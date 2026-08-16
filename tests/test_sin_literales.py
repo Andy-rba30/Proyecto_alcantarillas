@@ -4,11 +4,12 @@ tests/test_sin_literales.py
 Guardia automatica de la regla de arquitectura: ningun modulo declara valores.
 
 Todo literal numerico bajo src/ -- incluido src/modulos/, donde aterrizaran
-M0 a M11 -- es un defecto, salvo en los tres archivos exentos:
+M0 a M11 -- es un defecto, salvo en los cuatro archivos exentos:
 
     constantes_normativas.py   valores [N] con numeral verificado
     criterios_adoptados.py     valores [N->], [C] y [A] declarados
     tolerancias.py             precision numerica, no valores de proyecto
+    dominios.py                limites de dominio del dato de entrada
 
 Excepciones dentro de un modulo vigilado:
 
@@ -40,7 +41,8 @@ RAIZ = Path(__file__).resolve().parents[1]
 SRC = RAIZ / "src"
 MODULOS = SRC / "modulos"
 
-EXENTOS = {"constantes_normativas.py", "criterios_adoptados.py", "tolerancias.py"}
+EXENTOS = {"constantes_normativas.py", "criterios_adoptados.py",
+           "tolerancias.py", "dominios.py"}
 NUMEROS_PERMITIDOS = {0, 1, 2}
 MARCA = "# literal-ok"
 
@@ -68,12 +70,14 @@ def _marcado(lineas, numero_de_linea: int) -> bool:
     return False
 
 
-def literales_prohibidos(codigo: str, nombre: str = "<memoria>"):
-    """Devuelve [(linea, valor), ...] de los literales numericos no permitidos."""
+def literales_numericos(codigo: str, nombre: str = "<memoria>"):
+    """
+    Todos los literales numericos, sin aplicar ninguna exencion. Sirve para
+    comprobar que un archivo exento declara valores de verdad: en dominios.py
+    los numeros llevan la marca `# literal-ok` y `literales_prohibidos` los
+    dejaria pasar, con lo que el archivo pareceria vacio de valores.
+    """
     arbol = ast.parse(codigo, filename=nombre)
-    lineas = codigo.splitlines()
-    de_indice = _nodos_de_indice(arbol)
-
     hallazgos = []
     for nodo in ast.walk(arbol):
         if not isinstance(nodo, ast.Constant):
@@ -81,6 +85,24 @@ def literales_prohibidos(codigo: str, nombre: str = "<memoria>"):
         valor = nodo.value
         if isinstance(valor, bool) or not isinstance(valor, (int, float, complex)):
             continue                      # los strings y None no son literales numericos
+        hallazgos.append((nodo.lineno, valor))
+    return sorted(hallazgos)
+
+
+def literales_prohibidos(codigo: str, nombre: str = "<memoria>"):
+    """Devuelve [(linea, valor), ...] de los literales numericos no permitidos."""
+    arbol = ast.parse(codigo, filename=nombre)
+    lineas = codigo.splitlines()
+    de_indice = _nodos_de_indice(arbol)
+    # Se recorre el arbol otra vez para poder identificar los nodos por id():
+    # literales_numericos devuelve valores, no nodos.
+    hallazgos = []
+    for nodo in ast.walk(arbol):
+        if not isinstance(nodo, ast.Constant):
+            continue
+        valor = nodo.value
+        if isinstance(valor, bool) or not isinstance(valor, (int, float, complex)):
+            continue
         if id(nodo) in de_indice:
             continue
         if valor in NUMEROS_PERMITIDOS:   # 2 y 2.0 entran por igual
@@ -130,10 +152,23 @@ def test_los_archivos_exentos_existen_y_de_verdad_llevan_literales():
     for nombre in EXENTOS:
         ruta = SRC / nombre
         assert ruta.is_file(), f"'{nombre}' no existe: la lista de exentos caduco"
-        assert literales_prohibidos(ruta.read_text(encoding="utf-8-sig"), nombre), (
+        assert literales_numericos(ruta.read_text(encoding="utf-8-sig"), nombre), (
             f"'{nombre}' no contiene ningun literal: revisa si sigue siendo el "
             "archivo que declara valores"
         )
+
+
+def test_los_limites_de_dominio_salieron_de_M0():
+    """
+    M0 los usa pero ya no los declara: si vuelven al modulo, el barrido los
+    caza igual, pero este test dice donde tienen que estar.
+    """
+    m0 = (SRC / "modulos" / "M0_carga.py").read_text(encoding="utf-8-sig")
+    dominios = (SRC / "dominios.py").read_text(encoding="utf-8-sig")
+    for nombre in ("CBR_MAX_FISICO", "ESVIAJE_MAX", "S_CAUCE_MAX", "METROS_POR_KM"):
+        assert f"{nombre} =" in dominios, f"'{nombre}' no se declara en dominios.py"
+        assert f"{nombre} =" not in m0, f"'{nombre}' volvio a declararse en M0"
+        assert nombre in m0, f"M0 dejo de usar '{nombre}'"
 
 
 def test_el_directorio_de_modulos_esta_bajo_vigilancia():

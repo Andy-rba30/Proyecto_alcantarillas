@@ -28,8 +28,9 @@ DIRECTORIO_TESTS = Path(__file__).resolve().parent
 CSV_VALIDO = DIRECTORIO_TESTS / "ejemplo_puntos.csv"
 CSV_INVALIDO = DIRECTORIO_TESTS / "ejemplo_puntos_invalido.csv"
 
-# Campos de PuntoCritico que M0 deriva y que no son columnas del CSV (Sec. 1.2).
-DERIVADOS = {"progresiva_display"}
+# Campos de PuntoCritico que M0 deriva y que no son columnas del CSV (Sec. 1.2):
+# la notacion vial de la progresiva y la marca de datos pendientes de terceros.
+DERIVADOS = {"progresiva_display", "pendientes_externos"}
 
 
 def _encabezado(ruta: Path):

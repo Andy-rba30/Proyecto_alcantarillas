@@ -115,6 +115,35 @@ class DatoFaltanteError(ErrorProyecto):
         super().__init__(texto)
 
 
+class DatoInvalidoError(ErrorProyecto):
+    """
+    El dato esta, pero no puede ser: no es del tipo esperado, cae fuera del
+    rango fisico posible, o contradice a otro dato de la misma fila (Sec. 1.5).
+
+    Es hermano de DatoFaltanteError y no el mismo: "falta la columna" y "la
+    columna trae un CBR de 250 %" son dos problemas distintos del expediente y
+    se corrigen de forma distinta. Ambos descienden de ErrorProyecto, de modo
+    que la GUI puede atrapar los dos con un solo except.
+    """
+
+    def __init__(self, campo: str,
+                 valor: Any = None,
+                 id_punto: Optional[str] = None,
+                 motivo: Optional[str] = None) -> None:
+        self.campo = campo
+        self.valor = valor
+        self.id_punto = id_punto
+        self.motivo = motivo
+        texto = f"Dato invalido en '{campo}'"
+        if id_punto:
+            texto += f" del punto {id_punto}"
+        if motivo:
+            texto += f": {motivo}"
+        if valor is not None:
+            texto += f" (valor leido: {valor!r})"
+        super().__init__(texto)
+
+
 # ===========================================================================
 # Enumeraciones (categorias declaradas por la hoja de ruta, no valores)
 # ===========================================================================
@@ -185,6 +214,17 @@ class PuntoCritico:
     Q_receptor_m3s: Optional[float]    # m3/s - ANA / Junta (Tablero 3.1)
     cota_TW: Optional[float]           # msnm - calculada en 1.3 (Tablero 3.1)
     sucs_fundacion: str                # clasificacion SUCS de la calicata
+
+    # Derivado por M0, no es columna del CSV: columnas que la fila dejo vacias
+    # porque el dato depende de terceros (Tablero 3). NO significa fila
+    # invalida; significa fila cargada y marcada. Quien decide si el punto se
+    # puede calcular con lo que falta es el modulo que necesite el dato, no M0.
+    pendientes_externos: Tuple[str, ...] = ()
+
+    @property
+    def pendiente_dato_externo(self) -> bool:
+        """True si la fila espera algun dato de un tablero externo."""
+        return bool(self.pendientes_externos)
 
     def exigir(self, campo: str) -> Any:
         """

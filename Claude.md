@@ -13,7 +13,16 @@
 - Ningún módulo declara valores no normativos. Todo literal numérico fuera de
   constantes_normativas.py (solo [N]) o criterios_adoptados.py ([N→],[C],[A])
   es un defecto y se rechaza en revisión. Excepciones permitidas: 0, 1, 2,
-  índices, y constantes matemáticas puras (pi).
+  índices, y constantes matemáticas puras (pi). Dos archivos más quedan
+  exentos por no contener valores de proyecto: tolerancias.py (precisión
+  numérica: cambiarla no mueve ninguna magnitud física) y dominios.py (rango
+  físico posible de un dato de entrada: no entra en ninguna fórmula). Regla
+  para saber si un número va en uno de esos dos: si cambiarlo puede alterar un
+  resultado del cálculo, no va ahí.
+- Un literal que es parte de una fórmula transcrita de la hoja de ruta —el 8 de
+  A = (D²/8)(θ − sen θ), el exponente 2/3 de Manning— se deja en el módulo
+  marcado con `# literal-ok: <razón>`. La marca lo declara y lo hace visible en
+  revisión; sin marca, tests/test_sin_literales.py lo rechaza.
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) con valor None lanza CriterioPendienteError.
@@ -31,12 +40,24 @@
   la capa de reporte, nunca en el cálculo.
 
 ## Excepciones (taxonomía)
+Todas descienden de ErrorProyecto, definidas en modelos.py, para que la GUI
+distinga un problema del expediente de un fallo del programa con un solo except.
 - CriterioPendienteError: criterio [A] sin valor. La GUI la muestra como
   "falta declarar: <clave>", no como error del programa.
 - DisenoNoFactibleError: ninguna combinación material/diámetro cumple.
   Debe llevar el motivo y, si aplica, el delta de rasante requerido.
-- DatoFaltanteError: falta un dato de entrada del CSV.
-No usar Exception genérica en lógica de negocio.
+- DatoFaltanteError: falta un dato de entrada del CSV. Falta la **columna**
+  entera, o la celda obligatoria viene vacía. Lleva el nombre de la columna.
+- DatoInvalidoError: el dato **está** pero no puede ser: no es del tipo
+  esperado, cae fuera del rango físico de dominios.py, o contradice a otro
+  dato de su misma fila (§1.5). Hermana de DatoFaltanteError y no la misma:
+  "falta la columna cbr_subrasante" y "el CBR dice 250 %" son dos problemas
+  distintos del expediente y se corrigen de forma distinta. La regla para
+  elegir: si el revisor tiene que **añadir** algo es Faltante, si tiene que
+  **corregir** algo es Invalido.
+No usar Exception genérica en lógica de negocio. Un fallo de E/S (archivo
+inexistente) no es del expediente y sale como FileNotFoundError, fuera de
+ErrorProyecto.
 
 ## Estilo
 - Python 3.11+. Dependencias: numpy, scipy (brentq), pandas, pytest,

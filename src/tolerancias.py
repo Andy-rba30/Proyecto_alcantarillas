@@ -7,7 +7,9 @@ La regla de arquitectura dice que todo literal numerico fuera de
 `constantes_normativas.py` y `criterios_adoptados.py` es un defecto, y exime
 dos categorias: 0, 1, 2 e indices, y las constantes matematicas puras (pi).
 Este archivo es la TERCERA categoria exenta, y esta separada de las otras dos
-a proposito.
+a proposito. La cuarta es `dominios.py`, con los limites de dominio del dato
+de entrada: tampoco son valores de proyecto, pero responden a otra pregunta
+(que valores puede tomar un dato, no cuanto vale el ultimo bit del float).
 
 Por que no son criterios adoptados
 ----------------------------------
