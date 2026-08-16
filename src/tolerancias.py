@@ -46,6 +46,15 @@ Nunca comparar floats con ==: las tolerancias son explicitas y con nombre.
 # muy por encima del epsilon del double (~2.2e-16).
 TOL_BRENT = 1e-10
 
+# Margen del extremo del intervalo (0, 2*pi) sobre el que M3 busca theta con
+# Brent (Sec. 4.1). En theta=0 el conducto esta vacio: A=0, P=0 y R=0/0 es
+# indeterminado; en theta=2*pi esta lleno a presion, fuera del regimen de
+# flujo libre que modela Manning. Ningun theta real del diseno cae tan cerca
+# de cualquiera de los dos bordes (V1 tapa y/D en 0.75, muy lejos de ambos),
+# de modo que recortar el intervalo por este margen no descarta ninguna
+# solucion fisica: solo evita evaluar la geometria justo en la singularidad.
+TOL_THETA_BORDE = 1e-9
+
 # Comparacion contra un umbral normativo (y/D <= 0.75, V >= 0.25, HW/D <= 1.5).
 # Absorbe el ruido de punto flotante -- 0.675/0.90 puede dar 0.7500000000000001
 # y eso NO es un incumplimiento del borde libre -- sin llegar a tapar ninguna

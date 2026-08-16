@@ -363,6 +363,30 @@ class Geometria:
         return self.D * math.sin(self.theta / 2)
 
 
+@dataclass(frozen=True)
+class TiranteNormal:
+    """
+    Salida de M3 (Sec. 4.1): tirante normal resuelto por Manning + Brent con
+    la regla de doble n.
+
+    `geometria` es la UNICA solucion de Brent, con n_max (rama de capacidad y
+    tirante: V1 borde libre) -- el n mas conservador del lado de la
+    inundacion fija el theta real de diseño. `V` reusa esa MISMA geometria
+    (mismo theta, mismo R) pero recalcula la velocidad de Manning con n_min
+    (rama de velocidad y socavacion: V2, V3, Laushey): el mismo canal visto
+    con la rugosidad mas baja, conservador del lado de la erosion. No es una
+    segunda resolucion de Brent para un theta distinto.
+
+    Por eso, en general, `V * geometria.A != Q`: Q es el caudal de diseño que
+    define el theta (con n_max), mientras que V asume una rugosidad menor
+    sobre esa misma seccion (ver el fixture CP-2,
+    tests/fixtures/casos_patron.py, y `modulos.M3_hidraulica.resolver_manning`).
+    """
+
+    geometria: Geometria      # con n_max
+    V: float                  # m/s, con n_min
+
+
 # ===========================================================================
 # Resultados
 # ===========================================================================
