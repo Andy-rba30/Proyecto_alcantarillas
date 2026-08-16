@@ -1,0 +1,607 @@
+"""
+tests/test_M4_control.py
+=========================
+M4 contra las Fases 4.2 y 4.3, pieza por pieza:
+
+    1. tirante_critico   contra CP-6: autoconsistencia (residuo de
+       Q^2*T/(g*A^3) = 1 nulo y Froude = 1), y la independencia de n y S que
+       lo distingue del tirante normal de M3.
+    2. control_entrada   contra CP-5 / CP-5B / CP-5C: las tres ramas, el q*
+       que las separa, la continuidad de la interpolacion en 3.5 y en 4.0, y
+       la guardia de que Ks*S NO se omite.
+    3. control_salida    contra CP-8: la constante de friccion es 19.62 (SI)
+       y no 29 (imperial) -- test_constante_friccion_es_SI_no_imperial --, mas
+       las dos ramas de h_o = max(TW, (y_c + D)/2).
+    4. hw_gobernante     el mayor de los dos, CON la etiqueta de cual fue.
+
+Cada pieza se prueba sola: las piezas 2 y 3 aceptan un TiranteCritico
+inyectado, de modo que un fallo del solver critico no arrastra a los otros
+dos tests a rojo por una causa que no es suya.
+"""
+
+import math
+
+import pytest
+
+import criterios_adoptados as ca
+from constantes_normativas import (G, KU_METRICO, K_FRICCION_SI,
+                                   Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO)
+from modelos import (ConstantesHDS5, ControlGobernante, DatoInvalidoError,
+                     RegimenEntrada, ResultadoHidraulico, TiranteCritico)
+from modulos.M2_material import catalogo
+from modulos.M3_hidraulica import geometria
+from modulos.M4_control import (area_llena, caudal_adimensional,
+                                control_entrada, control_salida,
+                                hw_gobernante, perdida_carga,
+                                radio_hidraulico_lleno, resolver_control,
+                                tirante_critico)
+from modelos import TipoMaterial
+from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
+                                         CP5_TRANSICION_HDS5,
+                                         CP5B_NO_SUMERGIDO, CP5C_SUMERGIDO,
+                                         CP6_TIRANTE_CRITICO,
+                                         CP8_CONTROL_SALIDA)
+
+
+@pytest.fixture
+def concreto():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO)
+
+
+@pytest.fixture
+def hds5(concreto):
+    """Carta 'circular concreto, square edge w/headwall' de la Tabla A.1."""
+    return concreto.hds5
+
+
+# ===========================================================================
+# Pieza 1 - Tirante critico (Sec. 4.2.1)
+# ===========================================================================
+
+@pytest.mark.parametrize("Q", CP6_TIRANTE_CRITICO["Q_casos"])
+def test_el_residuo_de_la_ecuacion_critica_se_anula(Q):
+    """CP-6: no hay valor cerrado con que contrastar, se exige
+    autoconsistencia -- Q^2*T/(g*A^3) = 1 en la solucion."""
+    c = CP6_TIRANTE_CRITICO
+    critico = tirante_critico(Q=Q, D=c["D"])
+
+    g = critico.geometria
+    residuo = Q ** 2 * g.T / (G * g.A ** 3) - 1
+    assert abs(residuo) < c["residuo_maximo_admisible"]
+
+
+@pytest.mark.parametrize("Q", CP6_TIRANTE_CRITICO["Q_casos"])
+def test_el_froude_vale_uno_en_el_tirante_critico(Q):
+    """CP-6: F = V/sqrt(g*A/T) = 1 es la definicion misma de estado critico."""
+    c = CP6_TIRANTE_CRITICO
+    critico = tirante_critico(Q=Q, D=c["D"])
+
+    g = critico.geometria
+    froude = critico.V / math.sqrt(G * g.A / g.T)
+    assert froude == pytest.approx(c["froude_esperado"], abs=c["froude_tolerancia"])
+
+
+def test_la_velocidad_critica_es_Q_sobre_area():
+    """
+    Excepcion declarada a la guardia de M3 (V*A != Q): en el tirante critico
+    la velocidad SI es Q/A, porque la ecuacion que lo define no contiene n y
+    no hay dos ramas de rugosidad entre las que elegir.
+    """
+    c = CP6_TIRANTE_CRITICO
+    Q = c["Q_casos"][0]
+    critico = tirante_critico(Q=Q, D=c["D"])
+
+    assert critico.V == pytest.approx(Q / critico.geometria.A, rel=1e-12)
+
+
+def test_la_energia_critica_es_yc_mas_la_carga_de_velocidad():
+    """H_c = y_c + V_c^2/(2g): lo que consume la Forma 1 de Sec. 4.2."""
+    c = CP6_TIRANTE_CRITICO
+    critico = tirante_critico(Q=c["Q_casos"][2], D=c["D"])
+
+    assert critico.H_c == pytest.approx(
+        critico.y_c + critico.V ** 2 / (2 * G), rel=1e-12)
+    assert critico.H_c > critico.y_c
+
+
+def test_el_tirante_critico_no_depende_de_n_ni_de_S():
+    """
+    La distincion con M3 que la hoja de ruta pide sostener: son DOS solvers,
+    no dos llamadas al mismo. La firma de tirante_critico() ni siquiera
+    admite n ni S, y el resultado crece solo con Q.
+    """
+    c = CP6_TIRANTE_CRITICO
+    criticos = [tirante_critico(Q=Q, D=c["D"]) for Q in c["Q_casos"]]
+    tirantes = [k.y_c for k in criticos]
+
+    assert tirantes == sorted(tirantes), "y_c debe crecer monotono con Q"
+    assert all(0 < k.y_c < c["D"] for k in criticos)
+
+
+def test_el_tirante_critico_de_cp2_queda_bajo_el_normal_en_pendiente_suave():
+    """
+    Con S = 0.005 el flujo de CP-2 es subcritico (regimen lento): y_c < y_n.
+    Es la comprobacion cruzada entre los dos solvers -- si el critico saliera
+    por encima del normal a esa pendiente, uno de los dos estaria mal.
+    """
+    c = CP2_GEOMETRIA_MANNING
+    critico = tirante_critico(Q=c["Q_con_n_max_esperado"], D=c["D"])
+    y_normal = c["y_sobre_D"] * c["D"]
+
+    assert critico.y_c < y_normal
+
+
+@pytest.mark.parametrize("kwargs, campo", [
+    ({"Q": 0.0, "D": 0.90}, "Q"),
+    ({"Q": -1.0, "D": 0.90}, "Q"),
+    ({"Q": 1.0, "D": 0.0}, "D"),
+])
+def test_tirante_critico_valida_sus_parametros(kwargs, campo):
+    with pytest.raises(DatoInvalidoError) as exc:
+        tirante_critico(**kwargs)
+    assert exc.value.campo == campo
+
+
+# ===========================================================================
+# Pieza 2 - Control de entrada, HDS-5 (Sec. 4.2)
+# ===========================================================================
+
+def test_area_llena_y_radio_hidraulico_lleno():
+    c = CP5_TRANSICION_HDS5
+    assert area_llena(c["D"]) == pytest.approx(c["A_llena_esperada"], abs=1e-5)
+    assert radio_hidraulico_lleno(c["D"]) == pytest.approx(c["D"] / 4, rel=1e-12)
+
+
+def test_ku_es_el_valor_metrico():
+    """Ku = 1.811 (SI). El 1.0 imperial daria un q* 1.811 veces menor y
+    cambiaria de rama sin avisar."""
+    assert KU_METRICO == pytest.approx(CP5_TRANSICION_HDS5["Ku"], abs=1e-9)
+
+
+@pytest.mark.parametrize("caso, esperado", [
+    (CP5B_NO_SUMERGIDO, CP5B_NO_SUMERGIDO["q_estrella_aprox"]),
+    (CP5C_SUMERGIDO, CP5C_SUMERGIDO["q_estrella_aprox"]),
+])
+def test_caudal_adimensional_reproduce_los_casos_patron(caso, esperado):
+    assert caudal_adimensional(Q=caso["Q"], D=caso["D"]) == pytest.approx(
+        esperado, abs=CP5_TRANSICION_HDS5["tolerancia"])
+
+
+def test_caudal_adimensional_en_transicion_reproduce_cp5():
+    c = CP5_TRANSICION_HDS5
+    q = caudal_adimensional(Q=c["Q"], D=c["D"])
+    assert q == pytest.approx(c["q_estrella_esperado"], abs=c["tolerancia"])
+    assert Q_LIM_NO_SUMERGIDO < q < Q_LIM_SUMERGIDO
+
+
+def test_el_area_de_q_estrella_es_la_llena_y_no_la_del_tirante():
+    """
+    q* se define sobre la seccion LLENA (CP-5: A = pi*D^2/4 = 0.63617 m2).
+    Usar el area del tirante daria un q* mayor y podria saltar de rama.
+    """
+    c = CP5_TRANSICION_HDS5
+    # El area va sin redondear: CP-5 la publica a cinco decimales (0.63617) y
+    # contra ese valor la igualdad solo vale hasta la tolerancia del fixture.
+    esperado = KU_METRICO * c["Q"] / (math.pi * c["D"] ** 2 / 4 * math.sqrt(c["D"]))
+    assert caudal_adimensional(Q=c["Q"], D=c["D"]) == pytest.approx(esperado, rel=1e-12)
+
+    con_area_del_tirante = KU_METRICO * c["Q"] / (
+        CP2_GEOMETRIA_MANNING["A_esperado"] * math.sqrt(c["D"]))
+    assert caudal_adimensional(Q=c["Q"], D=c["D"]) < con_area_del_tirante
+
+
+@pytest.mark.parametrize("caso, regimen_esperado", [
+    (CP5B_NO_SUMERGIDO, RegimenEntrada.NO_SUMERGIDO),
+    (CP5_TRANSICION_HDS5, RegimenEntrada.TRANSICION),
+    (CP5C_SUMERGIDO, RegimenEntrada.SUMERGIDO),
+])
+def test_cada_caso_patron_cae_en_su_rama(caso, regimen_esperado, hds5):
+    resultado = control_entrada(Q=caso["Q"], D=caso["D"], S=0.005, hds5=hds5)
+    assert resultado.regimen is regimen_esperado
+
+
+def test_la_rama_no_sumergida_aplica_la_forma_1(hds5):
+    """HWi/D = H_c/D + K*(q*)^M + Ks*S, con H_c del tirante critico."""
+    c = CP5B_NO_SUMERGIDO
+    S = 0.005
+    critico = tirante_critico(Q=c["Q"], D=c["D"])
+    resultado = control_entrada(Q=c["Q"], D=c["D"], S=S, hds5=hds5, critico=critico)
+
+    esperado = (critico.H_c / c["D"]
+                + hds5.K * resultado.q_estrella ** hds5.M
+                + hds5.Ks * S)
+    assert resultado.HW_sobre_D == pytest.approx(esperado, rel=1e-12)
+    assert resultado.HW == pytest.approx(esperado * c["D"], rel=1e-12)
+
+
+def test_la_rama_sumergida_aplica_la_forma_cuadratica(hds5):
+    """HWi/D = c*(q*)^2 + Y + Ks*S: sin H_c, la geometria critica no entra."""
+    c = CP5C_SUMERGIDO
+    S = 0.005
+    resultado = control_entrada(Q=c["Q"], D=c["D"], S=S, hds5=hds5)
+
+    esperado = hds5.c * resultado.q_estrella ** 2 + hds5.Y + hds5.Ks * S
+    assert resultado.HW_sobre_D == pytest.approx(esperado, rel=1e-12)
+
+
+def test_la_transicion_interpola_y_no_devuelve_ninguna_rama_pura(hds5):
+    """
+    CP-5 lo dice expreso: "el test debe fallar si el modulo devuelve el valor
+    puro de la forma no sumergida o de la sumergida en vez de interpolar".
+    """
+    c = CP5_TRANSICION_HDS5
+    S = 0.005
+    critico = tirante_critico(Q=c["Q"], D=c["D"])
+    resultado = control_entrada(Q=c["Q"], D=c["D"], S=S, hds5=hds5, critico=critico)
+
+    q = resultado.q_estrella
+    puro_no_sumergido = critico.H_c / c["D"] + hds5.K * q ** hds5.M + hds5.Ks * S
+    puro_sumergido = hds5.c * q ** 2 + hds5.Y + hds5.Ks * S
+
+    assert resultado.regimen is RegimenEntrada.TRANSICION
+    assert resultado.HW_sobre_D != pytest.approx(puro_no_sumergido, rel=1e-6)
+    assert resultado.HW_sobre_D != pytest.approx(puro_sumergido, rel=1e-6)
+
+
+def test_la_interpolacion_reproduce_la_recta_entre_los_dos_extremos(hds5):
+    """
+    Se interpola entre la forma no sumergida evaluada en q* = 3.5 y la
+    sumergida evaluada en q* = 4.0, no entre las dos evaluadas en el q* real.
+    """
+    c = CP5_TRANSICION_HDS5
+    S = 0.005
+    critico = tirante_critico(Q=c["Q"], D=c["D"])
+    resultado = control_entrada(Q=c["Q"], D=c["D"], S=S, hds5=hds5, critico=critico)
+
+    inferior = (critico.H_c / c["D"]
+                + hds5.K * Q_LIM_NO_SUMERGIDO ** hds5.M + hds5.Ks * S)
+    superior = hds5.c * Q_LIM_SUMERGIDO ** 2 + hds5.Y + hds5.Ks * S
+    peso = ((resultado.q_estrella - Q_LIM_NO_SUMERGIDO)
+            / (Q_LIM_SUMERGIDO - Q_LIM_NO_SUMERGIDO))
+
+    assert resultado.HW_sobre_D == pytest.approx(
+        inferior + peso * (superior - inferior), rel=1e-12)
+    assert min(inferior, superior) <= resultado.HW_sobre_D <= max(inferior, superior)
+
+
+def test_la_curva_empalma_continua_en_los_dos_limites(hds5):
+    """
+    En q* = 3.5 y en q* = 4.0 la interpolacion debe valer lo mismo que la
+    rama pura de cada lado: un salto ahi seria un HW discontinuo frente a un
+    cambio infinitesimal de caudal.
+    """
+    D, S = 0.90, 0.005
+    A_llena = area_llena(D)
+
+    def Q_para(q_estrella):
+        return q_estrella * A_llena * math.sqrt(D) / KU_METRICO
+
+    epsilon = 1e-7
+    for limite in (Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO):
+        dentro = control_entrada(Q=Q_para(limite + epsilon) if limite == Q_LIM_NO_SUMERGIDO
+                                 else Q_para(limite - epsilon),
+                                 D=D, S=S, hds5=hds5)
+        fuera = control_entrada(Q=Q_para(limite), D=D, S=S, hds5=hds5)
+        assert dentro.regimen is RegimenEntrada.TRANSICION
+        assert dentro.HW_sobre_D == pytest.approx(fuera.HW_sobre_D, abs=1e-6)
+
+
+# --- Ks: no esta en la Tabla A.1 y no se omite -----------------------------
+
+def test_ks_esta_en_todas_las_cartas_de_la_tabla_a1():
+    """
+    Ks NO figura en la Tabla A.1: viene de la formulacion. La guardia es que
+    `ConstantesHDS5` lo declare obligatorio y que ninguna carta lo traiga en
+    cero por descuido.
+    """
+    from constantes_normativas import HDS5_INLET
+
+    for nombre, fila in HDS5_INLET.items():
+        assert "Ks" in fila, f"la carta '{nombre}' perdio el Ks"
+        assert fila["Ks"] in (-0.5, 0.7), (
+            f"la carta '{nombre}' tiene Ks={fila['Ks']}: la formulacion solo "
+            "admite -0.5 (sin inglete) y +0.7 (inglete)"
+        )
+
+    with pytest.raises(TypeError):
+        ConstantesHDS5(K=0.0098, M=2.00, c=0.0398, Y=0.67)   # sin Ks
+
+
+@pytest.mark.parametrize("caso", [CP5B_NO_SUMERGIDO, CP5C_SUMERGIDO,
+                                  CP5_TRANSICION_HDS5])
+def test_el_termino_ks_por_S_no_se_omite(caso, hds5):
+    """
+    Con Ks = -0.5, dos pendientes distintas tienen que dar HW distintos. Si
+    alguien borra el termino, los dos resultados coinciden y este test cae.
+    El efecto es chico a proposito -- unos milimetros -- porque ese es
+    exactamente el error que no se ve en una revision a ojo.
+    """
+    suave = control_entrada(Q=caso["Q"], D=caso["D"], S=0.001, hds5=hds5)
+    fuerte = control_entrada(Q=caso["Q"], D=caso["D"], S=0.050, hds5=hds5)
+
+    delta_esperado = hds5.Ks * (0.050 - 0.001)
+    assert suave.HW_sobre_D != pytest.approx(fuerte.HW_sobre_D, abs=1e-9)
+    assert fuerte.HW_sobre_D - suave.HW_sobre_D == pytest.approx(delta_esperado, rel=1e-9)
+
+
+def test_con_ks_negativo_mas_pendiente_significa_menos_carga(hds5):
+    """Ks = -0.5 (embocadura no en inglete): el signo importa, no solo el
+    modulo. Un tubo mas empinado entra mejor, no peor."""
+    assert hds5.Ks < 0
+    c = CP5B_NO_SUMERGIDO
+    suave = control_entrada(Q=c["Q"], D=c["D"], S=0.001, hds5=hds5)
+    fuerte = control_entrada(Q=c["Q"], D=c["D"], S=0.050, hds5=hds5)
+    assert fuerte.HW < suave.HW
+
+
+def test_una_carta_en_inglete_invierte_el_signo(hds5):
+    """La carta 'circular_cmp_mitered' trae Ks = +0.7: mas pendiente, mas
+    carga. Es la otra mitad de la formulacion, no un caso teorico."""
+    from constantes_normativas import HDS5_INLET
+
+    inglete = ConstantesHDS5.desde_dict(HDS5_INLET["circular_cmp_mitered"])
+    assert inglete.Ks > 0
+
+    c = CP5B_NO_SUMERGIDO
+    suave = control_entrada(Q=c["Q"], D=c["D"], S=0.001, hds5=inglete)
+    fuerte = control_entrada(Q=c["Q"], D=c["D"], S=0.050, hds5=inglete)
+    assert fuerte.HW > suave.HW
+
+
+def test_control_entrada_valida_la_pendiente(hds5):
+    with pytest.raises(DatoInvalidoError) as exc:
+        control_entrada(Q=1.0, D=0.90, S=0.0, hds5=hds5)
+    assert exc.value.campo == "S"
+
+
+# ===========================================================================
+# Pieza 3 - Control de salida (Sec. 4.3)
+# ===========================================================================
+
+def test_constante_friccion_es_SI_no_imperial():
+    """
+    LA guardia obligatoria de Sec. 4.3. El 29 de la literatura FHWA es del
+    sistema ingles y en metrico no falla ruidosamente: devuelve numeros
+    plausibles y equivocados. Con los datos de CP-8, 0.546 m en vez de
+    0.498 m -- un 9.6 % que nadie detecta a ojo.
+
+    El test ataca por tres lados a la vez, porque cada uno solo cubre una
+    forma de meter el error:
+      1. la constante declarada vale 19.62 y no 29;
+      2. la H que devuelve el modulo es la de CP-8 con 19.62;
+      3. y NO es la que saldria con 29 -- si alguien sustituye la constante,
+         el punto 2 falla; si ademas "corrige" el caso patron, falla el 3.
+    """
+    c = CP8_CONTROL_SALIDA
+
+    assert K_FRICCION_SI == pytest.approx(c["K_friccion_SI_correcto"], abs=1e-9)
+    assert K_FRICCION_SI != pytest.approx(c["K_friccion_imperial_incorrecto"], abs=1e-9)
+
+    H = perdida_carga(V=c["V"], R=c["R"], n=c["n"], L=c["L"], ke=c["ke"])
+
+    assert H == pytest.approx(c["H_esperado_con_19_62"], abs=1e-4)
+    assert H != pytest.approx(c["H_con_29_incorrecto"], abs=1e-3)
+
+    H_imperial = ((1 + c["ke"] + c["K_friccion_imperial_incorrecto"]
+                   * c["n"] ** 2 * c["L"] / c["R"] ** (4 / 3))
+                  * c["V"] ** 2 / (2 * G))
+    assert H_imperial == pytest.approx(c["H_con_29_incorrecto"], abs=1e-4)
+    assert H < H_imperial
+
+
+def test_la_perdida_de_carga_reproduce_la_formula_de_la_hoja_de_ruta():
+    c = CP8_CONTROL_SALIDA
+    esperado = ((1 + c["ke"] + K_FRICCION_SI * c["n"] ** 2 * c["L"] / c["R"] ** (4 / 3))
+                * c["V"] ** 2 / (2 * G))
+    assert perdida_carga(V=c["V"], R=c["R"], n=c["n"], L=c["L"],
+                         ke=c["ke"]) == pytest.approx(esperado, rel=1e-12)
+
+
+def test_el_ke_por_defecto_sale_del_criterio_adoptado():
+    """CP-8 usaba ke=0.5 como dato suelto; hoy ese 0.5 esta declarado en
+    'ke_entrada' [C] y el modulo lo lee de ahi si no se le pasa."""
+    c = CP8_CONTROL_SALIDA
+    assert ca.valor("ke_entrada") == pytest.approx(c["ke"], abs=1e-9)
+
+    con_criterio = perdida_carga(V=c["V"], R=c["R"], n=c["n"], L=c["L"])
+    explicito = perdida_carga(V=c["V"], R=c["R"], n=c["n"], L=c["L"], ke=c["ke"])
+    assert con_criterio == pytest.approx(explicito, rel=1e-12)
+
+
+def test_la_friccion_crece_con_la_longitud_y_con_n():
+    c = CP8_CONTROL_SALIDA
+    base = perdida_carga(V=c["V"], R=c["R"], n=c["n"], L=c["L"], ke=c["ke"])
+    mas_largo = perdida_carga(V=c["V"], R=c["R"], n=c["n"], L=2 * c["L"], ke=c["ke"])
+    mas_rugoso = perdida_carga(V=c["V"], R=c["R"], n=0.030, L=c["L"], ke=c["ke"])
+
+    assert mas_largo > base
+    assert mas_rugoso > base
+
+
+def test_la_geometria_de_referencia_es_la_seccion_llena():
+    """
+    Sec. 4.3 no dice de que seccion salen V y R: la eleccion esta declarada
+    en el criterio 'geometria_control_salida' [C]. El test la fija para que
+    no pueda cambiar en silencio.
+    """
+    assert ca.valor("geometria_control_salida") == "seccion_llena"
+
+    D, Q = 0.90, 1.0
+    salida = control_salida(Q=Q, D=D, S=0.005, L=20.0, TW=0.0,
+                            n=0.013, ke=0.5)
+
+    assert salida.R == pytest.approx(radio_hidraulico_lleno(D), rel=1e-12)
+    assert salida.V == pytest.approx(Q / area_llena(D), rel=1e-12)
+    assert salida.R != pytest.approx(CP2_GEOMETRIA_MANNING["R_esperado"], rel=1e-3)
+
+
+def test_ho_toma_la_rama_geometrica_con_TW_bajo():
+    """h_o = max(TW, (y_c + D)/2): con salida libre gobierna la geometria."""
+    D, Q = 0.90, 1.0
+    critico = tirante_critico(Q=Q, D=D)
+    salida = control_salida(Q=Q, D=D, S=0.005, L=20.0, TW=0.0, n=0.013, ke=0.5)
+
+    assert salida.h_o == pytest.approx((critico.y_c + D) / 2, rel=1e-9)
+    assert not salida.ahogado_por_TW
+
+
+def test_ho_toma_el_TW_cuando_el_receptor_ahoga_la_salida():
+    """La situacion que Sec. 4.3 advierte: el dren tiene nivel propio y es el
+    que manda el remanso aguas arriba."""
+    D, Q = 0.90, 1.0
+    TW_alto = 1.60
+    salida = control_salida(Q=Q, D=D, S=0.005, L=20.0, TW=TW_alto, n=0.013, ke=0.5)
+
+    assert salida.h_o == pytest.approx(TW_alto, rel=1e-12)
+    assert salida.ahogado_por_TW
+
+
+def test_la_ecuacion_de_control_de_salida_es_H_mas_ho_menos_SL():
+    D, Q, S, L = 0.90, 1.0, 0.005, 20.0
+    salida = control_salida(Q=Q, D=D, S=S, L=L, TW=0.30, n=0.013, ke=0.5)
+
+    assert salida.caida == pytest.approx(S * L, rel=1e-12)
+    assert salida.HW == pytest.approx(salida.H + salida.h_o - S * L, rel=1e-12)
+
+
+def test_un_TW_mas_alto_sube_el_HW_de_salida():
+    comun = dict(Q=1.0, D=0.90, S=0.005, L=20.0, n=0.013, ke=0.5)
+    bajo = control_salida(TW=0.0, **comun)
+    alto = control_salida(TW=1.60, **comun)
+    assert alto.HW > bajo.HW
+
+
+@pytest.mark.parametrize("kwargs, campo", [
+    ({"Q": 1.0, "D": 0.90, "S": 0.0, "L": 20.0, "TW": 0.0, "n": 0.013}, "S"),
+    ({"Q": 1.0, "D": 0.90, "S": 0.005, "L": 0.0, "TW": 0.0, "n": 0.013}, "L"),
+    ({"Q": 1.0, "D": 0.90, "S": 0.005, "L": 20.0, "TW": -0.1, "n": 0.013}, "TW"),
+    ({"Q": 1.0, "D": 0.90, "S": 0.005, "L": 20.0, "TW": 0.0, "n": 0.0}, "n"),
+])
+def test_control_salida_valida_sus_parametros(kwargs, campo):
+    with pytest.raises(DatoInvalidoError) as exc:
+        control_salida(**kwargs)
+    assert exc.value.campo == campo
+
+
+# ===========================================================================
+# Pieza 4 - Cual de los dos gobierna
+# ===========================================================================
+
+def test_gobierna_la_salida_cuando_el_receptor_ahoga(hds5):
+    """Un TW alto empuja el HW de salida por encima del de entrada."""
+    Q, D, S, L = 1.0, 0.90, 0.005, 20.0
+    entrada = control_entrada(Q=Q, D=D, S=S, hds5=hds5)
+    salida = control_salida(Q=Q, D=D, S=S, L=L, TW=2.50, n=0.013, ke=0.5)
+
+    HW, control = hw_gobernante(entrada, salida)
+
+    assert control is ControlGobernante.SALIDA
+    assert HW == pytest.approx(salida.HW, rel=1e-12)
+    assert HW > entrada.HW
+
+
+def test_gobierna_la_entrada_con_salida_libre_y_conducto_corto(hds5):
+    Q, D, S, L = 1.0, 0.90, 0.030, 8.0
+    entrada = control_entrada(Q=Q, D=D, S=S, hds5=hds5)
+    salida = control_salida(Q=Q, D=D, S=S, L=L, TW=0.0, n=0.013, ke=0.5)
+
+    HW, control = hw_gobernante(entrada, salida)
+
+    assert control is ControlGobernante.ENTRADA
+    assert HW == pytest.approx(entrada.HW, rel=1e-12)
+
+
+def test_el_gobernante_es_siempre_el_mayor_de_los_dos(hds5):
+    """La regla, sin depender del escenario: max(HW_entrada, HW_salida)."""
+    Q, D, S, L = 1.0, 0.90, 0.005, 20.0
+    entrada = control_entrada(Q=Q, D=D, S=S, hds5=hds5)
+
+    for TW in (0.0, 0.30, 0.80, 1.50, 2.50):
+        salida = control_salida(Q=Q, D=D, S=S, L=L, TW=TW, n=0.013, ke=0.5)
+        HW, control = hw_gobernante(entrada, salida)
+
+        assert HW == pytest.approx(max(entrada.HW, salida.HW), rel=1e-12)
+        esperado = (ControlGobernante.SALIDA if salida.HW > entrada.HW
+                    else ControlGobernante.ENTRADA)
+        assert control is esperado
+
+
+def test_el_resultado_dice_cual_goberno_y_conserva_los_dos_HW(concreto):
+    """
+    `ResultadoHidraulico` no devuelve el maximo a secas: lleva los dos HW y
+    la etiqueta. Su propiedad HW debe coincidir con el del control marcado.
+    """
+    c = CP2_GEOMETRIA_MANNING
+    resultado = resolver_control(D=c["D"], Q=c["Q_con_n_max_esperado"], S=c["S"],
+                                 L=20.0, TW=2.50, material=concreto)
+
+    assert isinstance(resultado, ResultadoHidraulico)
+    assert resultado.control_gobernante is ControlGobernante.SALIDA
+    assert resultado.HW == pytest.approx(resultado.HW_salida, rel=1e-12)
+    assert resultado.HW == pytest.approx(
+        max(resultado.HW_entrada, resultado.HW_salida), rel=1e-12)
+
+
+def test_resolver_control_conserva_el_reparto_de_rugosidades(concreto):
+    """
+    y_normal y la friccion del control de salida con n_max; V con n_min (asi
+    la deja M3); el tirante critico sin n. La regla de doble n de Sec. 4.1 no
+    se pierde al pasar por M4.
+    """
+    c = CP2_GEOMETRIA_MANNING
+    Q = c["Q_con_n_max_esperado"]
+    resultado = resolver_control(D=c["D"], Q=Q, S=c["S"], L=20.0, TW=0.30,
+                                 material=concreto)
+
+    assert resultado.y_normal == pytest.approx(c["y_sobre_D"] * c["D"], abs=1e-3)
+    assert resultado.V == pytest.approx(c["V_con_n_min_esperado"],
+                                        abs=c["tolerancia_hidraulica"])
+    assert resultado.y_critico == pytest.approx(tirante_critico(Q, c["D"]).y_c,
+                                                rel=1e-9)
+    assert resultado.Q == pytest.approx(Q, rel=1e-12)
+
+
+def test_resolver_control_devuelve_none_si_el_tirante_normal_no_existe(concreto):
+    """Mismo contrato que M3: 'este diametro no alcanza' es un resultado de
+    diseno, no una excepcion."""
+    assert resolver_control(D=0.90, Q=100.0, S=0.005, L=20.0, TW=0.0,
+                            material=concreto) is None
+
+
+def test_la_geometria_critica_es_la_misma_en_las_dos_piezas(hds5):
+    """
+    El critico se resuelve UNA vez y se inyecta en las dos piezas que lo
+    necesitan. Si cada una lo recalculara por su cuenta, dos Brent distintos
+    podrian devolver y_c distintos al ultimo bit y el h_o dejaria de casar
+    con el H_c del control de entrada.
+    """
+    Q, D, S = 1.0, 0.90, 0.005
+    critico = tirante_critico(Q, D)
+    entrada = control_entrada(Q=Q, D=D, S=S, hds5=hds5, critico=critico)
+    salida = control_salida(Q=Q, D=D, S=S, L=20.0, TW=0.0, n=0.013, ke=0.5,
+                            critico=critico)
+
+    assert entrada.critico is critico
+    assert salida.critico is critico
+    assert entrada.critico.y_c == salida.critico.y_c
+
+
+def test_la_geometria_critica_inyectada_da_lo_mismo_que_la_resuelta_dentro(hds5):
+    """Inyectar el critico es una optimizacion, no un cambio de resultado."""
+    Q, D, S = 1.0, 0.90, 0.005
+    con_inyeccion = control_entrada(Q=Q, D=D, S=S, hds5=hds5,
+                                    critico=tirante_critico(Q, D))
+    sin_inyeccion = control_entrada(Q=Q, D=D, S=S, hds5=hds5)
+
+    assert con_inyeccion.HW == pytest.approx(sin_inyeccion.HW, rel=1e-12)
+
+
+def test_las_tres_piezas_son_tipos_de_modelos(hds5):
+    """Ningun dict ad-hoc: lo que sale de M4 son los tipos de modelos.py."""
+    Q, D, S = 1.0, 0.90, 0.005
+    critico = tirante_critico(Q, D)
+
+    assert isinstance(critico, TiranteCritico)
+    assert isinstance(critico.geometria, type(geometria(D, 1.0)))
+    assert isinstance(control_entrada(Q=Q, D=D, S=S, hds5=hds5).regimen,
+                      RegimenEntrada)

@@ -196,6 +196,21 @@ class ControlGobernante(str, Enum):
     SALIDA = "salida"     # Sec. 4.3, HW = H + ho - S*L
 
 
+class RegimenEntrada(str, Enum):
+    """
+    Rama de la formulacion de control de entrada de HDS-5 (Sec. 4.2). No es
+    una clasificacion cualitativa del flujo: es LA ECUACION que se aplico, y
+    por eso viaja en el resultado. Una memoria que dice "HW = 0.87 m" sin
+    decir con que rama se obtuvo no es revisable.
+
+    El umbral es el caudal adimensional q* = Ku*Q/(A*D^0.5), con los limites
+    [N] `Q_LIM_NO_SUMERGIDO` (3.5) y `Q_LIM_SUMERGIDO` (4.0).
+    """
+    NO_SUMERGIDO = "no_sumergido"   # q* <= 3.5 -> Forma 1, con H_c
+    TRANSICION = "transicion"       # 3.5 < q* < 4.0 -> interpolacion lineal
+    SUMERGIDO = "sumergido"         # q* >= 4.0 -> forma cuadratica en q*
+
+
 # ===========================================================================
 # Datos de entrada
 # ===========================================================================
@@ -385,6 +400,81 @@ class TiranteNormal:
 
     geometria: Geometria      # con n_max
     V: float                  # m/s, con n_min
+
+
+@dataclass(frozen=True)
+class TiranteCritico:
+    """
+    Salida del primer solver de M4 (Sec. 4.2.1): tirante critico de la seccion
+    circular, raiz de Q^2*T/(g*A^3) = 1, resuelta con Brent sobre theta.
+
+    `geometria` es la seccion en estado critico (de ella salen y_c, A_c y T_c);
+    `V` = Q/A_c es la velocidad critica, y `H_c` = y_c + V^2/(2g) la energia
+    especifica critica que exige la Forma 1 del control de entrada.
+
+    A diferencia de `TiranteNormal`, aqui V SI es Q/A: el tirante critico no
+    depende de la rugosidad -- no interviene n en Q^2*T/(g*A^3) = 1 -- y por
+    lo tanto la regla de doble n (Sec. 4.1) no le aplica. Es la unica
+    velocidad del proyecto que se obtiene dividiendo Q entre A, y lo es porque
+    la ecuacion que la define no tiene rama de capacidad ni rama de erosion.
+    """
+
+    geometria: Geometria      # seccion en estado critico
+    V: float                  # m/s - velocidad critica, Q/A_c
+    H_c: float                # m  - energia especifica critica, y_c + V^2/(2g)
+
+    @property
+    def y_c(self) -> float:
+        """Tirante critico, m."""
+        return self.geometria.y
+
+
+@dataclass(frozen=True)
+class ControlEntrada:
+    """
+    Salida del control de entrada HDS-5 (Sec. 4.2). Ademas del HW lleva el
+    q* y la rama aplicada: son lo que hace revisable el numero en la memoria.
+
+    `HW` es carga sobre el fondo de la entrada, en metros. `HW_sobre_D` es el
+    HWi/D adimensional que devuelven las ecuaciones de la Tabla A.1, antes de
+    multiplicar por D -- y es tambien lo que compara V4b (HW/D <= 1.5).
+    """
+
+    HW: float                     # m  - HWi
+    HW_sobre_D: float             # adimensional - HWi/D
+    q_estrella: float             # adimensional - Ku*Q/(A_llena*D^0.5)
+    regimen: RegimenEntrada
+    critico: TiranteCritico
+    constantes: ConstantesHDS5
+    numeral: str = "HDS-5 Ap. A, Tabla A.1 (Sec. 4.2)"
+
+
+@dataclass(frozen=True)
+class ControlSalida:
+    """
+    Salida del control de salida (Sec. 4.3): HW = H + h_o - S*L.
+
+    Se guardan los tres sumandos por separado porque cada uno responde a una
+    pregunta distinta del revisor: `H` es la perdida total en el barril
+    (entrada + friccion + carga de velocidad), `h_o` es el nivel de agua a la
+    salida que la manda aguas arriba, y `S*L` es la caida del conducto.
+
+    `ahogado_por_TW` distingue las dos ramas de h_o = max(TW, (y_c + D)/2): si
+    es True, el que gobierna el remanso es el nivel del cuerpo receptor y no
+    la geometria del conducto. Es la situacion que Sec. 4.3 advierte
+    expresamente para descargas a drenes con nivel propio.
+    """
+
+    HW: float                     # m  - carga sobre el fondo de la entrada
+    H: float                      # m  - perdida total en el barril
+    h_o: float                    # m  - max(TW, (y_c + D)/2)
+    TW: float                     # m  - tirante en el cuerpo receptor
+    caida: float                  # m  - S*L
+    V: float                      # m/s - velocidad de referencia del barril
+    R: float                      # m  - radio hidraulico de referencia
+    ahogado_por_TW: bool
+    critico: TiranteCritico
+    numeral: str = "Sec. 4.3"
 
 
 # ===========================================================================

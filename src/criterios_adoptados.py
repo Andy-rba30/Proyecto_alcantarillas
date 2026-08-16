@@ -312,6 +312,43 @@ CRITERIOS: Dict[str, Criterio] = {
                                "cambiar los tres",
     ),
 
+    "geometria_control_salida": Criterio(
+        valor="seccion_llena",
+        etiqueta="C",
+        concepto="Seccion de referencia de la que se toman V y R en la ecuacion "
+                 "de control de salida H = (1 + ke + 19.62*n^2*L/R^(4/3))*V^2/(2g)",
+        justificacion="Sec. 4.3 escribe la ecuacion pero NO dice a que seccion "
+                      "pertenecen V y R, y la eleccion no es cosmetica: con la "
+                      "seccion llena de un tubo de 0.90 m, R = D/4 = 0.225 m; con "
+                      "el tirante normal de y/D = 0.75, R = 0.2715 m. La misma "
+                      "formula da dos H distintas. Se adopta la SECCION LLENA "
+                      "(A = pi*D^2/4, R = D/4, V = Q/A) porque es la seccion para "
+                      "la que HDS-5 deriva esa expresion: los tres sumandos "
+                      "(1 = carga de velocidad, ke = perdida de entrada, "
+                      "19.62*n^2*L/R^(4/3) = perdida por friccion) son las "
+                      "perdidas de un barril trabajando LLENO, que es el caso de "
+                      "control de salida por definicion. Aplicarla sobre la "
+                      "geometria del tirante normal mezcla dos regimenes. "
+                      "TRAZABILIDAD: el caso patron CP-8 de "
+                      "tests/fixtures/casos_patron.py alimenta la formula con "
+                      "R = 0.27152 y V = 2.2807, que son los de la seccion "
+                      "parcialmente llena de CP-2. CP-8 no contradice esto: es un "
+                      "caso patron de la CONSTANTE 19.62 frente al 29 imperial, y "
+                      "para eso da V y R como datos sueltos, no como la geometria "
+                      "de un control de salida real",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Cap. III - control de salida a "
+               "seccion llena. Sec. 4.3 de la hoja de ruta cita la ecuacion sin "
+               "definir la seccion",
+        reemplazado_por="Procedimiento de barril parcialmente lleno de HDS-5 "
+                        "(longitud de la seccion llena, Cap. III) si el "
+                        "expediente lo exige",
+        verificacion_pendiente="Con TW bajo y pendiente pronunciada el barril "
+                               "puede no llegar a llenarse y el control de salida "
+                               "no gobierna igualmente; verificar que el punto "
+                               "donde el control de salida GOBIERNE sea uno donde "
+                               "la hipotesis de seccion llena tenga sentido fisico",
+    ),
+
     "HW_D_max": Criterio(
         valor=1.5,
         etiqueta="C",
