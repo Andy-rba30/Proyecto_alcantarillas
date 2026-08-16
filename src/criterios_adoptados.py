@@ -178,6 +178,37 @@ CRITERIOS: Dict[str, Criterio] = {
                                "1998 y 2017. Va ANTES de la Fase 4",
     ),
 
+    "umbral_area_quebrada_importante_ha": Criterio(
+        valor=None,                 # VACIO: bloquea el TR de toda la Familia A
+        etiqueta="A",
+        concepto="Area de cuenca a partir de la cual el cauce de un punto de "
+                 "Familia A se clasifica como 'quebrada importante' (TR 71) en "
+                 "vez de 'quebrada menor' (TR 35) en la Tabla N 02",
+        justificacion="La Tabla N 02 (num. 3.6) entrega las dos filas con su R y "
+                      "su n, pero NO entrega la regla para decidir cual le toca a "
+                      "un cauce dado, y Sec. 2.3 se limita a decir que la Familia "
+                      "A lleva 'TR 71 o 35 anios'. El vacio no es menor: entre una "
+                      "fila y la otra el TR se duplica, y con el sube la intensidad "
+                      "de la IDF y el Q de diseno de todos los puntos de paso. Se "
+                      "elige el AREA DE CUENCA como descriptor porque es el unico "
+                      "dato del CSV que Sec. 1.1 califica expresamente de 'solo "
+                      "clasificador': no entra en ninguna formula y existe "
+                      "justamente para esto. Lo que falta es el umbral. "
+                      "ALTERNATIVA sin este criterio: clasificar cauce por cauce y "
+                      "pasar la categoria explicita a M1, que la acepta como "
+                      "argumento; entonces la eleccion se documenta punto por "
+                      "punto en la memoria en vez de por regla",
+        fuente="PENDIENTE - el Manual MTC no define 'quebrada importante' ni "
+               "'quebrada menor' por umbral de area, longitud ni caudal",
+        reemplazado_por="Clasificacion del cauce documentada punto por punto "
+                        "(categoria explicita a M1), o umbral tomado de un "
+                        "estudio hidrologico de la cuenca del Bajo Piura",
+        verificacion_pendiente="Si se adopta un umbral, declarar en la memoria "
+                               "que puntos quedan a cada lado y correr la "
+                               "sensibilidad del Q con TR 71 y TR 35: es la "
+                               "misma alcantarilla con dos caudales de diseno",
+    ),
+
     # ----------------------- HIDRAULICA: vacios ---------------------------
 
     "hds5_embocadura_hdpe": Criterio(

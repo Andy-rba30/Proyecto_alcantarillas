@@ -1,0 +1,464 @@
+"""
+M1_clasificacion.py
+===================
+Fase 2 de la hoja de ruta: umbral binario de luz (Sec. 2.1), periodo de retorno
+por la formula de la Tabla N 02 (Sec. 2.2) y perfil de familia A/B/C (Sec. 2.3).
+
+Las tres cosas que decide M1
+----------------------------
+1. DENOMINACION (Sec. 2.1). Luz < 6.0 m -> alcantarilla, y el punto sigue en
+   este script. Luz >= 6.0 m -> puente, Manual de Puentes, fuera de alcance.
+   El binario no tiene tercera casilla: "ponton" no existe en la normativa MTC.
+
+2. PERIODO DE RETORNO (Sec. 2.2). No se toma de una lista de TR "de costumbre":
+   se despeja de la formula del riesgo admisible con el R y el n de la fila que
+   corresponda de la Tabla N 02. No hay TR minimo obligatorio independiente y
+   por eso el modulo no adopta 50 anios ni ningun otro piso.
+
+3. PERFIL DE FAMILIA (Sec. 2.3). La familia viene declarada en el CSV
+   (Sec. 1.1 la lista como dato de entrada "de Fase 2"); lo que M1 resuelve es
+   lo que esa familia IMPLICA: de donde sale el caudal, que fila de la
+   Tabla N 02 le toca, que campos necesita y con que verificaciones se acepta.
+
+De donde sale la luz
+--------------------
+`luz_m` NO es columna del encabezado de Sec. 1.2 y por eso no es campo de
+PuntoCritico: es la luz que exige el cruce -- el ancho del canal o de la
+quebrada que se atraviesa -- y sale de la topografia o del QGIS, como en los
+dos ejemplos de Sec. 2.1 (canal de 12 m -> puente; canal de 2.75 m ->
+alcantarilla). No es el diametro: el diametro lo fija la Fase 4 y, topado por
+Sec. 3.2 en 2.70 m, nunca alcanzaria por si solo el umbral de 6.0 m. Como el
+dato no esta en el CSV, se pasa explicitamente; si no se pasa, el modulo lanza
+DatoFaltanteError en vez de suponer que el cruce es estrecho.
+
+El vacio que M1 no rellena
+--------------------------
+La Tabla N 02 trae dos filas y Sec. 2.3 dice que la Familia A lleva "TR 71 o 35
+anios", sin regla para decidir cual. M1 no elige por su cuenta: o el que llama
+declara la categoria del cauce, o se lee el criterio
+`umbral_area_quebrada_importante_ha`, hoy sin valor, que detiene el calculo con
+CriterioPendienteError. La Familia B si tiene fila fija (descarga de cunetas ->
+quebrada menor, TR 35) y la Familia C no tiene TR: su caudal es el del canal.
+
+Excepciones
+-----------
+    DatoFaltanteError        falta la luz del cruce, o un campo que la familia
+                             necesita y la fila trajo vacio.
+    DatoInvalidoError        la luz esta pero no puede ser (nula o negativa), o
+                             la categoria de TR no es una fila de la Tabla N 02.
+    CriterioPendienteError   Familia A sin categoria declarada: el umbral que
+                             separa quebrada importante de menor sigue vacio.
+    DisenoNoFactibleError    solo desde `exigir_alcance()`: el punto es puente.
+
+Uso
+---
+    from modulos.M0_carga import cargar_puntos
+    from modulos.M1_clasificacion import clasificar_puntos, exigir_alcance
+
+    puntos = cargar_puntos("tests/ejemplo_puntos.csv")
+    luces = {"A-01": 2.75, "A-02": 1.80, "B-01": 1.20, "C-01": 2.75}
+    for clasificacion in clasificar_puntos(puntos, luces):
+        exigir_alcance(clasificacion)              # detiene los puentes
+        TR = clasificacion.periodo_retorno.anios
+"""
+
+from __future__ import annotations
+
+from typing import Dict, List, Mapping, Optional, Tuple, Union
+
+from constantes_normativas import LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE
+from criterios_adoptados import valor
+from modelos import (CategoriaTR, Clasificacion, DatoFaltanteError,
+                     DatoInvalidoError, Denominacion, DisenoNoFactibleError,
+                     Familia, PerfilFamilia, PeriodoRetorno, PuntoCritico,
+                     Verificacion)
+from tolerancias import TOL_UMBRAL_NORMATIVO
+
+# Numerales que sustentan cada decision de la fase.
+NUMERAL_LUZ = "4.1.1.3.1 / 4.1.1.5.1"     # Manual MTC, pags. 70 y 88 (Sec. 2.1)
+NUMERAL_TR = "3.6, Tabla N 02"            # Manual MTC, pag. 25 (Sec. 2.2)
+NUMERAL_FAMILIA = "Sec. 2.3"              # la hoja de ruta, sin numeral MTC propio
+
+CRITERIO_CATEGORIA_A = "umbral_area_quebrada_importante_ha"
+
+CategoriaLike = Union[CategoriaTR, str]
+
+
+# ---------------------------------------------------------------------------
+# Sec. 2.1 - Umbral binario de luz
+# ---------------------------------------------------------------------------
+
+def denominacion_por_luz(luz_m: Optional[float],
+                         id_punto: Optional[str] = None) -> Denominacion:
+    """
+    Alcantarilla o puente, segun el umbral de 6.0 m (num. 4.1.1.3.1 y
+    4.1.1.5.1). Binario: no existe una tercera denominacion intermedia.
+
+    La tolerancia se aplica del lado exigente. Una luz que el punto flotante
+    deja en 5.999999999 es una luz de 6.0 m mal representada, y 6.0 m es
+    puente: sumarla al lado de la alcantarilla convertiria un puente en
+    alcantarilla por ruido de aritmetica.
+    """
+    luz = _luz_valida(luz_m, id_punto)
+    if luz <= LUZ_MAX_ALCANTARILLA - TOL_UMBRAL_NORMATIVO:
+        return Denominacion.ALCANTARILLA
+    return Denominacion.PUENTE
+
+
+def verificar_luz(luz_m: Optional[float],
+                  id_punto: Optional[str] = None) -> Verificacion:
+    """
+    Umbral de luz como verificacion, no como bool desnudo: la memoria necesita
+    el numeral que lo sustenta (Sec. 2.1).
+
+    `cumple` significa "esta dentro del alcance de este script", es decir, que
+    la denominacion es alcantarilla.
+    """
+    denominacion = denominacion_por_luz(luz_m, id_punto)
+    return Verificacion(
+        cumple=denominacion is Denominacion.ALCANTARILLA,
+        numeral=NUMERAL_LUZ,
+        valor_obtenido=float(luz_m),
+        valor_admisible=LUZ_MAX_ALCANTARILLA,
+        criterio_aplicado=None,           # umbral [N] puro, sin criterio adoptado
+    )
+
+
+def exigir_alcance(clasificacion: Clasificacion) -> Clasificacion:
+    """
+    Detiene el pipeline cuando el punto resulta puente (Sec. 2.1 y regla dura
+    de Sec. 3.1: luz >= 6.0 m -> fuera de alcance).
+
+    Se devuelve la misma clasificacion para poder encadenar. La excepcion es
+    DisenoNoFactibleError y no otra porque el punto es del expediente y la GUI
+    tiene que mostrarlo como tal: no hay conducto alguno que resuelva un cruce
+    de 6 m o mas, y el motivo dice a que manual se remite.
+    """
+    if clasificacion.en_alcance:
+        return clasificacion
+    raise DisenoNoFactibleError(
+        motivo=f"la luz del cruce ({clasificacion.luz_m} m) alcanza el umbral de "
+               f"{LUZ_MAX_ALCANTARILLA} m del num. {NUMERAL_LUZ}: la estructura es "
+               "un PUENTE y se disena con el Manual de Puentes, fuera del alcance "
+               "de este script. No existe la categoria intermedia 'ponton'",
+        id_punto=clasificacion.punto.id,
+    )
+
+
+def _luz_valida(luz_m: Optional[float], id_punto: Optional[str]) -> float:
+    """
+    La luz no es columna de Sec. 1.2: llega por argumento y aqui se comprueba
+    que llego y que es un numero posible.
+    """
+    if luz_m is None:
+        raise DatoFaltanteError(
+            "luz_m", id_punto=id_punto,
+            detalle="la luz del cruce no es columna del encabezado de Sec. 1.2 y "
+                    "se pasa a M1 explicitamente. Sale de la topografia o del "
+                    "QGIS (ancho del canal o de la quebrada que se atraviesa), no "
+                    "del diametro, que lo fija la Fase 4. Sin ella no se puede "
+                    "aplicar el umbral binario de Sec. 2.1",
+        )
+    try:
+        luz = float(luz_m)
+    except (TypeError, ValueError):
+        raise DatoInvalidoError(
+            "luz_m", valor=luz_m, id_punto=id_punto,
+            motivo="no es un numero (metros, SI)",
+        ) from None
+    if luz <= 0:
+        raise DatoInvalidoError(
+            "luz_m", valor=luz_m, id_punto=id_punto,
+            motivo="la luz del cruce es una longitud positiva en metros",
+        )
+    return luz
+
+
+# ---------------------------------------------------------------------------
+# Sec. 2.2 - Periodo de retorno
+# ---------------------------------------------------------------------------
+
+def tr_desde_riesgo(R: float, n: int) -> float:
+    """
+    TR despejado del riesgo admisible de falla (num. 3.6, Sec. 2.2):
+
+        R = 1 - (1 - 1/T)^n     =>     T = 1 / (1 - (1-R)^(1/n))
+
+    R es probabilidad (0 < R < 1) y n la vida util en anios. Devuelve el TR sin
+    redondear; el redondeo al anio lo hace `tr_de_categoria`.
+    """
+    if not 0 < R < 1:
+        raise DatoInvalidoError(
+            "R", valor=R, motivo="el riesgo admisible de falla es una "
+                                 "probabilidad entre 0 y 1, no un porcentaje")
+    if n <= 0:
+        raise DatoInvalidoError(
+            "n", valor=n, motivo="la vida util son anios y es positiva")
+    return 1 / (1 - (1 - R) ** (1 / n))
+
+
+def tr_de_categoria(categoria: CategoriaLike,
+                    id_punto: Optional[str] = None,
+                    fundamento: str = "") -> PeriodoRetorno:
+    """
+    TR de una fila de la Tabla N 02, calculado, no copiado (Sec. 2.2).
+
+    El redondeo al anio es el de la propia tabla: la columna "TR de diseno"
+    publica 71 y 35, que son 70.59 y 35.32 redondeados. Se conserva el valor
+    exacto en `exacto` para que el redondeo sea visible y no un dato perdido.
+    """
+    cat = _categoria(categoria, id_punto)
+    fila = RIESGO_ADMISIBLE[cat.value]
+    R, n = fila["R"], fila["n"]
+    exacto = tr_desde_riesgo(R, n)
+    return PeriodoRetorno(
+        procede=True,
+        categoria=cat,
+        R=R,
+        n=n,
+        exacto=exacto,
+        anios=round(exacto),
+        numeral=NUMERAL_TR,
+        fundamento=fundamento or f"fila '{cat.value}' de la Tabla N 02 "
+                                 f"(R = {R}, n = {n} anios)",
+        id_punto=id_punto,
+    )
+
+
+def periodo_retorno_de(punto: PuntoCritico,
+                       categoria: Optional[CategoriaLike] = None) -> PeriodoRetorno:
+    """
+    TR del punto segun su familia (Sec. 2.2 + Sec. 2.3).
+
+        Familia A  la hoja de ruta admite 71 o 35 y no dice cual. Se usa la
+                   categoria declarada por el que llama; si no la hay, se lee
+                   el criterio pendiente y el calculo se detiene.
+        Familia B  fila fija: alcantarilla de alivio = descarga de cunetas ->
+                   quebrada menor -> TR 35 anios (Sec. 2.3, explicito).
+        Familia C  no tiene TR: su caudal es el de diseno del canal, que fija
+                   la ANA o la Junta de Usuarios (Tablero 3.1).
+    """
+    perfil = perfil_de(punto.familia)
+
+    if punto.familia is Familia.C:
+        return PeriodoRetorno(
+            procede=False, categoria=None, R=None, n=None, exacto=None,
+            anios=None, numeral=NUMERAL_TR,
+            fundamento="Familia C: el caudal es el de diseno del canal o dren "
+                       "(ANA / Junta de Usuarios, Tablero 3.1), no un caudal "
+                       "hidrologico con periodo de retorno propio (Sec. 2.3)",
+            id_punto=punto.id,
+        )
+
+    if categoria is not None:
+        cat = _categoria(categoria, punto.id)
+        if perfil.categoria_tr is not None and cat is not perfil.categoria_tr:
+            raise DatoInvalidoError(
+                "familia", valor=cat.value, id_punto=punto.id,
+                motivo=f"la Familia {punto.familia.value} tiene fila fija en la "
+                       f"Tabla N 02 ('{perfil.categoria_tr.value}', Sec. 2.3) y "
+                       "no admite otra categoria")
+        return tr_de_categoria(
+            cat, punto.id,
+            fundamento=f"categoria '{cat.value}' declarada para el cauce del "
+                       f"punto; fila de la Tabla N 02 con R = "
+                       f"{RIESGO_ADMISIBLE[cat.value]['R']} y n = "
+                       f"{RIESGO_ADMISIBLE[cat.value]['n']} anios")
+
+    if perfil.categoria_tr is not None:
+        return tr_de_categoria(
+            perfil.categoria_tr, punto.id,
+            fundamento=f"Familia {punto.familia.value} ({perfil.nombre}): "
+                       f"{perfil.origen_del_caudal}, que es la fila "
+                       f"'{perfil.categoria_tr.value}' de la Tabla N 02 (Sec. 2.3)")
+
+    return tr_de_categoria(
+        _categoria_por_area(punto), punto.id,
+        fundamento=f"categoria derivada del area de cuenca "
+                   f"({punto.area_ha} ha) con el criterio "
+                   f"'{CRITERIO_CATEGORIA_A}'")
+
+
+def _categoria_por_area(punto: PuntoCritico) -> CategoriaTR:
+    """
+    Unica via automatica para la Familia A, y esta bloqueada a proposito: el
+    criterio no tiene valor y `valor()` lanza CriterioPendienteError antes de
+    mirar el area. Si algun dia se le pone umbral, el area de cuenca -- el dato
+    que Sec. 1.1 llama "solo clasificador" -- decide la fila.
+
+    La tolerancia va del lado conservador: en el empate exacto gana quebrada
+    importante, que es la fila de TR mayor y por tanto de mayor caudal.
+    """
+    umbral = valor(CRITERIO_CATEGORIA_A)
+    area = punto.exigir("area_ha")
+    if area >= umbral - TOL_UMBRAL_NORMATIVO:
+        return CategoriaTR.QUEBRADA_IMPORTANTE
+    return CategoriaTR.QUEBRADA_MENOR
+
+
+def _categoria(categoria: CategoriaLike,
+               id_punto: Optional[str] = None) -> CategoriaTR:
+    try:
+        cat = CategoriaTR(categoria)
+    except ValueError:
+        raise DatoInvalidoError(
+            "categoria_tr", valor=categoria, id_punto=id_punto,
+            motivo="las filas de la Tabla N 02 (Sec. 2.2) son "
+                   f"{', '.join(c.value for c in CategoriaTR)}",
+        ) from None
+    if cat.value not in RIESGO_ADMISIBLE:
+        raise DatoInvalidoError(
+            "categoria_tr", valor=categoria, id_punto=id_punto,
+            motivo=f"'{cat.value}' no tiene fila en RIESGO_ADMISIBLE "
+                   "(Anexo B, Tabla N 02)")
+    return cat
+
+
+# ---------------------------------------------------------------------------
+# Sec. 2.3 - Familias
+# ---------------------------------------------------------------------------
+# La familia llega declarada en el CSV (Sec. 1.1: dato de entrada "de Fase 2")
+# y M0 ya la valido contra el enum. Lo que se declara aqui es lo que cada
+# familia implica para el resto del calculo. Texto, no numeros: el unico umbral
+# numerico que menciona Sec. 2.3 -- los 1.5 m de terraplen que separan el
+# tratamiento sin bordillo del tratamiento con bordillo y bajantes -- pertenece
+# al drenaje longitudinal y lo resuelve M10 (Fase 10), que ademas necesita un
+# dato que Sec. 1.2 no trae: si el punto cae en curva peraltada.
+
+PERFILES: Dict[Familia, PerfilFamilia] = {
+
+    Familia.A: PerfilFamilia(
+        familia=Familia.A,
+        nombre="Alcantarillas de paso",
+        origen_del_caudal="Q hidrologico propio de la cuenca (Tc.py + IDF con "
+                          "el TR de la Fase 2)",
+        categoria_tr=None,          # "TR 71 o 35 anios": la hoja no fija cual
+        campos_requeridos=("Q_m3s", "area_ha", "S_cauce"),
+        verificaciones_aceptacion=("V1", "V2", "V4", "V5"),
+        notas=(
+            "La fila de la Tabla N 02 no esta fijada por la familia: se declara "
+            f"por punto o se resuelve con el criterio '{CRITERIO_CATEGORIA_A}'.",
+        ),
+        numeral=NUMERAL_FAMILIA,
+    ),
+
+    Familia.B: PerfilFamilia(
+        familia=Familia.B,
+        nombre="Alcantarillas de alivio",
+        origen_del_caudal="Q del drenaje longitudinal (cuneta)",
+        categoria_tr=CategoriaTR.QUEBRADA_MENOR,   # "descarga de cunetas" -> TR 35
+        campos_requeridos=("Q_m3s",),
+        verificaciones_aceptacion=None,            # Sec. 2.3 no declara conjunto propio
+        notas=(
+            "El espaciamiento lo fija la Fase 10 (M10) a partir de la longitud "
+            "maxima de cuneta, criterio 'long_max_cuneta'.",
+            "Tratamiento del terraplen segun su altura -- sin bordillo con "
+            "geomalla, o con bordillo y bajantes a ambos lados, a un solo lado "
+            "en curvas peraltadas -- es regla de Sec. 2.3 que resuelve M10: "
+            "depende de la altura de terraplen y de si el punto cae en curva "
+            "peraltada, y ninguno de los dos es columna de Sec. 1.2.",
+        ),
+        numeral=NUMERAL_FAMILIA,
+    ),
+
+    Familia.C: PerfilFamilia(
+        familia=Familia.C,
+        nombre="Cruces de canales y drenes",
+        origen_del_caudal="Q de diseno del canal (ANA / Junta de Usuarios del "
+                          "Bajo Piura)",
+        categoria_tr=None,          # no hay TR: el caudal no es hidrologico propio
+        campos_requeridos=("Q_m3s",),
+        verificaciones_aceptacion=None,            # Sec. 2.3 no declara conjunto propio
+        notas=(
+            "No puede alterar la rasante hidraulica ni el borde libre del canal.",
+            "Requiere autorizacion de obras en fuente natural / faja marginal.",
+            "Seccion: marco o multicelda.",
+            "Bloqueada por falta del dato de la ANA (Tablero 3.1): el Q propio "
+            "del canal es el que fija el diseno.",
+        ),
+        numeral=NUMERAL_FAMILIA,
+    ),
+}
+
+
+def perfil_de(familia: Union[Familia, str]) -> PerfilFamilia:
+    """Lo que implica la familia declarada en el CSV (Sec. 2.3)."""
+    try:
+        clave = Familia(familia)
+    except ValueError:
+        raise DatoInvalidoError(
+            "familia", valor=familia,
+            motivo="las familias de Sec. 2.3 son "
+                   f"{', '.join(f.value for f in Familia)}",
+        ) from None
+    return PERFILES[clave]
+
+
+def datos_pendientes(punto: PuntoCritico) -> Tuple[str, ...]:
+    """
+    Campos que la familia del punto necesita y la fila trajo vacios. No lanza:
+    marca, como hace M0. Quien decide si el punto se puede calcular sin ellos
+    es el modulo que los necesite.
+    """
+    perfil = perfil_de(punto.familia)
+    return tuple(campo for campo in perfil.campos_requeridos
+                 if getattr(punto, campo) is None)
+
+
+# ---------------------------------------------------------------------------
+# Clasificacion completa de un punto
+# ---------------------------------------------------------------------------
+
+def clasificar(punto: PuntoCritico,
+               luz_m: Optional[float],
+               categoria_tr: Optional[CategoriaLike] = None) -> Clasificacion:
+    """
+    Fase 2 completa para un punto: denominacion (Sec. 2.1), perfil de familia
+    (Sec. 2.3) y periodo de retorno (Sec. 2.2).
+
+    Si la luz lo hace puente, el TR no se resuelve: se devuelve con
+    procede=False y el motivo. Es deliberado -- intentar el TR de un punto
+    fuera de alcance puede disparar el criterio pendiente de la Familia A y la
+    GUI mostraria "falta declarar: umbral..." cuando el problema real es que el
+    cruce es un puente.
+    """
+    verificacion = verificar_luz(luz_m, punto.id)
+    denominacion = (Denominacion.ALCANTARILLA if verificacion.cumple
+                    else Denominacion.PUENTE)
+    perfil = perfil_de(punto.familia)
+
+    if denominacion is Denominacion.PUENTE:
+        tr = PeriodoRetorno(
+            procede=False, categoria=None, R=None, n=None, exacto=None,
+            anios=None, numeral=NUMERAL_TR,
+            fundamento=f"punto fuera de alcance: con luz {float(luz_m)} m la "
+                       f"estructura es un puente (num. {NUMERAL_LUZ}) y su "
+                       "periodo de retorno lo fija el Manual de Puentes",
+            id_punto=punto.id,
+        )
+    else:
+        tr = periodo_retorno_de(punto, categoria_tr)
+
+    return Clasificacion(
+        punto=punto,
+        luz_m=float(luz_m),
+        denominacion=denominacion,
+        verificacion_luz=verificacion,
+        perfil=perfil,
+        periodo_retorno=tr,
+        datos_pendientes=datos_pendientes(punto),
+    )
+
+
+def clasificar_puntos(puntos: List[PuntoCritico],
+                      luces: Mapping[str, float],
+                      categorias: Optional[Mapping[str, CategoriaLike]] = None
+                      ) -> List[Clasificacion]:
+    """
+    Clasifica una tanda de puntos. `luces` y `categorias` van por id de punto:
+    la luz porque no es columna de Sec. 1.2, y la categoria porque la fila de
+    la Tabla N 02 de la Familia A se declara cauce por cauce.
+    """
+    categorias = categorias or {}
+    return [clasificar(punto, luces.get(punto.id), categorias.get(punto.id))
+            for punto in puntos]

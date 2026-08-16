@@ -155,6 +155,29 @@ class Familia(str, Enum):
     C = "C"   # cruces de canales y drenes: Q del canal (ANA / Junta)
 
 
+class Denominacion(str, Enum):
+    """
+    Umbral binario de luz, Sec. 2.1 (num. 4.1.1.3.1 y 4.1.1.5.1).
+
+    Son las DOS unicas denominaciones que reconoce la normativa MTC. No existe
+    la categoria "ponton": el Manual de Puentes remite al Glosario de Terminos
+    (pag. 44) y alli el termino no se tipifica. Si un expediente la usa, es uso
+    corriente y no una tercera clase de estructura.
+    """
+    ALCANTARILLA = "alcantarilla"   # luz < 6.0 m -> Manual de Hidrologia
+    PUENTE = "puente"               # luz >= 6.0 m -> Manual de Puentes, fuera de alcance
+
+
+class CategoriaTR(str, Enum):
+    """
+    Filas de la Tabla N 02 (num. 3.6), Sec. 2.2. El valor de cada miembro
+    coincide con la clave de `constantes_normativas.RIESGO_ADMISIBLE`, de modo
+    que la categoria y su par (R, n) no puedan divergir.
+    """
+    QUEBRADA_IMPORTANTE = "quebrada_importante"   # R = 30 %, n = 25 anios
+    QUEBRADA_MENOR = "quebrada_menor"             # R = 35 %, n = 15 anios
+
+
 class TipoMaterial(str, Enum):
     """
     Materiales admitidos, Sec. 3.4. El valor de cada miembro coincide con la
@@ -399,6 +422,97 @@ class Verificacion:
     valor_admisible: Any
     criterio_aplicado: Optional[str]
     codigo: Optional[str] = None          # "V1" .. "V9" (Fase 5)
+
+
+# ===========================================================================
+# Clasificacion y periodo de retorno (Fase 2, salida de M1)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class PeriodoRetorno:
+    """
+    TR de diseno de un punto y la fila de la Tabla N 02 que lo sustenta
+    (Sec. 2.2). El TR no se transporta como un numero suelto: sin la fila que
+    lo origina, la memoria no puede defender por que son 71 anios y no 35.
+
+    `anios` es el valor de la columna "TR de diseno" de la tabla, redondeado
+    al anio; `exacto` conserva el resultado sin redondear.
+
+    `procede` es False en dos situaciones, y en ambas `anios` es None:
+      - Familia C: su caudal es el de diseno del canal (ANA / Junta), no un
+        caudal hidrologico con periodo de retorno propio (Sec. 2.3).
+      - Luz >= 6.0 m: el punto es un puente y esta fuera del alcance (Sec. 2.1).
+    """
+
+    procede: bool
+    categoria: Optional[CategoriaTR]
+    R: Optional[float]                    # riesgo admisible de falla
+    n: Optional[int]                      # vida util, anios
+    exacto: Optional[float]               # TR sin redondear
+    anios: Optional[int]                  # TR de diseno de la Tabla N 02
+    numeral: str
+    fundamento: str                       # por que esta fila y no la otra
+    id_punto: Optional[str] = None
+
+    def exigir_anios(self) -> int:
+        """
+        Devuelve el TR o lanza. Unico acceso permitido cuando el modulo que
+        llama NECESITA el numero: un TR ausente nunca se sustituye por uno
+        plausible.
+        """
+        if self.anios is None:
+            raise DatoFaltanteError(
+                "Q_m3s", id_punto=self.id_punto,
+                detalle=f"este punto no tiene TR de la Tabla N 02: {self.fundamento}",
+            )
+        return self.anios
+
+
+@dataclass(frozen=True)
+class PerfilFamilia:
+    """
+    Lo que la familia de Sec. 2.3 implica para el resto del calculo: de donde
+    sale su caudal, si la familia ya fija la fila de la Tabla N 02, que campos
+    del CSV necesita y con que verificaciones se acepta.
+
+    `verificaciones_aceptacion` es None cuando la hoja de ruta no declara un
+    conjunto propio para esa familia. None significa "no declarado", no
+    "ninguna": la tabla de la Fase 5 sigue aplicando punto por punto.
+    """
+
+    familia: Familia
+    nombre: str
+    origen_del_caudal: str
+    categoria_tr: Optional[CategoriaTR]        # None: la familia no la fija
+    campos_requeridos: Tuple[str, ...]         # campos de PuntoCritico
+    verificaciones_aceptacion: Optional[Tuple[str, ...]]
+    notas: Tuple[str, ...]
+    numeral: str
+
+
+@dataclass(frozen=True)
+class Clasificacion:
+    """
+    Salida de M1 para un punto: denominacion por luz (Sec. 2.1), perfil de
+    familia (Sec. 2.3) y periodo de retorno (Sec. 2.2).
+
+    `datos_pendientes` son los campos que la familia necesita y la fila trajo
+    vacios por depender de un tablero externo. Como en M0, quien decide si el
+    punto se puede calcular sin ellos es el modulo que los necesite.
+    """
+
+    punto: PuntoCritico
+    luz_m: float
+    denominacion: Denominacion
+    verificacion_luz: Verificacion
+    perfil: PerfilFamilia
+    periodo_retorno: PeriodoRetorno
+    datos_pendientes: Tuple[str, ...] = ()
+
+    @property
+    def en_alcance(self) -> bool:
+        """False si la luz lo hace puente: Manual de Puentes, otro script."""
+        return self.denominacion is Denominacion.ALCANTARILLA
 
 
 @dataclass(frozen=True)
