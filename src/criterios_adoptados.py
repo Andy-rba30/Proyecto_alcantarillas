@@ -157,6 +157,109 @@ CRITERIOS: Dict[str, Criterio] = {
         sensibilidad=(0.0, 0.5),   # 0.5*k_h como escenario alterno
     ),
 
+    # Los cuatro angulos que Sec. 9.2 exige ADEMAS de la cadena sismica para
+    # cerrar Mononobe-Okabe: "se requieren ademas phi del relleno, pendiente
+    # del relleno (i), inclinacion del muro (beta) y friccion muro-suelo
+    # (delta)". El primero ya esta declarado abajo como 'phi_relleno_trasdos'
+    # (bloque GEOTECNIA), porque no es solo del sismo: gobierna tambien el Ka
+    # estatico. Los otros tres viven aqui.
+
+    "pendiente_relleno_trasdos_i": Criterio(
+        valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
+        etiqueta="A",
+        concepto="Inclinacion de la superficie del relleno del trasdos sobre "
+                 "la horizontal (i), en grados, para Mononobe-Okabe",
+        justificacion="Sec. 9.2 la exige por su nombre y no la entrega, y "
+                      "Sec. 1.2 no trae ninguna columna de geometria del "
+                      "cabezal ni del terraplen sobre el trasdos. No se "
+                      "puede deducir del CSV: la altura de terraplen del "
+                      "punto (cota_rasante - cota_terreno) es un desnivel, "
+                      "no la pendiente de la superficie contra el muro. "
+                      "Adoptar i = 0 en silencio parece inocuo y no lo es: "
+                      "en Mononobe-Okabe i entra en sen(phi - psi - i), y "
+                      "con psi = 26.6 grados (k_h = 0.50) el radicando se "
+                      "anula para phi - i cerca de psi -- es decir, unos "
+                      "pocos grados de relleno inclinado pueden llevar el "
+                      "empuje sismico al infinito. Es el parametro con la "
+                      "sensibilidad mas violenta de toda la Fase 9",
+        fuente="PENDIENTE - seccion tipica del expediente vial sobre el "
+               "cabezal (DG-2018) o el detalle de coronacion del terraplen",
+        reemplazado_por="Geometria medida sobre la seccion transversal del "
+                        "punto de cruce",
+        sensibilidad=(0.0, 10.0),   # grados; horizontal frente a talud suave
+        verificacion_pendiente="Declarar si el relleno corona horizontal "
+                               "contra el muro (i = 0) o continua con el "
+                               "talud del terraplen: son dos detalles "
+                               "constructivos distintos, no un matiz",
+    ),
+
+    "inclinacion_muro_beta": Criterio(
+        valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
+        etiqueta="A",
+        concepto="Inclinacion del paramento interior (trasdos) del cabezal "
+                 "respecto de la VERTICAL (beta), en grados, positiva cuando "
+                 "el muro se aleja del relleno",
+        justificacion="Es geometria del cabezal, y Sec. 9 no lo dimensiona: "
+                      "la hoja de ruta fija el detalle de EMBOCADURA (tubo a "
+                      "ras del muro, square edge, Sec. 9.1 y Tablero 2.3) "
+                      "pero no el talud del paramento. Un cabezal de "
+                      "paramento vertical (beta = 0) y uno con talud de "
+                      "1:10 dan K_AE distintos, y el signo de beta se presta "
+                      "a error: se declara con la convencion de "
+                      "Mononobe-Okabe, no con la del plano",
+        fuente="PENDIENTE - predimensionamiento del cabezal; ver el criterio "
+               "'predimensionamiento_cabezal', del que este angulo es parte",
+        reemplazado_por="Plano de encofrado del cabezal del expediente",
+        sensibilidad=(0.0, 10.0),   # grados
+    ),
+
+    "friccion_muro_suelo_delta": Criterio(
+        valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
+        etiqueta="A",
+        concepto="Angulo de friccion entre el paramento del muro y el relleno "
+                 "(delta), en grados, para Mononobe-Okabe",
+        justificacion="Sec. 9.2 lo exige por su nombre y no lo entrega. La "
+                      "practica corriente lo liga a phi del relleno (del "
+                      "orden de phi/2 a 2*phi/3 en concreto contra suelo "
+                      "granular), pero la hoja de ruta no fija esa fraccion "
+                      "y adoptarla en silencio moveria a la vez el empuje "
+                      "estatico y el sismico. Ademas no es conservador por "
+                      "un lado solo: un delta alto reduce K_AE (favorable "
+                      "para el empuje) y a la vez inclina la resultante, "
+                      "cambiando el reparto entre deslizamiento y volteo",
+        fuente="PENDIENTE - se declara como fraccion de 'phi_relleno_trasdos' "
+               "con la fuente tecnica que la sostenga, o se mide",
+        reemplazado_por="Ensayo de interfase concreto-relleno, o adopcion "
+                        "declarada como fraccion de phi con su fuente",
+        sensibilidad=(0.0, 22.7),   # grados; delta=0 (conservador) a 2*phi/3 con phi=34
+        verificacion_pendiente="Declararlo como FRACCION de phi y no como "
+                               "angulo suelto, para que al ajustar "
+                               "'phi_relleno_trasdos' no queden incoherentes",
+    ),
+
+    "punto_aplicacion_incremento_sismico": Criterio(
+        valor=None,                 # VACIO: bloquea el momento de volteo sismico
+        etiqueta="A",
+        concepto="Altura de aplicacion del incremento sismico de empuje "
+                 "(P_AE - P_A), como fraccion de la altura H del muro",
+        justificacion="Mononobe-Okabe entrega el empuje TOTAL, no su punto de "
+                      "aplicacion. El empuje estatico si lo tiene sin "
+                      "adoptar nada: su distribucion es triangular y la "
+                      "resultante cae en H/3, que es el centroide del "
+                      "triangulo, no un criterio. El INCREMENTO sismico no es "
+                      "triangular y su altura de aplicacion es una convencion "
+                      "de la literatura (Seed-Whitman la sitea del orden de "
+                      "0.6H); la hoja de ruta no la fija. Sin ella no hay "
+                      "brazo, y sin brazo no hay momento de volteo sismico: "
+                      "la fila 'volteo / sismico' de la tabla de Sec. 9.3 no "
+                      "se puede evaluar",
+        fuente="PENDIENTE - Sec. 9.2 entrega K_AE y se detiene ahi. "
+               "Seed-Whitman (0.6H) o AASHTO LRFD Sec. 11, declarado con su "
+               "fuente en la memoria",
+        reemplazado_por="Convencion adoptada y escrita en la memoria de calculo",
+        sensibilidad=(0.333, 0.6),   # H/3 (empuje total en el centroide) a 0.6H
+    ),
+
     # ----------------------- HIDROLOGIA -----------------------------------
 
     "homogeneidad_serie_fen": Criterio(
@@ -726,6 +829,192 @@ CRITERIOS: Dict[str, Criterio] = {
         concepto="Angulo de las aletas del cabezal",
         justificacion="Ajustado al esviaje del cauce en cada punto",
         fuente="Practica corriente; no fijado por el Manual",
+    ),
+
+    # ----------------------- FASE 9: CABEZAL Y ALETAS ---------------------
+    # Sec. 9.2 nombra las combinaciones y la cadena sismica; Sec. 9.3 da los
+    # FS; Sec. 9.4 remite el diseno a AASHTO LRFD Sec. 5. Lo que NO transcribe
+    # son las tablas numericas de esas tres remisiones. Cada vacio se declara
+    # aqui en vez de rellenarse con el valor "de siempre".
+
+    "factores_carga_aashto": Criterio(
+        valor=None,                 # VACIO: bloquea toda combinacion de carga
+        etiqueta="A",
+        concepto="Factores gamma de las tres combinaciones de Sec. 9.2 "
+                 "(Resistencia I, Servicio I, Evento Extremo I) por tipo de "
+                 "carga: DC, EV, EH, LS, WA, EQ, con sus maximos y minimos",
+        justificacion="Sec. 9.2 NOMBRA las tres combinaciones con numeral "
+                      "(2.4.5.3, AASHTO LRFD Sec. 3.4.1) pero no transcribe "
+                      "la Tabla 3.4.1-1 ni la 3.4.1-2. Sin los factores, una "
+                      "combinacion es una lista de cargas, no una demanda. "
+                      "Y no es un dato que se pueda poner de memoria: los "
+                      "factores de EH y EV son DOBLES (gamma maximo y minimo) "
+                      "y cual de los dos gobierna depende de si la carga "
+                      "estabiliza o desestabiliza cada verificacion -- "
+                      "escribir 1.35 para el empuje de tierras en todas las "
+                      "filas es el error clasico y da del lado inseguro en "
+                      "volteo. Ademas Evento Extremo I lleva gamma_EQ, que la "
+                      "propia AASHTO deja a criterio del propietario",
+        fuente="PENDIENTE - AASHTO LRFD Bridge Design Specifications, Tablas "
+               "3.4.1-1 y 3.4.1-2, en la edicion que adopte el expediente, o "
+               "Manual de Puentes num. 2.4.5.3, pags. 140-143",
+        reemplazado_por="Transcripcion de la Tabla 3.4.1-1 con su edicion y "
+                        "pagina, declarada en la memoria",
+        verificacion_pendiente="Declarar la EDICION de AASHTO LRFD usada: los "
+                               "factores y la numeracion de la Sec. 11 "
+                               "cambiaron entre ediciones y la memoria tiene "
+                               "que ser reproducible",
+    ),
+
+    "peso_especifico_concreto_kn_m3": Criterio(
+        valor=None,                 # VACIO: bloquea el peso propio del cabezal
+        etiqueta="A",
+        concepto="Peso especifico del concreto armado del cabezal, kN/m3",
+        justificacion="Es el peso propio (carga DC) que resiste el volteo y "
+                      "el deslizamiento de Sec. 9.3: sin el no hay momento "
+                      "estabilizante ni fuerza normal en la base. La hoja de "
+                      "ruta no lo entrega en ningun numeral -- ni el Manual "
+                      "de Puentes ni EG-2013 Sec. 503 aparecen citados con un "
+                      "valor -- y aunque el valor de practica corriente esta "
+                      "muy acotado, aqui gobierna la regla de Sec. 0.7: un "
+                      "numero que multiplica el ESTABILIZANTE de las cinco "
+                      "verificaciones no entra en el calculo sin quedar "
+                      "declarado y sin sensibilidad",
+        fuente="PENDIENTE - AASHTO LRFD Tabla 3.5.1-1 o Manual de Puentes, "
+               "citado con numeral en la memoria",
+        reemplazado_por="Valor de la tabla de pesos unitarios de la norma que "
+                        "adopte el expediente",
+        sensibilidad=(23.5, 24.5),   # kN/m3, rango corriente del concreto armado
+    ),
+
+    "predimensionamiento_cabezal": Criterio(
+        valor=None,                 # VACIO: bloquea la estabilidad automatica
+        etiqueta="A",
+        concepto="Geometria del cabezal (altura H sobre zapata, ancho de "
+                 "zapata B, profundidad de desplante D_f, espesor de la "
+                 "pantalla en corona y en su arranque, espesor de zapata e "
+                 "inclinacion beta del trasdos), en m",
+        justificacion="Sec. 9.1 fija QUE es el cabezal (Sec. 503, concreto "
+                      "estructural) y COMO es su embocadura (tubo a ras, "
+                      "square edge, amarrada a las constantes HDS-5 de "
+                      "Sec. 4.2), pero no lo dimensiona, y Sec. 1.2 no trae "
+                      "ninguna columna con su geometria. Sin H no hay empuje, "
+                      "sin B no hay momento estabilizante ni presion de "
+                      "contacto, sin D_f no hay confinamiento. Las funciones "
+                      "de M9 aceptan la geometria como argumento explicito "
+                      "para poder tantear; lo que este vacio bloquea es que "
+                      "el cabezal se dimensione SOLO, sin que nadie declare "
+                      "de donde salieron las dimensiones",
+        fuente="PENDIENTE - predimensionamiento del proyectista, o plano tipo "
+               "de cabezal del expediente vial",
+        reemplazado_por="Plano de encofrado del cabezal, acotado",
+        verificacion_pendiente="La geometria tiene que ser COMPATIBLE con el "
+                               "diametro adoptado en la Fase 4 y con la "
+                               "altura de terraplen de la Fase 7: un cabezal "
+                               "declarado aparte del conducto que remata es "
+                               "una incoherencia de expediente",
+    ),
+
+    "N_cq_N_gammaq_meyerhof": Criterio(
+        valor=None,                 # VACIO: bloquea la capacidad portante en talud
+        etiqueta="A",
+        concepto="Factores de capacidad de carga N_cq y N_gamma_q para zapata "
+                 "proxima a talud (Meyerhof 1957), leidos de las figuras "
+                 "2.8.1.3.1.2c-1 y -2 del Manual de Puentes",
+        justificacion="Sec. 9.3 es taxativa en que el cabezal se apoya en el "
+                      "BORDE DEL TERRAPLEN y no en terreno horizontal, y en "
+                      "que la penalizacion es severa por perdida de "
+                      "confinamiento: N_q = 0.0 (eso si es un numero y esta "
+                      "en constantes_normativas), y N_c y N_gamma se "
+                      "REEMPLAZAN por N_cq y N_gamma_q. Pero esos dos salen "
+                      "de FIGURAS, no de una formula ni de una tabla: "
+                      "dependen de la distancia de la zapata al borde, de la "
+                      "altura del talud y de su inclinacion, y no hay forma "
+                      "de transcribirlos sin leer los abacos para la "
+                      "geometria concreta de cada punto. Usar N_c y N_gamma "
+                      "de terreno horizontal aqui seria exactamente la "
+                      "sobrestimacion que la hoja de ruta advierte",
+        fuente="PENDIENTE - Manual de Puentes num. 2.8.1.3.1.2c, figuras "
+               "2.8.1.3.1.2c-1 y 2.8.1.3.1.2c-2 (Meyerhof 1957), pags. 272-273",
+        reemplazado_por="Lectura de los abacos para la geometria real de cada "
+                        "cabezal, adjuntada a la memoria",
+        verificacion_pendiente="E.050 Art. 30.1-30.2 exige ADEMAS la "
+                               "verificacion por inclinacion de la superficie "
+                               "y de la base, y el analisis de estabilidad "
+                               "global del talud con la estructura "
+                               "cargandolo: son dos comprobaciones, no una "
+                               "(Sec. 9.3, 'doble verificacion')",
+    ),
+
+    "metodo_estabilidad_global": Criterio(
+        valor=None,                 # VACIO: bloquea las filas E4 y E5 de Sec. 9.3
+        etiqueta="A",
+        concepto="Metodo de analisis de estabilidad global del muro y del "
+                 "talud que lo soporta (equilibrio limite: Bishop "
+                 "simplificado, Spencer, Morgenstern-Price...)",
+        justificacion="La tabla de Sec. 9.3 exige FS = 1.50 estatico y 1.25 "
+                      "sismico para la estabilidad global del muro "
+                      "(39.13.6 b) y para la del talud (Art. 30.3), pero un "
+                      "FS de estabilidad global no se calcula con una "
+                      "formula cerrada: sale de un analisis de superficies "
+                      "de falla que exige el perfil estratigrafico completo, "
+                      "la geometria del terraplen y un metodo declarado. "
+                      "Ninguna de las tres cosas esta en el alcance del CSV "
+                      "de Sec. 1.2. El FS existe y esta transcrito; lo que "
+                      "falta es con que producir el valor a comparar",
+        fuente="PENDIENTE - E.050 Art. 30.3 y num. 39.13.6 b) fijan el "
+               "umbral, no el metodo. El analisis es del EMS del expediente",
+        reemplazado_por="Analisis de estabilidad de taludes del estudio "
+                        "geotecnico, con su metodo y sus superficies criticas",
+    ),
+
+    "recubrimiento_aashto_mm": Criterio(
+        valor=None,                 # VACIO: bloquea la regla del mayor (Sec. 0.2)
+        etiqueta="A",
+        concepto="Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, "
+                 "en mm, por condicion de exposicion, para compararlo con el "
+                 "de E.060 Art. 7.7.1",
+        justificacion="Sec. 0.2 fija la regla de conflicto: 'rige el "
+                      "recubrimiento MAYOR entre AASHTO y E.060'. Una regla "
+                      "del maximo con un solo operando no es una regla: si se "
+                      "toma el de E.060 sin mirar el de AASHTO, la excepcion "
+                      "declarada de durabilidad queda escrita en la memoria "
+                      "pero no aplicada. La hoja de ruta transcribe el lado "
+                      "E.060 (Art. 7.7.1: 70 / 50 / 40 mm, en "
+                      "constantes_normativas) y NO transcribe el lado AASHTO",
+        fuente="PENDIENTE - AASHTO LRFD, tabla de recubrimientos minimos "
+               "(Sec. 5) de la edicion que adopte el expediente",
+        reemplazado_por="Transcripcion de la tabla AASHTO con su edicion y "
+                        "pagina",
+        verificacion_pendiente="Con NF a 1.4 m y suelos salinos, E.060 "
+                               "Art. 7.7.5.1 (ambiente corrosivo, 'aumentar "
+                               "adecuadamente') es directamente invocable "
+                               "(Sec. 3.3): el aumento se declara aparte, "
+                               "porque el articulo no fija cuanto",
+    ),
+
+    "procedimiento_flexion_corte_aashto_sec5": Criterio(
+        valor=None,                 # VACIO: bloquea el dimensionado del refuerzo
+        etiqueta="A",
+        concepto="Procedimiento de diseno por flexion y corte de AASHTO LRFD "
+                 "Seccion 5: factores de resistencia phi, limites de refuerzo "
+                 "y modelo de corte (MCFT / beta-theta) aplicables",
+        justificacion="Sec. 9.4 remite el diseno a 'AASHTO LRFD Seccion 5' y "
+                      "no transcribe nada de esa seccion, en coherencia con "
+                      "la Via 1 de Sec. 0.2 (AASHTO de extremo a extremo, "
+                      "E.060 solo para durabilidad y recubrimientos). "
+                      "Mezclarlo con las expresiones de E.060 -- que si "
+                      "estan a mano y que muchos usarian por costumbre -- "
+                      "romperia justamente la consistencia carga-resistencia "
+                      "que Sec. 0.2 declara RESUELTA: no se pueden combinar "
+                      "demandas mayoradas por AASHTO con resistencias "
+                      "reducidas por E.060. Las cuantias minimas de E.060 "
+                      "Art. 14.3.1 que M9 si contrasta son REFERENCIA "
+                      "declarada, no el diseno",
+        fuente="PENDIENTE - AASHTO LRFD Seccion 5, via Manual de Puentes "
+               "Seccion 2.9, pag. 337",
+        reemplazado_por="Diseno estructural del cabezal del expediente "
+                        "tecnico, con la edicion de AASHTO declarada",
     ),
 }
 

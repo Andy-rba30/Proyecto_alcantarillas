@@ -159,6 +159,17 @@ F_PGA_TABLA = {                     # Tabla 2.4.3.11.2.1.2-1, PGA >= 0.50
 }
 # PGA, F_pga elegido, factor de muro y k_v -> criterios_adoptados
 
+# Combinaciones de carga: AASHTO LRFD Sec. 3.4.1 via Manual de Puentes
+# (num. 2.4.5.3, pags. 140-143). La hoja de ruta NOMBRA las tres y no
+# transcribe la Tabla 3.4.1-1: los factores gamma son un vacio declarado en
+# criterios_adoptados ("factores_carga_aashto"). Aqui solo viven los nombres,
+# que si estan en el texto normativo citado.
+COMBINACIONES_AASHTO = ("Resistencia I", "Servicio I", "Evento Extremo I")
+NUMERAL_COMBINACIONES = "2.4.5.3 (AASHTO LRFD Sec. 3.4.1), pags. 140-143"
+NUMERAL_SOBRECARGA_TRASDOS = "2.1.4.3.9, pag. 91"
+NUMERAL_ZAPATA_EN_TALUD = "2.8.1.3.1.2c, pags. 272-273"
+NUMERAL_K_H0 = "2.8.1.1.14.2"
+
 # ================= E.050 (RM 406-2018-VIVIENDA) ============================
 FS = {
     "capacidad_portante": {"estatico": 3.00, "sismico": 2.50},   # Art. 21
@@ -167,6 +178,16 @@ FS = {
     "estabilidad_global": {"estatico": 1.50, "sismico": 1.25},   # 39.13.6 b
     "talud":              {"estatico": 1.50, "sismico": 1.25},   # Art. 30.3
 }
+FS_NUMERAL = {                      # el numeral de cada fila de la tabla de 9.3
+    "capacidad_portante": "E.050 Art. 21.1/21.2, pag. 34",
+    "volteo":             "E.050 num. 39.13.6 a), pag. 72",
+    "deslizamiento":      "E.050 num. 39.13.6 a), pag. 72",
+    "estabilidad_global": "E.050 num. 39.13.6 b), pag. 72",
+    "talud":              "E.050 Art. 30.3, pag. 39",
+}
+NUMERAL_C_PHI = "E.050 Art. 20, pag. 33"   # cohesivos phi=0; friccionantes c=0
+NUMERAL_ZAPATA_TALUD_E050 = "E.050 Art. 30.1-30.2"
+
 SPT_PROF_MIN = 15.0                 # m (Art. 38)
 SPT_ESPACIAMIENTO = 1.0             # m entre ensayos
 
@@ -179,7 +200,30 @@ SULFATOS = [                        # Tabla 4.4: (SO4_min%, SO4_max%, cemento, a
 ]
 CLORUROS_EXTERNOS = {"a_c_max": 0.40, "fc_min_MPa": 35}   # Art. 4.2 / 4.4
 RECUBRIMIENTO = {"contra_suelo": 70, "suelo_intemperie_ge_3_4": 50,
-                 "suelo_intemperie_le_5_8": 40}           # Art. 7.7.1
+                 "suelo_intemperie_le_5_8": 40}           # Art. 7.7.1, mm
+NUMERAL_RECUBRIMIENTO = "E.060 Art. 7.7.1, pag. 54"
+AMBIENTE_CORROSIVO_AUMENTAR = "E.060 Art. 7.7.5.1"        # "aumentar adecuadamente"
+# Sin numero: el articulo dice "aumentar adecuadamente" y no fija cuanto. Con
+# NF a 1.4 m y suelos salinos es directamente invocable (Sec. 3.3), asi que el
+# aumento se declara en criterios_adoptados, no aqui.
+
+# ---- E.060, refuerzo de muros - REFERENCIA, no gobierna (Sec. 0.2) --------
+# Sec. 9.4 los llama "referencia de cuantias minimas": la Via 1 de Sec. 0.2
+# pone el DISENO estructural bajo AASHTO LRFD Sec. 5 y deja a E.060 solo la
+# durabilidad y los recubrimientos. Se transcriben porque la hoja de ruta los
+# cita con numeral y pagina, y M9 los contrasta como referencia declarada.
+CUANTIA_MIN_MURO = {"horizontal": 0.0020, "vertical": 0.0015}   # Art. 14.3.1, pag. 133
+NUMERAL_CUANTIA_MIN = "E.060 Art. 14.3.1, pag. 133"
+ESPESOR_TEMPERATURA_DOS_CARAS = 0.250       # m (250 mm); Art. 14.8.3
+NUMERAL_TEMPERATURA_DOS_CARAS = "E.060 Art. 14.8.3"
+ESPACIAMIENTO_MAX_VECES_ESPESOR = 3.0       # <= 3h        Art. 14.3.3
+ESPACIAMIENTO_MAX_ABSOLUTO = 0.400          # m (400 mm)   Art. 14.3.3
+NUMERAL_ESPACIAMIENTO = "E.060 Art. 14.3.3"
+
+# ---- E.060, concreto ciclopeo (alternativa de muro de gravedad) ----------
+CICLOPEO_FC_MATRIZ_MIN = 10.0               # MPa            Art. 22.10
+CICLOPEO_FRACCION_PIEDRA_MAX = 0.30         # del volumen    Art. 22.10
+NUMERAL_CICLOPEO = "E.060 Art. 22.10, pags. 194-195"
 
 # ================= E.030 (RM 183-2026-VIVIENDA) - solo referencia ==========
 ZONA_SISMICA_LA_UNION = 4

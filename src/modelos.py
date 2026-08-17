@@ -221,6 +221,21 @@ class CondicionRasante(str, Enum):
     RESGUARDO = "resguardo"           # HW + resguardo(CBR) + e_paq
 
 
+class CondicionAnalisis(str, Enum):
+    """
+    Las dos columnas de la tabla de factores de seguridad de Sec. 9.3: cada
+    verificacion de estabilidad del cabezal tiene un FS estatico y otro
+    sismico, y no son la misma verificacion con otro numero -- cambian las
+    fuerzas actuantes (aparece el incremento de Mononobe-Okabe) y cambia el
+    umbral (3.00 -> 2.50, 1.50 -> 1.25).
+
+    Los valores reproducen las claves de `constantes_normativas.FS`: quien
+    lea el FS de la tabla lo indexa con este enum, no con un string suelto.
+    """
+    ESTATICO = "estatico"
+    SISMICO = "sismico"
+
+
 class RegimenEntrada(str, Enum):
     """
     Rama de la formulacion de control de entrada de HDS-5 (Sec. 4.2). No es
@@ -769,6 +784,258 @@ class CompatibilidadGeometrica:
             ),
             id_punto=self.punto.id,
         )
+
+
+# ===========================================================================
+# Fase 9 - Cabezal y aletas (salida de M9)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class PasoSismico:
+    """
+    Una fila de la tabla "Cadena sismica - desagregada" de Sec. 9.2.
+
+    La hoja de ruta la escribe desagregada a proposito: PGA, F_pga, A_s,
+    k_h0, factor de muro y k_h son SEIS cosas distintas con tres etiquetas
+    distintas ([N] el mapa y el numeral 2.8.1.1.14.2, [A] la eleccion de
+    F_pga), y hoy coinciden todas en 0.50 solo porque F_pga y el factor de
+    muro valen 1.0. Un reporte que imprima "k_h = 0.50" y nada mas no permite
+    ver que la unica pieza discutible de la cadena es F_pga, ni recalcularla
+    cuando llegue el SPT.
+
+    `criterio` es la clave de `criterios_adoptados.py` cuando el paso LEE un
+    valor declarado, y None cuando el paso lo CALCULA a partir de los
+    anteriores (A_s y k_h): esos dos no se declaran en ningun sitio, salen de
+    una multiplicacion, y por eso su `etiqueta` es "-" y no [N] ni [A].
+    """
+
+    simbolo: str                          # "PGA", "F_pga", "A_s", ...
+    valor: float
+    concepto: str
+    etiqueta: str                         # "N", "A", "-" (calculado)
+    origen: str                           # numeral o "Calculado"
+    criterio: Optional[str] = None        # clave en criterios_adoptados.py
+
+
+@dataclass(frozen=True)
+class CadenaSismica:
+    """
+    Cadena sismica completa de Sec. 9.2, con los seis pasos horizontales mas
+    k_v, que va aparte porque NO deriva de la cadena: es una adopcion propia
+    ([A], criterio 'k_v').
+
+        A_s  = F_pga * PGA
+        k_h0 = A_s                        (Manual de Puentes, 2.8.1.1.14.2)
+        k_h  = factor_muro * k_h0
+
+    `pasos` reproduce la tabla de la hoja de ruta fila por fila para que M11
+    la imprima entera. Los campos escalares existen para que el calculo no
+    tenga que buscar dentro de la tupla.
+    """
+
+    PGA: float                            # g - roca Clase B, Tr = 1000 anios
+    F_pga: float                          # adimensional - factor de sitio
+    A_s: float                            # g - F_pga * PGA
+    k_h0: float                           # adimensional - = A_s
+    factor_muro: float                    # adimensional - 1.0 = muro rigido
+    k_h: float                            # adimensional - factor_muro * k_h0
+    k_v: float                            # adimensional - vertical, [A] aparte
+    pasos: Tuple[PasoSismico, ...]
+    numeral: str = "Sec. 9.2"
+
+
+@dataclass(frozen=True)
+class GeometriaCabezal:
+    """
+    Predimensionamiento del cabezal, en metros. NO sale del CSV: Sec. 1.2 no
+    trae ninguna columna de geometria del cabezal y Sec. 9 no lo dimensiona.
+    Lo aporta el proyectista (criterio 'predimensionamiento_cabezal') o el
+    llamador de M9 en un tanteo.
+
+    `beta_grados` es la inclinacion del PARAMENTO INTERIOR (trasdos) respecto
+    de la vertical, con el signo de Mononobe-Okabe: positiva cuando el muro se
+    inclina alejandose del relleno. Un muro de paramento vertical es 0.
+    """
+
+    H: float                              # m - altura del muro sobre la zapata
+    B: float                              # m - ancho de la zapata
+    D_f: float                            # m - profundidad de desplante
+    espesor_corona: float                 # m - espesor del muro en la corona
+    espesor_base_muro: float              # m - espesor del muro en su arranque
+    espesor_zapata: float                 # m
+    beta_grados: float = 0.0              # grados desde la vertical
+
+    @property
+    def altura_total(self) -> float:
+        """
+        H + espesor de zapata, en m: la altura del plano vertical contra el
+        que actua el relleno. No es lo mismo que `H`, que mide solo el muro
+        sobre la zapata, y confundirlas subestima el empuje en el espesor de
+        la zapata entero.
+        """
+        return self.H + self.espesor_zapata
+
+
+@dataclass(frozen=True)
+class EmpujeMononobeOkabe:
+    """
+    Coeficiente de empuje activo sismico K_AE por Mononobe-Okabe (Sec. 9.2) y
+    todos los angulos con que se obtuvo, porque sin ellos el numero no es
+    revisable: K_AE depende de cuatro angulos ademas de la cadena sismica y
+    tres de los cuatro (i, beta, delta) son adopciones del proyectista.
+
+    `K_A` es el coeficiente estatico de la MISMA formulacion (la de Coulomb
+    que resulta de hacer k_h = k_v = 0), no el de Rankine: el incremento
+    sismico solo tiene sentido restando dos coeficientes homogeneos. Con
+    i = beta = delta = 0 ambos coinciden con tan^2(45 - phi/2), y M9 lo
+    comprueba en un test.
+    """
+
+    K_AE: float                           # adimensional
+    K_A: float                            # adimensional - misma formulacion, k=0
+    psi_grados: float                     # arctan(k_h / (1 - k_v))
+    phi_grados: float                     # friccion interna del relleno
+    i_grados: float                       # pendiente del relleno
+    beta_grados: float                    # inclinacion del muro
+    delta_grados: float                   # friccion muro-suelo
+    k_h: float
+    k_v: float
+    numeral: str = "Sec. 9.2 (Mononobe-Okabe)"
+
+    @property
+    def incremento(self) -> float:
+        """K_AE - K_A: la parte sismica del coeficiente, siempre >= 0."""
+        return self.K_AE - self.K_A
+
+
+@dataclass(frozen=True)
+class EmpujesTrasdos:
+    """
+    Las cargas horizontales sobre el trasdos del cabezal en UNA condicion
+    (Sec. 9.2), cada una con su brazo sobre la base, mas la subpresion.
+
+    Cada empuje viaja con su brazo y no con un momento ya sumado, porque los
+    factores gamma de la combinacion (AASHTO LRFD Tabla 3.4.1-1, el vacio
+    'factores_carga_aashto') se aplican POR TIPO DE CARGA -- EH, LS, WA, EQ
+    llevan factores distintos y algunos son dobles. Un momento total sumado
+    sin factorizar no se puede combinar despues.
+
+    `incremento_sismico` y `z_incremento` son None en condicion estatica. La
+    subpresion no lleva brazo: es vertical y su efecto es reducir la normal
+    en la base, no volcar.
+    """
+
+    condicion: CondicionAnalisis
+    altura_empuje: float                  # m - altura del plano de empuje
+    gamma_relleno: float                  # kN/m3
+    E_activo: float                       # kN/m - carga EH
+    z_activo: float                       # m sobre la base (H/3)
+    E_sobrecarga: float                   # kN/m - carga LS
+    z_sobrecarga: float                   # m sobre la base (H/2)
+    E_hidrostatico: float                 # kN/m - carga WA
+    z_hidrostatico: float                 # m sobre la base
+    U_subpresion: float                   # kN/m - carga WA, vertical
+    K_A: float
+    incremento_sismico: Optional[float] = None   # kN/m - carga EQ
+    z_incremento: Optional[float] = None         # m sobre la base
+    mononobe_okabe: Optional[EmpujeMononobeOkabe] = None
+    numeral: str = "Sec. 9.2"
+
+    @property
+    def empuje_horizontal_total(self) -> float:
+        """
+        Suma SIN FACTORAR de los empujes horizontales, kN/m. Es la demanda de
+        servicio: para Resistencia I o Evento Extremo I hay que factorar cada
+        componente por separado con `M9_cabezal.factores_de_carga`.
+        """
+        total = self.E_activo + self.E_sobrecarga + self.E_hidrostatico
+        if self.incremento_sismico is not None:
+            total += self.incremento_sismico
+        return total
+
+    @property
+    def momento_volcante(self) -> float:
+        """
+        Momento volcante SIN FACTORAR respecto del pie de la zapata, kN*m/m:
+        cada empuje por su brazo. Misma advertencia que
+        `empuje_horizontal_total` sobre los factores.
+        """
+        momento = (self.E_activo * self.z_activo
+                   + self.E_sobrecarga * self.z_sobrecarga
+                   + self.E_hidrostatico * self.z_hidrostatico)
+        if self.incremento_sismico is not None and self.z_incremento is not None:
+            momento += self.incremento_sismico * self.z_incremento
+        return momento
+
+
+@dataclass(frozen=True)
+class CombinacionCarga:
+    """
+    Una de las tres combinaciones de Sec. 9.2 (AASHTO LRFD Sec. 3.4.1, via
+    Manual de Puentes num. 2.4.5.3): Resistencia I, Servicio I o Evento
+    Extremo I.
+
+    `componentes` nombra que cargas entran; `criterio_factores` apunta al
+    criterio de `criterios_adoptados.py` que tiene que entregar los factores
+    gamma. La hoja de ruta NOMBRA las combinaciones pero no transcribe la
+    Tabla 3.4.1-1, asi que este objeto describe la combinacion y no la
+    evalua: pedir los factores detiene el calculo (Sec. 0.7).
+    """
+
+    nombre: str                           # "Resistencia I", ...
+    numeral: str
+    componentes: Tuple[str, ...]
+    criterio_factores: str
+
+
+@dataclass(frozen=True)
+class RecubrimientoDiseno:
+    """
+    Recubrimiento adoptado en mm y de donde sale, con las DOS fuentes que la
+    regla de conflicto de Sec. 0.2 obliga a comparar: "rige el recubrimiento
+    mayor entre AASHTO y E.060".
+
+    Unico dato del proyecto en milimetros, coherente con
+    `constantes_normativas.RECUBRIMIENTO` (Art. 7.7.1 esta escrito en mm y
+    reescribirlo en metros solo introduciria ceros). No entra en ninguna
+    formula de equilibrio: es una especificacion de detalle para plano.
+    """
+
+    condicion: str                        # clave de RECUBRIMIENTO (Art. 7.7.1)
+    e060_mm: float
+    aashto_mm: float
+    adoptado_mm: float                    # max(e060, aashto) - Sec. 0.2
+    origen: str                           # "E.060" o "AASHTO"
+    criterio_aashto: str                  # clave en criterios_adoptados.py
+    numeral: str = "E.060 Art. 7.7.1 / Sec. 0.2 (regla del mayor)"
+
+
+@dataclass(frozen=True)
+class EstabilidadCabezal:
+    """
+    Expediente de estabilidad del cabezal en UNA condicion (Sec. 9.3). Las
+    cinco verificaciones de la tabla llevan codigo E1..E5 para no confundirse
+    con las V1-V9 de la Fase 5 ni con las G1/G2 de la Fase 7.
+
+    El mismo cabezal se verifica dos veces, una por `CondicionAnalisis`: el
+    resultado estatico y el sismico son dos objetos, no dos campos de uno,
+    porque cambian a la vez las fuerzas y los umbrales.
+    """
+
+    condicion: CondicionAnalisis
+    geometria: GeometriaCabezal
+    verificaciones: Tuple[Verificacion, ...]
+    numeral: str = "Sec. 9.3 (E.050)"
+
+    @property
+    def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
+        """Las que M11 debe destacar en la memoria del cabezal."""
+        return tuple(v for v in self.verificaciones if not v.cumple)
+
+    @property
+    def estable(self) -> bool:
+        """True si las cinco verificaciones de Sec. 9.3 cumplen."""
+        return not self.verificaciones_incumplidas
 
 
 # ===========================================================================
