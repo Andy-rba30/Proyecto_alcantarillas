@@ -180,6 +180,19 @@ def test_todo_criterio_sin_valor_declara_de_donde_saldra():
         assert c.justificacion, f"'{clave}' no declara por que hace falta"
 
 
+def test_criterios_usados_registra_la_invocacion():
+    """
+    La lista que consume el reporte (cli.py la vuelca al JSON) es la misma que
+    `reporte_criterios(solo_usados=True)` imprime: sale del registro de uso, no
+    del catalogo completo.
+    """
+    valor("PGA_roca_B")
+    usados = ca.criterios_usados()
+    assert "PGA_roca_B" in usados
+    assert usados == sorted(usados)
+    assert set(usados) <= set(CRITERIOS)
+
+
 def test_los_parametros_sensibilizables_traen_rango_de_dos_extremos():
     for clave, rango in parametros_sensibilizables().items():
         assert len(rango) == 2, f"'{clave}' no declara un rango de dos extremos"

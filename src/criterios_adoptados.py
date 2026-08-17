@@ -82,6 +82,16 @@ def criterios_sin_valor() -> List[str]:
     return sorted(k for k, c in CRITERIOS.items() if c.valor is None)
 
 
+def criterios_usados() -> List[str]:
+    """
+    Claves que el calculo invoco, en orden alfabetico. Es la misma informacion
+    que `reporte_criterios(solo_usados=True)` imprime como texto, expuesta como
+    lista para el consumidor que arma su propio bloque (cli.py la vuelca al
+    JSON). Existe para que nadie tenga que leer `_USADOS` desde fuera.
+    """
+    return sorted(_USADOS)
+
+
 # ---------------------------------------------------------------------------
 # CRITERIOS ADOPTADOS
 # ---------------------------------------------------------------------------
