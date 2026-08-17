@@ -520,6 +520,29 @@ class ResultadoHidraulico:
 
 
 @dataclass(frozen=True)
+class ProteccionSalida:
+    """
+    Salida de M6 (Fase 6): d50 de Laushey y las dos piezas complementarias que
+    la hoja de ruta deja como criterio adoptado (espesor y longitud).
+
+    `d50` es la unica magnitud con formula normativa (num. 4.1.1.3.7 c). NO es
+    un diseño de enrocado: la hoja de ruta (Sec. 6) dice expresamente que
+    faltan la granulometria completa y el filtro, y que sin filtro el
+    enrocado se socava por debajo y falla. `advertencias` transporta ese
+    aviso para que ningun consumidor de este resultado lo omita.
+    """
+
+    d50: float                            # m - num. 4.1.1.3.7 c)
+    espesor: float                        # m - multiplo de d50, criterio adoptado
+    longitud: float                       # m - criterio adoptado
+    V: float                              # m/s - velocidad de salida usada
+    criterio_espesor: str                 # clave en criterios_adoptados.py
+    criterio_longitud: str                # clave en criterios_adoptados.py
+    advertencias: Tuple[str, ...]
+    numeral: str = "4.1.1.3.7 c)"
+
+
+@dataclass(frozen=True)
 class Verificacion:
     """
     Resultado de una verificacion de la Fase 5. Nunca se devuelve un bool
