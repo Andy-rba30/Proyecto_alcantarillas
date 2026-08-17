@@ -1220,3 +1220,37 @@ class ResultadoPunto:
         if self.aceptado:
             return not self.verificaciones_incumplidas and self.motivo_rechazo is None
         return bool(self.motivo_rechazo)
+
+
+# ===========================================================================
+# Traza del diseno (bucle de MD; entregable 1 de la Fase 11)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class PasoDiseno:
+    """
+    Un escalon del bucle de MD: el par (material, D) que se probo y como
+    termino.
+
+    Existe porque la Fase 11 exige publicar las ITERACIONES del diseño
+    (entregable 1) y `ResultadoPunto` solo conserva la combinacion ganadora:
+    con ella sola la memoria muestra el diametro adoptado pero no puede
+    defender por que se descarto el anterior, que es justamente lo que un
+    revisor pregunta. No la produce ningun calculo nuevo -- es lo que MD ya
+    evaluaba y descartaba en silencio.
+
+    `verificaciones` viene vacia cuando el escalon ni siquiera transporto el
+    caudal en flujo libre (M3 no hallo tirante normal): la Fase 5 no llego a
+    correr y `motivo` lo dice. En el escalon aceptado, `motivo` es "".
+    """
+
+    material: str                         # Material.nombre
+    D: float                              # m - diametro probado
+    aceptado: bool
+    motivo: str                           # por que se descarto; "" si aceptado
+    verificaciones: Tuple[Verificacion, ...] = ()
+
+    @property
+    def incumplidas(self) -> Tuple[Verificacion, ...]:
+        """Las verificaciones que hicieron descartar este escalon."""
+        return tuple(v for v in self.verificaciones if not v.cumple)

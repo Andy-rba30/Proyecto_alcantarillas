@@ -100,7 +100,7 @@ from constantes_normativas import CUANTIA_MIN_MURO, RECUBRIMIENTO   # noqa: E402
 from modelos import (Clasificacion, CompatibilidadGeometrica,       # noqa: E402
                      CriterioPendienteError, DatoFaltanteError,
                      DatoInvalidoError, DisenoNoFactibleError,
-                     ErrorProyecto, Espaciamiento, Familia,
+                     ErrorProyecto, Espaciamiento, Familia, PasoDiseno,
                      ProteccionSalida, PuntoCritico, ResultadoPunto,
                      Verificacion)
 from modulos.M0_carga import cargar_puntos                          # noqa: E402
@@ -118,6 +118,13 @@ from modulos.M9_cabezal import (aviso_ambiente_corrosivo,           # noqa: E402
                                 k_ae_del_proyecto,
                                 recubrimiento_de_diseno)
 from modulos.M10_espaciamiento import espaciamiento_alivio          # noqa: E402
+# La agregacion de criterios bloqueantes y el armado de la memoria son de la
+# Fase 11: viven en M11 y aqui solo se usan. `CriterioBloqueante` y
+# `criterios_bloqueantes` se reexportan porque el JSON y el volcado de texto de
+# esta CLI los siguen publicando con el mismo nombre.
+from modulos.M11_reporte import (CriterioBloqueante,                # noqa: E402,F401
+                                 criterios_bloqueantes,
+                                 exportar_html, exportar_pdf)
 from modulos.MD import disenar_punto                                # noqa: E402
 
 # Etiquetas de fase. Son rotulos del informe, no valores de proyecto: cada uno
@@ -356,6 +363,10 @@ class InformePunto:
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
     espaciamiento: Optional[Espaciamiento] = None
+    # Escalones que MD probo, en orden. Es el entregable 1 de la Fase 11
+    # ("iteraciones"): la memoria tiene que poder decir por que se descarto el
+    # diametro anterior al adoptado. Se llena tambien cuando el punto no cierra.
+    traza: List[PasoDiseno] = field(default_factory=list)
     bloqueos: List[Bloqueo] = field(default_factory=list)
 
     @property
@@ -546,10 +557,14 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos) -> None:
 
     Q = externos.valor(punto.id, "Q_m3s")
     S = externos.valor(punto.id, "S_conducto")
+    # `informe.traza.append` es el observador de MD: los escalones quedan
+    # anotados aunque la etapa termine en DisenoNoFactibleError, que es cuando
+    # la memoria mas necesita ver que se probo.
     informe.resultado = _etapa(
         informe.bloqueos, FASE_DISENO, "material y diametro (bucle de MD)",
         lambda: disenar_punto(punto, L=informe.longitud.valor,
-                              TW=informe.tw.valor, Q=Q, S=S))
+                              TW=informe.tw.valor, Q=Q, S=S,
+                              registrar=informe.traza.append))
 
     if informe.resultado is not None and not informe.resultado.aceptado:
         informe.bloqueos.append(Bloqueo(
@@ -727,53 +742,6 @@ def _avisar_ids_desconocidos(informe: Informe, externos: DatosExternos) -> None:
 
 
 # ===========================================================================
-# Criterios pendientes que bloquearon algo
-# ===========================================================================
-
-@dataclass(frozen=True)
-class CriterioBloqueante:
-    """Un criterio pendiente, con todo lo que freno en esta corrida."""
-
-    clave: str
-    etiqueta: str
-    concepto: str
-    fuente: str
-    reemplazado_por: Optional[str]
-    fases: Tuple[str, ...]
-    etapas: Tuple[str, ...]
-    puntos: Tuple[str, ...]
-
-
-def criterios_bloqueantes(informe: Informe) -> Tuple[CriterioBloqueante, ...]:
-    """
-    Agrupa los bloqueos por criterio pendiente: la lista que el revisor
-    necesita para saber que declarar primero (Sec. 0.7).
-    """
-    acumulado: Dict[str, Dict[str, list]] = {}
-    for id_punto, bloqueo in informe.bloqueos():
-        if bloqueo.criterio is None:
-            continue
-        entrada = acumulado.setdefault(bloqueo.criterio,
-                                       {"fases": [], "etapas": [], "puntos": []})
-        for campo, dato in (("fases", bloqueo.fase), ("etapas", bloqueo.etapa),
-                            ("puntos", id_punto)):
-            if dato is not None and dato not in entrada[campo]:
-                entrada[campo].append(dato)
-
-    salida = []
-    for clave in sorted(acumulado):
-        declarado = ca.criterio(clave)
-        salida.append(CriterioBloqueante(
-            clave=clave, etiqueta=declarado.etiqueta,
-            concepto=declarado.concepto, fuente=declarado.fuente,
-            reemplazado_por=declarado.reemplazado_por,
-            fases=tuple(acumulado[clave]["fases"]),
-            etapas=tuple(acumulado[clave]["etapas"]),
-            puntos=tuple(acumulado[clave]["puntos"])))
-    return tuple(salida)
-
-
-# ===========================================================================
 # Volcado a JSON
 # ===========================================================================
 
@@ -792,6 +760,12 @@ def _verificacion_json(fase: str, v: Verificacion) -> Dict[str, Any]:
             "cumple": v.cumple, "valor_obtenido": _num(v.valor_obtenido),
             "valor_admisible": _num(v.valor_admisible),
             "criterio_aplicado": v.criterio_aplicado}
+
+
+def _paso_json(paso: PasoDiseno) -> Dict[str, Any]:
+    return {"material": paso.material, "D_m": _num(paso.D),
+            "aceptado": paso.aceptado, "motivo": paso.motivo,
+            "incumplidas": [v.codigo or v.numeral for v in paso.incumplidas]}
 
 
 def _dato_json(dato: Optional[DatoDeclarado]) -> Optional[Dict[str, Any]]:
@@ -896,6 +870,7 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "estructural": None,
         "espaciamiento_alivio": (None if informe.espaciamiento is None
                                  else _espaciamiento_json(informe.espaciamiento)),
+        "iteraciones": [_paso_json(p) for p in informe.traza],
         "verificaciones": [_verificacion_json(fase, v)
                            for fase, v in informe.verificaciones()],
         "bloqueos": [_bloqueo_json(b) for b in informe.bloqueos],
@@ -1182,6 +1157,15 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--criterios", action="store_true",
                    help="imprime tambien la declaracion completa de los "
                         "criterios usados (reporte_criterios)")
+    p.add_argument("--html", type=Path, dest="html_salida",
+                   help="escribe la memoria de calculo de la Fase 11 (M11) "
+                        "en esa ruta, como HTML")
+    p.add_argument("--pdf", type=Path, dest="pdf_salida",
+                   help="escribe la memoria en PDF con weasyprint; si no esta "
+                        "instalado, deja el HTML y lo abre en el navegador "
+                        "para Ctrl+P (misma via que legacy/Tc.py)")
+    p.add_argument("--proyecto", default="",
+                   help="nombre del proyecto que encabeza la memoria")
     return p
 
 
@@ -1211,6 +1195,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                    allow_nan=False),
         encoding="utf-8")
     print(f"\nJSON del expediente: {destino}")
+
+    if args.html_salida is not None:
+        ruta = exportar_html(informe, args.html_salida,
+                             proyecto=args.proyecto)
+        print(f"Memoria de calculo (HTML): {ruta}")
+
+    if args.pdf_salida is not None:
+        salida = exportar_pdf(informe, args.pdf_salida,
+                              proyecto=args.proyecto)
+        print(salida.mensaje)
 
     return 0 if informe.cerrado else 1
 

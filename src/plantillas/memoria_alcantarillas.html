@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<!--
+  memoria_alcantarillas.html
+  =========================
+  Plantilla de la memoria de calculo de la Fase 11, procesada por
+  src/modulos/M11_reporte.py con string.Template y delimitador de doble
+  porcentaje (mismo patron que legacy/Tc.py y su plantilla_memoria.html).
+
+  Los marcadores los sustituye M11 con `substitute`, NO con `safe_substitute`:
+  un marcador que la plantilla pide y M11 no entrega tiene que reventar en la
+  generacion, no salir impreso en la memoria. Por la misma razon esta
+  plantilla no puede contener el delimitador fuera de un marcador -- ni
+  siquiera dentro de un comentario como este, que fue el primer error que la
+  regla atrapo.
+
+  La hoja esta configurada en A4 para que "Imprimir -> Guardar como PDF" del
+  navegador de un resultado equivalente al de weasyprint.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Memoria de calculo - Alcantarillas - %%proyecto</title>
+<style>
+  @page { size: A4; margin: 18mm 15mm 16mm 15mm; }
+
+  html { font-size: 11px; }
+  body {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: #1c1c1c; background: #ffffff;
+    line-height: 1.45; margin: 0 auto; max-width: 210mm; padding: 10mm;
+  }
+
+  h1, h2, h3, h4 { color: #16324f; margin: 0 0 .4em 0; line-height: 1.25; }
+  h1 { font-size: 1.9rem; border-bottom: 3px solid #16324f; padding-bottom: .3em; }
+  h2 {
+    font-size: 1.35rem; margin-top: 1.8em;
+    border-bottom: 1px solid #c3cede; padding-bottom: .2em;
+  }
+  h3 { font-size: 1.1rem; margin-top: 1.3em; }
+  h4 { font-size: 1rem; margin-top: 1em; color: #3a4a5c; }
+  p  { margin: .5em 0; text-align: justify; }
+
+  .subtitulo { color: #55616f; font-size: 1.05rem; margin-top: -.2em; }
+  .lead { color: #55616f; }
+
+  table { border-collapse: collapse; width: 100%; margin: .7em 0; font-size: .93rem; }
+  th, td { border: 1px solid #c9d3e0; padding: 4px 7px; vertical-align: top; }
+  th { background: #eaf0f7; text-align: left; font-weight: 600; color: #16324f; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tbody tr:nth-child(even) td { background: #f8fafc; }
+
+  .compacta td, .compacta th { padding: 3px 6px; font-size: .88rem; }
+  .ancha { font-size: .86rem; }
+  .ancha th, .ancha td { padding: 3px 5px; }
+
+  code, .mono {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .88em; word-break: break-all;
+  }
+
+  /* Trazabilidad -------------------------------------------------------- */
+  .trazabilidad { border: 2px solid #16324f; padding: .6em .9em; margin: 1em 0; }
+  .trazabilidad table { margin: 0; }
+  .trazabilidad th { width: 30%; background: #f2f6fa; }
+
+  /* Estados ------------------------------------------------------------- */
+  .cumple    { color: #14672f; font-weight: 700; }
+  .incumple  { color: #a4160f; font-weight: 700; }
+  .pendiente { color: #8a5a00; font-weight: 700; }
+  tr.fila-incumple td { background: #fdf0ef; }
+  tr.fila-aceptada td { background: #eef8f0; }
+
+  .etiqueta {
+    display: inline-block; min-width: 2.4em; text-align: center;
+    border-radius: 3px; padding: 0 .35em; font-weight: 700; font-size: .85em;
+    border: 1px solid #99a7b8;
+  }
+  .et-N   { background: #e3f0e6; border-color: #7ba98a; color: #14672f; }
+  .et-Na  { background: #e6eef7; border-color: #7d9dc0; color: #1d4c7c; }
+  .et-C   { background: #fdf3e0; border-color: #d0a95f; color: #8a5a00; }
+  .et-A   { background: #fdeaea; border-color: #cf8b86; color: #a4160f; }
+
+  /* Bloques con aviso --------------------------------------------------- */
+  .nota, .aviso, .bloqueo {
+    border-left: 4px solid #16324f; background: #f4f7fb;
+    padding: .5em .8em; margin: .7em 0; font-size: .93rem;
+  }
+  .aviso   { border-left-color: #d0a95f; background: #fdf8ee; }
+  .bloqueo { border-left-color: #a4160f; background: #fdf1f0; }
+
+  /* Punto critico ------------------------------------------------------- */
+  .punto { border: 1px solid #c3cede; padding: .2em 1em 1em 1em; margin: 1.2em 0; }
+  .punto > h3 {
+    background: #16324f; color: #ffffff; margin: 0 -1em .8em -1em;
+    padding: .45em 1em; font-size: 1.05rem;
+  }
+  .punto.sin-cerrar > h3 { background: #7a2a24; }
+
+  .criterio { border: 1px solid #c9d3e0; padding: .5em .8em; margin: .6em 0; }
+  .criterio .clave { font-weight: 700; color: #16324f; }
+  .criterio dl { margin: .4em 0 0 0; }
+  .criterio dt {
+    float: left; clear: left; width: 11em; font-weight: 600; color: #55616f;
+  }
+  .criterio dd { margin: 0 0 .25em 11.5em; }
+
+  .tablero { margin: 1em 0 1.6em 0; }
+  .tablero .glosa { color: #55616f; font-style: italic; margin: .2em 0 .4em 0; }
+
+  footer {
+    margin-top: 2.5em; border-top: 1px solid #c3cede; padding-top: .6em;
+    color: #7b7b7b; font-size: .85rem;
+  }
+
+  @media print {
+    body { padding: 0; max-width: none; }
+    h2 { page-break-after: avoid; }
+    h3, h4 { page-break-after: avoid; }
+    table, .criterio, .nota, .aviso, .bloqueo { page-break-inside: avoid; }
+    .punto { page-break-inside: avoid; }
+    .salto { page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Memoria de calculo &mdash; Alcantarillas y cabezales</h1>
+<p class="subtitulo">%%proyecto</p>
+<p class="lead">%%subtitulo</p>
+
+<!-- ==================================================================== -->
+<h2 id="trazabilidad">0. Encabezado de trazabilidad</h2>
+
+<p>Esta seccion identifica de forma inequivoca <em>que</em> se calculo, <em>con
+que reglas</em> y <em>con que datos</em>. Dos corridas de este script sobre
+expedientes distintos, o sobre el mismo expediente con criterios distintos,
+producen encabezados distintos: sin esto dos memorias no se distinguen y
+ninguna es auditable.</p>
+
+<div class="trazabilidad">
+<table>
+  <tbody>
+    <tr><th>Hoja de ruta (fuente normativa unica)</th>
+        <td><b>%%version_hoja_ruta</b> &mdash; <span class="mono">%%hoja_ruta_archivo</span></td></tr>
+    <tr><th>SHA-1 de la hoja de ruta</th>
+        <td class="mono">%%hoja_ruta_sha1</td></tr>
+    <tr><th>CSV de entrada</th>
+        <td><span class="mono">%%csv_ruta</span></td></tr>
+    <tr><th>SHA-1 del CSV de entrada</th>
+        <td class="mono">%%csv_sha1</td></tr>
+    <tr><th>Version de criterios_adoptados</th>
+        <td>%%criterios_version</td></tr>
+    <tr><th>Fecha de criterios_adoptados.py</th>
+        <td>%%criterios_fecha</td></tr>
+    <tr><th>SHA-1 de criterios_adoptados.py</th>
+        <td class="mono">%%criterios_sha1</td></tr>
+    <tr><th>Fecha de generacion</th>
+        <td>%%generado_local &nbsp;(corrida UTC: %%generado_utc)</td></tr>
+    <tr><th>Estado del expediente</th>
+        <td>%%estado_expediente</td></tr>
+  </tbody>
+</table>
+</div>
+
+%%resumen_expediente
+
+<!-- ==================================================================== -->
+<h2 id="memorias" class="salto">1. Memoria de calculo por punto critico</h2>
+
+<p>Entregable 1 de la Fase 11: datos de partida <b>con su fuente</b>,
+iteraciones del diseño y cada verificacion como <b>cumple / no cumple</b>
+junto a su numeral. Las iteraciones son los escalones que el bucle de diseño
+probo y descarto, en orden: el diametro adoptado no se defiende solo, se
+defiende contra el que no sirvio.</p>
+
+%%memorias_punto
+
+<!-- ==================================================================== -->
+<h2 id="resumen" class="salto">2. Tabla resumen</h2>
+
+<p>Entregable 3 de la Fase 11. Una fila por punto critico, en el orden del
+CSV. Una celda vacia (&ndash;) significa que la etapa que produce ese dato
+quedo bloqueada; el motivo esta en la memoria del punto y en el bloque de
+pendientes.</p>
+
+<table class="ancha">
+  <thead>
+    <tr>
+      <th>Progresiva</th><th>Familia</th><th>TR<br>(años)</th><th>Tipo</th>
+      <th>Material y norma de producto</th><th>D<br>(m)</th><th>V<br>(m/s)</th>
+      <th>y/D</th><th>HW<br>(m)</th><th>Control<br>gobernante</th>
+      <th>Proteccion de salida</th><th>Tipo de cabezal</th>
+    </tr>
+  </thead>
+  <tbody>
+%%filas_resumen
+  </tbody>
+</table>
+
+<!-- ==================================================================== -->
+<h2 id="criterios" class="salto">3. Declaracion de criterios adoptados</h2>
+
+<p>Entregable 2 de la Fase 11, generado desde <code>criterios_adoptados.py</code>.
+Lista <b>unicamente los criterios que este calculo invoco</b>, cada uno con su
+etiqueta, su justificacion y su fuente. Un criterio declarado en el archivo
+pero no usado en esta corrida no aparece aqui: la memoria declara lo que
+sostiene sus numeros, no el catalogo completo.</p>
+
+<div class="nota">
+<p><b>Etiquetas.</b>
+<span class="etiqueta et-N">N</span> exigencia normativa peruana vigente, con
+numeral verificado &middot;
+<span class="etiqueta et-Na">N&rarr;</span> valor normativo aplicado por
+analogia, declarada &middot;
+<span class="etiqueta et-C">C</span> vacio normativo cubierto con fuente
+tecnica reconocida (FHWA, AASHTO) &middot;
+<span class="etiqueta et-A">A</span> sin norma ni fuente unica: adopcion
+declarada, con analisis de sensibilidad obligatorio.</p>
+</div>
+
+%%bloque_criterios
+
+<!-- ==================================================================== -->
+<h2 id="pendientes" class="salto">4. Pendientes &mdash; Tableros 1, 2 y 3</h2>
+
+<div class="aviso">
+<p><b>Este bloque va aparte a proposito.</b> Lo de la seccion 3 son criterios
+<b>cerrados</b>: tienen valor, fuente y justificacion, y sostienen los numeros
+de esta memoria. Lo de aqui abajo <b>no esta resuelto</b>. Mezclarlos daria a
+entender que el expediente esta mas cerrado de lo que esta, que es exactamente
+el error que la hoja de ruta busca evitar al segregar los pendientes por
+naturaleza.</p>
+</div>
+
+%%bloque_pendientes
+
+<footer>
+<p>Generado automaticamente por <code>M11_reporte.py</code> el
+%%generado_local. Toda cita de numeral proviene de %%hoja_ruta_archivo
+(%%version_hoja_ruta), fuente normativa unica del proyecto.</p>
+</footer>
+
+</body>
+</html>

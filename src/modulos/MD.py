@@ -103,11 +103,12 @@ Uso
 from __future__ import annotations
 
 from importlib import import_module
-from typing import List, Optional, Protocol, Sequence, Tuple, Iterable
+from typing import (Callable, List, Optional, Protocol, Sequence, Tuple,
+                    Iterable)
 
 from modelos import (DisenoNoFactibleError, ErrorProyecto, Familia, Material,
-                     PuntoCritico, ResultadoHidraulico, ResultadoPunto,
-                     Verificacion)
+                     PasoDiseno, PuntoCritico, ResultadoHidraulico,
+                     ResultadoPunto, Verificacion)
 from modulos.M2_material import materiales_candidatos, siguiente_diametro
 from modulos.M3_hidraulica import resolver_manning
 from modulos.M4_control import resolver_control
@@ -130,6 +131,23 @@ class Verificador(Protocol):
     def __call__(self, *, punto: PuntoCritico, material: Material, D: float,
                  resultado: ResultadoHidraulico) -> Sequence[Verificacion]:
         ...
+
+
+# Observador opcional del bucle: recibe un PasoDiseno por escalon probado.
+# No participa del diseño -- no puede cambiar el resultado ni detenerlo -- y
+# existe solo para que M11 publique las iteraciones (Fase 11, entregable 1).
+# Sin observador, MD se comporta exactamente igual que antes.
+Registrador = Callable[[PasoDiseno], None]
+
+
+def _registrar(registrador: Optional[Registrador], material: Material,
+               D: float, *, aceptado: bool, motivo: str,
+               verificaciones: Tuple[Verificacion, ...] = ()) -> None:
+    """Anota un escalon del bucle si hay observador; si no, no hace nada."""
+    if registrador is None:
+        return
+    registrador(PasoDiseno(material=material.nombre, D=D, aceptado=aceptado,
+                           motivo=motivo, verificaciones=verificaciones))
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +225,8 @@ def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
 
 def disenar_material(punto: PuntoCritico, material: Material, *,
                      Q: float, S: float, L: float, TW: float,
-                     verificar: Verificador
+                     verificar: Verificador,
+                     registrar: Optional[Registrador] = None
                      ) -> Tuple[Optional[ResultadoPunto], str]:
     """
     Recorre el catalogo de Sec. 3.2 para UN material, de menor a mayor, y
@@ -225,6 +244,10 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     Queda publica porque el bucle exterior no es el unico consumidor: correr
     los tres materiales y comparar sus diseños -- para la memoria de Sec. 3.4,
     que exige defender la eleccion -- es llamar a esta funcion tres veces.
+
+    `registrar` es un observador opcional: recibe un `PasoDiseno` por cada
+    escalon probado, en orden. Es lo que M11 necesita para publicar las
+    iteraciones (Fase 11, entregable 1). No altera el diseño ni el retorno.
     """
     D = siguiente_diametro(material.tipo)     # primer escalon: minimo normativo
     ultimo_motivo = "el catalogo no ofrecio ningun diametro"
@@ -234,6 +257,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
 
         if normal is None:
             ultimo_motivo = _motivo_sin_flujo_libre(D, Q, S, material)
+            _registrar(registrar, material, D, aceptado=False,
+                       motivo=ultimo_motivo)
         else:
             # No puede salir None: se le pasa el tirante normal ya resuelto, y
             # ese es el unico caso en que M4 devuelve None.
@@ -249,6 +274,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                 )
 
             if all(v.cumple for v in verificaciones):
+                _registrar(registrar, material, D, aceptado=True, motivo="",
+                           verificaciones=verificaciones)
                 return ResultadoPunto(
                     punto=punto,
                     material=material,
@@ -259,6 +286,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                 ), ""
 
             ultimo_motivo = _motivo_incumplimiento(D, verificaciones)
+            _registrar(registrar, material, D, aceptado=False,
+                       motivo=ultimo_motivo, verificaciones=verificaciones)
 
         D = siguiente_diametro(material.tipo, D)
 
@@ -271,7 +300,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
 
 def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
                   Q: Optional[float] = None, S: Optional[float] = None,
-                  verificar: Optional[Verificador] = None) -> ResultadoPunto:
+                  verificar: Optional[Verificador] = None,
+                  registrar: Optional[Registrador] = None) -> ResultadoPunto:
     """
     Diseño hidraulico completo de un punto critico: recorre los materiales
     candidatos de M2 (Sec. 3.4) y, dentro de cada uno, el catalogo ascendente
@@ -294,6 +324,10 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             alcantarilla es la del cauce y que V2 nunca la restringe (Sec. 5.2).
     verificar   funcion de la Fase 5. Por defecto, la de M5 (ver el docstring
             del modulo).
+    registrar   observador opcional del bucle (ver `disenar_material`). Recibe
+            los escalones de TODOS los materiales recorridos, en orden, tambien
+            cuando la llamada termina en DisenoNoFactibleError: la traza de un
+            punto que no cerro es justamente la que hay que publicar.
 
     Lanza DisenoNoFactibleError si ningun material candidato cumple, con el
     motivo del ultimo fallo de cada uno -- nunca un resultado silencioso ni un
@@ -314,7 +348,8 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     fallos: List[str] = []
     for material in candidatos:
         resultado, motivo = disenar_material(punto, material, Q=Q, S=S,
-                                             L=L, TW=TW, verificar=verificar)
+                                             L=L, TW=TW, verificar=verificar,
+                                             registrar=registrar)
         if resultado is not None:
             return resultado
         fallos.append(f"{material.nombre}: {motivo}")
@@ -358,6 +393,7 @@ def _resultado_fallido(punto: PuntoCritico, exc: ErrorProyecto) -> ResultadoPunt
 def disenar_lote(puntos: Iterable[PuntoCritico], *, L: float, TW: float,
                  Q: Optional[float] = None, S: Optional[float] = None,
                  verificar: Optional[Verificador] = None,
+                 registrar: Optional[Registrador] = None,
                  ) -> List[ResultadoPunto]:
     """
     Diseño hidraulico del lote completo de un expediente: llama a
@@ -379,6 +415,11 @@ def disenar_lote(puntos: Iterable[PuntoCritico], *, L: float, TW: float,
     geometria o caudal individualmente distintos -- lo habitual en la Fase 7 --
     llama a `disenar_punto` directamente, uno a uno, y ensambla la lista tu.
 
+    `registrar` es el mismo observador de `disenar_punto` y aqui recibe los
+    escalones de TODOS los puntos seguidos. Si necesitas la traza separada por
+    punto -- que es lo que publica M11 -- recorre los puntos tu y dale a cada
+    llamada su propio observador.
+
     Devuelve siempre una lista, vacia solo si `puntos` estaba vacio.
     """
     if verificar is None:
@@ -388,7 +429,8 @@ def disenar_lote(puntos: Iterable[PuntoCritico], *, L: float, TW: float,
     for punto in puntos:
         try:
             resultados.append(disenar_punto(punto, L=L, TW=TW, Q=Q, S=S,
-                                            verificar=verificar))
+                                            verificar=verificar,
+                                            registrar=registrar))
         except ErrorProyecto as exc:
             resultados.append(_resultado_fallido(punto, exc))
     return resultados
