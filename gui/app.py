@@ -207,13 +207,16 @@ class ExpedienteApp:
         self.nb.pack(fill="both", expand=True)
 
         self.tab_datos = MarcoScroll(self.nb)
+        self.tab_criterios = ttk.Frame(self.nb)
         self.tab_puntos = ttk.Frame(self.nb)
         self.tab_resumen = MarcoScroll(self.nb)
         self.nb.add(self.tab_datos, text="  1. Datos de entrada  ")
-        self.nb.add(self.tab_puntos, text="  2. Resultados por punto  ")
-        self.nb.add(self.tab_resumen, text="  3. Resumen  ")
+        self.nb.add(self.tab_criterios, text="  2. Criterios  ")
+        self.nb.add(self.tab_puntos, text="  3. Resultados por punto  ")
+        self.nb.add(self.tab_resumen, text="  4. Resumen  ")
 
         self._construir_tab_datos(self.tab_datos.interior)
+        self._construir_tab_criterios(self.tab_criterios)
         self._construir_tab_puntos(self.tab_puntos)
         self._construir_tab_resumen(self.tab_resumen.interior)
 
@@ -301,6 +304,254 @@ class ExpedienteApp:
             self.datos_externos_var.set(ruta)
 
     # -------------------------- Pestana 2 -----------------------------
+    def _construir_tab_criterios(self, p):
+        p.columnconfigure(0, weight=1)
+        p.rowconfigure(1, weight=1)
+
+        f_cab = ttk.Frame(p, padding=(10, 10, 10, 0))
+        f_cab.grid(row=0, column=0, sticky="ew")
+        ttk.Label(f_cab, text="Criterios adoptados (criterios_adoptados.py)",
+                  style="Header.TLabel").pack(anchor="w")
+        ttk.Label(
+            f_cab,
+            text="Etiquetas: [N] normativo  [N->] normativo por analogia  "
+                 "[C] fuente tecnica reconocida  [A] adopcion sin norma unica. "
+                 "Las filas en rojo son criterios PENDIENTES (valor=None): bloquean "
+                 "cualquier calculo que los invoque hasta que se declare un valor.",
+            style="Ayuda.TLabel", wraplength=980, justify="left",
+        ).pack(anchor="w", pady=(2, 8))
+
+        f_tabla = ttk.Frame(p, padding=(10, 0))
+        f_tabla.grid(row=1, column=0, sticky="nsew")
+        f_tabla.columnconfigure(0, weight=1)
+        f_tabla.rowconfigure(0, weight=1)
+
+        cols = ("clave", "etiqueta", "concepto", "valor", "estado", "fuente")
+        self.tree_criterios_todos = ttk.Treeview(
+            f_tabla, columns=cols, show="headings", height=14)
+        encabezados = [
+            ("clave", "Clave", 190, "w"),
+            ("etiqueta", "Etq.", 45, "center"),
+            ("concepto", "Concepto", 260, "w"),
+            ("valor", "Valor actual", 160, "w"),
+            ("estado", "Estado", 110, "center"),
+            ("fuente", "Fuente", 300, "w"),
+        ]
+        for col, txt, ancho, anchor in encabezados:
+            self.tree_criterios_todos.heading(col, text=txt)
+            self.tree_criterios_todos.column(col, width=ancho, anchor=anchor)
+        self.tree_criterios_todos.grid(row=0, column=0, sticky="nsew")
+        self.tree_criterios_todos.tag_configure("pendiente", background="#fdecea",
+                                                 foreground=COLOR_ERROR)
+        self.tree_criterios_todos.tag_configure("declarado_corrida",
+                                                 background="#fef9e7",
+                                                 foreground=COLOR_AVISO)
+        self.tree_criterios_todos.tag_configure("resuelto", foreground=COLOR_OK)
+        self.tree_criterios_todos.bind("<<TreeviewSelect>>", self._al_seleccionar_criterio)
+
+        scroll_ct = ttk.Scrollbar(f_tabla, orient="vertical",
+                                   command=self.tree_criterios_todos.yview)
+        self.tree_criterios_todos.configure(yscroll=scroll_ct.set)
+        scroll_ct.grid(row=0, column=1, sticky="ns")
+
+        f_detalle = ttk.LabelFrame(p, text="Detalle del criterio seleccionado", padding=10)
+        f_detalle.grid(row=2, column=0, sticky="ew", padx=10, pady=(10, 0))
+        f_detalle.columnconfigure(0, weight=1)
+
+        self.txt_detalle_criterio = tk.Text(f_detalle, height=6, wrap="word",
+                                             font=("Consolas", 9))
+        self.txt_detalle_criterio.grid(row=0, column=0, sticky="ew")
+        self.txt_detalle_criterio.configure(state="disabled")
+
+        f_declarar = ttk.LabelFrame(p, text="Declarar valor para el criterio pendiente",
+                                     padding=10)
+        f_declarar.grid(row=3, column=0, sticky="ew", padx=10, pady=10)
+        f_declarar.columnconfigure(1, weight=1)
+
+        ttk.Label(f_declarar, text="Criterio:").grid(row=0, column=0, sticky="w", padx=(0, 6))
+        self.lbl_criterio_seleccionado = ttk.Label(f_declarar, text="(ninguno seleccionado)",
+                                                     style="Header.TLabel")
+        self.lbl_criterio_seleccionado.grid(row=0, column=1, sticky="w")
+
+        ttk.Label(f_declarar, text="Valor nuevo:").grid(row=1, column=0, sticky="w",
+                                                          padx=(0, 6), pady=6)
+        self.valor_declarado_var = tk.StringVar()
+        ent_val = ttk.Entry(f_declarar, textvariable=self.valor_declarado_var)
+        ent_val.grid(row=1, column=1, sticky="we", pady=6)
+        Tooltip(ent_val, "Numero (con punto decimal) o texto, segun lo que pida el\n"
+                         "criterio. Se intenta interpretar como numero; si no es\n"
+                         "posible, se guarda como texto tal cual se escribe.")
+
+        f_botones = ttk.Frame(f_declarar)
+        f_botones.grid(row=2, column=0, columnspan=2, sticky="w", pady=(4, 0))
+
+        self.btn_aplicar_corrida = tk.Button(
+            f_botones, text="Aplicar solo a esta corrida", font=("Segoe UI", 9, "bold"),
+            bg="#2e86c1", fg="white", relief="flat", cursor="hand2",
+            state="disabled", command=self._aplicar_valor_corrida)
+        self.btn_aplicar_corrida.pack(side="left", padx=(0, 8), ipadx=6, ipady=3)
+        Tooltip(self.btn_aplicar_corrida,
+                "El valor se usa en el proximo EJECUTAR PIPELINE, pero\n"
+                "criterios_adoptados.py NO se modifica.")
+
+        self.btn_quitar_declarado = tk.Button(
+            f_botones, text="Quitar declaracion de la corrida", font=("Segoe UI", 9),
+            relief="flat", cursor="hand2", state="disabled",
+            command=self._quitar_valor_corrida)
+        self.btn_quitar_declarado.pack(side="left", padx=8, ipadx=6, ipady=3)
+
+        self.btn_guardar_archivo = tk.Button(
+            f_botones, text="Guardar en archivo fuente (permanente)", font=("Segoe UI", 9, "bold"),
+            bg="#c0392b", fg="white", relief="flat", cursor="hand2",
+            state="disabled", command=self._guardar_valor_en_archivo)
+        self.btn_guardar_archivo.pack(side="left", padx=8, ipadx=6, ipady=3)
+        Tooltip(self.btn_guardar_archivo,
+                "Reescribe 'valor=None' por este valor DIRECTAMENTE en\n"
+                "criterios_adoptados.py. Pide confirmacion. Etiqueta,\n"
+                "justificacion y fuente no se tocan: revisalas a mano si\n"
+                "el criterio deja de ser [A]/pendiente.")
+
+        self.lbl_estado_criterio = ttk.Label(p, text="", style="Ayuda.TLabel",
+                                              wraplength=980, justify="left")
+        self.lbl_estado_criterio.grid(row=4, column=0, sticky="w", padx=10, pady=(0, 10))
+
+        self._clave_criterio_seleccionado = None
+        self._llenar_tabla_criterios()
+
+    def _estado_criterio(self, clave):
+        """(texto, tag) del estado de un criterio para la tabla y el detalle."""
+        c = ca.criterio(clave)
+        if clave in ca.valores_dinamicos():
+            return "declarado (corrida)", "declarado_corrida"
+        if c.valor is None:
+            return "PENDIENTE", "pendiente"
+        return "resuelto", "resuelto"
+
+    def _llenar_tabla_criterios(self):
+        for item in self.tree_criterios_todos.get_children():
+            self.tree_criterios_todos.delete(item)
+        overrides = ca.valores_dinamicos()
+        for clave in sorted(ca.CRITERIOS):
+            c = ca.criterio(clave)
+            valor_efectivo = overrides.get(clave, c.valor)
+            estado_txt, tag = self._estado_criterio(clave)
+            self.tree_criterios_todos.insert("", "end", iid=clave, values=(
+                clave, c.etiqueta, c.concepto,
+                "(sin declarar)" if valor_efectivo is None else repr(valor_efectivo),
+                estado_txt, c.fuente,
+            ), tags=(tag,))
+
+    def _al_seleccionar_criterio(self, _evt=None):
+        seleccion = self.tree_criterios_todos.selection()
+        self.txt_detalle_criterio.configure(state="normal")
+        self.txt_detalle_criterio.delete("1.0", "end")
+        if not seleccion:
+            self._clave_criterio_seleccionado = None
+            self.lbl_criterio_seleccionado.config(text="(ninguno seleccionado)")
+            self.btn_aplicar_corrida.config(state="disabled")
+            self.btn_quitar_declarado.config(state="disabled")
+            self.btn_guardar_archivo.config(state="disabled")
+            self.txt_detalle_criterio.configure(state="disabled")
+            return
+
+        clave = seleccion[0]
+        c = ca.criterio(clave)
+        self._clave_criterio_seleccionado = clave
+        self.lbl_criterio_seleccionado.config(text=clave)
+
+        lineas = [
+            f"Justificacion : {c.justificacion}",
+            f"Fuente        : {c.fuente}",
+        ]
+        if c.reemplazado_por:
+            lineas.append(f"Se sustituye por: {c.reemplazado_por}")
+        if c.sensibilidad:
+            lineas.append(f"Sensibilidad  : {c.sensibilidad}")
+        if c.verificacion_pendiente:
+            lineas.append(f">> VERIFICAR  : {c.verificacion_pendiente}")
+        self.txt_detalle_criterio.insert("1.0", "\n".join(lineas))
+        self.txt_detalle_criterio.configure(state="disabled")
+
+        overrides = ca.valores_dinamicos()
+        valor_actual = overrides.get(clave, c.valor)
+        self.valor_declarado_var.set("" if valor_actual is None else str(valor_actual))
+
+        puede_declarar = c.valor is None or clave in overrides
+        self.btn_aplicar_corrida.config(state="normal" if puede_declarar or c.valor is None else "disabled")
+        self.btn_quitar_declarado.config(state="normal" if clave in overrides else "disabled")
+        self.btn_guardar_archivo.config(state="normal")
+
+    def _interpretar_valor_declarado(self, texto):
+        texto = texto.strip()
+        if texto == "":
+            raise ValueError("El valor no puede quedar vacio.")
+        try:
+            return float(texto.replace(",", "."))
+        except ValueError:
+            return texto
+
+    def _aplicar_valor_corrida(self):
+        clave = self._clave_criterio_seleccionado
+        if not clave:
+            return
+        try:
+            valor_nuevo = self._interpretar_valor_declarado(self.valor_declarado_var.get())
+        except ValueError as exc:
+            self.lbl_estado_criterio.config(text=f"Error: {exc}", foreground=COLOR_ERROR)
+            return
+        ca.establecer_valor_dinamico(clave, valor_nuevo)
+        self.lbl_estado_criterio.config(
+            text=f"'{clave}' declarado a {valor_nuevo!r} SOLO para la proxima corrida. "
+                 "criterios_adoptados.py no se modifico.",
+            foreground=COLOR_AVISO)
+        self._llenar_tabla_criterios()
+        self.tree_criterios_todos.selection_set(clave)
+
+    def _quitar_valor_corrida(self):
+        clave = self._clave_criterio_seleccionado
+        if not clave:
+            return
+        ca.quitar_valor_dinamico(clave)
+        self.lbl_estado_criterio.config(
+            text=f"Se quito la declaracion de '{clave}': vuelve a bloquear el calculo.",
+            foreground=COLOR_AVISO)
+        self._llenar_tabla_criterios()
+        self.tree_criterios_todos.selection_set(clave)
+
+    def _guardar_valor_en_archivo(self):
+        clave = self._clave_criterio_seleccionado
+        if not clave:
+            return
+        try:
+            valor_nuevo = self._interpretar_valor_declarado(self.valor_declarado_var.get())
+        except ValueError as exc:
+            self.lbl_estado_criterio.config(text=f"Error: {exc}", foreground=COLOR_ERROR)
+            return
+
+        confirmado = messagebox.askyesno(
+            "Confirmar escritura permanente",
+            f"Esto reescribe 'valor=' de '{clave}' en criterios_adoptados.py "
+            f"con el valor {valor_nuevo!r}.\n\n"
+            "Es un cambio PERMANENTE al archivo fuente del proyecto, no solo "
+            "a esta corrida. Etiqueta, justificacion y fuente del criterio "
+            "no se actualizan solos: revisalas a mano si corresponde.\n\n"
+            "¿Confirma que quiere escribir el archivo?",
+            icon="warning",
+        )
+        if not confirmado:
+            return
+        try:
+            ca.escribir_valor_en_archivo(clave, valor_nuevo)
+        except (KeyError, ValueError, OSError) as exc:
+            messagebox.showerror("No se pudo escribir el archivo", str(exc))
+            return
+        self.lbl_estado_criterio.config(
+            text=f"'{clave}' = {valor_nuevo!r} escrito en criterios_adoptados.py.",
+            foreground=COLOR_OK)
+        self._llenar_tabla_criterios()
+        self.tree_criterios_todos.selection_set(clave)
+
+    # -------------------------- Pestana 3 -----------------------------
     def _construir_tab_puntos(self, p):
         p.columnconfigure(0, weight=1)
         p.rowconfigure(0, weight=1)
@@ -365,7 +616,7 @@ class ExpedienteApp:
                 self.txt_detalle.insert("1.0", "\n".join(cli._lineas_punto(informe_punto)))
         self.txt_detalle.configure(state="disabled")
 
-    # -------------------------- Pestana 3 -----------------------------
+    # -------------------------- Pestana 4 -----------------------------
     def _construir_tab_resumen(self, p):
         ttk.Label(p, text="Estado del expediente", style="Header.TLabel").pack(anchor="w")
 

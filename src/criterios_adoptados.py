@@ -27,7 +27,8 @@ Etiquetas
     A    Sin norma ni fuente unica. Adopcion declarada + sensibilidad obligatoria
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Any, Optional, Tuple, Dict, List, Set
 
 from modelos import CriterioPendienteError
@@ -51,6 +52,41 @@ class Criterio:
 
 _USADOS: Set[str] = set()
 
+# ---------------------------------------------------------------------------
+# Declaracion en caliente (solo para la corrida actual)
+# ---------------------------------------------------------------------------
+# La GUI (pestana "Criterios") permite declarar un valor para un criterio con
+# valor=None SIN tocar este archivo. El override vive solo en memoria de
+# proceso: se pierde al cerrar la GUI y nunca se confunde con un valor [N]/[C]
+# transcrito de una norma. Reescribir este archivo es una accion aparte,
+# explicita, ver `escribir_valor_en_archivo`.
+_OVERRIDES: Dict[str, Any] = {}
+
+
+def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
+    """Declara, solo para esta corrida, el valor de un criterio pendiente."""
+    if clave not in CRITERIOS:
+        raise KeyError(
+            f"'{clave}' no esta declarado en criterios_adoptados.py. "
+            "Ningun parametro no normativo puede usarse sin declararse aqui."
+        )
+    _OVERRIDES[clave] = valor_nuevo
+
+
+def quitar_valor_dinamico(clave: str) -> None:
+    """Retira la declaracion en caliente de un criterio (vuelve a bloquear)."""
+    _OVERRIDES.pop(clave, None)
+
+
+def limpiar_valores_dinamicos() -> None:
+    """Retira todas las declaraciones en caliente de la corrida."""
+    _OVERRIDES.clear()
+
+
+def valores_dinamicos() -> Dict[str, Any]:
+    """Claves declaradas en caliente en esta corrida, sin registrar uso."""
+    return dict(_OVERRIDES)
+
 
 def valor(clave: str) -> Any:
     """Devuelve el valor del criterio y registra que fue usado."""
@@ -60,6 +96,8 @@ def valor(clave: str) -> Any:
             "Ningun parametro no normativo puede usarse sin declararse aqui."
         )
     _USADOS.add(clave)
+    if clave in _OVERRIDES:
+        return _OVERRIDES[clave]
     c = CRITERIOS[clave]
     if c.valor is None:
         # Detiene el calculo. NUNCA se devuelve un default silencioso: la GUI
@@ -75,11 +113,55 @@ def criterio(clave: str) -> Criterio:
 
 def criterios_sin_valor() -> List[str]:
     """
-    Claves cuyo valor es None: vacios que detienen el calculo si se invocan.
-    M11 los imprime en bloque aparte (Sec. 0.7) y la GUI los usa para avisar
-    antes de correr, no despues de la excepcion.
+    Claves cuyo valor es None y sin declaracion en caliente: vacios que
+    detienen el calculo si se invocan. M11 los imprime en bloque aparte
+    (Sec. 0.7) y la GUI los usa para avisar antes de correr, no despues de
+    la excepcion.
     """
-    return sorted(k for k, c in CRITERIOS.items() if c.valor is None)
+    return sorted(
+        k for k, c in CRITERIOS.items()
+        if c.valor is None and k not in _OVERRIDES
+    )
+
+
+def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
+                              ruta: Optional[str] = None) -> None:
+    """
+    Reescribe, EN EL ARCHIVO FUENTE, el ``valor=None`` del criterio `clave`
+    por `valor_nuevo`. Accion permanente y distinta de
+    `establecer_valor_dinamico`: se usa solo cuando el usuario confirma de
+    forma explicita que quiere dejar de tratar el criterio como pendiente
+    (la GUI pide confirmacion aparte antes de llamarla). No toca ningun otro
+    campo del Criterio (etiqueta, justificacion, fuente, sensibilidad): esos
+    se revisan y editan a mano, porque describen POR QUE se adopto el valor.
+    """
+    import re
+
+    if clave not in CRITERIOS:
+        raise KeyError(f"'{clave}' no esta declarado en criterios_adoptados.py.")
+
+    ruta_archivo = ruta or __file__
+    texto = Path(ruta_archivo).read_text(encoding="utf-8")
+
+    patron = re.compile(
+        r'("' + re.escape(clave) + r'":\s*Criterio\(\s*\n\s*valor=)([^,\n]*)(,)'
+    )
+    texto_nuevo, n = patron.subn(
+        lambda m: m.group(1) + repr(valor_nuevo) + m.group(3), texto, count=1,
+    )
+    if n == 0:
+        raise ValueError(
+            f"No se encontro el bloque 'valor=' de '{clave}' en {ruta_archivo}. "
+            "No se modifico el archivo."
+        )
+    Path(ruta_archivo).write_text(texto_nuevo, encoding="utf-8")
+
+    # El archivo ya quedo escrito; se refleja tambien en memoria para que el
+    # resto de esta sesion (GUI o CLI en curso) vea el valor definitivo sin
+    # tener que reiniciar el proceso, y se retira el override en caliente:
+    # ya no hace falta, el valor "real" es ahora este.
+    CRITERIOS[clave] = replace(CRITERIOS[clave], valor=valor_nuevo)
+    _OVERRIDES.pop(clave, None)
 
 
 def criterios_usados() -> List[str]:
@@ -1054,7 +1136,9 @@ def reporte_criterios(solo_usados: bool = True) -> str:
 
     for k in claves:
         c = CRITERIOS[k]
-        out.append(f"[{c.etiqueta}] {k} = {c.valor!r}")
+        valor_efectivo = _OVERRIDES.get(k, c.valor)
+        marca_override = "  [declarado para esta corrida, no en archivo]" if k in _OVERRIDES else ""
+        out.append(f"[{c.etiqueta}] {k} = {valor_efectivo!r}{marca_override}")
         out.append(f"     Concepto      : {c.concepto}")
         out.append(f"     Justificacion : {c.justificacion}")
         out.append(f"     Fuente        : {c.fuente}")
