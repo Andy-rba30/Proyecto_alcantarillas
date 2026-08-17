@@ -10,15 +10,21 @@ M5 contra las nueve verificaciones de la tabla de Fase 5:
     V4              resguardo de Sec. 5.1 leido desde 'resguardo_HW_subrasante'
                     (criterio_aplicado debe apuntar a ese criterio, cuya
                     etiqueta es [N->], no [N]).
-    V5, V7, V8      CriterioPendienteError: la hoja de ruta no entrega
-                    formula/metodo/dato, y los tres criterios nuevos
-                    ('remanso_derecho_via', 'flotacion_conducto',
-                    'TR_evento_extremo') se declaran vacios a proposito.
+    V5, V8          CriterioPendienteError: la hoja de ruta no entrega
+                    formula/metodo/dato, y los dos criterios nuevos
+                    ('remanso_derecho_via', 'TR_evento_extremo') se declaran
+                    vacios a proposito.
+    V7              Fase 8 SI entrega formula (ΣW >= FS*U): se calcula
+                    completo cuando 'peso_especifico_relleno_kn_m3' y
+                    'FS_flotacion' estan declarados, y se detiene en el
+                    primero de los dos que falte.
     V6              cumple por construccion: M2/MD no ofrecen diseño
                     multibarril.
     verificar()     el agregado con la firma de MD.Verificador: se detiene
                     en la primera pendiente, en el orden de la tabla.
 """
+
+import math
 
 import pytest
 
@@ -220,12 +226,58 @@ def test_v5_lanza_pendiente_por_falta_de_metodo_y_dato():
     assert excinfo.value.clave == "remanso_derecho_via"
 
 
-def test_v7_lanza_pendiente_por_falta_de_procedimiento(concreto):
+def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
+    """
+    Con 'peso_especifico_relleno_kn_m3' vacio, V7 se detiene ahi -- antes de
+    llegar a 'FS_flotacion' -- porque el peso del relleno se arma antes que
+    el umbral en `v7_flotacion`.
+    """
     punto = _punto()
     with pytest.raises(CriterioPendienteError) as excinfo:
         v7_flotacion(punto=punto, material=concreto, D=0.90,
                      resultado=_resultado())
-    assert excinfo.value.clave == "flotacion_conducto"
+    assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
+
+
+def test_v7_lanza_pendiente_por_falta_de_FS_con_peso_ya_declarado(concreto,
+                                                                   monkeypatch):
+    """Con el peso del relleno declarado, el siguiente vacio es 'FS_flotacion'."""
+    original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
+    monkeypatch.setitem(
+        ca.CRITERIOS, "peso_especifico_relleno_kn_m3",
+        original.__class__(**{**original.__dict__, "valor": 18.0}),
+    )
+    punto = _punto()
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        v7_flotacion(punto=punto, material=concreto, D=0.90,
+                     resultado=_resultado())
+    assert excinfo.value.clave == "FS_flotacion"
+
+
+def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
+                                                                monkeypatch):
+    """
+    cota_terreno=42.10 (= cota de entrada supuesta), D=0.90 -> clave=43.00.
+    cota_subrasante=44.05 -> altura_relleno = 1.05 m.
+    U = 9.81 * (pi/4) * 0.90^2 = 6.2417... kN/m
+    W = 18.0 * 0.90 * 1.05 = 17.01 kN/m
+    FS = 1.5 -> FS*U = 9.3626... kN/m -> W >= FS*U: cumple.
+    """
+    for clave, val in (("peso_especifico_relleno_kn_m3", 18.0),
+                       ("FS_flotacion", 1.5)):
+        original = ca.CRITERIOS[clave]
+        monkeypatch.setitem(
+            ca.CRITERIOS, clave,
+            original.__class__(**{**original.__dict__, "valor": val}),
+        )
+    punto = _punto()
+    v = v7_flotacion(punto=punto, material=concreto, D=0.90,
+                     resultado=_resultado())
+    assert v.codigo == "V7"
+    assert v.criterio_aplicado == "FS_flotacion"
+    assert v.valor_obtenido == pytest.approx(17.01, abs=1e-6)
+    assert v.valor_admisible == pytest.approx(1.5 * 9.81 * (math.pi / 4) * 0.90 ** 2, abs=1e-6)
+    assert v.cumple
 
 
 def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
@@ -235,9 +287,9 @@ def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
     assert excinfo.value.clave == "TR_evento_extremo"
 
 
-def test_los_tres_criterios_nuevos_estan_declarados_vacios():
-    for clave in ("remanso_derecho_via", "flotacion_conducto",
-                 "TR_evento_extremo"):
+def test_los_criterios_nuevos_estan_declarados_vacios():
+    for clave in ("remanso_derecho_via", "peso_especifico_relleno_kn_m3",
+                 "FS_flotacion", "TR_evento_extremo"):
         assert clave in ca.criterios_sin_valor()
 
 

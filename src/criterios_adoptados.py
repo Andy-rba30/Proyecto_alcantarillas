@@ -400,6 +400,12 @@ CRITERIOS: Dict[str, Criterio] = {
     # pero no entregan la formula ni el dato con que M5 pueda evaluarlo.
     # Cada uno se detiene aqui, no en M5, para que quede escrito por que
     # falta y que lo resolveria -- nunca un valor supuesto en silencio.
+    #
+    # V7 ya NO es de esta clase: Fase 8 (M8_estructural.py) implementa el
+    # procedimiento completo de ΣW >= FS*U. Lo que sigue faltando son dos
+    # datos puntuales del procedimiento -- 'FS_flotacion' y
+    # 'peso_especifico_relleno_kn_m3', mas abajo en la seccion de Fase 8 --
+    # no la formula ni el metodo, que ya estan escritos.
 
     "remanso_derecho_via": Criterio(
         valor=None,                 # VACIO: bloquea V5 para todo punto
@@ -423,33 +429,6 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Definir si el ancho de derecho de via es un "
                                "dato por punto (nueva columna del CSV) o un "
                                "criterio unico del tramo",
-    ),
-
-    "flotacion_conducto": Criterio(
-        valor=None,                 # VACIO: bloquea V7 para todo punto
-        etiqueta="C",               # Anexo A: "Definicion [N] + procedimiento [C]"
-        concepto="Factor de seguridad y procedimiento de subpresion para V7 "
-                 "(flotacion del conducto vacio, NF en su cota mas alta): "
-                 "peso propio del conducto, peso del relleno sobre la clave "
-                 "y empuje de flotacion U",
-        justificacion="El Manual de Puentes define la subpresion (num. "
-                      "2.4.3.8.2, pag. 113) pero no incorpora AASHTO LRFD "
-                      "Sec. 12, que es de donde sale el procedimiento "
-                      "completo (peso propio por norma de producto, peso del "
-                      "relleno con la altura que fije el tamizado de 7.A, y "
-                      "el FS de flotacion). Nada de eso esta resuelto todavia "
-                      "en el script: el peso propio depende de la Fase 8 "
-                      "(sin programar) y la altura de relleno depende de "
-                      "7.A (sin programar). V7 no tiene con que calcular",
-        fuente="PENDIENTE - Manual de Puentes num. 2.4.3.8.2 (definicion) + "
-               "AASHTO LRFD Sec. 12 (procedimiento, no incorporado por el "
-               "Manual de Puentes)",
-        reemplazado_por="Fase 7.A (altura de relleno) y Fase 8 (peso propio "
-                        "por norma de producto) resueltas, mas el FS de "
-                        "flotacion adoptado",
-        verificacion_pendiente="Documentar de donde sale el FS de flotacion "
-                               "si no lo fija AASHTO LRFD Sec. 12 explicito "
-                               "para conductos enterrados",
     ),
 
     "TR_evento_extremo": Criterio(
@@ -562,6 +541,111 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Nota constructiva [N] que si es firme: el equipo "
                                "pesado no circula sobre el conducto antes de que "
                                "el relleno alcance 0.30 m (Sec. 7.A)",
+    ),
+
+    # ----------------------- FASE 8: ESTRUCTURAL DEL CONDUCTO -------------
+    # Seleccion de clase/calibre por norma de producto (items 1-2) y V7 -
+    # flotacion (item 3). El resto de Fase 8 (item 5: rigidez de anillo,
+    # pandeo, costura) NO se calcula por decision expresa de la hoja de
+    # ruta -- se difiere al expediente tecnico, ver
+    # M8_estructural.verificacion_diferida_estructural().
+
+    "NF_profundidad_m": Criterio(
+        valor=1.4,
+        etiqueta="N",
+        concepto="Profundidad del nivel freatico (NF) bajo el terreno "
+                 "natural, llanura del Bajo Piura",
+        justificacion="Dato de caracterizacion geotecnica del sitio, citado "
+                      "de forma consistente en Sec. 0.5 (clasificacion "
+                      "sismica Clase de Sitio F por licuefaccion), Sec. 3.3 "
+                      "(agresividad quimica, Art. 7.7.5.1) y Fase 8/9 "
+                      "(flotacion V7, subpresion del cabezal). No es una "
+                      "eleccion de proyecto: es la lectura de campo que ya "
+                      "sostiene la clasificacion sismica adoptada en "
+                      "'clase_sitio'. V7 lo usa como fundamento de la "
+                      "hipotesis de calculo mas desfavorable ('tuberia "
+                      "vacia, NF en su cota mas alta' -- Fase 5, fila V7): "
+                      "con el NF somero, se asume sumersion completa del "
+                      "conducto en vez de calcular la fraccion de seccion "
+                      "sumergida contra una cota de invert real que el CSV "
+                      "no trae (misma limitacion que 'cota_entrada_supuesta' "
+                      "de M5). Es del lado seguro: nunca subestima el "
+                      "empuje de flotacion",
+        fuente="Manual de Suelos MTC / caracterizacion geotecnica del sitio "
+              "(Sec. 0.5, num. 105; Fase 8, num. 545; Fase 9, num. 582 de "
+              "la hoja de ruta)",
+        verificacion_pendiente="Confirmar contra el estudio geotecnico "
+                               "especifico del expediente si el NF es unico "
+                               "para todo el tramo o varia punto a punto",
+    ),
+
+    "clases_producto_por_relleno": Criterio(
+        valor=None,                 # VACIO: bloquea la seleccion de Fase 8, items 1-2
+        etiqueta="C",
+        concepto="Tabla de clase (concreto, AASHTO M-170M I-V) o calibre "
+                 "(TMC, ASTM A-807/AASHTO M36) admisible segun la altura de "
+                 "relleno sobre la clave, para Fase 8 items 1-2: seleccionar "
+                 "la clase/calibre por altura real y verificar que esa "
+                 "altura cae en el rango admisible de la clase elegida",
+        justificacion="Ninguna de las dos tablas (AASHTO M-170M clases I-V "
+                      "por diametro y altura de relleno; ASTM A-807/AASHTO "
+                      "M36 calibre por altura) esta transcrita en la hoja de "
+                      "ruta -- es el MISMO vacio de norma de producto ya "
+                      "declarado en 'h_relleno_min_concreto_tmc' (Sec. 7.A), "
+                      "pero alli solo hacia falta un minimo escalar y aqui "
+                      "hace falta la tabla completa de clases con su rango "
+                      "admisible. HDPE (AASHTO M294) no tiene tabla de clase "
+                      "por altura: su seleccion depende de un calculo de "
+                      "rigidez de anillo que Fase 8, item 5, difiere "
+                      "expresamente al expediente tecnico",
+        fuente="PENDIENTE - AASHTO M-170M (clases I-V, concreto); "
+              "ASTM A-807 / AASHTO M36 (calibre por altura, TMC). Falta "
+              "EXTRAER la tabla completa (clase o calibre x diametro x "
+              "rango de altura de relleno)",
+        reemplazado_por="Tabla de clase/calibre por altura de relleno de la "
+                        "norma de producto, extraida y transcrita con su "
+                        "numeral",
+    ),
+
+    "FS_flotacion": Criterio(
+        valor=None,                 # VACIO: bloquea V7 para todo punto
+        etiqueta="C",               # Anexo A: "Definicion [N] + procedimiento [C]"
+        concepto="Factor de seguridad de V7 (flotacion del conducto), "
+                 "ΣW >= FS * U",
+        justificacion="El Manual de Puentes define la subpresion (num. "
+                      "2.4.3.8.2, pag. 113) pero remite el procedimiento "
+                      "completo a AASHTO LRFD Sec. 12, que el Manual de "
+                      "Puentes no incorpora (Fase 8, item 5). El FS de "
+                      "flotacion para conductos enterrados no esta "
+                      "transcrito en la hoja de ruta",
+        fuente="PENDIENTE - AASHTO LRFD Sec. 12 / practica tecnica "
+              "reconocida (FHWA) para flotacion de conductos enterrados",
+        reemplazado_por="FS extraido de AASHTO LRFD Sec. 12 o de la "
+                        "practica tecnica reconocida, declarado con su "
+                        "fuente en la memoria",
+    ),
+
+    "peso_especifico_relleno_kn_m3": Criterio(
+        valor=None,                 # VACIO: bloquea el termino Sigma W de V7
+        etiqueta="A",
+        concepto="Peso especifico del material de relleno sobre la clave, "
+                 "para el termino ΣW de V7 (peso del prisma de relleno que "
+                 "se opone a la flotacion)",
+        justificacion="Ni la hoja de ruta ni el CSV (Sec. 1.2) traen el "
+                      "peso especifico del material de relleno: depende de "
+                      "la cantera que finalmente se especifique. V7 lo "
+                      "necesita para pesar el prisma de relleno sobre la "
+                      "clave (ancho D, altura la del punto -- ver "
+                      "M8_estructural.peso_relleno_kn_m). El peso propio del "
+                      "conducto NO se suma: omitirlo es conservador (reduce "
+                      "ΣW) y evita depender del espesor de pared que "
+                      "'clases_producto_por_relleno' todavia no resuelve",
+        fuente="PENDIENTE - ensayo de peso especifico del material de "
+              "cantera propuesto, o valor de practica corriente declarado "
+              "con su fuente en la memoria",
+        reemplazado_por="Peso especifico medido del material de relleno "
+                        "efectivamente especificado en el proyecto",
+        sensibilidad=(17.0, 20.0),   # kN/m3, rango corriente de rellenos compactados
     ),
 
     # ----------------------- FASE 7: COMPATIBILIDAD GEOMETRICA ------------

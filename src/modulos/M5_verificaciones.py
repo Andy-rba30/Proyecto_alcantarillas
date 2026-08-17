@@ -13,30 +13,39 @@ que declara su Protocol `Verificador`.
     V4  Carga a la entrada HW     HW <= cota subrasante - resguardo(CBR)  [N->]
     V5  Remanso aguas arriba      sin metodo declarado -> pendiente       [A]
     V6  Material solido de arrastre  seccion unica (cumple por construccion)
-    V7  Flotacion del conducto    sin procedimiento declarado -> pendiente [C]
+    V7  Flotacion del conducto    ΣW >= FS*U (Fase 8, M8_estructural);
+                                  pendiente en 'FS_flotacion' o
+                                  'peso_especifico_relleno_kn_m3'          [C]/[A]
     V8  Evento extremo (FEN)      sin TR mayor ni umbral -> pendiente      [A]
     V9  Disponibilidad de diametro  D <= tope de M2                        [C]
 
 Lo que NO se rellena en silencio
 ---------------------------------
-V5, V7 y V8 enuncian un REQUISITO en la hoja de ruta pero no entregan la
-formula, el metodo o el dato con que evaluarlo (ver el detalle en cada
-funcion). Rellenarlos con un supuesto no declarado es exactamente lo que
-CLAUDE.md prohibe como "el peor error posible en este proyecto": cada uno se
-detiene con `CriterioPendienteError` desde un criterio nuevo en
-`criterios_adoptados.py` ('remanso_derecho_via', 'flotacion_conducto',
-'TR_evento_extremo'), con su justificacion y lo que falta para resolverlo. En
-cuanto alguno de los tres reciba valor Y metodo, esta funcion se amplia --
-hoy no hay ecuacion que escribir.
+V5 y V8 enuncian un REQUISITO en la hoja de ruta pero no entregan la formula,
+el metodo o el dato con que evaluarlo (ver el detalle en cada funcion).
+Rellenarlos con un supuesto no declarado es exactamente lo que CLAUDE.md
+prohibe como "el peor error posible en este proyecto": cada uno se detiene
+con `CriterioPendienteError` desde un criterio nuevo en
+`criterios_adoptados.py` ('remanso_derecho_via', 'TR_evento_extremo'), con su
+justificacion y lo que falta para resolverlo.
 
-Consecuencia practica: mientras esos tres criterios sigan vacios,
-`verificar()` (y por lo tanto `MD.disenar_punto` / `MD.disenar_lote`) se
-detiene con `CriterioPendienteError` para CUALQUIER punto. No es un defecto
-de este modulo: es la misma regla que ya aplica a 'TW_receptor' o
-'v_max_tmc' -- un vacio real bloquea el calculo, no lo esconde. Las nueve
-funciones individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI
-son utilizables una por una hoy mismo; es el AGREGADO el que hereda el
-bloqueo de las tres pendientes.
+V7 SI tiene formula y metodo -- Fase 8, item 3 de la hoja de ruta, y
+`modulos.M8_estructural` la implementa completa (ΣW >= FS*U, "tuberia vacia,
+NF en su cota mas alta"). Lo que sigue pendiente son dos DATOS puntuales del
+procedimiento, no el procedimiento: el peso especifico del relleno
+('peso_especifico_relleno_kn_m3') y el factor de seguridad
+('FS_flotacion'), ninguno de los dos transcrito en la hoja de ruta. Ver el
+docstring de `v7_flotacion` mas abajo.
+
+Consecuencia practica: mientras 'remanso_derecho_via', 'TR_evento_extremo' y
+los dos criterios de V7 sigan vacios, `verificar()` (y por lo tanto
+`MD.disenar_punto` / `MD.disenar_lote`) se detiene con
+`CriterioPendienteError` para CUALQUIER punto. No es un defecto de este
+modulo: es la misma regla que ya aplica a 'TW_receptor' o 'v_max_tmc' -- un
+vacio real bloquea el calculo, no lo esconde. Las nueve funciones
+individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI son
+utilizables una por una hoy mismo; es el AGREGADO el que hereda el bloqueo de
+las pendientes.
 
 V4 -- el supuesto de la cota de entrada (declarar en la memoria)
 -------------------------------------------------------------------
@@ -63,9 +72,13 @@ Excepciones
 -----------
     CriterioPendienteError   V3 en TMC/HDPE ('v_max_tmc' / 'v_max_hdpe');
                              V5 ('remanso_derecho_via'); V7
-                             ('flotacion_conducto'); V8 ('TR_evento_extremo').
+                             ('peso_especifico_relleno_kn_m3' o
+                             'FS_flotacion'); V8 ('TR_evento_extremo').
     DatoInvalidoError        el 'material' de V3 no es de TipoMaterial (no
-                             deberia llegar aqui: M2 ya lo valido antes).
+                             deberia llegar aqui: M2 ya lo valido antes); en
+                             V7, la clave del conducto queda a nivel de la
+                             subrasante o por encima (no hay relleno que
+                             pesar).
 
 Uso
 ---
@@ -82,8 +95,12 @@ from typing import Tuple
 import criterios_adoptados as ca
 from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
-from modelos import Material, PuntoCritico, ResultadoHidraulico, Verificacion
+from modelos import (DatoInvalidoError, Material, PuntoCritico,
+                     ResultadoHidraulico, Verificacion)
 from modulos.M2_material import CRITERIO_DIAMETROS, CRITERIO_V_MAX
+from modulos.M8_estructural import (CRITERIO_FS_FLOTACION,
+                                    empuje_flotacion_kn_m, fs_flotacion,
+                                    peso_relleno_kn_m)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_V1 = "4.1.1.3.7 b)"
@@ -92,13 +109,12 @@ NUMERAL_V3 = "Tabla Nº 10 (num. 4.1.1.3.6)"
 NUMERAL_V4 = "5.1 (Manual de Suelos, num. 4.5.4 y 9.1(3))"
 NUMERAL_V5 = "Fase 5, V5 (DG-2018 + Ley 29338)"
 NUMERAL_V6 = "3.1"
-NUMERAL_V7 = "Fase 5, V7 (Manual de Puentes num. 2.4.3.8.2)"
+NUMERAL_V7 = "Fase 5, V7 (Manual de Puentes num. 2.4.3.8.2 + Fase 8, item 3)"
 NUMERAL_V8 = "Fase 5, V8"
 NUMERAL_V9 = "Sec. 3.2 (V9, nuevo en v7)"
 
 CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
-CRITERIO_FLOTACION = "flotacion_conducto"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
 
 
@@ -303,21 +319,55 @@ def v6_material_solido_arrastre() -> Verificacion:
 
 
 # ---------------------------------------------------------------------------
-# V7 - Flotacion del conducto (Manual de Puentes num. 2.4.3.8.2)
+# V7 - Flotacion del conducto (Manual de Puentes num. 2.4.3.8.2 + Fase 8.3)
 # ---------------------------------------------------------------------------
 
 def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
                  resultado: ResultadoHidraulico) -> Verificacion:
     """
-    Sigma W (peso propio + relleno) >= FS * U, tuberia vacia, NF en su cota
-    mas alta. El Manual de Puentes define la subpresion pero no incorpora
-    AASHTO LRFD Sec. 12 (de donde sale el procedimiento): faltan el peso
-    propio del conducto (Fase 8, sin programar), la altura de relleno sobre
-    la clave (Fase 7.A, sin programar) y el FS de flotacion, ninguno
-    declarado. Se detiene en el criterio 'flotacion_conducto'.
+    ΣW (peso del relleno sobre la clave) >= FS * U (empuje de flotacion),
+    tuberia vacia, NF en su cota mas alta (Fase 5, fila V7). El procedimiento
+    esta completo en `modulos.M8_estructural` (Fase 8, item 3); esta funcion
+    solo arma la altura de relleno del punto y ensambla el resultado.
+
+    La altura de relleno sobre la clave es la REAL del punto -- cota de
+    subrasante menos la cota de la clave -- no el minimo normativo de Sec.
+    7.A ('h_relleno_min_concreto_tmc', que sigue sin valor para concreto y
+    TMC): V7 pesa el relleno que de verdad hay encima, no un piso admisible.
+    Usa la misma cota de entrada supuesta que V4 y M7 (`cota_entrada_supuesta`),
+    para no evaluar la flotacion contra una referencia distinta de la que fija
+    la rasante.
+
+    NO suma el peso propio del conducto (ver "Por que el peso propio del
+    conducto no entra en V7" en el docstring de M8_estructural): omitirlo es
+    conservador, reduce ΣW en vez de inflarlo.
+
+    Se detiene en 'peso_especifico_relleno_kn_m3' (el termino de peso) o en
+    'FS_flotacion' (el umbral), los dos vacios que le faltan al procedimiento
+    -- no en un vacio de METODO como antes: ver el docstring del modulo.
     """
-    ca.valor(CRITERIO_FLOTACION)      # CriterioPendienteError: sin procedimiento
-    raise AssertionError("inalcanzable mientras 'flotacion_conducto' este vacio")
+    clave = cota_entrada_supuesta(punto) + D
+    altura_relleno = punto.cota_subrasante - clave
+    if altura_relleno <= TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            "cota_subrasante", valor=punto.cota_subrasante, id_punto=punto.id,
+            motivo="la clave del conducto queda a nivel de la subrasante o "
+                   "por encima: no hay relleno sobre la clave que pesar "
+                   f"en V7 ({NUMERAL_V7})",
+        )
+
+    U = empuje_flotacion_kn_m(D=D)
+    W = peso_relleno_kn_m(D=D, altura_relleno=altura_relleno)
+    FS = fs_flotacion()      # CriterioPendienteError si 'W' no se detuvo antes
+
+    return Verificacion(
+        cumple=W >= FS * U - TOL_UMBRAL_NORMATIVO,
+        numeral=NUMERAL_V7,
+        valor_obtenido=W,
+        valor_admisible=FS * U,
+        criterio_aplicado=CRITERIO_FS_FLOTACION,
+        codigo="V7",
+    )
 
 
 # ---------------------------------------------------------------------------

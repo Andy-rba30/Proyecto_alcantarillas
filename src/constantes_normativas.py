@@ -32,6 +32,7 @@ Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b)
 V_MIN = 0.25                        # m/s (4.1.1.3.6)
 LAUSHEY_K = 3.1                     # d50 = V^2/(3.1*g), metrico (4.1.1.3.7 c)
 G = 9.8                             # m/s2
+GAMMA_AGUA_KN_M3 = 9.81             # kN/m3; constante fisica, subpresion (num. 2.4.3.8.2)
 
 RIESGO_ADMISIBLE = {                # Tabla N 02, num. 3.6
     "quebrada_importante": {"R": 0.30, "n": 25},   # -> TR = 71 anios
@@ -113,6 +114,41 @@ H_RELLENO_MIN = {
 SUBSECCION = {"concreto_simple": "505", "concreto_reforzado": "506",
               "tmc": "507", "hdpe": "508"}
 SECCION_CABEZALES = "503"           # concreto estructural (+504 acero)
+
+# ================= EG-2013, Seccion 500 - 8.1 Cama y relleno lateral =======
+# Tabla literal de Fase 8, num. 8.1. Solo texto (cama, sujecion, numeral): no
+# es una verificacion con umbral, es la ficha por material para memoria y
+# planos (Sec. 11, entregable 7). Los porcentajes y fracciones de diametro
+# viajan como parte del texto normativo citado, no como numeros a comparar.
+CAMA_RELLENO_LATERAL = {
+    "concreto_simple": {
+        "cama_apoyo": "Concreto Clase F (f'c = 14 MPa), >= 15 cm",
+        "sujecion_relleno_lateral": "Clase F hasta >= 1/4 del diametro "
+                                    "exterior. Relleno Sec. 502 >= 95% MDS",
+        "numeral": "505.03/.07/.10/.11, pags. 950-951",
+    },
+    "concreto_reforzado": {
+        "cama_apoyo": "Subbase granular (Sec. 402) >= 15 cm, >= 95% MDS",
+        "sujecion_relleno_lateral": "Subbase hasta >= 1/6 del diametro "
+                                    "exterior. Relleno Sec. 502",
+        "numeral": "506.03/.07/.10/.11, pags. 959-960",
+    },
+    "tmc": {
+        "cama_apoyo": "Subbase granular >= 15 cm, >= 95% MDS, con arena "
+                      "suelta de 12 mm",
+        "sujecion_relleno_lateral": "Capas de 15-20 cm: >= 90% en base y "
+                                    "cuerpo, >= 95% en corona",
+        "numeral": "507.06/.07/.08, pag. 970",
+    },
+    "hdpe": {
+        "cama_apoyo": "Arena gruesa, capas de 15 cm, espesor 15-30 cm "
+                      "(30 cm en roca o suelo blando)",
+        "sujecion_relleno_lateral": "Capas alternadas y simetricas de "
+                                    "15 cm a > 95%; los 30 cm superiores a "
+                                    ">= 100%. Prohibida la anegacion",
+        "numeral": "508.05/.07, pags. 981-982",
+    },
+}
 
 # ================= Manual de Puentes (RD 041-2016-MTC/14) ==================
 SOBRECARGA_TRASDOS_H_EQ = 0.60      # m de relleno equivalente (2.1.4.3.9)

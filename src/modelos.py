@@ -568,6 +568,20 @@ class ProteccionSalida:
 
 
 @dataclass(frozen=True)
+class CamaApoyoRelleno:
+    """
+    Fila de la tabla 8.1 (EG-2013 Seccion 500) para un material: cama de
+    apoyo y sujecion / relleno lateral, con su numeral. Es informacion para
+    la memoria y los planos (Sec. 11, entregable 7), no una verificacion con
+    umbral: el CSV no trae una columna de compactacion realmente lograda
+    contra la que comparar.
+    """
+    cama_apoyo: str
+    sujecion_relleno_lateral: str
+    numeral: str
+
+
+@dataclass(frozen=True)
 class Verificacion:
     """
     Resultado de una verificacion de la Fase 5. Nunca se devuelve un bool
