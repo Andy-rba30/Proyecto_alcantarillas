@@ -564,6 +564,47 @@ CRITERIOS: Dict[str, Criterio] = {
                                "el relleno alcance 0.30 m (Sec. 7.A)",
     ),
 
+    # ----------------------- FASE 7: COMPATIBILIDAD GEOMETRICA ------------
+    # 7.A queda resuelto con lo ya declarado (h_relleno_min_concreto_tmc para
+    # el recubrimiento y resguardo_HW_subrasante para la carga a la entrada).
+    # Lo que 7.B abre es la LONGITUD del conducto.
+
+    "talud_terraplen": Criterio(
+        valor=None,                 # VACIO: bloquea la longitud del conducto en 7.B
+        etiqueta="A",
+        concepto="Inclinacion del talud del terraplen en el punto de cruce, "
+                 "como proyeccion horizontal por unidad de altura (H:V), para "
+                 "la 'proyeccion de taludes' que Sec. 7.B suma al ancho de "
+                 "plataforma al calcular la longitud del conducto",
+        justificacion="Sec. 7.B define la longitud como 'ancho de plataforma + "
+                      "proyeccion de taludes, afectada por esviaje', pero no "
+                      "entrega la inclinacion del talud ni una regla para "
+                      "deducirla, y Sec. 1.2 no la trae como columna: el unico "
+                      "dato de seccion transversal que llega por punto es el "
+                      "ancho de plataforma. El vacio no se puede tapar con lo "
+                      "que ya esta en el CSV -- la altura de terraplen del "
+                      "punto (cota_rasante - cota_terreno) da el BRAZO "
+                      "VERTICAL del talud, no su inclinacion -- y sin longitud "
+                      "no hay caida S*L ni cota de salida que amarrar al fondo "
+                      "del receptor, que es la otra mitad de 7.B. Adoptar en "
+                      "silencio un 1.5:1 de practica corriente moveria la "
+                      "longitud, la caida y la cota de salida de todos los "
+                      "puntos sin que nadie pueda rastrear de donde salio",
+        fuente="PENDIENTE - Manual de Diseño Geometrico DG-2018 y la seccion "
+               "tipica del proyecto, que fijan el talud del terraplen segun su "
+               "altura y el material del cuerpo",
+        reemplazado_por="Talud de la seccion tipica del expediente vial, o la "
+                        "longitud medida directamente sobre la seccion "
+                        "transversal de cada punto",
+        verificacion_pendiente="Declarar si el talud es unico para el tramo o "
+                               "varia por punto con la altura de terraplen. M7 "
+                               "lo aplica hoy a los DOS taludes con la misma "
+                               "altura (terraplen simetrico sobre el terreno "
+                               "natural del cruce), que es lo unico que el CSV "
+                               "permite calcular: si la seccion es asimetrica, "
+                               "la longitud se mide y no se deduce",
+    ),
+
     # ----------------------- PROTECCION Y DETALLE -------------------------
 
     "espesor_proteccion_salida": Criterio(

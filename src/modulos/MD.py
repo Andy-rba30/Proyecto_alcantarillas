@@ -40,7 +40,9 @@ Lo que MD NO hace
   vacio a proposito: "no factible -> subir rasante X cm" es el tamizado de
   7.A, que fija la rasante ANTES del bucle y no desde dentro (el acoplamiento
   circular rasante -> subrasante -> CBR -> resguardo -> V4 -> rasante se corta
-  ahi, Sec. 7.A). MD reporta el motivo; el delta lo pone M7.
+  ahi, Sec. 7.A). MD reporta el motivo; el delta lo pone
+  `modulos.M7_geometria.tamizado_rasante`, que lo devuelve en
+  `TamizadoRasante.delta_rasante_cm` sin necesidad de excepcion.
 - No fabrica la Verificacion V9 (disponibilidad de diametro). El descarte por
   tope de la norma de producto y V9 son el MISMO hecho, y quien lo declare
   como `Verificacion` con su numeral es M5, que ya recibe D y `material.D_max`.

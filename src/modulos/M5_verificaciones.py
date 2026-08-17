@@ -41,20 +41,23 @@ bloqueo de las tres pendientes.
 V4 -- el supuesto de la cota de entrada (declarar en la memoria)
 -------------------------------------------------------------------
 `modelos.ResultadoHidraulico` documenta que HW es una carga en metros SOBRE
-EL FONDO DE LA ENTRADA, y que la conversion a cota (msnm) es tarea de M7
-("sumando la cota de entrada"). M7 todavia no existe, y `PuntoCritico` no
-trae una columna de cota de fondo de entrada (a diferencia de
-`cota_fondo_receptor`, que si la trae para la salida) -- Sec. 7.B llama a
-esto "acoplamiento circular" y dice que se corta fijando la rasante en 7.A,
-que tampoco existe aun.
+EL FONDO DE LA ENTRADA, y que la conversion a cota (msnm) exige la cota de esa
+entrada. `PuntoCritico` no trae una columna de cota de fondo de entrada (a
+diferencia de `cota_fondo_receptor`, que si la trae para la salida).
 
-V4 no puede esperar a M7 sin dejar de existir, asi que este modulo adopta
-`punto.cota_terreno` como la cota de entrada: es el UNICO campo de Sec. 1.1
-que describe la elevacion natural del cruce (el nivel del cauce antes de
-cualquier obra), y por eso es la lectura mas defendible disponible hoy sin
-inventar una columna que el CSV no tiene. Es una INTERPRETACION, no un
-criterio adoptado con fuente propia -- declarala en la memoria como tal, y
-reemplazala en cuanto M7 fije la cota real de invert de entrada.
+V4 no puede existir sin esa cota, asi que este modulo adopta
+`punto.cota_terreno`: es el UNICO campo de Sec. 1.1 que describe la elevacion
+natural del cruce (el nivel del cauce antes de cualquier obra), y por eso es
+la lectura mas defendible disponible sin inventar una columna que el CSV no
+tiene. Es una INTERPRETACION, no un criterio adoptado con fuente propia --
+declarala en la memoria como tal, y reemplazala el dia que el expediente
+entregue la cota real de invert de entrada.
+
+La interpretacion vive en `cota_entrada_supuesta()`, publica, porque M7
+(tamizado de 7.A) convierte el MISMO HW a cota para fijar la rasante minima:
+las dos tienen que leer la misma referencia o el acoplamiento circular que
+7.A dice cortar sigue abierto. Lo mismo vale para `resguardo_por_cbr()`, que
+es la segunda condicion del tamizado.
 
 Excepciones
 -----------
@@ -182,13 +185,33 @@ def v3_velocidad_maxima(*, material: Material,
 # V4 - Carga a la entrada HW (Sec. 5.1, resguardo por analogia [N->])
 # ---------------------------------------------------------------------------
 
-def _resguardo_por_cbr(cbr: float) -> float:
+def cota_entrada_supuesta(punto: PuntoCritico) -> float:
+    """
+    Cota del fondo de la entrada, msnm. Es la INTERPRETACION declarada en el
+    docstring del modulo ("V4 -- el supuesto de la cota de entrada"): se adopta
+    `punto.cota_terreno` mientras M7 no fije la cota real de invert.
+
+    Es publica y con nombre propio porque V4 no es su unico consumidor: el
+    tamizado de 7.A (M7) convierte el mismo HW a cota para fijar la rasante
+    minima. Si cada modulo eligiera su propia cota de entrada, V4 y 7.A
+    quedarian evaluando dos condiciones distintas y el acoplamiento circular
+    que 7.A dice cortar seguiria abierto: la rasante se fijaria contra una
+    referencia y se verificaria contra otra.
+    """
+    return punto.cota_terreno
+
+
+def resguardo_por_cbr(cbr: float) -> float:
     """
     Resguardo de Sec. 5.1 segun el CBR de subrasante (Manual de Suelos, num.
     4.5.4): busca en `RESGUARDO_NAPA_SUBRASANTE` [N] la fila cuyo rango
     [CBR_min, CBR_max) contiene el dato, con los extremos None como
     ilimitados. Recorre las cuatro filas de la tabla, exhaustivas por
     construccion (cubren todo el dominio fisico del CBR).
+
+    Publica por el mismo motivo que `cota_entrada_supuesta`: la segunda
+    condicion del tamizado de 7.A (M7) es la misma tabla aplicada al mismo
+    CBR, y duplicarla alli seria abrir la puerta a que las dos se separen.
     """
     for cbr_min, cbr_max, resguardo in RESGUARDO_NAPA_SUBRASANTE:
         piso = cbr_min is None or cbr >= cbr_min
@@ -217,9 +240,9 @@ def v4_carga_entrada(*, punto: PuntoCritico,
     un criterio con fuente propia, y debe citarse como tal en la memoria.
     """
     ca.valor(CRITERIO_RESGUARDO)      # registra el uso; "segun_CBR" no es numerico
-    resguardo_m = _resguardo_por_cbr(punto.cbr_subrasante)
+    resguardo_m = resguardo_por_cbr(punto.cbr_subrasante)
 
-    cota_entrada = punto.cota_terreno     # ver supuesto declarado arriba
+    cota_entrada = cota_entrada_supuesta(punto)   # ver supuesto declarado arriba
     HW_cota = cota_entrada + resultado.HW
     admisible = punto.cota_subrasante - resguardo_m
 

@@ -11,8 +11,13 @@ numerico de proyecto. Los valores [N] estan en `constantes_normativas.py`
 Unidades
 --------
 SI estricto: m, m2, m3/s, m/s, rad, Pa, kN. Ninguna estructura de este archivo
-transporta pulgadas, pies ni kg/cm2; la conversion a unidades de presentacion
-ocurre solo en M11.
+transporta pulgadas, pies ni kg/cm2.
+
+Unica salvedad, y es de presentacion, no de calculo: `TamizadoRasante` expone
+`delta_rasante_cm` junto al `delta_rasante_m` que almacena, porque Sec. 7.B
+redacta su salida en centimetros ("no factible -> subir rasante X cm"). El
+factor sale de `dominios.CENTIMETROS_POR_METRO` -- una definicion de unidad,
+no un valor de proyecto -- y ningun campo almacenado esta en centimetros.
 
 Dos campos conservan la unidad de su encabezado normativo porque son
 localizadores o clasificadores y no entran en ningun calculo hidraulico ni
@@ -30,6 +35,8 @@ import math
 from dataclasses import dataclass, fields
 from enum import Enum
 from typing import Any, Dict, Optional, Tuple
+
+from dominios import CENTIMETROS_POR_METRO
 
 
 # ===========================================================================
@@ -194,6 +201,24 @@ class ControlGobernante(str, Enum):
     """Cual de los dos controles fija la carga a la entrada."""
     ENTRADA = "entrada"   # Sec. 4.2, HDS-5
     SALIDA = "salida"     # Sec. 4.3, HW = H + ho - S*L
+
+
+class CondicionRasante(str, Enum):
+    """
+    Cual de las dos condiciones de Sec. 7.A fija la cota de rasante minima:
+
+        cota rasante >= max( cota clave + h_rec + e_paq ,
+                             HW + resguardo(CBR) + e_paq )
+
+    No es una etiqueta cosmetica: dice que hay que mover para bajar la rasante
+    minima. Si gobierna RECUBRIMIENTO, el que manda es el conducto (bajar el
+    invert, reducir el diametro o cambiar de material, porque h_rec depende
+    del material); si gobierna RESGUARDO, manda la hidraulica (bajar el HW) o
+    el CBR de la subrasante. Con la condicion equivocada en la memoria, el
+    proyectista corrige la variable que no gobierna.
+    """
+    RECUBRIMIENTO = "recubrimiento"   # cota clave + h_rec + e_paq
+    RESGUARDO = "resguardo"           # HW + resguardo(CBR) + e_paq
 
 
 class RegimenEntrada(str, Enum):
@@ -559,6 +584,177 @@ class Verificacion:
     valor_admisible: Any
     criterio_aplicado: Optional[str]
     codigo: Optional[str] = None          # "V1" .. "V9" (Fase 5)
+
+
+# ===========================================================================
+# Fase 7 - Compatibilidad geometrica (salida de M7)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class TamizadoRasante:
+    """
+    Salida del tamizado previo de Sec. 7.A: la cota de rasante minima que el
+    punto admite, como MAXIMO de las dos condiciones, y cuanto le falta a la
+    rasante actual para alcanzarla.
+
+        cota rasante >= max( cota clave + h_rec + e_paq ,
+                             HW + resguardo(CBR) + e_paq )
+
+    Se guardan las DOS cotas por separado, no solo el maximo, porque la
+    memoria tiene que poder mostrar por cuanto quedo descartada la condicion
+    que no gobierna: una diferencia de 2 cm entre ambas significa que
+    cualquier ajuste de diametro cambia cual manda.
+
+    `delta_rasante_m` y `factible` los calcula M7 con la tolerancia de
+    `tolerancias.py` y viajan como campos, no como propiedades derivadas, para
+    que el objeto no vuelva a comparar floats por su cuenta. Son coherentes
+    con `cota_rasante_min` y `cota_rasante_actual` por construccion.
+
+    `criterio_recubrimiento` es None cuando h_rec es [N] puro (HDPE, EG-2013
+    508.07/508.08) y la clave del criterio adoptado cuando no lo es (concreto
+    y TMC, 'h_relleno_min_concreto_tmc'). `criterio_resguardo` es siempre
+    'resguardo_HW_subrasante', [N->] por analogia declarada (Sec. 5.1).
+    """
+
+    cota_rasante_min: float               # msnm - el maximo de las dos
+    cota_rasante_actual: float            # msnm - la del CSV (Sec. 1.1)
+    cota_por_recubrimiento: float         # msnm - cota clave + h_rec + e_paq
+    cota_por_resguardo: float             # msnm - HW + resguardo(CBR) + e_paq
+    condicion_gobernante: CondicionRasante
+    cota_entrada: float                   # msnm - fondo de la entrada
+    cota_clave: float                     # msnm - cota entrada + D
+    D_supuesto: float                     # m  - diametro del tamizado (Sec. 7.A)
+    HW: float                             # m  - carga sobre el fondo de la entrada
+    h_recubrimiento: float                # m  - relleno minimo sobre la clave
+    espesor_paquete: float                # m  - cota rasante - cota subrasante
+    resguardo: float                      # m  - tabla de Sec. 5.1 segun CBR
+    factible: bool                        # la rasante actual ya alcanza
+    delta_rasante_m: float                # m  - 0.0 si es factible
+    criterio_recubrimiento: Optional[str]
+    criterio_resguardo: str
+    id_punto: Optional[str] = None
+    numeral: str = "Sec. 7.A"
+
+    @property
+    def delta_rasante_cm(self) -> float:
+        """
+        El mismo delta en centimetros, que es la unidad en que Sec. 7.B
+        redacta la salida ("no factible -> subir rasante X cm"). Es conversion
+        de presentacion: el calculo entero sigue en metros (SI).
+        """
+        return self.delta_rasante_m * CENTIMETROS_POR_METRO
+
+    @property
+    def criterio_gobernante(self) -> Optional[str]:
+        """Clave del criterio adoptado de la condicion que fija la rasante."""
+        if self.condicion_gobernante is CondicionRasante.RESGUARDO:
+            return self.criterio_resguardo
+        return self.criterio_recubrimiento
+
+    @property
+    def mensaje(self) -> str:
+        """
+        La frase que Sec. 7.B exige devolver, en centimetros. Nunca un
+        resultado silencioso: cuando el punto es factible tambien lo dice.
+        """
+        if self.factible:
+            return (f"factible: la rasante {self.cota_rasante_actual:.3f} msnm "
+                    f"alcanza la minima de 7.A ({self.cota_rasante_min:.3f} "
+                    f"msnm, gobierna {self.condicion_gobernante.value})")
+        return (f"no factible -> subir rasante {self.delta_rasante_cm:.1f} cm "
+                f"(de {self.cota_rasante_actual:.3f} a "
+                f"{self.cota_rasante_min:.3f} msnm; gobierna la condicion de "
+                f"{self.condicion_gobernante.value})")
+
+    def exigir_factible(self) -> None:
+        """
+        Lanza `DisenoNoFactibleError` con el delta si la rasante no alcanza.
+
+        Existe para el consumidor que necesita la excepcion (un bucle que debe
+        abortar el punto) sin perder el numero: el delta viaja SIEMPRE en
+        `delta_rasante_m`, nunca como un mensaje suelto ni como una excepcion
+        generica. Quien prefiera el resultado sin excepcion lee `factible` y
+        `delta_rasante_cm`, que es la forma en que M7 lo devuelve por defecto.
+        """
+        if self.factible:
+            return
+        raise DisenoNoFactibleError(
+            motivo=self.mensaje,
+            delta_rasante_m=self.delta_rasante_m,
+            id_punto=self.id_punto,
+        )
+
+
+@dataclass(frozen=True)
+class CompatibilidadGeometrica:
+    """
+    Salida de la verificacion final por punto de Sec. 7.B: la geometria del
+    conducto ya amarrada al perfil (longitud, esviaje, pendiente, cotas de
+    entrada y salida) y el expediente de verificaciones que la sostiene.
+
+    `longitud` = (ancho de plataforma + proyeccion de taludes) * factor de
+    esviaje, en metros. `caida` = S * longitud, y `cota_salida` = cota de
+    entrada - caida.
+
+    Las verificaciones llevan codigo G1/G2 para no confundirse con las V1-V9
+    de la Fase 5: son de otra fase y de otro modulo. La lista es corta a
+    proposito -- ver "Por que 7.B solo trae dos verificaciones" en el
+    docstring de M7.
+    """
+
+    punto: PuntoCritico
+    D: float                              # m - diametro adoptado en la Fase 4
+    tamizado: TamizadoRasante             # el de 7.A, recalculado con ese D
+    longitud: float                       # m
+    proyeccion_taludes: float             # m - suma de los dos taludes
+    factor_esviaje: float                 # adimensional - 1/cos(esviaje)
+    altura_terraplen: float               # m - cota rasante - cota terreno
+    S_conducto: float                     # m/m - la del cauce (Sec. 7.B)
+    cota_entrada: float                   # msnm
+    cota_salida: float                    # msnm - cota entrada - S*L
+    caida: float                          # m  - S*L
+    verificaciones: Tuple[Verificacion, ...]
+    numeral: str = "Sec. 7.B"
+
+    @property
+    def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
+        """Las que M11 debe destacar en la memoria del punto."""
+        return tuple(v for v in self.verificaciones if not v.cumple)
+
+    @property
+    def factible(self) -> bool:
+        """True si las verificaciones de 7.B cumplen todas."""
+        return not self.verificaciones_incumplidas
+
+    @property
+    def delta_rasante_cm(self) -> float:
+        """
+        Cuanto hay que subir la rasante, en centimetros. 0.0 cuando la rasante
+        ya alcanza: el numero existe siempre, tambien cuando el punto cumple.
+        """
+        return self.tamizado.delta_rasante_cm
+
+    def exigir_factible(self) -> None:
+        """
+        Lanza `DisenoNoFactibleError` si 7.B no cumple, con el delta de
+        rasante cuando el incumplimiento es el de la rasante congelada (G1).
+        Si el que falla es otro (G2, cota de salida contra el receptor), el
+        delta va en None porque subir la rasante NO lo resuelve: sale de la
+        pendiente y de la cota del receptor, no del tamizado.
+        """
+        incumplidas = self.verificaciones_incumplidas
+        if not incumplidas:
+            return
+        if not self.tamizado.factible:
+            self.tamizado.exigir_factible()
+        raise DisenoNoFactibleError(
+            motivo="7.B incumple " + "; ".join(
+                f"{v.codigo or 'sin codigo'} ({v.numeral}): obtenido "
+                f"{v.valor_obtenido!r} frente a {v.valor_admisible!r}"
+                for v in incumplidas
+            ),
+            id_punto=self.punto.id,
+        )
 
 
 # ===========================================================================

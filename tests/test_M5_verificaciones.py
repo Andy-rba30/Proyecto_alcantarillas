@@ -27,7 +27,7 @@ from constantes_normativas import V_MIN, Y_SOBRE_D_MAX
 from modelos import (ControlGobernante, CriterioPendienteError, Familia,
                      PuntoCritico, ResultadoHidraulico, TipoMaterial)
 from modulos.M2_material import catalogo
-from modulos.M5_verificaciones import (_resguardo_por_cbr, v1_borde_libre,
+from modulos.M5_verificaciones import (resguardo_por_cbr, v1_borde_libre,
                                        v2_velocidad_minima,
                                        v3_velocidad_maxima,
                                        v4_carga_entrada, v5_remanso,
@@ -176,7 +176,7 @@ def test_v3_tmc_hdpe_lanza_pendiente_mientras_no_haya_valor(material_fixture,
     (1.5, 1.20),    # < 3 %: inadecuada
 ])
 def test_resguardo_por_cbr_reproduce_la_tabla_5_1(cbr, resguardo_esperado):
-    assert _resguardo_por_cbr(cbr) == pytest.approx(resguardo_esperado)
+    assert resguardo_por_cbr(cbr) == pytest.approx(resguardo_esperado)
 
 
 def test_v4_usa_el_criterio_resguardo_y_su_etiqueta_es_N_flecha():

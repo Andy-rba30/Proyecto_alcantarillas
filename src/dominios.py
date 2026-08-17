@@ -26,6 +26,15 @@ tienen.
 Regla practica para saber si un numero va aqui: si cambiarlo puede alterar un
 resultado del calculo, NO es un limite de dominio.
 
+El archivo hospeda ademas las DEFINICIONES DE UNIDAD que el calculo necesita
+para leer o escribir un dato (METROS_POR_KM, CENTIMETROS_POR_METRO). No son
+limites de dominio en sentido estricto, pero responden a la misma pregunta --
+que significa el numero que entra o sale, no cuanto vale una magnitud del
+proyecto -- y cambiarlas seria redefinir la unidad, no ajustar un criterio.
+Ninguna entra en formula de calculo: METROS_POR_KM traduce la notacion vial de
+progresivas al leer el CSV y CENTIMETROS_POR_METRO escribe en centimetros el
+delta de rasante que Sec. 7.B redacta en esa unidad.
+
 Las marcas `# literal-ok` viajaron con los valores desde M0_carga.py. En este
 archivo son redundantes -- el archivo entero esta exento del barrido -- pero se
 conservan porque son la justificacion de cada numero, no un permiso.
@@ -47,3 +56,9 @@ S_CAUCE_MAX = 1.0
 
 # Conversion de la notacion vial de progresivas ('0+380') a kilometros.
 METROS_POR_KM = 1000      # literal-ok: definicion de la unidad, no valor de proyecto
+
+# Conversion a la unidad de presentacion del delta de rasante de Sec. 7.B, que
+# la hoja de ruta redacta en centimetros ("no factible -> subir rasante X cm").
+# Mismo caso que METROS_POR_KM: es la definicion de la unidad, no un valor de
+# proyecto. El calculo entero sigue en metros; esto solo lo escribe.
+CENTIMETROS_POR_METRO = 100   # literal-ok: definicion de la unidad, no valor de proyecto
