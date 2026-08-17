@@ -1,0 +1,625 @@
+# -*- coding: utf-8 -*-
+"""
+gui/app.py
+==========
+Interfaz grafica del expediente de alcantarillas. Reutiliza el patron de
+`legacy/Tc.py`: Tkinter + ttkbootstrap, Notebook por pestanas, MarcoScroll,
+Tooltip y campo validable.
+
+No reimplementa el pipeline: llama a las mismas funciones que usa `cli.py`
+(`cargar_datos_externos`, `correr`, `informe_json`, `exportar_html`,
+`exportar_pdf`) para que la GUI y la linea de comandos vean siempre el mismo
+expediente.
+
+Pestanas
+--------
+    1. Datos de entrada    CSV de Sec. 1.2 (M0) + datos declarados que no son
+                            columna (banderas de `cli.py`) + boton de ejecucion.
+    2. Resultados por punto  Un Treeview con el resumen de cada punto y, al
+                            seleccionar una fila, el detalle de verificaciones
+                            y bloqueos de ese punto.
+    3. Resumen             Estado del expediente, criterios pendientes que
+                            bloquearon una etapa, y exportacion (JSON/HTML/PDF).
+"""
+
+from __future__ import annotations
+
+import sys
+import traceback
+from pathlib import Path
+from typing import Optional
+
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
+
+RAIZ = Path(__file__).resolve().parent.parent
+SRC = RAIZ / "src"
+for _ruta in (RAIZ, SRC):
+    if str(_ruta) not in sys.path:
+        sys.path.insert(0, str(_ruta))
+
+import json  # noqa: E402
+
+import cli  # noqa: E402
+import criterios_adoptados as ca  # noqa: E402
+from modelos import ErrorProyecto  # noqa: E402
+
+try:
+    import ttkbootstrap as tb
+except ImportError:
+    tb = None
+
+COLOR_ERROR = "#e74c3c"
+COLOR_OK = "#27ae60"
+COLOR_AVISO = "#b9770e"
+
+# Banderas globales que acepta `cli.py` fuera del CSV (ver docstring de
+# `cli.py`, seccion "Datos que NO estan en el CSV"). Cada tupla es
+# (clave, etiqueta, ayuda, unidad).
+CAMPOS_EXTERNOS = (
+    ("luz_m", "Luz del cruce:",
+     "Luz del cruce, en METROS (Sec. 2.1).\n"
+     "Sin ella no se puede separar alcantarilla de puente\n"
+     "y el punto no se dimensiona.", "[m]"),
+    ("TW_m", "Tirante en el receptor (TW):",
+     "Tirante en el receptor sobre el fondo de la salida, en METROS.\n"
+     "Si no se declara se pide al criterio 'TW_receptor'.", "[m]"),
+    ("longitud_m", "Longitud del conducto:",
+     "Longitud del conducto, en METROS.\n"
+     "Si no se declara la calcula M7 (Sec. 7.B).", "[m]"),
+    ("l_hidraulico", "L hidraulico (cuneta, Familia B):",
+     "Longitud a la que la cuneta agota su capacidad, en METROS.\n"
+     "Solo aplica a Familia B (Fase 10).", "[m]"),
+    ("categoria_tr", "Categoria TR (Familia A):",
+     "Fila de la Tabla N 02: 'quebrada_importante' o 'quebrada_menor'\n"
+     "(Sec. 2.2). Sin ella la Familia A se detiene en el umbral de area.", ""),
+)
+
+
+class Tooltip:
+    """Globo de ayuda simple para cualquier widget (patron de legacy/Tc.py)."""
+
+    def __init__(self, widget, texto, retardo=400):
+        self.widget = widget
+        self.texto = texto
+        self.retardo = retardo
+        self._after_id = None
+        self._tip = None
+        widget.bind("<Enter>", self._programar, add="+")
+        widget.bind("<Leave>", self._ocultar, add="+")
+        widget.bind("<ButtonPress>", self._ocultar, add="+")
+
+    def _programar(self, _evt=None):
+        self._cancelar()
+        self._after_id = self.widget.after(self.retardo, self._mostrar)
+
+    def _cancelar(self):
+        if self._after_id:
+            try:
+                self.widget.after_cancel(self._after_id)
+            except tk.TclError:
+                pass
+            self._after_id = None
+
+    def _mostrar(self):
+        if self._tip or not self.texto:
+            return
+        x = self.widget.winfo_rootx() + 18
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6
+        self._tip = tk.Toplevel(self.widget)
+        self._tip.wm_overrideredirect(True)
+        self._tip.wm_geometry(f"+{x}+{y}")
+        tk.Label(
+            self._tip, text=self.texto, justify="left", background="#ffffe0",
+            relief="solid", borderwidth=1, font=("Segoe UI", 8), padx=6, pady=3,
+        ).pack()
+
+    def _ocultar(self, _evt=None):
+        self._cancelar()
+        if self._tip:
+            self._tip.destroy()
+            self._tip = None
+
+
+class MarcoScroll(ttk.Frame):
+    """Contenedor con scroll vertical: el contenido se agrega en `.interior`."""
+
+    def __init__(self, master, **kw):
+        super().__init__(master, **kw)
+        self.canvas = tk.Canvas(self, highlightthickness=0, borderwidth=0)
+        self.vbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.vbar.set)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.vbar.pack(side="right", fill="y")
+
+        self.interior = ttk.Frame(self.canvas, padding=14)
+        self._id_win = self.canvas.create_window((0, 0), window=self.interior, anchor="nw")
+
+        self.interior.bind("<Configure>", self._ajustar_region)
+        self.canvas.bind("<Configure>", self._ajustar_ancho)
+        self.canvas.bind("<Enter>", self._activar_rueda)
+        self.canvas.bind("<Leave>", self._desactivar_rueda)
+
+    def _ajustar_region(self, _evt=None):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _ajustar_ancho(self, evt):
+        self.canvas.itemconfigure(self._id_win, width=evt.width)
+
+    def _activar_rueda(self, _evt=None):
+        self.canvas.bind_all("<MouseWheel>", self._rueda)
+
+    def _desactivar_rueda(self, _evt=None):
+        self.canvas.unbind_all("<MouseWheel>")
+
+    def _rueda(self, evt):
+        if isinstance(evt.widget, (ttk.Treeview, tk.Listbox, tk.Text)):
+            return
+        self.canvas.yview_scroll(int(-evt.delta / 120), "units")
+
+
+class ExpedienteApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Expediente de Alcantarillas - M0 a M10")
+        self.root.geometry("1100x800")
+        self.root.minsize(900, 620)
+
+        self.proyecto_var = tk.StringVar()
+        self.csv_var = tk.StringVar()
+        self.datos_externos_var = tk.StringVar()
+        self.externos_vars = {clave: tk.StringVar() for clave, *_r in CAMPOS_EXTERNOS}
+
+        self.informe: Optional[cli.Informe] = None
+
+        self._crear_interfaz()
+
+    # ------------------------------------------------------------------
+    # Construccion de la interfaz
+    # ------------------------------------------------------------------
+    def _crear_interfaz(self):
+        if tb is not None:
+            try:
+                self.style = tb.Style(theme="litera")
+            except Exception:
+                self.style = ttk.Style()
+        else:
+            self.style = ttk.Style()
+            if "clam" in self.style.theme_names():
+                self.style.theme_use("clam")
+
+        self.style.configure("TLabel", font=("Segoe UI", 9))
+        self.style.configure("Header.TLabel", font=("Segoe UI", 10, "bold"), foreground="#2c3e50")
+        self.style.configure("Ayuda.TLabel", font=("Segoe UI", 8, "italic"), foreground="#666666")
+        self.style.configure("Error.TLabel", font=("Segoe UI", 8, "bold"), foreground=COLOR_ERROR)
+        self.style.configure("Res.TLabel", font=("Consolas", 11, "bold"), foreground="#1b4f72")
+
+        try:
+            self.color_borde_ok = self.style.lookup("TFrame", "background") or "SystemButtonFace"
+        except tk.TclError:
+            self.color_borde_ok = "SystemButtonFace"
+
+        contenedor = ttk.Frame(self.root, padding=10)
+        contenedor.pack(fill="both", expand=True)
+
+        self.nb = ttk.Notebook(contenedor)
+        self.nb.pack(fill="both", expand=True)
+
+        self.tab_datos = MarcoScroll(self.nb)
+        self.tab_puntos = ttk.Frame(self.nb)
+        self.tab_resumen = MarcoScroll(self.nb)
+        self.nb.add(self.tab_datos, text="  1. Datos de entrada  ")
+        self.nb.add(self.tab_puntos, text="  2. Resultados por punto  ")
+        self.nb.add(self.tab_resumen, text="  3. Resumen  ")
+
+        self._construir_tab_datos(self.tab_datos.interior)
+        self._construir_tab_puntos(self.tab_puntos)
+        self._construir_tab_resumen(self.tab_resumen.interior)
+
+        barra = ttk.Frame(contenedor, padding=(0, 10, 0, 0))
+        barra.pack(fill="x")
+        self.lbl_estado = ttk.Label(barra, text="Sin ejecutar.", style="Ayuda.TLabel")
+        self.lbl_estado.pack(side="left")
+
+        self.btn_ejecutar = tk.Button(
+            barra, text="EJECUTAR PIPELINE (M0 -> M10)", font=("Segoe UI", 10, "bold"),
+            bg="#2e86c1", fg="white", activebackground="#21618c", activeforeground="white",
+            relief="flat", cursor="hand2", command=self.ejecutar_pipeline,
+        )
+        self.btn_ejecutar.pack(side="right", padx=4, ipadx=14, ipady=6)
+
+    # -------------------------- Pestana 1 -----------------------------
+    def _construir_tab_datos(self, p):
+        ttk.Label(p, text="1. Proyecto y CSV", style="Header.TLabel").pack(anchor="w")
+        f_proj = ttk.Frame(p)
+        f_proj.pack(fill="x", pady=(6, 14))
+        f_proj.columnconfigure(1, weight=1)
+
+        ttk.Label(f_proj, text="Nombre del proyecto:").grid(row=0, column=0, sticky="w", padx=5, pady=4)
+        ent_proy = ttk.Entry(f_proj, textvariable=self.proyecto_var)
+        ent_proy.grid(row=0, column=1, sticky="we", padx=5, pady=4, columnspan=2)
+        Tooltip(ent_proy, "Encabeza la memoria de calculo (M11).")
+
+        ttk.Label(f_proj, text="CSV de puntos criticos (Sec. 1.2):").grid(row=1, column=0, sticky="w", padx=5, pady=4)
+        ent_csv = ttk.Entry(f_proj, textvariable=self.csv_var)
+        ent_csv.grid(row=1, column=1, sticky="we", padx=5, pady=4)
+        ttk.Button(f_proj, text="Examinar...", command=self._elegir_csv).grid(row=1, column=2, sticky="w", padx=5)
+
+        ttk.Label(f_proj, text="JSON de datos externos (opcional):").grid(row=2, column=0, sticky="w", padx=5, pady=4)
+        ent_ext = ttk.Entry(f_proj, textvariable=self.datos_externos_var)
+        ent_ext.grid(row=2, column=1, sticky="we", padx=5, pady=4)
+        ttk.Button(f_proj, text="Examinar...", command=self._elegir_datos_externos).grid(row=2, column=2, sticky="w", padx=5)
+        Tooltip(ent_ext, "JSON con secciones 'globales' y/o 'puntos', igual que\n"
+                         "el '--datos-externos' de cli.py. Una bandera de abajo\n"
+                         "pisa al valor global de este archivo.")
+
+        ttk.Separator(p, orient="horizontal").pack(fill="x", pady=6)
+
+        ttk.Label(p, text="2. Datos declarados (no son columna del CSV)",
+                  style="Header.TLabel").pack(anchor="w", pady=(8, 0))
+        ttk.Label(p, text="Se aplican como banderas globales, igual que --luz, --tw, "
+                          "--longitud, --l-hidraulico y --categoria-tr de cli.py. "
+                          "Un valor por punto solo puede declararse en el JSON de "
+                          "datos externos.",
+                  style="Ayuda.TLabel", wraplength=820, justify="left").pack(anchor="w", pady=(0, 8))
+
+        f_ext = ttk.Frame(p)
+        f_ext.pack(fill="x", pady=6)
+        for fila, (clave, etiqueta, ayuda, unidad) in enumerate(CAMPOS_EXTERNOS):
+            ttk.Label(f_ext, text=etiqueta).grid(row=fila, column=0, sticky="w", padx=5, pady=6)
+            ent = ttk.Entry(f_ext, textvariable=self.externos_vars[clave], width=20, justify="right")
+            ent.grid(row=fila, column=1, sticky="w", padx=5, pady=6)
+            ttk.Label(f_ext, text=unidad, style="Ayuda.TLabel").grid(row=fila, column=2, sticky="w")
+            Tooltip(ent, ayuda)
+
+        self.lbl_error_datos = ttk.Label(p, text="", style="Error.TLabel", wraplength=820, justify="left")
+        self.lbl_error_datos.pack(anchor="w", padx=5, pady=(10, 0))
+
+        ttk.Label(
+            p,
+            text="Ningun dato de esta seccion tiene valor por defecto: sin declararlo, "
+                 "la etapa que lo necesita queda registrada como bloqueo en el informe "
+                 "(no se sustituye por un numero plausible).",
+            style="Ayuda.TLabel", wraplength=820, justify="left",
+        ).pack(anchor="w", padx=5, pady=(6, 0))
+
+    def _elegir_csv(self):
+        ruta = filedialog.askopenfilename(
+            title="Seleccionar CSV de puntos criticos",
+            filetypes=[("Archivos CSV", "*.csv"), ("Todos los archivos", "*.*")],
+        )
+        if ruta:
+            self.csv_var.set(ruta)
+
+    def _elegir_datos_externos(self):
+        ruta = filedialog.askopenfilename(
+            title="Seleccionar JSON de datos externos",
+            filetypes=[("Archivos JSON", "*.json"), ("Todos los archivos", "*.*")],
+        )
+        if ruta:
+            self.datos_externos_var.set(ruta)
+
+    # -------------------------- Pestana 2 -----------------------------
+    def _construir_tab_puntos(self, p):
+        p.columnconfigure(0, weight=1)
+        p.rowconfigure(0, weight=1)
+
+        f_tabla = ttk.Frame(p, padding=10)
+        f_tabla.grid(row=0, column=0, sticky="nsew")
+        f_tabla.columnconfigure(0, weight=1)
+        f_tabla.rowconfigure(0, weight=1)
+
+        cols = ("id", "progresiva", "familia", "dimensionado", "material", "D",
+                "control", "HW", "V", "incumplidas", "bloqueos")
+        self.tree_puntos = ttk.Treeview(f_tabla, columns=cols, show="headings", height=14)
+        encabezados = [
+            ("id", "Punto", 70, "w"),
+            ("progresiva", "Progresiva", 90, "center"),
+            ("familia", "Familia", 60, "center"),
+            ("dimensionado", "Dimensionado", 90, "center"),
+            ("material", "Material", 140, "w"),
+            ("D", "D (m)", 65, "center"),
+            ("control", "Control", 75, "center"),
+            ("HW", "HW (m)", 70, "center"),
+            ("V", "V (m/s)", 70, "center"),
+            ("incumplidas", "Verif. NO", 75, "center"),
+            ("bloqueos", "Bloqueos", 75, "center"),
+        ]
+        for col, txt, ancho, anchor in encabezados:
+            self.tree_puntos.heading(col, text=txt)
+            self.tree_puntos.column(col, width=ancho, anchor=anchor)
+        self.tree_puntos.grid(row=0, column=0, sticky="nsew")
+        self.tree_puntos.tag_configure("no_dimensionado", background="#fdecea")
+        self.tree_puntos.tag_configure("con_bloqueos", foreground=COLOR_AVISO)
+        self.tree_puntos.bind("<<TreeviewSelect>>", self._al_seleccionar_punto)
+
+        scroll = ttk.Scrollbar(f_tabla, orient="vertical", command=self.tree_puntos.yview)
+        self.tree_puntos.configure(yscroll=scroll.set)
+        scroll.grid(row=0, column=1, sticky="ns")
+
+        ttk.Label(p, text="Detalle del punto seleccionado", style="Header.TLabel",
+                  padding=(10, 0)).grid(row=1, column=0, sticky="w")
+
+        f_detalle = ttk.Frame(p, padding=10)
+        f_detalle.grid(row=2, column=0, sticky="nsew")
+        p.rowconfigure(2, weight=1)
+        f_detalle.columnconfigure(0, weight=1)
+        f_detalle.rowconfigure(0, weight=1)
+
+        self.txt_detalle = tk.Text(f_detalle, height=12, wrap="word", font=("Consolas", 9))
+        self.txt_detalle.grid(row=0, column=0, sticky="nsew")
+        self.txt_detalle.configure(state="disabled")
+        scroll_det = ttk.Scrollbar(f_detalle, orient="vertical", command=self.txt_detalle.yview)
+        self.txt_detalle.configure(yscroll=scroll_det.set)
+        scroll_det.grid(row=0, column=1, sticky="ns")
+
+    def _al_seleccionar_punto(self, _evt=None):
+        seleccion = self.tree_puntos.selection()
+        self.txt_detalle.configure(state="normal")
+        self.txt_detalle.delete("1.0", "end")
+        if seleccion and self.informe is not None:
+            id_punto = seleccion[0]
+            informe_punto = next((i for i in self.informe.puntos if i.punto.id == id_punto), None)
+            if informe_punto is not None:
+                self.txt_detalle.insert("1.0", "\n".join(cli._lineas_punto(informe_punto)))
+        self.txt_detalle.configure(state="disabled")
+
+    # -------------------------- Pestana 3 -----------------------------
+    def _construir_tab_resumen(self, p):
+        ttk.Label(p, text="Estado del expediente", style="Header.TLabel").pack(anchor="w")
+
+        f_res = ttk.LabelFrame(p, text="Resumen", padding=12)
+        f_res.pack(fill="x", pady=(8, 12))
+        f_res.columnconfigure(1, weight=1)
+
+        etiquetas = ["CSV", "Puntos del expediente", "Puntos dimensionados",
+                     "Verificaciones incumplidas", "Etapas bloqueadas", "Expediente cerrado"]
+        self.lbl_resumen = {}
+        for fila, txt in enumerate(etiquetas):
+            ttk.Label(f_res, text=f"{txt}:").grid(row=fila, column=0, sticky="w", pady=3)
+            lbl = ttk.Label(f_res, text="-", style="Res.TLabel")
+            lbl.grid(row=fila, column=1, sticky="w", padx=12, pady=3)
+            self.lbl_resumen[txt] = lbl
+
+        ttk.Label(p, text="Criterios pendientes que bloquearon una etapa (Sec. 0.7)",
+                  style="Header.TLabel").pack(anchor="w", pady=(4, 2))
+        ttk.Label(p, text="Un criterio con valor=None cuya etapa se invoco en esta corrida. "
+                          "No es un defecto silencioso: el calculo se detuvo hasta declararlo.",
+                  style="Ayuda.TLabel", wraplength=820, justify="left").pack(anchor="w", pady=(0, 8))
+
+        f_crit = ttk.Frame(p)
+        f_crit.pack(fill="both", expand=False, pady=4)
+        cols = ("clave", "etiqueta", "concepto", "fuente", "fases", "puntos")
+        self.tree_criterios = ttk.Treeview(f_crit, columns=cols, show="headings", height=8)
+        encabezados = [
+            ("clave", "Clave", 130, "w"),
+            ("etiqueta", "Etiqueta", 60, "center"),
+            ("concepto", "Concepto", 220, "w"),
+            ("fuente", "Fuente que lo resolveria", 220, "w"),
+            ("fases", "Fases", 140, "w"),
+            ("puntos", "Puntos", 140, "w"),
+        ]
+        for col, txt, ancho, anchor in encabezados:
+            self.tree_criterios.heading(col, text=txt)
+            self.tree_criterios.column(col, width=ancho, anchor=anchor)
+        self.tree_criterios.pack(side="left", fill="both", expand=True)
+        scroll_c = ttk.Scrollbar(f_crit, orient="vertical", command=self.tree_criterios.yview)
+        self.tree_criterios.configure(yscroll=scroll_c.set)
+        scroll_c.pack(side="left", fill="y")
+
+        ttk.Separator(p, orient="horizontal").pack(fill="x", pady=12)
+
+        ttk.Label(p, text="Exportacion", style="Header.TLabel").pack(anchor="w", pady=(0, 6))
+        f_exp = ttk.Frame(p)
+        f_exp.pack(fill="x")
+
+        self.btn_json = tk.Button(f_exp, text="Exportar JSON", font=("Segoe UI", 9, "bold"),
+                                  bg="#16a085", fg="white", relief="flat", cursor="hand2",
+                                  state="disabled", command=self.exportar_json)
+        self.btn_json.pack(side="left", padx=(0, 8), ipadx=8, ipady=4)
+
+        self.btn_html = tk.Button(f_exp, text="Exportar memoria (HTML)", font=("Segoe UI", 9, "bold"),
+                                  bg="#2e86c1", fg="white", relief="flat", cursor="hand2",
+                                  state="disabled", command=self.exportar_html)
+        self.btn_html.pack(side="left", padx=8, ipadx=8, ipady=4)
+
+        self.btn_pdf = tk.Button(f_exp, text="Exportar memoria (PDF)", font=("Segoe UI", 9, "bold"),
+                                 bg="#8e44ad", fg="white", relief="flat", cursor="hand2",
+                                 state="disabled", command=self.exportar_pdf)
+        self.btn_pdf.pack(side="left", padx=8, ipadx=8, ipady=4)
+        Tooltip(self.btn_pdf, "Usa weasyprint si esta instalado.\n"
+                              "Si no lo esta, abre la memoria en el navegador\n"
+                              "para imprimirla como PDF (Ctrl+P).")
+
+    # ------------------------------------------------------------------
+    # Lectura de banderas
+    # ------------------------------------------------------------------
+    def _leer_banderas(self):
+        """
+        Los valores de texto de CAMPOS_EXTERNOS, tal como los espera
+        `cargar_datos_externos`: None si el campo quedo vacio.
+        """
+        banderas = {}
+        for clave, *_resto in CAMPOS_EXTERNOS:
+            texto = self.externos_vars[clave].get().strip()
+            if clave == "l_hidraulico":
+                clave_bandera = "L_hidraulico_m"
+            else:
+                clave_bandera = clave
+            banderas[clave_bandera] = None
+            if texto:
+                if clave == "categoria_tr":
+                    banderas[clave_bandera] = texto
+                else:
+                    banderas[clave_bandera] = texto.replace(",", ".")
+        return banderas
+
+    # ------------------------------------------------------------------
+    # Ejecucion del pipeline
+    # ------------------------------------------------------------------
+    def ejecutar_pipeline(self):
+        self.lbl_error_datos.config(text="")
+        ruta_csv_texto = self.csv_var.get().strip()
+        if not ruta_csv_texto:
+            self.lbl_error_datos.config(text="Debe seleccionar el CSV de puntos criticos.")
+            self.nb.select(self.tab_datos)
+            return
+        ruta_csv = Path(ruta_csv_texto)
+
+        ruta_externos = None
+        texto_externos = self.datos_externos_var.get().strip()
+        if texto_externos:
+            ruta_externos = Path(texto_externos)
+
+        self.btn_ejecutar.config(state="disabled", text="Ejecutando...")
+        self.root.update_idletasks()
+        try:
+            externos = cli.cargar_datos_externos(ruta_externos, self._leer_banderas())
+            self.informe = cli.correr(ruta_csv, externos)
+        except (OSError, ValueError) as exc:
+            self._mostrar_error_entrada(f"No se pudo leer la entrada:\n{exc}")
+            return
+        except ErrorProyecto as exc:
+            self._mostrar_error_entrada(f"El expediente no se puede cargar:\n{exc}")
+            return
+        except Exception as exc:  # fallo de programa: se muestra con traza
+            traceback.print_exc()
+            messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
+            return
+        finally:
+            self.btn_ejecutar.config(state="normal", text="EJECUTAR PIPELINE (M0 -> M10)")
+
+        self._llenar_tabla_puntos()
+        self._llenar_resumen()
+        for btn in (self.btn_json, self.btn_html, self.btn_pdf):
+            btn.config(state="normal")
+        self.lbl_estado.config(
+            text=f"Ejecutado ({self.informe.generado}). "
+                 f"{self.informe.dimensionados}/{len(self.informe.puntos)} puntos dimensionados. "
+                 f"Expediente {'cerrado' if self.informe.cerrado else 'NO cerrado'}.")
+        self.nb.select(self.tab_puntos)
+
+    def _mostrar_error_entrada(self, mensaje):
+        self.lbl_error_datos.config(text=mensaje)
+        self.nb.select(self.tab_datos)
+        self.btn_ejecutar.config(state="normal", text="EJECUTAR PIPELINE (M0 -> M10)")
+
+    # ------------------------------------------------------------------
+    # Volcado a las tablas
+    # ------------------------------------------------------------------
+    def _llenar_tabla_puntos(self):
+        for item in self.tree_puntos.get_children():
+            self.tree_puntos.delete(item)
+        for informe_punto in self.informe.puntos:
+            punto = informe_punto.punto
+            incumplidas = len(informe_punto.incumplidas())
+            n_bloqueos = len(informe_punto.bloqueos)
+            if informe_punto.dimensionado:
+                r = informe_punto.resultado
+                h = r.resultado_hidraulico
+                material, D = r.material.nombre, f"{r.D:.2f}"
+                control, HW, V = h.control_gobernante.value, f"{h.HW:.3f}", f"{h.V:.2f}"
+            else:
+                material = D = control = HW = V = "-"
+
+            tags = []
+            if not informe_punto.dimensionado:
+                tags.append("no_dimensionado")
+            if n_bloqueos:
+                tags.append("con_bloqueos")
+
+            self.tree_puntos.insert("", "end", iid=punto.id, values=(
+                punto.id, punto.progresiva_display, punto.familia.value,
+                "si" if informe_punto.dimensionado else "no",
+                material, D, control, HW, V, incumplidas, n_bloqueos,
+            ), tags=tuple(tags))
+
+        self.txt_detalle.configure(state="normal")
+        self.txt_detalle.delete("1.0", "end")
+        self.txt_detalle.configure(state="disabled")
+
+    def _llenar_resumen(self):
+        informe = self.informe
+        incumplidas = sum(len(i.incumplidas()) for i in informe.puntos)
+        n_bloqueos = len(informe.bloqueos())
+        self.lbl_resumen["CSV"].config(text=str(informe.csv))
+        self.lbl_resumen["Puntos del expediente"].config(text=str(len(informe.puntos)))
+        self.lbl_resumen["Puntos dimensionados"].config(text=str(informe.dimensionados))
+        self.lbl_resumen["Verificaciones incumplidas"].config(
+            text=str(incumplidas), foreground=COLOR_ERROR if incumplidas else COLOR_OK)
+        self.lbl_resumen["Etapas bloqueadas"].config(
+            text=str(n_bloqueos), foreground=COLOR_AVISO if n_bloqueos else COLOR_OK)
+        self.lbl_resumen["Expediente cerrado"].config(
+            text="si" if informe.cerrado else "no",
+            foreground=COLOR_OK if informe.cerrado else COLOR_ERROR)
+
+        for item in self.tree_criterios.get_children():
+            self.tree_criterios.delete(item)
+        for c in cli.criterios_bloqueantes(informe):
+            puntos = ", ".join(c.puntos) if c.puntos else "proyecto (Fase 9)"
+            self.tree_criterios.insert("", "end", values=(
+                c.clave, c.etiqueta, c.concepto, c.fuente,
+                ", ".join(c.fases), puntos))
+
+    # ------------------------------------------------------------------
+    # Exportacion
+    # ------------------------------------------------------------------
+    def exportar_json(self):
+        if self.informe is None:
+            return
+        ruta = filedialog.asksaveasfilename(
+            title="Exportar JSON del expediente", defaultextension=".json",
+            filetypes=[("Archivo JSON", "*.json")],
+            initialfile=self.informe.csv.with_suffix(".informe.json").name,
+        )
+        if not ruta:
+            return
+        try:
+            Path(ruta).write_text(
+                json.dumps(cli.informe_json(self.informe), ensure_ascii=False,
+                           indent=2, allow_nan=False),
+                encoding="utf-8")
+            messagebox.showinfo("JSON exportado", f"Archivo: {ruta}")
+        except OSError as exc:
+            messagebox.showerror("Error al exportar", f"{exc}")
+
+    def exportar_html(self):
+        if self.informe is None:
+            return
+        ruta = filedialog.asksaveasfilename(
+            title="Exportar memoria de calculo (HTML)", defaultextension=".html",
+            filetypes=[("Archivo HTML", "*.html")],
+        )
+        if not ruta:
+            return
+        try:
+            cli.exportar_html(self.informe, Path(ruta), proyecto=self.proyecto_var.get())
+            messagebox.showinfo("Memoria exportada", f"Archivo: {ruta}")
+        except Exception as exc:
+            messagebox.showerror("Error al exportar", f"{type(exc).__name__}: {exc}")
+
+    def exportar_pdf(self):
+        if self.informe is None:
+            return
+        ruta = filedialog.asksaveasfilename(
+            title="Exportar memoria de calculo (PDF)", defaultextension=".pdf",
+            filetypes=[("Archivo PDF", "*.pdf")],
+        )
+        if not ruta:
+            return
+        try:
+            resultado = cli.exportar_pdf(self.informe, Path(ruta), proyecto=self.proyecto_var.get())
+            messagebox.showinfo("Memoria exportada", resultado.mensaje)
+        except Exception as exc:
+            messagebox.showerror("Error al exportar", f"{type(exc).__name__}: {exc}")
+
+
+def main():
+    root = tb.Window(themename="litera") if tb is not None else tk.Tk()
+    ExpedienteApp(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()

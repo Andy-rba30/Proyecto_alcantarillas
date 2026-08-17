@@ -1,0 +1,645 @@
+{
+  "expediente": {
+    "csv": "tests\\ejemplo_puntos.csv",
+    "generado_utc": "2026-08-17T13:54:43+00:00",
+    "puntos": 4,
+    "dimensionados": 0,
+    "cerrado": false
+  },
+  "puntos": [
+    {
+      "id": "A-01",
+      "progresiva": "0+380",
+      "familia": "A",
+      "pendientes_externos": [
+        "Q_receptor_m3s",
+        "cota_TW"
+      ],
+      "dimensionado": false,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.0,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": {
+          "valor": "quebrada_menor",
+          "origen": "linea de comandos (--categoria_tr)"
+        },
+        "longitud_m": {
+          "valor": 12.0,
+          "origen": "linea de comandos (--longitud_m)"
+        },
+        "TW_m": {
+          "valor": 0.5,
+          "origen": "linea de comandos (--TW_m)"
+        }
+      },
+      "clasificacion": {
+        "luz_m": 2.0,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "A",
+        "origen_del_caudal": "Q hidrologico propio de la cuenca (Tc.py + IDF con el TR de la Fase 2)",
+        "TR_procede": true,
+        "TR_anios": 35,
+        "TR_categoria": "quebrada_menor",
+        "TR_numeral": "3.6, Tabla N 02",
+        "TR_fundamento": "categoria 'quebrada_menor' declarada para el cauce del punto; fila de la Tabla N 02 con R = 0.35 y n = 15 anios",
+        "datos_pendientes": []
+      },
+      "diseno": null,
+      "proteccion_salida": null,
+      "geometria": null,
+      "estructural": null,
+      "espaciamiento_alivio": null,
+      "iteraciones": [],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "cumple": true,
+          "valor_obtenido": 2.0,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        }
+      ],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "material y diametro (bucle de MD)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "remanso_derecho_via",
+          "etiqueta": "A",
+          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+          "fuente": "PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial",
+          "campo": null,
+          "delta_rasante_m": null,
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial"
+        }
+      ]
+    },
+    {
+      "id": "A-02",
+      "progresiva": "1+920",
+      "familia": "A",
+      "pendientes_externos": [
+        "Q_receptor_m3s",
+        "cota_TW"
+      ],
+      "dimensionado": false,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.0,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": {
+          "valor": "quebrada_menor",
+          "origen": "linea de comandos (--categoria_tr)"
+        },
+        "longitud_m": {
+          "valor": 12.0,
+          "origen": "linea de comandos (--longitud_m)"
+        },
+        "TW_m": {
+          "valor": 0.5,
+          "origen": "linea de comandos (--TW_m)"
+        }
+      },
+      "clasificacion": {
+        "luz_m": 2.0,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "A",
+        "origen_del_caudal": "Q hidrologico propio de la cuenca (Tc.py + IDF con el TR de la Fase 2)",
+        "TR_procede": true,
+        "TR_anios": 35,
+        "TR_categoria": "quebrada_menor",
+        "TR_numeral": "3.6, Tabla N 02",
+        "TR_fundamento": "categoria 'quebrada_menor' declarada para el cauce del punto; fila de la Tabla N 02 con R = 0.35 y n = 15 anios",
+        "datos_pendientes": []
+      },
+      "diseno": null,
+      "proteccion_salida": null,
+      "geometria": null,
+      "estructural": null,
+      "espaciamiento_alivio": null,
+      "iteraciones": [],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "cumple": true,
+          "valor_obtenido": 2.0,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        }
+      ],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "material y diametro (bucle de MD)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "remanso_derecho_via",
+          "etiqueta": "A",
+          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+          "fuente": "PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial",
+          "campo": null,
+          "delta_rasante_m": null,
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial"
+        }
+      ]
+    },
+    {
+      "id": "B-01",
+      "progresiva": "2+450",
+      "familia": "B",
+      "pendientes_externos": [
+        "Q_receptor_m3s",
+        "cota_TW"
+      ],
+      "dimensionado": false,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.0,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": {
+          "valor": "quebrada_menor",
+          "origen": "linea de comandos (--categoria_tr)"
+        },
+        "longitud_m": {
+          "valor": 12.0,
+          "origen": "linea de comandos (--longitud_m)"
+        },
+        "TW_m": {
+          "valor": 0.5,
+          "origen": "linea de comandos (--TW_m)"
+        }
+      },
+      "clasificacion": {
+        "luz_m": 2.0,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "B",
+        "origen_del_caudal": "Q del drenaje longitudinal (cuneta)",
+        "TR_procede": true,
+        "TR_anios": 35,
+        "TR_categoria": "quebrada_menor",
+        "TR_numeral": "3.6, Tabla N 02",
+        "TR_fundamento": "categoria 'quebrada_menor' declarada para el cauce del punto; fila de la Tabla N 02 con R = 0.35 y n = 15 anios",
+        "datos_pendientes": []
+      },
+      "diseno": null,
+      "proteccion_salida": null,
+      "geometria": null,
+      "estructural": null,
+      "espaciamiento_alivio": {
+        "numeral": "Fase 10 (num. 4.1.2.1 d), pag. 178)",
+        "L_normativo_m": 200.0,
+        "L_hidraulico_m": 150.0,
+        "espaciamiento_max_m": 150.0,
+        "gobierna": "hidraulico",
+        "criterio_normativo": "long_max_cuneta"
+      },
+      "iteraciones": [],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "cumple": true,
+          "valor_obtenido": 2.0,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        }
+      ],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "material y diametro (bucle de MD)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "remanso_derecho_via",
+          "etiqueta": "A",
+          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+          "fuente": "PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial",
+          "campo": null,
+          "delta_rasante_m": null,
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial"
+        }
+      ]
+    },
+    {
+      "id": "C-01",
+      "progresiva": "3+100",
+      "familia": "C",
+      "pendientes_externos": [
+        "Q_m3s",
+        "area_ha",
+        "S_cauce",
+        "Q_receptor_m3s",
+        "cota_TW"
+      ],
+      "dimensionado": false,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.0,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": {
+          "valor": "quebrada_menor",
+          "origen": "linea de comandos (--categoria_tr)"
+        },
+        "longitud_m": {
+          "valor": 12.0,
+          "origen": "linea de comandos (--longitud_m)"
+        },
+        "TW_m": {
+          "valor": 0.5,
+          "origen": "linea de comandos (--TW_m)"
+        }
+      },
+      "clasificacion": {
+        "luz_m": 2.0,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "C",
+        "origen_del_caudal": "Q de diseno del canal (ANA / Junta de Usuarios del Bajo Piura)",
+        "TR_procede": false,
+        "TR_anios": null,
+        "TR_categoria": null,
+        "TR_numeral": "3.6, Tabla N 02",
+        "TR_fundamento": "Familia C: el caudal es el de diseno del canal o dren (ANA / Junta de Usuarios, Tablero 3.1), no un caudal hidrologico con periodo de retorno propio (Sec. 2.3)",
+        "datos_pendientes": [
+          "Q_m3s"
+        ]
+      },
+      "diseno": null,
+      "proteccion_salida": null,
+      "geometria": null,
+      "estructural": null,
+      "espaciamiento_alivio": null,
+      "iteraciones": [],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "cumple": true,
+          "valor_obtenido": 2.0,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        }
+      ],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "material y diametro (bucle de MD)",
+          "tipo": "DatoFaltanteError",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": "Q_m3s",
+          "delta_rasante_m": null,
+          "mensaje": "Falta el dato 'Q_m3s' en el punto C-01"
+        }
+      ]
+    }
+  ],
+  "cabezal": {
+    "cadena_sismica": {
+      "numeral": "Sec. 9.2",
+      "PGA": 0.5,
+      "F_pga": 1.0,
+      "A_s": 0.5,
+      "k_h0": 0.5,
+      "factor_muro": 1.0,
+      "k_h": 0.5,
+      "k_v": 0.0,
+      "pasos": [
+        {
+          "simbolo": "PGA",
+          "valor": 0.5,
+          "concepto": "Aceleracion pico en roca Clase B, Tr = 1000 anios"
+        },
+        {
+          "simbolo": "F_pga",
+          "valor": 1.0,
+          "concepto": "Factor de sitio"
+        },
+        {
+          "simbolo": "A_s",
+          "valor": 0.5,
+          "concepto": "Aceleracion ajustada por sitio (F_pga * PGA)"
+        },
+        {
+          "simbolo": "k_h0",
+          "valor": 0.5,
+          "concepto": "Coeficiente sismico de base (= A_s)"
+        },
+        {
+          "simbolo": "factor_muro",
+          "valor": 1.0,
+          "concepto": "Factor de muro (rigido, empotrado)"
+        },
+        {
+          "simbolo": "k_h",
+          "valor": 0.5,
+          "concepto": "Coeficiente sismico horizontal de diseno"
+        },
+        {
+          "simbolo": "k_v",
+          "valor": 0.0,
+          "concepto": "Coeficiente sismico vertical"
+        }
+      ]
+    },
+    "mononobe_okabe": null,
+    "geometria": null,
+    "recubrimientos": [],
+    "cuantias_minimas": {
+      "horizontal": 0.002,
+      "vertical": 0.0015
+    },
+    "notas": [
+      "Cabezales y aletas: concreto estructural EG-2013 Seccion 503 (+504 para el acero). NO tienen partida con numeral propio: se pagan bajo el volumen de concreto y el acero. Que aparezcan nominados en 503.01 confirma que son elemento estandar de terminacion, pero el argumento es mas debil que 'existe una partida especifica' (Sec. 9.1 (EG-2013 num. 503.01, pag. 905))",
+      "Embocadura: tubo a ras del muro (square edge), coherente con las constantes HDS-5 adoptadas en Sec. 4.2. Ambas decisiones se mueven juntas: cambiar el detalle obliga a cambiar las constantes (Sec. 9.1 y Tablero 2.3)",
+      "Empuje hidrostatico y subpresion: con NF a 1.4 m NO son opcionales (Manual de Puentes num. 2.4.3.8.2)",
+      "Zapata proxima al talud: doble verificacion, E.050 Art. 30.1-30.2 y 2.8.1.3.1.2c, pags. 272-273. El cabezal se apoya en el borde del terraplen, no en terreno horizontal",
+      "Diseno por flexion y corte: Sec. 9.4 (AASHTO LRFD Seccion 5, via Seccion 2.9). E.060 no gobierna el diseno estructural (Sec. 0.2, Via 1); si gobierna la durabilidad y los recubrimientos, con la regla del mayor",
+      "Las verificaciones E1-E5 de Sec. 9.3 no las ensambla esta CLI: M9.verificar_estabilidad recibe las demandas YA calculadas (capacidad portante, momentos y fuerzas) y elegir el plano de empuje o los factores de combinacion aqui seria decidir por el proyectista. La CLI corre las piezas de Fase 9 que se sostienen solas: cadena sismica (9.2), K_AE, recubrimientos (9.4) y cuantias minimas de referencia.",
+      "Recubrimiento: al valor adoptado hay que sumarle el aumento por ambiente corrosivo (E.060 Art. 7.7.5.1), directamente invocable con NF a 1.4 m y suelos salinos (Sec. 3.3). El articulo dice 'aumentar adecuadamente' y no fija cuanto: el aumento se declara en la memoria, no lo calcula este modulo"
+    ],
+    "bloqueos": [
+      {
+        "fase": "Fase 9 - Cabezal y aletas (M9)",
+        "etapa": "K_AE de Mononobe-Okabe (9.2)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "phi_relleno_trasdos",
+        "etiqueta": "A",
+        "concepto": "Angulo de friccion interna del material de cantera del trasdos",
+        "fuente": "PENDIENTE",
+        "campo": null,
+        "delta_rasante_m": null,
+        "mensaje": "'phi_relleno_trasdos' es un VACIO sin valor asignado (Angulo de friccion interna del material de cantera del trasdos). Debe resolverse antes de continuar: PENDIENTE"
+      },
+      {
+        "fase": "Fase 9 - Cabezal y aletas (M9)",
+        "etapa": "predimensionamiento del cabezal (9.3, E1-E5)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "predimensionamiento_cabezal",
+        "etiqueta": "A",
+        "concepto": "Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata e inclinacion beta del trasdos), en m",
+        "fuente": "PENDIENTE - predimensionamiento del proyectista, o plano tipo de cabezal del expediente vial",
+        "campo": null,
+        "delta_rasante_m": null,
+        "mensaje": "'predimensionamiento_cabezal' es un VACIO sin valor asignado (Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata e inclinacion beta del trasdos), en m). Debe resolverse antes de continuar: PENDIENTE - predimensionamiento del proyectista, o plano tipo de cabezal del expediente vial"
+      },
+      {
+        "fase": "Fase 9 - Cabezal y aletas (M9)",
+        "etapa": "recubrimiento de diseno 'contra_suelo' (9.4)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "recubrimiento_aashto_mm",
+        "etiqueta": "A",
+        "concepto": "Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, en mm, por condicion de exposicion, para compararlo con el de E.060 Art. 7.7.1",
+        "fuente": "PENDIENTE - AASHTO LRFD, tabla de recubrimientos minimos (Sec. 5) de la edicion que adopte el expediente",
+        "campo": null,
+        "delta_rasante_m": null,
+        "mensaje": "'recubrimiento_aashto_mm' es un VACIO sin valor asignado (Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, en mm, por condicion de exposicion, para compararlo con el de E.060 Art. 7.7.1). Debe resolverse antes de continuar: PENDIENTE - AASHTO LRFD, tabla de recubrimientos minimos (Sec. 5) de la edicion que adopte el expediente"
+      },
+      {
+        "fase": "Fase 9 - Cabezal y aletas (M9)",
+        "etapa": "recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "recubrimiento_aashto_mm",
+        "etiqueta": "A",
+        "concepto": "Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, en mm, por condicion de exposicion, para compararlo con el de E.060 Art. 7.7.1",
+        "fuente": "PENDIENTE - AASHTO LRFD, tabla de recubrimientos minimos (Sec. 5) de la edicion que adopte el expediente",
+        "campo": null,
+        "delta_rasante_m": null,
+        "mensaje": "'recubrimiento_aashto_mm' es un VACIO sin valor asignado (Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, en mm, por condicion de exposicion, para compararlo con el de E.060 Art. 7.7.1). Debe resolverse antes de continuar: PENDIENTE - AASHTO LRFD, tabla de recubrimientos minimos (Sec. 5) de la edicion que adopte el expediente"
+      },
+      {
+        "fase": "Fase 9 - Cabezal y aletas (M9)",
+        "etapa": "recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "recubrimiento_aashto_mm",
+        "etiqueta": "A",
+        "concepto": "Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, en mm, por condicion de exposicion, para compararlo con el de E.060 Art. 7.7.1",
+        "fuente": "PENDIENTE - AASHTO LRFD, tabla de recubrimientos minimos (Sec. 5) de la edicion que adopte el expediente",
+        "campo": null,
+        "delta_rasante_m": null,
+        "mensaje": "'recubrimiento_aashto_mm' es un VACIO sin valor asignado (Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, en mm, por condicion de exposicion, para compararlo con el de E.060 Art. 7.7.1). Debe resolverse antes de continuar: PENDIENTE - AASHTO LRFD, tabla de recubrimientos minimos (Sec. 5) de la edicion que adopte el expediente"
+      }
+    ]
+  },
+  "criterios": {
+    "usados": [
+      {
+        "clave": "F_pga",
+        "etiqueta": "A",
+        "valor": 1.0,
+        "concepto": "Factor de sitio para la aceleracion pico"
+      },
+      {
+        "clave": "PGA_roca_B",
+        "etiqueta": "N",
+        "valor": 0.5,
+        "concepto": "Aceleracion pico del terreno en roca Clase B, Tr = 1000 anios"
+      },
+      {
+        "clave": "diametros_normalizados",
+        "etiqueta": "C",
+        "valor": {
+          "inicio": 0.9,
+          "paso": 0.15,
+          "max": {
+            "concreto_reforzado": 2.7,
+            "tmc": 2.1,
+            "hdpe": 1.5
+          }
+        },
+        "concepto": "Progresion de diametros y topes por material"
+      },
+      {
+        "clave": "factor_muro",
+        "etiqueta": "N",
+        "valor": 1.0,
+        "concepto": "Factor de reduccion del coeficiente sismico por desplazamiento"
+      },
+      {
+        "clave": "geometria_control_salida",
+        "etiqueta": "C",
+        "valor": "seccion_llena",
+        "concepto": "Seccion de referencia de la que se toman V y R en la ecuacion de control de salida H = (1 + ke + 19.62*n^2*L/R^(4/3))*V^2/(2g)"
+      },
+      {
+        "clave": "hds5_embocadura_hdpe",
+        "etiqueta": "C",
+        "valor": {
+          "K": 0.0098,
+          "M": 2.0,
+          "c": 0.0398,
+          "Y": 0.67,
+          "Ks": -0.5
+        },
+        "concepto": "Constantes de control de entrada HDS-5 para tuberia HDPE"
+      },
+      {
+        "clave": "k_v",
+        "etiqueta": "A",
+        "valor": 0.0,
+        "concepto": "Coeficiente sismico vertical para Mononobe-Okabe"
+      },
+      {
+        "clave": "ke_entrada",
+        "etiqueta": "C",
+        "valor": 0.5,
+        "concepto": "Coeficiente de perdida de carga en la embocadura (ke)"
+      },
+      {
+        "clave": "long_max_cuneta",
+        "etiqueta": "A",
+        "valor": 200.0,
+        "concepto": "Longitud maxima de cuneta -> espaciamiento de alcantarillas de alivio"
+      },
+      {
+        "clave": "n_manning_hdpe",
+        "etiqueta": "A",
+        "valor": [
+          0.01,
+          0.013
+        ],
+        "concepto": "Coeficiente de rugosidad de Manning para HDPE de interior liso"
+      },
+      {
+        "clave": "phi_relleno_trasdos",
+        "etiqueta": "A",
+        "valor": null,
+        "concepto": "Angulo de friccion interna del material de cantera del trasdos"
+      },
+      {
+        "clave": "predimensionamiento_cabezal",
+        "etiqueta": "A",
+        "valor": null,
+        "concepto": "Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata e inclinacion beta del trasdos), en m"
+      },
+      {
+        "clave": "recubrimiento_aashto_mm",
+        "etiqueta": "A",
+        "valor": null,
+        "concepto": "Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, en mm, por condicion de exposicion, para compararlo con el de E.060 Art. 7.7.1"
+      },
+      {
+        "clave": "remanso_derecho_via",
+        "etiqueta": "A",
+        "valor": null,
+        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)"
+      },
+      {
+        "clave": "resguardo_HW_subrasante",
+        "etiqueta": "N->",
+        "valor": "segun_CBR",
+        "concepto": "Resguardo entre nivel de agua a la entrada y subrasante"
+      }
+    ],
+    "sin_valor_declarados": [
+      "FS_flotacion",
+      "Mw_licuefaccion",
+      "N_cq_N_gammaq_meyerhof",
+      "TR_evento_extremo",
+      "TW_receptor",
+      "angulo_aletas",
+      "c_phi_fundacion",
+      "capacidad_portante_adm",
+      "clases_producto_por_relleno",
+      "factores_carga_aashto",
+      "friccion_muro_suelo_delta",
+      "h_relleno_min_concreto_tmc",
+      "homogeneidad_serie_fen",
+      "inclinacion_muro_beta",
+      "longitud_proteccion_salida",
+      "metodo_estabilidad_global",
+      "pendiente_relleno_trasdos_i",
+      "peso_especifico_concreto_kn_m3",
+      "peso_especifico_relleno_kn_m3",
+      "phi_relleno_trasdos",
+      "predimensionamiento_cabezal",
+      "procedimiento_flexion_corte_aashto_sec5",
+      "punto_aplicacion_incremento_sismico",
+      "recubrimiento_aashto_mm",
+      "remanso_derecho_via",
+      "talud_terraplen",
+      "umbral_area_quebrada_importante_ha",
+      "v_max_concreto_eleccion",
+      "v_max_hdpe",
+      "v_max_tmc"
+    ],
+    "bloquearon": [
+      {
+        "clave": "phi_relleno_trasdos",
+        "etiqueta": "A",
+        "concepto": "Angulo de friccion interna del material de cantera del trasdos",
+        "fuente": "PENDIENTE",
+        "reemplazado_por": "Ensayo de corte directo sobre el material de cantera",
+        "fases": [
+          "Fase 9 - Cabezal y aletas (M9)"
+        ],
+        "etapas": [
+          "K_AE de Mononobe-Okabe (9.2)"
+        ],
+        "puntos": []
+      },
+      {
+        "clave": "predimensionamiento_cabezal",
+        "etiqueta": "A",
+        "concepto": "Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata e inclinacion beta del trasdos), en m",
+        "fuente": "PENDIENTE - predimensionamiento del proyectista, o plano tipo de cabezal del expediente vial",
+        "reemplazado_por": "Plano de encofrado del cabezal, acotado",
+        "fases": [
+          "Fase 9 - Cabezal y aletas (M9)"
+        ],
+        "etapas": [
+          "predimensionamiento del cabezal (9.3, E1-E5)"
+        ],
+        "puntos": []
+      },
+      {
+        "clave": "recubrimiento_aashto_mm",
+        "etiqueta": "A",
+        "concepto": "Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, en mm, por condicion de exposicion, para compararlo con el de E.060 Art. 7.7.1",
+        "fuente": "PENDIENTE - AASHTO LRFD, tabla de recubrimientos minimos (Sec. 5) de la edicion que adopte el expediente",
+        "reemplazado_por": "Transcripcion de la tabla AASHTO con su edicion y pagina",
+        "fases": [
+          "Fase 9 - Cabezal y aletas (M9)"
+        ],
+        "etapas": [
+          "recubrimiento de diseno 'contra_suelo' (9.4)",
+          "recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4)",
+          "recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4)"
+        ],
+        "puntos": []
+      },
+      {
+        "clave": "remanso_derecho_via",
+        "etiqueta": "A",
+        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+        "fuente": "PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial",
+        "reemplazado_por": "Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto",
+        "fases": [
+          "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"
+        ],
+        "etapas": [
+          "material y diametro (bucle de MD)"
+        ],
+        "puntos": [
+          "A-01",
+          "A-02",
+          "B-01"
+        ]
+      }
+    ]
+  }
+}
