@@ -395,6 +395,82 @@ CRITERIOS: Dict[str, Criterio] = {
         sensibilidad=(200.0, 250.0),
     ),
 
+    # ----------------------- FASE 5: VACIOS DE VERIFICACION ---------------
+    # Tres filas de la tabla de Fase 5 (V5, V7, V8) enuncian el REQUISITO
+    # pero no entregan la formula ni el dato con que M5 pueda evaluarlo.
+    # Cada uno se detiene aqui, no en M5, para que quede escrito por que
+    # falta y que lo resolveria -- nunca un valor supuesto en silencio.
+
+    "remanso_derecho_via": Criterio(
+        valor=None,                 # VACIO: bloquea V5 para todo punto
+        etiqueta="A",
+        concepto="Extension del remanso aguas arriba de la alcantarilla y "
+                 "ancho de derecho de via disponible en el punto, para V5 "
+                 "(embalse dentro del derecho de via, sin afectar terceros "
+                 "ni la faja marginal)",
+        justificacion="Sec. 4.2 y el DG-2018 exigen la condicion pero no dan "
+                      "metodo: la hoja de ruta no entrega un procedimiento de "
+                      "perfil de remanso (curva de remanso aguas arriba del "
+                      "embalse) ni el dato de ancho de derecho de via por "
+                      "punto -- este ultimo tampoco es columna del CSV "
+                      "(Sec. 1.2). Sin el metodo Y el dato, V5 no tiene con "
+                      "que comparar el HW calculado por M4",
+        fuente="PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 "
+               "(Fase 5, V5). Requiere perfil de remanso (paso a paso o "
+               "HEC-RAS) y el ancho de derecho de via del expediente vial",
+        reemplazado_por="Perfil de remanso calculado aguas arriba del punto "
+                        "y ancho de derecho de via declarado por punto",
+        verificacion_pendiente="Definir si el ancho de derecho de via es un "
+                               "dato por punto (nueva columna del CSV) o un "
+                               "criterio unico del tramo",
+    ),
+
+    "flotacion_conducto": Criterio(
+        valor=None,                 # VACIO: bloquea V7 para todo punto
+        etiqueta="C",               # Anexo A: "Definicion [N] + procedimiento [C]"
+        concepto="Factor de seguridad y procedimiento de subpresion para V7 "
+                 "(flotacion del conducto vacio, NF en su cota mas alta): "
+                 "peso propio del conducto, peso del relleno sobre la clave "
+                 "y empuje de flotacion U",
+        justificacion="El Manual de Puentes define la subpresion (num. "
+                      "2.4.3.8.2, pag. 113) pero no incorpora AASHTO LRFD "
+                      "Sec. 12, que es de donde sale el procedimiento "
+                      "completo (peso propio por norma de producto, peso del "
+                      "relleno con la altura que fije el tamizado de 7.A, y "
+                      "el FS de flotacion). Nada de eso esta resuelto todavia "
+                      "en el script: el peso propio depende de la Fase 8 "
+                      "(sin programar) y la altura de relleno depende de "
+                      "7.A (sin programar). V7 no tiene con que calcular",
+        fuente="PENDIENTE - Manual de Puentes num. 2.4.3.8.2 (definicion) + "
+               "AASHTO LRFD Sec. 12 (procedimiento, no incorporado por el "
+               "Manual de Puentes)",
+        reemplazado_por="Fase 7.A (altura de relleno) y Fase 8 (peso propio "
+                        "por norma de producto) resueltas, mas el FS de "
+                        "flotacion adoptado",
+        verificacion_pendiente="Documentar de donde sale el FS de flotacion "
+                               "si no lo fija AASHTO LRFD Sec. 12 explicito "
+                               "para conductos enterrados",
+    ),
+
+    "TR_evento_extremo": Criterio(
+        valor=None,                 # VACIO: bloquea V8 para todo punto
+        etiqueta="A",
+        concepto="Periodo de retorno del evento extremo de V8 y el umbral "
+                 "que define 'la via no colapsa aunque desborde'",
+        justificacion="Sec. 5 (V8) exige verificar el punto a un TR MAYOR "
+                      "que el de diseno y confirmar que la via no colapsa "
+                      "aunque desborde, pero la hoja de ruta no fija ese TR "
+                      "mayor ni un umbral cuantitativo de 'colapso' (p.ej. "
+                      "HW sobre la corona del terraplen). Sin el TR no hay "
+                      "Q que correr por M3/M4 aparte del Q de diseno, y sin "
+                      "el umbral no hay con que comparar el HW resultante",
+        fuente="PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, "
+               "no diseño', sin numeral que fije el TR ni el umbral",
+        reemplazado_por="TR del evento extremo (p.ej. el de la serie FEN de "
+                        "la Fase 1-bis) y definicion tecnica de colapso de "
+                        "la via, ambos declarados en la memoria",
+    ),
+
     # ----------------------- GEOTECNIA -----------------------------------
 
     "phi_relleno_trasdos": Criterio(
