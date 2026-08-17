@@ -236,6 +236,21 @@ class CondicionAnalisis(str, Enum):
     SISMICO = "sismico"
 
 
+class GobiernaEspaciamiento(str, Enum):
+    """
+    Cual de los dos limites de Fase 10 fija el espaciamiento maximo entre
+    alcantarillas de alivio (Familia B): el limite normativo de longitud de
+    cuneta por regimen, o la longitud a la que la cuneta agota su capacidad
+    hidraulica admisible frente al caudal aportante. No es cosmetico: si
+    gobierna NORMATIVO el remedio de un espaciamiento insuficiente es
+    replantear puntos de alivio adicionales por norma; si gobierna
+    HIDRAULICO, el remedio esta en la cuneta (seccion, pendiente) o en el
+    area tributaria, no en el limite de 4.1.2.1 d).
+    """
+    NORMATIVO = "normativo"     # num. 4.1.2.1 d) -- long_max_cuneta
+    HIDRAULICO = "hidraulico"   # capacidad admisible de la cuneta
+
+
 class RegimenEntrada(str, Enum):
     """
     Rama de la formulacion de control de entrada de HDS-5 (Sec. 4.2). No es
@@ -712,6 +727,40 @@ class TamizadoRasante:
             delta_rasante_m=self.delta_rasante_m,
             id_punto=self.id_punto,
         )
+
+
+@dataclass(frozen=True)
+class Espaciamiento:
+    """
+    Salida de Fase 10: espaciamiento maximo entre alcantarillas de alivio
+    (Familia B), el MINIMO de dos limites independientes:
+
+        espaciamiento_max = min(L_normativo, L_hidraulico)
+
+    `L_normativo` es el limite de num. 4.1.2.1 d) (longitud maxima de cuneta
+    segun regimen), leido del criterio adoptado 'long_max_cuneta' -- 200 m,
+    adoptado por el regimen FEN (Sec. 10, Anexo A).
+
+    `L_hidraulico` es la longitud a la que la cuneta agota su capacidad
+    admisible frente al caudal aportante por metro lineal. Este modulo no la
+    calcula: Sec. 10 punto 2 describe el procedimiento (disenar la cuneta,
+    capacidad admisible con borde libre, caudal aportante por area tributaria
+    e intensidad de TR = 35 anios) pero no fija la seccion de la cuneta, su n
+    de Manning ni la formula de intensidad -- ningun numeral de la hoja de
+    ruta los trae. Rellenar esos vacios en silencio violaria la regla del
+    proyecto, asi que `M10_espaciamiento` la recibe como argumento ya
+    resuelto, igual que MD.py recibe L y TW en vez de derivarlos.
+
+    Se guardan los DOS limites por separado, no solo el minimo, porque la
+    memoria tiene que poder mostrar por cuanto quedo descartado el que no
+    gobierna.
+    """
+    L_normativo: float           # m
+    L_hidraulico: float          # m
+    espaciamiento_max: float     # m - el minimo de los dos
+    gobierna: GobiernaEspaciamiento
+    criterio_normativo: str = "long_max_cuneta"
+    numeral: str = "Fase 10 (num. 4.1.2.1 d), pag. 178)"
 
 
 @dataclass(frozen=True)
