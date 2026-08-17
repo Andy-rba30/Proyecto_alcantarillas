@@ -68,6 +68,7 @@ Uso
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import html
 import math
@@ -898,6 +899,51 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
     return _fila(celdas, clase)
 
 
+COLUMNAS_RESUMEN_CSV = (
+    "id", "progresiva", "familia", "TR_anios", "tipo_hidraulico",
+    "material", "norma_producto", "D_m", "V_ms", "y_sobre_D", "HW_m",
+    "control_gobernante", "proteccion_d50_m", "proteccion_espesor_m",
+    "proteccion_longitud_m", "tipo_cabezal",
+)
+
+
+def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
+    """
+    Una fila del cuadro resumen (entregable 3) en valores planos, para CSV.
+    Misma fuente de datos que `fila_resumen`: toda celda que dependa de una
+    etapa bloqueada sale vacia, nunca con un valor plausible.
+    """
+    punto = informe.punto
+    fila: List[Any] = [punto.id, punto.progresiva_display, punto.familia.value]
+
+    if informe.clasificacion is None or informe.clasificacion.periodo_retorno.anios is None:
+        fila.append("")
+    else:
+        fila.append(informe.clasificacion.periodo_retorno.anios)
+
+    if informe.dimensionado:
+        resultado = informe.resultado
+        material = resultado.material
+        h = resultado.resultado_hidraulico
+        fila.extend([
+            material.tipo.value, material.nombre, material.norma_producto,
+            _num(resultado.D, FMT_2), _num(h.V, FMT_2),
+            _num(h.y_normal / resultado.D, FMT_2), _num(h.HW, FMT_2),
+            h.control_gobernante.value,
+        ])
+    else:
+        fila.extend(["", "", "", "", "", "", "", ""])
+
+    if informe.proteccion is None:
+        fila.extend(["", "", ""])
+    else:
+        p = informe.proteccion
+        fila.extend([_num(p.d50), _num(p.espesor, FMT_2), _num(p.longitud)])
+
+    fila.append(tipo_cabezal)
+    return fila
+
+
 # ===========================================================================
 # 3. Declaracion de criterios adoptados (entregable 2)
 # ===========================================================================
@@ -1137,6 +1183,26 @@ def exportar_html(informe: Any, destino: Path, **kwargs: Any) -> Path:
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
     destino.write_text(memoria_html(informe, **kwargs), encoding="utf-8")
+    return destino
+
+
+def exportar_csv(informe: Any, destino: Path, *, ruta_hoja: Optional[Path] = None) -> Path:
+    """
+    Escribe el cuadro resumen (entregable 3) como CSV, una fila por punto.
+    Mismas columnas y misma fuente de datos que `fila_resumen` en la memoria
+    HTML: es el mismo cuadro, en un formato que se abre en una hoja de calculo.
+    """
+    tableros = tableros_pendientes(ruta_hoja)
+    embocadura = decision_embocadura(tableros)
+    tipo_cabezal = embocadura or f"sin declarar (Tablero {ITEM_EMBOCADURA})"
+
+    destino = Path(destino)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    with destino.open("w", encoding="utf-8", newline="") as f:
+        escritor = csv.writer(f)
+        escritor.writerow(COLUMNAS_RESUMEN_CSV)
+        for p in informe.puntos:
+            escritor.writerow(_fila_resumen_csv(p, tipo_cabezal))
     return destino
 
 

@@ -579,6 +579,14 @@ class TestExportacion:
         with pytest.raises(FileNotFoundError):
             M11.cargar_plantilla(tmp_path / "no_existe.html")
 
+    def test_exportar_csv_escribe_una_fila_por_punto(self, informe, tmp_path):
+        destino = tmp_path / "sub" / "Resumen.csv"
+        ruta = M11.exportar_csv(informe, destino)
+        assert ruta.is_file()
+        lineas = ruta.read_text(encoding="utf-8").splitlines()
+        assert lineas[0] == ",".join(M11.COLUMNAS_RESUMEN_CSV)
+        assert len(lineas) == 1 + len(informe.puntos)
+
 
 # ===========================================================================
 # Escapado: el reporte no puede romperse ni inyectar con un dato del CSV

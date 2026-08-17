@@ -124,7 +124,7 @@ from modulos.M10_espaciamiento import espaciamiento_alivio          # noqa: E402
 # esta CLI los siguen publicando con el mismo nombre.
 from modulos.M11_reporte import (CriterioBloqueante,                # noqa: E402,F401
                                  criterios_bloqueantes,
-                                 exportar_html, exportar_pdf)
+                                 exportar_csv, exportar_html, exportar_pdf)
 from modulos.MD import disenar_punto                                # noqa: E402
 
 # Etiquetas de fase. Son rotulos del informe, no valores de proyecto: cada uno
@@ -1164,6 +1164,9 @@ def _parser() -> argparse.ArgumentParser:
                    help="escribe la memoria en PDF con weasyprint; si no esta "
                         "instalado, deja el HTML y lo abre en el navegador "
                         "para Ctrl+P (misma via que legacy/Tc.py)")
+    p.add_argument("--csv-resumen", type=Path, dest="csv_resumen_salida",
+                   help="escribe el cuadro resumen de la Fase 11 (entregable "
+                        "3) en esa ruta, como CSV")
     p.add_argument("--proyecto", default="",
                    help="nombre del proyecto que encabeza la memoria")
     return p
@@ -1205,6 +1208,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         salida = exportar_pdf(informe, args.pdf_salida,
                               proyecto=args.proyecto)
         print(salida.mensaje)
+
+    if args.csv_resumen_salida is not None:
+        ruta = exportar_csv(informe, args.csv_resumen_salida)
+        print(f"Cuadro resumen (CSV): {ruta}")
 
     return 0 if informe.cerrado else 1
 

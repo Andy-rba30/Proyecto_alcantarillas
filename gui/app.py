@@ -53,6 +53,9 @@ COLOR_ERROR = "#e74c3c"
 COLOR_OK = "#27ae60"
 COLOR_AVISO = "#b9770e"
 
+APP_VERSION = "1.0"
+FORMATO_SESION = 1                      # version del JSON de sesion (patron Tc.py)
+
 # Banderas globales que acepta `cli.py` fuera del CSV (ver docstring de
 # `cli.py`, seccion "Datos que NO estan en el CSV"). Cada tupla es
 # (clave, etiqueta, ayuda, unidad).
@@ -222,8 +225,10 @@ class ExpedienteApp:
 
         barra = ttk.Frame(contenedor, padding=(0, 10, 0, 0))
         barra.pack(fill="x")
+        ttk.Button(barra, text="Guardar sesion", command=self.guardar_sesion).pack(side="left", padx=4)
+        ttk.Button(barra, text="Cargar sesion", command=self.cargar_sesion).pack(side="left", padx=4)
         self.lbl_estado = ttk.Label(barra, text="Sin ejecutar.", style="Ayuda.TLabel")
-        self.lbl_estado.pack(side="left")
+        self.lbl_estado.pack(side="left", padx=(12, 0))
 
         self.btn_ejecutar = tk.Button(
             barra, text="EJECUTAR PIPELINE (M0 -> M10)", font=("Segoe UI", 10, "bold"),
@@ -683,6 +688,13 @@ class ExpedienteApp:
                               "Si no lo esta, abre la memoria en el navegador\n"
                               "para imprimirla como PDF (Ctrl+P).")
 
+        self.btn_csv = tk.Button(f_exp, text="Exportar cuadro resumen (CSV)", font=("Segoe UI", 9, "bold"),
+                                 bg="#16a085", fg="white", relief="flat", cursor="hand2",
+                                 state="disabled", command=self.exportar_csv)
+        self.btn_csv.pack(side="left", padx=8, ipadx=8, ipady=4)
+        Tooltip(self.btn_csv, "El cuadro resumen (entregable 3 de M11), una fila\n"
+                              "por punto, en una hoja de calculo.")
+
     # ------------------------------------------------------------------
     # Lectura de banderas
     # ------------------------------------------------------------------
@@ -743,7 +755,7 @@ class ExpedienteApp:
 
         self._llenar_tabla_puntos()
         self._llenar_resumen()
-        for btn in (self.btn_json, self.btn_html, self.btn_pdf):
+        for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv):
             btn.config(state="normal")
         self.lbl_estado.config(
             text=f"Ejecutado ({self.informe.generado}). "
@@ -864,6 +876,70 @@ class ExpedienteApp:
             messagebox.showinfo("Memoria exportada", resultado.mensaje)
         except Exception as exc:
             messagebox.showerror("Error al exportar", f"{type(exc).__name__}: {exc}")
+
+    def exportar_csv(self):
+        if self.informe is None:
+            return
+        ruta = filedialog.asksaveasfilename(
+            title="Exportar cuadro resumen (CSV)", defaultextension=".csv",
+            filetypes=[("Archivo CSV", "*.csv")],
+            initialfile=self.informe.csv.with_suffix(".resumen.csv").name,
+        )
+        if not ruta:
+            return
+        try:
+            cli.exportar_csv(self.informe, Path(ruta))
+            messagebox.showinfo("CSV exportado", f"Archivo: {ruta}")
+        except Exception as exc:
+            messagebox.showerror("Error al exportar", f"{type(exc).__name__}: {exc}")
+
+    # ------------------------------------------------------------------
+    # Sesion (JSON) - patron de legacy/Tc.py
+    # ------------------------------------------------------------------
+    def guardar_sesion(self):
+        data = {
+            "formato_version": FORMATO_SESION,
+            "app_version": APP_VERSION,
+            "proyecto": self.proyecto_var.get(),
+            "csv": self.csv_var.get(),
+            "datos_externos": self.datos_externos_var.get(),
+            "externos": {clave: var.get() for clave, var in self.externos_vars.items()},
+        }
+        ruta = filedialog.asksaveasfilename(
+            title="Guardar sesion", defaultextension=".json",
+            filetypes=[("Archivos JSON", "*.json")],
+            initialfile=f"sesion_{self.proyecto_var.get() or 'expediente'}.json",
+        )
+        if not ruta:
+            return
+        try:
+            with open(ruta, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            messagebox.showinfo("Exito", "Sesion guardada correctamente.")
+        except OSError as exc:
+            messagebox.showerror("Error al guardar", f"No se pudo escribir el archivo:\n{exc}")
+
+    def cargar_sesion(self):
+        ruta = filedialog.askopenfilename(
+            title="Cargar sesion", filetypes=[("Archivos JSON", "*.json")])
+        if not ruta:
+            return
+        try:
+            with open(ruta, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError) as exc:
+            messagebox.showerror("Error al cargar", f"No se pudo leer la sesion:\n{exc}")
+            return
+
+        self.proyecto_var.set(data.get("proyecto", ""))
+        self.csv_var.set(data.get("csv", ""))
+        self.datos_externos_var.set(data.get("datos_externos", ""))
+        for clave, valor in data.get("externos", {}).items():
+            if clave in self.externos_vars:
+                self.externos_vars[clave].set(valor)
+
+        self.lbl_error_datos.config(text="")
+        self.nb.select(self.tab_datos)
 
 
 def main():
