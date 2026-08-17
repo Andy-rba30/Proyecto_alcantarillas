@@ -13,6 +13,11 @@ que fija la guia de sesiones (Sec. 2), para un punto critico.
         si se agoto el catalogo -> "material descartado por diametro requerido"
     si ningun material llego a cumplir -> DisenoNoFactibleError
 
+`disenar_lote(puntos, ...)` corre `disenar_punto` sobre cada fila del CSV,
+captura los fallos por-punto como `ResultadoPunto(aceptado=False)` y devuelve
+la lista completa en el orden de la entrada: M11 puede listar aceptados y
+fallidos sin haber perdido ninguno.
+
 Devuelve el primer `ResultadoPunto` aceptado: el diametro MAS CHICO del
 material MAS ALTO en la lista de candidatos de M2 que pasa la Fase 5 entera.
 No compara materiales entre si ni busca "el mejor" -- la eleccion final de
@@ -96,10 +101,11 @@ Uso
 from __future__ import annotations
 
 from importlib import import_module
-from typing import List, Optional, Protocol, Sequence, Tuple
+from typing import List, Optional, Protocol, Sequence, Tuple, Iterable
 
-from modelos import (DisenoNoFactibleError, Familia, Material, PuntoCritico,
-                     ResultadoHidraulico, ResultadoPunto, Verificacion)
+from modelos import (DisenoNoFactibleError, ErrorProyecto, Familia, Material,
+                     PuntoCritico, ResultadoHidraulico, ResultadoPunto,
+                     Verificacion)
 from modulos.M2_material import materiales_candidatos, siguiente_diametro
 from modulos.M3_hidraulica import resolver_manning
 from modulos.M4_control import resolver_control
@@ -326,3 +332,61 @@ def _motivo_sin_candidatos(punto: PuntoCritico) -> str:
                    "catalogo de Sec. 3.2 es de conductos circulares. El punto "
                    "no es no-factible, es de otra forma de estructura")
     return motivo
+
+
+# ---------------------------------------------------------------------------
+# Lote de puntos: el bucle exterior del expediente
+# ---------------------------------------------------------------------------
+
+def _resultado_fallido(punto: PuntoCritico, exc: ErrorProyecto) -> ResultadoPunto:
+    """
+    Convierte una excepcion de proyecto en un ResultadoPunto no aceptado.
+
+    El motivo lleva el tipo de excepcion y su mensaje: `DisenoNoFactibleError`
+    y `DatoFaltanteError` son causas distintas del fallo y M11 debe poder
+    distinguirlas en el reporte, sin tener que releer la excepcion original.
+    """
+    return ResultadoPunto(
+        punto=punto,
+        aceptado=False,
+        motivo_rechazo=f"{type(exc).__name__}: {exc}",
+    )
+
+
+def disenar_lote(puntos: Iterable[PuntoCritico], *, L: float, TW: float,
+                 Q: Optional[float] = None, S: Optional[float] = None,
+                 verificar: Optional[Verificador] = None,
+                 ) -> List[ResultadoPunto]:
+    """
+    Diseño hidraulico del lote completo de un expediente: llama a
+    `disenar_punto` por cada `PuntoCritico` y devuelve la lista de resultados
+    en el MISMO ORDEN que la entrada, mezclando aceptados y fallidos.
+
+    Los puntos que lanzan `ErrorProyecto` (no factible, dato faltante, dato
+    invalido, criterio pendiente) se capturan y se convierten en un
+    `ResultadoPunto(aceptado=False)` con el motivo explicito: el lote continua
+    con el siguiente punto sin abortar. Un fallo de programa (ImportError,
+    ValueError) SI se propaga, porque indica que el modulo esta incompleto.
+
+    Cuando un criterio pendiente bloquea TODOS los puntos (p.ej. Q_m3s = None
+    en toda la Familia A porque 'homogeneidad_serie_fen' esta vacio), la lista
+    resultante tendra todos los puntos fallidos con CriterioPendienteError. Eso
+    es informacion correcta: el bloqueo lo declara el criterio, no el lote.
+
+    L, TW, Q, S y verificar se aplican a todos los puntos. Para puntos con
+    geometria o caudal individualmente distintos -- lo habitual en la Fase 7 --
+    llama a `disenar_punto` directamente, uno a uno, y ensambla la lista tu.
+
+    Devuelve siempre una lista, vacia solo si `puntos` estaba vacio.
+    """
+    if verificar is None:
+        verificar = _verificador_de_M5()
+
+    resultados: List[ResultadoPunto] = []
+    for punto in puntos:
+        try:
+            resultados.append(disenar_punto(punto, L=L, TW=TW, Q=Q, S=S,
+                                            verificar=verificar))
+        except ErrorProyecto as exc:
+            resultados.append(_resultado_fallido(punto, exc))
+    return resultados

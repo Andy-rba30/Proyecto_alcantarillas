@@ -272,11 +272,11 @@ def _resultado_punto(cumple: bool) -> ResultadoPunto:
     )
     return ResultadoPunto(
         punto=_punto(),
+        aceptado=cumple,
         material=_material_concreto(),
         D=CN.DIAMETRO_MIN,
         resultado_hidraulico=_resultado_hidraulico(ControlGobernante.ENTRADA),
         verificaciones=(v,),
-        aceptado=cumple,
         motivo_rechazo=None if cumple else "V1: y/D por encima del maximo",
     )
 
@@ -322,3 +322,23 @@ def test_diseno_no_factible_admite_no_tener_delta_de_rasante():
     e = DisenoNoFactibleError("HDPE descartado por diametro requerido")
     assert e.delta_rasante_m is None
     assert e.motivo in str(e)
+
+
+def test_resultado_punto_fallido_tiene_campos_en_none_y_motivo_explicito():
+    """
+    Un punto no factible -- capturado por disenar_lote -- tiene aceptado=False,
+    todos los campos de diseño en None y motivo_rechazo explicito. M11 lo lista
+    aparte del expediente de puntos resueltos.
+    """
+    fallido = ResultadoPunto(
+        punto=_punto(),
+        aceptado=False,
+        motivo_rechazo="ningun material candidato cumple la Fase 5",
+    )
+    assert not fallido.aceptado
+    assert fallido.material is None
+    assert fallido.D is None
+    assert fallido.resultado_hidraulico is None
+    assert fallido.verificaciones == ()
+    assert fallido.coherente                   # motivo_rechazo no es None
+    assert fallido.verificaciones_incumplidas == ()

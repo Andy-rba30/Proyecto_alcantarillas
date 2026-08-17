@@ -635,16 +635,26 @@ class ResultadoPunto:
     Resultado completo de un punto critico: la combinacion elegida y el
     expediente de verificaciones que la sostiene.
 
-    `motivo_rechazo` se llena cuando `aceptado` es False, con el mismo texto
-    que llevaria DisenoNoFactibleError si no quedara ninguna alternativa.
+    `aceptado` y `punto` son los dos campos siempre presentes. Los demas solo
+    existen para puntos que llegaron a dimensionarse:
+
+        aceptado=True   material, D, resultado_hidraulico y verificaciones
+                        estan completos. motivo_rechazo es None.
+        aceptado=False  material, D, resultado_hidraulico y verificaciones
+                        son None / tupla vacia. motivo_rechazo explica por
+                        que no hubo solucion. M11 los lista aparte.
+
+    Esta separacion permite a `disenar_lote` devolver la lista completa del
+    expediente -- puntos resueltos y fallidos mezclados en el orden del CSV --
+    sin perder ningun punto ni forzar un aborte.
     """
 
     punto: PuntoCritico
-    material: Material
-    D: float                              # m - diametro adoptado
-    resultado_hidraulico: ResultadoHidraulico
-    verificaciones: Tuple[Verificacion, ...]
     aceptado: bool
+    material: Optional[Material] = None
+    D: Optional[float] = None                      # m - diametro adoptado
+    resultado_hidraulico: Optional[ResultadoHidraulico] = None
+    verificaciones: Tuple[Verificacion, ...] = ()
     motivo_rechazo: Optional[str] = None
 
     @property

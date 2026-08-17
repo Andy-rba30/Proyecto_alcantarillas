@@ -30,7 +30,7 @@ from modelos import (DatoFaltanteError, DisenoNoFactibleError, Familia,
                      PuntoCritico, TipoMaterial, Verificacion)
 from modulos.M2_material import catalogo
 from modulos.MD import (MENSAJE_DIAMETRO_SUPERADO, MODULO_VERIFICACIONES,
-                        disenar_material, disenar_punto)
+                        disenar_lote, disenar_material, disenar_punto)
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING
 
 # Contexto geometrico del punto. Son datos de la Fase 7 (L) y del Tablero 3.1
@@ -317,3 +317,88 @@ def test_sin_M5_la_ausencia_sale_como_ImportError_y_no_como_ErrorProyecto():
     """
     with pytest.raises(ImportError, match="M5_verificaciones"):
         disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE)
+
+
+# ===========================================================================
+# disenar_lote: expediente completo
+# ===========================================================================
+
+def test_el_lote_devuelve_todos_los_puntos_en_orden():
+    puntos = [_punto(id="A-01"), _punto(id="A-02"), _punto(id="A-03")]
+
+    resultados = disenar_lote(puntos, L=L_CONDUCTO, TW=TW_LIBRE,
+                              verificar=_todo_cumple)
+
+    assert [r.punto.id for r in resultados] == ["A-01", "A-02", "A-03"]
+
+
+def test_el_lote_continua_despues_de_un_punto_fallido():
+    """
+    El punto A-02 tiene Q=50 m3/s y falla con DisenoNoFactibleError. El lote
+    no aborta: A-03 se procesa y sus resultados aparecen en la lista.
+    """
+    puntos = [
+        _punto(id="A-01"),
+        _punto(id="A-02", Q_m3s=50.0),   # no factible: ningún diametro alcanza
+        _punto(id="A-03"),
+    ]
+
+    resultados = disenar_lote(puntos, L=L_CONDUCTO, TW=TW_LIBRE,
+                              verificar=_todo_cumple)
+
+    assert len(resultados) == 3
+    assert resultados[0].aceptado
+    assert not resultados[1].aceptado
+    assert resultados[2].aceptado
+
+
+def test_el_punto_fallido_tiene_motivo_explicito_y_campos_en_none():
+    """
+    El motivo lleva el nombre del error y su mensaje: M11 distingue
+    DisenoNoFactibleError de DatoFaltanteError sin releer la excepcion.
+    """
+    puntos = [_punto(id="A-01", Q_m3s=50.0)]
+
+    resultados = disenar_lote(puntos, L=L_CONDUCTO, TW=TW_LIBRE,
+                              verificar=_todo_cumple)
+
+    fallido = resultados[0]
+    assert not fallido.aceptado
+    assert fallido.motivo_rechazo is not None
+    assert "DisenoNoFactibleError" in fallido.motivo_rechazo
+    assert fallido.material is None
+    assert fallido.D is None
+    assert fallido.resultado_hidraulico is None
+    assert fallido.verificaciones == ()
+    assert fallido.coherente
+
+
+def test_el_lote_captura_dato_faltante_por_punto():
+    """
+    Un punto sin S_cauce es DatoFaltanteError: el lote lo guarda como fallido
+    y sigue procesando los demas.
+    """
+    puntos = [_punto(id="A-01"), _punto(id="A-02", S_cauce=None)]
+
+    resultados = disenar_lote(puntos, L=L_CONDUCTO, TW=TW_LIBRE,
+                              verificar=_todo_cumple)
+
+    assert resultados[0].aceptado
+    assert not resultados[1].aceptado
+    assert "DatoFaltanteError" in resultados[1].motivo_rechazo
+
+
+def test_el_lote_vacio_devuelve_lista_vacia():
+    assert disenar_lote([], L=L_CONDUCTO, TW=TW_LIBRE,
+                        verificar=_todo_cumple) == []
+
+
+def test_lote_con_todos_fallidos_devuelve_todos_como_no_aceptados():
+    puntos = [_punto(id=f"A-{i:02d}") for i in range(3)]
+
+    resultados = disenar_lote(puntos, L=L_CONDUCTO, TW=TW_LIBRE,
+                              verificar=_nada_cumple)
+
+    assert all(not r.aceptado for r in resultados)
+    assert all(r.motivo_rechazo for r in resultados)
+    assert all(r.coherente for r in resultados)
