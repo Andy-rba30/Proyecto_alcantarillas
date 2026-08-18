@@ -4,12 +4,20 @@ tests/test_sin_literales.py
 Guardia automatica de la regla de arquitectura: ningun modulo declara valores.
 
 Todo literal numerico bajo src/ -- incluido src/modulos/, donde aterrizaran
-M0 a M11 -- es un defecto, salvo en los cuatro archivos exentos:
+M0 a M11 -- es un defecto, salvo en los cinco archivos exentos:
 
     constantes_normativas.py   valores [N] con numeral verificado
-    criterios_adoptados.py     valores [N->], [C] y [A] declarados
+    criterios_adoptados.py     valores [N->], [C], [A] y los [S] con ensayo
+                               pendiente, declarados
+    datos_sitio.py             valores [S] de corredor: la lectura de un mapa
+                               o un ensayo sobre las coordenadas de esta obra
     tolerancias.py             precision numerica, no valores de proyecto
     dominios.py                limites de dominio del dato de entrada
+
+Los dos ultimos estan exentos porque sus numeros NO son valores de proyecto.
+`datos_sitio.py` esta exento por la razon contraria: los suyos si lo son -- el
+PGA gobierna la cadena sismica entera -- y estan aparte porque no son
+constantes universales, que es una separacion de clasificacion, no de peso.
 
 Excepciones dentro de un modulo vigilado:
 
@@ -42,7 +50,7 @@ SRC = RAIZ / "src"
 MODULOS = SRC / "modulos"
 
 EXENTOS = {"constantes_normativas.py", "criterios_adoptados.py",
-           "tolerancias.py", "dominios.py"}
+           "datos_sitio.py", "tolerancias.py", "dominios.py"}
 NUMEROS_PERMITIDOS = {0, 1, 2}
 MARCA = "# literal-ok"
 
@@ -169,6 +177,48 @@ def test_los_limites_de_dominio_salieron_de_M0():
         assert f"{nombre} =" in dominios, f"'{nombre}' no se declara en dominios.py"
         assert f"{nombre} =" not in m0, f"'{nombre}' volvio a declararse en M0"
         assert nombre in m0, f"M0 dejo de usar '{nombre}'"
+
+
+def test_los_datos_de_sitio_salieron_de_constantes_y_criterios():
+    """
+    Los tres valores que se reclasificaron como [S] no pueden volver a estar
+    declarados en los archivos de los que salieron: dos declaraciones del
+    mismo dato es la inconsistencia Clase D/F que motivo la v5.
+    """
+    constantes = (SRC / "constantes_normativas.py").read_text(encoding="utf-8-sig")
+    criterios = (SRC / "criterios_adoptados.py").read_text(encoding="utf-8-sig")
+    sitio = (SRC / "datos_sitio.py").read_text(encoding="utf-8-sig")
+
+    for nombre in ("ZONA_SISMICA_LA_UNION", "Z_E030"):
+        assert f"{nombre} =" not in constantes, (
+            f"'{nombre}' volvio a declararse como constante [N]: es la lectura "
+            "de un mapa sobre las coordenadas de esta obra, no una constante "
+            "universal")
+        assert f'"{nombre}": DatoSitio(' in sitio, (
+            f"'{nombre}' no se declara en datos_sitio.py")
+
+    assert 'PERFIL_SUELO_PRESUNTO =' not in constantes
+    assert '"PERFIL_SUELO_PRESUNTO": Criterio(' in criterios
+
+    assert '"PGA_roca_B": DatoSitio(' in sitio
+    assert '"PGA_roca_B": Criterio(' not in criterios, (
+        "el PGA no puede estar declarado a la vez como criterio y como dato "
+        "de sitio")
+
+
+def test_la_tabla_del_factor_de_muro_es_normativa_y_la_eleccion_no():
+    """
+    El reparto tabla [N] / eleccion [A], el mismo que ya tenia F_pga: los dos
+    valores de la tabla del num. 2.8.1.1.14.2 son constantes normativas y cual
+    fila aplica a este cabezal es un criterio adoptado.
+    """
+    constantes = (SRC / "constantes_normativas.py").read_text(encoding="utf-8-sig")
+    criterios = (SRC / "criterios_adoptados.py").read_text(encoding="utf-8-sig")
+
+    assert "FACTOR_MURO_TABLA = {" in constantes
+    assert '"factor_muro_eleccion": Criterio(' in criterios
+    assert '"factor_muro": Criterio(' not in criterios, (
+        "'factor_muro' volvio a mezclar la tabla normativa con la eleccion")
 
 
 def test_el_directorio_de_modulos_esta_bajo_vigilancia():

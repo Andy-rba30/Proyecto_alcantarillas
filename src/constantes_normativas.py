@@ -157,7 +157,18 @@ NQ_ZAPATA_EN_TALUD = 0.0            # (2.8.1.3.1.2c)
 F_PGA_TABLA = {                     # Tabla 2.4.3.11.2.1.2-1, PGA >= 0.50
     "C": 1.0, "D": 1.0, "E": 0.9,
 }
-# PGA, F_pga elegido, factor de muro y k_v -> criterios_adoptados
+# Factor de reduccion del coeficiente sismico por desplazamiento admisible del
+# muro (num. 2.8.1.1.14.2). Las DOS filas son [N]: el numeral las fija. Cual de
+# las dos aplica a ESTE cabezal no lo dice el numeral -- lo decide como se
+# disena el cabezal -- y por eso la eleccion es el criterio [A]
+# 'factor_muro_eleccion', el mismo reparto que ya tenian F_PGA_TABLA y 'F_pga'.
+FACTOR_MURO_TABLA = {
+    "rigido": 1.0,        # sin reduccion: el muro no admite desplazamiento
+    "desplazable": 0.5,   # k_h = 0.5*k_h0, muros que admiten 25-50 mm
+}
+NUMERAL_FACTOR_MURO = "2.8.1.1.14.2"
+# PGA -> datos_sitio (dato de sitio [S]); F_pga elegido, factor de muro elegido
+# y k_v -> criterios_adoptados
 
 # Combinaciones de carga: AASHTO LRFD Sec. 3.4.1 via Manual de Puentes
 # (num. 2.4.5.3, pags. 140-143). La hoja de ruta NOMBRA las tres y no
@@ -225,7 +236,18 @@ CICLOPEO_FC_MATRIZ_MIN = 10.0               # MPa            Art. 22.10
 CICLOPEO_FRACCION_PIEDRA_MAX = 0.30         # del volumen    Art. 22.10
 NUMERAL_CICLOPEO = "E.060 Art. 22.10, pags. 194-195"
 
-# ================= E.030 (RM 183-2026-VIVIENDA) - solo referencia ==========
-ZONA_SISMICA_LA_UNION = 4
-Z_E030 = 0.45                       # Tr = 475 anios - NO se usa para el cabezal
-PERFIL_SUELO_PRESUNTO = "S5"        # suelos potencialmente licuables (Art. 14.6)
+# ================= E.030 (RM 183-2026-VIVIENDA) - donde quedo ==============
+# Este bloque tenia tres valores y ninguno era [N]: los tres son la lectura de
+# un mapa o de una clasificacion SOBRE LAS COORDENADAS DE ESTE PROYECTO. Citan
+# E.030 correctamente y aun asi cambiarian de valor en otra provincia, que es
+# justo lo que una constante normativa no hace. Se reclasificaron como datos de
+# sitio [S] y salieron de aqui:
+#
+#     ZONA_SISMICA_LA_UNION  ->  datos_sitio.DATOS_SITIO["ZONA_SISMICA_LA_UNION"]
+#     Z_E030                 ->  datos_sitio.DATOS_SITIO["Z_E030"]
+#     PERFIL_SUELO_PRESUNTO  ->  criterios_adoptados.CRITERIOS["PERFIL_SUELO_PRESUNTO"]
+#                                ([S] pendiente de SPT, junto a 'clase_sitio')
+#
+# El cambio es de clasificacion, no de uso: los tres seguian siendo referencia
+# que no gobierna el cabezal (Sec. 0.4 descarta el sismo de 475 anios de E.030
+# frente al PGA de Tr = 1000 anios del Manual de Puentes) y lo siguen siendo.

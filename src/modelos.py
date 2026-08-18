@@ -288,6 +288,19 @@ class PuntoCritico:
     Los campos Optional no son opcionales por comodidad: cada uno corresponde
     a un dato bloqueado en un tablero de pendientes. Se leen con `exigir()`,
     que lanza DatoFaltanteError en vez de asumir un valor.
+
+    `NF_profundidad_m` es la unica columna que NO viene del encabezado de
+    Sec. 1.2: se agrego al reclasificar el nivel freatico como dato de sitio
+    [S]. Era un criterio unico de proyecto (1.4 m, la caracterizacion de la
+    llanura del Bajo Piura) y su propia verificacion pendiente ya avisaba de
+    que podia variar punto a punto. Un dato que se MIDE en cada cruce es una
+    columna, no un criterio: el nivel freatico de un cruce en la llanura y el
+    de otro a tres kilometros son dos mediciones distintas, y declararlos con
+    un solo numero fingiria una uniformidad que ningun estudio del expediente
+    respalda. Viene vacio mientras el estudio geotecnico no de el valor de
+    cada punto, y entonces lo que se detiene es la verificacion que lo
+    necesite -- V7 en M8/M5, la subpresion del cabezal en M9 -- no la carga
+    del CSV.
     """
 
     id: str                            # identificador del punto
@@ -307,6 +320,7 @@ class PuntoCritico:
     Q_receptor_m3s: Optional[float]    # m3/s - ANA / Junta (Tablero 3.1)
     cota_TW: Optional[float]           # msnm - calculada en 1.3 (Tablero 3.1)
     sucs_fundacion: str                # clasificacion SUCS de la calicata
+    NF_profundidad_m: Optional[float]  # m - profundidad del nivel freatico
 
     # Derivado por M0, no es columna del CSV: columnas que la fila dejo vacias
     # porque el dato depende de terceros (Tablero 3). NO significa fila

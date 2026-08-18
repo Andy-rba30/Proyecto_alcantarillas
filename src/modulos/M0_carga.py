@@ -63,16 +63,27 @@ COLUMNAS: Tuple[str, ...] = tuple(
     f.name for f in fields(PuntoCritico) if f.name not in CAMPOS_DERIVADOS
 )
 
-# Columnas numericas, en el orden de Sec. 1.2.
+# Columnas numericas, en el orden de Sec. 1.2. `NF_profundidad_m` cierra la
+# lista porque no viene de ese encabezado: se agrego al reclasificar el nivel
+# freatico como dato de sitio [S] medido en cada cruce (ver PuntoCritico).
 _NUMERICAS: Tuple[str, ...] = (
     "Q_m3s", "area_ha", "S_cauce", "cota_terreno", "cota_rasante",
     "cota_subrasante", "cbr_subrasante", "esviaje_grados", "ancho_plataforma",
     "cota_fondo_receptor", "Q_receptor_m3s", "cota_TW",
+    "NF_profundidad_m",
 )
 
 # Vacios admitidos por tablero, no por comodidad.
 _VACIAS_TODA_FAMILIA = ("Q_receptor_m3s", "cota_TW")        # Tablero 3.1
 _VACIAS_FAMILIA_C = ("Q_m3s", "area_ha", "S_cauce")          # Tablero 3.1
+
+# Vacio admitido por el estudio geotecnico, que es otro tablero y no el 3.1: el
+# NF de cada cruce lo da ese estudio. Mientras no llegue, la fila se carga
+# marcada y quien se detiene es la verificacion que necesite el dato (V7 de
+# flotacion, subpresion del cabezal), no la carga del CSV. Rellenarlo con el
+# 1.4 m de la caracterizacion general de la llanura seria inventar una
+# medicion por punto que nadie hizo.
+_VACIAS_ESTUDIO_GEOTECNICO = ("NF_profundidad_m",)
 
 _SOBRANTES = "__sobrantes__"       # restkey de csv.DictReader
 
@@ -167,7 +178,7 @@ def _punto_desde_fila(fila: Dict[str, Any], numero: int) -> PuntoCritico:
     progresiva_km, progresiva_display = _progresiva(fila, id_punto, numero)
     familia = _familia(fila, id_punto, numero)
 
-    admiten_vacio = set(_VACIAS_TODA_FAMILIA)
+    admiten_vacio = set(_VACIAS_TODA_FAMILIA) | set(_VACIAS_ESTUDIO_GEOTECNICO)
     if familia is Familia.C:
         admiten_vacio.update(_VACIAS_FAMILIA_C)
 
@@ -322,6 +333,18 @@ def _valida_rangos(v: Dict[str, Optional[float]], id_punto: str) -> None:
 
     _exige(v["ancho_plataforma"] > 0, "ancho_plataforma", v["ancho_plataforma"],
            id_punto, "el ancho de plataforma es positivo")
+
+    # El NF se mide como PROFUNDIDAD bajo el terreno natural: es positivo por
+    # definicion. Un cero o un negativo significa agua sobre el terreno, que no
+    # es un nivel freatico sino un cauce, y una celda con signo cambiado es el
+    # error de transcripcion tipico de esta columna. No se le pone tope
+    # superior: cuan profundo puede estar el freatico no lo decide este modulo
+    # ni hay dato en el expediente para acotarlo.
+    if v["NF_profundidad_m"] is not None:
+        _exige(v["NF_profundidad_m"] > 0, "NF_profundidad_m",
+               v["NF_profundidad_m"], id_punto,
+               "el nivel freatico se mide como profundidad bajo el terreno "
+               "natural y es positivo; si el agua aflora, el dato no es un NF")
 
 
 def _valida_cruzadas(v: Dict[str, Optional[float]], id_punto: str) -> None:

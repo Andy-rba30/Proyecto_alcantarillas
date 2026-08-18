@@ -6,8 +6,9 @@ Fase 8 (M8_estructural.py):
     seleccionar_clase_calibre()      CriterioPendienteError:
                                       'clases_producto_por_relleno' vacio.
     empuje_flotacion_kn_m()          U = gamma_agua * (pi/4) * D^2, siempre
-                                      calculable (usa 'NF_profundidad_m',
-                                      que SI tiene valor).
+                                      calculable: la hipotesis es sumersion
+                                      completa y por eso NO usa el valor del
+                                      NF del punto.
     peso_relleno_kn_m()              CriterioPendienteError:
                                       'peso_especifico_relleno_kn_m3' vacio;
                                       calculo directo con el criterio declarado.
@@ -17,12 +18,16 @@ Fase 8 (M8_estructural.py):
 """
 
 import math
+from dataclasses import fields
+from pathlib import Path
 
 import pytest
 
 import criterios_adoptados as ca
 from constantes_normativas import GAMMA_AGUA_KN_M3
-from modelos import CamaApoyoRelleno, CriterioPendienteError, TipoMaterial
+import modulos.M8_estructural as M8
+from modelos import (CamaApoyoRelleno, CriterioPendienteError,
+                     PuntoCritico, TipoMaterial)
 from modulos.M2_material import catalogo
 from modulos.M8_estructural import (cama_apoyo_relleno_lateral,
                                     empuje_flotacion_kn_m, fs_flotacion,
@@ -60,7 +65,7 @@ def test_clases_producto_por_relleno_esta_declarado_vacio():
 # ===========================================================================
 
 def test_empuje_flotacion_es_siempre_calculable():
-    """U no depende de ningun criterio pendiente: NF_profundidad_m ya vale 1.4."""
+    """U no depende de ningun criterio pendiente ni del NF medido del punto."""
     U = empuje_flotacion_kn_m(D=0.90)
     assert U == pytest.approx(GAMMA_AGUA_KN_M3 * (math.pi / 4) * 0.90 ** 2)
 
@@ -91,10 +96,22 @@ def test_fs_flotacion_lanza_pendiente():
     assert excinfo.value.clave == "FS_flotacion"
 
 
-def test_NF_profundidad_m_tiene_valor_declarado():
-    """Es un dato de sitio [N], no un vacio: distinto de los otros dos de V7."""
-    assert ca.valor("NF_profundidad_m") == pytest.approx(1.4)
-    assert "NF_profundidad_m" not in ca.criterios_sin_valor()
+def test_el_NF_ya_no_es_un_criterio_de_este_modulo():
+    """
+    Era un criterio [N] de proyecto (1.4 m para todo el tramo). Hoy es un dato
+    de sitio [S] que se mide en cada cruce, o sea una columna del CSV. Que U
+    no lo lea es lo que mantiene V7 calculable en un punto cuyo estudio
+    geotecnico todavia no dio el NF: la hipotesis de la fila V7 es sumersion
+    completa, y sumergido del todo el conducto desplaza su volumen entero
+    este el freatico donde este.
+    """
+    with pytest.raises(KeyError):
+        ca.valor("NF_profundidad_m")
+    assert "NF_profundidad_m" in {f.name for f in fields(PuntoCritico)}
+
+    fuente = Path(M8.__file__).read_text(encoding="utf-8-sig")
+    assert 'ca.valor(CRITERIO_NF)' not in fuente
+    assert "CRITERIO_NF" not in fuente
 
 
 # ===========================================================================

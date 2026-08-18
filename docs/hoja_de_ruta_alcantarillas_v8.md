@@ -435,6 +435,8 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 
 > **Nota de unidades.** **19.62** es el valor SI. El **29** de la literatura FHWA es del sistema inglés. Usar 29 en métrico no falla ruidosamente: devuelve números plausibles y equivocados. **Test unitario obligatorio.**
 
+> **k_e — vacío que pasó inadvertido hasta la implementación.** Ningún numeral del Manual MTC ni del Manual de Puentes fija el coeficiente de pérdida de entrada k_e. Para la embocadura *square edge with headwall* (adoptada en §9.1), se toma **k_e = 0.5** de las tablas de coeficiente de pérdida de entrada del HDS-5. Etiqueta **[C]**, declarado en `criterios_adoptados.py` como `ke_entrada`.
+
 **Relevancia en este proyecto:** con descarga a drenes con nivel propio, el TW puede ahogar la alcantarilla. Se puede cumplir y/D ≤ 0.75 en el barril y aun así embalsar más de un metro sobre terreno agrícola.
 
 ---
@@ -713,6 +715,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | k_v = 0 | [A] | Sensibilidad (0, 0.5·k_h) |
 | M_w para licuefacción | [A] | **Sin valor.** Tablero 2.2 |
 | Constantes HDS-5 para HDPE | [C] | Carta *Circular Concrete, square edge*. Condicionado a HDPE de interior liso |
+| k_e (coeficiente de pérdida de entrada, §4.3) | [C] | HDS-5, embocadura square edge with headwall. **Cerrado en implementación** — sin numeral peruano |
 | n de Manning para HDPE | [A] | **Rango (0.010, 0.013)** por analogía. No valor puntual |
 | Velocidad máxima en HDPE y TMC | [C] | **Sin valor.** Fuente identificada (PPI/FHWA), valores por extraer |
 | Progresión de diámetros | [C] | 0.90 m + 0.15 m, topes por norma de producto |

@@ -16,8 +16,10 @@ Por que la cadena sismica va desagregada
 Hoy los seis pasos horizontales de Sec. 9.2 dan todos 0.50, y es tentador
 escribir `k_h = 0.50` de una vez. Seria un error de trazabilidad, no de
 aritmetica: coinciden SOLO porque F_pga y el factor de muro valen 1.0, y esos
-dos numeros tienen etiquetas distintas ([A] la eleccion de F_pga ante la
-ausencia de SPT, [N] el factor de muro por 2.8.1.1.14.2). Cuando llegue el
+dos numeros llegan por caminos distintos: los dos son la ELECCION [A] de una
+fila de una tabla [N] (F_PGA_TABLA y FACTOR_MURO_TABLA), y el PGA que abre la
+cadena no es ninguna de las dos cosas sino un dato de sitio [S] leido de un
+mapa sobre las coordenadas de esta obra. Cuando llegue el
 SPT y la clase de sitio se cierre en E, F_pga baja a 0.9 y la cadena entera
 se mueve. Con los pasos separados, M11 imprime que paso cambio y por que; con
 un 0.50 escrito a mano, no hay nada que recalcular ni que revisar.
@@ -31,8 +33,9 @@ k_v va aparte a proposito: no deriva de la cadena, es una adopcion propia
 
 Lo que este modulo SI calcula entero
 ------------------------------------
-    * La cadena sismica completa: sus cuatro insumos ('PGA_roca_B', 'F_pga',
-      'factor_muro', 'k_v') tienen valor declarado.
+    * La cadena sismica completa: sus cuatro insumos (el dato de sitio [S]
+      'PGA_roca_B' de datos_sitio.py, y los criterios 'F_pga',
+      'factor_muro_eleccion' y 'k_v') tienen valor declarado.
     * Mononobe-Okabe: la formula esta implementada y verificada contra su
       caso limite (con k_h = k_v = 0 e i = beta = delta = 0 devuelve
       exactamente tan^2(45 - phi/2)). Lo que falta son sus ANGULOS, no el
@@ -117,6 +120,7 @@ import math
 from typing import Optional, Tuple
 
 import criterios_adoptados as ca
+import datos_sitio as ds
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    CARGA_VIVA,
                                    CICLOPEO_FC_MATRIZ_MIN,
@@ -126,6 +130,7 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
                                    ESPACIAMIENTO_MAX_VECES_ESPESOR,
                                    ESPESOR_TEMPERATURA_DOS_CARAS,
+                                   FACTOR_MURO_TABLA,
                                    FS, FS_NUMERAL,
                                    GAMMA_AGUA_KN_M3,
                                    NQ_ZAPATA_EN_TALUD,
@@ -134,6 +139,7 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_COMBINACIONES,
                                    NUMERAL_CUANTIA_MIN,
                                    NUMERAL_ESPACIAMIENTO,
+                                   NUMERAL_FACTOR_MURO,
                                    NUMERAL_K_H0,
                                    NUMERAL_RECUBRIMIENTO,
                                    NUMERAL_SOBRECARGA_TRASDOS,
@@ -171,9 +177,11 @@ ETIQUETA_CALCULADO = "-"
 # Claves de criterios_adoptados
 # --------------------------------------------------------------------------
 
-CRITERIO_PGA = "PGA_roca_B"
+# El PGA no es un criterio: es un dato de sitio [S] y vive en datos_sitio.py.
+DATO_SITIO_PGA = "PGA_roca_B"
+
 CRITERIO_F_PGA = "F_pga"
-CRITERIO_FACTOR_MURO = "factor_muro"
+CRITERIO_FACTOR_MURO = "factor_muro_eleccion"
 CRITERIO_K_V = "k_v"
 
 CRITERIO_PHI_RELLENO = "phi_relleno_trasdos"
@@ -186,7 +194,8 @@ CRITERIO_FACTORES_CARGA = "factores_carga_aashto"
 CRITERIO_GAMMA_RELLENO = "peso_especifico_relleno_kn_m3"
 CRITERIO_GAMMA_CONCRETO = "peso_especifico_concreto_kn_m3"
 CRITERIO_GEOMETRIA = "predimensionamiento_cabezal"
-CRITERIO_NF = "NF_profundidad_m"
+# El NF ya no es criterio: es la columna 'NF_profundidad_m' del CSV, medida en
+# cada cruce. Entra por argumento a las funciones que lo necesitan.
 
 CRITERIO_MEYERHOF = "N_cq_N_gammaq_meyerhof"
 CRITERIO_ESTABILIDAD_GLOBAL = "metodo_estabilidad_global"
@@ -212,12 +221,15 @@ def pga_roca_b() -> float:
     """
     Paso 1: PGA, aceleracion pico en roca Clase B para Tr = 1000 anios, en g.
 
-    [N] leido del criterio 'PGA_roca_B' -- vive en criterios_adoptados y no en
+    [S] leido del dato de sitio 'PGA_roca_B' -- vive en datos_sitio.py y no en
     constantes_normativas porque, aunque el mapa es normativo, el valor
     depende de la coordenada sobre la que se lea y esa lectura es trazabilidad
-    del proyecto (Sec. 9.2, Apendice A3 del Manual de Puentes).
+    del proyecto (Sec. 9.2, Apendice A3 del Manual de Puentes). Esa frase, que
+    este docstring venia diciendo desde el principio, es exactamente la
+    definicion de la etiqueta [S]; hasta la quinta etiqueta el valor figuraba
+    como [N], que era la unica de las cuatro que no le corresponde.
     """
-    return ca.valor(CRITERIO_PGA)
+    return ds.valor(DATO_SITIO_PGA)
 
 
 def f_pga() -> float:
@@ -254,13 +266,24 @@ def factor_muro() -> float:
     Paso 5: factor de reduccion por desplazamiento admisible del muro
     (num. 2.8.1.1.14.2), adimensional.
 
-    1.0 = muro rigido. La hoja de ruta advierte expresamente que el caso
-    reducido (k_h = 0.5 * k_h0 = 0.25, para muros que admiten 25-50 mm de
-    desplazamiento) NO se asume en un cabezal empotrado en terraplen. El
-    valor se lee del criterio 'factor_muro', que lo declara [N] con esa
-    justificacion.
+    La TABLA es [N] y esta en `constantes_normativas.FACTOR_MURO_TABLA`: el
+    numeral fija sus dos filas (rigido = 1.0, desplazable = 0.5, esta ultima
+    el caso k_h = 0.5 * k_h0 = 0.25 de los muros que admiten 25-50 mm). Cual
+    de las dos aplica a ESTE cabezal no lo dice el numeral: lo dice como se
+    disena el cabezal, y por eso la ELECCION es [A] y se lee del criterio
+    'factor_muro_eleccion' (empotrado en el terraplen, sin desplazamiento
+    admisible garantizado -> fila rigida, sin reduccion). Es el mismo reparto
+    tabla/eleccion que ya tenian `F_PGA_TABLA` y el criterio 'F_pga'.
     """
-    return ca.valor(CRITERIO_FACTOR_MURO)
+    elegido = ca.valor(CRITERIO_FACTOR_MURO)
+    if elegido not in FACTOR_MURO_TABLA.values():
+        raise DatoInvalidoError(
+            CRITERIO_FACTOR_MURO, valor=elegido,
+            motivo="la eleccion tiene que ser una de las filas de "
+                   f"FACTOR_MURO_TABLA ({NUMERAL_FACTOR_MURO}): "
+                   f"{FACTOR_MURO_TABLA}",
+        )
+    return elegido
 
 
 def coeficiente_sismico_horizontal(*, k_h0: float, factor_muro: float) -> float:
@@ -300,8 +323,8 @@ def cadena_sismica() -> CadenaSismica:
     pasos = (
         PasoSismico(simbolo="PGA", valor=PGA,
                     concepto="Aceleracion pico en roca Clase B, Tr = 1000 anios",
-                    etiqueta=ca.criterio(CRITERIO_PGA).etiqueta,
-                    origen=NUMERAL_PGA, criterio=CRITERIO_PGA),
+                    etiqueta=ds.dato(DATO_SITIO_PGA).etiqueta,
+                    origen=NUMERAL_PGA, criterio=DATO_SITIO_PGA),
         PasoSismico(simbolo="F_pga", valor=Fpga,
                     concepto="Factor de sitio",
                     etiqueta=ca.criterio(CRITERIO_F_PGA).etiqueta,
@@ -605,17 +628,22 @@ def brazo_incremento_sismico(*, H: float) -> float:
     return ca.valor(CRITERIO_BRAZO_SISMICO) * H
 
 
-def altura_agua_sobre_base(*, D_f: float) -> float:
+def altura_agua_sobre_base(*, D_f: float, NF_profundidad_m: float) -> float:
     """
     Altura de agua sobre el nivel de fundacion, en m: la profundidad de
     desplante menos la profundidad del NF, acotada en 0 cuando la zapata queda
     por encima del freatico.
 
     Sec. 9.2 es explicita: "empuje hidrostatico y subpresion: con NF a 1.4 m
-    NO es opcional". El NF sale del criterio 'NF_profundidad_m' (1.4 m, [N]),
-    el mismo que sostiene la hipotesis de flotacion de M8.
+    NO es opcional". El NF entra por argumento porque es la columna
+    'NF_profundidad_m' del CSV, medida en el cruce -- dato de sitio [S] que
+    varia punto a punto -- y no un criterio unico de proyecto: dos cabezales
+    del mismo tramo pueden tener el freatico a profundidades distintas y cada
+    uno se calcula con la suya. Quien lo lee de la fila usa
+    `punto.exigir("NF_profundidad_m")`, que se detiene con DatoFaltanteError
+    si el estudio geotecnico todavia no dio el valor de ese punto.
     """
-    return max(D_f - ca.valor(CRITERIO_NF), 0.0)
+    return max(D_f - NF_profundidad_m, 0.0)
 
 
 def empuje_hidrostatico(*, h_agua: float) -> float:
@@ -681,7 +709,8 @@ def peso_propio_cabezal(*, geometria: GeometriaCabezal) -> float:
 
 def empujes_trasdos(*, geometria: GeometriaCabezal,
                     condicion: CondicionAnalisis,
-                    altura_empuje: float) -> EmpujesTrasdos:
+                    altura_empuje: float,
+                    NF_profundidad_m: float) -> EmpujesTrasdos:
     """
     Ensambla las cargas horizontales de Sec. 9.2 sobre el trasdos, cada una
     con su brazo sobre la base: empuje activo (EH), sobrecarga de 0.60 m
@@ -713,6 +742,12 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
     incremento sismico NO es geometria -- Mononobe-Okabe da el empuje y no su
     punto de aplicacion -- y sale de 'punto_aplicacion_incremento_sismico'.
 
+    `NF_profundidad_m` entra por argumento, como `altura_empuje`, y por la
+    misma razon: es un dato del punto (columna del CSV, dato de sitio [S]
+    medido en el cruce), no un criterio de proyecto. Quien llama lo saca de la
+    fila con `punto.exigir("NF_profundidad_m")` y se detiene con
+    DatoFaltanteError si el estudio geotecnico aun no lo dio para ese punto.
+
     Se detiene con `CriterioPendienteError` en el primero de los vacios que
     toque: el peso especifico del relleno, los cuatro angulos de K_AE (solo
     en condicion sismica) o el brazo del incremento.
@@ -724,7 +759,8 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
                                  H=altura_empuje)
     E_s = empuje_sobrecarga_trasdos(gamma_relleno=gamma, k_a=K_A_rankine,
                                     H=altura_empuje)
-    h_agua = altura_agua_sobre_base(D_f=geometria.D_f)
+    h_agua = altura_agua_sobre_base(D_f=geometria.D_f,
+                                    NF_profundidad_m=NF_profundidad_m)
     E_w = empuje_hidrostatico(h_agua=h_agua)
     U = subpresion(h_agua=h_agua, B=geometria.B)
 

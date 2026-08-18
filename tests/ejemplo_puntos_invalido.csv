@@ -1,2 +1,2 @@
-id,progresiva_km,familia,Q_m3s,area_ha,S_cauce,cota_terreno,cota_rasante,cbr_subrasante,esviaje_grados,ancho_plataforma,cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion
-A-01,0+380,A,1.167,850,0.006,42.10,44.20,8.5,15,9.60,41.30,,,SM
+id,progresiva_km,familia,Q_m3s,area_ha,S_cauce,cota_terreno,cota_rasante,cbr_subrasante,esviaje_grados,ancho_plataforma,cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion,NF_profundidad_m
+A-01,0+380,A,1.167,850,0.006,42.10,44.20,8.5,15,9.60,41.30,,,SM,

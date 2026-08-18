@@ -96,6 +96,7 @@ for _ruta in (RAIZ, SRC):
         sys.path.insert(0, str(_ruta))
 
 import criterios_adoptados as ca                                    # noqa: E402
+import datos_sitio as ds                                            # noqa: E402
 from constantes_normativas import CUANTIA_MIN_MURO, RECUBRIMIENTO   # noqa: E402
 from modelos import (Clasificacion, CompatibilidadGeometrica,       # noqa: E402
                      CriterioPendienteError, DatoFaltanteError,
@@ -923,6 +924,15 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
             "cerrado": informe.cerrado},
         "puntos": [_punto_json(p) for p in informe.puntos],
         "cabezal": _cabezal_json(informe.cabezal),
+        "datos_sitio": {
+            "usados": [{"clave": k, "etiqueta": ds.dato(k).etiqueta,
+                        "valor": _num(ds.dato(k).valor),
+                        "concepto": ds.dato(k).concepto,
+                        "trazabilidad": ds.dato(k).trazabilidad,
+                        "ambito": ds.dato(k).ambito}
+                       for k in ds.datos_usados()],
+            "sin_valor_declarados": ds.datos_sin_valor(),
+            "trazabilidad_incompleta": ds.datos_con_verificacion_pendiente()},
         "criterios": {
             "usados": [{"clave": k, "etiqueta": ca.criterio(k).etiqueta,
                         "valor": _num(ca.criterio(k).valor),
@@ -1122,6 +1132,8 @@ def volcar(informe: Informe, con_criterios: bool = False) -> str:
     lineas.extend(_lineas_resumen(informe))
     if con_criterios:
         lineas.append("")
+        lineas.append(ds.reporte_datos_sitio(solo_usados=True))
+        lineas.append("")
         lineas.append(ca.reporte_criterios(solo_usados=True))
     return "\n".join(lineas)
 
@@ -1156,7 +1168,8 @@ def _parser() -> argparse.ArgumentParser:
                         "quebrada_menor (Sec. 2.2, Familia A)")
     p.add_argument("--criterios", action="store_true",
                    help="imprime tambien la declaracion completa de los "
-                        "criterios usados (reporte_criterios)")
+                        "datos de sitio [S] y de los criterios usados "
+                        "(reporte_datos_sitio + reporte_criterios)")
     p.add_argument("--html", type=Path, dest="html_salida",
                    help="escribe la memoria de calculo de la Fase 11 (M11) "
                         "en esa ruta, como HTML")

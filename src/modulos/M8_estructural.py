@@ -54,12 +54,20 @@ en vez de aproximar en silencio.
 Por que U asume sumersion completa
 -------------------------------------
 La fila V7 de la Fase 5 fija la hipotesis de calculo: "tuberia vacia, NF en
-su cota mas alta". Con el NF somero del sitio (1.4 m, criterio
-'NF_profundidad_m', [N]) y sin una columna de invert real en el CSV (Sec.
-1.2 -- misma limitacion que `M5_verificaciones.cota_entrada_supuesta`), la
-lectura conservadora de "NF en su cota mas alta" es sumersion completa del
-conducto, no una geometria de sumersion parcial contra una cota de invert
-supuesta. Nunca subestima el empuje.
+su cota mas alta". Con el NF somero de la llanura del Bajo Piura y sin una
+columna de invert real en el CSV (Sec. 1.2 -- misma limitacion que
+`M5_verificaciones.cota_entrada_supuesta`), la lectura conservadora de "NF en
+su cota mas alta" es sumersion completa del conducto, no una geometria de
+sumersion parcial contra una cota de invert supuesta. Nunca subestima el
+empuje.
+
+Por eso U NO depende del valor del NF: la hipotesis es sumersion completa, y
+sumergido del todo el conducto desplaza su volumen entero este el freatico a
+1.4 m o a 0.8 m. El NF de cada cruce llega hoy por la columna
+'NF_profundidad_m' del CSV (dato de sitio [S] que se mide punto a punto, ya
+no un criterio unico de proyecto), y lo que si lo usa es la subpresion del
+cabezal en M9. Que U no lo lea es la razon de que V7 siga siendo calculable
+en un punto cuyo NF todavia no ha medido el estudio geotecnico.
 
 Excepciones
 -----------
@@ -94,7 +102,6 @@ NUMERAL_V7 = "Fase 5, V7 (Manual de Puentes num. 2.4.3.8.2)"
 CRITERIO_CLASES_PRODUCTO = "clases_producto_por_relleno"
 CRITERIO_FS_FLOTACION = "FS_flotacion"
 CRITERIO_PESO_RELLENO = "peso_especifico_relleno_kn_m3"
-CRITERIO_NF = "NF_profundidad_m"
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +145,6 @@ def empuje_flotacion_kn_m(*, D: float) -> float:
     diametro interior de exterior; usarlo es del lado conservador, un
     exterior real algo mayor daria un U un poco mayor).
     """
-    ca.valor(CRITERIO_NF)      # registra el uso: el NF somero es la razon de la hipotesis
     return GAMMA_AGUA_KN_M3 * (math.pi / 4) * D ** 2   # literal-ok: area de circulo, num. 2.4.3.8.2
 
 

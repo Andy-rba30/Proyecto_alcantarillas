@@ -9,25 +9,61 @@
   justificación de por qué hace falta, y detén el cálculo con excepción.
   Rellenar un vacío en silencio es el peor error posible en este proyecto.
 
+## Taxonomía de etiquetas (cinco, no cuatro)
+Todo valor de proyecto lleva una de estas cinco. Se leen de más determinado a
+más elegido, y ese es el orden en que M11 las imprime:
+
+- **[N]** Exigencia normativa peruana vigente, numeral verificado. El mismo
+  número en cualquier obra del país. Vive en constantes_normativas.py.
+- **[N→]** Valor normativo aplicado POR ANALOGÍA. Requiere declaración expresa.
+- **[S]** **Dato de sitio.** Obtenido mediante un procedimiento normativo real
+  (mapa, ensayo, medición de campo) aplicado a las coordenadas o condiciones de
+  ESTE proyecto. No es elección del proyectista ni analogía: es un hecho
+  determinado, no portable a otro proyecto. **En vez de sensibilidad declara
+  trazabilidad obligatoria**: el procedimiento exacto, la fuente, y si el dato
+  aplica a todo el corredor o varía punto a punto.
+- **[C]** Vacío normativo cubierto con fuente técnica reconocida (FHWA, AASHTO).
+- **[A]** Sin norma ni fuente única. Adopción declarada + sensibilidad.
+
+Regla para separar [N] de [S]: si el valor cambia al mover la obra de sitio
+pero NO al cambiar de proyectista, es [S]. "La Unión está en Zona 4" cita
+E.030 correctamente y aun así no es [N]. Regla para separar [S] de [A]: un [A]
+se defiende con un rango de sensibilidad porque hubo elección; un [S] no tiene
+rango que elegir y se defiende con la trazabilidad de la lectura.
+
+Dónde vive cada [S]: si vale para todo el corredor, en datos_sitio.py; si
+varía punto a punto, es columna del CSV (NF_profundidad_m, cbr_subrasante). Un
+[S] pendiente de ensayo que además comparte tablero con los criterios puede
+quedar en criterios_adoptados.py con el campo `trazabilidad`.
+
+Tabla y elección se separan siempre: los valores de una tabla normativa son
+[N] y viven en constantes_normativas.py (F_PGA_TABLA, FACTOR_MURO_TABLA); cuál
+fila aplica a esta obra es [A] y vive en criterios_adoptados.py ('F_pga',
+'factor_muro_eleccion').
+
 ## Arquitectura
 - Ningún módulo declara valores no normativos. Todo literal numérico fuera de
-  constantes_normativas.py (solo [N]) o criterios_adoptados.py ([N→],[C],[A])
-  es un defecto y se rechaza en revisión. Excepciones permitidas: 0, 1, 2,
+  constantes_normativas.py (solo [N]), criterios_adoptados.py ([N→],[C],[A] y
+  los [S] pendientes de ensayo) o datos_sitio.py (solo [S] de corredor) es un
+  defecto y se rechaza en revisión. Excepciones permitidas: 0, 1, 2,
   índices, y constantes matemáticas puras (pi). Dos archivos más quedan
   exentos por no contener valores de proyecto: tolerancias.py (precisión
   numérica: cambiarla no mueve ninguna magnitud física) y dominios.py (rango
   físico posible de un dato de entrada: no entra en ninguna fórmula). Regla
   para saber si un número va en uno de esos dos: si cambiarlo puede alterar un
-  resultado del cálculo, no va ahí.
+  resultado del cálculo, no va ahí. datos_sitio.py está exento por la razón
+  CONTRARIA: sus números sí son valores de proyecto, y de los más pesados —
+  está aparte porque no son constantes universales, no porque no importen.
 - Un literal que es parte de una fórmula transcrita de la hoja de ruta —el 8 de
   A = (D²/8)(θ − sen θ), el exponente 2/3 de Manning— se deja en el módulo
   marcado con `# literal-ok: <razón>`. La marca lo declara y lo hace visible en
   revisión; sin marca, tests/test_sin_literales.py lo rechaza.
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
-- criterios_adoptados.valor(clave) con valor None lanza CriterioPendienteError.
-  Nunca se sustituye por un default silencioso.
-- Cada invocación de un criterio se registra, para que M11 imprima solo los usados.
+- criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None
+  lanzan CriterioPendienteError. Nunca se sustituye por un default silencioso.
+- Cada invocación de un criterio o de un dato de sitio se registra, para que
+  M11 imprima solo los usados.
 - Cada verificación devuelve un objeto Verificacion(cumple, numeral, valor,
   criterio_aplicado), nunca un bool desnudo.
 

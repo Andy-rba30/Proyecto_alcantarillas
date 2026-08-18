@@ -14,6 +14,7 @@ import math
 import pytest
 
 import constantes_normativas as CN
+import datos_sitio as ds
 from tests.fixtures.casos_patron import (CP1_PERIODO_RETORNO,
                                          CP2_GEOMETRIA_MANNING,
                                          CP3_VELOCIDAD_MINIMA, CP4_LAUSHEY,
@@ -166,9 +167,32 @@ def test_la_tabla_de_F_pga_contiene_la_eleccion_de_CP7():
     assert CN.F_PGA_TABLA["E"] < CP7_CADENA_SISMICA["F_pga"]    # 0.9 para clase E
 
 
-def test_el_Z_de_E030_esta_solo_como_referencia():
-    """Tr = 475 anios: no se usa para el cabezal (Sec. 0.4)."""
-    assert CN.Z_E030 != pytest.approx(CP7_CADENA_SISMICA["PGA"])
+def test_el_Z_de_E030_ya_no_es_una_constante_normativa():
+    """
+    Sigue siendo referencia que no gobierna el cabezal (Tr = 475 anios,
+    Sec. 0.4), pero no es una constante [N]: "a este distrito le toca Zona 4,
+    y a la Zona 4 le toca Z = 0.45" es la lectura de un mapa sobre las
+    coordenadas de esta obra. Vive en datos_sitio.py como [S].
+    """
+    for nombre in ("Z_E030", "ZONA_SISMICA_LA_UNION", "PERFIL_SUELO_PRESUNTO"):
+        assert not hasattr(CN, nombre), (
+            f"'{nombre}' volvio al anexo de constantes normativas")
+
+    assert ds.dato("Z_E030").etiqueta == "S"
+    assert ds.dato("Z_E030").valor != pytest.approx(CP7_CADENA_SISMICA["PGA"])
+    assert ds.dato("ZONA_SISMICA_LA_UNION").trazabilidad
+
+
+def test_la_tabla_del_factor_de_muro_trae_sus_dos_filas():
+    """
+    Las dos filas del num. 2.8.1.1.14.2 son [N]: el numeral las fija. La
+    eleccion entre ellas no esta aqui, es el criterio 'factor_muro_eleccion'.
+    """
+    assert CN.FACTOR_MURO_TABLA["rigido"] == pytest.approx(
+        CP7_CADENA_SISMICA["factor_muro_rigido"])
+    assert CN.FACTOR_MURO_TABLA["desplazable"] == pytest.approx(
+        CP7_CADENA_SISMICA["factor_muro_desplazable"])
+    assert CN.NUMERAL_FACTOR_MURO == "2.8.1.1.14.2"
 
 
 # ---------------------------------------------------------------------------

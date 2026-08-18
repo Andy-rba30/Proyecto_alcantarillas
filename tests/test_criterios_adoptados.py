@@ -11,9 +11,13 @@ plausible, estos tests lo detienen.
 Valores de referencia: tests/fixtures/casos_patron.py (no se recalculan aqui).
 """
 
+from pathlib import Path
+
 import pytest
 
 import criterios_adoptados as ca
+import datos_sitio as ds
+from constantes_normativas import FACTOR_MURO_TABLA
 from criterios_adoptados import (CRITERIOS, criterio, criterios_sin_valor,
                                  parametros_sensibilizables, reporte_criterios,
                                  valor)
@@ -28,11 +32,15 @@ CLAVES_PENDIENTES = criterios_sin_valor()
 # Anexo A - indice de criterios no normativos. Cada fila de esa tabla debe
 # tener su entrada declarada aqui; si se agrega una fila al Anexo A y no al
 # modulo, este test lo delata.
+# 'PGA_roca_B' salio del Anexo A: es un dato de sitio [S] y vive en
+# datos_sitio.py. 'factor_muro' se partio en tabla [N]
+# (constantes_normativas.FACTOR_MURO_TABLA) y eleccion [A]
+# ('factor_muro_eleccion'), el mismo reparto que ya tenia F_pga.
 CLAVES_DEL_ANEXO_A = {
-    "PGA_roca_B",
     "clase_sitio",
+    "PERFIL_SUELO_PRESUNTO",
     "F_pga",
-    "factor_muro",
+    "factor_muro_eleccion",
     "k_v",
     "Mw_licuefaccion",
     "hds5_embocadura_hdpe",
@@ -167,9 +175,81 @@ def test_estan_declarados_todos_los_items_del_anexo_A():
 
 
 def test_las_etiquetas_son_de_la_convencion():
-    validas = {"N", "N->", "C", "A"}
+    """Cinco etiquetas, no cuatro: [S] entro con el dato de sitio."""
+    validas = {"N", "N->", "S", "C", "A"}
+    assert set(ca.ETIQUETAS_VALIDAS) == validas
     malas = {k: c.etiqueta for k, c in CRITERIOS.items() if c.etiqueta not in validas}
     assert not malas, f"Etiquetas fuera de la convencion: {malas}"
+
+
+def test_ningun_criterio_adoptado_lleva_ya_la_etiqueta_N():
+    """
+    Este archivo es el de lo que NO es exigencia normativa verificada. Las
+    tres entradas que llevaban [N] eran justo las mal clasificadas del
+    manifiesto: el PGA (dato de sitio), el factor de muro (tabla normativa
+    mezclada con la eleccion) y el NF (medicion por punto). Si vuelve a
+    aparecer una [N] aqui, es que alguien volvio a meter una constante
+    universal en el archivo equivocado.
+    """
+    con_N = {k for k, c in CRITERIOS.items() if c.etiqueta == "N"}
+    assert not con_N, (
+        f"Criterios con etiqueta [N] en criterios_adoptados.py: {sorted(con_N)}. "
+        "Una exigencia normativa con numeral verificado va a "
+        "constantes_normativas.py")
+
+
+def test_un_criterio_S_declara_trazabilidad_y_no_sensibilidad():
+    """
+    El campo que defiende un [S] no es el que defiende un [A]: un [A] muestra
+    el rango que se pudo elegir, y un [S] no tiene rango -- muestra como
+    repetir la lectura.
+    """
+    de_sitio = {k: c for k, c in CRITERIOS.items() if c.etiqueta == "S"}
+    assert de_sitio, "ningun criterio [S] declarado: revisa la taxonomia"
+    for clave, c in de_sitio.items():
+        assert c.trazabilidad, f"'{clave}' es [S] y no declara trazabilidad"
+        assert c.sensibilidad is None, (
+            f"'{clave}' es [S] y declara sensibilidad: un hecho de sitio no "
+            "tiene rango que elegir")
+
+
+def test_solo_los_S_declaran_trazabilidad():
+    intrusos = {k: c.etiqueta for k, c in CRITERIOS.items()
+                if c.trazabilidad and c.etiqueta != "S"}
+    assert not intrusos, f"Trazabilidad fuera de un [S]: {intrusos}"
+
+
+def test_la_guardia_de_coherencia_rechaza_un_S_sin_trazabilidad(monkeypatch):
+    """La guardia no es decorativa: si se rompe la regla, el modulo no carga."""
+    monkeypatch.setitem(
+        CRITERIOS, "criterio_de_prueba",
+        ca.Criterio(valor=1.0, etiqueta="S", concepto="c",
+                    justificacion="j", fuente="f"))
+    with pytest.raises(ValueError, match="trazabilidad"):
+        ca._coherencia_de_etiquetas()
+
+
+def test_el_perfil_de_suelo_es_referencia_declarada_y_no_calculo():
+    """
+    Salio de constantes_normativas.py, donde figuraba como [N]. Hoy no lo
+    invoca ningun modulo de calculo -- lo dice su propia trazabilidad -- y se
+    conserva declarado porque es la presuncion geotecnica en la que se apoya
+    'clase_sitio'.
+    """
+    c = criterio("PERFIL_SUELO_PRESUNTO")
+    assert c.etiqueta == "S"
+    assert c.reemplazado_por == "Ensayo SPT"
+    assert "REFERENCIA MUERTA" in c.trazabilidad
+
+    raiz = Path(__file__).resolve().parents[1]
+    invocaciones = [
+        ruta.name for ruta in (raiz / "src" / "modulos").glob("*.py")
+        if "PERFIL_SUELO_PRESUNTO" in ruta.read_text(encoding="utf-8-sig")
+    ]
+    assert not invocaciones, (
+        f"'PERFIL_SUELO_PRESUNTO' dejo de ser referencia muerta ({invocaciones}): "
+        "revisa si sigue bastando una presuncion de tramo o hace falta el dato "
+        "por calicata")
 
 
 def test_todo_criterio_sin_valor_declara_de_donde_saldra():
@@ -186,9 +266,9 @@ def test_criterios_usados_registra_la_invocacion():
     `reporte_criterios(solo_usados=True)` imprime: sale del registro de uso, no
     del catalogo completo.
     """
-    valor("PGA_roca_B")
+    valor("F_pga")
     usados = ca.criterios_usados()
-    assert "PGA_roca_B" in usados
+    assert "F_pga" in usados
     assert usados == sorted(usados)
     assert set(usados) <= set(CRITERIOS)
 
@@ -209,20 +289,27 @@ def test_la_cadena_sismica_reproduce_CP7():
     A_s = F_pga * PGA ; k_h = factor_muro * k_h0.
     """
     cp = CP7_CADENA_SISMICA
-    assert valor("PGA_roca_B") == pytest.approx(cp["PGA"])
+    # El PGA abre la cadena desde datos_sitio.py: es [S], no criterio.
+    assert ds.valor("PGA_roca_B") == pytest.approx(cp["PGA"])
     assert valor("F_pga") == pytest.approx(cp["F_pga"])
 
-    A_s = valor("PGA_roca_B") * valor("F_pga")
+    A_s = ds.valor("PGA_roca_B") * valor("F_pga")
     assert A_s == pytest.approx(cp["A_s_esperado"])
 
     k_h0 = A_s                                   # Manual de Puentes, 2.8.1.1.14.2
     assert k_h0 == pytest.approx(cp["k_h0_esperado"])
 
-    k_h = valor("factor_muro") * k_h0
+    k_h = valor("factor_muro_eleccion") * k_h0
     assert k_h == pytest.approx(cp["k_h_con_muro_rigido_esperado"])
 
+    # La eleccion adoptada es la fila rigida de la tabla [N] del numeral.
+    assert valor("factor_muro_eleccion") == pytest.approx(
+        FACTOR_MURO_TABLA["rigido"])
+    assert criterio("factor_muro_eleccion").sensibilidad == (
+        FACTOR_MURO_TABLA["desplazable"], FACTOR_MURO_TABLA["rigido"])
+
     # Si el muro admitiera desplazamiento, la misma cadena debe dar 0.25.
-    assert cp["factor_muro_desplazable"] * k_h0 == pytest.approx(
+    assert FACTOR_MURO_TABLA["desplazable"] * k_h0 == pytest.approx(
         cp["k_h_con_muro_desplazable_esperado"]
     )
     assert valor("k_v") == pytest.approx(cp["k_v_esperado"])

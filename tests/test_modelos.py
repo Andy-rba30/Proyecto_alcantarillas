@@ -58,6 +58,7 @@ def _punto(**cambios) -> PuntoCritico:
         Q_receptor_m3s=None,       # Tablero 3.1
         cota_TW=None,              # Tablero 3.1
         sucs_fundacion="SM",
+        NF_profundidad_m=None,     # lo da el estudio geotecnico, por punto
     )
     base.update(cambios)
     return PuntoCritico(**base)

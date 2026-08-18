@@ -23,8 +23,27 @@ Etiquetas
 ---------
     N    Exigencia normativa peruana vigente, numeral verificado
     N->  Valor normativo aplicado POR ANALOGIA. Requiere declaracion expresa
+    S    Dato de sitio. Obtenido mediante un procedimiento normativo real
+         (mapa, ensayo, medicion de campo) aplicado a las coordenadas o
+         condiciones de ESTE proyecto. No es eleccion del proyectista ni
+         analogia: es un hecho determinado, no portable a otro proyecto. En
+         vez de sensibilidad declara TRAZABILIDAD obligatoria: el
+         procedimiento exacto, la fuente, y si el dato aplica a todo el
+         corredor o varia punto a punto
     C    Vacio normativo cubierto con fuente tecnica reconocida (FHWA, AASHTO)
     A    Sin norma ni fuente unica. Adopcion declarada + sensibilidad obligatoria
+
+Las cinco se leen de mas determinado a mas elegido. [S] se lee entre [N->] y
+[C] por lo mismo: el procedimiento que lo produce es normativo y propio (no
+prestado, no ajeno), y lo unico local es la lectura.
+
+Donde vive cada [S]
+-------------------
+Un dato de sitio unico para todo el corredor vive en `datos_sitio.py`
+(PGA_roca_B, la zonificacion de E.030). Uno que varia punto a punto es una
+columna del CSV (NF_profundidad_m, cbr_subrasante). Aqui solo quedan los [S]
+que ademas siguen sujetos a un ensayo pendiente y por eso comparten tablero
+con los criterios adoptados.
 """
 
 from dataclasses import dataclass, replace
@@ -41,13 +60,20 @@ from modelos import CriterioPendienteError
 @dataclass(frozen=True)
 class Criterio:
     valor: Any
-    etiqueta: str                              # "N", "N->", "C", "A"
+    etiqueta: str                              # "N", "N->", "S", "C", "A"
     concepto: str                              # que es
     justificacion: str                         # por que este valor
     fuente: str                                # de donde sale
     reemplazado_por: Optional[str] = None      # ensayo/dato que lo sustituye
-    sensibilidad: Optional[Tuple] = None       # rango para analisis de sensibilidad
+    sensibilidad: Optional[Tuple] = None       # rango para analisis de sensibilidad -- SOLO [A]
+    trazabilidad: Optional[str] = None         # como reproducir la lectura -- SOLO [S]
     verificacion_pendiente: Optional[str] = None   # lo que falta confirmar
+
+    # sensibilidad y trazabilidad no son dos nombres para lo mismo y no se
+    # mezclan: un [A] se defiende mostrando cuanto cambiaria el resultado con
+    # el otro extremo del rango, y un [S] no tiene rango que elegir -- se
+    # defiende diciendo donde se leyo, para que el revisor repita la lectura.
+    # `_coherencia_de_etiquetas()` lo verifica al importar el modulo.
 
 
 _USADOS: Set[str] = set()
@@ -183,18 +209,44 @@ CRITERIOS: Dict[str, Criterio] = {
     # ----------------------- SISMO: cadena unica -------------------------
     # Se define UNA vez y se propaga a toda verificacion de estabilidad.
 
-    "PGA_roca_B": Criterio(
-        valor=0.50,
-        etiqueta="N",
-        concepto="Aceleracion pico del terreno en roca Clase B, Tr = 1000 anios",
-        justificacion="Lectura directa del mapa de isoaceleraciones sobre las "
-                      "coordenadas del distrito de La Union, Piura",
-        fuente="Manual de Puentes MTC, Apendice A3, mapa 'Isoaceleraciones "
-               "Espectrales Suelo Tipo B, AASHTO 2014 (Roca). Periodo estructural "
-               "0.0 seg (PGA)' - descartados los mapas de Ss y S1",
-        verificacion_pendiente="Registrar en la memoria las coordenadas o la curva "
-                               "de isoaceleracion sobre la que se hizo la lectura "
-                               "(trazabilidad; las curvas varian dentro del dpto.)",
+    # 'PGA_roca_B' ya no vive aqui: es un dato de sitio [S] -- la lectura de un
+    # mapa normativo sobre las coordenadas de esta obra, unica para todo el
+    # corredor -- y vive en `datos_sitio.py`. No se declara en dos sitios: la
+    # cadena sismica de M9 lo lee de alla.
+
+    "PERFIL_SUELO_PRESUNTO": Criterio(
+        valor="S5",
+        etiqueta="S",
+        concepto="Perfil de suelo de E.030 presunto para el sitio (S0-S5)",
+        justificacion="El Art. 14.6 de E.030 define el ESQUEMA de perfiles "
+                      "S0-S5 y sus umbrales; que letra le toca a este sitio es "
+                      "el resultado de aplicar ese esquema a las condiciones "
+                      "de la llanura del Bajo Piura (arenas saturadas, NF "
+                      "somero, suelos potencialmente licuables), no una "
+                      "exigencia normativa con valor fijo. En otra via con "
+                      "otro suelo el mismo articulo da otra letra. El nombre "
+                      "de la variable lo venia admitiendo desde el principio: "
+                      "PRESUNTO es una presuncion de expediente",
+        fuente="E.030 (RM 183-2026-VIVIENDA), Art. 14.6 - suelos "
+               "potencialmente licuables",
+        reemplazado_por="Ensayo SPT",
+        trazabilidad="Clasificacion del Art. 14.6 de E.030 aplicada a la "
+                     "caracterizacion geotecnica disponible del corredor "
+                     "(llanura del Bajo Piura, distrito de La Union), sin "
+                     "ensayo que la cierre. Ambito: todo el corredor mientras "
+                     "sea presuncion; con SPT pasa a ser dato por calicata y "
+                     "entonces le corresponde una columna del CSV, no esta "
+                     "entrada. REFERENCIA MUERTA HOY: ningun modulo de "
+                     "src/modulos/ lo invoca -- la clase de sitio que si entra "
+                     "en el calculo es la de AASHTO, criterio 'clase_sitio'. "
+                     "Se conserva declarado, y no borrado, porque es la "
+                     "presuncion geotecnica sobre la que se apoyan tanto "
+                     "'clase_sitio' como la hipotesis de licuefaccion de "
+                     "Sec. 0.5",
+        verificacion_pendiente="Al llegar el SPT, confirmar el perfil y "
+                               "decidir si es unico para el tramo o varia por "
+                               "calicata; si varia, no se corrige el valor: se "
+                               "convierte en columna del CSV",
     ),
 
     "clase_sitio": Criterio(
@@ -229,14 +281,20 @@ CRITERIOS: Dict[str, Criterio] = {
         sensibilidad=(0.9, 1.0),
     ),
 
-    "factor_muro": Criterio(
+    "factor_muro_eleccion": Criterio(
         valor=1.0,
-        etiqueta="N",
-        concepto="Factor de reduccion del coeficiente sismico por desplazamiento",
+        etiqueta="A",
+        concepto="Factor de reduccion del coeficiente sismico por "
+                 "desplazamiento: fila elegida de la tabla del numeral",
         justificacion="El cabezal esta empotrado en el terraplen y no tiene "
                       "desplazamiento lateral admisible garantizado de 25-50 mm. "
                       "Se adopta el caso de muro rigido, sin reduccion",
-        fuente="Manual de Puentes, numeral 2.8.1.1.14.2",
+        fuente="Tabla FACTOR_MURO_TABLA del Manual de Puentes num. 2.8.1.1.14.2 "
+               "(valores [N]: rigido = 1.0, desplazable = 0.5). La ELECCION de "
+               "la fila es [A]",
+        reemplazado_por="Diseno de detalle del cabezal que garantice (o "
+                        "descarte) un desplazamiento admisible de 25-50 mm",
+        sensibilidad=(0.5, 1.0),
     ),
 
     "k_v": Criterio(
@@ -745,34 +803,13 @@ CRITERIOS: Dict[str, Criterio] = {
     # ruta -- se difiere al expediente tecnico, ver
     # M8_estructural.verificacion_diferida_estructural().
 
-    "NF_profundidad_m": Criterio(
-        valor=1.4,
-        etiqueta="N",
-        concepto="Profundidad del nivel freatico (NF) bajo el terreno "
-                 "natural, llanura del Bajo Piura",
-        justificacion="Dato de caracterizacion geotecnica del sitio, citado "
-                      "de forma consistente en Sec. 0.5 (clasificacion "
-                      "sismica Clase de Sitio F por licuefaccion), Sec. 3.3 "
-                      "(agresividad quimica, Art. 7.7.5.1) y Fase 8/9 "
-                      "(flotacion V7, subpresion del cabezal). No es una "
-                      "eleccion de proyecto: es la lectura de campo que ya "
-                      "sostiene la clasificacion sismica adoptada en "
-                      "'clase_sitio'. V7 lo usa como fundamento de la "
-                      "hipotesis de calculo mas desfavorable ('tuberia "
-                      "vacia, NF en su cota mas alta' -- Fase 5, fila V7): "
-                      "con el NF somero, se asume sumersion completa del "
-                      "conducto en vez de calcular la fraccion de seccion "
-                      "sumergida contra una cota de invert real que el CSV "
-                      "no trae (misma limitacion que 'cota_entrada_supuesta' "
-                      "de M5). Es del lado seguro: nunca subestima el "
-                      "empuje de flotacion",
-        fuente="Manual de Suelos MTC / caracterizacion geotecnica del sitio "
-              "(Sec. 0.5, num. 105; Fase 8, num. 545; Fase 9, num. 582 de "
-              "la hoja de ruta)",
-        verificacion_pendiente="Confirmar contra el estudio geotecnico "
-                               "especifico del expediente si el NF es unico "
-                               "para todo el tramo o varia punto a punto",
-    ),
+    # 'NF_profundidad_m' ya no vive aqui: es un dato de sitio [S] que se mide
+    # en cada cruce, no una exigencia normativa, y por eso es COLUMNA DEL CSV
+    # (ver modelos.PuntoCritico y M0_carga.COLUMNAS). El 1.4 m que este
+    # criterio declaraba era la caracterizacion general de la llanura del Bajo
+    # Piura, y su propia `verificacion_pendiente` ya avisaba de que podia no
+    # ser uniforme dentro del tramo; repetirlo en las cuatro filas del CSV
+    # habria fingido cuatro mediciones donde hubo una descripcion de zona.
 
     "clases_producto_por_relleno": Criterio(
         valor=None,                 # VACIO: bloquea la seleccion de Fase 8, items 1-2
@@ -1112,10 +1149,56 @@ CRITERIOS: Dict[str, Criterio] = {
 
 
 # ---------------------------------------------------------------------------
+# Coherencia de las etiquetas
+# ---------------------------------------------------------------------------
+
+ETIQUETAS_VALIDAS = ("N", "N->", "S", "C", "A")
+
+
+def _coherencia_de_etiquetas() -> None:
+    """
+    Verifica al importar que ninguna entrada mezcle los dos modos de defensa.
+
+    Es una guardia de arquitectura, no una validacion de dato: si falla, el
+    archivo esta mal escrito y ninguna corrida deberia empezar. Un [S] sin
+    trazabilidad seria un hecho de sitio que el revisor no puede reproducir, y
+    un [S] con sensibilidad seria un hecho al que se le ofrece un rango de
+    valores alternativos, que es justo lo que un hecho no tiene.
+    """
+    for clave, c in CRITERIOS.items():
+        if c.etiqueta not in ETIQUETAS_VALIDAS:
+            raise ValueError(
+                f"'{clave}' lleva la etiqueta {c.etiqueta!r}, que no es de la "
+                f"convencion {ETIQUETAS_VALIDAS}"
+            )
+        if c.etiqueta == "S":
+            if not c.trazabilidad:
+                raise ValueError(
+                    f"'{clave}' es [S] y no declara trazabilidad. Un dato de "
+                    "sitio se defiende diciendo como reproducir la lectura"
+                )
+            if c.sensibilidad:
+                raise ValueError(
+                    f"'{clave}' es [S] y declara sensibilidad. Un hecho de "
+                    "sitio no tiene rango que elegir: si lo tuviera, seria [A]"
+                )
+        elif c.trazabilidad:
+            raise ValueError(
+                f"'{clave}' no es [S] y declara trazabilidad. El campo es "
+                "exclusivo de los datos de sitio"
+            )
+
+
+_coherencia_de_etiquetas()
+
+
+# ---------------------------------------------------------------------------
 # Reporte para el modulo M11
 # ---------------------------------------------------------------------------
 
-_ORDEN = {"N": 0, "N->": 1, "C": 2, "A": 3}
+# Orden de lectura, de mas determinado a mas elegido. [S] va entre [N->] y
+# [C]: su procedimiento es normativo y propio del sitio, no prestado ni ajeno.
+_ORDEN = {"N": 0, "N->": 1, "S": 2, "C": 3, "A": 4}
 
 
 def reporte_criterios(solo_usados: bool = True) -> str:
@@ -1146,6 +1229,8 @@ def reporte_criterios(solo_usados: bool = True) -> str:
             out.append(f"     Se sustituye por: {c.reemplazado_por}")
         if c.sensibilidad:
             out.append(f"     Sensibilidad  : {c.sensibilidad}")
+        if c.trazabilidad:
+            out.append(f"     Trazabilidad  : {c.trazabilidad}")
         if c.verificacion_pendiente:
             out.append(f"     >> VERIFICAR  : {c.verificacion_pendiente}")
         out.append("")
@@ -1178,9 +1263,12 @@ def parametros_sensibilizables() -> Dict[str, Tuple]:
 
 
 if __name__ == "__main__":
-    # Demostracion: cadena sismica completa desde una sola fuente
-    A_s = valor("PGA_roca_B") * valor("F_pga")
-    k_h = valor("factor_muro") * A_s
+    # Demostracion: cadena sismica completa desde una sola fuente. El PGA es
+    # un dato de sitio [S] y entra desde datos_sitio.py, no desde aqui.
+    import datos_sitio as ds
+
+    A_s = ds.valor("PGA_roca_B") * valor("F_pga")
+    k_h = valor("factor_muro_eleccion") * A_s
     valor("clase_sitio")
 
     print(f"A_s = {A_s:.2f} g")

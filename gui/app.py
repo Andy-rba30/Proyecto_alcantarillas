@@ -472,6 +472,8 @@ class ExpedienteApp:
             lineas.append(f"Se sustituye por: {c.reemplazado_por}")
         if c.sensibilidad:
             lineas.append(f"Sensibilidad  : {c.sensibilidad}")
+        if c.trazabilidad:
+            lineas.append(f"Trazabilidad  : {c.trazabilidad}")
         if c.verificacion_pendiente:
             lineas.append(f">> VERIFICAR  : {c.verificacion_pendiente}")
         self.txt_detalle_criterio.insert("1.0", "\n".join(lineas))

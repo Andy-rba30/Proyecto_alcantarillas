@@ -77,6 +77,11 @@
   }
   .et-N   { background: #e3f0e6; border-color: #7ba98a; color: #14672f; }
   .et-Na  { background: #e6eef7; border-color: #7d9dc0; color: #1d4c7c; }
+  /* [S] lleva violeta a proposito: es una categoria propia, no una variante
+     del verde [N] ni del azul [N->]. Un revisor que hojea la memoria tiene que
+     ver de un vistazo que ese dato no es ni norma ni analogia ni adopcion,
+     sino una lectura hecha sobre las coordenadas de esta obra. */
+  .et-S   { background: #efe8f7; border-color: #9b83bf; color: #55317f; }
   .et-C   { background: #fdf3e0; border-color: #d0a95f; color: #8a5a00; }
   .et-A   { background: #fdeaea; border-color: #cf8b86; color: #a4160f; }
 
@@ -212,11 +217,29 @@ sostiene sus numeros, no el catalogo completo.</p>
 numeral verificado &middot;
 <span class="etiqueta et-Na">N&rarr;</span> valor normativo aplicado por
 analogia, declarada &middot;
+<span class="etiqueta et-S">S</span> dato de sitio: obtenido con un
+procedimiento normativo real (mapa, ensayo, medicion de campo) aplicado a las
+coordenadas o condiciones de ESTE proyecto; no es eleccion ni analogia, es un
+hecho determinado y no portable a otra obra, y en vez de sensibilidad declara
+trazabilidad obligatoria &middot;
 <span class="etiqueta et-C">C</span> vacio normativo cubierto con fuente
 tecnica reconocida (FHWA, AASHTO) &middot;
 <span class="etiqueta et-A">A</span> sin norma ni fuente unica: adopcion
 declarada, con analisis de sensibilidad obligatorio.</p>
 </div>
+
+<h3>3.1 Datos de sitio <span class="etiqueta et-S">S</span></h3>
+
+<p>Hechos de este emplazamiento, leidos o medidos con el procedimiento que la
+norma prescribe. No se declaran con un rango de sensibilidad porque no hay
+nada que elegir en ellos: se declaran con la trazabilidad que permite a un
+revisor <b>repetir la lectura</b> y llegar al mismo numero. Los que valen para
+todo el corredor salen de <code>datos_sitio.py</code>; los que varian punto a
+punto son columnas del CSV y viajan en la memoria de cada punto.</p>
+
+%%bloque_datos_sitio
+
+<h3>3.2 Criterios adoptados</h3>
 
 %%bloque_criterios
 

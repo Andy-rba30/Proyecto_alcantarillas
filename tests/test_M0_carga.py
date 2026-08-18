@@ -126,7 +126,8 @@ def test_la_fila_de_familia_C_se_carga_marcada_y_no_se_rechaza():
     assert c01.S_cauce is None
     assert c01.pendiente_dato_externo
     assert set(c01.pendientes_externos) == {
-        "Q_m3s", "area_ha", "S_cauce", "Q_receptor_m3s", "cota_TW"}
+        "Q_m3s", "area_ha", "S_cauce", "Q_receptor_m3s", "cota_TW",
+        "NF_profundidad_m"}
     # Lo que si trajo la fila esta cargado y validado.
     assert c01.cbr_subrasante == pytest.approx(6.5)
     assert c01.cota_subrasante == pytest.approx(38.95)
@@ -138,6 +139,40 @@ def test_el_TW_esta_pendiente_en_todas_las_familias():
         assert punto.cota_TW is None
         assert punto.Q_receptor_m3s is None
         assert "cota_TW" in punto.pendientes_externos
+
+
+def test_el_NF_esta_pendiente_en_todas_las_familias(tmp_path):
+    """
+    El NF de cada cruce lo da el estudio geotecnico, no la hoja de ruta ni el
+    proyectista: la columna se carga vacia en las cuatro filas y se marca. No
+    se hereda el 1.4 m de la caracterizacion general de la llanura -- ese
+    numero describe una zona, no cuatro mediciones.
+    """
+    for punto in cargar_puntos(CSV_VALIDO):
+        assert punto.NF_profundidad_m is None
+        assert "NF_profundidad_m" in punto.pendientes_externos
+        with pytest.raises(DatoFaltanteError) as exc:
+            punto.exigir("NF_profundidad_m")
+        assert exc.value.campo == "NF_profundidad_m"
+
+
+def test_el_NF_declarado_se_carga_como_dato_del_punto(tmp_path):
+    """Cuando el estudio lo da, es un dato mas de la fila, no un criterio."""
+    punto = cargar_puntos(_con(tmp_path, NF_profundidad_m="1.4"))[0]
+    assert punto.NF_profundidad_m == pytest.approx(1.4)
+    assert "NF_profundidad_m" not in punto.pendientes_externos
+
+
+@pytest.mark.parametrize("valor", ["0", "-1.4"])
+def test_un_NF_no_positivo_es_dato_invalido(tmp_path, valor):
+    """
+    El NF es una PROFUNDIDAD bajo el terreno: el signo cambiado es el error de
+    transcripcion tipico de esta columna, y es dato invalido (hay que
+    corregirlo), no faltante (no hay nada que anadir).
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        cargar_puntos(_con(tmp_path, NF_profundidad_m=valor))
+    assert exc.value.campo == "NF_profundidad_m"
 
 
 def test_las_familias_A_y_B_no_heredan_la_excepcion_de_la_C(tmp_path):

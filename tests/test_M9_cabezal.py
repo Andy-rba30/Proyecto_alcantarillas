@@ -19,19 +19,23 @@ Y, transversalmente, que cada vacio declarado se detiene donde debe con
 """
 
 import math
+from pathlib import Path
 
 import pytest
 
 import criterios_adoptados as ca
+import datos_sitio as ds
 from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO, CUANTIA_MIN_MURO,
-                                   ESPACIAMIENTO_MAX_ABSOLUTO, FS,
+                                   ESPACIAMIENTO_MAX_ABSOLUTO,
+                                   FACTOR_MURO_TABLA, FS,
                                    GAMMA_AGUA_KN_M3, NQ_ZAPATA_EN_TALUD,
                                    RECUBRIMIENTO, SOBRECARGA_TRASDOS_H_EQ)
 from modelos import (CondicionAnalisis, CriterioPendienteError,
-                     DatoInvalidoError, DisenoNoFactibleError,
-                     GeometriaCabezal)
+                     DatoFaltanteError, DatoInvalidoError,
+                     DisenoNoFactibleError, GeometriaCabezal)
+from modulos.M0_carga import cargar_puntos
 from modulos.M9_cabezal import (aceleracion_ajustada_sitio,
                                 altura_agua_sobre_base,
                                 angulo_inercia_sismica,
@@ -67,6 +71,13 @@ from modulos.M9_cabezal import (aceleracion_ajustada_sitio,
                                 verificar_volteo)
 
 TOL = 1e-12
+
+CSV_EJEMPLO = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
+
+# NF de prueba, en m. No es un valor de proyecto: es el dato que en una corrida
+# real trae la fila del CSV (`punto.exigir("NF_profundidad_m")`), y aqui se fija
+# para que el ensamble de empujes tenga con que calcular la subpresion.
+NF_DE_PRUEBA = 1.4
 
 
 @pytest.fixture
@@ -137,6 +148,10 @@ def test_los_pasos_llevan_etiqueta_y_origen_para_M11():
                         "k_h", "k_v"]
 
     por_simbolo = {p.simbolo: p for p in cadena.pasos}
+    # El PGA abre la cadena como dato de sitio [S]: la lectura de un mapa
+    # normativo sobre las coordenadas de esta obra, no una constante universal
+    assert por_simbolo["PGA"].etiqueta == "S"
+    assert por_simbolo["PGA"].criterio == "PGA_roca_B"
     # F_pga es la unica pieza discutible de la cadena: [A] mientras no haya SPT
     assert por_simbolo["F_pga"].etiqueta == "A"
     assert por_simbolo["F_pga"].criterio == "F_pga"
@@ -152,8 +167,38 @@ def test_el_factor_de_muro_reducido_no_se_asume():
     Sec. 9.2: si el muro admitiera 25-50 mm de desplazamiento seria
     k_h = 0.5*k_h0 = 0.25. "No asumirlo en un cabezal empotrado".
     """
-    assert factor_muro() == pytest.approx(1.0)
+    assert factor_muro() == pytest.approx(FACTOR_MURO_TABLA["rigido"])
     assert cadena_sismica().k_h == pytest.approx(0.50)
+    # La otra fila de la tabla existe y es [N]; lo que es [A] es no elegirla
+    assert FACTOR_MURO_TABLA["desplazable"] == pytest.approx(0.5)
+    assert ca.criterio("factor_muro_eleccion").etiqueta == "A"
+
+
+def test_el_pga_sale_de_datos_de_sitio_y_no_de_un_criterio():
+    """
+    El docstring de `pga_roca_b` venia diciendo desde el principio que el
+    valor "depende de la coordenada sobre la que se lea", que es la definicion
+    de [S]. Hasta la quinta etiqueta figuraba como [N], la unica de las cuatro
+    que no le corresponde.
+    """
+    assert pga_roca_b() == pytest.approx(ds.valor("PGA_roca_B"))
+    assert ds.dato("PGA_roca_B").etiqueta == "S"
+    assert ds.dato("PGA_roca_B").trazabilidad
+    with pytest.raises(KeyError):
+        ca.valor("PGA_roca_B")
+
+
+def test_una_eleccion_de_factor_de_muro_fuera_de_la_tabla_es_dato_invalido(monkeypatch):
+    """
+    La eleccion es [A], pero solo entre las dos filas del numeral: un 0.7
+    inventado no es una eleccion, es un valor sin fuente.
+    """
+    original = ca.CRITERIOS["factor_muro_eleccion"]
+    monkeypatch.setitem(
+        ca.CRITERIOS, "factor_muro_eleccion",
+        original.__class__(**{**original.__dict__, "valor": 0.7}))
+    with pytest.raises(DatoInvalidoError):
+        factor_muro()
 
 
 # ===========================================================================
@@ -337,10 +382,40 @@ def test_subpresion_uniforme_en_todo_el_ancho_de_zapata():
         GAMMA_AGUA_KN_M3 * 1.2 * 1.6)
 
 
-def test_altura_de_agua_usa_el_NF_declarado_y_no_baja_de_cero():
-    # NF_profundidad_m = 1.4 m, [N]
-    assert altura_agua_sobre_base(D_f=2.0) == pytest.approx(0.6)
-    assert altura_agua_sobre_base(D_f=1.0) == pytest.approx(0.0)   # zapata sobre el NF
+def test_altura_de_agua_usa_el_NF_del_punto_y_no_baja_de_cero():
+    """
+    El NF entra por argumento: es la columna 'NF_profundidad_m' del CSV, dato
+    de sitio [S] medido en cada cruce, no un criterio unico de proyecto.
+    """
+    NF = 1.4
+    assert altura_agua_sobre_base(D_f=2.0, NF_profundidad_m=NF) == pytest.approx(0.6)
+    # zapata sobre el freatico: no hay agua que empujar
+    assert altura_agua_sobre_base(D_f=1.0, NF_profundidad_m=NF) == pytest.approx(0.0)
+
+
+def test_dos_puntos_con_NF_distinto_dan_alturas_de_agua_distintas():
+    """
+    Lo que el criterio unico de tramo no podia expresar: el mismo desplante
+    con el freatico a distinta profundidad da distinta subpresion, y cada
+    cabezal se calcula con el NF de su cruce.
+    """
+    somero = altura_agua_sobre_base(D_f=2.0, NF_profundidad_m=0.8)
+    profundo = altura_agua_sobre_base(D_f=2.0, NF_profundidad_m=1.4)
+    assert somero > profundo
+    assert somero == pytest.approx(1.2)
+
+
+def test_sin_NF_medido_el_punto_se_detiene_en_vez_de_asumirlo():
+    """
+    Un punto cuyo estudio geotecnico todavia no dio el NF no se calcula con un
+    valor plausible: `exigir` lanza DatoFaltanteError, que es lo que un
+    criterio unico de tramo escondia detras de un 1.4 m para todos.
+    """
+    punto = cargar_puntos(CSV_EJEMPLO)[0]
+    assert punto.NF_profundidad_m is None
+    with pytest.raises(DatoFaltanteError) as excinfo:
+        punto.exigir("NF_profundidad_m")
+    assert excinfo.value.campo == "NF_profundidad_m"
 
 
 def test_el_peso_propio_se_detiene_en_el_peso_especifico_del_concreto(geometria):
@@ -360,7 +435,8 @@ def test_el_ensamble_de_empujes_se_detiene_en_el_primer_vacio(geometria):
     with pytest.raises(CriterioPendienteError):
         empujes_trasdos(geometria=geometria,
                         condicion=CondicionAnalisis.ESTATICO,
-                        altura_empuje=geometria.altura_total)
+                        altura_empuje=geometria.altura_total,
+                        NF_profundidad_m=NF_DE_PRUEBA)
 
 
 def test_la_altura_total_incluye_el_canto_de_la_zapata(geometria):
@@ -749,10 +825,12 @@ def test_la_cadena_completa_corre_cuando_los_vacios_se_declaran(monkeypatch,
     H = geometria.altura_total
     estatico = empujes_trasdos(geometria=geometria,
                                condicion=CondicionAnalisis.ESTATICO,
-                               altura_empuje=H)
+                               altura_empuje=H,
+                               NF_profundidad_m=NF_DE_PRUEBA)
     sismico = empujes_trasdos(geometria=geometria,
                               condicion=CondicionAnalisis.SISMICO,
-                              altura_empuje=H)
+                              altura_empuje=H,
+                              NF_profundidad_m=NF_DE_PRUEBA)
 
     # El estatico no lleva componente EQ; el sismico si, y la suma crece
     assert estatico.incremento_sismico is None

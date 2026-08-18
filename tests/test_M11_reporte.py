@@ -22,6 +22,7 @@ from pathlib import Path
 import pytest
 
 import criterios_adoptados as ca
+import datos_sitio as ds
 from cli import (Bloqueo, DatoDeclarado, Informe, InformePunto,
                  cargar_datos_externos, correr)
 from modelos import PasoDiseno, Verificacion
@@ -408,6 +409,85 @@ class TestTablaResumen:
         vacio = M11.Tablero(numero="2", titulo="t", glosa="g",
                             encabezados=("#",), filas=())
         assert M11.decision_embocadura([vacio]) is None
+
+
+# ===========================================================================
+# (3.1) Declaracion de datos de sitio [S]
+# ===========================================================================
+
+class TestEtiquetaDeSitio:
+    """
+    La quinta etiqueta tiene que llegar entera a la memoria: con su clase CSS
+    propia, con su entrada en la leyenda y con su bloque de declaracion. Si
+    cualquiera de las tres falta, el revisor ve una [S] que la memoria no
+    explica, o un dato de sitio que la memoria no declara.
+    """
+
+    def test_la_S_esta_en_el_orden_entre_la_analogia_y_la_fuente_tecnica(self):
+        orden = list(M11.ORDEN_ETIQUETAS)
+        assert orden == ["N", "N->", "S", "C", "A"]
+        assert orden.index("N->") < orden.index("S") < orden.index("C")
+        # El mismo orden que la version en texto de criterios_adoptados
+        assert ca._ORDEN["S"] == orden.index("S")
+
+    def test_la_S_tiene_clase_propia_y_no_reusa_la_de_otra_etiqueta(self):
+        clases = M11.CLASE_ETIQUETA
+        assert clases["S"] == "et-S"
+        assert len(set(clases.values())) == len(clases), (
+            "dos etiquetas comparten clase CSS: dejarian de distinguirse en la "
+            "memoria")
+        assert M11._etiqueta_html("S") == '<span class="etiqueta et-S">S</span>'
+
+    def test_la_plantilla_define_el_estilo_de_la_S(self):
+        texto = PLANTILLA.read_text(encoding="utf-8")
+        assert ".et-S" in texto, "la plantilla no define el estilo de la [S]"
+        # Un tono propio: no puede repetir el de ninguna de las otras cuatro
+        estilos = dict(re.findall(r"\.(et-\w+)\s*\{([^}]*)\}", texto))
+        assert set(estilos) == {"et-N", "et-Na", "et-S", "et-C", "et-A"}
+        fondos = [re.search(r"background:\s*(#\w+)", v).group(1)
+                  for v in estilos.values()]
+        assert len(set(fondos)) == len(fondos), (
+            "la [S] reusa el fondo de otra etiqueta: es una categoria propia, "
+            "no una variante de las otras cuatro")
+
+    def test_la_leyenda_de_la_seccion_3_explica_la_S(self):
+        texto = PLANTILLA.read_text(encoding="utf-8")
+        leyenda = texto.split("<b>Etiquetas.</b>")[1].split("</div>")[0]
+        assert '<span class="etiqueta et-S">S</span>' in leyenda
+        assert "dato de sitio" in leyenda
+        assert "trazabilidad" in leyenda
+
+    def test_el_bloque_declara_cada_dato_con_su_trazabilidad(self):
+        import html as _html
+
+        renderizado = M11.bloque_datos_sitio(solo_usados=False)
+        for clave, d in ds.DATOS_SITIO.items():
+            assert clave in renderizado
+            assert _html.escape(d.procedimiento) in renderizado
+            assert _html.escape(d.fuente) in renderizado
+            assert _html.escape(d.trazabilidad) in renderizado
+            assert _html.escape(d.ambito) in renderizado
+        assert M11._etiqueta_html("S") in renderizado
+
+    def test_el_bloque_avisa_de_la_trazabilidad_incompleta(self):
+        renderizado = M11.bloque_datos_sitio(solo_usados=False)
+        assert "Advertencia" in renderizado
+        assert "PGA_roca_B" in renderizado
+
+    def test_sin_datos_invocados_el_bloque_lo_dice(self, monkeypatch):
+        monkeypatch.setattr(ds, "_USADOS", set())
+        assert "no invoco ningun dato de sitio" in M11.bloque_datos_sitio(
+            solo_usados=True)
+
+    def test_un_criterio_S_imprime_trazabilidad_donde_un_A_imprime_sensibilidad(self):
+        import html as _html
+
+        renderizado = M11.bloque_criterios(solo_usados=False)
+        de_sitio = [c for c in ca.CRITERIOS.values() if c.etiqueta == "S"]
+        assert de_sitio, "ningun criterio [S] declarado"
+        assert "<dt>Trazabilidad</dt>" in renderizado
+        for c in de_sitio:
+            assert _html.escape(c.trazabilidad) in renderizado
 
 
 # ===========================================================================

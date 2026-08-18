@@ -82,6 +82,7 @@ from string import Template
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import criterios_adoptados as ca
+import datos_sitio as ds
 
 try:
     from weasyprint import HTML as WeasyHTML
@@ -115,10 +116,11 @@ MARCA_INCUMPLE = "NO cumple"
 
 # Orden de lectura de las etiquetas, de mas normativo a mas adoptado. Reproduce
 # el de `criterios_adoptados.reporte_criterios`.
-ORDEN_ETIQUETAS: Tuple[str, ...] = ("N", "N->", "C", "A")
-CLASE_ETIQUETA: Dict[str, str] = {"N": "et-N", "N->": "et-Na",
+ORDEN_ETIQUETAS: Tuple[str, ...] = ("N", "N->", "S", "C", "A")
+CLASE_ETIQUETA: Dict[str, str] = {"N": "et-N", "N->": "et-Na", "S": "et-S",
                                   "C": "et-C", "A": "et-A"}
-ETIQUETA_HTML: Dict[str, str] = {"N": "N", "N->": "N&rarr;", "C": "C", "A": "A"}
+ETIQUETA_HTML: Dict[str, str] = {"N": "N", "N->": "N&rarr;", "S": "S",
+                                 "C": "C", "A": "A"}
 
 # Fila del Tablero 2 que declara el detalle de embocadura del cabezal. La
 # columna "Tipo de cabezal" del cuadro resumen (entregable 3) sale de ahi y no
@@ -182,7 +184,7 @@ MARCADORES: Tuple[str, ...] = (
     "generado_local", "generado_utc",
     "estado_expediente", "resumen_expediente",
     "memorias_punto", "filas_resumen",
-    "bloque_criterios", "bloque_pendientes",
+    "bloque_datos_sitio", "bloque_criterios", "bloque_pendientes",
 )
 
 
@@ -948,6 +950,57 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
 # 3. Declaracion de criterios adoptados (entregable 2)
 # ===========================================================================
 
+def bloque_datos_sitio(solo_usados: bool = True) -> str:
+    """
+    Los datos de sitio [S] que el calculo invoco, cada uno con el
+    procedimiento que lo produjo y la trazabilidad que permite repetirlo.
+
+    Va delante de los criterios y no mezclado con ellos: un [S] no se defiende
+    con un rango de sensibilidad -- no hay nada que elegir -- sino diciendo
+    donde se leyo. Mezclarlos daria a entender que el PGA del mapa y la
+    eleccion de F_pga son la misma clase de afirmacion, y son lo contrario:
+    uno es un hecho del sitio y el otro una decision del proyectista.
+    """
+    claves = sorted(ds.datos_usados() if solo_usados else ds.DATOS_SITIO)
+    if not claves:
+        return ('<div class="aviso"><p>Esta corrida no invoco ningun dato de '
+                "sitio.</p></div>")
+
+    partes: List[str] = []
+    for clave in claves:
+        d = ds.dato(clave)
+        campos = [
+            f"<dt>Concepto</dt><dd>{_esc(d.concepto)}</dd>",
+            f"<dt>Valor</dt><dd>{_valor_legible(d.valor)}</dd>",
+            f"<dt>Procedimiento</dt><dd>{_esc(d.procedimiento)}</dd>",
+            f"<dt>Fuente</dt><dd>{_esc(d.fuente)}</dd>",
+            f"<dt>Trazabilidad</dt><dd>{_esc(d.trazabilidad)}</dd>",
+            f"<dt>Ambito</dt><dd>{_esc(d.ambito)}</dd>",
+        ]
+        if d.reemplazado_por:
+            campos.append("<dt>Lo sustituye</dt>"
+                          f"<dd>{_esc(d.reemplazado_por)}</dd>")
+        if d.verificacion_pendiente:
+            campos.append('<dt class="pendiente">Verificar</dt>'
+                          f'<dd class="pendiente">'
+                          f"{_esc(d.verificacion_pendiente)}</dd>")
+        partes.append(
+            '<div class="criterio">'
+            f'<p class="clave">{_etiqueta_html(d.etiqueta)} '
+            f"<code>{_esc(clave)}</code></p><dl>" + "".join(campos)
+            + "</dl></div>")
+
+    con_pendiente = [k for k in claves if ds.dato(k).verificacion_pendiente]
+    if con_pendiente:
+        lista = ", ".join(f"<code>{_esc(k)}</code>" for k in con_pendiente)
+        partes.append(
+            '<div class="aviso"><p><b>Advertencia.</b> Los datos de sitio '
+            f"{lista} tienen la trazabilidad incompleta: el valor esta leido, "
+            "pero la memoria todavia no dice sobre que punto exacto se leyo y "
+            "un revisor no puede reproducir la lectura.</p></div>")
+    return "".join(partes)
+
+
 def bloque_criterios(solo_usados: bool = True) -> str:
     """
     El contenido de `criterios_adoptados.reporte_criterios` como HTML: cada
@@ -977,6 +1030,9 @@ def bloque_criterios(solo_usados: bool = True) -> str:
         if c.sensibilidad:
             campos.append("<dt>Sensibilidad</dt>"
                           f"<dd>{_valor_legible(c.sensibilidad)}</dd>")
+        if c.trazabilidad:
+            campos.append("<dt>Trazabilidad</dt>"
+                          f"<dd>{_esc(c.trazabilidad)}</dd>")
         if c.verificacion_pendiente:
             campos.append('<dt class="pendiente">Verificar</dt>'
                           f'<dd class="pendiente">'
@@ -1146,6 +1202,7 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "memorias_punto": "".join(memoria_de_punto(p) for p in informe.puntos),
         "filas_resumen": "".join(fila_resumen(p, tipo_cabezal)
                                  for p in informe.puntos),
+        "bloque_datos_sitio": bloque_datos_sitio(solo_usados=True),
         "bloque_criterios": bloque_criterios(solo_usados=True),
         "bloque_pendientes": bloque_pendientes(tableros, bloqueantes),
     }
