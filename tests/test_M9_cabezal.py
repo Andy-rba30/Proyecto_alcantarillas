@@ -25,12 +25,13 @@ import pytest
 
 import criterios_adoptados as ca
 import datos_sitio as ds
+from constantes_fisicas import GAMMA_AGUA_KN_M3
 from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO, CUANTIA_MIN_MURO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
                                    FACTOR_MURO_TABLA, FS,
-                                   GAMMA_AGUA_KN_M3, NQ_ZAPATA_EN_TALUD,
+                                   NQ_ZAPATA_EN_TALUD,
                                    RECUBRIMIENTO, SOBRECARGA_TRASDOS_H_EQ)
 from modelos import (CondicionAnalisis, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError,

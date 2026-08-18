@@ -359,3 +359,69 @@ def test_el_n_de_hdpe_es_un_rango_y_no_un_valor_puntual():
     assert n_min < n_max
     assert n_min == pytest.approx(CP2_GEOMETRIA_MANNING["n_min"])
     assert n_max == pytest.approx(CP2_GEOMETRIA_MANNING["n_max"])
+
+
+# ===========================================================================
+# Clase de sitio F: la dispensa de periodo corto no existe en AASHTO
+# ===========================================================================
+
+# Criterios que arma la cadena sismica de Sec. 0.4-0.5 y que M11 imprime en la
+# seccion sismica de la memoria. 'PERFIL_SUELO_PRESUNTO' entra porque es la
+# presuncion geotecnica sobre la que se apoya 'clase_sitio'.
+CRITERIOS_SISMICOS = ("clase_sitio", "PERFIL_SUELO_PRESUNTO", "F_pga",
+                      "factor_muro_eleccion", "k_v", "Mw_licuefaccion")
+
+
+def test_la_clase_de_sitio_es_adopcion_declarada_y_no_dispensa_normativa():
+    """
+    AASHTO LRFD 9a ed. (2020) NO concede dispensa por periodo corto a la
+    Clase F: ni el Art. 3.10.3.1, ni el comentario C3.10.3.1, ni tabla o nota
+    alguna. Exige estudio de respuesta de sitio especifico, sin condiciones.
+
+    Por eso el criterio dejo de ser [C] -- un vacio CUBIERTO con fuente
+    reconocida -- y paso a [A]: usar los factores de sitio tabulados es una
+    adopcion del proyectista y no un permiso de la norma. Si alguien vuelve a
+    poner [C] aqui, esta volviendo a atribuirle a AASHTO algo que no dice.
+    """
+    c = criterio("clase_sitio")
+    assert c.etiqueta == "A", (
+        "clase_sitio volvio a etiquetarse como vacio cubierto por una fuente. "
+        "No hay fuente que lo cubra: la dispensa de periodo corto no existe")
+    assert c.valor == "F_con_factores_tabulados_por_adopcion"
+    assert "no concede" in c.fuente or "NINGUNA" in c.fuente
+
+
+def test_la_memoria_no_presenta_ninguna_excepcion_en_la_seccion_sismica():
+    """
+    La palabra 'excepcion' desaparece de todo lo que M11 imprime de la cadena
+    sismica. No es cosmetica: el expediente llego a afirmar que AASHTO
+    autorizaba una dispensa para la Clase F, y un revisor con AASHTO a mano
+    lee 'excepcion' y busca el numeral que la concede. No hay ninguno.
+
+    La excepcion declarada de DURABILIDAD (Sec. 0.2, E.060 Cap. 4 y Art. 7.7)
+    si existe y es legitima -- por eso este test mira solo los criterios
+    sismicos y no el archivo entero.
+    """
+    for clave in CRITERIOS_SISMICOS:
+        c = criterio(clave)
+        texto = " ".join(str(campo) for campo in
+                         (c.concepto, c.justificacion, c.fuente,
+                          c.reemplazado_por, c.trazabilidad,
+                          c.verificacion_pendiente) if campo)
+        assert "excep" not in texto.lower(), (
+            f"'{clave}' vuelve a hablar de una excepcion en la seccion "
+            "sismica de la memoria")
+
+
+def test_lo_que_cierra_la_clase_de_sitio_es_el_estudio_de_respuesta_de_sitio():
+    """
+    Antes lo cerraba una lectura de Vs30/N_barra sobre 30 m. Sigue haciendo
+    falta -- define la clase -- pero ya no basta: la Clase F exige ADEMAS el
+    estudio de respuesta de sitio especifico. Pedir solo los 30 m volveria a
+    programar la campana corta, que es el error que este bloque de tests
+    lleva dos correcciones intentando evitar.
+    """
+    c = criterio("clase_sitio")
+    pendiente = f"{c.reemplazado_por} {c.verificacion_pendiente}"
+    assert "30 m" in c.reemplazado_por
+    assert "respuesta de sitio" in pendiente

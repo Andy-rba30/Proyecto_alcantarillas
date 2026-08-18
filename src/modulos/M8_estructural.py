@@ -17,12 +17,15 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
 
     3    Flotacion (V7), obligatoria con NF a 1.4 m.
          `empuje_flotacion_kn_m()`, `peso_relleno_kn_m()` y
-         `fs_flotacion()` -- SI implementadas: son las piezas de la formula
-         ΣW >= FS*U que modulos.M5_verificaciones.v7_flotacion ensambla.
+         `factores_carga_flotacion()` -- SI implementadas: son las piezas
+         del EQUILIBRIO DE FACTORES DE CARGA LRFD que
+         modulos.M5_verificaciones.v7_flotacion ensambla,
+
+             gamma_DC_min * DC + gamma_EV_min * EV  >=  gamma_WA * U
+
          El empuje U es siempre calculable (geometria + constante fisica);
          el peso del relleno se detiene en 'peso_especifico_relleno_kn_m3'
-         y el umbral en 'FS_flotacion' -- ninguno de los dos esta en la
-         hoja de ruta.
+         y los factores gamma en 'factores_carga_aashto'.
 
     4    Cama de apoyo y relleno lateral segun EG-2013 (8.1).
          `cama_apoyo_relleno_lateral()` -- SI implementada: la tabla 8.1
@@ -41,15 +44,45 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
          para que M11 lo imprima; no es un vacio a rellenar, es un alcance
          que la propia Fase 8 excluye del script.
 
+Por que V7 ya no usa un factor de seguridad global
+----------------------------------------------------
+La version anterior evaluaba ΣW >= FS*U con un FS clasico leido del criterio
+'FS_flotacion'. Estaba mal encuadrada: Sec. 0.2 adopta la Via 1 -- AASHTO
+LRFD de extremo a extremo -- y un FS global es de estados limite ADMISIBLES,
+el marco contrario. Mezclar los dos es la misma incoherencia carga-resistencia
+que Sec. 0.2 declara resuelta, solo que en el otro sentido: alli era no
+combinar demandas AASHTO con resistencias E.060; aqui es no verificar una
+demanda LRFD con un FS de tension admisible.
+
+La forma correcta en LRFD es un equilibrio de factores de carga: se MINORAN
+las cargas que estabilizan (peso propio DC y peso del relleno EV, con sus
+gamma MINIMOS de la Tabla 3.4.1-2) y se MAYORA la que desestabiliza (la
+subpresion, carga de agua WA, con su gamma de la Tabla 3.4.1-1),
+
+    gamma_DC_min * DC + gamma_EV_min * EV  >=  gamma_WA * U
+
+que con los minimos de la tabla es la forma 0.90*(DC + EV) >= 1.00*U. Los
+gamma NO estan escritos en este modulo: salen de 'factores_carga_aashto', el
+mismo criterio del que come M9 (Sec. 9.2). Que las dos fases lean la misma
+declaracion es justamente lo que impide que el expediente tenga dos juegos de
+factores de carga distintos.
+
+Consecuencia de taxonomia: 'FS_flotacion' se RETIRO de criterios_adoptados.py.
+No se le redefinio el contenido porque en LRFD no queda nada que represente:
+el papel que hacia -- el margen entre estabilizante y desestabilizante -- lo
+hacen ahora los propios gamma, y dejarlo declarado invitaria a multiplicar dos
+veces el mismo margen.
+
 Por que el peso propio del conducto no entra en V7
 ----------------------------------------------------
-ΣW = peso propio + peso del relleno, por la formula de la tabla de Fase 5
-(fila V7). El peso propio depende del espesor de pared, que sale de la
+DC = 0. El peso propio depende del espesor de pared, que sale de la
 clase/calibre seleccionada en los items 1-2 -- hoy bloqueados. Sumarlo
 supondria inventar un espesor. Omitirlo es la alternativa conservadora, NO
-una aproximacion optimista: un ΣW mas chico hace el chequeo MAS dificil de
-cumplir, nunca lo relaja. Se declara aqui, en cada resultado y en la memoria,
-en vez de aproximar en silencio.
+una aproximacion optimista: reduce el lado estabilizante y hace el chequeo MAS
+dificil de cumplir, nunca lo relaja. Que su gamma sea el MINIMO (0.90, no
+1.25) va en la misma direccion y por la misma razon: en flotacion el peso
+propio ayuda, y en LRFD lo que ayuda se minora. Se declara aqui, en cada
+resultado y en la memoria, en vez de aproximar en silencio.
 
 Por que U asume sumersion completa
 -------------------------------------
@@ -73,7 +106,7 @@ Excepciones
 -----------
     CriterioPendienteError   'clases_producto_por_relleno' (items 1-2);
                              'peso_especifico_relleno_kn_m3' o
-                             'FS_flotacion' (V7, via
+                             'factores_carga_aashto' (V7, via
                              modulos.M5_verificaciones.v7_flotacion).
 
 Uso
@@ -91,8 +124,10 @@ import math
 from typing import Tuple
 
 import criterios_adoptados as ca
-from constantes_normativas import CAMA_RELLENO_LATERAL, GAMMA_AGUA_KN_M3
-from modelos import CamaApoyoRelleno, Material, ReferenciaNormativa
+from constantes_fisicas import GAMMA_AGUA_KN_M3
+from constantes_normativas import CAMA_RELLENO_LATERAL
+from modelos import (CamaApoyoRelleno, DatoInvalidoError, FactoresFlotacion,
+                     Material, ReferenciaNormativa)
 
 NUMERAL_8_1_2 = "Fase 8, items 1-2"
 # La cita anterior, "Sec. 8.1 (EG-2013 Seccion 500)", era doblemente falsa:
@@ -110,11 +145,22 @@ NUMERAL_8_1 = ReferenciaNormativa(
                   "Seccion 502",
 )
 NUMERAL_8_5 = "Fase 8, item 5"
-NUMERAL_V7 = "Fase 5, V7 (Manual de Puentes num. 2.4.3.8.2)"
+NUMERAL_V7 = ("Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; "
+              "factores de carga: AASHTO LRFD Tablas 3.4.1-1 y 3.4.1-2)")
 
 CRITERIO_CLASES_PRODUCTO = "clases_producto_por_relleno"
-CRITERIO_FS_FLOTACION = "FS_flotacion"
+CRITERIO_FACTORES_CARGA = "factores_carga_aashto"
 CRITERIO_PESO_RELLENO = "peso_especifico_relleno_kn_m3"
+
+# Tipos de carga de las Tablas 3.4.1-1/-2 que intervienen en V7, y con que
+# extremo entra cada uno. En flotacion, DC y EV ESTABILIZAN (se minoran, gamma
+# minimo) y WA DESESTABILIZA (se mayora, gamma maximo). Los nombres viajan
+# aqui, los NUMEROS en 'factores_carga_aashto': este modulo no declara ninguno.
+CARGA_PESO_PROPIO = "DC"
+CARGA_RELLENO = "EV"
+CARGA_AGUA = "WA"
+EXTREMO_ESTABILIZANTE = "min"
+EXTREMO_DESESTABILIZANTE = "max"
 
 
 # ---------------------------------------------------------------------------
@@ -176,9 +222,53 @@ def peso_relleno_kn_m(*, D: float, altura_relleno: float) -> float:
     return gamma_relleno * D * altura_relleno
 
 
-def fs_flotacion() -> float:
-    """FS de V7, leido de 'FS_flotacion' (CriterioPendienteError mientras falte)."""
-    return ca.valor(CRITERIO_FS_FLOTACION)
+def factores_carga_flotacion() -> FactoresFlotacion:
+    """
+    Los tres gamma que V7 necesita, leidos de 'factores_carga_aashto'
+    (Tablas 3.4.1-1 y 3.4.1-2 de AASHTO LRFD): el MINIMO de DC y de EV, que
+    son las cargas estabilizantes, y el de WA, que es la desestabilizante.
+
+    No hay un gamma escrito en este modulo. Se detiene con
+    `CriterioPendienteError` mientras 'factores_carga_aashto' no tenga valor
+    -- el mismo vacio que bloquea las combinaciones de M9 (Sec. 9.2), y a
+    proposito el mismo criterio: dos juegos de factores de carga en un mismo
+    expediente es exactamente la contradiccion que Sec. 0.7 existe para
+    impedir.
+
+    Forma esperada del criterio, un dict por tipo de carga con sus dos
+    extremos::
+
+        {"DC": {"min": ..., "max": ...},
+         "EV": {"min": ..., "max": ...},
+         "WA": {"min": ..., "max": ...}, ...}
+    """
+    tabla = ca.valor(CRITERIO_FACTORES_CARGA)   # CriterioPendienteError mientras falte
+    return FactoresFlotacion(
+        gamma_DC=_gamma(tabla, CARGA_PESO_PROPIO, EXTREMO_ESTABILIZANTE),
+        gamma_EV=_gamma(tabla, CARGA_RELLENO, EXTREMO_ESTABILIZANTE),
+        gamma_WA=_gamma(tabla, CARGA_AGUA, EXTREMO_DESESTABILIZANTE),
+        criterio=CRITERIO_FACTORES_CARGA,
+    )
+
+
+def _gamma(tabla, tipo_de_carga: str, extremo: str) -> float:
+    """
+    Un gamma de la tabla declarada, con el error del expediente cuando la
+    declaracion no trae la fila o el extremo que V7 pide. Es
+    `DatoInvalidoError` y no `KeyError` porque el problema esta en lo que el
+    revisor escribio en 'factores_carga_aashto', no en el programa.
+    """
+    fila = tabla.get(tipo_de_carga) if hasattr(tabla, "get") else None
+    if fila is None or extremo not in fila:
+        raise DatoInvalidoError(
+            campo=CRITERIO_FACTORES_CARGA, valor=tabla,
+            motivo=f"V7 necesita el gamma '{extremo}' de la carga "
+                   f"'{tipo_de_carga}' (Tablas 3.4.1-1/-2) y la declaracion "
+                   "no lo trae. Se espera un dict "
+                   "{'DC': {'min': ..., 'max': ...}, 'EV': {...}, "
+                   "'WA': {...}}",
+        )
+    return float(fila[extremo])
 
 
 # ---------------------------------------------------------------------------

@@ -38,7 +38,11 @@ G_LAUSHEY = 9.8                      # m/s2; g tal como lo escribe la Sec.
                                      # (M4: tirante critico, control de
                                      # salida) es constantes_fisicas.G = 9.81,
                                      # no esta -- ver constantes_fisicas.py.
-GAMMA_AGUA_KN_M3 = 9.81             # kN/m3; constante fisica, subpresion (num. 2.4.3.8.2)
+# GAMMA_AGUA_KN_M3 ya no vive aqui: es una constante FISICA, no una exigencia
+# normativa. El num. 2.4.3.8.2 del Manual de Puentes dice como se calcula la
+# subpresion, no cuanto pesa el agua -- ningun numeral peruano fija eso. Vive
+# en constantes_fisicas.py, y ademas DERIVADA (RHO_AGUA * G), para que el
+# proyecto tenga una sola gravedad. Mismo criterio ya aplicado a G.
 
 RIESGO_ADMISIBLE = {                # Tabla N 02, num. 3.6
     "quebrada_importante": {"R": 0.30, "n": 25},   # -> TR = 71 anios

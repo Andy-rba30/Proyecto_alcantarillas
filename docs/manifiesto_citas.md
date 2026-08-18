@@ -182,7 +182,7 @@ Toda la tabla de factores de seguridad de la Fase 9 sale de este documento.
 | `e5_estabilidad_talud()` ≥ 1.50 / 1.25 | Art. 30.3 | E.050 | [M9:962-963](src/modulos/M9_cabezal.py:962) | [N] |
 | `c_phi_fundacion = None` — la obligación de usar solo uno (φ=0 o c=0) | Art. 20 | E.050 | [CA:719](src/criterios_adoptados.py:719) | [A] |
 | `PERFIL_SUELO_PRESUNTO` — lo reemplaza el **SPT de licuefacción: ≥ 15 m, ensayos cada 1 m** | Art. 38 | E.050 | [CA:229](src/criterios_adoptados.py:229) | [S] |
-| `clase_sitio` — lo reemplaza la **caracterización de sitio sobre los 30 m superiores** (Vs30 o N̄). El SPT de 15 m **no lo cierra**: otra profundidad, otra pregunta | Art. 3.10.3.1 (AASHTO) / perfil de E.030 | AASHTO LRFD / E.030 | [CA:256](src/criterios_adoptados.py:256) | [C] |
+| `clase_sitio` — lo reemplazan el **estudio de respuesta de sitio específico** que AASHTO exige para la Clase F y la **caracterización sobre los 30 m superiores** (Vs30 o N̄). El SPT de 15 m **no lo cierra**: otra profundidad, otra pregunta | Art. 3.10.3.1 (AASHTO) / perfil de E.030 | AASHTO LRFD / E.030 | [CA:256](src/criterios_adoptados.py:256) | **[A]** (era [C]) |
 | `metodo_estabilidad_global = None` — **afirmación negativa**: E.050 fija el umbral, no el método | Art. 30.3 y num. 39.13.6 b) | E.050 | [CA:1078](src/criterios_adoptados.py:1078) | [A] |
 
 ---
@@ -263,8 +263,8 @@ que falta traer del PDF.
 | Valor | Numeral citado | Documento fuente (según la cita) | Archivo:línea | Etiqueta |
 |---|---|---|---|---|
 | `COMBINACIONES_AASHTO` — los tres **nombres** (Resistencia I, Servicio I, Evento Extremo I) | Sec. 3.4.1 (vía Manual de Puentes num. 2.4.5.3) | AASHTO LRFD | [CN:178-179](src/constantes_normativas.py:178), [M9:798-799](src/modulos/M9_cabezal.py:798) | [N] |
-| `clase_sitio = "F_con_excepcion_periodo_corto"` — excepción para estructuras de periodo fundamental corto (≤ 0.5 s) | Art. 3.10.3.1 | AASHTO LRFD | [CA:262](src/criterios_adoptados.py:262) | [C] |
-| ↳ verificación pendiente sobre esa misma cita: precisar si la excepción está en el **articulado** 3.10.3.1 o en el **comentario** C3.10.3.1 / nota a la tabla | Art. 3.10.3.1 vs. C3.10.3.1 | AASHTO LRFD | [CA:266-268](src/criterios_adoptados.py:266) | [C] |
+| ~~`clase_sitio = "F_con_excepcion_periodo_corto"` — excepción para estructuras de periodo fundamental corto (≤ 0.5 s)~~ **CITA FALSA — RETIRADA.** Verificado contra AASHTO LRFD 9.ª ed. (2020): la dispensa no está en el Art. 3.10.3.1, ni en C3.10.3.1, ni en tabla o nota alguna. AASHTO exige estudio de respuesta de sitio específico para la Clase F, de forma incondicional. Hoy: `clase_sitio = "F_con_factores_tabulados_por_adopcion"`, adopción declarada del proyectista **sin respaldo normativo** — §0.5 | ninguna | — | [CA:256](src/criterios_adoptados.py:256) | ~~[C]~~ → **[A]** |
+| ↳ esa verificación **ya se hizo**: no está en el articulado ni en el comentario, porque no existe. Lo que queda pendiente es otra cosa — declarar en la memoria que la adopción va contra una exigencia expresa de AASHTO, y programar el estudio de respuesta de sitio | Art. 3.10.3.1 y C3.10.3.1, 9.ª ed. (2020) | AASHTO LRFD | [CA:317](src/criterios_adoptados.py:317) | **[A]** |
 | `factores_carga_aashto = None` — factores γ (DC, EV, EH, LS, WA, EQ) con máximos y mínimos | Tablas 3.4.1-1 y 3.4.1-2 | AASHTO LRFD | [CA:969](src/criterios_adoptados.py:969), [M9:52](src/modulos/M9_cabezal.py:52), [M9:805](src/modulos/M9_cabezal.py:805) | [A] |
 | `FS_flotacion = None` — FS de V7, ΣW ≥ FS·U | Sec. 12 (no incorporada por el Manual de Puentes) | AASHTO LRFD | [CA:842](src/criterios_adoptados.py:842) | [C] |
 | Rigidez de anillo, pandeo y resistencia de costura: **diferidos al expediente** | Sec. 12 | AASHTO LRFD | [M8:35-36](src/modulos/M8_estructural.py:35), [M8:209-214](src/modulos/M8_estructural.py:209) | [C] |
@@ -508,7 +508,10 @@ columna del CSV (`NF_profundidad_m`).
 4. **La doble definición declarada** ([CN:12-24](src/constantes_normativas.py:12)):
    `D_INICIO`/`D_PASO`/`D_MAX`, `HDS5_INLET` y `H_RELLENO_MIN` existen a la vez en
    los dos archivos. Verificar los dos lados y confirmar que dicen lo mismo.
-5. **La excepción de Clase F** ([CA:266-268](src/criterios_adoptados.py:266)):
-   el propio criterio pide precisar si AASHTO Art. 3.10.3.1 la trae en el
-   articulado o solo en el comentario. Es la diferencia entre una cita normativa
-   y una cita a un comentario no vinculante.
+5. ~~**La excepción de Clase F**~~ **RESUELTA, y en contra: la regla no existe.**
+   Verificado contra AASHTO LRFD 9.ª ed. (2020) — Art. 3.10.3.1, comentario
+   C3.10.3.1 y tablas de clase de sitio. No era la diferencia entre articulado
+   y comentario: no estaba en ninguno de los dos. El uso de factores de sitio
+   tabulados pasó a **adopción declarada `[A]`** del proyectista, sin respaldo
+   normativo, y la memoria debe decirlo con esas palabras
+   ([CA:256](src/criterios_adoptados.py:256), §0.5).

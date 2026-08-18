@@ -14,10 +14,13 @@ M5 contra las nueve verificaciones de la tabla de Fase 5:
                     formula/metodo/dato, y los dos criterios nuevos
                     ('remanso_derecho_via', 'TR_evento_extremo') se declaran
                     vacios a proposito.
-    V7              Fase 8 SI entrega formula (ΣW >= FS*U): se calcula
-                    completo cuando 'peso_especifico_relleno_kn_m3' y
-                    'FS_flotacion' estan declarados, y se detiene en el
-                    primero de los dos que falte.
+    V7              Fase 8 SI entrega procedimiento, y desde la correccion
+                    del marco LRFD es un equilibrio de factores de carga
+                    (gamma_DC*DC + gamma_EV*EV >= gamma_WA*U), no un FS
+                    global: se calcula completo cuando
+                    'peso_especifico_relleno_kn_m3' y 'factores_carga_aashto'
+                    estan declarados, y se detiene en el primero de los dos
+                    que falte.
     V6              cumple por construccion: M2/MD no ofrecen diseño
                     multibarril.
     verificar()     el agregado con la firma de MD.Verificador: se detiene
@@ -230,8 +233,8 @@ def test_v5_lanza_pendiente_por_falta_de_metodo_y_dato():
 def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
     """
     Con 'peso_especifico_relleno_kn_m3' vacio, V7 se detiene ahi -- antes de
-    llegar a 'FS_flotacion' -- porque el peso del relleno se arma antes que
-    el umbral en `v7_flotacion`.
+    llegar a 'factores_carga_aashto' -- porque el termino EV se arma antes
+    que los factores de carga en `v7_flotacion`.
     """
     punto = _punto()
     with pytest.raises(CriterioPendienteError) as excinfo:
@@ -240,9 +243,18 @@ def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
     assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
 
-def test_v7_lanza_pendiente_por_falta_de_FS_con_peso_ya_declarado(concreto,
-                                                                   monkeypatch):
-    """Con el peso del relleno declarado, el siguiente vacio es 'FS_flotacion'."""
+TABLA_GAMMA_DEMO = {"DC": {"min": 0.90, "max": 1.25},
+                    "EV": {"min": 1.00, "max": 1.35},
+                    "WA": {"min": 1.00, "max": 1.00}}
+
+
+def test_v7_lanza_pendiente_por_falta_de_factores_con_peso_ya_declarado(
+        concreto, monkeypatch):
+    """
+    Con el peso del relleno declarado, el siguiente vacio es
+    'factores_carga_aashto' -- ya no 'FS_flotacion', que se retiro al pasar
+    V7 al marco LRFD.
+    """
     original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
     monkeypatch.setitem(
         ca.CRITERIOS, "peso_especifico_relleno_kn_m3",
@@ -252,7 +264,7 @@ def test_v7_lanza_pendiente_por_falta_de_FS_con_peso_ya_declarado(concreto,
     with pytest.raises(CriterioPendienteError) as excinfo:
         v7_flotacion(punto=punto, material=concreto, D=0.90,
                      resultado=_resultado())
-    assert excinfo.value.clave == "FS_flotacion"
+    assert excinfo.value.clave == "factores_carga_aashto"
 
 
 def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
@@ -260,12 +272,13 @@ def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
     """
     cota_terreno=42.10 (= cota de entrada supuesta), D=0.90 -> clave=43.00.
     cota_subrasante=44.05 -> altura_relleno = 1.05 m.
-    U = 9.81 * (pi/4) * 0.90^2 = 6.2417... kN/m
-    W = 18.0 * 0.90 * 1.05 = 17.01 kN/m
-    FS = 1.5 -> FS*U = 9.3626... kN/m -> W >= FS*U: cumple.
+    U  = 9.81 * (pi/4) * 0.90^2 = 6.2417... kN/m
+    EV = 18.0 * 0.90 * 1.05 = 17.01 kN/m;  DC = 0 (peso propio omitido)
+    estabilizante   = 0.90*0 + 1.00*17.01 = 17.01 kN/m
+    desestabilizante = 1.00 * U = 6.2417... kN/m  -> cumple
     """
     for clave, val in (("peso_especifico_relleno_kn_m3", 18.0),
-                       ("FS_flotacion", 1.5)):
+                       ("factores_carga_aashto", TABLA_GAMMA_DEMO)):
         original = ca.CRITERIOS[clave]
         monkeypatch.setitem(
             ca.CRITERIOS, clave,
@@ -275,10 +288,34 @@ def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
     v = v7_flotacion(punto=punto, material=concreto, D=0.90,
                      resultado=_resultado())
     assert v.codigo == "V7"
-    assert v.criterio_aplicado == "FS_flotacion"
-    assert v.valor_obtenido == pytest.approx(17.01, abs=1e-6)
-    assert v.valor_admisible == pytest.approx(1.5 * 9.81 * (math.pi / 4) * 0.90 ** 2, abs=1e-6)
+    assert v.criterio_aplicado == "factores_carga_aashto"
+    assert v.valor_obtenido == pytest.approx(1.00 * 17.01, abs=1e-6)
+    assert v.valor_admisible == pytest.approx(
+        1.00 * 9.81 * (math.pi / 4) * 0.90 ** 2, abs=1e-6)
     assert v.cumple
+
+
+def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
+    """
+    El estabilizante y el desestabilizante llevan gamma DISTINTOS y cada uno
+    el suyo. Con una tabla en la que gamma_EV_min != gamma_WA, un FS global
+    no podria reproducir el resultado: es la prueba de que V7 dejo de serlo.
+    """
+    for clave, val in (("peso_especifico_relleno_kn_m3", 18.0),
+                       ("factores_carga_aashto",
+                        {"DC": {"min": 0.90, "max": 1.25},
+                         "EV": {"min": 0.90, "max": 1.35},
+                         "WA": {"min": 1.00, "max": 1.25}})):
+        original = ca.CRITERIOS[clave]
+        monkeypatch.setitem(
+            ca.CRITERIOS, clave,
+            original.__class__(**{**original.__dict__, "valor": val}),
+        )
+    v = v7_flotacion(punto=_punto(), material=concreto, D=0.90,
+                     resultado=_resultado())
+    assert v.valor_obtenido == pytest.approx(0.90 * 17.01, abs=1e-6)
+    assert v.valor_admisible == pytest.approx(
+        1.25 * 9.81 * (math.pi / 4) * 0.90 ** 2, abs=1e-6)
 
 
 def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
@@ -290,7 +327,7 @@ def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
 
 def test_los_criterios_nuevos_estan_declarados_vacios():
     for clave in ("remanso_derecho_via", "peso_especifico_relleno_kn_m3",
-                 "FS_flotacion", "TR_evento_extremo"):
+                 "factores_carga_aashto", "TR_evento_extremo"):
         assert clave in ca.criterios_sin_valor()
 
 

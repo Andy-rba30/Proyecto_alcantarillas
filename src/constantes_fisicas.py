@@ -25,9 +25,35 @@ d50 (num. 4.1.1.3.7 c): es la cita, no la fisica. En el resto del script
 el simbolo "g" sin fijarle un decimal propio -- ahi entra la constante fisica
 de este archivo. Antes de esta separacion convivian dos valores del mismo
 concepto sin que nadie lo declarara: G = 9.8 (heredado sin querer del
-Laushey) frente a GAMMA_AGUA_KN_M3 = 9.81 (que implica g = 9.81 kN/m3 /
+Laushey) frente a un GAMMA_AGUA_KN_M3 = 9.81 escrito como literal
+independiente en constantes_normativas.py (que implica g = 9.81 kN/m3 /
 1000 kg/m3), una inconsistencia silenciosa entre dos constantes que decian
 representar la misma gravedad.
+
+Por que el peso especifico del agua vive AQUI y no en constantes_normativas
+-----------------------------------------------------------------------------
+`GAMMA_AGUA_KN_M3 = 9.81` estuvo declarado como constante [N] con el numeral
+2.4.3.8.2 del Manual de Puentes. La cita era correcta en cuanto a DONDE se usa
+el valor -- la subpresion -- pero equivocada en cuanto a QUE es el valor: el
+peso especifico del agua no es una exigencia de la norma peruana. Ningun
+numeral peruano lo "fija"; el agua pesa lo que pesa en cualquier obra del
+planeta, y quien cambie de norma no cambia ese numero. Es exactamente el
+criterio que ya se le aplico a G.
+
+Ademas dejo de ser un literal independiente: se DERIVA de la densidad del agua
+y de la gravedad de este mismo archivo. Escribir 9.81 dos veces (una como
+gravedad, otra como peso especifico) era pedir que algun dia alguien tocara
+una y no la otra. Ahora solo hay una gravedad en el proyecto, y el peso
+especifico del agua es una consecuencia aritmetica suya.
 """
 
 G = 9.81   # m/s2; aceleracion estandar de la gravedad (CGPM, 1901)
+
+RHO_AGUA = 1000.0   # kg/m3; densidad del agua dulce a temperatura ordinaria
+
+# Factor de la unidad SI derivada, no un valor de proyecto: 1 kN = 1000 N. El
+# calculo opera en kN (ver CLAUDE.md, Unidades), la fisica en N.
+N_POR_KN = 1000.0
+
+GAMMA_AGUA = RHO_AGUA * G                   # N/m3  = 9810.0
+GAMMA_AGUA_KN_M3 = GAMMA_AGUA / N_POR_KN    # kN/m3 = 9.81, unidad del calculo

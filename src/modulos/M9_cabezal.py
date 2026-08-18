@@ -131,6 +131,7 @@ from typing import Optional, Tuple
 
 import criterios_adoptados as ca
 import datos_sitio as ds
+from constantes_fisicas import GAMMA_AGUA_KN_M3
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    CARGA_VIVA,
                                    CICLOPEO_FC_MATRIZ_MIN,
@@ -142,7 +143,6 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    ESPESOR_TEMPERATURA_DOS_CARAS,
                                    FACTOR_MURO_TABLA,
                                    FS, FS_NUMERAL,
-                                   GAMMA_AGUA_KN_M3,
                                    NQ_ZAPATA_EN_TALUD,
                                    NUMERAL_C_PHI,
                                    NUMERAL_CICLOPEO,

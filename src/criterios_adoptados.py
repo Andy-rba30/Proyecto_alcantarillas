@@ -254,17 +254,51 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "clase_sitio": Criterio(
-        valor="F_con_excepcion_periodo_corto",
-        etiqueta="C",
-        concepto="Clase de sitio sismica AASHTO",
+        valor="F_con_factores_tabulados_por_adopcion",
+        etiqueta="A",
+        concepto="Clase de sitio sismica AASHTO y base sobre la que se toman "
+                 "los factores de sitio de la cadena sismica",
         justificacion="El sitio es Clase F por susceptibilidad a licuefaccion "
-                      "(arenas saturadas, NF a 1.4 m). Se invoca la excepcion "
-                      "para estructuras de periodo fundamental corto (<= 0.5 s), "
-                      "que permite clasificar como si los suelos no licuaran, "
-                      "quedando los efectos de licuefaccion excluidos del alcance "
-                      "y remitidos al estudio geotecnico del expediente",
-        fuente="AASHTO LRFD Art. 3.10.3.1 (el Manual de Puentes no tipifica "
-               "excepciones para Clase F en su Tabla 2.4.3.11.2.1.2-1)",
+                      "(arenas saturadas, NF a 1.4 m); esa parte no cambia. "
+                      "LO QUE CAMBIA ES QUE LA DISPENSA POR PERIODO CORTO NO "
+                      "EXISTE. Se verifico contra AASHTO LRFD Bridge Design "
+                      "Specifications, 9a edicion (2020): no esta en el "
+                      "Art. 3.10.3.1, no esta en su comentario C3.10.3.1, y "
+                      "no esta en ninguna tabla ni nota de tabla de clases de "
+                      "sitio. AASHTO exige, de forma incondicional, un estudio de "
+                      "respuesta de sitio especifico para la Clase F. La "
+                      "redaccion anterior de este criterio y de Sec. 0.5 "
+                      "atribuia a AASHTO una dispensa por periodo "
+                      "fundamental T <= 0.5 s que AASHTO no concede: no fue "
+                      "un vacio rellenado en silencio, fue una autorizacion "
+                      "normativa inventada, que es peor, porque un vacio se "
+                      "ve y una cita falsa se cree. "
+                      "CONSECUENCIA SOBRE LA ETIQUETA: deja de ser [C]. Un "
+                      "[C] es un vacio normativo CUBIERTO con fuente tecnica "
+                      "reconocida, y aqui no hay fuente que cubra nada -- la "
+                      "que se citaba no dice lo que se le hacia decir. Pasa a "
+                      "[A]: seguir el calculo con los factores de sitio "
+                      "tabulados, mientras no exista el estudio de respuesta "
+                      "de sitio, es una ADOPCION DECLARADA DEL PROYECTISTA y "
+                      "no un permiso de la norma. La memoria lo dice con esas "
+                      "palabras; no hay forma honesta de escribirlo mas "
+                      "corto. "
+                      "ALCANCE, ahora sin coartada: los factores tabulados "
+                      "permiten DIMENSIONAR el elemento; no evaluan el riesgo "
+                      "de licuefaccion (Fase 0-bis), y los efectos de la "
+                      "licuefaccion -- asentamiento, desplazamiento lateral, "
+                      "perdida de capacidad portante -- quedan fuera del "
+                      "alcance del script y remitidos al estudio geotecnico "
+                      "del expediente. Un analisis de respuesta especifica de "
+                      "sitio puede arrojar valores MAYORES que los tabulados: "
+                      "la adopcion no es conservadora por construccion, y por "
+                      "eso es [A] y no [N->]",
+        fuente="NINGUNA autoriza la adopcion. AASHTO LRFD 9a ed. (2020), "
+               "Art. 3.10.3.1 y C3.10.3.1: la Clase F exige estudio de "
+               "respuesta de sitio especifico, sin dispensa alguna por periodo "
+               "corto. El Manual de Puentes tampoco tipifica dispensas "
+               "para Clase F en su Tabla 2.4.3.11.2.1.2-1. La adopcion es "
+               "del proyectista y se declara como tal",
         reemplazado_por="CARACTERIZACION DE SITIO SOBRE LOS 30 m SUPERIORES: "
                         "Vs30, o N_barra promediado en esos 30 m, con el que "
                         "se lee la clase de sitio. Los 30 m son parte de la "
@@ -281,9 +315,16 @@ CRITERIOS: Dict[str, Criterio] = {
                         "lectura que exige 30. Son dos requisitos de campana "
                         "distintos y conviene pedirlos juntos al programar la "
                         "campana geotecnica",
-        verificacion_pendiente="Precisar si en tu edicion de AASHTO la excepcion "
-                               "esta en el ARTICULADO 3.10.3.1 o en el COMENTARIO "
-                               "C3.10.3.1 / nota a la tabla, y citarla como tal",
+        verificacion_pendiente="La verificacion que este campo pedia -- si la "
+                               "dispensa estaba en articulado o en comentario "
+                               "-- YA SE HIZO y la respuesta fue que no esta "
+                               "en ninguno de los dos. Lo que queda pendiente "
+                               "es otra cosa: mientras la adopcion siga en "
+                               "pie, la memoria debe declararla como decision "
+                               "del proyectista contra una exigencia expresa "
+                               "de AASHTO, y el expediente debe programar el "
+                               "estudio de respuesta de sitio especifico. No "
+                               "se cita AASHTO como respaldo de la adopcion",
     ),
 
     "F_pga": Criterio(
@@ -744,10 +785,12 @@ CRITERIOS: Dict[str, Criterio] = {
     # falta y que lo resolveria -- nunca un valor supuesto en silencio.
     #
     # V7 ya NO es de esta clase: Fase 8 (M8_estructural.py) implementa el
-    # procedimiento completo de ΣW >= FS*U. Lo que sigue faltando son dos
-    # datos puntuales del procedimiento -- 'FS_flotacion' y
-    # 'peso_especifico_relleno_kn_m3', mas abajo en la seccion de Fase 8 --
-    # no la formula ni el metodo, que ya estan escritos.
+    # procedimiento completo, y desde la correccion del marco LRFD es un
+    # equilibrio de factores de carga, no un FS global. Lo que sigue faltando
+    # son dos datos puntuales del procedimiento -- 'peso_especifico_relleno_kn_m3'
+    # (mas abajo, seccion de Fase 8) y 'factores_carga_aashto' (seccion de
+    # Fase 9, compartido con M9) -- no la formula ni el metodo, que ya estan
+    # escritos.
 
     "remanso_derecho_via": Criterio(
         valor=None,                 # VACIO: bloquea V5 para todo punto
@@ -928,23 +971,20 @@ CRITERIOS: Dict[str, Criterio] = {
                         "numeral",
     ),
 
-    "FS_flotacion": Criterio(
-        valor=None,                 # VACIO: bloquea V7 para todo punto
-        etiqueta="C",               # Anexo A: "Definicion [N] + procedimiento [C]"
-        concepto="Factor de seguridad de V7 (flotacion del conducto), "
-                 "ΣW >= FS * U",
-        justificacion="El Manual de Puentes define la subpresion (num. "
-                      "2.4.3.8.2, pag. 113) pero remite el procedimiento "
-                      "completo a AASHTO LRFD Sec. 12, que el Manual de "
-                      "Puentes no incorpora (Fase 8, item 5). El FS de "
-                      "flotacion para conductos enterrados no esta "
-                      "transcrito en la hoja de ruta",
-        fuente="PENDIENTE - AASHTO LRFD Sec. 12 / practica tecnica "
-              "reconocida (FHWA) para flotacion de conductos enterrados",
-        reemplazado_por="FS extraido de AASHTO LRFD Sec. 12 o de la "
-                        "practica tecnica reconocida, declarado con su "
-                        "fuente en la memoria",
-    ),
+    # 'FS_flotacion' SE RETIRO. Declaraba el factor de seguridad global de
+    # ΣW >= FS*U, que es lenguaje de TENSION ADMISIBLE, y V7 se reescribio
+    # como el equilibrio de factores de carga que corresponde al marco LRFD
+    # que adopta Sec. 0.2:
+    #
+    #     gamma_DC_min * DC + gamma_EV_min * EV  >=  gamma_WA * U
+    #
+    # No se le redefinio el contenido porque en LRFD no queda nada que
+    # represente: el margen entre estabilizante y desestabilizante lo hacen
+    # ahora los propios gamma, y conservar ademas un FS seria contar dos veces
+    # el mismo margen. Los gamma NO son un criterio nuevo: salen de
+    # 'factores_carga_aashto', mas abajo, el mismo del que come M9 (Sec. 9.2).
+    # Que Fase 8 y Fase 9 lean la misma declaracion es lo que impide que el
+    # expediente termine con dos juegos de factores de carga distintos.
 
     "peso_especifico_relleno_kn_m3": Criterio(
         valor=None,                 # VACIO: bloquea el termino Sigma W de V7

@@ -681,6 +681,32 @@ class CamaApoyoRelleno:
 
 
 @dataclass(frozen=True)
+class FactoresFlotacion:
+    """
+    Los tres factores de carga gamma con que V7 evalua la flotacion del
+    conducto (Fase 8, item 3), leidos de 'factores_carga_aashto' (Tablas
+    3.4.1-1 y 3.4.1-2 de AASHTO LRFD).
+
+    Existe para que los tres viajen juntos con la clave del criterio de la
+    que salieron: quien lea el resultado de V7 en la memoria tiene que poder
+    ver CUAL gamma se aplico a cada carga, no solo el numero final. Un
+    equilibrio de factores de carga en el que no se distingue el gamma del
+    estabilizante del gamma del desestabilizante es indistinguible, en el
+    papel, de un factor de seguridad global -- que es justo lo que V7 dejo
+    de ser.
+
+    `gamma_DC` y `gamma_EV` son los MINIMOS de la Tabla 3.4.1-2: en flotacion
+    el peso propio y el peso del relleno estabilizan, y en LRFD lo que
+    estabiliza se minora. `gamma_WA` es el de la subpresion, que
+    desestabiliza y se mayora.
+    """
+    gamma_DC: float
+    gamma_EV: float
+    gamma_WA: float
+    criterio: str
+
+
+@dataclass(frozen=True)
 class Verificacion:
     """
     Resultado de una verificacion de la Fase 5. Nunca se devuelve un bool

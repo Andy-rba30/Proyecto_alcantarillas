@@ -12,7 +12,12 @@ Fase 8 (M8_estructural.py):
     peso_relleno_kn_m()              CriterioPendienteError:
                                       'peso_especifico_relleno_kn_m3' vacio;
                                       calculo directo con el criterio declarado.
-    fs_flotacion()                   CriterioPendienteError: 'FS_flotacion' vacio.
+    factores_carga_flotacion()       CriterioPendienteError:
+                                      'factores_carga_aashto' vacio;
+                                      DatoInvalidoError si la declaracion no
+                                      trae la fila o el extremo que V7 pide.
+                                      V7 dejo de ser un FS global: es el
+                                      equilibrio de factores de carga LRFD.
     cama_apoyo_relleno_lateral()     tabla 8.1, [N] literal, sin vacio.
     verificacion_diferida_estructural()  tupla de avisos, nunca calcula.
 """
@@ -24,13 +29,14 @@ from pathlib import Path
 import pytest
 
 import criterios_adoptados as ca
-from constantes_normativas import GAMMA_AGUA_KN_M3
+from constantes_fisicas import GAMMA_AGUA_KN_M3
 import modulos.M8_estructural as M8
 from modelos import (CamaApoyoRelleno, CriterioPendienteError,
-                     PuntoCritico, TipoMaterial)
+                     DatoInvalidoError, PuntoCritico, TipoMaterial)
 from modulos.M2_material import catalogo
 from modulos.M8_estructural import (cama_apoyo_relleno_lateral,
-                                    empuje_flotacion_kn_m, fs_flotacion,
+                                    empuje_flotacion_kn_m,
+                                    factores_carga_flotacion,
                                     peso_relleno_kn_m,
                                     seleccionar_clase_calibre,
                                     verificacion_diferida_estructural)
@@ -90,10 +96,54 @@ def test_peso_relleno_calcula_con_el_criterio_declarado(monkeypatch):
     assert W == pytest.approx(18.0 * 0.90 * 1.05)
 
 
-def test_fs_flotacion_lanza_pendiente():
+def _declarar(monkeypatch, clave, valor):
+    original = ca.CRITERIOS[clave]
+    monkeypatch.setitem(ca.CRITERIOS, clave,
+                        original.__class__(**{**original.__dict__, "valor": valor}))
+
+
+TABLA_GAMMA_DEMO = {"DC": {"min": 0.90, "max": 1.25},
+                    "EV": {"min": 1.00, "max": 1.35},
+                    "WA": {"min": 1.00, "max": 1.00}}
+
+
+def test_factores_carga_flotacion_lanza_pendiente():
+    """V7 ya no se detiene en un FS: se detiene en los factores de carga."""
     with pytest.raises(CriterioPendienteError) as excinfo:
-        fs_flotacion()
-    assert excinfo.value.clave == "FS_flotacion"
+        factores_carga_flotacion()
+    assert excinfo.value.clave == "factores_carga_aashto"
+
+
+def test_fs_flotacion_ya_no_existe():
+    """
+    'FS_flotacion' se retiro al reescribir V7 como equilibrio LRFD. Un FS
+    global es lenguaje de tension admisible y Sec. 0.2 adopta AASHTO LRFD de
+    extremo a extremo; conservar ademas un FS seria contar dos veces el mismo
+    margen. Este test impide que vuelva por la puerta de atras.
+    """
+    assert "FS_flotacion" not in ca.CRITERIOS
+    assert not hasattr(M8, "fs_flotacion")
+
+
+def test_los_gamma_de_v7_salen_del_criterio_y_con_el_extremo_correcto(monkeypatch):
+    """
+    DC y EV estabilizan la flotacion: entran con su gamma MINIMO. WA (la
+    subpresion) desestabiliza: entra con el MAXIMO. Tomar el maximo de EV
+    seria el error clasico, y aqui daria del lado inseguro.
+    """
+    _declarar(monkeypatch, "factores_carga_aashto", TABLA_GAMMA_DEMO)
+    g = factores_carga_flotacion()
+    assert (g.gamma_DC, g.gamma_EV, g.gamma_WA) == (0.90, 1.00, 1.00)
+    assert g.criterio == "factores_carga_aashto"
+
+
+def test_una_tabla_de_gamma_incompleta_es_dato_invalido(monkeypatch):
+    """Falta la fila WA: el problema esta en la declaracion, no en el programa."""
+    _declarar(monkeypatch, "factores_carga_aashto",
+              {"DC": {"min": 0.90, "max": 1.25}, "EV": {"min": 1.00, "max": 1.35}})
+    with pytest.raises(DatoInvalidoError) as excinfo:
+        factores_carga_flotacion()
+    assert "WA" in str(excinfo.value)
 
 
 def test_el_NF_ya_no_es_un_criterio_de_este_modulo():

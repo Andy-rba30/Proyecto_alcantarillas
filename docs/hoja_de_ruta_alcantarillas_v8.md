@@ -20,7 +20,7 @@
 | v6 decía | v7 corrige | Origen |
 |---|---|---|
 | "La Tabla A.1 organiza sus entradas **por geometría, no por material**" | **Sobreafirmación mía.** La Tabla A.1 organiza por **carta de material/forma** y, dentro de cada carta, por configuración de borde. Ver §4.2.1 | Autocorrección |
-| Excepción de periodo corto: verificación pendiente | **Cerrada.** El Manual de Puentes no la tipifica; se invoca AASHTO LRFD Art. 3.10.3.1 directamente `[C]` | Cierre 2 |
+| Excepción de periodo corto: verificación pendiente | **Retirada — la regla no existe.** Verificado contra AASHTO LRFD 9.ª ed. (2020), Art. 3.10.3.1 y C3.10.3.1: la Clase F exige estudio de respuesta de sitio, sin dispensa. Pasa a adopción declarada `[A]` — ver §0.5 | Corrección posterior a la v7 |
 | F_pga: valores por confirmar | **Confirmados** en Tabla 2.4.3.11.2.1.2-1: C=1.0, D=1.0, E=0.9 para PGA ≥ 0.50 | Cierre 3 |
 | Catálogo comercial de diámetros bloquea M2, M7, M8 | **Desbloqueado.** Progresión normalizada 0.90 m + 0.15 m, con topes por norma de producto. Sin catálogo de proveedor | Cierre 7 |
 | n de HDPE: vacío sin valor | **Rango declarado** (0.010–0.013) por analogía. **No un valor puntual** — ver §4.1.1 | Cierre 7, corregido |
@@ -50,7 +50,7 @@
 | Hidrología, TR, tipo de obra, Manning, velocidades, borde libre, protección de salida, cunetas | **Manual de Hidrología, Hidráulica y Drenaje** (RD 20-2011-MTC/14) | [N] Norma base |
 | Resguardo napa–subrasante, compactación, densidad de calicatas, terraplén sobre NF somero | **Manual de Suelos, Geología, Geotecnia y Pavimentos** (RD 10-2014-MTC/14) | [N] |
 | Cargas, combinaciones, HL-93, sobrecarga en trasdós, PGA, zapatas en talud, diseño del concreto | **Manual de Puentes** (RD 041-2016-MTC/14) | [N] |
-| Clase de sitio F y excepción de periodo corto; Sección 12 (estructuras enterradas) | **AASHTO LRFD Bridge Design Specifications** | [C] norma matriz, invocada donde el Manual no tipifica |
+| Clase de sitio F (exige estudio de respuesta de sitio, §0.5); Sección 12 (estructuras enterradas) | **AASHTO LRFD Bridge Design Specifications** | Norma matriz. `[C]` donde el Manual no tipifica; la clase de sitio **no** es uno de esos casos: es `[A]` — ver §0.5 |
 | Capacidad portante, FS de muros, licuefacción, c y φ, cimentación en talud | **RNE E.050** (RM 406-2018-VIVIENDA) | [N] |
 | Perfil de suelo licuable (señal técnica) | **RNE E.030** (RM 183-2026-VIVIENDA) | [N] con reserva de ámbito (0.4) |
 | Durabilidad del concreto y recubrimientos | **RNE E.060**, Cap. 4 y Art. 7.7 | [N] por excepción declarada (0.2) |
@@ -75,8 +75,8 @@ El Manual de Puentes establece que las combinaciones se rigen por **AASHTO LRFD 
 | Relación HW/D | No existe en el Manual MTC. `[C]` 1.2–1.5. El control real del embalse es V5 |
 | Velocidad máxima en TMC y HDPE | Tabla Nº 10 no los cubre. Fuentes identificadas (PPI, FHWA); **valores numéricos aún por extraer** |
 | n de Manning para HDPE | Tabla Nº 09 no lo lista. **Rango 0.010–0.013 adoptado por analogía al concreto** `[A]` |
-| Flotación de conductos | El Manual de Puentes define subpresión (2.4.3.8.2, pág. 113) pero no incorpora AASHTO LRFD Sec. 12. Definición `[N]` + procedimiento `[C]` |
-| Excepción de Clase F | **Cerrado.** El Manual no la tipifica; se invoca AASHTO LRFD Art. 3.10.3.1 `[C]` |
+| Flotación de conductos | El Manual de Puentes define subpresión (2.4.3.8.2, pág. 113) pero no incorpora AASHTO LRFD Sec. 12. Definición `[N]`; la verificación se plantea como **equilibrio de factores de carga LRFD** (§Fase 5, V7), con los γ de las Tablas 3.4.1-1/-2 vía `factores_carga_aashto` `[A]`. **Ya no un FS global:** un FS es lenguaje de tensión admisible y §0.2 adopta LRFD de extremo a extremo |
+| Clase de sitio F | **Cerrado en contra de lo que decía la v7.** AASHTO no concede dispensa alguna: exige estudio de respuesta de sitio específico. Usar factores tabulados es adopción `[A]` del proyectista — §0.5 |
 
 ### 0.4 Marco sísmico — CERRADO
 
@@ -98,17 +98,21 @@ No se usa el Z = 0.45 de E.030 para las fuerzas sobre el muro; su periodo de ret
 
 Los valores de tabla son **[N]**. La **elección** de F_pga = 1.0 sin conocer la clase de sitio definitiva es **[A]**: conservadora o exacta frente a las tres clases plausibles, con incertidumbre acotada al 10 %.
 
-**Alcance de "conservador":** lo es dentro del marco tabulado. Un análisis de respuesta específica de sitio —el que la Clase F exigiría sin la excepción invocada— podría arrojar valores mayores. Declararlo.
+**Alcance de "conservador":** lo es dentro del marco tabulado. El análisis de respuesta específica de sitio —el que la Clase F **exige**, sin dispensa posible (§0.5)— podría arrojar valores mayores. Declararlo.
 
-### 0.5 Clase de sitio F y excepción de periodo corto — CERRADO
+### 0.5 Clase de sitio F — ADOPCIÓN DECLARADA, NO DISPENSA NORMATIVA
 
-El sitio clasifica como **Clase de Sitio F** por susceptibilidad a licuefacción: arenas saturadas con NF a 1.4 m en la llanura del Bajo Piura. Clasificarlo como D o E mientras la Fase 0-bis advierte riesgo de licuefacción sería una contradicción interna del expediente.
+El sitio clasifica como **Clase de Sitio F** por susceptibilidad a licuefacción: arenas saturadas con NF a 1.4 m en la llanura del Bajo Piura. Clasificarlo como D o E mientras la Fase 0-bis advierte riesgo de licuefacción sería una contradicción interna del expediente. Eso no ha cambiado.
 
-**Se verificó que el Manual de Puentes no tipifica excepciones para la Clase F en su Tabla 2.4.3.11.2.1.2-1.** En consecuencia se invoca la norma matriz: **AASHTO LRFD, Artículo 3.10.3.1**, que autoriza la excepción para estructuras de periodo fundamental **T ≤ 0.5 s**, permitiendo clasificar el sitio como si los suelos no licuaran y emplear los factores de sitio tabulados. Etiqueta **[C]**.
+**Lo que sí cambia — corrección de la versión anterior de este apartado.** Las versiones previas afirmaban que AASHTO LRFD, Art. 3.10.3.1, autoriza una dispensa por periodo fundamental corto (T ≤ 0.5 s) que permitiría clasificar el sitio como si los suelos no licuaran y usar los factores de sitio tabulados. **Esa regla no existe.** Se verificó contra **AASHTO LRFD Bridge Design Specifications, 9.ª edición (2020)**: no está en el Art. 3.10.3.1, no está en su comentario C3.10.3.1, y no está en ninguna tabla ni nota a tabla de clases de sitio. **AASHTO exige, de forma incondicional, un estudio de respuesta de sitio específico para la Clase F.**
 
-> **Precisión de cita a resolver:** en AASHTO, la excepción para Clase F aparece asociada al Artículo 3.10.3.1 pero suele estar redactada como **nota a la tabla de clases de sitio o en el comentario C3.10.3.1**, no en el cuerpo del articulado. Antes de citarla, confirma si en tu edición está en articulado o en comentario, y cítala como lo que sea. Citar comentario como articulado es un error que un revisor con AASHTO a mano detecta de inmediato.
+Esto no fue un vacío rellenado en silencio: fue una **autorización normativa atribuida a una norma que no la concede**, y es el error más grave que ha tenido este expediente. Un vacío se ve; una cita falsa se cree. Queda anotado aquí, y no borrado, para que nadie vuelva a cerrarlo por el mismo camino.
 
-**Alcance de la excepción.** Permite **calcular** el elemento estructural con factores tabulados. **No constituye una evaluación del riesgo de licuefacción**, que permanece como el condicionante técnico no resuelto del proyecto (Fase 0-bis). AASHTO condiciona la excepción a que los efectos de la licuefacción —asentamiento, desplazamiento lateral, pérdida de capacidad— se evalúen por separado.
+**Consecuencia sobre la etiqueta: de `[C]` a `[A]`.** Un `[C]` es un vacío normativo **cubierto** con fuente técnica reconocida. Aquí no hay fuente que lo cubra: la que se citaba no dice lo que se le hacía decir. Por tanto, mientras no exista el estudio de respuesta de sitio, **seguir el cálculo con los factores de sitio tabulados es una adopción declarada del proyectista, no un permiso de la norma.** Etiqueta **[A]**, declarada en `criterios_adoptados.py` como `clase_sitio = "F_con_factores_tabulados_por_adopcion"`. La memoria de cálculo debe decirlo con esas palabras y **no citar AASHTO como respaldo de la adopción**.
+
+**Alcance de la adopción, ahora sin coartada.** Los factores tabulados permiten **dimensionar** el elemento estructural. **No constituyen una evaluación del riesgo de licuefacción**, que permanece como el condicionante técnico no resuelto del proyecto (Fase 0-bis), y los efectos de la licuefacción —asentamiento, desplazamiento lateral, pérdida de capacidad portante— quedan fuera del alcance del script y remitidos al estudio geotécnico del expediente. Un análisis de respuesta específica de sitio **puede arrojar valores mayores** que los tabulados: la adopción **no es conservadora por construcción**, y esa es exactamente la razón de que sea `[A]` y no `[N→]`.
+
+**Lo que cierra este apartado.** El estudio de respuesta de sitio específico que AASHTO exige para la Clase F, programado en la campaña geotécnica junto con la caracterización de los 30 m superiores (Vs30 o N̄) que define la clase.
 
 ### 0.6 Demanda sísmica para la evaluación de licuefacción — CERRADO
 
@@ -453,7 +457,7 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 | **V4b** | Relación HW/D | 1.2 – 1.5 | **[C]** |
 | **V5** | Remanso aguas arriba | Embalse dentro del **derecho de vía**, sin afectación a terceros ni a faja marginal | [N] DG-2018 + Ley 29338 |
 | **V6** | Material sólido de arrastre | Con palizada: sección única mayor | [N] |
-| **V7** | Flotación del conducto | ΣW (peso propio + relleno) ≥ FS · U. Tubería vacía, NF en su cota más alta | [N] subpresión 2.4.3.8.2 + [C] procedimiento |
+| **V7** | Flotación del conducto | **γ_DC,min · DC + γ_EV,min · EV ≥ γ_WA · U.** Tubería vacía, NF en su cota más alta. Las cargas que estabilizan (peso propio DC y peso del relleno EV) se **minoran**; la subpresión, que desestabiliza (WA), se **mayora**. Con los mínimos de la Tabla 3.4.1-2 es la forma 0.90·(DC + EV) ≥ 1.00·U. **Corrige la redacción anterior**, ΣW ≥ FS · U, que era un factor de seguridad global de tensión admisible dentro de un marco LRFD (§0.2) | [N] subpresión 2.4.3.8.2 + [A] los γ (`factores_carga_aashto`, Tablas 3.4.1-1/-2) |
 | **V8** | Evento extremo (FEN) | A TR mayor: la vía **no colapsa** aunque desborde | [N] verificación, no diseño |
 | **V9** | **Disponibilidad de diámetro** | D requerido ≤ tope de la norma de producto del material | **[C]** — nuevo en v7 |
 
@@ -670,7 +674,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 
 | # | Qué verificar | Documento | Bloquea |
 |---|---|---|---|
-| 1.1 | ¿La excepción de Clase F está en el **articulado** 3.10.3.1 o en el **comentario** C3.10.3.1? Citarla como lo que sea | AASHTO LRFD | Redacción de la memoria, §0.5 |
+| 1.1 | **VERIFICADO — la dispensa por periodo corto de la Clase F no existe.** No figura en el articulado 3.10.3.1, ni en el comentario C3.10.3.1, ni en ninguna tabla o nota a tabla. AASHTO exige estudio de respuesta de sitio específico para la Clase F, de forma incondicional. La cita se retira de la memoria y el uso de factores tabulados pasa a adopción `[A]` (§0.5) | AASHTO LRFD 9.ª ed. (2020), Art. 3.10.3.1 y C3.10.3.1 | **Cerrado.** Reabre §0.5 como decisión de proyecto, no como cita normativa |
 | 1.2 | Topes superiores de diámetro por material | ASTM C76 / AASHTO M36 / M294 | V9 y el tope del script |
 | 1.3 | Velocidades máximas admisibles para TMC y HDPE — **valores numéricos** | PPI / FHWA | V3 para materiales flexibles |
 | 1.4 | Registrar coordenadas o curva de isoaceleración de la lectura del PGA | Manual de Puentes, Apéndice A3 | Trazabilidad de §0.4 |
@@ -709,7 +713,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | Criterio | Etiqueta | Estado |
 |---|---|---|
 | PGA en roca (0.50 g) | [N] | **Cerrado.** Falta registrar coordenadas de lectura |
-| Clase de sitio (F con excepción de periodo corto) | [C] | **Cerrado.** AASHTO LRFD Art. 3.10.3.1. Precisar articulado vs. comentario |
+| Clase de sitio (F, factores tabulados por adopción) | [A] | **Reabierto y redeclarado.** La dispensa por periodo corto que lo cerraba no existe en AASHTO (verificado contra la 9.ª ed., 2020). Usar factores tabulados es adopción del proyectista, no permiso de la norma. Lo cierra el estudio de respuesta de sitio específico — §0.5 |
 | F_pga = 1.0 | [A] | Tabla [N]; elección [A]. Sensibilidad (0.9, 1.0) |
 | Factor de muro = 1.0 | [N] | Firme |
 | k_v = 0 | [A] | Sensibilidad (0, 0.5·k_h) |
