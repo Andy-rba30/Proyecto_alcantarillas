@@ -12,12 +12,14 @@ Fase 8 (M8_estructural.py):
     peso_relleno_kn_m()              CriterioPendienteError:
                                       'peso_especifico_relleno_kn_m3' vacio;
                                       calculo directo con el criterio declarado.
-    factores_carga_flotacion()       CriterioPendienteError:
-                                      'factores_carga_aashto' vacio;
-                                      DatoInvalidoError si la declaracion no
-                                      trae la fila o el extremo que V7 pide.
-                                      V7 dejo de ser un FS global: es el
-                                      equilibrio de factores de carga LRFD.
+    factores_carga_flotacion()       'factores_carga_aashto' es [C] (AASHTO
+                                      LRFD 9a ed.): calcula directo, lee la
+                                      fila 'Resistencia I'. DatoInvalidoError
+                                      si la declaracion no trae la
+                                      combinacion, la fila o el extremo que
+                                      V7 pide. V7 dejo de ser un FS global:
+                                      es el equilibrio de factores de carga
+                                      LRFD.
     cama_apoyo_relleno_lateral()     tabla 8.1, [N] literal, sin vacio.
     verificacion_diferida_estructural()  tupla de avisos, nunca calcula.
 """
@@ -102,16 +104,20 @@ def _declarar(monkeypatch, clave, valor):
                         original.__class__(**{**original.__dict__, "valor": valor}))
 
 
-TABLA_GAMMA_DEMO = {"DC": {"min": 0.90, "max": 1.25},
-                    "EV": {"min": 1.00, "max": 1.35},
-                    "WA": {"min": 1.00, "max": 1.00}}
+TABLA_GAMMA_DEMO = {"Resistencia I": {"DC": {"min": 0.90, "max": 1.25},
+                                      "EV": {"min": 1.00, "max": 1.35},
+                                      "WA": {"min": 1.00, "max": 1.00}}}
 
 
-def test_factores_carga_flotacion_lanza_pendiente():
-    """V7 ya no se detiene en un FS: se detiene en los factores de carga."""
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        factores_carga_flotacion()
-    assert excinfo.value.clave == "factores_carga_aashto"
+def test_factores_carga_flotacion_calcula_con_el_criterio_real():
+    """
+    'factores_carga_aashto' es [C] (AASHTO LRFD 9a ed.): V7 ya no se detiene
+    aqui. Lee la fila 'Resistencia I' -- DC y EV con su MINIMO (0.90 los
+    dos), WA con su MAXIMO (1.00, no hay margen que tomar en esa carga).
+    """
+    g = factores_carga_flotacion()
+    assert (g.gamma_DC, g.gamma_EV, g.gamma_WA) == (0.90, 0.90, 1.00)
+    assert g.criterio == "factores_carga_aashto"
 
 
 def test_fs_flotacion_ya_no_existe():
@@ -140,10 +146,19 @@ def test_los_gamma_de_v7_salen_del_criterio_y_con_el_extremo_correcto(monkeypatc
 def test_una_tabla_de_gamma_incompleta_es_dato_invalido(monkeypatch):
     """Falta la fila WA: el problema esta en la declaracion, no en el programa."""
     _declarar(monkeypatch, "factores_carga_aashto",
-              {"DC": {"min": 0.90, "max": 1.25}, "EV": {"min": 1.00, "max": 1.35}})
+              {"Resistencia I": {"DC": {"min": 0.90, "max": 1.25},
+                                 "EV": {"min": 1.00, "max": 1.35}}})
     with pytest.raises(DatoInvalidoError) as excinfo:
         factores_carga_flotacion()
     assert "WA" in str(excinfo.value)
+
+
+def test_una_tabla_sin_la_combinacion_resistencia_i_es_dato_invalido(monkeypatch):
+    """Falta la fila 'Resistencia I' entera: tambien es dato invalido, no KeyError."""
+    _declarar(monkeypatch, "factores_carga_aashto", {"Servicio I": {}})
+    with pytest.raises(DatoInvalidoError) as excinfo:
+        factores_carga_flotacion()
+    assert "Resistencia I" in str(excinfo.value)
 
 
 def test_el_NF_ya_no_es_un_criterio_de_este_modulo():

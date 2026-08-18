@@ -25,7 +25,9 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
 
          El empuje U es siempre calculable (geometria + constante fisica);
          el peso del relleno se detiene en 'peso_especifico_relleno_kn_m3'
-         y los factores gamma en 'factores_carga_aashto'.
+         (todavia vacio). Los factores gamma salen de 'factores_carga_aashto'
+         ([C], AASHTO LRFD 9a ed., Tablas 3.4.1-1/-2, fila 'Resistencia I'):
+         ya no se detienen.
 
     4    Cama de apoyo y relleno lateral segun EG-2013 (8.1).
          `cama_apoyo_relleno_lateral()` -- SI implementada: la tabla 8.1
@@ -105,9 +107,9 @@ en un punto cuyo NF todavia no ha medido el estudio geotecnico.
 Excepciones
 -----------
     CriterioPendienteError   'clases_producto_por_relleno' (items 1-2);
-                             'peso_especifico_relleno_kn_m3' o
-                             'factores_carga_aashto' (V7, via
+                             'peso_especifico_relleno_kn_m3' (V7, via
                              modulos.M5_verificaciones.v7_flotacion).
+                             'factores_carga_aashto' ya no esta vacio ([C]).
 
 Uso
 ---
@@ -222,51 +224,72 @@ def peso_relleno_kn_m(*, D: float, altura_relleno: float) -> float:
     return gamma_relleno * D * altura_relleno
 
 
+COMBINACION_V7 = "Resistencia I"
+# V7 es un equilibrio de factores de carga LRFD -- MINORA lo que estabiliza
+# (DC, EV) y MAYORA lo que desestabiliza (WA) -- y esos son exactamente los
+# extremos que trae Resistencia I (Strength I) en la Tabla 3.4.1-1/-2; las
+# otras dos combinaciones (Servicio I, Evento Extremo I) colapsan DC/EV/WA a
+# 1.00 y no aportarian el margen que V7 exige. Se fija aqui, no en el
+# criterio: 'factores_carga_aashto' declara las TRES combinaciones (Sec. 9.2
+# de M9 las necesita todas), y cual de las tres usa V7 es una decision de
+# este modulo, no del dato.
+
+
 def factores_carga_flotacion() -> FactoresFlotacion:
     """
-    Los tres gamma que V7 necesita, leidos de 'factores_carga_aashto'
-    (Tablas 3.4.1-1 y 3.4.1-2 de AASHTO LRFD): el MINIMO de DC y de EV, que
-    son las cargas estabilizantes, y el de WA, que es la desestabilizante.
+    Los tres gamma que V7 necesita, leidos de la fila 'Resistencia I' de
+    'factores_carga_aashto' (Tablas 3.4.1-1 y 3.4.1-2 de AASHTO LRFD): el
+    MINIMO de DC y de EV, que son las cargas estabilizantes, y el de WA, que
+    es la desestabilizante.
 
-    No hay un gamma escrito en este modulo. Se detiene con
-    `CriterioPendienteError` mientras 'factores_carga_aashto' no tenga valor
-    -- el mismo vacio que bloquea las combinaciones de M9 (Sec. 9.2), y a
-    proposito el mismo criterio: dos juegos de factores de carga en un mismo
-    expediente es exactamente la contradiccion que Sec. 0.7 existe para
-    impedir.
+    'factores_carga_aashto' es [C] (AASHTO LRFD 9a ed., Tablas 3.4.1-1/-2) y
+    es el MISMO criterio que consumen las combinaciones de M9 (Sec. 9.2):
+    dos juegos de factores de carga en un mismo expediente es exactamente la
+    contradiccion que Sec. 0.7 existe para impedir.
 
-    Forma esperada del criterio, un dict por tipo de carga con sus dos
-    extremos::
+    Forma esperada del criterio: un dict por combinacion, y dentro de cada
+    combinacion un dict por tipo de carga con sus dos extremos::
 
-        {"DC": {"min": ..., "max": ...},
-         "EV": {"min": ..., "max": ...},
-         "WA": {"min": ..., "max": ...}, ...}
+        {"Resistencia I": {"DC": {"min": ..., "max": ...},
+                           "EV": {"min": ..., "max": ...},
+                           "WA": {"min": ..., "max": ...}, ...},
+         "Servicio I": {...}, "Evento Extremo I": {...}}
     """
-    tabla = ca.valor(CRITERIO_FACTORES_CARGA)   # CriterioPendienteError mientras falte
+    tabla = ca.valor(CRITERIO_FACTORES_CARGA)
+    fila_combinacion = tabla.get(COMBINACION_V7) if hasattr(tabla, "get") else None
+    if fila_combinacion is None:
+        raise DatoInvalidoError(
+            campo=CRITERIO_FACTORES_CARGA, valor=tabla,
+            motivo=f"V7 necesita la combinacion '{COMBINACION_V7}' "
+                   f"declarada en '{CRITERIO_FACTORES_CARGA}' y la "
+                   "declaracion no la trae",
+        )
     return FactoresFlotacion(
-        gamma_DC=_gamma(tabla, CARGA_PESO_PROPIO, EXTREMO_ESTABILIZANTE),
-        gamma_EV=_gamma(tabla, CARGA_RELLENO, EXTREMO_ESTABILIZANTE),
-        gamma_WA=_gamma(tabla, CARGA_AGUA, EXTREMO_DESESTABILIZANTE),
+        gamma_DC=_gamma(fila_combinacion, CARGA_PESO_PROPIO, EXTREMO_ESTABILIZANTE),
+        gamma_EV=_gamma(fila_combinacion, CARGA_RELLENO, EXTREMO_ESTABILIZANTE),
+        gamma_WA=_gamma(fila_combinacion, CARGA_AGUA, EXTREMO_DESESTABILIZANTE),
         criterio=CRITERIO_FACTORES_CARGA,
     )
 
 
-def _gamma(tabla, tipo_de_carga: str, extremo: str) -> float:
+def _gamma(fila_combinacion, tipo_de_carga: str, extremo: str) -> float:
     """
-    Un gamma de la tabla declarada, con el error del expediente cuando la
-    declaracion no trae la fila o el extremo que V7 pide. Es
-    `DatoInvalidoError` y no `KeyError` porque el problema esta en lo que el
-    revisor escribio en 'factores_carga_aashto', no en el programa.
+    Un gamma de la fila de combinacion declarada, con el error del
+    expediente cuando la declaracion no trae la carga o el extremo que V7
+    pide. Es `DatoInvalidoError` y no `KeyError` porque el problema esta en
+    lo que el revisor escribio en 'factores_carga_aashto', no en el
+    programa.
     """
-    fila = tabla.get(tipo_de_carga) if hasattr(tabla, "get") else None
-    if fila is None or extremo not in fila:
+    fila = fila_combinacion.get(tipo_de_carga) if hasattr(fila_combinacion, "get") else None
+    if fila is None or not hasattr(fila, "get") or extremo not in fila:
         raise DatoInvalidoError(
-            campo=CRITERIO_FACTORES_CARGA, valor=tabla,
+            campo=CRITERIO_FACTORES_CARGA, valor=fila_combinacion,
             motivo=f"V7 necesita el gamma '{extremo}' de la carga "
-                   f"'{tipo_de_carga}' (Tablas 3.4.1-1/-2) y la declaracion "
-                   "no lo trae. Se espera un dict "
+                   f"'{tipo_de_carga}' (combinacion '{COMBINACION_V7}', "
+                   "Tablas 3.4.1-1/-2) y la declaracion no lo trae. Se "
+                   f"espera un dict {{'{COMBINACION_V7}': "
                    "{'DC': {'min': ..., 'max': ...}, 'EV': {...}, "
-                   "'WA': {...}}",
+                   "'WA': {...}}}",
         )
     return float(fila[extremo])
 

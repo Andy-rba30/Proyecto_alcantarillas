@@ -1096,53 +1096,84 @@ CRITERIOS: Dict[str, Criterio] = {
     # aqui en vez de rellenarse con el valor "de siempre".
 
     "factores_carga_aashto": Criterio(
-        valor=None,                 # VACIO: bloquea toda combinacion de carga
-        etiqueta="A",
+        valor={
+            "Resistencia I": {
+                "DC": {"max": 1.25, "min": 0.90},
+                "EV": {"max": 1.35, "min": 0.90},
+                "EH": {"max": 1.50, "min": 0.90},        # empuje ACTIVO -- caso de diseno del proyecto
+                "EH_en_reposo": {"max": 1.35},           # informativo: el proyecto disena con empuje activo, no en reposo
+                "LS": 1.75,
+                "WA": {"max": 1.00, "min": 1.00},
+            },
+            "Servicio I": {
+                "DC": {"max": 1.00, "min": 1.00},
+                "EV": {"max": 1.00, "min": 1.00},
+                "EH": {"max": 1.00, "min": 1.00},
+                "LS": 1.00,
+                "WA": {"max": 1.00, "min": 1.00},
+            },
+            "Evento Extremo I": {
+                "DC": {"max": 1.00, "min": 1.00},
+                "EV": {"max": 1.00, "min": 1.00},
+                "EH": {"max": 1.00, "min": 1.00},
+                "LS": "gamma_EQ",   # 0.50 o 0.00 -- a criterio del propietario, ver verificacion_pendiente
+                "WA": {"max": 1.00, "min": 1.00},
+                "EQ": {"max": 1.00, "min": 1.00},
+            },
+        },
+        etiqueta="C",
         concepto="Factores gamma de las tres combinaciones de Sec. 9.2 "
                  "(Resistencia I, Servicio I, Evento Extremo I) por tipo de "
                  "carga: DC, EV, EH, LS, WA, EQ, con sus maximos y minimos",
         justificacion="Sec. 9.2 NOMBRA las tres combinaciones con numeral "
-                      "(2.4.5.3, AASHTO LRFD Sec. 3.4.1) pero no transcribe "
+                      "(2.4.5.3, AASHTO LRFD Sec. 3.4.1) pero no transcribia "
                       "la Tabla 3.4.1-1 ni la 3.4.1-2. Sin los factores, una "
                       "combinacion es una lista de cargas, no una demanda. "
-                      "Y no es un dato que se pueda poner de memoria: los "
-                      "factores de EH y EV son DOBLES (gamma maximo y minimo) "
-                      "y cual de los dos gobierna depende de si la carga "
-                      "estabiliza o desestabiliza cada verificacion -- "
+                      "CERRADO por verificacion externa contra la fuente: "
+                      "los factores de EH y EV son DOBLES (gamma maximo y "
+                      "minimo) y cual de los dos gobierna depende de si la "
+                      "carga estabiliza o desestabiliza cada verificacion -- "
                       "escribir 1.35 para el empuje de tierras en todas las "
-                      "filas es el error clasico y da del lado inseguro en "
-                      "volteo. Ademas Evento Extremo I lleva gamma_EQ, que la "
-                      "propia AASHTO deja a criterio del propietario",
-        fuente="PENDIENTE - AASHTO LRFD Bridge Design Specifications, Tablas "
-               "3.4.1-1 y 3.4.1-2, en la edicion que adopte el expediente, o "
-               "Manual de Puentes num. 2.4.5.3, pags. 140-143",
-        reemplazado_por="Transcripcion de la Tabla 3.4.1-1 con su edicion y "
-                        "pagina, declarada en la memoria",
-        verificacion_pendiente="Declarar la EDICION de AASHTO LRFD usada: los "
-                               "factores y la numeracion de la Sec. 11 "
-                               "cambiaron entre ediciones y la memoria tiene "
-                               "que ser reproducible",
+                      "filas habria sido el error clasico y da del lado "
+                      "inseguro en volteo; la tabla fuente da EV minimo "
+                      "0.90, no 1.00. La Tabla 3.4.1-2 ademas distingue EH "
+                      "activo (1.50/0.90) de EH en reposo (1.35, sin minimo "
+                      "declarado por la fuente): el proyecto disena con "
+                      "empuje ACTIVO (Mononobe-Okabe/Coulomb, ver "
+                      "'inclinacion_muro_beta' y companeros), asi que 'EH' "
+                      "es el activo y 'EH_en_reposo' queda solo como dato "
+                      "informativo de la tabla. Evento Extremo I lleva "
+                      "gamma_EQ en la carga LS, que la propia AASHTO deja a "
+                      "criterio del propietario (0.50 o 0.00): no se fija "
+                      "aqui un numero, se declara la eleccion pendiente",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., Tablas "
+               "3.4.1-1 (pag. 3-14) y 3.4.1-2 (pag. 3-18); transcritas "
+               "tambien en Manual de Puentes MTC, pags. 143 y 146",
+        verificacion_pendiente="gamma_EQ (carga LS de Evento Extremo I) "
+                               "queda a criterio del propietario del "
+                               "proyecto (0.50 o 0.00, AASHTO LRFD "
+                               "C3.4.1): declarar en la memoria cual se "
+                               "adopta y por que, antes de evaluar esa "
+                               "combinacion",
     ),
 
     "peso_especifico_concreto_kn_m3": Criterio(
-        valor=None,                 # VACIO: bloquea el peso propio del cabezal
-        etiqueta="A",
+        valor=23.56,                # kN/m3, concreto armado (0.150 kcf)
+        etiqueta="C",
         concepto="Peso especifico del concreto armado del cabezal, kN/m3",
         justificacion="Es el peso propio (carga DC) que resiste el volteo y "
                       "el deslizamiento de Sec. 9.3: sin el no hay momento "
-                      "estabilizante ni fuerza normal en la base. La hoja de "
-                      "ruta no lo entrega en ningun numeral -- ni el Manual "
-                      "de Puentes ni EG-2013 Sec. 503 aparecen citados con un "
-                      "valor -- y aunque el valor de practica corriente esta "
-                      "muy acotado, aqui gobierna la regla de Sec. 0.7: un "
-                      "numero que multiplica el ESTABILIZANTE de las cinco "
-                      "verificaciones no entra en el calculo sin quedar "
-                      "declarado y sin sensibilidad",
-        fuente="PENDIENTE - AASHTO LRFD Tabla 3.5.1-1 o Manual de Puentes, "
-               "citado con numeral en la memoria",
-        reemplazado_por="Valor de la tabla de pesos unitarios de la norma que "
-                        "adopte el expediente",
-        sensibilidad=(23.5, 24.5),   # kN/m3, rango corriente del concreto armado
+                      "estabilizante ni fuerza normal en la base. CERRADO "
+                      "por verificacion externa: AASHTO LRFD Tabla 3.5.1-1 "
+                      "+ Comentario C3.5.1 dan 0.150 kcf (concreto normal "
+                      "armado) = 23.56 kN/m3. El valor cae dentro del rango "
+                      "de practica corriente (23.5-24.5 kN/m3) que este "
+                      "criterio manejaba antes de tener cita directa, pero "
+                      "no se adopta el redondeo regional de 24.0: ese numero "
+                      "no tiene fuente propia y 23.56 si la tiene",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., Tabla "
+               "3.5.1-1 + Comentario C3.5.1, pag. 3-21 (0.150 kcf, concreto "
+               "normal armado)",
     ),
 
     "predimensionamiento_cabezal": Criterio(
@@ -1227,23 +1258,31 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "recubrimiento_aashto_mm": Criterio(
-        valor=None,                 # VACIO: bloquea la regla del mayor (Sec. 0.2)
-        etiqueta="A",
+        valor={"contra_suelo": 75.0, "suelo_intemperie_ge_3_4": 75.0,
+              "suelo_intemperie_le_5_8": 75.0},
+        etiqueta="C",
         concepto="Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, "
                  "en mm, por condicion de exposicion, para compararlo con el "
                  "de E.060 Art. 7.7.1",
         justificacion="Sec. 0.2 fija la regla de conflicto: 'rige el "
-                      "recubrimiento MAYOR entre AASHTO y E.060'. Una regla "
-                      "del maximo con un solo operando no es una regla: si se "
-                      "toma el de E.060 sin mirar el de AASHTO, la excepcion "
-                      "declarada de durabilidad queda escrita en la memoria "
-                      "pero no aplicada. La hoja de ruta transcribe el lado "
-                      "E.060 (Art. 7.7.1: 70 / 50 / 40 mm, en "
-                      "constantes_normativas) y NO transcribe el lado AASHTO",
-        fuente="PENDIENTE - AASHTO LRFD, tabla de recubrimientos minimos "
-               "(Sec. 5) de la edicion que adopte el expediente",
-        reemplazado_por="Transcripcion de la tabla AASHTO con su edicion y "
-                        "pagina",
+                      "recubrimiento MAYOR entre AASHTO y E.060'. CERRADO "
+                      "por verificacion externa: AASHTO LRFD Tabla 5.10.1-1 "
+                      "no organiza el recubrimiento por diametro de barra "
+                      "como E.060 (>= 3/4\" / <= 5/8\") -- lo organiza por "
+                      "severidad de EXPOSICION. La Union (Piura) es corredor "
+                      "costero, y la categoria de exposicion aplicable de "
+                      "AASHTO es 'ambiente costero' = 75 mm, uniforme sin "
+                      "importar el diametro de barra. Como 75 > 70 "
+                      "(contra_suelo de E.060) y 75 > 50 y 75 > 40 (los dos "
+                      "casos de intemperie de E.060), AASHTO gobierna en los "
+                      "tres casos por la regla del mayor: no son tres "
+                      "lecturas distintas de AASHTO, es el mismo valor de "
+                      "exposicion costera aplicado a los tres casos de "
+                      "E.060, declarado explicito en las tres claves para "
+                      "que la memoria muestre la comparacion caso por caso",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., Tabla "
+               "5.10.1-1, pag. 5-169, categoria de exposicion 'ambiente "
+               "costero'",
         verificacion_pendiente="Con NF a 1.4 m y suelos salinos, E.060 "
                                "Art. 7.7.5.1 (ambiente corrosivo, 'aumentar "
                                "adecuadamente') es directamente invocable "
@@ -1304,13 +1343,24 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "procedimiento_flexion_corte_aashto_sec5": Criterio(
-        valor=None,                 # VACIO: bloquea el dimensionado del refuerzo
-        etiqueta="A",
+        valor={
+            "phi_flexion": 0.90,
+            "phi_corte": 0.90,
+            "modelo_corte": "MCFT_seccional_directo_no_iterativo "
+                            "(AASHTO LRFD 9a ed., 2020)",
+            "beta": "4.8 / (1 + 750*epsilon_s)",
+            "theta_grados": "29 + 3500*epsilon_s",
+            "Vc_kN": "0.0316*beta*lambda*raiz(f_c_prima)*bv*dv",
+            "Vs_kN": "(Vu/phi) - Vc - Vp",
+            "espaciamiento_s_m": "Av*fy*dv*cot(theta) / Vs",
+            "dv_m": "max(de - a/2, 0.9*de, 0.72*h)",
+        },
+        etiqueta="C",
         concepto="Procedimiento de diseno por flexion y corte de AASHTO LRFD "
                  "Seccion 5: factores de resistencia phi, limites de refuerzo "
                  "y modelo de corte (MCFT / beta-theta) aplicables",
         justificacion="Sec. 9.4 remite el diseno a 'AASHTO LRFD Seccion 5' y "
-                      "no transcribe nada de esa seccion, en coherencia con "
+                      "no transcribia nada de esa seccion, en coherencia con "
                       "la Via 1 de Sec. 0.2 (AASHTO de extremo a extremo, "
                       "E.060 solo para durabilidad y recubrimientos). "
                       "Mezclarlo con las expresiones de E.060 -- que si "
@@ -1318,18 +1368,27 @@ CRITERIOS: Dict[str, Criterio] = {
                       "romperia justamente la consistencia carga-resistencia "
                       "que Sec. 0.2 declara RESUELTA: no se pueden combinar "
                       "demandas mayoradas por AASHTO con resistencias "
-                      "reducidas por E.060. Las cuantias minimas de E.060 "
-                      "Art. 14.3.1 que M9 aplica son un PISO OBLIGATORIO "
-                      "sobre el resultado de este procedimiento -- "
-                      "rho_diseno = max(rho_calculado, rho_minimo) -- no una "
-                      "nota de referencia: cuando este vacio se cierre, el "
-                      "rho que salga de AASHTO entra por "
-                      "`M9.cuantia_de_diseno` y el minimo lo levanta si hace "
-                      "falta",
-        fuente="PENDIENTE - AASHTO LRFD Seccion 5, via Manual de Puentes "
-               "Seccion 2.9, pag. 337",
-        reemplazado_por="Diseno estructural del cabezal del expediente "
-                        "tecnico, con la edicion de AASHTO declarada",
+                      "reducidas por E.060. CERRADO por verificacion "
+                      "externa: Art. 5.5.4.2 da phi = 0.90 para flexion y "
+                      "para corte; Arts. 5.7.3.4.2, 5.7.3.3 y 5.7.2.8 dan el "
+                      "Modelo Seccional MCFT en su procedimiento directo no "
+                      "iterativo de la 9a ed. (2020), con beta, theta, Vc, "
+                      "Vs y dv en forma cerrada. Las cuantias minimas de "
+                      "E.060 Art. 14.3.1 que M9 aplica son un PISO "
+                      "OBLIGATORIO sobre el resultado de este procedimiento "
+                      "-- rho_diseno = max(rho_calculado, rho_minimo) -- no "
+                      "una nota de referencia: el rho que salga de AASHTO "
+                      "entra por `M9.cuantia_de_diseno` y el minimo lo "
+                      "levanta si hace falta. Cerrar este dato declara el "
+                      "PROCEDIMIENTO citado y disponible; el ENSAMBLE "
+                      "completo (iterar epsilon_s, resolver Vs y el "
+                      "espaciamiento para un momento y un cortante dados) "
+                      "sigue sin implementarse en `M9.diseno_flexion_corte` "
+                      "-- es una tarea de implementacion aparte, mas grande "
+                      "que transcribir un dato, y no se acomete aqui",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., "
+               "Arts. 5.5.4.2 (pag. 5-32) y 5.7.3.4.2 / 5.7.3.3 / 5.7.2.8 "
+               "(pags. 5-70 a 5-243)",
     ),
 }
 

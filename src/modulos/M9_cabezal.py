@@ -46,36 +46,42 @@ Lo que este modulo SI calcula entero
     * La regla del recubrimiento mayor, el PISO de cuantia minima aplicado
       como rho_diseno = max(rho_calculado, rho_minimo) (`cuantia_de_diseno`),
       el espaciamiento maximo y la alternativa en concreto ciclopeo.
+    * Las combinaciones AASHTO LRFD de Sec. 9.2 (`factores_de_carga()`), el
+      peso propio del cabezal (`peso_propio_cabezal`, 'peso_especifico_
+      concreto_kn_m3') y la regla del recubrimiento mayor
+      (`recubrimiento_de_diseno`, 'recubrimiento_aashto_mm'): los tres
+      criterios [C] se cerraron por verificacion externa contra AASHTO LRFD
+      9a ed.
 
 Lo que se detiene, y por que no se rellena
 ------------------------------------------
-    factores_carga_aashto        Sec. 9.2 NOMBRA Resistencia I, Servicio I y
-                                 Evento Extremo I con numeral, y no transcribe
-                                 la Tabla 3.4.1-1. `combinaciones()` describe
-                                 las tres; `factores_de_carga()` se detiene.
     pendiente_relleno_trasdos_i  Los tres angulos que Sec. 9.2 exige "ademas"
     inclinacion_muro_beta        de la cadena sismica para cerrar K_AE. El
     friccion_muro_suelo_delta    cuarto, phi, ya estaba vacio en GEOTECNIA
                                  ('phi_relleno_trasdos').
     punto_aplicacion_...         Mononobe-Okabe da el empuje, no su brazo.
-    peso_especifico_concreto     El peso propio del cabezal (carga DC).
     predimensionamiento_cabezal  H, B, D_f y espesores: Sec. 9 no dimensiona
                                  el cabezal y Sec. 1.2 no trae sus columnas.
     N_cq_N_gammaq_meyerhof       Salen de FIGURAS (2.8.1.3.1.2c-1 y -2), no de
                                  una formula transcribible.
     metodo_estabilidad_global    E4 y E5: el FS esta, el metodo con que
                                  producir el valor a comparar no.
-    recubrimiento_aashto_mm      Sin el lado AASHTO, "el mayor de los dos" no
-                                 es una regla.
-    procedimiento_flexion_...    AASHTO LRFD Sec. 5 no esta transcrita.
     cortante_alto_muro_...       El escalon de cuantia horizontal minima a
                                  0.0025 de E.060 Art. 11.10.10.2. Su
                                  disparador es una demanda de CORTANTE, y
                                  este modulo no calcula cortante: sale del
-                                 diseno bloqueado en la linea anterior. Se
+                                 diseno bloqueado en la linea siguiente. Se
                                  declara vacio en vez de omitirse -- omitirlo
                                  equivale a aplicar siempre el minimo mas
                                  bajo de los dos que tiene E.060.
+    procedimiento_flexion_...    Ya NO es un vacio de dato -- 'procedimiento_
+                                 flexion_corte_aashto_sec5' esta citado (phi,
+                                 MCFT beta-theta, Vc, Vs, dv). Lo que sigue
+                                 deteniendo `diseno_flexion_corte()` es que el
+                                 ENSAMBLE (iterar epsilon_s) no esta
+                                 implementado todavia: se detiene con
+                                 `NotImplementedError`, no con
+                                 `CriterioPendienteError`.
 
 Consecuencia practica, la misma de M5 y M8: las funciones de FORMULA son
 utilizables hoy mismo pasandoles sus argumentos, y los ENSAMBLES automaticos
@@ -718,10 +724,10 @@ def peso_propio_cabezal(*, geometria: GeometriaCabezal) -> float:
     rectangular, y suponer eso subestima el peso, que aqui es el
     ESTABILIZANTE de volteo y deslizamiento.
 
-    Se detiene con `CriterioPendienteError` en
-    'peso_especifico_concreto_kn_m3'.
+    'peso_especifico_concreto_kn_m3' es [C] (AASHTO LRFD Tabla 3.5.1-1,
+    23.56 kN/m3): la funcion calcula directo, ya no se detiene aqui.
     """
-    gamma_c = ca.valor(CRITERIO_GAMMA_CONCRETO)   # CriterioPendienteError mientras falte
+    gamma_c = ca.valor(CRITERIO_GAMMA_CONCRETO)
     area_pantalla = (geometria.espesor_corona + geometria.espesor_base_muro) / 2 * geometria.H
     area_zapata = geometria.B * geometria.espesor_zapata
     return gamma_c * (area_pantalla + area_zapata)
@@ -834,14 +840,13 @@ def combinaciones() -> Tuple[CombinacionCarga, ...]:
 
 def factores_de_carga(nombre: str) -> dict:
     """
-    Factores gamma de una combinacion, por tipo de carga.
-
-    Se detiene con `CriterioPendienteError` en 'factores_carga_aashto': Sec.
-    9.2 nombra las combinaciones y no transcribe la Tabla 3.4.1-1. No se
-    rellena de memoria, y no por formalismo: los factores de EH y EV son
-    DOBLES (maximo y minimo) y cual gobierna depende de si la carga estabiliza
-    o desestabiliza cada verificacion. Poner un solo numero por carga da del
-    lado inseguro en volteo.
+    Factores gamma de una combinacion, por tipo de carga: Tablas 3.4.1-1 y
+    3.4.1-2 de AASHTO LRFD, declaradas en 'factores_carga_aashto' ([C]) y
+    anidadas por nombre de combinacion. Los factores de EH y EV son DOBLES
+    (maximo y minimo) y cual gobierna depende de si la carga estabiliza o
+    desestabiliza cada verificacion: tomar un solo numero por carga da del
+    lado inseguro en volteo, por eso el criterio los trae completos y esta
+    funcion no elige por quien la llama.
     """
     if nombre not in COMBINACIONES_AASHTO:
         raise DatoInvalidoError(
@@ -850,7 +855,7 @@ def factores_de_carga(nombre: str) -> dict:
             motivo=("no es una de las combinaciones de Sec. 9.2: "
                     + ", ".join(COMBINACIONES_AASHTO)),
         )
-    tabla = ca.valor(CRITERIO_FACTORES_CARGA)   # CriterioPendienteError mientras falte
+    tabla = ca.valor(CRITERIO_FACTORES_CARGA)
     return tabla[nombre]
 
 
@@ -1166,10 +1171,11 @@ def recubrimiento_aashto_mm(*, condicion: str) -> float:
     """
     Recubrimiento minimo de AASHTO LRFD para la misma condicion, en mm.
 
-    Se detiene con `CriterioPendienteError` en 'recubrimiento_aashto_mm': la
-    hoja de ruta transcribe el lado E.060 y no el lado AASHTO.
+    'recubrimiento_aashto_mm' es [C] (AASHTO LRFD Tabla 5.10.1-1, exposicion
+    costera, 75 mm en las tres condiciones de E.060): la funcion calcula
+    directo, ya no se detiene aqui.
     """
-    tabla = ca.valor(CRITERIO_RECUBRIMIENTO_AASHTO)   # CriterioPendienteError mientras falte
+    tabla = ca.valor(CRITERIO_RECUBRIMIENTO_AASHTO)
     if condicion not in tabla:
         raise DatoInvalidoError(
             campo="condicion", valor=condicion,
@@ -1187,17 +1193,18 @@ def recubrimiento_de_diseno(*, condicion: str) -> RecubrimientoDiseno:
     Por que no basta con tomar el de E.060. Sec. 0.2 adopta la Via 1 (AASHTO
     LRFD de extremo a extremo) y declara la durabilidad como EXCEPCION: E.060
     entra, pero no desplaza a AASHTO, se compara con el. Una regla del maximo
-    evaluada con un solo operando no es una regla -- quedaria escrita en la
-    memoria y no aplicada -- asi que esta funcion se detiene con
-    `CriterioPendienteError` en 'recubrimiento_aashto_mm' hasta que el
-    expediente transcriba el otro lado.
+    evaluada con un solo operando no es una regla -- por eso esta funcion
+    exige los dos lados. Con 'recubrimiento_aashto_mm' cerrado ([C], 75 mm
+    por exposicion costera), la regla ya se evalua completa: AASHTO gobierna
+    en las tres condiciones de E.060 (70/50/40 mm) porque 75 es mayor en las
+    tres.
 
     Con NF a 1.4 m y suelos salinos, E.060 Art. 7.7.5.1 (ambiente corrosivo)
     es directamente invocable y manda AUMENTAR el resultado; el articulo no
     dice cuanto, y ese aumento se declara aparte (Sec. 3.3).
     """
     e060 = recubrimiento_e060_mm(condicion=condicion)
-    aashto = recubrimiento_aashto_mm(condicion=condicion)   # CriterioPendienteError
+    aashto = recubrimiento_aashto_mm(condicion=condicion)
     if aashto > e060:
         adoptado, origen = aashto, "AASHTO"
     else:
@@ -1432,21 +1439,28 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
     Diseno por flexion y corte del cabezal, AASHTO LRFD Seccion 5 (Sec. 9.4,
     via Manual de Puentes Seccion 2.9, pag. 337).
 
-    Se detiene con `CriterioPendienteError` en
-    'procedimiento_flexion_corte_aashto_sec5'. No es un diferimiento como el
-    del item 5 de la Fase 8 -- alli la hoja de ruta EXCLUYE expresamente el
-    calculo del alcance -- sino un vacio: Sec. 9.4 manda disenar por AASHTO
-    Sec. 5 y no transcribe nada de esa seccion.
+    El procedimiento (phi, MCFT beta-theta, Vc, Vs, dv) ya esta citado y
+    disponible en 'procedimiento_flexion_corte_aashto_sec5'. Lo que falta no
+    es el dato: es el ENSAMBLE. Este modulo todavia no implementa el calculo
+    iterativo de deformacion unitaria epsilon_s que alimenta beta y theta
+    (Art. 5.7.3.4.2), y sin epsilon_s no hay Vc ni Vs que resolver. Se
+    detiene a proposito con `NotImplementedError`, para no fingir un
+    resultado -- no es el mismo vacio que bloqueaba antes: ya no se puede
+    responder "falta declarar el criterio", porque el criterio esta
+    declarado.
 
-    Lo que no se hace, y es la tentacion evidente: sustituirla por las
-    expresiones de E.060, que si estan a mano. Romperia la consistencia
-    carga-resistencia que Sec. 0.2 declara RESUELTA -- no se combinan
-    demandas mayoradas por AASHTO con resistencias reducidas por E.060.
+    Lo que no se hara cuando se implemente, y es la tentacion evidente:
+    sustituir el procedimiento por las expresiones de E.060, que si estan a
+    mano. Romperia la consistencia carga-resistencia que Sec. 0.2 declara
+    RESUELTA -- no se combinan demandas mayoradas por AASHTO con
+    resistencias reducidas por E.060.
     """
-    ca.valor(CRITERIO_FLEXION_CORTE)   # CriterioPendienteError mientras falte
-    raise AssertionError(
-        "inalcanzable mientras 'procedimiento_flexion_corte_aashto_sec5' "
-        "este vacio"
+    ca.valor(CRITERIO_FLEXION_CORTE)   # citado y disponible; ya no lanza CriterioPendienteError
+    raise NotImplementedError(
+        "'procedimiento_flexion_corte_aashto_sec5' esta citado y disponible "
+        "(phi, MCFT beta-theta, Vc, Vs, dv); el ensamble del diseno por "
+        "flexion y corte de este modulo (iterar epsilon_s, resolver Vs y "
+        "el espaciamiento) todavia no esta implementado"
     )
 
 

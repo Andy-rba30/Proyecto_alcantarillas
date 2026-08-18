@@ -1063,7 +1063,7 @@ class EmpujesTrasdos:
     (Sec. 9.2), cada una con su brazo sobre la base, mas la subpresion.
 
     Cada empuje viaja con su brazo y no con un momento ya sumado, porque los
-    factores gamma de la combinacion (AASHTO LRFD Tabla 3.4.1-1, el vacio
+    factores gamma de la combinacion (AASHTO LRFD Tabla 3.4.1-1, criterio
     'factores_carga_aashto') se aplican POR TIPO DE CARGA -- EH, LS, WA, EQ
     llevan factores distintos y algunos son dobles. Un momento total sumado
     sin factorizar no se puede combinar despues.

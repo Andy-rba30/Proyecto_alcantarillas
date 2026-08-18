@@ -422,10 +422,17 @@ def test_sin_NF_medido_el_punto_se_detiene_en_vez_de_asumirlo():
     assert excinfo.value.campo == "NF_profundidad_m"
 
 
-def test_el_peso_propio_se_detiene_en_el_peso_especifico_del_concreto(geometria):
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        peso_propio_cabezal(geometria=geometria)
-    assert excinfo.value.clave == "peso_especifico_concreto_kn_m3"
+def test_el_peso_propio_calcula_con_el_gamma_de_concreto_declarado(geometria):
+    """
+    'peso_especifico_concreto_kn_m3' es [C] (AASHTO LRFD Tabla 3.5.1-1,
+    23.56 kN/m3): el peso propio ya no se detiene, calcula directo.
+    """
+    W = peso_propio_cabezal(geometria=geometria)
+    gamma_c = ca.valor("peso_especifico_concreto_kn_m3")
+    assert gamma_c == pytest.approx(23.56)
+    assert W == pytest.approx(
+        gamma_c * ((geometria.espesor_corona + geometria.espesor_base_muro)
+                   / 2 * geometria.H + geometria.B * geometria.espesor_zapata))
 
 
 def test_el_relleno_del_trasdos_es_el_mismo_criterio_que_usa_M8():
@@ -479,11 +486,22 @@ def test_la_sobrecarga_LS_esta_en_las_tres():
         assert "LS" in combinacion.componentes
 
 
-def test_describir_las_combinaciones_no_se_detiene_pero_evaluarlas_si():
+def test_describir_las_combinaciones_no_se_detiene_y_evaluarlas_tampoco():
+    """'factores_carga_aashto' es [C] (AASHTO LRFD 9a ed.): ya no se detiene."""
     assert len(combinaciones()) == 3          # describir: los nombres son [N]
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        factores_de_carga("Resistencia I")    # evaluar: la Tabla 3.4.1-1 no esta
-    assert excinfo.value.clave == "factores_carga_aashto"
+
+    resistencia = factores_de_carga("Resistencia I")
+    assert resistencia["DC"] == {"max": 1.25, "min": 0.90}
+    assert resistencia["EV"] == {"max": 1.35, "min": 0.90}
+    assert resistencia["EH"] == {"max": 1.50, "min": 0.90}
+    assert resistencia["LS"] == pytest.approx(1.75)
+
+    servicio = factores_de_carga("Servicio I")
+    assert servicio["DC"] == {"max": 1.00, "min": 1.00}
+
+    extremo = factores_de_carga("Evento Extremo I")
+    assert extremo["EQ"] == {"max": 1.00, "min": 1.00}
+    assert extremo["LS"] == "gamma_EQ"       # a criterio del propietario
 
 
 def test_una_combinacion_inventada_es_dato_invalido_no_criterio_pendiente():
@@ -676,20 +694,29 @@ def test_una_condicion_inexistente_es_dato_invalido():
         recubrimiento_e060_mm(condicion="sumergido")
 
 
-def test_el_lado_aashto_de_la_regla_del_mayor_esta_vacio():
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        recubrimiento_aashto_mm(condicion="contra_suelo")
-    assert excinfo.value.clave == "recubrimiento_aashto_mm"
+def test_el_lado_aashto_de_la_regla_del_mayor_ya_no_esta_vacio():
+    """
+    'recubrimiento_aashto_mm' es [C]: AASHTO LRFD Tabla 5.10.1-1 organiza el
+    recubrimiento por EXPOSICION, no por diametro; La Union es corredor
+    costero, asi que las tres condiciones de E.060 leen 75 mm.
+    """
+    assert recubrimiento_aashto_mm(condicion="contra_suelo") == pytest.approx(75.0)
+    assert recubrimiento_aashto_mm(condicion="suelo_intemperie_ge_3_4") == pytest.approx(75.0)
+    assert recubrimiento_aashto_mm(condicion="suelo_intemperie_le_5_8") == pytest.approx(75.0)
 
 
-def test_la_regla_del_recubrimiento_mayor_no_se_evalua_con_un_solo_operando():
+def test_la_regla_del_recubrimiento_mayor_ya_se_evalua_con_los_dos_operandos():
     """
-    Sec. 0.2: "rige el recubrimiento MAYOR entre AASHTO y E.060". Devolver el
-    de E.060 sin mirar el otro dejaria la regla escrita y no aplicada.
+    Sec. 0.2: "rige el recubrimiento MAYOR entre AASHTO y E.060". Con AASHTO
+    en 75 mm (exposicion costera) y E.060 en 70/50/40 mm, AASHTO gobierna
+    en los tres casos.
     """
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        recubrimiento_de_diseno(condicion="contra_suelo")
-    assert excinfo.value.clave == "recubrimiento_aashto_mm"
+    for condicion in ("contra_suelo", "suelo_intemperie_ge_3_4",
+                      "suelo_intemperie_le_5_8"):
+        r = recubrimiento_de_diseno(condicion=condicion)
+        assert r.aashto_mm == pytest.approx(75.0)
+        assert r.adoptado_mm == pytest.approx(75.0)
+        assert r.origen == "AASHTO"
 
 
 def test_la_regla_del_mayor_toma_el_aashto_cuando_gobierna(monkeypatch):
@@ -835,14 +862,18 @@ def test_alternativa_en_concreto_ciclopeo():
     assert flojo[1].valor_admisible == CICLOPEO_FRACCION_PIEDRA_MAX
 
 
-def test_el_diseno_por_flexion_y_corte_no_se_sustituye_por_E060():
+def test_el_diseno_por_flexion_y_corte_esta_citado_pero_no_ensamblado():
     """
-    Sec. 0.2, Via 1: no se combinan demandas mayoradas por AASHTO con
-    resistencias reducidas por E.060.
+    'procedimiento_flexion_corte_aashto_sec5' es [C] (phi, MCFT beta-theta,
+    Vc, Vs, dv): ya no es CriterioPendienteError. Lo que sigue faltando es
+    el ENSAMBLE (iterar epsilon_s), y por eso se detiene con
+    NotImplementedError -- Sec. 0.2, Via 1: cuando se implemente, no se
+    combinaran demandas mayoradas por AASHTO con resistencias reducidas por
+    E.060.
     """
-    with pytest.raises(CriterioPendienteError) as excinfo:
+    assert "procedimiento_flexion_corte_aashto_sec5" not in ca.criterios_sin_valor()
+    with pytest.raises(NotImplementedError):
         diseno_flexion_corte(momento=45.0, cortante=30.0)
-    assert excinfo.value.clave == "procedimiento_flexion_corte_aashto_sec5"
 
 
 # ===========================================================================
@@ -934,10 +965,8 @@ def test_la_cadena_completa_corre_cuando_los_vacios_se_declaran(monkeypatch,
 @pytest.mark.parametrize("clave", [
     "pendiente_relleno_trasdos_i", "inclinacion_muro_beta",
     "friccion_muro_suelo_delta", "punto_aplicacion_incremento_sismico",
-    "factores_carga_aashto", "peso_especifico_concreto_kn_m3",
     "predimensionamiento_cabezal", "N_cq_N_gammaq_meyerhof",
-    "metodo_estabilidad_global", "recubrimiento_aashto_mm",
-    "procedimiento_flexion_corte_aashto_sec5",
+    "metodo_estabilidad_global",
 ])
 def test_cada_vacio_de_la_fase_9_esta_declarado_con_su_justificacion(clave):
     criterio = ca.criterio(clave)
@@ -945,3 +974,21 @@ def test_cada_vacio_de_la_fase_9_esta_declarado_con_su_justificacion(clave):
     assert criterio.etiqueta == "A"
     assert criterio.fuente.startswith("PENDIENTE")
     assert len(criterio.justificacion) > 100      # no es un "falta el dato"
+
+
+@pytest.mark.parametrize("clave", [
+    "factores_carga_aashto", "peso_especifico_concreto_kn_m3",
+    "recubrimiento_aashto_mm", "procedimiento_flexion_corte_aashto_sec5",
+])
+def test_los_cuatro_datos_de_C_2_estan_cerrados_como_C(clave):
+    """
+    Los cuatro criterios de la Fase 9 que dependian de una tabla AASHTO sin
+    eleccion de ingenieria: transcripcion directa, etiqueta [C], fuente
+    citada con edicion y pagina.
+    """
+    criterio = ca.criterio(clave)
+    assert clave not in ca.criterios_sin_valor()
+    assert criterio.valor is not None
+    assert criterio.etiqueta == "C"
+    assert not criterio.fuente.startswith("PENDIENTE")
+    assert "AASHTO LRFD" in criterio.fuente

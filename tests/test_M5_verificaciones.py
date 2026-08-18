@@ -17,10 +17,9 @@ M5 contra las nueve verificaciones de la tabla de Fase 5:
     V7              Fase 8 SI entrega procedimiento, y desde la correccion
                     del marco LRFD es un equilibrio de factores de carga
                     (gamma_DC*DC + gamma_EV*EV >= gamma_WA*U), no un FS
-                    global: se calcula completo cuando
-                    'peso_especifico_relleno_kn_m3' y 'factores_carga_aashto'
-                    estan declarados, y se detiene en el primero de los dos
-                    que falte.
+                    global. 'factores_carga_aashto' es [C] (AASHTO LRFD 9a
+                    ed.) y ya no se detiene; el unico vacio que le queda a V7
+                    es 'peso_especifico_relleno_kn_m3'.
     V6              cumple por construccion: M2/MD no ofrecen diseño
                     multibarril.
     verificar()     el agregado con la firma de MD.Verificador: se detiene
@@ -243,17 +242,18 @@ def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
     assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
 
-TABLA_GAMMA_DEMO = {"DC": {"min": 0.90, "max": 1.25},
-                    "EV": {"min": 1.00, "max": 1.35},
-                    "WA": {"min": 1.00, "max": 1.00}}
+TABLA_GAMMA_DEMO = {"Resistencia I": {"DC": {"min": 0.90, "max": 1.25},
+                                      "EV": {"min": 1.00, "max": 1.35},
+                                      "WA": {"min": 1.00, "max": 1.00}}}
 
 
-def test_v7_lanza_pendiente_por_falta_de_factores_con_peso_ya_declarado(
+def test_v7_calcula_completo_en_cuanto_declara_el_peso_del_relleno(
         concreto, monkeypatch):
     """
-    Con el peso del relleno declarado, el siguiente vacio es
-    'factores_carga_aashto' -- ya no 'FS_flotacion', que se retiro al pasar
-    V7 al marco LRFD.
+    'factores_carga_aashto' es [C] (AASHTO LRFD 9a ed.) y ya no se detiene:
+    el unico vacio que le queda a V7 es 'peso_especifico_relleno_kn_m3'.
+    Declarado ese, V7 calcula completo con los gamma REALES (Resistencia I:
+    DC y EV minimos 0.90, WA 1.00) sin tocar nada mas.
     """
     original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
     monkeypatch.setitem(
@@ -261,10 +261,14 @@ def test_v7_lanza_pendiente_por_falta_de_factores_con_peso_ya_declarado(
         original.__class__(**{**original.__dict__, "valor": 18.0}),
     )
     punto = _punto()
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        v7_flotacion(punto=punto, material=concreto, D=0.90,
+    v = v7_flotacion(punto=punto, material=concreto, D=0.90,
                      resultado=_resultado())
-    assert excinfo.value.clave == "factores_carga_aashto"
+    assert v.codigo == "V7"
+    assert v.criterio_aplicado == "factores_carga_aashto"
+    assert v.valor_obtenido == pytest.approx(0.90 * 17.01, abs=1e-6)
+    assert v.valor_admisible == pytest.approx(
+        1.00 * 9.81 * (math.pi / 4) * 0.90 ** 2, abs=1e-6)
+    assert v.cumple
 
 
 def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
@@ -303,9 +307,10 @@ def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
     """
     for clave, val in (("peso_especifico_relleno_kn_m3", 18.0),
                        ("factores_carga_aashto",
-                        {"DC": {"min": 0.90, "max": 1.25},
-                         "EV": {"min": 0.90, "max": 1.35},
-                         "WA": {"min": 1.00, "max": 1.25}})):
+                        {"Resistencia I": {
+                            "DC": {"min": 0.90, "max": 1.25},
+                            "EV": {"min": 0.90, "max": 1.35},
+                            "WA": {"min": 1.00, "max": 1.25}}})):
         original = ca.CRITERIOS[clave]
         monkeypatch.setitem(
             ca.CRITERIOS, clave,
@@ -327,8 +332,10 @@ def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
 
 def test_los_criterios_nuevos_estan_declarados_vacios():
     for clave in ("remanso_derecho_via", "peso_especifico_relleno_kn_m3",
-                 "factores_carga_aashto", "TR_evento_extremo"):
+                 "TR_evento_extremo"):
         assert clave in ca.criterios_sin_valor()
+    # 'factores_carga_aashto' se cerro como [C] (AASHTO LRFD 9a ed.)
+    assert "factores_carga_aashto" not in ca.criterios_sin_valor()
 
 
 # ===========================================================================
