@@ -107,14 +107,14 @@ def test_catalogo_devuelve_un_material_completo():
     assert concreto.n_min == pytest.approx(0.010)
     assert concreto.n_max == pytest.approx(0.013)
     assert concreto.v_max_rango == pytest.approx((3.0, 6.0))
-    assert concreto.subseccion_eg2013 == "506"
+    assert concreto.seccion_eg2013 == "506"
 
 
 def test_el_hdpe_usa_el_rango_de_manning_por_analogia():
     hdpe = catalogo(TipoMaterial.HDPE)
     assert hdpe.n_min == pytest.approx(0.010)
     assert hdpe.n_max == pytest.approx(0.013)
-    assert hdpe.subseccion_eg2013 == "508"
+    assert hdpe.seccion_eg2013 == "508"
     assert hdpe.h_relleno_min == pytest.approx(0.30)   # [N] directo, sin vacio
 
 

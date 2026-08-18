@@ -19,12 +19,13 @@ forma independiente al pipeline (no se copiaron de la hoja de ruta sin
 recalcular). Si un test contra estos valores falla, el error está en el
 modulo bajo prueba, no en el fixture -- pero si tienes dudas, recalcula.
 
-Referencias de numeral: ver docs/hoja_de_ruta_alcantarillas_v7.md
+Referencias de numeral: ver docs/hoja_de_ruta_alcantarillas_v8.md
 """
 
 import math
 
-G = 9.8  # m/s2, Manual de Hidrologia MTC
+G = 9.81  # m/s2, gravedad fisica generica (constantes_fisicas.G). CP-8 usa
+          # esta, no G_LAUSHEY = 9.8 (esa es solo para Sec. 4.1.1.3.7 c) en M6).
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +184,14 @@ CP7_CADENA_SISMICA = {
 # CP-8 · Constante del control de salida -- SI vs. imperial (Sec. 4.3)
 # ---------------------------------------------------------------------------
 # H = (1 + ke + K_friccion*n^2*L/R^(4/3)) * V^2/(2g)
-# K_friccion = 19.62 en SI. Usar 29 (valor ingles) es el error clasico.
+# K_friccion = 19.63 en SI. Usar 29 (valor ingles) es el error clasico.
+#
+# El 19.63 es la conversion SI que el propio HDS-5 declara para su K = 29.
+# Sustituye al 19.62 que este fixture uso hasta ahora, justificado entonces
+# como "2*g": esa derivacion era una coincidencia numerica sin respaldo en la
+# fuente primaria y se retiro. Los valores dorados de abajo estan recalculados
+# con 19.63; el cambio mueve H en 5e-5 m, tres ordenes por debajo del salto
+# que este caso patron existe para atrapar.
 
 CP8_CONTROL_SALIDA = {
     "n": 0.013,
@@ -191,18 +199,24 @@ CP8_CONTROL_SALIDA = {
     "R": 0.27152,    # m, de CP-2
     "ke": 0.5,
     "V": 2.2807,     # m/s, de CP-2 (rama n_max) -- velocidad, no caudal
-    "K_friccion_SI_correcto": 19.62,
+    "K_friccion_SI_correcto": 19.63,
     "K_friccion_imperial_incorrecto": 29.0,
 
-    "H_esperado_con_19_62": 0.49819,   # m, verificado con calculo independiente
-    "H_con_29_incorrecto": 0.54605,    # m, para comparacion en el test
+    "H_esperado_con_K_SI": 0.49772,    # m, verificado con calculo independiente
+    "H_con_29_incorrecto": 0.54548,    # m, para comparacion en el test
     "nota": "test_constante_friccion_es_SI_no_imperial debe fallar si el "
-            "modulo usa 29 en vez de 19.62. Con estos datos la diferencia "
-            "entre ambas H es de ~9.6% (0.498 m vs 0.546 m) -- suficiente "
+            "modulo usa 29 en vez de 19.63. Con estos datos la diferencia "
+            "entre ambas H es de ~9.6% (0.4977 m vs 0.5455 m) -- suficiente "
             "para que el test lo detecte con una tolerancia estrecha, pero "
             "no tan grande como para notarse 'a ojo' en una revision "
             "manual descuidada. Es exactamente el tipo de error silencioso "
-            "que este caso patron existe para atrapar.",
+            "que este caso patron existe para atrapar. La clave del valor "
+            "dorado se llama 'H_esperado_con_K_SI' y no lleva el numero en "
+            "el nombre a proposito: el nombre anterior "
+            "('H_esperado_con_19_62') habria quedado mintiendo al corregir "
+            "la constante. Los dos valores usan g = 9.81 "
+            "(constantes_fisicas.G), no los 9.8 de G_LAUSHEY: recalculados "
+            "tras separar la gravedad generica de la de Laushey.",
 }
 
 
@@ -252,11 +266,11 @@ if __name__ == "__main__":
         R8 = CP8_CONTROL_SALIDA["R"]
         ke8 = CP8_CONTROL_SALIDA["ke"]
         V8 = CP8_CONTROL_SALIDA["V"]
-        H_si = (1 + ke8 + 19.62 * n8**2 * L8 / R8**(4/3)) * V8**2 / (2*G)
+        H_si = (1 + ke8 + 19.63 * n8**2 * L8 / R8**(4/3)) * V8**2 / (2*G)
         H_imp = (1 + ke8 + 29.0 * n8**2 * L8 / R8**(4/3)) * V8**2 / (2*G)
-        assert abs(H_si - CP8_CONTROL_SALIDA["H_esperado_con_19_62"]) < 1e-3
+        assert abs(H_si - CP8_CONTROL_SALIDA["H_esperado_con_K_SI"]) < 1e-3
         assert abs(H_imp - CP8_CONTROL_SALIDA["H_con_29_incorrecto"]) < 1e-3
-        print(f"CP-8 verificado: H(19.62)={H_si:.5f}  H(29, incorrecto)={H_imp:.5f}")
+        print(f"CP-8 verificado: H(19.63)={H_si:.5f}  H(29, incorrecto)={H_imp:.5f}")
     except ImportError:
         print("numpy/scipy no disponibles en este entorno; "
               "omite la autoverificacion.")

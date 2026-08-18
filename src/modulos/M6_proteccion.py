@@ -3,7 +3,7 @@ M6_proteccion.py
 =================
 Fase 6 de la hoja de ruta: proteccion de entrada y salida por Laushey.
 
-    d50 = V^2 / (LAUSHEY_K * G)          num. 4.1.1.3.7 c), pag. 80
+    d50 = V^2 / (LAUSHEY_K * G_LAUSHEY)  num. 4.1.1.3.7 c), pag. 80
 
 `V` es la velocidad de salida en m/s (sistema metrico: la constante 3.1 de
 Laushey asume metrico, no imperial); `d50` sale en metros. La formula es la
@@ -36,7 +36,7 @@ from __future__ import annotations
 from typing import Tuple
 
 import criterios_adoptados as ca
-from constantes_normativas import G, LAUSHEY_K
+from constantes_normativas import G_LAUSHEY, LAUSHEY_K
 from modelos import ProteccionSalida
 
 NUMERAL_LAUSHEY = "4.1.1.3.7 c)"
@@ -63,8 +63,8 @@ ADVERTENCIAS_PROTECCION_SALIDA: Tuple[str, ...] = (
 # ---------------------------------------------------------------------------
 
 def laushey_d50(*, V: float) -> float:
-    """d50 = V^2 / (LAUSHEY_K * G), sistema metrico (num. 4.1.1.3.7 c)."""
-    return V ** 2 / (LAUSHEY_K * G)
+    """d50 = V^2 / (LAUSHEY_K * G_LAUSHEY), sistema metrico (num. 4.1.1.3.7 c)."""
+    return V ** 2 / (LAUSHEY_K * G_LAUSHEY)
 
 
 # ---------------------------------------------------------------------------

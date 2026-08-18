@@ -36,7 +36,10 @@ from modelos import (CondicionAnalisis, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError,
                      DisenoNoFactibleError, GeometriaCabezal)
 from modulos.M0_carga import cargar_puntos
-from modulos.M9_cabezal import (aceleracion_ajustada_sitio,
+from modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
+                                NUMERAL_9_1,
+                                aceleracion_ajustada_sitio,
+                                cuantia_de_diseno,
                                 altura_agua_sobre_base,
                                 angulo_inercia_sismica,
                                 aplica_sobrecarga_trasdos,
@@ -729,6 +732,69 @@ def test_verificar_cuantia_horizontal_y_vertical():
     assert ok.cumple and ok.codigo == "R1"
     assert not no.cumple and no.codigo == "R2"
     assert "14.3.1" in ok.numeral
+
+
+# ---------------------------------------------------------------------------
+# El minimo del Art. 14.3.1 es un PISO que se aplica, no una nota que se
+# imprime. Antes de `cuantia_de_diseno` el modulo tenia el minimo transcrito y
+# nada que lo levantara.
+# ---------------------------------------------------------------------------
+
+def test_la_cuantia_de_diseno_levanta_el_calculo_hasta_el_minimo():
+    r = cuantia_de_diseno(cuantia_calculada=0.0012, direccion="horizontal",
+                          cortante_alto=False)
+    assert r.cuantia_adoptada == pytest.approx(CUANTIA_MIN_MURO["horizontal"])
+    assert r.gobierna == "minimo_normativo"
+    # los dos operandos viajan en el resultado, no solo el ganador
+    assert r.cuantia_calculada == pytest.approx(0.0012)
+    assert "14.3.1" in r.numeral
+
+
+def test_la_cuantia_de_diseno_respeta_el_calculo_cuando_supera_el_minimo():
+    r = cuantia_de_diseno(cuantia_calculada=0.0031, direccion="vertical",
+                          cortante_alto=False)
+    assert r.cuantia_adoptada == pytest.approx(0.0031)
+    assert r.gobierna == "calculo"
+
+
+def test_el_escalon_por_cortante_alto_detiene_el_calculo_y_no_se_rellena():
+    """
+    E.060 Art. 11.10.10.2 sube la cuantia horizontal minima bajo cortante
+    alto, y M9 no calcula cortante. Declarar la condicion tiene que DETENER
+    el calculo, no caer al 0.0020 del Art. 14.3.1, que es el menor de los dos
+    minimos que tiene E.060.
+    """
+    with pytest.raises(CriterioPendienteError):
+        cuantia_de_diseno(cuantia_calculada=0.0031, direccion="horizontal",
+                          cortante_alto=True)
+    assert ca.criterio(CRITERIO_CORTANTE_ALTO).valor is None
+
+
+def test_cortante_alto_no_tiene_valor_por_defecto():
+    """
+    Si `cortante_alto` admitiera default, la respuesta comoda (False) daria
+    siempre el minimo mas bajo sin que nadie la declare. El argumento es
+    obligatorio a proposito.
+    """
+    with pytest.raises(TypeError):
+        cuantia_de_diseno(cuantia_calculada=0.0031, direccion="horizontal")
+
+
+def test_la_direccion_invalida_se_rechaza_antes_de_mirar_el_cortante():
+    with pytest.raises(DatoInvalidoError):
+        cuantia_de_diseno(cuantia_calculada=0.003, direccion="diagonal",
+                          cortante_alto=False)
+
+
+def test_el_numeral_9_1_separa_la_seccion_propia_del_numeral_del_eg2013():
+    """
+    'Sec. 9.1' es navegacion de la hoja de ruta y no existe en el EG-2013.
+    Las dos mitades tienen que poder pedirse por separado.
+    """
+    assert NUMERAL_9_1.seccion_hoja_ruta == "Sec. 9.1"
+    assert "503.01" in NUMERAL_9_1.numeral_norma
+    assert "Sec. 9.1" not in NUMERAL_9_1.numeral_norma
+    assert "Seccion 500" not in str(NUMERAL_9_1)
 
 
 def test_acero_por_temperatura_en_ambas_caras_desde_250_mm():

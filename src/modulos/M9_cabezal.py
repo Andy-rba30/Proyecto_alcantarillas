@@ -9,7 +9,8 @@ que la hoja de ruta los escribe:
     9.3  Estabilidad    las cinco filas de la tabla de FS de E.050, cada una
                         con su condicion estatica y su condicion sismica
     9.4  Refuerzo       regla del recubrimiento MAYOR entre AASHTO y E.060,
-                        cuantias minimas de referencia, alternativa ciclopea
+                        cuantias minimas como PISO obligatorio del armado,
+                        alternativa ciclopea
 
 Por que la cadena sismica va desagregada
 ----------------------------------------
@@ -42,7 +43,8 @@ Lo que este modulo SI calcula entero
       procedimiento.
     * Las cinco verificaciones de FS de Sec. 9.3, a partir de las demandas:
       los umbrales son [N] literales de `constantes_normativas.FS`.
-    * La regla del recubrimiento mayor, las cuantias minimas de referencia,
+    * La regla del recubrimiento mayor, el PISO de cuantia minima aplicado
+      como rho_diseno = max(rho_calculado, rho_minimo) (`cuantia_de_diseno`),
       el espaciamiento maximo y la alternativa en concreto ciclopeo.
 
 Lo que se detiene, y por que no se rellena
@@ -66,6 +68,14 @@ Lo que se detiene, y por que no se rellena
     recubrimiento_aashto_mm      Sin el lado AASHTO, "el mayor de los dos" no
                                  es una regla.
     procedimiento_flexion_...    AASHTO LRFD Sec. 5 no esta transcrita.
+    cortante_alto_muro_...       El escalon de cuantia horizontal minima a
+                                 0.0025 de E.060 Art. 11.10.10.2. Su
+                                 disparador es una demanda de CORTANTE, y
+                                 este modulo no calcula cortante: sale del
+                                 diseno bloqueado en la linea anterior. Se
+                                 declara vacio en vez de omitirse -- omitirlo
+                                 equivale a aplicar siempre el minimo mas
+                                 bajo de los dos que tiene E.060.
 
 Consecuencia practica, la misma de M5 y M8: las funciones de FORMULA son
 utilizables hoy mismo pasandoles sus argumentos, y los ENSAMBLES automaticos
@@ -150,17 +160,21 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    SECCION_CABEZALES,
                                    SOBRECARGA_TRASDOS_H_EQ)
 from modelos import (CadenaSismica, CombinacionCarga, CondicionAnalisis,
-                     DatoInvalidoError, DisenoNoFactibleError,
+                     CuantiaRefuerzo, DatoInvalidoError, DisenoNoFactibleError,
                      EmpujeMononobeOkabe, EmpujesTrasdos, EstabilidadCabezal,
                      GeometriaCabezal, PasoSismico, RecubrimientoDiseno,
-                     Verificacion)
+                     ReferenciaNormativa, Verificacion)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
 # --------------------------------------------------------------------------
 # Numerales
 # --------------------------------------------------------------------------
 
-NUMERAL_9_1 = "Sec. 9.1 (EG-2013 num. 503.01, pag. 905)"
+NUMERAL_9_1 = ReferenciaNormativa(
+    seccion_hoja_ruta="Sec. 9.1",
+    numeral_norma="EG-2013, Capitulo V, Seccion 503 (concreto estructural), "
+                  "num. 503.01, pag. 905",
+)
 NUMERAL_9_2 = "Sec. 9.2"
 NUMERAL_9_3 = "Sec. 9.3 (E.050)"
 NUMERAL_MO = "Sec. 9.2 (Mononobe-Okabe)"
@@ -169,6 +183,11 @@ NUMERAL_F_PGA = "Manual de Puentes, Tabla 2.4.3.11.2.1.2-1"
 NUMERAL_SUBPRESION = "Manual de Puentes num. 2.4.3.8.2"
 NUMERAL_FLEXION_CORTE = "Sec. 9.4 (AASHTO LRFD Seccion 5, via Seccion 2.9)"
 NUMERAL_REGLA_RECUBRIMIENTO = "Sec. 0.2 (rige el recubrimiento mayor)"
+# El Art. 11.10.10.2 NO esta en la hoja de ruta: se cita como pendiente de
+# recoger en ella, no como numeral verificado. Ver el criterio
+# 'cortante_alto_muro_e060_art_11_10_10_2'.
+NUMERAL_CORTANTE_ALTO = ("E.060 Art. 11.10.10.2 (cortante alto) "
+                         "- PENDIENTE de recoger en la hoja de ruta")
 
 CALCULADO = "Calculado"
 ETIQUETA_CALCULADO = "-"
@@ -201,6 +220,7 @@ CRITERIO_MEYERHOF = "N_cq_N_gammaq_meyerhof"
 CRITERIO_ESTABILIDAD_GLOBAL = "metodo_estabilidad_global"
 CRITERIO_RECUBRIMIENTO_AASHTO = "recubrimiento_aashto_mm"
 CRITERIO_FLEXION_CORTE = "procedimiento_flexion_corte_aashto_sec5"
+CRITERIO_CORTANTE_ALTO = "cortante_alto_muro_e060_art_11_10_10_2"
 
 # Componentes de cada combinacion de Sec. 9.2, con la nomenclatura de cargas
 # de AASHTO LRFD. Son NOMBRES, no factores: los factores son el vacio que
@@ -1211,11 +1231,20 @@ def cuantia_minima(*, direccion: str) -> float:
     Cuantia minima de refuerzo de muro, E.060 Art. 14.3.1 (pag. 133):
     horizontal >= 0.0020, vertical >= 0.0015.
 
-    Sec. 9.4 las llama "REFERENCIA de cuantias minimas", y ese matiz importa:
-    por la Via 1 de Sec. 0.2 el diseno estructural es de AASHTO LRFD Sec. 5, y
-    E.060 solo gobierna durabilidad y recubrimientos. Estas cuantias se
-    contrastan como referencia declarada, no como el diseno -- que sigue
-    bloqueado en 'procedimiento_flexion_corte_aashto_sec5'.
+    Es un MINIMO OBLIGATORIO, no un dato informativo. Sec. 9.4 lo llama
+    "REFERENCIA de cuantias minimas" y el matiz es real pero no significa lo
+    que parece: por la Via 1 de Sec. 0.2 el DISENO estructural es de AASHTO
+    LRFD Sec. 5, de modo que E.060 no dicta cuanto acero pide la flexion. Lo
+    que si hace el Art. 14.3.1, dentro de E.060, es fijar un piso por debajo
+    del cual ningun muro se arma, gobierne quien gobierne el
+    dimensionamiento. La consecuencia practica esta en `cuantia_de_diseno`:
+    el minimo se aplica como rho_diseno = max(rho_calculado, rho_minimo), no
+    se imprime al pie de la memoria.
+
+    Escalon del Art. 11.10.10.2 (0.0025 bajo cortante alto): ver
+    `cuantia_de_diseno` y el criterio 'cortante_alto_muro_e060_art_11_10_10_2'.
+    Este modulo NO calcula cortante, y por eso el escalon queda declarado
+    como vacio y no resuelto en silencio.
     """
     if direccion not in CUANTIA_MIN_MURO:
         raise DatoInvalidoError(
@@ -1228,9 +1257,14 @@ def cuantia_minima(*, direccion: str) -> float:
 
 def verificar_cuantia(*, cuantia_provista: float, direccion: str) -> Verificacion:
     """
-    R1 (horizontal) / R2 (vertical): contraste de la cuantia provista contra
-    el minimo de referencia de E.060 Art. 14.3.1. Ver `cuantia_minima` sobre
-    por que es referencia y no diseno.
+    R1 (horizontal) / R2 (vertical): contraste de la cuantia PROVISTA en el
+    plano contra el minimo obligatorio de E.060 Art. 14.3.1.
+
+    Es la comprobacion a posteriori, y no sustituye a `cuantia_de_diseno`:
+    esta funcion detecta que un armado ya dibujado incumple el minimo, y
+    aquella impide que el minimo se pierda al producir el armado. Las dos
+    hacen falta -- la cuantia que llega aqui puede venir de un plano que
+    nadie paso por `cuantia_de_diseno`.
     """
     minima = cuantia_minima(direccion=direccion)
     codigo = "R1" if direccion == "horizontal" else "R2"
@@ -1241,6 +1275,71 @@ def verificar_cuantia(*, cuantia_provista: float, direccion: str) -> Verificacio
         valor_admisible=minima,
         criterio_aplicado=None,          # [N] puro, Art. 14.3.1
         codigo=codigo,
+    )
+
+
+def cuantia_de_diseno(*, cuantia_calculada: float, direccion: str,
+                      cortante_alto: bool) -> CuantiaRefuerzo:
+    """
+    Cuantia de refuerzo ADOPTADA para una direccion del muro:
+
+        rho_diseno = max(rho_calculado, rho_minimo)
+
+    El minimo de E.060 Art. 14.3.1 (pag. 133) es un piso obligatorio y aqui
+    es donde se aplica. Antes de esta funcion el modulo tenia el minimo
+    transcrito y `verificar_cuantia` para contrastarlo, pero nada que lo
+    levantara: un rho calculado por debajo del minimo salia del modulo tal
+    cual, y el minimo aparecia en la memoria como una linea al pie. Una
+    exigencia que solo se imprime no es una exigencia aplicada.
+
+    `cortante_alto` NO tiene valor por defecto, y es deliberado. E.060 tiene
+    dos minimos horizontales -- 0.0020 (Art. 14.3.1) y el escalon del
+    Art. 11.10.10.2 bajo demanda de cortante alta -- y elegir el mas bajo
+    porque es el unico que la hoja de ruta transcribe seria quedarse con el
+    minimo menor por omision. Este modulo NO calcula cortante: el diseno por
+    flexion y corte esta bloqueado entero en
+    'procedimiento_flexion_corte_aashto_sec5' (AASHTO LRFD Sec. 5, Via 1 de
+    Sec. 0.2), asi que no hay Vu con que contestar la pregunta. Se traslada a
+    quien llama, que es quien tiene el diseno estructural delante:
+
+        cortante_alto=False  el muro NO esta en la condicion del
+                             Art. 11.10.10.2, y quien lo afirma lo justifica
+                             en la memoria. Rige el 0.0020 / 0.0015.
+        cortante_alto=True   rige el escalon, cuyo valor esta declarado VACIO
+                             en 'cortante_alto_muro_e060_art_11_10_10_2':
+                             levanta `CriterioPendienteError` y detiene el
+                             calculo. Es el comportamiento correcto -- el
+                             numero no esta en la hoja de ruta y no se
+                             inventa aqui.
+
+    `direccion` es 'horizontal' o 'vertical'. El escalon del Art. 11.10.10.2
+    es de la cuantia HORIZONTAL; en vertical, `cortante_alto=True` no cambia
+    el minimo del Art. 14.3.1, pero se sigue exigiendo el argumento para que
+    la pregunta se conteste una sola vez por muro y no por direccion.
+    """
+    minima = cuantia_minima(direccion=direccion)      # DatoInvalidoError si no es direccion
+    numeral = NUMERAL_CUANTIA_MIN
+
+    if cortante_alto and direccion == "horizontal":
+        # CriterioPendienteError mientras el escalon siga sin declarar. No hay
+        # rama alternativa a proposito: sin el valor del Art. 11.10.10.2 no se
+        # puede armar un muro en esta condicion.
+        minima = float(ca.valor(CRITERIO_CORTANTE_ALTO))
+        numeral = f"{NUMERAL_CUANTIA_MIN} / {NUMERAL_CORTANTE_ALTO}"
+
+    if cuantia_calculada >= minima - TOL_UMBRAL_NORMATIVO:
+        adoptada, gobierna = cuantia_calculada, "calculo"
+    else:
+        adoptada, gobierna = minima, "minimo_normativo"
+
+    return CuantiaRefuerzo(
+        direccion=direccion,
+        cuantia_calculada=cuantia_calculada,
+        cuantia_minima=minima,
+        cuantia_adoptada=adoptada,
+        gobierna=gobierna,
+        numeral=numeral,
+        criterio_cortante_alto=CRITERIO_CORTANTE_ALTO,
     )
 
 

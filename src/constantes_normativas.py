@@ -1,7 +1,7 @@
 """
 constantes_normativas.py
 ========================
-Anexo B de docs/hoja_de_ruta_alcantarillas_v7.md, copiado literalmente.
+Anexo B de docs/hoja_de_ruta_alcantarillas_v8.md, copiado literalmente.
 
 Solo constantes [N] con numeral verificado. Todo [N->], [C] y [A] vive en
 `criterios_adoptados.py`. No agregar aqui ningun valor que no venga con su
@@ -31,7 +31,13 @@ DIAMETRO_MIN_SELVA_ALTA = 1.22      # m = 48"; NO aplica en costa (4.1.1.3.7 a)
 Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b)
 V_MIN = 0.25                        # m/s (4.1.1.3.6)
 LAUSHEY_K = 3.1                     # d50 = V^2/(3.1*g), metrico (4.1.1.3.7 c)
-G = 9.8                             # m/s2
+G_LAUSHEY = 9.8                      # m/s2; g tal como lo escribe la Sec.
+                                     # 4.1.1.3.7 c) junto a su formula de d50.
+                                     # Uso exclusivo de M6 (Laushey). La
+                                     # gravedad generica del resto del script
+                                     # (M4: tirante critico, control de
+                                     # salida) es constantes_fisicas.G = 9.81,
+                                     # no esta -- ver constantes_fisicas.py.
 GAMMA_AGUA_KN_M3 = 9.81             # kN/m3; constante fisica, subpresion (num. 2.4.3.8.2)
 
 RIESGO_ADMISIBLE = {                # Tabla N 02, num. 3.6
@@ -75,9 +81,22 @@ HDS5_INLET = {   # cartas por forma/material; dentro de cada una, por borde
 # HDPE -> criterios_adoptados.valor("hds5_embocadura_hdpe")
 
 # ================= Control de salida (SI) ==================================
-K_FRICCION_SI = 19.62               # H = (1 + ke + 19.62*n^2*L/R^(4/3)) * V^2/(2g)
+K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(2g)
                                     # OJO: 29 es el valor ingles.
                                     # TEST UNITARIO OBLIGATORIO.
+# De donde sale el 19.63: es el valor que el propio HDS-5 escribe como
+# conversion SI de su constante K = 29 del sistema ingles. Es una cifra de la
+# FUENTE PRIMARIA, transcrita, no una derivacion propia.
+# Lo que este comentario dijo antes y era falso: que 19.62 saliera de 2*g
+# (2 x 9.81). Es una coincidencia numerica -- los dos numeros se parecen
+# porque ambos rondan 2*g -- y no el origen de la constante. HDS-5 no deriva
+# K de la gravedad: K absorbe la conversion de unidades del termino de
+# friccion de Manning, donde g no interviene sola. Se retira esa
+# justificacion en vez de conservarla "por si acaso": una razon inventada
+# para un numero correcto es el mismo defecto que un numero inventado.
+# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: docs/hoja_de_ruta_alcantarillas_v8.md
+# (lineas 432, 436, 790 y 901) sigue escribiendo 19.62. Aqui gana la fuente
+# primaria HDS-5 por verificacion externa; la hoja de ruta debe corregirse.
 # ho = max(TW, (yc + D)/2)
 
 # ================= Diametros normalizados (ASTM / AASHTO) ==================
@@ -99,25 +118,51 @@ RESGUARDO_NAPA_SUBRASANTE = [       # (CBR_min, CBR_max, resguardo_m)  num. 4.5.
 # Su aplicacion al HW es POR ANALOGIA [N->] -> ver criterios_adoptados
 CBR_MIN_SUBRASANTE = 6.0            # % (num. 3.3)
 COMPACTACION_CORONA = 0.95          # 0.30 m superiores, capas de 0.15 m
+                                     # (num. 3.2.1, 3.2.2, 3.3 y 9.1(1))
 COMPACTACION_CUERPO = 0.90          # capas de hasta 0.30 m
+                                     # (num. 3.2.1, 3.2.2, 3.3 y 9.1(1))
 
 CALICATAS_POR_KM = {"autopista": 4, "dual": 4, "primera_clase": 4,
                     "segunda_clase": 3, "tercera_clase": 2, "bajo_volumen": 1}
-ESPACIAMIENTO_PERFIL_KM = 4.0       # nivel perfil
+                    # num. 4.2, Cuadro 4.1
+# El Cuadro 4.1 no es "calicatas x km" para todas las clases: en autopistas y
+# duales/multicarril la exigencia es "x km x SENTIDO", y el total se duplica.
+# Sin este multiplicador, una autopista de 5 km salia con 20 calicatas cuando
+# el Cuadro pide 40. Se declara aparte y no metido en el numero de arriba
+# porque son dos cosas distintas del mismo Cuadro: cuantas por kilometro, y
+# sobre cuantos sentidos se cuenta el kilometro.
+CALICATAS_POR_SENTIDO = {"autopista": True, "dual": True, "primera_clase": False,
+                         "segunda_clase": False, "tercera_clase": False,
+                         "bajo_volumen": False}
+                    # num. 4.2, Cuadro 4.1
+# El Cuadro admite ademas 6 en vez de 4 para autopistas con 4 carriles por
+# sentido, y "4 (o 6)" para duales. Ese 6 NO se transcribe aqui: el Cuadro lo
+# da como alternativa sin decir cuando aplica cada una, de modo que la
+# eleccion entre 4 y 6 no es [N]. Si el proyecto llega a necesitarla, es un
+# criterio [A] declarado en criterios_adoptados.py, no un numero mas en esta
+# tabla. Con el corredor de 5 km de este expediente la clase de via ni
+# siquiera esta cerrada (depende del IMDA del estudio de demanda), asi que la
+# alternativa no se ha alcanzado todavia.
+ESPACIAMIENTO_PERFIL_KM = 4.0       # nivel perfil (num. 4.2, Cuadro 4.1)
 
-# ================= EG-2013, Seccion 500 ====================================
+# ================= EG-2013, Capitulo V (Secciones 502-508) =================
 H_RELLENO_MIN = {
     "hdpe":     0.30,               # m, clave a subrasante (508.07/508.08)
     "concreto": None,               # AASHTO M-170M (clases I a V)
     "tmc":      None,               # ASTM A-807 / AASHTO M36
 }
-SUBSECCION = {"concreto_simple": "505", "concreto_reforzado": "506",
-              "tmc": "507", "hdpe": "508"}
+# 505, 506, 507 y 508 son SECCIONES completas del EG-2013, dentro del
+# Capitulo V. No son subsecciones de ninguna "Seccion 500": esa denominacion
+# no existe en el EG-2013 y la constante se llamaba SUBSECCION por arrastre de
+# ese error. Las SUBsecciones son las de dentro de cada una (505.03, 508.07).
+SECCION_EG2013 = {"concreto_simple": "505", "concreto_reforzado": "506",
+                  "tmc": "507", "hdpe": "508"}
 SECCION_CABEZALES = "503"           # concreto estructural (+504 acero)
 
-# ================= EG-2013, Seccion 500 - 8.1 Cama y relleno lateral =======
-# Tabla literal de Fase 8, num. 8.1. Solo texto (cama, sujecion, numeral): no
-# es una verificacion con umbral, es la ficha por material para memoria y
+# ========== EG-2013, Capitulo V - 8.1 Cama y relleno lateral ===============
+# Tabla literal de Sec. 8.1 de la hoja de ruta, con los numerales del EG-2013
+# por SECCION de material (505/506/507/508). Solo texto (cama, sujecion,
+# numeral): no es una verificacion con umbral, es la ficha por material para memoria y
 # planos (Sec. 11, entregable 7). Los porcentajes y fracciones de diametro
 # viajan como parte del texto normativo citado, no como numeros a comparar.
 CAMA_RELLENO_LATERAL = {
@@ -218,11 +263,21 @@ AMBIENTE_CORROSIVO_AUMENTAR = "E.060 Art. 7.7.5.1"        # "aumentar adecuadame
 # NF a 1.4 m y suelos salinos es directamente invocable (Sec. 3.3), asi que el
 # aumento se declara en criterios_adoptados, no aqui.
 
-# ---- E.060, refuerzo de muros - REFERENCIA, no gobierna (Sec. 0.2) --------
-# Sec. 9.4 los llama "referencia de cuantias minimas": la Via 1 de Sec. 0.2
-# pone el DISENO estructural bajo AASHTO LRFD Sec. 5 y deja a E.060 solo la
-# durabilidad y los recubrimientos. Se transcriben porque la hoja de ruta los
-# cita con numeral y pagina, y M9 los contrasta como referencia declarada.
+# ---- E.060, refuerzo de muros - MINIMO OBLIGATORIO ------------------------
+# Que "no gobierna el diseno" y que "es informativo" no son lo mismo, y este
+# bloque decia lo segundo cuando lo cierto es lo primero. La Via 1 de Sec. 0.2
+# pone el DIMENSIONAMIENTO bajo AASHTO LRFD Sec. 5 y deja a E.060 la
+# durabilidad y los recubrimientos: de ahi que Sec. 9.4 hable de "referencia
+# de cuantias minimas". Pero el Art. 14.3.1 fija un PISO por debajo del cual
+# ningun muro se arma, y un piso se aplica -- rho_diseno =
+# max(rho_calculado, rho_minimo), en `M9.cuantia_de_diseno` -- no se imprime.
+# Falta aqui el segundo minimo de E.060: el Art. 11.10.10.2 escalona la
+# cuantia HORIZONTAL a 0.0025 bajo demanda de cortante alta. No se transcribe
+# como constante [N] porque la hoja de ruta no lo recoge (solo cita el
+# 14.3.1); queda declarado como vacio en el criterio
+# 'cortante_alto_muro_e060_art_11_10_10_2'. Mientras siga asi, el 0.0020 de
+# abajo es el minimo MENOR de los dos que tiene E.060, y M9 obliga a contestar
+# expresamente cual aplica.
 CUANTIA_MIN_MURO = {"horizontal": 0.0020, "vertical": 0.0015}   # Art. 14.3.1, pag. 133
 NUMERAL_CUANTIA_MIN = "E.060 Art. 14.3.1, pag. 133"
 ESPESOR_TEMPERATURA_DOS_CARAS = 0.250       # m (250 mm); Art. 14.8.3

@@ -64,6 +64,21 @@ dentro de su rango; extrapolarlas al interior de la zona de transicion, que
 es justamente donde ninguna de las dos vale, seria usarlas fuera de su
 dominio. Asi la curva HWi/D(q*) queda continua en los dos extremos.
 
+    LA INTERPOLACION LINEAL NO ES EL METODO DEL HDS-5. Es una SIMPLIFICACION
+    ADOPTADA, declarada como criterio [C] en 'metodo_transicion_hds5'. HDS-5
+    no interpola: en la zona 3.5 < q* < 4.0 traza una curva TANGENTE a las
+    dos ramas, un empalme empirico ajustado sobre sus datos de laboratorio
+    del que no publica ecuacion cerrada. Quien prescribe la recta es Sec. 4.2
+    de la hoja de ruta, no la fuente primaria. La distincion importa para la
+    memoria: lo que se cita como HDS-5 son las DOS ECUACIONES y sus
+    constantes de la Tabla A.1; el puente entre ellas es del proyecto y se
+    defiende como tal. El error queda acotado -- la recta coincide con cada
+    rama en su borde de validez, asi que solo se separa de la curva original
+    en el interior de una ventana de q* de 0.5 de ancho -- y acotado no es lo
+    mismo que normativo. `control_entrada()` invoca el criterio al entrar en
+    esa rama, de modo que M11 lo imprime unicamente cuando algun punto del
+    corredor cae realmente en la transicion.
+
 K_s: no esta en la Tabla A.1
 -----------------------------
 Las cinco constantes de la Tabla A.1 son K, M, c e Y... y cuatro no son cinco.
@@ -79,22 +94,34 @@ criterio 'hds5_embocadura_hdpe' lo traen los cuatro.
 Control de salida (Sec. 4.3)
 -----------------------------
     HW = H + h_o - S*L
-    H  = (1 + ke + 19.62*n^2*L/R^(4/3)) * V^2/(2g)
+    H  = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(2g)
     h_o = max(TW, (y_c + D)/2)
 
-19.62 es el valor SI (`constantes_normativas.K_FRICCION_SI`). El 29 de la
+19.63 es el valor SI (`constantes_normativas.K_FRICCION_SI`). El 29 de la
 literatura FHWA es del sistema ingles y no falla ruidosamente en metrico:
-devuelve numeros plausibles y equivocados -- con los datos de CP-8, 0.546 m
-en vez de 0.498 m, un 9.6 % de diferencia. La guardia es
+devuelve numeros plausibles y equivocados -- con los datos de CP-8, 0.5455 m
+en vez de 0.4977 m, un 9.6 % de diferencia. La guardia es
 `test_constante_friccion_es_SI_no_imperial` (tests/test_M4_control.py), que
 contrasta contra CP-8 y contra el valor que saldria con 29.
 
-    NOTA DE COHERENCIA (declarar en la memoria): 19.62 = 2 * 9.81, mientras
-    que la gravedad del proyecto es `constantes_normativas.G` = 9.8, el valor
-    del Manual de Hidrologia MTC. Los dos numeros vienen de fuentes distintas
-    (FHWA y MTC) y la hoja de ruta los da asi, cada uno con su origen; no se
-    reconcilian aqui por cuenta propia. La discrepancia es del 0.1 % sobre el
-    termino de friccion, tres ordenes por debajo de la incertidumbre de n.
+    DE DONDE SALE EL 19.63, y de donde NO. Es la cifra que el propio HDS-5
+    escribe como conversion SI de su K = 29: fuente primaria transcrita.
+    Este docstring afirmaba antes que 19.62 "= 2 * 9.81" y que por eso la
+    formula quedaba internamente consistente con `constantes_fisicas.G`. Era
+    falso como ORIGEN: la semejanza con 2*g es una coincidencia numerica, no
+    la derivacion de la constante -- K absorbe la conversion de unidades del
+    termino de friccion de Manning, donde g no interviene sola. La
+    justificacion se retira entera, y no se reescribe con el numero nuevo:
+    inventar una razon para un numero correcto es el mismo defecto que
+    inventar el numero. Lo que si sigue en pie, y no dependia de aquella
+    nota, es que la gravedad de este modulo es `constantes_fisicas.G` = 9.81
+    y no `constantes_normativas.G_LAUSHEY` = 9.8, que la Sec. 4.1.1.3.7 c)
+    fija SOLO para la formula de Laushey de M6. Son dos constantes con dos
+    origenes y el proyecto las mantiene separadas a proposito.
+
+    DISCREPANCIA ABIERTA: la hoja de ruta (Sec. 4.3 y su nota de unidades)
+    sigue escribiendo 19.62. El codigo sostiene 19.63 por verificacion
+    contra HDS-5; la hoja de ruta debe corregirse.
 
 De donde salen V y R en esa ecuacion: la hoja de ruta escribe la formula pero
 no dice a que seccion pertenecen, y la eleccion mueve el resultado (R = D/4 =
@@ -141,7 +168,8 @@ from typing import Optional, Tuple
 from scipy.optimize import brentq
 
 import criterios_adoptados as ca
-from constantes_normativas import (G, KU_METRICO, K_FRICCION_SI,
+from constantes_fisicas import G
+from constantes_normativas import (KU_METRICO, K_FRICCION_SI,
                                    Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO)
 from modelos import (ConstantesHDS5, ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, Material,
@@ -156,6 +184,7 @@ NUMERAL_SALIDA = "4.3"
 
 CRITERIO_KE = "ke_entrada"
 CRITERIO_GEOMETRIA_SALIDA = "geometria_control_salida"
+CRITERIO_TRANSICION = "metodo_transicion_hds5"
 
 _THETA_MIN = TOL_THETA_BORDE
 _THETA_MAX = 2 * math.pi - TOL_THETA_BORDE
@@ -305,6 +334,12 @@ def control_entrada(Q: float, D: float, S: float, hds5: ConstantesHDS5,
         3.5 < q* < 4.0   interpolacion lineal entre el valor de la primera en
                     q* = 3.5 y el de la segunda en q* = 4.0
 
+    La tercera rama NO reproduce el HDS-5: la curva tangente del HDS-5 se
+    sustituye por una recta, y esa sustitucion es el criterio [C]
+    'metodo_transicion_hds5', que se invoca al entrar en la rama (ver el
+    docstring del modulo). Las dos ramas extremas si son las ecuaciones
+    literales de la Tabla A.1.
+
     El termino Ks*S no se omite: Ks no figura en la Tabla A.1 y viene de la
     formulacion (-0.5 sin inglete, +0.7 en inglete). Llega en
     `ConstantesHDS5.Ks`, que es un campo obligatorio justamente para que no se
@@ -333,6 +368,18 @@ def control_entrada(Q: float, D: float, S: float, hds5: ConstantesHDS5,
         # transicion ninguna de las dos ecuaciones vale, y extrapolarlas seria
         # usarlas fuera de su dominio de ajuste. Asi la curva empalma continua
         # en q* = 3.5 y en q* = 4.0.
+        #
+        # El criterio se invoca AQUI y no al entrar en la funcion: asi M11
+        # declara la simplificacion solo si algun punto cae de verdad en la
+        # transicion, y no en las corridas donde todos los q* quedan fuera.
+        metodo = ca.valor(CRITERIO_TRANSICION)
+        if metodo != "interpolacion_lineal_entre_extremos":
+            raise DatoInvalidoError(
+                CRITERIO_TRANSICION, valor=metodo,
+                motivo="M4 solo implementa la recta entre los extremos de "
+                       "validez. Reproducir la curva tangente del HDS-5 exige "
+                       "programar otro procedimiento, no cambiar este valor",
+            )
         extremo_inferior = _hw_sobre_D_no_sumergido(
             Q_LIM_NO_SUMERGIDO, critico.H_c, D, S, hds5)
         extremo_superior = _hw_sobre_D_sumergido(Q_LIM_SUMERGIDO, S, hds5)
@@ -359,10 +406,10 @@ def perdida_carga(V: float, R: float, n: float, L: float,
     """
     H = (1 + ke + K_friccion*n^2*L/R^(4/3)) * V^2/(2g), Sec. 4.3, en SI.
 
-    K_friccion es `constantes_normativas.K_FRICCION_SI` = 19.62. El 29 de la
-    literatura FHWA es del sistema ingles: usarlo en metrico no falla
-    ruidosamente, devuelve numeros plausibles y equivocados. Ver CP-8 y
-    `test_constante_friccion_es_SI_no_imperial`.
+    K_friccion es `constantes_normativas.K_FRICCION_SI` = 19.63, la
+    conversion SI que HDS-5 declara para su K = 29 del sistema ingles. Usar
+    el 29 en metrico no falla ruidosamente: devuelve numeros plausibles y
+    equivocados. Ver CP-8 y `test_constante_friccion_es_SI_no_imperial`.
 
     Los tres sumandos del parentesis son, en orden: carga de velocidad,
     perdida de entrada y perdida por friccion. `ke` sale del criterio
@@ -410,7 +457,7 @@ def control_salida(Q: float, D: float, S: float, L: float, TW: float,
     Carga a la entrada bajo control de salida (Sec. 4.3):
 
         HW = H + h_o - S*L
-        H  = (1 + ke + 19.62*n^2*L/R^(4/3)) * V^2/(2g)
+        H  = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(2g)
         h_o = max(TW, (y_c + D)/2)
 
     `TW` es el tirante en el cuerpo receptor durante la avenida, en metros

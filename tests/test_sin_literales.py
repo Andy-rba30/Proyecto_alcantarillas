@@ -4,7 +4,7 @@ tests/test_sin_literales.py
 Guardia automatica de la regla de arquitectura: ningun modulo declara valores.
 
 Todo literal numerico bajo src/ -- incluido src/modulos/, donde aterrizaran
-M0 a M11 -- es un defecto, salvo en los cinco archivos exentos:
+M0 a M11 -- es un defecto, salvo en los seis archivos exentos:
 
     constantes_normativas.py   valores [N] con numeral verificado
     criterios_adoptados.py     valores [N->], [C], [A] y los [S] con ensayo
@@ -13,8 +13,10 @@ M0 a M11 -- es un defecto, salvo en los cinco archivos exentos:
                                o un ensayo sobre las coordenadas de esta obra
     tolerancias.py             precision numerica, no valores de proyecto
     dominios.py                limites de dominio del dato de entrada
+    constantes_fisicas.py      constantes fisicas universales (hoy solo la
+                               gravedad), no valores de proyecto
 
-Los dos ultimos estan exentos porque sus numeros NO son valores de proyecto.
+Los tres ultimos estan exentos porque sus numeros NO son valores de proyecto.
 `datos_sitio.py` esta exento por la razon contraria: los suyos si lo son -- el
 PGA gobierna la cadena sismica entera -- y estan aparte porque no son
 constantes universales, que es una separacion de clasificacion, no de peso.
@@ -50,7 +52,8 @@ SRC = RAIZ / "src"
 MODULOS = SRC / "modulos"
 
 EXENTOS = {"constantes_normativas.py", "criterios_adoptados.py",
-           "datos_sitio.py", "tolerancias.py", "dominios.py"}
+           "datos_sitio.py", "tolerancias.py", "dominios.py",
+           "constantes_fisicas.py"}
 NUMEROS_PERMITIDOS = {0, 1, 2}
 MARCA = "# literal-ok"
 

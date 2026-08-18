@@ -92,10 +92,23 @@ from typing import Tuple
 
 import criterios_adoptados as ca
 from constantes_normativas import CAMA_RELLENO_LATERAL, GAMMA_AGUA_KN_M3
-from modelos import CamaApoyoRelleno, Material
+from modelos import CamaApoyoRelleno, Material, ReferenciaNormativa
 
 NUMERAL_8_1_2 = "Fase 8, items 1-2"
-NUMERAL_8_1 = "Sec. 8.1 (EG-2013 Seccion 500)"
+# La cita anterior, "Sec. 8.1 (EG-2013 Seccion 500)", era doblemente falsa:
+# ni "Sec. 8.1" es del EG-2013 (es el apartado de la hoja de ruta) ni existe
+# una "Seccion 500" en el EG-2013. Los conductos son SECCIONES del Capitulo V,
+# una por material (505 concreto simple, 506 concreto reforzado, 507 TMC,
+# 508 HDPE), y la fila concreta de cada uno la trae
+# `constantes_normativas.CAMA_RELLENO_LATERAL[material]["numeral"]`, que si
+# baja al numeral exacto (505.03/.07/.10/.11, pags. 950-951, etc.). Este
+# constante es solo el encabezado del bloque.
+NUMERAL_8_1 = ReferenciaNormativa(
+    seccion_hoja_ruta="Sec. 8.1",
+    numeral_norma="EG-2013, Capitulo V, Seccion de cada material "
+                  "(505 / 506 / 507 / 508); rellenos generales en la "
+                  "Seccion 502",
+)
 NUMERAL_8_5 = "Fase 8, item 5"
 NUMERAL_V7 = "Fase 5, V7 (Manual de Puentes num. 2.4.3.8.2)"
 

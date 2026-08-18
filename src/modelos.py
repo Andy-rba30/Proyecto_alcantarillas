@@ -26,7 +26,7 @@ estructural (Sec. 1.1):
     progresiva_km : km  - progresiva del cruce
     area_ha       : ha  - area de cuenca, "solo clasificador"
 
-Referencias de numeral: docs/hoja_de_ruta_alcantarillas_v7.md
+Referencias de numeral: docs/hoja_de_ruta_alcantarillas_v8.md
 """
 
 from __future__ import annotations
@@ -152,6 +152,61 @@ class DatoInvalidoError(ErrorProyecto):
 
 
 # ===========================================================================
+# Citas: la seccion interna y el numeral de la norma, separados
+# ===========================================================================
+
+class ReferenciaNormativa(str):
+    """
+    Cita partida en sus DOS mitades, que hasta ahora viajaban pegadas en un
+    solo string y se confundian entre si:
+
+        seccion_hoja_ruta   navegacion INTERNA de docs/hoja_de_ruta_*.md.
+                            "Sec. 9.1", "5.1", "Fase 10". No es una cita: son
+                            las coordenadas del apartado que trata el tema
+                            dentro del documento propio del proyecto.
+        numeral_norma       la CITA real y verificable, la que un revisor
+                            busca en el documento normativo: "EG-2013,
+                            Seccion 503, num. 503.01, pag. 905".
+
+    Por que hizo falta separarlas. Constantes como
+    `NUMERAL_9_1 = "Sec. 9.1 (EG-2013 num. 503.01, pag. 905)"` mezclaban las
+    dos cosas en una linea, y una verificacion externa leyo el string entero
+    como si fuese la cita -- salio a buscar una "Sec. 9.1" en el EG-2013, que
+    no existe. En `NUMERAL_8_1` el efecto fue peor: citaba una "Seccion 500"
+    del EG-2013 que tampoco existe (los conductos son las Secciones 505 a 508
+    del Capitulo V), un error de simplificacion arrastrado desde una version
+    temprana de la hoja de ruta. El defecto no era de una constante suelta:
+    era del formato, y por eso la solucion es un tipo y no cuatro parches.
+
+    Es una subclase de `str` a proposito. El valor sigue siendo el texto que
+    la memoria imprime, de modo que todo lo que ya consumia estos numerales
+    -- `Verificacion.numeral`, el escapado de M11, las pruebas que hacen
+    `numeral in memoria` -- sigue funcionando sin cambios, y ademas se puede
+    pedir cualquiera de las dos mitades por separado cuando el reporte quiera
+    imprimir solo la cita verificable.
+
+    El texto se compone con el NUMERAL DELANTE y la seccion propia detras y
+    etiquetada: quien lea de corrido encuentra primero lo que puede
+    verificar.
+    """
+
+    seccion_hoja_ruta: str
+    numeral_norma: str
+
+    def __new__(cls, *, seccion_hoja_ruta: str, numeral_norma: str):
+        obj = super().__new__(
+            cls, f"{numeral_norma} [hoja de ruta: {seccion_hoja_ruta}]")
+        obj.seccion_hoja_ruta = seccion_hoja_ruta
+        obj.numeral_norma = numeral_norma
+        return obj
+
+    def __repr__(self) -> str:
+        return (f"ReferenciaNormativa(seccion_hoja_ruta="
+                f"{self.seccion_hoja_ruta!r}, numeral_norma="
+                f"{self.numeral_norma!r})")
+
+
+# ===========================================================================
 # Enumeraciones (categorias declaradas por la hoja de ruta, no valores)
 # ===========================================================================
 
@@ -189,7 +244,7 @@ class TipoMaterial(str, Enum):
     """
     Materiales admitidos, Sec. 3.4. El valor de cada miembro coincide con la
     clave usada en `constantes_normativas.D_MAX`, `H_RELLENO_MIN` y
-    `SUBSECCION`. La correspondencia con las claves de la Tabla N 09
+    `SECCION_EG2013`. La correspondencia con las claves de la Tabla N 09
     (`MANNING`) la resuelve M2, no este modulo.
     """
     CONCRETO_REFORZADO = "concreto_reforzado"
@@ -395,7 +450,7 @@ class Material:
     hds5: ConstantesHDS5                    # carta adoptada en Sec. 4.2
     v_max_rango: Optional[Tuple[float, float]]   # m/s - Tabla N 10; None = vacio
     h_relleno_min: Optional[float]          # m sobre la clave (Sec. 7.A)
-    subseccion_eg2013: str                  # 505 / 506 / 507 / 508
+    seccion_eg2013: str                     # 505 / 506 / 507 / 508 (Capitulo V)
 
     @property
     def n_para_capacidad(self) -> float:
@@ -614,7 +669,7 @@ class ProteccionSalida:
 @dataclass(frozen=True)
 class CamaApoyoRelleno:
     """
-    Fila de la tabla 8.1 (EG-2013 Seccion 500) para un material: cama de
+    Fila de la tabla 8.1 (EG-2013 Capitulo V) para un material: cama de
     apoyo y sujecion / relleno lateral, con su numeral. Es informacion para
     la memoria y los planos (Sec. 11, entregable 7), no una verificacion con
     umbral: el CSV no trae una columna de compactacion realmente lograda
@@ -774,7 +829,11 @@ class Espaciamiento:
     espaciamiento_max: float     # m - el minimo de los dos
     gobierna: GobiernaEspaciamiento
     criterio_normativo: str = "long_max_cuneta"
-    numeral: str = "Fase 10 (num. 4.1.2.1 d), pag. 178)"
+    numeral: str = ReferenciaNormativa(
+        seccion_hoja_ruta="Fase 10",
+        numeral_norma="Manual de Hidrologia, Hidraulica y Drenaje (MTC), "
+                      "num. 4.1.2.1 d), pag. 178",
+    )
 
 
 @dataclass(frozen=True)
@@ -1071,6 +1130,31 @@ class RecubrimientoDiseno:
     origen: str                           # "E.060" o "AASHTO"
     criterio_aashto: str                  # clave en criterios_adoptados.py
     numeral: str = "E.060 Art. 7.7.1 / Sec. 0.2 (regla del mayor)"
+
+
+@dataclass(frozen=True)
+class CuantiaRefuerzo:
+    """
+    Cuantia de refuerzo ADOPTADA para una direccion de un muro, con las dos
+    candidatas que la produjeron: la calculada por el diseno estructural y el
+    minimo normativo. El minimo de E.060 Art. 14.3.1 es un PISO OBLIGATORIO,
+    no una nota informativa, y por eso el resultado es
+    `max(cuantia_calculada, cuantia_minima)` -- una regla del maximo cuyo
+    resultado se guarda junto a `gobierna`, para que la memoria diga cual de
+    los dos mando y no obligue al revisor a rehacer la comparacion.
+
+    Sin `gobierna` el objeto no serviria: dos cuantias adoptadas iguales
+    pueden venir una de un calculo justo y otra de un calculo muy por debajo
+    del minimo, y son dos situaciones distintas de revisar.
+    """
+
+    direccion: str                        # "horizontal" / "vertical"
+    cuantia_calculada: float              # la que sale del diseno estructural
+    cuantia_minima: float                 # Art. 14.3.1 (o el escalon aplicable)
+    cuantia_adoptada: float               # max de las dos
+    gobierna: str                         # "calculo" o "minimo_normativo"
+    numeral: str
+    criterio_cortante_alto: str           # clave en criterios_adoptados.py
 
 
 @dataclass(frozen=True)

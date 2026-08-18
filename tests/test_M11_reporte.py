@@ -314,7 +314,7 @@ class TestIteraciones:
             norma_producto="ASTM C76",
             hds5=ConstantesHDS5(K=0.0098, M=2.0, c=0.0398, Y=0.67, Ks=-0.5),
             v_max_rango=(3.0, 6.0), h_relleno_min=0.60,
-            subseccion_eg2013="505")
+            seccion_eg2013="505")
 
         # Verificador que rechaza todo: interesa la traza, no el diseño.
         def rechazar(*, punto, material, D, resultado):

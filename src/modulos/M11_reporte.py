@@ -694,8 +694,8 @@ def _tabla_diseno(informe: Any) -> str:
     filas = [
         _fila([_td("<b>Material</b>"),
                _td(f"{_esc(material.nombre)} &mdash; norma de producto "
-                   f"{_esc(material.norma_producto)}, EG-2013 subseccion "
-                   f"{_esc(material.subseccion_eg2013)}")]),
+                   f"{_esc(material.norma_producto)}, EG-2013 Seccion "
+                   f"{_esc(material.seccion_eg2013)}")]),
         _fila([_td("<b>Rugosidad (regla de doble n)</b>"),
                _td(f"n para capacidad y tirante = {_num(material.n_max)}; "
                    f"n para velocidad y socavacion = {_num(material.n_min)}")]),

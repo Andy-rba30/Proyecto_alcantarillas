@@ -5,7 +5,7 @@ Contrasta el Anexo B contra los casos patron. No reescribe los valores: los
 compara con los del fixture, que fueron recalculados de forma independiente.
 
 El test que mas importa es el de la constante de friccion del control de
-salida: usar 29 (valor ingles) en vez de 19.62 no falla ruidosamente, devuelve
+salida: usar 29 (valor ingles) en vez de 19.63 no falla ruidosamente, devuelve
 numeros plausibles y equivocados (Sec. 4.3).
 """
 
@@ -15,6 +15,7 @@ import pytest
 
 import constantes_normativas as CN
 import datos_sitio as ds
+from constantes_fisicas import G
 from tests.fixtures.casos_patron import (CP1_PERIODO_RETORNO,
                                          CP2_GEOMETRIA_MANNING,
                                          CP3_VELOCIDAD_MINIMA, CP4_LAUSHEY,
@@ -36,16 +37,16 @@ def test_la_constante_de_friccion_es_SI_y_no_imperial():
 def test_la_constante_SI_reproduce_la_H_del_caso_patron():
     """
     H = (1 + ke + K*n^2*L/R^(4/3)) * V^2/(2g). Con los datos de CP-8 la
-    diferencia entre 19.62 y 29 es de ~9.6%: plausible a ojo, detectable aqui.
+    diferencia entre 19.63 y 29 es de ~9.6%: plausible a ojo, detectable aqui.
     """
     cp = CP8_CONTROL_SALIDA
 
     def perdida(k):
         friccion = k * cp["n"] ** 2 * cp["L"] / cp["R"] ** (4 / 3)
-        return (1 + cp["ke"] + friccion) * cp["V"] ** 2 / (2 * CN.G)
+        return (1 + cp["ke"] + friccion) * cp["V"] ** 2 / (2 * G)
 
     assert perdida(CN.K_FRICCION_SI) == pytest.approx(
-        cp["H_esperado_con_19_62"], abs=1e-3)
+        cp["H_esperado_con_K_SI"], abs=1e-3)
     assert perdida(cp["K_friccion_imperial_incorrecto"]) == pytest.approx(
         cp["H_con_29_incorrecto"], abs=1e-3)
     assert perdida(CN.K_FRICCION_SI) < perdida(cp["K_friccion_imperial_incorrecto"])
@@ -108,7 +109,7 @@ def test_V2_nunca_gobierna_con_pendientes_constructivas():
 
 @pytest.mark.parametrize("caso", CP4_LAUSHEY)
 def test_laushey_reproduce_los_d50_de_CP4(caso):
-    d50 = caso["V"] ** 2 / (CN.LAUSHEY_K * CN.G)
+    d50 = caso["V"] ** 2 / (CN.LAUSHEY_K * CN.G_LAUSHEY)
     assert d50 == pytest.approx(caso["d50_esperado"], abs=caso["tolerancia"])
 
 
@@ -245,3 +246,51 @@ def test_el_resguardo_por_CBR_cubre_todo_el_rango_sin_huecos():
 def test_los_factores_de_seguridad_sismicos_son_menores_que_los_estaticos():
     for verificacion, valores in CN.FS.items():
         assert valores["sismico"] < valores["estatico"], verificacion
+
+
+# ---------------------------------------------------------------------------
+# EG-2013: Secciones, no subsecciones, y no existe ninguna "Seccion 500"
+# ---------------------------------------------------------------------------
+
+def test_los_conductos_son_secciones_completas_del_capitulo_v():
+    """
+    505, 506, 507 y 508 son SECCIONES del EG-2013. La constante se llamaba
+    SUBSECCION por arrastre de una "Seccion 500" que no existe en la norma;
+    las subsecciones de verdad son las de dentro de cada una (505.03).
+    """
+    assert set(CN.SECCION_EG2013.values()) == {"505", "506", "507", "508"}
+    assert not hasattr(CN, "SUBSECCION"), (
+        "SUBSECCION volvio: el nombre afirma una jerarquia que el EG-2013 no tiene")
+
+    for material, seccion in CN.SECCION_EG2013.items():
+        fila = CN.CAMA_RELLENO_LATERAL.get(material)
+        if fila is None:               # concreto_simple/reforzado, tmc, hdpe
+            continue
+        assert fila["numeral"].startswith(seccion), (
+            f"{material}: el numeral {fila['numeral']!r} no cae dentro de su "
+            f"Seccion {seccion}")
+
+
+def test_las_calicatas_de_autopista_y_dual_se_cuentan_por_sentido():
+    """
+    Cuadro 4.1: en autopistas y duales la exigencia es "x km x SENTIDO". Sin
+    el multiplicador, una autopista de 5 km salia con la mitad de calicatas
+    que pide el Cuadro.
+    """
+    assert set(CN.CALICATAS_POR_SENTIDO) == set(CN.CALICATAS_POR_KM), (
+        "las dos tablas del Cuadro 4.1 tienen que cubrir las mismas clases")
+    assert CN.CALICATAS_POR_SENTIDO["autopista"]
+    assert CN.CALICATAS_POR_SENTIDO["dual"]
+    assert not any(CN.CALICATAS_POR_SENTIDO[clase]
+                   for clase in ("primera_clase", "segunda_clase",
+                                 "tercera_clase", "bajo_volumen"))
+
+
+def test_la_constante_de_friccion_no_se_justifica_como_dos_veces_la_gravedad():
+    """
+    19.63 es la conversion SI que HDS-5 declara para su K = 29. El parecido
+    con 2*g (19.62) es una coincidencia numerica, y sostenerla como origen
+    fue el defecto que esta correccion retiro: si la constante viniera de
+    2*G, este test seria una tautologia en vez de una guardia.
+    """
+    assert CN.K_FRICCION_SI != pytest.approx(2 * G, abs=1e-9)

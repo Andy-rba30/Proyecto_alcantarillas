@@ -1,7 +1,9 @@
 # Reglas del proyecto
 
 ## Fuente de verdad
-- Fuente normativa única: docs/hoja_de_ruta_alcantarillas_v7.md. Toda cita de
+- Fuente normativa única: docs/hoja_de_ruta_alcantarillas_v8.md (o la version
+  vigente que exista en docs/: M11 la localiza con el patron
+  `hoja_de_ruta_alcantarillas_v*.md` y exige que haya exactamente una). Toda cita de
   numeral se verifica contra ese archivo. Nunca se inventa un numeral.
 - Si la hoja de ruta y tu conocimiento previo discrepan, gana la hoja de ruta.
 - **Si la hoja de ruta NO dice nada sobre algo que necesitas: NO lo inventes.**
@@ -46,14 +48,22 @@ fila aplica a esta obra es [A] y vive en criterios_adoptados.py ('F_pga',
   constantes_normativas.py (solo [N]), criterios_adoptados.py ([N→],[C],[A] y
   los [S] pendientes de ensayo) o datos_sitio.py (solo [S] de corredor) es un
   defecto y se rechaza en revisión. Excepciones permitidas: 0, 1, 2,
-  índices, y constantes matemáticas puras (pi). Dos archivos más quedan
+  índices, y constantes matemáticas puras (pi). Tres archivos más quedan
   exentos por no contener valores de proyecto: tolerancias.py (precisión
-  numérica: cambiarla no mueve ninguna magnitud física) y dominios.py (rango
-  físico posible de un dato de entrada: no entra en ninguna fórmula). Regla
-  para saber si un número va en uno de esos dos: si cambiarlo puede alterar un
+  numérica: cambiarla no mueve ninguna magnitud física), dominios.py (rango
+  físico posible de un dato de entrada: no entra en ninguna fórmula) y
+  constantes_fisicas.py (constantes físicas universales -- hoy solo la
+  gravedad, G = 9.81 m/s² -- el mismo número en cualquier obra del planeta;
+  no responde a "qué exige la norma peruana" y por eso no es [N]). Regla
+  para saber si un número va en uno de esos tres: si cambiarlo puede alterar un
   resultado del cálculo, no va ahí. datos_sitio.py está exento por la razón
   CONTRARIA: sus números sí son valores de proyecto, y de los más pesados —
   está aparte porque no son constantes universales, no porque no importen.
+  G_LAUSHEY = 9.8 SÍ vive en constantes_normativas.py, a pesar de ser
+  numéricamente el mismo concepto físico: es el valor que la Sec. 4.1.1.3.7 c)
+  de la hoja de ruta escribe explícitamente para su fórmula de d50, y separarlo
+  de la gravedad genérica evita que una obra tenga dos valores distintos de "g"
+  (9.8 en Laushey, 9.81 en todo lo demás) conviviendo sin que nadie lo declare.
 - Un literal que es parte de una fórmula transcrita de la hoja de ruta —el 8 de
   A = (D²/8)(θ − sen θ), el exponente 2/3 de Manning— se deja en el módulo
   marcado con `# literal-ok: <razón>`. La marca lo declara y lo hace visible en

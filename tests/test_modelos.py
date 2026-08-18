@@ -20,8 +20,8 @@ import constantes_normativas as CN
 from modelos import (ConstantesHDS5, ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DisenoNoFactibleError, ErrorProyecto,
                      Familia, Geometria, Material, PuntoCritico,
-                     ResultadoHidraulico, ResultadoPunto, TipoMaterial,
-                     Verificacion)
+                     ReferenciaNormativa, ResultadoHidraulico, ResultadoPunto,
+                     TipoMaterial, Verificacion)
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING, CP8_CONTROL_SALIDA
 
 DIRECTORIO_TESTS = Path(__file__).resolve().parent
@@ -177,7 +177,7 @@ def _material_concreto() -> Material:
         ),
         v_max_rango=CN.V_MAX["concreto"],
         h_relleno_min=CN.H_RELLENO_MIN["concreto"],
-        subseccion_eg2013=CN.SUBSECCION["concreto_reforzado"],
+        seccion_eg2013=CN.SECCION_EG2013["concreto_reforzado"],
     )
 
 
@@ -210,7 +210,7 @@ def _resultado_hidraulico(control: ControlGobernante) -> ResultadoHidraulico:
         y_critico=c["y_sobre_D"] * c["D"] / 2,     # valor de forma, no de calculo
         V=c["V_con_n_min_esperado"],
         Q=c["Q_con_n_max_esperado"],
-        HW_entrada=CP8_CONTROL_SALIDA["H_esperado_con_19_62"],
+        HW_entrada=CP8_CONTROL_SALIDA["H_esperado_con_K_SI"],
         HW_salida=CP8_CONTROL_SALIDA["H_con_29_incorrecto"],
         control_gobernante=control,
     )
@@ -343,3 +343,36 @@ def test_resultado_punto_fallido_tiene_campos_en_none_y_motivo_explicito():
     assert fallido.verificaciones == ()
     assert fallido.coherente                   # motivo_rechazo no es None
     assert fallido.verificaciones_incumplidas == ()
+
+
+# ---------------------------------------------------------------------------
+# ReferenciaNormativa: la seccion propia y el numeral de la norma, separados
+# ---------------------------------------------------------------------------
+
+def test_la_referencia_normativa_separa_la_navegacion_interna_de_la_cita():
+    """
+    Un verificador externo leyo "Sec. 9.1 (EG-2013 num. 503.01, pag. 905)"
+    como si el string entero fuese la cita, y salio a buscar una "Sec. 9.1"
+    en el EG-2013. Las dos mitades tienen que poder pedirse por separado.
+    """
+    r = ReferenciaNormativa(
+        seccion_hoja_ruta="Sec. 9.1",
+        numeral_norma="EG-2013, Capitulo V, Seccion 503, num. 503.01")
+
+    assert r.seccion_hoja_ruta == "Sec. 9.1"
+    assert "Sec. 9.1" not in r.numeral_norma
+    assert "503.01" in r.numeral_norma
+
+
+def test_la_referencia_normativa_sigue_siendo_un_string_para_quien_la_imprime():
+    """
+    Es subclase de str a proposito: `Verificacion.numeral`, el escapado de
+    M11 y las pruebas que hacen `numeral in memoria` no tenian que cambiar.
+    """
+    r = ReferenciaNormativa(seccion_hoja_ruta="Fase 10",
+                            numeral_norma="num. 4.1.2.1 d), pag. 178")
+
+    assert isinstance(r, str)
+    assert "4.1.2.1" in r
+    assert "hoja de ruta" in str(r)          # la mitad interna, etiquetada
+    assert str(r).startswith("num. 4.1.2.1")  # la cita verificable, delante

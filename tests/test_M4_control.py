@@ -9,7 +9,7 @@ M4 contra las Fases 4.2 y 4.3, pieza por pieza:
     2. control_entrada   contra CP-5 / CP-5B / CP-5C: las tres ramas, el q*
        que las separa, la continuidad de la interpolacion en 3.5 y en 4.0, y
        la guardia de que Ks*S NO se omite.
-    3. control_salida    contra CP-8: la constante de friccion es 19.62 (SI)
+    3. control_salida    contra CP-8: la constante de friccion es 19.63 (SI)
        y no 29 (imperial) -- test_constante_friccion_es_SI_no_imperial --, mas
        las dos ramas de h_o = max(TW, (y_c + D)/2).
     4. hw_gobernante     el mayor de los dos, CON la etiqueta de cual fue.
@@ -24,13 +24,15 @@ import math
 import pytest
 
 import criterios_adoptados as ca
-from constantes_normativas import (G, KU_METRICO, K_FRICCION_SI,
+from constantes_fisicas import G
+from constantes_normativas import (KU_METRICO, K_FRICCION_SI,
                                    Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO)
 from modelos import (ConstantesHDS5, ControlGobernante, DatoInvalidoError,
                      RegimenEntrada, ResultadoHidraulico, TiranteCritico)
 from modulos.M2_material import catalogo
 from modulos.M3_hidraulica import geometria
-from modulos.M4_control import (area_llena, caudal_adimensional,
+from modulos.M4_control import (CRITERIO_TRANSICION, area_llena,
+                                caudal_adimensional,
                                 control_entrada, control_salida,
                                 hw_gobernante, perdida_carga,
                                 radio_hidraulico_lleno, resolver_control,
@@ -243,6 +245,41 @@ def test_la_transicion_interpola_y_no_devuelve_ninguna_rama_pura(hds5):
     assert resultado.HW_sobre_D != pytest.approx(puro_sumergido, rel=1e-6)
 
 
+def test_la_transicion_declara_que_la_recta_es_simplificacion_y_no_HDS5(hds5):
+    """
+    HDS-5 no interpola linealmente: empalma las dos ramas con una curva
+    tangente empirica sin ecuacion publicada. La recta es una simplificacion
+    ADOPTADA, y tiene que quedar registrada como criterio [C] cuando se usa,
+    para que M11 la imprima. Fuera de la transicion no debe registrarse:
+    entonces se aplican las ecuaciones literales de la Tabla A.1.
+    """
+    c = CP5_TRANSICION_HDS5
+    assert ca.criterio(CRITERIO_TRANSICION).etiqueta == "C"
+
+    # se limpia SOLO esta clave, para no borrar el registro de las demas
+    ca._USADOS.discard(CRITERIO_TRANSICION)
+    control_entrada(Q=CP5B_NO_SUMERGIDO["Q"], D=CP5B_NO_SUMERGIDO["D"],
+                    S=0.005, hds5=hds5)
+    assert CRITERIO_TRANSICION not in ca.criterios_usados()
+
+    control_entrada(Q=c["Q"], D=c["D"], S=0.005, hds5=hds5)
+    assert CRITERIO_TRANSICION in ca.criterios_usados()
+
+
+def test_un_metodo_de_transicion_distinto_no_se_aplica_en_silencio(hds5):
+    """
+    Si alguien declara la curva tangente del HDS-5, M4 no la implementa: debe
+    decirlo, no seguir devolviendo la recta bajo otra etiqueta.
+    """
+    c = CP5_TRANSICION_HDS5
+    ca.establecer_valor_dinamico(CRITERIO_TRANSICION, "curva_tangente_hds5")
+    try:
+        with pytest.raises(DatoInvalidoError):
+            control_entrada(Q=c["Q"], D=c["D"], S=0.005, hds5=hds5)
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_TRANSICION)
+
+
 def test_la_interpolacion_reproduce_la_recta_entre_los_dos_extremos(hds5):
     """
     Se interpola entre la forma no sumergida evaluada en q* = 3.5 y la
@@ -362,13 +399,13 @@ def test_constante_friccion_es_SI_no_imperial():
     """
     LA guardia obligatoria de Sec. 4.3. El 29 de la literatura FHWA es del
     sistema ingles y en metrico no falla ruidosamente: devuelve numeros
-    plausibles y equivocados. Con los datos de CP-8, 0.546 m en vez de
-    0.498 m -- un 9.6 % que nadie detecta a ojo.
+    plausibles y equivocados. Con los datos de CP-8, 0.5455 m en vez de
+    0.4977 m -- un 9.6 % que nadie detecta a ojo.
 
     El test ataca por tres lados a la vez, porque cada uno solo cubre una
     forma de meter el error:
-      1. la constante declarada vale 19.62 y no 29;
-      2. la H que devuelve el modulo es la de CP-8 con 19.62;
+      1. la constante declarada vale 19.63 y no 29;
+      2. la H que devuelve el modulo es la de CP-8 con 19.63;
       3. y NO es la que saldria con 29 -- si alguien sustituye la constante,
          el punto 2 falla; si ademas "corrige" el caso patron, falla el 3.
     """
@@ -379,7 +416,7 @@ def test_constante_friccion_es_SI_no_imperial():
 
     H = perdida_carga(V=c["V"], R=c["R"], n=c["n"], L=c["L"], ke=c["ke"])
 
-    assert H == pytest.approx(c["H_esperado_con_19_62"], abs=1e-4)
+    assert H == pytest.approx(c["H_esperado_con_K_SI"], abs=1e-4)
     assert H != pytest.approx(c["H_con_29_incorrecto"], abs=1e-3)
 
     H_imperial = ((1 + c["ke"] + c["K_friccion_imperial_incorrecto"]

@@ -96,7 +96,7 @@ import criterios_adoptados as ca
 from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
 from modelos import (DatoInvalidoError, Material, PuntoCritico,
-                     ResultadoHidraulico, Verificacion)
+                     ReferenciaNormativa, ResultadoHidraulico, Verificacion)
 from modulos.M2_material import CRITERIO_DIAMETROS, CRITERIO_V_MAX
 from modulos.M8_estructural import (CRITERIO_FS_FLOTACION,
                                     empuje_flotacion_kn_m, fs_flotacion,
@@ -106,7 +106,11 @@ from tolerancias import TOL_UMBRAL_NORMATIVO
 NUMERAL_V1 = "4.1.1.3.7 b)"
 NUMERAL_V2 = "4.1.1.3.6"
 NUMERAL_V3 = "Tabla Nº 10 (num. 4.1.1.3.6)"
-NUMERAL_V4 = "5.1 (Manual de Suelos, num. 4.5.4 y 9.1(3))"
+NUMERAL_V4 = ReferenciaNormativa(
+    seccion_hoja_ruta="Sec. 5.1",
+    numeral_norma="Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), "
+                  "num. 4.5.4 y 9.1(3)",
+)
 NUMERAL_V5 = "Fase 5, V5 (DG-2018 + Ley 29338)"
 NUMERAL_V6 = "3.1"
 NUMERAL_V7 = "Fase 5, V7 (Manual de Puentes num. 2.4.3.8.2 + Fase 8, item 3)"

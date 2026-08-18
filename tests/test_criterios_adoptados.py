@@ -238,7 +238,7 @@ def test_el_perfil_de_suelo_es_referencia_declarada_y_no_calculo():
     """
     c = criterio("PERFIL_SUELO_PRESUNTO")
     assert c.etiqueta == "S"
-    assert c.reemplazado_por == "Ensayo SPT"
+    assert "SPT" in c.reemplazado_por
     assert "REFERENCIA MUERTA" in c.trazabilidad
 
     raiz = Path(__file__).resolve().parents[1]
@@ -250,6 +250,25 @@ def test_el_perfil_de_suelo_es_referencia_declarada_y_no_calculo():
         f"'PERFIL_SUELO_PRESUNTO' dejo de ser referencia muerta ({invocaciones}): "
         "revisa si sigue bastando una presuncion de tramo o hace falta el dato "
         "por calicata")
+
+
+def test_la_licuefaccion_y_la_clase_de_sitio_piden_profundidades_distintas():
+    """
+    Dos ensayos, dos profundidades, y no son intercambiables:
+
+        PERFIL_SUELO_PRESUNTO   licuefaccion -> SPT de 15 m (E.050 Art. 38)
+        clase_sitio             clase sismica -> 30 m (Vs30 / N_barra)
+
+    'clase_sitio' decia antes que lo cerraba un SPT de ">= 15 m", que es la
+    profundidad del OTRO requisito: con 15 m no se lee un Vs30. Este test
+    existe para que la campana geotecnica no se programe corta.
+    """
+    licuefaccion = criterio("PERFIL_SUELO_PRESUNTO").reemplazado_por
+    clase = criterio("clase_sitio").reemplazado_por
+
+    assert "15 m" in licuefaccion and "Art. 38" in licuefaccion
+    assert "30 m" in clase
+    assert "15 m" not in clase.split("NO LO CIERRA")[0]
 
 
 def test_todo_criterio_sin_valor_declara_de_donde_saldra():

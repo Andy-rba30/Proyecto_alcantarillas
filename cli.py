@@ -801,7 +801,7 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
     material, hidraulica = resultado.material, resultado.resultado_hidraulico
     return {"material": material.nombre, "tipo": material.tipo.value,
             "norma_producto": material.norma_producto,
-            "subseccion_eg2013": material.subseccion_eg2013,
+            "seccion_eg2013": material.seccion_eg2013,
             "n_min": _num(material.n_min), "n_max": _num(material.n_max),
             "D_m": _num(resultado.D), "D_max_material_m": _num(material.D_max),
             "control_gobernante": hidraulica.control_gobernante.value,

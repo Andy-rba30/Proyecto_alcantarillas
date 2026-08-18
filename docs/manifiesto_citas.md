@@ -10,6 +10,21 @@ de `src/constantes_normativas.py`, `src/criterios_adoptados.py`,
 > Cambia **dónde vive y con qué etiqueta se declara** cada afirmación; no
 > cambia ninguna afirmación normativa ni ningún valor, y no verifica ninguna
 > cita nueva. Las filas afectadas llevan la marca **↻**.
+>
+> **Segunda regeneración** (esta revisión), tras: (1) actualizar la fuente
+> normativa a `docs/hoja_de_ruta_alcantarillas_v8.md` (la v7 ya no existe en
+> el repo); (2) cerrar el numeral de `COMPACTACION_CORONA`/`COMPACTACION_CUERPO`
+> (Manual de Suelos num. 3.2.1, 3.2.2, 3.3 y 9.1(1)) y de
+> `CALICATAS_POR_KM`/`ESPACIAMIENTO_PERFIL_KM` (Manual de Suelos num. 4.2,
+> Cuadro 4.1); (3) separar la gravedad genérica de la de Laushey —
+> `G_LAUSHEY = 9.8` (num. 4.1.1.3.7 c), uso exclusivo de M6) queda en
+> `constantes_normativas.py`, y la gravedad física universal se movió a
+> `src/constantes_fisicas.py` (`G = 9.81`), resolviendo la inconsistencia
+> silenciosa entre `G = 9.8` y el `g = 9.81` implícito en `GAMMA_AGUA_KN_M3`.
+> Esta última **sí cambia un valor calculado**: la constante de gravedad que
+> usan el control de salida y el tirante crítico de M4 pasa de 9.8 a 9.81
+> (los tres casos patrón CP-8 se recalcularon; CP-4/Laushey no cambia, sigue
+> en 9.8). Las filas afectadas por esta segunda pasada llevan la marca **⟳**.
 
 ## Qué es y qué no es este documento
 
@@ -61,7 +76,8 @@ Es el documento con más citas del proyecto y el que gobierna las Fases 2 a 6.
 | `Y_SOBRE_D_MAX = 0.75` (borde libre ≥ 25 %) | 4.1.1.3.7 b) | Manual de Hidrología | [CN:31](src/constantes_normativas.py:31) | [N] |
 | `V_MIN = 0.25` m/s | 4.1.1.3.6 | Manual de Hidrología | [CN:32](src/constantes_normativas.py:32) | [N] |
 | `LAUSHEY_K = 3.1` (d50 = V²/(3.1·g), métrico) | 4.1.1.3.7 c) | Manual de Hidrología | [CN:33](src/constantes_normativas.py:33) | [N] |
-| `G = 9.8` m/s² | **⚠ sin numeral** en CN; M4 lo atribuye al "Manual de Hidrología MTC" | Manual de Hidrología | [CN:34](src/constantes_normativas.py:34), [M4:92-94](src/modulos/M4_control.py:92) | [N] |
+| ⟳ `G_LAUSHEY = 9.8` m/s² — uso exclusivo de M6 (Laushey) | 4.1.1.3.7 c) (la hoja de ruta escribe "g = 9.8 m/s²" junto a la fórmula de d50) | Manual de Hidrología | [CN:33-38](src/constantes_normativas.py:33) | [N] |
+| ⟳ **Ya no vive aquí**: la gravedad genérica de M4 (tirante crítico, control de salida) es `constantes_fisicas.G = 9.81`, constante física universal, no una cita del Manual de Hidrología | — | (constante física, sin numeral que citar — igual que π) | [constantes_fisicas.py:29](src/constantes_fisicas.py:29) | — |
 | `RIESGO_ADMISIBLE`: quebrada importante R=0.30, n=25 → TR 71 | Tabla N° 02, num. 3.6 | Manual de Hidrología | [CN:37-38](src/constantes_normativas.py:37) | [N] |
 | `RIESGO_ADMISIBLE`: quebrada menor R=0.35, n=15 → TR 35 | Tabla N° 02, num. 3.6 | Manual de Hidrología | [CN:37,39](src/constantes_normativas.py:39) | [N] |
 | `TR = 1/(1-(1-R)^(1/n))`, sin piso normativo | num. 3.6 (fórmula, no lista de TR) | Manual de Hidrología | [CN:41](src/constantes_normativas.py:41), [M1:183](src/modulos/M1_clasificacion.py:183) | [N] |
@@ -80,12 +96,12 @@ Es el documento con más citas del proyecto y el que gobierna las Fases 2 a 6.
 | `NUMERAL_V1 = "4.1.1.3.7 b)"` (V1, borde libre y/D ≤ 0.75) | 4.1.1.3.7 b) | Manual de Hidrología | [M5:106](src/modulos/M5_verificaciones.py:106) | [N] |
 | `NUMERAL_V2 = "4.1.1.3.6"` (V2, V ≥ 0.25 m/s) | 4.1.1.3.6 | Manual de Hidrología | [M5:107](src/modulos/M5_verificaciones.py:107) | [N] |
 | `NUMERAL_V3 = "Tabla Nº 10 (num. 4.1.1.3.6)"` (V3, velocidad máxima) | Tabla N° 10, num. 4.1.1.3.6 | Manual de Hidrología | [M5:108](src/modulos/M5_verificaciones.py:108) | [N] |
-| `NUMERAL_LAUSHEY = "4.1.1.3.7 c)"`; d50 = V²/(K·G), pág. 80 | 4.1.1.3.7 c) | Manual de Hidrología | [M6:6](src/modulos/M6_proteccion.py:6), [M6:42](src/modulos/M6_proteccion.py:42) | [N] |
+| ⟳ `NUMERAL_LAUSHEY = "4.1.1.3.7 c)"`; d50 = V²/(K·G_LAUSHEY), pág. 80 | 4.1.1.3.7 c) | Manual de Hidrología | [M6:6](src/modulos/M6_proteccion.py:6), [M6:42](src/modulos/M6_proteccion.py:42) | [N] |
 | `NUMERAL_FASE_10 = "Fase 10 (num. 4.1.2.1 d), pag. 178)"` | 4.1.2.1 d), pág. 178 | Manual de Hidrología | [M10:9](src/modulos/M10_espaciamiento.py:9), [M10:61](src/modulos/M10_espaciamiento.py:61) | [N] |
 | `n_manning_hdpe = (0.010, 0.013)` — rango del concreto por analogía | "Analogía a Tabla N° 09 (concreto, tubo recto)" | Manual de Hidrología (analogía) | [CA:485](src/criterios_adoptados.py:485) | [A] |
 | `v_max_concreto_eleccion = None` — elección dentro del rango 3.0–6.0 | Tabla N° 10 (num. 4.1.1.3.6): el rango es [N], la elección no está normada | Manual de Hidrología | [CA:523](src/criterios_adoptados.py:523) | [A] |
 | `long_max_cuneta = 200.0` m (se adopta la fila "muy lluviosa" por FEN) | num. 4.1.2.1 d), pág. 178 | Manual de Hidrología | [CA:639](src/criterios_adoptados.py:639) | [A] |
-| `umbral_area_quebrada_importante_ha = None` — **afirmación negativa**: el Manual no define "quebrada importante"/"menor" por umbral de área, longitud ni caudal | Tabla N° 02 (num. 3.6) entrega R y n pero no la regla de asignación | Manual de Hidrología | [CA:434](src/criterios_adoptados.py:434) | [A] |
+| `umbral_area_quebrada_importante_ha = None` — **afirmación negativa formalizada [A]**: la Tabla N° 02 da R y n por categoría y el Manual **no fija ninguna regla de asignación física** (área, caudal, longitud ni orden de cauce) para clasificar una quebrada. No es [C] porque no hay fuente técnica que cubra el vacío: el vacío está en la norma | Tabla N° 02 (num. 3.6) | Manual de Hidrología | [CA:452](src/criterios_adoptados.py:452) | [A] |
 
 > **Nota sobre `NUMERAL_MANNING = "4.1"`** ([M3:100](src/modulos/M3_hidraulica.py:100)):
 > es la **Sec. 4.1 de la hoja de ruta**, no un numeral del Manual MTC. Lo mismo
@@ -104,12 +120,12 @@ Es el documento con más citas del proyecto y el que gobierna las Fases 2 a 6.
 | `RESGUARDO_NAPA_SUBRASANTE`: 3 ≤ CBR < 6 → 1.00 m | num. 4.5.4 | Manual de Suelos | [CN:97](src/constantes_normativas.py:97) | [N] |
 | `RESGUARDO_NAPA_SUBRASANTE`: CBR < 3 → 1.20 m | num. 4.5.4 | Manual de Suelos | [CN:97](src/constantes_normativas.py:97) | [N] |
 | `CBR_MIN_SUBRASANTE = 6.0` % | num. 3.3 | Manual de Suelos | [CN:100](src/constantes_normativas.py:100) | [N] |
-| `COMPACTACION_CORONA = 0.95` (0.30 m superiores, capas de 0.15 m) | **⚠ sin numeral** | Manual de Suelos | [CN:101](src/constantes_normativas.py:101) | [N] |
-| `COMPACTACION_CUERPO = 0.90` (capas de hasta 0.30 m) | **⚠ sin numeral** | Manual de Suelos | [CN:102](src/constantes_normativas.py:102) | [N] |
-| `CALICATAS_POR_KM` (autopista/dual/1ª clase 4; 2ª clase 3; 3ª clase 2; bajo volumen 1) | **⚠ sin numeral** | Manual de Suelos | [CN:104-105](src/constantes_normativas.py:104) | [N] |
-| `ESPACIAMIENTO_PERFIL_KM = 4.0` (nivel perfil) | **⚠ sin numeral** | Manual de Suelos | [CN:106](src/constantes_normativas.py:106) | [N] |
+| ⟳ `COMPACTACION_CORONA = 0.95` (0.30 m superiores, capas de 0.15 m) | num. 3.2.1, 3.2.2, 3.3 y 9.1(1) | Manual de Suelos | [CN:107-108](src/constantes_normativas.py:107) | [N] |
+| ⟳ `COMPACTACION_CUERPO = 0.90` (capas de hasta 0.30 m) | num. 3.2.1, 3.2.2, 3.3 y 9.1(1) | Manual de Suelos | [CN:109-110](src/constantes_normativas.py:109) | [N] |
+| ⟳ `CALICATAS_POR_KM` (autopista/dual/1ª clase 4; 2ª clase 3; 3ª clase 2; bajo volumen 1) + `CALICATAS_POR_SENTIDO` (autopista y dual: **× sentido**, el total se duplica) | num. 4.2, Cuadro 4.1 | Manual de Suelos | [CN:125](src/constantes_normativas.py:125), [CN:134](src/constantes_normativas.py:134) | [N] |
+| ⟳ `ESPACIAMIENTO_PERFIL_KM = 4.0` (nivel perfil) | num. 4.2, Cuadro 4.1 | Manual de Suelos | [CN:115](src/constantes_normativas.py:115) | [N] |
 | `resguardo_HW_subrasante = "segun_CBR"` — la tabla 4.5.4 aplicada al HW de avenida, **por analogía** (el numeral regula el nivel freático, no un nivel transitorio) | num. 4.5.4 y 9.1(3) | Manual de Suelos | [CA:616](src/criterios_adoptados.py:616) | [N→] |
-| `NUMERAL_V4 = "5.1 (Manual de Suelos, num. 4.5.4 y 9.1(3))"` | 4.5.4 y 9.1(3) | Manual de Suelos | [M5:109](src/modulos/M5_verificaciones.py:109) | [N→] |
+| `NUMERAL_V4` — `ReferenciaNormativa`: `seccion_hoja_ruta="Sec. 5.1"` / `numeral_norma="Manual de Suelos…, num. 4.5.4 y 9.1(3)"` | 4.5.4 y 9.1(3) | Manual de Suelos | [M5:109](src/modulos/M5_verificaciones.py:109) | [N→] |
 | `resguardo_por_cbr()` — tabla de CBR aplicada en V4 | num. 4.5.4 | Manual de Suelos | [M5:225-226](src/modulos/M5_verificaciones.py:225) | [N] |
 | Tamizado 7.A: CBR → resguardo, misma tabla de Sec. 5.1 | num. 4.5.4 | Manual de Suelos | [M7:82](src/modulos/M7_geometria.py:82) | [N] |
 | ↻ `NF_profundidad_m` — **ya no es un valor declarado**: es columna del CSV, medida en cada cruce, y hoy viene vacía en las cuatro filas | El 1.4 m que se declaraba no tenía numeral del Manual: citaba la *hoja de ruta* (Sec. 0.5 num. 105; Fase 8 num. 545; Fase 9 num. 582). Siendo dato por punto, **no hay nada que verificar contra un PDF**: se verifica contra el estudio geotécnico del expediente, cruce por cruce | Estudio geotécnico del expediente (antes: "Manual de Suelos MTC / caracterización geotécnica del sitio") | [modelos.py:323](src/modelos.py:323), [M0:86](src/modulos/M0_carga.py:86) | [S] |
@@ -165,7 +181,8 @@ Toda la tabla de factores de seguridad de la Fase 9 sale de este documento.
 | `e4_estabilidad_global()` ≥ 1.50 / 1.25 | num. 39.13.6 b) | E.050 | [M9:944](src/modulos/M9_cabezal.py:944) | [N] |
 | `e5_estabilidad_talud()` ≥ 1.50 / 1.25 | Art. 30.3 | E.050 | [M9:962-963](src/modulos/M9_cabezal.py:962) | [N] |
 | `c_phi_fundacion = None` — la obligación de usar solo uno (φ=0 o c=0) | Art. 20 | E.050 | [CA:719](src/criterios_adoptados.py:719) | [A] |
-| `clase_sitio` — el SPT que lo reemplazaría: perforaciones ≥ 15 m, ensayos cada 1 m | Art. 38 | E.050 | [CA:264-265](src/criterios_adoptados.py:264) | [C] |
+| `PERFIL_SUELO_PRESUNTO` — lo reemplaza el **SPT de licuefacción: ≥ 15 m, ensayos cada 1 m** | Art. 38 | E.050 | [CA:229](src/criterios_adoptados.py:229) | [S] |
+| `clase_sitio` — lo reemplaza la **caracterización de sitio sobre los 30 m superiores** (Vs30 o N̄). El SPT de 15 m **no lo cierra**: otra profundidad, otra pregunta | Art. 3.10.3.1 (AASHTO) / perfil de E.030 | AASHTO LRFD / E.030 | [CA:256](src/criterios_adoptados.py:256) | [C] |
 | `metodo_estabilidad_global = None` — **afirmación negativa**: E.050 fija el umbral, no el método | Art. 30.3 y num. 39.13.6 b) | E.050 | [CA:1078](src/criterios_adoptados.py:1078) | [A] |
 
 ---
@@ -184,7 +201,8 @@ recubrimientos** (Vía 1 de Sec. 0.2); el diseño estructural es de AASHTO.
 | `CLORUROS_EXTERNOS = {a/c máx 0.40, f'c mín 35 MPa}` | Art. 4.2 / 4.4 | E.060 | [CN:212](src/constantes_normativas.py:212) | [N] |
 | `RECUBRIMIENTO`: contra suelo 70 mm; suelo/intemperie ≥ 3/4" 50 mm; ≤ 5/8" 40 mm | Art. 7.7.1, pág. 54 | E.060 | [CN:213-215](src/constantes_normativas.py:213), [M9:1129](src/modulos/M9_cabezal.py:1129) | [N] |
 | `AMBIENTE_CORROSIVO_AUMENTAR` — el artículo dice "aumentar adecuadamente" y **no fija cuánto** | Art. 7.7.5.1 | E.060 | [CN:216-219](src/constantes_normativas.py:216), [M9:1196](src/modulos/M9_cabezal.py:1196) | [N] |
-| `CUANTIA_MIN_MURO = {horizontal 0.0020, vertical 0.0015}` — **referencia declarada, no gobierna** | Art. 14.3.1, pág. 133 | E.060 | [CN:226-227](src/constantes_normativas.py:226), [M9:1211](src/modulos/M9_cabezal.py:1211) | [N] |
+| `CUANTIA_MIN_MURO = {horizontal 0.0020, vertical 0.0015}` — **piso obligatorio**, aplicado como ρ_diseño = max(ρ_calculado, ρ_mínimo) en `M9.cuantia_de_diseno`. Que AASHTO gobierne el *dimensionamiento* (Vía 1, Sec. 0.2) no convierte el mínimo en informativo | Art. 14.3.1, pág. 133 | E.060 | [CN:281](src/constantes_normativas.py:281), [M9:1281](src/modulos/M9_cabezal.py:1281) | [N] |
+| `cortante_alto_muro_e060_art_11_10_10_2 = None` — **segundo mínimo de E.060**: escalón de la cuantía horizontal a 0.0025 bajo cortante alto. **Vacío declarado**, no omitido: M9 no calcula cortante (bloqueado en `procedimiento_flexion_corte_aashto_sec5`) y el artículo no está en la hoja de ruta | Art. 11.10.10.2 — **⚠ pendiente de recoger en la hoja de ruta** | E.060 | [CA:1214](src/criterios_adoptados.py:1214) | [A] |
 | `ESPESOR_TEMPERATURA_DOS_CARAS = 0.250` m (refuerzo en dos caras) | Art. 14.8.3 | E.060 | [CN:228-229](src/constantes_normativas.py:228), [M9:1250](src/modulos/M9_cabezal.py:1250) | [N] |
 | `ESPACIAMIENTO_MAX_VECES_ESPESOR = 3.0` (≤ 3h) | Art. 14.3.3 | E.060 | [CN:230](src/constantes_normativas.py:230), [M9:1276-1277](src/modulos/M9_cabezal.py:1276) | [N] |
 | `ESPACIAMIENTO_MAX_ABSOLUTO = 0.400` m (400 mm) | Art. 14.3.3 | E.060 | [CN:231-232](src/constantes_normativas.py:231) | [N] |
@@ -193,21 +211,21 @@ recubrimientos** (Vía 1 de Sec. 0.2); el diseño estructural es de AASHTO.
 
 ---
 
-## 6. EG-2013 — Especificaciones Técnicas Generales para Construcción, Sección 500
+## 6. EG-2013 — Especificaciones Técnicas Generales para Construcción, Capítulo V (Secciones 502-508)
 
 | Valor | Numeral citado | Documento fuente (según la cita) | Archivo:línea | Etiqueta |
 |---|---|---|---|---|
 | `H_RELLENO_MIN["hdpe"] = 0.30` m (clave a subrasante) | 508.07 / 508.08 | EG-2013 | [CN:110](src/constantes_normativas.py:110), [M7:20](src/modulos/M7_geometria.py:20), [M7:259-260](src/modulos/M7_geometria.py:259) | [N] |
 | `H_RELLENO_MIN["concreto"] = None` — **afirmación negativa**: EG-2013 no lo fija, remite a AASHTO M-170M | AASHTO M-170M (clases I a V) | EG-2013 → norma de producto | [CN:111](src/constantes_normativas.py:111) | [N]/[C] |
 | `H_RELLENO_MIN["tmc"] = None` — **afirmación negativa**: EG-2013 no lo fija, remite a la norma de producto | ASTM A-807 / AASHTO M36 | EG-2013 → norma de producto | [CN:112](src/constantes_normativas.py:112) | [N]/[C] |
-| `SUBSECCION`: concreto simple 505, concreto reforzado 506, TMC 507, HDPE 508 | 505 / 506 / 507 / 508 | EG-2013 | [CN:114-115](src/constantes_normativas.py:114), [M11:697](src/modulos/M11_reporte.py:697) | [N] |
+| `SECCION_EG2013`: concreto simple 505, concreto reforzado 506, TMC 507, HDPE 508. **Renombrada desde `SUBSECCION`**: son Secciones completas del Capítulo V, no subsecciones de ninguna "Sección 500" | Secciones 505 / 506 / 507 / 508 | EG-2013 | [CN:158](src/constantes_normativas.py:158), [M11:697](src/modulos/M11_reporte.py:697) | [N] |
 | `SECCION_CABEZALES = "503"` (concreto estructural; + 504 acero) | 503 (+504) | EG-2013 | [CN:116](src/constantes_normativas.py:116) | [N] |
 | `CAMA_RELLENO_LATERAL["concreto_simple"]`: cama Clase F (f'c = 14 MPa) ≥ 15 cm; Clase F hasta ≥ 1/4 del D exterior; relleno Sec. 502 ≥ 95 % MDS | 505.03/.07/.10/.11, págs. 950-951 | EG-2013 | [CN:124-129](src/constantes_normativas.py:124) | [N] |
 | `CAMA_RELLENO_LATERAL["concreto_reforzado"]`: subbase granular (Sec. 402) ≥ 15 cm, ≥ 95 % MDS; subbase hasta ≥ 1/6 del D exterior; relleno Sec. 502 | 506.03/.07/.10/.11, págs. 959-960 | EG-2013 | [CN:130-135](src/constantes_normativas.py:130) | [N] |
 | `CAMA_RELLENO_LATERAL["tmc"]`: subbase ≥ 15 cm, ≥ 95 % MDS con arena suelta de 12 mm; capas de 15-20 cm ≥ 90 % base/cuerpo y ≥ 95 % corona | 507.06/.07/.08, pág. 970 | EG-2013 | [CN:136-142](src/constantes_normativas.py:136) | [N] |
 | `CAMA_RELLENO_LATERAL["hdpe"]`: arena gruesa, capas de 15 cm, espesor 15-30 cm (30 cm en roca o suelo blando); capas alternadas simétricas de 15 cm a > 95 %, los 30 cm superiores a ≥ 100 %; prohibida la anegación | 508.05/.07, págs. 981-982 | EG-2013 | [CN:143-150](src/constantes_normativas.py:143) | [N] |
-| `NUMERAL_8_1 = "Sec. 8.1 (EG-2013 Seccion 500)"` (cama y relleno lateral) | Sección 500 | EG-2013 | [M8:98](src/modulos/M8_estructural.py:98), [M8:172](src/modulos/M8_estructural.py:172) | [N] |
-| `NUMERAL_9_1 = "Sec. 9.1 (EG-2013 num. 503.01, pag. 905)"` — cabezales y aletas, concreto estructural, partida específica | 503.01, pág. 905 | EG-2013 | [M9:163](src/modulos/M9_cabezal.py:163), [M9:1364](src/modulos/M9_cabezal.py:1364) | [N] |
+| `NUMERAL_8_1` — `ReferenciaNormativa`: `seccion_hoja_ruta="Sec. 8.1"` / `numeral_norma="EG-2013, Capítulo V, Sección de cada material (505/506/507/508); rellenos generales en la Sección 502"`. **Corrige una cita doblemente falsa**: ni "Sec. 8.1" es del EG-2013, ni existe una "Sección 500" | Capítulo V, Secciones 502 y 505-508 | EG-2013 | [M8:106](src/modulos/M8_estructural.py:106) | [N] |
+| `NUMERAL_9_1` — `ReferenciaNormativa`: `seccion_hoja_ruta="Sec. 9.1"` / `numeral_norma="EG-2013, Capítulo V, Sección 503 (concreto estructural), num. 503.01, pág. 905"` | 503.01, pág. 905 | EG-2013 | [M9:173](src/modulos/M9_cabezal.py:173) | [N] |
 | `h_relleno_min_concreto_tmc = None` — EG-2013 fija 0.30 m para HDPE pero **no** para concreto ni TMC | 508.07 / 508.08 (lo que sí fija) | EG-2013 | [CA:780](src/criterios_adoptados.py:780) | [C] |
 | Nota constructiva: el equipo pesado no circula sobre el conducto antes de que el relleno alcance 0.30 m | Sec. 7.A de la hoja de ruta, apoyada en EG-2013 | EG-2013 | [CA:794-796](src/criterios_adoptados.py:794) | [N] |
 
@@ -225,12 +243,13 @@ recubrimientos** (Vía 1 de Sec. 0.2); el diseño estructural es de AASHTO.
 | `HDS5_INLET["circular_cmp_mitered"]`: K=0.0210, M=1.33, c=0.0463, Y=0.75 | Apéndice A, Tabla A.1, pág. A.8 | HDS-5 | [CN:71-72](src/constantes_normativas.py:71) | [N] |
 | `Ks = -0.5` (sin inglete) / `+0.7` (con inglete) | **⚠ el código declara expresamente que NO figura en la Tabla A.1**: "proviene de la formulación" | HDS-5 (formulación, sin tabla) | [CN:74](src/constantes_normativas.py:74), [M4:67-76](src/modulos/M4_control.py:67), [M4:308-310](src/modulos/M4_control.py:308) | [N] |
 | Ecuaciones de control de entrada: q* ≤ 3.5 → HWi/D = Hc/D + K·(q*)^M + Ks·S; q* ≥ 4.0 → HWi/D = c·(q*)² + Y + Ks·S | Apéndice A (Formas 1 y 2) | HDS-5 | [M4:55-57](src/modulos/M4_control.py:55) | [N] |
-| `K_FRICCION_SI = 19.62` — H = (1 + ke + 19.62·n²·L/R^(4/3))·V²/(2g); "29 es el valor inglés" | **⚠ sin numeral**: se cita la ecuación de control de salida, no un apartado | HDS-5 / literatura FHWA | [CN:78-80](src/constantes_normativas.py:78), [M4:79-96](src/modulos/M4_control.py:79) | [N] |
+| `metodo_transicion_hds5 = "interpolacion_lineal_entre_extremos"` — la transición 3.5 < q* < 4.0. **La recta NO es el método del HDS-5**: HDS-5 empalma las dos ramas con una curva **tangente empírica sin ecuación publicada**. La interpolación lineal la prescribe Sec. 4.2 de la hoja de ruta y aquí queda declarada como simplificación adoptada | Cap. IV y Apéndice A (curva de transición, sin ecuación) | HDS-5 3ª ed. (2012) | [CA:523](src/criterios_adoptados.py:523), [M4:335-355](src/modulos/M4_control.py:335) | [C] |
+| `K_FRICCION_SI = 19.63` — H = (1 + ke + 19.63·n²·L/R^(4/3))·V²/(2g); "29 es el valor inglés". **Corregido desde 19.62**: 19.63 es la conversión SI que el propio HDS-5 declara para su K = 29. Se retiró la justificación "= 2·g", coincidencia numérica sin respaldo en la fuente. **⚠ La hoja de ruta sigue diciendo 19.62 y debe corregirse** | **⚠ sin numeral**: se cita la ecuación de control de salida, no un apartado | HDS-5 / literatura FHWA | [CN:84](src/constantes_normativas.py:84), [M4:79-110](src/modulos/M4_control.py:79) | [N] |
 | `h_o = max(TW, (y_c + D)/2)` | **⚠ sin numeral** | HDS-5 (control de salida) | [CN:81](src/constantes_normativas.py:81), [M4:80-82](src/modulos/M4_control.py:80) | [N] |
 | `hds5_embocadura_hdpe = {K:0.0098, M:2.00, c:0.0398, Y:0.67, Ks:-0.5}` — fila del **concreto** aplicada a HDPE de interior liso a ras del muro | Apéndice A, Tabla A.1, pág. A.8 | HDS-5 | [CA:467](src/criterios_adoptados.py:467) | [C] |
-| `ke_entrada = 0.5` (square edge with headwall) | **⚠ sin numeral de tabla**: "tablas de coeficiente de pérdida de entrada" | HDS-5 | [CA:541](src/criterios_adoptados.py:541) | [C] |
+| `ke_entrada = 0.5` (square edge with headwall) — **cita cerrada** | Apéndice C, **Tabla C.2, pág. C.2** | HDS-5 3ª ed. (2012) | [CA:617](src/criterios_adoptados.py:617) | [C] |
 | `geometria_control_salida = "seccion_llena"` (A = πD²/4, R = D/4, V = Q/A) | Cap. III — control de salida a sección llena | HDS-5 | [CA:568](src/criterios_adoptados.py:568) | [C] |
-| `HW_D_max = 1.5` | **⚠ sin numeral**: "HDS-5 (FHWA), práctica corriente" | HDS-5 | [CA:605](src/criterios_adoptados.py:605) | [C] |
+| `HW_D_max = 1.5` — **cita cerrada**. La sensibilidad declarada (1.2, 1.5) es un **subrango** del 1.0–1.5 de la fuente | **Sec. 2.2.5, pág. 2.14** (rango 1.0–1.5) | HDS-5 3ª ed. (2012) | [CA:683](src/criterios_adoptados.py:683) | [C] |
 | Alternativa citada si el barril no llena: procedimiento de barril parcialmente lleno | Cap. III | HDS-5 | [CA:595-597](src/criterios_adoptados.py:595), [M4:400](src/modulos/M4_control.py:400) | [C] |
 
 ---
@@ -301,7 +320,7 @@ de uso.
 
 Se listan aparte para que nadie las busque en un documento normativo.
 
-### 11.a. Referencias a la propia hoja de ruta (`docs/hoja_de_ruta_alcantarillas_v7.md`)
+### 11.a. Referencias a la propia hoja de ruta (`docs/hoja_de_ruta_alcantarillas_v8.md`)
 
 Varios `NUMERAL_*` de módulo parecen numerales normativos y son secciones de la
 hoja de ruta. **No se verifican contra un PDF externo; se verifican contra la
@@ -384,44 +403,45 @@ un hecho que se leyó o se midió, no admite rango, y se defiende con la
 trazabilidad de la lectura. Antes de la quinta etiqueta, forzar el PGA o el
 nivel freático dentro de `[A]` habría dicho que alguien los "adoptó".
 
-### Los 32 criterios `[A]` del proyecto
+### Los 33 criterios `[A]` del proyecto
 
 | Criterio | Valor | Estado | Sensibilidad declarada | Archivo:línea |
 |---|---|---|---|---|
-| `F_pga` | 1.0 | declarado | (0.9, 1.0) | [CA:271](src/criterios_adoptados.py:271) |
+| `F_pga` | 1.0 | declarado | (0.9, 1.0) | [CA:289](src/criterios_adoptados.py:289) |
 | ↻ `factor_muro_eleccion` | 1.0 (fila rígida) | declarado | (0.5, 1.0) | [CA:284](src/criterios_adoptados.py:284) |
-| `k_v` | 0.0 | declarado | (0.0, 0.5) | [CA:300](src/criterios_adoptados.py:300) |
-| `pendiente_relleno_trasdos_i` | `None` | **vacío — bloquea K_AE y Ka de Coulomb** | (0.0, 10.0) ° | [CA:317](src/criterios_adoptados.py:317) |
-| `inclinacion_muro_beta` | `None` | **vacío — bloquea K_AE y Ka de Coulomb** | (0.0, 10.0) ° | [CA:346](src/criterios_adoptados.py:346) |
-| `friccion_muro_suelo_delta` | `None` | **vacío — bloquea K_AE y Ka de Coulomb** | (0.0, 22.7) ° | [CA:366](src/criterios_adoptados.py:366) |
-| `punto_aplicacion_incremento_sismico` | `None` | **vacío — bloquea el momento de volteo sísmico** | (0.333, 0.6)·H | [CA:390](src/criterios_adoptados.py:390) |
-| `homogeneidad_serie_fen` | `None` | **vacío — bloquea el Q de diseño de todos los puntos** | — | [CA:415](src/criterios_adoptados.py:415) |
-| `umbral_area_quebrada_importante_ha` | `None` | **vacío — bloquea el TR de toda la Familia A** | — | [CA:434](src/criterios_adoptados.py:434) |
-| `n_manning_hdpe` | (0.010, 0.013) | declarado | (0.010, 0.013) | [CA:485](src/criterios_adoptados.py:485) |
-| `v_max_concreto_eleccion` | `None` | **vacío — bloquea V3 en concreto** | (3.0, 6.0) m/s | [CA:523](src/criterios_adoptados.py:523) |
-| `TW_receptor` | `None` | **vacío** | — | [CA:628](src/criterios_adoptados.py:628) |
-| `long_max_cuneta` | 200.0 m | declarado | (200.0, 250.0) | [CA:639](src/criterios_adoptados.py:639) |
-| `remanso_derecho_via` | `None` | **vacío — bloquea V5 para todo punto** | — | [CA:663](src/criterios_adoptados.py:663) |
-| `TR_evento_extremo` | `None` | **vacío — bloquea V8 para todo punto** | — | [CA:687](src/criterios_adoptados.py:687) |
-| `phi_relleno_trasdos` | `None` | **vacío** | (30.0, 38.0) ° | [CA:708](src/criterios_adoptados.py:708) |
-| `c_phi_fundacion` | `None` | **vacío** | — | [CA:719](src/criterios_adoptados.py:719) |
-| `capacidad_portante_adm` | `None` | **vacío** | — | [CA:730](src/criterios_adoptados.py:730) |
-| `Mw_licuefaccion` | `None` | **vacío — bloquea la evaluación de licuefacción** | — | [CA:739](src/criterios_adoptados.py:739) |
-| `demanda_sismica_licuefaccion` | 1000 años | declarado | (475, 1000) | [CA:751](src/criterios_adoptados.py:751) |
-| `peso_especifico_relleno_kn_m3` | `None` | **vacío — bloquea el término ΣW de V7** | (17.0, 20.0) kN/m³ | [CA:860](src/criterios_adoptados.py:860) |
-| `talud_terraplen` | `None` | **vacío — bloquea la longitud del conducto en 7.B** | — | [CA:888](src/criterios_adoptados.py:888) |
-| `espesor_proteccion_salida` | 1.75·d50 | declarado | (1.5, 2.0) | [CA:926](src/criterios_adoptados.py:926) |
-| `longitud_proteccion_salida` | `None` | **vacío — completa el diseño de la Fase 6** | — | [CA:937](src/criterios_adoptados.py:937) |
-| `angulo_aletas` | `None` | **vacío** | — | [CA:955](src/criterios_adoptados.py:955) |
-| `factores_carga_aashto` | `None` | **vacío — bloquea toda combinación de carga** | — | [CA:969](src/criterios_adoptados.py:969) |
-| `peso_especifico_concreto_kn_m3` | `None` | **vacío — bloquea el peso propio del cabezal** | (23.5, 24.5) kN/m³ | [CA:998](src/criterios_adoptados.py:998) |
-| `predimensionamiento_cabezal` | `None` | **vacío — bloquea la estabilidad automática** | — | [CA:1019](src/criterios_adoptados.py:1019) |
-| `N_cq_N_gammaq_meyerhof` | `None` | **vacío — bloquea la capacidad portante en talud** | — | [CA:1047](src/criterios_adoptados.py:1047) |
-| `metodo_estabilidad_global` | `None` | **vacío — bloquea E4 y E5 de Sec. 9.3** | — | [CA:1078](src/criterios_adoptados.py:1078) |
-| `recubrimiento_aashto_mm` | `None` | **vacío — bloquea la regla del mayor (Sec. 0.2)** | — | [CA:1100](src/criterios_adoptados.py:1100) |
-| `procedimiento_flexion_corte_aashto_sec5` | `None` | **vacío — bloquea el dimensionado del refuerzo** | — | [CA:1125](src/criterios_adoptados.py:1125) |
+| `k_v` | 0.0 | declarado | (0.0, 0.5) | [CA:318](src/criterios_adoptados.py:318) |
+| `pendiente_relleno_trasdos_i` | `None` | **vacío — bloquea K_AE y Ka de Coulomb** | (0.0, 10.0) ° | [CA:335](src/criterios_adoptados.py:335) |
+| `inclinacion_muro_beta` | `None` | **vacío — bloquea K_AE y Ka de Coulomb** | (0.0, 10.0) ° | [CA:364](src/criterios_adoptados.py:364) |
+| `friccion_muro_suelo_delta` | `None` | **vacío — bloquea K_AE y Ka de Coulomb** | (0.0, 22.7) ° | [CA:384](src/criterios_adoptados.py:384) |
+| `punto_aplicacion_incremento_sismico` | `None` | **vacío — bloquea el momento de volteo sísmico** | (0.333, 0.6)·H | [CA:408](src/criterios_adoptados.py:408) |
+| `homogeneidad_serie_fen` | `None` | **vacío — bloquea el Q de diseño de todos los puntos** | — | [CA:433](src/criterios_adoptados.py:433) |
+| `umbral_area_quebrada_importante_ha` | `None` | **vacío — bloquea el TR de toda la Familia A** | — | [CA:452](src/criterios_adoptados.py:452) |
+| `n_manning_hdpe` | (0.010, 0.013) | declarado | (0.010, 0.013) | [CA:561](src/criterios_adoptados.py:561) |
+| `v_max_concreto_eleccion` | `None` | **vacío — bloquea V3 en concreto** | (3.0, 6.0) m/s | [CA:599](src/criterios_adoptados.py:599) |
+| `TW_receptor` | `None` | **vacío** | — | [CA:717](src/criterios_adoptados.py:717) |
+| `long_max_cuneta` | 200.0 m | declarado | (200.0, 250.0) | [CA:728](src/criterios_adoptados.py:728) |
+| `remanso_derecho_via` | `None` | **vacío — bloquea V5 para todo punto** | — | [CA:752](src/criterios_adoptados.py:752) |
+| `TR_evento_extremo` | `None` | **vacío — bloquea V8 para todo punto** | — | [CA:776](src/criterios_adoptados.py:776) |
+| `phi_relleno_trasdos` | `None` | **vacío** | (30.0, 38.0) ° | [CA:797](src/criterios_adoptados.py:797) |
+| `c_phi_fundacion` | `None` | **vacío** | — | [CA:808](src/criterios_adoptados.py:808) |
+| `capacidad_portante_adm` | `None` | **vacío** | — | [CA:819](src/criterios_adoptados.py:819) |
+| `Mw_licuefaccion` | `None` | **vacío — bloquea la evaluación de licuefacción** | — | [CA:828](src/criterios_adoptados.py:828) |
+| `demanda_sismica_licuefaccion` | 1000 años | declarado | (475, 1000) | [CA:840](src/criterios_adoptados.py:840) |
+| `peso_especifico_relleno_kn_m3` | `None` | **vacío — bloquea el término ΣW de V7** | (17.0, 20.0) kN/m³ | [CA:949](src/criterios_adoptados.py:949) |
+| `talud_terraplen` | `None` | **vacío — bloquea la longitud del conducto en 7.B** | — | [CA:977](src/criterios_adoptados.py:977) |
+| `espesor_proteccion_salida` | 1.75·d50 | declarado | (1.5, 2.0) | [CA:1015](src/criterios_adoptados.py:1015) |
+| `longitud_proteccion_salida` | `None` | **vacío — completa el diseño de la Fase 6** | — | [CA:1026](src/criterios_adoptados.py:1026) |
+| `angulo_aletas` | `None` | **vacío** | — | [CA:1044](src/criterios_adoptados.py:1044) |
+| `factores_carga_aashto` | `None` | **vacío — bloquea toda combinación de carga** | — | [CA:1058](src/criterios_adoptados.py:1058) |
+| `peso_especifico_concreto_kn_m3` | `None` | **vacío — bloquea el peso propio del cabezal** | (23.5, 24.5) kN/m³ | [CA:1087](src/criterios_adoptados.py:1087) |
+| `predimensionamiento_cabezal` | `None` | **vacío — bloquea la estabilidad automática** | — | [CA:1108](src/criterios_adoptados.py:1108) |
+| `N_cq_N_gammaq_meyerhof` | `None` | **vacío — bloquea la capacidad portante en talud** | — | [CA:1136](src/criterios_adoptados.py:1136) |
+| `metodo_estabilidad_global` | `None` | **vacío — bloquea E4 y E5 de Sec. 9.3** | — | [CA:1167](src/criterios_adoptados.py:1167) |
+| `recubrimiento_aashto_mm` | `None` | **vacío — bloquea la regla del mayor (Sec. 0.2)** | — | [CA:1189](src/criterios_adoptados.py:1189) |
+| `cortante_alto_muro_e060_art_11_10_10_2` | `None` | **vacío — bloquea el escalón de ρ a 0.0025 (E.060 Art. 11.10.10.2)** | — | [CA:1214](src/criterios_adoptados.py:1214) |
+| `procedimiento_flexion_corte_aashto_sec5` | `None` | **vacío — bloquea el dimensionado del refuerzo** | — | [CA:1266](src/criterios_adoptados.py:1266) |
 
-De los 32, **25 están sin valor**: invocarlos lanza `CriterioPendienteError` y
+De los 33, **26 están sin valor**: invocarlos lanza `CriterioPendienteError` y
 detiene el cálculo. Solo 7 tienen valor declarado (`F_pga`,
 `factor_muro_eleccion`, `k_v`, `n_manning_hdpe`, `long_max_cuneta`,
 `demanda_sismica_licuefaccion`, `espesor_proteccion_salida`).
@@ -463,19 +483,20 @@ columna del CSV (`NF_profundidad_m`).
 
 ### Puntos que la verificación debería mirar primero
 
-1. **Las 10 filas marcadas ⚠ sin numeral que viven en `constantes_normativas.py`.**
+1. **Las filas marcadas ⚠ sin numeral que viven en `constantes_normativas.py`.**
    Ese archivo admite solo `[N]` "con numeral verificado" (su propio docstring,
-   [CN:6-8](src/constantes_normativas.py:6)), y estas entraron sin él:
-   `G`, `COMPACTACION_CORONA`, `COMPACTACION_CUERPO`, `CALICATAS_POR_KM`,
-   `ESPACIAMIENTO_PERFIL_KM`, `SPT_ESPACIAMIENTO`, `K_FRICCION_SI`, `h_o`,
-   `Ks`, `D_MAX`/`D_PASO`. Eran 11: `ZONA_SISMICA_LA_UNION`/`Z_E030` salieron
-   del archivo en esta revisión, no por conseguir el numeral que les faltaba,
-   sino porque nunca fueron constantes normativas.
-   **Las restantes merecen la misma pregunta antes de buscarles numeral:**
-   ¿falta el numeral, o falta la etiqueta? `CALICATAS_POR_KM` y
-   `ESPACIAMIENTO_PERFIL_KM` son regla de campaña de ensayos, no valor de
-   sitio; pero conviene mirarlas con las cinco etiquetas en la mano y no con
-   cuatro.
+   [CN:6-8](src/constantes_normativas.py:6)). Esta revisión cerró cuatro:
+   `COMPACTACION_CORONA`, `COMPACTACION_CUERPO` (num. 3.2.1, 3.2.2, 3.3 y
+   9.1(1)) y `CALICATAS_POR_KM`, `ESPACIAMIENTO_PERFIL_KM` (num. 4.2, Cuadro
+   4.1) — ver la marca ⟳ en §2. `G` se resolvió por otra vía: dejó de ser una
+   constante sin numeral porque se separó en dos — `G_LAUSHEY = 9.8` con su
+   numeral propio (4.1.1.3.7 c), uso exclusivo de M6) y la gravedad genérica
+   de M4, que salió del archivo por completo hacia `constantes_fisicas.py`
+   (constante física universal, no una cita normativa — no necesita numeral,
+   igual que π). Siguen sin numeral: `SPT_ESPACIAMIENTO`, `K_FRICCION_SI`,
+   `h_o`, `Ks`, `D_MAX`/`D_PASO`. Eran 11 en la revisión anterior:
+   `ZONA_SISMICA_LA_UNION`/`Z_E030` habían salido del archivo por no ser
+   constantes normativas, no por conseguir el numeral que les faltaba.
 2. **`D_MAX` lleva la palabra "VERIFICAR" escrita en el propio código**
    ([CN:86](src/constantes_normativas.py:86)) y el criterio homólogo repite la
    advertencia ([CA:775-777](src/criterios_adoptados.py:775)). Los tres topes

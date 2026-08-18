@@ -229,7 +229,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "PRESUNTO es una presuncion de expediente",
         fuente="E.030 (RM 183-2026-VIVIENDA), Art. 14.6 - suelos "
                "potencialmente licuables",
-        reemplazado_por="Ensayo SPT",
+        reemplazado_por="Ensayo SPT DE LICUEFACCION: perforaciones de al menos "
+                        "15 m de profundidad con ensayo cada 1.00 m (E.050 "
+                        "Art. 38). Es la profundidad que cierra ESTE criterio "
+                        "-- la presuncion de suelo licuable del Art. 14.6 -- y "
+                        "no la del criterio 'clase_sitio', que necesita 30 m",
         trazabilidad="Clasificacion del Art. 14.6 de E.030 aplicada a la "
                      "caracterizacion geotecnica disponible del corredor "
                      "(llanura del Bajo Piura, distrito de La Union), sin "
@@ -261,8 +265,22 @@ CRITERIOS: Dict[str, Criterio] = {
                       "y remitidos al estudio geotecnico del expediente",
         fuente="AASHTO LRFD Art. 3.10.3.1 (el Manual de Puentes no tipifica "
                "excepciones para Clase F en su Tabla 2.4.3.11.2.1.2-1)",
-        reemplazado_por="Ensayo SPT: perforaciones >= 15 m, ensayos cada 1 m "
-                        "(E.050 Art. 38) -> N_barra o Vs30 -> clase definitiva",
+        reemplazado_por="CARACTERIZACION DE SITIO SOBRE LOS 30 m SUPERIORES: "
+                        "Vs30, o N_barra promediado en esos 30 m, con el que "
+                        "se lee la clase de sitio. Los 30 m son parte de la "
+                        "DEFINICION de la clase (AASHTO LRFD Art. 3.10.3.1, "
+                        "coherente con el perfil de E.030): una clase de sitio "
+                        "leida sobre menos profundidad no es la misma "
+                        "variable. "
+                        "NO LO CIERRA el SPT de 15 m de E.050 Art. 38: ese "
+                        "ensayo responde a la pregunta de licuefaccion "
+                        "(criterio PERFIL_SUELO_PRESUNTO) y se detiene a mitad "
+                        "de la columna que esta clase necesita. Este criterio "
+                        "decia antes '>= 15 m -> N_barra o Vs30', que mezclaba "
+                        "las dos profundidades y daba por cerrada con 15 m una "
+                        "lectura que exige 30. Son dos requisitos de campana "
+                        "distintos y conviene pedirlos juntos al programar la "
+                        "campana geotecnica",
         verificacion_pendiente="Precisar si en tu edicion de AASHTO la excepcion "
                                "esta en el ARTICULADO 3.10.3.1 o en el COMENTARIO "
                                "C3.10.3.1 / nota a la tabla, y citarla como tal",
@@ -437,22 +455,42 @@ CRITERIOS: Dict[str, Criterio] = {
         concepto="Area de cuenca a partir de la cual el cauce de un punto de "
                  "Familia A se clasifica como 'quebrada importante' (TR 71) en "
                  "vez de 'quebrada menor' (TR 35) en la Tabla N 02",
-        justificacion="La Tabla N 02 (num. 3.6) entrega las dos filas con su R y "
-                      "su n, pero NO entrega la regla para decidir cual le toca a "
-                      "un cauce dado, y Sec. 2.3 se limita a decir que la Familia "
-                      "A lleva 'TR 71 o 35 anios'. El vacio no es menor: entre una "
-                      "fila y la otra el TR se duplica, y con el sube la intensidad "
-                      "de la IDF y el Q de diseno de todos los puntos de paso. Se "
-                      "elige el AREA DE CUENCA como descriptor porque es el unico "
-                      "dato del CSV que Sec. 1.1 califica expresamente de 'solo "
-                      "clasificador': no entra en ninguna formula y existe "
-                      "justamente para esto. Lo que falta es el umbral. "
-                      "ALTERNATIVA sin este criterio: clasificar cauce por cauce y "
-                      "pasar la categoria explicita a M1, que la acepta como "
-                      "argumento; entonces la eleccion se documenta punto por "
-                      "punto en la memoria en vez de por regla",
-        fuente="PENDIENTE - el Manual MTC no define 'quebrada importante' ni "
-               "'quebrada menor' por umbral de area, longitud ni caudal",
+        justificacion="FORMALIZADO COMO [A] TRAS VERIFICACION EXTERNA DEL "
+                      "MANUAL. Lo que la Tabla N 02 (num. 3.6) del Manual de "
+                      "Hidrologia entrega son las dos filas con su riesgo "
+                      "admisible R y su vida util n, y de ahi sale el TR de "
+                      "cada categoria. Lo que NO entrega -- ni esa tabla ni "
+                      "ningun otro apartado del Manual -- es una REGLA DE "
+                      "ASIGNACION FISICA que diga cuando un cauce cae en una "
+                      "categoria o en la otra: no hay umbral de area, ni de "
+                      "caudal, ni de longitud, ni de orden de cauce. El "
+                      "Manual nombra las categorias y las tarifa; no las "
+                      "define. Sec. 2.3 de la hoja de ruta hereda el hueco y "
+                      "se limita a decir que la Familia A lleva 'TR 71 o 35 "
+                      "anios'. "
+                      "Por eso es [A] y no [C]: un [C] necesitaria una fuente "
+                      "tecnica reconocida que SI fije el criterio, y aqui no "
+                      "la hay -- el vacio esta en la norma y no se cubre "
+                      "prestandolo de otra. Y no es menor: entre una fila y "
+                      "la otra el TR se duplica, y con el suben la intensidad "
+                      "de la IDF y el Q de diseno de todos los puntos de "
+                      "paso. "
+                      "Se elige el AREA DE CUENCA como descriptor porque es "
+                      "el unico dato del CSV que Sec. 1.1 califica "
+                      "expresamente de 'solo clasificador': no entra en "
+                      "ninguna formula y existe justamente para esto. Elegir "
+                      "el descriptor tambien es parte de la adopcion -- el "
+                      "Manual tampoco dice que haya que clasificar por area. "
+                      "Lo que falta es el umbral. "
+                      "ALTERNATIVA sin este criterio: clasificar cauce por "
+                      "cauce y pasar la categoria explicita a M1, que la "
+                      "acepta como argumento; entonces la eleccion se "
+                      "documenta punto por punto en la memoria en vez de por "
+                      "regla",
+        fuente="PENDIENTE - Manual de Hidrologia, Hidraulica y Drenaje (MTC), "
+               "Tabla N 02 (num. 3.6): da R y n por categoria de cauce y NO "
+               "define 'quebrada importante' ni 'quebrada menor' por umbral "
+               "de area, longitud ni caudal. Verificado contra el texto",
         reemplazado_por="Clasificacion del cauce documentada punto por punto "
                         "(categoria explicita a M1), o umbral tomado de un "
                         "estudio hidrologico de la cuenca del Bajo Piura",
@@ -480,6 +518,44 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Confirmar que el detalle constructivo enrasa el "
                                "tubo en la cara del cabezal. Si aloja campana o "
                                "sobresale, corresponde otra fila de la tabla",
+    ),
+
+    "metodo_transicion_hds5": Criterio(
+        valor="interpolacion_lineal_entre_extremos",
+        etiqueta="C",
+        concepto="Metodo con que se cubre la zona de transicion del control de "
+                 "entrada de HDS-5, 3.5 < q* < 4.0",
+        justificacion="Sec. 4.2 de la hoja de ruta resuelve la transicion con "
+                      "'interpolar linealmente', y eso es lo que M4 implementa: "
+                      "una recta entre la forma NO SUMERGIDA evaluada en "
+                      "q* = 3.5 y la SUMERGIDA evaluada en q* = 4.0. Lo que se "
+                      "declara aqui es que ESO NO ES EL METODO DEL HDS-5. "
+                      "HDS-5 no interpola linealmente: en la zona de transicion "
+                      "traza a mano una curva TANGENTE a las dos ramas, un "
+                      "empalme empirico ajustado sobre los datos de laboratorio "
+                      "del que no publica ecuacion cerrada. La recta es una "
+                      "SIMPLIFICACION ADOPTADA de ese empalme, no una "
+                      "transcripcion de la fuente primaria, y por eso es [C] y "
+                      "no [N]: la fuente tecnica reconocida existe (HDS-5) pero "
+                      "el procedimiento programable no sale de ella. "
+                      "Que la recta empalme continua en los dos extremos "
+                      "(coincide con cada rama en su borde de validez) hace el "
+                      "error acotado y del orden del espesor de la propia "
+                      "curva de HDS-5, no lo convierte en el metodo del HDS-5. "
+                      "ALCANCE: solo afecta a los puntos cuyo q* cae dentro de "
+                      "la ventana 3.5-4.0; fuera de ella rigen las dos "
+                      "ecuaciones tal cual las escribe la tabla",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Cap. IV y Apendice A "
+               "(curva de transicion tangente, sin ecuacion publicada). La "
+               "interpolacion lineal la prescribe Sec. 4.2 de la hoja de ruta, "
+               "no HDS-5",
+        reemplazado_por="Lectura directa de la carta de HDS-5 en la zona de "
+                        "transicion, o el procedimiento tangente si el "
+                        "expediente exige reproducir la curva original",
+        verificacion_pendiente="Declarar en la memoria que puntos del corredor "
+                               "caen con q* entre 3.5 y 4.0: si ninguno lo hace, "
+                               "esta simplificacion no toca ningun resultado y "
+                               "basta con dejarla enunciada",
     ),
 
     "n_manning_hdpe": Criterio(
@@ -543,7 +619,7 @@ CRITERIOS: Dict[str, Criterio] = {
         etiqueta="C",
         concepto="Coeficiente de perdida de carga en la embocadura (ke)",
         justificacion="La ecuacion de control de salida de la hoja de ruta, "
-                      "H = (1 + ke + 19.62*n^2*L/R^(4/3))*V^2/(2g), contiene ke "
+                      "H = (1 + ke + 19.63*n^2*L/R^(4/3))*V^2/(2g), contiene ke "
                       "pero ningun apartado de la hoja le asigna valor. El "
                       "Manual MTC no desarrolla el control de salida, de modo "
                       "que el dato sale de HDS-5, en la fila que corresponde a "
@@ -555,21 +631,22 @@ CRITERIOS: Dict[str, Criterio] = {
                       "de donde salia. Queda trazado aqui: el fixture y el "
                       "calculo leen ahora el mismo origen, y si el valor cambia, "
                       "cambia en un solo sitio",
-        fuente="HDS-5 (FHWA) 3a ed., abril 2012 / tablas de coeficiente de "
-               "perdida de entrada para embocadura square edge with headwall",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice C, Tabla C.2, "
+               "pag. C.2 - coeficientes de perdida de entrada; fila 'square "
+               "edge with headwall', ke = 0.5. CITA CERRADA por verificacion "
+               "externa contra el documento: antes se citaba el manual sin "
+               "apendice, tabla ni pagina, y lo que quedaba pendiente era "
+               "exactamente eso",
         reemplazado_por="Fila de HDS-5 que corresponda si cambia el detalle de "
-                        "embocadura del cabezal (Tablero 2.3)",
-        verificacion_pendiente="El ke debe moverse junto con el detalle de "
-                               "embocadura (Tablero 2.3) y con las constantes "
-                               "HDS-5 de Sec. 4.2: cambiar el detalle obliga a "
-                               "cambiar los tres",
+                        "embocadura del cabezal (Tablero 2.3). La Tabla C.2 "
+                        "trae las demas configuraciones de borde",
     ),
 
     "geometria_control_salida": Criterio(
         valor="seccion_llena",
         etiqueta="C",
         concepto="Seccion de referencia de la que se toman V y R en la ecuacion "
-                 "de control de salida H = (1 + ke + 19.62*n^2*L/R^(4/3))*V^2/(2g)",
+                 "de control de salida H = (1 + ke + 19.63*n^2*L/R^(4/3))*V^2/(2g)",
         justificacion="Sec. 4.3 escribe la ecuacion pero NO dice a que seccion "
                       "pertenecen V y R, y la eleccion no es cosmetica: con la "
                       "seccion llena de un tubo de 0.90 m, R = D/4 = 0.225 m; con "
@@ -578,7 +655,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "(A = pi*D^2/4, R = D/4, V = Q/A) porque es la seccion para "
                       "la que HDS-5 deriva esa expresion: los tres sumandos "
                       "(1 = carga de velocidad, ke = perdida de entrada, "
-                      "19.62*n^2*L/R^(4/3) = perdida por friccion) son las "
+                      "19.63*n^2*L/R^(4/3) = perdida por friccion) son las "
                       "perdidas de un barril trabajando LLENO, que es el caso de "
                       "control de salida por definicion. Aplicarla sobre la "
                       "geometria del tirante normal mezcla dos regimenes. "
@@ -586,7 +663,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "tests/fixtures/casos_patron.py alimenta la formula con "
                       "R = 0.27152 y V = 2.2807, que son los de la seccion "
                       "parcialmente llena de CP-2. CP-8 no contradice esto: es un "
-                      "caso patron de la CONSTANTE 19.62 frente al 29 imperial, y "
+                      "caso patron de la CONSTANTE SI (19.63) frente al 29 imperial, "
+                      "y "
                       "para eso da V y R como datos sueltos, no como la geometria "
                       "de un control de salida real",
         fuente="HDS-5 (FHWA) 3a ed., abril 2012, Cap. III - control de salida a "
@@ -606,10 +684,21 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=1.5,
         etiqueta="C",
         concepto="Relacion maxima de carga a la entrada sobre diametro",
-        justificacion="El Manual MTC no define HW/D. Se adopta el rango corriente "
-                      "de la practica FHWA. El control gobernante del embalse es "
-                      "la verificacion V5 (remanso dentro del derecho de via)",
-        fuente="HDS-5 (FHWA), practica corriente",
+        justificacion="El Manual MTC no define HW/D. Se adopta el extremo "
+                      "superior del rango que HDS-5 da para el diseno "
+                      "corriente, 1.0-1.5. El control gobernante del embalse "
+                      "sigue siendo la verificacion V5 (remanso dentro del "
+                      "derecho de via). "
+                      "SOBRE LA SENSIBILIDAD: la banda declarada es "
+                      "(1.2, 1.5), no el rango completo (1.0, 1.5) de la "
+                      "fuente. Se conserva a proposito -- es la banda que el "
+                      "proyecto considera defendible para este corredor -- y "
+                      "se deja dicho que es un SUBRANGO, para que nadie la "
+                      "confunda con lo que dice HDS-5",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Sec. 2.2.5, pag. 2.14 - "
+               "rango de HW/D de 1.0 a 1.5 para el diseno corriente. CITA "
+               "CERRADA por verificacion externa contra el documento: antes "
+               "decia solo 'practica corriente', sin seccion ni pagina",
         sensibilidad=(1.2, 1.5),
     ),
 
@@ -1122,6 +1211,58 @@ CRITERIOS: Dict[str, Criterio] = {
                                "porque el articulo no fija cuanto",
     ),
 
+    "cortante_alto_muro_e060_art_11_10_10_2": Criterio(
+        valor=None,                 # VACIO: bloquea el escalon de rho a 0.0025
+        etiqueta="A",
+        concepto="Si el muro del cabezal esta en la condicion de CORTANTE "
+                 "ALTO de E.060 Art. 11.10.10.2, que escalona la cuantia "
+                 "horizontal minima de 0.0020 a 0.0025",
+        justificacion="E.060 no tiene un solo minimo de cuantia horizontal "
+                      "de muro: tiene dos. El Art. 14.3.1 fija 0.0020, y el "
+                      "Art. 11.10.10.2 lo sube a 0.0025 cuando la demanda de "
+                      "cortante supera el umbral que ese articulo define "
+                      "(del orden de Vu > 0.5*phi*Vc). Aplicar solo el "
+                      "0.0020 sin comprobar el otro es quedarse con el "
+                      "minimo mas bajo de los dos por omision. "
+                      "POR QUE NO SE RESUELVE AQUI Y NO SE RELLENA: el "
+                      "disparador es una DEMANDA DE CORTANTE, y M9 no "
+                      "calcula cortante -- el diseno por flexion y corte "
+                      "esta bloqueado entero en "
+                      "'procedimiento_flexion_corte_aashto_sec5', que es de "
+                      "AASHTO LRFD Sec. 5 por la Via 1 de Sec. 0.2. Sin Vu "
+                      "no hay forma de contestar si el muro esta o no en esa "
+                      "condicion, y contestar 'no' por defecto seria elegir "
+                      "el minimo mas bajo en silencio, que es exactamente el "
+                      "error que este archivo existe para impedir. "
+                      "Se declara VACIO y `M9.cuantia_de_diseno` lo exige a "
+                      "quien la llame: o se declara aqui, o el calculo se "
+                      "detiene. "
+                      "NOTA DE TAXONOMIA: el 0.0025 en si es [N] "
+                      "-- articulo peruano vigente -- y su sitio natural "
+                      "seria constantes_normativas.py. No esta alli porque "
+                      "la hoja de ruta no transcribe el Art. 11.10.10.2: "
+                      "solo cita el 14.3.1. Mientras la hoja de ruta no lo "
+                      "recoja, el numero viaja en esta justificacion y no "
+                      "como constante [N], para no crear una cita normativa "
+                      "que la fuente de verdad del proyecto no respalda. "
+                      "Ademas, la Via 1 de Sec. 0.2 abre una pregunta previa "
+                      "que tambien hay que contestar en la memoria: si el "
+                      "diseno estructural es de AASHTO, cual de los dos "
+                      "minimos de E.060 se importa y con que argumento",
+        fuente="PENDIENTE - E.060 Art. 11.10.10.2 (cuantia horizontal "
+               "minima en muros con cortante alto). Verificar numeral y "
+               "pagina contra el texto de E.060 antes de darle valor, y "
+               "recoger el articulo en la hoja de ruta",
+        reemplazado_por="Demanda de cortante Vu del cabezal, salida del "
+                        "diseno de 'procedimiento_flexion_corte_aashto_sec5', "
+                        "contrastada contra el umbral del Art. 11.10.10.2",
+        verificacion_pendiente="Al cerrarlo, declarar en la memoria las dos "
+                               "cosas por separado: el valor de Vu con que se "
+                               "decidio, y si el minimo aplicado es el 0.0020 "
+                               "del Art. 14.3.1 o el 0.0025 del "
+                               "Art. 11.10.10.2",
+    ),
+
     "procedimiento_flexion_corte_aashto_sec5": Criterio(
         valor=None,                 # VACIO: bloquea el dimensionado del refuerzo
         etiqueta="A",
@@ -1138,8 +1279,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "que Sec. 0.2 declara RESUELTA: no se pueden combinar "
                       "demandas mayoradas por AASHTO con resistencias "
                       "reducidas por E.060. Las cuantias minimas de E.060 "
-                      "Art. 14.3.1 que M9 si contrasta son REFERENCIA "
-                      "declarada, no el diseno",
+                      "Art. 14.3.1 que M9 aplica son un PISO OBLIGATORIO "
+                      "sobre el resultado de este procedimiento -- "
+                      "rho_diseno = max(rho_calculado, rho_minimo) -- no una "
+                      "nota de referencia: cuando este vacio se cierre, el "
+                      "rho que salga de AASHTO entra por "
+                      "`M9.cuantia_de_diseno` y el minimo lo levanta si hace "
+                      "falta",
         fuente="PENDIENTE - AASHTO LRFD Seccion 5, via Manual de Puentes "
                "Seccion 2.9, pag. 337",
         reemplazado_por="Diseno estructural del cabezal del expediente "

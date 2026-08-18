@@ -16,7 +16,7 @@ cosas mas chicas y anteriores a esa decision:
     2. PROVEE EL CATALOGO: para cada material candidato, junta en un
        `Material` los datos que la Fase 4 y la Fase 5 van a necesitar
        (n de Manning, tope de diametro, HDS-5, velocidad maxima, relleno
-       minimo, subseccion EG-2013), leidos de una sola fuente cada uno.
+       minimo, seccion EG-2013), leidos de una sola fuente cada uno.
 
 De donde sale cada dato del catalogo
 -------------------------------------
@@ -117,7 +117,8 @@ from __future__ import annotations
 from typing import Any, Optional, Tuple, Union
 
 import criterios_adoptados as ca
-from constantes_normativas import HDS5_INLET, H_RELLENO_MIN, MANNING, SUBSECCION, V_MAX
+from constantes_normativas import (HDS5_INLET, H_RELLENO_MIN, MANNING,
+                                   SECCION_EG2013, V_MAX)
 from modelos import (ConstantesHDS5, DatoInvalidoError, Familia, Material,
                      PuntoCritico, TipoMaterial)
 from tolerancias import TOL_UMBRAL_NORMATIVO
@@ -248,7 +249,7 @@ def catalogo(material: MaterialLike) -> Material:
     material: doble n de Manning, tope de diametro (Sec. 3.2), constantes
     HDS-5 de control de entrada (Sec. 4.2), rango de velocidad maxima
     (Tabla N 10 o el vacio que la sustituye), relleno minimo sobre la clave
-    (Sec. 7.A) y subseccion de EG-2013 para el presupuesto.
+    (Sec. 7.A) y seccion de EG-2013 para el presupuesto.
 
     v_max_rango y h_relleno_min pueden salir en None: ver la seccion "Vacios
     que el catalogo deja en None" del docstring del modulo.
@@ -280,7 +281,7 @@ def catalogo(material: MaterialLike) -> Material:
         hds5=hds5,
         v_max_rango=v_max_rango,
         h_relleno_min=h_relleno_min,
-        subseccion_eg2013=SUBSECCION[tipo.value],
+        seccion_eg2013=SECCION_EG2013[tipo.value],
     )
 
 

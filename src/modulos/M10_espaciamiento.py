@@ -56,9 +56,14 @@ from __future__ import annotations
 import math
 
 import criterios_adoptados as ca
-from modelos import DatoInvalidoError, Espaciamiento, GobiernaEspaciamiento
+from modelos import (DatoInvalidoError, Espaciamiento,
+                     GobiernaEspaciamiento, ReferenciaNormativa)
 
-NUMERAL_FASE_10 = "Fase 10 (num. 4.1.2.1 d), pag. 178)"
+NUMERAL_FASE_10 = ReferenciaNormativa(
+    seccion_hoja_ruta="Fase 10",
+    numeral_norma="Manual de Hidrologia, Hidraulica y Drenaje (MTC), "
+                  "num. 4.1.2.1 d), pag. 178",
+)
 
 CRITERIO_LONG_MAX_CUNETA = "long_max_cuneta"
 
