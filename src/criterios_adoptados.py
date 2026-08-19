@@ -68,6 +68,16 @@ class Criterio:
     sensibilidad: Optional[Tuple] = None       # rango para analisis de sensibilidad -- SOLO [A]
     trazabilidad: Optional[str] = None         # como reproducir la lectura -- SOLO [S]
     verificacion_pendiente: Optional[str] = None   # lo que falta confirmar
+    provisional: bool = False                  # valor de PRUEBA, no verificado
+
+    # `provisional=True` marca un valor cargado para una corrida de prueba
+    # integral: destraba el pipeline para ver que puntos completan diseno,
+    # pero NO esta verificado contra norma ni ensayo y no puede ir a una
+    # memoria de calculo. Existe para que ese valor NUNCA pueda pasar
+    # inadvertido: reporte_criterios() y M11 lo imprimen con marca visible.
+    # Ningun criterio del expediente lo lleva puesto -- si alguno aparece
+    # con provisional=True en una revision, es que quedo residuo de una
+    # prueba sin limpiar.
 
     # sensibilidad y trazabilidad no son dos nombres para lo mismo y no se
     # mezclan: un [A] se defiende mostrando cuanto cambiaria el resultado con
@@ -1466,7 +1476,8 @@ def reporte_criterios(solo_usados: bool = True) -> str:
         c = CRITERIOS[k]
         valor_efectivo = _OVERRIDES.get(k, c.valor)
         marca_override = "  [declarado para esta corrida, no en archivo]" if k in _OVERRIDES else ""
-        out.append(f"[{c.etiqueta}] {k} = {valor_efectivo!r}{marca_override}")
+        marca_prov = "  [PROVISIONAL: valor de prueba, NO verificado]" if c.provisional else ""
+        out.append(f"[{c.etiqueta}] {k} = {valor_efectivo!r}{marca_override}{marca_prov}")
         out.append(f"     Concepto      : {c.concepto}")
         out.append(f"     Justificacion : {c.justificacion}")
         out.append(f"     Fuente        : {c.fuente}")

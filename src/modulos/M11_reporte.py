@@ -1020,7 +1020,10 @@ def bloque_criterios(solo_usados: bool = True) -> str:
         c = ca.criterio(clave)
         campos = [
             f"<dt>Concepto</dt><dd>{_esc(c.concepto)}</dd>",
-            f"<dt>Valor</dt><dd>{_valor_legible(c.valor)}</dd>",
+            f"<dt>Valor</dt><dd>{_valor_legible(c.valor)}"
+            + ('<b class="pendiente"> [PROVISIONAL: valor de prueba, '
+               "NO verificado]</b>" if c.provisional else "")
+            + "</dd>",
             f"<dt>Justificacion</dt><dd>{_esc(c.justificacion)}</dd>",
             f"<dt>Fuente</dt><dd>{_esc(c.fuente)}</dd>",
         ]

@@ -32,7 +32,8 @@ import pytest
 
 import criterios_adoptados as ca
 from constantes_normativas import V_MIN, Y_SOBRE_D_MAX
-from modelos import (ControlGobernante, CriterioPendienteError, Familia,
+from modelos import (ControlGobernante, CriterioPendienteError,
+                     DatoFaltanteError, ErrorProyecto, Familia,
                      PuntoCritico, ResultadoHidraulico, TipoMaterial)
 from modulos.M2_material import catalogo
 from modulos.M5_verificaciones import (resguardo_por_cbr, v1_borde_libre,
@@ -227,6 +228,26 @@ def test_v5_lanza_pendiente_por_falta_de_metodo_y_dato():
     with pytest.raises(CriterioPendienteError) as excinfo:
         v5_remanso(punto=punto, resultado=_resultado())
     assert excinfo.value.clave == "remanso_derecho_via"
+
+
+def test_v5_con_el_criterio_declarado_no_revienta_con_assertionerror():
+    """
+    Regresion: con 'remanso_derecho_via' DECLARADO, V5 lanzaba un
+    `AssertionError` desnudo. Al no descender de ErrorProyecto, `cli._etapa`
+    no lo capturaba y la corrida entera abortaba. Ahora sale DatoFaltanteError
+    -- que si es ErrorProyecto -- y la CLI lo anota como bloqueo del punto.
+    """
+    punto = _punto()
+    ca.establecer_valor_dinamico("remanso_derecho_via", "cumple")
+    try:
+        with pytest.raises(DatoFaltanteError) as excinfo:
+            v5_remanso(punto=punto, resultado=_resultado())
+    finally:
+        ca.quitar_valor_dinamico("remanso_derecho_via")
+
+    assert isinstance(excinfo.value, ErrorProyecto)
+    assert excinfo.value.campo == "ancho_derecho_via_m"
+    assert excinfo.value.id_punto == "A-01"
 
 
 def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):

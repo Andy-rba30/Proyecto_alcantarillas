@@ -102,7 +102,7 @@ from typing import Tuple
 import criterios_adoptados as ca
 from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
-from modelos import (DatoInvalidoError, Material, PuntoCritico,
+from modelos import (DatoFaltanteError, DatoInvalidoError, Material, PuntoCritico,
                      ReferenciaNormativa, ResultadoHidraulico, Verificacion)
 from modulos.M2_material import CRITERIO_DIAMETROS, CRITERIO_V_MAX
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
@@ -304,9 +304,33 @@ def v5_remanso(*, punto: PuntoCritico,
     ancho de plataforma (`punto.ancho_plataforma`), que es la seccion vial
     construida y NO el derecho de via legal: usarlo seria inventar un dato
     que el expediente no declaro.
+
+    Los dos vacios se detienen por separado, y ninguno con un fallo de
+    programa:
+
+    - Criterio SIN valor -> `CriterioPendienteError` (la lanza `ca.valor`).
+    - Criterio CON valor -> `DatoFaltanteError`. Declarar el criterio no
+      cierra V5: sigue faltando el ancho de derecho de via del punto y el
+      perfil de remanso con que comparar el HW de M4. El revisor tiene que
+      ANADIR esos dos, y por eso es Faltante y no Invalido (CLAUDE.md).
+
+    Antes esta segunda rama era un `raise AssertionError` desnudo: no
+    descendia de `ErrorProyecto`, de modo que `cli._etapa` no lo capturaba y
+    una corrida con el criterio declarado abortaba entera, con todos sus
+    puntos, en vez de anotar el bloqueo y seguir.
     """
     ca.valor(CRITERIO_REMANSO)        # CriterioPendienteError: sin metodo ni dato
-    raise AssertionError("inalcanzable mientras 'remanso_derecho_via' este vacio")
+    raise DatoFaltanteError(
+        "ancho_derecho_via_m",
+        id_punto=punto.id,
+        detalle=(
+            f"el criterio '{CRITERIO_REMANSO}' esta declarado, pero V5 sigue "
+            "sin poder resolverse: falta el ancho de derecho de via del punto "
+            "(no es columna de Sec. 1.2) y el perfil de remanso aguas arriba "
+            "con que comparar el HW de M4. La hoja de ruta fija el requisito "
+            "y no el metodo: mientras no exista, V5 no se declara cumplida"
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
