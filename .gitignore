@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 *.pyo
 .env
+
+# reportes generados en la raiz por cli.py / GUI (la plantilla en
+# src/plantillas/ SI se versiona)
+/reporte_*.html
