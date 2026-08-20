@@ -1,0 +1,4 @@
+# El lanzador de Windows exige finales de linea CRLF: cmd.exe puede
+# malinterpretar las etiquetas de goto con LF. Se fija aqui para que todo
+# checkout lo garantice, sin depender del core.autocrlf de cada maquina.
+Abrir_GUI.bat text eol=crlf
