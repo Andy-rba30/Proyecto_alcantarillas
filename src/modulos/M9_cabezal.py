@@ -166,6 +166,7 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    SECCION_CABEZALES,
                                    SOBRECARGA_TRASDOS_H_EQ)
 from modelos import (CadenaSismica, CombinacionCarga, CondicionAnalisis,
+                     CriterioPendienteError,
                      CuantiaRefuerzo, DatoInvalidoError, DisenoNoFactibleError,
                      EmpujeMononobeOkabe, EmpujesTrasdos, EstabilidadCabezal,
                      GeometriaCabezal, PasoSismico, RecubrimientoDiseno,
@@ -977,8 +978,15 @@ def verificar_estabilidad_global(*, condicion: CondicionAnalisis) -> Verificacio
     """
     fs_requerido(verificacion="estabilidad_global", condicion=condicion)
     ca.valor(CRITERIO_ESTABILIDAD_GLOBAL)   # CriterioPendienteError mientras falte
-    raise AssertionError(
-        "inalcanzable mientras 'metodo_estabilidad_global' este vacio"
+    raise CriterioPendienteError(
+        CRITERIO_ESTABILIDAD_GLOBAL,
+        concepto="criterio declarado, pero E4 (estabilidad global de la masa "
+                 "que envuelve al muro) queda DIFERIDA al expediente tecnico: "
+                 "el FS a comparar sale de un analisis de superficies de "
+                 "falla con el perfil estratigrafico completo, que no esta "
+                 "en el CSV de Sec. 1.2",
+        fuente="analisis del EMS del expediente; verificacion diferida al "
+               "expediente tecnico, no omitida",
     )
 
 
@@ -993,8 +1001,14 @@ def verificar_talud(*, condicion: CondicionAnalisis) -> Verificacion:
     """
     fs_requerido(verificacion="talud", condicion=condicion)
     ca.valor(CRITERIO_ESTABILIDAD_GLOBAL)   # CriterioPendienteError mientras falte
-    raise AssertionError(
-        "inalcanzable mientras 'metodo_estabilidad_global' este vacio"
+    raise CriterioPendienteError(
+        CRITERIO_ESTABILIDAD_GLOBAL,
+        concepto="criterio declarado, pero E5 (estabilidad del talud del "
+                 "terraplen que soporta al muro) queda DIFERIDA al expediente "
+                 "tecnico: mismo vacio de metodo que E4 y no el mismo chequeo "
+                 "-- exige el analisis de superficies de falla del EMS",
+        fuente="analisis del EMS del expediente; verificacion diferida al "
+               "expediente tecnico, no omitida",
     )
 
 

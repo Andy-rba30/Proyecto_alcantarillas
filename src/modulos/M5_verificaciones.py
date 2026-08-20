@@ -102,7 +102,8 @@ from typing import Tuple
 import criterios_adoptados as ca
 from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
-from modelos import (DatoFaltanteError, DatoInvalidoError, Material, PuntoCritico,
+from modelos import (CriterioPendienteError, DatoFaltanteError,
+                     DatoInvalidoError, Material, PuntoCritico,
                      ReferenciaNormativa, ResultadoHidraulico, Verificacion)
 from modulos.M2_material import CRITERIO_DIAMETROS, CRITERIO_V_MAX
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
@@ -445,7 +446,16 @@ def v8_evento_extremo(*, punto: PuntoCritico,
     resultante. Se detiene en el criterio 'TR_evento_extremo'.
     """
     ca.valor(CRITERIO_EVENTO_EXTREMO)   # CriterioPendienteError: sin TR ni umbral
-    raise AssertionError("inalcanzable mientras 'TR_evento_extremo' este vacio")
+    raise CriterioPendienteError(
+        CRITERIO_EVENTO_EXTREMO,
+        concepto="criterio declarado, pero V8 queda DIFERIDA al expediente "
+                 "tecnico: a nivel de perfil no esta implementado correr la "
+                 "hidraulica del TR extremo ni comparar el HW resultante "
+                 "contra el umbral de colapso de la via",
+        fuente="misma via que la rigidez de anillo y el pandeo de la Fase 8 "
+               "(item 5): verificacion diferida al expediente tecnico, no "
+               "omitida",
+    )
 
 
 # ---------------------------------------------------------------------------
