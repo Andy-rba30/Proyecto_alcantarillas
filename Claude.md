@@ -1,5 +1,19 @@
 # Reglas del proyecto
 
+## Rama de trabajo (vigente hasta el merge final a main)
+- **Toda sesión nueva parte de la rama consolidada más reciente, NO de main.**
+  La rama consolidada vigente es:
+  **`claude/deferred-structural-checks-5brbki`**
+  (contiene el mecanismo diferido no bloqueante de V5/V8/E4-E5, el CI de
+  GitHub Actions, el flag `--pendientes` de cli.py y el diagnóstico de
+  docs/mapa_datos_faltantes.md — es la unión de las dos ramas que divergían
+  de main en c890ed7).
+- Si una consolidación posterior mueve el trabajo a otra rama, esta sección
+  se actualiza en ese mismo commit con el nombre exacto de la nueva rama:
+  este archivo es la fuente para saber cuál es sin adivinar.
+- Esta regla la retira el dueño del proyecto cuando decida hacer el merge
+  final a main; hasta entonces, no basar trabajo nuevo en main.
+
 ## Fuente de verdad
 - Fuente normativa única: docs/hoja_de_ruta_alcantarillas_v8.md (o la version
   vigente que exista en docs/: M11 la localiza con el patron
