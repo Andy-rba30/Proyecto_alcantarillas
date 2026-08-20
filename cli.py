@@ -76,6 +76,10 @@ Codigos de salida
         Tablero 3 siga abierto
     2   no se pudo correr: el CSV o el JSON de datos externos no se pueden
         leer o no tienen la forma esperada
+
+Con `--pendientes` no se corre el pipeline: se imprimen TODOS los criterios
+sin valor agrupados por via de cierre y se termina con codigo 0 -- es una
+consulta informativa, no un fallo, y el CSV es opcional.
 """
 
 from __future__ import annotations
@@ -83,6 +87,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -1157,6 +1162,101 @@ def volcar(informe: Informe, con_criterios: bool = False) -> str:
 
 
 # ===========================================================================
+# Criterios pendientes (--pendientes): consulta informativa, sin pipeline
+# ===========================================================================
+# Solo presentacion: lee `criterios_adoptados` tal cual esta y no cambia
+# ningun valor ni ninguna etiqueta.
+#
+# La via de cierre de cada criterio pendiente se reconoce sobre el texto de su
+# campo `fuente` -- no sobre una lista aparte de claves -- de modo que si
+# manana cambia la fuente de un criterio, el agrupamiento la sigue solo. Las
+# marcas son las que ese archivo ya escribe: instituciones de ensayo o dato de
+# campo (EMS, ANA, SENAMHI), documentos tecnicos identificados (AASHTO,
+# PPI/FHWA, "falta extraer") y decisiones del proyectista ("practica
+# corriente", "eleccion", "adopcion"). Cuando una fuente nombra mas de una
+# via, se lista en la mas determinada -- ensayo, luego documento, luego
+# decision -- en el mismo espiritu del orden N > N-> > S > C > A de las
+# etiquetas (de mas determinado a mas elegido). Una fuente que no nombra
+# ninguna via cae en "sin clasificar": no se fuerza.
+
+VIA_ENSAYO = "Requiere ensayo o dato de campo (EMS, ANA, SENAMHI)"
+VIA_DOCUMENTO = "Requiere documento externo (AASHTO M-170M, PPI/FHWA, etc.)"
+VIA_DECISION = "Decision del proyectista/asesor"
+VIA_SIN_CLASIFICAR = "Sin clasificar (la fuente no nombra su via de cierre)"
+
+# (via, marcas) en orden de PRECEDENCIA, no de presentacion. Una marca toda en
+# mayusculas es una sigla y se busca como palabra exacta, sensible a
+# mayusculas, para no leer "ANA" dentro de "peruana"; el resto se busca como
+# subcadena sin distinguir mayusculas.
+_MARCAS_VIA_CIERRE: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
+    (VIA_ENSAYO,
+     ("EMS", "ANA", "SENAMHI", "SPT", "ensayo", "calicata", "se mide",
+      "medicion", "corte directo", "dato de campo")),
+    (VIA_DOCUMENTO,
+     ("AASHTO", "ASTM", "PPI", "FHWA", "HDS-5", "HEC-14", "DG-2018",
+      "Seed-Whitman", "falta extraer", "fuente identificada",
+      "pag.", "pags.", "pagina")),
+    (VIA_DECISION,
+     ("proyectista", "asesor", "practica corriente", "eleccion", "adopcion",
+      "se declara", "declarado", "predimensionamiento")),
+)
+
+# Orden de presentacion (el del enunciado del tablero), no el de precedencia.
+ORDEN_VIAS = (VIA_DECISION, VIA_DOCUMENTO, VIA_ENSAYO, VIA_SIN_CLASIFICAR)
+
+
+def _fuente_menciona(fuente: str, marca: str) -> bool:
+    if marca.isupper():
+        patron = r"(?<![A-Z0-9])" + re.escape(marca) + r"(?![A-Z0-9])"
+        return re.search(patron, fuente) is not None
+    return marca in fuente.lower()
+
+
+def via_de_cierre(fuente: str) -> str:
+    """El grupo del tablero de pendientes que la fuente del criterio nombra."""
+    for via, marcas in _MARCAS_VIA_CIERRE:
+        if any(_fuente_menciona(fuente, marca) for marca in marcas):
+            return via
+    return VIA_SIN_CLASIFICAR
+
+
+def criterios_pendientes_por_via() -> Dict[str, List[str]]:
+    """Las claves sin valor de `criterios_adoptados`, agrupadas por via."""
+    grupos: Dict[str, List[str]] = {via: [] for via in ORDEN_VIAS}
+    for clave in ca.criterios_sin_valor():
+        grupos[via_de_cierre(ca.criterio(clave).fuente)].append(clave)
+    return grupos
+
+
+def reporte_pendientes() -> str:
+    """
+    El tablero completo de criterios sin valor, agrupado por via de cierre.
+    Es la vista que `reporte_criterios(solo_usados=True)` no da: TODOS los
+    vacios declarados, sin depender de que una corrida los invoque.
+    """
+    grupos = criterios_pendientes_por_via()
+    total = sum(len(claves) for claves in grupos.values())
+    lineas = _titulo(f"CRITERIOS PENDIENTES (SIN VALOR): {total}")
+    lineas.append("Cada uno detiene la etapa que lo invoque hasta que se "
+                  "declare (Sec. 0.7).")
+    lineas.append("Agrupados por via de cierre, leida del campo `fuente` de "
+                  "cada criterio.")
+    for via in ORDEN_VIAS:
+        claves = grupos[via]
+        if via == VIA_SIN_CLASIFICAR and not claves:
+            continue
+        lineas.append("")
+        lineas.extend(_titulo(f"{via}: {len(claves)}", "-"))
+        for clave in claves:
+            c = ca.criterio(clave)
+            lineas.append(f"[{c.etiqueta}] {clave}")
+            lineas.append(f"{SANGRIA}Concepto : {c.concepto}")
+            lineas.append(f"{SANGRIA}Fuente   : {c.fuente}")
+            lineas.append("")
+    return "\n".join(lineas)
+
+
+# ===========================================================================
 # Entrada
 # ===========================================================================
 
@@ -1168,7 +1268,9 @@ def _parser() -> argparse.ArgumentParser:
         epilog="Los datos que no son columna de Sec. 1.2 (luz, TW, longitud, "
                "Q/S de Familias B y C, L_hidraulico) se declaran con las "
                "banderas o con --datos-externos. No tienen valor por defecto.")
-    p.add_argument("csv", type=Path, help="ruta del CSV de puntos criticos")
+    p.add_argument("csv", type=Path, nargs="?",
+                   help="ruta del CSV de puntos criticos (opcional solo con "
+                        "--pendientes; para correr el pipeline es obligatorio)")
     p.add_argument("--json", type=Path, dest="json_salida",
                    help="ruta del JSON de salida (por defecto, junto al CSV "
                         "como <csv>.informe.json)")
@@ -1188,6 +1290,10 @@ def _parser() -> argparse.ArgumentParser:
                    help="imprime tambien la declaracion completa de los "
                         "datos de sitio [S] y de los criterios usados "
                         "(reporte_datos_sitio + reporte_criterios)")
+    p.add_argument("--pendientes", action="store_true",
+                   help="imprime TODOS los criterios sin valor, agrupados por "
+                        "via de cierre, y termina con codigo 0 sin correr el "
+                        "pipeline (consulta informativa; no requiere CSV)")
     p.add_argument("--html", type=Path, dest="html_salida",
                    help="escribe la memoria de calculo de la Fase 11 (M11) "
                         "en esa ruta, como HTML")
@@ -1204,7 +1310,19 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = _parser().parse_args(argv)
+    parser = _parser()
+    args = parser.parse_args(argv)
+
+    if args.pendientes:
+        # Consulta informativa: se responde y se termina en 0, SIN correr el
+        # pipeline. No es un fallo del expediente -- un CI que la invoque no
+        # debe leerla como error.
+        print(reporte_pendientes())
+        return 0
+
+    if args.csv is None:
+        parser.error("falta el CSV de puntos criticos (solo --pendientes "
+                     "corre sin CSV)")
 
     banderas = {"luz_m": args.luz, "TW_m": args.TW,
                 "longitud_m": args.longitud,

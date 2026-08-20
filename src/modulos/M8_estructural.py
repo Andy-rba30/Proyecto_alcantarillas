@@ -128,8 +128,9 @@ from typing import Tuple
 import criterios_adoptados as ca
 from constantes_fisicas import GAMMA_AGUA_KN_M3
 from constantes_normativas import CAMA_RELLENO_LATERAL
-from modelos import (CamaApoyoRelleno, DatoInvalidoError, FactoresFlotacion,
-                     Material, ReferenciaNormativa)
+from modelos import (CamaApoyoRelleno, CriterioPendienteError,
+                     DatoInvalidoError, FactoresFlotacion, Material,
+                     ReferenciaNormativa)
 
 NUMERAL_8_1_2 = "Fase 8, items 1-2"
 # La cita anterior, "Sec. 8.1 (EG-2013 Seccion 500)", era doblemente falsa:
@@ -185,8 +186,15 @@ def seleccionar_clase_calibre(*, material: Material, altura_relleno: float):
     `verificacion_diferida_estructural`), no por este vacio.
     """
     ca.valor(CRITERIO_CLASES_PRODUCTO)    # CriterioPendienteError mientras falte
-    raise AssertionError(
-        "inalcanzable mientras 'clases_producto_por_relleno' este vacio"
+    raise CriterioPendienteError(
+        CRITERIO_CLASES_PRODUCTO,
+        concepto="criterio declarado, pero la seleccion de clase/calibre "
+                 "(items 1-2) queda DIFERIDA al expediente tecnico: a nivel "
+                 "de perfil no esta implementado leer la tabla clase x "
+                 "diametro x rango de altura de relleno",
+        fuente="misma via que la rigidez de anillo y el pandeo del item 5 "
+               "(verificacion_diferida_estructural): verificacion diferida "
+               "al expediente tecnico, no omitida",
     )
 
 
