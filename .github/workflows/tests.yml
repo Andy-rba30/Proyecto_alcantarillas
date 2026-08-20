@@ -1,0 +1,37 @@
+# Integracion continua: corre la suite completa de pytest en cada push y en
+# cada pull request, sobre cualquier rama.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Python fijado en 3.11 de forma explicita (CLAUDE.md pide 3.11+):
+      # no se deja inferir, para que la version no varie entre corridas
+      # segun lo que traiga el runner.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Se instalan SOLO numpy, scipy y pytest, con las versiones exactas
+      # que fija requirements.txt (que queda intacto como fuente unica de
+      # verdad: el grep las lee de ahi, no las duplica aqui). Las otras dos
+      # dependencias de requirements.txt son opcionales por diseno -- el
+      # codigo las importa dentro de try/except -- y no aplican en un CI
+      # headless, por eso no se instalan:
+      #   - weasyprint necesita librerias nativas (GTK/cairo/pango) que el
+      #     runner no garantiza; sin el, exportar_pdf cae a la via del
+      #     navegador, y la suite ya prueba las dos vias con monkeypatch
+      #     (tests/test_M11_reporte.py), asi que ningun test lo requiere.
+      #   - ttkbootstrap es solo de la GUI (Tkinter); ningun test la importa.
+      - name: Instalar dependencias de calculo y de pruebas
+        run: python -m pip install $(grep -E '^(numpy|scipy|pytest)==' requirements.txt)
+
+      - name: Correr la suite
+        run: python -m pytest -q
