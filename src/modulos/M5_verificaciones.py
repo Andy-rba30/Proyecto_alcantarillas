@@ -11,24 +11,32 @@ que declara su Protocol `Verificador`.
     V3  Velocidad maxima          concreto: rango Tabla N 10 [N]
                                   TMC / HDPE: criterio pendiente   [C]
     V4  Carga a la entrada HW     HW <= cota subrasante - resguardo(CBR)  [N->]
-    V5  Remanso aguas arriba      sin metodo declarado -> pendiente       [A]
+    V5  Remanso aguas arriba      sin metodo declarado -> DIFERIDA al
+                                  expediente, no bloqueante (ver abajo)    [A]
     V6  Material solido de arrastre  seccion unica (cumple por construccion)
     V7  Flotacion del conducto    equilibrio LRFD de factores de carga
                                   (Fase 8, M8_estructural); pendiente en
                                   'factores_carga_aashto' o
                                   'peso_especifico_relleno_kn_m3'              [A]
-    V8  Evento extremo (FEN)      sin TR mayor ni umbral -> pendiente      [A]
+    V8  Evento extremo (FEN)      sin TR mayor ni umbral -> DIFERIDA al
+                                  expediente, no bloqueante (ver abajo)    [A]
     V9  Disponibilidad de diametro  D <= tope de M2                        [C]
 
 Lo que NO se rellena en silencio
 ---------------------------------
 V5 y V8 enuncian un REQUISITO en la hoja de ruta pero no entregan la formula,
-el metodo o el dato con que evaluarlo (ver el detalle en cada funcion).
-Rellenarlos con un supuesto no declarado es exactamente lo que CLAUDE.md
-prohibe como "el peor error posible en este proyecto": cada uno se detiene
-con `CriterioPendienteError` desde un criterio nuevo en
-`criterios_adoptados.py` ('remanso_derecho_via', 'TR_evento_extremo'), con su
-justificacion y lo que falta para resolverlo.
+el metodo o el dato con que evaluarlo. Rellenarlos con un supuesto no
+declarado es exactamente lo que CLAUDE.md prohibe como "el peor error posible
+en este proyecto": NO se calculan ni se aproximan. Desde esta version tampoco
+DETIENEN el pipeline: se difieren al expediente tecnico con el MISMO
+mecanismo que la Fase 8 ya usa para rigidez de anillo y pandeo
+(`modulos.M8_estructural.verificacion_diferida_estructural`) --
+`verificacion_diferida_hidraulica()` devuelve el texto que declara el
+diferimiento de cada una, con su fundamento y el criterio que lo resolveria
+('remanso_derecho_via', 'TR_evento_extremo', que siguen declarados vacios en
+`criterios_adoptados.py`), para que la CLI y M11 lo impriman siempre junto a
+la tabla de la Fase 5. Diferir no es cumplir: la memoria publica el aviso, no
+una verificacion con marca.
 
 V7 SI tiene formula y metodo -- Fase 8, item 3 de la hoja de ruta, y
 `modulos.M8_estructural` la implementa completa ("tuberia vacia, NF en su cota
@@ -43,15 +51,16 @@ procedimiento: el peso especifico del relleno
 ('factores_carga_aashto', el mismo criterio del que come M9). Ver el docstring
 de `v7_flotacion` mas abajo.
 
-Consecuencia practica: mientras 'remanso_derecho_via', 'TR_evento_extremo' y
-los dos criterios de V7 sigan vacios, `verificar()` (y por lo tanto
-`MD.disenar_punto` / `MD.disenar_lote`) se detiene con
-`CriterioPendienteError` para CUALQUIER punto. No es un defecto de este
-modulo: es la misma regla que ya aplica a 'TW_receptor' o 'v_max_tmc' -- un
-vacio real bloquea el calculo, no lo esconde. Las nueve funciones
-individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI son
-utilizables una por una hoy mismo; es el AGREGADO el que hereda el bloqueo de
-las pendientes.
+Consecuencia practica: mientras 'peso_especifico_relleno_kn_m3' (V7) siga
+vacio, `verificar()` (y por lo tanto `MD.disenar_punto` / `MD.disenar_lote`)
+se detiene con `CriterioPendienteError` para CUALQUIER punto -- V7 SI tiene
+metodo implementado esperando ese dato, y un vacio real de DATO bloquea el
+calculo, no lo esconde (la misma regla de 'TW_receptor' o 'v_max_tmc'). V5 y
+V8, en cambio, ya no bloquean: no hay metodo que este esperando un dato, y su
+diferimiento viaja como aviso (`verificacion_diferida_hidraulica`), no como
+excepcion. Las funciones individuales (v1_borde_libre, ...,
+v9_disponibilidad_diametro) SI son utilizables una por una hoy mismo; es el
+AGREGADO el que hereda el bloqueo de las pendientes de dato.
 
 V4 -- el supuesto de la cota de entrada (declarar en la memoria)
 -------------------------------------------------------------------
@@ -77,10 +86,10 @@ es la segunda condicion del tamizado.
 Excepciones
 -----------
     CriterioPendienteError   V3 en TMC/HDPE ('v_max_tmc' / 'v_max_hdpe');
-                             V5 ('remanso_derecho_via'); V7
-                             ('peso_especifico_relleno_kn_m3' o
-                             'factores_carga_aashto'); V8
-                             ('TR_evento_extremo').
+                             V7 ('peso_especifico_relleno_kn_m3' o
+                             'factores_carga_aashto'). V5 y V8 ya no lanzan:
+                             van diferidas al expediente (ver
+                             `verificacion_diferida_hidraulica`).
     DatoInvalidoError        el 'material' de V3 no es de TipoMaterial (no
                              deberia llegar aqui: M2 ya lo valido antes); en
                              V7, la clave del conducto queda a nivel de la
@@ -102,7 +111,7 @@ from typing import Tuple
 import criterios_adoptados as ca
 from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
-from modelos import (DatoFaltanteError, DatoInvalidoError, Material, PuntoCritico,
+from modelos import (DatoInvalidoError, Material, PuntoCritico,
                      ReferenciaNormativa, ResultadoHidraulico, Verificacion)
 from modulos.M2_material import CRITERIO_DIAMETROS, CRITERIO_V_MAX
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
@@ -288,52 +297,6 @@ def v4_carga_entrada(*, punto: PuntoCritico,
 
 
 # ---------------------------------------------------------------------------
-# V5 - Remanso aguas arriba (DG-2018 + Ley 29338)
-# ---------------------------------------------------------------------------
-
-def v5_remanso(*, punto: PuntoCritico,
-              resultado: ResultadoHidraulico) -> Verificacion:
-    """
-    Embalse dentro del derecho de via, sin afectar terceros ni la faja
-    marginal. La hoja de ruta fija el REQUISITO pero no un metodo de perfil
-    de remanso ni el ancho de derecho de via por punto (no es columna del
-    CSV, Sec. 1.2): sin los dos, V5 no tiene con que comparar el HW de M4.
-
-    Se detiene en el criterio 'remanso_derecho_via' -- vacio a proposito, ver
-    su justificacion en criterios_adoptados.py -- en vez de aproximar con el
-    ancho de plataforma (`punto.ancho_plataforma`), que es la seccion vial
-    construida y NO el derecho de via legal: usarlo seria inventar un dato
-    que el expediente no declaro.
-
-    Los dos vacios se detienen por separado, y ninguno con un fallo de
-    programa:
-
-    - Criterio SIN valor -> `CriterioPendienteError` (la lanza `ca.valor`).
-    - Criterio CON valor -> `DatoFaltanteError`. Declarar el criterio no
-      cierra V5: sigue faltando el ancho de derecho de via del punto y el
-      perfil de remanso con que comparar el HW de M4. El revisor tiene que
-      ANADIR esos dos, y por eso es Faltante y no Invalido (CLAUDE.md).
-
-    Antes esta segunda rama era un `raise AssertionError` desnudo: no
-    descendia de `ErrorProyecto`, de modo que `cli._etapa` no lo capturaba y
-    una corrida con el criterio declarado abortaba entera, con todos sus
-    puntos, en vez de anotar el bloqueo y seguir.
-    """
-    ca.valor(CRITERIO_REMANSO)        # CriterioPendienteError: sin metodo ni dato
-    raise DatoFaltanteError(
-        "ancho_derecho_via_m",
-        id_punto=punto.id,
-        detalle=(
-            f"el criterio '{CRITERIO_REMANSO}' esta declarado, pero V5 sigue "
-            "sin poder resolverse: falta el ancho de derecho de via del punto "
-            "(no es columna de Sec. 1.2) y el perfil de remanso aguas arriba "
-            "con que comparar el HW de M4. La hoja de ruta fija el requisito "
-            "y no el metodo: mientras no exista, V5 no se declara cumplida"
-        ),
-    )
-
-
-# ---------------------------------------------------------------------------
 # V6 - Material solido de arrastre (Sec. 3.1)
 # ---------------------------------------------------------------------------
 
@@ -432,23 +395,6 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
 
 
 # ---------------------------------------------------------------------------
-# V8 - Evento extremo / FEN (Fase 5, V8)
-# ---------------------------------------------------------------------------
-
-def v8_evento_extremo(*, punto: PuntoCritico,
-                      resultado: ResultadoHidraulico) -> Verificacion:
-    """
-    A un TR mayor que el de diseño, la via no colapsa aunque desborde. La
-    hoja de ruta no fija ese TR mayor ni un umbral cuantitativo de colapso
-    (p.ej. HW sobre la corona del terraplen): sin el TR no hay Q que correr
-    aparte del de diseño, y sin el umbral no hay con que comparar el HW
-    resultante. Se detiene en el criterio 'TR_evento_extremo'.
-    """
-    ca.valor(CRITERIO_EVENTO_EXTREMO)   # CriterioPendienteError: sin TR ni umbral
-    raise AssertionError("inalcanzable mientras 'TR_evento_extremo' este vacio")
-
-
-# ---------------------------------------------------------------------------
 # V9 - Disponibilidad de diametro (Sec. 3.2, nuevo en v7)
 # ---------------------------------------------------------------------------
 
@@ -469,29 +415,63 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 
 
 # ---------------------------------------------------------------------------
+# V5 y V8 - Diferidas al expediente (mismo mecanismo que Fase 8, item 5)
+# ---------------------------------------------------------------------------
+
+def verificacion_diferida_hidraulica() -> Tuple[str, ...]:
+    """
+    V5 (remanso aguas arriba) y V8 (evento extremo / FEN): la hoja de ruta
+    enuncia el REQUISITO de cada una pero no entrega la formula, el metodo o
+    el dato con que evaluarlo, y sus criterios ('remanso_derecho_via',
+    'TR_evento_extremo') siguen declarados vacios en criterios_adoptados.py.
+
+    NO se calculan ni se aproximan, y tampoco detienen el pipeline: se
+    declaran diferidas al expediente tecnico, con su fundamento, para que la
+    CLI y M11 lo impriman siempre junto a la tabla de la Fase 5 -- el MISMO
+    mecanismo, replicado, de `modulos.M8_estructural.
+    verificacion_diferida_estructural` (Fase 8, item 5). Diferir no es
+    cumplir: el aviso viaja como texto, nunca como una Verificacion con marca.
+    """
+    return (
+        "Remanso aguas arriba (V5): diferido al expediente tecnico -- la "
+        "hoja de ruta fija el requisito (embalse dentro del derecho de via, "
+        "sin afectar terceros ni la faja marginal) pero no entrega el metodo "
+        "de perfil de remanso (paso a paso o HEC-RAS) ni el ancho de derecho "
+        "de via por punto; lo resuelve el criterio "
+        f"'{CRITERIO_REMANSO}' ({NUMERAL_V5})",
+        "Evento extremo / FEN (V8): diferido al expediente tecnico -- la "
+        "hoja de ruta no fija el TR mayor que el de diseño ni el umbral "
+        "cuantitativo de colapso de la via; lo resuelve el criterio "
+        f"'{CRITERIO_EVENTO_EXTREMO}' ({NUMERAL_V8})",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Agregado: la firma que llama MD.py
 # ---------------------------------------------------------------------------
 
 def verificar(*, punto: PuntoCritico, material: Material, D: float,
              resultado: ResultadoHidraulico) -> Tuple[Verificacion, ...]:
     """
-    Las nueve verificaciones de la Fase 5, en el orden de la tabla. Coincide
-    con la firma de `modulos.MD.Verificador`: MD la importa como
+    Las verificaciones CALCULABLES de la Fase 5, en el orden de la tabla.
+    Coincide con la firma de `modulos.MD.Verificador`: MD la importa como
     `modulos.M5_verificaciones.verificar` cuando no se le inyecta otra.
 
-    Se detiene -- sin devolver nada -- en la primera de V3 (TMC/HDPE), V5, V7
-    o V8 que este pendiente: son excepciones, no verificaciones incumplidas,
-    y el bucle de MD no debe tratarlas como un diametro rechazado sino como
-    lo que son, un calculo que no puede completarse todavia.
+    V5 y V8 no estan en la tupla: van diferidas al expediente tecnico y su
+    aviso lo publica `verificacion_diferida_hidraulica()` (mismo mecanismo
+    que Fase 8, item 5), no una fila de esta tabla.
+
+    Se detiene -- sin devolver nada -- en la primera de V3 (TMC/HDPE) o V7
+    que este pendiente: son excepciones, no verificaciones incumplidas, y el
+    bucle de MD no debe tratarlas como un diametro rechazado sino como lo
+    que son, un calculo que no puede completarse todavia.
     """
     return (
         v1_borde_libre(D=D, resultado=resultado),
         v2_velocidad_minima(resultado=resultado),
         v3_velocidad_maxima(material=material, resultado=resultado),
         v4_carga_entrada(punto=punto, resultado=resultado),
-        v5_remanso(punto=punto, resultado=resultado),
         v6_material_solido_arrastre(),
         v7_flotacion(punto=punto, material=material, D=D, resultado=resultado),
-        v8_evento_extremo(punto=punto, resultado=resultado),
         v9_disponibilidad_diametro(D=D, material=material),
     )

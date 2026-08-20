@@ -106,6 +106,7 @@ from modelos import (Clasificacion, CompatibilidadGeometrica,       # noqa: E402
                      Verificacion)
 from modulos.M0_carga import cargar_puntos                          # noqa: E402
 from modulos.M1_clasificacion import clasificar, exigir_alcance     # noqa: E402
+from modulos.M5_verificaciones import verificacion_diferida_hidraulica  # noqa: E402
 from modulos.M6_proteccion import proteccion_salida                 # noqa: E402
 from modulos.M7_geometria import (compatibilidad_geometrica,        # noqa: E402
                                   cota_clave, longitud_conducto)
@@ -117,7 +118,8 @@ from modulos.M9_cabezal import (aviso_ambiente_corrosivo,           # noqa: E402
                                 condicion_normativa_cabezal,
                                 cuantia_minima, geometria_adoptada,
                                 k_ae_del_proyecto,
-                                recubrimiento_de_diseno)
+                                recubrimiento_de_diseno,
+                                verificacion_diferida_estabilidad_global)
 from modulos.M10_espaciamiento import espaciamiento_alivio          # noqa: E402
 # La agregacion de criterios bloqueantes y el armado de la memoria son de la
 # Fase 11: viven en M11 y aqui solo se usan. `CriterioBloqueante` y
@@ -810,7 +812,10 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "y_critico_m": _num(hidraulica.y_critico),
             "HW_entrada_m": _num(hidraulica.HW_entrada),
             "HW_salida_m": _num(hidraulica.HW_salida),
-            "HW_gobernante_m": _num(hidraulica.HW)}
+            "HW_gobernante_m": _num(hidraulica.HW),
+            # V5 y V8, diferidas al expediente (mismo mecanismo que el
+            # "verificacion_diferida" del bloque estructural, Fase 8 item 5).
+            "verificacion_diferida": list(verificacion_diferida_hidraulica())}
 
 
 def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
@@ -908,6 +913,9 @@ def _cabezal_json(informe: InformeCabezal) -> Dict[str, Any]:
                             "origen": r.origen, "numeral": r.numeral}
                            for r in informe.recubrimientos],
         "cuantias_minimas": {k: _num(v) for k, v in informe.cuantias.items()},
+        # E4 y E5, diferidas al expediente (mismo mecanismo que el
+        # "verificacion_diferida" del bloque estructural, Fase 8 item 5).
+        "verificacion_diferida": list(verificacion_diferida_estabilidad_global()),
         "notas": list(informe.notas),
         "bloqueos": [_bloqueo_json(b) for b in informe.bloqueos],
     }
@@ -980,6 +988,12 @@ def _lineas_verificaciones(informe: InformePunto) -> List[str]:
             out.append(f"{SANGRIA * 4}umbral del criterio "
                        f"'{v.criterio_aplicado}' "
                        f"[{ca.criterio(v.criterio_aplicado).etiqueta}]")
+    if informe.dimensionado:
+        # V5 y V8 no son filas de la tabla: van diferidas al expediente
+        # (mismo mecanismo que Fase 8, item 5) y se imprimen siempre junto a
+        # las verificaciones de la Fase 5.
+        for aviso in verificacion_diferida_hidraulica():
+            out.append(f"{SANGRIA * 2}diferido: {aviso}")
     return out
 
 
@@ -1049,6 +1063,8 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
     if informe.cama_apoyo is not None:
         out.append(f"{SANGRIA}Fase 8  cama: {informe.cama_apoyo.cama_apoyo} "
                    f"(num. {informe.cama_apoyo.numeral})")
+        for aviso in verificacion_diferida_estructural():
+            out.append(f"{SANGRIA * 2}diferido: {aviso}")
     if informe.espaciamiento is not None:
         e = informe.espaciamiento
         out.append(f"{SANGRIA}Fase 10 espaciamiento max = "
@@ -1073,6 +1089,8 @@ def _lineas_cabezal(informe: InformeCabezal) -> List[str]:
                    f"{r.numeral})")
     for direccion, cuantia in informe.cuantias.items():
         out.append(f"{SANGRIA}Cuantia minima {direccion}: {cuantia}")
+    for aviso in verificacion_diferida_estabilidad_global():
+        out.append(f"{SANGRIA * 2}diferido: {aviso}")
     for nota in informe.notas:
         out.append(f"{SANGRIA * 2}nota: {nota}")
     out.extend(_lineas_bloqueos(informe.bloqueos))

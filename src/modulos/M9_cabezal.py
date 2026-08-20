@@ -41,8 +41,10 @@ Lo que este modulo SI calcula entero
       caso limite (con k_h = k_v = 0 e i = beta = delta = 0 devuelve
       exactamente tan^2(45 - phi/2)). Lo que falta son sus ANGULOS, no el
       procedimiento.
-    * Las cinco verificaciones de FS de Sec. 9.3, a partir de las demandas:
-      los umbrales son [N] literales de `constantes_normativas.FS`.
+    * Las verificaciones E1-E3 de FS de Sec. 9.3, a partir de las demandas:
+      los umbrales son [N] literales de `constantes_normativas.FS`. E4 y E5
+      van diferidas al expediente (ver abajo), con sus umbrales igualmente
+      transcritos en esa misma tabla.
     * La regla del recubrimiento mayor, el PISO de cuantia minima aplicado
       como rho_diseno = max(rho_calculado, rho_minimo) (`cuantia_de_diseno`),
       el espaciamiento maximo y la alternativa en concreto ciclopeo.
@@ -64,8 +66,6 @@ Lo que se detiene, y por que no se rellena
                                  el cabezal y Sec. 1.2 no trae sus columnas.
     N_cq_N_gammaq_meyerhof       Salen de FIGURAS (2.8.1.3.1.2c-1 y -2), no de
                                  una formula transcribible.
-    metodo_estabilidad_global    E4 y E5: el FS esta, el metodo con que
-                                 producir el valor a comparar no.
     cortante_alto_muro_...       El escalon de cuantia horizontal minima a
                                  0.0025 de E.060 Art. 11.10.10.2. Su
                                  disparador es una demanda de CORTANTE, y
@@ -82,6 +82,20 @@ Lo que se detiene, y por que no se rellena
                                  implementado todavia: se detiene con
                                  `NotImplementedError`, no con
                                  `CriterioPendienteError`.
+
+Lo que se difiere, y por que no se detiene
+------------------------------------------
+E4 (estabilidad global del muro) y E5 (estabilidad del talud) tienen el
+UMBRAL transcrito (`fs_requerido`), pero el metodo con que producir el valor
+a comparar no existe en el script: un FS de estabilidad global sale de un
+analisis de superficies de falla que exige el perfil estratigrafico del EMS,
+y su criterio ('metodo_estabilidad_global') sigue declarado vacio en
+criterios_adoptados.py. No se calculan ni se aproximan, y tampoco detienen
+el pipeline: `verificacion_diferida_estabilidad_global()` devuelve el texto
+que declara el diferimiento con su fundamento -- el MISMO mecanismo de
+`modulos.M8_estructural.verificacion_diferida_estructural` (Fase 8, item 5)
+y de `modulos.M5_verificaciones.verificacion_diferida_hidraulica` (V5/V8) --
+para que la CLI y M11 lo impriman siempre junto al resto de Fase 9.
 
 Consecuencia practica, la misma de M5 y M8: las funciones de FORMULA son
 utilizables hoy mismo pasandoles sus argumentos, y los ENSAMBLES automaticos
@@ -963,38 +977,34 @@ def verificar_deslizamiento(*, fuerza_resistente: float,
                                 fs_obtenido=fs, codigo="E3")
 
 
-def verificar_estabilidad_global(*, condicion: CondicionAnalisis) -> Verificacion:
+def verificacion_diferida_estabilidad_global() -> Tuple[str, ...]:
     """
-    E4 - Estabilidad global del muro: FS >= 1.50 estatico / 1.25 sismico
-    (E.050 num. 39.13.6 b).
+    E4 (estabilidad global del muro) y E5 (estabilidad del talud): los
+    UMBRALES estan transcritos -- FS >= 1.50 estatico / 1.25 sismico, E.050
+    num. 39.13.6 b) y Art. 30.3, y `fs_requerido` los devuelve hoy mismo --
+    pero el metodo con que producir el valor a comparar no existe: un FS de
+    estabilidad global sale de un analisis de superficies de falla que exige
+    el perfil estratigrafico completo, y ese no esta en el CSV de Sec. 1.2.
+    Su criterio ('metodo_estabilidad_global') sigue declarado vacio en
+    criterios_adoptados.py.
 
-    Se detiene con `CriterioPendienteError` en 'metodo_estabilidad_global'.
-    El UMBRAL esta transcrito y `fs_requerido(verificacion="estabilidad_global",
-    ...)` lo devuelve hoy mismo; lo que no existe es con que producir el valor
-    a comparar -- un FS de estabilidad global sale de un analisis de
-    superficies de falla que exige el perfil estratigrafico completo, y ese no
-    esta en el CSV de Sec. 1.2.
+    NO se calculan ni se aproximan, y tampoco detienen el pipeline: se
+    declaran diferidas al expediente tecnico, con su fundamento, para que la
+    CLI y M11 lo impriman siempre junto al resto de Fase 9 -- el MISMO
+    mecanismo, replicado, de `modulos.M8_estructural.
+    verificacion_diferida_estructural` (Fase 8, item 5). Diferir no es
+    cumplir: el aviso viaja como texto, nunca como una Verificacion con marca.
     """
-    fs_requerido(verificacion="estabilidad_global", condicion=condicion)
-    ca.valor(CRITERIO_ESTABILIDAD_GLOBAL)   # CriterioPendienteError mientras falte
-    raise AssertionError(
-        "inalcanzable mientras 'metodo_estabilidad_global' este vacio"
-    )
-
-
-def verificar_talud(*, condicion: CondicionAnalisis) -> Verificacion:
-    """
-    E5 - Estabilidad del talud: FS >= 1.50 estatico / 1.25 sismico (E.050
-    Art. 30.3).
-
-    Mismo vacio que E4 ('metodo_estabilidad_global') y no el mismo chequeo:
-    E4 mira la masa que envuelve al muro, E5 el talud del terraplen que lo
-    soporta, y Sec. 9.3 las lista como dos filas con numerales distintos.
-    """
-    fs_requerido(verificacion="talud", condicion=condicion)
-    ca.valor(CRITERIO_ESTABILIDAD_GLOBAL)   # CriterioPendienteError mientras falte
-    raise AssertionError(
-        "inalcanzable mientras 'metodo_estabilidad_global' este vacio"
+    return (
+        "Estabilidad global del muro (E4): diferida al expediente tecnico -- "
+        "el FS esta transcrito (E.050 num. 39.13.6 b: 1.50 estatico / 1.25 "
+        "sismico) pero el valor a comparar sale de un analisis de superficies "
+        "de falla con el perfil estratigrafico del EMS; lo resuelve el "
+        f"criterio '{CRITERIO_ESTABILIDAD_GLOBAL}' ({NUMERAL_9_3})",
+        "Estabilidad del talud (E5): diferida al expediente tecnico, mismo "
+        "vacio de metodo (E.050 Art. 30.3) y no el mismo chequeo: E4 mira la "
+        "masa que envuelve al muro, E5 el talud del terraplen que lo soporta "
+        f"({NUMERAL_9_3})",
     )
 
 
@@ -1108,19 +1118,17 @@ def verificar_estabilidad(*, geometria: GeometriaCabezal,
                           momento_estabilizante: float,
                           momento_volcante: float,
                           fuerza_resistente: float,
-                          fuerza_actuante: float,
-                          incluir_globales: bool = False) -> EstabilidadCabezal:
+                          fuerza_actuante: float) -> EstabilidadCabezal:
     """
     Las verificaciones de Sec. 9.3 para UNA condicion, a partir de las
     demandas ya calculadas por el llamador.
 
     Devuelve E1, E2 y E3, que son las que se resuelven con las fuerzas y
-    momentos del cabezal. E4 y E5 solo se incluyen con
-    `incluir_globales=True`, y entonces la llamada se detiene con
-    `CriterioPendienteError` en 'metodo_estabilidad_global': se deja opcional
-    para que el expediente pueda cerrar la estabilidad interna del cabezal
-    mientras el analisis de taludes viaja por su cuenta en el EMS, sin que eso
-    haga desaparecer las dos filas de la tabla.
+    momentos del cabezal. E4 y E5 no se ensamblan aqui: van diferidas al
+    expediente tecnico y su aviso lo publica
+    `verificacion_diferida_estabilidad_global()` (mismo mecanismo que Fase 8,
+    item 5), sin que eso haga desaparecer las dos filas de la tabla -- la
+    memoria las imprime siempre como diferidas, con su fundamento.
 
     El mismo cabezal se verifica dos veces, una por condicion: no es la misma
     verificacion con otro umbral, cambian tambien las fuerzas (aparece el
@@ -1136,10 +1144,6 @@ def verificar_estabilidad(*, geometria: GeometriaCabezal,
                                 fuerza_actuante=fuerza_actuante,
                                 condicion=condicion),
     ]
-    if incluir_globales:
-        verificaciones.append(verificar_estabilidad_global(condicion=condicion))
-        verificaciones.append(verificar_talud(condicion=condicion))
-
     return EstabilidadCabezal(condicion=condicion, geometria=geometria,
                               verificaciones=tuple(verificaciones),
                               numeral=NUMERAL_9_3)

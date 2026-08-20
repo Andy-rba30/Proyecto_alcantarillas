@@ -68,10 +68,10 @@ from modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
                                 recubrimiento_e060_mm,
                                 requiere_temperatura_dos_caras,
                                 sobrecarga_trasdos_siempre_aplica, subpresion,
+                                verificacion_diferida_estabilidad_global,
                                 verificar_capacidad_portante, verificar_ciclopeo,
                                 verificar_cuantia, verificar_deslizamiento,
                                 verificar_espaciamiento, verificar_estabilidad,
-                                verificar_estabilidad_global, verificar_talud,
                                 verificar_volteo)
 
 TOL = 1e-12
@@ -603,23 +603,32 @@ def test_el_agregado_marca_las_incumplidas(geometria):
     assert [v.codigo for v in estabilidad.verificaciones_incumplidas] == ["E1"]
 
 
-def test_incluir_las_globales_detiene_el_agregado(geometria):
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        verificar_estabilidad(
-            geometria=geometria, condicion=CondicionAnalisis.ESTATICO,
-            q_actuante=100.0, q_ultima=400.0,
-            momento_estabilizante=200.0, momento_volcante=100.0,
-            fuerza_resistente=80.0, fuerza_actuante=50.0,
-            incluir_globales=True)
-    assert excinfo.value.clave == "metodo_estabilidad_global"
+def test_E4_y_E5_no_lanzan_y_devuelven_sus_dos_avisos_diferidos():
+    """
+    Mismo mecanismo que Fase 8, item 5 (test homologo en
+    tests/test_M8_estructural.py): tupla de avisos, nunca calcula, nunca
+    lanza. Cada aviso declara el diferimiento y el criterio que lo resolveria.
+    """
+    avisos = verificacion_diferida_estabilidad_global()
+    assert len(avisos) == 2
+    conceptos = " ".join(avisos).lower()
+    for palabra in ("estabilidad global", "talud", "diferida"):
+        assert palabra in conceptos
+    assert "metodo_estabilidad_global" in avisos[0]
 
 
-@pytest.mark.parametrize("funcion", [verificar_estabilidad_global, verificar_talud])
-def test_E4_y_E5_tienen_umbral_pero_no_metodo(funcion):
-    """El FS esta transcrito; con que producir el valor a comparar, no."""
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        funcion(condicion=CondicionAnalisis.ESTATICO)
-    assert excinfo.value.clave == "metodo_estabilidad_global"
+@pytest.mark.parametrize("fila", ["estabilidad_global", "talud"])
+def test_E4_y_E5_tienen_umbral_pero_no_metodo(fila):
+    """
+    El FS esta transcrito y `fs_requerido` lo devuelve hoy mismo; con que
+    producir el valor a comparar, no -- por eso las dos filas van diferidas
+    al expediente (aviso, no raise) y su criterio sigue declarado vacio.
+    """
+    assert fs_requerido(verificacion=fila,
+                        condicion=CondicionAnalisis.ESTATICO) == 1.50
+    assert fs_requerido(verificacion=fila,
+                        condicion=CondicionAnalisis.SISMICO) == 1.25
+    assert "metodo_estabilidad_global" in ca.criterios_sin_valor()
 
 
 # --- E.050 Art. 20: c y phi no se combinan --------------------------------

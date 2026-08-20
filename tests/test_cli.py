@@ -6,12 +6,14 @@ que registre cada bloqueo con su causa y que no rellene ningun vacio.
 
 Dos cosas que estas pruebas fijan a proposito:
 
-1. Con los criterios como estan hoy, NINGUN punto se dimensiona: V5 y V8 de la
-   Fase 5 son vacios declarados y la Fase 5 no puede completarse. El informe de
-   un punto dimensionado se prueba sustituyendo `MD.disenar_punto` -- lo que se
-   verifica ahi es la capa de reporte (material, D, control gobernante,
-   verificaciones con numeral), no el bucle de MD, que tiene sus propias
-   pruebas en tests/test_MD.py.
+1. Con los criterios como estan hoy, NINGUN punto se dimensiona: V7 de la
+   Fase 5 espera el dato 'peso_especifico_relleno_kn_m3' (vacio declarado) y
+   la Fase 5 no puede completarse. V5 y V8 ya no bloquean: van diferidas al
+   expediente tecnico (mismo mecanismo que Fase 8, item 5) y su aviso viaja
+   en el informe. El informe de un punto dimensionado se prueba sustituyendo
+   `MD.disenar_punto` -- lo que se verifica ahi es la capa de reporte
+   (material, D, control gobernante, verificaciones con numeral), no el bucle
+   de MD, que tiene sus propias pruebas en tests/test_MD.py.
 
 2. Un criterio se declara con `monkeypatch.setitem` sobre `ca.CRITERIOS`, el
    mismo patron de tests/test_M5_verificaciones.py: la prueba no toca el
@@ -192,11 +194,17 @@ def test_sin_tw_ni_longitud_se_bloquean_los_dos_insumos_de_md():
 
 
 def test_con_tw_y_longitud_el_bucle_de_md_llega_a_la_fase_5():
-    """El siguiente vacio es V5, no un insumo que falte: MD ya corrio."""
+    """
+    El siguiente vacio es V7, no un insumo que falte: MD ya corrio. V5 y V8
+    ya no aparecen como bloqueo -- van diferidas al expediente.
+    """
     informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
                        TW_m=0.0, longitud_m=12.0)
     a01 = _punto(informe, "A-01")
-    assert "remanso_derecho_via" in _claves_bloqueantes(a01)
+    claves = _claves_bloqueantes(a01)
+    assert "peso_especifico_relleno_kn_m3" in claves
+    assert "remanso_derecho_via" not in claves
+    assert "TR_evento_extremo" not in claves
     assert not a01.dimensionado
 
 
@@ -275,10 +283,10 @@ def test_los_criterios_bloqueantes_se_agrupan_con_sus_puntos():
     informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
                        TW_m=0.0, longitud_m=12.0)
     bloqueantes = {c.clave: c for c in cli.criterios_bloqueantes(informe)}
-    remanso = bloqueantes["remanso_derecho_via"]
-    assert set(remanso.puntos) == {"A-01", "A-02", "B-01"}
-    assert remanso.etiqueta == "A"
-    assert remanso.concepto and remanso.fuente
+    peso_relleno = bloqueantes["peso_especifico_relleno_kn_m3"]
+    assert set(peso_relleno.puntos) == {"A-01", "A-02", "B-01"}
+    assert peso_relleno.etiqueta == "A"
+    assert peso_relleno.concepto and peso_relleno.fuente
 
 
 def test_un_criterio_con_valor_no_aparece_como_bloqueante(monkeypatch):
@@ -393,7 +401,7 @@ def test_el_texto_nombra_el_material_el_control_y_los_bloqueos():
                        categoria_tr="quebrada_menor")
     texto = cli.volcar(informe)
     assert "CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA" in texto
-    assert "remanso_derecho_via" in texto
+    assert "peso_especifico_relleno_kn_m3" in texto
     assert "Expediente cerrado      : no" in texto
 
 
@@ -419,6 +427,98 @@ def test_main_devuelve_dos_si_el_csv_no_tiene_las_columnas(tmp_path, capsys):
     codigo = cli.main([str(ruta)])
     assert codigo == 2
     assert "no se puede cargar" in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------------------
+# Diferimiento no bloqueante (V5/V8, Fase 8 item 5, E4/E5): aceptacion
+# ---------------------------------------------------------------------------
+
+def _declarar_provisional(monkeypatch, **valores):
+    """
+    Como `_declarar`, pero con `provisional=True`: son valores de MARCADOR DE
+    POSICION para verificar el MECANISMO de diferimiento, NO adopciones
+    reales de C.1 -- criterios_adoptados.py no se toca, y la marca
+    'PROVISIONAL' garantiza que un valor de prueba nunca pase por decision.
+    """
+    for clave, valor in valores.items():
+        original = ca.CRITERIOS[clave]
+        monkeypatch.setitem(
+            ca.CRITERIOS, clave,
+            original.__class__(**{**original.__dict__, "valor": valor,
+                                  "provisional": True}),
+        )
+
+
+@pytest.fixture
+def informe_con_diferidas(monkeypatch):
+    """
+    A-01 con la Fase 5 completa DE VERDAD (bucle real de MD, sin sustituir
+    `disenar_punto`): el unico vacio de dato que le quedaba a la Fase 5 era
+    el de V7, y se cubre con un placeholder provisional. V5 y V8 no
+    necesitan valor: van diferidas al expediente.
+    """
+    _declarar_provisional(monkeypatch, peso_especifico_relleno_kn_m3=18.0)
+    return _informe(luz_m=2.0, categoria_tr="quebrada_menor", TW_m=0.0,
+                    longitud_m=12.0)
+
+
+def test_la_fase_5_llega_a_verde_para_A01_sin_tocar_V5_ni_V8(
+        informe_con_diferidas):
+    """El criterio de aceptacion: A-01 dimensiona con el bucle real de MD."""
+    a01 = _punto(informe_con_diferidas, "A-01")
+    assert a01.dimensionado
+    codigos = [v.codigo for v in a01.resultado.verificaciones]
+    assert codigos == ["V1", "V2", "V3", "V4", "V6", "V7", "V9"]
+    assert all(v.cumple for v in a01.resultado.verificaciones)
+    claves = _claves_bloqueantes(a01)
+    assert "remanso_derecho_via" not in claves
+    assert "TR_evento_extremo" not in claves
+    # El que SI tiene codigo real esperando el dato sigue bloqueando limpio.
+    assert "clases_producto_por_relleno" in claves
+
+
+def test_los_avisos_diferidos_viajan_en_el_json(informe_con_diferidas):
+    datos = cli.informe_json(informe_con_diferidas)
+    a01 = next(p for p in datos["puntos"] if p["id"] == "A-01")
+    diferidas_f5 = a01["diseno"]["verificacion_diferida"]
+    assert len(diferidas_f5) == 2
+    assert "remanso_derecho_via" in diferidas_f5[0]
+    assert "TR_evento_extremo" in diferidas_f5[1]
+    # El mecanismo original de Fase 8 sigue intacto y con la misma forma.
+    assert len(a01["estructural"]["verificacion_diferida"]) == 3
+    # Y E4/E5 viajan en el bloque del cabezal, que es del proyecto.
+    diferidas_f9 = datos["cabezal"]["verificacion_diferida"]
+    assert len(diferidas_f9) == 2
+    assert "metodo_estabilidad_global" in diferidas_f9[0]
+
+
+def test_los_avisos_diferidos_salen_en_la_consola(informe_con_diferidas):
+    texto = cli.volcar(informe_con_diferidas)
+    assert "diferido: Remanso aguas arriba (V5)" in texto
+    assert "diferido: Evento extremo / FEN (V8)" in texto
+    assert "diferido: Rigidez de anillo" in texto
+    assert "diferido: Estabilidad global del muro (E4)" in texto
+
+
+def test_los_avisos_diferidos_llegan_al_html_de_M11(informe_con_diferidas):
+    """
+    Criterio de aceptacion adicional: las notas de diferimiento de los tres
+    (remanso, evento extremo, estabilidad global) aparecen en el HTML de la
+    memoria (M11), igual que las de rigidez de anillo y pandeo de la Fase 8
+    -- no solo en la salida de consola de la CLI.
+    """
+    from modulos.M11_reporte import memoria_html
+
+    memoria = memoria_html(informe_con_diferidas, proyecto="prueba diferidas")
+    assert "Remanso aguas arriba (V5): diferido al expediente tecnico" in memoria
+    assert "Evento extremo / FEN (V8): diferido al expediente tecnico" in memoria
+    assert ("Estabilidad global del muro (E4): diferida al expediente "
+            "tecnico") in memoria
+    # Las de Fase 8 (rigidez de anillo, pandeo) tambien, con el mismo formato.
+    assert "Rigidez de anillo: diferida al expediente tecnico" in memoria
+    assert "Pandeo (buckling): diferido al expediente tecnico" in memoria
+    # Y el valor de prueba queda marcado como provisional en la memoria.
+    assert "PROVISIONAL" in memoria
 
 
 def test_un_id_declarado_que_no_esta_en_el_csv_se_avisa(tmp_path):

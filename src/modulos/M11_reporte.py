@@ -83,6 +83,12 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import criterios_adoptados as ca
 import datos_sitio as ds
+# Los avisos de verificaciones DIFERIDAS al expediente tecnico. M11 no
+# recalcula nada: son declaraciones de alcance de cada modulo (texto, no
+# numeros), y se importan de su fuente unica en vez de transcribirse aqui.
+from modulos.M5_verificaciones import verificacion_diferida_hidraulica
+from modulos.M8_estructural import verificacion_diferida_estructural
+from modulos.M9_cabezal import verificacion_diferida_estabilidad_global
 
 try:
     from weasyprint import HTML as WeasyHTML
@@ -750,6 +756,18 @@ def _tabla_verificaciones(informe: Any) -> str:
            '<table class="compacta">' + "".join(filas) + "</table>"
 
 
+def _notas_diferidas(titulo: str, avisos: Sequence[str]) -> str:
+    """
+    Un bloque de verificaciones DIFERIDAS al expediente tecnico, con el mismo
+    formato para las tres fuentes (Fase 5 V5/V8, Fase 8 item 5, Fase 9 E4/E5).
+    Diferir no es cumplir: se imprime como nota con su fundamento, nunca como
+    una fila de verificacion con marca.
+    """
+    elementos = "".join(f"<li>{_esc(a)}</li>" for a in avisos)
+    return (f'<div class="nota"><p><b>{_esc(titulo)}</b></p>'
+            f"<ul>{elementos}</ul></div>")
+
+
 def _bloques_fases_finales(informe: Any) -> str:
     """Fases 6, 7, 8 y 10 del punto, cada una con su numeral."""
     partes: List[str] = []
@@ -791,7 +809,10 @@ def _bloques_fases_finales(informe: Any) -> str:
             "<h4>Fase 8 &mdash; Cama de apoyo y relleno lateral</h4>"
             f"<p>Cama de apoyo: {_esc(c.cama_apoyo)}. Sujecion y relleno "
             f"lateral: {_esc(c.sujecion_relleno_lateral)} "
-            f"(num. {_esc(c.numeral)}).</p>")
+            f"(num. {_esc(c.numeral)}).</p>"
+            + _notas_diferidas(
+                "Fase 8, item 5 — verificaciones diferidas al expediente "
+                "tecnico", verificacion_diferida_estructural()))
 
     if informe.espaciamiento is not None:
         e = informe.espaciamiento
@@ -842,6 +863,13 @@ def memoria_de_punto(informe: Any) -> str:
         _tabla_iteraciones(informe),
         _tabla_diseno(informe),
         _tabla_verificaciones(informe),
+        # V5 y V8 no son filas de la tabla: van diferidas al expediente
+        # tecnico (mismo mecanismo que Fase 8, item 5) y acompañan siempre a
+        # las verificaciones de un punto que completo la Fase 5.
+        (_notas_diferidas(
+            "Fase 5 — V5 (remanso) y V8 (evento extremo) diferidas al "
+            "expediente tecnico", verificacion_diferida_hidraulica())
+         if informe.dimensionado else ""),
         _bloques_fases_finales(informe),
         _tabla_bloqueos(informe.bloqueos),
         "</div>",
@@ -1083,8 +1111,20 @@ def bloque_pendientes(tableros: Sequence[Tablero],
     Va separado de la declaracion de criterios a proposito (ver el docstring
     del modulo). Se imprime siempre, incluso vacio de bloqueos: que una corrida
     no haya tropezado con un pendiente no significa que el pendiente no exista.
+
+    Incluye ademas las verificaciones de la Fase 9 diferidas al expediente
+    (E4/E5): la memoria no tiene un bloque de cabezal por punto -- Sec. 9 es
+    del proyecto -- y este es el bloque donde el revisor busca lo no resuelto.
+    Las diferidas de Fase 5 (V5/V8) y Fase 8 (item 5) se imprimen en la
+    memoria de cada punto, junto a la fase que las difiere.
     """
     partes = ["".join(_tabla_tablero(t) for t in tableros)]
+
+    partes.append("<h3>Verificaciones diferidas al expediente tecnico "
+                  "(Fase 9)</h3>")
+    partes.append(_notas_diferidas(
+        "Fase 9 — E4 (estabilidad global) y E5 (talud) diferidas al "
+        "expediente tecnico", verificacion_diferida_estabilidad_global()))
 
     partes.append("<h3>Criterios declarados todavia sin valor</h3>")
     sin_valor = ca.criterios_sin_valor()
