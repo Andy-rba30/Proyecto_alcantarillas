@@ -30,7 +30,7 @@ from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO, CUANTIA_MIN_MURO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
-                                   FACTOR_MURO_TABLA, FS,
+                                   FACTOR_MURO_TABLA, FS, FS_NUMERAL,
                                    NQ_ZAPATA_EN_TALUD,
                                    RECUBRIMIENTO, SOBRECARGA_TRASDOS_H_EQ)
 from modelos import (CondicionAnalisis, CriterioPendienteError,
@@ -603,23 +603,82 @@ def test_el_agregado_marca_las_incumplidas(geometria):
     assert [v.codigo for v in estabilidad.verificaciones_incumplidas] == ["E1"]
 
 
-def test_incluir_las_globales_detiene_el_agregado(geometria):
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        verificar_estabilidad(
-            geometria=geometria, condicion=CondicionAnalisis.ESTATICO,
-            q_actuante=100.0, q_ultima=400.0,
-            momento_estabilizante=200.0, momento_volcante=100.0,
-            fuerza_resistente=80.0, fuerza_actuante=50.0,
-            incluir_globales=True)
-    assert excinfo.value.clave == "metodo_estabilidad_global"
+def test_incluir_las_globales_ya_no_detiene_el_agregado(geometria):
+    """
+    Con `incluir_globales=True` el agregado ya no se detiene: devuelve las
+    cinco filas de Sec. 9.3, con E4 y E5 diferidas.
+
+    OJO: `estable` y `verificaciones_incumplidas` filtran con `not v.cumple`
+    y None es falsy, asi que hoy las dos diferidas cuentan como
+    incumplimientos. Este test fija lo que HAY, no lo que debe ser: el paso 7
+    del encargo (inventario de los nueve `.cumple`) es el que lo corrige, y
+    entonces este test se actualiza con el.
+    """
+    estabilidad = verificar_estabilidad(
+        geometria=geometria, condicion=CondicionAnalisis.ESTATICO,
+        q_actuante=100.0, q_ultima=400.0,
+        momento_estabilizante=200.0, momento_volcante=100.0,
+        fuerza_resistente=80.0, fuerza_actuante=50.0,
+        incluir_globales=True)
+
+    assert [v.codigo for v in estabilidad.verificaciones] == [
+        "E1", "E2", "E3", "E4", "E5"]
+    diferidas = [v for v in estabilidad.verificaciones if v.cumple is None]
+    assert [v.codigo for v in diferidas] == ["E4", "E5"]
+    assert all(v.nota_diferida for v in diferidas)
+
+
+@pytest.mark.parametrize("funcion, codigo, clave_fs", [
+    (verificar_estabilidad_global, "E4", "estabilidad_global"),
+    (verificar_talud, "E5", "talud"),
+])
+def test_E4_y_E5_se_difieren_con_su_umbral_en_la_nota(funcion, codigo, clave_fs):
+    """
+    El FS esta transcrito; con que producir el valor a comparar, no. Por eso
+    se difieren con cumple=None, y el umbral -- que si existe -- viaja en la
+    nota en vez de en `valor_admisible`, donde se leeria como una comparacion
+    que nunca se hizo.
+    """
+    condicion = CondicionAnalisis.ESTATICO
+    v = funcion(condicion=condicion)
+
+    assert v.cumple is None
+    assert v.codigo == codigo
+    assert v.valor_obtenido is None
+    assert v.valor_admisible is None
+    assert v.criterio_aplicado is None
+    assert v.numeral == FS_NUMERAL[clave_fs]
+
+    fs = fs_requerido(verificacion=clave_fs, condicion=condicion)
+    assert str(fs) in v.nota_diferida
+    assert "metodo_estabilidad_global" in v.nota_diferida
+    assert "equilibrio limite" in v.nota_diferida.lower()
 
 
 @pytest.mark.parametrize("funcion", [verificar_estabilidad_global, verificar_talud])
-def test_E4_y_E5_tienen_umbral_pero_no_metodo(funcion):
-    """El FS esta transcrito; con que producir el valor a comparar, no."""
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        funcion(condicion=CondicionAnalisis.ESTATICO)
-    assert excinfo.value.clave == "metodo_estabilidad_global"
+def test_E4_y_E5_diferidas_no_registran_el_criterio_como_usado(funcion):
+    """
+    Una verificacion diferida no aplico el criterio a ningun numero: si lo
+    registrara, M11 lo imprimiria como usado y la memoria diria algo falso.
+    """
+    antes = set(ca.criterios_usados())
+    funcion(condicion=CondicionAnalisis.ESTATICO)
+    nuevos = set(ca.criterios_usados()) - antes
+    assert "metodo_estabilidad_global" not in nuevos
+
+
+@pytest.mark.parametrize("funcion", [verificar_estabilidad_global, verificar_talud])
+def test_E4_y_E5_registran_el_nivel_de_estudio_como_dato_usado(funcion):
+    """
+    A diferencia de los items 1-2 de Fase 8, lo que falta aqui SI depende de
+    la densidad de investigacion geotecnica: el analisis por equilibrio
+    limite necesita el perfil estratigrafico y los parametros de resistencia
+    del terreno. Por eso la nota lee el nivel de estudio, y por eso el dato
+    tiene que figurar como usado.
+    """
+    v = funcion(condicion=CondicionAnalisis.ESTATICO)
+    assert "nivel_estudio" in ds.datos_usados()
+    assert ds.valor("nivel_estudio") in v.nota_diferida
 
 
 # --- E.050 Art. 20: c y phi no se combinan --------------------------------

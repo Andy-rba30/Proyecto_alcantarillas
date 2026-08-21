@@ -65,7 +65,10 @@ Lo que se detiene, y por que no se rellena
     N_cq_N_gammaq_meyerhof       Salen de FIGURAS (2.8.1.3.1.2c-1 y -2), no de
                                  una formula transcribible.
     metodo_estabilidad_global    E4 y E5: el FS esta, el metodo con que
-                                 producir el valor a comparar no.
+                                 producir el valor a comparar no. Las dos
+                                 se DIFIEREN al expediente (cumple=None) en
+                                 vez de detenerse, y ya no invocan el
+                                 criterio.
     cortante_alto_muro_...       El escalon de cuantia horizontal minima a
                                  0.0025 de E.060 Art. 11.10.10.2. Su
                                  disparador es una demanda de CORTANTE, y
@@ -204,6 +207,11 @@ ETIQUETA_CALCULADO = "-"
 
 # El PGA no es un criterio: es un dato de sitio [S] y vive en datos_sitio.py.
 DATO_SITIO_PGA = "PGA_roca_B"
+# El nivel de estudio fundamenta las dos verificaciones diferidas de este
+# modulo (E4 y E5). Se declara aqui, como DATO_SITIO_PGA, y no se importa de
+# M5_verificaciones: los dos modulos son consumidores independientes del
+# mismo dato de sitio, no uno cliente del otro.
+DATO_SITIO_NIVEL_ESTUDIO = "nivel_estudio"
 
 CRITERIO_F_PGA = "F_pga"
 CRITERIO_FACTOR_MURO = "factor_muro_eleccion"
@@ -223,6 +231,11 @@ CRITERIO_GEOMETRIA = "predimensionamiento_cabezal"
 # cada cruce. Entra por argumento a las funciones que lo necesitan.
 
 CRITERIO_MEYERHOF = "N_cq_N_gammaq_meyerhof"
+# Ningun `ca.valor()` lo consume: E4 y E5 se difieren y una verificacion
+# diferida no aplica el criterio a nada. Se conserva declarado porque nombra
+# el vacio que habria que cerrar, y `nota_diferida_estabilidad_global` lo
+# cita. Es el mismo tratamiento que recibieron CRITERIO_EVENTO_EXTREMO (V8)
+# y CRITERIO_CLASES_PRODUCTO (Fase 8, items 1-2).
 CRITERIO_ESTABILIDAD_GLOBAL = "metodo_estabilidad_global"
 CRITERIO_RECUBRIMIENTO_AASHTO = "recubrimiento_aashto_mm"
 CRITERIO_FLEXION_CORTE = "procedimiento_flexion_corte_aashto_sec5"
@@ -963,22 +976,86 @@ def verificar_deslizamiento(*, fuerza_resistente: float,
                                 fs_obtenido=fs, codigo="E3")
 
 
+CLAVE_FS_E4 = "estabilidad_global"
+CLAVE_FS_E5 = "talud"
+
+
+def nota_diferida_estabilidad_global(*, clave: str, alcance: str,
+                                     condicion: CondicionAnalisis) -> str:
+    """
+    Texto de `nota_diferida` de E4 y E5. Una sola funcion para las dos:
+    Sec. 9.3 las lista como filas distintas -- E4 mira la masa que envuelve
+    al muro, E5 el talud del terraplen que lo soporta -- pero el vacio es el
+    mismo y describirlo dos veces con otras palabras invitaria a que las dos
+    descripciones se separaran.
+
+    POR QUE ESTA NOTA SI CITA EL NIVEL DE ESTUDIO, y la de los items 1-2 de
+    Fase 8 no: lo que falta aqui es un analisis por equilibrio limite, y ese
+    analisis se alimenta del perfil estratigrafico completo y de los
+    parametros de resistencia del terreno. Eso es densidad de investigacion
+    geotecnica -- exactamente lo que el nivel de estudio determina -- y no
+    una tabla que alguien pueda transcribir de una norma de producto. Es el
+    mismo caso que V5 y V8, no el de Fase 8.
+
+    El FS lo lee `fs_requerido` de la tabla [N] de Sec. 9.3 en vez de
+    escribirlo en el texto: el umbral es real y esta transcrito, y la nota
+    tiene que poder decirlo sin que este modulo declare el numero por su
+    cuenta.
+    """
+    nivel = ds.valor(DATO_SITIO_NIVEL_ESTUDIO)
+    fs = fs_requerido(verificacion=clave, condicion=condicion)
+    return (
+        f"{alcance} se DIFIERE al expediente tecnico. El UMBRAL existe y esta "
+        f"transcrito -- FS >= {fs} en condicion {condicion.value}, "
+        f"{FS_NUMERAL[clave]} -- y lo que falta es con que producir el valor "
+        "a comparar: un FS de estabilidad global no sale de una formula "
+        "cerrada sino del analisis por EQUILIBRIO LIMITE del estudio de "
+        "mecanica de suelos (Bishop simplificado, Spencer, "
+        "Morgenstern-Price...), con su metodo declarado y sus superficies "
+        "criticas, y ese analisis exige el perfil estratigrafico completo, la "
+        "geometria del terraplen y los parametros de resistencia del terreno. "
+        f"A nivel de estudio {nivel} (Manual de Suelos MTC num. 4.2, Cuadro "
+        f"4.1; ver '{DATO_SITIO_NIVEL_ESTUDIO}' en datos_sitio.py) la campana "
+        "geotecnica no produce ninguna de las tres, y ninguna es columna del "
+        f"CSV de Sec. 1.2. Para dejar de diferirla hace falta declarar "
+        f"'{CRITERIO_ESTABILIDAD_GLOBAL}' con el metodo e incorporar el "
+        "analisis de estabilidad de taludes del EMS, con sus superficies "
+        "criticas."
+    )
+
+
 def verificar_estabilidad_global(*, condicion: CondicionAnalisis) -> Verificacion:
     """
     E4 - Estabilidad global del muro: FS >= 1.50 estatico / 1.25 sismico
     (E.050 num. 39.13.6 b).
 
-    Se detiene con `CriterioPendienteError` en 'metodo_estabilidad_global'.
-    El UMBRAL esta transcrito y `fs_requerido(verificacion="estabilidad_global",
-    ...)` lo devuelve hoy mismo; lo que no existe es con que producir el valor
-    a comparar -- un FS de estabilidad global sale de un analisis de
-    superficies de falla que exige el perfil estratigrafico completo, y ese no
-    esta en el CSV de Sec. 1.2.
+    DIFERIDA al expediente tecnico: devuelve `cumple=None` con su fundamento
+    en `nota_diferida`, no una excepcion. El UMBRAL esta transcrito y
+    `fs_requerido` lo devuelve hoy mismo; lo que no existe es con que
+    producir el valor a comparar. Ver `nota_diferida_estabilidad_global`
+    para por que esta postergacion SI depende del nivel de estudio.
+
+    `valor_admisible` queda en None y no en el FS de la tabla, aunque el FS
+    se conozca: un admisible solo dice algo frente a un obtenido, y aqui no
+    hay obtenido. El umbral viaja en la nota, que es donde el revisor puede
+    leerlo sin confundirlo con una comparacion que no se hizo.
+
+    NO invoca `ca.valor(CRITERIO_ESTABILIDAD_GLOBAL)`: una verificacion
+    diferida no aplico el criterio a ningun numero, y registrarlo lo haria
+    figurar como usado en la memoria de M11 (CLAUDE.md). El criterio sigue
+    vacio.
     """
-    fs_requerido(verificacion="estabilidad_global", condicion=condicion)
-    ca.valor(CRITERIO_ESTABILIDAD_GLOBAL)   # CriterioPendienteError mientras falte
-    raise AssertionError(
-        "inalcanzable mientras 'metodo_estabilidad_global' este vacio"
+    return Verificacion(
+        cumple=None,
+        numeral=FS_NUMERAL[CLAVE_FS_E4],
+        valor_obtenido=None,
+        valor_admisible=None,
+        criterio_aplicado=None,
+        codigo="E4",
+        nota_diferida=nota_diferida_estabilidad_global(
+            clave=CLAVE_FS_E4,
+            alcance="E4, la estabilidad global del muro",
+            condicion=condicion),
     )
 
 
@@ -990,11 +1067,19 @@ def verificar_talud(*, condicion: CondicionAnalisis) -> Verificacion:
     Mismo vacio que E4 ('metodo_estabilidad_global') y no el mismo chequeo:
     E4 mira la masa que envuelve al muro, E5 el talud del terraplen que lo
     soporta, y Sec. 9.3 las lista como dos filas con numerales distintos.
+    Tambien DIFERIDA, con el mismo fundamento y su propio numeral.
     """
-    fs_requerido(verificacion="talud", condicion=condicion)
-    ca.valor(CRITERIO_ESTABILIDAD_GLOBAL)   # CriterioPendienteError mientras falte
-    raise AssertionError(
-        "inalcanzable mientras 'metodo_estabilidad_global' este vacio"
+    return Verificacion(
+        cumple=None,
+        numeral=FS_NUMERAL[CLAVE_FS_E5],
+        valor_obtenido=None,
+        valor_admisible=None,
+        criterio_aplicado=None,
+        codigo="E5",
+        nota_diferida=nota_diferida_estabilidad_global(
+            clave=CLAVE_FS_E5,
+            alcance="E5, la estabilidad del talud que soporta el cabezal",
+            condicion=condicion),
     )
 
 
@@ -1116,11 +1201,16 @@ def verificar_estabilidad(*, geometria: GeometriaCabezal,
 
     Devuelve E1, E2 y E3, que son las que se resuelven con las fuerzas y
     momentos del cabezal. E4 y E5 solo se incluyen con
-    `incluir_globales=True`, y entonces la llamada se detiene con
-    `CriterioPendienteError` en 'metodo_estabilidad_global': se deja opcional
-    para que el expediente pueda cerrar la estabilidad interna del cabezal
-    mientras el analisis de taludes viaja por su cuenta en el EMS, sin que eso
-    haga desaparecer las dos filas de la tabla.
+    `incluir_globales=True`, y entonces viajan DIFERIDAS (cumple=None): se
+    deja opcional para que el expediente pueda cerrar la estabilidad interna
+    del cabezal mientras el analisis de taludes viaja por su cuenta en el
+    EMS, sin que eso haga desaparecer las dos filas de la tabla.
+
+    OJO mientras el paso 7 del encargo no llegue: `EstabilidadCabezal.estable`
+    y `verificaciones_incumplidas` filtran con `not v.cumple`, y None es
+    falsy, de modo que con `incluir_globales=True` las dos diferidas cuentan
+    hoy como incumplimientos. Es el bug silencioso que el inventario de los
+    nueve `.cumple` existe para cerrar.
 
     El mismo cabezal se verifica dos veces, una por condicion: no es la misma
     verificacion con otro umbral, cambian tambien las fuerzas (aparece el
