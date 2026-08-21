@@ -729,6 +729,68 @@ justificación de "exposición costera uniforme" en vez de tres lecturas forzada
 
 ### Etapa C · Cierre de los 25 criterios vacíos
 
+> **Actualización — cerrar estos criterios ya no rompe la corrida**
+> (encargo de verificaciones diferidas, `a71aed7`..`bedf237`; ver
+> `docs/encargo_verificaciones_diferidas.md`).
+>
+> Cuatro de los criterios de esta etapa eran **topes con un `AssertionError`
+> detrás**. El patrón era el mismo en los cuatro:
+>
+> ```python
+> ca.valor(CRITERIO_X)      # CriterioPendienteError mientras el criterio esté vacío
+> raise AssertionError("inalcanzable mientras 'X' este vacio")
+> ```
+>
+> Mientras el criterio seguía vacío se comportaban como bloqueo limpio; en
+> cuanto se les daba valor, la línea siguiente abortaba la corrida entera,
+> porque el cálculo que consumiría ese valor nunca se escribió. Es decir:
+> **cerrar el criterio empeoraba las cosas**, y eso convertía esta etapa en una
+> trampa.
+>
+> | Criterio | Grupo | Dónde estaba el tope | Qué es ahora |
+> |---|---|---|---|
+> | `TR_evento_extremo` | C.1 | `M5_verificaciones.v8_evento_extremo` | verificación diferida (V8) |
+> | `clases_producto_por_relleno` | C.2 | `M8_estructural.seleccionar_clase_calibre` | verificación diferida (`8.1-2`) |
+> | `metodo_estabilidad_global` | C.2 | `M9_cabezal.verificar_estabilidad_global` y `verificar_talud` | verificaciones diferidas (E4, E5) |
+> | `remanso_derecho_via` | C.3 | `M5_verificaciones.v5_remanso` (tope doble) | verificación diferida (V5) |
+>
+> (Se citan por nombre de función y no por número de línea: los números que
+> usa `docs/encargo_verificaciones_diferidas.md` son los del commit `c890ed7`,
+> anteriores a estos cambios.)
+>
+> Las cuatro devuelven ahora `Verificacion(cumple=None)` con su fundamento en
+> `nota_diferida`, y **ya no invocan `ca.valor()`**: una verificación diferida
+> no aplicó el criterio a ningún número, así que no debe figurar como usado en
+> la memoria. Los cuatro criterios **siguen vacíos** — lo que cambió es cómo se
+> reporta su ausencia, no su valor. Declararlos es ahora inocuo.
+>
+> Quedan dos topes del mismo patrón, deliberadamente **fuera** de ese encargo:
+> `N_cq_N_gammaq_meyerhof` (grupo C.2, en
+> `M9_cabezal.capacidad_portante_zapata_en_talud`, al que además nadie llama
+> desde la CLI) y `h_relleno_min_concreto_tmc` (en
+> `M7_geometria.altura_recubrimiento`, que solo se dispara cuando M2 dejó el
+> campo en `None` — ver el punto siguiente). Esos dos sí siguen abortando si se
+> les da valor sin escribir antes el cálculo que lo consume.
+>
+> **Efecto colateral que destraba C.1/C.2 en la GUI:** `M2._valor_si_declarado`
+> decidía si un criterio estaba vacío leyendo el dataclass congelado, que no
+> consulta los overrides en caliente. Un criterio declarado con
+> `establecer_valor_dinamico` — la vía de la pestaña "Criterios" de la GUI — le
+> seguía pareciendo vacío a M2. Con el arreglo (`e20d412`),
+> `h_relleno_min_concreto_tmc` declarado dinámicamente **sí llega a M2**: el
+> catálogo deja de salir con el campo en `None`, concreto y TMC vuelven a
+> entrar como materiales candidatos, y el tope de
+> `M7_geometria.altura_recubrimiento` dejó de dispararse por esa vía.
+> Antes, con ese criterio declarado en caliente, solo sobrevivía HDPE y su tope
+> de 1.50 m.
+>
+> **Fase 7.A con entrada propia:** `python cli.py <csv> --modo-rasante` corre
+> el tamizado de rasante (M0 → M2 → M4 → `M7.tamizado_rasante`) **sin exigir
+> dimensionamiento**, barriendo el catálogo de diámetros y reportando la cota
+> mínima de rasante por punto. La Sec. 7.A es la generadora de la rasante y va
+> antes del perfil longitudinal; hasta `bedf237` solo se alcanzaba desde 7.B,
+> que corre después de dimensionar.
+
 Se cierran por vías distintas. Agrupados por lo que hace falta para resolverlos:
 
 **C.1 — Se cierran con una decisión tuya y de tu asesor (11 criterios, una tarde)**
