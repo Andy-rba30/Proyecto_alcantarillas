@@ -250,6 +250,68 @@ class TestMemoriaPorPunto:
         assert "4.1.1.3.7 b)" in html
         assert "fila-incumple" in html
 
+    def test_una_verificacion_diferida_se_marca_ambar_con_su_nota(self):
+        """
+        Sitios 8 y 9 del paso 7: una diferida (cumple=None) no puede salir
+        ni verde ni roja. Lleva su propia clase de fila, su propia marca y
+        la nota pegada a la fila -- no en un pie generico.
+        """
+        informe = _informe_de_ejemplo()
+        objetivo = informe.puntos[0]
+        objetivo.clasificacion = None
+        diferida = Verificacion(cumple=None, numeral="Fase 5, V5",
+                                valor_obtenido=None, valor_admisible=None,
+                                criterio_aplicado=None, codigo="V5",
+                                nota_diferida="V5 se DIFIERE al expediente: "
+                                              "falta el perfil de remanso")
+        objetivo.verificaciones = lambda: (("Fase 5", diferida),)
+        html = M11._tabla_verificaciones(objetivo)
+        assert M11.MARCA_DIFERIDA in html
+        assert "fila-diferida" in html
+        assert "nota-diferida" in html
+        assert "falta el perfil de remanso" in html
+        # ni la marca roja ni la fila roja: diferida no es incumplida
+        assert M11.MARCA_INCUMPLE not in html
+        assert "fila-incumple" not in html
+
+    def test_la_advertencia_de_limite_inferior_va_junto_al_diametro(self):
+        """
+        Con una diferida en el punto, la tabla del diseño lleva la
+        advertencia EN LA FILA del diametro adoptado: limite inferior,
+        nunca superior. El informe se arma sintetico porque la corrida real
+        de ejemplo aun no dimensiona ningun punto (V7 pendiente).
+        """
+        from modelos import (ControlGobernante, ResultadoHidraulico,
+                             ResultadoPunto, TipoMaterial)
+        from modulos.M0_carga import cargar_puntos
+        from modulos.M2_material import catalogo
+
+        punto = cargar_puntos(CSV_EJEMPLO)[0]
+        hidraulica = ResultadoHidraulico(
+            y_normal=0.30, y_critico=0.25, V=2.50, Q=1.0,
+            HW_entrada=0.50, HW_salida=0.40,
+            control_gobernante=ControlGobernante.ENTRADA)
+        resultado = ResultadoPunto(
+            punto=punto, aceptado=True, material=catalogo(TipoMaterial.HDPE),
+            D=0.60, resultado_hidraulico=hidraulica,
+            verificaciones=(
+                Verificacion(cumple=True, numeral="4.1.1.3.7 b)",
+                             valor_obtenido=0.5, valor_admisible=0.75,
+                             criterio_aplicado=None, codigo="V1"),
+                Verificacion(cumple=None, numeral="Fase 5, V5",
+                             valor_obtenido=None, valor_admisible=None,
+                             criterio_aplicado=None, codigo="V5",
+                             nota_diferida="diferida"),
+            ))
+        informe = _informe_de_ejemplo()
+        objetivo = informe.puntos[0]
+        objetivo.resultado = resultado
+        html = M11._tabla_diseno(objetivo)
+        assert "Diametro adoptado" in html
+        assert "LIMITE INFERIOR" in html
+        assert "V5" in html
+        assert "nunca" in html and "menor" in html
+
     def test_el_umbral_de_un_criterio_adoptado_se_identifica(self):
         """Un umbral [A] no puede parecer normativo: lleva clave y etiqueta."""
         clave = ca.criterios_sin_valor()[0]

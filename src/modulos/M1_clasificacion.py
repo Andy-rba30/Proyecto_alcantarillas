@@ -423,6 +423,19 @@ def clasificar(punto: PuntoCritico,
     cruce es un puente.
     """
     verificacion = verificar_luz(luz_m, punto.id)
+    # La denominacion de la obra NO admite el tercer estado de Verificacion:
+    # un diferido (cumple=None) es falsy, y el ternario de dos ramas lo
+    # convertiria EN SILENCIO en PUENTE -- cambiaria la denominacion de la
+    # obra sin que nadie la haya evaluado. verificar_luz siempre compara de
+    # verdad, asi que esto es un invariante del programa, no un caso del
+    # expediente: si algun dia llega un None aqui, es un error de codigo y
+    # falla ruidosamente en vez de reclasificar la obra.
+    if verificacion.cumple is None:
+        raise AssertionError(
+            "verificar_luz devolvio una verificacion DIFERIDA: la "
+            "denominacion alcantarilla/puente (Sec. 2.1) no es postergable "
+            "y no puede decidirse sin evaluarla"
+        )
     denominacion = (Denominacion.ALCANTARILLA if verificacion.cumple
                     else Denominacion.PUENTE)
     perfil = perfil_de(punto.familia)

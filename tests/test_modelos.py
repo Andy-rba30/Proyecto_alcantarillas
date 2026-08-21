@@ -17,11 +17,12 @@ from pathlib import Path
 import pytest
 
 import constantes_normativas as CN
-from modelos import (ConstantesHDS5, ControlGobernante, CriterioPendienteError,
+from modelos import (CompatibilidadGeometrica, ConstantesHDS5,
+                     ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DisenoNoFactibleError, ErrorProyecto,
-                     Familia, Geometria, Material, PuntoCritico,
+                     Familia, Geometria, Material, PasoDiseno, PuntoCritico,
                      ReferenciaNormativa, ResultadoHidraulico, ResultadoPunto,
-                     TipoMaterial, Verificacion)
+                     TamizadoRasante, TipoMaterial, Verificacion)
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING, CP8_CONTROL_SALIDA
 
 DIRECTORIO_TESTS = Path(__file__).resolve().parent
@@ -376,3 +377,67 @@ def test_la_referencia_normativa_sigue_siendo_un_string_para_quien_la_imprime():
     assert "4.1.2.1" in r
     assert "hoja de ruta" in str(r)          # la mitad interna, etiquetada
     assert str(r).startswith("num. 4.1.2.1")  # la cita verificable, delante
+
+
+# ===========================================================================
+# Verificaciones diferidas (cumple=None) en los agregados
+# ---------------------------------------------------------------------------
+# Sitios 3, 4 y 11 del inventario del paso 7: en todo agregado que filtra
+# incumplidas, el filtro es `cumple is False`. None es falsy, y un
+# `not v.cumple` arrastraria un diferido como incumplimiento en silencio.
+# ===========================================================================
+
+def _v(cumple, codigo="V1"):
+    return Verificacion(
+        cumple=cumple, numeral="Fase 5", valor_obtenido=None,
+        valor_admisible=None, criterio_aplicado=None, codigo=codigo,
+        nota_diferida="diferida al expediente" if cumple is None else None)
+
+
+def test_resultado_punto_una_diferida_no_es_incumplimiento():
+    """Sitio 3: un punto aceptado con diferidas es coherente."""
+    r = ResultadoPunto(punto=_punto(), aceptado=True,
+                       verificaciones=(_v(True), _v(None, "V5"), _v(None, "V8")))
+    assert r.verificaciones_incumplidas == ()
+    assert r.coherente
+
+
+def test_resultado_punto_solo_las_false_son_incumplidas():
+    r = ResultadoPunto(punto=_punto(), aceptado=False, motivo_rechazo="V1",
+                       verificaciones=(_v(False), _v(None, "V5")))
+    assert [v.codigo for v in r.verificaciones_incumplidas] == ["V1"]
+
+
+def test_paso_diseno_una_diferida_no_causa_el_descarte():
+    """Sitio 4: la traza de M11 no puede acusar a una diferida."""
+    paso = PasoDiseno(material="HDPE", D=0.60, aceptado=False, motivo="V1",
+                      verificaciones=(_v(False), _v(None, "V5")))
+    assert [v.codigo for v in paso.incumplidas] == ["V1"]
+
+
+def _tamizado_factible():
+    return TamizadoRasante(
+        cota_rasante_min=44.0, cota_rasante_actual=44.2,
+        cota_por_recubrimiento=44.0, cota_por_resguardo=43.8,
+        condicion_gobernante="recubrimiento", cota_entrada=42.0,
+        cota_clave=42.6, D_supuesto=0.6, HW=0.5, h_recubrimiento=0.6,
+        espesor_paquete=0.15, resguardo=0.5, factible=True,
+        delta_rasante_m=0.0, criterio_recubrimiento="h_relleno_min",
+        criterio_resguardo="resguardo_HW_subrasante")
+
+
+def test_compatibilidad_geometrica_una_diferida_no_la_hace_infactible():
+    """
+    Sitio 11 (dormido, defensa): G1 y G2 hoy nunca se difieren, pero si
+    algun dia una llegara con cumple=None, el punto no puede salir
+    infactible -- `exigir_factible` lanzaria DisenoNoFactibleError por una
+    verificacion que nadie evaluo.
+    """
+    compat = CompatibilidadGeometrica(
+        punto=_punto(), D=0.6, tamizado=_tamizado_factible(), longitud=12.0,
+        proyeccion_taludes=3.0, factor_esviaje=1.03, altura_terraplen=2.1,
+        S_conducto=0.01, cota_entrada=42.0, cota_salida=41.88, caida=0.12,
+        verificaciones=(_v(True, "G1"), _v(None, "G2")))
+    assert compat.verificaciones_incumplidas == ()
+    assert compat.factible
+    compat.exigir_factible()          # no lanza

@@ -320,11 +320,20 @@ def _resultado_hdpe(punto):
         HW_entrada=0.50, HW_salida=0.40,
         control_gobernante=ControlGobernante.ENTRADA)
     verificaciones = (
+        # V1 es [N] puro: criterio_aplicado=None, como en la Fase 5 real
+        # (el "Y_sobre_D_max" que llevaba antes ni siquiera es una clave de
+        # criterios_adoptados y reventaba el volcado de texto).
         Verificacion(cumple=True, numeral="4.1.1.3.7 b)", valor_obtenido=0.50,
-                     valor_admisible=0.75, criterio_aplicado="Y_sobre_D_max",
+                     valor_admisible=0.75, criterio_aplicado=None,
                      codigo="V1"),
         Verificacion(cumple=True, numeral="4.1.1.3.7 a)", valor_obtenido=2.50,
                      valor_admisible=0.60, criterio_aplicado=None, codigo="V2"),
+        # como en la Fase 5 real: V5 viaja DIFERIDA (cumple=None)
+        Verificacion(cumple=None, numeral="Fase 5, V5 (DG-2018 + Ley 29338)",
+                     valor_obtenido=None, valor_admisible=None,
+                     criterio_aplicado=None, codigo="V5",
+                     nota_diferida="V5 se DIFIERE al expediente tecnico: "
+                                   "falta el perfil de remanso"),
     )
     return ResultadoPunto(punto=punto, aceptado=True, material=material,
                           D=0.60, resultado_hidraulico=hidraulica,
@@ -453,3 +462,65 @@ def test_todos_los_puntos_del_csv_aparecen_en_el_informe():
     informe = _informe(luz_m=2.0)
     assert [i.punto.id for i in informe.puntos] == [
         p.id for p in cargar_puntos(CSV)]
+
+
+# ---------------------------------------------------------------------------
+# Verificaciones diferidas en la capa de reporte (sitios 5-9 y D del paso 7)
+# ---------------------------------------------------------------------------
+
+def test_incumplidas_del_informe_excluye_las_diferidas(informe_dimensionado):
+    """Sitio 5: la V5 diferida del fixture no es un incumplimiento."""
+    a01 = _punto(informe_dimensionado, "A-01")
+    assert [v.codigo for v in a01.incumplidas()] == []
+    assert "V5" in [v.codigo for v in a01.diferidas()]
+
+
+def test_la_fase_8_diferida_llega_al_informe(informe_dimensionado):
+    """
+    Bloque D: _fase_8 ya no descarta el Verificacion de clase/calibre. Queda
+    en informe.clase_calibre y entra a verificaciones() con su fase.
+    """
+    a01 = _punto(informe_dimensionado, "A-01")
+    assert a01.clase_calibre is not None
+    assert a01.clase_calibre.cumple is None
+    assert a01.clase_calibre.nota_diferida
+    fases = {fase for fase, v in a01.verificaciones() if v.cumple is None}
+    assert cli.FASE_ESTRUCTURAL in fases
+
+
+def test_el_json_trae_cumple_null_y_nota_diferida(informe_dimensionado):
+    """Sitio 6: el JSON dice POR QUE no se evaluo, no solo que no se evaluo."""
+    datos = cli.informe_json(informe_dimensionado)
+    a01 = next(p for p in datos["puntos"] if p["id"] == "A-01")
+    diferidas = [v for v in a01["verificaciones"] if v["cumple"] is None]
+    assert {v["codigo"] for v in diferidas} == {"V5", "8.1-2"}
+    assert all(v["nota_diferida"] for v in diferidas)
+    evaluadas = [v for v in a01["verificaciones"] if v["cumple"] is not None]
+    assert all(v["nota_diferida"] is None for v in evaluadas)
+
+
+def test_el_texto_marca_la_diferida_distinto_y_muestra_la_nota(
+        informe_dimensionado):
+    """Sitio 7: tercera marca, ni [OK] ni [NO], con la nota pegada a la fila."""
+    texto = cli.volcar(informe_dimensionado)
+    assert cli.MARCA_DIFERIDA in texto
+    assert "V5 se DIFIERE al expediente tecnico" in texto
+    # la V5 diferida no sale como [NO]
+    for linea in texto.splitlines():
+        if " V5 " in linea and cli.MARCA_INCUMPLE in linea:
+            raise AssertionError(f"V5 diferida marcada como incumplida: {linea}")
+
+
+def test_la_advertencia_de_limite_inferior_acompana_al_diametro(
+        informe_dimensionado):
+    """
+    La advertencia va JUNTO al D adoptado, no al pie: quien lee el diametro
+    tiene que verla sin buscarla. Y es limite inferior, nunca superior.
+    """
+    texto = cli.volcar(informe_dimensionado)
+    lineas = texto.splitlines()
+    indice_d = next(i for i, l in enumerate(lineas) if "Diametro : D =" in l)
+    ventana = "\n".join(lineas[indice_d:indice_d + 4])
+    assert "LIMITE INFERIOR" in ventana
+    assert "V5" in ventana
+    assert "nunca menor" in ventana

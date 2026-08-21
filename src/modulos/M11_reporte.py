@@ -113,6 +113,8 @@ FMT_3 = "{:.3f}"
 VACIO = "&ndash;"
 MARCA_CUMPLE = "cumple"
 MARCA_INCUMPLE = "NO cumple"
+# Tercer estado: diferida al expediente (cumple=None). Ni verde ni roja.
+MARCA_DIFERIDA = "DIFERIDA al expediente"
 
 # Orden de lectura de las etiquetas, de mas normativo a mas adoptado. Reproduce
 # el de `criterios_adoptados.reporte_criterios`.
@@ -234,7 +236,14 @@ def _etiqueta_html(etiqueta: str) -> str:
     return f'<span class="etiqueta {clase}">{texto}</span>'
 
 
-def _marca(cumple: bool) -> str:
+def _marca(cumple: Optional[bool]) -> str:
+    """
+    La marca de resultado con sus TRES estados: cumple (verde), NO cumple
+    (rojo) y diferida (ambar, cumple=None). El None se pregunta primero y
+    con `is None`: es falsy, y el if de dos ramas lo pintaria de rojo.
+    """
+    if cumple is None:
+        return f'<span class="diferida">{MARCA_DIFERIDA}</span>'
     clase = "cumple" if cumple else "incumple"
     texto = MARCA_CUMPLE if cumple else MARCA_INCUMPLE
     return f'<span class="{clase}">{texto}</span>'
@@ -672,7 +681,12 @@ def _tabla_iteraciones(informe: Any) -> str:
     for indice, paso in enumerate(traza, start=1):
         if paso.aceptado:
             resultado = '<span class="cumple">adoptado</span>'
-            motivo = "pasa todas las verificaciones de la Fase 5"
+            diferidas = [v.codigo or "?" for v in paso.verificaciones
+                         if v.cumple is None]
+            motivo = "pasa todas las verificaciones evaluadas de la Fase 5"
+            if diferidas:
+                motivo += (f" ({', '.join(diferidas)} diferidas al "
+                           "expediente, no evaluadas)")
         else:
             resultado = '<span class="incumple">descartado</span>'
             motivo = _esc(paso.motivo)
@@ -682,6 +696,27 @@ def _tabla_iteraciones(informe: Any) -> str:
                             _td(motivo)], clase))
     return "<h4>Iteraciones del diseño (Fases 3-5)</h4>" \
            '<table class="compacta">' + "".join(filas) + "</table>"
+
+
+def _advertencia_limite_inferior(resultado: Any) -> str:
+    """
+    La advertencia que acompana al diametro adoptado cuando alguna
+    verificacion del punto quedo diferida (cumple=None). Va JUNTO al D, no
+    en una nota general al pie: quien lee la tabla de resultados tiene que
+    verla sin buscarla. Y es limite inferior, nunca superior: las
+    verificaciones que si corren siguen corriendo completas, de modo que
+    diferir V5 y V8 no puede achicar el D -- solo el expediente, al
+    evaluarlas de verdad, puede agrandarlo.
+    """
+    codigos = [v.codigo or "?" for v in resultado.verificaciones
+               if v.cumple is None]
+    if not codigos:
+        return ""
+    return ('<br><span class="diferida">ADVERTENCIA:</span> este D es un '
+            "<b>LIMITE INFERIOR</b> a nivel perfil: "
+            f"{_esc(', '.join(codigos))} quedaron diferidas al expediente, "
+            "que puede requerir un D mayor al evaluarlas &mdash; nunca "
+            "menor, porque las verificaciones evaluadas corrieron completas.")
 
 
 def _tabla_diseno(informe: Any) -> str:
@@ -701,7 +736,8 @@ def _tabla_diseno(informe: Any) -> str:
                    f"n para velocidad y socavacion = {_num(material.n_min)}")]),
         _fila([_td("<b>Diametro adoptado</b>"),
                _td(f"D = {_num(resultado.D, FMT_2)} m (tope de la norma de "
-                   f"producto: {_num(material.D_max, FMT_2)} m)")]),
+                   f"producto: {_num(material.D_max, FMT_2)} m)"
+                   + _advertencia_limite_inferior(resultado))]),
         _fila([_td("<b>Hidraulica</b>"),
                _td(f"Q = {_num(hidraulica.Q)} m3/s &middot; y<sub>n</sub> = "
                    f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
@@ -741,11 +777,22 @@ def _tabla_verificaciones(informe: Any) -> str:
         else:
             umbral = f"{_etiqueta_html('N')} constante normativa"
         codigo = v.codigo or fase.split(" - ")[0]
-        clase = "" if v.cumple else "fila-incumple"
+        if v.cumple is None:
+            clase = "fila-diferida"
+        elif v.cumple:
+            clase = ""
+        else:
+            clase = "fila-incumple"
         filas.append(_fila([_td(_esc(codigo)), _td(_esc(v.numeral)),
                             _td(_num(v.valor_obtenido), "num"),
                             _td(_num(v.valor_admisible), "num"),
                             _td(umbral), _td(_marca(v.cumple))], clase))
+        if v.nota_diferida:
+            # El fundamento va pegado a su fila, no en un pie generico:
+            # quien ve la marca ambar lee el porque sin buscarlo.
+            filas.append(_fila([f'<td colspan="6" class="nota-diferida">'
+                                f"{_esc(v.nota_diferida)}</td>"],
+                               "fila-diferida"))
     return "<h4>Verificaciones</h4>" \
            '<table class="compacta">' + "".join(filas) + "</table>"
 

@@ -82,6 +82,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import textwrap
 import math
 import sys
 from dataclasses import dataclass, field
@@ -164,6 +165,9 @@ ANCHO = 78
 SANGRIA = "  "
 MARCA_CUMPLE = "[OK]"
 MARCA_INCUMPLE = "[NO]"
+# Tercer estado: diferida al expediente (cumple=None). Ni OK ni NO --
+# no se evaluo, y la marca tiene que leerse distinto de ambas.
+MARCA_DIFERIDA = "[--]"
 
 
 # ===========================================================================
@@ -363,6 +367,11 @@ class InformePunto:
     proteccion: Optional[ProteccionSalida] = None
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
+    # Fase 8, items 1-2: la clase/calibre por norma de producto, hoy siempre
+    # una verificacion DIFERIDA (cumple=None). Viaja como campo propio y
+    # entra en verificaciones(), para llegar al JSON, al HTML y al texto por
+    # el mismo camino que las de las Fases 2, 5 y 7.
+    clase_calibre: Optional[Verificacion] = None
     espaciamiento: Optional[Espaciamiento] = None
     # Escalones que MD probo, en orden. Es el entregable 1 de la Fase 11
     # ("iteraciones"): la memoria tiene que poder decir por que se descarto el
@@ -384,10 +393,17 @@ class InformePunto:
             filas.extend((FASE_DISENO, v) for v in self.resultado.verificaciones)
         if self.geometria is not None:
             filas.extend((FASE_GEOMETRIA, v) for v in self.geometria.verificaciones)
+        if self.clase_calibre is not None:
+            filas.append((FASE_ESTRUCTURAL, self.clase_calibre))
         return tuple(filas)
 
     def incumplidas(self) -> Tuple[Verificacion, ...]:
-        return tuple(v for _, v in self.verificaciones() if not v.cumple)
+        """Solo cumple is False: una diferida (None) no es un incumplimiento."""
+        return tuple(v for _, v in self.verificaciones() if v.cumple is False)
+
+    def diferidas(self) -> Tuple[Verificacion, ...]:
+        """Las diferidas al expediente (cumple is None), para reportarlas."""
+        return tuple(v for _, v in self.verificaciones() if v.cumple is None)
 
 
 @dataclass
@@ -600,11 +616,11 @@ def _fase_8(informe: InformePunto) -> None:
     (items 1-2) y la cama de apoyo (item 4). El item 5 esta diferido al
     expediente por la propia hoja de ruta y se imprime como nota.
 
-    Los items 1-2 son hoy un tope declarado en M8: en cuanto
-    'clases_producto_por_relleno' tenga valor, `seleccionar_clase_calibre`
-    lanza AssertionError porque la tabla todavia no esta transcrita. Esa
-    excepcion NO se atrapa -- es un modulo incompleto, no un expediente
-    incompleto -- y sale con su traza para que se vea que falta implementarla.
+    Los items 1-2 vuelven como verificacion DIFERIDA (cumple=None, paso 4
+    del encargo) y se GUARDAN en `informe.clase_calibre`: antes el resultado
+    se descartaba y el diferido no llegaba ni al JSON ni al HTML. Desde
+    `InformePunto.verificaciones()` viaja al reporte por el mismo camino que
+    las verificaciones de las otras fases.
     """
     resultado = informe.resultado
     material, D = resultado.material, resultado.D
@@ -616,10 +632,11 @@ def _fase_8(informe: InformePunto) -> None:
                     "altura de relleno sobre la clave",
                     lambda: punto.cota_subrasante - cota_clave(punto=punto, D=D))
     if altura is not None:
-        _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
-               "clase o calibre por norma de producto (items 1-2)",
-               lambda: seleccionar_clase_calibre(material=material,
-                                                 altura_relleno=altura))
+        informe.clase_calibre = _etapa(
+            informe.bloqueos, FASE_ESTRUCTURAL,
+            "clase o calibre por norma de producto (items 1-2)",
+            lambda: seleccionar_clase_calibre(material=material,
+                                              altura_relleno=altura))
     informe.cama_apoyo = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                                 "cama de apoyo y relleno lateral (item 4)",
                                 lambda: cama_apoyo_relleno_lateral(material))
@@ -757,10 +774,13 @@ def _num(valor: Any) -> Any:
 
 
 def _verificacion_json(fase: str, v: Verificacion) -> Dict[str, Any]:
+    # cumple sale con sus tres estados (true/false/null); cuando es null,
+    # nota_diferida dice POR QUE no se evaluo, no solo que no se evaluo.
     return {"fase": fase, "codigo": v.codigo, "numeral": v.numeral,
             "cumple": v.cumple, "valor_obtenido": _num(v.valor_obtenido),
             "valor_admisible": _num(v.valor_admisible),
-            "criterio_aplicado": v.criterio_aplicado}
+            "criterio_aplicado": v.criterio_aplicado,
+            "nota_diferida": v.nota_diferida}
 
 
 def _paso_json(paso: PasoDiseno) -> Dict[str, Any]:
@@ -971,11 +991,21 @@ def _lineas_verificaciones(informe: InformePunto) -> List[str]:
         return []
     out = [f"{SANGRIA}Verificaciones:"]
     for fase, v in filas:
-        marca = MARCA_CUMPLE if v.cumple else MARCA_INCUMPLE
+        if v.cumple is None:
+            marca = MARCA_DIFERIDA
+        elif v.cumple:
+            marca = MARCA_CUMPLE
+        else:
+            marca = MARCA_INCUMPLE
         codigo = v.codigo or fase.split(" - ")[0]
         out.append(f"{SANGRIA * 2}{marca} {codigo:<4} {v.numeral:<28} "
                    f"obtenido {_fmt(v.valor_obtenido)} | admisible "
                    f"{_fmt(v.valor_admisible)}")
+        if v.nota_diferida:
+            # La nota viaja junto a la fila, no en un pie generico: quien lee
+            # la marca [--] tiene que poder leer el porque sin buscarlo.
+            for linea in textwrap.wrap(v.nota_diferida, width=66):
+                out.append(f"{SANGRIA * 4}{linea}")
         if v.criterio_aplicado:
             out.append(f"{SANGRIA * 4}umbral del criterio "
                        f"'{v.criterio_aplicado}' "
@@ -1020,6 +1050,16 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         out.append(f"{SANGRIA}Fase 4  Material : {r.material.nombre} "
                    f"({r.material.norma_producto})")
         out.append(f"{SANGRIA}        Diametro : D = {_fmt(r.D)} m")
+        if any(v.cumple is None for v in r.verificaciones):
+            # Junto al diametro, no al pie: quien lee el D adoptado tiene que
+            # ver la advertencia sin buscarla.
+            codigos = ", ".join(v.codigo or "?" for v in r.verificaciones
+                                if v.cumple is None)
+            out.append(f"{SANGRIA}        ADVERTENCIA: D es LIMITE INFERIOR "
+                       f"a nivel perfil ({codigos} diferidas al expediente).")
+            out.append(f"{SANGRIA}        El expediente puede requerir un D "
+                       "mayor al evaluarlas; nunca menor: las verificaciones "
+                       "evaluadas corrieron completas.")
         out.append(f"{SANGRIA}        Control  : {h.control_gobernante.value} "
                    f"(HW = {_fmt(h.HW)} m; entrada {_fmt(h.HW_entrada)} / "
                    f"salida {_fmt(h.HW_salida)})")

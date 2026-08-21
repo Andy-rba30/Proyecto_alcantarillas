@@ -376,3 +376,30 @@ def test_la_clasificacion_es_inmutable(punto_b):
     clasificacion = clasificar(punto_b, 1.20)
     with pytest.raises(dataclasses.FrozenInstanceError):
         clasificacion.denominacion = Denominacion.PUENTE
+
+
+# ---------------------------------------------------------------------------
+# Sitio 12 del paso 7: la denominacion no admite el tercer estado
+# ---------------------------------------------------------------------------
+
+def test_una_verificacion_de_luz_diferida_no_reclasifica_la_obra(
+        monkeypatch, punto_a):
+    """
+    Decision documentada en clasificar(): un diferido (cumple=None) es falsy
+    y el ternario de dos ramas lo convertiria EN SILENCIO en PUENTE. Como
+    verificar_luz siempre evalua de verdad, un None aqui es un invariante
+    roto del programa -- no un caso del expediente -- y falla ruidosamente
+    con AssertionError en vez de cambiar la denominacion de la obra.
+    """
+    import modulos.M1_clasificacion as M1
+    from modelos import Verificacion
+
+    def _luz_diferida(luz_m, id_punto=None):
+        return Verificacion(cumple=None, numeral=M1.NUMERAL_LUZ,
+                            valor_obtenido=None, valor_admisible=None,
+                            criterio_aplicado=None,
+                            nota_diferida="no deberia existir")
+
+    monkeypatch.setattr(M1, "verificar_luz", _luz_diferida)
+    with pytest.raises(AssertionError, match="DIFERIDA"):
+        M1.clasificar(punto_a, luz_m=2.0, categoria_tr="quebrada_menor")

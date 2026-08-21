@@ -1206,11 +1206,10 @@ def verificar_estabilidad(*, geometria: GeometriaCabezal,
     del cabezal mientras el analisis de taludes viaja por su cuenta en el
     EMS, sin que eso haga desaparecer las dos filas de la tabla.
 
-    OJO mientras el paso 7 del encargo no llegue: `EstabilidadCabezal.estable`
-    y `verificaciones_incumplidas` filtran con `not v.cumple`, y None es
-    falsy, de modo que con `incluir_globales=True` las dos diferidas cuentan
-    hoy como incumplimientos. Es el bug silencioso que el inventario de los
-    nueve `.cumple` existe para cerrar.
+    `EstabilidadCabezal.estable` y `verificaciones_incumplidas` filtran con
+    `cumple is False`: las dos diferidas no cuentan como incumplimientos, y
+    un cabezal con E1-E3 cumplidas es estable a nivel perfil aunque E4 y E5
+    viajen diferidas.
 
     El mismo cabezal se verifica dos veces, una por condicion: no es la misma
     verificacion con otro umbral, cambian tambien las fuerzas (aparece el

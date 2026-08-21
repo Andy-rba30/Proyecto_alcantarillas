@@ -910,12 +910,19 @@ class CompatibilidadGeometrica:
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
-        """Las que M11 debe destacar en la memoria del punto."""
-        return tuple(v for v in self.verificaciones if not v.cumple)
+        """
+        Las que M11 debe destacar en la memoria del punto: solo las que
+        INCUMPLEN (cumple is False). G1 y G2 hoy nunca se difieren; el
+        filtro `is False` es defensa para que, si algun dia una lo hiciera,
+        el diferido no se leyera como no-factible y `exigir_factible` no
+        lanzara DisenoNoFactibleError por una verificacion pendiente.
+        """
+        return tuple(v for v in self.verificaciones if v.cumple is False)
 
     @property
     def factible(self) -> bool:
-        """True si las verificaciones de 7.B cumplen todas."""
+        """True si ninguna verificacion de 7.B incumple (las diferidas,
+        si las hubiera, no hacen infactible al punto)."""
         return not self.verificaciones_incumplidas
 
     @property
@@ -1217,12 +1224,23 @@ class EstabilidadCabezal:
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
-        """Las que M11 debe destacar en la memoria del cabezal."""
-        return tuple(v for v in self.verificaciones if not v.cumple)
+        """
+        Las que M11 debe destacar en la memoria del cabezal: solo las que
+        INCUMPLEN (cumple is False). Con `incluir_globales=True`, E4 y E5
+        llegan DIFERIDAS (cumple=None) y no son incumplimientos: sin el
+        filtro `is False`, el cabezal saldria inestable por dos analisis
+        que nadie corrio.
+        """
+        return tuple(v for v in self.verificaciones if v.cumple is False)
 
     @property
     def estable(self) -> bool:
-        """True si las cinco verificaciones de Sec. 9.3 cumplen."""
+        """
+        True si ninguna verificacion de Sec. 9.3 incumple. Las diferidas no
+        cuentan: un cabezal con E1-E3 cumplidas y E4/E5 diferidas al
+        expediente es estable A NIVEL PERFIL, y las dos filas siguen en la
+        tabla con su marca y su nota para que nadie las lea como cerradas.
+        """
         return not self.verificaciones_incumplidas
 
 
@@ -1347,14 +1365,21 @@ class ResultadoPunto:
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
-        """Las que M11 debe destacar en la memoria del punto."""
-        return tuple(v for v in self.verificaciones if not v.cumple)
+        """
+        Las que M11 debe destacar en la memoria del punto. Solo las que
+        INCUMPLEN (cumple is False): una diferida (None) no se evaluo y no
+        es un incumplimiento -- el filtro es `is False` porque None es falsy
+        y un `not v.cumple` la arrastraria aqui en silencio.
+        """
+        return tuple(v for v in self.verificaciones if v.cumple is False)
 
     @property
     def coherente(self) -> bool:
         """
         True si `aceptado` concuerda con las verificaciones y con el motivo de
-        rechazo. Sirve de guarda en los tests de M5 y M7.
+        rechazo. Sirve de guarda en los tests de M5 y M7. Un punto aceptado
+        puede llevar verificaciones diferidas: solo las False lo hacen
+        incoherente.
         """
         if self.aceptado:
             return not self.verificaciones_incumplidas and self.motivo_rechazo is None
@@ -1391,5 +1416,9 @@ class PasoDiseno:
 
     @property
     def incumplidas(self) -> Tuple[Verificacion, ...]:
-        """Las verificaciones que hicieron descartar este escalon."""
-        return tuple(v for v in self.verificaciones if not v.cumple)
+        """
+        Las verificaciones que hicieron descartar este escalon: solo las que
+        INCUMPLEN (cumple is False). Una diferida (None) no descarta nada y
+        no puede figurar como causa del descarte en la traza de M11.
+        """
+        return tuple(v for v in self.verificaciones if v.cumple is False)

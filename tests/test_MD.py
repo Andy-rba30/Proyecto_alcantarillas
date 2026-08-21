@@ -403,3 +403,60 @@ def test_lote_con_todos_fallidos_devuelve_todos_como_no_aceptados():
     assert all(not r.aceptado for r in resultados)
     assert all(r.motivo_rechazo for r in resultados)
     assert all(r.coherente for r in resultados)
+
+
+# ===========================================================================
+# Verificaciones diferidas en el bucle (sitios 1 y 2 del paso 7)
+# ===========================================================================
+
+def _diferida(codigo):
+    return Verificacion(
+        cumple=None, numeral=f"Fase 5, {codigo}", valor_obtenido=None,
+        valor_admisible=None, criterio_aplicado=None, codigo=codigo,
+        nota_diferida="diferida al expediente tecnico")
+
+
+def _cumple_con_diferidas(*, punto, material, D, resultado):
+    """Lo que la Fase 5 real devuelve hoy: todo cumple salvo V5/V8, diferidas."""
+    return (_verificacion(True), _diferida("V5"), _diferida("V8"))
+
+
+def _incumple_con_diferida(*, punto, material, D, resultado):
+    return (_verificacion(False, obtenido=1.0, admisible=2.0), _diferida("V5"))
+
+
+def test_un_diametro_con_v5_y_v8_diferidas_se_acepta():
+    """
+    Sitio 1 -- LA regresion del encargo. Un diferido no cuenta como
+    incumplimiento ni como cumplimiento, y SI permite aceptar el diametro.
+    Si lo impidiera, el efecto seria identico al AssertionError que los
+    pasos 2-5 retiraron y ningun punto se dimensionaria jamas.
+    """
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    resultado, motivo = disenar_material(
+        _punto(), material, Q=1.0, S=CP2_GEOMETRIA_MANNING["S"],
+        L=12.0, TW=0.0, verificar=_cumple_con_diferidas)
+
+    assert resultado is not None and resultado.aceptado
+    assert motivo == ""
+    assert [v.cumple for v in resultado.verificaciones] == [True, None, None]
+    # y el aceptado es coherente: las diferidas no son incumplimientos
+    assert resultado.verificaciones_incumplidas == ()
+    assert resultado.coherente
+
+
+def test_el_motivo_de_rechazo_no_acusa_a_las_diferidas():
+    """
+    Sitio 2: con una False y una diferida, el motivo nombra solo la False.
+    'V5 obtenido None frente a None' pareceria una comparacion real que
+    nunca ocurrio.
+    """
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    resultado, motivo = disenar_material(
+        _punto(), material, Q=1.0, S=CP2_GEOMETRIA_MANNING["S"],
+        L=12.0, TW=0.0, verificar=_incumple_con_diferida)
+
+    assert resultado is None
+    assert "V1" in motivo
+    assert "V5" not in motivo
+    assert "None" not in motivo

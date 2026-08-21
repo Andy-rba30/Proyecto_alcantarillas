@@ -606,13 +606,9 @@ def test_el_agregado_marca_las_incumplidas(geometria):
 def test_incluir_las_globales_ya_no_detiene_el_agregado(geometria):
     """
     Con `incluir_globales=True` el agregado ya no se detiene: devuelve las
-    cinco filas de Sec. 9.3, con E4 y E5 diferidas.
-
-    OJO: `estable` y `verificaciones_incumplidas` filtran con `not v.cumple`
-    y None es falsy, asi que hoy las dos diferidas cuentan como
-    incumplimientos. Este test fija lo que HAY, no lo que debe ser: el paso 7
-    del encargo (inventario de los nueve `.cumple`) es el que lo corrige, y
-    entonces este test se actualiza con el.
+    cinco filas de Sec. 9.3, con E4 y E5 diferidas. Y desde el paso 7 las
+    diferidas no cuentan como incumplimientos: con E1-E3 cumplidas el
+    cabezal es estable a nivel perfil.
     """
     estabilidad = verificar_estabilidad(
         geometria=geometria, condicion=CondicionAnalisis.ESTATICO,
@@ -626,6 +622,10 @@ def test_incluir_las_globales_ya_no_detiene_el_agregado(geometria):
     diferidas = [v for v in estabilidad.verificaciones if v.cumple is None]
     assert [v.codigo for v in diferidas] == ["E4", "E5"]
     assert all(v.nota_diferida for v in diferidas)
+    # sitio 10 del inventario: las diferidas no son incumplimientos y no
+    # vuelven inestable un cabezal cuyas E1-E3 cumplen
+    assert estabilidad.verificaciones_incumplidas == ()
+    assert estabilidad.estable
 
 
 @pytest.mark.parametrize("funcion, codigo, clave_fs", [
