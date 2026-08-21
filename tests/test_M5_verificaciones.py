@@ -31,9 +31,9 @@ import math
 import pytest
 
 import criterios_adoptados as ca
+import datos_sitio as ds
 from constantes_normativas import V_MIN, Y_SOBRE_D_MAX
-from modelos import (ControlGobernante, CriterioPendienteError,
-                     DatoFaltanteError, ErrorProyecto, Familia,
+from modelos import (ControlGobernante, CriterioPendienteError, Familia,
                      PuntoCritico, ResultadoHidraulico, TipoMaterial)
 from modulos.M2_material import catalogo
 from modulos.M5_verificaciones import (resguardo_por_cbr, v1_borde_libre,
@@ -220,34 +220,67 @@ def test_v4_usa_HW_del_control_gobernante():
 
 
 # ===========================================================================
-# V5, V7, V8 - Pendientes declarados
+# V5 y V8 diferidos al expediente; V7 pendiente declarado
 # ===========================================================================
 
-def test_v5_lanza_pendiente_por_falta_de_metodo_y_dato():
-    punto = _punto()
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        v5_remanso(punto=punto, resultado=_resultado())
-    assert excinfo.value.clave == "remanso_derecho_via"
+def test_v5_se_difiere_al_expediente_sin_metodo_ni_dato():
+    """
+    V5 ya no se detiene: se difiere. Devuelve un Verificacion con
+    cumple=None -- ni cumplida ni incumplida -- y la razon declarada en
+    `nota_diferida`, que nombra los dos vacios: el perfil de remanso y el
+    ancho de derecho de via.
+    """
+    v = v5_remanso(punto=_punto(), resultado=_resultado())
+    assert v.cumple is None
+    assert v.codigo == "V5"
+    assert v.valor_obtenido is None
+    assert v.valor_admisible is None
+    assert v.criterio_aplicado is None
+    assert v.nota_diferida
+    assert "remanso_derecho_via" in v.nota_diferida
+    assert "derecho de via" in v.nota_diferida
 
 
-def test_v5_con_el_criterio_declarado_no_revienta_con_assertionerror():
+def test_v5_diferida_no_registra_el_criterio_como_usado():
     """
-    Regresion: con 'remanso_derecho_via' DECLARADO, V5 lanzaba un
-    `AssertionError` desnudo. Al no descender de ErrorProyecto, `cli._etapa`
-    no lo capturaba y la corrida entera abortaba. Ahora sale DatoFaltanteError
-    -- que si es ErrorProyecto -- y la CLI lo anota como bloqueo del punto.
+    Una verificacion diferida no aplico el criterio a ningun numero: si lo
+    registrara, M11 lo imprimiria como usado y la memoria diria algo falso.
     """
-    punto = _punto()
+    antes = set(ca.criterios_usados())
+    v5_remanso(punto=_punto(), resultado=_resultado())
+    nuevos = set(ca.criterios_usados()) - antes
+    assert "remanso_derecho_via" not in nuevos
+
+
+def test_v5_diferida_registra_el_nivel_de_estudio_como_dato_usado():
+    """
+    La nota se arma con `ds.valor('nivel_estudio')`, no con la palabra
+    "perfil" escrita a mano: el nivel de estudio es el fundamento de la
+    postergacion y tiene que figurar como dato de sitio USADO para que M11
+    lo imprima junto a la verificacion que sostiene.
+    """
+    v = v5_remanso(punto=_punto(), resultado=_resultado())
+    assert "nivel_estudio" in ds.datos_usados()
+    assert ds.valor("nivel_estudio") in v.nota_diferida
+
+
+def test_v5_con_el_criterio_declarado_sigue_diferida():
+    """
+    Regresion doble. Antes V5 tenia dos capas de tope: sin el criterio
+    lanzaba CriterioPendienteError y CON el criterio declarado lanzaba
+    DatoFaltanteError('ancho_derecho_via_m') -- un dato que ademas no tiene
+    via de entrega en el codigo. Las dos capas se retiraron: declarar el
+    criterio no cambia nada, porque lo que falta no es el criterio sino el
+    metodo y el dato, y eso es justamente lo que la nota declara.
+    """
     ca.establecer_valor_dinamico("remanso_derecho_via", "cumple")
     try:
-        with pytest.raises(DatoFaltanteError) as excinfo:
-            v5_remanso(punto=punto, resultado=_resultado())
+        v = v5_remanso(punto=_punto(), resultado=_resultado())
     finally:
         ca.quitar_valor_dinamico("remanso_derecho_via")
 
-    assert isinstance(excinfo.value, ErrorProyecto)
-    assert excinfo.value.campo == "ancho_derecho_via_m"
-    assert excinfo.value.id_punto == "A-01"
+    assert v.cumple is None
+    assert v.nota_diferida
 
 
 def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
@@ -418,20 +451,22 @@ def test_v9_en_el_tope_exacto_cumple(hdpe):
 # verificar() - el agregado que llama MD
 # ===========================================================================
 
-def test_verificar_se_detiene_en_V5_la_primera_pendiente_en_orden(concreto):
+def test_verificar_se_detiene_en_V7_la_primera_pendiente_en_orden(concreto):
     """
-    Con concreto, V3 no esta pendiente (rango [N] directo): la primera
-    excepcion de la secuencia V1..V9 es V5.
+    Con concreto, V3 no esta pendiente (rango [N] directo). V5 tampoco
+    detiene ya la secuencia: se difiere. La primera excepcion de V1..V9 es
+    ahora V7, que si tiene formula y le falta un dato del procedimiento
+    ('peso_especifico_relleno_kn_m3').
     """
     punto = _punto()
     with pytest.raises(CriterioPendienteError) as excinfo:
         verificar(punto=punto, material=concreto, D=0.90,
                  resultado=_resultado(y_normal=0.60, V=1.5))
-    assert excinfo.value.clave == "remanso_derecho_via"
+    assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
 
 def test_verificar_con_tmc_se_detiene_antes_en_V3(tmc):
-    """Con TMC, V3 esta pendiente y precede a V5 en el orden de la tabla."""
+    """Con TMC, V3 esta pendiente y precede a V7 en el orden de la tabla."""
     punto = _punto()
     with pytest.raises(CriterioPendienteError) as excinfo:
         verificar(punto=punto, material=tmc, D=0.90,

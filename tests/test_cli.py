@@ -192,11 +192,16 @@ def test_sin_tw_ni_longitud_se_bloquean_los_dos_insumos_de_md():
 
 
 def test_con_tw_y_longitud_el_bucle_de_md_llega_a_la_fase_5():
-    """El siguiente vacio es V5, no un insumo que falte: MD ya corrio."""
+    """
+    El siguiente vacio esta dentro de la Fase 5, no en un insumo que falte:
+    MD ya corrio. Es V7 ('peso_especifico_relleno_kn_m3') y no V5, porque V5
+    dejo de detener la secuencia: se difiere al expediente con cumple=None.
+    """
     informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
                        TW_m=0.0, longitud_m=12.0)
     a01 = _punto(informe, "A-01")
-    assert "remanso_derecho_via" in _claves_bloqueantes(a01)
+    assert "peso_especifico_relleno_kn_m3" in _claves_bloqueantes(a01)
+    assert "remanso_derecho_via" not in _claves_bloqueantes(a01)
     assert not a01.dimensionado
 
 
@@ -275,10 +280,12 @@ def test_los_criterios_bloqueantes_se_agrupan_con_sus_puntos():
     informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
                        TW_m=0.0, longitud_m=12.0)
     bloqueantes = {c.clave: c for c in cli.criterios_bloqueantes(informe)}
-    remanso = bloqueantes["remanso_derecho_via"]
-    assert set(remanso.puntos) == {"A-01", "A-02", "B-01"}
-    assert remanso.etiqueta == "A"
-    assert remanso.concepto and remanso.fuente
+    relleno = bloqueantes["peso_especifico_relleno_kn_m3"]
+    assert set(relleno.puntos) == {"A-01", "A-02", "B-01"}
+    assert relleno.etiqueta == "A"
+    assert relleno.concepto and relleno.fuente
+    # V5 ya no bloquea a nadie: se difiere en vez de detenerse
+    assert "remanso_derecho_via" not in bloqueantes
 
 
 def test_un_criterio_con_valor_no_aparece_como_bloqueante(monkeypatch):
@@ -393,7 +400,7 @@ def test_el_texto_nombra_el_material_el_control_y_los_bloqueos():
                        categoria_tr="quebrada_menor")
     texto = cli.volcar(informe)
     assert "CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA" in texto
-    assert "remanso_derecho_via" in texto
+    assert "peso_especifico_relleno_kn_m3" in texto
     assert "Expediente cerrado      : no" in texto
 
 

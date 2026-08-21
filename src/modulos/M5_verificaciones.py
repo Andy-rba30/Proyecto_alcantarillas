@@ -11,7 +11,8 @@ que declara su Protocol `Verificador`.
     V3  Velocidad maxima          concreto: rango Tabla N 10 [N]
                                   TMC / HDPE: criterio pendiente   [C]
     V4  Carga a la entrada HW     HW <= cota subrasante - resguardo(CBR)  [N->]
-    V5  Remanso aguas arriba      sin metodo declarado -> pendiente       [A]
+    V5  Remanso aguas arriba      sin metodo ni ancho de derecho de via ->
+                                  DIFERIDA al expediente (cumple=None)    [A]
     V6  Material solido de arrastre  seccion unica (cumple por construccion)
     V7  Flotacion del conducto    equilibrio LRFD de factores de carga
                                   (Fase 8, M8_estructural); pendiente en
@@ -28,17 +29,20 @@ el metodo o el dato con que evaluarlo (ver el detalle en cada funcion).
 Rellenarlos con un supuesto no declarado es exactamente lo que CLAUDE.md
 prohibe como "el peor error posible en este proyecto".
 
-V8 no se rellena y tampoco se detiene: se DIFIERE al expediente tecnico y
-devuelve `cumple=None` con su fundamento en `nota_diferida`. Las dos cosas que
-le faltan -- el TR mayor del regimen FEN y el umbral de colapso -- pertenecen
-al nivel de expediente definitivo, y el nivel de estudio de este proyecto es
-perfil ('nivel_estudio' en datos_sitio.py). El criterio 'TR_evento_extremo'
-sigue vacio: la verificacion diferida NO lo invoca, para que no figure como
-usado en la memoria de M11.
+Ninguna de las dos se rellena, y ninguna se detiene: las dos se DIFIEREN al
+expediente tecnico y devuelven `cumple=None` con su fundamento en
+`nota_diferida`.
 
-V5 se detiene con `CriterioPendienteError` desde un criterio nuevo en
-`criterios_adoptados.py` ('remanso_derecho_via'), con su justificacion y lo
-que falta para resolverlo.
+    V5  falta el perfil de remanso (paso a paso o HEC-RAS) y el ancho de
+        derecho de via legal por punto; criterio 'remanso_derecho_via'.
+    V8  falta el TR mayor del regimen FEN y el umbral de colapso; criterio
+        'TR_evento_extremo'.
+
+Lo que a las dos les falta pertenece al nivel de expediente definitivo, y el
+nivel de estudio de este proyecto es el que declara datos_sitio en
+'nivel_estudio'. Los dos criterios siguen VACIOS y las dos verificaciones
+diferidas NO los invocan, para que no figuren como usados en la memoria de
+M11.
 
 V7 SI tiene formula y metodo -- Fase 8, item 3 de la hoja de ruta, y
 `modulos.M8_estructural` la implementa completa ("tuberia vacia, NF en su cota
@@ -87,10 +91,9 @@ es la segunda condicion del tamizado.
 Excepciones
 -----------
     CriterioPendienteError   V3 en TMC/HDPE ('v_max_tmc' / 'v_max_hdpe');
-                             V5 ('remanso_derecho_via'); V7
-                             ('peso_especifico_relleno_kn_m3' o
-                             'factores_carga_aashto'). V8 ya NO lanza: se
-                             difiere con cumple=None.
+                             V7 ('peso_especifico_relleno_kn_m3' o
+                             'factores_carga_aashto'). V5 y V8 ya NO lanzan:
+                             se difieren con cumple=None.
     DatoInvalidoError        el 'material' de V3 no es de TipoMaterial (no
                              deberia llegar aqui: M2 ya lo valido antes); en
                              V7, la clave del conducto queda a nivel de la
@@ -110,9 +113,10 @@ from __future__ import annotations
 from typing import Tuple
 
 import criterios_adoptados as ca
+import datos_sitio as ds
 from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
-from modelos import (DatoFaltanteError, DatoInvalidoError, Material, PuntoCritico,
+from modelos import (DatoInvalidoError, Material, PuntoCritico,
                      ReferenciaNormativa, ResultadoHidraulico, Verificacion)
 from modulos.M2_material import CRITERIO_DIAMETROS, CRITERIO_V_MAX
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
@@ -304,6 +308,36 @@ def v4_carga_entrada(*, punto: PuntoCritico,
 # V5 - Remanso aguas arriba (DG-2018 + Ley 29338)
 # ---------------------------------------------------------------------------
 
+DATO_NIVEL_ESTUDIO = "nivel_estudio"
+
+
+def nota_diferida_v5() -> str:
+    """
+    Texto de `nota_diferida` de V5, armado en cada llamada y no como
+    constante de modulo: el nivel de estudio se LEE de datos_sitio con
+    `ds.valor`, que registra el uso, y ese registro tiene que ocurrir cuando
+    la verificacion corre. Un texto congelado en import-time diria "perfil"
+    sin que el dato figurara como usado en la memoria de M11.
+    """
+    nivel = ds.valor(DATO_NIVEL_ESTUDIO)
+    return (
+        f"V5 se DIFIERE al expediente tecnico. A nivel de estudio {nivel} "
+        "(Manual de Suelos MTC num. 4.2, Cuadro 4.1; ver "
+        f"'{DATO_NIVEL_ESTUDIO}' en datos_sitio.py) no estan definidos ni el "
+        "perfil de remanso aguas arriba -- que exige un calculo paso a paso "
+        "o un modelo tipo HEC-RAS -- ni el ancho de derecho de via legal de "
+        "cada punto, que no es columna del CSV de Sec. 1.2. Sin los dos, V5 "
+        "no tiene con que comparar el HW de M4. NO se aproxima con el ancho "
+        "de plataforma (`ancho_plataforma`), que es la seccion vial "
+        "construida y no el derecho de via legal: usarlo seria inventar un "
+        "dato que el expediente no declaro. Para dejar de diferirla hace "
+        f"falta declarar '{CRITERIO_REMANSO}' con el metodo de perfil de "
+        "remanso, incorporar el ancho de derecho de via por punto como dato "
+        "de entrada, y comparar el embalse resultante contra ese ancho y "
+        "contra la faja marginal de la Ley 29338."
+    )
+
+
 def v5_remanso(*, punto: PuntoCritico,
               resultado: ResultadoHidraulico) -> Verificacion:
     """
@@ -312,37 +346,34 @@ def v5_remanso(*, punto: PuntoCritico,
     de remanso ni el ancho de derecho de via por punto (no es columna del
     CSV, Sec. 1.2): sin los dos, V5 no tiene con que comparar el HW de M4.
 
-    Se detiene en el criterio 'remanso_derecho_via' -- vacio a proposito, ver
-    su justificacion en criterios_adoptados.py -- en vez de aproximar con el
-    ancho de plataforma (`punto.ancho_plataforma`), que es la seccion vial
-    construida y NO el derecho de via legal: usarlo seria inventar un dato
-    que el expediente no declaro.
+    DIFERIDA al expediente tecnico: devuelve `cumple=None` con su fundamento
+    en `nota_diferida`, no una excepcion. Las dos cosas que le faltan
+    pertenecen al nivel de expediente definitivo, y el nivel de estudio de
+    este proyecto lo declara datos_sitio ('nivel_estudio'). No se calcula, no
+    se aproxima y no se oculta.
 
-    Los dos vacios se detienen por separado, y ninguno con un fallo de
-    programa:
+    Antes tenia DOS capas de tope y las dos se retiraron:
 
-    - Criterio SIN valor -> `CriterioPendienteError` (la lanza `ca.valor`).
-    - Criterio CON valor -> `DatoFaltanteError`. Declarar el criterio no
-      cierra V5: sigue faltando el ancho de derecho de via del punto y el
-      perfil de remanso con que comparar el HW de M4. El revisor tiene que
-      ANADIR esos dos, y por eso es Faltante y no Invalido (CLAUDE.md).
-
-    Antes esta segunda rama era un `raise AssertionError` desnudo: no
-    descendia de `ErrorProyecto`, de modo que `cli._etapa` no lo capturaba y
-    una corrida con el criterio declarado abortaba entera, con todos sus
-    puntos, en vez de anotar el bloqueo y seguir.
+    - `ca.valor(CRITERIO_REMANSO)`, que lanzaba `CriterioPendienteError`
+      mientras el criterio estuviera vacio. Ya no se invoca, por la misma
+      razon que en V8: una verificacion diferida no aplico el criterio a
+      ningun numero, y registrarlo lo haria figurar como usado en la memoria
+      de M11 (CLAUDE.md). 'remanso_derecho_via' sigue vacio.
+    - `DatoFaltanteError("ancho_derecho_via_m")`, que se disparaba con el
+      criterio ya declarado. Ese dato ademas no tiene ninguna via de entrega
+      en el codigo -- no es columna del CSV ni entrada de datos_sitio -- de
+      modo que el error pedia al revisor ANADIR algo que el programa no sabe
+      recibir. Lo que falta lo dice ahora la nota, que es donde el revisor
+      puede leerlo.
     """
-    ca.valor(CRITERIO_REMANSO)        # CriterioPendienteError: sin metodo ni dato
-    raise DatoFaltanteError(
-        "ancho_derecho_via_m",
-        id_punto=punto.id,
-        detalle=(
-            f"el criterio '{CRITERIO_REMANSO}' esta declarado, pero V5 sigue "
-            "sin poder resolverse: falta el ancho de derecho de via del punto "
-            "(no es columna de Sec. 1.2) y el perfil de remanso aguas arriba "
-            "con que comparar el HW de M4. La hoja de ruta fija el requisito "
-            "y no el metodo: mientras no exista, V5 no se declara cumplida"
-        ),
+    return Verificacion(
+        cumple=None,
+        numeral=NUMERAL_V5,
+        valor_obtenido=None,
+        valor_admisible=None,
+        criterio_aplicado=None,
+        codigo="V5",
+        nota_diferida=nota_diferida_v5(),
     )
 
 
@@ -526,13 +557,13 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
     con la firma de `modulos.MD.Verificador`: MD la importa como
     `modulos.M5_verificaciones.verificar` cuando no se le inyecta otra.
 
-    Se detiene -- sin devolver nada -- en la primera de V3 (TMC/HDPE), V5 o
-    V7 que este pendiente: son excepciones, no verificaciones incumplidas, y
-    el bucle de MD no debe tratarlas como un diametro rechazado sino como lo
-    que son, un calculo que no puede completarse todavia.
+    Se detiene -- sin devolver nada -- en la primera de V3 (TMC/HDPE) o V7
+    que este pendiente: son excepciones, no verificaciones incumplidas, y el
+    bucle de MD no debe tratarlas como un diametro rechazado sino como lo que
+    son, un calculo que no puede completarse todavia.
 
-    V8 ya no esta en esa lista: se difiere y viaja en la tupla como una
-    verificacion mas, con `cumple=None`.
+    V5 y V8 ya no estan en esa lista: se difieren y viajan en la tupla como
+    dos verificaciones mas, con `cumple=None`.
     """
     return (
         v1_borde_libre(D=D, resultado=resultado),
