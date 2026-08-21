@@ -712,17 +712,32 @@ class Verificacion:
     Resultado de una verificacion de la Fase 5. Nunca se devuelve un bool
     desnudo: sin numeral, la memoria de calculo no es defendible.
 
+    `cumple` tiene TRES estados, no dos:
+
+    - True: la verificacion se evaluo y cumple.
+    - False: la verificacion se evaluo e incumple.
+    - None: la verificacion NO se evaluo -- esta DIFERIDA a una etapa de
+      estudio posterior, y la razon declarada viaja en `nota_diferida`.
+      Ojo al consumir: None es falsy, de modo que un `if not v.cumple`
+      ingenuo trataria un diferido como incumplimiento. Comparar contra
+      False/None explicitamente.
+
+    `nota_diferida` solo se puebla cuando `cumple is None`: dice por que se
+    difiere, que exige el nivel de estudio actual y que haria falta para
+    dejar de diferirla.
+
     `criterio_aplicado` es la clave de `criterios_adoptados.py` cuando el
     umbral proviene de un criterio [N->], [C] o [A]; None cuando el umbral es
     [N] puro y se lee de `constantes_normativas.py`.
     """
 
-    cumple: bool
+    cumple: Optional[bool]
     numeral: str                          # "4.1.1.3.7 b)", "HDS-5 Ap. A", ...
     valor_obtenido: Any
     valor_admisible: Any
     criterio_aplicado: Optional[str]
     codigo: Optional[str] = None          # "V1" .. "V9" (Fase 5)
+    nota_diferida: Optional[str] = None   # solo cuando cumple is None
 
 
 # ===========================================================================

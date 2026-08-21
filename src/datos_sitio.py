@@ -213,6 +213,28 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                      "cabezal",
         ambito=AMBITO_CORREDOR,
     ),
+
+    # --------------------- Nivel de estudio del proyecto -----------------
+    # No es una eleccion del proyectista sino un hecho del encargo: la
+    # campana geotecnica ejecutada es la del nivel perfil del Manual de
+    # Suelos, y ese nivel es el que fundamenta las verificaciones diferidas
+    # al expediente definitivo (docs/encargo_verificaciones_diferidas.md).
+
+    "nivel_estudio": DatoSitio(
+        valor="perfil",
+        concepto="Nivel de profundidad del estudio (perfil / expediente "
+                 "definitivo)",
+        procedimiento="Declarado por el proyecto: la campana geotecnica "
+                      "ejecutada es de 5 calicatas en 5 km, sin SPT, corte "
+                      "directo ni ensayos quimicos completos",
+        fuente="Manual de Suelos MTC, num. 4.2, Cuadro 4.1 -- el mismo "
+               "numeral que ya cita ESPACIAMIENTO_PERFIL_KM en "
+               "constantes_normativas.py",
+        trazabilidad="La densidad de investigacion ejecutada corresponde a "
+                     "la que el Cuadro 4.1 exige para el nivel perfil, no a "
+                     "la de expediente definitivo",
+        ambito=AMBITO_CORREDOR,
+    ),
 }
 
 
