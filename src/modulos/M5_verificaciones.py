@@ -17,7 +17,8 @@ que declara su Protocol `Verificador`.
                                   (Fase 8, M8_estructural); pendiente en
                                   'factores_carga_aashto' o
                                   'peso_especifico_relleno_kn_m3'              [A]
-    V8  Evento extremo (FEN)      sin TR mayor ni umbral -> pendiente      [A]
+    V8  Evento extremo (FEN)      sin TR mayor ni umbral -> DIFERIDA al
+                                  expediente (cumple=None)                 [A]
     V9  Disponibilidad de diametro  D <= tope de M2                        [C]
 
 Lo que NO se rellena en silencio
@@ -25,10 +26,19 @@ Lo que NO se rellena en silencio
 V5 y V8 enuncian un REQUISITO en la hoja de ruta pero no entregan la formula,
 el metodo o el dato con que evaluarlo (ver el detalle en cada funcion).
 Rellenarlos con un supuesto no declarado es exactamente lo que CLAUDE.md
-prohibe como "el peor error posible en este proyecto": cada uno se detiene
-con `CriterioPendienteError` desde un criterio nuevo en
-`criterios_adoptados.py` ('remanso_derecho_via', 'TR_evento_extremo'), con su
-justificacion y lo que falta para resolverlo.
+prohibe como "el peor error posible en este proyecto".
+
+V8 no se rellena y tampoco se detiene: se DIFIERE al expediente tecnico y
+devuelve `cumple=None` con su fundamento en `nota_diferida`. Las dos cosas que
+le faltan -- el TR mayor del regimen FEN y el umbral de colapso -- pertenecen
+al nivel de expediente definitivo, y el nivel de estudio de este proyecto es
+perfil ('nivel_estudio' en datos_sitio.py). El criterio 'TR_evento_extremo'
+sigue vacio: la verificacion diferida NO lo invoca, para que no figure como
+usado en la memoria de M11.
+
+V5 se detiene con `CriterioPendienteError` desde un criterio nuevo en
+`criterios_adoptados.py` ('remanso_derecho_via'), con su justificacion y lo
+que falta para resolverlo.
 
 V7 SI tiene formula y metodo -- Fase 8, item 3 de la hoja de ruta, y
 `modulos.M8_estructural` la implementa completa ("tuberia vacia, NF en su cota
@@ -79,8 +89,8 @@ Excepciones
     CriterioPendienteError   V3 en TMC/HDPE ('v_max_tmc' / 'v_max_hdpe');
                              V5 ('remanso_derecho_via'); V7
                              ('peso_especifico_relleno_kn_m3' o
-                             'factores_carga_aashto'); V8
-                             ('TR_evento_extremo').
+                             'factores_carga_aashto'). V8 ya NO lanza: se
+                             difiere con cumple=None.
     DatoInvalidoError        el 'material' de V3 no es de TipoMaterial (no
                              deberia llegar aqui: M2 ya lo valido antes); en
                              V7, la clave del conducto queda a nivel de la
@@ -130,6 +140,9 @@ NUMERAL_V9 = "Sec. 3.2 (V9, nuevo en v7)"
 
 CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
+# Ningun `ca.valor()` lo consume: V8 se difiere y una verificacion diferida no
+# aplica el criterio a nada. Se conserva declarado porque nombra el vacio que
+# habria que cerrar para dejar de diferirla, y `NOTA_DIFERIDA_V8` lo cita.
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
 
 
@@ -435,17 +448,51 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
 # V8 - Evento extremo / FEN (Fase 5, V8)
 # ---------------------------------------------------------------------------
 
+NOTA_DIFERIDA_V8 = (
+    "V8 se DIFIERE al expediente tecnico. A nivel de estudio perfil (Manual "
+    "de Suelos MTC num. 4.2, Cuadro 4.1; ver 'nivel_estudio' en "
+    "datos_sitio.py) no estan definidos ni el periodo de retorno mayor con "
+    "que se representa el regimen FEN ni el umbral cuantitativo de colapso "
+    "de la via -- p.ej. la carga hidraulica HW sobre la corona del "
+    "terraplen: sin el TR no hay Q que correr aparte del de diseño, y sin el "
+    "umbral no hay con que comparar el HW resultante. Para dejar de "
+    "diferirla hace falta declarar 'TR_evento_extremo' con ese TR mayor y su "
+    "umbral de colapso, correr la cadena hidraulica con el Q asociado y "
+    "comparar el HW obtenido contra la cota de corona del terraplen del "
+    "punto."
+)
+
+
 def v8_evento_extremo(*, punto: PuntoCritico,
                       resultado: ResultadoHidraulico) -> Verificacion:
     """
     A un TR mayor que el de diseño, la via no colapsa aunque desborde. La
-    hoja de ruta no fija ese TR mayor ni un umbral cuantitativo de colapso
-    (p.ej. HW sobre la corona del terraplen): sin el TR no hay Q que correr
-    aparte del de diseño, y sin el umbral no hay con que comparar el HW
-    resultante. Se detiene en el criterio 'TR_evento_extremo'.
+    hoja de ruta enuncia el requisito y no fija ese TR mayor ni un umbral
+    cuantitativo de colapso (p.ej. HW sobre la corona del terraplen): sin el
+    TR no hay Q que correr aparte del de diseño, y sin el umbral no hay con
+    que comparar el HW resultante.
+
+    DIFERIDA al expediente tecnico: devuelve `cumple=None` con su fundamento
+    en `nota_diferida`, no una excepcion. La verificacion pertenece al nivel
+    de expediente definitivo y el de este proyecto es perfil ('nivel_estudio'
+    en datos_sitio.py). No se calcula, no se aproxima y no se oculta.
+
+    NO invoca `ca.valor(CRITERIO_EVENTO_EXTREMO)`, y esa omision es
+    deliberada: CLAUDE.md manda registrar cada invocacion de un criterio para
+    que M11 imprima solo los usados, y una verificacion diferida no aplico el
+    criterio a ningun numero. Dejar la llamada haria figurar en la memoria un
+    criterio que no goberno nada. 'TR_evento_extremo' sigue vacio y sigue
+    siendo el vacio que habria que cerrar para dejar de diferir V8.
     """
-    ca.valor(CRITERIO_EVENTO_EXTREMO)   # CriterioPendienteError: sin TR ni umbral
-    raise AssertionError("inalcanzable mientras 'TR_evento_extremo' este vacio")
+    return Verificacion(
+        cumple=None,
+        numeral=NUMERAL_V8,
+        valor_obtenido=None,
+        valor_admisible=None,
+        criterio_aplicado=None,
+        codigo="V8",
+        nota_diferida=NOTA_DIFERIDA_V8,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -479,10 +526,13 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
     con la firma de `modulos.MD.Verificador`: MD la importa como
     `modulos.M5_verificaciones.verificar` cuando no se le inyecta otra.
 
-    Se detiene -- sin devolver nada -- en la primera de V3 (TMC/HDPE), V5, V7
-    o V8 que este pendiente: son excepciones, no verificaciones incumplidas,
-    y el bucle de MD no debe tratarlas como un diametro rechazado sino como
-    lo que son, un calculo que no puede completarse todavia.
+    Se detiene -- sin devolver nada -- en la primera de V3 (TMC/HDPE), V5 o
+    V7 que este pendiente: son excepciones, no verificaciones incumplidas, y
+    el bucle de MD no debe tratarlas como un diametro rechazado sino como lo
+    que son, un calculo que no puede completarse todavia.
+
+    V8 ya no esta en esa lista: se difiere y viaja en la tupla como una
+    verificacion mas, con `cumple=None`.
     """
     return (
         v1_borde_libre(D=D, resultado=resultado),

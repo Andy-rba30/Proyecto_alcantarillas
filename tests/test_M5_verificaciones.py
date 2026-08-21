@@ -344,11 +344,31 @@ def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
         1.25 * 9.81 * (math.pi / 4) * 0.90 ** 2, abs=1e-6)
 
 
-def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
-    punto = _punto()
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        v8_evento_extremo(punto=punto, resultado=_resultado())
-    assert excinfo.value.clave == "TR_evento_extremo"
+def test_v8_se_difiere_al_expediente_sin_TR_ni_umbral():
+    """
+    V8 ya no se detiene: se difiere. Devuelve un Verificacion con
+    cumple=None -- ni cumplida ni incumplida -- y la razon declarada en
+    `nota_diferida`, que es lo que la memoria tiene que poder imprimir.
+    """
+    v = v8_evento_extremo(punto=_punto(), resultado=_resultado())
+    assert v.cumple is None
+    assert v.codigo == "V8"
+    assert v.valor_obtenido is None
+    assert v.valor_admisible is None
+    assert v.criterio_aplicado is None
+    assert v.nota_diferida
+    assert "TR_evento_extremo" in v.nota_diferida
+
+
+def test_v8_diferida_no_registra_el_criterio_como_usado():
+    """
+    Una verificacion diferida no aplico el criterio a ningun numero: si lo
+    registrara, M11 lo imprimiria como usado y la memoria diria algo falso.
+    """
+    antes = set(ca.criterios_usados())
+    v8_evento_extremo(punto=_punto(), resultado=_resultado())
+    nuevos = set(ca.criterios_usados()) - antes
+    assert "TR_evento_extremo" not in nuevos
 
 
 def test_los_criterios_nuevos_estan_declarados_vacios():
