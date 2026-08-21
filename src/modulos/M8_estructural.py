@@ -10,10 +10,13 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
 
     1-2  Seleccionar clase/calibre segun la altura real de relleno y
          verificar que esa altura cae en su rango admisible.
-         `seleccionar_clase_calibre()` -- se detiene con
-         CriterioPendienteError: ninguna de las dos tablas (AASHTO M-170M,
-         ASTM A-807/AASHTO M36) esta transcrita en la hoja de ruta. Ver el
-         criterio 'clases_producto_por_relleno' en criterios_adoptados.py.
+         `seleccionar_clase_calibre()` -- DIFERIDA al expediente tecnico:
+         devuelve `Verificacion(cumple=None)` con su fundamento en
+         `nota_diferida`, porque ninguna de las dos tablas (AASHTO M-170M,
+         ASTM A-807/AASHTO M36) esta transcrita en la hoja de ruta. El
+         criterio 'clases_producto_por_relleno' sigue vacio y la
+         verificacion diferida NO lo invoca, para que no figure como usado
+         en la memoria de M11.
 
     3    Flotacion (V7), obligatoria con NF a 1.4 m.
          `empuje_flotacion_kn_m()`, `peso_relleno_kn_m()` y
@@ -106,18 +109,28 @@ en un punto cuyo NF todavia no ha medido el estudio geotecnico.
 
 Excepciones
 -----------
-    CriterioPendienteError   'clases_producto_por_relleno' (items 1-2);
-                             'peso_especifico_relleno_kn_m3' (V7, via
+    CriterioPendienteError   'peso_especifico_relleno_kn_m3' (V7, via
                              modulos.M5_verificaciones.v7_flotacion).
                              'factores_carga_aashto' ya no esta vacio ([C]).
+                             Los items 1-2 ya NO lanzan: se difieren con
+                             cumple=None.
 
 Uso
 ---
     from modulos.M8_estructural import (cama_apoyo_relleno_lateral,
+                                        seleccionar_clase_calibre,
                                         verificacion_diferida_estructural)
 
     cama = cama_apoyo_relleno_lateral(material)          # informativo
+    clase = seleccionar_clase_calibre(material=material, # Verificacion
+                                      altura_relleno=h)  #   diferida
     diferido = verificacion_diferida_estructural()       # tupla de avisos
+
+Dos formas de diferir conviven en este modulo y no se unifican: los items 1-2
+devuelven un `Verificacion` con cumple=None, porque son una verificacion que
+algun dia se calculara; el item 5 devuelve texto, porque es un alcance que la
+hoja de ruta excluye del script y nunca va a tener valor obtenido ni
+admisible que comparar.
 """
 
 from __future__ import annotations
@@ -129,9 +142,12 @@ import criterios_adoptados as ca
 from constantes_fisicas import GAMMA_AGUA_KN_M3
 from constantes_normativas import CAMA_RELLENO_LATERAL
 from modelos import (CamaApoyoRelleno, DatoInvalidoError, FactoresFlotacion,
-                     Material, ReferenciaNormativa)
+                     Material, ReferenciaNormativa, Verificacion)
 
 NUMERAL_8_1_2 = "Fase 8, items 1-2"
+# Codigo de fila para la tabla de verificaciones, en la misma linea que
+# "V1".."V9" de la Fase 5 y "E1".."E5" del cabezal en M9.
+CODIGO_8_1_2 = "8.1-2"
 # La cita anterior, "Sec. 8.1 (EG-2013 Seccion 500)", era doblemente falsa:
 # ni "Sec. 8.1" es del EG-2013 (es el apartado de la hoja de ruta) ni existe
 # una "Seccion 500" en el EG-2013. Los conductos son SECCIONES del Capitulo V,
@@ -150,6 +166,9 @@ NUMERAL_8_5 = "Fase 8, item 5"
 NUMERAL_V7 = ("Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; "
               "factores de carga: AASHTO LRFD Tablas 3.4.1-1 y 3.4.1-2)")
 
+# Ningun `ca.valor()` lo consume: los items 1-2 se difieren y una verificacion
+# diferida no aplica el criterio a nada. Se conserva declarado porque nombra el
+# vacio que habria que cerrar, y `nota_diferida_clase_calibre` lo cita.
 CRITERIO_CLASES_PRODUCTO = "clases_producto_por_relleno"
 CRITERIO_FACTORES_CARGA = "factores_carga_aashto"
 CRITERIO_PESO_RELLENO = "peso_especifico_relleno_kn_m3"
@@ -169,24 +188,66 @@ EXTREMO_DESESTABILIZANTE = "max"
 # Items 1-2 - Seleccion de clase/calibre por norma de producto
 # ---------------------------------------------------------------------------
 
-def seleccionar_clase_calibre(*, material: Material, altura_relleno: float):
+def nota_diferida_clase_calibre() -> str:
+    """
+    Texto de `nota_diferida` de los items 1-2. Funcion y no constante por
+    simetria con las notas de M5, aunque esta no lea ningun dato de sitio:
+    lo que falta aqui no es densidad de investigacion sino la TRANSCRIPCION
+    de dos tablas de norma de producto, y eso no depende del nivel de
+    estudio del proyecto.
+    """
+    return (
+        "La seleccion de clase o calibre por norma de producto se DIFIERE al "
+        "expediente tecnico. Requiere transcribir la tabla completa clase / "
+        "calibre x diametro x rango admisible de altura de relleno de AASHTO "
+        "M-170M (concreto, clases I-V) y de ASTM A-807 / AASHTO M36 (TMC), y "
+        "ramificar por material: son dos tablas distintas y ninguna de las "
+        "dos esta transcrita en la hoja de ruta. Es el mismo vacio de norma "
+        "de producto que 'h_relleno_min_concreto_tmc' declara en Sec. 7.A, "
+        "pero alli bastaba un minimo escalar y aqui hace falta la tabla "
+        "entera. HDPE no tiene tabla de clase por altura: lo suyo queda "
+        f"diferido por el item 5 ({NUMERAL_8_5}), no por este vacio. Para "
+        f"dejar de diferirla hace falta declarar "
+        f"'{CRITERIO_CLASES_PRODUCTO}' con las dos tablas y comparar la "
+        "altura real de relleno del punto contra el rango admisible de la "
+        "clase que resulte."
+    )
+
+
+def seleccionar_clase_calibre(*, material: Material,
+                              altura_relleno: float) -> Verificacion:
     """
     Clase (concreto, AASHTO M-170M I-V) o calibre (TMC, ASTM A-807/AASHTO
     M36) segun la altura real de relleno del punto, y verificacion de que
     esa altura cae en el rango admisible de la clase elegida.
 
-    Ninguna de las dos tablas esta transcrita en la hoja de ruta -- el mismo
-    vacio de norma de producto que 'h_relleno_min_concreto_tmc' declara en
-    Sec. 7.A, pero alli bastaba un minimo escalar y aqui hace falta la tabla
-    completa con su rango admisible por clase. Se detiene en
-    'clases_producto_por_relleno' (ver su justificacion en
-    criterios_adoptados.py). HDPE no tiene tabla de clase por altura: su
-    verificacion detallada queda diferida al expediente por el item 5 (ver
-    `verificacion_diferida_estructural`), no por este vacio.
+    DIFERIDA al expediente tecnico: devuelve `cumple=None` con su fundamento
+    en `nota_diferida`, no una excepcion. Ninguna de las dos tablas esta
+    transcrita en la hoja de ruta, y transcribirlas es trabajo de expediente,
+    no un numero que el proyectista pueda declarar.
+
+    NO invoca `ca.valor(CRITERIO_CLASES_PRODUCTO)`: una verificacion diferida
+    no aplico el criterio a ningun numero, y registrarlo lo haria figurar
+    como usado en la memoria de M11 (CLAUDE.md). El criterio sigue vacio.
+
+    `material` y `altura_relleno` no se leen todavia y aun asi siguen en la
+    firma: son exactamente los dos argumentos que la version de expediente
+    necesita -- la tabla se elige por material y se entra en ella con la
+    altura -- y conservarlos deja que el dia que las tablas existan cambie
+    el cuerpo de esta funcion y nada mas.
+
+    Distinto del item 5 (`verificacion_diferida_estructural`), que difiere
+    rigidez de anillo, pandeo y costura por decision de la propia hoja de
+    ruta y devuelve texto, no un `Verificacion`. Las dos conviven.
     """
-    ca.valor(CRITERIO_CLASES_PRODUCTO)    # CriterioPendienteError mientras falte
-    raise AssertionError(
-        "inalcanzable mientras 'clases_producto_por_relleno' este vacio"
+    return Verificacion(
+        cumple=None,
+        numeral=NUMERAL_8_1_2,
+        valor_obtenido=None,
+        valor_admisible=None,
+        criterio_aplicado=None,
+        codigo=CODIGO_8_1_2,
+        nota_diferida=nota_diferida_clase_calibre(),
     )
 
 

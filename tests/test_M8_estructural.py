@@ -3,8 +3,10 @@ tests/test_M8_estructural.py
 =============================
 Fase 8 (M8_estructural.py):
 
-    seleccionar_clase_calibre()      CriterioPendienteError:
-                                      'clases_producto_por_relleno' vacio.
+    seleccionar_clase_calibre()      Verificacion diferida (cumple=None):
+                                      'clases_producto_por_relleno' vacio y
+                                      las dos tablas de norma de producto
+                                      sin transcribir.
     empuje_flotacion_kn_m()          U = gamma_agua * (pi/4) * D^2, siempre
                                       calculable: la hipotesis es sumersion
                                       completa y por eso NO usa el valor del
@@ -58,10 +60,45 @@ def hdpe():
 # Items 1-2 - Seleccion de clase/calibre
 # ===========================================================================
 
-def test_seleccionar_clase_calibre_lanza_pendiente(concreto):
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        seleccionar_clase_calibre(material=concreto, altura_relleno=1.0)
-    assert excinfo.value.clave == "clases_producto_por_relleno"
+def test_seleccionar_clase_calibre_se_difiere_al_expediente(concreto):
+    """
+    Los items 1-2 ya no se detienen: se difieren. Devuelven un Verificacion
+    con cumple=None y la razon en `nota_diferida`, que nombra las dos tablas
+    de norma de producto que habria que transcribir.
+    """
+    v = seleccionar_clase_calibre(material=concreto, altura_relleno=1.0)
+    assert v.cumple is None
+    assert v.valor_obtenido is None
+    assert v.valor_admisible is None
+    assert v.criterio_aplicado is None
+    assert v.nota_diferida
+    assert "M-170M" in v.nota_diferida
+    assert "M36" in v.nota_diferida
+    assert "clases_producto_por_relleno" in v.nota_diferida
+
+
+def test_clase_calibre_diferida_tambien_con_hdpe(hdpe):
+    """
+    cli._fase_8 llama a esta verificacion sin ramificar por material, aunque
+    HDPE no tenga tabla de clase por altura: lo suyo lo difiere el item 5, no
+    este vacio. Hoy es inofensivo porque la respuesta es un diferido y no una
+    excepcion, pero la nota lo dice en vez de callarlo.
+    """
+    v = seleccionar_clase_calibre(material=hdpe, altura_relleno=1.0)
+    assert v.cumple is None
+    assert v.nota_diferida
+    assert "HDPE" in v.nota_diferida
+
+
+def test_clase_calibre_diferida_no_registra_el_criterio_como_usado(concreto):
+    """
+    Una verificacion diferida no aplico el criterio a ningun numero: si lo
+    registrara, M11 lo imprimiria como usado y la memoria diria algo falso.
+    """
+    antes = set(ca.criterios_usados())
+    seleccionar_clase_calibre(material=concreto, altura_relleno=1.0)
+    nuevos = set(ca.criterios_usados()) - antes
+    assert "clases_producto_por_relleno" not in nuevos
 
 
 def test_clases_producto_por_relleno_esta_declarado_vacio():

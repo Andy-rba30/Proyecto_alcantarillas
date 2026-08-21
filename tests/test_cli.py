@@ -371,9 +371,20 @@ def test_la_fase_7_usa_la_misma_longitud_que_la_fase_4(informe_dimensionado):
     assert a01.geometria.longitud == a01.longitud.valor
 
 
-def test_la_clase_de_producto_sigue_bloqueada(informe_dimensionado):
+def test_la_clase_de_producto_ya_no_bloquea_la_fase_8(informe_dimensionado):
+    """
+    Los items 1-2 pasaron de tope a verificacion diferida: la Fase 8 corre
+    entera y 'clases_producto_por_relleno' deja de figurar como criterio que
+    bloqueo una etapa. El criterio sigue vacio -- lo que cambio es como se
+    reporta su ausencia, no que se haya declarado.
+
+    Ojo: `_fase_8` todavia DESCARTA el Verificacion que devuelve
+    `seleccionar_clase_calibre`, asi que el diferido no llega al informe ni
+    al JSON. Ensamblarlo es trabajo del paso 7 del encargo.
+    """
     claves = _claves_bloqueantes(_punto(informe_dimensionado, "A-01"))
-    assert "clases_producto_por_relleno" in claves
+    assert "clases_producto_por_relleno" not in claves
+    assert "clases_producto_por_relleno" in ca.criterios_sin_valor()
 
 
 # ---------------------------------------------------------------------------
