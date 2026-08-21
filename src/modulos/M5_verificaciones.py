@@ -146,8 +146,13 @@ CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
 # Ningun `ca.valor()` lo consume: V8 se difiere y una verificacion diferida no
 # aplica el criterio a nada. Se conserva declarado porque nombra el vacio que
-# habria que cerrar para dejar de diferirla, y `NOTA_DIFERIDA_V8` lo cita.
+# habria que cerrar para dejar de diferirla, y `nota_diferida_v8` lo cita.
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
+
+# El nivel de estudio es el fundamento de las dos verificaciones diferidas de
+# este modulo (V5 y V8): lo que a las dos les falta pertenece al nivel de
+# expediente definitivo. Es un dato de sitio [S], no un criterio.
+DATO_NIVEL_ESTUDIO = "nivel_estudio"
 
 
 # ---------------------------------------------------------------------------
@@ -307,9 +312,6 @@ def v4_carga_entrada(*, punto: PuntoCritico,
 # ---------------------------------------------------------------------------
 # V5 - Remanso aguas arriba (DG-2018 + Ley 29338)
 # ---------------------------------------------------------------------------
-
-DATO_NIVEL_ESTUDIO = "nivel_estudio"
-
 
 def nota_diferida_v5() -> str:
     """
@@ -479,19 +481,27 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
 # V8 - Evento extremo / FEN (Fase 5, V8)
 # ---------------------------------------------------------------------------
 
-NOTA_DIFERIDA_V8 = (
-    "V8 se DIFIERE al expediente tecnico. A nivel de estudio perfil (Manual "
-    "de Suelos MTC num. 4.2, Cuadro 4.1; ver 'nivel_estudio' en "
-    "datos_sitio.py) no estan definidos ni el periodo de retorno mayor con "
-    "que se representa el regimen FEN ni el umbral cuantitativo de colapso "
-    "de la via -- p.ej. la carga hidraulica HW sobre la corona del "
-    "terraplen: sin el TR no hay Q que correr aparte del de diseño, y sin el "
-    "umbral no hay con que comparar el HW resultante. Para dejar de "
-    "diferirla hace falta declarar 'TR_evento_extremo' con ese TR mayor y su "
-    "umbral de colapso, correr la cadena hidraulica con el Q asociado y "
-    "comparar el HW obtenido contra la cota de corona del terraplen del "
-    "punto."
-)
+def nota_diferida_v8() -> str:
+    """
+    Texto de `nota_diferida` de V8, armado en cada llamada por la misma razon
+    que el de V5 (ver `nota_diferida_v5`): el nivel de estudio se LEE de
+    datos_sitio con `ds.valor`, que registra el uso, y ese registro tiene que
+    ocurrir cuando la verificacion corre.
+    """
+    nivel = ds.valor(DATO_NIVEL_ESTUDIO)
+    return (
+        f"V8 se DIFIERE al expediente tecnico. A nivel de estudio {nivel} "
+        "(Manual de Suelos MTC num. 4.2, Cuadro 4.1; ver "
+        f"'{DATO_NIVEL_ESTUDIO}' en datos_sitio.py) no estan definidos ni el "
+        "periodo de retorno mayor con que se representa el regimen FEN ni el "
+        "umbral cuantitativo de colapso de la via -- p.ej. la carga "
+        "hidraulica HW sobre la corona del terraplen: sin el TR no hay Q que "
+        "correr aparte del de diseño, y sin el umbral no hay con que comparar "
+        "el HW resultante. Para dejar de diferirla hace falta declarar "
+        f"'{CRITERIO_EVENTO_EXTREMO}' con ese TR mayor y su umbral de "
+        "colapso, correr la cadena hidraulica con el Q asociado y comparar el "
+        "HW obtenido contra la cota de corona del terraplen del punto."
+    )
 
 
 def v8_evento_extremo(*, punto: PuntoCritico,
@@ -505,8 +515,9 @@ def v8_evento_extremo(*, punto: PuntoCritico,
 
     DIFERIDA al expediente tecnico: devuelve `cumple=None` con su fundamento
     en `nota_diferida`, no una excepcion. La verificacion pertenece al nivel
-    de expediente definitivo y el de este proyecto es perfil ('nivel_estudio'
-    en datos_sitio.py). No se calcula, no se aproxima y no se oculta.
+    de expediente definitivo, y el nivel de estudio de este proyecto lo
+    declara datos_sitio ('nivel_estudio'). No se calcula, no se aproxima y no
+    se oculta.
 
     NO invoca `ca.valor(CRITERIO_EVENTO_EXTREMO)`, y esa omision es
     deliberada: CLAUDE.md manda registrar cada invocacion de un criterio para
@@ -522,7 +533,7 @@ def v8_evento_extremo(*, punto: PuntoCritico,
         valor_admisible=None,
         criterio_aplicado=None,
         codigo="V8",
-        nota_diferida=NOTA_DIFERIDA_V8,
+        nota_diferida=nota_diferida_v8(),
     )
 
 

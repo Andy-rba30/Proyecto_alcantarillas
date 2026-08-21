@@ -404,6 +404,17 @@ def test_v8_diferida_no_registra_el_criterio_como_usado():
     assert "TR_evento_extremo" not in nuevos
 
 
+def test_v8_diferida_registra_el_nivel_de_estudio_como_dato_usado():
+    """
+    Igual que V5: la nota se arma con `ds.valor('nivel_estudio')` y no con la
+    palabra "perfil" escrita a mano, para que el dato que fundamenta la
+    postergacion figure como usado y M11 pueda imprimirlo.
+    """
+    v = v8_evento_extremo(punto=_punto(), resultado=_resultado())
+    assert "nivel_estudio" in ds.datos_usados()
+    assert ds.valor("nivel_estudio") in v.nota_diferida
+
+
 def test_los_criterios_nuevos_estan_declarados_vacios():
     for clave in ("remanso_derecho_via", "peso_especifico_relleno_kn_m3",
                  "TR_evento_extremo"):
