@@ -29,7 +29,9 @@ entrega el primero que cumple; quien quiera los tres para compararlos llama a
 Lo que MD NO hace
 -----------------
 - No verifica nada por su cuenta. Lee `Verificacion.cumple` y no reinterpreta
-  ninguna: si una verificacion es incorrecta, se corrige en M5.
+  ninguna: si una verificacion es incorrecta, se corrige en M5. `cumple`
+  tiene tres estados (True/False/None, ver modelos.Verificacion) y MD solo
+  rechaza por False: una diferida (None) no cuenta como incumplimiento.
 - No calcula L ni TW. La longitud del conducto (ancho de plataforma +
   proyeccion de taludes, afectada por el esviaje) es Fase 7 / 7.B, y el TW es
   el criterio pendiente 'TW_receptor' (Tablero 3.1) o su calculo por Manning
@@ -199,11 +201,17 @@ def _motivo_sin_flujo_libre(D: float, Q: float, S: float,
 
 def _motivo_incumplimiento(D: float,
                            verificaciones: Sequence[Verificacion]) -> str:
-    """Las verificaciones que no cumplen, con su codigo y su numeral."""
+    """
+    Las verificaciones que INCUMPLEN (cumple is False), con su codigo y su
+    numeral. Las diferidas (cumple is None) quedan fuera del motivo: no se
+    evaluaron, y escribir "obtenido None frente a None" en la memoria
+    pareceria una comparacion real que nunca ocurrio. El filtro es
+    `is False` y no `not v.cumple` justamente porque None es falsy.
+    """
     partes = [
         f"{v.codigo or 'sin codigo'} ({v.numeral}) obtenido {v.valor_obtenido!r} "
         f"frente a {v.valor_admisible!r}"
-        for v in verificaciones if not v.cumple
+        for v in verificaciones if v.cumple is False
     ]
     return f"D = {D:.2f} m: incumple " + "; ".join(partes)
 
@@ -248,6 +256,18 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     `registrar` es un observador opcional: recibe un `PasoDiseno` por cada
     escalon probado, en orden. Es lo que M11 necesita para publicar las
     iteraciones (Fase 11, entregable 1). No altera el diseño ni el retorno.
+
+    QUE HACE CON UNA VERIFICACION DIFERIDA (cumple=None): la ignora al
+    decidir. Un escalon se acepta cuando ninguna verificacion es False; las
+    diferidas ni cumplen ni incumplen, y no impiden aceptar. La consecuencia
+    es real y no se maquilla: V5 y V8 se evaluan dentro de este bucle por
+    cada diametro candidato, de modo que al diferirlas un diametro que antes
+    se habria rechazado por remanso o por evento extremo ahora pasa. El
+    diametro que sale de aqui a nivel perfil es un LIMITE INFERIOR: el
+    expediente, al evaluar V5 y V8 de verdad, puede requerir uno mayor.
+    Nunca menor -- las verificaciones que si corren siguen corriendo -- y por
+    eso el diferimiento es defendible: no oculta un incumplimiento, posterga
+    una evaluacion y lo deja escrito en cada `nota_diferida`.
     """
     D = siguiente_diametro(material.tipo)     # primer escalon: minimo normativo
     ultimo_motivo = "el catalogo no ofrecio ningun diametro"
@@ -273,7 +293,10 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                     "sin verificaciones no es defendible en la memoria"
                 )
 
-            if all(v.cumple for v in verificaciones):
+            # Acepta si NINGUNA es False: un diferido (cumple=None) ni
+            # cumple ni incumple, y no impide aceptar -- si lo impidiera,
+            # el efecto seria identico al tope que este bucle tenia antes.
+            if all(v.cumple is not False for v in verificaciones):
                 _registrar(registrar, material, D, aceptado=True, motivo="",
                            verificaciones=verificaciones)
                 return ResultadoPunto(
