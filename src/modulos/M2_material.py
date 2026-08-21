@@ -191,8 +191,16 @@ def _valor_si_declarado(clave: str) -> Optional[Any]:
     criterio vacio no se aplico a nada, no hay uso que declarar en M11. En
     cuanto el criterio reciba valor, esta funcion empieza a devolverlo Y a
     registrar el uso, porque a partir de ahi pasa por `ca.valor()`.
+
+    "Vacio" se decide con `ca.criterios_sin_valor()` y NO con
+    `ca.criterio(clave).valor is None`: ese segundo camino lee el dataclass
+    congelado y NO consulta los overrides en caliente
+    (`ca.establecer_valor_dinamico`, la via de la GUI), asi que un criterio
+    declarado dinamicamente le seguia pareciendo vacio a este modulo -- el
+    catalogo salia con el campo en None y el modulo que lo consume abortaba
+    con AssertionError en vez de usar el valor recien declarado.
     """
-    if ca.criterio(clave).valor is None:
+    if clave in ca.criterios_sin_valor():
         return None
     return ca.valor(clave)
 

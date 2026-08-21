@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+import criterios_adoptados as ca
 from modelos import DatoInvalidoError, Familia, Material, TipoMaterial
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import catalogo, materiales_candidatos, siguiente_diametro
@@ -135,6 +136,28 @@ def test_el_relleno_minimo_de_concreto_y_tmc_sigue_vacio():
     tmc = catalogo(TipoMaterial.TMC)
     assert concreto.h_relleno_min is None
     assert tmc.h_relleno_min is None
+
+
+def test_el_relleno_minimo_declarado_dinamicamente_lo_ve_el_catalogo():
+    """
+    Regresion: `_valor_si_declarado` decidia "vacio" leyendo
+    `ca.criterio(clave).valor`, que NO consulta los overrides en caliente
+    (`ca.establecer_valor_dinamico`, la via de la GUI en gui/app.py:509).
+    Un criterio declarado asi le seguia pareciendo vacio a M2, el catalogo
+    salia con `h_relleno_min=None` para concreto y TMC, y M7 caia en su
+    AssertionError en vez de usar el valor recien declarado.
+    """
+    ca.establecer_valor_dinamico("h_relleno_min_concreto_tmc", 0.60)
+    try:
+        concreto = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+        tmc = catalogo(TipoMaterial.TMC)
+        assert concreto.h_relleno_min == pytest.approx(0.60)
+        assert tmc.h_relleno_min == pytest.approx(0.60)
+    finally:
+        ca.quitar_valor_dinamico("h_relleno_min_concreto_tmc")
+
+    # y al retirar el override, vuelve a comportarse como vacio
+    assert catalogo(TipoMaterial.CONCRETO_REFORZADO).h_relleno_min is None
 
 
 def test_un_material_desconocido_en_catalogo_es_invalido():
