@@ -108,8 +108,12 @@ from modelos import (Clasificacion, CompatibilidadGeometrica,       # noqa: E402
 from modulos.M0_carga import cargar_puntos                          # noqa: E402
 from modulos.M1_clasificacion import clasificar, exigir_alcance     # noqa: E402
 from modulos.M6_proteccion import proteccion_salida                 # noqa: E402
+from modulos.M2_material import (materiales_candidatos,             # noqa: E402
+                                 siguiente_diametro)
+from modulos.M4_control import resolver_control                     # noqa: E402
 from modulos.M7_geometria import (compatibilidad_geometrica,        # noqa: E402
-                                  cota_clave, longitud_conducto)
+                                  cota_clave, longitud_conducto,
+                                  tamizado_rasante)
 from modulos.M8_estructural import (cama_apoyo_relleno_lateral,     # noqa: E402
                                     seleccionar_clase_calibre,
                                     verificacion_diferida_estructural)
@@ -679,6 +683,230 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos) -> InformePunto:
 
 
 # ===========================================================================
+# Modo rasante - el tamizado de Sec. 7.A como puerta de entrada propia
+# ===========================================================================
+# Sec. 7.A manda correr el tamizado "antes de definir el perfil longitudinal":
+# es la GENERADORA de la rasante, no una verificacion de ella. El pipeline
+# normal solo lo alcanza dentro de 7.B, que corre tras dimensionar -- la unica
+# fase que el proyecto necesita ANTES del perfil era la unica sin puerta de
+# entrada. `--modo-rasante` abre esa puerta: M0 -> M2 -> M4 -> M7.tamizado,
+# sin exigir dimensionamiento.
+#
+# POR QUE FUNCIONA CON UNA RASANTE PROVISIONAL: de las dos condiciones,
+#
+#     cota rasante >= max( cota clave + h_rec + e_paq ,
+#                          HW + resguardo(CBR) + e_paq )
+#
+# el unico termino que toca la rasante del CSV es e_paq = cota_rasante -
+# cota_subrasante (M7.espesor_paquete), y ese es un ESPESOR de la seccion
+# tipica, no una elevacion: el CSV trae las dos cotas juntas, y desplazar la
+# rasante provisional desplaza la subrasante exactamente lo mismo. La cota
+# minima resultante es invariante frente al valor absoluto de la rasante
+# provisional -- por eso el tamizado puede correr antes de que el perfil
+# exista. (Es el mismo argumento con el que el docstring de M7 corta el
+# acoplamiento circular rasante -> subrasante -> CBR -> V4 -> rasante.)
+#
+# POR QUE SE BARRE EL CATALOGO ENTERO y no solo el D maximo: las dos
+# condiciones se mueven en sentidos opuestos -- subir D sube la clave
+# (empeora recubrimiento) pero baja el HW (mejora resguardo) -- asi que la
+# cota minima NO es monotona en D. El propio docstring de M7 advierte que el
+# D maximo no es conservador para las dos a la vez. Se reporta la tabla
+# completa por diametro y cual minimiza la cota, que es lo que evita levantar
+# el terraplen mas de lo necesario.
+
+FASE_RASANTE = "Fase 7.A - Tamizado de rasante (M7, modo rasante)"
+
+NOTA_FUERA_CATALOGO = ("fuera del catalogo circular (marco o multicelda, "
+                       "Sec. 2.3)")
+
+
+@dataclass(frozen=True)
+class FilaTamizado:
+    """Una corrida del tamizado 7.A para un (material, D) del catalogo."""
+    material: str
+    D: float                     # m
+    HW: float                    # m, sobre el fondo de la entrada
+    control: str                 # entrada / salida
+    cota_por_recubrimiento: float   # msnm
+    cota_por_resguardo: float       # msnm
+    cota_rasante_min: float         # msnm
+    condicion_gobernante: str
+
+
+@dataclass
+class TamizadoMaterial:
+    """El barrido de un material: sus filas o el motivo por el que no corrio."""
+    material: str
+    norma_producto: str
+    filas: List[FilaTamizado] = field(default_factory=list)
+    sin_flujo_libre: List[float] = field(default_factory=list)  # D descartados
+    bloqueo: Optional[str] = None
+
+    @property
+    def fila_minima(self) -> Optional[FilaTamizado]:
+        """La fila que minimiza la cota de rasante. No es monotona en D."""
+        if not self.filas:
+            return None
+        return min(self.filas, key=lambda f: f.cota_rasante_min)
+
+
+@dataclass
+class TamizadoPunto:
+    """El tamizado 7.A de un punto, por material candidato."""
+    punto: PuntoCritico
+    materiales: List[TamizadoMaterial] = field(default_factory=list)
+    nota: Optional[str] = None            # NOTA_FUERA_CATALOGO en Familia C
+    bloqueos: List[str] = field(default_factory=list)
+
+    @property
+    def fila_minima(self) -> Optional[FilaTamizado]:
+        """La cota minima del punto entre todos los materiales con filas."""
+        candidatas = [m.fila_minima for m in self.materiales if m.fila_minima]
+        if not candidatas:
+            return None
+        return min(candidatas, key=lambda f: f.cota_rasante_min)
+
+
+def tamizado_punto(punto: PuntoCritico, externos: DatosExternos) -> TamizadoPunto:
+    """
+    M2 -> M4 -> M7.tamizado_rasante para UN punto, barriendo el catalogo de
+    diametros de cada material candidato. No exige dimensionamiento: no corre
+    la Fase 5 ni acepta o rechaza nada -- por cada (material, D) resuelve el
+    control gobernante (M4), lleva su HW al tamizado (M7) y anota la fila.
+
+    L y TW llegan de los datos externos, igual que en el pipeline normal:
+    el control de salida los necesita y a este nivel son datos declarados
+    del tablero, no calculos. Sin ellos el punto queda bloqueado con el
+    motivo escrito, no con una excepcion.
+
+    Un material cuyo tamizado depende de un criterio vacio (concreto y TMC
+    mientras 'h_relleno_min_concreto_tmc' no se declare) queda anotado como
+    bloqueado y el barrido sigue con los demas. Un D sin flujo libre no es
+    un error: se anota aparte, porque "este D no transporta Q" tambien es
+    informacion del barrido.
+    """
+    resultado = TamizadoPunto(punto=punto)
+
+    candidatos = materiales_candidatos(punto)
+    if not candidatos:
+        resultado.nota = NOTA_FUERA_CATALOGO
+        return resultado
+
+    try:
+        Q = externos.valor(punto.id, "Q_m3s")
+        Q = punto.exigir("Q_m3s") if Q is None else Q
+        S = externos.valor(punto.id, "S_conducto")
+        S = punto.exigir("S_cauce") if S is None else S
+    except ErrorProyecto as exc:
+        resultado.bloqueos.append(str(exc))
+        return resultado
+
+    L = externos.valor(punto.id, "longitud_m")
+    TW = externos.valor(punto.id, "TW_m")
+    if L is None or TW is None:
+        faltan = [n for n, v in (("longitud_m", L), ("TW_m", TW)) if v is None]
+        resultado.bloqueos.append(
+            f"faltan {', '.join(faltan)} (declarables con --longitud/--tw o "
+            "--datos-externos): el control de salida de M4 los necesita para "
+            "resolver el HW del tamizado")
+        return resultado
+
+    for material in candidatos:
+        barrido = TamizadoMaterial(material=material.nombre,
+                                   norma_producto=material.norma_producto)
+        resultado.materiales.append(barrido)
+        D = siguiente_diametro(material.tipo)
+        while D is not None:
+            hidraulica = resolver_control(D=D, Q=Q, S=S, L=L, TW=TW,
+                                          material=material)
+            if hidraulica is None:
+                barrido.sin_flujo_libre.append(D)
+            else:
+                try:
+                    tamizado = tamizado_rasante(punto=punto, material=material,
+                                                D_supuesto=D,
+                                                HW=hidraulica.HW)
+                except ErrorProyecto as exc:
+                    # criterio vacio (h_relleno de concreto/TMC): bloquea el
+                    # material entero, no cada D por separado
+                    barrido.bloqueo = str(exc)
+                    break
+                barrido.filas.append(FilaTamizado(
+                    material=material.nombre,
+                    D=D,
+                    HW=hidraulica.HW,
+                    control=hidraulica.control_gobernante.value,
+                    cota_por_recubrimiento=tamizado.cota_por_recubrimiento,
+                    cota_por_resguardo=tamizado.cota_por_resguardo,
+                    cota_rasante_min=tamizado.cota_rasante_min,
+                    condicion_gobernante=tamizado.condicion_gobernante.value,
+                ))
+            D = siguiente_diametro(material.tipo, D)
+
+    return resultado
+
+
+def correr_modo_rasante(ruta_csv: Path,
+                        externos: DatosExternos) -> List[TamizadoPunto]:
+    """M0 -> M2 -> M4 -> M7.tamizado_rasante para todos los puntos del CSV."""
+    return [tamizado_punto(p, externos) for p in cargar_puntos(ruta_csv)]
+
+
+def volcar_rasante(resultados: List[TamizadoPunto]) -> str:
+    """
+    La tabla del tamizado por punto, para fijar la rasante ANTES del perfil.
+    """
+    out = _titulo("MODO RASANTE - Tamizado previo de Sec. 7.A")
+    out.append("La cota minima se calcula con la rasante PROVISIONAL del CSV")
+    out.append("solo a traves del espesor del paquete (rasante - subrasante),")
+    out.append("que es un dato de la seccion tipica: la cota minima reportada")
+    out.append("es invariante frente al valor absoluto de esa rasante.")
+    out.append("")
+
+    for r in resultados:
+        punto = r.punto
+        out.append(f"{punto.id} ({punto.progresiva_display}, "
+                   f"Familia {punto.familia.value})")
+        if r.nota:
+            out.append(f"{SANGRIA}{r.nota}")
+            out.append("")
+            continue
+        for bloqueo in r.bloqueos:
+            out.append(f"{SANGRIA}BLOQUEADO: {bloqueo}")
+        for barrido in r.materiales:
+            out.append(f"{SANGRIA}{barrido.material} "
+                       f"({barrido.norma_producto}):")
+            if barrido.bloqueo:
+                out.append(f"{SANGRIA * 2}bloqueado: {barrido.bloqueo}")
+                continue
+            if barrido.filas:
+                out.append(f"{SANGRIA * 2}{'D (m)':>7} {'HW (m)':>8} "
+                           f"{'control':>8} {'c.recubr':>9} {'c.resg':>9} "
+                           f"{'c.minima':>9}  gobierna")
+            for fila in barrido.filas:
+                marca = " <- minima" if fila is barrido.fila_minima else ""
+                out.append(f"{SANGRIA * 2}{fila.D:>7.2f} {fila.HW:>8.3f} "
+                           f"{fila.control:>8} "
+                           f"{fila.cota_por_recubrimiento:>9.3f} "
+                           f"{fila.cota_por_resguardo:>9.3f} "
+                           f"{fila.cota_rasante_min:>9.3f}  "
+                           f"{fila.condicion_gobernante}{marca}")
+            if barrido.sin_flujo_libre:
+                descartados = ", ".join(f"{d:.2f}" for d in barrido.sin_flujo_libre)
+                out.append(f"{SANGRIA * 2}sin flujo libre (no transportan Q): "
+                           f"D = {descartados} m")
+        minima = r.fila_minima
+        if minima is not None:
+            out.append(f"{SANGRIA}Cota minima del punto: "
+                       f"{minima.cota_rasante_min:.3f} msnm "
+                       f"({minima.material}, D = {minima.D:.2f} m, gobierna "
+                       f"{minima.condicion_gobernante})")
+        out.append("")
+
+    return "\n".join(out)
+
+
+# ===========================================================================
 # Fase 9 - Cabezal (del proyecto, no del punto)
 # ===========================================================================
 
@@ -1206,6 +1434,12 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--categoria-tr", dest="categoria_tr",
                    help="fila de la Tabla N 02: quebrada_importante o "
                         "quebrada_menor (Sec. 2.2, Familia A)")
+    p.add_argument("--modo-rasante", action="store_true", dest="modo_rasante",
+                   help="solo el tamizado de Sec. 7.A: barre el catalogo de "
+                        "diametros por material y reporta la cota minima de "
+                        "rasante por punto, SIN exigir dimensionamiento "
+                        "(el tamizado es la generadora de la rasante y corre "
+                        "antes del perfil longitudinal)")
     p.add_argument("--criterios", action="store_true",
                    help="imprime tambien la declaracion completa de los "
                         "datos de sitio [S] y de los criterios usados "
@@ -1234,6 +1468,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "categoria_tr": args.categoria_tr}
     try:
         externos = cargar_datos_externos(args.datos_externos, banderas)
+        if args.modo_rasante:
+            resultados = correr_modo_rasante(args.csv, externos)
+            print(volcar_rasante(resultados))
+            # 0 si todo punto dentro del catalogo circular produjo su tabla;
+            # 1 si alguno quedo bloqueado (falta un dato o un criterio).
+            bloqueado = any(
+                r.nota is None and r.fila_minima is None for r in resultados)
+            return 1 if bloqueado else 0
         informe = correr(args.csv, externos)
     except (OSError, json.JSONDecodeError) as exc:
         print(f"No se pudo leer la entrada: {exc}", file=sys.stderr)
