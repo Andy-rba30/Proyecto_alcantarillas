@@ -598,6 +598,36 @@ class TestBloqueCriterios:
 
 class TestBloquePendientes:
 
+    def test_un_refinamiento_opcional_no_se_anuncia_como_vacio_bloqueante(self):
+        """
+        `v_max_concreto_eleccion` no detiene nada: V3 aplica el techo
+        normativo de 6.0 m/s. Figuraba en la tabla de "criterios declarados
+        todavia sin valor", que le dice al revisor que cualquier etapa que lo
+        invoque se detiene. No es cierto, y la memoria no puede afirmarlo.
+        """
+        import criterios_adoptados as ca
+
+        html = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+        assert "v_max_concreto_eleccion" in ca.criterios_opcionales_sin_declarar()
+
+        antes_de_opcionales = html.split("Refinamiento opcional no adoptado")[0]
+        assert "v_max_concreto_eleccion" not in antes_de_opcionales, (
+            "el opcional volvio a la tabla de vacios que detienen el calculo")
+
+    def test_el_opcional_sigue_visible_en_la_memoria_con_su_norma(self):
+        """
+        Salir de la tabla de vacios no puede significar desaparecer: que el
+        refinamiento estuviera disponible y no se adoptara es una decision
+        del proyectista, distinta de no haberlo mirado.
+        """
+        html = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+        assert "Refinamiento opcional no adoptado" in html
+
+        bloque = html.split("Refinamiento opcional no adoptado")[1]
+        assert "v_max_concreto_eleccion" in bloque
+        assert "Tabla N 10" in bloque, "no dice de que norma sale el defecto"
+        assert "no bloquean nada" in bloque
+
     def test_se_leen_los_tres_tableros_de_la_hoja_de_ruta(self):
         tableros = M11.tableros_pendientes()
         numeros = [t.numero for t in tableros]

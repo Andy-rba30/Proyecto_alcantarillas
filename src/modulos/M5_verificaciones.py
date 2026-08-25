@@ -216,11 +216,13 @@ def v3_velocidad_maxima(*, material: Material,
     del criterio cuando el proyectista lo bajo.
 
     TMC y HDPE: la Tabla N 10 no los cubre (Tablero 1.3). El valor sale de
-    `criterios_adoptados.valor('v_max_tmc' | 'v_max_hdpe')`, que hoy es None
-    y por lo tanto lanza `CriterioPendienteError` -- V3 no puede evaluarse
-    para estos materiales hasta que se extraiga el numero de PPI/FHWA. No es
-    un fallo de este modulo: es el vacio que la hoja de ruta declara. Esos
-    criterios ya eran un techo escalar, de modo que esta rama no cambia.
+    `criterios_adoptados.valor('v_max_tmc' | 'v_max_hdpe')`, hoy 4.6 m/s los
+    dos, con cita de WSDOT Hydraulics Manual M 23-03.12, Cap. 8, Tabla 8-4
+    (el vacio que la hoja de ruta declaraba quedo cerrado). Se leen con
+    `ca.valor`, no con `ca.valor_si_declarado`: no son opcionales -- si
+    alguien los vaciara, V3 debe detenerse y no caer a un techo inventado,
+    porque para estos materiales no hay ningun valor normativo de respaldo
+    al que volver. Son un techo escalar, de modo que esta rama no cambia.
     """
     if material.tipo in CRITERIO_V_MAX:
         clave = CRITERIO_V_MAX[material.tipo]

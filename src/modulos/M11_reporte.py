@@ -1117,6 +1117,32 @@ def bloque_pendientes(tableros: Sequence[Tablero],
                 _td(_esc(c.reemplazado_por or c.fuente))]))
         partes.append('<table class="ancha">' + "".join(filas) + "</table>")
 
+    opcionales = ca.criterios_opcionales_sin_declarar()
+    if opcionales:
+        # Salieron de la tabla de arriba porque no son vacios: su valor=None
+        # no detiene nada, el calculo aplica el valor normativo por defecto.
+        # Pero no pueden desaparecer de la memoria por eso: que el
+        # refinamiento estuviera disponible y no se adoptara es una decision
+        # del proyectista, y es distinto de no haberlo mirado.
+        partes.append("<h3>Refinamiento opcional no adoptado</h3>")
+        partes.append(
+            "<p>Estos criterios estan declarados sin valor a proposito y "
+            "<b>no bloquean nada</b>: refinan un valor que la norma ya fija, "
+            "de modo que el calculo corre con el valor normativo por defecto. "
+            "Nadie tiene obligacion de declararlos.</p>")
+        filas = [_fila(["<th>Criterio</th>", "<th>Etiqueta</th>",
+                        "<th>Concepto</th>", "<th>Rango en que podria moverse</th>",
+                        "<th>Norma que aporta el defecto</th>"])]
+        for clave in opcionales:
+            c = ca.criterio(clave)
+            filas.append(_fila([
+                _td(f"<code>{_esc(clave)}</code>"),
+                _td(_etiqueta_html(c.etiqueta)),
+                _td(_esc(c.concepto)),
+                _td(_esc(str(c.sensibilidad))),
+                _td(_esc(c.fuente))]))
+        partes.append('<table class="ancha">' + "".join(filas) + "</table>")
+
     partes.append("<h3>Criterios sin valor que bloquearon una etapa de esta "
                   "corrida</h3>")
     if not bloqueantes:

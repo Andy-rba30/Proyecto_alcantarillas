@@ -501,12 +501,16 @@ class ExpedienteApp:
         clave = self._clave_criterio_seleccionado
         if not clave:
             return
+        # `establecer_valor_dinamico` entra en el try: desde que somete la
+        # declaracion a la guardia de criterios_adoptados, rechaza un valor
+        # fuera del rango de sensibilidad con ValueError. Fuera del try, ese
+        # rechazo salia como traceback de Tk en vez de como mensaje leible.
         try:
             valor_nuevo = self._interpretar_valor_declarado(self.valor_declarado_var.get())
-        except ValueError as exc:
+            ca.establecer_valor_dinamico(clave, valor_nuevo)
+        except (ValueError, KeyError) as exc:
             self.lbl_estado_criterio.config(text=f"Error: {exc}", foreground=COLOR_ERROR)
             return
-        ca.establecer_valor_dinamico(clave, valor_nuevo)
         self.lbl_estado_criterio.config(
             text=f"'{clave}' declarado a {valor_nuevo!r} SOLO para la proxima corrida. "
                  "criterios_adoptados.py no se modifico.",

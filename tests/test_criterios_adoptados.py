@@ -298,6 +298,243 @@ def test_los_parametros_sensibilizables_traen_rango_de_dos_extremos():
         assert rango[0] <= rango[1], f"'{clave}' tiene el rango invertido"
 
 
+# ===========================================================================
+# La guardia de sensibilidad: un valor y su rango se defienden juntos
+# ===========================================================================
+#
+# `_verificar_criterio` es el UNICO sitio que sabe que hace valida a una
+# declaracion, y lo atraviesan los tres caminos por los que un criterio puede
+# recibir valor: el archivo al importarse, la declaracion en caliente de la
+# GUI, y la escritura permanente. Los tests de abajo entran por los tres.
+
+def _criterio_de_prueba(**campos):
+    base = dict(valor=1.0, etiqueta="A", concepto="c", justificacion="j",
+                fuente="f")
+    base.update(campos)
+    return ca.Criterio(**base)
+
+
+def test_el_valor_del_archivo_cae_dentro_de_su_propio_rango():
+    """Estado de partida: ningun criterio se contradice con su rango."""
+    for clave, c in CRITERIOS.items():
+        if c.sensibilidad is None or c.valor is None:
+            continue
+        rango = ca._rango_numerico(c.sensibilidad)
+        if rango is None:
+            continue
+        minimo, maximo = rango
+        extremos = c.valor if isinstance(c.valor, (tuple, list)) else (c.valor,)
+        for x in extremos:
+            assert minimo <= x <= maximo, (
+                f"'{clave}' vale {c.valor!r} fuera de su sensibilidad {c.sensibilidad!r}")
+
+
+def test_la_guardia_rechaza_un_valor_fuera_del_rango_y_dice_la_salida():
+    """
+    El mensaje no puede quedarse en 'tu numero esta mal': quien declaro el
+    rango pudo ser el equivocado, y el revisor necesita saber que las dos
+    cosas se defienden juntas.
+    """
+    malo = _criterio_de_prueba(valor=99.0, sensibilidad=(3.0, 6.0))
+    with pytest.raises(ValueError) as exc:
+        ca._verificar_criterio("criterio_de_prueba", malo)
+    mensaje = str(exc.value)
+    assert "fuera del rango" in mensaje
+    assert "corrigelo en criterios_adoptados.py" in mensaje
+    assert "se defienden juntos en la memoria" in mensaje
+
+
+def test_la_guardia_rechaza_el_rango_invertido():
+    with pytest.raises(ValueError, match="invertido"):
+        ca._verificar_criterio(
+            "criterio_de_prueba", _criterio_de_prueba(valor=None, sensibilidad=(6.0, 3.0)))
+
+
+def test_un_bool_no_se_cuela_como_numero_dentro_del_rango():
+    """
+    `bool` es subclase de `int` en Python: sin excluirlo, True pasaria por un
+    1.0 valido dentro de cualquier rango que contenga al 1.
+    """
+    assert not ca._es_real(True)
+    with pytest.raises(ValueError, match="no es un numero"):
+        ca._verificar_criterio(
+            "criterio_de_prueba", _criterio_de_prueba(valor=True, sensibilidad=(0.9, 1.0)))
+
+
+def test_un_valor_no_numerico_contra_un_rango_numerico_se_rechaza():
+    with pytest.raises(ValueError, match="no es un numero"):
+        ca._verificar_criterio(
+            "criterio_de_prueba", _criterio_de_prueba(valor="tres", sensibilidad=(3.0, 6.0)))
+
+
+def test_un_valor_de_dos_extremos_se_valida_extremo_a_extremo():
+    """
+    La regla de doble n de Sec. 4.1.1: `n_manning_hdpe` es un par, no un
+    numero. Los DOS extremos tienen que caer dentro del rango.
+    """
+    ca._verificar_criterio(
+        "criterio_de_prueba",
+        _criterio_de_prueba(valor=(0.011, 0.012), sensibilidad=(0.010, 0.013)))
+    with pytest.raises(ValueError, match="fuera del rango"):
+        ca._verificar_criterio(
+            "criterio_de_prueba",
+            _criterio_de_prueba(valor=(0.011, 0.020), sensibilidad=(0.010, 0.013)))
+
+
+# ---------------------------------------------------------------------------
+# Sensibilidad simbolica: se declara, no se evalua, no se coacciona
+# ---------------------------------------------------------------------------
+
+def test_una_sensibilidad_simbolica_se_acepta_y_no_se_evalua():
+    """
+    Un rango en funcion de otra variable no tiene dos numeros que recorrer.
+    La guardia lo respeta tal como esta escrito -- no le hace float(), no lo
+    fuerza a un formato que no tiene y no lo descarta en silencio.
+    """
+    simbolico = _criterio_de_prueba(
+        valor="lo que resulte", sensibilidad="2*phi_relleno_trasdos/3")
+    ca._verificar_criterio("criterio_de_prueba", simbolico)   # no lanza
+    assert ca._rango_numerico(simbolico.sensibilidad) is None
+
+
+def test_una_tupla_con_un_extremo_simbolico_es_simbolica_entera():
+    """La discriminacion es por FORMA, no por nombre de criterio."""
+    assert ca._rango_numerico((0.0, "2*phi/3")) is None
+    ca._verificar_criterio(
+        "criterio_de_prueba",
+        _criterio_de_prueba(valor=None, sensibilidad=(0.0, "2*phi/3")))
+
+
+def test_la_sensibilidad_vacia_se_rechaza():
+    """O se declara el rango que se pudo elegir, o no se declara el campo."""
+    with pytest.raises(ValueError, match="vacia"):
+        ca._verificar_criterio(
+            "criterio_de_prueba", _criterio_de_prueba(valor=None, sensibilidad=()))
+
+
+def test_el_barrido_solo_recibe_los_rangos_que_puede_recorrer(monkeypatch):
+    """
+    Una sensibilidad simbolica se imprime en la memoria pero no se puede
+    barrer sin resolver antes la variable de la que depende.
+    """
+    monkeypatch.setitem(
+        CRITERIOS, "criterio_de_prueba",
+        _criterio_de_prueba(valor=None, sensibilidad="2*phi_relleno_trasdos/3"))
+    assert "criterio_de_prueba" not in parametros_sensibilizables()
+    assert "criterio_de_prueba" in parametros_sensibilizables(solo_numericos=False)
+
+
+# ---------------------------------------------------------------------------
+# El mismo rasero por los tres caminos de declaracion
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def _limpia_overrides():
+    yield
+    ca.limpiar_valores_dinamicos()
+
+
+def test_la_declaracion_en_caliente_pasa_por_la_misma_guardia(_limpia_overrides):
+    """La GUI no es una puerta trasera al rango declarado."""
+    with pytest.raises(ValueError, match="fuera del rango"):
+        ca.establecer_valor_dinamico("v_max_concreto_eleccion", 99.0)
+    assert "v_max_concreto_eleccion" not in ca.valores_dinamicos()
+
+    ca.establecer_valor_dinamico("v_max_concreto_eleccion", 4.0)
+    assert ca.valor_si_declarado("v_max_concreto_eleccion") == pytest.approx(4.0)
+
+
+def test_un_override_a_None_se_rechaza_y_cierra_el_default_silencioso(_limpia_overrides):
+    """
+    `valor()` consulta _OVERRIDES ANTES de mirar si el valor es None: un
+    override a None devolvia None en vez de lanzar CriterioPendienteError,
+    que es exactamente el vacio relleno en silencio que este archivo existe
+    para impedir. Retirar una declaracion es `quitar_valor_dinamico`.
+    """
+    with pytest.raises(ValueError, match="quitar_valor_dinamico"):
+        ca.establecer_valor_dinamico("phi_relleno_trasdos", None)
+    assert "phi_relleno_trasdos" not in ca.valores_dinamicos()
+    with pytest.raises(CriterioPendienteError):
+        valor("phi_relleno_trasdos")
+
+
+def test_la_escritura_permanente_valida_antes_de_tocar_el_disco(tmp_path):
+    """
+    Un valor que la guardia rechaza no llega a escribirse: el archivo fuente
+    nunca queda en un estado que su propio import rechazaria.
+    """
+    copia = tmp_path / "criterios_copia.py"
+    original = Path(ca.__file__).read_text(encoding="utf-8")
+    copia.write_text(original, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="fuera del rango"):
+        ca.escribir_valor_en_archivo("v_max_concreto_eleccion", 99.0, ruta=str(copia))
+
+    assert copia.read_text(encoding="utf-8") == original, (
+        "la guardia rechazo el valor pero el archivo ya se habia tocado")
+
+
+# ---------------------------------------------------------------------------
+# Criterios opcionales: valor=None que NO es un vacio
+# ---------------------------------------------------------------------------
+
+def test_v_max_concreto_es_el_unico_opcional_declarado_hoy():
+    opcionales = {k for k, c in CRITERIOS.items() if c.opcional}
+    assert opcionales == {"v_max_concreto_eleccion"}
+
+
+def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():
+    """
+    Su valor=None no detiene nada: V3 aplica el techo normativo de 6.0 m/s.
+    Anunciarlo como vacio bloqueante le decia al revisor de la memoria que un
+    refinamiento que nadie tiene obligacion de declarar era un hueco.
+    """
+    assert "v_max_concreto_eleccion" not in criterios_sin_valor()
+    assert "v_max_concreto_eleccion" in ca.criterios_opcionales_sin_declarar()
+
+
+def test_el_reporte_imprime_los_opcionales_en_su_propio_bloque():
+    texto = reporte_criterios(solo_usados=False)
+    assert "REFINAMIENTO OPCIONAL NO ADOPTADO" in texto
+
+    bloque_vacios = texto.split("VACIOS SIN VALOR")[1].split("REFINAMIENTO OPCIONAL")[0]
+    assert "v_max_concreto_eleccion" not in bloque_vacios, (
+        "el opcional volvio al bloque de vacios bloqueantes")
+
+    bloque_opcional = texto.split("REFINAMIENTO OPCIONAL NO ADOPTADO")[1]
+    assert "v_max_concreto_eleccion" in bloque_opcional
+    assert "Tabla N 10" in bloque_opcional, (
+        "el bloque no dice de que norma sale el valor por defecto")
+
+
+def test_un_opcional_sin_fuente_normativa_se_rechaza():
+    """
+    Un opcional se sostiene sobre un defecto que vive FUERA de este archivo.
+    Sin esa norma, valor=None no significa 'se aplica lo normativo': significa
+    'no hay nada', y marcarlo opcional convierte un vacio en un silencio.
+    """
+    with pytest.raises(ValueError, match="fuente"):
+        ca._verificar_criterio("criterio_de_prueba", _criterio_de_prueba(
+            valor=None, opcional=True, sensibilidad=(3.0, 6.0),
+            fuente="PENDIENTE - falta extraer el numero"))
+
+
+def test_un_opcional_sin_rango_declarado_se_rechaza():
+    """El rango acota cuanto puede apartarse del valor normativo por defecto."""
+    with pytest.raises(ValueError, match="sensibilidad"):
+        ca._verificar_criterio("criterio_de_prueba", _criterio_de_prueba(
+            valor=None, opcional=True, sensibilidad=None))
+
+
+def test_leer_un_opcional_con_valor_no_lo_registra_como_usado():
+    """
+    Sin declarar no se aplico a nada, y M11 no tiene uso que declarar. Es la
+    diferencia entre 'no se adopto' y 'no se miro'.
+    """
+    assert ca.valor_si_declarado("v_max_concreto_eleccion") is None
+    assert "v_max_concreto_eleccion" not in ca._USADOS
+
+
 # ---------------------------------------------------------------------------
 # Contraste contra los casos patron
 # ---------------------------------------------------------------------------

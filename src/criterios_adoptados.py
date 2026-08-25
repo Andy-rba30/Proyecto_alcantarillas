@@ -16,6 +16,18 @@ Un criterio con valor None lanza CriterioPendienteError (modelos.py) y detiene
 el calculo. Nunca devuelve un default. Para saber que falta ANTES de correr,
 sin provocar la excepcion, se consulta criterios_sin_valor().
 
+La UNICA excepcion son los criterios marcados `opcional=True`: no cubren un
+vacio, refinan un valor que la norma ya fija. Sin declarar, el consumidor
+aplica el valor normativo por defecto y el calculo sigue. Se leen con
+valor_si_declarado(), nunca con valor(), y se listan con
+criterios_opcionales_sin_declarar(), no con criterios_sin_valor().
+
+Todo valor que entre por cualquiera de los tres caminos de declaracion -- el
+archivo al importarse, establecer_valor_dinamico() y escribir_valor_en_archivo()
+-- pasa por _verificar_criterio(). Si el criterio declara un rango de
+sensibilidad numerico, el valor tiene que caer dentro: el rango y el valor se
+defienden juntos en la memoria y no pueden contradecirse.
+
 Al cambiar un criterio (por ejemplo, cuando llegue el SPT), se modifica UNA
 linea de este archivo y todos los modulos se recalculan sin contradicciones.
 
@@ -46,6 +58,7 @@ que ademas siguen sujetos a un ensayo pendiente y por eso comparten tablero
 con los criterios adoptados.
 """
 
+import numbers
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Optional, Tuple, Dict, List, Set
@@ -65,10 +78,24 @@ class Criterio:
     justificacion: str                         # por que este valor
     fuente: str                                # de donde sale
     reemplazado_por: Optional[str] = None      # ensayo/dato que lo sustituye
-    sensibilidad: Optional[Tuple] = None       # rango para analisis de sensibilidad -- SOLO [A]
+    sensibilidad: Optional[Tuple] = None       # rango declarado -- [A] y [C]; nunca [S]
     trazabilidad: Optional[str] = None         # como reproducir la lectura -- SOLO [S]
     verificacion_pendiente: Optional[str] = None   # lo que falta confirmar
     provisional: bool = False                  # valor de PRUEBA, no verificado
+    opcional: bool = False                     # valor=None NO bloquea: hay defecto normativo
+
+    # `opcional=True` cambia el significado de `valor=None`, que sin el
+    # significa una sola cosa: vacio que detiene el calculo. Un criterio
+    # opcional REFINA un valor que la norma ya fija, en vez de cubrir un
+    # vacio que la norma deje abierto; sin declarar, el consumidor aplica el
+    # valor normativo por defecto y el calculo sigue. Se lee con
+    # `valor_si_declarado()`, nunca con `valor()`.
+    #
+    # La distincion vivia solo en que funcion usaba el llamador, mas prosa en
+    # la justificacion. Eso dejaba a `criterios_sin_valor()` -- y con el, al
+    # bloque "VACIOS SIN VALOR" de la memoria y al aviso de la GUI --
+    # anunciando como vacio bloqueante lo que es un refinamiento que nadie
+    # tiene obligacion de declarar. Ahora la distincion esta en el dato.
 
     # `provisional=True` marca un valor cargado para una corrida de prueba
     # integral: destraba el pipeline para ver que puntos completan diseno,
@@ -83,7 +110,7 @@ class Criterio:
     # mezclan: un [A] se defiende mostrando cuanto cambiaria el resultado con
     # el otro extremo del rango, y un [S] no tiene rango que elegir -- se
     # defiende diciendo donde se leyo, para que el revisor repita la lectura.
-    # `_coherencia_de_etiquetas()` lo verifica al importar el modulo.
+    # `_verificar_criterio()` lo verifica al importar el modulo.
 
 
 _USADOS: Set[str] = set()
@@ -100,12 +127,34 @@ _OVERRIDES: Dict[str, Any] = {}
 
 
 def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
-    """Declara, solo para esta corrida, el valor de un criterio pendiente."""
+    """
+    Declara, solo para esta corrida, el valor de un criterio pendiente.
+
+    Pasa por la MISMA guardia que el archivo: se arma el Criterio que
+    resultaria de esta declaracion y se somete a `_verificar_criterio`. Un
+    valor fuera del rango de sensibilidad que el propio criterio declara se
+    rechaza aqui, en el momento de declararlo, y no mas tarde durante el
+    calculo.
+
+    `valor_nuevo=None` se rechaza. No es una forma de retirar la
+    declaracion -- para eso esta `quitar_valor_dinamico` -- y aceptarlo abria
+    un default silencioso: `valor()` consulta `_OVERRIDES` ANTES de mirar si
+    el valor es None, de modo que un override a None devolvia None en vez de
+    lanzar `CriterioPendienteError`, que es justo lo que este archivo existe
+    para impedir.
+    """
     if clave not in CRITERIOS:
         raise KeyError(
             f"'{clave}' no esta declarado en criterios_adoptados.py. "
             "Ningun parametro no normativo puede usarse sin declararse aqui."
         )
+    if valor_nuevo is None:
+        raise ValueError(
+            f"No se puede declarar '{clave}' con valor None: una declaracion "
+            "en caliente aporta un valor, no lo retira. Para retirarla, usa "
+            "`quitar_valor_dinamico`; el criterio vuelve a bloquear el calculo"
+        )
+    _verificar_criterio(clave, replace(CRITERIOS[clave], valor=valor_nuevo))
     _OVERRIDES[clave] = valor_nuevo
 
 
@@ -184,10 +233,29 @@ def criterios_sin_valor() -> List[str]:
     detienen el calculo si se invocan. M11 los imprime en bloque aparte
     (Sec. 0.7) y la GUI los usa para avisar antes de correr, no despues de
     la excepcion.
+
+    Los criterios OPCIONALES quedan FUERA: su `valor=None` no detiene nada
+    -- el consumidor aplica el valor normativo por defecto -- y anunciarlos
+    como vacios bloqueantes le decia al revisor de la memoria que un
+    refinamiento que nadie tiene obligacion de declarar era un hueco del
+    expediente. Se listan aparte, en `criterios_opcionales_sin_declarar`.
     """
     return sorted(
         k for k, c in CRITERIOS.items()
-        if c.valor is None and k not in _OVERRIDES
+        if c.valor is None and not c.opcional and k not in _OVERRIDES
+    )
+
+
+def criterios_opcionales_sin_declarar() -> List[str]:
+    """
+    Criterios opcionales que nadie declaro: el calculo corre con el valor
+    normativo por defecto. NO son vacios y no bloquean nada; se informan
+    para que la memoria diga que el refinamiento estaba disponible y no se
+    adopto, que es distinto de no haberlo mirado.
+    """
+    return sorted(
+        k for k, c in CRITERIOS.items()
+        if c.opcional and c.valor is None and k not in _OVERRIDES
     )
 
 
@@ -206,6 +274,12 @@ def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
 
     if clave not in CRITERIOS:
         raise KeyError(f"'{clave}' no esta declarado en criterios_adoptados.py.")
+
+    # La misma guardia que el archivo y que la declaracion en caliente, y
+    # ANTES de tocar el disco: un valor que la guardia rechaza no llega a
+    # escribirse, para que el archivo fuente nunca quede en un estado que su
+    # propio import rechazaria.
+    _verificar_criterio(clave, replace(CRITERIOS[clave], valor=valor_nuevo))
 
     ruta_archivo = ruta or __file__
     texto = Path(ruta_archivo).read_text(encoding="utf-8")
@@ -711,6 +785,7 @@ CRITERIOS: Dict[str, Criterio] = {
                "maximos son [N]; adoptar uno mas conservador que el techo de "
                "la tabla no esta normado y es del proyectista",
         sensibilidad=(3.0, 6.0),
+        opcional=True,      # sin declarar, V3 aplica el techo [N] de 6.0 m/s
     ),
 
     "ke_entrada": Criterio(
@@ -1457,39 +1532,164 @@ CRITERIOS: Dict[str, Criterio] = {
 
 ETIQUETAS_VALIDAS = ("N", "N->", "S", "C", "A")
 
+# Salida que todo mensaje de rango debe ofrecer. El error no es "tu numero
+# esta mal": es que el numero y el rango se contradicen, y quien declaro el
+# rango puede haber sido el equivocado.
+_SALIDA_RANGO = (
+    "si el rango ya no es el correcto, corrigelo en criterios_adoptados.py; "
+    "el rango y el valor se defienden juntos en la memoria"
+)
+
+
+def _es_real(x: Any) -> bool:
+    """
+    Un numero real de verdad. `bool` queda fuera a proposito: en Python es
+    subclase de `int`, y sin esta exclusion `True` pasaria por un 1.0 valido
+    dentro de cualquier rango que contenga al 1.
+    """
+    return isinstance(x, numbers.Real) and not isinstance(x, bool)
+
+
+def _rango_numerico(sensibilidad: Any) -> Optional[Tuple]:
+    """
+    La sensibilidad si es un rango numerico validable; None si es SIMBOLICA.
+
+    La discriminacion es por FORMA, nunca por nombre de criterio: una
+    2-tupla de reales se valida entera, y cualquier otra cosa no vacia -- una
+    cadena como "2*phi_relleno_trasdos/3", un invocable, una tupla con un
+    extremo simbolico -- se acepta tal cual y no se toca. No se hace `float()`
+    sobre ella, no se coacciona a un formato que no tiene y no se descarta en
+    silencio: se declara, se imprime en el reporte como esta escrita, y el
+    analisis de sensibilidad la pide aparte.
+    """
+    if isinstance(sensibilidad, tuple) and all(_es_real(x) for x in sensibilidad):
+        return sensibilidad
+    return None
+
+
+def _verificar_sensibilidad(clave: str, c: Criterio) -> None:
+    """Forma del rango, orden de sus extremos, y el valor dentro de el."""
+    s = c.sensibilidad
+    if s is None:
+        return
+    if not s:
+        raise ValueError(
+            f"'{clave}' declara una sensibilidad vacia ({s!r}). O declara el "
+            f"rango que se pudo elegir, o no declares el campo"
+        )
+
+    rango = _rango_numerico(s)
+    if rango is None:
+        return              # simbolica: declarada, respetada, no evaluada
+
+    if len(rango) != 2:
+        raise ValueError(
+            f"'{clave}' declara una sensibilidad de {len(rango)} extremos "
+            f"({s!r}). Un rango numerico tiene dos: minimo y maximo"
+        )
+    minimo, maximo = rango
+    if minimo > maximo:
+        raise ValueError(
+            f"'{clave}' tiene el rango de sensibilidad invertido ({s!r}): "
+            f"el minimo {minimo!r} es mayor que el maximo {maximo!r}"
+        )
+
+    if c.valor is None:
+        return              # sin valor no hay nada que contrastar
+
+    # El valor puede ser un escalar o una tupla (la regla de doble n de
+    # Sec. 4.1.1: `n_manning_hdpe` es un par, no un numero). En los dos casos
+    # se exige que CADA numero caiga dentro del rango declarado.
+    candidatos = c.valor if isinstance(c.valor, (tuple, list)) else (c.valor,)
+    for x in candidatos:
+        if not _es_real(x):
+            raise ValueError(
+                f"'{clave}' declara un rango de sensibilidad numerico {s!r} "
+                f"pero su valor es {c.valor!r}, que no es un numero. "
+                f"Un rango numerico no puede defender un valor que no lo es: "
+                f"{_SALIDA_RANGO}"
+            )
+        if not minimo <= x <= maximo:
+            raise ValueError(
+                f"'{clave}' tiene el valor {c.valor!r} fuera del rango de "
+                f"sensibilidad que el mismo declara, {s!r} "
+                f"(el extremo infractor es {x!r}). {_SALIDA_RANGO}"
+            )
+
+
+def _verificar_criterio(clave: str, c: Criterio) -> None:
+    """
+    Valida UNA entrada. No lee CRITERIOS: recibe el objeto ya armado.
+
+    Es la unica que sabe que hace valida a una declaracion, y por eso la
+    atraviesan los TRES caminos por los que un criterio puede recibir valor:
+
+        archivo (import-time)      `_coherencia_de_etiquetas()`
+        declaracion en caliente    `establecer_valor_dinamico()`
+        escritura permanente       `escribir_valor_en_archivo()`
+
+    Los dos caminos dinamicos arman con `replace()` el Criterio que
+    RESULTARIA de la declaracion y lo pasan por aqui antes de aceptarla. La
+    logica vive una sola vez; los tres sitios son una linea y no pueden
+    divergir.
+
+    Es una guardia de arquitectura, no una validacion de dato: si falla al
+    importar, el archivo esta mal escrito y ninguna corrida deberia empezar.
+    Un [S] sin trazabilidad seria un hecho de sitio que el revisor no puede
+    reproducir, y un [S] con sensibilidad seria un hecho al que se le ofrece
+    un rango de valores alternativos, que es justo lo que un hecho no tiene.
+    """
+    if c.etiqueta not in ETIQUETAS_VALIDAS:
+        raise ValueError(
+            f"'{clave}' lleva la etiqueta {c.etiqueta!r}, que no es de la "
+            f"convencion {ETIQUETAS_VALIDAS}"
+        )
+    if c.etiqueta == "S":
+        if not c.trazabilidad:
+            raise ValueError(
+                f"'{clave}' es [S] y no declara trazabilidad. Un dato de "
+                "sitio se defiende diciendo como reproducir la lectura"
+            )
+        if c.sensibilidad:
+            raise ValueError(
+                f"'{clave}' es [S] y declara sensibilidad. Un hecho de "
+                "sitio no tiene rango que elegir: si lo tuviera, seria [A]"
+            )
+    elif c.trazabilidad:
+        raise ValueError(
+            f"'{clave}' no es [S] y declara trazabilidad. El campo es "
+            "exclusivo de los datos de sitio"
+        )
+
+    if c.opcional:
+        # Un opcional se sostiene sobre un defecto que vive FUERA de este
+        # archivo: la norma que `fuente` cita. Sin ese defecto, `valor=None`
+        # no significa "se aplica lo normativo", significa "no hay nada", y
+        # marcarlo opcional convierte un vacio en un silencio.
+        if not c.fuente or c.fuente.strip().upper().startswith("PENDIENTE"):
+            raise ValueError(
+                f"'{clave}' es opcional y su fuente es {c.fuente!r}. Un "
+                "criterio opcional refina un valor que la norma YA fija: su "
+                "fuente debe citar la norma de la que sale ese valor por "
+                "defecto, no quedar pendiente"
+            )
+        # Un refinamiento sin limites declarados no es un refinamiento: el
+        # rango dice hasta donde puede moverse el proyectista respecto del
+        # valor normativo, y es lo que la memoria tiene que defender.
+        if c.sensibilidad is None:
+            raise ValueError(
+                f"'{clave}' es opcional y no declara sensibilidad. El rango "
+                "es lo que acota cuanto puede apartarse del valor normativo "
+                "por defecto"
+            )
+
+    _verificar_sensibilidad(clave, c)
+
 
 def _coherencia_de_etiquetas() -> None:
-    """
-    Verifica al importar que ninguna entrada mezcle los dos modos de defensa.
-
-    Es una guardia de arquitectura, no una validacion de dato: si falla, el
-    archivo esta mal escrito y ninguna corrida deberia empezar. Un [S] sin
-    trazabilidad seria un hecho de sitio que el revisor no puede reproducir, y
-    un [S] con sensibilidad seria un hecho al que se le ofrece un rango de
-    valores alternativos, que es justo lo que un hecho no tiene.
-    """
+    """Somete TODO el archivo a la guardia, al importar el modulo."""
     for clave, c in CRITERIOS.items():
-        if c.etiqueta not in ETIQUETAS_VALIDAS:
-            raise ValueError(
-                f"'{clave}' lleva la etiqueta {c.etiqueta!r}, que no es de la "
-                f"convencion {ETIQUETAS_VALIDAS}"
-            )
-        if c.etiqueta == "S":
-            if not c.trazabilidad:
-                raise ValueError(
-                    f"'{clave}' es [S] y no declara trazabilidad. Un dato de "
-                    "sitio se defiende diciendo como reproducir la lectura"
-                )
-            if c.sensibilidad:
-                raise ValueError(
-                    f"'{clave}' es [S] y declara sensibilidad. Un hecho de "
-                    "sitio no tiene rango que elegir: si lo tuviera, seria [A]"
-                )
-        elif c.trazabilidad:
-            raise ValueError(
-                f"'{clave}' no es [S] y declara trazabilidad. El campo es "
-                "exclusivo de los datos de sitio"
-            )
+        _verificar_criterio(clave, c)
 
 
 _coherencia_de_etiquetas()
@@ -1525,7 +1725,10 @@ def reporte_criterios(solo_usados: bool = True) -> str:
         valor_efectivo = _OVERRIDES.get(k, c.valor)
         marca_override = "  [declarado para esta corrida, no en archivo]" if k in _OVERRIDES else ""
         marca_prov = "  [PROVISIONAL: valor de prueba, NO verificado]" if c.provisional else ""
-        out.append(f"[{c.etiqueta}] {k} = {valor_efectivo!r}{marca_override}{marca_prov}")
+        marca_opc = "  [refinamiento opcional]" if c.opcional else ""
+        out.append(
+            f"[{c.etiqueta}] {k} = {valor_efectivo!r}"
+            f"{marca_override}{marca_prov}{marca_opc}")
         out.append(f"     Concepto      : {c.concepto}")
         out.append(f"     Justificacion : {c.justificacion}")
         out.append(f"     Fuente        : {c.fuente}")
@@ -1558,12 +1761,38 @@ def reporte_criterios(solo_usados: bool = True) -> str:
             out.append(f"  - [{CRITERIOS[k].etiqueta}] {k}: {CRITERIOS[k].concepto}")
         out.append("-" * 78)
 
+    opcionales = criterios_opcionales_sin_declarar()
+    if opcionales:
+        out.append("")
+        out.append("-" * 78)
+        out.append("REFINAMIENTO OPCIONAL NO ADOPTADO - se aplica el valor")
+        out.append("normativo por defecto. NO son vacios: el calculo corre y")
+        out.append("nadie tiene obligacion de declararlos:")
+        for k in opcionales:
+            c = CRITERIOS[k]
+            out.append(f"  - [{c.etiqueta}] {k}: {c.concepto}")
+            out.append(f"      Norma que aporta el defecto: {c.fuente}")
+        out.append("-" * 78)
+
     return "\n".join(out)
 
 
-def parametros_sensibilizables() -> Dict[str, Tuple]:
-    """Devuelve los criterios con rango declarado, para el analisis de sensibilidad."""
-    return {k: c.sensibilidad for k, c in CRITERIOS.items() if c.sensibilidad}
+def parametros_sensibilizables(solo_numericos: bool = True) -> Dict[str, Tuple]:
+    """
+    Los criterios con rango declarado, para el analisis de sensibilidad.
+
+    Con `solo_numericos=True` (por defecto) devuelve unicamente los rangos
+    que un barrido puede recorrer: 2-tuplas de reales. Una sensibilidad
+    SIMBOLICA -- expresada en funcion de otro criterio -- se declara y se
+    imprime en la memoria, pero no se puede recorrer sin resolver antes la
+    variable de la que depende, y hacer `float()` sobre ella la falsearia.
+    Con `solo_numericos=False` salen todas, tal como estan declaradas.
+    """
+    return {
+        k: c.sensibilidad for k, c in CRITERIOS.items()
+        if c.sensibilidad
+        and (not solo_numericos or _rango_numerico(c.sensibilidad) is not None)
+    }
 
 
 if __name__ == "__main__":
