@@ -157,10 +157,19 @@ ESPACIAMIENTO_PERFIL_KM = 4.0       # nivel perfil (num. 4.2, Cuadro 4.1)
 
 # ================= EG-2013, Capitulo V (Secciones 502-508) =================
 H_RELLENO_MIN = {
-    "hdpe":     0.30,               # m, clave a subrasante (508.07/508.08)
-    "concreto": None,               # AASHTO M-170M (clases I a V)
-    "tmc":      None,               # ASTM A-807 / AASHTO M36
+    "hdpe":     0.30,               # m, clave a subrasante (508.07, pag. 982)
+    "concreto": None,               # VACIO VERIFICADO -- no es "falta extraer"
+    "tmc":      None,               # VACIO VERIFICADO -- idem
 }
+# Los dos None NO estan esperando una lectura pendiente: la busqueda esta
+# cerrada y no hay valor que traer. AASHTO M 170M, M 36 y ASTM A760 no
+# contienen alturas de relleno admisibles -- su Nota 1 las excluye por ser
+# especificaciones de fabricacion y compra -- y M 170M clasifica por D-load,
+# no por altura. El Manual de Puentes nunca incorporo la Sec. 12 de AASHTO
+# LRFD (su indice salta de 2.11 a 2.12). Estos comentarios decian antes
+# "AASHTO M-170M (clases I a V)" y "ASTM A-807 / AASHTO M36", que apuntaban a
+# tablas que no existen. El registro completo, con citas, esta en el criterio
+# 'h_relleno_min_concreto_tmc' y en docs/manifiesto_citas.md Sec. 14.a.
 # 505, 506, 507 y 508 son SECCIONES completas del EG-2013, dentro del
 # Capitulo V. No son subsecciones de ninguna "Seccion 500": esa denominacion
 # no existe en el EG-2013 y la constante se llamaba SUBSECCION por arrastre de
