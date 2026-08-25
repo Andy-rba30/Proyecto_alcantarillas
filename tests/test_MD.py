@@ -26,7 +26,8 @@ import importlib.util
 import pytest
 
 from constantes_normativas import Y_SOBRE_D_MAX
-from modelos import (DatoFaltanteError, DisenoNoFactibleError, Familia,
+from modelos import (CriterioPendienteError, DatoFaltanteError,
+                     DatoInvalidoError, DisenoNoFactibleError, Familia,
                      PuntoCritico, TipoMaterial, Verificacion)
 from modulos.M2_material import catalogo
 from modulos.MD import (MENSAJE_DIAMETRO_SUPERADO, MODULO_VERIFICACIONES,
@@ -105,6 +106,37 @@ class _Registro:
     def __call__(self, *, punto, material, D, resultado):
         self.llamadas.append((material.tipo, round(D, 2)))
         return (_verificacion(self.decision(D)),)
+
+
+class _RevientaMaterial:
+    """
+    Verificador que lanza ErrorProyecto en los materiales indicados y deja
+    cumplir a los demas. Reproduce, sin depender de M5, lo que hace V7 cuando
+    la clave del conducto ya no cabe bajo la subrasante: un material se cae a
+    mitad del catalogo y los siguientes tienen que poder seguir intentandose.
+    """
+
+    def __init__(self, *tipos_que_revientan, desde_D=0.0,
+                 exc=DatoInvalidoError, rechazan=()):
+        self.tipos = set(tipos_que_revientan)
+        self.rechazan = set(rechazan)     # se evaluan de verdad y no cumplen
+        self.desde_D = desde_D
+        self.exc = exc
+        self.llamadas = []
+
+    def __call__(self, *, punto, material, D, resultado):
+        self.llamadas.append((material.tipo, round(D, 2)))
+        if material.tipo in self.tipos and D >= self.desde_D:
+            if self.exc is DatoInvalidoError:
+                raise DatoInvalidoError("cota_subrasante", valor=44.05,
+                                        id_punto=punto.id,
+                                        motivo="la clave no cabe bajo la "
+                                               "subrasante a este diametro")
+            raise self.exc("criterio_de_prueba")
+        if material.tipo in self.rechazan:
+            return (_verificacion(False, obtenido="lo que sea",
+                                  admisible="otra cosa"),)
+        return (_verificacion(True),)
 
 
 # ===========================================================================
@@ -387,6 +419,132 @@ def test_el_lote_captura_dato_faltante_por_punto():
     assert resultados[0].aceptado
     assert not resultados[1].aceptado
     assert "DatoFaltanteError" in resultados[1].motivo_rechazo
+
+
+# ===========================================================================
+# 6 - Un material que revienta no se lleva el punto por delante
+# ===========================================================================
+
+def test_un_material_que_revienta_no_impide_que_otro_cierre():
+    """
+    El primer candidato (concreto) lanza ErrorProyecto a mitad del catalogo.
+    Antes esa excepcion suba hasta el llamador y mataba el punto entero: TMC
+    y HDPE no llegaban a intentarse. Ahora el material se descarta y el bucle
+    sigue, de modo que el punto cierra con el siguiente candidato que cumple.
+    """
+    verificar = _RevientaMaterial(TipoMaterial.CONCRETO_REFORZADO)
+
+    resultado = disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
+                              verificar=verificar)
+
+    assert resultado.aceptado
+    assert resultado.material.tipo is TipoMaterial.TMC
+    # El concreto se intento y se descarto; no se salto en silencio.
+    tipos = [t for t, _ in verificar.llamadas]
+    assert TipoMaterial.CONCRETO_REFORZADO in tipos
+    assert TipoMaterial.TMC in tipos
+
+
+def test_el_escalon_que_revienta_queda_en_la_traza():
+    """
+    Entregable 1: la traza de iteraciones publica lo que se INTENTO, y un
+    escalon que termino en excepcion se intento igual. Sin esto, la memoria
+    de un punto que no cerro perderia justo el escalon que explica por que.
+    """
+    verificar = _RevientaMaterial(TipoMaterial.CONCRETO_REFORZADO)
+    pasos = []
+
+    disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE, verificar=verificar,
+                  registrar=pasos.append)
+
+    concreto = [p for p in pasos if p.material == catalogo(
+        TipoMaterial.CONCRETO_REFORZADO).nombre]
+    assert concreto, "el escalon que revento tiene que estar en la traza"
+    assert not concreto[-1].aceptado
+    # El sujeto del motivo es el escalon, no el expediente.
+    assert "D = 0.90 m" in concreto[-1].motivo
+    assert "no se pudo evaluar" in concreto[-1].motivo
+    assert "DatoInvalidoError" in concreto[-1].motivo
+
+
+def test_si_todos_los_materiales_revientan_sigue_siendo_no_factible():
+    """
+    Con los tres candidatos cayendo, el punto no tiene diseño y eso se dice
+    con DisenoNoFactibleError, como cuando se agota el catalogo. El motivo
+    lleva los tres materiales, cada uno con su causa citada entera.
+    """
+    verificar = _RevientaMaterial(TipoMaterial.CONCRETO_REFORZADO,
+                                  TipoMaterial.TMC, TipoMaterial.HDPE)
+
+    with pytest.raises(DisenoNoFactibleError) as excinfo:
+        disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE, verificar=verificar)
+
+    motivo = str(excinfo.value)
+    for tipo in (TipoMaterial.CONCRETO_REFORZADO, TipoMaterial.TMC,
+                 TipoMaterial.HDPE):
+        assert catalogo(tipo).nombre in motivo
+    assert "DatoInvalidoError" in motivo
+    assert "no evaluable" in motivo
+
+
+def test_un_criterio_pendiente_bloquea_el_punto_aunque_otro_material_cierre():
+    """
+    Un criterio vacio NO es un descarte: es un material que no se evaluo.
+
+    El concreto es el candidato mas preferente de M2 y queda bloqueado; el TMC
+    cumpliria. Cerrar con TMC seria elegir material por descarte de uno que
+    nadie llego a verificar, y la memoria de Sec. 3.4 no podria defender esa
+    eleccion. El punto sale BLOQUEADO, con la clave que falta.
+    """
+    verificar = _RevientaMaterial(TipoMaterial.CONCRETO_REFORZADO,
+                                  exc=CriterioPendienteError)
+
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE, verificar=verificar)
+
+    assert excinfo.value.clave == "criterio_de_prueba"
+    # El TMC llego a probarse: el bucle no se detuvo en el concreto.
+    assert TipoMaterial.TMC in [t for t, _ in verificar.llamadas]
+
+
+def test_el_caso_mixto_es_bloqueado_y_no_no_factible():
+    """
+    Caso MIXTO: un material evaluado y RECHAZADO, los otros dos bloqueados por
+    criterio vacio. `DisenoNoFactibleError` afirma que ninguna combinacion
+    cumple, y esa afirmacion no se sostiene sobre dos materiales que nunca se
+    evaluaron. Sale CriterioPendienteError.
+    """
+    verificar = _RevientaMaterial(TipoMaterial.TMC, TipoMaterial.HDPE,
+                                  exc=CriterioPendienteError,
+                                  rechazan=(TipoMaterial.CONCRETO_REFORZADO,))
+
+    with pytest.raises(CriterioPendienteError):
+        disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE, verificar=verificar)
+
+
+def test_evaluados_todos_y_ninguno_cumple_si_es_no_factible():
+    """
+    La contraparte: sin ningun bloqueo, los tres materiales se evaluaron de
+    verdad y el punto es NO FACTIBLE, que es lo que DisenoNoFactibleError
+    puede afirmar con fundamento.
+    """
+    with pytest.raises(DisenoNoFactibleError):
+        disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
+                      verificar=_nada_cumple)
+
+
+def test_un_fallo_de_programa_sigue_propagandose():
+    """
+    La captura es de ErrorProyecto y de nada mas. Un ValueError es un defecto
+    del script, no un problema del expediente, y no puede quedar disfrazado
+    de "material descartado".
+    """
+    def revienta_feo(*, punto, material, D, resultado):
+        raise ValueError("defecto del programa")
+
+    with pytest.raises(ValueError):
+        disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
+                      verificar=revienta_feo)
 
 
 def test_el_lote_vacio_devuelve_lista_vacia():

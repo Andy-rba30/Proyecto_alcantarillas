@@ -106,7 +106,8 @@ from importlib import import_module
 from typing import (Callable, List, Optional, Protocol, Sequence, Tuple,
                     Iterable)
 
-from modelos import (DisenoNoFactibleError, ErrorProyecto, Familia, Material,
+from modelos import (CriterioPendienteError, DisenoNoFactibleError,
+                     ErrorProyecto, Familia, Material,
                      PasoDiseno, PuntoCritico, ResultadoHidraulico,
                      ResultadoPunto, Verificacion)
 from modulos.M2_material import materiales_candidatos, siguiente_diametro
@@ -208,6 +209,35 @@ def _motivo_incumplimiento(D: float,
     return f"D = {D:.2f} m: incumple " + "; ".join(partes)
 
 
+def _motivo_escalon_fallido(D: float, exc: ErrorProyecto) -> str:
+    """
+    Un escalon que termino en ErrorProyecto en vez de en una verificacion.
+
+    El sujeto de la frase es EL ESCALON, no el expediente: es MD quien eligio
+    esta D del catalogo, de modo que "con D = 2.10 m no se pudo evaluar" es un
+    hecho del bucle, y el mensaje de la excepcion queda detras como la causa
+    que lo explica. Sin el prefijo, un DatoInvalidoError sobre 'cota_subrasante'
+    lanzado por V7 se lee como "el dato del expediente esta mal" cuando lo que
+    ocurrio es que la clave del conducto, A ESTE DIAMETRO, ya no cabe bajo la
+    subrasante -- el dato no cambio, cambio la D que el bucle estaba probando.
+
+    MD no reinterpreta la excepcion ni la reclasifica: la cita entera, con su
+    tipo. Corregir el tipo o el campo de la excepcion es de M5, no de aqui.
+    """
+    return (f"D = {D:.2f} m: el escalon no se pudo evaluar -- "
+            f"{type(exc).__name__}: {exc}")
+
+
+def _motivo_material_fallido(exc: ErrorProyecto) -> str:
+    """
+    El material completo se cae porque uno de sus escalones lanzo. No es
+    "descartado por diametro requerido" (Anexo B) -- ese mensaje es para el
+    catalogo agotado bajo el tope -- ni es un incumplimiento de la Fase 5: es
+    un material que no se pudo terminar de evaluar, y se declara asi.
+    """
+    return f"material no evaluable: {type(exc).__name__}: {exc}"
+
+
 def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
     """
     El material se quedo sin catalogo: se agoto la progresion de Sec. 3.2 bajo
@@ -253,41 +283,54 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     ultimo_motivo = "el catalogo no ofrecio ningun diametro"
 
     while D is not None:
-        normal = resolver_manning(D=D, Q=Q, S=S, material=material)
+        try:
+            normal = resolver_manning(D=D, Q=Q, S=S, material=material)
 
-        if normal is None:
-            ultimo_motivo = _motivo_sin_flujo_libre(D, Q, S, material)
-            _registrar(registrar, material, D, aceptado=False,
-                       motivo=ultimo_motivo)
-        else:
-            # No puede salir None: se le pasa el tirante normal ya resuelto, y
-            # ese es el unico caso en que M4 devuelve None.
-            resultado = resolver_control(D=D, Q=Q, S=S, L=L, TW=TW,
-                                         material=material, normal=normal)
-            verificaciones = tuple(verificar(punto=punto, material=material,
-                                             D=D, resultado=resultado))
-            if not verificaciones:
-                raise ValueError(
-                    f"la Fase 5 devolvio cero verificaciones para {punto.id} "
-                    f"con {material.nombre} D = {D:.2f} m: un punto aceptado "
-                    "sin verificaciones no es defendible en la memoria"
-                )
+            if normal is None:
+                ultimo_motivo = _motivo_sin_flujo_libre(D, Q, S, material)
+                _registrar(registrar, material, D, aceptado=False,
+                           motivo=ultimo_motivo)
+            else:
+                # No puede salir None: se le pasa el tirante normal ya
+                # resuelto, y ese es el unico caso en que M4 devuelve None.
+                resultado = resolver_control(D=D, Q=Q, S=S, L=L, TW=TW,
+                                             material=material, normal=normal)
+                verificaciones = tuple(verificar(punto=punto,
+                                                 material=material,
+                                                 D=D, resultado=resultado))
+                if not verificaciones:
+                    raise ValueError(
+                        f"la Fase 5 devolvio cero verificaciones para "
+                        f"{punto.id} con {material.nombre} D = {D:.2f} m: un "
+                        "punto aceptado sin verificaciones no es defendible "
+                        "en la memoria"
+                    )
 
-            if all(v.cumple for v in verificaciones):
-                _registrar(registrar, material, D, aceptado=True, motivo="",
+                if all(v.cumple for v in verificaciones):
+                    _registrar(registrar, material, D, aceptado=True,
+                               motivo="", verificaciones=verificaciones)
+                    return ResultadoPunto(
+                        punto=punto,
+                        material=material,
+                        D=D,
+                        resultado_hidraulico=resultado,
+                        verificaciones=verificaciones,
+                        aceptado=True,
+                    ), ""
+
+                ultimo_motivo = _motivo_incumplimiento(D, verificaciones)
+                _registrar(registrar, material, D, aceptado=False,
+                           motivo=ultimo_motivo,
                            verificaciones=verificaciones)
-                return ResultadoPunto(
-                    punto=punto,
-                    material=material,
-                    D=D,
-                    resultado_hidraulico=resultado,
-                    verificaciones=verificaciones,
-                    aceptado=True,
-                ), ""
-
-            ultimo_motivo = _motivo_incumplimiento(D, verificaciones)
+        except ErrorProyecto as exc:
+            # El escalon probado queda en la traza ANTES de que la excepcion
+            # siga subiendo: un escalon que revento es parte de lo que se
+            # intento, y la memoria de un punto que no cerro es justamente la
+            # que hay que publicar entera. Solo ErrorProyecto: un ValueError o
+            # un ImportError es un fallo de programa y sube sin anotarse.
             _registrar(registrar, material, D, aceptado=False,
-                       motivo=ultimo_motivo, verificaciones=verificaciones)
+                       motivo=_motivo_escalon_fallido(D, exc))
+            raise
 
         D = siguiente_diametro(material.tipo, D)
 
@@ -329,10 +372,32 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             cuando la llamada termina en DisenoNoFactibleError: la traza de un
             punto que no cerro es justamente la que hay que publicar.
 
-    Lanza DisenoNoFactibleError si ningun material candidato cumple, con el
-    motivo del ultimo fallo de cada uno -- nunca un resultado silencioso ni un
-    diametro fuera de catalogo. `delta_rasante_m` sale vacio: ese numero es
-    del tamizado de 7.A, no de este bucle.
+    Lanza DisenoNoFactibleError si todos los materiales candidatos SE
+    EVALUARON y ninguno cumple, con el motivo del ultimo fallo de cada uno --
+    nunca un resultado silencioso ni un diametro fuera de catalogo.
+    `delta_rasante_m` sale vacio: ese numero es del tamizado de 7.A, no de
+    este bucle.
+
+    Un material que lanza ErrorProyecto a mitad del catalogo no mata el punto:
+    se descarta como material, con su causa citada entera en el motivo, y el
+    bucle sigue con el siguiente candidato. Los escalones que reventaron
+    quedan igualmente en la traza de `registrar`.
+
+    Distincion entre BLOQUEADO y NO FACTIBLE
+    ----------------------------------------
+    Si algun candidato quedo bloqueado por un criterio vacio, sale
+    `CriterioPendienteError` y no `DisenoNoFactibleError` -- incluido el caso
+    mixto y el caso en que un candidato posterior si cerro. Ver
+    `_exigir_criterios_declarados`, que es donde esta el fundamento.
+
+    PENDIENTE DELIBERADO (fuera del alcance de la tarea que introdujo esto):
+    cuando cada material se detiene en un criterio vacio DISTINTO, solo la
+    primera clave viaja como excepcion, porque `CriterioPendienteError` lleva
+    una sola `clave`. Las demas quedan en la traza de `PasoDiseno` y en las
+    'iteraciones' del informe, pero no como filas estructuradas del bloque de
+    pendientes de M11 ni como avisos "falta declarar" de la GUI. Exponer las
+    tres exige un campo nuevo en modelos.py -- una excepcion que admita varias
+    claves -- y eso toca la taxonomia de excepciones, que se decide aparte.
     """
     if verificar is None:
         verificar = _verificador_de_M5()
@@ -346,18 +411,82 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             motivo=_motivo_sin_candidatos(punto), id_punto=punto.id)
 
     fallos: List[str] = []
+    pendientes: List[CriterioPendienteError] = []
+
     for material in candidatos:
-        resultado, motivo = disenar_material(punto, material, Q=Q, S=S,
-                                             L=L, TW=TW, verificar=verificar,
-                                             registrar=registrar)
+        try:
+            resultado, motivo = disenar_material(
+                punto, material, Q=Q, S=S, L=L, TW=TW, verificar=verificar,
+                registrar=registrar)
+        except CriterioPendienteError as exc:
+            # Bloqueo, no descarte: este material no se evaluo, y "no se
+            # evaluo" no es "no cumple". Se anota aparte de `fallos` porque
+            # decide que excepcion sale del punto (ver mas abajo).
+            fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
+            pendientes.append(exc)
+            continue
+        except ErrorProyecto as exc:
+            # Un material que revienta se descarta COMO MATERIAL y el bucle
+            # sigue con el siguiente candidato. Antes la excepcion subia hasta
+            # el llamador y mataba el punto entero, de modo que un fallo del
+            # PRIMER candidato dejaba a los otros dos sin intentarse siquiera:
+            # el punto salia "no evaluable" cuando podia tener diseño con otro
+            # material. El motivo queda citado entero, con su tipo.
+            fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
+            continue
+
         if resultado is not None:
+            # Un candidato cerro. Si ALGUNO de los anteriores -- todos ellos
+            # mas preferentes en el orden de M2 -- quedo bloqueado por un
+            # criterio vacio, el punto NO esta diseñado: estaria eligiendo
+            # este material por descarte de otro que nunca se llego a evaluar,
+            # y la memoria no podria defender la eleccion de Sec. 3.4.
+            _exigir_criterios_declarados(pendientes)
             return resultado
+
         fallos.append(f"{material.nombre}: {motivo}")
+
+    # Ningun candidato cerro. Antes de declarar el punto NO FACTIBLE hay que
+    # poder afirmar que todos se evaluaron de verdad: ver la funcion.
+    _exigir_criterios_declarados(pendientes)
 
     raise DisenoNoFactibleError(
         motivo="ningun material candidato cumple la Fase 5. " + " | ".join(fallos),
         id_punto=punto.id,
     )
+
+
+def _exigir_criterios_declarados(
+        pendientes: Sequence[CriterioPendienteError]) -> None:
+    """
+    Si algun material quedo BLOQUEADO por un criterio vacio, el punto esta
+    bloqueado y sale ese `CriterioPendienteError`, no `DisenoNoFactibleError`.
+
+    Los dos son estados distintos del expediente y se corrigen de forma
+    distinta: "no factible" pide mover la rasante o cambiar de estructura;
+    "falta declarar <clave>" pide una decision de proyectista. Y son
+    incompatibles: `DisenoNoFactibleError` afirma que NINGUNA combinacion
+    material/diametro cumple, y esa afirmacion no se puede sostener sobre un
+    material que nunca se llego a evaluar. Decirlo igual seria rellenar un
+    vacio en silencio con la forma de un diagnostico.
+
+    Vale tambien para el caso MIXTO -- un material evaluado y rechazado, otro
+    bloqueado -- y para el caso en que un material posterior SI cerro: ese
+    cierre elige por descarte de un candidato mas preferente que nadie
+    verifico.
+
+    Solo viaja la primera clave. `CriterioPendienteError` lleva UNA `clave`, de
+    modo que cuando cada material se detiene en un vacio distinto (hoy en el
+    CSV de ejemplo: 'remanso_derecho_via' el concreto, 'v_max_tmc' el TMC y
+    'v_max_hdpe' el HDPE) las demas no llegan a la GUI ni al bloque de
+    pendientes de M11 como filas propias. NO se pierden: quedan en la traza de
+    `PasoDiseno` que recibe `registrar`, y de ahi en las 'iteraciones' del
+    informe. Publicarlas las tres como filas estructuradas exige un campo nuevo
+    en modelos.py -- una excepcion que lleve varias claves -- y queda pendiente
+    a proposito, fuera del alcance de esta tarea.
+    """
+    if pendientes:
+        raise pendientes[0]
 
 
 def _motivo_sin_candidatos(punto: PuntoCritico) -> str:
