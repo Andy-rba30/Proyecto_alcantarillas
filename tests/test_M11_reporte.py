@@ -263,6 +263,32 @@ class TestMemoriaPorPunto:
         assert ca.criterio(clave).etiqueta in re.sub(r"<[^>]+>", "", html) \
             or "etiqueta" in html
 
+    def test_un_criterio_desconocido_no_tumba_la_memoria(self):
+        """
+        Una `criterio_aplicado` que no es clave de CRITERIOS (un desajuste de
+        nombre entre el modulo de calculo y el tablero de criterios) es un
+        problema de REPORTE, no del expediente: la memoria lo imprime tal cual,
+        sin etiqueta, y sigue. Antes lanzaba KeyError y se perdia la memoria
+        entera del punto por un nombre mal escrito.
+        """
+        clave = "clave_que_no_existe_en_CRITERIOS"
+        assert clave not in ca.CRITERIOS
+        v = Verificacion(cumple=True, numeral="Sec. 5.1", valor_obtenido=1.0,
+                         valor_admisible=2.0, criterio_aplicado=clave,
+                         codigo="V4")
+        falso = InformePunto(punto=_informe_de_ejemplo().puntos[0].punto)
+        falso.verificaciones = lambda: (("Fase 5", v),)
+
+        html = M11._tabla_verificaciones(falso)
+        assert clave in html
+        # Sin etiqueta inventada: no aparece ninguna de las cinco.
+        texto = re.sub(r"<[^>]+>", " ", html)
+        for etiqueta in ("[N]", "[N\u2192]", "[S]", "[C]", "[A]"):
+            assert etiqueta not in texto
+
+        # Y la memoria completa del punto tampoco se cae.
+        assert clave in M11.memoria_de_punto(falso)
+
 
 class TestIteraciones:
     """

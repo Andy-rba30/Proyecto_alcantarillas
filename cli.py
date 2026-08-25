@@ -977,9 +977,13 @@ def _lineas_verificaciones(informe: InformePunto) -> List[str]:
                    f"obtenido {_fmt(v.valor_obtenido)} | admisible "
                    f"{_fmt(v.valor_admisible)}")
         if v.criterio_aplicado:
+            # Consulta tolerante: una clave que no este en CRITERIOS se imprime
+            # tal cual, sin etiqueta. Un desajuste de nombre es un problema de
+            # reporte y no puede tumbar la memoria del punto.
+            declarado = ca.CRITERIOS.get(v.criterio_aplicado)
+            etiqueta = f" [{declarado.etiqueta}]" if declarado is not None else ""
             out.append(f"{SANGRIA * 4}umbral del criterio "
-                       f"'{v.criterio_aplicado}' "
-                       f"[{ca.criterio(v.criterio_aplicado).etiqueta}]")
+                       f"'{v.criterio_aplicado}'{etiqueta}")
     return out
 
 

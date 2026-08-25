@@ -388,6 +388,22 @@ def test_el_json_es_serializable_y_lleva_las_tres_listas_de_criterios(
     assert all(v["numeral"] for v in a01["verificaciones"])
 
 
+def test_el_volcado_no_revienta_con_un_criterio_aplicado_desconocido(
+        informe_dimensionado):
+    """
+    `_resultado_hdpe` aplica el umbral "Y_sobre_D_max", que NO es clave de
+    CRITERIOS. El acceso directo `ca.criterio(...)` lanzaba KeyError y se caia
+    el volcado entero del expediente por un desajuste de nombre en la capa de
+    reporte. La consulta tolerante imprime la clave tal cual, sin etiqueta.
+    """
+    assert "Y_sobre_D_max" not in ca.CRITERIOS
+    texto = cli.volcar(informe_dimensionado)
+    assert "umbral del criterio 'Y_sobre_D_max'" in texto
+    # Sin etiqueta inventada: la linea termina en la clave, no en "[algo]".
+    linea = next(l for l in texto.splitlines() if "Y_sobre_D_max" in l)
+    assert linea.rstrip().endswith("'Y_sobre_D_max'")
+
+
 def test_el_texto_nombra_el_material_el_control_y_los_bloqueos():
     informe = _informe(luz_m=2.0, TW_m=0.0, longitud_m=12.0,
                        categoria_tr="quebrada_menor")

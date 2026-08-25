@@ -735,9 +735,14 @@ def _tabla_verificaciones(informe: Any) -> str:
                     "<th>Resultado</th>"])]
     for fase, v in verificaciones:
         if v.criterio_aplicado:
-            declarado = ca.criterio(v.criterio_aplicado)
-            umbral = (f"{_etiqueta_html(declarado.etiqueta)} "
-                      f"<code>{_esc(v.criterio_aplicado)}</code>")
+            # Consulta tolerante: si la clave no esta en CRITERIOS se imprime
+            # sola, sin etiqueta. Inventarle una etiqueta seria peor que no
+            # ponerla, y caerse seria peor todavia: la memoria no se cae por un
+            # desajuste de nombre en la capa de reporte.
+            declarado = ca.CRITERIOS.get(v.criterio_aplicado)
+            umbral = f"<code>{_esc(v.criterio_aplicado)}</code>"
+            if declarado is not None:
+                umbral = f"{_etiqueta_html(declarado.etiqueta)} " + umbral
         else:
             umbral = f"{_etiqueta_html('N')} constante normativa"
         codigo = v.codigo or fase.split(" - ")[0]
