@@ -29,7 +29,24 @@ LUZ_MAX_ALCANTARILLA = 6.0          # m; >= 6.0 -> puente (4.1.1.3.1 / 4.1.1.5.1
 DIAMETRO_MIN = 0.90                 # m (4.1.1.3.4 a)
 DIAMETRO_MIN_SELVA_ALTA = 1.22      # m = 48"; NO aplica en costa (4.1.1.3.7 a)
 Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b)
-V_MIN = 0.25                        # m/s (4.1.1.3.6)
+V_MIN = 0.25                        # m/s (4.1.1.3.6, pag. 76) -- ver abajo
+# Texto que fija V_MIN, literal (MC-HHD, RD 20-2011-MTC/14, num. 4.1.1.3.6,
+# pag. 76, parrafo inmediatamente posterior a la Tabla Nº 10):
+#
+#     "Se deberá verificar que la velocidad mínima del flujo dentro del
+#     conducto no produzca sedimentación que pueda incidir en una reducción de
+#     su capacidad hidráulica, recomendándose que la velocidad mínima sea igual
+#     a 0.25 m/s."
+#
+# Se transcribe entero y no solo el numero porque el parrafo fija dos cosas
+# que el 0.25 suelto pierde. Primera: el numeral RECOMIENDA, no prohibe --
+# V2 lo aplica como umbral duro por decision conservadora del proyecto, y ese
+# matiz viaja hasta la memoria dentro de M5.NUMERAL_V2. Segunda: la razon del
+# minimo es la SEDIMENTACION que reduce capacidad, no el desgaste; por eso
+# vale igual para todos los materiales, mientras que el techo de V_MAX cambia
+# con la calidad del revestimiento. Es la misma pagina que la Tabla Nº 10 y
+# el mismo numeral, de modo que sin el titulo de la tabla y sin este parrafo
+# los dos limites se confunden -- que es exactamente el error que V3 tenia.
 LAUSHEY_K = 3.1                     # d50 = V^2/(3.1*g), metrico (4.1.1.3.7 c)
 G_LAUSHEY = 9.8                      # m/s2; g tal como lo escribe la Sec.
                                      # 4.1.1.3.7 c) junto a su formula de d50.

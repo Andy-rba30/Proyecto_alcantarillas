@@ -781,9 +781,23 @@ CRITERIOS: Dict[str, Criterio] = {
                       "velocidad es V2 (0.25 m/s, misma pagina) y vale para "
                       "todos los materiales. Con aquella lectura, V3 rechazaba "
                       "conductos de concreto perfectamente admisibles",
-        fuente="Manual MTC, Tabla N 10 (num. 4.1.1.3.6, pag. 76) - los "
-               "maximos son [N]; adoptar uno mas conservador que el techo de "
-               "la tabla no esta normado y es del proyectista",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, "
+               "RD 20-2011-MTC/14), Tabla N 10 'Velocidades maximas "
+               "admisibles en conductos revestidos', num. 4.1.1.3.6, "
+               "pag. 76. "
+               "DE DONDE SALE EL DEFECTO: los dos numeros de la fila del "
+               "concreto, 3.0 y 6.0 m/s, son ambos MAXIMOS -- el rango "
+               "recorre la calidad del revestimiento, no un piso y un techo. "
+               "6.0 m/s es el maximo del acabado de mejor calidad, y es el "
+               "valor [N] que V3 aplica cuando este criterio no se declara. "
+               "3.0 m/s es el maximo del acabado mas pobre, y por eso es el "
+               "otro extremo del rango de sensibilidad: entre 3.0 y 6.0 esta "
+               "todo lo que el proyectista puede adoptar sin salirse de la "
+               "tabla. Bajar el techo dentro de ese rango, por las "
+               "condiciones de acabado de ESTA obra, no lo normaliza ningun "
+               "numeral: es adopcion declarada, y por eso [A] y no [N]. "
+               "El piso de velocidad NO sale de esta tabla: es V2, 0.25 m/s "
+               "de la misma pagina, y vale para todos los materiales",
         sensibilidad=(3.0, 6.0),
         opcional=True,      # sin declarar, V3 aplica el techo [N] de 6.0 m/s
     ),

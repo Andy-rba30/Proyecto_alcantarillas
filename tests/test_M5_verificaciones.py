@@ -27,6 +27,7 @@ M5 contra las nueve verificaciones de la tabla de Fase 5:
 """
 
 import math
+from pathlib import Path
 
 import pytest
 
@@ -37,6 +38,7 @@ from modelos import (ControlGobernante, CriterioPendienteError,
                      PuntoCritico, ResultadoHidraulico, TipoMaterial)
 from modulos.M2_material import catalogo
 from modulos.M5_verificaciones import (CRITERIO_V_MAX_CONCRETO,
+                                       NUMERAL_V2, NUMERAL_V3,
                                        resguardo_por_cbr, v1_borde_libre,
                                        v2_velocidad_minima,
                                        v3_velocidad_maxima,
@@ -136,6 +138,82 @@ def test_v2_cumple_sobre_el_piso():
 def test_v2_incumple_bajo_el_piso():
     v = v2_velocidad_minima(resultado=_resultado(V=0.10))
     assert not v.cumple
+
+
+def test_el_numeral_de_v2_lleva_a_la_memoria_pagina_y_matiz_de_recomendacion():
+    """
+    `numeral` es lo UNICO que la memoria imprime de V2 (M11 lo vuelca en su
+    columna). Si el sustento no viaja dentro de este string, el revisor lee
+    "4.1.1.3.6" pelado: ni la pagina, ni de que parrafo sale, ni -- lo que mas
+    importa -- que el numeral RECOMIENDA el 0.25 y no lo prohibe. V2 lo aplica
+    como umbral duro por decision conservadora del proyecto, y quien vea un
+    punto rechazado por V2 tiene que poder distinguir una recomendacion
+    incumplida de una infraccion.
+    """
+    assert "4.1.1.3.6" in NUMERAL_V2
+    assert "pag. 76" in NUMERAL_V2
+    assert "RD 20-2011-MTC/14" in NUMERAL_V2
+    assert "RECOMIENDA" in NUMERAL_V2
+    assert "recomendandose" in NUMERAL_V2
+    assert "umbral duro" in NUMERAL_V2
+    # El comportamiento NO cambia: el matiz se declara, no se aplica.
+    assert not v2_velocidad_minima(resultado=_resultado(V=0.10)).cumple
+
+
+def test_el_texto_literal_del_numeral_esta_transcrito_y_no_resumido():
+    """
+    El parrafo que fija V_MIN se transcribe entero en constantes_normativas y
+    en el docstring de V2. Un numero sin su parrafo pierde las dos cosas que
+    el parrafo fija: que es una recomendacion, y que la razon es la
+    sedimentacion (no el desgaste) -- que es lo que lo separa de V3.
+    """
+    import constantes_normativas as CN
+    from modulos import M5_verificaciones as M5
+
+    literal = "recomendándose que la velocidad mínima sea igual a 0.25 m/s"
+    razon = ("no produzca sedimentación que pueda incidir en una reducción de "
+             "su capacidad hidráulica")
+
+    def plano(ruta):
+        """El texto sin marcas de comentario ni saltos: la cita va partida
+        entre lineas y eso es formato, no una cita distinta."""
+        crudo = ruta.read_text(encoding="utf-8")
+        return " ".join(crudo.replace("#", " ").split())
+
+    for ruta in (Path(CN.__file__), Path(M5.__file__)):
+        texto = plano(ruta)
+        assert literal in texto, f"falta la cita literal en {ruta.name}"
+        assert razon in texto, f"falta la razon (sedimentacion) en {ruta.name}"
+        assert "4.1.1.3.6" in texto and "pag. 76" in texto
+
+
+def test_el_numeral_de_v3_lleva_a_la_memoria_el_titulo_de_la_tabla():
+    """
+    El TITULO de la Tabla Nº 10 ES el sustento de que se verifique un solo
+    extremo, no un adorno: "Velocidades maximas admisibles". Vivia solo en el
+    comentario de constantes_normativas y en docs/manifiesto_citas.md, que no
+    van al expediente.
+    """
+    assert "Velocidades maximas admisibles en conductos revestidos" in NUMERAL_V3
+    assert "pag. 76" in NUMERAL_V3
+    assert "4.1.1.3.6" in NUMERAL_V3
+    assert "RD 20-2011-MTC/14" in NUMERAL_V3
+    assert "solo el superior" in NUMERAL_V3
+
+
+def test_v2_y_v3_declaran_el_mismo_numeral_y_se_distinguen_por_el_texto():
+    """
+    Salen del mismo num. 4.1.1.3.6 y de la misma pag. 76. Lo que separa el
+    piso del techo no es el numeral: es el titulo de la tabla (V3) y el
+    parrafo que la sigue (V2). Si algun dia los dos numerales vuelven a ser
+    el numero pelado, se vuelven indistinguibles en la memoria.
+    """
+    assert "4.1.1.3.6" in NUMERAL_V2 and "4.1.1.3.6" in NUMERAL_V3
+    assert NUMERAL_V2 != NUMERAL_V3
+    assert "Tabla Nº 10" in NUMERAL_V2 and "Tabla Nº 10" in NUMERAL_V3
+    # V2 es el piso y lo dice; V3 es el techo y lo dice.
+    assert "posterior a la Tabla" in NUMERAL_V2
+    assert "maximas admisibles" in NUMERAL_V3
 
 
 # ===========================================================================

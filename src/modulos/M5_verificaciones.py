@@ -113,8 +113,24 @@ from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_V1 = "4.1.1.3.7 b)"
-NUMERAL_V2 = "4.1.1.3.6"
-NUMERAL_V3 = "Tabla Nº 10 (num. 4.1.1.3.6)"
+
+# V2 y V3 salen del MISMO numeral y de la MISMA pagina, y por eso los dos
+# numerales se escriben largos: lo que separa un piso de un techo no es el
+# numero, es el titulo de la tabla y el parrafo que la sigue. Estos dos
+# strings son lo UNICO que la memoria imprime de cada verificacion (M11 los
+# vuelca en la columna "numeral"), asi que el sustento tiene que viajar aqui
+# dentro o el revisor no lo ve: el titulo y la pagina vivian solo en el
+# comentario de constantes_normativas y en docs/manifiesto_citas.md, que no
+# van al expediente.
+NUMERAL_V2 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, pag. 76, parrafo '
+              'inmediatamente posterior a la Tabla Nº 10. El numeral RECOMIENDA '
+              'este minimo ("recomendandose que la velocidad minima sea igual '
+              'a 0.25 m/s"), no lo prohibe: aqui se aplica como umbral duro '
+              'por decision conservadora del proyecto')
+NUMERAL_V3 = ('MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 "Velocidades maximas '
+              'admisibles en conductos revestidos", num. 4.1.1.3.6, pag. 76. '
+              'Los DOS numeros de cada fila son maximos segun la calidad del '
+              'revestimiento: se verifica solo el superior, el piso lo pone V2')
 NUMERAL_V4 = ReferenciaNormativa(
     seccion_hoja_ruta="Sec. 5.1",
     numeral_norma="Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), "
@@ -163,6 +179,31 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
     V >= 0.25 m/s. Sec. 5.2 de la hoja de ruta ya advierte que este piso casi
     nunca gobierna (se necesitaria una pendiente ~0.00006 para violarlo); la
     verificacion se calcula igual, sin dar por hecho el resultado.
+
+    Texto que lo sustenta, literal (MC-HHD, RD 20-2011-MTC/14, num. 4.1.1.3.6,
+    pag. 76, parrafo inmediatamente posterior a la Tabla Nº 10):
+
+        "Se deberá verificar que la velocidad mínima del flujo dentro del
+        conducto no produzca sedimentación que pueda incidir en una reducción
+        de su capacidad hidráulica, recomendándose que la velocidad mínima sea
+        igual a 0.25 m/s."
+
+    DOS COSAS QUE ESE TEXTO FIJA Y QUE HAY QUE LEER JUNTAS:
+
+    (1) El 0.25 es una RECOMENDACION, no una prohibicion -- el numeral dice
+        "recomendandose". Esta funcion lo aplica igualmente como umbral duro
+        (`V >= V_MIN` decide `cumple`), que es la lectura conservadora y es la
+        que el proyecto adopta. Pero el matiz no puede quedarse en el codigo:
+        `NUMERAL_V2` lo lleva escrito, de modo que la memoria lo imprime junto
+        al resultado y un revisor que vea un punto rechazado por V2 sepa que
+        esta ante una recomendacion incumplida y no ante una infraccion.
+
+    (2) La RAZON del minimo es la sedimentacion que reduce la capacidad
+        hidraulica, no el desgaste. Es lo que separa a V2 de V3: el piso lo
+        pone la sedimentacion y vale para todos los materiales por igual; el
+        techo lo pone la abrasion del revestimiento y cambia con el material.
+        Por eso los dos numeros de la Tabla Nº 10 son maximos y ninguno es
+        este piso (ver `v3_velocidad_maxima`).
     """
     return Verificacion(
         cumple=resultado.V >= V_MIN - TOL_UMBRAL_NORMATIVO,
