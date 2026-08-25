@@ -1,17 +1,26 @@
 <!DOCTYPE html>
 <!--
-  memoria_alcantarillas.html
-  =========================
-  Plantilla de la memoria de calculo de la Fase 11, procesada por
-  src/modulos/M11_reporte.py con string.Template y delimitador de doble
-  porcentaje (mismo patron que legacy/Tc.py y su plantilla_memoria.html).
+  memoria_perfil.html
+  ===================
+  Segunda plantilla de la memoria de la Fase 11: la de una corrida a NIVEL DE
+  PERFIL (cli.py --alcance perfil). Misma maquinaria que
+  memoria_alcantarillas.html -- string.Template con delimitador de doble
+  porcentaje, sustituido con `substitute` -- y el MISMO CSS, copiado literal:
+  las dos memorias son el mismo documento a dos alcances, y deben verse igual.
 
-  Los marcadores los sustituye M11 con `substitute`, NO con `safe_substitute`:
-  un marcador que la plantilla pide y M11 no entrega tiene que reventar en la
-  generacion, no salir impreso en la memoria. Por la misma razon esta
-  plantilla no puede contener el delimitador fuera de un marcador -- ni
-  siquiera dentro de un comentario como este, que fue el primer error que la
-  regla atrapo.
+  Que cambia respecto de la de expediente:
+
+  - El bloque 4 ya no es el volcado de los Tableros 1, 2 y 3. A nivel de
+    perfil ese volcado es ruido: enumera pendientes de todo el expediente,
+    incluidos los de fases que esta corrida ni siquiera ejecuto. En su lugar
+    va lo unico que un revisor necesita para juzgar una memoria de perfil:
+    QUE se difirio al expediente y POR QUE.
+  - No se imprimen los marcadores del volcado de tableros. `substitute` no
+    falla por valores sobrantes, de modo que una plantilla puede usar un
+    subconjunto de los marcadores que M11 entrega.
+
+  Como la de expediente, esta plantilla no puede contener el delimitador
+  fuera de un marcador, ni siquiera dentro de este comentario.
 
   La hoja esta configurada en A4 para que "Imprimir -> Guardar como PDF" del
   navegador de un resultado equivalente al de weasyprint.
@@ -19,7 +28,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Memoria de calculo - Alcantarillas - %%proyecto</title>
+<title>Memoria de calculo (nivel de perfil) - Alcantarillas - %%proyecto</title>
 <style>
   @page { size: A4; margin: 18mm 15mm 16mm 15mm; }
 
@@ -129,9 +138,18 @@
 </head>
 <body>
 
-<h1>Memoria de calculo &mdash; Alcantarillas y cabezales</h1>
+<h1>Memoria de calculo &mdash; Alcantarillas <span class="lead">(nivel de perfil)</span></h1>
 <p class="subtitulo">%%proyecto</p>
 <p class="lead">%%subtitulo</p>
+
+<div class="aviso">
+<p><b>Alcance de este documento: nivel de perfil.</b> No es una memoria de
+expediente y no debe leerse como tal. Las verificaciones y las fases que este
+alcance remite al expediente estan enumeradas, una por una y con su
+fundamento, en la seccion 4. Un punto declarado <i>dimensionado</i> aqui lo
+esta <b>al alcance de perfil</b>: sostiene la decision de trazado y de
+predimensionamiento, no sustituye la verificacion del expediente.</p>
+</div>
 
 <!-- ==================================================================== -->
 <h2 id="trazabilidad">0. Encabezado de trazabilidad</h2>
@@ -140,7 +158,8 @@
 que reglas</em> y <em>con que datos</em>. Dos corridas de este script sobre
 expedientes distintos, o sobre el mismo expediente con criterios distintos,
 producen encabezados distintos: sin esto dos memorias no se distinguen y
-ninguna es auditable.</p>
+ninguna es auditable. Se mantiene identica a la de expediente a proposito: es
+lo que hace defendible la memoria, y el alcance no la cambia.</p>
 
 <div class="trazabilidad">
 <table>
@@ -161,7 +180,7 @@ ninguna es auditable.</p>
         <td class="mono">%%criterios_sha1</td></tr>
     <tr><th>Fecha de generacion</th>
         <td>%%generado_local &nbsp;(corrida UTC: %%generado_utc)</td></tr>
-    <tr><th>Estado del expediente</th>
+    <tr><th>Estado (al alcance declarado)</th>
         <td>%%estado_expediente</td></tr>
   </tbody>
 </table>
@@ -169,34 +188,27 @@ ninguna es auditable.</p>
 
 %%resumen_expediente
 
-<h3>0.1 Alcance de la corrida</h3>
-
-<p>Que ejecuto esta corrida y que dejo fuera. En una corrida de expediente no
-hay nada diferido y el bloque lo dice; el mismo bloque, en una memoria a nivel
-de perfil, lista las etapas remitidas al expediente con su fundamento. Sin
-esta declaracion, el estado del expediente de la tabla anterior no se puede
-interpretar.</p>
-
-%%bloque_alcance
-
 <!-- ==================================================================== -->
 <h2 id="memorias" class="salto">1. Memoria de calculo por punto critico</h2>
 
-<p>Entregable 1 de la Fase 11: datos de partida <b>con su fuente</b>,
-iteraciones del diseño y cada verificacion como <b>cumple / no cumple</b>
-junto a su numeral. Las iteraciones son los escalones que el bucle de diseño
-probo y descarto, en orden: el diametro adoptado no se defiende solo, se
-defiende contra el que no sirvio.</p>
+<p>Datos de partida <b>con su fuente</b>, iteraciones del diseño y cada
+verificacion como <b>cumple / no cumple</b> junto a su numeral. Las iteraciones
+son los escalones que el bucle de diseño probo y descarto, en orden: el
+diametro adoptado no se defiende solo, se defiende contra el que no sirvio.</p>
+
+<p>Las verificaciones diferidas por alcance <b>no aparecen en las tablas de
+cada punto</b>, porque no se resolvieron: aparecen en la seccion 4, que es
+donde se declara por que no se resolvieron.</p>
 
 %%memorias_punto
 
 <!-- ==================================================================== -->
 <h2 id="resumen" class="salto">2. Tabla resumen</h2>
 
-<p>Entregable 3 de la Fase 11. Una fila por punto critico, en el orden del
-CSV. Una celda vacia (&ndash;) significa que la etapa que produce ese dato
-quedo bloqueada; el motivo esta en la memoria del punto y en el bloque de
-pendientes.</p>
+<p>Una fila por punto critico, en el orden del CSV. Una celda vacia
+(&ndash;) significa que la etapa que produce ese dato no se ejecuto: por un
+bloqueo del expediente, o porque este alcance la difirio. La seccion 4
+distingue los dos casos.</p>
 
 <table class="ancha">
   <thead>
@@ -213,13 +225,15 @@ pendientes.</p>
 </table>
 
 <!-- ==================================================================== -->
-<h2 id="criterios" class="salto">3. Declaracion de criterios adoptados</h2>
+<h2 id="criterios" class="salto">3. Criterios adoptados usados</h2>
 
-<p>Entregable 2 de la Fase 11, generado desde <code>criterios_adoptados.py</code>.
-Lista <b>unicamente los criterios que este calculo invoco</b>, cada uno con su
-etiqueta, su justificacion y su fuente. Un criterio declarado en el archivo
-pero no usado en esta corrida no aparece aqui: la memoria declara lo que
-sostiene sus numeros, no el catalogo completo.</p>
+<p>Generado desde <code>criterios_adoptados.py</code>. Lista <b>unicamente los
+criterios que este calculo invoco</b>, cada uno con su etiqueta, su
+justificacion y su fuente. Un criterio declarado en el archivo pero no usado en
+esta corrida no aparece aqui: la memoria declara lo que sostiene sus numeros,
+no el catalogo completo. A nivel de perfil esa distincion pesa mas todavia,
+porque las fases diferidas no invocan sus criterios y por lo tanto no los
+declaran como usados.</p>
 
 <div class="nota">
 <p><b>Etiquetas.</b>
@@ -254,23 +268,38 @@ punto son columnas del CSV y viajan en la memoria de cada punto.</p>
 %%bloque_criterios
 
 <!-- ==================================================================== -->
-<h2 id="pendientes" class="salto">4. Pendientes &mdash; Tableros 1, 2 y 3</h2>
+<h2 id="alcance" class="salto">4. Alcance y diferimientos declarados</h2>
 
 <div class="aviso">
-<p><b>Este bloque va aparte a proposito.</b> Lo de la seccion 3 son criterios
-<b>cerrados</b>: tienen valor, fuente y justificacion, y sostienen los numeros
-de esta memoria. Lo de aqui abajo <b>no esta resuelto</b>. Mezclarlos daria a
-entender que el expediente esta mas cerrado de lo que esta, que es exactamente
-el error que la hoja de ruta busca evitar al segregar los pendientes por
-naturaleza.</p>
+<p><b>Esta seccion es la que delimita el valor del documento.</b> Lo de la
+seccion 3 son criterios <b>cerrados</b>, que sostienen los numeros de esta
+memoria. Lo de aqui abajo son verificaciones y fases que esta corrida
+<b>no resolvio</b>, por decision expresa de alcance. No estan pendientes por
+descuido ni fallaron: no se exigieron, y el expediente tecnico tiene que
+resolverlas antes de construir.</p>
 </div>
 
-%%bloque_pendientes
+<p>Cada fila dice el punto afectado, la fase, la etapa concreta que se
+difirio y su fundamento. Cuando la causa es un criterio sin valor, el
+fundamento lleva la clave, su etiqueta, su concepto y la fuente que lo
+cerraria; cuando es una fase completa, lleva la razon normativa del
+diferimiento.</p>
+
+%%bloque_alcance
+
+<div class="nota">
+<p><b>Que NO cubre este bloque.</b> Aqui solo esta lo diferido <i>por
+alcance</i>. Un criterio pendiente que ademas <b>bloqueo</b> una etapa que
+esta corrida si intento ejecutar no es un diferimiento: es un vacio del
+expediente, y aparece como bloqueo en la memoria del punto correspondiente
+(seccion 1). Los dos se corrigen de forma distinta y por eso no se mezclan.</p>
+</div>
 
 <footer>
 <p>Generado automaticamente por <code>M11_reporte.py</code> el
-%%generado_local. Toda cita de numeral proviene de %%hoja_ruta_archivo
-(%%version_hoja_ruta), fuente normativa unica del proyecto.</p>
+%%generado_local, a <b>nivel de perfil</b>. Toda cita de numeral proviene de
+%%hoja_ruta_archivo (%%version_hoja_ruta), fuente normativa unica del
+proyecto.</p>
 </footer>
 
 </body>

@@ -99,6 +99,10 @@ RAIZ = Path(__file__).resolve().parents[2]      # src/modulos/M11 -> src -> raiz
 SRC = RAIZ / "src"
 DIR_PLANTILLAS = SRC / "plantillas"
 NOMBRE_PLANTILLA = "memoria_alcantarillas.html"
+# Segunda plantilla, para corridas a nivel de perfil: misma estetica y
+# mismo contrato de marcadores, pero sin el volcado de Tableros 1-2-3 y
+# con el bloque de alcance en su lugar. Ver `cargar_plantilla`.
+NOMBRE_PLANTILLA_PERFIL = "memoria_perfil.html"
 ARCHIVO_CRITERIOS = SRC / "criterios_adoptados.py"
 
 DIR_DOCS = RAIZ / "docs"
@@ -185,6 +189,7 @@ MARCADORES: Tuple[str, ...] = (
     "estado_expediente", "resumen_expediente",
     "memorias_punto", "filas_resumen",
     "bloque_datos_sitio", "bloque_criterios", "bloque_pendientes",
+    "bloque_alcance",
 )
 
 
@@ -1138,6 +1143,54 @@ def bloque_pendientes(tableros: Sequence[Tablero],
 # Ensamblado del documento
 # ===========================================================================
 
+def bloque_alcance(informe: Any) -> str:
+    """
+    El alcance declarado de la corrida y TODO lo que difirio al expediente.
+
+    Es la pieza que impide que "cerrado" se lea como "expediente completo":
+    una corrida a nivel de perfil puede cerrar con etapas enteras diferidas, y
+    la memoria tiene que decir cuales y por que. Cada diferimiento se imprime
+    con lo que la CLI le adjunto -- clave, etiqueta, concepto y fuente cuando
+    la causa es un criterio pendiente; el fundamento textual cuando es una
+    fase completa -- de modo que un revisor pueda ir a buscarlo.
+
+    En alcance de expediente el bloque no desaparece: declara que no se
+    difirio nada. Que la memoria del expediente afirme "corri el pipeline
+    completo" vale tanto como que la de perfil afirme lo contrario.
+    """
+    alcance = _esc(informe.alcance)
+    diferidos = informe.diferidos()
+
+    encabezado = _fila([_td("<b>Alcance declarado de la corrida</b>"),
+                        _td(f"<code>{alcance}</code>")])
+    conteo = _fila([_td("<b>Etapas diferidas al expediente</b>"),
+                    _td(str(len(diferidos)), "num")])
+    tabla = ('<table class="compacta">' + encabezado + conteo + "</table>")
+
+    if not diferidos:
+        return tabla + (
+            '<div class="nota"><p>Ninguna etapa quedo diferida por alcance: '
+            "esta corrida ejecuto el pipeline completo, y el estado del "
+            "expediente que declara el bloque 0 se lee sin reservas de "
+            "alcance.</p></div>")
+
+    filas = [_fila(["<th>Punto</th>", "<th>Fase</th>", "<th>Etapa diferida</th>",
+                    "<th>Fundamento</th>"])]
+    for id_punto, b in diferidos:
+        donde = _esc(id_punto) if id_punto is not None else "<i>proyecto</i>"
+        if b.criterio:
+            fundamento = (f"{_etiqueta_html(b.etiqueta)} "
+                          f"<code>{_esc(b.criterio)}</code><br>"
+                          f"{_esc(b.concepto)}<br>"
+                          f"<i>Fuente:</i> {_esc(b.fuente)}")
+        else:
+            fundamento = _esc(b.mensaje)
+        filas.append(_fila([_td(donde), _td(_esc(b.fase)), _td(_esc(b.etapa)),
+                            _td(fundamento)]))
+
+    return tabla + '<table class="ancha">' + "".join(filas) + "</table>"
+
+
 def cargar_plantilla(ruta: Optional[Path] = None) -> PlantillaHTML:
     """Carga la plantilla %% de la memoria."""
     destino = (DIR_PLANTILLAS / NOMBRE_PLANTILLA) if ruta is None else ruta
@@ -1213,6 +1266,7 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "bloque_datos_sitio": bloque_datos_sitio(solo_usados=True),
         "bloque_criterios": bloque_criterios(solo_usados=True),
         "bloque_pendientes": bloque_pendientes(tableros, bloqueantes),
+        "bloque_alcance": bloque_alcance(informe),
     }
     if set(valores) != set(MARCADORES):
         diferencia = set(valores).symmetric_difference(MARCADORES)

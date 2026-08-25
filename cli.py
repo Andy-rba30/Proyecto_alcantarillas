@@ -126,6 +126,8 @@ from modulos.M10_espaciamiento import espaciamiento_alivio          # noqa: E402
 # `criterios_bloqueantes` se reexportan porque el JSON y el volcado de texto de
 # esta CLI los siguen publicando con el mismo nombre.
 from modulos.M11_reporte import (CriterioBloqueante,                # noqa: E402,F401
+                                 DIR_PLANTILLAS, NOMBRE_PLANTILLA,
+                                 NOMBRE_PLANTILLA_PERFIL,
                                  criterios_bloqueantes,
                                  exportar_csv, exportar_html, exportar_pdf)
 from modulos import M5_verificaciones as M5                        # noqa: E402
@@ -1374,6 +1376,26 @@ def volcar(informe: Informe, con_criterios: bool = False) -> str:
 # Entrada
 # ===========================================================================
 
+def plantilla_por_alcance(alcance: str,
+                          forzada: Optional[Path] = None) -> Path:
+    """
+    Que plantilla de M11 usa la memoria: la explicita si se paso --plantilla,
+    y si no la que corresponde al alcance de la corrida.
+
+    El alcance elige el DEFECTO, no una obligacion: la de perfil y la de
+    expediente comparten el contrato de marcadores, de modo que cualquiera de
+    las dos se puede forzar sobre cualquier corrida. Una memoria de perfil
+    impresa con la plantilla de expediente sigue siendo correcta -- solo trae
+    ademas el volcado de Tableros 1-2-3 -- y esa combinacion tiene su uso al
+    revisar que quedo fuera.
+    """
+    if forzada is not None:
+        return Path(forzada)
+    nombre = (NOMBRE_PLANTILLA_PERFIL if alcance == ALCANCE_PERFIL
+              else NOMBRE_PLANTILLA)
+    return DIR_PLANTILLAS / nombre
+
+
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cli.py",
@@ -1414,6 +1436,11 @@ def _parser() -> argparse.ArgumentParser:
                         "3) en esa ruta, como CSV")
     p.add_argument("--proyecto", default="",
                    help="nombre del proyecto que encabeza la memoria")
+    p.add_argument("--plantilla", type=Path, dest="plantilla",
+                   help="fuerza la plantilla HTML de la memoria (M11). Por "
+                        f"defecto, '{NOMBRE_PLANTILLA_PERFIL}' con --alcance "
+                        f"perfil y '{NOMBRE_PLANTILLA}' con --alcance "
+                        "expediente. Las dos aceptan cualquier corrida")
     p.add_argument("--alcance", choices=(ALCANCE_PERFIL, ALCANCE_EXPEDIENTE),
                    default=ALCANCE_EXPEDIENTE,
                    help="alcance de la corrida. 'expediente' (defecto): el "
@@ -1452,14 +1479,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         encoding="utf-8")
     print(f"\nJSON del expediente: {destino}")
 
+    plantilla = plantilla_por_alcance(args.alcance, args.plantilla)
+
     if args.html_salida is not None:
         ruta = exportar_html(informe, args.html_salida,
-                             proyecto=args.proyecto)
+                             proyecto=args.proyecto,
+                             ruta_plantilla=plantilla)
         print(f"Memoria de calculo (HTML): {ruta}")
+        print(f"Plantilla usada          : {plantilla.name}")
 
     if args.pdf_salida is not None:
         salida = exportar_pdf(informe, args.pdf_salida,
-                              proyecto=args.proyecto)
+                              proyecto=args.proyecto,
+                              ruta_plantilla=plantilla)
         print(salida.mensaje)
 
     if args.csv_resumen_salida is not None:

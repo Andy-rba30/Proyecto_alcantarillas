@@ -25,6 +25,7 @@ import pytest
 
 import cli
 import criterios_adoptados as ca
+from modulos.M11_reporte import PlantillaHTML
 from modelos import (ControlGobernante, DatoInvalidoError,
                      ResultadoHidraulico, ResultadoPunto, TipoMaterial,
                      Verificacion)
@@ -643,3 +644,54 @@ def test_perfil_cerrado_devuelve_exit_cero(tmp_path, monkeypatch, capsys):
     # El MISMO expediente en alcance completo NO cierra: V5 sigue exigiendose.
     assert cli.main(argumentos + ["--alcance", "expediente"]) == 1
     capsys.readouterr()
+
+
+# ---------------------------------------------------------------------------
+# Seleccion de plantilla de la memoria (M11)
+# ---------------------------------------------------------------------------
+
+def test_el_alcance_elige_la_plantilla_por_defecto():
+    perfil = cli.plantilla_por_alcance(cli.ALCANCE_PERFIL)
+    expediente = cli.plantilla_por_alcance(cli.ALCANCE_EXPEDIENTE)
+    assert perfil.name == cli.NOMBRE_PLANTILLA_PERFIL
+    assert expediente.name == cli.NOMBRE_PLANTILLA
+    assert perfil.is_file() and expediente.is_file()
+
+
+def test_la_plantilla_forzada_gana_sobre_el_alcance(tmp_path):
+    """Las dos comparten contrato: cualquiera vale para cualquier corrida."""
+    forzada = tmp_path / "otra.html"
+    for alcance in (cli.ALCANCE_PERFIL, cli.ALCANCE_EXPEDIENTE):
+        assert cli.plantilla_por_alcance(alcance, forzada) == forzada
+    assert cli._parser().parse_args(["x.csv"]).plantilla is None
+
+
+def test_la_memoria_de_perfil_sale_con_la_plantilla_de_perfil(
+        tmp_path, monkeypatch):
+    """De punta a punta: --alcance perfil --html usa memoria_perfil.html."""
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+    destino = tmp_path / "memoria.html"
+    codigo = cli.main([str(CSV), "--alcance", "perfil",
+                       "--luz", "2.0", "--tw", "0.0", "--longitud", "12.0",
+                       "--categoria-tr", "quebrada_menor",
+                       "--l-hidraulico", "180.0",
+                       "--json", str(tmp_path / "i.json"),
+                       "--html", str(destino)])
+    assert codigo == 1          # C-01 sigue sin Q: el expediente no cierra
+    html = destino.read_text(encoding="utf-8")
+    assert "nivel de perfil" in html
+    assert "4. Alcance y diferimientos declarados" in html
+    assert "remanso_derecho_via" in html
+    # El volcado de Tableros 1-2-3 NO esta: es lo que la plantilla reemplaza.
+    assert "Pendientes &mdash; Tableros 1, 2 y 3" not in html
+    assert PlantillaHTML.delimiter not in html
+
+
+def test_la_memoria_de_expediente_conserva_el_volcado_de_tableros(tmp_path):
+    destino = tmp_path / "memoria.html"
+    cli.main([str(CSV), "--luz", "2.0",
+              "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+    html = destino.read_text(encoding="utf-8")
+    assert "Pendientes &mdash; Tableros 1, 2 y 3" in html
+    assert "0.1 Alcance de la corrida" in html
+    assert "Ninguna etapa quedo diferida por alcance" in html

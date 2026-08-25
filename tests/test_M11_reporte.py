@@ -31,6 +31,13 @@ from modulos import M11_reporte as M11
 RAIZ = Path(__file__).resolve().parents[1]
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
 PLANTILLA = M11.DIR_PLANTILLAS / M11.NOMBRE_PLANTILLA
+PLANTILLA_PERFIL = M11.DIR_PLANTILLAS / M11.NOMBRE_PLANTILLA_PERFIL
+
+# Las dos plantillas de la memoria. El contrato de marcadores se valida sobre
+# AMBAS en la direccion que las obliga a las dos (no pedir lo que M11 no
+# entrega); la direccion contraria -- usarlos todos -- solo sobre la de
+# expediente: ver `test_ningun_marcador_declarado_sin_usar`.
+PLANTILLAS = (PLANTILLA, PLANTILLA_PERFIL)
 
 
 # ---------------------------------------------------------------------------
@@ -80,33 +87,48 @@ class TestPlantillaSinPorcentajesLibres:
         """Los que M11 entrega. Es la lista contra la que se contrasta todo."""
         return set(M11.marcadores_de_la_memoria())
 
-    def test_todo_delimitador_es_un_marcador_valido(self):
-        texto = PLANTILLA.read_text(encoding="utf-8")
+    @pytest.mark.parametrize("plantilla", PLANTILLAS, ids=lambda r: r.name)
+    def test_todo_delimitador_es_un_marcador_valido(self, plantilla):
+        texto = plantilla.read_text(encoding="utf-8")
         for coincidencia in self.TODOS.finditer(texto):
             nombre = coincidencia.group(2)
             linea = texto.count("\n", 0, coincidencia.start()) + 1
             assert nombre, (
-                f"linea {linea}: la plantilla contiene el delimitador "
-                f"'{M11.PlantillaHTML.delimiter}' sin un nombre de marcador "
-                "detras. Si es texto libre (un comentario, una explicacion del "
-                "patron), reescribelo sin el delimitador: string.Template lo "
-                "lee como marcador invalido y la memoria no se genera."
+                f"{plantilla.name} linea {linea}: la plantilla contiene el "
+                f"delimitador '{M11.PlantillaHTML.delimiter}' sin un nombre de "
+                "marcador detras. Si es texto libre (un comentario, una "
+                "explicacion del patron), reescribelo sin el delimitador: "
+                "string.Template lo lee como marcador invalido y la memoria "
+                "no se genera."
             )
 
-    def test_ningun_marcador_huerfano_en_la_plantilla(self):
-        """Un marcador que M11 no entrega revienta la generacion."""
-        texto = PLANTILLA.read_text(encoding="utf-8")
+    @pytest.mark.parametrize("plantilla", PLANTILLAS, ids=lambda r: r.name)
+    def test_ningun_marcador_huerfano_en_la_plantilla(self, plantilla):
+        """
+        Un marcador que M11 no entrega revienta la generacion. Vale para TODA
+        plantilla: es la direccion del contrato que ninguna puede violar,
+        porque `substitute` lanza KeyError con el marcador que falta.
+        """
+        texto = plantilla.read_text(encoding="utf-8")
         usados = {m.group(2) for m in self.TODOS.finditer(texto) if m.group(2)}
         huerfanos = sorted(usados - self._marcadores_declarados())
         assert not huerfanos, (
-            f"la plantilla pide marcadores que M11 no entrega: {huerfanos}. "
-            "Agregalos a `memoria_html` o quitalos de la plantilla."
+            f"{plantilla.name} pide marcadores que M11 no entrega: "
+            f"{huerfanos}. Agregalos a `memoria_html` o quitalos de la "
+            "plantilla."
         )
 
     def test_ningun_marcador_declarado_sin_usar(self):
         """
         Al reves: un marcador que M11 calcula y la plantilla no imprime es
         contenido de la memoria que se pierde en silencio.
+
+        Se exige SOLO a la plantilla de expediente, que es la completa: es la
+        que garantiza que todo lo que M11 sabe producir tiene un sitio donde
+        salir impreso. La de perfil usa a proposito un subconjunto (no imprime
+        el volcado de Tableros 1-2-3) y `substitute` no falla por valores
+        sobrantes, de modo que exigirle lo mismo prohibiria justo lo que esa
+        plantilla existe para hacer.
         """
         texto = PLANTILLA.read_text(encoding="utf-8")
         usados = {m.group(2) for m in self.TODOS.finditer(texto) if m.group(2)}
@@ -115,6 +137,25 @@ class TestPlantillaSinPorcentajesLibres:
             f"M11 entrega marcadores que la plantilla no imprime: {sin_usar}. "
             "Ese contenido no llega a la memoria."
         )
+
+    def test_la_de_perfil_usa_un_subconjunto_estricto(self):
+        """
+        La de perfil no puede degenerar en una copia de la de expediente: si
+        alguien le pega de vuelta el volcado de tableros, este test lo dice.
+        Y al reves, tampoco puede quedarse sin el bloque que la justifica.
+        """
+        texto = PLANTILLA_PERFIL.read_text(encoding="utf-8")
+        usados = {m.group(2) for m in self.TODOS.finditer(texto) if m.group(2)}
+        assert usados < self._marcadores_declarados(), (
+            "la plantilla de perfil deberia usar un subconjunto ESTRICTO de "
+            "los marcadores; si los usa todos, ya no se distingue de la de "
+            "expediente")
+        assert "bloque_pendientes" not in usados, (
+            "la plantilla de perfil no imprime el volcado de Tableros 1-2-3: "
+            "es justo lo que su bloque 4 reemplaza")
+        assert "bloque_alcance" in usados, (
+            "sin el bloque de alcance, una memoria de perfil no declara que "
+            "difirio: es su seccion 4 y la razon de existir de la plantilla")
 
     def test_el_detector_atrapa_un_delimitador_en_texto_libre(self):
         """
