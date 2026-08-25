@@ -149,6 +149,86 @@ def test_un_vacio_de_velocidad_maxima_no_detiene_el_catalogo(monkeypatch):
     assert not tmc.v_max_definida
 
 
+# ---------------------------------------------------------------------------
+# Declaracion en caliente: la via de la GUI
+# ---------------------------------------------------------------------------
+#
+# `ca.establecer_valor_dinamico` es como la pestana "Criterios" de la GUI
+# declara un criterio pendiente sin tocar criterios_adoptados.py. El catalogo
+# tiene que verlo igual que si estuviera escrito en el archivo.
+#
+# El caso que fallaba era exactamente este: criterio VACIO en el archivo y
+# declarado en caliente. `_valor_si_declarado` miraba `ca.criterio().valor` --
+# el dict del archivo -- y devolvia None sin consultar los overrides, de modo
+# que la declaracion del usuario se perdia. Con la clave YA declarada en el
+# archivo el bug no se veia, porque la lectura caia en `ca.valor()`, que si
+# resuelve overrides.
+
+@pytest.fixture
+def vaciar_criterio(monkeypatch):
+    """Deja un criterio sin valor en el archivo, como estaba antes de cerrarse."""
+    def _vaciar(clave):
+        original = ca.CRITERIOS[clave]
+        monkeypatch.setitem(ca.CRITERIOS, clave,
+                            original.__class__(**{**original.__dict__,
+                                                  "valor": None}))
+    return _vaciar
+
+
+def test_el_n_de_manning_del_hdpe_declarado_en_caliente_llega_al_catalogo(
+        vaciar_criterio):
+    """
+    El peor de los tres: el None se desempaquetaba en (n_min, n_max) y
+    reventaba con TypeError -- un fallo de PROGRAMA por un dato que el usuario
+    si habia declarado.
+    """
+    vaciar_criterio("n_manning_hdpe")
+    ca.establecer_valor_dinamico("n_manning_hdpe", (0.011, 0.012))
+    try:
+        hdpe = catalogo(TipoMaterial.HDPE)
+        assert (hdpe.n_min, hdpe.n_max) == (0.011, 0.012)
+    finally:
+        ca.quitar_valor_dinamico("n_manning_hdpe")
+
+
+def test_el_relleno_minimo_declarado_en_caliente_llega_al_catalogo(
+        vaciar_criterio):
+    vaciar_criterio("h_relleno_min_concreto_tmc")
+    ca.establecer_valor_dinamico("h_relleno_min_concreto_tmc", 0.75)
+    try:
+        concreto = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+        assert concreto.h_relleno_min == pytest.approx(0.75)
+    finally:
+        ca.quitar_valor_dinamico("h_relleno_min_concreto_tmc")
+
+
+def test_la_velocidad_maxima_declarada_en_caliente_llega_al_catalogo(
+        vaciar_criterio):
+    vaciar_criterio("v_max_tmc")
+    ca.establecer_valor_dinamico("v_max_tmc", 3.9)
+    try:
+        tmc = catalogo(TipoMaterial.TMC)
+        assert tmc.v_max_rango == pytest.approx(3.9)
+        assert tmc.v_max_definida
+    finally:
+        ca.quitar_valor_dinamico("v_max_tmc")
+
+
+def test_la_declaracion_en_caliente_pisa_al_valor_del_archivo():
+    """
+    Sin vaciar nada: el override tiene que ganar sobre el valor escrito. Esta
+    rama ya funcionaba antes del arreglo (caia en `ca.valor()`), y el test la
+    fija para que siga funcionando.
+    """
+    assert ca.criterio("v_max_tmc").valor is not None
+    ca.establecer_valor_dinamico("v_max_tmc", 3.9)
+    try:
+        assert catalogo(TipoMaterial.TMC).v_max_rango == pytest.approx(3.9)
+    finally:
+        ca.quitar_valor_dinamico("v_max_tmc")
+    assert catalogo(TipoMaterial.TMC).v_max_rango == ca.valor("v_max_tmc")
+
+
 def test_el_relleno_minimo_de_concreto_y_tmc_sigue_vacio():
     """'h_relleno_min_concreto_tmc' esta sin valor: el catalogo lo refleja."""
     concreto = catalogo(TipoMaterial.CONCRETO_REFORZADO)

@@ -186,15 +186,25 @@ def _tipo_material(material: MaterialLike) -> TipoMaterial:
 
 def _valor_si_declarado(clave: str) -> Optional[Any]:
     """
-    Devuelve el valor del criterio, o None si sigue sin declarar, SIN lanzar
-    CriterioPendienteError y sin registrarlo como usado en ese caso: un
-    criterio vacio no se aplico a nada, no hay uso que declarar en M11. En
-    cuanto el criterio reciba valor, esta funcion empieza a devolverlo Y a
-    registrar el uso, porque a partir de ahi pasa por `ca.valor()`.
+    Delega en `ca.valor_si_declarado`, la lectura tolerante publica: devuelve
+    el valor del criterio, o None si sigue sin declarar, SIN lanzar
+    CriterioPendienteError y sin registrarlo como usado en ese caso -- un
+    criterio vacio no se aplico a nada y no hay uso que declarar en M11.
+
+    Antes esta funcion consultaba `ca.criterio(clave).valor`, que es el valor
+    DEL ARCHIVO, y devolvia None sin mirar las declaraciones en caliente. Con
+    eso, un criterio vacio en el archivo y declarado desde la GUI (que usa
+    `ca.establecer_valor_dinamico`) seguia llegando aqui como None: el
+    catalogo no veia la declaracion. La consecuencia no era solo un dato
+    perdido -- en `n_manning_hdpe` el None se desempaquetaba en (n_min, n_max)
+    y reventaba con TypeError, un fallo de programa por un dato que el usuario
+    SI habia declarado.
+
+    Se conserva como envoltorio con nombre propio, en vez de llamar a `ca`
+    directo en los tres sitios, porque el docstring de este modulo la cita
+    como la lectura de los "vacios que el catalogo deja en None".
     """
-    if ca.criterio(clave).valor is None:
-        return None
-    return ca.valor(clave)
+    return ca.valor_si_declarado(clave)
 
 
 # ---------------------------------------------------------------------------
