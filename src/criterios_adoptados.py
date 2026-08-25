@@ -142,6 +142,37 @@ def valor(clave: str) -> Any:
     return c.valor
 
 
+def valor_si_declarado(clave: str) -> Optional[Any]:
+    """
+    El valor del criterio, o None si sigue sin declarar. NO lanza
+    CriterioPendienteError.
+
+    Es la lectura para los criterios OPCIONALES: los que refinan un valor que
+    la norma ya fija, en vez de cubrir un vacio. Un criterio de vacio se lee
+    con `valor()` y detiene el calculo mientras este vacio; uno opcional se
+    lee con esta, y quien la llama aplica el valor normativo por defecto.
+    Confundirlas en cualquiera de los dos sentidos es grave: `valor()` sobre
+    un opcional bloquea un calculo que la norma sabe resolver, y esta sobre
+    uno de vacio rellena el vacio en silencio, que es el peor error del
+    proyecto.
+
+    Un criterio sin valor no se registra como usado: no se aplico a nada y no
+    hay uso que declarar en M11. En cuanto reciba valor -- en el archivo o en
+    caliente -- empieza a devolverlo Y a registrarse.
+    """
+    if clave not in CRITERIOS:
+        raise KeyError(
+            f"'{clave}' no esta declarado en criterios_adoptados.py. "
+            "Ningun parametro no normativo puede usarse sin declararse aqui."
+        )
+    if clave in _OVERRIDES:
+        _USADOS.add(clave)
+        return _OVERRIDES[clave]
+    if CRITERIOS[clave].valor is None:
+        return None
+    return valor(clave)
+
+
 def criterio(clave: str) -> Criterio:
     """Devuelve el objeto completo, sin registrar uso (para reportes)."""
     return CRITERIOS[clave]
@@ -648,20 +679,33 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "v_max_concreto_eleccion": Criterio(
-        valor=None,                 # VACIO: la Tabla N 10 da un RANGO, no un valor
+        valor=None,                 # OPCIONAL: sin valor, V3 usa el techo [N]
         etiqueta="A",
-        concepto="Velocidad maxima admisible adoptada para el concreto, dentro "
-                 "del rango 3.0-6.0 m/s de la Tabla N 10",
-        justificacion="Regla de coherencia de la hoja de ruta: cuando una tabla "
-                      "normativa aporta los valores pero la ELECCION entre ellos "
-                      "es del proyectista, se desdobla - la tabla es [N] y la "
-                      "eleccion es [A]. V3 necesita UN numero. La lectura "
-                      "conservadora es el extremo inferior (3.0 m/s), pero "
-                      "adoptarla en silencio seria rellenar el vacio sin "
-                      "declararlo. Se deja sin valor a proposito: escribe aqui "
-                      "el numero que vas a defender en la memoria",
-        fuente="Manual MTC, Tabla N 10 (num. 4.1.1.3.6) - el rango es [N]; la "
-               "eleccion dentro del rango no esta normada",
+        concepto="Techo de velocidad adoptado para el concreto, mas "
+                 "conservador que el maximo normativo de 6.0 m/s",
+        justificacion="OPCIONAL, no un vacio: sin valor el calculo NO se "
+                      "detiene, V3 aplica el techo normativo de 6.0 m/s y la "
+                      "memoria no declara este criterio. Es la unica entrada "
+                      "de este archivo que se lee con "
+                      "`valor_si_declarado()` en vez de `valor()`. "
+                      "La Tabla N 10 se titula 'Velocidades maximas "
+                      "admisibles en conductos revestidos' (num. 4.1.1.3.6, "
+                      "pag. 76): sus dos numeros son MAXIMOS segun la calidad "
+                      "del revestimiento, y 6.0 m/s es el techo del acabado "
+                      "de mejor calidad. Un concreto de acabado corriente "
+                      "admite menos, y bajar el techo hasta 3.0 m/s -- el "
+                      "maximo del acabado mas pobre -- es una decision "
+                      "defendible del proyectista sobre las condiciones de "
+                      "ESTA obra, no una exigencia del numeral: por eso [A]. "
+                      "CORRIGE la redaccion anterior, que lo planteaba como "
+                      "'elegir un valor dentro del rango' dando por hecho que "
+                      "3.0 era un PISO a decidir. No lo es: el piso de "
+                      "velocidad es V2 (0.25 m/s, misma pagina) y vale para "
+                      "todos los materiales. Con aquella lectura, V3 rechazaba "
+                      "conductos de concreto perfectamente admisibles",
+        fuente="Manual MTC, Tabla N 10 (num. 4.1.1.3.6, pag. 76) - los "
+               "maximos son [N]; adoptar uno mas conservador que el techo de "
+               "la tabla no esta normado y es del proyectista",
         sensibilidad=(3.0, 6.0),
     ),
 

@@ -103,7 +103,8 @@ import criterios_adoptados as ca
 from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
 from modelos import (DatoFaltanteError, DatoInvalidoError, Material, PuntoCritico,
-                     ReferenciaNormativa, ResultadoHidraulico, Verificacion)
+                     ReferenciaNormativa, ResultadoHidraulico, TipoMaterial,
+                     Verificacion)
 from modulos.M2_material import CRITERIO_DIAMETROS, CRITERIO_V_MAX
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
@@ -131,6 +132,9 @@ NUMERAL_V9 = "Sec. 3.2 (V9, nuevo en v7)"
 CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
+# Techo OPCIONAL del concreto. Se lee con `valor_si_declarado`, no con
+# `valor`: sin declarar no bloquea nada y V3 usa el maximo [N] de la tabla.
+CRITERIO_V_MAX_CONCRETO = "v_max_concreto_eleccion"
 
 
 # ---------------------------------------------------------------------------
@@ -194,10 +198,22 @@ def v3_velocidad_maxima(*, material: Material,
     pagina y aplicable a todos los materiales por igual. Un segundo piso, mas
     alto y por material, no lo respalda ningun numeral.
 
-    Se toma el extremo SUPERIOR del par como admisible. Es el techo del
-    revestimiento de mejor calidad; adoptar uno mas bajo dentro del rango es
-    una decision del proyectista y no una exigencia de la tabla (ver
-    'v_max_concreto_eleccion' en criterios_adoptados.py).
+    Se toma el extremo SUPERIOR del par como admisible: es el techo del
+    revestimiento de mejor calidad.
+
+    Techo mas conservador, OPCIONAL. Para el concreto, el proyectista puede
+    declarar 'v_max_concreto_eleccion' y bajar ese techo -- hasta 3.0 m/s, el
+    maximo del acabado mas pobre -- si las condiciones del acabado de ESTA
+    obra lo ameritan. Se lee con `ca.valor_si_declarado`, NO con `ca.valor`:
+    es un criterio opcional que refina un valor que la norma ya fija, no un
+    vacio que la norma deje abierto. Sin declarar devuelve None, V3 aplica el
+    6.0 de la tabla y el criterio no entra en la memoria. Leerlo con
+    `ca.valor` bloquearia el concreto por un criterio que nadie tiene
+    obligacion de declarar.
+
+    `criterio_aplicado` distingue las dos procedencias, que es lo que un
+    revisor necesita: None cuando el umbral es el [N] de la tabla, y la clave
+    del criterio cuando el proyectista lo bajo.
 
     TMC y HDPE: la Tabla N 10 no los cubre (Tablero 1.3). El valor sale de
     `criterios_adoptados.valor('v_max_tmc' | 'v_max_hdpe')`, que hoy es None
@@ -221,12 +237,20 @@ def v3_velocidad_maxima(*, material: Material,
     # Solo el techo: el par de la Tabla N 10 son dos MAXIMOS, no un piso y un
     # techo (ver el docstring). El extremo inferior no se verifica.
     _, v_max = material.v_max_rango
+    clave = None
+
+    if material.tipo is TipoMaterial.CONCRETO_REFORZADO:
+        adoptado = ca.valor_si_declarado(CRITERIO_V_MAX_CONCRETO)
+        if adoptado is not None:
+            v_max = adoptado
+            clave = CRITERIO_V_MAX_CONCRETO
+
     return Verificacion(
         cumple=resultado.V <= v_max + TOL_UMBRAL_NORMATIVO,
         numeral=NUMERAL_V3,
         valor_obtenido=resultado.V,
         valor_admisible=v_max,
-        criterio_aplicado=None,          # [N] puro, Tabla N 10
+        criterio_aplicado=clave,   # None = [N] puro de la Tabla N 10
         codigo="V3",
     )
 

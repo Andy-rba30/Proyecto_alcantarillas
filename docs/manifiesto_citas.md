@@ -99,7 +99,7 @@ Es el documento con más citas del proyecto y el que gobierna las Fases 2 a 6.
 | ⟳ `NUMERAL_LAUSHEY = "4.1.1.3.7 c)"`; d50 = V²/(K·G_LAUSHEY), pág. 80 | 4.1.1.3.7 c) | Manual de Hidrología | [M6:6](src/modulos/M6_proteccion.py:6), [M6:42](src/modulos/M6_proteccion.py:42) | [N] |
 | `NUMERAL_FASE_10 = "Fase 10 (num. 4.1.2.1 d), pag. 178)"` | 4.1.2.1 d), pág. 178 | Manual de Hidrología | [M10:9](src/modulos/M10_espaciamiento.py:9), [M10:61](src/modulos/M10_espaciamiento.py:61) | [N] |
 | `n_manning_hdpe = (0.010, 0.013)` — rango del concreto por analogía | "Analogía a Tabla N° 09 (concreto, tubo recto)" | Manual de Hidrología (analogía) | [CA:485](src/criterios_adoptados.py:485) | [A] |
-| `v_max_concreto_eleccion = None` — elección dentro del rango 3.0–6.0 | Tabla N° 10 (num. 4.1.1.3.6): el rango es [N], la elección no está normada | Manual de Hidrología | [CA:523](src/criterios_adoptados.py:523) | [A] |
+| `v_max_concreto_eleccion = None` — techo **opcional** más conservador que el máximo normativo de 6.0 m/s | Tabla N° 10 (num. 4.1.1.3.6, pág. 76): los máximos son [N]; adoptar uno más bajo que el techo de la tabla no está normado | Manual de Hidrología | [CA:523](src/criterios_adoptados.py:523) | [A] |
 | `long_max_cuneta = 200.0` m (se adopta la fila "muy lluviosa" por FEN) | num. 4.1.2.1 d), pág. 178 | Manual de Hidrología | [CA:639](src/criterios_adoptados.py:639) | [A] |
 | `umbral_area_quebrada_importante_ha = None` — **afirmación negativa formalizada [A]**: la Tabla N° 02 da R y n por categoría y el Manual **no fija ninguna regla de asignación física** (área, caudal, longitud ni orden de cauce) para clasificar una quebrada. No es [C] porque no hay fuente técnica que cubra el vacío: el vacío está en la norma | Tabla N° 02 (num. 3.6) | Manual de Hidrología | [CA:452](src/criterios_adoptados.py:452) | [A] |
 
@@ -412,8 +412,12 @@ que está citado es la **tabla o el artículo subyacente** (que es `[N]` y sí s
 verifica), mientras que lo `[A]` es la **elección o el relleno del vacío**. El
 caso canónico es `F_pga`: la Tabla 2.4.3.11.2.1.2-1 del Manual de Puentes es
 `[N]` y se verifica; adoptar 1.0 dentro de ella es `[A]` y no se verifica, se
-justifica. Lo mismo ocurre con `v_max_concreto_eleccion` (rango `[N]`, elección
-`[A]`), con `long_max_cuneta` (las dos filas son `[N]`, elegir la de 200 m es
+justifica. Algo parecido ocurre con `v_max_concreto_eleccion`, aunque **no es el
+mismo caso** y conviene no confundirlos: ahí la norma **sí** resuelve sola —el
+techo `[N]` es 6.0 m/s— y el criterio solo permite adoptar uno **más
+conservador**, de modo que no hay vacío ni elección obligatoria. Por eso es el
+único que se lee con `valor_si_declarado()`: sin declarar no detiene nada. Con
+`long_max_cuneta` (las dos filas son `[N]`, elegir la de 200 m es
 `[A]`) y —desde esta revisión— con `factor_muro_eleccion`, que hasta ahora
 mezclaba las dos mitades en un solo valor `[N]`.
 
@@ -438,7 +442,7 @@ nivel freático dentro de `[A]` habría dicho que alguien los "adoptó".
 | `homogeneidad_serie_fen` | `None` | **vacío — bloquea el Q de diseño de todos los puntos** | — | [CA:433](src/criterios_adoptados.py:433) |
 | `umbral_area_quebrada_importante_ha` | `None` | **vacío — bloquea el TR de toda la Familia A** | — | [CA:452](src/criterios_adoptados.py:452) |
 | `n_manning_hdpe` | (0.010, 0.013) | declarado | (0.010, 0.013) | [CA:561](src/criterios_adoptados.py:561) |
-| `v_max_concreto_eleccion` | `None` | **vacío — bloquea V3 en concreto** | (3.0, 6.0) m/s | [CA:599](src/criterios_adoptados.py:599) |
+| `v_max_concreto_eleccion` | `None` | **OPCIONAL — no bloquea nada.** Sin declarar, V3 aplica el techo `[N]` de 6.0 m/s de la Tabla N° 10 y el criterio no se registra como usado. Declarándolo se baja ese techo y la `Verificacion` lo atribuye a esta clave. Único criterio del archivo que se lee con `valor_si_declarado()` en vez de `valor()` | (3.0, 6.0) m/s | [CA:599](src/criterios_adoptados.py:599) |
 | `TW_receptor` | `None` | **vacío** | — | [CA:717](src/criterios_adoptados.py:717) |
 | `long_max_cuneta` | 200.0 m | declarado | (200.0, 250.0) | [CA:728](src/criterios_adoptados.py:728) |
 | `remanso_derecho_via` | `None` | **vacío — bloquea V5 para todo punto** | — | [CA:752](src/criterios_adoptados.py:752) |

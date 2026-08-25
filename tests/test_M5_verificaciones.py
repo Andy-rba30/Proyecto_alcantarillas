@@ -36,7 +36,8 @@ from modelos import (ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, ErrorProyecto, Familia,
                      PuntoCritico, ResultadoHidraulico, TipoMaterial)
 from modulos.M2_material import catalogo
-from modulos.M5_verificaciones import (resguardo_por_cbr, v1_borde_libre,
+from modulos.M5_verificaciones import (CRITERIO_V_MAX_CONCRETO,
+                                       resguardo_por_cbr, v1_borde_libre,
                                        v2_velocidad_minima,
                                        v3_velocidad_maxima,
                                        v4_carga_entrada, v5_remanso,
@@ -172,6 +173,74 @@ def test_v3_concreto_cumple_bajo_el_extremo_inferior(concreto):
     """
     v = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=1.0))
     assert v.cumple
+
+
+def test_v3_sin_declarar_el_criterio_usa_el_techo_normativo(concreto, monkeypatch):
+    """
+    'v_max_concreto_eleccion' es OPCIONAL: sin declarar, V3 no se bloquea --
+    aplica el 6.0 [N] de la Tabla N 10 y no registra el criterio como usado,
+    de modo que no ensucia la declaracion de la memoria.
+    """
+    ca.limpiar_valores_dinamicos()
+    assert ca.criterio(CRITERIO_V_MAX_CONCRETO).valor is None
+
+    v = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=5.5))
+    assert v.cumple
+    assert v.valor_admisible == pytest.approx(6.0)
+    assert v.criterio_aplicado is None, (
+        "sin declarar, el umbral es [N] de la tabla y la memoria no debe "
+        "atribuirlo a un criterio adoptado")
+    assert CRITERIO_V_MAX_CONCRETO not in ca.criterios_usados()
+
+
+def test_v3_declarado_baja_el_techo_y_lo_atribuye(concreto, monkeypatch):
+    """
+    Declarado en 4.5, el techo baja: 4.0 m/s cumple y 5.0 no. Y la
+    `Verificacion` lo ATRIBUYE al criterio, que es lo que permite a un revisor
+    distinguir el umbral normativo del adoptado.
+    """
+    original = ca.CRITERIOS[CRITERIO_V_MAX_CONCRETO]
+    monkeypatch.setitem(
+        ca.CRITERIOS, CRITERIO_V_MAX_CONCRETO,
+        original.__class__(**{**original.__dict__, "valor": 4.5}))
+
+    pasa = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=4.0))
+    assert pasa.cumple
+    assert pasa.valor_admisible == pytest.approx(4.5)
+    assert pasa.criterio_aplicado == CRITERIO_V_MAX_CONCRETO
+
+    falla = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=5.0))
+    assert not falla.cumple, (
+        "5.0 m/s supera el techo declarado de 4.5: tiene que incumplir "
+        "aunque siga por debajo del 6.0 normativo")
+
+
+def test_v3_declarado_no_reintroduce_un_piso(concreto, monkeypatch):
+    """
+    El criterio baja el TECHO, no crea un piso. Con 4.5 declarado, 1.0 m/s
+    sigue cumpliendo V3: la correccion de la Parte B no se deshace por
+    declararlo.
+    """
+    original = ca.CRITERIOS[CRITERIO_V_MAX_CONCRETO]
+    monkeypatch.setitem(
+        ca.CRITERIOS, CRITERIO_V_MAX_CONCRETO,
+        original.__class__(**{**original.__dict__, "valor": 4.5}))
+    assert v3_velocidad_maxima(material=concreto,
+                               resultado=_resultado(V=1.0)).cumple
+
+
+def test_v3_solo_el_concreto_lee_ese_criterio(tmc, monkeypatch):
+    """
+    'v_max_concreto_eleccion' es del concreto. TMC y HDPE siguen leyendo su
+    propio criterio y lanzando CriterioPendienteError mientras este vacio:
+    declarar el del concreto no puede desbloquearlos por la puerta de atras.
+    """
+    original = ca.CRITERIOS[CRITERIO_V_MAX_CONCRETO]
+    monkeypatch.setitem(
+        ca.CRITERIOS, CRITERIO_V_MAX_CONCRETO,
+        original.__class__(**{**original.__dict__, "valor": 4.5}))
+    with pytest.raises(CriterioPendienteError):
+        v3_velocidad_maxima(material=tmc, resultado=_resultado(V=2.0))
 
 
 def test_v3_bajo_el_rango_lo_sigue_atrapando_v2_si_toca(concreto):
