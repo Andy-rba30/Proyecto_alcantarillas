@@ -189,7 +189,7 @@ MARCADORES: Tuple[str, ...] = (
     "estado_expediente", "resumen_expediente",
     "memorias_punto", "filas_resumen",
     "bloque_datos_sitio", "bloque_criterios", "bloque_pendientes",
-    "bloque_alcance",
+    "bloque_alcance", "bloque_acotaciones",
 )
 
 
@@ -748,6 +748,16 @@ def _tabla_verificaciones(informe: Any) -> str:
             umbral = f"<code>{_esc(v.criterio_aplicado)}</code>"
             if declarado is not None:
                 umbral = f"{_etiqueta_html(declarado.etiqueta)} " + umbral
+                if declarado.vacio_verificado:
+                    # La fila sola engana: dice la etiqueta y la clave, y de
+                    # ahi se lee una cita normativa corriente. No lo es -- el
+                    # numeral que la sostiene habla de otro material o de otra
+                    # situacion -- y el revisor esta mirando ESTA fila, no el
+                    # bloque 0-bis. La remision es lo que conecta las dos.
+                    umbral += (' <a href="#acotaciones" class="remision" '
+                               'title="Adopcion sobre un vacio normativo '
+                               'verificado: ver el bloque de acotaciones">'
+                               "&#9755; acotacion</a>")
         else:
             umbral = f"{_etiqueta_html('N')} constante normativa"
         codigo = v.codigo or fase.split(" - ")[0]
@@ -1165,6 +1175,92 @@ def bloque_pendientes(tableros: Sequence[Tablero],
     return "".join(partes)
 
 
+# ---------------------------------------------------------------------------
+# Acotaciones: adopciones del proyectista sobre vacios normativos verificados
+# ---------------------------------------------------------------------------
+
+def acotaciones_declaradas() -> list:
+    """
+    Criterios con valor que cubren un vacio normativo REGISTRADO.
+
+    Se leen del propio catalogo, no de la plantilla: cualquier adopcion futura
+    del mismo caracter entra aqui sola con solo declarar `vacio_verificado`.
+    """
+    return sorted(
+        (k for k, c in ca.CRITERIOS.items()
+         if c.vacio_verificado and c.valor is not None),
+        key=lambda k: (ca.CRITERIOS[k].etiqueta, k))
+
+
+def bloque_acotaciones(alcance: str = "expediente") -> str:
+    """
+    Bloque 6: lo que el proyectista adopto donde la norma no dice nada.
+
+    Existe porque la tabla de criterios no basta para estas entradas. Ahi
+    'h_relleno_min_concreto_tmc = 0.30 m [N->] EG-2013 508.07' se lee como una
+    cita normativa corriente, y oculta lo unico que un revisor necesita saber:
+    que el 508.07 habla de HDPE y no del material al que se le aplica. Un
+    valor adoptado sobre un vacio se defiende con el razonamiento entero o no
+    se defiende.
+
+    Por eso imprime las cinco piezas por separado -- que dice la norma, que NO
+    dice, que se adopto, por que es conservador, que queda pendiente -- en vez
+    de un parrafo unico donde las tres primeras se confunden.
+
+    El tono cambia con el alcance y no por estilo: en una memoria de PERFIL la
+    adopcion es una decision legitima del nivel de detalle que se esta
+    entregando; en una de EXPEDIENTE es una brecha, porque el expediente es
+    justamente donde esas verificaciones debian resolverse y no lo hicieron.
+    """
+    claves = acotaciones_declaradas()
+    if not claves:
+        return ('<div class="nota"><p>Ninguna: esta corrida no aplico ningun '
+                "valor adoptado sobre un vacio normativo. Todo lo que entro "
+                "en el calculo tiene norma que lo fija o ensayo que lo "
+                "determina.</p></div>")
+
+    de_expediente = alcance == "expediente"
+    partes = []
+    if de_expediente:
+        partes.append(
+            '<div class="bloqueo"><p><b>BRECHA DE EXPEDIENTE.</b> Las '
+            "adopciones de abajo se tomaron para destrabar el nivel de "
+            "PERFIL. Esta es una memoria de EXPEDIENTE, que es donde las "
+            "verificaciones por material debian resolverse: mientras sigan "
+            "abiertas, cada una es una brecha del expediente y no una nota al "
+            "pie. Ninguna puede citarse como valor verificado.</p></div>")
+    else:
+        partes.append(
+            '<div class="nota"><p>Adopciones del proyectista sobre vacios '
+            "normativos <b>verificados</b>: huecos donde la busqueda se agoto "
+            "fuente por fuente y quedo registrada, no huecos que nadie miro. "
+            "Son legitimas al nivel de perfil y <b>no sustituyen</b> la "
+            "verificacion de expediente que cada una declara.</p></div>")
+
+    for clave in claves:
+        c = ca.criterio(clave)
+        partes.append(
+            f'<h3><code>{_esc(clave)}</code> = '
+            f"{_esc(_valor_legible(c.valor))} &mdash; {_etiqueta_html(c.etiqueta)}</h3>")
+        partes.append(f"<p><b>Que es:</b> {_esc(c.concepto)}</p>")
+        partes.append(
+            f'<dl class="acotacion">'
+            # El orden importa: primero lo que la norma dice y no dice, que es
+            # el argumento; despues la busqueda, que es la prueba de que el
+            # vacio es real. Al reves se lee como una excusa buscada a
+            # posteriori.
+            f"<dt>Que dice la norma, que NO dice, y por que la adopcion "
+            f"es conservadora</dt><dd>{_esc(c.justificacion)}</dd>"
+            f"<dt>Busqueda que agoto el vacio</dt><dd>{_esc(c.fuente)}</dd>"
+            f"<dt>Registro completo de esa busqueda</dt>"
+            f"<dd><code>docs/{_esc(c.vacio_verificado)}</code> &mdash; ahi "
+            f"esta, fuente por fuente, que se busco y que se encontro</dd>"
+            f"<dt>{'BRECHA: lo que el expediente debia resolver' if de_expediente else 'Queda pendiente para el expediente'}</dt>"
+            f"<dd>{_esc(c.reemplazado_por)}</dd>"
+            f"</dl>")
+    return "".join(partes)
+
+
 # ===========================================================================
 # Ensamblado del documento
 # ===========================================================================
@@ -1293,6 +1389,7 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "bloque_criterios": bloque_criterios(solo_usados=True),
         "bloque_pendientes": bloque_pendientes(tableros, bloqueantes),
         "bloque_alcance": bloque_alcance(informe),
+        "bloque_acotaciones": bloque_acotaciones(alcance=informe.alcance),
     }
     if set(valores) != set(MARCADORES):
         diferencia = set(valores).symmetric_difference(MARCADORES)

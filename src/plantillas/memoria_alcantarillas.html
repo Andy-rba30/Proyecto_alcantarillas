@@ -92,6 +92,11 @@
   }
   .aviso   { border-left-color: #d0a95f; background: #fdf8ee; }
   .bloqueo { border-left-color: #a4160f; background: #fdf1f0; }
+  .remision { font-size: .85em; white-space: nowrap; text-decoration: none;
+              color: #8a5300; background: #fdf5e6; padding: 0 .3em;
+              border-radius: 3px; }
+  dl.acotacion dt { font-weight: bold; margin-top: .5em; }
+  dl.acotacion dd { margin: .1em 0 0 1.2em; }
 
   /* Punto critico ------------------------------------------------------- */
   .punto { border: 1px solid #c3cede; padding: .2em 1em 1em 1em; margin: 1.2em 0; }
@@ -178,6 +183,18 @@ esta declaracion, el estado del expediente de la tabla anterior no se puede
 interpretar.</p>
 
 %%bloque_alcance
+
+<!-- ==================================================================== -->
+<h2 id="acotaciones" class="salto">0-bis. Acotaciones sin resolver: brechas del expediente</h2>
+
+<p><b>En una memoria de expediente estas entradas son brechas, no notas.</b> El expediente es donde las verificaciones por material debian resolverse; mientras sigan abiertas, cada adopcion de perfil que llego hasta aqui sin cerrarse es una brecha declarada. Va aparte de la tabla de criterios porque ahi una adopcion de este
+tipo se lee como una cita normativa corriente y oculta lo unico que un revisor
+necesita: <b>que la norma citada habla de otra cosa</b> &mdash; de otro
+material, de otra situacion &mdash; y que aplicarla aqui es una decision, no una
+lectura. Cada entrada separa que dice la norma, que <b>no</b> dice, donde
+consta que el vacio se busco, y que queda pendiente.</p>
+
+%%bloque_acotaciones
 
 <!-- ==================================================================== -->
 <h2 id="memorias" class="salto">1. Memoria de calculo por punto critico</h2>

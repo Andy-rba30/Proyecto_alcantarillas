@@ -786,3 +786,103 @@ class TestEscapado:
         html = M11._tabla_bloqueos(punto.bloqueos)
         assert "<img" not in html
         assert "&lt;img" in html
+
+
+# ===========================================================================
+# (9) Acotaciones: adopciones sobre vacios normativos verificados
+# ===========================================================================
+
+class TestBloqueAcotaciones:
+    """
+    La tabla de criterios no basta para una adopcion sobre un vacio: ahi
+    'h_relleno_min_concreto_tmc = 0.30 m [N->] EG-2013 508.07' se lee como una
+    cita normativa corriente y oculta que el 508.07 habla de HDPE, no del
+    material al que se le aplica.
+    """
+
+    def test_se_alimenta_del_catalogo_y_no_de_la_plantilla(self):
+        """
+        Cualquier adopcion futura del mismo caracter cae aqui sola con solo
+        declarar `vacio_verificado`. Si algun dia esto se hardcodea en la
+        plantilla, este test deja de tener sentido y hay que revisarlo.
+        """
+        import criterios_adoptados as ca
+
+        declaradas = M11.acotaciones_declaradas()
+        esperadas = sorted(k for k, c in ca.CRITERIOS.items()
+                           if c.vacio_verificado and c.valor is not None)
+        assert declaradas == esperadas
+        assert "h_relleno_min_concreto_tmc" in declaradas
+
+    def test_imprime_las_cinco_piezas_del_razonamiento(self):
+        """
+        Que dice la norma / que NO dice / que se adopto / donde consta la
+        busqueda / que queda pendiente. Un valor adoptado sobre un vacio se
+        defiende con el razonamiento entero o no se defiende.
+        """
+        html = M11.bloque_acotaciones(alcance="perfil")
+        assert "h_relleno_min_concreto_tmc" in html
+        assert "Que dice la norma, que NO dice" in html
+        assert "conservadora" in html
+        assert "Registro completo de esa busqueda" in html
+        assert "manifiesto_citas.md Sec. 14.a" in html
+        assert "pendiente para el expediente" in html
+        # Lo que la fila G1 no puede decir y esta seccion si: el 508.07 es
+        # de HDPE.
+        assert "508.07" in html and "HDPE" in html
+
+    def test_el_expediente_lo_declara_como_brecha_y_el_perfil_no(self):
+        """
+        No es tono: una adopcion de perfil sin resolver es legitima en una
+        memoria de perfil y es una brecha en una de expediente, que es donde
+        esa verificacion debia cerrarse.
+        """
+        perfil = M11.bloque_acotaciones(alcance="perfil")
+        expediente = M11.bloque_acotaciones(alcance="expediente")
+
+        assert "BRECHA DE EXPEDIENTE" in expediente
+        assert "BRECHA DE EXPEDIENTE" not in perfil
+        assert "no sustituyen" in perfil
+        assert "BRECHA: lo que el expediente debia resolver" in expediente
+
+    def test_la_fila_de_la_verificacion_remite_a_la_seccion(self):
+        """
+        El revisor esta mirando la fila G1, no el bloque 0-bis. Sin remision,
+        la seccion existe y nadie llega a ella desde donde importa.
+        """
+        import criterios_adoptados as ca
+        from modelos import Verificacion
+
+        class _InformeFalso:
+            def __init__(self, *pares):
+                self._pares = pares
+
+            def verificaciones(self):
+                return self._pares
+
+        g1 = Verificacion(cumple=True, numeral="Sec. 7.A", valor_obtenido=40.6,
+                          valor_admisible=39.75, codigo="G1",
+                          criterio_aplicado="h_relleno_min_concreto_tmc")
+        html = M11._tabla_verificaciones(_InformeFalso(("Fase 7", g1)))
+        assert 'href="#acotaciones"' in html
+        assert "acotacion" in html
+
+        # Un criterio SIN vacio_verificado no remite: la remision no es
+        # decorativa, marca una clase concreta de valor.
+        v3 = Verificacion(cumple=True, numeral="4.1.1.3.6", valor_obtenido=1.0,
+                          valor_admisible=6.0, codigo="V3",
+                          criterio_aplicado="v_max_concreto_eleccion")
+        assert 'href="#acotaciones"' not in M11._tabla_verificaciones(
+            _InformeFalso(("Fase 5", v3)))
+
+    def test_las_dos_plantillas_declaran_el_marcador(self):
+        """
+        La de expediente tambien: un expediente con adopciones de perfil sin
+        resolver debe declararlo mas fuerte, no callarlo.
+        """
+        assert "bloque_acotaciones" in M11.MARCADORES
+        raiz = Path(__file__).resolve().parents[1] / "src" / "plantillas"
+        for nombre in ("memoria_perfil.html", "memoria_alcantarillas.html"):
+            texto = (raiz / nombre).read_text(encoding="utf-8")
+            assert "%%bloque_acotaciones" in texto, nombre
+            assert 'id="acotaciones"' in texto, nombre

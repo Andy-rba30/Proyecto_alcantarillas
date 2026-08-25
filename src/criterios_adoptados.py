@@ -59,7 +59,9 @@ con los criterios adoptados.
 """
 
 import numbers
+import re
 from dataclasses import dataclass, replace
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional, Tuple, Dict, List, Set
 
@@ -83,6 +85,19 @@ class Criterio:
     verificacion_pendiente: Optional[str] = None   # lo que falta confirmar
     provisional: bool = False                  # valor de PRUEBA, no verificado
     opcional: bool = False                     # valor=None NO bloquea: hay defecto normativo
+    vacio_verificado: str = ""                 # ancla al vacio registrado que este valor cubre
+
+    # `vacio_verificado` distingue dos cosas que se parecen y no son iguales:
+    # un valor que cubre un hueco que NADIE busco, y uno que cubre un hueco
+    # que alguien AGOTO -- fuente por fuente, con cita -- y dejo registrado.
+    # Solo lo segundo se puede defender en una memoria, y solo lo segundo
+    # entra en el bloque de acotaciones que M11 imprime.
+    #
+    # No es un booleano a proposito: lleva el ANCLA al registro
+    # ("manifiesto_citas.md Sec. 14.a"), de modo que la memoria puede decirle
+    # al revisor donde ir a leer la busqueda completa en vez de pedirle que
+    # confie. `_verificar_criterio` comprueba al importar que esa seccion
+    # existe de verdad: un ancla rota falla, no pasa en silencio.
 
     # `opcional=True` cambia el significado de `valor=None`, que sin el
     # significa una sola cosa: vacio que detiene el calculo. Un criterio
@@ -1148,6 +1163,7 @@ CRITERIOS: Dict[str, Criterio] = {
                         "AASHTO LRFD Sec. 12 (que el Manual de Puentes no "
                         "incorpora, ver fuente punto 2) o por clase D-load con "
                         "factor de cama",
+        vacio_verificado="manifiesto_citas.md Sec. 14.a",
         verificacion_pendiente="Nota constructiva [N] que si es firme: el equipo "
                                "pesado no circula sobre el conducto antes de que "
                                "el relleno alcance 0.30 m (Sec. 7.A)",
@@ -1633,6 +1649,65 @@ _SALIDA_RANGO = (
 )
 
 
+# Un ancla es "<archivo>.md Sec. <n>", relativo a docs/.
+_ANCLA = re.compile(r"^(?P<doc>[\w.\-]+\.md)\s+Sec\.\s+(?P<sec>[\w.\-]+)$")
+_DOCS = Path(__file__).resolve().parents[1] / "docs"
+
+
+@lru_cache(maxsize=None)
+def _secciones_de(documento: str) -> frozenset:
+    """
+    Titulos de seccion de un documento de docs/, como anclas ("14.a", "9").
+
+    Se cachea porque la guardia corre en cada declaracion en caliente y el
+    documento no cambia dentro de una corrida. Si el archivo no existe
+    devuelve None, y quien llama lo distingue de "existe pero no tiene esa
+    seccion": son dos errores distintos y el mensaje lo dice.
+    """
+    ruta = _DOCS / documento
+    if not ruta.is_file():
+        return None
+    return frozenset(
+        m.group(1) for m in re.finditer(
+            r"^#{2,4}\s+([\w.\-]+?)\.?\s",
+            ruta.read_text(encoding="utf-8"), re.MULTILINE)
+    )
+
+
+def _verificar_ancla_de_vacio(clave: str, ancla: str) -> None:
+    """
+    El ancla tiene que RESOLVER, no solo estar bien escrita.
+
+    Un valor que dice cubrir un vacio verificado y apunta a un registro que no
+    existe es peor que uno que no dice nada: afirma una diligencia que nadie
+    hizo. Se comprueba al importar, igual que el test de referencias comprueba
+    los archivo:linea del manifiesto.
+    """
+    m = _ANCLA.match(ancla.strip())
+    if not m:
+        raise ValueError(
+            f"'{clave}' declara vacio_verificado={ancla!r}, que no tiene la "
+            "forma '<documento>.md Sec. <n>' (por ejemplo "
+            "'manifiesto_citas.md Sec. 14.a'). El ancla existe para que la "
+            "memoria pueda mandar al revisor al registro: si no resuelve, no "
+            "sirve"
+        )
+    documento, seccion = m.group("doc"), m.group("sec")
+    secciones = _secciones_de(documento)
+    if secciones is None:
+        raise ValueError(
+            f"'{clave}' declara vacio_verificado={ancla!r} pero "
+            f"docs/{documento} no existe"
+        )
+    if seccion not in secciones:
+        raise ValueError(
+            f"'{clave}' declara vacio_verificado={ancla!r} pero "
+            f"docs/{documento} no tiene una Sec. {seccion}. El vacio que este "
+            "valor dice cubrir no esta registrado: o se registra, o el campo "
+            "no se declara"
+        )
+
+
 def _es_real(x: Any) -> bool:
     """
     Un numero real de verdad. `bool` queda fuera a proposito: en Python es
@@ -1774,6 +1849,22 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
                 "es lo que acota cuanto puede apartarse del valor normativo "
                 "por defecto"
             )
+
+    if c.vacio_verificado:
+        if c.valor is None:
+            raise ValueError(
+                f"'{clave}' declara vacio_verificado y no tiene valor. El "
+                "campo es para el valor que CUBRE un vacio registrado; un "
+                "criterio todavia vacio no cubre nada"
+            )
+        if not c.reemplazado_por:
+            raise ValueError(
+                f"'{clave}' cubre un vacio verificado y no declara "
+                "`reemplazado_por`. Una adopcion sobre un vacio agotado tiene "
+                "que decir que verificacion la cerraria de verdad, o se lee "
+                "como si el vacio ya estuviera resuelto"
+            )
+        _verificar_ancla_de_vacio(clave, c.vacio_verificado)
 
     _verificar_sensibilidad(clave, c)
 
