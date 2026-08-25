@@ -451,3 +451,195 @@ def test_todos_los_puntos_del_csv_aparecen_en_el_informe():
     informe = _informe(luz_m=2.0)
     assert [i.punto.id for i in informe.puntos] == [
         p.id for p in cargar_puntos(CSV)]
+
+
+# ---------------------------------------------------------------------------
+# Alcance de la corrida: bifurcacion perfil / expediente
+# ---------------------------------------------------------------------------
+#
+# La bandera --alcance separa dos corridas del MISMO pipeline: "expediente"
+# (defecto) lo corre entero, como siempre; "perfil" difiere V5, V8, la Fase 8
+# y la Fase 9 al expediente, dejando constancia con fundamento. Nada se borra:
+# lo diferido deja de contar solo para `Informe.cerrado`.
+#
+# Los criterios que aqui se declaran con `_declarar` son los que una corrida
+# de perfil real necesita cerrados (los detecto la propia corrida): el peso
+# especifico del relleno (V7 es obligatoria tambien en perfil), las
+# velocidades maximas de TMC/HDPE (V3) y la longitud de proteccion (Fase 6).
+# Son valores de PRUEBA via monkeypatch, el patron de todo este archivo: no
+# tocan criterios_adoptados.py.
+
+CRITERIOS_CORRIDA_PERFIL = dict(
+    peso_especifico_relleno_kn_m3=18.0,
+    v_max_tmc=4.5,
+    v_max_hdpe=6.0,
+    longitud_proteccion_salida=3.0,
+)
+
+EXTERNOS_PERFIL = dict(luz_m=2.0, categoria_tr="quebrada_menor", TW_m=0.0,
+                       longitud_m=12.0, L_hidraulico_m=180.0)
+
+
+def _informe_alcance(alcance, **globales):
+    return cli.correr(CSV, _externos(**globales), alcance=alcance)
+
+
+def test_el_alcance_por_defecto_es_expediente():
+    """Quien no pasa la bandera corre exactamente lo de siempre."""
+    assert cli._parser().parse_args(["x.csv"]).alcance == cli.ALCANCE_EXPEDIENTE
+    informe = _informe(luz_m=2.0)
+    assert informe.alcance == cli.ALCANCE_EXPEDIENTE
+    assert informe.diferidos() == ()
+
+
+def test_alcance_expediente_es_identico_al_comportamiento_actual():
+    """El mismo CSV con y sin la bandera produce el mismo informe JSON."""
+    con = cli.informe_json(_informe_alcance(cli.ALCANCE_EXPEDIENTE,
+                                            **EXTERNOS_PERFIL))
+    sin = cli.informe_json(cli.correr(CSV, _externos(**EXTERNOS_PERFIL)))
+    for datos in (con, sin):
+        datos["expediente"].pop("generado_utc")
+    assert con == sin
+
+
+def test_perfil_dimensiona_puntos_que_expediente_bloquea(monkeypatch):
+    """
+    El corazon de la bifurcacion: con los mismos datos, V5 (remanso) detiene
+    el bucle de MD en alcance expediente, y en alcance perfil se difiere y el
+    punto se dimensiona. El diferido queda registrado con clave, concepto y
+    fuente -- la constancia, no un descarte silencioso.
+    """
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+
+    expediente = _informe_alcance(cli.ALCANCE_EXPEDIENTE, **EXTERNOS_PERFIL)
+    assert expediente.dimensionados == 0
+
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+    assert perfil.dimensionados == 3      # A-01, A-02, B-01; C-01 es Familia C
+    a01 = _punto(perfil, "A-01")
+    assert a01.resultado.material.tipo is TipoMaterial.CONCRETO_REFORZADO
+
+    diferidos = [b for b in a01.bloqueos if b.diferido_por_alcance]
+    v5 = next(b for b in diferidos if b.criterio == "remanso_derecho_via")
+    assert v5.tipo == "CriterioPendienteError"
+    assert v5.concepto and v5.fuente
+    assert "V5" in v5.etapa
+    v8 = next(b for b in diferidos if b.criterio == "TR_evento_extremo")
+    assert "V8" in v8.etapa
+
+
+def test_perfil_intenta_v5_y_v8_pero_no_las_exige(monkeypatch):
+    """Las siete obligatorias estan en la tabla del punto; V5 y V8 no."""
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+    codigos = [v.codigo for _, v in _punto(perfil, "A-01").verificaciones()
+               if v.codigo and v.codigo.startswith("V")]
+    assert codigos == ["V1", "V2", "V3", "V4", "V6", "V7", "V9"]
+
+
+def test_perfil_no_ejecuta_fase_8_ni_cabezal(monkeypatch):
+    """
+    2.b: ni `_fase_8` ni `correr_cabezal` corren en perfil. El espia sobre
+    `seleccionar_clase_calibre` documenta ademas la MINA de M8: esa funcion
+    es una guarda deliberada (AssertionError en cuanto
+    'clases_producto_por_relleno' tenga valor, porque la tabla no esta
+    transcrita) y en alcance perfil NUNCA se alcanza. Que este test siga
+    exigiendo "cero llamadas" es lo que mantiene visible que, antes de
+    declarar ese criterio, hay que escribir el cuerpo de la funcion.
+    """
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+    llamadas = []
+    monkeypatch.setattr(cli, "seleccionar_clase_calibre",
+                        lambda **kw: llamadas.append(kw))
+    monkeypatch.setattr(cli, "cadena_sismica",
+                        lambda: llamadas.append("cabezal"))
+
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+    assert llamadas == []
+    assert perfil.cabezal.cadena is None
+    fases_8 = [b for i in perfil.puntos for b in i.bloqueos
+               if b.fase == cli.FASE_ESTRUCTURAL]
+    assert fases_8 and all(b.diferido_por_alcance for b in fases_8)
+    assert all(b.diferido_por_alcance for b in perfil.cabezal.bloqueos)
+
+    # En expediente, la Fase 8 y el cabezal SI corren.
+    llamadas.clear()
+    _informe_alcance(cli.ALCANCE_EXPEDIENTE, **EXTERNOS_PERFIL)
+    assert "cabezal" in llamadas
+
+
+def test_la_mina_de_v8_sigue_armada_en_perfil(monkeypatch):
+    """
+    MINA de M5 (no desactivar): `v8_evento_extremo` termina en
+    AssertionError en cuanto 'TR_evento_extremo' tenga valor -- el criterio
+    tendria dato pero la logica de V8 no esta escrita. El verificador de
+    perfil captura SOLO ErrorProyecto, asi que esa AssertionError propaga y
+    tumba la corrida con su traza en vez de quedar "diferida": un modulo
+    incompleto no es un asunto de alcance. Antes de declarar ese criterio
+    hay que escribir el cuerpo de la funcion.
+    """
+    _declarar(monkeypatch, TR_evento_extremo=100.0, **CRITERIOS_CORRIDA_PERFIL)
+    with pytest.raises(AssertionError, match="TR_evento_extremo"):
+        _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+
+
+def test_perfil_deja_constancia_en_texto_y_json(monkeypatch):
+    """2.d: el alcance usado y lo diferido, con fundamento, en ambas salidas."""
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+
+    datos = json.loads(json.dumps(cli.informe_json(perfil),
+                                  ensure_ascii=False, allow_nan=False))
+    assert datos["alcance"]["nivel"] == "perfil"
+    claves = {d["criterio"] for d in datos["alcance"]["diferidos"]}
+    assert "remanso_derecho_via" in claves and "TR_evento_extremo" in claves
+    remanso = next(d for d in datos["alcance"]["diferidos"]
+                   if d["criterio"] == "remanso_derecho_via")
+    assert remanso["fuente"] and remanso["punto"] == "A-01"
+    fases = {d["fase"] for d in datos["alcance"]["diferidos"]}
+    assert cli.FASE_ESTRUCTURAL in fases and cli.FASE_CABEZAL in fases
+
+    texto = cli.volcar(perfil)
+    assert "ALCANCE DE LA CORRIDA" in texto
+    assert "Alcance declarado: perfil" in texto
+    assert "remanso_derecho_via" in texto
+    assert "Fase 8 completa diferida" in texto
+    assert "Fase 9 completa diferida" in texto
+
+
+def test_expediente_tambien_declara_su_alcance():
+    informe = _informe(luz_m=2.0)
+    assert cli.informe_json(informe)["alcance"] == {
+        "nivel": "expediente", "diferidos": []}
+    assert "Alcance declarado: expediente" in cli.volcar(informe)
+
+
+def test_perfil_cerrado_devuelve_exit_cero(tmp_path, monkeypatch, capsys):
+    """
+    2.c: un expediente de perfil con todos sus puntos dimensionados y sin
+    bloqueos REALES cierra y main devuelve 0; los diferidos por alcance no
+    cuentan. Se usa B-01 solo, cerrando en HDPE: es el unico material cuyo
+    recubrimiento minimo es [N] (EG-2013 508.07/508.08) y deja pasar la Fase
+    7 sin declarar 'h_relleno_min_concreto_tmc' (los puntos de concreto/TMC
+    quedan ahi bloqueados de verdad, tambien en perfil). El v_max_tmc bajo
+    fuerza el descarte HONESTO del TMC -- evaluado e incumplido, no saltado.
+    """
+    _declarar(monkeypatch, v_max_tmc=1.0,
+              **{k: v for k, v in CRITERIOS_CORRIDA_PERFIL.items()
+                 if k != "v_max_tmc"})
+    lineas = CSV.read_text(encoding="utf-8").strip().splitlines()
+    solo_b01 = tmp_path / "solo_b01.csv"
+    solo_b01.write_text("\n".join([lineas[0]] + [
+        l for l in lineas if l.startswith("B-01")]) + "\n", encoding="utf-8")
+    argumentos = [str(solo_b01), "--luz", "2.0", "--tw", "0.0",
+                  "--longitud", "12.0", "--l-hidraulico", "180.0",
+                  "--json", str(tmp_path / "b01.json")]
+
+    assert cli.main(argumentos + ["--alcance", "perfil"]) == 0
+    salida = capsys.readouterr().out
+    assert "Expediente cerrado      : si" in salida
+    assert "Alcance de la corrida   : perfil" in salida
+
+    # El MISMO expediente en alcance completo NO cierra: V5 sigue exigiendose.
+    assert cli.main(argumentos + ["--alcance", "expediente"]) == 1
+    capsys.readouterr()

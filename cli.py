@@ -69,8 +69,10 @@ porque significa que un modulo esta incompleto.
 
 Codigos de salida
 -----------------
-    0   el expediente cerro: todos los puntos dimensionados, sin bloqueos y
-        con todas las verificaciones cumpliendo
+    0   el expediente cerro AL ALCANCE DECLARADO (--alcance, por defecto
+        "expediente"): todos los puntos dimensionados, sin bloqueos y con
+        todas las verificaciones cumpliendo. Lo diferido por alcance no
+        cuenta como bloqueo, pero queda impreso con su fundamento
     1   el expediente esta incompleto: hay bloqueos, puntos sin dimensionar o
         verificaciones incumplidas. Es el resultado normal mientras el
         Tablero 3 siga abierto
@@ -84,7 +86,7 @@ import argparse
 import json
 import math
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -126,7 +128,18 @@ from modulos.M10_espaciamiento import espaciamiento_alivio          # noqa: E402
 from modulos.M11_reporte import (CriterioBloqueante,                # noqa: E402,F401
                                  criterios_bloqueantes,
                                  exportar_csv, exportar_html, exportar_pdf)
+from modulos import M5_verificaciones as M5                        # noqa: E402
 from modulos.MD import disenar_punto                                # noqa: E402
+
+# Alcance de la corrida. Es una bifurcacion declarada, no una poda: con
+# "expediente" (el defecto) todo corre exactamente como siempre; con "perfil"
+# V5 y V8 se INTENTAN pero su fallo se difiere al expediente en vez de frenar
+# el dimensionamiento, y las Fases 8 y 9 no se ejecutan. Nada de lo diferido
+# se pierde: queda registrado como Bloqueo con `diferido_por_alcance=True`,
+# se imprime con su fundamento, y deja de contar solo para `Informe.cerrado`.
+# Son rotulos de la corrida, no valores de proyecto.
+ALCANCE_PERFIL = "perfil"
+ALCANCE_EXPEDIENTE = "expediente"
 
 # Etiquetas de fase. Son rotulos del informe, no valores de proyecto: cada uno
 # nombra el modulo y la seccion de la hoja de ruta que ejecuta esa etapa.
@@ -347,6 +360,11 @@ class Bloqueo:
     fuente: Optional[str] = None
     campo: Optional[str] = None
     delta_rasante_m: Optional[float] = None
+    # True cuando la etapa no se completo POR DECISION DE ALCANCE de la
+    # corrida (--alcance perfil), no por un defecto del expediente. Se imprime
+    # con su fundamento igual que cualquier bloqueo -- la memoria necesita esa
+    # constancia -- pero no cuenta para `Informe.cerrado`.
+    diferido_por_alcance: bool = False
 
 
 @dataclass
@@ -409,6 +427,7 @@ class Informe:
 
     csv: Path
     generado: str
+    alcance: str = ALCANCE_EXPEDIENTE
     puntos: List[InformePunto] = field(default_factory=list)
     cabezal: InformeCabezal = field(default_factory=InformeCabezal)
 
@@ -424,13 +443,27 @@ class Informe:
         filas.extend((None, b) for b in self.cabezal.bloqueos)
         return tuple(filas)
 
+    def diferidos(self) -> Tuple[Tuple[Optional[str], Bloqueo], ...]:
+        """Solo lo diferido por alcance, con el id del punto (None = proyecto)."""
+        return tuple((id_punto, b) for id_punto, b in self.bloqueos()
+                     if b.diferido_por_alcance)
+
     @property
     def cerrado(self) -> bool:
         """
-        True solo si no falta nada: todos los puntos dimensionados, ninguna
-        etapa bloqueada y ninguna verificacion incumplida.
+        True solo si no falta nada AL ALCANCE DECLARADO de la corrida: todos
+        los puntos dimensionados, ninguna etapa bloqueada y ninguna
+        verificacion incumplida.
+
+        Lo diferido por alcance (`diferido_por_alcance=True`) no cuenta como
+        bloqueo: no es un defecto del expediente sino una etapa que ESTA
+        corrida declaro fuera de su alcance. Sigue impreso, con fundamento,
+        en el informe -- cerrado a nivel de perfil no significa que el
+        expediente este completo, y el bloque de alcance lo dice.
         """
-        if not self.puntos or self.bloqueos():
+        if not self.puntos:
+            return False
+        if any(not b.diferido_por_alcance for _, b in self.bloqueos()):
             return False
         return all(i.dimensionado and not i.incumplidas() for i in self.puntos)
 
@@ -518,6 +551,84 @@ def _resolver_tw(informe: InformePunto,
     return DatoDeclarado("TW_m", tw, f"criterio '{CRITERIO_TW}'")
 
 
+def _diferir_verificacion(informe: InformePunto, codigo: str,
+                          exc: ErrorProyecto, ya_registrados: set) -> None:
+    """
+    Anota una verificacion diferida al expediente por alcance, UNA vez por
+    causa: MD llama al verificador en cada escalon (material x D) y la misma
+    V5 fallaria identica en todos; repetir la fila no anade informacion.
+    """
+    etapa = (f"verificacion {codigo} diferida al expediente "
+             f"(alcance {ALCANCE_PERFIL})")
+    bloqueo = replace(_bloqueo(FASE_DISENO, etapa, exc),
+                      diferido_por_alcance=True)
+    clave = (codigo, bloqueo.tipo, bloqueo.criterio, bloqueo.campo)
+    if clave in ya_registrados:
+        return
+    ya_registrados.add(clave)
+    informe.bloqueos.append(bloqueo)
+
+
+def _verificador_perfil(informe: InformePunto):
+    """
+    La Fase 5 al alcance de perfil: las nueve verificaciones de M5, en el
+    orden de la tabla, con V5 y V8 DIFERIDAS al expediente.
+
+    - Obligatorias (deciden si el diametro se acepta): V1, V2, V3, V4, V6,
+      V7 y V9. Corren exactamente como en M5.verificar y sus excepciones
+      suben igual: un criterio vacio en una obligatoria sigue bloqueando el
+      material (y, por la regla de MD, el punto).
+    - Diferidas: V5 (remanso / derecho de via) y V8 (evento extremo). Se
+      INTENTAN igual en cada escalon -- si algun dia su logica existe y
+      devuelven una Verificacion, entra a la tabla en su posicion y vuelve a
+      decidir --; mientras lancen ErrorProyecto, el fallo se registra como
+      bloqueo diferido con su clave/concepto/fuente y el punto sigue
+      dimensionandose. Sus motivos son datos del EXPEDIENTE (perfil de
+      remanso, derecho de via, TR de evento extremo), que es exactamente lo
+      que el alcance de perfil difiere.
+
+    Vive aqui y no en M5 a proposito: M5 declara QUE exige la Fase 5 completa
+    y no sabe de alcances; la decision de diferir es de la corrida, y entra
+    por el parametro `verificar` que MD ya expone.
+
+    MINA DELIBERADA (no desactivar): `M5.v8_evento_extremo` termina en
+    `raise AssertionError` en cuanto 'TR_evento_extremo' tenga valor -- el
+    criterio tendria dato pero la LOGICA de V8 no esta escrita. Aqui solo se
+    captura ErrorProyecto, de modo que esa AssertionError PROPAGA y tumba la
+    corrida con su traza: es un modulo incompleto, no un asunto de alcance, y
+    diferirlo lo escondería. Antes de declarar ese criterio hay que escribir
+    el cuerpo de la funcion. (La mina hermana, `M8.seleccionar_clase_calibre`
+    con 'clases_producto_por_relleno', esta documentada donde se salta la
+    Fase 8 en `correr_punto`.)
+    """
+    ya_registrados: set = set()
+
+    def verificar(*, punto: PuntoCritico, material, D: float, resultado):
+        filas: List[Verificacion] = [
+            M5.v1_borde_libre(D=D, resultado=resultado),
+            M5.v2_velocidad_minima(resultado=resultado),
+            M5.v3_velocidad_maxima(material=material, resultado=resultado),
+            M5.v4_carga_entrada(punto=punto, resultado=resultado),
+        ]
+        try:
+            filas.append(M5.v5_remanso(punto=punto, resultado=resultado))
+        except ErrorProyecto as exc:
+            _diferir_verificacion(informe, "V5", exc, ya_registrados)
+        filas.extend([
+            M5.v6_material_solido_arrastre(),
+            M5.v7_flotacion(punto=punto, material=material, D=D,
+                            resultado=resultado),
+        ])
+        try:
+            filas.append(M5.v8_evento_extremo(punto=punto, resultado=resultado))
+        except ErrorProyecto as exc:
+            _diferir_verificacion(informe, "V8", exc, ya_registrados)
+        filas.append(M5.v9_disponibilidad_diametro(D=D, material=material))
+        return tuple(filas)
+
+    return verificar
+
+
 def _fase_2(informe: InformePunto, externos: DatosExternos) -> bool:
     """
     Clasificacion y TR. Devuelve False si el punto no sigue: sin luz no se
@@ -548,14 +659,23 @@ def _fase_2(informe: InformePunto, externos: DatosExternos) -> bool:
                   lambda: exigir_alcance(informe.clasificacion)) is not None
 
 
-def _fase_diseno(informe: InformePunto, externos: DatosExternos) -> None:
-    """Fases 3-5: MD recorre materiales y diametros hasta que uno pase V1-V9."""
+def _fase_diseno(informe: InformePunto, externos: DatosExternos,
+                 alcance: str = ALCANCE_EXPEDIENTE) -> None:
+    """
+    Fases 3-5: MD recorre materiales y diametros hasta que uno pase la Fase 5.
+
+    Con alcance de expediente la Fase 5 es la de M5 completa (V1-V9). Con
+    alcance de perfil se inyecta `_verificador_perfil`, que difiere V5 y V8
+    al expediente y deja las otras siete como obligatorias.
+    """
     punto = informe.punto
     informe.longitud = _resolver_longitud(informe, externos)
     informe.tw = _resolver_tw(informe, externos)
     if informe.longitud is None or informe.tw is None:
         return
 
+    verificar = (_verificador_perfil(informe)
+                 if alcance == ALCANCE_PERFIL else None)
     Q = externos.valor(punto.id, "Q_m3s")
     S = externos.valor(punto.id, "S_conducto")
     # `informe.traza.append` es el observador de MD: los escalones quedan
@@ -565,6 +685,7 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos) -> None:
         informe.bloqueos, FASE_DISENO, "material y diametro (bucle de MD)",
         lambda: disenar_punto(punto, L=informe.longitud.valor,
                               TW=informe.tw.valor, Q=Q, S=S,
+                              verificar=verificar,
                               registrar=informe.traza.append))
 
     if informe.resultado is not None and not informe.resultado.aceptado:
@@ -643,20 +764,55 @@ def _fase_10(informe: InformePunto, externos: DatosExternos) -> None:
         lambda: espaciamiento_alivio(L_hidraulico))
 
 
-def correr_punto(punto: PuntoCritico, externos: DatosExternos) -> InformePunto:
+def _diferir_fase_8(informe: InformePunto) -> None:
+    """
+    Constancia del salto de la Fase 8 en alcance de perfil. La etapa completa
+    queda disponible, sin cambios, con --alcance expediente.
+
+    MINA DELIBERADA (no desactivar): `M8.seleccionar_clase_calibre` termina
+    en `raise AssertionError` en cuanto 'clases_producto_por_relleno' tenga
+    valor -- el criterio tendria dato pero la tabla de la norma de producto
+    no esta transcrita ni la logica escrita. En alcance de perfil esta guarda
+    nunca se alcanza porque la Fase 8 no corre; NO por eso deja de ser
+    necesaria: antes de declarar ese criterio hay que escribir el cuerpo de
+    la funcion. Igual que su hermana `M5.v8_evento_extremo` con
+    'TR_evento_extremo' (documentada en `_verificador_perfil`).
+    """
+    informe.bloqueos.append(Bloqueo(
+        fase=FASE_ESTRUCTURAL,
+        etapa=f"Fase 8 completa diferida al expediente (alcance {ALCANCE_PERFIL})",
+        tipo="DiferidoPorAlcance",
+        mensaje=("clase o calibre por norma de producto (items 1-2) y cama "
+                 "de apoyo (item 4) no se ejecutan en alcance de perfil: son "
+                 "verificacion estructural del conducto, que la hoja de ruta "
+                 "difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al "
+                 "expediente la verificacion detallada'). Disponibles sin "
+                 "cambios con --alcance expediente"),
+        diferido_por_alcance=True))
+
+
+def correr_punto(punto: PuntoCritico, externos: DatosExternos,
+                 alcance: str = ALCANCE_EXPEDIENTE) -> InformePunto:
     """
     El pipeline de un punto, de la Fase 2 a la Fase 10. Cada etapa corre si su
     insumo existe; si no, queda registrada como bloqueo y las que no dependen
     de ella siguen (la Fase 10 no necesita el diametro, por ejemplo).
+
+    Con alcance de perfil, la Fase 5 difiere V5 y V8 (ver
+    `_verificador_perfil`) y la Fase 8 no se ejecuta: queda como bloqueo
+    diferido con su fundamento (ver `_diferir_fase_8`).
     """
     informe = InformePunto(punto=punto)
 
     if _fase_2(informe, externos):
-        _fase_diseno(informe, externos)
+        _fase_diseno(informe, externos, alcance)
         if informe.dimensionado:
             _fase_6(informe)
             _fase_7(informe)
-            _fase_8(informe)
+            if alcance == ALCANCE_PERFIL:
+                _diferir_fase_8(informe)
+            else:
+                _fase_8(informe)
     _fase_10(informe, externos)
     return informe
 
@@ -707,19 +863,45 @@ def correr_cabezal() -> InformeCabezal:
     return informe
 
 
-def correr(ruta_csv: Path, externos: DatosExternos) -> Informe:
+def _cabezal_diferido() -> InformeCabezal:
+    """La Fase 9 entera como diferida por alcance, con su constancia."""
+    informe = InformeCabezal()
+    informe.bloqueos.append(Bloqueo(
+        fase=FASE_CABEZAL,
+        etapa=f"Fase 9 completa diferida al expediente (alcance {ALCANCE_PERFIL})",
+        tipo="DiferidoPorAlcance",
+        mensaje=("cadena sismica, Mononobe-Okabe, predimensionamiento, "
+                 "recubrimientos y cuantias del cabezal no se ejecutan en "
+                 "alcance de perfil: dependen de datos del expediente "
+                 "(ensayos de fundacion y relleno del Tablero 3 y criterios "
+                 "C.3) y de la estabilidad E1-E5 que la propia Fase 9 remite "
+                 "al expediente. Disponibles sin cambios con --alcance "
+                 "expediente"),
+        diferido_por_alcance=True))
+    return informe
+
+
+def correr(ruta_csv: Path, externos: DatosExternos,
+           alcance: str = ALCANCE_EXPEDIENTE) -> Informe:
     """
     Corre el expediente completo: M0 carga el CSV y cada punto recorre el
     pipeline; la Fase 9 corre una vez para el proyecto.
+
+    `alcance` es la bifurcacion declarada de la corrida (--alcance):
+    "expediente" (defecto) corre todo como siempre; "perfil" difiere V5, V8,
+    la Fase 8 y la Fase 9 al expediente, dejando constancia de cada uno.
 
     M0 no se protege con `_etapa`: si el CSV no se puede cargar no hay
     expediente que informar, y la excepcion sale al `main`.
     """
     puntos = cargar_puntos(ruta_csv)
     informe = Informe(csv=ruta_csv,
-                      generado=datetime.now(timezone.utc).isoformat(timespec="seconds"))
-    informe.puntos = [correr_punto(punto, externos) for punto in puntos]
-    informe.cabezal = correr_cabezal()
+                      generado=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                      alcance=alcance)
+    informe.puntos = [correr_punto(punto, externos, alcance)
+                      for punto in puntos]
+    informe.cabezal = (_cabezal_diferido() if alcance == ALCANCE_PERFIL
+                       else correr_cabezal())
 
     _avisar_ids_desconocidos(informe, externos)
     return informe
@@ -781,6 +963,7 @@ def _bloqueo_json(bloqueo: Bloqueo) -> Dict[str, Any]:
             "concepto": bloqueo.concepto, "fuente": bloqueo.fuente,
             "campo": bloqueo.campo,
             "delta_rasante_m": _num(bloqueo.delta_rasante_m),
+            "diferido_por_alcance": bloqueo.diferido_por_alcance,
             "mensaje": bloqueo.mensaje}
 
 
@@ -922,6 +1105,14 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
             "puntos": len(informe.puntos),
             "dimensionados": informe.dimensionados,
             "cerrado": informe.cerrado},
+        # Constancia del alcance de la corrida (no cosmetica: es la
+        # declaracion que la memoria necesita). "cerrado" de arriba se lee AL
+        # ALCANCE declarado aqui: lo diferido no cuenta como bloqueo, pero
+        # queda listado entero, con su fundamento, en "diferidos".
+        "alcance": {
+            "nivel": informe.alcance,
+            "diferidos": [{"punto": id_punto, **_bloqueo_json(b)}
+                          for id_punto, b in informe.diferidos()]},
         "puntos": [_punto_json(p) for p in informe.puntos],
         "cabezal": _cabezal_json(informe.cabezal),
         "datos_sitio": {
@@ -1102,16 +1293,51 @@ def _lineas_criterios_bloqueantes(informe: Informe) -> List[str]:
     return out
 
 
+def _lineas_alcance(informe: Informe) -> List[str]:
+    """
+    La declaracion de alcance de la corrida. En alcance de expediente basta
+    la linea; en alcance de perfil se lista TODO lo diferido con su
+    fundamento: es la constancia que la memoria de tesis necesita para que
+    "cerrado" no se lea como "expediente completo".
+    """
+    out = _titulo("ALCANCE DE LA CORRIDA")
+    out.append(f"Alcance declarado: {informe.alcance} (bandera --alcance; "
+               f"por defecto {ALCANCE_EXPEDIENTE})")
+    diferidos = informe.diferidos()
+    if not diferidos:
+        out.append("Ninguna etapa diferida por alcance: la corrida ejecuto "
+                   "el pipeline completo.")
+        return out
+    out.append("Diferido al expediente por alcance (registrado con su "
+               "fundamento; NO cuenta como bloqueo para el cierre):")
+    for id_punto, b in diferidos:
+        donde = id_punto if id_punto is not None else "proyecto"
+        out.append(f"{SANGRIA}[{donde}] {b.fase}")
+        out.append(f"{SANGRIA * 2}{b.etapa}")
+        if b.criterio:
+            out.append(f"{SANGRIA * 2}falta declarar: {b.criterio} "
+                       f"[{b.etiqueta}] - {b.concepto}")
+            out.append(f"{SANGRIA * 2}fuente: {b.fuente}")
+        else:
+            out.append(f"{SANGRIA * 2}{b.mensaje}")
+    return out
+
+
 def _lineas_resumen(informe: Informe) -> List[str]:
     total = len(informe.puntos)
     incumplidas = sum(len(i.incumplidas()) for i in informe.puntos)
-    bloqueos = len(informe.bloqueos())
+    diferidos = len(informe.diferidos())
+    bloqueos = len(informe.bloqueos()) - diferidos
     out = _titulo("RESUMEN")
     out.append(f"CSV                     : {informe.csv}")
+    out.append(f"Alcance de la corrida   : {informe.alcance}")
     out.append(f"Puntos del expediente   : {total}")
     out.append(f"Puntos dimensionados    : {informe.dimensionados}")
     out.append(f"Verificaciones incumplidas: {incumplidas}")
     out.append(f"Etapas bloqueadas       : {bloqueos}")
+    if diferidos:
+        out.append(f"Diferidas por alcance   : {diferidos} (ver ALCANCE DE "
+                   "LA CORRIDA; no cuentan para el cierre)")
     out.append(f"Expediente cerrado      : {'si' if informe.cerrado else 'no'}")
     if not informe.cerrado:
         out.append("")
@@ -1131,6 +1357,8 @@ def volcar(informe: Informe, con_criterios: bool = False) -> str:
         lineas.extend(_lineas_punto(punto))
         lineas.append("")
     lineas.extend(_lineas_cabezal(informe.cabezal))
+    lineas.append("")
+    lineas.extend(_lineas_alcance(informe))
     lineas.append("")
     lineas.extend(_lineas_criterios_bloqueantes(informe))
     lineas.extend(_lineas_resumen(informe))
@@ -1186,6 +1414,14 @@ def _parser() -> argparse.ArgumentParser:
                         "3) en esa ruta, como CSV")
     p.add_argument("--proyecto", default="",
                    help="nombre del proyecto que encabeza la memoria")
+    p.add_argument("--alcance", choices=(ALCANCE_PERFIL, ALCANCE_EXPEDIENTE),
+                   default=ALCANCE_EXPEDIENTE,
+                   help="alcance de la corrida. 'expediente' (defecto): el "
+                        "pipeline completo, como siempre. 'perfil': V5 y V8 "
+                        "se intentan pero su fallo se difiere al expediente, "
+                        "y las Fases 8 y 9 no se ejecutan; todo lo diferido "
+                        "queda registrado con su fundamento y no cuenta para "
+                        "el cierre")
     return p
 
 
@@ -1198,7 +1434,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "categoria_tr": args.categoria_tr}
     try:
         externos = cargar_datos_externos(args.datos_externos, banderas)
-        informe = correr(args.csv, externos)
+        informe = correr(args.csv, externos, alcance=args.alcance)
     except (OSError, json.JSONDecodeError) as exc:
         print(f"No se pudo leer la entrada: {exc}", file=sys.stderr)
         return 2
