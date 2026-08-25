@@ -177,15 +177,34 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
 def v3_velocidad_maxima(*, material: Material,
                         resultado: ResultadoHidraulico) -> Verificacion:
     """
-    Concreto: rango [N] de la Tabla N 10, ya resuelto por M2 en
-    `material.v_max_rango` (3.0-6.0 m/s) -- se verifican los DOS extremos,
-    tal como los da la tabla.
+    V3 verifica UN SOLO extremo: el techo. V <= v_max.
+
+    Materiales de la Tabla N 10 (concreto, ladrillo con concreto, mamposteria
+    de piedra): M2 trae el par en `material.v_max_rango`, pero los DOS
+    numeros del par son velocidades MAXIMAS -- la tabla se titula
+    "Velocidades maximas admisibles en conductos revestidos" (num. 4.1.1.3.6,
+    pag. 76) y el rango recorre la calidad del revestimiento, no un piso y un
+    techo. El extremo inferior es el maximo admisible del acabado mas pobre;
+    exigirlo como MINIMO era leer la tabla al reves.
+
+    Ese error tenia consecuencia real: rechazaba por V3 un conducto de
+    concreto a 1.5 m/s, que es una velocidad perfectamente admisible y que
+    cumple de sobra el unico piso que la norma fija. Porque el piso existe y
+    es otro: **V2**, autolimpieza, V >= 0.25 m/s, declarado aparte en la misma
+    pagina y aplicable a todos los materiales por igual. Un segundo piso, mas
+    alto y por material, no lo respalda ningun numeral.
+
+    Se toma el extremo SUPERIOR del par como admisible. Es el techo del
+    revestimiento de mejor calidad; adoptar uno mas bajo dentro del rango es
+    una decision del proyectista y no una exigencia de la tabla (ver
+    'v_max_concreto_eleccion' en criterios_adoptados.py).
 
     TMC y HDPE: la Tabla N 10 no los cubre (Tablero 1.3). El valor sale de
     `criterios_adoptados.valor('v_max_tmc' | 'v_max_hdpe')`, que hoy es None
     y por lo tanto lanza `CriterioPendienteError` -- V3 no puede evaluarse
     para estos materiales hasta que se extraiga el numero de PPI/FHWA. No es
-    un fallo de este modulo: es el vacio que la hoja de ruta declara.
+    un fallo de este modulo: es el vacio que la hoja de ruta declara. Esos
+    criterios ya eran un techo escalar, de modo que esta rama no cambia.
     """
     if material.tipo in CRITERIO_V_MAX:
         clave = CRITERIO_V_MAX[material.tipo]
@@ -199,14 +218,14 @@ def v3_velocidad_maxima(*, material: Material,
             codigo="V3",
         )
 
-    v_min, v_max = material.v_max_rango
-    cumple = (v_min - TOL_UMBRAL_NORMATIVO <= resultado.V
-             <= v_max + TOL_UMBRAL_NORMATIVO)
+    # Solo el techo: el par de la Tabla N 10 son dos MAXIMOS, no un piso y un
+    # techo (ver el docstring). El extremo inferior no se verifica.
+    _, v_max = material.v_max_rango
     return Verificacion(
-        cumple=cumple,
+        cumple=resultado.V <= v_max + TOL_UMBRAL_NORMATIVO,
         numeral=NUMERAL_V3,
         valor_obtenido=resultado.V,
-        valor_admisible=(v_min, v_max),
+        valor_admisible=v_max,
         criterio_aplicado=None,          # [N] puro, Tabla N 10
         codigo="V3",
     )

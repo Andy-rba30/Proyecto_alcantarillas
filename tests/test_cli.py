@@ -619,15 +619,16 @@ def test_perfil_cerrado_devuelve_exit_cero(tmp_path, monkeypatch, capsys):
     """
     2.c: un expediente de perfil con todos sus puntos dimensionados y sin
     bloqueos REALES cierra y main devuelve 0; los diferidos por alcance no
-    cuentan. Se usa B-01 solo, cerrando en HDPE: es el unico material cuyo
-    recubrimiento minimo es [N] (EG-2013 508.07/508.08) y deja pasar la Fase
-    7 sin declarar 'h_relleno_min_concreto_tmc' (los puntos de concreto/TMC
-    quedan ahi bloqueados de verdad, tambien en perfil). El v_max_tmc bajo
-    fuerza el descarte HONESTO del TMC -- evaluado e incumplido, no saltado.
+    cuentan. Se usa B-01 solo, que cierra en concreto a V = 1.96 m/s con
+    'h_relleno_min_concreto_tmc' declarado para que la Fase 7 no lo bloquee.
+
+    Esa velocidad es justamente la que la correccion de V3 legitimo: mientras
+    V3 leia el par de la Tabla N 10 como piso y techo, 1.96 m/s se rechazaba
+    por "bajo el minimo" y el concreto se descartaba en todo su catalogo. El
+    piso real lo pone V2 (0.25 m/s) y esta velocidad lo cumple de sobra.
     """
-    _declarar(monkeypatch, v_max_tmc=1.0,
-              **{k: v for k, v in CRITERIOS_CORRIDA_PERFIL.items()
-                 if k != "v_max_tmc"})
+    _declarar(monkeypatch, h_relleno_min_concreto_tmc=0.60,
+              **CRITERIOS_CORRIDA_PERFIL)
     lineas = CSV.read_text(encoding="utf-8").strip().splitlines()
     solo_b01 = tmp_path / "solo_b01.csv"
     solo_b01.write_text("\n".join([lineas[0]] + [

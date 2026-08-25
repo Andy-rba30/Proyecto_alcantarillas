@@ -452,7 +452,7 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 | **V1** | Borde libre | Mínimo **25 % de altura, diámetro o flecha** → **y/D ≤ 0.75** | [N] 4.1.1.3.7 b), pág. 79 |
 | **V2** | Velocidad mínima | **V ≥ 0.25 m/s** | [N] 4.1.1.3.6, pág. 75 |
 | **V2b** | Sedimentación / colmatación | Material sólido de arrastre + **acceso de mantenimiento en planos** | [N] + [A] |
-| **V3** | Velocidad máxima | Concreto **3.0–6.0 m/s**; ladrillo 2.5–3.5; mampostería 2.0. **TMC y HDPE: PPI/FHWA, valor por extraer** | [N] Tabla Nº 10 / [C] |
+| **V3** | Velocidad máxima | **Solo techo admisible.** Concreto **V ≤ 6.0 m/s**; ladrillo con concreto **V ≤ 3.5**; mampostería de piedra **V ≤ 2.0**. El par de la Tabla Nº 10 es un rango de valores MÁXIMOS según calidad del revestimiento, **no** un piso y un techo: el extremo inferior es el máximo admisible del acabado más pobre, y V3 no lo exige como mínimo. El piso universal de autolimpieza es **V2** (0.25 m/s). **TMC y HDPE: PPI/FHWA, valor por extraer** | [N] Tabla Nº 10, num. 4.1.1.3.6, pág. 76 / [C] |
 | **V4** | Carga a la entrada HW | **HW ≤ cota de subrasante − resguardo(CBR)** | **[N→]** ver 5.1 |
 | **V4b** | Relación HW/D | 1.2 – 1.5 | **[C]** |
 | **V5** | Remanso aguas arriba | Embalse dentro del **derecho de vía**, sin afectación a terceros ni a faja marginal | [N] DG-2018 + Ley 29338 |
@@ -764,12 +764,15 @@ MANNING = {                         # Tabla N 09: (n_min, n_max)
 }
 # n_max -> capacidad y tirante ; n_min -> velocidad y socavacion
 
-V_MAX = {                           # Tabla N 10
+V_MAX = {         # Tabla N 10 "Velocidades maximas admisibles" (4.1.1.3.6, pag. 76)
     "concreto":            (3.0, 6.0),
     "ladrillo_c_concreto": (2.5, 3.5),
     "mamposteria_piedra":  (2.0, 2.0),
     # TMC y HDPE no listados -> criterios_adoptados
 }
+# Los DOS extremos son velocidades MAXIMAS (rango por calidad del
+# revestimiento), no un piso y un techo. V3 verifica solo el superior; el
+# minimo de autolimpieza es V2 = 0.25 m/s (misma pagina) y vale para todos.
 
 LONG_MAX_CUNETA = {"seca": 250.0, "muy_lluviosa": 200.0}   # m (4.1.2.1 d)
 

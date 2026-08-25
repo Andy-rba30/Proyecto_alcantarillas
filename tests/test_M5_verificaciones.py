@@ -141,11 +141,16 @@ def test_v2_incumple_bajo_el_piso():
 # V3 - Velocidad maxima
 # ===========================================================================
 
-def test_v3_concreto_cumple_dentro_del_rango(concreto):
+def test_v3_concreto_verifica_solo_el_techo(concreto):
+    """
+    El admisible que V3 publica es UN escalar -- el extremo superior de la
+    Tabla N 10 -- no el par. Si vuelve a salir la tupla, alguien restauro la
+    lectura de piso+techo que esta correccion elimino.
+    """
     v = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=4.5))
     assert v.cumple
     assert v.codigo == "V3"
-    assert v.valor_admisible == pytest.approx((3.0, 6.0))
+    assert v.valor_admisible == pytest.approx(6.0)
     assert v.criterio_aplicado is None
 
 
@@ -154,10 +159,30 @@ def test_v3_concreto_incumple_sobre_el_maximo(concreto):
     assert not v.cumple
 
 
-def test_v3_concreto_incumple_bajo_el_minimo(concreto):
-    """El rango de la Tabla N 10 es de dos lados: 3.0-6.0, no solo un techo."""
+def test_v3_concreto_cumple_bajo_el_extremo_inferior(concreto):
+    """
+    1.0 m/s en concreto CUMPLE V3.
+
+    Los dos numeros de la Tabla N 10 son velocidades maximas (el titulo de la
+    tabla, num. 4.1.1.3.6 pag. 76, es "Velocidades maximas admisibles en
+    conductos revestidos"): el rango recorre la calidad del revestimiento, no
+    un piso y un techo. Antes esta misma velocidad se rechazaba por V3, que
+    era exigir un segundo piso, por material y mas alto que el normativo, sin
+    numeral que lo sostenga. El piso lo pone V2 y son 0.25 m/s.
+    """
     v = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=1.0))
-    assert not v.cumple
+    assert v.cumple
+
+
+def test_v3_bajo_el_rango_lo_sigue_atrapando_v2_si_toca(concreto):
+    """
+    La contraparte que evita que el fix abra un agujero: por debajo de 0.25
+    m/s el conducto sigue rechazandose, pero por V2 y con SU numeral, que es
+    donde la norma pone el piso de autolimpieza.
+    """
+    lento = _resultado(V=0.10)
+    assert v3_velocidad_maxima(material=concreto, resultado=lento).cumple
+    assert not v2_velocidad_minima(resultado=lento).cumple
 
 
 @pytest.mark.parametrize("material_fixture, clave", [

@@ -58,7 +58,13 @@ MANNING = {                         # Tabla N 09: (n_min, n_max)
 }
 # n_max -> capacidad y tirante ; n_min -> velocidad y socavacion
 
-V_MAX = {                           # Tabla N 10
+# Tabla N 10, "Velocidades maximas admisibles en conductos revestidos"
+# (num. 4.1.1.3.6, pag. 76). Los DOS numeros de cada fila son velocidades
+# MAXIMAS: el rango recorre la calidad del revestimiento y el extremo inferior
+# es el maximo admisible del acabado mas pobre. NO es (piso, techo). V3
+# verifica solo el superior; el piso de autolimpieza es V_MIN, aparte y para
+# todos los materiales. La transcripcion no cambia: cambia como se lee.
+V_MAX = {
     "concreto":            (3.0, 6.0),
     "ladrillo_c_concreto": (2.5, 3.5),
     "mamposteria_piedra":  (2.0, 2.0),

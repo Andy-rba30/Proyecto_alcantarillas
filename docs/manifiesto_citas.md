@@ -95,13 +95,34 @@ Es el documento con más citas del proyecto y el que gobierna las Fases 2 a 6.
 | Catálogo de diámetros arranca en 0.90 m "mínimo normativo MTC" | num. 4.1.1.3.4 a) | Manual de Hidrología | [M2:58](src/modulos/M2_material.py:58) | [N] |
 | `NUMERAL_V1 = "4.1.1.3.7 b)"` (V1, borde libre y/D ≤ 0.75) | 4.1.1.3.7 b) | Manual de Hidrología | [M5:106](src/modulos/M5_verificaciones.py:106) | [N] |
 | `NUMERAL_V2 = "4.1.1.3.6"` (V2, V ≥ 0.25 m/s) | 4.1.1.3.6 | Manual de Hidrología | [M5:107](src/modulos/M5_verificaciones.py:107) | [N] |
-| `NUMERAL_V3 = "Tabla Nº 10 (num. 4.1.1.3.6)"` (V3, velocidad máxima) | Tabla N° 10, num. 4.1.1.3.6 | Manual de Hidrología | [M5:108](src/modulos/M5_verificaciones.py:108) | [N] |
+| `NUMERAL_V3 = "Tabla Nº 10 (num. 4.1.1.3.6)"` (V3, velocidad máxima) — **solo se verifica el extremo SUPERIOR**, ver la nota al pie de esta sección | Tabla N° 10, num. 4.1.1.3.6, pág. 76 | Manual de Hidrología | [M5:108](src/modulos/M5_verificaciones.py:108) | [N] |
 | ⟳ `NUMERAL_LAUSHEY = "4.1.1.3.7 c)"`; d50 = V²/(K·G_LAUSHEY), pág. 80 | 4.1.1.3.7 c) | Manual de Hidrología | [M6:6](src/modulos/M6_proteccion.py:6), [M6:42](src/modulos/M6_proteccion.py:42) | [N] |
 | `NUMERAL_FASE_10 = "Fase 10 (num. 4.1.2.1 d), pag. 178)"` | 4.1.2.1 d), pág. 178 | Manual de Hidrología | [M10:9](src/modulos/M10_espaciamiento.py:9), [M10:61](src/modulos/M10_espaciamiento.py:61) | [N] |
 | `n_manning_hdpe = (0.010, 0.013)` — rango del concreto por analogía | "Analogía a Tabla N° 09 (concreto, tubo recto)" | Manual de Hidrología (analogía) | [CA:485](src/criterios_adoptados.py:485) | [A] |
 | `v_max_concreto_eleccion = None` — elección dentro del rango 3.0–6.0 | Tabla N° 10 (num. 4.1.1.3.6): el rango es [N], la elección no está normada | Manual de Hidrología | [CA:523](src/criterios_adoptados.py:523) | [A] |
 | `long_max_cuneta = 200.0` m (se adopta la fila "muy lluviosa" por FEN) | num. 4.1.2.1 d), pág. 178 | Manual de Hidrología | [CA:639](src/criterios_adoptados.py:639) | [A] |
 | `umbral_area_quebrada_importante_ha = None` — **afirmación negativa formalizada [A]**: la Tabla N° 02 da R y n por categoría y el Manual **no fija ninguna regla de asignación física** (área, caudal, longitud ni orden de cauce) para clasificar una quebrada. No es [C] porque no hay fuente técnica que cubra el vacío: el vacío está en la norma | Tabla N° 02 (num. 3.6) | Manual de Hidrología | [CA:452](src/criterios_adoptados.py:452) | [A] |
+
+> **Nota sobre `NUMERAL_V3` y la Tabla N° 10 — qué extremo se verifica.**
+> La tabla se titula **"Velocidades máximas admisibles en conductos
+> revestidos"** (num. 4.1.1.3.6, **pág. 76**). Los **dos** números de cada
+> fila —concreto (3.0, 6.0), ladrillo con concreto (2.5, 3.5), mampostería de
+> piedra (2.0, 2.0)— son velocidades **máximas**: el rango recorre la calidad
+> del revestimiento, y el extremo inferior es el máximo admisible del acabado
+> más pobre. **No es un piso.** Por eso `M5.v3_velocidad_maxima` verifica
+> únicamente `V ≤ v_max` y publica como `valor_admisible` un escalar, no el
+> par.
+>
+> El piso de velocidad existe y está fijado **aparte**, en el párrafo
+> siguiente a la tabla de esa misma página: **0.25 m/s** de autolimpieza,
+> aplicable por igual a todos los materiales. Eso es **V2**
+> (`NUMERAL_V2 = "4.1.1.3.6"`), y no una regla adicional de V3.
+>
+> **Qué estaba mal antes.** V3 exigía `v_min ≤ V ≤ v_max`, es decir un segundo
+> piso —por material y muy por encima del normativo— sin numeral que lo
+> sostuviera: un conducto de concreto a 1.5 m/s se rechazaba por V3 aunque
+> cumpliera V2 seis veces. La **transcripción** de `V_MAX` en la §1 nunca
+> estuvo mal y no se ha tocado; el defecto estaba en cómo M5 la consumía.
 
 > **Nota sobre `NUMERAL_MANNING = "4.1"`** ([M3:100](src/modulos/M3_hidraulica.py:100)):
 > es la **Sec. 4.1 de la hoja de ruta**, no un numeral del Manual MTC. Lo mismo
