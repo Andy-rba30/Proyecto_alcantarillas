@@ -30,6 +30,7 @@ from modelos import (CondicionRasante, ControlGobernante, CriterioPendienteError
 from modulos.M2_material import catalogo
 from modulos.M5_verificaciones import v4_carga_entrada
 from modulos.M7_geometria import (CRITERIO_TALUD, altura_recubrimiento,
+                                  criterio_recubrimiento,
                                   altura_terraplen, compatibilidad_geometrica,
                                   cota_clave, cota_salida, espesor_paquete,
                                   factor_esviaje, g1_rasante_congelada,
@@ -111,15 +112,31 @@ def test_h_recubrimiento_del_hdpe_es_el_valor_N_de_eg2013(hdpe):
     assert altura_recubrimiento(hdpe) == pytest.approx(H_REC_HDPE)
 
 
-def test_h_recubrimiento_de_concreto_se_detiene_en_el_criterio_vacio(concreto):
+def test_h_recubrimiento_de_concreto_es_el_0_30_adoptado_por_analogia(concreto):
     """
-    EG-2013 no fija h_rec para concreto ni TMC: remite al Proyecto y a la
-    norma de producto. M2 deja el campo en None y el vacio detiene el calculo
-    aqui, que es donde el numero haria falta.
+    EG-2013 no fija h_rec para concreto ni TMC -- vacio VERIFICADO, Sec. 14.a
+    del manifiesto. Se adopta el 0.30 m que 508.07 si fija para HDPE, por
+    analogia [N->] y a nivel de perfil: el HDPE es el material con menor
+    tolerancia a cobertura reducida, de modo que exigir su recubrimiento al
+    concreto y al TMC no queda del lado inseguro.
+
+    Antes esto lanzaba CriterioPendienteError y dejaba al HDPE como unico
+    material capaz de completar diseno, que no era un resultado de ingenieria
+    sino el efecto de un vacio documental.
     """
-    with pytest.raises(CriterioPendienteError) as exc:
-        altura_recubrimiento(concreto)
-    assert exc.value.clave == "h_relleno_min_concreto_tmc"
+    assert altura_recubrimiento(concreto) == pytest.approx(0.30)
+    assert altura_recubrimiento(concreto) == pytest.approx(H_REC_HDPE)
+
+
+def test_el_recubrimiento_adoptado_declara_su_procedencia_en_la_verificacion(concreto, hdpe):
+    """
+    Los dos materiales usan el mismo numero pero NO por la misma razon, y la
+    memoria tiene que poder distinguirlo: en HDPE es [N] leido de 508.07, en
+    concreto es la analogia [N->]. `criterio_recubrimiento` es lo que lleva
+    esa diferencia a la Verificacion de 7.B.
+    """
+    assert criterio_recubrimiento(hdpe) is None                 # [N] puro
+    assert criterio_recubrimiento(concreto) == "h_relleno_min_concreto_tmc"
 
 
 # ---------------------------------------------------------------------------

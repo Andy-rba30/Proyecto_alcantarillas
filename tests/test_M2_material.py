@@ -229,12 +229,20 @@ def test_la_declaracion_en_caliente_pisa_al_valor_del_archivo():
     assert catalogo(TipoMaterial.TMC).v_max_rango == ca.valor("v_max_tmc")
 
 
-def test_el_relleno_minimo_de_concreto_y_tmc_sigue_vacio():
-    """'h_relleno_min_concreto_tmc' esta sin valor: el catalogo lo refleja."""
+def test_el_relleno_minimo_de_concreto_y_tmc_es_el_0_30_adoptado():
+    """
+    'h_relleno_min_concreto_tmc' dejo de estar vacio: se adopto 0.30 m [N->]
+    por analogia con el unico valor que EG-2013 si fija (508.07, HDPE), sobre
+    el vacio verificado de Sec. 14.a del manifiesto. El catalogo lo refleja
+    para los DOS materiales -- el criterio no se partio, porque con un valor
+    compartido el split no aporta nada.
+    """
     concreto = catalogo(TipoMaterial.CONCRETO_REFORZADO)
     tmc = catalogo(TipoMaterial.TMC)
-    assert concreto.h_relleno_min is None
-    assert tmc.h_relleno_min is None
+    assert concreto.h_relleno_min == pytest.approx(0.30)
+    assert tmc.h_relleno_min == pytest.approx(0.30)
+    # Y es el MISMO numero que el [N] del HDPE: eso es la analogia.
+    assert catalogo(TipoMaterial.HDPE).h_relleno_min == pytest.approx(0.30)
 
 
 def test_un_material_desconocido_en_catalogo_es_invalido():

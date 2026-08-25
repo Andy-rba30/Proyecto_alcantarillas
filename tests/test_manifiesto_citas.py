@@ -36,11 +36,16 @@ REFERENCIA = re.compile(
 # y funciones de modulo, y las entradas de los diccionarios grandes
 # (CRITERIOS, MANNING, V_MAX...), que se citan fila por fila.
 DEFINICION = re.compile(
-    r"^(\s*)(?:def\s+([A-Za-z_]\w*)"
-    r"|class\s+([A-Za-z_]\w*)"
-    r"|([A-Z_][A-Z0-9_]*)\s*[:=]"
-    r"|\"([A-Za-z_]\w*)\"\s*:"
-    r"|([a-z_]\w*)\s*=)")
+    r"^(?:(\s*)(?:def|class)\s+([A-Za-z_]\w*)"          # def/class, a cualquier indentacion
+    r"|([A-Z_][A-Z0-9_]*)\s*[:=]"                        # CONSTANTE = ... (nivel de modulo)
+    r"|    \"([A-Za-z_]\w*)\"\s*:"                       # entrada de dict citada fila a fila
+    r"|([a-z_]\w*)\s*=(?!=))")                           # funcion/variable de modulo, columna 0
+
+# La ultima alternativa exige COLUMNA 0 a proposito. Sin eso, cada `valor=...`
+# dentro de un `Criterio(` contaba como definicion de un simbolo `valor` y
+# truncaba el bloque del criterio en su primera linea, de modo que una
+# referencia a su `fuente` o a su `justificacion` -- el caso legitimo que este
+# test dice admitir -- quedaba fuera del bloque y se reportaba como rota.
 
 
 # ---------------------------------------------------------------------------

@@ -175,9 +175,9 @@ Es el documento con más citas del proyecto y el que gobierna las Fases 2 a 6.
 | `NUMERAL_SUBPRESION = "Manual de Puentes num. 2.4.3.8.2"` (subpresión del cabezal) | 2.4.3.8.2 | Manual de Puentes | [M9:189](src/modulos/M9_cabezal.py:189), [M9:189](src/modulos/M9_cabezal.py:189) | [N] |
 | `presion_sobrecarga_trasdos()`: p = γ·0.60·k_a; aplica con tráfico a ≤ H/2 | num. 2.1.4.3.9 | Manual de Puentes | [M9:588](src/modulos/M9_cabezal.py:588), [M9:588](src/modulos/M9_cabezal.py:588) | [N] |
 | `n_q_zapata_en_talud()` = 0.0; N_c y N_γ **reemplazados** por N_cq y N_γq | num. 2.8.1.3.1.2c, págs. 272-273 | Manual de Puentes | [M9:1047](src/modulos/M9_cabezal.py:1047), [M9:1047-1049](src/modulos/M9_cabezal.py:1047) | [N] |
-| `N_cq_N_gammaq_meyerhof = None` — salen de **figuras**, no de tabla ni fórmula | figuras 2.8.1.3.1.2c-1 y 2.8.1.3.1.2c-2 (Meyerhof 1957), págs. 272-273 | Manual de Puentes | [CA:1398](src/criterios_adoptados.py:1398) | [A] |
-| `factores_carga_aashto = None` — el Manual nombra las combinaciones y no transcribe las Tablas 3.4.1-1/-2 | 2.4.5.3, págs. 140-143 | Manual de Puentes (vía AASHTO) | [CA:1289](src/criterios_adoptados.py:1289) | [A] |
-| `procedimiento_flexion_corte_aashto_sec5 = None` — remisión a AASHTO Sec. 5 | Manual de Puentes Sección 2.9, pág. 337 | Manual de Puentes (vía AASHTO) | [CA:1536](src/criterios_adoptados.py:1536), [M9:170](src/modulos/M9_cabezal.py:170), [M9:1333-1334](src/modulos/M9_cabezal.py:1333) | [A] |
+| `N_cq_N_gammaq_meyerhof = None` — salen de **figuras**, no de tabla ni fórmula | figuras 2.8.1.3.1.2c-1 y 2.8.1.3.1.2c-2 (Meyerhof 1957), págs. 272-273 | Manual de Puentes | [CA:1432](src/criterios_adoptados.py:1432) | [A] |
+| `factores_carga_aashto = None` — el Manual nombra las combinaciones y no transcribe las Tablas 3.4.1-1/-2 | 2.4.5.3, págs. 140-143 | Manual de Puentes (vía AASHTO) | [CA:1323](src/criterios_adoptados.py:1323) | [A] |
+| `procedimiento_flexion_corte_aashto_sec5 = None` — remisión a AASHTO Sec. 5 | Manual de Puentes Sección 2.9, pág. 337 | Manual de Puentes (vía AASHTO) | [CA:1570](src/criterios_adoptados.py:1570), [M9:170](src/modulos/M9_cabezal.py:170), [M9:1333-1334](src/modulos/M9_cabezal.py:1333) | [A] |
 | **Afirmación negativa**: AASHTO LRFD Sec. 12 NO está incorporada por el Manual de Puentes (difiere rigidez de anillo, pandeo y costura) | Sec. 12 de AASHTO, no incorporada | Manual de Puentes | [M8:35-36](src/modulos/M8_estructural.py:35), [M8:199-200](src/modulos/M8_estructural.py:199), [M8:209-210](src/modulos/M8_estructural.py:209) | [C] |
 | ↻ **Afirmación negativa, ahora con la evidencia de índice**: el Manual **nunca incorporó** la Sección 12 de AASHTO LRFD (*Buried Structures and Tunnel Liners*) — su índice **salta de 2.11** (Muros de Contención y Estribos) **a 2.12** (Disposiciones Constructivas). Vacío absoluto sobre conductos enterrados; ver §14 | índice: 2.11 → 2.12 (no existe el equivalente de la Sec. 12) | Manual de Puentes | [CA:1068-1073](src/criterios_adoptados.py:1068) | [C] |
 | ⚠ **TRAMPA DE VOCABULARIO — no usar este valor como altura de relleno**: el Manual sí usa la palabra "recubrimiento" para alcantarillas y da 2.0 in / 50 mm, pero ahí significa el **recubrimiento de concreto sobre el acero de refuerzo**, no la altura de relleno de tierra. Dos conceptos que comparten palabra en español y no tienen relación | Tabla 2.9.1.5.5.3-1, pág. 378 | Manual de Puentes | [CA:1073-1080](src/criterios_adoptados.py:1073) | — |
@@ -207,7 +207,7 @@ Toda la tabla de factores de seguridad de la Fase 9 sale de este documento.
 | `c_phi_fundacion = None` — la obligación de usar solo uno (φ=0 o c=0) | Art. 20 | E.050 | [CA:998](src/criterios_adoptados.py:998) | [A] |
 | `PERFIL_SUELO_PRESUNTO` — lo reemplaza el **SPT de licuefacción: ≥ 15 m, ensayos cada 1 m** | Art. 38 | E.050 | [CA:332](src/criterios_adoptados.py:332) | [S] |
 | `clase_sitio` — lo reemplazan el **estudio de respuesta de sitio específico** que AASHTO exige para la Clase F y la **caracterización sobre los 30 m superiores** (Vs30 o N̄). El SPT de 15 m **no lo cierra**: otra profundidad, otra pregunta | Art. 3.10.3.1 (AASHTO) / perfil de E.030 | AASHTO LRFD / E.030 | [CA:371](src/criterios_adoptados.py:371) | **[A]** (era [C]) |
-| `metodo_estabilidad_global = None` — **afirmación negativa**: E.050 fija el umbral, no el método | Art. 30.3 y num. 39.13.6 b) | E.050 | [CA:1429](src/criterios_adoptados.py:1429) | [A] |
+| `metodo_estabilidad_global = None` — **afirmación negativa**: E.050 fija el umbral, no el método | Art. 30.3 y num. 39.13.6 b) | E.050 | [CA:1463](src/criterios_adoptados.py:1463) | [A] |
 
 ---
 
@@ -226,7 +226,7 @@ recubrimientos** (Vía 1 de Sec. 0.2); el diseño estructural es de AASHTO.
 | `RECUBRIMIENTO`: contra suelo 70 mm; suelo/intemperie ≥ 3/4" 50 mm; ≤ 5/8" 40 mm | Art. 7.7.1, pág. 54 | E.060 | [CN:294-296](src/constantes_normativas.py:294), [M9:1162](src/modulos/M9_cabezal.py:1162) | [N] |
 | `AMBIENTE_CORROSIVO_AUMENTAR` — el artículo dice "aumentar adecuadamente" y **no fija cuánto** | Art. 7.7.5.1 | E.060 | [CN:297-300](src/constantes_normativas.py:297), [M9:1229](src/modulos/M9_cabezal.py:1229) | [N] |
 | `CUANTIA_MIN_MURO = {horizontal 0.0020, vertical 0.0015}` — **piso obligatorio**, aplicado como ρ_diseño = max(ρ_calculado, ρ_mínimo) en `M9.cuantia_de_diseno`. Que AASHTO gobierne el *dimensionamiento* (Vía 1, Sec. 0.2) no convierte el mínimo en informativo | Art. 14.3.1, pág. 133 | E.060 | [CN:317](src/constantes_normativas.py:317), [M9:1281](src/modulos/M9_cabezal.py:1281) | [N] |
-| `cortante_alto_muro_e060_art_11_10_10_2 = None` — **segundo mínimo de E.060**: escalón de la cuantía horizontal a 0.0025 bajo cortante alto. **Vacío declarado**, no omitido: M9 no calcula cortante (bloqueado en `procedimiento_flexion_corte_aashto_sec5`) y el artículo no está en la hoja de ruta | Art. 11.10.10.2 — **⚠ pendiente de recoger en la hoja de ruta** | E.060 | [CA:1484](src/criterios_adoptados.py:1484) | [A] |
+| `cortante_alto_muro_e060_art_11_10_10_2 = None` — **segundo mínimo de E.060**: escalón de la cuantía horizontal a 0.0025 bajo cortante alto. **Vacío declarado**, no omitido: M9 no calcula cortante (bloqueado en `procedimiento_flexion_corte_aashto_sec5`) y el artículo no está en la hoja de ruta | Art. 11.10.10.2 — **⚠ pendiente de recoger en la hoja de ruta** | E.060 | [CA:1518](src/criterios_adoptados.py:1518) | [A] |
 | `ESPESOR_TEMPERATURA_DOS_CARAS = 0.250` m (refuerzo en dos caras) | Art. 14.8.3 | E.060 | [CN:319-320](src/constantes_normativas.py:319), [M9:1358](src/modulos/M9_cabezal.py:1358) | [N] |
 | `ESPACIAMIENTO_MAX_VECES_ESPESOR = 3.0` (≤ 3h) | Art. 14.3.3 | E.060 | [CN:321](src/constantes_normativas.py:321), [M9:1276-1277](src/modulos/M9_cabezal.py:1276) | [N] |
 | `ESPACIAMIENTO_MAX_ABSOLUTO = 0.400` m (400 mm) | Art. 14.3.3 | E.060 | [CN:322-323](src/constantes_normativas.py:322) | [N] |
@@ -292,12 +292,12 @@ que falta traer del PDF.
 | `COMBINACIONES_AASHTO` — los tres **nombres** (Resistencia I, Servicio I, Evento Extremo I) | Sec. 3.4.1 (vía Manual de Puentes num. 2.4.5.3) | AASHTO LRFD | [CN:259-260](src/constantes_normativas.py:259), [M9:837](src/modulos/M9_cabezal.py:837) | [N] |
 | ~~`clase_sitio = "F_con_excepcion_periodo_corto"` — excepción para estructuras de periodo fundamental corto (≤ 0.5 s)~~ **CITA FALSA — RETIRADA.** Verificado contra AASHTO LRFD 9.ª ed. (2020): la dispensa no está en el Art. 3.10.3.1, ni en C3.10.3.1, ni en tabla o nota alguna. AASHTO exige estudio de respuesta de sitio específico para la Clase F, de forma incondicional. Hoy: `clase_sitio = "F_con_factores_tabulados_por_adopcion"`, adopción declarada del proyectista **sin respaldo normativo** — §0.5 | ninguna | — | [CA:371](src/criterios_adoptados.py:371) | ~~[C]~~ → **[A]** |
 | ↳ esa verificación **ya se hizo**: no está en el articulado ni en el comentario, porque no existe. Lo que queda pendiente es otra cosa — declarar en la memoria que la adopción va contra una exigencia expresa de AASHTO, y programar el estudio de respuesta de sitio | Art. 3.10.3.1 y C3.10.3.1, 9.ª ed. (2020) | AASHTO LRFD | [CA:435](src/criterios_adoptados.py:435) | **[A]** |
-| `factores_carga_aashto = None` — factores γ (DC, EV, EH, LS, WA, EQ) con máximos y mínimos | Tablas 3.4.1-1 y 3.4.1-2 | AASHTO LRFD | [CA:1289](src/criterios_adoptados.py:1289), [M9:52](src/modulos/M9_cabezal.py:52), [M9:805](src/modulos/M9_cabezal.py:805) | [A] |
+| `factores_carga_aashto = None` — factores γ (DC, EV, EH, LS, WA, EQ) con máximos y mínimos | Tablas 3.4.1-1 y 3.4.1-2 | AASHTO LRFD | [CA:1323](src/criterios_adoptados.py:1323), [M9:52](src/modulos/M9_cabezal.py:52), [M9:805](src/modulos/M9_cabezal.py:805) | [A] |
 | `FS_flotacion = None` — FS de V7, ΣW ≥ FS·U | Sec. 12 (no incorporada por el Manual de Puentes) | AASHTO LRFD | [CA:842](src/criterios_adoptados.py:842) | [C] |
 | Rigidez de anillo, pandeo y resistencia de costura: **diferidos al expediente** | Sec. 12 | AASHTO LRFD | [M8:35-36](src/modulos/M8_estructural.py:35), [M8:209-214](src/modulos/M8_estructural.py:209) | [C] |
-| `recubrimiento_aashto_mm = None` — lado AASHTO de la regla "rige el recubrimiento MAYOR" | tabla de recubrimientos mínimos, Sec. 5 | AASHTO LRFD | [CA:1451](src/criterios_adoptados.py:1451), [M9:1170-1173](src/modulos/M9_cabezal.py:1170) | [A] |
-| `procedimiento_flexion_corte_aashto_sec5 = None` — factores φ, límites de refuerzo, modelo de corte (MCFT / β-θ) | Sección 5 (vía Manual de Puentes Sec. 2.9, pág. 337) | AASHTO LRFD | [CA:1536](src/criterios_adoptados.py:1536), [M9:1333-1345](src/modulos/M9_cabezal.py:1333) | [A] |
-| `peso_especifico_concreto_kn_m3 = None` — peso unitario del concreto armado | Tabla 3.5.1-1 (o Manual de Puentes) | AASHTO LRFD | [CA:1351](src/criterios_adoptados.py:1351), [CA:1351-1352](src/criterios_adoptados.py:1351) | [A] |
+| `recubrimiento_aashto_mm = None` — lado AASHTO de la regla "rige el recubrimiento MAYOR" | tabla de recubrimientos mínimos, Sec. 5 | AASHTO LRFD | [CA:1485](src/criterios_adoptados.py:1485), [M9:1170-1173](src/modulos/M9_cabezal.py:1170) | [A] |
+| `procedimiento_flexion_corte_aashto_sec5 = None` — factores φ, límites de refuerzo, modelo de corte (MCFT / β-θ) | Sección 5 (vía Manual de Puentes Sec. 2.9, pág. 337) | AASHTO LRFD | [CA:1570](src/criterios_adoptados.py:1570), [M9:1333-1345](src/modulos/M9_cabezal.py:1333) | [A] |
+| `peso_especifico_concreto_kn_m3 = None` — peso unitario del concreto armado | Tabla 3.5.1-1 (o Manual de Puentes) | AASHTO LRFD | [CA:1385](src/criterios_adoptados.py:1385), [CA:1385-1386](src/criterios_adoptados.py:1385) | [A] |
 | `punto_aplicacion_incremento_sismico = None` — altura de aplicación de (P_AE − P_A) | Sec. 11 (alternativa: Seed-Whitman, 0.6H) | AASHTO LRFD | [CA:564](src/criterios_adoptados.py:564), [CA:564-566](src/criterios_adoptados.py:564) | [A] |
 | Advertencia transversal: **declarar la EDICIÓN de AASHTO LRFD** — los factores y la numeración de la Sec. 11 cambiaron entre ediciones | — | AASHTO LRFD | [CA:992-995](src/criterios_adoptados.py:992) | [A] |
 
@@ -319,7 +319,7 @@ verificación necesita otras fuentes.
 | `diametros_normalizados` = inicio 0.90, paso 0.15, topes {concreto 2.70, TMC 2.10, HDPE 1.50} | ASTM C76/AASHTO M170; AASHTO M36/ASTM A760; AASHTO M294 | ASTM / AASHTO | [CA:1043](src/criterios_adoptados.py:1043) | [C] |
 | ↳ verificación pendiente declarada: confirmar los topes contra el texto de cada norma de producto | — | ASTM / AASHTO | [CA:775-777](src/criterios_adoptados.py:775) | [C] |
 | `NORMA_PRODUCTO` por material (reporte) | ASTM C76/AASHTO M170; AASHTO M36/ASTM A760; AASHTO M294 | ASTM / AASHTO | [M2:148-150](src/modulos/M2_material.py:148) | [N] |
-| `clases_producto_por_relleno = None` — tabla clase/calibre × diámetro × rango de altura de relleno, **sin extraer** | AASHTO M-170M (clases I-V); ASTM A-807 / AASHTO M36 (calibre por altura) | ASTM / AASHTO | [CA:1137](src/criterios_adoptados.py:1137), [M8:153](src/modulos/M8_estructural.py:153) | [C] |
+| `clases_producto_por_relleno = None` — tabla clase/calibre × diámetro × rango de altura de relleno, **sin extraer** | AASHTO M-170M (clases I-V); ASTM A-807 / AASHTO M36 (calibre por altura) | ASTM / AASHTO | [CA:1171](src/criterios_adoptados.py:1171), [M8:153](src/modulos/M8_estructural.py:153) | [C] |
 | **Afirmación negativa**: AASHTO M294 (HDPE) no tiene tabla de clase por altura; depende de un cálculo de rigidez de anillo diferido al expediente | AASHTO M294 | ASTM / AASHTO | [CA:829-832](src/criterios_adoptados.py:829) | [C] |
 | ↻ `h_relleno_min_concreto_tmc = None` (lado norma de producto) — **cita cerrada en negativo**, ver §14. Ya no es "falta extraer": no hay nada que extraer | AASHTO M 170M; AASHTO M 36; ASTM A760 | ASTM / AASHTO | [CA:1059-1093](src/criterios_adoptados.py:1059) | [C] |
 | **Afirmación negativa**: AASHTO M 170M, M 36 y ASTM A760 **no contienen alturas de relleno admisibles**. Su **Nota 1** las excluye de forma expresa: son especificaciones de **fabricación y compra**, y no cubren encamado, relleno ni la relación entre carga de cobertura y clase o espesor | Nota 1 de cada norma | ASTM / AASHTO | [CA:1057-1063](src/criterios_adoptados.py:1057) | [C] |
@@ -395,18 +395,18 @@ hoja de ruta**, que es la fuente de verdad del proyecto.
 | Valor | Fuente citada | Archivo:línea | Etiqueta |
 |---|---|---|---|
 | `remanso_derecho_via = None` | Manual de Diseño Geométrico **DG-2018** + **Ley 29338**; requiere perfil de remanso (paso a paso o HEC-RAS) | [CA:942-944](src/criterios_adoptados.py:942), [M5:110](src/modulos/M5_verificaciones.py:110) | [A] |
-| `talud_terraplen = None` | **DG-2018** y sección tipo del proyecto | [CA:1208-1210](src/criterios_adoptados.py:1208) | [A] |
+| `talud_terraplen = None` | **DG-2018** y sección tipo del proyecto | [CA:1242-1244](src/criterios_adoptados.py:1242) | [A] |
 | `pendiente_relleno_trasdos_i = None` | Sección típica del expediente vial (**DG-2018**) o detalle de coronación del terraplén | [CA:491-493](src/criterios_adoptados.py:491) | [A] |
 | `v_max_hdpe = 4.6` m/s | ↻ **cita cerrada** — WSDOT Hydraulics Manual, ver §10-bis. Antes: PPI/FHWA, fuente identificada y valores sin extraer | [CA:734](src/criterios_adoptados.py:734) | [C] |
 | `v_max_tmc = 4.6` m/s | ↻ **cita cerrada** — WSDOT Hydraulics Manual, ver §10-bis. Antes: PPI/FHWA, ídem | [CA:746](src/criterios_adoptados.py:746) | [C] |
-| `longitud_proteccion_salida = None` | Práctica corriente de enrocado o **HEC-14** | [CA:1257-1258](src/criterios_adoptados.py:1257) | [A] |
+| `longitud_proteccion_salida = None` | Práctica corriente de enrocado o **HEC-14** | [CA:1291-1292](src/criterios_adoptados.py:1291) | [A] |
 | `homogeneidad_serie_fen = None` | Serie **SENAMHI** con longitud de registro, estación y años faltantes | [CA:589-591](src/criterios_adoptados.py:589) | [A] |
 | `TW_receptor = None` | **ANA** / Junta de Usuarios del Bajo Piura | [CA:905](src/criterios_adoptados.py:905) | [A] |
 | `Mw_licuefaccion = None` | Desagregación del peligro sísmico / sismo de subducción del norte peruano | [CA:1018-1019](src/criterios_adoptados.py:1018) | [A] |
 | `k_v = 0.0` | "Práctica corriente; no fijado por el Manual de Puentes" | [CA:474](src/criterios_adoptados.py:474) | [A] |
-| `espesor_proteccion_salida = 1.75`·d50 | "Práctica corriente de diseño de enrocado" (rango 1.5–2.0 d50) | [CA:1246](src/criterios_adoptados.py:1246) | [A] |
-| `angulo_aletas = None` | "Práctica corriente; no fijado por el Manual" | [CA:1275](src/criterios_adoptados.py:1275) | [A] |
-| `N_cq_N_gammaq_meyerhof = None` | **Meyerhof (1957)**, vía las figuras del Manual de Puentes (ver §3) | [CA:1398-1399](src/criterios_adoptados.py:1398) | [A] |
+| `espesor_proteccion_salida = 1.75`·d50 | "Práctica corriente de diseño de enrocado" (rango 1.5–2.0 d50) | [CA:1280](src/criterios_adoptados.py:1280) | [A] |
+| `angulo_aletas = None` | "Práctica corriente; no fijado por el Manual" | [CA:1309](src/criterios_adoptados.py:1309) | [A] |
+| `N_cq_N_gammaq_meyerhof = None` | **Meyerhof (1957)**, vía las figuras del Manual de Puentes (ver §3) | [CA:1432-1433](src/criterios_adoptados.py:1432) | [A] |
 | `punto_aplicacion_incremento_sismico = None` | **Seed-Whitman** (≈0.6H), vía AASHTO (ver §8) | [CA:564-566](src/criterios_adoptados.py:564) | [A] |
 
 ### 11.c. Módulos sin citas normativas externas
@@ -478,19 +478,19 @@ nivel freático dentro de `[A]` habría dicho que alguien los "adoptó".
 | `capacidad_portante_adm` | `None` | **vacío** | — | [CA:1009](src/criterios_adoptados.py:1009) |
 | `Mw_licuefaccion` | `None` | **vacío — bloquea la evaluación de licuefacción** | — | [CA:1018](src/criterios_adoptados.py:1018) |
 | `demanda_sismica_licuefaccion` | 1000 años | declarado | (475, 1000) | [CA:1030](src/criterios_adoptados.py:1030) |
-| `peso_especifico_relleno_kn_m3` | `None` | **vacío — bloquea el término ΣW de V7** | (17.0, 20.0) kN/m³ | [CA:1180](src/criterios_adoptados.py:1180) |
-| `talud_terraplen` | `None` | **vacío — bloquea la longitud del conducto en 7.B** | — | [CA:1208](src/criterios_adoptados.py:1208) |
-| `espesor_proteccion_salida` | 1.75·d50 | declarado | (1.5, 2.0) | [CA:1246](src/criterios_adoptados.py:1246) |
-| `longitud_proteccion_salida` | `None` | **vacío — completa el diseño de la Fase 6** | — | [CA:1257](src/criterios_adoptados.py:1257) |
-| `angulo_aletas` | `None` | **vacío** | — | [CA:1275](src/criterios_adoptados.py:1275) |
-| `factores_carga_aashto` | `None` | **vacío — bloquea toda combinación de carga** | — | [CA:1289](src/criterios_adoptados.py:1289) |
-| `peso_especifico_concreto_kn_m3` | `None` | **vacío — bloquea el peso propio del cabezal** | (23.5, 24.5) kN/m³ | [CA:1351](src/criterios_adoptados.py:1351) |
-| `predimensionamiento_cabezal` | `None` | **vacío — bloquea la estabilidad automática** | — | [CA:1370](src/criterios_adoptados.py:1370) |
-| `N_cq_N_gammaq_meyerhof` | `None` | **vacío — bloquea la capacidad portante en talud** | — | [CA:1398](src/criterios_adoptados.py:1398) |
-| `metodo_estabilidad_global` | `None` | **vacío — bloquea E4 y E5 de Sec. 9.3** | — | [CA:1429](src/criterios_adoptados.py:1429) |
-| `recubrimiento_aashto_mm` | `None` | **vacío — bloquea la regla del mayor (Sec. 0.2)** | — | [CA:1451](src/criterios_adoptados.py:1451) |
-| `cortante_alto_muro_e060_art_11_10_10_2` | `None` | **vacío — bloquea el escalón de ρ a 0.0025 (E.060 Art. 11.10.10.2)** | — | [CA:1484](src/criterios_adoptados.py:1484) |
-| `procedimiento_flexion_corte_aashto_sec5` | `None` | **vacío — bloquea el dimensionado del refuerzo** | — | [CA:1536](src/criterios_adoptados.py:1536) |
+| `peso_especifico_relleno_kn_m3` | `None` | **vacío — bloquea el término ΣW de V7** | (17.0, 20.0) kN/m³ | [CA:1214](src/criterios_adoptados.py:1214) |
+| `talud_terraplen` | `None` | **vacío — bloquea la longitud del conducto en 7.B** | — | [CA:1242](src/criterios_adoptados.py:1242) |
+| `espesor_proteccion_salida` | 1.75·d50 | declarado | (1.5, 2.0) | [CA:1280](src/criterios_adoptados.py:1280) |
+| `longitud_proteccion_salida` | `None` | **vacío — completa el diseño de la Fase 6** | — | [CA:1291](src/criterios_adoptados.py:1291) |
+| `angulo_aletas` | `None` | **vacío** | — | [CA:1309](src/criterios_adoptados.py:1309) |
+| `factores_carga_aashto` | `None` | **vacío — bloquea toda combinación de carga** | — | [CA:1323](src/criterios_adoptados.py:1323) |
+| `peso_especifico_concreto_kn_m3` | `None` | **vacío — bloquea el peso propio del cabezal** | (23.5, 24.5) kN/m³ | [CA:1385](src/criterios_adoptados.py:1385) |
+| `predimensionamiento_cabezal` | `None` | **vacío — bloquea la estabilidad automática** | — | [CA:1404](src/criterios_adoptados.py:1404) |
+| `N_cq_N_gammaq_meyerhof` | `None` | **vacío — bloquea la capacidad portante en talud** | — | [CA:1432](src/criterios_adoptados.py:1432) |
+| `metodo_estabilidad_global` | `None` | **vacío — bloquea E4 y E5 de Sec. 9.3** | — | [CA:1463](src/criterios_adoptados.py:1463) |
+| `recubrimiento_aashto_mm` | `None` | **vacío — bloquea la regla del mayor (Sec. 0.2)** | — | [CA:1485](src/criterios_adoptados.py:1485) |
+| `cortante_alto_muro_e060_art_11_10_10_2` | `None` | **vacío — bloquea el escalón de ρ a 0.0025 (E.060 Art. 11.10.10.2)** | — | [CA:1518](src/criterios_adoptados.py:1518) |
+| `procedimiento_flexion_corte_aashto_sec5` | `None` | **vacío — bloquea el dimensionado del refuerzo** | — | [CA:1570](src/criterios_adoptados.py:1570) |
 
 De los 33, **26 están sin valor**: invocarlos lanza `CriterioPendienteError` y
 detiene el cálculo. Solo 7 tienen valor declarado (`F_pga`,
@@ -592,10 +592,13 @@ de estos vacíos; aquí quedan consolidadas por criterio.
 
 ### 14.a. `h_relleno_min_concreto_tmc` — altura mínima de relleno sobre la clave (concreto y TMC)
 
-**Estado: vacío verificado. Búsqueda cerrada en las tres fuentes donde podía
-estar.** El criterio sigue en `valor=None` y sigue `[C]`; lo que cambió es que
-su `fuente` ya no promete un valor que nadie puede extraer
-([CA:1054-1088](src/criterios_adoptados.py:1054)).
+**Estado: vacío verificado → adopción `[N→]` por analogía, a nivel de perfil → verificación de expediente pendiente.** La secuencia completa, en ese orden:
+
+1. **El vacío es real y está cerrado** — la búsqueda se agotó en las tres fuentes donde podía estar (tabla de abajo). No es una cita pendiente de extraer.
+2. **Se adopta 0.30 m por analogía** con el único valor que la norma sí fija para esta misma magnitud, el de EG-2013 508.07 para HDPE. Etiqueta **`[N→]`**, no `[C]` ni `[A]`: hay un valor normativo real, con numeral y página, aplicado a un material distinto del que lo tiene. Es el mismo patrón que `resguardo_HW_subrasante`, el otro `[N→]` del proyecto, que aplica por analogía un numeral de nivel freático a un nivel de avenida. **La analogía es conservadora**: el HDPE es el material con MENOR tolerancia a cobertura reducida bajo carga viva, de modo que exigir su recubrimiento al concreto y al TMC no puede quedar del lado inseguro.
+3. **Queda pendiente la verificación por material**, que es de expediente y que esta adopción no sustituye — ver más abajo.
+
+`h_relleno_min_concreto_tmc` = 0.30 m ([CA:1063](src/criterios_adoptados.py:1063)). Sin ella, el tamizado 7.A se detenía en concreto y TMC y el HDPE era el único material que llegaba a completar diseño: no un resultado de ingeniería, sino el efecto de un vacío documental.
 
 | # | Dónde se buscó | Qué se encontró | Cita |
 |---|---|---|---|
@@ -623,20 +626,15 @@ que comparten palabra en español y no tienen ninguna relación. Quien busque
 «recubrimiento» en el Manual va a encontrar esa tabla primero, y usarla sería
 fijar la rasante de todos los puntos de concreto con un dato de otra cosa.
 
-#### Qué puede cerrar el vacío
+#### Verificación de expediente que esta adopción NO sustituye
 
-Ninguna lectura: las dos salidas son **decisiones de proyecto**, y cualquiera
-de las dos convierte el criterio de `[C]` en `[A]`, porque deja de haber fuente
-que lo cubra.
+El 0.30 m destraba el nivel de **perfil** — fijar la rasante en 7.A. La comprobación estructural por material es de **expediente** y sigue abierta:
 
-- **(a) Analogía declarada** con el 0.30 m que EG-2013 508.07 fija para HDPE,
-  escrita como adopción del proyectista y no como cita.
-- **(b) Cálculo estructural** de cobertura mínima: AASHTO LRFD Sec. 12 — que el
-  Manual de Puentes no incorpora, punto (2) — o clase D-load con factor de
-  cama. Es la misma salida que ya declara `clases_producto_por_relleno`
-  ([CA:1123](src/criterios_adoptados.py:1123)) y la que M8 difiere al
-  expediente ([M8:326](src/modulos/M8_estructural.py:326)).
+| Material | Verificación pendiente | Referencia |
+|---|---|---|
+| Concreto reforzado | Cobertura mínima por diseño estructural. El típico es **1.0 ft (~0.305 m)** salvo diseño especial de armadura, de modo que la adopción coincide prácticamente con él y la verificación debería **confirmarla, no corregirla** | AASHTO LRFD Art. 12.6.6.3 |
+| TMC | Relación **luz / corrugación** | ASTM A-807 |
 
-**Lo que NO se hace:** declarar un número para concreto o TMC mientras no se
-tome una de esas dos decisiones. Hoy el vacío detiene el tamizado 7.A en esos
-dos materiales, y esa detención es el comportamiento correcto.
+> **Referencia comparativa, NO valor de diseño.** WSDOT M 23-03.12, Tabla 8-6, admite cobertura reducida hasta **0.5 ft** en concreto Clase V. Se cita únicamente para sostener que el concreto tolera **más** que el HDPE — que es lo que hace conservadora la analogía. **No se adopta ese número ni ninguno derivado de él**, y no debe leerse como una alternativa al 0.30 m.
+
+**Lo que sigue sin hacerse:** declarar un valor *propio* para concreto o TMC apoyado en una norma de producto. Esa norma no existe (punto 1 de la tabla), y el 0.30 m no pretende serlo: es analogía declarada, y la memoria lo dice con esas palabras.
