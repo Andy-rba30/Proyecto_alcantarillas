@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+import criterios_adoptados as ca
 from modelos import DatoInvalidoError, Familia, Material, TipoMaterial
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import catalogo, materiales_candidatos, siguiente_diametro
@@ -118,15 +119,34 @@ def test_el_hdpe_usa_el_rango_de_manning_por_analogia():
     assert hdpe.h_relleno_min == pytest.approx(0.30)   # [N] directo, sin vacio
 
 
-def test_los_vacios_de_velocidad_maxima_no_detienen_el_catalogo():
-    """v_max_tmc y v_max_hdpe siguen sin valor (Tablero 1.3): el catalogo lo
-    refleja con None en vez de lanzar CriterioPendienteError."""
+def test_la_velocidad_maxima_declarada_llega_al_catalogo():
+    """
+    'v_max_tmc' y 'v_max_hdpe' ya estan declarados (WSDOT Hydraulics Manual,
+    Tabla 8-4): el catalogo los trae y `v_max_definida` lo confirma.
+    """
     tmc = catalogo(TipoMaterial.TMC)
     hdpe = catalogo(TipoMaterial.HDPE)
+    assert tmc.v_max_rango == ca.valor("v_max_tmc")
+    assert hdpe.v_max_rango == ca.valor("v_max_hdpe")
+    assert tmc.v_max_definida
+    assert hdpe.v_max_definida
+
+
+def test_un_vacio_de_velocidad_maxima_no_detiene_el_catalogo(monkeypatch):
+    """
+    Lo que el test anterior protegia antes de que el criterio tuviera valor, y
+    sigue siendo la conducta correcta si alguna vez vuelve a vaciarse: M2 lee
+    esos criterios con tolerancia y refleja el vacio con None, en vez de
+    lanzar CriterioPendienteError al construir el catalogo. Quien se detiene
+    es V3, que es donde el numero hace falta.
+    """
+    original = ca.CRITERIOS["v_max_tmc"]
+    monkeypatch.setitem(ca.CRITERIOS, "v_max_tmc",
+                        original.__class__(**{**original.__dict__,
+                                              "valor": None}))
+    tmc = catalogo(TipoMaterial.TMC)
     assert tmc.v_max_rango is None
-    assert hdpe.v_max_rango is None
     assert not tmc.v_max_definida
-    assert not hdpe.v_max_definida
 
 
 def test_el_relleno_minimo_de_concreto_y_tmc_sigue_vacio():

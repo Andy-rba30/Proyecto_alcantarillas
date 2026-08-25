@@ -337,6 +337,24 @@ de uso.
 
 ---
 
+## 10-bis. WSDOT Hydraulics Manual (M 23-03.12, abril 2026)
+
+Cubre el vacío que la Tabla N° 10 del Manual MTC deja abierto: esa tabla solo
+lista conductos **revestidos** (concreto, ladrillo, mampostería) y no alcanza a
+los materiales flexibles. Los dos valores salen de la **misma** tabla de la
+misma página, pero **no significan lo mismo** en cada material, y la columna de
+numeral lo dice: para el termoplástico la fuente prohíbe el uso por encima del
+límite, y para el metal solo exige mayor calibre o revestimiento. El 4.6 m/s
+del TMC es, por eso, adopción conservadora del proyecto y no un techo de la
+fuente.
+
+| Valor | Numeral citado | Documento fuente (según la cita) | Archivo:línea | Etiqueta |
+|---|---|---|---|---|
+| `v_max_hdpe = 4.6` m/s (= 15 ft/s) — **techo duro de la fuente**: por encima del límite el termoplástico no puede reforzarse estructuralmente y la propia tabla prohíbe su uso | Cap. 8, S8-6, Tabla 8-4 "Pipe Abrasion Levels", pp. 8-27/8-28 | WSDOT Hydraulics Manual M 23-03.12 (abril 2026) | [CA:660](src/criterios_adoptados.py:660) | [C] |
+| `v_max_tmc = 4.6` m/s — **la fuente NO fija techo absoluto para metal**: por encima de este valor exige mayor calibre o revestimiento, no prohíbe el material. Se adopta como límite de diseño conservador porque el catálogo de M2 no modela protección adicional por calibre | Cap. 8, S8-6, Tabla 8-4 "Pipe Abrasion Levels", pp. 8-27/8-28 | WSDOT Hydraulics Manual M 23-03.12 (abril 2026) | [CA:672](src/criterios_adoptados.py:672) | [C] |
+
+---
+
 ## 11. Citas que NO apuntan a ninguno de los PDF
 
 Se listan aparte para que nadie las busque en un documento normativo.
@@ -371,8 +389,8 @@ hoja de ruta**, que es la fuente de verdad del proyecto.
 | `remanso_derecho_via = None` | Manual de Diseño Geométrico **DG-2018** + **Ley 29338**; requiere perfil de remanso (paso a paso o HEC-RAS) | [CA:677-679](src/criterios_adoptados.py:677), [M5:110](src/modulos/M5_verificaciones.py:110) | [A] |
 | `talud_terraplen = None` | **DG-2018** y sección tipo del proyecto | [CA:909-911](src/criterios_adoptados.py:909) | [A] |
 | `pendiente_relleno_trasdos_i = None` | Sección típica del expediente vial (**DG-2018**) o detalle de coronación del terraplén | [CA:335-337](src/criterios_adoptados.py:335) | [A] |
-| `v_max_hdpe = None` | **Plastics Pipe Institute (PPI)** y **FHWA** — fuente identificada, valores sin extraer | [CA:502](src/criterios_adoptados.py:502) | [C] |
-| `v_max_tmc = None` | **PPI** y **FHWA** — ídem | [CA:513](src/criterios_adoptados.py:513) | [C] |
+| `v_max_hdpe = 4.6` m/s | ↻ **cita cerrada** — WSDOT Hydraulics Manual, ver §10-bis. Antes: PPI/FHWA, fuente identificada y valores sin extraer | [CA:660](src/criterios_adoptados.py:660) | [C] |
+| `v_max_tmc = 4.6` m/s | ↻ **cita cerrada** — WSDOT Hydraulics Manual, ver §10-bis. Antes: PPI/FHWA, ídem | [CA:672](src/criterios_adoptados.py:672) | [C] |
 | `longitud_proteccion_salida = None` | Práctica corriente de enrocado o **HEC-14** | [CA:947-948](src/criterios_adoptados.py:947) | [A] |
 | `homogeneidad_serie_fen = None` | Serie **SENAMHI** con longitud de registro, estación y años faltantes | [CA:427-429](src/criterios_adoptados.py:427) | [A] |
 | `TW_receptor = None` | **ANA** / Junta de Usuarios del Bajo Piura | [CA:635](src/criterios_adoptados.py:635) | [A] |
@@ -487,14 +505,22 @@ detiene el cálculo. Solo 7 tienen valor declarado (`F_pga`,
 | §8 AASHTO LRFD | 11 |
 | §9 Normas de producto ASTM/AASHTO | 11 |
 | §10 E.030 (solo referencia) | 4 |
+| §10-bis WSDOT Hydraulics Manual | 2 |
 | §11 Sin PDF externo (hoja de ruta + otras fuentes) | 14 + 14 |
 
-Distribución de los 45 criterios de `criterios_adoptados.py`:
+Distribución de los 46 criterios de `criterios_adoptados.py`:
 **0 `[N]`** ·
 **1 `[N→]`** (`resguardo_HW_subrasante`) ·
 **1 `[S]`** (`PERFIL_SUELO_PRESUNTO`) ·
-**11 `[C]`** ·
-**32 `[A]`** (§12).
+**14 `[C]`** ·
+**30 `[A]`** (§12).
+
+> **La distribución anterior decía 45 criterios, 11 `[C]` y 32 `[A]`, y estaba
+> desactualizada respecto al código** — no por esta revisión, que no cambia
+> ninguna etiqueta: `v_max_hdpe` y `v_max_tmc` ya eran `[C]` y siguen siéndolo.
+> Lo único que cambió en ellos es que pasaron de `[C]` **sin valor** a `[C]`
+> **con cita cerrada** (§10-bis). Los números de arriba son ahora los que
+> devuelve el propio archivo.
 
 Más **3 `[S]` de corredor** en `src/datos_sitio.py` (`PGA_roca_B`,
 `ZONA_SISMICA_LA_UNION`, `Z_E030`) y **1 `[S]` por punto** convertido en

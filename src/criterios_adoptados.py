@@ -658,24 +658,28 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "v_max_hdpe": Criterio(
-        valor=None,                 # VACIO
-        etiqueta="C",               # Anexo A y Sec. 0.1: la fuente (PPI/FHWA)
+        valor=4.6,
+        etiqueta="C",               # Anexo A y Sec. 0.1: la fuente (WSDOT)
                                     # es tecnica reconocida, no una adopcion libre
         concepto="Velocidad maxima admisible en HDPE",
         justificacion="La Tabla N 10 del Manual MTC no cubre materiales flexibles",
-        fuente="PENDIENTE - fuente identificada: Plastics Pipe Institute (PPI) "
-               "y FHWA. Falta EXTRAER los valores numericos",
-        reemplazado_por="Valor numerico de PPI/FHWA o ficha tecnica",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026), Cap. 8, S8-6, "
+               "Tabla 8-4 'Pipe Abrasion Levels', pp. 8-27/8-28. Techo duro: "
+               "por encima de 15 ft/s el termoplastico no puede reforzarse "
+               "estructuralmente y su uso queda prohibido por la propia tabla.",
     ),
 
     "v_max_tmc": Criterio(
-        valor=None,                 # VACIO
+        valor=4.6,
         etiqueta="C",               # idem v_max_hdpe: Anexo A lo etiqueta [C]
         concepto="Velocidad maxima admisible en TMC",
         justificacion="La Tabla N 10 del Manual MTC no cubre materiales flexibles",
-        fuente="PENDIENTE - fuente identificada: Plastics Pipe Institute (PPI) "
-               "y FHWA. Falta EXTRAER los valores numericos",
-        reemplazado_por="Valor numerico de PPI/FHWA o ficha tecnica",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026), Cap. 8, S8-6, "
+               "Tabla 8-4 'Pipe Abrasion Levels', pp. 8-27/8-28. La fuente NO "
+               "fija techo absoluto para metal -- por encima de este valor "
+               "exige mayor calibre o revestimiento, no prohibe el material. "
+               "Se adopta 4.6 m/s como limite de diseno conservador porque el "
+               "catalogo de M2 no modela proteccion adicional por calibre.",
     ),
 
     "v_max_concreto_eleccion": Criterio(

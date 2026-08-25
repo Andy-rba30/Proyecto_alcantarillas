@@ -239,8 +239,12 @@ def test_v3_solo_el_concreto_lee_ese_criterio(tmc, monkeypatch):
     monkeypatch.setitem(
         ca.CRITERIOS, CRITERIO_V_MAX_CONCRETO,
         original.__class__(**{**original.__dict__, "valor": 4.5}))
-    with pytest.raises(CriterioPendienteError):
-        v3_velocidad_maxima(material=tmc, resultado=_resultado(V=2.0))
+
+    v = v3_velocidad_maxima(material=tmc, resultado=_resultado(V=2.0))
+    assert v.criterio_aplicado == "v_max_tmc", (
+        "el TMC tiene que seguir leyendo SU criterio: declarar el del "
+        "concreto no puede cambiarle el umbral")
+    assert v.valor_admisible == pytest.approx(ca.valor("v_max_tmc"))
 
 
 def test_v3_bajo_el_rango_lo_sigue_atrapando_v2_si_toca(concreto):
@@ -258,9 +262,45 @@ def test_v3_bajo_el_rango_lo_sigue_atrapando_v2_si_toca(concreto):
     ("tmc", "v_max_tmc"),
     ("hdpe", "v_max_hdpe"),
 ])
-def test_v3_tmc_hdpe_lanza_pendiente_mientras_no_haya_valor(material_fixture,
-                                                            clave, request):
+def test_v3_tmc_hdpe_verifica_contra_el_criterio_declarado(material_fixture,
+                                                           clave, request):
+    """
+    Los dos criterios ya estan declarados (WSDOT Hydraulics Manual, Tabla 8-4,
+    4.6 m/s): V3 evalua contra ese techo y lo ATRIBUYE a su clave, que es lo
+    que distingue un umbral adoptado de uno normativo en la memoria.
+    """
     material = request.getfixturevalue(material_fixture)
+    techo = ca.valor(clave)
+
+    v = v3_velocidad_maxima(material=material, resultado=_resultado(V=2.0))
+    assert v.cumple
+    assert v.valor_admisible == pytest.approx(techo)
+    assert v.criterio_aplicado == clave
+
+    rapido = v3_velocidad_maxima(material=material,
+                                 resultado=_resultado(V=techo + 1.0))
+    assert not rapido.cumple
+
+
+@pytest.mark.parametrize("material_fixture, clave", [
+    ("tmc", "v_max_tmc"),
+    ("hdpe", "v_max_hdpe"),
+])
+def test_v3_tmc_hdpe_vuelve_a_bloquear_si_el_criterio_se_vacia(
+        material_fixture, clave, request, monkeypatch):
+    """
+    Lo que estos dos criterios protegian antes de tener valor, y sigue siendo
+    la conducta correcta: la Tabla N 10 no cubre materiales flexibles, de modo
+    que sin el criterio no hay con que comparar y V3 se detiene en vez de
+    inventar un techo. El catalogo de M2 hay que reconstruirlo dentro del
+    parche, porque la fixture lo armo con el criterio ya declarado.
+    """
+    original = ca.CRITERIOS[clave]
+    monkeypatch.setitem(ca.CRITERIOS, clave,
+                        original.__class__(**{**original.__dict__,
+                                              "valor": None}))
+    material = catalogo(request.getfixturevalue(material_fixture).tipo)
+
     with pytest.raises(CriterioPendienteError) as excinfo:
         v3_velocidad_maxima(material=material, resultado=_resultado(V=2.0))
     assert excinfo.value.clave == clave
@@ -504,13 +544,17 @@ def test_verificar_se_detiene_en_V5_la_primera_pendiente_en_orden(concreto):
     assert excinfo.value.clave == "remanso_derecho_via"
 
 
-def test_verificar_con_tmc_se_detiene_antes_en_V3(tmc):
-    """Con TMC, V3 esta pendiente y precede a V5 en el orden de la tabla."""
+def test_verificar_con_tmc_ya_pasa_v3_y_se_detiene_en_v5(tmc):
+    """
+    Con 'v_max_tmc' declarado, V3 deja de ser el freno y `verificar` avanza
+    hasta el siguiente vacio real de la tabla, que es V5 ('remanso_derecho_via').
+    Antes se detenia en V3, que precede a V5 en el orden de la Fase 5.
+    """
     punto = _punto()
     with pytest.raises(CriterioPendienteError) as excinfo:
         verificar(punto=punto, material=tmc, D=0.90,
                  resultado=_resultado(y_normal=0.60, V=1.5))
-    assert excinfo.value.clave == "v_max_tmc"
+    assert excinfo.value.clave == "remanso_derecho_via"
 
 
 def test_verificar_tiene_la_firma_del_protocol_de_MD(concreto):
