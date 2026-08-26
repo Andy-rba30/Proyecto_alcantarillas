@@ -122,3 +122,29 @@ ErrorProyecto.
 - pytest en tests/. Mínimo un test por módulo.
 - Todo módulo de cálculo se contrasta contra tests/fixtures/casos_patron.py.
 - Al cerrar cada módulo: commit con el nombre del módulo en el mensaje.
+
+## Cierre de tarea: la entrega es `origin/main`
+
+**Una tarea no está terminada hasta que su trabajo está en `origin/main`.**
+El último paso de cualquier tarea, siempre, son estos dos:
+
+1. **Fusionar a `main` y empujar.** Una rama de trabajo empujada al remoto no
+   es una entrega: es un borrador que nadie lee. Un commit que no está en
+   `main` no cuenta como entregado.
+2. **Confirmar el conteo de tests leyéndolo de `origin/main`**, no del clon
+   local ni de la rama de trabajo. Traer el remoto primero (`git fetch origin
+   main`) y correr la suite sobre ese árbol. El número que se reporta es ese.
+
+Por qué está escrito aquí: esto falló dos veces. La primera se arregló a mano
+en el "PASO 0" y no se dejó regla, así que volvió a pasar — siete commits y 36
+tests quedaron en una rama sin fusionar mientras se reportaba `main` como si
+los tuviera, y una auditoría posterior los dio por perdidos.
+
+Al reportar el conteo, distinguir **`passed` de `collected`**: hoy hay un test
+`skipped` permanente, de modo que `collected = passed + 1`. Decir cuál de los
+dos se está citando; la mayor parte de la confusión histórica de números sale
+de mezclarlos.
+
+Si la fusión no se puede hacer (permisos, política de egress, conflicto), eso
+**no** convierte la tarea en terminada: se reporta explícitamente qué quedó sin
+fusionar, en qué rama y con qué SHA, para que nadie lo lea como entregado.
