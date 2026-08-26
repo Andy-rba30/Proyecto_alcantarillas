@@ -16,25 +16,25 @@ x = @(t) exp(-t) .* sin(2*pi*t) .* (t >= 0);
 
 t = linspace(-5, 5, 1000);          % eje de tiempo: 1000 puntos entre -5 y 5
 
-% --- 2. Transformaciones: {titulo, función anónima} ----------------------
-transformaciones = {
-    'Original:  x(t)'                  @(t)  x(t)
-    'Amplificación:  2*x(t)'           @(t)  2*x(t)
-    'Reflexión en amplitud:  -x(t)'    @(t) -x(t)
-    'Desplazamiento vertical:  x(t)+1' @(t)  x(t) + 1
-    'Retardo:  x(t-2)'                 @(t)  x(t - 2)
-    'Adelanto:  x(t+2)'                @(t)  x(t + 2)
-    'Reflexión en el tiempo:  x(-t)'   @(t)  x(-t)
-    'Compresión:  x(2t)'               @(t)  x(2*t)
-    'Expansión:  x(t/2)'               @(t)  x(t/2)
+% --- 2. Transformaciones: cada fila es {titulo, función anónima} ---------
+lista = {
+    'Original:  x(t)',                  @(t)  x(t);
+    'Amplificación:  2*x(t)',           @(t)  2*x(t);
+    'Reflexión en amplitud:  -x(t)',    @(t) (-x(t));
+    'Desplazamiento vertical:  x(t)+1', @(t)  x(t) + 1;
+    'Retardo:  x(t-2)',                 @(t)  x(t - 2);
+    'Adelanto:  x(t+2)',                @(t)  x(t + 2);
+    'Reflexión en el tiempo:  x(-t)',   @(t)  x(-t);
+    'Compresión:  x(2t)',               @(t)  x(2*t);
+    'Expansión:  x(t/2)',               @(t)  x(t/2)
     };
 
 % --- 3. Una gráfica por transformación -----------------------------------
 figure('Color', 'w', 'Position', [60 50 1150 720]);
 
-for k = 1:size(transformaciones, 1)
-    titulo = transformaciones{k, 1};
-    y      = transformaciones{k, 2};
+for k = 1:size(lista, 1)
+    titulo = lista{k, 1};
+    y      = lista{k, 2};
 
     subplot(3, 3, k);
     plot([-5 5], [0 0], 'k', 'LineWidth', 0.5);        % ejes de referencia
@@ -45,7 +45,7 @@ for k = 1:size(transformaciones, 1)
     hold off;
 
     if k == 1
-        legend([h1 h2], 'original', 'transformada', 'Location', 'northeast');
+        legend([h1 h2], 'original', 'transformada', 'Location', 'northeast', 'FontSize', 8);
     end
 
     title(titulo, 'Interpreter', 'none', 'FontSize', 10);
