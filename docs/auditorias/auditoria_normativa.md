@@ -1453,13 +1453,14 @@ El EG-2013 lo confirma desde fuera, en su num. 506.05 b): «la carga necesaria p
 
 | Temario | Ítems | Cerrados | Pendientes | Primer pendiente |
 |---|---|---|---|---|
-| `temario_refutar_95.json` | 95 | 19 (`R95-001`…`R95-019`) | 76 | `R95-020` |
-| `temario_refutar_48.json` | 48 | 20 (`R48-001`…`R48-020`) | 28 | `R48-021` |
+| `temario_refutar_95.json` | 95 | 24 | 71 | `R95-025` |
+| `temario_refutar_48.json` | 48 | 20 | 28 | `R48-021` |
 
-El estado de cada ítem no es una suposición: sale del `journal.jsonl` de cada corrida
-(`type=result` → cerrado, `type=failed` por límite de sesión → pendiente). Los cerrados
-forman un **bloque contiguo desde el 001** en orden de lanzamiento, que es exactamente la
-firma de un corte por créditos y no de fallos dispersos.
+El estado de cada ítem no es una suposición: los cerrados en la corrida original salen
+del `journal.jsonl` (`type=result` → cerrado, `type=failed` por límite de sesión →
+pendiente), y forman un **bloque contiguo desde el 001** en orden de lanzamiento, que es
+la firma de un corte por créditos y no de fallos dispersos. Los cerrados posteriores
+llevan además su veredicto, su evidencia y su razonamiento dentro del propio JSON.
 
 **Sobre la numeración.** En la ejecución original **no existía** una numeración `R95-NNN` /
 `R48-NNN`: los refutadores se identificaban por el ID del hallazgo que refutaban (`H-05`,
@@ -1469,3 +1470,55 @@ primer mensaje de cada transcripción de agente. Ese orden es exacto y reproduci
 y los 48 tienen timestamps únicos, sin un solo empate— y cada ítem conserva su `agent_id` y
 su `spawn_ts` para que el mapeo se pueda auditar contra las transcripciones. No se inventó
 ningún tramo.
+
+---
+
+## 13. Refutación adversarial — resultados
+
+Ítems reabiertos y cerrados tras el corte de sesión: **5**. Se sostienen **3** · ajustados **2** · refutados **0** · fuera de alcance **0**.
+
+Cada ítem se re-verificó con instrucción de **derribar** el hallazgo: volver al PDF y al
+código por cuenta propia y refutar por defecto ante cualquier duda razonable. `AJUSTADO`
+significa que parte del cargo se sostiene y parte se cae; la severidad se mueve en
+consecuencia.
+
+| Ítem | Hallazgo | Resultado | Sev. final | Veredicto | Documento verificado | Razonamiento |
+|---|---|---|---|---|---|---|
+| `R95-020` | `H-05` | **SE SOSTIENE** | CRITICA | CONTRADICE | MTC Manual de Puentes (2018), num. 2.4.3.3.2 (pag. impresa 109), num. 2.4.3.11.1 (121), Tabla 2.4.5.3.1-2 (143), num. 2.8.1.3A.6.2 (280), num. 2.11 (505); indice general pags. 36-38 | Se sostiene y la severidad es la correcta: el repo afirma un vacio que la norma llena, que es justamente el supuesto CRITICO del briefing. El Manual regula conductos enterrados en numerales propios y varios de ellos dependen de la altura de relleno (IM en funcion de D_E; el corte de losas de alcantarilla cajon segun tenga mas o menos de 2.0 ft de relleno, pag. impresa 280). Encontre ademas un error que el auditor no vio y que agrava el hallazgo: la premisa del indice es doblemente falsa. Abri el PDF en la pagina 506 = impresa 505 y el num. 2.11 no es «Muros de Contencion y Estribos» sino «2.11 DISENO DE BARRERAS DE SONIDO (15 AASHTO)»; y la numeracion 2.x del Manual no sigue a la de AASHTO (2.8 Cimentaciones = AASHTO 10, 2.9 Superestructuras = AASHTO 5), de modo que «el indice salta de 2.11 a 2.12» no prueba nada sobre la Seccion 12. Atenuantes que no cambian el veredicto: el repo si matiza dos lineas mas abajo (CA:1129-1135) la Tabla 2.9.1.5.5.3-1 -- uno de los seis lugares que lista el auditor -- y la conclusion operativa (ningun valor de altura minima de relleno para concreto y TMC) sobrevive: ninguno de los seis numerales fija un recubrimiento minimo de tierra. Lo insostenible es la palabra «absoluto», no el vacio de la magnitud buscada. |
+| `R95-021` | `H-07` | **SE SOSTIENE** | MEDIA | CONTRADICE | MTC Manual de Puentes (2018), num. 2.4.3.8.1 y 2.4.3.8.2, pagina impresa 113 | Comprobado punto por punto: el PDF respalda al codigo y desmiente a la fila del manifiesto. El numeral 2.4.3.8.2 fija el PROCEDIMIENTO de subpresion, no el peso especifico del agua, tal como razona el docstring de constantes_fisicas.py:35-41 («la cita era correcta en cuanto a DONDE se usa el valor... pero equivocada en cuanto a QUE es el valor»). La fila :161 arrastra tres desfases simultaneos: archivo:linea (CN:35 ya no es esa constante), etiqueta ([N] con numeral para lo que el propio repo reclasifico como constante fisica) y atribucion. Mantengo MEDIA y no subo: es un defecto de documentacion, el codigo ya lleva la correccion escrita y el numero 9.81 kN/m3 no cambia ni afecta ningun calculo. Encaja en el renglon MEDIA del briefing («referencia archivo:linea desfasada, cita incompleta»). |
+| `R95-022` | `H-10` | **SE SOSTIENE** | MEDIA | CONTRADICE | MTC Manual de Puentes (2018), num. 2.8.1.3.1.2c y sus figuras -1 y -2, paginas impresas 272, 273 y 274 | Se sostiene solo por la pagina, y lo comprobe yo mismo: el rango real es 272-274 y la figura -2 (suelos no cohesivos, la aplicable a las arenas del Bajo Piura) queda fuera del rango citado. Todo lo demas CONFIRMA literalmente: numeracion de las dos figuras, atribucion a Meyerhof 1957, caracter de abaco y N_q = 0.0. Mantengo MEDIA y no subo a ALTA: no es una pagina ajena sino un rango incompleto en una unidad, dentro del numeral y del documento correctos, y el criterio esta declarado con valor None (no se calcula nada con el), de modo que el dano es que un revisor pierda una pagina. Nota menor: el auditor cita docs/manifiesto_citas.md:179, que es la fila de `factores_carga_aashto`; la fila de Meyerhof es la :178. El mismo rango 272-273 se repite en docs/hoja_de_ruta_alcantarillas_v8.md:622, que el auditor no menciona. |
+| `R95-023` | `H-14` | **AJUSTADO** | MEDIA | CONTRADICE | MTC Manual de Puentes (2018), num. 2.8.1.1.14.2 completo: 2.8.1.1.14.2.1 (pag. impresa 254) y 2.8.1.1.14.2.2 (pag. impresa 255) | AJUSTADO: se sostiene la mitad del hallazgo y cae su cargo mas fuerte, por eso bajo de ALTA a MEDIA. Lo que se sostiene: el numeral es prosa, no una tabla, y llamarlo «Tabla ... del Manual de Puentes» con «dos filas» es una caracterizacion que el PDF no admite; ademas «25-50 mm» es una conversion redondeada de «1.0 a 2.0 in» que ademas suelta el «o mas», y el Manual dice «puede ser reducido» (permisivo). Lo que cae: el auditor afirma que «rigido = 1.0 NO esta escrito en el numeral: es la ausencia de reduccion, inferida». Es falso -- el mismo numeral que el repo cita, 2.8.1.1.14.2, define kh0 como el coeficiente «asumiendo que el desplazamiento del muro sea cero» en su subnumeral .2.1, de modo que el factor 1.0 para muro que no se desplaza esta escrito, no inferido; y el repo cita el numeral PADRE, que cubre .2.1 y .2.2, asi que la referencia numeral no es erronea. Queda un defecto de vocabulario y de cita incompleta (renglon MEDIA del briefing), agravado por nada mas: el proyecto adopta 1.0, el lado sin reduccion, y declara la eleccion como [A] con sensibilidad (0.5, 1.0). Nota menor: el auditor cita manifiesto_citas.md:171 y :172; la fila del factor de muro es la :170. |
+| `R95-024` | `H-20` | **AJUSTADO** | MEDIA | CONTRADICE | MTC Manual de Puentes (2018), Seccion 2.9 SUPERESTRUCTURAS (pag. impresa 331), pag. impresa 337 (= num. 2.9.1.4.4.3) y num. 2.9.1.5.6.3.4.2 (pag. impresa 387) | AJUSTADO, y bajo de ALTA a MEDIA porque cae el cargo que el auditor llamo «mas de fondo». Lo que se sostiene y verifique: la pagina esta mal -- la Seccion 2.9 arranca en la impresa 331 y en la 337 no hay ninguna remision general a la Seccion 5. Lo que cae: la frase «Sec. 9.4 remite el diseno a AASHTO LRFD Seccion 5 y no transcribia nada de esa seccion» (criterios_adoptados.py:1603-1604) habla de la hoja de ruta del proyecto, no del Manual; el repo nunca afirmo que el Manual no transcriba, de modo que la Seccion 2.9 con su beta-theta no contradice nada. Tambien se desactiva la alarma de mezcla de ediciones: el repo declara su edicion expresamente («AASHTO LRFD 9a ed., 2020» en CA:1591 y CA:1630, con Arts. 5.5.4.2 y 5.7.3.4.2), manifiesto_citas.md:302 ya lleva la advertencia transversal de declarar la edicion, y las expresiones que el Manual transcribe bajo la numeracion antigua son numericamente identicas a las adoptadas -- verifique en PDFPAGE 388 = pag. impresa 387: «beta = 4.8/(1 + 750 eps_s)» y «theta = 29 + 3500 eps_s», y «Vc = 0.0316 beta raiz(fc') bv dv» en la 387-386. Queda un puntero de pagina equivocado dentro de la seccion y el documento correctos, de la misma clase que H-10, que gradue MEDIA por consistencia. |
+
+### 13.1 Evidencia por ítem
+
+**`R95-020` — hallazgo `H-05` — SE SOSTIENE (CRITICA, CONTRADICE)**
+
+*Dónde se miró:* MTC Manual de Puentes (2018), num. 2.4.3.3.2 (pag. impresa 109), num. 2.4.3.11.1 (121), Tabla 2.4.5.3.1-2 (143), num. 2.8.1.3A.6.2 (280), num. 2.11 (505); indice general pags. 36-38
+
+Lei src/criterios_adoptados.py:1124-1128, campo `fuente` de 'h_relleno_min_concreto_tmc': «(2) MANUAL DE PUENTES (RD 041-2016-MTC/14) -- nunca incorporo la Seccion 12 de AASHTO LRFD ('Buried Structures and Tunnel Liners'): su indice salta de 2.11 (Muros de Contencion y Estribos) a 2.12 (Disposiciones Constructivas). Vacio absoluto sobre conductos enterrados.» (repetido en docs/manifiesto_citas.md:182 y :606; la linea :184 que cita el auditor esta en blanco). Abri el PDF original en la pagina PDF 110 = pag. impresa 109 y leo el num. 2.4.3.3.2 «Componentes Enterrados (3.6.2.2 AASHTO): El incremento por carga dinamica para alcantarillas y otras estructuras enterradas, en porcentaje, se debera tomar como: IM = 33(1.0 - 0.125D_E) >= 0%», con «D_E = profundidad minima de la cubierta de tierra sobre la estructura (ft)». Verifique ademas en MTC_PUENTES.txt (PDFPAGE 122 = impresa 121) «No se requerira considerar acciones de sismo sobre alcantarillas tipo cajon y otras estructuras totalmente enterradas», y en PDFPAGE 144 = impresa 143 las filas EV «Estructura rigida enterrada 1.30 / 0.90» y «Estructuras flexible enterradas ... 1.50 / 1.30 / 1.95».
+
+**`R95-021` — hallazgo `H-07` — SE SOSTIENE (MEDIA, CONTRADICE)**
+
+*Dónde se miró:* MTC Manual de Puentes (2018), num. 2.4.3.8.1 y 2.4.3.8.2, pagina impresa 113
+
+En MTC_PUENTES.txt, PDFPAGE 114 (cabecera «Pagina 113»): «2.4.3.8.2 Subpresiones (3.7.2 AASHTO). La subpresion (flotabilidad) se debera considerar como una fuerza de levantamiento, tomada como la sumatoria de las componentes verticales de las presiones hidrostaticas, segun lo especificado en el Articulo 2.4.3.8.1 (3.7.1 AASHTO)...», y en 2.4.3.8.1, misma pagina: «La presion se debera calcular como el producto entre la altura de la columna de agua sobre el punto considerado, y el peso especifico del agua.» Ninguno de los dos asigna valor a ese peso especifico. Lei docs/manifiesto_citas.md:161: «GAMMA_AGUA_KN_M3 = 9.81 kN/m3 (subpresion) | num. 2.4.3.8.2 | Manual de Puentes | [CN:35] | [N]»; src/constantes_normativas.py:35 es hoy la linea «#» vacia dentro de la cita literal de V_MIN, y CN:58-62 dice «GAMMA_AGUA_KN_M3 ya no vive aqui... El num. 2.4.3.8.2 del Manual de Puentes dice como se calcula la subpresion, no cuanto pesa el agua». El valor esta en src/constantes_fisicas.py:59, derivado: `GAMMA_AGUA_KN_M3 = GAMMA_AGUA / N_POR_KN`.
+
+**`R95-022` — hallazgo `H-10` — SE SOSTIENE (MEDIA, CONTRADICE)**
+
+*Dónde se miró:* MTC Manual de Puentes (2018), num. 2.8.1.3.1.2c y sus figuras -1 y -2, paginas impresas 272, 273 y 274
+
+En MTC_PUENTES.txt el encabezado «2.8.1.3.1.2c Consideraciones para Zapatas Apoyadas en Taludes. (10.6.3.1.2c AASHTO)» cae en PDFPAGE 273 = pag. impresa 272; «Figura 2.8.1.3.1.2c-1 Factores de capacidad de carga modificados para zapatas en suelos cohesivos y sobre o adyacentes a terreno inclinado (Meyerhof 1957). Figura (10.6.3.1.2c-1 AASHTO)» en PDFPAGE 274, cabecera «Pagina 273»; «Figura 2.8.1.3.1.2c-2 ... en suelos no cohesivos y sobre o adyacentes a terreno inclinado (Meyerhof 1957). (Figura 10.6.3.1.2c-2 AASHTO)» en PDFPAGE 275, cabecera «Pagina 274». Lei src/criterios_adoptados.py:1467-1468: fuente=«PENDIENTE - Manual de Puentes num. 2.8.1.3.1.2c, figuras 2.8.1.3.1.2c-1 y 2.8.1.3.1.2c-2 (Meyerhof 1957), pags. 272-273», y el mismo rango en M9_cabezal.py:1064-1066, constantes_normativas.py:262 y docs/manifiesto_citas.md:177 y :178.
+
+**`R95-023` — hallazgo `H-14` — AJUSTADO (MEDIA, CONTRADICE)**
+
+*Dónde se miró:* MTC Manual de Puentes (2018), num. 2.8.1.1.14.2 completo: 2.8.1.1.14.2.1 (pag. impresa 254) y 2.8.1.1.14.2.2 (pag. impresa 255)
+
+En 2.8.1.1.14.2.2, PDFPAGE 256 = pag. impresa 255: «Donde el muro es capaz de desplazamientos de 1.0 a 2.0 in o mas durante el evento sismico de diseno, kh puede ser reducido a 0.5kh0 sin llevar a cabo un analisis de la deformacion mediante el metodo Newmark o una version simplificada de el.» Barri con grep todo el numeral 2.8.1.1.14 (lineas 18069-18300 del .txt): cero apariciones de «Tabla», de «25 mm» y de «50 mm». PERO en 2.8.1.1.14.2.1, PDFPAGE 255 = pag. impresa 254: «kh0=FpgaPGA = As donde kh0 es el coeficiente de aceleracion sismico horizontal asumiendo que el desplazamiento del muro sea cero». Lei src/constantes_normativas.py:241-250 («Las DOS filas son [N]: el numeral las fija», NUMERAL_FACTOR_MURO = «2.8.1.1.14.2»), criterios_adoptados.py:481-483 y M9_cabezal.py:295-298.
+
+**`R95-024` — hallazgo `H-20` — AJUSTADO (MEDIA, CONTRADICE)**
+
+*Dónde se miró:* MTC Manual de Puentes (2018), Seccion 2.9 SUPERESTRUCTURAS (pag. impresa 331), pag. impresa 337 (= num. 2.9.1.4.4.3) y num. 2.9.1.5.6.3.4.2 (pag. impresa 387)
+
+En MTC_PUENTES.txt, PDFPAGE 332, cabecera «Pagina 331»: «2.9 SUPERESTRUCTURAS / 2.9.1 Superestructuras de Concreto / 2.9.1.1 Generalidades»; el indice lo confirma («2.9 SUPERESTRUCTURAS ... 331»). PDFPAGE 338 = pag. impresa 337 es control de fisuracion por distribucion de armadura, sin ninguna remision a la Seccion 5 de AASHTO. Lei src/modulos/M9_cabezal.py:1439-1440 («AASHTO LRFD Seccion 5 (Sec. 9.4, via Manual de Puentes Seccion 2.9, pag. 337)») y docs/manifiesto_citas.md:180 y :299, que repiten «pag. 337». Pero «Sec. 9.4» NO es del Manual: es la seccion de la hoja de ruta del propio proyecto, docs/hoja_de_ruta_alcantarillas_v8.md:626 «### 9.4 Refuerzo y durabilidad -- Flexion y corte por AASHTO LRFD Seccion 5», en la misma serie que NUMERAL_9_2 = «Sec. 9.2» y NUMERAL_9_3 = «Sec. 9.3 (E.050)» (M9_cabezal.py:184-190).
+
