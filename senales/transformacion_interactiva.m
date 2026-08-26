@@ -1,8 +1,8 @@
-function transformacion_senales
-%TRANSFORMACION_SENALES  Transformación de señales:  y(t) = A*x(a*t + b) + B
+function transformacion_interactiva
+%TRANSFORMACION_INTERACTIVA  Transformación de señales:  y(t) = A*x(a*t + b) + B
 %
 %  COMO SE USA
-%    Abre este archivo en MATLAB y pulsa Run (o escribe transformacion_senales
+%    Abre este archivo en MATLAB y pulsa Run (o escribe transformacion_interactiva
 %    en la Command Window). Todo se elige desde el menú: no hay que tocar el
 %    código para cambiar de señal.
 %
