@@ -22,7 +22,8 @@
       "evidencia_alegada": "El umbral y su sentido ≥/< CONFIRMAN, pero «luz» tiene tres definiciones normativas incompatibles y ninguna es la del código. (1) Manual de Hidrología 4.1.1.3.1: «Se define como alcantarilla a la estructura cuya luz sea menor a 6.0 m» — «luz» a secas, sin definir. (2) Manual de Hidrología 4.1.1.5.1: «se definirá como puente a la estructura cuya luz sea mayor o igual a 6.0 m, siguiendo lo establecido en las especificaciones AASHTO LRFD» — remite explícitamente a AASHTO. (3) Manual de Puentes, Glosario, EN UNA MISMA PÁGINA, dos sentidos que se excluyen: «LUZ DEL TRAMO DEL PUENTE: Distancia longitudinal entre los ejes de apoyo de cada tramo que constituye la superestructura de un puente» y «OBRAS DE ARTE MENORES: Son aquellas obras cuya luz libre es menor que 6.00 m (20 ft)». (4) AASHTO LRFD 9.ª ed., Art. 1.2 DEFINITIONS: «Bridge—Any structure having an opening not less than 20.0 ft that forms part of a highway or that is located over or under a highway» — «opening», ni «span» ni «clear span».",
       "nota": "Lo que el usuario preguntó (¿el código compara una luz declarada con un diámetro?) tiene respuesta tranquilizadora: NO, y está DECLARADO. M1_clasificacion.py:29-33 dice expresamente «No es el diametro: el diametro lo fija la Fase 4 y, topado por Sec. 3.2 en 2.70 m, nunca alcanzaria por si solo el umbral de 6.0 m». Esa trampa está cubierta. La que NO está cubierta es otra y es peor: el código compara el ANCHO DEL CAUCE NATURAL, que es una cuarta magnitud, contra un umbral que la norma ancla —por su propia remisión a AASHTO— a la LUZ LIBRE DE LA ESTRUCTURA. Las dos divergen justamente en las secciones que este proyecto tiene en alcance: la Familia C está declarada «Sección: marco o multicelda» (M1:377). Un dren de 8 m resuelto con marco de 3 celdas de 2.5 m es PUENTE para el código (8 ≥ 6 → fuera de alcance, no se dimensiona) y OBRA DE ARTE MENOR / alcantarilla por el glosario del Manual de Puentes (luz libre 2.5 < 6.00 m). El ejemplo del propio proyecto «Canal de 12 m → puente» (hoja de ruta Sec. 2.1) se decide sobre esa misma base no declarada. ERROR NUMÉRICO: no en el cálculo hidráulico, pero sí en la CLASIFICACIÓN, que es binaria y decide si el punto se diseña o se expulsa del alcance. Consecuencia asimétrica: expulsa puntos que la norma sí admitiría. Agravante menor: «luz libre» y «luz del tramo (entre ejes de apoyo)» conviven en la MISMA página 45 del glosario, de modo que ni siquiera dentro del Manual de Puentes «luz» es unívoca; para un marco la diferencia entre ambas es el espesor de los tabiques.",
       "agent_id": "ada5824da1a8427e8",
-      "spawn_ts": "2026-08-26T15:08:22.231Z"
+      "spawn_ts": "2026-08-26T15:08:22.231Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-002",
@@ -36,7 +37,8 @@
       "evidencia_alegada": "Los DOS sentidos de «cover» quedan CONFIRMADOS, tal como planteaba la hipótesis. Sec. 12, Art. 12.6.6.3 «Minimum Cover»: «The minimum cover, including a well-compacted granular subbase and base course, shall not be less than that specified in Table 12.6.6.3-1» (altura de relleno); y Art. 12.8.9.4 «Minimum Depth of Fill»: «the minimum depth of cover (HD)». Sec. 5, Art. 5.10.1 «Concrete Cover», definido en las Definitions de la Sec. 5: «Concrete Cover—The specified minimum distance between the surface of the reinforcing bars, strands, post-tensioning ducts...» (recubrimiento de acero). PERO, además, la Tabla 12.6.6.3-1 NO dice lo que el manifiesto le atribuye. Sus filas de concreto son: «Reinforced Concrete Pipe | Under unpaved areas or top of flexible pavement | Bc/8 ... whichever is greater, > 12.0 in.» y «Reinforced Concrete Pipe | Under bottom of rigid pavement | 9.0 in.». Y su nota al pie fija el DATUM: «* Minimum cover taken from top of rigid pavement or bottom of flexible pavement». El comentario C12.6.6.3 lo refuerza: «Depending on the pipe material and the pavement type above it, the minimum cover may include the pavement thickness and base course, along with the sub-base.»",
       "nota": "Confirmo la hipótesis del punto 7: «cover» de AASHTO Sec. 12 ES altura de relleno y «cover» de AASHTO Sec. 5 ES recubrimiento de acero, los dos «recubrimiento» en español. La nota de trampa del manifiesto (§14.a, líneas 619-627) está acotada al Manual de Puentes Tabla 2.9.1.5.5.3-1 y NO se extiende a AASHTO, pese a que la tabla inmediatamente siguiente cita Art. 12.6.6.3: la trampa ya declarada se repite en un documento donde no se declaró. Pero lo grave es la CONSECUENCIA NUMÉRICA que el proyecto no vio, y que es vocabulario puro: los dos números que el manifiesto declara «prácticamente coincidentes» se miden desde datums DISTINTOS. AASHTO mide «from top of rigid pavement or bottom of flexible pavement» y cuenta subbase y base como parte del cover; EG-2013 508.07 mide «hasta el nivel de la subrasante», es decir POR DEBAJO de todo el paquete. No son la misma magnitud, así que la coincidencia 0.305 ≈ 0.30 es un artefacto de comparar dos reglas distintas, y el argumento «la verificación debería confirmarla, no corregirla» no se sostiene sobre esa base. ADEMÁS la cita atribuye al artículo un contenido que no tiene: «1.0 ft típico salvo diseño especial de armadura» no está en 12.6.6.3; la tabla da Bc/8 con piso de 12.0 in bajo pavimento flexible y 9.0 in —MENOS de 1.0 ft— bajo pavimento rígido, y la frase «salvo diseño especial de armadura» no aparece. Atenuante real: es una fila de «verificación de expediente PENDIENTE», no un valor adoptado, así que hoy no mueve ningún número del cálculo. Por eso ALTA y no CRÍTICA. Para diámetros de este proyecto (Bc ≈ 1.1 m → Bc/8 ≈ 5.4 in < 12 in) el piso de 12.0 in efectivamente gobernaría bajo pavimento flexible, de modo que el 1.0 ft no es un disparate como número; lo que está mal es presentarlo como lo que dice el artículo y compararlo contra un datum que no es el suyo.",
       "agent_id": "ae826a14d3e3f8d65",
-      "spawn_ts": "2026-08-26T15:12:54.476Z"
+      "spawn_ts": "2026-08-26T15:12:54.476Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-003",
@@ -50,7 +52,8 @@
       "evidencia_alegada": "El num. 4.1.1.3.1 «Aspectos generales» (alcantarillas) SÍ está en la pág. impresa 70 — esa mitad de la cita es correcta. El num. 4.1.1.5.1 «Aspectos generales» (puentes) está en la pág. impresa 86, NO en la 88: el folio impreso «86» encabeza esa página y en ella está la definición «En el presente Manual se definirá como puente a la estructura cuya luz sea mayor o igual a 6.0 m, siguiendo lo establecido en las especificaciones AASHTO LRFD». El índice del propio Manual lo confirma: «4.1.1.5.1 Aspectos generales ...... 86». La pág. 88 corresponde a otro apartado: «a.1) Topografía – Batimetría del cauce y zonas adyacentes ...... 88», dentro de 4.1.1.5.2.",
       "nota": "Hallazgo colateral: apareció al verificar el vocabulario de «luz» (E-03) y estrictamente pertenece al bloque de verificación de citas, pero lo reporto porque está confirmado y afecta a tres archivos a la vez. El NUMERAL es correcto, el CONTENIDO es correcto (4.1.1.5.1 sí define el umbral de 6.0 m) y el UMBRAL es correcto; solo la página está desfasada en dos. Severidad ALTA por la regla del briefing («página equivocada»). Corrección: «págs. 70 y 86».",
       "agent_id": "acf0121a1e7e1d103",
-      "spawn_ts": "2026-08-26T15:17:29.274Z"
+      "spawn_ts": "2026-08-26T15:17:29.274Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-004",
@@ -64,7 +67,8 @@
       "evidencia_alegada": "El numeral 2.1.4.3.9 del Manual de Puentes es \"Aparatos de Apoyo\" (dispositivos de apoyo de la superestructura), y ocupa efectivamente la pág. 91: no dice una palabra sobre sobrecarga de trasdós ni sobre altura de relleno equivalente. Además el Manual NO incorpora el artículo que sí la fija: su §2.4.4.1 \"Empuje del Suelo: EH, ES, LS y DD\" sólo desarrolla 2.4.4.1.1 a 2.4.4.1.5.4 (Requisitos, Compactación, Presencia de Agua, Efecto Sísmico, EH, ko, ka, kp) y salta directo a 2.4.5 — no hay subsección de LS ni tabla de heq. La fuente real es AASHTO LRFD 9ª ed. Art. 3.11.6.4: Δp = k·γs·heq, \"Equivalent heights of soil, heq, ... may be taken from Tables 3.11.6.4-1 and 3.11.6.4-2. **Linear interpolation shall be used for intermediate wall heights.**\" Y las tablas dan heq en función de la ALTURA del muro: estribos perpendiculares al tráfico 5.0 ft→4.0 ft, 10.0 ft→3.0 ft, ≥20.0 ft→2.0 ft; muros paralelos al tráfico 5.0 ft→5.0 ft (a 0 ft del tráfico), 10.0 ft→3.5 ft, ≥20.0 ft→2.0 ft. El 0.60 m ≈ 2.0 ft es exclusivamente la fila de ≥20 ft (6.1 m). La regla del H/2 que el repo implementa en `sobrecarga_trasdos_aplica` también sale de ahí, no del Manual.",
       "nota": "Doble defecto y por eso CRÍTICA. (1) De cita: se presenta como exigencia normativa peruana con numeral un valor que ese numeral no contiene y que el Manual no incorpora en ningún otro sitio. (2) De clasificación, que es lo de este bloque: 0.60 m es UNA FILA de una tabla condicionada por la altura del muro, endurecida como escalar [N]. Al aplicar la app a otra carretera —o incluso a ésta— con un cabezal de 1.5 a 3 m, heq debería ser 0.9 a 1.5 m y AASHTO OBLIGA a interpolar; el repo entrega siempre 0.60 m, que es el extremo INFERIOR (menos conservador) de la tabla. Agravante: la altura H del cabezal no está declarada en ninguna parte (`predimensionamiento_cabezal` = None), de modo que el código fija la fila de una tabla cuyo argumento de entrada el propio expediente reconoce como desconocido. Etiqueta que tiene: [N]. Etiqueta que debería tener: la TABLA completa (por altura) como [C] (AASHTO vía vacío del Manual) o [N→], y la altura del muro como argumento del cálculo, nunca un escalar.",
       "agent_id": "a7cb507bc9f8e7486",
-      "spawn_ts": "2026-08-26T15:20:07.758Z"
+      "spawn_ts": "2026-08-26T15:20:07.758Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-005",
@@ -78,7 +82,8 @@
       "evidencia_alegada": "La Tabla 2.4.3.11.2.1.2-1 \"Valores de Factor de Sitio, Fpga En Periodo-Cero en el Espectro de Aceleración (Tabla 3.10.3.2-1 AASHTO)\" es una matriz de CINCO clases de sitio por CINCO niveles de PGA: columnas PGA<0.10 / 0.20 / 0.30 / 0.40 / >0.50, filas A: 0.8 0.8 0.8 0.8 0.8; B: 1.0 1.0 1.0 1.0 1.0; C: 1.2 1.2 1.1 1.0 1.0; D: 1.6 1.4 1.2 1.1 1.0; E: 2.5 1.7 1.2 0.9 0.9. El texto previo aclara que los factores \"serán determinados usando las clases de sitio ... y los valores de los coeficientes PGA, Ss y S1 que se encuentren en los planos\".",
       "nota": "El repo transcribe una sola COLUMNA de la tabla —la de PGA ≥ 0.50— y sólo tres de sus cinco filas. Cuál columna aplica lo fija el PGA del sitio, que en este proyecto es `datos_sitio.PGA_roca_B = 0.50` g, un dato [S] que el propio manifiesto declara \"no portable a otro proyecto\". Aplicando el criterio de diagnóstico del proyecto: en otra vía con PGA = 0.20 g la MISMA tabla da C=1.2, D=1.4, E=1.7 — el valor no es el mismo número, luego no es [N]. Es exactamente el defecto que el manifiesto define, dentro de la variable que el manifiesto exhibe como ejemplo de buena práctica; el propio manifiesto ya avisaba (\"Lo que este cambio NO hace\") de que las demás filas de constantes_normativas.py no se revisaron. Qué pasaría en otra carretera: alguien cambia correctamente PGA_roca_B en datos_sitio.py, y F_PGA_TABLA y la justificación de 'F_pga' se quedan calladas en la columna equivocada. Etiqueta que tiene: [N] implícita por el archivo. Debería tener: la tabla ENTERA (5×5) como [N], y la columna la selecciona el PGA [S] en tiempo de cálculo. Mitigación real: hoy ningún módulo importa F_PGA_TABLA (M9 no la trae en su lista de imports, líneas 141-167), así que no mueve ningún resultado — pero sí viaja a la memoria como constante normativa declarada.",
       "agent_id": "a10577fa76278c1ac",
-      "spawn_ts": "2026-08-26T15:23:35.060Z"
+      "spawn_ts": "2026-08-26T15:23:35.060Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-006",
@@ -92,7 +97,8 @@
       "evidencia_alegada": "(no aplica: defecto interno del repo) La simetría que los docstrings afirman no existe en el código. `factor_muro()` rechaza una elección que no sea una fila de la tabla [N]; `f_pga()` devuelve el criterio tal cual y ni siquiera importa F_PGA_TABLA — la constante no aparece en la lista de imports de M9 (líneas 141-167).",
       "nota": "El reparto tabla-[N]/elección-[A] es sólo retórico para F_pga. Un `F_pga = 1.3` (o cualquier número fuera de la tabla) pasaría sin protesta y llegaría a la memoria etiquetado como \"fila elegida de una tabla normativa\". Combinado con F-02, el guardián que impediría que la elección se desalinee del PGA real no existe por partida doble: ni valida contra la tabla, ni ata la elección a `datos_sitio.PGA_roca_B`. Qué pasaría en otra carretera: la cadena sísmica entera (A_s, k_h0, k_h, K_AE) se calcularía con un F_pga que nadie contrasta contra nada.",
       "agent_id": "aad9df716acd66436",
-      "spawn_ts": "2026-08-26T15:27:26.792Z"
+      "spawn_ts": "2026-08-26T15:27:26.792Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-007",
@@ -106,7 +112,8 @@
       "evidencia_alegada": "El Manual de Suelos del MTC no pone techo al CBR de subrasante: su cuadro de Categorías de Sub rasante termina en \"S5 : Sub rasante Excelente — CBR ≥ 30%\", abierto por arriba. Y el propio Manual especifica materiales con CBR de 100 % y más: \"Base Granular CBR 100%, compactada al 100% de la MDS — a2 — 0.054/cm — Capa de Base recomendada para Tráfico > 10'000,000 EE\" (el ≥ se perdió en el OCR, pero el valor 100 está escrito), junto a \"Base Granular CBR 80%\".",
       "nota": "El comentario que justifica el tope es una afirmación física falsa: el CBR es una razón contra la piedra patrón y superar 100 % es corriente en roca, en gravas bien graduadas y en bases granulares —el propio Manual las tarifa a 100 %—. En ESTE expediente el tope nunca muerde (los CBR del CSV van de 6.5 a 15.5, aluvial del Bajo Piura). En otra carretera con subrasante rocosa o granular de calidad, un CBR de 120 % es un resultado de laboratorio legítimo y M0 aborta la carga de la fila con DatoInvalidoError, es decir, la app no corre. Es un umbral calibrado a este sitio disfrazado de límite físico universal, que es literalmente el caso que el encargo pide buscar. Además sí altera resultados por vía indirecta: el CBR gobierna la fila de RESGUARDO_NAPA_SUBRASANTE que usan V4 (M5:364) y el tamizado 7.A (M7), de modo que rechazar la fila decide si hay resultado o no. Debería ser: sin tope superior, o un tope muy por encima (p. ej. 200-300 %) declarado como implausibilidad de transcripción y no como \"tope de la escala\".",
       "agent_id": "ad77db6254c9db9ca",
-      "spawn_ts": "2026-08-26T15:28:33.423Z"
+      "spawn_ts": "2026-08-26T15:28:33.423Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-008",
@@ -120,7 +127,8 @@
       "evidencia_alegada": "(no aplica: defecto interno del repo) El criterio `FS_flotacion` YA NO EXISTE en el codigo. src/criterios_adoptados.py:1215-1220 lo declara retirado: «# 'FS_flotacion' SE RETIRO. Declaraba el factor de seguridad global de sigma W >= FS*U, que es lenguaje de TENSION ADMISIBLE, y V7 se reescribio como el equilibrio de factores de carga que corresponde al marco LRFD que adopta Sec. 0.2». Lo confirman src/modulos/M8_estructural.py:52 y 72 y src/modulos/M5_verificaciones.py:467. La linea citada, src/criterios_adoptados.py:842, dice «\"exactamente eso\",» y pertenece al campo `fuente` del criterio `ke_entrada` (HDS-5 Tabla C.2), sin ninguna relacion.",
       "nota": "ALTA: el manifiesto declara ser 'un volcado literal de lo que el codigo YA afirma' e inventaria como vigente un criterio suprimido, apuntando ademas a otro criterio distinto. Es una fila que no se puede verificar contra nada.",
       "agent_id": "aac79a9bdbf0abaa1",
-      "spawn_ts": "2026-08-26T15:30:33.637Z"
+      "spawn_ts": "2026-08-26T15:30:33.637Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-009",
@@ -134,7 +142,8 @@
       "evidencia_alegada": "(no aplica: defecto interno del repo) src/criterios_adoptados.py:992-995 pertenece al criterio `TR_evento_extremo` (V8) y dice «el umbral no hay con que comparar el HW resultante» / «fuente=\"PENDIENTE - Fase 5, V8 de la hoja de ruta...\"» — nada sobre ediciones de AASHTO. Busque el texto en todo el archivo (`grep -i edicion` sobre src/criterios_adoptados.py): las unicas apariciones son 'medicion de campo' (l.39), '9a edicion (2020)' dentro de `clase_sitio` (l.395), 'mediciones' (l.1185). No existe ninguna advertencia transversal sobre declarar la edicion, ni mencion de que la numeracion de la Sec. 11 cambiara entre ediciones (la unica 'Sec. 11' del archivo esta en la l.596, dentro de `punto_aplicacion_incremento_sismico`).",
       "nota": "ALTA: la fila registra una afirmacion del codigo que el codigo no hace en ninguna parte. O la advertencia se borro y el manifiesto no se regenero, o nunca estuvo. En ambos casos es una fila no verificable presentada como volcado literal.",
       "agent_id": "ad960c8f7f567cdec",
-      "spawn_ts": "2026-08-26T15:32:01.469Z"
+      "spawn_ts": "2026-08-26T15:32:01.469Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-010",
@@ -148,7 +157,8 @@
       "evidencia_alegada": "(no aplica: defecto interno del repo) Contado sobre el propio modulo (`cd src && python3 -c \"import criterios_adoptados as c; ...\"`): 46 criterios, con 0 [N], **2 [N->]**, 1 [S], **13 [C]**, 30 [A]. Los dos [N->] son `resguardo_HW_subrasante` Y `h_relleno_min_concreto_tmc` (este ultimo declara `etiqueta=\"N->\"` en src/criterios_adoptados.py:1076). El manifiesto lo cuenta como [C]: en §6 fila 253 y en §9 fila 324 lo etiqueta [C], y en §13 lo suma a los 14 [C].",
       "nota": "Contradiccion interna ADEMAS de contradiccion con el codigo: el propio §14.a del manifiesto (lineas 595 y 598) dice lo contrario — «adopcion [N->] por analogia» y «Es el mismo patron que `resguardo_HW_subrasante`, el OTRO [N->] del proyecto», es decir, dos. El total 46 cuadra por casualidad porque el error se compensa entre las dos columnas.",
       "agent_id": "a2cdc8595c139ac05",
-      "spawn_ts": "2026-08-26T15:33:59.708Z"
+      "spawn_ts": "2026-08-26T15:33:59.708Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-011",
@@ -162,7 +172,8 @@
       "evidencia_alegada": "(no aplica: defecto interno del repo) El numero correcto es **30**, el que da §13 — 33 es erroneo. Conte la tabla de §12: tiene exactamente 33 filas de datos (docs/manifiesto_citas.md:461-493). De esas 33 claves, CUATRO no son [A] en el codigo sino [C]: `factores_carga_aashto` (CA:1339), `peso_especifico_concreto_kn_m3` (CA:1401), `recubrimiento_aashto_mm` (CA:1501) y `procedimiento_flexion_corte_aashto_sec5` (CA:1586). Y falta `clase_sitio` (CA:386), que SI es [A] y tiene valor ('F_con_factores_tabulados_por_adopcion'). 33 - 4 + 1 = 30. El reparto real es 22 sin valor y 8 con valor, no 26/7: los 8 son los 7 listados mas `clase_sitio`.",
       "nota": "§12 y §13 se contradicen entre si (33 vs 30) y §12 se contradice con el codigo por partida triple: numero, composicion y reparto con/sin valor. El numero correcto es 30.",
       "agent_id": "a9de32fde6cff8f94",
-      "spawn_ts": "2026-08-26T15:35:25.439Z"
+      "spawn_ts": "2026-08-26T15:35:25.439Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-012",
@@ -176,7 +187,8 @@
       "evidencia_alegada": "(no aplica: defecto interno del repo) Los cuatro tienen HOY valor declarado y etiqueta [C]: `factores_carga_aashto` = dict completo de factores gamma por combinacion (Resistencia I: DC max 1.25/min 0.9, EV max 1.35/min 0.9, ...); `peso_especifico_concreto_kn_m3` = 23.56; `recubrimiento_aashto_mm` = {contra_suelo: 75.0, suelo_intemperie_ge_3_4: 75.0, suelo_intemperie_le_5_8: 75.0}; `procedimiento_flexion_corte_aashto_sec5` = {phi_flexion: 0.9, phi_corte: 0.9, modelo_corte: MCFT_seccional...}. El propio codigo lo dice en src/modulos/M9_cabezal.py:49-54 («los tres criterios [C] se cerraron por verificacion externa contra AASHTO LRFD 9a ed.») y en src/modulos/M9_cabezal.py:1174-1176 («'recubrimiento_aashto_mm' es [C] (AASHTO LRFD Tabla 5.10.1-1, exposicion costera, 75 mm...): la funcion calcula directo, ya no se detiene aqui»).",
       "nota": "ALTA porque falsea el ESTADO DEL PROYECTO en la direccion pesimista: el manifiesto presenta como bloqueantes cuatro criterios ya cerrados, y de paso los presenta como adopciones sin norma [A] cuando el codigo los declara [C] con fuente AASHTO LRFD 9a ed. y numeral. Un revisor que lea solo §12 concluye que el calculo esta detenido en cuatro puntos donde no lo esta.",
       "agent_id": "a0c76935f80f5f2ef",
-      "spawn_ts": "2026-08-26T15:36:07.152Z"
+      "spawn_ts": "2026-08-26T15:36:07.152Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-013",
@@ -190,7 +202,8 @@
       "evidencia_alegada": "El texto coincide LITERALMENTE, palabra por palabra: «La altura de relleno minimo desde la clave de la tuberia hasta el nivel de la subrasante sera de 0,30 m.» Pero esta en la pagina impresa 984, no en la 982. Aparece en EG2013.txt linea 52188, dentro del bloque PDFPAGE 992 (marca en la linea 52148), y el pie de esa pagina imprime literalmente «Manual de Carreteras / \"Especificaciones Tecnicas Generales para Construccion\" 984 / (EG - 2013) Revisada y Corregida a Junio 2013». Coherente con el offset del briefing (impresa = pdfpage - 8 = 984).",
       "nota": "Hallazgo colateral, encontrado al verificar DONDE vive la cita de H-MC-01. Segun la escala del briefing, 'pagina equivocada' es ALTA. El desfase de 2 paginas se repite en las cuatro apariciones (dos en el codigo, dos en el manifiesto), asi que es un unico error propagado, no una errata puntual.",
       "agent_id": "a944caec0ae626f12",
-      "spawn_ts": "2026-08-26T15:38:55.538Z"
+      "spawn_ts": "2026-08-26T15:38:55.538Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-014",
@@ -204,7 +217,8 @@
       "evidencia_alegada": "La Subseccion 508.07 'Colocacion del relleno alrededor de la estructura' y la frase 'La altura de relleno minimo desde la clave de la tuberia hasta el nivel de la subrasante sera de 0,30 m.' estan en la PAGINA IMPRESA 984, no en la 982. El encabezado de esa pagina dice literalmente: 'Manual de Carreteras \"Especificaciones Tecnicas Generales para Construccion\" 984'. La pagina 982 corresponde a PDFPAGE 990 y no contiene la Subseccion 508.07.",
       "nota": "El numeral 508.07 y el texto citado SI existen y dicen exactamente lo que el repo afirma (la Seccion 508 es 'Tuberia de polietileno de alta densidad', pag. 981, de modo que el 'SOLO PARA HDPE' tambien se confirma). Lo unico erroneo es la pagina, y esta impresa tres veces en el bloque que la memoria presenta como su pieza mas defendible. Un revisor que abra la 982 no encuentra nada.",
       "agent_id": "ae9b08a5e5d163413",
-      "spawn_ts": "2026-08-26T15:38:58.300Z"
+      "spawn_ts": "2026-08-26T15:38:58.300Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-015",
@@ -218,7 +232,8 @@
       "evidencia_alegada": "507.05 'Preparacion del terreno base' y 507.06 'Solado' estan en la pagina impresa 973 (PDFPAGE 981); 507.08 'Relleno' esta en la pagina impresa 974 (PDFPAGE 982, cuyo encabezado dice 974). El rango 969-970 esta desplazado 4 paginas. La SUSTANCIA si se confirma: 507.05 dice 'de acuerdo con la norma ASTM A-807', 507.06 'de acuerdo con la especificacion ASTM A-807' y 507.08 'de acuerdo a la especificacion ASTM A-807'.",
       "nota": "Solo la tercera pagina del mismo campo es correcta: 'Subseccion 506.02 (pag. 959) remite a AASHTO M-170M' — verificado, PDFPAGE 967, encabezado '959', texto 'La tuberia debera cumplir los requisitos... establecidos en la especificacion AASHTO M-170M'. De las tres remisiones de pagina que la memoria imprime en ese campo, dos estan mal.",
       "agent_id": "aad5d804a8624c0a6",
-      "spawn_ts": "2026-08-26T15:42:06.200Z"
+      "spawn_ts": "2026-08-26T15:42:06.200Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-016",
@@ -232,7 +247,8 @@
       "evidencia_alegada": "El indice del Manual de Puentes dice: '2.11 DISENO DE BARRERAS DE SONIDO ... 505' y '2.12 DISPOSICIONES CONSTRUCTIVAS ... 513'. El capitulo 2.11 NO es 'Muros de Contencion y Estribos'. Los muros de contencion y estribos viven dentro de 2.8 CIMENTACIONES (p. 239), en el sub-articulo 'Diseno Sismico de Estribos y Muros de Contencion Convencionales' (p. 252). Los capitulos vecinos son 2.9 SUPERESTRUCTURAS (p. 331), 2.10 REQUISITOS PARA APOYOS (p. 489).",
       "nota": "Es la evidencia que sostiene la analogia [N->] entera del 0.30 m, y va impresa en el bloque que la memoria declara como 'el razonamiento entero'. La CONCLUSION sobrevive —el Manual no tiene equivalente de la Seccion 12 de AASHTO LRFD y no fija altura minima de relleno; se busco 'altura minima de relleno', 'cubierta minima', 'cobertura minima' y 'relleno minimo' en MTC_PUENTES.txt sin resultado— pero el 'salto de indice' que la memoria describe no es el que dice.",
       "agent_id": "a80829478239c6ffe",
-      "spawn_ts": "2026-08-26T15:43:22.518Z"
+      "spawn_ts": "2026-08-26T15:43:22.518Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-017",
@@ -246,7 +262,8 @@
       "evidencia_alegada": "El Manual de Puentes SI trata conductos enterrados en al menos dos lugares: (a) Art. 2.4.3.3.2 'Componentes Enterrados' (3.6.2.2 AASHTO): 'El incremento por carga dinamica para alcantarillas y otras estructuras enterradas, en porcentaje, se debera tomar como: IM = 33(1.0 - 0.125 DE) >= 0%', donde 'DE = profundidad minima de la cubierta de tierra sobre la estructura (ft)'; (b) Art. 2.4.3.2.3.3 'Cargas de Diseno para Tableros, Sistemas de Tableros y Losas Superiores de Alcantarillas Rectangulares' (indice, p. 106).",
       "nota": "Afirmacion negativa impresa mas amplia de lo que la busqueda sostiene. El vacio OPERATIVO —que ningun articulo del Manual fija una altura minima de relleno sobre la clave— si se confirma: la unica aparicion de 'profundidad minima de la cubierta' es como VARIABLE DE de la formula de IM, no como exigencia. La memoria deberia decir 'no incorpora las disposiciones de cobertura minima de la Seccion 12 de AASHTO LRFD', no 'vacio absoluto'.",
       "agent_id": "a6f08967e806e559c",
-      "spawn_ts": "2026-08-26T15:45:35.967Z"
+      "spawn_ts": "2026-08-26T15:45:35.967Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-018",
@@ -260,7 +277,8 @@
       "evidencia_alegada": "La Tabla 2.4.3.11.2.1.2-1 existe y sus valores para PGA > 0.50 son exactamente C=1.0, D=1.0, E=0.9 — eso se CONFIRMA. Pero la MISMA tabla trae una fila mas: 'F2 * * * * *', con la Nota 2 al pie: 'Llevar a cabo investigaciones geotecnicas especificas del sitio y analisis de respuesta dinamica de sitio, para todos los sitios en sitio clase F'. Para la Clase F la tabla NO da factor. Y AASHTO LRFD 9a ed. Art. 3.10.2.1 lo repite: 'A Site-Specific Procedure SHALL be used if any one of the following conditions exist: ... The site is classified as Site Class F (Article 3.10.3.1)'.",
       "nota": "El proyecto declara, en criterios_adoptados.py:386, que el sitio ES Clase F ('El sitio es Clase F por susceptibilidad a licuefaccion; esa parte no cambia'). La memoria imprime un factor leido de una tabla que para esa clase tiene asterisco, presenta C/D/E como 'las tres clases plausibles' sin nombrar la F ni una sola vez en ese bloque, y nunca imprime la Nota 2. Un revisor que abra la tabla citada encuentra que la fila que le corresponde a este proyecto no tiene numero. Ver tambien G-07: el criterio que si dice todo esto no puede imprimirse nunca.",
       "agent_id": "a1815d06d9d2d0fbc",
-      "spawn_ts": "2026-08-26T15:46:38.166Z"
+      "spawn_ts": "2026-08-26T15:46:38.166Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-019",
@@ -274,7 +292,8 @@
       "evidencia_alegada": "(no aplica: defecto interno del repo). La memoria NO puede decirlo. bloque_criterios() imprime solo ca.criterios_usados(); ningun modulo de src/modulos/ ni cli.py llama nunca a valor('clase_sitio') — grep sobre todo el repo devuelve una sola referencia funcional, la de la linea 1988, que vive en el bloque de demostracion `if __name__ == \"__main__\":` y no se ejecuta cuando M11 importa el modulo. Comprobado en caliente: `'clase_sitio' in ca.criterios_usados()` = False. Ademas clase_sitio TIENE valor, de modo que tampoco entra en criterios_sin_valor() ni en la tabla 'Criterios declarados todavia sin valor'. Es inimprimible por construccion, en cualquier corrida y a cualquier alcance.",
       "nota": "Punto 6 del encargo. La cadena de promesas del proyecto (criterio -> manifiesto §13.5 -> memoria) se rompe en el ultimo eslabon. Lo unico que sobrevive es la fila 1.1 del Tablero 1, copiada literal de la hoja de ruta ('AASHTO exige estudio de respuesta de sitio especifico para la Clase F, de forma incondicional... el uso de factores tabulados pasa a adopcion [A]'), y esa fila NO existe a alcance perfil (ver G-16). El texto exacto 'sin respaldo normativo' no aparece en memoria.txt ni en memoria_perfil.txt: grep = 0.",
       "agent_id": "a4e3891ea53315a4f",
-      "spawn_ts": "2026-08-26T15:50:08.144Z"
+      "spawn_ts": "2026-08-26T15:50:08.144Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-020",
@@ -288,7 +307,8 @@
       "evidencia_alegada": "La Tabla 5.10.1-1 'Minimum Cover for Main Reinforcing Steel (in.)', pag. 5-169, esta enteramente en PULGADAS y tiene DOS ejes, no uno: la Situation en filas y la 'Reinforcing Material Category A / B / C' en columnas. La fila 'Coastal' da A = 3.0 in, B = 2.0 in, C = 2.0 in. Y la tabla SI usa el diametro de barra en dos de sus filas: 'Other than noted below - Up to No. 11 bar (1.5) - No. 14 and No. 18 bars (2.0)' y 'Bottom of cast-in-place slabs - Up to No. 11 bar - No. 14 and No. 18 bars'. Los valores de E.060 Art. 7.7.1 con que se compara si se confirman: (a) 70 mm contra suelo, (b) 50 mm barras 3/4\" y mayores, 40 mm barras 5/8\" y menores (pag. 54).",
       "nota": "Dos defectos en la misma frase impresa. (a) 'no organiza por diametro de barra' es falso: lo hace en dos filas. (b) Mas grave: el eje Categoria A/B/C no se menciona jamas, y de el depende la conclusion. 75 mm es el equivalente metrico blando de 3.0 in (76.2 mm), que es la Categoria A (acero sin proteger). Con Categoria B o C —acero con recubrimiento epoxico o resistente a la corrosion— el valor costero es 2.0 in = 50.8 mm, MENOR que los 70 mm contra_suelo de E.060, y la conclusion impresa 'AASHTO gobierna en los tres casos' se cae entera. La memoria fija un dato de diseno sin declarar la eleccion de la que depende.",
       "agent_id": "a9af70b2fe34c74c6",
-      "spawn_ts": "2026-08-26T15:52:08.949Z"
+      "spawn_ts": "2026-08-26T15:52:08.949Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R48-021",
@@ -850,5 +870,6 @@
       "evidencia": "docs/manifiesto_citas.md:296 dice literal: \"| `FS_flotacion = None` - FS de V7, SigmaW >= FS*U | Sec. 12 (no incorporada por el Manual de Puentes) | AASHTO LRFD | [CA:842](src/criterios_adoptados.py:842) | [C] |\". Lei src/criterios_adoptados.py:842 y es \"exactamente eso\",  -- la ultima linea del campo `fuente` del criterio `ke_entrada` (HDS-5 Tabla C.2). En :1215-1228 esta el bloque de comentario \"# 'FS_flotacion' SE RETIRO. Declaraba el factor de seguridad global de SigmaW >= FS*U...\"; importando el modulo, `'FS_flotacion' in ca.CRITERIOS` devuelve False, y M5_verificaciones.py:467 dice \"El criterio 'FS_flotacion' que sostenia el umbral se retiro\". En tests/test_manifiesto_citas.py:105-115, `_clasificadas()` hace `candidatos = [s for s in _simbolos_citados(fila) if s in bloques]` y manda a `prosa` toda fila sin simbolo vivo; sobre `prosa` solo corren las comprobaciones de archivo existente, rango y linea no vacia.",
       "razonamiento": "Comprobe las cinco piezas yo mismo y todas dan la razon al auditor. El manifiesto sigue inventariando un criterio inexistente con un ancla que aterriza en el campo `fuente` de otro criterio (`ke_entrada`), y la seccion 8 demuestra tener convencion para retirar filas -- la de `clase_sitio` esta tachada con \"CITA FALSA - RETIRADA\" -- que aqui no se aplico: la fila esta viva. El agujero del test es estructural tal como se describe: sin simbolo, la referencia cae en `prosa` y solo se comprueba que exista el archivo, que la linea este dentro del rango y que no este vacia. Matizo sin bajar severidad que la excepcion de prosa no queda del todo sin vigilancia agregada (`test_las_referencias_de_prosa_no_crecen_sin_control`, cupo 90, y `test_la_cobertura_verificable_no_se_degrada`, piso 0.65), pero ninguno de los dos mira fila por fila y una sola referencia degradada pasa por debajo de ambos. Anado que el preambulo de la seccion 8 (\"Ninguna cita a AASHTO LRFD lleva hoy un valor numerico transcrito: todas las tablas quedaron sin extraer\") tambien es falso hoy, y que este mismo defecto ya figura sin corregir en el registro interno docs/auditorias/auditoria_normativa.md:117 (MAN-03, ALTA, CONTRADICE). ALTA se sostiene: no es una linea desfasada (MEDIA), es un item [C] anunciado al revisor que no existe."
     }
-  ]
+  ],
+  "items_sin_veredicto_en_este_json": 20
 }

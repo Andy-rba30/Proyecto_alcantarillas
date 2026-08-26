@@ -4,9 +4,9 @@
   "workflow_run_id": "wf_b7d4d4dd-deb",
   "fase": "Refutar — verificacion adversarial de los hallazgos producidos por la fase Verificar",
   "total": 95,
-  "cerrados": 89,
-  "pendientes": 6,
-  "primer_pendiente": "R95-090",
+  "cerrados": 95,
+  "pendientes": 0,
+  "primer_pendiente": null,
   "procedencia_de_la_numeracion": "No existia en la ejecucion original una numeracion 'R95-NNN': los agentes refutadores se identificaban por el ID del hallazgo que refutaban (H-05, G-09, E-03, ...) y un mismo hallazgo pudo tener mas de un refutador. La numeracion de este temario se asigna por ORDEN DE SPAWN ASCENDENTE, tomado del timestamp del primer mensaje de cada transcripcion agent-*.jsonl del run. El orden es exacto y reproducible: los 95 refutadores tienen timestamps unicos (cero duplicados) y los items 'cerrado' forman un bloque contiguo desde el 001, que es exactamente la firma de un corte por limite de sesion. Cada item conserva agent_id y spawn_ts para que el mapeo sea auditable contra las transcripciones.",
   "estado_derivado_de": "journal.jsonl del run: type=result -> cerrado; type=failed (limite de sesion de creditos) -> pendiente. Es un hecho registrado, no una suposicion.",
   "items": [
@@ -22,7 +22,8 @@
       "evidencia_alegada": "num. 9.1(1) completo: «Se considerarán como materiales aptos para las capas de la sub rasante suelos con CBR ≥ 6%. En caso de ser menor (sub rasante Insuficiente o sub rasante inadecuada), o se presenten zonas húmedas locales o áreas blandas, será materia de un Estudio Especial para la estabilización, mejoramiento o reemplazo, donde el Ingeniero Responsable analizará diversas alternativas de estabilización o de solución, como: Estabilización mecánica, Reemplazo del suelo de cimentación, Estabilización con productos o aditivos que mejoran las propiedades del suelo, Estabilización con geosintéticos (geotextiles, geomallas u otros), Pedraplenes, Capas de arena, Elevar la rasante o cambiar el trazo vial sí las alternativas analizadas resultan ser demasiado costosas y complejas.» Ni un porcentaje de compactación ni un espesor de capa.",
       "nota": "El 9.1(1) existe pero no aporta NADA a ninguna de las dos constantes: trata del CBR mínimo de subrasante y del abanico de estabilizaciones. Es numeral de relleno en la cita de compactación (donde sí sostiene, en cambio, a CBR_MIN_SUBRASANTE, que no lo cita). Se verificó que no hay otro 9.1 en el documento: las únicas ocurrencias del encabezado son el índice (línea 245) y el cuerpo del Capítulo IX (línea 4992). Adjudicar a un numeral un valor que ese numeral no contiene es lo primero que revienta en una sustentación, aunque el valor esté bien por otro lado.",
       "agent_id": "a4f6f060fae2e6202",
-      "spawn_ts": "2026-08-26T15:26:25.765Z"
+      "spawn_ts": "2026-08-26T15:26:25.765Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-002",
@@ -36,7 +37,8 @@
       "evidencia_alegada": "num. 3.2.2 «Corte»: «El fondo de las zonas excavadas se preparará mediante escarificación en una profundidad de 0.15m, conformando y nivelando de acuerdo con las pendientes transversales especificadas en el diseño geométrico vial; y se compactará al 95% de la máxima densidad seca del ensayo proctor modificado.» num. 3.3: «En la etapa constructiva, los últimos 0.30m de suelo debajo del nivel superior de la sub rasante, deberán ser compactados al 95% de la máxima densidad seca obtenida del ensayo proctor modificado (MTC EM 115).»",
       "nota": "Aporte parcial, no nulo, y por eso es MEDIA y no ALTA. El 3.2.2 sostiene el 95% pero en CORTE (escarificado de 0.15 m de profundidad, que no es «capas de 0.15 m» de conformación) y no dice una palabra del 90% ni de capas de hasta 0.30 m. El 3.3 sostiene el 95% sobre los 0.30 m superiores de la subrasante pero tampoco menciona capas de 0.15 m ni el 90%. Consecuencia práctica: de los cuatro numerales citados para COMPACTACION_CUERPO = 0.90, sólo UNO (3.2.1) lo sostiene; los otros tres son relleno. Para COMPACTACION_CORONA = 0.95, 3.2.1 lo sostiene entero, 3.2.2 y 3.3 lo sostienen a medias y 9.1(1) nada.",
       "agent_id": "a135eff6c4d42786b",
-      "spawn_ts": "2026-08-26T15:29:26.077Z"
+      "spawn_ts": "2026-08-26T15:29:26.077Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-003",
@@ -50,7 +52,8 @@
       "evidencia_alegada": "El Cuadro 4.1 dice exactamente cuándo aplica cada una, y lo dice tres veces por fila: «Calzada 2 carriles por sentido: 4 calicatas x km x sentido / Calzada 3 carriles por sentido: 4 calicatas x km x sentido / Calzada 4 carriles por sentido: 6 calicatas x km x sentido». La condición de aplicación es el número de carriles por sentido de la calzada, enunciada de forma explícita y sin ambigüedad, y es idéntica en la fila de Autopistas y en la de Carreteras Duales o Multicarril.",
       "nota": "Vacío afirmado que no existe en la norma — el supuesto más grave del bloque. Búsquedas realizadas antes de declararlo (cuatro, como exige el método): (1) «(o 6)|4 o 6|ó 6» sobre las 281 páginas → ninguna coincidencia relacionada; (2) «carriles por sentido» → sólo las seis filas del Cuadro 4.1 y las del Cuadro 4.2, todas con la condición explícita; (3) «6 calicatas|4 calicatas|3 calicatas|2 calicatas|1 calicata» → las nueve celdas del Cuadro más una mención de «mínimo 4 calicatas» por sector homogéneo en rehabilitación (pág. impresa 29), ninguna que presente 4 y 6 como opción abierta; (4) lectura íntegra del texto del num. 4.2 que sigue al Cuadro (pág. impresa 29): regula factibilidad (2.0 km), perfil (4.0 km), tramos de 500-1000 m y menores de 500 m, y rehabilitación por deflectometría — en ningún punto reabre la elección entre 4 y 6. Además se leyó el Cuadro directamente del PDF original con pymupdf para descartar que la condición se hubiera perdido en la extracción: está en el PDF. Consecuencia: la razón declarada para no transcribir el 6 es falsa, y la derivación a criterio [A] que el comentario propone convertiría un número normativo cerrado en una adopción de proyecto. El 6 es tan [N] como el 4.",
       "agent_id": "a13b2376eef0de1fa",
-      "spawn_ts": "2026-08-26T15:30:42.064Z"
+      "spawn_ts": "2026-08-26T15:30:42.064Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-004",
@@ -64,7 +67,8 @@
       "evidencia_alegada": "La cadena «4 (o 6)» no aparece en ninguna parte del Manual de Suelos. La fila de Carreteras Duales o Multicarril del Cuadro 4.1 dice, literalmente y con la misma estructura de tres líneas que la de Autopistas: «Calzada 2 carriles por sentido: 4 calicatas x km x sentido / Calzada 3 carriles por sentido: 4 calicatas x km x sentido / Calzada 4 carriles por sentido: 6 calicatas x km x sentido».",
       "nota": "Doble defecto en una sola frase. (1) Cita textual falsa: «4 (o 6)» va entrecomillado y no es texto de la norma; es una paráfrasis del auditor interno presentada como transcripción. Búsqueda de «(o 6)», «4 o 6» y «ó 6» sobre el documento completo: sin coincidencias. (2) Distingue autopistas de duales cuando el Cuadro las trata idénticamente: el comentario sugiere que en autopistas el 6 tiene condición («con 4 carriles por sentido») y en duales no la tiene, y en el PDF las dos filas son la misma redacción palabra por palabra. Esa asimetría inventada es justamente lo que sostiene el vacío falso de H-12.",
       "agent_id": "a34e4086bf0a4d674",
-      "spawn_ts": "2026-08-26T15:32:01.539Z"
+      "spawn_ts": "2026-08-26T15:32:01.539Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-005",
@@ -78,7 +82,8 @@
       "evidencia_alegada": "El Cuadro 4.1 no tiene ninguna columna ni fila de «nivel perfil»: sus columnas son Tipo de Carretera, Profundidad (m), Número mínimo de Calicatas y Observación. El 4.0 km está en el texto corrido posterior al Cuadro: «El número de calicatas indicado en el cuadro 4.1, se aplica para pavimentos nuevos, reconstrucción y mejoramiento. En caso, de estudios de factibilidad o prefactibilidad se efectuará el número de calicatas indicadas en el referido cuadro espaciadas cada 2.0 km en vez de cada km. En caso de estudios a nivel de perfil se utilizará información secundaria existente en el tramo del proyecto, de no existir información secundaria se efectuará el número de calicatas del cuadro 4.1 espaciadas cada 4.0 km en vez de cada km.»",
       "nota": "El VALOR es correcto — 4.0 km, dígito por dígito — pero la atribución no. Tres defectos: (1) el 4.0 no sale del Cuadro 4.1, sale del texto del num. 4.2 y está una página impresa más adelante que el Cuadro; un revisor que abra el Cuadro buscando «nivel perfil» no lo encuentra. (2) Se pierde la CONDICIÓN: la norma manda 4.0 km sólo «de no existir información secundaria»; si la hay, el estudio a nivel de perfil se resuelve con esa información secundaria y no con calicatas espaciadas. La constante es incondicional. (3) Se pierde la regla hermana de 2.0 km para factibilidad/prefactibilidad, del mismo párrafo. Nota adicional para evitar una confusión: existe un «cada 4.0 km se realizará un CBR» en la página impresa 30 (pdfpage 31), pero pertenece al Cuadro 4.2 (ensayos de CBR/MR) y es un ejemplo para Carreteras de Tercera Clase en factibilidad — no es esta regla y no debe usarse como respaldo alternativo.",
       "agent_id": "af792979301d8411d",
-      "spawn_ts": "2026-08-26T15:33:32.360Z"
+      "spawn_ts": "2026-08-26T15:33:32.360Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-006",
@@ -92,7 +97,8 @@
       "evidencia_alegada": "num. 4.5.4: el resguardo de 0.60/0.80/1.00/1.20 m se gradúa por la CALIDAD DE LA SUBRASANTE (CBR), y el párrafo se ocupa de la saturación del apoyo del pavimento: sus salidas son «subdrenes o capas anticontaminantes y/o drenantes o se elevará la rasante», y el contexto inmediato son la contaminación de las capas granulares, las zonas húmedas locales y el congelamiento. No hay en el numeral ninguna consideración de desborde, erosión del terraplén, filtración por el cuerpo del relleno ni subpresión sobre el conducto.",
       "nota": "El argumento se sostiene a medias y está sin acotar, que en una sustentación es peor que estar mal. A FAVOR: como el HW de avenida está normalmente por encima del nivel freático en el mismo punto, exigir el mismo resguardo contra el HW es una condición más dura que la que la norma pide, y para el mecanismo que la analogía toma prestado —la saturación capilar del apoyo del pavimento— cae del lado seguro: un pico de avenida de horas no satura el espesor que satura un freático permanente. EN CONTRA, y esto es lo que falta declarar: (1) el resguardo se gradúa por CBR, y el CBR no gobierna ninguno de los mecanismos propios de un nivel de avenida (desborde de la plataforma, erosión del talud, filtración, subpresión); una subrasante de CBR ≥ 20 se queda con 0.60 m de holgura sobre la avenida de diseño, número que la norma nunca calibró como borde libre. (2) El repo no acota la conservadurismo a la saturación: dice «es conservadora» a secas, y V4 se titula «Carga a la entrada HW», lo que invita a leerla como el chequeo de borde libre que no es. (3) El riesgo es concreto porque V5 (remanso dentro del derecho de vía) está BLOQUEADA en el código —lanza CriterioPendienteError y luego DatoFaltanteError (M5_verificaciones.py:409-420)—, de modo que V4 es hoy la ÚNICA verificación ejecutable que ata el HW a la vía. Una analogía prestada de otro mecanismo, sin acotar, ocupando el lugar del único control operativo, es la parte indefendible del argumento.",
       "agent_id": "a7a20cd32e89c6190",
-      "spawn_ts": "2026-08-26T15:34:27.394Z"
+      "spawn_ts": "2026-08-26T15:34:27.394Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-007",
@@ -106,7 +112,8 @@
       "evidencia_alegada": "(Sin contraparte en el PDF: es un defecto interno de referencia del manifiesto, no una discrepancia con la norma.) En el repositorio, CALICATAS_POR_KM está en src/constantes_normativas.py:152 y CALICATAS_POR_SENTIDO en src/constantes_normativas.py:161.",
       "nota": "Los dos enlaces de la fila apuntan a la misma línea 152; el segundo debería apuntar a la 161. Se comprobó el resto de las referencias archivo:línea de la Sección 2 y todas las demás están correctas: CN:141 (RESGUARDO), CN:146 (CBR_MIN), CN:147 y CN:149 (COMPACTACION), CN:173 (ESPACIAMIENTO), CA:908 (criterio), M5:134 (NUMERAL_V4), M5:321 (resguardo_por_cbr), M7:82 (eslabón 4 del lazo). Es la única desfasada del bloque.",
       "agent_id": "ab80a550fb7ace7c7",
-      "spawn_ts": "2026-08-26T15:36:46.020Z"
+      "spawn_ts": "2026-08-26T15:36:46.020Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-008",
@@ -120,7 +127,8 @@
       "evidencia_alegada": "Índice del Manual: «4.1.1.5.1 Aspectos generales …………… 86». El encabezado «4.1.1.5 PUENTES / 4.1.1.5.1 Aspectos generales» está al pie de la pág. impresa 86; la frase que fija el umbral («…luz sea mayor o igual a 6.0 m…») está en la pág. impresa 87. La pág. impresa 88 corresponde a 4.1.1.5.2 «Consideraciones para el diseño», que no contiene el umbral.",
       "nota": "La pág. 70 es correcta para 4.1.1.3.1. La 88 está desfasada 1-2 páginas: hay que citar 86 (encabezado del numeral) o 87 (frase del umbral). Un revisor que abra la 88 no encuentra la definición de puente.",
       "agent_id": "a126f491fe8dbd296",
-      "spawn_ts": "2026-08-26T15:38:12.311Z"
+      "spawn_ts": "2026-08-26T15:38:12.311Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-009",
@@ -134,7 +142,8 @@
       "evidencia_alegada": "«recomendándose que la velocidad mínima sea igual a 0.25 m/s»",
       "nota": "Divergencia de dos tildes en una cita entrecomillada: \"recomendandose\" por «recomendándose» y \"minima\" por «mínima». Las palabras y el orden son exactos; solo faltan los diacríticos, porque el módulo está escrito en ASCII. Es cosmético en sustancia, pero NUMERAL_V2 es precisamente el string que M11 vuelca a la memoria de cálculo, de modo que la inexactitud llega al expediente. El mismo módulo, en el docstring de v2_velocidad_minima (M5:186-189), sí escribe la cita con todas sus tildes — o sea que el repo ya sabe escribirla bien. Idéntico problema en M5:194 («\"recomendandose\"»).",
       "agent_id": "a96f1bb13c2fb435c",
-      "spawn_ts": "2026-08-26T15:39:40.174Z"
+      "spawn_ts": "2026-08-26T15:39:40.174Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-010",
@@ -148,7 +157,8 @@
       "evidencia_alegada": "El num. 4.1.1.3.7 c) define g SIN valor numérico: «g : Aceleración de la gravedad (m/s²)». En toda la página impresa 80 no aparece la cifra 9.8, ni 9.81, ni ninguna otra magnitud de gravedad. La fórmula (49) se escribe simbólicamente: d₅₀ = V²/(3.1 g).",
       "nota": "El comentario de código afirma literalmente que el numeral \"escribe\" g junto a la fórmula, y el numeral no escribe ningún número: solo nombra la variable y su unidad. El 9.8 procede de la hoja de ruta del proyecto — y el propio manifiesto lo reconoce a media voz en la columna del numeral («la hoja de ruta escribe \"g = 9.8 m/s²\"») —, pero acto seguido lo consigna con \"Documento fuente: Manual de Hidrología\" y etiqueta [N], y lo aloja en el archivo que promete solo constantes con numeral verificado. Es exactamente el patrón que el briefing tipifica como crítico: valor de proyecto endurecido como constante normativa, más una atribución textual falsa a un numeral. Agravante de coherencia: el repo separó G_LAUSHEY = 9.8 de constantes_fisicas.G = 9.81 justificando que 9.8 es \"lo que dice el Manual\"; como el Manual no dice nada, la separación pierde su sustento normativo y queda como una decisión de proyecto sin declarar (usar 9.8 en vez de 9.81 hace el d50 de Laushey ~0.1 % mayor: es conservador, pero es una adopción, no una cita).",
       "agent_id": "a99ec4163d30bfedf",
-      "spawn_ts": "2026-08-26T15:40:53.121Z"
+      "spawn_ts": "2026-08-26T15:40:53.121Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-011",
@@ -162,7 +172,8 @@
       "evidencia_alegada": "«TABLA Nº 10: Velocidades máximas admisibles (m/s) en conductos revestidos». Una sola columna de valores, encabezada «VELOCIDAD (M/S)», frente a la columna «TIPO DE REVESTIMIENTO». Filas: Concreto → 3.0 – 6.0 · Ladrillo con concreto → 2.5 – 3.5 · Mampostería de piedra y concreto → 2.0. «Fuente: HCANALES, Máximo Villon B.»",
       "nota": "Tabla transcrita entera; solo tiene esas tres filas. La página 76 que el repo declara es EXACTA. Los dos primeros pares coinciden dígito por dígito. Tres divergencias: (1) la tercera fila trae UN SOLO valor, 2.0, y el repo la transcribe como el par (2.0, 2.0) — numéricamente inocuo, porque el máximo es 2.0 en cualquier lectura, pero convierte un escalar del Manual en un rango que el Manual no escribe, y sostiene una afirmación del manifiesto («los DOS números de cada fila…») que esa fila desmiente; (2) el título entrecomillado omite «(m/s)»: el título real es «Velocidades máximas admisibles (m/s) en conductos revestidos», y esa cita entrecomillada se imprime en la memoria vía NUMERAL_V3 y vía el campo `fuente` de v_max_concreto_eleccion; (3) la clave \"mamposteria_piedra\" recorta el nombre de fila, que es «Mampostería de piedra y concreto». Además el título se cita sin tildes («maximas»). Nada de esto cambia un resultado de cálculo, pero las tres cosas son verificables de un vistazo en la sustentación.",
       "agent_id": "a789c68dcdbccbbc3",
-      "spawn_ts": "2026-08-26T15:43:09.693Z"
+      "spawn_ts": "2026-08-26T15:43:09.693Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-012",
@@ -176,7 +187,8 @@
       "evidencia_alegada": "num. 4.1.2.1 d) Desagüe de las cunetas: «La descarga de agua de las cunetas se efectuará por medio de alcantarillas de alivio. En región seca o poca lluviosa la longitud de las cunetas será de 250m como máximo, las longitudes de recorridos mayores deberán justificarse técnicamente; en región muy lluviosa se recomienda reducir esta longitud máxima a 200m.» El apartado d) y esta frase están en la PÁGINA IMPRESA 179. La página impresa 178 contiene el apartado c) «Dimensiones mínimas» y la Tabla N° 34 de profundidad/ancho de cuneta.",
       "nota": "Los DOS VALORES son correctos dígito por dígito (250 m región seca, 200 m región muy lluviosa) y el numeral 4.1.2.1 d) existe y es el correcto. Lo que está mal es la PÁGINA: es la 179, no la 178, y el error está repetido en cuatro sitios del repo (CN, M10:64, CA:938 y el manifiesto). Agrava que la 178 no es una página vecina inocua: contiene otro apartado del mismo numeral (c, Dimensiones mínimas) con su propia tabla, de modo que un revisor que abra la 178 encontrará contenido plausible pero equivocado y puede concluir que los 250/200 no existen. Es la referencia más fácil de romper en una sustentación.",
       "agent_id": "af5f5b91d04a254ea",
-      "spawn_ts": "2026-08-26T15:44:14.848Z"
+      "spawn_ts": "2026-08-26T15:44:14.848Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-013",
@@ -190,7 +202,8 @@
       "evidencia_alegada": "No aplica: el defecto es de trazabilidad interna del repositorio, no de contenido normativo. Verificado contra los archivos del SHA 71b134fb.",
       "nota": "Cinco punteros desfasados, comprobados uno por uno sobre el árbol auditado: (a) «HDPE NO está listado en la Tabla N° 09» se referencia a CN:47, y CN:47 es una línea del comentario de V_MIN («# minimo es la SEDIMENTACION…»); el comentario real está en CN:74. (b) «TMC y HDPE NO están listados en la Tabla N° 10» se referencia a CN:55, y CN:55 es una línea del comentario de G_LAUSHEY; el comentario real está en CN:88. (c) La fórmula TR se referencia a CN:41, que es una línea de la explicación de V_MIN; el comentario real está en CN:68. (d) La fila de quebrada menor se referencia a [CN:62,64]; CN:62 pertenece al comentario de GAMMA_AGUA_KN_M3 y la entrada real es CN:66. (e) La fórmula TR se referencia a [M1:62], que es una línea del ejemplo de uso del docstring del módulo; la fórmula vive en M1:185 y el cálculo en M1:197. Ninguna cambia un número, pero el manifiesto se ofrece como el mapa que permite auditar el código sin leerlo entero, y cinco de sus punteros llevan a comentarios de otra constante — lo que en una revisión hace dudar del resto.",
       "agent_id": "a4c045f5fdd6a3ab8",
-      "spawn_ts": "2026-08-26T15:46:48.419Z"
+      "spawn_ts": "2026-08-26T15:46:48.419Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-014",
@@ -204,7 +217,8 @@
       "evidencia_alegada": "«a-2) Condición Pseudo - dinámico: 1.25 (por volteo y por deslizamiento)» y «1.50 en condición estática y 1.25 en condición pseudo-dinámica». E.050 no define «pseudo-dinámico» en su Artículo 5 (Definiciones): el término aparece sólo cuatro veces más, en 5.31 («equilibrio estático y pseudo-dinámico»), 5.55, 39.11.6 b) y 39.13.6, siempre sin definición.",
       "nota": "¿Son lo mismo? No literalmente, y la diferencia no es cosmética: «pseudo-dinámico» designa un MÉTODO de análisis (fuerza sísmica reducida a coeficiente aplicado estáticamente), mientras que «sísmico» designa una CONDICIÓN de carga. E.050 concede el 1.25 a la condición pseudo-dinámica; si alguien resolviera el muro con un análisis dinámico real, el 1.25 de 39.13.6 no sería el umbral que la norma le asigna. Atenuante fuerte: M9 sí calcula el incremento sísmico por Mononobe-Okabe (declarado en src/modelos.py:284), que es exactamente un procedimiento pseudo-estático, y en criterios_adoptados.py:493 el repo llega a escribir «analisis pseudo-estatico de muros». Es decir, el proyecto hace lo que la norma pide, pero en ningún punto del repo consta que la palabra de E.050 para esa columna sea «pseudo-dinámico»: la sustitución no está declarada. En sustentación, un revisor que abra la pág. 72 no encontrará la palabra «sísmico» en 39.13.6.",
       "agent_id": "a1999d8ede4211091",
-      "spawn_ts": "2026-08-26T15:48:12.613Z"
+      "spawn_ts": "2026-08-26T15:48:12.613Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-015",
@@ -218,7 +232,8 @@
       "evidencia_alegada": "No aplica: es un defecto de trazabilidad interna del repositorio, no una discrepancia con E.050. Los umbrales que estas filas invocan (3.00/2.50 del Art. 21.1/21.2, 1.50/1.25 del 39.13.6 a) y b), 1.50/1.25 del Art. 30.3) ya quedaron confirmados en H-01 a H-05.",
       "nota": "Doble defecto. (1) NOMBRES INEXISTENTES: grep sobre todo el repo devuelve `e1_capacidad_portante`…`e5_estabilidad_talud` ÚNICAMENTE dentro del propio manifiesto. Las funciones reales se llaman verificar_capacidad_portante, verificar_volteo, verificar_deslizamiento, verificar_estabilidad_global y verificar_talud; «E1».. «E5» existen, pero como valor del campo `codigo=` de cada Verificacion, no como nombre de función. (2) LÍNEAS DESFASADAS ~20-21 LÍNEAS, de forma sistemática: real 903 / manifiesto 882 (E1), real 923 / manifiesto 903 (E2), real 942 / manifiesto 903 (E3), real 966 / manifiesto 944 (E4), real 985 / manifiesto 962 (E5). El desfase es tan regular que delata un manifiesto regenerado sobre una versión anterior de M9_cabezal.py. Efecto práctico en sustentación: quien abra M9_cabezal.py:882 cae dentro del `return FS[verificacion][condicion.value]` de fs_requerido, y quien abra la 944 cae en medio del docstring de verificar_deslizamiento. Las cinco filas apuntan a sitios equivocados. Nótese que las OTRAS referencias del mismo bloque sí están al día y se verificaron una a una: CN:266, CN:280, CN:281, CN:283, CN:284, M9:1040, M9:1489, CA:347, CA:386, CA:1013 y CA:1479 son todas exactas.",
       "agent_id": "a01a7751589d22c9f",
-      "spawn_ts": "2026-08-26T15:50:05.269Z"
+      "spawn_ts": "2026-08-26T15:50:05.269Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-016",
@@ -232,7 +247,8 @@
       "evidencia_alegada": "No aplica: defecto de forma del manifiesto, sin efecto sobre el contenido normativo. Los cinco numerales y sus cinco páginas fueron verificados uno a uno en H-01..H-05.",
       "nota": "Cosmético pero conviene arreglarlo antes de la sustentación, porque la fila promete dos referencias y entrega la misma dos veces. Además CN:266 es sólo la línea de apertura del dict `FS = {`: los valores están en CN:267-271 y —más importante— las cadenas de numeral con su página, que es justo lo que el auditor quiere abrir, viven en el dict FS_NUMERAL en CN:273-279 (CN:274 capacidad_portante pág. 34, CN:275 volteo pág. 72, CN:276 deslizamiento pág. 72, CN:277 estabilidad_global pág. 72, CN:278 talud pág. 39). Ninguna fila del manifiesto enlaza a esas cinco líneas, que son las que el software imprime en la memoria.",
       "agent_id": "aaff0bed5d273419d",
-      "spawn_ts": "2026-08-26T15:51:42.813Z"
+      "spawn_ts": "2026-08-26T15:51:42.813Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-017",
@@ -246,7 +262,8 @@
       "evidencia_alegada": "El num. 2.1.4.3.9 existe y esta EXACTAMENTE en la pagina impresa 91, pero se titula \"Aparatos de Apoyo\" y dice: «Los aparatos de apoyo proporcionan la conexion para controlar la interaccion de las cargas y los movimientos entre la superestructura y la subestructura del puente... El diseno de los aparatos de apoyo se realizara de acuerdo a las especificaciones del AASHTO LRFD en su seccion 14. Ver Articulo 2.10 de este Manual (14.6 AASHTO).» No menciona sobrecarga, ni 0.60 m, ni relleno equivalente, ni trafico. El indice lo confirma: linea 354-355 del txt, \"2.1.4.3.9 Aparatos de Apoyo ....... 91\". El valor 0.60 m SI existe, pero en OTRO numeral: 2.4.2.2 \"Cargas de Suelo: EH, ES, y DD\" (3.5.2 AASHTO), pagina impresa 102: «Cuando se prevea trafico a una distancia horizontal, medida desde la parte superior de la estructura, menor o igual a la mitad de su altura, las presiones seran incrementadas anadiendo una sobrecarga vertical no menor que la equivalente a 0.60 m de altura de relleno. Cuando se disene una losa de aproximacion soportada en un extremo del puente, no sera necesario considerar dicho incremento de carga.»",
       "nota": "El numeral citado es de aparatos de apoyo. La pagina esta bien por casualidad; el numeral no. En una sustentacion, abrir la pagina 91 y encontrar 'Aparatos de Apoyo' donde la memoria anuncia la sobrecarga de trasdos es indefendible. El numeral correcto es 2.4.2.2, pagina impresa 102.",
       "agent_id": "ae47838eb5a52992a",
-      "spawn_ts": "2026-08-26T15:53:03.929Z"
+      "spawn_ts": "2026-08-26T15:53:03.929Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-018",
@@ -260,7 +277,8 @@
       "evidencia_alegada": "FALSO. La pagina impresa 143 del Manual (dentro del rango 140-143 que el propio repo cita) contiene ENTERAS las dos tablas: «Tabla 2.4.5.3.1-1 Combinaciones de Carga y Factores de Carga (3.4.1-1 AASHTO)» con las 14 filas de combinacion (RESISTENCIA I a V, EVENTO EXTREMO I y II, SERVICIO I a IV, FATIGA I y II) y las 22 columnas de carga, y «Tabla 2.4.5.3.1-2 Factores de carga para cargas permanentes, gamma_p (3.4.1-2 AASHTO)» con Maximo/Minimo. Valores literales verificados sobre el PDF original: RESISTENCIA I -> gamma_p / LL,IM,CE,BR,PL,LS = 1.75 / WA = 1.00 / FR = 1.00 / TU = 0.50-1.20. SERVICIO I -> 1.00 / 1.00 / 1.00 / WS 0.30 / WL 1.00. EVENTO EXTREMO I -> gamma_p 1.00 / LL = gamma_EQ / WA 1.00 / EQ 1.00. Tabla -2: DC 1.25/0.90; DC Resistencia IV 1.50/0.90; DW 1.50/0.65; EH Activa 1.50/0.90; EH En reposo 1.35/0.90; EH AEP paredes ancladas 1.35/N-A; EL 1.00/1.00; EV Estabilidad global 1.00/N-A; EV Muros y estribos de retencion 1.35/1.00; EV Estructura rigida enterrada 1.30/0.90; EV Porticos rigidos 1.35/0.90; EV Estructuras flexibles enterradas 1.50/1.30/1.95 con 0.90/0.90/0.90; ES 1.50/0.75. Ademas el propio texto de la pagina impresa 142 anuncia las tablas: «Los factores de carga... seran tomados como los especificados en la Tabla 2.4.5.3-1 (3.4.1-1 AASHTO). Los factores de carga para cargas permanentes seran tomados de la Tabla 2.4.5.3-2 (3.4.1-2 AASHTO).»",
       "nota": "El repo declara vacio un dato que la norma que cita, en la pagina que cita, transcribe completo. Los numeros que el repo importa de AASHTO 9a ed. coinciden salvo uno: EV minimo. El repo usa EV min = 0.90 generico; la Tabla 2.4.5.3.1-2 da 1.00 para 'Muros y estribos de retencion' y 0.90 solo para estructuras enterradas. Para un cabezal, la fila aplicable es la de muros/estribos. En flotacion el 0.90 resulta mas conservador, pero la fila esta mal elegida.",
       "agent_id": "a24df00500cc78adc",
-      "spawn_ts": "2026-08-26T15:54:31.077Z"
+      "spawn_ts": "2026-08-26T15:54:31.077Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-019",
@@ -274,7 +292,8 @@
       "evidencia_alegada": "La mitad de la evidencia de indice es FALSA. El num. 2.11 del Manual NO se titula 'Muros de Contencion y Estribos': se titula «2.11 DISEÑO DE BARRERAS DE SONIDO (15 AASHTO)», pagina impresa 505, y su alcance es «el diseno estructural de barreras de sonido, ya sea montada en tierra o montada en estructura y al diseno de las bases de barreras de sonido montadas en suelo». Verificado en el indice (txt lineas 2914-2915: '2.11 DISEÑO DE BARRERAS DE SONIDO ..... 505') y en el cuerpo (txt linea 35318). El num. 2.12 SI se titula «DISPOSICIONES CONSTRUCTIVAS», pagina impresa 513 — esa mitad confirma. Los muros de contencion y estribos no son una seccion de primer nivel del Manual: viven dentro del num. 2.8 CIMENTACIONES (p.ej. 2.8.1.1.14 'Diseno Sismico de Estribos y Muros de Contencion Convencionales', pagina impresa 252) y del num. 2.4.4.1 'Empuje del Suelo: EH, ES, LS y DD', pagina impresa 133.",
       "nota": "La conclusion global (el Manual no trae un equivalente de la Sec. 12) puede sostenerse por otras vias, pero el ARGUMENTO DE INDICE que el repo escribe para sostenerla es verificablemente falso. Un revisor que abra la pagina 505 encuentra barreras de sonido. Hay que reescribir la evidencia.",
       "agent_id": "a6953ac25d0a9d92d",
-      "spawn_ts": "2026-08-26T15:55:54.021Z"
+      "spawn_ts": "2026-08-26T15:55:54.021Z",
+      "origen_del_cierre": "Cerrado en la corrida original, antes del corte por limite de creditos. Su veredicto se consumio en la fase de verificacion y quedo incorporado a los 93 hallazgos del informe; el detalle vive en la transcripcion del agente (agent_id), no en este JSON."
     },
     {
       "id": "R95-020",
@@ -1680,7 +1699,7 @@
       "id": "R95-090",
       "enunciado": "[H-06] El repo afirma: \"La analogia es conservadora: el HDPE es el material con MENOR tolerancia a cobertura reducida bajo carga viva, de modo que exigir su recubrimiento al concreto y al TMC no puede quedar del lado inseguro\" / \"es el que menos rigidez de anillo aporta y el que mas depende del confinamiento del relleno. El concreto admite recubrimientos menores\" — El auditor alega contradiccion con el documento. Tarea: refutar o confirmar la contradiccion volviendo al PDF y al codigo.",
       "documento_fuente": "AASHTO LRFD Bridge Design Specifications, 9th ed. (2020)",
-      "estado": "pendiente",
+      "estado": "cerrado",
       "hallazgo_id": "H-06",
       "severidad_propuesta": "ALTA",
       "ubicacion_repo": "src/criterios_adoptados.py:1091-1103, docs/manifiesto_citas.md:598",
@@ -1688,13 +1707,19 @@
       "evidencia_alegada": "Tabla 12.6.6.3-1: Thermoplastic Pipe \"Under paved roads\" ID/2 >= 24.0 in.; \"Under unpaved areas\" ID/8 >= 12.0 in. Reinforced Concrete Pipe \"Under bottom of rigid pavement\" 9.0 in.; \"Under unpaved areas or top of flexible pavement\" Bc/8 o B'c/8, el mayor, >= 12.0 in. Corrugated Metal Pipe S/8 >= 12.0 in.",
       "nota": "Veredicto matizado, y por eso lo marco CONTRADICE y no CONFIRMA. La DIRECCION del argumento tiene respaldo parcial y por primera vez verificable: bajo calzada pavimentada el termoplastico exige ID/2 >= 24.0 in (0.61 m), la fila mas exigente de toda la tabla, frente a 9.0 in (0.229 m) del concreto bajo pavimento rigido. Hasta ahi, el HDPE si es el menos tolerante. PERO la afirmacion tal como esta redactada — universal, sin condicion de pavimento — es falsa en el otro caso de la misma tabla: bajo zona sin pavimentar o sobre pavimento flexible, el HDPE pide ID/8 y el concreto pide Bc/8 con Bc = diametro EXTERIOR, que es siempre mayor que el ID; a igual diametro nominal el concreto exige MAS cobertura que el HDPE. Y el TMC (S/8 >= 12 in) queda igualado, no por debajo. Es decir: el ordenamiento de tolerancias depende del tipo de pavimento y del diametro, y no es el ordenamiento fijo que el criterio enuncia. Nota adicional de mecanica: el argumento del repo razona por rigidez de anillo y confinamiento (mecanismo de tubo flexible), pero un tubo rigido de concreto bajo cobertura reducida falla por otro mecanismo (flexion/corte de la pared por carga viva concentrada, con el factor de impacto IM = 33(1.0-0.125 DE) creciendo justamente cuando DE baja); comparar tolerancias entre los dos mecanismos con una sola frase cualitativa no es demostracion, y la unica evidencia documental disponible que los ordena es esta tabla, que el repo no cita.",
       "agent_id": "a91ffef0a82f826d2",
-      "spawn_ts": "2026-08-26T15:59:27.984Z"
+      "spawn_ts": "2026-08-26T15:59:27.984Z",
+      "resultado": "REFUTADO",
+      "severidad_final": "OK",
+      "veredicto": "CONFIRMA",
+      "documento_verificado": "AASHTO LRFD Bridge Design Specifications, 9th ed. 2020 — Art. 12.6.6.3 y Tabla 12.6.6.3-1, pagina impresa 12-22 (PDFPAGE 1660); PDF original leido con Read",
+      "evidencia": "La tabla dice literalmente: «Corrugated Metal Pipe | — | S/8 > 12.0 in.»; «Thermoplastic Pipe | Under unpaved areas | ID/8 > 12.0 in. / Under paved roads | ID/2 > 24.0 in.»; «Reinforced Concrete Pipe | Under unpaved areas or top of flexible pavement | Bc/8 or B'c/8, whichever is greater, > 12.0 in.»; «Reinforced Concrete Pipe | Under bottom of rigid pavement | 9.0 in.» (los '>' son '≥' en el PDF). El propio Art. 12.6.6.3 define «Bc = outside diameter or width of the structure (ft)» e «ID = inside diameter (in.)». Lei src/criterios_adoptados.py:1092-1103 («el HDPE es el material con MENOR tolerancia a cobertura reducida bajo carga viva ... El concreto admite recubrimientos menores») y docs/manifiesto_citas.md:598.",
+      "razonamiento": "La tabla CONFIRMA la direccion del repo, no la contradice: bajo calzada pavimentada el termoplastico exige ID/2 ≥ 24.0 in, el valor mas alto de toda la tabla, y el concreto bajo pavimento rigido 9.0 in, el mas bajo de toda la tabla; el TMC no tiene fila 'paved', asi que bajo pavimento el HDPE tambien exige estrictamente mas que el TMC. El contraejemplo del auditor —«a igual diametro nominal el concreto exige MAS cobertura que el HDPE» bajo zona sin pavimentar— es aritmeticamente falso en el rango del proyecto: ID/8 esta en pulgadas y Bc/8 en pies, y ambas expresiones quedan por debajo del piso de 12.0 in para todo tubo menor de 96 in (8 ft), de modo que HDPE, concreto y TMC caen los tres en el MISMO 12.0 in (el catalogo del repo topa el HDPE en 1.50 m); no hay ninguna fila donde el HDPE exija MENOS que concreto o TMC. Ademas es falso que «el repo no cita» la tabla: el mismo criterio cita «AASHTO LRFD Art. 12.6.6.3 -- cobertura minima tipica 1.0 ft (~0.305 m)» en src/criterios_adoptados.py:1150 y en docs/manifiesto_citas.md:635, y ese tipico 1.0 ft es exactamente el piso de la tabla. Queda un residuo menor que el auditor no vio y que no sostiene un hallazgo: 0.30 m son 11.81 in, 5 mm por debajo del piso de 12.0 in, pero el repo ya lo declara al escribir «~0.305 m ... coincide practicamente con el tipico»."
     },
     {
       "id": "R95-091",
       "enunciado": "[H-07] El repo afirma: \"las Subsecciones 507.05, 507.06 y 507.08 (pags. 969-970) remiten a ASTM A-807 para TMC\" / \"507.05/.06/.08, pags. 969-970\" — El auditor alega contradiccion con el documento. Tarea: refutar o confirmar la contradiccion volviendo al PDF y al codigo.",
       "documento_fuente": "MTC EG-2013 Especificaciones Tecnicas Generales para Construccion",
-      "estado": "pendiente",
+      "estado": "cerrado",
       "hallazgo_id": "H-07",
       "severidad_propuesta": "ALTA",
       "ubicacion_repo": "src/criterios_adoptados.py:1145-1146, docs/manifiesto_citas.md:256, docs/manifiesto_citas.md:607",
@@ -1702,13 +1727,19 @@
       "evidencia_alegada": "507.05 \"Preparacion del terreno base\" (\"El terreno base se preparara de acuerdo con la norma ASTM A-807 y lo indicado en la Subseccion 505.06...\") y 507.06 \"Solado\" (\"El solado se construira de acuerdo con la especificacion ASTM A-807...\") estan en la pagina cuyo pie dice 973. 507.08 \"Relleno\" (\"La zona de terraplen adyacente al tubo ... se ejecutara de acuerdo a la especificacion ASTM A-807 y lo indicado en la Seccion 502...\") esta en la pagina cuyo pie dice 974.",
       "nota": "Error de 4 paginas. Igual que en H-02, el numero citado (969) es el de arranque de la Seccion 507 en el indice, no el de las subsecciones. El CONTENIDO de la remision si se confirma palabra por palabra: las tres subsecciones remiten a ASTM A-807. La remision hermana, 506.02 -> AASHTO M-170M, si esta correctamente paginada: pagina impresa 959 (pagina PDF 967), \"La tuberia debera cumplir los requisitos de materiales, diseno y manufactura establecidos en la especificacion AASHTO M-170M.\" — esa fila CONFIRMA.",
       "agent_id": "a73b7f27eb9dc3376",
-      "spawn_ts": "2026-08-26T15:59:28.467Z"
+      "spawn_ts": "2026-08-26T15:59:28.467Z",
+      "resultado": "SE_SOSTIENE",
+      "severidad_final": "ALTA",
+      "veredicto": "CONTRADICE",
+      "documento_verificado": "MTC EG-2013, Seccion 507 (Tuberia metalica corrugada), Subsecciones 507.05, 507.06 y 507.08 — paginas impresas 973 y 974 (PDFPAGE 981 y 982 de 1282)",
+      "evidencia": "PDFPAGE 981 lleva pie «973» y contiene «507.05 Preparación del terreno base — El terreno base se preparará de acuerdo con la norma ASTM A-807 y lo indicado en la Subsección 505.06» y «507.06 Solado — El solado se construirá de acuerdo con la especificación ASTM A-807». PDFPAGE 982 lleva pie «974» y contiene «507.08 Relleno — La zona de terraplén adyacente al tubo ... se ejecutará de acuerdo a la especificación ASTM A-807 y lo indicado en la Sección 502». La pagina impresa 969 (PDFPAGE 977) es el arranque de «SECCIÓN 507 / Tubería metálica corrugada» (507.01 Descripcion, 507.02 Materiales) y la 970 (PDFPAGE 978) trae la Tabla 507-01. Lei src/criterios_adoptados.py:1145 («las Subsecciones 507.05, 507.06 y 507.08 (pags. 969-970)») y docs/manifiesto_citas.md:256 y :607, que repiten «págs. 969-970».",
+      "razonamiento": "Verifique el desfase de 4 paginas yo mismo y descarte la explicacion de edicion distinta: la remision hermana del mismo criterio, «Subseccion 506.02 (pag. 959) remite a AASHTO M-170M», cae exactamente en la pagina impresa 959 (PDFPAGE 967) de ESTE mismo PDF, de modo que el repo trabajo sobre esta paginacion y el 969-970 es error, no offset de edicion. El contenido si se confirma palabra por palabra: las tres subsecciones remiten a ASTM A-807. Mantengo ALTA porque la escala del briefing clasifica «pagina equivocada» como ALTA y porque 969-970 son paginas reales del mismo documento con otro contenido (arranque de seccion y tabla de espesores), lo que hace que un revisor que las abra no encuentre la remision citada."
     },
     {
       "id": "R95-092",
       "enunciado": "[H-08] El repo afirma: \"el Manual SI usa la palabra 'recubrimiento' para alcantarillas en la Tabla 2.9.1.5.5.3-1 (pag. 378, 2.0 in / 50 mm)\" / \"da 2.0 in / 50 mm\" — El auditor alega contradiccion con el documento. Tarea: refutar o confirmar la contradiccion volviendo al PDF y al codigo.",
       "documento_fuente": "MTC Manual de Puentes (2018)",
-      "estado": "pendiente",
+      "estado": "cerrado",
       "hallazgo_id": "H-08",
       "severidad_propuesta": "MEDIA",
       "ubicacion_repo": "src/criterios_adoptados.py:1131-1133, docs/manifiesto_citas.md:183, docs/manifiesto_citas.md:621-623",
@@ -1716,13 +1747,19 @@
       "evidencia_alegada": "Tabla 2.9.1.5.5.3-1 \"Recubrimiento para las armaduras principales de aceros no protegidas (Tabla 5.12.3-1-AASHTO)\", unica columna numerica \"RECUBRIMIENTO (in)\". Fila \"Alcantarillas de cajon de concreto prefabricados\", con TRES valores: \"forjados para ser utilizados como superficie de conduccion — 2.5\"; \"forjados con inferior a 2 pies de relleno que no se utilicen como una superficie de conduccion — 2.0\"; \"todos los demas miembros — 1.0\".",
       "nota": "La PAGINA es correcta (378) y la sustancia de la trampa de vocabulario es correcta y util: ese recubrimiento es de concreto sobre armadura, no altura de tierra. Lo que falla es la transcripcion: la tabla da 2.5 / 2.0 / 1.0 in segun la condicion, no \"2.0 in\" a secas; el 2.0 es solo el caso intermedio. Y el \"/ 50 mm\" no esta en la tabla, que solo tiene columna en pulgadas: es una conversion del repo presentada dentro de un parentesis de cita. Menor, pero es exactamente el tipo de detalle que un revisor usa para desacreditar el resto.",
       "agent_id": "ad403a5c06014830e",
-      "spawn_ts": "2026-08-26T15:59:29.558Z"
+      "spawn_ts": "2026-08-26T15:59:29.558Z",
+      "resultado": "AJUSTADO",
+      "severidad_final": "BAJA",
+      "veredicto": "CONTRADICE",
+      "documento_verificado": "MTC Manual de Puentes, Tabla 2.9.1.5.5.3-1 (Tabla 5.12.3-1-AASHTO), pagina impresa 378 (PDFPAGE 379 de 673); PDF original leido con Read",
+      "evidencia": "En el PDF la unica columna numerica se titula «RECUBRIMIENTO (in)» —no hay columna en mm— y la fila «Alcantarillas de cajón de concreto prefabricados» trae TRES valores: «forjados para ser utilizados como superficie de conducción. — 2.5»; «forjados con inferior a 2 pies de relleno que no se utilicen como una superficie de conducción. — 2.0»; «todos los demás miembros. — 1.0». El pie de pagina dice «Página 378». Lei src/criterios_adoptados.py:1131-1133 y docs/manifiesto_citas.md:621-623: «en la Tabla 2.9.1.5.5.3-1 (pág. 378), y da 2.0 in / 50 mm».",
+      "razonamiento": "AJUSTADO: bajo de MEDIA a BAJA. Se confirma que la pagina (378), el numero de tabla y toda la sustancia de la trampa de vocabulario son correctos, y que el 2.0 NO es inventado: esta en la fila de alcantarillas y es justamente el caso «con inferior a 2 pies de relleno que no se utilicen como una superficie de conducción», es decir el que corresponde a una alcantarilla enterrada, de modo que la eleccion del 2.0 entre los tres valores es la pertinente y no arbitraria. Lo unico que falla es que se cita un valor de una fila de tres sin decir la condicion, y que el «/ 50 mm» es conversion del repo metida dentro del parentesis de la cita cuando la tabla solo tiene columna en pulgadas. Como el numero se declara expresamente inservible («el número de esa tabla NO sirve aquí») y no alimenta ningun calculo del repositorio, el defecto es redaccional, no de trazabilidad de un valor de diseno: BAJA."
     },
     {
       "id": "R95-093",
       "enunciado": "[H-09] El repo afirma: El recuento de §13 declara \"0 [N] · 1 [N->] (resguardo_HW_subrasante) · 1 [S] · 14 [C] · 30 [A]\" sobre 46 criterios, y afirma \"Los numeros de arriba son ahora los que devuelve el propio archivo\". §14.a, en cambio, llama a h_relleno_min_concreto_tmc \"[N->]\" y a resguardo_HW_subrasante \"el otro [N->] del proyecto\". — El auditor alega contradiccion con el documento. Tarea: refutar o confirmar la contradiccion volviendo al PDF y al codigo.",
       "documento_fuente": "Interno al repo — sin documento normativo externo (manifiesto / codigo / memoria)",
-      "estado": "pendiente",
+      "estado": "cerrado",
       "hallazgo_id": "H-09",
       "severidad_propuesta": "MEDIA",
       "ubicacion_repo": "docs/manifiesto_citas.md:520-524 vs docs/manifiesto_citas.md:598 y src/criterios_adoptados.py:1076",
@@ -1730,13 +1767,19 @@
       "evidencia_alegada": "No aplica a PDF: se verifico contra el propio archivo del repo. Conteo de etiquetas en src/criterios_adoptados.py: {'A': 30, 'C': 13, 'N->': 2, 'S': 1}, total 46. Los dos 'N->' son resguardo_HW_subrasante (linea 908) y h_relleno_min_concreto_tmc (linea 1074).",
       "nota": "El manifiesto se contradice consigo mismo y con el codigo en el mismo documento: §13 dice 1 [N->] y 14 [C]; el archivo tiene 2 [N->] y 13 [C]. Y el [N->] que falta en el recuento es precisamente el criterio que §14 dedica dos paginas a defender. La frase \"son ahora los que devuelve el propio archivo\" agrava el defecto, porque presenta como verificado un numero que el archivo desmiente.",
       "agent_id": "a7e90e33ecb501fe7",
-      "spawn_ts": "2026-08-26T15:59:29.943Z"
+      "spawn_ts": "2026-08-26T15:59:29.943Z",
+      "resultado": "SE_SOSTIENE",
+      "severidad_final": "MEDIA",
+      "veredicto": "CONTRADICE",
+      "documento_verificado": "Verificacion interna del repo: docs/manifiesto_citas.md §13 (lineas 519-524) contra src/criterios_adoptados.py; sin PDF externo",
+      "evidencia": "Conte yo mismo las etiquetas del archivo (`grep -n 'etiqueta=' src/criterios_adoptados.py`): A=30, C=13, N->=2, S=1, total 46; los dos `N->` estan en las lineas 910 (`\"resguardo_HW_subrasante\"`, clave en 908) y 1076 (`\"h_relleno_min_concreto_tmc\"`, clave en 1074). §13 declara «**0 `[N]`** · **1 `[N→]`** (`resguardo_HW_subrasante`) · **1 `[S]`** ... **14 `[C]`** · **30 `[A]`**» y remata «Los números de arriba son ahora los que devuelve el propio archivo». En el mismo documento, §14.a (linea 598) llama a `resguardo_HW_subrasante` «el otro `[N→]` del proyecto» y la fila de §6 (linea 254) etiqueta `h_relleno_min_concreto_tmc` como `[C]`. `git diff 71b134fb HEAD` sobre esos archivos es vacio: el estado auditado es el actual.",
+      "razonamiento": "Comprobado contra el archivo, no contra el reporte del auditor: el reparto real es 2 `[N→]` y 13 `[C]`, no 1 y 14; el total (46) coincide, de modo que el error es que el manifiesto contabiliza `h_relleno_min_concreto_tmc` en el cubo `[C]` cuando el codigo lo declara `N->`. Busque un matiz que salvara la frase (que §13 contara otra cosa, o que el `[C]` de §6 se refiriera al estado de la cita y no a la etiqueta del criterio) y no lo hay: §13 dice explicitamente «Distribución de los 46 criterios de `criterios_adoptados.py`». Agravante real: el `[N→]` que falta es precisamente el que §14.a dedica dos paginas a defender, y la frase «son ahora los que devuelve el propio archivo» presenta como verificado un numero que el archivo desmiente. Se sostiene MEDIA: es un recuento resumen desactualizado, no un numero normativo mal transcrito, y el `[N→]` sigue declarado como tal en el codigo y en §14.a."
     },
     {
       "id": "R95-094",
       "enunciado": "[H-10] El repo afirma: La cita literal del 508.07 y la constante H_RELLENO_MIN se referencian como [CN:160](src/constantes_normativas.py:160) — El auditor alega contradiccion con el documento. Tarea: refutar o confirmar la contradiccion volviendo al PDF y al codigo.",
       "documento_fuente": "MTC Manual de Suelos, Geologia, Geotecnia y Pavimentos (2014)",
-      "estado": "pendiente",
+      "estado": "cerrado",
       "hallazgo_id": "H-10",
       "severidad_propuesta": "MEDIA",
       "ubicacion_repo": "docs/manifiesto_citas.md:254, docs/manifiesto_citas.md:617-618",
@@ -1744,13 +1787,19 @@
       "evidencia_alegada": "No aplica a PDF. src/constantes_normativas.py:160 es la linea de comentario \"# sobre cuantos sentidos se cuenta el kilometro.\", del bloque CALICATAS_POR_SENTIDO (Manual de Suelos, num. 4.2, Cuadro 4.1). H_RELLENO_MIN se declara en las lineas 176-180, y el valor 0.30 del HDPE en la 177.",
       "nota": "Referencia archivo:linea desfasada 16 lineas y apuntando a un tema sin relacion (calicatas). Curiosamente el propio manifiesto usa la referencia CORRECTA [CN:176] en las tres filas anteriores de §6 (lineas 244-246), asi que es un desfase local de esa fila y de §14, no del bloque entero.",
       "agent_id": "ae3a47f177521d27b",
-      "spawn_ts": "2026-08-26T15:59:31.100Z"
+      "spawn_ts": "2026-08-26T15:59:31.100Z",
+      "resultado": "SE_SOSTIENE",
+      "severidad_final": "MEDIA",
+      "veredicto": "CONTRADICE",
+      "documento_verificado": "Verificacion interna del repo: docs/manifiesto_citas.md:254 y :617-618 contra src/constantes_normativas.py; sin PDF externo",
+      "evidencia": "src/constantes_normativas.py:160 es literalmente «# sobre cuantos sentidos se cuenta el kilometro.», ultima linea del comentario del bloque `CALICATAS_POR_SENTIDO` (Manual de Suelos, num. 4.2, Cuadro 4.1). El bloque que se pretende citar empieza en la 176 («H_RELLENO_MIN = {») y el valor del HDPE esta en la 177 («\"hdpe\": 0.30, # m, clave a subrasante (508.07, pag. 982)»). El manifiesto ancla la cita literal del 508.07 y la constante en «[CN:160](src/constantes_normativas.py:160)» (linea 254) y repite «[CN:160]» en §14.a (lineas 617-618), mientras que las tres filas inmediatamente anteriores de §6 (lineas 244-246) usan «[CN:176]», que si es correcta. `git diff 71b134fb HEAD` sobre esos archivos es vacio.",
+      "razonamiento": "Abri las dos lineas y el hallazgo se sostiene tal como esta descrito: desfase de 16 lineas que ademas cae en un bloque de otro tema (calicatas del Manual de Suelos), de modo que un revisor que siga el enlace no encuentra ni la constante ni la cita del EG-2013. No es un error del bloque entero sino de esa fila y de §14.a, porque el resto de §6 apunta bien a CN:176, lo que descarta que la numeracion del archivo haya cambiado despues de escribir el manifiesto de forma uniforme. Encaja exactamente en la categoria MEDIA del briefing («referencia archivo:línea desfasada»): no altera ningun numero normativo ni ninguna cita textual, solo el ancla de trazabilidad."
     },
     {
       "id": "R95-095",
       "enunciado": "[H-12] El repo afirma: \"la busqueda se agoto en las TRES fuentes donde podia estar\" (normas de producto, Manual de Puentes, EG-2013) — El auditor alega contradiccion con el documento. Tarea: refutar o confirmar la contradiccion volviendo al PDF y al codigo.",
       "documento_fuente": "MTC Manual de Hidrologia, Hidraulica y Drenaje (2011)",
-      "estado": "pendiente",
+      "estado": "cerrado",
       "hallazgo_id": "H-12",
       "severidad_propuesta": "MEDIA",
       "ubicacion_repo": "docs/manifiesto_citas.md:597, src/criterios_adoptados.py:1085-1088, src/criterios_adoptados.py:1114-1116",
@@ -1758,7 +1807,14 @@
       "evidencia_alegada": "El Manual de Hidrologia, Hidraulica y Drenaje (MTC) — que es el documento que gobierna las alcantarillas de este proyecto y del que salen V_MIN, D_INICIO, periodos de retorno, num. 4.1.1.3 completo — NO figura entre las tres fuentes declaradas. Su num. 4.1.1.3.5 a) enumera entre los factores fisicos y estructurales del diseno de una alcantarilla la \"altura de relleno disponible para la colocacion de la alcantarilla, cargas actuantes sobre la alcantarilla\", es decir NOMBRA la magnitud, pero no le pone valor en ningun lado. Tampoco figura el Manual de Suelos, ni AASHTO LRFD Sec. 12 (que si la fija, ver H-01).",
       "nota": "La conclusion de fondo NO cambia (ver H-16: el Manual de Hidrologia efectivamente no fija cobertura minima), pero la afirmacion metodologica \"se agoto en las tres fuentes donde podia estar\" es falsa: la busqueda no se declaro donde el proyecto tenia mas obligacion de mirar. Un vacio verificado vale exactamente lo que vale su lista de fuentes; dejar fuera el manual que gobierna la obra, el de suelos y la Seccion 12 de AASHTO — teniendo los tres PDF en el repositorio — hace que la lista no soporte la palabra \"agotado\".",
       "agent_id": "a2a0e1dbf6218f257",
-      "spawn_ts": "2026-08-26T15:59:31.732Z"
+      "spawn_ts": "2026-08-26T15:59:31.732Z",
+      "resultado": "AJUSTADO",
+      "severidad_final": "BAJA",
+      "veredicto": "CONTRADICE",
+      "documento_verificado": "MTC Manual de Hidrologia, Hidraulica y Drenaje, num. 4.1.1.3.5 a), pagina impresa 73 (PDFPAGE 76 de 225), contra docs/manifiesto_citas.md:597-607 y src/criterios_adoptados.py:1085-1088 y 1114-1146",
+      "evidencia": "El Manual dice, en su unica mencion de la magnitud: «Como factores físicos y estructurales, tenemos: la durabilidad, altura de relleno disponible para la colocación de la alcantarilla, cargas actuantes sobre la alcantarilla y calidad y tipo de terreno existente» (pag. impresa 73, PDFPAGE 76). Grepee el manual entero: «altura de relleno» aparece una sola vez (esa), y «relleno mínimo», «cobertura mínima» y «recubrimiento mínimo» no aparecen nunca; la unica cifra de instalacion cercana es la separacion entre tubos multiples (pag. 73). El repo declara en src/criterios_adoptados.py:1087-1088 y :1114-1116 «la busqueda esta cerrada en las tres fuentes donde podia estar» y las enumera: normas de producto, Manual de Puentes, EG-2013 Cap. V (tabla de §14.a, docs/manifiesto_citas.md:604-607).",
+      "razonamiento": "AJUSTADO: bajo de MEDIA a BAJA. Sostengo solo un tercio del hallazgo. Es cierto y verificable que el Manual de Hidrologia —el que gobierna la obra y del que salen 30 citas del propio manifiesto— no figura en la lista de tres, y que su 4.1.1.3.5 a) nombra la magnitud, asi que la lista deberia llevarlo como cuarta fila negativa. Pero las otras dos omisiones que alega el auditor son falsas: la Seccion 12 de AASHTO LRFD SI figura, dos veces y en el mismo criterio («AASHTO LRFD Art. 12.6.6.3 -- cobertura minima tipica 1.0 ft (~0.305 m)», src/criterios_adoptados.py:1150, y docs/manifiesto_citas.md:635), colocada como verificacion estructural de expediente y excluida del nivel de perfil con un argumento explicito (el Manual de Puentes nunca incorporo esa Seccion); y del Manual de Suelos no se aporta ningun indicio de que pudiera contener el valor. Ademas comprobe yo mismo que el Manual de Hidrologia no fija ningun valor, de modo que la conclusion de fondo (el vacio) no se toca y lo que queda es un defecto de redaccion de la lista de fuentes, no un vacio mal verificado."
     }
-  ]
+  ],
+  "items_sin_veredicto_en_este_json": 19
 }
