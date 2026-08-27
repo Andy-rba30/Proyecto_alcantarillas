@@ -1,8 +1,7 @@
 """
 tests/fixtures/casos_patron.py
 ===============================
-Casos de referencia con valores calculados a mano (fuera del pipeline, con
-scipy.optimize.brentq de forma independiente) para contrastar cada módulo.
+Casos de referencia calculados fuera del pipeline para contrastar cada módulo.
 
 Uso previsto en los módulos de prueba:
 
@@ -14,10 +13,27 @@ Uso previsto en los módulos de prueba:
         assert theta == pytest.approx(c["theta_esperado"], rel=1e-5)
         ...
 
-Todos los valores numéricos fueron verificados con scipy.optimize.brentq de
-forma independiente al pipeline (no se copiaron de la hoja de ruta sin
-recalcular). Si un test contra estos valores falla, el error está en el
-modulo bajo prueba, no en el fixture -- pero si tienes dudas, recalcula.
+Cómo se verifica cada caso (MAT-O20)
+------------------------------------
+Este encabezado decía «todos los valores numéricos fueron verificados con
+scipy.optimize.brentq de forma independiente». Era falso por partida doble: el
+bloque `__main__` solo autoverificaba CP-2 y CP-8, y brentq no interviene en
+ningún caso que no resuelva una raíz. La afirmación tapó durante toda su vida
+el defecto de CP-1 (MAT-D7 / SIS-F-03), cuyos dorados no salían de la fórmula
+que el propio caso declara. Lo que hoy es cierto:
+
+- **Autoverificados por el bloque `__main__` de este archivo** (recomputación
+  independiente, sin importar módulos del repo): CP-1, CP-2, CP-7 y CP-8.
+  Córrelo con `python3 tests/fixtures/casos_patron.py`. Solo CP-2 usa
+  `scipy.optimize.brentq` -- es el único que resuelve una raíz; los otros tres
+  son fórmula cerrada.
+- **Recomputados a mano, sin autoverificación en este archivo**: CP-3, CP-4,
+  CP-5 y CP-6. CP-6 no tiene valor cerrado por construcción (se contrasta por
+  residuo en su propio test).
+
+Si un test contra estos valores falla, el error está *probablemente* en el
+módulo bajo prueba -- pero el fixture no es infalible y ya falló una vez:
+recalcula antes de tocar el módulo.
 
 Referencias de numeral: ver docs/hoja_de_ruta_alcantarillas_v8.md
 """
@@ -32,21 +48,34 @@ G = 9.81  # m/s2, gravedad fisica generica (constantes_fisicas.G). CP-8 usa
 # CP-1 · Periodo de retorno (Sec. 2.2, Tabla N 02)
 # ---------------------------------------------------------------------------
 # TR = 1 / (1 - (1-R)**(1/n))
+#
+# CORREGIDO (MAT-D7 / SIS-F-03). Los dorados anteriores -- 70.63 y 35.29 --
+# NO salían de esta fórmula: la doble precisión da 70.59302021387457 y
+# 35.322715552711315. Los errores (-0.037 y +0.033, uno alto y otro bajo)
+# cabían justo debajo de la tolerancia de 0.05, de modo que la ventana quedaba
+# centrada en un número falso y la implementación CORRECTA pasaba con margen
+# de solo 0.013. Ningún documento de docs/ contiene 70.63 ni 35.29: no eran
+# valores de fuente mal copiados, eran dorados mal calculados.
+#
+# Los dorados de abajo son el double exacto redondeado a 5 decimales, así que
+# el residuo frente al cálculo real es <= 5e-6 por construcción; la tolerancia
+# de 1e-5 lo cubre y es 3700 veces más estrecha que la que dejó pasar el error.
+# Los redondeos publicados en la memoria (71 y 35 años) no cambian.
 
 CP1_PERIODO_RETORNO = [
     {
         "descripcion": "Quebradas importantes / badenes",
         "R": 0.30,
         "n": 25,
-        "TR_esperado": 70.63,   # redondea a 71 en la memoria
-        "tolerancia": 0.05,
+        "TR_esperado": 70.59302,   # exacto 70.59302021387457; redondea a 71
+        "tolerancia": 1e-5,
     },
     {
         "descripcion": "Quebradas menores / descarga de cunetas",
         "R": 0.35,
         "n": 15,
-        "TR_esperado": 35.29,   # redondea a 35 en la memoria
-        "tolerancia": 0.05,
+        "TR_esperado": 35.32272,   # exacto 35.322715552711315; redondea a 35
+        "tolerancia": 1e-5,
     },
 ]
 
@@ -101,7 +130,12 @@ CP3_VELOCIDAD_MINIMA = {
     "V_objetivo": 0.25,          # m/s, V2 del Manual MTC
     "S_que_produce_V_objetivo": 6.008e-5,   # adimensional
     "S_constructiva_minima_referencia": 0.001,
-    "conclusion": "V2 se cumple para cualquier S >= 0.001; nunca gobierna el diseno",
+    # La conclusion va condicionada a SUS entradas (MAT-O20): escrita sin
+    # ellas era falsa. Con y/D < 0.056 (mismo D y n) V2 SI se viola a
+    # S = 0.001; la hoja de ruta (Sec. 5.2) la condiciona correctamente.
+    "conclusion": "Para D=0.90, y/D=0.75 y n=0.013, V2 se cumple para "
+                  "cualquier S >= 0.001 y no gobierna el diseno. No es "
+                  "universal: no vale para tirantes relativos muy bajos.",
 }
 
 
@@ -177,6 +211,14 @@ CP7_CADENA_SISMICA = {
                                                    # la cadena esta desagregada
                                                    # y no hardcodeada en 0.50
     "k_v_esperado": 0.0,
+
+    # Rama de sensibilidad de la MISMA cadena: si el SPT cerrara la clase de
+    # sitio en E, F_pga baja a 0.9 (F_PGA_TABLA["E"]) y TODA la cadena se
+    # mueve. Es el detector de un k_h = 0.50 escrito a mano, y sus dorados
+    # viven aqui y no como literales en tests/test_M9_cabezal.py (SIS-F-14).
+    "F_pga_clase_E": 0.9,
+    "A_s_con_F_pga_clase_E_esperado": 0.45,          # 0.9 * 0.50
+    "k_h_con_F_pga_clase_E_esperado": 0.45,          # muro rigido: 1.0 * k_h0
 }
 
 
@@ -239,7 +281,43 @@ TODOS_LOS_CASOS = {
 
 
 if __name__ == "__main__":
-    # Recalculo independiente de verificacion, usa scipy si esta disponible.
+    # Recalculo independiente de verificacion. CP-1 y CP-7 son formula cerrada
+    # y no necesitan scipy: se autoverifican siempre. CP-2 resuelve una raiz
+    # (brentq) y CP-8 se recalcula junto a el.
+
+    # --- CP-1: TR = 1 / (1 - (1-R)^(1/n)) -----------------------------------
+    # Esta autoverificacion no existia (MAT-O20) y por eso los dorados de
+    # CP-1 pudieron estar mal durante toda su vida (MAT-D7 / SIS-F-03).
+    for _caso in CP1_PERIODO_RETORNO:
+        _TR = 1 / (1 - (1 - _caso["R"]) ** (1 / _caso["n"]))
+        print(f"Recalculo CP-1: R={_caso['R']} n={_caso['n']} "
+              f"TR={_TR:.11f} (fixture {_caso['TR_esperado']}, "
+              f"redondea a {round(_TR)})")
+        assert abs(_TR - _caso["TR_esperado"]) < _caso["tolerancia"], (
+            f"CP-1 R={_caso['R']} n={_caso['n']}: el dorado "
+            f"{_caso['TR_esperado']} no sale de la formula ({_TR!r})")
+    print("CP-1 verificado contra los valores del fixture.")
+
+    # --- CP-7: cadena sismica desagregada -----------------------------------
+    _cp7 = CP7_CADENA_SISMICA
+    _A_s = _cp7["F_pga"] * _cp7["PGA"]
+    _k_h0 = _A_s                                    # k_h0 = A_s (2.8.1.1.14.2)
+    assert abs(_A_s - _cp7["A_s_esperado"]) < 1e-12
+    assert abs(_k_h0 - _cp7["k_h0_esperado"]) < 1e-12
+    assert abs(_cp7["factor_muro_rigido"] * _k_h0
+               - _cp7["k_h_con_muro_rigido_esperado"]) < 1e-12
+    assert abs(_cp7["factor_muro_desplazable"] * _k_h0
+               - _cp7["k_h_con_muro_desplazable_esperado"]) < 1e-12
+    _A_s_E = _cp7["F_pga_clase_E"] * _cp7["PGA"]
+    assert abs(_A_s_E - _cp7["A_s_con_F_pga_clase_E_esperado"]) < 1e-12
+    assert abs(_cp7["factor_muro_rigido"] * _A_s_E
+               - _cp7["k_h_con_F_pga_clase_E_esperado"]) < 1e-12
+    print(f"CP-7 verificado: A_s={_A_s:.2f} k_h(rigido)="
+          f"{_cp7['factor_muro_rigido'] * _k_h0:.2f} k_h(desplazable)="
+          f"{_cp7['factor_muro_desplazable'] * _k_h0:.2f} "
+          f"k_h(F_pga clase E)={_cp7['factor_muro_rigido'] * _A_s_E:.2f}")
+
+    # --- CP-2 y CP-8 --------------------------------------------------------
     try:
         import numpy as np
         from scipy.optimize import brentq
