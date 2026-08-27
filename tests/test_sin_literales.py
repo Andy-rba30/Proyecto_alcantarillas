@@ -13,8 +13,9 @@ M0 a M11 -- es un defecto, salvo en los seis archivos exentos:
                                o un ensayo sobre las coordenadas de esta obra
     tolerancias.py             precision numerica, no valores de proyecto
     dominios.py                limites de dominio del dato de entrada
-    constantes_fisicas.py      constantes fisicas universales (hoy solo la
-                               gravedad), no valores de proyecto
+    constantes_fisicas.py      constantes fisicas universales (hoy cinco
+                               nombres: G, RHO_AGUA, N_POR_KN, GAMMA_AGUA,
+                               GAMMA_AGUA_KN_M3), no valores de proyecto
 
 Los tres ultimos estan exentos porque sus numeros NO son valores de proyecto.
 `datos_sitio.py` esta exento por la razon contraria: los suyos si lo son -- el
