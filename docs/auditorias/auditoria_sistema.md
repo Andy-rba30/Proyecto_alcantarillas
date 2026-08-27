@@ -50,7 +50,7 @@ reproducir con un comando. Sus 118 hallazgos crudos pasaron por una
   con `sed -n`, buscar activamente el consumidor que el auditor no encontró
   (`getattr`, f-string, iteración de dict, `dataclasses.fields`, marcador de
   plantilla), y refutar por defecto ante la duda.
-- **Lente 2 — decisión documentada.** Buscar en `Claude.md`, la hoja de ruta,
+- **Lente 2 — decisión documentada.** Buscar en `CLAUDE.md`, la hoja de ruta,
   los dos manifiestos, `docs/auditoria_y_ruta_despliegue_v9.md` y los docstrings
   completos si la decisión ya estaba declarada, y reclasificar en consecuencia.
 
@@ -124,7 +124,7 @@ Ambos fueron revertidos.
 | A-12 | MENOR | gui/app.py:5-7,202-204,277-285 | El docstring afirma reutilizar el "campo validable" de legacy/Tc.py; no existe y `color_borde_ok` queda muerto | defecto real |
 | A-13 | MENOR | src/modulos/M5_verificaciones.py:4-5; cli.py:573-577 | V2b (sedimentacion/colmatacion) de la Fase 5 no existe en ninguna linea de codigo y el alcance reducido a nueve verificaciones no esta escrito | deliberado sin documentar |
 | A-14 | MENOR | src/criterios_adoptados.py:279-285; gui/app.py:489 | El docstring dice `valor=None` y la regex reescribe cualquier valor dejando `fuente` intacta; el boton de la GUI se habilita para toda fila | deliberado documentado |
-| A-15 | MENOR | Claude.md:55-56; tests/test_sin_literales.py:16-17 | La constitucion y el test guardian siguen diciendo que constantes_fisicas.py tiene "hoy solo la gravedad": son cinco nombres | deliberado documentado |
+| A-15 | MENOR | CLAUDE.md:55-56; tests/test_sin_literales.py:16-17 | La constitucion y el test guardian siguen diciendo que constantes_fisicas.py tiene "hoy solo la gravedad": son cinco nombres | deliberado documentado |
 | A-16 | OBS | src/modulos/M0_carga.py:364-381 | Dos validaciones cruzadas (diametro implicito, entrega por gravedad) no son filas de la tabla de Sec. 1.5 y solo estan razonadas en comentarios de linea | deliberado sin documentar |
 | A-17 | OBS | gui/app.py:748; cli.py:886-887 | La GUI no expone `--alcance`: siempre corre "expediente" y `memoria_perfil.html` es inalcanzable desde la interfaz | deliberado sin documentar |
 | A-18 | OBS | gui/app.py:905-912,928-947 | La sesion JSON no guarda ni restaura los criterios declarados "solo para esta corrida" | deliberado sin documentar |
@@ -133,14 +133,14 @@ Ambos fueron revertidos.
 | A-21 | OBS | cli.py:736-745 | `cli._fase_8` repite la resta "subrasante menos clave" sin la guarda `DatoInvalidoError` de V7; hoy sin efecto porque M8 se detiene antes | deliberado documentado |
 | B-01 | GRAVE | src/criterios_adoptados.py:373-375,386,1988; src/modulos/M11_reporte.py:1032 | `clase_sitio` solo se invoca en el bloque `__main__`: no entra en `criterios_usados()` y la memoria (perfil y expediente) nunca declara la adopcion que la hoja de ruta:111 ordena escribir con esas palabras | defecto real |
 | B-02 | MENOR | src/modelos.py:568; src/modulos/M4_control.py:392 | `ControlEntrada.HW_sobre_D` se calcula, se guarda y no lo lee ninguna ruta de produccion; su docstring dice que es "lo que compara V4b" | defecto real |
-| B-03 | MENOR | Claude.md:109-110; requirements.txt | La lista de dependencias de la constitucion incluye jinja2 y pandas (cero usos, no instalados) y omite weasyprint, que si esta pineado | defecto real |
+| B-03 | MENOR | CLAUDE.md:109-110; requirements.txt | La lista de dependencias de la constitucion incluye jinja2 y pandas (cero usos, no instalados) y omite weasyprint, que si esta pineado | defecto real |
 | B-04 | MENOR | src/modelos.py:375-376; src/modulos/M0_carga.py:386-389; cli.py:545-553 | El procedimiento de Sec. 1.3 ("TW se calcula, no se mide") no esta implementado: `Q_receptor_m3s` y `cota_TW` se validan y no alimentan nada; un CSV con `cota_TW` llena sigue exigiendo `--tw` | deliberado sin documentar |
 | B-05 | MENOR | src/criterios_adoptados.py:1963; docs/hoja_de_ruta_alcantarillas_v8.md:660 | `parametros_sensibilizables()` (entregable 5, analisis de sensibilidad) solo la consumen los tests; ningun bloque de alcance lo declara diferido | deliberado sin documentar |
 | B-06 | MENOR | cli.py:1379-1396,1439-1443 | `--plantilla memoria_perfil.html` sobre corrida de expediente descarta 13 647 caracteres de pendientes; el docstring afirma que las dos plantillas "comparten el contrato de marcadores" | deliberado sin documentar |
 | B-07 | OBS | src/modelos.py:78-81 | `CriterioPendienteError.mensaje_gui` no tiene consumidor de produccion; la GUI muestra los pendientes por la via del `Bloqueo`, mas rica | deliberado sin documentar |
 | B-08 | OBS | src/modelos.py:1244-1255 | `PeriodoRetorno.exigir_anios` no tiene llamador: los cinco accesos al TR tratan el None explicitamente y ninguno necesita el entero | deliberado sin documentar |
 | B-09 | OBS | M2:127, M3:100, M4:182-183, M5:139, M8:134, MD:117 | Siete constantes `NUMERAL_*` de modulo declaradas y nunca leidas; dos de ellas por bloqueos ya documentados | deliberado sin documentar |
-| B-10 | OBS | legacy/Tc.py; Claude.md:116-119 | legacy/Tc.py (803 sentencias, 185 literales prohibidos, anuncia matplotlib y una plantilla inexistente) no lo importa nadie, no lo prueba nadie y no lo barre nadie, sin una linea que declare ese estatus | deliberado sin documentar |
+| B-10 | OBS | legacy/Tc.py; CLAUDE.md:116-119 | legacy/Tc.py (803 sentencias, 185 literales prohibidos, anuncia matplotlib y una plantilla inexistente) no lo importa nadie, no lo prueba nadie y no lo barre nadie, sin una linea que declare ese estatus | deliberado sin documentar |
 | B-11 | OBS | src/criterios_adoptados.py:604-605; src/modulos/MD.py:539 | `homogeneidad_serie_fen` no bloquea por una llamada `valor()`: el bloqueo es indirecto via la columna `Q_m3s` vacia, y esta escrito en el docstring de `disenar_lote` | deliberado documentado |
 | B-12 | OBS | src/modelos.py:378; src/modulos/M11_reporte.py:145-160 | `NF_profundidad_m` no la lee ningun modulo (la pieza que la usaria es la estabilidad del cabezal, declarada no ensamblada) y es la unica columna de Sec. 1.2 ausente de `CAMPOS_CSV` | deliberado documentado |
 | B-13 | OBS | src/modelos.py:1275; src/modulos/M1_clasificacion.py:337 | `PerfilFamilia.verificaciones_aceptacion` solo lo escribe M1 y lo leen dos asserts; el propio docstring declara que la Fase 5 aplica igual punto por punto | deliberado documentado |
@@ -185,7 +185,7 @@ Ambos fueron revertidos.
 | E-03 | OBS | gui/app.py:868,883,899 | Los tres exportadores capturan `except Exception` sin traza, mientras el patron hermano de la linea 755 si la imprime | defecto real |
 | E-04 | OBS | gui/app.py:494 | El unico `raise` de la GUI valida un campo tecleado con ValueError en vez de la taxonomia; se atrapa a tres lineas en sus dos llamadores | deliberado sin documentar |
 | E-05 | OBS | src/criterios_adoptados.py:144-173,1780 | Declarar un criterio desde la GUI con valor fuera de rango sale como ValueError/KeyError, fuera de ErrorProyecto; el docstring declara la guardia para los tres caminos | deliberado documentado |
-| E-06 | OBS | src/modelos.py:108-109; src/modulos/M5_verificaciones.py:409 | `modelos.py` ensancha `DatoFaltanteError` a "o de un tablero externo" y el codigo lo explota; Claude.md:95-96 sigue diciendo "el nombre de la columna" | deliberado documentado |
+| E-06 | OBS | src/modelos.py:108-109; src/modulos/M5_verificaciones.py:409 | `modelos.py` ensancha `DatoFaltanteError` a "o de un tablero externo" y el codigo lo explota; CLAUDE.md:95-96 sigue diciendo "el nombre de la columna" | deliberado documentado |
 | F-01 | GRAVE | gui/app.py:1-958 | 584 sentencias ejecutables con CERO tests; la GUI reimplementa la traduccion de banderas y decide el tipo del valor declarado, y ningun documento la exime | defecto real |
 | F-02 | GRAVE | src/criterios_adoptados.py:299-320 | La rama que SI escribe el archivo fuente de los criterios nunca se ejecuta en la suite: el unico test comprueba el rechazo previo | defecto real |
 | F-03 | GRAVE | tests/fixtures/casos_patron.py:41,48 | Los TR dorados de CP-1 (70.63 y 35.29) no salen de la formula que el propio fixture declara (70.593 y 35.323); el error cabe justo bajo la tolerancia | defecto real |
@@ -201,7 +201,7 @@ Ambos fueron revertidos.
 | F-13 | MENOR | tests/fixtures/casos_patron.py:32-237 | Seis modulos de calculo no consumen ningun caso patron; para cuatro de ellos (M2, M7, M8, M10) el fixture no define ninguno | defecto real |
 | F-14 | MENOR | tests/test_M9_cabezal.py:103-137,175 | Los valores dorados de CP-7 estan duplicados como literales en vez de leerse del fixture: corregir el fixture no llega a los tests de M9 | defecto real |
 | F-15 | MENOR | tests/fixtures/datos_referenciales_prueba.md:9-10,34-35; ...NO_APLICADOS.md:10,28,45-50,86 | Los dos .md de fixtures afirman cosas del codigo ya falsas: v_max en 6.0/4.5, "siguen en valor=None", cinco sitios de AssertionError que no existen, remanso que ya no aborta la corrida, baseline 653 | defecto real |
-| F-16 | MENOR | test_M6:58; test_M9:549,550,641,645,741; test_cli:99,114,115,123,207,237,342,359,388 | 15 asserts comparan floats con `==`, prohibido por Claude.md:111 sin exencion para tests (todos exactos por construccion) | defecto real |
+| F-16 | MENOR | test_M6:58; test_M9:549,550,641,645,741; test_cli:99,114,115,123,207,237,342,359,388 | 15 asserts comparan floats con `==`, prohibido por CLAUDE.md:111 sin exencion para tests (todos exactos por construccion) | defecto real |
 | F-17 | MENOR | tests/test_M3_hidraulica.py:147-151 | Un test que no invoca codigo de produccion (unica llamada: `pytest.approx`) cuenta en el conteo de 725 y no protege nada | deliberado sin documentar |
 | F-18 | OBS | docs/auditoria_y_ruta_despliegue_v9.md:44 | La auditoria previa sigue citando "12 modulos, 595 tests en verde"; hoy son 13 modulos y 725 passed | defecto real |
 | F-19 | OBS | src/criterios_adoptados.py:302-312 | El patron de `escribir_valor_en_archivo` no alcanza a los 2 criterios de valor multilinea; ese ValueError es lo unico que impide escribirles un escalar encima | deliberado sin documentar |
@@ -217,7 +217,7 @@ Las fichas marcadas **IMPRECISO** llegaron mal descritas del auditor que las enc
 ### A-01 -- M11 imprime "sin valor declarado" un criterio que el calculo si uso
 **Sev** BLOQUEANTE - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** src/modulos/M11_reporte.py:1029-1030,1040,1043
 `bloque_criterios` lee `ca.criterio(clave).valor`, el valor del ARCHIVO, y nunca consulta `_OVERRIDES`. El calculo si usa el override y la clave entra en `criterios_usados()`, de modo que el criterio aparece en el bloque 3 tachado como pendiente; `criterios_sin_valor()` lo excluye, asi que el bloque 4 tampoco lo lista. La version en texto `ca.reporte_criterios` si lo marca, contra lo que el propio docstring promete. La GUI expone "Aplicar solo a esta corrida" y luego exporta HTML/PDF: es el camino normal.
-**Regla:** Claude.md, Arquitectura: "Cada invocacion de un criterio o de un dato de sitio se registra, para que M11 imprima solo los usados" y "Rellenar un vacio en silencio es el peor error posible en este proyecto". Ademas contradice el docstring de la funcion (M11:1029-1030: "para que las dos digan exactamente lo mismo").
+**Regla:** CLAUDE.md, Arquitectura: "Cada invocacion de un criterio o de un dato de sitio se registra, para que M11 imprima solo los usados" y "Rellenar un vacio en silencio es el peor error posible en este proyecto". Ademas contradice el docstring de la funcion (M11:1029-1030: "para que las dos digan exactamente lo mismo").
 **Evidencia:**
 ```
 $ python3 -c "...ca.establecer_valor_dinamico('talud_terraplen',1.5)..."
@@ -235,7 +235,7 @@ $ grep -rn "valores_dinamicos|_OVERRIDES|en caliente" docs/   -> (sin resultados
 ### A-02 -- V4b (HW/D <= 1.5) no existe en el codigo y dos docstrings afirman que M5 la ejecuta
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Detectado desde 3 dimensiones** (A1, B1, C2) - **Ubicacion** src/modulos/M4_control.py:24; src/modelos.py:564; src/criterios_adoptados.py:886; docs/hoja_de_ruta_alcantarillas_v8.md:457
 La fila V4b de la tabla de Fase 5 no esta implementada, `HW_D_max` (valor 1.5, `[C]`) solo aparece en su propia declaracion y no entra en `criterios_usados()` tras una corrida completa. Dos docstrings afirman lo contrario: M4_control.py:24 dice que "HW/D <= 1.5 (V4b) ... son verificaciones de la Fase 5 y las hace M5", y modelos.py:564 dice que `HW_sobre_D` "es tambien lo que compara V4b". Ningun punto llega hoy a Fase 5 (V5 bloquea todo), de modo que no hay consecuencia de calculo.
-**Regla:** Hoja de ruta Fase 5, fila V4b ("Relacion HW/D | 1.2 - 1.5 | [C]"). Claude.md: "Cada invocacion de un criterio ... se registra, para que M11 imprima solo los usados" -- un criterio del Anexo A que ningun modulo invoca no puede aparecer nunca en la memoria. No hay declaracion de fuera de alcance en ningun docstring ni en docs/.
+**Regla:** Hoja de ruta Fase 5, fila V4b ("Relacion HW/D | 1.2 - 1.5 | [C]"). CLAUDE.md: "Cada invocacion de un criterio ... se registra, para que M11 imprima solo los usados" -- un criterio del Anexo A que ningun modulo invoca no puede aparecer nunca en la memoria. No hay declaracion de fuera de alcance en ningun docstring ni en docs/.
 **Evidencia:**
 ```
 $ grep -rn "HW_D_max" src/modulos/ cli.py gui/ --include=*.py
@@ -255,7 +255,7 @@ $ python3 cli.py tests/ejemplo_puntos.csv --luz 3 --tw 0.4 --alcance perfil | gr
 ### A-03 -- Ocho docstrings y dos filas del manifiesto declaran pendientes tres criterios ya cerrados
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Detectado desde 4 dimensiones** (A1 x2, C2, D2) - **Ubicacion** src/modulos/M2_material.py:40-42,50,264; src/modulos/M5_verificaciones.py:11-12,16-19,45-54,478; src/modulos/M7_geometria.py:21,157,262-265,283,375; src/modulos/MD.py:479-482; docs/manifiesto_citas.md:253,324
 `v_max_tmc` = `v_max_hdpe` = 4.6 y `h_relleno_min_concreto_tmc` = 0.30 con etiqueta `[N->]`. M2:40-42 dice "Dos de los criterios ... siguen sin valor" y enumera tres; M2:264 dice que los campos "pueden salir en None"; M5:11-19 lista V3 como "TMC / HDPE: criterio pendiente [C]" y V7 como pendiente en `factores_carga_aashto`; M7 describe seis veces el estado anterior (`[C]`, "M2 deja el campo en None"); MD:479-482 pone `v_max_tmc`/`v_max_hdpe` como ejemplo vivo de bloqueo cuando en la corrida real los tres materiales se detienen en `remanso_derecho_via`. Los mismos archivos se corrigen mas abajo (M5:260-266), lo que prueba que la actualizacion se hizo a medias.
-**Regla:** Claude.md, Estilo y Fuente de verdad: el docstring de modulo es el contrato de responsabilidad y toda cita se verifica contra el expediente. El cierre esta registrado en docs/manifiesto_citas.md:361-362, :400-401 y :593-601 y hasta en un test (`tests/test_M5_verificaciones.py:571`): la documentacion de modulo contradice al expediente, no al reves.
+**Regla:** CLAUDE.md, Estilo y Fuente de verdad: el docstring de modulo es el contrato de responsabilidad y toda cita se verifica contra el expediente. El cierre esta registrado en docs/manifiesto_citas.md:361-362, :400-401 y :593-601 y hasta en un test (`tests/test_M5_verificaciones.py:571`): la documentacion de modulo contradice al expediente, no al reves.
 **Evidencia:**
 ```
 $ python3 -c "...CRITERIOS[k].valor/etiqueta..."
@@ -276,7 +276,7 @@ $ python3 -c "...disenar_lote(...)..." -> los 3 candidatos de A-01 paran en 'rem
 ### A-04 -- `cota_entrada_supuesta` rellena un vacio de dato dentro de M5
 **Sev** GRAVE - **Clasificacion** deliberado sin documentar - **Veredicto** CONFIRMADO - **Ubicacion** src/modulos/M5_verificaciones.py:56-69,305-318
 El CSV no trae cota de fondo de entrada y M5 adopta `punto.cota_terreno`. Esa eleccion gobierna V4 (M5:362), V7 (M5:492) y cuatro puntos de M7 (252, 328, 465, 539) y M8. No existe ningun criterio para esto en criterios_adoptados.py (`ke_entrada` es otra cosa), no aparece en el Anexo A ni en ninguna linea de docs/, y M11 solo imprime el numero: "supuest"/"hipotesis" no aparecen en M11_reporte.py ni en cli.py.
-**Regla:** Claude.md: "Si la hoja de ruta NO dice nada sobre algo que necesitas: NO lo inventes. Crea una entrada en criterios_adoptados.py con valor=None, etiqueta [A] ... Rellenar un vacio en silencio es el peor error posible en este proyecto." El propio docstring manda "declarala en la memoria como tal" y la memoria no la declara.
+**Regla:** CLAUDE.md: "Si la hoja de ruta NO dice nada sobre algo que necesitas: NO lo inventes. Crea una entrada en criterios_adoptados.py con valor=None, etiqueta [A] ... Rellenar un vacio en silencio es el peor error posible en este proyecto." El propio docstring manda "declarala en la memoria como tal" y la memoria no la declara.
 **Evidencia:**
 ```
 $ grep -n "def cota_entrada_supuesta" -A3 src/modulos/M5_verificaciones.py
@@ -284,7 +284,7 @@ $ grep -n "def cota_entrada_supuesta" -A3 src/modulos/M5_verificaciones.py
 307:    Cota del fondo de la entrada, msnm. Es la INTERPRETACION declarada en el
 $ python3 -c "[k for k in ca.CRITERIOS if 'entrada' in k or 'cota' in k.lower()]"
 ['ke_entrada']
-$ grep -rn "cota_entrada_supuesta|cota de invert|fondo de la entrada|cota de entrada" docs/ Claude.md
+$ grep -rn "cota_entrada_supuesta|cota de invert|fondo de la entrada|cota de entrada" docs/ CLAUDE.md
 (sin resultados)
 $ grep -rn "supuest|hipotesis" src/modulos/M11_reporte.py cli.py
 (sin resultados; M11:800 y cli.py:1244 imprimen solo el numero)
@@ -294,7 +294,7 @@ $ grep -rn "supuest|hipotesis" src/modulos/M11_reporte.py cli.py
 ### A-05 -- `cli._bloqueo` y `M11.criterios_bloqueantes` resuelven toda clave contra `ca.criterio()`
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** cli.py:485; src/modulos/M11_reporte.py:557; src/datos_sitio.py:234
 `datos_sitio.valor()` lanza `CriterioPendienteError` igual que un criterio, pero `_bloqueo` busca la clave en `CRITERIOS` y un `[S]` de corredor daria KeyError: un problema del expediente saldria como fallo de programa. Los tres datos de corredor tienen valor hoy (PGA_roca_B=0.5, ZONA_SISMICA_LA_UNION=4, Z_E030=0.45), de modo que la rama es inalcanzable sin parchear `DATOS_SITIO`.
-**Regla:** Claude.md, Excepciones: "Todas descienden de ErrorProyecto ... para que la GUI distinga un problema del expediente de un fallo del programa con un solo except". Ningun docstring declara que cli.py solo soporte `CriterioPendienteError` de criterios_adoptados.
+**Regla:** CLAUDE.md, Excepciones: "Todas descienden de ErrorProyecto ... para que la GUI distinga un problema del expediente de un fallo del programa con un solo except". Ningun docstring declara que cli.py solo soporte `CriterioPendienteError` de criterios_adoptados.
 **Evidencia:**
 ```
 $ python3 -c "...replace(ds.DATOS_SITIO['PGA_roca_B'], valor=None); cli._etapa(...)" 2>&1 | tail -6
@@ -310,7 +310,7 @@ PGA_roca_B 0.5 | ZONA_SISMICA_LA_UNION 4 | Z_E030 0.45
 ### A-06 -- `Material.v_max_rango` transporta un escalar y `v_max_definida` afirma lo contrario de lo que devuelve
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Detectado desde 3 dimensiones** (A1, C2, F2) - **Ubicacion** src/modelos.py:451,466-468; src/modulos/M2_material.py:280-282
 El campo anotado `Optional[Tuple[float, float]]` recibe el float 4.6 para TMC y HDPE; concreto lleva (3.0, 6.0). El escalar es deliberado y esta documentado en M5:259-266 ("Son un techo escalar, de modo que esta rama no cambia") y fijado por tests, pero no en modelos.py, donde se consulta el contrato. Ademas `v_max_definida` se documenta como "False para TMC y HDPE mientras el Tablero 1.3 siga abierto" y hoy devuelve True para los tres. El unico desempaquetado (M5:282) solo se alcanza para concreto: no hay TypeError posible hoy.
-**Regla:** Claude.md, Arquitectura: "Los tipos que fluyen entre modulos estan en modelos.py."
+**Regla:** CLAUDE.md, Arquitectura: "Los tipos que fluyen entre modulos estan en modelos.py."
 **Evidencia:**
 ```
 $ python3 -c "print(Material.__annotations__['v_max_rango']); ...catalogo(t).v_max_rango..."
@@ -329,7 +329,7 @@ $ sed -n '269,282p' src/modulos/M5_verificaciones.py
 ### A-07 -- M11 declara "sin calcular nada nuevo" y calcula y/D en dos sitios
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/M11_reporte.py:5,903,953
 El barrido AST confirma que las unicas operaciones aritmeticas sobre magnitudes en M11 son `h.y_normal / resultado.D` en 903 y 953 (las otras dos BinOp son `Path / str`). No hay comentario, nombre ni excepcion declarada: es inconsistencia entre el docstring de modulo y dos divisiones inline. El numero impreso es identico al de V1 (M5:162) y a `modelos.Geometria.y_sobre_D`.
-**Regla:** docstring del propio M11 ("sin calcular nada nuevo") y Claude.md, Arquitectura: "Los tipos que fluyen entre modulos estan en modelos.py."
+**Regla:** docstring del propio M11 ("sin calcular nada nuevo") y CLAUDE.md, Arquitectura: "Los tipos que fluyen entre modulos estan en modelos.py."
 **Evidencia:**
 ```
 $ sed -n '4,5p' src/modulos/M11_reporte.py
@@ -360,7 +360,7 @@ $ ls -l src/modulos/M5_verificaciones.py
 ### A-09 -- El diagnostico de Familia C que MD escribio es inalcanzable desde el CSV
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/MD.py:405-411,492-500
 `disenar_punto` exige Q y S antes de pedir candidatos, asi que una fila C leida del CSV muere en `DatoFaltanteError('Q_m3s')` y la rama Familia C de `_motivo_sin_candidatos` nunca se ejecuta. El diagnostico que si sale es verdadero (el Tablero 3.1 declara la Familia C completa como dato externo pendiente), solo menos fundamental que "esa familia no es de conducto circular". Ningun punto se acepta ni se rechaza mal por esto.
-**Regla:** Claude.md, taxonomia de excepciones: "si el revisor tiene que anadir algo es Faltante, si tiene que corregir algo es Invalido". Contradice ademas el docstring de MD ("DisenoNoFactibleError ... o M2 no ofrece candidatos (Familia C, Sec. 2.3)").
+**Regla:** CLAUDE.md, taxonomia de excepciones: "si el revisor tiene que anadir algo es Faltante, si tiene que corregir algo es Invalido". Contradice ademas el docstring de MD ("DisenoNoFactibleError ... o M2 no ofrece candidatos (Familia C, Sec. 2.3)").
 **Evidencia:**
 ```
 $ python3 -c "...disenar_punto(C-01) y disenar_punto(replace(C-01,Q_m3s=1.0,S_cauce=0.005))"
@@ -375,8 +375,8 @@ $ sed -n '405,408p' src/modulos/MD.py
 
 ### A-10 -- El docstring de gui/app.py lista tres pestanas; la aplicacion tiene cuatro
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** gui/app.py:14-22,216-219,697-701
-El docstring enumera tres pestanas y `nb.add` se llama cuatro veces; la omitida es "2. Criterios", la que reescribe criterios_adoptados.py y declara valores en caliente. La lista de exportaciones tambien esta incompleta: dice (JSON/HTML/PDF) y la pestana 4 monta ademas `btn_csv`, el CSV que Claude.md:118 exige entre los componentes reutilizados.
-**Regla:** Claude.md, Estilo: el docstring declarado debe describir el comportamiento real. Ningun documento menciona la pestana de Criterios.
+El docstring enumera tres pestanas y `nb.add` se llama cuatro veces; la omitida es "2. Criterios", la que reescribe criterios_adoptados.py y declara valores en caliente. La lista de exportaciones tambien esta incompleta: dice (JSON/HTML/PDF) y la pestana 4 monta ademas `btn_csv`, el CSV que CLAUDE.md:118 exige entre los componentes reutilizados.
+**Regla:** CLAUDE.md, Estilo: el docstring declarado debe describir el comportamiento real. Ningun documento menciona la pestana de Criterios.
 **Evidencia:**
 ```
 $ sed -n '14,22p' gui/app.py
@@ -392,7 +392,7 @@ $ grep -n "btn_csv" gui/app.py
 ### A-11 -- La leyenda de etiquetas de la GUI contradice la taxonomia de cinco
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** gui/app.py:321-323
 La leyenda anuncia `[N]`, categoria imposible en criterios_adoptados.py (hay test guardian que lo impide), y omite `[S]`, que si esta presente (`PERFIL_SUELO_PRESUNTO`). Es texto de una pestana, sin efecto sobre el calculo ni sobre la memoria (M11 imprime con `_etiqueta_html`).
-**Regla:** Claude.md, "Taxonomia de etiquetas (cinco, no cuatro)": [N], [N->], [S], [C], [A].
+**Regla:** CLAUDE.md, "Taxonomia de etiquetas (cinco, no cuatro)": [N], [N->], [S], [C], [A].
 **Evidencia:**
 ```
 $ sed -n '321,323p' gui/app.py
@@ -408,7 +408,7 @@ def test_ningun_criterio_adoptado_lleva_ya_la_etiqueta_N():
 ### A-12 -- gui/app.py declara reutilizar el "campo validable" de legacy y no lo implementa
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** gui/app.py:5-7,202-204,277-285
 El docstring afirma reutilizar "MarcoScroll, Tooltip y campo validable"; `_campo_validable` no existe en la GUI y `color_borde_ok` queda como codigo muerto (dos asignaciones, ningun uso). Los campos se construyen con `ttk.Entry` desnudo. El usuario si sabe que campo esta mal (el mensaje de `cli.cargar_datos_externos` nombra el campo): lo que falta es la marca por campo.
-**Regla:** Claude.md, GUI: "Reutilizar el patron de legacy/Tc.py: ... campo validable ... No reinventar los componentes." Es el unico de la lista que falta y el docstring afirma que esta.
+**Regla:** CLAUDE.md, GUI: "Reutilizar el patron de legacy/Tc.py: ... campo validable ... No reinventar los componentes." Es el unico de la lista que falta y el docstring afirma que esta.
 **Evidencia:**
 ```
 $ grep -n "_campo_validable\|color_borde_ok" gui/app.py legacy/Tc.py
@@ -417,12 +417,12 @@ legacy/Tc.py:332,340,358,361,447,563      (definicion y uso reales)
 $ sed -n '277,283p' gui/app.py
             ent = ttk.Entry(f_ext, textvariable=..., ...)
 ```
-**Verificacion:** Lente 1 reprodujo el grep; lente 2 confirmo Claude.md:116-119 y el docstring que afirma la reutilizacion (GRAVE -> MENOR: carencia de UI sin efecto en ningun numero).
+**Verificacion:** Lente 1 reprodujo el grep; lente 2 confirmo CLAUDE.md:116-119 y el docstring que afirma la reutilizacion (GRAVE -> MENOR: carencia de UI sin efecto en ningun numero).
 
 ### A-13 -- V2b (sedimentacion / colmatacion) no existe en ninguna linea del codigo
 **Sev** MENOR - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/M5_verificaciones.py:4-5; cli.py:573-577; docs/hoja_de_ruta_alcantarillas_v8.md:454
 El identificador no existe en src/, cli.py, gui/ ni tests/, y no hay criterio ni mencion de "colmatacion"/"mantenimiento" en criterios_adoptados.py. El contenido de V2b es "acceso de mantenimiento en planos", entregable 7 de Sec. 11 que este software no produce, y el repo tiene una formula documental para ese caso (M8:306). Falta aplicarla: el alcance reducido a nueve verificaciones no esta escrito en ningun docstring ni en docs/.
-**Regla:** Hoja de ruta Fase 5, fila V2b ([N] + [A]). Claude.md: la parte [A] ni siquiera se declaro como vacio.
+**Regla:** Hoja de ruta Fase 5, fila V2b ([N] + [A]). CLAUDE.md: la parte [A] ni siquiera se declaro como vacio.
 **Evidencia:**
 ```
 $ grep -n "V2b" docs/hoja_de_ruta_alcantarillas_v8.md
@@ -439,7 +439,7 @@ $ sed -n '306p' src/modulos/M8_estructural.py
 ### A-14 -- El docstring de `escribir_valor_en_archivo` dice "valor=None" y la regex reescribe cualquier valor
 **Sev** MENOR - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/criterios_adoptados.py:279-285,302-306; gui/app.py:489,542-551
 La regex `([^,\n]*)` sobrescribe un valor ya declarado y deja `fuente` intacta, con lo que el manifiesto queda desalineado. Dos de los tres reproches ya estan documentados: no tocar etiqueta/justificacion/fuente esta en el propio docstring, y la GUI abre antes un messagebox que describe la conducta real y advierte exactamente de ese riesgo. Queda inexacta la primera frase del docstring y el boton habilitado sin condicion.
-**Regla:** Claude.md, Fuente de verdad, y docs/manifiesto_citas.md (cada fila es "un volcado literal de lo que el codigo YA afirma").
+**Regla:** CLAUDE.md, Fuente de verdad, y docs/manifiesto_citas.md (cada fila es "un volcado literal de lo que el codigo YA afirma").
 **Evidencia:**
 ```
 $ cp src/criterios_adoptados.py $D/copia.py; python3 -c "...escribir_valor_en_archivo('ke_entrada',0.9,ruta=copia)"
@@ -452,13 +452,13 @@ $ sed -n '542,551p' gui/app.py
 ```
 **Verificacion:** Lente 1 reprodujo la sobrescritura sobre copia; lente 2 hallo docstring y dialogo que documentan la decision (GRAVE -> MENOR, y reclasificado a deliberado documentado).
 
-### A-15 -- Claude.md y el test guardian siguen diciendo "hoy solo la gravedad"
-**Sev** MENOR - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** Claude.md:55-56; tests/test_sin_literales.py:16-17; src/constantes_fisicas.py:50-59
+### A-15 -- CLAUDE.md y el test guardian siguen diciendo "hoy solo la gravedad"
+**Sev** MENOR - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** CLAUDE.md:55-56; tests/test_sin_literales.py:16-17; src/constantes_fisicas.py:50-59
 constantes_fisicas.py declara cinco nombres (G, RHO_AGUA, N_POR_KN, GAMMA_AGUA, GAMMA_AGUA_KN_M3). El argumento de fondo del auditor no distingue a `GAMMA_AGUA_KN_M3` de la gravedad: G tambien entra en el calculo (M4:241, 284, 432) y el manifiesto declara que su correccion "si cambia un valor calculado". Queda un unico defecto: la enumeracion vencida en la constitucion y en el docstring del test.
-**Regla:** Claude.md, Arquitectura: "si cambiarlo puede alterar un resultado del calculo, no va ahi" mas la enumeracion "hoy solo la gravedad". La decision esta documentada en constantes_fisicas.py:33-47 y manifiesto_citas.md:19-27.
+**Regla:** CLAUDE.md, Arquitectura: "si cambiarlo puede alterar un resultado del calculo, no va ahi" mas la enumeracion "hoy solo la gravedad". La decision esta documentada en constantes_fisicas.py:33-47 y manifiesto_citas.md:19-27.
 **Evidencia:**
 ```
-$ sed -n '55,56p' Claude.md
+$ sed -n '55,56p' CLAUDE.md
   constantes_fisicas.py (constantes físicas universales -- hoy solo la
   gravedad, G = 9.81 m/s² -- ...
 $ grep -n "^[A-Z_0-9]* =" src/constantes_fisicas.py
@@ -471,8 +471,8 @@ M8_estructural.py:209 | M9_cabezal.py:683 | M9_cabezal.py:699
 
 ### A-16 -- Dos validaciones cruzadas de M0 no salen de la tabla de Sec. 1.5
 **Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/M0_carga.py:364-381,4-6
-Los dos chequeos (altura libre terreno-subrasante positiva; fondo del receptor bajo el terreno del cruce) no aparecen en la hoja de ruta. No son "criterios de factibilidad inventados": son comprobaciones de imposibilidad fisica entre dos datos de la misma fila, el tercer supuesto que Claude.md autoriza para `DatoInvalidoError`, y la frontera con la factibilidad esta fijada por test. Falta la declaracion escrita de ambas reglas fuera de los comentarios de linea.
-**Regla:** Claude.md: "Si la hoja de ruta NO dice nada sobre algo que necesitas: NO lo inventes", y el docstring de M0 que atribuye las validaciones cruzadas a la tabla de Sec. 1.5.
+Los dos chequeos (altura libre terreno-subrasante positiva; fondo del receptor bajo el terreno del cruce) no aparecen en la hoja de ruta. No son "criterios de factibilidad inventados": son comprobaciones de imposibilidad fisica entre dos datos de la misma fila, el tercer supuesto que CLAUDE.md autoriza para `DatoInvalidoError`, y la frontera con la factibilidad esta fijada por test. Falta la declaracion escrita de ambas reglas fuera de los comentarios de linea.
+**Regla:** CLAUDE.md: "Si la hoja de ruta NO dice nada sobre algo que necesitas: NO lo inventes", y el docstring de M0 que atribuye las validaciones cruzadas a la tabla de Sec. 1.5.
 **Evidencia:**
 ```
 $ sed -n '364,375p' src/modulos/M0_carga.py
@@ -484,12 +484,12 @@ $ grep -cn "entrega es por gravedad|diametro implicito" docs/hoja_de_ruta_alcant
 $ sed -n '353,367p' tests/test_M0_carga.py
 def test_un_terraplen_bajo_pero_posible_lo_decide_M7_y_no_M0  ("M0 solo rechaza lo imposible")
 ```
-**Verificacion:** Lente 1 reprodujo sed y grep; lente 2 leyo la Sec. 1.5 completa (hoja de ruta:214-232) y Claude.md:97-103, que autoriza la contradiccion entre datos de la misma fila sin exigir que el par este tabulado.
+**Verificacion:** Lente 1 reprodujo sed y grep; lente 2 leyo la Sec. 1.5 completa (hoja de ruta:214-232) y CLAUDE.md:97-103, que autoriza la contradiccion entre datos de la misma fila sin exigir que el par este tabulado.
 
 ### A-17 -- La GUI no expone `--alcance`
 **Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** gui/app.py:748; cli.py:886-887,1379-1396
 "alcance" no aparece en gui/app.py; la llamada es `cli.correr(ruta_csv, externos)` y `correr` toma `ALCANCE_EXPEDIENTE` por defecto. `memoria_perfil.html` solo se alcanza por `plantilla_por_alcance`, usada unicamente en cli.py:1482. La GUI corre el SUPERCONJUNTO, de modo que ninguna memoria suya afirma algo falso: es carencia de funcionalidad, no regla incumplida.
-**Regla:** el docstring de gui/app.py:9-12 promete llamar a las mismas funciones que cli.py (y lo cumple); Claude.md:115-119 no exige paridad de banderas.
+**Regla:** el docstring de gui/app.py:9-12 promete llamar a las mismas funciones que cli.py (y lo cumple); CLAUDE.md:115-119 no exige paridad de banderas.
 **Evidencia:**
 ```
 $ grep -n "alcance" gui/app.py   -> (sin resultados)
@@ -498,12 +498,12 @@ $ grep -n "cli.correr(" gui/app.py
 $ grep -n "plantilla_por_alcance" cli.py gui/app.py
 cli.py:1379 (def) | cli.py:1482 (unico uso)
 ```
-**Verificacion:** Lente 1 reprodujo todo; lente 2 leyo la seccion GUI de Claude.md y el docstring de `plantilla_por_alcance` ("El alcance elige el DEFECTO, no una obligacion"), que desarma la regla citada (GRAVE -> OBSERVACION).
+**Verificacion:** Lente 1 reprodujo todo; lente 2 leyo la seccion GUI de CLAUDE.md y el docstring de `plantilla_por_alcance` ("El alcance elige el DEFECTO, no una obligacion"), que desarma la regla citada (GRAVE -> OBSERVACION).
 
 ### A-18 -- La sesion JSON de la GUI no guarda los criterios declarados "solo para esta corrida"
 **Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** gui/app.py:905-912,928-947,429/438/482
 `guardar_sesion` no serializa `valores_dinamicos` y `cargar_sesion` no los restaura. La no-persistencia es coherente con la semantica declarada ("Declara, SOLO PARA ESTA CORRIDA...", criterios_adoptados.py:146) y con el mensaje de la propia GUI; al reabrir, los criterios vuelven a bloquear con su Bloqueo registrado, sin rellenar nada en silencio. Falta la linea que lo diga en el docstring de `guardar_sesion`.
-**Regla:** Claude.md, GUI: "sesion en JSON" como parte del patron de legacy/Tc.py.
+**Regla:** CLAUDE.md, GUI: "sesion en JSON" como parte del patron de legacy/Tc.py.
 **Evidencia:**
 ```
 $ sed -n '905,912p' gui/app.py
@@ -535,7 +535,7 @@ $ grep -n "HDS5_INLET\|H_RELLENO_MIN" src/modulos/M2_material.py
 ### A-20 -- El comentario de la discrepancia 19.63/19.62 cita lineas que ya no corresponden
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Detectado desde 2 dimensiones** (A2, C2) - **Ubicacion** src/constantes_normativas.py:124-126; src/modulos/M4_control.py:107-126
 El comentario remite a las lineas 432, 436, 790 y 901 de la hoja de ruta; las ocurrencias reales de 19.62 son 436, 440, 797 y 908 (el auditor de C2 ademas omitio la 440, la "Nota de unidades"). Las citas estan corridas unas pocas lineas tras editar el documento, no inventadas. La decision de fondo (gana HDS-5 con 19.63) esta documentada en tres sitios y tiene test guardian.
-**Regla:** Claude.md, Fuente de verdad: "Toda cita de numeral se verifica contra ese archivo" -- aplicada aqui a renglones de la hoja de ruta, no a numerales normativos.
+**Regla:** CLAUDE.md, Fuente de verdad: "Toda cita de numeral se verifica contra ese archivo" -- aplicada aqui a renglones de la hoja de ruta, no a numerales normativos.
 **Evidencia:**
 ```
 $ sed -n '124,126p' src/constantes_normativas.py
@@ -553,7 +553,7 @@ $ sed -n '409,412p' docs/auditoria_y_ruta_despliegue_v9.md
 ### A-21 -- `cli._fase_8` repite la resta "subrasante menos clave" sin la guarda de V7
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** cli.py:736-745; src/modulos/M5_verificaciones.py:492-500; src/modulos/M8_estructural.py:187-190
 No hay tercera copia de la formula: cli.py importa `cota_clave` de M7 (cli.py:113) y solo repite la resta, con un comentario que la ata a V7. El riesgo de que una altura nula entre en `seleccionar_clase_calibre` es nulo: esa funcion invoca `ca.valor(CRITERIO_CLASES_PRODUCTO)` y se detiene antes de mirar la altura. Queda que la resta de cli.py no lleva la guarda `DatoInvalidoError` de V7.
-**Regla:** Claude.md, Arquitectura: los modulos definen las reglas de calculo; cli.py se documenta como orquestador.
+**Regla:** CLAUDE.md, Arquitectura: los modulos definen las reglas de calculo; cli.py se documenta como orquestador.
 **Evidencia:**
 ```
 $ sed -n '736,741p' cli.py
@@ -570,7 +570,7 @@ $ grep -n "^from" src/modulos/M7_geometria.py | grep M5   -> 201 (ciclo M7->M5 c
 ### B-01 -- `clase_sitio` es inerte: la memoria nunca declara la adopcion que la hoja de ruta obliga a escribir
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** IMPRECISO/CONFIRMADO - **Detectado desde 2 dimensiones** (B1, D1) - **Ubicacion** src/criterios_adoptados.py:373-375,386,1988; src/modulos/M11_reporte.py:1032,1389; cli.py:1133
 Ningun modulo de produccion invoca `clase_sitio`: la unica llamada `valor("clase_sitio")` esta dentro del bloque `if __name__ == "__main__"`. Como tiene valor no entra en `criterios_sin_valor()` y como nadie lo invoca no entra en `criterios_usados()`, de modo que no cae en ninguna de las tres puertas de M11 y da 0 coincidencias en la memoria de perfil y en la de expediente. Ademas dos textos afirman lo contrario: la trazabilidad de `PERFIL_SUELO_PRESUNTO` dice que "la clase de sitio que si entra en el calculo es la de AASHTO, criterio clase_sitio", y `tests/test_criterios_adoptados.py:604-609` declara que M11 lo imprime en la seccion sismica.
-**Regla:** docs/hoja_de_ruta_alcantarillas_v8.md:111: "Etiqueta [A], declarada en criterios_adoptados.py como clase_sitio = \"F_con_factores_tabulados_por_adopcion\". **La memoria de calculo debe decirlo con esas palabras**." Y Claude.md, Arquitectura: "Cada invocacion de un criterio ... se registra, para que M11 imprima solo los usados".
+**Regla:** docs/hoja_de_ruta_alcantarillas_v8.md:111: "Etiqueta [A], declarada en criterios_adoptados.py como clase_sitio = \"F_con_factores_tabulados_por_adopcion\". **La memoria de calculo debe decirlo con esas palabras**." Y CLAUDE.md, Arquitectura: "Cada invocacion de un criterio ... se registra, para que M11 imprima solo los usados".
 **Evidencia:**
 ```
 $ grep -rn "clase_sitio" src/modulos/ cli.py gui/app.py src/plantillas/
@@ -600,10 +600,10 @@ $ grep -n "HW_gobernante_m" cli.py
 ```
 **Verificacion:** Lente 1 reprodujo el grep y trazo los cinco sitios internos de M4; lente 2 no hallo ninguna nota que declare pendiente la comparacion, solo las dos afirmaciones contrarias.
 
-### B-03 -- La lista de dependencias de Claude.md esta desactualizada
-**Sev** MENOR - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** Claude.md:109-110; requirements.txt; src/plantillas/*.html
-Claude.md lista pandas y jinja2: cero apariciones en todo el arbol .py/.html y ninguna en requirements.txt. Las dos plantillas no tienen un solo delimitador Jinja (el motor es `string.Template` con "%%"). `weasyprint==69.0` esta pineado y no figura en Claude.md ni en docs/. El motor real si esta documentado (M11:40, M11:174, Claude.md:118): lo que envejecio es la lista.
-**Regla:** Claude.md:109-110 "Dependencias: numpy, scipy (brentq), pandas, pytest, ttkbootstrap, jinja2. Cualquier dependencia adicional se consulta antes."
+### B-03 -- La lista de dependencias de CLAUDE.md esta desactualizada
+**Sev** MENOR - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** CLAUDE.md:109-110; requirements.txt; src/plantillas/*.html
+CLAUDE.md lista pandas y jinja2: cero apariciones en todo el arbol .py/.html y ninguna en requirements.txt. Las dos plantillas no tienen un solo delimitador Jinja (el motor es `string.Template` con "%%"). `weasyprint==69.0` esta pineado y no figura en CLAUDE.md ni en docs/. El motor real si esta documentado (M11:40, M11:174, CLAUDE.md:118): lo que envejecio es la lista.
+**Regla:** CLAUDE.md:109-110 "Dependencias: numpy, scipy (brentq), pandas, pytest, ttkbootstrap, jinja2. Cualquier dependencia adicional se consulta antes."
 **Evidencia:**
 ```
 $ cat requirements.txt
@@ -612,7 +612,7 @@ $ grep -rn "jinja\|pandas" --include=*.py --include=*.html . | grep -v '^./.git'
 0
 $ grep -c '{{\|{%' src/plantillas/memoria_alcantarillas.html src/plantillas/memoria_perfil.html
 0 / 0
-$ grep -n "weasyprint" Claude.md docs/*.md   -> (sin resultados)
+$ grep -n "weasyprint" CLAUDE.md docs/*.md   -> (sin resultados)
 ```
 **Verificacion:** Lente 1 reprodujo el comando entero; lente 2 confirmo que el cambio de motor si esta documentado en el codigo, de ahi GRAVE -> MENOR.
 
@@ -636,7 +636,7 @@ $ sed -n '192,196p' docs/hoja_de_ruta_alcantarillas_v8.md
 ### B-05 -- Entregable 5 (analisis de sensibilidad): su unica API la consumen solo los tests
 **Sev** MENOR - **Clasificacion** deliberado sin documentar - **Veredicto** CONFIRMADO - **Ubicacion** src/criterios_adoptados.py:1963; src/plantillas/memoria_alcantarillas.html:259; docs/hoja_de_ruta_alcantarillas_v8.md:660
 `parametros_sensibilizables()` no la invoca cli.py, gui/app.py ni M11, y no existe bloque de alcance que declare diferido el entregable 5, mientras la plantilla imprime "con analisis de sensibilidad obligatorio". La memoria si imprime el rango declarado de cada criterio (M11:1053-1055), de modo que el insumo llega al documento aunque el barrido no se ejecute. Hay ademas discrepancia de numeracion: la hoja de ruta llama 5 al analisis y 6 a HY-8, y la auditoria v9:834 llama 5 a HY-8.
-**Regla:** docs/hoja_de_ruta_alcantarillas_v8.md:660 (Fase 11, entregable 5) y Claude.md:28 ("[A] ... Adopcion declarada + sensibilidad").
+**Regla:** docs/hoja_de_ruta_alcantarillas_v8.md:660 (Fase 11, entregable 5) y CLAUDE.md:28 ("[A] ... Adopcion declarada + sensibilidad").
 **Evidencia:**
 ```
 $ grep -rn "parametros_sensibilizables" --include=*.py .
@@ -670,7 +670,7 @@ $ sed -n '1385,1390p' cli.py
 ### B-07 -- `CriterioPendienteError.mensaje_gui` no tiene consumidor de produccion
 **Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** src/modelos.py:78-81; gui/app.py:647,826-832
 La propiedad solo la llaman tres tests. Pero la GUI no muestra los pendientes por el `except` generico: `cli._etapa` captura cada `CriterioPendienteError` y `_bloqueo` lo traduce a un `Bloqueo` con clave, etiqueta, concepto y fuente, que la GUI pinta en una pestana dedicada -- mas informativo que "falta declarar: <clave>". La supuesta duplicacion en cli.py:1190 y :1320 es falsa: esas lineas formatean un `Bloqueo`, que no tiene esa propiedad.
-**Regla:** Claude.md:91-93: "CriterioPendienteError ... La GUI la muestra como 'falta declarar: <clave>', no como error del programa." El mandato se cumple por otra via; falta la nota que lo diga.
+**Regla:** CLAUDE.md:91-93: "CriterioPendienteError ... La GUI la muestra como 'falta declarar: <clave>', no como error del programa." El mandato se cumple por otra via; falta la nota que lo diga.
 **Evidencia:**
 ```
 $ grep -rn "mensaje_gui" --include=*.py .
@@ -695,14 +695,14 @@ $ grep -rn "exigir_anios" --include=*.py .
 $ grep -rn "\.anios\b" --include=*.py src/ cli.py gui/app.py
 M11:638 (if ... is None) | M11:889, :941 (idem) | cli.py:979 (vuelca None) | cli.py:1207-1208
 M1_clasificacion.py:62 (dentro del ejemplo del docstring, lineas 55-63)
-$ grep -rn "exigir_anios" docs/ Claude.md; echo rc=$?   -> rc=1
+$ grep -rn "exigir_anios" docs/ CLAUDE.md; echo rc=$?   -> rc=1
 ```
 **Verificacion:** Lente 1 reprodujo ambos greps; lente 2 leyo el docstring completo y verifico que ninguno de los cinco accesos inventa un TR (MENOR -> OBSERVACION).
 
 ### B-09 -- Siete constantes `NUMERAL_*` de modulo declaradas y nunca leidas
 **Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** M2:127, M3:100, M4:182-183, M5:139, M8:134, MD:117
-Las siete tienen un unico uso: su propia asignacion. La regla que se invoca no dice lo que el hallazgo afirmaba: Claude.md:113 exige el numeral EN EL DOCSTRING (y los docstrings lo llevan) y Claude.md:77-78 exige que cada VERIFICACION devuelva `Verificacion(...)` (M5 emite NUMERAL_V1, V2, V3, V4, V6, V7, V9). Dos de las siete son inertes por motivo documentado (V5 sin metodo declarado; Fase 8 items 1-2 bloqueados); las otras cinco son constantes muertas.
-**Regla:** Claude.md:113 y :77-78; docs/manifiesto_citas.md:377-391 las lista sin declararlas inertes.
+Las siete tienen un unico uso: su propia asignacion. La regla que se invoca no dice lo que el hallazgo afirmaba: CLAUDE.md:113 exige el numeral EN EL DOCSTRING (y los docstrings lo llevan) y CLAUDE.md:77-78 exige que cada VERIFICACION devuelva `Verificacion(...)` (M5 emite NUMERAL_V1, V2, V3, V4, V6, V7, V9). Dos de las siete son inertes por motivo documentado (V5 sin metodo declarado; Fase 8 items 1-2 bloqueados); las otras cinco son constantes muertas.
+**Regla:** CLAUDE.md:113 y :77-78; docs/manifiesto_citas.md:377-391 las lista sin declararlas inertes.
 **Evidencia:**
 ```
 $ for n in NUMERAL_MATERIAL NUMERAL_MANNING NUMERAL_ENTRADA NUMERAL_SALIDA NUMERAL_V5 NUMERAL_8_1_2 NUMERAL_BUCLE; do ... done
@@ -715,9 +715,9 @@ clase/calibre seleccionada en los items 1-2 -- hoy bloqueados.
 **Verificacion:** Lente 1 reprodujo el bucle; lente 2 verifico que la regla citada no se incumple (MENOR -> OBSERVACION).
 
 ### B-10 -- legacy/Tc.py: sin importadores, sin tests, sin barrido y sin estatus declarado
-**Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** CONFIRMADO - **Detectado desde 3 dimensiones** (B2, C1, F1) - **Ubicacion** legacy/Tc.py:1-1320,57; Claude.md:116-119,122
-Nadie importa Tc.py, ningun test lo menciona, el barrido de literales no lo alcanza (185 literales prohibidos, 50 valores distintos) y sus 803 sentencias ejecutables no las cubre nada. Su cabecera anuncia matplotlib (0 en requirements.txt) y `NOMBRE_PLANTILLA` apunta a un `plantilla_memoria.html` que no existe ahi. La unica mencion en toda la documentacion es Claude.md:116, que lo enmarca como patron de GUI a leer; ninguna linea declara que legacy/ quede fuera de las reglas de literales y de tests.
-**Regla:** Claude.md:47-50 (literales), Claude.md:122 ("Minimo un test por modulo") frente a Claude.md:116-119 ("Leer esos archivos antes de escribir GUI").
+**Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** CONFIRMADO - **Detectado desde 3 dimensiones** (B2, C1, F1) - **Ubicacion** legacy/Tc.py:1-1320,57; CLAUDE.md:116-119,122
+Nadie importa Tc.py, ningun test lo menciona, el barrido de literales no lo alcanza (185 literales prohibidos, 50 valores distintos) y sus 803 sentencias ejecutables no las cubre nada. Su cabecera anuncia matplotlib (0 en requirements.txt) y `NOMBRE_PLANTILLA` apunta a un `plantilla_memoria.html` que no existe ahi. La unica mencion en toda la documentacion es CLAUDE.md:116, que lo enmarca como patron de GUI a leer; ninguna linea declara que legacy/ quede fuera de las reglas de literales y de tests.
+**Regla:** CLAUDE.md:47-50 (literales), CLAUDE.md:122 ("Minimo un test por modulo") frente a CLAUDE.md:116-119 ("Leer esos archivos antes de escribir GUI").
 **Evidencia:**
 ```
 $ grep -rn "import Tc\|from Tc\|from legacy" --include=*.py .   -> (sin resultados)
@@ -728,12 +728,12 @@ $ grep -rIl 'legacy' tests/*.py conftest.py || echo '(ninguno)'   -> (ningun tes
 $ grep -rn "legacy" docs/*.md ; echo rc=$?   -> rc=1
 $ grep -c matplotlib requirements.txt -> 0
 ```
-**Verificacion:** Lente 1 reprodujo conteos y greps en las tres pasadas; lente 2 confirmo que no existe README ni linea de exencion, solo el nombre del directorio y el contexto de Claude.md.
+**Verificacion:** Lente 1 reprodujo conteos y greps en las tres pasadas; lente 2 confirmo que no existe README ni linea de exencion, solo el nombre del directorio y el contexto de CLAUDE.md.
 
 ### B-11 -- `homogeneidad_serie_fen` no bloquea por una llamada `valor()`
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/criterios_adoptados.py:604-605; src/modulos/MD.py:537-541
 No hay ninguna llamada `valor('homogeneidad_serie_fen')` en produccion y el criterio figura en `sin_valor_declarados` pero nunca en `usados` ni en `bloquearon`. El mecanismo esta escrito: el docstring de `disenar_lote` explica que el bloqueo es INDIRECTO (el hidrologo no entrega Q hasta cerrar la homogeneidad, la columna viene vacia y salta `DatoFaltanteError`), y la auditoria v9 lo registra como pendiente externo cuya salida correcta es imprimirse en el bloque de pendientes -- verificado en la memoria. Queda la debilidad: con `Q_m3s` lleno, nada obliga a declarar como se trato la poblacion mixta FEN.
-**Regla:** Claude.md, Arquitectura: "criterios_adoptados.valor(clave) ... con valor None lanzan CriterioPendienteError. Nunca se sustituye por un default silencioso." No hay default silencioso aqui.
+**Regla:** CLAUDE.md, Arquitectura: "criterios_adoptados.valor(clave) ... con valor None lanzan CriterioPendienteError. Nunca se sustituye por un default silencioso." No hay default silencioso aqui.
 **Evidencia:**
 ```
 $ grep -rn 'valor("homogeneidad_serie_fen")' src/ cli.py gui/app.py   -> (sin salida)
@@ -767,7 +767,7 @@ $ python3 -c "...d['puntos'][0]['pendientes_externos']"
 ### B-13 -- `PerfilFamilia.verificaciones_aceptacion` es un campo declarativo
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/modelos.py:1265-1267,1275; src/modulos/M1_clasificacion.py:337
 Solo lo escribe M1 y lo leen dos asserts de tests; no hay consumidores dinamicos (getattr, `fields`, `asdict`, plantillas). El docstring, leido entero, declara por que nada despacha sobre el: "None significa 'no declarado', no 'ninguna': la tabla de la Fase 5 sigue aplicando punto por punto". Queda como observacion que el campo tampoco viaja a la memoria (cli.py:976-977 publica solo familia y origen del caudal).
-**Regla:** el docstring de `PerfilFamilia` promete decir "con que verificaciones se acepta"; Claude.md, Arquitectura: "Los tipos que fluyen entre modulos estan en modelos.py".
+**Regla:** el docstring de `PerfilFamilia` promete decir "con que verificaciones se acepta"; CLAUDE.md, Arquitectura: "Los tipos que fluyen entre modulos estan en modelos.py".
 **Evidencia:**
 ```
 $ grep -rn "verificaciones_aceptacion" src/ cli.py gui/app.py tests/ docs/
@@ -800,7 +800,7 @@ $ sed -n '75p;93p' docs/manifiesto_citas.md
 ### B-15 -- `demanda_sismica_licuefaccion = 1000` no aparece en ninguna salida
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/criterios_adoptados.py:1045-1056
 Cero referencias de codigo y 0 coincidencias en la memoria de perfil y de expediente: tiene valor (no entra en `criterios_sin_valor`) y nadie lo invoca (no entra en `criterios_usados`). La adopcion esta declarada en la fuente de verdad -- §0.6 de la hoja de ruta ("Adoptado: Tr = 1000 anios [A] ... Se descarta el sismo de 475 anios de E.030") y dos filas del manifiesto -- para un calculo que §0.5 declara fuera del alcance del script. Sin linea escrita queda que un criterio con valor y sin invocacion desaparece del HTML.
-**Regla:** Claude.md: "[A] Sin norma ni fuente unica. Adopcion declarada + sensibilidad."
+**Regla:** CLAUDE.md: "[A] Sin norma ni fuente unica. Adopcion declarada + sensibilidad."
 **Evidencia:**
 ```
 $ grep -rn "demanda_sismica_licuefaccion" --include=*.py --include=*.html --include=*.md .
@@ -815,7 +815,7 @@ $ sed -n '115,117p' docs/hoja_de_ruta_alcantarillas_v8.md
 ### B-16 -- `sucs_fundacion` es columna obligatoria que ningun modulo lee
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/modelos.py:377; src/modulos/M0_carga.py:209; src/modulos/M11_reporte.py:160
 Se carga con `_texto()` (obligatoria), ningun modulo lee el atributo y su unico destino es `CAMPOS_CSV`. La obligatoriedad no es invencion del codigo: la hoja de ruta:182 la lista con etiqueta `[N] E.050` y la linea 190 la incluye en el encabezado literal del CSV de Sec. 1.2. Su consumidor previsto, `c_phi_fundacion`, esta declarado vacio y registrado como pendiente externo que la memoria imprime.
-**Regla:** Claude.md, Excepciones: "DatoFaltanteError ... la celda obligatoria viene vacia." Ninguna regla se rompe.
+**Regla:** CLAUDE.md, Excepciones: "DatoFaltanteError ... la celda obligatoria viene vacia." Ninguna regla se rompe.
 **Evidencia:**
 ```
 $ grep -rn "\.sucs_fundacion" src/ cli.py gui/app.py --include=*.py   -> (vacio)
@@ -830,7 +830,7 @@ cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion
 ### B-17 -- `EmpujesTrasdos` no lo alcanza ninguna corrida
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/modelos.py:1060-1116; src/modulos/M9_cabezal.py:736,802
 Solo lo observan los tests: cli.py no importa `empujes_trasdos` y gui/ no toca M9. La constancia que el auditor daba por inexistente si existe y se imprime en el entregable: `NOTA_ESTABILIDAD_CABEZAL` (cli.py:168-175) declara que la CLI no ensambla E1-E5 porque "elegir el plano de empuje ... seria decidir por el proyectista", y M9:85-89 nombra `empujes_trasdos` entre los ensambles diferidos. Aunque la CLI lo llamara se detendria en `phi_relleno_trasdos`, que ya figura en `bloquearon`.
-**Regla:** Claude.md, Arquitectura: "Los tipos que fluyen entre modulos estan en modelos.py."
+**Regla:** CLAUDE.md, Arquitectura: "Los tipos que fluyen entre modulos estan en modelos.py."
 **Evidencia:**
 ```
 $ grep -rn "empujes_trasdos\|EmpujesTrasdos" src/ cli.py gui/app.py tests/ --include=*.py
@@ -846,7 +846,7 @@ $ sed -n '785,787p' src/modulos/M9_cabezal.py
 ### B-18 -- Cinco campos de dataclass escritos y nunca leidos
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/modelos.py:599 (`ahogado_por_TW`), :1135-1136, :1157, :1180
 Ninguna lectura en produccion. Cuatro de los cinco tienen su decision escrita: `componentes`/`criterio_factores` porque `CombinacionCarga` "describe la combinacion y no la evalua"; `cuantia_adoptada` porque lo escribe `cuantia_de_diseno()`, parte del diseno por flexion detenido con `NotImplementedError`; `criterio_aashto` es redundante, no roto, porque la traza de `recubrimiento_aashto_mm` si llega a la memoria por `criterios_usados`. El unico sin cobertura es `ahogado_por_TW`, que distingue la rama que Sec. 4.3 advierte para descargas a drenes y no se emite ni al JSON ni al HTML.
-**Regla:** Claude.md, Arquitectura: los campos `criterio_*` existen para que la trazabilidad viaje hasta la memoria.
+**Regla:** CLAUDE.md, Arquitectura: los campos `criterio_*` existen para que la trazabilidad viaje hasta la memoria.
 **Evidencia:**
 ```
 $ grep -rn "\.ahogado_por_TW\|\.cuantia_adoptada\|\.criterio_aashto\|\.criterio_factores\|\.componentes\b" src/ cli.py gui/app.py src/plantillas/
@@ -862,7 +862,7 @@ $ python3 -c "...[c['clave'] for c in d['criterios']['usados']]"
 ### B-19 -- Cinco criterios sin consumidor, todos registrados como pendientes declarados
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Detectado desde 2 dimensiones** (B1, D2) - **Ubicacion** src/criterios_adoptados.py:347,1013,1024,1033,1325
 `PERFIL_SUELO_PRESUNTO`, `c_phi_fundacion`, `capacidad_portante_adm`, `Mw_licuefaccion` y `angulo_aletas` tienen cero invocaciones y cero referencias en produccion. Los cuatro con `valor=None` salen en `sin_valor_declarados` del JSON y en el bloque de criterios sin valor del HTML. Los consumidores que faltan son los que la CLI declara no ensamblar (E1-E5, licuefaccion fuera de alcance, geometria de aletas), y la auditoria v9:766-772 declara que imprimirlos como pendientes "es exactamente lo correcto a nivel de perfil".
-**Regla:** Claude.md: "Crea una entrada ... **y deten el calculo con excepcion**." No hay calculo que detener porque el calculo esta declarado fuera de alcance.
+**Regla:** CLAUDE.md: "Crea una entrada ... **y deten el calculo con excepcion**." No hay calculo que detener porque el calculo esta declarado fuera de alcance.
 **Evidencia:**
 ```
 $ for k in PERFIL_SUELO_PRESUNTO c_phi_fundacion capacidad_portante_adm Mw_licuefaccion angulo_aletas; do ...; done
@@ -897,7 +897,7 @@ predimensionamiento del cabezal (9.3, E1-E5) | CriterioPendienteError
 ### B-21 -- `n_q/n_s_zapata_en_talud` sin llamador interno
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/M9_cabezal.py:1018,1047,1086-1089
 `capacidad_portante_zapata_en_talud` llama `ca.valor(CRITERIO_MEYERHOF)` y lanza `AssertionError` sin usar ninguna de las dos funciones. El docstring de esa misma funcion (M9:1076-1079) declara por que: con suelo friccionante `n_s_zapata_en_talud` levantaria `DatoInvalidoError` culpando al dato "cuando lo que falta de verdad es la lectura de los abacos. N_s se calcula aparte, con esa funcion, al ir a leerlos". `n_q_zapata_en_talud` es un `[N]` literal catalogado en el manifiesto con su numeral.
-**Regla:** Claude.md:9-12 obliga a detener el calculo ante un vacio, y se cumple.
+**Regla:** CLAUDE.md:9-12 obliga a detener el calculo ante un vacio, y se cumple.
 **Evidencia:**
 ```
 $ sed -n '1086,1089p' src/modulos/M9_cabezal.py
@@ -915,7 +915,7 @@ M9_cabezal.py:116, :1076 | tests/test_M9_cabezal.py:62, 640, 645, 649, 656
 ### B-22 -- Cuatro APIs publicas sin consumidor de produccion
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/criterios_adoptados.py:181; src/modulos/M11_reporte.py:196; src/modelos.py:466; src/modulos/M9_cabezal.py:561-573
 `limpiar_valores_dinamicos`, `marcadores_de_la_memoria`, `v_max_definida` y `aplica_sobrecarga_trasdos` solo aparecen en su definicion fuera de tests/. La acusacion que sostenia la regla es falsa: M5:282 no comprueba nada, es un desempaquetado `_, v_max = material.v_max_rango` detras del `return` de la rama TMC/HDPE, asi que nadie reimplementa `v_max_definida`. Y `aplica_sobrecarga_trasdos` declara su motivo en el docstring. Quedan dos utilidades sin llamador.
-**Regla:** ninguna prohibicion explicita; Claude.md:71-72 no aplica una vez desmontado el caso de M5.
+**Regla:** ninguna prohibicion explicita; CLAUDE.md:71-72 no aplica una vez desmontado el caso de M5.
 **Evidencia:**
 ```
 $ for n in limpiar_valores_dinamicos marcadores_de_la_memoria v_max_definida aplica_sobrecarga_trasdos; do grep -rn "\b$n\b" --include=*.py . | grep -v '/tests/'; done
@@ -983,7 +983,7 @@ test_sin_literales:177,178,191,192,193 | test_M8:177 | test_M11:643 | test_M5:18
 ### C-03 -- La marca `# literal-ok` se busca como substring: vale dentro de un string o de un docstring
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** tests/test_sin_literales.py:79; src/dominios.py:38
 `MARCA in lineas[indice]` es texto plano, sin tokenizar: un string de produccion que contenga la cadena exime su linea y la siguiente, y un docstring que EXPLIQUE la convencion hace lo mismo. No es hipotetico: dominios.py:38 lleva la cadena dentro del docstring de modulo. dominios.py esta exento del barrido, asi que hoy no rompe nada.
-**Regla:** tests/test_sin_literales.py:29 y Claude.md:68-69 declaran la exencion como "el comentario `# literal-ok: <razon>`"; el codigo acepta la cadena en cualquier posicion.
+**Regla:** tests/test_sin_literales.py:29 y CLAUDE.md:68-69 declaran la exencion como "el comentario `# literal-ok: <razon>`"; el codigo acepta la cadena en cualquier posicion.
 **Evidencia:**
 ```
 $ python3 -c "...literales_prohibidos('MSG = \"vease # literal-ok\"\nN_MANNING = 0.013\n')"
@@ -1000,7 +1000,7 @@ $ sed -n '79p' tests/test_sin_literales.py
 ### C-04 -- `_nodos_de_indice` exime TODO entero dentro de un `Subscript`
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** tests/test_sin_literales.py:65-73,117
 La funcion recorre el subarbol completo de `nodo.slice` y exime cualquier `ast.Constant` entero, sin mirar de que se indexa: `CAUDAL_POR_TR[500]` y `TABLA[900][2500]` no producen ni un hallazgo. Hoy no esta ejercitado (las tablas del proyecto se indexan por string), pero la primera tabla indexada por numero entra sin guardia.
-**Regla:** el docstring de la propia funcion la acota a "indices y rebanadas: x[3], x[1:5]"; Claude.md:47-50 exige que un valor de proyecto viva en uno de los tres archivos declarados, y una clave numerica de tabla lo es.
+**Regla:** el docstring de la propia funcion la acota a "indices y rebanadas: x[3], x[1:5]"; CLAUDE.md:47-50 exige que un valor de proyecto viva en uno de los tres archivos declarados, y una clave numerica de tabla lo es.
 **Evidencia:**
 ```
 $ python3 -c "...literales_prohibidos('q = CAUDAL_POR_TR[500]\nD = TABLA[900][2500]\n')"
@@ -1029,7 +1029,7 @@ $ for n in constantes_normativas criterios_adoptados datos_sitio tolerancias dom
 ### C-06 -- `barrido()` solo recorre src/: cli.py y gui/app.py quedan sin vigilancia
 **Sev** MENOR - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Detectado desde 2 dimensiones** (C1, C2) - **Ubicacion** tests/test_sin_literales.py:51,147; cli.py:178; gui/app.py:85
 `SRC = RAIZ/'src'` y el unico `barrido(SRC)`. cli.py da 8 literales prohibidos (3 valores distintos) y gui/app.py 151 (32 distintos), frente a 0 en todo src/. Los 159 se clasificaron uno a uno: ANCHO=78, decimales=3, `SANGRIA*4`, paddings, anchos de columna, tamanos de fuente y el retardo del tooltip. Ninguno es valor de proyecto. El alcance esta declarado en el docstring del test; lo que no esta escrito en ninguna parte es POR QUE los dos archivos quedan fuera.
-**Regla:** Claude.md:47-50: "Todo literal numerico fuera de [los tres archivos] es un defecto y se rechaza en revision" -- sin restringirlo a src/.
+**Regla:** CLAUDE.md:47-50: "Todo literal numerico fuera de [los tres archivos] es un defecto y se rechaza en revision" -- sin restringirlo a src/.
 **Evidencia:**
 ```
 $ python3 -c "...literales_prohibidos por archivo..."
@@ -1040,7 +1040,7 @@ $ grep -n "^SRC = \|barrido(SRC)" tests/test_sin_literales.py -> 51 / 147
 $ sed -n '176,178p' cli.py
 # Presentacion. Ninguno entra en un calculo: mueven columnas de texto.
 ANCHO = 78
-$ grep -rn "test_sin_literales\|barrido" docs/ Claude.md  -> nada sobre alcance
+$ grep -rn "test_sin_literales\|barrido" docs/ CLAUDE.md  -> nada sobre alcance
 ```
 **Verificacion:** Lente 1 reprodujo las cifras en las dos pasadas y listo los 8 de cli.py; lente 2 hallo el alcance declarado y la razon ausente.
 **Nota de reconciliacion:** el verificador de C1 puso MENOR aplicando la regla de calibracion del encargo ("un guardia que no cubre un archivo donde hoy no hay violacion real es MENOR"); el de C2 puso OBSERVACION. Va MENOR, que es lo que esa regla nombra.
@@ -1048,7 +1048,7 @@ $ grep -rn "test_sin_literales\|barrido" docs/ Claude.md  -> nada sobre alcance
 ### C-07 -- La marca en linea propia exime todos los literales de la linea siguiente
 **Sev** MENOR - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Detectado desde 2 dimensiones** (C1, F2) - **Ubicacion** tests/test_sin_literales.py:76-81
 `_marcado` mira `n-1` y `n-2`: un `# literal-ok: coartada` en linea propia deja pasar `V_MAX_INVENTADA_SIN_DECLARAR = 4.5` dentro de M3_hidraulica.py con la suite en 725 passed. La regla esta escrita en el docstring de la funcion ("La marca vale en la propia linea o en la anterior"), pero el parentesis "(expresiones partidas)" describe una intencion mas estrecha que lo que el codigo permite. Hoy no hay en src/ ni un literal cubierto solo por la marca de la linea anterior.
-**Regla:** Claude.md:67-70: la marca "lo declara y lo hace visible en revision".
+**Regla:** CLAUDE.md:67-70: la marca "lo declara y lo hace visible en revision".
 **Evidencia:**
 ```
 $ cd $D/r && printf '\n# literal-ok: coartada\nV_MAX_INVENTADA_SIN_DECLARAR = 4.5\n' >> src/modulos/M3_hidraulica.py
@@ -1066,7 +1066,7 @@ $ python3 (barrido de src/): lineas cubiertas SOLO por marca de la linea anterio
 ### C-08 -- `valor in NUMEROS_PERMITIDOS` deja pasar complejos
 **Sev** OBSERVACION - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** tests/test_sin_literales.py:57,115,119
 `0j` y `2+0j` pertenecen a `{0, 1, 2}` y el filtro admite `complex`, de modo que un literal complejo cuya parte real valga 0, 1 o 2 pasa el detector. El caso `float` (2.0, 1e0) si esta documentado en el propio archivo y no se reporta. Ningun modulo de un proyecto de hidraulica declara literales complejos: riesgo latente puro.
-**Regla:** Claude.md:50-51: "Excepciones permitidas: 0, 1, 2, indices, y constantes matematicas puras (pi)."
+**Regla:** CLAUDE.md:50-51: "Excepciones permitidas: 0, 1, 2, indices, y constantes matematicas puras (pi)."
 **Evidencia:**
 ```
 $ python3 -c "...literales_prohibidos('a=2.0\nb=1e0\nc=0j\nd=2+0j\ne=-0.0\n')..."
@@ -1076,14 +1076,14 @@ $ sed -n '57p;115p;119p' tests/test_sin_literales.py
 NUMEROS_PERMITIDOS = {0, 1, 2}
         if isinstance(valor, bool) or not isinstance(valor, (int, float, complex)):
         if valor in NUMEROS_PERMITIDOS:   # 2 y 2.0 entran por igual
-$ grep -rn "complex\|complejo" docs/ Claude.md   -> (sin resultados)
+$ grep -rn "complex\|complejo" docs/ CLAUDE.md   -> (sin resultados)
 ```
-**Verificacion:** Lente 1 reprodujo literalmente; lente 2 leyo Claude.md:50-51 completo -- la lista no contempla el caso ni lo prohibe (MENOR -> OBSERVACION por impacto nulo).
+**Verificacion:** Lente 1 reprodujo literalmente; lente 2 leyo CLAUDE.md:50-51 completo -- la lista no contempla el caso ni lo prohibe (MENOR -> OBSERVACION por impacto nulo).
 
 ### C-09 -- Valores de proyecto construidos por conversion de string son invisibles al detector
 **Sev** OBSERVACION - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** tests/test_sin_literales.py:111-124
 El detector es puramente sintactico: `int("13")/int("1000")`, `float("4.6")` e `int("500")` no producen hallazgo, y el modulo importado expone 0.013, 4.6 y 500. Solo cae el 0.9 escrito como literal. Requiere ofuscacion deliberada, no es un riesgo de escritura accidental; el limite no esta acotado en el docstring, que presenta el test como "Guardia automatica de la regla de arquitectura".
-**Regla:** Claude.md:47-50 (regla de revision humana, que el detector solo apoya).
+**Regla:** CLAUDE.md:47-50 (regla de revision humana, que el detector solo apoya).
 **Evidencia:**
 ```
 $ python3 - (fichero sintetico con las tres conversiones + un 0.9 literal)
@@ -1097,7 +1097,7 @@ aislado: []          # 3*0.1 SI cae: [(1, 0.1), (1, 3)]
 ### C-10 -- `tests/ejemplo_puntos.informe.json`: salida de corrida versionada, sin uso y sin ignorar
 **Sev** OBSERVACION - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Detectado desde 2 dimensiones** (C2, F2) - **Ubicacion** tests/ejemplo_puntos.informe.json; cli.py:1475; .gitignore
 El archivo esta versionado, ninguna referencia lo lee (tests/, src/, cli.py, docs/, conftest.py) y cualquier corrida del CLI lo reescribe: `python3 cli.py tests/ejemplo_puntos.csv` deja ` M tests/ejemplo_puntos.informe.json` con 192 inserciones. `.gitignore` ya aplica el criterio contrario a los reportes HTML generados y no cubre `*.informe.json`. Su ultimo cambio viene arrastrado en un commit sobre otro tema (f6168fa): no hay decision, hay deriva.
-**Regla:** Claude.md, Cierre de tarea: la entrega se comprueba sobre un arbol limpio; un artefacto generado y versionado hace que "git status limpio" deje de ser senal fiable.
+**Regla:** CLAUDE.md, Cierre de tarea: la entrega se comprueba sobre un arbol limpio; un artefacto generado y versionado hace que "git status limpio" deje de ser senal fiable.
 **Evidencia:**
 ```
 $ grep -rn "ejemplo_puntos.informe" tests/ src/ cli.py docs/ conftest.py   -> (sin salida)
@@ -1115,7 +1115,7 @@ f6168fa h_relleno_min_concreto_tmc = 0.30 m, adoptado [N->] por analogia
 ### C-11 -- El barrido solo mira `.py`: las plantillas HTML quedan fuera
 **Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** CONFIRMADO - **Ubicacion** tests/test_sin_literales.py:130; src/plantillas/memoria_alcantarillas.html; src/plantillas/memoria_perfil.html
 `raiz.rglob("*.py")` deja los dos ficheros de src/plantillas/ fuera de la guardia pese a vivir dentro de src/. Revisados numero a numero: fuera del `<style>` solo hay numeracion de seccion. No hay valores de calculo hoy; la limitacion por formato no esta escrita como decision en ningun sitio.
-**Regla:** Claude.md:47-50 habla de "todo literal numerico" sin restringir el formato; el docstring del test dice "Todo literal numerico bajo src/" y src/plantillas/ esta bajo src/.
+**Regla:** CLAUDE.md:47-50 habla de "todo literal numerico" sin restringir el formato; el docstring del test dice "Todo literal numerico bajo src/" y src/plantillas/ esta bajo src/.
 **Evidencia:**
 ```
 $ for f in src/plantillas/*.html; do awk '/<\/style>/,0' $f | grep -oE "[0-9]+(\.[0-9]+)*" | sort -u | tr '\n' ' '; done
@@ -1123,14 +1123,14 @@ memoria_alcantarillas.html: 0 0.1 1 11 2 3 3.1 3.2 4
 memoria_perfil.html:        0 1 2 3 3.1 3.2 4
 $ sed -n '130p' tests/test_sin_literales.py
     for ruta in sorted(raiz.rglob("*.py")):
-$ grep -rn "plantilla" docs/*.md Claude.md   -> ninguna linea sobre el alcance del barrido
+$ grep -rn "plantilla" docs/*.md CLAUDE.md   -> ninguna linea sobre el alcance del barrido
 ```
 **Verificacion:** Lente 1 reprodujo las dos listas byte a byte; lente 2 confirmo que la unica guardia sobre plantillas (test_M11_reporte.py:878) valida marcadores, no literales.
 
 ### C-12 -- El docstring de Uso de M1 da luces de ejemplo sin la salvedad que si lleva el test
 **Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/M1_clasificacion.py:54-62
 El dict `{"A-01": 2.75, "A-02": 1.80, "B-01": 1.20, "C-01": 2.75}` aparece sin salvedad en el modulo y con tres lineas de advertencia en el test. La premisa que sostenia la severidad es falsa: los ids no son puntos reales del expediente sino los de `tests/ejemplo_puntos.csv`, que el propio ejemplo carga en la linea anterior; grep de esos ids y de sus progresivas en docs/ da cero. El ejemplo es internamente coherente; falta que la salvedad viva tambien en produccion.
-**Regla:** cli.py:51-53 ("no se sustituye por un numero plausible") y Claude.md:9 -- ninguna se rompe aqui.
+**Regla:** cli.py:51-53 ("no se sustituye por un numero plausible") y CLAUDE.md:9 -- ninguna se rompe aqui.
 **Evidencia:**
 ```
 $ sed -n '58,60p' src/modulos/M1_clasificacion.py
@@ -1197,7 +1197,7 @@ $ python3 (cruce de las 33 filas): [A] falsos: factores_carga_aashto, peso_espec
 ### D-03 -- "Es la unica entrada que se lee con `valor_si_declarado()`" es falso
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** src/criterios_adoptados.py:781; docs/manifiesto_citas.md:445,471
 La afirmacion esta escrita en tres sitios (codigo + dos filas del manifiesto) y hay cuatro claves mas leidas asi en M2. Matiz que acota el dano: para `h_relleno_min_concreto_tmc` y `v_max_hdpe`/`v_max_tmc` el calculo si se detiene mas tarde (M7:267, M5:270); la unica clave para la que la exclusividad es rotundamente falsa es `n_manning_hdpe`, que no se lee con `valor()` en ningun punto de src/.
-**Regla:** Claude.md, Fuente de verdad: la justificacion de un criterio es lo que se defiende en la memoria.
+**Regla:** CLAUDE.md, Fuente de verdad: la justificacion de un criterio es lo que se defiende en la memoria.
 **Evidencia:**
 ```
 $ grep -rn "valor_si_declarado" src/modulos/*.py | grep -v "def \|Delega"
@@ -1229,7 +1229,7 @@ $ grep -rn "k_v" docs/hoja_de_ruta_alcantarillas_v8.md
 ### D-05 -- `angulo_aletas` es el unico vacio sin `reemplazado_por` ni fuente PENDIENTE
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** src/criterios_adoptados.py:1325-1331; src/modulos/M11_reporte.py:1126
 M11 emite `_td(_esc(c.reemplazado_por or c.fuente))` en la columna "Que lo resuelve" de la tabla de criterios sin valor, de modo que la memoria dice que lo que resuelve este vacio es "Practica corriente; no fijado por el Manual" -- el enunciado del vacio. Es FALSO que sean cuatro campos fallados: el archivo exime deliberadamente de sensibilidad a los criterios vacios (12 de 22 `[A]` sin valor tampoco la declaran). El criterio no lo lee ningun modulo y sigue apareciendo en `criterios_sin_valor()`.
-**Regla:** Claude.md, taxonomia `[A]`; la guardia solo exige `reemplazado_por` junto a `vacio_verificado`.
+**Regla:** CLAUDE.md, taxonomia `[A]`; la guardia solo exige `reemplazado_por` junto a `vacio_verificado`.
 **Evidencia:**
 ```
 $ python3 -c "c=ca.criterio('angulo_aletas'); ..."
@@ -1245,7 +1245,7 @@ $ python3 (barrido de los 22 [A] vacios): angulo_aletas es el unico sin reemp y 
 ### D-06 -- `Z_E030` hereda la trazabilidad pero no la verificacion abierta
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** src/datos_sitio.py:194-216,261-264; cli.py:1128
 datos_sitio.py:205-207 declara que la lectura "hereda su misma trazabilidad" de `ZONA_SISMICA_LA_UNION`, cuya `verificacion_pendiente` exige contrastar el Anexo II de E.030 antes de citar el valor; `Z_E030` no declara ninguna. La consecuencia sobre la memoria impresa es FALSA: `Z_E030` no lo invoca ningun modulo, cli.py ni la GUI, y tanto `reporte_datos_sitio` como el aviso de M11:1013 iteran solo claves usadas. El efecto real es de export: `datos_con_verificacion_pendiente()` recorre todo el dict y `trazabilidad_incompleta` del JSON omite `Z_E030`.
-**Regla:** Claude.md, `[S]`: "declara trazabilidad obligatoria: el procedimiento exacto, la fuente."
+**Regla:** CLAUDE.md, `[S]`: "declara trazabilidad obligatoria: el procedimiento exacto, la fuente."
 **Evidencia:**
 ```
 $ python3 -c "...ds.datos_con_verificacion_pendiente(); ds.dato('Z_E030').verificacion_pendiente..."
@@ -1277,7 +1277,7 @@ $ grep -n "trazabilidad_incompleta\|sin_valor_declarados" cli.py
 ### D-08 -- `clase_sitio` es `[A]` con valor y sin sensibilidad
 **Sev** MENOR - **Clasificacion** deliberado sin documentar - **Veredicto** CONFIRMADO - **Detectado desde 2 dimensiones** (C2, D1) - **Ubicacion** src/criterios_adoptados.py:386-457
 Es el unico de los 30 `[A]` con valor declarado y `sensibilidad=None`. `_verificar_criterio` solo exige sensibilidad a los `opcional=True` y `_verificar_sensibilidad` retorna de inmediato cuando es None, asi que nada frena la omision, y no hay test que la fije. Su propia justificacion reconoce que la adopcion "no es conservadora por construccion", que es exactamente el caso en que el rango hace falta; el archivo admite sensibilidades simbolicas, con test, asi que el valor categorico no lo impedia.
-**Regla:** Claude.md:28 y src/criterios_adoptados.py:50: "[A] Sin norma ni fuente unica. Adopcion declarada + sensibilidad obligatoria."
+**Regla:** CLAUDE.md:28 y src/criterios_adoptados.py:50: "[A] Sin norma ni fuente unica. Adopcion declarada + sensibilidad obligatoria."
 **Evidencia:**
 ```
 $ python3 -c "[k for k,c in CRITERIOS.items() if c.etiqueta=='A' and c.valor is not None and c.sensibilidad is None]"
@@ -1288,12 +1288,12 @@ $ sed -n '1830,1834p' src/criterios_adoptados.py
 $ sed -n '1748,1750p' src/criterios_adoptados.py
     if rango is None: return          # simbolica: declarada, respetada, no evaluada
 ```
-**Verificacion:** Lente 1 reprodujo el filtro en las dos pasadas y verifico que la guardia no cubre el caso; lente 2 busco la excepcion en Claude.md, los dos manifiestos, la hoja de ruta y los tests: no existe.
+**Verificacion:** Lente 1 reprodujo el filtro en las dos pasadas y verifico que la guardia no cubre el caso; lente 2 busco la excepcion en CLAUDE.md, los dos manifiestos, la hoja de ruta y los tests: no existe.
 
 ### D-09 -- `datos_sitio.py` no tiene guardia al importar
 **Sev** MENOR - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** src/datos_sitio.py:97-118; src/criterios_adoptados.py:1787-1878
 `DatoSitio(trazabilidad='', etiqueta='A')` se construye sin error mientras `ca._verificar_criterio` rechaza el equivalente; el unico privado del modulo es `_USADOS`. Atenuantes: el manifiesto declara los tests como mecanismo de aplicacion legitimo del proyecto y los pone en la misma tabla que la guardia de import; `datos_sitio.py` no tiene API de escritura dinamica (la unica via de violacion es editar el archivo, cubierta por tests) y hoy los tres datos declaran `[S]` con trazabilidad no vacia.
-**Regla:** Claude.md, `[S]`: "En vez de sensibilidad declara trazabilidad obligatoria." datos_sitio.py:14-19 la enuncia con las mismas palabras y no la hace cumplir.
+**Regla:** CLAUDE.md, `[S]`: "En vez de sensibilidad declara trazabilidad obligatoria." datos_sitio.py:14-19 la enuncia con las mismas palabras y no la hace cumplir.
 **Evidencia:**
 ```
 $ python3 -c "d=ds.DatoSitio(valor=1.0,...,trazabilidad='',etiqueta='A'); ..."
@@ -1357,7 +1357,7 @@ $ grep -n "cita cerrada" docs/manifiesto_citas.md -> 400 (v_max_hdpe), 401 (v_ma
 ### D-13 -- `clases_producto_por_relleno` es el unico `[C]` con `valor=None`
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/criterios_adoptados.py:1187-1214
 Su fuente empieza por "PENDIENTE". El estado esta registrado en los dos documentos donde un revisor lo buscaria: la auditoria v9 lo nombra tres veces (624-627, 656, 754) y dice que "quedan declarados `[A]`/`[C]` pendientes, sin bloquear nada", y el manifiesto lo tabula como `[C]` "sin extraer". Hay precedente interno: `v_max_tmc`/`v_max_hdpe` fueron `[C]` vacios y hoy valen 4.6. Lo que no esta escrito es el criterio general de eleccion entre `[A]` y `[C]` para un hueco abierto.
-**Regla:** Claude.md: "[C] Vacio normativo cubierto con fuente tecnica reconocida"; la guardia no cubre este caso.
+**Regla:** CLAUDE.md: "[C] Vacio normativo cubierto con fuente tecnica reconocida"; la guardia no cubre este caso.
 **Evidencia:**
 ```
 $ python3 -c "[k for k,c in CRITERIOS.items() if c.etiqueta=='C' and c.valor is None]"
@@ -1373,7 +1373,7 @@ $ grep -n clases_producto_por_relleno docs/manifiesto_citas.md -> 322 (**sin ext
 ### E-01 -- gui/app.py:749 disfraza un fallo de programa como problema del expediente
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** gui/app.py:749,755; cli.py:1465; src/modulos/MD.py:329-330
 El manejador de EJECUTAR captura `except (OSError, ValueError)` ANTES del brazo que imprime traza. Cualquier ValueError nacido dentro del pipeline (MD:302, M5:338, M11:319/344/480/1396) escapa de `cli.correr` sin ser capturado por `_etapa` (que solo atrapa `ErrorProyecto`) y aterriza en ese primer brazo: la GUI lo muestra como "No se pudo leer la entrada", sin traza. El brazo es mas ancho de lo necesario: lo unico a atrapar era `json.JSONDecodeError`, y asi lo hacen bien cli.py:1465 y el propio gui/app.py:936.
-**Regla:** Claude.md, Excepciones: "Todas descienden de ErrorProyecto ... para que la GUI distinga un problema del expediente de un fallo del programa con un solo except." MD:329-330 escribe la regla opuesta: "un ValueError o un ImportError es un fallo de programa y sube sin anotarse".
+**Regla:** CLAUDE.md, Excepciones: "Todas descienden de ErrorProyecto ... para que la GUI distinga un problema del expediente de un fallo del programa con un solo except." MD:329-330 escribe la regla opuesta: "un ValueError o un ImportError es un fallo de programa y sube sin anotarse".
 **Evidencia:**
 ```
 $ PYTHONPATH=src:. python3 -c "...monkeypatch M5.v1_borde_libre -> ValueError; cli.correr(...)"
@@ -1392,7 +1392,7 @@ cli.py:1465 | gui/app.py:936
 ### E-02 -- M9 usa `DatoInvalidoError` para validar argumentos internos
 **Sev** MENOR - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/M9_cabezal.py:852,876,1163,1257
 Cuatro sitios validan strings que produce el propio codigo (`nombre`, `verificacion`, `condicion`, `direccion`) y ahi `DatoInvalidoError` disfraza un fallo de programa de problema del expediente. El quinto (M9:1180) NO pertenece a la lista: su tabla sale de `ca.valor(CRITERIO_RECUBRIMIENTO_AASHTO)`, es decir del expediente. Consecuencia hoy nula: cli.py:844 y :851 iteran las mismas tablas que se validan y M9:892 pasa claves literales. La eleccion es deliberada y esta fijada por tests, pero no escrita.
-**Regla:** Claude.md, Excepciones; la regla explicita del propio proyecto esta en src/modulos/M8_estructural.py:276-281.
+**Regla:** CLAUDE.md, Excepciones; la regla explicita del propio proyecto esta en src/modulos/M8_estructural.py:276-281.
 **Evidencia:**
 ```
 $ PYTHONPATH=src:. python3 -c "cli._etapa(..., M9.recubrimiento_de_diseno(condicion='no_existe'))"
@@ -1410,7 +1410,7 @@ $ grep -rn "argumento interno|contrato interno" src/modulos/M9_cabezal.py docs/*
 ### E-03 -- Los tres exportadores de la GUI capturan `except Exception` sin traza
 **Sev** OBSERVACION - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** gui/app.py:868,883,899
 Los tres manejadores no llaman `traceback.print_exc()`, a diferencia del patron hermano de la linea 755, y no declaran por que. Dos matices: el messagebox si imprime `type(exc).__name__`, de modo que lo que se pierde es la traza y el punto exacto, no la distincion; y un manejador de tope de un boton de exportacion no es logica de negocio (el mismo archivo usa `except Exception` en :188 para el fallback de estilo).
-**Regla:** Claude.md, Excepciones: "No usar Exception generica" y el patron correcto ya presente en gui/app.py:749-757.
+**Regla:** CLAUDE.md, Excepciones: "No usar Exception generica" y el patron correcto ya presente en gui/app.py:749-757.
 **Evidencia:**
 ```
 $ grep -n "except Exception" -A2 gui/app.py
@@ -1425,7 +1425,7 @@ $ awk 'NR>=865 && NR<=869' gui/app.py   -> el try cubre solo cli.exportar_* + sh
 ### E-04 -- gui/app.py:494 valida un dato tecleado con ValueError
 **Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** gui/app.py:494 y sus consumidores gui/app.py:511 y :538
 Es el unico `raise` del archivo y no sale de la clase de la GUI: se atrapa a tres lineas en ambos llamadores y funciona como senal de control interna. El brazo de la linea 497 NO lo consume -- esta dentro de la misma funcion y cubre solo el `float()`, y no puede alcanzarlo porque el raise ocurre antes del try. El valor vacio de un widget Tk no es todavia un dato de entrada del expediente. La funcion no tiene docstring donde dejar constancia.
-**Regla:** Claude.md, Excepciones: "si el revisor tiene que anadir algo es Faltante" -- acotada a los datos de entrada del CSV.
+**Regla:** CLAUDE.md, Excepciones: "si el revisor tiene que anadir algo es Faltante" -- acotada a los datos de entrada del CSV.
 **Evidencia:**
 ```
 $ awk 'NR>=491 && NR<=498' gui/app.py
@@ -1441,7 +1441,7 @@ $ awk 'NR==511; NR==538' gui/app.py -> los dos consumidores reales
 ### E-05 -- Declarar un criterio desde la GUI con valor fuera de rango sale como ValueError
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** src/criterios_adoptados.py:144-173,1780,1809,1815; gui/app.py:510-511
 El rechazo sale como `ValueError`/`KeyError`, fuera de `ErrorProyecto`. La afirmacion de que "en ningun sitio se argumenta" es falsa: el docstring de `_verificar_criterio` (1793-1804) enumera los TRES caminos que la atraviesan -- incluido "declaracion en caliente `establecer_valor_dinamico()`" -- y declara la funcion "una guardia de arquitectura, no una validacion de dato"; el docstring del propio `establecer_valor_dinamico` lo repite. Ningun valor no declarado entra al calculo: la guardia lo impide.
-**Regla:** Claude.md, Excepciones: "DatoInvalidoError: el dato esta pero no puede ser."
+**Regla:** CLAUDE.md, Excepciones: "DatoInvalidoError: el dato esta pero no puede ser."
 **Evidencia:**
 ```
 $ PYTHONPATH=src python3 -c "ca.establecer_valor_dinamico('F_pga', 99999.0)"
@@ -1454,10 +1454,10 @@ $ awk 'NR>=1793 && NR<=1804' src/criterios_adoptados.py
 **Nota de evidencia:** el auditor ubico `establecer_valor_dinamico` en la linea 1166; esa linea es el campo `vacio_verificado` de un criterio. La funcion vive en 144-173.
 **Verificacion:** Lente 1 reprodujo la salida y corrigio la ubicacion; lente 2 hallo la decision escrita en el docstring de la funcion que lanza (GRAVE -> OBSERVACION).
 
-### E-06 -- `modelos.py` ensancha el contrato de `DatoFaltanteError` respecto de Claude.md
+### E-06 -- `modelos.py` ensancha el contrato de `DatoFaltanteError` respecto de CLAUDE.md
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** CONFIRMADO - **Ubicacion** src/modelos.py:108-109; src/modulos/M5_verificaciones.py:409-415; cli.py:511-515
-Claude.md define la excepcion como "falta un dato de entrada del CSV ... Lleva el nombre de la columna"; modelos.py la redefine como "del CSV (Sec. 1.2) **o de un tablero externo**" y el codigo lo explota: M5:410 pasa `campo="ancho_derecho_via_m"`, que su propio detalle admite que "no es columna de Sec. 1.2", y `cli._falta_dato` la fabrica para datos de `--datos-externos`. Consecuencia: el campo `campo` del JSON no siempre nombra una columna del CSV.
-**Regla:** Claude.md:95-96, no actualizado. La decision si esta en el docstring de la clase y en el de `v5_remanso`.
+CLAUDE.md define la excepcion como "falta un dato de entrada del CSV ... Lleva el nombre de la columna"; modelos.py la redefine como "del CSV (Sec. 1.2) **o de un tablero externo**" y el codigo lo explota: M5:410 pasa `campo="ancho_derecho_via_m"`, que su propio detalle admite que "no es columna de Sec. 1.2", y `cli._falta_dato` la fabrica para datos de `--datos-externos`. Consecuencia: el campo `campo` del JSON no siempre nombra una columna del CSV.
+**Regla:** CLAUDE.md:95-96, no actualizado. La decision si esta en el docstring de la clase y en el de `v5_remanso`.
 **Evidencia:**
 ```
 $ awk 'NR>=108 && NR<=109' src/modelos.py
@@ -1465,16 +1465,16 @@ class DatoFaltanteError(ErrorProyecto):
     """Falta un dato de entrada del CSV (Sec. 1.2) o de un tablero externo."""
 $ awk 'NR>=409 && NR<=415' src/modulos/M5_verificaciones.py
     raise DatoFaltanteError("ancho_derecho_via_m", ... "(no es columna de Sec. 1.2)" ...
-$ grep -n "DatoFaltanteError" -A2 Claude.md
+$ grep -n "DatoFaltanteError" -A2 CLAUDE.md
 95:- DatoFaltanteError: falta un dato de entrada del CSV. Falta la **columna** ...
 ```
 **Nota de evidencia:** `cli._falta_dato` esta en 511-515, no en 513-517.
 **Verificacion:** Lente 1 reprodujo el ensanche y corrigio el rango; lente 2 confirmo que la decision esta declarada y que lo que falta es la actualizacion de la constitucion.
 
 ### F-01 -- gui/app.py: 584 sentencias ejecutables con CERO tests
-**Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** gui/app.py:1-958 (logica sin cubrir en :491, :532, :707, :748); Claude.md:122
+**Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** gui/app.py:1-958 (logica sin cubrir en :491, :532, :707, :748); CLAUDE.md:122
 Ningun test importa gui/app.py, de modo que la cobertura real del repositorio es 69 % de las sentencias, no 96 %. La GUI no es un envoltorio inerte: decide el tipo del valor declarado (`_interpretar_valor_declarado`), traduce banderas a mano (`l_hidraulico` -> `L_hidraulico_m`) y llama `cli.correr(ruta_csv, externos)` con dos argumentos, de modo que nunca puede producir el entregable de "perfil". Agravante verificado: el bucle de banderas de `cargar_datos_externos` no pasa por `_exige_clave`, asi que una clave desincronizada entra y el dato se pierde en silencio.
-**Regla:** Claude.md:122: "pytest en tests/. Minimo un test por modulo." Ninguna linea de Claude.md ni de docs/ exime a gui/.
+**Regla:** CLAUDE.md:122: "pytest en tests/. Minimo un test por modulo." Ninguna linea de CLAUDE.md ni de docs/ exime a gui/.
 **Evidencia:**
 ```
 $ python3 -c "PythonParser(filename='gui/app.py') ..." -> 584 sentencias ejecutables
@@ -1485,12 +1485,12 @@ $ sed -n '886,887p' cli.py -> def correr(ruta_csv, externos, alcance=ALCANCE_EXP
 $ python3 -c "cli.cargar_datos_externos(None,{'l_hidraulico':'5.0'}).globales"
 {'l_hidraulico': DatoDeclarado(...)}   -> clave desconocida aceptada sin _exige_clave
 ```
-**Verificacion:** Lente 1 reprodujo el conteo, la ausencia de tests y la llamada sin alcance; lente 2 no hallo exencion escrita en Claude.md, la hoja de ruta ni la auditoria v9.
+**Verificacion:** Lente 1 reprodujo el conteo, la ausencia de tests y la llamada sin alcance; lente 2 no hallo exencion escrita en CLAUDE.md, la hoja de ruta ni la auditoria v9.
 
 ### F-02 -- La rama que SI escribe el archivo fuente de los criterios no tiene ningun test
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** src/criterios_adoptados.py:277-321 (299-320 sin cubrir); tests/test_criterios_adoptados.py:461-475; gui/app.py:555
 `escribir_valor_en_archivo` es la unica ruta que muta permanentemente la fuente de verdad y la dispara el boton "Guardar en archivo". El unico test comprueba el rechazo previo. Todo lo posterior a la guardia queda sin ejecutar: lectura del archivo, sustitucion por regex del bloque `valor=`, el ValueError de "no se encontro el bloque", la escritura, la actualizacion en memoria de `CRITERIOS[clave]` y el retiro del override.
-**Regla:** Claude.md:122 leido con Claude.md:9-12 ("Rellenar un vacio en silencio es el peor error posible"): nada en docs/ declara esta rama como no verificable.
+**Regla:** CLAUDE.md:122 leido con CLAUDE.md:9-12 ("Rellenar un vacio en silencio es el peor error posible"): nada en docs/ declara esta rama como no verificable.
 **Evidencia:**
 ```
 $ python3 -m coverage run -m pytest -q; python3 -m coverage report -m --include="src/criterios_adoptados.py"
@@ -1514,14 +1514,14 @@ R=0.3  n=25  fixture=70.63  formula=70.59302  error=0.03698  tolerancia=0.05
 R=0.35 n=15  fixture=35.29  formula=35.32272  error=0.03272  tolerancia=0.05
 $ awk 'NR>=206 && NR<=208' src/modulos/M1_clasificacion.py
     publica 71 y 35, que son 70.59 y 35.32 redondeados.
-$ grep -rn "70\.63|35\.29" docs/ Claude.md   -> (ninguna aparicion)
+$ grep -rn "70\.63|35\.29" docs/ CLAUDE.md   -> (ninguna aparicion)
 ```
 **Verificacion:** Lente 1 recalculo con la formula del fixture y verifico los dos consumidores (`abs=caso['tolerancia']`); lente 2 confirmo que el valor no sale de la fuente de verdad y que el encabezado afirma lo contrario.
 
 ### F-04 -- Mononobe-Okabe: el caso limite de Rankine no cubre las convenciones de beta, i y delta
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/M9_cabezal.py:442-443,462,463,490,493,494; tests/test_M9_cabezal.py:213-221
 Con i = beta = delta = 0 los cuatro cosenos son insensibles al signo: mutar `cos(i - beta)` a `cos(i + beta)` deja la suite en 725 passed, y sobreviven siete mutantes con impacto de calculo. Es documentacion que afirma lo que el codigo no da, por partida doble: M9:442-443 dice "Es la comprobacion que garantiza que los signos estan bien puestos" y el docstring del test dice "Si un signo esta cambiado, aqui se ve". El unico test con angulo no nulo (i=5) es de excepcion.
-**Regla:** Claude.md:123: "Todo modulo de calculo se contrasta contra tests/fixtures/casos_patron.py"; no existe caso patron de Mononobe-Okabe con angulos no nulos.
+**Regla:** CLAUDE.md:123: "Todo modulo de calculo se contrasta contra tests/fixtures/casos_patron.py"; no existe caso patron de Mononobe-Okabe con angulos no nulos.
 **Evidencia:**
 ```
 $ (copia limpia) sed -i '463s|math.cos(i - beta)|math.cos(i + beta)|' src/modulos/M9_cabezal.py
@@ -1537,7 +1537,7 @@ DisenoNoFactibleError  # el unico i!=0 de la suite es de excepcion
 ### F-05 -- `empuje_activo_sismico_total` sin ningun test de valor: 4/4 mutantes sobreviven
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** src/modulos/M9_cabezal.py:629; tests/test_M9_cabezal.py:361-372
 `(1-k_v)` -> `(1+k_v)` y `/2` -> `*2` dejan la suite en 725 passed. El unico assert (`incremento == approx(P_AE - P_A)`) es tautologico porque `incremento_sismico` (M9:639-640) llama a la misma funcion. Agravante: el test invoca con `k_v = 0.0`, de modo que el mutante del `(1-k_v)` es indetectable por construccion. La funcion solo la consume `empujes_trasdos`, que la CLI no ensambla.
-**Regla:** Claude.md:123. No hay caso patron de P_AE (CP-7 cubre la cadena sismica, no el empuje).
+**Regla:** CLAUDE.md:123. No hay caso patron de P_AE (CP-7 cubre la cadena sismica, no el empuje).
 **Evidencia:**
 ```
 $ (copia) sed -i '629s|(1 - k_v)|(1 + k_v)|' src/modulos/M9_cabezal.py && pytest -q | tail -1
@@ -1553,7 +1553,7 @@ $ sed -n '361,372p' tests/test_M9_cabezal.py
 ### F-06 -- E3 deslizamiento: ningun test asserta el FS
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/M9_cabezal.py:958,961; tests/test_M9_cabezal.py:554-560
 `fuerza_resistente * fuerza_actuante` en lugar de la division deja 725 passed, e invertir la guarda de la linea 958 (que hace `fs = math.inf` siempre) tambien. `verificar_deslizamiento` si se ejercita en cuatro tests (directo y via `verificar_estabilidad`), pero ninguno asserta el `valor_obtenido`: los asserts son de numeral, de codigo y de `cumple`. El test hermano de capacidad portante si asserta 3.10.
-**Regla:** Claude.md:122-123: el assert es de existencia/booleano donde debia ser de valor, y fija como correcto un FS calculado con el operador equivocado.
+**Regla:** CLAUDE.md:122-123: el assert es de existencia/booleano donde debia ser de valor, y fija como correcto un FS calculado con el operador equivocado.
 **Evidencia:**
 ```
 $ (copia) sed -i '961s|fuerza_resistente / fuerza_actuante|fuerza_resistente * fuerza_actuante|' && pytest -q|tail -1
@@ -1570,7 +1570,7 @@ $ sed -n '556,565p' tests/test_M9_cabezal.py
 ### F-07 -- Empuje total y momento volcante del cabezal sin test de valor
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** src/modelos.py:1099,1111-1115; tests/test_M9_cabezal.py:936-937,960-961
 `EmpujesTrasdos.empuje_horizontal_total` y `.momento_volcante` sobreviven a `*`->`/` y `+`->`-` con la suite en 725 passed; los unicos asserts son dos comparaciones de orden. No alimentan ninguna memoria entregable hoy: ni cli.py ni gui/app.py importan `empujes_trasdos` ni `verificar_estabilidad`, la CLI declara por escrito que no ensambla E1-E5 y los cuatro criterios de angulo de Sec. 9.2 estan en None.
-**Regla:** Claude.md:123. Nada en docs/ ni en los docstrings declara este ensamblado como diferido a efectos de prueba: `momento_volcante` se presenta como resultado vigente.
+**Regla:** CLAUDE.md:123. Nada en docs/ ni en los docstrings declara este ensamblado como diferido a efectos de prueba: `momento_volcante` se presenta como resultado vigente.
 **Evidencia:**
 ```
 $ (copia) sed -i '1111s|self.E_activo \* self.z_activo|self.E_activo / self.z_activo|' src/modelos.py && pytest -q|tail -1
@@ -1586,7 +1586,7 @@ $ python3 -c "...CRITERIOS[k].valor..." -> phi_relleno_trasdos None / ... / fric
 ### F-08 -- Sec. 7.B: la rama viva de longitud del conducto no tiene assert de valor
 **Sev** GRAVE - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** src/modulos/M7_geometria.py:442,454,532; tests/test_cli.py:285-291
 Mutar `2 * talud` -> `2 / talud`, `ancho + proyeccion` -> `ancho - proyeccion` y la misma resta dentro de `compatibilidad_geometrica` deja la suite en 725 passed. El unico test que ejecuta la rama viva (con `talud_terraplen=1.5` declarado) asserta solo la cadena de procedencia. La linea 534 NO pertenece al hallazgo: mutarla rompe la suite, porque la rama con longitud DADA si tiene assert de valor (10.40). `talud_terraplen` esta hoy en None, pero en cuanto se declare la longitud entra a la memoria y se propaga a la friccion de M4 y a la caida S*L.
-**Regla:** Claude.md:123; no hay caso patron de la Sec. 7.B.
+**Regla:** CLAUDE.md:123; no hay caso patron de la Sec. 7.B.
 **Evidencia:**
 ```
 $ (copia) sed -i '454s|ancho_plataforma + proyeccion_taludes|ancho_plataforma - proyeccion_taludes|' && pytest -q|tail -1
@@ -1601,8 +1601,8 @@ $ sed -n '287,292p' tests/test_cli.py
 
 ### F-09 -- El cuadro resumen CSV (entregable 3) nunca se genera con un punto dimensionado
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** src/modulos/M11_reporte.py:932-966 (947-950 y 962-963 sin cubrir); tests/test_M11_reporte.py:759-765
-La rama de contenido (`if informe.dimensionado:` y el `else` de proteccion) nunca se ejecuta; el unico test comprueba que el archivo existe, la cabecera y el numero de lineas, sin comparar ninguna celda. No existe en Claude.md ni en docs/ ninguna regla de cobertura de ramas, y la auditoria v9:44 cuenta la exportacion entre lo terminado.
-**Regla:** Claude.md:122 en su lectura util: el entregable tiene test, pero no de su contenido.
+La rama de contenido (`if informe.dimensionado:` y el `else` de proteccion) nunca se ejecuta; el unico test comprueba que el archivo existe, la cabecera y el numero de lineas, sin comparar ninguna celda. No existe en CLAUDE.md ni en docs/ ninguna regla de cobertura de ramas, y la auditoria v9:44 cuenta la exportacion entre lo terminado.
+**Regla:** CLAUDE.md:122 en su lectura util: el entregable tiene test, pero no de su contenido.
 **Evidencia:**
 ```
 $ python3 -m coverage report -m --include="src/modulos/M11_reporte.py"
@@ -1619,7 +1619,7 @@ $ sed -n '759,765p' tests/test_M11_reporte.py
 ### F-10 -- Guardas de expediente sin cobertura en cuatro modulos y en cli.py
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** M1:165,310,389; M4:272,443; M5:495; M9:466,1180; cli.py:250,255,292,310 (+ MD:168,178)
 Trece `raise` de ErrorProyecto no se ejecutan en ninguna corrida y no son inalcanzables: M4:443 (`geometria_control_salida` distinta de `seccion_llena`) es alcanzable desde la GUI, que acepta texto libre, y M9:466 (coseno del denominador nulo o negativo) se dispara con delta+beta+psi >= 90 -- lo verifique. Quedan tambien sin cubrir M1:389 (familia desconocida), M5:495 (clave a nivel de subrasante) y cuatro `DatoInvalidoError` del JSON de datos externos. Se excluyen los `AssertionError`, declarados en sus docstrings.
-**Regla:** Claude.md:88-106: la taxonomia existe para que la GUI distinga; un `raise` sin test no garantiza que el tipo, el campo y el motivo sean los que la GUI espera.
+**Regla:** CLAUDE.md:88-106: la taxonomia existe para que la GUI distinga; un `raise` sin test no garantiza que el tipo, el campo y el motivo sean los que la GUI espera.
 **Evidencia:**
 ```
 $ python3 -m coverage json ... && python3 -c "...raise sin cubrir..."
@@ -1633,7 +1633,7 @@ DisenoNoFactibleError | Mononobe-Okabe fuera de su dominio ... delta+beta+psi = 
 ### F-11 -- Seis banderas del CLI sin ninguna cobertura
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** cli.py:1411,1423,1430,1434,1437,1439 (cuerpos sin cubrir: 1368-1371, 1492-1495, 1498-1499)
 Solo 8 de las 14 banderas aparecen en tests/test_cli.py. No se ejercitan `--pdf`, `--csv-resumen`, `--criterios`, `--datos-externos`, `--proyecto` ni `--plantilla`: el cableado bandera->funcion queda sin red, con una asimetria observable (`--pdf` pasa `ruta_plantilla` en 1494 y `--csv-resumen` no en 1498). Las funciones destino si estan probadas en test_M11_reporte.py.
-**Regla:** Claude.md:122 sobre cli.py como modulo de entrega; docs/auditoria_y_ruta_despliegue_v9.md:16 y :782 presentan el CLI y la exportacion como terminados.
+**Regla:** CLAUDE.md:122 sobre cli.py como modulo de entrega; docs/auditoria_y_ruta_despliegue_v9.md:16 y :782 presentan el CLI y la exportacion como terminados.
 **Evidencia:**
 ```
 $ grep -rIno -- '--[a-z-]\+' tests/test_cli.py | sort -u
@@ -1650,7 +1650,7 @@ cli.py  582  24  96%  ..., 1368-1371, 1492-1495, 1498-1499, 1505
 ### F-12 -- La celda de texto vacia del CSV no la prueba nadie
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** src/modulos/M0_carga.py:230-235 (linea 233 sin cubrir); llamadores en :169, :209, :250, :267
 La rama de celda vacia para columnas de TEXTO no se ejecuta en ninguna corrida de la suite, pese a cubrir cuatro columnas obligatorias (`id`, `progresiva_km`, `familia`, `sucs_fundacion`). El comportamiento hoy es correcto -- se reproduce vaciando cada columna --, pero nada lo fija: cambiar `_texto` por un default dejaria la suite en 725 verdes con la familia vacia colandose hasta M1.
-**Regla:** Claude.md:95-97: "DatoFaltanteError ... Falta la columna entera, **o la celda obligatoria viene vacia**."
+**Regla:** CLAUDE.md:95-97: "DatoFaltanteError ... Falta la columna entera, **o la celda obligatoria viene vacia**."
 **Evidencia:**
 ```
 $ for c in 1 3 16; do (fila 2 con la columna c vacia) cargar_puntos(v.csv); done
@@ -1665,7 +1665,7 @@ src/modulos/M0_carga.py  130  2  98%   233, 317
 ### F-13 -- Seis modulos de calculo no consumen `casos_patron.py`
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** tests/fixtures/casos_patron.py:32-237; tests de M2, M5, M7, M8, M9, M10
 Los seis dan `casos_patron=0`. Lo que baja la severidad: el fixture define SOLO OCHO casos y ninguno cubre M2, M7, M8 ni M10, de modo que para esos cuatro la regla no es incumplible por descuido -- exige primero escribir el caso dorado que no existe. El unico incumplimiento neto es M9, que tiene CP-7 escrito y no lo importa. M5 es intermedio: CP-3 le corresponde y se consume desde test_M3 y test_constantes_normativas.
-**Regla:** Claude.md:123: "Todo modulo de calculo se contrasta contra tests/fixtures/casos_patron.py." Ninguna linea de docs/ declara exentos a estos modulos.
+**Regla:** CLAUDE.md:123: "Todo modulo de calculo se contrasta contra tests/fixtures/casos_patron.py." Ninguna linea de docs/ declara exentos a estos modulos.
 **Evidencia:**
 ```
 $ for m in M2_material M5_verificaciones M7_geometria M8_estructural M9_cabezal M10_espaciamiento; do grep -c casos_patron tests/test_${m}.py; done
@@ -1680,7 +1680,7 @@ $ for f in tests/test_M*.py; do grep -c casos_patron $f; done -> M0:1 M1:2 M3:1 
 ### F-14 -- Los valores dorados de CP-7 estan duplicados como literales en test_M9_cabezal.py
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** tests/test_M9_cabezal.py:103-137,175; tests/fixtures/casos_patron.py:164-180; tests/test_criterios_adoptados.py:542-571
 CP-7 lo consume un test que no importa M9. La afirmacion central del hallazgo original es FALSA: existe `test_cada_paso_lee_su_propio_criterio_y_no_un_0_50_escrito_a_mano`, que llama a las cuatro funciones de produccion, inyecta F_pga=0.9 y exige A_s == k_h == 0.45, es decir el detector exacto de un 0.50 hardcodeado. Lo que sobrevive es la duplicacion: 0.50, 0.45 y 0.25 estan escritos como literales en vez de importarse de `CP7_CADENA_SISMICA`, de modo que corregir el fixture no llega a los tests de M9.
-**Regla:** Claude.md:123: el contraste tiene que ser contra el MODULO y contra el fixture.
+**Regla:** CLAUDE.md:123: el contraste tiene que ser contra el MODULO y contra el fixture.
 **Evidencia:**
 ```
 $ grep -n "CP7_CADENA_SISMICA" tests/test_criterios_adoptados.py -> 26 (import), 547
@@ -1713,8 +1713,8 @@ $ sed -n '202p' src/modulos/M5_verificaciones.py -> prosa de docstring, no el de
 
 ### F-16 -- 15 asserts de la suite comparan floats con `==`
 **Sev** MENOR - **Clasificacion** defecto real - **Veredicto** IMPRECISO - **Ubicacion** test_M6:58; test_M9:549,550,641,645,741; test_cli:99,114,115,123,207,237,342,359,388 (+ test_M2:129-130)
-Las 15 apariciones existen y Claude.md:111 lo prohibe sin exencion para tests. Ninguna compara el resultado de una operacion de punto flotante: son constantes de modulo, valores declarados que viajan de punta a punta y retornos literales -- incluido el caso que el hallazgo llamaba "el mas expuesto" (`n_s_zapata_en_talud` con B<H_s hace `return 0.0`). Incumplimiento de la letra, sin riesgo de resultado.
-**Regla:** Claude.md, Estilo: "No comparar floats con ==. Tolerancias explicitas y nombradas", repetido en src/tolerancias.py:39.
+Las 15 apariciones existen y CLAUDE.md:111 lo prohibe sin exencion para tests. Ninguna compara el resultado de una operacion de punto flotante: son constantes de modulo, valores declarados que viajan de punta a punta y retornos literales -- incluido el caso que el hallazgo llamaba "el mas expuesto" (`n_s_zapata_en_talud` con B<H_s hace `return 0.0`). Incumplimiento de la letra, sin riesgo de resultado.
+**Regla:** CLAUDE.md, Estilo: "No comparar floats con ==. Tolerancias explicitas y nombradas", repetido en src/tolerancias.py:39.
 **Evidencia:**
 ```
 $ grep -rn "assert .*== *[0-9]*\.[0-9]" tests/*.py | grep -v approx
@@ -1722,14 +1722,14 @@ test_M6_proteccion.py:58 | test_M9_cabezal.py:549,550,641,645,741
 test_cli.py:99,114,115,123,207,237,342,359,388            (15 en total)
 $ awk 'NR>=1033 && NR<=1035' src/modulos/M9_cabezal.py
     if B < H_s: return 0.0      # literal: el assert de la linea 645 es exacto por construccion
-$ sed -n '108,112p' Claude.md   -> la seccion Estilo no exime a los tests
+$ sed -n '108,112p' CLAUDE.md   -> la seccion Estilo no exime a los tests
 ```
 **Verificacion:** Lente 1 reprodujo el grep exacto y desmonto el "caso mas expuesto"; lente 2 leyo la seccion Estilo completa: no hay exencion.
 
 ### F-17 -- Un test que no invoca codigo de produccion y otro que contrasta el fixture consigo mismo
 **Sev** MENOR - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** tests/test_M3_hidraulica.py:147-151; tests/test_modelos.py:141-148 (parcial: el assert de la linea 148)
 `test_pendiente_que_produce_v_objetivo_de_cp3` tiene una unica llamada, `pytest.approx`, confirmado por AST: reimplementa la formula de velocidad y pasa aunque M3 devuelva basura. Dos correcciones que bajan la severidad: M3 SI esta contrastado contra CP-2/CP-3 por otros seis tests con assert de valor, asi que es redundancia y no hueco de cobertura; y `test_la_geometria_reproduce_CP2` si ejerce codigo de produccion (`Geometria.y_sobre_D`), de modo que solo su segundo assert es fixture contra si mismo. Ninguno declara en su docstring que sea comprobacion del fixture.
-**Regla:** Claude.md:122-123: un test que no ejerce ninguna funcion del modulo no lo contrasta.
+**Regla:** CLAUDE.md:122-123: un test que no ejerce ninguna funcion del modulo no lo contrasta.
 **Evidencia:**
 ```
 $ python3 -c "import ast; ... test_pendiente_que_produce_v_objetivo_de_cp3 ..."
@@ -1744,7 +1744,7 @@ $ awk 'NR>=488 && NR<=491' src/modelos.py -> @property y_sobre_D  (test_modelos.
 ### F-18 -- La auditoria previa sigue citando 595 tests y 12 modulos
 **Sev** OBSERVACION - **Clasificacion** defecto real - **Veredicto** CONFIRMADO - **Ubicacion** docs/auditoria_y_ruta_despliegue_v9.md:44
 Es el unico conteo de tests publicado en todo docs/, asi que no hay contradiccion entre documentos, solo desactualizacion: hoy son 725 passed + 1 skipped y src/modulos/ contiene 13 ficheros. La linea es la tabla de estado de una auditoria fechada y la desviacion va hacia arriba.
-**Regla:** Claude.md:144-146: "Al reportar el conteo, distinguir passed de collected ... Decir cual de los dos se esta citando." La linea 44 ni distingue ni esta actualizada.
+**Regla:** CLAUDE.md:144-146: "Al reportar el conteo, distinguir passed de collected ... Decir cual de los dos se esta citando." La linea 44 ni distingue ni esta actualizada.
 **Evidencia:**
 ```
 $ sed -n '44p' docs/auditoria_y_ruta_despliegue_v9.md
@@ -1758,7 +1758,7 @@ $ grep -rn 'tests en verde\|passed' docs/*.md -> unica coincidencia: la linea 44
 ### F-19 -- El ValueError de `escribir_valor_en_archivo` bloquea los 2 criterios de valor multilinea
 **Sev** OBSERVACION - **Clasificacion** deliberado sin documentar - **Veredicto** IMPRECISO - **Ubicacion** src/criterios_adoptados.py:302-312; criterios afectados en :1339-1340 y :1586-1587
 2 de los 46 criterios no los encuentra el patron porque su `valor=` abre un dict multilinea. El sentido esta invertido respecto del hallazgo original: `_verificar_criterio` NO rechaza un escalar para un criterio de valor dict -- llamar `escribir_valor_en_archivo('factores_carga_aashto', 1.5, ...)` deja pasar el 1.5 y lo unico que impide escribir un float encima de la tabla de factores AASHTO es ese ValueError. La GUI solo puede producir float o str. Falta la linea que acote el alcance en el docstring y una verificacion de tipo aguas arriba.
-**Regla:** Claude.md:122; la limitacion no esta escrita en el docstring, en gui/app.py ni en docs/.
+**Regla:** CLAUDE.md:122; la limitacion no esta escrita en el docstring, en gui/app.py ni en docs/.
 **Evidencia:**
 ```
 $ python3 -c "...regex sobre CRITERIOS..."
@@ -1774,7 +1774,7 @@ $ awk 'NR>=554&&NR<=558' gui/app.py -> la GUI atrapa (KeyError, ValueError, OSEr
 ### F-20 -- El skip permanente y la segunda rama de ImportError de MD
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** CONFIRMADO - **Ubicacion** tests/test_MD.py:344-352; src/modulos/MD.py:167-168,178,555
 El skip es deliberado y su motivo esta escrito en el `reason` y en el docstring de `MD._verificador_de_M5`, que ademas menciona expresamente la segunda condicion ("Un M5 ausente O SIN ESA FUNCION"). Queda deuda de cobertura de dos lineas: el segundo `raise ImportError` (M5 presente sin `verificar`, ejercitable sin borrar el modulo) y el `verificar = _verificador_de_M5()` del camino de lote.
-**Regla:** Claude.md:122; no hay regla de cobertura de ramas escrita en Claude.md ni en docs/.
+**Regla:** CLAUDE.md:122; no hay regla de cobertura de ramas escrita en CLAUDE.md ni en docs/.
 **Evidencia:**
 ```
 $ python3 -m pytest -q -rs 2>&1 | tail -3
@@ -1791,7 +1791,7 @@ $ awk 'NR>=160 && NR<=161' src/modulos/MD.py
 ### F-21 -- El borde de tolerancia de los umbrales no esta cubierto
 **Sev** OBSERVACION - **Clasificacion** deliberado documentado - **Veredicto** IMPRECISO - **Ubicacion** M5:209,272,292,511; M7:482; M9:894,1279,1337,1397,1418,1426; M4:532; M1:294; M3:103
 Invertir el signo de `TOL_UMBRAL_NORMATIVO` en esas comparaciones deja la suite en 725 passed (tres reproducidos uno a uno). Sin riesgo: la tolerancia vale 1e-9, de modo que la banda invertida mide 2e-9 -- once ordenes por debajo de cualquier magnitud de diseno --, y el propio archivo lo declara ("una millonesima de milimetro"). La regla citada no esta incumplida: el codigo no compara floats con `==`, y `test_tolerancias.py:34-42` si ejerce la semantica de la banda.
-**Regla:** Claude.md, Estilo: "No comparar floats con ==. Tolerancias explicitas y nombradas" -- se cumple.
+**Regla:** CLAUDE.md, Estilo: "No comparar floats con ==. Tolerancias explicitas y nombradas" -- se cumple.
 **Evidencia:**
 ```
 $ (copia) sed -i '209s|V_MIN - TOL_UMBRAL_NORMATIVO|V_MIN + TOL_UMBRAL_NORMATIVO|' && pytest -q|tail -1
