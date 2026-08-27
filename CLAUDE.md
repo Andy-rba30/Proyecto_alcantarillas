@@ -35,3 +35,30 @@ Cuando un prompt cite identificadores de hallazgo (MAT-D1, SIS-A-01, NOR-PUE-03,
 Las referencias `archivo:línea` de las auditorías pueden estar corridas: la auditoría
 normativa detectó que al menos 66 de 296 no llevan a lo que dicen. Anclá siempre al **nombre
 del símbolo** (función, constante, clave de criterio), nunca al número de línea.
+
+## Reglas de corrección de hallazgos de auditoría
+
+Este repositorio tiene 236 hallazgos de tres auditorías externas, ya cruzados en
+`docs/auditorias/matriz_cruzada_auditorias.xlsx` (14 clusters por causa raíz, 8
+conflictos resueltos). Ese archivo es el TRACKER: el estado de cada hallazgo se
+marca ahí, en las columnas Estado / Responsable / Commit. El PLAN es
+`docs/hoja_de_ruta_correcciones_v12.md`.
+
+1. Antes de tocar un archivo, busca su cluster en la hoja `Clusters`. Un cluster
+   se corrige entero, en un solo cambio de diseño y un solo commit. Nunca
+   hallazgo por hallazgo.
+2. Antes de aplicar cualquier corrección, consulta la hoja `Conflictos` (o la §6
+   del plan). Ocho objetos del repositorio tienen una corrección "obvia" que es
+   la EQUIVOCADA porque otra auditoría descubrió por qué. Si el objeto que vas a
+   tocar está ahí, la resolución de esa fila es vinculante y sustituye a tu
+   criterio.
+3. Ancla todo por NOMBRE DE SÍMBOLO (función, constante, clave de criterio),
+   nunca por número de línea. Al menos 66 de 296 referencias archivo:línea del
+   manifiesto no llevan a lo que dicen llevar, y las auditorías corren sobre dos
+   commits distintos (71b134fb y 2e1708ab).
+4. Cita los IDs siempre con prefijo MAT- / SIS- / NOR-. `F-01` y `F-02`
+   significan hallazgos DISTINTOS en la auditoría Normativa y en la de Sistema.
+5. No escribas tests contra el comportamiento actual antes de cerrar las fases
+   de corrección: congelarías los defectos. Los tests van en su fase, después.
+6. Cuando el código y la hoja de ruta discrepan, el defecto se reporta contra la
+   hoja de ruta primero y la fuente primaria (el PDF en normas/) decide.
