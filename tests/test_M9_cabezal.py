@@ -73,8 +73,14 @@ from modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
                                 verificar_espaciamiento, verificar_estabilidad,
                                 verificar_estabilidad_global, verificar_talud,
                                 verificar_volteo)
+from tests.fixtures.casos_patron import CP7_CADENA_SISMICA
 
 TOL = 1e-12
+
+# Los dorados de la cadena sismica se LEEN del caso patron, no se reescriben
+# como literales aqui (SIS-F-14): duplicarlos hacia que corregir el fixture no
+# llegara nunca a estos tests.
+CP7 = CP7_CADENA_SISMICA
 
 CSV_EJEMPLO = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
 
@@ -108,16 +114,16 @@ def test_los_seis_pasos_horizontales_dan_la_cadena_de_la_hoja_de_ruta():
     k_h0 = coeficiente_sismico_base(A_s=A_s)
     k_h = coeficiente_sismico_horizontal(k_h0=k_h0, factor_muro=factor_muro())
 
-    assert PGA == pytest.approx(0.50)
-    assert Fpga == pytest.approx(1.0)
-    assert A_s == pytest.approx(0.50)
-    assert k_h0 == pytest.approx(0.50)
-    assert k_h == pytest.approx(0.50)
+    assert PGA == pytest.approx(CP7["PGA"])
+    assert Fpga == pytest.approx(CP7["F_pga"])
+    assert A_s == pytest.approx(CP7["A_s_esperado"])
+    assert k_h0 == pytest.approx(CP7["k_h0_esperado"])
+    assert k_h == pytest.approx(CP7["k_h_con_muro_rigido_esperado"])
 
 
 def test_k_v_va_aparte_y_es_cero():
     """No deriva de la cadena: es una adopcion [A] con su propia fila."""
-    assert coeficiente_sismico_vertical() == pytest.approx(0.0)
+    assert coeficiente_sismico_vertical() == pytest.approx(CP7["k_v_esperado"])
     assert ca.criterio("k_v").etiqueta == "A"
 
 
@@ -128,12 +134,13 @@ def test_cada_paso_lee_su_propio_criterio_y_no_un_0_50_escrito_a_mano():
     mano no se enteraria.
     """
     cadena = cadena_sismica()
-    A_s = aceleracion_ajustada_sitio(PGA=cadena.PGA, F_pga=0.9)
+    A_s = aceleracion_ajustada_sitio(PGA=cadena.PGA,
+                                     F_pga=CP7["F_pga_clase_E"])
     k_h = coeficiente_sismico_horizontal(
         k_h0=coeficiente_sismico_base(A_s=A_s), factor_muro=cadena.factor_muro)
 
-    assert A_s == pytest.approx(0.45)
-    assert k_h == pytest.approx(0.45)
+    assert A_s == pytest.approx(CP7["A_s_con_F_pga_clase_E_esperado"])
+    assert k_h == pytest.approx(CP7["k_h_con_F_pga_clase_E_esperado"])
     assert k_h != pytest.approx(cadena.k_h)
 
 
@@ -172,9 +179,11 @@ def test_el_factor_de_muro_reducido_no_se_asume():
     k_h = 0.5*k_h0 = 0.25. "No asumirlo en un cabezal empotrado".
     """
     assert factor_muro() == pytest.approx(FACTOR_MURO_TABLA["rigido"])
-    assert cadena_sismica().k_h == pytest.approx(0.50)
+    assert cadena_sismica().k_h == pytest.approx(
+        CP7["k_h_con_muro_rigido_esperado"])
     # La otra fila de la tabla existe y es [N]; lo que es [A] es no elegirla
-    assert FACTOR_MURO_TABLA["desplazable"] == pytest.approx(0.5)
+    assert FACTOR_MURO_TABLA["desplazable"] == pytest.approx(
+        CP7["factor_muro_desplazable"])
     assert ca.criterio("factor_muro_eleccion").etiqueta == "A"
 
 
