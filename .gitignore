@@ -6,3 +6,8 @@ __pycache__/
 # reportes generados en la raiz por cli.py / GUI (la plantilla en
 # src/plantillas/ SI se versiona)
 /reporte_*.html
+
+# salida de corrida del CLI (cli.py:1475, <csv>.informe.json por defecto):
+# cualquier ejecucion sobre tests/ejemplo_puntos.csv la reescribe, no es un
+# fixture que algun test lea (SIS-C-10)
+tests/*.informe.json
