@@ -22,7 +22,7 @@ Este archivo tiene tres partes y una regla de convivencia:
 
 **La regla de convivencia:** este documento es el **plan**;
 `docs/auditorias/matriz_cruzada_auditorias.xlsx` es el **tracker**. El estado de cada uno de
-los 236 hallazgos se marca en el Excel, en sus columnas `Estado` / `Responsable` /
+los 234 hallazgos se marca en el Excel, en sus columnas `Estado` / `Responsable` /
 `Commit`. Nunca se abre un tercer documento para registrar avance.
 
 **Advertencia de nombre de archivo:** `M11_reporte.ruta_hoja_de_ruta()` busca en `docs/` el
@@ -273,9 +273,14 @@ Debe pasar a **formatear una traza que el cálculo emitió**.
 
 ## 5. Los 14 clusters — el mapa de «qué se rompe si toco esto»
 
-Los 236 hallazgos están reagrupados **por causa raíz** en la hoja `Clusters` del `.xlsx`.
+Los 234 hallazgos están reagrupados **por causa raíz** en la hoja `Clusters` del `.xlsx`.
 Un cluster es la unidad real de trabajo: sus hallazgos comparten archivo, fuente normativa o
 error de fondo, y **se corrigen juntos, en un solo cambio de diseño y un solo commit**.
+
+Solo 224 de los 234 caen en alguno de los 14 clusters. Los otros 10 —última fila de la tabla—
+llevan `—` en la columna Cluster porque la auditoría los revisó y los cerró como correctos,
+sin corrección que hacer: los nueve `NOR-OK-*` y `NOR-AAS-07`, retirado. **No son trabajo
+pendiente**, y por eso no entran en ninguna fase ni consumen sesión.
 
 | Cluster | Título | Hallazgos | Auditorías |
 |---|---|---|---|
@@ -388,7 +393,7 @@ impiden romper un hallazgo al arreglar otro tienen que vivir ahí. Pega esto al 
 ```markdown
 ## Reglas de corrección de hallazgos de auditoría
 
-Este repositorio tiene 236 hallazgos de tres auditorías externas, ya cruzados en
+Este repositorio tiene 234 hallazgos de tres auditorías externas, ya cruzados en
 `docs/auditorias/matriz_cruzada_auditorias.xlsx` (14 clusters por causa raíz, 8
 conflictos resueltos). Ese archivo es el TRACKER: el estado de cada hallazgo se
 marca ahí, en las columnas Estado / Responsable / Commit. El PLAN es
@@ -396,7 +401,10 @@ marca ahí, en las columnas Estado / Responsable / Commit. El PLAN es
 
 1. Antes de tocar un archivo, busca su cluster en la hoja `Clusters`. Un cluster
    se corrige entero, en un solo cambio de diseño y un solo commit. Nunca
-   hallazgo por hallazgo.
+   hallazgo por hallazgo. Solo 224 de los 234 caen en alguno de los 14
+   clusters: los otros 10 llevan `—` en la columna Cluster (los nueve
+   `NOR-OK-*` y `NOR-AAS-07`, retirado) porque la auditoría los cerró como
+   correctos, sin corrección que hacer. No son trabajo pendiente.
 2. Antes de aplicar cualquier corrección, consulta la hoja `Conflictos` (o la §6
    del plan). Ocho objetos del repositorio tienen una corrección "obvia" que es
    la EQUIVOCADA porque otra auditoría descubrió por qué. Si el objeto que vas a

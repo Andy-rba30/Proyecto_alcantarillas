@@ -153,7 +153,7 @@ fusionar, en qué rama y con qué SHA, para que nadie lo lea como entregado.
 
 ## Reglas de corrección de hallazgos de auditoría
 
-Este repositorio tiene 236 hallazgos de tres auditorías externas
+Este repositorio tiene 234 hallazgos de tres auditorías externas
 (`docs/auditorias/auditoria_matematica.md`, `auditoria_sistema.md`,
 `auditoria_normativa.md`), ya cruzados en
 `docs/auditorias/matriz_cruzada_auditorias.xlsx` (14 clusters por causa raíz, 8
@@ -164,7 +164,10 @@ marca ahí, en las columnas Estado / Responsable / Commit. El PLAN es
 1. Antes de tocar un archivo, busca su cluster en la hoja `Clusters` y abre la
    ficha de cada ID citado (MAT-, SIS-, NOR-) para leer su evidencia completa.
    Un cluster se corrige entero, en un solo cambio de diseño y un solo commit.
-   Nunca hallazgo por hallazgo.
+   Nunca hallazgo por hallazgo. Solo 224 de los 234 caen en alguno de los 14
+   clusters: los otros 10 llevan `—` en la columna Cluster (los nueve
+   `NOR-OK-*` y `NOR-AAS-07`, retirado) porque la auditoría los revisó y los
+   cerró como correctos, sin corrección que hacer. No son trabajo pendiente.
 2. Antes de aplicar cualquier corrección, consulta la hoja `Conflictos` (o la §6
    del plan). Ocho objetos del repositorio tienen una corrección "obvia" que es
    la EQUIVOCADA porque otra auditoría descubrió por qué. Si el objeto que vas a
