@@ -52,9 +52,11 @@ fila aplica a esta obra es [A] y vive en criterios_adoptados.py ('F_pga',
   exentos por no contener valores de proyecto: tolerancias.py (precisión
   numérica: cambiarla no mueve ninguna magnitud física), dominios.py (rango
   físico posible de un dato de entrada: no entra en ninguna fórmula) y
-  constantes_fisicas.py (constantes físicas universales -- hoy solo la
-  gravedad, G = 9.81 m/s² -- el mismo número en cualquier obra del planeta;
-  no responde a "qué exige la norma peruana" y por eso no es [N]). Regla
+  constantes_fisicas.py (constantes físicas universales -- hoy cinco nombres:
+  G = 9.81 m/s², RHO_AGUA, N_POR_KN, GAMMA_AGUA y GAMMA_AGUA_KN_M3 (esta
+  última derivada de las tres anteriores, no un literal independiente) --
+  el mismo valor en cualquier obra del planeta; no responde a "qué exige la
+  norma peruana" y por eso no es [N]). Regla
   para saber si un número va en uno de esos tres: si cambiarlo puede alterar un
   resultado del cálculo, no va ahí. datos_sitio.py está exento por la razón
   CONTRARIA: sus números sí son valores de proyecto, y de los más pesados —
