@@ -108,8 +108,8 @@ inexistente) no es del expediente y sale como FileNotFoundError, fuera de
 ErrorProyecto.
 
 ## Estilo
-- Python 3.11+. Dependencias: numpy, scipy (brentq), pandas, pytest,
-  ttkbootstrap, jinja2. Cualquier dependencia adicional se consulta antes.
+- Python 3.11+. Dependencias: numpy, scipy (brentq), pytest, ttkbootstrap,
+  weasyprint. Cualquier dependencia adicional se consulta antes.
 - No comparar floats con ==. Tolerancias explícitas y nombradas.
 - Identificadores en español (coherente con Tc.py), docstrings en español.
 - Cada función de cálculo lleva en su docstring el numeral que la sustenta.
