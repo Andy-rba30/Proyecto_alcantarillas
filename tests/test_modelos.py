@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 import constantes_normativas as CN
+import criterios_adoptados as ca
 from modelos import (ConstantesHDS5, ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DisenoNoFactibleError, ErrorProyecto,
                      Familia, Geometria, Material, PuntoCritico,
@@ -170,13 +171,15 @@ def _material_concreto() -> Material:
         nombre="Concreto reforzado",
         n_min=n_min,
         n_max=n_max,
-        D_max=CN.D_MAX["concreto_reforzado"],
+        D_max=ca.valor("D_max_catalogo")["concreto_reforzado"],
+        D_max_de_catalogo=ca.criterio("D_max_catalogo").de_catalogo,
         norma_producto="ASTM C76 / AASHTO M170",
         hds5=ConstantesHDS5.desde_dict(
             CN.HDS5_INLET["circular_concreto_square_edge_headwall"]
         ),
         v_max_rango=CN.V_MAX["concreto"],
-        h_relleno_min=CN.H_RELLENO_MIN["concreto"],
+        h_relleno_min_eg2013=CN.H_RELLENO_MIN["concreto"],
+        espesor_pared=ca.valor("espesor_pared_conducto")["concreto_reforzado"],
         seccion_eg2013=CN.SECCION_EG2013["concreto_reforzado"],
     )
 

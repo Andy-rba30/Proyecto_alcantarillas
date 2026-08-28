@@ -304,9 +304,10 @@ def test_el_expediente_no_cierra_mientras_haya_bloqueos():
 def _resultado_hdpe(punto):
     """
     Un `ResultadoPunto` aceptado, con material y hidraulica coherentes, para
-    probar la capa de reporte. HDPE porque su recubrimiento minimo es [N]
-    (EG-2013 508.07/508.08) y deja correr el tamizado de 7.A sin declarar
-    'h_relleno_min_concreto_tmc'.
+    probar la capa de reporte. HDPE por costumbre de este archivo, no por
+    necesidad: desde C01 los tres materiales corren el tamizado de 7.A con la
+    misma tabla (AASHTO LRFD 12.6.6.3) y ninguno depende ya de un criterio de
+    recubrimiento propio.
     """
     material = catalogo(TipoMaterial.HDPE)
     hidraulica = ResultadoHidraulico(
@@ -381,8 +382,16 @@ def test_el_json_es_serializable_y_lleva_las_tres_listas_de_criterios(
     datos = json.loads(crudo)
     assert datos["expediente"]["puntos"] == 4
     assert datos["expediente"]["cerrado"] is False
-    assert set(datos["criterios"]) == {"usados", "sin_valor_declarados",
-                                       "bloquearon"}
+    # Seis listas desde la correccion de C08: a las tres originales se
+    # sumaron `declarados_en_caliente` (SIS-A-01: un valor que gobierna el
+    # calculo y no esta en el archivo), `verificacion_pendiente` (SIS-D-07:
+    # el hermano de `trazabilidad_incompleta` de los datos de sitio) y
+    # `sin_consumidor` (SIS-B-15/B-19).
+    assert set(datos["criterios"]) == {
+        "usados", "sin_valor_declarados", "bloquearon",
+        "declarados_en_caliente", "verificacion_pendiente", "sin_consumidor"}
+    # Cada criterio usado dice de donde salio su valor, no solo cual es.
+    assert all("declarado_en_caliente" in c for c in datos["criterios"]["usados"])
     a01 = next(p for p in datos["puntos"] if p["id"] == "A-01")
     assert a01["diseno"]["control_gobernante"] == "entrada"
     assert a01["diseno"]["D_m"] == 0.60
@@ -619,16 +628,19 @@ def test_perfil_cerrado_devuelve_exit_cero(tmp_path, monkeypatch, capsys):
     """
     2.c: un expediente de perfil con todos sus puntos dimensionados y sin
     bloqueos REALES cierra y main devuelve 0; los diferidos por alcance no
-    cuentan. Se usa B-01 solo, que cierra en concreto a V = 1.96 m/s con
-    'h_relleno_min_concreto_tmc' declarado para que la Fase 7 no lo bloquee.
+    cuentan. Se usa B-01 solo, que cierra en concreto a V = 1.96 m/s.
 
     Esa velocidad es justamente la que la correccion de V3 legitimo: mientras
     V3 leia el par de la Tabla N 10 como piso y techo, 1.96 m/s se rechazaba
     por "bajo el minimo" y el concreto se descartaba en todo su catalogo. El
     piso real lo pone V2 (0.25 m/s) y esta velocidad lo cumple de sobra.
+
+    Ya no declara 'h_relleno_min_concreto_tmc': ese criterio se retiro en C01
+    y la Fase 7 no lo pide. Los dos criterios que hoy podrian bloquearla --
+    'espesor_pared_conducto' y 'condicion_pavimento' -- los declara conftest
+    para toda la corrida de pruebas.
     """
-    _declarar(monkeypatch, h_relleno_min_concreto_tmc=0.60,
-              **CRITERIOS_CORRIDA_PERFIL)
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
     lineas = CSV.read_text(encoding="utf-8").strip().splitlines()
     solo_b01 = tmp_path / "solo_b01.csv"
     solo_b01.write_text("\n".join([lineas[0]] + [
@@ -696,3 +708,73 @@ def test_la_memoria_de_expediente_conserva_el_volcado_de_tableros(tmp_path):
     assert "Pendientes &mdash; Tableros 1, 2 y 3" in html
     assert "0.1 Alcance de la corrida" in html
     assert "Ninguna etapa quedo diferida por alcance" in html
+
+
+# ---------------------------------------------------------------------------
+# --declarar: la via de declaracion en caliente desde la linea de comandos
+# ---------------------------------------------------------------------------
+# Es el mismo camino que usa la GUI (`establecer_valor_dinamico`), no un
+# segundo mecanismo: pasa por la guardia del archivo y la memoria imprime el
+# valor con su procedencia (SIS-A-01).
+
+def test_declarar_pasa_por_la_guardia_del_archivo():
+    try:
+        with pytest.raises(ValueError, match="fuera del rango"):
+            cli.declarar_criterios(["v_max_concreto_eleccion=99.0"])
+        assert "v_max_concreto_eleccion" not in ca.valores_dinamicos()
+
+        cli.declarar_criterios(["v_max_concreto_eleccion=4.0"])
+        assert ca.valores_dinamicos()["v_max_concreto_eleccion"] == pytest.approx(4.0)
+    finally:
+        ca.quitar_valor_dinamico("v_max_concreto_eleccion")
+
+
+def test_declarar_admite_texto_y_exige_la_forma_clave_igual_valor():
+    try:
+        cli.declarar_criterios(["origen_cota_fondo_entrada=cota_terreno"])
+        assert ca.valores_dinamicos()["origen_cota_fondo_entrada"] == "cota_terreno"
+
+        with pytest.raises(ValueError, match="CLAVE=VALOR"):
+            cli.declarar_criterios(["origen_cota_fondo_entrada"])
+        with pytest.raises(KeyError):
+            cli.declarar_criterios(["criterio_que_no_existe=1.0"])
+    finally:
+        ca.establecer_valor_dinamico("origen_cota_fondo_entrada", "cota_terreno")
+
+
+def test_la_memoria_declara_el_criterio_dado_en_caliente_con_su_procedencia(tmp_path):
+    """
+    El criterio de salida de esta correccion, extremo a extremo: se corre la
+    CLI declarando un criterio en caliente y el HTML tiene que traerlo con su
+    valor efectivo Y con la marca de que se declaro para la corrida.
+    """
+    destino = tmp_path / "memoria.html"
+    try:
+        cli.main([str(CSV), "--luz", "2.0", "--declarar", "TW_receptor=1.2",
+                  "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+        html = destino.read_text(encoding="utf-8")
+
+        assert "TW_receptor" in html
+        ficha = html.split("<code>TW_receptor</code>")[1].split("</dl>")[0]
+        assert "1.2" in ficha
+        assert "sin valor declarado" not in ficha
+        assert "DECLARADO PARA ESTA CORRIDA" in ficha
+        assert "Criterios declarados solo para esta corrida" in html
+    finally:
+        ca.quitar_valor_dinamico("TW_receptor")
+
+
+def test_el_json_lleva_el_valor_efectivo_y_la_procedencia(tmp_path):
+    salida = tmp_path / "i.json"
+    try:
+        cli.main([str(CSV), "--luz", "2.0", "--declarar", "TW_receptor=1.2",
+                  "--json", str(salida)])
+        datos = json.loads(salida.read_text(encoding="utf-8"))
+        usados = {c["clave"]: c for c in datos["criterios"]["usados"]}
+
+        assert usados["TW_receptor"]["valor"] == pytest.approx(1.2)
+        assert usados["TW_receptor"]["declarado_en_caliente"] is True
+        assert "TW_receptor" in datos["criterios"]["declarados_en_caliente"]
+        assert datos["criterios"]["verificacion_pendiente"]
+    finally:
+        ca.quitar_valor_dinamico("TW_receptor")

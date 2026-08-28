@@ -72,19 +72,24 @@ def test_clases_producto_por_relleno_esta_declarado_vacio():
 # Item 3 - Piezas de V7
 # ===========================================================================
 
-def test_empuje_flotacion_es_siempre_calculable():
-    """U no depende de ningun criterio pendiente ni del NF medido del punto."""
-    U = empuje_flotacion_kn_m(D=0.90)
-    assert U == pytest.approx(GAMMA_AGUA_KN_M3 * (math.pi / 4) * 0.90 ** 2)
+def test_empuje_flotacion_no_depende_del_NF_medido_del_punto():
+    """
+    U no depende del NF: la hipotesis es sumersion completa. SI depende del
+    espesor de pared, porque se calcula sobre el volumen DESPLAZADO -- el
+    diametro exterior, num. 2.4.3.8.2 (MAT-D3).
+    """
+    U = empuje_flotacion_kn_m(D_exterior=1.10)
+    assert U == pytest.approx(GAMMA_AGUA_KN_M3 * (math.pi / 4) * 1.10 ** 2)
 
 
 def test_empuje_flotacion_crece_con_el_diametro():
-    assert empuje_flotacion_kn_m(D=1.20) > empuje_flotacion_kn_m(D=0.90)
+    assert (empuje_flotacion_kn_m(D_exterior=1.20)
+            > empuje_flotacion_kn_m(D_exterior=0.90))
 
 
 def test_peso_relleno_lanza_pendiente():
     with pytest.raises(CriterioPendienteError) as excinfo:
-        peso_relleno_kn_m(D=0.90, altura_relleno=1.0)
+        peso_relleno_kn_m(D_exterior=0.90, altura_relleno=1.0)
     assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
 
@@ -94,8 +99,8 @@ def test_peso_relleno_calcula_con_el_criterio_declarado(monkeypatch):
         ca.CRITERIOS, "peso_especifico_relleno_kn_m3",
         original.__class__(**{**original.__dict__, "valor": 18.0}),
     )
-    W = peso_relleno_kn_m(D=0.90, altura_relleno=1.05)
-    assert W == pytest.approx(18.0 * 0.90 * 1.05)
+    W = peso_relleno_kn_m(D_exterior=1.10, altura_relleno=1.05)
+    assert W == pytest.approx(18.0 * 1.10 * 1.05)
 
 
 def _declarar(monkeypatch, clave, valor):

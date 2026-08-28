@@ -197,13 +197,14 @@ def test_la_tabla_del_factor_de_muro_trae_sus_dos_filas():
 
 
 # ---------------------------------------------------------------------------
-# Topes de diametro y coherencia interna del anexo
+# Progresion de diametros y coherencia interna del anexo
 # ---------------------------------------------------------------------------
-
-def test_el_hdpe_es_el_material_con_el_tope_mas_restrictivo():
-    assert CN.D_MAX["hdpe"] == min(CN.D_MAX.values())
-    assert CN.D_MAX["hdpe"] < CN.D_MAX["tmc"] < CN.D_MAX["concreto_reforzado"]
-
+# Los tres tests que miraban `CN.D_MAX` viven ahora en
+# tests/test_criterios_adoptados.py: los topes salieron de este archivo porque
+# no son [N] -- las normas de producto a las que se les atribuian tabulan
+# hasta 3600 mm (NOR-PRO-01, NOR-PRO-02, MAT-O8) -- y pasaron al criterio
+# 'D_max_catalogo'. Los tests se mudaron con ellos, sin cambiar lo que
+# comprueban.
 
 def test_la_progresion_de_diametros_arranca_en_el_minimo_normativo():
     assert CN.D_INICIO == pytest.approx(CN.DIAMETRO_MIN)
@@ -221,17 +222,6 @@ def test_arrancar_en_0_90_en_vez_de_36_pulgadas_es_conservador():
     assert CN.D_INICIO < D_36_pulgadas
     subestimacion = 1 - CN.D_INICIO ** 2 / D_36_pulgadas ** 2
     assert 0.02 < subestimacion < 0.04
-
-
-def test_todos_los_topes_de_diametro_son_alcanzables_desde_la_progresion():
-    for material, tope in CN.D_MAX.items():
-        assert tope >= CN.D_INICIO, f"el tope de {material} es menor que el minimo"
-
-
-def test_ningun_diametro_de_alcantarilla_alcanza_la_luz_de_puente():
-    """Sec. 2.1: con luz >= 6.0 m la obra sale del alcance del script."""
-    assert max(CN.D_MAX.values()) < CN.LUZ_MAX_ALCANTARILLA
-    assert CN.DIAMETRO_MIN < CN.LUZ_MAX_ALCANTARILLA
 
 
 def test_el_resguardo_por_CBR_cubre_todo_el_rango_sin_huecos():

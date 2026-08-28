@@ -662,3 +662,137 @@ def test_lo_que_cierra_la_clase_de_sitio_es_el_estudio_de_respuesta_de_sitio():
     pendiente = f"{c.reemplazado_por} {c.verificacion_pendiente}"
     assert "30 m" in c.reemplazado_por
     assert "respuesta de sitio" in pendiente
+
+
+# ---------------------------------------------------------------------------
+# Valor EFECTIVO y procedencia (SIS-A-01, el bloqueante de las tres auditorias)
+# ---------------------------------------------------------------------------
+# El defecto era de REPORTE y no de calculo: el calculo si usaba el valor
+# declarado en caliente. Estos tests fijan la mitad que faltaba -- que el
+# archivo pueda decir, ademas de que valor gobierna, DE DONDE vino.
+
+def test_criterio_efectivo_devuelve_el_valor_que_gobierna_el_calculo(_limpia_overrides):
+    """`criterio()` da el valor del archivo; `criterio_efectivo()`, el que corre."""
+    clave = "phi_relleno_trasdos"
+    assert criterio(clave).valor is None
+
+    ca.establecer_valor_dinamico(clave, 32.0)
+
+    assert criterio(clave).valor is None, "el archivo no se toca"
+    assert ca.criterio_efectivo(clave).valor == pytest.approx(32.0)
+    assert valor(clave) == pytest.approx(32.0), (
+        "el calculo y el reporte tienen que leer el MISMO valor: si divergen "
+        "vuelve el hallazgo bloqueante")
+    # El resto del Criterio viaja intacto: solo cambia el valor.
+    assert ca.criterio_efectivo(clave).justificacion == criterio(clave).justificacion
+
+
+def test_la_procedencia_distingue_el_declarado_en_caliente_del_transcrito(_limpia_overrides):
+    """Un override no es un valor transcrito de una norma, y se dice."""
+    assert not ca.declarado_en_caliente("F_pga")
+    assert "F_pga" not in ca.criterios_declarados_en_caliente()
+
+    ca.establecer_valor_dinamico("phi_relleno_trasdos", 32.0)
+
+    assert ca.declarado_en_caliente("phi_relleno_trasdos")
+    assert "phi_relleno_trasdos" in ca.criterios_declarados_en_caliente()
+    # Ni vacio ni valor de archivo: la tercera categoria, que antes no existia
+    # y hacia que el criterio se cayera de los dos bloques de la memoria.
+    assert "phi_relleno_trasdos" not in criterios_sin_valor()
+
+
+def test_el_reporte_de_texto_marca_lo_declarado_para_la_corrida(_limpia_overrides):
+    ca.establecer_valor_dinamico("phi_relleno_trasdos", 32.0)
+    valor("phi_relleno_trasdos")
+
+    texto = reporte_criterios(solo_usados=True)
+
+    assert "32.0" in texto
+    assert "declarado para esta corrida, no en archivo" in texto
+    assert "DECLARADOS SOLO PARA ESTA CORRIDA" in texto
+
+
+def test_los_criterios_sin_consumidor_declaran_por_que_nadie_los_invoca():
+    """
+    Un criterio CON valor y sin invocacion no cae en ningun bloque de la
+    memoria y desaparecia del HTML (SIS-B-15). La razon se escribe UNA vez,
+    en el propio criterio, y no repartida entre la auditoria y el manifiesto.
+    """
+    sin_consumidor = ca.criterios_sin_consumidor()
+    assert "demanda_sismica_licuefaccion" in sin_consumidor
+    for clave in sin_consumidor:
+        assert criterio(clave).sin_consumidor.strip(), clave
+
+
+def test_hay_homologo_de_datos_con_verificacion_pendiente():
+    """
+    `datos_sitio` exponia la consulta y `criterios_adoptados` no, de modo que
+    el JSON del expediente declaraba que datos de sitio quedaban sin cerrar
+    documentalmente y no que criterios (SIS-D-07).
+    """
+    abiertos = ca.criterios_con_verificacion_pendiente()
+    assert abiertos
+    for clave in abiertos:
+        assert criterio(clave).verificacion_pendiente
+        assert ca.criterio_efectivo(clave).valor is not None, (
+            f"'{clave}' no tiene valor: un vacio se declara en el bloque de "
+            "vacios, no como verificacion documental abierta")
+    # Hermanos de verdad: misma pregunta, mismo tipo de respuesta ordenada.
+    assert abiertos == sorted(abiertos)
+    assert ds.datos_con_verificacion_pendiente() == sorted(
+        ds.datos_con_verificacion_pendiente())
+
+
+def test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor():
+    """
+    La memoria imprime "ningun modulo de produccion los llama" leyendo el
+    campo `sin_consumidor`. Sin esta guardia esa frase seria una afirmacion no
+    verificada -- exactamente el patron que SIS-A-03 denuncio en ocho
+    docstrings: texto que describia un estado que el codigo ya no tenia.
+
+    Se mira produccion, no tests: `src/modulos/`, `cli.py` y `gui/app.py`.
+    """
+    raiz = Path(__file__).resolve().parents[1]
+    fuentes = list((raiz / "src" / "modulos").glob("*.py"))
+    fuentes += [raiz / "cli.py", raiz / "gui" / "app.py"]
+    textos = {ruta: ruta.read_text(encoding="utf-8-sig") for ruta in fuentes}
+
+    for clave in ca.criterios_sin_consumidor():
+        invocaciones = [ruta.name for ruta, texto in textos.items()
+                        if clave in texto]
+        assert not invocaciones, (
+            f"'{clave}' declara `sin_consumidor` y aparece en {invocaciones}. "
+            "O lo invoca alguien -- y entonces la memoria esta mintiendo -- o "
+            "la mencion hay que quitarla")
+
+
+# ---------------------------------------------------------------------------
+# Topes de diametro: de catalogo, no de norma (C01)
+# ---------------------------------------------------------------------------
+# Los tres tests de este bloque vivian en tests/test_constantes_normativas.py,
+# mirando `CN.D_MAX`. Comprueban lo mismo; lo que cambio es donde vive el dato
+# y, sobre todo, QUE es: las normas de producto a las que se le atribuia el
+# tope tabulan hasta 3600 mm (NOR-PRO-01, NOR-PRO-02, MAT-O8), de modo que
+# 2.70 / 2.10 / 1.50 son topes de catalogo adoptados por el proyecto.
+
+CLAVE_TOPES = "D_max_catalogo"
+
+
+def test_el_hdpe_es_el_material_con_el_tope_mas_restrictivo():
+    topes = valor(CLAVE_TOPES)
+    assert topes["hdpe"] == min(topes.values())
+    assert topes["hdpe"] < topes["tmc"] < topes["concreto_reforzado"]
+
+
+def test_todos_los_topes_de_diametro_son_alcanzables_desde_la_progresion():
+    inicio = valor("diametros_normalizados")["inicio"]
+    for material, tope in valor(CLAVE_TOPES).items():
+        assert tope >= inicio, f"el tope de {material} es menor que el minimo"
+
+
+def test_ningun_diametro_de_alcantarilla_alcanza_la_luz_de_puente():
+    """Sec. 2.1: con luz >= 6.0 m la obra sale del alcance del script."""
+    import constantes_normativas as CN
+    assert max(valor(CLAVE_TOPES).values()) < CN.LUZ_MAX_ALCANTARILLA
+    assert CN.DIAMETRO_MIN < CN.LUZ_MAX_ALCANTARILLA
+

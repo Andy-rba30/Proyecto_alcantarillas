@@ -37,10 +37,26 @@ from modulos.M7_geometria import (CRITERIO_TALUD, altura_recubrimiento,
                                   g2_cota_salida, longitud_conducto,
                                   proyeccion_taludes, tamizado_rasante)
 
-# El HDPE es el unico material cuyo h_rec es [N] (0.30 m, EG-2013
-# 508.07/508.08): con concreto o TMC, 7.A se detiene en el vacio
-# 'h_relleno_min_concreto_tmc' y no hay tamizado que probar.
-H_REC_HDPE = H_RELLENO_MIN["hdpe"]
+# El HDPE es el unico material con minimo de relleno en EG-2013 (0.30 m,
+# Subseccion 508.07, pag. 984). Ya NO es el h_rec del tamizado: desde C01,
+# h_rec es el MAYOR entre ese minimo y la cobertura minima de la Tabla
+# 12.6.6.3-1 de AASHTO LRFD, y en HDPE bajo pavimento la tabla pide ID/2 >=
+# 24 in -- 0.75 m para D = 1.50 m --, muy por encima de los 0.30.
+#
+# Los tres materiales corren ahora el tamizado: no queda ninguno bloqueado por
+# un vacio de recubrimiento. Los que bloquean 7.A son otros dos, y la corrida
+# de pruebas los declara en conftest.py: 'espesor_pared_conducto' y
+# 'condicion_pavimento' (esta ultima, "flexible").
+H_REC_EG2013_HDPE = H_RELLENO_MIN["hdpe"]
+
+# Valores de la corrida de pruebas, recalculados a mano para el HDPE de los
+# tests (D = 1.50 m interior, t = 0.05 m, condicion "flexible"):
+#
+#   cobertura AASHTO = max(ID/2, 24 in) = max(0.75, 0.6096) = 0.75 m
+#   h_rec            = max(0.30 de EG-2013, 0.75) = 0.75 m
+#   cota clave       = cota_terreno + D + t = 42.10 + 1.50 + 0.05 = 43.65
+H_REC_HDPE = 0.75
+COTA_CLAVE_HDPE = 43.65
 
 
 def _punto(**cambios) -> PuntoCritico:
@@ -103,40 +119,55 @@ def test_espesor_paquete_invertido_es_dato_invalido():
     assert exc.value.campo == "cota_subrasante"
 
 
-def test_cota_clave_es_la_entrada_mas_el_diametro():
+def test_cota_clave_llega_a_la_superficie_exterior_del_tubo(hdpe):
+    """
+    MAT-D4: la clave es la FISICA -- la generatriz exterior superior --, que
+    es desde donde EG-2013 508.07 mide el relleno. 42.10 + 1.50 + 0.05 =
+    43.65, no 43.60.
+
+    El espesor entra UNA vez, no dos: la cota de entrada es el invert
+    INTERIOR, de modo que la generatriz exterior superior queda a D_int + t
+    sobre ella. Sumar D_ext (42.10 + 1.60 = 43.70) seria contar el espesor
+    del fondo, que esta por DEBAJO del invert.
+    """
     punto = _punto(cota_terreno=42.10)
-    assert cota_clave(punto=punto, D=1.50) == pytest.approx(43.60)
+    assert (cota_clave(punto=punto, material=hdpe, D=1.50)
+            == pytest.approx(COTA_CLAVE_HDPE))
 
 
-def test_h_recubrimiento_del_hdpe_es_el_valor_N_de_eg2013(hdpe):
-    assert altura_recubrimiento(hdpe) == pytest.approx(H_REC_HDPE)
-
-
-def test_h_recubrimiento_de_concreto_es_el_0_30_adoptado_por_analogia(concreto):
+def test_h_recubrimiento_del_hdpe_lo_gobierna_la_tabla_de_aashto(hdpe):
     """
-    EG-2013 no fija h_rec para concreto ni TMC -- vacio VERIFICADO, Sec. 14.a
-    del manifiesto. Se adopta el 0.30 m que 508.07 si fija para HDPE, por
-    analogia [N->] y a nivel de perfil: el HDPE es el material con menor
-    tolerancia a cobertura reducida, de modo que exigir su recubrimiento al
-    concreto y al TMC no queda del lado inseguro.
-
-    Antes esto lanzaba CriterioPendienteError y dejaba al HDPE como unico
-    material capaz de completar diseno, que no era un resultado de ingenieria
-    sino el efecto de un vacio documental.
+    NOR-VAC-01: el 0.30 m de EG-2013 no es el minimo aplicable. Bajo pavimento
+    la Tabla 12.6.6.3-1 pide ID/2 >= 24 in para el termoplastico, y con
+    D = 1.50 m eso son 0.75 m: 2.5 veces el valor que el proyecto usaba.
     """
-    assert altura_recubrimiento(concreto) == pytest.approx(0.30)
-    assert altura_recubrimiento(concreto) == pytest.approx(H_REC_HDPE)
+    assert altura_recubrimiento(material=hdpe, D=1.50) == pytest.approx(0.75)
+    assert altura_recubrimiento(material=hdpe, D=1.50) > H_REC_EG2013_HDPE
 
 
-def test_el_recubrimiento_adoptado_declara_su_procedencia_en_la_verificacion(concreto, hdpe):
+def test_h_recubrimiento_de_concreto_sale_de_la_tabla_y_no_de_una_analogia(concreto):
     """
-    Los dos materiales usan el mismo numero pero NO por la misma razon, y la
-    memoria tiene que poder distinguirlo: en HDPE es [N] leido de 508.07, en
-    concreto es la analogia [N->]. `criterio_recubrimiento` es lo que lleva
-    esa diferencia a la Verificacion de 7.B.
+    EG-2013 no fija h_rec para concreto ni TMC, y el vacio se cubria por
+    analogia con el 0.30 m del HDPE. No era un vacio: la Tabla 12.6.6.3-1 lo
+    tabula, y su piso -- 12.0 in = 0.3048 m -- ya deja el 0.30 m adoptado 5 mm
+    corto (NOR-VAC-01).
+
+    Con D = 1.50 m y t = 0.10 m: Bc = 1.70 m, Bc/8 = 0.2125 m y sqrt(Bc)/8 en
+    pies son 0.0900 m, de modo que gobierna el piso de 0.3048 m.
     """
-    assert criterio_recubrimiento(hdpe) is None                 # [N] puro
-    assert criterio_recubrimiento(concreto) == "h_relleno_min_concreto_tmc"
+    h_rec = altura_recubrimiento(material=concreto, D=1.50)
+    assert h_rec == pytest.approx(0.3048)
+    assert h_rec > 0.30
+
+
+def test_el_recubrimiento_declara_su_procedencia_en_la_verificacion(concreto, hdpe):
+    """
+    La tabla de AASHTO entra en los TRES materiales, de modo que en los tres
+    hay un criterio [C] que declarar. Antes el HDPE devolvia None -- su 0.30 m
+    se leia como [N] puro -- y los otros dos citaban la analogia retirada.
+    """
+    assert criterio_recubrimiento(hdpe) == "cobertura_minima_aashto"
+    assert criterio_recubrimiento(concreto) == "cobertura_minima_aashto"
 
 
 # ---------------------------------------------------------------------------
@@ -145,19 +176,20 @@ def test_el_recubrimiento_adoptado_declara_su_procedencia_en_la_verificacion(con
 
 def test_tamizado_toma_el_maximo_y_reporta_las_dos_condiciones(hdpe):
     """
-    cota clave      = 42.10 + 1.50 = 43.60
+    cota clave      = 42.10 + 1.50 + 0.05 = 43.65   (clave FISICA, MAT-D4)
+    h_rec           = max(0.30 EG-2013, 0.75 AASHTO) = 0.75
     e_paq           = 44.20 - 44.05 = 0.15
     resguardo(8.5)  = 0.80 (tramo 6-20 %)
 
-    por recubrimiento: 43.60 + 0.30 + 0.15 = 44.05
+    por recubrimiento: 43.65 + 0.75 + 0.15 = 44.55
     por resguardo    : 42.10 + 0.50 + 0.80 + 0.15 = 43.55
     """
     punto = _punto()
     t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
 
-    assert t.cota_por_recubrimiento == pytest.approx(44.05)
+    assert t.cota_por_recubrimiento == pytest.approx(44.55)
     assert t.cota_por_resguardo == pytest.approx(43.55)
-    assert t.cota_rasante_min == pytest.approx(44.05)
+    assert t.cota_rasante_min == pytest.approx(44.55)
     assert t.condicion_gobernante is CondicionRasante.RECUBRIMIENTO
     assert t.resguardo == pytest.approx(0.80)
     assert t.espesor_paquete == pytest.approx(0.15)
@@ -165,37 +197,49 @@ def test_tamizado_toma_el_maximo_y_reporta_las_dos_condiciones(hdpe):
 
 def test_un_HW_alto_hace_gobernar_el_resguardo(hdpe):
     """
-    Con HW = 1.20: por resguardo = 42.10 + 1.20 + 0.80 + 0.15 = 44.25, que
-    supera los 44.05 del recubrimiento. Cambia la condicion gobernante y con
+    Con HW = 1.70: por resguardo = 42.10 + 1.70 + 0.80 + 0.15 = 44.75, que
+    supera los 44.55 del recubrimiento. Cambia la condicion gobernante y con
     ella la variable que hay que mover.
+
+    El HW de este test subio de 1.20 a 1.70 por la correccion de C01: con la
+    clave fisica y la cobertura de AASHTO, la condicion de recubrimiento es
+    0.50 m mas alta y 1.20 ya no la supera.
     """
     punto = _punto()
-    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=1.20)
+    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=1.70)
 
     assert t.condicion_gobernante is CondicionRasante.RESGUARDO
-    assert t.cota_rasante_min == pytest.approx(44.25)
+    assert t.cota_rasante_min == pytest.approx(44.75)
     assert t.criterio_gobernante == "resguardo_HW_subrasante"
 
 
 def test_en_empate_gobierna_el_recubrimiento(hdpe):
     """
-    HW elegido para que las dos condiciones den 44.05 exactos:
-    42.10 + HW + 0.80 + 0.15 = 44.05 -> HW = 1.00. Se declara gobernante el
+    HW elegido para que las dos condiciones den 44.55 exactos:
+    42.10 + HW + 0.80 + 0.15 = 44.55 -> HW = 1.50. Se declara gobernante el
     recubrimiento, que es el que no depende del calculo hidraulico.
     """
     punto = _punto()
-    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=1.00)
+    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=1.50)
 
     assert t.cota_por_recubrimiento == pytest.approx(t.cota_por_resguardo)
     assert t.condicion_gobernante is CondicionRasante.RECUBRIMIENTO
 
 
-def test_el_criterio_del_recubrimiento_es_None_en_hdpe_y_la_clave_en_concreto(hdpe):
-    """El 0.30 m del HDPE es [N] puro: no hay criterio adoptado que citar."""
+def test_el_tamizado_declara_de_donde_sale_cada_umbral(hdpe):
+    """
+    El recubrimiento del HDPE ya no es [N] puro: lo gobierna la Tabla
+    12.6.6.3-1, que es [C]. El tamizado tiene que citarla, tambien cuando la
+    condicion que manda es esa.
+    """
     t = tamizado_rasante(punto=_punto(), material=hdpe, D_supuesto=1.50, HW=0.50)
-    assert t.criterio_recubrimiento is None
-    assert t.criterio_gobernante is None          # gobierna el recubrimiento
+    assert t.criterio_recubrimiento == "cobertura_minima_aashto"
+    assert t.criterio_gobernante == "cobertura_minima_aashto"
     assert t.criterio_resguardo == "resguardo_HW_subrasante"
+    # La geometria fisica viaja con el resultado, para que la memoria pueda
+    # mostrar sobre que diametro se calculo la cobertura.
+    assert t.espesor_pared == pytest.approx(0.05)
+    assert t.D_exterior == pytest.approx(1.60)
 
 
 # ---------------------------------------------------------------------------
@@ -203,7 +247,7 @@ def test_el_criterio_del_recubrimiento_es_None_en_hdpe_y_la_clave_en_concreto(hd
 # ---------------------------------------------------------------------------
 
 def test_rasante_suficiente_da_delta_cero_y_factible(hdpe):
-    punto = _punto(cota_rasante=44.50, cota_subrasante=44.35)
+    punto = _punto(cota_rasante=45.00, cota_subrasante=44.85)
     t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
 
     assert t.factible
@@ -218,9 +262,9 @@ def test_rasante_insuficiente_devuelve_el_delta_en_cm_sin_lanzar(hdpe):
     Sec. 7.B: "el chequeo devuelve 'no factible -> subir rasante X cm', nunca
     un resultado silencioso". Devuelve: no lanza.
 
-    Con la rasante en 43.85 y minima 44.05 -> faltan 0.20 m = 20 cm.
+    Con la rasante en 44.35 y minima 44.55 -> faltan 0.20 m = 20 cm.
     """
-    punto = _punto(cota_rasante=43.85, cota_subrasante=43.70)
+    punto = _punto(cota_rasante=44.35, cota_subrasante=44.20)
     t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
 
     assert not t.factible
@@ -232,7 +276,7 @@ def test_rasante_insuficiente_devuelve_el_delta_en_cm_sin_lanzar(hdpe):
 
 def test_la_excepcion_del_no_factible_es_de_la_taxonomia_y_lleva_el_delta(hdpe):
     """Nunca una excepcion generica: DisenoNoFactibleError con delta_rasante_m."""
-    punto = _punto(cota_rasante=43.85, cota_subrasante=43.70)
+    punto = _punto(cota_rasante=44.35, cota_subrasante=44.20)
     t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
 
     with pytest.raises(DisenoNoFactibleError) as exc:
@@ -244,14 +288,14 @@ def test_la_excepcion_del_no_factible_es_de_la_taxonomia_y_lleva_el_delta(hdpe):
 
 
 def test_g1_reproduce_el_veredicto_del_tamizado(hdpe):
-    punto = _punto(cota_rasante=43.85, cota_subrasante=43.70)
+    punto = _punto(cota_rasante=44.35, cota_subrasante=44.20)
     t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
     v = g1_rasante_congelada(t)
 
     assert v.codigo == "G1"
     assert not v.cumple
-    assert v.valor_obtenido == pytest.approx(43.85)
-    assert v.valor_admisible == pytest.approx(44.05)
+    assert v.valor_obtenido == pytest.approx(44.35)
+    assert v.valor_admisible == pytest.approx(44.55)
 
 
 # ---------------------------------------------------------------------------
@@ -269,7 +313,7 @@ def test_la_rasante_minima_de_7A_hace_cumplir_V4_al_limite(hdpe):
     Se pone la rasante EXACTAMENTE en la minima que devuelve el tamizado (con
     el HW gobernando) y se comprueba que V4 cumple, al limite y sin holgura.
     """
-    HW = 1.20                                   # gobierna el resguardo
+    HW = 1.70                                   # gobierna el resguardo
     e_paq = 0.15
     base = _punto()
     t = tamizado_rasante(punto=base, material=hdpe, D_supuesto=1.50, HW=HW)
@@ -286,7 +330,7 @@ def test_la_rasante_minima_de_7A_hace_cumplir_V4_al_limite(hdpe):
 
 def test_un_centimetro_menos_de_rasante_rompe_V4(hdpe):
     """La otra mitad del mismo hecho: bajo la minima de 7.A, V4 no cumple."""
-    HW = 1.20
+    HW = 1.70
     e_paq = 0.15
     t = tamizado_rasante(punto=_punto(), material=hdpe, D_supuesto=1.50, HW=HW)
 
@@ -404,7 +448,7 @@ def test_7B_se_detiene_en_el_talud_si_no_se_le_pasa_la_longitud(hdpe):
 
 
 def test_7B_con_longitud_dada_arma_la_geometria_y_las_dos_verificaciones(hdpe):
-    punto = _punto(cota_rasante=44.50, cota_subrasante=44.35)
+    punto = _punto(cota_rasante=45.00, cota_subrasante=44.85)
     geo = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
                                     resultado=_resultado(), longitud=20.0)
 
@@ -423,7 +467,7 @@ def test_7B_no_factible_por_rasante_devuelve_el_delta_y_lo_lleva_a_la_excepcion(
     rasante congelada. Devuelve resultado con el delta; la excepcion, si se
     pide, es DisenoNoFactibleError con ese delta -- nunca generica.
     """
-    punto = _punto(cota_rasante=43.85, cota_subrasante=43.70)
+    punto = _punto(cota_rasante=44.35, cota_subrasante=44.20)
     geo = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
                                     resultado=_resultado(), longitud=20.0)
 
@@ -441,7 +485,7 @@ def test_7B_no_factible_por_cota_de_salida_no_lleva_delta_de_rasante(hdpe):
     corrige con la pendiente, la longitud o la cota del receptor. La
     excepcion sale sin delta, y eso es informacion, no una omision.
     """
-    punto = _punto(cota_rasante=44.50, cota_subrasante=44.35,
+    punto = _punto(cota_rasante=45.00, cota_subrasante=44.85,
                    cota_fondo_receptor=42.05)
     geo = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
                                     resultado=_resultado(), longitud=20.0)

@@ -74,7 +74,7 @@ El Manual de Puentes establece que las combinaciones se rigen por **AASHTO LRFD 
 | Control de entrada / salida | El Manual MTC no lo desarrolla. HDS-5 3ª ed. (2012) aplicado **por encima** del mínimo normativo `[C]`. **Aporte metodológico** |
 | Relación HW/D | No existe en el Manual MTC. `[C]` 1.2–1.5. El control real del embalse es V5 |
 | Velocidad máxima en TMC y HDPE | Tabla Nº 10 no los cubre. Fuentes identificadas (PPI, FHWA); **valores numéricos aún por extraer** |
-| n de Manning para HDPE | Tabla Nº 09 no lo lista. **Rango 0.010–0.013 adoptado por analogía al concreto** `[A]` |
+| n de Manning para HDPE | Tabla Nº 09 no lo lista. **Rango 0.010–0.013 aplicado por analogía al concreto** `[N→]` (corregido desde `[A]`: lo exige la **regla de coherencia** de §0.1 — un valor justificado invocando una fila de una tabla normativa no puede ser `[A]` —, y es el mismo caso que `resguardo_HW_subrasante` y `h_relleno_min_concreto_tmc`. Ref. SIS-D-11) |
 | Flotación de conductos | El Manual de Puentes define subpresión (2.4.3.8.2, pág. 113) pero no incorpora AASHTO LRFD Sec. 12. Definición `[N]`; la verificación se plantea como **equilibrio de factores de carga LRFD** (§Fase 5, V7), con los γ de las Tablas 3.4.1-1/-2 vía `factores_carga_aashto` `[A]`. **Ya no un FS global:** un FS es lenguaje de tensión admisible y §0.2 adopta LRFD de extremo a extremo |
 | Clase de sitio F | **Cerrado en contra de lo que decía la v7.** AASHTO no concede dispensa alguna: exige estudio de respuesta de sitio específico. Usar factores tabulados es adopción `[A]` del proyectista — §0.5 |
 
@@ -373,7 +373,7 @@ Resolver con **bisección o Brent sobre θ ∈ (0, 2π)**.
 | Metal corrugado (dren de lluvias) | 0.021 | 0.030 | [N] |
 | Concreto, tubo recto | 0.010 | 0.013 | [N] |
 | Madera (duelas) | 0.010 | 0.014 | [N] |
-| **HDPE (interior liso)** | **0.010** | **0.013** | **[A]** por analogía al concreto |
+| **HDPE (interior liso)** | **0.010** | **0.013** | **[N→]** por analogía al concreto (ver §0.3 y la regla de coherencia de §0.1) |
 
 **Regla [N]:** **n máximo** para capacidad y tirante (conservador del lado de la inundación); **n mínimo** para velocidad máxima y socavación (conservador del lado de la erosión).
 
@@ -720,7 +720,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | M_w para licuefacción | [A] | **Sin valor.** Tablero 2.2 |
 | Constantes HDS-5 para HDPE | [C] | Carta *Circular Concrete, square edge*. Condicionado a HDPE de interior liso |
 | k_e (coeficiente de pérdida de entrada, §4.3) | [C] | HDS-5, embocadura square edge with headwall. **Cerrado en implementación** — sin numeral peruano |
-| n de Manning para HDPE | [A] | **Rango (0.010, 0.013)** por analogía. No valor puntual |
+| n de Manning para HDPE | [N→] | **Rango (0.010, 0.013)** por analogía. No valor puntual. El código lo **lee de** `constantes_normativas.MANNING["concreto_recto"]`, no lo copia: una analogía que duplica el literal de su origen deja de serlo en cuanto uno de los dos cambie |
 | Velocidad máxima en HDPE y TMC | [C] | **Sin valor.** Fuente identificada (PPI/FHWA), valores por extraer |
 | Progresión de diámetros | [C] | 0.90 m + 0.15 m, topes por norma de producto |
 | HW/D máximo (1.5) | [C] | Sensibilidad (1.2, 1.5) |
@@ -732,6 +732,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | Capacidad portante admisible | [A] | **Sin valor.** EMS conforme a E.050 |
 | Espesor de protección de salida (1.75 · d₅₀) | [A] | Sensibilidad (1.5, 2.0) |
 | Ángulo de aletas | [A] | Según esviaje de cada punto |
+| Origen de la cota de fondo de entrada (`origen_cota_fondo_entrada`) | [A] | **Sin valor.** HW es una carga *sobre el fondo de la entrada* (§4.2/4.3) y esa cota **no es columna de §1.2**: el CSV trae `cota_terreno`, `cota_rasante`, `cota_subrasante` y `cota_fondo_receptor` —la de la salida—, no la del invert de entrada. §7.B pide las cotas «amarradas al perfil del cauce y a la cota de fondo del receptor» sin fijar la regla. Gobierna **V4, V7 y las dos condiciones del tamizado 7.A**, o sea la rasante. Regla implementada: `"cota_terreno"` (adoptar el terreno natural del cruce). Lo cierra la **cota de invert medida por punto**, como columna propia del CSV. Ref. SIS-A-04 |
 | Homogeneidad de la serie hidrológica (FEN) | [A] | Tablero 3.2 |
 
 ---

@@ -83,6 +83,13 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import criterios_adoptados as ca
 import datos_sitio as ds
+# La clave del criterio que fija la cota de fondo de entrada se importa de su
+# modulo, no se reescribe aqui: si se renombrara, una copia literal en el
+# reporte apuntaria a un criterio inexistente sin que nada avisara. Es el
+# mismo reparto por el que M7 importa CRITERIO_RESGUARDO de M5.
+from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
+                                       verificaciones_no_evaluadas)
+from modulos.M8_estructural import verificacion_diferida_estructural
 
 try:
     from weasyprint import HTML as WeasyHTML
@@ -158,6 +165,12 @@ CAMPOS_CSV: Tuple[Tuple[str, str, str], ...] = (
     ("Q_receptor_m3s", "Caudal del receptor", "m3/s"),
     ("cota_TW", "Cota de TW", "msnm"),
     ("sucs_fundacion", "SUCS de la fundacion", ""),
+    # No viene del encabezado de Sec. 1.2 -- se agrego al reclasificar el NF
+    # como dato por punto -- y por eso faltaba en esta tabla. Se carga, se
+    # valida y viaja en `PuntoCritico`: si no se imprime, la memoria no
+    # muestra un dato del expediente que el CSV si trae, y el revisor no
+    # puede ver si venia vacio (SIS-B-12).
+    ("NF_profundidad_m", "Profundidad del nivel freatico", "m"),
 )
 
 # Datos que no son columna del CSV y llegan declarados (ver `DatoDeclarado` de
@@ -359,8 +372,15 @@ def version_criterios() -> str:
     """
     total = len(ca.CRITERIOS)
     sin_valor = len(ca.criterios_sin_valor())
+    en_caliente = len(ca.criterios_declarados_en_caliente())
+    # El conteo describe el estado de ESTA corrida, no solo el del archivo, y
+    # por eso los declarados en caliente van dichos aparte: sin ellos el
+    # encabezado presentaba como archivo lo que era archivo + declaraciones,
+    # y el SHA-1 de al lado -- que si es solo del archivo -- no cuadraba.
+    aparte = (f", mas {en_caliente} declarado(s) solo para esta corrida (NO "
+              "en el archivo ni en su SHA-1)" if en_caliente else "")
     return (f"{total} criterios declarados, {sin_valor} todavia sin valor "
-            f"(huella por SHA-1 del archivo)")
+            f"(huella por SHA-1 del archivo){aparte}")
 
 
 def fecha_archivo(ruta: Path) -> str:
@@ -705,8 +725,10 @@ def _tabla_diseno(informe: Any) -> str:
                _td(f"n para capacidad y tirante = {_num(material.n_max)}; "
                    f"n para velocidad y socavacion = {_num(material.n_min)}")]),
         _fila([_td("<b>Diametro adoptado</b>"),
-               _td(f"D = {_num(resultado.D, FMT_2)} m (tope de la norma de "
-                   f"producto: {_num(material.D_max, FMT_2)} m)")]),
+               _td(f"D = {_num(resultado.D, FMT_2)} m interior "
+                   f"(tope de CATALOGO adoptado: "
+                   f"{_num(material.D_max, FMT_2)} m &mdash; "
+                   f"{_esc(material.D_max_de_catalogo)})")]),
         _fila([_td("<b>Hidraulica</b>"),
                _td(f"Q = {_num(hidraulica.Q)} m3/s &middot; y<sub>n</sub> = "
                    f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
@@ -766,8 +788,14 @@ def _tabla_verificaciones(informe: Any) -> str:
                             _td(_num(v.valor_obtenido), "num"),
                             _td(_num(v.valor_admisible), "num"),
                             _td(umbral), _td(_marca(v.cumple))], clase))
+    # La tabla de Fase 5 de la hoja de ruta trae ONCE filas y este software
+    # evalua nueve: V2b y V4b no. Se dice aqui, pegado a la tabla de
+    # verificaciones, y no en una nota lejana: es donde el revisor cuenta.
+    diferidas = "".join(
+        f'<div class="nota"><p>{_esc(t)}</p></div>'
+        for t in verificaciones_no_evaluadas())
     return "<h4>Verificaciones</h4>" \
-           '<table class="compacta">' + "".join(filas) + "</table>"
+           '<table class="compacta">' + "".join(filas) + "</table>" + diferidas
 
 
 def _bloques_fases_finales(informe: Any) -> str:
@@ -794,11 +822,18 @@ def _bloques_fases_finales(informe: Any) -> str:
                   else '<span class="incumple">no compatible</span>')
         delta = ("" if g.delta_rasante_cm is None else
                  f" Requiere subir la rasante {_num(g.delta_rasante_cm, FMT_2)} cm.")
+        # La cota de entrada NO es un dato del CSV: sale de la regla que el
+        # proyectista declaro en 'origen_cota_fondo_entrada' (SIS-A-04). Se
+        # imprime marcada, con la clave del criterio delante, porque un
+        # numero en msnm sin marca se lee como cota levantada en campo.
         partes.append(
             "<h4>Fase 7 &mdash; Compatibilidad geometrica</h4>"
             f"<p>L = {_num(g.longitud, FMT_2)} m, esviaje afectando con factor "
             f"{_num(g.factor_esviaje)}; cota de entrada {_num(g.cota_entrada)} "
-            f"msnm y de salida {_num(g.cota_salida)} msnm (caida "
+            "msnm (<b>adoptada</b>, criterio "
+            f"<code>{_esc(CRITERIO_ORIGEN_COTA_ENTRADA)}</code>: no es cota "
+            "medida) y de salida "
+            f"{_num(g.cota_salida)} msnm (caida "
             f"{_num(g.caida)} m), num. {_esc(g.numeral)}. Tamizado 7.A: "
             f"{estado}, gobierna la condicion "
             f"<b>{_esc(t.condicion_gobernante.value)}</b> "
@@ -807,11 +842,18 @@ def _bloques_fases_finales(informe: Any) -> str:
 
     if informe.cama_apoyo is not None:
         c = informe.cama_apoyo
+        # El item 5 de Fase 8 (rigidez de anillo, pandeo, costura) esta
+        # diferido al expediente por decision expresa de la hoja de ruta.
+        # M8 declara ese texto "para que M11 lo imprima siempre junto al
+        # resto de Fase 8", y hasta ahora solo lo imprimia el JSON.
+        diferidas = "".join(
+            f'<div class="nota"><p>{_esc(t)}</p></div>'
+            for t in verificacion_diferida_estructural())
         partes.append(
             "<h4>Fase 8 &mdash; Cama de apoyo y relleno lateral</h4>"
             f"<p>Cama de apoyo: {_esc(c.cama_apoyo)}. Sujecion y relleno "
             f"lateral: {_esc(c.sujecion_relleno_lateral)} "
-            f"(num. {_esc(c.numeral)}).</p>")
+            f"(num. {_esc(c.numeral)}).</p>" + diferidas)
 
     if informe.espaciamiento is not None:
         e = informe.espaciamiento
@@ -900,7 +942,7 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
             _td(f"{_esc(material.nombre)}<br>{_esc(material.norma_producto)}"),
             _td(_num(resultado.D, FMT_2), "num"),
             _td(_num(h.V, FMT_2), "num"),
-            _td(_num(h.y_normal / resultado.D, FMT_2), "num"),
+            _td(_num(resultado.y_sobre_D, FMT_2), "num"),
             _td(_num(h.HW, FMT_2), "num"),
             _td(_esc(h.control_gobernante.value)),
         ])
@@ -950,7 +992,7 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
         fila.extend([
             material.tipo.value, material.nombre, material.norma_producto,
             _num(resultado.D, FMT_2), _num(h.V, FMT_2),
-            _num(h.y_normal / resultado.D, FMT_2), _num(h.HW, FMT_2),
+            _num(resultado.y_sobre_D, FMT_2), _num(h.HW, FMT_2),
             h.control_gobernante.value,
         ])
     else:
@@ -1021,13 +1063,52 @@ def bloque_datos_sitio(solo_usados: bool = True) -> str:
     return "".join(partes)
 
 
+def _procedencia(clave: str) -> str:
+    """
+    De donde salio el valor que gobierna el calculo: el archivo, o una
+    declaracion hecha para esta corrida.
+
+    Se imprime en TODOS los criterios y no solo en los declarados en caliente.
+    Una marca que aparece solo a veces se lee como una nota al pie; la misma
+    fila en todas las fichas convierte la procedencia en parte del contrato de
+    la memoria, que es lo que es: el SHA-1 del encabezado identifica el
+    ARCHIVO, y un valor que no esta en el archivo no queda identificado por el
+    SHA-1 de nadie.
+    """
+    if not ca.declarado_en_caliente(clave):
+        return ("<dt>Procedencia</dt><dd>transcrita en "
+                "<code>criterios_adoptados.py</code>, la version que el "
+                "encabezado identifica por SHA-1</dd>")
+    del_archivo = ca.criterio(clave).valor
+    dice_el_archivo = (
+        "el archivo lo declara <b>sin valor</b>" if del_archivo is None else
+        f"el archivo declara {_valor_legible(del_archivo)}")
+    return ('<dt class="pendiente">Procedencia</dt>'
+            f'<dd class="pendiente"><b>DECLARADO PARA ESTA CORRIDA</b> '
+            f"&mdash; {dice_el_archivo}. El valor de arriba lo declaro quien "
+            "corrio el calculo (GUI o CLI) y NO esta en "
+            "<code>criterios_adoptados.py</code>: no es un valor transcrito "
+            "de una norma y reproducir esta memoria exige repetir la "
+            "declaracion.</dd>")
+
+
 def bloque_criterios(solo_usados: bool = True) -> str:
     """
     El contenido de `criterios_adoptados.reporte_criterios` como HTML: cada
-    criterio invocado con su etiqueta, su justificacion y su fuente.
+    criterio invocado con su valor EFECTIVO, su procedencia, su etiqueta, su
+    justificacion y su fuente.
 
     Lee los mismos objetos `Criterio` que la version en texto, en el mismo
     orden de etiqueta, para que las dos digan exactamente lo mismo.
+
+    Valor EFECTIVO significa `ca.criterio_efectivo`, no `ca.criterio`: el
+    valor que el calculo uso de verdad. Leyendo el del archivo, un criterio
+    declarado en caliente -- el camino normal de la GUI, "aplicar solo a esta
+    corrida" -- se imprimia como "sin valor declarado" en la misma pagina
+    cuyos numeros gobernaba, y el bloque de vacios tampoco lo listaba
+    (`criterios_sin_valor` lo excluye, con razon: ya no es un vacio). El
+    criterio desaparecia de la memoria por partida doble. Era el unico
+    hallazgo BLOQUEANTE de las tres auditorias (SIS-A-01).
     """
     claves = sorted(ca.criterios_usados() if solo_usados else ca.CRITERIOS,
                     key=lambda k: (_orden_etiqueta(ca.criterio(k).etiqueta), k))
@@ -1037,13 +1118,16 @@ def bloque_criterios(solo_usados: bool = True) -> str:
 
     partes: List[str] = []
     for clave in claves:
-        c = ca.criterio(clave)
+        c = ca.criterio_efectivo(clave)
         campos = [
             f"<dt>Concepto</dt><dd>{_esc(c.concepto)}</dd>",
             f"<dt>Valor</dt><dd>{_valor_legible(c.valor)}"
+            + ('<b class="pendiente"> [declarado para esta corrida, no en '
+               "archivo]</b>" if ca.declarado_en_caliente(clave) else "")
             + ('<b class="pendiente"> [PROVISIONAL: valor de prueba, '
                "NO verificado]</b>" if c.provisional else "")
             + "</dd>",
+            _procedencia(clave),
             f"<dt>Justificacion</dt><dd>{_esc(c.justificacion)}</dd>",
             f"<dt>Fuente</dt><dd>{_esc(c.fuente)}</dd>",
         ]
@@ -1065,6 +1149,18 @@ def bloque_criterios(solo_usados: bool = True) -> str:
             f'<p class="clave">{_etiqueta_html(c.etiqueta)} '
             f"<code>{_esc(clave)}</code></p><dl>" + "".join(campos)
             + "</dl></div>")
+
+    en_caliente = [k for k in claves if ca.declarado_en_caliente(k)]
+    if en_caliente:
+        lista = ", ".join(f"<code>{_esc(k)}</code>" for k in en_caliente)
+        partes.append(
+            '<div class="bloqueo"><p><b>DECLARADOS PARA ESTA CORRIDA.</b> '
+            f"Los criterios {lista} recibieron su valor al lanzar el calculo "
+            "y <b>no estan en <code>criterios_adoptados.py</code></b>. Valen "
+            "para esta memoria y para ninguna otra: el encabezado identifica "
+            "el archivo por SHA-1 y estos valores no viajan en el. Para que "
+            "el expediente los sostenga hay que escribirlos en el archivo, "
+            "con su justificacion y su fuente, y volver a correr.</p></div>")
 
     con_pendiente = [k for k in claves if ca.criterio(k).verificacion_pendiente]
     if con_pendiente:
@@ -1120,11 +1216,49 @@ def bloque_pendientes(tableros: Sequence[Tablero],
                         "<th>Concepto</th>", "<th>Que lo resuelve</th>"])]
         for clave in sin_valor:
             c = ca.criterio(clave)
+            # `reemplazado_por` es el ensayo o dato que CIERRA el vacio. Sin
+            # el, esta columna caia en `fuente`, que en un criterio vacio es
+            # el ENUNCIADO del vacio ("Practica corriente; no fijado por el
+            # Manual"): la memoria decia que lo que resuelve el hueco es la
+            # descripcion del hueco. Ahora se dice que falta declararlo.
             filas.append(_fila([
                 _td(f"<code>{_esc(clave)}</code>"),
                 _td(_etiqueta_html(c.etiqueta)),
                 _td(_esc(c.concepto)),
-                _td(_esc(c.reemplazado_por or c.fuente))]))
+                _td(_esc(c.reemplazado_por) if c.reemplazado_por else
+                    '<span class="pendiente">sin declarar que lo resuelve '
+                    "&mdash; el criterio no dice que ensayo o dato lo "
+                    "cerraria</span>")]))
+        partes.append('<table class="ancha">' + "".join(filas) + "</table>")
+
+    partes.append("<h3>Criterios declarados solo para esta corrida</h3>")
+    en_caliente = ca.criterios_declarados_en_caliente()
+    if not en_caliente:
+        partes.append("<p>Ninguno: todo valor que entro en el calculo esta "
+                      "transcrito en <code>criterios_adoptados.py</code>.</p>")
+    else:
+        # Ni vacios ni valores del archivo: la tercera categoria que faltaba.
+        # `criterios_sin_valor()` los excluye -- correctamente, porque el
+        # calculo tuvo valor con que correr -- y por eso, antes de esta
+        # tabla, se caian de la memoria entre las dos sillas.
+        partes.append(
+            "<p>Estos criterios recibieron valor <b>al lanzar esta corrida</b> "
+            "y no estan en <code>criterios_adoptados.py</code>. El calculo los "
+            "uso; el archivo que el encabezado identifica por SHA-1, no los "
+            "tiene. Mientras sigan asi, la memoria <b>no</b> los sostiene: "
+            "para el expediente hay que escribirlos en el archivo con su "
+            "justificacion y su fuente.</p>")
+        filas = [_fila(["<th>Criterio</th>", "<th>Etiqueta</th>",
+                        "<th>Concepto</th>", "<th>Valor declarado</th>",
+                        "<th>Que dice el archivo</th>"])]
+        for clave in en_caliente:
+            c = ca.criterio(clave)
+            filas.append(_fila([
+                _td(f"<code>{_esc(clave)}</code>"),
+                _td(_etiqueta_html(c.etiqueta)),
+                _td(_esc(c.concepto)),
+                _td(_valor_legible(ca.criterio_efectivo(clave).valor)),
+                _td(_valor_legible(c.valor))]))
         partes.append('<table class="ancha">' + "".join(filas) + "</table>")
 
     opcionales = ca.criterios_opcionales_sin_declarar()
@@ -1151,6 +1285,32 @@ def bloque_pendientes(tableros: Sequence[Tablero],
                 _td(_esc(c.concepto)),
                 _td(_esc(str(c.sensibilidad))),
                 _td(_esc(c.fuente))]))
+        partes.append('<table class="ancha">' + "".join(filas) + "</table>")
+
+    sin_consumidor = ca.criterios_sin_consumidor()
+    if sin_consumidor:
+        # Un criterio CON valor y sin invocacion no cae en ninguno de los
+        # otros bloques (no esta usado, no esta vacio, no es opcional) y
+        # desaparecia de la memoria sin dejar rastro. La razon de que nadie lo
+        # invoque se escribe UNA vez, en el campo `sin_consumidor` del propio
+        # criterio, y se imprime aqui.
+        partes.append("<h3>Criterios declarados que ninguna etapa invoca</h3>")
+        partes.append(
+            "<p>Estan declarados y <b>ningun modulo de produccion los llama</b>. "
+            "No es un olvido de cableado: cada uno dice por que, y el motivo "
+            "es siempre el mismo tipo de cosa &mdash; su consumidor esta "
+            "declarado fuera del alcance de esta corrida. Se imprimen para "
+            "que el revisor no tenga que deducir de su ausencia si faltan o "
+            "sobran.</p>")
+        filas = [_fila(["<th>Criterio</th>", "<th>Etiqueta</th>",
+                        "<th>Valor</th>", "<th>Por que nadie lo invoca</th>"])]
+        for clave in sin_consumidor:
+            c = ca.criterio_efectivo(clave)
+            filas.append(_fila([
+                _td(f"<code>{_esc(clave)}</code>"),
+                _td(_etiqueta_html(c.etiqueta)),
+                _td(_valor_legible(c.valor)),
+                _td(_esc(c.sin_consumidor))]))
         partes.append('<table class="ancha">' + "".join(filas) + "</table>")
 
     partes.append("<h3>Criterios sin valor que bloquearon una etapa de esta "
@@ -1186,9 +1346,13 @@ def acotaciones_declaradas() -> list:
     Se leen del propio catalogo, no de la plantilla: cualquier adopcion futura
     del mismo caracter entra aqui sola con solo declarar `vacio_verificado`.
     """
+    # Valor EFECTIVO: una adopcion sobre un vacio verificado que se declaro
+    # en caliente cubre el vacio igual que si estuviera en el archivo, y tiene
+    # que aparecer en este bloque -- con su marca de procedencia, que la pone
+    # `bloque_acotaciones`. Leyendo `c.valor` se caia del bloque.
     return sorted(
         (k for k, c in ca.CRITERIOS.items()
-         if c.vacio_verificado and c.valor is not None),
+         if c.vacio_verificado and ca.criterio_efectivo(k).valor is not None),
         key=lambda k: (ca.CRITERIOS[k].etiqueta, k))
 
 
@@ -1196,12 +1360,18 @@ def bloque_acotaciones(alcance: str = "expediente") -> str:
     """
     Bloque 6: lo que el proyectista adopto donde la norma no dice nada.
 
-    Existe porque la tabla de criterios no basta para estas entradas. Ahi
-    'h_relleno_min_concreto_tmc = 0.30 m [N->] EG-2013 508.07' se lee como una
-    cita normativa corriente, y oculta lo unico que un revisor necesita saber:
-    que el 508.07 habla de HDPE y no del material al que se le aplica. Un
-    valor adoptado sobre un vacio se defiende con el razonamiento entero o no
-    se defiende.
+    Existe porque la tabla de criterios no basta para estas entradas. Un
+    'D_max_catalogo = 2.10 m [A] ASTM A760' se leeria como una cita normativa
+    corriente y ocultaria lo unico que el revisor necesita saber: que A760
+    tabula hasta 3600 mm y que el tope lo pone el proyecto. Un valor adoptado
+    sobre un vacio -- o sobre una disponibilidad -- se defiende con el
+    razonamiento entero o no se defiende.
+
+    El ejemplo que este docstring usaba, 'h_relleno_min_concreto_tmc = 0.30 m
+    [N->] EG-2013 508.07', ya no existe: el criterio se retiro al cerrarse
+    NOR-VAC-01. Servia para lo mismo -- el 508.07 habla de HDPE y no del
+    material al que se le aplicaba -- y acabo demostrandolo por la via dura:
+    aquel valor no solo se leia mal, ademas era corto.
 
     Por eso imprime las cinco piezas por separado -- que dice la norma, que NO
     dice, que se adopto, por que es conservador, que queda pendiente -- en vez
@@ -1238,10 +1408,13 @@ def bloque_acotaciones(alcance: str = "expediente") -> str:
             "verificacion de expediente que cada una declara.</p></div>")
 
     for clave in claves:
-        c = ca.criterio(clave)
+        c = ca.criterio_efectivo(clave)
+        marca = (' <b class="pendiente">[declarado para esta corrida, no en '
+                 "archivo]</b>" if ca.declarado_en_caliente(clave) else "")
         partes.append(
             f'<h3><code>{_esc(clave)}</code> = '
-            f"{_esc(_valor_legible(c.valor))} &mdash; {_etiqueta_html(c.etiqueta)}</h3>")
+            f"{_valor_legible(c.valor)}{marca} &mdash; "
+            f"{_etiqueta_html(c.etiqueta)}</h3>")
         partes.append(f"<p><b>Que es:</b> {_esc(c.concepto)}</p>")
         partes.append(
             f'<dl class="acotacion">'
