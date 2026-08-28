@@ -581,9 +581,10 @@ def test_el_resultado_dice_cual_goberno_y_conserva_los_dos_HW(concreto):
 
 def test_resolver_control_conserva_el_reparto_de_rugosidades(concreto):
     """
-    y_normal y la friccion del control de salida con n_max; V con n_min (asi
-    la deja M3); el tirante critico sin n. La regla de doble n de Sec. 4.1 no
-    se pierde al pasar por M4.
+    y_normal y la friccion del control de salida con n_max; las DOS
+    velocidades tal como las deja M3 -- `V_erosion` con n_min (techos) y
+    `V_sedimentacion` con n_max (piso de V2) --; el tirante critico sin n. La
+    regla de doble n de Sec. 4.1 no se pierde al pasar por M4.
     """
     c = CP2_GEOMETRIA_MANNING
     Q = c["Q_con_n_max_esperado"]
@@ -591,8 +592,10 @@ def test_resolver_control_conserva_el_reparto_de_rugosidades(concreto):
                                  material=concreto)
 
     assert resultado.y_normal == pytest.approx(c["y_sobre_D"] * c["D"], abs=1e-3)
-    assert resultado.V == pytest.approx(c["V_con_n_min_esperado"],
-                                        abs=c["tolerancia_hidraulica"])
+    assert resultado.V_erosion == pytest.approx(c["V_con_n_min_esperado"],
+                                                abs=c["tolerancia_hidraulica"])
+    assert resultado.V_sedimentacion == pytest.approx(
+        c["V_con_n_max_esperado"], abs=c["tolerancia_hidraulica"])
     assert resultado.y_critico == pytest.approx(tirante_critico(Q, c["D"]).y_c,
                                                 rel=1e-9)
     assert resultado.Q == pytest.approx(Q, rel=1e-12)

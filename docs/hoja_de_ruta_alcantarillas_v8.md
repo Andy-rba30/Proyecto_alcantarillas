@@ -72,10 +72,10 @@ El Manual de Puentes establece que las combinaciones se rigen por **AASHTO LRFD 
 | Vacío | Estado en v7 |
 |---|---|
 | Control de entrada / salida | El Manual MTC no lo desarrolla. HDS-5 3ª ed. (2012) aplicado **por encima** del mínimo normativo `[C]`. **Aporte metodológico** |
-| Relación HW/D | No existe en el Manual MTC. `[C]` 1.2–1.5. El control real del embalse es V5 |
+| Relación HW/D | No existe en el Manual MTC. **`[A]` 1.2–1.5** (corregido desde `[C]`: el rango 1.0–1.5 **no lo prescribe el HDS-5**, lo describe — ver V4b en Fase 5. Ref. `NOR-HDS-02`, `MAT-D2`). El control real del embalse es V5 |
 | Velocidad máxima en TMC y HDPE | Tabla Nº 10 no los cubre. Fuentes identificadas (PPI, FHWA); **valores numéricos aún por extraer** |
-| n de Manning para HDPE | Tabla Nº 09 no lo lista. **Rango 0.010–0.013 adoptado por analogía al concreto** `[A]` |
-| Flotación de conductos | El Manual de Puentes define subpresión (2.4.3.8.2, pág. 113) pero no incorpora AASHTO LRFD Sec. 12. Definición `[N]`; la verificación se plantea como **equilibrio de factores de carga LRFD** (§Fase 5, V7), con los γ de las Tablas 3.4.1-1/-2 vía `factores_carga_aashto` `[A]`. **Ya no un FS global:** un FS es lenguaje de tensión admisible y §0.2 adopta LRFD de extremo a extremo |
+| n de Manning para HDPE | Tabla Nº 09 no lo lista. **Rango 0.010–0.013 aplicado por analogía al concreto** `[N→]` (corregido desde `[A]`: lo exige la **regla de coherencia** de §0.1 — un valor justificado invocando una fila de una tabla normativa no puede ser `[A]` —, y es el mismo caso que `resguardo_HW_subrasante` y `h_relleno_min_concreto_tmc`. Ref. SIS-D-11) |
+| Flotación de conductos | El Manual de Puentes define subpresión (2.4.3.8.2, pág. 113) pero no incorpora AASHTO LRFD Sec. 12. Definición `[N]`; la verificación se plantea como **equilibrio de factores de carga LRFD** (§Fase 5, V7), con los γ de las **Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2 del propio Manual** (pág. impresa 143; son las 3.4.1-1/-2 de AASHTO, transcritas) `[N]`, y `factores_carga_aashto` `[A]` limitado a **qué fila** de γp describe a cada estructura. **Corrección de esta tabla** (`NOR-PUE-04`): decía «los γ … vía `factores_carga_aashto` `[A]`», y llamaba adoptado a lo que la norma peruana escribe. El Manual sí transcribe las dos tablas, en la misma página que este documento ya citaba. **Ya no un FS global:** un FS es lenguaje de tensión admisible y §0.2 adopta LRFD de extremo a extremo |
 | Clase de sitio F | **Cerrado en contra de lo que decía la v7.** AASHTO no concede dispensa alguna: exige estudio de respuesta de sitio específico. Usar factores tabulados es adopción `[A]` del proyectista — §0.5 |
 
 ### 0.4 Marco sísmico — CERRADO
@@ -84,7 +84,13 @@ El Manual de Puentes establece que las combinaciones se rigen por **AASHTO LRFD 
 
 Se descartan expresamente los mapas de S_s (T = 0.2 s) y S₁ (T = 1.0 s), que corresponden a aceleraciones espectrales y no a la aceleración pico del terreno.
 
-No se usa el Z = 0.45 de E.030 para las fuerzas sobre el muro; su periodo de retorno de referencia (475 años) difiere del adoptado.
+No se usa el Z = 0.45 de E.030 para las fuerzas sobre el muro, y el argumento **de ámbito va primero** — pero no es el que parece. El **Art. 4 «Ámbito de aplicación»** (pág. impresa 7) aplica la norma «a) al diseño de **edificaciones** nuevas. b) al reforzamiento de **edificaciones** existentes…», y un cabezal de alcantarilla no es una edificación: cierto, pero insuficiente. **E.030 no guarda silencio sobre lo que no es edificación.** Su **Art. 7.3** (pág. impresa 8) los nombra y se los **atrae**:
+
+> «Mientras no se cuente con normas nacionales específicas para estructuras tales como reservorios, tanques, silos, **puentes**, torres de transmisión, muelles, **estructuras hidráulicas**, túneles y todas aquellas cuyo comportamiento sísmico difiera del de las edificaciones se deben utilizar los valores *Z* y *S* del Capítulo II de la presente Norma Técnica amplificados de acuerdo a la importancia de la estructura, debiendo ser sustentado por el proyectista tomando en cuenta estándares internacionales.»
+
+Es decir: «no es una edificación» **no es lo que saca al cabezal de E.030 — es el disparador del artículo que lo mete**. Lo que lo saca es que la condición suspensiva **no se cumple**: el MTC *sí* cuenta con norma nacional específica, el Manual de Puentes, de modo que el mandato de usar *Z* y *S* nunca llega a activarse. Es un fundamento **positivo** y más fuerte que el silencio: la propia E.030 cede el paso ante la norma sectorial. El argumento por periodo de retorno es el tercero y el discutible (`NOR-E030-03`).
+
+El periodo de retorno de referencia de Z **no lo escribe el Art. 11.1**: escribe «una probabilidad de 10 % de ser excedida en 50 años». Los 475 años son una derivación —Tr = −50/ln 0,90 = 474,6— y la cifra sólo aparece literal en el **Anexo III** de E.030 (pág. impresa 67), sobre estudios de microzonificación (`NOR-E030-01`).
 
 > **Único resto pendiente:** registrar en la memoria las **coordenadas o la curva de isoaceleración** sobre la que se hizo la lectura. Las curvas varían dentro de un mismo departamento y el revisor puede querer reproducir la lectura. Es un dato de trazabilidad, no un cambio de valor.
 
@@ -373,7 +379,7 @@ Resolver con **bisección o Brent sobre θ ∈ (0, 2π)**.
 | Metal corrugado (dren de lluvias) | 0.021 | 0.030 | [N] |
 | Concreto, tubo recto | 0.010 | 0.013 | [N] |
 | Madera (duelas) | 0.010 | 0.014 | [N] |
-| **HDPE (interior liso)** | **0.010** | **0.013** | **[A]** por analogía al concreto |
+| **HDPE (interior liso)** | **0.010** | **0.013** | **[N→]** por analogía al concreto (ver §0.3 y la regla de coherencia de §0.1) |
 
 **Regla [N]:** **n máximo** para capacidad y tirante (conservador del lado de la inundación); **n mínimo** para velocidad máxima y socavación (conservador del lado de la erosión).
 
@@ -401,9 +407,17 @@ $$\frac{HW_i}{D} = \frac{H_c}{D} + K\,(q^*)^{M} + K_s\,S$$
 
 $$\frac{HW_i}{D} = c\,(q^*)^{2} + Y + K_s\,S$$
 
-**Transición (3.5 < q\* < 4.0):** interpolar linealmente.
+**Transición (3.5 < q\* < 4.0):** interpolar linealmente **entre el valor de la forma no sumergida en q\* = 3.5 y el de la sumergida en q\* = 4.0** (no entre las dos formas evaluadas en el q\* real: dentro de la ventana ninguna de las dos vale).
+
+> **La recta NO es el método del HDS-5, y esta línea la presentaba como si lo fuera** (`MAT-O10`). El HDS-5 empalma las dos ramas con una **curva tangente** ajustada sobre sus datos de laboratorio, **de la que no publica ecuación cerrada**. Quien prescribe la recta es esta hoja de ruta, no la fuente. Es una **simplificación adoptada** `[C]`, declarada en `criterios_adoptados` como `metodo_transicion_hds5` e invocada solo al entrar en la rama, de modo que la memoria la declara únicamente si algún punto del corredor cae de verdad en la transición. El error está acotado —la recta coincide con cada rama en su borde de validez— y acotado no es lo mismo que normativo.
 
 **K_s** = −0.5 para embocaduras no en inglete; **+0.7** para inglete. *(No figura en la Tabla A.1: proviene de la formulación de las ecuaciones. No omitirlo.)*
+
+> **El término K_s·S no tiene tope, y una carga negativa no existe** (`MAT-D10`). Con K_s = −0.5, una pendiente grande y un caudal chico llevan las dos formas a devolver **HW_i/D negativo** —una lámina de agua por debajo del fondo del conducto—. El umbral del signo, para la Forma 1, es `S > 2·(H_c/D + K·(q*)^M)`: con D = 0.90 m, Q = 0.05 m³/s y la carta de concreto vale `S > 0.3770624`, y hasta la corrección el diseño se **aceptaba entero** con HW = −0.010 m, o sea con V4 y el tamizado de 7.A evaluados 0.18 m del lado no conservador.
+>
+> `M4.control_entrada()` **rechaza** ese resultado con `DisenoNoFactibleError`. Es un rechazo, no un piso: adoptar una carga en su lugar —la lectura física sería HW ≈ H_c— exige un valor que **ni esta hoja ni el HDS-5 fijan**, y ponerlo aquí sería rellenar un vacío en silencio. Y no es `DatoInvalidoError`: una S de 0.40 m/m es del tipo correcto, cae dentro de `dominios.S_CAUCE_MAX` y no contradice a nadie —no hay dato que el revisor tenga que corregir—; lo que no cierra es el **método** sobre esa combinación de Q, D y S.
+>
+> **Cuánto cierra este rechazo, con números.** Cierra el signo y poco más. Con `S = 0.37706` el diseño se sigue aceptando con HW = +10⁻⁶ m, y V4 y 7.A quedan evaluados **0.1695 m** del lado no conservador —el 94 % del error—: de los 0.1798 m que el hallazgo denuncia, el rechazo retira 0.0103, el **5.7 %**. En el corredor de este expediente (S_cauce = 0.006–0.008) no se dispara nunca: en D = 0.90 hace falta `S > 0.27` y además Q = 0.025 m³/s. Acotar el rango de validez **entero** de la corrección exige una pendiente máxima que ni esta hoja ni el manual escriben, y ponerla sería inventarla: **queda abierto**.
 
 | Configuración | K | M | c | Y | K_s |
 |---|---|---|---|---|---|
@@ -433,11 +447,27 @@ con un segundo Brent sobre θ. **M4 requiere dos solvers, no uno.**
 
 $$HW = H + h_o - S\,L$$
 
-$$H = \left(1 + k_e + \frac{19.62\,n^{2}L}{R^{4/3}}\right)\frac{V^{2}}{2g} \qquad \text{(SI)}$$
+$$H = \left(1 + k_e + \frac{19.63\,n^{2}L}{R^{4/3}}\right)\frac{V^{2}}{2g} \qquad \text{(SI)}$$
 
 $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 
-> **Nota de unidades.** **19.62** es el valor SI. El **29** de la literatura FHWA es del sistema inglés. Usar 29 en métrico no falla ruidosamente: devuelve números plausibles y equivocados. **Test unitario obligatorio.**
+> **h_o tiene numeral, y tiene una condición de uso que esta hoja no recogía** (`NOR-HDS-05`). La fórmula está en **HDS-5 3.ª ed., num. 3.3.3 «Outlet Control», pág. impresa 3.24** (el manifiesto marcaba la fila «⚠ sin numeral»), y allí mismo viene acotada:
+>
+> «Approximate hydraulic gradeline ho = (dc + D)/2 **can only be used if the barrel flows full for most of its length. It should not be used if the inlet is not submerged.**» (viñeta de la lista «The manual method has the assumptions:») · «If outlet control governs and the headwater depth (referenced to the inlet invert) is **less than 1.2D**, it is possible that the barrel flows partly full though its entire length. In this case, **caution should be used** in applying the approximate method of setting the downstream elevation based on the greater of tailwater or (dc + D)/2. If the headwater depth falls below **0.75D**, the approximate method should not be used.» (párrafo de prosa que sigue a esa lista) — son **tres** condiciones, no dos.
+>
+> La forma con el **máximo** —que es la que implementa `M4.control_salida`— la 3.ª ed. no la numera: la escribe en prosa («the greater of tailwater or (dc + D)/2»). Impresa como igualdad está en la edición de 1985 que también vive en `normas/`: «ho = TW or (dc + D)/2 whichever is larger.»
+>
+> **De las tres condiciones, el proyecto EVALÚA dos y declara la tercera.** Las dos evaluables son los límites sobre HW/D, que son una comparación entre dos números que `control_salida()` ya tiene: cuando el control de salida **gobierna** un punto y su HW/D cae bajo 1.2 o bajo 0.75, la memoria **de ese punto** lo dice junto al HW (`ResultadoHidraulico.h_o_fuera_de_rango`), no como advertencia general. Un aviso que no señala el punto afectado es el «nadie se entera» que el hallazgo denuncia. Los dos números son `[N]`: los escribe la fuente (`H_O_HW_SOBRE_D_MIN`, `H_O_HW_SOBRE_D_CAUTELA`) — y el 0.75 **no es** el 0.75 del borde libre de V1: aquél es del Manual MTC sobre el *tirante*, éste del HDS-5 sobre la *carga a la entrada*.
+>
+> La tercera —que el barril fluya lleno en la mayor parte de su longitud— **no se evalúa**, y ahí sí: exige un perfil de la lámina de agua a lo largo del conducto que este script no calcula. El criterio `geometria_control_salida = "seccion_llena"` **presupone lo mismo** que habría que verificar, de modo que esa premisa entra dos veces por dos puertas y no se comprueba por ninguna. Queda declarada en su `verificacion_pendiente`. Lo que la cerraría es el **procedimiento de barril parcialmente lleno del Cap. III**.
+>
+> **Circularidad que conviene ver:** el HW con que se evalúan los dos límites lo produce la propia aproximación, de modo que un h_o sobreestimado puede hacer que el control de salida gobierne un punto donde no gobernaría. El aviso se emite igual; deshacerla exige el procedimiento completo.
+
+> **Nota de unidades.** **19.63** es el valor SI. El **29** de la literatura FHWA es del sistema inglés. Usar 29 en métrico no falla ruidosamente: devuelve números plausibles y equivocados. **Test unitario obligatorio.**
+>
+> **Corregido desde 19.62** (conflicto #6 del plan de correcciones; `MAT-D12`, `MAT-X5`, `MAT-O12`, `NOR-COH-01`, `SIS-A-20`). Esta hoja escribía 19.62 en sus **cuatro** menciones y el código sostenía 19.63 desde antes, declarando la discrepancia. Gana la fuente primaria, verificada contra el PDF: **HDS-5 3.ª ed. (2012), num. 3.1.4, ec. (3.4b), pág. impresa 3.10** — «KU = 29 in English Units (19.63 in SI)» —, repetido en la ec. (DG 3.1), pág. DG3.3. **Ojo con la otra copia de `normas/`:** `fhwa_culvert_hydraulics_hds5si.pdf` es la edición de **1985** y, pese al «si» del nombre, imprime sus ecs. (4b) y (5) con **29** y rótulos duales «ft (m)»; leerla literal «en SI» reproduce el error de +9.6 % que esta nota advierte.
+>
+> Y el parecido con **2·g no es una coincidencia**: `K = 2g/φ²`, con φ = 1.486 en el sistema inglés y φ = 1 en SI. De ahí `2·32.2/1.486² = 29.16` y `2·9.81456 = 19.629`. Lo único que separa 19.63 de 19.62 es **cuál g**: HDS-5 trabaja con 32.2 ft/s² = 9.81456 m/s² y el proyecto usa `constantes_fisicas.G = 9.81`. Se conserva el 19.63 **transcrito de la fuente**, no el 2·G derivado; la diferencia afecta al término de fricción en un +0.05 % — unas 190 veces menos que el 9.6 % del 29 imperial, que es el error que esta nota existe para advertir.
 
 > **k_e — vacío que pasó inadvertido hasta la implementación.** Ningún numeral del Manual MTC ni del Manual de Puentes fija el coeficiente de pérdida de entrada k_e. Para la embocadura *square edge with headwall* (adoptada en §9.1), se toma **k_e = 0.5** de las tablas de coeficiente de pérdida de entrada del HDS-5. Etiqueta **[C]**, declarado en `criterios_adoptados.py` como `ke_entrada`.
 
@@ -453,11 +483,11 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 | **V2** | Velocidad mínima | **V ≥ 0.25 m/s** | [N] 4.1.1.3.6, pág. 75 |
 | **V2b** | Sedimentación / colmatación | Material sólido de arrastre + **acceso de mantenimiento en planos** | [N] + [A] |
 | **V3** | Velocidad máxima | **Solo techo admisible.** Concreto **V ≤ 6.0 m/s**; ladrillo con concreto **V ≤ 3.5**; mampostería de piedra **V ≤ 2.0**. El par de la Tabla Nº 10 es un rango de valores MÁXIMOS según calidad del revestimiento, **no** un piso y un techo: el extremo inferior es el máximo admisible del acabado más pobre, y V3 no lo exige como mínimo. El piso universal de autolimpieza es **V2** (0.25 m/s). **TMC y HDPE: PPI/FHWA, valor por extraer** | [N] Tabla Nº 10, num. 4.1.1.3.6, pág. 76 / [C] |
-| **V4** | Carga a la entrada HW | **HW ≤ cota de subrasante − resguardo(CBR)** | **[N→]** ver 5.1 |
-| **V4b** | Relación HW/D | 1.2 – 1.5 | **[C]** |
+| **V4** | Carga a la entrada HW | **cota de entrada + HW ≤ cota de subrasante − resguardo(CBR)** — *corregido desde* «HW ≤ cota de subrasante − resguardo(CBR)», que comparaba una **carga** con una **cota** (`MAT-O5`); ver la nota de datum en 5.1 | **[N→]** ver 5.1 |
+| **V4b** | Relación HW/D | 1.2 – 1.5 | **[A]** — *corregido desde `[C]`.* El HDS-5 **no fija** HW/D: su num. 2.2.5 d) «Agency Constraints», pág. impresa **2.10** (la v8 citaba la 2.14, que trata de espolones de escombros y seguridad vial) **describe** lo que imponen las agencias viales de EE. UU. — «The allowable HW/D ratio varies throughout the country, but commonly ranges from 1.0 to 1.5» — y en el Perú la agencia es el MTC, que no fija ninguno. Elegir 1.5, que es el extremo **menos restrictivo**, es adopción del proyectista. **No implementada:** ver `M5.verificaciones_no_evaluadas()`. Ref. `NOR-HDS-02`, `MAT-D2`, `SIS-A-02` |
 | **V5** | Remanso aguas arriba | Embalse dentro del **derecho de vía**, sin afectación a terceros ni a faja marginal | [N] DG-2018 + Ley 29338 |
 | **V6** | Material sólido de arrastre | Con palizada: sección única mayor | [N] |
-| **V7** | Flotación del conducto | **γ_DC,min · DC + γ_EV,min · EV ≥ γ_WA · U.** Tubería vacía, NF en su cota más alta. Las cargas que estabilizan (peso propio DC y peso del relleno EV) se **minoran**; la subpresión, que desestabiliza (WA), se **mayora**. Con los mínimos de la Tabla 3.4.1-2 es la forma 0.90·(DC + EV) ≥ 1.00·U. **Corrige la redacción anterior**, ΣW ≥ FS · U, que era un factor de seguridad global de tensión admisible dentro de un marco LRFD (§0.2) | [N] subpresión 2.4.3.8.2 + [A] los γ (`factores_carga_aashto`, Tablas 3.4.1-1/-2) |
+| **V7** | Flotación del conducto | **γ_DC,min · DC + γ_EV,min · EV ≥ γ_WA · U.** Tubería vacía, NF en su cota más alta. Las cargas que estabilizan (peso propio DC y peso del relleno EV) se **minoran**; la subpresión, que desestabiliza (WA), se **mayora**. Con el mínimo de la fila que corresponde a un **conducto enterrado** en la Tabla 2.4.5.3.1-2 es la forma 0.90·(DC + EV) ≥ 1.00·U. **Corrección** (`MAT-D8`, `NOR-PUE-03`): esa tabla no tiene un γ_EV único, lo desglosa por **tipo de estructura** —«Estructura rígida enterrada» 1.30/0.90, «Alcantarillas termoplásticas» 1.30/0.90, flexibles «Entre otros» 1.95/0.90, y **«Muros y estribos de retención» 1.35/1.00**, que es la del cabezal de §Fase 9—. El 0.90 de V7 es el del conducto y no vale para el cabezal. **Corrige la redacción anterior**, ΣW ≥ FS · U, que era un factor de seguridad global de tensión admisible dentro de un marco LRFD (§0.2) | [N] subpresión 2.4.3.8.2 + [N] los γ (Manual de Puentes, Tablas 2.4.5.3.1-1/-2, pág. impresa 143) + [A] la fila de γp por estructura (`factores_carga_aashto`) |
 | **V8** | Evento extremo (FEN) | A TR mayor: la vía **no colapsa** aunque desborde | [N] verificación, no diseño |
 | **V9** | **Disponibilidad de diámetro** | D requerido ≤ tope de la norma de producto del material | **[C]** — nuevo en v7 |
 
@@ -472,7 +502,13 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 | 3 – 6 % | Insuficiente | **1.00 m** |
 | < 3 % | Inadecuada | **1.20 m** |
 
-> **ADVERTENCIA DE APLICACIÓN.** El numeral regula la separación frente a la **napa freática** (nivel permanente), **no** frente a un nivel transitorio de avenida. Aplicarlo al HW es una **extensión por analogía** y se declara como **[N→]**.
+> **NOTA DE DATUM — los dos términos de V4 son NIVELES** (`MAT-O5`, `MAT-O6`). Esta hoja escribía V4 como «HW ≤ cota de subrasante − resguardo» y la segunda condición de 7.A como «HW + resguardo + e_paq», poniendo a **HW** —que es una **carga en metros sobre el fondo de la entrada** (§4.2/§4.3)— del mismo lado de la desigualdad que una **cota en msnm**. Leído literal no es conservador ni no conservador: es **dimensionalmente incoherente**, y se cumple siempre (0.5 ≤ 43.25). El código nunca lo escribió así —`M5.v4_carga_entrada` y `M7.tamizado_rasante` suman la cota de entrada de `M5.cota_entrada_supuesta`—, de modo que **el defecto era solo documental y está corregido en esta hoja**: V4 y la segunda condición de 7.A llevan ahora el sumando `cota de entrada` explícito.
+>
+> La forma nivel-contra-nivel es además la del numeral, verificada contra el PDF (Manual de Suelos, **num. 4.5.4, pág. impresa 42**): *«El nivel superior de la sub rasante debe quedar encima del nivel de la napa freática como mínimo a 0.60 m cuando se trate de una sub rasante excelente - muy buena (CBR ≥ 20 %); a 0.80 m … buena - regular (6% ≤ CBR < 20%); a 1.00 m … Insuficiente (3% ≤ CBR < 6%); y, a 1.20 m … inadecuada (CBR < 3%). En caso necesario, se colocarán subdrenes o capas anticontaminantes y/o drenantes o se elevará la rasante hasta el nivel necesario.»* Los dos términos que el Manual compara —«el nivel superior de la sub rasante» y «el nivel de la napa freática»— son del mismo tipo. Lo que el Manual **no** escribe es una ecuación de cotas ni un datum: enuncia una separación relativa, y de ahí no se sigue una forma «cota_A ≤ cota_B − separación» más que por lectura del proyecto.
+>
+> **Qué cota de entrada.** No es columna de §1.2: sale de la regla declarada en `origen_cota_fondo_entrada` **[A]** (ver §0.7, «Gobierno de criterios adoptados»). Mientras esa regla no sea la cota de invert medida por punto, las dos desigualdades quedan amarradas a un supuesto, no a un levantamiento.
+
+> **ADVERTENCIA DE APLICACIÓN.** El numeral regula la separación frente a la **napa freática** (nivel permanente), **no** frente a un nivel transitorio de avenida. Aplicarlo al HW es una **extensión por analogía** y se declara como **[N→]**. Verificado contra el PDF: el Manual **no menciona HW ni carga hidráulica en ningún numeral** —«carga hidráulica» no aparece, y todas las ocurrencias de «HW» son parte de la sigla «FHWA»—, de modo que la analogía es del proyecto entera y no admite lectura [N].
 >
 > Redacción: *"Ante la ausencia de un criterio normativo peruano que relacione la carga hidráulica de entrada con el nivel de subrasante, se adopta por analogía el resguardo que el Manual de Suelos (num. 4.5.4) exige frente al nivel freático, por ser el único parámetro normativo nacional que protege la subrasante de la saturación."*
 
@@ -511,9 +547,13 @@ Con pendientes bajas los d₅₀ son pequeños (3–13 cm): lo probable es que g
 
 ### 7.A Tamizado previo — fija la rasante una sola vez
 
-$$\text{cota rasante} \ \ge\ \max\begin{cases} \text{cota clave} + h_{rec} + e_{paq} \\ HW + \text{resguardo}(CBR) + e_{paq} \end{cases}$$
+$$\text{cota rasante} \ \ge\ \max\begin{cases} \text{cota clave} + h_{rec} + e_{paq} \\ \text{cota entrada} + HW + \text{resguardo}(CBR) + e_{paq} \end{cases}$$
 
 Correr el tamizado con el diámetro máximo supuesto **antes** de definir el perfil longitudinal.
+
+> **El sumando `cota entrada` de la segunda condición es una corrección de esta hoja** (`MAT-O6`), no un cambio de criterio. La v8 escribía esa línea como «HW + resguardo + e_paq», mezclando la **carga** HW con las **cotas** de las otras dos —la misma incoherencia de V4, y por la misma razón: las dos condiciones son la misma desigualdad escrita al revés (ver la nota de datum de §5.1). Con el sumando explícito, la equivalencia con V4 es álgebra de una línea: `cota rasante ≥ cota entrada + HW + resguardo + e_paq` ⟺ `cota entrada + HW ≤ (cota rasante − e_paq) − resguardo` = `cota de subrasante − resguardo`, que es V4. El código ya la sumaba (`M7.tamizado_rasante`, término `entrada + HW + resguardo + e_paq`); lo que estaba mal era la hoja.
+>
+> La **primera** condición no necesitaba corrección: `cota clave`, `h_rec` y `e_paq` son una cota y dos espesores, y el resultado es una cota.
 
 **Altura mínima de relleno sobre la clave — EG-2013:**
 
@@ -531,6 +571,8 @@ Nota constructiva [N]: el equipo pesado no circula sobre el conducto antes de qu
 - **Pendiente de la alcantarilla:** la del cauce (V2 nunca la restringe). La restricción real es constructiva y de cota del receptor
 - **Cotas de entrada y salida** amarradas al perfil del cauce y a la cota de fondo del receptor
 - El chequeo devuelve *"no factible → subir rasante X cm"*, nunca un resultado silencioso
+
+> **7.B corre con LA MISMA pendiente que la Fase 4, no con una suya** (`MAT-D9`). «La del cauce» es la regla y sigue siéndolo: es el valor por defecto, `S_cauce` de §1.2. Pero no todos los puntos la usan —la Familia B se dimensiona con el caudal del drenaje longitudinal y la C con el del canal (§2.3), y esos cruces declaran su propia pendiente por la vía de datos externos (`S_conducto`)—, y hasta esta corrección 7.B **no se enteraba**: el HW, las velocidades y el tirante salían de la pendiente declarada, mientras la caída `S·L` y la cota de salida se recalculaban con la del cauce. Dos pendientes en el mismo punto, ninguna marcada como distinta de la otra en el informe. La pendiente viaja ahora dentro del resultado hidráulico (`ResultadoHidraulico.S`) y `M7.compatibilidad_geometrica` la lee de ahí: **ya no es argumento suyo**, de modo que no puede volver a elegirse dos veces.
 
 **Acoplamiento circular declarado:** rasante → paquete estructural → subrasante → CBR → resguardo → V4 → rasante. Se corta fijando la rasante en 7.A y congelándola.
 
@@ -579,7 +621,7 @@ EG-2013 Sección 503 (Concreto Estructural), num. 503.01, pág. 905, describe el
 
 ### 9.2 Cargas — AASHTO LRFD vía Manual de Puentes [N]
 
-**Combinaciones:** AASHTO LRFD Sec. 3.4.1 — Resistencia I, Servicio I, Evento Extremo I (num. 2.4.5.3, págs. 140-143).
+**Combinaciones:** AASHTO LRFD Sec. 3.4.1 — Resistencia I, Servicio I, Evento Extremo I (num. 2.4.5.3, págs. 140-143). Sus **factores** están transcritos en el propio Manual, Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pág. impresa 143: son `[N]`, no un vacío (`NOR-PUE-04`).
 
 **Carga viva:** **HL-93** (num. 2.4.3.2.2.1, págs. 103-104).
 
@@ -591,19 +633,40 @@ EG-2013 Sección 503 (Concreto Estructural), num. 503.01, pág. 905, describe el
 
 | Paso | Símbolo | Valor | Origen | Etiqueta |
 |---|---|---|---|---|
-| Aceleración pico en roca Clase B, Tr = 1000 años | PGA | **0.50 g** | Manual de Puentes, Apéndice A3, mapa "PGA, T = 0.0 seg" | [N] |
-| Factor de sitio | F_pga | **1.0** | Tabla 2.4.3.11.2.1.2-1 (valores [N]); **elección** ante ausencia de SPT | [A] |
+| Aceleración pico en roca Clase B, Tr = 1000 años | PGA | **0.50 g** | Manual de Puentes, Apéndice A3, mapa "PGA, T = 0.0 seg" | **[S]** (era [N]) |
+| Factor de sitio | F_pga | **1.0** | Tabla 2.4.3.11.2.1.2-1, pág. impresa 123 (valores [N]); **elección de las FILAS** ante ausencia de caracterización de sitio | [A] |
 | Aceleración ajustada por sitio | **A_s = F_pga · PGA** | **0.50 g** | Calculado | — |
-| Coeficiente sísmico de base | **k_h0 = A_s** | **0.50** | Manual de Puentes, 2.8.1.1.14.2 | [N] |
-| Factor de muro (rígido, empotrado) | — | **1.0** | Manual de Puentes, 2.8.1.1.14.2 | [N] |
+| Coeficiente sísmico de base | **k_h0 = A_s** | **0.50** | Manual de Puentes, **2.8.1.1.14.2.1** | [N] |
+| Factor de muro (sin reducción) | — | **1.0** | Manual de Puentes, **2.8.1.1.14.2.2** — el numeral fija **un** valor, 0.5, y de forma permisiva; el 1.0 es la ausencia de reducción | **[A]** (la declaración) |
 | **Coeficiente sísmico horizontal de diseño** | **k_h** | **0.50** | Calculado | — |
-| Coeficiente sísmico vertical | k_v | **0** | Adopción habitual en muros de baja altura | [A] |
+| Coeficiente sísmico vertical | k_v | **0** | Manual de Puentes, **2.8.1.1.14.2.1** — «kv **se asumirá cero**… a no ser que…» | **[N] condicionado** (era [A]) |
+| **Fuerza de inercia del muro** | **P_IR = k_h·(W_w + W_s)** | — | Manual de Puentes, **2.8.1.1.14.1**, ec. 2.8.1.1.14.1-1 | [N] |
 
-*Si el muro admitiera desplazamiento de 25–50 mm, k_h = 0.5 · k_h0 = 0.25. **No asumirlo en un cabezal empotrado en terraplén.***
+*Si el muro admitiera desplazamiento de **1.0 a 2.0 in o más** (25.4–50.8 mm; el «o más» abre el rango por arriba y no debe recortarse), k_h = 0.5 · k_h0 = 0.25. **No asumirlo en un cabezal empotrado en terraplén.** AASHTO condiciona además esa reducción a que el movimiento sea aceptable para el propietario, de modo que la decisión no es sólo técnica.*
 
 Para K_AE por **Mononobe-Okabe** se requieren además φ del relleno, pendiente del relleno (i), inclinación del muro (β) y fricción muro-suelo (δ).
 
 **Todos estos valores se leen desde `criterios_adoptados.py`.**
+
+#### Lo que esta sección omitía, y por qué la cadena no termina en k_h
+
+Las cinco correcciones de abajo se levantaron contra la fuente primaria (los PDF de `normas/`) y **el defecto es de esta hoja de ruta**, no del código. Se dejan escritas aquí para que quien lea la hoja sin leer el código no diseñe con la versión incompleta.
+
+1. **Faltaba `P_IR` y faltaba la combinación.** La cadena de arriba terminaba en k_h y K_AE. El num. **2.8.1.1.14.1** — la misma sección de la que esta hoja toma k_h0 y la reducción por desplazamiento, un nivel más arriba — exige combinar el empuje sísmico con la **inercia de la masa del muro**, `P_IR = k_h·(W_w + W_s)`, donde W_w es el peso de la pared y W_s el del suelo inmediatamente encima del muro **incluido el talón**. Y no como suma: los dos efectos **no son simultáneos**, de modo que se investigan dos casos y rige el más desfavorable —
+   - **100 % P_AE + 50 % P_IR**, y
+   - **50 % P_AE** (pero *«no sea menor que la presión estática activa del terreno»*) **+ 100 % P_IR**.
+
+   Con k_h = 0.50, P_IR vale la mitad del peso movilizado — el mismo orden que el propio incremento sísmico del empuje —, así que la omisión iba del lado **inseguro** en volteo y en deslizamiento sísmicos (`MAT-D6`, `MAT-X7`).
+
+2. **Faltaba la excentricidad de la resultante en la base**, que el mismo num. 2.8.1.1.14.1 acota bajo sismo, y el límite **depende de γ_EQ**: **dos tercios centrales (e ≤ B/3)** con γ_EQ = 0.0, ocho décimas centrales (e ≤ 0,4·B) con γ_EQ = 1.0, e **interpolación lineal** en medio. Y γ_EQ es un vacío que este expediente todavía no ha declarado (`MAT-O16`).
+
+   **El «dos tercios» no sale del literal del Manual, que imprime «tercio central» — es su tercera errata en esta cadena, y la única que mueve un número.** AASHTO 11.6.5.1 escribe «middle **two-thirds**» (pág. impresa 11-25); el propio Manual traduce bien ese giro tres páginas antes, en su numeral estático de límites de excentricidad («dentro **los dos tercios centrales** del ancho de la base»), y en el mismo párrafo sísmico traduce bien «eight-tenths». Y la lectura literal es **normativamente imposible**: dejaría el límite bajo sismo (B/6) al doble de estricto que el límite estático del mismo Manual (B/3), invirtiendo la filosofía de estados límite. Con el texto de AASHTO el artículo es coherente: **ancla** en γ_EQ = 0.0 sobre el mismo B/3 del estático y **relaja** hasta 0,4·B. El código sigue a AASHTO.
+
+3. **`k_h0 = A_s` no es incondicional.** El num. 2.8.1.1.14.2.1 añade que *«para muros cimentados sobre Sitio con suelos Clase A o B (roca dura o blanda), k_h0 estará basado en 1.2 veces el coeficiente de aceleración pico del suelo»*. Con cimentación en roca serían 0.60 y no 0.50 (`MAT-O4`, `NOR-PUE-12`). **El paréntesis que el Manual imprime a continuación —«(es decir, 1.2 kh0=FpgaPGA)»— es errata**: leído al pie de la letra da una *reducción* del 17 %. Gana la prosa, coincidente con AASHTO 11.6.5.2.1.
+
+4. **El Manual imprime K_AE con «1 − √(…)» y eso es errata de imprenta** (Apéndice A11, num. A.11.3.1, pág. impresa 586). AASHTO — que el propio Manual declara transcribir — imprime «1 + √(…)». Con el menos, K_AE **diverge** cuando el radicando tiende a 1 y el caso límite k_h = k_v = 0 deja de devolver el Ka de Coulomb. **El código sigue a AASHTO y hace bien**; esta hoja no advertía de la discrepancia, de modo que un revisor que «corrigiera» el código contra la letra impresa rompía la fórmula (`MAT-O2`, `MAT-X2`).
+
+5. **El agua bajo el NF.** Esta sección dice que «empuje hidrostático y subpresión no son opcionales» y no dice nada de cómo entra el freático en el **empuje de tierras**. El código usa γ total en toda la altura más la hidrostática completa, con lo que cuenta el agua de poros dos veces en la zona sumergida; AASHTO 3.11.3 *«Presence of Water»* exige γ **sumergido** bajo el nivel freático. La desviación es **conservadora** y su magnitud es un valor absoluto constante, no un porcentaje: el exceso de presión horizontal vale Ka·γ_w·h_agua — 1,96 kPa con Ka = 1/3 y 0,60 m de agua —, de modo que en relativo pesa +25 % sobre un muro de 0,60 m (que es como la ficha `MAT-O3` lo calculó), +11 % sobre uno de 2,00 m con el freático a 1,40 m, y menos cuanto más alto sea el muro. Se declara en el punto de uso; corregirla exige un peso específico sumergido del relleno que el expediente no tiene (`MAT-O3`, `MAT-X3`).
 
 ### 9.3 Estabilidad — E.050 [N]
 
@@ -614,6 +677,10 @@ Para K_AE por **Mononobe-Okabe** se requieren además φ del relleno, pendiente 
 | Deslizamiento — estabilidad interna | **1.50** | **1.25** | 39.13.6 a), pág. 72 |
 | Estabilidad global del muro | **1.50** | **1.25** | 39.13.6 b), pág. 72 |
 | Estabilidad del talud | **1.50** | **1.25** | Art. 30.3, pág. 39 |
+
+**Y una sexta fila, que E.050 no escribe y el Manual de Puentes sí (`MAT-O16`):** la **ubicación de la resultante en la base bajo sismo**, num. 2.8.1.1.14.1 — dentro de los **dos tercios centrales** (e ≤ B/3) con γ_EQ = 0.0, dentro de las **ocho décimas centrales** (e ≤ 0,4·B) con γ_EQ = 1.0, e interpolación lineal entre ambos (ver la advertencia de errata en §9.2). No es un FS y por eso no cabe en la tabla de arriba.
+
+**Y la `q_actuante` que la primera fila da por resuelta tiene su propio numeral, que no es el sísmico:** el num. **2.8.1.1.12.2 «Capacidad de Carga»** (pág. impresa 248) reparte la distribución de presión de contacto **por terreno de fundación** — presión **uniforme** sobre el ancho efectivo B − 2e si el muro se apoya en **suelo**; distribución **lineal** sobre B, con su forma triangular fuera del núcleo, si se apoya en **roca**. Este cabezal se funda en la llanura arenosa: le corresponde la primera. Y el mismo capítulo trae el límite **estático** de excentricidad (dos tercios centrales en suelo, nueve décimos en roca) que es el que ancla el extremo γ_EQ = 0.0 del límite sísmico.
 
 **Parámetros de resistencia** (Art. 20, pág. 33): en cohesivos φ = 0; en friccionantes c = 0. No se combinan.
 
@@ -720,10 +787,10 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | M_w para licuefacción | [A] | **Sin valor.** Tablero 2.2 |
 | Constantes HDS-5 para HDPE | [C] | Carta *Circular Concrete, square edge*. Condicionado a HDPE de interior liso |
 | k_e (coeficiente de pérdida de entrada, §4.3) | [C] | HDS-5, embocadura square edge with headwall. **Cerrado en implementación** — sin numeral peruano |
-| n de Manning para HDPE | [A] | **Rango (0.010, 0.013)** por analogía. No valor puntual |
+| n de Manning para HDPE | [N→] | **Rango (0.010, 0.013)** por analogía. No valor puntual. El código lo **lee de** `constantes_normativas.MANNING["concreto_recto"]`, no lo copia: una analogía que duplica el literal de su origen deja de serlo en cuanto uno de los dos cambie |
 | Velocidad máxima en HDPE y TMC | [C] | **Sin valor.** Fuente identificada (PPI/FHWA), valores por extraer |
 | Progresión de diámetros | [C] | 0.90 m + 0.15 m, topes por norma de producto |
-| HW/D máximo (1.5) | [C] | Sensibilidad (1.2, 1.5) |
+| HW/D máximo (1.5) | [A] | Sensibilidad (1.2, 1.5), **subrango** de la banda 1.0–1.5 que el HDS-5 describe (no prescribe). Corregido desde [C]. Ref. `NOR-HDS-02` |
 | Resguardo HW–subrasante | [N→] | Analogía declarada desde el criterio de napa freática |
 | TW en el receptor | [A] | **Sin valor.** Tablero 3.1 |
 | Longitud máxima de cuneta (200 m) | [A] | Sensibilidad (200, 250) |
@@ -732,6 +799,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | Capacidad portante admisible | [A] | **Sin valor.** EMS conforme a E.050 |
 | Espesor de protección de salida (1.75 · d₅₀) | [A] | Sensibilidad (1.5, 2.0) |
 | Ángulo de aletas | [A] | Según esviaje de cada punto |
+| Origen de la cota de fondo de entrada (`origen_cota_fondo_entrada`) | [A] | **Sin valor.** HW es una carga *sobre el fondo de la entrada* (§4.2/4.3) y esa cota **no es columna de §1.2**: el CSV trae `cota_terreno`, `cota_rasante`, `cota_subrasante` y `cota_fondo_receptor` —la de la salida—, no la del invert de entrada. §7.B pide las cotas «amarradas al perfil del cauce y a la cota de fondo del receptor» sin fijar la regla. Gobierna **V4, V7 y las dos condiciones del tamizado 7.A**, o sea la rasante. Regla implementada: `"cota_terreno"` (adoptar el terreno natural del cruce). Lo cierra la **cota de invert medida por punto**, como columna propia del CSV. Ref. SIS-A-04 |
 | Homogeneidad de la serie hidrológica (FEN) | [A] | Tablero 3.2 |
 
 ---
@@ -794,7 +862,7 @@ HDS5_INLET = {   # cartas por forma/material; dentro de cada una, por borde
 # HDPE -> criterios_adoptados.valor("hds5_embocadura_hdpe")
 
 # ================= Control de salida (SI) ==================================
-K_FRICCION_SI = 19.62               # H = (1 + ke + 19.62*n^2*L/R^(4/3)) * V^2/(2g)
+K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(2g)
                                     # OJO: 29 es el valor ingles.
                                     # TEST UNITARIO OBLIGATORIO.
 # ho = max(TW, (yc + D)/2)
@@ -905,7 +973,7 @@ M0_carga.py ... M11_reporte.py
 - **Tope superior de diámetro obligatorio por material.** Superado el tope, el material se descarta con mensaje explícito. El HDPE (~1.50 m) es el crítico.
 - **Q(y/D) no es monótona** cerca de sección llena (máximo en y/D ≈ 0.938). Al topar en 0.75 se evita la zona, pero el solver debe manejar el caso "sin solución" → siguiente diámetro.
 - **M4 necesita tirante crítico:** Q²T/(gA³) = 1, segundo Brent sobre θ.
-- **Unidades del control de salida:** 19.62 en SI, no 29. Test unitario obligatorio.
+- **Unidades del control de salida:** 19.63 en SI, no 29 (corregido desde 19.62; ver la nota de unidades de §4.3). Test unitario obligatorio.
 - **El n de HDPE es un rango, no un valor.** Un valor puntual rompe la regla de doble n y subestima velocidad y socavación.
 - Cada verificación devuelve el **booleano y el numeral que la sustenta**.
 - M11 imprime los criterios usados y, al final, los pendientes que no deben citarse en la memoria.

@@ -87,6 +87,24 @@ Confirmado en cada punto de esta reconciliación: el número no cambió durante
 las cinco correcciones de línea base de §4 (todas documentales o de
 `.gitignore`, ninguna toca código de cálculo).
 
+> **Este número es la FOTO de la línea base (S1), no el estado de hoy.** Se
+> deja como está a propósito: es contra él contra el que se comparan las
+> sesiones siguientes. Estado posterior, para que nadie lea el 725 como
+> vigente: **S2 (cluster C08) lo dejó en 743 `passed`, 1 `skipped`** — 18
+> tests nuevos, ninguno retirado —, y **S9 (cluster C04, cadena sísmica) lo
+> dejó en 744 `passed`, 1 `skipped` → 745 `collected`**. S9 no escribió
+> ningún test nuevo: el `+1` es la expansión de
+> `test_criterio_pendiente_lanza_error_y_no_devuelve_default`, ya
+> parametrizado sobre los criterios sin valor, al que le entró el vacío nuevo
+> `gamma_EQ`. Un test se renombró (el del factor de muro) y ninguno se
+> retiró. **S10 (cluster C07, recubrimiento) lo dejó en 749 `passed`, 1
+> `skipped` → 750 `collected`**: cinco tests nuevos, y son la excepción
+> deliberada a la regla de no escribir tests antes de la fase que les toca —
+> no congelan el comportamiento actual, comprueban que los dos vacíos nuevos
+> **detienen** el cálculo y que la fila ausente de una tabla no se lee como
+> un «no». Eso era, hasta S10, una afirmación que solo vivía en la prosa de
+> los docstrings.
+
 ---
 
 ## 3. Reconciliación de anclajes archivo:línea
@@ -341,19 +359,21 @@ Los 9 hallazgos de este lote verificaron **SÍ** sin excepción.
 
 ## 4. Cuatro deudas de línea base corregidas
 
-Cada una en su propio commit, suite verde antes de cada uno (725 passed, 1
-skipped en las cinco):
+Cada una en su propio commit, suite verde antes de cada uno. El conteo que se
+cita abajo es el de HOY, no el de entonces: este documento se mantiene al día
+con la suite vigente (749 passed, 1 skipped) y no como fotografía de S1 —
+`verificar_sesion.py` avisa si se desincroniza.
 
 | Hallazgo | Commit | Qué cambió |
 |---|---|---|
 | **SIS-A-15** | `59440a9` + `8b033b6` | `Claude.md` y `tests/test_sin_literales.py` decían "constantes_fisicas.py: hoy solo la gravedad"; el módulo ya declara cinco nombres (`G`, `RHO_AGUA`, `N_POR_KN`, `GAMMA_AGUA`, `GAMMA_AGUA_KN_M3`). Dos ubicaciones, dos commits — la cita del hallazgo señalaba ambas. |
 | **SIS-B-03** | `08ba613` | `Claude.md` listaba `pandas` y `jinja2` como dependencias (cero usos en `src/`, `gui/`, `cli.py`; no instalados) y omitía `weasyprint` (pineado en `requirements.txt`, usado en `M11_reporte.py` para exportar PDF). |
-| **SIS-F-18** | `3c526b4` | `docs/auditoria_y_ruta_despliegue_v9.md` citaba "12 módulos, 595 tests en verde"; hoy son 13 módulos y 725 passed + 1 skipped. |
+| **SIS-F-18** | `3c526b4` | `docs/auditoria_y_ruta_despliegue_v9.md` citaba "12 módulos, 595 tests en verde"; se corrigió al conteo vigente en ese momento (línea base de S1, ver §2). El conteo de módulos (13) no ha cambiado; el de tests sí — mantenido al día en `docs/auditoria_y_ruta_despliegue_v9.md`, hoy 749 `passed` + 1 `skipped`. |
 | **SIS-C-10** | `219f584` | `tests/ejemplo_puntos.informe.json` era salida de corrida versionada que cualquier ejecución de `cli.py` sobre `tests/ejemplo_puntos.csv` pisa (`cli.py:1475`); ningún test la lee. Se destraqueó (`git rm --cached`, sigue en disco) y se agregó `tests/*.informe.json` al `.gitignore`. |
 
 Estas cinco correcciones son **documentales o de control de versión** —
-ninguna toca `src/`, `gui/` o `cli.py`. La suite se mantuvo en 725 passed, 1
-skipped (726 collected) en todo momento.
+ninguna toca `src/`, `gui/` o `cli.py`. La suite se mantuvo verde en todo
+momento; hoy son 749 passed, 1 skipped (750 collected).
 
 ---
 
@@ -375,3 +395,85 @@ esta reconciliación — este documento entrega el mapa, no cierra hallazgos.
 **No se corrigió ningún hallazgo de fondo en esta sesión**, conforme al
 objetivo. Las cuatro deudas de línea base de la instrucción original (§4) son
 higiene de la propia constitución/documentación, no hallazgos de la matriz.
+
+---
+
+## 6. Limitación del entorno: no se puede borrar una rama del remoto (S4)
+
+`CLAUDE.md` exige que ninguna rama auxiliar quede abierta, y
+`verificar_sesion.py` lo comprueba (chequeo 3). En la sesión S4 (cluster C01)
+la rama se fusionó a `main` y `main` se empujó sin problema, pero **el borrado
+de la rama en el remoto se rechaza con HTTP 403**:
+
+```
+$ git push origin --delete claude/cluster-c01-geometry-gt8kjc
+error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403
+send-pack: unexpected disconnect while reading sideband packet
+fatal: the remote end hung up unexpectedly
+```
+
+Reproducido cuatro veces con espera exponencial, con `--delete` y con la forma
+`:rama`, y con `http.version=HTTP/1.1` (que es la que deja ver el 403 en vez
+del corte de sideband). **No es la política de egress**: el endpoint
+`$HTTPS_PROXY/__agentproxy/status` devuelve `recentRelayFailures: []`, de modo
+que el 403 lo emite GitHub. Es decir, la credencial de la sesión tiene permiso
+de `push` pero no de `delete_ref`.
+
+Consecuencia práctica, para que nadie la lea como descuido: mientras esto siga
+así, `verificar_sesion.py` **va a fallar el chequeo 3 al final de toda sesión
+que use rama auxiliar**, con la rama ya fusionada. Eso explica también por qué
+«las últimas sesiones no lo cumplieron». Dos formas de cerrarlo, ninguna al
+alcance de la sesión:
+
+1. Que el borrado lo haga alguien con permiso sobre el repositorio (o el
+   ajuste de *Automatically delete head branches* en GitHub).
+2. Que se le conceda `delete_ref` a la credencial de las sesiones.
+
+Lo que **sí** está bajo control de la sesión y se cumplió: la rama no queda con
+commits fuera de `main` —el chequeo distingue las dos cosas y solo marca
+`[FALLO]` la rama fusionada y no borrada— y la rama local se borró.
+
+**Reincidencia y saldo, al cierre de S9 (cluster C04).** El 403 se reprodujo
+igual, y ya no es una rama sino **tres** las que están fusionadas en `main` y
+sin borrar en el remoto:
+
+| Rama | Sesión | Fusionada en `main` |
+|---|---|---|
+| `claude/cluster-c13-rasante-geometria-2p5fqc` | S7 | sí |
+| `claude/cluster-c03-lrfd-factors-23mrzf` | S8 | sí |
+| `claude/cluster-c04-sismica-ay9szt` | S9 | sí |
+
+S9 intentó borrar las tres —la suya y las dos heredadas— y las tres
+devolvieron el mismo `HTTP 403`. No hay tampoco herramienta de borrado de
+referencias en el servidor MCP de GitHub de la sesión (`create_branch` existe,
+`delete_branch` no). De modo que `verificar_sesion.py` seguirá dando
+`[FALLO] … ya fusionada, debería estar borrada` tres veces, **y ninguna de las
+tres significa trabajo sin entregar**: el chequeo comprueba antes que la rama
+no tenga commits fuera de `main`, y las tres pasan esa comprobación. Las dos
+salidas siguen siendo las mismas dos de arriba, y las dos están fuera del
+alcance de la sesión.
+
+**Saldo al cierre de S10 (cluster C07): cinco.** El intento se repitió sobre
+las cinco y ninguna se borró; esta vez el fallo no llegó rotulado como
+`HTTP 403` sino como `send-pack: unexpected disconnect while reading sideband
+packet` seguido de `Everything up-to-date`, que es la misma negativa del
+remoto contada de otra manera —la referencia sigue ahí después del intento—.
+
+| Rama | Sesión | Fusionada en `main` |
+|---|---|---|
+| `claude/cluster-c13-rasante-geometria-2p5fqc` | S7 | sí |
+| `claude/cluster-c03-lrfd-factors-23mrzf` | S8 | sí |
+| `claude/cluster-c04-sismica-ay9szt` | S9 | sí |
+| `claude/cluster-c07-recubrimiento-nadl34` | S10 | sí |
+| `claude/s10-cluster-c07-resume-p19vmh` | S10 | sí |
+
+La quinta es la rama que el propio arranque de la sesión creó para retomar
+S10; no llevó trabajo propio —se dejó apuntando a `main`— y aun así cuenta
+para el chequeo 3, porque el chequeo mira referencias del remoto y no de dónde
+salió cada una.
+
+De modo que `verificar_sesion.py` dará `[FALLO] … ya fusionada, debería estar
+borrada` **cinco** veces, y **ninguna de las cinco significa trabajo sin
+entregar**: el chequeo comprueba antes que la rama no tenga commits fuera de
+`main`, y las cinco pasan esa comprobación. Las dos salidas siguen siendo las
+mismas dos de arriba y las dos están fuera del alcance de la sesión.

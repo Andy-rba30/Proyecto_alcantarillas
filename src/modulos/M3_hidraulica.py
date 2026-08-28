@@ -28,22 +28,46 @@ falta para poblar el campo `y` del tipo).
 Regla de doble n (Sec. 4.1)
 -----------------------------
 n MAXIMO para capacidad y tirante (V1, borde libre): conservador del lado de
-la inundacion. n MINIMO para velocidad y socavacion (V2, V3, Laushey):
+la inundacion. n MINIMO para velocidad MAXIMA y socavacion (V3, Laushey):
 conservador del lado de la erosion.
 
 La UNICA resolucion de Brent usa n_max: es el n que, para el mismo Q y D,
 exige mas area y por lo tanto fija el theta real de diseño (mas resistencia
--> mas tirante para el mismo caudal). La velocidad de la rama de erosion NO
-sale de una segunda resolucion de Brent con un theta distinto: sale de
-recalcular Manning con n_min SOBRE ESA MISMA geometria (mismo theta, mismo
-R) -- el mismo canal visto con la rugosidad mas baja. Asi lo fija el fixture
-CP-2 (tests/fixtures/casos_patron.py: D, y/D, S fijos, y las dos velocidades
-V_con_n_max y V_con_n_min salen de la MISMA R con dos n distintos).
+-> mas tirante para el mismo caudal). Las velocidades NO salen de una segunda
+resolucion de Brent con un theta distinto: salen de recalcular Manning SOBRE
+ESA MISMA geometria (mismo theta, mismo R) con cada uno de los dos n -- el
+mismo canal visto con la rugosidad mas baja y con la mas alta. Asi lo fija el
+fixture CP-2 (tests/fixtures/casos_patron.py: D, y/D, S fijos, y las dos
+velocidades V_con_n_max y V_con_n_min salen de la MISMA R con dos n
+distintos).
 
-`resolver_manning()` aplica la regla completa: una resolucion de Brent con
-`material.n_para_capacidad`, y sobre su geometria, V = (1/n_min)*R^(2/3)*S^0.5
-con `material.n_para_velocidad`. Ver la advertencia ya documentada en
-`modelos.TiranteNormal` (V*A != Q, por diseño).
+DOS VELOCIDADES, NO UNA (MAT-D1)
+---------------------------------
+Un umbral de velocidad no tiene un extremo conservador: tiene dos, y son
+opuestos. Contra un TECHO (V3, Laushey) lo conservador es suponer la
+velocidad mas ALTA que el rango de n admite, o sea calcularla con n_min.
+Contra un PISO (V2, autolimpieza) lo conservador es exactamente lo contrario:
+suponer la mas BAJA, que sale de n_max.
+
+`resolver_manning()` devuelve las dos:
+
+    V_erosion       = (1/n_min)*R^(2/3)*S^0.5    estimacion ALTA  -> V3, d50
+    V_sedimentacion = (1/n_max)*R^(2/3)*S^0.5    estimacion BAJA  -> V2
+
+Hasta esta correccion devolvia solo la primera, bajo el nombre `V`, y V2 la
+consumia: un piso verificado con la estimacion alta. La Sec. 4.1 de la hoja
+de ruta asigna n minimo a "velocidad maxima y socavacion" -- V2 no esta en
+esa lista -- y el fixture CP-3 modela el umbral de V2 con n = 0.013, que es
+n_max: el repositorio se contradecia a si mismo.
+
+`V_sedimentacion` es ademas el minimo REAL de la velocidad sobre todo el rango
+de n de la Tabla N 09, no solo el minimo sobre esta geometria: con un n menor
+el tirante normal baja, el area baja y la velocidad media Q/A sube -- mientras
+theta este en la rama creciente de la curva de capacidad, que es donde V1
+mantiene el diseño (y/D <= 0.75); ver `modelos.TiranteNormal`, que enuncia la
+condicion. Y cumple `V_sedimentacion * A = Q` exactamente, porque es la
+velocidad media del mismo n con que se resolvio el tirante. Ver la advertencia
+ya documentada en `modelos.TiranteNormal` (V_erosion*A != Q, por diseño).
 
 `tirante_normal()`, la pieza mas chica, resuelve Manning para un solo n. Queda
 publica porque M4 la reutiliza para lo que si necesita geometria de un n
@@ -53,7 +77,8 @@ en si es una ecuacion distinta (Sec. 4.2.1) y vive en M4.
 De donde sale el n de HDPE
 ----------------------------
 M3 no lee `criterios_adoptados` en ningun punto: consume el `Material` que M2
-ya resolvio (Sec. 3.4), incluidos `n_para_capacidad` y `n_para_velocidad`. Para
+ya resolvio (Sec. 3.4), incluidos `n_para_capacidad`,
+`n_para_velocidad_maxima` y `n_para_velocidad_minima`. Para
 HDPE, M2 ya puso alli el RANGO completo por analogia al concreto (0.010-0.013,
 criterio 'n_manning_hdpe', Sec. 4.1.1) y no un valor puntual: un n unico
 rompiria la regla de doble n porque las dos ramas usarian la misma rugosidad y
@@ -84,7 +109,8 @@ Uso
     if resolucion is None:
         ...  # pasar al siguiente diametro
     y_normal = resolucion.geometria.y
-    V = resolucion.V
+    V_techo = resolucion.V_erosion        # contra V3 y el d50 de Laushey
+    V_piso = resolucion.V_sedimentacion   # contra V2
 """
 
 from __future__ import annotations
@@ -199,18 +225,30 @@ def resolver_manning(D: float, Q: float, S: float, material: Material) -> Option
     1. Una unica resolucion de Brent con `material.n_para_capacidad` (n_max):
        fija el theta real de diseño -- el mas conservador del lado de la
        inundacion, el que alimenta V1 (borde libre).
-    2. Sobre esa MISMA geometria (mismo R), la velocidad se recalcula con
-       `material.n_para_velocidad` (n_min): el mismo canal con la rugosidad
-       mas baja, conservador del lado de la erosion (V2, V3, Laushey).
+    2. Sobre esa MISMA geometria (mismo R), las DOS velocidades del rango de
+       n de la Tabla N 09:
+         - con `material.n_para_velocidad_maxima` (n_min), la estimacion ALTA,
+           conservadora contra los TECHOS (V3, Laushey);
+         - con `material.n_para_velocidad_minima` (n_max), la estimacion BAJA,
+           conservadora contra el PISO (V2, autolimpieza).
+
+    Las dos salen de la misma expresion de Manning -- V = (1/n)*R^(2/3)*S^0.5,
+    ec. (47) del num. 4.1.1.3.6 -- con la misma R y distinto n. Ninguna se
+    obtiene dividiendo Q entre A: hacerlo devolveria siempre la segunda, y con
+    ella un techo verificado del lado inseguro.
 
     Devuelve None si la resolucion de Brent con n_max no converge: el
     material no alcanza a transportar Q en flujo libre a esta D y S, y no
-    hay geometria sobre la que evaluar la segunda rama.
+    hay geometria sobre la que evaluar las velocidades.
     """
     geom = tirante_normal(D, Q, S, material.n_para_capacidad)
     if geom is None:
         return None
 
-    n_min = material.n_para_velocidad
-    V = (1 / n_min) * geom.R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
-    return TiranteNormal(geometria=geom, V=V)
+    # literal-ok: exponentes de Manning, ec. (47) del num. 4.1.1.3.6 / Sec. 4.1
+    factor_geometrico = geom.R ** (2 / 3) * S ** (1 / 2)
+    return TiranteNormal(
+        geometria=geom,
+        V_erosion=factor_geometrico / material.n_para_velocidad_maxima,
+        V_sedimentacion=factor_geometrico / material.n_para_velocidad_minima,
+    )

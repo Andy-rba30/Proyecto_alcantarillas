@@ -18,19 +18,33 @@ Hoy los seis pasos horizontales de Sec. 9.2 dan todos 0.50, y es tentador
 escribir `k_h = 0.50` de una vez. Seria un error de trazabilidad, no de
 aritmetica: coinciden SOLO porque F_pga y el factor de muro valen 1.0, y esos
 dos numeros llegan por caminos distintos: los dos son la ELECCION [A] de una
-fila de una tabla [N] (F_PGA_TABLA y FACTOR_MURO_TABLA), y el PGA que abre la
+fila de una tabla [N] (F_PGA_TABLA) o la declaracion [A] de si se aplica la
+reduccion que un numeral autoriza -- el factor de muro NO sale de una tabla, y
+decir que salia era el defecto NOR-PUE-07 --, y el PGA que abre la
 cadena no es ninguna de las dos cosas sino un dato de sitio [S] leido de un
 mapa sobre las coordenadas de esta obra. Cuando llegue el
-SPT y la clase de sitio se cierre en E, F_pga baja a 0.9 y la cadena entera
-se mueve. Con los pasos separados, M11 imprime que paso cambio y por que; con
-un 0.50 escrito a mano, no hay nada que recalcular ni que revisar.
+SPT cierre la caracterizacion del sitio en la fila E, F_pga baja a 0.9 y la
+cadena entera se mueve. Con los pasos separados, el informe dice que paso
+cambio y por que; con un 0.50 escrito a mano, no hay nada que recalcular ni que
+revisar. QUIEN LOS IMPRIME es la CLI -- `_lineas_cabezal` y `_cabezal_json` --,
+no M11: la memoria de M11 recoge de Fase 9 la declaracion normativa y los
+criterios usados, no la tabla de la cadena.
 
     A_s  = F_pga * PGA
-    k_h0 = A_s                          (Manual de Puentes, 2.8.1.1.14.2)
+    k_h0 = A_s                          (Manual de Puentes, 2.8.1.1.14.2.1)
+    k_h0 = 1.2 * F_pga * PGA            (idem, cimentacion en Clase A o B)
     k_h  = factor_muro * k_h0
 
-k_v va aparte a proposito: no deriva de la cadena, es una adopcion propia
-([A], criterio 'k_v') y la hoja de ruta lo pone en su propia fila.
+Y CADA PASO LLEVA AHORA LA CONDICION QUE SU FUENTE LE PONE. Tres de los siete
+la llevaban implicita en el numero, que es como se pierde -- el numero se
+revisa, el supuesto no se ve: de que filas de la tabla sale F_pga, en cual de
+las dos ramas de k_h0 cae la cimentacion, y cual de los dos regimenes de k_v
+rige. `PasoSismico.condicion` las imprime.
+
+k_v va aparte a proposito, pero no por lo que este docstring decia: NO es una
+adopcion propia. Lo fija el mismo numeral del que sale k_h0 -- "se asumira
+cero... a no ser que" -- y por eso es [N] condicionado. Lo que el criterio
+'k_v' declara es cual de los dos regimenes rige, no el numero.
 
 Lo que este modulo SI calcula entero
 ------------------------------------
@@ -48,10 +62,16 @@ Lo que este modulo SI calcula entero
       el espaciamiento maximo y la alternativa en concreto ciclopeo.
     * Las combinaciones AASHTO LRFD de Sec. 9.2 (`factores_de_carga()`), el
       peso propio del cabezal (`peso_propio_cabezal`, 'peso_especifico_
-      concreto_kn_m3') y la regla del recubrimiento mayor
-      (`recubrimiento_de_diseno`, 'recubrimiento_aashto_mm'): los tres
-      criterios [C] se cerraron por verificacion externa contra AASHTO LRFD
-      9a ed.
+      concreto_kn_m3'). La regla del recubrimiento mayor
+      (`recubrimiento_de_diseno`) ya NO es de este grupo: su lado AASHTO se
+      calcula y depende de dos declaraciones que el expediente no ha hecho
+      -- 'categoria_refuerzo_aashto' y 'exposicion_quimica_ems' --, de modo
+      que hoy se detiene. Los factores de
+      carga ya no son un criterio [C]: las dos tablas del num. 2.4.5.3.1 del
+      Manual de Puentes estan transcritas como [N] en constantes_normativas y
+      'factores_carga_aashto' [A] declara solo de que FILA de gamma_p cuelga
+      cada estructura -- el cabezal, de "Muros y estribos de retencion"
+      (1.35/1.00, NOR-PUE-03).
 
 Lo que se detiene, y por que no se rellena
 ------------------------------------------
@@ -139,36 +159,100 @@ import criterios_adoptados as ca
 import datos_sitio as ds
 from constantes_fisicas import GAMMA_AGUA_KN_M3
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
+                                   AMBIENTE_CORROSIVO_TEXTO,
                                    CARGA_VIVA,
-                                   CICLOPEO_FC_MATRIZ_MIN,
+                                   CICLOPEO_DISCREPANCIA_HOJA_RUTA,
+                                   CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO,
                                    CUANTIA_MIN_MURO,
+                                   E030_AMBITO_LECTURA,
+                                   E030_S5_LECTURA,
+                                   E030_S5_TEXTO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
                                    ESPACIAMIENTO_MAX_VECES_ESPESOR,
+                                   ESPESOR_DOS_CAPAS_REFUERZO,
                                    ESPESOR_TEMPERATURA_DOS_CARAS,
-                                   FACTOR_MURO_TABLA,
+                                   EXCEPCION_DOS_CAPAS_REFUERZO,
+                                   EXCEPCION_REFUERZO_MIN_MURO_TEXTO,
+                                   EXPOSICION_ESPECIAL,
+                                   E030_ART_7_3_TEXTO,
+                                   EXCENTRICIDAD_ADMISIBLE_FRACCION_B,
+                                   EXCENTRICIDAD_ERRATA_MANUAL,
+                                   FACTOR_MURO_CON_REDUCCION,
+                                   FACTOR_MURO_DECLARACIONES,
+                                   F_PGA_CLASES_EN_ROCA,
+                                   F_PGA_EXIGE_ESTUDIO_DE_SITIO,
+                                   F_PGA_TABLA,
+                                   F_PGA_TABLA_PGA_COLUMNAS,
                                    FS, FS_NUMERAL,
+                                   GAMMA_P_MARCA,
+                                   HIPOTESIS_EMPUJE_BAJO_NF,
+                                   K_AE_ERRATA_MANUAL,
+                                   K_H0_FACTOR_ROCA_A_B,
+                                   K_H0_ROCA_ERRATA,
+                                   K_V_CASO_RESERVADO,
+                                   K_V_DECLARACION_PRESCRITO,
+                                   K_V_PRESCRITO,
+                                   LECTURA_COLUMNA_EXTREMA_ESTRICTA,
+                                   LECTURAS_COLUMNA_EXTREMA,
                                    NQ_ZAPATA_EN_TALUD,
+                                   NUMERAL_AGUA_TRASDOS_AASHTO,
                                    NUMERAL_C_PHI,
                                    NUMERAL_CICLOPEO,
+                                   NUMERAL_CICLOPEO_APLICABLE,
+                                   NUMERAL_COMBINACION_4_2_4_4,
+                                   NUMERAL_DOS_CAPAS_REFUERZO,
+                                   NUMERAL_EXCEPCION_REFUERZO_MIN_MURO,
+                                   NUMERAL_EXPOSICION_ESPECIAL,
+                                   NUMERAL_PROTECCION_CORROSION,
+                                   PROTECCION_CORROSION_TEXTO,
                                    NUMERAL_COMBINACIONES,
                                    NUMERAL_CUANTIA_MIN,
+                                   NUMERAL_E030_AMBITO,
+                                   NUMERAL_E030_S5,
                                    NUMERAL_ESPACIAMIENTO,
+                                   NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION,
+                                   NUMERAL_EXCENTRICIDAD_ESTATICA,
+                                   NUMERAL_EXCENTRICIDAD_SISMICA,
+                                   NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO,
+                                   NUMERAL_F_PGA_TABLA,
                                    NUMERAL_FACTOR_MURO,
+                                   NUMERAL_K_AE_AASHTO,
+                                   NUMERAL_K_AE_MANUAL,
                                    NUMERAL_K_H0,
+                                   NUMERAL_P_IR,
+                                   NUMERAL_PRESION_CONTACTO,
                                    NUMERAL_RECUBRIMIENTO,
+                                   NUMERAL_RECUBRIMIENTO_MP,
+                                   NUMERAL_SULFATOS,
                                    NUMERAL_SOBRECARGA_TRASDOS,
+                                   NUMERAL_TABLA_GAMMA_P,
                                    NUMERAL_TEMPERATURA_DOS_CARAS,
                                    NUMERAL_ZAPATA_EN_TALUD,
                                    NUMERAL_ZAPATA_TALUD_E050,
+                                   P_SEIS_COMBINACIONES,
+                                   P_SEIS_PISO_ESTATICO,
                                    RECUBRIMIENTO,
+                                   RECUBRIMIENTO_AC_UMBRAL_ALTO,
+                                   RECUBRIMIENTO_AC_UMBRAL_BAJO,
+                                   RECUBRIMIENTO_MP_FACTOR_AC,
+                                   RECUBRIMIENTO_MP_EQUIVALENCIA,
+                                   RECUBRIMIENTO_MP_MM,
+                                   RECUBRIMIENTO_MP_PISO_MM,
+                                   REDUCCION_KH_POR_DESPLAZAMIENTO,
                                    SECCION_CABEZALES,
-                                   SOBRECARGA_TRASDOS_H_EQ)
-from modelos import (CadenaSismica, CombinacionCarga, CondicionAnalisis,
-                     CuantiaRefuerzo, DatoInvalidoError, DisenoNoFactibleError,
+                                   SOBRECARGA_TRASDOS_H_EQ,
+                                   SULFATOS,
+                                   TABLA_COMBINACIONES_FILAS,
+                                   TABLA_GAMMA_P_FILAS)
+from modelos import (CadenaSismica, CasoDemandaSismica, CombinacionCarga,
+                     CondicionAnalisis, CuantiaRefuerzo, DatoInvalidoError,
+                     DemandaSismicaCabezal, DisenoNoFactibleError,
                      EmpujeMononobeOkabe, EmpujesTrasdos, EstabilidadCabezal,
-                     GeometriaCabezal, PasoSismico, RecubrimientoDiseno,
+                     FuerzaInerciaMuro, GeometriaCabezal, PasoSismico,
+                     PresionContactoBase, RecubrimientoDiseno,
+                     RequisitosDurabilidad,
                      ReferenciaNormativa, Verificacion)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
@@ -185,7 +269,7 @@ NUMERAL_9_2 = "Sec. 9.2"
 NUMERAL_9_3 = "Sec. 9.3 (E.050)"
 NUMERAL_MO = "Sec. 9.2 (Mononobe-Okabe)"
 NUMERAL_PGA = "Manual de Puentes, Apendice A3, mapa PGA T = 0.0 seg"
-NUMERAL_F_PGA = "Manual de Puentes, Tabla 2.4.3.11.2.1.2-1"
+NUMERAL_F_PGA = NUMERAL_F_PGA_TABLA
 NUMERAL_SUBPRESION = "Manual de Puentes num. 2.4.3.8.2"
 NUMERAL_FLEXION_CORTE = "Sec. 9.4 (AASHTO LRFD Seccion 5, via Seccion 2.9)"
 NUMERAL_REGLA_RECUBRIMIENTO = "Sec. 0.2 (rige el recubrimiento mayor)"
@@ -206,8 +290,10 @@ ETIQUETA_CALCULADO = "-"
 DATO_SITIO_PGA = "PGA_roca_B"
 
 CRITERIO_F_PGA = "F_pga"
+CRITERIO_F_PGA_LECTURA = "F_pga_lectura_columna_extrema"
 CRITERIO_FACTOR_MURO = "factor_muro_eleccion"
 CRITERIO_K_V = "k_v"
+CRITERIO_GAMMA_EQ = "gamma_EQ"
 
 CRITERIO_PHI_RELLENO = "phi_relleno_trasdos"
 CRITERIO_I_RELLENO = "pendiente_relleno_trasdos_i"
@@ -224,13 +310,30 @@ CRITERIO_GEOMETRIA = "predimensionamiento_cabezal"
 
 CRITERIO_MEYERHOF = "N_cq_N_gammaq_meyerhof"
 CRITERIO_ESTABILIDAD_GLOBAL = "metodo_estabilidad_global"
-CRITERIO_RECUBRIMIENTO_AASHTO = "recubrimiento_aashto_mm"
+CRITERIO_TABLA_RECUBRIMIENTO = "tabla_recubrimiento_aashto_mm"
+CRITERIO_CATEGORIA_REFUERZO = "categoria_refuerzo_aashto"
+CRITERIO_SITUACION_RECUBRIMIENTO = "situacion_recubrimiento_aashto"
+CRITERIO_EXPOSICION_QUIMICA = "exposicion_quimica_ems"
+CRITERIO_FACTOR_BANDA_AC = "factor_recubrimiento_banda_intermedia_ac"
+
+# Claves obligatorias del dato de sitio 'exposicion_quimica_ems'. Se exigen
+# TODAS y presentes: una clave ausente no es una lectura negativa.
+CLAVES_ESCALAS_SULFATOS = ("so4_suelo_pct", "so4_agua_ppm")
+CLAVE_FILAS_TABLA_4_2 = "tabla_4_2"
+NOMBRE_TABLA_4_2 = "Tabla 4.2"
+NOMBRE_TABLA_4_4 = "Tabla 4.4"
+
+# La columna de la Tabla 5.10.1-1 que el corpus PERUANO tambien tabula: el
+# Manual de Puentes transcribe esa y solo esa ("aceros no protegidas"). Con
+# cualquiera de las otras dos, el numero deja de ser [N] y pasa a ser el [C]
+# con que la Via 1 de Sec. 0.2 cubre lo que el corpus peruano no tabula.
+CATEGORIA_ACERO_SIN_RECUBRIR = "A"
 CRITERIO_FLEXION_CORTE = "procedimiento_flexion_corte_aashto_sec5"
 CRITERIO_CORTANTE_ALTO = "cortante_alto_muro_e060_art_11_10_10_2"
 
 # Componentes de cada combinacion de Sec. 9.2, con la nomenclatura de cargas
-# de AASHTO LRFD. Son NOMBRES, no factores: los factores son el vacio que
-# declara 'factores_carga_aashto'.
+# de AASHTO LRFD. Son NOMBRES, no factores: los factores son [N] y estan en
+# `constantes_normativas.TABLA_COMBINACIONES_FILAS` y `TABLA_GAMMA_P_FILAS`.
 COMPONENTES_COMBINACION = {
     "Resistencia I": ("DC", "EV", "EH", "LS", "WA"),
     "Servicio I": ("DC", "EV", "EH", "LS", "WA"),
@@ -258,17 +361,189 @@ def pga_roca_b() -> float:
     return ds.valor(DATO_SITIO_PGA)
 
 
+def clases_de_sitio_plausibles() -> Tuple[str, ...]:
+    """
+    Las FILAS de la Tabla 2.4.3.11.2.1.2-1 sobre las que este proyecto lee el
+    factor de sitio ([A], criterio 'F_pga').
+
+    Es el reparto R1 del proyecto -- la tabla es [N], la eleccion de fila es
+    [A] -- aplicado por fin a F_pga. El criterio guardaba el RESULTADO (1.0),
+    que es el mismo defecto que tenia 'factores_carga_aashto' antes de C03: un
+    numero suelto no puede expresar de que filas salio ni que pasa cuando la
+    campana geotecnica cierre la clase. Ahora guarda las filas, y el numero
+    lo calcula `f_pga`.
+
+    Se rechaza, con `DatoInvalidoError`:
+      * una fila que no existe en la tabla;
+      * una declaracion vacia;
+      * la fila F, que la tabla marca con asterisco y sin factor: elegirla no
+        es leer un valor, es leer una exigencia de estudio (Nota 2).
+    """
+    elegidas = ca.valor(CRITERIO_F_PGA)
+    if isinstance(elegidas, str) or not isinstance(elegidas, (tuple, list)):
+        raise DatoInvalidoError(
+            campo=CRITERIO_F_PGA, valor=elegidas,
+            motivo=f"la declaracion tiene que ser la tupla de filas de "
+                   f"{NUMERAL_F_PGA_TABLA} sobre las que se lee el factor, "
+                   f"no un factor ya resuelto",
+        )
+    if not elegidas:
+        raise DatoInvalidoError(
+            campo=CRITERIO_F_PGA, valor=elegidas,
+            motivo="no declara ninguna fila: sin fila no hay factor que leer",
+        )
+    for clase in elegidas:
+        if clase not in F_PGA_TABLA:
+            raise DatoInvalidoError(
+                campo=CRITERIO_F_PGA, valor=clase,
+                motivo=f"no es una fila de {NUMERAL_F_PGA_TABLA}: "
+                       f"{', '.join(sorted(F_PGA_TABLA))}",
+            )
+        if F_PGA_EXIGE_ESTUDIO_DE_SITIO in F_PGA_TABLA[clase]:
+            raise DatoInvalidoError(
+                campo=CRITERIO_F_PGA, valor=clase,
+                motivo=f"la fila '{clase}' de {NUMERAL_F_PGA_TABLA} no trae "
+                       f"factor: la fuente le pone asterisco en las cinco "
+                       f"columnas y su Nota 2 exige investigaciones "
+                       f"geotecnicas especificas del sitio y analisis de "
+                       f"respuesta dinamica. No hay numero que leer ahi. Si "
+                       f"esa es la fila que el expediente se atribuye, "
+                       f"entonces lo que hay que declarar no es un factor de "
+                       f"tabla sino la adopcion de seguir sin el, que es "
+                       f"materia de la premisa abierta y no de este criterio",
+            )
+    return tuple(elegidas)
+
+
+def _pga_en_rotulo_extremo(PGA: float) -> bool:
+    """
+    Si el PGA cae JUSTO sobre uno de los dos rotulos extremos de la tabla de
+    F_pga, que son los unicos puntos donde la lectura declarada en
+    'F_pga_lectura_columna_extrema' cambia algo.
+
+    Existe para que la condicion que el informe imprime diga la verdad en los dos
+    casos: con PGA = 0.50 la lectura del borde gobierna, y con un PGA
+    interior no gobierna nada y decir que si seria falso.
+    """
+    limites = F_PGA_TABLA_PGA_COLUMNAS
+    return any(math.isclose(PGA, x, abs_tol=TOL_UMBRAL_NORMATIVO)
+               for x in (limites[0], limites[-1]))
+
+
+def factor_sitio_desde_tabla(*, clase: str, PGA: float,
+                             lectura_extremos: str) -> float:
+    """
+    F_pga de UNA fila de la Tabla 2.4.3.11.2.1.2-1 para un PGA dado, aplicando
+    su Nota 1 ("usar linea recta de interpolacion para valores intermedios de
+    PGA").
+
+    Los cinco numeros de los rotulos -- 0.10, 0.20, 0.30, 0.40 y 0.50 -- son
+    [N]: la tabla los imprime. Lo que la tabla NO resuelve es que hacer con un
+    PGA que cae JUSTO en los rotulos extremos, porque los dos son
+    desigualdades estrictas: "PGA < 0.10" y "PGA > 0.50". El de este proyecto
+    es exactamente 0.50 y por tanto no cae en ninguna columna tabulada
+    (NOR-PUE-11). Esa lectura es del proyectista y entra por argumento:
+
+      'limite_inclusive'  las columnas extremas aplican TAMBIEN en su propio
+                          limite, de modo que 0.50 lee la ultima columna. Es
+                          la lectura corriente y la que este proyecto declara.
+      'limite_estricto'   los rotulos se leen al pie de la letra: en 0.50 no
+                          hay columna y no hay nada que interpolar, asi que el
+                          calculo se DETIENE en vez de elegir una.
+
+    Que la lectura no es neutra se ve en la fila D: con 'limite_inclusive' da
+    1.0 y con la columna anterior daria 1.1. Por eso se declara.
+    """
+    if clase not in F_PGA_TABLA:
+        raise DatoInvalidoError(
+            campo="clase", valor=clase,
+            motivo=f"no es una fila de {NUMERAL_F_PGA_TABLA}",
+        )
+    if lectura_extremos not in LECTURAS_COLUMNA_EXTREMA:
+        raise DatoInvalidoError(
+            campo="lectura_extremos", valor=lectura_extremos,
+            motivo="la lectura de los rotulos extremos tiene que ser una de "
+                   f"{LECTURAS_COLUMNA_EXTREMA}",
+        )
+    fila = F_PGA_TABLA[clase]
+    if F_PGA_EXIGE_ESTUDIO_DE_SITIO in fila:
+        # Misma excepcion que en `clases_de_sitio_plausibles` y a proposito:
+        # el hecho es el mismo -- se pidio una fila que no trae factor -- y
+        # dos excepciones distintas para un mismo hecho obligarian a quien
+        # atrapa a saber por cual de las dos puertas entro.
+        raise DatoInvalidoError(
+            campo="clase", valor=clase,
+            motivo=f"la fila '{clase}' de {NUMERAL_F_PGA_TABLA} no tiene "
+                   f"factor tabulado: la fuente le pone asterisco en las "
+                   f"cinco columnas y su Nota 2 exige estudio de respuesta "
+                   f"dinamica de sitio. No hay numero que leer ahi",
+        )
+
+    limites = F_PGA_TABLA_PGA_COLUMNAS
+    inferior, superior = limites[0], limites[-1]
+    if lectura_extremos == LECTURA_COLUMNA_EXTREMA_ESTRICTA and (
+            math.isclose(PGA, inferior, abs_tol=TOL_UMBRAL_NORMATIVO)
+            or math.isclose(PGA, superior, abs_tol=TOL_UMBRAL_NORMATIVO)):
+        raise DisenoNoFactibleError(
+            motivo=f"PGA = {PGA:.3f} g cae justo sobre un rotulo extremo de "
+                   f"{NUMERAL_F_PGA_TABLA}, y los dos son desigualdades "
+                   f"estrictas ('PGA < {inferior}', 'PGA > {superior}'): con "
+                   f"la lectura '{lectura_extremos}' no hay columna que leer "
+                   f"ni valor entre el que interpolar"
+        )
+
+    if PGA <= inferior:
+        return fila[0]
+    if PGA >= superior:
+        return fila[-1]
+    for k in range(len(limites) - 1):
+        x0, x1 = limites[k], limites[k + 1]
+        if x0 <= PGA <= x1:
+            y0, y1 = fila[k], fila[k + 1]
+            return y0 + (y1 - y0) * (PGA - x0) / (x1 - x0)
+    raise DisenoNoFactibleError(              # inalcanzable: los tramos cubren
+        motivo=f"PGA = {PGA} fuera de {NUMERAL_F_PGA_TABLA}"   # todo el rango
+    )
+
+
 def f_pga() -> float:
     """
     Paso 2: F_pga, factor de sitio, adimensional.
 
-    Es la UNICA pieza discutible de la cadena: la Tabla 2.4.3.11.2.1.2-1 es
-    [N] (C = 1.0, D = 1.0, E = 0.9 para PGA >= 0.50) pero la ELECCION entre
-    sus filas es [A] mientras no haya SPT que cierre la clase de sitio
-    (criterio 'F_pga', regla de coherencia de la Sec. 0 preliminar: la tabla
-    es [N], la eleccion es [A]).
+    Es la ENVOLVENTE de la tabla sobre las filas que 'F_pga' declara
+    plausibles: el mayor de sus factores al PGA del proyecto. Mientras la
+    campana geotecnica no cierre la clase, adoptar el mayor es la lectura
+    conservadora, y con las filas declaradas la memoria puede decir de cuales
+    salio -- que es lo que un 1.0 escrito a mano no permitia (NOR-MEM-03).
+
+    Lo que NO hace esta funcion, y hay que decirlo: no decide la clase del
+    sitio. La premisa de la Sec. 0.5 -- que el sitio cae en la Clase F de
+    AASHTO por licuefaccion -- sigue abierta en el criterio que la declara, y
+    el salto de la clasificacion de E.030 a la de AASHTO no lo escribe
+    ninguno de los dos documentos (NOR-AAS-02; la discrepancia entre los dos
+    esquemas esta transcrita en
+    `constantes_normativas.E030_S5_VS_CLASE_F`). Esta funcion lee las filas
+    que el proyectista declara; no las deduce.
     """
-    return ca.valor(CRITERIO_F_PGA)
+    PGA = pga_roca_b()
+    lectura = lectura_columna_extrema()
+    return max(factor_sitio_desde_tabla(clase=clase, PGA=PGA,
+                                        lectura_extremos=lectura)
+               for clase in clases_de_sitio_plausibles())
+
+
+def lectura_columna_extrema() -> str:
+    """
+    Como se leen los dos rotulos extremos de la tabla de F_pga, del criterio
+    'F_pga_lectura_columna_extrema' ([A]). Ver `factor_sitio_desde_tabla`.
+    """
+    lectura = ca.valor(CRITERIO_F_PGA_LECTURA)
+    if lectura not in LECTURAS_COLUMNA_EXTREMA:
+        raise DatoInvalidoError(
+            campo=CRITERIO_F_PGA_LECTURA, valor=lectura,
+            motivo=f"tiene que ser una de {LECTURAS_COLUMNA_EXTREMA}",
+        )
+    return lectura
 
 
 def aceleracion_ajustada_sitio(*, PGA: float, F_pga: float) -> float:
@@ -276,40 +551,105 @@ def aceleracion_ajustada_sitio(*, PGA: float, F_pga: float) -> float:
     return F_pga * PGA
 
 
-def coeficiente_sismico_base(*, A_s: float) -> float:
+def cimentacion_en_roca() -> bool:
     """
-    Paso 4: k_h0 = A_s (Manual de Puentes, num. 2.8.1.1.14.2).
+    Si la cimentacion del cabezal cae en las filas de ROCA de la tabla de
+    F_pga (Clase A o B), que es la condicion que dispara la clausula de roca
+    del num. 2.8.1.1.14.2.1.
 
-    La igualdad es [N]: no es que k_h0 "se adopte" igual a A_s, es que el
-    numeral la establece. Se deja como funcion propia y no como alias para
-    que la memoria pueda citar el numeral en su fila de la tabla.
+    Se resuelve con las MISMAS filas que declara 'F_pga' y no con un criterio
+    nuevo: si el proyectista declara que las filas plausibles son C, D y E,
+    ya esta diciendo que la cimentacion no es roca. Antes esa afirmacion
+    estaba implicita en un 1.0 y la clausula no se implementaba ni se
+    descartaba (MAT-O4, NOR-PUE-12); ahora se descarta de forma trazable, y
+    el dia que alguien anada A o B a la declaracion la clausula se activa
+    sola.
+
+    Una declaracion MIXTA -- filas de roca y de suelo a la vez -- no se
+    resuelve por mayoria ni por el lado conservador: son dos ramas distintas
+    del numeral y elegir una seria decidir por el proyectista.
     """
+    clases = clases_de_sitio_plausibles()
+    en_roca = [c for c in clases if c in F_PGA_CLASES_EN_ROCA]
+    if en_roca and len(en_roca) != len(clases):
+        raise DatoInvalidoError(
+            campo=CRITERIO_F_PGA, valor=clases,
+            motivo=f"mezcla filas de roca {F_PGA_CLASES_EN_ROCA} con filas de "
+                   f"suelo, y {NUMERAL_K_H0} da a cada grupo una expresion "
+                   f"distinta de k_h0. Declarar en cual de las dos ramas cae "
+                   f"la cimentacion del cabezal",
+        )
+    return bool(en_roca)
+
+
+def coeficiente_sismico_base(*, A_s: float, F_pga: float, PGA: float,
+                             cimentacion_en_roca: bool) -> float:
+    """
+    Paso 4: k_h0, coeficiente sismico de base (num. 2.8.1.1.14.2.1,
+    `NUMERAL_K_H0`).
+
+    DOS RAMAS, y el repositorio implementaba una sola sin decirlo:
+
+        cimentacion en suelo   k_h0 = F_pga*PGA = A_s
+        cimentacion en roca    k_h0 = 1.2 * F_pga * PGA
+        (Clase de Sitio A o B)
+
+    La igualdad de la primera rama es [N]: no es que k_h0 "se adopte" igual a
+    A_s, es que el numeral la establece ("kh0=FpgaPGA = As donde kh0 es el
+    coeficiente de aceleracion sismico horizontal asumiendo que el
+    desplazamiento del muro sea cero").
+
+    LA SEGUNDA RAMA SE TOMA DE LA PROSA Y NO DEL PARENTESIS. El Manual
+    imprime "(es decir, 1.2 kh0=FpgaPGA)", que leido al pie de la letra daria
+    k_h0 = A_s/1.2 -- una reduccion del 17 %, lo contrario de lo que la misma
+    frase acaba de decir. Es errata de imprenta y esta declarada entera en
+    `constantes_normativas.K_H0_ROCA_ERRATA`, con la ecuacion de AASHTO que
+    la resuelve. Es la segunda de las tres erratas del Manual en esta misma
+    cadena; las otras estan en `k_ae_mononobe_okabe` y en
+    `excentricidad_admisible_sismica`.
+
+    `cimentacion_en_roca` entra por argumento y no se deduce aqui: quien
+    quiera la rama del proyecto usa `cimentacion_en_roca()`, que la resuelve
+    con las filas declaradas en 'F_pga'.
+    """
+    if cimentacion_en_roca:
+        return K_H0_FACTOR_ROCA_A_B * F_pga * PGA
     return A_s
 
 
 def factor_muro() -> float:
     """
-    Paso 5: factor de reduccion por desplazamiento admisible del muro
-    (num. 2.8.1.1.14.2), adimensional.
+    Paso 5: factor por el que se multiplica k_h0 segun la deformacion lateral
+    admitida al muro (num. 2.8.1.1.14.2.2, `NUMERAL_FACTOR_MURO`),
+    adimensional.
 
-    La TABLA es [N] y esta en `constantes_normativas.FACTOR_MURO_TABLA`: el
-    numeral fija sus dos filas (rigido = 1.0, desplazable = 0.5, esta ultima
-    el caso k_h = 0.5 * k_h0 = 0.25 de los muros que admiten 25-50 mm). Cual
-    de las dos aplica a ESTE cabezal no lo dice el numeral: lo dice como se
-    disena el cabezal, y por eso la ELECCION es [A] y se lee del criterio
-    'factor_muro_eleccion' (empotrado en el terraplen, sin desplazamiento
-    admisible garantizado -> fila rigida, sin reduccion). Es el mismo reparto
-    tabla/eleccion que ya tenian `F_PGA_TABLA` y el criterio 'F_pga'.
+    AQUI NO HAY TABLA. Este archivo declaraba `FACTOR_MURO_TABLA` con dos
+    filas ("rigido" 1.0 / "desplazable" 0.5) afirmando que "las DOS filas son
+    [N]: el numeral las fija". El numeral no presenta ninguna tabla -- en las
+    pags. impresas 252-257 del Manual no hay una sola -- y fija UN valor, 0.5,
+    de forma PERMISIVA ("kh puede ser reducido a 0.5kh0"). El 1.0 no es una
+    fila tabulada: es la AUSENCIA de reduccion, que es la definicion misma de
+    k_h0 (NOR-PUE-07).
+
+    Lo que el proyectista declara, entonces, no es una fila sino si aplica o
+    no la reduccion que el numeral autoriza. Y no es una decision solo
+    tecnica: AASHTO, del que el numeral es traduccion, la condiciona ademas a
+    que el movimiento lateral sea "acceptable to the Owner". Este cabezal va
+    empotrado en el terraplen y no tiene desplazamiento admisible garantizado,
+    de modo que se declara SIN reduccion -- el lado conservador, y el que la
+    propia Sec. 9.2 subraya ("no asumirlo en un cabezal empotrado").
     """
-    elegido = ca.valor(CRITERIO_FACTOR_MURO)
-    if elegido not in FACTOR_MURO_TABLA.values():
+    declarado = ca.valor(CRITERIO_FACTOR_MURO)
+    if declarado not in FACTOR_MURO_DECLARACIONES:
         raise DatoInvalidoError(
-            CRITERIO_FACTOR_MURO, valor=elegido,
-            motivo="la eleccion tiene que ser una de las filas de "
-                   f"FACTOR_MURO_TABLA ({NUMERAL_FACTOR_MURO}): "
-                   f"{FACTOR_MURO_TABLA}",
+            CRITERIO_FACTOR_MURO, valor=declarado,
+            motivo=f"la declaracion tiene que ser una de "
+                   f"{FACTOR_MURO_DECLARACIONES} ({NUMERAL_FACTOR_MURO}). El "
+                   f"numeral no tabula filas: autoriza una reduccion",
         )
-    return elegido
+    if declarado == FACTOR_MURO_CON_REDUCCION:
+        return REDUCCION_KH_POR_DESPLAZAMIENTO
+    return 1.0   # literal-ok: ausencia de reduccion, k_h = k_h0 por definicion
 
 
 def coeficiente_sismico_horizontal(*, k_h0: float, factor_muro: float) -> float:
@@ -321,62 +661,154 @@ def coeficiente_sismico_vertical() -> float:
     """
     k_v, coeficiente sismico vertical, adimensional.
 
-    Fuera de la cadena a proposito: no deriva de PGA ni de k_h, es una
-    adopcion [A] del criterio 'k_v' (0, "adopcion habitual en muros de baja
-    altura") y la hoja de ruta la pone en su propia fila. Su sensibilidad
-    declarada contempla 0.5*k_h como escenario alterno.
+    ES [N] CONDICIONADO, no una adopcion. El criterio 'k_v' declaraba 0.0 con
+    la fuente "practica corriente; no fijado por el Manual de Puentes", y esa
+    afirmacion negativa es falsa: el MISMO numeral del que la cadena toma
+    k_h0 lo fija ("El coeficiente de aceleracion sismica vertical, kv, se
+    asumira cero con el proposito de calcular las presiones laterales del
+    terreno, a no ser que...", `NUMERAL_K_H0`). El valor era correcto; la
+    cita y
+    la etiqueta, no (NOR-PUE-08, MAT-O11, MAT-X4).
+
+    El numeral reserva dos casos -- muro significativamente afectado por
+    efectos de alguna falla cercana, y aceleraciones verticales relativamente
+    altas simultaneas con la horizontal -- y no cuantifica ninguno ni escribe
+    un k_v alternativo para ellos. Lo que el proyecto declara en el criterio
+    'k_v' es, por tanto, una de dos cosas:
+
+        la cadena prescrita       -> k_v = K_V_PRESCRITO, que es [N]
+        un numero                 -> el caso reservado se da y el proyectista
+                                     aporta el valor que el Manual no da
+
+    Cualquier otra cosa es `DatoInvalidoError`. El rango de sensibilidad
+    (0.0, 0.5) que el criterio declaraba sugeria una libertad que el numeral
+    no concede, y ademas su comentario ("0.5*k_h") no coincidia con su propio
+    extremo: con la cadena de hoy 0.5*k_h vale 0.25, no 0.5 (SIS-D-04).
     """
-    return ca.valor(CRITERIO_K_V)
+    declarado = ca.valor(CRITERIO_K_V)
+    if declarado == K_V_DECLARACION_PRESCRITO:
+        return K_V_PRESCRITO
+    if isinstance(declarado, bool) or not isinstance(declarado, (int, float)):
+        raise DatoInvalidoError(
+            CRITERIO_K_V, valor=declarado,
+            motivo=f"o se declara '{K_V_DECLARACION_PRESCRITO}' y rige el "
+                   f"cero de {NUMERAL_K_H0}, o se declara el numero que "
+                   f"corresponde al caso que ese numeral reserva y que no "
+                   f"cuantifica. {K_V_CASO_RESERVADO}",
+        )
+    return float(declarado)
 
 
 def cadena_sismica() -> CadenaSismica:
     """
-    Los seis pasos horizontales de Sec. 9.2 mas k_v, cada uno con su etiqueta
-    y su origen, en el orden de la tabla de la hoja de ruta.
+    Los seis pasos horizontales de Sec. 9.2 mas k_v, cada uno con su etiqueta,
+    su origen y LA CONDICION QUE SU FUENTE LE PONE, en el orden de la tabla de
+    la hoja de ruta.
 
-    `pasos` es lo que M11 imprime: la cadena entera, no el resultado. Todos
-    los insumos tienen valor declarado, asi que esta funcion no se detiene
-    hoy por ningun vacio.
+    `pasos` es lo que el informe imprime: la cadena entera, no el resultado. La
+    columna nueva es `condicion`: cada eslabon dice bajo que supuesto vale, de
+    modo que un revisor pueda comprobar el supuesto y no solo el numero. Los
+    tres que mas pesan -- de que filas de la tabla sale F_pga, en que rama de
+    k_h0 cae la cimentacion, y que caso de k_v rige -- eran justamente los que
+    viajaban implicitos.
+
+    Todos los insumos tienen valor declarado, asi que esta funcion no se
+    detiene hoy por ningun vacio.
     """
     PGA = pga_roca_b()
+    clases = clases_de_sitio_plausibles()
+    lectura = lectura_columna_extrema()
     Fpga = f_pga()
     A_s = aceleracion_ajustada_sitio(PGA=PGA, F_pga=Fpga)
-    k_h0 = coeficiente_sismico_base(A_s=A_s)
+    en_roca = cimentacion_en_roca()
+    k_h0 = coeficiente_sismico_base(A_s=A_s, F_pga=Fpga, PGA=PGA,
+                                    cimentacion_en_roca=en_roca)
     f_muro = factor_muro()
     k_h = coeficiente_sismico_horizontal(k_h0=k_h0, factor_muro=f_muro)
     k_v = coeficiente_sismico_vertical()
+    declarado_muro = ca.valor(CRITERIO_FACTOR_MURO)
+    # La etiqueta y la condicion de k_v NO se cablean: dependen de cual de
+    # los dos regimenes declaro el criterio. Cableadas, un k_v puesto a mano
+    # por el proyectista para el caso reservado salia de la memoria como [N]
+    # "exigencia normativa con numeral verificado" y con una condicion que
+    # afirmaba lo contrario de lo que acababa de pasar -- el peor error
+    # posible de la taxonomia, cometido justo por la funcion que existe para
+    # arreglar etiquetas.
+    rige_el_cero = ca.valor(CRITERIO_K_V) == K_V_DECLARACION_PRESCRITO
+    if rige_el_cero:
+        etiqueta_k_v = "N"
+        origen_k_v = NUMERAL_K_H0
+        condicion_k_v = ("El numeral lo fija en cero salvo muro "
+                         "significativamente afectado por efectos de alguna "
+                         "falla cercana, o aceleraciones verticales "
+                         "relativamente altas simultaneas con la horizontal. "
+                         "Ninguno de los dos casos se declara para este "
+                         "cabezal, de modo que rige el cero prescrito")
+    else:
+        etiqueta_k_v = ca.criterio(CRITERIO_K_V).etiqueta
+        origen_k_v = "Declarado por el proyectista"
+        condicion_k_v = ("El expediente declara que se da uno de los dos "
+                         f"casos que {NUMERAL_K_H0} reserva. Para ellos el "
+                         "Manual NO escribe ningun k_v, asi que este valor es "
+                         "del proyectista y no de la norma")
 
     pasos = (
         PasoSismico(simbolo="PGA", valor=PGA,
                     concepto="Aceleracion pico en roca Clase B, Tr = 1000 anios",
                     etiqueta=ds.dato(DATO_SITIO_PGA).etiqueta,
-                    origen=NUMERAL_PGA, criterio=DATO_SITIO_PGA),
+                    origen=NUMERAL_PGA, criterio=DATO_SITIO_PGA,
+                    condicion="Lectura del mapa sobre las coordenadas de esta "
+                              "obra; su reproducibilidad llega hoy hasta el "
+                              "distrito"),
         PasoSismico(simbolo="F_pga", valor=Fpga,
                     concepto="Factor de sitio",
                     etiqueta=ca.criterio(CRITERIO_F_PGA).etiqueta,
-                    origen=NUMERAL_F_PGA, criterio=CRITERIO_F_PGA),
+                    origen=NUMERAL_F_PGA, criterio=CRITERIO_F_PGA,
+                    condicion=f"Envolvente de las filas {', '.join(clases)} "
+                              f"de la tabla" + (
+                                  f"; PGA = {PGA:.2f} g cae justo sobre un "
+                                  f"rotulo extremo, que es desigualdad "
+                                  f"estricta, y ese borde se lee con "
+                                  f"'{lectura}'"
+                                  if _pga_en_rotulo_extremo(PGA) else
+                                  f"; PGA = {PGA:.2f} g cae dentro de la "
+                                  f"tabla y el factor sale de la "
+                                  f"interpolacion de su Nota 1")),
         PasoSismico(simbolo="A_s", valor=A_s,
                     concepto="Aceleracion ajustada por sitio (F_pga * PGA)",
                     etiqueta=ETIQUETA_CALCULADO, origen=CALCULADO),
         PasoSismico(simbolo="k_h0", valor=k_h0,
-                    concepto="Coeficiente sismico de base (= A_s)",
-                    etiqueta="N", origen=NUMERAL_K_H0),
+                    concepto="Coeficiente sismico de base",
+                    etiqueta="N", origen=NUMERAL_K_H0,
+                    condicion=("Rama de roca: k_h0 = 1.2*F_pga*PGA, "
+                               "cimentacion en Clase de Sitio A o B"
+                               if en_roca else
+                               "Rama de suelo: k_h0 = A_s. La rama de roca "
+                               "(1.2*F_pga*PGA, Clase de Sitio A o B) queda "
+                               "descartada porque ninguna fila declarada en "
+                               "'F_pga' es de roca")),
         PasoSismico(simbolo="factor_muro", valor=f_muro,
-                    concepto="Factor de muro (rigido, empotrado)",
+                    concepto="Factor por deformacion lateral admitida al muro",
                     etiqueta=ca.criterio(CRITERIO_FACTOR_MURO).etiqueta,
-                    origen=NUMERAL_K_H0, criterio=CRITERIO_FACTOR_MURO),
+                    origen=NUMERAL_FACTOR_MURO, criterio=CRITERIO_FACTOR_MURO,
+                    condicion=f"Declaracion '{declarado_muro}'. El numeral no "
+                              f"tabula filas: autoriza reducir k_h0 a la "
+                              f"mitad si el muro admite 1.0 a 2.0 in o mas de "
+                              f"desplazamiento Y el propietario acepta ese "
+                              f"movimiento"),
         PasoSismico(simbolo="k_h", valor=k_h,
                     concepto="Coeficiente sismico horizontal de diseno",
                     etiqueta=ETIQUETA_CALCULADO, origen=CALCULADO),
         PasoSismico(simbolo="k_v", valor=k_v,
                     concepto="Coeficiente sismico vertical",
-                    etiqueta=ca.criterio(CRITERIO_K_V).etiqueta,
-                    origen="Adopcion declarada", criterio=CRITERIO_K_V),
+                    etiqueta=etiqueta_k_v, origen=origen_k_v,
+                    criterio=CRITERIO_K_V, condicion=condicion_k_v),
     )
 
     return CadenaSismica(PGA=PGA, F_pga=Fpga, A_s=A_s, k_h0=k_h0,
                          factor_muro=f_muro, k_h=k_h, k_v=k_v,
-                         pasos=pasos, numeral=NUMERAL_9_2)
+                         pasos=pasos, numeral=NUMERAL_9_2,
+                         clases_de_sitio=clases, cimentacion_en_roca=en_roca)
 
 
 # ===========================================================================
@@ -441,6 +873,35 @@ def k_ae_mononobe_okabe(*, phi_grados: float, i_grados: float,
     i = beta = delta = 0, esta expresion devuelve exactamente
     tan^2(45 - phi/2), el Ka de Rankine que cita Sec. 9.2. Es la comprobacion
     que garantiza que los signos estan bien puestos.
+
+    EL SIGNO DEL CORCHETE: [1 + R], Y EL MANUAL DE PUENTES IMPRIME [1 - R].
+    Hay que decirlo aqui, en el punto de uso, porque un revisor que compare
+    esta funcion con la letra impresa de la norma peruana va a creer que
+    encontro un error de transcripcion, y "corregirla" rompe la formula.
+
+    El Apendice A11 del Manual (num. A.11.3.1 "Metodo de Mononobe -Okabe",
+    pag. impresa 586 / PDF 587) imprime el denominador con signo MENOS. Es
+    ERRATA DE IMPRENTA, no una variante peruana:
+
+      * el propio Manual declara transcribir a AASHTO, y AASHTO imprime "+"
+        (Art. A11.3.1, ec. A11.3.1-1, pag. impresa 11-145 / PDF 1614);
+      * con el menos, K_AE DIVERGE cuando el radicando tiende a 1, y el caso
+        limite k_h = k_v = 0 deja de devolver el Ka de Coulomb -- la formula
+        se rompe justo donde el Manual la manda coincidir.
+
+    ESTE CODIGO SIGUE A AASHTO, y esa es la decision correcta. La declaracion
+    completa, con las dos citas, esta en
+    `constantes_normativas.K_AE_ERRATA_MANUAL`, y viaja a la memoria por
+    `condicion_normativa_cabezal`. Es la primera de las TRES erratas del
+    Manual en esta misma cadena sismica: las otras dos son el parentesis de
+    la clausula de roca de k_h0, en `coeficiente_sismico_base`, y el "tercio
+    central" del limite de excentricidad, en
+    `excentricidad_admisible_sismica` -- la unica de las tres que mueve un
+    numero.
+
+    Se reporta contra la hoja de ruta: su Sec. 9.2 remite a Mononobe-Okabe
+    sin escribir la formula ni advertir de la errata, de modo que quien la
+    lea sin leer este codigo no tiene con que detectarla.
 
     Dominio de validez. La formula tiene solucion real solo si
     phi - psi - i >= 0: por debajo de ese limite la cuna activa no encuentra
@@ -774,6 +1235,25 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
     fila con `punto.exigir("NF_profundidad_m")` y se detiene con
     DatoFaltanteError si el estudio geotecnico aun no lo dio para ese punto.
 
+    EL AGUA BAJO EL NF, hipotesis declarada y no supuesta. El empuje activo
+    se calcula con el peso especifico TOTAL del relleno en toda la altura y
+    se le suma la hidrostatica completa, de modo que en la zona sumergida el
+    agua de poros se cuenta dos veces. AASHTO 3.11.3 "Presence of Water"
+    (pag. impresa 3-118 / PDF 172) exige lo contrario, y con un `shall`:
+    "Submerged unit weights of the soil shall be used to determine the
+    lateral earth pressure below the groundwater table". La desviacion es
+    CONSERVADORA y esta acotada: el exceso es Ka*gamma_agua*h_agua, constante
+    en toda la zona sumergida -- 1.96 kPa con Ka = 1/3 y 0.60 m de agua --, de
+    modo que en porcentaje depende de la altura del muro: +25 % sobre un muro
+    de 0.60 m (el caso con que lo calculo la ficha MAT-O3), +11 % sobre uno de
+    2.00 m con el freatico a 1.40 m, y menos cuanto mas alto. Se
+    mantiene porque corregirla exige un peso especifico SUMERGIDO del relleno
+    que este expediente todavia no tiene: aplicar AASHTO con el unico gamma
+    declarado seria aliviar el empuje sin dato que lo sostenga. El texto
+    completo esta en `constantes_normativas.HIPOTESIS_EMPUJE_BAJO_NF` y viaja
+    a la memoria por `condicion_normativa_cabezal`; la hoja de ruta no dice
+    nada del NF en el empuje y por eso el defecto se reporta contra ella.
+
     Se detiene con `CriterioPendienteError` en el primero de los vacios que
     toque: el peso especifico del relleno, los cuatro angulos de K_AE (solo
     en condicion sismica) o el brazo del incremento.
@@ -816,8 +1296,339 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
 
 
 # ===========================================================================
+# 9.2 - INERCIA DEL MURO Y DEMANDA SISMICA (100/50 - 50/100)
+# El tramo de la cadena que faltaba entero: MAT-D6, MAT-X7, MAT-O16.
+# ===========================================================================
+
+def peso_suelo_sobre_talon(*, ancho_talon: float, altura_suelo: float,
+                           gamma_relleno: float) -> float:
+    """
+    W_s, peso del suelo que gravita sobre el talon de la zapata, kN/m
+    (num. 2.8.1.1.14.1).
+
+    La fuente lo define ESTRECHO y conviene no ensancharlo: "el peso del
+    suelo que esta inmediatamente encima del muro, incluyendo el talon del
+    muro". No es el relleno del trasdos entero -- ese ya entra por el empuje
+    activo -- sino la columna de suelo que la zapata carga y que, por tanto,
+    acelera con el muro.
+
+    `altura_suelo` entra por argumento y no se deduce de la geometria por la
+    misma razon que `altura_empuje` en `empujes_trasdos`: la altura de suelo
+    sobre el talon depende de donde se corte el plano de calculo, y elegirlo
+    aqui seria decidir por el proyectista. La eleccion corriente es la altura
+    del muro sobre la cara superior de la zapata.
+    """
+    return gamma_relleno * ancho_talon * altura_suelo
+
+
+def fuerza_inercia_muro(*, k_h: float, W_w: float,
+                        W_s: float) -> FuerzaInerciaMuro:
+    """
+    P_IR = k_h * (W_w + W_s), kN/m: la fuerza de inercia de la masa del muro
+    (num. 2.8.1.1.14.1, ec. 2.8.1.1.14.1-1 = AASHTO 11.6.5.1-1).
+
+    ESTE TERMINO NO EXISTIA EN EL REPOSITORIO. La cadena de la hoja de ruta
+    termina en k_h y K_AE, y `empujes_trasdos` sumaba EH + LS + WA + el
+    incremento de Mononobe-Okabe sin ninguna linea de inercia del muro. La
+    omision es NO CONSERVADORA y no marginal: con k_h = 0.50, P_IR vale la
+    mitad del peso movilizado, del mismo orden que el propio incremento
+    sismico del empuje, y falta en el volteo y en el deslizamiento sismicos.
+
+    Se reporta contra la hoja de ruta, que es la que hay que corregir: su
+    Sec. 9.2 desagrega la cadena, cita el num. 2.8.1.1.14.2 para k_h0 y nunca
+    menciona P_IR, que esta en el num. 2.8.1.1.14.1 -- la misma seccion, un
+    nivel mas arriba.
+    """
+    return FuerzaInerciaMuro(P_IR=k_h * (W_w + W_s), W_w=W_w, W_s=W_s,
+                             k_h=k_h, numeral=NUMERAL_P_IR)
+
+
+def demanda_sismica_cabezal(*, P_AE: float, P_A: float,
+                            inercia: FuerzaInerciaMuro
+                            ) -> DemandaSismicaCabezal:
+    """
+    P_seis: los dos casos que el num. 2.8.1.1.14.1 manda investigar y el mas
+    desfavorable de los dos.
+
+        caso 1   100 % P_AE  +   50 % P_IR
+        caso 2    50 % P_AE  +  100 % P_IR,
+                  con el 50 % de P_AE acotado por abajo en el empuje activo
+                  ESTATICO: "no sea menor que la presion estatica activa del
+                  terreno (F = 1/2 gf h2 k)"
+
+    La fuente dice por que son dos y no una suma: "los efectos de la
+    combinacion de P_AE y P_IR NO SON SIMULTANEOS". Sumar el 100 % de los dos
+    sobrestima; tomar solo uno subestima.
+
+    ESTA FUNCION NO ELIGE EL QUE GOBIERNA, y es deliberado. La fuente manda
+    quedarse con "el resultado mas conservador de estos dos ANALISIS", no con
+    la mayor de las dos fuerzas: P_AE y P_IR actuan a alturas distintas, de
+    modo que el orden por fuerza resultante no coincide con el orden por
+    momento volcante, y elegir por la suma devuelve el caso equivocado justo
+    donde equivocarse es no conservador. Quien evalue la estabilidad pasa el
+    efecto que midio a `DemandaSismicaCabezal.mas_desfavorable`.
+
+    QUE ES `P_AE` AQUI. El empuje TOTAL de Mononobe-Okabe -- estatico mas
+    dinamico --, no el incremento. AASHTO lo advierte en el comentario del
+    mismo articulo: "Since P_AE is the combined lateral earth pressure force
+    resulting from static earth pressure plus dynamic effects, the static
+    earth pressure ... K_a, should not be added to the seismic earth
+    pressure". Pasarle el incremento de `incremento_sismico` en vez del total
+    de `empuje_activo_sismico_total` es el error que este parrafo existe para
+    impedir.
+
+    QUE NO ENTRA. La sobrecarga de trasdos: el comentario excluye de P_AE las
+    cargas de sobrecarga permanente sobre el muro, que aportan por su cuenta
+    su empuje estatico y su propia inercia k_h*W_sobrecarga. Este objeto
+    devuelve la demanda del PAR P_AE / P_IR, y quien ensamble la combinacion
+    Evento Extremo I tiene que anadir esos dos terminos aparte.
+    """
+    # El piso estatico se identifica por el NOMBRE de la combinacion a la que
+    # la fuente se lo pone, y ese nombre es dato [N]. Si alguna vez dejara de
+    # coincidir, el piso se aplicaria a ninguna combinacion EN SILENCIO -- que
+    # es exactamente la clase de omision no conservadora que este bloque
+    # existe para cerrar --, asi que se comprueba en vez de confiarse.
+    nombres = [nombre for nombre, _, _ in P_SEIS_COMBINACIONES]
+    if P_SEIS_PISO_ESTATICO not in nombres:
+        raise DatoInvalidoError(
+            campo="P_SEIS_PISO_ESTATICO", valor=P_SEIS_PISO_ESTATICO,
+            motivo=f"nombra una combinacion que no esta en "
+                   f"P_SEIS_COMBINACIONES ({nombres}): el piso del empuje "
+                   f"activo estatico que exige {NUMERAL_P_IR} no se estaria "
+                   f"aplicando a ninguna",
+        )
+    casos = []
+    for nombre, fraccion_ae, fraccion_ir in P_SEIS_COMBINACIONES:
+        ae = fraccion_ae * P_AE
+        piso = nombre == P_SEIS_PISO_ESTATICO and ae < P_A
+        if piso:
+            ae = P_A
+        ir = fraccion_ir * inercia.P_IR
+        casos.append(CasoDemandaSismica(
+            nombre=nombre, fraccion_P_AE=fraccion_ae,
+            fraccion_P_IR=fraccion_ir, P_AE_aplicado=ae, P_IR_aplicado=ir,
+            total=ae + ir, piso_estatico_activo=piso,
+        ))
+    return DemandaSismicaCabezal(casos=tuple(casos), P_AE=P_AE, P_A=P_A,
+                                 inercia=inercia, numeral=NUMERAL_P_IR)
+
+
+# ===========================================================================
+# 9.3 - PRESION DE CONTACTO Y EXCENTRICIDAD EN LA BASE
+# ===========================================================================
+
+def excentricidad_resultante(*, N: float, momento_neto: float,
+                             B: float) -> float:
+    """
+    e, excentricidad de la resultante respecto del CENTRO de la zapata, en m.
+
+        e = momento_neto / N
+
+    `momento_neto` es el momento respecto del centro de la base -- el
+    volcante menos el estabilizante --, y `N` la normal neta ya descontada la
+    subpresion (ver `subpresion`). El signo de e no interesa: lo que se
+    compara con el limite es su magnitud, y por eso se devuelve el valor
+    absoluto.
+
+    Con N <= 0 no hay resultante que ubicar: la zapata no esta comprimida y
+    el problema no es de excentricidad sino de flotacion, que es otra
+    verificacion.
+    """
+    if N <= 0:
+        raise DatoInvalidoError(
+            campo="N", valor=N,
+            motivo="la normal neta en la base tiene que ser de compresion "
+                   "para que la resultante tenga una ubicacion que comparar "
+                   "con el limite de excentricidad. Con N <= 0 el problema es "
+                   "de flotacion, no de excentricidad",
+        )
+    if B <= 0:
+        raise DatoInvalidoError(
+            campo="B", valor=B,
+            motivo="el ancho de zapata tiene que ser positivo",
+        )
+    return abs(momento_neto / N)
+
+
+def excentricidad_admisible_sismica(*, B: float, gamma_EQ: float) -> float:
+    """
+    Excentricidad maxima admisible de la resultante bajo sismo, en m
+    (num. 2.8.1.1.14.1).
+
+    NO ES UN LIMITE FIJO: el numeral lo hace depender de gamma_EQ.
+
+        gamma_EQ = 0.0   dos tercios centrales   ->  e <= B/3
+        gamma_EQ = 1.0   ocho decimas centrales  ->  e <= 0.4*B
+        entre los dos    interpolacion lineal
+
+    Y EL PRIMERO NO SALE DEL LITERAL DEL MANUAL, que imprime "tercio central"
+    (e <= B/6). Es la TERCERA errata de imprenta de esta cadena y la unica
+    que mueve un numero: AASHTO 11.6.5.1 escribe "middle two-thirds", el
+    propio Manual traduce bien ese mismo giro tres paginas antes en su
+    numeral estatico, y la lectura literal dejaria el limite bajo SISMO al
+    doble de estricto que el estatico del mismo Manual -- imposible en la
+    filosofia de estados limite. La declaracion entera, con las tres pruebas,
+    esta en `constantes_normativas.EXCENTRICIDAD_ERRATA_MANUAL`. Con el texto
+    de AASHTO el articulo es coherente: ANCLA en B/3, que es el limite
+    estatico para fundacion en suelo, y RELAJA hasta 0.4*B.
+
+    Quien adopte gamma_EQ distinto de 0 sin interpolar no tiene regla. Por eso
+    el limite se calcula y gamma_EQ es un vacio declarado ('gamma_EQ'), no un
+    supuesto.
+    """
+    tramos = EXCENTRICIDAD_ADMISIBLE_FRACCION_B
+    g0, g1 = min(tramos), max(tramos)
+    if not g0 - TOL_UMBRAL_NORMATIVO <= gamma_EQ <= g1 + TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            campo=CRITERIO_GAMMA_EQ, valor=gamma_EQ,
+            motivo=f"el numeral tabula el limite de excentricidad solo entre "
+                   f"gamma_EQ = {g0} y gamma_EQ = {g1}, e interpola en medio: "
+                   f"fuera de ese rango no hay limite que leer",
+        )
+    f0, f1 = tramos[g0], tramos[g1]
+    fraccion = f0 + (f1 - f0) * (gamma_EQ - g0) / (g1 - g0)
+    return fraccion * B
+
+
+def gamma_eq() -> float:
+    """
+    gamma_EQ, factor de carga viva de Evento Extremo I, del criterio del mismo
+    nombre. Se detiene con `CriterioPendienteError` mientras siga vacio: ni la
+    Tabla 2.4.5.3.1-1 ni AASHTO escriben un numero -- la tabla imprime el
+    simbolo y AASHTO manda determinarlo "on a project-specific basis".
+    """
+    return ca.valor(CRITERIO_GAMMA_EQ)
+
+
+def presion_contacto_base(*, N: float, momento_neto: float, B: float,
+                          cimentacion_en_roca: bool) -> PresionContactoBase:
+    """
+    Presion de contacto bajo la zapata, en kPa, segun la distribucion que la
+    fuente da a CADA TERRENO DE FUNDACION (num. 2.8.1.1.12.2, `NUMERAL_
+    PRESION_CONTACTO`). Son dos ramas y no una:
+
+        fundacion en SUELO   presion UNIFORME sobre el ancho efectivo:
+                             q = N / (B - 2e)                  (-1)
+
+        fundacion en ROCA    presion distribuida LINEALMENTE:
+                             dentro del tercio central (e <= B/6)
+                                 q = (N/B)(1 +- 6e/B)          (-2, -3)
+                             fuera del tercio central
+                                 q_max = 2N/[3(B/2 - e)], q_min = 0  (-4, -5)
+
+    ESTO ES UN CAMBIO CONTRA LA FICHA DEL HALLAZGO, y hay que decir por que.
+    MAT-O16 describe el procedimiento ausente como "excentricidad, e <= B/6,
+    q_max = N/B*(1+6e/B)", que es la rama de ROCA. Implementarla sola, como
+    se hizo primero, aplicaba a esta obra -- la llanura arenosa del Bajo
+    Piura, que el propio proyecto declara en 'F_pga' que NO es roca -- la
+    rama que la fuente reserva al otro terreno, y la elegia en silencio, que
+    es justo lo que este cluster existe para no hacer. La direccion era
+    conservadora (Navier sobre B da un pico mayor que el uniforme sobre
+    B - 2e), de modo que no hay ningun numero emitido que corregir; lo que se
+    corrige es la rama y la cita.
+
+    `cimentacion_en_roca` entra por argumento, como en
+    `coeficiente_sismico_base` y por lo mismo: quien quiera la rama del
+    proyecto llama a `cimentacion_en_roca()`, que la resuelve con las filas
+    declaradas en 'F_pga'. Es el MISMO reparto suelo/roca que gobierna k_h0,
+    y que lo sea no es coincidencia: las dos ramas cuelgan de la clase de
+    sitio.
+
+    Con e >= B/2 la resultante cae fuera de la zapata y no hay equilibrio
+    posible en ninguna de las dos ramas: sale como `DisenoNoFactibleError`
+    con su motivo, no como una division por cero ni como una presion enorme
+    sin explicacion.
+    """
+    e = excentricidad_resultante(N=N, momento_neto=momento_neto, B=B)
+    if e >= B / 2 - TOL_UMBRAL_NORMATIVO:   # literal-ok: media zapata
+        raise DisenoNoFactibleError(
+            motivo=f"la resultante cae fuera de la zapata (e = {e:.4f} m, "
+                   f"B/2 = {B / 2:.4f} m): no hay distribucion de presiones "
+                   f"que equilibre el muro. Hay que ampliar B o reducir el "
+                   f"momento volcante ({NUMERAL_PRESION_CONTACTO})"
+        )
+    ancho_efectivo = B - 2 * e
+    limite_nucleo = B / 6                   # literal-ok: nucleo central, e = B/6
+    dentro = e <= limite_nucleo + TOL_UMBRAL_NORMATIVO
+
+    if not cimentacion_en_roca:
+        # Rama de SUELO: uniforme sobre el ancho efectivo. No hay q_min
+        # distinto: la fuente reparte la resultante por igual sobre B - 2e y
+        # el resto de la zapata no toma presion.
+        q = N / ancho_efectivo
+        return PresionContactoBase(N=N, B=B, e=e, q_max=q, q_min=q,
+                                   ancho_efectivo=ancho_efectivo,
+                                   dentro_del_nucleo=dentro,
+                                   distribucion="uniforme sobre B - 2e "
+                                                "(fundacion en suelo)",
+                                   numeral=NUMERAL_PRESION_CONTACTO)
+
+    # Rama de ROCA: distribucion lineal, y su forma cambia en el tercio
+    # central. Las dos expresiones empalman exactamente en e = B/6, donde las
+    # dos dan 2N/B.
+    if dentro:
+        q_medio = N / B
+        variacion = 6 * e / B               # literal-ok: q = N/B(1+-6e/B)
+        q_max = q_medio * (1 + variacion)
+        q_min = q_medio * (1 - variacion)
+        forma = "lineal sobre B (fundacion en roca, resultante en el nucleo)"
+    else:
+        q_max = 2 * N / (3 * (B / 2 - e))   # literal-ok: triangular, base 3(B/2-e)
+        q_min = 0.0
+        forma = ("triangular sobre 3(B/2 - e) (fundacion en roca, resultante "
+                 "fuera del nucleo)")
+    return PresionContactoBase(N=N, B=B, e=e, q_max=q_max, q_min=q_min,
+                               ancho_efectivo=ancho_efectivo,
+                               dentro_del_nucleo=dentro, distribucion=forma,
+                               numeral=NUMERAL_PRESION_CONTACTO)
+
+
+def verificar_excentricidad_sismica(*, N: float, momento_neto: float,
+                                    B: float,
+                                    gamma_EQ: float) -> Verificacion:
+    """
+    E6 - Ubicacion de la resultante en la base bajo sismo (num.
+    2.8.1.1.14.1): e <= B/6 con gamma_EQ = 0.0, e <= 0.4*B con gamma_EQ = 1.0,
+    interpolado en medio.
+
+    Es una fila que la tabla de Sec. 9.3 no trae -- E.050 no la escribe -- y
+    que el Manual de Puentes si exige. Se numera E6 para no pisar las cinco
+    de E.050 y se devuelve como `Verificacion`, no como bool, igual que las
+    otras. El criterio aplicado es 'gamma_EQ' porque de el depende el umbral:
+    a diferencia de los FS de E.050, este limite NO es un [N] puro.
+    """
+    e = excentricidad_resultante(N=N, momento_neto=momento_neto, B=B)
+    admisible = excentricidad_admisible_sismica(B=B, gamma_EQ=gamma_EQ)
+    return Verificacion(
+        cumple=e <= admisible + TOL_UMBRAL_NORMATIVO,
+        numeral=NUMERAL_EXCENTRICIDAD_SISMICA,
+        valor_obtenido=e,
+        valor_admisible=admisible,
+        criterio_aplicado=CRITERIO_GAMMA_EQ,
+        codigo="E6",
+    )
+
+
+# ===========================================================================
 # 9.2 - COMBINACIONES AASHTO LRFD
 # ===========================================================================
+
+# Cargas de la Tabla 2.4.5.3.1-1 que comparten la columna de PERMANENTES: la
+# tabla les da una sola celda ("DC DD DW EH EV ES EL PS CR SH"), y donde esa
+# celda dice gamma_p hay que ir a la Tabla -2 fila por fila. Las demas cargas
+# de Sec. 9.2 -- LS, WA, EQ -- tienen columna propia y no cuelgan de gamma_p.
+CARGAS_PERMANENTES = ("DC", "EV", "EH")
+
+# El cabezal, como elemento estructural de 'factores_carga_aashto'. M9 no
+# dimensiona ninguna otra cosa: el conducto es de Fase 8 y lo resuelve M8 con
+# el material del punto.
+ELEMENTO_CABEZAL = "cabezal"
+
+# DC no se elige: la Tabla 2.4.5.3.1-2 trae una sola fila de componentes
+# (1.25/0.90); la otra, "DC: Resistencia IV Solamente", es de una combinacion
+# que Sec. 9.2 no nombra.
+FILA_GAMMA_P_DC = "DC_componentes_y_auxiliares"
+
 
 def combinaciones() -> Tuple[CombinacionCarga, ...]:
     """
@@ -825,10 +1636,10 @@ def combinaciones() -> Tuple[CombinacionCarga, ...]:
     Puentes num. 2.4.5.3): Resistencia I, Servicio I y Evento Extremo I, con
     las cargas que participan en cada una.
 
-    Describe, no evalua: los nombres estan en el texto normativo citado, los
-    factores gamma no. Esta funcion no se detiene -- es la que M11 usa para
-    declarar QUE combinaciones rigen aunque el expediente todavia no haya
-    transcrito la Tabla 3.4.1-1.
+    Describe, no evalua: nombra que cargas entran en cada combinacion. Esta
+    funcion no se detiene -- es la que M11 usa para declarar QUE
+    combinaciones rigen aunque no se hayan evaluado. Los factores los
+    entrega `factores_de_carga`, que si necesita la eleccion de fila.
     """
     return tuple(
         CombinacionCarga(nombre=nombre, numeral=NUMERAL_COMBINACIONES,
@@ -840,13 +1651,49 @@ def combinaciones() -> Tuple[CombinacionCarga, ...]:
 
 def factores_de_carga(nombre: str) -> dict:
     """
-    Factores gamma de una combinacion, por tipo de carga: Tablas 3.4.1-1 y
-    3.4.1-2 de AASHTO LRFD, declaradas en 'factores_carga_aashto' ([C]) y
-    anidadas por nombre de combinacion. Los factores de EH y EV son DOBLES
-    (maximo y minimo) y cual gobierna depende de si la carga estabiliza o
-    desestabiliza cada verificacion: tomar un solo numero por carga da del
-    lado inseguro en volteo, por eso el criterio los trae completos y esta
-    funcion no elige por quien la llama.
+    Factores gamma de una combinacion DEL CABEZAL, por tipo de carga: Tablas
+    2.4.5.3.1-1 y 2.4.5.3.1-2 del Manual de Puentes (= 3.4.1-1 y 3.4.1-2 de
+    AASHTO LRFD), [N] en `constantes_normativas`.
+
+    Los factores de EH y EV son DOBLES (maximo y minimo) y cual gobierna
+    depende de si la carga estabiliza o desestabiliza cada verificacion:
+    tomar un solo numero por carga da del lado inseguro en volteo, por eso
+    esta funcion los devuelve completos y no elige por quien la llama.
+
+    DEL CABEZAL, y hay que decirlo (NOR-PUE-03). La Tabla 2.4.5.3.1-2
+    desglosa el empuje vertical de tierra por TIPO DE ESTRUCTURA, y M9 modela
+    el cabezal como muro de contencion con zapata: su fila es "Muros y
+    estribos de retencion", 1.35 / 1.00. El minimo es 1.00 y NO 0.90 -- el
+    0.90 es de "Estructura rigida enterrada", la fila del conducto, que es lo
+    que consume V7 en Fase 8. Que fila describe a cada estructura lo declara
+    'factores_carga_aashto' ([A]); los numeros no salen de ahi.
+
+    EN QUE DIRECCION VA ESO, porque es facil contarlo al reves: el empuje
+    vertical de tierra sobre el talon ESTABILIZA el volteo y el
+    deslizamiento, de modo que pasar su minimo de 0.90 a 1.00 RELAJA esas dos
+    verificaciones alrededor de un 8 %; minorar lo que estabiliza es la
+    direccion conservadora, no la insegura. Lo que se corrige es la
+    conformidad con la fuente -- el par que el proyecto usaba no era ninguna
+    fila de la tabla --, y la fuente lo prescribe sin rodeos (AASHTO LRFD 9a
+    ed., C3.4.1, pag. impresa 3-15): "The vertical earth load on the rear of
+    a cantilevered retaining wall would be multiplied by gamma_p min (1.00)
+    and the weight of the structure would be multiplied by gamma_p min (0.90)
+    because these forces result in an increase in the contact stress (and
+    shear strength) at the base of the wall and foundation". Para la
+    capacidad portante el mismo comentario manda los MAXIMOS (1.25, 1.35,
+    1.50), que es la otra mitad de la razon por la que esta funcion devuelve
+    los dos extremos y no elige por quien la llama.
+
+    EH sale de la fila "Activa" porque el proyecto disena con empuje ACTIVO
+    (Mononobe-Okabe / Coulomb, ver 'inclinacion_muro_beta' y companeros), y
+    esa eleccion se declara en el mismo criterio. Las otras dos filas de EH
+    -- "En reposo" (1.35/0.90) y "AEP Para paredes ancladas" (1.35/N/A) --
+    estan en la tabla completa, con sus pares, para que se vea de que se
+    eligio.
+
+    La celda que la fuente marca N/A viaja como `GAMMA_P_NO_APLICA`: no es un
+    cero ni un olvido, es la fuente diciendo que esa fila no tiene ese
+    extremo. Ninguna de las dos filas que este proyecto usa lo lleva.
     """
     if nombre not in COMBINACIONES_AASHTO:
         raise DatoInvalidoError(
@@ -855,8 +1702,62 @@ def factores_de_carga(nombre: str) -> dict:
             motivo=("no es una de las combinaciones de Sec. 9.2: "
                     + ", ".join(COMBINACIONES_AASHTO)),
         )
-    tabla = ca.valor(CRITERIO_FACTORES_CARGA)
-    return tabla[nombre]
+    eleccion = ca.valor(CRITERIO_FACTORES_CARGA)
+    filas_del_cabezal = (eleccion.get(ELEMENTO_CABEZAL)
+                         if hasattr(eleccion, "get") else None)
+    if not hasattr(filas_del_cabezal, "get"):
+        raise DatoInvalidoError(
+            campo=CRITERIO_FACTORES_CARGA, valor=eleccion,
+            motivo=f"Sec. 9.2 necesita saber que filas de gamma_p describen "
+                   f"al elemento '{ELEMENTO_CABEZAL}' y la declaracion no lo "
+                   "dice",
+        )
+
+    fila_combinacion = TABLA_COMBINACIONES_FILAS[nombre]
+    factores = {}
+    for carga in COMPONENTES_COMBINACION[nombre]:
+        if carga in CARGAS_PERMANENTES:
+            factores[carga] = _gamma_permanente(carga, fila_combinacion,
+                                                filas_del_cabezal)
+        else:
+            celda = fila_combinacion[carga]
+            # Copia por el mismo motivo que arriba: la celda es una constante
+            # [N] y devolverla por referencia dejaria que un llamador mute la
+            # tabla normativa para todo el proceso.
+            factores[carga] = dict(celda) if isinstance(celda, dict) else celda
+    return factores
+
+
+def _gamma_permanente(carga: str, fila_combinacion: dict,
+                      filas_del_cabezal: dict) -> dict:
+    """
+    El factor de una carga permanente en una combinacion. Si la Tabla
+    2.4.5.3.1-1 imprime un numero en la columna de permanentes (Servicio I y
+    Evento Extremo I imprimen 1.00), ese numero vale para las tres cargas; si
+    imprime el simbolo gamma_p, hay que bajar a la fila que la Tabla -2 da a
+    ESTA estructura y ESTA carga.
+
+    Evento Extremo I lleva 1.00 y no gamma_p en las dos fuentes, y no es un
+    descuido de transcripcion: C3.4.1 de AASHTO explica que antes de 2015 se
+    usaba un gamma_p mayor que 1.0 y que esa practica iba contra la filosofia
+    del estado limite de evento extremo.
+    """
+    celda = fila_combinacion["permanentes"]
+    if celda != GAMMA_P_MARCA:
+        # Copia: la celda es una constante [N] compartida por las tres cargas
+        # de la combinacion, y devolver el mismo objeto dejaria que quien lo
+        # reciba modifique la tabla normativa desde fuera.
+        return dict(celda)
+    fila = (FILA_GAMMA_P_DC if carga == "DC"
+            else filas_del_cabezal.get(carga))
+    if fila not in TABLA_GAMMA_P_FILAS:
+        raise DatoInvalidoError(
+            campo=CRITERIO_FACTORES_CARGA, valor=fila,
+            motivo=f"la carga '{carga}' del cabezal se declara en la fila "
+                   f"'{fila}', que no es una fila de {NUMERAL_TABLA_GAMMA_P}",
+        )
+    return {"max": TABLA_GAMMA_P_FILAS[fila]["max"],
+            "min": TABLA_GAMMA_P_FILAS[fila]["min"]}
 
 
 # ===========================================================================
@@ -909,6 +1810,14 @@ def verificar_capacidad_portante(*, q_actuante: float, q_ultima: float,
     `q_ultima` tiene que venir de `capacidad_portante_zapata_en_talud` y no de
     una formula de terreno horizontal: Sec. 9.3 es taxativa en que el cabezal
     se apoya en el borde del terraplen (ver esa funcion).
+
+    `q_actuante` sale de `presion_contacto_base` (su `q_max`). Esta funcion
+    lo exigia YA RESUELTO y en el repositorio no habia con que producirlo: la
+    excentricidad que decide cual de las dos distribuciones aplica no estaba
+    ni como procedimiento ni como vacio declarado (MAT-O16). Ahora esta, y el
+    limite sismico de esa excentricidad -- que no es "el tercio central" a
+    secas, depende de gamma_EQ -- lo comprueba
+    `verificar_excentricidad_sismica`.
     """
     if q_actuante <= 0:
         raise DatoInvalidoError(
@@ -1167,69 +2076,508 @@ def recubrimiento_e060_mm(*, condicion: str) -> float:
     return float(RECUBRIMIENTO[condicion])
 
 
+def clase_exposicion_sulfatos(*, so4_suelo_pct: Optional[float],
+                             so4_agua_ppm: Optional[float]) -> dict:
+    """
+    Fila de la Tabla 4.4 de E.060 (pag. impresa 38) que aplica al sitio.
+
+    DOS ESCALAS PARALELAS, no una. La tabla clasifica por sulfato soluble en
+    el SUELO (% en peso) o por sulfato en el AGUA (ppm), y son alternativas:
+    el expediente puede traer una, la otra o las dos. Con las dos, gobierna la
+    MAS exigente -- no promedian ni se eligen, y quedarse con la menor seria
+    escoger el requisito mas bajo por omision.
+
+    EL BORDE QUE LA TABLA IMPRESA DEJA ABIERTO -- SO4 = 2,0 % exacto no cae en
+    ninguna fila -- lo cierra la hoja de ruta hacia la fila SEVERA, y cada fila
+    de `SULFATOS` declara si su limite inferior es estricto en vez de dejar la
+    respuesta escondida en un ">=" de este bucle. Ver
+    `SULFATOS_BORDE_ABIERTO_TEXTO`.
+    """
+    if so4_suelo_pct is None and so4_agua_ppm is None:
+        raise DatoInvalidoError(
+            campo=CRITERIO_EXPOSICION_QUIMICA, valor=None,
+            motivo="la Tabla 4.4 clasifica por sulfato en el suelo (% en "
+                   "peso) o por sulfato en el agua (ppm), y el dato no trae "
+                   "ninguna de las dos escalas",
+        )
+    indice = 0
+    for posicion, fila in enumerate(SULFATOS):
+        estricto = fila["limite_inferior_estricto"]
+        alcanza = False
+        for medida, clave in ((so4_suelo_pct, "so4_suelo_pct"),
+                              (so4_agua_ppm, "so4_agua_ppm")):
+            if medida is None:
+                continue
+            minimo = fila[clave][0]
+            # El limite estricto NO se decide aqui: viaja en la fila, porque
+            # es una lectura declarada y no una convencion del codigo.
+            alcanza = alcanza or (medida > minimo if estricto
+                                  else medida >= minimo)
+        if alcanza:
+            indice = max(indice, posicion)
+    return SULFATOS[indice]
+
+
+def _exposicion_quimica_validada() -> dict:
+    """
+    El dato de sitio 'exposicion_quimica_ems', comprobado ANTES de usarlo.
+
+    POR QUE EXISTE ESTA FUNCION, y por que no basta con `.get()`. La version
+    anterior leia `exposicion.get("cloruros_tabla_4_2")`: una clave AUSENTE
+    daba None, None es falso, y el calculo seguia como si el EMS hubiera
+    dicho "no hay cloruros". Con eso desaparecian en silencio la a/c <= 0.40
+    y el f'c >= 35 MPa de esa fila -- que son justamente las exigencias que
+    el expediente venia afirmando en prosa y que este cluster convirtio en
+    dato. La ausencia de una lectura NO es una lectura negativa: es
+    DatoInvalidoError, y el revisor tiene que anadir el analisis que falta.
+
+    Lo segundo que comprueba es la FORMA. Este dato es el unico de todo el
+    expediente que no es un numero ni un rotulo, sino un diccionario, y la
+    unica via por la que hoy se puede declarar desde la ventana produce
+    float o str. Sin esta comprobacion, declararlo mal no daba un problema
+    del expediente sino un AttributeError -- un fallo del programa, que es
+    precisamente la distincion que la taxonomia de excepciones existe para
+    mantener.
+    """
+    exposicion = ca.valor(CRITERIO_EXPOSICION_QUIMICA)
+    if not isinstance(exposicion, dict):
+        raise DatoInvalidoError(
+            campo=CRITERIO_EXPOSICION_QUIMICA, valor=exposicion,
+            motivo="el analisis quimico del EMS se declara como un "
+                   "diccionario con las claves "
+                   + ", ".join(CLAVES_ESCALAS_SULFATOS)
+                   + f" y {CLAVE_FILAS_TABLA_4_2}",
+        )
+    for clave in CLAVES_ESCALAS_SULFATOS:
+        if clave not in exposicion:
+            raise DatoInvalidoError(
+                campo=CRITERIO_EXPOSICION_QUIMICA, valor=exposicion,
+                motivo=f"falta la escala '{clave}' de la Tabla 4.4. Las dos "
+                       f"escalas son alternativas y una puede venir en None, "
+                       f"pero las dos claves tienen que estar declaradas: "
+                       f"omitir una no es decir que no se midio",
+            )
+        medida = exposicion[clave]
+        if medida is not None and (isinstance(medida, bool)
+                                   or not isinstance(medida, (int, float))):
+            raise DatoInvalidoError(
+                campo=CRITERIO_EXPOSICION_QUIMICA, valor=medida,
+                motivo=f"'{clave}' es una magnitud medida y tiene que ser un "
+                       f"numero o None",
+            )
+    filas = exposicion.get(CLAVE_FILAS_TABLA_4_2)
+    if not isinstance(filas, dict):
+        raise DatoInvalidoError(
+            campo=CRITERIO_EXPOSICION_QUIMICA, valor=filas,
+            motivo=f"falta '{CLAVE_FILAS_TABLA_4_2}': las tres filas de la "
+                   f"Tabla 4.2 se declaran como si/no en un diccionario",
+        )
+    for clave in EXPOSICION_ESPECIAL:
+        if clave not in filas:
+            raise DatoInvalidoError(
+                campo=CRITERIO_EXPOSICION_QUIMICA, valor=filas,
+                motivo=f"falta la fila '{clave}' de la Tabla 4.2. Se declaran "
+                       f"LAS TRES porque la nota al pie manda tomar la menor "
+                       f"relacion a/c APLICABLE, y aplicable no se puede "
+                       f"evaluar sobre un conjunto incompleto",
+            )
+        if not isinstance(filas[clave], bool):
+            raise DatoInvalidoError(
+                campo=CRITERIO_EXPOSICION_QUIMICA, valor=filas[clave],
+                motivo=f"la fila '{clave}' de la Tabla 4.2 aplica o no "
+                       f"aplica: se declara True o False",
+            )
+    sobrantes = set(filas) - set(EXPOSICION_ESPECIAL)
+    if sobrantes:
+        raise DatoInvalidoError(
+            campo=CRITERIO_EXPOSICION_QUIMICA, valor=sorted(sobrantes),
+            motivo="la Tabla 4.2 tiene tres filas y no mas: "
+                   + ", ".join(sorted(EXPOSICION_ESPECIAL)),
+        )
+    return exposicion
+
+
+def _extremo_declarado(candidatos, funcion):
+    """
+    El extremo de una lista de (valor, fuente), con TODAS las fuentes que lo
+    alcanzan, no solo una.
+
+    Antes esto era `min(candidatos)` sobre tuplas, y con dos tablas empatadas
+    en el valor el desempate lo decidia la comparacion alfabetica del nombre
+    de la fuente. Ninguna de las dos tablas es "menor" que la otra: si las
+    dos imponen el mismo limite, las dos gobiernan, y eso es lo que la
+    memoria tiene que decir.
+    """
+    if not candidatos:
+        return None, "-"
+    extremo = funcion(valor for valor, _ in candidatos)
+    fuentes = [fuente for valor, fuente in candidatos
+               if abs(valor - extremo) <= TOL_UMBRAL_NORMATIVO]
+    return extremo, " y ".join(fuentes)
+
+
+def requisitos_durabilidad_concreto() -> RequisitosDurabilidad:
+    """
+    Relacion a/c maxima y f'c minimo del concreto, combinando las Tablas 4.2 y
+    4.4 de E.060 con la nota al pie que las dos llevan:
+
+        "Cuando se utilicen las Tablas 4.2 y 4.4 simultaneamente, se debe
+        utilizar la MENOR relacion maxima agua-material cementante aplicable
+        y el MAYOR f'c minimo"
+
+    Es el eslabon que faltaba entero (NOR-E060-06): el expediente tenia las
+    dos tablas transcritas y ninguna regla que las cruzara, de modo que en un
+    sitio con sulfatos Y cloruros -- este -- no habia forma de decir que
+    relacion a/c se especifica. Y de esa relacion a/c cuelga el recubrimiento,
+    por el modificador del Art. 5.10.1 de AASHTO.
+
+    QUE NUMERAL MANDA APLICAR LA TABLA 4.2, que la cadena habia perdido: el
+    Art. 4.4.2 (pag. impresa 39), verificado contra el PDF. "Cuando el
+    concreto con refuerzo vaya a estar expuesto a cloruros de quimicos
+    descongelantes, sal, agua salobre, agua de mar o salpicaduras de las
+    mismas, deben cumplirse los requisitos de la Tabla 4.2 para la maxima
+    relacion agua-material cementante y valor minimo de f'c, Y LOS REQUISITOS
+    DE RECUBRIMIENTO MINIMO DEL CONCRETO DE 7.7". Es el articulo que ata este
+    cluster entero -- exposicion quimica, relacion a/c y recubrimiento en una
+    sola frase --, y una version anterior de este cluster lo habia sacado de
+    la cadena de numerales creyendo que citarlo era un error.
+
+    LAS TRES FILAS DE LA TABLA 4.2 SE MIRAN, no solo la de cloruros. "La
+    MENOR relacion a/c aplicable" es una comparacion, y una comparacion a la
+    que le falta un candidato da el resultado equivocado sin avisar.
+
+    Consume el dato de sitio 'exposicion_quimica_ems' ([S], pendiente de
+    ensayo): sin el analisis quimico del EMS, `CriterioPendienteError` y el
+    calculo se detiene. No hay lectura por defecto -- la afirmacion "corredor
+    salino" viajaba en prosa por varias justificaciones y no era un dato.
+    """
+    exposicion = _exposicion_quimica_validada()
+    fila = clase_exposicion_sulfatos(
+        so4_suelo_pct=exposicion[CLAVES_ESCALAS_SULFATOS[0]],
+        so4_agua_ppm=exposicion[CLAVES_ESCALAS_SULFATOS[1]])
+
+    candidatos_ac = []
+    candidatos_fc = []
+    if fila["a_c_max"] is not None:
+        candidatos_ac.append((fila["a_c_max"], NOMBRE_TABLA_4_4))
+    if fila["fc_min_MPa"] is not None:
+        candidatos_fc.append((fila["fc_min_MPa"], NOMBRE_TABLA_4_4))
+    # LAS TRES FILAS DE LA TABLA 4.2, no solo la de cloruros. "La MENOR
+    # relacion a/c APLICABLE" no se puede evaluar sobre un conjunto que el
+    # dato deja a medias: si el concreto ademas debe ser de baja
+    # permeabilidad, esa fila es aplicable y tiene que entrar a la
+    # comparacion. El dato declara las tres, y aqui entran las que aplican.
+    for clave, aplica in exposicion[CLAVE_FILAS_TABLA_4_2].items():
+        if not aplica:
+            continue
+        requisito = EXPOSICION_ESPECIAL[clave]
+        etiqueta = f"{NOMBRE_TABLA_4_2} ({clave})"
+        candidatos_ac.append((requisito["a_c_max"], etiqueta))
+        candidatos_fc.append((requisito["fc_min_MPa"], etiqueta))
+
+    # La nota al pie, aplicada: MENOR a/c y MAYOR f'c de los aplicables.
+    a_c_max, gobierna_a_c = _extremo_declarado(candidatos_ac, min)
+    fc_min, gobierna_fc = _extremo_declarado(candidatos_fc, max)
+
+    return RequisitosDurabilidad(
+        a_c_max=a_c_max, fc_min_MPa=fc_min,
+        clase_sulfatos=fila["exposicion"],
+        gobierna_a_c=gobierna_a_c, gobierna_fc=gobierna_fc,
+        cementos_admisibles=fila["cementos"],
+        numeral=f"{NUMERAL_PROTECCION_CORROSION} / "
+                f"{NUMERAL_EXPOSICION_ESPECIAL} / {NUMERAL_SULFATOS} / "
+                f"{NUMERAL_COMBINACION_4_2_4_4}",
+    )
+
+
+def factor_recubrimiento_por_ac(*, a_c_max: Optional[float]) -> Tuple[float, str]:
+    """
+    Modificador del recubrimiento por relacion agua-cemento, con su origen.
+
+        W/C <= 0.40  ->  0.8        W/C >= 0.50  ->  1.2
+
+    El Art. 5.10.1 de AASHTO no deja la tabla de recubrimientos en bruto:
+    "Cover ... shall not be less than that specified in Table 5.10.1-1 AND
+    MODIFIED FOR W/CM RATIO". El Manual de Puentes trae los mismos factores en
+    su num. 2.9.1.5.5.3. El criterio los ignoraba enteros, y son los que
+    invierten la conclusion de la regla del mayor (NOR-AAS-05).
+
+    QUE a/c ENTRA AQUI: la MAXIMA que la durabilidad permite, no la del diseno
+    de mezcla. Es la eleccion conservadora de las dos -- una a/c mas alta da
+    factor mas alto y por tanto MAS recubrimiento --, y ademas es la unica que
+    el expediente conoce en fase de perfil.
+
+    SIN LIMITE DE DURABILIDAD (`a_c_max=None`, exposicion insignificante y
+    ninguna fila de la Tabla 4.2 aplicable) no hay a/c contra la que evaluar
+    el modificador. No se inventa una: se aplica el factor MAS exigente de la
+    tabla, 1.2, y la funcion lo declara en el origen que devuelve. Ese origen
+    VIAJA hasta la memoria (`RecubrimientoDiseno.origen_factor`), porque del
+    numero solo no se distingue esta situacion de un expediente cuya a/c
+    maxima si es 0.50: son dos cosas distintas y la segunda es un dato,
+    mientras la primera es una acotacion del calculo.
+
+    LA BANDA INTERMEDIA no se resuelve aqui con un literal. El Manual de
+    Puentes no imprime factor para 0.40 < a/c < 0.50 y AASHTO si; ese hueco
+    es un [C] declarado ('factor_recubrimiento_banda_intermedia_ac'), no un
+    1.0 escrito en este modulo por parecer neutro. Y la banda es alcanzable:
+    con sulfatos severos y sin cloruros la a/c maxima resulta 0.45.
+    """
+    if a_c_max is None:
+        return (max(RECUBRIMIENTO_MP_FACTOR_AC.values()),
+                "conservador: ninguna de las dos tablas de E.060 limita la "
+                "relacion a/c, y se aplica el factor mas exigente")
+    if a_c_max <= RECUBRIMIENTO_AC_UMBRAL_BAJO + TOL_UMBRAL_NORMATIVO:
+        return (RECUBRIMIENTO_MP_FACTOR_AC["a_c_menor_igual_0_40"],
+                f"a/c maxima {a_c_max} <= 0.40")
+    if a_c_max >= RECUBRIMIENTO_AC_UMBRAL_ALTO - TOL_UMBRAL_NORMATIVO:
+        return (RECUBRIMIENTO_MP_FACTOR_AC["a_c_mayor_igual_0_50"],
+                f"a/c maxima {a_c_max} >= 0.50")
+    return (ca.valor(CRITERIO_FACTOR_BANDA_AC),
+            f"a/c maxima {a_c_max} en la banda intermedia (0.40 < a/c < "
+            f"0.50): el Manual de Puentes no imprime factor para esta banda "
+            f"y el hueco lo cubre el criterio [C] "
+            f"'{CRITERIO_FACTOR_BANDA_AC}' con el valor de AASHTO LRFD "
+            f"Art. 5.10.1")
+
+
 def recubrimiento_aashto_mm(*, condicion: str) -> float:
     """
-    Recubrimiento minimo de AASHTO LRFD para la misma condicion, en mm.
+    Lado AASHTO / Manual de Puentes de la regla del mayor, en mm, para la
+    condicion de E.060 que se le pase. Ya NO es un valor declarado: se
+    CALCULA, y por eso puede detenerse.
 
-    'recubrimiento_aashto_mm' es [C] (AASHTO LRFD Tabla 5.10.1-1, exposicion
-    costera, 75 mm en las tres condiciones de E.060): la funcion calcula
-    directo, ya no se detiene aqui.
+        tabulado      = max( tabla_aashto[situacion][categoria] ,
+                             tabla_manual[fila equivalente] )   # solo cat. A
+        recubrimiento = max( tabulado * factor_ac , piso de 1.0 in )
+
+    Los tres eslabones y de donde sale cada uno:
+
+      situacion   'situacion_recubrimiento_aashto' [A]: que fila de la tabla
+                  se pone enfrente de cada condicion de E.060. Las dos tablas
+                  no se indexan igual -- E.060 por diametro de barra, AASHTO
+                  por severidad de exposicion -- y el emparejamiento no lo
+                  dice ninguna de las dos normas.
+      categoria   'categoria_refuerzo_aashto' [A], VACIO: la columna A/B/C.
+                  Es la condicion de aplicacion que el expediente nunca
+                  declaro (NOR-AAS-01) y la que puede invertir quien gobierna.
+      factor_ac   modificador del Art. 5.10.1, via la durabilidad del
+                  concreto, que a su vez cuelga del analisis quimico del EMS.
+
+    DE QUE CORPUS SALE EL NUMERO, que la memoria tiene que declarar: con
+    categoria A el valor es [N] peruano -- el Manual de Puentes transcribe esa
+    columna en su Tabla 2.9.1.5.5.3-1, cuyo titulo dice "aceros no
+    protegidas" -- y con B o C el corpus peruano no tabula nada para
+    exposicion exterior y el hueco lo cubre AASHTO LRFD 9a ed. como [C], por
+    la Via 1 de Sec. 0.2.
     """
-    tabla = ca.valor(CRITERIO_RECUBRIMIENTO_AASHTO)
-    if condicion not in tabla:
+    if condicion not in RECUBRIMIENTO:
         raise DatoInvalidoError(
             campo="condicion", valor=condicion,
-            motivo=f"no esta en la tabla declarada en '{CRITERIO_RECUBRIMIENTO_AASHTO}'",
+            motivo="no es una fila del Art. 7.7.1: " + ", ".join(sorted(RECUBRIMIENTO)),
         )
-    return float(tabla[condicion])
+    return _recubrimiento_aashto_detallado(condicion=condicion)[0]
+
+
+def _recubrimiento_aashto_detallado(*, condicion: str) -> Tuple[float, dict]:
+    """El valor y la cadena que lo produjo, para que la memoria la imprima."""
+    situaciones = ca.valor(CRITERIO_SITUACION_RECUBRIMIENTO)
+    if condicion not in situaciones:
+        raise DatoInvalidoError(
+            campo="condicion", valor=condicion,
+            motivo=f"no tiene fila emparejada en "
+                   f"'{CRITERIO_SITUACION_RECUBRIMIENTO}'",
+        )
+    situacion = situaciones[condicion]
+    tabla = ca.valor(CRITERIO_TABLA_RECUBRIMIENTO)
+    if situacion not in tabla:
+        raise DatoInvalidoError(
+            campo="situacion", valor=situacion,
+            motivo=f"no es una fila de la Tabla 5.10.1-1 transcrita en "
+                   f"'{CRITERIO_TABLA_RECUBRIMIENTO}'",
+        )
+    categoria = ca.valor(CRITERIO_CATEGORIA_REFUERZO)   # VACIO: detiene aqui
+    if categoria not in tabla[situacion]:
+        raise DatoInvalidoError(
+            campo=CRITERIO_CATEGORIA_REFUERZO, valor=categoria,
+            motivo="las categorias de la Tabla 5.10.1-1 son "
+                   + ", ".join(sorted(tabla[situacion])),
+        )
+
+    tabulado = float(tabla[situacion][categoria])
+    filas_mp = RECUBRIMIENTO_MP_EQUIVALENCIA.get(situacion)
+    if filas_mp is None:
+        # NO se sigue adelante saltandose el cruce. Una fila sin
+        # correspondencia declarada significa que las dos transcripciones se
+        # han desincronizado, y seguir seria calcular el recubrimiento con
+        # una sola de las dos fuentes creyendo que se compararon.
+        raise DatoInvalidoError(
+            campo="situacion", valor=situacion,
+            motivo="no tiene fila equivalente declarada en "
+                   "RECUBRIMIENTO_MP_EQUIVALENCIA, y sin ella no se puede "
+                   "cruzar la tabla de AASHTO con la del Manual de Puentes",
+        )
+    if categoria == CATEGORIA_ACERO_SIN_RECUBRIR:
+        # El corpus peruano TABULA esta columna, asi que el valor sale de el y
+        # no de AASHTO: es lo que pedia NOR-PUE-10, y no basta con nombrarlo en
+        # la etiqueta. Se toma el mayor por la misma regla de conflicto de
+        # Sec. 0.2 -- hoy coinciden en las 21 filas, y si alguna edicion las
+        # separa, la regla ya esta escrita y no hay que decidir en caliente.
+        #
+        # EL CRUCE SE HACE POR MAPA Y NO POR NOMBRE DE CLAVE. Antes la guarda
+        # era `situacion in RECUBRIMIENTO_MP_MM`, y en las 8 filas de la
+        # familia de pilotes -- donde el Manual traduce "shafts" por "Pilares"
+        # y ademas parte en dos la fila de ambiente corrosivo -- daba False:
+        # el cruce se saltaba sin avisar y la red de seguridad cubria 14 filas
+        # de 21 mientras el comentario afirmaba que las cubria todas.
+        tabulado = max([tabulado]
+                       + [float(RECUBRIMIENTO_MP_MM[fila])
+                          for fila in filas_mp])
+    requisitos = requisitos_durabilidad_concreto()
+    factor, origen_factor = factor_recubrimiento_por_ac(
+        a_c_max=requisitos.a_c_max)
+    modificado = tabulado * factor
+    # Piso absoluto sobre las barras principales: 1.0 in. Es lo que impide que
+    # el 0.8 lleve el recubrimiento por debajo de la pulgada.
+    piso_aplicado = modificado < RECUBRIMIENTO_MP_PISO_MM - TOL_UMBRAL_NORMATIVO
+    valor = max(modificado, RECUBRIMIENTO_MP_PISO_MM)
+    corpus = ("[N] Manual de Puentes Tabla 2.9.1.5.5.3-1 (aceros no "
+              "protegidos), coincidente con AASHTO LRFD Tabla 5.10.1-1 "
+              "columna A"
+              if categoria == CATEGORIA_ACERO_SIN_RECUBRIR else
+              "[C] AASHTO LRFD Tabla 5.10.1-1 columna " + str(categoria)
+              + ": el Manual de Puentes no CALLA sobre el acero protegido "
+                "-- su num. 2.9.1.5.5.4 lo trata --, pero solo autoriza usar "
+                "la tabla con acero protegido 'Para exposicion interior'. "
+                "Fuera de ella el corpus peruano no tabula, y el hueco lo "
+                "cubre AASHTO por la Via 1 de Sec. 0.2. Es una lectura "
+                "declarada, no neutra: la contraria mantendria la columna de "
+                "aceros no protegidos y esta en la sensibilidad de "
+                "'" + CRITERIO_CATEGORIA_REFUERZO + "'")
+    detalle = {"situacion": situacion, "categoria": categoria,
+               "tabulado_mm": tabulado, "factor_ac": factor,
+               "origen_factor": origen_factor, "piso_aplicado": piso_aplicado,
+               "corpus": corpus, "requisitos": requisitos,
+               "filas_mp": filas_mp}
+    return valor, detalle
 
 
 def recubrimiento_de_diseno(*, condicion: str) -> RecubrimientoDiseno:
     """
     Regla de conflicto de Sec. 0.2: **rige el recubrimiento MAYOR entre AASHTO
-    y E.060**. Devuelve los dos valores, el adoptado y cual de las dos normas
-    gobierna.
+    y E.060**. Devuelve los dos operandos, el adoptado, cual de las dos normas
+    gobierna, y la cadena con que se produjo el lado AASHTO.
 
     Por que no basta con tomar el de E.060. Sec. 0.2 adopta la Via 1 (AASHTO
     LRFD de extremo a extremo) y declara la durabilidad como EXCEPCION: E.060
     entra, pero no desplaza a AASHTO, se compara con el. Una regla del maximo
     evaluada con un solo operando no es una regla -- por eso esta funcion
-    exige los dos lados. Con 'recubrimiento_aashto_mm' cerrado ([C], 75 mm
-    por exposicion costera), la regla ya se evalua completa: AASHTO gobierna
-    en las tres condiciones de E.060 (70/50/40 mm) porque 75 es mayor en las
-    tres.
+    exige los dos lados.
 
-    Con NF a 1.4 m y suelos salinos, E.060 Art. 7.7.5.1 (ambiente corrosivo)
-    es directamente invocable y manda AUMENTAR el resultado; el articulo no
-    dice cuanto, y ese aumento se declara aparte (Sec. 3.3).
+    QUE CAMBIO Y POR QUE (cluster C07; conflicto #3 del plan de correcciones).
+    El lado AASHTO era un valor declarado, 75 mm en las tres condiciones, con
+    la conclusion ya escrita: "AASHTO gobierna en los tres casos". Los 75 mm
+    eran los 3.0 in de la columna A redondeados a la baja, sin el modificador
+    por relacion a/c y sin decir que habia tres columnas. Con la cadena
+    completa la conclusion deja de valer para las tres.
+
+    EL RESULTADO, CONDICION POR CONDICION, para que nadie lo lea como una
+    inversion general que no es. Con categoria A y el factor 0.8 de
+    a/c <= 0.40, el lado AASHTO vale 76.2 x 0.8 = 61.0 mm en las tres:
+
+        contra_suelo             E.060 70.0  AASHTO 61.0  ->  gobierna E.060
+        suelo_intemperie_ge_3_4  E.060 50.0  AASHTO 61.0  ->  gobierna AASHTO
+        suelo_intemperie_le_5_8  E.060 40.0  AASHTO 61.0  ->  gobierna AASHTO
+
+    Es decir: la inversion ocurre en UNA de las tres condiciones -- la
+    principal, la del concreto vaciado contra el suelo -- y en las otras dos
+    AASHTO sigue gobernando, con 61.0 mm en vez de los 75 mm de antes.
+    Corregir solo 75 -> 76.2, que era la correccion obvia que el conflicto #3
+    prohibe, habria dejado la conclusion falsa con un numero mas exacto.
+
+    EL EFECTO NETO, que conviene decir en voz alta: el recubrimiento adoptado
+    BAJA en las tres condiciones respecto del expediente anterior (75 mm ->
+    70.0 / 61.0 / 61.0). Es lo que la norma exige una vez aplicado el
+    modificador que faltaba, y no es una holgura ganada: cuando la fila de
+    cloruros de la Tabla 4.2 aplica, el Art. 4.4.2 remite al recubrimiento de
+    7.7 y el Art. 7.7.5.1 manda AUMENTAR este minimo -- ver
+    `aviso_ambiente_corrosivo`, que consume el mismo dato y lo dice sin
+    condicional cuando el dato ya esta declarado.
+
+    E.060 Art. 7.7.5.1 (ambiente corrosivo) manda AUMENTAR este resultado y no
+    dice cuanto; ese aumento se declara aparte (`aviso_ambiente_corrosivo`).
     """
     e060 = recubrimiento_e060_mm(condicion=condicion)
-    aashto = recubrimiento_aashto_mm(condicion=condicion)
-    if aashto > e060:
+    aashto, detalle = _recubrimiento_aashto_detallado(condicion=condicion)
+    if aashto > e060 + TOL_UMBRAL_NORMATIVO:
         adoptado, origen = aashto, "AASHTO"
     else:
         adoptado, origen = e060, "E.060"
     return RecubrimientoDiseno(
         condicion=condicion, e060_mm=e060, aashto_mm=aashto,
         adoptado_mm=adoptado, origen=origen,
-        criterio_aashto=CRITERIO_RECUBRIMIENTO_AASHTO,
-        numeral=f"{NUMERAL_RECUBRIMIENTO} / {NUMERAL_REGLA_RECUBRIMIENTO}",
+        criterio_aashto=CRITERIO_TABLA_RECUBRIMIENTO,
+        numeral=f"{NUMERAL_RECUBRIMIENTO} / {NUMERAL_RECUBRIMIENTO_MP} / "
+                f"{NUMERAL_REGLA_RECUBRIMIENTO}",
+        situacion=detalle["situacion"], categoria=detalle["categoria"],
+        tabulado_mm=detalle["tabulado_mm"], factor_ac=detalle["factor_ac"],
+        piso_aplicado=detalle["piso_aplicado"], corpus_tabla=detalle["corpus"],
+        origen_factor=detalle["origen_factor"],
+        requisitos=detalle["requisitos"],
     )
 
 
 def aviso_ambiente_corrosivo() -> str:
     """
     Aviso para la memoria: el recubrimiento de `recubrimiento_de_diseno` es el
-    MINIMO antes del aumento por ambiente corrosivo. E.060 Art. 7.7.5.1 dice
-    "aumentar adecuadamente" y no fija cuanto, asi que el aumento no se
-    calcula aqui: se declara.
+    MINIMO antes del aumento por ambiente corrosivo. El aumento no se calcula
+    aqui, se declara -- E.060 Art. 7.7.5.1 no fija cuanto.
+
+    DOS CORRECCIONES DE CITA (NOR-E060-04). La primera, la forma verbal: el
+    articulo imprime "debe aumentarse adecuadamente", no "aumentar
+    adecuadamente", y entrecomillar lo segundo es citar mal aunque el fondo
+    coincida. La segunda pesa mas: el articulo ofrece una ALTERNATIVA expresa
+    -- "o debe disponerse de otro tipo de proteccion" -- que el aviso omitia,
+    y que es un camino de cumplimiento distinto del que el expediente
+    contempla. Con la alternativa a la vista, proteger el refuerzo (la
+    categoria B o C de 'categoria_refuerzo_aashto') deja de ser solo una
+    opcion de suministro y pasa a ser una forma de cumplir este articulo.
+    Por eso el aviso transcribe el texto entero y no lo resume.
+
+    Y EL AVISO EVALUA SU PROPIO ANTECEDENTE, que es lo que le faltaba. Decia
+    "si el analisis quimico del EMS confirma la exposicion" -- un condicional
+    cuyo antecedente el programa YA tiene resuelto en el mismo dato del que
+    cuelga el factor por a/c. Dejarlo en potencial tenia una consecuencia
+    concreta: en la misma corrida en que el modificador BAJA el recubrimiento
+    adoptado, el aumento que la norma manda aplicar quedaba en prosa
+    condicional. El Art. 4.4.2 cierra el circulo -- expuesto a cloruros ->
+    Tabla 4.2 Y "los requisitos de recubrimiento minimo del concreto de 7.7"
+    --, y el Art. 7.7.1 abre con la salvedad "excepto cuando se requieran
+    recubrimientos mayores segun 7.7.5.1".
     """
+    exposicion = _exposicion_quimica_validada()
+    aplica = exposicion[CLAVE_FILAS_TABLA_4_2]["cloruros"]
+    if aplica:
+        cabecera = (
+            "Recubrimiento: el valor adoptado es el MINIMO y HAY QUE "
+            f"AUMENTARLO ({AMBIENTE_CORROSIVO_AUMENTAR}). No es un supuesto: "
+            "el analisis quimico declarado en "
+            f"'{CRITERIO_EXPOSICION_QUIMICA}' dice que el concreto queda "
+            "expuesto a los cloruros de la Tabla 4.2, y con eso el "
+            f"{NUMERAL_PROTECCION_CORROSION} manda cumplir tambien \""
+            f"{PROTECCION_CORROSION_TEXTO}\". ")
+    else:
+        cabecera = (
+            "Recubrimiento: el analisis quimico declarado en "
+            f"'{CRITERIO_EXPOSICION_QUIMICA}' NO da por expuesto el concreto "
+            "a los cloruros de la Tabla 4.2, de modo que el aumento de este "
+            "articulo no se dispara por esa via. Queda anotado porque el "
+            "ambiente corrosivo no se agota en los cloruros de esa fila. ")
     return (
-        "Recubrimiento: al valor adoptado hay que sumarle el aumento por "
-        f"ambiente corrosivo ({AMBIENTE_CORROSIVO_AUMENTAR}), directamente "
-        "invocable con NF a 1.4 m y suelos salinos (Sec. 3.3). El articulo "
-        "dice 'aumentar adecuadamente' y no fija cuanto: el aumento se "
-        "declara en la memoria, no lo calcula este modulo"
+        cabecera
+        + f"Texto literal del articulo: \"{AMBIENTE_CORROSIVO_TEXTO}\". No "
+        "fija cuanto, y ofrece la alternativa de disponer otro tipo de "
+        "proteccion: las dos cosas se declaran en la memoria, no las calcula "
+        "este modulo"
     )
 
 
@@ -1242,11 +2590,24 @@ def cuantia_minima(*, direccion: str) -> float:
     "REFERENCIA de cuantias minimas" y el matiz es real pero no significa lo
     que parece: por la Via 1 de Sec. 0.2 el DISENO estructural es de AASHTO
     LRFD Sec. 5, de modo que E.060 no dicta cuanto acero pide la flexion. Lo
-    que si hace el Art. 14.3.1, dentro de E.060, es fijar un piso por debajo
-    del cual ningun muro se arma, gobierne quien gobierne el
-    dimensionamiento. La consecuencia practica esta en `cuantia_de_diseno`:
-    el minimo se aplica como rho_diseno = max(rho_calculado, rho_minimo), no
-    se imprime al pie de la memoria.
+    que si hace el Art. 14.3.1, dentro de E.060, es fijar un piso, gobierne
+    quien gobierne el dimensionamiento. La consecuencia practica esta en
+    `cuantia_de_diseno`: el minimo se aplica como rho_diseno =
+    max(rho_calculado, rho_minimo), no se imprime al pie de la memoria.
+
+    LO QUE ESTE DOCSTRING AFIRMABA DE MAS (NOR-E060-01). Decia que el 14.3.1
+    fija "un piso por debajo del cual NINGUN muro se arma". Para un muro de
+    CONTENCION -- que es lo que el cabezal es -- eso no es lo que dice E.060:
+    el Art. 14.8.2 remite a 14.3 y acto seguido permite exceptuarlo, "cuando
+    el Ingeniero Proyectista disponga juntas de contraccion y señale
+    procedimientos constructivos que controlen los efectos de contraccion y
+    temperatura". La excepcion es potestativa y exige las DOS cosas a la vez.
+    Este proyecto NO la invoca -- no hay juntas de contraccion ni
+    procedimientos constructivos declarados en el expediente -- y por eso el
+    minimo se aplica entero. Lo que cambia es el argumento: se aplica porque
+    nadie ejercio la excepcion, no porque la norma no la ofrezca. La
+    diferencia importa el dia que el proyectista quiera ejercerla:
+    `nota_excepcion_refuerzo_minimo` le dice que tiene que declarar para eso.
 
     Escalon del Art. 11.10.10.2 (0.0025 bajo cortante alto): ver
     `cuantia_de_diseno` y el criterio 'cortante_alto_muro_e060_art_11_10_10_2'.
@@ -1260,6 +2621,29 @@ def cuantia_minima(*, direccion: str) -> float:
                    + ", ".join(sorted(CUANTIA_MIN_MURO)),
         )
     return CUANTIA_MIN_MURO[direccion]
+
+
+def nota_excepcion_refuerzo_minimo() -> str:
+    """
+    La frase para la memoria: el minimo de E.060 Art. 14.3.1 se aplica entero
+    porque el proyecto no ejercio la excepcion que el Art. 14.8.2 ofrece para
+    muros de contencion, no porque la norma no la tenga.
+
+    Sin esta nota, la memoria presentaba el minimo como inexcusable, que es
+    afirmar de la norma algo que la norma no dice (NOR-E060-01). Con ella, el
+    revisor ve las dos cosas: el numero que se aplico y la puerta que existia
+    y no se uso.
+    """
+    return (
+        "Cuantia minima de refuerzo del muro: se aplica integra la de "
+        f"{NUMERAL_CUANTIA_MIN}. El {NUMERAL_EXCEPCION_REFUERZO_MIN_MURO} "
+        f"permite exceptuarla en muros de contencion -- \"{EXCEPCION_REFUERZO_MIN_MURO_TEXTO}\" "
+        "--, y este expediente NO ejerce esa excepcion: no declara juntas de "
+        "contraccion ni procedimientos constructivos de control de "
+        "contraccion y temperatura, que son las dos condiciones que el "
+        "articulo exige a la vez. Ejercerla es una decision del proyectista y "
+        "obliga a declarar las dos en el expediente"
+    )
 
 
 def verificar_cuantia(*, cuantia_provista: float, direccion: str) -> Verificacion:
@@ -1353,28 +2737,72 @@ def cuantia_de_diseno(*, cuantia_calculada: float, direccion: str,
 def requiere_temperatura_dos_caras(*, espesor: float) -> bool:
     """
     True si hace falta acero por temperatura en AMBAS caras: espesor >= 0.250
-    m (250 mm), E.060 Art. 14.8.3. `espesor` en metros.
+    m (250 mm), E.060 Art. 14.8.3. Umbral INCLUSIVO ("mayor o igual a").
+    `espesor` en metros.
+
+    Este es el umbral del acero POR TEMPERATURA Y CONTRACCION, y solo de el.
+    El del refuerzo en dos capas es otro y esta 50 mm mas abajo: ver
+    `requiere_refuerzo_dos_capas`.
     """
     return espesor >= ESPESOR_TEMPERATURA_DOS_CARAS - TOL_UMBRAL_NORMATIVO
 
 
+def requiere_refuerzo_dos_capas(*, espesor: float) -> bool:
+    """
+    True si el refuerzo va en DOS CAPAS en cada direccion: espesor > 0.200 m
+    (200 mm), E.060 Art. 14.3.2. Umbral ESTRICTO ("mayor que"), a diferencia
+    del de temperatura. `espesor` en metros.
+
+    POR QUE EXISTE ESTA FUNCION (NOR-E060-02). El modulo decidia el acero en
+    dos caras con un solo umbral, el de 250 mm del Art. 14.8.3, y la memoria
+    imprimia "Acero por temperatura en UNA cara" para todo espesor menor. Pero
+    E.060 tiene DOS umbrales sobre cosas distintas: el 14.3.2 exige el
+    refuerzo "en cada direccion colocado en dos capas paralelas a las caras
+    del muro" a partir de 200 mm -- con una sola excepcion, los muros de
+    sotanos, que un cabezal no es --, y el 14.8.2 remite expresamente a todo
+    14.3, de modo que un muro de contencion lo hereda. Entre 200 y 250 mm el
+    muro lleva dos capas por 14.3.2 aunque el acero por temperatura vaya en
+    una cara por 14.8.3, y la memoria decia lo contrario.
+    """
+    return espesor > ESPESOR_DOS_CAPAS_REFUERZO + TOL_UMBRAL_NORMATIVO
+
+
 def nota_temperatura_dos_caras(*, espesor: float) -> str:
     """
-    La frase para la memoria y el plano: en que cara o caras va el acero por
-    temperatura, con su numeral. No es una verificacion con umbral contra un
-    dato del proyecto -- es una regla de detalle que se dispara con el
-    espesor -- y por eso sale como texto y no como `Verificacion`.
+    La frase para la memoria y el plano: en que cara o caras va el refuerzo,
+    con su numeral. No es una verificacion con umbral contra un dato del
+    proyecto -- son dos reglas de detalle que se disparan con el espesor -- y
+    por eso sale como texto y no como `Verificacion`.
+
+    Los dos umbrales van juntos en la misma frase a proposito: separarlos era
+    lo que permitia leer "en UNA cara" y creer que el muro entero lleva una
+    sola parrilla.
     """
     if requiere_temperatura_dos_caras(espesor=espesor):
-        return (
+        temperatura = (
             f"Acero por temperatura en AMBAS caras: espesor {espesor:.3f} m "
             f">= {ESPESOR_TEMPERATURA_DOS_CARAS:.3f} m "
             f"({NUMERAL_TEMPERATURA_DOS_CARAS})"
         )
-    return (
-        f"Acero por temperatura en UNA cara: espesor {espesor:.3f} m < "
-        f"{ESPESOR_TEMPERATURA_DOS_CARAS:.3f} m ({NUMERAL_TEMPERATURA_DOS_CARAS})"
-    )
+    else:
+        temperatura = (
+            f"Acero por temperatura en UNA cara: espesor {espesor:.3f} m < "
+            f"{ESPESOR_TEMPERATURA_DOS_CARAS:.3f} m "
+            f"({NUMERAL_TEMPERATURA_DOS_CARAS})"
+        )
+    if requiere_refuerzo_dos_capas(espesor=espesor):
+        capas = (
+            f"; refuerzo en cada direccion en DOS CAPAS paralelas a las caras: "
+            f"espesor {espesor:.3f} m > {ESPESOR_DOS_CAPAS_REFUERZO:.3f} m "
+            f"({NUMERAL_DOS_CAPAS_REFUERZO}, {EXCEPCION_DOS_CAPAS_REFUERZO})"
+        )
+    else:
+        capas = (
+            f"; refuerzo en una capa por direccion: espesor {espesor:.3f} m "
+            f"<= {ESPESOR_DOS_CAPAS_REFUERZO:.3f} m "
+            f"({NUMERAL_DOS_CAPAS_REFUERZO})"
+        )
+    return temperatura + capas
 
 
 def espaciamiento_maximo(*, espesor: float) -> float:
@@ -1406,19 +2834,32 @@ def verificar_espaciamiento(*, espaciamiento: float,
 def verificar_ciclopeo(*, fc_matriz: float,
                        fraccion_piedra: float) -> Tuple[Verificacion, ...]:
     """
-    R4 / R5: alternativa en concreto ciclopeo, E.060 Art. 22.10 (pags.
-    194-195): f'c de la matriz >= 10 MPa y piedra desplazadora <= 30 % del
-    volumen. Admitido para muros de gravedad; Sec. 9.4 la llama "opcion
+    R4 / R5: alternativa en concreto ciclopeo. Piedra desplazadora <= 30 % del
+    volumen total de concreto ciclopeo (E.060 Art. 22.10, pags. 194-195) y
+    f'c de la matriz >= el MAYOR de los dos minimos que rigen sobre el mismo
+    material. Admitido para muros de gravedad; Sec. 9.4 la llama "opcion
     realista para cabezales pequenos".
+
+    DOS MINIMOS, Y EL EXPEDIENTE DECLARABA EL MENOR (NOR-E060-07). E.060
+    Art. 22.10 pide 10 MPa para la matriz. La Tabla 503-07 del EG-2013 -- cuya
+    Seccion 503 es la que este proyecto cita para cabezales, y que es
+    especificacion vial del MTC -- clasifica el concreto ciclopeo como Clase G
+    y le pide 14 MPa. Los dos rigen sobre una obra vial peruana y ninguno
+    deroga al otro, asi que se aplica el mayor: la misma regla del maximo que
+    Sec. 0.2 usa para el recubrimiento y `M7.altura_recubrimiento` para la
+    cobertura. Citar solo el 10 MPa era quedarse con el requisito mas bajo de
+    los dos disponibles, y de los dos el que NO es de una norma vial.
 
     `fc_matriz` en MPa, `fraccion_piedra` en tanto por uno (0.30, no 30).
     """
     return (
         Verificacion(
-            cumple=fc_matriz >= CICLOPEO_FC_MATRIZ_MIN - TOL_UMBRAL_NORMATIVO,
-            numeral=NUMERAL_CICLOPEO,
+            cumple=fc_matriz >= CICLOPEO_FC_MATRIZ_MIN_APLICABLE - TOL_UMBRAL_NORMATIVO,
+            numeral=f"{NUMERAL_CICLOPEO_APLICABLE} "
+                    f"[DISCREPA DE LA HOJA DE RUTA: "
+                    f"{CICLOPEO_DISCREPANCIA_HOJA_RUTA}]",
             valor_obtenido=fc_matriz,
-            valor_admisible=CICLOPEO_FC_MATRIZ_MIN,
+            valor_admisible=CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
             criterio_aplicado=None,
             codigo="R4",
         ),
@@ -1449,6 +2890,28 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
     responder "falta declarar el criterio", porque el criterio esta
     declarado.
 
+    DOS TRAMPAS QUE EL ENSAMBLE VA A ENCONTRAR, escritas aqui porque es donde
+    se van a pisar y no en la ficha de una auditoria:
+
+      LAS FORMULAS SON IMPERIALES (MAT-O9, MAT-X8). La 9a ed. no publica
+      edicion SI: su C5.1 declara "These specifications use kips and ksi
+      units", y el 0.0316 de la Ec. 5.7.3.3-3 no es una constante fisica sino
+      1/raiz(1000), el factor de conversion psi->ksi. El criterio guardaba
+      esas expresiones bajo claves "Vc_kN" y "dv_m" -- etiquetas SI sobre
+      formulas en kip y pulgada --, y hoy las claves llevan la unidad real en
+      el nombre ("Vc_kip", "dv_in"). Este modulo opera en SI: el ensamble
+      tendra que convertir en la frontera, y declarar la conversion, no
+      cambiarle el nombre a las variables.
+
+      BETA TIENE DOS EXPRESIONES (NOR-AAS-06). La Ec. 5.7.3.4.2-1 vale solo
+      "for sections containing at least the minimum amount of transverse
+      reinforcement specified in Article 5.7.2.5"; sin ese refuerzo minimo
+      rige la Ec. 5.7.3.4.2-2, que ademas depende del parametro de
+      espaciamiento de fisura sxe. Un muro de cabezal delgado sin estribos
+      cae normalmente en el segundo caso, de modo que el ensamble tiene que
+      contestar primero si el muro lleva el refuerzo transversal minimo: la
+      expresion no se elige por costumbre.
+
     Lo que no se hara cuando se implemente, y es la tentacion evidente:
     sustituir el procedimiento por las expresiones de E.060, que si estan a
     mano. Romperia la consistencia carga-resistencia que Sec. 0.2 declara
@@ -1462,6 +2925,124 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
         "flexion y corte de este modulo (iterar epsilon_s, resolver Vs y "
         "el espaciamiento) todavia no esta implementado"
     )
+
+
+# ===========================================================================
+# 9.x - QUE FUNCIONES DE ESTE MODULO NO TIENEN LLAMADOR DE PRODUCCION, Y POR
+#       QUE. Una sola escritura, como ya se hace con los criterios
+#       (`criterios_adoptados.criterios_sin_consumidor`).
+# ===========================================================================
+# La razon de cada una vivia repartida entre la auditoria, el manifiesto, el
+# docstring del modulo y la nota que la CLI imprime, y ninguno de los cuatro
+# era la fuente: los tres hallazgos "deliberado documentado" de este cluster
+# (SIS-B-17, SIS-B-20, SIS-B-21) son el mismo defecto de reparto. Aqui la
+# razon se escribe una vez, y la CLI y la memoria la leen de aqui.
+#
+# "Sin llamador de produccion" NO es codigo muerto: son formulas utilizables
+# hoy pasandoles sus argumentos, y lo que falta es el INSUMO -- un vacio
+# declarado -- o el llamador que lo ensamble. Si alguna se cablea, sale de
+# esta lista en el mismo commit.
+#
+# LA LISTA SE MANTIENE A MANO Y NO HAY GUARDIA QUE LA ATE al estado real del
+# modulo. Es la misma deuda que `criterios_sin_consumidor` cerro con un test
+# (`test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor`), y aqui
+# esta abierta: el test que la ate va en la fase de tests, no antes. Mientras
+# tanto, la comprobacion es de revision: si una funcion de este modulo no
+# aparece llamada desde cli.py, gui/app.py ni otro modulo de src/modulos/,
+# tiene que estar aqui. La primera version de esta lista ya nacio incompleta
+# -- le faltaban siete entradas, dos de ellas de funciones creadas en el mismo
+# commit -- y eso es exactamente lo que el test tendra que impedir.
+FUNCIONES_SIN_CONSUMIDOR = {
+    "empujes_trasdos": (
+        "Ensambla el plano de empuje del trasdos y ninguna corrida lo "
+        "alcanza: la CLI no lo llama porque elegir el plano de empuje "
+        "(`altura_empuje`) y los factores de combinacion seria decidir por el "
+        "proyectista, y el criterio 'predimensionamiento_cabezal' esta vacio. "
+        "Se conserva porque es la formula, no el ensamble, lo que el "
+        "expediente necesita: quien tantee un cabezal la llama con su "
+        "geometria"),
+    "peso_suelo_sobre_talon": (
+        "Produce el W_s de P_IR. Necesita el ancho del talon, que es parte "
+        "de 'predimensionamiento_cabezal', y la altura de suelo sobre el "
+        "talon, que depende de donde se corte el plano de calculo y por eso "
+        "entra por argumento"),
+    "fuerza_inercia_muro": (
+        "Mismo caso que `empujes_trasdos`, y por el mismo vacio: W_s necesita "
+        "el ancho del talon, que es parte de 'predimensionamiento_cabezal'. "
+        "La formula si esta implementada, que es lo que faltaba (MAT-D6)"),
+    "gamma_eq": (
+        "Lee el criterio 'gamma_EQ', que es vacio: hoy detendria a quien la "
+        "llamara, y quien la llamaria -- el chequeo de excentricidad -- ya "
+        "esta detenido antes por la geometria"),
+    "verificar_estabilidad": (
+        "Agrega E1-E3 (y E4-E5 si se piden) a partir de demandas ya "
+        "calculadas. La CLI no la llama porque ensamblar esas demandas exige "
+        "elegir el plano de empuje y los factores de combinacion, que es "
+        "decidir por el proyectista -- la misma razon de `empujes_trasdos`, y "
+        "la que la nota de cli.py declara"),
+    "peso_propio_cabezal": (
+        "Formula de geometria exacta, utilizable hoy con una geometria de "
+        "tanteo; sin 'predimensionamiento_cabezal' no hay geometria de "
+        "proyecto que pasarle"),
+    "parametros_resistencia_art20": (
+        "Aplica la regla de E.050 Art. 20 (en cohesivos phi = 0, en "
+        "friccionantes c = 0) sobre los parametros del terreno de fundacion. "
+        "Quien la usaria es el calculo de la fuerza resistente al "
+        "deslizamiento, que la CLI no ensambla por la misma razon que el "
+        "resto de la estabilidad"),
+    "aplica_sobrecarga_trasdos": (
+        "Comprueba la regla de la distancia H/2 para el trafico. No la llama "
+        "nadie a proposito: Sec. 9.2 cierra el punto diciendo que en un "
+        "cabezal bajo terraplen vial la sobrecarga SIEMPRE aplica, de modo "
+        "que el pipeline usa `sobrecarga_trasdos_siempre_aplica` y esta queda "
+        "para quien tenga la distancia medida y quiera comprobarlo"),
+    "sobrecarga_trasdos_siempre_aplica": (
+        "Declaracion para la memoria. Hoy no la imprime nadie porque la "
+        "seccion de la memoria que la llevaria es la de empujes, que esta "
+        "detenida"),
+    "demanda_sismica_cabezal": (
+        "Combina P_AE con P_IR segun el num. 2.8.1.1.14.1. Sin geometria no "
+        "hay ninguno de los dos, de modo que hereda el mismo vacio"),
+    "presion_contacto_base": (
+        "Produce el q_actuante que `verificar_capacidad_portante` exige ya "
+        "resuelto, con la rama del numeral que corresponde al terreno de "
+        "fundacion. Hereda el vacio de la geometria (MAT-O16)"),
+    "verificar_excentricidad_sismica": (
+        "Ademas de la geometria necesita 'gamma_EQ', que es vacio propio: el "
+        "limite va de B/6 a 0.4*B segun su valor"),
+    "armado del num. 9.4 (ocho funciones)": (
+        "`cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_"
+        "caras`, `requiere_refuerzo_dos_capas`, `nota_temperatura_dos_caras`, "
+        "`espaciamiento_maximo`, `verificar_espaciamiento` y "
+        "`verificar_ciclopeo` no tienen llamador "
+        "porque su insumo es el diseno por flexion y corte, que se detiene en "
+        "`diseno_flexion_corte` con NotImplementedError, y el espesor del "
+        "elemento, que sale de 'predimensionamiento_cabezal'. La CLI registra "
+        "ese bloqueo en cada corrida (SIS-B-20)"),
+    "clase_exposicion_sulfatos / factor_recubrimiento_por_ac": (
+        "No tienen llamador de PRODUCCION directo y no son deuda: las llama "
+        "`requisitos_durabilidad_concreto` y "
+        "`_recubrimiento_aashto_detallado`, que si estan en el camino de la "
+        "CLI. Se declaran aparte porque son las dos piezas que un revisor va "
+        "a querer ejecutar sueltas para reproducir la clasificacion de la "
+        "Tabla 4.4 y el factor por a/c sin montar el recubrimiento entero"),
+    "n_q_zapata_en_talud / n_s_zapata_en_talud": (
+        "No tienen llamador interno porque la funcion que las usaria, "
+        "`capacidad_portante_zapata_en_talud`, se detiene antes en "
+        "'N_cq_N_gammaq_meyerhof': N_cq y N_gamma_q salen de FIGURAS y no de "
+        "una formula transcribible. N_s se calcula aparte al leer los abacos, "
+        "que es justo para lo que existe la funcion (SIS-B-21)"),
+}
+
+
+def funciones_sin_consumidor() -> Tuple[str, ...]:
+    """
+    Las familias de funciones de M9 que ningun modulo de produccion invoca,
+    cada una con su razon, para que la CLI y la memoria la impriman desde un
+    solo sitio en vez de repetirla.
+    """
+    return tuple(f"{nombre}: {razon}"
+                 for nombre, razon in FUNCIONES_SIN_CONSUMIDOR.items())
 
 
 # ===========================================================================
@@ -1492,4 +3073,63 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
         f"Diseno por flexion y corte: {NUMERAL_FLEXION_CORTE}. E.060 no "
         f"gobierna el diseno estructural (Sec. 0.2, Via 1); si gobierna la "
         f"durabilidad y los recubrimientos, con la regla del mayor",
+        # Las erratas de imprenta del Manual en la cadena sismica -- son TRES
+        # y la tercera esta mas abajo, con la excentricidad. Van a
+        # la memoria y no solo a un docstring porque quien las va a encontrar
+        # es el revisor que compare el codigo con la norma impresa, y sin
+        # esta nota concluira que el codigo esta mal (MAT-O2, MAT-X2).
+        f"Mononobe-Okabe, signo del denominador: {K_AE_ERRATA_MANUAL} "
+        f"({NUMERAL_K_AE_MANUAL}; {NUMERAL_K_AE_AASHTO})",
+        f"k_h0 en cimentacion sobre roca: {K_H0_ROCA_ERRATA} "
+        f"({NUMERAL_K_H0})",
+        # La hipotesis del agua en el trasdos: desviacion conservadora de un
+        # `shall` de AASHTO, declarada (MAT-O3, MAT-X3).
+        f"Empuje bajo el nivel freatico: {HIPOTESIS_EMPUJE_BAJO_NF} "
+        f"({NUMERAL_AGUA_TRASDOS_AASHTO})",
+        # Inercia del muro: el termino que faltaba, y el aviso de que la
+        # combinacion no es una suma (MAT-D6, MAT-X7).
+        f"Demanda sismica del cabezal: no basta el empuje. El num. {NUMERAL_P_IR} "
+        f"exige combinar P_AE con la inercia de la masa del muro "
+        f"P_IR = k_h*(W_w + W_s), en dos casos que se investigan por separado "
+        f"porque sus efectos NO son simultaneos -- 100 % P_AE + 50 % P_IR, y "
+        f"50 % P_AE (no menor que el empuje activo estatico) + 100 % P_IR --, "
+        f"rigiendo el mas desfavorable. La Sec. 9.2 de la hoja de ruta "
+        f"desagrega la cadena sismica y NO menciona P_IR: el defecto se "
+        f"reporta contra ella",
+        # El limite de excentricidad: no es "el tercio central" a secas
+        # (MAT-O16).
+        f"Ubicacion de la resultante en la base bajo sismo: el "
+        f"num. {NUMERAL_EXCENTRICIDAD_SISMICA} la acota a los dos tercios "
+        f"centrales (e <= B/3) con gamma_EQ = 0.0 y a las ocho decimas "
+        f"centrales (e <= 0.4*B) con gamma_EQ = 1.0, interpolando en medio. "
+        f"Es una verificacion que la tabla de FS de Sec. 9.3 no trae, porque "
+        f"E.050 no la escribe, y depende de 'gamma_EQ', que sigue vacio",
+        # La tercera errata, que mueve un numero y por eso pesa mas que las
+        # otras dos.
+        f"Excentricidad sismica, 'tercio central': {EXCENTRICIDAD_ERRATA_MANUAL} "
+        f"({NUMERAL_EXCENTRICIDAD_SISMICA}; {NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO}; "
+        f"el limite estatico que sirve de ancla, en {NUMERAL_EXCENTRICIDAD_ESTATICA})",
+        # La presion de contacto tiene dos ramas y el proyecto usa la de suelo.
+        f"Presion de contacto en la base: el num. {NUMERAL_PRESION_CONTACTO} "
+        f"la reparte por terreno de fundacion -- uniforme sobre el ancho "
+        f"efectivo B - 2e en SUELO, lineal sobre B en ROCA -- y no la "
+        f"escribe el numeral sismico. La rama que aplica a este cabezal es la "
+        f"de suelo, coherente con las filas de sitio declaradas en 'F_pga'",
+        # Por que E.030 no gobierna este cabezal. El descarte se defendia solo
+        # por periodo de retorno, que es la via discutible (NOR-E030-03).
+        f"E.030 no gobierna el diseno sismico de este cabezal, y el argumento "
+        f"es de AMBITO antes que de periodo de retorno: {E030_AMBITO_LECTURA} "
+        f"({NUMERAL_E030_AMBITO}; {NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION})",
+        f"Texto literal del Art. 7.3 de E.030, que es el que cede el paso: "
+        f"\"{E030_ART_7_3_TEXTO}\" ({NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION})",
+        # Lo que E.030 SI dice sobre este sitio, y que el expediente tenia
+        # archivado como referencia muerta (NOR-E030-02).
+        f"Perfil de suelo S5 de E.030: aunque la norma no gobierne el diseno "
+        f"del cabezal, su clasificacion del sitio trae una consecuencia que "
+        f"el expediente tiene que atender. Texto literal: \"{E030_S5_TEXTO}\" "
+        f"({NUMERAL_E030_S5}). {E030_S5_LECTURA}",
+        # Las funciones de este modulo que ningun llamador de produccion
+        # alcanza, con su razon, desde un solo sitio (SIS-B-17/20/21).
+        *(f"Sin llamador de produccion -- {linea}"
+          for linea in funciones_sin_consumidor()),
     )
