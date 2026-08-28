@@ -452,3 +452,28 @@ tres significa trabajo sin entregar**: el chequeo comprueba antes que la rama
 no tenga commits fuera de `main`, y las tres pasan esa comprobación. Las dos
 salidas siguen siendo las mismas dos de arriba, y las dos están fuera del
 alcance de la sesión.
+
+**Saldo al cierre de S10 (cluster C07): cinco.** El intento se repitió sobre
+las cinco y ninguna se borró; esta vez el fallo no llegó rotulado como
+`HTTP 403` sino como `send-pack: unexpected disconnect while reading sideband
+packet` seguido de `Everything up-to-date`, que es la misma negativa del
+remoto contada de otra manera —la referencia sigue ahí después del intento—.
+
+| Rama | Sesión | Fusionada en `main` |
+|---|---|---|
+| `claude/cluster-c13-rasante-geometria-2p5fqc` | S7 | sí |
+| `claude/cluster-c03-lrfd-factors-23mrzf` | S8 | sí |
+| `claude/cluster-c04-sismica-ay9szt` | S9 | sí |
+| `claude/cluster-c07-recubrimiento-nadl34` | S10 | sí |
+| `claude/s10-cluster-c07-resume-p19vmh` | S10 | sí |
+
+La quinta es la rama que el propio arranque de la sesión creó para retomar
+S10; no llevó trabajo propio —se dejó apuntando a `main`— y aun así cuenta
+para el chequeo 3, porque el chequeo mira referencias del remoto y no de dónde
+salió cada una.
+
+De modo que `verificar_sesion.py` dará `[FALLO] … ya fusionada, debería estar
+borrada` **cinco** veces, y **ninguna de las cinco significa trabajo sin
+entregar**: el chequeo comprueba antes que la rama no tenga commits fuera de
+`main`, y las cinco pasan esa comprobación. Las dos salidas siguen siendo las
+mismas dos de arriba y las dos están fuera del alcance de la sesión.
