@@ -66,15 +66,28 @@ else:
         ok(f"{passed} passed, {skipped} skipped")
 
 # --------------------------------------------- 2. docs coinciden con la suite
+# EL CONTEO ES UN PAR, NO UN NUMERO, desde S12. Los tests que abren los PDF de
+# normas/ llevan `@pytest.mark.pdf` y se saltan sin PyMuPDF, que es dependencia
+# de TEST y no de produccion. Los dos numeros son legitimos y los documentos
+# vivos citan los dos: este paso tiene que aceptar cualquiera de ellos y
+# seguir cazando el tercero, que es el desactualizado.
 print("\n2. Los documentos vivos citan el numero real de tests")
+salida_sin_pdf = subprocess.run(
+    [sys.executable, "-m", "pytest", "-q", "-m", "not pdf"],
+    capture_output=True, text=True).stdout
+m2 = re.search(r"(\d+) passed", salida_sin_pdf)
+passed_sin_pdf = int(m2.group(1)) if m2 else passed
+legitimos = {passed, passed_sin_pdf}
+print(f"          con PyMuPDF {passed}, sin PyMuPDF {passed_sin_pdf}")
 desfasados = 0
 for doc in Path("docs").rglob("*.md"):
     if doc.as_posix() in DOCS_CONGELADOS:
         continue
     texto = doc.read_text(errors="ignore")
     for n in sorted(set(re.findall(r"(\d{3,4}) passed", texto))):
-        if int(n) != passed:
-            aviso(f"{doc}: dice '{n} passed', la suite da {passed}")
+        if int(n) not in legitimos:
+            aviso(f"{doc}: dice '{n} passed', la suite da "
+                  + " o ".join(str(x) for x in sorted(legitimos)))
             desfasados += 1
 if not desfasados:
     ok("ningun documento vivo cita un conteo desactualizado")
