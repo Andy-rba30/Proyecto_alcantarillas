@@ -41,7 +41,7 @@ Esto obliga a separar dos cosas que se confunden al hablar de "listo para desple
 
 | | Estado |
 |---|---|
-| **El software como herramienta** | Terminado. 13 módulos, 725 passed + 1 skipped (726 collected), GUI, exportación con trazabilidad |
+| **El software como herramienta** | Terminado. 13 módulos, 743 passed + 1 skipped (744 collected), GUI, exportación con trazabilidad |
 | **El expediente como cálculo de ingeniería** | Bloqueado. Faltan 25 decisiones y datos que ninguna línea de código puede inventar |
 
 Desplegar hoy es correcto y útil — la herramienta funciona. Lo que no existe todavía es un
@@ -414,6 +414,17 @@ de su constante 29**, no 19.62. La diferencia es de 0.05 %, irrelevante en magni
 "elegancia" que atribuí a 2×g era una coincidencia numérica sin respaldo en la fuente, y hay una
 fuente primaria que sí lo fija. Corregir a 19.63, y quitar la justificación "= 2×g" — no es de
 donde sale el número.
+
+> **Corrección posterior a este párrafo (sesión C06, conflicto #6; `MAT-D12`, `MAT-X5`).** Este
+> pasaje y el punto (2) del prompt de cierre que aparece más abajo se dejan como quedaron —son el
+> registro de lo que se decidió entonces—, pero **la mitad de la explicación era falsa y no puede
+> quedar sin marca**: el parecido con 2×g **no es una coincidencia**. `K = 2g/φ²` es exacto, con
+> φ el factor de unidades de Manning (1.486 en el sistema inglés, 1 en SI): `2·32.2/1.486² = 29.16`
+> y `2·9.81456 = 19.629`. Lo único que separa 19.63 de 19.62 es **cuál g** —HDS-5 trabaja con
+> 32.2 ft/s² = 9.81456 m/s² y el proyecto usa `constantes_fisicas.G = 9.81`—. Lo que sí se
+> mantiene, y es lo que importaba, es la **decisión**: el valor que se usa es el **transcrito** de
+> la fuente primaria (19.63), no uno derivado de la G del proyecto. La justificación corregida
+> vive en `constantes_normativas.K_FRICCION_SI` y en el docstring de `M4_control`.
 
 **La transición del HDS-5 no es interpolación lineal.** Toda la arquitectura de M4 (y el caso
 patrón CP-5) asume interpolación lineal entre q\*=3.5 y q\*=4.0. El verificador encontró que el

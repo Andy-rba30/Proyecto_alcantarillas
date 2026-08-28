@@ -3,17 +3,27 @@ M8_estructural.py
 ==================
 Fase 8 de la hoja de ruta: verificacion estructural del conducto, sin
 catalogo de proveedor -- la seleccion se hace contra las NORMAS DE PRODUCTO
-(AASHTO M-170M clases I-V para concreto, ASTM A-807/AASHTO M36 para TMC,
-AASHTO M294 para HDPE), coherente con la neutralidad comercial de Sec. 3.2.
+(AASHTO M 170M-04 clases I-V para concreto, ASTM A796/A796M para el calibre
+por altura de cobertura del TMC, AASHTO M294 para HDPE), coherente con la
+neutralidad comercial de Sec. 3.2.
+
+LA NORMA DEL TMC NO ES ASTM A-807 (NOR-PRO-04). Este modulo la citaba tres
+veces y esa designacion no aparece ni una vez en M 170M, M 36 ni A760. La que
+lleva el diseno estructural -- calibre por altura de cobertura -- es ASTM
+A796/A796M, citada siete veces por A760 y en la lista de normas de M 36;
+A798/A798M es la de instalacion. A-807 si es la norma a la que remiten las
+Subsecciones 507.05/.06/.08 del EG-2013, pero para materiales y fabricacion,
+no para esa tabla.
 
 Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
 
     1-2  Seleccionar clase/calibre segun la altura real de relleno y
          verificar que esa altura cae en su rango admisible.
          `seleccionar_clase_calibre()` -- se detiene con
-         CriterioPendienteError: ninguna de las dos tablas (AASHTO M-170M,
-         ASTM A-807/AASHTO M36) esta transcrita en la hoja de ruta. Ver el
-         criterio 'clases_producto_por_relleno' en criterios_adoptados.py.
+         CriterioPendienteError: ninguna de las dos tablas (AASHTO M 170M-04
+         Tablas 1 a 5, ASTM A796/A796M) esta transcrita en la hoja de ruta.
+         Ver el criterio 'clases_producto_por_relleno' en
+         criterios_adoptados.py.
 
     3    Flotacion (V7), obligatoria con NF a 1.4 m.
          `empuje_flotacion_kn_m()`, `peso_relleno_kn_m()` y
@@ -23,11 +33,12 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
 
              gamma_DC_min * DC + gamma_EV_min * EV  >=  gamma_WA * U
 
-         El empuje U es siempre calculable (geometria + constante fisica);
-         el peso del relleno se detiene en 'peso_especifico_relleno_kn_m3'
-         (todavia vacio). Los factores gamma salen de 'factores_carga_aashto'
-         ([C], AASHTO LRFD 9a ed., Tablas 3.4.1-1/-2, fila 'Resistencia I'):
-         ya no se detienen.
+         El empuje U YA NO es siempre calculable: se calcula sobre el
+         diametro EXTERIOR (num. 2.4.3.8.2 -- volumen desplazado, MAT-D3) y
+         por eso se detiene en 'espesor_pared_conducto'. El peso del relleno
+         se detiene ademas en 'peso_especifico_relleno_kn_m3'. Los factores
+         gamma salen de 'factores_carga_aashto' ([C], AASHTO LRFD 9a ed.,
+         Tablas 3.4.1-1/-2, fila 'Resistencia I'): esos no se detienen.
 
     4    Cama de apoyo y relleno lateral segun EG-2013 (8.1).
          `cama_apoyo_relleno_lateral()` -- SI implementada: la tabla 8.1
@@ -77,11 +88,15 @@ veces el mismo margen.
 
 Por que el peso propio del conducto no entra en V7
 ----------------------------------------------------
-DC = 0. El peso propio depende del espesor de pared, que sale de la
-clase/calibre seleccionada en los items 1-2 -- hoy bloqueados. Sumarlo
-supondria inventar un espesor. Omitirlo es la alternativa conservadora, NO
-una aproximacion optimista: reduce el lado estabilizante y hace el chequeo MAS
-dificil de cumplir, nunca lo relaja. Que su gamma sea el MINIMO (0.90, no
+DC = 0. El peso propio depende del espesor de pared Y de la densidad del
+material del tubo. Lo primero ya esta declarado ('espesor_pared_conducto',
+hoy sin valor); lo segundo no lo declara nadie, de modo que sumar DC seguiria
+exigiendo inventar un dato. Omitirlo es la alternativa conservadora, NO una
+aproximacion optimista: reduce el lado estabilizante y hace el chequeo MAS
+dificil de cumplir, nunca lo relaja. Es lo contrario de lo que pasaba con U,
+donde usar el diametro interior tambien "aproximaba" y lo hacia del lado
+INSEGURO (MAT-D3): una omision es conservadora o no segun de que lado del
+equilibrio caiga, y hay que decir de cual. Que su gamma sea el MINIMO (0.90, no
 1.25) va en la misma direccion y por la misma razon: en flotacion el peso
 propio ayuda, y en LRFD lo que ayuda se minora. Se declara aqui, en cada
 resultado y en la memoria, en vez de aproximar en silencio.
@@ -107,6 +122,8 @@ en un punto cuyo NF todavia no ha medido el estudio geotecnico.
 Excepciones
 -----------
     CriterioPendienteError   'clases_producto_por_relleno' (items 1-2);
+                             'espesor_pared_conducto' (el D exterior de U y
+                             de EV, via modulos.M2_material.diametro_exterior);
                              'peso_especifico_relleno_kn_m3' (V7, via
                              modulos.M5_verificaciones.v7_flotacion).
                              'factores_carga_aashto' ya no esta vacio ([C]).
@@ -171,15 +188,15 @@ EXTREMO_DESESTABILIZANTE = "max"
 
 def seleccionar_clase_calibre(*, material: Material, altura_relleno: float):
     """
-    Clase (concreto, AASHTO M-170M I-V) o calibre (TMC, ASTM A-807/AASHTO
-    M36) segun la altura real de relleno del punto, y verificacion de que
-    esa altura cae en el rango admisible de la clase elegida.
+    Clase (concreto, AASHTO M 170M-04, Clases I a V) o calibre (TMC, ASTM
+    A796/A796M) segun la altura real de relleno del punto, y verificacion de
+    que esa altura cae en el rango admisible de la clase elegida.
 
     Ninguna de las dos tablas esta transcrita en la hoja de ruta -- el mismo
-    vacio de norma de producto que 'h_relleno_min_concreto_tmc' declara en
-    Sec. 7.A, pero alli bastaba un minimo escalar y aqui hace falta la tabla
-    completa con su rango admisible por clase. Se detiene en
-    'clases_producto_por_relleno' (ver su justificacion en
+    vacio de norma de producto que 'espesor_pared_conducto' declara para la
+    geometria fisica, y los dos se cierran juntos: el espesor de pared es una
+    consecuencia de la clase o el calibre que aqui se seleccione. Se detiene
+    en 'clases_producto_por_relleno' (ver su justificacion en
     criterios_adoptados.py). HDPE no tiene tabla de clase por altura: su
     verificacion detallada queda diferida al expediente por el item 5 (ver
     `verificacion_diferida_estructural`), no por este vacio.
@@ -194,34 +211,55 @@ def seleccionar_clase_calibre(*, material: Material, altura_relleno: float):
 # Item 3 - V7: Flotacion del conducto
 # ---------------------------------------------------------------------------
 
-def empuje_flotacion_kn_m(*, D: float) -> float:
+def empuje_flotacion_kn_m(*, D_exterior: float) -> float:
     """
     U, empuje de flotacion por metro lineal de conducto, kN/m (num.
     2.4.3.8.2): conducto totalmente sumergido, la hipotesis conservadora de
     "NF en su cota mas alta" que fija la fila V7 de la Fase 5 (ver "Por que
     U asume sumersion completa" en el docstring del modulo).
 
-    U = gamma_agua * (pi/4) * D^2 -- el area exterior del conducto, D como
-    aproximacion del diametro exterior (el catalogo de Sec. 3.2 no separa
-    diametro interior de exterior; usarlo es del lado conservador, un
-    exterior real algo mayor daria un U un poco mayor).
+        U = gamma_agua * (pi/4) * D_ext^2
+
+    EL DIAMETRO ES EL EXTERIOR, y ese es el punto (MAT-D3). Esta funcion
+    recibia el interior y su docstring lo declaraba "del lado conservador,
+    un exterior real algo mayor daria un U un poco mayor". Las dos frases
+    eran falsas a la vez:
+
+      - el num. 2.4.3.8.2 define la subpresion sobre el VOLUMEN DESPLAZADO,
+        que es el que encierra la superficie exterior, no el interior;
+      - subestimar el volumen desplazado subestima U, y U es la carga
+        DESestabilizante del equilibrio de V7. Menos U es un chequeo mas
+        FACIL de pasar. El conservadurismo declarado apuntaba al reves del
+        real: con t = 0.100 m en un tubo de concreto de D = 0.90 m,
+        D_ext = 1.10 m y U pasa de 6.24 a 9.32 kN/m -- el valor anterior
+        estaba un 33 % por debajo.
+
+    El D exterior lo entrega `M2_material.diametro_exterior`, que se detiene
+    en 'espesor_pared_conducto' mientras ese criterio siga vacio.
     """
-    return GAMMA_AGUA_KN_M3 * (math.pi / 4) * D ** 2   # literal-ok: area de circulo, num. 2.4.3.8.2
+    return GAMMA_AGUA_KN_M3 * (math.pi / 4) * D_exterior ** 2   # literal-ok: area de circulo, num. 2.4.3.8.2
 
 
-def peso_relleno_kn_m(*, D: float, altura_relleno: float) -> float:
+def peso_relleno_kn_m(*, D_exterior: float, altura_relleno: float) -> float:
     """
-    Peso del relleno sobre la clave, kN/m: prisma de ancho D (el diametro
-    del conducto, la misma aproximacion de `empuje_flotacion_kn_m`) y altura
-    `altura_relleno`, con el peso especifico del criterio
-    'peso_especifico_relleno_kn_m3'.
+    Peso del relleno sobre la clave, kN/m: prisma de ancho D_ext -- el ancho
+    que el conducto ocupa de verdad en planta, el mismo diametro con que se
+    calcula U -- y altura `altura_relleno`, con el peso especifico del
+    criterio 'peso_especifico_relleno_kn_m3'.
+
+    QUE LOS DOS TERMINOS USEN EL MISMO ANCHO NO ES UN DETALLE. El equilibrio
+    de V7 compara gamma_EV*EV contra gamma_WA*U, y los dos crecen con el
+    ancho: con el interior en los dos lados el cociente apenas cambiaba, y de
+    ahi que MAT-D3 midiera el efecto sobre la altura de relleno limite
+    h* = gamma_w*pi*D_ext/(4*0.90*gamma_r) y no sobre U suelto. Con el
+    exterior en los dos lados el margen se evalua sobre la geometria real.
 
     NO suma el peso propio del conducto -- ver "Por que el peso propio del
     conducto no entra en V7" en el docstring del modulo: omitirlo es
     conservador, no una aproximacion optimista.
     """
     gamma_relleno = ca.valor(CRITERIO_PESO_RELLENO)   # CriterioPendienteError mientras falte
-    return gamma_relleno * D * altura_relleno
+    return gamma_relleno * D_exterior * altura_relleno
 
 
 COMBINACION_V7 = "Resistencia I"

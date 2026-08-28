@@ -6,6 +6,19 @@
   `hoja_de_ruta_alcantarillas_v*.md` y exige que haya exactamente una). Toda cita de
   numeral se verifica contra ese archivo. Nunca se inventa un numeral.
 - Si la hoja de ruta y tu conocimiento previo discrepan, gana la hoja de ruta.
+- **La única excepción a lo anterior: la fuente primaria.** Si la hoja de ruta
+  discrepa del documento normativo original —el PDF en `normas/`— y la
+  discrepancia se **verifica contra ese PDF**, gana la fuente primaria. Tu
+  conocimiento previo no es fuente primaria: una verificación es citar numeral,
+  página impresa y texto literal del documento. Cuando ganes por esta vía tienes
+  que hacer las tres cosas, no una: (1) declarar la discrepancia **en el punto de
+  uso**, con la cita que la sostiene; (2) reportar el defecto **contra la hoja de
+  ruta**, que es la que hay que corregir; (3) dejar dicho que la hoja de ruta
+  sigue mal mientras no se corrija, porque quien la lea sin leer el código
+  diseñará con el valor equivocado. Esta regla estaba **aplicada y no escrita**
+  (`constantes_normativas.py`, K_fricción SI: «aquí gana la fuente primaria
+  HDS-5 por verificación externa»), y sin escribirla el proyecto tenía dos
+  jerarquías incompatibles y un precedente sin norma (NOR-COH-02).
 - **Si la hoja de ruta NO dice nada sobre algo que necesitas: NO lo inventes.**
   Crea una entrada en criterios_adoptados.py con valor=None, etiqueta [A] y
   justificación de por qué hace falta, y detén el cálculo con excepción.

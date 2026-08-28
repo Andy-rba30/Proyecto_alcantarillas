@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 import constantes_normativas as CN
+import criterios_adoptados as ca
 from modelos import (ConstantesHDS5, ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DisenoNoFactibleError, ErrorProyecto,
                      Familia, Geometria, Material, PuntoCritico,
@@ -164,19 +165,23 @@ def test_el_ancho_superficial_es_consistente_con_el_tirante():
 # ---------------------------------------------------------------------------
 
 def _material_concreto() -> Material:
-    n_min, n_max = CN.MANNING["concreto_recto"]
+    n_min, n_max = CN.MANNING["concreto_tubo_recto"]
     return Material(
         tipo=TipoMaterial.CONCRETO_REFORZADO,
         nombre="Concreto reforzado",
         n_min=n_min,
         n_max=n_max,
-        D_max=CN.D_MAX["concreto_reforzado"],
+        D_max=ca.valor("D_max_catalogo")["concreto_reforzado"],
+        D_max_de_catalogo=ca.criterio("D_max_catalogo").de_catalogo,
         norma_producto="ASTM C76 / AASHTO M170",
         hds5=ConstantesHDS5.desde_dict(
             CN.HDS5_INLET["circular_concreto_square_edge_headwall"]
         ),
-        v_max_rango=CN.V_MAX["concreto"],
-        h_relleno_min=CN.H_RELLENO_MIN["concreto"],
+        fila_manning=CN.TABLA_09_FILAS["concreto_tubo_recto"]["fila"],
+        v_max_tabla10=CN.V_MAX["concreto"],
+        v_max_adoptado=None,
+        h_relleno_min_eg2013=CN.H_RELLENO_MIN["concreto"],
+        espesor_pared=ca.valor("espesor_pared_conducto")["concreto_reforzado"],
         seccion_eg2013=CN.SECCION_EG2013["concreto_reforzado"],
     )
 
@@ -184,8 +189,10 @@ def _material_concreto() -> Material:
 def test_el_material_expone_las_dos_ramas_de_n():
     m = _material_concreto()
     assert m.n_para_capacidad == pytest.approx(CP2_GEOMETRIA_MANNING["n_max"])
-    assert m.n_para_velocidad == pytest.approx(CP2_GEOMETRIA_MANNING["n_min"])
-    assert m.n_para_velocidad < m.n_para_capacidad
+    assert m.n_para_velocidad_maxima == pytest.approx(CP2_GEOMETRIA_MANNING["n_min"])
+    assert m.n_para_velocidad_maxima < m.n_para_capacidad
+    # El piso de velocidad se calcula con n_max, no con n_min (MAT-D1).
+    assert m.n_para_velocidad_minima == pytest.approx(CP2_GEOMETRIA_MANNING["n_max"])
 
 
 def test_la_velocidad_maxima_del_concreto_esta_tabulada():
@@ -208,7 +215,8 @@ def _resultado_hidraulico(control: ControlGobernante) -> ResultadoHidraulico:
     return ResultadoHidraulico(
         y_normal=c["y_sobre_D"] * c["D"],
         y_critico=c["y_sobre_D"] * c["D"] / 2,     # valor de forma, no de calculo
-        V=c["V_con_n_min_esperado"],
+        V_erosion=c["V_con_n_min_esperado"],
+        V_sedimentacion=c["V_con_n_max_esperado"],
         Q=c["Q_con_n_max_esperado"],
         HW_entrada=CP8_CONTROL_SALIDA["H_esperado_con_K_SI"],
         HW_salida=CP8_CONTROL_SALIDA["H_con_29_incorrecto"],
@@ -225,12 +233,20 @@ def test_HW_selecciona_el_control_que_gobierna():
 
 def test_la_velocidad_no_es_el_caudal_dividido_entre_el_area():
     """
-    Regla de doble n: V sale de n_min y Q de n_max, asi que V*A != Q. Si algun
-    dia coinciden, alguien se ahorro el calculo doble de Sec. 4.1.
+    Regla de doble n: `V_erosion` sale de n_min y Q de n_max, asi que
+    V_erosion*A != Q. Si algun dia coinciden, alguien se ahorro el calculo
+    doble de Sec. 4.1.
+
+    `V_sedimentacion` SI cumple V*A = Q, y eso no es la regla ahorrada sino su
+    consecuencia: es la velocidad media del mismo n con que se resolvio el
+    tirante (ver `modelos.TiranteNormal`).
     """
     c = CP2_GEOMETRIA_MANNING
     r = _resultado_hidraulico(ControlGobernante.ENTRADA)
-    assert r.V * c["A_esperado"] != pytest.approx(r.Q, rel=c["tolerancia_hidraulica"])
+    assert r.V_erosion * c["A_esperado"] != pytest.approx(
+        r.Q, rel=c["tolerancia_hidraulica"])
+    assert r.V_sedimentacion * c["A_esperado"] == pytest.approx(
+        r.Q, rel=c["tolerancia_hidraulica"])
 
 
 def test_la_verificacion_no_es_un_bool_desnudo():

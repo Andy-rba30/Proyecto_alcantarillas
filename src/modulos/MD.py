@@ -44,9 +44,12 @@ Lo que MD NO hace
   `modulos.M7_geometria.tamizado_rasante`, que lo devuelve en
   `TamizadoRasante.delta_rasante_cm` sin necesidad de excepcion.
 - No fabrica la Verificacion V9 (disponibilidad de diametro). El descarte por
-  tope de la norma de producto y V9 son el MISMO hecho, y quien lo declare
-  como `Verificacion` con su numeral es M5, que ya recibe D y `material.D_max`.
+  tope de CATALOGO y V9 son el MISMO hecho, y quien lo declare como
+  `Verificacion` con su criterio es M5, que ya recibe D y `material.D_max`.
   MD lo reporta como texto en el motivo de descarte, no como verificacion.
+  Ese tope NO es normativo: sale del criterio 'D_max_catalogo' [A] y las
+  normas de producto a las que se le atribuia no lo sostienen (NOR-PRO-01,
+  NOR-PRO-02). El motivo de descarte lo dice con esas palabras.
 - No itera puntos. El bucle exterior "para cada punto" no esta aqui porque
   cada punto entra con su L y su TW propios (arriba) y porque la hoja de ruta
   no declara que hacer con el lote cuando UN punto sale no factible: si aborta
@@ -241,12 +244,21 @@ def _motivo_material_fallido(exc: ErrorProyecto) -> str:
 def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
     """
     El material se quedo sin catalogo: se agoto la progresion de Sec. 3.2 bajo
-    el tope de su norma de producto. Lleva el mensaje textual del Anexo B y,
+    el tope de CATALOGO del material. Lleva el mensaje textual del Anexo B y,
     detras, el ultimo fallo concreto -- el mensaje solo dice que no hay tubo
     mas grande; el motivo dice por que hacia falta uno.
+
+    El tope se cita como lo que es: una adopcion del proyecto sobre la
+    disponibilidad ('D_max_catalogo'), NO la norma de producto. Este mensaje
+    decia "segun {norma_producto}" y esa atribucion es falsa -- A760 tabula
+    hasta 3600 mm y M 170M tambien (NOR-PRO-01, NOR-PRO-02) --, de modo que
+    un punto descartado aqui parecia rechazado por la norma cuando lo rechaza
+    el catalogo adoptado.
     """
-    return (f"{MENSAJE_DIAMETRO_SUPERADO} (tope {material.D_max:.2f} m segun "
-            f"{material.norma_producto}). Ultimo intento: {ultimo_motivo}")
+    return (f"{MENSAJE_DIAMETRO_SUPERADO} (tope de catalogo adoptado "
+            f"{material.D_max:.2f} m, criterio 'D_max_catalogo'; NO es un "
+            f"tope de {material.norma_producto}). Ultimo intento: "
+            f"{ultimo_motivo}")
 
 
 # ---------------------------------------------------------------------------
@@ -476,10 +488,15 @@ def _exigir_criterios_declarados(
     verifico.
 
     Solo viaja la primera clave. `CriterioPendienteError` lleva UNA `clave`, de
-    modo que cuando cada material se detiene en un vacio distinto (hoy en el
-    CSV de ejemplo: 'remanso_derecho_via' el concreto, 'v_max_tmc' el TMC y
-    'v_max_hdpe' el HDPE) las demas no llegan a la GUI ni al bloque de
-    pendientes de M11 como filas propias. NO se pierden: quedan en la traza de
+    modo que cuando cada material se detiene en un vacio distinto las demas no
+    llegan a la GUI ni al bloque de
+    pendientes de M11 como filas propias. (El ejemplo que traia este parrafo
+    -- "'v_max_tmc' el TMC y 'v_max_hdpe' el HDPE" -- describia un estado ya
+    superado: esos dos criterios tienen valor desde hace tiempo y en el CSV de
+    ejemplo los tres materiales se detienen hoy en el mismo sitio. Se retira
+    el ejemplo en vez de actualizarlo: cual es el primer vacio de cada
+    material depende del expediente, y un ejemplo concreto vuelve a envejecer
+    en silencio.) NO se pierden: quedan en la traza de
     `PasoDiseno` que recibe `registrar`, y de ahi en las 'iteraciones' del
     informe. Publicarlas las tres como filas estructuradas exige un campo nuevo
     en modelos.py -- una excepcion que lleve varias claves -- y queda pendiente

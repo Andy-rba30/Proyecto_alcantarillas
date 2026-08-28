@@ -243,9 +243,11 @@ class CategoriaTR(str, Enum):
 class TipoMaterial(str, Enum):
     """
     Materiales admitidos, Sec. 3.4. El valor de cada miembro coincide con la
-    clave usada en `constantes_normativas.D_MAX`, `H_RELLENO_MIN` y
-    `SECCION_EG2013`. La correspondencia con las claves de la Tabla N 09
-    (`MANNING`) la resuelve M2, no este modulo.
+    clave usada en `constantes_normativas.H_RELLENO_MIN` y `SECCION_EG2013`, y
+    con la de los criterios que se indexan por material ('D_max_catalogo',
+    'espesor_pared_conducto', 'cobertura_minima_aashto'). La correspondencia
+    con las claves de la Tabla N 09 (`MANNING`) la resuelve M2, no este
+    modulo.
     """
     CONCRETO_REFORZADO = "concreto_reforzado"
     TMC = "tmc"
@@ -344,6 +346,16 @@ class PuntoCritico:
     a un dato bloqueado en un tablero de pendientes. Se leen con `exigir()`,
     que lanza DatoFaltanteError en vez de asumir un valor.
 
+    `sucs_fundacion` es obligatoria y NINGUN modulo la lee, y las dos cosas
+    son correctas a la vez. La obligatoriedad no la inventa el codigo: la
+    hoja de ruta la lista en Sec. 1.1 con etiqueta [N] E.050 y la incluye en
+    el encabezado literal de Sec. 1.2, o sea que una fila sin ella es un
+    expediente incompleto y M0 tiene que decirlo. Su consumidor previsto es
+    el criterio 'c_phi_fundacion' -- correlacion de resistencia desde la
+    clasificacion SUCS --, que esta declarado vacio y cuyo ensamblaje (E1-E5
+    de Sec. 9.3) esta fuera del alcance de esta CLI. Se carga, se valida y se
+    imprime en la memoria; el dia que E1-E5 se ensamblen, el dato ya esta.
+
     `NF_profundidad_m` es la unica columna que NO viene del encabezado de
     Sec. 1.2: se agrego al reclasificar el nivel freatico como dato de sitio
     [S]. Era un criterio unico de proyecto (1.4 m, la caracterizacion de la
@@ -437,19 +449,53 @@ class Material:
     declara la forma; no fija ningun numero.
 
     Regla de doble n (Sec. 4.1): n maximo para capacidad y tirante, n minimo
-    para velocidad y socavacion. Se expone con dos propiedades para que ningun
-    modulo tenga que recordar cual es cual.
+    para velocidad MAXIMA y socavacion. Se expone con TRES propiedades -- no
+    dos -- para que ningun modulo tenga que recordar cual es cual: la
+    velocidad tiene dos umbrales, un techo y un piso, y cada uno se calcula
+    con el n del extremo contrario. `n_para_velocidad_minima` devuelve el
+    mismo numero que `n_para_capacidad`, y tiene nombre propio porque el
+    motivo es otro: alli n_max da mas tirante, aqui da menos velocidad.
+
+    Dos campos que se leen mal si no se dice de que son:
+
+    `D_max` NO es un tope normativo. Es el tope de CATALOGO que el proyecto
+    adopta ('D_max_catalogo', [A]), y `D_max_de_catalogo` trae el rotulo con
+    que hay que imprimirlo. `norma_producto` es la norma que rige el producto
+    -- materiales, fabricacion, aceptacion -- y NO la que topa el diametro:
+    A760 tabula hasta 3600 mm y M 170M tambien (NOR-PRO-01, NOR-PRO-02).
+
+    `h_relleno_min_eg2013` es SOLO el minimo de EG-2013, que existe unicamente
+    para HDPE (Subseccion 508.07, pag. 984). No es el recubrimiento minimo del
+    material: ese lo calcula `M7_geometria.altura_recubrimiento` como el mayor
+    entre este y la cobertura minima de AASHTO (Tabla 12.6.6.3-1), y depende
+    del diametro exterior. Un None aqui significa "EG-2013 no lo fija para
+    este material", no "falta el dato".
     """
 
     tipo: TipoMaterial
     nombre: str                             # etiqueta para el reporte
     n_min: float                            # Tabla N 09 (o criterio adoptado)
     n_max: float
-    D_max: float                            # m - tope de la norma de producto (V9)
+    D_max: float                            # m - tope de CATALOGO adoptado (V9)
+    D_max_de_catalogo: str                  # rotulo obligatorio de ese tope
     norma_producto: str                     # ASTM C76 / AASHTO M36 / M294 ...
     hds5: ConstantesHDS5                    # carta adoptada en Sec. 4.2
-    v_max_rango: Optional[Tuple[float, float]]   # m/s - Tabla N 10; None = vacio
-    h_relleno_min: Optional[float]          # m sobre la clave (Sec. 7.A)
+    fila_manning: str                       # fila LITERAL de la Tabla N 09
+    # Los dos techos de velocidad, separados porque son dos cosas distintas y
+    # un solo campo las confundia (SIS-A-06): el campo anotado
+    # `Optional[Tuple[float, float]]` transportaba el par de la Tabla N 10 para
+    # el concreto y un ESCALAR para TMC y HDPE, de modo que el contrato que se
+    # consulta aqui decia lo que el dato no era.
+    v_max_tabla10: Optional[Tuple[float, ...]]   # m/s - fila de la Tabla N 10,
+                                            # tal cual: dos valores para el
+                                            # concreto, uno para la
+                                            # mamposteria. None = el material
+                                            # NO tiene fila en esa tabla
+    v_max_adoptado: Optional[float]         # m/s - techo escalar de un criterio
+                                            # [C] (TMC, HDPE). None = el techo
+                                            # sale de la tabla, o falta declararlo
+    h_relleno_min_eg2013: Optional[float]   # m sobre la clave; None = EG-2013 no lo fija
+    espesor_pared: Optional[float]          # m - t; None = criterio sin declarar
     seccion_eg2013: str                     # 505 / 506 / 507 / 508 (Capitulo V)
 
     @property
@@ -458,14 +504,50 @@ class Material:
         return self.n_max
 
     @property
-    def n_para_velocidad(self) -> float:
-        """n minimo: conservador del lado de la erosion (Sec. 4.1)."""
+    def n_para_velocidad_maxima(self) -> float:
+        """
+        n minimo: conservador del lado de la erosion (Sec. 4.1), o sea contra
+        los TECHOS de velocidad -- V3 y el d50 de Laushey. Es la estimacion
+        ALTA de velocidad.
+
+        El nombre reproduce el de la hoja de ruta (Sec. 4.1: n minimo para
+        "velocidad maxima y socavacion"). Se llamaba `n_para_velocidad`, sin
+        el "maxima", y ese nombre era la mitad del defecto MAT-D1: leido desde
+        V2 -- que es tambien una verificacion de velocidad -- parecia el n que
+        le tocaba, y no lo es.
+        """
         return self.n_min
 
     @property
+    def n_para_velocidad_minima(self) -> float:
+        """
+        n maximo: el que da la estimacion BAJA de velocidad sobre la geometria
+        de diseño, y por lo tanto el conservador contra un PISO de velocidad
+        (V2, autolimpieza, Sec. 4.1.1.3.6).
+
+        Devuelve el mismo numero que `n_para_capacidad` y existe aparte porque
+        la razon es distinta: en capacidad n_max se usa porque exige mas area,
+        y aqui porque entrega menos velocidad. Si algun dia el proyecto tomara
+        el n de dos tablas distintas para las dos cosas, esta propiedad es la
+        que cambiaria sin tocar la otra.
+        """
+        return self.n_max
+
+    @property
     def v_max_definida(self) -> bool:
-        """False para TMC y HDPE mientras el Tablero 1.3 siga abierto."""
-        return self.v_max_rango is not None
+        """
+        True si el material tiene un techo de velocidad aplicable: fila en la
+        Tabla N 10, o techo escalar declarado en su criterio.
+
+        HOY DEVUELVE True PARA LOS TRES, y el docstring anterior decia lo
+        contrario -- "False para TMC y HDPE mientras el Tablero 1.3 siga
+        abierto" (SIS-A-06). La frase no era falsa cuando se escribio: era
+        condicional, y su condicion se cerro al declararse 'v_max_tmc' y
+        'v_max_hdpe' con la fuente WSDOT. Vuelve a False para TMC o HDPE si
+        alguien vacia esos criterios, que es justo lo que este campo tiene que
+        poder decir.
+        """
+        return self.v_max_tabla10 is not None or self.v_max_adoptado is not None
 
 
 @dataclass(frozen=True)
@@ -510,20 +592,55 @@ class TiranteNormal:
 
     `geometria` es la UNICA solucion de Brent, con n_max (rama de capacidad y
     tirante: V1 borde libre) -- el n mas conservador del lado de la
-    inundacion fija el theta real de diseño. `V` reusa esa MISMA geometria
-    (mismo theta, mismo R) pero recalcula la velocidad de Manning con n_min
-    (rama de velocidad y socavacion: V2, V3, Laushey): el mismo canal visto
-    con la rugosidad mas baja, conservador del lado de la erosion. No es una
-    segunda resolucion de Brent para un theta distinto.
+    inundacion fija el theta real de diseño. Sobre esa MISMA geometria (mismo
+    theta, mismo R) se calculan las DOS velocidades de la regla de doble n,
+    porque un umbral de velocidad no tiene un extremo conservador sino dos, y
+    son opuestos:
 
-    Por eso, en general, `V * geometria.A != Q`: Q es el caudal de diseño que
-    define el theta (con n_max), mientras que V asume una rugosidad menor
-    sobre esa misma seccion (ver el fixture CP-2,
+        `V_erosion`        con n_min: la estimacion ALTA. Es la que hay que
+                           usar contra un TECHO -- V3 (velocidad maxima
+                           admisible) y el d50 de Laushey (Fase 6) --, porque
+                           el riesgo esta en que la velocidad real sea mayor
+                           que la calculada.
+        `V_sedimentacion`  con n_max: la estimacion BAJA. Es la que hay que
+                           usar contra un PISO -- V2 (velocidad minima de
+                           autolimpieza) --, porque ahi el riesgo es el
+                           contrario: que la velocidad real sea MENOR que la
+                           calculada y el conducto sedimente.
+
+    POR QUE HAY DOS Y NO UNA (MAT-D1). Este tipo llevaba un solo campo `V`,
+    calculado con n_min, y V2 lo consumia: un piso verificado con la
+    estimacion alta de velocidad, o sea el conservadurismo invertido. La
+    Sec. 4.1 de la hoja de ruta asigna n minimo a "velocidad MAXIMA y
+    socavacion" y no nombra a V2; el fixture CP-3 modela el umbral de V2 con
+    n = 0.013, que es n_max. El repositorio se contradecia a si mismo, y la
+    ventana permisiva era real: con D = 0.90 m, y/D = 0.75 y S = 5e-5, la
+    velocidad de la rama n_max es 0.228 m/s -- por debajo del piso de
+    0.25 m/s -- mientras que la de la rama n_min da 0.297 m/s y el punto salia
+    "cumple".
+
+    `V_erosion * geometria.A != Q` en general: Q es el caudal de diseño que
+    define el theta (con n_max), mientras que esa velocidad asume una
+    rugosidad menor sobre la misma seccion (ver el fixture CP-2,
     tests/fixtures/casos_patron.py, y `modulos.M3_hidraulica.resolver_manning`).
+    `V_sedimentacion`, en cambio, SI cumple `V * A = Q`, y no por casualidad:
+    es la velocidad media del mismo n con que se resolvio la geometria.
+
+    Eso la convierte ademas en el minimo REAL de la velocidad sobre todo el
+    rango de n de la Tabla N 09, no solo en "la de la geometria de diseño":
+    resolviendo Manning con un n menor, el tirante normal baja, el area baja y
+    la velocidad media Q/A sube. La cadena vale mientras theta este en la RAMA
+    CRECIENTE de la curva de capacidad de la seccion circular -- Q(theta) no
+    es monotona: alcanza su maximo cerca de y/D = 0.94 y decae hasta la
+    seccion llena --, y ahi esta siempre el diseño de este proyecto, porque V1
+    lo acota en y/D <= 0.75 (num. 4.1.1.3.7 b). Se dice y no se da por
+    supuesto: por encima de ese maximo la relacion theta(n) deja de ser
+    creciente y el argumento no aplicaria.
     """
 
     geometria: Geometria      # con n_max
-    V: float                  # m/s, con n_min
+    V_erosion: float          # m/s, con n_min  - estimacion ALTA (techos)
+    V_sedimentacion: float    # m/s, con n_max  - estimacion BAJA (pisos)
 
 
 @dataclass(frozen=True)
@@ -561,7 +678,17 @@ class ControlEntrada:
 
     `HW` es carga sobre el fondo de la entrada, en metros. `HW_sobre_D` es el
     HWi/D adimensional que devuelven las ecuaciones de la Tabla A.1, antes de
-    multiplicar por D -- y es tambien lo que compara V4b (HW/D <= 1.5).
+    multiplicar por D.
+
+    `HW_sobre_D` NO LO LEE HOY NINGUNA RUTA DE PRODUCCION, y este docstring
+    decia que era "lo que compara V4b (HW/D <= 1.5)" (SIS-B-02, SIS-A-02). Esa
+    comparacion no existe: M5 no implementa V4b y la declara no evaluada en
+    `verificaciones_no_evaluadas()`. El campo se conserva -- es la salida
+    literal de las ecuaciones de la Tabla A.1, la magnitud con la que HDS-5
+    razona, y multiplicarla por D para volver a dividirla despues seria
+    perderla y recomponerla -- y sera el argumento del chequeo el dia que se
+    cablee, pero mientras tanto lo que se dice de el es lo que se puede
+    sostener: que hoy solo lo leen los tests.
     """
 
     HW: float                     # m  - HWi
@@ -587,6 +714,22 @@ class ControlSalida:
     es True, el que gobierna el remanso es el nivel del cuerpo receptor y no
     la geometria del conducto. Es la situacion que Sec. 4.3 advierte
     expresamente para descargas a drenes con nivel propio.
+
+    `h_o_fuera_de_rango` y `h_o_requiere_cautela` son las DOS condiciones de
+    uso que HDS-5 pone a esa aproximacion y que el proyecto puede evaluar
+    (NOR-HDS-05, num. 3.3.3, pag. impresa 3.24): por debajo de HW/D = 0.75 la
+    fuente dice que la aproximacion no debe usarse, y por debajo de 1.2 pide
+    cautela porque el barril puede fluir parcialmente lleno. Son banderas y no
+    excepciones a proposito: la fuente no prohibe calcular, dice que el numero
+    no es de fiar, y quien decide que hacer con un punto asi es el revisor.
+    Viajan a `ResultadoHidraulico` -- ya filtradas por si el control de salida
+    gobierna, que es la condicion con que la fuente las escribe -- y de ahi a
+    la memoria del punto.
+
+    La tercera condicion de la fuente -- que el barril fluya lleno en la mayor
+    parte de su longitud -- NO tiene bandera porque no se puede evaluar sin un
+    perfil de la lamina de agua. Queda declarada en
+    `constantes_normativas.H_O_CONDICION_APLICACION`.
     """
 
     HW: float                     # m  - carga sobre el fondo de la entrada
@@ -598,6 +741,10 @@ class ControlSalida:
     R: float                      # m  - radio hidraulico de referencia
     ahogado_por_TW: bool
     critico: TiranteCritico
+    HW_sobre_D: float = 0.0       # adimensional - HW/D, lo que acotan las dos
+                                  # condiciones de uso de h_o
+    h_o_fuera_de_rango: bool = False      # HW/D < 0.75 (num. 3.3.3)
+    h_o_requiere_cautela: bool = False    # HW/D < 1.2  (num. 3.3.3)
     numeral: str = "Sec. 4.3"
 
 
@@ -611,26 +758,46 @@ class ResultadoHidraulico:
     Salida de M3 + M4 para una combinacion punto / material / diametro.
 
     ATENCION a la regla de doble n (Sec. 4.1): `y_normal` se resuelve con
-    n_max y `V` se calcula con n_min, de modo que en general
+    n_max, y la velocidad viaja en DOS campos porque un umbral de velocidad
+    tiene dos extremos conservadores opuestos (ver `TiranteNormal`):
 
-        V * A  !=  Q
+        `V_erosion`        con n_min, estimacion ALTA. Contra los TECHOS: V3
+                           y el d50 de la Fase 6. En general
+                           `V_erosion * A != Q`, y esa discrepancia es
+                           intencional.
+        `V_sedimentacion`  con n_max, estimacion BAJA. Contra el PISO: V2.
 
-    y esa discrepancia es intencional: Q es el caudal de diseno del punto,
-    mientras que V es la velocidad conservadora del lado de la erosion, la que
-    alimenta V3 y el d50 de la Fase 6. Un modulo que obtenga V dividiendo Q
-    entre A esta anulando la regla.
+    NO HAY UN CAMPO `V` A SECAS, Y ES DELIBERADO. Lo habia, valia `V_erosion`
+    y V2 lo consumia para verificar un piso con la estimacion alta (MAT-D1).
+    Un nombre neutro deja que cada consumidor suponga que "la velocidad" es la
+    suya; con dos nombres, elegir mal es visible en la linea que lo hace. Un
+    modulo que obtenga la velocidad dividiendo Q entre A esta anulando la
+    regla de doble n: siempre le dara `V_sedimentacion`, tambien cuando lo que
+    necesita es el techo.
 
     HW_entrada y HW_salida son cargas sobre el fondo de la entrada, en metros.
     La conversion a cota (msnm) la hace M7 sumando la cota de entrada.
+
+    `h_o_fuera_de_rango` / `h_o_requiere_cautela`: HDS-5 acota el uso de
+    h_o = (dc + D)/2 con dos limites sobre HW/D, y los escribe condicionados a
+    que el control de salida gobierne (num. 3.3.3, pag. impresa 3.24). Aqui
+    llegan ya con esa condicion aplicada, de modo que True significa "este
+    punto usa la aproximacion fuera del rango que su fuente declara" y no
+    "podria pasarle a alguien". M11 lo imprime junto al HW del punto.
     """
 
     y_normal: float                       # m  - con n_max (Sec. 4.1)
     y_critico: float                      # m  - Q^2*T/(g*A^3) = 1 (Sec. 4.2)
-    V: float                              # m/s - con n_min (Sec. 4.1)
+    V_erosion: float                      # m/s - con n_min (Sec. 4.1)
+    V_sedimentacion: float                # m/s - con n_max (Sec. 4.1)
     Q: float                              # m3/s - caudal de diseno del punto
     HW_entrada: float                     # m  - control de entrada (Sec. 4.2)
     HW_salida: float                      # m  - control de salida (Sec. 4.3)
     control_gobernante: ControlGobernante
+    # Las dos condiciones de uso de h_o que el proyecto evalua, ya filtradas
+    # por si el control de salida gobierna (NOR-HDS-05). Ver `ControlSalida`.
+    h_o_fuera_de_rango: bool = False
+    h_o_requiere_cautela: bool = False
 
     @property
     def HW(self) -> float:
@@ -659,7 +826,13 @@ class ProteccionSalida:
     d50: float                            # m - num. 4.1.1.3.7 c)
     espesor: float                        # m - multiplo de d50, criterio adoptado
     longitud: float                       # m - criterio adoptado
-    V: float                              # m/s - velocidad de salida usada
+    V: float                              # m/s - la velocidad de salida con
+                                          # que se calculo el d50: siempre
+                                          # `ResultadoHidraulico.V_erosion`
+                                          # (rama de n minimo, estimacion
+                                          # ALTA), que es el lado conservador
+                                          # para una proteccion contra
+                                          # socavacion -- el d50 crece con V^2
     criterio_espesor: str                 # clave en criterios_adoptados.py
     criterio_longitud: str                # clave en criterios_adoptados.py
     advertencias: Tuple[str, ...]
@@ -749,10 +922,25 @@ class TamizadoRasante:
     que el objeto no vuelva a comparar floats por su cuenta. Son coherentes
     con `cota_rasante_min` y `cota_rasante_actual` por construccion.
 
-    `criterio_recubrimiento` es None cuando h_rec es [N] puro (HDPE, EG-2013
-    508.07/508.08) y la clave del criterio adoptado cuando no lo es (concreto
-    y TMC, 'h_relleno_min_concreto_tmc'). `criterio_resguardo` es siempre
-    'resguardo_HW_subrasante', [N->] por analogia declarada (Sec. 5.1).
+    `criterio_recubrimiento` es hoy siempre 'cobertura_minima_aashto': el
+    recubrimiento minimo ya no es un escalar leido por material sino el mayor
+    entre el minimo de EG-2013 (que solo existe para HDPE) y la cobertura
+    minima de la Tabla 12.6.6.3-1 de AASHTO LRFD, y esa tabla entra en los
+    TRES materiales. Antes era None en HDPE -- donde el 0.30 m se leia como
+    [N] puro -- y 'h_relleno_min_concreto_tmc' en los otros dos; el campo
+    sigue siendo Optional porque un h_rec que algun dia vuelva a salir solo de
+    EG-2013 no tendria criterio que declarar.
+
+    `criterio_resguardo` es siempre 'resguardo_HW_subrasante', [N->] por
+    analogia declarada (Sec. 5.1).
+
+    LA CLAVE ES LA FISICA, no la hidraulica: `cota_clave` = cota de entrada +
+    D interior + espesor de pared. EG-2013 508.07 mide el relleno minimo
+    "desde la clave de la tuberia", que es la superficie exterior (MAT-D4).
+    `D_supuesto` sigue siendo el diametro INTERIOR -- el que entra en Manning
+    y en la geometria hidraulica -- y `D_exterior` es el que entra en la
+    cobertura minima de AASHTO (el Bc del Art. 12.6.6.3) y en el empuje de
+    flotacion de V7.
     """
 
     cota_rasante_min: float               # msnm - el maximo de las dos
@@ -761,8 +949,10 @@ class TamizadoRasante:
     cota_por_resguardo: float             # msnm - HW + resguardo(CBR) + e_paq
     condicion_gobernante: CondicionRasante
     cota_entrada: float                   # msnm - fondo de la entrada
-    cota_clave: float                     # msnm - cota entrada + D
-    D_supuesto: float                     # m  - diametro del tamizado (Sec. 7.A)
+    cota_clave: float                     # msnm - cota entrada + D + espesor de pared
+    D_supuesto: float                     # m  - diametro INTERIOR del tamizado (Sec. 7.A)
+    espesor_pared: float                  # m  - t; separa el interior del exterior
+    D_exterior: float                     # m  - D_supuesto + 2*t; el Bc de AASHTO
     HW: float                             # m  - carga sobre el fondo de la entrada
     h_recubrimiento: float                # m  - relleno minimo sobre la clave
     espesor_paquete: float                # m  - cota rasante - cota subrasante
@@ -1329,6 +1519,24 @@ class ResultadoPunto:
     resultado_hidraulico: Optional[ResultadoHidraulico] = None
     verificaciones: Tuple[Verificacion, ...] = ()
     motivo_rechazo: Optional[str] = None
+
+    @property
+    def y_sobre_D(self) -> Optional[float]:
+        """
+        Relacion de llenado del punto dimensionado, y_normal / D, o None si el
+        punto no llego a dimensionarse.
+
+        Vive aqui, en el tipo que fluye entre modulos, y no en la capa de
+        reporte: M11 la calculaba inline en dos sitios (la tabla del punto y
+        la fila del cuadro resumen), contra su propio docstring de modulo
+        ("sin calcular nada nuevo") y contra la regla de arquitectura. Es el
+        mismo numero que V1 verifica en `M5_verificaciones.v1_borde_libre` y
+        el mismo que `Geometria.y_sobre_D` define para la seccion; escrito
+        una vez, no puede divergir entre la memoria y la verificacion.
+        """
+        if self.resultado_hidraulico is None or self.D is None:
+            return None
+        return self.resultado_hidraulico.y_normal / self.D
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
