@@ -1037,7 +1037,12 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
 
 
 def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
-    return {"numeral": p.numeral, "V_m_s": _num(p.V), "d50_m": _num(p.d50),
+    # La clave dice de que rama es la velocidad, como en el bloque de
+    # hidraulica: el d50 de Laushey se calcula con `V_erosion` (n minimo, la
+    # estimacion alta). "V_m_s" a secas reproducia en este rincon del JSON la
+    # ambiguedad que MAT-D1 vino a quitar.
+    return {"numeral": p.numeral, "V_erosion_m_s": _num(p.V),
+            "d50_m": _num(p.d50),
             "espesor_m": _num(p.espesor), "longitud_m": _num(p.longitud),
             "criterio_espesor": p.criterio_espesor,
             "criterio_longitud": p.criterio_longitud,

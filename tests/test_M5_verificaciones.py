@@ -370,7 +370,7 @@ def test_v3_tmc_hdpe_verifica_contra_el_criterio_declarado(material_fixture,
                                                            clave, request):
     """
     Los dos criterios ya estan declarados (WSDOT Hydraulics Manual, Tabla 8-4,
-    4.6 m/s): V3 evalua contra ese techo y lo ATRIBUYE a su clave, que es lo
+    4.572 m/s): V3 evalua contra ese techo y lo ATRIBUYE a su clave, que es lo
     que distingue un umbral adoptado de uno normativo en la memoria.
     """
     material = request.getfixturevalue(material_fixture)

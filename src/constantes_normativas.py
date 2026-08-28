@@ -69,16 +69,25 @@ DIAMETRO_MIN_AMBITO = (
     "del corredor NO esta cerrada (depende del IMDA del estudio de demanda), "
     "de modo que el proyecto no puede afirmar que se cumple. El piso se aplica "
     "igual a las Familias A y B, y esa es una ADOPCION declarada, no una "
-    "lectura automatica del numeral: aplicarlo es conservador del lado "
-    "hidraulico -- exige mas seccion, nunca menos -- y por eso se adopta "
-    "mientras el IMDA no cierre. "
+    "lectura automatica del numeral. "
+    "SU DIRECCION NO ES UNIFORMEMENTE CONSERVADORA, y decirlo importa porque "
+    "lo contrario -- 'mas seccion nunca puede ser peor' -- es intuitivo y es "
+    "falso. Mas diametro da mas capacidad y mas borde libre, o sea es "
+    "conservador para V1; y da MENOS velocidad para el mismo caudal, o sea "
+    "va CONTRA el piso de autolimpieza de V2. Ejemplo real, concreto con "
+    "n_max = 0.013, S = 0.001 y Q = 0.0035 m3/s: D = 0.75 m da 0.2554 m/s y "
+    "cumple V2; D = 0.90 m da 0.2488 m/s y NO cumple. En ese caudal, aplicar "
+    "el piso sin que la condicion del numeral este establecida puede declarar "
+    "no factible un punto que un conducto mas chico resolveria. Es una "
+    "consecuencia de la adopcion, no un defecto del calculo, y se declara "
+    "aqui para que quien cierre el IMDA sepa que hay algo que revisar. "
     "CONDICION 2 -- 'salvo en cruces de canales de riego': la Familia C de "
     "este expediente ES un conjunto de cruces de canal, y el numeral la "
     "EXCEPTUA expresamente: alli la seccion se adopta 'de acuerdo a cada "
-    "diseno particular' y este piso no rige. `M2_material.materiales_candidatos` "
-    "devuelve tupla vacia para la Familia C, de modo que ningun punto de esa "
-    "familia recibe el piso -- pero hasta ahora la razon escrita era solo la "
-    "forma de la seccion (Sec. 2.3 de la hoja de ruta) y no esta excepcion "
+    "diseno particular' y este piso no rige. El catalogo de conductos "
+    "circulares no entrega candidatos para esa familia, de modo que ningun "
+    "punto suyo recibe el piso -- pero hasta ahora la razon escrita era solo "
+    "la forma de la seccion (Sec. 2.3 de la hoja de ruta) y no esta excepcion "
     "normativa, que es la que gobierna.")
 
 # --- Diametro minimo recomendado en selva alta: num. 4.1.1.3.7 a), pag. 79 ---
@@ -178,9 +187,21 @@ TABLA_02_NOTA_VIDA_UTIL = (
     "Alcantarillas de quebradas importantes n = 25 anios; Alcantarillas de "
     "quebradas menores n = 15 anios; Drenaje de plataforma y Sub-drenes "
     "n = 15 anios.")
+TABLA_02_NOTA_PUENTES = (
+    "(*) - Para obtencion de la luz y nivel de aguas maximas extraordinarias. "
+    "- Se recomienda un periodo de retorno T de 500 anios para el calculo de "
+    "socavacion.")
+TABLA_02_NOTA_IMPORTANCIA = (
+    "Se tendra en cuenta, la importancia y la vida util de la obra a "
+    "disenarse.")
 TABLA_02_NOTA_PROPIETARIO = (
     "El Propietario de una Obra es el que define el riesgo admisible de falla "
     "y la vida util de las obras.")
+# Las cuatro notas de la tabla, en el orden en que la pagina las imprime. La
+# fila "Puentes (*)" llevaba su marcador y la nota no estaba transcrita: un
+# (*) colgando en una transcripcion que se anuncia completa.
+TABLA_02_NOTAS = (TABLA_02_NOTA_PUENTES, TABLA_02_NOTA_VIDA_UTIL,
+                  TABLA_02_NOTA_IMPORTANCIA, TABLA_02_NOTA_PROPIETARIO)
 # clave de calculo -> (nombre literal de la fila, R en tanto por uno, n anios)
 TABLA_02_FILAS = {
     "puentes": {
@@ -348,14 +369,21 @@ V_MAX = {clave: fila["valores"] for clave, fila in TABLA_10_FILAS.items()}
 # `aplicacion` lo que el PROYECTO hace con ello. Los dos se imprimen juntos y
 # separados: sin el segundo no se ve la decision, sin el primero se inventa una
 # exigencia.
+#
+# `texto` es una TUPLA de citas VERBATIM, y esa forma es deliberada. En la
+# primera version era una sola cadena y en dos entradas -- TR y V3 -- llevaba
+# prosa del proyecto y una tabla reformateada bajo el rotulo "Texto literal".
+# Rotular como literal lo que no lo es es exactamente el defecto NOR-HID-06,
+# reintroducido por el bloque construido para cerrarlo. Lo que no es cita
+# verbatim va en `transcripcion`, con su propio rotulo.
 UMBRALES_DE_VERIFICACION = (
     {"codigo": "V1",
      "que": "Borde libre: y/D <= 0.75 (minimo 25 % de borde libre)",
      "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) 'Borde libre', "
                 "pag. impresa 79",
      "caracter": "RECOMENDACION",
-     "texto": "Se recomienda que el diseño hidraulico considere como minimo el "
-              "25 % de la altura, diametro o flecha de la estructura.",
+     "texto": ("Se recomienda que el diseño hidraulico considere como minimo "
+               "el 25 % de la altura, diametro o flecha de la estructura.",),
      "aplicacion": "Se aplica como umbral DURO (un punto con y/D > 0.75 se "
                    "marca 'NO cumple'). Es la lectura conservadora y es "
                    "decision del proyecto, no exigencia del numeral."},
@@ -365,10 +393,10 @@ UMBRALES_DE_VERIFICACION = (
                 "a la Tabla Nº 10; arranca en la pag. impresa 76 y el valor se "
                 "imprime en la 77",
      "caracter": "RECOMENDACION",
-     "texto": "Se debera verificar que la velocidad minima del flujo dentro "
-              "del conducto no produzca sedimentacion que pueda incidir en una "
-              "reduccion de su capacidad hidraulica, recomendandose que la "
-              "velocidad minima sea igual a 0.25 m/s.",
+     "texto": ("Se debera verificar que la velocidad minima del flujo dentro "
+               "del conducto no produzca sedimentacion que pueda incidir en "
+               "una reduccion de su capacidad hidraulica, recomendandose que "
+               "la velocidad minima sea igual a 0.25 m/s.",),
      "aplicacion": "Se aplica como umbral DURO, y se evalua con la velocidad "
                    "de la rama de n MAXIMO -- la estimacion BAJA de velocidad "
                    "--, que es el extremo conservador para un piso. La razon "
@@ -380,8 +408,17 @@ UMBRALES_DE_VERIFICACION = (
                 "admisibles (m/s) en conductos revestidos', num. 4.1.1.3.6, "
                 "pag. impresa 76. Fuente de la tabla: HCANALES, Maximo Villon B.",
      "caracter": "EXIGENCIA (tabla de valores admisibles)",
-     "texto": "Concreto 3.0 - 6.0 ; Ladrillo con concreto 2.5 - 3.5 ; "
-              "Mamposteria de piedra y concreto 2.0.",
+     "texto": (TABLA_10_TITULO,
+               TABLA_10_TEXTO_PREVIO),
+     "transcripcion": ("Filas de la Tabla Nº 10, con su nombre literal y los "
+                       "valores tal como la tabla los imprime: "
+                       + " ; ".join(
+                           f"{fila['fila']} = "
+                           + " - ".join(f"{v}" for v in fila["valores"])
+                           for fila in TABLA_10_FILAS.values())
+                       + " (m/s). No es una cita: es la tabla reordenada en "
+                         "una linea. La fila de mamposteria trae UN solo "
+                         "valor, no un par."),
      "aplicacion": "Los DOS numeros de la fila son MAXIMOS: se verifica solo el "
                    "superior, y el inferior NO es un piso. Se evalua con la "
                    "velocidad de la rama de n MINIMO -- la estimacion ALTA --, "
@@ -394,11 +431,11 @@ UMBRALES_DE_VERIFICACION = (
      "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 02, num. 3.6, "
                 "pag. impresa 25",
      "caracter": "RECOMENDACION -- MAXIMOS, y la decision es del Propietario",
-     "texto": "El titulo de la tabla es 'VALORES MAXIMOS RECOMENDADOS de "
-              "riesgo admisible de obras de drenaje', el texto que la "
-              "introduce dice 'se recomienda utilizar como maximo', y la nota "
-              "al pie cierra: 'El Propietario de una Obra es el que define el "
-              "riesgo admisible de falla y la vida util de las obras'.",
+     # Las tres citas van SEPARADAS y verbatim, incluida la mayuscula del
+     # titulo impreso: unidas en un parrafo explicativo dejaban de ser citas.
+     "texto": (TABLA_02_TITULO,
+               TABLA_02_TEXTO_PREVIO,
+               TABLA_02_NOTA_PROPIETARIO),
      "aplicacion": "El proyecto adopta los valores maximos recomendados de la "
                    "tabla (R = 30 % / n = 25 anios para quebrada importante; "
                    "R = 35 % / n = 15 anios para quebrada menor y descarga de "
@@ -406,14 +443,18 @@ UMBRALES_DE_VERIFICACION = (
                    "recomendado es el extremo MENOS conservador del margen que "
                    "la tabla concede -- mas riesgo admisible da menos TR y "
                    "menos caudal de diseno --, y a diferencia de V1 y V2 aqui "
-                   "la lectura conservadora seria adoptar MENOS. Mientras el "
-                   "Propietario no declare valores propios, esta adopcion "
-                   "gobierna el TR de todos los puntos."},
+                   "la lectura conservadora seria adoptar MENOS. El "
+                   "Propietario tiene una via declarada para ejercer la "
+                   "decision que la nota al pie le asigna: el criterio "
+                   "adoptado 'riesgo_admisible_propietario', que aparece en "
+                   "el bloque de criterios de esta memoria y que solo admite "
+                   "endurecer el techo, nunca aflojarlo. Mientras no la use, "
+                   "esta adopcion gobierna el TR de todos los puntos."},
     {"codigo": "D_min",
      "que": "Seccion minima circular de 0.90 m",
      "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.4 a), pag. impresa 72",
      "caracter": "EXIGENCIA CONDICIONADA ('se adoptara', con dos condiciones)",
-     "texto": DIAMETRO_MIN_TEXTO,
+     "texto": (DIAMETRO_MIN_TEXTO,),
      "aplicacion": DIAMETRO_MIN_AMBITO},
 )
 
@@ -457,7 +498,15 @@ K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(
 
 # ================= Diametros normalizados (ASTM / AASHTO) ==================
 D_PASO = 0.15                       # m; reproduce las series de 6" y 150 mm
-D_INICIO = 0.90                     # m; minimo normativo MTC
+D_INICIO = 0.90                     # m; el piso del num. 4.1.1.3.4 a), que
+                                    # NO es incondicional: ver DIAMETRO_MIN,
+                                    # DIAMETRO_MIN_TEXTO y DIAMETRO_MIN_AMBITO.
+                                    # Decia "minimo normativo MTC" a secas, que
+                                    # es la formula exacta que NOR-HID-03 cita
+                                    # como defecto -- el numeral lo condiciona
+                                    # a "carreteras de alto volumen de
+                                    # transito" y exceptua los cruces de canal
+                                    # de riego.
 # D_MAX SALIO DE ESTE ARCHIVO. Declaraba los topes por material -- 2.70 /
 # 2.10 / 1.50 m -- atribuidos a "ASTM C76 / AASHTO M170", "AASHTO M36 / ASTM
 # A760" y "AASHTO M294", bajo el rotulo "topes por norma de producto -

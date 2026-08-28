@@ -775,6 +775,73 @@ CRITERIOS: Dict[str, Criterio] = {
                                "analisis de homogeneidad que lo respalda",
     ),
 
+    "riesgo_admisible_propietario": Criterio(
+        valor=None,                 # OPCIONAL: sin valor rigen los maximos
+                                    # recomendados de la Tabla N 02
+        etiqueta="A",
+        concepto="Riesgo admisible de falla R y vida util n que el Propietario "
+                 "de la obra adopta, si son distintos de los maximos "
+                 "recomendados de la Tabla N 02",
+        justificacion="OPCIONAL, no un vacio: sin valor el calculo NO se "
+                      "detiene y M1 aplica las dos filas de la Tabla N 02 "
+                      "(quebrada importante R = 0.30 / n = 25; quebrada menor "
+                      "y descarga de cunetas R = 0.35 / n = 15). "
+                      "POR QUE EXISTE (NOR-HID-08). La Tabla N 02 no fija "
+                      "esos numeros: los RECOMIENDA como maximos -- su titulo "
+                      "es 'VALORES MAXIMOS RECOMENDADOS', el texto que la "
+                      "introduce dice 'se recomienda utilizar como maximo' -- "
+                      "y su nota al pie asigna expresamente la decision a "
+                      "otro: 'El Propietario de una Obra es el que define el "
+                      "riesgo admisible de falla y la vida util de las obras'. "
+                      "Adoptar los maximos recomendados es entonces una "
+                      "decision del proyecto, no una lectura del numeral, y "
+                      "necesitaba una via declarada por la que el Propietario "
+                      "pueda ejercer la suya. Sin este criterio, M1 imprimia "
+                      "en la memoria que el proyecto adopta los maximos "
+                      "'mientras el Propietario no declare otros' y no habia "
+                      "ninguna forma de declararlos: una promesa sin "
+                      "mecanismo. "
+                      "EN QUE DIRECCION MUEVE. Al reves que V1 y V2, aqui el "
+                      "extremo recomendado es el MENOS conservador: mas "
+                      "riesgo admisible da menos periodo de retorno y menos "
+                      "caudal de diseno. Un Propietario que adopte R = 0.20 "
+                      "con n = 25 pasa de TR = 71 a TR = 113 anios, +59 %, y "
+                      "con el sube el Q de diseno de todos los puntos de "
+                      "Familia A. Por eso el criterio solo puede ENDURECER lo "
+                      "que la tabla concede, nunca aflojarlo: M1 rechaza un R "
+                      "declarado por encima del maximo recomendado de su "
+                      "fila. "
+                      "QUE NO ES. No es la eleccion de FILA -- que cauce cae "
+                      "en 'quebrada importante' y cual en 'quebrada menor' --, "
+                      "que es otro eje y vive en "
+                      "'umbral_area_quebrada_importante_ha', sin valor y "
+                      "bloqueando. Aqui se declara, para una fila ya elegida, "
+                      "que R y que n adopta el Propietario",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, "
+               "RD 20-2011-MTC/14), Tabla N 02 'VALORES MAXIMOS RECOMENDADOS "
+               "DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE', num. 3.6, "
+               "pag. impresa 25, y su nota al pie. La tabla completa -- seis "
+               "filas, con las dos notas -- esta transcrita en "
+               "constantes_normativas.TABLA_02_FILAS; las dos filas que el "
+               "calculo consume salen de ella por "
+               "constantes_normativas.RIESGO_ADMISIBLE, que es el valor por "
+               "defecto que este criterio refina",
+        reemplazado_por="Declaracion escrita del Propietario de la obra sobre "
+                        "el riesgo admisible de falla y la vida util, que es "
+                        "a quien la nota al pie de la Tabla N 02 le asigna la "
+                        "decision",
+        sensibilidad=("los maximos recomendados de la Tabla N 02, que el "
+                      "proyecto adopta por defecto: R = 30 % con n = 25 anios "
+                      "(quebrada importante, TR 71) y R = 35 % con n = 15 "
+                      "anios (quebrada menor y descarga de cunetas, TR 35)",
+                      "cualquier R menor y/o cualquier n mayor que declare el "
+                      "Propietario: la tabla es un techo y solo se puede bajar "
+                      "de el. El TR crece al bajar R o al subir n -- p.ej. "
+                      "R = 20 % con n = 25 da TR = 113 anios --, y con el "
+                      "crece el caudal de diseno"),
+        opcional=True,      # sin declarar, rigen los maximos de la Tabla N 02
+    ),
+
     "umbral_area_quebrada_importante_ha": Criterio(
         valor=None,                 # VACIO: bloquea el TR de toda la Familia A
         etiqueta="A",
@@ -2043,7 +2110,7 @@ CRITERIOS: Dict[str, Criterio] = {
                                "por diametro y hay que elegir una. El "
                                "precedente interno es 'v_max_tmc' / "
                                "'v_max_hdpe', que fueron [C] sin valor por la "
-                               "misma razon y hoy valen 4.6 sin haber cambiado "
+                               "misma razon y hoy valen 4.572 sin haber cambiado "
                                "de etiqueta",
     ),
 

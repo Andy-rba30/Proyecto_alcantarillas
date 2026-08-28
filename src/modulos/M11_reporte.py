@@ -665,7 +665,10 @@ def _tabla_clasificacion(informe: Any) -> str:
                     f"{_esc(tr.fundamento)}")
     else:
         categoria = "" if tr.categoria is None else f" ({_esc(tr.categoria.value)})"
-        texto_tr = (f"<b>{tr.anios} años</b>{categoria}, num. "
+        # Sin anteponer "num.": `NUMERAL_TR` dejo de ser un numeral desnudo
+        # al cerrarse NOR-HID-08 y ya trae el suyo dentro, de modo que el
+        # prefijo imprimia "num. MC-HHD (...), num. 3.6".
+        texto_tr = (f"<b>{tr.anios} años</b>{categoria} &mdash; "
                     f"{_esc(tr.numeral)}. {_esc(tr.fundamento)}")
 
     filas = [
@@ -1488,16 +1491,26 @@ def bloque_umbrales() -> str:
         "confunden, y confundirlas es lo que convierte una recomendacion en "
         "una exigencia inventada.</p></div>"]
     for u in UMBRALES_DE_VERIFICACION:
+        # Cada cita, entre comillas y por separado. Unirlas en un parrafo con
+        # conectores del proyecto convertia la cita en parafrasis sin que se
+        # notara, bajo un rotulo que decia "literal".
+        citas = "".join(f"<p>&laquo;{_esc(cita)}&raquo;</p>"
+                        for cita in u["texto"])
+        campos = [
+            f"<dt>Numeral y pagina</dt><dd>{_esc(u['numeral'])}</dd>",
+            f"<dt>Caracter en la fuente</dt>"
+            f"<dd><b>{_esc(u['caracter'])}</b></dd>",
+            f"<dt>Texto literal de la fuente</dt><dd>{citas}</dd>",
+        ]
+        if u.get("transcripcion"):
+            campos.append("<dt>Transcripcion de la tabla (no es cita)</dt>"
+                          f"<dd>{_esc(u['transcripcion'])}</dd>")
+        campos.append("<dt>Que hace el proyecto con el</dt>"
+                      f"<dd>{_esc(u['aplicacion'])}</dd>")
         partes.append(
             f'<h3><code>{_esc(u["codigo"])}</code> &mdash; '
             f'{_esc(u["que"])}</h3>'
-            f'<dl class="acotacion">'
-            f"<dt>Numeral y pagina</dt><dd>{_esc(u['numeral'])}</dd>"
-            f"<dt>Caracter en la fuente</dt><dd><b>{_esc(u['caracter'])}</b></dd>"
-            f"<dt>Texto literal</dt><dd>&laquo;{_esc(u['texto'])}&raquo;</dd>"
-            f"<dt>Que hace el proyecto con el</dt>"
-            f"<dd>{_esc(u['aplicacion'])}</dd>"
-            f"</dl>")
+            f'<dl class="acotacion">' + "".join(campos) + "</dl>")
     partes.append(
         '<div class="aviso"><p><b>Interpretacion del proyectista sobre la '
         "Tabla N&deg; 10.</b> "

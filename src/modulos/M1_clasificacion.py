@@ -68,7 +68,7 @@ from typing import Dict, List, Mapping, Optional, Tuple, Union
 
 from constantes_normativas import (LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE,
                                    TABLA_02_FILAS)
-from criterios_adoptados import valor
+from criterios_adoptados import valor, valor_si_declarado
 from modelos import (CategoriaTR, Clasificacion, DatoFaltanteError,
                      DatoInvalidoError, Denominacion, DisenoNoFactibleError,
                      Familia, PerfilFamilia, PeriodoRetorno, PuntoCritico,
@@ -96,6 +96,11 @@ NUMERAL_TR = ('MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 "VALORES '
 NUMERAL_FAMILIA = "Sec. 2.3"              # la hoja de ruta, sin numeral MTC propio
 
 CRITERIO_CATEGORIA_A = "umbral_area_quebrada_importante_ha"
+# La decision que la nota al pie de la Tabla N 02 le asigna al Propietario:
+# que R y que n adopta para una fila ya elegida. OPCIONAL -- se lee con
+# `valor_si_declarado`, no con `valor` --: sin declarar rigen los maximos
+# recomendados de la tabla y el calculo no se detiene.
+CRITERIO_RIESGO_PROPIETARIO = "riesgo_admisible_propietario"
 
 CategoriaLike = Union[CategoriaTR, str]
 
@@ -213,6 +218,58 @@ def tr_desde_riesgo(R: float, n: int) -> float:
     return 1 / (1 - (1 - R) ** (1 / n))
 
 
+def _riesgo_del_propietario(cat: CategoriaTR, R: float, n: int):
+    """
+    (R, n, declarado) tras aplicar la declaracion del Propietario, si la hay.
+
+    La nota al pie de la Tabla N 02 dice que "El Propietario de una Obra es el
+    que define el riesgo admisible de falla y la vida util de las obras", y el
+    titulo de la tabla la presenta como VALORES MAXIMOS RECOMENDADOS. Los
+    numeros de `RIESGO_ADMISIBLE` son, por lo tanto, un techo recomendado que
+    el proyecto adopta por defecto, no una exigencia; esta funcion es la via
+    por la que el Propietario ejerce su decision (NOR-HID-08).
+
+    Se lee con `valor_si_declarado`, no con `valor`: sin declaracion el
+    calculo NO se detiene y rigen los maximos de la tabla. La declaracion se
+    escribe por fila:
+
+        {"quebrada_importante": {"R": 0.20, "n": 25}}
+
+    Solo puede ENDURECER lo que la tabla concede. Un R por encima del maximo
+    recomendado de su fila, o un n por debajo de la vida util que la nota al
+    pie le asigna, es `DatoInvalidoError`: la tabla dice "como maximo", de modo
+    que declarar mas riesgo del recomendado no es una decision del Propietario
+    sino salirse del techo normativo. Bajar R o subir n sube el TR y con el el
+    caudal de diseno, que es la direccion segura.
+    """
+    declarado = valor_si_declarado(CRITERIO_RIESGO_PROPIETARIO)
+    if not declarado or cat.value not in declarado:
+        return R, n, False
+
+    fila = declarado[cat.value]
+    R_declarado = fila.get("R", R)
+    n_declarado = fila.get("n", n)
+    if R_declarado > R + TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            CRITERIO_RIESGO_PROPIETARIO, valor=R_declarado,
+            motivo=f"la Tabla N 02 recomienda R = {R} COMO MAXIMO para la "
+                   f"fila '{cat.value}'. El Propietario puede adoptar un "
+                   f"riesgo menor -- que sube el TR y el caudal de diseno -- "
+                   f"pero no uno mayor: eso seria salirse del techo que la "
+                   f"tabla concede, no ejercer la decision que su nota al pie "
+                   f"le asigna",
+        )
+    if n_declarado < n - TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            CRITERIO_RIESGO_PROPIETARIO, valor=n_declarado,
+            motivo=f"la nota al pie de la Tabla N 02 asigna n = {n} anios de "
+                   f"vida util a la fila '{cat.value}'. Una vida util menor "
+                   f"baja el TR y el caudal de diseno: es la direccion "
+                   f"insegura, y no es lo que la nota concede",
+        )
+    return R_declarado, n_declarado, True
+
+
 def tr_de_categoria(categoria: CategoriaLike,
                     id_punto: Optional[str] = None,
                     fundamento: str = "") -> PeriodoRetorno:
@@ -236,6 +293,7 @@ def tr_de_categoria(categoria: CategoriaLike,
     cat = _categoria(categoria, id_punto)
     fila = RIESGO_ADMISIBLE[cat.value]
     R, n = fila["R"], fila["n"]
+    R, n, adoptado_por_propietario = _riesgo_del_propietario(cat, R, n)
     exacto = tr_desde_riesgo(R, n)
     return PeriodoRetorno(
         procede=True,
@@ -247,9 +305,18 @@ def tr_de_categoria(categoria: CategoriaLike,
         numeral=NUMERAL_TR,
         fundamento=fundamento or (
             f"fila \"{TABLA_02_FILAS[cat.value]['fila']}\" de la Tabla N 02 "
-            f"(R = {R}, n = {n} anios). Son los valores MAXIMOS RECOMENDADOS "
-            f"de la tabla, adoptados por el proyecto: la nota al pie deja la "
-            f"decision al Propietario de la obra, que no ha declarado otros"),
+            f"(R = {R}, n = {n} anios). " + (
+                f"Valores DECLARADOS POR EL PROPIETARIO en el criterio "
+                f"'{CRITERIO_RIESGO_PROPIETARIO}', por debajo de los maximos "
+                f"recomendados de la tabla, que son R = "
+                f"{RIESGO_ADMISIBLE[cat.value]['R']} y n = "
+                f"{RIESGO_ADMISIBLE[cat.value]['n']} anios"
+                if adoptado_por_propietario else
+                "Son los valores MAXIMOS RECOMENDADOS de la tabla, adoptados "
+                "por el proyecto: la nota al pie deja la decision al "
+                "Propietario de la obra, que no ha declarado otros por la via "
+                f"que tiene para hacerlo (criterio "
+                f"'{CRITERIO_RIESGO_PROPIETARIO}')")),
         id_punto=id_punto,
     )
 

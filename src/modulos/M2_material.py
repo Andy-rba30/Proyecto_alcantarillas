@@ -66,7 +66,7 @@ Cuatro criterios alimentan campos que `Material` declara `Optional`:
 'n_manning_hdpe', 'v_max_tmc', 'v_max_hdpe' y 'espesor_pared_conducto'.
 
 ESTADO HOY: los tres primeros tienen valor y el cuarto no.
-'v_max_tmc' = 'v_max_hdpe' = 4.6 m/s [C] (WSDOT, Tabla 8-4);
+'v_max_tmc' = 'v_max_hdpe' = 4.572 m/s [C] (WSDOT, Tabla 8-4: 15 ft/s);
 'n_manning_hdpe' = la fila del concreto de la Tabla N 09 [N->];
 'espesor_pared_conducto' = SIN VALOR [A], y bloquea en su punto de uso
 (`diametro_exterior` de este mismo modulo, que llaman
@@ -106,8 +106,15 @@ darle un punto de uso que bloquee, como tienen los otros tres.
 
 Sec. 3.2 - Catalogo de diametros
 ---------------------------------
-Progresion 0.90 m (minimo normativo MTC, num. 4.1.1.3.4 a) + pasos de 0.15 m,
-topada por material. Los dos numeros de la progresion viven en el criterio
+Progresion 0.90 m + pasos de 0.15 m, topada por material. El 0.90 sale del
+num. 4.1.1.3.4 a) y NO es un piso incondicional: el numeral lo escribe "en
+carreteras de alto volumen de transito" -- condicion que este proyecto no puede
+afirmar, porque la clase de via depende del IMDA -- y exceptua expresamente los
+cruces de canal de riego, que es la Familia C (ver "Familia C queda sin
+candidatos", mas abajo, y `constantes_normativas.DIAMETRO_MIN_AMBITO`).
+Aplicarlo igual a las Familias A y B es una adopcion declarada, y su direccion
+NO es uniformemente conservadora: mas diametro da mas borde libre (favorable a
+V1) y menos velocidad (desfavorable al piso de V2). Los dos numeros de la progresion viven en el criterio
 'diametros_normalizados' [C]; los tres topes, en 'D_max_catalogo' [A]. Estan
 separados porque no son la misma clase de dato: el paso se verifica contra la
 serie de diametros nominales de las normas de producto y los topes NO salen de

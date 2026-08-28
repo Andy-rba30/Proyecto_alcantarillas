@@ -227,8 +227,9 @@ NUMERAL_V3 = ('MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 "Velocidades maximas '
               'Los DOS numeros de cada fila son MAXIMOS -- lo dice el titulo --, '
               'de modo que se verifica solo el superior y el piso lo pone V2. '
               'Que el rango recorra la calidad del revestimiento es '
-              'INTERPRETACION DEL PROYECTISTA y no del Manual (ver '
-              'constantes_normativas.TABLA_10_INTERPRETACION_PROYECTO). Se '
+              'INTERPRETACION DEL PROYECTISTA y no del Manual: se declara '
+              'aparte, en el bloque "Umbrales normativos y su caracter" de '
+              'esta memoria. Se '
               'evalua con la velocidad de la rama de n MINIMO -- la estimacion '
               'alta --, que es el extremo conservador para un techo')
 NUMERAL_V4 = ReferenciaNormativa(

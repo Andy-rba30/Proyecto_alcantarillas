@@ -785,7 +785,13 @@ class ProteccionSalida:
     d50: float                            # m - num. 4.1.1.3.7 c)
     espesor: float                        # m - multiplo de d50, criterio adoptado
     longitud: float                       # m - criterio adoptado
-    V: float                              # m/s - velocidad de salida usada
+    V: float                              # m/s - la velocidad de salida con
+                                          # que se calculo el d50: siempre
+                                          # `ResultadoHidraulico.V_erosion`
+                                          # (rama de n minimo, estimacion
+                                          # ALTA), que es el lado conservador
+                                          # para una proteccion contra
+                                          # socavacion -- el d50 crece con V^2
     criterio_espesor: str                 # clave en criterios_adoptados.py
     criterio_longitud: str                # clave en criterios_adoptados.py
     advertencias: Tuple[str, ...]
