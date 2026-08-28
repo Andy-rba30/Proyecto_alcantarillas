@@ -510,6 +510,9 @@ LONG_MAX_CUNETA_LAGUNA = (
 # Todo valor de este bloque sale de la 3a ed. Leer la copia de 1985 "en SI"
 # reproduce exactamente el error del 29 (ver K_FRICCION_SI).
 KU_METRICO = 1.811                  # q* = KU*Q/(A*D**0.5)
+NUMERAL_KU_METRICO = _reg.cita("HDS5_3ED.A.2").como_texto()
+NUMERAL_KS_PENDIENTE = _reg.cita("HDS5_3ED.A.2.1#KS").como_texto()
+NUMERAL_TABLA_A1 = _reg.cita("HDS5_3ED.TA.1").como_texto()
 # El 1.811 no esta en la Tabla A.1 (pag. A.8) sino en la lista de variables de
 # las ecuaciones de control de entrada, num. A.2.1 "Unsubmerged Inlet Control
 # Equations", pag. impresa A.2 (PDF 191) de la 3a ed., que lo imprime asi:
@@ -526,6 +529,14 @@ KU_METRICO = 1.811                  # q* = KU*Q/(A*D**0.5)
 # 4.0. Cambiarlos por los del parentesis seria aplicar dos veces la conversion.
 Q_LIM_NO_SUMERGIDO = 3.5
 Q_LIM_SUMERGIDO    = 4.0            # entre ambos: interpolacion lineal
+NUMERAL_Q_LIM_NO_SUMERGIDO = _reg.cita("HDS5_3ED.A.2.1#QLIM").como_texto()
+NUMERAL_Q_LIM_SUMERGIDO = _reg.cita("HDS5_3ED.A.2.2#QLIM").como_texto()
+# La ZONA DE TRANSICION entre las dos ramas: su numeral, corregido
+# (NOR-HDS-06). No es el "Cap. IV" que el criterio citaba -- ese es "CULVERT
+# DESIGN FOR AQUATIC ORGANISM PASSAGE" en la 3a ed. --, es el num. 3.1.3.
+NUMERAL_ZONA_TRANSICION = _reg.cita("HDS5_3ED.3.1.3#TRANSICION").como_texto()
+# Y la Tabla C.2, de donde sale ke: pag. impresa C.6, no C.2 (NOR-HDS-01).
+NUMERAL_TABLA_KE = _reg.cita("HDS5_3ED.TC.2").como_texto()
 
 HDS5_INLET = {   # cartas por forma/material; dentro de cada una, por borde
     "circular_concreto_square_edge_headwall": {"K": 0.0098, "M": 2.00,
@@ -617,8 +628,7 @@ K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(
 # tenia aqui una sola linea de comentario -- "ho = max(TW, (yc + D)/2)" -- y el
 # manifiesto marcaba la fila "sin numeral". Las dos cosas quedan cerradas: la
 # formula SI tiene numeral, y viene con un limite de validez expreso.
-H_O_NUMERAL = ("HDS-5 (FHWA) 3a ed., abril 2012, num. 3.3.3 'Outlet Control', "
-               "pag. impresa 3.24 (PDF 106)")
+H_O_NUMERAL = _reg.cita("HDS5_3ED.3.3.3#HO").como_texto()
 # Texto literal de la condicion de uso. Las DOS citas estan en la misma pagina
 # impresa 3.24 y en dos sitios distintos de ella, y decir cual es cual importa
 # (era una sola atribucion para las dos, y una de ellas era falsa):
@@ -1130,6 +1140,17 @@ H_RELLENO_MIN = {
 # Capitulo V. No son subsecciones de ninguna "Seccion 500": esa denominacion
 # no existe en el EG-2013 y la constante se llamaba SUBSECCION por arrastre de
 # ese error. Las SUBsecciones son las de dentro de cada una (505.03, 508.07).
+# LA REMISION DE SEGUNDO NIVEL de tres de las cuatro fichas de cama y relleno.
+# El "95 % MDS" que el expediente les atribuia NO es literal de las Secciones
+# 505, 506 ni 507: llega desde el num. 205.12 c) 1., por remision. El valor es
+# correcto; lo que faltaba era decir por que via llega, que es la diferencia
+# entre una cita y una deduccion (NOR-EG-03).
+NUMERAL_COMPACTACION_REMITIDA = _reg.cita("EG2013.205.12c1").como_texto()
+NUMERAL_COMPACTACION_EG2013_506 = (
+    "506.07 remite a " + NUMERAL_COMPACTACION_REMITIDA)
+NUMERAL_COMPACTACION_EG2013_507 = (
+    "507.08 remite a " + NUMERAL_COMPACTACION_REMITIDA)
+
 SECCION_EG2013 = {"concreto_simple": "505", "concreto_reforzado": "506",
                   "tmc": "507", "hdpe": "508"}
 SECCION_CABEZALES = "503"           # concreto estructural (+504 acero)
@@ -1193,7 +1214,7 @@ CAMA_RELLENO_LATERAL = {
         # especifica para la corona en la Subseccion 205.12(c)(1)", y esa
         # subseccion (pag. impresa 193) es la que imprime Di > 0.95 De para la
         # corona y Di > 0.90 De para base y cuerpo.
-        "procedencia_de_los_porcentajes": "506.07 -> 205.12(c)(1), pag. impresa 193",
+        "procedencia_de_los_porcentajes": NUMERAL_COMPACTACION_EG2013_506,
     },
     "tmc": {
         "cama_apoyo": "Subbase granular >= 15 cm, >= 95% MDS, con arena "
@@ -1210,7 +1231,7 @@ CAMA_RELLENO_LATERAL = {
         # De la Seccion 507 son literales las capas de 15-20 cm y la arena
         # suelta de 12 mm. El par 90/95 llega por remision a 205.12(c)(1), y
         # los 15 cm de cama por doble remision 507.06 -> 506.07.
-        "procedencia_de_los_porcentajes": "507.08 -> 205.12(c)(1), pag. impresa 193",
+        "procedencia_de_los_porcentajes": NUMERAL_COMPACTACION_EG2013_507,
     },
     "hdpe": {
         "cama_apoyo": "Arena gruesa, capas de 15 cm, espesor 15-30 cm "
@@ -1480,6 +1501,8 @@ K_V_TEXTO = ("El coeficiente de aceleracion sismica vertical, kv, se asumira "
 # proyecto declara, entonces, no es un numero sino si el caso reservado se da
 # (criterio 'k_v'). Si se diera, ahi hay un vacio real y el calculo se
 # detiene en vez de inventar un valor.
+NUMERAL_FALLA_CERCANA_AASHTO = _reg.cita(
+    "AASHTO_LRFD_9.3.10.2.2").como_texto()
 K_V_CASO_RESERVADO = (
     "El num. 2.8.1.1.14.2.1 reserva dos casos -- muro significativamente "
     "afectado por efectos de alguna falla cercana, y aceleraciones "
@@ -1613,9 +1636,8 @@ EXCENTRICIDAD_SISMICA_TEXTO_AASHTO = (
     "the middle eight-tenths of the base for gamma_EQ = 1.0. For values of "
     "gamma_EQ between 0.0 and 1.0, the resultant location restriction shall "
     "be obtained by linear interpolation of the values given in this Article.")
-NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO = (
-    "AASHTO LRFD 9a ed. (2020), Art. 11.6.5.1 'General', pag. impresa 11-25 "
-    "(PDF 1494)")
+NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO = _reg.cita(
+    "AASHTO_LRFD_9.11.6.5.1#EXC").como_texto()
 EXCENTRICIDAD_ERRATA_MANUAL = (
     "TERCERA ERRATA DE IMPRENTA DEL MANUAL en esta misma cadena sismica, y la "
     "unica que mueve un numero. El num. 2.8.1.1.14.1 traduce el 'middle "
@@ -1701,9 +1723,7 @@ NUMERAL_K_AE_MANUAL = ("Manual de Puentes (MTC), Apendice A11 'Diseno "
                        "Sismico de Estructuras de Contencion', num. A.11.3.1 "
                        "'Metodo de Mononobe -Okabe', ec. A.11.3.1-2, pag. "
                        "impresa 586 (PDF 587)")
-NUMERAL_K_AE_AASHTO = ("AASHTO LRFD 9a ed. (2020), Appendix A11, Art. "
-                       "A11.3.1 'Mononobe-Okabe Method', ec. A11.3.1-1, pag. "
-                       "impresa 11-145 (PDF 1614)")
+NUMERAL_K_AE_AASHTO = _reg.cita("AASHTO_LRFD_9.A11.3.1#KAE").como_texto()
 K_AE_ERRATA_MANUAL = (
     "ERRATA DE IMPRENTA DEL MANUAL. El Apendice A11 imprime el denominador "
     "de K_AE con '[1 - raiz(...)]', signo MENOS, verificado renderizando la "
@@ -1723,9 +1743,7 @@ K_AE_ERRATA_ANOMALIA_ADICIONAL = (
 # El agua bajo el nivel freatico: hipotesis del proyecto y la exigencia de la
 # que se aparta. Se declara como dato y no como comentario porque la memoria
 # tiene que imprimirla (MAT-O3, MAT-X3).
-NUMERAL_AGUA_TRASDOS_AASHTO = ("AASHTO LRFD 9a ed. (2020), Art. 3.11.3 "
-                               "'Presence of Water', pag. impresa 3-118 "
-                               "(PDF 172)")
+NUMERAL_AGUA_TRASDOS_AASHTO = _reg.cita("AASHTO_LRFD_9.3.11.3").como_texto()
 AGUA_TRASDOS_TEXTO_AASHTO = (
     "Submerged unit weights of the soil shall be used to determine the "
     "lateral earth pressure below the groundwater table.")
@@ -2139,6 +2157,8 @@ TABLA_COMBINACIONES_NOTA_EXTREMOS = (
 
 # gamma_EQ, el factor de la carga viva en Evento Extremo I: la tabla no trae
 # numero y la fuente NO ofrece un par a elegir. Cita literal, verificada:
+NUMERAL_GAMMA_EQ_COMENTARIO = _reg.cita(
+    "AASHTO_LRFD_9.C3.4.1#GAMMA_EQ").como_texto()
 GAMMA_EQ_TEXTO = (
     "AASHTO LRFD 9a ed., Art. 3.4.1, pag. impresa 3-19: 'The load factor for "
     "live load in Extreme Event Load Combination I, gamma_EQ, shall be "
@@ -2272,6 +2292,9 @@ RECUBRIMIENTO_MP_FACTOR_AC = {
     "a_c_menor_igual_0_40": 0.8,
     "a_c_mayor_igual_0_50": 1.2,
 }
+NUMERAL_FACTOR_AC_AASHTO = _reg.cita("AASHTO_LRFD_9.5.10.1").como_texto()
+NUMERAL_RECUBRIMIENTO_AASHTO = _reg.cita(
+    "AASHTO_LRFD_9.T5.10.1-1").como_texto()
 RECUBRIMIENTO_AC_UMBRAL_BAJO = 0.40    # "Para W/C <= 0.40 ... 0.8"
 RECUBRIMIENTO_AC_UMBRAL_ALTO = 0.50    # "Para W/C >= 0.50 ... 1.2"
 RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA = (
@@ -2345,17 +2368,79 @@ FS = {
     "talud":              {"estatico": 1.50, "sismico": 1.25},   # Art. 30.3
 }
 FS_NUMERAL = {                      # el numeral de cada fila de la tabla de 9.3
-    "capacidad_portante": "E.050 Art. 21.1/21.2, pag. 34",
-    "volteo":             "E.050 num. 39.13.6 a), pag. 72",
-    "deslizamiento":      "E.050 num. 39.13.6 a), pag. 72",
-    "estabilidad_global": "E.050 num. 39.13.6 b), pag. 72",
-    "talud":              "E.050 Art. 30.3, pag. 39",
+    "capacidad_portante": _reg.cita("E050.21").como_texto(),
+    "volteo":             _reg.cita("E050.39.13.6").como_texto(),
+    "deslizamiento":      _reg.cita("E050.39.13.6").como_texto(),
+    "estabilidad_global": _reg.cita("E050.39.13.6").como_texto(),
+    "talud":              _reg.cita("E050.30.3").como_texto(),
 }
-NUMERAL_C_PHI = "E.050 Art. 20, pag. 33"   # cohesivos phi=0; friccionantes c=0
+# COMO NOMBRA E.050 LA SEGUNDA CONDICION, que NO es «sismico» en tres de las
+# cinco filas (NOR-E050-01). La clave del dict se conserva porque esta
+# cableada en M9 y en la memoria; lo que se añade es la palabra de la fuente,
+# que es la que la memoria tiene que imprimir junto al numero:
+#
+#   Art. 21.2   «Para solicitacion maxima de SISMO O VIENTO (la que sea mas
+#               desfavorable)». El viento esta DENTRO de la misma casilla, y
+#               «sismico» lo excluye.
+#   Art. 30.3   «en condiciones SISMICAS». Es el unico de los tres donde la
+#               palabra es literal.
+#   39.13.6     «Condicion Pseudo - dinamico» en a-2 y «condicion
+#               pseudo-dinamica» en b). NO es un sinonimo decorativo: designa
+#               el METODO de analisis -- coeficiente sismico horizontal
+#               aplicado como fuerza estatica equivalente --, y el FS de 1.25
+#               esta atado a ese metodo.
+#   Anexo I     un CUARTO termino, «dinamico» a secas (pag. impresa 74).
+#
+# Aplanar los cuatro en «sismico» borra dos cosas distintas: que en capacidad
+# portante el gobernante puede ser el VIENTO, y que en muros el 1.25 es de un
+# metodo pseudoestatico concreto.
+FS_NOMBRE_DE_LA_CONDICION = {
+    "capacidad_portante": {
+        "estatico": "Para cargas estáticas",
+        "sismico": ("Para solicitación máxima de sismo o viento (la que sea "
+                    "más desfavorable)")},
+    "volteo": {"estatico": "Condición Estático",
+               "sismico": "Condición Pseudo - dinámico"},
+    "deslizamiento": {"estatico": "Condición Estático",
+                      "sismico": "Condición Pseudo - dinámico"},
+    "estabilidad_global": {"estatico": "condición estática",
+                           "sismico": "condición pseudo-dinámica"},
+    "talud": {"estatico": "en consideraciones estáticas",
+              "sismico": "en condiciones sísmicas"},
+}
+# La coletilla que cierra el 39.13.6 y condiciona sus dos incisos por igual.
+# El repositorio no la recogia.
+FS_MUROS_ESTADO_LIMITE = "En todos los casos respecto al estado límite del suelo"
+NUMERAL_C_PHI = _reg.cita("E050.20").como_texto()
 NUMERAL_ZAPATA_TALUD_E050 = "E.050 Art. 30.1-30.2"
 
-SPT_PROF_MIN = 15.0                 # m (Art. 38)
+# ---------------------------------------------------------------------------
+# El programa de SPT -- y PARA QUE es (NOR-E050-02)
+# ---------------------------------------------------------------------------
+# DOS COSAS QUE EL REPOSITORIO DECIA MAL. La primera es que el espaciamiento
+# figuraba "sin numeral": SI LO TIENE, es el 38.4.3 (pag. impresa 51), y va
+# reforzado con el adverbio «obligatoriamente». La segunda es mas grave y es
+# de ALCANCE: los dos valores viven bajo el «Articulo 38.- Licuacion de
+# suelos», y el 38.4.1 los dispara SOLO «Cuando la historia sismica del lugar
+# haga sospechar la posibilidad de ocurrencia de Licuacion». NO son el
+# programa de SPT general de E.050 -- ese esta en el 14.2.3 y la Tabla 3,
+# pags. impresas 18-19 --: son el programa de exploracion PARA ANALISIS DE
+# LICUEFACCION. Citarlos como minimos universales del SPT extiende la norma
+# mas alla de lo que dice.
+#
+# Para este expediente el disparador SI se cumple -- el sitio se atribuye
+# suelos potencialmente licuables --, de modo que los valores aplican; lo que
+# faltaba era decir POR QUE aplican.
+SPT_PROF_MIN = 15.0                 # m
 SPT_ESPACIAMIENTO = 1.0             # m entre ensayos
+NUMERAL_SPT = _reg.cita("E050.38.4.3").como_texto()
+SPT_AMBITO = (
+    "El num. 38.4.3 vive bajo el «Articulo 38.- Licuacion de suelos», "
+    "sub-numeral «38.4 Exploracion de campo», y el 38.4.1 lo dispara solo "
+    "«Cuando la historia sismica del lugar haga sospechar la posibilidad de "
+    "ocurrencia de Licuacion». No es el programa de SPT general de E.050 -- "
+    "ese esta en el num. 14.2.3 y la Tabla 3 --: es el de exploracion para "
+    "analisis de licuefaccion. En este expediente el disparador se cumple")
 
 # ================= E.060 (durabilidad, excepcion declarada) ================
 # LAS DOS TABLAS DE DURABILIDAD SE LEEN JUNTAS, y esa es la primera cosa que
@@ -2495,7 +2580,7 @@ RECUBRIMIENTO_TEXTO = {
                                "o la intemperie: barras de 5/8\" y menores, "
                                "mallas electrosoldadas",
 }
-NUMERAL_RECUBRIMIENTO = "E.060 Art. 7.7.1, pag. 54"
+NUMERAL_RECUBRIMIENTO = _reg.cita("E060.7.7.1").como_texto()
 # El encabezado del 7.7.1 remite EL MISMO al 7.7.5.1: el aumento por ambiente
 # corrosivo no es una nota externa que alguien decidio traer, es la excepcion
 # que el propio articulo de los 70/50/40 mm declara.
@@ -2503,7 +2588,7 @@ RECUBRIMIENTO_SALVEDAD_TEXTO = (
     "Debe proporcionarse el siguiente recubrimiento mínimo de concreto al "
     "refuerzo, excepto cuando se requieran recubrimientos mayores según "
     "7.7.5.1 ó se requiera protección especial contra el fuego")
-AMBIENTE_CORROSIVO_AUMENTAR = "E.060 Art. 7.7.5.1, pag. 55"
+AMBIENTE_CORROSIVO_AUMENTAR = _reg.cita("E060.7.7.5.1").como_texto()
 # TEXTO LITERAL, corregido (NOR-E060-04). El repo entrecomillaba "aumentar
 # adecuadamente" -- forma verbal que el articulo no imprime -- y ademas
 # omitia la alternativa expresa del final, que es un camino de cumplimiento
@@ -2550,7 +2635,7 @@ AMBIENTE_CORROSIVO_TEXTO = (
 # abajo es el minimo MENOR de los dos que tiene E.060, y M9 obliga a contestar
 # expresamente cual aplica.
 CUANTIA_MIN_MURO = {"horizontal": 0.0020, "vertical": 0.0015}   # Art. 14.3.1, pag. 133
-NUMERAL_CUANTIA_MIN = "E.060 Art. 14.3.1, pag. 133"
+NUMERAL_CUANTIA_MIN = _reg.cita("E060.14.3.1").como_texto()
 EXCEPCION_REFUERZO_MIN_MURO_TEXTO = (
     "El refuerzo mínimo será el indicado en 14.3. Este requisito podrá "
     "exceptuarse cuando el Ingeniero Proyectista disponga juntas de "
@@ -2574,13 +2659,18 @@ NUMERAL_EXCEPCION_REFUERZO_MIN_MURO = "E.060 Art. 14.8.2, pag. 134"
 # acero por temperatura no lo exija por 14.8.3, y la memoria imprimia lo
 # contrario ("Acero por temperatura en UNA cara") para todo espesor < 250 mm.
 ESPESOR_DOS_CAPAS_REFUERZO = 0.200          # m (200 mm); Art. 14.3.2, estricto
-NUMERAL_DOS_CAPAS_REFUERZO = "E.060 Art. 14.3.2, pag. 133"
+NUMERAL_DOS_CAPAS_REFUERZO = _reg.cita("E060.14.3.2").como_texto()
 EXCEPCION_DOS_CAPAS_REFUERZO = "excepto los muros de sótanos"
 ESPESOR_TEMPERATURA_DOS_CARAS = 0.250       # m (250 mm); Art. 14.8.3, inclusivo
 NUMERAL_TEMPERATURA_DOS_CARAS = "E.060 Art. 14.8.3, pag. 134"
 ESPACIAMIENTO_MAX_VECES_ESPESOR = 3.0       # <= 3h        Art. 14.3.3
 ESPACIAMIENTO_MAX_ABSOLUTO = 0.400          # m (400 mm)   Art. 14.3.3
-NUMERAL_ESPACIAMIENTO = "E.060 Art. 14.3.3"
+# DOS NUMERALES CON EL MISMO CONTENIDO Y OTRAS PALABRAS, hallado al verificar:
+# el 14.3.3 (muros en general) y el 14.8.4 (muros de CONTENCION, pag. impresa
+# 134). Para un cabezal -- que es un muro de contencion -- el aplicable
+# directo es el segundo, y el expediente citaba solo el primero.
+NUMERAL_ESPACIAMIENTO = _reg.cita("E060.14.3.3").como_texto()
+NUMERAL_ESPACIAMIENTO_MURO_CONTENCION = _reg.cita("E060.14.8.4").como_texto()
 
 # ---- E.060, concreto ciclopeo (alternativa de muro de gravedad) ----------
 # DOS MINIMOS SOBRE EL MISMO MATERIAL, y el expediente declaraba el menor

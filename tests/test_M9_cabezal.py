@@ -419,16 +419,72 @@ def test_el_h_eq_paralelo_depende_del_borde_de_calzada_y_el_umbral_es_exacto(
     """
     El umbral de la Tabla 3.11.6.4-2 es «1.0 ft or Further» = 0.3048 m
     EXACTOS. Redondearlo a 0.30 relaja el criterio: un trasdos con el borde a
-    0.30 m justos NO alcanza el umbral y le corresponde la columna de 0.0 ft,
-    que da mas del doble.
+    0.30 m justos NO alcanza el umbral.
+
+    LO QUE PASA POR DEBAJO DEL UMBRAL YA NO ES LEER LA OTRA COLUMNA: es la
+    banda abierta 0 < d < 1.0 ft, que la fuente no cubre y que un criterio [A]
+    VACIO detiene. La version anterior de este test afirmaba que 0.30 m daba
+    1.3812 m -- la columna de 0.0 ft --, y esa lectura la elegia el codigo en
+    duro. Con el criterio declarado, elegirla exige decirlo.
     """
     _declarar_orientacion(monkeypatch, ORIENTACION_PARALELO_AL_TRAFICO)
     _declarar_borde(monkeypatch, 0.35)
     assert h_eq_sobrecarga_trasdos(altura_muro_total=2.00) == \
         pytest.approx(2.0 * PIE_EN_METROS)      # 0.6096 m
-    _declarar_borde(monkeypatch, 0.30)          # por DEBAJO de 1.0 ft
+    # El umbral EXACTO: 1.0 ft justo sigue siendo «or Further».
+    _declarar_borde(monkeypatch, PIE_EN_METROS)
+    assert h_eq_sobrecarga_trasdos(altura_muro_total=2.00) == \
+        pytest.approx(2.0 * PIE_EN_METROS)
+    # 0.30 m NO alcanza el umbral, y ahi la fuente calla: se detiene.
+    _declarar_borde(monkeypatch, 0.30)
+    with pytest.raises(CriterioPendienteError):
+        h_eq_sobrecarga_trasdos(altura_muro_total=2.00)
+    # Declarada la lectura, el numero es el de la columna de 0.0 ft.
+    ca.establecer_valor_dinamico("h_eq_banda_intermedia_borde", "columna_cero")
+    try:
+        assert h_eq_sobrecarga_trasdos(altura_muro_total=2.00) == \
+            pytest.approx(1.3812, abs=1e-4)
+    finally:
+        ca.limpiar_valores_dinamicos()
+    # Y el borde 0.0 SI esta tabulado: no es banda, es columna.
+    _declarar_borde(monkeypatch, 0.0)
     assert h_eq_sobrecarga_trasdos(altura_muro_total=2.00) == \
         pytest.approx(1.3812, abs=1e-4)
+
+
+def test_el_h_eq_bajo_la_primera_fila_de_la_tabla_se_detiene(monkeypatch):
+    """
+    AASHTO manda interpolar «for intermediate wall heights» -- ENTRE filas --
+    y sus dos tablas arrancan en 5.0 ft = 1.524 m. Por debajo no hay fila con
+    que interpolar: es laguna de la fuente, no lectura de la tabla.
+
+    LO ENCONTRO LA AUDITORIA ADVERSARIAL DE S12. El codigo tomaba la primera
+    fila en duro con el argumento de que era el lado conservador, y no lo
+    decide eso: extrapolar el primer tramo da un h_eq AUN MAYOR. Con muro
+    paralelo, borde 0.20 m y altura total 1.20 m las dos lagunas se apilaban y
+    la funcion devolvia 1.524 m -- 2.54 veces el piso del Manual -- sin decir
+    de donde salia.
+    """
+    _declarar_orientacion(monkeypatch, ORIENTACION_PERPENDICULAR_AL_TRAFICO)
+    with pytest.raises(CriterioPendienteError):
+        h_eq_sobrecarga_trasdos(altura_muro_total=1.20)
+    # La altura de la primera fila EXACTA no es laguna: la fila existe.
+    assert h_eq_sobrecarga_trasdos(altura_muro_total=5.0 * PIE_EN_METROS) == \
+        pytest.approx(4.0 * PIE_EN_METROS)
+    # Y las dos lecturas declarables dan numeros DISTINTOS, que es por lo que
+    # hay que elegir en vez de dejar que el codigo elija.
+    ca.establecer_valor_dinamico("h_eq_bajo_altura_tabulada", "primera_fila")
+    try:
+        primera = h_eq_sobrecarga_trasdos(altura_muro_total=1.20)
+    finally:
+        ca.limpiar_valores_dinamicos()
+    ca.establecer_valor_dinamico("h_eq_bajo_altura_tabulada", "extrapolar_lineal")
+    try:
+        extrapolada = h_eq_sobrecarga_trasdos(altura_muro_total=1.20)
+    finally:
+        ca.limpiar_valores_dinamicos()
+    assert primera == pytest.approx(4.0 * PIE_EN_METROS)
+    assert extrapolada > primera
 
 
 def test_el_h_eq_nunca_baja_del_piso_peruano(monkeypatch):

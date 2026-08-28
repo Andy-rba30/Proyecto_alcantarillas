@@ -154,7 +154,7 @@ if openpyxl:
     # parciales cuya fase ya fue ejecutada: nadie los va a volver a mirar
     #   F1 -> S2-S10 (hecho)   F2 -> S12   F3 -> S14   F4 -> S16   F5 -> S19
     # Actualizar FASES_EJECUTADAS al cerrar cada sesion de fase.
-    FASES_EJECUTADAS = {"F1"}
+    FASES_EJECUTADAS = {"F1", "F2"}
     parciales = [r for r in filas if r[i["Estado"]] == "Cerrado parcial"]
     huerfanos_fase = [r[0] for r in parciales
                       if r[i["Fase"]] in FASES_EJECUTADAS]

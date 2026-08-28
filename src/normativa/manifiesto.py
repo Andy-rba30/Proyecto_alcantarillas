@@ -130,9 +130,24 @@ def _linea_del_simbolo(rel: str, simbolos: List[str],
         return None
     for inicio, fin in tramos:
         if inicio <= linea_actual <= fin:
-            return linea_actual          # ya cae dentro: no se toca
-    return min((inicio for inicio, _ in tramos),
-               key=lambda x: abs(x - linea_actual))
+            # DENTRO DEL BLOQUE NO BASTA: puede ser un renglon en blanco entre
+            # el comentario de cabecera y el `def`, y una referencia que
+            # aterriza en el vacio no lleva a lo que dice llevar -- que es
+            # NOR-MAN-04 en pequeño. Se baja al primer renglon con texto.
+            return _primer_renglon_con_texto(rel, linea_actual, fin)
+    return _primer_renglon_con_texto(
+        rel, min((inicio for inicio, _ in tramos),
+                 key=lambda x: abs(x - linea_actual)), None)
+
+
+def _primer_renglon_con_texto(rel: str, desde: int,
+                              hasta: Optional[int]) -> int:
+    lineas = (RAIZ / rel).read_text(encoding="utf-8").split("\n")
+    tope = len(lineas) if hasta is None else min(hasta, len(lineas))
+    for n in range(desde, tope + 1):
+        if lineas[n - 1].strip():
+            return n
+    return desde
 
 
 def resincronizar(texto: str) -> Tuple[str, List[str], int]:

@@ -443,4 +443,102 @@ DIS_T09_A2_DESPLAZADA = _d(
 )
 
 
+DIS_E060_BORDE = _d(
+    id="DIS-E060-BORDE-2-0",
+    objeto=("en que fila de la Tabla 4.4 cae un SO4 de 2,0 % exacto en el "
+            "suelo (o de 10 000 ppm exacto en el agua)"),
+    partes=(
+        Parte(quien="E060",
+              que_dice=("no lo dice. Verificado sobre la imagen renderizada "
+                        "de la pag. impresa 38: la fila severa se imprime "
+                        "«0,2 ≤ SO4 < 2,0», con cota superior ESTRICTA, y la "
+                        "muy severa «2,0 < SO4», con cota inferior ESTRICTA y "
+                        "sin «≤». El valor exacto no cae en ninguna de las "
+                        "dos: es un hueco del texto impreso"),
+              cita_id="E060.T4.4"),
+        Parte(quien="hoja_de_ruta",
+              que_dice=("su Sec. 3.3 escribe la fila severa como «0.20 - "
+                        "2.00» y la muy severa como «> 2.00», de modo que el "
+                        "punto exacto queda en SEVERA")),
+    ),
+    gana="hoja_de_ruta",
+    por_que=("no es que la hoja de ruta contradiga a la fuente primaria: es "
+             "que la fuente CALLA, y la hoja de ruta es la fuente de verdad "
+             "del proyecto mientras el documento normativo no la contradiga. "
+             "Se declara porque es una LECTURA y no un dato -- la tabla "
+             "impresa no la escribe --, y por eso cada fila del registro dice "
+             "si su limite inferior es estricto en vez de esconder la "
+             "respuesta en un `>=` del codigo"),
+    efecto_si_se_sigue_la_otra=("la unica diferencia practica entre las dos "
+                                "filas es el CEMENTO -- V frente a V mas "
+                                "puzolana --: la relacion a/c y el f'c minimo "
+                                "son los mismos, de modo que el recubrimiento "
+                                "del refuerzo no cambia por este borde"),
+    estado=EstadoDiscrepancia.RESUELTA,
+)
+
+
+DIS_MP_ERRATAS_GAMMA_P = _d(
+    id="DIS-MP-ERRATAS-GAMMA-P",
+    objeto=("las erratas de imprenta de la Tabla 2.4.5.3.1-2 del Manual, que "
+            "la transcripcion conserva tal cual"),
+    partes=(
+        Parte(quien="MP",
+              que_dice=("«Maximo» SIN tilde en el encabezado de columna, "
+                        "mientras «Mínimo» a su lado la lleva; «EV: Presion "
+                        "vertical de la tierra» sin tilde en «Presion», "
+                        "mientras la fila hermana «EH: Presión Horizontal de "
+                        "la tierra» si la lleva; «Estructuras flexible "
+                        "enterradas», sin la «s» de flexibles; «plancas» por "
+                        "«planchas»"),
+              cita_id="MP.T2.4.5.3.1-2"),
+        Parte(quien="AASHTO_LRFD_9",
+              que_dice=("su Table 3.4.1-2 escribe «All others» donde el "
+                        "Manual traduce «Entre otros», y «Structural Plate "
+                        "Culverts with DEEP Corrugations» donde el Manual "
+                        "omite «profundas» -- omision SUSTANTIVA, no de "
+                        "imprenta, porque cambia que fila describe a un TMC"),
+              cita_id="AASHTO_LRFD_9.T3.4.1-2"),
+    ),
+    gana="MP",
+    por_que=("es la norma peruana vigente y en las filas que este proyecto usa "
+             "las dos fuentes coinciden digito a digito. Las erratas se COPIAN "
+             "TAL CUAL, no se arreglan: la fila que la memoria imprime tiene "
+             "que poder buscarse en el PDF, y si aqui se «corrigieran» las "
+             "tildes, la nota de erratas estaria atribuyendo al Manual una "
+             "falta que seria del codigo"),
+    efecto_si_se_sigue_la_otra=("ninguno numerico en lo que se usa; la "
+                                "omision de «profundas» SI importa al elegir "
+                                "la fila del TMC, y por eso viaja al criterio "
+                                "'factores_carga_aashto' y no a esta nota"),
+    estado=EstadoDiscrepancia.ERRATA_DE_IMPRENTA,
+)
+
+
+DIS_HDS5_APENDICE_G = _d(
+    id="DIS-HDS5-APENDICE-G",
+    objeto="el apendice al que remite el titulo de la Tabla A.1 de HDS-5",
+    partes=(
+        Parte(quien="HDS5_3ED",
+              que_dice=("su Tabla A.1 se titula «Constants for Inlet Control "
+                        "Equations for Charts in Appendix G» y en esta 3a "
+                        "edicion NO EXISTE un Apendice G"),
+              cita_id="HDS5_3ED.TA.1"),
+        Parte(quien="codigo",
+              que_dice=("las cartas estan en el Apendice C, «DESIGN CHARTS, "
+                        "TABLES, AND FORMS», que abre en la pag. impresa C.1 "
+                        "(PDF 211)"),
+              cita_id="HDS5_3ED.TC.2"),
+    ),
+    gana="HDS5_3ED",
+    por_que=("el titulo se transcribe COMO LO IMPRIME, con la advertencia: "
+             "corregirlo en la cita mandaria al revisor a buscar un titulo "
+             "que el documento no tiene. Es errata de la fuente, y "
+             "probablemente arrastre de una edicion anterior"),
+    efecto_si_se_sigue_la_otra=("quien busque el «Apendice G» no lo encuentra "
+                                "y puede concluir que la tabla no esta"),
+    estado=EstadoDiscrepancia.ERRATA_DE_IMPRENTA,
+)
+
+
 DISCREPANCIAS: Dict[str, Discrepancia] = {d.id: d for d in _TODAS}

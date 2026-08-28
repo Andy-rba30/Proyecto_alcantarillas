@@ -36,6 +36,7 @@ from .esquema import (
     Interpretacion,
     MetodoDeVerificacion,
     NoEvaluable,
+    PorCriterio,
     PorDatoDeSitio,
     PorExpresion,
     Verbatim,
@@ -996,6 +997,923 @@ MS_C411 = _cita(
           "basada en AASHTO M 145 y/o ASTM D 3282». La tabla de categorias es "
           "esta, el Cuadro 4.11. Sin efecto sobre los cuatro escalones del "
           "resguardo, que el propio 4.5.4 enuncia con sus intervalos."),
+)
+
+
+# ===========================================================================
+# E.060 Concreto Armado  (desfase 0)
+# ===========================================================================
+
+E060_T42 = _cita(
+    id="E060.T4.2",
+    fuente_id="E060",
+    numeral="Tabla 4.2",
+    titulo_numeral="REQUISITOS PARA CONDICIONES ESPECIALES DE EXPOSICIÓN",
+    pagina_impresa="37",
+    pagina_pdf=37,
+    texto_literal=Verbatim(
+        texto=("Los concretos expuestos a las condiciones especiales de "
+               "exposición señaladas en la Tabla 4.2 deben cumplir con las "
+               "relaciones máximas agua-material cementante y con la "
+               "resistencia mínima f’c señaladas en ésta."),
+        pagina_pdf=37),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    nota=("La invocan DOS numerales por vias distintas, y los dos hacen falta: "
+          "el 4.2.2 (pag. impresa 37) por condiciones especiales de "
+          "exposicion en general, y el 4.4.2 (pag. impresa 39) "
+          "especificamente para los cloruros, que es el disparador de este "
+          "expediente."),
+)
+
+E060_4_4_2 = _cita(
+    id="E060.4.4.2",
+    fuente_id="E060",
+    numeral="4.4.2",
+    titulo_numeral="PROTECCIÓN DEL REFUERZO CONTRA LA CORROSIÓN",
+    pagina_impresa="39",
+    pagina_pdf=39,
+    # El encabezado del bloque 4.4 se imprime al pie de la pag. anterior.
+    pagina_pdf_titulo=38,
+    texto_literal=Verbatim(
+        texto=("Cuando el concreto con refuerzo vaya a estar expuesto a "
+               "cloruros de químicos descongelantes, sal, agua salobre, agua "
+               "de mar o salpicaduras de las mismas, deben cumplirse los "
+               "requisitos de la Tabla 4.2 para la máxima relación "
+               "agua-material cementante y valor mínimo de f’c, y los "
+               "requisitos de recubrimiento mínimo del concreto de 7.7."),
+        pagina_pdf=39),
+    caracter=Caracter.EXIGENCIA,
+    nota=("ES EL ESLABON QUE ATA EL CLUSTER DE DURABILIDAD DE PUNTA A PUNTA: "
+          "manda aplicar la Tabla 4.2 a los cloruros externos Y remite al "
+          "recubrimiento del 7.7. Sin el, la cadena a/c -> recubrimiento "
+          "queda sin numeral que la sostenga. El disparador es acotado -- "
+          "cloruros «de quimicos descongelantes, sal, agua salobre, agua de "
+          "mar o salpicaduras» --, no cloruros en el suelo en general."),
+)
+
+E060_T44 = _cita(
+    id="E060.T4.4",
+    fuente_id="E060",
+    numeral="Tabla 4.4",
+    titulo_numeral="REQUISITOS PARA CONCRETO EXPUESTO A SOLUCIONES DE SULFATOS",
+    pagina_impresa="38",
+    pagina_pdf=38,
+    texto_literal=Verbatim(
+        texto=("Cuando se utilicen las Tablas 4.2 y 4.4 simultáneamente, se "
+               "debe utilizar la menor relación máxima agua-material "
+               "cementante aplicable y el mayor f’c mínimo."),
+        pagina_pdf=38),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    condiciones=(
+        # La exposicion quimica del sitio es un [S] pendiente de ENSAYO: sin
+        # el EMS del expediente no se sabe en que fila cae el suelo, y por
+        # tanto ni la a/c maxima ni -- via el modificador de AASHTO -- el
+        # recubrimiento del refuerzo. Bloquea, y debe.
+        CondicionAplicacion(
+            id="COND-EXPOSICION-QUIMICA-EMS",
+            texto=Verbatim(
+                texto=("Sulfato soluble en agua (SO4) presente en el suelo, "
+                       "porcentaje en peso"),
+                pagina_pdf=38),
+            cita_id="E060.T4.4",
+            resuelve=PorCriterio(clave="exposicion_quimica_ems")),
+    ),
+    nota=("La invoca el num. 4.3.1, bajo «4.3 EXPOSICION A SULFATOS». El "
+          "`texto_literal` es la NOTA COMUN a las dos tablas, y esta a "
+          "proposito: es la regla que decide que se especifica cuando el "
+          "sitio tiene sulfatos Y cloruros a la vez -- el caso de un corredor "
+          "costero con freatico somero --, y esta impresa al pie de LAS DOS "
+          "(pags. 37 y 38), colgando en cada una de las columnas de a/c y de "
+          "f'c. Transcribir una tabla sin la otra deja el requisito a medias."),
+)
+
+E060_7_7_1 = _cita(
+    id="E060.7.7.1",
+    fuente_id="E060",
+    numeral="7.7.1",
+    titulo_numeral="Concreto construido en sitio (no preesforzado)",
+    pagina_impresa="54",
+    pagina_pdf=54,
+    texto_literal=Verbatim(
+        texto=("Debe proporcionarse el siguiente recubrimiento mínimo de "
+               "concreto al refuerzo, excepto cuando se requieran "
+               "recubrimientos mayores según 7.7.5.1 ó se requiera protección "
+               "especial contra el fuego"),
+        pagina_pdf=54),
+    caracter=Caracter.EXIGENCIA,
+    jerarquia_numeral=("7.7 RECUBRIMIENTO DE CONCRETO PARA EL REFUERZO",),
+    nota=("EL PROPIO ENCABEZADO REMITE AL 7.7.5.1: el aumento por ambiente "
+          "corrosivo no es una nota externa que alguien decidio traer, es la "
+          "excepcion que el articulo de los 70/50/40 mm declara."),
+)
+
+E060_7_7_5_1 = _cita(
+    id="E060.7.7.5.1",
+    fuente_id="E060",
+    numeral="7.7.5.1",
+    titulo_numeral="Ambientes corrosivos",
+    pagina_impresa="55",
+    pagina_pdf=55,
+    texto_literal=Verbatim(
+        texto=("En ambientes corrosivos u otras condiciones severas de "
+               "exposición, debe aumentarse adecuadamente el espesor del "
+               "recubrimiento de concreto y debe tomarse en consideración su "
+               "densidad y porosidad o debe disponerse de otro tipo de "
+               "protección."),
+        pagina_pdf=55),
+    caracter=Caracter.EXIGENCIA,
+    nota=("EXIGENCIA DE RESULTADO SIN CUANTIFICAR: manda aumentar y no dice "
+          "cuanto. El cuanto es [A] del proyectista, y la ALTERNATIVA del "
+          "final -- «o debe disponerse de otro tipo de proteccion» -- es un "
+          "camino de cumplimiento distinto que este expediente no contempla y "
+          "que hay que dejar visible."),
+)
+
+E060_14_3_1 = _cita(
+    id="E060.14.3.1",
+    fuente_id="E060",
+    numeral="14.3.1",
+    titulo_numeral="REFUERZO MÍNIMO",
+    pagina_impresa="133",
+    pagina_pdf=133,
+    texto_literal=Verbatim(
+        texto=("El refuerzo mínimo vertical y horizontal debe cumplir con las "
+               "disposiciones de 14.3, a menos que se requiera una cantidad "
+               "mayor por cortante de acuerdo con 11.10."),
+        pagina_pdf=133),
+    caracter=Caracter.EXIGENCIA,
+    nota=("EL ESCALONAMIENTO 0,002 -> 0,0025 LO ANUNCIA ESTE MISMO NUMERAL, "
+          "no solo el 11.10.10.2: su primera oracion remite a 11.10 «a menos "
+          "que se requiera una cantidad mayor por cortante». La norma imprime "
+          "«0,002» y «0,0015»."),
+)
+
+E060_14_3_2 = _cita(
+    id="E060.14.3.2",
+    fuente_id="E060",
+    numeral="14.3.2",
+    titulo_numeral="REFUERZO MÍNIMO",
+    pagina_impresa="133",
+    pagina_pdf=133,
+    texto_literal=Verbatim(
+        texto=("Los muros con un espesor mayor que 200 mm, excepto los muros "
+               "de sótanos, deben tener el refuerzo en cada dirección "
+               "colocado en dos capas paralelas a las caras del muro."),
+        pagina_pdf=133),
+    caracter=Caracter.EXIGENCIA,
+)
+
+E060_14_3_3 = _cita(
+    id="E060.14.3.3",
+    fuente_id="E060",
+    numeral="14.3.3",
+    titulo_numeral="REFUERZO MÍNIMO",
+    pagina_impresa="133",
+    pagina_pdf=133,
+    texto_literal=Verbatim(
+        texto=("El refuerzo vertical y el horizontal no debe estar espaciados "
+               "a más de tres veces el espesor del muro, ni de 400 mm."),
+        pagina_pdf=133),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("E060.14.8.4",),
+    nota=("El repositorio no le asignaba pagina; es la impresa 133. Y hay un "
+          "SEGUNDO numeral con el mismo contenido y otras palabras: el 14.8.4 "
+          "(pag. impresa 134), que es el que rige DIRECTAMENTE un muro de "
+          "contencion como el cabezal."),
+)
+
+E060_14_8_4 = _cita(
+    id="E060.14.8.4",
+    fuente_id="E060",
+    numeral="14.8.4",
+    titulo_numeral="Muros de contención",
+    pagina_impresa="134",
+    pagina_pdf=134,
+    texto_literal=Verbatim(
+        texto=("El refuerzo vertical y horizontal no se colocará a un "
+               "espaciamiento mayor que tres veces el espesor del muro ni que "
+               "400 mm."),
+        pagina_pdf=134),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("E060.14.3.3",),
+    nota=("Hallado al verificar: es el gemelo del 14.3.3 para muros de "
+          "contencion, y por tanto el aplicable directo a un cabezal. El "
+          "expediente citaba solo el 14.3.3."),
+)
+
+
+# ===========================================================================
+# E.050 Suelos y Cimentaciones  (desfase 0)
+# ===========================================================================
+
+E050_21 = _cita(
+    id="E050.21",
+    fuente_id="E050",
+    numeral="Art. 21.1 y 21.2",
+    titulo_numeral="Factor de seguridad frente a una falla por corte",
+    pagina_impresa="34",
+    pagina_pdf=34,
+    texto_literal=Verbatim(
+        texto=("Los factores de seguridad mínimos que deben tener las "
+               "cimentaciones son los siguientes: 21.1. Para cargas "
+               "estáticas: 3,0 21.2. Para solicitación máxima de sismo o "
+               "viento (la que sea más desfavorable): 2,5"),
+        pagina_pdf=34),
+    caracter=Caracter.EXIGENCIA,
+    nota=("LA SEGUNDA CONDICION NO ES «SISMICA» A SECAS: es «solicitacion "
+          "maxima de sismo O VIENTO (la que sea mas desfavorable)». El viento "
+          "esta dentro de la misma casilla, y la clave «sismico» del "
+          "repositorio lo excluia (NOR-E050-01)."),
+)
+
+E050_30_3 = _cita(
+    id="E050.30.3",
+    fuente_id="E050",
+    numeral="Art. 30.3",
+    titulo_numeral="Cimentaciones superficiales en taludes o en su cercanía",
+    pagina_impresa="39",
+    pagina_pdf=39,
+    texto_literal=Verbatim(
+        texto=("El factor de seguridad mínimo del talud, en consideraciones "
+               "estáticas debe ser 1,5 y en condiciones sísmicas 1,25."),
+        pagina_pdf=39),
+    caracter=Caracter.EXIGENCIA,
+    nota=("AQUI la norma SI dice «condiciones sismicas». Es el unico de los "
+          "tres numerales de FS que usa esa palabra."),
+)
+
+E050_39_13_6 = _cita(
+    id="E050.39.13.6",
+    fuente_id="E050",
+    numeral="39.13.6 a) y b)",
+    titulo_numeral="Muros de contención",
+    pagina_impresa="72",
+    pagina_pdf=72,
+    jerarquia_numeral=("Sostenimiento de excavaciones",),
+    texto_literal=Verbatim(
+        texto=("a-1) Condición Estático 1.50 (por volteo y por "
+               "deslizamiento)"),
+        pagina_pdf=72),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    nota=("NOR-E050-01, cerrado. La palabra «sismico» NO APARECE en este "
+          "numeral: la segunda condicion se llama «Condición Pseudo - "
+          "dinámico» en a-2 y «condición pseudo-dinámica» en b). No es un "
+          "sinonimo decorativo -- designa el METODO de analisis, coeficiente "
+          "sismico horizontal aplicado como fuerza estatica equivalente --, y "
+          "E.050 usa CUATRO vocabularios distintos para esa casilla segun el "
+          "numeral: «sismo o viento» (Art. 21.2), «condiciones sismicas» "
+          "(Art. 30.3), «pseudo-dinamico» (39.13.6) y «dinamico» a secas "
+          "(Anexo I, pag. impresa 74). "
+          "Y una coletilla que el repositorio no recogia cierra el numeral y "
+          "condiciona a) y b) por igual: «En todos los casos respecto al "
+          "estado límite del suelo»."),
+)
+
+E050_20 = _cita(
+    id="E050.20",
+    fuente_id="E050",
+    numeral="Art. 20.2 y 20.3",
+    titulo_numeral="Capacidad de carga",
+    pagina_impresa="33",
+    pagina_pdf=33,
+    texto_literal=Verbatim(
+        texto=("En suelos friccionantes (gravas, arenas y gravas-arenosas), "
+               "se emplea una cohesión (c) igual a cero."),
+        pagina_pdf=33),
+    caracter=Caracter.EXIGENCIA,
+    nota=("El repositorio citaba «Art. 20» a secas; los numerales exactos son "
+          "20.2 (cohesivos, phi = 0) y 20.3 (friccionantes, c = 0). El "
+          "simbolo phi no sobrevive a la extraccion de texto -- la norma lo "
+          "compone con fuente simbolica --, y por eso el `texto_literal` es "
+          "el inciso que si se puede buscar."),
+)
+
+E050_38_4_3 = _cita(
+    id="E050.38.4.3",
+    fuente_id="E050",
+    numeral="38.4.3",
+    titulo_numeral="Exploración de campo",
+    pagina_impresa="51",
+    pagina_pdf=51,
+    jerarquia_numeral=("Licuación de suelos",),
+    texto_literal=Verbatim(
+        texto=("Las perforaciones deben tener una profundidad mínima de 15 m "
+               "y deben ser realizadas por las técnicas de lavado o rotativa. "
+               "Dentro de las perforaciones se llevan a cabo Ensayos de "
+               "Penetración Estándar SPT (NTP 339.133) espaciados "
+               "obligatoriamente cada 1 m."),
+        pagina_pdf=51),
+    caracter=Caracter.EXIGENCIA,
+    nota=("NOR-E050-02, cerrado, y con un hallazgo de mas. (1) EL "
+          "ESPACIAMIENTO SI TIENE NUMERAL: es este, y el repositorio lo "
+          "declaraba «sin numeral». Ademas va reforzado con «obligatoriamente». "
+          "(2) LO GRAVE, que el repositorio omitia: los dos valores viven bajo "
+          "«Articulo 38.- Licuacion de suelos», y el 38.4.1 los dispara SOLO "
+          "«Cuando la historia sismica del lugar haga sospechar la posibilidad "
+          "de ocurrencia de Licuacion». NO son el programa de SPT general de "
+          "E.050 -- ese esta en el 14.2.3 y la Tabla 3, pags. 18-19 --: son el "
+          "programa de exploracion PARA ANALISIS DE LICUEFACCION. Citarlos "
+          "como minimos universales del SPT extiende la norma mas alla de lo "
+          "que dice."),
+)
+
+
+# ===========================================================================
+# EG-2013
+# ===========================================================================
+
+EG_503_04 = _cita(
+    id="EG2013.503.04#T503_07",
+    fuente_id="EG2013",
+    numeral="503.04, Tabla 503-07",
+    titulo_numeral="Clases de concreto",
+    pagina_impresa="912",
+    pagina_pdf=920,
+    pagina_pdf_titulo=919,
+    texto_literal=Verbatim(
+        texto=("Se compone de concreto simple Clase F y agregado ciclópeo, en "
+               "proporción de 30% del volumen total, como máximo"),
+        pagina_pdf=920),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    nota=("La tabla tiene DOS columnas, no tres: «Clase» y «Resistencia "
+          "minima a la compresion a 28 dias». El uso no es columna, es "
+          "encabezado de grupo dentro de la primera. Y no lleva ninguna nota "
+          "al pie."),
+)
+
+EG_508_07 = _cita(
+    id="EG2013.508.07#RELLENO_MIN",
+    fuente_id="EG2013",
+    numeral="508.07",
+    titulo_numeral="Colocación del relleno alrededor de la estructura",
+    pagina_impresa="984",
+    pagina_pdf=992,
+    texto_literal=Verbatim(
+        texto=("La altura de relleno mínimo desde la clave de la tubería "
+               "hasta el nivel de la subrasante será de 0,30 m."),
+        pagina_pdf=992),
+    caracter=Caracter.EXIGENCIA,
+    nota=("NOR-EG-01 / NOR-EG-02. La pagina impresa es la 984 (PDF 992). La "
+          "982 (PDF 990) trae 508.02 b), c) y d) -- calidad del tubo, "
+          "muestreo y material para cama de asiento --, nada de altura de "
+          "relleno. El desfase de este documento es +8, el mayor del corpus, "
+          "y confundir impresa con PDF produce exactamente ese error. "
+          "NO CONFUNDIR CON SU VECINA: el 508.08 (pag. impresa 985) tambien "
+          "dice 0,30 m, pero es la exigencia de EJECUCION -- que el equipo "
+          "pesado no circule antes de alcanzarla --, no la altura minima de "
+          "diseño. Dos frases con el mismo numero en paginas contiguas."),
+)
+
+EG_205_12 = _cita(
+    id="EG2013.205.12c1",
+    fuente_id="EG2013",
+    numeral="205.12 c) 1.",
+    # El EG-2013 lo imprime en SINGULAR, «Criterio», y en la pag. impresa 191:
+    # el apartado c) y su punto 1 caen dos paginas mas adelante.
+    titulo_numeral="205.12 Criterio",
+    pagina_impresa="193",
+    pagina_pdf=201,
+    pagina_pdf_titulo=199,
+    texto_literal=Verbatim(
+        texto=("el 90% de la máxima densidad obtenida en el ensayo Proctor "
+               "Modificado de referencia (De) para la base y cuerpo del "
+               "terraplén y el 95% con respecto a la máxima obtenida en el "
+               "mismo ensayo, cuando se verifique la compactación de la "
+               "corona del terraplén."),
+        pagina_pdf=201),
+    caracter=Caracter.EXIGENCIA,
+    nota=("ES LA REMISION DE SEGUNDO NIVEL de tres de las cuatro fichas de "
+          "cama y relleno: el «95 % MDS» que el expediente les atribuia no es "
+          "literal de las Secciones 505, 506 ni 507 -- llega desde aqui, por "
+          "remision. El valor es correcto; lo que faltaba era decir por que "
+          "via llega, que es la diferencia entre una cita y una deduccion."),
+)
+
+
+# ===========================================================================
+# HDS-5, 3a ed.  (por capitulo)
+# ===========================================================================
+
+HDS5_A2 = _cita(
+    id="HDS5_3ED.A.2",
+    fuente_id="HDS5_3ED",
+    numeral="A.2, A.2.1",
+    titulo_numeral="INLET CONTROL EQUATIONS",
+    pagina_impresa="A.2",
+    pagina_pdf=191,
+    pagina_pdf_titulo=190,
+    texto_literal=Verbatim(
+        texto="Ku          Unit conversion 1.0 (1.811 SI)",
+        pagina_pdf=191),
+    caracter=Caracter.DEFINICION,
+    nota=("NOR-HDS-03, confirmado: `Ku` y `Ks` estan en la LISTA DE VARIABLES "
+          "de las ecuaciones del num. A.2.1, pag. impresa A.2, y NO en la "
+          "Tabla A.1. La Tabla A.1 tiene nueve columnas y de constantes de la "
+          "ecuacion solo cuatro -- K, M, c e Y --: no hay columna K_u ni "
+          "columna K_s."),
+)
+
+HDS5_A21_KS = _cita(
+    id="HDS5_3ED.A.2.1#KS",
+    fuente_id="HDS5_3ED",
+    numeral="A.2.1",
+    titulo_numeral="Unsubmerged Inlet Control Equations",
+    pagina_impresa="A.2",
+    pagina_pdf=191,
+    pagina_pdf_titulo=190,
+    texto_literal=Verbatim(
+        texto="Ks          Slope correction, -0.5 (mitered inlets +0.7)",
+        pagina_pdf=191),
+    caracter=Caracter.DEFINICION,
+)
+
+HDS5_A21_QLIM = _cita(
+    id="HDS5_3ED.A.2.1#QLIM",
+    fuente_id="HDS5_3ED",
+    numeral="A.2.1",
+    titulo_numeral="Unsubmerged Inlet Control Equations",
+    pagina_impresa="A.1",
+    pagina_pdf=190,
+    texto_literal=Verbatim(
+        texto=("Equations (A.1) and (A.2) apply up to about Q/AD0.5 = 3.5 "
+               "(1.93 SI)."),
+        pagina_pdf=190),
+    caracter=Caracter.APROXIMACION,
+    nota=("«apply up to ABOUT»: la fuente NO fija un umbral duro. Y los 3.5 "
+          "son del sistema INGLES; su equivalente SI, entre parentesis, es "
+          "1.93. Como `caudal_adimensional` multiplica por KU_METRICO = "
+          "1.811, el q* que M4 compara ya esta en la escala inglesa y le "
+          "corresponden 3.5 y 4.0: cambiarlos por los del parentesis seria "
+          "aplicar dos veces la conversion."),
+)
+
+HDS5_A22_QLIM = _cita(
+    id="HDS5_3ED.A.2.2#QLIM",
+    fuente_id="HDS5_3ED",
+    numeral="A.2.2",
+    titulo_numeral="Submerged Inlet Control Equations",
+    pagina_impresa="A.2",
+    pagina_pdf=191,
+    texto_literal=Verbatim(
+        texto=("The submerged equation (A.3) applies above about Q/AD0.5 = "
+               "4.0 (2.21 SI)."),
+        pagina_pdf=191),
+    caracter=Caracter.APROXIMACION,
+)
+
+HDS5_TA1 = _cita(
+    id="HDS5_3ED.TA.1",
+    fuente_id="HDS5_3ED",
+    numeral="Table A.1",
+    titulo_numeral=("Constants for Inlet Control Equations for Charts in "
+                    "Appendix G."),
+    pagina_impresa="A.8",
+    pagina_pdf=197,
+    texto_literal=Verbatim(
+        texto=("Table A.1.  Constants for Inlet Control Equations for Charts "
+               "in Appendix G."),
+        pagina_pdf=197),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    nota=("ERRATA DE LA PROPIA FUENTE, hallada al verificar: el titulo dice "
+          "«for Charts in Appendix G» y en esta 3a edicion NO EXISTE un "
+          "Apendice G -- las cartas estan en el Apendice C. Se transcribe "
+          "como lo imprime, con la advertencia, para que quien lo busque lo "
+          "encuentre."),
+)
+
+HDS5_TC2 = _cita(
+    id="HDS5_3ED.TC.2",
+    fuente_id="HDS5_3ED",
+    numeral="Table C.2",
+    titulo_numeral="Entrance Loss Coefficients.",
+    pagina_impresa="C.6",
+    pagina_pdf=216,
+    texto_literal=Verbatim(
+        texto="Table C.2.  Entrance Loss Coefficients.",
+        pagina_pdf=216),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    nota=("NOR-HDS-01, confirmado contra el PDF. La cita original decia "
+          "«pagina C.2», que es EL NUMERO DE LA TABLA LEIDO COMO PAGINA: la "
+          "pag. impresa C.2 (PDF 212) es la continuacion del indice de cartas "
+          "del apendice. La tabla esta en la C.6 (PDF 216)."),
+)
+
+HDS5_3_1_4 = _cita(
+    id="HDS5_3ED.3.1.4#K",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.4, ec. (3.4b)",
+    titulo_numeral="Outlet Control",
+    pagina_impresa="3.10",
+    pagina_pdf=92,
+    pagina_pdf_titulo=87,
+    texto_literal=Verbatim(
+        texto="KU  =  29 in English Units (19.63 in SI)",
+        pagina_pdf=92),
+    caracter=Caracter.DEFINICION,
+    nota=("El 19.63 ESTA en la fuente, no es derivacion. El numeral abre en "
+          "la pag. impresa 3.5 y la ecuacion esta en la 3.10."),
+)
+
+HDS5_3_1_3 = _cita(
+    id="HDS5_3ED.3.1.3#TRANSICION",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.3",
+    titulo_numeral="Inlet Control",
+    pagina_impresa="3.4",
+    pagina_pdf=86,
+    texto_literal=Verbatim(
+        texto=("The flow transition zone between the low headwater (weir "
+               "control) and the high headwater (orifice control) flow "
+               "conditions is poorly defined.  This zone is approximated by "
+               "plotting the unsubmerged and submerged flow equations and "
+               "connecting them with a line tangent to both curves"),
+        pagina_pdf=86),
+    caracter=Caracter.APROXIMACION,
+    nota=("NOR-HDS-06, cerrado: ESTE es el numeral de la zona de transicion, "
+          "no el «Cap. IV» que el criterio citaba. El Capitulo 4 de la 3a ed. "
+          "se titula «CULVERT DESIGN FOR AQUATIC ORGANISM PASSAGE (AOP)» -- "
+          "paso de fauna acuatica -- y tampoco se salva leyendolo como la "
+          "edicion de 1985, cuyo Capitulo 4 es «Tapered Inlets». Es el mismo "
+          "patron que NOR-PUE-01: el numeral existe y su titulo no "
+          "corresponde. La otra mitad de la cita vieja, «y Apendice A», SI "
+          "era correcta: la misma regla esta en el num. A.2."),
+)
+
+HDS5_3_3_3 = _cita(
+    id="HDS5_3ED.3.3.3#HO",
+    fuente_id="HDS5_3ED",
+    numeral="3.3.3",
+    titulo_numeral="Outlet Control",
+    pagina_impresa="3.24",
+    pagina_pdf=106,
+    texto_literal=Verbatim(
+        texto=("Approximate hydraulic gradeline ho = (dc + D)/2 can only be "
+               "used if the barrel flows full for"),
+        pagina_pdf=106),
+    caracter=Caracter.APROXIMACION,
+    nota=("Las TRES condiciones estan en esta pagina, y la primera tiene una "
+          "SEGUNDA MITAD que el expediente no recogia: «It should not be used "
+          "if the inlet is not submerged». Son dos condiciones, no una. "
+          "Ademas la fuente no escribe la razon HW/D: escribe «the headwater "
+          "depth (referenced to the inlet invert) is less than 1.2D», y la "
+          "referencia al invert de entrada es parte de la definicion. Las "
+          "tres son `should` / `can only`, no `shall`."),
+)
+
+
+# ===========================================================================
+# AASHTO LRFD 9a ed. -- el resto
+# ===========================================================================
+
+AASHTO_T3_4_1_1 = _cita(
+    id="AASHTO_LRFD_9.T3.4.1-1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 3.4.1-1",
+    titulo_numeral="Load Combinations and Load Factors",
+    pagina_impresa="3-17",
+    pagina_pdf=71,
+    texto_literal=Verbatim(
+        texto="Table 3.4.1-1—Load Combinations and Load Factors",
+        pagina_pdf=71),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    corresponde_en=("MP.T2.4.5.3.1-1",),
+    nota=("NOR-AAS-03, resuelto a favor del codigo vigente: la ficha "
+          "reprochaba «pag. 3-14» y el repositorio ya decia 3-17, que es lo "
+          "correcto segun la fuente."),
+)
+
+AASHTO_T3_4_1_2 = _cita(
+    id="AASHTO_LRFD_9.T3.4.1-2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 3.4.1-2",
+    titulo_numeral="Load Factors for Permanent Loads",
+    pagina_impresa="3-18",
+    pagina_pdf=72,
+    texto_literal=Verbatim(
+        texto="Load Factors for Permanent Loads",
+        pagina_pdf=72),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP.T2.4.5.3.1-2",),
+    nota=("Confirma dos hallazgos abiertos: EV «Retaining Walls and "
+          "Abutments» = 1.35 / 1.00 (no 0.90; sostiene NOR-PUE-03) y EH "
+          "At-Rest = 1.35 / 0.90, CON minimo declarado -- lo que refuta la "
+          "afirmacion negativa de NOR-AAS-04, que sostenia que la fuente no "
+          "declara minimo para EH en reposo. El N/A pertenece a la fila "
+          "siguiente, «AEP for anchored walls»."),
+)
+
+AASHTO_5_10_1 = _cita(
+    id="AASHTO_LRFD_9.5.10.1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.10.1",
+    titulo_numeral="Concrete Cover",
+    pagina_impresa="5-167",
+    pagina_pdf=526,
+    texto_literal=Verbatim(
+        texto=("Cover for prestressing and reinforcing steel shall not be "
+               "less than that specified in Table 5.10.1-1 and modified for "
+               "W/CM ratio."),
+        pagina_pdf=526),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    nota=("El factor por relacion agua-cemento NO es opcional: la norma dice "
+          "`shall`, y esta en el CUERPO ARTICULADO (columna izquierda), no en "
+          "el comentario. Sostiene NOR-AAS-05."),
+)
+
+AASHTO_T5_10_1_1 = _cita(
+    id="AASHTO_LRFD_9.T5.10.1-1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 5.10.1-1",
+    titulo_numeral="Minimum Cover for Main Reinforcing Steel (in.)",
+    pagina_impresa="5-169",
+    pagina_pdf=528,
+    texto_literal=Verbatim(
+        texto="Minimum Cover for Main Reinforcing Steel",
+        pagina_pdf=528),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    corresponde_en=("MP.T2.9.1.5.5.3-1",),
+    nota=("TRES categorias de acero -- A, B y C --, bajo el encabezado de "
+          "grupo «Reinforcing Material Category», y la tabla peruana tiene "
+          "UNA sola columna porque cubre una sola categoria: la no protegida. "
+          "Es la clave de NOR-AAS-01: los 3.0 in de «Coastal» son de la "
+          "Categoria A, y con B o C la tabla baja a 2.0 in = 50.8 mm, con lo "
+          "que la regla del mayor la pasaria a ganar E.060."),
+)
+
+AASHTO_12_6_6_3 = _cita(
+    id="AASHTO_LRFD_9.12.6.6.3#COBERTURA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.6.3",
+    titulo_numeral="Minimum Cover",
+    pagina_impresa="12-21",
+    pagina_pdf=1659,
+    texto_literal=Verbatim(
+        texto=("The minimum cover, including a well-compacted granular "
+               "subbase and base course, shall not be less than that "
+               "specified in Table 12.6.6.3-1"),
+        pagina_pdf=1659),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    nota=("El ARTICULO abre en la pag. impresa 12-21; solo la TABLA esta en "
+          "la 12-22. Y una correccion contra la ficha de auditoria, no contra "
+          "el repositorio: NOR-VAC-01 transcribe la fila de Reinforced "
+          "Concrete Pipe como «raiz(Bc)/8» y el PDF imprime «B'c/8», con Bc' "
+          "definido en 12-21 como «out-to-out vertical rise of pipe». Es una "
+          "PRIMA, no un radical: artefacto de la linearizacion de la capa de "
+          "texto. Corregir en la ficha antes de derivar cualquier numero."),
+)
+
+AASHTO_T12_6_6_3_1 = _cita(
+    id="AASHTO_LRFD_9.T12.6.6.3-1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 12.6.6.3-1",
+    titulo_numeral="Minimum Cover",
+    pagina_impresa="12-22",
+    pagina_pdf=1660,
+    pagina_pdf_titulo=1660,
+    jerarquia_numeral=("12.6.6.3", "Minimum Cover"),
+    texto_literal=Verbatim(
+        texto="Table 12.6.6.3-1—Minimum Cover",
+        pagina_pdf=1660),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    nota=("LA TABLA VIVE UNA PAGINA DESPUES QUE SU NUMERAL, y por eso lleva "
+          "cita propia: el articulado 12.6.6.3 abre en la 12-21 (PDF 1659) y "
+          "la tabla entera esta en la 12-22 (PDF 1660). Citarlas con la misma "
+          "pagina manda al revisor a la pagina donde la tabla no esta. "
+          "SUS COLUMNAS NO SON LAS QUE EL EXPEDIENTE SUPONIA: son «Type», "
+          "«Condition» y «Minimum Cover*», TRES, y las condiciones de "
+          "pavimento son VALORES de la segunda columna que solo aparecen en "
+          "2 de los 13 tipos. No es una matriz tipo x condicion de pavimento. "
+          "El repositorio ya la leia asi -- repite la misma fila en las tres "
+          "condiciones para el metal corrugado, en vez de inventarle dos que "
+          "la tabla no trae --, y esta verificacion lo confirma."),
+)
+
+AASHTO_3_10_2_2 = _cita(
+    id="AASHTO_LRFD_9.3.10.2.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.10.2.2",
+    titulo_numeral="Site-Specific Procedure",
+    pagina_impresa="3-100",
+    pagina_pdf=154,
+    texto_literal=Verbatim(
+        texto=("For sites located within 6 miles of an active surface or a "
+               "shallow fault, as depicted in the USGS Active Fault Map, "
+               "studies shall be considered to quantify near-fault effects"),
+        pagina_pdf=154),
+    caracter=Caracter.EXIGENCIA,
+    nota=("«6 miles» esta literal; cualquier conversion a km (9.66) es del "
+          "proyecto. Y `shall be CONSIDERED`: obliga a considerar el estudio, "
+          "no a hacerlo. La remision al USGS Active Fault Map tambien es "
+          "literal, y es el punto: ese mapa no cubre el Peru."),
+)
+
+AASHTO_3_11_3 = _cita(
+    id="AASHTO_LRFD_9.3.11.3",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.11.3",
+    titulo_numeral="Presence of Water",
+    pagina_impresa="3-118",
+    pagina_pdf=172,
+    texto_literal=Verbatim(
+        texto=("Submerged unit weights of the soil shall be used to determine "
+               "the lateral earth pressure below the groundwater table."),
+        pagina_pdf=172),
+    caracter=Caracter.EXIGENCIA,
+)
+
+AASHTO_11_6_5_1 = _cita(
+    id="AASHTO_LRFD_9.11.6.5.1#EXC",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.5.1",
+    titulo_numeral="General",
+    pagina_impresa="11-25",
+    pagina_pdf=1494,
+    texto_literal=Verbatim(
+        texto=("For seismic eccentricity evaluation of walls with foundations "
+               "on soil and rock, the location of the resultant of the "
+               "reaction forces shall be within the middle two-thirds of the "
+               "base for"),
+        pagina_pdf=1494),
+    caracter=Caracter.EXIGENCIA,
+    nota=("«middle two-thirds», no «tercio central»: es la parte de AASHTO "
+          "que gana a la errata de traduccion del Manual. Y su comentario "
+          "C11.6.5.1 ARRANCA en esta misma pagina (columna derecha), no en la "
+          "11-26; lo que si esta en la 11-26 es el texto que el repositorio "
+          "le atribuye."),
+)
+
+AASHTO_11_6_5_2_1 = _cita(
+    id="AASHTO_LRFD_9.11.6.5.2.1#ROCA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.5.2.1",
+    titulo_numeral="Characterization of Acceleration at Wall Base",
+    pagina_impresa="11-27",
+    pagina_pdf=1496,
+    texto_literal=Verbatim(
+        texto=("For walls founded on Site Class A or B soil (hard or soft "
+               "rock), kh0 shall be based on 1.2 times the site-adjusted peak "
+               "ground acceleration coefficient (i.e., kh0 = 1.2FpgaPGA)."),
+        pagina_pdf=1496),
+    caracter=Caracter.EXIGENCIA,
+    nota=("El 1.2 esta literal, y del lado correcto de la igualdad: es lo que "
+          "resuelve la errata de imprenta del Manual, cuyo parentesis lo pone "
+          "a la izquierda."),
+)
+
+AASHTO_A11_3_1 = _cita(
+    id="AASHTO_LRFD_9.A11.3.1#KAE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="A11.3.1, ec. A11.3.1-1",
+    titulo_numeral="Mononobe–Okabe Method",
+    pagina_impresa="11-145",
+    pagina_pdf=1614,
+    pagina_pdf_titulo=1613,
+    texto_literal=Verbatim(
+        texto="seismic active earth pressure coefficient",
+        pagina_pdf=1614),
+    caracter=Caracter.APROXIMACION,
+    metodo=IMAGEN,
+    nota=("El ENCABEZADO del articulo se imprime en la pag. impresa 11-144 "
+          "(PDF 1613) y la ECUACION en la 11-145 (PDF 1614). La forma exacta "
+          "del corchete -- «[1 + raiz(...)]» -- NO ES VERIFICABLE por "
+          "extraccion de texto: la capa devuelve la formula rota. Se decide "
+          "sobre la imagen renderizada, y por eso el metodo es IMAGEN. Las "
+          "unidades de la fuente son imperiales (kcf, ft)."),
+)
+
+AASHTO_C3_4_1 = _cita(
+    id="AASHTO_LRFD_9.C3.4.1#GAMMA_EQ",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C3.4.1",
+    titulo_numeral="3.4.1-Load Factors and Load Combinations",
+    pagina_impresa="3-10",
+    pagina_pdf=64,
+    # El encabezado del articulo se imprime en la pag. impresa 3-9; el
+    # comentario que esta cita transcribe, en la 3-10.
+    pagina_pdf_titulo=63,
+    texto_literal=Verbatim(
+        texto=("Application of Turkstra's rule for combining uncorrelated "
+               "loads indicates that"),
+        pagina_pdf=64),
+    caracter=Caracter.RECOMENDACION,
+    metodo=AMBOS,
+    nota=("EL 0.50 ESTA LITERAL EN LA FUENTE, pero como COMENTARIO y con el "
+          "calificador «is reasonable»: no es una exigencia ni una de dos "
+          "opciones tabuladas. Y el 0.0 aparece solo como referencia a "
+          "ediciones pasadas del Standard Specifications, seguido de «This "
+          "issue is not resolved». Quien lo determina es el PROYECTO "
+          "(«project-specific basis», Art. 3.4.1, pag. impresa 3-19), no «el "
+          "propietario»."),
+)
+
+
+# ===========================================================================
+# Manual de Puentes -- el resto de la cadena
+# ===========================================================================
+
+MP_T_COMBINACIONES = _cita(
+    id="MP.T2.4.5.3.1-1",
+    fuente_id="MP",
+    numeral="2.4.5.3.1, Tabla 2.4.5.3.1-1",
+    titulo_numeral="Factores de Carga y Combinaciones",
+    pagina_impresa="143",
+    pagina_pdf=144,
+    pagina_pdf_titulo=141,
+    texto_literal=Verbatim(
+        texto="Combinaciones de Carga y Factores de Carga",
+        pagina_pdf=144),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("AASHTO_LRFD_9.T3.4.1-1",),
+    nota=("EL PROPIO MANUAL LA NOMBRA DE DOS FORMAS INCOMPATIBLES: el rotulo "
+          "impreso sobre la tabla dice «Tabla 2.4.5.3.1-1» y el cuerpo del "
+          "texto, en la pag. impresa 142, la llama «Tabla 2.4.5.3-1», sin el "
+          "«.1». Se cita la forma del ROTULO, que es la que un revisor lee "
+          "sobre la tabla que tiene delante."),
+)
+
+MP_T_GAMMA_P = _cita(
+    id="MP.T2.4.5.3.1-2",
+    fuente_id="MP",
+    numeral="2.4.5.3.1, Tabla 2.4.5.3.1-2",
+    titulo_numeral="Factores de Carga y Combinaciones",
+    pagina_impresa="143",
+    pagina_pdf=144,
+    pagina_pdf_titulo=141,
+    texto_literal=Verbatim(
+        texto="Factores de carga para cargas permanentes",
+        pagina_pdf=144),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("AASHTO_LRFD_9.T3.4.1-2",),
+    nota=("NOR-PUE-04: el repositorio afirmaba que el Manual «no transcribe "
+          "la Tabla 3.4.1-1» y que los gamma eran un vacio declarado. Las dos "
+          "afirmaciones eran falsas -- el Manual transcribe LAS DOS tablas, "
+          "completas y con sus valores, dentro del rango de paginas que el "
+          "propio archivo citaba --, y declarar un vacio sobre la pagina que "
+          "trae la tabla es el defecto que Sec. 0.5 llama el mas grave."),
+)
+
+MP_T_F_PGA = _cita(
+    id="MP.T2.4.3.11.2.1.2-1",
+    fuente_id="MP",
+    numeral="Tabla 2.4.3.11.2.1.2-1",
+    titulo_numeral="Efectos de Sitio",
+    pagina_impresa="123",
+    pagina_pdf=124,
+    # El numeral 2.4.3.11.2.1 abre en la pag. impresa 122 y la tabla esta en
+    # la 123.
+    pagina_pdf_titulo=123,
+    texto_literal=Verbatim(
+        texto="Coeficiente Aceleracion Pico del Terreno",
+        pagina_pdf=124),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    condiciones=(
+        # La clase de sitio es la PREMISA ABIERTA del expediente, y por eso
+        # bloquea: el salto «suelo licuable -> Clase F» no lo escribe ninguno
+        # de los dos documentos que el criterio invoca. La discrepancia entre
+        # el esquema de E.030 (perfil S5) y el de AASHTO / Manual de Puentes
+        # (Clase F) esta declarada y NO se resuelve aqui: es S13.
+        CondicionAplicacion(
+            id="COND-CLASE-DE-SITIO",
+            texto=Verbatim(texto="Clase de Sitio", pagina_pdf=124),
+            cita_id="MP.T2.4.3.11.2.1.2-1",
+            resuelve=PorCriterio(clave="clase_sitio")),
+    ),
+    nota=("TRES DE SUS RASGOS SOLO SE VEN RENDERIZANDO, y los tres deciden "
+          "una lectura: el signo `>` de la ultima columna, el asterisco de "
+          "la fila F y el «1» del encabezado superior, que es la llamada a la "
+          "Nota 1 y no un exponente."),
+)
+
+MP_T_RECUBRIMIENTO = _cita(
+    id="MP.T2.9.1.5.5.3-1",
+    fuente_id="MP",
+    numeral="2.9.1.5.5.3, Tabla 2.9.1.5.5.3-1",
+    titulo_numeral="Recubrimiento de Concreto",
+    pagina_impresa="377",
+    pagina_pdf=378,
+    texto_literal=Verbatim(
+        texto="Recubrimiento de Concreto",
+        pagina_pdf=378),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("AASHTO_LRFD_9.T5.10.1-1",),
+    nota=("LO QUE EL TITULO DE LA TABLA DICE Y NADIE HABIA LEIDO -- y es la "
+          "clave del cluster C07 --: «Recubrimiento para las armaduras "
+          "principales de aceros NO PROTEGIDAS». La tabla peruana tiene UNA "
+          "columna porque cubre UNA categoria de acero: la no protegida, que "
+          "AASHTO llama Categoria A. El acero epoxico o galvanizado el Manual "
+          "lo trata en un numeral aparte, el 2.9.1.5.5.4."),
 )
 
 

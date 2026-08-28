@@ -127,6 +127,19 @@ _GUIONES = {
 # MISMO numero: "2,0 %" y 2.00. Solo se toca la coma que va ENTRE DIGITOS --
 # la de una enumeracion ("DC, DD, DW") no es un decimal y se deja.
 _COMA_DECIMAL = re.compile(r"(?<=\d),(?=\d)")
+# EL GUION DE FIN DE LINEA. Cuando una palabra se parte al final de un
+# renglon, la extraccion devuelve el guion Y un espacio: la pag. impresa
+# 11-25 de AASHTO imprime «middle two-thirds» y el volcado da «middle two-
+# thirds». Es un artefacto DEL EXTRACTOR, no del documento, y si no se
+# deshace obliga a recortar todo `Verbatim` para que no cruce un salto de
+# linea -- con lo que las citas dejarian de poder ser frases enteras.
+#
+# La regla es deliberadamente ESTRECHA: guion PEGADO a la letra anterior,
+# seguido de espacio o salto de linea, y letra despues. Un guion con espacio a
+# AMBOS lados no se toca, porque entonces es del documento: E.050 imprime
+# «Condición Pseudo - dinámico» asi, con los dos espacios, y esa es una
+# errata de la fuente que hay que conservar.
+_GUION_DE_FIN_DE_LINEA = re.compile(r"(?<=[^\W\d_])-\s+(?=[^\W\d_])")
 _ESPACIOS = re.compile(r"\s+")
 
 
@@ -140,6 +153,7 @@ def normalizar(texto: str) -> str:
     for origen, destino in _GUIONES.items():
         texto = texto.replace(origen, destino)
     texto = _COMA_DECIMAL.sub(".", texto)
+    texto = _GUION_DE_FIN_DE_LINEA.sub("-", texto)
     texto = unicodedata.normalize("NFKD", texto)
     texto = "".join(c for c in texto if not unicodedata.combining(c))
     texto = texto.casefold()

@@ -16,6 +16,8 @@ que una cita en prosa NO TIENE IDENTIDAD. Estos tests existen para que la
 siguiente no pueda comportarse asi.
 """
 
+import functools
+
 import pytest
 
 from normativa import registro as _registro
@@ -105,8 +107,18 @@ def test_T4_ninguna_cita_queda_huerfana(reg):
     """
     import constantes_normativas as CN
 
-    consumidas = {v for nombre in dir(CN) if nombre.startswith("NUMERAL")
-                  for v in [getattr(CN, nombre)] if isinstance(v, str)}
+    def _textos(v):
+        if isinstance(v, str):
+            yield v
+        elif isinstance(v, dict):
+            for x in v.values():
+                yield from _textos(x)
+        elif isinstance(v, (list, tuple)):
+            for x in v:
+                yield from _textos(x)
+
+    consumidas = {t for nombre in dir(CN) if not nombre.startswith("_")
+                  for t in _textos(getattr(CN, nombre))}
     referenciadas = reg.citas_referenciadas()
     huerfanas = []
     for c in reg.citas:
@@ -231,14 +243,23 @@ def test_T12_pendiente_no_es_lo_mismo_que_no_usada(reg):
 def test_T13_toda_vista_de_calculo_declarada_existe_de_verdad(reg):
     """
     Si una tabla declara que de ella se deriva `MANNING`, ese nombre tiene que
-    existir en `constantes_normativas`. Es la mitad barata de T14.
+    existir. Es la mitad barata de T14.
+
+    LOS DOS SITIOS DONDE PUEDE VIVIR UNA VISTA, y no es lo mismo: una tabla
+    [N] deriva en `constantes_normativas` y una tabla que cubre un vacio
+    peruano -- la 5.10.1-1 y la 12.6.6.3-1 de AASHTO -- deriva en una clave de
+    `criterios_adoptados`, porque el valor es [C]. Aceptar los dos sitios NO
+    es relajar el test: lo que se comprueba es que el nombre EXISTA, y una
+    clave inexistente de criterios falla igual que un atributo inexistente de
+    constantes.
     """
     import constantes_normativas as CN
+    import criterios_adoptados as ca
     for t in reg.tablas:
         for vista in t.vistas_de_calculo:
-            assert hasattr(CN, vista), (
-                f"{t.id} declara la vista `{vista}`, que no existe en "
-                "constantes_normativas")
+            assert hasattr(CN, vista) or vista in ca.CRITERIOS, (
+                f"{t.id} declara la vista `{vista}`, que no existe ni en "
+                "constantes_normativas ni como clave de criterios_adoptados")
 
 
 def test_T14_las_vistas_derivadas_coinciden_con_su_transcripcion(reg):
@@ -259,6 +280,33 @@ def test_T14_las_vistas_derivadas_coinciden_con_su_transcripcion(reg):
     c41 = reg.tabla("MS.C41")
     assert CN.CALICATAS_POR_SENTIDO == {c41.clave_corta(f): f.valores["por_sentido"]
                                         for f in c41.filas}
+    # La Tabla 5.10.1-1 de AASHTO: la vista NO vive en constantes_normativas
+    # sino en una clave de criterios, porque el valor es [C]. Era el ultimo
+    # dict de 63 numeros copiado a mano que quedaba en el expediente.
+    import criterios_adoptados as ca
+    t5101 = reg.tabla("AASHTO_LRFD_9.T5.10.1-1")
+    assert ca.valor("tabla_recubrimiento_aashto_mm") == {
+        t5101.clave_corta(f): {"A": f.valores["cat_a_mm"],
+                               "B": f.valores["cat_b_mm"],
+                               "C": f.valores["cat_c_mm"]}
+        for f in t5101.filas}
+
+
+def test_T14_la_conversion_a_mm_de_la_tabla_de_aashto_es_exacta(reg):
+    """
+    La pulgada es lo IMPRESO y el milimetro es la conversion del proyecto. Las
+    dos viajan juntas en cada fila precisamente para que esto se pueda
+    comprobar: de redondear mal esta conversion salio el «75 mm» que el
+    expediente arrastro donde la fuente escribe 3.0 in = 76.2 mm.
+    """
+    from constantes_fisicas import PULGADA_EN_MM
+    t5101 = reg.tabla("AASHTO_LRFD_9.T5.10.1-1")
+    for f in t5101.filas:
+        for cat in ("a", "b", "c"):
+            assert f.valores[f"cat_{cat}_mm"] == pytest.approx(
+                f.valores[f"cat_{cat}_in"] * PULGADA_EN_MM), (
+                f"{f.id}, categoria {cat.upper()}: el mm no es la pulgada "
+                "impresa por 25.4")
 
 
 # ===========================================================================
@@ -665,3 +713,158 @@ def test_el_numeral_de_laushey_no_escribe_ningun_valor_de_g(reg):
     # Y los dos numerales que SI lo escriben estan en el registro.
     assert "9.8" in reg.cita("MC_HHD.3.12.5#G").texto_literal.texto
     assert "9.8" in reg.cita("MC_HHD.4.1.1.5.4b24#G").texto_literal.texto
+
+
+# ===========================================================================
+# T23 - una laguna que dice BLOQUEA tiene que poder bloquear
+# ===========================================================================
+# LO ENCONTRO LA AUDITORIA ADVERSARIAL DE ESTA MISMA SESION, y es el defecto
+# que el proyecto llama el peor posible cometido DENTRO del cluster que existe
+# para eliminarlo: las dos tablas de h_eq declaraban
+# `Laguna(..., si_nadie_lo_cierra=BLOQUEA)` apuntando a dos claves de
+# criterios que NO EXISTIAN, y el codigo resolvia las dos lagunas a mano -- un
+# clamp y un `>=` -- sin etiqueta, sin sensibilidad y sin excepcion. La
+# declaracion era decorativa: decia BLOQUEA y no bloqueaba nada.
+#
+# Con muro paralelo, borde 0.20 m y altura total 1.20 m las dos lagunas se
+# apilaban y la funcion devolvia 1.524 m -- 2.54 veces el piso del Manual --
+# sin decir de donde salia.
+
+def test_T23_toda_laguna_nombra_un_cerrador_que_existe(reg):
+    import criterios_adoptados as ca
+    import datos_sitio as ds
+    for t in reg.tablas:
+        for laguna in _todas_las_lagunas(t):
+            quien = laguna.quien_lo_cierra
+            assert quien.strip(), f"{t.id}: una laguna sin cerrador declarado"
+            clave = _clave_entre_corchetes(quien)
+            if clave is None:
+                continue            # lo cierra un modulo, no una clave
+            assert clave in ca.CRITERIOS or clave in ds.DATOS_SITIO, (
+                f"{t.id}: la laguna dice que la cierra «{quien}», y esa clave "
+                "no existe. Una laguna que apunta a la nada es una laguna "
+                "resuelta en duro dentro del codigo")
+
+
+def test_T23_una_laguna_que_bloquea_apunta_a_un_vacio_de_verdad(reg):
+    """
+    `si_nadie_lo_cierra=BLOQUEA` solo es verdad si la clave que la cierra
+    esta VACIA o el consumidor se detiene igual. Se comprueba el caso que el
+    hallazgo destapo: las dos lagunas de h_eq.
+    """
+    import criterios_adoptados as ca
+    for clave in ("h_eq_bajo_altura_tabulada", "h_eq_banda_intermedia_borde"):
+        c = ca.CRITERIOS[clave]
+        assert c.valor is None and not c.opcional, (
+            f"«{clave}» ya no bloquea: si se le ha dado valor, la laguna que "
+            "lo nombra tiene que dejar de decir BLOQUEA")
+        assert c.etiqueta == "A" and c.sensibilidad, (
+            f"«{clave}»: un [A] se defiende con su rango de sensibilidad")
+
+
+def test_T23_las_dos_lagunas_de_h_eq_detienen_el_calculo():
+    """
+    La comprobacion de verdad: el caso numerico del hallazgo se detiene.
+    """
+    from unittest import mock
+    from modelos import CriterioPendienteError
+    from modulos import M9_cabezal as M9
+
+    sitio = {"orientacion_muro_respecto_al_trafico":
+             M9.ORIENTACION_PARALELO_AL_TRAFICO,
+             "distancia_borde_calzada_al_trasdos_m": 0.20}
+    with mock.patch.object(M9.ds, "valor", lambda k: sitio[k]):
+        with pytest.raises(CriterioPendienteError):
+            M9.h_eq_sobrecarga_trasdos(altura_muro_total=1.20)
+
+
+def _todas_las_lagunas(tabla):
+    yield from tabla.lagunas
+    for m in tabla.modificadores:
+        yield from m.lagunas
+
+
+def _clave_entre_corchetes(texto):
+    import re
+    m = re.search(r"\['([^']+)'\]", texto)
+    return m.group(1) if m else None
+
+
+# ===========================================================================
+# T24 - un consumidor declarado tiene que existir
+# ===========================================================================
+# `Usada(por=(...))` es una afirmacion comprobable, y hasta esta sesion nadie
+# la comprobaba: seis filas y dos columnas del Cuadro 4.1 decian que las usaba
+# `MD.densidad_de_calicatas`, un simbolo que NO EXISTE en ningun modulo. Es la
+# misma clase de defecto que el cluster persigue -- una cita que suena bien y
+# no resuelve -- cometida al escribir el registro que lo persigue.
+
+def test_T24_todo_consumidor_declarado_por_una_tabla_existe(reg):
+    for t in reg.tablas:
+        for donde, uso in _usos_de(t):
+            for consumidor in getattr(uso, "por", ()):
+                assert _resuelve(consumidor), (
+                    f"{t.id}, {donde}: declara que la usa «{consumidor}», y "
+                    "ese simbolo no existe. Un consumidor inventado hace "
+                    "parecer cableado lo que no lo esta")
+
+
+def _usos_de(tabla):
+    for c in tabla.columnas:
+        yield (f"columna {c.id}", c.uso)
+    for f in tabla.filas:
+        yield (f"fila {f.id}", f.uso)
+
+
+def _resuelve(consumidor: str) -> bool:
+    """
+    Las formas en que una tabla puede nombrar a quien la consume:
+    `criterios_adoptados['clave']`, `datos_sitio['clave']`, `Modulo.simbolo` y
+    `Modulo.simbolo['clave']`.
+
+    EL PREFIJO DE MODULO ES EL CORTO -- `M9`, no `M9_cabezal` --, que es como
+    el proyecto los nombra en prosa desde la hoja de ruta. Se resuelve contra
+    los ficheros de `src/modulos` que empiezan por ese prefijo, no exigiendo
+    el nombre completo: exigirlo obligaria a reescribir el registro entero
+    para ganar exactitud que el lector no necesita.
+    """
+    import importlib
+    import criterios_adoptados as ca
+    import datos_sitio as ds
+
+    clave = _clave_entre_corchetes(consumidor)
+    cabeza = consumidor.split("[")[0]
+    if consumidor.startswith("criterios_adoptados["):
+        return clave in ca.CRITERIOS
+    if consumidor.startswith("datos_sitio["):
+        return clave in ds.DATOS_SITIO
+    if "." not in cabeza:
+        return False
+    modulo, _, simbolo = cabeza.rpartition(".")
+    for m in _modulos_con_prefijo(modulo):
+        if hasattr(m, simbolo):
+            if clave is None:
+                return True
+            contenedor = getattr(m, simbolo)
+            return clave in contenedor
+    return False
+
+
+@functools.lru_cache(maxsize=None)
+def _modulos_con_prefijo(prefijo: str):
+    import importlib
+    import pathlib as _pl
+    encontrados = []
+    for ruta in (prefijo, f"modulos.{prefijo}"):
+        try:
+            encontrados.append(importlib.import_module(ruta))
+        except ImportError:
+            pass
+    raiz = _pl.Path(__file__).resolve().parent.parent / "src" / "modulos"
+    for fichero in sorted(raiz.glob(f"{prefijo}_*.py")):
+        try:
+            encontrados.append(
+                importlib.import_module(f"modulos.{fichero.stem}"))
+        except ImportError:
+            pass
+    return tuple(encontrados)

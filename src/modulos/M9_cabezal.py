@@ -227,6 +227,10 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_RECUBRIMIENTO_MP,
                                    NUMERAL_SULFATOS,
                                    NUMERAL_SOBRECARGA_TRASDOS,
+                                   NUMERAL_SOBRECARGA_TRASDOS_AASHTO,
+                                   NUMERAL_SOBRECARGA_TRASDOS_ALTURA,
+                                   NUMERAL_SOBRECARGA_TRASDOS_APLICA,
+                                   H_EQ_REPARTO_DE_TABLAS,
                                    NUMERAL_TABLA_GAMMA_P,
                                    NUMERAL_TEMPERATURA_DOS_CARAS,
                                    NUMERAL_ZAPATA_EN_TALUD,
@@ -317,6 +321,15 @@ CRITERIO_GEOMETRIA = "predimensionamiento_cabezal"
 CRITERIO_MEYERHOF = "N_cq_N_gammaq_meyerhof"
 CRITERIO_ESTABILIDAD_GLOBAL = "metodo_estabilidad_global"
 CRITERIO_TABLA_RECUBRIMIENTO = "tabla_recubrimiento_aashto_mm"
+# Las dos lagunas de las tablas de h_eq de AASHTO 3.11.6.4, que el registro
+# declara y que hasta esta sesion se resolvian en duro dentro del modulo.
+CRITERIO_H_EQ_BAJO_TABLA = "h_eq_bajo_altura_tabulada"
+CRITERIO_H_EQ_BANDA_BORDE = "h_eq_banda_intermedia_borde"
+H_EQ_BAJO_TABLA_PRIMERA_FILA = "primera_fila"
+H_EQ_BAJO_TABLA_EXTRAPOLAR = "extrapolar_lineal"
+H_EQ_BANDA_LEE_COLUMNA_CERO = "columna_cero"
+H_EQ_BANDA_INTERPOLA = "interpolar_entre_columnas"
+
 CRITERIO_CATEGORIA_REFUERZO = "categoria_refuerzo_aashto"
 CRITERIO_SITUACION_RECUBRIMIENTO = "situacion_recubrimiento_aashto"
 CRITERIO_EXPOSICION_QUIMICA = "exposicion_quimica_ems"
@@ -1117,11 +1130,7 @@ def h_eq_sobrecarga_trasdos(*, altura_muro_total: float) -> float:
                         H_EQ_ESTRIBO_PERPENDICULAR_FT.values())
     elif orientacion == ORIENTACION_PARALELO_AL_TRAFICO:
         borde = ds.valor("distancia_borde_calzada_al_trasdos_m")
-        # El umbral de la fuente es 1.0 ft EXACTO. La banda 0 < d < 1.0 ft es
-        # una laguna que la fuente no cubre -- manda interpolar entre FILAS,
-        # no entre columnas --, y el proyecto lee la columna de 0.0 ft para
-        # toda distancia menor, que es el lado conservador.
-        lejos = borde >= H_EQ_BORDE_UMBRAL_M - TOL_UMBRAL_NORMATIVO
+        lejos = _columna_de_borde(borde)
         puntos = sorted((f[0], f[2] if lejos else f[1])
                         for f in H_EQ_MURO_PARALELO_FT.values())
     else:
@@ -1140,6 +1149,47 @@ def h_eq_sobrecarga_trasdos(*, altura_muro_total: float) -> float:
     return max(SOBRECARGA_TRASDOS_PISO_MP_M, h_eq_aashto)
 
 
+def _columna_de_borde(borde_m: float) -> bool:
+    """
+    Cual de las DOS columnas de la Tabla 3.11.6.4-2 aplica. True = la de
+    "1.0 ft or Further".
+
+    LA TABLA TIENE DOS COLUMNAS Y NADA EN MEDIO. Sus rotulos son "0.0 ft" y
+    "1.0 ft or Further", y la unica interpolacion que AASHTO autoriza es la de
+    ALTURAS ("for intermediate wall heights"), entre filas. La banda abierta
+    0 < d < 1.0 ft es laguna de la fuente y la cierra un criterio [A] vacio,
+    no un redondeo de este modulo: hasta que se declare, el calculo se detiene.
+
+    LA TOLERANCIA DECIDE IGUALDAD, NO LADO SEGURO, y la distincion es el
+    hallazgo que la corrigio. Antes la comparacion era
+    `borde >= UMBRAL - TOL`, que redondea hacia "lejos" -- la columna de h_eq
+    MENOR, o sea el lado RELAJADO --, justo la direccion que los comentarios de
+    alrededor condenan. Ahora la tolerancia solo sirve para reconocer los dos
+    valores que la tabla SI tabula (0.0 ft y 1.0 ft) pese a la representacion
+    binaria; lo que cae de verdad entre ellos no se redondea a ninguno de los
+    dos: bloquea.
+    """
+    if borde_m >= H_EQ_BORDE_UMBRAL_M - TOL_UMBRAL_NORMATIVO:
+        return True                       # columna "1.0 ft or Further"
+    if borde_m <= TOL_UMBRAL_NORMATIVO:
+        if borde_m < -TOL_UMBRAL_NORMATIVO:
+            raise DatoInvalidoError(
+                campo="distancia_borde_calzada_al_trasdos_m", valor=borde_m,
+                motivo="una distancia del trasdos al borde de calzada no "
+                       "puede ser negativa")
+        return False                      # columna "0.0 ft"
+    # La banda abierta: la fuente calla y el criterio esta vacio.
+    regla = ca.valor(CRITERIO_H_EQ_BANDA_BORDE)   # VACIO: detiene aqui
+    if regla == H_EQ_BANDA_LEE_COLUMNA_CERO:
+        return False
+    raise DatoInvalidoError(
+        campo=CRITERIO_H_EQ_BANDA_BORDE, valor=regla,
+        motivo="las lecturas declaradas de la banda 0 < d < 1.0 ft son "
+               f"'{H_EQ_BANDA_LEE_COLUMNA_CERO}' y "
+               f"'{H_EQ_BANDA_INTERPOLA}'; interpolar entre las dos columnas "
+               "exige ademas escribir la regla, que la fuente no da")
+
+
 def _interpolar_h_eq(altura_ft: float,
                      puntos: Sequence[Tuple[float, float]]) -> float:
     """
@@ -1152,13 +1202,27 @@ def _interpolar_h_eq(altura_ft: float,
       - por encima de la ultima fila, esta se rotula ">=20.0" y su valor rige
         para toda altura mayor -- eso SI lo escribe la tabla;
       - por debajo de la primera (5.0 ft = 1.524 m) no hay fila con que
-        interpolar y extrapolar no lo autoriza nadie. Se toma el valor de la
-        primera fila, que es el mayor de la columna -- h_eq decrece con la
-        altura --, o sea el lado conservador. Es una LAGUNA declarada en el
-        registro, no una lectura de la tabla.
+        interpolar y extrapolar no lo autoriza nadie. Es una LAGUNA de la
+        fuente y la cierra un criterio [A] VACIO, no este modulo: hasta que se
+        declare, el calculo se detiene. Antes se tomaba la primera fila en
+        duro, con el argumento de que era el lado conservador; no lo decide
+        eso, porque extrapolar el primer tramo da un h_eq AUN MAYOR y las dos
+        lecturas son elegibles.
     """
     if altura_ft <= puntos[0][0]:
-        return puntos[0][1]
+        if altura_ft >= puntos[0][0] - TOL_UMBRAL_NORMATIVO:
+            return puntos[0][1]           # la fila existe: no hay laguna
+        regla = ca.valor(CRITERIO_H_EQ_BAJO_TABLA)    # VACIO: detiene aqui
+        if regla == H_EQ_BAJO_TABLA_PRIMERA_FILA:
+            return puntos[0][1]
+        if regla == H_EQ_BAJO_TABLA_EXTRAPOLAR:
+            (a0, h0), (a1, h1) = puntos[0], puntos[1]
+            return h0 + (h1 - h0) * (altura_ft - a0) / (a1 - a0)
+        raise DatoInvalidoError(
+            campo=CRITERIO_H_EQ_BAJO_TABLA, valor=regla,
+            motivo="las lecturas declaradas por debajo de la primera fila "
+                   f"son '{H_EQ_BAJO_TABLA_PRIMERA_FILA}' y "
+                   f"'{H_EQ_BAJO_TABLA_EXTRAPOLAR}'")
     if altura_ft >= puntos[-1][0]:
         return puntos[-1][1]
     for (a0, h0), (a1, h1) in zip(puntos, puntos[1:]):
@@ -1410,13 +1474,17 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
 
     E_a = empuje_activo_estatico(gamma_relleno=gamma, k_a=K_A_rankine,
                                  H=altura_empuje)
+    # AASHTO mide la altura de entrada de h_eq desde la superficie del relleno
+    # hasta el FONDO DE LA ZAPATA, con un `shall`. `geometria.H` es la altura
+    # del muro SOBRE la zapata, de modo que la de la tabla es la suma.
+    altura_para_h_eq = geometria.H + geometria.espesor_zapata
+    # h_eq SE CALCULA APARTE Y VIAJA EN EL RESULTADO. Antes solo existia dentro
+    # de `empuje_sobrecarga_trasdos` y se perdia: la memoria recibia el empuje
+    # y no la altura equivalente, la orientacion ni la segunda fuente.
+    h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=altura_para_h_eq)
     E_s = empuje_sobrecarga_trasdos(
         gamma_relleno=gamma, k_a=K_A_rankine, H=altura_empuje,
-        # AASHTO mide la altura de entrada de h_eq desde la superficie del
-        # relleno hasta el FONDO DE LA ZAPATA, con un `shall`. `geometria.H`
-        # es la altura del muro SOBRE la zapata, de modo que la de la tabla es
-        # la suma de las dos.
-        altura_muro_total=geometria.H + geometria.espesor_zapata)
+        altura_muro_total=altura_para_h_eq)
     h_agua = altura_agua_sobre_base(D_f=geometria.D_f,
                                     NF_profundidad_m=NF_profundidad_m)
     E_w = empuje_hidrostatico(h_agua=h_agua)
@@ -1444,6 +1512,10 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
         z_incremento=z_incremento,
         mononobe_okabe=mo,
         numeral=NUMERAL_9_2,
+        h_eq_sobrecarga=h_eq,
+        orientacion_muro=ds.valor("orientacion_muro_respecto_al_trafico"),
+        numeral_sobrecarga=(f"{NUMERAL_SOBRECARGA_TRASDOS} + "
+                            f"{NUMERAL_SOBRECARGA_TRASDOS_AASHTO}"),
     )
 
 
@@ -3234,6 +3306,18 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
         f"({NUMERAL_K_AE_MANUAL}; {NUMERAL_K_AE_AASHTO})",
         f"k_h0 en cimentacion sobre roca: {K_H0_ROCA_ERRATA} "
         f"({NUMERAL_K_H0})",
+        # LA SOBRECARGA VIVA DEL TRASDOS, con sus DOS fuentes. La memoria
+        # imprimia solo el numeral peruano, que fija un PISO de 0.60 m, para
+        # un h_eq que la tabla de AASHTO puede llevar a 1.12 m: el lector veia
+        # el numero grande citado contra la fuente del numero pequeño
+        # (NOR-PUE-01, NOR-PUE-02, MAT-O1, MAT-X1).
+        f"Sobrecarga viva en el trasdos: h_eq = max(piso del Manual, tabla de "
+        f"AASHTO por altura y orientacion). {NUMERAL_SOBRECARGA_TRASDOS} fija "
+        f"el piso -- «no menor que» -- y no tabula nada; el valor sale de "
+        f"{NUMERAL_SOBRECARGA_TRASDOS_AASHTO}. La altura de entrada es la del "
+        f"muro CON zapata: {NUMERAL_SOBRECARGA_TRASDOS_ALTURA}",
+        f"Cual de las dos tablas de AASHTO aplica: {H_EQ_REPARTO_DE_TABLAS}",
+        f"Cuando la sobrecarga se aplica: {NUMERAL_SOBRECARGA_TRASDOS_APLICA}",
         # La hipotesis del agua en el trasdos: desviacion conservadora de un
         # `shall` de AASHTO, declarada (MAT-O3, MAT-X3).
         f"Empuje bajo el nivel freatico: {HIPOTESIS_EMPUJE_BAJO_NF} "
