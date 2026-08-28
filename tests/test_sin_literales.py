@@ -55,6 +55,41 @@ MODULOS = SRC / "modulos"
 EXENTOS = {"constantes_normativas.py", "criterios_adoptados.py",
            "datos_sitio.py", "tolerancias.py", "dominios.py",
            "constantes_fisicas.py"}
+
+# El registro normativo entra en la lista CON UNA CONDICION QUE LAS OTRAS SEIS
+# NO TIENEN: todo literal numerico suyo tiene que estar DENTRO de un objeto de
+# transcripcion -- una `FilaDeTabla`, un `Verbatim`, una `Cita`, una `Fuente`,
+# un `RangoNormativo`, un `TramoDeModificador`... --, nunca como constante de
+# modulo suelta. Sin esa condicion, `src/normativa/` seria el mejor escondite
+# del repositorio: un paquete grande, exento entero, donde cualquier valor de
+# proyecto podria colarse sin etiqueta.
+#
+# La comprueba `test_el_registro_normativo_no_esconde_constantes_sueltas`, mas
+# abajo. La marca `# literal-ok: <razon>` sigue valiendo, para los pocos
+# numeros que no son transcripcion (una escala de renderizado, un tamaño de
+# muestra).
+PAQUETE_REGISTRO = "normativa"
+
+# Los constructores del registro: un numero dentro de la llamada a uno de
+# estos ES una transcripcion, y por eso se admite. Se listan por NOMBRE y no
+# por importacion para que este test no dependa de que el paquete importe.
+CONSTRUCTORES_DE_TRANSCRIPCION = {
+    # el objeto documental
+    "Fuente", "Cita", "Verbatim", "Verificado", "Ausencia", "Catalogo",
+    "NotaAlPie", "CondicionAplicacion", "Discrepancia", "Parte", "Laguna",
+    "Interpretacion", "AfirmacionNegativa", "Transcripcion", "Fundamento",
+    # la tabla y sus partes
+    "TablaNormativa", "ColumnaDeTabla", "FilaDeTabla", "Modificador",
+    "TramoDeModificador", "CorrespondenciaDeTablas", "Acotada", "Integra",
+    "Usada", "NoUsada", "PendienteDeCondicion",
+    # los rangos
+    "IntervaloAdmisible", "TechoUnico", "PisoUnico", "ConjuntoDeMaximos",
+    "BandaDeInterpolacion",
+    # la paginacion
+    "Corrida", "PorCapitulo", "Irregular", "SinDeterminar",
+    # las fabricas internas de cada modulo del paquete
+    "_cita", "_tabla", "_d", "_ausente", "_firmado", "_fundamento",
+}
 NUMEROS_PERMITIDOS = {0, 1, 2}
 MARCA = "# literal-ok"
 
@@ -125,11 +160,39 @@ def literales_prohibidos(codigo: str, nombre: str = "<memoria>"):
     return sorted(hallazgos)
 
 
+def _lineas_de_transcripcion(fuente: str) -> set:
+    """
+    Las lineas que caen DENTRO de la llamada a un constructor del registro.
+
+    Se marca el subarbol entero de cada llamada, no solo sus argumentos
+    directos: una `FilaDeTabla` lleva su `valores={...}` con los numeros
+    dentro de un dict, y un `ConjuntoDeMaximos` dentro de ese dict.
+    """
+    dentro = set()
+    arbol = ast.parse(fuente)
+    for nodo in ast.walk(arbol):
+        if not isinstance(nodo, ast.Call):
+            continue
+        f = nodo.func
+        nombre = f.id if isinstance(f, ast.Name) else (
+            f.attr if isinstance(f, ast.Attribute) else None)
+        if nombre not in CONSTRUCTORES_DE_TRANSCRIPCION:
+            continue
+        for hijo in ast.walk(nodo):
+            if hasattr(hijo, "lineno"):
+                dentro.update(range(hijo.lineno,
+                                    getattr(hijo, "end_lineno", hijo.lineno) + 1))
+    return dentro
+
+
 def barrido(raiz: Path) -> dict:
     """Recorre un arbol .py y devuelve {ruta relativa: [(linea, valor), ...]}."""
     faltas = {}
     for ruta in sorted(raiz.rglob("*.py")):
         if ruta.name in EXENTOS:
+            continue
+        if PAQUETE_REGISTRO in ruta.parts:
+            # Exento del barrido general y sujeto al suyo, mas estrecho.
             continue
         # utf-8-sig y no utf-8: un editor de Windows puede dejar BOM y el
         # interprete de Python lo acepta. El barrido tiene que leer lo mismo
@@ -156,6 +219,37 @@ def test_ningun_modulo_declara_literales_numericos():
         "numeral) o a criterios_adoptados.py (si es [N->], [C] o [A]). Una "
         "tolerancia va a tolerancias.py. Si es parte de una formula, marca la "
         f"linea con '{MARCA}: <razon>'."
+    )
+
+
+def test_el_registro_normativo_no_esconde_constantes_sueltas():
+    """
+    La exencion de `src/normativa/` se ESTRECHA, no se ensancha (§10.2 b del
+    diseño): un numero suyo vale si es transcripcion o si esta marcado. Una
+    constante de modulo suelta, no.
+    """
+    paquete = SRC / PAQUETE_REGISTRO
+    assert paquete.is_dir(), "src/normativa/ no existe: la exencion caduco"
+    faltas = {}
+    for ruta in sorted(paquete.rglob("*.py")):
+        fuente = ruta.read_text(encoding="utf-8-sig")
+        lineas = fuente.splitlines()
+        transcripcion = _lineas_de_transcripcion(fuente)
+        sueltos = [(n, v) for n, v in literales_numericos(fuente, ruta.name)
+                   if v not in NUMEROS_PERMITIDOS
+                   and n not in transcripcion
+                   and not _marcado(lineas, n)]
+        if sueltos:
+            faltas[str(ruta.relative_to(SRC))] = sueltos
+    detalle = "\n".join(
+        f"  {archivo}: " + ", ".join(f"linea {n} -> {v!r}" for n, v in hallazgos)
+        for archivo, hallazgos in faltas.items())
+    assert not faltas, (
+        "Literales numericos sueltos en src/normativa/:\n" + detalle +
+        "\n\nEn el registro un numero vale si esta DENTRO de un objeto de "
+        "transcripcion (Verbatim, Cita, Fuente, FilaDeTabla, un rango, un "
+        "tramo de modificador...). Si no lo es, o va a un archivo exento o se "
+        f"marca la linea con '{MARCA}: <razon>'."
     )
 
 

@@ -1,0 +1,24 @@
+# Dependencias de TEST. NO entran al software calculado.
+#
+# Regla: `requirements.txt` es lo que hace falta para CALCULAR una alcantarilla.
+# Este archivo es lo que hace falta para COMPROBAR que lo calculado se apoya en
+# lo que las normas dicen. Un despliegue que solo tenga que producir memorias
+# no necesita nada de aqui, y por eso estan separados.
+#
+# PyMuPDF -- lectura de los PDF de normas/: texto por pagina y renderizado a
+#   imagen. Lo usan `src/normativa/extraccion/` y los tests marcados
+#   `@pytest.mark.pdf` (T0, T2, T3, T5, T6 del diseño del registro normativo).
+#   Se eligio sobre `pdfminer.six` porque cubre texto E IMAGEN: tres hallazgos
+#   ya cerrados del proyecto -- el `>` de la ultima columna de F_pga, el
+#   asterisco de la fila F y el `[1 -]` del denominador de K_AE -- se
+#   decidieron renderizando la pagina, y tres de las trece fuentes de normas/
+#   (AASHTO M 36, AASHTO M 170M y ASTM A760) no entregan texto utilizable en
+#   absoluto. `pdfminer.six` no renderiza.
+#   Si no esta instalado, la suite NO se cae: los tests estructurales del
+#   registro corren igual y los que abren PDF se saltan.
+PyMuPDF>=1.24
+
+# openpyxl -- mantenimiento del tracker de auditorias
+#   (docs/auditorias/matriz_cruzada_auditorias.xlsx). Herramienta de
+#   mantenimiento, no dependencia del software calculado.
+openpyxl>=3.1
