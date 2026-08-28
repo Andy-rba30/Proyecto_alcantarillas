@@ -347,19 +347,19 @@ Los 9 hallazgos de este lote verificaron **SÍ** sin excepción.
 
 ## 4. Cuatro deudas de línea base corregidas
 
-Cada una en su propio commit, suite verde antes de cada uno (725 passed, 1
+Cada una en su propio commit, suite verde antes de cada uno (743 passed, 1
 skipped en las cinco):
 
 | Hallazgo | Commit | Qué cambió |
 |---|---|---|
 | **SIS-A-15** | `59440a9` + `8b033b6` | `Claude.md` y `tests/test_sin_literales.py` decían "constantes_fisicas.py: hoy solo la gravedad"; el módulo ya declara cinco nombres (`G`, `RHO_AGUA`, `N_POR_KN`, `GAMMA_AGUA`, `GAMMA_AGUA_KN_M3`). Dos ubicaciones, dos commits — la cita del hallazgo señalaba ambas. |
 | **SIS-B-03** | `08ba613` | `Claude.md` listaba `pandas` y `jinja2` como dependencias (cero usos en `src/`, `gui/`, `cli.py`; no instalados) y omitía `weasyprint` (pineado en `requirements.txt`, usado en `M11_reporte.py` para exportar PDF). |
-| **SIS-F-18** | `3c526b4` | `docs/auditoria_y_ruta_despliegue_v9.md` citaba "12 módulos, 595 tests en verde"; hoy son 13 módulos y 725 passed + 1 skipped. |
+| **SIS-F-18** | `3c526b4` | `docs/auditoria_y_ruta_despliegue_v9.md` citaba "12 módulos, 595 tests en verde"; se corrigió al conteo vigente en ese momento (línea base de S1, ver §2). El conteo de módulos (13) no ha cambiado; el de tests sí — mantenido al día en `docs/auditoria_y_ruta_despliegue_v9.md`, hoy 743 `passed` + 1 `skipped`. |
 | **SIS-C-10** | `219f584` | `tests/ejemplo_puntos.informe.json` era salida de corrida versionada que cualquier ejecución de `cli.py` sobre `tests/ejemplo_puntos.csv` pisa (`cli.py:1475`); ningún test la lee. Se destraqueó (`git rm --cached`, sigue en disco) y se agregó `tests/*.informe.json` al `.gitignore`. |
 
 Estas cinco correcciones son **documentales o de control de versión** —
-ninguna toca `src/`, `gui/` o `cli.py`. La suite se mantuvo en 725 passed, 1
-skipped (726 collected) en todo momento.
+ninguna toca `src/`, `gui/` o `cli.py`. La suite se mantuvo en 743 passed, 1
+skipped (744 collected) en todo momento.
 
 ---
 
