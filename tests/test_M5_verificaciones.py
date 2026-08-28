@@ -27,6 +27,7 @@ M5 contra las nueve verificaciones de la tabla de Fase 5:
 """
 
 import math
+import re
 from pathlib import Path
 
 import pytest
@@ -34,11 +35,13 @@ import pytest
 import criterios_adoptados as ca
 from constantes_normativas import V_MIN, Y_SOBRE_D_MAX
 from modelos import (ControlGobernante, CriterioPendienteError,
-                     DatoFaltanteError, ErrorProyecto, Familia,
-                     PuntoCritico, ResultadoHidraulico, TipoMaterial)
+                     DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
+                     Familia, PuntoCritico, ResultadoHidraulico, TipoMaterial)
 from modulos.M2_material import catalogo
-from modulos.M5_verificaciones import (CRITERIO_V_MAX_CONCRETO,
+from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
+                                       CRITERIO_V_MAX_CONCRETO,
                                        NUMERAL_V2, NUMERAL_V3,
+                                       cota_entrada_supuesta,
                                        resguardo_por_cbr, v1_borde_libre,
                                        v2_velocidad_minima,
                                        v3_velocidad_maxima,
@@ -640,3 +643,78 @@ def test_verificar_tiene_la_firma_del_protocol_de_MD(concreto):
     with pytest.raises(CriterioPendienteError):
         verificar(punto=_punto(), material=concreto, D=0.90,
                  resultado=_resultado())
+
+
+# ---------------------------------------------------------------------------
+# La cota de fondo de entrada es una DECLARACION, no un supuesto del codigo
+# ---------------------------------------------------------------------------
+# SIS-A-04: M5 adoptaba `punto.cota_terreno` dentro del modulo, sin criterio,
+# sin Anexo A y sin marca en la memoria, y esa eleccion gobierna V4, V7 y la
+# rasante de 7.A. La regla nuclear del proyecto dice que un hueco que no
+# cierra ninguna norma se declara vacio y detiene el calculo.
+
+def test_sin_declarar_el_origen_la_cota_de_entrada_detiene_el_calculo():
+    """
+    La suite corre con la declaracion puesta (ver conftest). Aqui se retira a
+    proposito: es el unico sitio donde se comprueba que el vacio bloquea de
+    verdad y no que el conftest lo tape.
+    """
+    ca.quitar_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA)
+    try:
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            cota_entrada_supuesta(_punto())
+        assert excinfo.value.clave == CRITERIO_ORIGEN_COTA_ENTRADA
+        assert ca.criterio(CRITERIO_ORIGEN_COTA_ENTRADA).valor is None, (
+            "el archivo no puede traer la eleccion hecha: la toma el "
+            "proyectista, no el programa")
+    finally:
+        ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+
+
+def test_la_regla_declarada_es_la_que_se_aplica():
+    punto = _punto()
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+    assert cota_entrada_supuesta(punto) == pytest.approx(punto.cota_terreno)
+    assert CRITERIO_ORIGEN_COTA_ENTRADA in ca.criterios_usados(), (
+        "la eleccion tiene que registrarse como usada o la memoria no la "
+        "declara")
+
+
+def test_una_regla_no_implementada_es_dato_invalido_no_un_fallo_de_programa():
+    """
+    Declarar una regla que este modulo no sabe aplicar es un problema del
+    expediente -- alguien eligio algo que el software no implementa -- y sale
+    como `DatoInvalidoError` de la taxonomia del proyecto, no como KeyError.
+    """
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_de_invert_medida")
+    try:
+        with pytest.raises(DatoInvalidoError):
+            cota_entrada_supuesta(_punto())
+    finally:
+        ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+
+
+def test_las_dos_filas_no_evaluadas_se_declaran_en_vez_de_desaparecer():
+    """
+    La tabla de Fase 5 tiene ONCE filas y este modulo NUEVE funciones. Las dos
+    que faltan -- V2b (sedimentacion / colmatacion) y V4b (relacion HW/D) --
+    no pueden quedar como un ejercicio de resta del lector: se declaran con su
+    fundamento, igual que el item 5 de la Fase 8 (SIS-A-13 / MAT-O15).
+    """
+    from modulos.M5_verificaciones import verificaciones_no_evaluadas
+
+    textos = verificaciones_no_evaluadas()
+    completo = " ".join(textos)
+    assert "V2b" in completo and "planos" in completo
+    assert "V4b" in completo and "HW_D_max" in completo
+
+    # El conteo, contra la hoja de ruta y contra este modulo: si alguno de los
+    # dos cambia, el texto de la constancia deja de ser cierto.
+    raiz = Path(__file__).resolve().parents[1]
+    hoja = next((raiz / "docs").glob("hoja_de_ruta_alcantarillas_v*.md"))
+    filas = re.findall(r"^\| \*\*(V\d+b?)\*\*", hoja.read_text(encoding="utf-8"), re.M)
+    modulo = (raiz / "src" / "modulos" / "M5_verificaciones.py").read_text(encoding="utf-8")
+    funciones = re.findall(r"^def (v\d+_\w+)", modulo, re.M)
+    assert len(filas) == 11, f"la tabla de Fase 5 ya no tiene once filas: {filas}"
+    assert len(funciones) == 9, f"M5 ya no tiene nueve verificaciones: {funciones}"
+    assert len(textos) == len(filas) - len(funciones)

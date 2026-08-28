@@ -17,8 +17,11 @@ separa a proposito, y que este modulo mantiene separadas:
 
     cota clave  = cota de fondo de la entrada + D          (Sec. 7.A)
     h_rec       = relleno minimo sobre la clave: 0.30 m en HDPE [N]
-                  (EG-2013 508.07/508.08); en concreto y TMC es el vacio
-                  'h_relleno_min_concreto_tmc' [C], que detiene el calculo
+                  (EG-2013 508.07/508.08); en concreto y TMC, el criterio
+                  'h_relleno_min_concreto_tmc' [N->], hoy CON valor (el mismo
+                  0.30 m adoptado por analogia, a nivel de perfil, con la
+                  verificacion estructural por material abierta). Si alguna
+                  vez vuelve a vaciarse, detiene el calculo para esos dos
     e_paq       = cota de rasante - cota de subrasante     (Sec. 1.1)
     HW          = carga a la entrada, en metros sobre el fondo de la entrada
                   (Sec. 4.2 / 4.3), convertida a cota aqui
@@ -127,7 +130,9 @@ pregunta que rasante hace falta para que quepa. Por eso este modulo no
 reimplementa ninguna de las dos piezas que comparten:
 
     modulos.M5_verificaciones.cota_entrada_supuesta   la cota a la que se
-                                                      refiere el HW
+                                                      refiere el HW (la fija
+                                                      el criterio declarado
+                                                      'origen_cota_fondo_entrada')
     modulos.M5_verificaciones.resguardo_por_cbr       la tabla de Sec. 5.1
 
 Si M7 eligiera su propia cota de entrada o copiara la tabla, la rasante se
@@ -154,7 +159,10 @@ seria un criterio, la hoja de ruta no lo da, y por lo tanto no se exige aqui.
 
 Excepciones
 -----------
-    CriterioPendienteError   'h_relleno_min_concreto_tmc' en concreto y TMC
+    CriterioPendienteError   'origen_cota_fondo_entrada' (bloquea toda
+                             conversion de HW a cota, o sea 7.A entero y las
+                             cotas de 7.B, para cualquier material);
+                             'h_relleno_min_concreto_tmc' en concreto y TMC
                              (bloquea 7.A para esos materiales, no para HDPE);
                              'talud_terraplen' (bloquea la longitud de 7.B).
     DisenoNoFactibleError    lo lanzan `TamizadoRasante.exigir_factible()` y
@@ -245,9 +253,9 @@ def cota_clave(*, punto: PuntoCritico, D: float) -> float:
     """
     Cota de la clave del conducto, msnm: fondo de la entrada + D (Sec. 7.A).
 
-    La cota de entrada es la interpretacion declarada de M5
-    (`cota_entrada_supuesta`), no un dato del CSV: ver el docstring de aquel
-    modulo y declararla en la memoria.
+    La cota de entrada NO es un dato del CSV: sale de la regla que el
+    proyectista declaro en 'origen_cota_fondo_entrada' y que M5 aplica en
+    `cota_entrada_supuesta`. La memoria la imprime como adoptada.
     """
     return cota_entrada_supuesta(punto) + D
 
@@ -277,7 +285,7 @@ def criterio_recubrimiento(material: Material) -> Optional[str]:
 
     Reproduce la reparticion que M2 aplica al construir el catalogo: el HDPE
     lee EG-2013 directo (sin vacio que declarar) y los otros dos dependen del
-    criterio [C]. Se necesita por separado porque la `Verificacion` de 7.B
+    criterio [N->]. Se necesita por separado porque la `Verificacion` de 7.B
     tiene que decir de donde salio su umbral, y `Material` guarda el valor
     pero no su procedencia.
     """
@@ -372,8 +380,8 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
     Es la unica de las dos verificaciones de 7.B que se puede evaluar hoy sin
     el criterio 'talud_terraplen', porque no necesita la longitud. El criterio
     aplicado es el de la condicion que gobierna: 'resguardo_HW_subrasante'
-    [N->] si manda la carga a la entrada, 'h_relleno_min_concreto_tmc' [C] si
-    manda el recubrimiento en concreto o TMC, y None si manda el
+    [N->] si manda la carga a la entrada, 'h_relleno_min_concreto_tmc' [N->]
+    si manda el recubrimiento en concreto o TMC, y None si manda el
     recubrimiento en HDPE, donde el 0.30 m es [N] puro.
     """
     return Verificacion(

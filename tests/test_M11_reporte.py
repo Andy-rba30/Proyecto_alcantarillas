@@ -591,12 +591,82 @@ class TestBloqueCriterios:
     def test_un_criterio_sin_valor_se_declara_sin_valor(self):
         assert "sin valor declarado" in M11._valor_legible(None)
 
+    # -----------------------------------------------------------------
+    # SIS-A-01, el unico hallazgo BLOQUEANTE de las tres auditorias
+    # -----------------------------------------------------------------
+
+    def test_imprime_el_valor_efectivo_de_un_criterio_declarado_en_caliente(self):
+        """
+        El defecto: `bloque_criterios` leia `ca.criterio(clave).valor` -- el
+        valor del ARCHIVO -- de modo que un criterio declarado desde la GUI
+        ("aplicar solo a esta corrida") gobernaba los numeros de la pagina y
+        la misma pagina lo imprimia como "sin valor declarado". El bloque de
+        vacios tampoco lo listaba, porque ya no es un vacio: desaparecia por
+        partida doble.
+        """
+        clave = "phi_relleno_trasdos"
+        ca.establecer_valor_dinamico(clave, 32.0)
+        try:
+            ca.valor(clave)                      # el calculo lo usa
+            bloque = M11.bloque_criterios(solo_usados=True)
+
+            assert "32.0" in bloque
+            ficha = bloque.split(clave)[1]
+            assert "sin valor declarado" not in ficha.split("</dl>")[0]
+            assert "declarado para esta corrida, no en archivo" in bloque
+            assert "DECLARADO PARA ESTA CORRIDA" in bloque
+            assert "el archivo lo declara" in bloque, (
+                "la memoria tiene que decir tambien QUE dice el archivo: sin "
+                "eso no se distingue un vacio declarado en caliente de un "
+                "valor del archivo sustituido en caliente")
+        finally:
+            ca.quitar_valor_dinamico(clave)
+
+    def test_la_procedencia_se_imprime_en_todos_los_criterios(self):
+        """
+        Una marca que aparece solo a veces se lee como nota al pie. La fila de
+        procedencia va en todas las fichas: es parte del contrato de la
+        memoria, no una excepcion.
+        """
+        bloque = M11.bloque_criterios(solo_usados=False)
+        assert bloque.count("<dt>Procedencia</dt>") + bloque.count(
+            '<dt class="pendiente">Procedencia</dt>') == len(ca.CRITERIOS)
+
 
 # ===========================================================================
 # (5) Bloque aparte de pendientes: Tableros 1, 2 y 3
 # ===========================================================================
 
 class TestBloquePendientes:
+
+    def test_el_bloque_4_lista_los_declarados_solo_para_esta_corrida(self):
+        """
+        La otra mitad de SIS-A-01: `criterios_sin_valor()` los excluye -- con
+        razon, el calculo tuvo valor con que correr -- y sin una seccion
+        propia se caian entre las dos sillas.
+        """
+        clave = "phi_relleno_trasdos"
+        ca.establecer_valor_dinamico(clave, 32.0)
+        try:
+            bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+            assert "Criterios declarados solo para esta corrida" in bloque
+            seccion = bloque.split("Criterios declarados solo para esta corrida")[1]
+            assert clave in seccion
+            assert "32.0" in seccion
+        finally:
+            ca.quitar_valor_dinamico(clave)
+
+    def test_que_lo_resuelve_no_cae_en_el_enunciado_del_vacio(self):
+        """
+        SIS-D-05: la columna imprimia `reemplazado_por or fuente`, y en un
+        criterio vacio la `fuente` es el enunciado del hueco. La memoria decia
+        que lo que resuelve el vacio es la descripcion del vacio.
+        """
+        bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+        for clave in ca.criterios_sin_valor():
+            c = ca.criterio(clave)
+            if not c.reemplazado_por:
+                assert "sin declarar que lo resuelve" in bloque
 
     def test_un_refinamiento_opcional_no_se_anuncia_como_vacio_bloqueante(self):
         """
@@ -810,8 +880,13 @@ class TestBloqueAcotaciones:
 
         declaradas = M11.acotaciones_declaradas()
         esperadas = sorted(k for k, c in ca.CRITERIOS.items()
-                           if c.vacio_verificado and c.valor is not None)
-        assert declaradas == esperadas
+                           if c.vacio_verificado
+                           and ca.criterio_efectivo(k).valor is not None)
+        # Mismo CONJUNTO: el orden lo fija la funcion por (etiqueta, clave),
+        # que no es el alfabetico puro de esta lista. Con una sola acotacion
+        # declarada las dos coincidian por casualidad.
+        assert sorted(declaradas) == esperadas
+        assert declaradas, "el catalogo declara al menos una acotacion"
         assert "h_relleno_min_concreto_tmc" in declaradas
 
     def test_imprime_las_cinco_piezas_del_razonamiento(self):

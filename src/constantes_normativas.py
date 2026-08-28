@@ -21,7 +21,29 @@ porque la hoja de ruta los incluyo aqui aun siendo [C]:
 La inconsistencia Clase D/F que motivo la v5 fue exactamente esto: el mismo
 parametro definido en dos lugares (Sec. 0.7). Para el CALCULO, la fuente unica
 es `criterios_adoptados.py`; lo de aqui queda como referencia trazable del
-Anexo B. Ningun modulo debe leer los tres bloques citados desde este archivo.
+Anexo B.
+
+La prohibicion es POR CLAVE, no por bloque entero. Un modulo no debe leer de
+aqui la clave que tiene homologo declarado; las demas filas de esos mismos
+diccionarios no tienen homologo y se leen de aqui, que es su unica fuente:
+
+    HDS5_INLET      las filas de concreto y de TMC no tienen criterio
+                    homologo (son lectura directa de la Tabla A.1 de HDS-5) y
+                    M2 las lee de aqui. La fila de HDPE, no: esa sale del
+                    criterio 'hds5_embocadura_hdpe'.
+    H_RELLENO_MIN   la fila 'hdpe' no tiene homologo -- EG-2013 508.07 la
+                    fija sin vacio que declarar -- y M2 la lee de aqui. Las
+                    de concreto y TMC salen del criterio, cuyo nombre
+                    ('h_relleno_min_concreto_tmc') ya dice a que filas
+                    sustituye.
+    D_INICIO / D_PASO / D_MAX   sin excepcion: la progresion entera y los
+                    tres topes salen siempre del criterio
+                    'diametros_normalizados'.
+
+La frase anterior era categorica ("Ningun modulo debe leer los tres bloques
+citados desde este archivo") y describia mal lo que el propio bloque de arriba
+acota clave por clave; M2 documenta la reparticion en su docstring y la marca
+con comentarios de linea. Queda escrita aqui para que no haya que deducirla.
 """
 
 # ================= Manual de Hidrologia (RD 20-2011-MTC/14) =================
@@ -342,3 +364,37 @@ NUMERAL_CICLOPEO = "E.060 Art. 22.10, pags. 194-195"
 # El cambio es de clasificacion, no de uso: los tres seguian siendo referencia
 # que no gobierna el cabezal (Sec. 0.4 descarta el sismo de 475 anios de E.030
 # frente al PGA de Tr = 1000 anios del Manual de Puentes) y lo siguen siendo.
+
+
+# ===========================================================================
+# Constantes de REFERENCIA: transcritas del Anexo B, sin consumidor de calculo
+# ===========================================================================
+# Este archivo es la transcripcion literal del Anexo B, y el Anexo B trae mas
+# de lo que el script calcula. Trece de sus constantes no las lee ningun
+# modulo de produccion: son requisitos que el expediente tiene que cumplir
+# (densidad de calicatas, compactacion, limites de agresividad quimica) o
+# pisos normativos que el pipeline aplica por otra via.
+#
+# La lista existe porque sin ella las dos clases de constante se ven iguales
+# leyendo el archivo, y un revisor no puede saber si "sin consumidor"
+# significa "todavia no cableada" o "no le corresponde cablearse". Aqui
+# significa lo segundo, en las trece.
+#
+# Es documentacion, no configuracion: nadie la importa para calcular. Si
+# alguna se cablea, sale de esta lista en el mismo commit.
+CONSTANTES_DE_REFERENCIA = (
+    "DIAMETRO_MIN",              # el piso de 0.90 m entra por
+    "DIAMETRO_MIN_SELVA_ALTA",   # 'diametros_normalizados' (D_INICIO), y la
+                                 # fila de selva alta no aplica en costa
+    "LONG_MAX_CUNETA",           # Fase 10 recibe L_hidraulico declarado
+    "CBR_MIN_SUBRASANTE",        # requisito del paquete estructural vial
+    "COMPACTACION_CORONA",       # requisitos de ejecucion (EG-2013), sin
+    "COMPACTACION_CUERPO",       # columna en el CSV contra la que comparar
+    "CALICATAS_POR_KM",          # densidad de investigacion geotecnica:
+    "CALICATAS_POR_SENTIDO",     # gobierna la campana de campo, no el
+    "ESPACIAMIENTO_PERFIL_KM",   # dimensionamiento de la alcantarilla
+    "SPT_PROF_MIN",              # profundidad y paso del SPT que cerraria
+    "SPT_ESPACIAMIENTO",         # 'clase_sitio' y 'PERFIL_SUELO_PRESUNTO'
+    "SULFATOS",                  # agresividad quimica: la decide el EMS del
+    "CLORUROS_EXTERNOS",         # expediente, no este calculo
+)

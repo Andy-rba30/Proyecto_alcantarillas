@@ -9,7 +9,8 @@ que declara su Protocol `Verificador`.
     V1  Borde libre               y/D <= 0.75                    [N] 4.1.1.3.7 b)
     V2  Velocidad minima          V >= 0.25 m/s                   [N] 4.1.1.3.6
     V3  Velocidad maxima          concreto: rango Tabla N 10 [N]
-                                  TMC / HDPE: criterio pendiente   [C]
+                                  TMC / HDPE: 'v_max_tmc' / 'v_max_hdpe',
+                                  CERRADOS con valor 4.6 m/s       [C]
     V4  Carga a la entrada HW     HW <= cota subrasante - resguardo(CBR)  [N->]
     V5  Remanso aguas arriba      sin metodo declarado -> pendiente       [A]
     V6  Material solido de arrastre  seccion unica (cumple por construccion)
@@ -20,6 +21,48 @@ que declara su Protocol `Verificador`.
     V8  Evento extremo (FEN)      sin TR mayor ni umbral -> pendiente      [A]
     V9  Disponibilidad de diametro  D <= tope de M2                        [C]
 
+Por que son NUEVE funciones y la tabla de Fase 5 tiene ONCE filas
+-----------------------------------------------------------------
+La tabla de Fase 5 de la hoja de ruta lista once verificaciones -- V1, V2,
+**V2b**, V3, V4, **V4b**, V5, V6, V7, V8, V9 -- y este modulo implementa
+nueve. Las dos que faltan son V2b y V4b, y no faltan por lo mismo:
+
+**V2b - sedimentacion / colmatacion. Diferida al expediente, con constancia.**
+Lo que V2b exige no es un umbral que este software pueda evaluar, sino ACCESO
+DE MANTENIMIENTO EN LOS PLANOS -- el entregable 7 de Sec. 11, que este script
+no produce (no dibuja planos). La mitad [N] de esa fila -- la velocidad
+minima que evita la sedimentacion -- SI esta implementada, y es V2 (0.25 m/s,
+num. 4.1.1.3.6, cuyo motivo declarado en la norma es justamente la
+sedimentacion). Queda una obligacion viva y de expediente que no desaparece:
+prever el acceso de mantenimiento para limpieza en los planos de cada punto.
+`verificacion_diferida_v2b()` la declara, M11 la imprime pegada a la tabla de
+verificaciones de cada punto -- que es donde el revisor cuenta las filas -- y
+el JSON la lleva en 'verificaciones_no_evaluadas'.
+
+**V4b - relacion HW/D. No implementada, y su tratamiento esta ABIERTO.** El
+criterio existe ('HW_D_max', 1.5) y ningun modulo lo consume. NO se cablea
+aqui, y no por descuido: de donde sale ese 1.5 y que etiqueta le corresponde
+son objeto de una revision abierta del expediente, y cablear el chequeo antes
+de cerrarla verificaria los puntos contra un umbral cuya procedencia el
+proyecto todavia no puede defender. Mientras siga asi, esta fila no se evalua
+y este parrafo es su constancia. Cuando esa revision cierre, V4b entra como
+funcion propia y este texto se sustituye por ella.
+
+AVISO para quien lea esto y quiera arreglarlo por su cuenta: hay dos
+docstrings que hoy afirman lo CONTRARIO -- que M5 si ejecuta V4b --, en
+`modulos.M4_control` y en `modelos.ControlEntrada`. Estan detectados y se
+corrigen en el mismo paquete que el cableado, no antes: primero se cierra de
+donde sale el umbral, despues se cablea y se corrigen las tres cosas juntas.
+Corregir solo los docstrings dejaria el paquete a medias, que es exactamente
+como llego este modulo a tener ocho descripciones desfasadas.
+
+Se dice con los dos numeros -- once filas, nueve funciones -- porque la
+diferencia importa: contarla mal (decir "una fila mas") tapa justamente la
+que sigue abierta.
+Es la misma via documental que Fase 8 ya usa para el item 5 (rigidez de
+anillo, pandeo y costura): se declara diferido con su motivo, no se calcula
+un numero que nadie pidio.
+
 Lo que NO se rellena en silencio
 ---------------------------------
 V5 y V8 enuncian un REQUISITO en la hoja de ruta pero no entregan la formula,
@@ -29,6 +72,20 @@ prohibe como "el peor error posible en este proyecto": cada uno se detiene
 con `CriterioPendienteError` desde un criterio nuevo en
 `criterios_adoptados.py` ('remanso_derecho_via', 'TR_evento_extremo'), con su
 justificacion y lo que falta para resolverlo.
+
+TW -- Sec. 1.3 ("TW se calcula, no se mide"), diferido y declarado
+------------------------------------------------------------------
+El TW que consume la Fase 4 entra por el criterio 'TW_receptor' (Tablero
+3.1), NO por el procedimiento de tres pasos de Sec. 1.3 (Q del receptor de
+ANA/Junta -> Manning en la seccion del receptor -> cota de agua). Ese
+procedimiento no esta implementado en ningun modulo, y la consecuencia hay
+que decirla porque no se adivina: **un CSV que traiga 'Q_receptor_m3s' y
+'cota_TW' llenos sigue exigiendo el TW declarado** (`--tw` en la CLI o el
+criterio), porque ningun modulo lee esas dos columnas -- viajan a la memoria
+como datos del expediente y nada mas. Lo que falta no es una conversion sino
+el paso 2 entero: la seccion transversal del receptor, que no es columna de
+Sec. 1.2. Mientras tanto el bloqueo es ruidoso (`CriterioPendienteError`
+sobre 'TW_receptor'), nunca un relleno silencioso.
 
 V7 SI tiene formula y metodo -- Fase 8, item 3 de la hoja de ruta, y
 `modulos.M8_estructural` la implementa completa ("tuberia vacia, NF en su cota
@@ -53,39 +110,54 @@ individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI son
 utilizables una por una hoy mismo; es el AGREGADO el que hereda el bloqueo de
 las pendientes.
 
-V4 -- el supuesto de la cota de entrada (declarar en la memoria)
--------------------------------------------------------------------
+V4 -- la cota de entrada es un CRITERIO DECLARADO, no un supuesto del codigo
+----------------------------------------------------------------------------
 `modelos.ResultadoHidraulico` documenta que HW es una carga en metros SOBRE
 EL FONDO DE LA ENTRADA, y que la conversion a cota (msnm) exige la cota de esa
 entrada. `PuntoCritico` no trae una columna de cota de fondo de entrada (a
 diferencia de `cota_fondo_receptor`, que si la trae para la salida).
 
-V4 no puede existir sin esa cota, asi que este modulo adopta
-`punto.cota_terreno`: es el UNICO campo de Sec. 1.1 que describe la elevacion
-natural del cruce (el nivel del cauce antes de cualquier obra), y por eso es
-la lectura mas defendible disponible sin inventar una columna que el CSV no
-tiene. Es una INTERPRETACION, no un criterio adoptado con fuente propia --
-declarala en la memoria como tal, y reemplazala el dia que el expediente
-entregue la cota real de invert de entrada.
+V4 no puede existir sin esa cota. Este modulo NO la elige: la elige el
+proyectista, en el criterio 'origen_cota_fondo_entrada'
+(`criterios_adoptados.py`), y mientras nadie lo declare V4, V7 y el tamizado
+7.A se detienen con `CriterioPendienteError` como cualquier otro vacio. La
+regla admisible implementada hoy es 'cota_terreno' -- adoptar el terreno
+natural del cruce, el unico campo de Sec. 1.1 que describe la elevacion del
+cauce antes de la obra --, y su alcance, su direccion de conservadurismo y lo
+que la sustituye estan escritos en la justificacion del criterio.
 
-La interpretacion vive en `cota_entrada_supuesta()`, publica, porque M7
-(tamizado de 7.A) convierte el MISMO HW a cota para fijar la rasante minima:
-las dos tienen que leer la misma referencia o el acoplamiento circular que
-7.A dice cortar sigue abierto. Lo mismo vale para `resguardo_por_cbr()`, que
-es la segunda condicion del tamizado.
+QUE CAMBIO Y POR QUE: hasta la correccion de SIS-A-01/SIS-A-04 este modulo
+adoptaba `punto.cota_terreno` por su cuenta, con la eleccion explicada solo
+aqui -- sin entrada en `criterios_adoptados.py`, sin fila en el Anexo A y sin
+que la memoria marcara el numero como adoptado. Un docstring no es una
+declaracion: no lo lee el revisor de la memoria, no entra en
+`criterios_usados()` y no se puede cambiar sin tocar el codigo. La eleccion
+gobierna V4, V7 y la rasante de 7.A/M7-M8, o sea el resultado de la obra, y
+por eso vive donde vive el resto de lo que el proyectista decide.
+
+La lectura vive en `cota_entrada_supuesta()`, publica, porque M7 (tamizado de
+7.A) convierte el MISMO HW a cota para fijar la rasante minima: las dos
+tienen que leer la misma referencia o el acoplamiento circular que 7.A dice
+cortar sigue abierto. Lo mismo vale para `resguardo_por_cbr()`, que es la
+segunda condicion del tamizado.
 
 Excepciones
 -----------
-    CriterioPendienteError   V3 en TMC/HDPE ('v_max_tmc' / 'v_max_hdpe');
-                             V5 ('remanso_derecho_via'); V7
+    CriterioPendienteError   V4, V7 y todo consumidor de
+                             `cota_entrada_supuesta`
+                             ('origen_cota_fondo_entrada'); V5
+                             ('remanso_derecho_via'); V7
                              ('peso_especifico_relleno_kn_m3' o
                              'factores_carga_aashto'); V8
-                             ('TR_evento_extremo').
+                             ('TR_evento_extremo'). V3 en TMC/HDPE ya NO:
+                             'v_max_tmc' y 'v_max_hdpe' tienen valor.
     DatoInvalidoError        el 'material' de V3 no es de TipoMaterial (no
                              deberia llegar aqui: M2 ya lo valido antes); en
                              V7, la clave del conducto queda a nivel de la
                              subrasante o por encima (no hay relleno que
-                             pesar).
+                             pesar); la regla declarada en
+                             'origen_cota_fondo_entrada' no es una de las
+                             implementadas.
 
 Uso
 ---
@@ -148,9 +220,60 @@ NUMERAL_V9 = "Sec. 3.2 (V9, nuevo en v7)"
 CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
+# La regla con la que se obtiene la cota de fondo de entrada (V4, V7 y 7.A).
+CRITERIO_ORIGEN_COTA_ENTRADA = "origen_cota_fondo_entrada"
+# Reglas IMPLEMENTADAS: clave = valor que el proyectista declara en el
+# criterio, valor = campo de `PuntoCritico` del que sale la cota. No hay
+# aritmetica ninguna aqui -- cada regla es la lectura de una columna que el
+# CSV ya trae -- y por eso la tabla no contiene ningun valor de proyecto:
+# contiene el nombre de la columna que la declaracion elige.
+ORIGENES_COTA_ENTRADA = {"cota_terreno": "cota_terreno"}
 # Techo OPCIONAL del concreto. Se lee con `valor_si_declarado`, no con
 # `valor`: sin declarar no bloquea nada y V3 usa el maximo [N] de la tabla.
 CRITERIO_V_MAX_CONCRETO = "v_max_concreto_eleccion"
+
+
+# ---------------------------------------------------------------------------
+# Las DOS filas de Fase 5 que este modulo no evalua: V2b y V4b
+# ---------------------------------------------------------------------------
+
+def verificaciones_no_evaluadas() -> Tuple[str, ...]:
+    """
+    Las dos filas de la tabla de Fase 5 que este modulo NO implementa como
+    verificacion -- V2b y V4b -- y por que cada una.
+
+    Misma forma y mismo proposito que
+    `M8_estructural.verificacion_diferida_estructural`: lo que queda fuera del
+    alcance del script no se calcula ni se aproxima, se declara con su
+    fundamento para que la memoria lo imprima. Un requisito que desaparece sin
+    dejar rastro es lo que este proyecto persigue; que la tabla tenga ONCE
+    filas y el modulo NUEVE funciones tiene que verse en la memoria, no
+    deducirse contando.
+
+    V2b: la mitad [N] -- la velocidad minima que evita la sedimentacion -- SI
+    se verifica, y es V2 (0.25 m/s, num. 4.1.1.3.6, cuyo motivo declarado en
+    el propio numeral es la sedimentacion). Lo que queda fuera es la mitad
+    [A], el acceso de mantenimiento para limpieza, contenido de los PLANOS
+    (Sec. 11, entregable 7) que este software no produce.
+
+    V4b: no se evalua porque su umbral esta en revision abierta (ver el
+    encabezado del modulo). El nombre de esta funcion era
+    `verificacion_diferida_v2b` y se renombro al incorporarla: una funcion que
+    devuelve dos constancias no puede llamarse por una sola de ellas.
+    """
+    return (
+        "V2b (sedimentacion / colmatacion): la condicion de velocidad la "
+        f"verifica V2 ({NUMERAL_V2}). El acceso de mantenimiento para "
+        "limpieza queda DIFERIDO al expediente: es contenido de planos "
+        "(Sec. 11, entregable 7), que este software no dibuja. Ningun "
+        "punto se da por conforme en V2b por el hecho de cumplir V2",
+        "V4b (relacion HW/D): NO evaluada. El criterio 'HW_D_max' esta "
+        "declarado y ningun modulo lo consume; el origen del umbral y su "
+        "etiqueta estan en revision abierta, y verificar contra un umbral "
+        "cuya procedencia no se puede defender seria peor que no "
+        "verificarlo. El control real del embalse aguas arriba es V5, que "
+        "esta declarada y bloquea",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -304,9 +427,13 @@ def v3_velocidad_maxima(*, material: Material,
 
 def cota_entrada_supuesta(punto: PuntoCritico) -> float:
     """
-    Cota del fondo de la entrada, msnm. Es la INTERPRETACION declarada en el
-    docstring del modulo ("V4 -- el supuesto de la cota de entrada"): se adopta
-    `punto.cota_terreno` mientras M7 no fije la cota real de invert.
+    Cota del fondo de la entrada, msnm, segun la regla que el proyectista
+    declaro en el criterio 'origen_cota_fondo_entrada' (Sec. 7.B; ver "V4 --
+    la cota de entrada es un CRITERIO DECLARADO" en el docstring del modulo).
+
+    Sin criterio declarado se detiene con `CriterioPendienteError`: la cota de
+    fondo de entrada no es columna del CSV ni la fija ninguna norma, de modo
+    que elegirla aqui seria rellenar un vacio en silencio.
 
     Es publica y con nombre propio porque V4 no es su unico consumidor: el
     tamizado de 7.A (M7) convierte el mismo HW a cota para fijar la rasante
@@ -315,7 +442,16 @@ def cota_entrada_supuesta(punto: PuntoCritico) -> float:
     que 7.A dice cortar seguiria abierto: la rasante se fijaria contra una
     referencia y se verificaria contra otra.
     """
-    return punto.cota_terreno
+    origen = ca.valor(CRITERIO_ORIGEN_COTA_ENTRADA)
+    if origen not in ORIGENES_COTA_ENTRADA:
+        raise DatoInvalidoError(
+            CRITERIO_ORIGEN_COTA_ENTRADA, valor=origen,
+            motivo="la regla declarada tiene que ser una de las "
+                   f"implementadas: {sorted(ORIGENES_COTA_ENTRADA)}. Una cota "
+                   "de fondo de entrada MEDIDA no se declara aqui: entra como "
+                   "columna del CSV y sustituye al criterio entero",
+        )
+    return getattr(punto, ORIGENES_COTA_ENTRADA[origen])
 
 
 def resguardo_por_cbr(cbr: float) -> float:
@@ -475,11 +611,11 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
 
     La altura de relleno sobre la clave es la REAL del punto -- cota de
     subrasante menos la cota de la clave -- no el minimo normativo de Sec.
-    7.A ('h_relleno_min_concreto_tmc', que sigue sin valor para concreto y
-    TMC): V7 pesa el relleno que de verdad hay encima, no un piso admisible.
-    Usa la misma cota de entrada supuesta que V4 y M7 (`cota_entrada_supuesta`),
-    para no evaluar la flotacion contra una referencia distinta de la que fija
-    la rasante.
+    7.A ('h_relleno_min_concreto_tmc'): V7 pesa el relleno que de verdad hay
+    encima, no un piso admisible. Usa la misma cota de entrada que V4 y M7
+    (`cota_entrada_supuesta`, que aplica la regla declarada en
+    'origen_cota_fondo_entrada'), para no evaluar la flotacion contra una
+    referencia distinta de la que fija la rasante.
 
     DC = 0: no suma el peso propio del conducto (ver "Por que el peso propio
     del conducto no entra en V7" en el docstring de M8_estructural). Omitirlo

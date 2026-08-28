@@ -62,6 +62,26 @@ sustituye por un defecto ni convierte el vacio en un incumplimiento: un
 criterio sin valor es un calculo que todavia no se puede completar, no una
 verificacion que falla.
 
+Como declarar uno sin tocar el archivo: `--declarar CLAVE=VALOR`, repetible.
+Es la MISMA via que la pestana "Criterios" de la GUI --
+`criterios_adoptados.establecer_valor_dinamico`, que somete el valor a la
+guardia del archivo -- y vale solo para esa corrida:
+`criterios_adoptados.py` no se modifica. La memoria imprime esos valores con
+su procedencia ("declarado para esta corrida, no en archivo") y los lista
+aparte, para que nadie los lea como transcritos de una norma.
+
+Misma via NO es misma politica, y conviene saberlo: la GUI solo ofrece el
+boton para los criterios VACIOS (y para retirar lo que ella misma declaro),
+mientras que `--declarar` acepta cualquier clave declarada, incluidas las que
+ya traen valor en el archivo. Es deliberado -- una corrida de sensibilidad
+consiste justamente en mover un valor que ya existe -- y no abre un agujero:
+el valor pasa por la misma guardia, la memoria lo marca como declarado para
+la corrida y dice ademas QUE valor trae el archivo, de modo que sustituir un
+valor transcrito queda a la vista en el entregable. Lo que no se puede por
+ninguna de las dos vias es declarar `None` -- ni la cadena vacia
+(`--declarar CLAVE=` se rechaza): retirar una declaracion es otra operacion, y
+aqui consiste en no pasar la bandera.
+
 Solo se atrapa `ErrorProyecto` (criterio pendiente, dato faltante, dato
 invalido, diseno no factible): es un problema del expediente y va al informe.
 Un fallo de programa (ImportError, AssertionError) se propaga con su traza,
@@ -83,6 +103,7 @@ Codigos de salida
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import math
 import sys
@@ -1014,6 +1035,18 @@ def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
             "altura_terraplen_m": _num(g.altura_terraplen),
             "S_conducto": _num(g.S_conducto),
             "cota_entrada_msnm": _num(g.cota_entrada),
+            # El consumidor del JSON tiene que poder distinguir una cota
+            # levantada de una adoptada sin leer la memoria: el mismo archivo
+            # ya declara el origen de los datos externos ("origen": "criterio
+            # 'TW_receptor'") y esta cota no lo hacia (SIS-A-04).
+            "cota_entrada_origen": {
+                "adoptada": True,
+                "criterio": M5.CRITERIO_ORIGEN_COTA_ENTRADA,
+                "regla": ca.valor_si_declarado(M5.CRITERIO_ORIGEN_COTA_ENTRADA),
+                "nota": "no es cota medida: sale de la regla declarada en ese "
+                        "criterio mientras el expediente no entregue la cota "
+                        "de invert de entrada por punto",
+            },
             "cota_salida_msnm": _num(g.cota_salida), "caida_m": _num(g.caida),
             "factible": g.factible,
             "delta_rasante_cm": _num(g.delta_rasante_cm),
@@ -1059,6 +1092,12 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "iteraciones": [_paso_json(p) for p in informe.traza],
         "verificaciones": [_verificacion_json(fase, v)
                            for fase, v in informe.verificaciones()],
+        # Las filas V2b y V4b de la tabla de Fase 5 no se evaluan, y la
+        # constancia viaja con el punto igual que la del item 5 de Fase 8:
+        # contar nueve verificaciones donde la hoja de ruta lista ONCE no
+        # puede quedar como un ejercicio de resta del lector
+        # (SIS-A-13 / MAT-O15).
+        "verificaciones_no_evaluadas": list(M5.verificaciones_no_evaluadas()),
         "bloqueos": [_bloqueo_json(b) for b in informe.bloqueos],
     }
     if informe.cama_apoyo is not None:
@@ -1127,11 +1166,24 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
             "sin_valor_declarados": ds.datos_sin_valor(),
             "trazabilidad_incompleta": ds.datos_con_verificacion_pendiente()},
         "criterios": {
-            "usados": [{"clave": k, "etiqueta": ca.criterio(k).etiqueta,
-                        "valor": _num(ca.criterio(k).valor),
+            # Valor EFECTIVO y procedencia: el JSON es el otro reporte de la
+            # corrida y tenia el mismo defecto que la memoria HTML -- leia el
+            # valor del ARCHIVO, de modo que un criterio declarado en
+            # caliente viajaba con "valor": null mientras gobernaba el
+            # calculo (SIS-A-01).
+            "usados": [{"clave": k,
+                        "etiqueta": ca.criterio(k).etiqueta,
+                        "valor": _num(ca.criterio_efectivo(k).valor),
+                        "declarado_en_caliente": ca.declarado_en_caliente(k),
                         "concepto": ca.criterio(k).concepto}
                        for k in ca.criterios_usados()],
             "sin_valor_declarados": ca.criterios_sin_valor(),
+            "declarados_en_caliente": ca.criterios_declarados_en_caliente(),
+            # Hermano de `trazabilidad_incompleta` de los datos de sitio: sin
+            # el, un consumidor del JSON veia que datos de sitio quedaban sin
+            # cerrar documentalmente y no veia que criterios (SIS-D-07).
+            "verificacion_pendiente": ca.criterios_con_verificacion_pendiente(),
+            "sin_consumidor": ca.criterios_sin_consumidor(),
             "bloquearon": [{"clave": c.clave, "etiqueta": c.etiqueta,
                             "concepto": c.concepto, "fuente": c.fuente,
                             "reemplazado_por": c.reemplazado_por,
@@ -1240,8 +1292,15 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
             out.append(f"{SANGRIA * 4}aviso: {advertencia}")
     if informe.geometria is not None:
         g = informe.geometria
+        # La cota de entrada NO es un dato del CSV: sale de la regla que el
+        # proyectista declaro en 'origen_cota_fondo_entrada'. Va marcada en
+        # las TRES salidas (texto, JSON y HTML) y no solo en la memoria: la
+        # GUI pinta el detalle del punto con estas mismas lineas, y un numero
+        # en msnm sin marca se lee como cota levantada en campo (SIS-A-04).
         out.append(f"{SANGRIA}Fase 7  L = {_fmt(g.longitud)} m, cota entrada "
-                   f"{_fmt(g.cota_entrada)} / salida {_fmt(g.cota_salida)} msnm")
+                   f"{_fmt(g.cota_entrada)} (ADOPTADA, criterio "
+                   f"'{M5.CRITERIO_ORIGEN_COTA_ENTRADA}': no es cota medida) "
+                   f"/ salida {_fmt(g.cota_salida)} msnm")
         out.append(f"{SANGRIA * 4}{g.tamizado.mensaje}")
     if informe.cama_apoyo is not None:
         out.append(f"{SANGRIA}Fase 8  cama: {informe.cama_apoyo.cama_apoyo} "
@@ -1410,6 +1469,12 @@ def _parser() -> argparse.ArgumentParser:
                         "como <csv>.informe.json)")
     p.add_argument("--datos-externos", type=Path, dest="datos_externos",
                    help="JSON con los datos declarados, globales y por punto")
+    p.add_argument("--declarar", action="append", default=[],
+                   metavar="CLAVE=VALOR", dest="declaraciones",
+                   help="declara un criterio de criterios_adoptados.py SOLO "
+                        "para esta corrida (repetible). Es la misma via que "
+                        "la GUI: el archivo no se toca y la memoria imprime "
+                        "el valor marcado como declarado para la corrida")
     p.add_argument("--luz", type=float, help="luz del cruce, m (Sec. 2.1)")
     p.add_argument("--tw", type=float, dest="TW",
                    help="tirante en el receptor sobre el fondo de la salida, m")
@@ -1452,8 +1517,55 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
+def declarar_criterios(declaraciones: Sequence[str]) -> List[str]:
+    """
+    Aplica las declaraciones `CLAVE=VALOR` de `--declarar` a la corrida.
+
+    Pasa por `criterios_adoptados.establecer_valor_dinamico`, el UNICO camino
+    de declaracion en caliente, que a su vez somete el valor a la misma
+    guardia que el archivo (`_verificar_criterio`): un valor fuera del rango
+    de sensibilidad se rechaza aqui y la corrida no empieza.
+
+    El texto se interpreta con `ast.literal_eval` -- 1.5, (0.010, 0.013),
+    'cota_terreno' -- y lo que no sea un literal de Python se toma como
+    cadena, que es lo que declara un criterio categorico. No hay conversion
+    de unidades ni default: lo que el usuario escribe es lo que se declara.
+    """
+    aplicadas = []
+    for declaracion in declaraciones:
+        clave, sep, texto = declaracion.partition("=")
+        if not sep or not clave.strip():
+            raise ValueError(
+                f"--declarar {declaracion!r} no tiene la forma CLAVE=VALOR")
+        clave, texto = clave.strip(), texto.strip()
+        if not texto:
+            # Sin esto, `ast.literal_eval("")` lanza SyntaxError, el texto cae
+            # al respaldo y se declara la CADENA VACIA: un valor que nadie
+            # quiso declarar entrando por la puerta de una errata.
+            raise ValueError(
+                f"--declarar {declaracion!r} no trae valor. Para retirar una "
+                "declaracion no se declara vacio: se omite la bandera")
+        try:
+            valor_nuevo = ast.literal_eval(texto)
+        except (ValueError, SyntaxError):
+            valor_nuevo = texto
+        ca.establecer_valor_dinamico(clave, valor_nuevo)
+        aplicadas.append(clave)
+    return aplicadas
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = _parser().parse_args(argv)
+
+    try:
+        declaradas = declarar_criterios(args.declaraciones)
+    except (ValueError, KeyError) as exc:
+        print(f"No se pudo declarar el criterio: {exc}", file=sys.stderr)
+        return 2
+    for clave in declaradas:
+        print(f"Criterio declarado SOLO para esta corrida: {clave} = "
+              f"{ca.valores_dinamicos()[clave]!r} "
+              "(criterios_adoptados.py no se modifico)")
 
     banderas = {"luz_m": args.luz, "TW_m": args.TW,
                 "longitud_m": args.longitud,

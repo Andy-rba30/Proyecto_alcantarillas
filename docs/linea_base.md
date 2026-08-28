@@ -87,6 +87,12 @@ Confirmado en cada punto de esta reconciliación: el número no cambió durante
 las cinco correcciones de línea base de §4 (todas documentales o de
 `.gitignore`, ninguna toca código de cálculo).
 
+> **Este número es la FOTO de la línea base (S1), no el estado de hoy.** Se
+> deja como está a propósito: es contra él contra el que se comparan las
+> sesiones siguientes. Estado posterior, para que nadie lea el 725 como
+> vigente: **S2 (cluster C08) lo dejó en 743 `passed`, 1 `skipped` → 744
+> `collected`** — 18 tests nuevos, ninguno retirado.
+
 ---
 
 ## 3. Reconciliación de anclajes archivo:línea

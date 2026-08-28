@@ -476,10 +476,15 @@ def _exigir_criterios_declarados(
     verifico.
 
     Solo viaja la primera clave. `CriterioPendienteError` lleva UNA `clave`, de
-    modo que cuando cada material se detiene en un vacio distinto (hoy en el
-    CSV de ejemplo: 'remanso_derecho_via' el concreto, 'v_max_tmc' el TMC y
-    'v_max_hdpe' el HDPE) las demas no llegan a la GUI ni al bloque de
-    pendientes de M11 como filas propias. NO se pierden: quedan en la traza de
+    modo que cuando cada material se detiene en un vacio distinto las demas no
+    llegan a la GUI ni al bloque de
+    pendientes de M11 como filas propias. (El ejemplo que traia este parrafo
+    -- "'v_max_tmc' el TMC y 'v_max_hdpe' el HDPE" -- describia un estado ya
+    superado: esos dos criterios tienen valor desde hace tiempo y en el CSV de
+    ejemplo los tres materiales se detienen hoy en el mismo sitio. Se retira
+    el ejemplo en vez de actualizarlo: cual es el primer vacio de cada
+    material depende del expediente, y un ejemplo concreto vuelve a envejecer
+    en silencio.) NO se pierden: quedan en la traza de
     `PasoDiseno` que recibe `registrar`, y de ahi en las 'iteraciones' del
     informe. Publicarlas las tres como filas estructuradas exige un campo nuevo
     en modelos.py -- una excepcion que lleve varias claves -- y queda pendiente

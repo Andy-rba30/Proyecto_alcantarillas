@@ -65,7 +65,17 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional, Tuple, Dict, List, Set
 
+from constantes_normativas import MANNING
 from modelos import CriterioPendienteError
+
+# `MANNING` es la unica importacion de constantes normativas que hace este
+# archivo, y entra por una razon concreta: 'n_manning_hdpe' es un [N->] --
+# una fila de esa tabla aplicada por analogia a un material que la tabla no
+# lista -- y su valor tiene que SER esa fila, no una copia que puede quedar
+# desincronizada. Un [N->] que duplica el literal de su origen no es una
+# analogia declarada: son dos numeros iguales por casualidad hasta que uno
+# cambie. No abre la puerta a mas: aqui no se transcribe ninguna constante
+# normativa, se referencia la que ya esta transcrita en su archivo.
 
 
 # ---------------------------------------------------------------------------
@@ -86,6 +96,18 @@ class Criterio:
     provisional: bool = False                  # valor de PRUEBA, no verificado
     opcional: bool = False                     # valor=None NO bloquea: hay defecto normativo
     vacio_verificado: str = ""                 # ancla al vacio registrado que este valor cubre
+    sin_consumidor: str = ""                   # por que NINGUN modulo lo invoca
+
+    # `sin_consumidor` es la razon escrita de que ninguna etapa de produccion
+    # llame a este criterio. Existe porque un criterio sin consumidor tiene
+    # dos lecturas opuestas -- se olvido cablearlo, o su consumidor esta
+    # declarado fuera de alcance -- y desde fuera del archivo no se
+    # distinguen: `criterios_usados()` devuelve lo mismo en los dos casos.
+    #
+    # Sin el campo, un criterio CON valor y sin invocacion no cae en ninguno
+    # de los tres bloques de M11 (no esta usado, no esta vacio, no es
+    # opcional) y desaparece de la memoria sin dejar rastro. Con el, M11 lo
+    # imprime en su propio bloque con la razon delante.
 
     # `vacio_verificado` distingue dos cosas que se parecen y no son iguales:
     # un valor que cubre un hueco que NADIE busco, y uno que cubre un hueco
@@ -330,6 +352,84 @@ def criterios_usados() -> List[str]:
     return sorted(_USADOS)
 
 
+def declarado_en_caliente(clave: str) -> bool:
+    """
+    True si el valor que GOBIERNA el calculo entro por
+    `establecer_valor_dinamico` y no esta en el archivo.
+
+    Es la mitad que faltaba de `criterio_efectivo`: el valor efectivo dice
+    QUE numero se uso y esta dice DE DONDE vino. Separadas porque la memoria
+    tiene que imprimir las dos cosas -- un override no es un valor
+    transcrito, y una memoria que no distinga las dos procedencias declara
+    como cerrado lo que solo vale para esa corrida.
+    """
+    if clave not in CRITERIOS:
+        raise KeyError(
+            f"'{clave}' no esta declarado en criterios_adoptados.py."
+        )
+    return clave in _OVERRIDES
+
+
+def criterios_declarados_en_caliente() -> List[str]:
+    """
+    Claves con valor declarado SOLO para esta corrida, en orden alfabetico.
+
+    No son vacios (`criterios_sin_valor` las excluye, y con razon: el calculo
+    tiene valor con que correr) y tampoco son valores del archivo. Sin esta
+    lista se caian entre las dos sillas: la memoria las imprimia como
+    pendientes y el bloque de pendientes no las mostraba.
+    """
+    return sorted(_OVERRIDES)
+
+
+def criterio_efectivo(clave: str) -> Criterio:
+    """
+    El Criterio TAL COMO GOBIERNA el calculo: con el valor declarado en
+    caliente si lo hay, y con el del archivo si no. No registra uso.
+
+    `criterio()` devuelve lo que dice el ARCHIVO y por eso no sirve para
+    declarar en la memoria lo que el calculo hizo: un criterio declarado en
+    caliente se imprimia como "sin valor declarado" mientras su override
+    gobernaba los numeros de esa misma pagina. Todo reporte lee de aqui;
+    `criterio()` queda para quien necesite exactamente el texto del archivo
+    (por ejemplo, para contrastarlo con el override).
+    """
+    c = criterio(clave)
+    if clave in _OVERRIDES:
+        return replace(c, valor=_OVERRIDES[clave])
+    return c
+
+
+def criterios_con_verificacion_pendiente() -> List[str]:
+    """
+    Los que tienen valor pero una verificacion documental abierta: hermano de
+    `datos_sitio.datos_con_verificacion_pendiente()`.
+
+    Las dos dataclases comparten el campo `verificacion_pendiente` y solo una
+    exponia la consulta, de modo que un consumidor del JSON veia que datos de
+    sitio quedaban sin cerrar documentalmente y no veia que criterios. El
+    valor efectivo cuenta: un criterio declarado en caliente sobre un
+    criterio con verificacion abierta sigue teniendola abierta.
+    """
+    return sorted(
+        k for k in CRITERIOS
+        if criterio_efectivo(k).valor is not None
+        and CRITERIOS[k].verificacion_pendiente
+    )
+
+
+def criterios_sin_consumidor() -> List[str]:
+    """
+    Los que declaran por que ningun modulo de produccion los invoca.
+
+    La razon se escribe UNA vez, en el campo `sin_consumidor` del propio
+    criterio, y de ahi la leen la memoria y quien audite el archivo. Antes
+    vivia repartida entre la auditoria v9, el manifiesto y los docstrings de
+    los modulos que NO los llaman, que es el peor sitio para buscarla.
+    """
+    return sorted(k for k, c in CRITERIOS.items() if c.sin_consumidor)
+
+
 # ---------------------------------------------------------------------------
 # CRITERIOS ADOPTADOS
 # ---------------------------------------------------------------------------
@@ -381,6 +481,15 @@ CRITERIOS: Dict[str, Criterio] = {
                                "decidir si es unico para el tramo o varia por "
                                "calicata; si varia, no se corrige el valor: se "
                                "convierte en columna del CSV",
+        sin_consumidor="Referencia declarada, no calculo: la clasificacion "
+                       "sismica del sitio se declara aparte, en el criterio "
+                       "'clase_sitio', y la evaluacion de licuefaccion que "
+                       "usaria este perfil esta declarada fuera del alcance "
+                       "del script (Sec. 0.5). Se conserva declarado, y no "
+                       "borrado, para que el ensayo que lo cerraria siga "
+                       "pedido; que papel juega respecto de 'clase_sitio' "
+                       "esta en su trazabilidad y es materia de la revision "
+                       "de la cadena sismica, no de este campo",
     ),
 
     "clase_sitio": Criterio(
@@ -454,7 +563,25 @@ CRITERIOS: Dict[str, Criterio] = {
                                "del proyectista contra una exigencia expresa "
                                "de AASHTO, y el expediente debe programar el "
                                "estudio de respuesta de sitio especifico. No "
-                               "se cita AASHTO como respaldo de la adopcion",
+                               "se cita AASHTO como respaldo de la adopcion. "
+                               "POR QUE NO DECLARA SENSIBILIDAD, siendo el "
+                               "unico [A] con valor que no la declara: un "
+                               "rango de sensibilidad dice entre que dos "
+                               "valores pudo moverse la ELECCION, y aqui la "
+                               "eleccion no esta cerrada por arriba porque "
+                               "la PREMISA -- que el sitio es Clase F por "
+                               "licuefaccion -- esta bajo REVISION ABIERTA "
+                               "del expediente, no resuelta ni en un sentido "
+                               "ni en el otro. Hasta que esa revision "
+                               "termine, declarar un rango de clases "
+                               "alternativas seria fijar la respuesta antes "
+                               "de resolver la pregunta, y la memoria "
+                               "imprimiria como acotada una adopcion que "
+                               "todavia no lo esta. El rango se declara "
+                               "cuando la premisa se cierre, y no antes; "
+                               "hasta entonces lo que la memoria dice es lo "
+                               "unico defendible hoy: que no hay norma que "
+                               "respalde la adopcion",
     ),
 
     "F_pga": Criterio(
@@ -617,7 +744,22 @@ CRITERIOS: Dict[str, Criterio] = {
                "SENAMHI con su longitud de registro, estacion y anios faltantes",
         reemplazado_por="Analisis de homogeneidad sobre la serie SENAMHI completa",
         verificacion_pendiente="Tablero 3.2: verificar si la serie contiene 1983, "
-                               "1998 y 2017. Va ANTES de la Fase 4",
+                               "1998 y 2017. Va ANTES de la Fase 4. "
+                               "COMO BLOQUEA, que no es como los demas y "
+                               "conviene saberlo (SIS-B-11): ningun modulo "
+                               "llama a `valor('homogeneidad_serie_fen')`. El "
+                               "bloqueo es INDIRECTO -- el hidrologo no "
+                               "entrega Q hasta cerrar la homogeneidad, la "
+                               "columna 'Q_m3s' llega vacia y salta "
+                               "DatoFaltanteError -- y esta escrito en el "
+                               "docstring de `MD.disenar_lote`. La "
+                               "consecuencia: si el CSV trae 'Q_m3s' LLENO, "
+                               "nada obliga a declarar como se trato la "
+                               "poblacion mixta, y este criterio saldra en el "
+                               "bloque de pendientes de la memoria sin haber "
+                               "detenido nada. Quien reciba un CSV con Q ya "
+                               "calculado tiene que exigir, aparte, el "
+                               "analisis de homogeneidad que lo respalda",
     ),
 
     "umbral_area_quebrada_importante_ha": Criterio(
@@ -730,17 +872,34 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "n_manning_hdpe": Criterio(
-        valor=(0.010, 0.013),       # RANGO (n_min, n_max), no valor puntual
-        etiqueta="A",
+        # El valor NO se escribe: se LEE de la tabla normativa de la que sale
+        # por analogia. Escrito a mano era el mismo par (0.010, 0.013) copiado
+        # del concreto, sin nada que ligara las dos copias: si alguien
+        # corrigiera la Tabla N 09, esta seguiria con el valor viejo y la
+        # "analogia" habria dejado de serlo en silencio (SIS-D-11).
+        valor=MANNING["concreto_recto"],   # RANGO (n_min, n_max), no puntual
+        etiqueta="N->",             # analogia normativa declarada, no adopcion
         concepto="Coeficiente de rugosidad de Manning para HDPE de interior liso",
         justificacion="La Tabla N 09 del Manual MTC no lista HDPE. Se adopta el "
                       "RANGO COMPLETO del concreto por analogia. Un valor puntual "
                       "(p.ej. 0.012) romperia la regla de doble n: n_max para "
                       "capacidad y n_min para velocidad y socavacion. Con un solo "
-                      "numero, una de las dos verificaciones deja de ser conservadora",
-        fuente="Analogia a Tabla N 09 (concreto, tubo recto)",
+                      "numero, una de las dos verificaciones deja de ser conservadora. "
+                      "ETIQUETA: es [N->] y no [A]. La regla de coherencia de la "
+                      "hoja de ruta (num. 40) lo dice literal -- un criterio "
+                      "justificado invocando una disposicion normativa no puede "
+                      "etiquetarse [A] -- y aqui la justificacion ES una fila de "
+                      "una tabla normativa aplicada por analogia a un material que "
+                      "esa tabla no lista, que es la definicion de [N->]. Los dos "
+                      "casos gemelos del archivo ('resguardo_HW_subrasante' y "
+                      "'h_relleno_min_concreto_tmc') ya llevaban [N->] por lo "
+                      "mismo. La hoja de ruta se contradice a si misma al escribir "
+                      "[A] para este criterio en su Anexo A: manda su propia regla "
+                      "de coherencia, no la fila del indice",
+        fuente="Analogia a Tabla N 09 (concreto, tubo recto), num. 4.1.1.3.5, "
+               "transcrita en constantes_normativas.MANNING",
         reemplazado_por="Ficha tecnica del producto seleccionado",
-        sensibilidad=(0.010, 0.013),
+        sensibilidad=MANNING["concreto_recto"],
         verificacion_pendiente="Confirmar que el HDPE especificado es de INTERIOR "
                                "LISO. El de interior corrugado tiene n del orden de "
                                "0.018-0.025 y la analogia seria gruesamente insegura",
@@ -756,6 +915,21 @@ CRITERIOS: Dict[str, Criterio] = {
                "Tabla 8-4 'Pipe Abrasion Levels', pp. 8-27/8-28. Techo duro: "
                "por encima de 15 ft/s el termoplastico no puede reforzarse "
                "estructuralmente y su uso queda prohibido por la propia tabla.",
+        reemplazado_por="Ficha tecnica del producto seleccionado o "
+                        "especificacion del fabricante con su propio techo de "
+                        "velocidad; y, para el expediente, la transcripcion "
+                        "de la Tabla 8-4 al repositorio de normas",
+        # POR QUE NO LLEVA `vacio_verificado`, siendo una afirmacion negativa
+        # sobre la Tabla N 10 (SIS-D-12): el campo es para el valor que cubre
+        # un vacio AGOTADO -- una busqueda cerrada fuente por fuente que
+        # termino sin encontrar nada, como la de 'h_relleno_min_concreto_tmc'
+        # en Sec. 14.a. Aqui no hubo vacio que agotar: la busqueda ENCONTRO
+        # una fuente tecnica reconocida y el valor sale de ella. Es una cita
+        # cerrada, que el manifiesto registra en su Sec. 10-bis, y por eso
+        # este criterio es [C] con fuente y no una adopcion sobre un hueco.
+        # Marcarlo como vacio verificado lo imprimiria en el bloque de
+        # acotaciones de la memoria, que dice "el proyectista adopto esto
+        # donde la norma no dice nada": seria falso.
     ),
 
     "v_max_tmc": Criterio(
@@ -769,6 +943,15 @@ CRITERIOS: Dict[str, Criterio] = {
                "exige mayor calibre o revestimiento, no prohibe el material. "
                "Se adopta 4.6 m/s como limite de diseno conservador porque el "
                "catalogo de M2 no modela proteccion adicional por calibre.",
+        reemplazado_por="Ficha tecnica del producto seleccionado, o el "
+                        "modelado del calibre y el revestimiento en el "
+                        "catalogo de M2 (que es lo que la fuente pide en vez "
+                        "de un techo unico); y, para el expediente, la "
+                        "transcripcion de la Tabla 8-4 al repositorio de "
+                        "normas",
+        # Mismo motivo que en 'v_max_hdpe' para no llevar `vacio_verificado`:
+        # cita cerrada sobre fuente tecnica (Sec. 10-bis del manifiesto), no
+        # dossier de vacio agotado (SIS-D-12).
     ),
 
     "v_max_concreto_eleccion": Criterio(
@@ -778,9 +961,19 @@ CRITERIOS: Dict[str, Criterio] = {
                  "conservador que el maximo normativo de 6.0 m/s",
         justificacion="OPCIONAL, no un vacio: sin valor el calculo NO se "
                       "detiene, V3 aplica el techo normativo de 6.0 m/s y la "
-                      "memoria no declara este criterio. Es la unica entrada "
-                      "de este archivo que se lee con "
-                      "`valor_si_declarado()` en vez de `valor()`. "
+                      "memoria no declara este criterio. Es el unico "
+                      "`opcional=True` del archivo, y por eso el unico que se "
+                      "lee con `valor_si_declarado()` PORQUE ES OPCIONAL. "
+                      "CORRIGE la redaccion anterior, que decia 'la unica "
+                      "entrada que se lee con valor_si_declarado()': no lo "
+                      "es. M2 lee asi otras cuatro claves NO opcionales "
+                      "('n_manning_hdpe', 'h_relleno_min_concreto_tmc', "
+                      "'v_max_tmc', 'v_max_hdpe') para poder armar el "
+                      "catalogo con campos vacios y que el bloqueo salte en "
+                      "el punto de uso; la diferencia es que aquellas SI "
+                      "detienen el calculo mas tarde y esta no detiene nada "
+                      "nunca. Confundir las dos cosas es lo que la palabra "
+                      "'unica' hacia. "
                       "La Tabla N 10 se titula 'Velocidades maximas "
                       "admisibles en conductos revestidos' (num. 4.1.1.3.6, "
                       "pag. 76): sus dos numeros son MAXIMOS segun la calidad "
@@ -954,6 +1147,62 @@ CRITERIOS: Dict[str, Criterio] = {
     # Fase 9, compartido con M9) -- no la formula ni el metodo, que ya estan
     # escritos.
 
+    "origen_cota_fondo_entrada": Criterio(
+        valor=None,                 # VACIO: bloquea V4, V7 y el tamizado 7.A
+        etiqueta="A",
+        concepto="Regla con la que se obtiene la cota del FONDO DE LA ENTRADA "
+                 "(invert) de cada punto, msnm, mientras el expediente no la "
+                 "entregue medida",
+        justificacion="HW es una carga en metros SOBRE EL FONDO DE LA ENTRADA "
+                      "(Sec. 4.2/4.3, `modelos.ResultadoHidraulico`), y "
+                      "convertirla a cota -- que es lo que hacen V4, V7 y las "
+                      "dos condiciones del tamizado 7.A -- exige esa cota. El "
+                      "CSV de Sec. 1.2 NO trae columna de cota de fondo de "
+                      "entrada: trae 'cota_terreno' (terreno natural, DEM), "
+                      "'cota_rasante', 'cota_subrasante' y "
+                      "'cota_fondo_receptor' (la del receptor, o sea la "
+                      "SALIDA). La hoja de ruta tampoco fija la regla: Sec. "
+                      "7.B pide las cotas de entrada y salida 'amarradas al "
+                      "perfil del cauce y a la cota de fondo del receptor', "
+                      "sin decir cual de las dos lecturas gobierna. "
+                      "QUE ESTABA MAL: M5 adoptaba `punto.cota_terreno` "
+                      "dentro del codigo, sin criterio, sin Anexo A y sin que "
+                      "la memoria marcara el numero como supuesto (SIS-A-04). "
+                      "Era la eleccion del proyectista escrita como si fuera "
+                      "un dato, y es exactamente lo que este archivo existe "
+                      "para impedir. "
+                      "QUE SE HACE AHORA: la eleccion se declara aqui y no la "
+                      "toma el programa. Valor admisible implementado hoy: "
+                      "'cota_terreno' -- adoptar el terreno natural del cruce "
+                      "como fondo de la entrada, que es la lectura mas "
+                      "defendible a nivel de PERFIL con las columnas que el "
+                      "CSV si trae y la que hace coincidir V4 con la segunda "
+                      "condicion de 7.A. NO es conservadora por "
+                      "construccion: si el invert real queda por debajo del "
+                      "terreno (entrada excavada), la cota de HW calculada "
+                      "es MAYOR que la real y V4 se vuelve exigente de mas; "
+                      "si queda por encima (entrada elevada sobre relleno), "
+                      "V4 se vuelve permisiva. Por eso es adopcion "
+                      "declarada [A] y no analogia normativa",
+        fuente="PENDIENTE - NINGUNA norma fija esta regla: no la da el Manual "
+               "de Hidrologia (Sec. 4.2/4.3 define HW sobre el fondo, no como "
+               "obtener el fondo), no la da la hoja de ruta (Sec. 7.B enuncia "
+               "el amarre sin regla de calculo) y no es columna de Sec. 1.2. "
+               "Es una decision del proyectista sobre ESTE expediente",
+        reemplazado_por="Cota de fondo de entrada MEDIDA por punto "
+                        "(nivelacion del perfil longitudinal del cauce en el "
+                        "cruce), como columna propia del CSV. El dia que el "
+                        "expediente la entregue, este criterio deja de "
+                        "aplicarse: un dato medido no se sustituye por una "
+                        "regla adoptada",
+        verificacion_pendiente="Declarar en la memoria, punto por punto, si "
+                               "la entrada proyectada queda excavada o "
+                               "elevada respecto del terreno natural: es la "
+                               "diferencia entre esta adopcion y el invert "
+                               "real, y es la que decide si V4 y 7.A quedaron "
+                               "del lado seguro en ese punto",
+    ),
+
     "remanso_derecho_via": Criterio(
         valor=None,                 # VACIO: bloquea V5 para todo punto
         etiqueta="A",
@@ -1019,6 +1268,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "c=0 en friccionantes",
         fuente="PENDIENTE",
         reemplazado_por="Corte directo o SPT",
+        sin_consumidor="Su consumidor son las verificaciones de estabilidad "
+                       "del cabezal E1-E5 (Sec. 9.3), que esta CLI declara "
+                       "no ensamblar: ver la nota de alcance que la propia "
+                       "corrida imprime. Se declara igual, y vacio, para que "
+                       "el bloque de pendientes lo pida al expediente en vez "
+                       "de que aparezca el dia del ensamblaje",
     ),
 
     "capacidad_portante_adm": Criterio(
@@ -1028,6 +1283,9 @@ CRITERIOS: Dict[str, Criterio] = {
         justificacion="Derivada de c_phi_fundacion, que es a su vez adoptado",
         fuente="PENDIENTE",
         reemplazado_por="EMS conforme a E.050",
+        sin_consumidor="Mismo motivo que 'c_phi_fundacion', del que deriva: "
+                       "lo consumen E1-E5 (Sec. 9.3), no ensambladas en esta "
+                       "CLI",
     ),
 
     "Mw_licuefaccion": Criterio(
@@ -1040,6 +1298,12 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="PENDIENTE: desagregacion del peligro sismico o adopcion justificada "
                "del sismo de diseno de la subduccion del norte peruano",
         reemplazado_por="Estudio de peligro sismico especifico",
+        sin_consumidor="La evaluacion de licuefaccion esta declarada FUERA "
+                       "del alcance del script (Sec. 0.5): el script no "
+                       "calcula el factor de seguridad a licuefaccion, de "
+                       "modo que nada invoca el MSF ni su Mw. Se declara "
+                       "vacio para que el expediente lo programe, no porque "
+                       "falte cablearlo",
     ),
 
     "demanda_sismica_licuefaccion": Criterio(
@@ -1053,6 +1317,19 @@ CRITERIOS: Dict[str, Criterio] = {
                       "disenada a 1000 es incoherencia de niveles de seguridad",
         fuente="Coherencia con el marco del Manual de Puentes",
         sensibilidad=(475, 1000),
+        sin_consumidor="Igual que 'Mw_licuefaccion': la evaluacion de "
+                       "licuefaccion esta fuera del alcance del script "
+                       "(Sec. 0.5) y nada la invoca. Es uno de los dos "
+                       "criterios CON valor y sin invocacion -- el otro es "
+                       "'PERFIL_SUELO_PRESUNTO', dos filas mas arriba en esta "
+                       "misma tabla -- y por eso no caia en ninguno de los "
+                       "bloques de la memoria: ni usado, ni vacio, ni "
+                       "opcional. Desaparecia del HTML. La adopcion "
+                       "(Tr = 1000 anios, §0.6 de la hoja de ruta, "
+                       "descartando el sismo de 475 anios de E.030) tiene que "
+                       "estar en la memoria aunque este calculo no corra: es "
+                       "la que fija la demanda que el estudio geotecnico del "
+                       "expediente debe exigirle al suelo",
     ),
 
     "diametros_normalizados": Criterio(
@@ -1121,11 +1398,41 @@ CRITERIOS: Dict[str, Criterio] = {
                "clasifica por D-load (resistencia), NO por altura, de modo "
                "que no hay tabla clase-a-altura que extraer de ella. Este "
                "campo decia antes que el valor saldria de ahi; no sale. "
-               "(2) MANUAL DE PUENTES (RD 041-2016-MTC/14) -- nunca incorporo "
-               "la Seccion 12 de AASHTO LRFD ('Buried Structures and Tunnel "
-               "Liners'): su indice salta de 2.11 (Muros de Contencion y "
-               "Estribos) a 2.12 (Disposiciones Constructivas). Vacio "
-               "absoluto sobre conductos enterrados. "
+               "(2) MANUAL DE PUENTES (RD 041-2016-MTC/14) -- no incorporo "
+               "un capitulo equivalente a la Seccion 12 de AASHTO LRFD "
+               "('Buried Structures and Tunnel Liners') y NO FIJA ALTURA "
+               "MINIMA DE RELLENO para ningun material. Esa es toda la "
+               "afirmacion negativa que se sostiene, y va acotada asi a "
+               "proposito: decia antes 'vacio absoluto sobre conductos "
+               "enterrados', que es falso, y lo sostenia con una evidencia de "
+               "indice que tambien lo es. El Manual SI trata estructuras "
+               "enterradas, al menos en cinco lugares -- verificados uno por "
+               "uno contra el PDF: num. 2.4.3.3.2 'Componentes Enterrados' "
+               "(pag. 109), IM = 33(1.0 - 0.125 DE) >= 0 % con DE = "
+               "profundidad minima de cubierta de tierra; Tabla 2.4.5.3.1-2 "
+               "'Factores de carga para cargas permanentes' (pag. 143), con "
+               "filas propias de 'Estructura rigida enterrada' (1.30/0.90) y "
+               "'Estructuras flexible enterradas'; num. 2.8.1.3A.6.2 "
+               "(pag. 280), cortante en losas de "
+               "alcantarilla cajon con menos o mas de 2.0 ft (600 mm) de "
+               "relleno; num. 2.9.1.4.6.4.6 (pag. 362), armadura de "
+               "distribucion segun la altura de relleno sobre la losa; y "
+               "num. 2.4.3.11.1 (pag. 121), que exime a las alcantarillas "
+               "cajon totalmente enterradas de la accion sismica. Ninguno de "
+               "los cinco fija una altura minima de relleno: todos SUPONEN "
+               "conocida la cobertura y la usan como entrada, que es "
+               "exactamente el dato que aqui falta. "
+               "LA EVIDENCIA DE INDICE QUE SE RETIRA, por falsa: se decia que "
+               "'el indice salta de 2.11 (Muros de Contencion y Estribos) a "
+               "2.12'. El 2.11 del Manual es 'DISENO DE BARRERAS DE SONIDO' "
+               "(15 AASHTO), pag. 505, y el 2.12 'Disposiciones "
+               "Constructivas', pag. 513; los muros y estribos viven dentro "
+               "de 2.8 Cimentaciones, que es de donde este mismo expediente "
+               "saca 2.8.1.1.14.2. Ademas la numeracion del Manual no sigue "
+               "la de AASHTO (2.8 <-> 10, 2.10 <-> 14.6, 2.11 <-> 15), de "
+               "modo que 'entre 2.11 y 2.12 deberia estar la Sec. 12' no era "
+               "una inferencia valida. La conclusion no cambia; el argumento "
+               "con que se sostenia, si. "
                "TRAMPA DE VOCABULARIO, anotada para que nadie la vuelva a "
                "pisar: el Manual SI usa la palabra 'recubrimiento' para "
                "alcantarillas en la Tabla 2.9.1.5.5.3-1 (pag. 378, 2.0 in / "
@@ -1210,6 +1517,18 @@ CRITERIOS: Dict[str, Criterio] = {
         reemplazado_por="Tabla de clase/calibre por altura de relleno de la "
                         "norma de producto, extraida y transcrita con su "
                         "numeral",
+        verificacion_pendiente="POR QUE ES [C] Y NO [A], que es la unica "
+                               "combinacion de este archivo (un [C] sin "
+                               "valor): la etiqueta la fija DE DONDE saldra "
+                               "el valor, no si ya lo tiene. Aqui la fuente "
+                               "tecnica existe, esta identificada y es "
+                               "reconocida (AASHTO M-170M, ASTM A-807 / "
+                               "AASHTO M36): lo que falta es TRANSCRIBIRLA, "
+                               "no elegir. Un [A] seria lo contrario: no hay "
+                               "fuente y decide el proyectista. El precedente "
+                               "interno es 'v_max_tmc' / 'v_max_hdpe', que "
+                               "fueron [C] sin valor por la misma razon y hoy "
+                               "valen 4.6 sin haber cambiado de etiqueta",
     ),
 
     # 'FS_flotacion' SE RETIRO. Declaraba el factor de seguridad global de
@@ -1327,7 +1646,19 @@ CRITERIOS: Dict[str, Criterio] = {
         etiqueta="A",
         concepto="Angulo de las aletas del cabezal",
         justificacion="Ajustado al esviaje del cauce en cada punto",
-        fuente="Practica corriente; no fijado por el Manual",
+        fuente="PENDIENTE - Practica corriente de diseno de cabezales; ni el "
+               "Manual de Hidrologia ni el Manual de Puentes fijan el angulo "
+               "de las aletas. No hay numeral que extraer: hay una geometria "
+               "que el proyectista define punto por punto",
+        reemplazado_por="Geometria de aletas del expediente: angulo por punto, "
+                        "definido con el esviaje medido del cauce "
+                        "('esviaje_grados' de Sec. 1.2) y el plano tipo de "
+                        "cabezal adoptado",
+        sin_consumidor="Ningun modulo lo invoca porque el script no dibuja la "
+                       "geometria de las aletas: dimensiona el cabezal "
+                       "(Fase 9) y remite el despiece al plano del "
+                       "expediente. Se declara para que el vacio se pida, no "
+                       "para que se calcule aqui",
     ),
 
     # ----------------------- FASE 9: CABEZAL Y ALETAS ---------------------
@@ -1904,9 +2235,10 @@ def reporte_criterios(solo_usados: bool = True) -> str:
            "=" * 78, ""]
 
     for k in claves:
-        c = CRITERIOS[k]
-        valor_efectivo = _OVERRIDES.get(k, c.valor)
-        marca_override = "  [declarado para esta corrida, no en archivo]" if k in _OVERRIDES else ""
+        c = criterio_efectivo(k)
+        valor_efectivo = c.valor
+        marca_override = ("  [declarado para esta corrida, no en archivo]"
+                          if declarado_en_caliente(k) else "")
         marca_prov = "  [PROVISIONAL: valor de prueba, NO verificado]" if c.provisional else ""
         marca_opc = "  [refinamiento opcional]" if c.opcional else ""
         out.append(
@@ -1942,6 +2274,34 @@ def reporte_criterios(solo_usados: bool = True) -> str:
         out.append("(bloque aparte, Sec. 0.7 - no se sustituyen por defecto):")
         for k in sin_valor:
             out.append(f"  - [{CRITERIOS[k].etiqueta}] {k}: {CRITERIOS[k].concepto}")
+        out.append("-" * 78)
+
+    en_caliente = criterios_declarados_en_caliente()
+    if en_caliente:
+        # Ni vacios (tienen valor) ni valores del archivo (no estan en el):
+        # sin este bloque se caian de las dos listas a la vez.
+        out.append("")
+        out.append("-" * 78)
+        out.append("DECLARADOS SOLO PARA ESTA CORRIDA - no estan en este")
+        out.append("archivo ni en el SHA-1 que la memoria imprime. Valen para")
+        out.append("esta corrida y para ninguna otra:")
+        for k in en_caliente:
+            c = CRITERIOS[k]
+            dice = ("el archivo lo declara sin valor" if c.valor is None
+                    else f"el archivo declara {c.valor!r}")
+            out.append(f"  - [{c.etiqueta}] {k} = {_OVERRIDES[k]!r}  ({dice})")
+        out.append("-" * 78)
+
+    sin_consumidor = criterios_sin_consumidor()
+    if sin_consumidor:
+        out.append("")
+        out.append("-" * 78)
+        out.append("DECLARADOS QUE NINGUNA ETAPA INVOCA - con la razon escrita")
+        out.append("en el propio criterio, no deducida de su ausencia:")
+        for k in sin_consumidor:
+            c = criterio_efectivo(k)
+            out.append(f"  - [{c.etiqueta}] {k} = {c.valor!r}")
+            out.append(f"      {c.sin_consumidor}")
         out.append("-" * 78)
 
     opcionales = criterios_opcionales_sin_declarar()

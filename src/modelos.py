@@ -344,6 +344,16 @@ class PuntoCritico:
     a un dato bloqueado en un tablero de pendientes. Se leen con `exigir()`,
     que lanza DatoFaltanteError en vez de asumir un valor.
 
+    `sucs_fundacion` es obligatoria y NINGUN modulo la lee, y las dos cosas
+    son correctas a la vez. La obligatoriedad no la inventa el codigo: la
+    hoja de ruta la lista en Sec. 1.1 con etiqueta [N] E.050 y la incluye en
+    el encabezado literal de Sec. 1.2, o sea que una fila sin ella es un
+    expediente incompleto y M0 tiene que decirlo. Su consumidor previsto es
+    el criterio 'c_phi_fundacion' -- correlacion de resistencia desde la
+    clasificacion SUCS --, que esta declarado vacio y cuyo ensamblaje (E1-E5
+    de Sec. 9.3) esta fuera del alcance de esta CLI. Se carga, se valida y se
+    imprime en la memoria; el dia que E1-E5 se ensamblen, el dato ya esta.
+
     `NF_profundidad_m` es la unica columna que NO viene del encabezado de
     Sec. 1.2: se agrego al reclasificar el nivel freatico como dato de sitio
     [S]. Era un criterio unico de proyecto (1.4 m, la caracterizacion de la
@@ -1329,6 +1339,24 @@ class ResultadoPunto:
     resultado_hidraulico: Optional[ResultadoHidraulico] = None
     verificaciones: Tuple[Verificacion, ...] = ()
     motivo_rechazo: Optional[str] = None
+
+    @property
+    def y_sobre_D(self) -> Optional[float]:
+        """
+        Relacion de llenado del punto dimensionado, y_normal / D, o None si el
+        punto no llego a dimensionarse.
+
+        Vive aqui, en el tipo que fluye entre modulos, y no en la capa de
+        reporte: M11 la calculaba inline en dos sitios (la tabla del punto y
+        la fila del cuadro resumen), contra su propio docstring de modulo
+        ("sin calcular nada nuevo") y contra la regla de arquitectura. Es el
+        mismo numero que V1 verifica en `M5_verificaciones.v1_borde_libre` y
+        el mismo que `Geometria.y_sobre_D` define para la seccion; escrito
+        una vez, no puede divergir entre la memoria y la verificacion.
+        """
+        if self.resultado_hidraulico is None or self.D is None:
+            return None
+        return self.resultado_hidraulico.y_normal / self.D
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:

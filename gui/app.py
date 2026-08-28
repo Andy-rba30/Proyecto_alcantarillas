@@ -425,20 +425,22 @@ class ExpedienteApp:
 
     def _estado_criterio(self, clave):
         """(texto, tag) del estado de un criterio para la tabla y el detalle."""
-        c = ca.criterio(clave)
-        if clave in ca.valores_dinamicos():
+        if ca.declarado_en_caliente(clave):
             return "declarado (corrida)", "declarado_corrida"
-        if c.valor is None:
+        if ca.criterio(clave).valor is None:
             return "PENDIENTE", "pendiente"
         return "resuelto", "resuelto"
 
     def _llenar_tabla_criterios(self):
         for item in self.tree_criterios_todos.get_children():
             self.tree_criterios_todos.delete(item)
-        overrides = ca.valores_dinamicos()
+        # El valor efectivo NO se recalcula aqui: lo da `criterio_efectivo`,
+        # la misma funcion que leen M11 y el JSON. Tres copias de la regla
+        # "override si lo hay, archivo si no" son tres sitios donde puede
+        # divergir, y esa divergencia fue el hallazgo bloqueante SIS-A-01.
         for clave in sorted(ca.CRITERIOS):
             c = ca.criterio(clave)
-            valor_efectivo = overrides.get(clave, c.valor)
+            valor_efectivo = ca.criterio_efectivo(clave).valor
             estado_txt, tag = self._estado_criterio(clave)
             self.tree_criterios_todos.insert("", "end", iid=clave, values=(
                 clave, c.etiqueta, c.concepto,
@@ -479,13 +481,13 @@ class ExpedienteApp:
         self.txt_detalle_criterio.insert("1.0", "\n".join(lineas))
         self.txt_detalle_criterio.configure(state="disabled")
 
-        overrides = ca.valores_dinamicos()
-        valor_actual = overrides.get(clave, c.valor)
+        valor_actual = ca.criterio_efectivo(clave).valor
         self.valor_declarado_var.set("" if valor_actual is None else str(valor_actual))
 
-        puede_declarar = c.valor is None or clave in overrides
+        en_caliente = ca.declarado_en_caliente(clave)
+        puede_declarar = c.valor is None or en_caliente
         self.btn_aplicar_corrida.config(state="normal" if puede_declarar or c.valor is None else "disabled")
-        self.btn_quitar_declarado.config(state="normal" if clave in overrides else "disabled")
+        self.btn_quitar_declarado.config(state="normal" if en_caliente else "disabled")
         self.btn_guardar_archivo.config(state="normal")
 
     def _interpretar_valor_declarado(self, texto):

@@ -37,21 +37,47 @@ y TMC sale del criterio 'h_relleno_min_concreto_tmc' (H_RELLENO_MIN['hdpe'] si
 se lee directo del Anexo B, porque ese valor no tiene homologo: EG-2013 lo fija
 en 0.30 m sin vacio que declarar).
 
-Vacios que el catalogo deja en None, a proposito
---------------------------------------------------
-Dos de los criterios que alimentan el catalogo siguen sin valor (Tablero 1.3):
-'v_max_tmc', 'v_max_hdpe' y 'h_relleno_min_concreto_tmc'. La regla general del
-proyecto es que un criterio sin valor DETIENE el calculo apenas se invoca
-(`criterios_adoptados.valor` lanza CriterioPendienteError). Pero `Material` ya
-declara esos tres campos como Optional (`v_max_rango`, `h_relleno_min`) para
-justamente este caso: un catalogo que no puede ni listarse porque un dato
-pendiente de extraer bloquea la sola construccion del objeto no es un catalogo,
-es un candado. Por eso `catalogo()` NO llama a `valor()` para esos tres campos:
-llama a `criterio()` (que no registra uso ni lanza) y, si el valor sigue en
-None, lo traslada tal cual al `Material`. No es rellenar el vacio: es
-reportarlo con fidelidad, exactamente como ya lo modela el campo Optional. En
-cuanto cualquiera de esos tres criterios reciba valor, `catalogo()` empieza a
-devolverlo y a registrarlo como usado, sin tocar este archivo.
+Campos que el catalogo puede dejar en None, a proposito
+--------------------------------------------------------
+Cuatro criterios alimentan campos que `Material` declara `Optional`:
+'n_manning_hdpe', 'v_max_tmc', 'v_max_hdpe' y 'h_relleno_min_concreto_tmc'.
+
+ESTADO HOY, que no es el que decia este docstring: los CUATRO tienen valor.
+'v_max_tmc' = 'v_max_hdpe' = 4.6 m/s [C] (WSDOT, Tabla 8-4);
+'h_relleno_min_concreto_tmc' = 0.30 m [N->] (EG-2013 508.07 por analogia).
+CUIDADO con este ultimo: tener valor no es tenerlo cerrado. El NUMERO sigue
+en revision abierta -- la cobertura minima de AASHTO (Art. 12.6.6.3) esta
+tabulada y el hallazgo abierto sostiene que 0.30 m queda por debajo de su
+piso -- y ademas se discute desde donde se mide la clave (diametro interior o
+exterior). Las dos cosas se corrigen juntas, en su propio paquete, con la
+tabla leida del PDF: lo que aqui se corrige es solo la descripcion del
+estado, no el valor;
+'n_manning_hdpe' = la fila del concreto de la Tabla N 09 [N->]. Este bloque
+decia "Dos de los criterios ... siguen sin valor" y a continuacion enumeraba
+tres, y otros siete docstrings del proyecto repetian ese estado ya superado
+(SIS-A-03). Lo que sigue vivo es el MECANISMO, por si alguno vuelve a
+vaciarse, y por eso se conserva escrito.
+
+EL MECANISMO. La regla general del proyecto es que un criterio sin valor
+DETIENE el calculo apenas se invoca (`criterios_adoptados.valor` lanza
+CriterioPendienteError). Pero un catalogo que no se puede ni listar porque un
+dato pendiente de extraer bloquea la construccion del objeto no es un
+catalogo, es un candado. Por eso `catalogo()` lee esos cuatro con
+`_valor_si_declarado()` -- que delega en `ca.valor_si_declarado`, no en
+`ca.criterio(...)` como decia este texto -- y traslada el None al `Material`
+tal cual. No es rellenar el vacio: es reportarlo con fidelidad, y el bloqueo
+salta despues, en el punto de uso (M7:`altura_recubrimiento` para el relleno
+minimo, M5:`v3_velocidad_maxima` para las velocidades), donde el revisor
+puede saber que verificacion se detuvo.
+
+LA EXCEPCION, escrita porque no la cubre el parrafo anterior:
+'n_manning_hdpe' NO tiene punto de uso que lo detenga. Su None se
+desempaqueta aqui mismo en `n_min, n_max` y saldria como `TypeError` -- un
+fallo de programa -- en vez de como `CriterioPendienteError` del expediente.
+No es alcanzable hoy (el criterio tiene valor, y una declaracion en caliente
+a None se rechaza en `establecer_valor_dinamico`): solo lo seria vaciando el
+archivo a mano. Queda dicho para quien lo vacie: antes de hacerlo, hay que
+darle un punto de uso que bloquee, como tienen los otros tres.
 
 Sec. 3.2 - Catalogo de diametros
 ---------------------------------
@@ -261,8 +287,11 @@ def catalogo(material: MaterialLike) -> Material:
     (Tabla N 10 o el vacio que la sustituye), relleno minimo sobre la clave
     (Sec. 7.A) y seccion de EG-2013 para el presupuesto.
 
-    v_max_rango y h_relleno_min pueden salir en None: ver la seccion "Vacios
-    que el catalogo deja en None" del docstring del modulo.
+    v_max_rango, h_relleno_min y la doble n del HDPE pueden salir en None si
+    su criterio se vacia: se leen con `_valor_si_declarado()`, no con
+    `ca.valor()` ni con `ca.criterio()`. Ver "Campos que el catalogo puede
+    dejar en None" en el docstring del modulo, incluida la excepcion de
+    'n_manning_hdpe'.
     """
     tipo = _tipo_material(material)
     prog = _progresion()
