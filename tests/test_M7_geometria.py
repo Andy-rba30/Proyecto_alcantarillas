@@ -463,7 +463,9 @@ def test_7B_con_longitud_dada_arma_la_geometria_y_las_dos_verificaciones(hdpe):
     assert geo.S_conducto == pytest.approx(punto.S_cauce)
     assert geo.caida == pytest.approx(0.006 * 20.0)
     assert geo.cota_salida == pytest.approx(41.98)
-    assert geo.delta_rasante_cm == pytest.approx(0.0)
+    # None y no 0.0: la rasante alcanza, de modo que no hay delta que pedir
+    # (ver `CompatibilidadGeometrica.delta_rasante_cm`).
+    assert geo.delta_rasante_cm is None
     geo.exigir_factible()                       # no lanza
 
 

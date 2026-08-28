@@ -1311,7 +1311,7 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"y_c = {_fmt(h.y_critico)} m, "
                    f"V_erosion = {_fmt(h.V_erosion)} m/s (n min), "
                    f"V_sedimentacion = {_fmt(h.V_sedimentacion)} m/s (n max), "
-                   f"Q = {_fmt(h.Q)} m3/s, S = {_fmt(h.S)} m/m")
+                   f"Q = {_fmt(h.Q)} m3/s, S = {_fmt(h.S, 4)} m/m")
         out.append(f"{SANGRIA}        Longitud : L = {_fmt(informe.longitud.valor)} m "
                    f"({informe.longitud.origen}) | TW = "
                    f"{_fmt(informe.tw.valor)} m ({informe.tw.origen})")

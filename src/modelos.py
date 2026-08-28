@@ -1122,11 +1122,27 @@ class CompatibilidadGeometrica:
         return not self.verificaciones_incumplidas
 
     @property
-    def delta_rasante_cm(self) -> float:
+    def delta_rasante_cm(self) -> Optional[float]:
         """
-        Cuanto hay que subir la rasante, en centimetros. 0.0 cuando la rasante
-        ya alcanza: el numero existe siempre, tambien cuando el punto cumple.
+        Cuanto hay que subir la rasante, en centimetros, o None cuando subirla
+        no es el remedio.
+
+        Es el delta del TAMIZADO, o sea el de G1, y solo existe cuando G1 es
+        la que falla. Si la rasante alcanza y lo que incumple es G2 -- la cota
+        de salida contra el fondo del receptor --, subir la rasante NO lo
+        arregla: G2 se corrige con la pendiente, con la longitud o con la cota
+        del receptor. Por eso aqui va None y no 0.0, que es la misma regla que
+        `exigir_factible` ya aplicaba al construir la excepcion.
+
+        Devolvia 0.0 SIEMPRE, y eso hacia que `M11_reporte` escribiera
+        "Requiere subir la rasante 0.00 cm" en el punto cuya salida queda
+        enterrada bajo el receptor -- una instruccion vacia en el sitio donde
+        el revisor busca el remedio. El caso era inalcanzable mientras 7.B
+        corriese con la pendiente del cauce en vez de la del diseño (MAT-D9);
+        al cerrarse ese hallazgo dejo de serlo.
         """
+        if self.tamizado.factible:
+            return None
         return self.tamizado.delta_rasante_cm
 
     def exigir_factible(self) -> None:

@@ -670,10 +670,15 @@ def altura_relleno_sobre_clave(*, punto: PuntoCritico, material: Material,
     if altura <= TOL_UMBRAL_NORMATIVO:
         raise DatoInvalidoError(
             "cota_subrasante", valor=punto.cota_subrasante, id_punto=punto.id,
+            # El motivo NO cita numeral de fase: la misma magnitud la
+            # consumen V7 (Fase 5) y la norma de producto (Fase 8), y una
+            # excepcion que nombrase una sola mandaria al revisor a la etapa
+            # equivocada la mitad de las veces. Quien la atrapa ya sabe en que
+            # etapa esta -- `cli._etapa` la anota con su fase.
             motivo="la clave del conducto queda a nivel de la subrasante o "
                    f"por encima ({altura:+.3f} m de relleno): no hay relleno "
-                   "sobre la clave que pesar en V7 ni con que entrar a la "
-                   f"norma de producto de la Fase 8 ({NUMERAL_V7})",
+                   "sobre la clave que pesar ni con que entrar a la tabla de "
+                   "la norma de producto",
         )
     return altura
 
@@ -722,10 +727,14 @@ def v4_carga_entrada(*, punto: PuntoCritico,
     la aplicacion de ESA tabla al HW lo que Sec. 5.1 etiqueta [N->]).
 
     `HW` es una carga en metros sobre el fondo de la entrada (Sec. 4.2/4.3);
-    convertirla a cota exige la cota de esa entrada. Este modulo adopta
-    `punto.cota_terreno` para eso -- ver "V4 -- el supuesto de la cota de
-    entrada" en el docstring del modulo: es una interpretacion declarada, no
-    un criterio con fuente propia, y debe citarse como tal en la memoria.
+    convertirla a cota exige la cota de esa entrada. Este modulo NO la elige:
+    la pide a `cota_entrada_supuesta`, que aplica la regla que el proyectista
+    declaro en 'origen_cota_fondo_entrada' [A] -- ver "V4 -- la cota de
+    entrada es un CRITERIO DECLARADO, no un supuesto del codigo" en el
+    docstring del modulo. Este parrafo decia "este modulo adopta
+    `punto.cota_terreno`", que es lo que hacia ANTES de SIS-A-01/SIS-A-04 y
+    dejo de ser cierto entonces: 'cota_terreno' es hoy una de las reglas
+    admisibles del criterio, no una eleccion del codigo.
     """
     ca.valor(CRITERIO_RESGUARDO)      # registra el uso; "segun_CBR" no es numerico
     resguardo_m = resguardo_por_cbr(punto.cbr_subrasante)
