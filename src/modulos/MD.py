@@ -58,16 +58,29 @@ Lo que MD NO hace
 
 Interfaz con M5 -- supuesto de arquitectura, no valor de proyecto
 ------------------------------------------------------------------
-M5 todavia no existe en el repositorio. MD no puede orquestar sin llamarlo, de
-modo que fija la unica pieza que un orquestador esta obligado a fijar: la
-FIRMA con la que lo llama.
+ESTE PARRAFO ABRIA CON "M5 todavia no existe en el repositorio" Y ESA PREMISA
+CADUCO (SIS-A-08): `src/modulos/M5_verificaciones.py` existe desde hace varias
+sesiones y esta cubierto por su propia suite. El Protocol y la importacion
+perezosa de abajo SIGUEN siendo la forma correcta, pero por otra razon, y
+decirla importa porque la razon vieja invitaba a borrarlos en cuanto M5
+apareciera:
+
+    MD no depende de M5 porque M5 falte, sino porque MD es el ORQUESTADOR y no
+    debe conocer la implementacion de lo que orquesta. La inyeccion por
+    argumento es lo que permite a un test pasarle un doble, a la GUI pasarle
+    una version instrumentada y a una sesion futura sustituir M5 sin tocar
+    este archivo. La importacion perezosa evita ademas un ciclo de importacion
+    en el arranque.
+
+Lo que MD fija es la unica pieza que un orquestador esta obligado a fijar: la
+FIRMA con la que llama a M5.
 
     verificar(punto=..., material=..., D=..., resultado=...) -> Sequence[Verificacion]
 
 Se pasa siempre por palabra clave, para que M5 pueda ampliar la firma sin
 romper este archivo. La funcion se toma del argumento `verificar`; si no se
-pasa, MD la importa de `modulos.M5_verificaciones.verificar`, y si ese modulo
-aun no existe la ausencia sale como ImportError -- un fallo de programa, no
+pasa, MD la importa de `modulos.M5_verificaciones.verificar`, y si esa
+importacion fallara la ausencia sale como ImportError -- un fallo de programa, no
 del expediente, y por eso fuera de ErrorProyecto (misma regla que
 FileNotFoundError). Que M5 devuelva CERO verificaciones no es un diseño
 aceptado: es ValueError, porque un punto aceptado sin verificaciones no es

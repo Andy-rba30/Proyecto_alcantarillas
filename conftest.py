@@ -51,6 +51,27 @@ for ruta in (RAIZ, SRC):
 # la suite caeria por un efecto de orden de ejecucion.
 import pytest  # noqa: E402
 
+
+def pytest_configure(config):
+    """
+    Registra la marca `pdf`, que separa los tests que ABREN un PDF de
+    `normas/` del resto de la suite.
+
+    Existe porque las dos mitades tienen precondiciones distintas:
+
+      - los estructurales corren siempre, con `requirements.txt` a secas;
+      - los de PDF necesitan `PyMuPDF` (que vive en `requirements-dev.txt`,
+        porque es dependencia de TEST y no del software calculado) y los
+        250 MB de `normas/`. Se SALTAN, no fallan, si falta cualquiera de las
+        dos cosas.
+
+    Para correr solo los de PDF:  pytest -m pdf
+    Para excluirlos:              pytest -m "not pdf"
+    """
+    config.addinivalue_line(
+        "markers",
+        "pdf: abre un PDF de normas/; exige PyMuPDF (requirements-dev.txt)")
+
 import criterios_adoptados as _ca  # noqa: E402
 
 CLAVE_ORIGEN_COTA = "origen_cota_fondo_entrada"

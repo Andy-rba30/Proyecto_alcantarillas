@@ -77,7 +77,19 @@ from normativa import registro as _registro_normativo
 _reg = _registro_normativo.construir()
 
 # ================= Manual de Hidrologia (RD 20-2011-MTC/14) =================
-LUZ_MAX_ALCANTARILLA = 6.0          # m; >= 6.0 -> puente (4.1.1.3.1 / 4.1.1.5.1)
+# El umbral que separa alcantarilla de puente. Los DOS numerales lo escriben,
+# cada uno desde su lado, y por eso se citan los dos:
+#   4.1.1.3.1 "Aspectos generales" (pag. impresa 70): "alcantarilla ... cuya
+#       luz sea menor a 6.0 m";
+#   4.1.1.5.1 "Aspectos generales" (pag. impresa 87): "puente ... cuya luz sea
+#       mayor o igual a 6.0 m".
+# LA SEGUNDA PAGINA ESTABA CORRIDA (NOR-HID-05): la cita decia 88, y la pag.
+# impresa 88 trae "a.1) Topografia - Batimetria del cauce y zonas adyacentes",
+# del num. 4.1.1.5.2. El numeral 4.1.1.5.1 ocupa las impresas 86-87 y la frase
+# que fija el valor se imprime en la 87.
+LUZ_MAX_ALCANTARILLA = 6.0          # m; >= 6.0 -> puente
+NUMERAL_LUZ_ALCANTARILLA = _reg.cita("MC_HHD.4.1.1.3.1").como_texto()
+NUMERAL_LUZ_PUENTE = _reg.cita("MC_HHD.4.1.1.5.1").como_texto()
 
 # --- Diametro minimo de seccion circular: num. 4.1.1.3.4 a), pag. impresa 72 -
 # El numero suelto se lee como un piso incondicional y NO lo es. El numeral
@@ -137,7 +149,8 @@ DIAMETRO_MIN_TMC_SELVA_ALTA_CONDICIONES = (
     "arbustiva en taludes. NO APLICA EN COSTA, que es donde esta este "
     "corredor (La Union, Piura).")
 
-Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b), pag. 79
+Y_SOBRE_D_MAX = 0.75                # borde libre >= 25%
+NUMERAL_BORDE_LIBRE = _reg.cita("MC_HHD.4.1.1.3.7b").como_texto()
 # Texto que fija Y_SOBRE_D_MAX, literal (MC-HHD, RD 20-2011-MTC/14,
 # num. 4.1.1.3.7 b) "Borde libre", pag. impresa 79):
 #
@@ -152,7 +165,8 @@ Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b), pag. 79
 # velocidad no, cuando la fuente los escribe igual. Los dos se aplican como
 # umbral duro por decision conservadora del proyecto, y las dos veces eso es
 # una ADOPCION que la memoria tiene que declarar.
-V_MIN = 0.25                        # m/s (4.1.1.3.6, pags. 76-77) -- ver abajo
+V_MIN = 0.25                        # m/s -- ver abajo
+NUMERAL_V_MIN = _reg.cita("MC_HHD.4.1.1.3.6#VMIN").como_texto()
 # Texto que fija V_MIN, literal (MC-HHD, RD 20-2011-MTC/14, num. 4.1.1.3.6,
 # parrafo inmediatamente posterior a la Tabla Nº 10; ARRANCA en la pag.
 # impresa 76 y el numero se imprime en la 77):
@@ -175,14 +189,67 @@ V_MIN = 0.25                        # m/s (4.1.1.3.6, pags. 76-77) -- ver abajo
 # de la Tabla Nº 10 cambia con el material. Es el mismo numeral que la Tabla
 # Nº 10, de modo que sin el titulo de la tabla y sin este parrafo los dos
 # limites se confunden -- que es exactamente el error que V3 tenia.
-LAUSHEY_K = 3.1                     # d50 = V^2/(3.1*g), metrico (4.1.1.3.7 c)
-G_LAUSHEY = 9.8                      # m/s2; g tal como lo escribe la Sec.
-                                     # 4.1.1.3.7 c) junto a su formula de d50.
-                                     # Uso exclusivo de M6 (Laushey). La
-                                     # gravedad generica del resto del script
-                                     # (M4: tirante critico, control de
-                                     # salida) es constantes_fisicas.G = 9.81,
-                                     # no esta -- ver constantes_fisicas.py.
+LAUSHEY_K = 3.1                     # d50 = V^2/(3.1*g), ec. (49) del
+                                    # num. 4.1.1.3.7 c), pag. impresa 80.
+                                    # El 3.1 SI esta impreso en la formula.
+# ---------------------------------------------------------------------------
+# G_LAUSHEY -- el numero es defendible y la cita no lo era (NOR-HID-01, MAT-O7)
+# ---------------------------------------------------------------------------
+# ESTA CONSTANTE LLEVABA ESCRITO: "g tal como lo escribe la Sec. 4.1.1.3.7 c)
+# junto a su formula de d50". ES FALSO, y verificado en contra sobre el PDF: el
+# num. 4.1.1.3.7 c) "Socavacion local a la salida de la alcantarilla" (pag.
+# impresa 80, PDF 83) define g SIN NUMERO. Su lista de variables dice, literal:
+#
+#     g       : Aceleración de la gravedad (m/s2)
+#
+# y en toda esa pagina no hay otro numero que el 3.1 del denominador y el (49)
+# del rotulo de la ecuacion.
+#
+# ES EL MISMO GENERO DE DEFECTO QUE EL PROYECTO YA PURGO CON EL "19.62 = 2g":
+# una atribucion que suena razonable, que nadie comprueba porque el numero es
+# correcto, y que manda al revisor a una pagina donde no esta lo que la cita
+# promete. Una cita que no se puede comprobar es indistinguible de una
+# inventada.
+#
+# DONDE SI ESCRIBE EL MANUAL g = 9.8, barrido sobre sus 225 paginas ("9.8"
+# como gravedad aparece en dos y solo dos; "9.81" no aparece ni una vez):
+#
+#   num. 3.12.5 "Otras Metodologias", pag. impresa 63 (PDF 66):
+#       "la velocidad critica (Vc) se define como la raiz cuadrada del calado
+#        critico (yc) multiplicado por la aceleracion de la gravedad
+#        (g= 9.8 m/s2)"
+#   num. 4.1.1.5.4 b.2.4) "Metodo de Laursen", pag. impresa 111 (PDF 114):
+#       "g       : Aceleración de la gravedad (9.8 m/s2)"
+#
+# El segundo es socavacion general por contraccion en PUENTES, no la de salida
+# de alcantarilla. O sea: el 9.8 es la gravedad que ESTE Manual usa, leido
+# entero, y por eso el valor se conserva; lo que se corrige es DE DONDE se
+# dice que sale. Se citan los dos sitios y no uno, porque los dos lo escriben
+# y ninguno es el numeral de Laushey.
+#
+# LA HOJA DE RUTA SIGUE MAL mientras no se corrija: su Fase 6 escribe
+# "g = 9.8 m/s2" bajo el encabezado "Laushey — num. 4.1.1.3.7 c), pag. 80",
+# presentando el numero como si el numeral lo imprimiera. Ver la Discrepancia
+# DIS-HR-G-LAUSHEY del registro, en estado ABIERTA_CONTRA_HOJA_DE_RUTA.
+#
+# Uso exclusivo de M6 (Laushey). La gravedad generica del resto del script
+# (M4: tirante critico, control de salida) es constantes_fisicas.G = 9.81.
+G_LAUSHEY = 9.8                      # m/s2
+NUMERAL_LAUSHEY = _reg.cita("MC_HHD.4.1.1.3.7c").como_texto()
+NUMERAL_G_LAUSHEY = _reg.cita("MC_HHD.3.12.5#G").como_texto()
+NUMERAL_G_LAUSHEY_SEGUNDA_FUENTE = _reg.cita(
+    "MC_HHD.4.1.1.5.4b24#G").como_texto()
+# El numeral que NO lo escribe, declarado para que la correccion tenga donde
+# estar dicha y para que un test tenga contra que fallar si alguien la
+# revierte.
+NUMERAL_LAUSHEY_SIN_VALOR_DE_G = _reg.cita("MC_HHD.4.1.1.3.7c#G").como_texto()
+G_LAUSHEY_ATRIBUCION = (
+    "El num. 4.1.1.3.7 c), que es el de la formula de d50, NO escribe ningun "
+    "valor de g: define el simbolo y su unidad. El 9.8 es la gravedad que el "
+    "Manual usa, y la escribe en otros dos numerales -- el 3.12.5 (pag. "
+    "impresa 63) y el 4.1.1.5.4 b.2.4) (pag. impresa 111) --. El 9.81 no "
+    "aparece ni una vez en sus 225 paginas. Se conserva el numero y se "
+    "corrige la atribucion")
 # GAMMA_AGUA_KN_M3 ya no vive aqui: es una constante FISICA, no una exigencia
 # normativa. El num. 2.4.3.8.2 del Manual de Puentes dice como se calcula la
 # subpresion, no cuanto pesa el agua -- ningun numeral peruano fija eso. Vive
@@ -283,6 +350,12 @@ RIESGO_ADMISIBLE = {
 # extremo que la deja del lado seguro. El valor NORMAL no entra en ninguna de
 # las dos ramas: entraria en un calculo de un solo n, que es justo lo que la
 # regla prohibe.
+NUMERAL_DISENO_HIDRAULICO = _reg.cita("MC_HHD.4.1.1.3.6").como_texto()
+# El numeral con el que ESTE se confundio antes de S5, declarado para que la
+# confusion no pueda repetirse en silencio: el 4.1.1.3.5 es "Recomendaciones y
+# factores a tomar en cuenta para el diseño de una alcantarilla" y NO contiene
+# ninguna tabla de rugosidad.
+NUMERAL_RECOMENDACIONES_ALCANTARILLA = _reg.cita("MC_HHD.4.1.1.3.5").como_texto()
 TABLA_09_TITULO = ("TABLA Nº 09: Valores del Coeficiente de Rugosidad de "
                    "Manning (n)")
 TABLA_09_COLUMNAS = ("TIPO DE CANAL", "MINIMO", "NORMAL", "MAXIMO")
@@ -375,7 +448,45 @@ TABLA_10_INTERPRETACION_PROYECTO = (
 # velocidad es V_MIN, no el extremo inferior de esta fila.
 V_MAX = {clave: fila["valores"] for clave, fila in TABLA_10_FILAS.items()}
 
-LONG_MAX_CUNETA = {"seca": 250.0, "muy_lluviosa": 200.0}   # m (4.1.2.1 d)
+# ---------------------------------------------------------------------------
+# Longitud maxima de cuneta -- dos cifras que NO tienen la misma fuerza
+# ---------------------------------------------------------------------------
+# NOR-HID-02, cerrado en sus dos extremos.
+#
+# LA PAGINA. La cita decia "pag. 178". La pagina impresa 178 (PDF 181) trae la
+# TABLA Nº 34 "Dimensiones minimas", que es el apartado c) del mismo numeral;
+# el apartado d) "Desague de las cunetas", con las dos longitudes, esta en la
+# 179 (PDF 182).
+#
+# EL CARACTER, que es lo que el dict pelado borraba. La fuente escribe las dos
+# cifras con verbos DISTINTOS, y tratarlas como dos topes duros equivalentes
+# hace pasar por exigencia lo que es recomendacion:
+#
+#   250 m (region seca o poca lluviosa)  "sera de 250m como maximo", futuro
+#       imperativo, PERO con valvula de escape expresa en la misma frase:
+#       "las longitudes de recorridos mayores deberan justificarse
+#       tecnicamente". Es un maximo rebatible por justificacion tecnica, no un
+#       tope absoluto.
+#   200 m (region muy lluviosa)  "se recomienda reducir esta longitud maxima a
+#       200m". Recomendacion pura, sin verbo imperativo.
+#
+# Y UN HUECO DE LA FUENTE que conviene ver: el apartado nombra solo DOS
+# regimenes -- "seca o poca lluviosa" y "muy lluviosa" -- y deja sin longitud
+# el regimen intermedio "lluviosa" que su propia Tabla Nº 34 tabula.
+LONG_MAX_CUNETA = {"seca": 250.0, "muy_lluviosa": 200.0}   # m
+NUMERAL_LONG_MAX_CUNETA = _reg.cita("MC_HHD.4.1.2.1d").como_texto()
+LONG_MAX_CUNETA_CARACTER = {
+    "seca": ("EXIGENCIA CON JUSTIFICACION ADMITIDA: «la longitud de las "
+             "cunetas sera de 250m como maximo, las longitudes de recorridos "
+             "mayores deberan justificarse tecnicamente»"),
+    "muy_lluviosa": ("RECOMENDACION: «en region muy lluviosa se recomienda "
+                     "reducir esta longitud maxima a 200m»"),
+}
+LONG_MAX_CUNETA_LAGUNA = (
+    "El apartado 4.1.2.1 d) nombra dos regimenes -- «seca o poca lluviosa» y "
+    "«muy lluviosa» -- y no asigna longitud al regimen intermedio "
+    "«lluviosa» que su propia Tabla Nº 34 tabula. Es un hueco del texto "
+    "impreso, no de esta transcripcion")
 
 # ================= HDS-5 (FHWA) 3a ed., abril 2012 =========================
 # Apendice A. NO todo sale de la Tabla A.1, y este encabezado decia que si
@@ -773,16 +884,87 @@ D_INICIO = 0.90                     # m; el piso del num. 4.1.1.3.4 a), que
 # leidas de los PDF -- y la hoja de ruta SIGUE MAL mientras no se corrija.
 
 # ================= Manual de Suelos (RD 10-2014-MTC/14) ====================
-RESGUARDO_NAPA_SUBRASANTE = [       # (CBR_min, CBR_max, resguardo_m)  num. 4.5.4
+# ---------------------------------------------------------------------------
+# Distancia minima de la subrasante a la napa freatica
+# ---------------------------------------------------------------------------
+# EL NOMBRE DE ESTA CONSTANTE ES VOCABULARIO DEL PROYECTO, NO DEL MANUAL
+# (NOR-SUE-05). "Resguardo" aparece UNA vez en las 281 paginas del Manual de
+# Suelos -- pag. impresa 56, "deben mantenerse al resguardo de la luz" --, y
+# es sobre conservacion de muestras. El Manual llama a esta magnitud
+# "el nivel superior de la sub rasante debe quedar encima del nivel de la napa
+# freatica como minimo a X m". El nombre se conserva porque esta cableado en
+# M5 y en la memoria, y la equivalencia se declara aqui en vez de dejar que
+# alguien busque "resguardo" en el PDF y no lo encuentre.
+#
+# Y NO ES UNA TABLA: el num. 4.5.4 lo escribe en PROSA CORRIDA, en una sola
+# oracion con sus cuatro escalones. El numeral arranca en la pag. impresa 41 y
+# el parrafo esta en la 42.
+#
+# LA FUENTE OFRECE REMEDIO, y tratarlo como umbral duro de rechazo la
+# endurece: la ultima oracion del mismo parrafo dice "En caso necesario, se
+# colocaran subdrenes o capas anticontaminantes y/o drenantes o se elevara la
+# rasante hasta el nivel necesario". No es un rechazo binario.
+RESGUARDO_NAPA_SUBRASANTE = [       # (CBR_min, CBR_max, resguardo_m)
     (20.0, None, 0.60), (6.0, 20.0, 0.80),
     (3.0, 6.0, 1.00),   (None, 3.0, 1.20),
 ]
+NUMERAL_RESGUARDO_NAPA = _reg.cita("MS.4.5.4").como_texto()
+NUMERAL_RESGUARDO_NAPA_SEGUNDA = _reg.cita("MS.9.1.3").como_texto()
+NUMERAL_CATEGORIAS_SUBRASANTE = _reg.cita("MS.4.4#C411").como_texto()
+RESGUARDO_PALABRA_DEL_PROYECTO = (
+    "«Resguardo» es vocabulario de este proyecto. El Manual de Suelos no usa "
+    "esa palabra para esta magnitud -- aparece una sola vez en sus 281 "
+    "paginas, en la impresa 56 y sobre conservacion de muestras --: la llama "
+    "«el nivel superior de la sub rasante debe quedar encima del nivel de la "
+    "napa freatica como minimo a X m»")
+RESGUARDO_REMEDIOS_ALTERNATIVOS = (
+    "En caso necesario, se colocarán subdrenes o capas anticontaminantes y/o "
+    "drenantes o se elevará la rasante hasta el nivel necesario")
+# ERRATA DE LA PROPIA FUENTE, hallada al verificar: el num. 4.5.4 remite «al
+# cuadro 4.10» para la categoria de sub rasante, y el Cuadro 4.10 (pag.
+# impresa 36) es «Clasificacion de los suelos basada en AASHTO M 145 y/o ASTM
+# D 3282». La tabla de categorias es el Cuadro 4.11 (pag. impresa 37).
+CATEGORIAS_SUBRASANTE_ERRATA_REMISION = (
+    "El num. 4.5.4 remite al «cuadro 4.10» y la tabla de categorias de sub "
+    "rasante es el Cuadro 4.11; el 4.10 es la clasificacion de suelos "
+    "AASHTO M 145 / ASTM D 3282. Errata de remision del propio Manual")
 # Su aplicacion al HW es POR ANALOGIA [N->] -> ver criterios_adoptados
-CBR_MIN_SUBRASANTE = 6.0            # % (num. 3.3)
+CBR_MIN_SUBRASANTE = 6.0            # %
+# ---------------------------------------------------------------------------
+# Compactacion -- UN numeral la sostiene, no cuatro (NOR-SUE-03)
+# ---------------------------------------------------------------------------
+# Los dos valores se citaban a "num. 3.2.1, 3.2.2, 3.3 y 9.1(1)", los cuatro a
+# la vez. Verificado contra el PDF, uno por uno:
+#
+#   3.2.1 "Terraplen" (pag. impresa 24)  SOSTIENE LOS DOS. Es el unico:
+#       "La base y cuerpo del terraplen o relleno sera conformado en capas de
+#        hasta 0.30m y compactadas al 90% ... La corona ... tendra un espesor
+#        minimo de 0.30m y sera conformada en capas de 0.15m, compactadas al
+#        95%".
+#   3.2.2 "Corte" (pag. impresa 24)  trae UN 95 %, pero es el del FONDO DE
+#       EXCAVACION escarificado 0.15 m, otro elemento. No contiene el 90 %.
+#   3.3 "Sub rasante del camino" (pag. impresa 24)  trae otro 95 %, el de los
+#       ultimos 0.30 m bajo la subrasante. Tampoco contiene el 90 %.
+#   9.1 apartado 1) (pag. impresa 89)  NO CONTIENE NINGUN PORCENTAJE DE
+#       COMPACTACION. Va de CBR >= 6 % y de alternativas de estabilizacion:
+#       es el numeral que sostiene CBR_MIN_SUBRASANTE, no estos dos.
+#
+# Citar los cuatro para los dos valores hacia pasar por respaldo lo que no lo
+# era, y ademas repartia la responsabilidad de modo que ningun numeral quedaba
+# como EL que hay que abrir. Se cita el que los sostiene y se dice que
+# sostienen los otros.
 COMPACTACION_CORONA = 0.95          # 0.30 m superiores, capas de 0.15 m
-                                     # (num. 3.2.1, 3.2.2, 3.3 y 9.1(1))
 COMPACTACION_CUERPO = 0.90          # capas de hasta 0.30 m
-                                     # (num. 3.2.1, 3.2.2, 3.3 y 9.1(1))
+NUMERAL_COMPACTACION = _reg.cita("MS.3.2.1").como_texto()
+NUMERAL_COMPACTACION_CORTE = _reg.cita("MS.3.2.2").como_texto()
+NUMERAL_COMPACTACION_SUBRASANTE = _reg.cita("MS.3.3").como_texto()
+NUMERAL_ESTABILIZACION_CBR = _reg.cita("MS.9.1.1").como_texto()
+COMPACTACION_ALCANCE_DE_CADA_NUMERAL = (
+    "3.2.1 «Terraplen» sostiene LOS DOS valores (90 % base y cuerpo, 95 % "
+    "corona). 3.2.2 «Corte» y 3.3 «Sub rasante del camino» traen cada uno un "
+    "95 % de OTRO elemento -- el fondo de excavacion escarificado y los "
+    "ultimos 0.30 m bajo la subrasante -- y ninguno contiene el 90 %. "
+    "9.1(1) no contiene ningun porcentaje de compactacion: va de CBR >= 6 %")
 
 # ---------------------------------------------------------------------------
 # Cuadro 4.1 -- numero de calicatas (num. 4.2, pag. impresa 28, PDF 29)
@@ -878,9 +1060,21 @@ H_RELLENO_MIN = {
 # tuberia" es la superficie EXTERIOR del tubo, no el punto que queda a D
 # sobre el invert interior -- de ahi que M7 calcule la clave con el espesor
 # de pared (MAT-D4).
-# LA PAGINA: 984, verificada leyendo el PDF. Este comentario decia 982, y esa
-# cita viaja a mas sitios del expediente (NOR-EG-01, cluster C11); aqui se
-# corrige la ocurrencia que este archivo declara, no las demas.
+# LA PAGINA: impresa 984 (PDF 992), verificada leyendo el PDF en S12 sobre la
+# cabecera de la propia pagina. Este comentario llego a decir 982, y la
+# impresa 982 (PDF 990) trae 508.02 b), c) y d) -- calidad del tubo, muestreo
+# y material para cama de asiento --, nada de altura de relleno. El desfase de
+# este documento es +8, el mayor del corpus, y confundir pagina impresa con
+# pagina PDF produce exactamente un error de 8: la distancia entre las dos
+# cifras que el repositorio manejaba (NOR-EG-01, NOR-EG-02).
+#
+# Y NO CONFUNDIRLA CON SU VECINA: la subseccion 508.08 "Proteccion de la
+# estructura durante la construccion" (pag. impresa 985) tambien dice 0,30 m,
+# pero con otro sentido -- "el equipo y vehiculos pesados no deberan circular
+# sobre la estructura antes que la altura de relleno minima sobre la misma sea
+# de 0,30 m" --, que es la NOTA CONSTRUCTIVA de mas abajo y no la altura
+# minima de diseño. Dos frases con el mismo numero en paginas contiguas: si se
+# citan como una sola, el expediente pierde una de las dos exigencias.
 #
 # NOTA CONSTRUCTIVA [N] que acompaña a este mismo 0.30 m (Sec. 7.A de la hoja
 # de ruta): el equipo pesado no circula sobre el conducto antes de que el
@@ -974,20 +1168,49 @@ CAMA_RELLENO_LATERAL = {
         "cama_apoyo": "Concreto Clase F (f'c = 14 MPa), >= 15 cm",
         "sujecion_relleno_lateral": "Clase F hasta >= 1/4 del diametro "
                                     "exterior. Relleno Sec. 502 >= 95% MDS",
-        "numeral": "505.03/.07/.10/.11, pags. 950-951",
+        # PAGINAS CORREGIDAS (NOR-EG-03): el rango declarado era 950-951 y
+        # dejaba fuera las dos subsecciones que sostienen lo que la ficha
+        # afirma. Reales, leidas del PDF: 505.03 "Material para solado y
+        # sujecion" pag. impresa 950; 505.07 "Solado" 951; 505.10 "Sujecion"
+        # 952-953 -- la que trae el "un cuarto del diametro exterior" --;
+        # 505.11 "Relleno" 953.
+        "numeral": "505.03/.07/.10/.11, pags. impresas 950-953",
+        # EL 95 % NO ES LITERAL DE 505.11, y decirlo importa: esa subseccion
+        # solo remite a la Seccion 502, sin porcentaje. El 95 % de la pagina
+        # vecina es de 505.06 "Preparacion del terreno base" y se refiere al
+        # TERRENO BASE, no al relleno lateral.
+        "procedencia_de_los_porcentajes": ("por remision a la Sec. 502; el 95 % impreso "
+                               "cerca es de 505.06 y es del terreno base"),
     },
     "concreto_reforzado": {
         "cama_apoyo": "Subbase granular (Sec. 402) >= 15 cm, >= 95% MDS",
         "sujecion_relleno_lateral": "Subbase hasta >= 1/6 del diametro "
                                     "exterior. Relleno Sec. 502",
-        "numeral": "506.03/.07/.10/.11, pags. 959-960",
+        # PAGINAS CORREGIDAS (NOR-EG-03): declarado 959-960, real 959-961.
+        # 506.10 "Sujecion" y 506.11 "Relleno" estan en la impresa 961.
+        "numeral": "506.03/.07/.10/.11, pags. impresas 959-961",
+        # El 95 % llega por REMISION DE SEGUNDO NIVEL: 506.07 exige "la que se
+        # especifica para la corona en la Subseccion 205.12(c)(1)", y esa
+        # subseccion (pag. impresa 193) es la que imprime Di > 0.95 De para la
+        # corona y Di > 0.90 De para base y cuerpo.
+        "procedencia_de_los_porcentajes": "506.07 -> 205.12(c)(1), pag. impresa 193",
     },
     "tmc": {
         "cama_apoyo": "Subbase granular >= 15 cm, >= 95% MDS, con arena "
                       "suelta de 12 mm",
         "sujecion_relleno_lateral": "Capas de 15-20 cm: >= 90% en base y "
                                     "cuerpo, >= 95% en corona",
-        "numeral": "507.06/.07/.08, pag. 970",
+        # PAGINA CORRIDA TRES (NOR-EG-03): declarada 970, real 973-974. La
+        # impresa 970 trae la Tabla 507-01 "Espesores Minimos de Alcantarillas
+        # Circulares y Abovedadas", que es otra cosa. Reales: 507.05
+        # "Preparacion del terreno base" y 507.06 "Solado" en la 973; 507.07
+        # "Ensamblado e Instalacion de la tuberia" 973-974; 507.08 "Relleno"
+        # 974.
+        "numeral": "507.05/.06/.07/.08, pags. impresas 973-974",
+        # De la Seccion 507 son literales las capas de 15-20 cm y la arena
+        # suelta de 12 mm. El par 90/95 llega por remision a 205.12(c)(1), y
+        # los 15 cm de cama por doble remision 507.06 -> 506.07.
+        "procedencia_de_los_porcentajes": "507.08 -> 205.12(c)(1), pag. impresa 193",
     },
     "hdpe": {
         "cama_apoyo": "Arena gruesa, capas de 15 cm, espesor 15-30 cm "
@@ -995,7 +1218,12 @@ CAMA_RELLENO_LATERAL = {
         "sujecion_relleno_lateral": "Capas alternadas y simetricas de "
                                     "15 cm a > 95%; los 30 cm superiores a "
                                     ">= 100%. Prohibida la anegacion",
-        "numeral": "508.05/.07, pags. 981-982",
+        # PAGINAS CORREGIDAS (NOR-EG-03): declaradas 981-982, reales 982-985.
+        # En la impresa 981 solo esta 508.01 "Descripcion". Reales: 508.02 d)
+        # "Material para cama de asiento" en la 982; 508.05 "Preparacion de la
+        # cama de asiento del tubo" en la 983; 508.07 "Colocacion del relleno
+        # alrededor de la estructura" en la 984-985.
+        "numeral": "508.02 d)/.05/.07, pags. impresas 982-985",
     },
 }
 
@@ -2081,6 +2309,23 @@ NUMERAL_RECUBRIMIENTO_MP = (
 NUMERAL_SOBRECARGA_TRASDOS = _reg.cita("MP.2.4.2.2#SOBRECARGA").como_texto()
 NUMERAL_SOBRECARGA_TRASDOS_AASHTO = _reg.cita(
     "AASHTO_LRFD_9.3.11.6.4").como_texto()
+NUMERAL_SOBRECARGA_TRASDOS_ALTURA = _reg.cita(
+    "AASHTO_LRFD_9.3.11.6.4#ALTURA").como_texto()
+NUMERAL_SOBRECARGA_TRASDOS_APLICA = _reg.cita(
+    "AASHTO_LRFD_9.3.11.6.4#APLICA").como_texto()
+# El COMENTARIO, que no es articulado y aun asi es lo unico que reparte las
+# dos tablas junto con sus titulos. Se cita como comentario, no como articulo.
+NUMERAL_SOBRECARGA_TRASDOS_COMENTARIO = _reg.cita(
+    "AASHTO_LRFD_9.C3.11.6.4").como_texto()
+H_EQ_REPARTO_DE_TABLAS = (
+    "NO EXISTE en el articulado de AASHTO ninguna frase que reparta las dos "
+    "tablas de h_eq: el cuerpo normativo las cita juntas y sin condicionante "
+    "(«may be taken from Tables 3.11.6.4-1 and 3.11.6.4-2»). Quien las "
+    "reparte son los TITULOS de las tablas -- «on Abutments Perpendicular to "
+    "Traffic» y «on Retaining Walls Parallel to Traffic» -- y el comentario "
+    "C3.11.6.4, que no es articulado. Atribuir el reparto al articulo seria "
+    "una cita falsa; se cita a los titulos y al comentario, que es de donde "
+    "sale")
 # El numeral FALSO, declarado. No se borra: se nombra, para que el error tenga
 # un sitio donde estar dicho y para que un test tenga contra que fallar si
 # alguien lo reactiva.

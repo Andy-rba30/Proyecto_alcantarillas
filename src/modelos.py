@@ -870,6 +870,19 @@ class CamaApoyoRelleno:
     cama_apoyo: str
     sujecion_relleno_lateral: str
     numeral: str
+    # DE DONDE SALEN LOS PORCENTAJES DE COMPACTACION que la fila imprime, y
+    # es un campo y no un comentario porque la memoria tiene que poder
+    # decirlo. Al verificar las cuatro fichas contra el EG-2013 (NOR-EG-03)
+    # aparecio que en tres de ellas el "95 % MDS" NO es literal de la
+    # subseccion citada: llega por REMISION -- 506.07 y 507.08 remiten a la
+    # Subseccion 205.12(c)(1), que es la que imprime Di > 0.95 De para la
+    # corona y Di > 0.90 De para base y cuerpo --, y en la ficha del concreto
+    # simple el 95 % de la pagina vecina es de OTRO elemento (el terreno base
+    # de 505.06). El valor es correcto; lo que faltaba era decir por que via
+    # llega, que es la diferencia entre una cita y una deduccion.
+    # Vacio significa "todo lo que la fila imprime es literal de su
+    # subseccion", que es el caso del HDPE.
+    procedencia_de_los_porcentajes: str = ""
 
 
 @dataclass(frozen=True)

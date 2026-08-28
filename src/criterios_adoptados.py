@@ -1272,10 +1272,28 @@ CRITERIOS: Dict[str, Criterio] = {
                       "ALCANCE: solo afecta a los puntos cuyo q* cae dentro de "
                       "la ventana 3.5-4.0; fuera de ella rigen las dos "
                       "ecuaciones tal cual las escribe la tabla",
-        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Cap. IV y Apendice A "
-               "(curva de transicion tangente, sin ecuacion publicada). La "
-               "interpolacion lineal la prescribe Sec. 4.2 de la hoja de ruta, "
-               "no HDS-5",
+        fuente=(
+            "HDS-5 (FHWA) 3a ed., abril 2012: num. 3.1.3 'Inlet Control', "
+            "pag. impresa 3.4 (PDF 86) -- 'The flow transition zone between "
+            "the low headwater (weir control) and the high headwater (orifice "
+            "control) flow conditions is poorly defined. This zone is "
+            "approximated by plotting the unsubmerged and submerged flow "
+            "equations and connecting them with a line tangent to both "
+            "curves' -- y num. A.2 'INLET CONTROL EQUATIONS', pag. impresa "
+            "A.1 (PDF 190) -- 'The transition zone is defined empirically by "
+            "drawing a curve between and tangent to the curves defined by the "
+            "unsubmerged and submerged equations'. "
+            "NUMERAL CORREGIDO (NOR-HDS-06): esta fuente citaba 'Cap. IV', y "
+            "el Capitulo 4 de ESTA 3a edicion se titula 'CULVERT DESIGN FOR "
+            "AQUATIC ORGANISM PASSAGE (AOP)' -- paso de fauna acuatica, "
+            "biologia de peces y barreras de salto --, que no tiene nada que "
+            "ver con la zona de transicion. Es el mismo patron que "
+            "NOR-PUE-01: el numeral existe y su titulo no corresponde al "
+            "contenido que se le atribuye. Tampoco se salva leyendolo como la "
+            "edicion de 1985, cuyo Capitulo 4 es 'Tapered Inlets'. La mitad "
+            "'y Apendice A' de la cita vieja SI era correcta y se conserva. "
+            "La interpolacion lineal la prescribe Sec. 4.2 de la hoja de "
+            "ruta, no HDS-5"),
         reemplazado_por="Lectura directa de la carta de HDS-5 en la zona de "
                         "transicion, o el procedimiento tangente si el "
                         "expediente exige reproducir la curva original",
