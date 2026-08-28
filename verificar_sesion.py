@@ -151,6 +151,20 @@ if openpyxl:
     else:
         ok(f"las {len(sin_cluster)} filas sin cluster siguen fuera de la cola")
 
+    # parciales cuya fase ya fue ejecutada: nadie los va a volver a mirar
+    #   F1 -> S2-S10 (hecho)   F2 -> S12   F3 -> S14   F4 -> S16   F5 -> S19
+    # Actualizar FASES_EJECUTADAS al cerrar cada sesion de fase.
+    FASES_EJECUTADAS = {"F1"}
+    parciales = [r for r in filas if r[i["Estado"]] == "Cerrado parcial"]
+    huerfanos_fase = [r[0] for r in parciales
+                      if r[i["Fase"]] in FASES_EJECUTADAS]
+    if huerfanos_fase:
+        aviso("parciales cuya fase ya corrio, sin sesion que los recoja: "
+              + ", ".join(huerfanos_fase))
+    if parciales:
+        ok(f"{len(parciales)} parcial(es); "
+           f"{len(parciales) - len(huerfanos_fase)} esperan una fase futura")
+
 # ----------------------------------------------------------------- resumen
 print("\n" + "=" * 66)
 if FALLOS:
