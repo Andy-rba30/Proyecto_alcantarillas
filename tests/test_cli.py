@@ -311,7 +311,8 @@ def _resultado_hdpe(punto):
     """
     material = catalogo(TipoMaterial.HDPE)
     hidraulica = ResultadoHidraulico(
-        y_normal=0.30, y_critico=0.25, V=2.50, Q=punto.Q_m3s or 1.0,
+        y_normal=0.30, y_critico=0.25,
+        V_erosion=2.50, V_sedimentacion=1.92, Q=punto.Q_m3s or 1.0,
         HW_entrada=0.50, HW_salida=0.40,
         control_gobernante=ControlGobernante.ENTRADA)
     verificaciones = (

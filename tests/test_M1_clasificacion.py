@@ -169,7 +169,12 @@ def test_el_TR_de_diseno_es_el_de_la_tabla_N02(categoria, anios):
     assert tr.exacto == pytest.approx(anios, abs=0.5)
     # El redondeo queda visible, no perdido: el exacto no es el publicado.
     assert tr.exacto != pytest.approx(float(tr.anios))
-    assert tr.numeral == "3.6, Tabla N 02"
+    # El numeral ya no viaja pelado: lleva el titulo literal de la tabla y su
+    # caracter -- maximos RECOMENDADOS, con la decision del Propietario en la
+    # nota al pie (NOR-HID-08).
+    assert "3.6" in tr.numeral and "Tabla N 02" in tr.numeral
+    assert "MAXIMOS RECOMENDADOS" in tr.numeral
+    assert "Propietario" in tr.numeral
 
 
 def test_el_TR_no_se_copia_sino_que_se_calcula_desde_R_y_n():

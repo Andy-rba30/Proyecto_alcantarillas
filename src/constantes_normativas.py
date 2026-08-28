@@ -51,12 +51,75 @@ con comentarios de linea. Queda escrita aqui para que no haya que deducirla.
 
 # ================= Manual de Hidrologia (RD 20-2011-MTC/14) =================
 LUZ_MAX_ALCANTARILLA = 6.0          # m; >= 6.0 -> puente (4.1.1.3.1 / 4.1.1.5.1)
-DIAMETRO_MIN = 0.90                 # m (4.1.1.3.4 a)
-DIAMETRO_MIN_SELVA_ALTA = 1.22      # m = 48"; NO aplica en costa (4.1.1.3.7 a)
-Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b)
-V_MIN = 0.25                        # m/s (4.1.1.3.6, pag. 76) -- ver abajo
+
+# --- Diametro minimo de seccion circular: num. 4.1.1.3.4 a), pag. impresa 72 -
+# El numero suelto se lee como un piso incondicional y NO lo es. El numeral
+# trae dos condicionantes y la transcripcion literal los conserva porque el
+# proyecto no puede evaluar el primero y SI cae dentro del segundo (NOR-HID-03,
+# MAT-O19):
+DIAMETRO_MIN = 0.90                 # m (4.1.1.3.4 a), pag. impresa 72
+DIAMETRO_MIN_TEXTO = (
+    "En carreteras de alto volumen de transito y por necesidad de limpieza y "
+    "mantenimiento de las alcantarillas, se adoptara una seccion minima "
+    "circular de 0.90 m (36\") de diametro o su equivalente de otra seccion, "
+    "salvo en cruces de canales de riego donde se adoptaran secciones de "
+    "acuerdo a cada diseno particular.")
+DIAMETRO_MIN_AMBITO = (
+    "CONDICION 1 -- 'carreteras de alto volumen de transito': la clase de via "
+    "del corredor NO esta cerrada (depende del IMDA del estudio de demanda), "
+    "de modo que el proyecto no puede afirmar que se cumple. El piso se aplica "
+    "igual a las Familias A y B, y esa es una ADOPCION declarada, no una "
+    "lectura automatica del numeral: aplicarlo es conservador del lado "
+    "hidraulico -- exige mas seccion, nunca menos -- y por eso se adopta "
+    "mientras el IMDA no cierre. "
+    "CONDICION 2 -- 'salvo en cruces de canales de riego': la Familia C de "
+    "este expediente ES un conjunto de cruces de canal, y el numeral la "
+    "EXCEPTUA expresamente: alli la seccion se adopta 'de acuerdo a cada "
+    "diseno particular' y este piso no rige. `M2_material.materiales_candidatos` "
+    "devuelve tupla vacia para la Familia C, de modo que ningun punto de esa "
+    "familia recibe el piso -- pero hasta ahora la razon escrita era solo la "
+    "forma de la seccion (Sec. 2.3 de la hoja de ruta) y no esta excepcion "
+    "normativa, que es la que gobierna.")
+
+# --- Diametro minimo recomendado en selva alta: num. 4.1.1.3.7 a), pag. 79 ---
+# El nombre anterior (DIAMETRO_MIN_SELVA_ALTA) omitia las tres restricciones
+# que el numeral pone y que el valor solo no lleva (NOR-HID-12): es una
+# RECOMENDACION, es solo para TMC, y esta condicionada a cuatro caracteristicas
+# fisicas y geomorfologicas. El nombre nuevo lleva dos de las tres y el texto
+# literal la tercera.
+DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO = 1.22   # m = 48" (4.1.1.3.7 a), pag. 79
+DIAMETRO_MIN_TMC_SELVA_ALTA_TEXTO = (
+    "Se recomienda utilizar, en zonas de selva alta, con las caracteristicas "
+    "fisicas y geomorfologicos indicadas en el parrafo anterior, como diametro "
+    "minimo alcantarillas TMC Ø 48\".")
+DIAMETRO_MIN_TMC_SELVA_ALTA_CONDICIONES = (
+    "Las cuatro caracteristicas del parrafo anterior, que el numeral exige "
+    "para que la recomendacion aplique: cauces encajonados, en V, inactivos o "
+    "con flujo permanente de agua; pendientes entre 5% y 60%; suelo de taludes "
+    "y lecho de material granular (aluvial, coluvial, con matriz fina de arena "
+    "y limos, gravas y gravillas), vulnerable a erosion pluvial; vegetacion "
+    "arbustiva en taludes. NO APLICA EN COSTA, que es donde esta este "
+    "corredor (La Union, Piura).")
+
+Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b), pag. 79
+# Texto que fija Y_SOBRE_D_MAX, literal (MC-HHD, RD 20-2011-MTC/14,
+# num. 4.1.1.3.7 b) "Borde libre", pag. impresa 79):
+#
+#     "Se recomienda que el diseño hidráulico considere como mínimo el 25 % de
+#     la altura, diámetro o flecha de la estructura."
+#
+# SE TRANSCRIBE POR LO MISMO QUE V_MIN, Y ESO ES EL DEFECTO QUE CIERRA
+# (MAT-O13, NOR-HID-10): el 0.75 y el 0.25 salen del MISMO tipo de frase --
+# "se recomienda" -- del mismo apartado 4.1.1.3, y hasta ahora solo V_MIN
+# llevaba el matiz. Un revisor que viera "recomienda, no prohibe" en V2 y un
+# numeral pelado en V1 leeria que el borde libre es una exigencia y el piso de
+# velocidad no, cuando la fuente los escribe igual. Los dos se aplican como
+# umbral duro por decision conservadora del proyecto, y las dos veces eso es
+# una ADOPCION que la memoria tiene que declarar.
+V_MIN = 0.25                        # m/s (4.1.1.3.6, pags. 76-77) -- ver abajo
 # Texto que fija V_MIN, literal (MC-HHD, RD 20-2011-MTC/14, num. 4.1.1.3.6,
-# pag. 76, parrafo inmediatamente posterior a la Tabla Nº 10):
+# parrafo inmediatamente posterior a la Tabla Nº 10; ARRANCA en la pag.
+# impresa 76 y el numero se imprime en la 77):
 #
 #     "Se deberá verificar que la velocidad mínima del flujo dentro del
 #     conducto no produzca sedimentación que pueda incidir en una reducción de
@@ -66,12 +129,16 @@ V_MIN = 0.25                        # m/s (4.1.1.3.6, pag. 76) -- ver abajo
 # Se transcribe entero y no solo el numero porque el parrafo fija dos cosas
 # que el 0.25 suelto pierde. Primera: el numeral RECOMIENDA, no prohibe --
 # V2 lo aplica como umbral duro por decision conservadora del proyecto, y ese
-# matiz viaja hasta la memoria dentro de M5.NUMERAL_V2. Segunda: la razon del
-# minimo es la SEDIMENTACION que reduce capacidad, no el desgaste; por eso
-# vale igual para todos los materiales, mientras que el techo de V_MAX cambia
-# con la calidad del revestimiento. Es la misma pagina que la Tabla Nº 10 y
-# el mismo numeral, de modo que sin el titulo de la tabla y sin este parrafo
-# los dos limites se confunden -- que es exactamente el error que V3 tenia.
+# matiz viaja hasta la memoria por DOS vias, no una: dentro de M5.NUMERAL_V2
+# (que solo se imprime si el punto llego a evaluarse) y dentro de
+# UMBRALES_DE_VERIFICACION, que M11 imprime SIEMPRE (NOR-MEM-01: la memoria
+# generada no llevaba el matiz ni una sola vez, porque el pipeline se detiene
+# antes de V2 y la unica via era la tabla de verificaciones del punto).
+# Segunda: la razon del minimo es la SEDIMENTACION que reduce capacidad, no el
+# desgaste; por eso vale igual para todos los materiales, mientras que el techo
+# de la Tabla Nº 10 cambia con el material. Es el mismo numeral que la Tabla
+# Nº 10, de modo que sin el titulo de la tabla y sin este parrafo los dos
+# limites se confunden -- que es exactamente el error que V3 tenia.
 LAUSHEY_K = 3.1                     # d50 = V^2/(3.1*g), metrico (4.1.1.3.7 c)
 G_LAUSHEY = 9.8                      # m/s2; g tal como lo escribe la Sec.
                                      # 4.1.1.3.7 c) junto a su formula de d50.
@@ -86,32 +153,269 @@ G_LAUSHEY = 9.8                      # m/s2; g tal como lo escribe la Sec.
 # en constantes_fisicas.py, y ademas DERIVADA (RHO_AGUA * G), para que el
 # proyecto tenga una sola gravedad. Mismo criterio ya aplicado a G.
 
-RIESGO_ADMISIBLE = {                # Tabla N 02, num. 3.6
-    "quebrada_importante": {"R": 0.30, "n": 25},   # -> TR = 71 anios
-    "quebrada_menor":      {"R": 0.35, "n": 15},   # -> TR = 35 anios
+# ---------------------------------------------------------------------------
+# Tabla N 02 -- riesgo admisible (num. 3.6, pag. impresa 25)
+# ---------------------------------------------------------------------------
+# TRANSCRITA COMPLETA: seis filas, aunque el calculo use dos (NOR-HID-07,
+# NOR-HID-08). Las cuatro filas que el script no consume no sobran -- son las
+# que dejan ver que la fila de la alcantarilla de cuneta es la MISMA que la de
+# quebrada menor, y que el drenaje de plataforma tiene otra.
+TABLA_02_TITULO = ("TABLA Nº 02: VALORES MAXIMOS RECOMENDADOS DE RIESGO "
+                   "ADMISIBLE DE OBRAS DE DRENAJE")
+TABLA_02_COLUMNAS = ("TIPO DE OBRA", "RIESGO ADMISIBLE (**) ( %)")
+TABLA_02_TEXTO_PREVIO = (
+    "De acuerdo a los valores presentados en la Tabla Nº 01 se recomienda "
+    "utilizar como maximo, los siguientes valores de riesgo admisible de obras "
+    "de drenaje:")
+# Nota al pie (**), literal. Es normativa y es la que cambia el CARACTER de
+# toda la tabla: el titulo dice "valores maximos RECOMENDADOS" y el pie asigna
+# la decision al Propietario. El proyecto adopta los maximos recomendados, que
+# es el extremo MENOS conservador del margen que la tabla concede (mas riesgo
+# admisible -> menos TR -> menos caudal de diseno), y esa adopcion se declara
+# en la memoria porque no es una lectura automatica del numeral.
+TABLA_02_NOTA_VIDA_UTIL = (
+    "(**) Vida Util considerado (n): Puentes y Defensas Ribereñas n = 40 anios; "
+    "Alcantarillas de quebradas importantes n = 25 anios; Alcantarillas de "
+    "quebradas menores n = 15 anios; Drenaje de plataforma y Sub-drenes "
+    "n = 15 anios.")
+TABLA_02_NOTA_PROPIETARIO = (
+    "El Propietario de una Obra es el que define el riesgo admisible de falla "
+    "y la vida util de las obras.")
+# clave de calculo -> (nombre literal de la fila, R en tanto por uno, n anios)
+TABLA_02_FILAS = {
+    "puentes": {
+        "fila": "Puentes (*)", "R": 0.25, "n": 40},
+    "quebrada_importante": {
+        "fila": "Alcantarillas de paso de quebradas importantes y badenes",
+        "R": 0.30, "n": 25},
+    "quebrada_menor": {
+        "fila": ("Alcantarillas de paso quebradas menores y descarga de agua "
+                 "de cunetas"),
+        "R": 0.35, "n": 15},
+    "drenaje_plataforma": {
+        "fila": "Drenaje de la plataforma (a nivel longitudinal)",
+        "R": 0.40, "n": 15},
+    "subdrenes": {
+        "fila": "Subdrenes", "R": 0.40, "n": 15},
+    "defensas_riberenas": {
+        "fila": "Defensas Ribereñas", "R": 0.25, "n": 40},
 }
+# Las DOS filas que el calculo de la Fase 2 consume. Se derivan de la
+# transcripcion completa en vez de repetir los numeros: si la transcripcion se
+# corrige, esta vista se corrige con ella y no quedan dos copias que puedan
+# divergir (el mismo motivo por el que 'n_manning_hdpe' LEE de MANNING).
+RIESGO_ADMISIBLE = {
+    clave: {"R": TABLA_02_FILAS[clave]["R"], "n": TABLA_02_FILAS[clave]["n"]}
+    for clave in ("quebrada_importante", "quebrada_menor")
+}   # -> TR = 71 y 35 anios
 # TR = 1 / (1 - (1-R)**(1/n))       # sin piso normativo
 
-MANNING = {                         # Tabla N 09: (n_min, n_max)
-    "metal_corrugado": (0.021, 0.030),
-    "concreto_recto":  (0.010, 0.013),
-    "madera_duelas":   (0.010, 0.014),
+# ---------------------------------------------------------------------------
+# Tabla N 09 -- coeficiente de rugosidad de Manning (num. 4.1.1.3.6, pag. 75)
+# ---------------------------------------------------------------------------
+# TRANSCRITA COMPLETA EN LO QUE AL PROYECTO LE TOCA, con las TRES columnas y
+# con las SUBFILAS separadas (NOR-HID-11). Los dos defectos que cierra:
+#
+#   1. La tabla tiene MINIMO / NORMAL / MAXIMO y el codigo llevaba dos
+#      columnas. La columna NORMAL es la de uso corriente y no aparecia por
+#      ningun lado; ahora esta transcrita, y por que el calculo no la usa esta
+#      dicho abajo en vez de deducirse de su ausencia.
+#   2. "Metal corrugado" tiene DOS subfilas -- sub-dren (0.017/0.019/0.021) y
+#      dren para aguas lluvias (0.021/0.024/0.030) -- y el codigo tomaba la
+#      segunda bajo la clave generica 'metal_corrugado', sin declarar la
+#      eleccion. El par (0.021, 0.030) coincide ademas con el MAXIMO de la
+#      primera subfila, de modo que la confusion no se detectaba leyendo los
+#      numeros. Las claves llevan ahora la subfila en el nombre y M2 declara
+#      cual aplica a cada material y por que.
+#
+# POR QUE EL CALCULO USA MINIMO Y MAXIMO Y NO NORMAL: por la regla de doble n
+# (Sec. 4.1 de la hoja de ruta), que no pide el valor corriente sino los dos
+# EXTREMOS -- n maximo para capacidad y tirante, n minimo para velocidad
+# maxima y socavacion --, de modo que cada verificacion se resuelva con el
+# extremo que la deja del lado seguro. El valor NORMAL no entra en ninguna de
+# las dos ramas: entraria en un calculo de un solo n, que es justo lo que la
+# regla prohibe.
+TABLA_09_TITULO = ("TABLA Nº 09: Valores del Coeficiente de Rugosidad de "
+                   "Manning (n)")
+TABLA_09_COLUMNAS = ("TIPO DE CANAL", "MINIMO", "NORMAL", "MAXIMO")
+TABLA_09_FUENTE_TABLA = "Hidraulica de Canales Abiertos, Ven Te Chow, 1983"
+TABLA_09_GRUPO = ("A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO "
+                  "-- el unico grupo de la tabla que describe una alcantarilla; "
+                  "los grupos B (canales revestidos), C (excavado) y D "
+                  "(corrientes naturales) describen el cauce, no el conducto, y "
+                  "no se transcriben aqui porque ningun modulo dimensiona un "
+                  "cauce")
+TABLA_09_FILAS = {
+    "metal_corrugado_subdren": {
+        "fila": "A.1 METALICOS - c. Metal corrugado - sub - dren",
+        "min": 0.017, "normal": 0.019, "max": 0.021},
+    "metal_corrugado_dren_aguas_lluvias": {
+        "fila": "A.1 METALICOS - c. Metal corrugado - dren para aguas lluvias",
+        "min": 0.021, "normal": 0.024, "max": 0.030},
+    "concreto_tubo_recto": {
+        "fila": ("A.2 NO METALICOS - a. Concreto - tubo recto y libre de "
+                 "basuras"),
+        "min": 0.010, "normal": 0.011, "max": 0.013},
+    "madera_duelas": {
+        "fila": "A.2 NO METALICOS - b. Madera - duelas",
+        "min": 0.010, "normal": 0.012, "max": 0.014},
     # HDPE no listado -> criterios_adoptados.valor("n_manning_hdpe")
 }
-# n_max -> capacidad y tirante ; n_min -> velocidad y socavacion
+# Vista de calculo: (n_min, n_max) por fila. Derivada de la transcripcion, no
+# copiada de ella. n_max -> capacidad y tirante ; n_min -> velocidad MAXIMA y
+# socavacion. El piso de velocidad (V2) NO sale de n_min: sale de n_max, que
+# es la estimacion BAJA de velocidad -- ver `M3_hidraulica.resolver_manning`.
+MANNING = {clave: (fila["min"], fila["max"])
+           for clave, fila in TABLA_09_FILAS.items()}
 
-# Tabla N 10, "Velocidades maximas admisibles en conductos revestidos"
-# (num. 4.1.1.3.6, pag. 76). Los DOS numeros de cada fila son velocidades
-# MAXIMAS: el rango recorre la calidad del revestimiento y el extremo inferior
-# es el maximo admisible del acabado mas pobre. NO es (piso, techo). V3
-# verifica solo el superior; el piso de autolimpieza es V_MIN, aparte y para
-# todos los materiales. La transcripcion no cambia: cambia como se lee.
-V_MAX = {
-    "concreto":            (3.0, 6.0),
-    "ladrillo_c_concreto": (2.5, 3.5),
-    "mamposteria_piedra":  (2.0, 2.0),
+# ---------------------------------------------------------------------------
+# Tabla N 10 -- velocidades maximas admisibles (num. 4.1.1.3.6, pag. 76)
+# ---------------------------------------------------------------------------
+# TITULO LITERAL, CON LA UNIDAD. El repo lo entrecomillaba sin "(m/s)"
+# (NOR-HID-06) en los tres sitios donde lo cita, y la unidad omitida es lo
+# primero que un revisor comprueba en una cita entre comillas.
+TABLA_10_TITULO = ("TABLA Nº 10: Velocidades maximas admisibles (m/s) en "
+                   "conductos revestidos")
+TABLA_10_COLUMNAS = ("TIPO DE REVESTIMIENTO", "VELOCIDAD (M/S)")
+TABLA_10_FUENTE_TABLA = "HCANALES, Maximo Villon B."
+TABLA_10_TEXTO_PREVIO = (
+    "Se debe tener en cuenta la velocidad, parametro que es necesario "
+    "verificar de tal manera que se encuentre dentro de un rango, cuyos "
+    "limites se describen a continuacion.")
+# Cada fila con su nombre LITERAL y sus valores tal como la tabla los imprime:
+# la mamposteria trae UN solo valor, no un par (NOR-HID-07). Escribirla como
+# (2.0, 2.0) inventaba un par que la fuente no escribe.
+TABLA_10_FILAS = {
+    "concreto":            {"fila": "Concreto", "valores": (3.0, 6.0)},
+    "ladrillo_c_concreto": {"fila": "Ladrillo con concreto",
+                            "valores": (2.5, 3.5)},
+    "mamposteria_piedra":  {"fila": "Mamposteria de piedra y concreto",
+                            "valores": (2.0,)},
     # TMC y HDPE no listados -> criterios_adoptados
 }
+# QUE SIGNIFICAN LOS DOS NUMEROS, Y QUE PARTE DE ESO ES DEL MANUAL Y QUE PARTE
+# ES DEL PROYECTO (NOR-HID-04). Del Manual, verificado:
+#   - el titulo dice "Velocidades maximas admisibles (m/s)" y la unica columna
+#     de valores se rotula "VELOCIDAD (M/S)": los dos numeros son MAXIMOS, y
+#     ninguno es un piso. Esa lectura se sostiene y es la que V3 aplica.
+#   - el piso de velocidad esta APARTE, en el parrafo siguiente (V_MIN), y vale
+#     para todos los materiales por igual.
+#   - la fila de mamposteria trae un solo valor.
+#   - la fuente de la tabla no es el MTC: es HCANALES, Maximo Villon B.
+# Del proyecto, NO del Manual -- y hasta ahora se imprimia pegado a la cita
+# como si fuera de la fuente: la explicacion de POR QUE hay dos numeros ("el
+# rango recorre la calidad del revestimiento; el inferior es el maximo del
+# acabado mas pobre"). El Manual no lo dice en ninguna parte, y ademas la
+# frase con que introduce la tabla apunta en otra direccion ("se encuentre
+# dentro de un rango, cuyos limites se describen a continuacion") y la fila de
+# mamposteria, con un solo numero, no encaja con una lectura de acabados. Es
+# INTERPRETACION DEL PROYECTISTA, razonable y declarada como tal; lo que la
+# fuente sostiene es solo que los dos numeros son maximos.
+TABLA_10_INTERPRETACION_PROYECTO = (
+    "INTERPRETACION DEL PROYECTISTA, NO DEL MANUAL: que los dos numeros de una "
+    "fila recorran la calidad del revestimiento -- el superior para el acabado "
+    "de mejor calidad y el inferior para el mas pobre -- es una lectura que "
+    "este proyecto adopta para poder elegir un techo mas conservador dentro de "
+    "la fila ('v_max_concreto_eleccion'). El Manual NO la escribe: solo dice "
+    "que la tabla da velocidades maximas admisibles. En contra de esta lectura "
+    "juegan dos hechos de la propia fuente: la frase que introduce la tabla "
+    "habla de un 'rango' con 'limites', y la fila de mamposteria trae un solo "
+    "valor. A favor juega el titulo, que es lo unico que decide que ninguno de "
+    "los dos numeros sea un piso. Se imprime SIEMPRE separada de la cita.")
+# Vista de calculo: los valores de la fila, tal cual. V3 aplica el MAYOR (el
+# techo del acabado de mejor calidad) y no verifica el menor: el piso de
+# velocidad es V_MIN, no el extremo inferior de esta fila.
+V_MAX = {clave: fila["valores"] for clave, fila in TABLA_10_FILAS.items()}
+
+# ---------------------------------------------------------------------------
+# El CARACTER de cada umbral que el proyecto verifica
+# ---------------------------------------------------------------------------
+# Existe por NOR-MEM-01, que es un defecto del PRODUCTO y no del codigo: el
+# matiz "el numeral recomienda, no prohibe" viajaba solo dentro de
+# M5.NUMERAL_V2, o sea dentro de la tabla de verificaciones de cada punto. Esa
+# tabla no se imprime si el punto no llego a evaluarse -- y hoy no llega,
+# porque 'homogeneidad_serie_fen' bloquea el Q de toda la Familia A --, de modo
+# que la palabra "recomend" aparecia CERO veces en la memoria generada mientras
+# el repositorio afirmaba que era "lo unico que la memoria imprime de V2".
+#
+# Un umbral aplicado como exigencia cuando la fuente lo escribe como
+# recomendacion es una decision del proyecto, no una lectura de la norma, y se
+# declara. Al reves -- imprimir "exigencia" donde la fuente recomienda -- es
+# una cita falsa, que es la clase de defecto que la Sec. 0.5 de la hoja de ruta
+# llama la mas grave: "un vacio se ve; una cita falsa se cree".
+#
+# `caracter` es lo que la FUENTE hace (recomendacion / exigencia) y
+# `aplicacion` lo que el PROYECTO hace con ello. Los dos se imprimen juntos y
+# separados: sin el segundo no se ve la decision, sin el primero se inventa una
+# exigencia.
+UMBRALES_DE_VERIFICACION = (
+    {"codigo": "V1",
+     "que": "Borde libre: y/D <= 0.75 (minimo 25 % de borde libre)",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) 'Borde libre', "
+                "pag. impresa 79",
+     "caracter": "RECOMENDACION",
+     "texto": "Se recomienda que el diseño hidraulico considere como minimo el "
+              "25 % de la altura, diametro o flecha de la estructura.",
+     "aplicacion": "Se aplica como umbral DURO (un punto con y/D > 0.75 se "
+                   "marca 'NO cumple'). Es la lectura conservadora y es "
+                   "decision del proyecto, no exigencia del numeral."},
+    {"codigo": "V2",
+     "que": "Velocidad minima de autolimpieza: V >= 0.25 m/s",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo posterior "
+                "a la Tabla Nº 10; arranca en la pag. impresa 76 y el valor se "
+                "imprime en la 77",
+     "caracter": "RECOMENDACION",
+     "texto": "Se debera verificar que la velocidad minima del flujo dentro "
+              "del conducto no produzca sedimentacion que pueda incidir en una "
+              "reduccion de su capacidad hidraulica, recomendandose que la "
+              "velocidad minima sea igual a 0.25 m/s.",
+     "aplicacion": "Se aplica como umbral DURO, y se evalua con la velocidad "
+                   "de la rama de n MAXIMO -- la estimacion BAJA de velocidad "
+                   "--, que es el extremo conservador para un piso. La razon "
+                   "del minimo es la sedimentacion que reduce capacidad, no el "
+                   "desgaste: por eso vale igual para todos los materiales."},
+    {"codigo": "V3",
+     "que": "Velocidad maxima admisible del revestimiento",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 'Velocidades maximas "
+                "admisibles (m/s) en conductos revestidos', num. 4.1.1.3.6, "
+                "pag. impresa 76. Fuente de la tabla: HCANALES, Maximo Villon B.",
+     "caracter": "EXIGENCIA (tabla de valores admisibles)",
+     "texto": "Concreto 3.0 - 6.0 ; Ladrillo con concreto 2.5 - 3.5 ; "
+              "Mamposteria de piedra y concreto 2.0.",
+     "aplicacion": "Los DOS numeros de la fila son MAXIMOS: se verifica solo el "
+                   "superior, y el inferior NO es un piso. Se evalua con la "
+                   "velocidad de la rama de n MINIMO -- la estimacion ALTA --, "
+                   "que es el extremo conservador para un techo. TMC y HDPE no "
+                   "tienen fila en esta tabla: su techo sale de un criterio [C] "
+                   "con fuente WSDOT."},
+    {"codigo": "TR",
+     "que": "Riesgo admisible y vida util con que se calcula el periodo de "
+            "retorno (Tabla Nº 02)",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 02, num. 3.6, "
+                "pag. impresa 25",
+     "caracter": "RECOMENDACION -- MAXIMOS, y la decision es del Propietario",
+     "texto": "El titulo de la tabla es 'VALORES MAXIMOS RECOMENDADOS de "
+              "riesgo admisible de obras de drenaje', el texto que la "
+              "introduce dice 'se recomienda utilizar como maximo', y la nota "
+              "al pie cierra: 'El Propietario de una Obra es el que define el "
+              "riesgo admisible de falla y la vida util de las obras'.",
+     "aplicacion": "El proyecto adopta los valores maximos recomendados de la "
+                   "tabla (R = 30 % / n = 25 anios para quebrada importante; "
+                   "R = 35 % / n = 15 anios para quebrada menor y descarga de "
+                   "cunetas). ADVERTENCIA QUE HAY QUE LEER: adoptar el MAXIMO "
+                   "recomendado es el extremo MENOS conservador del margen que "
+                   "la tabla concede -- mas riesgo admisible da menos TR y "
+                   "menos caudal de diseno --, y a diferencia de V1 y V2 aqui "
+                   "la lectura conservadora seria adoptar MENOS. Mientras el "
+                   "Propietario no declare valores propios, esta adopcion "
+                   "gobierna el TR de todos los puntos."},
+    {"codigo": "D_min",
+     "que": "Seccion minima circular de 0.90 m",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.4 a), pag. impresa 72",
+     "caracter": "EXIGENCIA CONDICIONADA ('se adoptara', con dos condiciones)",
+     "texto": DIAMETRO_MIN_TEXTO,
+     "aplicacion": DIAMETRO_MIN_AMBITO},
+)
 
 LONG_MAX_CUNETA = {"seca": 250.0, "muy_lluviosa": 200.0}   # m (4.1.2.1 d)
 
@@ -467,8 +771,11 @@ NUMERAL_CICLOPEO = "E.060 Art. 22.10, pags. 194-195"
 # alguna se cablea, sale de esta lista en el mismo commit.
 CONSTANTES_DE_REFERENCIA = (
     "DIAMETRO_MIN",              # el piso de 0.90 m entra por
-    "DIAMETRO_MIN_SELVA_ALTA",   # 'diametros_normalizados' (D_INICIO), y la
-                                 # fila de selva alta no aplica en costa
+                                 # 'diametros_normalizados' (D_INICIO). Ver
+                                 # DIAMETRO_MIN_AMBITO: su numeral lo
+                                 # condiciona y exceptua a los cruces de canal
+    "DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO",   # recomendacion, solo TMC y
+                                 # solo selva alta: no aplica en costa
     "LONG_MAX_CUNETA",           # Fase 10 recibe L_hidraulico declarado
     "CBR_MIN_SUBRASANTE",        # requisito del paquete estructural vial
     "COMPACTACION_CORONA",       # requisitos de ejecucion (EG-2013), sin

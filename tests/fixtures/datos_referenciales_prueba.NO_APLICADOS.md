@@ -54,6 +54,17 @@ trae y ninguna fuente citada respalda. CLAUDE.md lo prohibe expresamente
 ("Si la hoja de ruta NO dice nada sobre algo que necesitas: NO lo inventes").
 Se necesita el par (v_min, v_max) de PPI/FHWA, no solo el maximo.
 
+> **ESTE PARRAFO YA NO DESCRIBE EL CODIGO (aviso dejado al cerrar C05).** Su
+> premisa se cayo dos veces. Primera: los dos numeros de la fila de la Tabla
+> N 10 son ambos MAXIMOS, no un piso y un techo, de modo que no hay ningun
+> "limite inferior" que inventar -- el piso de velocidad es V2 (0.25 m/s) y
+> vale para todos los materiales. Segunda: `Material.v_max_rango` ya no
+> existe. El techo escalar de TMC y HDPE viaja en `Material.v_max_adoptado` y
+> la fila de la tabla en `Material.v_max_tabla10`, precisamente porque un solo
+> campo transportando las dos formas era el defecto SIS-A-06. El archivo
+> entero esta declarado como contenido caduco (SIS-F-15, cluster C09) y se
+> corrige alli; esta nota solo evita que alguien busque un simbolo retirado.
+
 ## Datos que NO son criterio: van al CSV o a --datos-externos
 
 ### luz_m  <- el bloqueo dominante de la corrida

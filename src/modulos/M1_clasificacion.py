@@ -66,7 +66,8 @@ from __future__ import annotations
 
 from typing import Dict, List, Mapping, Optional, Tuple, Union
 
-from constantes_normativas import LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE
+from constantes_normativas import (LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE,
+                                   TABLA_02_FILAS)
 from criterios_adoptados import valor
 from modelos import (CategoriaTR, Clasificacion, DatoFaltanteError,
                      DatoInvalidoError, Denominacion, DisenoNoFactibleError,
@@ -76,7 +77,22 @@ from tolerancias import TOL_UMBRAL_NORMATIVO
 
 # Numerales que sustentan cada decision de la fase.
 NUMERAL_LUZ = "4.1.1.3.1 / 4.1.1.5.1"     # Manual MTC, pags. 70 y 88 (Sec. 2.1)
-NUMERAL_TR = "3.6, Tabla N 02"            # Manual MTC, pag. 25 (Sec. 2.2)
+# El numeral se escribe largo por lo mismo que los de M5: es lo que la memoria
+# imprime, y sin el CARACTER de la tabla el revisor lee como exigencia lo que
+# la fuente escribe como techo recomendado (NOR-HID-08). El titulo literal es
+# "VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje", el
+# texto que la introduce dice "se recomienda utilizar como maximo", y la nota
+# al pie cierra: "El Propietario de una Obra es el que define el riesgo
+# admisible de falla y la vida util de las obras". El proyecto adopta los
+# maximos recomendados, que en esta tabla -- al reves que en V1 y V2 -- es el
+# extremo MENOS conservador del margen concedido: mas riesgo admisible da
+# menos TR y menos caudal de diseno.
+NUMERAL_TR = ('MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 "VALORES '
+              'MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje", '
+              'pag. impresa 25. La tabla RECOMIENDA estos valores "como '
+              'maximo" y su nota al pie asigna la decision al Propietario de '
+              'la obra; el proyecto adopta los maximos recomendados mientras '
+              'el Propietario no declare otros')  # (Sec. 2.2)
 NUMERAL_FAMILIA = "Sec. 2.3"              # la hoja de ruta, sin numeral MTC propio
 
 CRITERIO_CATEGORIA_A = "umbral_area_quebrada_importante_ha"
@@ -206,6 +222,16 @@ def tr_de_categoria(categoria: CategoriaLike,
     El redondeo al anio es el de la propia tabla: la columna "TR de diseno"
     publica 71 y 35, que son 70.59 y 35.32 redondeados. Se conserva el valor
     exacto en `exacto` para que el redondeo sea visible y no un dato perdido.
+
+    QUE CLASE DE VALORES SON R Y n (NOR-HID-08). Maximos RECOMENDADOS, no
+    exigencias: el titulo de la Tabla N 02 lo dice, el texto que la introduce
+    dice "se recomienda utilizar como maximo" y la nota al pie remata que "El
+    Propietario de una Obra es el que define el riesgo admisible de falla y la
+    vida util de las obras". Adoptarlos tal cual es una decision del proyecto,
+    y es la MENOS conservadora que la tabla admite: mas riesgo admisible da
+    menos TR y menos caudal de diseno. `fundamento` lo lleva escrito para que
+    la memoria no presente como umbral normativo lo que es un techo
+    recomendado adoptado.
     """
     cat = _categoria(categoria, id_punto)
     fila = RIESGO_ADMISIBLE[cat.value]
@@ -219,8 +245,11 @@ def tr_de_categoria(categoria: CategoriaLike,
         exacto=exacto,
         anios=round(exacto),
         numeral=NUMERAL_TR,
-        fundamento=fundamento or f"fila '{cat.value}' de la Tabla N 02 "
-                                 f"(R = {R}, n = {n} anios)",
+        fundamento=fundamento or (
+            f"fila \"{TABLA_02_FILAS[cat.value]['fila']}\" de la Tabla N 02 "
+            f"(R = {R}, n = {n} anios). Son los valores MAXIMOS RECOMENDADOS "
+            f"de la tabla, adoptados por el proyecto: la nota al pie deja la "
+            f"decision al Propietario de la obra, que no ha declarado otros"),
         id_punto=id_punto,
     )
 

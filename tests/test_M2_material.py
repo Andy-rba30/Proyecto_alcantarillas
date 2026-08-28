@@ -10,7 +10,7 @@ Los tests que mas importan son cuatro:
     - cada material se detiene en SU tope de Sec. 3.2 (el de HDPE es el mas
       restrictivo: ~1.50 m) y siguiente_diametro() devuelve None ahi, nunca
       un numero que no existe como producto;
-    - v_max_rango y h_relleno_min salen en None para TMC/HDPE sin lanzar
+    - v_max_adoptado y h_relleno_min salen en None para TMC/HDPE sin lanzar
       CriterioPendienteError, porque el vacio esta documentado, no relleno;
     - la Familia C no tiene candidatos: su seccion es marco o multicelda.
 """
@@ -107,7 +107,9 @@ def test_catalogo_devuelve_un_material_completo():
     assert concreto.D_max == pytest.approx(2.70)
     assert concreto.n_min == pytest.approx(0.010)
     assert concreto.n_max == pytest.approx(0.013)
-    assert concreto.v_max_rango == pytest.approx((3.0, 6.0))
+    assert concreto.v_max_tabla10 == pytest.approx((3.0, 6.0))
+    assert concreto.v_max_adoptado is None
+    assert concreto.fila_manning.endswith("tubo recto y libre de basuras")
     assert concreto.seccion_eg2013 == "506"
 
 
@@ -126,8 +128,9 @@ def test_la_velocidad_maxima_declarada_llega_al_catalogo():
     """
     tmc = catalogo(TipoMaterial.TMC)
     hdpe = catalogo(TipoMaterial.HDPE)
-    assert tmc.v_max_rango == ca.valor("v_max_tmc")
-    assert hdpe.v_max_rango == ca.valor("v_max_hdpe")
+    assert tmc.v_max_adoptado == ca.valor("v_max_tmc")
+    assert hdpe.v_max_adoptado == ca.valor("v_max_hdpe")
+    assert tmc.v_max_tabla10 is None and hdpe.v_max_tabla10 is None
     assert tmc.v_max_definida
     assert hdpe.v_max_definida
 
@@ -145,7 +148,7 @@ def test_un_vacio_de_velocidad_maxima_no_detiene_el_catalogo(monkeypatch):
                         original.__class__(**{**original.__dict__,
                                               "valor": None}))
     tmc = catalogo(TipoMaterial.TMC)
-    assert tmc.v_max_rango is None
+    assert tmc.v_max_adoptado is None
     assert not tmc.v_max_definida
 
 
@@ -216,7 +219,7 @@ def test_la_velocidad_maxima_declarada_en_caliente_llega_al_catalogo(
     ca.establecer_valor_dinamico("v_max_tmc", 3.9)
     try:
         tmc = catalogo(TipoMaterial.TMC)
-        assert tmc.v_max_rango == pytest.approx(3.9)
+        assert tmc.v_max_adoptado == pytest.approx(3.9)
         assert tmc.v_max_definida
     finally:
         ca.quitar_valor_dinamico("v_max_tmc")
@@ -231,10 +234,10 @@ def test_la_declaracion_en_caliente_pisa_al_valor_del_archivo():
     assert ca.criterio("v_max_tmc").valor is not None
     ca.establecer_valor_dinamico("v_max_tmc", 3.9)
     try:
-        assert catalogo(TipoMaterial.TMC).v_max_rango == pytest.approx(3.9)
+        assert catalogo(TipoMaterial.TMC).v_max_adoptado == pytest.approx(3.9)
     finally:
         ca.quitar_valor_dinamico("v_max_tmc")
-    assert catalogo(TipoMaterial.TMC).v_max_rango == ca.valor("v_max_tmc")
+    assert catalogo(TipoMaterial.TMC).v_max_adoptado == ca.valor("v_max_tmc")
 
 
 def test_solo_el_hdpe_tiene_minimo_de_relleno_en_eg2013():

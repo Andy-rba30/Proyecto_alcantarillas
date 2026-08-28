@@ -198,8 +198,10 @@ def test_la_hidraulica_del_resultado_es_la_del_par_aceptado():
 
     assert hidraulica.Q == pytest.approx(punto.Q_m3s)
     assert hidraulica.y_normal / resultado.D == pytest.approx(Y_SOBRE_D_MAX, rel=1e-3)
-    # Regla de doble n (Sec. 4.1): la V del resultado sale de n_min, no de Q/A.
-    assert hidraulica.V > hidraulica.Q / (hidraulica.y_normal * resultado.D)
+    # Regla de doble n (Sec. 4.1): la velocidad de erosion sale de n_min, no
+    # de Q/A -- esa ultima es justamente `V_sedimentacion`, la del piso de V2.
+    assert hidraulica.V_erosion > hidraulica.Q / (hidraulica.y_normal * resultado.D)
+    assert hidraulica.V_sedimentacion < hidraulica.V_erosion
     assert hidraulica.HW in (hidraulica.HW_entrada, hidraulica.HW_salida)
 
 
