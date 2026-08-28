@@ -2202,10 +2202,13 @@ CRITERIOS: Dict[str, Criterio] = {
     # No se le redefinio el contenido porque en LRFD no queda nada que
     # represente: el margen entre estabilizante y desestabilizante lo hacen
     # ahora los propios gamma, y conservar ademas un FS seria contar dos veces
-    # el mismo margen. Los gamma NO son un criterio nuevo: salen de
-    # 'factores_carga_aashto', mas abajo, el mismo del que come M9 (Sec. 9.2).
-    # Que Fase 8 y Fase 9 lean la misma declaracion es lo que impide que el
-    # expediente termine con dos juegos de factores de carga distintos.
+    # el mismo margen. Los gamma NO son un criterio: son [N] y viven en
+    # constantes_normativas (las dos tablas del num. 2.4.5.3.1); lo que
+    # 'factores_carga_aashto' declara, mas abajo, es de que FILA de gamma_p
+    # cuelga cada estructura, y es el mismo criterio del que come M9
+    # (Sec. 9.2). Que Fase 8 y Fase 9 lean las mismas tablas y la misma
+    # declaracion es lo que impide que el expediente termine con dos juegos
+    # de factores de carga distintos.
 
     "peso_especifico_relleno_kn_m3": Criterio(
         valor=None,                 # VACIO: bloquea el termino Sigma W de V7
@@ -2397,18 +2400,48 @@ CRITERIOS: Dict[str, Criterio] = {
                       "de retencion' (1.35/1.00) y el minimo de 'Estructura "
                       "rigida enterrada' (1.30/0.90). Un criterio con un solo "
                       "par no puede expresar lo que la fuente desglosa por "
-                      "TIPO DE ESTRUCTURA, y el dano no era hipotetico: para "
-                      "el cabezal, que la tabla clasifica como muro de "
-                      "retencion, el minimo es 1.00 y usar 0.90 rebaja un "
-                      "10 % el peso de tierra que ESTABILIZA el volteo, el "
-                      "deslizamiento y la flotacion, que es la direccion "
-                      "insegura (NOR-PUE-03). Y no se podia arreglar "
+                      "TIPO DE ESTRUCTURA: para el cabezal, que la tabla "
+                      "clasifica como muro de retencion, el minimo es 1.00 "
+                      "y no 0.90 (NOR-PUE-03). Y no se podia arreglar "
                       "cambiando el par por otro par: del par viejo, V7 leia "
                       "el minimo -- 0.90, que es el correcto para una "
                       "estructura enterrada -- y del cabezal se leia el "
                       "maximo -- 1.35, que es el correcto para un muro --, de "
                       "modo que cualquier par unico habria roto uno de los "
-                      "dos. La correccion es el desglose.  "
+                      "dos. La correccion es el desglose. "
+                      "EN QUE DIRECCION VA ESTA CORRECCION, dicho con "
+                      "cuidado porque la ficha NOR-PUE-03 lo dice al reves y "
+                      "no hay que repetirlo: la ficha sostiene que usar 0.90 "
+                      "rebaja el peso estabilizante de tierra en E2 (volteo), "
+                      "E3 (deslizamiento) y V7 (flotacion), y que esa es la "
+                      "direccion INSEGURA. Es al reves. Rebajar lo que "
+                      "ESTABILIZA es la direccion CONSERVADORA: es lo que el "
+                      "marco LRFD hace a proposito, y es la razon por la que "
+                      "V7 minora DC y EV. Subir ese minimo de 0.90 a 1.00 "
+                      "RELAJA volteo y deslizamiento alrededor de un 8 %, no "
+                      "los endurece. El defecto que se corrige es de "
+                      "CONFORMIDAD NORMATIVA -- el par no era ninguna fila y "
+                      "la fila del muro dice 1.00 --, no de inseguridad, y la "
+                      "fuente lo prescribe expresamente: AASHTO LRFD 9a ed., "
+                      "C3.4.1, pag. impresa 3-15 (PDF 69), al aplicar los "
+                      "criterios al deslizamiento de muros: 'The vertical "
+                      "earth load on the rear of a cantilevered retaining "
+                      "wall would be multiplied by gamma_p min (1.00) and the "
+                      "weight of the structure would be multiplied by "
+                      "gamma_p min (0.90) because these forces result in an "
+                      "increase in the contact stress (and shear strength) at "
+                      "the base of the wall and foundation'. El mismo "
+                      "comentario da el otro extremo para la capacidad "
+                      "portante, donde gobiernan los maximos: peso propio "
+                      "1.25, empuje vertical 1.35, empuje activo 1.50. "
+                      "NINGUN NUMERO DEL EXPEDIENTE CAMBIA HOY POR ESTO. El "
+                      "conflicto #2 del plan ya lo decia -- hoy no hay dano "
+                      "-- y se comprueba: ningun modulo de produccion consume "
+                      "los factores del cabezal (la estabilidad de Sec. 9.3 "
+                      "sigue bloqueada por 'predimensionamiento_cabezal', y "
+                      "E2 y E3 se evaluan hoy como FS globales de E.050 sobre "
+                      "demandas sin factorar). Lo que se corrige es el numero "
+                      "que se consumira cuando se desbloqueen. "
                       "LA ETIQUETA PASA DE [C] A [A] Y NO ES UN ABLANDAMIENTO. "
                       "[C] significa vacio normativo cubierto con una fuente "
                       "tecnica reconocida, y aqui no habia vacio: el Manual de "

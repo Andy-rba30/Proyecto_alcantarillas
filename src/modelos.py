@@ -898,9 +898,17 @@ class FactoresFlotacion:
     retencion y un conducto enterrado no llevan el mismo par -- y un gamma_EV
     suelto no dice de cual de las seis filas salio. El par {1.35, 0.90} que
     el proyecto uso durante un tiempo no era ninguna de ellas: mezclaba el
-    maximo de una con el minimo de otra (MAT-D8, NOR-PUE-03). Que la fila
-    llegue al resultado es lo que impide que eso vuelva a pasar sin que se
-    vea.
+    maximo de una con el minimo de otra (MAT-D8, NOR-PUE-03).
+
+    HASTA DONDE LLEGA HOY ESE CAMPO, dicho con exactitud: llega a este objeto
+    y ahi se queda. `M5_verificaciones.v7_flotacion` arma la `Verificacion` de
+    V7 con el codigo, el numeral y la clave del criterio, y no con la fila:
+    la memoria NO imprime hoy de que fila salio el gamma de V7. Lo que si
+    imprime es el criterio 'factores_carga_aashto' entero en el bloque de
+    criterios usados, y ese criterio nombra la fila de cada estructura, de
+    modo que el dato esta en la memoria por esa via y no por esta. Llevarlo
+    tambien a la fila de V7 pide un campo mas en `Verificacion` y su
+    renderizado en M11, y es trabajo de la fase de reporte, no de esta.
     """
     gamma_DC: float
     gamma_EV: float
@@ -1308,7 +1316,8 @@ class EmpujesTrasdos:
     (Sec. 9.2), cada una con su brazo sobre la base, mas la subpresion.
 
     Cada empuje viaja con su brazo y no con un momento ya sumado, porque los
-    factores gamma de la combinacion (AASHTO LRFD Tabla 3.4.1-1, criterio
+    factores gamma de la combinacion (Manual de Puentes, Tablas 2.4.5.3.1-1 y
+    -2; la fila de gamma_p que aplica a cada estructura la declara
     'factores_carga_aashto') se aplican POR TIPO DE CARGA -- EH, LS, WA, EQ
     llevan factores distintos y algunos son dobles. Un momento total sumado
     sin factorizar no se puede combinar despues.

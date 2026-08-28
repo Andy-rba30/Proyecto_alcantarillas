@@ -504,9 +504,14 @@ def test_describir_las_combinaciones_no_se_detiene_y_evaluarlas_tampoco():
     EL gamma_EV MINIMO DEL CABEZAL ES 1.00 Y NO 0.90 (NOR-PUE-03). M9 modela
     el cabezal como muro de contencion, y la fila "Muros y estribos de
     retencion" de la Tabla 2.4.5.3.1-2 da 1.35 / 1.00. El 0.90 que este test
-    exigia antes es de "Estructura rigida enterrada", la fila del CONDUCTO:
-    aplicado al cabezal rebajaba un 10 % el peso de tierra que estabiliza el
-    volteo y el deslizamiento.
+    exigia antes es de "Estructura rigida enterrada", la fila del CONDUCTO.
+
+    El cambio RELAJA volteo y deslizamiento alrededor de un 8 %: el empuje
+    vertical de tierra sobre el talon estabiliza, y minorar lo que estabiliza
+    es la direccion conservadora. Se corrige igual porque el par anterior no
+    era ninguna fila de la tabla y porque C3.4.1 de AASHTO prescribe ese 1.00
+    para el deslizamiento de un muro en voladizo. Queda dicho aqui para que
+    nadie lea este test como la prueba de que el expediente se endurecio.
     """
     assert len(combinaciones()) == 3          # describir: los nombres son [N]
 

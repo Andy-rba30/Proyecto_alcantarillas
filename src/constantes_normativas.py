@@ -979,117 +979,165 @@ GAMMA_P_NO_APLICA = None
 # de cargas permanentes: no es un numero, es una remision a la Tabla -2.
 GAMMA_P_MARCA = "gamma_p"
 
+# QUE DE ESTE BLOQUE TIENE CONSUMIDOR Y QUE NO, declarado en vez de deducirse.
+# Lo consume el calculo: TABLA_GAMMA_P_FILAS y fila_gamma_p_legible (M8 y M9),
+# TABLA_COMBINACIONES_FILAS (M8 y M9), GAMMA_P_NO_APLICA (la guarda de M8) y
+# GAMMA_P_MARCA (M9). Lo demas -- los titulos, las columnas, las notas al pie,
+# la de erratas, la de completitud, la de correspondencia con AASHTO y
+# GAMMA_EQ_TEXTO -- NO lo invoca ningun modulo: es la parte de la
+# transcripcion que existe para que la cita sea verificable contra el PDF y
+# para que la memoria pueda imprimirla el dia que la Fase 9 se desbloquee. Es
+# el mismo caso de TABLA_09_TITULO y TABLA_09_COLUMNAS, que tampoco tienen
+# consumidor y estan por la misma razon; no es codigo muerto, es la cita.
+
 TABLA_GAMMA_P_TITULO = ("Tabla 2.4.5.3.1-2 Factores de carga para cargas "
-                        "permanentes, gamma_p")
+                        "permanentes, γp")
 TABLA_GAMMA_P_COLUMNAS = (
-    "Tipo de Carga, Tipo de Fundaciones, y Metodos Usados para Fuerza de "
-    "Arrastre Hacia Abajo (Downdrag)", "Maximo", "Minimo")
+    "Tipo de Carga, Tipo de Fundaciones, y Métodos Usados para Fuerza de "
+    "Arrastre Hacia Abajo (Downdrag)", "Maximo", "Mínimo")
+
+# LAS DOS COLUMNAS SE ESCRIBEN COMO LAS IMPRIME EL MANUAL, y no son iguales:
+# "Maximo" va SIN tilde en el original y "Mínimo" CON ella. Es una errata de
+# la fuente, no de esta transcripcion, y por eso la primera no se "arregla".
+# La distincion importa: si aqui se quitaran las dos tildes, la nota de erratas
+# estaria atribuyendo al Manual una falta que seria del codigo.
 
 # La tabla COMPLETA, las dieciocho filas con valor, aunque el calculo use
 # cinco. Es la regla dura del proyecto (NOR-HID-11, NOR-VAC-01): la tabla se
 # transcribe entera y la eleccion se declara aparte, porque una tabla podada
-# no deja ver de que se eligio una fila. `fila` es el texto LITERAL del
-# Manual, con sus erratas de imprenta anotadas: la memoria lo imprime tal cual
-# y un revisor con el PDF delante lo encuentra igual.
-# `fila` es el texto LITERAL de la celda, tal como se lee en el PDF, y
-# `grupo` el encabezado literal del bloque del que cuelga -- EH y EV traen sus
-# subfilas colgadas de una fila de titulo, y DD tres metodos bajo el suyo.
-# Estan SEPARADOS a proposito: la celda del reposo dice "En reposo.", no "EH:
-# Presion Horizontal de la tierra -- En reposo.", y juntarlos en un solo campo
-# haria pasar por transcripcion una frase compuesta aqui. Quien necesite una
-# linea sola los concatena, y entonces la composicion es visible.
+# no deja ver de que se eligio una fila.
+#
+# COMO SE LEEN LOS TRES CAMPOS DE TEXTO, que son transcripcion y no
+# nomenclatura de este proyecto: `fila` es el texto LITERAL de la celda,
+# `grupo` el encabezado literal del bloque del que cuelga -- EH, EV y DD traen
+# sus subfilas colgadas de una fila de titulo -- y `subgrupo` el segundo nivel,
+# que solo tienen las tres subfilas flexibles de EV. Estan SEPARADOS a
+# proposito: la celda del reposo dice "En reposo.", no "EH: Presión Horizontal
+# de la tierra -- En reposo.", y juntarlos en un solo campo haria pasar por
+# transcripcion una frase compuesta aqui. Quien necesite una linea sola llama a
+# `fila_gamma_p_legible`, y entonces la composicion es visible y esta en un
+# solo sitio.
+#
+# LOS TRES VAN CON SUS TILDES Y CON SUS LETRAS GRIEGAS, al reves que la
+# mayoria de este archivo: son texto citado, y un revisor tiene que poder
+# buscarlo en el PDF y encontrarlo. Las erratas de imprenta del Manual se
+# copian tal cual y se declaran en TABLA_GAMMA_P_ERRATAS.
 TABLA_GAMMA_P_FILAS = {
     "DC_componentes_y_auxiliares": {
-        "grupo": "", "fila": "DC: Componentes y Auxiliares.",
-        "max": 1.25, "min": 0.90},
+        "grupo": "", "subgrupo": "",
+        "fila": "DC: Componentes y Auxiliares.", "max": 1.25, "min": 0.90},
     "DC_resistencia_IV_solamente": {
-        "grupo": "", "fila": "DC: Resistencia IV Solamente.",
-        "max": 1.50, "min": 0.90},
+        "grupo": "", "subgrupo": "",
+        "fila": "DC: Resistencia IV Solamente.", "max": 1.50, "min": 0.90},
     "DD_pilotes_metodo_tomlinson": {
-        "grupo": "DD: Downdrag",
-        "fila": "Pilotes, alfa Metodo de Tomlinson.",
-        "max": 1.40, "min": 0.25},
+        "grupo": "DD: Downdrag", "subgrupo": "",
+        "fila": "Pilotes, α Método de Tomlinson.", "max": 1.40, "min": 0.25},
     "DD_pilotes_metodo_lambda": {
-        "grupo": "DD: Downdrag", "fila": "Pilotes, lambda Metodo.",
-        "max": 1.05, "min": 0.30},
+        "grupo": "DD: Downdrag", "subgrupo": "",
+        "fila": "Pilotes, λ Método.", "max": 1.05, "min": 0.30},
     "DD_pilotes_perforados_oneill_reese": {
-        "grupo": "DD: Downdrag",
-        "fila": "Pilotes Perforados, (Drilled Shaft) Metodo de O'Neill and "
+        "grupo": "DD: Downdrag", "subgrupo": "",
+        "fila": "Pilotes Perforados, (Drilled Shaft) Método de O’Neill and "
                 "Reese (1999).", "max": 1.25, "min": 0.35},
     "DW_superficie_de_rodadura_y_accesorios": {
-        "grupo": "", "fila": "DW: Superficie de rodadura y accesorios.",
+        "grupo": "", "subgrupo": "",
+        "fila": "DW: Superficie de rodadura y accesorios.",
         "max": 1.50, "min": 0.65},
     # Las tres subfilas de "EH: Presion Horizontal de la tierra".
     "EH_activa": {
-        "grupo": "EH: Presion Horizontal de la tierra", "fila": "Activa.",
-        "max": 1.50, "min": 0.90},
+        "grupo": "EH: Presión Horizontal de la tierra.", "subgrupo": "",
+        "fila": "Activa.", "max": 1.50, "min": 0.90},
     "EH_en_reposo": {
-        "grupo": "EH: Presion Horizontal de la tierra", "fila": "En reposo.",
-        "max": 1.35, "min": 0.90},
+        "grupo": "EH: Presión Horizontal de la tierra.", "subgrupo": "",
+        "fila": "En reposo.", "max": 1.35, "min": 0.90},
     "EH_AEP_paredes_ancladas": {
-        "grupo": "EH: Presion Horizontal de la tierra",
+        "grupo": "EH: Presión Horizontal de la tierra.", "subgrupo": "",
         "fila": "AEP Para paredes ancladas.",
         "max": 1.35, "min": GAMMA_P_NO_APLICA},
     "EL_esfuerzos_residuales": {
-        "grupo": "",
+        "grupo": "", "subgrupo": "",
         "fila": "EL: Esfuerzos residuales acumulados resultantes del proceso "
                 "constructivo, (Locked-in construction Stresses.)",
         "max": 1.00, "min": 1.00},
     # Las seis subfilas de "EV: Presion vertical de la tierra" (sic, sin
-    # tilde). Las tres ultimas cuelgan ademas de "Estructuras flexible
-    # enterradas" (sic, sin la "s"), que la tabla escribe como subtitulo con
-    # sus tres opciones marcadas "o ...".
+    # tilde en "Presion"). Las tres ultimas cuelgan ademas del subtitulo
+    # "Estructuras flexible enterradas" (sic, sin la "s" de flexibles), que la
+    # tabla imprime en su propia linea con sus tres opciones marcadas "o ...".
     "EV_estabilidad_global": {
-        "grupo": "EV: Presion vertical de la tierra",
+        "grupo": "EV: Presion vertical de la tierra", "subgrupo": "",
         "fila": "Estabilidad global.",
         "max": 1.00, "min": GAMMA_P_NO_APLICA},
     "EV_muros_y_estribos_de_retencion": {
-        "grupo": "EV: Presion vertical de la tierra",
-        "fila": "Muros y estribos de retencion.", "max": 1.35, "min": 1.00},
+        "grupo": "EV: Presion vertical de la tierra", "subgrupo": "",
+        "fila": "Muros y estribos de retención.", "max": 1.35, "min": 1.00},
     "EV_estructura_rigida_enterrada": {
-        "grupo": "EV: Presion vertical de la tierra",
-        "fila": "Estructura rigida enterrada.", "max": 1.30, "min": 0.90},
+        "grupo": "EV: Presion vertical de la tierra", "subgrupo": "",
+        "fila": "Estructura rígida enterrada.", "max": 1.30, "min": 0.90},
     "EV_porticos_rigidos": {
-        "grupo": "EV: Presion vertical de la tierra",
-        "fila": "Porticos rigidos.", "max": 1.35, "min": 0.90},
+        "grupo": "EV: Presion vertical de la tierra", "subgrupo": "",
+        "fila": "Pórticos rígidos.", "max": 1.35, "min": 0.90},
     "EV_flexibles_cajon_metalico_plancha_fibra_vidrio": {
-        "grupo": "EV: Presion vertical de la tierra -- Estructuras flexible "
-                 "enterradas",
-        "fila": "o Alcantarillas cajon metalicas, plancas estructurales con "
+        "grupo": "EV: Presion vertical de la tierra",
+        "subgrupo": "Estructuras flexible enterradas",
+        "fila": "o Alcantarillas cajón metálicas, plancas estructurales con "
                 "corrugaciones y alcantarillas de fibra de vidrio.",
         "max": 1.50, "min": 0.90},
     "EV_flexibles_alcantarillas_termoplasticas": {
-        "grupo": "EV: Presion vertical de la tierra -- Estructuras flexible "
-                 "enterradas",
-        "fila": "o Alcantarillas termoplasticas.", "max": 1.30, "min": 0.90},
+        "grupo": "EV: Presion vertical de la tierra",
+        "subgrupo": "Estructuras flexible enterradas",
+        "fila": "o Alcantarillas termoplásticas.", "max": 1.30, "min": 0.90},
     "EV_flexibles_entre_otros": {
-        "grupo": "EV: Presion vertical de la tierra -- Estructuras flexible "
-                 "enterradas",
+        "grupo": "EV: Presion vertical de la tierra",
+        "subgrupo": "Estructuras flexible enterradas",
         "fila": "o Entre otros.", "max": 1.95, "min": 0.90},
     "ES_carga_superficial_en_el_terreno": {
-        "grupo": "", "fila": "ES: Carga superficial(Sobrecarga) en el terreno",
+        "grupo": "", "subgrupo": "",
+        "fila": "ES: Carga superficial(Sobrecarga) en el terreno",
         "max": 1.50, "min": 0.75},
 }
 
 
 def fila_gamma_p_legible(clave: str) -> str:
     """
-    Grupo y celda de una fila de gamma_p en una sola linea, para imprimirla.
-    Los dos trozos son literales del PDF; el " -- " que los une es de aqui.
+    Grupo, subgrupo y celda de una fila de gamma_p en una sola linea, para
+    imprimirla. Los tres trozos son literales del PDF; el " -- " que los une
+    es de aqui, y por eso la composicion vive en esta funcion y no dentro del
+    dato: buscar la frase compuesta en el PDF no la encontraria, buscar
+    cualquiera de sus tres trozos si.
     """
     r = TABLA_GAMMA_P_FILAS[clave]
-    return f"{r['grupo']} -- {r['fila']}" if r["grupo"] else r["fila"]
+    return " -- ".join(t for t in (r["grupo"], r["subgrupo"], r["fila"]) if t)
 
 
-# Las erratas del Manual en esta tabla, transcritas donde estan para que nadie
-# las "corrija" y crea que arregla una transcripcion: "Maximo" sin tilde en el
-# encabezado, "Estructuras flexible enterradas" sin la "s", "Presion vertical
-# de la tierra" sin tilde, "plancas" por "planchas", y "Entre otros" como
-# traduccion de "All others".
+# TRES TRAMPAS DE LA EXTRACCION DE TEXTO, comprobadas sobre la celda
+# RENDERIZADA y no sobre el volcado plano -- la leccion de NOR-VAC-01, donde
+# una prima de SymbolMT se leyo como una raiz cuadrada:
+#
+#   1. El titulo imprime "gamma_p" con un glifo de fuente Symbol (la
+#      extraccion devuelve un caracter de uso privado) y una "p" en negrita
+#      matematica. Aqui se escribe el simbolo tal como se LEE en la pagina.
+#   2. El encabezado de la primera columna aparece partido por la columna
+#      vecina: la extraccion lo devuelve como "Tipo de Carga, Tipo de
+#      Fundaciones, y / Factor de Carga / Metodos Usados...". Las dos mitades
+#      son de la misma celda, y aqui van unidas como se leen.
+#   3. LAS TRES SUBFILAS FLEXIBLES SALEN CON SUS PARES INTERCALADOS: la
+#      extraccion da "...alcantarillas de fibra de | 1.50 0.90 | vidrio. |
+#      1.30 0.90 | o Alcantarillas termoplasticas. | 1.95 0.90 | o Entre
+#      otros.", que leido de corrido asignaria 1.30/0.90 a la fila de la fibra
+#      de vidrio y 1.95/0.90 a la termoplastica. La asignacion correcta -- la
+#      de la pagina renderizada -- es 1.50 a las metalicas y de plancha, 1.30 a
+#      las termoplasticas y 1.95 a "Entre otros", y coincide digito a digito
+#      con la Table 3.4.1-2 de AASHTO 9a ed. Esa coincidencia es lo que cierra
+#      la lectura.
+#
+# Las erratas de imprenta del Manual en esta tabla, transcritas donde estan
+# para que nadie las "corrija" creyendo que arregla una transcripcion.
 TABLA_GAMMA_P_ERRATAS = (
     "Transcripcion literal, con las erratas de imprenta del Manual: 'Maximo' "
-    "sin tilde en el encabezado de columna; 'Estructuras flexible enterradas' "
-    "(sin la 's' de flexibles); 'Presion vertical de la tierra' sin tilde; "
+    "SIN tilde en el encabezado de columna (mientras 'Mínimo', a su lado, la "
+    "lleva); 'EV: Presion vertical de la tierra' sin tilde en 'Presion' "
+    "(mientras la fila hermana 'EH: Presión Horizontal de la tierra' si la "
+    "lleva); 'Estructuras flexible enterradas', sin la 's' de flexibles; "
     "'plancas' por 'planchas'; y 'Entre otros' donde AASHTO dice 'All "
     "others'. Se copian tal cual: la fila que la memoria imprime tiene que "
     "poder buscarse en el PDF")
@@ -1124,11 +1172,16 @@ TABLA_COMBINACIONES_COLUMNAS = (
     "DC DD DW EH EV ES EL PS CR SH", "LL IM CE BR PL LS", "WA", "WS", "WL",
     "FR", "TU", "TG", "SE", "EQ", "BL", "IC", "CT", "CV")
 
-# Nota literal al pie de la Tabla 2.4.5.3.1-1, que es la que explica los
-# pares del tipo 0.50/1.20 de la columna TU:
+# Nota literal al pie de la Tabla 2.4.5.3.1-1. NO es la que explica los pares
+# del tipo 0.50/1.20 de la columna TU -- este comentario lo afirmaba y era una
+# cita falsa dentro de un bloque [N]. Lo que gobierna son las ULTIMAS
+# columnas, las de los eventos extremos: donde el Manual pone esta nota al
+# pie, AASHTO imprime el encabezado "Use One of These at a Time" sobre EQ,
+# BL, IC, CT y CV. Ninguna de esas cinco entra en Sec. 9.2 salvo EQ, y en
+# Evento Extremo I es la unica de las cinco con valor.
 TABLA_COMBINACIONES_NOTA_AL_PIE = (
     "Usar solamente uno de los indicados en estas columnas en cada "
-    "combinacion")
+    "combinación")
 
 TABLA_COMBINACIONES_FILAS = {
     "Resistencia I": {

@@ -140,7 +140,7 @@ def test_factores_carga_flotacion_calcula_con_el_criterio_real(concreto):
     g = factores_carga_flotacion(material=concreto)
     assert (g.gamma_DC, g.gamma_EV, g.gamma_WA) == (0.90, 0.90, 1.00)
     assert g.criterio == "factores_carga_aashto"
-    assert "Estructura rigida enterrada" in g.fila_gamma_EV
+    assert "Estructura rígida enterrada" in g.fila_gamma_EV
 
 
 def test_fs_flotacion_ya_no_existe():

@@ -878,11 +878,24 @@ def factores_de_carga(nombre: str) -> dict:
     el cabezal como muro de contencion con zapata: su fila es "Muros y
     estribos de retencion", 1.35 / 1.00. El minimo es 1.00 y NO 0.90 -- el
     0.90 es de "Estructura rigida enterrada", la fila del conducto, que es lo
-    que consume V7 en Fase 8. Aplicarle al cabezal el 0.90 rebajaba un 10 %
-    el peso de tierra que ESTABILIZA E2 (volteo), E3 (deslizamiento) y la
-    flotacion, que es la direccion insegura. Que fila describe a cada
-    estructura lo declara 'factores_carga_aashto' ([A]); los numeros no salen
-    de ahi.
+    que consume V7 en Fase 8. Que fila describe a cada estructura lo declara
+    'factores_carga_aashto' ([A]); los numeros no salen de ahi.
+
+    EN QUE DIRECCION VA ESO, porque es facil contarlo al reves: el empuje
+    vertical de tierra sobre el talon ESTABILIZA el volteo y el
+    deslizamiento, de modo que pasar su minimo de 0.90 a 1.00 RELAJA esas dos
+    verificaciones alrededor de un 8 %; minorar lo que estabiliza es la
+    direccion conservadora, no la insegura. Lo que se corrige es la
+    conformidad con la fuente -- el par que el proyecto usaba no era ninguna
+    fila de la tabla --, y la fuente lo prescribe sin rodeos (AASHTO LRFD 9a
+    ed., C3.4.1, pag. impresa 3-15): "The vertical earth load on the rear of
+    a cantilevered retaining wall would be multiplied by gamma_p min (1.00)
+    and the weight of the structure would be multiplied by gamma_p min (0.90)
+    because these forces result in an increase in the contact stress (and
+    shear strength) at the base of the wall and foundation". Para la
+    capacidad portante el mismo comentario manda los MAXIMOS (1.25, 1.35,
+    1.50), que es la otra mitad de la razon por la que esta funcion devuelve
+    los dos extremos y no elige por quien la llama.
 
     EH sale de la fila "Activa" porque el proyecto disena con empuje ACTIVO
     (Mononobe-Okabe / Coulomb, ver 'inclinacion_muro_beta' y companeros), y
@@ -920,7 +933,11 @@ def factores_de_carga(nombre: str) -> dict:
             factores[carga] = _gamma_permanente(carga, fila_combinacion,
                                                 filas_del_cabezal)
         else:
-            factores[carga] = fila_combinacion[carga]
+            celda = fila_combinacion[carga]
+            # Copia por el mismo motivo que arriba: la celda es una constante
+            # [N] y devolverla por referencia dejaria que un llamador mute la
+            # tabla normativa para todo el proceso.
+            factores[carga] = dict(celda) if isinstance(celda, dict) else celda
     return factores
 
 

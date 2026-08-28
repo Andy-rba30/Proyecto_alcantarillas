@@ -593,12 +593,15 @@ def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
         original.__class__(**{**original.__dict__, "valor": 18.0}),
     )
     g = factores_carga_flotacion(material=concreto)
-    assert g.gamma_EV != g.gamma_WA         # un FS global no distingue los dos
+    assert (g.gamma_EV, g.gamma_WA) == (0.90, 1.00)   # anclados, no derivados
     v = v7_flotacion(punto=_punto(), material=concreto, D=0.90,
                      resultado=_resultado())
-    assert v.valor_obtenido == pytest.approx(g.gamma_EV * 18.81, abs=1e-6)
+    assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
     assert v.valor_admisible == pytest.approx(
-        g.gamma_WA * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
+        1.00 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
+    # Y el punto del test: los dos lados llevan gamma DISTINTOS, de modo que
+    # ningun factor de seguridad global reproduce el resultado.
+    assert g.gamma_EV != g.gamma_WA
 
 
 def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
