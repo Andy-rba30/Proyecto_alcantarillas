@@ -725,8 +725,10 @@ def _tabla_diseno(informe: Any) -> str:
                _td(f"n para capacidad y tirante = {_num(material.n_max)}; "
                    f"n para velocidad y socavacion = {_num(material.n_min)}")]),
         _fila([_td("<b>Diametro adoptado</b>"),
-               _td(f"D = {_num(resultado.D, FMT_2)} m (tope de la norma de "
-                   f"producto: {_num(material.D_max, FMT_2)} m)")]),
+               _td(f"D = {_num(resultado.D, FMT_2)} m interior "
+                   f"(tope de CATALOGO adoptado: "
+                   f"{_num(material.D_max, FMT_2)} m &mdash; no es un tope "
+                   f"normativo, criterio 'D_max_catalogo')")]),
         _fila([_td("<b>Hidraulica</b>"),
                _td(f"Q = {_num(hidraulica.Q)} m3/s &middot; y<sub>n</sub> = "
                    f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
@@ -1358,12 +1360,18 @@ def bloque_acotaciones(alcance: str = "expediente") -> str:
     """
     Bloque 6: lo que el proyectista adopto donde la norma no dice nada.
 
-    Existe porque la tabla de criterios no basta para estas entradas. Ahi
-    'h_relleno_min_concreto_tmc = 0.30 m [N->] EG-2013 508.07' se lee como una
-    cita normativa corriente, y oculta lo unico que un revisor necesita saber:
-    que el 508.07 habla de HDPE y no del material al que se le aplica. Un
-    valor adoptado sobre un vacio se defiende con el razonamiento entero o no
-    se defiende.
+    Existe porque la tabla de criterios no basta para estas entradas. Un
+    'D_max_catalogo = 2.10 m [A] ASTM A760' se leeria como una cita normativa
+    corriente y ocultaria lo unico que el revisor necesita saber: que A760
+    tabula hasta 3600 mm y que el tope lo pone el proyecto. Un valor adoptado
+    sobre un vacio -- o sobre una disponibilidad -- se defiende con el
+    razonamiento entero o no se defiende.
+
+    El ejemplo que este docstring usaba, 'h_relleno_min_concreto_tmc = 0.30 m
+    [N->] EG-2013 508.07', ya no existe: el criterio se retiro al cerrarse
+    NOR-VAC-01. Servia para lo mismo -- el 508.07 habla de HDPE y no del
+    material al que se le aplicaba -- y acabo demostrandolo por la via dura:
+    aquel valor no solo se leia mal, ademas era corto.
 
     Por eso imprime las cinco piezas por separado -- que dice la norma, que NO
     dice, que se adopto, por que es conservador, que queda pendiente -- en vez

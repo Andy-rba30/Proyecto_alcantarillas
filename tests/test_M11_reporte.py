@@ -378,10 +378,11 @@ class TestIteraciones:
         material = Material(
             tipo=TipoMaterial.CONCRETO_REFORZADO, nombre="concreto reforzado",
             n_min=0.010, n_max=0.013, D_max=1.20,
+            D_max_de_catalogo="tope de catalogo de prueba",
             norma_producto="ASTM C76",
             hds5=ConstantesHDS5(K=0.0098, M=2.0, c=0.0398, Y=0.67, Ks=-0.5),
-            v_max_rango=(3.0, 6.0), h_relleno_min=0.60,
-            seccion_eg2013="505")
+            v_max_rango=(3.0, 6.0), h_relleno_min_eg2013=0.30,
+            espesor_pared=0.10, seccion_eg2013="505")
 
         # Verificador que rechaza todo: interesa la traza, no el diseño.
         def rechazar(*, punto, material, D, resultado):
@@ -887,7 +888,10 @@ class TestBloqueAcotaciones:
         # declarada las dos coincidian por casualidad.
         assert sorted(declaradas) == esperadas
         assert declaradas, "el catalogo declara al menos una acotacion"
-        assert "h_relleno_min_concreto_tmc" in declaradas
+        # Era 'h_relleno_min_concreto_tmc', retirado en C01: su vacio no era
+        # un vacio. La acotacion vigente es la que lo sustituye -- aplicar
+        # AASHTO LRFD Art. 12.6.6.3 donde el corpus peruano calla.
+        assert "cobertura_minima_aashto" in declaradas
 
     def test_imprime_las_cinco_piezas_del_razonamiento(self):
         """
@@ -896,9 +900,9 @@ class TestBloqueAcotaciones:
         defiende con el razonamiento entero o no se defiende.
         """
         html = M11.bloque_acotaciones(alcance="perfil")
-        assert "h_relleno_min_concreto_tmc" in html
+        assert "cobertura_minima_aashto" in html
         assert "Que dice la norma, que NO dice" in html
-        assert "conservadora" in html
+        assert "CONSERVADORA" in html
         assert "Registro completo de esa busqueda" in html
         assert "manifiesto_citas.md Sec. 14.a" in html
         assert "pendiente para el expediente" in html
@@ -937,7 +941,7 @@ class TestBloqueAcotaciones:
 
         g1 = Verificacion(cumple=True, numeral="Sec. 7.A", valor_obtenido=40.6,
                           valor_admisible=39.75, codigo="G1",
-                          criterio_aplicado="h_relleno_min_concreto_tmc")
+                          criterio_aplicado="cobertura_minima_aashto")
         html = M11._tabla_verificaciones(_InformeFalso(("Fase 7", g1)))
         assert 'href="#acotaciones"' in html
         assert "acotacion" in html

@@ -25,38 +25,63 @@ bloques del Anexo B tienen homologo en criterios_adoptados.py porque la hoja
 de ruta los incluyo alli aun siendo [C], y la fuente unica para el CALCULO es
 siempre el criterio adoptado:
 
-    D_INICIO / D_PASO / D_MAX   -> criterio 'diametros_normalizados'
+    D_INICIO / D_PASO           -> criterio 'diametros_normalizados'
     HDS5_INLET (fila HDPE)      -> criterio 'hds5_embocadura_hdpe'
-    H_RELLENO_MIN (concreto/tmc)-> criterio 'h_relleno_min_concreto_tmc'
 
-Este modulo respeta esa regla: la progresion de diametros y sus topes salen
-siempre de 'diametros_normalizados'; la fila HDS-5 de concreto y de TMC sale
-de HDS5_INLET (no tienen homologo -- son lectura directa de la Tabla A.1),
-mientras que la fila de HDPE sale del criterio; y `h_relleno_min` de concreto
-y TMC sale del criterio 'h_relleno_min_concreto_tmc' (H_RELLENO_MIN['hdpe'] si
-se lee directo del Anexo B, porque ese valor no tiene homologo: EG-2013 lo fija
-en 0.30 m sin vacio que declarar).
+Este modulo respeta esa regla: la progresion de diametros sale siempre de
+'diametros_normalizados'; la fila HDS-5 de concreto y de TMC sale de
+HDS5_INLET (no tienen homologo -- son lectura directa de la Tabla A.1),
+mientras que la fila de HDPE sale del criterio.
+
+Dos datos del catalogo cambiaron de sitio y de naturaleza (cluster C01):
+
+    D_max            ya NO sale de `constantes_normativas.D_MAX`, que se
+                     retiro de alli: los topes no salen de las normas de
+                     producto a las que se les atribuian (A760 tabula hasta
+                     3600 mm, M 170M tambien -- NOR-PRO-01, NOR-PRO-02,
+                     MAT-O8). Salen del criterio 'D_max_catalogo' [A], que
+                     ademas trae en `de_catalogo` el rotulo con que hay que
+                     imprimirlos. `Material.D_max_de_catalogo` lo transporta
+                     para que la memoria no vuelva a llamarlos normativos.
+    h_relleno_min    ya NO existe como campo. El recubrimiento minimo dejo de
+                     ser un escalar por material: se CALCULA en
+                     `M7_geometria.altura_recubrimiento` como el mayor entre
+                     el minimo de EG-2013 -- que solo existe para HDPE, y que
+                     el catalogo transporta en `h_relleno_min_eg2013` -- y la
+                     cobertura minima de la Tabla 12.6.6.3-1 de AASHTO LRFD,
+                     que depende del diametro EXTERIOR y de la condicion de
+                     pavimento (NOR-VAC-01).
+
+Y uno es nuevo:
+
+    espesor_pared    m, el t que separa el diametro interior del exterior.
+                     Sale del criterio 'espesor_pared_conducto' [A], hoy SIN
+                     VALOR. Es lo que le faltaba al catalogo para que la clave
+                     fisica y el volumen desplazado no se calculasen con el
+                     diametro interior (MAT-D3, MAT-D4).
 
 Campos que el catalogo puede dejar en None, a proposito
 --------------------------------------------------------
 Cuatro criterios alimentan campos que `Material` declara `Optional`:
-'n_manning_hdpe', 'v_max_tmc', 'v_max_hdpe' y 'h_relleno_min_concreto_tmc'.
+'n_manning_hdpe', 'v_max_tmc', 'v_max_hdpe' y 'espesor_pared_conducto'.
 
-ESTADO HOY, que no es el que decia este docstring: los CUATRO tienen valor.
+ESTADO HOY: los tres primeros tienen valor y el cuarto no.
 'v_max_tmc' = 'v_max_hdpe' = 4.6 m/s [C] (WSDOT, Tabla 8-4);
-'h_relleno_min_concreto_tmc' = 0.30 m [N->] (EG-2013 508.07 por analogia).
-CUIDADO con este ultimo: tener valor no es tenerlo cerrado. El NUMERO sigue
-en revision abierta -- la cobertura minima de AASHTO (Art. 12.6.6.3) esta
-tabulada y el hallazgo abierto sostiene que 0.30 m queda por debajo de su
-piso -- y ademas se discute desde donde se mide la clave (diametro interior o
-exterior). Las dos cosas se corrigen juntas, en su propio paquete, con la
-tabla leida del PDF: lo que aqui se corrige es solo la descripcion del
-estado, no el valor;
-'n_manning_hdpe' = la fila del concreto de la Tabla N 09 [N->]. Este bloque
-decia "Dos de los criterios ... siguen sin valor" y a continuacion enumeraba
-tres, y otros siete docstrings del proyecto repetian ese estado ya superado
-(SIS-A-03). Lo que sigue vivo es el MECANISMO, por si alguno vuelve a
-vaciarse, y por eso se conserva escrito.
+'n_manning_hdpe' = la fila del concreto de la Tabla N 09 [N->];
+'espesor_pared_conducto' = SIN VALOR [A], y bloquea en su punto de uso
+(`diametro_exterior` de este mismo modulo, que llaman
+`M5_verificaciones.cota_clave` y `M8_estructural`/V7).
+
+El cuarto criterio de esta lista era antes 'h_relleno_min_concreto_tmc', con
+valor 0.30 m: se RETIRO al cerrarse NOR-VAC-01 -- el vacio que cubria no era
+un vacio, la Tabla 12.6.6.3-1 de AASHTO LRFD lo tabula, y el numero adoptado
+quedaba por debajo de su piso. Su hueco en la lista lo ocupa el espesor de
+pared, que es un vacio de la misma familia (norma de producto) y esta vez sin
+valor de verdad.
+
+Este bloque decia ademas "Dos de los criterios ... siguen sin valor" y a
+continuacion enumeraba tres, y otros siete docstrings del proyecto repetian
+ese estado ya superado (SIS-A-03).
 
 EL MECANISMO. La regla general del proyecto es que un criterio sin valor
 DETIENE el calculo apenas se invoca (`criterios_adoptados.valor` lanza
@@ -66,9 +91,9 @@ catalogo, es un candado. Por eso `catalogo()` lee esos cuatro con
 `_valor_si_declarado()` -- que delega en `ca.valor_si_declarado`, no en
 `ca.criterio(...)` como decia este texto -- y traslada el None al `Material`
 tal cual. No es rellenar el vacio: es reportarlo con fidelidad, y el bloqueo
-salta despues, en el punto de uso (M7:`altura_recubrimiento` para el relleno
-minimo, M5:`v3_velocidad_maxima` para las velocidades), donde el revisor
-puede saber que verificacion se detuvo.
+salta despues, en el punto de uso (`diametro_exterior` de este modulo para el
+espesor de pared, M5:`v3_velocidad_maxima` para las velocidades), donde el
+revisor puede saber que verificacion se detuvo.
 
 LA EXCEPCION, escrita porque no la cubre el parrafo anterior:
 'n_manning_hdpe' NO tiene punto de uso que lo detenga. Su None se
@@ -82,9 +107,15 @@ darle un punto de uso que bloquee, como tienen los otros tres.
 Sec. 3.2 - Catalogo de diametros
 ---------------------------------
 Progresion 0.90 m (minimo normativo MTC, num. 4.1.1.3.4 a) + pasos de 0.15 m,
-topada por material segun norma de producto. Ambos numeros y los tres topes
-viven en el criterio 'diametros_normalizados' (etiqueta [C]): no se usan
-catalogos de proveedor, para preservar neutralidad comercial en obra publica.
+topada por material. Los dos numeros de la progresion viven en el criterio
+'diametros_normalizados' [C]; los tres topes, en 'D_max_catalogo' [A]. Estan
+separados porque no son la misma clase de dato: el paso se verifica contra la
+serie de diametros nominales de las normas de producto y los topes NO salen de
+ninguna norma -- son de catalogo, y como tales descartan material por
+DISPONIBILIDAD, no por exigencia (NOR-PRO-01, NOR-PRO-02). Que no se usen
+catalogos de proveedor para la PROGRESION es lo que preserva la neutralidad
+comercial en obra publica; el tope, en cambio, es inevitablemente una decision
+sobre lo que se consigue, y por eso va declarado como adopcion.
 
     NOTA DE CONSERVADURISMO (declarar en la memoria): 0.90 m redondo
     subestima el equivalente exacto de 36" (0.9144 m) en aproximadamente
@@ -153,7 +184,8 @@ NUMERAL_CATALOGO = "Sec. 3.2"     # nuevo en v7, sin numeral MTC propio
 NUMERAL_MATERIAL = "Sec. 3.4"
 
 CRITERIO_DIAMETROS = "diametros_normalizados"
-CRITERIO_H_RELLENO_CONCRETO_TMC = "h_relleno_min_concreto_tmc"
+CRITERIO_D_MAX_CATALOGO = "D_max_catalogo"
+CRITERIO_ESPESOR_PARED = "espesor_pared_conducto"
 CRITERIO_N_MANNING_HDPE = "n_manning_hdpe"
 CRITERIO_HDS5_HDPE = "hds5_embocadura_hdpe"
 CRITERIO_V_MAX = {
@@ -163,9 +195,13 @@ CRITERIO_V_MAX = {
 
 MaterialLike = Union[TipoMaterial, str]
 
-# Nombre para el reporte y norma de producto que topa el diametro (Sec. 3.2,
-# tabla de topes). El numero del tope no vive aqui: sale de
-# 'diametros_normalizados'; esto es solo la etiqueta de a que norma se remite.
+# Nombre para el reporte y norma de producto de cada material (Sec. 3.2). NO
+# es "la norma que topa el diametro": esa lectura era el defecto NOR-PRO-01 /
+# NOR-PRO-02 -- A760 tabula hasta 3600 mm y M 170M tambien, de modo que
+# ninguna de ellas sostiene el tope que el proyecto aplica. Es la norma que
+# rige el PRODUCTO (materiales, fabricacion, aceptacion), y viaja al reporte
+# como tal. El tope sale del criterio 'D_max_catalogo' y se imprime con su
+# propio rotulo de catalogo.
 _NOMBRE = {
     TipoMaterial.CONCRETO_REFORZADO: "Concreto reforzado",
     TipoMaterial.TMC: "TMC galvanizada",
@@ -192,6 +228,15 @@ _HDS5_CLAVE = {
 # 'v_max_tmc' / 'v_max_hdpe' (CRITERIO_V_MAX), no de esta tabla.
 _V_MAX_CLAVE = {
     TipoMaterial.CONCRETO_REFORZADO: "concreto",
+}
+# H_RELLENO_MIN usa 'concreto' donde TipoMaterial usa 'concreto_reforzado':
+# la clave del dict del Anexo B no coincide con el `value` del enum en ese
+# material, y solo en ese. Se mapea aqui en vez de renombrar la constante,
+# que es transcripcion literal del Anexo.
+_EG2013_CLAVE = {
+    TipoMaterial.CONCRETO_REFORZADO: "concreto",
+    TipoMaterial.TMC: "tmc",
+    TipoMaterial.HDPE: "hdpe",
 }
 
 
@@ -241,6 +286,50 @@ def _progresion() -> dict:
     return ca.valor(CRITERIO_DIAMETROS)
 
 
+def _topes() -> dict:
+    return ca.valor(CRITERIO_D_MAX_CATALOGO)
+
+
+# ---------------------------------------------------------------------------
+# Sec. 3.2 - Geometria fisica del conducto: espesor de pared y D exterior
+# ---------------------------------------------------------------------------
+
+def espesor_pared(material: Material) -> float:
+    """
+    t, espesor de pared del conducto, m ('espesor_pared_conducto', [A]).
+
+    Se detiene con `CriterioPendienteError` mientras el criterio siga vacio.
+    Aqui es donde el vacio bloquea, no en `catalogo()`: el catalogo tiene que
+    poder listarse aunque el espesor no este declarado (ver "Campos que el
+    catalogo puede dejar en None" en el docstring del modulo), y el bloqueo
+    salta en el punto donde el numero hace falta de verdad.
+    """
+    if material.espesor_pared is None:
+        ca.valor(CRITERIO_ESPESOR_PARED)      # CriterioPendienteError
+        raise AssertionError(
+            f"inalcanzable mientras '{CRITERIO_ESPESOR_PARED}' este vacio"
+        )
+    ca.valor(CRITERIO_ESPESOR_PARED)          # registra el uso para M11
+    return material.espesor_pared
+
+
+def diametro_exterior(*, material: Material, D: float) -> float:
+    """
+    D_ext = D + 2*t, m: el diametro EXTERIOR del conducto.
+
+    `D` es el diametro interior -- el hidraulico, el que entra en Manning y en
+    `modelos.Geometria` -- y `D_ext` es el que gobierna todo lo que toca al
+    terreno: el Bc del Art. 12.6.6.3 de AASHTO LRFD (cobertura minima), el
+    volumen desplazado de la subpresion de V7 (num. 2.4.3.8.2 del Manual de
+    Puentes) y la posicion de la clave fisica. Confundirlos es MAT-D3 y
+    MAT-D4: los dos quedaban del lado inseguro por el mismo motivo.
+
+    Se detiene con `CriterioPendienteError` mientras 'espesor_pared_conducto'
+    siga vacio (ver `espesor_pared`).
+    """
+    return D + 2 * espesor_pared(material)
+
+
 def siguiente_diametro(material: MaterialLike,
                        D: Optional[float] = None) -> Optional[float]:
     """
@@ -255,7 +344,8 @@ def siguiente_diametro(material: MaterialLike,
     """
     tipo = _tipo_material(material)
     prog = _progresion()
-    inicio, paso, tope = prog["inicio"], prog["paso"], prog["max"][tipo.value]
+    inicio, paso = prog["inicio"], prog["paso"]
+    tope = _topes()[tipo.value]      # tope de CATALOGO, no normativo
 
     if D is None:
         return inicio
@@ -287,39 +377,46 @@ def catalogo(material: MaterialLike) -> Material:
     (Tabla N 10 o el vacio que la sustituye), relleno minimo sobre la clave
     (Sec. 7.A) y seccion de EG-2013 para el presupuesto.
 
-    v_max_rango, h_relleno_min y la doble n del HDPE pueden salir en None si
+    v_max_rango, espesor_pared y la doble n del HDPE pueden salir en None si
     su criterio se vacia: se leen con `_valor_si_declarado()`, no con
     `ca.valor()` ni con `ca.criterio()`. Ver "Campos que el catalogo puede
     dejar en None" en el docstring del modulo, incluida la excepcion de
     'n_manning_hdpe'.
+
+    `h_relleno_min_eg2013` NO es de esa familia aunque tambien sea Optional:
+    su None no es un vacio pendiente sino el hecho normativo de que EG-2013
+    fija la altura minima de relleno solo para HDPE. Nadie lo declarara nunca.
     """
     tipo = _tipo_material(material)
-    prog = _progresion()
 
     if tipo is TipoMaterial.HDPE:
         n_min, n_max = _valor_si_declarado(CRITERIO_N_MANNING_HDPE)
         hds5 = ConstantesHDS5.desde_dict(ca.valor(CRITERIO_HDS5_HDPE))
-        h_relleno_min = H_RELLENO_MIN["hdpe"]     # [N] directo: sin vacio, sin homologo
     else:
         n_min, n_max = MANNING[_MANNING_CLAVE[tipo]]
         hds5 = ConstantesHDS5.desde_dict(HDS5_INLET[_HDS5_CLAVE[tipo]])
-        h_relleno_min = _valor_si_declarado(CRITERIO_H_RELLENO_CONCRETO_TMC)
 
     if tipo in _V_MAX_CLAVE:
         v_max_rango = V_MAX[_V_MAX_CLAVE[tipo]]
     else:
         v_max_rango = _valor_si_declarado(CRITERIO_V_MAX[tipo])
 
+    espesores = _valor_si_declarado(CRITERIO_ESPESOR_PARED)
+
     return Material(
         tipo=tipo,
         nombre=_NOMBRE[tipo],
         n_min=n_min,
         n_max=n_max,
-        D_max=prog["max"][tipo.value],
+        D_max=_topes()[tipo.value],
+        D_max_de_catalogo=ca.criterio(CRITERIO_D_MAX_CATALOGO).de_catalogo,
         norma_producto=_NORMA_PRODUCTO[tipo],
         hds5=hds5,
         v_max_rango=v_max_rango,
-        h_relleno_min=h_relleno_min,
+        # [N] directo de EG-2013 508.07 y SOLO para HDPE: los otros dos
+        # materiales no tienen minimo en el EG-2013, y su None significa eso.
+        h_relleno_min_eg2013=H_RELLENO_MIN[_EG2013_CLAVE[tipo]],
+        espesor_pared=None if espesores is None else espesores[tipo.value],
         seccion_eg2013=SECCION_EG2013[tipo.value],
     )
 

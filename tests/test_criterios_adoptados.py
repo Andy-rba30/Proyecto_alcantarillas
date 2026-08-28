@@ -764,3 +764,35 @@ def test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor():
             f"'{clave}' declara `sin_consumidor` y aparece en {invocaciones}. "
             "O lo invoca alguien -- y entonces la memoria esta mintiendo -- o "
             "la mencion hay que quitarla")
+
+
+# ---------------------------------------------------------------------------
+# Topes de diametro: de catalogo, no de norma (C01)
+# ---------------------------------------------------------------------------
+# Los tres tests de este bloque vivian en tests/test_constantes_normativas.py,
+# mirando `CN.D_MAX`. Comprueban lo mismo; lo que cambio es donde vive el dato
+# y, sobre todo, QUE es: las normas de producto a las que se le atribuia el
+# tope tabulan hasta 3600 mm (NOR-PRO-01, NOR-PRO-02, MAT-O8), de modo que
+# 2.70 / 2.10 / 1.50 son topes de catalogo adoptados por el proyecto.
+
+CLAVE_TOPES = "D_max_catalogo"
+
+
+def test_el_hdpe_es_el_material_con_el_tope_mas_restrictivo():
+    topes = valor(CLAVE_TOPES)
+    assert topes["hdpe"] == min(topes.values())
+    assert topes["hdpe"] < topes["tmc"] < topes["concreto_reforzado"]
+
+
+def test_todos_los_topes_de_diametro_son_alcanzables_desde_la_progresion():
+    inicio = valor("diametros_normalizados")["inicio"]
+    for material, tope in valor(CLAVE_TOPES).items():
+        assert tope >= inicio, f"el tope de {material} es menor que el minimo"
+
+
+def test_ningun_diametro_de_alcantarilla_alcanza_la_luz_de_puente():
+    """Sec. 2.1: con luz >= 6.0 m la obra sale del alcance del script."""
+    import constantes_normativas as CN
+    assert max(valor(CLAVE_TOPES).values()) < CN.LUZ_MAX_ALCANTARILLA
+    assert CN.DIAMETRO_MIN < CN.LUZ_MAX_ALCANTARILLA
+

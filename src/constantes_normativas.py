@@ -11,12 +11,13 @@ Unidades: SI (m, m3/s, m/s, MPa donde se indica, mm en recubrimientos).
 
 ADVERTENCIA DE DOBLE DEFINICION
 -------------------------------
-Tres bloques de este anexo tienen un homologo en `criterios_adoptados.py`,
-porque la hoja de ruta los incluyo aqui aun siendo [C]:
+Dos bloques de este anexo tienen un homologo en `criterios_adoptados.py`,
+porque la hoja de ruta los incluyo aqui aun siendo [C] (eran tres: el tercero,
+H_RELLENO_MIN, dejo de tener homologo al retirarse
+'h_relleno_min_concreto_tmc' -- ver abajo):
 
-    D_INICIO / D_PASO / D_MAX   <->  criterio "diametros_normalizados"
+    D_INICIO / D_PASO           <->  criterio "diametros_normalizados"
     HDS5_INLET                  <->  criterio "hds5_embocadura_hdpe" (HDPE)
-    H_RELLENO_MIN               <->  criterio "h_relleno_min_concreto_tmc"
 
 La inconsistencia Clase D/F que motivo la v5 fue exactamente esto: el mismo
 parametro definido en dos lugares (Sec. 0.7). Para el CALCULO, la fuente unica
@@ -31,16 +32,18 @@ diccionarios no tienen homologo y se leen de aqui, que es su unica fuente:
                     homologo (son lectura directa de la Tabla A.1 de HDS-5) y
                     M2 las lee de aqui. La fila de HDPE, no: esa sale del
                     criterio 'hds5_embocadura_hdpe'.
-    H_RELLENO_MIN   la fila 'hdpe' no tiene homologo -- EG-2013 508.07 la
-                    fija sin vacio que declarar -- y M2 la lee de aqui. Las
-                    de concreto y TMC salen del criterio, cuyo nombre
-                    ('h_relleno_min_concreto_tmc') ya dice a que filas
-                    sustituye.
-    D_INICIO / D_PASO / D_MAX   sin excepcion: la progresion entera y los
-                    tres topes salen siempre del criterio
-                    'diametros_normalizados'.
+    H_RELLENO_MIN   YA NO TIENE HOMOLOGO. Su criterio gemelo,
+                    'h_relleno_min_concreto_tmc', se retiro: el recubrimiento
+                    minimo ya no es un escalar por material sino un calculo
+                    (M7.altura_recubrimiento) sobre la Tabla 12.6.6.3-1 de
+                    AASHTO LRFD, que vive en el criterio
+                    'cobertura_minima_aashto'. De este archivo sale hoy solo
+                    el minimo de EG-2013, que es [N] y solo existe para HDPE.
+    D_INICIO / D_PASO   la progresion sale siempre del criterio
+                    'diametros_normalizados'. Los topes ya no estan aqui:
+                    ver el bloque de diametros normalizados, mas abajo.
 
-La frase anterior era categorica ("Ningun modulo debe leer los tres bloques
+La frase anterior era categorica ("Ningun modulo debe leer los bloques
 citados desde este archivo") y describia mal lo que el propio bloque de arriba
 acota clave por clave; M2 documenta la reparticion en su docstring y la marca
 con comentarios de linea. Queda escrita aqui para que no haya que deducirla.
@@ -151,13 +154,30 @@ K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(
 # ================= Diametros normalizados (ASTM / AASHTO) ==================
 D_PASO = 0.15                       # m; reproduce las series de 6" y 150 mm
 D_INICIO = 0.90                     # m; minimo normativo MTC
-D_MAX = {                           # topes por norma de producto - VERIFICAR
-    "concreto_reforzado": 2.70,     # ASTM C76 / AASHTO M170
-    "tmc":                2.10,     # AASHTO M36 / ASTM A760
-    "hdpe":               1.50,     # AASHTO M294  <- el mas restrictivo
-}
-# Sin tope, el solver puede converger a un diametro inexistente.
-# Superado el tope: devolver "material descartado por diametro requerido".
+# D_MAX SALIO DE ESTE ARCHIVO. Declaraba los topes por material -- 2.70 /
+# 2.10 / 1.50 m -- atribuidos a "ASTM C76 / AASHTO M170", "AASHTO M36 / ASTM
+# A760" y "AASHTO M294", bajo el rotulo "topes por norma de producto -
+# VERIFICAR". La atribucion es FALSA y esta verificada en contra sobre los
+# PDF de normas/ (NOR-PRO-01, NOR-PRO-02, MAT-O8):
+#
+#   ASTM A760/A760M-10, Tabla 1 "Tamaños de tuberia", pag. 3: diametros
+#   nominales de 100 mm (4 in) a 3600 mm (144 in). Los 2100 mm son una fila
+#   mas de la serie, no un maximo.
+#   AASHTO M 170M-04, Tablas 1 a 5 (Clases I a V): de 300 a 3600 mm, y la
+#   Seccion 7.2 preve ademas diseños especiales por encima de lo tabulado.
+#   AASHTO M294 no esta en normas/: el tope del HDPE no se pudo contrastar.
+#
+# No son topes normativos: son topes de CATALOGO, y como tales descartaban
+# material en silencio con una cita que ninguna norma sostiene. Viven ahora
+# en criterios_adoptados.py, criterio 'D_max_catalogo' [A], con el campo
+# `de_catalogo` que obliga a imprimirlos rotulados como lo que son. La marca
+# "VERIFICAR" que llevaban era la senal de que nunca debieron entrar aqui:
+# una constante [N] sin numeral no es una constante [N] pendiente de
+# confirmar, es un valor de otra clase.
+#
+# Sin tope, el solver puede converger a un diametro que nadie fabrica ni
+# transporta a la obra. Superado el tope: "material descartado por diametro
+# requerido" -- y ese descarte es ADOPTADO, no normativo.
 
 # ================= Manual de Suelos (RD 10-2014-MTC/14) ====================
 RESGUARDO_NAPA_SUBRASANTE = [       # (CBR_min, CBR_max, resguardo_m)  num. 4.5.4
@@ -196,19 +216,57 @@ ESPACIAMIENTO_PERFIL_KM = 4.0       # nivel perfil (num. 4.2, Cuadro 4.1)
 
 # ================= EG-2013, Capitulo V (Secciones 502-508) =================
 H_RELLENO_MIN = {
-    "hdpe":     0.30,               # m, clave a subrasante (508.07, pag. 982)
-    "concreto": None,               # VACIO VERIFICADO -- no es "falta extraer"
-    "tmc":      None,               # VACIO VERIFICADO -- idem
+    "hdpe":     0.30,               # m, clave a subrasante (508.07, pag. 984)
+    "concreto": None,               # EG-2013 no lo fija -- ver comentario
+    "tmc":      None,               # EG-2013 no lo fija -- idem
 }
-# Los dos None NO estan esperando una lectura pendiente: la busqueda esta
-# cerrada y no hay valor que traer. AASHTO M 170M, M 36 y ASTM A760 no
-# contienen alturas de relleno admisibles -- su Nota 1 las excluye por ser
-# especificaciones de fabricacion y compra -- y M 170M clasifica por D-load,
-# no por altura. El Manual de Puentes nunca incorporo la Sec. 12 de AASHTO
-# LRFD (su indice salta de 2.11 a 2.12). Estos comentarios decian antes
-# "AASHTO M-170M (clases I a V)" y "ASTM A-807 / AASHTO M36", que apuntaban a
-# tablas que no existen. El registro completo, con citas, esta en el criterio
-# 'h_relleno_min_concreto_tmc' y en docs/manifiesto_citas.md Sec. 14.a.
+# Texto que fija la fila del HDPE, literal (EG-2013, Capitulo V, Subseccion
+# 508.07 "Colocacion del relleno alrededor de la estructura", pagina impresa
+# 984, ultimo parrafo):
+#
+#     "La altura de relleno minimo desde la clave de la tuberia hasta el
+#     nivel de la subrasante sera de 0,30 m."
+#
+# Dos cosas que el 0.30 suelto pierde. Primera: la magnitud es CLAVE a
+# SUBRASANTE, exactamente la que calcula 7.A. Segunda: "la clave de la
+# tuberia" es la superficie EXTERIOR del tubo, no el punto que queda a D
+# sobre el invert interior -- de ahi que M7 calcule la clave con el espesor
+# de pared (MAT-D4).
+# LA PAGINA: 984, verificada leyendo el PDF. Este comentario decia 982, y esa
+# cita viaja a mas sitios del expediente (NOR-EG-01, cluster C11); aqui se
+# corrige la ocurrencia que este archivo declara, no las demas.
+#
+# NOTA CONSTRUCTIVA [N] que acompaña a este mismo 0.30 m (Sec. 7.A de la hoja
+# de ruta): el equipo pesado no circula sobre el conducto antes de que el
+# relleno alcance 0.30 m. Vivia en el criterio 'h_relleno_min_concreto_tmc' y
+# se traslada aqui al retirarse aquel: es una exigencia de EJECUCION sobre el
+# relleno del EG-2013, no la altura minima de diseño, y no la sustituye la
+# cobertura minima de AASHTO -- que es de diseño en servicio, no de obra.
+#
+# QUE SIGNIFICAN LOS DOS None, que NO es lo que decia este comentario. Antes
+# decian "VACIO VERIFICADO -- no es 'falta extraer'", y sostenian que la
+# busqueda estaba cerrada en todas las fuentes posibles. Era falso por dos
+# lados:
+#
+#   (a) LA FUENTE QUE FALTABA (NOR-VAC-01). AASHTO LRFD 9a ed., Art.
+#       12.6.6.3 y Tabla 12.6.6.3-1 (pag. 12-22), tabulan la cobertura minima
+#       para los tres tipos de conducto de este catalogo. Esta en normas/ y
+#       es el cuerpo normativo que Sec. 0.2 adopta de extremo a extremo. El
+#       valor de concreto y TMC sale de ahi, via el criterio
+#       'cobertura_minima_aashto'; estos None significan hoy "EG-2013 no lo
+#       fija para este material", que es cierto, y nada mas.
+#   (b) LA ATRIBUCION DE LA EXCLUSION ERA FALSA EN DOS DE TRES (NOR-PRO-03).
+#       Las tres normas de producto efectivamente NO dan alturas de relleno
+#       -- ese fondo se confirma -- pero la formula "su Nota 1 las excluye
+#       por ser especificaciones de fabricacion y compra" es de UNA sola:
+#       AASHTO M 170M-04, Nota 1 ("This specification is a manufacturing and
+#       purchase specification only, and does not include requirements for
+#       bedding, backfill, or the relationship between field load condition
+#       and the strength classification of pipe"). En AASHTO M 36 la
+#       exclusion esta en §1.3 y en ASTM A760/A760M-10 en §1.4, con otra
+#       redaccion; la Nota 1 de esas dos habla de laminas con fibra de
+#       aramida y post-recubrimiento asfaltico. Sigue siendo cierto que
+#       M 170M clasifica por D-load y no por altura.
 # 505, 506, 507 y 508 son SECCIONES completas del EG-2013, dentro del
 # Capitulo V. No son subsecciones de ninguna "Seccion 500": esa denominacion
 # no existe en el EG-2013 y la constante se llamaba SUBSECCION por arrastre de

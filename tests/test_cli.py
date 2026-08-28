@@ -304,9 +304,10 @@ def test_el_expediente_no_cierra_mientras_haya_bloqueos():
 def _resultado_hdpe(punto):
     """
     Un `ResultadoPunto` aceptado, con material y hidraulica coherentes, para
-    probar la capa de reporte. HDPE porque su recubrimiento minimo es [N]
-    (EG-2013 508.07/508.08) y deja correr el tamizado de 7.A sin declarar
-    'h_relleno_min_concreto_tmc'.
+    probar la capa de reporte. HDPE por costumbre de este archivo, no por
+    necesidad: desde C01 los tres materiales corren el tamizado de 7.A con la
+    misma tabla (AASHTO LRFD 12.6.6.3) y ninguno depende ya de un criterio de
+    recubrimiento propio.
     """
     material = catalogo(TipoMaterial.HDPE)
     hidraulica = ResultadoHidraulico(
@@ -627,16 +628,19 @@ def test_perfil_cerrado_devuelve_exit_cero(tmp_path, monkeypatch, capsys):
     """
     2.c: un expediente de perfil con todos sus puntos dimensionados y sin
     bloqueos REALES cierra y main devuelve 0; los diferidos por alcance no
-    cuentan. Se usa B-01 solo, que cierra en concreto a V = 1.96 m/s con
-    'h_relleno_min_concreto_tmc' declarado para que la Fase 7 no lo bloquee.
+    cuentan. Se usa B-01 solo, que cierra en concreto a V = 1.96 m/s.
 
     Esa velocidad es justamente la que la correccion de V3 legitimo: mientras
     V3 leia el par de la Tabla N 10 como piso y techo, 1.96 m/s se rechazaba
     por "bajo el minimo" y el concreto se descartaba en todo su catalogo. El
     piso real lo pone V2 (0.25 m/s) y esta velocidad lo cumple de sobra.
+
+    Ya no declara 'h_relleno_min_concreto_tmc': ese criterio se retiro en C01
+    y la Fase 7 no lo pide. Los dos criterios que hoy podrian bloquearla --
+    'espesor_pared_conducto' y 'condicion_pavimento' -- los declara conftest
+    para toda la corrida de pruebas.
     """
-    _declarar(monkeypatch, h_relleno_min_concreto_tmc=0.60,
-              **CRITERIOS_CORRIDA_PERFIL)
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
     lineas = CSV.read_text(encoding="utf-8").strip().splitlines()
     solo_b01 = tmp_path / "solo_b01.csv"
     solo_b01.write_text("\n".join([lineas[0]] + [

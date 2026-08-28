@@ -131,7 +131,11 @@ from modulos.M0_carga import cargar_puntos                          # noqa: E402
 from modulos.M1_clasificacion import clasificar, exigir_alcance     # noqa: E402
 from modulos.M6_proteccion import proteccion_salida                 # noqa: E402
 from modulos.M7_geometria import (compatibilidad_geometrica,        # noqa: E402
-                                  cota_clave, longitud_conducto)
+                                  longitud_conducto)
+# `cota_clave` vive en M5 y no en M7: la comparten V7 y el tamizado de 7.A, y
+# tenerla en dos sitios fue el defecto MAT-D4 (las dos copias la calculaban
+# sin espesor de pared).
+from modulos.M5_verificaciones import cota_clave                    # noqa: E402
 from modulos.M8_estructural import (cama_apoyo_relleno_lateral,     # noqa: E402
                                     seleccionar_clase_calibre,
                                     verificacion_diferida_estructural)
@@ -754,11 +758,12 @@ def _fase_8(informe: InformePunto) -> None:
     material, D = resultado.material, resultado.D
     punto = informe.punto
 
-    # Altura real de relleno sobre la clave, la misma definicion que usa V7:
-    # subrasante menos clave, no el minimo normativo de 7.A.
+    # Altura real de relleno sobre la clave FISICA (con espesor de pared), la
+    # misma definicion que usa V7: subrasante menos clave, no el minimo de 7.A.
     altura = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                     "altura de relleno sobre la clave",
-                    lambda: punto.cota_subrasante - cota_clave(punto=punto, D=D))
+                    lambda: punto.cota_subrasante - cota_clave(
+                        punto=punto, material=material, D=D))
     if altura is not None:
         _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                "clase o calibre por norma de producto (items 1-2)",

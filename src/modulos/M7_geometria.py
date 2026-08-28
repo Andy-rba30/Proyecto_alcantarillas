@@ -15,13 +15,20 @@ separa a proposito, y que este modulo mantiene separadas:
     cota rasante >= max( cota clave + h_rec + e_paq ,
                          HW + resguardo(CBR) + e_paq )
 
-    cota clave  = cota de fondo de la entrada + D          (Sec. 7.A)
-    h_rec       = relleno minimo sobre la clave: 0.30 m en HDPE [N]
-                  (EG-2013 508.07/508.08); en concreto y TMC, el criterio
-                  'h_relleno_min_concreto_tmc' [N->], hoy CON valor (el mismo
-                  0.30 m adoptado por analogia, a nivel de perfil, con la
-                  verificacion estructural por material abierta). Si alguna
-                  vez vuelve a vaciarse, detiene el calculo para esos dos
+    cota clave  = cota de fondo de la entrada + D + espesor de pared. Es la
+                  clave FISICA, la superficie exterior del tubo, que es desde
+                  donde EG-2013 508.07 mide el relleno (MAT-D4). La calcula
+                  `M5_verificaciones.cota_clave`, no este modulo
+    h_rec       = relleno minimo sobre la clave, calculado como el MAYOR de
+                  dos minimos (`altura_recubrimiento`): el de EG-2013, que
+                  solo existe para HDPE (0.30 m, Subseccion 508.07, pag. 984,
+                  [N]), y la cobertura minima de la Tabla 12.6.6.3-1 de AASHTO
+                  LRFD ([C], 'cobertura_minima_aashto'), que depende del
+                  diametro EXTERIOR y de la condicion de pavimento. Ya NO es
+                  un escalar de 0.30 m para los tres materiales: ese numero
+                  quedaba 5 mm bajo el piso de 12 in de la tabla y hasta un
+                  20 % bajo el Bc/8 que gobierna en diametros grandes
+                  (NOR-VAC-01)
     e_paq       = cota de rasante - cota de subrasante     (Sec. 1.1)
     HW          = carga a la entrada, en metros sobre el fondo de la entrada
                   (Sec. 4.2 / 4.3), convertida a cota aqui
@@ -58,11 +65,22 @@ A 0 grados vale 1 y el conducto es perpendicular a la via.
 La proyeccion de taludes SI es un vacio: Sec. 7.B pide sumarla pero no da la
 inclinacion del talud y Sec. 1.2 no la trae como columna. Se detiene en el
 criterio 'talud_terraplen' [A], vacio a proposito (ver su justificacion en
-criterios_adoptados.py). Consecuencia practica, igual que en M5: mientras ese
-criterio siga vacio, `longitud_conducto()` y `compatibilidad_geometrica()` se
-detienen con CriterioPendienteError para CUALQUIER punto, mientras que TODO
-7.A -- el tamizado, el delta de rasante y su verificacion G1 -- funciona hoy
-mismo, porque no necesita la longitud.
+criterios_adoptados.py). Mientras ese criterio siga vacio,
+`longitud_conducto()` y `compatibilidad_geometrica()` se detienen con
+CriterioPendienteError para CUALQUIER punto.
+
+7.A YA NO CORRE SOLO, que es lo que este parrafo decia antes. El tamizado
+necesita hoy otros dos criterios, y los dos estan vacios a proposito:
+
+    'espesor_pared_conducto'  donde esta la clave fisica, y el Bc que entra en
+                              la cobertura minima del concreto (MAT-D3/D4)
+    'condicion_pavimento'     que fila de la Tabla 12.6.6.3-1 aplica a esta
+                              via (NOR-VAC-01)
+
+Que 7.A funcionase "hoy mismo" era el sintoma, no la virtud: funcionaba
+porque medía la clave desde el punto equivocado y comparaba contra un numero
+que ninguna tabla sostiene. Un tamizado que se detiene diciendo que le falta
+el espesor de pared es mas util que uno que devuelve una rasante 33 % corta.
 
 EL ACOPLAMIENTO CIRCULAR (Sec. 7.B lo declara; aqui se corta)
 --------------------------------------------------------------
@@ -133,7 +151,14 @@ reimplementa ninguna de las dos piezas que comparten:
                                                       refiere el HW (la fija
                                                       el criterio declarado
                                                       'origen_cota_fondo_entrada')
+    modulos.M5_verificaciones.cota_clave              la clave fisica, con el
+                                                      espesor de pared
     modulos.M5_verificaciones.resguardo_por_cbr       la tabla de Sec. 5.1
+
+`cota_clave` entro en esta lista al corregirse MAT-D4: estaba definida a la
+vez aqui y dentro de `v7_flotacion`, y las dos copias calculaban
+cota_entrada + D. Dos copias del mismo defecto es exactamente lo que esta
+seccion existe para evitar.
 
 Si M7 eligiera su propia cota de entrada o copiara la tabla, la rasante se
 fijaria contra una condicion y V4 se verificaria contra otra, y el
@@ -162,8 +187,10 @@ Excepciones
     CriterioPendienteError   'origen_cota_fondo_entrada' (bloquea toda
                              conversion de HW a cota, o sea 7.A entero y las
                              cotas de 7.B, para cualquier material);
-                             'h_relleno_min_concreto_tmc' en concreto y TMC
-                             (bloquea 7.A para esos materiales, no para HDPE);
+                             'espesor_pared_conducto' (bloquea la clave fisica
+                             y con ella 7.A entero, para los tres materiales);
+                             'condicion_pavimento' (bloquea el recubrimiento
+                             minimo, tambien para los tres);
                              'talud_terraplen' (bloquea la longitud de 7.B).
     DisenoNoFactibleError    lo lanzan `TamizadoRasante.exigir_factible()` y
                              `CompatibilidadGeometrica.exigir_factible()`, con
@@ -183,7 +210,7 @@ Uso
 
     # 7.A, antes del perfil longitudinal, con el diametro maximo supuesto
     tamizado = tamizado_rasante(punto=punto, material=hdpe,
-                                D_supuesto=hdpe.D_max, HW=0.95)
+                                D_supuesto=hdpe.D_max, HW=0.95)   # D_max: tope de CATALOGO
     tamizado.cota_rasante_min          # msnm - la rasante que hay que fijar
     tamizado.delta_rasante_cm          # cm  - cuanto falta subir; 0.0 si cabe
     print(tamizado.mensaje)            # "no factible -> subir rasante 18.0 cm"
@@ -203,10 +230,10 @@ import criterios_adoptados as ca
 from dominios import ESVIAJE_MAX
 from modelos import (CompatibilidadGeometrica, CondicionRasante,
                      DatoInvalidoError, Material, PuntoCritico,
-                     ResultadoHidraulico, TamizadoRasante, TipoMaterial,
+                     ResultadoHidraulico, TamizadoRasante,
                      Verificacion)
-from modulos.M2_material import CRITERIO_H_RELLENO_CONCRETO_TMC
-from modulos.M5_verificaciones import (CRITERIO_RESGUARDO,
+from modulos.M2_material import diametro_exterior, espesor_pared
+from modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
                                        cota_entrada_supuesta,
                                        resguardo_por_cbr)
 from tolerancias import TOL_UMBRAL_NORMATIVO
@@ -217,6 +244,19 @@ NUMERAL_G1 = "Sec. 7.A (recubrimiento EG-2013 / resguardo Sec. 5.1)"
 NUMERAL_G2 = "Sec. 7.B (cotas amarradas al fondo del receptor)"
 
 CRITERIO_TALUD = "talud_terraplen"
+CRITERIO_COBERTURA_AASHTO = "cobertura_minima_aashto"
+CRITERIO_CONDICION_PAVIMENTO = "condicion_pavimento"
+
+# Claves de la fila de 'cobertura_minima_aashto'. Los nombres reproducen la
+# nomenclatura del propio Art. 12.6.6.3 (S, Bc, ID) y no se reescriben aqui:
+# el criterio es la transcripcion y este modulo solo la lee.
+_DIAMETRO_DE_LA_FILA = {
+    "exterior": "D_ext",     # Bc, "outside diameter or width of the structure"
+    "interior": "D_int",     # ID, "inside diameter"
+    "nominal": "D_int",      # S, "diameter of pipe" -- el nominal del catalogo,
+                             # que en este proyecto es el interior (Sec. 3.2)
+}
+PIE_A_METRO = "pie_a_metro"
 
 
 # ---------------------------------------------------------------------------
@@ -249,49 +289,125 @@ def espesor_paquete(punto: PuntoCritico) -> float:
     return e_paq
 
 
-def cota_clave(*, punto: PuntoCritico, D: float) -> float:
+# `cota_clave` NO se define aqui: se importa de M5_verificaciones, junto a
+# `cota_entrada_supuesta` y `resguardo_por_cbr`, por la razon que el docstring
+# del modulo ya da para esas dos -- V7 y 7.A tienen que medir la clave desde
+# la misma referencia o el acoplamiento sigue abierto por la puerta de atras.
+# Estaba definida en los dos sitios, y las dos copias arrastraban el mismo
+# defecto: la calculaban como cota_entrada + D, sin espesor de pared (MAT-D4).
+
+
+def cobertura_minima_aashto(*, material: Material, D: float) -> float:
     """
-    Cota de la clave del conducto, msnm: fondo de la entrada + D (Sec. 7.A).
+    Cobertura minima sobre la clave, m, segun la Tabla 12.6.6.3-1 de AASHTO
+    LRFD 9a ed. (Art. 12.6.6.3 "Minimum Cover", pag. 12-22), para el material
+    y el diametro dados.
 
-    La cota de entrada NO es un dato del CSV: sale de la regla que el
-    proyectista declaro en 'origen_cota_fondo_entrada' y que M5 aplica en
-    `cota_entrada_supuesta`. La memoria la imprime como adoptada.
+        cobertura = max( D_de_la_fila / divisor , piso de la fila )
+
+    y en la fila del concreto, ademas, la rama "or sqrt(Bc)/8, whichever is
+    greater", que la tabla escribe con Bc en PIES -- no es homogenea y por eso
+    se evalua en pies y se devuelve a metros con la conversion exacta que el
+    propio criterio declara.
+
+    QUE DIAMETRO ENTRA lo dice la nomenclatura del articulo, y no es el mismo
+    en las tres filas: Bc ("outside diameter or width of the structure") en el
+    concreto reforzado, S ("diameter of pipe") en el metal corrugado e ID
+    ("inside diameter") en el termoplastico. La distincion importa: en un tubo
+    de concreto de D = 2.40 m con t = 0.15 m, Bc/8 da 0.34 m y (D_int)/8 daria
+    0.30 -- justo el numero equivocado que este proyecto tenia.
+
+    QUE FILA APLICA lo decide 'condicion_pavimento' [A], hoy SIN VALOR: la
+    llamada se detiene con `CriterioPendienteError` hasta que se declare. No
+    se adopta el extremo mas exigente "por si acaso" porque no hay uno solo --
+    en concreto la fila de pavimento rigido pide MENOS que las otras dos -- y
+    porque adoptarlo moveria la rasante de todos los puntos sin declararlo.
+
+    Se detiene tambien en 'espesor_pared_conducto' cuando la fila usa Bc.
     """
-    return cota_entrada_supuesta(punto) + D
+    tabla = ca.valor(CRITERIO_COBERTURA_AASHTO)
+    condicion = ca.valor(CRITERIO_CONDICION_PAVIMENTO)   # CriterioPendienteError
+    filas = tabla[material.tipo.value]
+    if condicion not in filas:
+        raise DatoInvalidoError(
+            CRITERIO_CONDICION_PAVIMENTO, valor=condicion,
+            motivo="la condicion de pavimento declarada tiene que ser una de "
+                   f"las filas transcritas de la Tabla 12.6.6.3-1: "
+                   f"{sorted(filas)}",
+        )
+    fila = filas[condicion]
+
+    diametros = {"D_int": D,
+                 "D_ext": diametro_exterior(material=material, D=D)}
+    D_fila = diametros[_DIAMETRO_DE_LA_FILA[fila["sobre"]]]
+
+    candidatos = [fila["piso_m"]]
+    if fila["divisor"] is not None:
+        candidatos.append(D_fila / fila["divisor"])
+        if fila["raiz_pies"]:
+            pie = tabla[PIE_A_METRO]
+            candidatos.append(math.sqrt(D_fila / pie) * pie / fila["divisor"])
+    return max(candidatos)
 
 
-def altura_recubrimiento(material: Material) -> float:
+def altura_recubrimiento(*, material: Material, D: float) -> float:
     """
     h_rec: relleno minimo sobre la clave hasta la subrasante, m (Sec. 7.A).
 
-    HDPE: 0.30 m [N] por EG-2013 508.07/508.08, que M2 ya trae resuelto en
-    `material.h_relleno_min`. Concreto y TMC: EG-2013 no lo fija y remite al
-    Proyecto y a la norma de producto, de modo que M2 deja el campo en None
-    (ver "Vacios que el catalogo deja en None" en su docstring) y es AQUI
-    donde el vacio detiene el calculo, porque es aqui donde el numero haria
-    falta.
+        h_rec = max( minimo de EG-2013 , cobertura minima de AASHTO )
+
+    REGLA DEL MAYOR, la misma que Sec. 0.2 ya aplica al recubrimiento de
+    concreto entre AASHTO y E.060. Los dos minimos regulan lo mismo desde dos
+    corpus distintos y ninguno deroga al otro: EG-2013 es norma peruana
+    vigente [N] y AASHTO LRFD es el cuerpo que Sec. 0.2 adopta de extremo a
+    extremo, cubriendo con [C] el vacio que el corpus peruano deja.
+
+    QUE CAMBIO Y POR QUE (NOR-VAC-01, MAT-D4, conflicto #5 del plan de
+    correcciones). Esta funcion devolvia `material.h_relleno_min`: 0.30 m para
+    los tres materiales -- [N] de EG-2013 en HDPE y adoptado por analogia en
+    concreto y TMC. Ese numero estaba mal por DOS motivos que se acumulaban
+    sobre el mismo valor, y corregir uno solo lo dejaba corto igual:
+
+      (1) EL NUMERO. La Tabla 12.6.6.3-1 pone un piso de 12.0 in = 0.3048 m
+          para concreto y para metal, de modo que 0.30 m quedaba 5 mm por
+          debajo; y en diametros grandes no gobierna el piso sino Bc/8, que
+          para un tubo de concreto de 2.40 m da ~0.36 m, un 20 % mas.
+      (2) EL PUNTO DESDE DONDE SE MIDE. La clave se calculaba sobre el
+          diametro interior, sin espesor de pared, de modo que la rasante
+          minima salia corta ademas en t. Ver `M5_verificaciones.cota_clave`.
+
+    El vacio que la analogia cubria no era un vacio: la busqueda se declaro
+    cerrada tras agotar tres fuentes y la cuarta -- AASHTO LRFD Sec. 12 --
+    estaba en normas/ y es la que el propio proyecto adopta. El criterio
+    'h_relleno_min_concreto_tmc' se retiro.
+
+    Se detiene con `CriterioPendienteError` en 'condicion_pavimento' (que fila
+    de la tabla) y en 'espesor_pared_conducto' (el Bc del concreto).
     """
-    if material.h_relleno_min is None:
-        ca.valor(CRITERIO_H_RELLENO_CONCRETO_TMC)   # CriterioPendienteError
-        raise AssertionError(
-            f"inalcanzable mientras '{CRITERIO_H_RELLENO_CONCRETO_TMC}' este vacio"
-        )
-    return material.h_relleno_min
+    aashto = cobertura_minima_aashto(material=material, D=D)
+    if material.h_relleno_min_eg2013 is None:
+        return aashto
+    return max(material.h_relleno_min_eg2013, aashto)
 
 
 def criterio_recubrimiento(material: Material) -> Optional[str]:
     """
-    Clave del criterio adoptado del que sale h_rec, o None si es [N] puro.
+    Clave del criterio del que sale h_rec: hoy siempre
+    'cobertura_minima_aashto'.
 
-    Reproduce la reparticion que M2 aplica al construir el catalogo: el HDPE
-    lee EG-2013 directo (sin vacio que declarar) y los otros dos dependen del
-    criterio [N->]. Se necesita por separado porque la `Verificacion` de 7.B
-    tiene que decir de donde salio su umbral, y `Material` guarda el valor
-    pero no su procedencia.
+    Devolvia None en HDPE -- donde el 0.30 m se leia como [N] puro de EG-2013
+    -- y 'h_relleno_min_concreto_tmc' en los otros dos. Ahora la tabla de
+    AASHTO entra en los TRES materiales, de modo que en los tres hay un
+    criterio [C] que declarar; en HDPE ademas compite con el minimo [N] de
+    EG-2013 y puede ganarlo cualquiera de los dos segun el diametro y la
+    condicion de pavimento.
+
+    Se conserva la firma Optional -- y la funcion, en vez de una constante --
+    porque el dia en que un material tenga h_rec gobernado solo por EG-2013 no
+    habra criterio adoptado que declarar, y la `Verificacion` de G1 tiene que
+    poder decirlo. `Material` guarda los valores pero no su procedencia.
     """
-    if material.tipo is TipoMaterial.HDPE:
-        return None
-    return CRITERIO_H_RELLENO_CONCRETO_TMC
+    return CRITERIO_COBERTURA_AASHTO
 
 
 # ---------------------------------------------------------------------------
@@ -332,9 +448,11 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
     ante la duda se señala la mas estable.
     """
     e_paq = espesor_paquete(punto)
-    h_rec = altura_recubrimiento(material)
+    h_rec = altura_recubrimiento(material=material, D=D_supuesto)
     entrada = cota_entrada_supuesta(punto)
-    clave = cota_clave(punto=punto, D=D_supuesto)
+    clave = cota_clave(punto=punto, material=material, D=D_supuesto)
+    t_pared = espesor_pared(material)
+    D_ext = diametro_exterior(material=material, D=D_supuesto)
 
     ca.valor(CRITERIO_RESGUARDO)      # registra el uso; "segun_CBR" no es numerico
     resguardo = resguardo_por_cbr(punto.cbr_subrasante)
@@ -360,6 +478,8 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
         cota_entrada=entrada,
         cota_clave=clave,
         D_supuesto=D_supuesto,
+        espesor_pared=t_pared,
+        D_exterior=D_ext,
         HW=HW,
         h_recubrimiento=h_rec,
         espesor_paquete=e_paq,
@@ -377,12 +497,17 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
     """
     G1: la rasante del expediente alcanza la minima del tamizado de 7.A.
 
-    Es la unica de las dos verificaciones de 7.B que se puede evaluar hoy sin
-    el criterio 'talud_terraplen', porque no necesita la longitud. El criterio
+    Es la unica de las dos verificaciones de 7.B que no necesita la longitud
+    del conducto, y por lo tanto la unica evaluable sin 'talud_terraplen'.
+    El criterio
     aplicado es el de la condicion que gobierna: 'resguardo_HW_subrasante'
-    [N->] si manda la carga a la entrada, 'h_relleno_min_concreto_tmc' [N->]
-    si manda el recubrimiento en concreto o TMC, y None si manda el
-    recubrimiento en HDPE, donde el 0.30 m es [N] puro.
+    [N->] si manda la carga a la entrada, y 'cobertura_minima_aashto' [C] si
+    manda el recubrimiento -- en los tres materiales, porque la Tabla
+    12.6.6.3-1 entra en los tres (ver `criterio_recubrimiento`).
+
+    ADEMAS, esta verificacion ya no se puede evaluar sin 'talud_terraplen'
+    pero tampoco sin 'espesor_pared_conducto' ni 'condicion_pavimento': lo
+    dice el docstring del modulo, y este parrafo decia lo contrario.
     """
     return Verificacion(
         cumple=tamizado.factible,

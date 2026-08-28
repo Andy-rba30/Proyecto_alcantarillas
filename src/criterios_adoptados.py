@@ -97,6 +97,19 @@ class Criterio:
     opcional: bool = False                     # valor=None NO bloquea: hay defecto normativo
     vacio_verificado: str = ""                 # ancla al vacio registrado que este valor cubre
     sin_consumidor: str = ""                   # por que NINGUN modulo lo invoca
+    de_catalogo: str = ""                      # rotulo: el valor es de CATALOGO, no de norma
+
+    # `de_catalogo` marca el valor que se PARECE a una exigencia normativa y
+    # no lo es: un tope de proveedor, una disponibilidad de mercado. Lleva el
+    # rotulo con que hay que imprimirlo -- de que catalogo sale y que norma de
+    # producto NO lo sostiene -- para que la memoria no le invente una cita.
+    #
+    # Nace de NOR-PRO-01 y NOR-PRO-02: los topes D_MAX (2.70 / 2.10 / 1.50 m)
+    # vivian en constantes_normativas.py atribuidos a AASHTO M170 y ASTM A760,
+    # y esas normas tabulan hasta 3600 mm. Un tope de catalogo impreso como
+    # tope normativo es una cita falsa que ademas descarta materiales en
+    # silencio. El campo existe para que la distincion viaje con el dato y no
+    # dependa de que alguien lea la justificacion entera.
 
     # `sin_consumidor` es la razon escrita de que ninguna etapa de produccion
     # llame a este criterio. Existe porque un criterio sin consumidor tiene
@@ -827,10 +840,38 @@ CRITERIOS: Dict[str, Criterio] = {
                       "friccion del barril. El HDPE de interior liso cortado a ras "
                       "del muro presenta en la boca pared lisa y borde cuadrado: "
                       "misma condicion de entrada que el concreto",
-        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, pag. A.8",
-        verificacion_pendiente="Confirmar que el detalle constructivo enrasa el "
-                               "tubo en la cara del cabezal. Si aloja campana o "
-                               "sobresale, corresponde otra fila de la tabla",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, "
+               "pag. A.8, fila 'Circular Concrete / Square edge w/headwall'. "
+               "Los cinco valores confirman contra esa fila y la pagina es la "
+               "correcta (verificado por la auditoria normativa, NOR-ANA-03)",
+        sensibilidad=("Tabla A.1, fila 'Circular Concrete / Square edge "
+                      "w/headwall' (la adoptada): K=0.0098, c=0.0398, Y=0.67",
+                      "Tabla A.1, fila 'Circular CM / Headwall' (la "
+                      "alternativa): K=0.0078, c=0.0379, Y=0.69"),
+        verificacion_pendiente="LA ANALOGIA NO ES CONSERVADORA, Y HAY QUE "
+                               "DECLARARLO EN LA MEMORIA (NOR-ANA-03). En la "
+                               "rama sumergida HW_i/D = c*q*^2 + Y + Ks*S, la "
+                               "fila del concreto adoptada da un HW MENOR que "
+                               "la fila del metal corrugado en todo el rango "
+                               "de q* de interes (c y Y son ambos menores: "
+                               "0.0398 vs 0.0379 con Y 0.67 vs 0.69 -- el "
+                               "termino independiente pesa mas). Un HW mas bajo "
+                               "es la direccion INSEGURA para V1, para V4 y "
+                               "para el resguardo de 7.A. La adopcion se "
+                               "sostiene en el argumento fisico de arriba -- el "
+                               "perfil de pared EN LA BOCA, no la friccion del "
+                               "barril -- y no en un margen de seguridad: son "
+                               "dos cosas distintas y el criterio declaraba "
+                               "solo la primera. Lo que cierra el punto no es "
+                               "cambiar de fila (la de metal seria otra "
+                               "analogia, elegida por su resultado y no por su "
+                               "fundamento) sino el detalle constructivo: "
+                               "confirmar que el tubo enrasa en la cara del "
+                               "cabezal con pared interior lisa. Si aloja "
+                               "campana, sobresale o el HDPE es de interior "
+                               "corrugado, corresponde otra fila y la "
+                               "alternativa de la sensibilidad pasa a ser la "
+                               "adoptada",
     ),
 
     "metodo_transicion_hds5": Criterio(
@@ -892,8 +933,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "una tabla normativa aplicada por analogia a un material que "
                       "esa tabla no lista, que es la definicion de [N->]. Los dos "
                       "casos gemelos del archivo ('resguardo_HW_subrasante' y "
-                      "'h_relleno_min_concreto_tmc') ya llevaban [N->] por lo "
-                      "mismo. La hoja de ruta se contradice a si misma al escribir "
+                      "'h_relleno_min_concreto_tmc', hoy retirado) ya llevaban "
+                      "[N->] por lo mismo. La hoja de ruta se contradice a si misma al escribir "
                       "[A] para este criterio en su Anexo A: manda su propia regla "
                       "de coherencia, no la fila del indice",
         fuente="Analogia a Tabla N 09 (concreto, tubo recto), num. 4.1.1.3.5, "
@@ -922,8 +963,11 @@ CRITERIOS: Dict[str, Criterio] = {
         # POR QUE NO LLEVA `vacio_verificado`, siendo una afirmacion negativa
         # sobre la Tabla N 10 (SIS-D-12): el campo es para el valor que cubre
         # un vacio AGOTADO -- una busqueda cerrada fuente por fuente que
-        # termino sin encontrar nada, como la de 'h_relleno_min_concreto_tmc'
-        # en Sec. 14.a. Aqui no hubo vacio que agotar: la busqueda ENCONTRO
+        # termino sin encontrar nada. El ejemplo que este comentario citaba
+        # -- 'h_relleno_min_concreto_tmc' en Sec. 14.a -- ya no sirve como
+        # ejemplo de nada: aquel vacio se declaro agotado sin haber mirado
+        # AASHTO LRFD Art. 12.6.6.3, que lo cerraba, y el criterio se retiro
+        # (NOR-VAC-01). Aqui no hubo vacio que agotar: la busqueda ENCONTRO
         # una fuente tecnica reconocida y el valor sale de ella. Es una cita
         # cerrada, que el manifiesto registra en su Sec. 10-bis, y por eso
         # este criterio es [C] con fuente y no una adopcion sobre un hueco.
@@ -967,7 +1011,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "CORRIGE la redaccion anterior, que decia 'la unica "
                       "entrada que se lee con valor_si_declarado()': no lo "
                       "es. M2 lee asi otras cuatro claves NO opcionales "
-                      "('n_manning_hdpe', 'h_relleno_min_concreto_tmc', "
+                      "('n_manning_hdpe', 'espesor_pared_conducto', "
                       "'v_max_tmc', 'v_max_hdpe') para poder armar el "
                       "catalogo con campos vacios y que el bloqueo salte en "
                       "el punto de uso; la diferencia es que aquellas SI "
@@ -1105,9 +1149,33 @@ CRITERIOS: Dict[str, Criterio] = {
         justificacion="El numeral 4.5.4 regula la separacion frente al NIVEL "
                       "FREATICO, no frente a un nivel transitorio de avenida. Se "
                       "aplica POR ANALOGIA por ser el unico parametro normativo "
-                      "nacional que protege la subrasante de la saturacion. La "
-                      "analogia es conservadora y debe declararse en la memoria",
-        fuente="Manual de Suelos MTC, numeral 4.5.4 y 9.1(3)",
+                      "nacional que protege la subrasante de la saturacion, y la "
+                      "analogia debe declararse en la memoria. "
+                      "QUE LA ANALOGIA QUEDE DEL LADO SEGURO ES PLAUSIBLE, NO "
+                      "DEMOSTRADO (NOR-ANA-02). Este campo decia 'la analogia es "
+                      "conservadora' como si fuera un hecho establecido, y no lo "
+                      "es: el resguardo del 4.5.4 protege la subrasante del "
+                      "ASCENSO CAPILAR CONTINUO de un freatico permanente, "
+                      "mientras que un HW de avenida moja el terreno durante "
+                      "horas, por un mecanismo distinto, y puede subir por encima "
+                      "del freatico. Que el resguardo dimensionado para el primer "
+                      "mecanismo baste para el segundo no se deduce del numeral "
+                      "ni de ningun otro del Manual de Suelos. Se conserva la "
+                      "adopcion -- no hay parametro nacional que la sustituya -- "
+                      "y se retira la afirmacion de conservadurismo, que era la "
+                      "unica parte que la fuente no sostenia. La auditoria "
+                      "normativa confirmo lo demas: el numeral regula lo que se "
+                      "le atribuye, la tabla es la que el codigo transcribe y la "
+                      "etiqueta [N->] es la correcta",
+        fuente="Manual de Suelos MTC, numeral 4.5.4 (pags. 41-42) y 9.1(3) "
+               "(pags. 89-90), que repite la tabla en el capitulo de "
+               "estabilizacion",
+        verificacion_pendiente="La equivalencia entre saturacion permanente "
+                               "(el mecanismo del 4.5.4) y mojado transitorio "
+                               "por avenida (el de V4) queda sin demostrar. "
+                               "Cerrarla exige una fuente que trate el "
+                               "remanso de avenida sobre la subrasante, no una "
+                               "lectura mas del mismo numeral",
     ),
 
     "TW_receptor": Criterio(
@@ -1333,147 +1401,423 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "diametros_normalizados": Criterio(
-        valor={"inicio": 0.90, "paso": 0.15,
-               "max": {"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50}},
+        valor={"inicio": 0.90, "paso": 0.15},
         etiqueta="C",
-        concepto="Progresion de diametros y topes por material",
+        concepto="Progresion de diametros normalizados (inicio y paso)",
         justificacion="Neutralidad comercial exigible en obra publica: no se usan "
                       "catalogos de proveedor. El paso de 0.15 m reproduce las "
-                      "series de 6 pulgadas (ASTM/AASHTO) y de 150 mm (M294) con "
-                      "error despreciable. Usar 0.90 en vez de 0.9144 subestima el "
-                      "area ~3%, del lado de la seguridad",
-        fuente="ASTM C76/AASHTO M170; AASHTO M36/ASTM A760; AASHTO M294",
-        verificacion_pendiente="Confirmar los topes superiores contra el texto de "
-                               "cada norma de producto. El de HDPE (~1.50 m) es el "
-                               "mas restrictivo y puede descartar el material",
+                      "series de 6 pulgadas (ASTM/AASHTO: 6 in = 0.1524 m) y de "
+                      "150 mm (M294) con error despreciable. Usar 0.90 en vez de "
+                      "0.9144 (36 in) subestima el area ~3%, del lado de la "
+                      "seguridad. "
+                      "LOS TOPES YA NO ESTAN AQUI. Este criterio declaraba "
+                      "tambien 'max' -- 2.70 / 2.10 / 1.50 m -- como si fuera la "
+                      "misma clase de dato que el paso, y no lo es: el paso se "
+                      "verifica contra la serie de la norma de producto y los "
+                      "topes NO salen de ninguna norma (NOR-PRO-01, NOR-PRO-02, "
+                      "MAT-O8). Viven ahora en 'D_max_catalogo', rotulados como "
+                      "topes de catalogo",
+        fuente="Series de diametro nominal de las normas de producto: ASTM "
+               "A760/A760M-10, Tabla 1 'Tamaños de tuberia' (150 a 3600 mm, en "
+               "escalones de 150 mm a partir de 900 mm); AASHTO M 170M-04, "
+               "Tablas 1 a 5 (300 a 3600 mm); AASHTO M294 (serie de 150 mm). El "
+               "piso de 0.90 m no sale de ellas sino del minimo normativo "
+               "peruano: Manual de Hidrologia num. 4.1.1.3.4 a) "
+               "(constantes_normativas.DIAMETRO_MIN)",
     ),
 
-    "h_relleno_min_concreto_tmc": Criterio(
-        valor=0.30,                 # m; ADOPTADO por analogia -- ver justificacion
-        etiqueta="N->",
-        concepto="Altura minima de relleno sobre la clave para concreto y TMC",
-        justificacion="ADOPCION POR ANALOGIA SOBRE UN VACIO VERIFICADO, a nivel "
-                      "de PERFIL. "
-                      "LO QUE LA NORMA SI FIJA: EG-2013 Subseccion 508.07, "
-                      "pag. 982, exige 0.30 m desde la clave hasta la "
-                      "subrasante, y lo exige SOLO PARA HDPE. Es un valor "
-                      "normativo real, con numeral y pagina, de la misma "
-                      "magnitud que aqui hace falta (subrasante menos clave, "
-                      "la que calcula 7.A). "
-                      "LO QUE NO FIJA NADIE: para concreto y TMC no hay valor, "
-                      "y no por falta de buscarlo -- la busqueda esta cerrada "
-                      "en las tres fuentes donde podia estar y registrada en "
-                      "docs/manifiesto_citas.md Sec. 14.a. No es una cita "
-                      "pendiente de extraer: es un vacio verificado. "
-                      "POR QUE LA ANALOGIA ES CONSERVADORA Y NO UNA COARTADA: "
-                      "el HDPE es el material con MENOR tolerancia a cobertura "
-                      "reducida bajo carga viva -- es el que menos rigidez de "
-                      "anillo aporta y el que mas depende del confinamiento "
-                      "del relleno. El concreto admite recubrimientos menores; "
-                      "WSDOT Hydraulics Manual M 23-03.12, Tabla 8-6, llega a "
-                      "0.5 ft de cobertura reducida en Clase V (SE CITA COMO "
-                      "REFERENCIA COMPARATIVA DE TOLERANCIA ENTRE MATERIALES, "
-                      "NO COMO VALOR DE DISENO: no se adopta ese numero ni "
-                      "ninguno derivado de el). Exigir a concreto y a TMC el "
-                      "recubrimiento del material MENOS tolerante no puede "
-                      "quedar del lado inseguro, que es la unica direccion en "
-                      "que una analogia entre materiales puede fallar. "
-                      "ALCANCE -- POR QUE 'A NIVEL DE PERFIL': el 0.30 m "
-                      "destraba el tamizado 7.A, que es lo que el nivel de "
-                      "perfil necesita para fijar la rasante. NO sustituye la "
-                      "verificacion estructural por material, que es de "
-                      "expediente y sigue pendiente (ver `reemplazado_por`). "
-                      "Sin este valor, 7.A detenia el calculo en concreto y "
-                      "TMC y el HDPE era el unico material que llegaba a "
-                      "completar diseno, que no es un resultado de ingenieria "
-                      "sino el efecto de un vacio documental",
-        fuente="NINGUNA. No es un valor 'pendiente de extraer': es un VACIO "
-               "VERIFICADO, y la busqueda esta cerrada en las tres fuentes "
-               "donde podia estar. "
-               "(1) NORMAS DE PRODUCTO -- AASHTO M 170M, AASHTO M 36 y ASTM "
-               "A760 no contienen alturas de relleno admisibles, y su Nota 1 "
-               "las excluye de forma expresa: son especificaciones de "
-               "FABRICACION Y COMPRA, y no cubren encamado, relleno ni la "
-               "relacion entre carga de cobertura y clase o espesor. M 170M "
-               "clasifica por D-load (resistencia), NO por altura, de modo "
-               "que no hay tabla clase-a-altura que extraer de ella. Este "
-               "campo decia antes que el valor saldria de ahi; no sale. "
-               "(2) MANUAL DE PUENTES (RD 041-2016-MTC/14) -- no incorporo "
-               "un capitulo equivalente a la Seccion 12 de AASHTO LRFD "
-               "('Buried Structures and Tunnel Liners') y NO FIJA ALTURA "
-               "MINIMA DE RELLENO para ningun material. Esa es toda la "
-               "afirmacion negativa que se sostiene, y va acotada asi a "
-               "proposito: decia antes 'vacio absoluto sobre conductos "
-               "enterrados', que es falso, y lo sostenia con una evidencia de "
-               "indice que tambien lo es. El Manual SI trata estructuras "
-               "enterradas, al menos en cinco lugares -- verificados uno por "
-               "uno contra el PDF: num. 2.4.3.3.2 'Componentes Enterrados' "
-               "(pag. 109), IM = 33(1.0 - 0.125 DE) >= 0 % con DE = "
-               "profundidad minima de cubierta de tierra; Tabla 2.4.5.3.1-2 "
-               "'Factores de carga para cargas permanentes' (pag. 143), con "
-               "filas propias de 'Estructura rigida enterrada' (1.30/0.90) y "
-               "'Estructuras flexible enterradas'; num. 2.8.1.3A.6.2 "
-               "(pag. 280), cortante en losas de "
-               "alcantarilla cajon con menos o mas de 2.0 ft (600 mm) de "
-               "relleno; num. 2.9.1.4.6.4.6 (pag. 362), armadura de "
-               "distribucion segun la altura de relleno sobre la losa; y "
-               "num. 2.4.3.11.1 (pag. 121), que exime a las alcantarillas "
-               "cajon totalmente enterradas de la accion sismica. Ninguno de "
-               "los cinco fija una altura minima de relleno: todos SUPONEN "
-               "conocida la cobertura y la usan como entrada, que es "
-               "exactamente el dato que aqui falta. "
-               "LA EVIDENCIA DE INDICE QUE SE RETIRA, por falsa: se decia que "
-               "'el indice salta de 2.11 (Muros de Contencion y Estribos) a "
-               "2.12'. El 2.11 del Manual es 'DISENO DE BARRERAS DE SONIDO' "
-               "(15 AASHTO), pag. 505, y el 2.12 'Disposiciones "
-               "Constructivas', pag. 513; los muros y estribos viven dentro "
-               "de 2.8 Cimentaciones, que es de donde este mismo expediente "
-               "saca 2.8.1.1.14.2. Ademas la numeracion del Manual no sigue "
-               "la de AASHTO (2.8 <-> 10, 2.10 <-> 14.6, 2.11 <-> 15), de "
-               "modo que 'entre 2.11 y 2.12 deberia estar la Sec. 12' no era "
-               "una inferencia valida. La conclusion no cambia; el argumento "
-               "con que se sostenia, si. "
+    "D_max_catalogo": Criterio(
+        valor={"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50},
+        etiqueta="A",
+        concepto="Diametro maximo que el proyecto admite por material, como "
+                 "tope de DISPONIBILIDAD (catalogo), no como tope normativo",
+        de_catalogo="TOPE DE CATALOGO, NO DE NORMA. Imprimir siempre asi: "
+                    "'diametro maximo adoptado por disponibilidad de mercado'. "
+                    "Las normas de producto que el proyecto cita para cada "
+                    "material NO topan el diametro donde este criterio lo topa "
+                    "-- A760/A760M-10 tabula hasta 3600 mm y M 170M-04 tambien "
+                    "--, de modo que atribuirles el tope seria una cita falsa. "
+                    "Es tambien el aviso de que superar el tope NO significa "
+                    "'material inexistente': significa 'fuera del catalogo "
+                    "adoptado', y se levanta declarando otro tope",
+        justificacion="ADOPCION DEL PROYECTISTA SOBRE UNA DISPONIBILIDAD, no "
+                      "sobre un vacio normativo. El tope existe por una razon "
+                      "de calculo real -- sin el, el solver de la Fase 4 "
+                      "converge a un diametro que nadie fabrica ni transporta a "
+                      "la obra -- pero el NUMERO es una decision de proyecto "
+                      "sobre lo que se consigue en el mercado local, no una "
+                      "exigencia. "
+                      "QUE CAMBIA RESPECTO DE LA VERSION ANTERIOR: nada del "
+                      "valor, todo de la etiqueta y de la cita. Los tres numeros "
+                      "son los mismos que traia 'diametros_normalizados'; lo que "
+                      "se retira es la atribucion a ASTM C76 / AASHTO M170, "
+                      "AASHTO M36 / ASTM A760 y AASHTO M294, que no los "
+                      "sostienen (NOR-PRO-01, NOR-PRO-02) y que el propio codigo "
+                      "marcaba 'VERIFICAR' sin numeral (MAT-O8). "
+                      "POR QUE NO SE SUBEN A 3600 mm: porque eso seria cambiar "
+                      "una adopcion no declarada por otra. Lo que la fuente "
+                      "sostiene es que la norma no topa donde el proyecto topa, "
+                      "no cual es el tope que a esta obra le conviene. Elegir el "
+                      "tope real es del expediente -- ver `reemplazado_por` --, "
+                      "y mientras tanto los tres valores se conservan porque son "
+                      "los que la Fase 4 ya venia usando y son los CONSERVADORES "
+                      "en su unico efecto: descartan material antes, nunca "
+                      "despues. Un tope mas alto solo puede ampliar el conjunto "
+                      "de disenos admisibles. "
+                      "CONSECUENCIA QUE HAY QUE DECLARAR EN LA MEMORIA: V9 "
+                      "(`M5_verificaciones.v9_disponibilidad_diametro`) y "
+                      "`M2_material.siguiente_diametro` descartan material "
+                      "contra este tope, y ese descarte es ADOPTADO. Un punto "
+                      "que salga 'no factible por diametro' con 2.10 m de TMC no "
+                      "es un punto que la norma prohiba resolver con TMC",
+        fuente="NINGUNA NORMA. Verificado en contra por lectura directa del "
+               "PDF: ASTM A760/A760M-10, Tabla 1 'Tamaños de tuberia', pag. 3, "
+               "tabula diametros nominales de 100 mm (4 in) a 3600 mm (144 in) "
+               "-- 2100 mm es una fila mas de la serie, no un maximo. AASHTO M "
+               "170M-04, Tablas 1 a 5 (Clases I a V), tabula de 300 a 3600 mm y "
+               "su Seccion 7.2 preve ademas 'special designs for sizes and loads "
+               "beyond those shown in Tables 1 to 5'. AASHTO M294 no esta en "
+               "normas/ y su tope de 1.50 m no se pudo contrastar con ninguna "
+               "fuente del repositorio",
+        reemplazado_por="Disponibilidad real de mercado para el corredor, "
+                        "declarada en el expediente con su respaldo (consulta a "
+                        "fabricantes, o el tope de la serie tabulada de cada "
+                        "norma de producto si el proyecto decide no acotar). "
+                        "Mientras no se declare, el descarte por diametro se "
+                        "imprime como adoptado",
+        verificacion_pendiente="Los tres topes siguen sin respaldo documental. "
+                               "El de HDPE (1.50 m) es el mas restrictivo y es "
+                               "el unico cuya norma de producto (AASHTO M294) ni "
+                               "siquiera esta en normas/ para poder contrastarlo",
+    ),
+
+    # 'h_relleno_min_concreto_tmc' SE RETIRO. Declaraba 0.30 m [N->] para
+    # concreto y TMC "por analogia sobre un vacio verificado": el HDPE es el
+    # material menos tolerante a cobertura reducida, luego exigirle a los
+    # otros dos su mismo recubrimiento no podia quedar del lado inseguro.
+    #
+    # Las dos mitades del argumento cayeron a la vez.
+    #
+    # (1) EL VACIO NO ERA UN VACIO (NOR-VAC-01). La busqueda se declaro
+    #     cerrada tras agotar tres fuentes -- normas de producto, Manual de
+    #     Puentes y EG-2013 -- y falto la cuarta, que ademas esta en el propio
+    #     repositorio y es la que Sec. 0.2 adopta de extremo a extremo: AASHTO
+    #     LRFD 9a ed. (2020), Art. 12.6.6.3 "Minimum Cover" y su
+    #     Tabla 12.6.6.3-1, pag. 12-22, tabulan la cobertura minima por tipo
+    #     de conducto. Vive ahora en 'cobertura_minima_aashto'.
+    # (2) EL NUMERO ERA CORTO. Esa tabla pone un PISO de 12.0 in = 0.3048 m
+    #     para concreto y metal, de modo que 0.30 m quedaba 5 mm por debajo;
+    #     y lo que gobierna en diametros grandes no es el piso sino Bc/8, que
+    #     para un tubo de 2.40 m de concreto (Bc ~ 2.9 m) da ~0.36 m, un 20 %
+    #     mas que lo adoptado.
+    #
+    # Se retira en vez de corregirle el numero porque ya no queda vacio que
+    # cubrir: el recubrimiento minimo pasa a CALCULARSE
+    # (`M7_geometria.altura_recubrimiento`) como el mayor entre el minimo de
+    # EG-2013 -- que solo existe para HDPE -- y la cobertura minima de AASHTO,
+    # que depende del diametro EXTERIOR y de la condicion de pavimento. Un
+    # escalar unico para dos materiales no puede expresar eso.
+    #
+    # Cae con el la referencia a WSDOT M 23-03.12 Tabla 8-6 (NOR-ANA-01): era
+    # la unica cita que la memoria ofrecia para sostener "el concreto tolera
+    # mas", y no esta en el repositorio. La Tabla 12.6.6.3-1 confirma la
+    # DIRECCION de aquel argumento -- bajo pavimento el termoplastico pide
+    # ID/2 >= 24 in, el valor mas alto de la tabla -- y desmiente su MAGNITUD:
+    # la analogia era conservadora en el orden de los materiales y no en el
+    # numero. Con la tabla cableada, ni la direccion ni la magnitud dependen
+    # ya de una fuente ausente.
+
+    "cobertura_minima_aashto": Criterio(
+        valor={
+            # Tabla 12.6.6.3-1, transcrita a SI. Por material del catalogo y
+            # por condicion de pavimento. Cada fila:
+            #   divisor   el D se divide por el (None: la fila es un valor
+            #             fijo, sin termino proporcional al diametro)
+            #   sobre     que diametro entra en el divisor, con la nomenclatura
+            #             del propio Art. 12.6.6.3: "exterior" para Bc
+            #             ("outside diameter or width of the structure"),
+            #             "interior" para ID ("inside diameter"), "nominal"
+            #             para S ("diameter of pipe")
+            #   piso_m    el ">" de la tabla: minimo absoluto, en metros
+            #   raiz_pies rama "or sqrt(Bc)/8, whichever is greater" -- solo
+            #             la fila del concreto la tiene, y no es homogenea:
+            #             la tabla escribe Bc en PIES y por eso se evalua en
+            #             pies y se devuelve a metros (ver "pie_a_metro")
+            "concreto_reforzado": {
+                # "Reinforced Concrete Pipe / Under unpaved areas or top of
+                # flexible pavement -- Bc/8 or sqrt(Bc)/8, whichever is
+                # greater, > 12.0 in."
+                "no_pavimentado": {"divisor": 8.0, "sobre": "exterior",
+                                   "piso_m": 0.3048, "raiz_pies": True},
+                "flexible": {"divisor": 8.0, "sobre": "exterior",
+                             "piso_m": 0.3048, "raiz_pies": True},
+                # "Under bottom of rigid pavement -- 9.0 in."
+                "rigido": {"divisor": None, "sobre": "exterior",
+                           "piso_m": 0.2286, "raiz_pies": False},
+            },
+            "tmc": {
+                # "Corrugated Metal Pipe / -- / S/8 > 12.0 in." Fila unica:
+                # la tabla no distingue condicion de pavimento para el metal
+                # corrugado, y por eso las tres condiciones repiten la misma
+                # fila en vez de inventarle dos que la tabla no trae.
+                "no_pavimentado": {"divisor": 8.0, "sobre": "nominal",
+                                   "piso_m": 0.3048, "raiz_pies": False},
+                "flexible": {"divisor": 8.0, "sobre": "nominal",
+                             "piso_m": 0.3048, "raiz_pies": False},
+                "rigido": {"divisor": 8.0, "sobre": "nominal",
+                           "piso_m": 0.3048, "raiz_pies": False},
+            },
+            "hdpe": {
+                # "Thermoplastic Pipe / Under unpaved areas -- ID/8 > 12.0 in.
+                #                     / Under paved roads  -- ID/2 > 24.0 in."
+                # Las dos condiciones pavimentadas caen en la MISMA fila: la
+                # tabla dice "paved roads" sin separar flexible de rigido.
+                "no_pavimentado": {"divisor": 8.0, "sobre": "interior",
+                                   "piso_m": 0.3048, "raiz_pies": False},
+                "flexible": {"divisor": 2.0, "sobre": "interior",
+                             "piso_m": 0.6096, "raiz_pies": False},
+                "rigido": {"divisor": 2.0, "sobre": "interior",
+                           "piso_m": 0.6096, "raiz_pies": False},
+            },
+            # Definicion exacta de la unidad (NIST): 1 ft = 0.3048 m. No es un
+            # valor de proyecto ni una constante fisica: esta aqui, dentro de
+            # la transcripcion, porque la rama sqrt(Bc)/8 NO es homogenea y
+            # solo tiene sentido con Bc en pies. Sin ella la fila del concreto
+            # no se puede pasar a SI sin inventar un coeficiente.
+            "pie_a_metro": 0.3048,
+        },
+        etiqueta="C",
+        concepto="Cobertura minima sobre la clave del conducto, por material y "
+                 "condicion de pavimento (Tabla 12.6.6.3-1 de AASHTO LRFD)",
+        justificacion="VACIO NORMATIVO PERUANO CUBIERTO CON LA FUENTE QUE EL "
+                      "PROPIO PROYECTO YA ADOPTO. EG-2013 fija la altura "
+                      "minima de relleno solo para HDPE (Subseccion 508.07, "
+                      "pag. impresa 984) y el Manual de Puentes no incorporo "
+                      "la Sec. 12 de AASHTO LRFD, de modo que para concreto y "
+                      "TMC el corpus peruano no da numero. AASHTO LRFD si, y "
+                      "Sec. 0.2 de la hoja de ruta adopta la Via 1 -- AASHTO "
+                      "LRFD de extremo a extremo -- lo que hace de esta tabla "
+                      "la fuente natural y no una analogia. Es [C] y no [N] "
+                      "porque AASHTO no es norma peruana vigente: es la fuente "
+                      "tecnica reconocida con que se cubre el vacio. "
+                      "REGLA DE CONFLICTO, la misma que Sec. 0.2 ya aplica al "
+                      "recubrimiento de concreto (AASHTO frente a E.060): rige "
+                      "el MAYOR de los dos minimos. Para HDPE conviven el "
+                      "0.30 m de EG-2013 [N] y esta tabla, y se aplica el "
+                      "mayor; para concreto y TMC solo existe esta. "
+                      "SIMPLIFICACION CONSERVADORA DECLARADA -- el datum. La "
+                      "nota al pie de la Tabla 12.6.6.3-1 dice que la "
+                      "cobertura se mide 'from top of rigid pavement or bottom "
+                      "of flexible pavement', mientras que 7.A mide h_rec de "
+                      "la clave a la SUBRASANTE. La cobertura de AASHTO es "
+                      "entonces h_rec MAS el paquete que quede por encima de "
+                      "la subrasante (base, subbase y, con pavimento rigido, "
+                      "la losa), o sea siempre >= h_rec. Exigir el minimo de "
+                      "AASHTO a h_rec solo -- que es lo que hace 7.A -- pide "
+                      "de mas, nunca de menos. Se declara porque es una "
+                      "eleccion de encuadre, aunque su direccion sea segura: "
+                      "cerrarla de verdad exige el desglose del paquete "
+                      "estructural, que Sec. 1.2 no trae como columna. "
+                      "QUE FILA APLICA la decide 'condicion_pavimento', que es "
+                      "un vacio aparte y bloquea: la tabla es [C] y elegir su "
+                      "fila es [A], el mismo reparto que F_PGA_TABLA / 'F_pga' "
+                      "y FACTOR_MURO_TABLA / 'factor_muro_eleccion'",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
+               "Seccion 12 'Buried Structures and Tunnel Liners', "
+               "Art. 12.6.6.3 'Minimum Cover' y Tabla 12.6.6.3-1, pag. "
+               "impresa 12-22 (PDF 1660 de "
+               "normas/AASHTO.LRFD.Bridge.Design.Specifications_9th.Edition."
+               "2020.pdf). Nomenclatura del propio articulo: 'S = diameter of "
+               "pipe (in.)', 'Bc = outside diameter or width of the structure "
+               "(ft)', 'ID = inside diameter (in.)'. Filas transcritas, "
+               "literales: Corrugated Metal Pipe 'S/8 > 12.0 in.'; "
+               "Thermoplastic Pipe 'Under unpaved areas ID/8 > 12.0 in.' y "
+               "'Under paved roads ID/2 > 24.0 in.'; Reinforced Concrete Pipe "
+               "'Under unpaved areas or top of flexible pavement: Bc/8 or "
+               "sqrt(Bc)/8, whichever is greater, > 12.0 in.' y 'Under bottom "
+               "of rigid pavement: 9.0 in.'. Nota al pie: 'Minimum cover taken "
+               "from top of rigid pavement or bottom of flexible pavement'. "
+               "Conversiones a SI: 12.0 in = 0.3048 m, 9.0 in = 0.2286 m, "
+               "24.0 in = 0.6096 m (1 in = 0.0254 m exacto). "
+               "BUSQUEDA EN EL CORPUS PERUANO, agotada fuente por fuente y "
+               "registrada en docs/manifiesto_citas.md Sec. 14.a: EG-2013 "
+               "Cap. V fija la altura minima de relleno SOLO para HDPE "
+               "(Subseccion 508.07, pag. impresa 984, verificada leyendo el "
+               "PDF); las Secciones 505, 506 y 507 regulan colocacion y "
+               "compactacion y remiten a la Seccion 502, que tampoco fija "
+               "altura minima de diseño. El Manual de Puentes (RD "
+               "041-2016-MTC/14) no incorporo un capitulo equivalente a la "
+               "Seccion 12 de AASHTO LRFD y no fija altura minima de relleno "
+               "para ningun material: trata estructuras enterradas en al "
+               "menos cinco numerales (2.4.3.3.2 pag. 109; Tabla 2.4.5.3.1-2 "
+               "pag. 143; 2.8.1.3A.6.2 pag. 280; 2.9.1.4.6.4.6 pag. 362; "
+               "2.4.3.11.1 pag. 121) y los cinco SUPONEN conocida la "
+               "cobertura. Las normas de producto tampoco: AASHTO M 170M-04 "
+               "lo excluye en su Nota 1 ('manufacturing and purchase "
+               "specification only'), AASHTO M 36 en su §1.3 y ASTM "
+               "A760/A760M-10 en su §1.4 -- la atribucion anterior ponia la "
+               "misma 'Nota 1' en las tres y era falsa en dos (NOR-PRO-03). "
                "TRAMPA DE VOCABULARIO, anotada para que nadie la vuelva a "
-               "pisar: el Manual SI usa la palabra 'recubrimiento' para "
-               "alcantarillas en la Tabla 2.9.1.5.5.3-1 (pag. 378, 2.0 in / "
-               "50 mm), pero ahi significa el recubrimiento de CONCRETO SOBRE "
-               "EL ACERO DE REFUERZO, no la altura de relleno de tierra. Son "
-               "dos conceptos que comparten palabra en espaniol y no tienen "
-               "ninguna relacion; el numero de esa tabla NO sirve aqui. "
-               "(3) EG-2013 Cap. V -- para HDPE si lo fija, y con la misma "
-               "magnitud que calcula V7 (subrasante menos clave): Subseccion "
-               "508.07, pag. 982, literal, 'La altura de relleno minimo desde "
-               "la clave de la tuberia hasta el nivel de la subrasante sera "
-               "de 0,30 m.' Para concreto y TMC no: las Secciones 505, 506 y "
-               "507 solo regulan colocacion y compactacion y remiten a la "
-               "Seccion 502, que tampoco fija altura minima de diseno. Las "
-               "remisiones son formales y terminan en (1): Subseccion 506.02 "
-               "(pag. 959) remite a AASHTO M-170M para concreto reforzado, y "
-               "las Subsecciones 507.05, 507.06 y 507.08 (pags. 969-970) "
-               "remiten a ASTM A-807 para TMC",
-        reemplazado_por="VERIFICACION ESTRUCTURAL POR MATERIAL, de "
-                        "EXPEDIENTE. El 0.30 m adoptado es de perfil y no la "
-                        "sustituye. Concreto reforzado: AASHTO LRFD "
-                        "Art. 12.6.6.3 -- cobertura minima tipica 1.0 ft "
-                        "(~0.305 m) salvo diseno especial de armadura, de modo "
-                        "que la adopcion coincide practicamente con el tipico "
-                        "de AASHTO y la verificacion deberia confirmarla, no "
-                        "corregirla. TMC: relacion luz/corrugacion conforme "
-                        "ASTM A-807. "
-                        "NO lo cierra ninguna norma de PRODUCTO: ver la "
-                        "fuente, punto (1). Este campo pedia antes 'la tabla "
-                        "de alturas admisibles de la norma de producto para la "
-                        "clase o calibre de la Fase 8', y esa tabla no existe "
-                        "-- M 170M clasifica por D-load y su Nota 1 excluye el "
-                        "relleno del alcance. La otra via, tambien de "
-                        "expediente, es calcular la cobertura minima por "
-                        "AASHTO LRFD Sec. 12 (que el Manual de Puentes no "
-                        "incorpora, ver fuente punto 2) o por clase D-load con "
-                        "factor de cama",
+               "pisar: el Manual de Puentes SI usa la palabra 'recubrimiento' "
+               "para alcantarillas en la Tabla 2.9.1.5.5.3-1 (pag. 378, 2.0 "
+               "in / 50 mm), pero ahi significa el recubrimiento de CONCRETO "
+               "SOBRE EL ACERO DE REFUERZO, no la altura de relleno de "
+               "tierra. Son dos conceptos que comparten palabra en espaniol y "
+               "no tienen ninguna relacion; el numero de esa tabla NO sirve "
+               "aqui. "
+               "LA EVIDENCIA DE INDICE QUE SE RETIRO, por falsa (NOR-PUE-06): "
+               "se sostenia que 'el indice del Manual salta de 2.11 (Muros de "
+               "Contencion y Estribos) a 2.12'. El 2.11 del Manual es 'DISEÑO "
+               "DE BARRERAS DE SONIDO' (15 AASHTO), pag. 505, y el 2.12 "
+               "'Disposiciones Constructivas', pag. 513; los muros y estribos "
+               "viven dentro de 2.8 Cimentaciones, de donde este mismo "
+               "expediente saca 2.8.1.1.14.2. Ademas la numeracion del Manual "
+               "no sigue la de AASHTO (2.8 <-> 10, 2.10 <-> 14.6, 2.11 <-> "
+               "15), de modo que 'entre 2.11 y 2.12 deberia estar la Sec. 12' "
+               "no era una inferencia valida. La conclusion -- que el Manual "
+               "no incorporo la Sec. 12 -- no cambia; el argumento con que se "
+               "sostenia, si",
+        reemplazado_por="Una disposicion PERUANA que fije la cobertura minima "
+                        "para concreto y TMC: hoy no existe, y por eso se "
+                        "aplica AASHTO LRFD. La cerraria que el MTC "
+                        "incorporase la Sec. 12 de AASHTO LRFD al Manual de "
+                        "Puentes, o una version del EG-2013 que extendiese el "
+                        "508.07 a los otros dos materiales. Queda ademas "
+                        "abierto el DATUM: la tabla mide la cobertura desde "
+                        "el fondo del pavimento flexible o el techo del "
+                        "rigido, y 7.A la exige sobre la subrasante -- la "
+                        "simplificacion es conservadora y se cierra con el "
+                        "desglose del paquete estructural, que Sec. 1.2 no "
+                        "trae como columna",
         vacio_verificado="manifiesto_citas.md Sec. 14.a",
-        verificacion_pendiente="Nota constructiva [N] que si es firme: el equipo "
-                               "pesado no circula sobre el conducto antes de que "
-                               "el relleno alcance 0.30 m (Sec. 7.A)",
+        verificacion_pendiente="Las filas que el catalogo de este proyecto NO "
+                               "usa quedaron fuera de la transcripcion "
+                               "(Spiral Rib, Structural Plate, Fiberglass, "
+                               "Steel-Reinforced Thermoplastic, Long-Span, "
+                               "Box y Deep Corrugated). Si algun dia el "
+                               "catalogo de Sec. 3.2 admite otra forma, hay "
+                               "que traerlas: hoy no estan porque no aplican, "
+                               "no porque no existan. Falta ademas cerrar el "
+                               "datum -- ver la SIMPLIFICACION CONSERVADORA de "
+                               "la justificacion --, que necesita el desglose "
+                               "del paquete estructural",
+    ),
+
+    "condicion_pavimento": Criterio(
+        valor=None,                 # VACIO: bloquea 7.A -- que fila de la tabla
+        etiqueta="A",
+        concepto="Condicion de la superficie de rodadura sobre el cruce, para "
+                 "elegir la fila de la Tabla 12.6.6.3-1: 'no_pavimentado', "
+                 "'flexible' o 'rigido'",
+        justificacion="LA TABLA ES [C] Y ELEGIR SU FILA ES [A]: mismo reparto "
+                      "que F_PGA_TABLA / 'F_pga' y FACTOR_MURO_TABLA / "
+                      "'factor_muro_eleccion'. La Tabla 12.6.6.3-1 separa 'under "
+                      "unpaved areas', 'top of flexible pavement' y 'under "
+                      "bottom of rigid pavement', y cual de las tres es esta via "
+                      "no lo dice ninguna norma: lo dice la seccion tipica del "
+                      "expediente vial. "
+                      "POR QUE NO SE DEDUCE DE LO QUE YA HAY: el CSV (Sec. 1.2) "
+                      "trae cota de rasante y cota de subrasante, y su "
+                      "diferencia -- el paquete estructural e_paq -- es positiva "
+                      "tambien en un afirmado. Un paquete no dice si hay carpeta "
+                      "asfaltica ni si es losa de concreto. "
+                      "POR QUE NO SE ADOPTA EL EXTREMO CONSERVADOR EN SILENCIO: "
+                      "porque cambia el resultado, y mucho. En HDPE la fila "
+                      "pavimentada pide ID/2 >= 24 in -- 0.75 m para un tubo de "
+                      "1.50 m -- frente a 0.30 m de la fila no pavimentada: "
+                      "2.5 veces. Elegir la mas exigente 'por si acaso' subiria "
+                      "la rasante de todos los puntos sin que nadie pueda "
+                      "rastrear de donde salio, que es exactamente lo que "
+                      "CLAUDE.md prohibe. En concreto el efecto es el contrario "
+                      "y por eso tampoco hay un extremo 'seguro' unico: la fila "
+                      "de pavimento RIGIDO pide 9.0 in fijos, MENOS que las "
+                      "otras dos",
+        fuente="PENDIENTE - seccion tipica del expediente vial (Manual de "
+               "Diseño Geometrico DG-2018 y el estudio de pavimentos), que fija "
+               "el tipo de superficie de rodadura del corredor. Misma "
+               "procedencia que 'talud_terraplen'",
+        reemplazado_por="Tipo de pavimento de la seccion tipica del proyecto "
+                        "vial, o una columna por punto si el corredor cambia de "
+                        "superficie a lo largo de sus 5 km",
+        sensibilidad=("no_pavimentado", "flexible", "rigido"),
+        verificacion_pendiente="Declarar si la condicion es unica para el "
+                               "corredor o varia por punto. Se declara como "
+                               "criterio de corredor porque la seccion tipica "
+                               "lo es; si el expediente trae tramos con "
+                               "superficie distinta, pasa a ser columna del CSV",
+    ),
+
+    "espesor_pared_conducto": Criterio(
+        valor=None,                 # VACIO: bloquea la clave fisica y el empuje de V7
+        etiqueta="A",
+        concepto="Espesor de pared del conducto por material, en metros: la "
+                 "distancia entre la superficie interior y la exterior que "
+                 "separa el diametro hidraulico D del diametro exterior "
+                 "D_ext = D + 2*t",
+        justificacion="EL CATALOGO DE Sec. 3.2 MODELA EL TUBO CON UN SOLO "
+                      "DIAMETRO, el interior, y hay dos sitios donde el que "
+                      "hace falta es el exterior: "
+                      "(1) LA CLAVE FISICA (MAT-D4). EG-2013 Subseccion 508.07 "
+                      "mide el relleno minimo 'desde la clave de la tuberia', "
+                      "que es la superficie EXTERIOR; 7.A la calculaba como "
+                      "cota de entrada + D, sin espesor. Con la clave corta en "
+                      "t, la rasante minima sale corta en t: una rasante fijada "
+                      "en ese minimo deja ~0.20 m reales de recubrimiento donde "
+                      "EG-2013 exige 0.30 (deficit del 33 % para D = 0.90 m de "
+                      "concreto). "
+                      "(2) EL EMPUJE DE FLOTACION (MAT-D3). El num. 2.4.3.8.2 "
+                      "del Manual de Puentes define la subpresion sobre el "
+                      "VOLUMEN DESPLAZADO, que es el exterior. V7 usaba "
+                      "U = gamma_w*(pi/4)*D^2 con D interior y su docstring lo "
+                      "declaraba conservador: es al reves. Subestimar el volumen "
+                      "desplazado subestima la carga DESestabilizante, y el "
+                      "conservadurismo declarado apunta al lado contrario del "
+                      "real (-31.6 % en U para D = 0.90 m de concreto). "
+                      "POR QUE NO TIENE VALOR Y BLOQUEA: porque el espesor no "
+                      "es un dato unico por material, es una CONSECUENCIA de la "
+                      "clase o calibre que se especifique, y esa seleccion es "
+                      "el vacio que 'clases_producto_por_relleno' ya declara "
+                      "abierto para la Fase 8, items 1-2. En concreto, AASHTO M "
+                      "170M-04 tabula TRES espesores por diametro (Wall A, B y "
+                      "C, Tablas 1 a 5) y elegir cual se usa es del proyectista; "
+                      "en TMC el espesor util es la altura de corrugacion mas el "
+                      "calibre de la plancha, y la corrugacion admisible por "
+                      "diametro esta en la Tabla 1 de A760 mientras el calibre "
+                      "sigue abierto en 'clases_producto_por_relleno'; en HDPE "
+                      "es la altura del perfil corrugado, y AASHTO M294 no esta "
+                      "en normas/. Con una fuente que exige elegir, otra que "
+                      "depende de un vacio ya declarado y una tercera ausente, "
+                      "no hay transcripcion que hacer: hay una adopcion que "
+                      "declarar, y por eso [A] y no [C]. "
+                      "POR QUE NO SE APROXIMA A CERO 'del lado seguro': porque "
+                      "no hay un lado seguro unico. En 7.A un t mayor sube la "
+                      "clave y exige mas rasante (t = 0 es INSEGURO); en V7 un t "
+                      "mayor sube el empuje U (t = 0 tambien es inseguro). Las "
+                      "dos apuntan en la misma direccion aqui, y aun asi "
+                      "adoptar un numero sin declararlo seria rellenar el vacio "
+                      "en silencio",
+        fuente="PENDIENTE - por material: AASHTO M 170M-04, Tablas 1 a 5, "
+               "columna 'Wall Thickness' de las paredes A, B y C por diametro "
+               "designado (concreto reforzado, con la eleccion de pared por "
+               "declarar); ASTM A760/A760M-10 Tabla 1 (tamaños de corrugacion "
+               "admisibles por diametro nominal) junto con el calibre de la "
+               "plancha que fije la Fase 8 (TMC); AASHTO M294 (HDPE), que NO "
+               "esta en normas/",
+        reemplazado_por="El espesor de pared de la clase, calibre o perfil "
+                        "efectivamente especificado en el expediente. Se cierra "
+                        "junto con 'clases_producto_por_relleno': son el mismo "
+                        "vacio de norma de producto visto desde dos fases -- "
+                        "alli la clase por altura de relleno, aqui el espesor "
+                        "que esa clase implica",
+        verificacion_pendiente="El espesor real NO es constante por material: "
+                               "crece con el diametro. Este criterio lo declara "
+                               "como un escalar por material, que es lo que el "
+                               "nivel de perfil (Sec. 1.4) admite; el "
+                               "expediente lo sustituye por la tabla espesor x "
+                               "diametro x clase. Mientras sea escalar hay que "
+                               "declararlo para el diametro MAYOR que el "
+                               "material vaya a usar, que es donde el espesor "
+                               "es mayor y la clave queda mas alta",
     ),
 
     # ----------------------- FASE 8: ESTRUCTURAL DEL CONDUCTO -------------
@@ -1494,41 +1838,65 @@ CRITERIOS: Dict[str, Criterio] = {
     "clases_producto_por_relleno": Criterio(
         valor=None,                 # VACIO: bloquea la seleccion de Fase 8, items 1-2
         etiqueta="C",
-        concepto="Tabla de clase (concreto, AASHTO M-170M I-V) o calibre "
-                 "(TMC, ASTM A-807/AASHTO M36) admisible segun la altura de "
+        concepto="Tabla de clase (concreto, AASHTO M 170M-04, Clases I a V) o "
+                 "calibre (TMC, ASTM A796/A796M) admisible segun la altura de "
                  "relleno sobre la clave, para Fase 8 items 1-2: seleccionar "
                  "la clase/calibre por altura real y verificar que esa "
                  "altura cae en el rango admisible de la clase elegida",
-        justificacion="Ninguna de las dos tablas (AASHTO M-170M clases I-V "
-                      "por diametro y altura de relleno; ASTM A-807/AASHTO "
-                      "M36 calibre por altura) esta transcrita en la hoja de "
-                      "ruta -- es el MISMO vacio de norma de producto ya "
-                      "declarado en 'h_relleno_min_concreto_tmc' (Sec. 7.A), "
-                      "pero alli solo hacia falta un minimo escalar y aqui "
-                      "hace falta la tabla completa de clases con su rango "
-                      "admisible. HDPE (AASHTO M294) no tiene tabla de clase "
-                      "por altura: su seleccion depende de un calculo de "
+        justificacion="Ninguna de las dos tablas (AASHTO M 170M-04 clases I-V "
+                      "por diametro y altura de relleno; ASTM A796/A796M "
+                      "calibre por altura de cobertura) esta transcrita en la "
+                      "hoja de ruta. HDPE (AASHTO M294) no tiene tabla de "
+                      "clase por altura: su seleccion depende de un calculo de "
                       "rigidez de anillo que Fase 8, item 5, difiere "
-                      "expresamente al expediente tecnico",
-        fuente="PENDIENTE - AASHTO M-170M (clases I-V, concreto); "
-              "ASTM A-807 / AASHTO M36 (calibre por altura, TMC). Falta "
-              "EXTRAER la tabla completa (clase o calibre x diametro x "
-              "rango de altura de relleno)",
+                      "expresamente al expediente tecnico. "
+                      "LA NORMA DEL TMC NO ES A-807 (NOR-PRO-04). Este "
+                      "criterio atribuia el calibre por altura y la relacion "
+                      "luz/corrugacion a 'ASTM A-807', y esa designacion no "
+                      "aparece NI UNA VEZ en M 170M, M 36 ni A760. Lo que si "
+                      "aparece: A760 §1.4 remite el procedimiento de "
+                      "instalacion a ASTM A798/A798M, y tanto A760 como la "
+                      "lista de normas de M 36 citan ASTM A796/A796M "
+                      "('Practice for Structural Design of Corrugated Steel "
+                      "Pipe'), que es la que lleva el calibre por altura de "
+                      "cobertura. De donde venia el error: EG-2013 "
+                      "Subsecciones 507.05, 507.06 y 507.08 (pags. 969-970) SI "
+                      "remiten a A-807 -- esa cita del expediente es correcta "
+                      "y no se toca -- pero remiten para MATERIALES Y "
+                      "FABRICACION, no para la tabla de calibre por altura. "
+                      "PARTE DEL PENDIENTE YA SE PUEDE CERRAR: la relacion "
+                      "luz/corrugacion no hay que buscarla fuera, esta en la "
+                      "Tabla 1 de A760 (una 'X' por cada tamaño de corrugacion "
+                      "estandar para cada diametro nominal) y en la Tabla 6 de "
+                      "M 36, las dos adjuntas en normas/. Lo que sigue fuera "
+                      "del repositorio es A796",
+        fuente="PENDIENTE - AASHTO M 170M-04, Tablas 1 a 5 (clases I a V por "
+              "diametro, concreto); ASTM A796/A796M (calibre por altura de "
+              "cobertura, TMC), que NO esta en normas/. Falta EXTRAER la "
+              "tabla completa (clase o calibre x diametro x rango de altura "
+              "de relleno). La relacion luz/corrugacion, en cambio, si esta "
+              "disponible: ASTM A760/A760M-10 Tabla 1 y AASHTO M 36 Tabla 6",
         reemplazado_por="Tabla de clase/calibre por altura de relleno de la "
                         "norma de producto, extraida y transcrita con su "
-                        "numeral",
+                        "numeral. Cierra ademas 'espesor_pared_conducto': el "
+                        "espesor de pared es una consecuencia de la clase, el "
+                        "calibre o el perfil que aqui se seleccione",
         verificacion_pendiente="POR QUE ES [C] Y NO [A], que es la unica "
                                "combinacion de este archivo (un [C] sin "
                                "valor): la etiqueta la fija DE DONDE saldra "
                                "el valor, no si ya lo tiene. Aqui la fuente "
                                "tecnica existe, esta identificada y es "
-                               "reconocida (AASHTO M-170M, ASTM A-807 / "
-                               "AASHTO M36): lo que falta es TRANSCRIBIRLA, "
-                               "no elegir. Un [A] seria lo contrario: no hay "
-                               "fuente y decide el proyectista. El precedente "
-                               "interno es 'v_max_tmc' / 'v_max_hdpe', que "
-                               "fueron [C] sin valor por la misma razon y hoy "
-                               "valen 4.6 sin haber cambiado de etiqueta",
+                               "reconocida (AASHTO M 170M-04, ASTM A796/A796M): "
+                               "lo que falta es TRANSCRIBIRLA, no elegir. Un "
+                               "[A] seria lo contrario: no hay fuente y decide "
+                               "el proyectista -- que es justo el caso de "
+                               "'espesor_pared_conducto', su gemelo por la "
+                               "otra punta: alli M 170M ofrece TRES paredes "
+                               "por diametro y hay que elegir una. El "
+                               "precedente interno es 'v_max_tmc' / "
+                               "'v_max_hdpe', que fueron [C] sin valor por la "
+                               "misma razon y hoy valen 4.6 sin haber cambiado "
+                               "de etiqueta",
     ),
 
     # 'FS_flotacion' SE RETIRO. Declaraba el factor de seguridad global de
@@ -1570,9 +1938,12 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     # ----------------------- FASE 7: COMPATIBILIDAD GEOMETRICA ------------
-    # 7.A queda resuelto con lo ya declarado (h_relleno_min_concreto_tmc para
-    # el recubrimiento y resguardo_HW_subrasante para la carga a la entrada).
-    # Lo que 7.B abre es la LONGITUD del conducto.
+    # 7.A ya NO queda resuelto con lo declarado: pide tres cosas que estan
+    # mas arriba en este archivo -- 'cobertura_minima_aashto' (la tabla),
+    # 'condicion_pavimento' (que fila) y 'espesor_pared_conducto' (donde esta
+    # la clave fisica) --, y las dos ultimas bloquean. 'resguardo_HW_subrasante'
+    # sigue cubriendo la otra condicion del maximo, la de la carga a la
+    # entrada. Lo que 7.B abre aparte es la LONGITUD del conducto.
 
     "talud_terraplen": Criterio(
         valor=None,                 # VACIO: bloquea la longitud del conducto en 7.B
@@ -2181,6 +2552,16 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
                 "por defecto"
             )
 
+    if c.de_catalogo and c.etiqueta in ("N", "N->"):
+        # Un tope de catalogo no puede llevar etiqueta normativa: si la
+        # llevara, la memoria lo imprimiria como exigencia y le buscaria un
+        # numeral que no tiene. Es exactamente el defecto NOR-PRO-01/02.
+        raise ValueError(
+            f"'{clave}' se rotula `de_catalogo` y lleva etiqueta "
+            f"{c.etiqueta!r}. Un valor de catalogo de proveedor no es una "
+            "exigencia normativa ni una analogia normativa: es [C] o [A]"
+        )
+
     if c.vacio_verificado:
         if c.valor is None:
             raise ValueError(
@@ -2245,6 +2626,8 @@ def reporte_criterios(solo_usados: bool = True) -> str:
             f"[{c.etiqueta}] {k} = {valor_efectivo!r}"
             f"{marca_override}{marca_prov}{marca_opc}")
         out.append(f"     Concepto      : {c.concepto}")
+        if c.de_catalogo:
+            out.append(f"     DE CATALOGO   : {c.de_catalogo}")
         out.append(f"     Justificacion : {c.justificacion}")
         out.append(f"     Fuente        : {c.fuente}")
         if c.reemplazado_por:

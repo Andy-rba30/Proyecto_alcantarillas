@@ -177,7 +177,8 @@ from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
 from modelos import (DatoFaltanteError, DatoInvalidoError, Material, PuntoCritico,
                      ReferenciaNormativa, ResultadoHidraulico, TipoMaterial,
                      Verificacion)
-from modulos.M2_material import CRITERIO_DIAMETROS, CRITERIO_V_MAX
+from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO, CRITERIO_V_MAX,
+                                 diametro_exterior, espesor_pared)
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
@@ -454,6 +455,37 @@ def cota_entrada_supuesta(punto: PuntoCritico) -> float:
     return getattr(punto, ORIGENES_COTA_ENTRADA[origen])
 
 
+def cota_clave(*, punto: PuntoCritico, material: Material, D: float) -> float:
+    """
+    Cota de la clave FISICA del conducto, msnm (Sec. 7.A):
+
+        cota clave = cota de fondo de la entrada + D interior + espesor de pared
+
+    El espesor de pared entra UNA vez y no dos: la cota de entrada es el
+    invert INTERIOR -- la superficie por donde corre el agua -- de modo que la
+    superficie exterior superior queda a D_int + t sobre ella, no a D_ext.
+
+    POR QUE NO ES cota_entrada + D, que es lo que este proyecto calculaba
+    (MAT-D4): EG-2013 Subseccion 508.07 (pag. impresa 984) mide el relleno
+    minimo "desde la clave de la tuberia hasta el nivel de la subrasante", y
+    la clave de la tuberia es su superficie EXTERIOR. Con la clave calculada
+    sobre el diametro interior, la rasante minima de 7.A sale corta justo en
+    t: una rasante fijada en ese minimo deja ~0.20 m reales de recubrimiento
+    donde EG-2013 exige 0.30 (deficit del 33 % para D = 0.90 m de concreto).
+
+    Es publica y vive AQUI, junto a `cota_entrada_supuesta`, por la misma
+    razon que ella: la usan V7 (para pesar el relleno real sobre la clave) y
+    el tamizado de 7.A (para fijar la rasante), y si cada modulo la
+    recalculase por su cuenta las dos condiciones se separarian. Estaba
+    duplicada -- M7.cota_clave y una linea suelta dentro de `v7_flotacion` --
+    y las dos copias tenian el mismo error.
+
+    Se detiene con `CriterioPendienteError` en 'origen_cota_fondo_entrada'
+    (la cota de entrada) o en 'espesor_pared_conducto' (el espesor).
+    """
+    return cota_entrada_supuesta(punto) + D + espesor_pared(material)
+
+
 def resguardo_por_cbr(cbr: float) -> float:
     """
     Resguardo de Sec. 5.1 segun el CBR de subrasante (Manual de Suelos, num.
@@ -610,12 +642,20 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     resultado.
 
     La altura de relleno sobre la clave es la REAL del punto -- cota de
-    subrasante menos la cota de la clave -- no el minimo normativo de Sec.
-    7.A ('h_relleno_min_concreto_tmc'): V7 pesa el relleno que de verdad hay
-    encima, no un piso admisible. Usa la misma cota de entrada que V4 y M7
-    (`cota_entrada_supuesta`, que aplica la regla declarada en
+    subrasante menos la cota de la clave -- no el minimo de Sec. 7.A: V7 pesa
+    el relleno que de verdad hay encima, no un piso admisible. Usa la misma
+    `cota_clave` que el tamizado de 7.A, que a su vez usa la misma cota de
+    entrada que V4 (`cota_entrada_supuesta`, la regla declarada en
     'origen_cota_fondo_entrada'), para no evaluar la flotacion contra una
-    referencia distinta de la que fija la rasante.
+    referencia distinta de la que fija la rasante. Esa clave es la FISICA:
+    lleva el espesor de pared, y por eso V7 se detiene tambien en
+    'espesor_pared_conducto' (MAT-D4).
+
+    U y EV se calculan sobre el diametro EXTERIOR, no sobre el interior. El
+    num. 2.4.3.8.2 define la subpresion sobre el volumen desplazado, que es el
+    exterior; usar el interior la subestimaba un 31.6 % para D = 0.90 m de
+    concreto, y el docstring de M8 declaraba esa aproximacion "del lado
+    conservador" cuando es exactamente la contraria (MAT-D3).
 
     DC = 0: no suma el peso propio del conducto (ver "Por que el peso propio
     del conducto no entra en V7" en el docstring de M8_estructural). Omitirlo
@@ -625,7 +665,7 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     'factores_carga_aashto' (los gamma), los dos vacios que le faltan al
     procedimiento -- no en un vacio de METODO: ver el docstring del modulo.
     """
-    clave = cota_entrada_supuesta(punto) + D
+    clave = cota_clave(punto=punto, material=material, D=D)
     altura_relleno = punto.cota_subrasante - clave
     if altura_relleno <= TOL_UMBRAL_NORMATIVO:
         raise DatoInvalidoError(
@@ -635,8 +675,9 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
                    f"en V7 ({NUMERAL_V7})",
         )
 
-    U = empuje_flotacion_kn_m(D=D)
-    EV = peso_relleno_kn_m(D=D, altura_relleno=altura_relleno)
+    D_ext = diametro_exterior(material=material, D=D)
+    U = empuje_flotacion_kn_m(D_exterior=D_ext)
+    EV = peso_relleno_kn_m(D_exterior=D_ext, altura_relleno=altura_relleno)
     DC = 0.0                 # peso propio omitido, del lado conservador
     g = factores_carga_flotacion()   # CriterioPendienteError si EV no se detuvo antes
 
@@ -676,16 +717,23 @@ def v8_evento_extremo(*, punto: PuntoCritico,
 
 def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     """
-    D requerido <= tope de la norma de producto del material. El tope es
-    `material.D_max`, que M2 ya resolvio desde el criterio
-    'diametros_normalizados' -- V9 solo lo consulta, no lo recalcula.
+    D requerido <= tope de CATALOGO del material. El tope es `material.D_max`,
+    que M2 resuelve desde el criterio 'D_max_catalogo' -- V9 solo lo consulta,
+    no lo recalcula.
+
+    NO ES UN UMBRAL NORMATIVO (NOR-PRO-01, NOR-PRO-02, MAT-O8). El tope se
+    atribuia a ASTM C76/AASHTO M170, AASHTO M36/ASTM A760 y AASHTO M294, y
+    ninguna de las tres lo sostiene: A760 tabula diametros nominales hasta
+    3600 mm y M 170M igual. Es una adopcion del proyecto sobre la
+    disponibilidad de mercado, y por eso `criterio_aplicado` apunta ahora a
+    'D_max_catalogo': un punto rechazado por V9 no lo rechaza la norma.
     """
     return Verificacion(
         cumple=D <= material.D_max + TOL_UMBRAL_NORMATIVO,
         numeral=NUMERAL_V9,
         valor_obtenido=D,
         valor_admisible=material.D_max,
-        criterio_aplicado=CRITERIO_DIAMETROS,
+        criterio_aplicado=CRITERIO_D_MAX_CATALOGO,
         codigo="V9",
     )
 

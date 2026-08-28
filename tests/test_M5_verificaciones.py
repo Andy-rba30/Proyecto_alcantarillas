@@ -501,21 +501,30 @@ def test_v7_calcula_completo_en_cuanto_declara_el_peso_del_relleno(
                      resultado=_resultado())
     assert v.codigo == "V7"
     assert v.criterio_aplicado == "factores_carga_aashto"
-    assert v.valor_obtenido == pytest.approx(0.90 * 17.01, abs=1e-6)
+    assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
     assert v.valor_admisible == pytest.approx(
-        1.00 * 9.81 * (math.pi / 4) * 0.90 ** 2, abs=1e-6)
+        1.00 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
     assert v.cumple
 
 
 def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
                                                                 monkeypatch):
     """
-    cota_terreno=42.10 (= cota de entrada supuesta), D=0.90 -> clave=43.00.
-    cota_subrasante=44.05 -> altura_relleno = 1.05 m.
-    U  = 9.81 * (pi/4) * 0.90^2 = 6.2417... kN/m
-    EV = 18.0 * 0.90 * 1.05 = 17.01 kN/m;  DC = 0 (peso propio omitido)
-    estabilizante   = 0.90*0 + 1.00*17.01 = 17.01 kN/m
-    desestabilizante = 1.00 * U = 6.2417... kN/m  -> cumple
+    Recalculado a mano con la geometria FISICA del conducto (C01): el espesor
+    de pared de la corrida de pruebas para el concreto es t = 0.10 m, de modo
+    que D_ext = 0.90 + 2*0.10 = 1.10 m.
+
+    cota_terreno=42.10 (= cota de entrada supuesta), D=0.90, t=0.10
+        -> clave = 42.10 + 0.90 + 0.10 = 43.10   (clave FISICA, MAT-D4)
+    cota_subrasante=44.05 -> altura_relleno = 44.05 - 43.10 = 0.95 m.
+    U  = 9.81 * (pi/4) * 1.10^2 = 9.3228... kN/m   (volumen desplazado, MAT-D3)
+    EV = 18.0 * 1.10 * 0.95 = 18.81 kN/m;  DC = 0 (peso propio omitido)
+    estabilizante   = 0.90*0 + 1.00*18.81 = 18.81 kN/m
+    desestabilizante = 1.00 * U = 9.3228... kN/m  -> cumple
+
+    Los numeros anteriores -- clave 43.00, altura 1.05, U = 6.2417, EV = 17.01
+    -- salian de usar el diametro interior en los dos sitios. U estaba un 33 %
+    por debajo del real, y esa es la carga desestabilizante.
     """
     for clave, val in (("peso_especifico_relleno_kn_m3", 18.0),
                        ("factores_carga_aashto", TABLA_GAMMA_DEMO)):
@@ -529,9 +538,9 @@ def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
                      resultado=_resultado())
     assert v.codigo == "V7"
     assert v.criterio_aplicado == "factores_carga_aashto"
-    assert v.valor_obtenido == pytest.approx(1.00 * 17.01, abs=1e-6)
+    assert v.valor_obtenido == pytest.approx(1.00 * 18.81, abs=1e-6)
     assert v.valor_admisible == pytest.approx(
-        1.00 * 9.81 * (math.pi / 4) * 0.90 ** 2, abs=1e-6)
+        1.00 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
     assert v.cumple
 
 
@@ -554,9 +563,9 @@ def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
         )
     v = v7_flotacion(punto=_punto(), material=concreto, D=0.90,
                      resultado=_resultado())
-    assert v.valor_obtenido == pytest.approx(0.90 * 17.01, abs=1e-6)
+    assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
     assert v.valor_admisible == pytest.approx(
-        1.25 * 9.81 * (math.pi / 4) * 0.90 ** 2, abs=1e-6)
+        1.25 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
 
 
 def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
@@ -594,7 +603,8 @@ def test_v9_cumple_bajo_el_tope(concreto):
     assert v.cumple
     assert v.codigo == "V9"
     assert v.valor_admisible == pytest.approx(concreto.D_max)
-    assert v.criterio_aplicado == "diametros_normalizados"
+    # El tope es de CATALOGO, no de la norma de producto (NOR-PRO-01/02).
+    assert v.criterio_aplicado == "D_max_catalogo"
 
 
 def test_v9_incumple_sobre_el_tope(hdpe):

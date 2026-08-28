@@ -44,9 +44,12 @@ Lo que MD NO hace
   `modulos.M7_geometria.tamizado_rasante`, que lo devuelve en
   `TamizadoRasante.delta_rasante_cm` sin necesidad de excepcion.
 - No fabrica la Verificacion V9 (disponibilidad de diametro). El descarte por
-  tope de la norma de producto y V9 son el MISMO hecho, y quien lo declare
-  como `Verificacion` con su numeral es M5, que ya recibe D y `material.D_max`.
+  tope de CATALOGO y V9 son el MISMO hecho, y quien lo declare como
+  `Verificacion` con su criterio es M5, que ya recibe D y `material.D_max`.
   MD lo reporta como texto en el motivo de descarte, no como verificacion.
+  Ese tope NO es normativo: sale del criterio 'D_max_catalogo' [A] y las
+  normas de producto a las que se le atribuia no lo sostienen (NOR-PRO-01,
+  NOR-PRO-02). El motivo de descarte lo dice con esas palabras.
 - No itera puntos. El bucle exterior "para cada punto" no esta aqui porque
   cada punto entra con su L y su TW propios (arriba) y porque la hoja de ruta
   no declara que hacer con el lote cuando UN punto sale no factible: si aborta
@@ -241,12 +244,21 @@ def _motivo_material_fallido(exc: ErrorProyecto) -> str:
 def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
     """
     El material se quedo sin catalogo: se agoto la progresion de Sec. 3.2 bajo
-    el tope de su norma de producto. Lleva el mensaje textual del Anexo B y,
+    el tope de CATALOGO del material. Lleva el mensaje textual del Anexo B y,
     detras, el ultimo fallo concreto -- el mensaje solo dice que no hay tubo
     mas grande; el motivo dice por que hacia falta uno.
+
+    El tope se cita como lo que es: una adopcion del proyecto sobre la
+    disponibilidad ('D_max_catalogo'), NO la norma de producto. Este mensaje
+    decia "segun {norma_producto}" y esa atribucion es falsa -- A760 tabula
+    hasta 3600 mm y M 170M tambien (NOR-PRO-01, NOR-PRO-02) --, de modo que
+    un punto descartado aqui parecia rechazado por la norma cuando lo rechaza
+    el catalogo adoptado.
     """
-    return (f"{MENSAJE_DIAMETRO_SUPERADO} (tope {material.D_max:.2f} m segun "
-            f"{material.norma_producto}). Ultimo intento: {ultimo_motivo}")
+    return (f"{MENSAJE_DIAMETRO_SUPERADO} (tope de catalogo adoptado "
+            f"{material.D_max:.2f} m, criterio 'D_max_catalogo'; NO es un "
+            f"tope de {material.norma_producto}). Ultimo intento: "
+            f"{ultimo_motivo}")
 
 
 # ---------------------------------------------------------------------------

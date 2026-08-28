@@ -243,9 +243,11 @@ class CategoriaTR(str, Enum):
 class TipoMaterial(str, Enum):
     """
     Materiales admitidos, Sec. 3.4. El valor de cada miembro coincide con la
-    clave usada en `constantes_normativas.D_MAX`, `H_RELLENO_MIN` y
-    `SECCION_EG2013`. La correspondencia con las claves de la Tabla N 09
-    (`MANNING`) la resuelve M2, no este modulo.
+    clave usada en `constantes_normativas.H_RELLENO_MIN` y `SECCION_EG2013`, y
+    con la de los criterios que se indexan por material ('D_max_catalogo',
+    'espesor_pared_conducto', 'cobertura_minima_aashto'). La correspondencia
+    con las claves de la Tabla N 09 (`MANNING`) la resuelve M2, no este
+    modulo.
     """
     CONCRETO_REFORZADO = "concreto_reforzado"
     TMC = "tmc"
@@ -449,17 +451,34 @@ class Material:
     Regla de doble n (Sec. 4.1): n maximo para capacidad y tirante, n minimo
     para velocidad y socavacion. Se expone con dos propiedades para que ningun
     modulo tenga que recordar cual es cual.
+
+    Dos campos que se leen mal si no se dice de que son:
+
+    `D_max` NO es un tope normativo. Es el tope de CATALOGO que el proyecto
+    adopta ('D_max_catalogo', [A]), y `D_max_de_catalogo` trae el rotulo con
+    que hay que imprimirlo. `norma_producto` es la norma que rige el producto
+    -- materiales, fabricacion, aceptacion -- y NO la que topa el diametro:
+    A760 tabula hasta 3600 mm y M 170M tambien (NOR-PRO-01, NOR-PRO-02).
+
+    `h_relleno_min_eg2013` es SOLO el minimo de EG-2013, que existe unicamente
+    para HDPE (Subseccion 508.07, pag. 984). No es el recubrimiento minimo del
+    material: ese lo calcula `M7_geometria.altura_recubrimiento` como el mayor
+    entre este y la cobertura minima de AASHTO (Tabla 12.6.6.3-1), y depende
+    del diametro exterior. Un None aqui significa "EG-2013 no lo fija para
+    este material", no "falta el dato".
     """
 
     tipo: TipoMaterial
     nombre: str                             # etiqueta para el reporte
     n_min: float                            # Tabla N 09 (o criterio adoptado)
     n_max: float
-    D_max: float                            # m - tope de la norma de producto (V9)
+    D_max: float                            # m - tope de CATALOGO adoptado (V9)
+    D_max_de_catalogo: str                  # rotulo obligatorio de ese tope
     norma_producto: str                     # ASTM C76 / AASHTO M36 / M294 ...
     hds5: ConstantesHDS5                    # carta adoptada en Sec. 4.2
     v_max_rango: Optional[Tuple[float, float]]   # m/s - Tabla N 10; None = vacio
-    h_relleno_min: Optional[float]          # m sobre la clave (Sec. 7.A)
+    h_relleno_min_eg2013: Optional[float]   # m sobre la clave; None = EG-2013 no lo fija
+    espesor_pared: Optional[float]          # m - t; None = criterio sin declarar
     seccion_eg2013: str                     # 505 / 506 / 507 / 508 (Capitulo V)
 
     @property
@@ -759,10 +778,25 @@ class TamizadoRasante:
     que el objeto no vuelva a comparar floats por su cuenta. Son coherentes
     con `cota_rasante_min` y `cota_rasante_actual` por construccion.
 
-    `criterio_recubrimiento` es None cuando h_rec es [N] puro (HDPE, EG-2013
-    508.07/508.08) y la clave del criterio adoptado cuando no lo es (concreto
-    y TMC, 'h_relleno_min_concreto_tmc'). `criterio_resguardo` es siempre
-    'resguardo_HW_subrasante', [N->] por analogia declarada (Sec. 5.1).
+    `criterio_recubrimiento` es hoy siempre 'cobertura_minima_aashto': el
+    recubrimiento minimo ya no es un escalar leido por material sino el mayor
+    entre el minimo de EG-2013 (que solo existe para HDPE) y la cobertura
+    minima de la Tabla 12.6.6.3-1 de AASHTO LRFD, y esa tabla entra en los
+    TRES materiales. Antes era None en HDPE -- donde el 0.30 m se leia como
+    [N] puro -- y 'h_relleno_min_concreto_tmc' en los otros dos; el campo
+    sigue siendo Optional porque un h_rec que algun dia vuelva a salir solo de
+    EG-2013 no tendria criterio que declarar.
+
+    `criterio_resguardo` es siempre 'resguardo_HW_subrasante', [N->] por
+    analogia declarada (Sec. 5.1).
+
+    LA CLAVE ES LA FISICA, no la hidraulica: `cota_clave` = cota de entrada +
+    D interior + espesor de pared. EG-2013 508.07 mide el relleno minimo
+    "desde la clave de la tuberia", que es la superficie exterior (MAT-D4).
+    `D_supuesto` sigue siendo el diametro INTERIOR -- el que entra en Manning
+    y en la geometria hidraulica -- y `D_exterior` es el que entra en la
+    cobertura minima de AASHTO (el Bc del Art. 12.6.6.3) y en el empuje de
+    flotacion de V7.
     """
 
     cota_rasante_min: float               # msnm - el maximo de las dos
@@ -771,8 +805,10 @@ class TamizadoRasante:
     cota_por_resguardo: float             # msnm - HW + resguardo(CBR) + e_paq
     condicion_gobernante: CondicionRasante
     cota_entrada: float                   # msnm - fondo de la entrada
-    cota_clave: float                     # msnm - cota entrada + D
-    D_supuesto: float                     # m  - diametro del tamizado (Sec. 7.A)
+    cota_clave: float                     # msnm - cota entrada + D + espesor de pared
+    D_supuesto: float                     # m  - diametro INTERIOR del tamizado (Sec. 7.A)
+    espesor_pared: float                  # m  - t; separa el interior del exterior
+    D_exterior: float                     # m  - D_supuesto + 2*t; el Bc de AASHTO
     HW: float                             # m  - carga sobre el fondo de la entrada
     h_recubrimiento: float                # m  - relleno minimo sobre la clave
     espesor_paquete: float                # m  - cota rasante - cota subrasante
