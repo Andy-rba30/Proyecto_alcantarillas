@@ -381,3 +381,40 @@ esta reconciliación — este documento entrega el mapa, no cierra hallazgos.
 **No se corrigió ningún hallazgo de fondo en esta sesión**, conforme al
 objetivo. Las cuatro deudas de línea base de la instrucción original (§4) son
 higiene de la propia constitución/documentación, no hallazgos de la matriz.
+
+---
+
+## 6. Limitación del entorno: no se puede borrar una rama del remoto (S4)
+
+`CLAUDE.md` exige que ninguna rama auxiliar quede abierta, y
+`verificar_sesion.py` lo comprueba (chequeo 3). En la sesión S4 (cluster C01)
+la rama se fusionó a `main` y `main` se empujó sin problema, pero **el borrado
+de la rama en el remoto se rechaza con HTTP 403**:
+
+```
+$ git push origin --delete claude/cluster-c01-geometry-gt8kjc
+error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403
+send-pack: unexpected disconnect while reading sideband packet
+fatal: the remote end hung up unexpectedly
+```
+
+Reproducido cuatro veces con espera exponencial, con `--delete` y con la forma
+`:rama`, y con `http.version=HTTP/1.1` (que es la que deja ver el 403 en vez
+del corte de sideband). **No es la política de egress**: el endpoint
+`$HTTPS_PROXY/__agentproxy/status` devuelve `recentRelayFailures: []`, de modo
+que el 403 lo emite GitHub. Es decir, la credencial de la sesión tiene permiso
+de `push` pero no de `delete_ref`.
+
+Consecuencia práctica, para que nadie la lea como descuido: mientras esto siga
+así, `verificar_sesion.py` **va a fallar el chequeo 3 al final de toda sesión
+que use rama auxiliar**, con la rama ya fusionada. Eso explica también por qué
+«las últimas sesiones no lo cumplieron». Dos formas de cerrarlo, ninguna al
+alcance de la sesión:
+
+1. Que el borrado lo haga alguien con permiso sobre el repositorio (o el
+   ajuste de *Automatically delete head branches* en GitHub).
+2. Que se le conceda `delete_ref` a la credencial de las sesiones.
+
+Lo que **sí** está bajo control de la sesión y se cumplió: la rama no queda con
+commits fuera de `main` —el chequeo distingue las dos cosas y solo marca
+`[FALLO]` la rama fusionada y no borrada— y la rama local se borró.
