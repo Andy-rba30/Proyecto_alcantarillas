@@ -41,7 +41,7 @@ Esto obliga a separar dos cosas que se confunden al hablar de "listo para desple
 
 | | Estado |
 |---|---|
-| **El software como herramienta** | Terminado. 13 módulos, 749 passed + 1 skipped (750 collected), GUI, exportación con trazabilidad |
+| **El software como herramienta** | Terminado. 13 módulos, **843 passed + 1 skipped (844 collected)** con `requirements-dev.txt` instalado — 811 passed + 33 skipped sin PyMuPDF, mismo `collected`: los 32 tests que abren los PDF de `normas/` llevan `@pytest.mark.pdf`. GUI, exportación con trazabilidad |
 | **El expediente como cálculo de ingeniería** | Bloqueado. Faltan 25 decisiones y datos que ninguna línea de código puede inventar |
 
 Desplegar hoy es correcto y útil — la herramienta funciona. Lo que no existe todavía es un
@@ -626,7 +626,7 @@ dependían de AASHTO LRFD:
 | Criterio | Valor que cierra el vacío | Fuente |
 |---|---|---|
 | `factores_carga_aashto` | ~~DC 1.25/0.90, EV 1.35/0.90, EH 1.50/0.90 (activo)~~ **el EV de esta fila era el defecto `MAT-D8`/`NOR-PUE-03`: ver la corrección marcada ↻ más abajo. Hoy la tabla es `[N]` en `constantes_normativas` y el criterio guarda solo la elección de fila** | Tablas 2.4.5.3.1-1/-2 del Manual de Puentes, **las dos en la pág. impresa 143** (no 146) — `[N]` vía MTC, no hace falta AASHTO directo |
-| `recubrimiento_aashto_mm` | 75 mm contra el suelo (Cat. A) — **mayor que los 70 mm de E.060**, así que ahora gobierna este valor por la regla "rige el mayor" de §9.4 | AASHTO Tabla 5.10.1-1, pág. 5-169 |
+| `tabla_recubrimiento_aashto_mm` | ↻ **el «75 mm» de esta fila no está en la tabla y se retira** (`MAT-D16`, verificado en S12 sobre la pág. renderizada). La Tabla 5.10.1-1 imprime **pulgadas y nada más**, y la fila `Cast against earth` de la Categoría A dice **3.0 in**, que son **76.2 mm** exactos (1 in = 25.4 mm). 75 mm no sale de la tabla ni por conversión: es un redondeo. El criterio ya no guarda un número suelto sino **las 21 filas × 3 categorías completas**, derivadas del registro normativo; sigue siendo mayor que los 70 mm de E.060 y sigue gobernando por la regla "rige el mayor" de §9.4, pero con 76.2 | AASHTO Tabla 5.10.1-1, pág. impresa 5-169 (PDF 528) |
 | `procedimiento_flexion_corte_aashto_sec5` | φ=0.90 flexión y corte; MCFT con β y θ analíticos (fórmulas completas en el memo) | Art. 5.5.4.2 y 5.7.3.4.2 |
 | `peso_especifico_concreto_kn_m3` | 23.56 kN/m³ (AASHTO) — la práctica regional/MTC redondea a 24.0 kN/m³, ambos defendibles | Tabla 3.5.1-1 + Comentario C3.5.1 |
 | `FS_flotacion` | Se cierra **cambiando el método**, no con un número — ver hallazgo de arriba | Art. 3.7.2 |
@@ -735,6 +735,18 @@ está mal en él, verificado después contra el PDF:
 > explícitamente para que la memoria muestre la comparación caso por caso, usa 75 mm en las tres;
 > documenta en el criterio que es el mismo valor fuente (exposición costera) aplicado a los tres
 > casos de E.060, no tres lecturas distintas de AASHTO.
+
+> ↻ **Corrección de S12 al bloque citado arriba (`MAT-D16`, `NOR-AAS-01`).** Las instrucciones que
+> este documento reproduce dicen **75 mm** cinco veces, y ese número **no está en la Tabla 5.10.1-1**:
+> la tabla imprime pulgadas, la fila `Coastal` de la **Categoría A** dice **3.0 in = 76.2 mm**, y la
+> misma fila baja a **2.0 in = 50.8 mm** en las categorías **B** y **C** (acero recubierto con
+> epóxico o galvanizado, y materiales AASHTO M 334M). Con B o C, **50.8 < 70 y la regla del mayor la
+> hace perder frente a E.060**, que es justo lo contrario de lo que el bloque citado da por hecho: la
+> conclusión «AASHTO gobierna en los tres» **depende de una categoría de acero que el expediente
+> nunca declaró**. Por eso `categoria_refuerzo_aashto` es hoy un criterio **`[A]` vacío que detiene
+> el cálculo**, y la tabla vive transcrita entera —21 filas × 3 categorías— en el registro normativo
+> (`AASHTO_LRFD_9.T5.10.1-1`), no como un valor ya digerido. El bloque de arriba se conserva como
+> está porque es la instrucción histórica de aquella sesión, no una afirmación vigente.
 >
 > **(3) `peso_especifico_concreto_kn_m3`** — Tabla 3.5.1-1 + Comentario C3.5.1, AASHTO LRFD 9ª Ed.,
 > pág. 3-21: **23.56 kN/m³** (0.150 kcf, concreto armado). Cae dentro del rango de sensibilidad ya

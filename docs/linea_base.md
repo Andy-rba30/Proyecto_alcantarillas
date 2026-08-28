@@ -104,6 +104,28 @@ las cinco correcciones de línea base de §4 (todas documentales o de
 > **detienen** el cálculo y que la fila ausente de una tabla no se lee como
 > un «no». Eso era, hasta S10, una afirmación que solo vivía en la prosa de
 > los docstrings.
+>
+> **S12 (clusters C11, C12 y C02 — el registro normativo) lo dejó en 843
+> `passed`, 1 `skipped` → 844 `collected`**: 94 tests nuevos, ninguno
+> retirado. Son la guardia del registro (T0–T24) y las pruebas de los tres
+> clusters.
+>
+> **A partir de S12 el conteo depende de si `requirements-dev.txt` está
+> instalado, y hay que decir cuál de los dos se cita.** Los 32 tests de
+> `tests/test_normativa_pdf.py` —los que abren los PDF de `normas/` y hacen
+> verdadera la palabra «verificado»— llevan `@pytest.mark.pdf` y se **saltan**
+> si falta PyMuPDF. Los dos números:
+>
+> | Entorno | passed | skipped | collected |
+> |---|---|---|---|
+> | Con `pip install -r requirements-dev.txt` | **843** | 1 | 844 |
+> | Sin PyMuPDF | **811** | 33 | 844 |
+>
+> `collected` **no** cambia entre los dos: lo que cambia es de qué lado del
+> reparto caen esos 32. La regla vieja «`collected` = `passed` + 1» solo vale
+> con PyMuPDF instalado; sin él el skip permanente de SIS-F-20 deja de ser el
+> único. PyMuPDF es dependencia de **TEST**, no de producción: no está en
+> `requirements.txt` y el software calculado no lo importa nunca.
 
 ---
 
@@ -361,19 +383,19 @@ Los 9 hallazgos de este lote verificaron **SÍ** sin excepción.
 
 Cada una en su propio commit, suite verde antes de cada uno. El conteo que se
 cita abajo es el de HOY, no el de entonces: este documento se mantiene al día
-con la suite vigente (749 passed, 1 skipped) y no como fotografía de S1 —
+con la suite vigente (843 passed, 1 skipped) y no como fotografía de S1 —
 `verificar_sesion.py` avisa si se desincroniza.
 
 | Hallazgo | Commit | Qué cambió |
 |---|---|---|
 | **SIS-A-15** | `59440a9` + `8b033b6` | `Claude.md` y `tests/test_sin_literales.py` decían "constantes_fisicas.py: hoy solo la gravedad"; el módulo ya declara cinco nombres (`G`, `RHO_AGUA`, `N_POR_KN`, `GAMMA_AGUA`, `GAMMA_AGUA_KN_M3`). Dos ubicaciones, dos commits — la cita del hallazgo señalaba ambas. |
 | **SIS-B-03** | `08ba613` | `Claude.md` listaba `pandas` y `jinja2` como dependencias (cero usos en `src/`, `gui/`, `cli.py`; no instalados) y omitía `weasyprint` (pineado en `requirements.txt`, usado en `M11_reporte.py` para exportar PDF). |
-| **SIS-F-18** | `3c526b4` | `docs/auditoria_y_ruta_despliegue_v9.md` citaba "12 módulos, 595 tests en verde"; se corrigió al conteo vigente en ese momento (línea base de S1, ver §2). El conteo de módulos (13) no ha cambiado; el de tests sí — mantenido al día en `docs/auditoria_y_ruta_despliegue_v9.md`, hoy 749 `passed` + 1 `skipped`. |
+| **SIS-F-18** | `3c526b4` | `docs/auditoria_y_ruta_despliegue_v9.md` citaba "12 módulos, 595 tests en verde"; se corrigió al conteo vigente en ese momento (línea base de S1, ver §2). El conteo de módulos (13) no ha cambiado; el de tests sí — mantenido al día en `docs/auditoria_y_ruta_despliegue_v9.md`, hoy 843 `passed` + 1 `skipped` (811 + 33 sin PyMuPDF). |
 | **SIS-C-10** | `219f584` | `tests/ejemplo_puntos.informe.json` era salida de corrida versionada que cualquier ejecución de `cli.py` sobre `tests/ejemplo_puntos.csv` pisa (`cli.py:1475`); ningún test la lee. Se destraqueó (`git rm --cached`, sigue en disco) y se agregó `tests/*.informe.json` al `.gitignore`. |
 
 Estas cinco correcciones son **documentales o de control de versión** —
 ninguna toca `src/`, `gui/` o `cli.py`. La suite se mantuvo verde en todo
-momento; hoy son 749 passed, 1 skipped (750 collected).
+momento; hoy son **843 passed, 1 skipped (844 collected)** con `requirements-dev.txt` instalado, u **811 passed, 33 skipped** sin PyMuPDF — mismo `collected`, ver la tabla de §2.
 
 ---
 
