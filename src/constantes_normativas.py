@@ -178,6 +178,12 @@ D_INICIO = 0.90                     # m; minimo normativo MTC
 # Sin tope, el solver puede converger a un diametro que nadie fabrica ni
 # transporta a la obra. Superado el tope: "material descartado por diametro
 # requerido" -- y ese descarte es ADOPTADO, no normativo.
+#
+# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: su Anexo B (linea 806 de
+# docs/hoja_de_ruta_alcantarillas_v8.md) declara estos mismos topes bajo el
+# rotulo "topes por norma de producto - VERIFICAR" y con las mismas
+# atribuciones. Gana la fuente primaria -- las tablas de A760 y M 170M,
+# leidas de los PDF -- y la hoja de ruta SIGUE MAL mientras no se corrija.
 
 # ================= Manual de Suelos (RD 10-2014-MTC/14) ====================
 RESGUARDO_NAPA_SUBRASANTE = [       # (CBR_min, CBR_max, resguardo_m)  num. 4.5.4
@@ -267,6 +273,25 @@ H_RELLENO_MIN = {
 #       redaccion; la Nota 1 de esas dos habla de laminas con fibra de
 #       aramida y post-recubrimiento asfaltico. Sigue siendo cierto que
 #       M 170M clasifica por D-load y no por altura.
+#
+# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA. La v8 sigue escribiendo lo que
+# aqui se corrige, y quien la lea sin leer el codigo diseñara con el valor
+# equivocado:
+#
+#   linea 523 (tabla de Sec. 7.A): "Concreto y TMC | No fijado. Remite al
+#     Proyecto, AASHTO M-170M (clases I-V) o ASTM A-807 | [C] norma de
+#     producto". Las dos remisiones son falsas: M 170M no da alturas de
+#     relleno y A-807 no es la norma que se le atribuye (ver NOR-PRO-04). Y
+#     "no fijado" ya no es cierto: lo fija AASHTO LRFD Art. 12.6.6.3, que el
+#     propio Sec. 0.2 adopta.
+#   linea 546 (tabla de Fase 8): "TMC | ASTM A-807 / AASHTO M36 -- calibre
+#     segun altura". El calibre por altura de cobertura es de ASTM A796/A796M.
+#   linea 832 (Anexo B): repite la remision a A-807 en el comentario de
+#     H_RELLENO_MIN["tmc"].
+#
+# Aqui gana la fuente primaria por verificacion externa contra los PDF de
+# normas/, como en K_FRICCION_SI. La hoja de ruta SIGUE MAL mientras no se
+# corrija: el defecto esta reportado contra ella, no contra este archivo.
 # 505, 506, 507 y 508 son SECCIONES completas del EG-2013, dentro del
 # Capitulo V. No son subsecciones de ninguna "Seccion 500": esa denominacion
 # no existe en el EG-2013 y la constante se llamaba SUBSECCION por arrastre de

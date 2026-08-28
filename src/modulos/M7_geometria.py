@@ -337,9 +337,15 @@ def cobertura_minima_aashto(*, material: Material, D: float) -> float:
         )
     fila = filas[condicion]
 
-    diametros = {"D_int": D,
-                 "D_ext": diametro_exterior(material=material, D=D)}
-    D_fila = diametros[_DIAMETRO_DE_LA_FILA[fila["sobre"]]]
+    # El D exterior se pide SOLO si la fila lo usa. La fila del concreto
+    # (Bc) lo necesita y por lo tanto se detiene en 'espesor_pared_conducto';
+    # las del metal (S) y el termoplastico (ID) no, y exigirselo seria
+    # inventarles una dependencia que la tabla no tiene. Quien SI la tiene
+    # siempre es la cota de clave, que es otra cosa y esta en M5.
+    if _DIAMETRO_DE_LA_FILA[fila["sobre"]] == "D_ext":
+        D_fila = diametro_exterior(material=material, D=D)
+    else:
+        D_fila = D
 
     candidatos = [fila["piso_m"]]
     if fila["divisor"] is not None:

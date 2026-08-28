@@ -727,8 +727,8 @@ def _tabla_diseno(informe: Any) -> str:
         _fila([_td("<b>Diametro adoptado</b>"),
                _td(f"D = {_num(resultado.D, FMT_2)} m interior "
                    f"(tope de CATALOGO adoptado: "
-                   f"{_num(material.D_max, FMT_2)} m &mdash; no es un tope "
-                   f"normativo, criterio 'D_max_catalogo')")]),
+                   f"{_num(material.D_max, FMT_2)} m &mdash; "
+                   f"{_esc(material.D_max_de_catalogo)})")]),
         _fila([_td("<b>Hidraulica</b>"),
                _td(f"Q = {_num(hidraulica.Q)} m3/s &middot; y<sub>n</sub> = "
                    f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
