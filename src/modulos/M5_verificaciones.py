@@ -35,7 +35,7 @@ minima que evita la sedimentacion -- SI esta implementada, y es V2 (0.25 m/s,
 num. 4.1.1.3.6, cuyo motivo declarado en la norma es justamente la
 sedimentacion). Queda una obligacion viva y de expediente que no desaparece:
 prever el acceso de mantenimiento para limpieza en los planos de cada punto.
-`verificacion_diferida_v2b()` la declara, M11 la imprime pegada a la tabla de
+`verificaciones_no_evaluadas()` la declara, M11 la imprime pegada a la tabla de
 verificaciones de cada punto -- que es donde el revisor cuenta las filas -- y
 el JSON la lleva en 'verificaciones_no_evaluadas'.
 

@@ -701,6 +701,7 @@ def test_las_dos_filas_no_evaluadas_se_declaran_en_vez_de_desaparecer():
     no pueden quedar como un ejercicio de resta del lector: se declaran con su
     fundamento, igual que el item 5 de la Fase 8 (SIS-A-13 / MAT-O15).
     """
+    from modulos import M11_reporte as M11
     from modulos.M5_verificaciones import verificaciones_no_evaluadas
 
     textos = verificaciones_no_evaluadas()
@@ -710,11 +711,18 @@ def test_las_dos_filas_no_evaluadas_se_declaran_en_vez_de_desaparecer():
 
     # El conteo, contra la hoja de ruta y contra este modulo: si alguno de los
     # dos cambia, el texto de la constancia deja de ser cierto.
+    #
+    # El patron de funciones lleva la `b` OPCIONAL a proposito. Sin ella
+    # (`v\d+_`) no casaba `v4b_...` ni `v2b_...`, que son justo las dos que
+    # esta guardia vigila: el dia que V4b se cablee con su nombre natural, el
+    # test seguiria en verde con la constancia diciendo que nadie la evalua.
     raiz = Path(__file__).resolve().parents[1]
-    hoja = next((raiz / "docs").glob("hoja_de_ruta_alcantarillas_v*.md"))
+    # La hoja se localiza como lo hace M11 -- que exige que haya exactamente
+    # una --, no con el primer resultado de un glob.
+    hoja = M11.ruta_hoja_de_ruta()
     filas = re.findall(r"^\| \*\*(V\d+b?)\*\*", hoja.read_text(encoding="utf-8"), re.M)
     modulo = (raiz / "src" / "modulos" / "M5_verificaciones.py").read_text(encoding="utf-8")
-    funciones = re.findall(r"^def (v\d+_\w+)", modulo, re.M)
+    funciones = re.findall(r"^def (v\d+b?_\w+)", modulo, re.M)
     assert len(filas) == 11, f"la tabla de Fase 5 ya no tiene once filas: {filas}"
     assert len(funciones) == 9, f"M5 ya no tiene nueve verificaciones: {funciones}"
     assert len(textos) == len(filas) - len(funciones)
