@@ -426,3 +426,23 @@ alcance de la sesión:
 Lo que **sí** está bajo control de la sesión y se cumplió: la rama no queda con
 commits fuera de `main` —el chequeo distingue las dos cosas y solo marca
 `[FALLO]` la rama fusionada y no borrada— y la rama local se borró.
+
+**Reincidencia y saldo, al cierre de S9 (cluster C04).** El 403 se reprodujo
+igual, y ya no es una rama sino **tres** las que están fusionadas en `main` y
+sin borrar en el remoto:
+
+| Rama | Sesión | Fusionada en `main` |
+|---|---|---|
+| `claude/cluster-c13-rasante-geometria-2p5fqc` | S7 | sí |
+| `claude/cluster-c03-lrfd-factors-23mrzf` | S8 | sí |
+| `claude/cluster-c04-sismica-ay9szt` | S9 | sí |
+
+S9 intentó borrar las tres —la suya y las dos heredadas— y las tres
+devolvieron el mismo `HTTP 403`. No hay tampoco herramienta de borrado de
+referencias en el servidor MCP de GitHub de la sesión (`create_branch` existe,
+`delete_branch` no). De modo que `verificar_sesion.py` seguirá dando
+`[FALLO] … ya fusionada, debería estar borrada` tres veces, **y ninguna de las
+tres significa trabajo sin entregar**: el chequeo comprueba antes que la rama
+no tenga commits fuera de `main`, y las tres pasan esa comprobación. Las dos
+salidas siguen siendo las mismas dos de arriba, y las dos están fuera del
+alcance de la sesión.
