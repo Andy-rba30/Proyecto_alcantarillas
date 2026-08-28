@@ -82,7 +82,7 @@ def test_el_diametro_minimo_y_el_llenado_maximo_son_los_de_CP2():
 
 
 def test_el_n_del_concreto_es_el_par_de_CP2():
-    n_min, n_max = CN.MANNING["concreto_recto"]
+    n_min, n_max = CN.MANNING["concreto_tubo_recto"]
     assert n_min == pytest.approx(CP2_GEOMETRIA_MANNING["n_min"])
     assert n_max == pytest.approx(CP2_GEOMETRIA_MANNING["n_max"])
 
@@ -197,13 +197,14 @@ def test_la_tabla_del_factor_de_muro_trae_sus_dos_filas():
 
 
 # ---------------------------------------------------------------------------
-# Topes de diametro y coherencia interna del anexo
+# Progresion de diametros y coherencia interna del anexo
 # ---------------------------------------------------------------------------
-
-def test_el_hdpe_es_el_material_con_el_tope_mas_restrictivo():
-    assert CN.D_MAX["hdpe"] == min(CN.D_MAX.values())
-    assert CN.D_MAX["hdpe"] < CN.D_MAX["tmc"] < CN.D_MAX["concreto_reforzado"]
-
+# Los tres tests que miraban `CN.D_MAX` viven ahora en
+# tests/test_criterios_adoptados.py: los topes salieron de este archivo porque
+# no son [N] -- las normas de producto a las que se les atribuian tabulan
+# hasta 3600 mm (NOR-PRO-01, NOR-PRO-02, MAT-O8) -- y pasaron al criterio
+# 'D_max_catalogo'. Los tests se mudaron con ellos, sin cambiar lo que
+# comprueban.
 
 def test_la_progresion_de_diametros_arranca_en_el_minimo_normativo():
     assert CN.D_INICIO == pytest.approx(CN.DIAMETRO_MIN)
@@ -221,17 +222,6 @@ def test_arrancar_en_0_90_en_vez_de_36_pulgadas_es_conservador():
     assert CN.D_INICIO < D_36_pulgadas
     subestimacion = 1 - CN.D_INICIO ** 2 / D_36_pulgadas ** 2
     assert 0.02 < subestimacion < 0.04
-
-
-def test_todos_los_topes_de_diametro_son_alcanzables_desde_la_progresion():
-    for material, tope in CN.D_MAX.items():
-        assert tope >= CN.D_INICIO, f"el tope de {material} es menor que el minimo"
-
-
-def test_ningun_diametro_de_alcantarilla_alcanza_la_luz_de_puente():
-    """Sec. 2.1: con luz >= 6.0 m la obra sale del alcance del script."""
-    assert max(CN.D_MAX.values()) < CN.LUZ_MAX_ALCANTARILLA
-    assert CN.DIAMETRO_MIN < CN.LUZ_MAX_ALCANTARILLA
 
 
 def test_el_resguardo_por_CBR_cubre_todo_el_rango_sin_huecos():
@@ -286,11 +276,21 @@ def test_las_calicatas_de_autopista_y_dual_se_cuentan_por_sentido():
                                  "tercera_clase", "bajo_volumen"))
 
 
-def test_la_constante_de_friccion_no_se_justifica_como_dos_veces_la_gravedad():
+def test_la_constante_de_friccion_no_se_deriva_de_la_gravedad_del_proyecto():
     """
-    19.63 es la conversion SI que HDS-5 declara para su K = 29. El parecido
-    con 2*g (19.62) es una coincidencia numerica, y sostenerla como origen
-    fue el defecto que esta correccion retiro: si la constante viniera de
-    2*G, este test seria una tautologia en vez de una guardia.
+    La guardia sigue siendo la misma -- que `K_FRICCION_SI` NO sea `2*G` -- y
+    lo que cambia es su motivo, porque el que tenia era falso (MAT-D12,
+    MAT-X5). Este docstring decia que el parecido con 2*g era "una
+    coincidencia numerica". No lo es: `K = 2*g/phi^2` exactamente, con phi el
+    factor de unidades de Manning (1.486 en el sistema ingles, 1 en SI), de
+    modo que en SI la constante ES dos veces la gravedad.
+
+    Lo que separa 19.63 de 19.62 es CUAL gravedad: HDS-5 trabaja con
+    32.2 ft/s^2 = 9.81456 m/s^2 y este proyecto usa `constantes_fisicas.G` =
+    9.81. Por eso la guardia vale igual: el valor es el TRANSCRITO de la
+    fuente primaria, no uno derivado de la G del proyecto, y si alguien lo
+    reemplazara por `2*G` estaria cambiando la fuente del numero -- de HDS-5 a
+    la aritmetica local -- sin decirlo. La diferencia es de +0.05 % sobre el
+    termino de friccion.
     """
     assert CN.K_FRICCION_SI != pytest.approx(2 * G, abs=1e-9)

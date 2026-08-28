@@ -85,13 +85,27 @@ from modelos import CriterioPendienteError
 
 ETIQUETA_SITIO = "S"
 
+# El corredor de ESTE expediente. Es un dato del proyecto -- cambia al mover
+# la obra y no al cambiar de proyectista --, no una constante del programa, y
+# por eso se declara aqui, en el archivo de los [S], y no incrustado en la
+# frase que define la etiqueta. Escrito como literal dentro de
+# `AMBITO_CORREDOR`, aplicar la app a otra carretera heredaba "~5 km" en
+# silencio en la memoria de la obra nueva (NOR-F-01).
+#
+# Su entrada completa, con procedimiento y trazabilidad, es
+# DATOS_SITIO["corredor_del_proyecto"]; aqui esta el texto porque el valor por
+# defecto del campo `ambito` se necesita al DEFINIR la dataclass, antes de que
+# el diccionario exista. Una sola escritura, dos usos.
+CORREDOR_DEL_PROYECTO = ("terraplen de ~5 km de la Fase 0-bis de la hoja de "
+                         "ruta, num. 150")
+
 # Ambito del dato. Hoy solo existe uno: lo que varia punto a punto no vive
 # aqui, vive en el CSV. Se declara igualmente en cada entrada porque es la
 # mitad de la trazabilidad que la etiqueta [S] exige ("si el dato aplica a
 # todo el corredor o varia punto a punto"), y porque el dia que una lectura
 # deje de valer para todo el tramo, la fila tiene que decirlo antes de
 # mudarse al CSV.
-AMBITO_CORREDOR = ("todo el corredor (el terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150)")
+AMBITO_CORREDOR = f"todo el corredor ({CORREDOR_DEL_PROYECTO})"
 
 
 @dataclass(frozen=True)
@@ -212,6 +226,42 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                      "Manual de Puentes, Sec. 0.4), que es el que gobierna el "
                      "cabezal",
         ambito=AMBITO_CORREDOR,
+        # Hereda la trazabilidad de 'ZONA_SISMICA_LA_UNION' -- lo dice su
+        # propio campo `trazabilidad` -- y con ella hereda lo que aquella
+        # tiene ABIERTO. Sin este campo, `datos_con_verificacion_pendiente()`
+        # devolvia la zona y no el factor que se lee CON la zona, de modo que
+        # el JSON del expediente declaraba cerrada documentalmente una
+        # lectura que depende de otra que no lo esta (SIS-D-06).
+        verificacion_pendiente="Hereda la verificacion abierta de "
+                               "'ZONA_SISMICA_LA_UNION': el valor sale de "
+                               "entrar en la tabla del Art. 11.1 con la zona "
+                               "que el Anexo II de E.030 da al distrito, y "
+                               "esa entrada del Anexo II todavia no se "
+                               "contrasto contra la norma vigente. No "
+                               "gobierna ningun calculo (Sec. 0.4), por lo "
+                               "que no bloquea",
+    ),
+
+    "corredor_del_proyecto": DatoSitio(
+        valor=CORREDOR_DEL_PROYECTO,
+        concepto="Tramo de via al que se aplica este expediente, y por tanto "
+                 "el ambito para el que valen los demas datos de sitio",
+        procedimiento="Definicion del tramo en la Fase 0-bis de la hoja de "
+                      "ruta (num. 150): el terraplen sobre el que se "
+                      "distribuyen los puntos criticos del CSV",
+        fuente="docs/hoja_de_ruta_alcantarillas_v8.md, Fase 0-bis, num. 150",
+        trazabilidad="La longitud aproximada sale de la definicion del tramo "
+                     "del expediente vial, no de una medicion propia de este "
+                     "estudio. NO gobierna ningun calculo: se imprime como el "
+                     "ambito de cada dato de sitio, que es lo que la etiqueta "
+                     "[S] obliga a declarar ('si el dato aplica a todo el "
+                     "corredor o varia punto a punto'). Al aplicar el "
+                     "programa a otra via, esta entrada es la que cambia; "
+                     "mientras estuvo escrita dentro de `AMBITO_CORREDOR` se "
+                     "heredaba sin que nadie la revisara",
+        reemplazado_por="Progresiva inicial y final del tramo, del expediente "
+                        "vial, cuando el proyecto declare su cabecera de "
+                        "obra en vez de una longitud aproximada",
     ),
 }
 

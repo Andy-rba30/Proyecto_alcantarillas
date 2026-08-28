@@ -92,7 +92,10 @@ def test_resolver_manning_aplica_doble_n(concreto):
 
     assert isinstance(resolucion, TiranteNormal)
     assert resolucion.geometria.theta == pytest.approx(c["theta_esperado"], rel=1e-4)
-    assert resolucion.V == pytest.approx(c["V_con_n_min_esperado"], abs=c["tolerancia_hidraulica"])
+    assert resolucion.V_erosion == pytest.approx(
+        c["V_con_n_min_esperado"], abs=c["tolerancia_hidraulica"])
+    assert resolucion.V_sedimentacion == pytest.approx(
+        c["V_con_n_max_esperado"], abs=c["tolerancia_hidraulica"])
 
 
 def test_v_con_n_min_no_es_Q_sobre_area(concreto):
@@ -106,8 +109,12 @@ def test_v_con_n_min_no_es_Q_sobre_area(concreto):
     resolucion = resolver_manning(D=c["D"], Q=Q, S=c["S"], material=concreto)
 
     V_incorrecta = Q / resolucion.geometria.A
-    assert resolucion.V != pytest.approx(V_incorrecta, rel=1e-3)
-    assert resolucion.V > V_incorrecta   # n_min < n_max -> misma R, mas velocidad
+    assert resolucion.V_erosion != pytest.approx(V_incorrecta, rel=1e-3)
+    assert resolucion.V_erosion > V_incorrecta   # n_min < n_max -> misma R, mas velocidad
+    # La otra rama SI vale Q/A, y por construccion: es la velocidad media del
+    # mismo n con que se resolvio el tirante. Es lo que la hace el minimo real
+    # de la velocidad sobre el rango de n, o sea el extremo conservador de V2.
+    assert resolucion.V_sedimentacion == pytest.approx(V_incorrecta, rel=1e-9)
 
 
 def test_las_dos_ramas_comparten_la_misma_geometria(concreto):
@@ -119,9 +126,12 @@ def test_las_dos_ramas_comparten_la_misma_geometria(concreto):
     Q = c["Q_con_n_max_esperado"]
 
     resolucion = resolver_manning(D=c["D"], Q=Q, S=c["S"], material=concreto)
-    V_esperada = (1 / concreto.n_para_velocidad) * resolucion.geometria.R ** (2 / 3) * c["S"] ** (1 / 2)
+    factor = resolucion.geometria.R ** (2 / 3) * c["S"] ** (1 / 2)
 
-    assert resolucion.V == pytest.approx(V_esperada, rel=1e-9)
+    assert resolucion.V_erosion == pytest.approx(
+        factor / concreto.n_para_velocidad_maxima, rel=1e-9)
+    assert resolucion.V_sedimentacion == pytest.approx(
+        factor / concreto.n_para_velocidad_minima, rel=1e-9)
 
 
 def test_hdpe_tambien_aplica_doble_n_por_el_rango_de_criterios_adoptados(hdpe):
@@ -136,7 +146,8 @@ def test_hdpe_tambien_aplica_doble_n_por_el_rango_de_criterios_adoptados(hdpe):
 
     assert resolucion is not None
     V_con_n_max = Q / resolucion.geometria.A
-    assert resolucion.V > V_con_n_max
+    assert resolucion.V_erosion > V_con_n_max
+    assert resolucion.V_sedimentacion == pytest.approx(V_con_n_max, rel=1e-9)
 
 
 # ---------------------------------------------------------------------------

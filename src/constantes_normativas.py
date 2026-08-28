@@ -11,27 +11,124 @@ Unidades: SI (m, m3/s, m/s, MPa donde se indica, mm en recubrimientos).
 
 ADVERTENCIA DE DOBLE DEFINICION
 -------------------------------
-Tres bloques de este anexo tienen un homologo en `criterios_adoptados.py`,
-porque la hoja de ruta los incluyo aqui aun siendo [C]:
+Dos bloques de este anexo tienen un homologo en `criterios_adoptados.py`,
+porque la hoja de ruta los incluyo aqui aun siendo [C] (eran tres: el tercero,
+H_RELLENO_MIN, dejo de tener homologo al retirarse
+'h_relleno_min_concreto_tmc' -- ver abajo):
 
-    D_INICIO / D_PASO / D_MAX   <->  criterio "diametros_normalizados"
+    D_INICIO / D_PASO           <->  criterio "diametros_normalizados"
     HDS5_INLET                  <->  criterio "hds5_embocadura_hdpe" (HDPE)
-    H_RELLENO_MIN               <->  criterio "h_relleno_min_concreto_tmc"
 
 La inconsistencia Clase D/F que motivo la v5 fue exactamente esto: el mismo
 parametro definido en dos lugares (Sec. 0.7). Para el CALCULO, la fuente unica
 es `criterios_adoptados.py`; lo de aqui queda como referencia trazable del
-Anexo B. Ningun modulo debe leer los tres bloques citados desde este archivo.
+Anexo B.
+
+La prohibicion es POR CLAVE, no por bloque entero. Un modulo no debe leer de
+aqui la clave que tiene homologo declarado; las demas filas de esos mismos
+diccionarios no tienen homologo y se leen de aqui, que es su unica fuente:
+
+    HDS5_INLET      las filas de concreto y de TMC no tienen criterio
+                    homologo (son lectura directa de la Tabla A.1 de HDS-5) y
+                    M2 las lee de aqui. La fila de HDPE, no: esa sale del
+                    criterio 'hds5_embocadura_hdpe'.
+    H_RELLENO_MIN   YA NO TIENE HOMOLOGO. Su criterio gemelo,
+                    'h_relleno_min_concreto_tmc', se retiro: el recubrimiento
+                    minimo ya no es un escalar por material sino un calculo
+                    (M7.altura_recubrimiento) sobre la Tabla 12.6.6.3-1 de
+                    AASHTO LRFD, que vive en el criterio
+                    'cobertura_minima_aashto'. De este archivo sale hoy solo
+                    el minimo de EG-2013, que es [N] y solo existe para HDPE.
+    D_INICIO / D_PASO   la progresion sale siempre del criterio
+                    'diametros_normalizados'. Los topes ya no estan aqui:
+                    ver el bloque de diametros normalizados, mas abajo.
+
+La frase anterior era categorica ("Ningun modulo debe leer los bloques
+citados desde este archivo") y describia mal lo que el propio bloque de arriba
+acota clave por clave; M2 documenta la reparticion en su docstring y la marca
+con comentarios de linea. Queda escrita aqui para que no haya que deducirla.
 """
 
 # ================= Manual de Hidrologia (RD 20-2011-MTC/14) =================
 LUZ_MAX_ALCANTARILLA = 6.0          # m; >= 6.0 -> puente (4.1.1.3.1 / 4.1.1.5.1)
-DIAMETRO_MIN = 0.90                 # m (4.1.1.3.4 a)
-DIAMETRO_MIN_SELVA_ALTA = 1.22      # m = 48"; NO aplica en costa (4.1.1.3.7 a)
-Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b)
-V_MIN = 0.25                        # m/s (4.1.1.3.6, pag. 76) -- ver abajo
+
+# --- Diametro minimo de seccion circular: num. 4.1.1.3.4 a), pag. impresa 72 -
+# El numero suelto se lee como un piso incondicional y NO lo es. El numeral
+# trae dos condicionantes y la transcripcion literal los conserva porque el
+# proyecto no puede evaluar el primero y SI cae dentro del segundo (NOR-HID-03,
+# MAT-O19):
+DIAMETRO_MIN = 0.90                 # m (4.1.1.3.4 a), pag. impresa 72
+DIAMETRO_MIN_TEXTO = (
+    "En carreteras de alto volumen de transito y por necesidad de limpieza y "
+    "mantenimiento de las alcantarillas, se adoptara una seccion minima "
+    "circular de 0.90 m (36\") de diametro o su equivalente de otra seccion, "
+    "salvo en cruces de canales de riego donde se adoptaran secciones de "
+    "acuerdo a cada diseno particular.")
+DIAMETRO_MIN_AMBITO = (
+    "CONDICION 1 -- 'carreteras de alto volumen de transito': la clase de via "
+    "del corredor NO esta cerrada (depende del IMDA del estudio de demanda), "
+    "de modo que el proyecto no puede afirmar que se cumple. El piso se aplica "
+    "igual a las Familias A y B, y esa es una ADOPCION declarada, no una "
+    "lectura automatica del numeral. "
+    "SU DIRECCION NO ES UNIFORMEMENTE CONSERVADORA, y decirlo importa porque "
+    "lo contrario -- 'mas seccion nunca puede ser peor' -- es intuitivo y es "
+    "falso. Mas diametro da mas capacidad y mas borde libre, o sea es "
+    "conservador para V1; y da MENOS velocidad para el mismo caudal, o sea "
+    "va CONTRA el piso de autolimpieza de V2. Ejemplo real, concreto con "
+    "n_max = 0.013, S = 0.001 y Q = 0.0035 m3/s: D = 0.75 m da 0.2554 m/s y "
+    "cumple V2; D = 0.90 m da 0.2488 m/s y NO cumple. En ese caudal, aplicar "
+    "el piso sin que la condicion del numeral este establecida puede declarar "
+    "no factible un punto que un conducto mas chico resolveria. Es una "
+    "consecuencia de la adopcion, no un defecto del calculo, y se declara "
+    "aqui para que quien cierre el IMDA sepa que hay algo que revisar. "
+    "CONDICION 2 -- 'salvo en cruces de canales de riego': la Familia C de "
+    "este expediente ES un conjunto de cruces de canal, y el numeral la "
+    "EXCEPTUA expresamente: alli la seccion se adopta 'de acuerdo a cada "
+    "diseno particular' y este piso no rige. El catalogo de conductos "
+    "circulares no entrega candidatos para esa familia, de modo que ningun "
+    "punto suyo recibe el piso -- pero hasta ahora la razon escrita era solo "
+    "la forma de la seccion (Sec. 2.3 de la hoja de ruta) y no esta excepcion "
+    "normativa, que es la que gobierna.")
+
+# --- Diametro minimo recomendado en selva alta: num. 4.1.1.3.7 a), pag. 79 ---
+# El nombre anterior (DIAMETRO_MIN_SELVA_ALTA) omitia las tres restricciones
+# que el numeral pone y que el valor solo no lleva (NOR-HID-12): es una
+# RECOMENDACION, es solo para TMC, y esta condicionada a cuatro caracteristicas
+# fisicas y geomorfologicas. El nombre nuevo lleva dos de las tres y el texto
+# literal la tercera.
+DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO = 1.22   # m = 48" (4.1.1.3.7 a), pag. 79
+DIAMETRO_MIN_TMC_SELVA_ALTA_TEXTO = (
+    "Se recomienda utilizar, en zonas de selva alta, con las caracteristicas "
+    "fisicas y geomorfologicos indicadas en el parrafo anterior, como diametro "
+    "minimo alcantarillas TMC Ø 48\".")
+DIAMETRO_MIN_TMC_SELVA_ALTA_CONDICIONES = (
+    "Las cuatro caracteristicas del parrafo anterior, que el numeral exige "
+    "para que la recomendacion aplique: cauces encajonados, en V, inactivos o "
+    "con flujo permanente de agua; pendientes entre 5% y 60%; suelo de taludes "
+    "y lecho de material granular (aluvial, coluvial, con matriz fina de arena "
+    "y limos, gravas y gravillas), vulnerable a erosion pluvial; vegetacion "
+    "arbustiva en taludes. NO APLICA EN COSTA, que es donde esta este "
+    "corredor (La Union, Piura).")
+
+Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b), pag. 79
+# Texto que fija Y_SOBRE_D_MAX, literal (MC-HHD, RD 20-2011-MTC/14,
+# num. 4.1.1.3.7 b) "Borde libre", pag. impresa 79):
+#
+#     "Se recomienda que el diseño hidráulico considere como mínimo el 25 % de
+#     la altura, diámetro o flecha de la estructura."
+#
+# SE TRANSCRIBE POR LO MISMO QUE V_MIN, Y ESO ES EL DEFECTO QUE CIERRA
+# (MAT-O13, NOR-HID-10): el 0.75 y el 0.25 salen del MISMO tipo de frase --
+# "se recomienda" -- del mismo apartado 4.1.1.3, y hasta ahora solo V_MIN
+# llevaba el matiz. Un revisor que viera "recomienda, no prohibe" en V2 y un
+# numeral pelado en V1 leeria que el borde libre es una exigencia y el piso de
+# velocidad no, cuando la fuente los escribe igual. Los dos se aplican como
+# umbral duro por decision conservadora del proyecto, y las dos veces eso es
+# una ADOPCION que la memoria tiene que declarar.
+V_MIN = 0.25                        # m/s (4.1.1.3.6, pags. 76-77) -- ver abajo
 # Texto que fija V_MIN, literal (MC-HHD, RD 20-2011-MTC/14, num. 4.1.1.3.6,
-# pag. 76, parrafo inmediatamente posterior a la Tabla Nº 10):
+# parrafo inmediatamente posterior a la Tabla Nº 10; ARRANCA en la pag.
+# impresa 76 y el numero se imprime en la 77):
 #
 #     "Se deberá verificar que la velocidad mínima del flujo dentro del
 #     conducto no produzca sedimentación que pueda incidir en una reducción de
@@ -41,12 +138,16 @@ V_MIN = 0.25                        # m/s (4.1.1.3.6, pag. 76) -- ver abajo
 # Se transcribe entero y no solo el numero porque el parrafo fija dos cosas
 # que el 0.25 suelto pierde. Primera: el numeral RECOMIENDA, no prohibe --
 # V2 lo aplica como umbral duro por decision conservadora del proyecto, y ese
-# matiz viaja hasta la memoria dentro de M5.NUMERAL_V2. Segunda: la razon del
-# minimo es la SEDIMENTACION que reduce capacidad, no el desgaste; por eso
-# vale igual para todos los materiales, mientras que el techo de V_MAX cambia
-# con la calidad del revestimiento. Es la misma pagina que la Tabla Nº 10 y
-# el mismo numeral, de modo que sin el titulo de la tabla y sin este parrafo
-# los dos limites se confunden -- que es exactamente el error que V3 tenia.
+# matiz viaja hasta la memoria por DOS vias, no una: dentro de M5.NUMERAL_V2
+# (que solo se imprime si el punto llego a evaluarse) y dentro de
+# UMBRALES_DE_VERIFICACION, que M11 imprime SIEMPRE (NOR-MEM-01: la memoria
+# generada no llevaba el matiz ni una sola vez, porque el pipeline se detiene
+# antes de V2 y la unica via era la tabla de verificaciones del punto).
+# Segunda: la razon del minimo es la SEDIMENTACION que reduce capacidad, no el
+# desgaste; por eso vale igual para todos los materiales, mientras que el techo
+# de la Tabla Nº 10 cambia con el material. Es el mismo numeral que la Tabla
+# Nº 10, de modo que sin el titulo de la tabla y sin este parrafo los dos
+# limites se confunden -- que es exactamente el error que V3 tenia.
 LAUSHEY_K = 3.1                     # d50 = V^2/(3.1*g), metrico (4.1.1.3.7 c)
 G_LAUSHEY = 9.8                      # m/s2; g tal como lo escribe la Sec.
                                      # 4.1.1.3.7 c) junto a su formula de d50.
@@ -61,38 +162,230 @@ G_LAUSHEY = 9.8                      # m/s2; g tal como lo escribe la Sec.
 # en constantes_fisicas.py, y ademas DERIVADA (RHO_AGUA * G), para que el
 # proyecto tenga una sola gravedad. Mismo criterio ya aplicado a G.
 
-RIESGO_ADMISIBLE = {                # Tabla N 02, num. 3.6
-    "quebrada_importante": {"R": 0.30, "n": 25},   # -> TR = 71 anios
-    "quebrada_menor":      {"R": 0.35, "n": 15},   # -> TR = 35 anios
+# ---------------------------------------------------------------------------
+# Tabla N 02 -- riesgo admisible (num. 3.6, pag. impresa 25)
+# ---------------------------------------------------------------------------
+# TRANSCRITA COMPLETA: seis filas, aunque el calculo use dos (NOR-HID-07,
+# NOR-HID-08). Las cuatro filas que el script no consume no sobran -- son las
+# que dejan ver que la fila de la alcantarilla de cuneta es la MISMA que la de
+# quebrada menor, y que el drenaje de plataforma tiene otra.
+TABLA_02_TITULO = ("TABLA Nº 02: VALORES MAXIMOS RECOMENDADOS DE RIESGO "
+                   "ADMISIBLE DE OBRAS DE DRENAJE")
+TABLA_02_COLUMNAS = ("TIPO DE OBRA", "RIESGO ADMISIBLE (**) ( %)")
+TABLA_02_TEXTO_PREVIO = (
+    "De acuerdo a los valores presentados en la Tabla Nº 01 se recomienda "
+    "utilizar como maximo, los siguientes valores de riesgo admisible de obras "
+    "de drenaje:")
+# Nota al pie (**), literal. Es normativa y es la que cambia el CARACTER de
+# toda la tabla: el titulo dice "valores maximos RECOMENDADOS" y el pie asigna
+# la decision al Propietario. El proyecto adopta los maximos recomendados, que
+# es el extremo MENOS conservador del margen que la tabla concede (mas riesgo
+# admisible -> menos TR -> menos caudal de diseno), y esa adopcion se declara
+# en la memoria porque no es una lectura automatica del numeral.
+TABLA_02_NOTA_VIDA_UTIL = (
+    "(**) Vida Util considerado (n): Puentes y Defensas Ribereñas n = 40 anios; "
+    "Alcantarillas de quebradas importantes n = 25 anios; Alcantarillas de "
+    "quebradas menores n = 15 anios; Drenaje de plataforma y Sub-drenes "
+    "n = 15 anios.")
+TABLA_02_NOTA_PUENTES = (
+    "(*) - Para obtencion de la luz y nivel de aguas maximas extraordinarias. "
+    "- Se recomienda un periodo de retorno T de 500 anios para el calculo de "
+    "socavacion.")
+TABLA_02_NOTA_IMPORTANCIA = (
+    "Se tendra en cuenta, la importancia y la vida util de la obra a "
+    "disenarse.")
+TABLA_02_NOTA_PROPIETARIO = (
+    "El Propietario de una Obra es el que define el riesgo admisible de falla "
+    "y la vida util de las obras.")
+# Las cuatro notas de la tabla, en el orden en que la pagina las imprime. La
+# fila "Puentes (*)" llevaba su marcador y la nota no estaba transcrita: un
+# (*) colgando en una transcripcion que se anuncia completa.
+TABLA_02_NOTAS = (TABLA_02_NOTA_PUENTES, TABLA_02_NOTA_VIDA_UTIL,
+                  TABLA_02_NOTA_IMPORTANCIA, TABLA_02_NOTA_PROPIETARIO)
+# clave de calculo -> (nombre literal de la fila, R en tanto por uno, n anios)
+TABLA_02_FILAS = {
+    "puentes": {
+        "fila": "Puentes (*)", "R": 0.25, "n": 40},
+    "quebrada_importante": {
+        "fila": "Alcantarillas de paso de quebradas importantes y badenes",
+        "R": 0.30, "n": 25},
+    "quebrada_menor": {
+        "fila": ("Alcantarillas de paso quebradas menores y descarga de agua "
+                 "de cunetas"),
+        "R": 0.35, "n": 15},
+    "drenaje_plataforma": {
+        "fila": "Drenaje de la plataforma (a nivel longitudinal)",
+        "R": 0.40, "n": 15},
+    "subdrenes": {
+        "fila": "Subdrenes", "R": 0.40, "n": 15},
+    "defensas_riberenas": {
+        "fila": "Defensas Ribereñas", "R": 0.25, "n": 40},
 }
+# Las DOS filas que el calculo de la Fase 2 consume. Se derivan de la
+# transcripcion completa en vez de repetir los numeros: si la transcripcion se
+# corrige, esta vista se corrige con ella y no quedan dos copias que puedan
+# divergir (el mismo motivo por el que 'n_manning_hdpe' LEE de MANNING).
+RIESGO_ADMISIBLE = {
+    clave: {"R": TABLA_02_FILAS[clave]["R"], "n": TABLA_02_FILAS[clave]["n"]}
+    for clave in ("quebrada_importante", "quebrada_menor")
+}   # -> TR = 71 y 35 anios
 # TR = 1 / (1 - (1-R)**(1/n))       # sin piso normativo
 
-MANNING = {                         # Tabla N 09: (n_min, n_max)
-    "metal_corrugado": (0.021, 0.030),
-    "concreto_recto":  (0.010, 0.013),
-    "madera_duelas":   (0.010, 0.014),
+# ---------------------------------------------------------------------------
+# Tabla N 09 -- coeficiente de rugosidad de Manning (num. 4.1.1.3.6, pag. 75)
+# ---------------------------------------------------------------------------
+# TRANSCRITA COMPLETA EN LO QUE AL PROYECTO LE TOCA, con las TRES columnas y
+# con las SUBFILAS separadas (NOR-HID-11). Los dos defectos que cierra:
+#
+#   1. La tabla tiene MINIMO / NORMAL / MAXIMO y el codigo llevaba dos
+#      columnas. La columna NORMAL es la de uso corriente y no aparecia por
+#      ningun lado; ahora esta transcrita, y por que el calculo no la usa esta
+#      dicho abajo en vez de deducirse de su ausencia.
+#   2. "Metal corrugado" tiene DOS subfilas -- sub-dren (0.017/0.019/0.021) y
+#      dren para aguas lluvias (0.021/0.024/0.030) -- y el codigo tomaba la
+#      segunda bajo la clave generica 'metal_corrugado', sin declarar la
+#      eleccion. El par (0.021, 0.030) coincide ademas con el MAXIMO de la
+#      primera subfila, de modo que la confusion no se detectaba leyendo los
+#      numeros. Las claves llevan ahora la subfila en el nombre y M2 declara
+#      cual aplica a cada material y por que.
+#
+# POR QUE EL CALCULO USA MINIMO Y MAXIMO Y NO NORMAL: por la regla de doble n
+# (Sec. 4.1 de la hoja de ruta), que no pide el valor corriente sino los dos
+# EXTREMOS -- n maximo para capacidad y tirante, n minimo para velocidad
+# maxima y socavacion --, de modo que cada verificacion se resuelva con el
+# extremo que la deja del lado seguro. El valor NORMAL no entra en ninguna de
+# las dos ramas: entraria en un calculo de un solo n, que es justo lo que la
+# regla prohibe.
+TABLA_09_TITULO = ("TABLA Nº 09: Valores del Coeficiente de Rugosidad de "
+                   "Manning (n)")
+TABLA_09_COLUMNAS = ("TIPO DE CANAL", "MINIMO", "NORMAL", "MAXIMO")
+TABLA_09_FUENTE_TABLA = "Hidraulica de Canales Abiertos, Ven Te Chow, 1983"
+TABLA_09_GRUPO = ("A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO "
+                  "-- el unico grupo de la tabla que describe una alcantarilla; "
+                  "los grupos B (canales revestidos), C (excavado) y D "
+                  "(corrientes naturales) describen el cauce, no el conducto, y "
+                  "no se transcriben aqui porque ningun modulo dimensiona un "
+                  "cauce")
+TABLA_09_FILAS = {
+    "metal_corrugado_subdren": {
+        "fila": "A.1 METALICOS - c. Metal corrugado - sub - dren",
+        "min": 0.017, "normal": 0.019, "max": 0.021},
+    "metal_corrugado_dren_aguas_lluvias": {
+        "fila": "A.1 METALICOS - c. Metal corrugado - dren para aguas lluvias",
+        "min": 0.021, "normal": 0.024, "max": 0.030},
+    "concreto_tubo_recto": {
+        "fila": ("A.2 NO METALICOS - a. Concreto - tubo recto y libre de "
+                 "basuras"),
+        "min": 0.010, "normal": 0.011, "max": 0.013},
+    "madera_duelas": {
+        "fila": "A.2 NO METALICOS - b. Madera - duelas",
+        "min": 0.010, "normal": 0.012, "max": 0.014},
     # HDPE no listado -> criterios_adoptados.valor("n_manning_hdpe")
 }
-# n_max -> capacidad y tirante ; n_min -> velocidad y socavacion
+# Vista de calculo: (n_min, n_max) por fila. Derivada de la transcripcion, no
+# copiada de ella. n_max -> capacidad y tirante ; n_min -> velocidad MAXIMA y
+# socavacion. El piso de velocidad (V2) NO sale de n_min: sale de n_max, que
+# es la estimacion BAJA de velocidad -- ver `M3_hidraulica.resolver_manning`.
+MANNING = {clave: (fila["min"], fila["max"])
+           for clave, fila in TABLA_09_FILAS.items()}
 
-# Tabla N 10, "Velocidades maximas admisibles en conductos revestidos"
-# (num. 4.1.1.3.6, pag. 76). Los DOS numeros de cada fila son velocidades
-# MAXIMAS: el rango recorre la calidad del revestimiento y el extremo inferior
-# es el maximo admisible del acabado mas pobre. NO es (piso, techo). V3
-# verifica solo el superior; el piso de autolimpieza es V_MIN, aparte y para
-# todos los materiales. La transcripcion no cambia: cambia como se lee.
-V_MAX = {
-    "concreto":            (3.0, 6.0),
-    "ladrillo_c_concreto": (2.5, 3.5),
-    "mamposteria_piedra":  (2.0, 2.0),
+# ---------------------------------------------------------------------------
+# Tabla N 10 -- velocidades maximas admisibles (num. 4.1.1.3.6, pag. 76)
+# ---------------------------------------------------------------------------
+# TITULO LITERAL, CON LA UNIDAD. El repo lo entrecomillaba sin "(m/s)"
+# (NOR-HID-06) en los tres sitios donde lo cita, y la unidad omitida es lo
+# primero que un revisor comprueba en una cita entre comillas.
+TABLA_10_TITULO = ("TABLA Nº 10: Velocidades maximas admisibles (m/s) en "
+                   "conductos revestidos")
+TABLA_10_COLUMNAS = ("TIPO DE REVESTIMIENTO", "VELOCIDAD (M/S)")
+TABLA_10_FUENTE_TABLA = "HCANALES, Maximo Villon B."
+TABLA_10_TEXTO_PREVIO = (
+    "Se debe tener en cuenta la velocidad, parametro que es necesario "
+    "verificar de tal manera que se encuentre dentro de un rango, cuyos "
+    "limites se describen a continuacion.")
+# Cada fila con su nombre LITERAL y sus valores tal como la tabla los imprime:
+# la mamposteria trae UN solo valor, no un par (NOR-HID-07). Escribirla como
+# (2.0, 2.0) inventaba un par que la fuente no escribe.
+TABLA_10_FILAS = {
+    "concreto":            {"fila": "Concreto", "valores": (3.0, 6.0)},
+    "ladrillo_c_concreto": {"fila": "Ladrillo con concreto",
+                            "valores": (2.5, 3.5)},
+    "mamposteria_piedra":  {"fila": "Mamposteria de piedra y concreto",
+                            "valores": (2.0,)},
     # TMC y HDPE no listados -> criterios_adoptados
 }
+# QUE SIGNIFICAN LOS DOS NUMEROS, Y QUE PARTE DE ESO ES DEL MANUAL Y QUE PARTE
+# ES DEL PROYECTO (NOR-HID-04). Del Manual, verificado:
+#   - el titulo dice "Velocidades maximas admisibles (m/s)" y la unica columna
+#     de valores se rotula "VELOCIDAD (M/S)": los dos numeros son MAXIMOS, y
+#     ninguno es un piso. Esa lectura se sostiene y es la que V3 aplica.
+#   - el piso de velocidad esta APARTE, en el parrafo siguiente (V_MIN), y vale
+#     para todos los materiales por igual.
+#   - la fila de mamposteria trae un solo valor.
+#   - la fuente de la tabla no es el MTC: es HCANALES, Maximo Villon B.
+# Del proyecto, NO del Manual -- y hasta ahora se imprimia pegado a la cita
+# como si fuera de la fuente: la explicacion de POR QUE hay dos numeros ("el
+# rango recorre la calidad del revestimiento; el inferior es el maximo del
+# acabado mas pobre"). El Manual no lo dice en ninguna parte, y ademas la
+# frase con que introduce la tabla apunta en otra direccion ("se encuentre
+# dentro de un rango, cuyos limites se describen a continuacion") y la fila de
+# mamposteria, con un solo numero, no encaja con una lectura de acabados. Es
+# INTERPRETACION DEL PROYECTISTA, razonable y declarada como tal; lo que la
+# fuente sostiene es solo que los dos numeros son maximos.
+TABLA_10_INTERPRETACION_PROYECTO = (
+    "INTERPRETACION DEL PROYECTISTA, NO DEL MANUAL: que los dos numeros de una "
+    "fila recorran la calidad del revestimiento -- el superior para el acabado "
+    "de mejor calidad y el inferior para el mas pobre -- es una lectura que "
+    "este proyecto adopta para poder elegir un techo mas conservador dentro de "
+    "la fila ('v_max_concreto_eleccion'). El Manual NO la escribe: solo dice "
+    "que la tabla da velocidades maximas admisibles. En contra de esta lectura "
+    "juegan dos hechos de la propia fuente: la frase que introduce la tabla "
+    "habla de un 'rango' con 'limites', y la fila de mamposteria trae un solo "
+    "valor. A favor juega el titulo, que es lo unico que decide que ninguno de "
+    "los dos numeros sea un piso. Se imprime SIEMPRE separada de la cita.")
+# Vista de calculo: los valores de la fila, tal cual. V3 aplica el MAYOR (el
+# techo del acabado de mejor calidad) y no verifica el menor: el piso de
+# velocidad es V_MIN, no el extremo inferior de esta fila.
+V_MAX = {clave: fila["valores"] for clave, fila in TABLA_10_FILAS.items()}
 
 LONG_MAX_CUNETA = {"seca": 250.0, "muy_lluviosa": 200.0}   # m (4.1.2.1 d)
 
 # ================= HDS-5 (FHWA) 3a ed., abril 2012 =========================
-# Apendice A, Tabla A.1, pag. A.8
+# Apendice A. NO todo sale de la Tabla A.1, y este encabezado decia que si
+# (NOR-HDS-03): de la Tabla A.1 (pag. impresa A.8) salen SOLO las constantes
+# K, M, c e Y de cada carta; KU, Ks, los dos limites de rama y las propias
+# ecuaciones estan en el texto del num. A.2, pags. impresas A.1-A.2. Cada
+# constante lleva abajo su sitio exacto.
+#
+# LAS DOS COPIAS DE HDS-5 QUE HAY EN normas/ NO DICEN LO MISMO, y todo este
+# bloque se apoya en UNA de las dos (MAT-X5, MAT-O12):
+#
+#   hif12026.pdf                     3a ed., abril 2012 (FHWA-HIF-12-026).
+#                                    Trae las conversiones SI explicitas.
+#   fhwa_culvert_hydraulics_hds5si.pdf   edicion de septiembre de 1985
+#                                    (FHWA-IP-85-15), rotulada "SI" por sus
+#                                    cartas en version metrica. NO imprime
+#                                    numero de pagina y NO imprime ni 1.811
+#                                    ni 19.63: opera en unidades inglesas con
+#                                    rotulos duales "ft (m)".
+#
+# Todo valor de este bloque sale de la 3a ed. Leer la copia de 1985 "en SI"
+# reproduce exactamente el error del 29 (ver K_FRICCION_SI).
 KU_METRICO = 1.811                  # q* = KU*Q/(A*D**0.5)
+# El 1.811 no esta en la Tabla A.1 (pag. A.8) sino en la lista de variables de
+# las ecuaciones de control de entrada, num. A.2.1 "Unsubmerged Inlet Control
+# Equations", pag. impresa A.2 (PDF 191) de la 3a ed., que lo imprime asi:
+#     "Ku Unit conversion 1.0 (1.811 SI)"
+# Verificado contra el PDF en esta sesion. Lo que sigue citado a la Tabla A.1
+# de la pag. A.8 son las constantes K, M, c e Y de HDS5_INLET.
+# Los dos limites de rama tampoco salen de la Tabla A.1 (NOR-HDS-03): estan en
+# el texto del num. A.2, pags. impresas A.1-A.2, que introduce las ecuaciones.
+# La Tabla A.1 de la pag. A.8 contiene SOLO las constantes K, M, c e Y por
+# carta. Y son los limites del sistema INGLES a proposito: HDS-5 los escribe
+# sobre Q/(A*D^0.5) y da entre parentesis su equivalente SI, mas chico; como
+# `caudal_adimensional` multiplica por KU_METRICO = 1.811, el q* que compara
+# M4 esta ya en la escala inglesa y los umbrales que le corresponden son 3.5 y
+# 4.0. Cambiarlos por los del parentesis seria aplicar dos veces la conversion.
 Q_LIM_NO_SUMERGIDO = 3.5
 Q_LIM_SUMERGIDO    = 4.0            # entre ambos: interpolacion lineal
 
@@ -104,7 +397,33 @@ HDS5_INLET = {   # cartas por forma/material; dentro de cada una, por borde
     "circular_cmp_mitered":                   {"K": 0.0210, "M": 1.33,
                                                "c": 0.0463, "Y": 0.75, "Ks":  0.7},
 }
-# Ks NO figura en la Tabla A.1: proviene de la formulacion (-0.5 / +0.7). No omitir.
+# Ks NO figura en la Tabla A.1: proviene de la formulacion (-0.5 / +0.7). No
+# omitir. Su sitio exacto en la 3a ed., verificado contra el PDF, es la lista
+# de variables del num. A.2.1 "Unsubmerged Inlet Control Equations",
+# pag. impresa A.2 (PDF 191), que lo imprime en una linea:
+#     "Ks Slope correction, -0.5 (mitered inlets +0.7)"
+# y lo explica en la pag. impresa 3.25 (PDF 107):
+#     "For mitered culverts, a correction term of +0.7S is used to account for
+#      the control section being outside the culvert barrel and slightly
+#      higher."
+#
+# EL +0.7 DE INGLETE Y EL ke = 0.7 DE INGLETE SON DOS COEFICIENTES DISTINTOS
+# CON EL MISMO NUMERO (NOR-HDS-04). Con embocadura ingleteada el 0.7 aparece
+# dos veces en la misma cadena de calculo, por dos motivos sin relacion:
+#
+#   Ks = +0.7   correccion por PENDIENTE del control de ENTRADA. Multiplica a
+#               S en HWi/D, es adimensional y vive en el num. A.2.1 (pag. A.2).
+#   ke = 0.7    coeficiente de PERDIDA de entrada del control de SALIDA, fila
+#               "Mitered to conform to fill slope" de la Tabla C.2, pag.
+#               impresa C.6 (PDF 216). Entra en H, no en HWi/D, y llega por el
+#               criterio 'ke_entrada'.
+#
+# Coinciden en valor y en condicion (inglete) y en nada mas. Se anota aqui, en
+# el sitio donde vive el primero, para que nadie los cruce ni deduzca uno del
+# otro: este proyecto adopta hoy la embocadura a ras del muro (square edge with
+# headwall), donde los dos numeros son distintos -- Ks = -0.5 y ke = 0.5 --, y
+# el cruce solo seria posible si alguien cambiara la embocadura a inglete.
+#
 # HDPE -> criterios_adoptados.valor("hds5_embocadura_hdpe")
 
 # ================= Control de salida (SI) ==================================
@@ -113,29 +432,301 @@ K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(
                                     # TEST UNITARIO OBLIGATORIO.
 # De donde sale el 19.63: es el valor que el propio HDS-5 escribe como
 # conversion SI de su constante K = 29 del sistema ingles. Es una cifra de la
-# FUENTE PRIMARIA, transcrita, no una derivacion propia.
-# Lo que este comentario dijo antes y era falso: que 19.62 saliera de 2*g
-# (2 x 9.81). Es una coincidencia numerica -- los dos numeros se parecen
-# porque ambos rondan 2*g -- y no el origen de la constante. HDS-5 no deriva
-# K de la gravedad: K absorbe la conversion de unidades del termino de
-# friccion de Manning, donde g no interviene sola. Se retira esa
-# justificacion en vez de conservarla "por si acaso": una razon inventada
-# para un numero correcto es el mismo defecto que un numero inventado.
-# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: docs/hoja_de_ruta_alcantarillas_v8.md
-# (lineas 432, 436, 790 y 901) sigue escribiendo 19.62. Aqui gana la fuente
-# primaria HDS-5 por verificacion externa; la hoja de ruta debe corregirse.
-# ho = max(TW, (yc + D)/2)
+# FUENTE PRIMARIA, transcrita, no una derivacion propia. Verificado en la 3a
+# ed. (hif12026.pdf) en dos sitios: num. 3.1.4 "Outlet Control", ec. (3.4b),
+# pag. impresa 3.10 (PDF 92) -- "KU = 29 in English Units (19.63 in SI)" --, y
+# la ec. (DG 3.1), pag. impresa DG3.3 (PDF 296) -- "KU is 29 (19.63 in SI
+# Units)".
+#
+# LA COPIA DE 1985 QUE ESTA EN normas/ NO SIRVE PARA ESTO, y hay que decirlo
+# porque lleva "si" en el nombre del archivo (MAT-O12, MAT-X5): sus ecs. (4b)
+# y (5), en la pag. 54 del PDF, imprimen "29 n^2 L / R^1.33" con rotulos de
+# unidades duales "ft (m)", y su gravedad, en la pag. 53, es
+# "32.2 ft/s/s (9.8 m/s/s)". Leida literal "en SI" reproduce exactamente el
+# error del 29 (+9.6 %). El 19.63 solo lo imprime la 3a ed.
+#
+# POR QUE SE PARECE TANTO A 2*g, que es la pregunta que este comentario
+# contestaba mal. Decia que el parecido era "una coincidencia numerica" y que
+# "HDS-5 no deriva K de la gravedad". Es falso, y la relacion es exacta
+# (MAT-D12, MAT-X5):
+#
+#     K = 2*g / phi^2      phi = factor de unidades de Manning
+#                          (1.486 en el sistema ingles, 1 en SI)
+#
+#     ingles:  2 * 32.2 / 1.486^2 = 29.164   -> el 29 impreso
+#     SI:      2 * 9.81456        = 19.629   -> el 19.63 impreso
+#
+# o sea que en SI la constante ES 2*g, y lo unico que separa 19.63 de 19.62 es
+# CUAL g: HDS-5 trabaja con 32.2 ft/s^2 = 9.81456 m/s^2 y este proyecto usa
+# constantes_fisicas.G = 9.81. Se conserva el 19.63 transcrito y no el 2*G
+# derivado -- el valor es de la fuente primaria --, y el efecto de la
+# diferencia se dice en vez de callarse: 19.63/19.62 = 1.0005, un +0.05 % sobre
+# el TERMINO DE FRICCION -- unas 190 veces menos que el 9.6 % que produce el 29
+# imperial, que es el error que esta constante existe para atrapar.
+#
+# La hoja de ruta escribia 19.62 en sus cuatro menciones y quedo corregida a
+# 19.63 en el mismo commit que este comentario (Sec. 4.3, su nota de unidades,
+# el Anexo C y las notas criticas de programacion). Ya no hay discrepancia
+# abierta, y por eso este comentario ya no cita renglones de la hoja de ruta:
+# citarlos fue lo que produjo SIS-A-20, cuatro numeros de linea que el propio
+# documento fue corriendo.
+
+# --------------------------------------------------------------------------
+# h_o, la linea de energia a la salida -- y la CONDICION que la habilita
+# --------------------------------------------------------------------------
+# Este bloque existe porque la formula se aplicaba sin su condicion de uso, y
+# la condicion esta impresa junto a la formula (NOR-HDS-05). El repositorio
+# tenia aqui una sola linea de comentario -- "ho = max(TW, (yc + D)/2)" -- y el
+# manifiesto marcaba la fila "sin numeral". Las dos cosas quedan cerradas: la
+# formula SI tiene numeral, y viene con un limite de validez expreso.
+H_O_NUMERAL = ("HDS-5 (FHWA) 3a ed., abril 2012, num. 3.3.3 'Outlet Control', "
+               "pag. impresa 3.24 (PDF 106)")
+# Texto literal de la condicion de uso. Las DOS citas estan en la misma pagina
+# impresa 3.24 y en dos sitios distintos de ella, y decir cual es cual importa
+# (era una sola atribucion para las dos, y una de ellas era falsa):
+#
+#   la primera es una vineta de la lista "The manual method has the
+#   assumptions:";
+#   la segunda esta en el parrafo de prosa que sigue a esa lista, el mismo que
+#   trae la condicion de 1.2D.
+H_O_CONDICION_TEXTO = (
+    "Approximate hydraulic gradeline ho = (dc + D)/2 can only be used if the "
+    "barrel flows full for most of its length. It should not be used if the "
+    "inlet is not submerged.",
+    "If outlet control governs and the headwater depth (referenced to the "
+    "inlet invert) is less than 1.2D, it is possible that the barrel flows "
+    "partly full though its entire length. In this case, caution should be "
+    "used in applying the approximate method of setting the downstream "
+    "elevation based on the greater of tailwater or (dc + D)/2. If the "
+    "headwater depth falls below 0.75D, the approximate method should not be "
+    "used.",
+)
+# Los dos numeros de esa segunda cita, extraidos para poder EVALUARLOS. Son
+# [N]: los escribe la fuente, no los elige el proyectista.
+#
+# POR QUE SE EVALUAN Y LA PRIMERA CONDICION NO. "Que el barril fluya lleno en
+# la mayor parte de su longitud" exige un perfil de la lamina de agua que este
+# script no calcula. Estos dos, en cambio, son una comparacion entre dos
+# numeros que el modulo ya tiene: HW y D. Declararlos sin evaluarlos, pudiendo,
+# era extender a la segunda condicion una imposibilidad que solo vale para la
+# primera -- y dejaba la memoria diciendo "esto podria estar fuera de rango"
+# sin decir en que punto lo esta, que es literalmente el "nadie se entera" de
+# NOR-HDS-05.
+#
+# El 0.75 NO es el 0.75 de Y_SOBRE_D_MAX, y por eso son dos constantes y no
+# una: aquel es el borde libre del num. 4.1.1.3.7 b) del Manual MTC sobre el
+# TIRANTE, este es un limite de validez del HDS-5 sobre la CARGA A LA ENTRADA.
+# Misma cifra, dos magnitudes y dos fuentes. Es el mismo reparto que G y
+# G_LAUSHEY.
+H_O_HW_SOBRE_D_MIN = 0.75           # HW/D por debajo del cual la aproximacion
+                                    # NO debe usarse (num. 3.3.3, pag. 3.24)
+H_O_HW_SOBRE_D_CAUTELA = 1.2        # HW/D por debajo del cual la fuente pide
+                                    # cautela: el barril puede fluir
+                                    # parcialmente lleno (mismo numeral)
+# La forma con el MAXIMO -- que es la que implementa `M4.control_salida` -- la
+# 3a ed. no la numera: la escribe en prosa ("the greater of tailwater or
+# (dc + D)/2", misma pag. 3.24; "or (dc + D)/2 if larger", num. 3.4.5, pag.
+# 3.32). Impresa como igualdad esta en la edicion de 1985 que tambien vive en
+# normas/, dentro de su procedimiento paso a paso (PDF 67):
+H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
+# Lo que el proyecto hace con la condicion, y que NO puede hacer:
+H_O_CONDICION_APLICACION = (
+    "h_o se calcula SIEMPRE, y de las tres condiciones que la fuente le pone "
+    "el proyecto EVALUA dos y declara la tercera. "
+    "SE EVALUAN, punto por punto, los dos limites sobre HW/D: por debajo de "
+    "1.2 la fuente pide cautela y por debajo de 0.75 dice que la aproximacion "
+    "no debe usarse. Cuando el control de salida GOBIERNA un punto y su HW/D "
+    "cae bajo alguno de los dos, la memoria de ese punto lo dice con esas "
+    "palabras, junto al HW: un aviso general que no senala el punto afectado "
+    "no le sirve al revisor, que es lo que este bloque venia haciendo. "
+    "NO SE EVALUA la primera condicion -- que el barril fluya lleno en la "
+    "mayor parte de su longitud --, y no por descuido: exige un perfil de la "
+    "lamina de agua a lo largo del conducto, que este script no calcula. El "
+    "criterio adoptado 'geometria_control_salida' = 'seccion_llena' "
+    "PRESUPONE ademas lo mismo que ahi habria que verificar, de modo que esa "
+    "premisa entra dos veces por dos puertas y no se comprueba por ninguna. "
+    "No se sustituye por otra formula ni se inventa un criterio de llenado: "
+    "se declara, y quien revise el expediente decide si el punto necesita el "
+    "procedimiento de barril parcialmente lleno del Cap. III, que es la "
+    "alternativa que el propio criterio ya cita. "
+    "HAY UNA CIRCULARIDAD QUE CONVIENE VER: el HW con que se evaluan los dos "
+    "limites es el que produce la propia aproximacion, de modo que un h_o "
+    "sobreestimado puede hacer que el control de salida gobierne un punto "
+    "donde no gobernaria. El aviso se emite igual; deshacer la circularidad "
+    "exige el procedimiento completo, no otra lectura de esta pagina.")
+
+# ---------------------------------------------------------------------------
+# El CARACTER de cada umbral, y de cada CONDICION DE USO, que el proyecto aplica
+# ---------------------------------------------------------------------------
+# ESTE BLOQUE VIVE AQUI, DESPUES DE LAS TABLAS Y DE LAS CONSTANTES DE HDS-5,
+# porque referencia constantes de las dos zonas del archivo -- las del Manual
+# MTC (Tabla Nº 02, Tabla Nº 10, D_min) y las de HDS-5 (h_o) -- y en Python un
+# nombre tiene que estar definido antes de usarse. Estaba mas arriba, cuando
+# solo miraba a las primeras.
+# Existe por NOR-MEM-01, que es un defecto del PRODUCTO y no del codigo: el
+# matiz "el numeral recomienda, no prohibe" viajaba solo dentro de
+# M5.NUMERAL_V2, o sea dentro de la tabla de verificaciones de cada punto. Esa
+# tabla no se imprime si el punto no llego a evaluarse -- y hoy no llega,
+# porque 'homogeneidad_serie_fen' bloquea el Q de toda la Familia A --, de modo
+# que la palabra "recomend" aparecia CERO veces en la memoria generada mientras
+# el repositorio afirmaba que era "lo unico que la memoria imprime de V2".
+#
+# Un umbral aplicado como exigencia cuando la fuente lo escribe como
+# recomendacion es una decision del proyecto, no una lectura de la norma, y se
+# declara. Al reves -- imprimir "exigencia" donde la fuente recomienda -- es
+# una cita falsa, que es la clase de defecto que la Sec. 0.5 de la hoja de ruta
+# llama la mas grave: "un vacio se ve; una cita falsa se cree".
+#
+# `caracter` es lo que la FUENTE hace (recomendacion / exigencia) y
+# `aplicacion` lo que el PROYECTO hace con ello. Los dos se imprimen juntos y
+# separados: sin el segundo no se ve la decision, sin el primero se inventa una
+# exigencia.
+#
+# `texto` es una TUPLA de citas VERBATIM, y esa forma es deliberada. En la
+# primera version era una sola cadena y en dos entradas -- TR y V3 -- llevaba
+# prosa del proyecto y una tabla reformateada bajo el rotulo "Texto literal".
+# Rotular como literal lo que no lo es es exactamente el defecto NOR-HID-06,
+# reintroducido por el bloque construido para cerrarlo. Lo que no es cita
+# verbatim va en `transcripcion`, con su propio rotulo.
+UMBRALES_DE_VERIFICACION = (
+    {"codigo": "V1",
+     "que": "Borde libre: y/D <= 0.75 (minimo 25 % de borde libre)",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) 'Borde libre', "
+                "pag. impresa 79",
+     "caracter": "RECOMENDACION",
+     "texto": ("Se recomienda que el diseño hidraulico considere como minimo "
+               "el 25 % de la altura, diametro o flecha de la estructura.",),
+     "aplicacion": "Se aplica como umbral DURO (un punto con y/D > 0.75 se "
+                   "marca 'NO cumple'). Es la lectura conservadora y es "
+                   "decision del proyecto, no exigencia del numeral."},
+    {"codigo": "V2",
+     "que": "Velocidad minima de autolimpieza: V >= 0.25 m/s",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo posterior "
+                "a la Tabla Nº 10; arranca en la pag. impresa 76 y el valor se "
+                "imprime en la 77",
+     "caracter": "RECOMENDACION",
+     "texto": ("Se debera verificar que la velocidad minima del flujo dentro "
+               "del conducto no produzca sedimentacion que pueda incidir en "
+               "una reduccion de su capacidad hidraulica, recomendandose que "
+               "la velocidad minima sea igual a 0.25 m/s.",),
+     "aplicacion": "Se aplica como umbral DURO, y se evalua con la velocidad "
+                   "de la rama de n MAXIMO -- la estimacion BAJA de velocidad "
+                   "--, que es el extremo conservador para un piso. La razon "
+                   "del minimo es la sedimentacion que reduce capacidad, no el "
+                   "desgaste: por eso vale igual para todos los materiales."},
+    {"codigo": "V3",
+     "que": "Velocidad maxima admisible del revestimiento",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 'Velocidades maximas "
+                "admisibles (m/s) en conductos revestidos', num. 4.1.1.3.6, "
+                "pag. impresa 76. Fuente de la tabla: HCANALES, Maximo Villon B.",
+     "caracter": "EXIGENCIA (tabla de valores admisibles)",
+     "texto": (TABLA_10_TITULO,
+               TABLA_10_TEXTO_PREVIO),
+     "transcripcion": ("Filas de la Tabla Nº 10, con su nombre literal y los "
+                       "valores tal como la tabla los imprime: "
+                       + " ; ".join(
+                           f"{fila['fila']} = "
+                           + " - ".join(f"{v}" for v in fila["valores"])
+                           for fila in TABLA_10_FILAS.values())
+                       + " (m/s). No es una cita: es la tabla reordenada en "
+                         "una linea. La fila de mamposteria trae UN solo "
+                         "valor, no un par."),
+     "aplicacion": "Los DOS numeros de la fila son MAXIMOS: se verifica solo el "
+                   "superior, y el inferior NO es un piso. Se evalua con la "
+                   "velocidad de la rama de n MINIMO -- la estimacion ALTA --, "
+                   "que es el extremo conservador para un techo. TMC y HDPE no "
+                   "tienen fila en esta tabla: su techo sale de un criterio [C] "
+                   "con fuente WSDOT."},
+    {"codigo": "TR",
+     "que": "Riesgo admisible y vida util con que se calcula el periodo de "
+            "retorno (Tabla Nº 02)",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 02, num. 3.6, "
+                "pag. impresa 25",
+     "caracter": "RECOMENDACION -- MAXIMOS, y la decision es del Propietario",
+     # Las tres citas van SEPARADAS y verbatim, incluida la mayuscula del
+     # titulo impreso: unidas en un parrafo explicativo dejaban de ser citas.
+     "texto": (TABLA_02_TITULO,
+               TABLA_02_TEXTO_PREVIO,
+               TABLA_02_NOTA_PROPIETARIO),
+     "aplicacion": "El proyecto adopta los valores maximos recomendados de la "
+                   "tabla (R = 30 % / n = 25 anios para quebrada importante; "
+                   "R = 35 % / n = 15 anios para quebrada menor y descarga de "
+                   "cunetas). ADVERTENCIA QUE HAY QUE LEER: adoptar el MAXIMO "
+                   "recomendado es el extremo MENOS conservador del margen que "
+                   "la tabla concede -- mas riesgo admisible da menos TR y "
+                   "menos caudal de diseno --, y a diferencia de V1 y V2 aqui "
+                   "la lectura conservadora seria adoptar MENOS. El "
+                   "Propietario tiene una via declarada para ejercer la "
+                   "decision que la nota al pie le asigna: el criterio "
+                   "adoptado 'riesgo_admisible_propietario', que aparece en "
+                   "el bloque de criterios de esta memoria y que solo admite "
+                   "endurecer el techo, nunca aflojarlo. Mientras no la use, "
+                   "esta adopcion gobierna el TR de todos los puntos."},
+    {"codigo": "D_min",
+     "que": "Seccion minima circular de 0.90 m",
+     "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.4 a), pag. impresa 72",
+     "caracter": "EXIGENCIA CONDICIONADA ('se adoptara', con dos condiciones)",
+     "texto": (DIAMETRO_MIN_TEXTO,),
+     "aplicacion": DIAMETRO_MIN_AMBITO},
+    {"codigo": "h_o",
+     "que": "Linea de energia a la salida del conducto: "
+            "h_o = max(TW, (y_c + D)/2), Sec. 4.3",
+     "numeral": H_O_NUMERAL,
+     "caracter": "APROXIMACION CON CONDICION DE USO EXPRESA",
+     "texto": H_O_CONDICION_TEXTO,
+     "transcripcion": ("La forma con el MAXIMO, que es la que el proyecto "
+                       "implementa, la 3a ed. no la numera: la escribe en "
+                       "prosa ('the greater of tailwater or (dc + D)/2', "
+                       "misma pag. 3.24). Impresa como igualdad esta en la "
+                       "edicion de 1985 que tambien vive en normas/, dentro "
+                       "de su procedimiento paso a paso: <<"
+                       + H_O_FORMA_MAXIMO_TEXTO + ">> Esta linea no es cita "
+                       "de la 3a ed.: es la union de las dos ediciones, y por "
+                       "eso va aqui y no arriba."),
+     "aplicacion": H_O_CONDICION_APLICACION},
+)
 
 # ================= Diametros normalizados (ASTM / AASHTO) ==================
 D_PASO = 0.15                       # m; reproduce las series de 6" y 150 mm
-D_INICIO = 0.90                     # m; minimo normativo MTC
-D_MAX = {                           # topes por norma de producto - VERIFICAR
-    "concreto_reforzado": 2.70,     # ASTM C76 / AASHTO M170
-    "tmc":                2.10,     # AASHTO M36 / ASTM A760
-    "hdpe":               1.50,     # AASHTO M294  <- el mas restrictivo
-}
-# Sin tope, el solver puede converger a un diametro inexistente.
-# Superado el tope: devolver "material descartado por diametro requerido".
+D_INICIO = 0.90                     # m; el piso del num. 4.1.1.3.4 a), que
+                                    # NO es incondicional: ver DIAMETRO_MIN,
+                                    # DIAMETRO_MIN_TEXTO y DIAMETRO_MIN_AMBITO.
+                                    # Decia "minimo normativo MTC" a secas, que
+                                    # es la formula exacta que NOR-HID-03 cita
+                                    # como defecto -- el numeral lo condiciona
+                                    # a "carreteras de alto volumen de
+                                    # transito" y exceptua los cruces de canal
+                                    # de riego.
+# D_MAX SALIO DE ESTE ARCHIVO. Declaraba los topes por material -- 2.70 /
+# 2.10 / 1.50 m -- atribuidos a "ASTM C76 / AASHTO M170", "AASHTO M36 / ASTM
+# A760" y "AASHTO M294", bajo el rotulo "topes por norma de producto -
+# VERIFICAR". La atribucion es FALSA y esta verificada en contra sobre los
+# PDF de normas/ (NOR-PRO-01, NOR-PRO-02, MAT-O8):
+#
+#   ASTM A760/A760M-10, Tabla 1 "Tamaños de tuberia", pag. 3: diametros
+#   nominales de 100 mm (4 in) a 3600 mm (144 in). Los 2100 mm son una fila
+#   mas de la serie, no un maximo.
+#   AASHTO M 170M-04, Tablas 1 a 5 (Clases I a V): de 300 a 3600 mm, y la
+#   Seccion 7.2 preve ademas diseños especiales por encima de lo tabulado.
+#   AASHTO M294 no esta en normas/: el tope del HDPE no se pudo contrastar.
+#
+# No son topes normativos: son topes de CATALOGO, y como tales descartaban
+# material en silencio con una cita que ninguna norma sostiene. Viven ahora
+# en criterios_adoptados.py, criterio 'D_max_catalogo' [A], con el campo
+# `de_catalogo` que obliga a imprimirlos rotulados como lo que son. La marca
+# "VERIFICAR" que llevaban era la senal de que nunca debieron entrar aqui:
+# una constante [N] sin numeral no es una constante [N] pendiente de
+# confirmar, es un valor de otra clase.
+#
+# Sin tope, el solver puede converger a un diametro que nadie fabrica ni
+# transporta a la obra. Superado el tope: "material descartado por diametro
+# requerido" -- y ese descarte es ADOPTADO, no normativo.
+#
+# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: su Anexo B (linea 806 de
+# docs/hoja_de_ruta_alcantarillas_v8.md) declara estos mismos topes bajo el
+# rotulo "topes por norma de producto - VERIFICAR" y con las mismas
+# atribuciones. Gana la fuente primaria -- las tablas de A760 y M 170M,
+# leidas de los PDF -- y la hoja de ruta SIGUE MAL mientras no se corrija.
 
 # ================= Manual de Suelos (RD 10-2014-MTC/14) ====================
 RESGUARDO_NAPA_SUBRASANTE = [       # (CBR_min, CBR_max, resguardo_m)  num. 4.5.4
@@ -174,19 +765,76 @@ ESPACIAMIENTO_PERFIL_KM = 4.0       # nivel perfil (num. 4.2, Cuadro 4.1)
 
 # ================= EG-2013, Capitulo V (Secciones 502-508) =================
 H_RELLENO_MIN = {
-    "hdpe":     0.30,               # m, clave a subrasante (508.07, pag. 982)
-    "concreto": None,               # VACIO VERIFICADO -- no es "falta extraer"
-    "tmc":      None,               # VACIO VERIFICADO -- idem
+    "hdpe":     0.30,               # m, clave a subrasante (508.07, pag. 984)
+    "concreto": None,               # EG-2013 no lo fija -- ver comentario
+    "tmc":      None,               # EG-2013 no lo fija -- idem
 }
-# Los dos None NO estan esperando una lectura pendiente: la busqueda esta
-# cerrada y no hay valor que traer. AASHTO M 170M, M 36 y ASTM A760 no
-# contienen alturas de relleno admisibles -- su Nota 1 las excluye por ser
-# especificaciones de fabricacion y compra -- y M 170M clasifica por D-load,
-# no por altura. El Manual de Puentes nunca incorporo la Sec. 12 de AASHTO
-# LRFD (su indice salta de 2.11 a 2.12). Estos comentarios decian antes
-# "AASHTO M-170M (clases I a V)" y "ASTM A-807 / AASHTO M36", que apuntaban a
-# tablas que no existen. El registro completo, con citas, esta en el criterio
-# 'h_relleno_min_concreto_tmc' y en docs/manifiesto_citas.md Sec. 14.a.
+# Texto que fija la fila del HDPE, literal (EG-2013, Capitulo V, Subseccion
+# 508.07 "Colocacion del relleno alrededor de la estructura", pagina impresa
+# 984, ultimo parrafo):
+#
+#     "La altura de relleno minimo desde la clave de la tuberia hasta el
+#     nivel de la subrasante sera de 0,30 m."
+#
+# Dos cosas que el 0.30 suelto pierde. Primera: la magnitud es CLAVE a
+# SUBRASANTE, exactamente la que calcula 7.A. Segunda: "la clave de la
+# tuberia" es la superficie EXTERIOR del tubo, no el punto que queda a D
+# sobre el invert interior -- de ahi que M7 calcule la clave con el espesor
+# de pared (MAT-D4).
+# LA PAGINA: 984, verificada leyendo el PDF. Este comentario decia 982, y esa
+# cita viaja a mas sitios del expediente (NOR-EG-01, cluster C11); aqui se
+# corrige la ocurrencia que este archivo declara, no las demas.
+#
+# NOTA CONSTRUCTIVA [N] que acompaña a este mismo 0.30 m (Sec. 7.A de la hoja
+# de ruta): el equipo pesado no circula sobre el conducto antes de que el
+# relleno alcance 0.30 m. Vivia en el criterio 'h_relleno_min_concreto_tmc' y
+# se traslada aqui al retirarse aquel: es una exigencia de EJECUCION sobre el
+# relleno del EG-2013, no la altura minima de diseño, y no la sustituye la
+# cobertura minima de AASHTO -- que es de diseño en servicio, no de obra.
+#
+# QUE SIGNIFICAN LOS DOS None, que NO es lo que decia este comentario. Antes
+# decian "VACIO VERIFICADO -- no es 'falta extraer'", y sostenian que la
+# busqueda estaba cerrada en todas las fuentes posibles. Era falso por dos
+# lados:
+#
+#   (a) LA FUENTE QUE FALTABA (NOR-VAC-01). AASHTO LRFD 9a ed., Art.
+#       12.6.6.3 y Tabla 12.6.6.3-1 (pag. 12-22), tabulan la cobertura minima
+#       para los tres tipos de conducto de este catalogo. Esta en normas/ y
+#       es el cuerpo normativo que Sec. 0.2 adopta de extremo a extremo. El
+#       valor de concreto y TMC sale de ahi, via el criterio
+#       'cobertura_minima_aashto'; estos None significan hoy "EG-2013 no lo
+#       fija para este material", que es cierto, y nada mas.
+#   (b) LA ATRIBUCION DE LA EXCLUSION ERA FALSA EN DOS DE TRES (NOR-PRO-03).
+#       Las tres normas de producto efectivamente NO dan alturas de relleno
+#       -- ese fondo se confirma -- pero la formula "su Nota 1 las excluye
+#       por ser especificaciones de fabricacion y compra" es de UNA sola:
+#       AASHTO M 170M-04, Nota 1 ("This specification is a manufacturing and
+#       purchase specification only, and does not include requirements for
+#       bedding, backfill, or the relationship between field load condition
+#       and the strength classification of pipe"). En AASHTO M 36 la
+#       exclusion esta en §1.3 y en ASTM A760/A760M-10 en §1.4, con otra
+#       redaccion; la Nota 1 de esas dos habla de laminas con fibra de
+#       aramida y post-recubrimiento asfaltico. Sigue siendo cierto que
+#       M 170M clasifica por D-load y no por altura.
+#
+# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA. La v8 sigue escribiendo lo que
+# aqui se corrige, y quien la lea sin leer el codigo diseñara con el valor
+# equivocado:
+#
+#   linea 523 (tabla de Sec. 7.A): "Concreto y TMC | No fijado. Remite al
+#     Proyecto, AASHTO M-170M (clases I-V) o ASTM A-807 | [C] norma de
+#     producto". Las dos remisiones son falsas: M 170M no da alturas de
+#     relleno y A-807 no es la norma que se le atribuye (ver NOR-PRO-04). Y
+#     "no fijado" ya no es cierto: lo fija AASHTO LRFD Art. 12.6.6.3, que el
+#     propio Sec. 0.2 adopta.
+#   linea 546 (tabla de Fase 8): "TMC | ASTM A-807 / AASHTO M36 -- calibre
+#     segun altura". El calibre por altura de cobertura es de ASTM A796/A796M.
+#   linea 832 (Anexo B): repite la remision a A-807 en el comentario de
+#     H_RELLENO_MIN["tmc"].
+#
+# Aqui gana la fuente primaria por verificacion externa contra los PDF de
+# normas/, como en K_FRICCION_SI. La hoja de ruta SIGUE MAL mientras no se
+# corrija: el defecto esta reportado contra ella, no contra este archivo.
 # 505, 506, 507 y 508 son SECCIONES completas del EG-2013, dentro del
 # Capitulo V. No son subsecciones de ninguna "Seccion 500": esa denominacion
 # no existe en el EG-2013 y la constante se llamaba SUBSECCION por arrastre de
@@ -251,13 +899,381 @@ NUMERAL_FACTOR_MURO = "2.8.1.1.14.2"
 # PGA -> datos_sitio (dato de sitio [S]); F_pga elegido, factor de muro elegido
 # y k_v -> criterios_adoptados
 
-# Combinaciones de carga: AASHTO LRFD Sec. 3.4.1 via Manual de Puentes
-# (num. 2.4.5.3, pags. 140-143). La hoja de ruta NOMBRA las tres y no
-# transcribe la Tabla 3.4.1-1: los factores gamma son un vacio declarado en
-# criterios_adoptados ("factores_carga_aashto"). Aqui solo viven los nombres,
-# que si estan en el texto normativo citado.
+# Combinaciones de carga: Manual de Puentes num. 2.4.5.3 "Factores de Carga y
+# Combinaciones" (= 3.4 AASHTO), subnumeral 2.4.5.3.1 (= 3.4.1 AASHTO),
+# pag. impresa 140 (PDF 141). Aqui viven los NOMBRES de las tres combinaciones
+# que usa el proyecto y, desde la correccion de NOR-PUE-04, tambien los
+# FACTORES: las dos tablas del numeral estan transcritas mas abajo.
+#
+# POR QUE ESTABAN FUERA Y AHORA ESTAN AQUI (NOR-PUE-04). Este comentario decia
+# que el Manual "no transcribe la Tabla 3.4.1-1" y que los gamma eran "un
+# vacio declarado en criterios_adoptados". Las dos afirmaciones son falsas, y
+# la segunda ademas describia un estado del repositorio que ya no existia (el
+# criterio tenia valor desde hacia tiempo). El Manual SI transcribe las dos
+# tablas, completas y con sus valores, DENTRO del rango de paginas que este
+# mismo archivo citaba: Tabla 2.4.5.3.1-1 y Tabla 2.4.5.3.1-2, las dos en la
+# pag. impresa 143 (PDF 144). Verificado leyendo el PDF de
+# normas/"Puentes (Version Libro).pdf" (encabezado impreso de cada pagina, no
+# aritmetica de desfase; el desfase es PDF = impresa + 1).
+#
+# Declarar un vacio sobre la pagina que trae la tabla es el defecto que
+# Sec. 0.5 de la hoja de ruta llama el mas grave: un vacio se ve, una cita
+# falsa se cree. Aqui ademas invertia la taxonomia entera -- los gamma son
+# exigencia normativa peruana con numeral verificado, o sea [N], y lo unico
+# elegido es QUE FILA de la tabla describe a cada estructura de esta obra,
+# que es [A] y vive en 'factores_carga_aashto'. Es el mismo reparto de
+# F_PGA_TABLA / 'F_pga' y FACTOR_MURO_TABLA / 'factor_muro_eleccion'.
 COMBINACIONES_AASHTO = ("Resistencia I", "Servicio I", "Evento Extremo I")
 NUMERAL_COMBINACIONES = "2.4.5.3 (AASHTO LRFD Sec. 3.4.1), pags. 140-143"
+
+# El numeral con que hay que CITAR las dos tablas. El propio Manual las nombra
+# de dos formas incompatibles: el rotulo impreso sobre cada tabla dice
+# "Tabla 2.4.5.3.1-1" y "Tabla 2.4.5.3.1-2", pero el cuerpo del texto en la
+# pag. impresa 142 (PDF 143) las llama "Tabla 2.4.5.3-1" y "Tabla 2.4.5.3-2",
+# sin el ".1". Se cita la forma del ROTULO, que es la que un revisor lee sobre
+# la tabla que tiene delante.
+NUMERAL_TABLA_COMBINACIONES = (
+    "Manual de Puentes (MTC) num. 2.4.5.3.1, Tabla 2.4.5.3.1-1 "
+    "'Combinaciones de Carga y Factores de Carga' (3.4.1-1 AASHTO), "
+    "pag. impresa 143 (PDF 144)")
+NUMERAL_TABLA_GAMMA_P = (
+    "Manual de Puentes (MTC) num. 2.4.5.3.1, Tabla 2.4.5.3.1-2 "
+    "'Factores de carga para cargas permanentes, gamma_p' (3.4.1-2 AASHTO), "
+    "pag. impresa 143 (PDF 144)")
+
+# La correspondencia con AASHTO LRFD 9a ed., y en que difieren. Se declara
+# porque el proyecto adopta la Via 1 (Sec. 0.2: AASHTO LRFD de extremo a
+# extremo) y podria dar por identicas dos tablas que NO lo son: el Manual
+# traduce una edicion anterior.
+TABLAS_GAMMA_CORRESPONDENCIA_AASHTO = (
+    "Tabla 2.4.5.3.1-1 = Table 3.4.1-1 'Load Combinations and Load Factors', "
+    "AASHTO LRFD 9a ed. (2020), pag. impresa 3-17 (PDF 71). "
+    "Tabla 2.4.5.3.1-2 = Table 3.4.1-2 'Load Factors for Permanent Loads, "
+    "gamma_p', pag. impresa 3-18 (PDF 72). "
+    "EN LAS COLUMNAS Y FILAS QUE ESTE PROYECTO USA las dos fuentes coinciden "
+    "digito a digito, y por eso la peruana basta y se cita ella. DIFERENCIAS "
+    "verificadas, ninguna en lo que se usa aqui: (a) la 9a ed. agrega a la "
+    "tabla de gamma_p cuatro filas que el Manual no trae -- las tres de "
+    "estabilidad interna de muros MSE y la de muros de suelo claveteado; "
+    "(b) la 9a ed. dice 'O'Neill and Reese (2010)' donde el Manual dice "
+    "'(1999)'; (c) en la fila flexible de 1.50 la 9a ed. exige 'Structural "
+    "Plate Culverts with DEEP Corrugations' y el Manual traduce 'planchas "
+    "estructurales con corrugaciones', sin 'profundas' -- omision sustantiva, "
+    "ver la eleccion del TMC en 'factores_carga_aashto'; (d) en la Tabla -1 "
+    "difieren factores de WS (Resistencia III, Resistencia V, Servicio I y "
+    "Servicio IV), el LL de Servicio III y los de Fatiga I y II: ninguna de "
+    "esas columnas ni de esas combinaciones entra en Sec. 9.2")
+
+# La celda "N/A" de la Tabla 2.4.5.3.1-2. NO es "no declarado" ni "falta el
+# dato": la fuente dice expresamente que esa fila no tiene ese extremo. Se le
+# da nombre para que ningun consumidor la lea como un cero, un uno o una
+# omision, y para que pedirla sea un error del expediente y no un KeyError.
+#
+# Existe por MAT-D15 / NOR-AAS-04: el criterio afirmaba que la fuente no
+# declara minimo para EH en reposo. Lo declara -- 0.90 --; el N/A pertenece a
+# la fila SIGUIENTE, "AEP Para paredes ancladas". Un corrimiento de una fila
+# entre dos filas que comparten el maximo 1.35.
+GAMMA_P_NO_APLICA = None
+
+# El marcador "gamma_p" que la propia Tabla 2.4.5.3.1-1 imprime en la columna
+# de cargas permanentes: no es un numero, es una remision a la Tabla -2.
+GAMMA_P_MARCA = "gamma_p"
+
+# QUE DE ESTE BLOQUE TIENE CONSUMIDOR Y QUE NO, declarado en vez de deducirse.
+# Lo consume el calculo: TABLA_GAMMA_P_FILAS y fila_gamma_p_legible (M8 y M9),
+# TABLA_COMBINACIONES_FILAS (M8 y M9), GAMMA_P_NO_APLICA (la guarda de M8) y
+# GAMMA_P_MARCA (M9). Lo demas -- los titulos, las columnas, las notas al pie,
+# la de erratas, la de completitud, la de correspondencia con AASHTO y
+# GAMMA_EQ_TEXTO -- NO lo invoca ningun modulo: es la parte de la
+# transcripcion que existe para que la cita sea verificable contra el PDF y
+# para que la memoria pueda imprimirla el dia que la Fase 9 se desbloquee. Es
+# el mismo caso de TABLA_09_TITULO y TABLA_09_COLUMNAS, que tampoco tienen
+# consumidor y estan por la misma razon; no es codigo muerto, es la cita.
+
+TABLA_GAMMA_P_TITULO = ("Tabla 2.4.5.3.1-2 Factores de carga para cargas "
+                        "permanentes, γp")
+TABLA_GAMMA_P_COLUMNAS = (
+    "Tipo de Carga, Tipo de Fundaciones, y Métodos Usados para Fuerza de "
+    "Arrastre Hacia Abajo (Downdrag)", "Maximo", "Mínimo")
+
+# LAS DOS COLUMNAS SE ESCRIBEN COMO LAS IMPRIME EL MANUAL, y no son iguales:
+# "Maximo" va SIN tilde en el original y "Mínimo" CON ella. Es una errata de
+# la fuente, no de esta transcripcion, y por eso la primera no se "arregla".
+# La distincion importa: si aqui se quitaran las dos tildes, la nota de erratas
+# estaria atribuyendo al Manual una falta que seria del codigo.
+
+# La tabla COMPLETA, las dieciocho filas con valor, aunque el calculo use
+# cinco. Es la regla dura del proyecto (NOR-HID-11, NOR-VAC-01): la tabla se
+# transcribe entera y la eleccion se declara aparte, porque una tabla podada
+# no deja ver de que se eligio una fila.
+#
+# COMO SE LEEN LOS TRES CAMPOS DE TEXTO, que son transcripcion y no
+# nomenclatura de este proyecto: `fila` es el texto LITERAL de la celda,
+# `grupo` el encabezado literal del bloque del que cuelga -- EH, EV y DD traen
+# sus subfilas colgadas de una fila de titulo -- y `subgrupo` el segundo nivel,
+# que solo tienen las tres subfilas flexibles de EV. Estan SEPARADOS a
+# proposito: la celda del reposo dice "En reposo.", no "EH: Presión Horizontal
+# de la tierra -- En reposo.", y juntarlos en un solo campo haria pasar por
+# transcripcion una frase compuesta aqui. Quien necesite una linea sola llama a
+# `fila_gamma_p_legible`, y entonces la composicion es visible y esta en un
+# solo sitio.
+#
+# LOS TRES VAN CON SUS TILDES Y CON SUS LETRAS GRIEGAS, al reves que la
+# mayoria de este archivo: son texto citado, y un revisor tiene que poder
+# buscarlo en el PDF y encontrarlo. Las erratas de imprenta del Manual se
+# copian tal cual y se declaran en TABLA_GAMMA_P_ERRATAS.
+TABLA_GAMMA_P_FILAS = {
+    "DC_componentes_y_auxiliares": {
+        "grupo": "", "subgrupo": "",
+        "fila": "DC: Componentes y Auxiliares.", "max": 1.25, "min": 0.90},
+    "DC_resistencia_IV_solamente": {
+        "grupo": "", "subgrupo": "",
+        "fila": "DC: Resistencia IV Solamente.", "max": 1.50, "min": 0.90},
+    "DD_pilotes_metodo_tomlinson": {
+        "grupo": "DD: Downdrag", "subgrupo": "",
+        "fila": "Pilotes, α Método de Tomlinson.", "max": 1.40, "min": 0.25},
+    "DD_pilotes_metodo_lambda": {
+        "grupo": "DD: Downdrag", "subgrupo": "",
+        "fila": "Pilotes, λ Método.", "max": 1.05, "min": 0.30},
+    "DD_pilotes_perforados_oneill_reese": {
+        "grupo": "DD: Downdrag", "subgrupo": "",
+        "fila": "Pilotes Perforados, (Drilled Shaft) Método de O’Neill and "
+                "Reese (1999).", "max": 1.25, "min": 0.35},
+    "DW_superficie_de_rodadura_y_accesorios": {
+        "grupo": "", "subgrupo": "",
+        "fila": "DW: Superficie de rodadura y accesorios.",
+        "max": 1.50, "min": 0.65},
+    # Las tres subfilas de "EH: Presion Horizontal de la tierra".
+    "EH_activa": {
+        "grupo": "EH: Presión Horizontal de la tierra.", "subgrupo": "",
+        "fila": "Activa.", "max": 1.50, "min": 0.90},
+    "EH_en_reposo": {
+        "grupo": "EH: Presión Horizontal de la tierra.", "subgrupo": "",
+        "fila": "En reposo.", "max": 1.35, "min": 0.90},
+    "EH_AEP_paredes_ancladas": {
+        "grupo": "EH: Presión Horizontal de la tierra.", "subgrupo": "",
+        "fila": "AEP Para paredes ancladas.",
+        "max": 1.35, "min": GAMMA_P_NO_APLICA},
+    "EL_esfuerzos_residuales": {
+        "grupo": "", "subgrupo": "",
+        "fila": "EL: Esfuerzos residuales acumulados resultantes del proceso "
+                "constructivo, (Locked-in construction Stresses.)",
+        "max": 1.00, "min": 1.00},
+    # Las seis subfilas de "EV: Presion vertical de la tierra" (sic, sin
+    # tilde en "Presion"). Las tres ultimas cuelgan ademas del subtitulo
+    # "Estructuras flexible enterradas" (sic, sin la "s" de flexibles), que la
+    # tabla imprime en su propia linea con sus tres opciones marcadas "o ...".
+    "EV_estabilidad_global": {
+        "grupo": "EV: Presion vertical de la tierra", "subgrupo": "",
+        "fila": "Estabilidad global.",
+        "max": 1.00, "min": GAMMA_P_NO_APLICA},
+    "EV_muros_y_estribos_de_retencion": {
+        "grupo": "EV: Presion vertical de la tierra", "subgrupo": "",
+        "fila": "Muros y estribos de retención.", "max": 1.35, "min": 1.00},
+    "EV_estructura_rigida_enterrada": {
+        "grupo": "EV: Presion vertical de la tierra", "subgrupo": "",
+        "fila": "Estructura rígida enterrada.", "max": 1.30, "min": 0.90},
+    "EV_porticos_rigidos": {
+        "grupo": "EV: Presion vertical de la tierra", "subgrupo": "",
+        "fila": "Pórticos rígidos.", "max": 1.35, "min": 0.90},
+    "EV_flexibles_cajon_metalico_plancha_fibra_vidrio": {
+        "grupo": "EV: Presion vertical de la tierra",
+        "subgrupo": "Estructuras flexible enterradas",
+        "fila": "o Alcantarillas cajón metálicas, plancas estructurales con "
+                "corrugaciones y alcantarillas de fibra de vidrio.",
+        "max": 1.50, "min": 0.90},
+    "EV_flexibles_alcantarillas_termoplasticas": {
+        "grupo": "EV: Presion vertical de la tierra",
+        "subgrupo": "Estructuras flexible enterradas",
+        "fila": "o Alcantarillas termoplásticas.", "max": 1.30, "min": 0.90},
+    "EV_flexibles_entre_otros": {
+        "grupo": "EV: Presion vertical de la tierra",
+        "subgrupo": "Estructuras flexible enterradas",
+        "fila": "o Entre otros.", "max": 1.95, "min": 0.90},
+    "ES_carga_superficial_en_el_terreno": {
+        "grupo": "", "subgrupo": "",
+        "fila": "ES: Carga superficial(Sobrecarga) en el terreno",
+        "max": 1.50, "min": 0.75},
+}
+
+
+def fila_gamma_p_legible(clave: str) -> str:
+    """
+    Grupo, subgrupo y celda de una fila de gamma_p en una sola linea, para
+    imprimirla. Los tres trozos son literales del PDF; el " -- " que los une
+    es de aqui, y por eso la composicion vive en esta funcion y no dentro del
+    dato: buscar la frase compuesta en el PDF no la encontraria, buscar
+    cualquiera de sus tres trozos si.
+    """
+    r = TABLA_GAMMA_P_FILAS[clave]
+    return " -- ".join(t for t in (r["grupo"], r["subgrupo"], r["fila"]) if t)
+
+
+# TRES TRAMPAS DE LA EXTRACCION DE TEXTO, comprobadas sobre la celda
+# RENDERIZADA y no sobre el volcado plano -- la leccion de NOR-VAC-01, donde
+# una prima de SymbolMT se leyo como una raiz cuadrada:
+#
+#   1. El titulo imprime "gamma_p" con un glifo de fuente Symbol (la
+#      extraccion devuelve un caracter de uso privado) y una "p" en negrita
+#      matematica. Aqui se escribe el simbolo tal como se LEE en la pagina.
+#   2. El encabezado de la primera columna aparece partido por la columna
+#      vecina: la extraccion lo devuelve como "Tipo de Carga, Tipo de
+#      Fundaciones, y / Factor de Carga / Metodos Usados...". Las dos mitades
+#      son de la misma celda, y aqui van unidas como se leen.
+#   3. LAS TRES SUBFILAS FLEXIBLES SALEN CON SUS PARES INTERCALADOS: la
+#      extraccion da "...alcantarillas de fibra de | 1.50 0.90 | vidrio. |
+#      1.30 0.90 | o Alcantarillas termoplasticas. | 1.95 0.90 | o Entre
+#      otros.", que leido de corrido asignaria 1.30/0.90 a la fila de la fibra
+#      de vidrio y 1.95/0.90 a la termoplastica. La asignacion correcta -- la
+#      de la pagina renderizada -- es 1.50 a las metalicas y de plancha, 1.30 a
+#      las termoplasticas y 1.95 a "Entre otros", y coincide digito a digito
+#      con la Table 3.4.1-2 de AASHTO 9a ed. Esa coincidencia es lo que cierra
+#      la lectura.
+#
+# Las erratas de imprenta del Manual en esta tabla, transcritas donde estan
+# para que nadie las "corrija" creyendo que arregla una transcripcion.
+TABLA_GAMMA_P_ERRATAS = (
+    "Transcripcion literal, con las erratas de imprenta del Manual: 'Maximo' "
+    "SIN tilde en el encabezado de columna (mientras 'Mínimo', a su lado, la "
+    "lleva); 'EV: Presion vertical de la tierra' sin tilde en 'Presion' "
+    "(mientras la fila hermana 'EH: Presión Horizontal de la tierra' si la "
+    "lleva); 'Estructuras flexible enterradas', sin la 's' de flexibles; "
+    "'plancas' por 'planchas'; y 'Entre otros' donde AASHTO dice 'All "
+    "others'. Se copian tal cual: la fila que la memoria imprime tiene que "
+    "poder buscarse en el PDF")
+
+TABLA_COMBINACIONES_TITULO = ("Tabla 2.4.5.3.1-1 Combinaciones de Carga y "
+                              "Factores de Carga")
+
+# Las TRES combinaciones de Sec. 9.2, tal como las imprime la Tabla
+# 2.4.5.3.1-1, por tipo de carga. Las demas filas de la tabla (Resistencia
+# II a V, Evento Extremo II, Servicio II a IV, Fatiga I y II) no se
+# transcriben porque Sec. 9.2 no las nombra: no es una tabla podada, es que
+# la hoja de ruta elige tres combinaciones y estas son esas tres.
+#
+# La columna de cargas permanentes de la tabla es UNA sola -- "DC DD DW EH EV
+# ES EL PS CR SH" -- y por eso DC, EV y EH comparten celda: donde dice
+# GAMMA_P_MARCA hay que ir a la Tabla -2, y donde dice un numero ese numero
+# vale para las tres.
+#
+# EVENTO EXTREMO I LLEVA 1.00 EN LAS PERMANENTES, NO gamma_p, y no es un
+# error de transcripcion: lo dicen las dos fuentes y el comentario C3.4.1 de
+# AASHTO explica por que ("Prior to 2015, these Specifications used a value
+# for gamma_p greater than 1.0. This practice went against the intended
+# philosophy behind the Extreme Event Limit State", pag. impresa 3-10).
+# La celda "--" de la Tabla 2.4.5.3.1-1: la carga NO PARTICIPA en esa
+# combinacion. Como el N/A de la Tabla -2, no es un cero: es la fuente
+# diciendo que ahi no hay factor.
+COMBINACION_NO_PARTICIPA = "--"
+
+# Las CATORCE columnas de la tabla, en su orden impreso. La primera agrupa
+# todas las cargas permanentes bajo un solo factor.
+TABLA_COMBINACIONES_COLUMNAS = (
+    "DC DD DW EH EV ES EL PS CR SH", "LL IM CE BR PL LS", "WA", "WS", "WL",
+    "FR", "TU", "TG", "SE", "EQ", "BL", "IC", "CT", "CV")
+
+# Nota literal al pie de la Tabla 2.4.5.3.1-1. NO es la que explica los pares
+# del tipo 0.50/1.20 de la columna TU -- este comentario lo afirmaba y era una
+# cita falsa dentro de un bloque [N]. Lo que gobierna son las ULTIMAS
+# columnas, las de los eventos extremos: donde el Manual pone esta nota al
+# pie, AASHTO imprime el encabezado "Use One of These at a Time" sobre EQ,
+# BL, IC, CT y CV. Ninguna de esas cinco entra en Sec. 9.2 salvo EQ, y en
+# Evento Extremo I es la unica de las cinco con valor.
+TABLA_COMBINACIONES_NOTA_AL_PIE = (
+    "Usar solamente uno de los indicados en estas columnas en cada "
+    "combinación")
+
+TABLA_COMBINACIONES_FILAS = {
+    "Resistencia I": {
+        "permanentes": GAMMA_P_MARCA,   # DC DD DW EH EV ES EL PS CR SH
+        "LS": 1.75,                     # columna LL IM CE BR PL LS
+        "WA": {"max": 1.00, "min": 1.00},
+        "WS": COMBINACION_NO_PARTICIPA,
+        "WL": COMBINACION_NO_PARTICIPA,
+        "FR": 1.00,
+        "TU": (0.50, 1.20),             # uno de los dos, ver la nota al pie
+        "TG": "gamma_TG",
+        "SE": "gamma_SE",
+        "EQ": COMBINACION_NO_PARTICIPA,
+        "BL": COMBINACION_NO_PARTICIPA,
+        "IC": COMBINACION_NO_PARTICIPA,
+        "CT": COMBINACION_NO_PARTICIPA,
+        "CV": COMBINACION_NO_PARTICIPA,
+    },
+    "Servicio I": {
+        "permanentes": {"max": 1.00, "min": 1.00},
+        "LS": 1.00,
+        "WA": {"max": 1.00, "min": 1.00},
+        "WS": 0.30,                     # el Manual; AASHTO 9a ed. da 1.00
+        "WL": 1.00,
+        "FR": 1.00,
+        "TU": (1.00, 1.20),
+        "TG": "gamma_TG",
+        "SE": "gamma_SE",
+        "EQ": COMBINACION_NO_PARTICIPA,
+        "BL": COMBINACION_NO_PARTICIPA,
+        "IC": COMBINACION_NO_PARTICIPA,
+        "CT": COMBINACION_NO_PARTICIPA,
+        "CV": COMBINACION_NO_PARTICIPA,
+    },
+    "Evento Extremo I": {
+        "permanentes": {"max": 1.00, "min": 1.00},
+        "LS": "gamma_EQ",               # la tabla imprime gamma_EQ, no un numero
+        "WA": {"max": 1.00, "min": 1.00},
+        "WS": COMBINACION_NO_PARTICIPA,
+        "WL": COMBINACION_NO_PARTICIPA,
+        "FR": 1.00,
+        "TU": COMBINACION_NO_PARTICIPA,
+        "TG": COMBINACION_NO_PARTICIPA,
+        "SE": COMBINACION_NO_PARTICIPA,
+        "EQ": {"max": 1.00, "min": 1.00},
+        "BL": COMBINACION_NO_PARTICIPA,
+        "IC": COMBINACION_NO_PARTICIPA,
+        "CT": COMBINACION_NO_PARTICIPA,
+        "CV": COMBINACION_NO_PARTICIPA,
+    },
+}
+
+# QUE SE TRANSCRIBE Y QUE NO, dicho aqui en vez de deducirse de la ausencia:
+# de la Tabla 2.4.5.3.1-1 estan las TRES filas que Sec. 9.2 nombra, con sus
+# CATORCE columnas completas. Las otras diez filas -- Resistencia II a V,
+# Evento Extremo II, Servicio II a IV, Fatiga I y II -- no estan porque la
+# hoja de ruta no las usa: no es una tabla podada, es que Sec. 9.2 elige tres
+# combinaciones y estas son esas tres. De la Tabla 2.4.5.3.1-2, en cambio,
+# estan las dieciocho filas, tambien las que el calculo no usa.
+TABLA_COMBINACIONES_COMPLETITUD = (
+    "PARCIAL POR FILAS, COMPLETA POR COLUMNAS: las tres combinaciones que "
+    "Sec. 9.2 nombra (Resistencia I, Servicio I, Evento Extremo I), con las "
+    "catorce columnas de la tabla. Las otras diez filas de la Tabla "
+    "2.4.5.3.1-1 no se transcriben porque ninguna fase del proyecto las "
+    "evalua")
+
+# Los pares {1.00, 1.00} no son una invencion: la tabla imprime UN 1.00 para
+# toda la columna de cargas permanentes (y para WA, y para EQ), o sea el mismo
+# factor sea cual sea el extremo. Se escribe en la forma de dos extremos que
+# usan los consumidores para que una fila de la Tabla -1 y una de la Tabla -2
+# se lean igual; el numero es el de la fuente y no hay eleccion detras.
+TABLA_COMBINACIONES_NOTA_EXTREMOS = (
+    "Donde la Tabla 2.4.5.3.1-1 imprime un solo 1.00 para la columna de "
+    "cargas permanentes, aqui figura {max 1.00, min 1.00}: es el MISMO "
+    "numero escrito en la forma de dos extremos con que se leen las filas de "
+    "la Tabla -2, no un par elegido")
+
+# gamma_EQ, el factor de la carga viva en Evento Extremo I: la tabla no trae
+# numero y la fuente NO ofrece un par a elegir. Cita literal, verificada:
+GAMMA_EQ_TEXTO = (
+    "AASHTO LRFD 9a ed., Art. 3.4.1, pag. impresa 3-19: 'The load factor for "
+    "live load in Extreme Event Load Combination I, gamma_EQ, shall be "
+    "determined on a project-specific basis.' El comentario C3.4.1 (pag. "
+    "impresa 3-10) agrega: 'Past editions of the Standard Specifications used "
+    "gamma_EQ = 0.0. This issue is not resolved. The possibility of partial "
+    "live load, i.e., gamma_EQ < 1.0, with earthquakes should be considered. "
+    "Application of Turkstra's rule for combining uncorrelated loads "
+    "indicates that gamma_EQ = 0.50 is reasonable for a wide range of values "
+    "of average daily truck traffic (ADTT).' O sea: el 0.0 es practica "
+    "HISTORICA de ediciones pasadas y el 0.50 una indicacion de "
+    "razonabilidad, no dos opciones tabuladas; y quien lo determina es el "
+    "PROYECTO ('project-specific basis'), no 'el propietario'")
 NUMERAL_SOBRECARGA_TRASDOS = "2.1.4.3.9, pag. 91"
 NUMERAL_ZAPATA_EN_TALUD = "2.8.1.3.1.2c, pags. 272-273"
 NUMERAL_K_H0 = "2.8.1.1.14.2"
@@ -342,3 +1358,40 @@ NUMERAL_CICLOPEO = "E.060 Art. 22.10, pags. 194-195"
 # El cambio es de clasificacion, no de uso: los tres seguian siendo referencia
 # que no gobierna el cabezal (Sec. 0.4 descarta el sismo de 475 anios de E.030
 # frente al PGA de Tr = 1000 anios del Manual de Puentes) y lo siguen siendo.
+
+
+# ===========================================================================
+# Constantes de REFERENCIA: transcritas del Anexo B, sin consumidor de calculo
+# ===========================================================================
+# Este archivo es la transcripcion literal del Anexo B, y el Anexo B trae mas
+# de lo que el script calcula. Trece de sus constantes no las lee ningun
+# modulo de produccion: son requisitos que el expediente tiene que cumplir
+# (densidad de calicatas, compactacion, limites de agresividad quimica) o
+# pisos normativos que el pipeline aplica por otra via.
+#
+# La lista existe porque sin ella las dos clases de constante se ven iguales
+# leyendo el archivo, y un revisor no puede saber si "sin consumidor"
+# significa "todavia no cableada" o "no le corresponde cablearse". Aqui
+# significa lo segundo, en las trece.
+#
+# Es documentacion, no configuracion: nadie la importa para calcular. Si
+# alguna se cablea, sale de esta lista en el mismo commit.
+CONSTANTES_DE_REFERENCIA = (
+    "DIAMETRO_MIN",              # el piso de 0.90 m entra por
+                                 # 'diametros_normalizados' (D_INICIO). Ver
+                                 # DIAMETRO_MIN_AMBITO: su numeral lo
+                                 # condiciona y exceptua a los cruces de canal
+    "DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO",   # recomendacion, solo TMC y
+                                 # solo selva alta: no aplica en costa
+    "LONG_MAX_CUNETA",           # Fase 10 recibe L_hidraulico declarado
+    "CBR_MIN_SUBRASANTE",        # requisito del paquete estructural vial
+    "COMPACTACION_CORONA",       # requisitos de ejecucion (EG-2013), sin
+    "COMPACTACION_CUERPO",       # columna en el CSV contra la que comparar
+    "CALICATAS_POR_KM",          # densidad de investigacion geotecnica:
+    "CALICATAS_POR_SENTIDO",     # gobierna la campana de campo, no el
+    "ESPACIAMIENTO_PERFIL_KM",   # dimensionamiento de la alcantarilla
+    "SPT_PROF_MIN",              # profundidad y paso del SPT que cerraria
+    "SPT_ESPACIAMIENTO",         # 'clase_sitio' y 'PERFIL_SUELO_PRESUNTO'
+    "SULFATOS",                  # agresividad quimica: la decide el EMS del
+    "CLORUROS_EXTERNOS",         # expediente, no este calculo
+)
