@@ -1418,7 +1418,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "MAT-O8). Viven ahora en 'D_max_catalogo', rotulados como "
                       "topes de catalogo",
         fuente="Series de diametro nominal de las normas de producto: ASTM "
-               "A760/A760M-10, Tabla 1 'Tamaños de tuberia' (150 a 3600 mm, en "
+               "A760/A760M-10, Tabla 1 'Tamaños de tuberia' (100 a 3600 mm, en "
                "escalones de 150 mm a partir de 900 mm); AASHTO M 170M-04, "
                "Tablas 1 a 5 (300 a 3600 mm); AASHTO M294 (serie de 150 mm). El "
                "piso de 0.90 m no sale de ellas sino del minimo normativo "
@@ -1546,53 +1546,60 @@ CRITERIOS: Dict[str, Criterio] = {
             #             ("outside diameter or width of the structure"),
             #             "interior" para ID ("inside diameter"), "nominal"
             #             para S ("diameter of pipe")
-            #   piso_m    el ">" de la tabla: minimo absoluto, en metros
-            #   raiz_pies rama "or sqrt(Bc)/8, whichever is greater" -- solo
-            #             la fila del concreto la tiene, y no es homogenea:
-            #             la tabla escribe Bc en PIES y por eso se evalua en
-            #             pies y se devuelve a metros (ver "pie_a_metro")
+            #   piso_m    el ">=" de la tabla: minimo absoluto, en metros
+            #
+            # Los tres divisores son adimensionales y las tres filas son
+            # homogeneas: la cobertura sale en la misma unidad que el diametro
+            # con que se entra. No hay conversion de unidades que hacer.
             "concreto_reforzado": {
                 # "Reinforced Concrete Pipe / Under unpaved areas or top of
-                # flexible pavement -- Bc/8 or sqrt(Bc)/8, whichever is
-                # greater, > 12.0 in."
+                # flexible pavement -- Bc/8 or B'c/8, whichever is greater,
+                # >= 12.0 in."
+                #
+                # POR QUE EL "whichever is greater" NO APARECE EN EL DATO. El
+                # segundo termino es B'c, que el Art. 12.6.6.3 define como
+                # "out-to-out vertical rise of pipe (ft)". En un conducto
+                # CIRCULAR la altura exterior de punta a punta ES el diametro
+                # exterior, de modo que B'c = Bc por geometria y el maximo de
+                # los dos terminos se reduce a Bc/8. El catalogo de Sec. 3.2
+                # es exclusivamente circular (Material.D es un diametro; la
+                # Familia C, de marco o multicelda, sale sin candidatos), asi
+                # que la reduccion vale para todo lo que este proyecto
+                # calcula. Para un tubo-arco o una seccion no circular B'c
+                # deja de ser Bc y hay que traer el segundo termino: queda
+                # anotado en `verificacion_pendiente`.
                 "no_pavimentado": {"divisor": 8.0, "sobre": "exterior",
-                                   "piso_m": 0.3048, "raiz_pies": True},
+                                   "piso_m": 0.3048},
                 "flexible": {"divisor": 8.0, "sobre": "exterior",
-                             "piso_m": 0.3048, "raiz_pies": True},
+                             "piso_m": 0.3048},
                 # "Under bottom of rigid pavement -- 9.0 in."
                 "rigido": {"divisor": None, "sobre": "exterior",
-                           "piso_m": 0.2286, "raiz_pies": False},
+                           "piso_m": 0.2286},
             },
             "tmc": {
-                # "Corrugated Metal Pipe / -- / S/8 > 12.0 in." Fila unica:
+                # "Corrugated Metal Pipe / -- / S/8 >= 12.0 in." Fila unica:
                 # la tabla no distingue condicion de pavimento para el metal
                 # corrugado, y por eso las tres condiciones repiten la misma
                 # fila en vez de inventarle dos que la tabla no trae.
                 "no_pavimentado": {"divisor": 8.0, "sobre": "nominal",
-                                   "piso_m": 0.3048, "raiz_pies": False},
+                                   "piso_m": 0.3048},
                 "flexible": {"divisor": 8.0, "sobre": "nominal",
-                             "piso_m": 0.3048, "raiz_pies": False},
+                             "piso_m": 0.3048},
                 "rigido": {"divisor": 8.0, "sobre": "nominal",
-                           "piso_m": 0.3048, "raiz_pies": False},
+                           "piso_m": 0.3048},
             },
             "hdpe": {
-                # "Thermoplastic Pipe / Under unpaved areas -- ID/8 > 12.0 in.
-                #                     / Under paved roads  -- ID/2 > 24.0 in."
+                # "Thermoplastic Pipe / Under unpaved areas -- ID/8 >= 12.0 in.
+                #                     / Under paved roads  -- ID/2 >= 24.0 in."
                 # Las dos condiciones pavimentadas caen en la MISMA fila: la
                 # tabla dice "paved roads" sin separar flexible de rigido.
                 "no_pavimentado": {"divisor": 8.0, "sobre": "interior",
-                                   "piso_m": 0.3048, "raiz_pies": False},
+                                   "piso_m": 0.3048},
                 "flexible": {"divisor": 2.0, "sobre": "interior",
-                             "piso_m": 0.6096, "raiz_pies": False},
+                             "piso_m": 0.6096},
                 "rigido": {"divisor": 2.0, "sobre": "interior",
-                           "piso_m": 0.6096, "raiz_pies": False},
+                           "piso_m": 0.6096},
             },
-            # Definicion exacta de la unidad (NIST): 1 ft = 0.3048 m. No es un
-            # valor de proyecto ni una constante fisica: esta aqui, dentro de
-            # la transcripcion, porque la rama sqrt(Bc)/8 NO es homogenea y
-            # solo tiene sentido con Bc en pies. Sin ella la fila del concreto
-            # no se puede pasar a SI sin inventar un coeficiente.
-            "pie_a_metro": 0.3048,
         },
         etiqueta="C",
         concepto="Cobertura minima sobre la clave del conducto, por material y "
@@ -1654,18 +1661,34 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
                "Seccion 12 'Buried Structures and Tunnel Liners', "
                "Art. 12.6.6.3 'Minimum Cover' y Tabla 12.6.6.3-1, pag. "
-               "impresa 12-22 (PDF 1660 de "
+               "impresa 12-22 (indice de pagina 1659 del PDF, 0-based, en "
                "normas/AASHTO.LRFD.Bridge.Design.Specifications_9th.Edition."
-               "2020.pdf). Nomenclatura del propio articulo: 'S = diameter of "
-               "pipe (in.)', 'Bc = outside diameter or width of the structure "
-               "(ft)', 'ID = inside diameter (in.)'. Filas transcritas, "
-               "literales: Corrugated Metal Pipe 'S/8 > 12.0 in.'; "
-               "Thermoplastic Pipe 'Under unpaved areas ID/8 > 12.0 in.' y "
-               "'Under paved roads ID/2 > 24.0 in.'; Reinforced Concrete Pipe "
-               "'Under unpaved areas or top of flexible pavement: Bc/8 or "
-               "sqrt(Bc)/8, whichever is greater, > 12.0 in.' y 'Under bottom "
-               "of rigid pavement: 9.0 in.'. Nota al pie: 'Minimum cover taken "
-               "from top of rigid pavement or bottom of flexible pavement'. "
+               "2020.pdf). Nomenclatura del propio articulo, las CUATRO "
+               "definiciones: 'S = diameter of pipe (in.)', 'Bc = outside "
+               "diameter or width of the structure (ft)', \"Bc' = out-to-out "
+               "vertical rise of pipe (ft)\", 'ID = inside diameter (in.)'. "
+               "Filas transcritas, literales, leidas sobre la celda RENDERIZADA "
+               "y no sobre la extraccion de texto: Corrugated Metal Pipe "
+               "'S/8 >= 12.0 in.'; Thermoplastic Pipe 'Under unpaved areas "
+               "ID/8 >= 12.0 in.' y 'Under paved roads ID/2 >= 24.0 in.'; "
+               "Reinforced Concrete Pipe 'Under unpaved areas or top of "
+               "flexible pavement: Bc/8 or B'c/8, whichever is greater, "
+               ">= 12.0 in.' y 'Under bottom of rigid pavement: 9.0 in.'. Nota "
+               "al pie: 'Minimum cover taken from top of rigid pavement or "
+               "bottom of flexible pavement'. Cuerpo del articulo: 'The "
+               "minimum cover, including a well-compacted granular subbase and "
+               "base course, shall not be less than that specified in Table "
+               "12.6.6.3-1'. "
+               "POR QUE SE INSISTE EN 'RENDERIZADA': el segundo termino de la "
+               "fila del concreto se extrae como 'Bc\\uf0a2' -- la prima de "
+               "B'c es un glifo de SymbolMT -- y la ficha NOR-VAC-01 de la "
+               "auditoria normativa lo leyo como una RAIZ, 'sqrt(Bc)/8'. Esta "
+               "transcripcion lo copio de la ficha en su primera version, sin "
+               "abrir el PDF, y de ahi salio una formula que no existe, un "
+               "argumento de homogeneidad inventado y un factor de conversion "
+               "pie-metro que no hacia falta. No hay radical en la tabla: la "
+               "celda dice 'Bc/8 or B'c/8'. Es exactamente el defecto que este "
+               "cluster existe para eliminar, cometido dentro de el. "
                "Conversiones a SI: 12.0 in = 0.3048 m, 9.0 in = 0.2286 m, "
                "24.0 in = 0.6096 m (1 in = 0.0254 m exacto). "
                "BUSQUEDA EN EL CORPUS PERUANO, agotada fuente por fuente y "
@@ -1719,7 +1742,13 @@ CRITERIOS: Dict[str, Criterio] = {
                         "desglose del paquete estructural, que Sec. 1.2 no "
                         "trae como columna",
         vacio_verificado="manifiesto_citas.md Sec. 14.a",
-        verificacion_pendiente="Las filas que el catalogo de este proyecto NO "
+        verificacion_pendiente="EL SEGUNDO TERMINO DE LA FILA DEL CONCRETO "
+                               "(B'c/8) no esta en el dato: se reduce a Bc/8 "
+                               "porque el catalogo es circular y ahi B'c = Bc. "
+                               "Si algun dia entra un tubo-arco o una seccion "
+                               "no circular, la reduccion deja de valer y hay "
+                               "que traer el termino. "
+                               "Las filas que el catalogo de este proyecto NO "
                                "usa quedaron fuera de la transcripcion "
                                "(Spiral Rib, Structural Plate, Fiberglass, "
                                "Steel-Reinforced Thermoplastic, Long-Span, "
@@ -1801,7 +1830,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "declaraba conservador: es al reves. Subestimar el volumen "
                       "desplazado subestima la carga DESestabilizante, y el "
                       "conservadurismo declarado apunta al lado contrario del "
-                      "real (-31.6 % en U para D = 0.90 m de concreto). "
+                      "real: con t = 0.100 m en un tubo de concreto de "
+                      "D = 0.90 m, D_ext = 1.10 m y el U anterior queda un "
+                      "33.1 % por debajo (0.90^2/1.10^2 - 1 = -0.331). La "
+                      "ficha MAT-D3 publica -31.6 % porque supone "
+                      "OD = 1.088 m; la cifra que vale en el codigo es la de "
+                      "su propia convencion, D_ext = D + 2t. "
                       "POR QUE NO TIENE VALOR Y BLOQUEA: porque el espesor no "
                       "es un dato unico por material, es una CONSECUENCIA de la "
                       "clase o calibre que se especifique, y esa seleccion es "

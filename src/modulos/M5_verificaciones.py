@@ -653,9 +653,10 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
 
     U y EV se calculan sobre el diametro EXTERIOR, no sobre el interior. El
     num. 2.4.3.8.2 define la subpresion sobre el volumen desplazado, que es el
-    exterior; usar el interior la subestimaba un 31.6 % para D = 0.90 m de
-    concreto, y el docstring de M8 declaraba esa aproximacion "del lado
-    conservador" cuando es exactamente la contraria (MAT-D3).
+    exterior; con t = 0.100 m en un tubo de concreto de D = 0.90 m
+    (D_ext = 1.10 m) usar el interior la subestimaba un 33.1 %, y el docstring
+    de M8 declaraba esa aproximacion "del lado conservador" cuando es
+    exactamente la contraria (MAT-D3).
 
     DC = 0: no suma el peso propio del conducto (ver "Por que el peso propio
     del conducto no entra en V7" en el docstring de M8_estructural). Omitirlo

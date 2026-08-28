@@ -240,7 +240,15 @@ from tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_7A = "Sec. 7.A"
 NUMERAL_7B = "Sec. 7.B"
-NUMERAL_G1 = "Sec. 7.A (recubrimiento EG-2013 / resguardo Sec. 5.1)"
+# El recubrimiento NO sale solo de EG-2013, y decir que si es la atribucion
+# falsa que NOR-VAC-01 denuncia: el EG-2013 fija la altura minima de relleno
+# unicamente para HDPE. Este string es lo que M11 imprime en la columna
+# "numeral" de la fila G1, o sea lo unico que el revisor ve de esa
+# verificacion, y con la version anterior una fila de CONCRETO decia
+# "recubrimiento EG-2013" al lado de criterio_aplicado = cobertura_minima_aashto.
+NUMERAL_G1 = ("Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo "
+              "HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / "
+              "resguardo Sec. 5.1)")
 NUMERAL_G2 = "Sec. 7.B (cotas amarradas al fondo del receptor)"
 
 CRITERIO_TALUD = "talud_terraplen"
@@ -256,7 +264,6 @@ _DIAMETRO_DE_LA_FILA = {
     "nominal": "D_int",      # S, "diameter of pipe" -- el nominal del catalogo,
                              # que en este proyecto es el interior (Sec. 3.2)
 }
-PIE_A_METRO = "pie_a_metro"
 
 
 # ---------------------------------------------------------------------------
@@ -305,10 +312,13 @@ def cobertura_minima_aashto(*, material: Material, D: float) -> float:
 
         cobertura = max( D_de_la_fila / divisor , piso de la fila )
 
-    y en la fila del concreto, ademas, la rama "or sqrt(Bc)/8, whichever is
-    greater", que la tabla escribe con Bc en PIES -- no es homogenea y por eso
-    se evalua en pies y se devuelve a metros con la conversion exacta que el
-    propio criterio declara.
+    Las tres filas son homogeneas -- los divisores son adimensionales -- de
+    modo que no hay ninguna conversion de unidades que hacer. El "or B'c/8,
+    whichever is greater" de la fila del concreto tampoco aparece aqui: B'c es
+    la "out-to-out vertical rise of pipe" del propio articulo, que en un
+    conducto CIRCULAR es el diametro exterior, o sea Bc. El maximo de dos
+    terminos iguales es uno solo. Ver la nota del criterio: para una seccion
+    no circular la reduccion deja de valer.
 
     QUE DIAMETRO ENTRA lo dice la nomenclatura del articulo, y no es el mismo
     en las tres filas: Bc ("outside diameter or width of the structure") en el
@@ -350,9 +360,6 @@ def cobertura_minima_aashto(*, material: Material, D: float) -> float:
     candidatos = [fila["piso_m"]]
     if fila["divisor"] is not None:
         candidatos.append(D_fila / fila["divisor"])
-        if fila["raiz_pies"]:
-            pie = tabla[PIE_A_METRO]
-            candidatos.append(math.sqrt(D_fila / pie) * pie / fila["divisor"])
     return max(candidatos)
 
 
@@ -386,6 +393,19 @@ def altura_recubrimiento(*, material: Material, D: float) -> float:
     cerrada tras agotar tres fuentes y la cuarta -- AASHTO LRFD Sec. 12 --
     estaba en normas/ y es la que el propio proyecto adopta. El criterio
     'h_relleno_min_concreto_tmc' se retiro.
+
+    LO QUE NO ES UNIFORME, Y HAY QUE DECIRLO. "El numero era corto" vale en
+    ocho de las nueve combinaciones material x condicion, no en las nueve. En
+    CONCRETO bajo PAVIMENTO RIGIDO la tabla pide 9.0 in = 0.2286 m, que es
+    MENOS que el 0.30 m retirado. Frente al estado anterior, el balance de la
+    correccion en esa casilla es exactamente `t - 0.0714 m`: con el espesor
+    de la corrida de pruebas (t = 0.100) la rasante minima sube 0.029 m, pero
+    con un t declarado por debajo de 0.0714 m BAJARIA. No es un descuido: son
+    dos cambios independientes -- el umbral y el punto desde donde se mide --
+    y en esa casilla apuntan en sentidos opuestos. Quien declare
+    'espesor_pared_conducto' por debajo de ese valor para concreto tiene que
+    saber que esta relajando la exigencia respecto de lo que el expediente
+    venia aplicando, y decirlo en la memoria.
 
     Se detiene con `CriterioPendienteError` en 'condicion_pavimento' (que fila
     de la tabla) y en 'espesor_pared_conducto' (el Bc del concreto).
@@ -511,9 +531,12 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
     manda el recubrimiento -- en los tres materiales, porque la Tabla
     12.6.6.3-1 entra en los tres (ver `criterio_recubrimiento`).
 
-    ADEMAS, esta verificacion ya no se puede evaluar sin 'talud_terraplen'
-    pero tampoco sin 'espesor_pared_conducto' ni 'condicion_pavimento': lo
-    dice el docstring del modulo, y este parrafo decia lo contrario.
+    Sigue sin necesitar 'talud_terraplen' -- solo lee campos de
+    `TamizadoRasante`, y el tamizado nunca llama a `proyeccion_taludes` --,
+    pero eso ya no la hace evaluable "hoy mismo": el tamizado que la alimenta
+    se detiene ahora en 'espesor_pared_conducto' y en 'condicion_pavimento'.
+    Lo que cambio no es esta funcion sino lo que hay que declarar antes de
+    llegar a ella.
     """
     return Verificacion(
         cumple=tamizado.factible,

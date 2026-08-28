@@ -171,6 +171,7 @@ Uso
 
 from __future__ import annotations
 
+import numbers
 from typing import Any, Optional, Tuple, Union
 
 import criterios_adoptados as ca
@@ -310,6 +311,15 @@ def espesor_pared(material: Material) -> float:
             f"inalcanzable mientras '{CRITERIO_ESPESOR_PARED}' este vacio"
         )
     ca.valor(CRITERIO_ESPESOR_PARED)          # registra el uso para M11
+    if not isinstance(material.espesor_pared, numbers.Real):
+        raise DatoInvalidoError(
+            campo=CRITERIO_ESPESOR_PARED, valor=material.espesor_pared,
+            motivo="el espesor de pared declarado para "
+                   f"'{material.tipo.value}' no es un numero. Este criterio "
+                   "se declara como un dict con un espesor en metros por "
+                   "material: {'concreto_reforzado': ..., 'tmc': ..., "
+                   "'hdpe': ...}",
+        )
     return material.espesor_pared
 
 
@@ -402,6 +412,16 @@ def catalogo(material: MaterialLike) -> Material:
         v_max_rango = _valor_si_declarado(CRITERIO_V_MAX[tipo])
 
     espesores = _valor_si_declarado(CRITERIO_ESPESOR_PARED)
+    if espesores is not None and not hasattr(espesores, "get"):
+        # Una declaracion mal formada es problema del EXPEDIENTE, no del
+        # programa: sin esta guardia un escalar declarado desde la GUI --
+        # que solo sabe ofrecer float o str -- reventaba aqui con TypeError.
+        raise DatoInvalidoError(
+            campo=CRITERIO_ESPESOR_PARED, valor=espesores,
+            motivo="se declaro un valor unico donde el criterio espera un "
+                   "espesor por material: {'concreto_reforzado': ..., "
+                   "'tmc': ..., 'hdpe': ...}, en metros",
+        )
 
     return Material(
         tipo=tipo,
@@ -416,7 +436,7 @@ def catalogo(material: MaterialLike) -> Material:
         # [N] directo de EG-2013 508.07 y SOLO para HDPE: los otros dos
         # materiales no tienen minimo en el EG-2013, y su None significa eso.
         h_relleno_min_eg2013=H_RELLENO_MIN[_EG2013_CLAVE[tipo]],
-        espesor_pared=None if espesores is None else espesores[tipo.value],
+        espesor_pared=None if espesores is None else espesores.get(tipo.value),
         seccion_eg2013=SECCION_EG2013[tipo.value],
     )
 

@@ -119,11 +119,16 @@ def test_espesor_paquete_invertido_es_dato_invalido():
     assert exc.value.campo == "cota_subrasante"
 
 
-def test_cota_clave_es_la_entrada_mas_el_diametro_exterior(hdpe):
+def test_cota_clave_llega_a_la_superficie_exterior_del_tubo(hdpe):
     """
-    MAT-D4: la clave es la FISICA -- superficie exterior --, que es desde
-    donde EG-2013 508.07 mide el relleno. 42.10 + 1.50 + 0.05 = 43.65, no
-    43.60.
+    MAT-D4: la clave es la FISICA -- la generatriz exterior superior --, que
+    es desde donde EG-2013 508.07 mide el relleno. 42.10 + 1.50 + 0.05 =
+    43.65, no 43.60.
+
+    El espesor entra UNA vez, no dos: la cota de entrada es el invert
+    INTERIOR, de modo que la generatriz exterior superior queda a D_int + t
+    sobre ella. Sumar D_ext (42.10 + 1.60 = 43.70) seria contar el espesor
+    del fondo, que esta por DEBAJO del invert.
     """
     punto = _punto(cota_terreno=42.10)
     assert (cota_clave(punto=punto, material=hdpe, D=1.50)
