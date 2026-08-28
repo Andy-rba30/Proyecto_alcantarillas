@@ -84,10 +84,15 @@ def _punto(**cambios) -> PuntoCritico:
     return PuntoCritico(**base)
 
 
-def _resultado(*, HW_entrada=0.50) -> ResultadoHidraulico:
+def _resultado(*, HW_entrada=0.50, S=0.006) -> ResultadoHidraulico:
+    """
+    `S` es la pendiente con que corrio el diseño y la que 7.B usa: por defecto
+    la misma que `_punto()` trae en `S_cauce`, que es el caso normal (nadie
+    declaro otra). Se puede pasar distinta para el punto que si la declara.
+    """
     return ResultadoHidraulico(
         y_normal=0.60, y_critico=0.40,
-        V_erosion=1.5, V_sedimentacion=1.2, Q=1.0,
+        V_erosion=1.5, V_sedimentacion=1.2, Q=1.0, S=S,
         HW_entrada=HW_entrada, HW_salida=0.20,
         control_gobernante=ControlGobernante.ENTRADA,
     )
@@ -308,8 +313,8 @@ def test_la_rasante_minima_de_7A_hace_cumplir_V4_al_limite(hdpe):
     Corazon del corte declarado en Sec. 7.B. La condicion de resguardo de 7.A
     es V4 despejada en la rasante:
 
-        HW <= (cota rasante - e_paq) - resguardo
-        cota rasante >= HW + resguardo + e_paq
+        cota entrada + HW <= (cota rasante - e_paq) - resguardo
+        cota rasante >= cota entrada + HW + resguardo + e_paq
 
     Se pone la rasante EXACTAMENTE en la minima que devuelve el tamizado (con
     el HW gobernando) y se comprueba que V4 cumple, al limite y sin holgura.
@@ -458,7 +463,9 @@ def test_7B_con_longitud_dada_arma_la_geometria_y_las_dos_verificaciones(hdpe):
     assert geo.S_conducto == pytest.approx(punto.S_cauce)
     assert geo.caida == pytest.approx(0.006 * 20.0)
     assert geo.cota_salida == pytest.approx(41.98)
-    assert geo.delta_rasante_cm == pytest.approx(0.0)
+    # None y no 0.0: la rasante alcanza, de modo que no hay delta que pedir
+    # (ver `CompatibilidadGeometrica.delta_rasante_cm`).
+    assert geo.delta_rasante_cm is None
     geo.exigir_factible()                       # no lanza
 
 

@@ -265,7 +265,7 @@ class CondicionRasante(str, Enum):
     Cual de las dos condiciones de Sec. 7.A fija la cota de rasante minima:
 
         cota rasante >= max( cota clave + h_rec + e_paq ,
-                             HW + resguardo(CBR) + e_paq )
+                             cota entrada + HW + resguardo(CBR) + e_paq )
 
     No es una etiqueta cosmetica: dice que hay que mover para bajar la rasante
     minima. Si gobierna RECUBRIMIENTO, el que manda es el conducto (bajar el
@@ -275,7 +275,7 @@ class CondicionRasante(str, Enum):
     proyectista corrige la variable que no gobierna.
     """
     RECUBRIMIENTO = "recubrimiento"   # cota clave + h_rec + e_paq
-    RESGUARDO = "resguardo"           # HW + resguardo(CBR) + e_paq
+    RESGUARDO = "resguardo"           # cota entrada + HW + resguardo + e_paq
 
 
 class CondicionAnalisis(str, Enum):
@@ -778,6 +778,21 @@ class ResultadoHidraulico:
     HW_entrada y HW_salida son cargas sobre el fondo de la entrada, en metros.
     La conversion a cota (msnm) la hace M7 sumando la cota de entrada.
 
+    `Q` y `S` son LOS DATOS CON QUE CORRIO EL DISENO, no los de la fila del
+    CSV, y viajan aqui por el mismo motivo: ninguno de los dos sale siempre de
+    su columna. Sec. 2.3 pone el caudal de la Familia B en el drenaje
+    longitudinal y el de la C en el canal, y el punto cuya rasante no sigue el
+    cauce declara su pendiente aparte ('S_conducto' de la CLI). Quien
+    consuma este resultado -- la Fase 6, el tamizado de 7.A, la memoria --
+    tiene que poder leer con QUE numeros se resolvio, sin volver a decidirlo.
+
+    `S` entro en el tipo al cerrarse MAT-D9: la Fase 7 la re-resolvia por su
+    cuenta contra `punto.S_cauce` y caia en la pendiente del cauce aunque el
+    diseno hubiera corrido con otra, de modo que un mismo punto tenia dos
+    pendientes -- una en el HW y otra en la cota de salida -- sin que nada lo
+    dijera. No es un dato nuevo: es el mismo que M3 y M4 ya recibieron, hecho
+    visible en su salida para que no se pueda elegir dos veces.
+
     `h_o_fuera_de_rango` / `h_o_requiere_cautela`: HDS-5 acota el uso de
     h_o = (dc + D)/2 con dos limites sobre HW/D, y los escribe condicionados a
     que el control de salida gobierne (num. 3.3.3, pag. impresa 3.24). Aqui
@@ -791,6 +806,10 @@ class ResultadoHidraulico:
     V_erosion: float                      # m/s - con n_min (Sec. 4.1)
     V_sedimentacion: float                # m/s - con n_max (Sec. 4.1)
     Q: float                              # m3/s - caudal de diseno del punto
+    S: float                              # m/m - pendiente con que corrio el
+                                          # diseno (la del cauce salvo que el
+                                          # punto declare la suya): la MISMA
+                                          # que usa 7.B (MAT-D9)
     HW_entrada: float                     # m  - control de entrada (Sec. 4.2)
     HW_salida: float                      # m  - control de salida (Sec. 4.3)
     control_gobernante: ControlGobernante
@@ -910,7 +929,7 @@ class TamizadoRasante:
     rasante actual para alcanzarla.
 
         cota rasante >= max( cota clave + h_rec + e_paq ,
-                             HW + resguardo(CBR) + e_paq )
+                             cota entrada + HW + resguardo(CBR) + e_paq )
 
     Se guardan las DOS cotas por separado, no solo el maximo, porque la
     memoria tiene que poder mostrar por cuanto quedo descartada la condicion
@@ -946,7 +965,8 @@ class TamizadoRasante:
     cota_rasante_min: float               # msnm - el maximo de las dos
     cota_rasante_actual: float            # msnm - la del CSV (Sec. 1.1)
     cota_por_recubrimiento: float         # msnm - cota clave + h_rec + e_paq
-    cota_por_resguardo: float             # msnm - HW + resguardo(CBR) + e_paq
+    cota_por_resguardo: float             # msnm - cota entrada + HW
+                                          #        + resguardo(CBR) + e_paq
     condicion_gobernante: CondicionRasante
     cota_entrada: float                   # msnm - fondo de la entrada
     cota_clave: float                     # msnm - cota entrada + D + espesor de pared
@@ -1067,6 +1087,12 @@ class CompatibilidadGeometrica:
     de la Fase 5: son de otra fase y de otro modulo. La lista es corta a
     proposito -- ver "Por que 7.B solo trae dos verificaciones" en el
     docstring de M7.
+
+    `S_conducto` es la pendiente CON LA QUE CORRIO EL DISENO
+    (`ResultadoHidraulico.S`), no una que esta fase vuelva a elegir. Sec. 7.B
+    dice que la pendiente de la alcantarilla es la del cauce, y esa sigue
+    siendo la regla; lo que ya no puede pasar es que el punto que declara la
+    suya la use en el HW y no en la cota de salida (MAT-D9).
     """
 
     punto: PuntoCritico
@@ -1076,7 +1102,9 @@ class CompatibilidadGeometrica:
     proyeccion_taludes: float             # m - suma de los dos taludes
     factor_esviaje: float                 # adimensional - 1/cos(esviaje)
     altura_terraplen: float               # m - cota rasante - cota terreno
-    S_conducto: float                     # m/m - la del cauce (Sec. 7.B)
+    S_conducto: float                     # m/m - la del diseno hidraulico
+                                          # (`ResultadoHidraulico.S`), que es
+                                          # la del cauce salvo declaracion
     cota_entrada: float                   # msnm
     cota_salida: float                    # msnm - cota entrada - S*L
     caida: float                          # m  - S*L
@@ -1094,11 +1122,27 @@ class CompatibilidadGeometrica:
         return not self.verificaciones_incumplidas
 
     @property
-    def delta_rasante_cm(self) -> float:
+    def delta_rasante_cm(self) -> Optional[float]:
         """
-        Cuanto hay que subir la rasante, en centimetros. 0.0 cuando la rasante
-        ya alcanza: el numero existe siempre, tambien cuando el punto cumple.
+        Cuanto hay que subir la rasante, en centimetros, o None cuando subirla
+        no es el remedio.
+
+        Es el delta del TAMIZADO, o sea el de G1, y solo existe cuando G1 es
+        la que falla. Si la rasante alcanza y lo que incumple es G2 -- la cota
+        de salida contra el fondo del receptor --, subir la rasante NO lo
+        arregla: G2 se corrige con la pendiente, con la longitud o con la cota
+        del receptor. Por eso aqui va None y no 0.0, que es la misma regla que
+        `exigir_factible` ya aplicaba al construir la excepcion.
+
+        Devolvia 0.0 SIEMPRE, y eso hacia que `M11_reporte` escribiera
+        "Requiere subir la rasante 0.00 cm" en el punto cuya salida queda
+        enterrada bajo el receptor -- una instruccion vacia en el sitio donde
+        el revisor busca el remedio. El caso era inalcanzable mientras 7.B
+        corriese con la pendiente del cauce en vez de la del diseño (MAT-D9);
+        al cerrarse ese hallazgo dejo de serlo.
         """
+        if self.tamizado.factible:
+            return None
         return self.tamizado.delta_rasante_cm
 
     def exigir_factible(self) -> None:

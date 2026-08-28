@@ -128,6 +128,10 @@ PATRON_HOJA_RUTA = "hoja_de_ruta_alcantarillas_v*.md"
 # mueve ningun resultado del calculo.
 FMT_2 = "{:.2f}"
 FMT_3 = "{:.3f}"
+# Cuatro decimales para la PENDIENTE del diseño: con tres, una S de 0.0006
+# se imprime 0.001 y la caida S*L de la Fase 7 deja de recomputarse desde la
+# memoria, que es justo lo que esa fila existe para permitir (MAT-D9).
+FMT_4 = "{:.4f}"
 VACIO = "&ndash;"
 MARCA_CUMPLE = "cumple"
 MARCA_INCUMPLE = "NO cumple"
@@ -741,8 +745,18 @@ def _tabla_diseno(informe: Any) -> str:
                    f"(tope de CATALOGO adoptado: "
                    f"{_num(material.D_max, FMT_2)} m &mdash; "
                    f"{_esc(material.D_max_de_catalogo)})")]),
+        # Q y S son los del DISEÑO, no los de la columna del CSV: la Familia B
+        # y la C traen su propio caudal (Sec. 2.3) y el punto que no sigue el
+        # cauce declara su pendiente. La S iba SIN imprimir y la memoria
+        # quedaba sin poder recomputar la caida ni la cota de salida de la
+        # Fase 7: la unica pendiente del entregable era la columna S_cauce del
+        # bloque de datos de partida, que en esos puntos NO es la del diseño
+        # (MAT-D9). Va aqui, al lado de Q, por la misma razon que Q.
         _fila([_td("<b>Hidraulica</b>"),
-               _td(f"Q = {_num(hidraulica.Q)} m3/s &middot; y<sub>n</sub> = "
+               _td(f"Q = {_num(hidraulica.Q)} m3/s &middot; S = "
+                   f"{_num(hidraulica.S, FMT_4)} m/m (la del diseño: la del "
+                   "cauce salvo que el punto declare la suya) &middot; "
+                   f"y<sub>n</sub> = "
                    f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
                    f"{_num(hidraulica.y_critico)} m &middot; "
                    f"V<sub>erosion</sub> = "
@@ -857,8 +871,17 @@ def _bloques_fases_finales(informe: Any) -> str:
     if informe.geometria is not None:
         g = informe.geometria
         t = g.tamizado
-        estado = ('<span class="cumple">compatible</span>' if g.factible
-                  else '<span class="incumple">no compatible</span>')
+        # DOS estados y no uno. `g.factible` es el de 7.B ENTERA (G1 y G2) y
+        # `t.factible` el del tamizado de 7.A (solo G1): rotular el primero
+        # como "Tamizado 7.A" decia "el tamizado no compatible" en el punto
+        # cuyo tamizado si compatible y lo que falla es la cota de salida, y
+        # el revisor iba a corregir la rasante, que no es el remedio de G2.
+        estado_7b = ('<span class="cumple">compatible</span>' if g.factible
+                     else '<span class="incumple">no compatible</span>')
+        estado_7a = ('<span class="cumple">compatible</span>' if t.factible
+                     else '<span class="incumple">no compatible</span>')
+        # None cuando la rasante alcanza: subirla no arregla un G2 incumplido
+        # (ver `CompatibilidadGeometrica.delta_rasante_cm`).
         delta = ("" if g.delta_rasante_cm is None else
                  f" Requiere subir la rasante {_num(g.delta_rasante_cm, FMT_2)} cm.")
         # La cota de entrada NO es un dato del CSV: sale de la regla que el
@@ -873,8 +896,9 @@ def _bloques_fases_finales(informe: Any) -> str:
             f"<code>{_esc(CRITERIO_ORIGEN_COTA_ENTRADA)}</code>: no es cota "
             "medida) y de salida "
             f"{_num(g.cota_salida)} msnm (caida "
-            f"{_num(g.caida)} m), num. {_esc(g.numeral)}. Tamizado 7.A: "
-            f"{estado}, gobierna la condicion "
+            f"{_num(g.caida)} m), num. {_esc(g.numeral)}. Compatibilidad "
+            f"7.B (G1 y G2): {estado_7b}. Tamizado 7.A (G1): "
+            f"{estado_7a}, gobierna la condicion "
             f"<b>{_esc(t.condicion_gobernante.value)}</b> "
             f"(criterio <code>{_esc(t.criterio_gobernante)}</code>).{delta}</p>"
             f'<div class="nota"><p>{_esc(t.mensaje)}</p></div>')

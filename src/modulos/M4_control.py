@@ -741,6 +741,12 @@ def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
         V_erosion=normal.V_erosion,
         V_sedimentacion=normal.V_sedimentacion,
         Q=Q,
+        # Q y S salen en el resultado porque son los datos CON QUE SE
+        # RESOLVIO, no los de la columna: la Familia B y la C traen su propio
+        # caudal (Sec. 2.3) y el punto que no sigue el cauce declara su
+        # pendiente. La Fase 7 los lee de aqui en vez de volver a elegirlos
+        # (MAT-D9).
+        S=S,
         HW_entrada=entrada.HW,
         HW_salida=salida.HW,
         control_gobernante=control,

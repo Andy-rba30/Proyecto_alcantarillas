@@ -477,7 +477,7 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 | **V2** | Velocidad mínima | **V ≥ 0.25 m/s** | [N] 4.1.1.3.6, pág. 75 |
 | **V2b** | Sedimentación / colmatación | Material sólido de arrastre + **acceso de mantenimiento en planos** | [N] + [A] |
 | **V3** | Velocidad máxima | **Solo techo admisible.** Concreto **V ≤ 6.0 m/s**; ladrillo con concreto **V ≤ 3.5**; mampostería de piedra **V ≤ 2.0**. El par de la Tabla Nº 10 es un rango de valores MÁXIMOS según calidad del revestimiento, **no** un piso y un techo: el extremo inferior es el máximo admisible del acabado más pobre, y V3 no lo exige como mínimo. El piso universal de autolimpieza es **V2** (0.25 m/s). **TMC y HDPE: PPI/FHWA, valor por extraer** | [N] Tabla Nº 10, num. 4.1.1.3.6, pág. 76 / [C] |
-| **V4** | Carga a la entrada HW | **HW ≤ cota de subrasante − resguardo(CBR)** | **[N→]** ver 5.1 |
+| **V4** | Carga a la entrada HW | **cota de entrada + HW ≤ cota de subrasante − resguardo(CBR)** — *corregido desde* «HW ≤ cota de subrasante − resguardo(CBR)», que comparaba una **carga** con una **cota** (`MAT-O5`); ver la nota de datum en 5.1 | **[N→]** ver 5.1 |
 | **V4b** | Relación HW/D | 1.2 – 1.5 | **[A]** — *corregido desde `[C]`.* El HDS-5 **no fija** HW/D: su num. 2.2.5 d) «Agency Constraints», pág. impresa **2.10** (la v8 citaba la 2.14, que trata de espolones de escombros y seguridad vial) **describe** lo que imponen las agencias viales de EE. UU. — «The allowable HW/D ratio varies throughout the country, but commonly ranges from 1.0 to 1.5» — y en el Perú la agencia es el MTC, que no fija ninguno. Elegir 1.5, que es el extremo **menos restrictivo**, es adopción del proyectista. **No implementada:** ver `M5.verificaciones_no_evaluadas()`. Ref. `NOR-HDS-02`, `MAT-D2`, `SIS-A-02` |
 | **V5** | Remanso aguas arriba | Embalse dentro del **derecho de vía**, sin afectación a terceros ni a faja marginal | [N] DG-2018 + Ley 29338 |
 | **V6** | Material sólido de arrastre | Con palizada: sección única mayor | [N] |
@@ -496,7 +496,13 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 | 3 – 6 % | Insuficiente | **1.00 m** |
 | < 3 % | Inadecuada | **1.20 m** |
 
-> **ADVERTENCIA DE APLICACIÓN.** El numeral regula la separación frente a la **napa freática** (nivel permanente), **no** frente a un nivel transitorio de avenida. Aplicarlo al HW es una **extensión por analogía** y se declara como **[N→]**.
+> **NOTA DE DATUM — los dos términos de V4 son NIVELES** (`MAT-O5`, `MAT-O6`). Esta hoja escribía V4 como «HW ≤ cota de subrasante − resguardo» y la segunda condición de 7.A como «HW + resguardo + e_paq», poniendo a **HW** —que es una **carga en metros sobre el fondo de la entrada** (§4.2/§4.3)— del mismo lado de la desigualdad que una **cota en msnm**. Leído literal no es conservador ni no conservador: es **dimensionalmente incoherente**, y se cumple siempre (0.5 ≤ 43.25). El código nunca lo escribió así —`M5.v4_carga_entrada` y `M7.tamizado_rasante` suman la cota de entrada de `M5.cota_entrada_supuesta`—, de modo que **el defecto era solo documental y está corregido en esta hoja**: V4 y la segunda condición de 7.A llevan ahora el sumando `cota de entrada` explícito.
+>
+> La forma nivel-contra-nivel es además la del numeral, verificada contra el PDF (Manual de Suelos, **num. 4.5.4, pág. impresa 42**): *«El nivel superior de la sub rasante debe quedar encima del nivel de la napa freática como mínimo a 0.60 m cuando se trate de una sub rasante excelente - muy buena (CBR ≥ 20 %); a 0.80 m … buena - regular (6% ≤ CBR < 20%); a 1.00 m … Insuficiente (3% ≤ CBR < 6%); y, a 1.20 m … inadecuada (CBR < 3%). En caso necesario, se colocarán subdrenes o capas anticontaminantes y/o drenantes o se elevará la rasante hasta el nivel necesario.»* Los dos términos que el Manual compara —«el nivel superior de la sub rasante» y «el nivel de la napa freática»— son del mismo tipo. Lo que el Manual **no** escribe es una ecuación de cotas ni un datum: enuncia una separación relativa, y de ahí no se sigue una forma «cota_A ≤ cota_B − separación» más que por lectura del proyecto.
+>
+> **Qué cota de entrada.** No es columna de §1.2: sale de la regla declarada en `origen_cota_fondo_entrada` **[A]** (ver §0.7, «Gobierno de criterios adoptados»). Mientras esa regla no sea la cota de invert medida por punto, las dos desigualdades quedan amarradas a un supuesto, no a un levantamiento.
+
+> **ADVERTENCIA DE APLICACIÓN.** El numeral regula la separación frente a la **napa freática** (nivel permanente), **no** frente a un nivel transitorio de avenida. Aplicarlo al HW es una **extensión por analogía** y se declara como **[N→]**. Verificado contra el PDF: el Manual **no menciona HW ni carga hidráulica en ningún numeral** —«carga hidráulica» no aparece, y todas las ocurrencias de «HW» son parte de la sigla «FHWA»—, de modo que la analogía es del proyecto entera y no admite lectura [N].
 >
 > Redacción: *"Ante la ausencia de un criterio normativo peruano que relacione la carga hidráulica de entrada con el nivel de subrasante, se adopta por analogía el resguardo que el Manual de Suelos (num. 4.5.4) exige frente al nivel freático, por ser el único parámetro normativo nacional que protege la subrasante de la saturación."*
 
@@ -535,9 +541,13 @@ Con pendientes bajas los d₅₀ son pequeños (3–13 cm): lo probable es que g
 
 ### 7.A Tamizado previo — fija la rasante una sola vez
 
-$$\text{cota rasante} \ \ge\ \max\begin{cases} \text{cota clave} + h_{rec} + e_{paq} \\ HW + \text{resguardo}(CBR) + e_{paq} \end{cases}$$
+$$\text{cota rasante} \ \ge\ \max\begin{cases} \text{cota clave} + h_{rec} + e_{paq} \\ \text{cota entrada} + HW + \text{resguardo}(CBR) + e_{paq} \end{cases}$$
 
 Correr el tamizado con el diámetro máximo supuesto **antes** de definir el perfil longitudinal.
+
+> **El sumando `cota entrada` de la segunda condición es una corrección de esta hoja** (`MAT-O6`), no un cambio de criterio. La v8 escribía esa línea como «HW + resguardo + e_paq», mezclando la **carga** HW con las **cotas** de las otras dos —la misma incoherencia de V4, y por la misma razón: las dos condiciones son la misma desigualdad escrita al revés (ver la nota de datum de §5.1). Con el sumando explícito, la equivalencia con V4 es álgebra de una línea: `cota rasante ≥ cota entrada + HW + resguardo + e_paq` ⟺ `cota entrada + HW ≤ (cota rasante − e_paq) − resguardo` = `cota de subrasante − resguardo`, que es V4. El código ya la sumaba (`M7.tamizado_rasante`, término `entrada + HW + resguardo + e_paq`); lo que estaba mal era la hoja.
+>
+> La **primera** condición no necesitaba corrección: `cota clave`, `h_rec` y `e_paq` son una cota y dos espesores, y el resultado es una cota.
 
 **Altura mínima de relleno sobre la clave — EG-2013:**
 
@@ -555,6 +565,8 @@ Nota constructiva [N]: el equipo pesado no circula sobre el conducto antes de qu
 - **Pendiente de la alcantarilla:** la del cauce (V2 nunca la restringe). La restricción real es constructiva y de cota del receptor
 - **Cotas de entrada y salida** amarradas al perfil del cauce y a la cota de fondo del receptor
 - El chequeo devuelve *"no factible → subir rasante X cm"*, nunca un resultado silencioso
+
+> **7.B corre con LA MISMA pendiente que la Fase 4, no con una suya** (`MAT-D9`). «La del cauce» es la regla y sigue siéndolo: es el valor por defecto, `S_cauce` de §1.2. Pero no todos los puntos la usan —la Familia B se dimensiona con el caudal del drenaje longitudinal y la C con el del canal (§2.3), y esos cruces declaran su propia pendiente por la vía de datos externos (`S_conducto`)—, y hasta esta corrección 7.B **no se enteraba**: el HW, las velocidades y el tirante salían de la pendiente declarada, mientras la caída `S·L` y la cota de salida se recalculaban con la del cauce. Dos pendientes en el mismo punto, ninguna marcada como distinta de la otra en el informe. La pendiente viaja ahora dentro del resultado hidráulico (`ResultadoHidraulico.S`) y `M7.compatibilidad_geometrica` la lee de ahí: **ya no es argumento suyo**, de modo que no puede volver a elegirse dos veces.
 
 **Acoplamiento circular declarado:** rasante → paquete estructural → subrasante → CBR → resguardo → V4 → rasante. Se corta fijando la rasante en 7.A y congelándola.
 

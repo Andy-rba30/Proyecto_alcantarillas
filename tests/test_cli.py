@@ -301,7 +301,7 @@ def test_el_expediente_no_cierra_mientras_haya_bloqueos():
 # Reporte de un punto dimensionado
 # ---------------------------------------------------------------------------
 
-def _resultado_hdpe(punto):
+def _resultado_hdpe(punto, S=None, **_):
     """
     Un `ResultadoPunto` aceptado, con material y hidraulica coherentes, para
     probar la capa de reporte. HDPE por costumbre de este archivo, no por
@@ -310,9 +310,15 @@ def _resultado_hdpe(punto):
     recubrimiento propio.
     """
     material = catalogo(TipoMaterial.HDPE)
+    S = punto.exigir("S_cauce") if S is None else S
     hidraulica = ResultadoHidraulico(
         y_normal=0.30, y_critico=0.25,
         V_erosion=2.50, V_sedimentacion=1.92, Q=punto.Q_m3s or 1.0,
+        # La S del diseño, resuelta como la resuelve `MD.disenar_punto`: la
+        # que declare el llamador y, si no hay, `punto.exigir("S_cauce")`,
+        # que lanza DatoFaltanteError cuando la columna viene vacia. Sin
+        # `or` ni default: ese es justamente el defecto que MAT-D9 cierra.
+        S=S,
         HW_entrada=0.50, HW_salida=0.40,
         control_gobernante=ControlGobernante.ENTRADA)
     verificaciones = (
@@ -332,7 +338,7 @@ def informe_dimensionado(monkeypatch):
     """A-01 dimensionado, con la Fase 6 desbloqueada y la 8 aun sin tabla."""
     _declarar(monkeypatch, longitud_proteccion_salida=3.0)
     monkeypatch.setattr(cli, "disenar_punto",
-                        lambda punto, **kwargs: _resultado_hdpe(punto))
+                        lambda punto, **kwargs: _resultado_hdpe(punto, **kwargs))
     return _informe(luz_m=2.0, categoria_tr="quebrada_menor", TW_m=0.0,
                     longitud_m=12.0)
 
