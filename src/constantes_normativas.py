@@ -843,6 +843,29 @@ SECCION_EG2013 = {"concreto_simple": "505", "concreto_reforzado": "506",
                   "tmc": "507", "hdpe": "508"}
 SECCION_CABEZALES = "503"           # concreto estructural (+504 acero)
 
+# ---- Tabla 503-07, "Clases de concreto estructural" -----------------------
+# La Seccion 503 es la que este proyecto cita para los cabezales, y trae su
+# propia escala de clases con la resistencia minima de cada una. Interesa
+# aqui la Clase G, el concreto ciclopeo, porque convive con el Art. 22.10 de
+# E.060 sobre el MISMO material y pide mas (NOR-E060-07): el expediente
+# declaraba solo el minimo de E.060, que es el menor de los dos.
+CLASES_CONCRETO_EG2013_MPA = {
+    "A": 35.0,      # concreto pre y post tensado
+    "B": 32.0,
+    "C": 28.0,      # concreto reforzado
+    "D": 21.0,
+    "E": 17.5,
+    "F": 14.0,      # concreto simple
+    "G": 14.0,      # concreto ciclopeo (Clase F + agregado ciclopeo)
+}
+CICLOPEO_CLASE_G_TEXTO = (
+    "Se compone de concreto simple Clase F y agregado ciclópeo, en "
+    "proporción de 30% del volumen total, como máximo")
+CICLOPEO_FC_MATRIZ_MIN_EG2013 = CLASES_CONCRETO_EG2013_MPA["G"]
+NUMERAL_CICLOPEO_EG2013 = ("EG-2013 Seccion 503, num. 503.04 'Clases de "
+                           "concreto', Tabla 503-07 'Clases de concreto "
+                           "estructural', pag. impresa 912 (PDF 920)")
+
 # ========== EG-2013, Capitulo V - 8.1 Cama y relleno lateral ===============
 # Tabla literal de Sec. 8.1 de la hoja de ruta, con los numerales del EG-2013
 # por SECCION de material (505/506/507/508). Solo texto (cama, sujecion,
@@ -1704,6 +1727,155 @@ GAMMA_EQ_TEXTO = (
     "HISTORICA de ediciones pasadas y el 0.50 una indicacion de "
     "razonabilidad, no dos opciones tabuladas; y quien lo determina es el "
     "PROYECTO ('project-specific basis'), no 'el propietario'")
+# ---- Recubrimiento de concreto: el corpus peruano SI lo da ----------------
+# NOR-PUE-10. El lado "AASHTO" de la regla del mayor de Sec. 0.2 se venia
+# sosteniendo solo contra AASHTO LRFD, con etiqueta [C], mientras el Manual de
+# Puentes -- norma peruana vigente, de la que este mismo expediente saca los
+# factores de carga y toda la cadena sismica -- transcribe la MISMA tabla y
+# los MISMOS factores de modificacion por relacion agua-cemento. Estando en el
+# corpus peruano, el numero es [N] y vive aqui.
+#
+# LO QUE EL TITULO DE LA TABLA DICE Y NADIE HABIA LEIDO -- es la clave de todo
+# el cluster C07: "Recubrimiento para las armaduras principales de aceros NO
+# PROTEGIDAS". La tabla peruana tiene UNA sola columna porque cubre UNA sola
+# categoria de acero: la no protegida, que la 9a ed. de AASHTO llama
+# Categoria A. El acero epoxico o galvanizado el Manual lo trata en un
+# numeral aparte (2.9.1.5.5.4 "Recubrimiento Protector"). De modo que los
+# 3.0 in de "ubicaciones costeras" NO son "el recubrimiento de AASHTO": son el
+# del acero SIN recubrir, y con acero protegido la tabla de la 9a ed. baja a
+# 2.0 in. Esa condicion de aplicacion es la que faltaba declarar (NOR-AAS-01),
+# y por eso el criterio 'categoria_refuerzo_aashto' esta VACIO y bloquea.
+#
+# Los valores se transcriben en mm, la unidad en que este proyecto especifica
+# recubrimientos (E.060 Art. 7.7.1 esta escrito en mm), con la pulgada de la
+# fuente al lado. 1 in = 25.4 mm exacto: 3.0 in son 76.2 mm y no 75 (MAT-D16).
+RECUBRIMIENTO_MP_TITULO = ("Recubrimiento para las armaduras principales de "
+                           "aceros no protegidas")
+RECUBRIMIENTO_MP_MM = {
+    "agua_salada":                        101.6,   # 4.0 in
+    "vaciado_contra_suelo":                76.2,   # 3.0 in
+    "costera":                             76.2,   # 3.0 in
+    "sales_anticongelantes":               63.5,   # 2.5 in
+    "tableros_neumaticos_clavos":          63.5,   # 2.5 in
+    "exterior_no_superior":                50.8,   # 2.0 in
+    "interior_hasta_n11":                  38.1,   # 1.5 in
+    "interior_n14_n18":                    50.8,   # 2.0 in
+    "losa_in_situ_inferior_hasta_n11":     25.4,   # 1.0 in
+    "losa_in_situ_inferior_n14_n18":       50.8,   # 2.0 in
+    "paneles_prefabricados_encofrados":    20.32,  # 0.8 in
+    "pilar_prefabricado_no_corrosivo":     50.8,   # 2.0 in
+    "pilar_prefabricado_corrosivo":        76.2,   # 3.0 in
+    "pilote_prefabricado_pretensado":      50.8,   # 2.0 in
+    "pilar_in_situ_no_corrosivo":          50.8,   # 2.0 in
+    "pilar_in_situ_corrosivo_general":     76.2,   # 3.0 in
+    "pilar_in_situ_corrosivo_protegida":   76.2,   # 3.0 in
+    "pilar_in_situ_cascaras":              50.8,   # 2.0 in
+    "pilar_in_situ_tremie_o_lechada":      76.2,   # 3.0 in
+    # Alcantarillas de cajon de concreto PREFABRICADAS. Las tres filas llevan
+    # su condicion en el nombre a proposito (NOR-PUE-14): los "2.0 in / 50 mm
+    # para alcantarillas" que el expediente citaba de pasada no son de
+    # alcantarillas en general, son de la losa superior de una alcantarilla
+    # cajon prefabricada con menos de 2 pies de relleno que ademas no se use
+    # como superficie de rodadura. Y 2.0 in son 50.8 mm, no 50.
+    "alcantarilla_cajon_prefab_losa_de_rodadura":       63.5,   # 2.5 in
+    "alcantarilla_cajon_prefab_losa_menos_2_pies":      50.8,   # 2.0 in
+    "alcantarilla_cajon_prefab_otros_miembros":         25.4,   # 1.0 in
+}
+# CORRESPONDENCIA DE FILAS ENTRE LAS DOS TRANSCRIPCIONES DE LA MISMA TABLA.
+# No es una eleccion de proyecto: es la reconciliacion de dos traducciones del
+# mismo original. AASHTO LRFD Tabla 5.10.1-1 y la Tabla 2.9.1.5.5.3-1 del
+# Manual son la misma tabla, y aun asi sus filas NO se pueden cruzar por
+# nombre de clave: el Manual traduce "shafts" por "Pilares" donde la
+# transcripcion de AASHTO dice "pilote", y ademas PARTE EN DOS la fila de
+# pilares in situ en ambiente corrosivo ("En general" / "Armadura
+# protegida"), que del lado de AASHTO es una sola.
+#
+# POR QUE HACE FALTA ESCRIBIRLA. `M9._recubrimiento_aashto_detallado` cruza
+# las dos transcripciones con la regla del mayor de Sec. 0.2, y ese cruce
+# se hacia con `situacion in RECUBRIMIENTO_MP_MM`. Para las 14 filas de
+# nombre coincidente funcionaba; para las 8 de la familia de pilotes la
+# condicion daba False y el cruce SE SALTABA SIN AVISAR -- es decir, la red
+# de seguridad estaba escrita para 14 filas de 21 y el comentario afirmaba
+# que estaba escrita para todas. Con el mapa completo el cruce cubre las 21,
+# y una fila sin correspondencia declarada es un error, no un salto callado.
+RECUBRIMIENTO_MP_EQUIVALENCIA = {
+    "agua_salada":                       ("agua_salada",),
+    "vaciado_contra_suelo":              ("vaciado_contra_suelo",),
+    "costera":                           ("costera",),
+    "sales_anticongelantes":             ("sales_anticongelantes",),
+    "tableros_neumaticos_clavos":        ("tableros_neumaticos_clavos",),
+    "exterior_no_superior":              ("exterior_no_superior",),
+    "interior_hasta_n11":                ("interior_hasta_n11",),
+    "interior_n14_n18":                  ("interior_n14_n18",),
+    "losa_in_situ_inferior_hasta_n11":   ("losa_in_situ_inferior_hasta_n11",),
+    "losa_in_situ_inferior_n14_n18":     ("losa_in_situ_inferior_n14_n18",),
+    "paneles_prefabricados_encofrados":  ("paneles_prefabricados_encofrados",),
+    "pilote_prefab_armado_no_corrosivo": ("pilar_prefabricado_no_corrosivo",),
+    "pilote_prefab_armado_corrosivo":    ("pilar_prefabricado_corrosivo",),
+    "pilote_prefab_pretensado":          ("pilote_prefabricado_pretensado",),
+    "pilote_in_situ_no_corrosivo":       ("pilar_in_situ_no_corrosivo",),
+    # La fila que el Manual parte en dos. Se declaran las DOS subfilas y el
+    # cruce toma el mayor de ellas, que es lo que hace la regla de Sec. 0.2
+    # cuando una fuente detalla mas que la otra.
+    "pilote_in_situ_corrosivo":          ("pilar_in_situ_corrosivo_general",
+                                          "pilar_in_situ_corrosivo_protegida"),
+    "pilote_in_situ_cascaras":           ("pilar_in_situ_cascaras",),
+    "pilote_in_situ_tremie_o_lechada":   ("pilar_in_situ_tremie_o_lechada",),
+    "alcantarilla_cajon_prefab_losa_de_rodadura":
+        ("alcantarilla_cajon_prefab_losa_de_rodadura",),
+    "alcantarilla_cajon_prefab_losa_menos_2_pies":
+        ("alcantarilla_cajon_prefab_losa_menos_2_pies",),
+    "alcantarilla_cajon_prefab_otros_miembros":
+        ("alcantarilla_cajon_prefab_otros_miembros",),
+}
+RECUBRIMIENTO_MP_FILA_TEXTO = {
+    "vaciado_contra_suelo": "Vaciado del concreto contra el suelo",
+    "costera": "Ubicaciones costeras",
+    "agua_salada": "Exposición directa al agua salada",
+    "alcantarilla_cajon_prefab_losa_menos_2_pies":
+        "Alcantarillas de cajón de concreto prefabricados: forjados con "
+        "inferior a 2 pies de relleno que no se utilicen como una superficie "
+        "de conducción",
+}
+# El modificador por relacion agua-cemento, que el criterio ignoraba entero
+# (NOR-AAS-05). El Manual lo escribe con DOS vinetas y AASHTO con tres: el
+# tramo intermedio (0.40 < W/C < 0.50 -> 1.0) esta en AASHTO Art. 5.10.1 y el
+# Manual no lo imprime. Se transcribe lo que el Manual dice, y la ausencia se
+# declara en RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA en vez de rellenarse con el
+# valor de la otra fuente.
+RECUBRIMIENTO_MP_FACTOR_AC = {
+    "a_c_menor_igual_0_40": 0.8,
+    "a_c_mayor_igual_0_50": 1.2,
+}
+RECUBRIMIENTO_AC_UMBRAL_BAJO = 0.40    # "Para W/C <= 0.40 ... 0.8"
+RECUBRIMIENTO_AC_UMBRAL_ALTO = 0.50    # "Para W/C >= 0.50 ... 1.2"
+RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA = (
+    "El Manual de Puentes imprime solo dos factores (W/C <= 0.40 -> 0.8 y "
+    "W/C >= 0.50 -> 1.2) y deja sin factor la banda intermedia 0.40 < W/C < "
+    "0.50, que AASHTO LRFD 9a ed. Art. 5.10.1 (pag. impresa 5-167) si cubre "
+    "con 1.0. LA BANDA ES ALCANZABLE EN ESTE PROYECTO: una version anterior "
+    "de esta nota decia que no lo era 'porque su a/c maxima la fija la Tabla "
+    "4.2 de E.060 en 0.40 por cloruros', y eso daba por sabido justamente el "
+    "dato que este cluster declaro VACIO ('exposicion_quimica_ems'). Con "
+    "sulfatos severos y sin cloruros la a/c maxima resulta 0.45 y la banda "
+    "intermedia se activa, de modo que la laguna del corpus peruano hay que "
+    "cubrirla de verdad: lo hace el criterio [C] "
+    "'factor_recubrimiento_banda_intermedia_ac', no un literal del modulo")
+# Piso absoluto sobre las barras principales. Es lo que impide que el factor
+# de 0.8 pueda llevar el recubrimiento a cualquier cosa.
+RECUBRIMIENTO_MP_PISO_MM = 25.4                  # 1.0 in; el Manual escribe
+                                                 # "1.0 in (25 mm)" y se aplica
+                                                 # la pulgada exacta, que es la
+                                                 # mayor de las dos cifras
+RECUBRIMIENTO_MP_PISO_TEXTO = (
+    "El recubrimiento mínimo sobre las barras principales, incluyendo las "
+    "barras protegidas con un recubrimiento de resina epóxico, deberá ser de "
+    "1.0 in (25 mm)")
+NUMERAL_RECUBRIMIENTO_MP = (
+    "Manual de Puentes num. 2.9.1.5.5.3 'Recubrimiento de Concreto' "
+    "(5.12.3 AASHTO) y Tabla 2.9.1.5.5.3-1, pags. impresas 377-378 "
+    "(PDF 378-379)")
+
 NUMERAL_SOBRECARGA_TRASDOS = "2.1.4.3.9, pag. 91"
 NUMERAL_ZAPATA_EN_TALUD = "2.8.1.3.1.2c, pags. 272-273"
 # NUMERAL_K_H0 se declaraba aqui por segunda vez, como "2.8.1.1.14.2" a secas,
@@ -1733,48 +1905,268 @@ SPT_PROF_MIN = 15.0                 # m (Art. 38)
 SPT_ESPACIAMIENTO = 1.0             # m entre ensayos
 
 # ================= E.060 (durabilidad, excepcion declarada) ================
-SULFATOS = [                        # Tabla 4.4: (SO4_min%, SO4_max%, cemento, a/c, f'c_MPa)
-    (0.00, 0.10, None,               None, None),
-    (0.10, 0.20, "II/IP(MS)/IS(MS)", 0.50, 28),
-    (0.20, 2.00, "V",                0.45, 31),
-    (2.00, None, "V + puzolana",     0.45, 31),
+# LAS DOS TABLAS DE DURABILIDAD SE LEEN JUNTAS, y esa es la primera cosa que
+# faltaba. La Tabla 4.2 y la Tabla 4.4 llevan las dos, al pie, la MISMA nota
+# marcada con asterisco desde sus columnas de a/c y de f'c. No es un adorno de
+# imprenta: es la regla que decide que se especifica cuando el sitio tiene
+# sulfatos Y cloruros a la vez, que es precisamente el caso de un corredor
+# costero con freatico somero. Transcribir una tabla sin la otra, o cualquiera
+# de las dos sin la nota, deja el requisito de durabilidad a medias --
+# NOR-E060-05 y NOR-E060-06 son ese mismo defecto visto desde dos lados.
+NOTA_COMBINACION_4_2_4_4 = (
+    "Cuando se utilicen las Tablas 4.2 y 4.4 simultáneamente, se debe "
+    "utilizar la menor relación máxima agua-material cementante aplicable y "
+    "el mayor f'c mínimo")
+NUMERAL_COMBINACION_4_2_4_4 = ("E.060, nota al pie de las Tablas 4.2 y 4.4, "
+                               "pags. impresas 37 y 38")
+
+# ---- Tabla 4.2, "Requisitos para condiciones especiales de exposicion" -----
+# Las TRES filas, con el texto literal de su condicion. El proyecto consumia
+# solo la tercera y la atribuia a "Art. 4.2 / 4.4": el par (0.40, 35) es de la
+# TABLA 4.2. La version anterior de este cluster llego a escribir aqui que
+# citarla como "Art. 4.2 / 4.4" eran "dos numerales distintos citados como si
+# fueran uno", y ESO ERA FALSO: verificado contra el PDF, el Art. 4.4.2
+# (pag. impresa 39) es precisamente el articulo que MANDA aplicar la Tabla 4.2
+# a los cloruros externos, y ademas remite al recubrimiento -- "deben
+# cumplirse los requisitos de la Tabla 4.2 para la maxima relacion
+# agua-material cementante y valor minimo de f'c, y los requisitos de
+# recubrimiento minimo del concreto de 7.7". Es el eslabon normativo que ata
+# este cluster de punta a punta, y la cadena de numerales lo habia perdido.
+# Lo que si es cierto del 4.4 es que su primer inciso, el 4.4.1, va de otra
+# cosa (contenido de ion cloruro en el concreto endurecido, Tabla 4.5): por
+# eso se cita el 4.4.2 y no "el 4.4".
+#
+# EL ALCANCE DEL DISPARADOR, que la fila escribe y conviene no perder: los
+# cloruros que activan esta fila son los "provenientes de productos
+# descongelantes, sal, agua salobre, agua de mar o a salpicaduras del mismo
+# origen". No es "cloruros en el suelo" en general.
+EXPOSICION_ESPECIAL = {
+    "baja_permeabilidad": {
+        "texto": "Concreto que se pretende tenga baja permeabilidad en "
+                 "exposición al agua",
+        "a_c_max": 0.50, "fc_min_MPa": 28},
+    "congelamiento_deshielo": {
+        "texto": "Concreto expuesto a ciclos de congelamiento y deshielo en "
+                 "condición húmeda o a productos químicos descongelantes",
+        "a_c_max": 0.45, "fc_min_MPa": 31},
+    "cloruros": {
+        "texto": "Para proteger de la corrosión el refuerzo de acero cuando "
+                 "el concreto está expuesto a cloruros provenientes de "
+                 "productos descongelantes, sal, agua salobre, agua de mar o "
+                 "a salpicaduras del mismo origen",
+        "a_c_max": 0.40, "fc_min_MPa": 35},
+}
+NUMERAL_EXPOSICION_ESPECIAL = ("E.060 Tabla 4.2, pag. impresa 37, aplicada "
+                               "por el Art. 4.4.2, pag. impresa 39")
+PROTECCION_CORROSION_TEXTO = (
+    "Cuando el concreto con refuerzo vaya a estar expuesto a cloruros de "
+    "químicos descongelantes, sal, agua salobre, agua de mar o salpicaduras "
+    "de las mismas, deben cumplirse los requisitos de la Tabla 4.2 para la "
+    "máxima relación agua-material cementante y valor mínimo de f'c, y los "
+    "requisitos de recubrimiento mínimo del concreto de 7.7")
+NUMERAL_PROTECCION_CORROSION = "E.060 Art. 4.4.2, pag. impresa 39"
+
+# ---- Tabla 4.4, "Requisitos para concreto expuesto a soluciones de sulfatos"
+# DOS escalas paralelas, no una. La tabla clasifica la exposicion por el
+# sulfato soluble en agua presente en el SUELO (porcentaje en peso) o por el
+# sulfato en el AGUA (ppm). La transcripcion anterior llevaba solo la del
+# suelo, de modo que un expediente con analisis de agua -- lo esperable con
+# ANA de por medio -- no podia clasificarse (NOR-E060-05). Y los cementos de
+# la exposicion moderada son SEIS: se transcribian tres.
+#
+# EL BORDE DE 2,0 % QUE LA TABLA IMPRESA DEJA ABIERTO. La fila severa termina
+# en "< 2,0" y la muy severa empieza en "2,0 <", de modo que SO4 = 2,0 % exacto
+# -- y 10 000 ppm exacto en la escala del agua -- no cae en ninguna de las dos.
+# Es un hueco del texto impreso, no una omision de esta transcripcion, y la
+# fuente primaria NO lo resuelve. Quien si lo resuelve es la hoja de ruta:
+# su Sec. 3.3 escribe la fila severa como "0.20 - 2.00" y la muy severa como
+# "> 2.00", de modo que el punto exacto cae en SEVERA. Se sigue a la hoja de
+# ruta, que es la fuente de verdad del proyecto mientras el documento
+# normativo no la contradiga -- y aqui no la contradice: calla. Por eso cada
+# fila declara si su limite inferior es estricto, en vez de dejar la respuesta
+# escondida en un ">=" del codigo. Ver SULFATOS_BORDE_ABIERTO_TEXTO.
+SULFATOS = [
+    {"exposicion": "insignificante",
+     "so4_suelo_pct": (0.00, 0.10), "so4_agua_ppm": (0, 150),
+     "limite_inferior_estricto": False,
+     "cementos": (), "a_c_max": None, "fc_min_MPa": None},
+    {"exposicion": "moderada",
+     "so4_suelo_pct": (0.10, 0.20), "so4_agua_ppm": (150, 1500),
+     "limite_inferior_estricto": False,
+     "cementos": ("II", "IP(MS)", "IS(MS)", "P(MS)", "I(PM)(MS)", "I(SM)(MS)"),
+     "a_c_max": 0.50, "fc_min_MPa": 28},
+    {"exposicion": "severa",
+     "so4_suelo_pct": (0.20, 2.00), "so4_agua_ppm": (1500, 10000),
+     "limite_inferior_estricto": False,
+     "cementos": ("V",), "a_c_max": 0.45, "fc_min_MPa": 31},
+    {"exposicion": "muy_severa",
+     "so4_suelo_pct": (2.00, None), "so4_agua_ppm": (10000, None),
+     # ESTRICTO: la tabla imprime "2,0 <" y la hoja de ruta "> 2.00". El
+     # valor 2,0 % exacto se queda en la fila severa.
+     "limite_inferior_estricto": True,
+     "cementos": ("V más puzolana",), "a_c_max": 0.45, "fc_min_MPa": 31},
 ]
-CLORUROS_EXTERNOS = {"a_c_max": 0.40, "fc_min_MPa": 35}   # Art. 4.2 / 4.4
+NUMERAL_SULFATOS = "E.060 Tabla 4.4, pag. impresa 38"
+SULFATOS_NOTA_AGUA_DE_MAR = ("Se considera el caso del agua de mar como "
+                             "exposición moderada")
+SULFATOS_NOTA_PUZOLANA = (
+    "Puzolana que se ha comprobado por medio de ensayos, o por experiencia, "
+    "que mejora la resistencia a sulfatos cuando se usa en concretos que "
+    "contienen cemento tipo V")
+SULFATOS_BORDE_ABIERTO_TEXTO = (
+    "La Tabla 4.4 imprime la fila severa como '< 2,0 %' y la muy severa como "
+    "'2,0 % <': el valor 2,0 % exacto -- y 10 000 ppm exacto en la escala del "
+    "agua -- no cae en ninguna de las dos. El hueco lo cierra la hoja de ruta, "
+    "que en su Sec. 3.3 escribe 'Severa 0.20 - 2.00' y 'Muy severa > 2.00': el "
+    "punto exacto queda en SEVERA (cemento V, a/c 0.45, f'c 31 MPa). Se sigue "
+    "esa lectura y no la mas exigente porque la fuente primaria no contradice "
+    "a la hoja de ruta en este punto: calla. Se declara porque es una lectura, "
+    "no un dato -- la tabla impresa no la escribe -- y porque la unica "
+    "diferencia practica entre las dos filas es el cemento (V frente a V mas "
+    "puzolana): la relacion a/c y el f'c minimo son los mismos, de modo que el "
+    "recubrimiento no cambia por este borde")
+
+# ---- E.060 Art. 7.7.1: el lado peruano de la regla del recubrimiento mayor -
 RECUBRIMIENTO = {"contra_suelo": 70, "suelo_intemperie_ge_3_4": 50,
                  "suelo_intemperie_le_5_8": 40}           # Art. 7.7.1, mm
+# El texto LITERAL de cada inciso. Importa porque el rotulo corto que el
+# proyecto usa para el primero -- "vaciado contra el suelo" -- recoge solo la
+# mitad de la condicion: el articulo exige las dos cosas a la vez, colocado
+# contra el suelo Y expuesto permanentemente a el.
+RECUBRIMIENTO_TEXTO = {
+    "contra_suelo": "Concreto colocado contra el suelo y expuesto "
+                    "permanentemente a él",
+    "suelo_intemperie_ge_3_4": "Concreto en contacto permanente con el suelo "
+                               "o la intemperie: barras de 3/4\" y mayores",
+    "suelo_intemperie_le_5_8": "Concreto en contacto permanente con el suelo "
+                               "o la intemperie: barras de 5/8\" y menores, "
+                               "mallas electrosoldadas",
+}
 NUMERAL_RECUBRIMIENTO = "E.060 Art. 7.7.1, pag. 54"
-AMBIENTE_CORROSIVO_AUMENTAR = "E.060 Art. 7.7.5.1"        # "aumentar adecuadamente"
-# Sin numero: el articulo dice "aumentar adecuadamente" y no fija cuanto. Con
-# NF a 1.4 m y suelos salinos es directamente invocable (Sec. 3.3), asi que el
-# aumento se declara en criterios_adoptados, no aqui.
+# El encabezado del 7.7.1 remite EL MISMO al 7.7.5.1: el aumento por ambiente
+# corrosivo no es una nota externa que alguien decidio traer, es la excepcion
+# que el propio articulo de los 70/50/40 mm declara.
+RECUBRIMIENTO_SALVEDAD_TEXTO = (
+    "Debe proporcionarse el siguiente recubrimiento mínimo de concreto al "
+    "refuerzo, excepto cuando se requieran recubrimientos mayores según "
+    "7.7.5.1 ó se requiera protección especial contra el fuego")
+AMBIENTE_CORROSIVO_AUMENTAR = "E.060 Art. 7.7.5.1, pag. 55"
+# TEXTO LITERAL, corregido (NOR-E060-04). El repo entrecomillaba "aumentar
+# adecuadamente" -- forma verbal que el articulo no imprime -- y ademas
+# omitia la alternativa expresa del final, que es un camino de cumplimiento
+# distinto del que el proyecto contempla: se puede aumentar el recubrimiento
+# O disponer otro tipo de proteccion. Sin numero: el articulo no fija cuanto,
+# asi que el aumento se declara en criterios_adoptados, no aqui.
+AMBIENTE_CORROSIVO_TEXTO = (
+    "En ambientes corrosivos u otras condiciones severas de exposición, debe "
+    "aumentarse adecuadamente el espesor del recubrimiento de concreto y debe "
+    "tomarse en consideración su densidad y porosidad o debe disponerse de "
+    "otro tipo de protección")
 
 # ---- E.060, refuerzo de muros - MINIMO OBLIGATORIO ------------------------
 # Que "no gobierna el diseno" y que "es informativo" no son lo mismo, y este
 # bloque decia lo segundo cuando lo cierto es lo primero. La Via 1 de Sec. 0.2
 # pone el DIMENSIONAMIENTO bajo AASHTO LRFD Sec. 5 y deja a E.060 la
 # durabilidad y los recubrimientos: de ahi que Sec. 9.4 hable de "referencia
-# de cuantias minimas". Pero el Art. 14.3.1 fija un PISO por debajo del cual
-# ningun muro se arma, y un piso se aplica -- rho_diseno =
-# max(rho_calculado, rho_minimo), en `M9.cuantia_de_diseno` -- no se imprime.
-# Falta aqui el segundo minimo de E.060: el Art. 11.10.10.2 escalona la
-# cuantia HORIZONTAL a 0.0025 bajo demanda de cortante alta. No se transcribe
-# como constante [N] porque la hoja de ruta no lo recoge (solo cita el
-# 14.3.1); queda declarado como vacio en el criterio
+# de cuantias minimas". Pero el Art. 14.3.1 fija un piso, y un piso se aplica
+# -- rho_diseno = max(rho_calculado, rho_minimo), en `M9.cuantia_de_diseno` --
+# no se imprime.
+#
+# LO QUE ESTE BLOQUE AFIRMABA DE MAS (NOR-E060-01). Decia que el 14.3.1 fija
+# "un PISO por debajo del cual NINGUN muro se arma". Para un muro cualquiera
+# pasa; para un muro de CONTENCION, que es lo que el cabezal es, el propio
+# Capitulo 14 tiene un articulo especifico que lo exceptua:
+#
+#     14.8.2  "El refuerzo mínimo será el indicado en 14.3. Este requisito
+#     podrá exceptuarse cuando el Ingeniero Proyectista disponga juntas de
+#     contracción y señale procedimientos constructivos que controlen los
+#     efectos de contracción y temperatura."
+#
+# La excepcion existe, es potestativa, y exige DOS actos del proyectista a la
+# vez -- disponer las juntas Y señalar los procedimientos --, no uno. Este
+# proyecto NO la invoca: no hay juntas de contraccion ni procedimientos
+# constructivos declarados en el expediente, de modo que el minimo se aplica
+# entero. Lo que cambia es el argumento: se aplica porque nadie ejercio la
+# excepcion, no porque la norma no la ofrezca. Ver
+# EXCEPCION_REFUERZO_MIN_MURO_TEXTO, que M9 imprime junto al minimo.
+#
+# El segundo minimo de E.060 -- el 0.0025 del Art. 11.10.10.2 bajo cortante
+# alto -- sigue sin transcribirse como constante [N] porque la hoja de ruta no
+# lo recoge (solo cita el 14.3.1); queda declarado como vacio en el criterio
 # 'cortante_alto_muro_e060_art_11_10_10_2'. Mientras siga asi, el 0.0020 de
 # abajo es el minimo MENOR de los dos que tiene E.060, y M9 obliga a contestar
 # expresamente cual aplica.
 CUANTIA_MIN_MURO = {"horizontal": 0.0020, "vertical": 0.0015}   # Art. 14.3.1, pag. 133
 NUMERAL_CUANTIA_MIN = "E.060 Art. 14.3.1, pag. 133"
-ESPESOR_TEMPERATURA_DOS_CARAS = 0.250       # m (250 mm); Art. 14.8.3
-NUMERAL_TEMPERATURA_DOS_CARAS = "E.060 Art. 14.8.3"
+EXCEPCION_REFUERZO_MIN_MURO_TEXTO = (
+    "El refuerzo mínimo será el indicado en 14.3. Este requisito podrá "
+    "exceptuarse cuando el Ingeniero Proyectista disponga juntas de "
+    "contracción y señale procedimientos constructivos que controlen los "
+    "efectos de contracción y temperatura")
+NUMERAL_EXCEPCION_REFUERZO_MIN_MURO = "E.060 Art. 14.8.2, pag. 134"
+
+# DOS UMBRALES DE ESPESOR, no uno (NOR-E060-02). Se parecen y no son lo
+# mismo, y el expediente aplicaba solo el segundo:
+#
+#   14.3.2 (pag. 133), 200 mm, ESTRICTO -- "Los muros con un espesor mayor
+#     que 200 mm, excepto los muros de sótanos, deben tener el refuerzo en
+#     cada dirección colocado en dos capas paralelas a las caras del muro."
+#     Alcanza a TODO el refuerzo, en las dos direcciones. El 14.8.2 remite
+#     expresamente a 14.3 entero, asi que un muro de contencion lo hereda.
+#   14.8.3 (pag. 134), 250 mm, INCLUSIVO -- "El acero por temperatura y
+#     contracción deberá colocarse en ambas caras para muros de espesor mayor
+#     o igual a 250 mm." Alcanza SOLO al acero por temperatura y contraccion.
+#
+# Entre 200 y 250 mm el muro lleva refuerzo en dos capas por 14.3.2 aunque el
+# acero por temperatura no lo exija por 14.8.3, y la memoria imprimia lo
+# contrario ("Acero por temperatura en UNA cara") para todo espesor < 250 mm.
+ESPESOR_DOS_CAPAS_REFUERZO = 0.200          # m (200 mm); Art. 14.3.2, estricto
+NUMERAL_DOS_CAPAS_REFUERZO = "E.060 Art. 14.3.2, pag. 133"
+EXCEPCION_DOS_CAPAS_REFUERZO = "excepto los muros de sótanos"
+ESPESOR_TEMPERATURA_DOS_CARAS = 0.250       # m (250 mm); Art. 14.8.3, inclusivo
+NUMERAL_TEMPERATURA_DOS_CARAS = "E.060 Art. 14.8.3, pag. 134"
 ESPACIAMIENTO_MAX_VECES_ESPESOR = 3.0       # <= 3h        Art. 14.3.3
 ESPACIAMIENTO_MAX_ABSOLUTO = 0.400          # m (400 mm)   Art. 14.3.3
 NUMERAL_ESPACIAMIENTO = "E.060 Art. 14.3.3"
 
 # ---- E.060, concreto ciclopeo (alternativa de muro de gravedad) ----------
+# DOS MINIMOS SOBRE EL MISMO MATERIAL, y el expediente declaraba el menor
+# (NOR-E060-07). E.060 Art. 22.10 pide f'c = 10 MPa para la matriz; la Tabla
+# 503-07 del EG-2013 -- cuya Seccion 503 es la que este proyecto cita para
+# cabezales -- clasifica el concreto ciclopeo como Clase G y le pide 14 MPa.
+# Para una obra vial del MTC rigen los dos, y por tanto el mayor: la misma
+# regla del mayor que Sec. 0.2 aplica al recubrimiento. `M9.verificar_ciclopeo`
+# contrasta contra `CICLOPEO_FC_MATRIZ_MIN_APLICABLE` y declara de cual de las
+# dos normas sale.
 CICLOPEO_FC_MATRIZ_MIN = 10.0               # MPa            Art. 22.10
 CICLOPEO_FRACCION_PIEDRA_MAX = 0.30         # del volumen    Art. 22.10
 NUMERAL_CICLOPEO = "E.060 Art. 22.10, pags. 194-195"
+CICLOPEO_FC_MATRIZ_MIN_APLICABLE = max(CICLOPEO_FC_MATRIZ_MIN,
+                                       CICLOPEO_FC_MATRIZ_MIN_EG2013)
+NUMERAL_CICLOPEO_APLICABLE = f"{NUMERAL_CICLOPEO} / {NUMERAL_CICLOPEO_EG2013}"
+# DISCREPANCIA CON LA HOJA DE RUTA, declarada en el punto de uso porque la
+# regla de CLAUDE.md pide las tres cosas y no una: (1) la Sec. 9.4 de la hoja
+# de ruta escribe "f'c de matriz >= 10 MPa" y este modulo verifica contra
+# 14 MPa; (2) el defecto es de la hoja de ruta, que mira solo a E.060 y no ve
+# que sobre el mismo material rige tambien la Tabla 503-07 del EG-2013, que
+# es norma vial del MTC y pide mas; (3) MIENTRAS NO SE CORRIJA, la hoja de
+# ruta sigue mal: quien la lea sin leer el codigo dimensionara un cabezal de
+# ciclopeo con una matriz de 10 MPa que este calculo va a rechazar. La fuente
+# primaria decide (EG-2013 Tabla 503-07, pag. impresa 912) y por eso gana.
+CICLOPEO_DISCREPANCIA_HOJA_RUTA = (
+    "La Sec. 9.4 de la hoja de ruta pide f'c de matriz >= 10 MPa citando solo "
+    "el Art. 22.10 de E.060. Sobre el mismo material rige ademas la Clase G "
+    "de la Tabla 503-07 del EG-2013 (14 MPa), que es la norma vial del MTC "
+    "que este proyecto aplica, y por la regla del mayor gobierna esta. LA "
+    "HOJA DE RUTA SIGUE INCOMPLETA mientras no recoja el segundo minimo")
+# DEUDA DECLARADA, fuera del alcance de este cluster y anotada para que no se
+# pierda: el Art. 22.10.2.3 añade al mismo material un TECHO de calculo --
+# "en el cálculo de las resistencias segun 22.5 se utilizará un factor
+# phi = 0,5 y se utilizará, para el diseño, un valor de f'c no mayor a
+# 10 MPa" --, de modo que el material se especifica con el mayor de los dos
+# minimos y se DISEÑA con f'c <= 10 MPa y phi = 0.5. `verificar_ciclopeo`
+# comprueba hoy la especificacion del material, no el dimensionamiento, y
+# ningun modulo dimensiona un muro de gravedad ciclopeo todavia.
 
 # ================= E.030 (RM 183-2026-VIVIENDA) - donde quedo ==============
 # Este bloque tenia tres valores y ninguno era [N]: los tres son la lectura de
@@ -1950,6 +2342,14 @@ CONSTANTES_DE_REFERENCIA = (
     "ESPACIAMIENTO_PERFIL_KM",   # dimensionamiento de la alcantarilla
     "SPT_PROF_MIN",              # profundidad y paso del SPT que cerraria
     "SPT_ESPACIAMIENTO",         # 'clase_sitio' y 'PERFIL_SUELO_PRESUNTO'
-    "SULFATOS",                  # agresividad quimica: la decide el EMS del
-    "CLORUROS_EXTERNOS",         # expediente, no este calculo
 )
+# SULFATOS y EXPOSICION_ESPECIAL (la Tabla 4.2, que antes se referenciaba
+# ademas desde un `CLORUROS_EXTERNOS` hoy retirado por no tener un solo
+# consumidor) SALIERON de esta lista al entrar en el calculo (C07). Se
+# declaraban aqui como "agresividad quimica: la decide el EMS del expediente,
+# no este calculo", y era verdad a medias: el EMS decide el DATO, y con el
+# dato las dos tablas si producen un numero que el calculo usa. Hoy
+# `M9.requisitos_durabilidad_concreto` las combina por la nota al pie comun,
+# de ahi sale la relacion a/c maxima, y de la a/c sale el factor que modifica
+# el recubrimiento del refuerzo. El insumo -- 'exposicion_quimica_ems' -- es
+# un [S] pendiente de ensayo, y mientras no llegue el calculo se detiene.

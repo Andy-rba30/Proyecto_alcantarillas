@@ -1578,9 +1578,39 @@ class CombinacionCarga:
 
 
 @dataclass(frozen=True)
+class RequisitosDurabilidad:
+    """
+    Relacion a/c maxima y f'c minimo que la agresividad quimica del sitio
+    impone al concreto, ya combinadas las Tablas 4.2 y 4.4 de E.060 por la
+    nota al pie que las dos llevan: "se debe utilizar la MENOR relacion
+    maxima agua-material cementante aplicable y el MAYOR f'c minimo".
+
+    Las dos tablas se cruzan en un solo punto del calculo -- este -- y el
+    resultado no es un numero suelto: es un par de exigencias con la fila que
+    produjo cada una. Sin `gobierna_a_c` y `gobierna_fc` la memoria no puede
+    decir POR QUE el concreto lleva esa relacion, que es justo lo que el
+    revisor va a preguntar cuando vea que la a/c de sulfatos y la de cloruros
+    no coinciden.
+
+    `a_c_max` puede ser None: significa que ninguna de las dos tablas impone
+    limite (exposicion insignificante y sin cloruros). No es un vacio del
+    expediente, es una exigencia que la norma no formula, y el consumidor
+    tiene que tratarlo como tal -- ver `M9.factor_recubrimiento_por_ac`.
+    """
+
+    a_c_max: Optional[float]              # relacion agua-material cementante
+    fc_min_MPa: Optional[float]
+    clase_sulfatos: str                   # fila de la Tabla 4.4 que aplica
+    gobierna_a_c: str                     # "Tabla 4.2" / "Tabla 4.4" / "-"
+    gobierna_fc: str
+    cementos_admisibles: Tuple[str, ...]  # Tabla 4.4, por clase de sulfatos
+    numeral: str
+
+
+@dataclass(frozen=True)
 class RecubrimientoDiseno:
     """
-    Recubrimiento adoptado en mm y de donde sale, con las DOS fuentes que la
+    Recubrimiento adoptado en mm y de donde sale, con los DOS operandos que la
     regla de conflicto de Sec. 0.2 obliga a comparar: "rige el recubrimiento
     mayor entre AASHTO y E.060".
 
@@ -1588,6 +1618,24 @@ class RecubrimientoDiseno:
     `constantes_normativas.RECUBRIMIENTO` (Art. 7.7.1 esta escrito en mm y
     reescribirlo en metros solo introduciria ceros). No entra en ninguna
     formula de equilibrio: es una especificacion de detalle para plano.
+
+    POR QUE EL LADO AASHTO LLEVA SIETE CAMPOS Y NO UNO. Ese lado ya no es un
+    valor declarado: es el resultado de una cadena -- fila de la tabla,
+    columna por categoria de acero, modificador por relacion a/c, piso
+    absoluto de 1.0 in -- y cada eslabon puede invertir quien gobierna. Un
+    solo numero obligaria al revisor a rehacer la cadena para saber si el
+    resultado es defendible, que es exactamente lo que paso con los 75 mm que
+    este objeto transportaba antes: el numero se leia bien y no habia forma de
+    ver que le faltaban una columna y un modificador.
+
+    LOS DOS ULTIMOS CAMPOS EXISTEN PORQUE UN FACTOR NO SE EXPLICA SOLO. El
+    `factor_ac` es un numero de una tabla de tres entradas, y del numero no se
+    deduce por que se eligio: 1.2 puede ser "la a/c maxima es 0.50 o mas" o
+    puede ser "no hay ninguna a/c contra la que evaluarlo y se toma el factor
+    mas exigente". Son dos situaciones distintas del expediente y la segunda
+    hay que poder leerla en la memoria, no solo en el codigo. `origen_factor`
+    la trae, y `requisitos` trae la exigencia de durabilidad entera -- con
+    que tabla gobierna cada mitad -- de la que el factor cuelga.
     """
 
     condicion: str                        # clave de RECUBRIMIENTO (Art. 7.7.1)
@@ -1597,6 +1645,14 @@ class RecubrimientoDiseno:
     origen: str                           # "E.060" o "AASHTO"
     criterio_aashto: str                  # clave en criterios_adoptados.py
     numeral: str = "E.060 Art. 7.7.1 / Sec. 0.2 (regla del mayor)"
+    situacion: str = ""                   # fila de la tabla de AASHTO / MP
+    categoria: str = ""                   # columna: "A", "B" o "C"
+    tabulado_mm: float = 0.0              # valor de tabla, antes del factor
+    factor_ac: float = 1.0                # modificador por relacion a/c
+    piso_aplicado: bool = False           # True si mando el piso de 1.0 in
+    corpus_tabla: str = ""                # "[N] Manual de Puentes" / "[C] AASHTO LRFD"
+    origen_factor: str = ""               # por que ese factor por a/c
+    requisitos: Optional["RequisitosDurabilidad"] = None
 
 
 @dataclass(frozen=True)

@@ -2242,12 +2242,27 @@ CRITERIOS: Dict[str, Criterio] = {
                "misma 'Nota 1' en las tres y era falsa en dos (NOR-PRO-03). "
                "TRAMPA DE VOCABULARIO, anotada para que nadie la vuelva a "
                "pisar: el Manual de Puentes SI usa la palabra 'recubrimiento' "
-               "para alcantarillas en la Tabla 2.9.1.5.5.3-1 (pag. 378, 2.0 "
-               "in / 50 mm), pero ahi significa el recubrimiento de CONCRETO "
+               "para alcantarillas en la Tabla 2.9.1.5.5.3-1 (pag. impresa "
+               "378), pero ahi significa el recubrimiento de CONCRETO "
                "SOBRE EL ACERO DE REFUERZO, no la altura de relleno de "
                "tierra. Son dos conceptos que comparten palabra en espaniol y "
                "no tienen ninguna relacion; el numero de esa tabla NO sirve "
                "aqui. "
+               "LA FILA DE ESA TABLA, COMPLETA (NOR-PUE-14): esta nota citaba "
+               "'2.0 in / 50 mm' a secas, como si fuera el recubrimiento de "
+               "una alcantarilla cualquiera, y son dos imprecisiones en seis "
+               "caracteres. Primera, la fila es 'Alcantarillas de cajon de "
+               "concreto PREFABRICADOS' y tiene tres subfilas, cada una con "
+               "su condicion: 'forjados para ser utilizados como superficie "
+               "de conduccion' 2.5 in; 'forjados con inferior a 2 pies de "
+               "relleno que no se utilicen como una superficie de conduccion' "
+               "2.0 in; 'todos los demas miembros' 1.0 in. Los 2.0 in son de "
+               "la losa superior de una alcantarilla CAJON PREFABRICADA con "
+               "menos de 2 pies de relleno que ademas no sea superficie de "
+               "rodadura: dos condiciones que no cumple ningun conducto del "
+               "catalogo circular de Sec. 3.2. Segunda, 2.0 in son 50.8 mm, "
+               "no 50. Las tres subfilas estan transcritas, con sus tres "
+               "categorias de acero, en 'tabla_recubrimiento_aashto_mm'. "
                "LA EVIDENCIA DE INDICE QUE SE RETIRO, por falsa (NOR-PUE-06): "
                "se sostenia que 'el indice del Manual salta de 2.11 (Muros de "
                "Contencion y Estribos) a 2.12'. El 2.11 del Manual es 'DISEÑO "
@@ -2958,37 +2973,345 @@ CRITERIOS: Dict[str, Criterio] = {
                         "geotecnico, con su metodo y sus superficies criticas",
     ),
 
-    "recubrimiento_aashto_mm": Criterio(
-        valor={"contra_suelo": 75.0, "suelo_intemperie_ge_3_4": 75.0,
-              "suelo_intemperie_le_5_8": 75.0},
+    # ---- El recubrimiento del refuerzo: la CADENA, no un numero -----------
+    # Estos cuatro criterios sustituyen al antiguo 'recubrimiento_aashto_mm',
+    # que era un solo dict con 75.0 mm en las tres condiciones y la conclusion
+    # ya escrita ("AASHTO gobierna en los tres casos por la regla del mayor").
+    # Ese numero no se podia defender por tres razones que se acumulaban:
+    #
+    #   (1) 75 mm no esta en ninguna tabla. La Tabla 5.10.1-1 esta en
+    #       PULGADAS y da 3.0 in = 76.2 mm; redondear un MINIMO hacia abajo va
+    #       del lado no conservador (MAT-D16).
+    #   (2) Los 3.0 in son UNA COLUMNA de tres. La tabla se organiza por
+    #       "Reinforcing Material Category" -- A acero sin recubrir, B epoxico
+    #       o galvanizado, C acero AASHTO M 334M -- y con acero protegido da
+    #       2.0 in = 50.8 mm (NOR-AAS-01). La categoria no se declaraba en
+    #       ninguna parte del expediente.
+    #   (3) Falta el modificador por relacion agua-cemento, que el Art. 5.10.1
+    #       impone sobre la tabla y el criterio ignoraba entero: con
+    #       W/CM <= 0.40 el factor es 0.8 (NOR-AAS-05).
+    #
+    # Y las tres juntas INVIERTEN la conclusion, que es lo que hace que este
+    # cluster no se pueda corregir hallazgo por hallazgo: 3.0 in x 0.8 = 61.0
+    # mm queda POR DEBAJO de los 70 mm que E.060 pide para concreto contra el
+    # suelo, de modo que la regla del mayor la gana E.060 y no AASHTO. Con
+    # acero protegido, 2.0 in x 0.8 = 40.6 mm, y E.060 gana en dos de las tres
+    # condiciones y pierde por medio milimetro en la tercera. Corregir solo el
+    # 75 -> 76.2 habria dejado en pie una conclusion falsa con un numero mas
+    # exacto: es el conflicto #3 de docs/hoja_de_ruta_correcciones_v12.md.
+    #
+    # De ahi el reparto: la TABLA es dato (transcrita entera, aqui abajo y en
+    # constantes_normativas), la CATEGORIA y la EXPOSICION son declaraciones
+    # que el expediente tiene que hacer, y el VALOR se calcula en
+    # `M9.recubrimiento_de_diseno`. Mientras falte una de las dos
+    # declaraciones, el calculo se detiene. No hay numero por defecto.
+
+    "categoria_refuerzo_aashto": Criterio(
+        valor=None,                 # VACIO: bloquea la regla del mayor de 9.4
+        etiqueta="A",
+        concepto="Categoria de material de refuerzo de la Tabla 5.10.1-1 de "
+                 "AASHTO LRFD ('A' acero sin recubrir, 'B' epoxico o "
+                 "galvanizado, 'C' acero AASHTO M 334M), que decide que "
+                 "columna de la tabla de recubrimientos aplica a este cabezal",
+        justificacion="ES LA CONDICION DE APLICACION QUE FALTABA, y no un "
+                      "refinamiento: la tabla de recubrimientos de AASHTO no "
+                      "tiene un valor por situacion, tiene TRES -- uno por "
+                      "categoria de acero -- y el expediente venia usando el "
+                      "de la columna A sin decir que estaba eligiendo columna. "
+                      "Al pie de la tabla: 'Category A - Uncoated reinforcing "
+                      "steel meeting AASHTO M 31M/M 31 - Category B - Epoxy "
+                      "coated or galvanized meeting ASTM A775/A775M - "
+                      "Category C - Materials meeting AASHTO M 334M/M 334'. "
+                      "POR QUE NO SE ELIGE AQUI: la categoria la fija la "
+                      "ESPECIFICACION DEL ACERO del expediente, que es una "
+                      "decision de proyecto con consecuencia de costo y de "
+                      "suministro, no una lectura de norma. En un corredor "
+                      "salino con freatico somero el acero galvanizado o "
+                      "epoxico es una opcion natural, y justamente por eso no "
+                      "se puede suponer la A: suponerla es suponer el caso "
+                      "que MAS recubrimiento pide, que parece conservador y no "
+                      "lo es -- con acero protegido el proyectista podria "
+                      "creer que le sobra recubrimiento cuando lo que cambio "
+                      "fue la columna. "
+                      "QUE CAMBIA SEGUN LA RESPUESTA, con el factor 0.8 por "
+                      "a/c <= 0.40 ya aplicado y para la fila costera: "
+                      "A -> 76.2 x 0.8 = 61.0 mm, y E.060 gobierna el caso "
+                      "'contra_suelo' con sus 70 mm; B o C -> 50.8 x 0.8 = "
+                      "40.6 mm, y E.060 gobierna tambien 'suelo_intemperie_"
+                      "ge_3_4' (50 mm). La eleccion mueve el recubrimiento "
+                      "adoptado y mueve QUIEN LO IMPONE, que es lo que la "
+                      "memoria tiene que declarar. "
+                      "DONDE QUEDA EL CORPUS PERUANO: el Manual de Puentes "
+                      "transcribe esta misma tabla (num. 2.9.1.5.5.3) pero "
+                      "SOLO la columna A -- su titulo lo dice, 'Recubrimiento "
+                      "para las armaduras principales de aceros no "
+                      "protegidas' -- y trata la proteccion epoxica o "
+                      "galvanizada en un numeral aparte, el 2.9.1.5.5.4, "
+                      "donde solo autoriza usar la tabla con acero protegido "
+                      "'para exposicion interior'. De modo que con categoria "
+                      "A el valor es [N] peruano y con B o C el corpus "
+                      "peruano no tabula nada para exposicion exterior y el "
+                      "hueco lo cubre AASHTO LRFD por la Via 1 de Sec. 0.2, "
+                      "como [C]. La etiqueta de la fuente del recubrimiento "
+                      "adoptado depende, por tanto, de este mismo criterio",
+        fuente="PENDIENTE - AASHTO LRFD 9a ed., Tabla 5.10.1-1 y su nota al "
+               "pie, pag. impresa 5-169 (PDF 528); Manual de Puentes "
+               "num. 2.9.1.5.5.3 y 2.9.1.5.5.4, pags. impresas 377-378. La "
+               "tabla y sus categorias estan verificadas; lo que falta es "
+               "CUAL de las tres se especifica en esta obra",
+        sensibilidad=("A: acero sin recubrir (AASHTO M 31M/M 31)",
+                      "B: epoxico o galvanizado (ASTM A775/A775M)",
+                      "C: acero AASHTO M 334M/M 334",
+                      "LECTURA ALTERNATIVA, declarada porque bajar de columna "
+                      "con B o C NO es una lectura neutra: el num. "
+                      "2.9.1.5.5.4 del Manual autoriza usar la tabla con "
+                      "acero protegido 'Para exposicion interior', y de ahi "
+                      "caben dos lecturas. La adoptada: fuera de la "
+                      "exposicion interior el corpus peruano calla y el hueco "
+                      "lo cubren las columnas B y C de AASHTO, como [C]. La "
+                      "contraria: si el Manual solo autoriza la reduccion en "
+                      "interior, en exposicion exterior sigue rigiendo su "
+                      "unica columna -- la de aceros no protegidos -- y el "
+                      "acero protegido no baja de 3.0 in. En la fila costera "
+                      "con el factor 0.8 la diferencia es 40.6 mm frente a "
+                      "61.0 mm, y en 'suelo_intemperie_le_5_8' decide ademas "
+                      "quien gobierna: E.060 con 40 mm en la lectura "
+                      "adoptada, AASHTO en la contraria"),
+        reemplazado_por="Especificacion del acero de refuerzo del expediente "
+                        "(norma de producto del acero que se compra), o la "
+                        "decision expresa del proyectista de proteger o no el "
+                        "refuerzo en ambiente salino",
+    ),
+
+    "factor_recubrimiento_banda_intermedia_ac": Criterio(
+        valor=1.0,
         etiqueta="C",
-        concepto="Recubrimiento minimo del refuerzo exigido por AASHTO LRFD, "
-                 "en mm, por condicion de exposicion, para compararlo con el "
-                 "de E.060 Art. 7.7.1",
-        justificacion="Sec. 0.2 fija la regla de conflicto: 'rige el "
-                      "recubrimiento MAYOR entre AASHTO y E.060'. CERRADO "
-                      "por verificacion externa: AASHTO LRFD Tabla 5.10.1-1 "
-                      "no organiza el recubrimiento por diametro de barra "
-                      "como E.060 (>= 3/4\" / <= 5/8\") -- lo organiza por "
-                      "severidad de EXPOSICION. La Union (Piura) es corredor "
-                      "costero, y la categoria de exposicion aplicable de "
-                      "AASHTO es 'ambiente costero' = 75 mm, uniforme sin "
-                      "importar el diametro de barra. Como 75 > 70 "
-                      "(contra_suelo de E.060) y 75 > 50 y 75 > 40 (los dos "
-                      "casos de intemperie de E.060), AASHTO gobierna en los "
-                      "tres casos por la regla del mayor: no son tres "
-                      "lecturas distintas de AASHTO, es el mismo valor de "
-                      "exposicion costera aplicado a los tres casos de "
-                      "E.060, declarado explicito en las tres claves para "
-                      "que la memoria muestre la comparacion caso por caso",
-        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., Tabla "
-               "5.10.1-1, pag. 5-169, categoria de exposicion 'ambiente "
-               "costero'",
-        verificacion_pendiente="Con NF a 1.4 m y suelos salinos, E.060 "
-                               "Art. 7.7.5.1 (ambiente corrosivo, 'aumentar "
-                               "adecuadamente') es directamente invocable "
-                               "(Sec. 3.3): el aumento se declara aparte, "
-                               "porque el articulo no fija cuanto",
+        concepto="Factor de modificacion del recubrimiento para la banda "
+                 "intermedia de relacion agua-cemento, 0.40 < a/c < 0.50, que "
+                 "el Manual de Puentes no imprime",
+        justificacion="ES UN HUECO DEL CORPUS PERUANO, no un valor neutro que "
+                      "se pueda dejar en el modulo por obvio. El num. "
+                      "2.9.1.5.5.3 del Manual escribe DOS factores -- 0.8 "
+                      "para W/C <= 0.40 y 1.2 para W/C >= 0.50 -- y deja la "
+                      "banda de en medio sin factor; AASHTO LRFD Art. 5.10.1, "
+                      "de donde el Manual toma la tabla, si la cubre con 1.0. "
+                      "Se aplica AASHTO por la Via 1 de Sec. 0.2, que es "
+                      "exactamente lo que una etiqueta [C] declara. "
+                      "POR QUE IMPORTA QUE ESTE AQUI Y NO EN EL MODULO. "
+                      "Vivia en M9 como `FACTOR_AC_BANDA_INTERMEDIA = 1.0` "
+                      "con el argumento de que era 'el factor NEUTRO'. "
+                      "Multiplicar por uno es neutro en aritmetica y no en "
+                      "normativa: aqui significa 'en esta banda no se "
+                      "modifica el recubrimiento', que es una afirmacion que "
+                      "el corpus peruano NO hace y que hay que sostener con "
+                      "una fuente. Ademas la banda es alcanzable -- con "
+                      "sulfatos severos y sin cloruros la a/c maxima resulta "
+                      "0.45 --, de modo que no es un caso teorico",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
+               "Art. 5.10.1 'Concrete Cover', pag. impresa 5-167 (PDF 526): "
+               "'For W/CM ratio between 0.40 and 0.50 ... 1.0'. El Manual de "
+               "Puentes num. 2.9.1.5.5.3 (pag. impresa 377) imprime solo los "
+               "otros dos factores. Ver RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA",
+        sensibilidad=("El unico valor alternativo defendible seria extender "
+                      "el 1.2 de la banda alta a la intermedia, por no dejar "
+                      "sin modificar un concreto que el corpus peruano no "
+                      "clasifica. Daria mas recubrimiento (76.2 -> 91.4 mm en "
+                      "la fila costera con categoria A) y seria mas "
+                      "conservador, pero contradice la fuente de la que sale "
+                      "la propia tabla, que si escribe el 1.0",),
+    ),
+
+    "exposicion_quimica_ems": Criterio(
+        valor=None,                 # VACIO: bloquea el factor por a/c de 9.4
+        etiqueta="S",
+        concepto="Agresividad quimica del suelo y del agua freatica en el "
+                 "corredor, y condiciones de exposicion del concreto, en las "
+                 "magnitudes con que E.060 clasifica: sulfato soluble en el "
+                 "suelo (% en peso) y en el agua (ppm) para la Tabla 4.4, y "
+                 "cual de las TRES filas de la Tabla 4.2 aplica",
+        justificacion="ES EL DATO DEL QUE CUELGA EL RECUBRIMIENTO, por una "
+                      "cadena que el expediente no tenia escrita: la "
+                      "agresividad quimica fija la relacion a/c maxima "
+                      "(E.060 Tablas 4.2 y 4.4, combinadas por su nota al "
+                      "pie), la a/c maxima fija el factor de modificacion del "
+                      "recubrimiento (AASHTO Art. 5.10.1 y Manual de Puentes "
+                      "num. 2.9.1.5.5.3: 0.8 / 1.0 / 1.2), y el factor "
+                      "multiplica al valor tabulado. Sin este dato no hay "
+                      "factor, y sin factor el recubrimiento de AASHTO que el "
+                      "expediente imprimia era el valor bruto de la tabla, un "
+                      "20 % por encima del que la norma exige. "
+                      "POR QUE NO SE DA POR SUPUESTO. El repositorio venia "
+                      "afirmando en varias justificaciones que el corredor "
+                      "tiene 'suelos salinos' y freatico a 1.4 m, y de ahi "
+                      "sacaba que aplica la fila de cloruros de la Tabla 4.2 "
+                      "(a/c <= 0.40, f'c >= 35 MPa). Esa afirmacion no estaba "
+                      "declarada en ningun sitio como dato: viajaba en prosa. "
+                      "Y la fila de la Tabla 4.2 no se dispara con 'suelos "
+                      "salinos' en general, sino con cloruros 'provenientes "
+                      "de productos descongelantes, sal, agua salobre, agua "
+                      "de mar o a salpicaduras del mismo origen'. Quien "
+                      "sostenga que aplica tiene que poder mostrar el "
+                      "analisis; mientras no este, el calculo se detiene aqui "
+                      "y no aguas abajo con un numero que nadie puede "
+                      "reproducir. "
+                      "ES [S] Y NO [A]: no hay nada que elegir. Es una "
+                      "medicion de laboratorio sobre muestras de ESTE "
+                      "corredor, y cambia al mover la obra, no al cambiar de "
+                      "proyectista. Vive aqui, y no en datos_sitio.py, "
+                      "porque sigue pendiente del ensayo -- que es la "
+                      "condicion que este archivo admite para un [S]",
+        fuente="PENDIENTE - Analisis quimico del EMS (contenido de sulfatos y "
+               "cloruros en suelo y en agua freatica). Las tablas contra las "
+               "que se clasifica ya estan transcritas: E.060 Tabla 4.2 "
+               "(pag. impresa 37), Tabla 4.4 (pag. impresa 38) y la nota al "
+               "pie comun a las dos",
+        trazabilidad="Ensayo quimico de suelos y de agua del EMS del "
+                     "expediente, sobre muestras del corredor, MAS la "
+                     "condicion de exposicion del elemento. La estructura del "
+                     "dato es un diccionario con estas claves, TODAS "
+                     "obligatorias: 'so4_suelo_pct', sulfato soluble en agua "
+                     "presente en el suelo, en porcentaje en peso; "
+                     "'so4_agua_ppm', sulfato en el agua, en ppm; y "
+                     "'tabla_4_2', a su vez un diccionario con las TRES filas "
+                     "de esa tabla como si/no -- 'baja_permeabilidad', "
+                     "'congelamiento_deshielo' y 'cloruros'. "
+                     "POR QUE LAS TRES FILAS Y NO SOLO LA DE CLORUROS: la "
+                     "nota al pie comun a las Tablas 4.2 y 4.4 manda aplicar "
+                     "'la MENOR relacion maxima agua-material cementante "
+                     "APLICABLE', y aplicable no se puede evaluar sobre un "
+                     "conjunto que el dato deja a medias. Con solo la fila de "
+                     "cloruros declarada, un concreto que ademas deba ser de "
+                     "baja permeabilidad se evaluaba contra un candidato "
+                     "menos que el que la norma manda mirar. "
+                     "UNA CLAVE AUSENTE NO ES UN 'NO': es DatoInvalidoError. "
+                     "La version anterior leia la de cloruros con `.get()`, y "
+                     "un EMS que no la trajera se leia como 'no hay "
+                     "cloruros', que es rellenar un vacio en silencio. "
+                     "El dato vale para todo el corredor si el EMS lo "
+                     "muestrea por tramos homogeneos; si la agresividad varia "
+                     "de un punto a otro, deja de ser un dato de corredor y "
+                     "tiene que pasar a ser columna del CSV. Las dos escalas "
+                     "de sulfato son alternativas -- el suelo O el agua --: "
+                     "las dos claves tienen que estar, pero una de ellas "
+                     "puede venir en None; con las dos medidas, gobierna la "
+                     "mas exigente",
+        reemplazado_por="El analisis quimico del EMS. Mientras no exista, "
+                        "ningun recubrimiento de 9.4 se puede calcular",
+    ),
+
+    "situacion_recubrimiento_aashto": Criterio(
+        valor={"contra_suelo": "vaciado_contra_suelo",
+               "suelo_intemperie_ge_3_4": "costera",
+               "suelo_intemperie_le_5_8": "costera"},
+        etiqueta="A",
+        concepto="Fila de la tabla de recubrimientos de AASHTO / Manual de "
+                 "Puentes que se contrasta con cada condicion de E.060 "
+                 "Art. 7.7.1, para poder evaluar la regla del mayor",
+        justificacion="LAS DOS TABLAS NO SE INDEXAN IGUAL, y ese desajuste "
+                      "hay que resolverlo con una eleccion declarada. E.060 "
+                      "organiza el recubrimiento por DIAMETRO DE BARRA "
+                      "(>= 3/4\" / <= 5/8\") y por contacto con el suelo; "
+                      "AASHTO y el Manual lo organizan por SEVERIDAD DE "
+                      "EXPOSICION, sin mirar el diametro. Para comparar hay "
+                      "que decir que fila de la segunda se pone enfrente de "
+                      "cada fila de la primera, y eso no lo dice ninguna de "
+                      "las dos normas. "
+                      "LA LECTURA ADOPTADA: la cara del cabezal que se vacia "
+                      "contra el terreno se contrasta con 'Vaciado del "
+                      "concreto contra el suelo', que es literalmente la "
+                      "misma situacion fisica; las dos condiciones de "
+                      "intemperie de E.060 se contrastan con 'Ubicaciones "
+                      "costeras', porque La Union (Piura) esta en el corredor "
+                      "costero y esa es la exposicion de las caras vistas. "
+                      "POR QUE LA ELECCION NO MUEVE EL NUMERO, que es lo que "
+                      "la hace defendible: las dos filas elegidas tienen "
+                      "valores IDENTICOS en las tres categorias de acero "
+                      "(3.0 / 2.0 / 2.0 in). La eleccion se declara igual, "
+                      "porque el dia que alguien aplique este calculo a una "
+                      "obra no costera la fila 'costera' deja de valer y la "
+                      "sustituye 'Situacion exterior que no sea superior' "
+                      "(2.0 in en la columna A), que si cambia el resultado",
+        fuente="AASHTO LRFD 9a ed., Tabla 5.10.1-1, pag. impresa 5-169 "
+               "(PDF 528); Manual de Puentes, Tabla 2.9.1.5.5.3-1, pag. "
+               "impresa 378 (PDF 379). Las filas existen y estan transcritas "
+               "enteras; lo que se elige es el emparejamiento con E.060",
+        sensibilidad=("costera y vaciado_contra_suelo: 3.0/2.0/2.0 in, "
+                      "identicas",
+                      "agua_salada, si el cabezal quedara con exposicion "
+                      "directa a agua salada: 4.0/2.5/2.5 in",
+                      "exterior_no_superior, en una obra no costera: "
+                      "2.0/2.0/1.5 in"),
+    ),
+
+    "tabla_recubrimiento_aashto_mm": Criterio(
+        valor={
+            # Tabla 5.10.1-1 COMPLETA, en mm, por (situacion, categoria).
+            # 1 in = 25.4 mm exacto. La pulgada de la fuente va al lado.
+            # -- Severe to Moderate Exposure --
+            "agua_salada":                {"A": 101.6, "B": 63.5, "C": 63.5},
+            "vaciado_contra_suelo":       {"A": 76.2, "B": 50.8, "C": 50.8},
+            "costera":                    {"A": 76.2, "B": 50.8, "C": 50.8},
+            "sales_anticongelantes":      {"A": 63.5, "B": 50.8, "C": 38.1},
+            "tableros_neumaticos_clavos": {"A": 63.5, "B": 63.5, "C": 50.8},
+            "exterior_no_superior":       {"A": 50.8, "B": 50.8, "C": 38.1},
+            # -- Limited Exposure --
+            "interior_hasta_n11":         {"A": 38.1, "B": 25.4, "C": 25.4},
+            "interior_n14_n18":           {"A": 50.8, "B": 50.8, "C": 50.8},
+            "losa_in_situ_inferior_hasta_n11": {"A": 25.4, "B": 25.4, "C": 25.4},
+            "losa_in_situ_inferior_n14_n18":   {"A": 50.8, "B": 50.8, "C": 50.8},
+            "paneles_prefabricados_encofrados": {"A": 20.32, "B": 20.32,
+                                                 "C": 20.32},
+            # -- Piling --
+            "pilote_prefab_armado_no_corrosivo": {"A": 50.8, "B": 38.1, "C": 25.4},
+            "pilote_prefab_armado_corrosivo":    {"A": 76.2, "B": 63.5, "C": 50.8},
+            "pilote_prefab_pretensado":          {"A": 50.8, "B": 25.4, "C": 25.4},
+            "pilote_in_situ_no_corrosivo":       {"A": 50.8, "B": 38.1, "C": 38.1},
+            "pilote_in_situ_corrosivo":          {"A": 76.2, "B": 63.5, "C": 50.8},
+            "pilote_in_situ_cascaras":           {"A": 50.8, "B": 38.1, "C": 25.4},
+            "pilote_in_situ_tremie_o_lechada":   {"A": 76.2, "B": 63.5, "C": 50.8},
+            # -- Precast Culverts --
+            "alcantarilla_cajon_prefab_losa_de_rodadura":  {"A": 63.5, "B": 50.8,
+                                                            "C": 38.1},
+            "alcantarilla_cajon_prefab_losa_menos_2_pies": {"A": 50.8, "B": 38.1,
+                                                            "C": 25.4},
+            "alcantarilla_cajon_prefab_otros_miembros":    {"A": 25.4, "B": 25.4,
+                                                            "C": 25.4},
+        },
+        etiqueta="C",
+        concepto="Tabla 5.10.1-1 de AASHTO LRFD, 'Minimum Cover for Main "
+                 "Reinforcing Steel', completa: las 21 situaciones por las "
+                 "tres categorias de material de refuerzo, convertidas a mm",
+        justificacion="LA TABLA SE TRANSCRIBE ENTERA AUNQUE EL CALCULO USE "
+                      "DOS FILAS. El expediente llevaba un solo numero, 75 "
+                      "mm, que era una lectura ya digerida de la fila costera "
+                      "de la columna A: no se podia comprobar contra el PDF "
+                      "sin rehacer la lectura, no dejaba ver que habia tres "
+                      "columnas, y no permitia contestar que pasaria con otra "
+                      "categoria de acero. Con la tabla completa las tres "
+                      "preguntas se contestan leyendo. "
+                      "ES [C] Y NO [N]: AASHTO LRFD no es norma peruana, y "
+                      "esta transcripcion cubre lo que el corpus peruano no "
+                      "tabula -- las columnas B y C, de acero protegido. La "
+                      "columna A si la tiene el Manual de Puentes, y por eso "
+                      "vive ademas en constantes_normativas.RECUBRIMIENTO_MP_"
+                      "MM con etiqueta [N]: no son dos transcripciones "
+                      "rivales, son la misma tabla en los dos corpus, y "
+                      "`M9.recubrimiento_de_diseno` declara de cual sale el "
+                      "valor que aplica segun la categoria elegida. "
+                      "LO QUE NO ESTA EN ESTE DICT y hay que aplicarle "
+                      "encima, en este orden: el modificador por relacion "
+                      "agua-cemento del Art. 5.10.1 (0.8 / 1.0 / 1.2) y el "
+                      "piso absoluto de 1.0 in = 25.4 mm sobre las barras "
+                      "principales, que impide que el modificador de 0.8 "
+                      "baje el recubrimiento por debajo de la pulgada. Los "
+                      "dos los aplica `M9.recubrimiento_de_diseno`, no este "
+                      "criterio: aqui vive la tabla, no la regla",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
+               "Tabla 5.10.1-1 'Minimum Cover for Main Reinforcing Steel "
+               "(in.)', pag. impresa 5-169 (PDF 528), con su nota al pie de "
+               "categorias; Art. 5.10.1 'Concrete Cover', pag. impresa 5-167 "
+               "(PDF 526), para el modificador por W/CM; pag. impresa 5-168 "
+               "(PDF 527) para el piso de 1.0 in sobre barras principales",
     ),
 
     "cortante_alto_muro_e060_art_11_10_10_2": Criterio(
@@ -2998,12 +3321,31 @@ CRITERIOS: Dict[str, Criterio] = {
                  "ALTO de E.060 Art. 11.10.10.2, que escalona la cuantia "
                  "horizontal minima de 0.0020 a 0.0025",
         justificacion="E.060 no tiene un solo minimo de cuantia horizontal "
-                      "de muro: tiene dos. El Art. 14.3.1 fija 0.0020, y el "
-                      "Art. 11.10.10.2 lo sube a 0.0025 cuando la demanda de "
-                      "cortante supera el umbral que ese articulo define "
-                      "(del orden de Vu > 0.5*phi*Vc). Aplicar solo el "
-                      "0.0020 sin comprobar el otro es quedarse con el "
-                      "minimo mas bajo de los dos por omision. "
+                      "de muro: tiene dos. El Art. 14.3.1 fija 0.0020 y el "
+                      "Art. 11.10.10.2 lo sube a 0.0025 bajo demanda de "
+                      "cortante alta. Aplicar solo el 0.0020 sin comprobar el "
+                      "otro es quedarse con el minimo mas bajo de los dos por "
+                      "omision. "
+                      "EL UMBRAL, CORREGIDO (NOR-E060-03). Esta "
+                      "justificacion decia que el disparador es 'el umbral "
+                      "que ese articulo define (del orden de Vu > "
+                      "0.5*phi*Vc)'. Verificado contra el PDF, el "
+                      "Art. 11.10.10.2 entero es una sola frase y no define "
+                      "umbral alguno: 'La cuantía de refuerzo horizontal para "
+                      "cortante no debe ser menor que 0,0025 y su "
+                      "espaciamiento no debe exceder tres veces el espesor "
+                      "del muro ni de 400 mm' (pag. impresa 104). El "
+                      "'0.5*phi*Vc' existe en E.060, pero en el "
+                      "Art. 11.5.6.1 (pag. 91) y para elementos sometidos a "
+                      "FLEXION, no para muros: era una atribucion inventada, "
+                      "del mismo tipo que NOR-PUE-01. Los umbrales que de "
+                      "verdad escalonan el regimen de un muro son otros y "
+                      "tienen otra forma: el Art. 11.10.10.1 abre la "
+                      "exigencia de refuerzo por corte 'Donde Vu exceda la "
+                      "resistencia al corte phi*Vc', y los Arts. 11.10.7 y "
+                      "11.10.8 (pags. 103-104) reparten el regimen segun Vu "
+                      "sea menor o mayor que 0.085*raiz(f_c_prima)*Acw. "
+                      "Ninguno de los tres es el que el criterio citaba. "
                       "POR QUE NO SE RESUELVE AQUI Y NO SE RELLENA: el "
                       "disparador es una DEMANDA DE CORTANTE, y M9 no "
                       "calcula cortante -- el diseno por flexion y corte "
@@ -3030,9 +3372,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "diseno estructural es de AASHTO, cual de los dos "
                       "minimos de E.060 se importa y con que argumento",
         fuente="PENDIENTE - E.060 Art. 11.10.10.2 (cuantia horizontal "
-               "minima en muros con cortante alto). Verificar numeral y "
-               "pagina contra el texto de E.060 antes de darle valor, y "
-               "recoger el articulo en la hoja de ruta",
+               "minima en muros con cortante alto), pag. impresa 104, "
+               "verificado contra el PDF: el 0.0025 esta literal ahi y el "
+               "umbral de entrada esta en los Arts. 11.10.7 / 11.10.8 "
+               "(0.085*raiz(f_c_prima)*Acw) y 11.10.10.1 (Vu > phi*Vc). Lo "
+               "que sigue pendiente NO es la cita, que ya esta verificada: es "
+               "la DEMANDA Vu con que contestar si este muro esta en esa "
+               "condicion, y que la hoja de ruta recoja el articulo",
         reemplazado_por="Demanda de cortante Vu del cabezal, salida del "
                         "diseno de 'procedimiento_flexion_corte_aashto_sec5', "
                         "contrastada contra el umbral del Art. 11.10.10.2",
@@ -3049,12 +3395,52 @@ CRITERIOS: Dict[str, Criterio] = {
             "phi_corte": 0.90,
             "modelo_corte": "MCFT_seccional_directo_no_iterativo "
                             "(AASHTO LRFD 9a ed., 2020)",
-            "beta": "4.8 / (1 + 750*epsilon_s)",
-            "theta_grados": "29 + 3500*epsilon_s",
-            "Vc_kN": "0.0316*beta*lambda*raiz(f_c_prima)*bv*dv",
-            "Vs_kN": "(Vu/phi) - Vc - Vp",
-            "espaciamiento_s_m": "Av*fy*dv*cot(theta) / Vs",
-            "dv_m": "max(de - a/2, 0.9*de, 0.72*h)",
+            # EL SISTEMA DE UNIDADES, PRIMERO Y COMO DATO (MAT-O9, MAT-X8).
+            # Las expresiones de abajo son de la 9a ed., que no tiene edicion
+            # SI: su C5.1 (pag. impresa 5-1) declara "These specifications use
+            # kips and ksi units" y tabula la conversion de las formas
+            # N*raiz(f_c_prima), donde N = 1 psi corresponde a 0.0316 ksi.
+            # Ese 0.0316 no es una constante fisica: es 1/raiz(1000), el
+            # factor psi->ksi. Las claves llevan la unidad en el nombre para
+            # que nadie alimente estas formulas con MPa y metros, que es lo
+            # que las claves anteriores -- "Vc_kN", "dv_m" -- invitaban a
+            # hacer sobre una formula imperial.
+            "sistema_de_unidades": "kip - ksi - pulgada (AASHTO LRFD 9a ed. "
+                                   "no publica edicion SI; C5.1, pag. "
+                                   "impresa 5-1)",
+            # BETA TIENE DOS EXPRESIONES, NO UNA (NOR-AAS-06). El Art.
+            # 5.7.3.4.2 condiciona la primera al refuerzo transversal minimo
+            # del Art. 5.7.2.5; un muro de cabezal delgado sin estribos cae
+            # normalmente en la segunda, que ademas depende del parametro de
+            # espaciamiento de fisura sxe.
+            "condicion_beta": "'For sections containing at least the minimum "
+                              "amount of transverse reinforcement specified "
+                              "in Article 5.7.2.5, the value of beta may be "
+                              "determined by Eq. 5.7.3.4.2-1'. Para el otro "
+                              "caso el articulo es igual de POTESTATIVO, y "
+                              "conviene no endurecerlo al traducir: 'When "
+                              "sections do not contain at least the minimum "
+                              "amount of shear reinforcement, the value of "
+                              "beta may be as specified in "
+                              "Eq. 5.7.3.4.2-2' -- 'may be', no 'rige'. Cual "
+                              "de las dos aplica lo decide el armado "
+                              "transversal del muro, que este proyecto "
+                              "todavia no dimensiona",
+            "beta_con_refuerzo_transversal_minimo":
+                "4.8 / (1 + 750*epsilon_s)                    [Ec. 5.7.3.4.2-1]",
+            "beta_sin_refuerzo_transversal_minimo":
+                "(4.8 / (1 + 750*epsilon_s)) * (51 / (39 + sxe_in))"
+                "   [Ec. 5.7.3.4.2-2]",
+            "sxe_in": "sx * 1.38 / (ag + 0.63), acotado a "
+                      "12.0 in <= sxe <= 80.0 in                [Ec. 5.7.3.4.2-7]",
+            "theta_grados": "29 + 3500*epsilon_s   [Ec. 5.7.3.4.2-3; a "
+                            "diferencia de beta, vale en los DOS casos]",
+            "limites_epsilon_s": "-0.40e-3 <= epsilon_s <= 6.0e-3",
+            "Vc_kip": "0.0316*beta*lambda*raiz(f_c_prima_ksi)*bv_in*dv_in"
+                      "   [Ec. 5.7.3.3-3]",
+            "Vs_kip": "(Vu/phi) - Vc - Vp",
+            "espaciamiento_s_in": "Av*fy*dv*cot(theta) / Vs",
+            "dv_in": "max(de - a/2, 0.9*de, 0.72*h)",
         },
         etiqueta="C",
         concepto="Procedimiento de diseno por flexion y corte de AASHTO LRFD "
@@ -3088,8 +3474,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "-- es una tarea de implementacion aparte, mas grande "
                       "que transcribir un dato, y no se acomete aqui",
         fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., "
-               "Arts. 5.5.4.2 (pag. 5-32) y 5.7.3.4.2 / 5.7.3.3 / 5.7.2.8 "
-               "(pags. 5-70 a 5-243)",
+               "Art. 5.5.4.2 (pag. impresa 5-32) para los phi; "
+               "Art. 5.7.2.8 'Shear Stress on Concrete' (pag. impresa 5-64, "
+               "PDF 423) para dv; Art. 5.7.3.3 'Nominal Shear Resistance' "
+               "(pag. impresa 5-67, PDF 426) para Vc y Vs; Art. 5.7.3.4.2 "
+               "'General Procedure' (pag. impresa 5-70, PDF 429) para beta, "
+               "theta y sus condiciones, con sxe y sus limites en las pags. "
+               "impresas 5-71 y 5-72; C5.1 (pag. impresa 5-1) para el sistema "
+               "de unidades. PAGINAS CORREGIDAS: la fuente declaraba el rango "
+               "'pags. 5-70 a 5-243', que NO contiene ni al 5.7.3.3 (5-67) ni "
+               "al 5.7.2.8 (5-64), los dos anteriores a su limite inferior",
     ),
 }
 
