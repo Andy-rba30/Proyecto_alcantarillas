@@ -161,6 +161,7 @@ from constantes_fisicas import GAMMA_AGUA_KN_M3
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    AMBIENTE_CORROSIVO_TEXTO,
                                    CARGA_VIVA,
+                                   CICLOPEO_DISCREPANCIA_HOJA_RUTA,
                                    CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO,
@@ -204,6 +205,8 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_DOS_CAPAS_REFUERZO,
                                    NUMERAL_EXCEPCION_REFUERZO_MIN_MURO,
                                    NUMERAL_EXPOSICION_ESPECIAL,
+                                   NUMERAL_PROTECCION_CORROSION,
+                                   PROTECCION_CORROSION_TEXTO,
                                    NUMERAL_COMBINACIONES,
                                    NUMERAL_CUANTIA_MIN,
                                    NUMERAL_E030_AMBITO,
@@ -234,6 +237,7 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    RECUBRIMIENTO_AC_UMBRAL_ALTO,
                                    RECUBRIMIENTO_AC_UMBRAL_BAJO,
                                    RECUBRIMIENTO_MP_FACTOR_AC,
+                                   RECUBRIMIENTO_MP_EQUIVALENCIA,
                                    RECUBRIMIENTO_MP_MM,
                                    RECUBRIMIENTO_MP_PISO_MM,
                                    REDUCCION_KH_POR_DESPLAZAMIENTO,
@@ -310,17 +314,20 @@ CRITERIO_TABLA_RECUBRIMIENTO = "tabla_recubrimiento_aashto_mm"
 CRITERIO_CATEGORIA_REFUERZO = "categoria_refuerzo_aashto"
 CRITERIO_SITUACION_RECUBRIMIENTO = "situacion_recubrimiento_aashto"
 CRITERIO_EXPOSICION_QUIMICA = "exposicion_quimica_ems"
+CRITERIO_FACTOR_BANDA_AC = "factor_recubrimiento_banda_intermedia_ac"
+
+# Claves obligatorias del dato de sitio 'exposicion_quimica_ems'. Se exigen
+# TODAS y presentes: una clave ausente no es una lectura negativa.
+CLAVES_ESCALAS_SULFATOS = ("so4_suelo_pct", "so4_agua_ppm")
+CLAVE_FILAS_TABLA_4_2 = "tabla_4_2"
+NOMBRE_TABLA_4_2 = "Tabla 4.2"
+NOMBRE_TABLA_4_4 = "Tabla 4.4"
 
 # La columna de la Tabla 5.10.1-1 que el corpus PERUANO tambien tabula: el
 # Manual de Puentes transcribe esa y solo esa ("aceros no protegidas"). Con
 # cualquiera de las otras dos, el numero deja de ser [N] y pasa a ser el [C]
 # con que la Via 1 de Sec. 0.2 cubre lo que el corpus peruano no tabula.
 CATEGORIA_ACERO_SIN_RECUBRIR = "A"
-# Factor de la banda intermedia de relacion a/c. No es un valor de proyecto
-# ni una eleccion: es el factor NEUTRO, y ademas es lo que AASHTO LRFD
-# Art. 5.10.1 escribe para 0.40 < W/CM < 0.50, banda que el Manual de
-# Puentes no imprime (ver RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA).
-FACTOR_AC_BANDA_INTERMEDIA = 1.0
 CRITERIO_FLEXION_CORTE = "procedimiento_flexion_corte_aashto_sec5"
 CRITERIO_CORTANTE_ALTO = "cortante_alto_muro_e060_art_11_10_10_2"
 
@@ -2111,6 +2118,104 @@ def clase_exposicion_sulfatos(*, so4_suelo_pct: Optional[float],
     return SULFATOS[indice]
 
 
+def _exposicion_quimica_validada() -> dict:
+    """
+    El dato de sitio 'exposicion_quimica_ems', comprobado ANTES de usarlo.
+
+    POR QUE EXISTE ESTA FUNCION, y por que no basta con `.get()`. La version
+    anterior leia `exposicion.get("cloruros_tabla_4_2")`: una clave AUSENTE
+    daba None, None es falso, y el calculo seguia como si el EMS hubiera
+    dicho "no hay cloruros". Con eso desaparecian en silencio la a/c <= 0.40
+    y el f'c >= 35 MPa de esa fila -- que son justamente las exigencias que
+    el expediente venia afirmando en prosa y que este cluster convirtio en
+    dato. La ausencia de una lectura NO es una lectura negativa: es
+    DatoInvalidoError, y el revisor tiene que anadir el analisis que falta.
+
+    Lo segundo que comprueba es la FORMA. Este dato es el unico de todo el
+    expediente que no es un numero ni un rotulo, sino un diccionario, y la
+    unica via por la que hoy se puede declarar desde la ventana produce
+    float o str. Sin esta comprobacion, declararlo mal no daba un problema
+    del expediente sino un AttributeError -- un fallo del programa, que es
+    precisamente la distincion que la taxonomia de excepciones existe para
+    mantener.
+    """
+    exposicion = ca.valor(CRITERIO_EXPOSICION_QUIMICA)
+    if not isinstance(exposicion, dict):
+        raise DatoInvalidoError(
+            campo=CRITERIO_EXPOSICION_QUIMICA, valor=exposicion,
+            motivo="el analisis quimico del EMS se declara como un "
+                   "diccionario con las claves "
+                   + ", ".join(CLAVES_ESCALAS_SULFATOS)
+                   + f" y {CLAVE_FILAS_TABLA_4_2}",
+        )
+    for clave in CLAVES_ESCALAS_SULFATOS:
+        if clave not in exposicion:
+            raise DatoInvalidoError(
+                campo=CRITERIO_EXPOSICION_QUIMICA, valor=exposicion,
+                motivo=f"falta la escala '{clave}' de la Tabla 4.4. Las dos "
+                       f"escalas son alternativas y una puede venir en None, "
+                       f"pero las dos claves tienen que estar declaradas: "
+                       f"omitir una no es decir que no se midio",
+            )
+        medida = exposicion[clave]
+        if medida is not None and (isinstance(medida, bool)
+                                   or not isinstance(medida, (int, float))):
+            raise DatoInvalidoError(
+                campo=CRITERIO_EXPOSICION_QUIMICA, valor=medida,
+                motivo=f"'{clave}' es una magnitud medida y tiene que ser un "
+                       f"numero o None",
+            )
+    filas = exposicion.get(CLAVE_FILAS_TABLA_4_2)
+    if not isinstance(filas, dict):
+        raise DatoInvalidoError(
+            campo=CRITERIO_EXPOSICION_QUIMICA, valor=filas,
+            motivo=f"falta '{CLAVE_FILAS_TABLA_4_2}': las tres filas de la "
+                   f"Tabla 4.2 se declaran como si/no en un diccionario",
+        )
+    for clave in EXPOSICION_ESPECIAL:
+        if clave not in filas:
+            raise DatoInvalidoError(
+                campo=CRITERIO_EXPOSICION_QUIMICA, valor=filas,
+                motivo=f"falta la fila '{clave}' de la Tabla 4.2. Se declaran "
+                       f"LAS TRES porque la nota al pie manda tomar la menor "
+                       f"relacion a/c APLICABLE, y aplicable no se puede "
+                       f"evaluar sobre un conjunto incompleto",
+            )
+        if not isinstance(filas[clave], bool):
+            raise DatoInvalidoError(
+                campo=CRITERIO_EXPOSICION_QUIMICA, valor=filas[clave],
+                motivo=f"la fila '{clave}' de la Tabla 4.2 aplica o no "
+                       f"aplica: se declara True o False",
+            )
+    sobrantes = set(filas) - set(EXPOSICION_ESPECIAL)
+    if sobrantes:
+        raise DatoInvalidoError(
+            campo=CRITERIO_EXPOSICION_QUIMICA, valor=sorted(sobrantes),
+            motivo="la Tabla 4.2 tiene tres filas y no mas: "
+                   + ", ".join(sorted(EXPOSICION_ESPECIAL)),
+        )
+    return exposicion
+
+
+def _extremo_declarado(candidatos, funcion):
+    """
+    El extremo de una lista de (valor, fuente), con TODAS las fuentes que lo
+    alcanzan, no solo una.
+
+    Antes esto era `min(candidatos)` sobre tuplas, y con dos tablas empatadas
+    en el valor el desempate lo decidia la comparacion alfabetica del nombre
+    de la fuente. Ninguna de las dos tablas es "menor" que la otra: si las
+    dos imponen el mismo limite, las dos gobiernan, y eso es lo que la
+    memoria tiene que decir.
+    """
+    if not candidatos:
+        return None, "-"
+    extremo = funcion(valor for valor, _ in candidatos)
+    fuentes = [fuente for valor, fuente in candidatos
+               if abs(valor - extremo) <= TOL_UMBRAL_NORMATIVO]
+    return extremo, " y ".join(fuentes)
+
+
 def requisitos_durabilidad_concreto() -> RequisitosDurabilidad:
     """
     Relacion a/c maxima y f'c minimo del concreto, combinando las Tablas 4.2 y
@@ -2126,37 +2231,61 @@ def requisitos_durabilidad_concreto() -> RequisitosDurabilidad:
     relacion a/c se especifica. Y de esa relacion a/c cuelga el recubrimiento,
     por el modificador del Art. 5.10.1 de AASHTO.
 
+    QUE NUMERAL MANDA APLICAR LA TABLA 4.2, que la cadena habia perdido: el
+    Art. 4.4.2 (pag. impresa 39), verificado contra el PDF. "Cuando el
+    concreto con refuerzo vaya a estar expuesto a cloruros de quimicos
+    descongelantes, sal, agua salobre, agua de mar o salpicaduras de las
+    mismas, deben cumplirse los requisitos de la Tabla 4.2 para la maxima
+    relacion agua-material cementante y valor minimo de f'c, Y LOS REQUISITOS
+    DE RECUBRIMIENTO MINIMO DEL CONCRETO DE 7.7". Es el articulo que ata este
+    cluster entero -- exposicion quimica, relacion a/c y recubrimiento en una
+    sola frase --, y una version anterior de este cluster lo habia sacado de
+    la cadena de numerales creyendo que citarlo era un error.
+
+    LAS TRES FILAS DE LA TABLA 4.2 SE MIRAN, no solo la de cloruros. "La
+    MENOR relacion a/c aplicable" es una comparacion, y una comparacion a la
+    que le falta un candidato da el resultado equivocado sin avisar.
+
     Consume el dato de sitio 'exposicion_quimica_ems' ([S], pendiente de
     ensayo): sin el analisis quimico del EMS, `CriterioPendienteError` y el
     calculo se detiene. No hay lectura por defecto -- la afirmacion "corredor
     salino" viajaba en prosa por varias justificaciones y no era un dato.
     """
-    exposicion = ca.valor(CRITERIO_EXPOSICION_QUIMICA)
+    exposicion = _exposicion_quimica_validada()
     fila = clase_exposicion_sulfatos(
-        so4_suelo_pct=exposicion.get("so4_suelo_pct"),
-        so4_agua_ppm=exposicion.get("so4_agua_ppm"))
+        so4_suelo_pct=exposicion[CLAVES_ESCALAS_SULFATOS[0]],
+        so4_agua_ppm=exposicion[CLAVES_ESCALAS_SULFATOS[1]])
 
     candidatos_ac = []
     candidatos_fc = []
     if fila["a_c_max"] is not None:
-        candidatos_ac.append((fila["a_c_max"], "Tabla 4.4"))
+        candidatos_ac.append((fila["a_c_max"], NOMBRE_TABLA_4_4))
     if fila["fc_min_MPa"] is not None:
-        candidatos_fc.append((fila["fc_min_MPa"], "Tabla 4.4"))
-    if exposicion.get("cloruros_tabla_4_2"):
-        cloruros = EXPOSICION_ESPECIAL["cloruros"]
-        candidatos_ac.append((cloruros["a_c_max"], "Tabla 4.2"))
-        candidatos_fc.append((cloruros["fc_min_MPa"], "Tabla 4.2"))
+        candidatos_fc.append((fila["fc_min_MPa"], NOMBRE_TABLA_4_4))
+    # LAS TRES FILAS DE LA TABLA 4.2, no solo la de cloruros. "La MENOR
+    # relacion a/c APLICABLE" no se puede evaluar sobre un conjunto que el
+    # dato deja a medias: si el concreto ademas debe ser de baja
+    # permeabilidad, esa fila es aplicable y tiene que entrar a la
+    # comparacion. El dato declara las tres, y aqui entran las que aplican.
+    for clave, aplica in exposicion[CLAVE_FILAS_TABLA_4_2].items():
+        if not aplica:
+            continue
+        requisito = EXPOSICION_ESPECIAL[clave]
+        etiqueta = f"{NOMBRE_TABLA_4_2} ({clave})"
+        candidatos_ac.append((requisito["a_c_max"], etiqueta))
+        candidatos_fc.append((requisito["fc_min_MPa"], etiqueta))
 
     # La nota al pie, aplicada: MENOR a/c y MAYOR f'c de los aplicables.
-    a_c_max, gobierna_a_c = min(candidatos_ac) if candidatos_ac else (None, "-")
-    fc_min, gobierna_fc = max(candidatos_fc) if candidatos_fc else (None, "-")
+    a_c_max, gobierna_a_c = _extremo_declarado(candidatos_ac, min)
+    fc_min, gobierna_fc = _extremo_declarado(candidatos_fc, max)
 
     return RequisitosDurabilidad(
         a_c_max=a_c_max, fc_min_MPa=fc_min,
         clase_sulfatos=fila["exposicion"],
         gobierna_a_c=gobierna_a_c, gobierna_fc=gobierna_fc,
         cementos_admisibles=fila["cementos"],
-        numeral=f"{NUMERAL_EXPOSICION_ESPECIAL} / {NUMERAL_SULFATOS} / "
+        numeral=f"{NUMERAL_PROTECCION_CORROSION} / "
+                f"{NUMERAL_EXPOSICION_ESPECIAL} / {NUMERAL_SULFATOS} / "
                 f"{NUMERAL_COMBINACION_4_2_4_4}",
     )
 
@@ -2178,11 +2307,20 @@ def factor_recubrimiento_por_ac(*, a_c_max: Optional[float]) -> Tuple[float, str
     factor mas alto y por tanto MAS recubrimiento --, y ademas es la unica que
     el expediente conoce en fase de perfil.
 
-    SIN LIMITE DE DURABILIDAD (`a_c_max=None`, exposicion insignificante y sin
-    cloruros) no hay a/c contra la que evaluar el modificador. No se inventa
-    una: se aplica el factor MAS exigente de la tabla, 1.2, y la funcion lo
-    declara en el origen que devuelve, para que la memoria lo imprima como lo
-    que es -- una lectura conservadora, no un dato del expediente.
+    SIN LIMITE DE DURABILIDAD (`a_c_max=None`, exposicion insignificante y
+    ninguna fila de la Tabla 4.2 aplicable) no hay a/c contra la que evaluar
+    el modificador. No se inventa una: se aplica el factor MAS exigente de la
+    tabla, 1.2, y la funcion lo declara en el origen que devuelve. Ese origen
+    VIAJA hasta la memoria (`RecubrimientoDiseno.origen_factor`), porque del
+    numero solo no se distingue esta situacion de un expediente cuya a/c
+    maxima si es 0.50: son dos cosas distintas y la segunda es un dato,
+    mientras la primera es una acotacion del calculo.
+
+    LA BANDA INTERMEDIA no se resuelve aqui con un literal. El Manual de
+    Puentes no imprime factor para 0.40 < a/c < 0.50 y AASHTO si; ese hueco
+    es un [C] declarado ('factor_recubrimiento_banda_intermedia_ac'), no un
+    1.0 escrito en este modulo por parecer neutro. Y la banda es alcanzable:
+    con sulfatos severos y sin cloruros la a/c maxima resulta 0.45.
     """
     if a_c_max is None:
         return (max(RECUBRIMIENTO_MP_FACTOR_AC.values()),
@@ -2194,10 +2332,12 @@ def factor_recubrimiento_por_ac(*, a_c_max: Optional[float]) -> Tuple[float, str
     if a_c_max >= RECUBRIMIENTO_AC_UMBRAL_ALTO - TOL_UMBRAL_NORMATIVO:
         return (RECUBRIMIENTO_MP_FACTOR_AC["a_c_mayor_igual_0_50"],
                 f"a/c maxima {a_c_max} >= 0.50")
-    return (FACTOR_AC_BANDA_INTERMEDIA,
+    return (ca.valor(CRITERIO_FACTOR_BANDA_AC),
             f"a/c maxima {a_c_max} en la banda intermedia (0.40 < a/c < "
             f"0.50): el Manual de Puentes no imprime factor para esta banda "
-            f"y se aplica el 1.0 de AASHTO LRFD Art. 5.10.1")
+            f"y el hueco lo cubre el criterio [C] "
+            f"'{CRITERIO_FACTOR_BANDA_AC}' con el valor de AASHTO LRFD "
+            f"Art. 5.10.1")
 
 
 def recubrimiento_aashto_mm(*, condicion: str) -> float:
@@ -2206,8 +2346,9 @@ def recubrimiento_aashto_mm(*, condicion: str) -> float:
     condicion de E.060 que se le pase. Ya NO es un valor declarado: se
     CALCULA, y por eso puede detenerse.
 
-        recubrimiento = max( tabla[situacion][categoria] * factor_ac ,
-                             piso de 1.0 in )
+        tabulado      = max( tabla_aashto[situacion][categoria] ,
+                             tabla_manual[fila equivalente] )   # solo cat. A
+        recubrimiento = max( tabulado * factor_ac , piso de 1.0 in )
 
     Los tres eslabones y de donde sale cada uno:
 
@@ -2263,15 +2404,34 @@ def _recubrimiento_aashto_detallado(*, condicion: str) -> Tuple[float, dict]:
         )
 
     tabulado = float(tabla[situacion][categoria])
-    if (categoria == CATEGORIA_ACERO_SIN_RECUBRIR
-            and situacion in RECUBRIMIENTO_MP_MM):
+    filas_mp = RECUBRIMIENTO_MP_EQUIVALENCIA.get(situacion)
+    if filas_mp is None:
+        # NO se sigue adelante saltandose el cruce. Una fila sin
+        # correspondencia declarada significa que las dos transcripciones se
+        # han desincronizado, y seguir seria calcular el recubrimiento con
+        # una sola de las dos fuentes creyendo que se compararon.
+        raise DatoInvalidoError(
+            campo="situacion", valor=situacion,
+            motivo="no tiene fila equivalente declarada en "
+                   "RECUBRIMIENTO_MP_EQUIVALENCIA, y sin ella no se puede "
+                   "cruzar la tabla de AASHTO con la del Manual de Puentes",
+        )
+    if categoria == CATEGORIA_ACERO_SIN_RECUBRIR:
         # El corpus peruano TABULA esta columna, asi que el valor sale de el y
         # no de AASHTO: es lo que pedia NOR-PUE-10, y no basta con nombrarlo en
-        # la etiqueta. Se toma el mayor de los dos por la misma regla de
-        # conflicto de Sec. 0.2 -- hoy coinciden (3.0 in en las dos), y si
-        # alguna edicion los separa, la regla ya esta escrita y no hay que
-        # decidir nada en caliente.
-        tabulado = max(tabulado, float(RECUBRIMIENTO_MP_MM[situacion]))
+        # la etiqueta. Se toma el mayor por la misma regla de conflicto de
+        # Sec. 0.2 -- hoy coinciden en las 21 filas, y si alguna edicion las
+        # separa, la regla ya esta escrita y no hay que decidir en caliente.
+        #
+        # EL CRUCE SE HACE POR MAPA Y NO POR NOMBRE DE CLAVE. Antes la guarda
+        # era `situacion in RECUBRIMIENTO_MP_MM`, y en las 8 filas de la
+        # familia de pilotes -- donde el Manual traduce "shafts" por "Pilares"
+        # y ademas parte en dos la fila de ambiente corrosivo -- daba False:
+        # el cruce se saltaba sin avisar y la red de seguridad cubria 14 filas
+        # de 21 mientras el comentario afirmaba que las cubria todas.
+        tabulado = max([tabulado]
+                       + [float(RECUBRIMIENTO_MP_MM[fila])
+                          for fila in filas_mp])
     requisitos = requisitos_durabilidad_concreto()
     factor, origen_factor = factor_recubrimiento_por_ac(
         a_c_max=requisitos.a_c_max)
@@ -2285,12 +2445,19 @@ def _recubrimiento_aashto_detallado(*, condicion: str) -> Tuple[float, dict]:
               "columna A"
               if categoria == CATEGORIA_ACERO_SIN_RECUBRIR else
               "[C] AASHTO LRFD Tabla 5.10.1-1 columna " + str(categoria)
-              + ": el corpus peruano no tabula el acero protegido para "
-                "exposicion exterior")
+              + ": el Manual de Puentes no CALLA sobre el acero protegido "
+                "-- su num. 2.9.1.5.5.4 lo trata --, pero solo autoriza usar "
+                "la tabla con acero protegido 'Para exposicion interior'. "
+                "Fuera de ella el corpus peruano no tabula, y el hueco lo "
+                "cubre AASHTO por la Via 1 de Sec. 0.2. Es una lectura "
+                "declarada, no neutra: la contraria mantendria la columna de "
+                "aceros no protegidos y esta en la sensibilidad de "
+                "'" + CRITERIO_CATEGORIA_REFUERZO + "'")
     detalle = {"situacion": situacion, "categoria": categoria,
                "tabulado_mm": tabulado, "factor_ac": factor,
                "origen_factor": origen_factor, "piso_aplicado": piso_aplicado,
-               "corpus": corpus, "requisitos": requisitos}
+               "corpus": corpus, "requisitos": requisitos,
+               "filas_mp": filas_mp}
     return valor, detalle
 
 
@@ -2311,10 +2478,30 @@ def recubrimiento_de_diseno(*, condicion: str) -> RecubrimientoDiseno:
     la conclusion ya escrita: "AASHTO gobierna en los tres casos". Los 75 mm
     eran los 3.0 in de la columna A redondeados a la baja, sin el modificador
     por relacion a/c y sin decir que habia tres columnas. Con la cadena
-    completa el resultado se invierte en el caso principal: 3.0 in = 76.2 mm,
-    por el factor 0.8 de a/c <= 0.40, da 61.0 mm, y E.060 pide 70 mm contra el
-    suelo. **Gobierna E.060.** Corregir solo 75 -> 76.2, que era la correccion
-    obvia, habria dejado la conclusion falsa con un numero mas exacto.
+    completa la conclusion deja de valer para las tres.
+
+    EL RESULTADO, CONDICION POR CONDICION, para que nadie lo lea como una
+    inversion general que no es. Con categoria A y el factor 0.8 de
+    a/c <= 0.40, el lado AASHTO vale 76.2 x 0.8 = 61.0 mm en las tres:
+
+        contra_suelo             E.060 70.0  AASHTO 61.0  ->  gobierna E.060
+        suelo_intemperie_ge_3_4  E.060 50.0  AASHTO 61.0  ->  gobierna AASHTO
+        suelo_intemperie_le_5_8  E.060 40.0  AASHTO 61.0  ->  gobierna AASHTO
+
+    Es decir: la inversion ocurre en UNA de las tres condiciones -- la
+    principal, la del concreto vaciado contra el suelo -- y en las otras dos
+    AASHTO sigue gobernando, con 61.0 mm en vez de los 75 mm de antes.
+    Corregir solo 75 -> 76.2, que era la correccion obvia que el conflicto #3
+    prohibe, habria dejado la conclusion falsa con un numero mas exacto.
+
+    EL EFECTO NETO, que conviene decir en voz alta: el recubrimiento adoptado
+    BAJA en las tres condiciones respecto del expediente anterior (75 mm ->
+    70.0 / 61.0 / 61.0). Es lo que la norma exige una vez aplicado el
+    modificador que faltaba, y no es una holgura ganada: cuando la fila de
+    cloruros de la Tabla 4.2 aplica, el Art. 4.4.2 remite al recubrimiento de
+    7.7 y el Art. 7.7.5.1 manda AUMENTAR este minimo -- ver
+    `aviso_ambiente_corrosivo`, que consume el mismo dato y lo dice sin
+    condicional cuando el dato ya esta declarado.
 
     E.060 Art. 7.7.5.1 (ambiente corrosivo) manda AUMENTAR este resultado y no
     dice cuanto; ese aumento se declara aparte (`aviso_ambiente_corrosivo`).
@@ -2334,6 +2521,8 @@ def recubrimiento_de_diseno(*, condicion: str) -> RecubrimientoDiseno:
         situacion=detalle["situacion"], categoria=detalle["categoria"],
         tabulado_mm=detalle["tabulado_mm"], factor_ac=detalle["factor_ac"],
         piso_aplicado=detalle["piso_aplicado"], corpus_tabla=detalle["corpus"],
+        origen_factor=detalle["origen_factor"],
+        requisitos=detalle["requisitos"],
     )
 
 
@@ -2353,14 +2542,42 @@ def aviso_ambiente_corrosivo() -> str:
     categoria B o C de 'categoria_refuerzo_aashto') deja de ser solo una
     opcion de suministro y pasa a ser una forma de cumplir este articulo.
     Por eso el aviso transcribe el texto entero y no lo resume.
+
+    Y EL AVISO EVALUA SU PROPIO ANTECEDENTE, que es lo que le faltaba. Decia
+    "si el analisis quimico del EMS confirma la exposicion" -- un condicional
+    cuyo antecedente el programa YA tiene resuelto en el mismo dato del que
+    cuelga el factor por a/c. Dejarlo en potencial tenia una consecuencia
+    concreta: en la misma corrida en que el modificador BAJA el recubrimiento
+    adoptado, el aumento que la norma manda aplicar quedaba en prosa
+    condicional. El Art. 4.4.2 cierra el circulo -- expuesto a cloruros ->
+    Tabla 4.2 Y "los requisitos de recubrimiento minimo del concreto de 7.7"
+    --, y el Art. 7.7.1 abre con la salvedad "excepto cuando se requieran
+    recubrimientos mayores segun 7.7.5.1".
     """
+    exposicion = _exposicion_quimica_validada()
+    aplica = exposicion[CLAVE_FILAS_TABLA_4_2]["cloruros"]
+    if aplica:
+        cabecera = (
+            "Recubrimiento: el valor adoptado es el MINIMO y HAY QUE "
+            f"AUMENTARLO ({AMBIENTE_CORROSIVO_AUMENTAR}). No es un supuesto: "
+            "el analisis quimico declarado en "
+            f"'{CRITERIO_EXPOSICION_QUIMICA}' dice que el concreto queda "
+            "expuesto a los cloruros de la Tabla 4.2, y con eso el "
+            f"{NUMERAL_PROTECCION_CORROSION} manda cumplir tambien \""
+            f"{PROTECCION_CORROSION_TEXTO}\". ")
+    else:
+        cabecera = (
+            "Recubrimiento: el analisis quimico declarado en "
+            f"'{CRITERIO_EXPOSICION_QUIMICA}' NO da por expuesto el concreto "
+            "a los cloruros de la Tabla 4.2, de modo que el aumento de este "
+            "articulo no se dispara por esa via. Queda anotado porque el "
+            "ambiente corrosivo no se agota en los cloruros de esa fila. ")
     return (
-        "Recubrimiento: al valor adoptado hay que sumarle el aumento por "
-        f"ambiente corrosivo ({AMBIENTE_CORROSIVO_AUMENTAR}), si el analisis "
-        "quimico del EMS ('exposicion_quimica_ems') confirma la exposicion. "
-        f"Texto literal del articulo: \"{AMBIENTE_CORROSIVO_TEXTO}\". No fija "
-        "cuanto, y ofrece la alternativa de disponer otro tipo de proteccion: "
-        "las dos cosas se declaran en la memoria, no las calcula este modulo"
+        cabecera
+        + f"Texto literal del articulo: \"{AMBIENTE_CORROSIVO_TEXTO}\". No "
+        "fija cuanto, y ofrece la alternativa de disponer otro tipo de "
+        "proteccion: las dos cosas se declaran en la memoria, no las calcula "
+        "este modulo"
     )
 
 
@@ -2638,7 +2855,9 @@ def verificar_ciclopeo(*, fc_matriz: float,
     return (
         Verificacion(
             cumple=fc_matriz >= CICLOPEO_FC_MATRIZ_MIN_APLICABLE - TOL_UMBRAL_NORMATIVO,
-            numeral=NUMERAL_CICLOPEO_APLICABLE,
+            numeral=f"{NUMERAL_CICLOPEO_APLICABLE} "
+                    f"[DISCREPA DE LA HOJA DE RUTA: "
+                    f"{CICLOPEO_DISCREPANCIA_HOJA_RUTA}]",
             valor_obtenido=fc_matriz,
             valor_admisible=CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
             criterio_aplicado=None,

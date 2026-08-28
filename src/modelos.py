@@ -1619,7 +1619,7 @@ class RecubrimientoDiseno:
     reescribirlo en metros solo introduciria ceros). No entra en ninguna
     formula de equilibrio: es una especificacion de detalle para plano.
 
-    POR QUE EL LADO AASHTO LLEVA CINCO CAMPOS Y NO UNO. Ese lado ya no es un
+    POR QUE EL LADO AASHTO LLEVA SIETE CAMPOS Y NO UNO. Ese lado ya no es un
     valor declarado: es el resultado de una cadena -- fila de la tabla,
     columna por categoria de acero, modificador por relacion a/c, piso
     absoluto de 1.0 in -- y cada eslabon puede invertir quien gobierna. Un
@@ -1627,6 +1627,15 @@ class RecubrimientoDiseno:
     resultado es defendible, que es exactamente lo que paso con los 75 mm que
     este objeto transportaba antes: el numero se leia bien y no habia forma de
     ver que le faltaban una columna y un modificador.
+
+    LOS DOS ULTIMOS CAMPOS EXISTEN PORQUE UN FACTOR NO SE EXPLICA SOLO. El
+    `factor_ac` es un numero de una tabla de tres entradas, y del numero no se
+    deduce por que se eligio: 1.2 puede ser "la a/c maxima es 0.50 o mas" o
+    puede ser "no hay ninguna a/c contra la que evaluarlo y se toma el factor
+    mas exigente". Son dos situaciones distintas del expediente y la segunda
+    hay que poder leerla en la memoria, no solo en el codigo. `origen_factor`
+    la trae, y `requisitos` trae la exigencia de durabilidad entera -- con
+    que tabla gobierna cada mitad -- de la que el factor cuelga.
     """
 
     condicion: str                        # clave de RECUBRIMIENTO (Art. 7.7.1)
@@ -1642,6 +1651,8 @@ class RecubrimientoDiseno:
     factor_ac: float = 1.0                # modificador por relacion a/c
     piso_aplicado: bool = False           # True si mando el piso de 1.0 in
     corpus_tabla: str = ""                # "[N] Manual de Puentes" / "[C] AASHTO LRFD"
+    origen_factor: str = ""               # por que ese factor por a/c
+    requisitos: Optional["RequisitosDurabilidad"] = None
 
 
 @dataclass(frozen=True)

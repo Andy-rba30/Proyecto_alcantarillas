@@ -3061,20 +3061,74 @@ CRITERIOS: Dict[str, Criterio] = {
                "CUAL de las tres se especifica en esta obra",
         sensibilidad=("A: acero sin recubrir (AASHTO M 31M/M 31)",
                       "B: epoxico o galvanizado (ASTM A775/A775M)",
-                      "C: acero AASHTO M 334M/M 334"),
+                      "C: acero AASHTO M 334M/M 334",
+                      "LECTURA ALTERNATIVA, declarada porque bajar de columna "
+                      "con B o C NO es una lectura neutra: el num. "
+                      "2.9.1.5.5.4 del Manual autoriza usar la tabla con "
+                      "acero protegido 'Para exposicion interior', y de ahi "
+                      "caben dos lecturas. La adoptada: fuera de la "
+                      "exposicion interior el corpus peruano calla y el hueco "
+                      "lo cubren las columnas B y C de AASHTO, como [C]. La "
+                      "contraria: si el Manual solo autoriza la reduccion en "
+                      "interior, en exposicion exterior sigue rigiendo su "
+                      "unica columna -- la de aceros no protegidos -- y el "
+                      "acero protegido no baja de 3.0 in. En la fila costera "
+                      "con el factor 0.8 la diferencia es 40.6 mm frente a "
+                      "61.0 mm, y en 'suelo_intemperie_le_5_8' decide ademas "
+                      "quien gobierna: E.060 con 40 mm en la lectura "
+                      "adoptada, AASHTO en la contraria"),
         reemplazado_por="Especificacion del acero de refuerzo del expediente "
                         "(norma de producto del acero que se compra), o la "
                         "decision expresa del proyectista de proteger o no el "
                         "refuerzo en ambiente salino",
     ),
 
+    "factor_recubrimiento_banda_intermedia_ac": Criterio(
+        valor=1.0,
+        etiqueta="C",
+        concepto="Factor de modificacion del recubrimiento para la banda "
+                 "intermedia de relacion agua-cemento, 0.40 < a/c < 0.50, que "
+                 "el Manual de Puentes no imprime",
+        justificacion="ES UN HUECO DEL CORPUS PERUANO, no un valor neutro que "
+                      "se pueda dejar en el modulo por obvio. El num. "
+                      "2.9.1.5.5.3 del Manual escribe DOS factores -- 0.8 "
+                      "para W/C <= 0.40 y 1.2 para W/C >= 0.50 -- y deja la "
+                      "banda de en medio sin factor; AASHTO LRFD Art. 5.10.1, "
+                      "de donde el Manual toma la tabla, si la cubre con 1.0. "
+                      "Se aplica AASHTO por la Via 1 de Sec. 0.2, que es "
+                      "exactamente lo que una etiqueta [C] declara. "
+                      "POR QUE IMPORTA QUE ESTE AQUI Y NO EN EL MODULO. "
+                      "Vivia en M9 como `FACTOR_AC_BANDA_INTERMEDIA = 1.0` "
+                      "con el argumento de que era 'el factor NEUTRO'. "
+                      "Multiplicar por uno es neutro en aritmetica y no en "
+                      "normativa: aqui significa 'en esta banda no se "
+                      "modifica el recubrimiento', que es una afirmacion que "
+                      "el corpus peruano NO hace y que hay que sostener con "
+                      "una fuente. Ademas la banda es alcanzable -- con "
+                      "sulfatos severos y sin cloruros la a/c maxima resulta "
+                      "0.45 --, de modo que no es un caso teorico",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
+               "Art. 5.10.1 'Concrete Cover', pag. impresa 5-167 (PDF 526): "
+               "'For W/CM ratio between 0.40 and 0.50 ... 1.0'. El Manual de "
+               "Puentes num. 2.9.1.5.5.3 (pag. impresa 377) imprime solo los "
+               "otros dos factores. Ver RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA",
+        sensibilidad=("El unico valor alternativo defendible seria extender "
+                      "el 1.2 de la banda alta a la intermedia, por no dejar "
+                      "sin modificar un concreto que el corpus peruano no "
+                      "clasifica. Daria mas recubrimiento (76.2 -> 91.4 mm en "
+                      "la fila costera con categoria A) y seria mas "
+                      "conservador, pero contradice la fuente de la que sale "
+                      "la propia tabla, que si escribe el 1.0",),
+    ),
+
     "exposicion_quimica_ems": Criterio(
         valor=None,                 # VACIO: bloquea el factor por a/c de 9.4
         etiqueta="S",
         concepto="Agresividad quimica del suelo y del agua freatica en el "
-                 "corredor, en las magnitudes con que E.060 clasifica: "
-                 "sulfato soluble en el suelo (% en peso), sulfato en el agua "
-                 "(ppm) y presencia de los cloruros que enumera la Tabla 4.2",
+                 "corredor, y condiciones de exposicion del concreto, en las "
+                 "magnitudes con que E.060 clasifica: sulfato soluble en el "
+                 "suelo (% en peso) y en el agua (ppm) para la Tabla 4.4, y "
+                 "cual de las TRES filas de la Tabla 4.2 aplica",
         justificacion="ES EL DATO DEL QUE CUELGA EL RECUBRIMIENTO, por una "
                       "cadena que el expediente no tenia escrita: la "
                       "agresividad quimica fija la relacion a/c maxima "
@@ -3112,19 +3166,35 @@ CRITERIOS: Dict[str, Criterio] = {
                "(pag. impresa 37), Tabla 4.4 (pag. impresa 38) y la nota al "
                "pie comun a las dos",
         trazabilidad="Ensayo quimico de suelos y de agua del EMS del "
-                     "expediente, sobre muestras del corredor. Se necesitan "
-                     "tres magnitudes, en estas unidades: sulfato soluble en "
-                     "agua presente en el suelo, en porcentaje en peso "
-                     "(clave 'so4_suelo_pct'); sulfato en el agua, en ppm "
-                     "(clave 'so4_agua_ppm'); y si el concreto queda expuesto "
-                     "a los cloruros que enumera la fila tercera de la Tabla "
-                     "4.2, como si/no (clave 'cloruros_tabla_4_2'). El dato "
-                     "vale para todo el corredor si el EMS lo muestrea por "
-                     "tramos homogeneos; si la agresividad varia de un punto "
-                     "a otro, deja de ser un dato de corredor y tiene que "
-                     "pasar a ser columna del CSV. Las dos escalas de sulfato "
-                     "son alternativas -- el suelo O el agua --, no hay que "
-                     "tener las dos; con las dos, gobierna la mas exigente",
+                     "expediente, sobre muestras del corredor, MAS la "
+                     "condicion de exposicion del elemento. La estructura del "
+                     "dato es un diccionario con estas claves, TODAS "
+                     "obligatorias: 'so4_suelo_pct', sulfato soluble en agua "
+                     "presente en el suelo, en porcentaje en peso; "
+                     "'so4_agua_ppm', sulfato en el agua, en ppm; y "
+                     "'tabla_4_2', a su vez un diccionario con las TRES filas "
+                     "de esa tabla como si/no -- 'baja_permeabilidad', "
+                     "'congelamiento_deshielo' y 'cloruros'. "
+                     "POR QUE LAS TRES FILAS Y NO SOLO LA DE CLORUROS: la "
+                     "nota al pie comun a las Tablas 4.2 y 4.4 manda aplicar "
+                     "'la MENOR relacion maxima agua-material cementante "
+                     "APLICABLE', y aplicable no se puede evaluar sobre un "
+                     "conjunto que el dato deja a medias. Con solo la fila de "
+                     "cloruros declarada, un concreto que ademas deba ser de "
+                     "baja permeabilidad se evaluaba contra un candidato "
+                     "menos que el que la norma manda mirar. "
+                     "UNA CLAVE AUSENTE NO ES UN 'NO': es DatoInvalidoError. "
+                     "La version anterior leia la de cloruros con `.get()`, y "
+                     "un EMS que no la trajera se leia como 'no hay "
+                     "cloruros', que es rellenar un vacio en silencio. "
+                     "El dato vale para todo el corredor si el EMS lo "
+                     "muestrea por tramos homogeneos; si la agresividad varia "
+                     "de un punto a otro, deja de ser un dato de corredor y "
+                     "tiene que pasar a ser columna del CSV. Las dos escalas "
+                     "de sulfato son alternativas -- el suelo O el agua --: "
+                     "las dos claves tienen que estar, pero una de ellas "
+                     "puede venir en None; con las dos medidas, gobierna la "
+                     "mas exigente",
         reemplazado_por="El analisis quimico del EMS. Mientras no exista, "
                         "ningun recubrimiento de 9.4 se puede calcular",
     ),
@@ -3346,8 +3416,13 @@ CRITERIOS: Dict[str, Criterio] = {
             "condicion_beta": "'For sections containing at least the minimum "
                               "amount of transverse reinforcement specified "
                               "in Article 5.7.2.5, the value of beta may be "
-                              "determined by Eq. 5.7.3.4.2-1'. Sin ese "
-                              "refuerzo minimo rige la Ec. 5.7.3.4.2-2. Cual "
+                              "determined by Eq. 5.7.3.4.2-1'. Para el otro "
+                              "caso el articulo es igual de POTESTATIVO, y "
+                              "conviene no endurecerlo al traducir: 'When "
+                              "sections do not contain at least the minimum "
+                              "amount of shear reinforcement, the value of "
+                              "beta may be as specified in "
+                              "Eq. 5.7.3.4.2-2' -- 'may be', no 'rige'. Cual "
                               "de las dos aplica lo decide el armado "
                               "transversal del muro, que este proyecto "
                               "todavia no dimensiona",

@@ -140,7 +140,16 @@ CLAVE_EXPOSICION_QUIMICA = "exposicion_quimica_ems"
 EXPOSICION_QUIMICA_DE_PRUEBA = {
     "so4_suelo_pct": 0.0,
     "so4_agua_ppm": None,
-    "cloruros_tabla_4_2": True,
+    # LAS TRES FILAS DE LA TABLA 4.2, declaradas una por una. No estan las
+    # tres por prolijidad: "la MENOR relacion a/c aplicable" de la nota al pie
+    # es una comparacion, y con una fila sin declarar la comparacion se hacia
+    # sobre un conjunto incompleto sin que nada avisara. Una clave ausente es
+    # DatoInvalidoError, no un "no aplica".
+    "tabla_4_2": {
+        "baja_permeabilidad": False,
+        "congelamiento_deshielo": False,
+        "cloruros": True,
+    },
 }
 
 _DECLARACIONES_DE_PRUEBA = {

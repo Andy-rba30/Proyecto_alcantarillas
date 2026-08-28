@@ -1193,7 +1193,18 @@ def _cabezal_json(informe: InformeCabezal) -> Dict[str, Any]:
                             "tabulado_mm": _num(r.tabulado_mm),
                             "factor_ac": _num(r.factor_ac),
                             "piso_aplicado": r.piso_aplicado,
-                            "corpus_tabla": r.corpus_tabla}
+                            "corpus_tabla": r.corpus_tabla,
+                            "origen_factor": r.origen_factor,
+                            "durabilidad": (
+                                None if r.requisitos is None else {
+                                    "a_c_max": _num(r.requisitos.a_c_max),
+                                    "fc_min_MPa": _num(r.requisitos.fc_min_MPa),
+                                    "clase_sulfatos": r.requisitos.clase_sulfatos,
+                                    "gobierna_a_c": r.requisitos.gobierna_a_c,
+                                    "gobierna_fc": r.requisitos.gobierna_fc,
+                                    "cementos_admisibles":
+                                        list(r.requisitos.cementos_admisibles),
+                                    "numeral": r.requisitos.numeral})}
                            for r in informe.recubrimientos],
         "cuantias_minimas": {k: _num(v) for k, v in informe.cuantias.items()},
         "notas": list(informe.notas),
@@ -1408,6 +1419,18 @@ def _lineas_cabezal(informe: InformeCabezal) -> List[str]:
                    f"por relacion a/c = {_fmt(r.aashto_mm, 1)} mm"
                    + (" (piso de 1.0 in aplicado)" if r.piso_aplicado else "")
                    + f"; {r.corpus_tabla}")
+        # DE DONDE SALE EL FACTOR, no solo cuanto vale. Un 1.2 puede ser "la
+        # a/c maxima es 0.50 o mas" o "no hay a/c contra la que evaluarlo y se
+        # toma el mas exigente": son dos situaciones distintas del expediente
+        # y la memoria tiene que poder distinguirlas sin abrir el codigo.
+        out.append(f"{SANGRIA * 2}factor por a/c: {r.origen_factor}")
+        if r.requisitos is not None:
+            out.append(
+                f"{SANGRIA * 2}durabilidad del concreto: a/c maxima "
+                f"{r.requisitos.a_c_max} (gobierna {r.requisitos.gobierna_a_c}), "
+                f"f'c minimo {r.requisitos.fc_min_MPa} MPa "
+                f"(gobierna {r.requisitos.gobierna_fc}); exposicion a "
+                f"sulfatos '{r.requisitos.clase_sulfatos}'")
     for direccion, cuantia in informe.cuantias.items():
         out.append(f"{SANGRIA}Cuantia minima {direccion}: {cuantia}")
     for nota in informe.notas:

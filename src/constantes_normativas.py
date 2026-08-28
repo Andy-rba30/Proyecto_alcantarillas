@@ -1781,6 +1781,53 @@ RECUBRIMIENTO_MP_MM = {
     "alcantarilla_cajon_prefab_losa_menos_2_pies":      50.8,   # 2.0 in
     "alcantarilla_cajon_prefab_otros_miembros":         25.4,   # 1.0 in
 }
+# CORRESPONDENCIA DE FILAS ENTRE LAS DOS TRANSCRIPCIONES DE LA MISMA TABLA.
+# No es una eleccion de proyecto: es la reconciliacion de dos traducciones del
+# mismo original. AASHTO LRFD Tabla 5.10.1-1 y la Tabla 2.9.1.5.5.3-1 del
+# Manual son la misma tabla, y aun asi sus filas NO se pueden cruzar por
+# nombre de clave: el Manual traduce "shafts" por "Pilares" donde la
+# transcripcion de AASHTO dice "pilote", y ademas PARTE EN DOS la fila de
+# pilares in situ en ambiente corrosivo ("En general" / "Armadura
+# protegida"), que del lado de AASHTO es una sola.
+#
+# POR QUE HACE FALTA ESCRIBIRLA. `M9._recubrimiento_aashto_detallado` cruza
+# las dos transcripciones con la regla del mayor de Sec. 0.2, y ese cruce
+# se hacia con `situacion in RECUBRIMIENTO_MP_MM`. Para las 14 filas de
+# nombre coincidente funcionaba; para las 8 de la familia de pilotes la
+# condicion daba False y el cruce SE SALTABA SIN AVISAR -- es decir, la red
+# de seguridad estaba escrita para 14 filas de 21 y el comentario afirmaba
+# que estaba escrita para todas. Con el mapa completo el cruce cubre las 21,
+# y una fila sin correspondencia declarada es un error, no un salto callado.
+RECUBRIMIENTO_MP_EQUIVALENCIA = {
+    "agua_salada":                       ("agua_salada",),
+    "vaciado_contra_suelo":              ("vaciado_contra_suelo",),
+    "costera":                           ("costera",),
+    "sales_anticongelantes":             ("sales_anticongelantes",),
+    "tableros_neumaticos_clavos":        ("tableros_neumaticos_clavos",),
+    "exterior_no_superior":              ("exterior_no_superior",),
+    "interior_hasta_n11":                ("interior_hasta_n11",),
+    "interior_n14_n18":                  ("interior_n14_n18",),
+    "losa_in_situ_inferior_hasta_n11":   ("losa_in_situ_inferior_hasta_n11",),
+    "losa_in_situ_inferior_n14_n18":     ("losa_in_situ_inferior_n14_n18",),
+    "paneles_prefabricados_encofrados":  ("paneles_prefabricados_encofrados",),
+    "pilote_prefab_armado_no_corrosivo": ("pilar_prefabricado_no_corrosivo",),
+    "pilote_prefab_armado_corrosivo":    ("pilar_prefabricado_corrosivo",),
+    "pilote_prefab_pretensado":          ("pilote_prefabricado_pretensado",),
+    "pilote_in_situ_no_corrosivo":       ("pilar_in_situ_no_corrosivo",),
+    # La fila que el Manual parte en dos. Se declaran las DOS subfilas y el
+    # cruce toma el mayor de ellas, que es lo que hace la regla de Sec. 0.2
+    # cuando una fuente detalla mas que la otra.
+    "pilote_in_situ_corrosivo":          ("pilar_in_situ_corrosivo_general",
+                                          "pilar_in_situ_corrosivo_protegida"),
+    "pilote_in_situ_cascaras":           ("pilar_in_situ_cascaras",),
+    "pilote_in_situ_tremie_o_lechada":   ("pilar_in_situ_tremie_o_lechada",),
+    "alcantarilla_cajon_prefab_losa_de_rodadura":
+        ("alcantarilla_cajon_prefab_losa_de_rodadura",),
+    "alcantarilla_cajon_prefab_losa_menos_2_pies":
+        ("alcantarilla_cajon_prefab_losa_menos_2_pies",),
+    "alcantarilla_cajon_prefab_otros_miembros":
+        ("alcantarilla_cajon_prefab_otros_miembros",),
+}
 RECUBRIMIENTO_MP_FILA_TEXTO = {
     "vaciado_contra_suelo": "Vaciado del concreto contra el suelo",
     "costera": "Ubicaciones costeras",
@@ -1806,10 +1853,14 @@ RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA = (
     "El Manual de Puentes imprime solo dos factores (W/C <= 0.40 -> 0.8 y "
     "W/C >= 0.50 -> 1.2) y deja sin factor la banda intermedia 0.40 < W/C < "
     "0.50, que AASHTO LRFD 9a ed. Art. 5.10.1 (pag. impresa 5-167) si cubre "
-    "con 1.0. Este proyecto no cae en esa banda -- su a/c maxima la fija la "
-    "Tabla 4.2 de E.060 en 0.40 por cloruros --, asi que la laguna no lo "
-    "afecta; se deja escrita para que nadie la resuelva de memoria el dia que "
-    "una obra sin cloruros caiga dentro")
+    "con 1.0. LA BANDA ES ALCANZABLE EN ESTE PROYECTO: una version anterior "
+    "de esta nota decia que no lo era 'porque su a/c maxima la fija la Tabla "
+    "4.2 de E.060 en 0.40 por cloruros', y eso daba por sabido justamente el "
+    "dato que este cluster declaro VACIO ('exposicion_quimica_ems'). Con "
+    "sulfatos severos y sin cloruros la a/c maxima resulta 0.45 y la banda "
+    "intermedia se activa, de modo que la laguna del corpus peruano hay que "
+    "cubrirla de verdad: lo hace el criterio [C] "
+    "'factor_recubrimiento_banda_intermedia_ac', no un literal del modulo")
 # Piso absoluto sobre las barras principales. Es lo que impide que el factor
 # de 0.8 pueda llevar el recubrimiento a cualquier cosa.
 RECUBRIMIENTO_MP_PISO_MM = 25.4                  # 1.0 in; el Manual escribe
@@ -1872,9 +1923,18 @@ NUMERAL_COMBINACION_4_2_4_4 = ("E.060, nota al pie de las Tablas 4.2 y 4.4, "
 # ---- Tabla 4.2, "Requisitos para condiciones especiales de exposicion" -----
 # Las TRES filas, con el texto literal de su condicion. El proyecto consumia
 # solo la tercera y la atribuia a "Art. 4.2 / 4.4": el par (0.40, 35) es de la
-# TABLA 4.2, y el 4.4 es otra exigencia -- "Proteccion del refuerzo contra la
-# corrosion", que remite a la Tabla 4.5 sobre contenido de ion cloruro en el
-# concreto endurecido. Dos numerales distintos citados como si fueran uno.
+# TABLA 4.2. La version anterior de este cluster llego a escribir aqui que
+# citarla como "Art. 4.2 / 4.4" eran "dos numerales distintos citados como si
+# fueran uno", y ESO ERA FALSO: verificado contra el PDF, el Art. 4.4.2
+# (pag. impresa 39) es precisamente el articulo que MANDA aplicar la Tabla 4.2
+# a los cloruros externos, y ademas remite al recubrimiento -- "deben
+# cumplirse los requisitos de la Tabla 4.2 para la maxima relacion
+# agua-material cementante y valor minimo de f'c, y los requisitos de
+# recubrimiento minimo del concreto de 7.7". Es el eslabon normativo que ata
+# este cluster de punta a punta, y la cadena de numerales lo habia perdido.
+# Lo que si es cierto del 4.4 es que su primer inciso, el 4.4.1, va de otra
+# cosa (contenido de ion cloruro en el concreto endurecido, Tabla 4.5): por
+# eso se cita el 4.4.2 y no "el 4.4".
 #
 # EL ALCANCE DEL DISPARADOR, que la fila escribe y conviene no perder: los
 # cloruros que activan esta fila son los "provenientes de productos
@@ -1896,15 +1956,15 @@ EXPOSICION_ESPECIAL = {
                  "a salpicaduras del mismo origen",
         "a_c_max": 0.40, "fc_min_MPa": 35},
 }
-NUMERAL_EXPOSICION_ESPECIAL = "E.060 Tabla 4.2, pag. impresa 37"
-
-# `CLORUROS_EXTERNOS` NO vuelve a escribir el par: lo referencia. Dos
-# transcripciones del mismo numero se desincronizan en cuanto una cambie, y
-# este archivo ya tiene la fila entera con su texto literal encima.
-CLORUROS_EXTERNOS = {
-    "a_c_max": EXPOSICION_ESPECIAL["cloruros"]["a_c_max"],
-    "fc_min_MPa": EXPOSICION_ESPECIAL["cloruros"]["fc_min_MPa"],
-}
+NUMERAL_EXPOSICION_ESPECIAL = ("E.060 Tabla 4.2, pag. impresa 37, aplicada "
+                               "por el Art. 4.4.2, pag. impresa 39")
+PROTECCION_CORROSION_TEXTO = (
+    "Cuando el concreto con refuerzo vaya a estar expuesto a cloruros de "
+    "químicos descongelantes, sal, agua salobre, agua de mar o salpicaduras "
+    "de las mismas, deben cumplirse los requisitos de la Tabla 4.2 para la "
+    "máxima relación agua-material cementante y valor mínimo de f'c, y los "
+    "requisitos de recubrimiento mínimo del concreto de 7.7")
+NUMERAL_PROTECCION_CORROSION = "E.060 Art. 4.4.2, pag. impresa 39"
 
 # ---- Tabla 4.4, "Requisitos para concreto expuesto a soluciones de sulfatos"
 # DOS escalas paralelas, no una. La tabla clasifica la exposicion por el
@@ -2084,6 +2144,21 @@ NUMERAL_CICLOPEO = "E.060 Art. 22.10, pags. 194-195"
 CICLOPEO_FC_MATRIZ_MIN_APLICABLE = max(CICLOPEO_FC_MATRIZ_MIN,
                                        CICLOPEO_FC_MATRIZ_MIN_EG2013)
 NUMERAL_CICLOPEO_APLICABLE = f"{NUMERAL_CICLOPEO} / {NUMERAL_CICLOPEO_EG2013}"
+# DISCREPANCIA CON LA HOJA DE RUTA, declarada en el punto de uso porque la
+# regla de CLAUDE.md pide las tres cosas y no una: (1) la Sec. 9.4 de la hoja
+# de ruta escribe "f'c de matriz >= 10 MPa" y este modulo verifica contra
+# 14 MPa; (2) el defecto es de la hoja de ruta, que mira solo a E.060 y no ve
+# que sobre el mismo material rige tambien la Tabla 503-07 del EG-2013, que
+# es norma vial del MTC y pide mas; (3) MIENTRAS NO SE CORRIJA, la hoja de
+# ruta sigue mal: quien la lea sin leer el codigo dimensionara un cabezal de
+# ciclopeo con una matriz de 10 MPa que este calculo va a rechazar. La fuente
+# primaria decide (EG-2013 Tabla 503-07, pag. impresa 912) y por eso gana.
+CICLOPEO_DISCREPANCIA_HOJA_RUTA = (
+    "La Sec. 9.4 de la hoja de ruta pide f'c de matriz >= 10 MPa citando solo "
+    "el Art. 22.10 de E.060. Sobre el mismo material rige ademas la Clase G "
+    "de la Tabla 503-07 del EG-2013 (14 MPa), que es la norma vial del MTC "
+    "que este proyecto aplica, y por la regla del mayor gobierna esta. LA "
+    "HOJA DE RUTA SIGUE INCOMPLETA mientras no recoja el segundo minimo")
 # DEUDA DECLARADA, fuera del alcance de este cluster y anotada para que no se
 # pierda: el Art. 22.10.2.3 añade al mismo material un TECHO de calculo --
 # "en el cálculo de las resistencias segun 22.5 se utilizará un factor
@@ -2268,7 +2343,9 @@ CONSTANTES_DE_REFERENCIA = (
     "SPT_PROF_MIN",              # profundidad y paso del SPT que cerraria
     "SPT_ESPACIAMIENTO",         # 'clase_sitio' y 'PERFIL_SUELO_PRESUNTO'
 )
-# SULFATOS y CLORUROS_EXTERNOS SALIERON de esta lista al cablearse (C07). Se
+# SULFATOS y EXPOSICION_ESPECIAL (la Tabla 4.2, que antes se referenciaba
+# ademas desde un `CLORUROS_EXTERNOS` hoy retirado por no tener un solo
+# consumidor) SALIERON de esta lista al entrar en el calculo (C07). Se
 # declaraban aqui como "agresividad quimica: la decide el EMS del expediente,
 # no este calculo", y era verdad a medias: el EMS decide el DATO, y con el
 # dato las dos tablas si producen un numero que el calculo usa. Hoy

@@ -27,6 +27,8 @@ import criterios_adoptados as ca
 import datos_sitio as ds
 from constantes_fisicas import GAMMA_AGUA_KN_M3
 from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
+                                   RECUBRIMIENTO_MP_EQUIVALENCIA,
+                                   RECUBRIMIENTO_MP_MM,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO, CUANTIA_MIN_MURO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
@@ -68,6 +70,7 @@ from modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
                                 presion_sobrecarga_trasdos,
                                 recubrimiento_aashto_mm, recubrimiento_de_diseno,
                                 recubrimiento_e060_mm,
+                                requisitos_durabilidad_concreto,
                                 requiere_temperatura_dos_caras,
                                 sobrecarga_trasdos_siempre_aplica, subpresion,
                                 verificar_capacidad_portante, verificar_ciclopeo,
@@ -791,6 +794,122 @@ def test_la_regla_del_mayor_toma_el_aashto_cuando_gobierna():
         assert manda_aashto.e060_mm == 40.0
     finally:
         ca.establecer_valor_dinamico("categoria_refuerzo_aashto", "A")
+
+
+@pytest.fixture
+def vaciar_criterio(monkeypatch):
+    """Deja un criterio sin valor en el archivo, como estaba antes de cerrarse."""
+    def _vaciar(clave):
+        original = ca.CRITERIOS[clave]
+        monkeypatch.setitem(ca.CRITERIOS, clave,
+                            original.__class__(**{**original.__dict__,
+                                                  "valor": None}))
+    return _vaciar
+
+
+@pytest.mark.parametrize("clave", ["categoria_refuerzo_aashto",
+                                   "exposicion_quimica_ems"])
+def test_los_dos_vacios_del_recubrimiento_detienen_el_calculo(
+        clave, vaciar_criterio):
+    """
+    LA AFIRMACION CENTRAL DE C07, comprobada y no solo escrita: sin la
+    categoria de acero y sin el analisis quimico del EMS, el recubrimiento no
+    se calcula. Hasta aqui esas dos detenciones vivian en la prosa de los
+    docstrings; una corrida de pruebas las declara en el conftest y por eso
+    el resto de la suite no las ve nunca.
+
+    Se comprueban las dos claves porque bloquean por caminos distintos: la
+    categoria decide la columna de la tabla, y la exposicion quimica entra
+    por el factor de relacion a/c, dos eslabones separados de la misma
+    cadena. Que una detenga no dice nada de la otra.
+    """
+    vaciar_criterio(clave)
+    ca.quitar_valor_dinamico(clave)
+    with pytest.raises(CriterioPendienteError) as exc:
+        recubrimiento_de_diseno(condicion="contra_suelo")
+    assert exc.value.clave == clave
+
+
+def test_una_fila_no_declarada_de_la_tabla_4_2_no_se_lee_como_un_no(
+        vaciar_criterio):
+    """
+    LA REGLA NUCLEAR, en el punto exacto donde se estaba incumpliendo. El dato
+    se leia con `.get("cloruros_tabla_4_2")`: una clave ausente daba None,
+    None es falso, y el calculo continuaba como si el EMS hubiera dicho que no
+    hay cloruros. Con eso desaparecian sin ruido la a/c <= 0.40 y el
+    f'c >= 35 MPa de esa fila.
+
+    La ausencia de una lectura no es una lectura negativa: es
+    DatoInvalidoError, y quien cierre el expediente tiene que anadir el
+    ensayo que falta -- no corregir un numero, que es la frontera con
+    DatoFaltanteError que este proyecto usa.
+    """
+    vaciar_criterio("exposicion_quimica_ems")
+    ca.establecer_valor_dinamico(
+        "exposicion_quimica_ems",
+        {"so4_suelo_pct": 0.05, "so4_agua_ppm": None,
+         "tabla_4_2": {"baja_permeabilidad": False,
+                       "congelamiento_deshielo": False}})   # falta 'cloruros'
+    try:
+        with pytest.raises(DatoInvalidoError) as exc:
+            recubrimiento_de_diseno(condicion="contra_suelo")
+        assert "cloruros" in str(exc.value)
+    finally:
+        ca.quitar_valor_dinamico("exposicion_quimica_ems")
+
+
+def test_las_tres_filas_de_la_tabla_4_2_entran_en_la_menor_a_c_aplicable(
+        vaciar_criterio):
+    """
+    La nota al pie manda la MENOR relacion a/c APLICABLE, y aplicable no se
+    puede evaluar sobre un conjunto al que le falta un candidato. Con la fila
+    de baja permeabilidad activa y sin cloruros, la a/c que gobierna es la
+    0.50 de esa fila -- no la ausencia de limite que salia cuando la unica
+    fila mirada era la de cloruros.
+    """
+    vaciar_criterio("exposicion_quimica_ems")
+    ca.establecer_valor_dinamico(
+        "exposicion_quimica_ems",
+        {"so4_suelo_pct": 0.0, "so4_agua_ppm": None,
+         "tabla_4_2": {"baja_permeabilidad": True,
+                       "congelamiento_deshielo": False,
+                       "cloruros": False}})
+    try:
+        requisitos = requisitos_durabilidad_concreto()
+        assert requisitos.a_c_max == pytest.approx(0.50)
+        assert "Tabla 4.2" in requisitos.gobierna_a_c
+    finally:
+        ca.quitar_valor_dinamico("exposicion_quimica_ems")
+
+
+def test_el_cruce_con_la_tabla_del_manual_cubre_las_filas_de_pilotes():
+    """
+    LA RED DE SEGURIDAD, COMPLETA. El cruce entre las dos transcripciones de
+    la misma tabla se hacia con `situacion in RECUBRIMIENTO_MP_MM`, y en las
+    filas de la familia de pilotes las claves no coinciden -- el Manual
+    traduce "shafts" por "Pilares" y ademas parte en dos la fila de ambiente
+    corrosivo --, de modo que el cruce se saltaba SIN AVISAR: cubria 14 filas
+    de 21 mientras el comentario afirmaba que las cubria todas.
+
+    Este test es el que impide que vuelva a pasar en silencio: toda fila de la
+    tabla de AASHTO tiene equivalencia declarada, toda equivalencia apunta a
+    filas que existen en la del Manual, y en la columna A -- la unica que el
+    Manual tabula -- las dos fuentes coinciden.
+    """
+    tabla = ca.valor("tabla_recubrimiento_aashto_mm")
+    assert set(tabla) == set(RECUBRIMIENTO_MP_EQUIVALENCIA), (
+        "hay filas de la tabla de AASHTO sin equivalencia declarada con la "
+        "del Manual de Puentes, o al reves")
+    for situacion, filas_mp in RECUBRIMIENTO_MP_EQUIVALENCIA.items():
+        assert filas_mp, f"'{situacion}' declara una equivalencia vacia"
+        for fila in filas_mp:
+            assert fila in RECUBRIMIENTO_MP_MM, (
+                f"'{situacion}' apunta a '{fila}', que no esta en la tabla "
+                f"del Manual")
+        assert max(RECUBRIMIENTO_MP_MM[f] for f in filas_mp) == pytest.approx(
+            tabla[situacion]["A"]), (
+            f"'{situacion}': la columna A de AASHTO y la unica columna del "
+            f"Manual dejaron de coincidir")
 
 
 def test_el_aumento_por_ambiente_corrosivo_se_declara_y_no_se_calcula():
