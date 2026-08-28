@@ -193,9 +193,13 @@ CLAVES_EXTERNAS: Tuple[str, ...] = ("luz_m", "TW_m", "longitud_m", "Q_m3s",
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
 NOTA_ESTABILIDAD_CABEZAL = (
-    "Las verificaciones E1-E6 de Fase 9 no las ensambla esta CLI: "
-    "M9.verificar_estabilidad recibe las demandas YA calculadas (capacidad "
-    "portante, momentos y fuerzas) y elegir el plano de empuje o los factores "
+    "Las verificaciones de estabilidad de Fase 9 no las ensambla esta CLI: "
+    "M9.verificar_estabilidad devuelve E1-E3 (y E4-E5 si se le piden) a "
+    "partir de las demandas YA calculadas, y E6 -- la ubicacion de la "
+    "resultante en la base bajo sismo, que el Manual de Puentes exige y "
+    "E.050 no escribe -- es funcion suelta, "
+    "M9.verificar_excentricidad_sismica, porque no es un factor de seguridad "
+    "y no cabe en la tabla de Sec. 9.3. Elegir el plano de empuje o los factores "
     "de combinacion aqui seria decidir por el proyectista. La CLI corre las "
     "piezas de Fase 9 que se sostienen solas: cadena sismica (9.2), K_AE, "
     "recubrimientos (9.4) y cuantias minimas de referencia. Que funciones de "
@@ -1150,13 +1154,23 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
 def _cabezal_json(informe: InformeCabezal) -> Dict[str, Any]:
     cadena = informe.cadena
     return {
+        # Cada paso viaja con su etiqueta, su origen y LA CONDICION que su
+        # fuente le pone. Sin esos tres campos el JSON daba siete numeros y
+        # nada mas: no se podia ver de que filas de la tabla salio F_pga, en
+        # que rama de k_h0 cayo la cimentacion ni que regimen de k_v rige, que
+        # es justamente lo que hay que revisar de una cadena sismica -- el
+        # numero se comprueba solo, el supuesto no se ve.
         "cadena_sismica": (None if cadena is None else {
             "numeral": cadena.numeral, "PGA": _num(cadena.PGA),
             "F_pga": _num(cadena.F_pga), "A_s": _num(cadena.A_s),
             "k_h0": _num(cadena.k_h0), "factor_muro": _num(cadena.factor_muro),
             "k_h": _num(cadena.k_h), "k_v": _num(cadena.k_v),
+            "clases_de_sitio": list(cadena.clases_de_sitio),
+            "cimentacion_en_roca": cadena.cimentacion_en_roca,
             "pasos": [{"simbolo": p.simbolo, "valor": _num(p.valor),
-                       "concepto": p.concepto} for p in cadena.pasos]}),
+                       "concepto": p.concepto, "etiqueta": p.etiqueta,
+                       "origen": p.origen, "criterio": p.criterio,
+                       "condicion": p.condicion} for p in cadena.pasos]}),
         "mononobe_okabe": (None if informe.mononobe_okabe is None else {
             "K_AE": _num(informe.mononobe_okabe.K_AE),
             "K_A": _num(informe.mononobe_okabe.K_A)}),
@@ -1363,6 +1377,12 @@ def _lineas_cabezal(informe: InformeCabezal) -> List[str]:
         out.append(f"{SANGRIA}Cadena sismica (num. {c.numeral}): "
                    f"PGA {_fmt(c.PGA, 2)} g -> A_s {_fmt(c.A_s, 2)} g -> "
                    f"k_h {_fmt(c.k_h, 2)} | k_v {_fmt(c.k_v, 2)}")
+        # La condicion de cada eslabon, debajo del resumen: es lo que separa
+        # una cadena revisable de siete numeros que coinciden por casualidad.
+        for paso in c.pasos:
+            if paso.condicion:
+                out.append(f"{SANGRIA * 2}{paso.simbolo} "
+                           f"[{paso.etiqueta}]: {paso.condicion}")
     for r in informe.recubrimientos:
         out.append(f"{SANGRIA}Recubrimiento '{r.condicion}': "
                    f"{_fmt(r.adoptado_mm, 0)} mm (gobierna {r.origen}, "

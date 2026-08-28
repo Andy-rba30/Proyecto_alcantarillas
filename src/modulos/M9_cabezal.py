@@ -18,13 +18,17 @@ Hoy los seis pasos horizontales de Sec. 9.2 dan todos 0.50, y es tentador
 escribir `k_h = 0.50` de una vez. Seria un error de trazabilidad, no de
 aritmetica: coinciden SOLO porque F_pga y el factor de muro valen 1.0, y esos
 dos numeros llegan por caminos distintos: los dos son la ELECCION [A] de una
-fila de una tabla [N] (F_PGA_TABLA y FACTOR_MURO_TABLA), y el PGA que abre la
+fila de una tabla [N] (F_PGA_TABLA) o la declaracion [A] de si se aplica la
+reduccion que un numeral autoriza -- el factor de muro NO sale de una tabla, y
+decir que salia era el defecto NOR-PUE-07 --, y el PGA que abre la
 cadena no es ninguna de las dos cosas sino un dato de sitio [S] leido de un
 mapa sobre las coordenadas de esta obra. Cuando llegue el
 SPT cierre la caracterizacion del sitio en la fila E, F_pga baja a 0.9 y la
-cadena entera se mueve. Con los pasos separados, M11 imprime que paso cambio y
-por que; con un 0.50 escrito a mano, no hay nada que recalcular ni que
-revisar.
+cadena entera se mueve. Con los pasos separados, el informe dice que paso
+cambio y por que; con un 0.50 escrito a mano, no hay nada que recalcular ni que
+revisar. QUIEN LOS IMPRIME es la CLI -- `_lineas_cabezal` y `_cabezal_json` --,
+no M11: la memoria de M11 recoge de Fase 9 la declaracion normativa y los
+criterios usados, no la tabla de la cadena.
 
     A_s  = F_pga * PGA
     k_h0 = A_s                          (Manual de Puentes, 2.8.1.1.14.2.1)
@@ -163,10 +167,11 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
                                    ESPACIAMIENTO_MAX_VECES_ESPESOR,
                                    ESPESOR_TEMPERATURA_DOS_CARAS,
+                                   E030_ART_7_3_TEXTO,
                                    EXCENTRICIDAD_ADMISIBLE_FRACCION_B,
+                                   EXCENTRICIDAD_ERRATA_MANUAL,
                                    FACTOR_MURO_CON_REDUCCION,
                                    FACTOR_MURO_DECLARACIONES,
-                                   FACTOR_MURO_SIN_REDUCCION,
                                    F_PGA_CLASES_EN_ROCA,
                                    F_PGA_EXIGE_ESTUDIO_DE_SITIO,
                                    F_PGA_TABLA,
@@ -191,13 +196,17 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_E030_AMBITO,
                                    NUMERAL_E030_S5,
                                    NUMERAL_ESPACIAMIENTO,
+                                   NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION,
+                                   NUMERAL_EXCENTRICIDAD_ESTATICA,
                                    NUMERAL_EXCENTRICIDAD_SISMICA,
+                                   NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO,
                                    NUMERAL_F_PGA_TABLA,
                                    NUMERAL_FACTOR_MURO,
                                    NUMERAL_K_AE_AASHTO,
                                    NUMERAL_K_AE_MANUAL,
                                    NUMERAL_K_H0,
                                    NUMERAL_P_IR,
+                                   NUMERAL_PRESION_CONTACTO,
                                    NUMERAL_RECUBRIMIENTO,
                                    NUMERAL_SOBRECARGA_TRASDOS,
                                    NUMERAL_TABLA_GAMMA_P,
@@ -354,9 +363,28 @@ def clases_de_sitio_plausibles() -> Tuple[str, ...]:
                        f"factor: la fuente le pone asterisco en las cinco "
                        f"columnas y su Nota 2 exige investigaciones "
                        f"geotecnicas especificas del sitio y analisis de "
-                       f"respuesta dinamica. No hay numero que leer ahi",
+                       f"respuesta dinamica. No hay numero que leer ahi. Si "
+                       f"esa es la fila que el expediente se atribuye, "
+                       f"entonces lo que hay que declarar no es un factor de "
+                       f"tabla sino la adopcion de seguir sin el, que es "
+                       f"materia de la premisa abierta y no de este criterio",
             )
     return tuple(elegidas)
+
+
+def _pga_en_rotulo_extremo(PGA: float) -> bool:
+    """
+    Si el PGA cae JUSTO sobre uno de los dos rotulos extremos de la tabla de
+    F_pga, que son los unicos puntos donde la lectura declarada en
+    'F_pga_lectura_columna_extrema' cambia algo.
+
+    Existe para que la condicion que el informe imprime diga la verdad en los dos
+    casos: con PGA = 0.50 la lectura del borde gobierna, y con un PGA
+    interior no gobierna nada y decir que si seria falso.
+    """
+    limites = F_PGA_TABLA_PGA_COLUMNAS
+    return any(math.isclose(PGA, x, abs_tol=TOL_UMBRAL_NORMATIVO)
+               for x in (limites[0], limites[-1]))
 
 
 def factor_sitio_desde_tabla(*, clase: str, PGA: float,
@@ -396,10 +424,16 @@ def factor_sitio_desde_tabla(*, clase: str, PGA: float,
         )
     fila = F_PGA_TABLA[clase]
     if F_PGA_EXIGE_ESTUDIO_DE_SITIO in fila:
-        raise DisenoNoFactibleError(
+        # Misma excepcion que en `clases_de_sitio_plausibles` y a proposito:
+        # el hecho es el mismo -- se pidio una fila que no trae factor -- y
+        # dos excepciones distintas para un mismo hecho obligarian a quien
+        # atrapa a saber por cual de las dos puertas entro.
+        raise DatoInvalidoError(
+            campo="clase", valor=clase,
             motivo=f"la fila '{clase}' de {NUMERAL_F_PGA_TABLA} no tiene "
-                   f"factor tabulado: su Nota 2 exige estudio de respuesta "
-                   f"dinamica de sitio"
+                   f"factor tabulado: la fuente le pone asterisco en las "
+                   f"cinco columnas y su Nota 2 exige estudio de respuesta "
+                   f"dinamica de sitio. No hay numero que leer ahi",
         )
 
     limites = F_PGA_TABLA_PGA_COLUMNAS
@@ -527,8 +561,9 @@ def coeficiente_sismico_base(*, A_s: float, F_pga: float, PGA: float,
     k_h0 = A_s/1.2 -- una reduccion del 17 %, lo contrario de lo que la misma
     frase acaba de decir. Es errata de imprenta y esta declarada entera en
     `constantes_normativas.K_H0_ROCA_ERRATA`, con la ecuacion de AASHTO que
-    la resuelve. Es la segunda errata del Manual en esta misma cadena; la
-    otra esta en `k_ae_mononobe_okabe`.
+    la resuelve. Es la segunda de las tres erratas del Manual en esta misma
+    cadena; las otras estan en `k_ae_mononobe_okabe` y en
+    `excentricidad_admisible_sismica`.
 
     `cimentacion_en_roca` entra por argumento y no se deduce aqui: quien
     quiera la rama del proyecto usa `cimentacion_en_roca()`, que la resuelve
@@ -627,7 +662,7 @@ def cadena_sismica() -> CadenaSismica:
     su origen y LA CONDICION QUE SU FUENTE LE PONE, en el orden de la tabla de
     la hoja de ruta.
 
-    `pasos` es lo que M11 imprime: la cadena entera, no el resultado. La
+    `pasos` es lo que el informe imprime: la cadena entera, no el resultado. La
     columna nueva es `condicion`: cada eslabon dice bajo que supuesto vale, de
     modo que un revisor pueda comprobar el supuesto y no solo el numero. Los
     tres que mas pesan -- de que filas de la tabla sale F_pga, en que rama de
@@ -649,6 +684,30 @@ def cadena_sismica() -> CadenaSismica:
     k_h = coeficiente_sismico_horizontal(k_h0=k_h0, factor_muro=f_muro)
     k_v = coeficiente_sismico_vertical()
     declarado_muro = ca.valor(CRITERIO_FACTOR_MURO)
+    # La etiqueta y la condicion de k_v NO se cablean: dependen de cual de
+    # los dos regimenes declaro el criterio. Cableadas, un k_v puesto a mano
+    # por el proyectista para el caso reservado salia de la memoria como [N]
+    # "exigencia normativa con numeral verificado" y con una condicion que
+    # afirmaba lo contrario de lo que acababa de pasar -- el peor error
+    # posible de la taxonomia, cometido justo por la funcion que existe para
+    # arreglar etiquetas.
+    rige_el_cero = ca.valor(CRITERIO_K_V) == K_V_DECLARACION_PRESCRITO
+    if rige_el_cero:
+        etiqueta_k_v = "N"
+        origen_k_v = NUMERAL_K_H0
+        condicion_k_v = ("El numeral lo fija en cero salvo muro "
+                         "significativamente afectado por efectos de alguna "
+                         "falla cercana, o aceleraciones verticales "
+                         "relativamente altas simultaneas con la horizontal. "
+                         "Ninguno de los dos casos se declara para este "
+                         "cabezal, de modo que rige el cero prescrito")
+    else:
+        etiqueta_k_v = ca.criterio(CRITERIO_K_V).etiqueta
+        origen_k_v = "Declarado por el proyectista"
+        condicion_k_v = ("El expediente declara que se da uno de los dos "
+                         f"casos que {NUMERAL_K_H0} reserva. Para ellos el "
+                         "Manual NO escribe ningun k_v, asi que este valor es "
+                         "del proyectista y no de la norma")
 
     pasos = (
         PasoSismico(simbolo="PGA", valor=PGA,
@@ -662,11 +721,16 @@ def cadena_sismica() -> CadenaSismica:
                     concepto="Factor de sitio",
                     etiqueta=ca.criterio(CRITERIO_F_PGA).etiqueta,
                     origen=NUMERAL_F_PGA, criterio=CRITERIO_F_PGA,
-                    condicion=f"Envolvente de las filas {', '.join(clases)} de "
-                              f"la tabla; los rotulos extremos se leen con "
-                              f"'{lectura}' porque PGA = {PGA:.2f} g cae "
-                              f"sobre uno de ellos y los dos son "
-                              f"desigualdades estrictas"),
+                    condicion=f"Envolvente de las filas {', '.join(clases)} "
+                              f"de la tabla" + (
+                                  f"; PGA = {PGA:.2f} g cae justo sobre un "
+                                  f"rotulo extremo, que es desigualdad "
+                                  f"estricta, y ese borde se lee con "
+                                  f"'{lectura}'"
+                                  if _pga_en_rotulo_extremo(PGA) else
+                                  f"; PGA = {PGA:.2f} g cae dentro de la "
+                                  f"tabla y el factor sale de la "
+                                  f"interpolacion de su Nota 1")),
         PasoSismico(simbolo="A_s", valor=A_s,
                     concepto="Aceleracion ajustada por sitio (F_pga * PGA)",
                     etiqueta=ETIQUETA_CALCULADO, origen=CALCULADO),
@@ -694,13 +758,8 @@ def cadena_sismica() -> CadenaSismica:
                     etiqueta=ETIQUETA_CALCULADO, origen=CALCULADO),
         PasoSismico(simbolo="k_v", valor=k_v,
                     concepto="Coeficiente sismico vertical",
-                    etiqueta="N", origen=NUMERAL_K_H0, criterio=CRITERIO_K_V,
-                    condicion="El numeral lo fija en cero salvo muro "
-                              "significativamente afectado por efectos de "
-                              "alguna falla cercana, o aceleraciones "
-                              "verticales relativamente altas simultaneas con "
-                              "la horizontal. Ninguno de los dos casos se "
-                              "declara para este cabezal"),
+                    etiqueta=etiqueta_k_v, origen=origen_k_v,
+                    criterio=CRITERIO_K_V, condicion=condicion_k_v),
     )
 
     return CadenaSismica(PGA=PGA, F_pga=Fpga, A_s=A_s, k_h0=k_h0,
@@ -790,9 +849,12 @@ def k_ae_mononobe_okabe(*, phi_grados: float, i_grados: float,
     ESTE CODIGO SIGUE A AASHTO, y esa es la decision correcta. La declaracion
     completa, con las dos citas, esta en
     `constantes_normativas.K_AE_ERRATA_MANUAL`, y viaja a la memoria por
-    `condicion_normativa_cabezal`. Es la primera de las DOS erratas del
-    Manual en esta misma cadena sismica: la otra, en el parentesis de la
-    clausula de roca de k_h0, esta en `coeficiente_sismico_base`.
+    `condicion_normativa_cabezal`. Es la primera de las TRES erratas del
+    Manual en esta misma cadena sismica: las otras dos son el parentesis de
+    la clausula de roca de k_h0, en `coeficiente_sismico_base`, y el "tercio
+    central" del limite de excentricidad, en
+    `excentricidad_admisible_sismica` -- la unica de las tres que mueve un
+    numero.
 
     Se reporta contra la hoja de ruta: su Sec. 9.2 remite a Mononobe-Okabe
     sin escribir la formula ni advertir de la errata, de modo que quien la
@@ -1137,8 +1199,11 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
     (pag. impresa 3-118 / PDF 172) exige lo contrario, y con un `shall`:
     "Submerged unit weights of the soil shall be used to determine the
     lateral earth pressure below the groundwater table". La desviacion es
-    CONSERVADORA y esta acotada -- con gamma_sat = 20 kN/m3, Ka = 1/3 y
-    0.60 m sumergidos, 9.9 kPa en la base contra 7.9 kPa, +25 % local -- y se
+    CONSERVADORA y esta acotada: el exceso es Ka*gamma_agua*h_agua, constante
+    en toda la zona sumergida -- 1.96 kPa con Ka = 1/3 y 0.60 m de agua --, de
+    modo que en porcentaje depende de la altura del muro: +25 % sobre un muro
+    de 0.60 m (el caso con que lo calculo la ficha MAT-O3), +11 % sobre uno de
+    2.00 m con el freatico a 1.40 m, y menos cuanto mas alto. Se
     mantiene porque corregirla exige un peso especifico SUMERGIDO del relleno
     que este expediente todavia no tiene: aplicar AASHTO con el unico gamma
     declarado seria aliviar el empuje sin dato que lo sostenga. El texto
@@ -1252,6 +1317,14 @@ def demanda_sismica_cabezal(*, P_AE: float, P_A: float,
     combinacion de P_AE y P_IR NO SON SIMULTANEOS". Sumar el 100 % de los dos
     sobrestima; tomar solo uno subestima.
 
+    ESTA FUNCION NO ELIGE EL QUE GOBIERNA, y es deliberado. La fuente manda
+    quedarse con "el resultado mas conservador de estos dos ANALISIS", no con
+    la mayor de las dos fuerzas: P_AE y P_IR actuan a alturas distintas, de
+    modo que el orden por fuerza resultante no coincide con el orden por
+    momento volcante, y elegir por la suma devuelve el caso equivocado justo
+    donde equivocarse es no conservador. Quien evalue la estabilidad pasa el
+    efecto que midio a `DemandaSismicaCabezal.mas_desfavorable`.
+
     QUE ES `P_AE` AQUI. El empuje TOTAL de Mononobe-Okabe -- estatico mas
     dinamico --, no el incremento. AASHTO lo advierte en el comentario del
     mismo articulo: "Since P_AE is the combined lateral earth pressure force
@@ -1339,18 +1412,26 @@ def excentricidad_admisible_sismica(*, B: float, gamma_EQ: float) -> float:
     Excentricidad maxima admisible de la resultante bajo sismo, en m
     (num. 2.8.1.1.14.1).
 
-    NO ES "EL TERCIO CENTRAL" A SECAS, que es como el hallazgo lo describe y
-    como se implementaria de memoria. El numeral hace depender el limite de
-    gamma_EQ:
+    NO ES UN LIMITE FIJO: el numeral lo hace depender de gamma_EQ.
 
-        gamma_EQ = 0.0   tercio central          ->  e <= B/6
+        gamma_EQ = 0.0   dos tercios centrales   ->  e <= B/3
         gamma_EQ = 1.0   ocho decimas centrales  ->  e <= 0.4*B
         entre los dos    interpolacion lineal
 
-    Quien implemente solo el tercio central queda del lado seguro pero fuera
-    de la norma; quien adopte gamma_EQ distinto de 0 sin interpolar no tiene
-    regla. Por eso el limite se calcula y gamma_EQ es un vacio declarado
-    ('gamma_EQ'), no un supuesto.
+    Y EL PRIMERO NO SALE DEL LITERAL DEL MANUAL, que imprime "tercio central"
+    (e <= B/6). Es la TERCERA errata de imprenta de esta cadena y la unica
+    que mueve un numero: AASHTO 11.6.5.1 escribe "middle two-thirds", el
+    propio Manual traduce bien ese mismo giro tres paginas antes en su
+    numeral estatico, y la lectura literal dejaria el limite bajo SISMO al
+    doble de estricto que el estatico del mismo Manual -- imposible en la
+    filosofia de estados limite. La declaracion entera, con las tres pruebas,
+    esta en `constantes_normativas.EXCENTRICIDAD_ERRATA_MANUAL`. Con el texto
+    de AASHTO el articulo es coherente: ANCLA en B/3, que es el limite
+    estatico para fundacion en suelo, y RELAJA hasta 0.4*B.
+
+    Quien adopte gamma_EQ distinto de 0 sin interpolar no tiene regla. Por eso
+    el limite se calcula y gamma_EQ es un vacio declarado ('gamma_EQ'), no un
+    supuesto.
     """
     tramos = EXCENTRICIDAD_ADMISIBLE_FRACCION_B
     g0, g1 = min(tramos), max(tramos)
@@ -1376,28 +1457,44 @@ def gamma_eq() -> float:
     return ca.valor(CRITERIO_GAMMA_EQ)
 
 
-def presion_contacto_base(*, N: float, momento_neto: float,
-                          B: float) -> PresionContactoBase:
+def presion_contacto_base(*, N: float, momento_neto: float, B: float,
+                          cimentacion_en_roca: bool) -> PresionContactoBase:
     """
-    q_max y q_min bajo la zapata, en kPa, por distribucion lineal de Navier
-    sobre un ancho unitario de muro.
+    Presion de contacto bajo la zapata, en kPa, segun la distribucion que la
+    fuente da a CADA TERRENO DE FUNDACION (num. 2.8.1.1.12.2, `NUMERAL_
+    PRESION_CONTACTO`). Son dos ramas y no una:
 
-        dentro del nucleo (e <= B/6)   q = N/B * (1 +- 6e/B)
-        fuera del nucleo               la zapata levanta en un borde y la
-                                       resultante se equilibra con una
-                                       distribucion triangular sobre
-                                       3*(B/2 - e):
-                                       q_max = 2N / (3*(B/2 - e)), q_min = 0
+        fundacion en SUELO   presion UNIFORME sobre el ancho efectivo:
+                             q = N / (B - 2e)                  (-1)
 
-    Es el `q_actuante` que `verificar_capacidad_portante` exige ya resuelto y
-    que en el repositorio no habia con que producir (MAT-O16): el chequeo de
-    capacidad portante existia sin su insumo, y la excentricidad -- que es lo
-    que decide cual de las dos distribuciones aplica -- no estaba ni como
-    procedimiento ni como vacio declarado.
+        fundacion en ROCA    presion distribuida LINEALMENTE:
+                             dentro del tercio central (e <= B/6)
+                                 q = (N/B)(1 +- 6e/B)          (-2, -3)
+                             fuera del tercio central
+                                 q_max = 2N/[3(B/2 - e)], q_min = 0  (-4, -5)
+
+    ESTO ES UN CAMBIO CONTRA LA FICHA DEL HALLAZGO, y hay que decir por que.
+    MAT-O16 describe el procedimiento ausente como "excentricidad, e <= B/6,
+    q_max = N/B*(1+6e/B)", que es la rama de ROCA. Implementarla sola, como
+    se hizo primero, aplicaba a esta obra -- la llanura arenosa del Bajo
+    Piura, que el propio proyecto declara en 'F_pga' que NO es roca -- la
+    rama que la fuente reserva al otro terreno, y la elegia en silencio, que
+    es justo lo que este cluster existe para no hacer. La direccion era
+    conservadora (Navier sobre B da un pico mayor que el uniforme sobre
+    B - 2e), de modo que no hay ningun numero emitido que corregir; lo que se
+    corrige es la rama y la cita.
+
+    `cimentacion_en_roca` entra por argumento, como en
+    `coeficiente_sismico_base` y por lo mismo: quien quiera la rama del
+    proyecto llama a `cimentacion_en_roca()`, que la resuelve con las filas
+    declaradas en 'F_pga'. Es el MISMO reparto suelo/roca que gobierna k_h0,
+    y que lo sea no es coincidencia: las dos ramas cuelgan de la clase de
+    sitio.
 
     Con e >= B/2 la resultante cae fuera de la zapata y no hay equilibrio
-    posible: sale como `DisenoNoFactibleError` con su motivo, no como una
-    division por cero ni como una presion enorme sin explicacion.
+    posible en ninguna de las dos ramas: sale como `DisenoNoFactibleError`
+    con su motivo, no como una division por cero ni como una presion enorme
+    sin explicacion.
     """
     e = excentricidad_resultante(N=N, momento_neto=momento_neto, B=B)
     if e >= B / 2 - TOL_UMBRAL_NORMATIVO:   # literal-ok: media zapata
@@ -1405,21 +1502,42 @@ def presion_contacto_base(*, N: float, momento_neto: float,
             motivo=f"la resultante cae fuera de la zapata (e = {e:.4f} m, "
                    f"B/2 = {B / 2:.4f} m): no hay distribucion de presiones "
                    f"que equilibre el muro. Hay que ampliar B o reducir el "
-                   f"momento volcante ({NUMERAL_EXCENTRICIDAD_SISMICA})"
+                   f"momento volcante ({NUMERAL_PRESION_CONTACTO})"
         )
+    ancho_efectivo = B - 2 * e
     limite_nucleo = B / 6                   # literal-ok: nucleo central, e = B/6
     dentro = e <= limite_nucleo + TOL_UMBRAL_NORMATIVO
+
+    if not cimentacion_en_roca:
+        # Rama de SUELO: uniforme sobre el ancho efectivo. No hay q_min
+        # distinto: la fuente reparte la resultante por igual sobre B - 2e y
+        # el resto de la zapata no toma presion.
+        q = N / ancho_efectivo
+        return PresionContactoBase(N=N, B=B, e=e, q_max=q, q_min=q,
+                                   ancho_efectivo=ancho_efectivo,
+                                   dentro_del_nucleo=dentro,
+                                   distribucion="uniforme sobre B - 2e "
+                                                "(fundacion en suelo)",
+                                   numeral=NUMERAL_PRESION_CONTACTO)
+
+    # Rama de ROCA: distribucion lineal, y su forma cambia en el tercio
+    # central. Las dos expresiones empalman exactamente en e = B/6, donde las
+    # dos dan 2N/B.
     if dentro:
         q_medio = N / B
-        variacion = 6 * e / B               # literal-ok: Navier, q = N/B(1+-6e/B)
+        variacion = 6 * e / B               # literal-ok: q = N/B(1+-6e/B)
         q_max = q_medio * (1 + variacion)
         q_min = q_medio * (1 - variacion)
+        forma = "lineal sobre B (fundacion en roca, resultante en el nucleo)"
     else:
         q_max = 2 * N / (3 * (B / 2 - e))   # literal-ok: triangular, base 3(B/2-e)
         q_min = 0.0
+        forma = ("triangular sobre 3(B/2 - e) (fundacion en roca, resultante "
+                 "fuera del nucleo)")
     return PresionContactoBase(N=N, B=B, e=e, q_max=q_max, q_min=q_min,
-                               dentro_del_nucleo=dentro,
-                               numeral=NUMERAL_EXCENTRICIDAD_SISMICA)
+                               ancho_efectivo=ancho_efectivo,
+                               dentro_del_nucleo=dentro, distribucion=forma,
+                               numeral=NUMERAL_PRESION_CONTACTO)
 
 
 def verificar_excentricidad_sismica(*, N: float, momento_neto: float,
@@ -2223,10 +2341,20 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
 # (SIS-B-17, SIS-B-20, SIS-B-21) son el mismo defecto de reparto. Aqui la
 # razon se escribe una vez, y la CLI y la memoria la leen de aqui.
 #
-# "Sin llamador de produccion" NO es codigo muerto: las tres familias son
-# formulas utilizables hoy pasandoles sus argumentos, y lo que falta es el
-# INSUMO -- un vacio declarado -- o el llamador que lo ensamble. Si alguna se
-# cablea, sale de esta lista en el mismo commit.
+# "Sin llamador de produccion" NO es codigo muerto: son formulas utilizables
+# hoy pasandoles sus argumentos, y lo que falta es el INSUMO -- un vacio
+# declarado -- o el llamador que lo ensamble. Si alguna se cablea, sale de
+# esta lista en el mismo commit.
+#
+# LA LISTA SE MANTIENE A MANO Y NO HAY GUARDIA QUE LA ATE al estado real del
+# modulo. Es la misma deuda que `criterios_sin_consumidor` cerro con un test
+# (`test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor`), y aqui
+# esta abierta: el test que la ate va en la fase de tests, no antes. Mientras
+# tanto, la comprobacion es de revision: si una funcion de este modulo no
+# aparece llamada desde cli.py, gui/app.py ni otro modulo de src/modulos/,
+# tiene que estar aqui. La primera version de esta lista ya nacio incompleta
+# -- le faltaban siete entradas, dos de ellas de funciones creadas en el mismo
+# commit -- y eso es exactamente lo que el test tendra que impedir.
 FUNCIONES_SIN_CONSUMIDOR = {
     "empujes_trasdos": (
         "Ensambla el plano de empuje del trasdos y ninguna corrida lo "
@@ -2236,16 +2364,52 @@ FUNCIONES_SIN_CONSUMIDOR = {
         "Se conserva porque es la formula, no el ensamble, lo que el "
         "expediente necesita: quien tantee un cabezal la llama con su "
         "geometria"),
+    "peso_suelo_sobre_talon": (
+        "Produce el W_s de P_IR. Necesita el ancho del talon, que es parte "
+        "de 'predimensionamiento_cabezal', y la altura de suelo sobre el "
+        "talon, que depende de donde se corte el plano de calculo y por eso "
+        "entra por argumento"),
     "fuerza_inercia_muro": (
         "Mismo caso que `empujes_trasdos`, y por el mismo vacio: W_s necesita "
         "el ancho del talon, que es parte de 'predimensionamiento_cabezal'. "
         "La formula si esta implementada, que es lo que faltaba (MAT-D6)"),
+    "gamma_eq": (
+        "Lee el criterio 'gamma_EQ', que es vacio: hoy detendria a quien la "
+        "llamara, y quien la llamaria -- el chequeo de excentricidad -- ya "
+        "esta detenido antes por la geometria"),
+    "verificar_estabilidad": (
+        "Agrega E1-E3 (y E4-E5 si se piden) a partir de demandas ya "
+        "calculadas. La CLI no la llama porque ensamblar esas demandas exige "
+        "elegir el plano de empuje y los factores de combinacion, que es "
+        "decidir por el proyectista -- la misma razon de `empujes_trasdos`, y "
+        "la que la nota de cli.py declara"),
+    "peso_propio_cabezal": (
+        "Formula de geometria exacta, utilizable hoy con una geometria de "
+        "tanteo; sin 'predimensionamiento_cabezal' no hay geometria de "
+        "proyecto que pasarle"),
+    "parametros_resistencia_art20": (
+        "Aplica la regla de E.050 Art. 20 (en cohesivos phi = 0, en "
+        "friccionantes c = 0) sobre los parametros del terreno de fundacion. "
+        "Quien la usaria es el calculo de la fuerza resistente al "
+        "deslizamiento, que la CLI no ensambla por la misma razon que el "
+        "resto de la estabilidad"),
+    "aplica_sobrecarga_trasdos": (
+        "Comprueba la regla de la distancia H/2 para el trafico. No la llama "
+        "nadie a proposito: Sec. 9.2 cierra el punto diciendo que en un "
+        "cabezal bajo terraplen vial la sobrecarga SIEMPRE aplica, de modo "
+        "que el pipeline usa `sobrecarga_trasdos_siempre_aplica` y esta queda "
+        "para quien tenga la distancia medida y quiera comprobarlo"),
+    "sobrecarga_trasdos_siempre_aplica": (
+        "Declaracion para la memoria. Hoy no la imprime nadie porque la "
+        "seccion de la memoria que la llevaria es la de empujes, que esta "
+        "detenida"),
     "demanda_sismica_cabezal": (
         "Combina P_AE con P_IR segun el num. 2.8.1.1.14.1. Sin geometria no "
         "hay ninguno de los dos, de modo que hereda el mismo vacio"),
     "presion_contacto_base": (
         "Produce el q_actuante que `verificar_capacidad_portante` exige ya "
-        "resuelto. Hereda el vacio de la geometria (MAT-O16)"),
+        "resuelto, con la rama del numeral que corresponde al terreno de "
+        "fundacion. Hereda el vacio de la geometria (MAT-O16)"),
     "verificar_excentricidad_sismica": (
         "Ademas de la geometria necesita 'gamma_EQ', que es vacio propio: el "
         "limite va de B/6 a 0.4*B segun su valor"),
@@ -2304,7 +2468,8 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
         f"Diseno por flexion y corte: {NUMERAL_FLEXION_CORTE}. E.060 no "
         f"gobierna el diseno estructural (Sec. 0.2, Via 1); si gobierna la "
         f"durabilidad y los recubrimientos, con la regla del mayor",
-        # Las dos erratas de imprenta del Manual en la cadena sismica. Van a
+        # Las erratas de imprenta del Manual en la cadena sismica -- son TRES
+        # y la tercera esta mas abajo, con la excentricidad. Van a
         # la memoria y no solo a un docstring porque quien las va a encontrar
         # es el revisor que compare el codigo con la norma impresa, y sin
         # esta nota concluira que el codigo esta mal (MAT-O2, MAT-X2).
@@ -2318,7 +2483,7 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
         f"({NUMERAL_AGUA_TRASDOS_AASHTO})",
         # Inercia del muro: el termino que faltaba, y el aviso de que la
         # combinacion no es una suma (MAT-D6, MAT-X7).
-        f"Demanda sismica del cabezal: no basta el empuje. El {NUMERAL_P_IR} "
+        f"Demanda sismica del cabezal: no basta el empuje. El num. {NUMERAL_P_IR} "
         f"exige combinar P_AE con la inercia de la masa del muro "
         f"P_IR = k_h*(W_w + W_s), en dos casos que se investigan por separado "
         f"porque sus efectos NO son simultaneos -- 100 % P_AE + 50 % P_IR, y "
@@ -2329,16 +2494,29 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
         # El limite de excentricidad: no es "el tercio central" a secas
         # (MAT-O16).
         f"Ubicacion de la resultante en la base bajo sismo: el "
-        f"{NUMERAL_EXCENTRICIDAD_SISMICA} la acota al tercio central "
-        f"(e <= B/6) con gamma_EQ = 0.0 y a las ocho decimas centrales "
-        f"(e <= 0.4*B) con gamma_EQ = 1.0, interpolando en medio. Es una "
-        f"verificacion que la tabla de FS de Sec. 9.3 no trae, porque E.050 "
-        f"no la escribe, y depende de 'gamma_EQ', que sigue vacio",
+        f"num. {NUMERAL_EXCENTRICIDAD_SISMICA} la acota a los dos tercios "
+        f"centrales (e <= B/3) con gamma_EQ = 0.0 y a las ocho decimas "
+        f"centrales (e <= 0.4*B) con gamma_EQ = 1.0, interpolando en medio. "
+        f"Es una verificacion que la tabla de FS de Sec. 9.3 no trae, porque "
+        f"E.050 no la escribe, y depende de 'gamma_EQ', que sigue vacio",
+        # La tercera errata, que mueve un numero y por eso pesa mas que las
+        # otras dos.
+        f"Excentricidad sismica, 'tercio central': {EXCENTRICIDAD_ERRATA_MANUAL} "
+        f"({NUMERAL_EXCENTRICIDAD_SISMICA}; {NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO}; "
+        f"el limite estatico que sirve de ancla, en {NUMERAL_EXCENTRICIDAD_ESTATICA})",
+        # La presion de contacto tiene dos ramas y el proyecto usa la de suelo.
+        f"Presion de contacto en la base: el num. {NUMERAL_PRESION_CONTACTO} "
+        f"la reparte por terreno de fundacion -- uniforme sobre el ancho "
+        f"efectivo B - 2e en SUELO, lineal sobre B en ROCA -- y no la "
+        f"escribe el numeral sismico. La rama que aplica a este cabezal es la "
+        f"de suelo, coherente con las filas de sitio declaradas en 'F_pga'",
         # Por que E.030 no gobierna este cabezal. El descarte se defendia solo
         # por periodo de retorno, que es la via discutible (NOR-E030-03).
         f"E.030 no gobierna el diseno sismico de este cabezal, y el argumento "
         f"es de AMBITO antes que de periodo de retorno: {E030_AMBITO_LECTURA} "
-        f"({NUMERAL_E030_AMBITO})",
+        f"({NUMERAL_E030_AMBITO}; {NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION})",
+        f"Texto literal del Art. 7.3 de E.030, que es el que cede el paso: "
+        f"\"{E030_ART_7_3_TEXTO}\" ({NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION})",
         # Lo que E.030 SI dice sobre este sitio, y que el expediente tenia
         # archivado como referencia muerta (NOR-E030-02).
         f"Perfil de suelo S5 de E.030: aunque la norma no gobierne el diseno "

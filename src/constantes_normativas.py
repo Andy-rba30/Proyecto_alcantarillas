@@ -1008,8 +1008,9 @@ K_H0_ROCA_ERRATA = (
     "impresa 11-27 (PDF 1496), lo escribe sin ambiguedad: "
     "'k_h0 shall be based on 1.2 times the site-adjusted peak ground "
     "acceleration coefficient (i.e., k_h0 = 1.2 F_pga PGA)'. GANA LA PROSA "
-    "DEL MANUAL, coincidente con AASHTO. Es la segunda errata de imprenta de "
-    "esta misma cadena sismica; la otra es K_AE_ERRATA_MANUAL")
+    "DEL MANUAL, coincidente con AASHTO. Es la segunda de las TRES erratas de "
+    "imprenta de esta misma cadena sismica; las otras son "
+    "K_AE_ERRATA_MANUAL y EXCENTRICIDAD_ERRATA_MANUAL")
 
 # k_v: el Manual lo FIJA, no lo deja a eleccion. La afirmacion contraria
 # ('practica corriente; no fijado por el Manual de Puentes') vivia en el
@@ -1152,17 +1153,102 @@ EXCENTRICIDAD_SISMICA_TEXTO = (
     "entre 0.0 y 1.0 la ubicacion de la resultante se obtendra por "
     "interpolacion lineal entre los valores dados en este articulo.")
 # Los dos extremos que el numeral tabula, como excentricidad admisible en
-# FRACCION de B: tercio central -> e <= B/6; ocho decimas centrales ->
-# e <= 0.4*B. Entre ellos, interpolacion lineal sobre gamma_EQ.
-EXCENTRICIDAD_ADMISIBLE_FRACCION_B = {0.0: 1.0 / 6.0, 1.0: 0.4}
+# FRACCION de B, SIGUIENDO A AASHTO Y NO AL LITERAL DEL MANUAL (ver
+# EXCENTRICIDAD_ERRATA_MANUAL): dos tercios centrales -> e <= B/3; ocho
+# decimas centrales -> e <= 0.4*B. Entre ellos, interpolacion lineal sobre
+# gamma_EQ.
+EXCENTRICIDAD_ADMISIBLE_FRACCION_B = {0.0: 1.0 / 3.0, 1.0: 0.4}
+EXCENTRICIDAD_SISMICA_TEXTO_AASHTO = (
+    "For seismic eccentricity evaluation of walls with foundations on soil "
+    "and rock, the location of the resultant of the reaction forces shall be "
+    "within the middle two-thirds of the base for gamma_EQ = 0.0 and within "
+    "the middle eight-tenths of the base for gamma_EQ = 1.0. For values of "
+    "gamma_EQ between 0.0 and 1.0, the resultant location restriction shall "
+    "be obtained by linear interpolation of the values given in this Article.")
+NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO = (
+    "AASHTO LRFD 9a ed. (2020), Art. 11.6.5.1 'General', pag. impresa 11-25 "
+    "(PDF 1494)")
+EXCENTRICIDAD_ERRATA_MANUAL = (
+    "TERCERA ERRATA DE IMPRENTA DEL MANUAL en esta misma cadena sismica, y la "
+    "unica que mueve un numero. El num. 2.8.1.1.14.1 traduce el 'middle "
+    "two-thirds' de AASHTO como 'tercio central', que no es lo mismo: dos "
+    "tercios centrales es e <= B/3 y el tercio central es e <= B/6, la mitad. "
+    "Que es descuido de traduccion y no decision del MTC lo prueba el propio "
+    "Manual, tres paginas antes: en su numeral ESTATICO traduce el MISMO giro "
+    "correctamente -- 'dentro los dos tercios centrales del ancho de la base' "
+    "-- y en el mismo parrafo sismico traduce bien 'eight-tenths' como 'ocho "
+    "decimas centrales'. Solo degrada 'two-thirds', y solo ahi. "
+    "Y LA LECTURA LITERAL ES NORMATIVAMENTE IMPOSIBLE: dejaria el limite bajo "
+    "SISMO (e <= B/6) al doble de estricto que el mismo Manual exige bajo "
+    "carga estatica permanente (e <= B/3, fundacion en suelo), lo que invierte "
+    "la filosofia de estados limite -- Evento Extremo I es raro y mas "
+    "tolerante que Resistencia I, no al reves. Con el texto de AASHTO el "
+    "articulo es coherente: ANCLA en gamma_EQ = 0.0 sobre el mismo B/3 del "
+    "limite estatico y desde ahi RELAJA a 0.4*B cuando gamma_EQ = 1.0. "
+    "GANA AASHTO. Seguir la letra del Manual seria conservador -- por eso "
+    "esto no cambia ningun resultado ya emitido -- pero rechazaria disenos "
+    "que la norma acepta, y sobre todo dejaria la cita sin sostener")
 
 # --------------------------------------------------------------------------
-# CADENA SISMICA - las dos erratas de imprenta del Manual
+# ESTABILIDAD - presion de contacto en la base (ESTATICO, y no sismico)
 # --------------------------------------------------------------------------
-# El proyecto sigue a AASHTO en los dos puntos y NO al literal del Manual.
+# Las formulas de presion de contacto NO estan en el numeral sismico: estan
+# aqui, y la fuente las reparte en DOS RAMAS segun el terreno de fundacion.
+# Aplicar la de roca a una cimentacion en suelo -- que es lo que hacia este
+# proyecto sin decirlo -- sobrestima la presion de pico, o sea es
+# conservador, pero es la rama equivocada del numeral y se elegia en
+# silencio.
+NUMERAL_PRESION_CONTACTO = (
+    "Manual de Puentes (MTC) num. 2.8.1.1.12.2 'Capacidad de Carga' "
+    "(11.6.3.2 AASHTO), pag. impresa 248 (PDF 249)")
+PRESION_CONTACTO_TEXTO = (
+    "Si el muro es soportado por una fundacion en suelo: La tension vertical "
+    "se debera calcular suponiendo una presion uniformemente distribuida "
+    "sobre el area de una base efectiva. La presion vertical se debera "
+    "calcular de la siguiente manera: sigma_v = SumaV / (B - 2e) "
+    "(2.8.1.1.12.2-1). "
+    "Si el muro es soportado por una fundacion en roca: La presion vertical "
+    "se debera calcular suponiendo una presion distribuida linealmente sobre "
+    "el area de una base efectiva. Si la resultante cae dentro del tercio "
+    "central de la base, sigma_vmax = (SumaV/B)(1 + 6 e/B) (2.8.1.1.12.2-2), "
+    "sigma_vmin = (SumaV/B)(1 - 6 e/B) (2.8.1.1.12.2-3). Si la resultante cae "
+    "fuera del tercio central de la base, sigma_vmax = 2 SumaV / "
+    "{3[(B/2) - e)]} (2.8.1.1.12.2-4), sigma_vmin = 0 (2.8.1.1.12.2-5)")
+# El limite ESTATICO de excentricidad, que no es el sismico y tambien se
+# desglosa por terreno. Se transcribe porque es lo que ancla el extremo
+# gamma_EQ = 0.0 del limite sismico y por tanto lo que prueba que el "tercio
+# central" de aquel es errata.
+#
+# EL NUMERAL SE IMPRIME MAL EN EL PROPIO MANUAL: dice "2.3.1.1.12.3", con un
+# 3 donde toca un 8, rompiendo la serie 2.8.1.1.12.2 -> ... -> 2.8.1.1.12.5;
+# y el indice del Manual repite la errata. La remision a AASHTO (11.6.3.3) si
+# es correcta. Se cita como lo imprime, con la advertencia, para que quien lo
+# busque lo encuentre.
+NUMERAL_EXCENTRICIDAD_ESTATICA = (
+    "Manual de Puentes (MTC) num. 2.3.1.1.12.3 'Limites de Excentricidad' "
+    "(11.6.3.3 AASHTO) -- el numeral se imprime asi, con 2.3 en vez de 2.8, "
+    "errata del Manual que su propio indice repite --, pag. impresa 250 "
+    "(PDF 251)")
+EXCENTRICIDAD_ESTATICA_FRACCION_B = {"suelo": 1.0 / 3.0, "roca": 0.45}
+EXCENTRICIDAD_ESTATICA_TEXTO = (
+    "En las fundaciones en suelo la ubicacion de la resultante de las fuerzas "
+    "de reaccion debera estar dentro los dos tercios centrales del ancho de "
+    "la base. En las fundaciones sobre roca la ubicacion de la resultante de "
+    "las fuerzas de reaccion debera estar dentro de los nueve decimos "
+    "centrales del ancho de la base. Los criterios especificados para la "
+    "ubicacion de la resultante, junto con la investigacion de la presion de "
+    "contacto, reemplaza la investigacion de la relacion entre el momento "
+    "estabilizador y el momento de vuelco.")
+
+# --------------------------------------------------------------------------
+# CADENA SISMICA - las TRES erratas de imprenta del Manual
+# --------------------------------------------------------------------------
+# El proyecto sigue a AASHTO en los tres puntos y NO al literal del Manual.
 # Esta declarado aqui, y no solo en un docstring de M9, porque es lo que
 # impide que un revisor "corrija" el codigo contra la letra impresa y rompa
-# la formula (MAT-O2, MAT-X2). La segunda errata es K_H0_ROCA_ERRATA.
+# la formula (MAT-O2, MAT-X2). Las otras dos son K_H0_ROCA_ERRATA y
+# EXCENTRICIDAD_ERRATA_MANUAL; ninguna de las tres estaba declarada, y la
+# tercera la destapo la auditoria adversarial de esta misma sesion.
 NUMERAL_K_AE_MANUAL = ("Manual de Puentes (MTC), Apendice A11 'Diseno "
                        "Sismico de Estructuras de Contencion', num. A.11.3.1 "
                        "'Metodo de Mononobe -Okabe', ec. A.11.3.1-2, pag. "
@@ -1200,10 +1286,19 @@ HIPOTESIS_EMPUJE_BAJO_NF = (
     "TOTAL del relleno en toda la altura y se le suma la hidrostatica "
     "completa bajo el NF. AASHTO 3.11.3 exige peso especifico SUMERGIDO bajo "
     "el nivel freatico, de modo que el agua de poros se cuenta dos veces en "
-    "la zona sumergida. La desviacion es CONSERVADORA y esta acotada: con "
-    "gamma_sat = 20 kN/m3, Ka = 1/3 y 0.60 m sumergidos, la presion en la "
-    "base es 9.9 kPa contra los 7.9 kPa de AASHTO, un +25 % local. Se "
-    "mantiene, y se declara, porque corregirla exige un peso especifico "
+    "la zona sumergida. "
+    "CUANTO ES, exactamente: el exceso de presion horizontal es "
+    "Ka*(gamma - gamma')*h = Ka*gamma_agua*h, o sea CONSTANTE en toda la zona "
+    "sumergida y proporcional solo a la profundidad bajo el NF. Con "
+    "gamma_sat = 20 kN/m3 (gamma' = 10.19), Ka = 1/3 y h = 0.60 m son "
+    "1.96 kPa de mas, siempre. En porcentaje NO hay un solo numero, porque "
+    "depende de la altura del muro: sobre un muro de 0.60 m -- todo el sumergido, "
+    "que es el caso con que la ficha MAT-O3 lo calculo -- la presion en la "
+    "base es 9.9 kPa contra 7.9 kPa, +25 %; sobre uno de 2.00 m con el "
+    "freatico a 1.40 m es 19.2 contra 17.3 kPa, +11 %; y sigue bajando con la "
+    "altura, porque el exceso no crece y el empuje si. La desviacion es "
+    "CONSERVADORA en todos los casos (gamma > gamma' siempre). "
+    "Se mantiene, y se declara, porque corregirla exige un peso especifico "
     "sumergido del relleno que este expediente todavia no tiene: aplicar "
     "AASHTO con el unico gamma declarado seria ALIVIAR el empuje sin dato "
     "que lo sostenga. La hoja de ruta no dice nada del NF en el empuje: solo "
@@ -1213,14 +1308,19 @@ HIPOTESIS_EMPUJE_BAJO_NF = (
 # QUE DE ESTE BLOQUE TIENE CONSUMIDOR Y QUE NO, declarado en vez de deducirse,
 # como ya se hacia con el bloque de gamma_p. Lo consume el calculo (M9):
 # F_PGA_TABLA, F_PGA_TABLA_PGA_COLUMNAS, F_PGA_EXIGE_ESTUDIO_DE_SITIO,
-# F_PGA_CLASES_EN_ROCA, K_H0_FACTOR_ROCA_A_B, K_V_PRESCRITO,
-# REDUCCION_KH_POR_DESPLAZAMIENTO, FACTOR_MURO_DECLARACIONES,
+# F_PGA_CLASES_EN_ROCA, LECTURAS_COLUMNA_EXTREMA,
+# LECTURA_COLUMNA_EXTREMA_ESTRICTA, K_H0_FACTOR_ROCA_A_B, K_V_PRESCRITO,
+# K_V_DECLARACION_PRESCRITO, REDUCCION_KH_POR_DESPLAZAMIENTO,
+# FACTOR_MURO_DECLARACIONES, FACTOR_MURO_CON_REDUCCION,
 # P_SEIS_COMBINACIONES, P_SEIS_PISO_ESTATICO,
-# EXCENTRICIDAD_ADMISIBLE_FRACCION_B y los NUMERAL_*. Lo demas -- los
-# titulos, los encabezados, las notas al pie, los textos literales y las dos
-# declaraciones de errata -- NO lo invoca ninguna formula: es la parte de la
-# transcripcion que existe para que la cita sea verificable contra el PDF y
-# para que la memoria la imprima. No es codigo muerto, es la cita.
+# EXCENTRICIDAD_ADMISIBLE_FRACCION_B y los NUMERAL_*. Los textos literales
+# K_V_CASO_RESERVADO, K_AE_ERRATA_MANUAL, K_H0_ROCA_ERRATA,
+# HIPOTESIS_EMPUJE_BAJO_NF, E030_AMBITO_LECTURA, E030_S5_TEXTO y
+# E030_S5_LECTURA no entran en ninguna formula pero SI los invoca M9: viajan
+# a la memoria por `condicion_normativa_cabezal`. Lo demas -- los titulos, los
+# encabezados, las notas al pie y el resto de los literales -- no lo invoca
+# nadie: es la parte de la transcripcion que existe para que la cita sea
+# verificable contra el PDF. No es codigo muerto, es la cita.
 #
 # PGA -> datos_sitio (dato de sitio [S]); la eleccion de filas de F_pga, la
 # declaracion de reduccion del muro, el caso reservado de k_v y gamma_EQ ->
@@ -1249,7 +1349,10 @@ HIPOTESIS_EMPUJE_BAJO_NF = (
 # exigencia normativa peruana con numeral verificado, o sea [N], y lo unico
 # elegido es QUE FILA de la tabla describe a cada estructura de esta obra,
 # que es [A] y vive en 'factores_carga_aashto'. Es el mismo reparto de
-# F_PGA_TABLA / 'F_pga' y FACTOR_MURO_TABLA / 'factor_muro_eleccion'.
+# F_PGA_TABLA / 'F_pga'. El del factor de muro se le parece pero no es
+# igual: alli la parte [N] no es una tabla sino un unico valor
+# autorizado (REDUCCION_KH_POR_DESPLAZAMIENTO), y llamarla tabla era el
+# defecto NOR-PUE-07.
 COMBINACIONES_AASHTO = ("Resistencia I", "Servicio I", "Evento Extremo I")
 NUMERAL_COMBINACIONES = "2.4.5.3 (AASHTO LRFD Sec. 3.4.1), pags. 140-143"
 
@@ -1719,11 +1822,40 @@ E030_AMBITO_TEXTO = (
 # abre el ambito a obras viales.
 E030_AMBITO_LECTURA = (
     "El Art. 4 acota el ambito de E.030 a las edificaciones nuevas y al "
-    "reforzamiento o reparacion de edificaciones existentes. No contiene "
-    "exclusion expresa de puentes ni de obras de arte vial: no los nombra. "
-    "El descarte de E.030 para el cabezal se sostiene en que un cabezal de "
-    "alcantarilla no es una edificacion, y ese argumento es anterior e "
-    "independiente del periodo de retorno")
+    "reforzamiento o reparacion de edificaciones existentes, y un cabezal de "
+    "alcantarilla de una carretera no es una edificacion. PERO ESO SOLO NO "
+    "BASTA, y creer que basta es el error que este campo cometia: E.030 NO "
+    "guarda silencio sobre las obras que no son edificaciones. Su Art. 7.3 "
+    "las nombra -- puentes y estructuras hidraulicas entre ellas -- y se las "
+    "ATRAE, con una condicion suspensiva: 'mientras no se cuente con normas "
+    "nacionales especificas'. De modo que 'no es una edificacion' no es lo "
+    "que saca al cabezal de E.030: es el disparador del articulo que lo "
+    "mete. LO QUE LO SACA es que la condicion NO SE CUMPLE: el MTC si tiene "
+    "norma nacional especifica -- el Manual de Puentes --, y por eso el "
+    "mandato de usar Z y S de E.030 no llega a activarse. Es un fundamento "
+    "POSITIVO, y mas fuerte que el silencio que este campo invocaba: la "
+    "propia E.030 cede el paso ante la norma sectorial. Ver "
+    "E030_ART_7_3_TEXTO")
+
+NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION = (
+    "E.030 (RM 183-2026-VIVIENDA), Art. 7.3, dentro del Art. 7 "
+    "'Consideraciones para el diseno y comportamiento estructural', pag. "
+    "impresa 8 (PDF 8)")
+E030_ART_7_3_TEXTO = (
+    "Mientras no se cuente con normas nacionales especificas para estructuras "
+    "tales como reservorios, tanques, silos, puentes, torres de transmision, "
+    "muelles, estructuras hidraulicas, tuneles y todas aquellas cuyo "
+    "comportamiento sismico difiera del de las edificaciones se deben "
+    "utilizar los valores Z y S del Capitulo II de la presente Norma Tecnica "
+    "amplificados de acuerdo a la importancia de la estructura, debiendo ser "
+    "sustentado por el proyectista tomando en cuenta estandares "
+    "internacionales.")
+# Es el UNICO numeral de E.030 que nombra puentes u obras hidraulicas: se
+# barrio la norma entera y los otros aciertos son otra cosa (los reservorios
+# de la tabla de categoria A son EDIFICACIONES esenciales, las 'instalaciones
+# hidraulicas y sanitarias' del Art. 55.2 d) son elementos no estructurales
+# adosados a una edificacion, y "PUENTE PIEDRA" es un distrito de Lima en el
+# Anexo II). Ningun numeral menciona alcantarillas ni obras de arte vial.
 
 NUMERAL_E030_Z = ("E.030 (RM 183-2026-VIVIENDA), Art. 11.1 y Tabla N 1, "
                   "pag. impresa 9 (PDF 9)")

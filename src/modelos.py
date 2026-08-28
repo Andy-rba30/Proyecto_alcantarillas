@@ -1237,16 +1237,17 @@ class CadenaSismica:
         k_h0 = 1.2 * F_pga * PGA          (idem, cimentacion en Clase A o B)
         k_h  = factor_muro * k_h0
 
-    `pasos` reproduce la tabla de la hoja de ruta fila por fila para que M11
-    la imprima entera. Los campos escalares existen para que el calculo no
+    `pasos` reproduce la tabla de la hoja de ruta fila por fila para que el
+    informe la imprima entera -- con su condicion por eslabon, que es lo que
+    la hace revisable. Los campos escalares existen para que el calculo no
     tenga que buscar dentro de la tupla.
     """
 
     PGA: float                            # g - roca Clase B, Tr = 1000 anios
     F_pga: float                          # adimensional - factor de sitio
     A_s: float                            # g - F_pga * PGA
-    k_h0: float                           # adimensional - = A_s
-    factor_muro: float                    # adimensional - 1.0 = muro rigido
+    k_h0: float                           # adimensional - A_s, o 1.2*F_pga*PGA en roca
+    factor_muro: float                    # adimensional - 1.0 = sin reduccion
     k_h: float                            # adimensional - factor_muro * k_h0
     k_v: float                            # adimensional - vertical, [N] aparte
     pasos: Tuple[PasoSismico, ...]
@@ -1474,15 +1475,42 @@ class DemandaSismicaCabezal:
     inercia: FuerzaInerciaMuro
     numeral: str
 
-    @property
-    def gobernante(self) -> CasoDemandaSismica:
-        """El mas desfavorable de los dos: 'el resultado mas conservador'."""
-        return max(self.casos, key=lambda c: c.total)
+    def mas_desfavorable(self, efectos: Dict[str, float]) -> CasoDemandaSismica:
+        """
+        El caso que gobierna, comparando el EFECTO que el llamador midio en
+        cada uno: `{nombre_del_caso: efecto}`, con el efecto orientado de modo
+        que mayor sea peor (momento volcante, fuerza actuante, 1/FS...).
 
-    @property
-    def P_seis(self) -> float:
-        """kN/m: la demanda que gobierna el diseno del muro."""
-        return self.gobernante.total
+        POR QUE NO HAY UN `gobernante` QUE COMPARE LAS SUMAS. Porque la fuente
+        no manda comparar fuerzas, manda comparar ANALISIS: "el resultado mas
+        conservador de estos dos ANALISIS se usara para el diseno del muro"
+        (Manual 2.8.1.1.14.1; "the most conservative result from these two
+        analyses", AASHTO 11.6.5.1). P_AE y P_IR actuan a alturas distintas
+        -- el empuje en el tercio inferior, la inercia en el centroide de la
+        masa del muro y su relleno --, de modo que el orden por fuerza
+        resultante NO es el orden por momento volcante. Ejemplo con brazos
+        corrientes: P_AE = 100 kN/m a 1.20 m y P_IR = 80 kN/m a 2.00 m dan
+        140 kN/m y 200.0 kN*m/m en el primer caso, y 130 kN/m y 220.0 kN*m/m
+        en el segundo: la suma senala el primero y el volteo lo gobierna el
+        segundo, un 10 % mas. Un `gobernante` que ordenara por `total`
+        devolveria el caso equivocado justo en la verificacion -- el volteo --
+        donde equivocarse es no conservador.
+
+        La comparacion por fuerza sigue disponible para quien de verdad la
+        necesite (deslizamiento con los dos empujes al mismo nivel), pero
+        tiene que pedirla nombrandola: `mas_desfavorable({c.nombre: c.total
+        for c in demanda.casos})`.
+        """
+        nombres = {c.nombre for c in self.casos}
+        faltan = nombres - set(efectos)
+        if faltan:
+            raise DatoInvalidoError(
+                campo="efectos", valor=sorted(efectos),
+                motivo=f"el numeral manda comparar los dos analisis y faltan "
+                       f"los de {sorted(faltan)}: sin el efecto de cada caso "
+                       f"no hay cual sea 'el resultado mas conservador'",
+            )
+        return max(self.casos, key=lambda c: efectos[c.nombre])
 
 
 @dataclass(frozen=True)
@@ -1496,12 +1524,19 @@ class PresionContactoBase:
     vacio declarado: `verificar_capacidad_portante` exige `q_actuante` ya
     resuelto y en el repositorio no habia con que producirlo (MAT-O16).
 
-    `dentro_del_nucleo` no es lo mismo que `cumple`: el nucleo central
-    (e <= B/6) es la condicion para que la distribucion lineal completa tenga
-    sentido -- fuera de el la zapata levanta y q_min saldria negativo --,
-    mientras que el limite SISMICO depende de gamma_EQ y llega hasta 0.4*B.
-    Con e > B/6 las presiones que se devuelven son las de la distribucion
-    parcial, no las de la formula del nucleo.
+    `distribucion` dice QUE RAMA del numeral se aplico, porque son dos y la
+    fuente las reparte por terreno de fundacion: presion uniforme sobre el
+    ancho efectivo B - 2e si el muro se apoya en suelo, y distribucion lineal
+    sobre B si se apoya en roca. Aplicar la de roca a una cimentacion en
+    suelo sobrestima el pico -- es conservador -- pero es la rama equivocada,
+    y sin este campo la eleccion no se veria en ningun sitio.
+
+    `dentro_del_nucleo` no es lo mismo que `cumple`, y solo cambia la formula
+    en la rama de ROCA: el nucleo central (e <= B/6) es la condicion para que
+    la distribucion lineal completa tenga sentido -- fuera de el la zapata
+    levanta y q_min saldria negativo --, mientras que el limite SISMICO
+    depende de gamma_EQ y llega hasta 0.4*B. Se informa en las dos ramas
+    porque es una propiedad de la resultante, no de la formula.
     """
 
     N: float                              # kN/m - normal neta en la base
@@ -1509,7 +1544,9 @@ class PresionContactoBase:
     e: float                              # m - excentricidad respecto del centro
     q_max: float                          # kPa
     q_min: float                          # kPa
+    ancho_efectivo: float                 # m - B - 2e
     dentro_del_nucleo: bool
+    distribucion: str                     # que rama del numeral se aplico
     numeral: str
 
 

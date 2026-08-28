@@ -175,13 +175,17 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
     # periodo de retorno -- Sec. 0.4 de la hoja de ruta prefiere el PGA de
     # Tr = 1000 anios del Manual de Puentes al sismo de E.030 --, que es la
     # via discutible: invita a preguntar por que no aplicar las dos normas.
-    # El argumento de AMBITO es anterior y cierra la pregunta: el Art. 4 de
-    # E.030 acota la norma a las edificaciones nuevas y al reforzamiento o
-    # reparacion de edificaciones existentes, y un cabezal de alcantarilla de
-    # una carretera no es una edificacion. El expediente no lo invocaba en
-    # ningun sitio (NOR-E030-03). Texto literal y la advertencia de como NO
-    # estirarlo -- el articulo no excluye expresamente a los puentes: no los
-    # nombra -- en constantes_normativas.E030_AMBITO_TEXTO y
+    # El argumento de AMBITO es anterior y cierra la pregunta, pero NO es el
+    # que parecia. El Art. 4 acota E.030 a las edificaciones y un cabezal de
+    # alcantarilla no lo es -- cierto --, solo que E.030 no guarda silencio
+    # sobre lo que no es edificacion: su Art. 7.3 nombra puentes y
+    # estructuras hidraulicas y se los ATRAE, "mientras no se cuente con
+    # normas nacionales especificas". Lo que saca al cabezal de E.030, por
+    # tanto, no es el silencio sino que esa condicion NO SE CUMPLE: el MTC si
+    # tiene norma especifica, el Manual de Puentes. Es un fundamento positivo
+    # y mas fuerte -- la propia E.030 cede el paso --, y el expediente no
+    # invocaba ni uno ni otro (NOR-E030-03). Textos literales en
+    # constantes_normativas.E030_AMBITO_TEXTO, E030_ART_7_3_TEXTO y
     # E030_AMBITO_LECTURA.
     #
     # Se conservan porque un revisor los va a buscar y porque su ausencia se
@@ -250,8 +254,13 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                      "nombra en num. 87 solo para decir que NO se usa en el "
                      "calculo. El descarte tiene DOS argumentos y el "
                      "expediente usaba solo el segundo: (1) AMBITO -- el "
-                     "Art. 4 de E.030 aplica la norma a edificaciones, y este "
-                     "cabezal no lo es; es anterior y no admite replica; "
+                     "Art. 4 aplica la norma a edificaciones y este cabezal "
+                     "no lo es, pero eso solo no basta, porque el Art. 7.3 "
+                     "nombra los puentes y las estructuras hidraulicas y les "
+                     "aplica Z y S 'mientras no se cuente con normas "
+                     "nacionales especificas'; lo que cierra la pregunta es "
+                     "que esa condicion no se cumple, porque el Manual de "
+                     "Puentes existe y es la norma sectorial del MTC; "
                      "(2) periodo de retorno -- el de referencia de Z, "
                      "derivado en 475 anios, difiere del adoptado (Tr = 1000 "
                      "anios del Manual de Puentes, Sec. 0.4). El (1) es el "

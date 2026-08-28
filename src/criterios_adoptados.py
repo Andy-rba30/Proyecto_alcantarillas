@@ -737,9 +737,18 @@ CRITERIOS: Dict[str, Criterio] = {
                         "dinamica de sitio que pide la Nota 2",
         sensibilidad="entre 0.9 (fila E) y 1.0 (filas C y D) al PGA de este "
                      "proyecto, con la lectura declarada en "
-                     "'F_pga_lectura_columna_extrema'; sube a 1.1 (fila D) si "
-                     "esa lectura se cambia a 'limite_estricto' y se lee la "
-                     "columna PGA = 0.40",
+                     "'F_pga_lectura_columna_extrema'. Ese es TODO el rango "
+                     "alcanzable: la otra lectura declarable, "
+                     "'limite_estricto', no lee la columna anterior sino que "
+                     "DETIENE el calculo, porque con los rotulos leidos al "
+                     "pie de la letra en PGA = 0.50 no hay columna ni hay dos "
+                     "valores entre los que interpolar. El 1.1 de la fila D "
+                     "en la columna PGA = 0.40 existe en la tabla y NO es "
+                     "alcanzable por ninguna declaracion de este proyecto: "
+                     "llegar a el exigiria una tercera lectura -- extrapolar "
+                     "desde la columna anterior -- que no se declara porque "
+                     "no la sostiene la Nota 1, que habla de interpolar entre "
+                     "valores y no de extrapolar mas alla del ultimo",
     ),
 
     # La tabla se lee por columnas de PGA y sus dos rotulos extremos son
@@ -912,11 +921,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "DONDE PESA, ademas de en la combinacion: el num. "
                       "2.8.1.1.14.1 hace depender de gamma_EQ el limite de "
                       "excentricidad de la resultante en la base bajo sismo "
-                      "-- tercio central (e <= B/6) con gamma_EQ = 0.0, ocho "
-                      "decimas centrales (e <= 0.4*B) con gamma_EQ = 1.0, e "
-                      "interpolacion lineal en medio. Es un factor DOS y pico "
-                      "entre los dos extremos, de modo que sin este valor no "
-                      "hay chequeo de excentricidad sismica que hacer",
+                      "-- dos tercios centrales (e <= B/3) con gamma_EQ = 0.0, "
+                      "ocho decimas centrales (e <= 0.4*B) con gamma_EQ = 1.0, "
+                      "e interpolacion lineal en medio. El limite se mueve un "
+                      "20 % entre los dos extremos, y sin este valor no hay "
+                      "chequeo de excentricidad sismica que hacer. "
+                      "OJO CON LA CIFRA: el Manual imprime 'tercio central' "
+                      "en vez de los dos tercios de AASHTO, y con esa lectura "
+                      "el rango pareceria un factor 2.4. Es errata de "
+                      "traduccion, declarada en "
+                      "constantes_normativas.EXCENTRICIDAD_ERRATA_MANUAL",
         fuente="AASHTO LRFD 9a ed. (2020), Art. 3.4.1, pag. impresa 3-19, y "
                "su comentario C3.4.1, pag. impresa 3-10; texto literal en "
                "constantes_normativas.GAMMA_EQ_TEXTO. Via Manual de Puentes "
@@ -2170,7 +2184,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "QUE FILA APLICA la decide 'condicion_pavimento', que es "
                       "un vacio aparte y bloquea: la tabla es [C] y elegir su "
                       "fila es [A], el mismo reparto que F_PGA_TABLA / 'F_pga' "
-                      "y FACTOR_MURO_TABLA / 'factor_muro_eleccion'",
+                      "y REDUCCION_KH_POR_DESPLAZAMIENTO / "
+                      "'factor_muro_eleccion' -- este ultimo con la salvedad "
+                      "de que ahi la parte [N] no es una tabla sino un solo "
+                      "valor autorizado, y llamarla tabla era el defecto "
+                      "NOR-PUE-07",
         fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
                "Seccion 12 'Buried Structures and Tunnel Liners', "
                "Art. 12.6.6.3 'Minimum Cover' y Tabla 12.6.6.3-1, pag. "
@@ -2281,7 +2299,8 @@ CRITERIOS: Dict[str, Criterio] = {
                  "elegir la fila de la Tabla 12.6.6.3-1: 'no_pavimentado', "
                  "'flexible' o 'rigido'",
         justificacion="LA TABLA ES [C] Y ELEGIR SU FILA ES [A]: mismo reparto "
-                      "que F_PGA_TABLA / 'F_pga' y FACTOR_MURO_TABLA / "
+                      "que F_PGA_TABLA / 'F_pga' y "
+                      "REDUCCION_KH_POR_DESPLAZAMIENTO / "
                       "'factor_muro_eleccion'. La Tabla 12.6.6.3-1 separa 'under "
                       "unpaved areas', 'top of flexible pavement' y 'under "
                       "bottom of rigid pavement', y cual de las tres es esta via "
@@ -2629,7 +2648,7 @@ CRITERIOS: Dict[str, Criterio] = {
             # numeros no estan aqui ni pueden estarlo -- son las claves de
             # `constantes_normativas.TABLA_GAMMA_P_FILAS`, que es donde vive
             # la tabla completa. Ese reparto es el de F_PGA_TABLA / 'F_pga' y
-            # FACTOR_MURO_TABLA / 'factor_muro_eleccion'.
+            # REDUCCION_KH_POR_DESPLAZAMIENTO / 'factor_muro_eleccion'.
             #
             # Las tres primeras claves son los valores de `TipoMaterial`, el
             # mismo indexado por material que ya usan 'D_max_catalogo',
@@ -2736,7 +2755,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "unico elegido -- y por eso lo unico que queda aqui -- "
                       "es que fila describe a cada estructura, que es [A] "
                       "por el reparto que este proyecto ya aplica dos veces "
-                      "-- F_PGA_TABLA / 'F_pga' y FACTOR_MURO_TABLA / "
+                      "-- F_PGA_TABLA / 'F_pga' y "
+                      "REDUCCION_KH_POR_DESPLAZAMIENTO / "
                       "'factor_muro_eleccion' --: la tabla es [N] y vive en "
                       "el Anexo B (Sec. 0.7 de la hoja de ruta: alli solo van "
                       "constantes [N] con numeral verificado), y elegir una "
