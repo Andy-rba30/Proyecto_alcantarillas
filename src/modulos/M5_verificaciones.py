@@ -43,22 +43,27 @@ prever el acceso de mantenimiento para limpieza en los planos de cada punto.
 verificaciones de cada punto -- que es donde el revisor cuenta las filas -- y
 el JSON la lleva en 'verificaciones_no_evaluadas'.
 
-**V4b - relacion HW/D. No implementada, y su tratamiento esta ABIERTO.** El
-criterio existe ('HW_D_max', 1.5) y ningun modulo lo consume. NO se cablea
-aqui, y no por descuido: de donde sale ese 1.5 y que etiqueta le corresponde
-son objeto de una revision abierta del expediente, y cablear el chequeo antes
-de cerrarla verificaria los puntos contra un umbral cuya procedencia el
-proyecto todavia no puede defender. Mientras siga asi, esta fila no se evalua
-y este parrafo es su constancia. Cuando esa revision cierre, V4b entra como
-funcion propia y este texto se sustituye por ella.
+**V4b - relacion HW/D. No implementada; la PROCEDENCIA del umbral ya esta
+cerrada, el cableado no.** El criterio existe ('HW_D_max', 1.5) y ningun
+modulo lo consume. Lo que estaba abierto -- de donde sale ese 1.5 y que
+etiqueta le corresponde -- se cerro contra el PDF: el rango 1.0-1.5 no es un
+criterio que el HDS-5 fije, sino la practica que su Sec. 2.2.5 d) "Agency
+Constraints" DESCRIBE de las agencias viales estadounidenses, y 1.5 es su
+extremo superior, el menos restrictivo. Por eso el criterio dejo de ser [C]
+-- vacio cubierto por fuente tecnica -- y paso a [A]: es una adopcion del
+proyectista sobre una banda de practica ajena, con su rango de sensibilidad.
+Ver `criterios_adoptados.CRITERIOS['HW_D_max']`, que lleva la cita y el texto
+literal.
 
-AVISO para quien lea esto y quiera arreglarlo por su cuenta: hay dos
-docstrings que hoy afirman lo CONTRARIO -- que M5 si ejecuta V4b --, en
-`modulos.M4_control` y en `modelos.ControlEntrada`. Estan detectados y se
-corrigen en el mismo paquete que el cableado, no antes: primero se cierra de
-donde sale el umbral, despues se cablea y se corrigen las tres cosas juntas.
-Corregir solo los docstrings dejaria el paquete a medias, que es exactamente
-como llego este modulo a tener ocho descripciones desfasadas.
+Lo que sigue pendiente es el CABLEADO, y se hace aparte a proposito: es un
+cambio de comportamiento -- puntos que hoy pasan podrian dejar de pasar -- y
+no entra en el mismo paso que la reetiquetacion. Mientras tanto esta fila no
+se evalua y `verificaciones_no_evaluadas()` es su constancia en la memoria.
+
+Los dos docstrings que afirmaban lo CONTRARIO -- que M5 si ejecuta V4b --,
+en `modulos.M4_control` y en `modelos.ControlEntrada`, ya no lo afirman: se
+corrigieron junto con la reetiquetacion, que es lo que los hacia corregibles
+sin dejar el paquete a medias.
 
 Se dice con los dos numeros -- once filas, nueve funciones -- porque la
 diferencia importa: contarla mal (decir "una fila mas") tapa justamente la
@@ -285,8 +290,9 @@ def verificaciones_no_evaluadas() -> Tuple[str, ...]:
     [A], el acceso de mantenimiento para limpieza, contenido de los PLANOS
     (Sec. 11, entregable 7) que este software no produce.
 
-    V4b: no se evalua porque su umbral esta en revision abierta (ver el
-    encabezado del modulo). El nombre de esta funcion era
+    V4b: no se evalua porque su chequeo no esta cableado (ver el encabezado
+    del modulo; la procedencia del umbral si esta cerrada). El nombre de esta
+    funcion era
     `verificacion_diferida_v2b` y se renombro al incorporarla: una funcion que
     devuelve dos constancias no puede llamarse por una sola de ellas.
     """
@@ -297,11 +303,15 @@ def verificaciones_no_evaluadas() -> Tuple[str, ...]:
         "(Sec. 11, entregable 7), que este software no dibuja. Ningun "
         "punto se da por conforme en V2b por el hecho de cumplir V2",
         "V4b (relacion HW/D): NO evaluada. El criterio 'HW_D_max' esta "
-        "declarado y ningun modulo lo consume; el origen del umbral y su "
-        "etiqueta estan en revision abierta, y verificar contra un umbral "
-        "cuya procedencia no se puede defender seria peor que no "
-        "verificarlo. El control real del embalse aguas arriba es V5, que "
-        "esta declarada y bloquea",
+        "declarado y ningun modulo lo consume. Su procedencia ya no esta "
+        "abierta: el rango 1.0-1.5 no es un criterio del HDS-5 sino la "
+        "practica de agencias viales estadounidenses que su Sec. 2.2.5 d) "
+        "describe, y 1.5 es el extremo superior, el menos restrictivo; el "
+        "criterio dejo de ser un vacio cubierto por fuente tecnica y quedo "
+        "reetiquetado como adopcion del proyectista, con su sensibilidad. "
+        "Lo que falta es cablear el chequeo, que es un cambio de "
+        "comportamiento y se hace aparte. El control real del embalse "
+        "aguas arriba es V5, que esta declarada y bloquea",
     )
 
 

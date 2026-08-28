@@ -276,11 +276,21 @@ def test_las_calicatas_de_autopista_y_dual_se_cuentan_por_sentido():
                                  "tercera_clase", "bajo_volumen"))
 
 
-def test_la_constante_de_friccion_no_se_justifica_como_dos_veces_la_gravedad():
+def test_la_constante_de_friccion_no_se_deriva_de_la_gravedad_del_proyecto():
     """
-    19.63 es la conversion SI que HDS-5 declara para su K = 29. El parecido
-    con 2*g (19.62) es una coincidencia numerica, y sostenerla como origen
-    fue el defecto que esta correccion retiro: si la constante viniera de
-    2*G, este test seria una tautologia en vez de una guardia.
+    La guardia sigue siendo la misma -- que `K_FRICCION_SI` NO sea `2*G` -- y
+    lo que cambia es su motivo, porque el que tenia era falso (MAT-D12,
+    MAT-X5). Este docstring decia que el parecido con 2*g era "una
+    coincidencia numerica". No lo es: `K = 2*g/phi^2` exactamente, con phi el
+    factor de unidades de Manning (1.486 en el sistema ingles, 1 en SI), de
+    modo que en SI la constante ES dos veces la gravedad.
+
+    Lo que separa 19.63 de 19.62 es CUAL gravedad: HDS-5 trabaja con
+    32.2 ft/s^2 = 9.81456 m/s^2 y este proyecto usa `constantes_fisicas.G` =
+    9.81. Por eso la guardia vale igual: el valor es el TRANSCRITO de la
+    fuente primaria, no uno derivado de la G del proyecto, y si alguien lo
+    reemplazara por `2*G` estaria cambiando la fuente del numero -- de HDS-5 a
+    la aritmetica local -- sin decirlo. La diferencia es de +0.05 % sobre el
+    termino de friccion.
     """
     assert CN.K_FRICCION_SI != pytest.approx(2 * G, abs=1e-9)

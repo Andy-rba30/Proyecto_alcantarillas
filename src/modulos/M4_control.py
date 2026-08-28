@@ -21,12 +21,23 @@ dentro del test.
 Lo que M4 NO hace
 -----------------
 M4 no resuelve el tirante normal (eso es M3, Sec. 4.1), no elige material ni
-diametro (M2), y no verifica nada: que HW/D <= 1.5 (V4b) o que HW quede bajo
-la subrasante con su resguardo (V4) son verificaciones de la Fase 5 y las
-hace M5 con el HW que este modulo entrega. M4 tampoco decide de donde sale el
-TW: lo recibe como dato. El TW del cuerpo receptor es el criterio pendiente
-'TW_receptor' (ANA / Junta de Usuarios) y quien lo resuelva debe declararlo,
-no este modulo.
+diametro (M2), y no verifica nada: que HW quede bajo la subrasante con su
+resguardo (V4) es verificacion de la Fase 5 y la hace M5 con el HW que este
+modulo entrega. M4 tampoco decide de donde sale el TW: lo recibe como dato.
+El TW del cuerpo receptor es el criterio pendiente 'TW_receptor' (ANA / Junta
+de Usuarios) y quien lo resuelva debe declararlo, no este modulo.
+
+    V4b (la relacion HW/D) NO LA VERIFICA NADIE, Y ESTE PARRAFO DECIA LO
+    CONTRARIO. Decia que "HW/D <= 1.5 (V4b) ... son verificaciones de la Fase
+    5 y las hace M5". M5 no la implementa y nunca la implemento (SIS-A-02,
+    MAT-D2): la fila V4b de la tabla de Fase 5 se declara NO EVALUADA en
+    `M5.verificaciones_no_evaluadas()`, que es donde vive su constancia y de
+    donde M11 la imprime. El umbral existe como criterio adoptado y su
+    etiqueta quedo cerrada -- [A], no [C]: el rango 1.0-1.5 es una encuesta
+    de practica de agencias estadounidenses que el HDS-5 describe, no un
+    criterio que el manual fije (NOR-HDS-02) --, y el cableado del chequeo es
+    trabajo aparte y posterior. Lo que M4 entrega para cuando ese cableado
+    llegue es `ControlEntrada.HW_sobre_D`.
 
 Los dos solvers de Brent (Sec. 4.2.1)
 --------------------------------------
@@ -79,6 +90,32 @@ dominio. Asi la curva HWi/D(q*) queda continua en los dos extremos.
     esa rama, de modo que M11 lo imprime unicamente cuando algun punto del
     corredor cae realmente en la transicion.
 
+El termino K_s*S tiene un limite, y el limite es fisico
+-------------------------------------------------------
+La correccion por pendiente K_s*S es una recta sin tope: con K_s = -0.5, basta
+una S grande y un Q chico para que las dos formas devuelvan HWi/D NEGATIVO --
+una carga de agua bajo el fondo del conducto, que no existe (MAT-D10). El
+umbral del signo, para la Forma 1, es S > 2*(H_c/D + K*(q*)^M): con
+D = 0.90 m, Q = 0.05 m3/s y la carta de concreto, S > 0.377 alcanza, y hasta
+esta correccion el diseño se ACEPTABA entero con HW = -0.010 m, o sea con V4
+y el tamizado de 7.A evaluados 0.18 m del lado no conservador.
+
+`control_entrada()` ya no devuelve ese numero: cuando HWi/D sale <= 0 lanza
+`DatoInvalidoError` sobre la pendiente. Es un rechazo, no un piso, y la
+diferencia importa. Un piso exige decidir QUE carga se adopta en su lugar --
+la lectura fisica seria HW ~ H_c, la energia especifica critica --, y ese
+valor no lo fija ni la hoja de ruta ni el HDS-5: adoptarlo aqui seria rellenar
+un vacio en silencio, que es el peor defecto de este proyecto. Rechazar no
+adopta nada. Lo que el rechazo afirma es solo lo que se puede sostener: que
+con esos datos la formulacion del HDS-5 quedo fuera de rango y su resultado
+no es publicable.
+
+El rechazo no acota el rango de validez ENTERO de la correccion -- la recta
+deja de representar al HDS-5 bastante antes de cruzar el cero, y cual es esa
+pendiente maxima es una pregunta abierta que ni la hoja de ruta ni el manual
+contestan --; acota lo unico que se puede afirmar sin fuente: que una carga
+negativa es imposible.
+
 K_s: no esta en la Tabla A.1
 -----------------------------
 Las cinco constantes de la Tabla A.1 son K, M, c e Y... y cuatro no son cinco.
@@ -104,24 +141,50 @@ en vez de 0.4977 m, un 9.6 % de diferencia. La guardia es
 `test_constante_friccion_es_SI_no_imperial` (tests/test_M4_control.py), que
 contrasta contra CP-8 y contra el valor que saldria con 29.
 
-    DE DONDE SALE EL 19.63, y de donde NO. Es la cifra que el propio HDS-5
-    escribe como conversion SI de su K = 29: fuente primaria transcrita.
-    Este docstring afirmaba antes que 19.62 "= 2 * 9.81" y que por eso la
-    formula quedaba internamente consistente con `constantes_fisicas.G`. Era
-    falso como ORIGEN: la semejanza con 2*g es una coincidencia numerica, no
-    la derivacion de la constante -- K absorbe la conversion de unidades del
-    termino de friccion de Manning, donde g no interviene sola. La
-    justificacion se retira entera, y no se reescribe con el numero nuevo:
-    inventar una razon para un numero correcto es el mismo defecto que
-    inventar el numero. Lo que si sigue en pie, y no dependia de aquella
-    nota, es que la gravedad de este modulo es `constantes_fisicas.G` = 9.81
-    y no `constantes_normativas.G_LAUSHEY` = 9.8, que la Sec. 4.1.1.3.7 c)
-    fija SOLO para la formula de Laushey de M6. Son dos constantes con dos
+    DE DONDE SALE EL 19.63, y por que se parece tanto a 2*g. Es la cifra que
+    el HDS-5 escribe como conversion SI de su K = 29: fuente primaria
+    transcrita. El parecido con 2*g NO es una coincidencia, y este docstring
+    afirmaba que si lo era (MAT-D12, MAT-X5). La relacion es exacta y se
+    comprueba con dos multiplicaciones:
+
+        K = 2*g / phi^2      phi = factor de unidades de Manning
+                             (1.486 en el sistema ingles, 1 en SI)
+
+        ingles:  2 * 32.2 / 1.486^2   = 29.164  -> el 29 que imprime HDS-5
+        SI:      2 * 9.81456          = 19.629  -> el 19.63 que imprime HDS-5
+
+    o sea que en SI la constante ES 2*g, y lo unico que separa al 19.63 del
+    19.62 es CUAL g: HDS-5 trabaja con g = 32.2 ft/s^2, que son 9.81456 m/s^2,
+    y el proyecto usa `constantes_fisicas.G` = 9.81. Decir "coincidencia"
+    ocultaba justamente eso -- que los dos numeros son el mismo concepto
+    redondeado en dos sistemas --, y una razon falsa para un numero correcto
+    es el mismo defecto que un numero inventado, en la otra direccion.
+
+    Se conserva el 19.63 transcrito, no el 2*G derivado: el valor es de la
+    fuente primaria y las tres auditorias coinciden en que el codigo tiene
+    razon. Lo que la diferencia introduce esta acotado y se dice: el cociente
+    19.63/19.62 vale 1.0005, de modo que afecta al termino de FRICCION en un
+    +0.05 %: unas 190 veces menos que el 9.6 % que produce usar el 29
+    imperial, que es el error que esta constante existe para atrapar.
+
+    Sigue en pie, y no dependia de aquella nota, que la gravedad de este
+    modulo es `constantes_fisicas.G` = 9.81 y no
+    `constantes_normativas.G_LAUSHEY` = 9.8, que la Sec. 4.1.1.3.7 c) fija
+    SOLO para la formula de Laushey de M6. Son dos constantes con dos
     origenes y el proyecto las mantiene separadas a proposito.
 
-    DISCREPANCIA ABIERTA: la hoja de ruta (Sec. 4.3 y su nota de unidades)
-    sigue escribiendo 19.62. El codigo sostiene 19.63 por verificacion
-    contra HDS-5; la hoja de ruta debe corregirse.
+h_o TIENE NUMERAL Y TIENE CONDICION DE USO, y hasta esta correccion el
+modulo no traia ninguna de las dos (NOR-HDS-05). Es el num. 3.3.3 "Outlet
+Control", pag. impresa 3.24 de la 3a ed., y alli mismo dice que la
+aproximacion "can only be used if the barrel flows full for most of its
+length" y que "it should not be used if the inlet is not submerged". Este
+modulo la aplica SIEMPRE, tambien cuando el barril no llena, porque
+comprobarlo exige un perfil de la lamina de agua que el script no calcula.
+No se disimula: el texto literal y su condicion viven en
+`constantes_normativas.H_O_NUMERAL` / `H_O_CONDICION_TEXTO`, entran en
+`UMBRALES_DE_VERIFICACION` -- el unico bloque que M11 imprime siempre -- y la
+verificacion pendiente esta declarada en el criterio
+'geometria_control_salida', que presupone exactamente lo mismo.
 
 De donde salen V y R en esa ecuacion: la hoja de ruta escribe la formula pero
 no dice a que seccion pertenecen, y la eleccion mueve el resultado (R = D/4 =
@@ -322,6 +385,44 @@ def _regimen(q_estrella: float) -> RegimenEntrada:
     return RegimenEntrada.TRANSICION
 
 
+def _exigir_hw_no_negativo(HW_sobre_D: float, S: float, D: float,
+                           q_estrella: float, hds5: ConstantesHDS5) -> None:
+    """
+    Rechaza el HWi/D que la correccion por pendiente K_s*S deja bajo cero
+    (MAT-D10). Sec. 4.2 no acota ese termino y la recta no tiene tope: con
+    K_s = -0.5, una pendiente grande y un caudal chico devuelven una carga
+    NEGATIVA a la entrada, que es una lamina de agua por debajo del fondo del
+    conducto -- no un HW pequeño: un HW imposible.
+
+    No sustituye el valor por ningun piso. Que carga corresponde cuando la
+    formulacion sale de rango no lo fija la hoja de ruta ni el HDS-5, y
+    adoptar uno aqui -- H_c, cero, el que fuera -- seria rellenar un vacio en
+    silencio. Se rechaza el dato que lleva la formula fuera de rango, que es
+    lo unico que la fuente sostiene, y el motivo lleva el umbral del signo
+    para que el revisor vea de que lado esta.
+
+    Sale como `DatoInvalidoError` sobre 'S' y no como `DatoFaltanteError`
+    porque no falta nada: el dato esta y hay que CORREGIRLO (la pendiente de
+    esa fila, o el diametro con que se la esta probando). `MD.disenar_punto`
+    lo trata como descarte del material con su causa citada entera, nunca
+    como un resultado silencioso.
+    """
+    if HW_sobre_D > 0:
+        return
+    raise DatoInvalidoError(
+        "S", valor=S,
+        motivo=f"con D={D} m y q*={q_estrella:.5f} la correccion por "
+               f"pendiente Ks*S de {NUMERAL_ENTRADA} (Ks={hds5.Ks}) devuelve "
+               f"HWi/D={HW_sobre_D:.5f}, una carga a la entrada nula o "
+               f"negativa, que es fisicamente imposible. El HDS-5 formula esa "
+               f"correccion para pendientes de alcantarilla corrientes y aqui "
+               f"quedo extrapolada fuera de rango; el proyecto no adopta "
+               f"ningun piso en su lugar porque ni la hoja de ruta ni el "
+               f"HDS-5 lo fijan. Revisar la pendiente de esta fila o el "
+               f"diametro con que se la prueba",
+    )
+
+
 def control_entrada(Q: float, D: float, S: float, hds5: ConstantesHDS5,
                     critico: Optional[TiranteCritico] = None) -> ControlEntrada:
     """
@@ -338,7 +439,10 @@ def control_entrada(Q: float, D: float, S: float, hds5: ConstantesHDS5,
     sustituye por una recta, y esa sustitucion es el criterio [C]
     'metodo_transicion_hds5', que se invoca al entrar en la rama (ver el
     docstring del modulo). Las dos ramas extremas si son las ecuaciones
-    literales de la Tabla A.1.
+    literales de HDS-5 -- pero de su num. A.2, ecs. (A.1) a (A.3), pags.
+    impresas A.1-A.2, NO de la Tabla A.1 (NOR-HDS-03): de esa tabla, que esta
+    en la pag. A.8, salen unicamente las constantes K, M, c e Y de cada
+    carta.
 
     El termino Ks*S no se omite: Ks no figura en la Tabla A.1 y viene de la
     formulacion (-0.5 sin inglete, +0.7 en inglete). Llega en
@@ -386,6 +490,11 @@ def control_entrada(Q: float, D: float, S: float, hds5: ConstantesHDS5,
         peso = ((q_estrella - Q_LIM_NO_SUMERGIDO)
                 / (Q_LIM_SUMERGIDO - Q_LIM_NO_SUMERGIDO))
         HW_sobre_D = extremo_inferior + peso * (extremo_superior - extremo_inferior)
+
+    # Una sola vez, despues de las tres ramas: el termino Ks*S entra en las
+    # tres -- tambien en la transicion, por sus dos extremos -- y el rechazo
+    # es el mismo. Ver `_exigir_hw_no_negativo` y el docstring del modulo.
+    _exigir_hw_no_negativo(HW_sobre_D, S, D, q_estrella, hds5)
 
     return ControlEntrada(
         HW=HW_sobre_D * D,

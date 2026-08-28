@@ -72,7 +72,7 @@ El Manual de Puentes establece que las combinaciones se rigen por **AASHTO LRFD 
 | Vacío | Estado en v7 |
 |---|---|
 | Control de entrada / salida | El Manual MTC no lo desarrolla. HDS-5 3ª ed. (2012) aplicado **por encima** del mínimo normativo `[C]`. **Aporte metodológico** |
-| Relación HW/D | No existe en el Manual MTC. `[C]` 1.2–1.5. El control real del embalse es V5 |
+| Relación HW/D | No existe en el Manual MTC. **`[A]` 1.2–1.5** (corregido desde `[C]`: el rango 1.0–1.5 **no lo prescribe el HDS-5**, lo describe — ver V4b en Fase 5. Ref. `NOR-HDS-02`, `MAT-D2`). El control real del embalse es V5 |
 | Velocidad máxima en TMC y HDPE | Tabla Nº 10 no los cubre. Fuentes identificadas (PPI, FHWA); **valores numéricos aún por extraer** |
 | n de Manning para HDPE | Tabla Nº 09 no lo lista. **Rango 0.010–0.013 aplicado por analogía al concreto** `[N→]` (corregido desde `[A]`: lo exige la **regla de coherencia** de §0.1 — un valor justificado invocando una fila de una tabla normativa no puede ser `[A]` —, y es el mismo caso que `resguardo_HW_subrasante` y `h_relleno_min_concreto_tmc`. Ref. SIS-D-11) |
 | Flotación de conductos | El Manual de Puentes define subpresión (2.4.3.8.2, pág. 113) pero no incorpora AASHTO LRFD Sec. 12. Definición `[N]`; la verificación se plantea como **equilibrio de factores de carga LRFD** (§Fase 5, V7), con los γ de las Tablas 3.4.1-1/-2 vía `factores_carga_aashto` `[A]`. **Ya no un FS global:** un FS es lenguaje de tensión admisible y §0.2 adopta LRFD de extremo a extremo |
@@ -401,9 +401,15 @@ $$\frac{HW_i}{D} = \frac{H_c}{D} + K\,(q^*)^{M} + K_s\,S$$
 
 $$\frac{HW_i}{D} = c\,(q^*)^{2} + Y + K_s\,S$$
 
-**Transición (3.5 < q\* < 4.0):** interpolar linealmente.
+**Transición (3.5 < q\* < 4.0):** interpolar linealmente **entre el valor de la forma no sumergida en q\* = 3.5 y el de la sumergida en q\* = 4.0** (no entre las dos formas evaluadas en el q\* real: dentro de la ventana ninguna de las dos vale).
+
+> **La recta NO es el método del HDS-5, y esta línea la presentaba como si lo fuera** (`MAT-O10`). El HDS-5 empalma las dos ramas con una **curva tangente** ajustada sobre sus datos de laboratorio, **de la que no publica ecuación cerrada**. Quien prescribe la recta es esta hoja de ruta, no la fuente. Es una **simplificación adoptada** `[C]`, declarada en `criterios_adoptados` como `metodo_transicion_hds5` e invocada solo al entrar en la rama, de modo que la memoria la declara únicamente si algún punto del corredor cae de verdad en la transición. El error está acotado —la recta coincide con cada rama en su borde de validez— y acotado no es lo mismo que normativo.
 
 **K_s** = −0.5 para embocaduras no en inglete; **+0.7** para inglete. *(No figura en la Tabla A.1: proviene de la formulación de las ecuaciones. No omitirlo.)*
+
+> **El término K_s·S no tiene tope, y una carga negativa no existe** (`MAT-D10`). Con K_s = −0.5, una pendiente grande y un caudal chico llevan las dos formas a devolver **HW_i/D negativo** —una lámina de agua por debajo del fondo del conducto—. El umbral del signo, para la Forma 1, es `S > 2·(H_c/D + K·(q*)^M)`: con D = 0.90 m, Q = 0.05 m³/s y la carta de concreto basta `S > 0.377`, y hasta la corrección el diseño se **aceptaba entero** con HW = −0.010 m, o sea con V4 y el tamizado de 7.A evaluados 0.18 m del lado no conservador.
+>
+> `M4.control_entrada()` **rechaza** ese resultado (`DatoInvalidoError` sobre la pendiente). Es un rechazo, no un piso: adoptar una carga en su lugar —la lectura física sería HW ≈ H_c— exige un valor que **ni esta hoja ni el HDS-5 fijan**, y ponerlo aquí sería rellenar un vacío en silencio. El rechazo no acota el rango de validez entero de la corrección —la recta deja de representar al HDS-5 bastante antes de cruzar el cero, y cuál es esa pendiente máxima **es una pregunta abierta**—; acota lo único que se puede afirmar sin fuente: que una carga negativa es imposible.
 
 | Configuración | K | M | c | Y | K_s |
 |---|---|---|---|---|---|
@@ -433,11 +439,23 @@ con un segundo Brent sobre θ. **M4 requiere dos solvers, no uno.**
 
 $$HW = H + h_o - S\,L$$
 
-$$H = \left(1 + k_e + \frac{19.62\,n^{2}L}{R^{4/3}}\right)\frac{V^{2}}{2g} \qquad \text{(SI)}$$
+$$H = \left(1 + k_e + \frac{19.63\,n^{2}L}{R^{4/3}}\right)\frac{V^{2}}{2g} \qquad \text{(SI)}$$
 
 $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 
-> **Nota de unidades.** **19.62** es el valor SI. El **29** de la literatura FHWA es del sistema inglés. Usar 29 en métrico no falla ruidosamente: devuelve números plausibles y equivocados. **Test unitario obligatorio.**
+> **h_o tiene numeral, y tiene una condición de uso que esta hoja no recogía** (`NOR-HDS-05`). La fórmula está en **HDS-5 3.ª ed., num. 3.3.3 «Outlet Control», pág. impresa 3.24** (el manifiesto marcaba la fila «⚠ sin numeral»), y allí mismo viene acotada:
+>
+> «Approximate hydraulic gradeline ho = (dc + D)/2 **can only be used if the barrel flows full for most of its length. It should not be used if the inlet is not submerged.**» · «If the headwater depth falls below **0.75D**, the approximate method should not be used.»
+>
+> La forma con el **máximo** —que es la que implementa `M4.control_salida`— la 3.ª ed. no la numera: la escribe en prosa («the greater of tailwater or (dc + D)/2»). Impresa como igualdad está en la edición de 1985 que también vive en `normas/`: «ho = TW or (dc + D)/2 whichever is larger.»
+>
+> **El proyecto la aplica siempre, y eso es una limitación declarada del nivel de análisis, no un descuido.** Comprobar que el barril fluya lleno en la mayor parte de su longitud exige un perfil de la lámina de agua a lo largo del conducto, que este script no calcula; y el criterio `geometria_control_salida = "seccion_llena"` **presupone lo mismo** que aquí habría que verificar, de modo que la premisa entra dos veces por dos puertas y no se comprueba por ninguna. Queda declarada en `verificacion_pendiente` de ese criterio, que la memoria imprime en cada corrida. Lo que la cerraría es el **procedimiento de barril parcialmente lleno del Cap. III**.
+
+> **Nota de unidades.** **19.63** es el valor SI. El **29** de la literatura FHWA es del sistema inglés. Usar 29 en métrico no falla ruidosamente: devuelve números plausibles y equivocados. **Test unitario obligatorio.**
+>
+> **Corregido desde 19.62** (conflicto #6 del plan de correcciones; `MAT-D12`, `MAT-X5`, `MAT-O12`, `NOR-COH-01`, `SIS-A-20`). Esta hoja escribía 19.62 en sus **cuatro** menciones y el código sostenía 19.63 desde antes, declarando la discrepancia. Gana la fuente primaria, verificada contra el PDF: **HDS-5 3.ª ed. (2012), num. 3.1.4, ec. (3.4b), pág. impresa 3.10** — «KU = 29 in English Units (19.63 in SI)» —, repetido en la ec. (DG 3.1), pág. DG3.3. **Ojo con la otra copia de `normas/`:** `fhwa_culvert_hydraulics_hds5si.pdf` es la edición de **1985** y, pese al «si» del nombre, imprime sus ecs. (4b) y (5) con **29** y rótulos duales «ft (m)»; leerla literal «en SI» reproduce el error de +9.6 % que esta nota advierte.
+>
+> Y el parecido con **2·g no es una coincidencia**: `K = 2g/φ²`, con φ = 1.486 en el sistema inglés y φ = 1 en SI. De ahí `2·32.2/1.486² = 29.16` y `2·9.81456 = 19.629`. Lo único que separa 19.63 de 19.62 es **cuál g**: HDS-5 trabaja con 32.2 ft/s² = 9.81456 m/s² y el proyecto usa `constantes_fisicas.G = 9.81`. Se conserva el 19.63 **transcrito de la fuente**, no el 2·G derivado; la diferencia afecta al término de fricción en un +0.05 % — unas 190 veces menos que el 9.6 % del 29 imperial, que es el error que esta nota existe para advertir.
 
 > **k_e — vacío que pasó inadvertido hasta la implementación.** Ningún numeral del Manual MTC ni del Manual de Puentes fija el coeficiente de pérdida de entrada k_e. Para la embocadura *square edge with headwall* (adoptada en §9.1), se toma **k_e = 0.5** de las tablas de coeficiente de pérdida de entrada del HDS-5. Etiqueta **[C]**, declarado en `criterios_adoptados.py` como `ke_entrada`.
 
@@ -454,7 +472,7 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 | **V2b** | Sedimentación / colmatación | Material sólido de arrastre + **acceso de mantenimiento en planos** | [N] + [A] |
 | **V3** | Velocidad máxima | **Solo techo admisible.** Concreto **V ≤ 6.0 m/s**; ladrillo con concreto **V ≤ 3.5**; mampostería de piedra **V ≤ 2.0**. El par de la Tabla Nº 10 es un rango de valores MÁXIMOS según calidad del revestimiento, **no** un piso y un techo: el extremo inferior es el máximo admisible del acabado más pobre, y V3 no lo exige como mínimo. El piso universal de autolimpieza es **V2** (0.25 m/s). **TMC y HDPE: PPI/FHWA, valor por extraer** | [N] Tabla Nº 10, num. 4.1.1.3.6, pág. 76 / [C] |
 | **V4** | Carga a la entrada HW | **HW ≤ cota de subrasante − resguardo(CBR)** | **[N→]** ver 5.1 |
-| **V4b** | Relación HW/D | 1.2 – 1.5 | **[C]** |
+| **V4b** | Relación HW/D | 1.2 – 1.5 | **[A]** — *corregido desde `[C]`.* El HDS-5 **no fija** HW/D: su num. 2.2.5 d) «Agency Constraints», pág. impresa **2.10** (la v8 citaba la 2.14, que trata de espolones de escombros y seguridad vial) **describe** lo que imponen las agencias viales de EE. UU. — «The allowable HW/D ratio varies throughout the country, but commonly ranges from 1.0 to 1.5» — y en el Perú la agencia es el MTC, que no fija ninguno. Elegir 1.5, que es el extremo **menos restrictivo**, es adopción del proyectista. **No implementada:** ver `M5.verificaciones_no_evaluadas()`. Ref. `NOR-HDS-02`, `MAT-D2`, `SIS-A-02` |
 | **V5** | Remanso aguas arriba | Embalse dentro del **derecho de vía**, sin afectación a terceros ni a faja marginal | [N] DG-2018 + Ley 29338 |
 | **V6** | Material sólido de arrastre | Con palizada: sección única mayor | [N] |
 | **V7** | Flotación del conducto | **γ_DC,min · DC + γ_EV,min · EV ≥ γ_WA · U.** Tubería vacía, NF en su cota más alta. Las cargas que estabilizan (peso propio DC y peso del relleno EV) se **minoran**; la subpresión, que desestabiliza (WA), se **mayora**. Con los mínimos de la Tabla 3.4.1-2 es la forma 0.90·(DC + EV) ≥ 1.00·U. **Corrige la redacción anterior**, ΣW ≥ FS · U, que era un factor de seguridad global de tensión admisible dentro de un marco LRFD (§0.2) | [N] subpresión 2.4.3.8.2 + [A] los γ (`factores_carga_aashto`, Tablas 3.4.1-1/-2) |
@@ -723,7 +741,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | n de Manning para HDPE | [N→] | **Rango (0.010, 0.013)** por analogía. No valor puntual. El código lo **lee de** `constantes_normativas.MANNING["concreto_recto"]`, no lo copia: una analogía que duplica el literal de su origen deja de serlo en cuanto uno de los dos cambie |
 | Velocidad máxima en HDPE y TMC | [C] | **Sin valor.** Fuente identificada (PPI/FHWA), valores por extraer |
 | Progresión de diámetros | [C] | 0.90 m + 0.15 m, topes por norma de producto |
-| HW/D máximo (1.5) | [C] | Sensibilidad (1.2, 1.5) |
+| HW/D máximo (1.5) | [A] | Sensibilidad (1.2, 1.5), **subrango** de la banda 1.0–1.5 que el HDS-5 describe (no prescribe). Corregido desde [C]. Ref. `NOR-HDS-02` |
 | Resguardo HW–subrasante | [N→] | Analogía declarada desde el criterio de napa freática |
 | TW en el receptor | [A] | **Sin valor.** Tablero 3.1 |
 | Longitud máxima de cuneta (200 m) | [A] | Sensibilidad (200, 250) |
@@ -795,7 +813,7 @@ HDS5_INLET = {   # cartas por forma/material; dentro de cada una, por borde
 # HDPE -> criterios_adoptados.valor("hds5_embocadura_hdpe")
 
 # ================= Control de salida (SI) ==================================
-K_FRICCION_SI = 19.62               # H = (1 + ke + 19.62*n^2*L/R^(4/3)) * V^2/(2g)
+K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(2g)
                                     # OJO: 29 es el valor ingles.
                                     # TEST UNITARIO OBLIGATORIO.
 # ho = max(TW, (yc + D)/2)
@@ -906,7 +924,7 @@ M0_carga.py ... M11_reporte.py
 - **Tope superior de diámetro obligatorio por material.** Superado el tope, el material se descarta con mensaje explícito. El HDPE (~1.50 m) es el crítico.
 - **Q(y/D) no es monótona** cerca de sección llena (máximo en y/D ≈ 0.938). Al topar en 0.75 se evita la zona, pero el solver debe manejar el caso "sin solución" → siguiente diámetro.
 - **M4 necesita tirante crítico:** Q²T/(gA³) = 1, segundo Brent sobre θ.
-- **Unidades del control de salida:** 19.62 en SI, no 29. Test unitario obligatorio.
+- **Unidades del control de salida:** 19.63 en SI, no 29 (corregido desde 19.62; ver la nota de unidades de §4.3). Test unitario obligatorio.
 - **El n de HDPE es un rango, no un valor.** Un valor puntual rompe la regla de doble n y subestima velocidad y socavación.
 - Cada verificación devuelve el **booleano y el numeral que la sustenta**.
 - M11 imprime los criterios usados y, al final, los pendientes que no deben citarse en la memoria.

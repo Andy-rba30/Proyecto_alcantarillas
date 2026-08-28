@@ -348,9 +348,178 @@ TABLA_10_INTERPRETACION_PROYECTO = (
 # velocidad es V_MIN, no el extremo inferior de esta fila.
 V_MAX = {clave: fila["valores"] for clave, fila in TABLA_10_FILAS.items()}
 
+LONG_MAX_CUNETA = {"seca": 250.0, "muy_lluviosa": 200.0}   # m (4.1.2.1 d)
+
+# ================= HDS-5 (FHWA) 3a ed., abril 2012 =========================
+# Apendice A. NO todo sale de la Tabla A.1, y este encabezado decia que si
+# (NOR-HDS-03): de la Tabla A.1 (pag. impresa A.8) salen SOLO las constantes
+# K, M, c e Y de cada carta; KU, Ks, los dos limites de rama y las propias
+# ecuaciones estan en el texto del num. A.2, pags. impresas A.1-A.2. Cada
+# constante lleva abajo su sitio exacto.
+#
+# LAS DOS COPIAS DE HDS-5 QUE HAY EN normas/ NO DICEN LO MISMO, y todo este
+# bloque se apoya en UNA de las dos (MAT-X5, MAT-O12):
+#
+#   hif12026.pdf                     3a ed., abril 2012 (FHWA-HIF-12-026).
+#                                    Trae las conversiones SI explicitas.
+#   fhwa_culvert_hydraulics_hds5si.pdf   edicion de septiembre de 1985
+#                                    (FHWA-IP-85-15), rotulada "SI" por sus
+#                                    cartas en version metrica. NO imprime
+#                                    numero de pagina y NO imprime ni 1.811
+#                                    ni 19.63: opera en unidades inglesas con
+#                                    rotulos duales "ft (m)".
+#
+# Todo valor de este bloque sale de la 3a ed. Leer la copia de 1985 "en SI"
+# reproduce exactamente el error del 29 (ver K_FRICCION_SI).
+KU_METRICO = 1.811                  # q* = KU*Q/(A*D**0.5)
+# El 1.811 no esta en la Tabla A.1 (pag. A.8) sino en la lista de variables de
+# las ecuaciones de control de entrada, num. A.2.1 "Unsubmerged Inlet Control
+# Equations", pag. impresa A.2 (PDF 191) de la 3a ed., que lo imprime asi:
+#     "Ku Unit conversion 1.0 (1.811 SI)"
+# Verificado contra el PDF en esta sesion. Lo que sigue citado a la Tabla A.1
+# de la pag. A.8 son las constantes K, M, c e Y de HDS5_INLET.
+# Los dos limites de rama tampoco salen de la Tabla A.1 (NOR-HDS-03): estan en
+# el texto del num. A.2, pags. impresas A.1-A.2, que introduce las ecuaciones.
+# La Tabla A.1 de la pag. A.8 contiene SOLO las constantes K, M, c e Y por
+# carta. Y son los limites del sistema INGLES a proposito: HDS-5 los escribe
+# sobre Q/(A*D^0.5) y da entre parentesis su equivalente SI, mas chico; como
+# `caudal_adimensional` multiplica por KU_METRICO = 1.811, el q* que compara
+# M4 esta ya en la escala inglesa y los umbrales que le corresponden son 3.5 y
+# 4.0. Cambiarlos por los del parentesis seria aplicar dos veces la conversion.
+Q_LIM_NO_SUMERGIDO = 3.5
+Q_LIM_SUMERGIDO    = 4.0            # entre ambos: interpolacion lineal
+
+HDS5_INLET = {   # cartas por forma/material; dentro de cada una, por borde
+    "circular_concreto_square_edge_headwall": {"K": 0.0098, "M": 2.00,
+                                               "c": 0.0398, "Y": 0.67, "Ks": -0.5},
+    "circular_cmp_headwall":                  {"K": 0.0078, "M": 2.00,
+                                               "c": 0.0379, "Y": 0.69, "Ks": -0.5},
+    "circular_cmp_mitered":                   {"K": 0.0210, "M": 1.33,
+                                               "c": 0.0463, "Y": 0.75, "Ks":  0.7},
+}
+# Ks NO figura en la Tabla A.1: proviene de la formulacion (-0.5 / +0.7). No
+# omitir. Su sitio exacto en la 3a ed., verificado contra el PDF, es la lista
+# de variables del num. A.2.1 "Unsubmerged Inlet Control Equations",
+# pag. impresa A.2 (PDF 191), que lo imprime en una linea:
+#     "Ks Slope correction, -0.5 (mitered inlets +0.7)"
+# y lo explica en la pag. impresa 3.25 (PDF 107):
+#     "For mitered culverts, a correction term of +0.7S is used to account for
+#      the control section being outside the culvert barrel and slightly
+#      higher."
+#
+# EL +0.7 DE INGLETE Y EL ke = 0.7 DE INGLETE SON DOS COEFICIENTES DISTINTOS
+# CON EL MISMO NUMERO (NOR-HDS-04). Con embocadura ingleteada el 0.7 aparece
+# dos veces en la misma cadena de calculo, por dos motivos sin relacion:
+#
+#   Ks = +0.7   correccion por PENDIENTE del control de ENTRADA. Multiplica a
+#               S en HWi/D, es adimensional y vive en el num. A.2.1 (pag. A.2).
+#   ke = 0.7    coeficiente de PERDIDA de entrada del control de SALIDA, fila
+#               "Mitered to conform to fill slope" de la Tabla C.2, pag.
+#               impresa C.6 (PDF 216). Entra en H, no en HWi/D, y llega por el
+#               criterio 'ke_entrada'.
+#
+# Coinciden en valor y en condicion (inglete) y en nada mas. Se anota aqui, en
+# el sitio donde vive el primero, para que nadie los cruce ni deduzca uno del
+# otro: este proyecto adopta hoy la embocadura a ras del muro (square edge with
+# headwall), donde los dos numeros son distintos -- Ks = -0.5 y ke = 0.5 --, y
+# el cruce solo seria posible si alguien cambiara la embocadura a inglete.
+#
+# HDPE -> criterios_adoptados.valor("hds5_embocadura_hdpe")
+
+# ================= Control de salida (SI) ==================================
+K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(2g)
+                                    # OJO: 29 es el valor ingles.
+                                    # TEST UNITARIO OBLIGATORIO.
+# De donde sale el 19.63: es el valor que el propio HDS-5 escribe como
+# conversion SI de su constante K = 29 del sistema ingles. Es una cifra de la
+# FUENTE PRIMARIA, transcrita, no una derivacion propia. Verificado en la 3a
+# ed. (hif12026.pdf) en dos sitios: num. 3.1.4 "Outlet Control", ec. (3.4b),
+# pag. impresa 3.10 (PDF 92) -- "KU = 29 in English Units (19.63 in SI)" --, y
+# la ec. (DG 3.1), pag. impresa DG3.3 (PDF 296) -- "KU is 29 (19.63 in SI
+# Units)".
+#
+# LA COPIA DE 1985 QUE ESTA EN normas/ NO SIRVE PARA ESTO, y hay que decirlo
+# porque lleva "si" en el nombre del archivo (MAT-O12, MAT-X5): sus ecs. (4b)
+# y (5), en la pag. 54 del PDF, imprimen "29 n^2 L / R^1.33" con rotulos de
+# unidades duales "ft (m)", y su gravedad, en la pag. 53, es
+# "32.2 ft/s/s (9.8 m/s/s)". Leida literal "en SI" reproduce exactamente el
+# error del 29 (+9.6 %). El 19.63 solo lo imprime la 3a ed.
+#
+# POR QUE SE PARECE TANTO A 2*g, que es la pregunta que este comentario
+# contestaba mal. Decia que el parecido era "una coincidencia numerica" y que
+# "HDS-5 no deriva K de la gravedad". Es falso, y la relacion es exacta
+# (MAT-D12, MAT-X5):
+#
+#     K = 2*g / phi^2      phi = factor de unidades de Manning
+#                          (1.486 en el sistema ingles, 1 en SI)
+#
+#     ingles:  2 * 32.2 / 1.486^2 = 29.164   -> el 29 impreso
+#     SI:      2 * 9.81456        = 19.629   -> el 19.63 impreso
+#
+# o sea que en SI la constante ES 2*g, y lo unico que separa 19.63 de 19.62 es
+# CUAL g: HDS-5 trabaja con 32.2 ft/s^2 = 9.81456 m/s^2 y este proyecto usa
+# constantes_fisicas.G = 9.81. Se conserva el 19.63 transcrito y no el 2*G
+# derivado -- el valor es de la fuente primaria --, y el efecto de la
+# diferencia se dice en vez de callarse: 19.63/19.62 = 1.0005, un +0.05 % sobre
+# el TERMINO DE FRICCION -- unas 190 veces menos que el 9.6 % que produce el 29
+# imperial, que es el error que esta constante existe para atrapar.
+#
+# La hoja de ruta escribia 19.62 en sus cuatro menciones y quedo corregida a
+# 19.63 en el mismo commit que este comentario (Sec. 4.3, su nota de unidades,
+# el Anexo C y las notas criticas de programacion). Ya no hay discrepancia
+# abierta, y por eso este comentario ya no cita renglones de la hoja de ruta:
+# citarlos fue lo que produjo SIS-A-20, cuatro numeros de linea que el propio
+# documento fue corriendo.
+
+# --------------------------------------------------------------------------
+# h_o, la linea de energia a la salida -- y la CONDICION que la habilita
+# --------------------------------------------------------------------------
+# Este bloque existe porque la formula se aplicaba sin su condicion de uso, y
+# la condicion esta impresa junto a la formula (NOR-HDS-05). El repositorio
+# tenia aqui una sola linea de comentario -- "ho = max(TW, (yc + D)/2)" -- y el
+# manifiesto marcaba la fila "sin numeral". Las dos cosas quedan cerradas: la
+# formula SI tiene numeral, y viene con un limite de validez expreso.
+H_O_NUMERAL = ("HDS-5 (FHWA) 3a ed., abril 2012, num. 3.3.3 'Outlet Control', "
+               "pag. impresa 3.24 (PDF 106)")
+# Texto literal de la condicion de uso (3a ed., pag. impresa 3.24, vineta de
+# la lista "The manual method has the assumptions:"):
+H_O_CONDICION_TEXTO = (
+    "Approximate hydraulic gradeline ho = (dc + D)/2 can only be used if the "
+    "barrel flows full for most of its length. It should not be used if the "
+    "inlet is not submerged.",
+    "If the headwater depth falls below 0.75D, the approximate method should "
+    "not be used.",
+)
+# La forma con el MAXIMO -- que es la que implementa `M4.control_salida` -- la
+# 3a ed. no la numera: la escribe en prosa ("the greater of tailwater or
+# (dc + D)/2", misma pag. 3.24; "or (dc + D)/2 if larger", num. 3.4.5, pag.
+# 3.32). Impresa como igualdad esta en la edicion de 1985 que tambien vive en
+# normas/, dentro de su procedimiento paso a paso (PDF 67):
+H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
+# Lo que el proyecto hace con la condicion, y que NO puede hacer:
+H_O_CONDICION_APLICACION = (
+    "h_o se calcula SIEMPRE, tambien cuando la condicion no se cumple, y esa "
+    "es una limitacion declarada del nivel de analisis, no un descuido. Que "
+    "el barril fluya lleno en la mayor parte de su longitud exige un perfil "
+    "de la lamina de agua a lo largo del conducto, que este script no "
+    "calcula; y el criterio adoptado 'geometria_control_salida' = "
+    "'seccion_llena' PRESUPONE lo mismo que aqui habria que verificar, de "
+    "modo que la premisa entra dos veces por dos puertas y no se comprueba "
+    "por ninguna. Mientras siga asi, el HW de control de salida de un punto "
+    "cuyo barril no llene esta calculado fuera del rango que la propia "
+    "fuente declara. No se sustituye por otra formula ni se inventa un "
+    "criterio de llenado: se declara, y quien revise el expediente decide si "
+    "el punto necesita el procedimiento de barril parcialmente lleno del "
+    "Cap. III, que es la alternativa que el propio criterio ya cita.")
+
 # ---------------------------------------------------------------------------
-# El CARACTER de cada umbral que el proyecto verifica
+# El CARACTER de cada umbral, y de cada CONDICION DE USO, que el proyecto aplica
 # ---------------------------------------------------------------------------
+# ESTE BLOQUE VIVE AQUI, DESPUES DE LAS TABLAS Y DE LAS CONSTANTES DE HDS-5,
+# porque referencia constantes de las dos zonas del archivo -- las del Manual
+# MTC (Tabla Nº 02, Tabla Nº 10, D_min) y las de HDS-5 (h_o) -- y en Python un
+# nombre tiene que estar definido antes de usarse. Estaba mas arriba, cuando
+# solo miraba a las primeras.
 # Existe por NOR-MEM-01, que es un defecto del PRODUCTO y no del codigo: el
 # matiz "el numeral recomienda, no prohibe" viajaba solo dentro de
 # M5.NUMERAL_V2, o sea dentro de la tabla de verificaciones de cada punto. Esa
@@ -456,45 +625,23 @@ UMBRALES_DE_VERIFICACION = (
      "caracter": "EXIGENCIA CONDICIONADA ('se adoptara', con dos condiciones)",
      "texto": (DIAMETRO_MIN_TEXTO,),
      "aplicacion": DIAMETRO_MIN_AMBITO},
+    {"codigo": "h_o",
+     "que": "Linea de energia a la salida del conducto: "
+            "h_o = max(TW, (y_c + D)/2), Sec. 4.3",
+     "numeral": H_O_NUMERAL,
+     "caracter": "APROXIMACION CON CONDICION DE USO EXPRESA",
+     "texto": H_O_CONDICION_TEXTO,
+     "transcripcion": ("La forma con el MAXIMO, que es la que el proyecto "
+                       "implementa, la 3a ed. no la numera: la escribe en "
+                       "prosa ('the greater of tailwater or (dc + D)/2', "
+                       "misma pag. 3.24). Impresa como igualdad esta en la "
+                       "edicion de 1985 que tambien vive en normas/, dentro "
+                       "de su procedimiento paso a paso: <<"
+                       + H_O_FORMA_MAXIMO_TEXTO + ">> Esta linea no es cita "
+                       "de la 3a ed.: es la union de las dos ediciones, y por "
+                       "eso va aqui y no arriba."),
+     "aplicacion": H_O_CONDICION_APLICACION},
 )
-
-LONG_MAX_CUNETA = {"seca": 250.0, "muy_lluviosa": 200.0}   # m (4.1.2.1 d)
-
-# ================= HDS-5 (FHWA) 3a ed., abril 2012 =========================
-# Apendice A, Tabla A.1, pag. A.8
-KU_METRICO = 1.811                  # q* = KU*Q/(A*D**0.5)
-Q_LIM_NO_SUMERGIDO = 3.5
-Q_LIM_SUMERGIDO    = 4.0            # entre ambos: interpolacion lineal
-
-HDS5_INLET = {   # cartas por forma/material; dentro de cada una, por borde
-    "circular_concreto_square_edge_headwall": {"K": 0.0098, "M": 2.00,
-                                               "c": 0.0398, "Y": 0.67, "Ks": -0.5},
-    "circular_cmp_headwall":                  {"K": 0.0078, "M": 2.00,
-                                               "c": 0.0379, "Y": 0.69, "Ks": -0.5},
-    "circular_cmp_mitered":                   {"K": 0.0210, "M": 1.33,
-                                               "c": 0.0463, "Y": 0.75, "Ks":  0.7},
-}
-# Ks NO figura en la Tabla A.1: proviene de la formulacion (-0.5 / +0.7). No omitir.
-# HDPE -> criterios_adoptados.valor("hds5_embocadura_hdpe")
-
-# ================= Control de salida (SI) ==================================
-K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(2g)
-                                    # OJO: 29 es el valor ingles.
-                                    # TEST UNITARIO OBLIGATORIO.
-# De donde sale el 19.63: es el valor que el propio HDS-5 escribe como
-# conversion SI de su constante K = 29 del sistema ingles. Es una cifra de la
-# FUENTE PRIMARIA, transcrita, no una derivacion propia.
-# Lo que este comentario dijo antes y era falso: que 19.62 saliera de 2*g
-# (2 x 9.81). Es una coincidencia numerica -- los dos numeros se parecen
-# porque ambos rondan 2*g -- y no el origen de la constante. HDS-5 no deriva
-# K de la gravedad: K absorbe la conversion de unidades del termino de
-# friccion de Manning, donde g no interviene sola. Se retira esa
-# justificacion en vez de conservarla "por si acaso": una razon inventada
-# para un numero correcto es el mismo defecto que un numero inventado.
-# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: docs/hoja_de_ruta_alcantarillas_v8.md
-# (lineas 432, 436, 790 y 901) sigue escribiendo 19.62. Aqui gana la fuente
-# primaria HDS-5 por verificacion externa; la hoja de ruta debe corregirse.
-# ho = max(TW, (yc + D)/2)
 
 # ================= Diametros normalizados (ASTM / AASHTO) ==================
 D_PASO = 0.15                       # m; reproduce las series de 6" y 150 mm

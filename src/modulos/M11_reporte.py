@@ -1461,9 +1461,18 @@ def bloque_acotaciones(alcance: str = "expediente") -> str:
 
 def bloque_umbrales() -> str:
     """
-    Los umbrales normativos que el proyecto verifica, cada uno con el texto
-    literal que lo fija, su CARACTER en la fuente (recomendacion o exigencia)
-    y lo que el proyecto hace con el.
+    Los umbrales normativos que el proyecto verifica -- y las CONDICIONES DE
+    USO de las formulas que adopta --, cada uno con el texto literal que lo
+    fija, su CARACTER en la fuente (recomendacion, exigencia o condicion de
+    aplicacion) y lo que el proyecto hace con el.
+
+    La entrada 'h_o' no es un umbral y esta aqui a proposito (NOR-HDS-05): la
+    condicion que HDS-5 impone a h_o = (dc + D)/2 tiene que llegar a la
+    memoria SIEMPRE, y el criterio que la declara ('geometria_control_salida')
+    solo se imprime si alguna corrida llega a invocarlo -- que hoy no ocurre,
+    porque el pipeline se detiene antes de M4. Es exactamente el mecanismo por
+    el que NOR-MEM-01 dejo el matiz de V2 fuera de la memoria generada, y la
+    solucion es la misma: un bloque que no depende de ningun resultado.
 
     POR QUE ES UN BLOQUE PROPIO Y NO UNA COLUMNA DE LA TABLA DE
     VERIFICACIONES (NOR-MEM-01). El matiz "el numeral recomienda, no prohibe"

@@ -228,12 +228,28 @@ CP7_CADENA_SISMICA = {
 # H = (1 + ke + K_friccion*n^2*L/R^(4/3)) * V^2/(2g)
 # K_friccion = 19.63 en SI. Usar 29 (valor ingles) es el error clasico.
 #
-# El 19.63 es la conversion SI que el propio HDS-5 declara para su K = 29.
-# Sustituye al 19.62 que este fixture uso hasta ahora, justificado entonces
-# como "2*g": esa derivacion era una coincidencia numerica sin respaldo en la
-# fuente primaria y se retiro. Los valores dorados de abajo estan recalculados
-# con 19.63; el cambio mueve H en 5e-5 m, tres ordenes por debajo del salto
-# que este caso patron existe para atrapar.
+# El 19.63 es la conversion SI que HDS-5 declara para su K = 29 -- pero SOLO
+# en una de las dos copias del manual que hay en normas/, y esta linea decia
+# "el propio HDS-5 declara" sin esa salvedad (MAT-O12, MAT-X5):
+#
+#   hif12026.pdf (3a ed., 2012), num. 3.1.4, ec. (3.4b), pag. impresa 3.10:
+#       "KU = 29 in English Units (19.63 in SI)"    <- de aqui sale el 19.63
+#   fhwa_culvert_hydraulics_hds5si.pdf (ed. de 1985, la que lleva "si" en el
+#       nombre del archivo): sus ecs. (4b) y (5), en la pag. 54 del PDF,
+#       imprimen "29 n^2 L / R^1.33" con rotulos duales "ft (m)", y su
+#       gravedad, en la pag. 53, es "32.2 ft/s/s (9.8 m/s/s)". No imprime
+#       19.63 en ninguna de las dos. Leida literal "en SI" reproduce
+#       exactamente el error del 29 (+9.6 %) que este caso patron atrapa.
+#
+# El 19.63 sustituye al 19.62 que este fixture uso hasta ahora, justificado
+# entonces como "2*g". La correccion del VALOR se mantiene; la de la RAZON no:
+# el parecido con 2*g no era una coincidencia, es exacto -- K = 2*g/phi^2 con
+# phi = 1.486 en el sistema ingles y 1 en SI, de modo que 2*32.2/1.486^2 =
+# 29.16 y 2*9.81456 = 19.629 --, y lo unico que separa 19.63 de 19.62 es cual
+# g: la de HDS-5 son 32.2 ft/s^2 = 9.81456 m/s^2 y la del proyecto es 9.81.
+# Los valores dorados de abajo estan recalculados con 19.63; el cambio mueve H
+# en 5e-5 m, tres ordenes por debajo del salto que este caso patron existe
+# para atrapar.
 
 CP8_CONTROL_SALIDA = {
     "n": 0.013,

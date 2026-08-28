@@ -678,7 +678,17 @@ class ControlEntrada:
 
     `HW` es carga sobre el fondo de la entrada, en metros. `HW_sobre_D` es el
     HWi/D adimensional que devuelven las ecuaciones de la Tabla A.1, antes de
-    multiplicar por D -- y es tambien lo que compara V4b (HW/D <= 1.5).
+    multiplicar por D.
+
+    `HW_sobre_D` NO LO LEE HOY NINGUNA RUTA DE PRODUCCION, y este docstring
+    decia que era "lo que compara V4b (HW/D <= 1.5)" (SIS-B-02, SIS-A-02). Esa
+    comparacion no existe: M5 no implementa V4b y la declara no evaluada en
+    `verificaciones_no_evaluadas()`. El campo se conserva -- es la salida
+    literal de las ecuaciones de la Tabla A.1, la magnitud con la que HDS-5
+    razona, y multiplicarla por D para volver a dividirla despues seria
+    perderla y recomponerla -- y sera el argumento del chequeo el dia que se
+    cablee, pero mientras tanto lo que se dice de el es lo que se puede
+    sostener: que hoy solo lo leen los tests.
     """
 
     HW: float                     # m  - HWi

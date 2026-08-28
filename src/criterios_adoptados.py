@@ -65,17 +65,26 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional, Tuple, Dict, List, Set
 
-from constantes_normativas import MANNING
+from constantes_normativas import (H_O_CONDICION_TEXTO, H_O_NUMERAL,
+                                   MANNING)
 from modelos import CriterioPendienteError
 
-# `MANNING` es la unica importacion de constantes normativas que hace este
-# archivo, y entra por una razon concreta: 'n_manning_hdpe' es un [N->] --
-# una fila de esa tabla aplicada por analogia a un material que la tabla no
-# lista -- y su valor tiene que SER esa fila, no una copia que puede quedar
-# desincronizada. Un [N->] que duplica el literal de su origen no es una
-# analogia declarada: son dos numeros iguales por casualidad hasta que uno
-# cambie. No abre la puerta a mas: aqui no se transcribe ninguna constante
-# normativa, se referencia la que ya esta transcrita en su archivo.
+# Las TRES importaciones de constantes normativas que hace este archivo
+# entran por la misma razon, y ninguna transcribe nada: referencian lo que ya
+# esta transcrito en su archivo.
+#
+# `MANNING`: 'n_manning_hdpe' es un [N->] -- una fila de esa tabla aplicada
+# por analogia a un material que la tabla no lista -- y su valor tiene que SER
+# esa fila, no una copia que puede quedar desincronizada. Un [N->] que duplica
+# el literal de su origen no es una analogia declarada: son dos numeros
+# iguales por casualidad hasta que uno cambie.
+#
+# `H_O_NUMERAL` y `H_O_CONDICION_TEXTO`: la condicion de uso que HDS-5 impone
+# a h_o (num. 3.3.3) es lo que hace pendiente la verificacion de
+# 'geometria_control_salida' (NOR-HDS-05), y el texto de esa condicion tiene
+# que ser el MISMO que constantes_normativas transcribe. Copiado a mano seria
+# una segunda transcripcion que puede desviarse de la primera sin que nadie lo
+# note, que es exactamente lo que este proyecto persigue en las citas.
 
 
 # ---------------------------------------------------------------------------
@@ -1208,12 +1217,29 @@ CRITERIOS: Dict[str, Criterio] = {
                       "de donde salia. Queda trazado aqui: el fixture y el "
                       "calculo leen ahora el mismo origen, y si el valor cambia, "
                       "cambia en un solo sitio",
-        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice C, Tabla C.2, "
-               "pag. C.2 - coeficientes de perdida de entrada; fila 'square "
-               "edge with headwall', ke = 0.5. CITA CERRADA por verificacion "
-               "externa contra el documento: antes se citaba el manual sin "
-               "apendice, tabla ni pagina, y lo que quedaba pendiente era "
-               "exactamente eso",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice C, Tabla C.2 "
+               "'Entrance Loss Coefficients', pag. impresa C.6 (PDF 216). "
+               "En el bloque 'Pipe, Concrete', la fila se imprime "
+               "'Square-edge  0.5' SANGRADA bajo el rotulo de agrupacion "
+               "'Headwall or headwall and wingwalls': el 0.5 lo fija esa "
+               "pertenencia, y la fila suelta sin su encabezado pierde la "
+               "condicion. NINGUNA fila de la tabla se imprime literalmente "
+               "'square edge with headwall', que es como el proyecto nombra a "
+               "la embocadura adoptada: ese nombre es la suma de la fila y de "
+               "su rotulo de agrupacion, y por eso se citan los dos. "
+               "LA PAGINA ESTABA MAL Y SE CORRIGE: este campo "
+               "decia 'pag. C.2', que es el numero de la TABLA leido como "
+               "numero de pagina. La pag. impresa C.2 (PDF 212) es la "
+               "continuacion del indice de cartas del Apendice C y no "
+               "contiene ningun coeficiente. Verificado contra el PDF en la "
+               "sesion de C06; el valor 0.5 confirma, el localizador no. "
+               "OJO AL 0.7 (NOR-HDS-04): esta misma tabla da ke = 0.7 para "
+               "'Mitered to conform to fill slope', que es el MISMO numero "
+               "que el Ks = +0.7 de inglete del control de ENTRADA "
+               "(constantes_normativas.HDS5_INLET) y una magnitud sin "
+               "ninguna relacion con el. Con embocadura a ras del muro, que "
+               "es la adoptada, no coinciden; con inglete si, y no hay que "
+               "deducir uno del otro",
         reemplazado_por="Fila de HDS-5 que corresponda si cambia el detalle de "
                         "embocadura del cabezal (Tablero 2.3). La Tabla C.2 "
                         "trae las demas configuraciones de borde",
@@ -1250,32 +1276,84 @@ CRITERIOS: Dict[str, Criterio] = {
         reemplazado_por="Procedimiento de barril parcialmente lleno de HDS-5 "
                         "(longitud de la seccion llena, Cap. III) si el "
                         "expediente lo exige",
-        verificacion_pendiente="Con TW bajo y pendiente pronunciada el barril "
-                               "puede no llegar a llenarse y el control de salida "
-                               "no gobierna igualmente; verificar que el punto "
-                               "donde el control de salida GOBIERNE sea uno donde "
-                               "la hipotesis de seccion llena tenga sentido fisico",
+        verificacion_pendiente=(
+            "Con TW bajo y pendiente pronunciada el barril puede no llegar a "
+            "llenarse y el control de salida no gobierna igualmente; "
+            "verificar que el punto donde el control de salida GOBIERNE sea "
+            "uno donde la hipotesis de seccion llena tenga sentido fisico. "
+            "ESTA VERIFICACION NO ES SOLO DE ESTE CRITERIO: es tambien la "
+            "condicion de uso que HDS-5 impone a h_o = (dc + D)/2, el otro "
+            "termino de la misma ecuacion, y el proyecto la aplicaba sin "
+            "recogerla (NOR-HDS-05). " + H_O_NUMERAL + " la escribe asi: "
+            + "; ".join(f"<<{cita}>>" for cita in H_O_CONDICION_TEXTO)
+            + ". La premisa entra dos veces por dos puertas -- este criterio "
+            "la ADOPTA y h_o la SUPONE -- y no se comprueba por ninguna: que "
+            "el barril fluya lleno en la mayor parte de su longitud exige un "
+            "perfil de la lamina de agua a lo largo del conducto, que este "
+            "script no calcula. Mientras siga asi, el HW de control de salida "
+            "de un punto cuyo barril no llene esta calculado fuera del rango "
+            "que la propia fuente declara. Lo que la cerraria es el "
+            "procedimiento de barril parcialmente lleno del Cap. III, que es "
+            "lo que ya dice `reemplazado_por`"),
     ),
 
     "HW_D_max": Criterio(
         valor=1.5,
-        etiqueta="C",
+        etiqueta="A",
         concepto="Relacion maxima de carga a la entrada sobre diametro",
-        justificacion="El Manual MTC no define HW/D. Se adopta el extremo "
-                      "superior del rango que HDS-5 da para el diseno "
-                      "corriente, 1.0-1.5. El control gobernante del embalse "
-                      "sigue siendo la verificacion V5 (remanso dentro del "
-                      "derecho de via). "
+        justificacion="ADOPCION DEL PROYECTISTA SOBRE UNA BANDA DE PRACTICA "
+                      "AJENA, y no un valor que ninguna fuente fije. Este "
+                      "criterio era [C] -- vacio normativo cubierto con "
+                      "fuente tecnica reconocida -- y la etiqueta no se "
+                      "sostiene (NOR-HDS-02): el HDS-5 no cubre este vacio "
+                      "porque no prescribe HW/D alguno. Lo que hace su "
+                      "num. 2.2.5 d) es DESCRIBIR lo que imponen las "
+                      "agencias viales de los Estados Unidos, y decir que "
+                      "ese limite ajeno 'varies throughout the country'. El "
+                      "unico imperativo de ese parrafo -- 'they must be "
+                      "followed unless a design exemption is granted' -- "
+                      "tiene por sujeto la restriccion que cada agencia "
+                      "impone, no el rango. En el Peru la agencia es el MTC, "
+                      "cuyo Manual no fija HW/D: no hay restriccion de "
+                      "agencia que seguir, y por eso elegir un numero dentro "
+                      "de esa banda es una decision del proyectista, [A] con "
+                      "su sensibilidad, no la lectura de una tabla. "
+                      "DE DONDE SALE EL 1.5, que es lo que faltaba decir: es "
+                      "el EXTREMO SUPERIOR de la banda descrita, o sea el "
+                      "menos restrictivo de los dos -- admite mas embalse a "
+                      "la entrada, no menos --, y se conserva porque el "
+                      "control gobernante del embalse en este proyecto no es "
+                      "este umbral sino V5 (remanso dentro del derecho de "
+                      "via), que es el que de verdad protege a terceros. "
                       "SOBRE LA SENSIBILIDAD: la banda declarada es "
-                      "(1.2, 1.5), no el rango completo (1.0, 1.5) de la "
-                      "fuente. Se conserva a proposito -- es la banda que el "
-                      "proyecto considera defendible para este corredor -- y "
-                      "se deja dicho que es un SUBRANGO, para que nadie la "
-                      "confunda con lo que dice HDS-5",
-        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Sec. 2.2.5, pag. 2.14 - "
-               "rango de HW/D de 1.0 a 1.5 para el diseno corriente. CITA "
-               "CERRADA por verificacion externa contra el documento: antes "
-               "decia solo 'practica corriente', sin seccion ni pagina",
+                      "(1.2, 1.5), la mitad alta de la banda descrita "
+                      "(1.0, 1.5). Se conserva a proposito y se deja dicho "
+                      "que es un SUBRANGO, para que nadie la confunda con lo "
+                      "que dice HDS-5. "
+                      "NINGUN MODULO LO CONSUME HOY: el chequeo V4b no esta "
+                      "cableado, y la fila se declara no evaluada en "
+                      "`M5.verificaciones_no_evaluadas()`, que es donde M11 "
+                      "la imprime. Cablearlo es un cambio de comportamiento "
+                      "y se hace aparte de esta reetiquetacion",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, num. 2.2.5 'Allowable "
+               "Headwater' (arranca en la pag. impresa 2.9), apartado "
+               "d. 'Agency Constraints', pag. impresa 2.10 (PDF 72). Texto "
+               "literal: <<Some state or local highway agencies place limits "
+               "on the headwater produced by a culvert. For example, the "
+               "headwater depth may not be allowed to exceed the barrel "
+               "height or some multiple of the barrel height, expressed as "
+               "HW/D. The allowable HW/D ratio varies throughout the "
+               "country, but commonly ranges from 1.0 to 1.5. Although very "
+               "low HW/D constraints will severely limit the flexibility "
+               "inherent in culvert design, they must be followed unless a "
+               "design exemption is granted.>> "
+               "LA PAGINA ANTERIOR ERA FALSA y la cita se daba por CERRADA: "
+               "este campo decia 'Sec. 2.2.5, pag. 2.14', y la pag. impresa "
+               "2.14 (PDF 76) trata de espolones de escombros (Figura 2.8) y "
+               "de seguridad vial (num. 2.3.3). Verificado contra el PDF en "
+               "la sesion de C06. El pasaje ademas NO EXISTE en la otra copia "
+               "de HDS-5 que hay en normas/ (la edicion de 1985): el rango es "
+               "exclusivo de la 3a ed.",
         sensibilidad=(1.2, 1.5),
     ),
 
