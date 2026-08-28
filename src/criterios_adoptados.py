@@ -479,8 +479,14 @@ CRITERIOS: Dict[str, Criterio] = {
                       "otro suelo el mismo articulo da otra letra. El nombre "
                       "de la variable lo venia admitiendo desde el principio: "
                       "PRESUNTO es una presuncion de expediente",
-        fuente="E.030 (RM 183-2026-VIVIENDA), Art. 14.6 - suelos "
-               "potencialmente licuables",
+        fuente="E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla N 2, fila S5 "
+               "(su rotulo literal viaja en "
+               "constantes_normativas.E030_S5_LECTURA), primera vineta "
+               "'Suelos potencialmente licuables', pag. impresa 11 (PDF 11). "
+               "La Tabla N 3 del num. "
+               "14.7 -- la que el num. 14.8 obliga a usar para clasificar -- "
+               "NO tiene fila S5, solo S0 a S4: coherente con que la propia "
+               "fila diga que 'estos casos no estan cubiertos'",
         reemplazado_por="Ensayo SPT DE LICUEFACCION: perforaciones de al menos "
                         "15 m de profundidad con ensayo cada 1.00 m (E.050 "
                         "Art. 38). Es la profundidad que cierra ESTE criterio "
@@ -492,26 +498,42 @@ CRITERIOS: Dict[str, Criterio] = {
                      "ensayo que la cierre. Ambito: todo el corredor mientras "
                      "sea presuncion; con SPT pasa a ser dato por calicata y "
                      "entonces le corresponde una columna del CSV, no esta "
-                     "entrada. REFERENCIA MUERTA HOY: ningun modulo de "
-                     "src/modulos/ lo invoca -- la clase de sitio que si entra "
-                     "en el calculo es la de AASHTO, criterio 'clase_sitio'. "
-                     "Se conserva declarado, y no borrado, porque es la "
-                     "presuncion geotecnica sobre la que se apoyan tanto "
-                     "'clase_sitio' como la hipotesis de licuefaccion de "
-                     "Sec. 0.5",
+                     "entrada. NO LO INVOCA NINGUN MODULO DE src/modulos/ -- "
+                     "la clase de sitio que si entra en el calculo es la de "
+                     "AASHTO, criterio 'clase_sitio' --, pero LLAMARLO "
+                     "'REFERENCIA MUERTA', como decia este campo, se queda "
+                     "muy por debajo de lo que la fuente dice: la fila S5 de "
+                     "la Tabla N 2 trae en su ultima vineta la afirmacion "
+                     "normativa mas fuerte que el expediente hace sobre este "
+                     "sitio -- 'Se prohibe las construcciones apoyadas sobre "
+                     "estos perfiles, salvo que, se efectue un estudio "
+                     "especifico para el sitio, en el cual se debe considerar "
+                     "los mejoramientos en el estrato del perfil'. Es una "
+                     "prohibicion CONDICIONADA -- ni bloqueo duro ni "
+                     "referencia muerta --, y la memoria imprimia la letra "
+                     "sin la consecuencia (NOR-E030-02). Texto literal y "
+                     "lectura en constantes_normativas.E030_S5_TEXTO y "
+                     "E030_S5_LECTURA; la nota llega a la memoria por "
+                     "M9.condicion_normativa_cabezal. Se conserva declarado, "
+                     "y no borrado, porque es la presuncion geotecnica sobre "
+                     "la que se apoyan tanto 'clase_sitio' como la hipotesis "
+                     "de licuefaccion de Sec. 0.5",
         verificacion_pendiente="Al llegar el SPT, confirmar el perfil y "
                                "decidir si es unico para el tramo o varia por "
                                "calicata; si varia, no se corrige el valor: se "
                                "convierte en columna del CSV",
-        sin_consumidor="Referencia declarada, no calculo: la clasificacion "
-                       "sismica del sitio se declara aparte, en el criterio "
-                       "'clase_sitio', y la evaluacion de licuefaccion que "
-                       "usaria este perfil esta declarada fuera del alcance "
-                       "del script (Sec. 0.5). Se conserva declarado, y no "
+        sin_consumidor="Ningun modulo de calculo lo invoca: la clasificacion "
+                       "sismica que gobierna la cadena es la de AASHTO, y la "
+                       "evaluacion de licuefaccion que usaria este perfil "
+                       "esta declarada fuera del alcance del script "
+                       "(Sec. 0.5). NO INVOCARLO NO ES IGNORARLO: la "
+                       "prohibicion condicionada que trae la fila S5 es una "
+                       "obligacion del EXPEDIENTE, no un numero del calculo, "
+                       "y por eso viaja a la memoria como nota normativa "
+                       "(M9.condicion_normativa_cabezal) en vez de como "
+                       "criterio invocado. Se conserva declarado, y no "
                        "borrado, para que el ensayo que lo cerraria siga "
-                       "pedido; que papel juega respecto de 'clase_sitio' "
-                       "esta en su trazabilidad y es materia de la revision "
-                       "de la cadena sismica, no de este campo",
+                       "pedido",
     ),
 
     "clase_sitio": Criterio(
@@ -519,15 +541,51 @@ CRITERIOS: Dict[str, Criterio] = {
         etiqueta="A",
         concepto="Clase de sitio sismica AASHTO y base sobre la que se toman "
                  "los factores de sitio de la cadena sismica",
-        justificacion="El sitio es Clase F por susceptibilidad a licuefaccion "
-                      "(arenas saturadas, NF a 1.4 m); esa parte no cambia. "
-                      "LO QUE CAMBIA ES QUE LA DISPENSA POR PERIODO CORTO NO "
-                      "EXISTE. Se verifico contra AASHTO LRFD Bridge Design "
+        justificacion="LA PREMISA -- QUE EL SITIO ES CLASE F POR "
+                      "LICUEFACCION -- ESTA ABIERTA, Y ESTE CAMPO DECIA LO "
+                      "CONTRARIO: 'esa parte no cambia'. Cambia, o al menos "
+                      "no esta sostenida. El salto de 'suelo potencialmente "
+                      "licuable' a 'Clase de Sitio F' NO LO ESCRIBE NINGUNO "
+                      "de los dos documentos que este criterio invoca. La "
+                      "Clase F de AASHTO LRFD 9a ed. (Art. 3.10.3.1, Tabla "
+                      "3.10.3.1-1, pag. impresa 3-102) enumera suelos que "
+                      "requieren evaluacion especifica -- turbas y arcillas "
+                      "muy organicas, arcillas de plasticidad muy alta, "
+                      "arcillas blandas muy potentes -- introducidos por un "
+                      "'such as' que deja la lista abierta, de modo que de la "
+                      "ausencia de la licuefaccion en la enumeracion no se "
+                      "sigue que este fuera; pero la 9a ed. trata la "
+                      "licuefaccion por VIA DISTINTA de la clase de sitio, en "
+                      "su Art. 10.5.4.2 'Liquefaction Design Requirements'. "
+                      "Quien clasifica los suelos licuables en su categoria "
+                      "aparte es E.030, en el perfil S5 (Art. 14.6, Tabla "
+                      "N 2), que es de donde el expediente saca la letra. Los "
+                      "dos esquemas discrepan justamente en el rasgo que "
+                      "motiva la clasificacion de este sitio, y el expediente "
+                      "trasladaba uno al otro sin declararlo (NOR-AAS-02). La "
+                      "transcripcion de esa discrepancia esta en "
+                      "constantes_normativas.E030_S5_VS_CLASE_F. "
+                      "RESOLVERLA NO ES MATERIA DE ESTE CAMPO ni de esta "
+                      "correccion: es una decision normativa abierta del "
+                      "expediente, y hasta que se tome, lo que este criterio "
+                      "declara es que el proyecto sigue el calculo con "
+                      "factores de sitio tabulados. "
+                      "LO QUE SI ESTA CERRADO ES QUE LA DISPENSA POR PERIODO "
+                      "CORTO NO EXISTE. Se verifico contra AASHTO LRFD Bridge Design "
                       "Specifications, 9a edicion (2020): no esta en el "
                       "Art. 3.10.3.1, no esta en su comentario C3.10.3.1, y "
                       "no esta en ninguna tabla ni nota de tabla de clases de "
                       "sitio. AASHTO exige, de forma incondicional, un estudio de "
-                      "respuesta de sitio especifico para la Clase F. La "
+                      "respuesta de sitio especifico para la Clase F, y el "
+                      "Manual de Puentes lo repite en la tabla misma: su "
+                      "Tabla 2.4.3.11.2.1.2-1 pone asterisco a la fila F en "
+                      "las cinco columnas de PGA y su Nota 2 manda 'llevar a "
+                      "cabo investigaciones geotecnicas especificas del sitio "
+                      "y analisis de respuesta dinamica de sitio, para todos "
+                      "los sitios en sitio clase F'. El repositorio afirmaba "
+                      "justo lo contrario -- que el Manual NO tipifica nada "
+                      "para la Clase F -- y esa afirmacion negativa era falsa "
+                      "(NOR-PUE-09). La "
                       "redaccion anterior de este criterio y de Sec. 0.5 "
                       "atribuia a AASHTO una dispensa por periodo "
                       "fundamental T <= 0.5 s que AASHTO no concede: no fue "
@@ -603,46 +661,271 @@ CRITERIOS: Dict[str, Criterio] = {
                                "cuando la premisa se cierre, y no antes; "
                                "hasta entonces lo que la memoria dice es lo "
                                "unico defendible hoy: que no hay norma que "
-                               "respalde la adopcion",
+                               "respalde la adopcion. "
+                               "Y QUEDA ABIERTO EL CABLEADO. Ningun modulo de "
+                               "produccion invoca este criterio, de modo que "
+                               "no entra en `criterios_usados()` y la memoria "
+                               "no imprime la adopcion que la Sec. 0.5 de la "
+                               "hoja de ruta obliga a escribir con esas "
+                               "palabras (SIS-B-01). No se cablea en esta "
+                               "correccion a proposito: cablearlo antes de "
+                               "resolver la premisa haria que la memoria "
+                               "DECLARARA FORMALMENTE una clasificacion que "
+                               "la fuente no sostiene, que es peor que no "
+                               "declararla. Lo que si se cerro aqui es la "
+                               "incoherencia entre este criterio y 'F_pga' "
+                               "(SIS-D-01): la tabla esta completa, su fila F "
+                               "figura con su asterisco y su Nota 2, y "
+                               "'F_pga' dice ahora sobre que filas se lee y "
+                               "por que la F no esta entre ellas",
     ),
 
+    # F_pga deja de guardar el RESULTADO y pasa a guardar la ELECCION, que es
+    # el reparto R1 del proyecto (la tabla es [N], la fila es [A]) y el mismo
+    # movimiento que ya se hizo con 'factores_carga_aashto' en C03. Un 1.0
+    # suelto no dice de que filas salio, no se recalcula cuando la campana
+    # geotecnica cierre la clase, y hacia invisibles tres cosas que la tabla
+    # si dice (NOR-PUE-09, NOR-PUE-11, NOR-MEM-03, MAT-O4, NOR-PUE-12).
     "F_pga": Criterio(
-        valor=1.0,
+        valor=("C", "D", "E"),
         etiqueta="A",
-        concepto="Factor de sitio para la aceleracion pico",
-        justificacion="Sin SPT no hay clase de sitio definitiva. Para PGA >= 0.50 "
-                      "los factores convergen: 1.0 para clases C y D, 0.9 para E. "
-                      "Se adopta 1.0 por ser conservador o exacto frente a las "
-                      "tres clases plausibles; incertidumbre asociada <= 10%",
-        fuente="Tabla 2.4.3.11.2.1.2-1 del Manual de Puentes (valores [N]: C=1.0, D=1.0, E=0.9 para PGA>=0.50). La ELECCION es [A]",
-        reemplazado_por="Clase de sitio definitiva desde SPT",
-        sensibilidad=(0.9, 1.0),
+        concepto="Filas de la Tabla 2.4.3.11.2.1.2-1 sobre las que se lee el "
+                 "factor de sitio de la cadena sismica. El factor adoptado es "
+                 "la ENVOLVENTE (el mayor) de esas filas al PGA del proyecto; "
+                 "hoy vale 1.0",
+        justificacion="Sin la caracterizacion de los 30 m superiores no hay "
+                      "clase de sitio definitiva, y por eso lo que se declara "
+                      "es el conjunto de filas plausibles y no una. Al PGA de "
+                      "este proyecto la tabla da 1.0 para C, 1.0 para D y 0.9 "
+                      "para E, de modo que la envolvente es 1.0: conservador "
+                      "o exacto frente a las tres. "
+                      "LAS FILAS QUE NO SE DECLARAN, Y POR QUE, que es la "
+                      "mitad que faltaba. (a) A y B son las filas de ROCA "
+                      "(0.8 y 1.0): no se declaran porque la cimentacion es "
+                      "la llanura arenosa del Bajo Piura, y esa omision no es "
+                      "cosmetica -- el num. 2.8.1.1.14.2.1 da a las "
+                      "cimentaciones en Clase A o B una expresion distinta de "
+                      "k_h0 (1.2*F_pga*PGA en vez de A_s), de modo que "
+                      "declarar C/D/E es lo que descarta esa rama de forma "
+                      "trazable. Mientras la tabla del repositorio solo tuvo "
+                      "C, D y E, la regla no se implementaba ni se descartaba. "
+                      "(b) F no se declara porque NO TIENE FACTOR: la tabla le "
+                      "pone asterisco en las cinco columnas y su Nota 2 exige "
+                      "investigaciones geotecnicas especificas del sitio y "
+                      "analisis de respuesta dinamica. Y eso importa aqui mas "
+                      "que en ninguna otra fila, porque el expediente se "
+                      "atribuye a si mismo la Clase F en el criterio "
+                      "'clase_sitio': la convergencia con que este valor se "
+                      "defendia dejaba fuera justamente la fila que el propio "
+                      "expediente reclama, y esa fila no da numero, pide un "
+                      "estudio. Se declara aqui para que las dos afirmaciones "
+                      "dejen de convivir sin cruzarse. Que la premisa de la "
+                      "Clase F se sostenga o no es cuestion ABIERTA -- ver "
+                      "'clase_sitio' y constantes_normativas.E030_S5_VS_CLASE_F "
+                      "--, y este criterio no la resuelve: declara con que "
+                      "filas se leyo la tabla mientras siga abierta",
+        fuente="Manual de Puentes (MTC), Tabla 2.4.3.11.2.1.2-1 (Tabla "
+               "3.10.3.2-1 AASHTO), pag. impresa 123 (PDF 124), transcrita "
+               "COMPLETA -- seis filas y cinco columnas, con sus dos notas al "
+               "pie -- en constantes_normativas.F_PGA_TABLA. Los valores son "
+               "[N]; QUE FILAS describen a este sitio es [A] y es lo unico "
+               "que se declara aqui",
+        reemplazado_por="Caracterizacion de sitio sobre los 30 m superiores "
+                        "(Vs30 o N_barra), que cierra la clase y deja una "
+                        "sola fila. Si esa caracterizacion diera Clase F, no "
+                        "queda fila con factor: queda el estudio de respuesta "
+                        "dinamica de sitio que pide la Nota 2",
+        sensibilidad="entre 0.9 (fila E) y 1.0 (filas C y D) al PGA de este "
+                     "proyecto, con la lectura declarada en "
+                     "'F_pga_lectura_columna_extrema'; sube a 1.1 (fila D) si "
+                     "esa lectura se cambia a 'limite_estricto' y se lee la "
+                     "columna PGA = 0.40",
     ),
 
+    # La tabla se lee por columnas de PGA y sus dos rotulos extremos son
+    # DESIGUALDADES ESTRICTAS: "PGA < 0.10" y "PGA > 0.50". El PGA de este
+    # proyecto es exactamente 0.50 y no cae en ninguna columna tabulada
+    # (NOR-PUE-11). La tabla no resuelve ese borde; lo resuelve quien la lee, y
+    # por eso es criterio y no constante.
+    "F_pga_lectura_columna_extrema": Criterio(
+        valor="limite_inclusive",
+        etiqueta="A",
+        concepto="Como se leen los dos rotulos extremos de la Tabla "
+                 "2.4.3.11.2.1.2-1 cuando el PGA cae justo sobre uno de ellos",
+        justificacion="La Nota 1 de la tabla manda interpolar en linea recta "
+                      "para valores intermedios de PGA, y los cinco numeros "
+                      "de los rotulos son los puntos entre los que se "
+                      "interpola. Pero los dos rotulos de los extremos son "
+                      "estrictos, de modo que un PGA de exactamente 0.50 no "
+                      "esta cubierto por ninguna columna ni queda entre dos. "
+                      "Se adopta 'limite_inclusive': la columna 'PGA > 0.50' "
+                      "aplica tambien en 0.50, por ser el valor a partir del "
+                      "cual la fuente deja de variar el factor -- las filas "
+                      "C, D y E repiten ahi el ultimo numero o lo bajan, "
+                      "ninguna lo sube. LA LECTURA NO ES NEUTRA y por eso se "
+                      "declara: con 'limite_estricto' el calculo se detiene "
+                      "en vez de elegir columna, y si en su lugar se leyera "
+                      "la columna anterior (PGA = 0.40) la fila D daria 1.1 "
+                      "en vez de 1.0 y la envolvente subiria un 10 %, "
+                      "arrastrando toda la cadena sismica",
+        fuente="Manual de Puentes (MTC), Tabla 2.4.3.11.2.1.2-1, rotulos de "
+               "columna y Nota 1, pag. impresa 123 (PDF 124). La tabla NO "
+               "resuelve el borde: la lectura es del proyectista",
+        reemplazado_por="Un PGA de proyecto que caiga dentro de una columna, "
+                        "o el estudio de respuesta de sitio, que sustituye la "
+                        "tabla entera",
+        sensibilidad=("limite_inclusive", "limite_estricto"),
+        verificacion_pendiente="Al registrar las coordenadas de la lectura "
+                               "del PGA (pendiente 1.4), comprobar si el "
+                               "valor sigue siendo exactamente 0.50: si "
+                               "cayera dentro de una columna, este criterio "
+                               "deja de gobernar nada y se retira",
+    ),
+
+    # No es una fila de una tabla: el num. 2.8.1.1.14.2.2 no presenta ninguna
+    # tabla y fija UN valor, 0.5, de forma permisiva. Lo que se declara es si
+    # se aplica o no esa reduccion (NOR-PUE-07).
     "factor_muro_eleccion": Criterio(
-        valor=1.0,
+        valor="sin_reduccion",
         etiqueta="A",
-        concepto="Factor de reduccion del coeficiente sismico por "
-                 "desplazamiento: fila elegida de la tabla del numeral",
-        justificacion="El cabezal esta empotrado en el terraplen y no tiene "
-                      "desplazamiento lateral admisible garantizado de 25-50 mm. "
-                      "Se adopta el caso de muro rigido, sin reduccion",
-        fuente="Tabla FACTOR_MURO_TABLA del Manual de Puentes num. 2.8.1.1.14.2 "
-               "(valores [N]: rigido = 1.0, desplazable = 0.5). La ELECCION de "
-               "la fila es [A]",
+        concepto="Si se aplica al cabezal la reduccion de k_h0 que el numeral "
+                 "autoriza para muros con desplazamiento lateral admitido",
+        justificacion="El cabezal va empotrado en el terraplen y no tiene "
+                      "desplazamiento lateral admisible garantizado, de modo "
+                      "que se declara SIN reduccion: k_h = k_h0. Es lo que la "
+                      "propia Sec. 9.2 subraya ('no asumirlo en un cabezal "
+                      "empotrado en terraplen') y es el lado conservador. "
+                      "POR QUE ESTO ES [A] Y NO LA ELECCION DE UNA FILA [N]: "
+                      "el numeral no tabula nada. Autoriza -- 'kh PUEDE ser "
+                      "reducido a 0.5kh0' -- y el 1.0 no es un valor "
+                      "tabulado sino la ausencia de reduccion, que es la "
+                      "definicion misma de k_h0 ('asumiendo que el "
+                      "desplazamiento del muro sea cero'). Ademas la "
+                      "autorizacion no es solo tecnica: AASHTO, del que el "
+                      "numeral es traduccion, la condiciona a que el "
+                      "movimiento lateral sea aceptable para el propietario, "
+                      "lo que la deja fuera del alcance de un calculo",
+        fuente="Manual de Puentes (MTC) num. 2.8.1.1.14.2.2 'Estimacion de la "
+               "Aceleracion que Actua Sobre la Masa del Muro' (11.6.5.2.2 "
+               "AASHTO), pag. impresa 255 (PDF 256). Texto literal y las tres "
+               "condiciones que AASHTO acumula, en "
+               "constantes_normativas.REDUCCION_KH_TEXTO y "
+               "REDUCCION_KH_CONDICIONES. El unico numero [N] del numeral es "
+               "el 0.5",
         reemplazado_por="Diseno de detalle del cabezal que garantice (o "
-                        "descarte) un desplazamiento admisible de 25-50 mm",
-        sensibilidad=(0.5, 1.0),
+                        "descarte) un desplazamiento lateral de 1.0 a 2.0 in "
+                        "o mas, mas la aceptacion del propietario",
+        sensibilidad=("sin_reduccion", "reduccion_por_desplazamiento"),
+        verificacion_pendiente="El repositorio convertia el rango del Manual "
+                               "('1.0 a 2.0 in o mas') en '25-50 mm', que "
+                               "redondea y ademas pierde el 'o mas': un muro "
+                               "con 60 mm de desplazamiento admisible quedaba "
+                               "fuera del rango escrito y si califica. Si "
+                               "alguna vez se declara la reduccion, "
+                               "contrastar contra "
+                               "DESPLAZAMIENTO_HABILITA_REDUCCION_M y no "
+                               "contra el rango redondeado",
     ),
 
+    # k_v no es una adopcion: lo fija el mismo numeral del que la cadena toma
+    # k_h0. Lo que se declara aqui es si se da alguno de los dos casos que ese
+    # numeral reserva -- y no es un matiz de redaccion: la fuente que este
+    # criterio citaba ('practica corriente; no fijado por el Manual de
+    # Puentes') afirmaba lo contrario de lo que dice el Manual (NOR-PUE-08,
+    # MAT-O11, MAT-X4).
     "k_v": Criterio(
-        valor=0.0,
+        valor="prescrito_sin_caso_reservado",
         etiqueta="A",
-        concepto="Coeficiente sismico vertical para Mononobe-Okabe",
-        justificacion="Adopcion habitual en analisis pseudo-estatico de muros de "
-                      "contencion de baja altura",
-        fuente="Practica corriente; no fijado por el Manual de Puentes",
-        sensibilidad=(0.0, 0.5),   # 0.5*k_h como escenario alterno
+        concepto="Cual de los dos regimenes de k_v del num. 2.8.1.1.14.2.1 "
+                 "rige en este cabezal. Con el declarado, k_v = 0.0 y ese "
+                 "cero es [N], no una adopcion",
+        justificacion="El numeral fija k_v = 0 para el calculo de presiones "
+                      "laterales y reserva dos casos: muro significativamente "
+                      "afectado por efectos de alguna falla cercana, y "
+                      "aceleraciones verticales relativamente altas actuando "
+                      "simultaneamente con la horizontal. No cuantifica "
+                      "ninguno de los dos -- no da distancia a la falla, no "
+                      "define 'cercana', no fija umbral de aceleracion "
+                      "vertical -- y para ellos tampoco escribe un k_v "
+                      "alternativo. Se declara que ninguno de los dos se da "
+                      "en este cabezal, con lo que rige el cero prescrito. "
+                      "QUE PASA SI ALGUNO SE DIERA: este criterio admite "
+                      "entonces un NUMERO en lugar de la declaracion, y ese "
+                      "numero seria del proyectista, porque el Manual no lo "
+                      "da. Es la unica forma honesta de escribirlo: el valor "
+                      "por defecto es normativo y el del caso reservado no "
+                      "existe en la fuente. "
+                      "POR QUE SE RETIRA LA SENSIBILIDAD (0.0, 0.5): "
+                      "sugeria una libertad que el numeral no concede -- el "
+                      "cero es prescrito, no elegido -- y ademas su propio "
+                      "comentario no coincidia con su extremo: decia "
+                      "'0.5*k_h como escenario alterno', que con la cadena de "
+                      "este proyecto vale 0.25 y no 0.5. La hoja de ruta "
+                      "escribe (0, 0.5*k_h), que es otra cosa distinta de las "
+                      "dos",
+        fuente="Manual de Puentes (MTC) num. 2.8.1.1.14.2.1 'Caracterizacion "
+               "de la Aceleracion en la Base del Muro de Contencion' "
+               "(11.6.5.2.1 AASHTO), pag. impresa 254 (PDF 255), reiterado en "
+               "el num. 2.8.1.1.14.3 (pag. impresa 255). Texto literal en "
+               "constantes_normativas.K_V_TEXTO; el alcance de los dos casos "
+               "reservados, en K_V_CASO_RESERVADO",
+        reemplazado_por="Evaluacion neotectonica del corredor que descarte o "
+                        "confirme falla activa proxima, dentro del estudio "
+                        "geotecnico del expediente",
+        sensibilidad=("prescrito_sin_caso_reservado",
+                      "un k_v declarado por el proyectista para el caso que "
+                      "el numeral reserva y no cuantifica"),
+        verificacion_pendiente="El Manual no cuantifica 'falla cercana'. "
+                               "AASHTO si, pero en otro articulo y sobre un "
+                               "mapa que no cubre el Peru: su Art. 3.10.2.2 "
+                               "(pag. impresa 3-100) habla de sitios a menos "
+                               "de 6 millas de una falla activa superficial o "
+                               "somera segun el USGS Active Fault Map. "
+                               "Mientras el expediente no traiga la "
+                               "evaluacion neotectonica equivalente, esta "
+                               "declaracion se apoya en la ausencia de "
+                               "hallazgo, no en un hallazgo de ausencia, y "
+                               "hay que decirlo asi en la memoria",
+    ),
+
+    # gamma_EQ existia como PROSA dentro de la verificacion pendiente de
+    # 'factores_carga_aashto' -- "sigue sin valor y bloquea esa combinacion" --
+    # y no como vacio declarado, de modo que nada podia detenerse en el. Ahora
+    # es entrada propia porque la cadena sismica lo NECESITA en dos sitios: la
+    # combinacion Evento Extremo I y, sobre todo, el limite de excentricidad
+    # de la resultante en la base, que va de B/6 a 0.4*B segun su valor
+    # (MAT-O16).
+    "gamma_EQ": Criterio(
+        valor=None,                 # VACIO: bloquea el limite de excentricidad
+        etiqueta="A",
+        concepto="Factor de carga de la carga viva en la combinacion Evento "
+                 "Extremo I, adimensional",
+        justificacion="La Tabla 2.4.5.3.1-1 imprime el SIMBOLO gamma_EQ en la "
+                      "columna de LS, no un numero, y AASHTO manda "
+                      "determinarlo 'on a project-specific basis'. Su "
+                      "comentario C3.4.1 cuenta que las ediciones pasadas "
+                      "usaban 0.0 y que la regla de Turkstra hace razonable "
+                      "0.50 para un rango amplio de ADTT, pero eso no son dos "
+                      "opciones tabuladas: es historia y una indicacion de "
+                      "razonabilidad. Adoptar cualquiera de las dos en "
+                      "silencio seria rellenar el vacio. "
+                      "DONDE PESA, ademas de en la combinacion: el num. "
+                      "2.8.1.1.14.1 hace depender de gamma_EQ el limite de "
+                      "excentricidad de la resultante en la base bajo sismo "
+                      "-- tercio central (e <= B/6) con gamma_EQ = 0.0, ocho "
+                      "decimas centrales (e <= 0.4*B) con gamma_EQ = 1.0, e "
+                      "interpolacion lineal en medio. Es un factor DOS y pico "
+                      "entre los dos extremos, de modo que sin este valor no "
+                      "hay chequeo de excentricidad sismica que hacer",
+        fuente="AASHTO LRFD 9a ed. (2020), Art. 3.4.1, pag. impresa 3-19, y "
+               "su comentario C3.4.1, pag. impresa 3-10; texto literal en "
+               "constantes_normativas.GAMMA_EQ_TEXTO. Via Manual de Puentes "
+               "num. 2.4.5.3.1, Tabla 2.4.5.3.1-1. Ninguno de los dos escribe "
+               "un numero",
+        reemplazado_por="Determinacion especifica del proyecto, con el ADTT "
+                        "de la via y el fundamento que la sostenga, "
+                        "declarada en la memoria",
+        sensibilidad=(0.0, 0.5),   # el 0.0 historico y el 0.50 de Turkstra
     ),
 
     # Los cuatro angulos que Sec. 9.2 exige ADEMAS de la cadena sismica para
@@ -2572,8 +2855,8 @@ CRITERIOS: Dict[str, Criterio] = {
         etiqueta="A",
         concepto="Geometria del cabezal (altura H sobre zapata, ancho de "
                  "zapata B, profundidad de desplante D_f, espesor de la "
-                 "pantalla en corona y en su arranque, espesor de zapata e "
-                 "inclinacion beta del trasdos), en m",
+                 "pantalla en corona y en su arranque, espesor de zapata, "
+                 "ancho del TALON e inclinacion beta del trasdos), en m",
         justificacion="Sec. 9.1 fija QUE es el cabezal (Sec. 503, concreto "
                       "estructural) y COMO es su embocadura (tubo a ras, "
                       "square edge, amarrada a las constantes HDS-5 de "
@@ -2584,7 +2867,14 @@ CRITERIOS: Dict[str, Criterio] = {
                       "de M9 aceptan la geometria como argumento explicito "
                       "para poder tantear; lo que este vacio bloquea es que "
                       "el cabezal se dimensione SOLO, sin que nadie declare "
-                      "de donde salieron las dimensiones",
+                      "de donde salieron las dimensiones. "
+                      "EL ANCHO DEL TALON ENTRO EN LA LISTA con la inercia "
+                      "del muro: el num. 2.8.1.1.14.1 define W_s como el peso "
+                      "del suelo inmediatamente encima del muro INCLUYENDO EL "
+                      "TALON, de modo que sin esa medida no hay W_s y sin W_s "
+                      "no hay P_IR. `GeometriaCabezal.exigir_ancho_talon` se "
+                      "detiene aqui si falta; poner 0 en su lugar anularia la "
+                      "mitad de P_IR, y del lado inseguro",
         fuente="PENDIENTE - predimensionamiento del proyectista, o plano tipo "
                "de cabezal del expediente vial",
         reemplazado_por="Plano de encofrado del cabezal, acotado",

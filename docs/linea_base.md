@@ -90,8 +90,14 @@ las cinco correcciones de línea base de §4 (todas documentales o de
 > **Este número es la FOTO de la línea base (S1), no el estado de hoy.** Se
 > deja como está a propósito: es contra él contra el que se comparan las
 > sesiones siguientes. Estado posterior, para que nadie lea el 725 como
-> vigente: **S2 (cluster C08) lo dejó en 743 `passed`, 1 `skipped` → 744
-> `collected`** — 18 tests nuevos, ninguno retirado.
+> vigente: **S2 (cluster C08) lo dejó en 743 `passed`, 1 `skipped`** — 18
+> tests nuevos, ninguno retirado —, y **S9 (cluster C04, cadena sísmica) lo
+> dejó en 744 `passed`, 1 `skipped` → 745 `collected`**. S9 no escribió
+> ningún test nuevo: el `+1` es la expansión de
+> `test_criterio_pendiente_lanza_error_y_no_devuelve_default`, ya
+> parametrizado sobre los criterios sin valor, al que le entró el vacío nuevo
+> `gamma_EQ`. Un test se renombró (el del factor de muro) y ninguno se
+> retiró.
 
 ---
 
@@ -347,19 +353,21 @@ Los 9 hallazgos de este lote verificaron **SÍ** sin excepción.
 
 ## 4. Cuatro deudas de línea base corregidas
 
-Cada una en su propio commit, suite verde antes de cada uno (743 passed, 1
-skipped en las cinco):
+Cada una en su propio commit, suite verde antes de cada uno. El conteo que se
+cita abajo es el de HOY, no el de entonces: este documento se mantiene al día
+con la suite vigente (744 passed, 1 skipped) y no como fotografía de S1 —
+`verificar_sesion.py` avisa si se desincroniza.
 
 | Hallazgo | Commit | Qué cambió |
 |---|---|---|
 | **SIS-A-15** | `59440a9` + `8b033b6` | `Claude.md` y `tests/test_sin_literales.py` decían "constantes_fisicas.py: hoy solo la gravedad"; el módulo ya declara cinco nombres (`G`, `RHO_AGUA`, `N_POR_KN`, `GAMMA_AGUA`, `GAMMA_AGUA_KN_M3`). Dos ubicaciones, dos commits — la cita del hallazgo señalaba ambas. |
 | **SIS-B-03** | `08ba613` | `Claude.md` listaba `pandas` y `jinja2` como dependencias (cero usos en `src/`, `gui/`, `cli.py`; no instalados) y omitía `weasyprint` (pineado en `requirements.txt`, usado en `M11_reporte.py` para exportar PDF). |
-| **SIS-F-18** | `3c526b4` | `docs/auditoria_y_ruta_despliegue_v9.md` citaba "12 módulos, 595 tests en verde"; se corrigió al conteo vigente en ese momento (línea base de S1, ver §2). El conteo de módulos (13) no ha cambiado; el de tests sí — mantenido al día en `docs/auditoria_y_ruta_despliegue_v9.md`, hoy 743 `passed` + 1 `skipped`. |
+| **SIS-F-18** | `3c526b4` | `docs/auditoria_y_ruta_despliegue_v9.md` citaba "12 módulos, 595 tests en verde"; se corrigió al conteo vigente en ese momento (línea base de S1, ver §2). El conteo de módulos (13) no ha cambiado; el de tests sí — mantenido al día en `docs/auditoria_y_ruta_despliegue_v9.md`, hoy 744 `passed` + 1 `skipped`. |
 | **SIS-C-10** | `219f584` | `tests/ejemplo_puntos.informe.json` era salida de corrida versionada que cualquier ejecución de `cli.py` sobre `tests/ejemplo_puntos.csv` pisa (`cli.py:1475`); ningún test la lee. Se destraqueó (`git rm --cached`, sigue en disco) y se agregó `tests/*.informe.json` al `.gitignore`. |
 
 Estas cinco correcciones son **documentales o de control de versión** —
-ninguna toca `src/`, `gui/` o `cli.py`. La suite se mantuvo en 743 passed, 1
-skipped (744 collected) en todo momento.
+ninguna toca `src/`, `gui/` o `cli.py`. La suite se mantuvo verde en todo
+momento; hoy son 744 passed, 1 skipped (745 collected).
 
 ---
 

@@ -41,7 +41,7 @@ Esto obliga a separar dos cosas que se confunden al hablar de "listo para desple
 
 | | Estado |
 |---|---|
-| **El software como herramienta** | Terminado. 13 módulos, 743 passed + 1 skipped (744 collected), GUI, exportación con trazabilidad |
+| **El software como herramienta** | Terminado. 13 módulos, 744 passed + 1 skipped (745 collected), GUI, exportación con trazabilidad |
 | **El expediente como cálculo de ingeniería** | Bloqueado. Faltan 25 decisiones y datos que ninguna línea de código puede inventar |
 
 Desplegar hoy es correcto y útil — la herramienta funciona. Lo que no existe todavía es un

@@ -170,13 +170,25 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
     ),
 
     # --------------------- E.030 - solo referencia -----------------------
-    # Los dos datos que siguen NO gobiernan el diseno del cabezal: Sec. 0.4
-    # de la hoja de ruta descarta el sismo de 475 anios de E.030 en favor del
-    # PGA de Tr = 1000 anios del Manual de Puentes. Se conservan porque un
-    # revisor los va a buscar y porque su ausencia se leeria como olvido, no
-    # como descarte deliberado. Vivian en constantes_normativas.py como [N];
-    # el cambio a [S] es de CLASIFICACION, no de uso: no los usaba ningun
-    # modulo antes y no los usa ninguno ahora.
+    # Los dos datos que siguen NO gobiernan el diseno del cabezal, y el
+    # argumento por el que no lo gobiernan CAMBIO. Se defendia solo por
+    # periodo de retorno -- Sec. 0.4 de la hoja de ruta prefiere el PGA de
+    # Tr = 1000 anios del Manual de Puentes al sismo de E.030 --, que es la
+    # via discutible: invita a preguntar por que no aplicar las dos normas.
+    # El argumento de AMBITO es anterior y cierra la pregunta: el Art. 4 de
+    # E.030 acota la norma a las edificaciones nuevas y al reforzamiento o
+    # reparacion de edificaciones existentes, y un cabezal de alcantarilla de
+    # una carretera no es una edificacion. El expediente no lo invocaba en
+    # ningun sitio (NOR-E030-03). Texto literal y la advertencia de como NO
+    # estirarlo -- el articulo no excluye expresamente a los puentes: no los
+    # nombra -- en constantes_normativas.E030_AMBITO_TEXTO y
+    # E030_AMBITO_LECTURA.
+    #
+    # Se conservan porque un revisor los va a buscar y porque su ausencia se
+    # leeria como olvido, no como descarte deliberado. Vivian en
+    # constantes_normativas.py como [N]; el cambio a [S] fue de
+    # CLASIFICACION, no de uso: no los usaba ningun modulo antes y no los usa
+    # ninguno ahora.
 
     "ZONA_SISMICA_LA_UNION": DatoSitio(
         valor=4,
@@ -207,24 +219,43 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
 
     "Z_E030": DatoSitio(
         valor=0.45,
-        concepto="Factor de zona Z de E.030 (aceleracion maxima en suelo "
-                 "rigido para Tr = 475 anios), en g",
-        procedimiento="Entrada de la tabla de factor de zona del Art. 11.1 de "
-                      "E.030 con la zona leida en 'ZONA_SISMICA_LA_UNION'. La "
-                      "tabla es normativa; la fila que aplica la fija la "
-                      "ubicacion",
-        fuente="E.030 (RM 183-2026-VIVIENDA), Art. 11.1, Tabla de factores de "
-               "zona (Zona 4 -> Z = 0.45)",
+        concepto="Factor de zona Z de E.030, en g: la aceleracion maxima "
+                 "horizontal en suelo rigido con una probabilidad de 10 % de "
+                 "ser excedida en 50 anios, que es como la define el Art. "
+                 "11.1. NO 'para Tr = 475 anios': eso es una derivacion",
+        procedimiento="Entrada de la Tabla N 1 de factores de zona del Art. "
+                      "11.1 de E.030 con la zona leida en "
+                      "'ZONA_SISMICA_LA_UNION'. La tabla es normativa; la "
+                      "fila que aplica la fija la ubicacion. EL PERIODO DE "
+                      "RETORNO NO SE LEE, SE DERIVA: el Art. 11.1 escribe la "
+                      "probabilidad y no la cifra, y Tr = -50/ln(0.90) = "
+                      "474.6 ~ 475 anios es aritmetica del proyectista. Este "
+                      "campo decia 'para Tr = 475 anios' como si fuera "
+                      "concepto de la norma (NOR-E030-01). La cifra si "
+                      "aparece literal en E.030, pero en otro sitio y con "
+                      "otro proposito: el Anexo III, pag. impresa 67, sobre "
+                      "el contenido minimo de los estudios de "
+                      "microzonificacion sismica",
+        fuente="E.030 (RM 183-2026-VIVIENDA), Art. 11.1 y Tabla N 1, pag. "
+               "impresa 9 (PDF 9): 'Este factor representa la aceleracion "
+               "maxima horizontal en suelo rigido con una probabilidad de 10% "
+               "de ser excedida en 50 anios' (Zona 4 -> Z = 0.45). Texto "
+               "literal en constantes_normativas.E030_Z_TEXTO; la derivacion "
+               "del periodo de retorno, en E030_TR_DERIVACION",
         trazabilidad="Art. 11.1 de E.030 leido con la zona que el Anexo II da "
                      "al distrito de La Union (Piura), o sea el valor que "
                      "resulta de 'ZONA_SISMICA_LA_UNION' y hereda su misma "
                      "trazabilidad. Lo que si esta en la fuente normativa "
                      "unica del proyecto es el descarte: la hoja de ruta lo "
                      "nombra en num. 87 solo para decir que NO se usa en el "
-                     "calculo, porque su periodo de retorno de referencia "
-                     "(475 anios) difiere del adoptado (Tr = 1000 anios del "
-                     "Manual de Puentes, Sec. 0.4), que es el que gobierna el "
-                     "cabezal",
+                     "calculo. El descarte tiene DOS argumentos y el "
+                     "expediente usaba solo el segundo: (1) AMBITO -- el "
+                     "Art. 4 de E.030 aplica la norma a edificaciones, y este "
+                     "cabezal no lo es; es anterior y no admite replica; "
+                     "(2) periodo de retorno -- el de referencia de Z, "
+                     "derivado en 475 anios, difiere del adoptado (Tr = 1000 "
+                     "anios del Manual de Puentes, Sec. 0.4). El (1) es el "
+                     "que cierra la pregunta (NOR-E030-03)",
         ambito=AMBITO_CORREDOR,
         # Hereda la trazabilidad de 'ZONA_SISMICA_LA_UNION' -- lo dice su
         # propio campo `trazabilidad` -- y con ella hereda lo que aquella

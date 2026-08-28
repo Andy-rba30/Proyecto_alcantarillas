@@ -30,7 +30,8 @@ from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO, CUANTIA_MIN_MURO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
-                                   FACTOR_MURO_TABLA, FS,
+                                   FS,
+                                   REDUCCION_KH_POR_DESPLAZAMIENTO,
                                    NQ_ZAPATA_EN_TALUD,
                                    RECUBRIMIENTO, SOBRECARGA_TRASDOS_H_EQ,
                                    TABLA_GAMMA_P_FILAS)
@@ -112,7 +113,8 @@ def test_los_seis_pasos_horizontales_dan_la_cadena_de_la_hoja_de_ruta():
     PGA = pga_roca_b()
     Fpga = f_pga()
     A_s = aceleracion_ajustada_sitio(PGA=PGA, F_pga=Fpga)
-    k_h0 = coeficiente_sismico_base(A_s=A_s)
+    k_h0 = coeficiente_sismico_base(A_s=A_s, F_pga=Fpga, PGA=PGA,
+                                    cimentacion_en_roca=False)
     k_h = coeficiente_sismico_horizontal(k_h0=k_h0, factor_muro=factor_muro())
 
     assert PGA == pytest.approx(CP7["PGA"])
@@ -138,7 +140,10 @@ def test_cada_paso_lee_su_propio_criterio_y_no_un_0_50_escrito_a_mano():
     A_s = aceleracion_ajustada_sitio(PGA=cadena.PGA,
                                      F_pga=CP7["F_pga_clase_E"])
     k_h = coeficiente_sismico_horizontal(
-        k_h0=coeficiente_sismico_base(A_s=A_s), factor_muro=cadena.factor_muro)
+        k_h0=coeficiente_sismico_base(A_s=A_s, F_pga=CP7["F_pga_clase_E"],
+                                      PGA=cadena.PGA,
+                                      cimentacion_en_roca=False),
+        factor_muro=cadena.factor_muro)
 
     assert A_s == pytest.approx(CP7["A_s_con_F_pga_clase_E_esperado"])
     assert k_h == pytest.approx(CP7["k_h_con_F_pga_clase_E_esperado"])
@@ -179,11 +184,13 @@ def test_el_factor_de_muro_reducido_no_se_asume():
     Sec. 9.2: si el muro admitiera 25-50 mm de desplazamiento seria
     k_h = 0.5*k_h0 = 0.25. "No asumirlo en un cabezal empotrado".
     """
-    assert factor_muro() == pytest.approx(FACTOR_MURO_TABLA["rigido"])
+    assert factor_muro() == pytest.approx(CP7["factor_muro_rigido"])
     assert cadena_sismica().k_h == pytest.approx(
         CP7["k_h_con_muro_rigido_esperado"])
-    # La otra fila de la tabla existe y es [N]; lo que es [A] es no elegirla
-    assert FACTOR_MURO_TABLA["desplazable"] == pytest.approx(
+    # El unico valor [N] del numeral es el 0.5, y ademas es permisivo: lo que
+    # es [A] es no acogerse a esa reduccion. El 1.0 no es una fila tabulada,
+    # es la ausencia de reduccion (NOR-PUE-07).
+    assert REDUCCION_KH_POR_DESPLAZAMIENTO == pytest.approx(
         CP7["factor_muro_desplazable"])
     assert ca.criterio("factor_muro_eleccion").etiqueta == "A"
 

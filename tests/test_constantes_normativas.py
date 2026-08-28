@@ -163,9 +163,22 @@ def test_ninguna_carta_omite_Ks():
 # ---------------------------------------------------------------------------
 
 def test_la_tabla_de_F_pga_contiene_la_eleccion_de_CP7():
-    assert CN.F_PGA_TABLA["C"] == pytest.approx(CP7_CADENA_SISMICA["F_pga"])
-    assert CN.F_PGA_TABLA["D"] == pytest.approx(CP7_CADENA_SISMICA["F_pga"])
-    assert CN.F_PGA_TABLA["E"] < CP7_CADENA_SISMICA["F_pga"]    # 0.9 para clase E
+    # La tabla esta ahora COMPLETA: seis filas por cinco columnas de PGA. La
+    # columna del PGA de este proyecto es la ultima, rotulada "PGA > 0.50".
+    ultima = -1
+    assert CN.F_PGA_TABLA["C"][ultima] == pytest.approx(
+        CP7_CADENA_SISMICA["F_pga"])
+    assert CN.F_PGA_TABLA["D"][ultima] == pytest.approx(
+        CP7_CADENA_SISMICA["F_pga"])
+    assert CN.F_PGA_TABLA["E"][ultima] < CP7_CADENA_SISMICA["F_pga"]   # 0.9
+    # Las filas que faltaban: A y B (roca), sin las cuales la clausula de
+    # roca de k_h0 no era representable, y F, que no trae factor sino la
+    # exigencia de estudio de su Nota 2.
+    assert set(CN.F_PGA_CLASES_EN_ROCA) <= set(CN.F_PGA_TABLA)
+    assert set(CN.F_PGA_TABLA[CN.F_PGA_CLASE_SIN_FACTOR]) == {
+        CN.F_PGA_EXIGE_ESTUDIO_DE_SITIO}
+    assert all(len(fila) == len(CN.F_PGA_TABLA_PGA_COLUMNAS)
+               for fila in CN.F_PGA_TABLA.values())
 
 
 def test_el_Z_de_E030_ya_no_es_una_constante_normativa():
@@ -184,16 +197,23 @@ def test_el_Z_de_E030_ya_no_es_una_constante_normativa():
     assert ds.dato("ZONA_SISMICA_LA_UNION").trazabilidad
 
 
-def test_la_tabla_del_factor_de_muro_trae_sus_dos_filas():
+def test_el_factor_de_muro_no_es_una_tabla_sino_una_reduccion_autorizada():
     """
-    Las dos filas del num. 2.8.1.1.14.2 son [N]: el numeral las fija. La
-    eleccion entre ellas no esta aqui, es el criterio 'factor_muro_eleccion'.
+    Aqui vivia `FACTOR_MURO_TABLA` con dos filas, afirmando que "las DOS filas
+    son [N]: el numeral las fija". El num. 2.8.1.1.14.2.2 no presenta ninguna
+    tabla y fija UN valor, 0.5, ademas de forma permisiva; el 1.0 es la
+    ausencia de reduccion, que es la definicion misma de k_h0 (NOR-PUE-07).
+
+    Y el numeral que se citaba, "2.8.1.1.14.2", es un encabezado sin cuerpo:
+    la reduccion esta un nivel mas abajo, en el .2.2.
     """
-    assert CN.FACTOR_MURO_TABLA["rigido"] == pytest.approx(
-        CP7_CADENA_SISMICA["factor_muro_rigido"])
-    assert CN.FACTOR_MURO_TABLA["desplazable"] == pytest.approx(
+    assert not hasattr(CN, "FACTOR_MURO_TABLA")
+    assert CN.REDUCCION_KH_POR_DESPLAZAMIENTO == pytest.approx(
         CP7_CADENA_SISMICA["factor_muro_desplazable"])
-    assert CN.NUMERAL_FACTOR_MURO == "2.8.1.1.14.2"
+    assert CN.NUMERAL_FACTOR_MURO.startswith("2.8.1.1.14.2.2")
+    assert "puede ser reducido a 0.5kh0" in CN.REDUCCION_KH_TEXTO
+    # Las tres condiciones que AASHTO acumula, una de ellas no tecnica.
+    assert any("propietario" in c for c in CN.REDUCCION_KH_CONDICIONES)
 
 
 # ---------------------------------------------------------------------------

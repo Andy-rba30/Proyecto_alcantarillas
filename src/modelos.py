@@ -1216,17 +1216,25 @@ class PasoSismico:
     etiqueta: str                         # "N", "A", "-" (calculado)
     origen: str                           # numeral o "Calculado"
     criterio: Optional[str] = None        # clave en criterios_adoptados.py
+    # La CONDICION bajo la que el paso vale: de que filas de la tabla sale
+    # F_pga, en que rama de k_h0 cae la cimentacion, que caso de k_v rige.
+    # Tres de los siete pasos llevaban esa condicion implicita en el numero,
+    # que es como se pierde: el numero se revisa, el supuesto no se ve. Los
+    # pasos CALCULADOS (A_s, k_h) no llevan condicion propia -- heredan la de
+    # sus insumos -- y por eso el campo es opcional.
+    condicion: Optional[str] = None
 
 
 @dataclass(frozen=True)
 class CadenaSismica:
     """
     Cadena sismica completa de Sec. 9.2, con los seis pasos horizontales mas
-    k_v, que va aparte porque NO deriva de la cadena: es una adopcion propia
-    ([A], criterio 'k_v').
+    k_v, que va aparte porque NO deriva de la cadena: lo fija su propio
+    numeral ([N] condicionado, num. 2.8.1.1.14.2.1).
 
         A_s  = F_pga * PGA
-        k_h0 = A_s                        (Manual de Puentes, 2.8.1.1.14.2)
+        k_h0 = A_s                        (Manual de Puentes, 2.8.1.1.14.2.1)
+        k_h0 = 1.2 * F_pga * PGA          (idem, cimentacion en Clase A o B)
         k_h  = factor_muro * k_h0
 
     `pasos` reproduce la tabla de la hoja de ruta fila por fila para que M11
@@ -1240,9 +1248,16 @@ class CadenaSismica:
     k_h0: float                           # adimensional - = A_s
     factor_muro: float                    # adimensional - 1.0 = muro rigido
     k_h: float                            # adimensional - factor_muro * k_h0
-    k_v: float                            # adimensional - vertical, [A] aparte
+    k_v: float                            # adimensional - vertical, [N] aparte
     pasos: Tuple[PasoSismico, ...]
     numeral: str = "Sec. 9.2"
+    # Las filas de la Tabla 2.4.3.11.2.1.2-1 sobre las que se leyo F_pga, y
+    # en que rama de k_h0 cayo la cimentacion. Viajan con la cadena porque el
+    # numero no se puede revisar sin ellas: un F_pga de 1.0 leido sobre C/D/E
+    # y uno leido sobre A/B son dos afirmaciones distintas, y la segunda
+    # ademas cambia la formula de k_h0.
+    clases_de_sitio: Tuple[str, ...] = ()
+    cimentacion_en_roca: bool = False
 
 
 @dataclass(frozen=True)
@@ -1265,6 +1280,35 @@ class GeometriaCabezal:
     espesor_base_muro: float              # m - espesor del muro en su arranque
     espesor_zapata: float                 # m
     beta_grados: float = 0.0              # grados desde la vertical
+    # Ancho del TALON, la parte de la zapata que queda del lado del relleno.
+    # Entra aqui porque el num. 2.8.1.1.14.1 define W_s como "el peso del
+    # suelo que esta inmediatamente encima del muro, INCLUYENDO EL TALON": sin
+    # esa medida no hay W_s y sin W_s no hay P_IR. Es opcional en la
+    # dataclase y NO por comodidad -- un default numerico seria inventar
+    # geometria --, sino para que las funciones que no lo necesitan sigan
+    # aceptando una geometria de tanteo sin el; quien lo necesita lo pide con
+    # `exigir_ancho_talon`, que se detiene si falta.
+    ancho_talon: Optional[float] = None   # m
+
+    def exigir_ancho_talon(self) -> float:
+        """
+        El ancho del talon, o `CriterioPendienteError` si no se declaro.
+
+        Se detiene con la misma excepcion que el criterio del que sale la
+        geometria ('predimensionamiento_cabezal'), porque es lo que es: una
+        dimension del cabezal que nadie ha declarado todavia. Devolver 0 en su
+        lugar anularia W_s y con el la mitad de P_IR, en la direccion no
+        conservadora.
+        """
+        if self.ancho_talon is None:
+            raise CriterioPendienteError(
+                "predimensionamiento_cabezal",
+                concepto="ancho del talon de la zapata",
+                fuente="El num. 2.8.1.1.14.1 define W_s como el peso del "
+                       "suelo inmediatamente encima del muro, incluyendo el "
+                       "talon: sin el ancho del talon no hay W_s ni P_IR",
+            )
+        return self.ancho_talon
 
     @property
     def altura_total(self) -> float:
@@ -1368,6 +1412,105 @@ class EmpujesTrasdos:
         if self.incremento_sismico is not None and self.z_incremento is not None:
             momento += self.incremento_sismico * self.z_incremento
         return momento
+
+
+@dataclass(frozen=True)
+class FuerzaInerciaMuro:
+    """
+    P_IR, la fuerza de inercia de la masa del muro bajo sismo (Manual de
+    Puentes num. 2.8.1.1.14.1, ec. 2.8.1.1.14.1-1 = AASHTO 11.6.5.1-1).
+
+    Este objeto no existia y el termino tampoco: la cadena sismica del
+    proyecto terminaba en k_h y K_AE, y el ensamble de empujes sumaba
+    EH + LS + WA + el incremento de Mononobe-Okabe sin ninguna linea de
+    inercia del muro (MAT-D6, MAT-X7). La MISMA seccion de la que la hoja de
+    ruta toma k_h0 exige combinar las dos.
+
+    Los dos pesos viajan separados y no sumados porque la fuente los define
+    aparte y son mas estrechos de lo que "peso del muro" sugiere: W_s es el
+    suelo que esta INMEDIATAMENTE ENCIMA del muro, incluido el talon, no el
+    relleno del trasdos entero.
+    """
+
+    P_IR: float                           # kN/m - k_h * (W_w + W_s)
+    W_w: float                            # kN/m - peso de la pared
+    W_s: float                            # kN/m - suelo sobre el muro y el talon
+    k_h: float                            # adimensional
+    numeral: str
+
+
+@dataclass(frozen=True)
+class CasoDemandaSismica:
+    """
+    Uno de los dos casos que el num. 2.8.1.1.14.1 manda investigar. No son dos
+    formas de decir lo mismo: la fuente advierte expresamente que los efectos
+    de P_AE y P_IR NO son simultaneos, y por eso reparte los porcentajes.
+    """
+
+    nombre: str                           # "100% P_AE + 50% P_IR", ...
+    fraccion_P_AE: float
+    fraccion_P_IR: float
+    P_AE_aplicado: float                  # kN/m - ya con su fraccion y su piso
+    P_IR_aplicado: float                  # kN/m - ya con su fraccion
+    total: float                          # kN/m
+    piso_estatico_activo: bool            # si el piso de P_A levanto la fraccion
+
+
+@dataclass(frozen=True)
+class DemandaSismicaCabezal:
+    """
+    P_seis: la demanda sismica del cabezal, como la define el num.
+    2.8.1.1.14.1 -- los dos casos y el mas desfavorable de los dos.
+
+    `P_AE` es el empuje TOTAL de Mononobe-Okabe (estatico mas dinamico) y no
+    su incremento: el comentario del articulo es explicito en que P_AE ya
+    incluye el empuje estatico y que el Ka estatico NO debe sumarsele. `P_A`
+    viaja aparte porque es el PISO del segundo caso, no un sumando.
+    """
+
+    casos: Tuple[CasoDemandaSismica, ...]
+    P_AE: float                           # kN/m - Mononobe-Okabe total
+    P_A: float                            # kN/m - empuje activo estatico
+    inercia: FuerzaInerciaMuro
+    numeral: str
+
+    @property
+    def gobernante(self) -> CasoDemandaSismica:
+        """El mas desfavorable de los dos: 'el resultado mas conservador'."""
+        return max(self.casos, key=lambda c: c.total)
+
+    @property
+    def P_seis(self) -> float:
+        """kN/m: la demanda que gobierna el diseno del muro."""
+        return self.gobernante.total
+
+
+@dataclass(frozen=True)
+class PresionContactoBase:
+    """
+    La presion de contacto bajo la zapata y la excentricidad que la produce
+    (Manual de Puentes num. 2.8.1.1.14.1 para el limite sismico; distribucion
+    lineal de Navier para las presiones).
+
+    Era el UNICO eslabon de la cadena de estabilidad sin procedimiento ni
+    vacio declarado: `verificar_capacidad_portante` exige `q_actuante` ya
+    resuelto y en el repositorio no habia con que producirlo (MAT-O16).
+
+    `dentro_del_nucleo` no es lo mismo que `cumple`: el nucleo central
+    (e <= B/6) es la condicion para que la distribucion lineal completa tenga
+    sentido -- fuera de el la zapata levanta y q_min saldria negativo --,
+    mientras que el limite SISMICO depende de gamma_EQ y llega hasta 0.4*B.
+    Con e > B/6 las presiones que se devuelven son las de la distribucion
+    parcial, no las de la formula del nucleo.
+    """
+
+    N: float                              # kN/m - normal neta en la base
+    B: float                              # m - ancho de zapata
+    e: float                              # m - excentricidad respecto del centro
+    q_max: float                          # kPa
+    q_min: float                          # kPa
+    dentro_del_nucleo: bool
+    numeral: str
 
 
 @dataclass(frozen=True)

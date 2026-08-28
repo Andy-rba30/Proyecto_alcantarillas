@@ -84,7 +84,9 @@ El Manual de Puentes establece que las combinaciones se rigen por **AASHTO LRFD 
 
 Se descartan expresamente los mapas de S_s (T = 0.2 s) y S₁ (T = 1.0 s), que corresponden a aceleraciones espectrales y no a la aceleración pico del terreno.
 
-No se usa el Z = 0.45 de E.030 para las fuerzas sobre el muro; su periodo de retorno de referencia (475 años) difiere del adoptado.
+No se usa el Z = 0.45 de E.030 para las fuerzas sobre el muro, y el argumento **de ámbito va primero**: el **Art. 4 «Ámbito de aplicación»** (pág. impresa 7) aplica la norma «a) al diseño de **edificaciones** nuevas. b) al reforzamiento de **edificaciones** existentes…», y un cabezal de alcantarilla de una carretera no es una edificación. El artículo **no excluye expresamente** a los puentes ni a las obras de arte vial —no los nombra—, así que la cita hay que hacerla por lo que afirma y no por lo que se le quiera hacer negar. El argumento por periodo de retorno es el segundo y el discutible (`NOR-E030-03`).
+
+El periodo de retorno de referencia de Z **no lo escribe el Art. 11.1**: escribe «una probabilidad de 10 % de ser excedida en 50 años». Los 475 años son una derivación —Tr = −50/ln 0,90 = 474,6— y la cifra sólo aparece literal en el **Anexo III** de E.030 (pág. impresa 67), sobre estudios de microzonificación (`NOR-E030-01`).
 
 > **Único resto pendiente:** registrar en la memoria las **coordenadas o la curva de isoaceleración** sobre la que se hizo la lectura. Las curvas varían dentro de un mismo departamento y el revisor puede querer reproducir la lectura. Es un dato de trazabilidad, no un cambio de valor.
 
@@ -627,19 +629,38 @@ EG-2013 Sección 503 (Concreto Estructural), num. 503.01, pág. 905, describe el
 
 | Paso | Símbolo | Valor | Origen | Etiqueta |
 |---|---|---|---|---|
-| Aceleración pico en roca Clase B, Tr = 1000 años | PGA | **0.50 g** | Manual de Puentes, Apéndice A3, mapa "PGA, T = 0.0 seg" | [N] |
-| Factor de sitio | F_pga | **1.0** | Tabla 2.4.3.11.2.1.2-1 (valores [N]); **elección** ante ausencia de SPT | [A] |
+| Aceleración pico en roca Clase B, Tr = 1000 años | PGA | **0.50 g** | Manual de Puentes, Apéndice A3, mapa "PGA, T = 0.0 seg" | **[S]** (era [N]) |
+| Factor de sitio | F_pga | **1.0** | Tabla 2.4.3.11.2.1.2-1, pág. impresa 123 (valores [N]); **elección de las FILAS** ante ausencia de caracterización de sitio | [A] |
 | Aceleración ajustada por sitio | **A_s = F_pga · PGA** | **0.50 g** | Calculado | — |
-| Coeficiente sísmico de base | **k_h0 = A_s** | **0.50** | Manual de Puentes, 2.8.1.1.14.2 | [N] |
-| Factor de muro (rígido, empotrado) | — | **1.0** | Manual de Puentes, 2.8.1.1.14.2 | [N] |
+| Coeficiente sísmico de base | **k_h0 = A_s** | **0.50** | Manual de Puentes, **2.8.1.1.14.2.1** | [N] |
+| Factor de muro (sin reducción) | — | **1.0** | Manual de Puentes, **2.8.1.1.14.2.2** — el numeral fija **un** valor, 0.5, y de forma permisiva; el 1.0 es la ausencia de reducción | **[A]** (la declaración) |
 | **Coeficiente sísmico horizontal de diseño** | **k_h** | **0.50** | Calculado | — |
-| Coeficiente sísmico vertical | k_v | **0** | Adopción habitual en muros de baja altura | [A] |
+| Coeficiente sísmico vertical | k_v | **0** | Manual de Puentes, **2.8.1.1.14.2.1** — «kv **se asumirá cero**… a no ser que…» | **[N] condicionado** (era [A]) |
+| **Fuerza de inercia del muro** | **P_IR = k_h·(W_w + W_s)** | — | Manual de Puentes, **2.8.1.1.14.1**, ec. 2.8.1.1.14.1-1 | [N] |
 
-*Si el muro admitiera desplazamiento de 25–50 mm, k_h = 0.5 · k_h0 = 0.25. **No asumirlo en un cabezal empotrado en terraplén.***
+*Si el muro admitiera desplazamiento de **1.0 a 2.0 in o más** (25.4–50.8 mm; el «o más» abre el rango por arriba y no debe recortarse), k_h = 0.5 · k_h0 = 0.25. **No asumirlo en un cabezal empotrado en terraplén.** AASHTO condiciona además esa reducción a que el movimiento sea aceptable para el propietario, de modo que la decisión no es sólo técnica.*
 
 Para K_AE por **Mononobe-Okabe** se requieren además φ del relleno, pendiente del relleno (i), inclinación del muro (β) y fricción muro-suelo (δ).
 
 **Todos estos valores se leen desde `criterios_adoptados.py`.**
+
+#### Lo que esta sección omitía, y por qué la cadena no termina en k_h
+
+Las cinco correcciones de abajo se levantaron contra la fuente primaria (los PDF de `normas/`) y **el defecto es de esta hoja de ruta**, no del código. Se dejan escritas aquí para que quien lea la hoja sin leer el código no diseñe con la versión incompleta.
+
+1. **Faltaba `P_IR` y faltaba la combinación.** La cadena de arriba terminaba en k_h y K_AE. El num. **2.8.1.1.14.1** — la misma sección de la que esta hoja toma k_h0 y la reducción por desplazamiento, un nivel más arriba — exige combinar el empuje sísmico con la **inercia de la masa del muro**, `P_IR = k_h·(W_w + W_s)`, donde W_w es el peso de la pared y W_s el del suelo inmediatamente encima del muro **incluido el talón**. Y no como suma: los dos efectos **no son simultáneos**, de modo que se investigan dos casos y rige el más desfavorable —
+   - **100 % P_AE + 50 % P_IR**, y
+   - **50 % P_AE** (pero *«no sea menor que la presión estática activa del terreno»*) **+ 100 % P_IR**.
+
+   Con k_h = 0.50, P_IR vale la mitad del peso movilizado — el mismo orden que el propio incremento sísmico del empuje —, así que la omisión iba del lado **inseguro** en volteo y en deslizamiento sísmicos (`MAT-D6`, `MAT-X7`).
+
+2. **Faltaba la excentricidad de la resultante en la base**, que el mismo num. 2.8.1.1.14.1 acota bajo sismo. **No es «el tercio central» a secas:** el límite depende de γ_EQ — tercio central (e ≤ B/6) con γ_EQ = 0.0, ocho décimas centrales (e ≤ 0.4·B) con γ_EQ = 1.0, e **interpolación lineal** en medio. Y γ_EQ es un vacío que este expediente todavía no ha declarado (`MAT-O16`).
+
+3. **`k_h0 = A_s` no es incondicional.** El num. 2.8.1.1.14.2.1 añade que *«para muros cimentados sobre Sitio con suelos Clase A o B (roca dura o blanda), k_h0 estará basado en 1.2 veces el coeficiente de aceleración pico del suelo»*. Con cimentación en roca serían 0.60 y no 0.50 (`MAT-O4`, `NOR-PUE-12`). **El paréntesis que el Manual imprime a continuación —«(es decir, 1.2 kh0=FpgaPGA)»— es errata**: leído al pie de la letra da una *reducción* del 17 %. Gana la prosa, coincidente con AASHTO 11.6.5.2.1.
+
+4. **El Manual imprime K_AE con «1 − √(…)» y eso es errata de imprenta** (Apéndice A11, num. A.11.3.1, pág. impresa 586). AASHTO — que el propio Manual declara transcribir — imprime «1 + √(…)». Con el menos, K_AE **diverge** cuando el radicando tiende a 1 y el caso límite k_h = k_v = 0 deja de devolver el Ka de Coulomb. **El código sigue a AASHTO y hace bien**; esta hoja no advertía de la discrepancia, de modo que un revisor que «corrigiera» el código contra la letra impresa rompía la fórmula (`MAT-O2`, `MAT-X2`).
+
+5. **El agua bajo el NF.** Esta sección dice que «empuje hidrostático y subpresión no son opcionales» y no dice nada de cómo entra el freático en el **empuje de tierras**. El código usa γ total en toda la altura más la hidrostática completa, con lo que cuenta el agua de poros dos veces en la zona sumergida; AASHTO 3.11.3 *«Presence of Water»* exige γ **sumergido** bajo el nivel freático. La desviación es **conservadora** (+25 % local) y se declara en el punto de uso, pero corregirla exige un peso específico sumergido del relleno que el expediente no tiene (`MAT-O3`, `MAT-X3`).
 
 ### 9.3 Estabilidad — E.050 [N]
 
@@ -650,6 +671,8 @@ Para K_AE por **Mononobe-Okabe** se requieren además φ del relleno, pendiente 
 | Deslizamiento — estabilidad interna | **1.50** | **1.25** | 39.13.6 a), pág. 72 |
 | Estabilidad global del muro | **1.50** | **1.25** | 39.13.6 b), pág. 72 |
 | Estabilidad del talud | **1.50** | **1.25** | Art. 30.3, pág. 39 |
+
+**Y una sexta fila, que E.050 no escribe y el Manual de Puentes sí (`MAT-O16`):** la **ubicación de la resultante en la base bajo sismo**, num. 2.8.1.1.14.1 — dentro del **tercio central** (e ≤ B/6) con γ_EQ = 0.0, dentro de las **ocho décimas centrales** (e ≤ 0.4·B) con γ_EQ = 1.0, e interpolación lineal entre ambos. No es un FS y por eso no cabe en la tabla de arriba, pero es la condición que decide si la presión de contacto `q_actuante` —la que la primera fila da por resuelta— se calcula con la distribución completa o con la parcial.
 
 **Parámetros de resistencia** (Art. 20, pág. 33): en cohesivos φ = 0; en friccionantes c = 0. No se combinan.
 

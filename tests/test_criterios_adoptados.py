@@ -17,7 +17,8 @@ import pytest
 
 import criterios_adoptados as ca
 import datos_sitio as ds
-from constantes_normativas import FACTOR_MURO_TABLA
+from constantes_normativas import (F_PGA_TABLA,
+                                   REDUCCION_KH_POR_DESPLAZAMIENTO)
 from criterios_adoptados import (CRITERIOS, criterio, criterios_sin_valor,
                                  parametros_sensibilizables, reporte_criterios,
                                  valor)
@@ -33,15 +34,20 @@ CLAVES_PENDIENTES = criterios_sin_valor()
 # tener su entrada declarada aqui; si se agrega una fila al Anexo A y no al
 # modulo, este test lo delata.
 # 'PGA_roca_B' salio del Anexo A: es un dato de sitio [S] y vive en
-# datos_sitio.py. 'factor_muro' se partio en tabla [N]
-# (constantes_normativas.FACTOR_MURO_TABLA) y eleccion [A]
-# ('factor_muro_eleccion'), el mismo reparto que ya tenia F_pga.
+# datos_sitio.py. 'factor_muro' se partio en el unico valor [N] del numeral
+# (constantes_normativas.REDUCCION_KH_POR_DESPLAZAMIENTO) y la declaracion [A]
+# de si se aplica ('factor_muro_eleccion'). F_pga siguio el mismo camino: la
+# tabla [N] completa en constantes_normativas.F_PGA_TABLA y las FILAS sobre
+# las que se lee en el criterio, mas la lectura de sus rotulos extremos, que
+# la tabla no resuelve ('F_pga_lectura_columna_extrema').
 CLAVES_DEL_ANEXO_A = {
     "clase_sitio",
     "PERFIL_SUELO_PRESUNTO",
     "F_pga",
+    "F_pga_lectura_columna_extrema",
     "factor_muro_eleccion",
     "k_v",
+    "gamma_EQ",
     "Mw_licuefaccion",
     "hds5_embocadura_hdpe",
     "n_manning_hdpe",
@@ -555,28 +561,33 @@ def test_la_cadena_sismica_reproduce_CP7():
     cp = CP7_CADENA_SISMICA
     # El PGA abre la cadena desde datos_sitio.py: es [S], no criterio.
     assert ds.valor("PGA_roca_B") == pytest.approx(cp["PGA"])
-    assert valor("F_pga") == pytest.approx(cp["F_pga"])
 
-    A_s = ds.valor("PGA_roca_B") * valor("F_pga")
+    # El criterio ya no guarda el FACTOR sino las FILAS de la tabla sobre las
+    # que se lee: la tabla es [N] y la eleccion de fila es [A]. El factor sale
+    # de la envolvente de esas filas al PGA del proyecto.
+    filas = valor("F_pga")
+    assert filas == ("C", "D", "E")
+    F_pga = max(F_PGA_TABLA[fila][-1] for fila in filas)
+    assert F_pga == pytest.approx(cp["F_pga"])
+
+    A_s = ds.valor("PGA_roca_B") * F_pga
     assert A_s == pytest.approx(cp["A_s_esperado"])
 
-    k_h0 = A_s                                   # Manual de Puentes, 2.8.1.1.14.2
+    k_h0 = A_s                                 # Manual de Puentes, 2.8.1.1.14.2.1
     assert k_h0 == pytest.approx(cp["k_h0_esperado"])
 
-    k_h = valor("factor_muro_eleccion") * k_h0
-    assert k_h == pytest.approx(cp["k_h_con_muro_rigido_esperado"])
-
-    # La eleccion adoptada es la fila rigida de la tabla [N] del numeral.
-    assert valor("factor_muro_eleccion") == pytest.approx(
-        FACTOR_MURO_TABLA["rigido"])
-    assert criterio("factor_muro_eleccion").sensibilidad == (
-        FACTOR_MURO_TABLA["desplazable"], FACTOR_MURO_TABLA["rigido"])
+    # Lo declarado es si se aplica o no la reduccion que el numeral autoriza;
+    # sin reduccion, k_h = k_h0.
+    assert valor("factor_muro_eleccion") == "sin_reduccion"
+    assert k_h0 == pytest.approx(cp["k_h_con_muro_rigido_esperado"])
 
     # Si el muro admitiera desplazamiento, la misma cadena debe dar 0.25.
-    assert FACTOR_MURO_TABLA["desplazable"] * k_h0 == pytest.approx(
+    assert REDUCCION_KH_POR_DESPLAZAMIENTO * k_h0 == pytest.approx(
         cp["k_h_con_muro_desplazable_esperado"]
     )
-    assert valor("k_v") == pytest.approx(cp["k_v_esperado"])
+    # k_v ya no es un numero adoptado: el criterio declara que rige el cero
+    # que fija el num. 2.8.1.1.14.2.1, y ese cero es [N].
+    assert valor("k_v") == "prescrito_sin_caso_reservado"
 
 
 def test_el_ke_del_control_de_salida_esta_trazado_contra_CP8():
@@ -614,7 +625,8 @@ def test_el_n_de_hdpe_es_un_rango_y_no_un_valor_puntual():
 # seccion sismica de la memoria. 'PERFIL_SUELO_PRESUNTO' entra porque es la
 # presuncion geotecnica sobre la que se apoya 'clase_sitio'.
 CRITERIOS_SISMICOS = ("clase_sitio", "PERFIL_SUELO_PRESUNTO", "F_pga",
-                      "factor_muro_eleccion", "k_v", "Mw_licuefaccion")
+                      "F_pga_lectura_columna_extrema", "factor_muro_eleccion",
+                      "k_v", "gamma_EQ", "Mw_licuefaccion")
 
 
 def test_la_clase_de_sitio_es_adopcion_declarada_y_no_dispensa_normativa():

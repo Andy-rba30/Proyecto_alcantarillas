@@ -883,21 +883,348 @@ CAMA_RELLENO_LATERAL = {
 SOBRECARGA_TRASDOS_H_EQ = 0.60      # m de relleno equivalente (2.1.4.3.9)
 CARGA_VIVA = "HL-93"                # (2.4.3.2.2.1)
 NQ_ZAPATA_EN_TALUD = 0.0            # (2.8.1.3.1.2c)
-F_PGA_TABLA = {                     # Tabla 2.4.3.11.2.1.2-1, PGA >= 0.50
-    "C": 1.0, "D": 1.0, "E": 0.9,
+
+# --------------------------------------------------------------------------
+# CADENA SISMICA (1/4) - Tabla de factores de sitio F_pga
+# --------------------------------------------------------------------------
+# La tabla ENTERA -- sus seis filas y sus cinco columnas -- y no las tres
+# filas que el calculo consume. Es la regla del proyecto ("la tabla se
+# transcribe COMPLETA, aunque el calculo use una parte") aplicada a la pieza
+# donde su ausencia costaba mas caro:
+#
+#   * Faltaban las filas A y B (roca dura y roca blanda). Sin ellas la
+#     clausula de roca del num. 2.8.1.1.14.2.1 -- k_h0 basado en 1.2 veces el
+#     pico del suelo para muros cimentados en Clase A o B -- NO ERA
+#     REPRESENTABLE: el codigo no tenia con que preguntar si la cimentacion
+#     cae en esas dos filas, de modo que la regla no se implementaba NI se
+#     descartaba (MAT-O4, NOR-PUE-12).
+#   * Faltaba la fila F. El repositorio afirmaba que "el Manual NO tipifica
+#     excepciones para Clase F en su Tabla 2.4.3.11.2.1.2-1". La tabla SI se
+#     pronuncia sobre la Clase F: le pone asterisco en las cinco columnas y
+#     una Nota 2 al pie que exige estudio. Eso no es un vacio que una fuente
+#     tecnica deba cubrir: es una exigencia expresa (NOR-PUE-09, NOR-MEM-03).
+#   * El rotulo de la ultima columna decia aqui "PGA >= 0.50" y la tabla dice
+#     "PGA > 0.50", ESTRICTAMENTE MAYOR. El PGA de este proyecto es
+#     exactamente 0.50: no cae en ninguna columna tabulada, y el signo mal
+#     transcrito hacia invisible el problema (NOR-PUE-11).
+#
+# El signo de la ultima columna y el asterisco de la fila F deciden dos
+# hallazgos y no se leen fiablemente por extraccion de texto: se verificaron
+# renderizando la pag. impresa 123 (PDF 124) como imagen.
+NUMERAL_F_PGA_TABLA = ("Manual de Puentes (MTC) num. 2.4.3.11.2.1.2, "
+                       "Tabla 2.4.3.11.2.1.2-1 (Tabla 3.10.3.2-1 AASHTO), "
+                       "pag. impresa 123 (PDF 124)")
+F_PGA_TABLA_TITULO = ("Tabla 2.4.3.11.2.1.2-1 Valores de Factor de Sitio, "
+                      "F_pga En Periodo-Cero en el Espectro de Aceleracion")
+# El encabezado es de DOS niveles y el superior abarca las cinco columnas de
+# la derecha. El "1" final es la llamada a la Nota 1, no un exponente.
+F_PGA_TABLA_ENCABEZADO_SUPERIOR = ("Coeficiente Aceleracion Pico del Terreno "
+                                   "(PGA)1")
+F_PGA_TABLA_COLUMNAS = ("Clase de Sitio", "PGA < 0.10", "PGA = 0.20",
+                        "PGA = 0.30", "PGA = 0.40", "PGA > 0.50")
+# El PGA de referencia de cada columna, en g, para poder interpolar como
+# manda la Nota 1. La ultima se rotula "> 0.50" y su punto de referencia es
+# 0.50: es el valor a partir del cual la fuente deja de variar el factor. QUE
+# HACER CON UN PGA DE EXACTAMENTE 0.50 -- leer esa columna o interpolar
+# contra la anterior -- la tabla no lo resuelve, y por eso la lectura se
+# declara en el criterio [A] 'F_pga' y no se decide aqui.
+F_PGA_TABLA_PGA_COLUMNAS = (0.10, 0.20, 0.30, 0.40, 0.50)
+# Marca de la celda que la fuente deja sin factor. No es un cero ni un
+# olvido: es el asterisco impreso, que remite a la Nota 2. Mismo papel que
+# GAMMA_P_NO_APLICA en la Tabla 2.4.5.3.1-2.
+F_PGA_EXIGE_ESTUDIO_DE_SITIO = "*"
+F_PGA_TABLA = {
+    #          PGA<0.10  PGA=0.20  PGA=0.30  PGA=0.40  PGA>0.50
+    "A": (0.8, 0.8, 0.8, 0.8, 0.8),
+    "B": (1.0, 1.0, 1.0, 1.0, 1.0),
+    "C": (1.2, 1.2, 1.1, 1.0, 1.0),
+    "D": (1.6, 1.4, 1.2, 1.1, 1.0),
+    "E": (2.5, 1.7, 1.2, 0.9, 0.9),
+    "F": (F_PGA_EXIGE_ESTUDIO_DE_SITIO,) * 5,
 }
-# Factor de reduccion del coeficiente sismico por desplazamiento admisible del
-# muro (num. 2.8.1.1.14.2). Las DOS filas son [N]: el numeral las fija. Cual de
-# las dos aplica a ESTE cabezal no lo dice el numeral -- lo decide como se
-# disena el cabezal -- y por eso la eleccion es el criterio [A]
-# 'factor_muro_eleccion', el mismo reparto que ya tenian F_PGA_TABLA y 'F_pga'.
-FACTOR_MURO_TABLA = {
-    "rigido": 1.0,        # sin reduccion: el muro no admite desplazamiento
-    "desplazable": 0.5,   # k_h = 0.5*k_h0, muros que admiten 25-50 mm
-}
-NUMERAL_FACTOR_MURO = "2.8.1.1.14.2"
-# PGA -> datos_sitio (dato de sitio [S]); F_pga elegido, factor de muro elegido
-# y k_v -> criterios_adoptados
+F_PGA_TABLA_NOTAS = (
+    "1. Usar linea recta de interpolacion para valores intermedios de PGA.",
+    "2. Llevar a cabo investigaciones geotecnicas especificas del sitio y "
+    "analisis de respuesta dinamica de sitio, para todos los sitios en sitio "
+    "clase F",
+)
+# La fila que la Nota 2 marca. El Manual la imprime como "F2" -- el 2 es la
+# llamada a la nota -- con asterisco en las cinco celdas.
+F_PGA_CLASE_SIN_FACTOR = "F"
+# Las dos filas que la clausula de roca del num. 2.8.1.1.14.2.1 nombra:
+# "Clase A o B (roca dura o blanda)". Se declaran junto a la tabla que las
+# define, y no dentro de M9, para que la clausula sea representable.
+F_PGA_CLASES_EN_ROCA = ("A", "B")
+# Como se leen los DOS rotulos extremos, que son desigualdades estrictas
+# ("PGA < 0.10" y "PGA > 0.50"). Son NOMBRES de lectura, no valores: cual de
+# los dos aplica lo declara el criterio [A] 'F_pga_lectura_columna_extrema',
+# porque la tabla no lo resuelve y el PGA de este proyecto cae justo sobre
+# uno de ellos (NOR-PUE-11).
+LECTURA_COLUMNA_EXTREMA_INCLUSIVE = "limite_inclusive"
+LECTURA_COLUMNA_EXTREMA_ESTRICTA = "limite_estricto"
+LECTURAS_COLUMNA_EXTREMA = (LECTURA_COLUMNA_EXTREMA_INCLUSIVE,
+                            LECTURA_COLUMNA_EXTREMA_ESTRICTA)
+
+# --------------------------------------------------------------------------
+# CADENA SISMICA (2/4) - k_h0, k_v y la reduccion por desplazamiento del muro
+# --------------------------------------------------------------------------
+# TRES NUMERALES DISTINTOS, y el repositorio los citaba todos como
+# "2.8.1.1.14.2". Ese numeral existe y su titulo corresponde al tema, pero es
+# un ENCABEZADO SIN CUERPO: entre el y el encabezado siguiente no hay una
+# sola linea de texto (verificado como imagen, pag. impresa 254 / PDF 255).
+# Citarlo manda al revisor a un renglon que no dice nada.
+NUMERAL_CADENA_SISMICA = ("Manual de Puentes (MTC) num. 2.8.1.1.14 'Diseno "
+                          "Sismico de Estribos y Muros de Contencion "
+                          "Convencionales' (11.6.5 AASHTO), pag. impresa 252 "
+                          "(PDF 253)")
+NUMERAL_K_H0 = ("2.8.1.1.14.2.1 'Caracterizacion de la Aceleracion en la Base "
+                "del Muro de Contencion' (11.6.5.2.1 AASHTO), pag. impresa "
+                "254 (PDF 255)")
+NUMERAL_FACTOR_MURO = ("2.8.1.1.14.2.2 'Estimacion de la Aceleracion que "
+                       "Actua Sobre la Masa del Muro' (11.6.5.2.2 AASHTO), "
+                       "pag. impresa 255 (PDF 256)")
+NUMERAL_P_IR = ("2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado "
+                "'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254)")
+
+K_H0_TEXTO = ("kh0=FpgaPGA = As donde kh0 es el coeficiente de aceleracion "
+              "sismico horizontal asumiendo que el desplazamiento del muro "
+              "sea cero")
+
+# Clausula de roca del mismo numeral. El 1.2 es [N] y sale de la PROSA; el
+# parentesis que la acompana esta mal impreso y se transcribe entero para que
+# nadie lo aplique (ver K_H0_ROCA_ERRATA).
+K_H0_FACTOR_ROCA_A_B = 1.2
+K_H0_ROCA_TEXTO = ("Para muros cimentados sobre Sitio con suelos Clase A o B "
+                   "(roca dura o blanda), k h0 estara basado en 1.2 veces el "
+                   "coeficiente de aceleracion pico del suelo (es decir, "
+                   "1.2 kh0=FpgaPGA).")
+K_H0_ROCA_ERRATA = (
+    "ERRATA DE IMPRENTA DEL MANUAL, verificada como imagen en la pag. "
+    "impresa 254 (PDF 255): el parentesis imprime '1.2 kh0=FpgaPGA', con el "
+    "1.2 del lado izquierdo. Leido al pie de la letra daria "
+    "k_h0 = F_pga*PGA/1.2, una REDUCCION del 17 %, justo lo contrario de lo "
+    "que la prosa de la misma frase acaba de decir. AASHTO LRFD 9a ed., "
+    "Art. 11.6.5.2.1 'Characterization of Acceleration at Wall Base', pag. "
+    "impresa 11-27 (PDF 1496), lo escribe sin ambiguedad: "
+    "'k_h0 shall be based on 1.2 times the site-adjusted peak ground "
+    "acceleration coefficient (i.e., k_h0 = 1.2 F_pga PGA)'. GANA LA PROSA "
+    "DEL MANUAL, coincidente con AASHTO. Es la segunda errata de imprenta de "
+    "esta misma cadena sismica; la otra es K_AE_ERRATA_MANUAL")
+
+# k_v: el Manual lo FIJA, no lo deja a eleccion. La afirmacion contraria
+# ('practica corriente; no fijado por el Manual de Puentes') vivia en el
+# criterio 'k_v' y era falsa (NOR-PUE-08, MAT-O11, MAT-X4).
+K_V_PRESCRITO = 0.0
+# La declaracion con la que el proyecto dice que rige el cero prescrito, es
+# decir, que ninguno de los dos casos que el numeral reserva se da en este
+# cabezal. Es un NOMBRE, no un valor: el valor es K_V_PRESCRITO y es [N].
+K_V_DECLARACION_PRESCRITO = "prescrito_sin_caso_reservado"
+K_V_TEXTO = ("El coeficiente de aceleracion sismica vertical, kv, se asumira "
+             "cero con el proposito de calcular las presiones laterales del "
+             "terreno, a no ser que el muro este significativamente afectado "
+             "por efectos de alguna falla cercana, o si son relativamente "
+             "altas las aceleraciones verticales que probablemente esten "
+             "actuando simultaneamente con la aceleracion horizontal.")
+# El "a no ser que" NO trae umbral en el corpus peruano: el Manual no da
+# distancia a la falla, no define "cercana" y no cuantifica "relativamente
+# altas"; y para ese caso tampoco escribe un k_v alternativo. Lo que el
+# proyecto declara, entonces, no es un numero sino si el caso reservado se da
+# (criterio 'k_v'). Si se diera, ahi hay un vacio real y el calculo se
+# detiene en vez de inventar un valor.
+K_V_CASO_RESERVADO = (
+    "El num. 2.8.1.1.14.2.1 reserva dos casos -- muro significativamente "
+    "afectado por efectos de alguna falla cercana, y aceleraciones "
+    "verticales relativamente altas simultaneas con la horizontal -- y no "
+    "cuantifica ninguno: no hay distancia a la falla, no hay definicion de "
+    "'cercana' y no hay umbral de aceleracion vertical. El num. "
+    "2.8.1.1.14.3 (pag. impresa 255) reitera el cero remitiendo a este "
+    "numeral. AASHTO SI cuantifica el primer caso, pero en otro articulo y "
+    "sobre un mapa que no cubre el Peru: Art. 3.10.2.2, pag. impresa 3-100 "
+    "(PDF 154), 'For sites located within 6 miles of an active surface or a "
+    "shallow fault, as depicted in the USGS Active Fault Map, studies shall "
+    "be considered to quantify near-fault effects'. El Manual, que es la "
+    "norma aplicable, no traslada ni el umbral ni el mapa")
+
+# Reduccion por desplazamiento admisible del muro. UN SOLO VALOR NORMATIVO,
+# 0.5, y ademas PERMISIVO ('puede ser reducido'). Aqui vivia
+# FACTOR_MURO_TABLA = {rigido: 1.0, desplazable: 0.5} con el argumento de que
+# "las DOS filas son [N]: el numeral las fija". El numeral no fija dos filas
+# ni presenta tabla alguna: en las pags. impresas 252-257 del Manual no hay
+# una sola tabla (NOR-PUE-07). El 1.0 no es una fila tabulada, es la
+# AUSENCIA de reduccion -- que es la definicion misma de k_h0 en K_H0_TEXTO,
+# 'asumiendo que el desplazamiento del muro sea cero'.
+REDUCCION_KH_POR_DESPLAZAMIENTO = 0.5
+REDUCCION_KH_TEXTO = ("Donde el muro es capaz de desplazamientos de 1.0 a "
+                      "2.0 in o mas durante el evento sismico de diseno, kh "
+                      "puede ser reducido a 0.5kh0 sin llevar a cabo un "
+                      "analisis de la deformacion mediante el metodo Newmark "
+                      "o una version simplificada de el.")
+# Desplazamiento que HABILITA la reduccion, en m (SI, como todo el codigo).
+# El Manual lo escribe en pulgadas: "de 1.0 a 2.0 in O MAS". El habilitante
+# es el extremo INFERIOR, 1.0 in; el 2.0 in y el "o mas" dicen que el rango
+# sigue abierto por arriba. El comentario que vivia aqui decia "muros que
+# admiten 25-50 mm", que redondea la conversion y ademas PIERDE el "o mas":
+# un muro con 60 mm de desplazamiento admisible quedaba fuera del rango
+# escrito y si califica segun el Manual (NOR-PUE-07).
+DESPLAZAMIENTO_HABILITA_REDUCCION_M = 0.0254     # 1.0 in exacta
+DESPLAZAMIENTO_REFERENCIA_SUPERIOR_M = 0.0508    # 2.0 in exacta; no es tope
+# La reduccion no depende solo de la geometria. AASHTO, del que el numeral es
+# traduccion, acumula TRES condiciones y una de ellas no es tecnica.
+REDUCCION_KH_CONDICIONES = (
+    "el muro es libre de moverse lateralmente bajo la carga sismica",
+    "el movimiento lateral durante el evento de diseno es aceptable para el "
+    "propietario ('acceptable to the Owner', AASHTO 11.6.5.2.2)",
+    "el muro es capaz de desplazamientos de 1.0 a 2.0 in o mas",
+)
+# Las dos declaraciones admisibles del criterio 'factor_muro_eleccion'. Son
+# NOMBRES, no factores: el unico factor normativo de este numeral es
+# REDUCCION_KH_POR_DESPLAZAMIENTO.
+FACTOR_MURO_SIN_REDUCCION = "sin_reduccion"
+FACTOR_MURO_CON_REDUCCION = "reduccion_por_desplazamiento"
+FACTOR_MURO_DECLARACIONES = (FACTOR_MURO_SIN_REDUCCION,
+                             FACTOR_MURO_CON_REDUCCION)
+
+# --------------------------------------------------------------------------
+# CADENA SISMICA (3/4) - inercia del muro y combinacion 100/50 - 50/100
+# --------------------------------------------------------------------------
+# El termino que faltaba ENTERO en el repositorio (MAT-D6, MAT-X7): la cadena
+# de la hoja de ruta termina en k_h y K_AE, y el ensamble de empujes sumaba
+# EH + LS + WA + el incremento de Mononobe-Okabe sin ninguna linea de inercia
+# del muro. La MISMA seccion de la que la hoja toma k_h0 y la reduccion por
+# desplazamiento exige combinar las dos.
+P_IR_TEXTO = ("La fuerza lateral total debido al sismo sera aplicada al muro "
+              "y la carga de presion del terreno, Pseis sera determinado "
+              "teniendo en cuenta el efecto combinado de PAE y PIR, en el "
+              "cual: PIR = kh (Ww + Ws)")
+# Las definiciones son mas ESTRECHAS de lo que "peso del muro" sugiere, y en
+# eso se juega el numero: W_s no es el relleno del trasdos entero.
+P_IR_DEFINICIONES = (
+    "Ww = peso de la pared.",
+    "Ws = peso del suelo que esta inmediatamente encima del muro, incluyendo "
+    "el talon del muro.",
+)
+P_SEIS_TEXTO = ("Para investigar la estabilidad de los muros de contencion, "
+                "considerando que los efectos de la combinacion de PAE y "
+                "PIR, no son simultaneos, la estabilidad se estudiara de la "
+                "siguiente manera: Combinar el 100% de la presion sismica "
+                "del terreno PAE con 50% de la fuerza de inercia del muro "
+                "PIR, y Combinar el 50% de PAE, pero que no sea menor que la "
+                "presion estatica activa del terreno (F = 1/2 gf h2 k), con "
+                "el 100% de la fuerza de inercia del muro PIR. El resultado "
+                "mas conservador de estos dos analisis se usara para el "
+                "diseno del muro de contencion.")
+# Las dos combinaciones, como dato: (nombre, fraccion de P_AE, fraccion de
+# P_IR). El piso "no menor que la presion estatica activa" viaja aparte, en
+# P_SEIS_PISO_ESTATICO, porque es una CONDICION y no un factor.
+P_SEIS_COMBINACIONES = (
+    ("100% P_AE + 50% P_IR", 1.00, 0.50),
+    ("50% P_AE + 100% P_IR", 0.50, 1.00),
+)
+P_SEIS_PISO_ESTATICO = "50% P_AE + 100% P_IR"
+P_SEIS_REGLA = "El resultado mas conservador de estos dos analisis"
+# Que NO entra en P_AE, segun el Comentario del mismo articulo. Importa para
+# no contar dos veces la sobrecarga de trasdos: su empuje y su propia inercia
+# k_h*W_sobrecarga son terminos aparte.
+P_AE_EXCLUYE_SOBRECARGA = (
+    "La P_AE no incluye ninguna fuerza adicional lateral causada por cargas "
+    "de sobrecarga permanente localizadas encima del muro (ejemplo. La "
+    "fuerza estatica F_p y la fuerza dinamica k_h*W_surcharge ...)")
+# Y que SI incluye, que es la otra mitad de la misma advertencia: AASHTO
+# C11.6.5.1, pag. impresa 11-26 (PDF 1495).
+P_AE_INCLUYE_ESTATICO = (
+    "Since P_AE is the combined lateral earth pressure force resulting from "
+    "static earth pressure plus dynamic effects, the static earth pressure "
+    "... K_a, should not be added to the seismic earth pressure")
+
+# --------------------------------------------------------------------------
+# CADENA SISMICA (4/4) - excentricidad de la resultante en la base
+# --------------------------------------------------------------------------
+# El unico eslabon de la cadena de estabilidad que no tenia ni procedimiento
+# ni vacio declarado (MAT-O16). El limite NO es "el tercio central" a secas:
+# depende de gamma_EQ, el factor de carga viva de Evento Extremo I, que este
+# expediente todavia no declara -- y por eso el criterio 'gamma_EQ' existe.
+NUMERAL_EXCENTRICIDAD_SISMICA = NUMERAL_P_IR
+EXCENTRICIDAD_SISMICA_TEXTO = (
+    "Para la evaluacion de la excentricidad sismica de los muros que "
+    "cimentan en suelo y roca, la ubicacion de la resultante de las fuerzas "
+    "de reaccion estara dentro del tercio central de la base para gEQ = 0.0 "
+    "y dentro de ocho decimas centrales para gEQ = 1.0. Para valores de gEQ "
+    "entre 0.0 y 1.0 la ubicacion de la resultante se obtendra por "
+    "interpolacion lineal entre los valores dados en este articulo.")
+# Los dos extremos que el numeral tabula, como excentricidad admisible en
+# FRACCION de B: tercio central -> e <= B/6; ocho decimas centrales ->
+# e <= 0.4*B. Entre ellos, interpolacion lineal sobre gamma_EQ.
+EXCENTRICIDAD_ADMISIBLE_FRACCION_B = {0.0: 1.0 / 6.0, 1.0: 0.4}
+
+# --------------------------------------------------------------------------
+# CADENA SISMICA - las dos erratas de imprenta del Manual
+# --------------------------------------------------------------------------
+# El proyecto sigue a AASHTO en los dos puntos y NO al literal del Manual.
+# Esta declarado aqui, y no solo en un docstring de M9, porque es lo que
+# impide que un revisor "corrija" el codigo contra la letra impresa y rompa
+# la formula (MAT-O2, MAT-X2). La segunda errata es K_H0_ROCA_ERRATA.
+NUMERAL_K_AE_MANUAL = ("Manual de Puentes (MTC), Apendice A11 'Diseno "
+                       "Sismico de Estructuras de Contencion', num. A.11.3.1 "
+                       "'Metodo de Mononobe -Okabe', ec. A.11.3.1-2, pag. "
+                       "impresa 586 (PDF 587)")
+NUMERAL_K_AE_AASHTO = ("AASHTO LRFD 9a ed. (2020), Appendix A11, Art. "
+                       "A11.3.1 'Mononobe-Okabe Method', ec. A11.3.1-1, pag. "
+                       "impresa 11-145 (PDF 1614)")
+K_AE_ERRATA_MANUAL = (
+    "ERRATA DE IMPRENTA DEL MANUAL. El Apendice A11 imprime el denominador "
+    "de K_AE con '[1 - raiz(...)]', signo MENOS, verificado renderizando la "
+    "pag. impresa 586 (PDF 587) a 6x: el trazo es horizontal unico, sin "
+    "trazo vertical. AASHTO, del que el propio Manual declara transcribirlo, "
+    "imprime '[1 + raiz(...)]' (pag. impresa 11-145). GANA AASHTO, y no por "
+    "preferencia de fuente: con el signo menos K_AE DIVERGE cuando el "
+    "radicando tiende a 1, y el caso limite k_h = k_v = 0 deja de devolver "
+    "el Ka de Coulomb -- la formula se rompe donde el propio Manual la "
+    "manda coincidir. EL CODIGO SIGUE A AASHTO. Quien 'corrija' M9 contra la "
+    "letra impresa del Manual rompe la formula")
+K_AE_ERRATA_ANOMALIA_ADICIONAL = (
+    "En la misma pagina el texto llama a la fuerza 'E_AE' y la formula "
+    "imprime 'E_EA', con los subindices transpuestos: otro descuido de "
+    "composicion del mismo apendice")
+
+# El agua bajo el nivel freatico: hipotesis del proyecto y la exigencia de la
+# que se aparta. Se declara como dato y no como comentario porque la memoria
+# tiene que imprimirla (MAT-O3, MAT-X3).
+NUMERAL_AGUA_TRASDOS_AASHTO = ("AASHTO LRFD 9a ed. (2020), Art. 3.11.3 "
+                               "'Presence of Water', pag. impresa 3-118 "
+                               "(PDF 172)")
+AGUA_TRASDOS_TEXTO_AASHTO = (
+    "Submerged unit weights of the soil shall be used to determine the "
+    "lateral earth pressure below the groundwater table.")
+HIPOTESIS_EMPUJE_BAJO_NF = (
+    "El empuje activo de este proyecto se calcula con el peso especifico "
+    "TOTAL del relleno en toda la altura y se le suma la hidrostatica "
+    "completa bajo el NF. AASHTO 3.11.3 exige peso especifico SUMERGIDO bajo "
+    "el nivel freatico, de modo que el agua de poros se cuenta dos veces en "
+    "la zona sumergida. La desviacion es CONSERVADORA y esta acotada: con "
+    "gamma_sat = 20 kN/m3, Ka = 1/3 y 0.60 m sumergidos, la presion en la "
+    "base es 9.9 kPa contra los 7.9 kPa de AASHTO, un +25 % local. Se "
+    "mantiene, y se declara, porque corregirla exige un peso especifico "
+    "sumergido del relleno que este expediente todavia no tiene: aplicar "
+    "AASHTO con el unico gamma declarado seria ALIVIAR el empuje sin dato "
+    "que lo sostenga. La hoja de ruta no dice nada del NF en el empuje: solo "
+    "que 'empuje hidrostatico y subpresion, con NF a 1.4 m, no son "
+    "opcionales'")
+
+# QUE DE ESTE BLOQUE TIENE CONSUMIDOR Y QUE NO, declarado en vez de deducirse,
+# como ya se hacia con el bloque de gamma_p. Lo consume el calculo (M9):
+# F_PGA_TABLA, F_PGA_TABLA_PGA_COLUMNAS, F_PGA_EXIGE_ESTUDIO_DE_SITIO,
+# F_PGA_CLASES_EN_ROCA, K_H0_FACTOR_ROCA_A_B, K_V_PRESCRITO,
+# REDUCCION_KH_POR_DESPLAZAMIENTO, FACTOR_MURO_DECLARACIONES,
+# P_SEIS_COMBINACIONES, P_SEIS_PISO_ESTATICO,
+# EXCENTRICIDAD_ADMISIBLE_FRACCION_B y los NUMERAL_*. Lo demas -- los
+# titulos, los encabezados, las notas al pie, los textos literales y las dos
+# declaraciones de errata -- NO lo invoca ninguna formula: es la parte de la
+# transcripcion que existe para que la cita sea verificable contra el PDF y
+# para que la memoria la imprima. No es codigo muerto, es la cita.
+#
+# PGA -> datos_sitio (dato de sitio [S]); la eleccion de filas de F_pga, la
+# declaracion de reduccion del muro, el caso reservado de k_v y gamma_EQ ->
+# criterios_adoptados
 
 # Combinaciones de carga: Manual de Puentes num. 2.4.5.3 "Factores de Carga y
 # Combinaciones" (= 3.4 AASHTO), subnumeral 2.4.5.3.1 (= 3.4.1 AASHTO),
@@ -1276,7 +1603,10 @@ GAMMA_EQ_TEXTO = (
     "PROYECTO ('project-specific basis'), no 'el propietario'")
 NUMERAL_SOBRECARGA_TRASDOS = "2.1.4.3.9, pag. 91"
 NUMERAL_ZAPATA_EN_TALUD = "2.8.1.3.1.2c, pags. 272-273"
-NUMERAL_K_H0 = "2.8.1.1.14.2"
+# NUMERAL_K_H0 se declaraba aqui por segunda vez, como "2.8.1.1.14.2" a secas,
+# y esta segunda asignacion pisaba a la primera. Vive ahora una sola vez, en
+# el bloque de la cadena sismica, con el subnumeral que de verdad escribe la
+# igualdad (2.8.1.1.14.2.1) y su pagina.
 
 # ================= E.050 (RM 406-2018-VIVIENDA) ============================
 FS = {
@@ -1356,8 +1686,104 @@ NUMERAL_CICLOPEO = "E.060 Art. 22.10, pags. 194-195"
 #                                ([S] pendiente de SPT, junto a 'clase_sitio')
 #
 # El cambio es de clasificacion, no de uso: los tres seguian siendo referencia
-# que no gobierna el cabezal (Sec. 0.4 descarta el sismo de 475 anios de E.030
-# frente al PGA de Tr = 1000 anios del Manual de Puentes) y lo siguen siendo.
+# que no gobierna el cabezal y lo siguen siendo. LO QUE CAMBIA ES POR QUE.
+# El descarte se justificaba SOLO por periodo de retorno -- Sec. 0.4 prefiere
+# el PGA de Tr = 1000 anios del Manual de Puentes al sismo de 475 anios de
+# E.030 --, que es la via discutible: invita a preguntar por que no usar las
+# dos. El argumento de AMBITO es anterior y cierra la pregunta, y el
+# expediente no lo invocaba en ningun sitio (NOR-E030-03). Ver
+# E030_AMBITO_TEXTO.
+#
+# Lo que sigue NO es un valor de calculo: son textos literales de E.030 que el
+# expediente tiene que poder citar. Dos de ellos existen porque el
+# repositorio los estaba diciendo mal.
+
+NUMERAL_E030_AMBITO = ("E.030 (RM 183-2026-VIVIENDA), Art. 4 'Ambito de "
+                       "aplicacion', pag. impresa 7 (PDF 7)")
+E030_AMBITO_TEXTO = (
+    "La presente Norma Tecnica es de cumplimiento obligatorio a nivel "
+    "nacional y se aplica a: a) El diseno de edificaciones nuevas. b) El "
+    "reforzamiento de edificaciones existentes y la reparacion de "
+    "estructuras que resulten danadas por la accion de los sismos "
+    "(Capitulo VIII).")
+# COMO SE CITA ESTE ARTICULO SIN ESTIRARLO. El Art. 4 acota el ambito POR LO
+# AFIRMATIVO: se aplica a edificaciones. No nombra puentes, obras de arte
+# vial ni muros de contencion -- ni para incluirlos ni para excluirlos --, de
+# modo que decir que "E.030 excluye expresamente los puentes" seria hacerle
+# decir lo que no dice. Lo defendible es lo que el articulo si escribe: el
+# ambito son las edificaciones, y un cabezal de alcantarilla de una carretera
+# no lo es. Concuerdan el Art. 1 ('condiciones minimas para el diseno
+# sismorresistente de las edificaciones', pag. impresa 6) y el Art. 61 'Otras
+# estructuras' (pag. impresa 26), que alcanza a letreros, chimeneas, torres y
+# antenas "instaladas en cualquier nivel del edificio" y por tanto tampoco
+# abre el ambito a obras viales.
+E030_AMBITO_LECTURA = (
+    "El Art. 4 acota el ambito de E.030 a las edificaciones nuevas y al "
+    "reforzamiento o reparacion de edificaciones existentes. No contiene "
+    "exclusion expresa de puentes ni de obras de arte vial: no los nombra. "
+    "El descarte de E.030 para el cabezal se sostiene en que un cabezal de "
+    "alcantarilla no es una edificacion, y ese argumento es anterior e "
+    "independiente del periodo de retorno")
+
+NUMERAL_E030_Z = ("E.030 (RM 183-2026-VIVIENDA), Art. 11.1 y Tabla N 1, "
+                  "pag. impresa 9 (PDF 9)")
+E030_Z_TEXTO = (
+    "A cada zona se asigna un factor Z segun se indica en la Tabla N 1 de la "
+    "presente Norma Tecnica. Este factor representa la aceleracion maxima "
+    "horizontal en suelo rigido con una probabilidad de 10% de ser excedida "
+    "en 50 anios.")
+# El Art. 11 NO escribe "475 anios": escribe la probabilidad. El Tr = 475 es
+# una derivacion aritmetica del proyectista, Tr = -50/ln(0.90) = 474.6, y
+# atribuirsela al articulo es ponerle en la boca una cifra que no imprime
+# (NOR-E030-01). La cifra SI aparece literal en E.030, pero en otro sitio y
+# con otro proposito: el Anexo III, pag. impresa 67, sobre el contenido
+# minimo de los estudios de microzonificacion sismica, que pide mapas "a
+# nivel de roca o suelo firme (Vs30 >= 800 m/s) y periodo de retorno de 475
+# anios". Es la unica pagina de la norma donde "475" aparece.
+E030_TR_DERIVACION = (
+    "Tr = 475 anios NO lo escribe el Art. 11: es la derivacion de la "
+    "probabilidad que si escribe, Tr = -50/ln(0.90) = 474.6 ~ 475. La cifra "
+    "aparece literal en el Anexo III de E.030 (pag. impresa 67), en el "
+    "contenido minimo de los estudios de microzonificacion sismica, no en la "
+    "definicion de Z")
+
+NUMERAL_E030_S5 = ("E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla N 2, fila "
+                   "S5, pag. impresa 11 (PDF 11)")
+# La ultima vineta de la celda S5, que el repositorio no recogia. Es la
+# afirmacion normativa mas fuerte que el expediente hace sobre este sitio, y
+# se declaraba como "referencia muerta" (NOR-E030-02).
+E030_S5_TEXTO = (
+    "Estos casos no estan cubiertos en la clasificacion establecida en la "
+    "Tabla N 2 de la presente Norma Tecnica. Se prohibe las construcciones "
+    "apoyadas sobre estos perfiles, salvo que, se efectue un estudio "
+    "especifico para el sitio, en el cual se debe considerar los "
+    "mejoramientos en el estrato del perfil.")
+E030_S5_LECTURA = (
+    "Es una prohibicion CONDICIONADA, no absoluta: la misma oracion la "
+    "levanta con estudio especifico de sitio y mejoramiento del estrato. "
+    "Leerla como bloqueo duro va mas alla de la fuente; leerla como "
+    "referencia muerta se queda muy por debajo. La fila S5 se llama 'Suelos "
+    "excepcionales' y su primera vineta es 'Suelos potencialmente licuables', "
+    "que es la razon por la que este expediente se atribuye esa letra. La "
+    "Tabla N 3 del num. 14.7 -- la que el num. 14.8 obliga a usar para "
+    "clasificar -- NO tiene fila S5, solo S0 a S4, coherente con que 'estos "
+    "casos no estan cubiertos'")
+# DONDE DISCREPAN LOS DOS ESQUEMAS, que es lo que el expediente cruzaba sin
+# declararlo: E.030 SI mete los suelos potencialmente licuables en su
+# categoria excepcional (S5); AASHTO y el Manual de Puentes NO los nombran en
+# su Clase de Sitio F, y tratan la licuefaccion por otra via (AASHTO LRFD 9a
+# ed., Art. 10.5.4.2 'Liquefaction Design Requirements'). El salto
+# "licuable -> Clase F" no esta escrito en ninguno de los dos documentos que
+# el criterio 'clase_sitio' invoca (NOR-AAS-02). Resolverlo no es materia de
+# este archivo: es la premisa que el expediente tiene abierta.
+E030_S5_VS_CLASE_F = (
+    "E.030 clasifica los suelos potencialmente licuables en su perfil S5 "
+    "'Suelos excepcionales' (Art. 14.6, Tabla N 2). AASHTO LRFD 9a ed. y el "
+    "Manual de Puentes NO los nombran en su Clase de Sitio F y tratan la "
+    "licuefaccion por via distinta de la clase de sitio (AASHTO Art. "
+    "10.5.4.2). Los dos esquemas discrepan justamente en el rasgo que motiva "
+    "la clasificacion de este sitio, y el salto de uno al otro no lo escribe "
+    "ninguno de los dos: es premisa abierta del expediente, no cita")
 
 
 # ===========================================================================

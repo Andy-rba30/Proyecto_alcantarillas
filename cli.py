@@ -193,12 +193,15 @@ CLAVES_EXTERNAS: Tuple[str, ...] = ("luz_m", "TW_m", "longitud_m", "Q_m3s",
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
 NOTA_ESTABILIDAD_CABEZAL = (
-    "Las verificaciones E1-E5 de Sec. 9.3 no las ensambla esta CLI: "
+    "Las verificaciones E1-E6 de Fase 9 no las ensambla esta CLI: "
     "M9.verificar_estabilidad recibe las demandas YA calculadas (capacidad "
     "portante, momentos y fuerzas) y elegir el plano de empuje o los factores "
     "de combinacion aqui seria decidir por el proyectista. La CLI corre las "
     "piezas de Fase 9 que se sostienen solas: cadena sismica (9.2), K_AE, "
-    "recubrimientos (9.4) y cuantias minimas de referencia."
+    "recubrimientos (9.4) y cuantias minimas de referencia. Que funciones de "
+    "M9 quedan sin llamador de produccion, y por que cada una, se declara en "
+    "UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y esta CLI lo lee de "
+    "alli en vez de repetirlo."
 )
 
 # Presentacion. Ninguno entra en un calculo: mueven columnas de texto.
