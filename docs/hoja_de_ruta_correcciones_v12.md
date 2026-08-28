@@ -556,11 +556,11 @@ y en suscripción no cuesta extra.
 |---|---|---|---|---|---|---|
 | **S0** | Preparación (§8) | — | — | Sonnet 5 | medium | no |
 | **S1** | Reconciliar línea base | — | 0 | Sonnet 5 | high | no |
-| **S2–S10** | Corrección de fondo | C08, C09, C01, C05, C06, C13, C03, C04, C07 | 20 | **Opus 5** | **high** | **sí** |
+| **S2–S10** | Corrección de fondo | C08, C09, C01, C05, C06, C13, C03, C04, C07 | 16 | **Opus 5** | **high** | **sí** |
 | **S11** | Diseño del registro normativo | — | — | **Fable 5** | high | sí |
 | **S12** | Citas y transcripciones | C11, C12, C02 | 62 | Opus 5 | **ultracode** | no |
 | **S13** | Premisa Clase de Sitio F | (C04) | — | **Fable 5** | high | sí |
-| **S14** | Vacíos y cableado | C01, C04, C06, C08, C11 | 36 | Opus 5 | high | sí |
+| **S14** | Vacíos y cableado | C01, C04, C06, C08, C11 | 40 | Opus 5 | high | sí |
 | **S15** | Modo de resolución de variables | — | — | Opus 5 | high | sí |
 | **S16** | Tests y guardianes | C09, C10 | 33 | Opus 5 | **ultracode** | no |
 | **S17** | Ventana emergente | (C14) | — | Opus 5 | high | sí |
@@ -573,6 +573,15 @@ y en suscripción no cuesta extra.
 conflictos acoplados; una sesión por cluster mantiene la ventana de contexto limpia y el
 commit atómico. Orden: **C08** (el bloqueante) → **C09** (los dorados de CP-1, porque
 validan todo lo demás) → C01 → C05 → C06 → C13 → C03 → C04 → C07.
+
+**Por qué S2–S10 dice 16 y no 20.** La columna `Hallazgos` de esta tabla es el conteo de
+filas de la hoja `Hallazgos` por fase, no el de filas que la sesión tocó. Las nueve
+sesiones sí trabajaron veinte: cuatro —`MAT-D2`, `SIS-A-02` (S6) y `SIS-B-01`, `SIS-D-01`
+(S9)— quedaron en «Cerrado parcial» porque los conflictos #1 y #8 prohíben cablearlos
+antes de cerrar su premisa, y lo que les queda abierto es el cableado, que es S14. Por eso
+se reasignaron a F3 y por eso S14 pasa de 36 a 40: son las mismas cuatro filas, contadas
+donde se van a cerrar. Estaban en F1 con F1 ya consumida, o sea que ninguna sesión que
+filtre por fase las habría vuelto a mirar.
 
 ---
 
@@ -953,12 +962,12 @@ antes haría que la memoria declare formalmente algo que la fuente no sostiene.
 
 ### S14 · Vacíos y cableado
 
-**Opus 5 · `high` · plan mode SÍ.** 36 hallazgos con juicio de por medio (decidir qué es
+**Opus 5 · `high` · plan mode SÍ.** 40 hallazgos con juicio de por medio (decidir qué es
 vacío real y qué es vacío inventado). Ultracode repartiría esa decisión y perderías
 coherencia.
 
 ```
-Clusters C01, C04, C06, C08, C11. 36 hallazgos.
+Clusters C01, C04, C06, C08, C11. 40 hallazgos.
 
 Con las citas ya firmes (S12) se puede decidir qué es vacío real y qué es vacío
 inventado. Esa es toda la sesión.
