@@ -83,6 +83,11 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import criterios_adoptados as ca
 import datos_sitio as ds
+# Los umbrales normativos con su CARACTER (recomendacion / exigencia) se leen
+# de su transcripcion, no se reescriben aqui: la memoria y el codigo tienen
+# que citar el mismo objeto o divergen, que es literalmente NOR-MEM-01.
+from constantes_normativas import (TABLA_10_INTERPRETACION_PROYECTO,
+                                   UMBRALES_DE_VERIFICACION)
 # La clave del criterio que fija la cota de fondo de entrada se importa de su
 # modulo, no se reescribe aqui: si se renombrara, una copia literal en el
 # reporte apuntaria a un criterio inexistente sin que nada avisara. Es el
@@ -202,7 +207,7 @@ MARCADORES: Tuple[str, ...] = (
     "estado_expediente", "resumen_expediente",
     "memorias_punto", "filas_resumen",
     "bloque_datos_sitio", "bloque_criterios", "bloque_pendientes",
-    "bloque_alcance", "bloque_acotaciones",
+    "bloque_alcance", "bloque_acotaciones", "bloque_umbrales",
 )
 
 
@@ -660,7 +665,10 @@ def _tabla_clasificacion(informe: Any) -> str:
                     f"{_esc(tr.fundamento)}")
     else:
         categoria = "" if tr.categoria is None else f" ({_esc(tr.categoria.value)})"
-        texto_tr = (f"<b>{tr.anios} años</b>{categoria}, num. "
+        # Sin anteponer "num.": `NUMERAL_TR` dejo de ser un numeral desnudo
+        # al cerrarse NOR-HID-08 y ya trae el suyo dentro, de modo que el
+        # prefijo imprimia "num. MC-HHD (...), num. 3.6".
+        texto_tr = (f"<b>{tr.anios} años</b>{categoria} &mdash; "
                     f"{_esc(tr.numeral)}. {_esc(tr.fundamento)}")
 
     filas = [
@@ -723,7 +731,9 @@ def _tabla_diseno(informe: Any) -> str:
                    f"{_esc(material.seccion_eg2013)}")]),
         _fila([_td("<b>Rugosidad (regla de doble n)</b>"),
                _td(f"n para capacidad y tirante = {_num(material.n_max)}; "
-                   f"n para velocidad y socavacion = {_num(material.n_min)}")]),
+                   f"n para velocidad maxima y socavacion = "
+                   f"{_num(material.n_min)}. Fila de la Tabla N 09: "
+                   f"{_esc(material.fila_manning)}")]),
         _fila([_td("<b>Diametro adoptado</b>"),
                _td(f"D = {_num(resultado.D, FMT_2)} m interior "
                    f"(tope de CATALOGO adoptado: "
@@ -732,8 +742,13 @@ def _tabla_diseno(informe: Any) -> str:
         _fila([_td("<b>Hidraulica</b>"),
                _td(f"Q = {_num(hidraulica.Q)} m3/s &middot; y<sub>n</sub> = "
                    f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
-                   f"{_num(hidraulica.y_critico)} m &middot; V = "
-                   f"{_num(hidraulica.V, FMT_2)} m/s")]),
+                   f"{_num(hidraulica.y_critico)} m &middot; "
+                   f"V<sub>erosion</sub> = "
+                   f"{_num(hidraulica.V_erosion, FMT_2)} m/s (con n minimo, "
+                   f"contra los techos: V3 y d50) &middot; "
+                   f"V<sub>sedimentacion</sub> = "
+                   f"{_num(hidraulica.V_sedimentacion, FMT_2)} m/s (con n "
+                   f"maximo, contra el piso de V2)")]),
         _fila([_td("<b>Control gobernante</b>"),
                _td(f"{_esc(hidraulica.control_gobernante.value)} &mdash; "
                    f"HW = {_num(hidraulica.HW)} m (entrada "
@@ -941,7 +956,8 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
             _td(_esc(material.tipo.value)),
             _td(f"{_esc(material.nombre)}<br>{_esc(material.norma_producto)}"),
             _td(_num(resultado.D, FMT_2), "num"),
-            _td(_num(h.V, FMT_2), "num"),
+            _td(_num(h.V_erosion, FMT_2), "num"),
+            _td(_num(h.V_sedimentacion, FMT_2), "num"),
             _td(_num(resultado.y_sobre_D, FMT_2), "num"),
             _td(_num(h.HW, FMT_2), "num"),
             _td(_esc(h.control_gobernante.value)),
@@ -949,7 +965,7 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
     else:
         celdas.extend([_td(VACIO), _td(VACIO), _td(VACIO, "num"),
                        _td(VACIO, "num"), _td(VACIO, "num"),
-                       _td(VACIO, "num"), _td(VACIO)])
+                       _td(VACIO, "num"), _td(VACIO, "num"), _td(VACIO)])
 
     if informe.proteccion is None:
         celdas.append(_td(VACIO))
@@ -965,7 +981,11 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
 
 COLUMNAS_RESUMEN_CSV = (
     "id", "progresiva", "familia", "TR_anios", "tipo_hidraulico",
-    "material", "norma_producto", "D_m", "V_ms", "y_sobre_D", "HW_m",
+    "material", "norma_producto", "D_m",
+    # Dos columnas y no una: la velocidad de la rama n_min (techos: V3, d50) y
+    # la de la rama n_max (piso: V2) son numeros distintos y una sola columna
+    # "V_ms" obligaba al lector a adivinar cual (MAT-D1).
+    "V_erosion_ms", "V_sedimentacion_ms", "y_sobre_D", "HW_m",
     "control_gobernante", "proteccion_d50_m", "proteccion_espesor_m",
     "proteccion_longitud_m", "tipo_cabezal",
 )
@@ -991,12 +1011,13 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
         h = resultado.resultado_hidraulico
         fila.extend([
             material.tipo.value, material.nombre, material.norma_producto,
-            _num(resultado.D, FMT_2), _num(h.V, FMT_2),
+            _num(resultado.D, FMT_2), _num(h.V_erosion, FMT_2),
+            _num(h.V_sedimentacion, FMT_2),
             _num(resultado.y_sobre_D, FMT_2), _num(h.HW, FMT_2),
             h.control_gobernante.value,
         ])
     else:
-        fila.extend(["", "", "", "", "", "", "", ""])
+        fila.extend(["", "", "", "", "", "", "", "", ""])
 
     if informe.proteccion is None:
         fila.extend(["", "", ""])
@@ -1434,6 +1455,69 @@ def bloque_acotaciones(alcance: str = "expediente") -> str:
     return "".join(partes)
 
 
+# ---------------------------------------------------------------------------
+# Umbrales normativos y su caracter
+# ---------------------------------------------------------------------------
+
+def bloque_umbrales() -> str:
+    """
+    Los umbrales normativos que el proyecto verifica, cada uno con el texto
+    literal que lo fija, su CARACTER en la fuente (recomendacion o exigencia)
+    y lo que el proyecto hace con el.
+
+    POR QUE ES UN BLOQUE PROPIO Y NO UNA COLUMNA DE LA TABLA DE
+    VERIFICACIONES (NOR-MEM-01). El matiz "el numeral recomienda, no prohibe"
+    viajaba unicamente dentro de `M5.NUMERAL_V2`, o sea dentro de la tabla de
+    verificaciones de cada punto. Esa tabla solo se imprime si el punto llego
+    a evaluarse, y hoy no llega -- 'homogeneidad_serie_fen' bloquea el Q de
+    toda la Familia A --, de modo que la palabra "recomend" aparecia CERO
+    veces en la memoria generada mientras el repositorio afirmaba que era "lo
+    unico que la memoria imprime de V2". La afirmacion era cierta sobre el
+    codigo y falsa sobre el producto.
+
+    Este bloque no depende de ningun resultado: declara el marco normativo con
+    que se verifica, se imprima o no una sola fila de verificacion. Un umbral
+    aplicado como exigencia cuando la fuente lo escribe como recomendacion es
+    una decision del proyecto y se declara; al reves -- imprimir "exigencia"
+    donde la fuente recomienda -- es una cita falsa, que la Sec. 0.5 de la
+    hoja de ruta llama la clase de defecto mas grave.
+
+    No calcula nada: formatea `constantes_normativas.UMBRALES_DE_VERIFICACION`.
+    """
+    partes = [
+        '<div class="nota"><p>De cada umbral se dicen tres cosas por separado: '
+        "el texto <b>literal</b> de la fuente, el <b>caracter</b> que esa "
+        "fuente le da, y lo que el <b>proyecto</b> hace con el. Juntas se "
+        "confunden, y confundirlas es lo que convierte una recomendacion en "
+        "una exigencia inventada.</p></div>"]
+    for u in UMBRALES_DE_VERIFICACION:
+        # Cada cita, entre comillas y por separado. Unirlas en un parrafo con
+        # conectores del proyecto convertia la cita en parafrasis sin que se
+        # notara, bajo un rotulo que decia "literal".
+        citas = "".join(f"<p>&laquo;{_esc(cita)}&raquo;</p>"
+                        for cita in u["texto"])
+        campos = [
+            f"<dt>Numeral y pagina</dt><dd>{_esc(u['numeral'])}</dd>",
+            f"<dt>Caracter en la fuente</dt>"
+            f"<dd><b>{_esc(u['caracter'])}</b></dd>",
+            f"<dt>Texto literal de la fuente</dt><dd>{citas}</dd>",
+        ]
+        if u.get("transcripcion"):
+            campos.append("<dt>Transcripcion de la tabla (no es cita)</dt>"
+                          f"<dd>{_esc(u['transcripcion'])}</dd>")
+        campos.append("<dt>Que hace el proyecto con el</dt>"
+                      f"<dd>{_esc(u['aplicacion'])}</dd>")
+        partes.append(
+            f'<h3><code>{_esc(u["codigo"])}</code> &mdash; '
+            f'{_esc(u["que"])}</h3>'
+            f'<dl class="acotacion">' + "".join(campos) + "</dl>")
+    partes.append(
+        '<div class="aviso"><p><b>Interpretacion del proyectista sobre la '
+        "Tabla N&deg; 10.</b> "
+        f"{_esc(TABLA_10_INTERPRETACION_PROYECTO)}</p></div>")
+    return "".join(partes)
+
+
 # ===========================================================================
 # Ensamblado del documento
 # ===========================================================================
@@ -1563,6 +1647,7 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "bloque_pendientes": bloque_pendientes(tableros, bloqueantes),
         "bloque_alcance": bloque_alcance(informe),
         "bloque_acotaciones": bloque_acotaciones(alcance=informe.alcance),
+        "bloque_umbrales": bloque_umbrales(),
     }
     if set(valores) != set(MARCADORES):
         diferencia = set(valores).symmetric_difference(MARCADORES)

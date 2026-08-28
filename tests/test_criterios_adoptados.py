@@ -478,9 +478,17 @@ def test_la_escritura_permanente_valida_antes_de_tocar_el_disco(tmp_path):
 # Criterios opcionales: valor=None que NO es un vacio
 # ---------------------------------------------------------------------------
 
-def test_v_max_concreto_es_el_unico_opcional_declarado_hoy():
+def test_los_opcionales_declarados_hoy():
+    """
+    Se llamaba `..._es_el_unico_opcional_declarado_hoy`. Ya no es el unico:
+    al cerrar NOR-HID-08 entro 'riesgo_admisible_propietario', que tiene
+    exactamente la misma forma -- la norma fija un valor por defecto (los
+    maximos recomendados de la Tabla N 02) y el criterio permite endurecerlo,
+    sin bloquear si nadie lo declara.
+    """
     opcionales = {k for k, c in CRITERIOS.items() if c.opcional}
-    assert opcionales == {"v_max_concreto_eleccion"}
+    assert opcionales == {"v_max_concreto_eleccion",
+                          "riesgo_admisible_propietario"}
 
 
 def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():

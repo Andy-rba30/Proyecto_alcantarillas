@@ -723,11 +723,18 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
 
 
 def _fase_6(informe: InformePunto) -> None:
-    """Proteccion de salida por Laushey, con la V de la regla de doble n."""
+    """
+    Proteccion de salida por Laushey, con la V de la regla de doble n.
+
+    Entra `V_erosion` -- la rama de n minimo, la estimacion ALTA -- porque el
+    d50 crece con V^2 y la piedra mas grande es el lado conservador de una
+    proteccion contra socavacion. La otra rama, `V_sedimentacion`, es la del
+    piso de V2 y aqui daria una piedra mas chica que la necesaria.
+    """
     resultado = informe.resultado.resultado_hidraulico
     informe.proteccion = _etapa(
         informe.bloqueos, FASE_PROTECCION, "d50, espesor y longitud",
-        lambda: proteccion_salida(V=resultado.V))
+        lambda: proteccion_salida(V=resultado.V_erosion))
 
 
 def _fase_7(informe: InformePunto) -> None:
@@ -1016,7 +1023,12 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "n_min": _num(material.n_min), "n_max": _num(material.n_max),
             "D_m": _num(resultado.D), "D_max_material_m": _num(material.D_max),
             "control_gobernante": hidraulica.control_gobernante.value,
-            "Q_m3s": _num(hidraulica.Q), "V_m_s": _num(hidraulica.V),
+            "Q_m3s": _num(hidraulica.Q),
+            # Dos claves y no una "V_m_s": la velocidad de la rama n_min
+            # (techos: V3, d50) y la de la rama n_max (piso: V2) son numeros
+            # distintos, y una sola clave obligaba a adivinar cual (MAT-D1).
+            "V_erosion_m_s": _num(hidraulica.V_erosion),
+            "V_sedimentacion_m_s": _num(hidraulica.V_sedimentacion),
             "y_normal_m": _num(hidraulica.y_normal),
             "y_critico_m": _num(hidraulica.y_critico),
             "HW_entrada_m": _num(hidraulica.HW_entrada),
@@ -1025,7 +1037,12 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
 
 
 def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
-    return {"numeral": p.numeral, "V_m_s": _num(p.V), "d50_m": _num(p.d50),
+    # La clave dice de que rama es la velocidad, como en el bloque de
+    # hidraulica: el d50 de Laushey se calcula con `V_erosion` (n minimo, la
+    # estimacion alta). "V_m_s" a secas reproducia en este rincon del JSON la
+    # ambiguedad que MAT-D1 vino a quitar.
+    return {"numeral": p.numeral, "V_erosion_m_s": _num(p.V),
+            "d50_m": _num(p.d50),
             "espesor_m": _num(p.espesor), "longitud_m": _num(p.longitud),
             "criterio_espesor": p.criterio_espesor,
             "criterio_longitud": p.criterio_longitud,
@@ -1278,7 +1295,9 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"(HW = {_fmt(h.HW)} m; entrada {_fmt(h.HW_entrada)} / "
                    f"salida {_fmt(h.HW_salida)})")
         out.append(f"{SANGRIA}        Hidraulica: y_n = {_fmt(h.y_normal)} m, "
-                   f"y_c = {_fmt(h.y_critico)} m, V = {_fmt(h.V)} m/s, "
+                   f"y_c = {_fmt(h.y_critico)} m, "
+                   f"V_erosion = {_fmt(h.V_erosion)} m/s (n min), "
+                   f"V_sedimentacion = {_fmt(h.V_sedimentacion)} m/s (n max), "
                    f"Q = {_fmt(h.Q)} m3/s")
         out.append(f"{SANGRIA}        Longitud : L = {_fmt(informe.longitud.valor)} m "
                    f"({informe.longitud.origen}) | TW = "

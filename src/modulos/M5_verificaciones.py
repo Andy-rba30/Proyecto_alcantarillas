@@ -7,10 +7,14 @@ un bool desnudo), mas `verificar()`, el agregado que MD.py llama con la firma
 que declara su Protocol `Verificador`.
 
     V1  Borde libre               y/D <= 0.75                    [N] 4.1.1.3.7 b)
+                                  (RECOMENDACION aplicada como umbral duro)
     V2  Velocidad minima          V >= 0.25 m/s                   [N] 4.1.1.3.6
-    V3  Velocidad maxima          concreto: rango Tabla N 10 [N]
+                                  (RECOMENDACION aplicada como umbral duro;
+                                  se evalua con la rama n_max, la estimacion
+                                  BAJA de velocidad -- ver `v2_velocidad_minima`)
+    V3  Velocidad maxima          concreto: fila de la Tabla N 10 [N]
                                   TMC / HDPE: 'v_max_tmc' / 'v_max_hdpe',
-                                  CERRADOS con valor 4.6 m/s       [C]
+                                  CERRADOS con valor 4.572 m/s     [C]
     V4  Carga a la entrada HW     HW <= cota subrasante - resguardo(CBR)  [N->]
     V5  Remanso aguas arriba      sin metodo declarado -> pendiente       [A]
     V6  Material solido de arrastre  seccion unica (cumple por construccion)
@@ -185,25 +189,49 @@ from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     peso_relleno_kn_m)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
-NUMERAL_V1 = "4.1.1.3.7 b)"
-
-# V2 y V3 salen del MISMO numeral y de la MISMA pagina, y por eso los dos
-# numerales se escriben largos: lo que separa un piso de un techo no es el
-# numero, es el titulo de la tabla y el parrafo que la sigue. Estos dos
-# strings son lo UNICO que la memoria imprime de cada verificacion (M11 los
-# vuelca en la columna "numeral"), asi que el sustento tiene que viajar aqui
-# dentro o el revisor no lo ve: el titulo y la pagina vivian solo en el
-# comentario de constantes_normativas y en docs/manifiesto_citas.md, que no
-# van al expediente.
-NUMERAL_V2 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, pag. 76, parrafo '
-              'inmediatamente posterior a la Tabla Nº 10. El numeral RECOMIENDA '
-              'este minimo ("recomendandose que la velocidad minima sea igual '
-              'a 0.25 m/s"), no lo prohibe: aqui se aplica como umbral duro '
-              'por decision conservadora del proyecto')
+# Los TRES numerales de las verificaciones hidraulicas se escriben largos, y
+# por el mismo motivo: son lo UNICO que la memoria imprime de cada
+# verificacion (M11 los vuelca en la columna "numeral"), de modo que el
+# sustento tiene que viajar aqui dentro o el revisor no lo ve. El titulo de la
+# tabla, la pagina y el CARACTER de la frase vivian solo en el comentario de
+# constantes_normativas y en docs/manifiesto_citas.md, que no van al
+# expediente.
+#
+# V1 iba pelado -- "4.1.1.3.7 b)" -- y eso era un trato asimetrico sin
+# fundamento (MAT-O13, NOR-HID-10): el 0.75 de V1 y el 0.25 de V2 salen del
+# MISMO tipo de frase ("se recomienda") del mismo apartado 4.1.1.3, y solo V2
+# llevaba el matiz. Un revisor que viera "recomienda, no prohibe" en V2 y un
+# numeral desnudo en V1 leeria que el borde libre es exigencia y el piso de
+# velocidad no, cuando la fuente los escribe igual.
+NUMERAL_V1 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) "Borde libre", '
+              'pag. impresa 79. El numeral RECOMIENDA este borde libre ("Se '
+              'recomienda que el diseño hidraulico considere como minimo el '
+              '25 % de la altura, diametro o flecha de la estructura"), no lo '
+              'prohibe: aqui se aplica como umbral duro por decision '
+              'conservadora del proyecto, igual que el piso de V2')
+# V2 y V3 salen ademas del MISMO numeral -- 4.1.1.3.6 -- y de paginas
+# contiguas: la Tabla Nº 10 esta en la 76 y el parrafo que la sigue termina en
+# la 77. Lo que separa un piso de un techo no es el numero: es el titulo de la
+# tabla y ese parrafo.
+NUMERAL_V2 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo '
+              'inmediatamente posterior a la Tabla Nº 10: arranca en la pag. '
+              'impresa 76 y el valor se imprime en la 77. El numeral '
+              'RECOMIENDA este minimo ("recomendandose que la velocidad '
+              'minima sea igual a 0.25 m/s"), no lo prohibe: aqui se aplica '
+              'como umbral duro por decision conservadora del proyecto. Se '
+              'evalua con la velocidad de la rama de n MAXIMO -- la '
+              'estimacion baja --, que es el extremo conservador para un piso')
 NUMERAL_V3 = ('MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 "Velocidades maximas '
-              'admisibles en conductos revestidos", num. 4.1.1.3.6, pag. 76. '
-              'Los DOS numeros de cada fila son maximos segun la calidad del '
-              'revestimiento: se verifica solo el superior, el piso lo pone V2')
+              'admisibles (m/s) en conductos revestidos", num. 4.1.1.3.6, '
+              'pag. impresa 76; fuente de la tabla: HCANALES, Maximo Villon B. '
+              'Los DOS numeros de cada fila son MAXIMOS -- lo dice el titulo --, '
+              'de modo que se verifica solo el superior y el piso lo pone V2. '
+              'Que el rango recorra la calidad del revestimiento es '
+              'INTERPRETACION DEL PROYECTISTA y no del Manual: se declara '
+              'aparte, en el bloque "Umbrales normativos y su caracter" de '
+              'esta memoria. Se '
+              'evalua con la velocidad de la rama de n MINIMO -- la estimacion '
+              'alta --, que es el extremo conservador para un techo')
 NUMERAL_V4 = ReferenciaNormativa(
     seccion_hoja_ruta="Sec. 5.1",
     numeral_norma="Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), "
@@ -282,7 +310,28 @@ def verificaciones_no_evaluadas() -> Tuple[str, ...]:
 # ---------------------------------------------------------------------------
 
 def v1_borde_libre(*, D: float, resultado: ResultadoHidraulico) -> Verificacion:
-    """y/D <= 0.75: minimo 25 % de borde libre sobre el tirante normal."""
+    """
+    y/D <= 0.75: minimo 25 % de borde libre sobre el tirante normal.
+
+    Texto que lo sustenta, literal (MC-HHD, RD 20-2011-MTC/14,
+    num. 4.1.1.3.7 b) "Borde libre", pag. impresa 79):
+
+        "Se recomienda que el diseño hidráulico considere como mínimo el 25 %
+        de la altura, diámetro o flecha de la estructura."
+
+    ES UNA RECOMENDACION, IGUAL QUE EL PISO DE V2, y esta funcion la aplica
+    igualmente como umbral duro (`y/D <= 0.75` decide `cumple`), que es la
+    lectura conservadora y la que el proyecto adopta. El matiz viaja en
+    `NUMERAL_V1`, que es lo unico que la memoria imprime de V1. Hasta esta
+    correccion `NUMERAL_V1` era el numeral desnudo mientras `NUMERAL_V2` si
+    llevaba el matiz: dos frases del mismo apartado presentadas con distinta
+    fuerza normativa, sin nada en la fuente que lo justificara (MAT-O13,
+    NOR-HID-10).
+
+    El tirante que se compara es `y_normal`, resuelto con n_max (rama de
+    capacidad): mas rugosidad da mas tirante para el mismo Q, o sea el extremo
+    conservador para una verificacion de borde libre.
+    """
     y_sobre_D = resultado.y_normal / D
     return Verificacion(
         cumple=y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO,
@@ -320,7 +369,10 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
         que el proyecto adopta. Pero el matiz no puede quedarse en el codigo:
         `NUMERAL_V2` lo lleva escrito, de modo que la memoria lo imprime junto
         al resultado y un revisor que vea un punto rechazado por V2 sepa que
-        esta ante una recomendacion incumplida y no ante una infraccion.
+        esta ante una recomendacion incumplida y no ante una infraccion. Y no
+        viaja solo por ahi: `constantes_normativas.UMBRALES_DE_VERIFICACION`
+        lo lleva al bloque que M11 imprime SIEMPRE, tambien cuando ningun
+        punto llego a evaluarse (NOR-MEM-01).
 
     (2) La RAZON del minimo es la sedimentacion que reduce la capacidad
         hidraulica, no el desgaste. Es lo que separa a V2 de V3: el piso lo
@@ -328,11 +380,33 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
         techo lo pone la abrasion del revestimiento y cambia con el material.
         Por eso los dos numeros de la Tabla Nº 10 son maximos y ninguno es
         este piso (ver `v3_velocidad_maxima`).
+
+    QUE VELOCIDAD SE COMPARA, Y POR QUE NO ES LA MISMA QUE EN V3 (MAT-D1)
+    ---------------------------------------------------------------------
+    `resultado.V_sedimentacion`: la de la rama de n MAXIMO, que es la
+    estimacion BAJA de velocidad. No `V_erosion`, que es la alta y la que
+    consume V3.
+
+    La regla de doble n (Sec. 4.1 de la hoja de ruta) asigna n minimo a
+    "velocidad MAXIMA y socavacion". V2 no esta en esa lista, y no por olvido:
+    un piso y un techo tienen extremos conservadores OPUESTOS. Contra un techo
+    hay que suponer la velocidad mas alta que el rango de n admite; contra un
+    piso, la mas baja. Verificar el piso con la estimacion alta es declarar
+    "cumple" en el caso en que el conducto sedimenta.
+
+    Hasta esta correccion V2 leia la rama n_min y el defecto era medible: con
+    D = 0.90 m, y/D = 0.75 y S = 5e-5, la rama n_max da 0.228 m/s -- por
+    debajo del piso -- y la n_min 0.297 m/s, de modo que el punto pasaba. La
+    ventana permisiva completa es S entre 3.55e-5 y 6.01e-5, por debajo de
+    cualquier pendiente constructiva, asi que ningun diseño real quedo
+    afectado; lo que estaba invertido era el conservadurismo. El fixture CP-3
+    ya modelaba el umbral de V2 con n = 0.013 (n_max): el repositorio se
+    contradecia a si mismo.
     """
     return Verificacion(
-        cumple=resultado.V >= V_MIN - TOL_UMBRAL_NORMATIVO,
+        cumple=resultado.V_sedimentacion >= V_MIN - TOL_UMBRAL_NORMATIVO,
         numeral=NUMERAL_V2,
-        valor_obtenido=resultado.V,
+        valor_obtenido=resultado.V_sedimentacion,
         valor_admisible=V_MIN,
         criterio_aplicado=None,
         codigo="V2",
@@ -349,12 +423,25 @@ def v3_velocidad_maxima(*, material: Material,
     V3 verifica UN SOLO extremo: el techo. V <= v_max.
 
     Materiales de la Tabla N 10 (concreto, ladrillo con concreto, mamposteria
-    de piedra): M2 trae el par en `material.v_max_rango`, pero los DOS
-    numeros del par son velocidades MAXIMAS -- la tabla se titula
-    "Velocidades maximas admisibles en conductos revestidos" (num. 4.1.1.3.6,
-    pag. 76) y el rango recorre la calidad del revestimiento, no un piso y un
-    techo. El extremo inferior es el maximo admisible del acabado mas pobre;
-    exigirlo como MINIMO era leer la tabla al reves.
+    de piedra y concreto): M2 trae la fila literal en
+    `material.v_max_tabla10`, y TODOS sus valores son velocidades MAXIMAS --
+    la tabla se titula "Velocidades maximas admisibles (m/s) en conductos
+    revestidos" (num. 4.1.1.3.6, pag. impresa 76), su unica columna de valores
+    se rotula "VELOCIDAD (M/S)", y el piso esta aparte en el parrafo
+    siguiente. El extremo inferior no es un minimo; exigirlo como tal era leer
+    la tabla al reves.
+
+    QUE DICE LA FUENTE Y QUE PONE EL PROYECTO (NOR-HID-04). Que los dos
+    numeros sean maximos lo dice el titulo. Que el rango "recorra la calidad
+    del revestimiento" -- el superior para el mejor acabado, el inferior para
+    el mas pobre -- NO lo dice el Manual en ninguna parte: es interpretacion
+    del proyectista, esta declarada como tal en
+    `constantes_normativas.TABLA_10_INTERPRETACION_PROYECTO`, y es la que
+    sostiene que 'v_max_concreto_eleccion' pueda bajar el techo dentro de la
+    fila. Se dice aparte y no pegado a la cita porque en contra de esa lectura
+    juegan dos hechos de la propia fuente: la frase que introduce la tabla
+    habla de "un rango, cuyos limites se describen a continuacion", y la fila
+    de mamposteria trae un solo valor.
 
     Ese error tenia consecuencia real: rechazaba por V3 un conducto de
     concreto a 1.5 m/s, que es una velocidad perfectamente admisible y que
@@ -363,8 +450,11 @@ def v3_velocidad_maxima(*, material: Material,
     pagina y aplicable a todos los materiales por igual. Un segundo piso, mas
     alto y por material, no lo respalda ningun numeral.
 
-    Se toma el extremo SUPERIOR del par como admisible: es el techo del
-    revestimiento de mejor calidad.
+    Se toma el valor MAYOR de la fila como admisible. Bajo la interpretacion
+    del proyecto es el techo del revestimiento de mejor calidad; bajo lo que
+    la fuente sostiene sin mas, es simplemente la mayor de las velocidades que
+    la tabla admite para ese revestimiento, y verificar contra ella es la
+    lectura minima que no inventa un piso.
 
     Techo mas conservador, OPCIONAL. Para el concreto, el proyectista puede
     declarar 'v_max_concreto_eleccion' y bajar ese techo -- hasta 3.0 m/s, el
@@ -381,9 +471,13 @@ def v3_velocidad_maxima(*, material: Material,
     del criterio cuando el proyectista lo bajo.
 
     TMC y HDPE: la Tabla N 10 no los cubre (Tablero 1.3). El valor sale de
-    `criterios_adoptados.valor('v_max_tmc' | 'v_max_hdpe')`, hoy 4.6 m/s los
-    dos, con cita de WSDOT Hydraulics Manual M 23-03.12, Cap. 8, Tabla 8-4
-    (el vacio que la hoja de ruta declaraba quedo cerrado). Se leen con
+    `criterios_adoptados.valor('v_max_tmc' | 'v_max_hdpe')`, hoy 4.572 m/s los
+    dos -- la conversion exacta de las 15 ft/s de la fuente, que antes se
+    escribia redondeada a 4.6 y quedaba 0.6 % POR ENCIMA del techo declarado
+    duro (MAT-O14) --, con cita de WSDOT Hydraulics Manual M 23-03.12, Cap. 8,
+    Tabla 8-4 (el vacio que la hoja de ruta declaraba quedo cerrado; esa tabla
+    NO esta en normas/ y la cita no es auditable contra el repositorio, lo que
+    el propio criterio declara). Se leen con
     `ca.valor`, no con `ca.valor_si_declarado`: no son opcionales -- si
     alguien los vaciara, V3 debe detenerse y no caer a un techo inventado,
     porque para estos materiales no hay ningun valor normativo de respaldo
@@ -393,17 +487,20 @@ def v3_velocidad_maxima(*, material: Material,
         clave = CRITERIO_V_MAX[material.tipo]
         v_max = ca.valor(clave)     # CriterioPendienteError mientras falte
         return Verificacion(
-            cumple=resultado.V <= v_max + TOL_UMBRAL_NORMATIVO,
+            cumple=resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO,
             numeral=NUMERAL_V3,
-            valor_obtenido=resultado.V,
+            valor_obtenido=resultado.V_erosion,
             valor_admisible=v_max,
             criterio_aplicado=clave,
             codigo="V3",
         )
 
-    # Solo el techo: el par de la Tabla N 10 son dos MAXIMOS, no un piso y un
-    # techo (ver el docstring). El extremo inferior no se verifica.
-    _, v_max = material.v_max_rango
+    # Solo el techo: los valores de la fila de la Tabla N 10 son todos
+    # MAXIMOS, no un piso y un techo (ver el docstring). Se toma el mayor; los
+    # demas no se verifican. `max()` y no un desempaquetado de dos: la fila de
+    # la mamposteria trae UN solo valor y escribirla como (2.0, 2.0) inventaba
+    # un par que la fuente no imprime (NOR-HID-07).
+    v_max = max(material.v_max_tabla10)
     clave = None
 
     if material.tipo is TipoMaterial.CONCRETO_REFORZADO:
@@ -413,9 +510,9 @@ def v3_velocidad_maxima(*, material: Material,
             clave = CRITERIO_V_MAX_CONCRETO
 
     return Verificacion(
-        cumple=resultado.V <= v_max + TOL_UMBRAL_NORMATIVO,
+        cumple=resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO,
         numeral=NUMERAL_V3,
-        valor_obtenido=resultado.V,
+        valor_obtenido=resultado.V_erosion,
         valor_admisible=v_max,
         criterio_aplicado=clave,   # None = [N] puro de la Tabla N 10
         codigo="V3",

@@ -575,7 +575,8 @@ class ExpedienteApp:
         f_tabla.rowconfigure(0, weight=1)
 
         cols = ("id", "progresiva", "familia", "dimensionado", "material", "D",
-                "control", "HW", "V", "incumplidas", "bloqueos")
+                "control", "HW", "V_erosion", "V_sedimentacion",
+                "incumplidas", "bloqueos")
         self.tree_puntos = ttk.Treeview(f_tabla, columns=cols, show="headings", height=14)
         encabezados = [
             ("id", "Punto", 70, "w"),
@@ -586,7 +587,11 @@ class ExpedienteApp:
             ("D", "D (m)", 65, "center"),
             ("control", "Control", 75, "center"),
             ("HW", "HW (m)", 70, "center"),
-            ("V", "V (m/s)", 70, "center"),
+            # Dos columnas, no una: la velocidad contra los techos (V3, d50)
+            # y la del piso (V2) se calculan con n distinto y no son el mismo
+            # numero (MAT-D1).
+            ("V_erosion", "V n min (m/s)", 90, "center"),
+            ("V_sedimentacion", "V n max (m/s)", 90, "center"),
             ("incumplidas", "Verif. NO", 75, "center"),
             ("bloqueos", "Bloqueos", 75, "center"),
         ]
@@ -790,9 +795,11 @@ class ExpedienteApp:
                 r = informe_punto.resultado
                 h = r.resultado_hidraulico
                 material, D = r.material.nombre, f"{r.D:.2f}"
-                control, HW, V = h.control_gobernante.value, f"{h.HW:.3f}", f"{h.V:.2f}"
+                control, HW = h.control_gobernante.value, f"{h.HW:.3f}"
+                V_ero = f"{h.V_erosion:.2f}"
+                V_sed = f"{h.V_sedimentacion:.2f}"
             else:
-                material = D = control = HW = V = "-"
+                material = D = control = HW = V_ero = V_sed = "-"
 
             tags = []
             if not informe_punto.dimensionado:
@@ -803,7 +810,8 @@ class ExpedienteApp:
             self.tree_puntos.insert("", "end", iid=punto.id, values=(
                 punto.id, punto.progresiva_display, punto.familia.value,
                 "si" if informe_punto.dimensionado else "no",
-                material, D, control, HW, V, incumplidas, n_bloqueos,
+                material, D, control, HW, V_ero, V_sed, incumplidas,
+                n_bloqueos,
             ), tags=tuple(tags))
 
         self.txt_detalle.configure(state="normal")

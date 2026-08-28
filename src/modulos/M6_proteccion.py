@@ -61,8 +61,17 @@ Uso
 ---
     from modulos.M6_proteccion import laushey_d50, proteccion_salida
 
-    d50 = laushey_d50(V=resultado.V)
-    proteccion = proteccion_salida(V=resultado.V)   # exige 'longitud_proteccion_salida'
+    d50 = laushey_d50(V=resultado.V_erosion)
+    proteccion = proteccion_salida(V=resultado.V_erosion)   # exige 'longitud_proteccion_salida'
+
+QUE VELOCIDAD ENTRA (regla de doble n, Sec. 4.1)
+-------------------------------------------------
+`V_erosion`, la de la rama de n MINIMO -- la estimacion ALTA. El d50 crece con
+V^2: suponer la velocidad mas alta que el rango de n admite da la piedra mas
+grande, que es el lado conservador para una proteccion contra socavacion. Es
+la misma rama que consume V3 (techo de velocidad) y la contraria a la de V2,
+que es un piso y usa la estimacion baja (`V_sedimentacion`, ver
+`M5_verificaciones.v2_velocidad_minima`).
 """
 
 from __future__ import annotations

@@ -79,11 +79,22 @@ def _punto(**cambios) -> PuntoCritico:
 
 
 def _resultado(*, y_normal=0.60, y_critico=0.40, V=1.5, Q=1.0,
+              V_erosion=None, V_sedimentacion=None,
               HW_entrada=0.50, HW_salida=0.20,
               control=ControlGobernante.ENTRADA) -> ResultadoHidraulico:
+    """
+    Doble de prueba del resultado hidraulico para las nueve verificaciones.
+
+    `V` fija LAS DOS ramas de velocidad al mismo numero, que es lo que un test
+    de umbrales necesita: M5 compara contra un limite, no reconstruye Manning.
+    Un test que quiera distinguirlas -- porque V2 lee la rama de n maximo y V3
+    la de n minimo (MAT-D1) -- pasa `V_erosion` y/o `V_sedimentacion`.
+    """
     return ResultadoHidraulico(
-        y_normal=y_normal, y_critico=y_critico, V=V, Q=Q,
-        HW_entrada=HW_entrada, HW_salida=HW_salida,
+        y_normal=y_normal, y_critico=y_critico,
+        V_erosion=V if V_erosion is None else V_erosion,
+        V_sedimentacion=V if V_sedimentacion is None else V_sedimentacion,
+        Q=Q, HW_entrada=HW_entrada, HW_salida=HW_salida,
         control_gobernante=control,
     )
 
@@ -111,7 +122,12 @@ def test_v1_cumple_dentro_del_borde_libre():
     v = v1_borde_libre(D=0.90, resultado=_resultado(y_normal=0.60))
     assert v.cumple
     assert v.codigo == "V1"
-    assert v.numeral == "4.1.1.3.7 b)"
+    # El numeral ya no viaja pelado: lleva RD, pagina, texto literal y el
+    # caracter de RECOMENDACION, igual que el de V2 (MAT-O13, NOR-HID-10).
+    assert "4.1.1.3.7 b)" in v.numeral
+    assert "RD 20-2011-MTC/14" in v.numeral
+    assert "RECOMIENDA" in v.numeral and "umbral duro" in v.numeral
+    assert "pag. impresa 79" in v.numeral
     assert v.valor_admisible == pytest.approx(Y_SOBRE_D_MAX)
     assert v.criterio_aplicado is None
 
@@ -154,7 +170,10 @@ def test_el_numeral_de_v2_lleva_a_la_memoria_pagina_y_matiz_de_recomendacion():
     incumplida de una infraccion.
     """
     assert "4.1.1.3.6" in NUMERAL_V2
-    assert "pag. 76" in NUMERAL_V2
+    # La cita da las DOS paginas: el parrafo arranca en la 76 y el 0.25 se
+    # imprime en la 77 -- quien fuera a la 76 a comprobar el numero no lo
+    # encontraba.
+    assert "pag. impresa 76" in NUMERAL_V2 and "77" in NUMERAL_V2
     assert "RD 20-2011-MTC/14" in NUMERAL_V2
     assert "RECOMIENDA" in NUMERAL_V2
     assert "recomendandose" in NUMERAL_V2
@@ -187,7 +206,7 @@ def test_el_texto_literal_del_numeral_esta_transcrito_y_no_resumido():
         texto = plano(ruta)
         assert literal in texto, f"falta la cita literal en {ruta.name}"
         assert razon in texto, f"falta la razon (sedimentacion) en {ruta.name}"
-        assert "4.1.1.3.6" in texto and "pag. 76" in texto
+        assert "4.1.1.3.6" in texto and "pag. impresa 76" in texto
 
 
 def test_el_numeral_de_v3_lleva_a_la_memoria_el_titulo_de_la_tabla():
@@ -197,8 +216,12 @@ def test_el_numeral_de_v3_lleva_a_la_memoria_el_titulo_de_la_tabla():
     comentario de constantes_normativas y en docs/manifiesto_citas.md, que no
     van al expediente.
     """
-    assert "Velocidades maximas admisibles en conductos revestidos" in NUMERAL_V3
-    assert "pag. 76" in NUMERAL_V3
+    # Con la unidad: el titulo impreso es "Velocidades maximas admisibles
+    # (m/s) en conductos revestidos", y omitir "(m/s)" en una cita entre
+    # comillas es lo primero que un revisor detecta (NOR-HID-06).
+    assert ("Velocidades maximas admisibles (m/s) en conductos revestidos"
+            in NUMERAL_V3)
+    assert "pag. impresa 76" in NUMERAL_V3
     assert "4.1.1.3.6" in NUMERAL_V3
     assert "RD 20-2011-MTC/14" in NUMERAL_V3
     assert "solo el superior" in NUMERAL_V3
@@ -347,7 +370,7 @@ def test_v3_tmc_hdpe_verifica_contra_el_criterio_declarado(material_fixture,
                                                            clave, request):
     """
     Los dos criterios ya estan declarados (WSDOT Hydraulics Manual, Tabla 8-4,
-    4.6 m/s): V3 evalua contra ese techo y lo ATRIBUYE a su clave, que es lo
+    4.572 m/s): V3 evalua contra ese techo y lo ATRIBUYE a su clave, que es lo
     que distingue un umbral adoptado de uno normativo en la memoria.
     """
     material = request.getfixturevalue(material_fixture)

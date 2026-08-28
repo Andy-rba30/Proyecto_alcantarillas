@@ -381,7 +381,10 @@ class TestIteraciones:
             D_max_de_catalogo="tope de catalogo de prueba",
             norma_producto="ASTM C76",
             hds5=ConstantesHDS5(K=0.0098, M=2.0, c=0.0398, Y=0.67, Ks=-0.5),
-            v_max_rango=(3.0, 6.0), h_relleno_min_eg2013=0.30,
+            fila_manning="A.2 NO METALICOS - a. Concreto - tubo recto y "
+                         "libre de basuras",
+            v_max_tabla10=(3.0, 6.0), v_max_adoptado=None,
+            h_relleno_min_eg2013=0.30,
             espesor_pared=0.10, seccion_eg2013="505")
 
         # Verificador que rechaza todo: interesa la traza, no el diseño.

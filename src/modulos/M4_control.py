@@ -551,8 +551,11 @@ def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
     Reparto de rugosidades (regla de doble n, Sec. 4.1):
       - el tirante normal y la friccion del control de salida usan n_max
         (`material.n_para_capacidad`): conservador del lado de la inundacion;
-      - la velocidad que sale en `ResultadoHidraulico.V` usa n_min, tal como
-        la deja M3, para las verificaciones de erosion;
+      - las DOS velocidades que salen en `ResultadoHidraulico` viajan tal
+        como las deja M3: `V_erosion` (n_min, estimacion alta) para los techos
+        -- V3 y el d50 de Laushey -- y `V_sedimentacion` (n_max, estimacion
+        baja) para el piso de autolimpieza de V2. M4 no elige entre ellas ni
+        recalcula ninguna: solo las traslada;
       - el tirante critico no usa ninguno: no depende de n.
 
     El tirante critico se resuelve UNA vez y se inyecta en las dos piezas que
@@ -572,7 +575,8 @@ def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
     return ResultadoHidraulico(
         y_normal=normal.geometria.y,
         y_critico=critico.y_c,
-        V=normal.V,
+        V_erosion=normal.V_erosion,
+        V_sedimentacion=normal.V_sedimentacion,
         Q=Q,
         HW_entrada=entrada.HW,
         HW_salida=salida.HW,

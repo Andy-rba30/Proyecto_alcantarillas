@@ -66,7 +66,7 @@ Cuatro criterios alimentan campos que `Material` declara `Optional`:
 'n_manning_hdpe', 'v_max_tmc', 'v_max_hdpe' y 'espesor_pared_conducto'.
 
 ESTADO HOY: los tres primeros tienen valor y el cuarto no.
-'v_max_tmc' = 'v_max_hdpe' = 4.6 m/s [C] (WSDOT, Tabla 8-4);
+'v_max_tmc' = 'v_max_hdpe' = 4.572 m/s [C] (WSDOT, Tabla 8-4: 15 ft/s);
 'n_manning_hdpe' = la fila del concreto de la Tabla N 09 [N->];
 'espesor_pared_conducto' = SIN VALOR [A], y bloquea en su punto de uso
 (`diametro_exterior` de este mismo modulo, que llaman
@@ -106,8 +106,15 @@ darle un punto de uso que bloquee, como tienen los otros tres.
 
 Sec. 3.2 - Catalogo de diametros
 ---------------------------------
-Progresion 0.90 m (minimo normativo MTC, num. 4.1.1.3.4 a) + pasos de 0.15 m,
-topada por material. Los dos numeros de la progresion viven en el criterio
+Progresion 0.90 m + pasos de 0.15 m, topada por material. El 0.90 sale del
+num. 4.1.1.3.4 a) y NO es un piso incondicional: el numeral lo escribe "en
+carreteras de alto volumen de transito" -- condicion que este proyecto no puede
+afirmar, porque la clase de via depende del IMDA -- y exceptua expresamente los
+cruces de canal de riego, que es la Familia C (ver "Familia C queda sin
+candidatos", mas abajo, y `constantes_normativas.DIAMETRO_MIN_AMBITO`).
+Aplicarlo igual a las Familias A y B es una adopcion declarada, y su direccion
+NO es uniformemente conservadora: mas diametro da mas borde libre (favorable a
+V1) y menos velocidad (desfavorable al piso de V2). Los dos numeros de la progresion viven en el criterio
 'diametros_normalizados' [C]; los tres topes, en 'D_max_catalogo' [A]. Estan
 separados porque no son la misma clase de dato: el paso se verifica contra la
 serie de diametros nominales de las normas de producto y los topes NO salen de
@@ -132,22 +139,35 @@ producto.
 Sec. 3.4 - Matriz de decision de material
 -------------------------------------------
 Concreto reforzado es el unico material sin vacio normativo propio: su n
-sale de la Tabla N 09 (MANNING['concreto_recto']) y su velocidad maxima de
-la Tabla N 10 (V_MAX['concreto']), ambas [N] en constantes_normativas.py.
-TMC comparte fila de Tabla N 09 (MANNING['metal_corrugado']) pero no tiene
-fila en la Tabla N 10: su velocidad maxima es el vacio 'v_max_tmc'. HDPE no
-esta en ninguna de las dos tablas del Manual MTC: su n sale del criterio
-'n_manning_hdpe' (rango completo por analogia, [A]) y su velocidad maxima
-del vacio 'v_max_hdpe'.
+sale de la Tabla N 09 (MANNING['concreto_tubo_recto']) y su velocidad maxima
+de la Tabla N 10 (V_MAX['concreto']), ambas [N] en constantes_normativas.py.
+TMC tiene su propia subfila en la Tabla N 09
+(MANNING['metal_corrugado_dren_aguas_lluvias'] -- ver `_MANNING_CLAVE`, que
+declara por que esa y no la de sub-dren) pero no tiene fila en la Tabla N 10:
+su velocidad maxima es el criterio 'v_max_tmc'. HDPE no esta en ninguna de las
+dos tablas del Manual MTC: su n sale del criterio 'n_manning_hdpe' (la subfila
+completa del concreto por analogia, [N->]) y su velocidad maxima del criterio
+'v_max_hdpe'.
 
-Familia C queda sin candidatos
--------------------------------
+Familia C queda sin candidatos -- por DOS razones, y la normativa faltaba
+-------------------------------------------------------------------------
 Sec. 2.3 (recogido en M1_clasificacion.PERFILES) dice que la Familia C usa
 "seccion: marco o multicelda", no un conducto circular. El catalogo de este
 modulo es exclusivamente de conductos circulares (Material.D es un diametro),
 de modo que `materiales_candidatos()` devuelve la tupla vacia para un punto
 de Familia C: no es que ningun material circular pase el filtro, es que la
 pregunta de conducto circular no aplica a esa familia.
+
+La segunda razon es NORMATIVA y no estaba escrita (NOR-HID-03). El
+num. 4.1.1.3.4 a) del Manual de Hidrologia, que es de donde sale el piso de
+0.90 m que este catalogo aplica como primer escalon, EXCEPTUA expresamente a
+los cruces de canal de riego: "...salvo en cruces de canales de riego donde se
+adoptaran secciones de acuerdo a cada diseno particular". La Familia C de este
+expediente ES el conjunto de cruces de canal. Que la exclusion se apoyara solo
+en la forma de la seccion dejaba el piso normativo aplicandose "por defecto" a
+una familia que el numeral exime: mismo resultado, razon incompleta. El texto
+literal y su ambito estan en `constantes_normativas.DIAMETRO_MIN_TEXTO` y
+`DIAMETRO_MIN_AMBITO`.
 
 Excepciones
 -----------
@@ -176,7 +196,7 @@ from typing import Any, Optional, Tuple, Union
 
 import criterios_adoptados as ca
 from constantes_normativas import (HDS5_INLET, H_RELLENO_MIN, MANNING,
-                                   SECCION_EG2013, V_MAX)
+                                   SECCION_EG2013, TABLA_09_FILAS, V_MAX)
 from modelos import (ConstantesHDS5, DatoInvalidoError, Familia, Material,
                      PuntoCritico, TipoMaterial)
 from tolerancias import TOL_UMBRAL_NORMATIVO
@@ -217,9 +237,29 @@ _NORMA_PRODUCTO = {
 # Claves de MANNING (Tabla N 09) y de HDS5_INLET (Tabla A.1) que si tienen
 # fila normativa directa: HDPE no esta en ninguna de las dos tablas del
 # Manual MTC y por eso no aparece en estos dos dicts (usa criterio adoptado).
+# LA ELECCION DE SUBFILA SE DECLARA AQUI, QUE ES DONDE SE HACE (NOR-HID-11).
+# La Tabla N 09 no tiene una fila por material sino un arbol de subfilas, y
+# elegir una es una decision sobre QUE ES la obra, no sobre que valor conviene:
+#
+#   TMC     -> "Metal corrugado / dren para aguas lluvias" (0.021/0.024/0.030),
+#              NO "Metal corrugado / sub - dren" (0.017/0.019/0.021). Una
+#              alcantarilla evacua escorrentia superficial; un sub-dren capta
+#              agua del terreno. La confusion no se detectaba mirando los
+#              numeros: el par (n_min, n_max) de la subfila elegida, (0.021,
+#              0.030), empieza justo donde TERMINA la otra, y el codigo la
+#              guardaba bajo la clave generica 'metal_corrugado'.
+#   Concreto -> "Concreto / tubo recto y libre de basuras" (0.010/0.011/0.013),
+#              la primera de las siete subfilas de concreto. Es la que
+#              describe el conducto de este proyecto: tramo recto, sin camaras
+#              ni conexiones intermedias (esas son "tubo de alcantarillado con
+#              camaras, entradas", 0.013/0.015/0.017). Si un punto llevara
+#              camaras, esta clave cambiaria -- y con ella el tirante, porque
+#              el n_max sube de 0.013 a 0.017.
+#   HDPE    -> no esta en la tabla: criterio 'n_manning_hdpe', que aplica por
+#              analogia la MISMA subfila del concreto.
 _MANNING_CLAVE = {
-    TipoMaterial.CONCRETO_REFORZADO: "concreto_recto",
-    TipoMaterial.TMC: "metal_corrugado",
+    TipoMaterial.CONCRETO_REFORZADO: "concreto_tubo_recto",
+    TipoMaterial.TMC: "metal_corrugado_dren_aguas_lluvias",
 }
 _HDS5_CLAVE = {
     TipoMaterial.CONCRETO_REFORZADO: "circular_concreto_square_edge_headwall",
@@ -387,7 +427,7 @@ def catalogo(material: MaterialLike) -> Material:
     (Tabla N 10 o el vacio que la sustituye), relleno minimo sobre la clave
     (Sec. 7.A) y seccion de EG-2013 para el presupuesto.
 
-    v_max_rango, espesor_pared y la doble n del HDPE pueden salir en None si
+    v_max_adoptado, espesor_pared y la doble n del HDPE pueden salir en None si
     su criterio se vacia: se leen con `_valor_si_declarado()`, no con
     `ca.valor()` ni con `ca.criterio()`. Ver "Campos que el catalogo puede
     dejar en None" en el docstring del modulo, incluida la excepcion de
@@ -406,10 +446,12 @@ def catalogo(material: MaterialLike) -> Material:
         n_min, n_max = MANNING[_MANNING_CLAVE[tipo]]
         hds5 = ConstantesHDS5.desde_dict(HDS5_INLET[_HDS5_CLAVE[tipo]])
 
-    if tipo in _V_MAX_CLAVE:
-        v_max_rango = V_MAX[_V_MAX_CLAVE[tipo]]
-    else:
-        v_max_rango = _valor_si_declarado(CRITERIO_V_MAX[tipo])
+    # Los dos techos NO son el mismo campo (SIS-A-06): uno es la fila literal
+    # de la Tabla N 10 y el otro un escalar de criterio. Cada material llena
+    # uno y deja el otro en None.
+    v_max_tabla10 = V_MAX.get(_V_MAX_CLAVE.get(tipo))
+    v_max_adoptado = (None if tipo in _V_MAX_CLAVE
+                      else _valor_si_declarado(CRITERIO_V_MAX[tipo]))
 
     espesores = _valor_si_declarado(CRITERIO_ESPESOR_PARED)
     if espesores is not None and not hasattr(espesores, "get"):
@@ -432,7 +474,12 @@ def catalogo(material: MaterialLike) -> Material:
         D_max_de_catalogo=ca.criterio(CRITERIO_D_MAX_CATALOGO).de_catalogo,
         norma_producto=_NORMA_PRODUCTO[tipo],
         hds5=hds5,
-        v_max_rango=v_max_rango,
+        fila_manning=(TABLA_09_FILAS[_MANNING_CLAVE[tipo]]["fila"]
+                      if tipo in _MANNING_CLAVE else
+                      f"no listado en la Tabla N 09; analogia declarada en el "
+                      f"criterio '{CRITERIO_N_MANNING_HDPE}'"),
+        v_max_tabla10=v_max_tabla10,
+        v_max_adoptado=v_max_adoptado,
         # [N] directo de EG-2013 508.07 y SOLO para HDPE: los otros dos
         # materiales no tienen minimo en el EG-2013, y su None significa eso.
         h_relleno_min_eg2013=H_RELLENO_MIN[_EG2013_CLAVE[tipo]],
@@ -451,8 +498,12 @@ def materiales_candidatos(punto: PuntoCritico) -> Tuple[Material, ...]:
     Sec. 3.4). No elige uno: entrega el catalogo completo de los que tienen
     sentido para la familia del punto.
 
-    Familia C queda con la tupla vacia: su seccion es marco o multicelda
-    (Sec. 2.3), no un conducto circular, y este catalogo no cubre esa forma.
+    Familia C queda con la tupla vacia, por dos razones que se acumulan: su
+    seccion es marco o multicelda (Sec. 2.3), no un conducto circular que este
+    catalogo cubra; y el num. 4.1.1.3.4 a), del que sale el piso de 0.90 m con
+    que arranca la progresion, exceptua a los cruces de canal de riego -- que
+    es lo que la Familia C es -- remitiendolos a "cada diseno particular". Ver
+    "Familia C queda sin candidatos" en el docstring del modulo.
     """
     if punto.familia is Familia.C:
         return ()

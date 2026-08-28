@@ -82,7 +82,7 @@ def test_el_diametro_minimo_y_el_llenado_maximo_son_los_de_CP2():
 
 
 def test_el_n_del_concreto_es_el_par_de_CP2():
-    n_min, n_max = CN.MANNING["concreto_recto"]
+    n_min, n_max = CN.MANNING["concreto_tubo_recto"]
     assert n_min == pytest.approx(CP2_GEOMETRIA_MANNING["n_min"])
     assert n_max == pytest.approx(CP2_GEOMETRIA_MANNING["n_max"])
 

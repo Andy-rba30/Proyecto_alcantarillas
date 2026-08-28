@@ -775,6 +775,73 @@ CRITERIOS: Dict[str, Criterio] = {
                                "analisis de homogeneidad que lo respalda",
     ),
 
+    "riesgo_admisible_propietario": Criterio(
+        valor=None,                 # OPCIONAL: sin valor rigen los maximos
+                                    # recomendados de la Tabla N 02
+        etiqueta="A",
+        concepto="Riesgo admisible de falla R y vida util n que el Propietario "
+                 "de la obra adopta, si son distintos de los maximos "
+                 "recomendados de la Tabla N 02",
+        justificacion="OPCIONAL, no un vacio: sin valor el calculo NO se "
+                      "detiene y M1 aplica las dos filas de la Tabla N 02 "
+                      "(quebrada importante R = 0.30 / n = 25; quebrada menor "
+                      "y descarga de cunetas R = 0.35 / n = 15). "
+                      "POR QUE EXISTE (NOR-HID-08). La Tabla N 02 no fija "
+                      "esos numeros: los RECOMIENDA como maximos -- su titulo "
+                      "es 'VALORES MAXIMOS RECOMENDADOS', el texto que la "
+                      "introduce dice 'se recomienda utilizar como maximo' -- "
+                      "y su nota al pie asigna expresamente la decision a "
+                      "otro: 'El Propietario de una Obra es el que define el "
+                      "riesgo admisible de falla y la vida util de las obras'. "
+                      "Adoptar los maximos recomendados es entonces una "
+                      "decision del proyecto, no una lectura del numeral, y "
+                      "necesitaba una via declarada por la que el Propietario "
+                      "pueda ejercer la suya. Sin este criterio, M1 imprimia "
+                      "en la memoria que el proyecto adopta los maximos "
+                      "'mientras el Propietario no declare otros' y no habia "
+                      "ninguna forma de declararlos: una promesa sin "
+                      "mecanismo. "
+                      "EN QUE DIRECCION MUEVE. Al reves que V1 y V2, aqui el "
+                      "extremo recomendado es el MENOS conservador: mas "
+                      "riesgo admisible da menos periodo de retorno y menos "
+                      "caudal de diseno. Un Propietario que adopte R = 0.20 "
+                      "con n = 25 pasa de TR = 71 a TR = 113 anios, +59 %, y "
+                      "con el sube el Q de diseno de todos los puntos de "
+                      "Familia A. Por eso el criterio solo puede ENDURECER lo "
+                      "que la tabla concede, nunca aflojarlo: M1 rechaza un R "
+                      "declarado por encima del maximo recomendado de su "
+                      "fila. "
+                      "QUE NO ES. No es la eleccion de FILA -- que cauce cae "
+                      "en 'quebrada importante' y cual en 'quebrada menor' --, "
+                      "que es otro eje y vive en "
+                      "'umbral_area_quebrada_importante_ha', sin valor y "
+                      "bloqueando. Aqui se declara, para una fila ya elegida, "
+                      "que R y que n adopta el Propietario",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, "
+               "RD 20-2011-MTC/14), Tabla N 02 'VALORES MAXIMOS RECOMENDADOS "
+               "DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE', num. 3.6, "
+               "pag. impresa 25, y su nota al pie. La tabla completa -- seis "
+               "filas, con las dos notas -- esta transcrita en "
+               "constantes_normativas.TABLA_02_FILAS; las dos filas que el "
+               "calculo consume salen de ella por "
+               "constantes_normativas.RIESGO_ADMISIBLE, que es el valor por "
+               "defecto que este criterio refina",
+        reemplazado_por="Declaracion escrita del Propietario de la obra sobre "
+                        "el riesgo admisible de falla y la vida util, que es "
+                        "a quien la nota al pie de la Tabla N 02 le asigna la "
+                        "decision",
+        sensibilidad=("los maximos recomendados de la Tabla N 02, que el "
+                      "proyecto adopta por defecto: R = 30 % con n = 25 anios "
+                      "(quebrada importante, TR 71) y R = 35 % con n = 15 "
+                      "anios (quebrada menor y descarga de cunetas, TR 35)",
+                      "cualquier R menor y/o cualquier n mayor que declare el "
+                      "Propietario: la tabla es un techo y solo se puede bajar "
+                      "de el. El TR crece al bajar R o al subir n -- p.ej. "
+                      "R = 20 % con n = 25 da TR = 113 anios --, y con el "
+                      "crece el caudal de diseno"),
+        opcional=True,      # sin declarar, rigen los maximos de la Tabla N 02
+    ),
+
     "umbral_area_quebrada_importante_ha": Criterio(
         valor=None,                 # VACIO: bloquea el TR de toda la Familia A
         etiqueta="A",
@@ -918,7 +985,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # del concreto, sin nada que ligara las dos copias: si alguien
         # corrigiera la Tabla N 09, esta seguiria con el valor viejo y la
         # "analogia" habria dejado de serlo en silencio (SIS-D-11).
-        valor=MANNING["concreto_recto"],   # RANGO (n_min, n_max), no puntual
+        valor=MANNING["concreto_tubo_recto"],   # RANGO (n_min, n_max), no puntual
         etiqueta="N->",             # analogia normativa declarada, no adopcion
         concepto="Coeficiente de rugosidad de Manning para HDPE de interior liso",
         justificacion="La Tabla N 09 del Manual MTC no lista HDPE. Se adopta el "
@@ -937,17 +1004,37 @@ CRITERIOS: Dict[str, Criterio] = {
                       "[N->] por lo mismo. La hoja de ruta se contradice a si misma al escribir "
                       "[A] para este criterio en su Anexo A: manda su propia regla "
                       "de coherencia, no la fila del indice",
-        fuente="Analogia a Tabla N 09 (concreto, tubo recto), num. 4.1.1.3.5, "
-               "transcrita en constantes_normativas.MANNING",
+        fuente="Analogia a la fila 'A.2 NO METALICOS - a. Concreto - tubo recto "
+               "y libre de basuras' de la Tabla N 09 del Manual de Hidrologia "
+               "(MTC, RD 20-2011-MTC/14), num. 4.1.1.3.6 'Diseno hidraulico', "
+               "pag. impresa 75; transcrita completa en "
+               "constantes_normativas.TABLA_09_FILAS y leida por "
+               "constantes_normativas.MANNING. "
+               "NUMERAL CORREGIDO: este campo citaba el num. 4.1.1.3.5, que es "
+               "'Recomendaciones y factores a tomar en cuenta para el diseno de "
+               "una alcantarilla' y no contiene ninguna tabla de rugosidad. La "
+               "Tabla N 09 la llama el num. 4.1.1.3.6 ('n: Coeficiente de "
+               "Manning (Ver Tabla N 09)', pag. impresa 74), verificado sobre "
+               "el PDF de normas/. "
+               "QUE COLUMNAS TOMA LA ANALOGIA: la MINIMO (0.010) y la MAXIMO "
+               "(0.013), no la NORMAL (0.011), porque la regla de doble n pide "
+               "los dos extremos y no el valor corriente",
         reemplazado_por="Ficha tecnica del producto seleccionado",
-        sensibilidad=MANNING["concreto_recto"],
+        sensibilidad=MANNING["concreto_tubo_recto"],
         verificacion_pendiente="Confirmar que el HDPE especificado es de INTERIOR "
                                "LISO. El de interior corrugado tiene n del orden de "
                                "0.018-0.025 y la analogia seria gruesamente insegura",
     ),
 
     "v_max_hdpe": Criterio(
-        valor=4.6,
+        # 15 ft/s x 0.3048 m/ft = 4.572 m/s EXACTOS. Antes decia 4.6 (MAT-O14):
+        # un techo declarado DURO -- por encima de el la fuente prohibe el
+        # material -- redondeado HACIA ARRIBA queda 0.6 % por encima del techo
+        # que dice aplicar, o sea admite velocidades que la fuente no admite.
+        # Un minimo se redondea hacia arriba y un maximo hacia abajo; aqui no
+        # hace falta redondear ninguno de los dos lados porque la conversion es
+        # exacta.
+        valor=4.572,
         etiqueta="C",               # Anexo A y Sec. 0.1: la fuente (WSDOT)
                                     # es tecnica reconocida, no una adopcion libre
         concepto="Velocidad maxima admisible en HDPE",
@@ -955,7 +1042,23 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026), Cap. 8, S8-6, "
                "Tabla 8-4 'Pipe Abrasion Levels', pp. 8-27/8-28. Techo duro: "
                "por encima de 15 ft/s el termoplastico no puede reforzarse "
-               "estructuralmente y su uso queda prohibido por la propia tabla.",
+               "estructuralmente y su uso queda prohibido por la propia tabla. "
+               "EL VALOR ES LA CONVERSION EXACTA DE LAS 15 ft/s: "
+               "15 x 0.3048 = 4.572 m/s. "
+               "LIMITACION QUE HAY QUE DECLARAR (MAT-O14): la Tabla 8-4 de "
+               "WSDOT NO esta en normas/, de modo que esta cita no es "
+               "auditable contra un documento del repositorio como si lo son "
+               "las del Manual de Hidrologia. Mientras la tabla no se anexe, "
+               "el numero se defiende por su conversion y por la coherencia "
+               "con 'v_max_tmc', no por verificacion documental. "
+               "DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: "
+               "docs/hoja_de_ruta_alcantarillas_v8.md sigue escribiendo, en la fila "
+               "V3 de la tabla de la Fase 5, 'TMC y HDPE: PPI/FHWA, valor por "
+               "extraer', cuando el criterio esta cerrado desde hace varias "
+               "sesiones y ademas la fuente que lo cerro no es PPI/FHWA sino "
+               "WSDOT. La hoja de ruta es la que hay que corregir; mientras no "
+               "se corrija, quien la lea sin leer este archivo creera que el "
+               "techo del HDPE sigue vacio.",
         reemplazado_por="Ficha tecnica del producto seleccionado o "
                         "especificacion del fabricante con su propio techo de "
                         "velocidad; y, para el expediente, la transcripcion "
@@ -977,7 +1080,11 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "v_max_tmc": Criterio(
-        valor=4.6,
+        # Mismo motivo que en 'v_max_hdpe' (MAT-O14): 15 ft/s = 4.572 m/s
+        # exactos. Aqui la fuente no fija techo absoluto y el numero es una
+        # adopcion conservadora del proyecto anclada en el mismo umbral, de
+        # modo que redondear hacia arriba tampoco tiene apoyo.
+        valor=4.572,
         etiqueta="C",               # idem v_max_hdpe: Anexo A lo etiqueta [C]
         concepto="Velocidad maxima admisible en TMC",
         justificacion="La Tabla N 10 del Manual MTC no cubre materiales flexibles",
@@ -985,8 +1092,18 @@ CRITERIOS: Dict[str, Criterio] = {
                "Tabla 8-4 'Pipe Abrasion Levels', pp. 8-27/8-28. La fuente NO "
                "fija techo absoluto para metal -- por encima de este valor "
                "exige mayor calibre o revestimiento, no prohibe el material. "
-               "Se adopta 4.6 m/s como limite de diseno conservador porque el "
-               "catalogo de M2 no modela proteccion adicional por calibre.",
+               "Se adopta como limite de diseno conservador el mismo umbral "
+               "de 15 ft/s = 4.572 m/s (conversion exacta), porque el catalogo "
+               "de M2 no modela proteccion adicional por calibre. "
+               "LIMITACION QUE HAY QUE DECLARAR (MAT-O14): la Tabla 8-4 de "
+               "WSDOT NO esta en normas/ y esta cita no es auditable contra un "
+               "documento del repositorio. "
+               "DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: "
+               "docs/hoja_de_ruta_alcantarillas_v8.md sigue escribiendo, en la "
+               "fila V3 de la tabla de la Fase 5, 'TMC y HDPE: PPI/FHWA, valor "
+               "por extraer', aunque el criterio este cerrado y la fuente que "
+               "lo cerro sea WSDOT y no PPI/FHWA. La hoja de ruta es la que "
+               "hay que corregir.",
         reemplazado_por="Ficha tecnica del producto seleccionado, o el "
                         "modelado del calibre y el revestimiento en el "
                         "catalogo de M2 (que es lo que la fuente pide en vez "
@@ -1019,10 +1136,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "nunca. Confundir las dos cosas es lo que la palabra "
                       "'unica' hacia. "
                       "La Tabla N 10 se titula 'Velocidades maximas "
-                      "admisibles en conductos revestidos' (num. 4.1.1.3.6, "
-                      "pag. 76): sus dos numeros son MAXIMOS segun la calidad "
-                      "del revestimiento, y 6.0 m/s es el techo del acabado "
-                      "de mejor calidad. Un concreto de acabado corriente "
+                      "admisibles (m/s) en conductos revestidos' "
+                      "(num. 4.1.1.3.6, pag. impresa 76): sus dos numeros son "
+                      "MAXIMOS -- eso lo dice el titulo --, y que el superior "
+                      "corresponda al acabado de mejor calidad es "
+                      "INTERPRETACION DEL PROYECTO, no del Manual (ver abajo, "
+                      "en `fuente`). Un concreto de acabado corriente "
                       "admite menos, y bajar el techo hasta 3.0 m/s -- el "
                       "maximo del acabado mas pobre -- es una decision "
                       "defendible del proyectista sobre las condiciones de "
@@ -1035,21 +1154,39 @@ CRITERIOS: Dict[str, Criterio] = {
                       "conductos de concreto perfectamente admisibles",
         fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, "
                "RD 20-2011-MTC/14), Tabla N 10 'Velocidades maximas "
-               "admisibles en conductos revestidos', num. 4.1.1.3.6, "
-               "pag. 76. "
-               "DE DONDE SALE EL DEFECTO: los dos numeros de la fila del "
-               "concreto, 3.0 y 6.0 m/s, son ambos MAXIMOS -- el rango "
-               "recorre la calidad del revestimiento, no un piso y un techo. "
-               "6.0 m/s es el maximo del acabado de mejor calidad, y es el "
-               "valor [N] que V3 aplica cuando este criterio no se declara. "
-               "3.0 m/s es el maximo del acabado mas pobre, y por eso es el "
-               "otro extremo del rango de sensibilidad: entre 3.0 y 6.0 esta "
-               "todo lo que el proyectista puede adoptar sin salirse de la "
-               "tabla. Bajar el techo dentro de ese rango, por las "
-               "condiciones de acabado de ESTA obra, no lo normaliza ningun "
-               "numeral: es adopcion declarada, y por eso [A] y no [N]. "
-               "El piso de velocidad NO sale de esta tabla: es V2, 0.25 m/s "
-               "de la misma pagina, y vale para todos los materiales",
+               "admisibles (m/s) en conductos revestidos', num. 4.1.1.3.6, "
+               "pag. impresa 76. Fuente de la propia tabla: HCANALES, Maximo "
+               "Villon B. -- no es una tabla de elaboracion del MTC. "
+               "TITULO CORREGIDO (NOR-HID-06): este campo entrecomillaba el "
+               "titulo sin '(m/s)'. En una cita entre comillas que la memoria "
+               "reproduce, la unidad omitida es lo primero que un revisor "
+               "comprueba. "
+               "LO QUE LA FUENTE SOSTIENE: que los dos numeros de la fila del "
+               "concreto, 3.0 y 6.0 m/s, son ambos MAXIMOS. Lo dice el titulo "
+               "de la tabla y lo confirma el rotulo de su unica columna de "
+               "valores, 'VELOCIDAD (M/S)'. 6.0 m/s es el mayor de los dos y "
+               "es el valor [N] que V3 aplica cuando este criterio no se "
+               "declara. El piso de velocidad NO sale de esta tabla: es V2, "
+               "0.25 m/s del parrafo siguiente, y vale para todos los "
+               "materiales. "
+               "LO QUE NO SOSTIENE, Y ESTE CAMPO AFIRMABA (NOR-HID-04): que "
+               "el rango 'recorra la calidad del revestimiento' y que 3.0 sea "
+               "'el maximo del acabado mas pobre'. El Manual no explica en "
+               "ninguna parte por que hay dos numeros. La frase con que "
+               "introduce la tabla apunta incluso en otra direccion ('se "
+               "encuentre dentro de un rango, cuyos limites se describen a "
+               "continuacion') y la fila de mamposteria trae UN SOLO valor "
+               "(2.0), que no encaja con una lectura de acabados. Es "
+               "INTERPRETACION DEL PROYECTISTA -- razonable, y la que sostiene "
+               "que este criterio pueda bajar el techo dentro de la fila -- y "
+               "se declara como tal, no adosada a la cita: "
+               "constantes_normativas.TABLA_10_INTERPRETACION_PROYECTO la "
+               "imprime separada, y la memoria la lee de ahi. "
+               "QUE SIGNIFICA ENTONCES EL RANGO DE SENSIBILIDAD (3.0, 6.0): "
+               "los dos valores que la fila del concreto escribe. Adoptar el "
+               "menor es el techo mas conservador que se puede tomar sin "
+               "salirse de la tabla; no lo normaliza ningun numeral, y por eso "
+               "[A] y no [N]",
         sensibilidad=(3.0, 6.0),
         opcional=True,      # sin declarar, V3 aplica el techo [N] de 6.0 m/s
     ),
@@ -1422,8 +1559,23 @@ CRITERIOS: Dict[str, Criterio] = {
                "escalones de 150 mm a partir de 900 mm); AASHTO M 170M-04, "
                "Tablas 1 a 5 (300 a 3600 mm); AASHTO M294 (serie de 150 mm). El "
                "piso de 0.90 m no sale de ellas sino del minimo normativo "
-               "peruano: Manual de Hidrologia num. 4.1.1.3.4 a) "
-               "(constantes_normativas.DIAMETRO_MIN)",
+               "peruano: Manual de Hidrologia num. 4.1.1.3.4 a), pag. impresa "
+               "72 (constantes_normativas.DIAMETRO_MIN). "
+               "EL PISO ES CONDICIONAL Y ESTE CAMPO LO OMITIA (NOR-HID-03, "
+               "MAT-O19). El numeral lo escribe asi: 'En carreteras de alto "
+               "volumen de transito y por necesidad de limpieza y "
+               "mantenimiento de las alcantarillas, se adoptara una seccion "
+               "minima circular de 0.90 m (36\") de diametro o su equivalente "
+               "de otra seccion, salvo en cruces de canales de riego donde se "
+               "adoptaran secciones de acuerdo a cada diseno particular'. Las "
+               "dos condiciones tocan a este proyecto: la clase de via NO esta "
+               "cerrada, de modo que 'alto volumen de transito' no se puede "
+               "afirmar -- el piso se aplica igual a las Familias A y B y eso "
+               "es una adopcion conservadora declarada, no una lectura "
+               "automatica --, y la Familia C ES un conjunto de cruces de "
+               "canal, o sea el caso que el numeral EXCEPTUA. El detalle esta "
+               "en constantes_normativas.DIAMETRO_MIN_AMBITO, que la memoria "
+               "imprime",
     ),
 
     "D_max_catalogo": Criterio(
@@ -1958,7 +2110,7 @@ CRITERIOS: Dict[str, Criterio] = {
                                "por diametro y hay que elegir una. El "
                                "precedente interno es 'v_max_tmc' / "
                                "'v_max_hdpe', que fueron [C] sin valor por la "
-                               "misma razon y hoy valen 4.6 sin haber cambiado "
+                               "misma razon y hoy valen 4.572 sin haber cambiado "
                                "de etiqueta",
     ),
 

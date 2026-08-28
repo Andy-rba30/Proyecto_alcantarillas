@@ -86,7 +86,8 @@ def _punto(**cambios) -> PuntoCritico:
 
 def _resultado(*, HW_entrada=0.50) -> ResultadoHidraulico:
     return ResultadoHidraulico(
-        y_normal=0.60, y_critico=0.40, V=1.5, Q=1.0,
+        y_normal=0.60, y_critico=0.40,
+        V_erosion=1.5, V_sedimentacion=1.2, Q=1.0,
         HW_entrada=HW_entrada, HW_salida=0.20,
         control_gobernante=ControlGobernante.ENTRADA,
     )
