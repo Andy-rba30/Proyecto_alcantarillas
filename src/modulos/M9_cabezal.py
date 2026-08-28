@@ -161,7 +161,6 @@ from constantes_fisicas import GAMMA_AGUA_KN_M3
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    AMBIENTE_CORROSIVO_TEXTO,
                                    CARGA_VIVA,
-                                   CICLOPEO_FC_MATRIZ_MIN,
                                    CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO,
@@ -199,7 +198,6 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NQ_ZAPATA_EN_TALUD,
                                    NUMERAL_AGUA_TRASDOS_AASHTO,
                                    NUMERAL_C_PHI,
-                                   NOTA_COMBINACION_4_2_4_4,
                                    NUMERAL_CICLOPEO,
                                    NUMERAL_CICLOPEO_APLICABLE,
                                    NUMERAL_COMBINACION_4_2_4_4,
@@ -242,7 +240,6 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    SECCION_CABEZALES,
                                    SOBRECARGA_TRASDOS_H_EQ,
                                    SULFATOS,
-                                   SULFATOS_BORDE_ABIERTO_TEXTO,
                                    TABLA_COMBINACIONES_FILAS,
                                    TABLA_GAMMA_P_FILAS)
 from modelos import (CadenaSismica, CasoDemandaSismica, CombinacionCarga,
@@ -2266,6 +2263,15 @@ def _recubrimiento_aashto_detallado(*, condicion: str) -> Tuple[float, dict]:
         )
 
     tabulado = float(tabla[situacion][categoria])
+    if (categoria == CATEGORIA_ACERO_SIN_RECUBRIR
+            and situacion in RECUBRIMIENTO_MP_MM):
+        # El corpus peruano TABULA esta columna, asi que el valor sale de el y
+        # no de AASHTO: es lo que pedia NOR-PUE-10, y no basta con nombrarlo en
+        # la etiqueta. Se toma el mayor de los dos por la misma regla de
+        # conflicto de Sec. 0.2 -- hoy coinciden (3.0 in en las dos), y si
+        # alguna edicion los separa, la regla ya esta escrita y no hay que
+        # decidir nada en caliente.
+        tabulado = max(tabulado, float(RECUBRIMIENTO_MP_MM[situacion]))
     requisitos = requisitos_durabilidad_concreto()
     factor, origen_factor = factor_recubrimiento_por_ac(
         a_c_max=requisitos.a_c_max)
