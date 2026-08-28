@@ -62,8 +62,11 @@ Lo que este modulo SI calcula entero
       el espaciamiento maximo y la alternativa en concreto ciclopeo.
     * Las combinaciones AASHTO LRFD de Sec. 9.2 (`factores_de_carga()`), el
       peso propio del cabezal (`peso_propio_cabezal`, 'peso_especifico_
-      concreto_kn_m3') y la regla del recubrimiento mayor
-      (`recubrimiento_de_diseno`, 'recubrimiento_aashto_mm'). Los factores de
+      concreto_kn_m3'). La regla del recubrimiento mayor
+      (`recubrimiento_de_diseno`) ya NO es de este grupo: su lado AASHTO se
+      calcula y depende de dos declaraciones que el expediente no ha hecho
+      -- 'categoria_refuerzo_aashto' y 'exposicion_quimica_ems' --, de modo
+      que hoy se detiene. Los factores de
       carga ya no son un criterio [C]: las dos tablas del num. 2.4.5.3.1 del
       Manual de Puentes estan transcritas como [N] en constantes_normativas y
       'factores_carga_aashto' [A] declara solo de que FILA de gamma_p cuelga
@@ -156,8 +159,10 @@ import criterios_adoptados as ca
 import datos_sitio as ds
 from constantes_fisicas import GAMMA_AGUA_KN_M3
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
+                                   AMBIENTE_CORROSIVO_TEXTO,
                                    CARGA_VIVA,
                                    CICLOPEO_FC_MATRIZ_MIN,
+                                   CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO,
                                    CUANTIA_MIN_MURO,
@@ -166,7 +171,11 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    E030_S5_TEXTO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
                                    ESPACIAMIENTO_MAX_VECES_ESPESOR,
+                                   ESPESOR_DOS_CAPAS_REFUERZO,
                                    ESPESOR_TEMPERATURA_DOS_CARAS,
+                                   EXCEPCION_DOS_CAPAS_REFUERZO,
+                                   EXCEPCION_REFUERZO_MIN_MURO_TEXTO,
+                                   EXPOSICION_ESPECIAL,
                                    E030_ART_7_3_TEXTO,
                                    EXCENTRICIDAD_ADMISIBLE_FRACCION_B,
                                    EXCENTRICIDAD_ERRATA_MANUAL,
@@ -190,7 +199,13 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NQ_ZAPATA_EN_TALUD,
                                    NUMERAL_AGUA_TRASDOS_AASHTO,
                                    NUMERAL_C_PHI,
+                                   NOTA_COMBINACION_4_2_4_4,
                                    NUMERAL_CICLOPEO,
+                                   NUMERAL_CICLOPEO_APLICABLE,
+                                   NUMERAL_COMBINACION_4_2_4_4,
+                                   NUMERAL_DOS_CAPAS_REFUERZO,
+                                   NUMERAL_EXCEPCION_REFUERZO_MIN_MURO,
+                                   NUMERAL_EXPOSICION_ESPECIAL,
                                    NUMERAL_COMBINACIONES,
                                    NUMERAL_CUANTIA_MIN,
                                    NUMERAL_E030_AMBITO,
@@ -208,6 +223,8 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_P_IR,
                                    NUMERAL_PRESION_CONTACTO,
                                    NUMERAL_RECUBRIMIENTO,
+                                   NUMERAL_RECUBRIMIENTO_MP,
+                                   NUMERAL_SULFATOS,
                                    NUMERAL_SOBRECARGA_TRASDOS,
                                    NUMERAL_TABLA_GAMMA_P,
                                    NUMERAL_TEMPERATURA_DOS_CARAS,
@@ -216,9 +233,16 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    P_SEIS_COMBINACIONES,
                                    P_SEIS_PISO_ESTATICO,
                                    RECUBRIMIENTO,
+                                   RECUBRIMIENTO_AC_UMBRAL_ALTO,
+                                   RECUBRIMIENTO_AC_UMBRAL_BAJO,
+                                   RECUBRIMIENTO_MP_FACTOR_AC,
+                                   RECUBRIMIENTO_MP_MM,
+                                   RECUBRIMIENTO_MP_PISO_MM,
                                    REDUCCION_KH_POR_DESPLAZAMIENTO,
                                    SECCION_CABEZALES,
                                    SOBRECARGA_TRASDOS_H_EQ,
+                                   SULFATOS,
+                                   SULFATOS_BORDE_ABIERTO_TEXTO,
                                    TABLA_COMBINACIONES_FILAS,
                                    TABLA_GAMMA_P_FILAS)
 from modelos import (CadenaSismica, CasoDemandaSismica, CombinacionCarga,
@@ -227,6 +251,7 @@ from modelos import (CadenaSismica, CasoDemandaSismica, CombinacionCarga,
                      EmpujeMononobeOkabe, EmpujesTrasdos, EstabilidadCabezal,
                      FuerzaInerciaMuro, GeometriaCabezal, PasoSismico,
                      PresionContactoBase, RecubrimientoDiseno,
+                     RequisitosDurabilidad,
                      ReferenciaNormativa, Verificacion)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
@@ -284,7 +309,21 @@ CRITERIO_GEOMETRIA = "predimensionamiento_cabezal"
 
 CRITERIO_MEYERHOF = "N_cq_N_gammaq_meyerhof"
 CRITERIO_ESTABILIDAD_GLOBAL = "metodo_estabilidad_global"
-CRITERIO_RECUBRIMIENTO_AASHTO = "recubrimiento_aashto_mm"
+CRITERIO_TABLA_RECUBRIMIENTO = "tabla_recubrimiento_aashto_mm"
+CRITERIO_CATEGORIA_REFUERZO = "categoria_refuerzo_aashto"
+CRITERIO_SITUACION_RECUBRIMIENTO = "situacion_recubrimiento_aashto"
+CRITERIO_EXPOSICION_QUIMICA = "exposicion_quimica_ems"
+
+# La columna de la Tabla 5.10.1-1 que el corpus PERUANO tambien tabula: el
+# Manual de Puentes transcribe esa y solo esa ("aceros no protegidas"). Con
+# cualquiera de las otras dos, el numero deja de ser [N] y pasa a ser el [C]
+# con que la Via 1 de Sec. 0.2 cubre lo que el corpus peruano no tabula.
+CATEGORIA_ACERO_SIN_RECUBRIR = "A"
+# Factor de la banda intermedia de relacion a/c. No es un valor de proyecto
+# ni una eleccion: es el factor NEUTRO, y ademas es lo que AASHTO LRFD
+# Art. 5.10.1 escribe para 0.40 < W/CM < 0.50, banda que el Manual de
+# Puentes no imprime (ver RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA).
+FACTOR_AC_BANDA_INTERMEDIA = 1.0
 CRITERIO_FLEXION_CORTE = "procedimiento_flexion_corte_aashto_sec5"
 CRITERIO_CORTANTE_ALTO = "cortante_alto_muro_e060_art_11_10_10_2"
 
@@ -2033,69 +2072,289 @@ def recubrimiento_e060_mm(*, condicion: str) -> float:
     return float(RECUBRIMIENTO[condicion])
 
 
+def clase_exposicion_sulfatos(*, so4_suelo_pct: Optional[float],
+                             so4_agua_ppm: Optional[float]) -> dict:
+    """
+    Fila de la Tabla 4.4 de E.060 (pag. impresa 38) que aplica al sitio.
+
+    DOS ESCALAS PARALELAS, no una. La tabla clasifica por sulfato soluble en
+    el SUELO (% en peso) o por sulfato en el AGUA (ppm), y son alternativas:
+    el expediente puede traer una, la otra o las dos. Con las dos, gobierna la
+    MAS exigente -- no promedian ni se eligen, y quedarse con la menor seria
+    escoger el requisito mas bajo por omision.
+
+    EL BORDE QUE LA TABLA IMPRESA DEJA ABIERTO -- SO4 = 2,0 % exacto no cae en
+    ninguna fila -- lo cierra la hoja de ruta hacia la fila SEVERA, y cada fila
+    de `SULFATOS` declara si su limite inferior es estricto en vez de dejar la
+    respuesta escondida en un ">=" de este bucle. Ver
+    `SULFATOS_BORDE_ABIERTO_TEXTO`.
+    """
+    if so4_suelo_pct is None and so4_agua_ppm is None:
+        raise DatoInvalidoError(
+            campo=CRITERIO_EXPOSICION_QUIMICA, valor=None,
+            motivo="la Tabla 4.4 clasifica por sulfato en el suelo (% en "
+                   "peso) o por sulfato en el agua (ppm), y el dato no trae "
+                   "ninguna de las dos escalas",
+        )
+    indice = 0
+    for posicion, fila in enumerate(SULFATOS):
+        estricto = fila["limite_inferior_estricto"]
+        alcanza = False
+        for medida, clave in ((so4_suelo_pct, "so4_suelo_pct"),
+                              (so4_agua_ppm, "so4_agua_ppm")):
+            if medida is None:
+                continue
+            minimo = fila[clave][0]
+            # El limite estricto NO se decide aqui: viaja en la fila, porque
+            # es una lectura declarada y no una convencion del codigo.
+            alcanza = alcanza or (medida > minimo if estricto
+                                  else medida >= minimo)
+        if alcanza:
+            indice = max(indice, posicion)
+    return SULFATOS[indice]
+
+
+def requisitos_durabilidad_concreto() -> RequisitosDurabilidad:
+    """
+    Relacion a/c maxima y f'c minimo del concreto, combinando las Tablas 4.2 y
+    4.4 de E.060 con la nota al pie que las dos llevan:
+
+        "Cuando se utilicen las Tablas 4.2 y 4.4 simultaneamente, se debe
+        utilizar la MENOR relacion maxima agua-material cementante aplicable
+        y el MAYOR f'c minimo"
+
+    Es el eslabon que faltaba entero (NOR-E060-06): el expediente tenia las
+    dos tablas transcritas y ninguna regla que las cruzara, de modo que en un
+    sitio con sulfatos Y cloruros -- este -- no habia forma de decir que
+    relacion a/c se especifica. Y de esa relacion a/c cuelga el recubrimiento,
+    por el modificador del Art. 5.10.1 de AASHTO.
+
+    Consume el dato de sitio 'exposicion_quimica_ems' ([S], pendiente de
+    ensayo): sin el analisis quimico del EMS, `CriterioPendienteError` y el
+    calculo se detiene. No hay lectura por defecto -- la afirmacion "corredor
+    salino" viajaba en prosa por varias justificaciones y no era un dato.
+    """
+    exposicion = ca.valor(CRITERIO_EXPOSICION_QUIMICA)
+    fila = clase_exposicion_sulfatos(
+        so4_suelo_pct=exposicion.get("so4_suelo_pct"),
+        so4_agua_ppm=exposicion.get("so4_agua_ppm"))
+
+    candidatos_ac = []
+    candidatos_fc = []
+    if fila["a_c_max"] is not None:
+        candidatos_ac.append((fila["a_c_max"], "Tabla 4.4"))
+    if fila["fc_min_MPa"] is not None:
+        candidatos_fc.append((fila["fc_min_MPa"], "Tabla 4.4"))
+    if exposicion.get("cloruros_tabla_4_2"):
+        cloruros = EXPOSICION_ESPECIAL["cloruros"]
+        candidatos_ac.append((cloruros["a_c_max"], "Tabla 4.2"))
+        candidatos_fc.append((cloruros["fc_min_MPa"], "Tabla 4.2"))
+
+    # La nota al pie, aplicada: MENOR a/c y MAYOR f'c de los aplicables.
+    a_c_max, gobierna_a_c = min(candidatos_ac) if candidatos_ac else (None, "-")
+    fc_min, gobierna_fc = max(candidatos_fc) if candidatos_fc else (None, "-")
+
+    return RequisitosDurabilidad(
+        a_c_max=a_c_max, fc_min_MPa=fc_min,
+        clase_sulfatos=fila["exposicion"],
+        gobierna_a_c=gobierna_a_c, gobierna_fc=gobierna_fc,
+        cementos_admisibles=fila["cementos"],
+        numeral=f"{NUMERAL_EXPOSICION_ESPECIAL} / {NUMERAL_SULFATOS} / "
+                f"{NUMERAL_COMBINACION_4_2_4_4}",
+    )
+
+
+def factor_recubrimiento_por_ac(*, a_c_max: Optional[float]) -> Tuple[float, str]:
+    """
+    Modificador del recubrimiento por relacion agua-cemento, con su origen.
+
+        W/C <= 0.40  ->  0.8        W/C >= 0.50  ->  1.2
+
+    El Art. 5.10.1 de AASHTO no deja la tabla de recubrimientos en bruto:
+    "Cover ... shall not be less than that specified in Table 5.10.1-1 AND
+    MODIFIED FOR W/CM RATIO". El Manual de Puentes trae los mismos factores en
+    su num. 2.9.1.5.5.3. El criterio los ignoraba enteros, y son los que
+    invierten la conclusion de la regla del mayor (NOR-AAS-05).
+
+    QUE a/c ENTRA AQUI: la MAXIMA que la durabilidad permite, no la del diseno
+    de mezcla. Es la eleccion conservadora de las dos -- una a/c mas alta da
+    factor mas alto y por tanto MAS recubrimiento --, y ademas es la unica que
+    el expediente conoce en fase de perfil.
+
+    SIN LIMITE DE DURABILIDAD (`a_c_max=None`, exposicion insignificante y sin
+    cloruros) no hay a/c contra la que evaluar el modificador. No se inventa
+    una: se aplica el factor MAS exigente de la tabla, 1.2, y la funcion lo
+    declara en el origen que devuelve, para que la memoria lo imprima como lo
+    que es -- una lectura conservadora, no un dato del expediente.
+    """
+    if a_c_max is None:
+        return (max(RECUBRIMIENTO_MP_FACTOR_AC.values()),
+                "conservador: ninguna de las dos tablas de E.060 limita la "
+                "relacion a/c, y se aplica el factor mas exigente")
+    if a_c_max <= RECUBRIMIENTO_AC_UMBRAL_BAJO + TOL_UMBRAL_NORMATIVO:
+        return (RECUBRIMIENTO_MP_FACTOR_AC["a_c_menor_igual_0_40"],
+                f"a/c maxima {a_c_max} <= 0.40")
+    if a_c_max >= RECUBRIMIENTO_AC_UMBRAL_ALTO - TOL_UMBRAL_NORMATIVO:
+        return (RECUBRIMIENTO_MP_FACTOR_AC["a_c_mayor_igual_0_50"],
+                f"a/c maxima {a_c_max} >= 0.50")
+    return (FACTOR_AC_BANDA_INTERMEDIA,
+            f"a/c maxima {a_c_max} en la banda intermedia (0.40 < a/c < "
+            f"0.50): el Manual de Puentes no imprime factor para esta banda "
+            f"y se aplica el 1.0 de AASHTO LRFD Art. 5.10.1")
+
+
 def recubrimiento_aashto_mm(*, condicion: str) -> float:
     """
-    Recubrimiento minimo de AASHTO LRFD para la misma condicion, en mm.
+    Lado AASHTO / Manual de Puentes de la regla del mayor, en mm, para la
+    condicion de E.060 que se le pase. Ya NO es un valor declarado: se
+    CALCULA, y por eso puede detenerse.
 
-    'recubrimiento_aashto_mm' es [C] (AASHTO LRFD Tabla 5.10.1-1, exposicion
-    costera, 75 mm en las tres condiciones de E.060): la funcion calcula
-    directo, ya no se detiene aqui.
+        recubrimiento = max( tabla[situacion][categoria] * factor_ac ,
+                             piso de 1.0 in )
+
+    Los tres eslabones y de donde sale cada uno:
+
+      situacion   'situacion_recubrimiento_aashto' [A]: que fila de la tabla
+                  se pone enfrente de cada condicion de E.060. Las dos tablas
+                  no se indexan igual -- E.060 por diametro de barra, AASHTO
+                  por severidad de exposicion -- y el emparejamiento no lo
+                  dice ninguna de las dos normas.
+      categoria   'categoria_refuerzo_aashto' [A], VACIO: la columna A/B/C.
+                  Es la condicion de aplicacion que el expediente nunca
+                  declaro (NOR-AAS-01) y la que puede invertir quien gobierna.
+      factor_ac   modificador del Art. 5.10.1, via la durabilidad del
+                  concreto, que a su vez cuelga del analisis quimico del EMS.
+
+    DE QUE CORPUS SALE EL NUMERO, que la memoria tiene que declarar: con
+    categoria A el valor es [N] peruano -- el Manual de Puentes transcribe esa
+    columna en su Tabla 2.9.1.5.5.3-1, cuyo titulo dice "aceros no
+    protegidas" -- y con B o C el corpus peruano no tabula nada para
+    exposicion exterior y el hueco lo cubre AASHTO LRFD 9a ed. como [C], por
+    la Via 1 de Sec. 0.2.
     """
-    tabla = ca.valor(CRITERIO_RECUBRIMIENTO_AASHTO)
-    if condicion not in tabla:
+    if condicion not in RECUBRIMIENTO:
         raise DatoInvalidoError(
             campo="condicion", valor=condicion,
-            motivo=f"no esta en la tabla declarada en '{CRITERIO_RECUBRIMIENTO_AASHTO}'",
+            motivo="no es una fila del Art. 7.7.1: " + ", ".join(sorted(RECUBRIMIENTO)),
         )
-    return float(tabla[condicion])
+    return _recubrimiento_aashto_detallado(condicion=condicion)[0]
+
+
+def _recubrimiento_aashto_detallado(*, condicion: str) -> Tuple[float, dict]:
+    """El valor y la cadena que lo produjo, para que la memoria la imprima."""
+    situaciones = ca.valor(CRITERIO_SITUACION_RECUBRIMIENTO)
+    if condicion not in situaciones:
+        raise DatoInvalidoError(
+            campo="condicion", valor=condicion,
+            motivo=f"no tiene fila emparejada en "
+                   f"'{CRITERIO_SITUACION_RECUBRIMIENTO}'",
+        )
+    situacion = situaciones[condicion]
+    tabla = ca.valor(CRITERIO_TABLA_RECUBRIMIENTO)
+    if situacion not in tabla:
+        raise DatoInvalidoError(
+            campo="situacion", valor=situacion,
+            motivo=f"no es una fila de la Tabla 5.10.1-1 transcrita en "
+                   f"'{CRITERIO_TABLA_RECUBRIMIENTO}'",
+        )
+    categoria = ca.valor(CRITERIO_CATEGORIA_REFUERZO)   # VACIO: detiene aqui
+    if categoria not in tabla[situacion]:
+        raise DatoInvalidoError(
+            campo=CRITERIO_CATEGORIA_REFUERZO, valor=categoria,
+            motivo="las categorias de la Tabla 5.10.1-1 son "
+                   + ", ".join(sorted(tabla[situacion])),
+        )
+
+    tabulado = float(tabla[situacion][categoria])
+    requisitos = requisitos_durabilidad_concreto()
+    factor, origen_factor = factor_recubrimiento_por_ac(
+        a_c_max=requisitos.a_c_max)
+    modificado = tabulado * factor
+    # Piso absoluto sobre las barras principales: 1.0 in. Es lo que impide que
+    # el 0.8 lleve el recubrimiento por debajo de la pulgada.
+    piso_aplicado = modificado < RECUBRIMIENTO_MP_PISO_MM - TOL_UMBRAL_NORMATIVO
+    valor = max(modificado, RECUBRIMIENTO_MP_PISO_MM)
+    corpus = ("[N] Manual de Puentes Tabla 2.9.1.5.5.3-1 (aceros no "
+              "protegidos), coincidente con AASHTO LRFD Tabla 5.10.1-1 "
+              "columna A"
+              if categoria == CATEGORIA_ACERO_SIN_RECUBRIR else
+              "[C] AASHTO LRFD Tabla 5.10.1-1 columna " + str(categoria)
+              + ": el corpus peruano no tabula el acero protegido para "
+                "exposicion exterior")
+    detalle = {"situacion": situacion, "categoria": categoria,
+               "tabulado_mm": tabulado, "factor_ac": factor,
+               "origen_factor": origen_factor, "piso_aplicado": piso_aplicado,
+               "corpus": corpus, "requisitos": requisitos}
+    return valor, detalle
 
 
 def recubrimiento_de_diseno(*, condicion: str) -> RecubrimientoDiseno:
     """
     Regla de conflicto de Sec. 0.2: **rige el recubrimiento MAYOR entre AASHTO
-    y E.060**. Devuelve los dos valores, el adoptado y cual de las dos normas
-    gobierna.
+    y E.060**. Devuelve los dos operandos, el adoptado, cual de las dos normas
+    gobierna, y la cadena con que se produjo el lado AASHTO.
 
     Por que no basta con tomar el de E.060. Sec. 0.2 adopta la Via 1 (AASHTO
     LRFD de extremo a extremo) y declara la durabilidad como EXCEPCION: E.060
     entra, pero no desplaza a AASHTO, se compara con el. Una regla del maximo
     evaluada con un solo operando no es una regla -- por eso esta funcion
-    exige los dos lados. Con 'recubrimiento_aashto_mm' cerrado ([C], 75 mm
-    por exposicion costera), la regla ya se evalua completa: AASHTO gobierna
-    en las tres condiciones de E.060 (70/50/40 mm) porque 75 es mayor en las
-    tres.
+    exige los dos lados.
 
-    Con NF a 1.4 m y suelos salinos, E.060 Art. 7.7.5.1 (ambiente corrosivo)
-    es directamente invocable y manda AUMENTAR el resultado; el articulo no
-    dice cuanto, y ese aumento se declara aparte (Sec. 3.3).
+    QUE CAMBIO Y POR QUE (cluster C07; conflicto #3 del plan de correcciones).
+    El lado AASHTO era un valor declarado, 75 mm en las tres condiciones, con
+    la conclusion ya escrita: "AASHTO gobierna en los tres casos". Los 75 mm
+    eran los 3.0 in de la columna A redondeados a la baja, sin el modificador
+    por relacion a/c y sin decir que habia tres columnas. Con la cadena
+    completa el resultado se invierte en el caso principal: 3.0 in = 76.2 mm,
+    por el factor 0.8 de a/c <= 0.40, da 61.0 mm, y E.060 pide 70 mm contra el
+    suelo. **Gobierna E.060.** Corregir solo 75 -> 76.2, que era la correccion
+    obvia, habria dejado la conclusion falsa con un numero mas exacto.
+
+    E.060 Art. 7.7.5.1 (ambiente corrosivo) manda AUMENTAR este resultado y no
+    dice cuanto; ese aumento se declara aparte (`aviso_ambiente_corrosivo`).
     """
     e060 = recubrimiento_e060_mm(condicion=condicion)
-    aashto = recubrimiento_aashto_mm(condicion=condicion)
-    if aashto > e060:
+    aashto, detalle = _recubrimiento_aashto_detallado(condicion=condicion)
+    if aashto > e060 + TOL_UMBRAL_NORMATIVO:
         adoptado, origen = aashto, "AASHTO"
     else:
         adoptado, origen = e060, "E.060"
     return RecubrimientoDiseno(
         condicion=condicion, e060_mm=e060, aashto_mm=aashto,
         adoptado_mm=adoptado, origen=origen,
-        criterio_aashto=CRITERIO_RECUBRIMIENTO_AASHTO,
-        numeral=f"{NUMERAL_RECUBRIMIENTO} / {NUMERAL_REGLA_RECUBRIMIENTO}",
+        criterio_aashto=CRITERIO_TABLA_RECUBRIMIENTO,
+        numeral=f"{NUMERAL_RECUBRIMIENTO} / {NUMERAL_RECUBRIMIENTO_MP} / "
+                f"{NUMERAL_REGLA_RECUBRIMIENTO}",
+        situacion=detalle["situacion"], categoria=detalle["categoria"],
+        tabulado_mm=detalle["tabulado_mm"], factor_ac=detalle["factor_ac"],
+        piso_aplicado=detalle["piso_aplicado"], corpus_tabla=detalle["corpus"],
     )
 
 
 def aviso_ambiente_corrosivo() -> str:
     """
     Aviso para la memoria: el recubrimiento de `recubrimiento_de_diseno` es el
-    MINIMO antes del aumento por ambiente corrosivo. E.060 Art. 7.7.5.1 dice
-    "aumentar adecuadamente" y no fija cuanto, asi que el aumento no se
-    calcula aqui: se declara.
+    MINIMO antes del aumento por ambiente corrosivo. El aumento no se calcula
+    aqui, se declara -- E.060 Art. 7.7.5.1 no fija cuanto.
+
+    DOS CORRECCIONES DE CITA (NOR-E060-04). La primera, la forma verbal: el
+    articulo imprime "debe aumentarse adecuadamente", no "aumentar
+    adecuadamente", y entrecomillar lo segundo es citar mal aunque el fondo
+    coincida. La segunda pesa mas: el articulo ofrece una ALTERNATIVA expresa
+    -- "o debe disponerse de otro tipo de proteccion" -- que el aviso omitia,
+    y que es un camino de cumplimiento distinto del que el expediente
+    contempla. Con la alternativa a la vista, proteger el refuerzo (la
+    categoria B o C de 'categoria_refuerzo_aashto') deja de ser solo una
+    opcion de suministro y pasa a ser una forma de cumplir este articulo.
+    Por eso el aviso transcribe el texto entero y no lo resume.
     """
     return (
         "Recubrimiento: al valor adoptado hay que sumarle el aumento por "
-        f"ambiente corrosivo ({AMBIENTE_CORROSIVO_AUMENTAR}), directamente "
-        "invocable con NF a 1.4 m y suelos salinos (Sec. 3.3). El articulo "
-        "dice 'aumentar adecuadamente' y no fija cuanto: el aumento se "
-        "declara en la memoria, no lo calcula este modulo"
+        f"ambiente corrosivo ({AMBIENTE_CORROSIVO_AUMENTAR}), si el analisis "
+        "quimico del EMS ('exposicion_quimica_ems') confirma la exposicion. "
+        f"Texto literal del articulo: \"{AMBIENTE_CORROSIVO_TEXTO}\". No fija "
+        "cuanto, y ofrece la alternativa de disponer otro tipo de proteccion: "
+        "las dos cosas se declaran en la memoria, no las calcula este modulo"
     )
 
 
@@ -2108,11 +2367,24 @@ def cuantia_minima(*, direccion: str) -> float:
     "REFERENCIA de cuantias minimas" y el matiz es real pero no significa lo
     que parece: por la Via 1 de Sec. 0.2 el DISENO estructural es de AASHTO
     LRFD Sec. 5, de modo que E.060 no dicta cuanto acero pide la flexion. Lo
-    que si hace el Art. 14.3.1, dentro de E.060, es fijar un piso por debajo
-    del cual ningun muro se arma, gobierne quien gobierne el
-    dimensionamiento. La consecuencia practica esta en `cuantia_de_diseno`:
-    el minimo se aplica como rho_diseno = max(rho_calculado, rho_minimo), no
-    se imprime al pie de la memoria.
+    que si hace el Art. 14.3.1, dentro de E.060, es fijar un piso, gobierne
+    quien gobierne el dimensionamiento. La consecuencia practica esta en
+    `cuantia_de_diseno`: el minimo se aplica como rho_diseno =
+    max(rho_calculado, rho_minimo), no se imprime al pie de la memoria.
+
+    LO QUE ESTE DOCSTRING AFIRMABA DE MAS (NOR-E060-01). Decia que el 14.3.1
+    fija "un piso por debajo del cual NINGUN muro se arma". Para un muro de
+    CONTENCION -- que es lo que el cabezal es -- eso no es lo que dice E.060:
+    el Art. 14.8.2 remite a 14.3 y acto seguido permite exceptuarlo, "cuando
+    el Ingeniero Proyectista disponga juntas de contraccion y señale
+    procedimientos constructivos que controlen los efectos de contraccion y
+    temperatura". La excepcion es potestativa y exige las DOS cosas a la vez.
+    Este proyecto NO la invoca -- no hay juntas de contraccion ni
+    procedimientos constructivos declarados en el expediente -- y por eso el
+    minimo se aplica entero. Lo que cambia es el argumento: se aplica porque
+    nadie ejercio la excepcion, no porque la norma no la ofrezca. La
+    diferencia importa el dia que el proyectista quiera ejercerla:
+    `nota_excepcion_refuerzo_minimo` le dice que tiene que declarar para eso.
 
     Escalon del Art. 11.10.10.2 (0.0025 bajo cortante alto): ver
     `cuantia_de_diseno` y el criterio 'cortante_alto_muro_e060_art_11_10_10_2'.
@@ -2126,6 +2398,29 @@ def cuantia_minima(*, direccion: str) -> float:
                    + ", ".join(sorted(CUANTIA_MIN_MURO)),
         )
     return CUANTIA_MIN_MURO[direccion]
+
+
+def nota_excepcion_refuerzo_minimo() -> str:
+    """
+    La frase para la memoria: el minimo de E.060 Art. 14.3.1 se aplica entero
+    porque el proyecto no ejercio la excepcion que el Art. 14.8.2 ofrece para
+    muros de contencion, no porque la norma no la tenga.
+
+    Sin esta nota, la memoria presentaba el minimo como inexcusable, que es
+    afirmar de la norma algo que la norma no dice (NOR-E060-01). Con ella, el
+    revisor ve las dos cosas: el numero que se aplico y la puerta que existia
+    y no se uso.
+    """
+    return (
+        "Cuantia minima de refuerzo del muro: se aplica integra la de "
+        f"{NUMERAL_CUANTIA_MIN}. El {NUMERAL_EXCEPCION_REFUERZO_MIN_MURO} "
+        f"permite exceptuarla en muros de contencion -- \"{EXCEPCION_REFUERZO_MIN_MURO_TEXTO}\" "
+        "--, y este expediente NO ejerce esa excepcion: no declara juntas de "
+        "contraccion ni procedimientos constructivos de control de "
+        "contraccion y temperatura, que son las dos condiciones que el "
+        "articulo exige a la vez. Ejercerla es una decision del proyectista y "
+        "obliga a declarar las dos en el expediente"
+    )
 
 
 def verificar_cuantia(*, cuantia_provista: float, direccion: str) -> Verificacion:
@@ -2219,28 +2514,72 @@ def cuantia_de_diseno(*, cuantia_calculada: float, direccion: str,
 def requiere_temperatura_dos_caras(*, espesor: float) -> bool:
     """
     True si hace falta acero por temperatura en AMBAS caras: espesor >= 0.250
-    m (250 mm), E.060 Art. 14.8.3. `espesor` en metros.
+    m (250 mm), E.060 Art. 14.8.3. Umbral INCLUSIVO ("mayor o igual a").
+    `espesor` en metros.
+
+    Este es el umbral del acero POR TEMPERATURA Y CONTRACCION, y solo de el.
+    El del refuerzo en dos capas es otro y esta 50 mm mas abajo: ver
+    `requiere_refuerzo_dos_capas`.
     """
     return espesor >= ESPESOR_TEMPERATURA_DOS_CARAS - TOL_UMBRAL_NORMATIVO
 
 
+def requiere_refuerzo_dos_capas(*, espesor: float) -> bool:
+    """
+    True si el refuerzo va en DOS CAPAS en cada direccion: espesor > 0.200 m
+    (200 mm), E.060 Art. 14.3.2. Umbral ESTRICTO ("mayor que"), a diferencia
+    del de temperatura. `espesor` en metros.
+
+    POR QUE EXISTE ESTA FUNCION (NOR-E060-02). El modulo decidia el acero en
+    dos caras con un solo umbral, el de 250 mm del Art. 14.8.3, y la memoria
+    imprimia "Acero por temperatura en UNA cara" para todo espesor menor. Pero
+    E.060 tiene DOS umbrales sobre cosas distintas: el 14.3.2 exige el
+    refuerzo "en cada direccion colocado en dos capas paralelas a las caras
+    del muro" a partir de 200 mm -- con una sola excepcion, los muros de
+    sotanos, que un cabezal no es --, y el 14.8.2 remite expresamente a todo
+    14.3, de modo que un muro de contencion lo hereda. Entre 200 y 250 mm el
+    muro lleva dos capas por 14.3.2 aunque el acero por temperatura vaya en
+    una cara por 14.8.3, y la memoria decia lo contrario.
+    """
+    return espesor > ESPESOR_DOS_CAPAS_REFUERZO + TOL_UMBRAL_NORMATIVO
+
+
 def nota_temperatura_dos_caras(*, espesor: float) -> str:
     """
-    La frase para la memoria y el plano: en que cara o caras va el acero por
-    temperatura, con su numeral. No es una verificacion con umbral contra un
-    dato del proyecto -- es una regla de detalle que se dispara con el
-    espesor -- y por eso sale como texto y no como `Verificacion`.
+    La frase para la memoria y el plano: en que cara o caras va el refuerzo,
+    con su numeral. No es una verificacion con umbral contra un dato del
+    proyecto -- son dos reglas de detalle que se disparan con el espesor -- y
+    por eso sale como texto y no como `Verificacion`.
+
+    Los dos umbrales van juntos en la misma frase a proposito: separarlos era
+    lo que permitia leer "en UNA cara" y creer que el muro entero lleva una
+    sola parrilla.
     """
     if requiere_temperatura_dos_caras(espesor=espesor):
-        return (
+        temperatura = (
             f"Acero por temperatura en AMBAS caras: espesor {espesor:.3f} m "
             f">= {ESPESOR_TEMPERATURA_DOS_CARAS:.3f} m "
             f"({NUMERAL_TEMPERATURA_DOS_CARAS})"
         )
-    return (
-        f"Acero por temperatura en UNA cara: espesor {espesor:.3f} m < "
-        f"{ESPESOR_TEMPERATURA_DOS_CARAS:.3f} m ({NUMERAL_TEMPERATURA_DOS_CARAS})"
-    )
+    else:
+        temperatura = (
+            f"Acero por temperatura en UNA cara: espesor {espesor:.3f} m < "
+            f"{ESPESOR_TEMPERATURA_DOS_CARAS:.3f} m "
+            f"({NUMERAL_TEMPERATURA_DOS_CARAS})"
+        )
+    if requiere_refuerzo_dos_capas(espesor=espesor):
+        capas = (
+            f"; refuerzo en cada direccion en DOS CAPAS paralelas a las caras: "
+            f"espesor {espesor:.3f} m > {ESPESOR_DOS_CAPAS_REFUERZO:.3f} m "
+            f"({NUMERAL_DOS_CAPAS_REFUERZO}, {EXCEPCION_DOS_CAPAS_REFUERZO})"
+        )
+    else:
+        capas = (
+            f"; refuerzo en una capa por direccion: espesor {espesor:.3f} m "
+            f"<= {ESPESOR_DOS_CAPAS_REFUERZO:.3f} m "
+            f"({NUMERAL_DOS_CAPAS_REFUERZO})"
+        )
+    return temperatura + capas
 
 
 def espaciamiento_maximo(*, espesor: float) -> float:
@@ -2272,19 +2611,30 @@ def verificar_espaciamiento(*, espaciamiento: float,
 def verificar_ciclopeo(*, fc_matriz: float,
                        fraccion_piedra: float) -> Tuple[Verificacion, ...]:
     """
-    R4 / R5: alternativa en concreto ciclopeo, E.060 Art. 22.10 (pags.
-    194-195): f'c de la matriz >= 10 MPa y piedra desplazadora <= 30 % del
-    volumen. Admitido para muros de gravedad; Sec. 9.4 la llama "opcion
+    R4 / R5: alternativa en concreto ciclopeo. Piedra desplazadora <= 30 % del
+    volumen total de concreto ciclopeo (E.060 Art. 22.10, pags. 194-195) y
+    f'c de la matriz >= el MAYOR de los dos minimos que rigen sobre el mismo
+    material. Admitido para muros de gravedad; Sec. 9.4 la llama "opcion
     realista para cabezales pequenos".
+
+    DOS MINIMOS, Y EL EXPEDIENTE DECLARABA EL MENOR (NOR-E060-07). E.060
+    Art. 22.10 pide 10 MPa para la matriz. La Tabla 503-07 del EG-2013 -- cuya
+    Seccion 503 es la que este proyecto cita para cabezales, y que es
+    especificacion vial del MTC -- clasifica el concreto ciclopeo como Clase G
+    y le pide 14 MPa. Los dos rigen sobre una obra vial peruana y ninguno
+    deroga al otro, asi que se aplica el mayor: la misma regla del maximo que
+    Sec. 0.2 usa para el recubrimiento y `M7.altura_recubrimiento` para la
+    cobertura. Citar solo el 10 MPa era quedarse con el requisito mas bajo de
+    los dos disponibles, y de los dos el que NO es de una norma vial.
 
     `fc_matriz` en MPa, `fraccion_piedra` en tanto por uno (0.30, no 30).
     """
     return (
         Verificacion(
-            cumple=fc_matriz >= CICLOPEO_FC_MATRIZ_MIN - TOL_UMBRAL_NORMATIVO,
-            numeral=NUMERAL_CICLOPEO,
+            cumple=fc_matriz >= CICLOPEO_FC_MATRIZ_MIN_APLICABLE - TOL_UMBRAL_NORMATIVO,
+            numeral=NUMERAL_CICLOPEO_APLICABLE,
             valor_obtenido=fc_matriz,
-            valor_admisible=CICLOPEO_FC_MATRIZ_MIN,
+            valor_admisible=CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
             criterio_aplicado=None,
             codigo="R4",
         ),
@@ -2314,6 +2664,28 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
     resultado -- no es el mismo vacio que bloqueaba antes: ya no se puede
     responder "falta declarar el criterio", porque el criterio esta
     declarado.
+
+    DOS TRAMPAS QUE EL ENSAMBLE VA A ENCONTRAR, escritas aqui porque es donde
+    se van a pisar y no en la ficha de una auditoria:
+
+      LAS FORMULAS SON IMPERIALES (MAT-O9, MAT-X8). La 9a ed. no publica
+      edicion SI: su C5.1 declara "These specifications use kips and ksi
+      units", y el 0.0316 de la Ec. 5.7.3.3-3 no es una constante fisica sino
+      1/raiz(1000), el factor de conversion psi->ksi. El criterio guardaba
+      esas expresiones bajo claves "Vc_kN" y "dv_m" -- etiquetas SI sobre
+      formulas en kip y pulgada --, y hoy las claves llevan la unidad real en
+      el nombre ("Vc_kip", "dv_in"). Este modulo opera en SI: el ensamble
+      tendra que convertir en la frontera, y declarar la conversion, no
+      cambiarle el nombre a las variables.
+
+      BETA TIENE DOS EXPRESIONES (NOR-AAS-06). La Ec. 5.7.3.4.2-1 vale solo
+      "for sections containing at least the minimum amount of transverse
+      reinforcement specified in Article 5.7.2.5"; sin ese refuerzo minimo
+      rige la Ec. 5.7.3.4.2-2, que ademas depende del parametro de
+      espaciamiento de fisura sxe. Un muro de cabezal delgado sin estribos
+      cae normalmente en el segundo caso, de modo que el ensamble tiene que
+      contestar primero si el muro lleva el refuerzo transversal minimo: la
+      expresion no se elige por costumbre.
 
     Lo que no se hara cuando se implemente, y es la tentacion evidente:
     sustituir el procedimiento por las expresiones de E.060, que si estan a
@@ -2413,14 +2785,22 @@ FUNCIONES_SIN_CONSUMIDOR = {
     "verificar_excentricidad_sismica": (
         "Ademas de la geometria necesita 'gamma_EQ', que es vacio propio: el "
         "limite va de B/6 a 0.4*B segun su valor"),
-    "armado del num. 9.4 (siete funciones)": (
+    "armado del num. 9.4 (ocho funciones)": (
         "`cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_"
-        "caras`, `nota_temperatura_dos_caras`, `espaciamiento_maximo`, "
-        "`verificar_espaciamiento` y `verificar_ciclopeo` no tienen llamador "
+        "caras`, `requiere_refuerzo_dos_capas`, `nota_temperatura_dos_caras`, "
+        "`espaciamiento_maximo`, `verificar_espaciamiento` y "
+        "`verificar_ciclopeo` no tienen llamador "
         "porque su insumo es el diseno por flexion y corte, que se detiene en "
         "`diseno_flexion_corte` con NotImplementedError, y el espesor del "
         "elemento, que sale de 'predimensionamiento_cabezal'. La CLI registra "
         "ese bloqueo en cada corrida (SIS-B-20)"),
+    "clase_exposicion_sulfatos / factor_recubrimiento_por_ac": (
+        "No tienen llamador de PRODUCCION directo y no son deuda: las llama "
+        "`requisitos_durabilidad_concreto` y "
+        "`_recubrimiento_aashto_detallado`, que si estan en el camino de la "
+        "CLI. Se declaran aparte porque son las dos piezas que un revisor va "
+        "a querer ejecutar sueltas para reproducir la clasificacion de la "
+        "Tabla 4.4 y el factor por a/c sin montar el recubrimiento entero"),
     "n_q_zapata_en_talud / n_s_zapata_en_talud": (
         "No tienen llamador interno porque la funcion que las usaria, "
         "`capacidad_portante_zapata_en_talud`, se detiene antes en "

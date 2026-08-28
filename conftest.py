@@ -104,10 +104,51 @@ CLAVE_ESPESOR_PARED = "espesor_pared_conducto"
 CLAVE_CONDICION_PAVIMENTO = "condicion_pavimento"
 CONDICION_PAVIMENTO_DE_PRUEBA = "flexible"
 
+# ---------------------------------------------------------------------------
+# ...y las dos declaraciones de las que cuelga el recubrimiento del refuerzo
+# ---------------------------------------------------------------------------
+# Cluster C07. El lado AASHTO de la regla del recubrimiento mayor dejo de ser
+# un valor declarado (75 mm) y pasa a calcularse -- fila de la tabla, columna
+# por categoria de acero, modificador por relacion a/c, piso de 1.0 in --, de
+# modo que necesita dos cosas que el expediente no tiene:
+#
+#   'categoria_refuerzo_aashto'  la columna A/B/C de la Tabla 5.10.1-1. La fija
+#                                la especificacion del acero que se compra.
+#   'exposicion_quimica_ems'     el analisis quimico del EMS, del que sale la
+#                                relacion a/c maxima y con ella el modificador.
+#
+# TAMBIEN SON VALORES DE LA CORRIDA DE PRUEBAS, elegidos para ser rastreables:
+#
+#   categoria "A"   acero sin recubrir. Es la columna que el expediente venia
+#                   usando sin decirlo (los 75 mm eran sus 3.0 in redondeados
+#                   a la baja), asi que la corrida queda comparable con el
+#                   estado anterior y ademas es la que MAS recubrimiento pide.
+#   exposicion      sulfatos "insignificante" (0.0 %) y cloruros SI. Es la
+#                   combinacion que deja ver cual fila gobierna: sin requisito
+#                   por sulfatos, la relacion a/c que sale es la 0.40 de la
+#                   fila de cloruros de la Tabla 4.2 -- la misma que el
+#                   expediente afirmaba en prosa -- y el factor resulta 0.8.
+#                   El 0.0 de sulfatos NO afecta al recubrimiento (cualquier
+#                   fila de la Tabla 4.4 da a/c >= 0.45, y la nota al pie
+#                   manda quedarse con la MENOR de las dos tablas); afecta al
+#                   f'c minimo y al tipo de cemento, que este calculo no usa.
+#
+# El proyectista que cierre el expediente no hereda ninguna de las dos.
+CLAVE_CATEGORIA_REFUERZO = "categoria_refuerzo_aashto"
+CATEGORIA_REFUERZO_DE_PRUEBA = "A"
+CLAVE_EXPOSICION_QUIMICA = "exposicion_quimica_ems"
+EXPOSICION_QUIMICA_DE_PRUEBA = {
+    "so4_suelo_pct": 0.0,
+    "so4_agua_ppm": None,
+    "cloruros_tabla_4_2": True,
+}
+
 _DECLARACIONES_DE_PRUEBA = {
     CLAVE_ORIGEN_COTA: ORIGEN_COTA_DE_PRUEBA,
     CLAVE_ESPESOR_PARED: ESPESOR_PARED_DE_PRUEBA,
     CLAVE_CONDICION_PAVIMENTO: CONDICION_PAVIMENTO_DE_PRUEBA,
+    CLAVE_CATEGORIA_REFUERZO: CATEGORIA_REFUERZO_DE_PRUEBA,
+    CLAVE_EXPOSICION_QUIMICA: EXPOSICION_QUIMICA_DE_PRUEBA,
 }
 
 

@@ -26,7 +26,7 @@ import pytest
 import criterios_adoptados as ca
 import datos_sitio as ds
 from constantes_fisicas import GAMMA_AGUA_KN_M3
-from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN,
+from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO, CUANTIA_MIN_MURO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
@@ -726,56 +726,78 @@ def test_una_condicion_inexistente_es_dato_invalido():
         recubrimiento_e060_mm(condicion="sumergido")
 
 
-def test_el_lado_aashto_de_la_regla_del_mayor_ya_no_esta_vacio():
+def test_el_lado_aashto_de_la_regla_del_mayor_se_calcula_y_no_se_declara():
     """
-    'recubrimiento_aashto_mm' es [C]: AASHTO LRFD Tabla 5.10.1-1 organiza el
-    recubrimiento por EXPOSICION, no por diametro; La Union es corredor
-    costero, asi que las tres condiciones de E.060 leen 75 mm.
+    Cluster C07. El lado AASHTO ya no es un valor de tabla declarado: sale de
+    tabla x factor por relacion a/c, con el piso de 1.0 in. Con la corrida de
+    pruebas declarando categoria "A" y a/c = 0.40 (fila de cloruros de la
+    Tabla 4.2), las tres condiciones de E.060 leen 76.2 x 0.8 = 60.96 mm -- no
+    los 75 mm de antes, que eran los 3.0 in redondeados a la baja y sin el
+    modificador del Art. 5.10.1.
     """
-    assert recubrimiento_aashto_mm(condicion="contra_suelo") == pytest.approx(75.0)
-    assert recubrimiento_aashto_mm(condicion="suelo_intemperie_ge_3_4") == pytest.approx(75.0)
-    assert recubrimiento_aashto_mm(condicion="suelo_intemperie_le_5_8") == pytest.approx(75.0)
+    esperado = 76.2 * 0.8
+    for condicion in ("contra_suelo", "suelo_intemperie_ge_3_4",
+                      "suelo_intemperie_le_5_8"):
+        assert recubrimiento_aashto_mm(condicion=condicion) == pytest.approx(esperado)
 
 
 def test_la_regla_del_recubrimiento_mayor_ya_se_evalua_con_los_dos_operandos():
     """
-    Sec. 0.2: "rige el recubrimiento MAYOR entre AASHTO y E.060". Con AASHTO
-    en 75 mm (exposicion costera) y E.060 en 70/50/40 mm, AASHTO gobierna
-    en los tres casos.
+    Sec. 0.2: "rige el recubrimiento MAYOR entre AASHTO y E.060". LA
+    CONCLUSION SE INVIERTE respecto de lo que este test comprobaba antes, y es
+    el resultado del cluster C07: con el lado AASHTO en 60.96 mm, E.060
+    gobierna el caso "contra el suelo" con sus 70 mm, y AASHTO sigue
+    gobernando las dos condiciones de intemperie (50 y 40 mm).
     """
-    for condicion in ("contra_suelo", "suelo_intemperie_ge_3_4",
-                      "suelo_intemperie_le_5_8"):
+    contra_suelo = recubrimiento_de_diseno(condicion="contra_suelo")
+    assert contra_suelo.aashto_mm == pytest.approx(60.96)
+    assert contra_suelo.adoptado_mm == pytest.approx(70.0)
+    assert contra_suelo.origen == "E.060"
+    # la cadena que produjo el lado AASHTO viaja en el resultado: sin ella el
+    # numero vuelve a ser un valor que hay que creer, que es como sobrevivio
+    # el 75 mm con una columna y un modificador de menos
+    assert contra_suelo.situacion == "vaciado_contra_suelo"
+    assert contra_suelo.categoria == "A"
+    assert contra_suelo.tabulado_mm == pytest.approx(76.2)
+    assert contra_suelo.factor_ac == pytest.approx(0.8)
+
+    for condicion in ("suelo_intemperie_ge_3_4", "suelo_intemperie_le_5_8"):
         r = recubrimiento_de_diseno(condicion=condicion)
-        assert r.aashto_mm == pytest.approx(75.0)
-        assert r.adoptado_mm == pytest.approx(75.0)
+        assert r.adoptado_mm == pytest.approx(60.96)
         assert r.origen == "AASHTO"
+        assert r.e060_mm == RECUBRIMIENTO[condicion]
 
 
-def test_la_regla_del_mayor_toma_el_aashto_cuando_gobierna(monkeypatch):
+def test_la_regla_del_mayor_toma_el_aashto_cuando_gobierna():
     """
-    Se inyecta un lado AASHTO ficticio para probar la REGLA, que es lo que
-    este modulo aporta; el valor real sigue siendo un vacio del expediente.
+    Se cambia la categoria de acero para mover el lado AASHTO y comprobar la
+    REGLA, que es lo que este modulo aporta. Con acero epoxico o galvanizado
+    la tabla da 2.0 in = 50.8 mm y el factor los deja en 40.64: E.060 pasa a
+    gobernar tambien la condicion de intemperie de barras >= 3/4" (50 mm) y
+    sigue perdiendo en la de barras <= 5/8" (40 mm). Es exactamente la
+    inversion que el conflicto #3 del plan anticipaba.
     """
-    monkeypatch.setitem(ca.CRITERIOS, "recubrimiento_aashto_mm",
-                        ca.Criterio(valor={"contra_suelo": 75.0,
-                                           "suelo_intemperie_ge_3_4": 25.0},
-                                    etiqueta="A", concepto="prueba",
-                                    justificacion="prueba", fuente="prueba"))
+    ca.establecer_valor_dinamico("categoria_refuerzo_aashto", "B")
+    try:
+        manda_e060 = recubrimiento_de_diseno(condicion="suelo_intemperie_ge_3_4")
+        assert manda_e060.aashto_mm == pytest.approx(50.8 * 0.8)
+        assert manda_e060.adoptado_mm == pytest.approx(50.0)
+        assert manda_e060.origen == "E.060"
 
-    manda_aashto = recubrimiento_de_diseno(condicion="contra_suelo")
-    assert manda_aashto.adoptado_mm == pytest.approx(75.0)
-    assert manda_aashto.origen == "AASHTO"
-
-    manda_e060 = recubrimiento_de_diseno(condicion="suelo_intemperie_ge_3_4")
-    assert manda_e060.adoptado_mm == pytest.approx(50.0)
-    assert manda_e060.origen == "E.060"
-    # los dos operandos viajan en el resultado, no solo el ganador
-    assert manda_e060.e060_mm == 50.0 and manda_e060.aashto_mm == 25.0
+        manda_aashto = recubrimiento_de_diseno(condicion="suelo_intemperie_le_5_8")
+        assert manda_aashto.adoptado_mm == pytest.approx(40.64)
+        assert manda_aashto.origen == "AASHTO"
+        # los dos operandos viajan en el resultado, no solo el ganador
+        assert manda_aashto.e060_mm == 40.0
+    finally:
+        ca.establecer_valor_dinamico("categoria_refuerzo_aashto", "A")
 
 
 def test_el_aumento_por_ambiente_corrosivo_se_declara_y_no_se_calcula():
     aviso = aviso_ambiente_corrosivo()
-    assert "7.7.5.1" in aviso and "no lo calcula" in aviso
+    assert "7.7.5.1" in aviso and "no las calcula este modulo" in aviso
+    # NOR-E060-04: la alternativa que el articulo ofrece, y que el aviso omitia
+    assert "otro tipo de protección" in aviso
 
 
 @pytest.mark.parametrize("direccion, minima", [
@@ -884,13 +906,16 @@ def test_verificar_espaciamiento():
 
 
 def test_alternativa_en_concreto_ciclopeo():
-    ok = verificar_ciclopeo(fc_matriz=12.0, fraccion_piedra=0.25)
+    # 12.0 MPa CUMPLIA antes y ya no: el minimo aplicable es el mayor de los
+    # dos que rigen sobre el mismo material -- 10 MPa de E.060 Art. 22.10 y
+    # 14 MPa de la Clase G de la Tabla 503-07 del EG-2013 (NOR-E060-07).
+    ok = verificar_ciclopeo(fc_matriz=15.0, fraccion_piedra=0.25)
     assert all(v.cumple for v in ok)
     assert [v.codigo for v in ok] == ["R4", "R5"]
 
     flojo = verificar_ciclopeo(fc_matriz=8.0, fraccion_piedra=0.40)
     assert not any(v.cumple for v in flojo)
-    assert flojo[0].valor_admisible == CICLOPEO_FC_MATRIZ_MIN
+    assert flojo[0].valor_admisible == CICLOPEO_FC_MATRIZ_MIN_APLICABLE
     assert flojo[1].valor_admisible == CICLOPEO_FRACCION_PIEDRA_MAX
 
 
@@ -1010,7 +1035,8 @@ def test_cada_vacio_de_la_fase_9_esta_declarado_con_su_justificacion(clave):
 
 @pytest.mark.parametrize("clave", [
     "peso_especifico_concreto_kn_m3",
-    "recubrimiento_aashto_mm", "procedimiento_flexion_corte_aashto_sec5",
+    "tabla_recubrimiento_aashto_mm",
+    "procedimiento_flexion_corte_aashto_sec5",
 ])
 def test_los_datos_de_C_2_estan_cerrados_como_C(clave):
     """

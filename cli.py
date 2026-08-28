@@ -142,6 +142,7 @@ from modulos.M8_estructural import (cama_apoyo_relleno_lateral,     # noqa: E402
                                     seleccionar_clase_calibre,
                                     verificacion_diferida_estructural)
 from modulos.M9_cabezal import (aviso_ambiente_corrosivo,           # noqa: E402
+                                nota_excepcion_refuerzo_minimo,
                                 cadena_sismica,
                                 condicion_normativa_cabezal,
                                 cuantia_minima, geometria_adoptada,
@@ -903,6 +904,11 @@ def correr_cabezal() -> InformeCabezal:
 
     notas = list(condicion_normativa_cabezal())
     notas.append(NOTA_ESTABILIDAD_CABEZAL)
+    # Por que el minimo de cuantia se aplica entero: E.060 lo deja exceptuar
+    # en muros de contencion y este expediente no ejerce la excepcion. Sin
+    # esta linea la memoria presentaba el minimo como inexcusable, que es
+    # afirmar de la norma algo que la norma no dice (NOR-E060-01).
+    notas.append(nota_excepcion_refuerzo_minimo())
     aviso = _etapa(informe.bloqueos, FASE_CABEZAL,
                    "aviso de ambiente corrosivo (9.4)", aviso_ambiente_corrosivo)
     if aviso is not None:
@@ -1181,7 +1187,13 @@ def _cabezal_json(informe: InformeCabezal) -> Dict[str, Any]:
                             "e060_mm": _num(r.e060_mm),
                             "aashto_mm": _num(r.aashto_mm),
                             "adoptado_mm": _num(r.adoptado_mm),
-                            "origen": r.origen, "numeral": r.numeral}
+                            "origen": r.origen, "numeral": r.numeral,
+                            "situacion": r.situacion,
+                            "categoria": r.categoria,
+                            "tabulado_mm": _num(r.tabulado_mm),
+                            "factor_ac": _num(r.factor_ac),
+                            "piso_aplicado": r.piso_aplicado,
+                            "corpus_tabla": r.corpus_tabla}
                            for r in informe.recubrimientos],
         "cuantias_minimas": {k: _num(v) for k, v in informe.cuantias.items()},
         "notas": list(informe.notas),
@@ -1385,8 +1397,17 @@ def _lineas_cabezal(informe: InformeCabezal) -> List[str]:
                            f"[{paso.etiqueta}]: {paso.condicion}")
     for r in informe.recubrimientos:
         out.append(f"{SANGRIA}Recubrimiento '{r.condicion}': "
-                   f"{_fmt(r.adoptado_mm, 0)} mm (gobierna {r.origen}, "
+                   f"{_fmt(r.adoptado_mm, 1)} mm (gobierna {r.origen}, "
                    f"{r.numeral})")
+        # La cadena del lado AASHTO, debajo del resultado: sin ella el numero
+        # vuelve a ser un valor que hay que creer. Es la misma razon por la
+        # que la cadena sismica imprime la condicion de cada eslabon.
+        out.append(f"{SANGRIA * 2}lado AASHTO: fila '{r.situacion}', "
+                   f"categoria de acero '{r.categoria}' -> "
+                   f"{_fmt(r.tabulado_mm, 1)} mm de tabla x {r.factor_ac} "
+                   f"por relacion a/c = {_fmt(r.aashto_mm, 1)} mm"
+                   + (" (piso de 1.0 in aplicado)" if r.piso_aplicado else "")
+                   + f"; {r.corpus_tabla}")
     for direccion, cuantia in informe.cuantias.items():
         out.append(f"{SANGRIA}Cuantia minima {direccion}: {cuantia}")
     for nota in informe.notas:
