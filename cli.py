@@ -62,6 +62,26 @@ sustituye por un defecto ni convierte el vacio en un incumplimiento: un
 criterio sin valor es un calculo que todavia no se puede completar, no una
 verificacion que falla.
 
+Como declarar uno sin tocar el archivo: `--declarar CLAVE=VALOR`, repetible.
+Es la MISMA via que la pestana "Criterios" de la GUI --
+`criterios_adoptados.establecer_valor_dinamico`, que somete el valor a la
+guardia del archivo -- y vale solo para esa corrida:
+`criterios_adoptados.py` no se modifica. La memoria imprime esos valores con
+su procedencia ("declarado para esta corrida, no en archivo") y los lista
+aparte, para que nadie los lea como transcritos de una norma.
+
+Misma via NO es misma politica, y conviene saberlo: la GUI solo ofrece el
+boton para los criterios VACIOS (y para retirar lo que ella misma declaro),
+mientras que `--declarar` acepta cualquier clave declarada, incluidas las que
+ya traen valor en el archivo. Es deliberado -- una corrida de sensibilidad
+consiste justamente en mover un valor que ya existe -- y no abre un agujero:
+el valor pasa por la misma guardia, la memoria lo marca como declarado para
+la corrida y dice ademas QUE valor trae el archivo, de modo que sustituir un
+valor transcrito queda a la vista en el entregable. Lo que no se puede por
+ninguna de las dos vias es declarar `None` -- ni la cadena vacia
+(`--declarar CLAVE=` se rechaza): retirar una declaracion es otra operacion, y
+aqui consiste en no pasar la bandera.
+
 Solo se atrapa `ErrorProyecto` (criterio pendiente, dato faltante, dato
 invalido, diseno no factible): es un problema del expediente y va al informe.
 Un fallo de programa (ImportError, AssertionError) se propaga con su traza,
@@ -83,6 +103,7 @@ Codigos de salida
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import math
 import sys
@@ -110,7 +131,13 @@ from modulos.M0_carga import cargar_puntos                          # noqa: E402
 from modulos.M1_clasificacion import clasificar, exigir_alcance     # noqa: E402
 from modulos.M6_proteccion import proteccion_salida                 # noqa: E402
 from modulos.M7_geometria import (compatibilidad_geometrica,        # noqa: E402
-                                  cota_clave, longitud_conducto)
+                                  longitud_conducto)
+# `altura_relleno_sobre_clave` vive en M5 y no aqui: la comparten V7 -- que
+# pesa ese relleno como EV -- y la Fase 8, que con el entra a la norma de
+# producto. La resta estaba escrita en los dos sitios y la copia de esta CLI
+# iba SIN la guarda de cotas incoherentes (SIS-A-21). Es el mismo defecto de
+# `cota_clave` (MAT-D4), que por eso tambien vive en M5.
+from modulos.M5_verificaciones import altura_relleno_sobre_clave    # noqa: E402
 from modulos.M8_estructural import (cama_apoyo_relleno_lateral,     # noqa: E402
                                     seleccionar_clase_calibre,
                                     verificacion_diferida_estructural)
@@ -166,12 +193,19 @@ CLAVES_EXTERNAS: Tuple[str, ...] = ("luz_m", "TW_m", "longitud_m", "Q_m3s",
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
 NOTA_ESTABILIDAD_CABEZAL = (
-    "Las verificaciones E1-E5 de Sec. 9.3 no las ensambla esta CLI: "
-    "M9.verificar_estabilidad recibe las demandas YA calculadas (capacidad "
-    "portante, momentos y fuerzas) y elegir el plano de empuje o los factores "
+    "Las verificaciones de estabilidad de Fase 9 no las ensambla esta CLI: "
+    "M9.verificar_estabilidad devuelve E1-E3 (y E4-E5 si se le piden) a "
+    "partir de las demandas YA calculadas, y E6 -- la ubicacion de la "
+    "resultante en la base bajo sismo, que el Manual de Puentes exige y "
+    "E.050 no escribe -- es funcion suelta, "
+    "M9.verificar_excentricidad_sismica, porque no es un factor de seguridad "
+    "y no cabe en la tabla de Sec. 9.3. Elegir el plano de empuje o los factores "
     "de combinacion aqui seria decidir por el proyectista. La CLI corre las "
     "piezas de Fase 9 que se sostienen solas: cadena sismica (9.2), K_AE, "
-    "recubrimientos (9.4) y cuantias minimas de referencia."
+    "recubrimientos (9.4) y cuantias minimas de referencia. Que funciones de "
+    "M9 quedan sin llamador de produccion, y por que cada una, se declara en "
+    "UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y esta CLI lo lee de "
+    "alli en vez de repetirlo."
 )
 
 # Presentacion. Ninguno entra en un calculo: mueven columnas de texto.
@@ -698,11 +732,18 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
 
 
 def _fase_6(informe: InformePunto) -> None:
-    """Proteccion de salida por Laushey, con la V de la regla de doble n."""
+    """
+    Proteccion de salida por Laushey, con la V de la regla de doble n.
+
+    Entra `V_erosion` -- la rama de n minimo, la estimacion ALTA -- porque el
+    d50 crece con V^2 y la piedra mas grande es el lado conservador de una
+    proteccion contra socavacion. La otra rama, `V_sedimentacion`, es la del
+    piso de V2 y aqui daria una piedra mas chica que la necesaria.
+    """
     resultado = informe.resultado.resultado_hidraulico
     informe.proteccion = _etapa(
         informe.bloqueos, FASE_PROTECCION, "d50, espesor y longitud",
-        lambda: proteccion_salida(V=resultado.V))
+        lambda: proteccion_salida(V=resultado.V_erosion))
 
 
 def _fase_7(informe: InformePunto) -> None:
@@ -733,11 +774,16 @@ def _fase_8(informe: InformePunto) -> None:
     material, D = resultado.material, resultado.D
     punto = informe.punto
 
-    # Altura real de relleno sobre la clave, la misma definicion que usa V7:
-    # subrasante menos clave, no el minimo normativo de 7.A.
+    # Altura real de relleno sobre la clave FISICA (con espesor de pared), la
+    # misma definicion que usa V7: subrasante menos clave, no el minimo de 7.A.
+    # Se pide a M5 en vez de restarse aqui: esta copia iba sin la guarda de
+    # `DatoInvalidoError` que V7 si tenia, y una altura negativa habria
+    # entrado a la tabla de clases de la norma de producto el dia en que
+    # 'clases_producto_por_relleno' se declare (SIS-A-21).
     altura = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                     "altura de relleno sobre la clave",
-                    lambda: punto.cota_subrasante - cota_clave(punto=punto, D=D))
+                    lambda: altura_relleno_sobre_clave(
+                        punto=punto, material=material, D=D))
     if altura is not None:
         _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                "clase o calibre por norma de producto (items 1-2)",
@@ -990,7 +1036,19 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "n_min": _num(material.n_min), "n_max": _num(material.n_max),
             "D_m": _num(resultado.D), "D_max_material_m": _num(material.D_max),
             "control_gobernante": hidraulica.control_gobernante.value,
-            "Q_m3s": _num(hidraulica.Q), "V_m_s": _num(hidraulica.V),
+            # Q y S son los del DISEÑO, no los de la columna del CSV: la
+            # Familia B y la C traen su propio caudal (Sec. 2.3) y el punto que
+            # no sigue el cauce declara su pendiente. La pendiente sale tambien
+            # en el bloque de geometria, y ahora es forzosamente la misma: las
+            # dos leen `ResultadoHidraulico.S` (MAT-D9). Aqui va ademas porque
+            # el bloque de geometria no existe si la Fase 7 quedo bloqueada.
+            "Q_m3s": _num(hidraulica.Q),
+            "S_m_m": _num(hidraulica.S),
+            # Dos claves y no una "V_m_s": la velocidad de la rama n_min
+            # (techos: V3, d50) y la de la rama n_max (piso: V2) son numeros
+            # distintos, y una sola clave obligaba a adivinar cual (MAT-D1).
+            "V_erosion_m_s": _num(hidraulica.V_erosion),
+            "V_sedimentacion_m_s": _num(hidraulica.V_sedimentacion),
             "y_normal_m": _num(hidraulica.y_normal),
             "y_critico_m": _num(hidraulica.y_critico),
             "HW_entrada_m": _num(hidraulica.HW_entrada),
@@ -999,7 +1057,12 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
 
 
 def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
-    return {"numeral": p.numeral, "V_m_s": _num(p.V), "d50_m": _num(p.d50),
+    # La clave dice de que rama es la velocidad, como en el bloque de
+    # hidraulica: el d50 de Laushey se calcula con `V_erosion` (n minimo, la
+    # estimacion alta). "V_m_s" a secas reproducia en este rincon del JSON la
+    # ambiguedad que MAT-D1 vino a quitar.
+    return {"numeral": p.numeral, "V_erosion_m_s": _num(p.V),
+            "d50_m": _num(p.d50),
             "espesor_m": _num(p.espesor), "longitud_m": _num(p.longitud),
             "criterio_espesor": p.criterio_espesor,
             "criterio_longitud": p.criterio_longitud,
@@ -1014,6 +1077,18 @@ def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
             "altura_terraplen_m": _num(g.altura_terraplen),
             "S_conducto": _num(g.S_conducto),
             "cota_entrada_msnm": _num(g.cota_entrada),
+            # El consumidor del JSON tiene que poder distinguir una cota
+            # levantada de una adoptada sin leer la memoria: el mismo archivo
+            # ya declara el origen de los datos externos ("origen": "criterio
+            # 'TW_receptor'") y esta cota no lo hacia (SIS-A-04).
+            "cota_entrada_origen": {
+                "adoptada": True,
+                "criterio": M5.CRITERIO_ORIGEN_COTA_ENTRADA,
+                "regla": ca.valor_si_declarado(M5.CRITERIO_ORIGEN_COTA_ENTRADA),
+                "nota": "no es cota medida: sale de la regla declarada en ese "
+                        "criterio mientras el expediente no entregue la cota "
+                        "de invert de entrada por punto",
+            },
             "cota_salida_msnm": _num(g.cota_salida), "caida_m": _num(g.caida),
             "factible": g.factible,
             "delta_rasante_cm": _num(g.delta_rasante_cm),
@@ -1059,6 +1134,12 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "iteraciones": [_paso_json(p) for p in informe.traza],
         "verificaciones": [_verificacion_json(fase, v)
                            for fase, v in informe.verificaciones()],
+        # Las filas V2b y V4b de la tabla de Fase 5 no se evaluan, y la
+        # constancia viaja con el punto igual que la del item 5 de Fase 8:
+        # contar nueve verificaciones donde la hoja de ruta lista ONCE no
+        # puede quedar como un ejercicio de resta del lector
+        # (SIS-A-13 / MAT-O15).
+        "verificaciones_no_evaluadas": list(M5.verificaciones_no_evaluadas()),
         "bloqueos": [_bloqueo_json(b) for b in informe.bloqueos],
     }
     if informe.cama_apoyo is not None:
@@ -1073,13 +1154,23 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
 def _cabezal_json(informe: InformeCabezal) -> Dict[str, Any]:
     cadena = informe.cadena
     return {
+        # Cada paso viaja con su etiqueta, su origen y LA CONDICION que su
+        # fuente le pone. Sin esos tres campos el JSON daba siete numeros y
+        # nada mas: no se podia ver de que filas de la tabla salio F_pga, en
+        # que rama de k_h0 cayo la cimentacion ni que regimen de k_v rige, que
+        # es justamente lo que hay que revisar de una cadena sismica -- el
+        # numero se comprueba solo, el supuesto no se ve.
         "cadena_sismica": (None if cadena is None else {
             "numeral": cadena.numeral, "PGA": _num(cadena.PGA),
             "F_pga": _num(cadena.F_pga), "A_s": _num(cadena.A_s),
             "k_h0": _num(cadena.k_h0), "factor_muro": _num(cadena.factor_muro),
             "k_h": _num(cadena.k_h), "k_v": _num(cadena.k_v),
+            "clases_de_sitio": list(cadena.clases_de_sitio),
+            "cimentacion_en_roca": cadena.cimentacion_en_roca,
             "pasos": [{"simbolo": p.simbolo, "valor": _num(p.valor),
-                       "concepto": p.concepto} for p in cadena.pasos]}),
+                       "concepto": p.concepto, "etiqueta": p.etiqueta,
+                       "origen": p.origen, "criterio": p.criterio,
+                       "condicion": p.condicion} for p in cadena.pasos]}),
         "mononobe_okabe": (None if informe.mononobe_okabe is None else {
             "K_AE": _num(informe.mononobe_okabe.K_AE),
             "K_A": _num(informe.mononobe_okabe.K_A)}),
@@ -1127,11 +1218,24 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
             "sin_valor_declarados": ds.datos_sin_valor(),
             "trazabilidad_incompleta": ds.datos_con_verificacion_pendiente()},
         "criterios": {
-            "usados": [{"clave": k, "etiqueta": ca.criterio(k).etiqueta,
-                        "valor": _num(ca.criterio(k).valor),
+            # Valor EFECTIVO y procedencia: el JSON es el otro reporte de la
+            # corrida y tenia el mismo defecto que la memoria HTML -- leia el
+            # valor del ARCHIVO, de modo que un criterio declarado en
+            # caliente viajaba con "valor": null mientras gobernaba el
+            # calculo (SIS-A-01).
+            "usados": [{"clave": k,
+                        "etiqueta": ca.criterio(k).etiqueta,
+                        "valor": _num(ca.criterio_efectivo(k).valor),
+                        "declarado_en_caliente": ca.declarado_en_caliente(k),
                         "concepto": ca.criterio(k).concepto}
                        for k in ca.criterios_usados()],
             "sin_valor_declarados": ca.criterios_sin_valor(),
+            "declarados_en_caliente": ca.criterios_declarados_en_caliente(),
+            # Hermano de `trazabilidad_incompleta` de los datos de sitio: sin
+            # el, un consumidor del JSON veia que datos de sitio quedaban sin
+            # cerrar documentalmente y no veia que criterios (SIS-D-07).
+            "verificacion_pendiente": ca.criterios_con_verificacion_pendiente(),
+            "sin_consumidor": ca.criterios_sin_consumidor(),
             "bloquearon": [{"clave": c.clave, "etiqueta": c.etiqueta,
                             "concepto": c.concepto, "fuente": c.fuente,
                             "reemplazado_por": c.reemplazado_por,
@@ -1221,8 +1325,10 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"(HW = {_fmt(h.HW)} m; entrada {_fmt(h.HW_entrada)} / "
                    f"salida {_fmt(h.HW_salida)})")
         out.append(f"{SANGRIA}        Hidraulica: y_n = {_fmt(h.y_normal)} m, "
-                   f"y_c = {_fmt(h.y_critico)} m, V = {_fmt(h.V)} m/s, "
-                   f"Q = {_fmt(h.Q)} m3/s")
+                   f"y_c = {_fmt(h.y_critico)} m, "
+                   f"V_erosion = {_fmt(h.V_erosion)} m/s (n min), "
+                   f"V_sedimentacion = {_fmt(h.V_sedimentacion)} m/s (n max), "
+                   f"Q = {_fmt(h.Q)} m3/s, S = {_fmt(h.S, 4)} m/m")
         out.append(f"{SANGRIA}        Longitud : L = {_fmt(informe.longitud.valor)} m "
                    f"({informe.longitud.origen}) | TW = "
                    f"{_fmt(informe.tw.valor)} m ({informe.tw.origen})")
@@ -1240,8 +1346,15 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
             out.append(f"{SANGRIA * 4}aviso: {advertencia}")
     if informe.geometria is not None:
         g = informe.geometria
+        # La cota de entrada NO es un dato del CSV: sale de la regla que el
+        # proyectista declaro en 'origen_cota_fondo_entrada'. Va marcada en
+        # las TRES salidas (texto, JSON y HTML) y no solo en la memoria: la
+        # GUI pinta el detalle del punto con estas mismas lineas, y un numero
+        # en msnm sin marca se lee como cota levantada en campo (SIS-A-04).
         out.append(f"{SANGRIA}Fase 7  L = {_fmt(g.longitud)} m, cota entrada "
-                   f"{_fmt(g.cota_entrada)} / salida {_fmt(g.cota_salida)} msnm")
+                   f"{_fmt(g.cota_entrada)} (ADOPTADA, criterio "
+                   f"'{M5.CRITERIO_ORIGEN_COTA_ENTRADA}': no es cota medida) "
+                   f"/ salida {_fmt(g.cota_salida)} msnm")
         out.append(f"{SANGRIA * 4}{g.tamizado.mensaje}")
     if informe.cama_apoyo is not None:
         out.append(f"{SANGRIA}Fase 8  cama: {informe.cama_apoyo.cama_apoyo} "
@@ -1264,6 +1377,12 @@ def _lineas_cabezal(informe: InformeCabezal) -> List[str]:
         out.append(f"{SANGRIA}Cadena sismica (num. {c.numeral}): "
                    f"PGA {_fmt(c.PGA, 2)} g -> A_s {_fmt(c.A_s, 2)} g -> "
                    f"k_h {_fmt(c.k_h, 2)} | k_v {_fmt(c.k_v, 2)}")
+        # La condicion de cada eslabon, debajo del resumen: es lo que separa
+        # una cadena revisable de siete numeros que coinciden por casualidad.
+        for paso in c.pasos:
+            if paso.condicion:
+                out.append(f"{SANGRIA * 2}{paso.simbolo} "
+                           f"[{paso.etiqueta}]: {paso.condicion}")
     for r in informe.recubrimientos:
         out.append(f"{SANGRIA}Recubrimiento '{r.condicion}': "
                    f"{_fmt(r.adoptado_mm, 0)} mm (gobierna {r.origen}, "
@@ -1410,6 +1529,12 @@ def _parser() -> argparse.ArgumentParser:
                         "como <csv>.informe.json)")
     p.add_argument("--datos-externos", type=Path, dest="datos_externos",
                    help="JSON con los datos declarados, globales y por punto")
+    p.add_argument("--declarar", action="append", default=[],
+                   metavar="CLAVE=VALOR", dest="declaraciones",
+                   help="declara un criterio de criterios_adoptados.py SOLO "
+                        "para esta corrida (repetible). Es la misma via que "
+                        "la GUI: el archivo no se toca y la memoria imprime "
+                        "el valor marcado como declarado para la corrida")
     p.add_argument("--luz", type=float, help="luz del cruce, m (Sec. 2.1)")
     p.add_argument("--tw", type=float, dest="TW",
                    help="tirante en el receptor sobre el fondo de la salida, m")
@@ -1452,8 +1577,55 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
+def declarar_criterios(declaraciones: Sequence[str]) -> List[str]:
+    """
+    Aplica las declaraciones `CLAVE=VALOR` de `--declarar` a la corrida.
+
+    Pasa por `criterios_adoptados.establecer_valor_dinamico`, el UNICO camino
+    de declaracion en caliente, que a su vez somete el valor a la misma
+    guardia que el archivo (`_verificar_criterio`): un valor fuera del rango
+    de sensibilidad se rechaza aqui y la corrida no empieza.
+
+    El texto se interpreta con `ast.literal_eval` -- 1.5, (0.010, 0.013),
+    'cota_terreno' -- y lo que no sea un literal de Python se toma como
+    cadena, que es lo que declara un criterio categorico. No hay conversion
+    de unidades ni default: lo que el usuario escribe es lo que se declara.
+    """
+    aplicadas = []
+    for declaracion in declaraciones:
+        clave, sep, texto = declaracion.partition("=")
+        if not sep or not clave.strip():
+            raise ValueError(
+                f"--declarar {declaracion!r} no tiene la forma CLAVE=VALOR")
+        clave, texto = clave.strip(), texto.strip()
+        if not texto:
+            # Sin esto, `ast.literal_eval("")` lanza SyntaxError, el texto cae
+            # al respaldo y se declara la CADENA VACIA: un valor que nadie
+            # quiso declarar entrando por la puerta de una errata.
+            raise ValueError(
+                f"--declarar {declaracion!r} no trae valor. Para retirar una "
+                "declaracion no se declara vacio: se omite la bandera")
+        try:
+            valor_nuevo = ast.literal_eval(texto)
+        except (ValueError, SyntaxError):
+            valor_nuevo = texto
+        ca.establecer_valor_dinamico(clave, valor_nuevo)
+        aplicadas.append(clave)
+    return aplicadas
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = _parser().parse_args(argv)
+
+    try:
+        declaradas = declarar_criterios(args.declaraciones)
+    except (ValueError, KeyError) as exc:
+        print(f"No se pudo declarar el criterio: {exc}", file=sys.stderr)
+        return 2
+    for clave in declaradas:
+        print(f"Criterio declarado SOLO para esta corrida: {clave} = "
+              f"{ca.valores_dinamicos()[clave]!r} "
+              "(criterios_adoptados.py no se modifico)")
 
     banderas = {"luz_m": args.luz, "TW_m": args.TW,
                 "longitud_m": args.longitud,

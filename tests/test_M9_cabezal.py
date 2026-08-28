@@ -30,9 +30,11 @@ from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO, CUANTIA_MIN_MURO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
-                                   FACTOR_MURO_TABLA, FS,
+                                   FS,
+                                   REDUCCION_KH_POR_DESPLAZAMIENTO,
                                    NQ_ZAPATA_EN_TALUD,
-                                   RECUBRIMIENTO, SOBRECARGA_TRASDOS_H_EQ)
+                                   RECUBRIMIENTO, SOBRECARGA_TRASDOS_H_EQ,
+                                   TABLA_GAMMA_P_FILAS)
 from modelos import (CondicionAnalisis, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError,
                      DisenoNoFactibleError, GeometriaCabezal)
@@ -111,7 +113,8 @@ def test_los_seis_pasos_horizontales_dan_la_cadena_de_la_hoja_de_ruta():
     PGA = pga_roca_b()
     Fpga = f_pga()
     A_s = aceleracion_ajustada_sitio(PGA=PGA, F_pga=Fpga)
-    k_h0 = coeficiente_sismico_base(A_s=A_s)
+    k_h0 = coeficiente_sismico_base(A_s=A_s, F_pga=Fpga, PGA=PGA,
+                                    cimentacion_en_roca=False)
     k_h = coeficiente_sismico_horizontal(k_h0=k_h0, factor_muro=factor_muro())
 
     assert PGA == pytest.approx(CP7["PGA"])
@@ -137,7 +140,10 @@ def test_cada_paso_lee_su_propio_criterio_y_no_un_0_50_escrito_a_mano():
     A_s = aceleracion_ajustada_sitio(PGA=cadena.PGA,
                                      F_pga=CP7["F_pga_clase_E"])
     k_h = coeficiente_sismico_horizontal(
-        k_h0=coeficiente_sismico_base(A_s=A_s), factor_muro=cadena.factor_muro)
+        k_h0=coeficiente_sismico_base(A_s=A_s, F_pga=CP7["F_pga_clase_E"],
+                                      PGA=cadena.PGA,
+                                      cimentacion_en_roca=False),
+        factor_muro=cadena.factor_muro)
 
     assert A_s == pytest.approx(CP7["A_s_con_F_pga_clase_E_esperado"])
     assert k_h == pytest.approx(CP7["k_h_con_F_pga_clase_E_esperado"])
@@ -178,11 +184,13 @@ def test_el_factor_de_muro_reducido_no_se_asume():
     Sec. 9.2: si el muro admitiera 25-50 mm de desplazamiento seria
     k_h = 0.5*k_h0 = 0.25. "No asumirlo en un cabezal empotrado".
     """
-    assert factor_muro() == pytest.approx(FACTOR_MURO_TABLA["rigido"])
+    assert factor_muro() == pytest.approx(CP7["factor_muro_rigido"])
     assert cadena_sismica().k_h == pytest.approx(
         CP7["k_h_con_muro_rigido_esperado"])
-    # La otra fila de la tabla existe y es [N]; lo que es [A] es no elegirla
-    assert FACTOR_MURO_TABLA["desplazable"] == pytest.approx(
+    # El unico valor [N] del numeral es el 0.5, y ademas es permisivo: lo que
+    # es [A] es no acogerse a esa reduccion. El 1.0 no es una fila tabulada,
+    # es la ausencia de reduccion (NOR-PUE-07).
+    assert REDUCCION_KH_POR_DESPLAZAMIENTO == pytest.approx(
         CP7["factor_muro_desplazable"])
     assert ca.criterio("factor_muro_eleccion").etiqueta == "A"
 
@@ -496,12 +504,27 @@ def test_la_sobrecarga_LS_esta_en_las_tres():
 
 
 def test_describir_las_combinaciones_no_se_detiene_y_evaluarlas_tampoco():
-    """'factores_carga_aashto' es [C] (AASHTO LRFD 9a ed.): ya no se detiene."""
+    """
+    Las tablas de factores de carga son [N] y la eleccion de fila esta
+    declarada: ya no se detiene.
+
+    EL gamma_EV MINIMO DEL CABEZAL ES 1.00 Y NO 0.90 (NOR-PUE-03). M9 modela
+    el cabezal como muro de contencion, y la fila "Muros y estribos de
+    retencion" de la Tabla 2.4.5.3.1-2 da 1.35 / 1.00. El 0.90 que este test
+    exigia antes es de "Estructura rigida enterrada", la fila del CONDUCTO.
+
+    El cambio RELAJA volteo y deslizamiento alrededor de un 8 %: el empuje
+    vertical de tierra sobre el talon estabiliza, y minorar lo que estabiliza
+    es la direccion conservadora. Se corrige igual porque el par anterior no
+    era ninguna fila de la tabla y porque C3.4.1 de AASHTO prescribe ese 1.00
+    para el deslizamiento de un muro en voladizo. Queda dicho aqui para que
+    nadie lea este test como la prueba de que el expediente se endurecio.
+    """
     assert len(combinaciones()) == 3          # describir: los nombres son [N]
 
     resistencia = factores_de_carga("Resistencia I")
     assert resistencia["DC"] == {"max": 1.25, "min": 0.90}
-    assert resistencia["EV"] == {"max": 1.35, "min": 0.90}
+    assert resistencia["EV"] == {"max": 1.35, "min": 1.00}
     assert resistencia["EH"] == {"max": 1.50, "min": 0.90}
     assert resistencia["LS"] == pytest.approx(1.75)
 
@@ -986,14 +1009,22 @@ def test_cada_vacio_de_la_fase_9_esta_declarado_con_su_justificacion(clave):
 
 
 @pytest.mark.parametrize("clave", [
-    "factores_carga_aashto", "peso_especifico_concreto_kn_m3",
+    "peso_especifico_concreto_kn_m3",
     "recubrimiento_aashto_mm", "procedimiento_flexion_corte_aashto_sec5",
 ])
-def test_los_cuatro_datos_de_C_2_estan_cerrados_como_C(clave):
+def test_los_datos_de_C_2_estan_cerrados_como_C(clave):
     """
-    Los cuatro criterios de la Fase 9 que dependian de una tabla AASHTO sin
-    eleccion de ingenieria: transcripcion directa, etiqueta [C], fuente
-    citada con edicion y pagina.
+    Los criterios de la Fase 9 que dependian de una tabla AASHTO sin eleccion
+    de ingenieria: transcripcion directa, etiqueta [C], fuente citada con
+    edicion y pagina.
+
+    'factores_carga_aashto' SALIO de esta lista (C03: NOR-PUE-04). Era el
+    cuarto, y su [C] descansaba sobre una afirmacion falsa: que el corpus
+    peruano no traia las tablas de factores de carga. El Manual de Puentes las
+    trae completas en su pag. impresa 143, de modo que los numeros son [N] y
+    viven en constantes_normativas; lo que queda en el criterio es la ELECCION
+    de fila por estructura, que es [A]. Su contrato lo verifica el test
+    siguiente.
     """
     criterio = ca.criterio(clave)
     assert clave not in ca.criterios_sin_valor()
@@ -1001,3 +1032,23 @@ def test_los_cuatro_datos_de_C_2_estan_cerrados_como_C(clave):
     assert criterio.etiqueta == "C"
     assert not criterio.fuente.startswith("PENDIENTE")
     assert "AASHTO LRFD" in criterio.fuente
+
+
+def test_los_factores_de_carga_son_tabla_N_mas_eleccion_A():
+    """
+    La tabla es [N] y la eleccion de fila es [A] (Sec. 0.7). El criterio no
+    puede volver a guardar numeros: si lo hiciera, volveria a poder escribir
+    un par -- como el {max 1.35, min 0.90} de MAT-D8 -- que no es ninguna fila
+    de la Tabla 2.4.5.3.1-2.
+    """
+    criterio = ca.criterio("factores_carga_aashto")
+    assert criterio.etiqueta == "A"
+    assert "factores_carga_aashto" not in ca.criterios_sin_valor()
+    for elemento, filas in criterio.valor.items():
+        for carga, fila in filas.items():
+            assert isinstance(fila, str), (
+                f"'{elemento}'/'{carga}' guarda {fila!r}: la eleccion nombra "
+                "una fila, no un factor")
+            assert fila in TABLA_GAMMA_P_FILAS, (
+                f"'{elemento}'/'{carga}' nombra la fila '{fila}', que no "
+                "esta en la Tabla 2.4.5.3.1-2")

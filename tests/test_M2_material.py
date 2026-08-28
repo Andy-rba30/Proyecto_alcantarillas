@@ -10,7 +10,7 @@ Los tests que mas importan son cuatro:
     - cada material se detiene en SU tope de Sec. 3.2 (el de HDPE es el mas
       restrictivo: ~1.50 m) y siguiente_diametro() devuelve None ahi, nunca
       un numero que no existe como producto;
-    - v_max_rango y h_relleno_min salen en None para TMC/HDPE sin lanzar
+    - v_max_adoptado y h_relleno_min salen en None para TMC/HDPE sin lanzar
       CriterioPendienteError, porque el vacio esta documentado, no relleno;
     - la Familia C no tiene candidatos: su seccion es marco o multicelda.
 """
@@ -107,7 +107,9 @@ def test_catalogo_devuelve_un_material_completo():
     assert concreto.D_max == pytest.approx(2.70)
     assert concreto.n_min == pytest.approx(0.010)
     assert concreto.n_max == pytest.approx(0.013)
-    assert concreto.v_max_rango == pytest.approx((3.0, 6.0))
+    assert concreto.v_max_tabla10 == pytest.approx((3.0, 6.0))
+    assert concreto.v_max_adoptado is None
+    assert concreto.fila_manning.endswith("tubo recto y libre de basuras")
     assert concreto.seccion_eg2013 == "506"
 
 
@@ -116,7 +118,7 @@ def test_el_hdpe_usa_el_rango_de_manning_por_analogia():
     assert hdpe.n_min == pytest.approx(0.010)
     assert hdpe.n_max == pytest.approx(0.013)
     assert hdpe.seccion_eg2013 == "508"
-    assert hdpe.h_relleno_min == pytest.approx(0.30)   # [N] directo, sin vacio
+    assert hdpe.h_relleno_min_eg2013 == pytest.approx(0.30)   # [N] directo, sin vacio
 
 
 def test_la_velocidad_maxima_declarada_llega_al_catalogo():
@@ -126,8 +128,9 @@ def test_la_velocidad_maxima_declarada_llega_al_catalogo():
     """
     tmc = catalogo(TipoMaterial.TMC)
     hdpe = catalogo(TipoMaterial.HDPE)
-    assert tmc.v_max_rango == ca.valor("v_max_tmc")
-    assert hdpe.v_max_rango == ca.valor("v_max_hdpe")
+    assert tmc.v_max_adoptado == ca.valor("v_max_tmc")
+    assert hdpe.v_max_adoptado == ca.valor("v_max_hdpe")
+    assert tmc.v_max_tabla10 is None and hdpe.v_max_tabla10 is None
     assert tmc.v_max_definida
     assert hdpe.v_max_definida
 
@@ -145,7 +148,7 @@ def test_un_vacio_de_velocidad_maxima_no_detiene_el_catalogo(monkeypatch):
                         original.__class__(**{**original.__dict__,
                                               "valor": None}))
     tmc = catalogo(TipoMaterial.TMC)
-    assert tmc.v_max_rango is None
+    assert tmc.v_max_adoptado is None
     assert not tmc.v_max_definida
 
 
@@ -191,15 +194,23 @@ def test_el_n_de_manning_del_hdpe_declarado_en_caliente_llega_al_catalogo(
         ca.quitar_valor_dinamico("n_manning_hdpe")
 
 
-def test_el_relleno_minimo_declarado_en_caliente_llega_al_catalogo(
+def test_el_espesor_de_pared_declarado_en_caliente_llega_al_catalogo(
         vaciar_criterio):
-    vaciar_criterio("h_relleno_min_concreto_tmc")
-    ca.establecer_valor_dinamico("h_relleno_min_concreto_tmc", 0.75)
+    """
+    Mismo mecanismo que probaba 'h_relleno_min_concreto_tmc' antes de
+    retirarse (NOR-VAC-01): un criterio que el catalogo lee con
+    `valor_si_declarado` tiene que ver la declaracion en caliente, no solo el
+    valor del archivo.
+    """
+    vaciar_criterio("espesor_pared_conducto")
+    ca.establecer_valor_dinamico(
+        "espesor_pared_conducto",
+        {"concreto_reforzado": 0.12, "tmc": 0.02, "hdpe": 0.06})
     try:
         concreto = catalogo(TipoMaterial.CONCRETO_REFORZADO)
-        assert concreto.h_relleno_min == pytest.approx(0.75)
+        assert concreto.espesor_pared == pytest.approx(0.12)
     finally:
-        ca.quitar_valor_dinamico("h_relleno_min_concreto_tmc")
+        ca.quitar_valor_dinamico("espesor_pared_conducto")
 
 
 def test_la_velocidad_maxima_declarada_en_caliente_llega_al_catalogo(
@@ -208,7 +219,7 @@ def test_la_velocidad_maxima_declarada_en_caliente_llega_al_catalogo(
     ca.establecer_valor_dinamico("v_max_tmc", 3.9)
     try:
         tmc = catalogo(TipoMaterial.TMC)
-        assert tmc.v_max_rango == pytest.approx(3.9)
+        assert tmc.v_max_adoptado == pytest.approx(3.9)
         assert tmc.v_max_definida
     finally:
         ca.quitar_valor_dinamico("v_max_tmc")
@@ -223,26 +234,26 @@ def test_la_declaracion_en_caliente_pisa_al_valor_del_archivo():
     assert ca.criterio("v_max_tmc").valor is not None
     ca.establecer_valor_dinamico("v_max_tmc", 3.9)
     try:
-        assert catalogo(TipoMaterial.TMC).v_max_rango == pytest.approx(3.9)
+        assert catalogo(TipoMaterial.TMC).v_max_adoptado == pytest.approx(3.9)
     finally:
         ca.quitar_valor_dinamico("v_max_tmc")
-    assert catalogo(TipoMaterial.TMC).v_max_rango == ca.valor("v_max_tmc")
+    assert catalogo(TipoMaterial.TMC).v_max_adoptado == ca.valor("v_max_tmc")
 
 
-def test_el_relleno_minimo_de_concreto_y_tmc_es_el_0_30_adoptado():
+def test_solo_el_hdpe_tiene_minimo_de_relleno_en_eg2013():
     """
-    'h_relleno_min_concreto_tmc' dejo de estar vacio: se adopto 0.30 m [N->]
-    por analogia con el unico valor que EG-2013 si fija (508.07, HDPE), sobre
-    el vacio verificado de Sec. 14.a del manifiesto. El catalogo lo refleja
-    para los DOS materiales -- el criterio no se partio, porque con un valor
-    compartido el split no aporta nada.
+    EG-2013 fija la altura minima de relleno UNICAMENTE para HDPE (Subseccion
+    508.07, pag. 984). El None de concreto y TMC significa eso y nada mas: su
+    recubrimiento minimo lo pone la Tabla 12.6.6.3-1 de AASHTO LRFD, en
+    `M7_geometria.altura_recubrimiento`.
+
+    Este test comprobaba antes que los tres valian 0.30 m, que era la
+    analogia de 'h_relleno_min_concreto_tmc'. Se retiro con el criterio
+    (NOR-VAC-01): el 0.30 m quedaba 5 mm bajo el piso de 12 in de esa tabla.
     """
-    concreto = catalogo(TipoMaterial.CONCRETO_REFORZADO)
-    tmc = catalogo(TipoMaterial.TMC)
-    assert concreto.h_relleno_min == pytest.approx(0.30)
-    assert tmc.h_relleno_min == pytest.approx(0.30)
-    # Y es el MISMO numero que el [N] del HDPE: eso es la analogia.
-    assert catalogo(TipoMaterial.HDPE).h_relleno_min == pytest.approx(0.30)
+    assert catalogo(TipoMaterial.HDPE).h_relleno_min_eg2013 == pytest.approx(0.30)
+    assert catalogo(TipoMaterial.CONCRETO_REFORZADO).h_relleno_min_eg2013 is None
+    assert catalogo(TipoMaterial.TMC).h_relleno_min_eg2013 is None
 
 
 def test_un_material_desconocido_en_catalogo_es_invalido():

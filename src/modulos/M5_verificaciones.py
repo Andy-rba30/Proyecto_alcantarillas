@@ -7,10 +7,16 @@ un bool desnudo), mas `verificar()`, el agregado que MD.py llama con la firma
 que declara su Protocol `Verificador`.
 
     V1  Borde libre               y/D <= 0.75                    [N] 4.1.1.3.7 b)
+                                  (RECOMENDACION aplicada como umbral duro)
     V2  Velocidad minima          V >= 0.25 m/s                   [N] 4.1.1.3.6
-    V3  Velocidad maxima          concreto: rango Tabla N 10 [N]
-                                  TMC / HDPE: criterio pendiente   [C]
-    V4  Carga a la entrada HW     HW <= cota subrasante - resguardo(CBR)  [N->]
+                                  (RECOMENDACION aplicada como umbral duro;
+                                  se evalua con la rama n_max, la estimacion
+                                  BAJA de velocidad -- ver `v2_velocidad_minima`)
+    V3  Velocidad maxima          concreto: fila de la Tabla N 10 [N]
+                                  TMC / HDPE: 'v_max_tmc' / 'v_max_hdpe',
+                                  CERRADOS con valor 4.572 m/s     [C]
+    V4  Carga a la entrada HW     cota entrada + HW <= cota subrasante
+                                  - resguardo(CBR)                       [N->]
     V5  Remanso aguas arriba      sin metodo declarado -> pendiente       [A]
     V6  Material solido de arrastre  seccion unica (cumple por construccion)
     V7  Flotacion del conducto    equilibrio LRFD de factores de carga
@@ -19,6 +25,53 @@ que declara su Protocol `Verificador`.
                                   'peso_especifico_relleno_kn_m3'              [A]
     V8  Evento extremo (FEN)      sin TR mayor ni umbral -> pendiente      [A]
     V9  Disponibilidad de diametro  D <= tope de M2                        [C]
+
+Por que son NUEVE funciones y la tabla de Fase 5 tiene ONCE filas
+-----------------------------------------------------------------
+La tabla de Fase 5 de la hoja de ruta lista once verificaciones -- V1, V2,
+**V2b**, V3, V4, **V4b**, V5, V6, V7, V8, V9 -- y este modulo implementa
+nueve. Las dos que faltan son V2b y V4b, y no faltan por lo mismo:
+
+**V2b - sedimentacion / colmatacion. Diferida al expediente, con constancia.**
+Lo que V2b exige no es un umbral que este software pueda evaluar, sino ACCESO
+DE MANTENIMIENTO EN LOS PLANOS -- el entregable 7 de Sec. 11, que este script
+no produce (no dibuja planos). La mitad [N] de esa fila -- la velocidad
+minima que evita la sedimentacion -- SI esta implementada, y es V2 (0.25 m/s,
+num. 4.1.1.3.6, cuyo motivo declarado en la norma es justamente la
+sedimentacion). Queda una obligacion viva y de expediente que no desaparece:
+prever el acceso de mantenimiento para limpieza en los planos de cada punto.
+`verificaciones_no_evaluadas()` la declara, M11 la imprime pegada a la tabla de
+verificaciones de cada punto -- que es donde el revisor cuenta las filas -- y
+el JSON la lleva en 'verificaciones_no_evaluadas'.
+
+**V4b - relacion HW/D. No implementada; la PROCEDENCIA del umbral ya esta
+cerrada, el cableado no.** El criterio existe ('HW_D_max', 1.5) y ningun
+modulo lo consume. Lo que estaba abierto -- de donde sale ese 1.5 y que
+etiqueta le corresponde -- se cerro contra el PDF: el rango 1.0-1.5 no es un
+criterio que el HDS-5 fije, sino la practica que su Sec. 2.2.5 d) "Agency
+Constraints" DESCRIBE de las agencias viales estadounidenses, y 1.5 es su
+extremo superior, el menos restrictivo. Por eso el criterio dejo de ser [C]
+-- vacio cubierto por fuente tecnica -- y paso a [A]: es una adopcion del
+proyectista sobre una banda de practica ajena, con su rango de sensibilidad.
+Ver `criterios_adoptados.CRITERIOS['HW_D_max']`, que lleva la cita y el texto
+literal.
+
+Lo que sigue pendiente es el CABLEADO, y se hace aparte a proposito: es un
+cambio de comportamiento -- puntos que hoy pasan podrian dejar de pasar -- y
+no entra en el mismo paso que la reetiquetacion. Mientras tanto esta fila no
+se evalua y `verificaciones_no_evaluadas()` es su constancia en la memoria.
+
+Los dos docstrings que afirmaban lo CONTRARIO -- que M5 si ejecuta V4b --,
+en `modulos.M4_control` y en `modelos.ControlEntrada`, ya no lo afirman: se
+corrigieron junto con la reetiquetacion, que es lo que los hacia corregibles
+sin dejar el paquete a medias.
+
+Se dice con los dos numeros -- once filas, nueve funciones -- porque la
+diferencia importa: contarla mal (decir "una fila mas") tapa justamente la
+que sigue abierta.
+Es la misma via documental que Fase 8 ya usa para el item 5 (rigidez de
+anillo, pandeo y costura): se declara diferido con su motivo, no se calcula
+un numero que nadie pidio.
 
 Lo que NO se rellena en silencio
 ---------------------------------
@@ -30,6 +83,20 @@ con `CriterioPendienteError` desde un criterio nuevo en
 `criterios_adoptados.py` ('remanso_derecho_via', 'TR_evento_extremo'), con su
 justificacion y lo que falta para resolverlo.
 
+TW -- Sec. 1.3 ("TW se calcula, no se mide"), diferido y declarado
+------------------------------------------------------------------
+El TW que consume la Fase 4 entra por el criterio 'TW_receptor' (Tablero
+3.1), NO por el procedimiento de tres pasos de Sec. 1.3 (Q del receptor de
+ANA/Junta -> Manning en la seccion del receptor -> cota de agua). Ese
+procedimiento no esta implementado en ningun modulo, y la consecuencia hay
+que decirla porque no se adivina: **un CSV que traiga 'Q_receptor_m3s' y
+'cota_TW' llenos sigue exigiendo el TW declarado** (`--tw` en la CLI o el
+criterio), porque ningun modulo lee esas dos columnas -- viajan a la memoria
+como datos del expediente y nada mas. Lo que falta no es una conversion sino
+el paso 2 entero: la seccion transversal del receptor, que no es columna de
+Sec. 1.2. Mientras tanto el bloqueo es ruidoso (`CriterioPendienteError`
+sobre 'TW_receptor'), nunca un relleno silencioso.
+
 V7 SI tiene formula y metodo -- Fase 8, item 3 de la hoja de ruta, y
 `modulos.M8_estructural` la implementa completa ("tuberia vacia, NF en su cota
 mas alta"). Ya NO como un factor de seguridad global ΣW >= FS*U, sino como el
@@ -39,9 +106,10 @@ equilibrio de factores de carga que corresponde al marco LRFD de Sec. 0.2:
 
 Lo que sigue pendiente son dos DATOS puntuales del procedimiento, no el
 procedimiento: el peso especifico del relleno
-('peso_especifico_relleno_kn_m3') y los factores gamma
-('factores_carga_aashto', el mismo criterio del que come M9). Ver el docstring
-de `v7_flotacion` mas abajo.
+('peso_especifico_relleno_kn_m3') y la eleccion de fila de gamma_p
+('factores_carga_aashto', el mismo criterio del que come M9; los gamma en si
+son [N] y estan en constantes_normativas). Ver el docstring de `v7_flotacion`
+mas abajo.
 
 Consecuencia practica: mientras 'remanso_derecho_via', 'TR_evento_extremo' y
 los dos criterios de V7 sigan vacios, `verificar()` (y por lo tanto
@@ -53,39 +121,54 @@ individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI son
 utilizables una por una hoy mismo; es el AGREGADO el que hereda el bloqueo de
 las pendientes.
 
-V4 -- el supuesto de la cota de entrada (declarar en la memoria)
--------------------------------------------------------------------
+V4 -- la cota de entrada es un CRITERIO DECLARADO, no un supuesto del codigo
+----------------------------------------------------------------------------
 `modelos.ResultadoHidraulico` documenta que HW es una carga en metros SOBRE
 EL FONDO DE LA ENTRADA, y que la conversion a cota (msnm) exige la cota de esa
 entrada. `PuntoCritico` no trae una columna de cota de fondo de entrada (a
 diferencia de `cota_fondo_receptor`, que si la trae para la salida).
 
-V4 no puede existir sin esa cota, asi que este modulo adopta
-`punto.cota_terreno`: es el UNICO campo de Sec. 1.1 que describe la elevacion
-natural del cruce (el nivel del cauce antes de cualquier obra), y por eso es
-la lectura mas defendible disponible sin inventar una columna que el CSV no
-tiene. Es una INTERPRETACION, no un criterio adoptado con fuente propia --
-declarala en la memoria como tal, y reemplazala el dia que el expediente
-entregue la cota real de invert de entrada.
+V4 no puede existir sin esa cota. Este modulo NO la elige: la elige el
+proyectista, en el criterio 'origen_cota_fondo_entrada'
+(`criterios_adoptados.py`), y mientras nadie lo declare V4, V7 y el tamizado
+7.A se detienen con `CriterioPendienteError` como cualquier otro vacio. La
+regla admisible implementada hoy es 'cota_terreno' -- adoptar el terreno
+natural del cruce, el unico campo de Sec. 1.1 que describe la elevacion del
+cauce antes de la obra --, y su alcance, su direccion de conservadurismo y lo
+que la sustituye estan escritos en la justificacion del criterio.
 
-La interpretacion vive en `cota_entrada_supuesta()`, publica, porque M7
-(tamizado de 7.A) convierte el MISMO HW a cota para fijar la rasante minima:
-las dos tienen que leer la misma referencia o el acoplamiento circular que
-7.A dice cortar sigue abierto. Lo mismo vale para `resguardo_por_cbr()`, que
-es la segunda condicion del tamizado.
+QUE CAMBIO Y POR QUE: hasta la correccion de SIS-A-01/SIS-A-04 este modulo
+adoptaba `punto.cota_terreno` por su cuenta, con la eleccion explicada solo
+aqui -- sin entrada en `criterios_adoptados.py`, sin fila en el Anexo A y sin
+que la memoria marcara el numero como adoptado. Un docstring no es una
+declaracion: no lo lee el revisor de la memoria, no entra en
+`criterios_usados()` y no se puede cambiar sin tocar el codigo. La eleccion
+gobierna V4, V7 y la rasante de 7.A/M7-M8, o sea el resultado de la obra, y
+por eso vive donde vive el resto de lo que el proyectista decide.
+
+La lectura vive en `cota_entrada_supuesta()`, publica, porque M7 (tamizado de
+7.A) convierte el MISMO HW a cota para fijar la rasante minima: las dos
+tienen que leer la misma referencia o el acoplamiento circular que 7.A dice
+cortar sigue abierto. Lo mismo vale para `resguardo_por_cbr()`, que es la
+segunda condicion del tamizado.
 
 Excepciones
 -----------
-    CriterioPendienteError   V3 en TMC/HDPE ('v_max_tmc' / 'v_max_hdpe');
-                             V5 ('remanso_derecho_via'); V7
+    CriterioPendienteError   V4, V7 y todo consumidor de
+                             `cota_entrada_supuesta`
+                             ('origen_cota_fondo_entrada'); V5
+                             ('remanso_derecho_via'); V7
                              ('peso_especifico_relleno_kn_m3' o
                              'factores_carga_aashto'); V8
-                             ('TR_evento_extremo').
+                             ('TR_evento_extremo'). V3 en TMC/HDPE ya NO:
+                             'v_max_tmc' y 'v_max_hdpe' tienen valor.
     DatoInvalidoError        el 'material' de V3 no es de TipoMaterial (no
                              deberia llegar aqui: M2 ya lo valido antes); en
                              V7, la clave del conducto queda a nivel de la
                              subrasante o por encima (no hay relleno que
-                             pesar).
+                             pesar); la regla declarada en
+                             'origen_cota_fondo_entrada' no es una de las
+                             implementadas.
 
 Uso
 ---
@@ -105,32 +188,57 @@ from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
 from modelos import (DatoFaltanteError, DatoInvalidoError, Material, PuntoCritico,
                      ReferenciaNormativa, ResultadoHidraulico, TipoMaterial,
                      Verificacion)
-from modulos.M2_material import CRITERIO_DIAMETROS, CRITERIO_V_MAX
+from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO, CRITERIO_V_MAX,
+                                 diametro_exterior, espesor_pared)
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
                                     peso_relleno_kn_m)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
-NUMERAL_V1 = "4.1.1.3.7 b)"
-
-# V2 y V3 salen del MISMO numeral y de la MISMA pagina, y por eso los dos
-# numerales se escriben largos: lo que separa un piso de un techo no es el
-# numero, es el titulo de la tabla y el parrafo que la sigue. Estos dos
-# strings son lo UNICO que la memoria imprime de cada verificacion (M11 los
-# vuelca en la columna "numeral"), asi que el sustento tiene que viajar aqui
-# dentro o el revisor no lo ve: el titulo y la pagina vivian solo en el
-# comentario de constantes_normativas y en docs/manifiesto_citas.md, que no
-# van al expediente.
-NUMERAL_V2 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, pag. 76, parrafo '
-              'inmediatamente posterior a la Tabla Nº 10. El numeral RECOMIENDA '
-              'este minimo ("recomendandose que la velocidad minima sea igual '
-              'a 0.25 m/s"), no lo prohibe: aqui se aplica como umbral duro '
-              'por decision conservadora del proyecto')
+# Los TRES numerales de las verificaciones hidraulicas se escriben largos, y
+# por el mismo motivo: son lo UNICO que la memoria imprime de cada
+# verificacion (M11 los vuelca en la columna "numeral"), de modo que el
+# sustento tiene que viajar aqui dentro o el revisor no lo ve. El titulo de la
+# tabla, la pagina y el CARACTER de la frase vivian solo en el comentario de
+# constantes_normativas y en docs/manifiesto_citas.md, que no van al
+# expediente.
+#
+# V1 iba pelado -- "4.1.1.3.7 b)" -- y eso era un trato asimetrico sin
+# fundamento (MAT-O13, NOR-HID-10): el 0.75 de V1 y el 0.25 de V2 salen del
+# MISMO tipo de frase ("se recomienda") del mismo apartado 4.1.1.3, y solo V2
+# llevaba el matiz. Un revisor que viera "recomienda, no prohibe" en V2 y un
+# numeral desnudo en V1 leeria que el borde libre es exigencia y el piso de
+# velocidad no, cuando la fuente los escribe igual.
+NUMERAL_V1 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) "Borde libre", '
+              'pag. impresa 79. El numeral RECOMIENDA este borde libre ("Se '
+              'recomienda que el diseño hidraulico considere como minimo el '
+              '25 % de la altura, diametro o flecha de la estructura"), no lo '
+              'prohibe: aqui se aplica como umbral duro por decision '
+              'conservadora del proyecto, igual que el piso de V2')
+# V2 y V3 salen ademas del MISMO numeral -- 4.1.1.3.6 -- y de paginas
+# contiguas: la Tabla Nº 10 esta en la 76 y el parrafo que la sigue termina en
+# la 77. Lo que separa un piso de un techo no es el numero: es el titulo de la
+# tabla y ese parrafo.
+NUMERAL_V2 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo '
+              'inmediatamente posterior a la Tabla Nº 10: arranca en la pag. '
+              'impresa 76 y el valor se imprime en la 77. El numeral '
+              'RECOMIENDA este minimo ("recomendandose que la velocidad '
+              'minima sea igual a 0.25 m/s"), no lo prohibe: aqui se aplica '
+              'como umbral duro por decision conservadora del proyecto. Se '
+              'evalua con la velocidad de la rama de n MAXIMO -- la '
+              'estimacion baja --, que es el extremo conservador para un piso')
 NUMERAL_V3 = ('MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 "Velocidades maximas '
-              'admisibles en conductos revestidos", num. 4.1.1.3.6, pag. 76. '
-              'Los DOS numeros de cada fila son maximos segun la calidad del '
-              'revestimiento: se verifica solo el superior, el piso lo pone V2')
+              'admisibles (m/s) en conductos revestidos", num. 4.1.1.3.6, '
+              'pag. impresa 76; fuente de la tabla: HCANALES, Maximo Villon B. '
+              'Los DOS numeros de cada fila son MAXIMOS -- lo dice el titulo --, '
+              'de modo que se verifica solo el superior y el piso lo pone V2. '
+              'Que el rango recorra la calidad del revestimiento es '
+              'INTERPRETACION DEL PROYECTISTA y no del Manual: se declara '
+              'aparte, en el bloque "Umbrales normativos y su caracter" de '
+              'esta memoria. Se '
+              'evalua con la velocidad de la rama de n MINIMO -- la estimacion '
+              'alta --, que es el extremo conservador para un techo')
 NUMERAL_V4 = ReferenciaNormativa(
     seccion_hoja_ruta="Sec. 5.1",
     numeral_norma="Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), "
@@ -139,8 +247,9 @@ NUMERAL_V4 = ReferenciaNormativa(
 NUMERAL_V5 = "Fase 5, V5 (DG-2018 + Ley 29338)"
 NUMERAL_V6 = "3.1"
 NUMERAL_V7 = ("Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; "
-              "equilibrio de factores de carga: AASHTO LRFD Tablas 3.4.1-1 y "
-              "3.4.1-2, via el criterio 'factores_carga_aashto'; "
+              "equilibrio de factores de carga: Manual de Puentes Tablas "
+              "2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de "
+              "gamma_p elegida por estructura en 'factores_carga_aashto'; "
               "procedimiento: Fase 8, item 3)")
 NUMERAL_V8 = "Fase 5, V8"
 NUMERAL_V9 = "Sec. 3.2 (V9, nuevo en v7)"
@@ -148,9 +257,103 @@ NUMERAL_V9 = "Sec. 3.2 (V9, nuevo en v7)"
 CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
+# La regla con la que se obtiene la cota de fondo de entrada (V4, V7 y 7.A).
+CRITERIO_ORIGEN_COTA_ENTRADA = "origen_cota_fondo_entrada"
+# Reglas IMPLEMENTADAS: clave = valor que el proyectista declara en el
+# criterio, valor = campo de `PuntoCritico` del que sale la cota. No hay
+# aritmetica ninguna aqui -- cada regla es la lectura de una columna que el
+# CSV ya trae -- y por eso la tabla no contiene ningun valor de proyecto:
+# contiene el nombre de la columna que la declaracion elige.
+ORIGENES_COTA_ENTRADA = {"cota_terreno": "cota_terreno"}
 # Techo OPCIONAL del concreto. Se lee con `valor_si_declarado`, no con
 # `valor`: sin declarar no bloquea nada y V3 usa el maximo [N] de la tabla.
 CRITERIO_V_MAX_CONCRETO = "v_max_concreto_eleccion"
+
+
+# ---------------------------------------------------------------------------
+# Las DOS filas de Fase 5 que este modulo no evalua: V2b y V4b
+# ---------------------------------------------------------------------------
+
+def verificaciones_no_evaluadas() -> Tuple[str, ...]:
+    """
+    Las dos filas de la tabla de Fase 5 que este modulo NO implementa como
+    verificacion -- V2b y V4b -- y por que cada una.
+
+    Misma forma y mismo proposito que
+    `M8_estructural.verificacion_diferida_estructural`: lo que queda fuera del
+    alcance del script no se calcula ni se aproxima, se declara con su
+    fundamento para que la memoria lo imprima. Un requisito que desaparece sin
+    dejar rastro es lo que este proyecto persigue; que la tabla tenga ONCE
+    filas y el modulo NUEVE funciones tiene que verse en la memoria, no
+    deducirse contando.
+
+    V2b: la mitad [N] -- la velocidad minima que evita la sedimentacion -- SI
+    se verifica, y es V2 (0.25 m/s, num. 4.1.1.3.6, cuyo motivo declarado en
+    el propio numeral es la sedimentacion). Lo que queda fuera es la mitad
+    [A], el acceso de mantenimiento para limpieza, contenido de los PLANOS
+    (Sec. 11, entregable 7) que este software no produce.
+
+    V4b: no se evalua porque su chequeo no esta cableado (ver el encabezado
+    del modulo; la procedencia del umbral si esta cerrada). El nombre de esta
+    funcion era
+    `verificacion_diferida_v2b` y se renombro al incorporarla: una funcion que
+    devuelve dos constancias no puede llamarse por una sola de ellas.
+    """
+    return (
+        "V2b (sedimentacion / colmatacion): la condicion de velocidad la "
+        f"verifica V2 ({NUMERAL_V2}). El acceso de mantenimiento para "
+        "limpieza queda DIFERIDO al expediente: es contenido de planos "
+        "(Sec. 11, entregable 7), que este software no dibuja. Ningun "
+        "punto se da por conforme en V2b por el hecho de cumplir V2",
+        _constancia_v4b(),
+    )
+
+
+CLAVE_HW_D_MAX = "HW_D_max"
+
+
+def _constancia_v4b() -> str:
+    """
+    La constancia de V4b, con el VALOR y la ETIQUETA leidos del criterio en vez
+    de repetidos aqui.
+
+    Es la unica via por la que 'HW_D_max' llega a la memoria: no lo consume
+    ningun modulo, de modo que no entra en `criterios_usados()` y M11 no
+    imprime su ficha. Si esta constancia solo contara la historia en prosa, el
+    revisor no veria ni el 1.5, ni la etiqueta que la sesion de C06 corrigio,
+    ni el rango de sensibilidad -- que es justo el trabajo hecho para cerrar
+    NOR-HDS-02.
+
+    Se lee con `ca.criterio_efectivo`, que NO registra uso: leerlo para
+    imprimirlo no es consumirlo, y anotarlo como usado diria que alguna
+    verificacion se apoyo en el, que es exactamente lo que no ocurre. Leerlo
+    en vez de copiarlo evita ademas que esta cadena quede mintiendo el dia que
+    el criterio cambie.
+
+    La etiqueta se escribe SIN corchetes ("etiqueta A", no "[A]") y no es
+    cosmetica: esta cadena se imprime pegada a la tabla de verificaciones del
+    punto, y ahi un "[A]" entre corchetes es la marca con que M11 rotula el
+    criterio de UNA FILA de esa tabla. Dos usos del mismo simbolo a un
+    centimetro de distancia se leen como uno solo.
+    """
+    c = ca.criterio_efectivo(CLAVE_HW_D_MAX)
+    return (
+        f"V4b (relacion HW/D): NO evaluada. El criterio '{CLAVE_HW_D_MAX}' "
+        f"esta declarado con valor {c.valor!r}, etiqueta {c.etiqueta} "
+        f"(adopcion declarada) y sensibilidad {c.sensibilidad}, y ningun "
+        "modulo lo consume. Su "
+        "procedencia ya no esta abierta: el rango 1.0-1.5 no es un criterio "
+        "del HDS-5 sino la practica de agencias viales estadounidenses que su "
+        "num. 2.2.5 d) 'Agency Constraints' (pag. impresa 2.10) DESCRIBE "
+        "-- <<The allowable HW/D ratio varies throughout the country, but "
+        "commonly ranges from 1.0 to 1.5>> --, y 1.5 es el extremo superior, "
+        "el menos restrictivo. En el Peru la agencia es el MTC, que no fija "
+        "HW/D alguno, de modo que elegir un numero dentro de esa banda ajena "
+        "es adopcion del proyectista: por eso el criterio dejo de ser un "
+        "vacio cubierto por fuente tecnica. Lo que falta es cablear el "
+        "chequeo, que es un cambio de comportamiento y se hace aparte. El "
+        "control real del embalse aguas arriba es V5, que esta declarada y "
+        "bloquea")
 
 
 # ---------------------------------------------------------------------------
@@ -158,7 +361,28 @@ CRITERIO_V_MAX_CONCRETO = "v_max_concreto_eleccion"
 # ---------------------------------------------------------------------------
 
 def v1_borde_libre(*, D: float, resultado: ResultadoHidraulico) -> Verificacion:
-    """y/D <= 0.75: minimo 25 % de borde libre sobre el tirante normal."""
+    """
+    y/D <= 0.75: minimo 25 % de borde libre sobre el tirante normal.
+
+    Texto que lo sustenta, literal (MC-HHD, RD 20-2011-MTC/14,
+    num. 4.1.1.3.7 b) "Borde libre", pag. impresa 79):
+
+        "Se recomienda que el diseño hidráulico considere como mínimo el 25 %
+        de la altura, diámetro o flecha de la estructura."
+
+    ES UNA RECOMENDACION, IGUAL QUE EL PISO DE V2, y esta funcion la aplica
+    igualmente como umbral duro (`y/D <= 0.75` decide `cumple`), que es la
+    lectura conservadora y la que el proyecto adopta. El matiz viaja en
+    `NUMERAL_V1`, que es lo unico que la memoria imprime de V1. Hasta esta
+    correccion `NUMERAL_V1` era el numeral desnudo mientras `NUMERAL_V2` si
+    llevaba el matiz: dos frases del mismo apartado presentadas con distinta
+    fuerza normativa, sin nada en la fuente que lo justificara (MAT-O13,
+    NOR-HID-10).
+
+    El tirante que se compara es `y_normal`, resuelto con n_max (rama de
+    capacidad): mas rugosidad da mas tirante para el mismo Q, o sea el extremo
+    conservador para una verificacion de borde libre.
+    """
     y_sobre_D = resultado.y_normal / D
     return Verificacion(
         cumple=y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO,
@@ -196,7 +420,10 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
         que el proyecto adopta. Pero el matiz no puede quedarse en el codigo:
         `NUMERAL_V2` lo lleva escrito, de modo que la memoria lo imprime junto
         al resultado y un revisor que vea un punto rechazado por V2 sepa que
-        esta ante una recomendacion incumplida y no ante una infraccion.
+        esta ante una recomendacion incumplida y no ante una infraccion. Y no
+        viaja solo por ahi: `constantes_normativas.UMBRALES_DE_VERIFICACION`
+        lo lleva al bloque que M11 imprime SIEMPRE, tambien cuando ningun
+        punto llego a evaluarse (NOR-MEM-01).
 
     (2) La RAZON del minimo es la sedimentacion que reduce la capacidad
         hidraulica, no el desgaste. Es lo que separa a V2 de V3: el piso lo
@@ -204,11 +431,33 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
         techo lo pone la abrasion del revestimiento y cambia con el material.
         Por eso los dos numeros de la Tabla Nº 10 son maximos y ninguno es
         este piso (ver `v3_velocidad_maxima`).
+
+    QUE VELOCIDAD SE COMPARA, Y POR QUE NO ES LA MISMA QUE EN V3 (MAT-D1)
+    ---------------------------------------------------------------------
+    `resultado.V_sedimentacion`: la de la rama de n MAXIMO, que es la
+    estimacion BAJA de velocidad. No `V_erosion`, que es la alta y la que
+    consume V3.
+
+    La regla de doble n (Sec. 4.1 de la hoja de ruta) asigna n minimo a
+    "velocidad MAXIMA y socavacion". V2 no esta en esa lista, y no por olvido:
+    un piso y un techo tienen extremos conservadores OPUESTOS. Contra un techo
+    hay que suponer la velocidad mas alta que el rango de n admite; contra un
+    piso, la mas baja. Verificar el piso con la estimacion alta es declarar
+    "cumple" en el caso en que el conducto sedimenta.
+
+    Hasta esta correccion V2 leia la rama n_min y el defecto era medible: con
+    D = 0.90 m, y/D = 0.75 y S = 5e-5, la rama n_max da 0.228 m/s -- por
+    debajo del piso -- y la n_min 0.297 m/s, de modo que el punto pasaba. La
+    ventana permisiva completa es S entre 3.55e-5 y 6.01e-5, por debajo de
+    cualquier pendiente constructiva, asi que ningun diseño real quedo
+    afectado; lo que estaba invertido era el conservadurismo. El fixture CP-3
+    ya modelaba el umbral de V2 con n = 0.013 (n_max): el repositorio se
+    contradecia a si mismo.
     """
     return Verificacion(
-        cumple=resultado.V >= V_MIN - TOL_UMBRAL_NORMATIVO,
+        cumple=resultado.V_sedimentacion >= V_MIN - TOL_UMBRAL_NORMATIVO,
         numeral=NUMERAL_V2,
-        valor_obtenido=resultado.V,
+        valor_obtenido=resultado.V_sedimentacion,
         valor_admisible=V_MIN,
         criterio_aplicado=None,
         codigo="V2",
@@ -225,12 +474,25 @@ def v3_velocidad_maxima(*, material: Material,
     V3 verifica UN SOLO extremo: el techo. V <= v_max.
 
     Materiales de la Tabla N 10 (concreto, ladrillo con concreto, mamposteria
-    de piedra): M2 trae el par en `material.v_max_rango`, pero los DOS
-    numeros del par son velocidades MAXIMAS -- la tabla se titula
-    "Velocidades maximas admisibles en conductos revestidos" (num. 4.1.1.3.6,
-    pag. 76) y el rango recorre la calidad del revestimiento, no un piso y un
-    techo. El extremo inferior es el maximo admisible del acabado mas pobre;
-    exigirlo como MINIMO era leer la tabla al reves.
+    de piedra y concreto): M2 trae la fila literal en
+    `material.v_max_tabla10`, y TODOS sus valores son velocidades MAXIMAS --
+    la tabla se titula "Velocidades maximas admisibles (m/s) en conductos
+    revestidos" (num. 4.1.1.3.6, pag. impresa 76), su unica columna de valores
+    se rotula "VELOCIDAD (M/S)", y el piso esta aparte en el parrafo
+    siguiente. El extremo inferior no es un minimo; exigirlo como tal era leer
+    la tabla al reves.
+
+    QUE DICE LA FUENTE Y QUE PONE EL PROYECTO (NOR-HID-04). Que los dos
+    numeros sean maximos lo dice el titulo. Que el rango "recorra la calidad
+    del revestimiento" -- el superior para el mejor acabado, el inferior para
+    el mas pobre -- NO lo dice el Manual en ninguna parte: es interpretacion
+    del proyectista, esta declarada como tal en
+    `constantes_normativas.TABLA_10_INTERPRETACION_PROYECTO`, y es la que
+    sostiene que 'v_max_concreto_eleccion' pueda bajar el techo dentro de la
+    fila. Se dice aparte y no pegado a la cita porque en contra de esa lectura
+    juegan dos hechos de la propia fuente: la frase que introduce la tabla
+    habla de "un rango, cuyos limites se describen a continuacion", y la fila
+    de mamposteria trae un solo valor.
 
     Ese error tenia consecuencia real: rechazaba por V3 un conducto de
     concreto a 1.5 m/s, que es una velocidad perfectamente admisible y que
@@ -239,8 +501,11 @@ def v3_velocidad_maxima(*, material: Material,
     pagina y aplicable a todos los materiales por igual. Un segundo piso, mas
     alto y por material, no lo respalda ningun numeral.
 
-    Se toma el extremo SUPERIOR del par como admisible: es el techo del
-    revestimiento de mejor calidad.
+    Se toma el valor MAYOR de la fila como admisible. Bajo la interpretacion
+    del proyecto es el techo del revestimiento de mejor calidad; bajo lo que
+    la fuente sostiene sin mas, es simplemente la mayor de las velocidades que
+    la tabla admite para ese revestimiento, y verificar contra ella es la
+    lectura minima que no inventa un piso.
 
     Techo mas conservador, OPCIONAL. Para el concreto, el proyectista puede
     declarar 'v_max_concreto_eleccion' y bajar ese techo -- hasta 3.0 m/s, el
@@ -257,9 +522,13 @@ def v3_velocidad_maxima(*, material: Material,
     del criterio cuando el proyectista lo bajo.
 
     TMC y HDPE: la Tabla N 10 no los cubre (Tablero 1.3). El valor sale de
-    `criterios_adoptados.valor('v_max_tmc' | 'v_max_hdpe')`, hoy 4.6 m/s los
-    dos, con cita de WSDOT Hydraulics Manual M 23-03.12, Cap. 8, Tabla 8-4
-    (el vacio que la hoja de ruta declaraba quedo cerrado). Se leen con
+    `criterios_adoptados.valor('v_max_tmc' | 'v_max_hdpe')`, hoy 4.572 m/s los
+    dos -- la conversion exacta de las 15 ft/s de la fuente, que antes se
+    escribia redondeada a 4.6 y quedaba 0.6 % POR ENCIMA del techo declarado
+    duro (MAT-O14) --, con cita de WSDOT Hydraulics Manual M 23-03.12, Cap. 8,
+    Tabla 8-4 (el vacio que la hoja de ruta declaraba quedo cerrado; esa tabla
+    NO esta en normas/ y la cita no es auditable contra el repositorio, lo que
+    el propio criterio declara). Se leen con
     `ca.valor`, no con `ca.valor_si_declarado`: no son opcionales -- si
     alguien los vaciara, V3 debe detenerse y no caer a un techo inventado,
     porque para estos materiales no hay ningun valor normativo de respaldo
@@ -269,17 +538,20 @@ def v3_velocidad_maxima(*, material: Material,
         clave = CRITERIO_V_MAX[material.tipo]
         v_max = ca.valor(clave)     # CriterioPendienteError mientras falte
         return Verificacion(
-            cumple=resultado.V <= v_max + TOL_UMBRAL_NORMATIVO,
+            cumple=resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO,
             numeral=NUMERAL_V3,
-            valor_obtenido=resultado.V,
+            valor_obtenido=resultado.V_erosion,
             valor_admisible=v_max,
             criterio_aplicado=clave,
             codigo="V3",
         )
 
-    # Solo el techo: el par de la Tabla N 10 son dos MAXIMOS, no un piso y un
-    # techo (ver el docstring). El extremo inferior no se verifica.
-    _, v_max = material.v_max_rango
+    # Solo el techo: los valores de la fila de la Tabla N 10 son todos
+    # MAXIMOS, no un piso y un techo (ver el docstring). Se toma el mayor; los
+    # demas no se verifican. `max()` y no un desempaquetado de dos: la fila de
+    # la mamposteria trae UN solo valor y escribirla como (2.0, 2.0) inventaba
+    # un par que la fuente no imprime (NOR-HID-07).
+    v_max = max(material.v_max_tabla10)
     clave = None
 
     if material.tipo is TipoMaterial.CONCRETO_REFORZADO:
@@ -289,9 +561,9 @@ def v3_velocidad_maxima(*, material: Material,
             clave = CRITERIO_V_MAX_CONCRETO
 
     return Verificacion(
-        cumple=resultado.V <= v_max + TOL_UMBRAL_NORMATIVO,
+        cumple=resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO,
         numeral=NUMERAL_V3,
-        valor_obtenido=resultado.V,
+        valor_obtenido=resultado.V_erosion,
         valor_admisible=v_max,
         criterio_aplicado=clave,   # None = [N] puro de la Tabla N 10
         codigo="V3",
@@ -304,9 +576,13 @@ def v3_velocidad_maxima(*, material: Material,
 
 def cota_entrada_supuesta(punto: PuntoCritico) -> float:
     """
-    Cota del fondo de la entrada, msnm. Es la INTERPRETACION declarada en el
-    docstring del modulo ("V4 -- el supuesto de la cota de entrada"): se adopta
-    `punto.cota_terreno` mientras M7 no fije la cota real de invert.
+    Cota del fondo de la entrada, msnm, segun la regla que el proyectista
+    declaro en el criterio 'origen_cota_fondo_entrada' (Sec. 7.B; ver "V4 --
+    la cota de entrada es un CRITERIO DECLARADO" en el docstring del modulo).
+
+    Sin criterio declarado se detiene con `CriterioPendienteError`: la cota de
+    fondo de entrada no es columna del CSV ni la fija ninguna norma, de modo
+    que elegirla aqui seria rellenar un vacio en silencio.
 
     Es publica y con nombre propio porque V4 no es su unico consumidor: el
     tamizado de 7.A (M7) convierte el mismo HW a cota para fijar la rasante
@@ -315,7 +591,98 @@ def cota_entrada_supuesta(punto: PuntoCritico) -> float:
     que 7.A dice cortar seguiria abierto: la rasante se fijaria contra una
     referencia y se verificaria contra otra.
     """
-    return punto.cota_terreno
+    origen = ca.valor(CRITERIO_ORIGEN_COTA_ENTRADA)
+    if origen not in ORIGENES_COTA_ENTRADA:
+        raise DatoInvalidoError(
+            CRITERIO_ORIGEN_COTA_ENTRADA, valor=origen,
+            motivo="la regla declarada tiene que ser una de las "
+                   f"implementadas: {sorted(ORIGENES_COTA_ENTRADA)}. Una cota "
+                   "de fondo de entrada MEDIDA no se declara aqui: entra como "
+                   "columna del CSV y sustituye al criterio entero",
+        )
+    return getattr(punto, ORIGENES_COTA_ENTRADA[origen])
+
+
+def cota_clave(*, punto: PuntoCritico, material: Material, D: float) -> float:
+    """
+    Cota de la clave FISICA del conducto, msnm (Sec. 7.A):
+
+        cota clave = cota de fondo de la entrada + D interior + espesor de pared
+
+    El espesor de pared entra UNA vez y no dos: la cota de entrada es el
+    invert INTERIOR -- la superficie por donde corre el agua -- de modo que la
+    superficie exterior superior queda a D_int + t sobre ella, no a D_ext.
+
+    POR QUE NO ES cota_entrada + D, que es lo que este proyecto calculaba
+    (MAT-D4): EG-2013 Subseccion 508.07 (pag. impresa 984) mide el relleno
+    minimo "desde la clave de la tuberia hasta el nivel de la subrasante", y
+    la clave de la tuberia es su superficie EXTERIOR. Con la clave calculada
+    sobre el diametro interior, la rasante minima de 7.A sale corta justo en
+    t: una rasante fijada en ese minimo deja ~0.20 m reales de recubrimiento
+    donde EG-2013 exige 0.30 (deficit del 33 % para D = 0.90 m de concreto).
+
+    Es publica y vive AQUI, junto a `cota_entrada_supuesta`, por la misma
+    razon que ella: la usan V7 (para pesar el relleno real sobre la clave) y
+    el tamizado de 7.A (para fijar la rasante), y si cada modulo la
+    recalculase por su cuenta las dos condiciones se separarian. Estaba
+    duplicada -- M7.cota_clave y una linea suelta dentro de `v7_flotacion` --
+    y las dos copias tenian el mismo error.
+
+    Se detiene con `CriterioPendienteError` en 'origen_cota_fondo_entrada'
+    (la cota de entrada) o en 'espesor_pared_conducto' (el espesor).
+    """
+    return cota_entrada_supuesta(punto) + D + espesor_pared(material)
+
+
+def altura_relleno_sobre_clave(*, punto: PuntoCritico, material: Material,
+                               D: float) -> float:
+    """
+    Altura REAL de relleno sobre la clave fisica del conducto, m:
+
+        altura = cota de subrasante - cota de clave
+
+    Es el relleno que de verdad hay encima -- no el minimo de Sec. 7.A, que es
+    un piso admisible y otra cosa --, y lo consumen dos etapas distintas: V7,
+    que lo pesa como EV para la flotacion, y la Fase 8, que con el entra a la
+    tabla de clases o calibres de la norma de producto (items 1-2).
+
+    LA GUARDA ES PARTE DE LA MAGNITUD, y por eso vive aqui y no en cada
+    consumidor. Una altura nula o negativa significa que la clave queda a
+    nivel de la subrasante o por encima: no es un relleno pequeño sino un
+    punto cuyas cotas no se sostienen, y el numero que saldria de restarlas no
+    tiene sentido fisico en ninguna de las dos etapas. Sale como
+    `DatoInvalidoError` sobre 'cota_subrasante' -- el revisor tiene que
+    CORREGIR una cota, no añadir un dato (CLAUDE.md) --, que es la excepcion
+    que la Fase 5 ya lanzaba.
+
+    POR QUE SE EXTRAJO (SIS-A-21). La resta estaba escrita dos veces: dentro
+    de `v7_flotacion`, con la guarda, y en `cli._fase_8`, sin ella. La segunda
+    copia no hacia daño HOY -- la Fase 8 se detiene antes, en el tope de
+    'clases_producto_por_relleno' -- y esa es exactamente la forma en que una
+    guarda desaparece sin que nadie lo note: el dia en que ese criterio se
+    declare y la tabla se transcriba, la Fase 8 entraria a la norma de
+    producto con una altura negativa y elegiria una clase contra un numero sin
+    sentido. Escrita una vez, la guarda no se puede olvidar en una de las dos.
+
+    Se detiene con `CriterioPendienteError` en lo mismo que `cota_clave`:
+    'origen_cota_fondo_entrada' y 'espesor_pared_conducto'.
+    """
+    clave = cota_clave(punto=punto, material=material, D=D)
+    altura = punto.cota_subrasante - clave
+    if altura <= TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            "cota_subrasante", valor=punto.cota_subrasante, id_punto=punto.id,
+            # El motivo NO cita numeral de fase: la misma magnitud la
+            # consumen V7 (Fase 5) y la norma de producto (Fase 8), y una
+            # excepcion que nombrase una sola mandaria al revisor a la etapa
+            # equivocada la mitad de las veces. Quien la atrapa ya sabe en que
+            # etapa esta -- `cli._etapa` la anota con su fase.
+            motivo="la clave del conducto queda a nivel de la subrasante o "
+                   f"por encima ({altura:+.3f} m de relleno): no hay relleno "
+                   "sobre la clave que pesar ni con que entrar a la tabla de "
+                   "la norma de producto",
+        )
+    return altura
 
 
 def resguardo_por_cbr(cbr: float) -> float:
@@ -344,17 +711,32 @@ def resguardo_por_cbr(cbr: float) -> float:
 def v4_carga_entrada(*, punto: PuntoCritico,
                      resultado: ResultadoHidraulico) -> Verificacion:
     """
-    HW <= cota de subrasante - resguardo(CBR), Sec. 5.1. El resguardo sale
+    cota de entrada + HW <= cota de subrasante - resguardo(CBR), Sec. 5.1.
+
+    LOS DOS TERMINOS SON NIVELES, y por eso la desigualdad lleva el sumando
+    `cota de entrada` que la hoja de ruta v8 omitia (MAT-O5): HW es una carga
+    en metros sobre el fondo de la entrada, no una cota, y compararla con una
+    cota msnm sin ese sumando se cumple siempre. El codigo nunca lo omitio
+    -- ver `HW_cota` mas abajo --; era la hoja la que estaba mal, y se
+    corrigio alli. El numeral tambien compara niveles: "El nivel superior de
+    la sub rasante debe quedar encima del nivel de la napa freatica como
+    minimo a 0.60 m ..." (Manual de Suelos, num. 4.5.4, pag. impresa 42).
+
+    El resguardo sale
     del criterio 'resguardo_HW_subrasante' [N->] (analogia declarada al nivel
     freatico, no un valor puntual: la tabla de CBR vive en
     `constantes_normativas.RESGUARDO_NAPA_SUBRASANTE`, [N] por numeral, y es
     la aplicacion de ESA tabla al HW lo que Sec. 5.1 etiqueta [N->]).
 
     `HW` es una carga en metros sobre el fondo de la entrada (Sec. 4.2/4.3);
-    convertirla a cota exige la cota de esa entrada. Este modulo adopta
-    `punto.cota_terreno` para eso -- ver "V4 -- el supuesto de la cota de
-    entrada" en el docstring del modulo: es una interpretacion declarada, no
-    un criterio con fuente propia, y debe citarse como tal en la memoria.
+    convertirla a cota exige la cota de esa entrada. Este modulo NO la elige:
+    la pide a `cota_entrada_supuesta`, que aplica la regla que el proyectista
+    declaro en 'origen_cota_fondo_entrada' [A] -- ver "V4 -- la cota de
+    entrada es un CRITERIO DECLARADO, no un supuesto del codigo" en el
+    docstring del modulo. Este parrafo decia "este modulo adopta
+    `punto.cota_terreno`", que es lo que hacia ANTES de SIS-A-01/SIS-A-04 y
+    dejo de ser cierto entonces: 'cota_terreno' es hoy una de las reglas
+    admisibles del criterio, no una eleccion del codigo.
     """
     ca.valor(CRITERIO_RESGUARDO)      # registra el uso; "segun_CBR" no es numerico
     resguardo_m = resguardo_por_cbr(punto.cbr_subrasante)
@@ -457,8 +839,18 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
 
     Se minoran las cargas que estabilizan -- peso propio del conducto (DC) y
     peso del relleno sobre la clave (EV), con sus gamma MINIMOS de la Tabla
-    3.4.1-2 -- y se mayora la subpresion, que desestabiliza (WA, Tabla
-    3.4.1-1). Con los minimos de la tabla es la forma 0.90*(DC + EV) >= 1.00*U.
+    2.4.5.3.1-2 -- y se mayora la subpresion, que desestabiliza (WA, Tabla
+    2.4.5.3.1-1). Para un conducto enterrado es la forma
+    0.90*(DC + EV) >= 1.00*U.
+
+    EL gamma DE EV DEPENDE DEL MATERIAL, y por eso esta funcion le pasa el
+    suyo a `factores_carga_flotacion`. La Tabla 2.4.5.3.1-2 desglosa el
+    empuje vertical de tierra por TIPO DE ESTRUCTURA: el tubo de concreto es
+    "Estructura rigida enterrada", el HDPE una "Alcantarilla termoplastica" y
+    el TMC una estructura flexible de la subfila "Entre otros". Los tres
+    minimos valen 0.90 y el numero de V7 no cambia por esto; lo que cambia es
+    que la fila de la que sale queda dicha, en vez de heredarse de un par
+    unico que no era ninguna fila de la tabla (MAT-D8, NOR-PUE-03).
 
     NO es un FS global. La fila V7 de la hoja de ruta lo enuncia como
     ΣW >= FS*U, que es lenguaje de tension admisible; Sec. 0.2 adopta AASHTO
@@ -474,35 +866,41 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     resultado.
 
     La altura de relleno sobre la clave es la REAL del punto -- cota de
-    subrasante menos la cota de la clave -- no el minimo normativo de Sec.
-    7.A ('h_relleno_min_concreto_tmc', que sigue sin valor para concreto y
-    TMC): V7 pesa el relleno que de verdad hay encima, no un piso admisible.
-    Usa la misma cota de entrada supuesta que V4 y M7 (`cota_entrada_supuesta`),
-    para no evaluar la flotacion contra una referencia distinta de la que fija
-    la rasante.
+    subrasante menos la cota de la clave -- no el minimo de Sec. 7.A: V7 pesa
+    el relleno que de verdad hay encima, no un piso admisible. No la resta
+    aqui: la pide a `altura_relleno_sobre_clave`, que es la misma que consume
+    la Fase 8 y trae la guarda de cotas incoherentes con ella (SIS-A-21). Esa
+    funcion usa la misma `cota_clave` que el tamizado de 7.A, que a su vez usa
+    la misma cota de entrada que V4 (`cota_entrada_supuesta`, la regla
+    declarada en 'origen_cota_fondo_entrada'), para no evaluar la flotacion
+    contra una referencia distinta de la que fija la rasante. Esa clave es la
+    FISICA: lleva el espesor de pared, y por eso V7 se detiene tambien en
+    'espesor_pared_conducto' (MAT-D4).
+
+    U y EV se calculan sobre el diametro EXTERIOR, no sobre el interior. El
+    num. 2.4.3.8.2 define la subpresion sobre el volumen desplazado, que es el
+    exterior; con t = 0.100 m en un tubo de concreto de D = 0.90 m
+    (D_ext = 1.10 m) usar el interior la subestimaba un 33.1 %, y el docstring
+    de M8 declaraba esa aproximacion "del lado conservador" cuando es
+    exactamente la contraria (MAT-D3).
 
     DC = 0: no suma el peso propio del conducto (ver "Por que el peso propio
     del conducto no entra en V7" en el docstring de M8_estructural). Omitirlo
     es conservador, reduce el lado estabilizante en vez de inflarlo.
 
     Se detiene en 'peso_especifico_relleno_kn_m3' (el termino EV) o en
-    'factores_carga_aashto' (los gamma), los dos vacios que le faltan al
-    procedimiento -- no en un vacio de METODO: ver el docstring del modulo.
+    'factores_carga_aashto' (la eleccion de fila de gamma_p), los dos vacios
+    que le faltan al procedimiento -- no en un vacio de METODO: ver el
+    docstring del modulo.
     """
-    clave = cota_entrada_supuesta(punto) + D
-    altura_relleno = punto.cota_subrasante - clave
-    if altura_relleno <= TOL_UMBRAL_NORMATIVO:
-        raise DatoInvalidoError(
-            "cota_subrasante", valor=punto.cota_subrasante, id_punto=punto.id,
-            motivo="la clave del conducto queda a nivel de la subrasante o "
-                   "por encima: no hay relleno sobre la clave que pesar "
-                   f"en V7 ({NUMERAL_V7})",
-        )
+    altura_relleno = altura_relleno_sobre_clave(punto=punto, material=material,
+                                                D=D)
 
-    U = empuje_flotacion_kn_m(D=D)
-    EV = peso_relleno_kn_m(D=D, altura_relleno=altura_relleno)
+    D_ext = diametro_exterior(material=material, D=D)
+    U = empuje_flotacion_kn_m(D_exterior=D_ext)
+    EV = peso_relleno_kn_m(D_exterior=D_ext, altura_relleno=altura_relleno)
     DC = 0.0                 # peso propio omitido, del lado conservador
-    g = factores_carga_flotacion()   # CriterioPendienteError si EV no se detuvo antes
+    g = factores_carga_flotacion(material=material)   # CriterioPendienteError si EV no se detuvo antes
 
     estabilizante = g.gamma_DC * DC + g.gamma_EV * EV
     desestabilizante = g.gamma_WA * U
@@ -540,16 +938,23 @@ def v8_evento_extremo(*, punto: PuntoCritico,
 
 def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     """
-    D requerido <= tope de la norma de producto del material. El tope es
-    `material.D_max`, que M2 ya resolvio desde el criterio
-    'diametros_normalizados' -- V9 solo lo consulta, no lo recalcula.
+    D requerido <= tope de CATALOGO del material. El tope es `material.D_max`,
+    que M2 resuelve desde el criterio 'D_max_catalogo' -- V9 solo lo consulta,
+    no lo recalcula.
+
+    NO ES UN UMBRAL NORMATIVO (NOR-PRO-01, NOR-PRO-02, MAT-O8). El tope se
+    atribuia a ASTM C76/AASHTO M170, AASHTO M36/ASTM A760 y AASHTO M294, y
+    ninguna de las tres lo sostiene: A760 tabula diametros nominales hasta
+    3600 mm y M 170M igual. Es una adopcion del proyecto sobre la
+    disponibilidad de mercado, y por eso `criterio_aplicado` apunta ahora a
+    'D_max_catalogo': un punto rechazado por V9 no lo rechaza la norma.
     """
     return Verificacion(
         cumple=D <= material.D_max + TOL_UMBRAL_NORMATIVO,
         numeral=NUMERAL_V9,
         valor_obtenido=D,
         valor_admisible=material.D_max,
-        criterio_aplicado=CRITERIO_DIAMETROS,
+        criterio_aplicado=CRITERIO_D_MAX_CATALOGO,
         codigo="V9",
     )
 

@@ -17,7 +17,8 @@ import pytest
 
 import criterios_adoptados as ca
 import datos_sitio as ds
-from constantes_normativas import FACTOR_MURO_TABLA
+from constantes_normativas import (F_PGA_TABLA,
+                                   REDUCCION_KH_POR_DESPLAZAMIENTO)
 from criterios_adoptados import (CRITERIOS, criterio, criterios_sin_valor,
                                  parametros_sensibilizables, reporte_criterios,
                                  valor)
@@ -33,15 +34,20 @@ CLAVES_PENDIENTES = criterios_sin_valor()
 # tener su entrada declarada aqui; si se agrega una fila al Anexo A y no al
 # modulo, este test lo delata.
 # 'PGA_roca_B' salio del Anexo A: es un dato de sitio [S] y vive en
-# datos_sitio.py. 'factor_muro' se partio en tabla [N]
-# (constantes_normativas.FACTOR_MURO_TABLA) y eleccion [A]
-# ('factor_muro_eleccion'), el mismo reparto que ya tenia F_pga.
+# datos_sitio.py. 'factor_muro' se partio en el unico valor [N] del numeral
+# (constantes_normativas.REDUCCION_KH_POR_DESPLAZAMIENTO) y la declaracion [A]
+# de si se aplica ('factor_muro_eleccion'). F_pga siguio el mismo camino: la
+# tabla [N] completa en constantes_normativas.F_PGA_TABLA y las FILAS sobre
+# las que se lee en el criterio, mas la lectura de sus rotulos extremos, que
+# la tabla no resuelve ('F_pga_lectura_columna_extrema').
 CLAVES_DEL_ANEXO_A = {
     "clase_sitio",
     "PERFIL_SUELO_PRESUNTO",
     "F_pga",
+    "F_pga_lectura_columna_extrema",
     "factor_muro_eleccion",
     "k_v",
+    "gamma_EQ",
     "Mw_licuefaccion",
     "hds5_embocadura_hdpe",
     "n_manning_hdpe",
@@ -478,9 +484,17 @@ def test_la_escritura_permanente_valida_antes_de_tocar_el_disco(tmp_path):
 # Criterios opcionales: valor=None que NO es un vacio
 # ---------------------------------------------------------------------------
 
-def test_v_max_concreto_es_el_unico_opcional_declarado_hoy():
+def test_los_opcionales_declarados_hoy():
+    """
+    Se llamaba `..._es_el_unico_opcional_declarado_hoy`. Ya no es el unico:
+    al cerrar NOR-HID-08 entro 'riesgo_admisible_propietario', que tiene
+    exactamente la misma forma -- la norma fija un valor por defecto (los
+    maximos recomendados de la Tabla N 02) y el criterio permite endurecerlo,
+    sin bloquear si nadie lo declara.
+    """
     opcionales = {k for k, c in CRITERIOS.items() if c.opcional}
-    assert opcionales == {"v_max_concreto_eleccion"}
+    assert opcionales == {"v_max_concreto_eleccion",
+                          "riesgo_admisible_propietario"}
 
 
 def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():
@@ -547,28 +561,33 @@ def test_la_cadena_sismica_reproduce_CP7():
     cp = CP7_CADENA_SISMICA
     # El PGA abre la cadena desde datos_sitio.py: es [S], no criterio.
     assert ds.valor("PGA_roca_B") == pytest.approx(cp["PGA"])
-    assert valor("F_pga") == pytest.approx(cp["F_pga"])
 
-    A_s = ds.valor("PGA_roca_B") * valor("F_pga")
+    # El criterio ya no guarda el FACTOR sino las FILAS de la tabla sobre las
+    # que se lee: la tabla es [N] y la eleccion de fila es [A]. El factor sale
+    # de la envolvente de esas filas al PGA del proyecto.
+    filas = valor("F_pga")
+    assert filas == ("C", "D", "E")
+    F_pga = max(F_PGA_TABLA[fila][-1] for fila in filas)
+    assert F_pga == pytest.approx(cp["F_pga"])
+
+    A_s = ds.valor("PGA_roca_B") * F_pga
     assert A_s == pytest.approx(cp["A_s_esperado"])
 
-    k_h0 = A_s                                   # Manual de Puentes, 2.8.1.1.14.2
+    k_h0 = A_s                                 # Manual de Puentes, 2.8.1.1.14.2.1
     assert k_h0 == pytest.approx(cp["k_h0_esperado"])
 
-    k_h = valor("factor_muro_eleccion") * k_h0
-    assert k_h == pytest.approx(cp["k_h_con_muro_rigido_esperado"])
-
-    # La eleccion adoptada es la fila rigida de la tabla [N] del numeral.
-    assert valor("factor_muro_eleccion") == pytest.approx(
-        FACTOR_MURO_TABLA["rigido"])
-    assert criterio("factor_muro_eleccion").sensibilidad == (
-        FACTOR_MURO_TABLA["desplazable"], FACTOR_MURO_TABLA["rigido"])
+    # Lo declarado es si se aplica o no la reduccion que el numeral autoriza;
+    # sin reduccion, k_h = k_h0.
+    assert valor("factor_muro_eleccion") == "sin_reduccion"
+    assert k_h0 == pytest.approx(cp["k_h_con_muro_rigido_esperado"])
 
     # Si el muro admitiera desplazamiento, la misma cadena debe dar 0.25.
-    assert FACTOR_MURO_TABLA["desplazable"] * k_h0 == pytest.approx(
+    assert REDUCCION_KH_POR_DESPLAZAMIENTO * k_h0 == pytest.approx(
         cp["k_h_con_muro_desplazable_esperado"]
     )
-    assert valor("k_v") == pytest.approx(cp["k_v_esperado"])
+    # k_v ya no es un numero adoptado: el criterio declara que rige el cero
+    # que fija el num. 2.8.1.1.14.2.1, y ese cero es [N].
+    assert valor("k_v") == "prescrito_sin_caso_reservado"
 
 
 def test_el_ke_del_control_de_salida_esta_trazado_contra_CP8():
@@ -606,7 +625,8 @@ def test_el_n_de_hdpe_es_un_rango_y_no_un_valor_puntual():
 # seccion sismica de la memoria. 'PERFIL_SUELO_PRESUNTO' entra porque es la
 # presuncion geotecnica sobre la que se apoya 'clase_sitio'.
 CRITERIOS_SISMICOS = ("clase_sitio", "PERFIL_SUELO_PRESUNTO", "F_pga",
-                      "factor_muro_eleccion", "k_v", "Mw_licuefaccion")
+                      "F_pga_lectura_columna_extrema", "factor_muro_eleccion",
+                      "k_v", "gamma_EQ", "Mw_licuefaccion")
 
 
 def test_la_clase_de_sitio_es_adopcion_declarada_y_no_dispensa_normativa():
@@ -662,3 +682,137 @@ def test_lo_que_cierra_la_clase_de_sitio_es_el_estudio_de_respuesta_de_sitio():
     pendiente = f"{c.reemplazado_por} {c.verificacion_pendiente}"
     assert "30 m" in c.reemplazado_por
     assert "respuesta de sitio" in pendiente
+
+
+# ---------------------------------------------------------------------------
+# Valor EFECTIVO y procedencia (SIS-A-01, el bloqueante de las tres auditorias)
+# ---------------------------------------------------------------------------
+# El defecto era de REPORTE y no de calculo: el calculo si usaba el valor
+# declarado en caliente. Estos tests fijan la mitad que faltaba -- que el
+# archivo pueda decir, ademas de que valor gobierna, DE DONDE vino.
+
+def test_criterio_efectivo_devuelve_el_valor_que_gobierna_el_calculo(_limpia_overrides):
+    """`criterio()` da el valor del archivo; `criterio_efectivo()`, el que corre."""
+    clave = "phi_relleno_trasdos"
+    assert criterio(clave).valor is None
+
+    ca.establecer_valor_dinamico(clave, 32.0)
+
+    assert criterio(clave).valor is None, "el archivo no se toca"
+    assert ca.criterio_efectivo(clave).valor == pytest.approx(32.0)
+    assert valor(clave) == pytest.approx(32.0), (
+        "el calculo y el reporte tienen que leer el MISMO valor: si divergen "
+        "vuelve el hallazgo bloqueante")
+    # El resto del Criterio viaja intacto: solo cambia el valor.
+    assert ca.criterio_efectivo(clave).justificacion == criterio(clave).justificacion
+
+
+def test_la_procedencia_distingue_el_declarado_en_caliente_del_transcrito(_limpia_overrides):
+    """Un override no es un valor transcrito de una norma, y se dice."""
+    assert not ca.declarado_en_caliente("F_pga")
+    assert "F_pga" not in ca.criterios_declarados_en_caliente()
+
+    ca.establecer_valor_dinamico("phi_relleno_trasdos", 32.0)
+
+    assert ca.declarado_en_caliente("phi_relleno_trasdos")
+    assert "phi_relleno_trasdos" in ca.criterios_declarados_en_caliente()
+    # Ni vacio ni valor de archivo: la tercera categoria, que antes no existia
+    # y hacia que el criterio se cayera de los dos bloques de la memoria.
+    assert "phi_relleno_trasdos" not in criterios_sin_valor()
+
+
+def test_el_reporte_de_texto_marca_lo_declarado_para_la_corrida(_limpia_overrides):
+    ca.establecer_valor_dinamico("phi_relleno_trasdos", 32.0)
+    valor("phi_relleno_trasdos")
+
+    texto = reporte_criterios(solo_usados=True)
+
+    assert "32.0" in texto
+    assert "declarado para esta corrida, no en archivo" in texto
+    assert "DECLARADOS SOLO PARA ESTA CORRIDA" in texto
+
+
+def test_los_criterios_sin_consumidor_declaran_por_que_nadie_los_invoca():
+    """
+    Un criterio CON valor y sin invocacion no cae en ningun bloque de la
+    memoria y desaparecia del HTML (SIS-B-15). La razon se escribe UNA vez,
+    en el propio criterio, y no repartida entre la auditoria y el manifiesto.
+    """
+    sin_consumidor = ca.criterios_sin_consumidor()
+    assert "demanda_sismica_licuefaccion" in sin_consumidor
+    for clave in sin_consumidor:
+        assert criterio(clave).sin_consumidor.strip(), clave
+
+
+def test_hay_homologo_de_datos_con_verificacion_pendiente():
+    """
+    `datos_sitio` exponia la consulta y `criterios_adoptados` no, de modo que
+    el JSON del expediente declaraba que datos de sitio quedaban sin cerrar
+    documentalmente y no que criterios (SIS-D-07).
+    """
+    abiertos = ca.criterios_con_verificacion_pendiente()
+    assert abiertos
+    for clave in abiertos:
+        assert criterio(clave).verificacion_pendiente
+        assert ca.criterio_efectivo(clave).valor is not None, (
+            f"'{clave}' no tiene valor: un vacio se declara en el bloque de "
+            "vacios, no como verificacion documental abierta")
+    # Hermanos de verdad: misma pregunta, mismo tipo de respuesta ordenada.
+    assert abiertos == sorted(abiertos)
+    assert ds.datos_con_verificacion_pendiente() == sorted(
+        ds.datos_con_verificacion_pendiente())
+
+
+def test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor():
+    """
+    La memoria imprime "ningun modulo de produccion los llama" leyendo el
+    campo `sin_consumidor`. Sin esta guardia esa frase seria una afirmacion no
+    verificada -- exactamente el patron que SIS-A-03 denuncio en ocho
+    docstrings: texto que describia un estado que el codigo ya no tenia.
+
+    Se mira produccion, no tests: `src/modulos/`, `cli.py` y `gui/app.py`.
+    """
+    raiz = Path(__file__).resolve().parents[1]
+    fuentes = list((raiz / "src" / "modulos").glob("*.py"))
+    fuentes += [raiz / "cli.py", raiz / "gui" / "app.py"]
+    textos = {ruta: ruta.read_text(encoding="utf-8-sig") for ruta in fuentes}
+
+    for clave in ca.criterios_sin_consumidor():
+        invocaciones = [ruta.name for ruta, texto in textos.items()
+                        if clave in texto]
+        assert not invocaciones, (
+            f"'{clave}' declara `sin_consumidor` y aparece en {invocaciones}. "
+            "O lo invoca alguien -- y entonces la memoria esta mintiendo -- o "
+            "la mencion hay que quitarla")
+
+
+# ---------------------------------------------------------------------------
+# Topes de diametro: de catalogo, no de norma (C01)
+# ---------------------------------------------------------------------------
+# Los tres tests de este bloque vivian en tests/test_constantes_normativas.py,
+# mirando `CN.D_MAX`. Comprueban lo mismo; lo que cambio es donde vive el dato
+# y, sobre todo, QUE es: las normas de producto a las que se le atribuia el
+# tope tabulan hasta 3600 mm (NOR-PRO-01, NOR-PRO-02, MAT-O8), de modo que
+# 2.70 / 2.10 / 1.50 son topes de catalogo adoptados por el proyecto.
+
+CLAVE_TOPES = "D_max_catalogo"
+
+
+def test_el_hdpe_es_el_material_con_el_tope_mas_restrictivo():
+    topes = valor(CLAVE_TOPES)
+    assert topes["hdpe"] == min(topes.values())
+    assert topes["hdpe"] < topes["tmc"] < topes["concreto_reforzado"]
+
+
+def test_todos_los_topes_de_diametro_son_alcanzables_desde_la_progresion():
+    inicio = valor("diametros_normalizados")["inicio"]
+    for material, tope in valor(CLAVE_TOPES).items():
+        assert tope >= inicio, f"el tope de {material} es menor que el minimo"
+
+
+def test_ningun_diametro_de_alcantarilla_alcanza_la_luz_de_puente():
+    """Sec. 2.1: con luz >= 6.0 m la obra sale del alcance del script."""
+    import constantes_normativas as CN
+    assert max(valor(CLAVE_TOPES).values()) < CN.LUZ_MAX_ALCANTARILLA
+    assert CN.DIAMETRO_MIN < CN.LUZ_MAX_ALCANTARILLA
+

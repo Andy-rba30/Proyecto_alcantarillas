@@ -85,13 +85,27 @@ from modelos import CriterioPendienteError
 
 ETIQUETA_SITIO = "S"
 
+# El corredor de ESTE expediente. Es un dato del proyecto -- cambia al mover
+# la obra y no al cambiar de proyectista --, no una constante del programa, y
+# por eso se declara aqui, en el archivo de los [S], y no incrustado en la
+# frase que define la etiqueta. Escrito como literal dentro de
+# `AMBITO_CORREDOR`, aplicar la app a otra carretera heredaba "~5 km" en
+# silencio en la memoria de la obra nueva (NOR-F-01).
+#
+# Su entrada completa, con procedimiento y trazabilidad, es
+# DATOS_SITIO["corredor_del_proyecto"]; aqui esta el texto porque el valor por
+# defecto del campo `ambito` se necesita al DEFINIR la dataclass, antes de que
+# el diccionario exista. Una sola escritura, dos usos.
+CORREDOR_DEL_PROYECTO = ("terraplen de ~5 km de la Fase 0-bis de la hoja de "
+                         "ruta, num. 150")
+
 # Ambito del dato. Hoy solo existe uno: lo que varia punto a punto no vive
 # aqui, vive en el CSV. Se declara igualmente en cada entrada porque es la
 # mitad de la trazabilidad que la etiqueta [S] exige ("si el dato aplica a
 # todo el corredor o varia punto a punto"), y porque el dia que una lectura
 # deje de valer para todo el tramo, la fila tiene que decirlo antes de
 # mudarse al CSV.
-AMBITO_CORREDOR = ("todo el corredor (el terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150)")
+AMBITO_CORREDOR = f"todo el corredor ({CORREDOR_DEL_PROYECTO})"
 
 
 @dataclass(frozen=True)
@@ -156,13 +170,29 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
     ),
 
     # --------------------- E.030 - solo referencia -----------------------
-    # Los dos datos que siguen NO gobiernan el diseno del cabezal: Sec. 0.4
-    # de la hoja de ruta descarta el sismo de 475 anios de E.030 en favor del
-    # PGA de Tr = 1000 anios del Manual de Puentes. Se conservan porque un
-    # revisor los va a buscar y porque su ausencia se leeria como olvido, no
-    # como descarte deliberado. Vivian en constantes_normativas.py como [N];
-    # el cambio a [S] es de CLASIFICACION, no de uso: no los usaba ningun
-    # modulo antes y no los usa ninguno ahora.
+    # Los dos datos que siguen NO gobiernan el diseno del cabezal, y el
+    # argumento por el que no lo gobiernan CAMBIO. Se defendia solo por
+    # periodo de retorno -- Sec. 0.4 de la hoja de ruta prefiere el PGA de
+    # Tr = 1000 anios del Manual de Puentes al sismo de E.030 --, que es la
+    # via discutible: invita a preguntar por que no aplicar las dos normas.
+    # El argumento de AMBITO es anterior y cierra la pregunta, pero NO es el
+    # que parecia. El Art. 4 acota E.030 a las edificaciones y un cabezal de
+    # alcantarilla no lo es -- cierto --, solo que E.030 no guarda silencio
+    # sobre lo que no es edificacion: su Art. 7.3 nombra puentes y
+    # estructuras hidraulicas y se los ATRAE, "mientras no se cuente con
+    # normas nacionales especificas". Lo que saca al cabezal de E.030, por
+    # tanto, no es el silencio sino que esa condicion NO SE CUMPLE: el MTC si
+    # tiene norma especifica, el Manual de Puentes. Es un fundamento positivo
+    # y mas fuerte -- la propia E.030 cede el paso --, y el expediente no
+    # invocaba ni uno ni otro (NOR-E030-03). Textos literales en
+    # constantes_normativas.E030_AMBITO_TEXTO, E030_ART_7_3_TEXTO y
+    # E030_AMBITO_LECTURA.
+    #
+    # Se conservan porque un revisor los va a buscar y porque su ausencia se
+    # leeria como olvido, no como descarte deliberado. Vivian en
+    # constantes_normativas.py como [N]; el cambio a [S] fue de
+    # CLASIFICACION, no de uso: no los usaba ningun modulo antes y no los usa
+    # ninguno ahora.
 
     "ZONA_SISMICA_LA_UNION": DatoSitio(
         valor=4,
@@ -193,25 +223,85 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
 
     "Z_E030": DatoSitio(
         valor=0.45,
-        concepto="Factor de zona Z de E.030 (aceleracion maxima en suelo "
-                 "rigido para Tr = 475 anios), en g",
-        procedimiento="Entrada de la tabla de factor de zona del Art. 11.1 de "
-                      "E.030 con la zona leida en 'ZONA_SISMICA_LA_UNION'. La "
-                      "tabla es normativa; la fila que aplica la fija la "
-                      "ubicacion",
-        fuente="E.030 (RM 183-2026-VIVIENDA), Art. 11.1, Tabla de factores de "
-               "zona (Zona 4 -> Z = 0.45)",
+        concepto="Factor de zona Z de E.030, en g: la aceleracion maxima "
+                 "horizontal en suelo rigido con una probabilidad de 10 % de "
+                 "ser excedida en 50 anios, que es como la define el Art. "
+                 "11.1. NO 'para Tr = 475 anios': eso es una derivacion",
+        procedimiento="Entrada de la Tabla N 1 de factores de zona del Art. "
+                      "11.1 de E.030 con la zona leida en "
+                      "'ZONA_SISMICA_LA_UNION'. La tabla es normativa; la "
+                      "fila que aplica la fija la ubicacion. EL PERIODO DE "
+                      "RETORNO NO SE LEE, SE DERIVA: el Art. 11.1 escribe la "
+                      "probabilidad y no la cifra, y Tr = -50/ln(0.90) = "
+                      "474.6 ~ 475 anios es aritmetica del proyectista. Este "
+                      "campo decia 'para Tr = 475 anios' como si fuera "
+                      "concepto de la norma (NOR-E030-01). La cifra si "
+                      "aparece literal en E.030, pero en otro sitio y con "
+                      "otro proposito: el Anexo III, pag. impresa 67, sobre "
+                      "el contenido minimo de los estudios de "
+                      "microzonificacion sismica",
+        fuente="E.030 (RM 183-2026-VIVIENDA), Art. 11.1 y Tabla N 1, pag. "
+               "impresa 9 (PDF 9): 'Este factor representa la aceleracion "
+               "maxima horizontal en suelo rigido con una probabilidad de 10% "
+               "de ser excedida en 50 anios' (Zona 4 -> Z = 0.45). Texto "
+               "literal en constantes_normativas.E030_Z_TEXTO; la derivacion "
+               "del periodo de retorno, en E030_TR_DERIVACION",
         trazabilidad="Art. 11.1 de E.030 leido con la zona que el Anexo II da "
                      "al distrito de La Union (Piura), o sea el valor que "
                      "resulta de 'ZONA_SISMICA_LA_UNION' y hereda su misma "
                      "trazabilidad. Lo que si esta en la fuente normativa "
                      "unica del proyecto es el descarte: la hoja de ruta lo "
                      "nombra en num. 87 solo para decir que NO se usa en el "
-                     "calculo, porque su periodo de retorno de referencia "
-                     "(475 anios) difiere del adoptado (Tr = 1000 anios del "
-                     "Manual de Puentes, Sec. 0.4), que es el que gobierna el "
-                     "cabezal",
+                     "calculo. El descarte tiene DOS argumentos y el "
+                     "expediente usaba solo el segundo: (1) AMBITO -- el "
+                     "Art. 4 aplica la norma a edificaciones y este cabezal "
+                     "no lo es, pero eso solo no basta, porque el Art. 7.3 "
+                     "nombra los puentes y las estructuras hidraulicas y les "
+                     "aplica Z y S 'mientras no se cuente con normas "
+                     "nacionales especificas'; lo que cierra la pregunta es "
+                     "que esa condicion no se cumple, porque el Manual de "
+                     "Puentes existe y es la norma sectorial del MTC; "
+                     "(2) periodo de retorno -- el de referencia de Z, "
+                     "derivado en 475 anios, difiere del adoptado (Tr = 1000 "
+                     "anios del Manual de Puentes, Sec. 0.4). El (1) es el "
+                     "que cierra la pregunta (NOR-E030-03)",
         ambito=AMBITO_CORREDOR,
+        # Hereda la trazabilidad de 'ZONA_SISMICA_LA_UNION' -- lo dice su
+        # propio campo `trazabilidad` -- y con ella hereda lo que aquella
+        # tiene ABIERTO. Sin este campo, `datos_con_verificacion_pendiente()`
+        # devolvia la zona y no el factor que se lee CON la zona, de modo que
+        # el JSON del expediente declaraba cerrada documentalmente una
+        # lectura que depende de otra que no lo esta (SIS-D-06).
+        verificacion_pendiente="Hereda la verificacion abierta de "
+                               "'ZONA_SISMICA_LA_UNION': el valor sale de "
+                               "entrar en la tabla del Art. 11.1 con la zona "
+                               "que el Anexo II de E.030 da al distrito, y "
+                               "esa entrada del Anexo II todavia no se "
+                               "contrasto contra la norma vigente. No "
+                               "gobierna ningun calculo (Sec. 0.4), por lo "
+                               "que no bloquea",
+    ),
+
+    "corredor_del_proyecto": DatoSitio(
+        valor=CORREDOR_DEL_PROYECTO,
+        concepto="Tramo de via al que se aplica este expediente, y por tanto "
+                 "el ambito para el que valen los demas datos de sitio",
+        procedimiento="Definicion del tramo en la Fase 0-bis de la hoja de "
+                      "ruta (num. 150): el terraplen sobre el que se "
+                      "distribuyen los puntos criticos del CSV",
+        fuente="docs/hoja_de_ruta_alcantarillas_v8.md, Fase 0-bis, num. 150",
+        trazabilidad="La longitud aproximada sale de la definicion del tramo "
+                     "del expediente vial, no de una medicion propia de este "
+                     "estudio. NO gobierna ningun calculo: se imprime como el "
+                     "ambito de cada dato de sitio, que es lo que la etiqueta "
+                     "[S] obliga a declarar ('si el dato aplica a todo el "
+                     "corredor o varia punto a punto'). Al aplicar el "
+                     "programa a otra via, esta entrada es la que cambia; "
+                     "mientras estuvo escrita dentro de `AMBITO_CORREDOR` se "
+                     "heredaba sin que nadie la revisara",
+        reemplazado_por="Progresiva inicial y final del tramo, del expediente "
+                        "vial, cuando el proyecto declare su cabecera de "
+                        "obra en vez de una longitud aproximada",
     ),
 }
 
