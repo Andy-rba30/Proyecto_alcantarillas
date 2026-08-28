@@ -87,7 +87,9 @@ import datos_sitio as ds
 # de su transcripcion, no se reescriben aqui: la memoria y el codigo tienen
 # que citar el mismo objeto o divergen, que es literalmente NOR-MEM-01.
 from constantes_normativas import (TABLA_10_INTERPRETACION_PROYECTO,
-                                   UMBRALES_DE_VERIFICACION)
+                                   UMBRALES_DE_VERIFICACION,
+                                   H_O_HW_SOBRE_D_CAUTELA,
+                                   H_O_HW_SOBRE_D_MIN, H_O_NUMERAL)
 # La clave del criterio que fija la cota de fondo de entrada se importa de su
 # modulo, no se reescribe aqui: si se renombrara, una copia literal en el
 # reporte apuntaria a un criterio inexistente sin que nada avisara. Es el
@@ -755,6 +757,28 @@ def _tabla_diseno(informe: Any) -> str:
                    f"{_num(hidraulica.HW_entrada)} / salida "
                    f"{_num(hidraulica.HW_salida)})")]),
     ]
+    # La condicion de uso de h_o, dicha EN EL PUNTO donde se incumple y no
+    # solo como advertencia general del bloque 0-ter (NOR-HDS-05): un aviso
+    # que no señala el punto afectado deja al revisor sin saber cual de ellos
+    # esta calculado fuera del rango de su fuente, que es el "nadie se entera"
+    # que el hallazgo denuncia.
+    if hidraulica.h_o_requiere_cautela:
+        limite = (H_O_HW_SOBRE_D_MIN if hidraulica.h_o_fuera_de_rango
+                  else H_O_HW_SOBRE_D_CAUTELA)
+        veredicto = ("NO DEBE USARSE" if hidraulica.h_o_fuera_de_rango
+                     else "PIDE CAUTELA")
+        filas.append(_fila([
+            _td("<b>h<sub>o</sub> fuera de rango</b>"),
+            _td(f"El control de SALIDA gobierna este punto y su "
+                f"HW/D = {_num(hidraulica.HW / resultado.D, FMT_2)} "
+                f"queda por debajo de {_num(limite, FMT_2)}: para ese "
+                f"HW/D, {_esc(H_O_NUMERAL)} dice que la aproximacion "
+                f"h<sub>o</sub> = (d<sub>c</sub> + D)/2 <b>{veredicto}</b>. "
+                "El HW de este punto esta calculado con ella igualmente, y "
+                "por eso se dice aqui. Lo que lo resolveria es el "
+                "procedimiento de barril parcialmente lleno del Cap. III "
+                "del HDS-5, que este script no implementa "
+                "(<code>geometria_control_salida</code>).")]))
     return "<h4>Fases 3-5 &mdash; Combinacion adoptada</h4>" \
            '<table class="compacta">' + "".join(filas) + "</table>"
 
@@ -1469,10 +1493,17 @@ def bloque_umbrales() -> str:
     La entrada 'h_o' no es un umbral y esta aqui a proposito (NOR-HDS-05): la
     condicion que HDS-5 impone a h_o = (dc + D)/2 tiene que llegar a la
     memoria SIEMPRE, y el criterio que la declara ('geometria_control_salida')
-    solo se imprime si alguna corrida llega a invocarlo -- que hoy no ocurre,
-    porque el pipeline se detiene antes de M4. Es exactamente el mecanismo por
-    el que NOR-MEM-01 dejo el matiz de V2 fuera de la memoria generada, y la
-    solucion es la misma: un bloque que no depende de ningun resultado.
+    solo se imprime si la corrida llega a invocarlo -- o sea si llega a M4,
+    que en la corrida por defecto de este expediente no ocurre: se detiene
+    antes en 'talud_terraplen'. Con `--longitud` declarada M4 si corre y la
+    ficha del criterio se imprime; la diferencia es justamente el problema, y
+    es el mecanismo por el que NOR-MEM-01 dejo el matiz de V2 fuera de la
+    memoria generada. La solucion es la misma: un bloque que no depende de
+    ningun resultado.
+
+    Lo que este bloque NO puede decir es que un punto CONCRETO esta fuera de
+    rango, porque no mira resultados. Eso se dice en la memoria del punto, en
+    `_tabla_diseno`, leyendo `ResultadoHidraulico.h_o_fuera_de_rango`.
 
     POR QUE ES UN BLOQUE PROPIO Y NO UNA COLUMNA DE LA TABLA DE
     VERIFICACIONES (NOR-MEM-01). El matiz "el numeral recomienda, no prohibe"

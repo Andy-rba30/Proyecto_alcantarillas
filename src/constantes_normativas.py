@@ -481,15 +481,48 @@ K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(
 # formula SI tiene numeral, y viene con un limite de validez expreso.
 H_O_NUMERAL = ("HDS-5 (FHWA) 3a ed., abril 2012, num. 3.3.3 'Outlet Control', "
                "pag. impresa 3.24 (PDF 106)")
-# Texto literal de la condicion de uso (3a ed., pag. impresa 3.24, vineta de
-# la lista "The manual method has the assumptions:"):
+# Texto literal de la condicion de uso. Las DOS citas estan en la misma pagina
+# impresa 3.24 y en dos sitios distintos de ella, y decir cual es cual importa
+# (era una sola atribucion para las dos, y una de ellas era falsa):
+#
+#   la primera es una vineta de la lista "The manual method has the
+#   assumptions:";
+#   la segunda esta en el parrafo de prosa que sigue a esa lista, el mismo que
+#   trae la condicion de 1.2D.
 H_O_CONDICION_TEXTO = (
     "Approximate hydraulic gradeline ho = (dc + D)/2 can only be used if the "
     "barrel flows full for most of its length. It should not be used if the "
     "inlet is not submerged.",
-    "If the headwater depth falls below 0.75D, the approximate method should "
-    "not be used.",
+    "If outlet control governs and the headwater depth (referenced to the "
+    "inlet invert) is less than 1.2D, it is possible that the barrel flows "
+    "partly full though its entire length. In this case, caution should be "
+    "used in applying the approximate method of setting the downstream "
+    "elevation based on the greater of tailwater or (dc + D)/2. If the "
+    "headwater depth falls below 0.75D, the approximate method should not be "
+    "used.",
 )
+# Los dos numeros de esa segunda cita, extraidos para poder EVALUARLOS. Son
+# [N]: los escribe la fuente, no los elige el proyectista.
+#
+# POR QUE SE EVALUAN Y LA PRIMERA CONDICION NO. "Que el barril fluya lleno en
+# la mayor parte de su longitud" exige un perfil de la lamina de agua que este
+# script no calcula. Estos dos, en cambio, son una comparacion entre dos
+# numeros que el modulo ya tiene: HW y D. Declararlos sin evaluarlos, pudiendo,
+# era extender a la segunda condicion una imposibilidad que solo vale para la
+# primera -- y dejaba la memoria diciendo "esto podria estar fuera de rango"
+# sin decir en que punto lo esta, que es literalmente el "nadie se entera" de
+# NOR-HDS-05.
+#
+# El 0.75 NO es el 0.75 de Y_SOBRE_D_MAX, y por eso son dos constantes y no
+# una: aquel es el borde libre del num. 4.1.1.3.7 b) del Manual MTC sobre el
+# TIRANTE, este es un limite de validez del HDS-5 sobre la CARGA A LA ENTRADA.
+# Misma cifra, dos magnitudes y dos fuentes. Es el mismo reparto que G y
+# G_LAUSHEY.
+H_O_HW_SOBRE_D_MIN = 0.75           # HW/D por debajo del cual la aproximacion
+                                    # NO debe usarse (num. 3.3.3, pag. 3.24)
+H_O_HW_SOBRE_D_CAUTELA = 1.2        # HW/D por debajo del cual la fuente pide
+                                    # cautela: el barril puede fluir
+                                    # parcialmente lleno (mismo numeral)
 # La forma con el MAXIMO -- que es la que implementa `M4.control_salida` -- la
 # 3a ed. no la numera: la escribe en prosa ("the greater of tailwater or
 # (dc + D)/2", misma pag. 3.24; "or (dc + D)/2 if larger", num. 3.4.5, pag.
@@ -498,19 +531,29 @@ H_O_CONDICION_TEXTO = (
 H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
 # Lo que el proyecto hace con la condicion, y que NO puede hacer:
 H_O_CONDICION_APLICACION = (
-    "h_o se calcula SIEMPRE, tambien cuando la condicion no se cumple, y esa "
-    "es una limitacion declarada del nivel de analisis, no un descuido. Que "
-    "el barril fluya lleno en la mayor parte de su longitud exige un perfil "
-    "de la lamina de agua a lo largo del conducto, que este script no "
-    "calcula; y el criterio adoptado 'geometria_control_salida' = "
-    "'seccion_llena' PRESUPONE lo mismo que aqui habria que verificar, de "
-    "modo que la premisa entra dos veces por dos puertas y no se comprueba "
-    "por ninguna. Mientras siga asi, el HW de control de salida de un punto "
-    "cuyo barril no llene esta calculado fuera del rango que la propia "
-    "fuente declara. No se sustituye por otra formula ni se inventa un "
-    "criterio de llenado: se declara, y quien revise el expediente decide si "
-    "el punto necesita el procedimiento de barril parcialmente lleno del "
-    "Cap. III, que es la alternativa que el propio criterio ya cita.")
+    "h_o se calcula SIEMPRE, y de las tres condiciones que la fuente le pone "
+    "el proyecto EVALUA dos y declara la tercera. "
+    "SE EVALUAN, punto por punto, los dos limites sobre HW/D: por debajo de "
+    "1.2 la fuente pide cautela y por debajo de 0.75 dice que la aproximacion "
+    "no debe usarse. Cuando el control de salida GOBIERNA un punto y su HW/D "
+    "cae bajo alguno de los dos, la memoria de ese punto lo dice con esas "
+    "palabras, junto al HW: un aviso general que no senala el punto afectado "
+    "no le sirve al revisor, que es lo que este bloque venia haciendo. "
+    "NO SE EVALUA la primera condicion -- que el barril fluya lleno en la "
+    "mayor parte de su longitud --, y no por descuido: exige un perfil de la "
+    "lamina de agua a lo largo del conducto, que este script no calcula. El "
+    "criterio adoptado 'geometria_control_salida' = 'seccion_llena' "
+    "PRESUPONE ademas lo mismo que ahi habria que verificar, de modo que esa "
+    "premisa entra dos veces por dos puertas y no se comprueba por ninguna. "
+    "No se sustituye por otra formula ni se inventa un criterio de llenado: "
+    "se declara, y quien revise el expediente decide si el punto necesita el "
+    "procedimiento de barril parcialmente lleno del Cap. III, que es la "
+    "alternativa que el propio criterio ya cita. "
+    "HAY UNA CIRCULARIDAD QUE CONVIENE VER: el HW con que se evaluan los dos "
+    "limites es el que produce la propia aproximacion, de modo que un h_o "
+    "sobreestimado puede hacer que el control de salida gobierne un punto "
+    "donde no gobernaria. El aviso se emite igual; deshacer la circularidad "
+    "exige el procedimiento completo, no otra lectura de esta pagina.")
 
 # ---------------------------------------------------------------------------
 # El CARACTER de cada umbral, y de cada CONDICION DE USO, que el proyecto aplica

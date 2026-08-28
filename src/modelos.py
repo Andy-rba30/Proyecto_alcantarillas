@@ -714,6 +714,22 @@ class ControlSalida:
     es True, el que gobierna el remanso es el nivel del cuerpo receptor y no
     la geometria del conducto. Es la situacion que Sec. 4.3 advierte
     expresamente para descargas a drenes con nivel propio.
+
+    `h_o_fuera_de_rango` y `h_o_requiere_cautela` son las DOS condiciones de
+    uso que HDS-5 pone a esa aproximacion y que el proyecto puede evaluar
+    (NOR-HDS-05, num. 3.3.3, pag. impresa 3.24): por debajo de HW/D = 0.75 la
+    fuente dice que la aproximacion no debe usarse, y por debajo de 1.2 pide
+    cautela porque el barril puede fluir parcialmente lleno. Son banderas y no
+    excepciones a proposito: la fuente no prohibe calcular, dice que el numero
+    no es de fiar, y quien decide que hacer con un punto asi es el revisor.
+    Viajan a `ResultadoHidraulico` -- ya filtradas por si el control de salida
+    gobierna, que es la condicion con que la fuente las escribe -- y de ahi a
+    la memoria del punto.
+
+    La tercera condicion de la fuente -- que el barril fluya lleno en la mayor
+    parte de su longitud -- NO tiene bandera porque no se puede evaluar sin un
+    perfil de la lamina de agua. Queda declarada en
+    `constantes_normativas.H_O_CONDICION_APLICACION`.
     """
 
     HW: float                     # m  - carga sobre el fondo de la entrada
@@ -725,6 +741,10 @@ class ControlSalida:
     R: float                      # m  - radio hidraulico de referencia
     ahogado_por_TW: bool
     critico: TiranteCritico
+    HW_sobre_D: float = 0.0       # adimensional - HW/D, lo que acotan las dos
+                                  # condiciones de uso de h_o
+    h_o_fuera_de_rango: bool = False      # HW/D < 0.75 (num. 3.3.3)
+    h_o_requiere_cautela: bool = False    # HW/D < 1.2  (num. 3.3.3)
     numeral: str = "Sec. 4.3"
 
 
@@ -757,6 +777,13 @@ class ResultadoHidraulico:
 
     HW_entrada y HW_salida son cargas sobre el fondo de la entrada, en metros.
     La conversion a cota (msnm) la hace M7 sumando la cota de entrada.
+
+    `h_o_fuera_de_rango` / `h_o_requiere_cautela`: HDS-5 acota el uso de
+    h_o = (dc + D)/2 con dos limites sobre HW/D, y los escribe condicionados a
+    que el control de salida gobierne (num. 3.3.3, pag. impresa 3.24). Aqui
+    llegan ya con esa condicion aplicada, de modo que True significa "este
+    punto usa la aproximacion fuera del rango que su fuente declara" y no
+    "podria pasarle a alguien". M11 lo imprime junto al HW del punto.
     """
 
     y_normal: float                       # m  - con n_max (Sec. 4.1)
@@ -767,6 +794,10 @@ class ResultadoHidraulico:
     HW_entrada: float                     # m  - control de entrada (Sec. 4.2)
     HW_salida: float                      # m  - control de salida (Sec. 4.3)
     control_gobernante: ControlGobernante
+    # Las dos condiciones de uso de h_o que el proyecto evalua, ya filtradas
+    # por si el control de salida gobierna (NOR-HDS-05). Ver `ControlSalida`.
+    h_o_fuera_de_rango: bool = False
+    h_o_requiere_cautela: bool = False
 
     @property
     def HW(self) -> float:

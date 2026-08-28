@@ -302,17 +302,55 @@ def verificaciones_no_evaluadas() -> Tuple[str, ...]:
         "limpieza queda DIFERIDO al expediente: es contenido de planos "
         "(Sec. 11, entregable 7), que este software no dibuja. Ningun "
         "punto se da por conforme en V2b por el hecho de cumplir V2",
-        "V4b (relacion HW/D): NO evaluada. El criterio 'HW_D_max' esta "
-        "declarado y ningun modulo lo consume. Su procedencia ya no esta "
-        "abierta: el rango 1.0-1.5 no es un criterio del HDS-5 sino la "
-        "practica de agencias viales estadounidenses que su Sec. 2.2.5 d) "
-        "describe, y 1.5 es el extremo superior, el menos restrictivo; el "
-        "criterio dejo de ser un vacio cubierto por fuente tecnica y quedo "
-        "reetiquetado como adopcion del proyectista, con su sensibilidad. "
-        "Lo que falta es cablear el chequeo, que es un cambio de "
-        "comportamiento y se hace aparte. El control real del embalse "
-        "aguas arriba es V5, que esta declarada y bloquea",
+        _constancia_v4b(),
     )
+
+
+CLAVE_HW_D_MAX = "HW_D_max"
+
+
+def _constancia_v4b() -> str:
+    """
+    La constancia de V4b, con el VALOR y la ETIQUETA leidos del criterio en vez
+    de repetidos aqui.
+
+    Es la unica via por la que 'HW_D_max' llega a la memoria: no lo consume
+    ningun modulo, de modo que no entra en `criterios_usados()` y M11 no
+    imprime su ficha. Si esta constancia solo contara la historia en prosa, el
+    revisor no veria ni el 1.5, ni la etiqueta que la sesion de C06 corrigio,
+    ni el rango de sensibilidad -- que es justo el trabajo hecho para cerrar
+    NOR-HDS-02.
+
+    Se lee con `ca.criterio_efectivo`, que NO registra uso: leerlo para
+    imprimirlo no es consumirlo, y anotarlo como usado diria que alguna
+    verificacion se apoyo en el, que es exactamente lo que no ocurre. Leerlo
+    en vez de copiarlo evita ademas que esta cadena quede mintiendo el dia que
+    el criterio cambie.
+
+    La etiqueta se escribe SIN corchetes ("etiqueta A", no "[A]") y no es
+    cosmetica: esta cadena se imprime pegada a la tabla de verificaciones del
+    punto, y ahi un "[A]" entre corchetes es la marca con que M11 rotula el
+    criterio de UNA FILA de esa tabla. Dos usos del mismo simbolo a un
+    centimetro de distancia se leen como uno solo.
+    """
+    c = ca.criterio_efectivo(CLAVE_HW_D_MAX)
+    return (
+        f"V4b (relacion HW/D): NO evaluada. El criterio '{CLAVE_HW_D_MAX}' "
+        f"esta declarado con valor {c.valor!r}, etiqueta {c.etiqueta} "
+        f"(adopcion declarada) y sensibilidad {c.sensibilidad}, y ningun "
+        "modulo lo consume. Su "
+        "procedencia ya no esta abierta: el rango 1.0-1.5 no es un criterio "
+        "del HDS-5 sino la practica de agencias viales estadounidenses que su "
+        "num. 2.2.5 d) 'Agency Constraints' (pag. impresa 2.10) DESCRIBE "
+        "-- <<The allowable HW/D ratio varies throughout the country, but "
+        "commonly ranges from 1.0 to 1.5>> --, y 1.5 es el extremo superior, "
+        "el menos restrictivo. En el Peru la agencia es el MTC, que no fija "
+        "HW/D alguno, de modo que elegir un numero dentro de esa banda ajena "
+        "es adopcion del proyectista: por eso el criterio dejo de ser un "
+        "vacio cubierto por fuente tecnica. Lo que falta es cablear el "
+        "chequeo, que es un cambio de comportamiento y se hace aparte. El "
+        "control real del embalse aguas arriba es V5, que esta declarada y "
+        "bloquea")
 
 
 # ---------------------------------------------------------------------------

@@ -96,12 +96,12 @@ La correccion por pendiente K_s*S es una recta sin tope: con K_s = -0.5, basta
 una S grande y un Q chico para que las dos formas devuelvan HWi/D NEGATIVO --
 una carga de agua bajo el fondo del conducto, que no existe (MAT-D10). El
 umbral del signo, para la Forma 1, es S > 2*(H_c/D + K*(q*)^M): con
-D = 0.90 m, Q = 0.05 m3/s y la carta de concreto, S > 0.377 alcanza, y hasta
+D = 0.90 m, Q = 0.05 m3/s y la carta de concreto vale S > 0.3770624, y hasta
 esta correccion el diseño se ACEPTABA entero con HW = -0.010 m, o sea con V4
 y el tamizado de 7.A evaluados 0.18 m del lado no conservador.
 
 `control_entrada()` ya no devuelve ese numero: cuando HWi/D sale <= 0 lanza
-`DatoInvalidoError` sobre la pendiente. Es un rechazo, no un piso, y la
+`DisenoNoFactibleError` con el motivo entero. Es un rechazo, no un piso, y la
 diferencia importa. Un piso exige decidir QUE carga se adopta en su lugar --
 la lectura fisica seria HW ~ H_c, la energia especifica critica --, y ese
 valor no lo fija ni la hoja de ruta ni el HDS-5: adoptarlo aqui seria rellenar
@@ -110,11 +110,20 @@ adopta nada. Lo que el rechazo afirma es solo lo que se puede sostener: que
 con esos datos la formulacion del HDS-5 quedo fuera de rango y su resultado
 no es publicable.
 
-El rechazo no acota el rango de validez ENTERO de la correccion -- la recta
-deja de representar al HDS-5 bastante antes de cruzar el cero, y cual es esa
-pendiente maxima es una pregunta abierta que ni la hoja de ruta ni el manual
-contestan --; acota lo unico que se puede afirmar sin fuente: que una carga
-negativa es imposible.
+CUANTO DE MAT-D10 CIERRA ESTE RECHAZO, dicho con numeros porque callarlo lo
+haria parecer mas de lo que es. Cierra el SIGNO y poco mas. Justo por debajo
+del umbral el diseño se sigue aceptando: con S = 0.37706 sale HW = +1e-6 m, y
+V4 y el tamizado de 7.A quedan evaluados 0.1695 m del lado no conservador --
+el 94 % de los 0.1798 m de error que la ficha denuncia. De esos 0.1798 m el
+rechazo retira 0.0103, o sea el 5.7 %. Y en el corredor de este expediente
+(S_cauce = 0.006-0.008) no se dispara nunca: en D = 0.90 hace falta S > 0.27,
+y ademas con Q = 0.025 m3/s.
+
+Es lo que se puede hacer sin fuente. Acotar el rango de validez ENTERO de la
+correccion -- la recta deja de representar al HDS-5 bastante antes de cruzar
+el cero -- exige una pendiente maxima que ni la hoja de ruta ni el manual
+escriben, y ponerla aqui seria inventarla. Queda abierto y escrito: el
+rechazo protege contra lo imposible, no contra lo extrapolado.
 
 K_s: no esta en la Tabla A.1
 -----------------------------
@@ -182,9 +191,19 @@ modulo la aplica SIEMPRE, tambien cuando el barril no llena, porque
 comprobarlo exige un perfil de la lamina de agua que el script no calcula.
 No se disimula: el texto literal y su condicion viven en
 `constantes_normativas.H_O_NUMERAL` / `H_O_CONDICION_TEXTO`, entran en
-`UMBRALES_DE_VERIFICACION` -- el unico bloque que M11 imprime siempre -- y la
+`UMBRALES_DE_VERIFICACION` -- uno de los bloques que M11 imprime sin depender
+de ningun resultado, junto al de alcance y al de acotaciones -- y la
 verificacion pendiente esta declarada en el criterio
 'geometria_control_salida', que presupone exactamente lo mismo.
+
+De las tres condiciones que HDS-5 le pone a h_o, DOS se evaluan punto por
+punto -- los limites HW/D < 0.75 ("should not be used") y HW/D < 1.2
+("caution should be used"), en `control_salida()` --, y la tercera, que el
+barril fluya lleno, no: exige un perfil de la lamina de agua que este script
+no calcula. Declarar las tres sin evaluar ninguna, pudiendo evaluar dos, era
+extender a toda la nota una imposibilidad que solo vale para una, y dejaba la
+memoria avisando de que "algun punto podria estar fuera de rango" sin decir
+cual lo esta.
 
 De donde salen V y R en esa ecuacion: la hoja de ruta escribe la formula pero
 no dice a que seccion pertenecen, y la eleccion mueve el resultado (R = D/4 =
@@ -207,6 +226,10 @@ Excepciones
 -----------
     DatoInvalidoError        Q, D, S, L, n o TW no son fisicamente validos
                              para plantear el problema.
+    DisenoNoFactibleError    la combinacion Q/D/S lleva la Forma 1 fuera de
+                             rango y devuelve HWi/D <= 0 (ver mas arriba). No
+                             es un dato invalido: el dato esta bien y lo que
+                             no cierra es el metodo sobre esa combinacion.
     CriterioPendienteError   llega desde 'ke_entrada' o
                              'geometria_control_salida' si alguno se vacia.
 
@@ -232,12 +255,14 @@ from scipy.optimize import brentq
 
 import criterios_adoptados as ca
 from constantes_fisicas import G
-from constantes_normativas import (KU_METRICO, K_FRICCION_SI,
-                                   Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO)
+from constantes_normativas import (H_O_HW_SOBRE_D_CAUTELA,
+                                   H_O_HW_SOBRE_D_MIN, KU_METRICO,
+                                   K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
+                                   Q_LIM_SUMERGIDO)
 from modelos import (ConstantesHDS5, ControlEntrada, ControlGobernante,
-                     ControlSalida, DatoInvalidoError, Material,
-                     RegimenEntrada, ResultadoHidraulico, TiranteCritico,
-                     TiranteNormal)
+                     ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
+                     Material, RegimenEntrada, ResultadoHidraulico,
+                     TiranteCritico, TiranteNormal)
 from modulos.M3_hidraulica import geometria, resolver_manning
 from tolerancias import TOL_BRENT, TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
 
@@ -397,29 +422,42 @@ def _exigir_hw_no_negativo(HW_sobre_D: float, S: float, D: float,
     No sustituye el valor por ningun piso. Que carga corresponde cuando la
     formulacion sale de rango no lo fija la hoja de ruta ni el HDS-5, y
     adoptar uno aqui -- H_c, cero, el que fuera -- seria rellenar un vacio en
-    silencio. Se rechaza el dato que lleva la formula fuera de rango, que es
-    lo unico que la fuente sostiene, y el motivo lleva el umbral del signo
-    para que el revisor vea de que lado esta.
+    silencio.
 
-    Sale como `DatoInvalidoError` sobre 'S' y no como `DatoFaltanteError`
-    porque no falta nada: el dato esta y hay que CORREGIRLO (la pendiente de
-    esa fila, o el diametro con que se la esta probando). `MD.disenar_punto`
-    lo trata como descarte del material con su causa citada entera, nunca
-    como un resultado silencioso.
+    POR QUE `DisenoNoFactibleError` Y NO `DatoInvalidoError`, que fue la
+    primera eleccion y era la equivocada. `DatoInvalidoError` es "el dato esta
+    pero no puede ser": tipo equivocado, fuera del rango de `dominios.py`, o
+    en contradiccion con otro dato de su fila. Una S de 0.40 m/m no es ninguna
+    de las tres -- es del tipo correcto, cae dentro de `S_CAUCE_MAX` = 1.0 y no
+    contradice a nadie --, y el discriminante de CLAUDE.md ("si el revisor
+    tiene que CORREGIR algo es Invalido") no se cumple: una pendiente medida
+    en campo no se corrige. Lo que no puede sostenerse no es el dato, es la
+    combinacion: con ese Q, ese D y esa S, el metodo adoptado no entrega un
+    numero publicable. Eso es una no factibilidad, y su motivo lo dice.
+
+    El mensaje tampoco puede mandar al revisor a "revisar la pendiente de esta
+    fila": es lo que se le dice cuando la celda esta cargada en porcentaje
+    (ver `dominios.S_CAUCE_MAX`), y aqui lo iria a buscar y no lo encontraria.
+
+    `MD.disenar_material` lo trata como descarte del material con su causa
+    citada entera, y descartar el material -- no solo el diametro -- es lo
+    correcto: HWi/D decrece con D (bajan H_c/D y q* a la vez), de modo que si
+    la carta se cae en un diametro, ninguno mayor la levanta.
     """
     if HW_sobre_D > 0:
         return
-    raise DatoInvalidoError(
-        "S", valor=S,
-        motivo=f"con D={D} m y q*={q_estrella:.5f} la correccion por "
-               f"pendiente Ks*S de {NUMERAL_ENTRADA} (Ks={hds5.Ks}) devuelve "
-               f"HWi/D={HW_sobre_D:.5f}, una carga a la entrada nula o "
-               f"negativa, que es fisicamente imposible. El HDS-5 formula esa "
-               f"correccion para pendientes de alcantarilla corrientes y aqui "
-               f"quedo extrapolada fuera de rango; el proyecto no adopta "
-               f"ningun piso en su lugar porque ni la hoja de ruta ni el "
-               f"HDS-5 lo fijan. Revisar la pendiente de esta fila o el "
-               f"diametro con que se la prueba",
+    raise DisenoNoFactibleError(
+        motivo=f"control de entrada ({NUMERAL_ENTRADA}): con D={D} m, "
+               f"S={S} m/m y q*={q_estrella:.5f}, la correccion por pendiente "
+               f"Ks*S (Ks={hds5.Ks}) devuelve HWi/D={HW_sobre_D:.5f} -- una "
+               f"carga a la entrada nula o negativa, que es fisicamente "
+               f"imposible. El HDS-5 formula esa correccion para pendientes "
+               f"de alcantarilla corrientes y aqui quedo extrapolada fuera de "
+               f"rango. No se adopta ningun piso en su lugar (ni la hoja de "
+               f"ruta ni el HDS-5 lo fijan), de modo que esta combinacion no "
+               f"produce un HW publicable y se descarta. Lo que la resolveria "
+               f"es un procedimiento valido para pendientes de ese orden, no "
+               f"otro diametro: HWi/D decrece al crecer D",
     )
 
 
@@ -602,9 +640,16 @@ def control_salida(Q: float, D: float, S: float, L: float, TW: float,
     h_o_geometrico = (critico.y_c + D) / 2
     h_o = max(TW, h_o_geometrico)
     caida = S * L
+    HW = H + h_o - caida
+
+    # Las dos condiciones de uso que HDS-5 pone a h_o y que SI se pueden
+    # evaluar (num. 3.3.3, pag. impresa 3.24; NOR-HDS-05). No lanzan: la
+    # fuente no prohibe calcular, dice que el numero no es de fiar. Ver
+    # `constantes_normativas.H_O_CONDICION_APLICACION`.
+    HW_sobre_D = HW / D
 
     return ControlSalida(
-        HW=H + h_o - caida,
+        HW=HW,
         H=H,
         h_o=h_o,
         TW=TW,
@@ -613,6 +658,9 @@ def control_salida(Q: float, D: float, S: float, L: float, TW: float,
         R=R,
         ahogado_por_TW=TW > h_o_geometrico,
         critico=critico,
+        HW_sobre_D=HW_sobre_D,
+        h_o_fuera_de_rango=HW_sobre_D < H_O_HW_SOBRE_D_MIN,
+        h_o_requiere_cautela=HW_sobre_D < H_O_HW_SOBRE_D_CAUTELA,
     )
 
 
@@ -681,6 +729,12 @@ def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
                             n=material.n_para_capacidad, critico=critico)
     _, control = hw_gobernante(entrada, salida)
 
+    # HDS-5 escribe las dos condiciones de uso de h_o condicionadas a que el
+    # control de salida GOBIERNE ("If outlet control governs and the headwater
+    # depth ... is less than 1.2D"), y asi se propagan: si gobierna la entrada,
+    # el HW de salida no es la carga del punto y no hay nada que advertir.
+    gobierna_salida = control is ControlGobernante.SALIDA
+
     return ResultadoHidraulico(
         y_normal=normal.geometria.y,
         y_critico=critico.y_c,
@@ -690,4 +744,6 @@ def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
         HW_entrada=entrada.HW,
         HW_salida=salida.HW,
         control_gobernante=control,
+        h_o_fuera_de_rango=gobierna_salida and salida.h_o_fuera_de_rango,
+        h_o_requiere_cautela=gobierna_salida and salida.h_o_requiere_cautela,
     )
