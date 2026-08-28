@@ -15,7 +15,8 @@ que declara su Protocol `Verificador`.
     V3  Velocidad maxima          concreto: fila de la Tabla N 10 [N]
                                   TMC / HDPE: 'v_max_tmc' / 'v_max_hdpe',
                                   CERRADOS con valor 4.572 m/s     [C]
-    V4  Carga a la entrada HW     HW <= cota subrasante - resguardo(CBR)  [N->]
+    V4  Carga a la entrada HW     cota entrada + HW <= cota subrasante
+                                  - resguardo(CBR)                       [N->]
     V5  Remanso aguas arriba      sin metodo declarado -> pendiente       [A]
     V6  Material solido de arrastre  seccion unica (cumple por construccion)
     V7  Flotacion del conducto    equilibrio LRFD de factores de carga
@@ -631,6 +632,52 @@ def cota_clave(*, punto: PuntoCritico, material: Material, D: float) -> float:
     return cota_entrada_supuesta(punto) + D + espesor_pared(material)
 
 
+def altura_relleno_sobre_clave(*, punto: PuntoCritico, material: Material,
+                               D: float) -> float:
+    """
+    Altura REAL de relleno sobre la clave fisica del conducto, m:
+
+        altura = cota de subrasante - cota de clave
+
+    Es el relleno que de verdad hay encima -- no el minimo de Sec. 7.A, que es
+    un piso admisible y otra cosa --, y lo consumen dos etapas distintas: V7,
+    que lo pesa como EV para la flotacion, y la Fase 8, que con el entra a la
+    tabla de clases o calibres de la norma de producto (items 1-2).
+
+    LA GUARDA ES PARTE DE LA MAGNITUD, y por eso vive aqui y no en cada
+    consumidor. Una altura nula o negativa significa que la clave queda a
+    nivel de la subrasante o por encima: no es un relleno pequeño sino un
+    punto cuyas cotas no se sostienen, y el numero que saldria de restarlas no
+    tiene sentido fisico en ninguna de las dos etapas. Sale como
+    `DatoInvalidoError` sobre 'cota_subrasante' -- el revisor tiene que
+    CORREGIR una cota, no añadir un dato (CLAUDE.md) --, que es la excepcion
+    que la Fase 5 ya lanzaba.
+
+    POR QUE SE EXTRAJO (SIS-A-21). La resta estaba escrita dos veces: dentro
+    de `v7_flotacion`, con la guarda, y en `cli._fase_8`, sin ella. La segunda
+    copia no hacia daño HOY -- la Fase 8 se detiene antes, en el tope de
+    'clases_producto_por_relleno' -- y esa es exactamente la forma en que una
+    guarda desaparece sin que nadie lo note: el dia en que ese criterio se
+    declare y la tabla se transcriba, la Fase 8 entraria a la norma de
+    producto con una altura negativa y elegiria una clase contra un numero sin
+    sentido. Escrita una vez, la guarda no se puede olvidar en una de las dos.
+
+    Se detiene con `CriterioPendienteError` en lo mismo que `cota_clave`:
+    'origen_cota_fondo_entrada' y 'espesor_pared_conducto'.
+    """
+    clave = cota_clave(punto=punto, material=material, D=D)
+    altura = punto.cota_subrasante - clave
+    if altura <= TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            "cota_subrasante", valor=punto.cota_subrasante, id_punto=punto.id,
+            motivo="la clave del conducto queda a nivel de la subrasante o "
+                   f"por encima ({altura:+.3f} m de relleno): no hay relleno "
+                   "sobre la clave que pesar en V7 ni con que entrar a la "
+                   f"norma de producto de la Fase 8 ({NUMERAL_V7})",
+        )
+    return altura
+
+
 def resguardo_por_cbr(cbr: float) -> float:
     """
     Resguardo de Sec. 5.1 segun el CBR de subrasante (Manual de Suelos, num.
@@ -657,7 +704,18 @@ def resguardo_por_cbr(cbr: float) -> float:
 def v4_carga_entrada(*, punto: PuntoCritico,
                      resultado: ResultadoHidraulico) -> Verificacion:
     """
-    HW <= cota de subrasante - resguardo(CBR), Sec. 5.1. El resguardo sale
+    cota de entrada + HW <= cota de subrasante - resguardo(CBR), Sec. 5.1.
+
+    LOS DOS TERMINOS SON NIVELES, y por eso la desigualdad lleva el sumando
+    `cota de entrada` que la hoja de ruta v8 omitia (MAT-O5): HW es una carga
+    en metros sobre el fondo de la entrada, no una cota, y compararla con una
+    cota msnm sin ese sumando se cumple siempre. El codigo nunca lo omitio
+    -- ver `HW_cota` mas abajo --; era la hoja la que estaba mal, y se
+    corrigio alli. El numeral tambien compara niveles: "El nivel superior de
+    la sub rasante debe quedar encima del nivel de la napa freatica como
+    minimo a 0.60 m ..." (Manual de Suelos, num. 4.5.4, pag. impresa 42).
+
+    El resguardo sale
     del criterio 'resguardo_HW_subrasante' [N->] (analogia declarada al nivel
     freatico, no un valor puntual: la tabla de CBR vive en
     `constantes_normativas.RESGUARDO_NAPA_SUBRASANTE`, [N] por numeral, y es
@@ -788,12 +846,14 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
 
     La altura de relleno sobre la clave es la REAL del punto -- cota de
     subrasante menos la cota de la clave -- no el minimo de Sec. 7.A: V7 pesa
-    el relleno que de verdad hay encima, no un piso admisible. Usa la misma
-    `cota_clave` que el tamizado de 7.A, que a su vez usa la misma cota de
-    entrada que V4 (`cota_entrada_supuesta`, la regla declarada en
-    'origen_cota_fondo_entrada'), para no evaluar la flotacion contra una
-    referencia distinta de la que fija la rasante. Esa clave es la FISICA:
-    lleva el espesor de pared, y por eso V7 se detiene tambien en
+    el relleno que de verdad hay encima, no un piso admisible. No la resta
+    aqui: la pide a `altura_relleno_sobre_clave`, que es la misma que consume
+    la Fase 8 y trae la guarda de cotas incoherentes con ella (SIS-A-21). Esa
+    funcion usa la misma `cota_clave` que el tamizado de 7.A, que a su vez usa
+    la misma cota de entrada que V4 (`cota_entrada_supuesta`, la regla
+    declarada en 'origen_cota_fondo_entrada'), para no evaluar la flotacion
+    contra una referencia distinta de la que fija la rasante. Esa clave es la
+    FISICA: lleva el espesor de pared, y por eso V7 se detiene tambien en
     'espesor_pared_conducto' (MAT-D4).
 
     U y EV se calculan sobre el diametro EXTERIOR, no sobre el interior. El
@@ -811,15 +871,8 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     'factores_carga_aashto' (los gamma), los dos vacios que le faltan al
     procedimiento -- no en un vacio de METODO: ver el docstring del modulo.
     """
-    clave = cota_clave(punto=punto, material=material, D=D)
-    altura_relleno = punto.cota_subrasante - clave
-    if altura_relleno <= TOL_UMBRAL_NORMATIVO:
-        raise DatoInvalidoError(
-            "cota_subrasante", valor=punto.cota_subrasante, id_punto=punto.id,
-            motivo="la clave del conducto queda a nivel de la subrasante o "
-                   "por encima: no hay relleno sobre la clave que pesar "
-                   f"en V7 ({NUMERAL_V7})",
-        )
+    altura_relleno = altura_relleno_sobre_clave(punto=punto, material=material,
+                                                D=D)
 
     D_ext = diametro_exterior(material=material, D=D)
     U = empuje_flotacion_kn_m(D_exterior=D_ext)

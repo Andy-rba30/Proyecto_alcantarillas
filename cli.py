@@ -132,10 +132,12 @@ from modulos.M1_clasificacion import clasificar, exigir_alcance     # noqa: E402
 from modulos.M6_proteccion import proteccion_salida                 # noqa: E402
 from modulos.M7_geometria import (compatibilidad_geometrica,        # noqa: E402
                                   longitud_conducto)
-# `cota_clave` vive en M5 y no en M7: la comparten V7 y el tamizado de 7.A, y
-# tenerla en dos sitios fue el defecto MAT-D4 (las dos copias la calculaban
-# sin espesor de pared).
-from modulos.M5_verificaciones import cota_clave                    # noqa: E402
+# `altura_relleno_sobre_clave` vive en M5 y no aqui: la comparten V7 -- que
+# pesa ese relleno como EV -- y la Fase 8, que con el entra a la norma de
+# producto. La resta estaba escrita en los dos sitios y la copia de esta CLI
+# iba SIN la guarda de cotas incoherentes (SIS-A-21). Es el mismo defecto de
+# `cota_clave` (MAT-D4), que por eso tambien vive en M5.
+from modulos.M5_verificaciones import altura_relleno_sobre_clave    # noqa: E402
 from modulos.M8_estructural import (cama_apoyo_relleno_lateral,     # noqa: E402
                                     seleccionar_clase_calibre,
                                     verificacion_diferida_estructural)
@@ -767,9 +769,13 @@ def _fase_8(informe: InformePunto) -> None:
 
     # Altura real de relleno sobre la clave FISICA (con espesor de pared), la
     # misma definicion que usa V7: subrasante menos clave, no el minimo de 7.A.
+    # Se pide a M5 en vez de restarse aqui: esta copia iba sin la guarda de
+    # `DatoInvalidoError` que V7 si tenia, y una altura negativa habria
+    # entrado a la tabla de clases de la norma de producto el dia en que
+    # 'clases_producto_por_relleno' se declare (SIS-A-21).
     altura = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                     "altura de relleno sobre la clave",
-                    lambda: punto.cota_subrasante - cota_clave(
+                    lambda: altura_relleno_sobre_clave(
                         punto=punto, material=material, D=D))
     if altura is not None:
         _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
@@ -1023,7 +1029,14 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "n_min": _num(material.n_min), "n_max": _num(material.n_max),
             "D_m": _num(resultado.D), "D_max_material_m": _num(material.D_max),
             "control_gobernante": hidraulica.control_gobernante.value,
+            # Q y S son los del DISEÑO, no los de la columna del CSV: la
+            # Familia B y la C traen su propio caudal (Sec. 2.3) y el punto que
+            # no sigue el cauce declara su pendiente. La pendiente sale tambien
+            # en el bloque de geometria, y ahora es forzosamente la misma: las
+            # dos leen `ResultadoHidraulico.S` (MAT-D9). Aqui va ademas porque
+            # el bloque de geometria no existe si la Fase 7 quedo bloqueada.
             "Q_m3s": _num(hidraulica.Q),
+            "S_m_m": _num(hidraulica.S),
             # Dos claves y no una "V_m_s": la velocidad de la rama n_min
             # (techos: V3, d50) y la de la rama n_max (piso: V2) son numeros
             # distintos, y una sola clave obligaba a adivinar cual (MAT-D1).
@@ -1298,7 +1311,7 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"y_c = {_fmt(h.y_critico)} m, "
                    f"V_erosion = {_fmt(h.V_erosion)} m/s (n min), "
                    f"V_sedimentacion = {_fmt(h.V_sedimentacion)} m/s (n max), "
-                   f"Q = {_fmt(h.Q)} m3/s")
+                   f"Q = {_fmt(h.Q)} m3/s, S = {_fmt(h.S)} m/m")
         out.append(f"{SANGRIA}        Longitud : L = {_fmt(informe.longitud.valor)} m "
                    f"({informe.longitud.origen}) | TW = "
                    f"{_fmt(informe.tw.valor)} m ({informe.tw.origen})")

@@ -78,7 +78,7 @@ def _punto(**cambios) -> PuntoCritico:
     return PuntoCritico(**base)
 
 
-def _resultado(*, y_normal=0.60, y_critico=0.40, V=1.5, Q=1.0,
+def _resultado(*, y_normal=0.60, y_critico=0.40, V=1.5, Q=1.0, S=0.006,
               V_erosion=None, V_sedimentacion=None,
               HW_entrada=0.50, HW_salida=0.20,
               control=ControlGobernante.ENTRADA) -> ResultadoHidraulico:
@@ -94,7 +94,7 @@ def _resultado(*, y_normal=0.60, y_critico=0.40, V=1.5, Q=1.0,
         y_normal=y_normal, y_critico=y_critico,
         V_erosion=V if V_erosion is None else V_erosion,
         V_sedimentacion=V if V_sedimentacion is None else V_sedimentacion,
-        Q=Q, HW_entrada=HW_entrada, HW_salida=HW_salida,
+        Q=Q, S=S, HW_entrada=HW_entrada, HW_salida=HW_salida,
         control_gobernante=control,
     )
 

@@ -218,6 +218,7 @@ def _resultado_hidraulico(control: ControlGobernante) -> ResultadoHidraulico:
         V_erosion=c["V_con_n_min_esperado"],
         V_sedimentacion=c["V_con_n_max_esperado"],
         Q=c["Q_con_n_max_esperado"],
+        S=c["S"],
         HW_entrada=CP8_CONTROL_SALIDA["H_esperado_con_K_SI"],
         HW_salida=CP8_CONTROL_SALIDA["H_con_29_incorrecto"],
         control_gobernante=control,

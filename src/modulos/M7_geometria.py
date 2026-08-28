@@ -13,7 +13,7 @@ separa a proposito, y que este modulo mantiene separadas:
 7.A -- el tamizado
 ------------------
     cota rasante >= max( cota clave + h_rec + e_paq ,
-                         HW + resguardo(CBR) + e_paq )
+                         cota entrada + HW + resguardo(CBR) + e_paq )
 
     cota clave  = cota de fondo de la entrada + D + espesor de pared. Es la
                   clave FISICA, la superficie exterior del tubo, que es desde
@@ -53,9 +53,24 @@ explicito y no un valor que este modulo elija.
 7.B -- la verificacion final
 ----------------------------
     longitud   = (ancho de plataforma + proyeccion de taludes) / cos(esviaje)
-    pendiente  = la del cauce (Sec. 7.B y Sec. 1.5); V2 nunca la restringe
-                 (Sec. 5.2)
+    pendiente  = la MISMA con que corrio el diseño hidraulico,
+                 `ResultadoHidraulico.S`; V2 nunca la restringe (Sec. 5.2)
     cota salida = cota de entrada - S * longitud
+
+LA PENDIENTE NO SE ELIGE DOS VECES (MAT-D9). Sec. 7.B dice que la pendiente de
+la alcantarilla es la del cauce, y esa sigue siendo la regla del proyecto: el
+valor por defecto lo pone la Fase 4, que resuelve `punto.exigir("S_cauce")`
+cuando nadie declara otra cosa. Lo que este modulo YA NO hace es volver a
+resolverla por su cuenta. Lo hacia -- `S = punto.exigir("S_cauce")` si el
+llamador no pasaba nada -- y el llamador de produccion (`cli._fase_7`) no
+pasaba nada, de modo que el punto que declaraba su pendiente aparte
+('S_conducto' de la CLI, la via de Sec. 2.3 para la Familia B y la C) quedaba
+con DOS pendientes: el HW y las velocidades calculados con la declarada, y la
+caida y la cota de salida con la del cauce. Ninguna de las dos era visible en
+el informe como distinta de la otra. Ahora la pendiente viaja dentro del
+resultado hidraulico, que es la salida de quien la resolvio, y 7.B la lee de
+ahi: si el proyecto quiere cambiarla, se cambia en la Fase 4 y las dos cosas
+se mueven juntas.
 
 El 1/cos(esviaje) no es un coeficiente adoptado: es la identidad geometrica
 del cruce oblicuo -- el eje del conducto es la hipotenusa del ancho que
@@ -103,7 +118,9 @@ no una cadena:
   4. CBR -> resguardo. La tabla de Sec. 5.1 (Manual de Suelos, num. 4.5.4)
      entrega 0.60 / 0.80 / 1.00 / 1.20 m segun el tramo de CBR.
   5. resguardo -> V4. La verificacion V4 exige
-     HW <= cota de subrasante - resguardo(CBR).
+     cota de entrada + HW <= cota de subrasante - resguardo(CBR). Los DOS
+     terminos son niveles: HW es una carga sobre el fondo de la entrada y no
+     se puede comparar con una cota sin sumarle esa cota (MAT-O5).
   6. V4 -> rasante. Cuando V4 no cumple, Sec. 5.1 lista las salidas:
      subdrenes, capas drenantes o **elevar la rasante** -- "lo que alimenta
      7.A". Y elevar la rasante vuelve al eslabon 1.
@@ -127,8 +144,8 @@ Que hace falta para que cortarlo sea legitimo y no una simplificacion tapada:
   - por lo tanto el resguardo es constante frente a la rasante, y la condicion
     de V4 se puede escribir como una cota inferior CERRADA sobre la rasante:
 
-        HW <= (cota rasante - e_paq) - resguardo
-        cota rasante >= HW + resguardo + e_paq
+        cota entrada + HW <= (cota rasante - e_paq) - resguardo
+        cota rasante >= cota entrada + HW + resguardo + e_paq
 
     que es, literalmente, la segunda linea del maximo de 7.A. El lazo se
     resuelve de una sola pasada, sin iterar.
@@ -215,7 +232,8 @@ Uso
     tamizado.delta_rasante_cm          # cm  - cuanto falta subir; 0.0 si cabe
     print(tamizado.mensaje)            # "no factible -> subir rasante 18.0 cm"
 
-    # 7.B, por punto, con el diametro que la Fase 4 adopto
+    # 7.B, por punto, con el diametro que la Fase 4 adopto. La pendiente NO
+    # es argumento: sale de `resultado.S`, la que uso el diseño (MAT-D9)
     geometria = compatibilidad_geometrica(punto=punto, material=material,
                                           D=resultado_punto.D,
                                           resultado=resultado_punto.resultado_hidraulico)
@@ -447,7 +465,7 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
     condiciones, y el delta que le falta a la rasante del CSV para alcanzarla.
 
         cota rasante >= max( cota clave + h_rec + e_paq ,
-                             HW + resguardo(CBR) + e_paq )
+                             cota entrada + HW + resguardo(CBR) + e_paq )
 
     Argumentos
     ----------
@@ -623,6 +641,11 @@ def cota_salida(*, punto: PuntoCritico, longitud: float, S: float) -> float:
     La pendiente es la del CAUCE (Sec. 7.B y Sec. 1.5): la alcantarilla sigue
     el cauce natural, y V2 nunca la restringe (Sec. 5.2). La restriccion real
     es constructiva y de cota del receptor, que es lo que verifica G2.
+
+    `S` es argumento y no se resuelve aqui: quien llama desde 7.B pasa
+    `ResultadoHidraulico.S`, la del diseño. Esta funcion es una identidad
+    geometrica sobre la pendiente que reciba, y no le corresponde decidir
+    cual es (MAT-D9).
     """
     return cota_entrada_supuesta(punto) - S * longitud
 
@@ -656,7 +679,6 @@ def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion
 
 def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                               D: float, resultado: ResultadoHidraulico,
-                              S: Optional[float] = None,
                               longitud: Optional[float] = None
                               ) -> CompatibilidadGeometrica:
     """
@@ -668,11 +690,14 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
     Argumentos
     ----------
     D           m     diametro adoptado (no el supuesto de 7.A).
-    resultado         salida de la Fase 4. De aqui sale el HW del control que
-                      gobierna (`ResultadoHidraulico.HW`), en metros sobre el
-                      fondo de la entrada.
-    S           m/m   pendiente del conducto. Por defecto la del cauce,
-                      `punto.exigir("S_cauce")` (Sec. 7.B, Sec. 1.5).
+    resultado         salida de la Fase 4. De aqui salen las DOS magnitudes
+                      del diseño que 7.B necesita y no puede volver a elegir:
+                      el HW del control que gobierna
+                      (`ResultadoHidraulico.HW`, en metros sobre el fondo de
+                      la entrada) y la pendiente con que se resolvio
+                      (`ResultadoHidraulico.S`). La pendiente por eso no es
+                      argumento de esta funcion: ver "LA PENDIENTE NO SE
+                      ELIGE DOS VECES" en el docstring del modulo (MAT-D9).
     longitud    m     longitud del conducto. Por defecto la calcula
                       `longitud_conducto`, que exige 'talud_terraplen'. Se
                       admite explicita para el punto cuya seccion transversal
@@ -687,7 +712,7 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
     se pide con `CompatibilidadGeometrica.exigir_factible()` y sale como
     `DisenoNoFactibleError` con el delta, nunca generica.
     """
-    S = punto.exigir("S_cauce") if S is None else S
+    S = resultado.S          # la del diseno, no una nueva eleccion (MAT-D9)
     factor = factor_esviaje(punto)
     if longitud is None:
         proyeccion = proyeccion_taludes(punto)      # exige 'talud_terraplen'
