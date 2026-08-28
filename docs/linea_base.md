@@ -477,3 +477,25 @@ borrada` **cinco** veces, y **ninguna de las cinco significa trabajo sin
 entregar**: el chequeo comprueba antes que la rama no tenga commits fuera de
 `main`, y las cinco pasan esa comprobación. Las dos salidas siguen siendo las
 mismas dos de arriba y las dos están fuera del alcance de la sesión.
+
+**Saldo al cierre de S11 (diseño del registro normativo): una.** Las cinco
+anteriores **ya no están en el remoto** —`git branch -r` lista hoy solo `main` y
+la rama de esta sesión—, de modo que alguien con permisos las borró entre S10 y
+S11. Eso no cambia el diagnóstico: el intento desde la sesión volvió a fallar,
+y esta vez con las dos formas de la negativa **a la vez**, `HTTP 403` y el
+`send-pack: unexpected disconnect` seguido de `Everything up-to-date`.
+
+| Rama | Sesión | Fusionada en `main` |
+|---|---|---|
+| `claude/diseno-registro-normativo-607nkm` | S11 | sí (`66bf252`) |
+
+Cuarta reincidencia, y con ella lo que se puede afirmar cambia de tono: **el
+borrado de ramas no es una tarea de la sesión, es una tarea del propietario del
+repositorio.** El token de la sesión puede crear referencias y no puede
+borrarlas, y ninguna de las cuatro veces que se ha intentado ha funcionado. Lo
+que sí está en manos de la sesión —fusionar a `main` y dejarlo verificado— se
+hizo antes de intentar el borrado, y es lo que decide si hay trabajo entregado.
+
+`verificar_sesion.py` dará `[FALLO] … ya fusionada, debería estar borrada`
+**una** vez, y **no significa trabajo sin entregar**: el chequeo comprueba
+antes que la rama no tenga commits fuera de `main`, y esta lo pasa.
