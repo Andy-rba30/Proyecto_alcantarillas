@@ -203,16 +203,27 @@ HDS5_SI_1985 = Fuente(
     paginas_pdf=410,
     paginacion=SinDeterminar(
         por_que=("la copia no imprime numeros de pagina propios: es una "
-                 "conversion a PDF de la version HTML del documento, y sus "
-                 "410 paginas no llevan cabecera ni pie numerado. Sus citas "
-                 "se localizan por pagina PDF y no tienen pagina impresa que "
-                 "declarar")),
+                 "conversion electronica del documento a HTML y de ahi a PDF, "
+                 "y sus 410 paginas no llevan cabecera ni pie numerado. El "
+                 "propio archivo lo declara en su frontispicio: «During the "
+                 "editing of this manual for conversion to an electronic "
+                 "format, the intent has been to keep the document text as "
+                 "close to the original as possible. In the process of "
+                 "scanning and converting, some changes may have been made "
+                 "inadvertently». Sus citas se localizan por pagina PDF y no "
+                 "tienen pagina impresa que declarar")),
     convive_con=("HDS5_3ED",),
-    nota=("PESE AL «si» DEL NOMBRE DEL ARCHIVO, opera en unidades inglesas "
-          "con rotulos duales «ft (m)»: sus ecs. (4b) y (5) imprimen 29 y no "
-          "19.63. Leerla literal «en SI» reproduce el error de +9.6 % que "
-          "K_FRICCION_SI existe para atrapar. Ver la Discrepancia "
-          "DIS-HDS5-EDICIONES."),
+    nota=("EL «si» DEL NOMBRE DEL ARCHIVO ES DEL REPOSITORIO, NO DEL "
+          "DOCUMENTO, y conviene decirlo asi: la portada no se rotula «SI» ni "
+          "«metric» en ninguna parte -- dice «September 1985» y "
+          "«FHWA-IP-85-15» --; el unico «SI» del frontispicio es el enlace a "
+          "una tabla anexa «U.S. - SI Conversions», y las laminas del "
+          "Apendice D llevan rotulos «Metric Version» / «English Version». "
+          "El cuerpo opera en unidades inglesas con rotulos duales «ft (m)»: "
+          "sus ecs. (4b) y (5) imprimen 29 y no 19.63, y su gravedad es "
+          "«32.2 ft/s/s (9.8 m/s/s)». Leerla literal «en SI» reproduce el "
+          "error de +9.6 % que K_FRICCION_SI existe para atrapar. Ver la "
+          "Discrepancia DIS-HDS5-EDICIONES."),
 )
 
 AASHTO_LRFD_9 = Fuente(
@@ -264,12 +275,16 @@ AASHTO_M36 = Fuente(
                  "for Sewers and Drains.pdf"),
     sha1="f85b5658385ae6779dde4e5fd340ac3122b62636",
     paginas_pdf=24,
-    paginacion=SinDeterminar(
-        por_que=("el PDF es un raster SIN capa de texto: la extraccion "
-                 "devuelve cadena vacia en las 24 paginas, de modo que no hay "
-                 "cabecera que leer para medir el desfase. Se localiza "
-                 "renderizando")),
+    # Medido renderizando el pie de cada pagina: la impresa «M 36-n» es la
+    # PDF n+1, porque la PDF 1 es una caratula sin numerar.
+    paginacion=Corrida(desfase=1),
     texto_extraible=False,
+    convive_con=("ASTM_A760",),
+    nota=("RASTER PURO, SIN CAPA DE TEXTO: la extraccion devuelve cadena "
+          "vacia en las 24 paginas. Todo dato suyo se verifica renderizando. "
+          "Y es la MISMA norma de doble designacion que ASTM A760/A760M, en "
+          "edicion anterior: el PDF de A760 rotula «AASHTO No. M 36 / M 36M» "
+          "en su propia portada."),
 )
 
 ASTM_A760 = Fuente(
@@ -284,13 +299,26 @@ ASTM_A760 = Fuente(
                  "Metallic-Coated for Sewers and Drains.pdf"),
     sha1="47d0d447143ca158615dff7dec79f2f7a8975732",
     paginas_pdf=15,
-    paginacion=SinDeterminar(
-        por_que=("el PDF trae una codificacion de fuente sin tabla ToUnicode: "
-                 "el volcado devuelve «@esmkgbdmog» donde la pagina imprime "
-                 "«Designacion», y la sustitucion no es uniforme ni siquiera "
-                 "en los digitos, de modo que no se puede deshacer. Tampoco "
-                 "se puede leer el numero de pagina. Se localiza renderizando")),
+    # Medido renderizando el pie de cada pagina: pagina impresa = pagina PDF.
+    paginacion=Corrida(desfase=0),
     texto_extraible=False,
+    convive_con=("AASHTO_M36",),
+    nota=(
+        "DOS COSAS QUE SOLO SE VEN RENDERIZANDO, y las dos son propiedades de "
+        "la fuente que el registro tiene que declarar. "
+        "PRIMERA: la capa de texto EXISTE y es INUTILIZABLE. La fuente no "
+        "trae tabla ToUnicode usable y el volcado devuelve caracteres "
+        "sustituidos -- «@esmkgbdmog» donde la pagina imprime «Designacion» "
+        "--; la sustitucion no es uniforme ni siquiera en los digitos, de "
+        "modo que no se puede deshacer. Todo dato de esta fuente se verifica "
+        "por imagen. "
+        "SEGUNDA: NO ES EL ORIGINAL EN INGLES. Es una TRADUCCION AL ESPAÑOL, "
+        "y ademas de doble designacion: su portada rotula «Designación: A760 "
+        "/ A760M - 10» y, arriba a la derecha, «AASHTO No. M 36 / M 36M». Es "
+        "decir que este PDF y el de AASHTO M 36 son la MISMA norma en dos "
+        "ediciones distintas, no dos normas independientes. Citar una "
+        "traduccion como si fuera el original es una cita imprecisa aunque el "
+        "dato sea correcto, y por eso se declara."),
 )
 
 

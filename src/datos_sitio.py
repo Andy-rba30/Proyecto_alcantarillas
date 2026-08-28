@@ -303,6 +303,130 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                         "vial, cuando el proyecto declare su cabecera de "
                         "obra en vez de una longitud aproximada",
     ),
+
+    # ----------------------------------------------------------------------
+    # Geometria de la via y del cabezal respecto del trafico
+    # ----------------------------------------------------------------------
+    # LOS TRES QUE SIGUEN SON [S] Y NO [A], y la distincion decide donde
+    # viven: ninguno se ELIGE. La orientacion del cabezal respecto del
+    # trafico se LEE del plano de planta, los carriles por sentido salen del
+    # diseño geometrico de la via y el borde de calzada se mide sobre la
+    # seccion transversal. Cambian al mover la obra de sitio y NO cambian al
+    # cambiar de proyectista, que es la regla de CLAUDE.md para separar [S] de
+    # [A]. Los tres valen para todo el corredor mientras el trazo sea uno.
+    #
+    # Los tres valen None y por tanto DETIENEN el calculo. Es lo que el
+    # conflicto vinculante #4 del plan de correcciones ordena: "no hay
+    # contradiccion sino un dato faltante". No se sube h_eq a 1.12 m ni se
+    # deja en 0.60: se declara lo que falta.
+
+    "orientacion_muro_respecto_al_trafico": DatoSitio(
+        valor=None,
+        concepto="Orientacion del trasdos del cabezal respecto de la "
+                 "direccion del trafico, que es lo que decide CUAL de las dos "
+                 "tablas de altura de suelo equivalente de AASHTO 3.11.6.4 "
+                 "aplica al empuje de sobrecarga viva (LS)",
+        procedimiento="Lectura del plano de planta: angulo entre el eje del "
+                      "conducto y el eje de la via. Un cabezal cuyo trasdos "
+                      "corre paralelo al eje de la via es 'paralelo al "
+                      "trafico'; uno enfrentado al trafico, "
+                      "'perpendicular'. Valores admisibles: "
+                      "'perpendicular_al_trafico' o 'paralelo_al_trafico'",
+        fuente="AASHTO LRFD 9a ed., Art. 3.11.6.4 'Live Load Surcharge (LS)', "
+               "pag. impresa 3-151 (PDF 205), Tablas 3.11.6.4-1 y 3.11.6.4-2",
+        trazabilidad=(
+            "LO QUE HAY QUE SABER ANTES DE DECLARARLO, y no es una "
+            "formalidad. AASHTO NO ofrece un eje libre 'orientacion': ofrece "
+            "dos BINOMIOS ACOPLADOS. La Tabla 3.11.6.4-1 es de ESTRIBOS "
+            "perpendiculares al trafico -- su variable de entrada se llama "
+            "literalmente 'Abutment Height (ft)' -- y la 3.11.6.4-2 de MUROS "
+            "DE CONTENCION paralelos al trafico. NO HAY TABLA para 'muro "
+            "perpendicular' ni para 'estribo paralelo'. "
+            "De modo que declarar 'perpendicular_al_trafico' para un cabezal "
+            "de alcantarilla obliga a leer la tabla de estribos, y eso es una "
+            "ANALOGIA declarada [N->], no una lectura directa: el propio "
+            "comentario C3.11.6.4 dice que h_eq es MAYOR para un estribo que "
+            "para un muro, de modo que la analogia va del lado conservador y "
+            "hay que decirlo. "
+            "Y una segunda cosa que la fuente no resuelve: NO EXISTE en el "
+            "articulado ninguna frase que reparta las dos tablas. El cuerpo "
+            "normativo las cita juntas y sin condicionante; quien las reparte "
+            "son los TITULOS de las tablas y el comentario, que no es "
+            "articulado. Verificado barriendo las 1905 paginas del PDF. "
+            "AMBITO: vale para todo el corredor mientras el trazo sea uno. Si "
+            "algun cruce tuviera esviaje distinto del resto, este dato deja de "
+            "ser unico para el tramo y pasa a columna del CSV"),
+        ambito=AMBITO_CORREDOR,
+        verificacion_pendiente=(
+            "Declarar la orientacion sobre el plano de planta del expediente. "
+            "Mientras siga en None, `M9.h_eq_sobrecarga_trasdos` se detiene y "
+            "el empuje de sobrecarga viva del cabezal no se calcula"),
+    ),
+
+    "distancia_borde_calzada_al_trasdos_m": DatoSitio(
+        valor=None,
+        concepto="Distancia horizontal del trasdos del muro al borde de la "
+                 "calzada, en m. Solo la pide la Tabla 3.11.6.4-2, es decir "
+                 "el caso de muro PARALELO al trafico",
+        procedimiento="Medicion sobre la seccion transversal del expediente "
+                      "vial, del paramento interior del cabezal al borde de "
+                      "la calzada",
+        fuente="AASHTO LRFD 9a ed., Tabla 3.11.6.4-2, encabezado de columna "
+               "'heq (ft) Distance from wall backface to edge of traffic', "
+               "pag. impresa 3-151 (PDF 205)",
+        trazabilidad=(
+            "EL UMBRAL DE LA FUENTE ES 1.0 ft = 0.3048 m EXACTOS, no 0.30 m. "
+            "La tabla rotula su segunda columna 'ft or Further' sobre 1.0 ft, "
+            "y 1 in = 25.4 mm es exacto. Redondear a 0.30 RELAJA el criterio: "
+            "un trasdos con el borde de calzada a 0.30 m justos NO alcanza el "
+            "umbral y le corresponde la columna de 0.0 ft, que da h_eq mayor. "
+            "La banda 0.0 < d < 1.0 ft es una LAGUNA de la fuente: manda "
+            "interpolar 'for intermediate wall HEIGHTS' -- entre filas -- y no "
+            "autoriza interpolar entre estas dos columnas. El proyecto lee la "
+            "columna de 0.0 ft para toda distancia menor, que es el lado "
+            "conservador, y lo declara"),
+        ambito=AMBITO_CORREDOR,
+        verificacion_pendiente=(
+            "Solo hace falta si la orientacion resulta 'paralelo_al_trafico'. "
+            "Con 'perpendicular_al_trafico' la Tabla 3.11.6.4-1 no tiene "
+            "columna de distancia y este dato no se invoca"),
+    ),
+
+    "carriles_por_sentido": DatoSitio(
+        valor=None,
+        concepto="Numero de carriles por sentido de la calzada, que es lo que "
+                 "el Cuadro 4.1 del Manual de Suelos usa para fijar el numero "
+                 "minimo de calicatas en autopistas y en carreteras duales o "
+                 "multicarril",
+        procedimiento="Lectura del diseño geometrico de la via (seccion "
+                      "transversal tipo). Valores tabulados por el Cuadro "
+                      "4.1: 2, 3 o 4 carriles por sentido",
+        fuente="Manual de Carreteras: Suelos, Geologia, Geotecnia y "
+               "Pavimentos, num. 4.2 'Caracterizacion de la sub rasante', "
+               "Cuadro 4.1 'Numero de Calicatas para Exploracion de Suelos', "
+               "pag. impresa 28 (PDF 29)",
+        trazabilidad=(
+            "EXISTE PORQUE EL REPOSITORIO AFIRMABA QUE LA NORMA NO LO PEDIA "
+            "(NOR-SUE-01, MAT-D11). El comentario de `CALICATAS_POR_SENTIDO` "
+            "decia que el Cuadro da el 6 'como alternativa sin decir cuando "
+            "aplica cada una'. Verificado contra el PDF: el Cuadro lo "
+            "condiciona por carriles por sentido, con tres viñetas explicitas "
+            "-- 2 carriles/sentido: 4 calicatas x km x sentido; 3: 4; 4: 6 -- "
+            "y la cadena '4 (o 6)' que el repositorio le atribuia no aparece "
+            "en ninguna celda. De modo que el 6 SI es [N] y lo que faltaba no "
+            "era un criterio del proyectista sino este dato. "
+            "El dato lo fija el diseño geometrico, que a su vez depende del "
+            "IMDA del estudio de demanda: mientras la clase de via no este "
+            "cerrada, este dato tampoco. "
+            "SOLO SE INVOCA en las dos filas multicarril del Cuadro; en las "
+            "cuatro clases de una calzada el Cuadro da un escalar y no hace "
+            "falta"),
+        ambito=AMBITO_CORREDOR,
+        verificacion_pendiente=(
+            "Declararlo al cerrar la clase de via. El Cuadro tabula 2, 3 y 4 "
+            "carriles por sentido y NO dice que hacer con 5 o mas: esa es una "
+            "laguna de la fuente, declarada en el registro"),
+    ),
 }
 
 

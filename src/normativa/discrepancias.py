@@ -179,9 +179,15 @@ DIS_D_MAX = _d(
                         "serie, no un maximo"),
               cita_id="ASTM_A760.T1#DIAMETROS"),
         Parte(quien="AASHTO_M170M",
-              que_dice=("sus Tablas 1 a 5 (Clases I a V) van de 300 a 3600 mm, "
-                        "y la Seccion 7.2 preve diseños especiales por encima "
-                        "de lo tabulado"),
+              que_dice=("el conjunto de sus Tablas 1 a 5 cubre de 300 mm "
+                        "(Tablas 2 a 5) a 3600 mm (Tablas 3 y 5), y la Sec. "
+                        "7.2 «Modified and Special Designs» preve ademas "
+                        "diseños por encima de lo tabulado con permiso del "
+                        "propietario. LEIDO TABLA POR TABLA la envolvente no "
+                        "es uniforme -- la Tabla 1, Clase I, va de 1500 a "
+                        "3450 mm --, y la redaccion anterior de esta cita, "
+                        "«Tablas 1 a 5: de 300 a 3600 mm», era falsa leida "
+                        "distributivamente"),
               cita_id="AASHTO_M170M.T1_T5#DIAMETROS"),
     ),
     gana="ASTM_A760",

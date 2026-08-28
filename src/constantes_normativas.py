@@ -49,6 +49,33 @@ acota clave por clave; M2 documenta la reparticion en su docstring y la marca
 con comentarios de linea. Queda escrita aqui para que no haya que deducirla.
 """
 
+# ---------------------------------------------------------------------------
+# EL REGISTRO NORMATIVO, y por que este archivo lo importa
+# ---------------------------------------------------------------------------
+# `src/normativa/` guarda la TRANSCRIPCION -- la tabla entera, con sus notas,
+# su cita y su pagina PDF verificada -- y este archivo guarda la VISTA DE
+# CALCULO que los modulos consumen. No es una capa nueva: es el patron que
+# este archivo ya usaba (MANNING derivado de TABLA_09_FILAS, V_MAX de
+# TABLA_10_FILAS, RIESGO_ADMISIBLE de TABLA_02_FILAS) llevado a su sitio, con
+# el comentario que lo acompañaba de razon: "si la transcripcion se corrige,
+# esta vista se corrige con ella y no quedan dos copias que puedan divergir".
+#
+# LA DIRECCION DE LA DEPENDENCIA IMPORTA y es de una sola via:
+#
+#     normativa/  <-  constantes_normativas.py  <-  criterios_adoptados.py
+#                                                <-  modulos M0..M11
+#
+# El registro NO importa nada de la derecha. De ahi que conozca la CLAVE del
+# criterio o del dato de sitio que resuelve una condicion y nunca el objeto:
+# la resolucion es tardia y la hace el consumidor.
+#
+# Los nombres publicos de este archivo NO CAMBIAN. Un consumidor sigue
+# leyendo `MANNING`, `V_MAX` o `SOBRECARGA_TRASDOS_H_EQ` con la misma forma y
+# el mismo valor; lo unico que cambia es de donde salen.
+from normativa import registro as _registro_normativo
+
+_reg = _registro_normativo.construir()
+
 # ================= Manual de Hidrologia (RD 20-2011-MTC/14) =================
 LUZ_MAX_ALCANTARILLA = 6.0          # m; >= 6.0 -> puente (4.1.1.3.1 / 4.1.1.5.1)
 
@@ -703,12 +730,29 @@ D_INICIO = 0.90                     # m; el piso del num. 4.1.1.3.4 a), que
 # VERIFICAR". La atribucion es FALSA y esta verificada en contra sobre los
 # PDF de normas/ (NOR-PRO-01, NOR-PRO-02, MAT-O8):
 #
-#   ASTM A760/A760M-10, Tabla 1 "Tamaños de tuberia", pag. 3: diametros
-#   nominales de 100 mm (4 in) a 3600 mm (144 in). Los 2100 mm son una fila
-#   mas de la serie, no un maximo.
-#   AASHTO M 170M-04, Tablas 1 a 5 (Clases I a V): de 300 a 3600 mm, y la
-#   Seccion 7.2 preve ademas diseños especiales por encima de lo tabulado.
+#   ASTM A760/A760M-10, Tabla 1 "Tamaños de tuberia", pag. impresa 3: la serie
+#   va de 100 mm (4 in) a 3600 mm (144 in), fila a fila. Los 2100 mm son la
+#   fila de 84 in, una mas de la serie, no un maximo. VERIFICADO POR IMAGEN:
+#   el PDF de esta norma no entrega texto utilizable.
+#   AASHTO M 170M-04, Tablas 1 a 5 (Clases I a V). LA REDACCION ANTERIOR
+#   -- "Tablas 1 a 5 (Clases I a V): de 300 a 3600 mm" -- era falsa leida
+#   distributivamente, y al verificarla por imagen se vio por que: la Tabla 1
+#   (Clase I) va de 1500 a 3450 mm y la Tabla 2 (Clase II) tampoco llega a
+#   3600. Lo cierto es la ENVOLVENTE: el conjunto de las cinco cubre de
+#   300 mm (Tablas 2 a 5) a 3600 mm (Tablas 3 y 5). La Seccion 7.2
+#   "Modified and Special Designs" preve ademas diseños por encima de lo
+#   tabulado, con permiso del propietario. El fondo -- que 2.70 m no es un
+#   tope de M 170M -- se sostiene igual; lo que se corrige es la forma de la
+#   cita, que atribuia a cada tabla un rango que dos de ellas no tienen.
 #   AASHTO M294 no esta en normas/: el tope del HDPE no se pudo contrastar.
+#
+#   Y UNA COSA MAS QUE LA VERIFICACION POR IMAGEN DESTAPO: el PDF de ASTM
+#   A760 que hay en normas/ NO es el original en ingles, es una TRADUCCION AL
+#   ESPAÑOL, y ademas de doble designacion -- su portada rotula "AASHTO No.
+#   M 36 / M 36M" --, de modo que ese PDF y el de AASHTO M 36 son la MISMA
+#   norma en dos ediciones distintas y no dos normas independientes. Citar
+#   una traduccion como si fuera el original es una cita imprecisa aunque el
+#   dato sea correcto; queda declarado en `normativa/fuentes.py`.
 #
 # No son topes normativos: son topes de CATALOGO, y como tales descartaban
 # material en silencio con una cita que ninguna norma sostiene. Viven ahora
@@ -740,28 +784,81 @@ COMPACTACION_CORONA = 0.95          # 0.30 m superiores, capas de 0.15 m
 COMPACTACION_CUERPO = 0.90          # capas de hasta 0.30 m
                                      # (num. 3.2.1, 3.2.2, 3.3 y 9.1(1))
 
-CALICATAS_POR_KM = {"autopista": 4, "dual": 4, "primera_clase": 4,
-                    "segunda_clase": 3, "tercera_clase": 2, "bajo_volumen": 1}
-                    # num. 4.2, Cuadro 4.1
-# El Cuadro 4.1 no es "calicatas x km" para todas las clases: en autopistas y
-# duales/multicarril la exigencia es "x km x SENTIDO", y el total se duplica.
-# Sin este multiplicador, una autopista de 5 km salia con 20 calicatas cuando
-# el Cuadro pide 40. Se declara aparte y no metido en el numero de arriba
-# porque son dos cosas distintas del mismo Cuadro: cuantas por kilometro, y
-# sobre cuantos sentidos se cuenta el kilometro.
-CALICATAS_POR_SENTIDO = {"autopista": True, "dual": True, "primera_clase": False,
-                         "segunda_clase": False, "tercera_clase": False,
-                         "bajo_volumen": False}
-                    # num. 4.2, Cuadro 4.1
-# El Cuadro admite ademas 6 en vez de 4 para autopistas con 4 carriles por
-# sentido, y "4 (o 6)" para duales. Ese 6 NO se transcribe aqui: el Cuadro lo
-# da como alternativa sin decir cuando aplica cada una, de modo que la
-# eleccion entre 4 y 6 no es [N]. Si el proyecto llega a necesitarla, es un
-# criterio [A] declarado en criterios_adoptados.py, no un numero mas en esta
-# tabla. Con el corredor de 5 km de este expediente la clase de via ni
-# siquiera esta cerrada (depende del IMDA del estudio de demanda), asi que la
-# alternativa no se ha alcanzado todavia.
-ESPACIAMIENTO_PERFIL_KM = 4.0       # nivel perfil (num. 4.2, Cuadro 4.1)
+# ---------------------------------------------------------------------------
+# Cuadro 4.1 -- numero de calicatas (num. 4.2, pag. impresa 28, PDF 29)
+# ---------------------------------------------------------------------------
+# EL COMENTARIO QUE VIVIA AQUI AFIRMABA DOS COSAS, Y LAS DOS ERAN FALSAS
+# (NOR-SUE-01, MAT-D11). Decia:
+#
+#     "El Cuadro admite ademas 6 en vez de 4 para autopistas con 4 carriles
+#      por sentido, y '4 (o 6)' para duales. Ese 6 NO se transcribe aqui: el
+#      Cuadro lo da como alternativa SIN DECIR CUANDO APLICA CADA UNA, de modo
+#      que la eleccion entre 4 y 6 no es [N]."
+#
+# Verificado contra el PDF: (a) el Cuadro SI dice cuando aplica cada una --
+# lo condiciona por CARRILES POR SENTIDO, con tres viñetas explicitas en cada
+# una de las dos filas multicarril: 2 carriles/sentido -> 4, 3 -> 4, 4 -> 6 --;
+# y (b) la cadena "4 (o 6)" NO EXISTE en ninguna celda del Cuadro ni en el
+# texto del numeral: la fila de Duales dice exactamente lo mismo que la de
+# Autopistas.
+#
+# POR QUE ESTE DEFECTO ES DE LA MISMA FAMILIA QUE UNA CITA FALSA, aunque
+# parezca lo contrario. Afirmar que la fuente CALLA donde HABLA es la forma
+# inversa del defecto que este cluster persigue: en vez de citar lo que la
+# norma no dice, se niega lo que si dice. El resultado es igual de invisible
+# -- un vacio inventado que convierte en [A] lo que es [N] -- y ademas mueve
+# un numero: una autopista de 4 carriles por sentido salia con la mitad de las
+# calicatas que el Cuadro exige.
+#
+# COMO QUEDA. La celda de las dos filas multicarril no es un escalar: es una
+# tabla de tres entradas por carriles por sentido, y asi esta transcrita en el
+# registro. La vista de calculo de abajo conserva la forma antigua para las
+# cuatro clases de una calzada -- donde el Cuadro SI da un escalar -- y para
+# las dos multicarril devuelve el centinela que obliga a pasar por
+# `calicatas_por_km`, que exige el dato.
+_C41 = _reg.tabla("MS.C41")
+CALICATAS_POR_KM = {
+    _C41.clave_corta(f): f.valores["calicatas_por_km"] for f in _C41.filas}
+CALICATAS_POR_SENTIDO = {
+    _C41.clave_corta(f): f.valores["por_sentido"] for f in _C41.filas}
+# El Cuadro fija tambien la PROFUNDIDAD, en columna propia y con su datum
+# ("1.50 m respecto al nivel de sub rasante del proyecto", no respecto al
+# terreno natural). El repositorio no la recogia (NOR-SUE-04).
+CALICATAS_PROFUNDIDAD_M = {
+    _C41.clave_corta(f): f.valores["profundidad_m"] for f in _C41.filas}
+# La celda de las multicarril, abierta por carriles por sentido. Es [N]: lo
+# escribe el Cuadro. Lo que NO es [N] es cuantos carriles tiene esta via, y
+# por eso el dato de sitio bloquea.
+CALICATAS_POR_CARRILES_POR_SENTIDO = {
+    _C41.clave_corta(f): {
+        2: f.valores["calicatas_2_carriles_por_sentido"],
+        3: f.valores["calicatas_3_carriles_por_sentido"],
+        4: f.valores["calicatas_4_carriles_por_sentido"],
+    }
+    for f in _C41.filas
+    if "calicatas_2_carriles_por_sentido" in f.valores
+}
+# El centinela que la vista devuelve para las filas multicarril: la fuente NO
+# da un escalar ahi, y devolver 4 seria escribir un numero que el Cuadro no
+# pone en esa celda.
+CALICATAS_REMITE_A_CARRILES = _C41.fila("autopista").valores["calicatas_por_km"]
+
+# El 4.0 km NO ESTA EN EL CUADRO 4.1 y NO ES INCONDICIONAL (NOR-SUE-02). Las
+# dos cosas las decia el comentario anterior y las dos son falsas:
+#
+#   (a) UBICACION. El Cuadro no contiene ninguna celda con 4.0 km ni con
+#       2.0 km: solo dice "x km". El 4.0 vive en un parrafo del num. 4.2, en
+#       la pag. impresa 29 (PDF 30).
+#   (b) CONDICION. La fuente lo condiciona DOS veces: solo para estudios a
+#       nivel de PERFIL, y solo "de no existir informacion secundaria" -- el
+#       orden de prelacion impreso es usar PRIMERO la informacion secundaria
+#       existente en el tramo. Presentarlo como un espaciamiento fijo de nivel
+#       perfil borra el primer termino de esa prelacion.
+#
+# Y el mismo parrafo trae un tercer escalon que el repositorio no recogia:
+# 2.0 km para factibilidad y prefactibilidad, ese si incondicional.
+ESPACIAMIENTO_PERFIL_KM = 4.0       # num. 4.2, parrafo posterior al Cuadro 4.1
+ESPACIAMIENTO_FACTIBILIDAD_KM = 2.0  # mismo parrafo, sin condicion adicional
 
 # ================= EG-2013, Capitulo V (Secciones 502-508) =================
 H_RELLENO_MIN = {
@@ -903,7 +1000,107 @@ CAMA_RELLENO_LATERAL = {
 }
 
 # ================= Manual de Puentes (RD 041-2016-MTC/14) ==================
-SOBRECARGA_TRASDOS_H_EQ = 0.60      # m de relleno equivalente (2.1.4.3.9)
+# ---------------------------------------------------------------------------
+# SOBRECARGA DE TRAFICO EN EL TRASDOS -- h_eq
+# ---------------------------------------------------------------------------
+# ESTE BLOQUE ERA UNA SOLA LINEA:
+#
+#     SOBRECARGA_TRASDOS_H_EQ = 0.60   # m de relleno equivalente (2.1.4.3.9)
+#
+# y esa linea tenia DOS defectos, uno de cita y otro de valor (NOR-PUE-01,
+# NOR-PUE-02, MAT-D5, MAT-O1, MAT-X1; conflicto vinculante #4 del plan).
+#
+# EL DEFECTO DE CITA. El num. 2.1.4.3.9 del Manual de Puentes se titula
+# "Aparatos de Apoyo" (pag. impresa 91, PDF 92) y va de la conexion entre
+# superestructura y subestructura: no contiene la palabra "sobrecarga", ni
+# "trasdós", ni "relleno equivalente", ni el valor 0.60. El texto que SI
+# sostiene la sobrecarga esta en el num. 2.4.2.2 "Cargas de Suelo: EH, ES, y
+# DD" (pag. impresa 102, PDF 103). El numeral falso estaba propagado a seis
+# puntos del repositorio, y esa propagacion es la mitad del daño: eran seis
+# cadenas independientes y nada garantizaba que se corrigieran las seis. Hoy
+# es UNA cita del registro, `MP.2.4.2.2#SOBRECARGA`, referenciada desde donde
+# haga falta.
+#
+# EL DEFECTO DE VALOR, que es el que mueve un numero. El Manual escribe
+# "una sobrecarga vertical NO MENOR QUE la equivalente a 0.60 m de altura de
+# relleno": es un PISO, no un valor de diseño, y ademas condicionado a que
+# haya trafico dentro de H/2. AASHTO LRFD -- que la Sec. 0.2 adopta de extremo
+# a extremo -- TABULA el valor en su Art. 3.11.6.4, y para un cabezal de 2.0 m
+# con trafico perpendicular la interpolacion obligatoria da 1.12 m, o sea
+# 1.87 veces el 0.60 adoptado. Con gamma_LS = 1.75 eso llega al empuje de
+# diseño. El 0.60 plano no es defendible.
+#
+# LO QUE LA VERIFICACION DE S12 AÑADIO AL CONFLICTO #4, y matiza su
+# resolucion sin contradecirla:
+#
+#   1. EL MANUAL DE PUENTES NO TRANSCRIBE LAS TABLAS DE AASHTO. Su traduccion
+#      de la Sec. 3.11 (num. 2.4.4.1 "Empuje del Suelo: EH, ES, LS y DD") SE
+#      CORTA en el empuje pasivo k_p: no hay 2.4.4.1.6 ni ningun subnumeral
+#      LS. Barrido de las 673 paginas: "3.11.6.4" -> 0 apariciones. De modo
+#      que h_eq variable con la altura NO sale del corpus peruano y hay que
+#      citarlo a AASHTO, declarandolo.
+#   2. AASHTO NO OFRECE UN EJE LIBRE "ORIENTACION": ofrece dos BINOMIOS
+#      ACOPLADOS -- estribo + perpendicular (Tabla 3.11.6.4-1, cuya variable
+#      se llama literalmente "Abutment Height") y muro de contencion +
+#      paralelo (Tabla 3.11.6.4-2) --. No hay tabla para "muro perpendicular"
+#      ni para "estribo paralelo". Aplicar la Tabla -1 a un cabezal es
+#      ANALOGIA declarada, no lectura directa, y por eso el criterio que la
+#      habilita es [N->] y no [N].
+#   3. NO EXISTE FRASE NORMATIVA QUE REPARTA LAS DOS TABLAS. El articulado las
+#      cita juntas y sin condicionante ("may be taken from Tables 3.11.6.4-1
+#      and 3.11.6.4-2"); quien las reparte son los TITULOS de las tablas y el
+#      comentario C3.11.6.4, que no es articulado. Atribuir el reparto al
+#      articulo seria una cita falsa mas.
+#   4. EL UMBRAL DE DISTANCIA ES 1.0 ft = 0.3048 m, NO 0.30 m. El plan escribe
+#      "borde >= 0.3 m" y ese redondeo RELAJA el criterio: un trasdos con el
+#      borde de calzada a 0.30 m exactos no alcanza el umbral de la fuente.
+#   5. LA ALTURA QUE ENTRA EN LA TABLA INCLUYE LA ZAPATA: "The wall height
+#      shall be taken as the distance between the surface of the backfill and
+#      the bottom of the footing". Medirla sin la zapata subestima la altura
+#      y, como h_eq DECRECE con ella, sobrestima h_eq.
+#
+# COMO QUEDA. Los dos numerales rigen a la vez y gobierna el mayor, que es la
+# misma regla del mayor de la Sec. 0.2 que el proyecto ya aplica al
+# recubrimiento:
+#
+#     h_eq = max( PISO_MP_M , h_eq_AASHTO(altura_total, orientacion, borde) )
+#
+# y `orientacion` es un DATO DE SITIO que BLOQUEA mientras no se declare
+# (datos_sitio 'orientacion_muro_respecto_al_trafico'). No se sube h_eq a
+# 1.12 m ni se deja en 0.60: se declara lo que falta, que es lo que el
+# conflicto #4 ordena.
+SOBRECARGA_TRASDOS_PISO_MP_M = 0.60   # m; PISO del num. 2.4.2.2, pag. 102
+# El nombre viejo se conserva COMO ALIAS DEL PISO y no como "el h_eq", que es
+# lo que era. Sigue existiendo porque el manifiesto, la hoja de ruta y los
+# tests lo nombran, y porque su valor no cambia: lo que cambia es lo que
+# significa. Quien quiera el h_eq de diseño llama a
+# `M9.h_eq_sobrecarga_trasdos`, que exige la orientacion.
+SOBRECARGA_TRASDOS_H_EQ = SOBRECARGA_TRASDOS_PISO_MP_M
+
+# Las dos tablas de AASHTO, en PIES, que es lo que la fuente imprime. Vistas
+# DERIVADAS de la transcripcion del registro: si la transcripcion se corrige,
+# estas se corrigen con ella y no quedan dos copias que puedan divergir.
+H_EQ_ESTRIBO_PERPENDICULAR_FT = _reg.tabla(
+    "AASHTO_LRFD_9.T3.11.6.4-1").pares("altura_ft", "h_eq_ft")
+H_EQ_MURO_PARALELO_FT = {
+    _t.clave_corta(_f): (_f.valores["altura_ft"],
+                         _f.valores["borde_0_0_ft"],
+                         _f.valores["borde_1_0_ft_o_mas"])
+    for _t in (_reg.tabla("AASHTO_LRFD_9.T3.11.6.4-2"),) for _f in _t.filas
+}
+# El umbral de distancia del borde de calzada al trasdos, EXACTO. La fuente
+# rotula la columna "1.0 ft or Further"; 1.0 in = 25.4 mm exactos, luego
+# 1.0 ft = 0.3048 m. Redondearlo a 0.30 va del lado inseguro.
+H_EQ_BORDE_UMBRAL_M = 0.3048
+H_EQ_BORDE_COLUMNA_CERO = "borde_0_0_ft"
+H_EQ_BORDE_COLUMNA_LEJOS = "borde_1_0_ft_o_mas"
+# Las dos orientaciones que la fuente tabula. Son NOMBRES de fila, no
+# factores: cual aplica a esta obra lo dice el dato de sitio.
+ORIENTACION_PERPENDICULAR_AL_TRAFICO = "perpendicular_al_trafico"
+ORIENTACION_PARALELO_AL_TRAFICO = "paralelo_al_trafico"
+ORIENTACIONES_TABULADAS = (ORIENTACION_PERPENDICULAR_AL_TRAFICO,
+                           ORIENTACION_PARALELO_AL_TRAFICO)
+
 CARGA_VIVA = "HL-93"                # (2.4.3.2.2.1)
 NQ_ZAPATA_EN_TALUD = 0.0            # (2.8.1.3.1.2c)
 
@@ -1876,7 +2073,18 @@ NUMERAL_RECUBRIMIENTO_MP = (
     "(5.12.3 AASHTO) y Tabla 2.9.1.5.5.3-1, pags. impresas 377-378 "
     "(PDF 378-379)")
 
-NUMERAL_SOBRECARGA_TRASDOS = "2.1.4.3.9, pag. 91"
+# LA CITA CORREGIDA, y sale del registro en vez de escribirse aqui: es UNA
+# cita referenciada, no una cadena que casualmente coincide con otras cinco
+# (NOR-PUE-01). El numeral viejo -- 2.1.4.3.9 "Aparatos de Apoyo" -- sigue en
+# el registro como `MP.2.1.4.3.9`, declarado como lo que es, para que quien
+# venga con la cita vieja en la mano encuentre por que no vale.
+NUMERAL_SOBRECARGA_TRASDOS = _reg.cita("MP.2.4.2.2#SOBRECARGA").como_texto()
+NUMERAL_SOBRECARGA_TRASDOS_AASHTO = _reg.cita(
+    "AASHTO_LRFD_9.3.11.6.4").como_texto()
+# El numeral FALSO, declarado. No se borra: se nombra, para que el error tenga
+# un sitio donde estar dicho y para que un test tenga contra que fallar si
+# alguien lo reactiva.
+NUMERAL_SOBRECARGA_TRASDOS_RETIRADO = _reg.cita("MP.2.1.4.3.9").como_texto()
 NUMERAL_ZAPATA_EN_TALUD = "2.8.1.3.1.2c, pags. 272-273"
 # NUMERAL_K_H0 se declaraba aqui por segunda vez, como "2.8.1.1.14.2" a secas,
 # y esta segunda asignacion pisaba a la primera. Vive ahora una sola vez, en
