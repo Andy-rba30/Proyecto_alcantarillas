@@ -49,9 +49,12 @@ Lo que este modulo SI calcula entero
     * Las combinaciones AASHTO LRFD de Sec. 9.2 (`factores_de_carga()`), el
       peso propio del cabezal (`peso_propio_cabezal`, 'peso_especifico_
       concreto_kn_m3') y la regla del recubrimiento mayor
-      (`recubrimiento_de_diseno`, 'recubrimiento_aashto_mm'): los tres
-      criterios [C] se cerraron por verificacion externa contra AASHTO LRFD
-      9a ed.
+      (`recubrimiento_de_diseno`, 'recubrimiento_aashto_mm'). Los factores de
+      carga ya no son un criterio [C]: las dos tablas del num. 2.4.5.3.1 del
+      Manual de Puentes estan transcritas como [N] en constantes_normativas y
+      'factores_carga_aashto' [A] declara solo de que FILA de gamma_p cuelga
+      cada estructura -- el cabezal, de "Muros y estribos de retencion"
+      (1.35/1.00, NOR-PUE-03).
 
 Lo que se detiene, y por que no se rellena
 ------------------------------------------
@@ -149,6 +152,7 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    ESPESOR_TEMPERATURA_DOS_CARAS,
                                    FACTOR_MURO_TABLA,
                                    FS, FS_NUMERAL,
+                                   GAMMA_P_MARCA,
                                    NQ_ZAPATA_EN_TALUD,
                                    NUMERAL_C_PHI,
                                    NUMERAL_CICLOPEO,
@@ -159,12 +163,15 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_K_H0,
                                    NUMERAL_RECUBRIMIENTO,
                                    NUMERAL_SOBRECARGA_TRASDOS,
+                                   NUMERAL_TABLA_GAMMA_P,
                                    NUMERAL_TEMPERATURA_DOS_CARAS,
                                    NUMERAL_ZAPATA_EN_TALUD,
                                    NUMERAL_ZAPATA_TALUD_E050,
                                    RECUBRIMIENTO,
                                    SECCION_CABEZALES,
-                                   SOBRECARGA_TRASDOS_H_EQ)
+                                   SOBRECARGA_TRASDOS_H_EQ,
+                                   TABLA_COMBINACIONES_FILAS,
+                                   TABLA_GAMMA_P_FILAS)
 from modelos import (CadenaSismica, CombinacionCarga, CondicionAnalisis,
                      CuantiaRefuerzo, DatoInvalidoError, DisenoNoFactibleError,
                      EmpujeMononobeOkabe, EmpujesTrasdos, EstabilidadCabezal,
@@ -229,8 +236,8 @@ CRITERIO_FLEXION_CORTE = "procedimiento_flexion_corte_aashto_sec5"
 CRITERIO_CORTANTE_ALTO = "cortante_alto_muro_e060_art_11_10_10_2"
 
 # Componentes de cada combinacion de Sec. 9.2, con la nomenclatura de cargas
-# de AASHTO LRFD. Son NOMBRES, no factores: los factores son el vacio que
-# declara 'factores_carga_aashto'.
+# de AASHTO LRFD. Son NOMBRES, no factores: los factores son [N] y estan en
+# `constantes_normativas.TABLA_COMBINACIONES_FILAS` y `TABLA_GAMMA_P_FILAS`.
 COMPONENTES_COMBINACION = {
     "Resistencia I": ("DC", "EV", "EH", "LS", "WA"),
     "Servicio I": ("DC", "EV", "EH", "LS", "WA"),
@@ -819,16 +826,33 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
 # 9.2 - COMBINACIONES AASHTO LRFD
 # ===========================================================================
 
+# Cargas de la Tabla 2.4.5.3.1-1 que comparten la columna de PERMANENTES: la
+# tabla les da una sola celda ("DC DD DW EH EV ES EL PS CR SH"), y donde esa
+# celda dice gamma_p hay que ir a la Tabla -2 fila por fila. Las demas cargas
+# de Sec. 9.2 -- LS, WA, EQ -- tienen columna propia y no cuelgan de gamma_p.
+CARGAS_PERMANENTES = ("DC", "EV", "EH")
+
+# El cabezal, como elemento estructural de 'factores_carga_aashto'. M9 no
+# dimensiona ninguna otra cosa: el conducto es de Fase 8 y lo resuelve M8 con
+# el material del punto.
+ELEMENTO_CABEZAL = "cabezal"
+
+# DC no se elige: la Tabla 2.4.5.3.1-2 trae una sola fila de componentes
+# (1.25/0.90); la otra, "DC: Resistencia IV Solamente", es de una combinacion
+# que Sec. 9.2 no nombra.
+FILA_GAMMA_P_DC = "DC_componentes_y_auxiliares"
+
+
 def combinaciones() -> Tuple[CombinacionCarga, ...]:
     """
     Las tres combinaciones de Sec. 9.2 (AASHTO LRFD Sec. 3.4.1, via Manual de
     Puentes num. 2.4.5.3): Resistencia I, Servicio I y Evento Extremo I, con
     las cargas que participan en cada una.
 
-    Describe, no evalua: los nombres estan en el texto normativo citado, los
-    factores gamma no. Esta funcion no se detiene -- es la que M11 usa para
-    declarar QUE combinaciones rigen aunque el expediente todavia no haya
-    transcrito la Tabla 3.4.1-1.
+    Describe, no evalua: nombra que cargas entran en cada combinacion. Esta
+    funcion no se detiene -- es la que M11 usa para declarar QUE
+    combinaciones rigen aunque no se hayan evaluado. Los factores los
+    entrega `factores_de_carga`, que si necesita la eleccion de fila.
     """
     return tuple(
         CombinacionCarga(nombre=nombre, numeral=NUMERAL_COMBINACIONES,
@@ -840,13 +864,36 @@ def combinaciones() -> Tuple[CombinacionCarga, ...]:
 
 def factores_de_carga(nombre: str) -> dict:
     """
-    Factores gamma de una combinacion, por tipo de carga: Tablas 3.4.1-1 y
-    3.4.1-2 de AASHTO LRFD, declaradas en 'factores_carga_aashto' ([C]) y
-    anidadas por nombre de combinacion. Los factores de EH y EV son DOBLES
-    (maximo y minimo) y cual gobierna depende de si la carga estabiliza o
-    desestabiliza cada verificacion: tomar un solo numero por carga da del
-    lado inseguro en volteo, por eso el criterio los trae completos y esta
-    funcion no elige por quien la llama.
+    Factores gamma de una combinacion DEL CABEZAL, por tipo de carga: Tablas
+    2.4.5.3.1-1 y 2.4.5.3.1-2 del Manual de Puentes (= 3.4.1-1 y 3.4.1-2 de
+    AASHTO LRFD), [N] en `constantes_normativas`.
+
+    Los factores de EH y EV son DOBLES (maximo y minimo) y cual gobierna
+    depende de si la carga estabiliza o desestabiliza cada verificacion:
+    tomar un solo numero por carga da del lado inseguro en volteo, por eso
+    esta funcion los devuelve completos y no elige por quien la llama.
+
+    DEL CABEZAL, y hay que decirlo (NOR-PUE-03). La Tabla 2.4.5.3.1-2
+    desglosa el empuje vertical de tierra por TIPO DE ESTRUCTURA, y M9 modela
+    el cabezal como muro de contencion con zapata: su fila es "Muros y
+    estribos de retencion", 1.35 / 1.00. El minimo es 1.00 y NO 0.90 -- el
+    0.90 es de "Estructura rigida enterrada", la fila del conducto, que es lo
+    que consume V7 en Fase 8. Aplicarle al cabezal el 0.90 rebajaba un 10 %
+    el peso de tierra que ESTABILIZA E2 (volteo), E3 (deslizamiento) y la
+    flotacion, que es la direccion insegura. Que fila describe a cada
+    estructura lo declara 'factores_carga_aashto' ([A]); los numeros no salen
+    de ahi.
+
+    EH sale de la fila "Activa" porque el proyecto disena con empuje ACTIVO
+    (Mononobe-Okabe / Coulomb, ver 'inclinacion_muro_beta' y companeros), y
+    esa eleccion se declara en el mismo criterio. Las otras dos filas de EH
+    -- "En reposo" (1.35/0.90) y "AEP Para paredes ancladas" (1.35/N/A) --
+    estan en la tabla completa, con sus pares, para que se vea de que se
+    eligio.
+
+    La celda que la fuente marca N/A viaja como `GAMMA_P_NO_APLICA`: no es un
+    cero ni un olvido, es la fuente diciendo que esa fila no tiene ese
+    extremo. Ninguna de las dos filas que este proyecto usa lo lleva.
     """
     if nombre not in COMBINACIONES_AASHTO:
         raise DatoInvalidoError(
@@ -855,8 +902,58 @@ def factores_de_carga(nombre: str) -> dict:
             motivo=("no es una de las combinaciones de Sec. 9.2: "
                     + ", ".join(COMBINACIONES_AASHTO)),
         )
-    tabla = ca.valor(CRITERIO_FACTORES_CARGA)
-    return tabla[nombre]
+    eleccion = ca.valor(CRITERIO_FACTORES_CARGA)
+    filas_del_cabezal = (eleccion.get(ELEMENTO_CABEZAL)
+                         if hasattr(eleccion, "get") else None)
+    if not hasattr(filas_del_cabezal, "get"):
+        raise DatoInvalidoError(
+            campo=CRITERIO_FACTORES_CARGA, valor=eleccion,
+            motivo=f"Sec. 9.2 necesita saber que filas de gamma_p describen "
+                   f"al elemento '{ELEMENTO_CABEZAL}' y la declaracion no lo "
+                   "dice",
+        )
+
+    fila_combinacion = TABLA_COMBINACIONES_FILAS[nombre]
+    factores = {}
+    for carga in COMPONENTES_COMBINACION[nombre]:
+        if carga in CARGAS_PERMANENTES:
+            factores[carga] = _gamma_permanente(carga, fila_combinacion,
+                                                filas_del_cabezal)
+        else:
+            factores[carga] = fila_combinacion[carga]
+    return factores
+
+
+def _gamma_permanente(carga: str, fila_combinacion: dict,
+                      filas_del_cabezal: dict) -> dict:
+    """
+    El factor de una carga permanente en una combinacion. Si la Tabla
+    2.4.5.3.1-1 imprime un numero en la columna de permanentes (Servicio I y
+    Evento Extremo I imprimen 1.00), ese numero vale para las tres cargas; si
+    imprime el simbolo gamma_p, hay que bajar a la fila que la Tabla -2 da a
+    ESTA estructura y ESTA carga.
+
+    Evento Extremo I lleva 1.00 y no gamma_p en las dos fuentes, y no es un
+    descuido de transcripcion: C3.4.1 de AASHTO explica que antes de 2015 se
+    usaba un gamma_p mayor que 1.0 y que esa practica iba contra la filosofia
+    del estado limite de evento extremo.
+    """
+    celda = fila_combinacion["permanentes"]
+    if celda != GAMMA_P_MARCA:
+        # Copia: la celda es una constante [N] compartida por las tres cargas
+        # de la combinacion, y devolver el mismo objeto dejaria que quien lo
+        # reciba modifique la tabla normativa desde fuera.
+        return dict(celda)
+    fila = (FILA_GAMMA_P_DC if carga == "DC"
+            else filas_del_cabezal.get(carga))
+    if fila not in TABLA_GAMMA_P_FILAS:
+        raise DatoInvalidoError(
+            campo=CRITERIO_FACTORES_CARGA, valor=fila,
+            motivo=f"la carga '{carga}' del cabezal se declara en la fila "
+                   f"'{fila}', que no es una fila de {NUMERAL_TABLA_GAMMA_P}",
+        )
+    return {"max": TABLA_GAMMA_P_FILAS[fila]["max"],
+            "min": TABLA_GAMMA_P_FILAS[fila]["min"]}
 
 
 # ===========================================================================

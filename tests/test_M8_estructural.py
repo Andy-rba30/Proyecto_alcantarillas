@@ -12,14 +12,17 @@ Fase 8 (M8_estructural.py):
     peso_relleno_kn_m()              CriterioPendienteError:
                                       'peso_especifico_relleno_kn_m3' vacio;
                                       calculo directo con el criterio declarado.
-    factores_carga_flotacion()       'factores_carga_aashto' es [C] (AASHTO
-                                      LRFD 9a ed.): calcula directo, lee la
-                                      fila 'Resistencia I'. DatoInvalidoError
-                                      si la declaracion no trae la
-                                      combinacion, la fila o el extremo que
-                                      V7 pide. V7 dejo de ser un FS global:
-                                      es el equilibrio de factores de carga
-                                      LRFD.
+    factores_carga_flotacion()       las dos tablas del num. 2.4.5.3.1 son
+                                      [N] y 'factores_carga_aashto' es [A]
+                                      (la fila de gamma_p por estructura):
+                                      calcula directo sobre la fila
+                                      'Resistencia I'. DatoInvalidoError si
+                                      la eleccion no cubre el material,
+                                      nombra una fila que no esta en la
+                                      tabla, o nombra una cuyo extremo la
+                                      fuente marca N/A. V7 dejo de ser un FS
+                                      global: es el equilibrio de factores de
+                                      carga LRFD.
     cama_apoyo_relleno_lateral()     tabla 8.1, [N] literal, sin vacio.
     verificacion_diferida_estructural()  tupla de avisos, nunca calcula.
 """
@@ -109,20 +112,35 @@ def _declarar(monkeypatch, clave, valor):
                         original.__class__(**{**original.__dict__, "valor": valor}))
 
 
-TABLA_GAMMA_DEMO = {"Resistencia I": {"DC": {"min": 0.90, "max": 1.25},
-                                      "EV": {"min": 1.00, "max": 1.35},
-                                      "WA": {"min": 1.00, "max": 1.00}}}
+# La ELECCION de fila por estructura, que es lo que hoy declara el criterio.
+# Esta declara para el concreto la fila del CABEZAL -- muro de retencion,
+# minimo 1.00 -- para poder distinguir en un test que el gamma_EV sale de la
+# fila elegida y no de un par fijo. No es la eleccion del proyecto: la del
+# proyecto pone al conducto de concreto en "Estructura rigida enterrada".
+ELECCION_DEMO = {"concreto_reforzado": {"EV": "EV_muros_y_estribos_de_retencion"}}
 
 
-def test_factores_carga_flotacion_calcula_con_el_criterio_real():
+def test_factores_carga_flotacion_calcula_con_el_criterio_real(concreto):
     """
-    'factores_carga_aashto' es [C] (AASHTO LRFD 9a ed.): V7 ya no se detiene
-    aqui. Lee la fila 'Resistencia I' -- DC y EV con su MINIMO (0.90 los
-    dos), WA con su MAXIMO (1.00, no hay margen que tomar en esa carga).
+    Las dos tablas del num. 2.4.5.3.1 son [N] y la eleccion de fila esta
+    declarada: V7 ya no se detiene aqui.
+
+    Para el conducto de concreto la fila es "Estructura rigida enterrada"
+    (1.30/0.90): DC y EV entran con su MINIMO -- 0.90 los dos, el de DC de la
+    fila "DC: Componentes y Auxiliares" -- y WA con su MAXIMO (1.00, de la
+    Tabla 2.4.5.3.1-1; no hay margen que tomar en esa carga).
+
+    La fila viaja en el resultado, y ese es el punto de MAT-D8: la tabla
+    desglosa EV por TIPO DE ESTRUCTURA -- el HDPE cuelga de "Alcantarillas
+    termoplasticas" y el TMC de la subfila flexible "Entre otros" -- y un
+    conducto no es un muro. Los tres minimos enterrados valen 0.90, de modo
+    que V7 no cambia de numero; lo que cambia es que ya no se puede leer sin
+    decir de que fila sale.
     """
-    g = factores_carga_flotacion()
+    g = factores_carga_flotacion(material=concreto)
     assert (g.gamma_DC, g.gamma_EV, g.gamma_WA) == (0.90, 0.90, 1.00)
     assert g.criterio == "factores_carga_aashto"
+    assert "Estructura rigida enterrada" in g.fila_gamma_EV
 
 
 def test_fs_flotacion_ya_no_existe():
@@ -136,34 +154,59 @@ def test_fs_flotacion_ya_no_existe():
     assert not hasattr(M8, "fs_flotacion")
 
 
-def test_los_gamma_de_v7_salen_del_criterio_y_con_el_extremo_correcto(monkeypatch):
+def test_los_gamma_de_v7_salen_de_la_fila_elegida_y_con_el_extremo_correcto(
+        concreto, monkeypatch):
     """
     DC y EV estabilizan la flotacion: entran con su gamma MINIMO. WA (la
     subpresion) desestabiliza: entra con el MAXIMO. Tomar el maximo de EV
     seria el error clasico, y aqui daria del lado inseguro.
+
+    Se declara para el concreto la fila del muro de retencion, cuyo minimo es
+    1.00: el gamma_EV cambia con ella, que es la prueba de que sale de la
+    fila declarada y no de un par escrito en el codigo.
     """
-    _declarar(monkeypatch, "factores_carga_aashto", TABLA_GAMMA_DEMO)
-    g = factores_carga_flotacion()
+    _declarar(monkeypatch, "factores_carga_aashto", ELECCION_DEMO)
+    g = factores_carga_flotacion(material=concreto)
     assert (g.gamma_DC, g.gamma_EV, g.gamma_WA) == (0.90, 1.00, 1.00)
     assert g.criterio == "factores_carga_aashto"
 
 
-def test_una_tabla_de_gamma_incompleta_es_dato_invalido(monkeypatch):
-    """Falta la fila WA: el problema esta en la declaracion, no en el programa."""
+def test_una_eleccion_que_no_cubre_el_material_es_dato_invalido(hdpe,
+                                                                monkeypatch):
+    """
+    Falta el HDPE en la declaracion: el problema esta en lo que el revisor
+    escribio, no en el programa. Antes este hueco no se podia ni expresar --
+    el criterio traia un par unico para todas las estructuras -- y esa es
+    justamente la forma en que MAT-D8 pasaba inadvertido.
+    """
+    _declarar(monkeypatch, "factores_carga_aashto", ELECCION_DEMO)
+    with pytest.raises(DatoInvalidoError) as excinfo:
+        factores_carga_flotacion(material=hdpe)
+    assert "hdpe" in str(excinfo.value)
+
+
+def test_una_fila_que_no_es_de_la_tabla_es_dato_invalido(concreto, monkeypatch):
+    """
+    La eleccion nombra una fila de la Tabla 2.4.5.3.1-2, y se contrasta
+    contra la tabla: ni un nombre inventado ni una fila cuyo extremo la
+    fuente marca N/A pasan como gamma. Las dos son dato invalido, no
+    KeyError ni None.
+    """
     _declarar(monkeypatch, "factores_carga_aashto",
-              {"Resistencia I": {"DC": {"min": 0.90, "max": 1.25},
-                                 "EV": {"min": 1.00, "max": 1.35}}})
+              {"concreto_reforzado": {"EV": "EV_fila_que_no_existe"}})
     with pytest.raises(DatoInvalidoError) as excinfo:
-        factores_carga_flotacion()
-    assert "WA" in str(excinfo.value)
+        factores_carga_flotacion(material=concreto)
+    assert "EV_fila_que_no_existe" in str(excinfo.value)
 
-
-def test_una_tabla_sin_la_combinacion_resistencia_i_es_dato_invalido(monkeypatch):
-    """Falta la fila 'Resistencia I' entera: tambien es dato invalido, no KeyError."""
-    _declarar(monkeypatch, "factores_carga_aashto", {"Servicio I": {}})
+    # Y una fila que SI existe pero cuyo minimo la fuente marca N/A:
+    # "Estabilidad global" no tiene minimo, y eso no es un cero ni una
+    # omision. Es la otra cara de MAT-D15 / NOR-AAS-04, donde el N/A de una
+    # fila se leyo como "la fuente no declara minimo" para otra.
+    _declarar(monkeypatch, "factores_carga_aashto",
+              {"concreto_reforzado": {"EV": "EV_estabilidad_global"}})
     with pytest.raises(DatoInvalidoError) as excinfo:
-        factores_carga_flotacion()
-    assert "Resistencia I" in str(excinfo.value)
+        factores_carga_flotacion(material=concreto)
+    assert "N/A" in str(excinfo.value)
 
 
 def test_el_NF_ya_no_es_un_criterio_de_este_modulo():

@@ -37,8 +37,10 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
          diametro EXTERIOR (num. 2.4.3.8.2 -- volumen desplazado, MAT-D3) y
          por eso se detiene en 'espesor_pared_conducto'. El peso del relleno
          se detiene ademas en 'peso_especifico_relleno_kn_m3'. Los factores
-         gamma salen de 'factores_carga_aashto' ([C], AASHTO LRFD 9a ed.,
-         Tablas 3.4.1-1/-2, fila 'Resistencia I'): esos no se detienen.
+         gamma son [N] y estan en constantes_normativas (las dos tablas del
+         num. 2.4.5.3.1, fila 'Resistencia I'); de 'factores_carga_aashto'
+         ([A]) sale solo QUE FILA de gamma_p describe al conducto de cada
+         material: ninguno de los dos se detiene.
 
     4    Cama de apoyo y relleno lateral segun EG-2013 (8.1).
          `cama_apoyo_relleno_lateral()` -- SI implementada: la tabla 8.1
@@ -69,16 +71,22 @@ demanda LRFD con un FS de tension admisible.
 
 La forma correcta en LRFD es un equilibrio de factores de carga: se MINORAN
 las cargas que estabilizan (peso propio DC y peso del relleno EV, con sus
-gamma MINIMOS de la Tabla 3.4.1-2) y se MAYORA la que desestabiliza (la
-subpresion, carga de agua WA, con su gamma de la Tabla 3.4.1-1),
+gamma MINIMOS de la Tabla 2.4.5.3.1-2) y se MAYORA la que desestabiliza (la
+subpresion, carga de agua WA, con su gamma de la Tabla 2.4.5.3.1-1),
 
     gamma_DC_min * DC + gamma_EV_min * EV  >=  gamma_WA * U
 
-que con los minimos de la tabla es la forma 0.90*(DC + EV) >= 1.00*U. Los
-gamma NO estan escritos en este modulo: salen de 'factores_carga_aashto', el
-mismo criterio del que come M9 (Sec. 9.2). Que las dos fases lean la misma
-declaracion es justamente lo que impide que el expediente tenga dos juegos de
-factores de carga distintos.
+que para un conducto enterrado es la forma 0.90*(DC + EV) >= 1.00*U. Los
+gamma NO estan escritos en este modulo: son [N] y viven en
+constantes_normativas, y de que FILA de gamma_p cuelga cada estructura lo
+declara 'factores_carga_aashto', el mismo criterio del que come M9
+(Sec. 9.2). Que las dos fases lean las mismas tablas y la misma declaracion
+es justamente lo que impide que el expediente tenga dos juegos de factores de
+carga distintos -- y que las lean POR ESTRUCTURA es lo que impide lo
+contrario, que el conducto herede el factor del muro o al reves: la Tabla
+2.4.5.3.1-2 da 0.90 de minimo a la estructura enterrada y 1.00 al muro de
+retencion, y durante un tiempo el proyecto uso un unico par que no era
+ninguna de las dos filas (MAT-D8, NOR-PUE-03).
 
 Consecuencia de taxonomia: 'FS_flotacion' se RETIRO de criterios_adoptados.py.
 No se le redefinio el contenido porque en LRFD no queda nada que represente:
@@ -99,7 +107,10 @@ INSEGURO (MAT-D3): una omision es conservadora o no segun de que lado del
 equilibrio caiga, y hay que decir de cual. Que su gamma sea el MINIMO (0.90, no
 1.25) va en la misma direccion y por la misma razon: en flotacion el peso
 propio ayuda, y en LRFD lo que ayuda se minora. Se declara aqui, en cada
-resultado y en la memoria, en vez de aproximar en silencio.
+resultado y en la memoria, en vez de aproximar en silencio. Ese 0.90 es el
+minimo de la fila "DC: Componentes y Auxiliares" de la Tabla 2.4.5.3.1-2, la
+unica fila de DC que Sec. 9.2 puede usar: la otra, "DC: Resistencia IV
+Solamente", es de una combinacion que Sec. 9.2 no nombra.
 
 Por que U asume sumersion completa
 -------------------------------------
@@ -126,7 +137,12 @@ Excepciones
                              de EV, via modulos.M2_material.diametro_exterior);
                              'peso_especifico_relleno_kn_m3' (V7, via
                              modulos.M5_verificaciones.v7_flotacion).
-                             'factores_carga_aashto' ya no esta vacio ([C]).
+                             'factores_carga_aashto' ya no esta vacio ([A]:
+                             la eleccion de fila de gamma_p por estructura).
+    DatoInvalidoError        la eleccion de 'factores_carga_aashto' no cubre
+                             el material del punto, nombra una fila que no
+                             esta en la Tabla 2.4.5.3.1-2, o nombra una cuyo
+                             extremo la fuente declara N/A.
 
 Uso
 ---
@@ -144,7 +160,12 @@ from typing import Tuple
 
 import criterios_adoptados as ca
 from constantes_fisicas import GAMMA_AGUA_KN_M3
-from constantes_normativas import CAMA_RELLENO_LATERAL
+from constantes_normativas import (CAMA_RELLENO_LATERAL,
+                                   GAMMA_P_NO_APLICA,
+                                   NUMERAL_TABLA_GAMMA_P,
+                                   TABLA_COMBINACIONES_FILAS,
+                                   TABLA_GAMMA_P_FILAS,
+                                   fila_gamma_p_legible)
 from modelos import (CamaApoyoRelleno, DatoInvalidoError, FactoresFlotacion,
                      Material, ReferenciaNormativa)
 
@@ -165,21 +186,30 @@ NUMERAL_8_1 = ReferenciaNormativa(
 )
 NUMERAL_8_5 = "Fase 8, item 5"
 NUMERAL_V7 = ("Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; "
-              "factores de carga: AASHTO LRFD Tablas 3.4.1-1 y 3.4.1-2)")
+              "factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y "
+              "2.4.5.3.1-2, pag. impresa 143)")
 
 CRITERIO_CLASES_PRODUCTO = "clases_producto_por_relleno"
 CRITERIO_FACTORES_CARGA = "factores_carga_aashto"
 CRITERIO_PESO_RELLENO = "peso_especifico_relleno_kn_m3"
 
-# Tipos de carga de las Tablas 3.4.1-1/-2 que intervienen en V7, y con que
-# extremo entra cada uno. En flotacion, DC y EV ESTABILIZAN (se minoran, gamma
-# minimo) y WA DESESTABILIZA (se mayora, gamma maximo). Los nombres viajan
-# aqui, los NUMEROS en 'factores_carga_aashto': este modulo no declara ninguno.
+# Tipos de carga de las Tablas 2.4.5.3.1-1/-2 que intervienen en V7, y con
+# que extremo entra cada uno. En flotacion, DC y EV ESTABILIZAN (se minoran,
+# gamma minimo) y WA DESESTABILIZA (se mayora, gamma maximo). Los nombres
+# viajan aqui; los NUMEROS estan en constantes_normativas ([N], las dos tablas
+# del num. 2.4.5.3.1 completas) y la ELECCION de fila en
+# 'factores_carga_aashto' ([A]). Este modulo no declara ni una cosa ni la otra.
 CARGA_PESO_PROPIO = "DC"
 CARGA_RELLENO = "EV"
 CARGA_AGUA = "WA"
 EXTREMO_ESTABILIZANTE = "min"
 EXTREMO_DESESTABILIZANTE = "max"
+
+# DC no se elige: la Tabla 2.4.5.3.1-2 tiene una sola fila de componentes
+# (1.25/0.90) y la otra, "DC: Resistencia IV Solamente", pertenece a una
+# combinacion que Sec. 9.2 no usa. Por eso la fila esta aqui y no en el
+# criterio: no hay eleccion que declarar.
+FILA_GAMMA_P_DC = "DC_componentes_y_auxiliares"
 
 
 # ---------------------------------------------------------------------------
@@ -265,71 +295,118 @@ def peso_relleno_kn_m(*, D_exterior: float, altura_relleno: float) -> float:
 COMBINACION_V7 = "Resistencia I"
 # V7 es un equilibrio de factores de carga LRFD -- MINORA lo que estabiliza
 # (DC, EV) y MAYORA lo que desestabiliza (WA) -- y esos son exactamente los
-# extremos que trae Resistencia I (Strength I) en la Tabla 3.4.1-1/-2; las
-# otras dos combinaciones (Servicio I, Evento Extremo I) colapsan DC/EV/WA a
-# 1.00 y no aportarian el margen que V7 exige. Se fija aqui, no en el
-# criterio: 'factores_carga_aashto' declara las TRES combinaciones (Sec. 9.2
-# de M9 las necesita todas), y cual de las tres usa V7 es una decision de
-# este modulo, no del dato.
+# extremos que trae Resistencia I (Strength I) en las Tablas 2.4.5.3.1-1/-2;
+# las otras dos combinaciones (Servicio I, Evento Extremo I) colapsan las
+# cargas permanentes y WA a 1.00 y no aportarian el margen que V7 exige. Se
+# fija aqui, no en constantes_normativas: la tabla trae las tres combinaciones
+# (Sec. 9.2 de M9 las necesita todas), y cual de las tres usa V7 es una
+# decision de este modulo, no del dato.
 
 
-def factores_carga_flotacion() -> FactoresFlotacion:
+def factores_carga_flotacion(*, material: Material) -> FactoresFlotacion:
     """
-    Los tres gamma que V7 necesita, leidos de la fila 'Resistencia I' de
-    'factores_carga_aashto' (Tablas 3.4.1-1 y 3.4.1-2 de AASHTO LRFD): el
-    MINIMO de DC y de EV, que son las cargas estabilizantes, y el de WA, que
-    es la desestabilizante.
+    Los tres gamma que V7 necesita para EL CONDUCTO DE ESTE MATERIAL: el
+    MINIMO de DC y el de EV, que son las cargas estabilizantes, y el de WA,
+    que es la desestabilizante.
 
-    'factores_carga_aashto' es [C] (AASHTO LRFD 9a ed., Tablas 3.4.1-1/-2) y
-    es el MISMO criterio que consumen las combinaciones de M9 (Sec. 9.2):
-    dos juegos de factores de carga en un mismo expediente es exactamente la
-    contradiccion que Sec. 0.7 existe para impedir.
+    De donde sale cada uno, que ya no es de un solo sitio:
 
-    Forma esperada del criterio: un dict por combinacion, y dentro de cada
-    combinacion un dict por tipo de carga con sus dos extremos::
+      * gamma_DC y gamma_EV son de la Tabla 2.4.5.3.1-2 (gamma_p), [N],
+        transcrita completa en `constantes_normativas.TABLA_GAMMA_P_FILAS`.
+      * gamma_WA es de la fila "Resistencia I" de la Tabla 2.4.5.3.1-1, [N],
+        en `TABLA_COMBINACIONES_FILAS`.
+      * QUE FILA de gamma_p describe a este conducto lo declara
+        'factores_carga_aashto' ([A]), indexado por material.
 
-        {"Resistencia I": {"DC": {"min": ..., "max": ...},
-                           "EV": {"min": ..., "max": ...},
-                           "WA": {"min": ..., "max": ...}, ...},
-         "Servicio I": {...}, "Evento Extremo I": {...}}
+    POR QUE ESTA FUNCION RECIBE EL MATERIAL (MAT-D8, NOR-PUE-03). Antes leia
+    un par unico de EV, {max 1.35, min 0.90}, que no es ninguna fila de la
+    tabla: mezclaba el maximo de "Muros y estribos de retencion" con el
+    minimo de "Estructura rigida enterrada". La tabla desglosa EV por TIPO DE
+    ESTRUCTURA, y un conducto enterrado no es un muro: el tubo de concreto
+    cuelga de "Estructura rigida enterrada" (1.30/0.90), el HDPE de
+    "Alcantarillas termoplasticas" (1.30/0.90) y el TMC de la subfila
+    flexible "Entre otros" (1.95/0.90). Los tres minimos valen 0.90, de modo
+    que el numero que V7 usa hoy no cambia; lo que cambia es que ya no se
+    puede leer sin decir de que fila sale, que es lo que dejaba a un
+    consumidor futuro heredar el extremo de otra estructura.
+
+    Se detiene con `CriterioPendienteError` si la eleccion no esta declarada,
+    y con `DatoInvalidoError` si lo declarado no cubre a este material o
+    nombra una fila que no es de la tabla.
     """
-    tabla = ca.valor(CRITERIO_FACTORES_CARGA)
-    fila_combinacion = tabla.get(COMBINACION_V7) if hasattr(tabla, "get") else None
-    if fila_combinacion is None:
-        raise DatoInvalidoError(
-            campo=CRITERIO_FACTORES_CARGA, valor=tabla,
-            motivo=f"V7 necesita la combinacion '{COMBINACION_V7}' "
-                   f"declarada en '{CRITERIO_FACTORES_CARGA}' y la "
-                   "declaracion no la trae",
-        )
+    eleccion = ca.valor(CRITERIO_FACTORES_CARGA)
+    fila_EV = _fila_elegida(eleccion, material.tipo.value, CARGA_RELLENO)
     return FactoresFlotacion(
-        gamma_DC=_gamma(fila_combinacion, CARGA_PESO_PROPIO, EXTREMO_ESTABILIZANTE),
-        gamma_EV=_gamma(fila_combinacion, CARGA_RELLENO, EXTREMO_ESTABILIZANTE),
-        gamma_WA=_gamma(fila_combinacion, CARGA_AGUA, EXTREMO_DESESTABILIZANTE),
+        gamma_DC=_gamma_p(FILA_GAMMA_P_DC, EXTREMO_ESTABILIZANTE),
+        gamma_EV=_gamma_p(fila_EV, EXTREMO_ESTABILIZANTE),
+        gamma_WA=_gamma_de_la_combinacion(CARGA_AGUA, EXTREMO_DESESTABILIZANTE),
         criterio=CRITERIO_FACTORES_CARGA,
+        fila_gamma_EV=fila_gamma_p_legible(fila_EV),
     )
 
 
-def _gamma(fila_combinacion, tipo_de_carga: str, extremo: str) -> float:
+def _fila_elegida(eleccion, elemento: str, tipo_de_carga: str) -> str:
     """
-    Un gamma de la fila de combinacion declarada, con el error del
-    expediente cuando la declaracion no trae la carga o el extremo que V7
-    pide. Es `DatoInvalidoError` y no `KeyError` porque el problema esta en
-    lo que el revisor escribio en 'factores_carga_aashto', no en el
-    programa.
+    La fila de gamma_p que el criterio declara para un elemento estructural,
+    con el error del EXPEDIENTE cuando la declaracion no lo cubre o nombra
+    una fila que la Tabla 2.4.5.3.1-2 no tiene. Es `DatoInvalidoError` y no
+    `KeyError` porque el problema esta en lo que el revisor escribio en
+    'factores_carga_aashto', no en el programa.
     """
-    fila = fila_combinacion.get(tipo_de_carga) if hasattr(fila_combinacion, "get") else None
-    if fila is None or not hasattr(fila, "get") or extremo not in fila:
+    del_elemento = eleccion.get(elemento) if hasattr(eleccion, "get") else None
+    fila = (del_elemento.get(tipo_de_carga)
+            if hasattr(del_elemento, "get") else None)
+    if not isinstance(fila, str):
         raise DatoInvalidoError(
-            campo=CRITERIO_FACTORES_CARGA, valor=fila_combinacion,
-            motivo=f"V7 necesita el gamma '{extremo}' de la carga "
-                   f"'{tipo_de_carga}' (combinacion '{COMBINACION_V7}', "
-                   "Tablas 3.4.1-1/-2) y la declaracion no lo trae. Se "
-                   f"espera un dict {{'{COMBINACION_V7}': "
-                   "{'DC': {'min': ..., 'max': ...}, 'EV': {...}, "
-                   "'WA': {...}}}",
+            campo=CRITERIO_FACTORES_CARGA, valor=eleccion,
+            motivo=f"V7 necesita saber que fila de gamma_p describe al "
+                   f"elemento '{elemento}' para la carga '{tipo_de_carga}', y "
+                   "la declaracion no lo dice. Se espera un dict "
+                   "{'<elemento>': {'EV': '<clave de "
+                   "TABLA_GAMMA_P_FILAS>'}}",
         )
-    return float(fila[extremo])
+    if fila not in TABLA_GAMMA_P_FILAS:
+        raise DatoInvalidoError(
+            campo=CRITERIO_FACTORES_CARGA, valor=fila,
+            motivo=f"el elemento '{elemento}' se declara en la fila "
+                   f"'{fila}', que no es una fila de {NUMERAL_TABLA_GAMMA_P}",
+        )
+    return fila
+
+
+def _gamma_p(fila: str, extremo: str) -> float:
+    """
+    Un extremo de una fila de la Tabla 2.4.5.3.1-2, [N].
+
+    El N/A de la tabla NO es un cero ni una omision: hay filas -- "Estabilidad
+    global" y "AEP Para paredes ancladas" -- en las que la fuente declara que
+    ese extremo no existe. Pedirlo es un error del expediente y se dice asi,
+    en vez de dejar pasar un None que mas abajo seria un TypeError o, peor,
+    un numero inventado (MAT-D15, NOR-AAS-04).
+    """
+    valor_gamma = TABLA_GAMMA_P_FILAS[fila][extremo]
+    if valor_gamma is GAMMA_P_NO_APLICA:
+        raise DatoInvalidoError(
+            campo=CRITERIO_FACTORES_CARGA, valor=fila,
+            motivo=f"la fila '{fila}' de {NUMERAL_TABLA_GAMMA_P} declara N/A "
+                   f"en su extremo '{extremo}': la fuente dice que esa fila "
+                   "no tiene ese factor, de modo que no hay gamma que aplicar",
+        )
+    return float(valor_gamma)
+
+
+def _gamma_de_la_combinacion(tipo_de_carga: str, extremo: str) -> float:
+    """
+    Un gamma de la fila 'Resistencia I' de la Tabla 2.4.5.3.1-1, [N]. Es el
+    camino de las cargas que NO son permanentes -- aqui WA --, que no cuelgan
+    de la tabla de gamma_p y por lo tanto no tienen fila que elegir.
+
+    No lleva guardia de dato del expediente, a diferencia de la eleccion: esa
+    tabla es [N] y esta transcrita completa: si le faltara la carga WA no
+    seria un error del revisor sino de la transcripcion, o sea del programa,
+    y un KeyError es la senal honesta de eso.
+    """
+    return float(TABLA_COMBINACIONES_FILAS[COMBINACION_V7][tipo_de_carga][extremo])
 
 
 # ---------------------------------------------------------------------------

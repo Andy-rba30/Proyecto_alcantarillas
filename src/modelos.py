@@ -887,15 +887,26 @@ class FactoresFlotacion:
     papel, de un factor de seguridad global -- que es justo lo que V7 dejo
     de ser.
 
-    `gamma_DC` y `gamma_EV` son los MINIMOS de la Tabla 3.4.1-2: en flotacion
-    el peso propio y el peso del relleno estabilizan, y en LRFD lo que
-    estabiliza se minora. `gamma_WA` es el de la subpresion, que
-    desestabiliza y se mayora.
+    `gamma_DC` y `gamma_EV` son los MINIMOS de la Tabla 2.4.5.3.1-2: en
+    flotacion el peso propio y el peso del relleno estabilizan, y en LRFD lo
+    que estabiliza se minora. `gamma_WA` es el de la subpresion, que
+    desestabiliza y se mayora, y sale de la Tabla 2.4.5.3.1-1.
+
+    `fila_gamma_EV` es la fila LITERAL de la Tabla 2.4.5.3.1-2 de la que sale
+    `gamma_EV`, y viaja por la misma razon que el resto: esa tabla desglosa
+    el empuje vertical de tierra POR TIPO DE ESTRUCTURA -- un muro de
+    retencion y un conducto enterrado no llevan el mismo par -- y un gamma_EV
+    suelto no dice de cual de las seis filas salio. El par {1.35, 0.90} que
+    el proyecto uso durante un tiempo no era ninguna de ellas: mezclaba el
+    maximo de una con el minimo de otra (MAT-D8, NOR-PUE-03). Que la fila
+    llegue al resultado es lo que impide que eso vuelva a pasar sin que se
+    vea.
     """
     gamma_DC: float
     gamma_EV: float
     gamma_WA: float
     criterio: str
+    fila_gamma_EV: str
 
 
 @dataclass(frozen=True)
@@ -1358,10 +1369,17 @@ class CombinacionCarga:
     Extremo I.
 
     `componentes` nombra que cargas entran; `criterio_factores` apunta al
-    criterio de `criterios_adoptados.py` que tiene que entregar los factores
-    gamma. La hoja de ruta NOMBRA las combinaciones pero no transcribe la
-    Tabla 3.4.1-1, asi que este objeto describe la combinacion y no la
-    evalua: pedir los factores detiene el calculo (Sec. 0.7).
+    criterio de `criterios_adoptados.py` donde se declara QUE FILA de la
+    tabla de gamma_p describe a cada estructura. Este objeto describe la
+    combinacion y no la evalua.
+
+    Deciamos aqui que "la hoja de ruta NOMBRA las combinaciones pero no
+    transcribe la Tabla 3.4.1-1". Lo primero sigue siendo cierto y lo segundo
+    dejo de importar: las dos tablas del numeral 2.4.5.3.1 SI estan en el
+    corpus peruano -- Manual de Puentes, pag. impresa 143 -- y desde
+    NOR-PUE-04 estan transcritas como [N] en `constantes_normativas`. Pedir
+    los factores ya no detiene el calculo por falta de tabla; lo unico que
+    puede detenerlo es que falte la ELECCION de fila.
     """
 
     nombre: str                           # "Resistencia I", ...

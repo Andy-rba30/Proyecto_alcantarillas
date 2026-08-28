@@ -625,7 +625,7 @@ dependían de AASHTO LRFD:
 
 | Criterio | Valor que cierra el vacío | Fuente |
 |---|---|---|
-| `factores_carga_aashto` | DC 1.25/0.90, EV 1.35/0.90, EH 1.50/0.90 (activo) — tabla completa en el memo | Tabla 3.4.1-1/-2, transcrita también en el Manual de Puentes (págs. 143, 146) — puede citarse como `[N]` vía MTC, no hace falta AASHTO directo |
+| `factores_carga_aashto` | ~~DC 1.25/0.90, EV 1.35/0.90, EH 1.50/0.90 (activo)~~ **el EV de esta fila era el defecto `MAT-D8`/`NOR-PUE-03`: ver la corrección marcada ↻ más abajo. Hoy la tabla es `[N]` en `constantes_normativas` y el criterio guarda solo la elección de fila** | Tablas 2.4.5.3.1-1/-2 del Manual de Puentes, **las dos en la pág. impresa 143** (no 146) — `[N]` vía MTC, no hace falta AASHTO directo |
 | `recubrimiento_aashto_mm` | 75 mm contra el suelo (Cat. A) — **mayor que los 70 mm de E.060**, así que ahora gobierna este valor por la regla "rige el mayor" de §9.4 | AASHTO Tabla 5.10.1-1, pág. 5-169 |
 | `procedimiento_flexion_corte_aashto_sec5` | φ=0.90 flexión y corte; MCFT con β y θ analíticos (fórmulas completas en el memo) | Art. 5.5.4.2 y 5.7.3.4.2 |
 | `peso_especifico_concreto_kn_m3` | 23.56 kN/m³ (AASHTO) — la práctica regional/MTC redondea a 24.0 kN/m³, ambos defendibles | Tabla 3.5.1-1 + Comentario C3.5.1 |
@@ -698,7 +698,31 @@ bien.
 > posibilidad en tu mensaje anterior; la fuente verificada zanja la duda. Etiqueta `[N]`, citable
 > vía Manual de Puentes MTC directamente (págs. 143/146), sin necesidad de AASHTO como fuente
 > primaria si prefieres la cadena de citas más corta.
->
+
+**↻ CORRECCIÓN POSTERIOR — este prompt, tal como está escrito arriba, produjo el defecto
+`MAT-D8` / `NOR-PUE-03`, y se deja sin tocar por ser el registro de lo que se pidió.** Lo que
+está mal en él, verificado después contra el PDF:
+
+- **«el valor de EV mínimo es 0.90 según la tabla fuente — no 1.00» es falso tal como está
+  dicho.** La Tabla 2.4.5.3.1-2 no tiene un γ_EV único: desglosa el empuje vertical de tierra
+  **por tipo de estructura**. «Muros y estribos de retención» → 1.35 / **1.00**; «Estructura
+  rígida enterrada» → **1.30** / 0.90; «Pórticos rígidos» → 1.35 / 0.90; las tres flexibles →
+  1.50 · 1.30 · 1.95 / 0.90; «Estabilidad global» → 1.00 / N/A. El par `{1.35, 0.90}` que salió
+  de aquí **no es ninguna fila**: junta el máximo de la primera con el mínimo de la tercera. Para
+  el cabezal —que M9 modela como muro de contención— el mínimo es **1.00**, y el 0.90 rebajaba un
+  10 % el peso de tierra que estabiliza volteo, deslizamiento y flotación.
+- **«EH en reposo 1.35, sin mínimo» es falso** (`MAT-D15`, `NOR-AAS-04`): la fuente da «En
+  reposo 1.35 / **0.90**». El N/A es de la fila siguiente, «AEP para paredes ancladas».
+- **Las páginas «3-14/3-18» y «143/146» están mal**: la Tabla 3.4.1-1 está en la **3-17** de
+  AASHTO (la 3-14 es texto corrido sobre γ_TU) y las dos tablas del Manual están **las dos en la
+  pág. impresa 143** (la 146 es una lámina fotográfica).
+- **`γ_EQ` no es «0.50 o 0.00, por proyecto» a criterio del propietario**: AASHTO dice «shall be
+  determined on a **project-specific basis**»; el 0.0 es práctica de ediciones pasadas y el 0.50
+  una indicación de razonabilidad del comentario C3.4.1. Sigue siendo un **vacío declarado**.
+- Lo que **sí** era correcto en este prompt: la etiqueta `[N]` citable vía Manual de Puentes. El
+  Manual transcribe las dos tablas y por eso hoy son `[N]` en `constantes_normativas`; lo que es
+  `[A]` es la elección de fila (`NOR-PUE-04`).
+
 > **(2) `recubrimiento_aashto_mm`** — Tabla 5.10.1-1, AASHTO LRFD 9ª Ed., pág. 5-169, Categoría A
 > (acero convencional). Aviso antes de mapear a las tres claves de E.060: **AASHTO no organiza su
 > tabla por diámetro de barra como E.060** (≥3/4" / ≤5/8") — organiza por severidad de exposición.

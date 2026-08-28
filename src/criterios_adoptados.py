@@ -2327,70 +2327,192 @@ CRITERIOS: Dict[str, Criterio] = {
 
     # ----------------------- FASE 9: CABEZAL Y ALETAS ---------------------
     # Sec. 9.2 nombra las combinaciones y la cadena sismica; Sec. 9.3 da los
-    # FS; Sec. 9.4 remite el diseno a AASHTO LRFD Sec. 5. Lo que NO transcribe
-    # son las tablas numericas de esas tres remisiones. Cada vacio se declara
-    # aqui en vez de rellenarse con el valor "de siempre".
+    # FS; Sec. 9.4 remite el diseno a AASHTO LRFD Sec. 5. De las tablas
+    # numericas de esas tres remisiones, la hoja de ruta no transcribe
+    # ninguna; el corpus normativo peruano, en cambio, SI trae las dos de los
+    # factores de carga, y desde NOR-PUE-04 estan transcritas donde les
+    # corresponde -- `constantes_normativas.TABLA_GAMMA_P_FILAS` y
+    # `TABLA_COMBINACIONES_FILAS`, [N] -- y aqui queda solo la ELECCION de
+    # fila. Lo que sigue siendo vacio de tabla se declara aqui, cada uno con
+    # su razon, en vez de rellenarse con el valor "de siempre".
 
     "factores_carga_aashto": Criterio(
         valor={
-            "Resistencia I": {
-                "DC": {"max": 1.25, "min": 0.90},
-                "EV": {"max": 1.35, "min": 0.90},
-                "EH": {"max": 1.50, "min": 0.90},        # empuje ACTIVO -- caso de diseno del proyecto
-                "EH_en_reposo": {"max": 1.35},           # informativo: el proyecto disena con empuje activo, no en reposo
-                "LS": 1.75,
-                "WA": {"max": 1.00, "min": 1.00},
-            },
-            "Servicio I": {
-                "DC": {"max": 1.00, "min": 1.00},
-                "EV": {"max": 1.00, "min": 1.00},
-                "EH": {"max": 1.00, "min": 1.00},
-                "LS": 1.00,
-                "WA": {"max": 1.00, "min": 1.00},
-            },
-            "Evento Extremo I": {
-                "DC": {"max": 1.00, "min": 1.00},
-                "EV": {"max": 1.00, "min": 1.00},
-                "EH": {"max": 1.00, "min": 1.00},
-                "LS": "gamma_EQ",   # 0.50 o 0.00 -- a criterio del propietario, ver verificacion_pendiente
-                "WA": {"max": 1.00, "min": 1.00},
-                "EQ": {"max": 1.00, "min": 1.00},
-            },
+            # LA ELECCION, y nada mas que la eleccion: que FILA de la Tabla
+            # 2.4.5.3.1-2 [N] describe a cada estructura de esta obra. Los
+            # numeros no estan aqui ni pueden estarlo -- son las claves de
+            # `constantes_normativas.TABLA_GAMMA_P_FILAS`, que es donde vive
+            # la tabla completa. Ese reparto es el de F_PGA_TABLA / 'F_pga' y
+            # FACTOR_MURO_TABLA / 'factor_muro_eleccion'.
+            #
+            # Las tres primeras claves son los valores de `TipoMaterial`, el
+            # mismo indexado por material que ya usan 'D_max_catalogo',
+            # 'espesor_pared_conducto' y 'cobertura_minima_aashto'.
+
+            # Tubo de concreto reforzado enterrado bajo el terraplen. No es
+            # "Porticos rigidos" (1.35/0.90): un portico es un marco con
+            # patas, y el catalogo de Sec. 3.2 es circular -- la Familia C,
+            # de marco o multicelda, sale sin candidatos.
+            "concreto_reforzado": {"EV": "EV_estructura_rigida_enterrada"},
+
+            # TMC. Es estructura flexible enterrada, y de las tres subfilas
+            # flexibles le toca la de "Entre otros" (1.95/0.90): no es
+            # alcantarilla cajon metalica, no es de fibra de vidrio, y no es
+            # una plancha estructural. AQUI HAY QUE DECLARAR UNA DIVERGENCIA
+            # DE LA FUENTE PERUANA: AASHTO 9a ed. restringe esa fila a
+            # "Structural Plate Culverts with DEEP Corrugations" y el Manual
+            # traduce "plancas estructurales con corrugaciones", sin
+            # "profundas". Leido al pie de la letra, el Manual dejaria caer
+            # ahi cualquier tubo corrugado y le daria 1.50 en vez de 1.95. Se
+            # elige "Entre otros" por dos razones que apuntan al mismo lado:
+            # es lo que sostiene la fuente primaria (un tubo corrugado no es
+            # una plancha estructural) y es el maximo mas alto de las tres,
+            # o sea el extremo conservador cuando EV desestabiliza.
+            "tmc": {"EV": "EV_flexibles_entre_otros"},
+
+            # HDPE: la subfila flexible es literal, "Alcantarillas
+            # termoplasticas" (1.30/0.90). No hay eleccion que discutir.
+            "hdpe": {"EV": "EV_flexibles_alcantarillas_termoplasticas"},
+
+            # El cabezal. M9 lo modela como muro de contencion con zapata, y
+            # esa es la fila "Muros y estribos de retencion" (1.35/1.00). Su
+            # MINIMO es 1.00, no 0.90 (NOR-PUE-03). Y "EH_activa" porque el
+            # proyecto disena con empuje ACTIVO -- Mononobe-Okabe / Coulomb,
+            # ver 'inclinacion_muro_beta' y companeros --, no en reposo.
+            "cabezal": {"EV": "EV_muros_y_estribos_de_retencion",
+                        "EH": "EH_activa"},
         },
-        etiqueta="C",
-        concepto="Factores gamma de las tres combinaciones de Sec. 9.2 "
-                 "(Resistencia I, Servicio I, Evento Extremo I) por tipo de "
-                 "carga: DC, EV, EH, LS, WA, EQ, con sus maximos y minimos",
-        justificacion="Sec. 9.2 NOMBRA las tres combinaciones con numeral "
-                      "(2.4.5.3, AASHTO LRFD Sec. 3.4.1) pero no transcribia "
-                      "la Tabla 3.4.1-1 ni la 3.4.1-2. Sin los factores, una "
-                      "combinacion es una lista de cargas, no una demanda. "
-                      "CERRADO por verificacion externa contra la fuente: "
-                      "los factores de EH y EV son DOBLES (gamma maximo y "
-                      "minimo) y cual de los dos gobierna depende de si la "
-                      "carga estabiliza o desestabiliza cada verificacion -- "
-                      "escribir 1.35 para el empuje de tierras en todas las "
-                      "filas habria sido el error clasico y da del lado "
-                      "inseguro en volteo; la tabla fuente da EV minimo "
-                      "0.90, no 1.00. La Tabla 3.4.1-2 ademas distingue EH "
-                      "activo (1.50/0.90) de EH en reposo (1.35, sin minimo "
-                      "declarado por la fuente): el proyecto disena con "
-                      "empuje ACTIVO (Mononobe-Okabe/Coulomb, ver "
-                      "'inclinacion_muro_beta' y companeros), asi que 'EH' "
-                      "es el activo y 'EH_en_reposo' queda solo como dato "
-                      "informativo de la tabla. Evento Extremo I lleva "
-                      "gamma_EQ en la carga LS, que la propia AASHTO deja a "
-                      "criterio del propietario (0.50 o 0.00): no se fija "
-                      "aqui un numero, se declara la eleccion pendiente",
-        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., Tablas "
-               "3.4.1-1 (pag. 3-14) y 3.4.1-2 (pag. 3-18); transcritas "
-               "tambien en Manual de Puentes MTC, pags. 143 y 146",
-        verificacion_pendiente="gamma_EQ (carga LS de Evento Extremo I) "
-                               "queda a criterio del propietario del "
-                               "proyecto (0.50 o 0.00, AASHTO LRFD "
-                               "C3.4.1): declarar en la memoria cual se "
-                               "adopta y por que, antes de evaluar esa "
-                               "combinacion",
+        etiqueta="A",
+        concepto="Que fila de la Tabla 2.4.5.3.1-2 (factores gamma_p de "
+                 "cargas permanentes) describe a cada estructura de esta "
+                 "obra: los tres conductos del catalogo, por material, y el "
+                 "cabezal. La TABLA es [N] y vive en constantes_normativas; "
+                 "aqui solo esta la eleccion de fila",
+        justificacion="POR QUE ESTE CRITERIO CAMBIO DE FORMA Y DE ETIQUETA "
+                      "(cluster C03: MAT-D8, MAT-D15, NOR-PUE-03, NOR-PUE-04, "
+                      "NOR-AAS-04). Antes transcribia aqui los gamma de las "
+                      "tres combinaciones, con etiqueta [C] y un unico par "
+                      "para EV, {max 1.35, min 0.90}. Ese par NO ES NINGUNA "
+                      "FILA de la tabla: toma el maximo de 'Muros y estribos "
+                      "de retencion' (1.35/1.00) y el minimo de 'Estructura "
+                      "rigida enterrada' (1.30/0.90). Un criterio con un solo "
+                      "par no puede expresar lo que la fuente desglosa por "
+                      "TIPO DE ESTRUCTURA, y el dano no era hipotetico: para "
+                      "el cabezal, que la tabla clasifica como muro de "
+                      "retencion, el minimo es 1.00 y usar 0.90 rebaja un "
+                      "10 % el peso de tierra que ESTABILIZA el volteo, el "
+                      "deslizamiento y la flotacion, que es la direccion "
+                      "insegura (NOR-PUE-03). Y no se podia arreglar "
+                      "cambiando el par por otro par: del par viejo, V7 leia "
+                      "el minimo -- 0.90, que es el correcto para una "
+                      "estructura enterrada -- y del cabezal se leia el "
+                      "maximo -- 1.35, que es el correcto para un muro --, de "
+                      "modo que cualquier par unico habria roto uno de los "
+                      "dos. La correccion es el desglose.  "
+                      "LA ETIQUETA PASA DE [C] A [A] Y NO ES UN ABLANDAMIENTO. "
+                      "[C] significa vacio normativo cubierto con una fuente "
+                      "tecnica reconocida, y aqui no habia vacio: el Manual de "
+                      "Puentes -- norma peruana vigente -- transcribe las dos "
+                      "tablas completas, con sus valores, en la pag. impresa "
+                      "143, que es una de las paginas que este mismo criterio "
+                      "citaba al declarar el vacio (NOR-PUE-04). Los numeros "
+                      "son entonces [N] y estan en constantes_normativas; lo "
+                      "unico elegido -- y por eso lo unico que queda aqui -- "
+                      "es que fila describe a cada estructura, que es [A] "
+                      "por el reparto que este proyecto ya aplica dos veces "
+                      "-- F_PGA_TABLA / 'F_pga' y FACTOR_MURO_TABLA / "
+                      "'factor_muro_eleccion' --: la tabla es [N] y vive en "
+                      "el Anexo B (Sec. 0.7 de la hoja de ruta: alli solo van "
+                      "constantes [N] con numeral verificado), y elegir una "
+                      "fila no convierte la eleccion en norma. "
+                      "LA AFIRMACION SOBRE EH EN REPOSO ERA FALSA, y se "
+                      "retira (MAT-D15, NOR-AAS-04). Este criterio decia que "
+                      "la Tabla 3.4.1-2 distingue 'EH activo (1.50/0.90) de "
+                      "EH en reposo (1.35, SIN MINIMO DECLARADO POR LA "
+                      "FUENTE)'. La fuente lo declara: 'En reposo. 1.35 / "
+                      "0.90' en el Manual, 'At-Rest 1.35 / 0.90' en AASHTO. "
+                      "El N/A pertenece a la fila SIGUIENTE, 'AEP Para "
+                      "paredes ancladas' (1.35 / N/A), que comparte el "
+                      "maximo 1.35: fue un corrimiento de una fila. Si el "
+                      "proyecto migrase alguna vez a empuje en reposo, esa "
+                      "afirmacion dejaba la combinacion desfavorable sin "
+                      "minimo. Las tres filas de EH estan hoy en "
+                      "TABLA_GAMMA_P_FILAS con sus pares completos, y el N/A "
+                      "de la fila que si lo tiene viaja como "
+                      "GAMMA_P_NO_APLICA para que pedirlo sea un error del "
+                      "expediente y no un silencio. "
+                      "LA OTRA AFIRMACION QUE SE RETIRA, por imprecisa: "
+                      "'la tabla fuente da EV minimo 0.90, no 1.00'. La tabla "
+                      "no tiene un 'EV minimo' unico. Muros y estribos: 1.00. "
+                      "Estructura rigida enterrada, porticos rigidos y las "
+                      "tres flexibles: 0.90. Estabilidad global: N/A. La "
+                      "frase era cierta solo para la fila del conducto y se "
+                      "estaba aplicando al cabezal. Hay que nombrar la fila, "
+                      "y por eso este criterio ahora NO PUEDE no nombrarla. "
+                      "gamma_EQ (carga viva de Evento Extremo I) sigue sin "
+                      "valor y sigue bloqueando esa combinacion: ver "
+                      "`verificacion_pendiente`",
+        fuente="LA TABLA (valores [N], no estan aqui): Manual de Puentes "
+               "(MTC) num. 2.4.5.3.1, Tabla 2.4.5.3.1-2 'Factores de carga "
+               "para cargas permanentes, gamma_p' y Tabla 2.4.5.3.1-1 "
+               "'Combinaciones de Carga y Factores de Carga', las DOS en la "
+               "pag. impresa 143 (PDF 144) de normas/'Puentes (Version "
+               "Libro).pdf'; transcritas en "
+               "constantes_normativas.TABLA_GAMMA_P_FILAS y "
+               "TABLA_COMBINACIONES_FILAS, con su correspondencia y sus "
+               "divergencias frente a AASHTO LRFD 9a ed. (2020), Tablas "
+               "3.4.1-2 (pag. impresa 3-18) y 3.4.1-1 (pag. impresa 3-17). "
+               "LA ELECCION (esto, [A]): de que fila cuelga cada estructura "
+               "del proyecto, decidido por el proyectista y sostenido en la "
+               "descripcion literal de cada fila. "
+               "TRES PAGINAS QUE ESTE CAMPO CITABA MAL, verificadas una a una "
+               "leyendo el encabezado impreso del PDF y corregidas aqui: la "
+               "Tabla 3.4.1-1 NO esta en la pag. 3-14 de AASHTO (esa pagina "
+               "es texto corrido sobre gamma_TU, sin tabla) sino en la 3-17; "
+               "y las dos tablas del Manual no estan en las pags. 143 y 146 "
+               "sino las dos en la 143 -- la 146 es una lamina fotografica "
+               "sin numerar, 'PUENTE. CARACHA'. La Tabla 2.4.5.3.1-3, que "
+               "este proyecto no usa, esta en la 144. "
+               "ERRATA DE LA PROPIA FUENTE, anotada para no citarla mal: el "
+               "cuerpo del Manual en la pag. impresa 142 llama a estas tablas "
+               "'2.4.5.3-1' y '2.4.5.3-2', sin el '.1', mientras el rotulo "
+               "impreso sobre cada una dice '2.4.5.3.1-1' y '2.4.5.3.1-2'. Se "
+               "cita la forma del rotulo",
+        sensibilidad=("EV_estructura_rigida_enterrada", "EV_porticos_rigidos",
+                      "EV_muros_y_estribos_de_retencion",
+                      "EV_flexibles_entre_otros",
+                      "EV_flexibles_cajon_metalico_plancha_fibra_vidrio",
+                      "EV_flexibles_alcantarillas_termoplasticas"),
+        reemplazado_por="Nada normativo: la tabla no elige por el proyecto. "
+                        "Lo que cerraria la eleccion del TMC es que el MTC "
+                        "corrija la traduccion de la fila flexible de 1.50 "
+                        "('plancas estructurales con corrugaciones') "
+                        "reponiendo el 'profundas' que AASHTO exige; hasta "
+                        "entonces la frontera entre esa fila y 'Entre otros' "
+                        "la sostiene la fuente primaria y no la peruana",
+        verificacion_pendiente="gamma_EQ, el factor de la carga viva en "
+                               "Evento Extremo I, SIGUE SIN VALOR y bloquea "
+                               "esa combinacion: la Tabla 2.4.5.3.1-1 imprime "
+                               "el simbolo, no un numero. Y la atribucion con "
+                               "que este campo lo declaraba era falsa: decia "
+                               "'a criterio del propietario del proyecto "
+                               "(0.50 o 0.00, AASHTO LRFD C3.4.1)', y esa "
+                               "frase no existe en la 9a ed. -- 'discretion' "
+                               "no aparece ni una vez en el Art. 3.4.1 ni en "
+                               "su comentario. Lo que la fuente dice, literal, "
+                               "esta en constantes_normativas.GAMMA_EQ_TEXTO: "
+                               "el factor 'shall be determined on a "
+                               "project-specific basis' (Art. 3.4.1, pag. "
+                               "impresa 3-19); el 0.0 es practica de "
+                               "ediciones pasadas y el 0.50 una indicacion de "
+                               "razonabilidad del comentario C3.4.1, no dos "
+                               "opciones tabuladas a elegir. Declarar en la "
+                               "memoria el valor adoptado y su fundamento, "
+                               "antes de evaluar Evento Extremo I. TRAMPA "
+                               "CERCANA: el par '0.0 / 0.50' SI aparece "
+                               "tabulado en la pag. impresa 3-16, pero es de "
+                               "gamma_TG (gradiente de temperatura), otra "
+                               "carga",
     ),
 
     "peso_especifico_concreto_kn_m3": Criterio(

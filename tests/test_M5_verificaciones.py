@@ -17,9 +17,11 @@ M5 contra las nueve verificaciones de la tabla de Fase 5:
     V7              Fase 8 SI entrega procedimiento, y desde la correccion
                     del marco LRFD es un equilibrio de factores de carga
                     (gamma_DC*DC + gamma_EV*EV >= gamma_WA*U), no un FS
-                    global. 'factores_carga_aashto' es [C] (AASHTO LRFD 9a
-                    ed.) y ya no se detiene; el unico vacio que le queda a V7
-                    es 'peso_especifico_relleno_kn_m3'.
+                    global. Los gamma son [N] (Manual de Puentes, Tablas
+                    2.4.5.3.1-1/-2) y 'factores_carga_aashto' es [A] -- la
+                    fila de gamma_p que describe a cada estructura --, de
+                    modo que ya no se detiene; el unico vacio que le queda a
+                    V7 es 'peso_especifico_relleno_kn_m3'.
     V6              cumple por construccion: M2/MD no ofrecen diseño
                     multibarril.
     verificar()     el agregado con la firma de MD.Verificador: se detiene
@@ -38,6 +40,7 @@ from modelos import (ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
                      Familia, PuntoCritico, ResultadoHidraulico, TipoMaterial)
 from modulos.M2_material import catalogo
+from modulos.M8_estructural import factores_carga_flotacion
 from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        CRITERIO_V_MAX_CONCRETO,
                                        NUMERAL_V2, NUMERAL_V3,
@@ -501,18 +504,22 @@ def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
     assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
 
-TABLA_GAMMA_DEMO = {"Resistencia I": {"DC": {"min": 0.90, "max": 1.25},
-                                      "EV": {"min": 1.00, "max": 1.35},
-                                      "WA": {"min": 1.00, "max": 1.00}}}
+# La ELECCION de fila de gamma_p por estructura, que es lo que declara hoy
+# 'factores_carga_aashto'. Esta pone al conducto de concreto en la fila del
+# MURO DE RETENCION (minimo 1.00) para poder ver, en un test, que el gamma_EV
+# de V7 sale de la fila declarada. La eleccion del proyecto es otra:
+# "Estructura rigida enterrada", minimo 0.90.
+ELECCION_DEMO = {"concreto_reforzado": {"EV": "EV_muros_y_estribos_de_retencion"}}
 
 
 def test_v7_calcula_completo_en_cuanto_declara_el_peso_del_relleno(
         concreto, monkeypatch):
     """
-    'factores_carga_aashto' es [C] (AASHTO LRFD 9a ed.) y ya no se detiene:
-    el unico vacio que le queda a V7 es 'peso_especifico_relleno_kn_m3'.
-    Declarado ese, V7 calcula completo con los gamma REALES (Resistencia I:
-    DC y EV minimos 0.90, WA 1.00) sin tocar nada mas.
+    Los gamma son [N] y la eleccion de fila esta declarada: ya no se detiene
+    aqui. El unico vacio que le queda a V7 es 'peso_especifico_relleno_kn_m3'.
+    Declarado ese, V7 calcula completo con los gamma REALES sin tocar nada
+    mas: para el conducto de concreto, la fila "Estructura rigida enterrada"
+    da EV minimo 0.90, DC minimo 0.90 y WA 1.00.
     """
     original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
     monkeypatch.setitem(
@@ -550,7 +557,7 @@ def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
     por debajo del real, y esa es la carga desestabilizante.
     """
     for clave, val in (("peso_especifico_relleno_kn_m3", 18.0),
-                       ("factores_carga_aashto", TABLA_GAMMA_DEMO)):
+                       ("factores_carga_aashto", ELECCION_DEMO)):
         original = ca.CRITERIOS[clave]
         monkeypatch.setitem(
             ca.CRITERIOS, clave,
@@ -570,25 +577,28 @@ def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
 def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
     """
     El estabilizante y el desestabilizante llevan gamma DISTINTOS y cada uno
-    el suyo. Con una tabla en la que gamma_EV_min != gamma_WA, un FS global
-    no podria reproducir el resultado: es la prueba de que V7 dejo de serlo.
+    el suyo: con gamma_EV_min != gamma_WA, un FS global no podria reproducir
+    el resultado, y esa es la prueba de que V7 dejo de serlo.
+
+    Los dos gamma son los REALES y ya no hacen falta inventados: el conducto
+    de concreto cuelga de "Estructura rigida enterrada" y entra con su minimo
+    0.90, mientras WA entra con el 1.00 de la Tabla 2.4.5.3.1-1. La version
+    anterior de este test declaraba un WA de 1.25 para forzar la diferencia;
+    ese numero ya no se puede declarar, porque el factor de WA no es una
+    eleccion del proyecto sino una celda [N] de la tabla.
     """
-    for clave, val in (("peso_especifico_relleno_kn_m3", 18.0),
-                       ("factores_carga_aashto",
-                        {"Resistencia I": {
-                            "DC": {"min": 0.90, "max": 1.25},
-                            "EV": {"min": 0.90, "max": 1.35},
-                            "WA": {"min": 1.00, "max": 1.25}}})):
-        original = ca.CRITERIOS[clave]
-        monkeypatch.setitem(
-            ca.CRITERIOS, clave,
-            original.__class__(**{**original.__dict__, "valor": val}),
-        )
+    original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
+    monkeypatch.setitem(
+        ca.CRITERIOS, "peso_especifico_relleno_kn_m3",
+        original.__class__(**{**original.__dict__, "valor": 18.0}),
+    )
+    g = factores_carga_flotacion(material=concreto)
+    assert g.gamma_EV != g.gamma_WA         # un FS global no distingue los dos
     v = v7_flotacion(punto=_punto(), material=concreto, D=0.90,
                      resultado=_resultado())
-    assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
+    assert v.valor_obtenido == pytest.approx(g.gamma_EV * 18.81, abs=1e-6)
     assert v.valor_admisible == pytest.approx(
-        1.25 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
+        g.gamma_WA * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
 
 
 def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
@@ -602,7 +612,8 @@ def test_los_criterios_nuevos_estan_declarados_vacios():
     for clave in ("remanso_derecho_via", "peso_especifico_relleno_kn_m3",
                  "TR_evento_extremo"):
         assert clave in ca.criterios_sin_valor()
-    # 'factores_carga_aashto' se cerro como [C] (AASHTO LRFD 9a ed.)
+    # 'factores_carga_aashto' no es un vacio: declara la fila de gamma_p de
+    # cada estructura, y los gamma en si son [N] (NOR-PUE-04)
     assert "factores_carga_aashto" not in ca.criterios_sin_valor()
 
 

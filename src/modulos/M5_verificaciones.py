@@ -106,9 +106,10 @@ equilibrio de factores de carga que corresponde al marco LRFD de Sec. 0.2:
 
 Lo que sigue pendiente son dos DATOS puntuales del procedimiento, no el
 procedimiento: el peso especifico del relleno
-('peso_especifico_relleno_kn_m3') y los factores gamma
-('factores_carga_aashto', el mismo criterio del que come M9). Ver el docstring
-de `v7_flotacion` mas abajo.
+('peso_especifico_relleno_kn_m3') y la eleccion de fila de gamma_p
+('factores_carga_aashto', el mismo criterio del que come M9; los gamma en si
+son [N] y estan en constantes_normativas). Ver el docstring de `v7_flotacion`
+mas abajo.
 
 Consecuencia practica: mientras 'remanso_derecho_via', 'TR_evento_extremo' y
 los dos criterios de V7 sigan vacios, `verificar()` (y por lo tanto
@@ -246,8 +247,9 @@ NUMERAL_V4 = ReferenciaNormativa(
 NUMERAL_V5 = "Fase 5, V5 (DG-2018 + Ley 29338)"
 NUMERAL_V6 = "3.1"
 NUMERAL_V7 = ("Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; "
-              "equilibrio de factores de carga: AASHTO LRFD Tablas 3.4.1-1 y "
-              "3.4.1-2, via el criterio 'factores_carga_aashto'; "
+              "equilibrio de factores de carga: Manual de Puentes Tablas "
+              "2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de "
+              "gamma_p elegida por estructura en 'factores_carga_aashto'; "
               "procedimiento: Fase 8, item 3)")
 NUMERAL_V8 = "Fase 5, V8"
 NUMERAL_V9 = "Sec. 3.2 (V9, nuevo en v7)"
@@ -837,8 +839,18 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
 
     Se minoran las cargas que estabilizan -- peso propio del conducto (DC) y
     peso del relleno sobre la clave (EV), con sus gamma MINIMOS de la Tabla
-    3.4.1-2 -- y se mayora la subpresion, que desestabiliza (WA, Tabla
-    3.4.1-1). Con los minimos de la tabla es la forma 0.90*(DC + EV) >= 1.00*U.
+    2.4.5.3.1-2 -- y se mayora la subpresion, que desestabiliza (WA, Tabla
+    2.4.5.3.1-1). Para un conducto enterrado es la forma
+    0.90*(DC + EV) >= 1.00*U.
+
+    EL gamma DE EV DEPENDE DEL MATERIAL, y por eso esta funcion le pasa el
+    suyo a `factores_carga_flotacion`. La Tabla 2.4.5.3.1-2 desglosa el
+    empuje vertical de tierra por TIPO DE ESTRUCTURA: el tubo de concreto es
+    "Estructura rigida enterrada", el HDPE una "Alcantarilla termoplastica" y
+    el TMC una estructura flexible de la subfila "Entre otros". Los tres
+    minimos valen 0.90 y el numero de V7 no cambia por esto; lo que cambia es
+    que la fila de la que sale queda dicha, en vez de heredarse de un par
+    unico que no era ninguna fila de la tabla (MAT-D8, NOR-PUE-03).
 
     NO es un FS global. La fila V7 de la hoja de ruta lo enuncia como
     ΣW >= FS*U, que es lenguaje de tension admisible; Sec. 0.2 adopta AASHTO
@@ -877,8 +889,9 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     es conservador, reduce el lado estabilizante en vez de inflarlo.
 
     Se detiene en 'peso_especifico_relleno_kn_m3' (el termino EV) o en
-    'factores_carga_aashto' (los gamma), los dos vacios que le faltan al
-    procedimiento -- no en un vacio de METODO: ver el docstring del modulo.
+    'factores_carga_aashto' (la eleccion de fila de gamma_p), los dos vacios
+    que le faltan al procedimiento -- no en un vacio de METODO: ver el
+    docstring del modulo.
     """
     altura_relleno = altura_relleno_sobre_clave(punto=punto, material=material,
                                                 D=D)
@@ -887,7 +900,7 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     U = empuje_flotacion_kn_m(D_exterior=D_ext)
     EV = peso_relleno_kn_m(D_exterior=D_ext, altura_relleno=altura_relleno)
     DC = 0.0                 # peso propio omitido, del lado conservador
-    g = factores_carga_flotacion()   # CriterioPendienteError si EV no se detuvo antes
+    g = factores_carga_flotacion(material=material)   # CriterioPendienteError si EV no se detuvo antes
 
     estabilizante = g.gamma_DC * DC + g.gamma_EV * EV
     desestabilizante = g.gamma_WA * U

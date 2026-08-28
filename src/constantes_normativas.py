@@ -899,13 +899,328 @@ NUMERAL_FACTOR_MURO = "2.8.1.1.14.2"
 # PGA -> datos_sitio (dato de sitio [S]); F_pga elegido, factor de muro elegido
 # y k_v -> criterios_adoptados
 
-# Combinaciones de carga: AASHTO LRFD Sec. 3.4.1 via Manual de Puentes
-# (num. 2.4.5.3, pags. 140-143). La hoja de ruta NOMBRA las tres y no
-# transcribe la Tabla 3.4.1-1: los factores gamma son un vacio declarado en
-# criterios_adoptados ("factores_carga_aashto"). Aqui solo viven los nombres,
-# que si estan en el texto normativo citado.
+# Combinaciones de carga: Manual de Puentes num. 2.4.5.3 "Factores de Carga y
+# Combinaciones" (= 3.4 AASHTO), subnumeral 2.4.5.3.1 (= 3.4.1 AASHTO),
+# pag. impresa 140 (PDF 141). Aqui viven los NOMBRES de las tres combinaciones
+# que usa el proyecto y, desde la correccion de NOR-PUE-04, tambien los
+# FACTORES: las dos tablas del numeral estan transcritas mas abajo.
+#
+# POR QUE ESTABAN FUERA Y AHORA ESTAN AQUI (NOR-PUE-04). Este comentario decia
+# que el Manual "no transcribe la Tabla 3.4.1-1" y que los gamma eran "un
+# vacio declarado en criterios_adoptados". Las dos afirmaciones son falsas, y
+# la segunda ademas describia un estado del repositorio que ya no existia (el
+# criterio tenia valor desde hacia tiempo). El Manual SI transcribe las dos
+# tablas, completas y con sus valores, DENTRO del rango de paginas que este
+# mismo archivo citaba: Tabla 2.4.5.3.1-1 y Tabla 2.4.5.3.1-2, las dos en la
+# pag. impresa 143 (PDF 144). Verificado leyendo el PDF de
+# normas/"Puentes (Version Libro).pdf" (encabezado impreso de cada pagina, no
+# aritmetica de desfase; el desfase es PDF = impresa + 1).
+#
+# Declarar un vacio sobre la pagina que trae la tabla es el defecto que
+# Sec. 0.5 de la hoja de ruta llama el mas grave: un vacio se ve, una cita
+# falsa se cree. Aqui ademas invertia la taxonomia entera -- los gamma son
+# exigencia normativa peruana con numeral verificado, o sea [N], y lo unico
+# elegido es QUE FILA de la tabla describe a cada estructura de esta obra,
+# que es [A] y vive en 'factores_carga_aashto'. Es el mismo reparto de
+# F_PGA_TABLA / 'F_pga' y FACTOR_MURO_TABLA / 'factor_muro_eleccion'.
 COMBINACIONES_AASHTO = ("Resistencia I", "Servicio I", "Evento Extremo I")
 NUMERAL_COMBINACIONES = "2.4.5.3 (AASHTO LRFD Sec. 3.4.1), pags. 140-143"
+
+# El numeral con que hay que CITAR las dos tablas. El propio Manual las nombra
+# de dos formas incompatibles: el rotulo impreso sobre cada tabla dice
+# "Tabla 2.4.5.3.1-1" y "Tabla 2.4.5.3.1-2", pero el cuerpo del texto en la
+# pag. impresa 142 (PDF 143) las llama "Tabla 2.4.5.3-1" y "Tabla 2.4.5.3-2",
+# sin el ".1". Se cita la forma del ROTULO, que es la que un revisor lee sobre
+# la tabla que tiene delante.
+NUMERAL_TABLA_COMBINACIONES = (
+    "Manual de Puentes (MTC) num. 2.4.5.3.1, Tabla 2.4.5.3.1-1 "
+    "'Combinaciones de Carga y Factores de Carga' (3.4.1-1 AASHTO), "
+    "pag. impresa 143 (PDF 144)")
+NUMERAL_TABLA_GAMMA_P = (
+    "Manual de Puentes (MTC) num. 2.4.5.3.1, Tabla 2.4.5.3.1-2 "
+    "'Factores de carga para cargas permanentes, gamma_p' (3.4.1-2 AASHTO), "
+    "pag. impresa 143 (PDF 144)")
+
+# La correspondencia con AASHTO LRFD 9a ed., y en que difieren. Se declara
+# porque el proyecto adopta la Via 1 (Sec. 0.2: AASHTO LRFD de extremo a
+# extremo) y podria dar por identicas dos tablas que NO lo son: el Manual
+# traduce una edicion anterior.
+TABLAS_GAMMA_CORRESPONDENCIA_AASHTO = (
+    "Tabla 2.4.5.3.1-1 = Table 3.4.1-1 'Load Combinations and Load Factors', "
+    "AASHTO LRFD 9a ed. (2020), pag. impresa 3-17 (PDF 71). "
+    "Tabla 2.4.5.3.1-2 = Table 3.4.1-2 'Load Factors for Permanent Loads, "
+    "gamma_p', pag. impresa 3-18 (PDF 72). "
+    "EN LAS COLUMNAS Y FILAS QUE ESTE PROYECTO USA las dos fuentes coinciden "
+    "digito a digito, y por eso la peruana basta y se cita ella. DIFERENCIAS "
+    "verificadas, ninguna en lo que se usa aqui: (a) la 9a ed. agrega a la "
+    "tabla de gamma_p cuatro filas que el Manual no trae -- las tres de "
+    "estabilidad interna de muros MSE y la de muros de suelo claveteado; "
+    "(b) la 9a ed. dice 'O'Neill and Reese (2010)' donde el Manual dice "
+    "'(1999)'; (c) en la fila flexible de 1.50 la 9a ed. exige 'Structural "
+    "Plate Culverts with DEEP Corrugations' y el Manual traduce 'planchas "
+    "estructurales con corrugaciones', sin 'profundas' -- omision sustantiva, "
+    "ver la eleccion del TMC en 'factores_carga_aashto'; (d) en la Tabla -1 "
+    "difieren factores de WS (Resistencia III, Resistencia V, Servicio I y "
+    "Servicio IV), el LL de Servicio III y los de Fatiga I y II: ninguna de "
+    "esas columnas ni de esas combinaciones entra en Sec. 9.2")
+
+# La celda "N/A" de la Tabla 2.4.5.3.1-2. NO es "no declarado" ni "falta el
+# dato": la fuente dice expresamente que esa fila no tiene ese extremo. Se le
+# da nombre para que ningun consumidor la lea como un cero, un uno o una
+# omision, y para que pedirla sea un error del expediente y no un KeyError.
+#
+# Existe por MAT-D15 / NOR-AAS-04: el criterio afirmaba que la fuente no
+# declara minimo para EH en reposo. Lo declara -- 0.90 --; el N/A pertenece a
+# la fila SIGUIENTE, "AEP Para paredes ancladas". Un corrimiento de una fila
+# entre dos filas que comparten el maximo 1.35.
+GAMMA_P_NO_APLICA = None
+
+# El marcador "gamma_p" que la propia Tabla 2.4.5.3.1-1 imprime en la columna
+# de cargas permanentes: no es un numero, es una remision a la Tabla -2.
+GAMMA_P_MARCA = "gamma_p"
+
+TABLA_GAMMA_P_TITULO = ("Tabla 2.4.5.3.1-2 Factores de carga para cargas "
+                        "permanentes, gamma_p")
+TABLA_GAMMA_P_COLUMNAS = (
+    "Tipo de Carga, Tipo de Fundaciones, y Metodos Usados para Fuerza de "
+    "Arrastre Hacia Abajo (Downdrag)", "Maximo", "Minimo")
+
+# La tabla COMPLETA, las dieciocho filas con valor, aunque el calculo use
+# cinco. Es la regla dura del proyecto (NOR-HID-11, NOR-VAC-01): la tabla se
+# transcribe entera y la eleccion se declara aparte, porque una tabla podada
+# no deja ver de que se eligio una fila. `fila` es el texto LITERAL del
+# Manual, con sus erratas de imprenta anotadas: la memoria lo imprime tal cual
+# y un revisor con el PDF delante lo encuentra igual.
+# `fila` es el texto LITERAL de la celda, tal como se lee en el PDF, y
+# `grupo` el encabezado literal del bloque del que cuelga -- EH y EV traen sus
+# subfilas colgadas de una fila de titulo, y DD tres metodos bajo el suyo.
+# Estan SEPARADOS a proposito: la celda del reposo dice "En reposo.", no "EH:
+# Presion Horizontal de la tierra -- En reposo.", y juntarlos en un solo campo
+# haria pasar por transcripcion una frase compuesta aqui. Quien necesite una
+# linea sola los concatena, y entonces la composicion es visible.
+TABLA_GAMMA_P_FILAS = {
+    "DC_componentes_y_auxiliares": {
+        "grupo": "", "fila": "DC: Componentes y Auxiliares.",
+        "max": 1.25, "min": 0.90},
+    "DC_resistencia_IV_solamente": {
+        "grupo": "", "fila": "DC: Resistencia IV Solamente.",
+        "max": 1.50, "min": 0.90},
+    "DD_pilotes_metodo_tomlinson": {
+        "grupo": "DD: Downdrag",
+        "fila": "Pilotes, alfa Metodo de Tomlinson.",
+        "max": 1.40, "min": 0.25},
+    "DD_pilotes_metodo_lambda": {
+        "grupo": "DD: Downdrag", "fila": "Pilotes, lambda Metodo.",
+        "max": 1.05, "min": 0.30},
+    "DD_pilotes_perforados_oneill_reese": {
+        "grupo": "DD: Downdrag",
+        "fila": "Pilotes Perforados, (Drilled Shaft) Metodo de O'Neill and "
+                "Reese (1999).", "max": 1.25, "min": 0.35},
+    "DW_superficie_de_rodadura_y_accesorios": {
+        "grupo": "", "fila": "DW: Superficie de rodadura y accesorios.",
+        "max": 1.50, "min": 0.65},
+    # Las tres subfilas de "EH: Presion Horizontal de la tierra".
+    "EH_activa": {
+        "grupo": "EH: Presion Horizontal de la tierra", "fila": "Activa.",
+        "max": 1.50, "min": 0.90},
+    "EH_en_reposo": {
+        "grupo": "EH: Presion Horizontal de la tierra", "fila": "En reposo.",
+        "max": 1.35, "min": 0.90},
+    "EH_AEP_paredes_ancladas": {
+        "grupo": "EH: Presion Horizontal de la tierra",
+        "fila": "AEP Para paredes ancladas.",
+        "max": 1.35, "min": GAMMA_P_NO_APLICA},
+    "EL_esfuerzos_residuales": {
+        "grupo": "",
+        "fila": "EL: Esfuerzos residuales acumulados resultantes del proceso "
+                "constructivo, (Locked-in construction Stresses.)",
+        "max": 1.00, "min": 1.00},
+    # Las seis subfilas de "EV: Presion vertical de la tierra" (sic, sin
+    # tilde). Las tres ultimas cuelgan ademas de "Estructuras flexible
+    # enterradas" (sic, sin la "s"), que la tabla escribe como subtitulo con
+    # sus tres opciones marcadas "o ...".
+    "EV_estabilidad_global": {
+        "grupo": "EV: Presion vertical de la tierra",
+        "fila": "Estabilidad global.",
+        "max": 1.00, "min": GAMMA_P_NO_APLICA},
+    "EV_muros_y_estribos_de_retencion": {
+        "grupo": "EV: Presion vertical de la tierra",
+        "fila": "Muros y estribos de retencion.", "max": 1.35, "min": 1.00},
+    "EV_estructura_rigida_enterrada": {
+        "grupo": "EV: Presion vertical de la tierra",
+        "fila": "Estructura rigida enterrada.", "max": 1.30, "min": 0.90},
+    "EV_porticos_rigidos": {
+        "grupo": "EV: Presion vertical de la tierra",
+        "fila": "Porticos rigidos.", "max": 1.35, "min": 0.90},
+    "EV_flexibles_cajon_metalico_plancha_fibra_vidrio": {
+        "grupo": "EV: Presion vertical de la tierra -- Estructuras flexible "
+                 "enterradas",
+        "fila": "o Alcantarillas cajon metalicas, plancas estructurales con "
+                "corrugaciones y alcantarillas de fibra de vidrio.",
+        "max": 1.50, "min": 0.90},
+    "EV_flexibles_alcantarillas_termoplasticas": {
+        "grupo": "EV: Presion vertical de la tierra -- Estructuras flexible "
+                 "enterradas",
+        "fila": "o Alcantarillas termoplasticas.", "max": 1.30, "min": 0.90},
+    "EV_flexibles_entre_otros": {
+        "grupo": "EV: Presion vertical de la tierra -- Estructuras flexible "
+                 "enterradas",
+        "fila": "o Entre otros.", "max": 1.95, "min": 0.90},
+    "ES_carga_superficial_en_el_terreno": {
+        "grupo": "", "fila": "ES: Carga superficial(Sobrecarga) en el terreno",
+        "max": 1.50, "min": 0.75},
+}
+
+
+def fila_gamma_p_legible(clave: str) -> str:
+    """
+    Grupo y celda de una fila de gamma_p en una sola linea, para imprimirla.
+    Los dos trozos son literales del PDF; el " -- " que los une es de aqui.
+    """
+    r = TABLA_GAMMA_P_FILAS[clave]
+    return f"{r['grupo']} -- {r['fila']}" if r["grupo"] else r["fila"]
+
+
+# Las erratas del Manual en esta tabla, transcritas donde estan para que nadie
+# las "corrija" y crea que arregla una transcripcion: "Maximo" sin tilde en el
+# encabezado, "Estructuras flexible enterradas" sin la "s", "Presion vertical
+# de la tierra" sin tilde, "plancas" por "planchas", y "Entre otros" como
+# traduccion de "All others".
+TABLA_GAMMA_P_ERRATAS = (
+    "Transcripcion literal, con las erratas de imprenta del Manual: 'Maximo' "
+    "sin tilde en el encabezado de columna; 'Estructuras flexible enterradas' "
+    "(sin la 's' de flexibles); 'Presion vertical de la tierra' sin tilde; "
+    "'plancas' por 'planchas'; y 'Entre otros' donde AASHTO dice 'All "
+    "others'. Se copian tal cual: la fila que la memoria imprime tiene que "
+    "poder buscarse en el PDF")
+
+TABLA_COMBINACIONES_TITULO = ("Tabla 2.4.5.3.1-1 Combinaciones de Carga y "
+                              "Factores de Carga")
+
+# Las TRES combinaciones de Sec. 9.2, tal como las imprime la Tabla
+# 2.4.5.3.1-1, por tipo de carga. Las demas filas de la tabla (Resistencia
+# II a V, Evento Extremo II, Servicio II a IV, Fatiga I y II) no se
+# transcriben porque Sec. 9.2 no las nombra: no es una tabla podada, es que
+# la hoja de ruta elige tres combinaciones y estas son esas tres.
+#
+# La columna de cargas permanentes de la tabla es UNA sola -- "DC DD DW EH EV
+# ES EL PS CR SH" -- y por eso DC, EV y EH comparten celda: donde dice
+# GAMMA_P_MARCA hay que ir a la Tabla -2, y donde dice un numero ese numero
+# vale para las tres.
+#
+# EVENTO EXTREMO I LLEVA 1.00 EN LAS PERMANENTES, NO gamma_p, y no es un
+# error de transcripcion: lo dicen las dos fuentes y el comentario C3.4.1 de
+# AASHTO explica por que ("Prior to 2015, these Specifications used a value
+# for gamma_p greater than 1.0. This practice went against the intended
+# philosophy behind the Extreme Event Limit State", pag. impresa 3-10).
+# La celda "--" de la Tabla 2.4.5.3.1-1: la carga NO PARTICIPA en esa
+# combinacion. Como el N/A de la Tabla -2, no es un cero: es la fuente
+# diciendo que ahi no hay factor.
+COMBINACION_NO_PARTICIPA = "--"
+
+# Las CATORCE columnas de la tabla, en su orden impreso. La primera agrupa
+# todas las cargas permanentes bajo un solo factor.
+TABLA_COMBINACIONES_COLUMNAS = (
+    "DC DD DW EH EV ES EL PS CR SH", "LL IM CE BR PL LS", "WA", "WS", "WL",
+    "FR", "TU", "TG", "SE", "EQ", "BL", "IC", "CT", "CV")
+
+# Nota literal al pie de la Tabla 2.4.5.3.1-1, que es la que explica los
+# pares del tipo 0.50/1.20 de la columna TU:
+TABLA_COMBINACIONES_NOTA_AL_PIE = (
+    "Usar solamente uno de los indicados en estas columnas en cada "
+    "combinacion")
+
+TABLA_COMBINACIONES_FILAS = {
+    "Resistencia I": {
+        "permanentes": GAMMA_P_MARCA,   # DC DD DW EH EV ES EL PS CR SH
+        "LS": 1.75,                     # columna LL IM CE BR PL LS
+        "WA": {"max": 1.00, "min": 1.00},
+        "WS": COMBINACION_NO_PARTICIPA,
+        "WL": COMBINACION_NO_PARTICIPA,
+        "FR": 1.00,
+        "TU": (0.50, 1.20),             # uno de los dos, ver la nota al pie
+        "TG": "gamma_TG",
+        "SE": "gamma_SE",
+        "EQ": COMBINACION_NO_PARTICIPA,
+        "BL": COMBINACION_NO_PARTICIPA,
+        "IC": COMBINACION_NO_PARTICIPA,
+        "CT": COMBINACION_NO_PARTICIPA,
+        "CV": COMBINACION_NO_PARTICIPA,
+    },
+    "Servicio I": {
+        "permanentes": {"max": 1.00, "min": 1.00},
+        "LS": 1.00,
+        "WA": {"max": 1.00, "min": 1.00},
+        "WS": 0.30,                     # el Manual; AASHTO 9a ed. da 1.00
+        "WL": 1.00,
+        "FR": 1.00,
+        "TU": (1.00, 1.20),
+        "TG": "gamma_TG",
+        "SE": "gamma_SE",
+        "EQ": COMBINACION_NO_PARTICIPA,
+        "BL": COMBINACION_NO_PARTICIPA,
+        "IC": COMBINACION_NO_PARTICIPA,
+        "CT": COMBINACION_NO_PARTICIPA,
+        "CV": COMBINACION_NO_PARTICIPA,
+    },
+    "Evento Extremo I": {
+        "permanentes": {"max": 1.00, "min": 1.00},
+        "LS": "gamma_EQ",               # la tabla imprime gamma_EQ, no un numero
+        "WA": {"max": 1.00, "min": 1.00},
+        "WS": COMBINACION_NO_PARTICIPA,
+        "WL": COMBINACION_NO_PARTICIPA,
+        "FR": 1.00,
+        "TU": COMBINACION_NO_PARTICIPA,
+        "TG": COMBINACION_NO_PARTICIPA,
+        "SE": COMBINACION_NO_PARTICIPA,
+        "EQ": {"max": 1.00, "min": 1.00},
+        "BL": COMBINACION_NO_PARTICIPA,
+        "IC": COMBINACION_NO_PARTICIPA,
+        "CT": COMBINACION_NO_PARTICIPA,
+        "CV": COMBINACION_NO_PARTICIPA,
+    },
+}
+
+# QUE SE TRANSCRIBE Y QUE NO, dicho aqui en vez de deducirse de la ausencia:
+# de la Tabla 2.4.5.3.1-1 estan las TRES filas que Sec. 9.2 nombra, con sus
+# CATORCE columnas completas. Las otras diez filas -- Resistencia II a V,
+# Evento Extremo II, Servicio II a IV, Fatiga I y II -- no estan porque la
+# hoja de ruta no las usa: no es una tabla podada, es que Sec. 9.2 elige tres
+# combinaciones y estas son esas tres. De la Tabla 2.4.5.3.1-2, en cambio,
+# estan las dieciocho filas, tambien las que el calculo no usa.
+TABLA_COMBINACIONES_COMPLETITUD = (
+    "PARCIAL POR FILAS, COMPLETA POR COLUMNAS: las tres combinaciones que "
+    "Sec. 9.2 nombra (Resistencia I, Servicio I, Evento Extremo I), con las "
+    "catorce columnas de la tabla. Las otras diez filas de la Tabla "
+    "2.4.5.3.1-1 no se transcriben porque ninguna fase del proyecto las "
+    "evalua")
+
+# Los pares {1.00, 1.00} no son una invencion: la tabla imprime UN 1.00 para
+# toda la columna de cargas permanentes (y para WA, y para EQ), o sea el mismo
+# factor sea cual sea el extremo. Se escribe en la forma de dos extremos que
+# usan los consumidores para que una fila de la Tabla -1 y una de la Tabla -2
+# se lean igual; el numero es el de la fuente y no hay eleccion detras.
+TABLA_COMBINACIONES_NOTA_EXTREMOS = (
+    "Donde la Tabla 2.4.5.3.1-1 imprime un solo 1.00 para la columna de "
+    "cargas permanentes, aqui figura {max 1.00, min 1.00}: es el MISMO "
+    "numero escrito en la forma de dos extremos con que se leen las filas de "
+    "la Tabla -2, no un par elegido")
+
+# gamma_EQ, el factor de la carga viva en Evento Extremo I: la tabla no trae
+# numero y la fuente NO ofrece un par a elegir. Cita literal, verificada:
+GAMMA_EQ_TEXTO = (
+    "AASHTO LRFD 9a ed., Art. 3.4.1, pag. impresa 3-19: 'The load factor for "
+    "live load in Extreme Event Load Combination I, gamma_EQ, shall be "
+    "determined on a project-specific basis.' El comentario C3.4.1 (pag. "
+    "impresa 3-10) agrega: 'Past editions of the Standard Specifications used "
+    "gamma_EQ = 0.0. This issue is not resolved. The possibility of partial "
+    "live load, i.e., gamma_EQ < 1.0, with earthquakes should be considered. "
+    "Application of Turkstra's rule for combining uncorrelated loads "
+    "indicates that gamma_EQ = 0.50 is reasonable for a wide range of values "
+    "of average daily truck traffic (ADTT).' O sea: el 0.0 es practica "
+    "HISTORICA de ediciones pasadas y el 0.50 una indicacion de "
+    "razonabilidad, no dos opciones tabuladas; y quien lo determina es el "
+    "PROYECTO ('project-specific basis'), no 'el propietario'")
 NUMERAL_SOBRECARGA_TRASDOS = "2.1.4.3.9, pag. 91"
 NUMERAL_ZAPATA_EN_TALUD = "2.8.1.3.1.2c, pags. 272-273"
 NUMERAL_K_H0 = "2.8.1.1.14.2"
