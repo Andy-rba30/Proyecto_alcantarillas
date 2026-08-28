@@ -521,3 +521,25 @@ hizo antes de intentar el borrado, y es lo que decide si hay trabajo entregado.
 `verificar_sesion.py` dará `[FALLO] … ya fusionada, debería estar borrada`
 **una** vez, y **no significa trabajo sin entregar**: el chequeo comprueba
 antes que la rama no tenga commits fuera de `main`, y esta lo pasa.
+
+**Saldo al cierre de S12 (registro normativo, clusters C11/C12/C02): dos.**
+Quinta reincidencia, y la primera en la que la rama anterior **sigue estando**:
+la de S11 no la borró nadie entre sesiones, de modo que a la de S12 se le suma.
+Los dos intentos —`git push origin --delete` sobre cada una— devolvieron otra
+vez las dos formas de la negativa a la vez, `HTTP 403` seguido de
+`send-pack: unexpected disconnect while reading sideband packet` y de un
+`Everything up-to-date` que delata que el borrado ni siquiera llegó a
+proponerse.
+
+| Rama | Sesión | Fusionada en `main` |
+|---|---|---|
+| `claude/diseno-registro-normativo-607nkm` | S11 | sí (`66bf252`) |
+| `claude/registro-normativo-pymupdf-0fo35b` | S12 | sí (`66fde80`) |
+
+Las dos pasan la comprobación de «sin commits fuera de `main`», que es la que
+distingue una rama olvidada de trabajo sin entregar. `verificar_sesion.py`
+dará el `[FALLO]` **dos** veces y el resultado global será `FALLA` por eso y
+solo por eso: los cuatro chequeos que dependen de la sesión —suite, conteos,
+árbol limpio y tracker— están en `[OK]`. **Las borra el propietario desde la
+web**; no hay nada más que la sesión pueda hacer, y ya van cinco veces
+comprobado.
