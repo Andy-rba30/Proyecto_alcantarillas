@@ -456,6 +456,37 @@ def criterios_sin_consumidor() -> List[str]:
 # CRITERIOS ADOPTADOS
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# La Tabla 5.10.1-1 de AASHTO, DERIVADA DEL REGISTRO y no copiada a mano
+# ---------------------------------------------------------------------------
+# Este dict era 63 numeros escritos aqui, y la transcripcion completa de la
+# misma tabla vive ahora en el registro normativo, con el rotulo literal en
+# ingles de cada fila, la pulgada IMPRESA al lado del milimetro convertido, la
+# nota de las tres categorias y la correspondencia declarada con la tabla del
+# Manual de Puentes. Mantener dos copias a mano de la misma tabla es
+# exactamente el defecto que este cluster existe para eliminar: la que el
+# revisor lee y la que el programa calcula tienen que ser LA MISMA.
+#
+# LA CONVERSION NO SE REHACE AQUI. La tabla del registro trae las columnas en
+# pulgadas -- lo impreso -- y en milimetros -- la conversion del proyecto,
+# exacta --, y esta funcion solo las reagrupa por (situacion, categoria), que
+# es la forma en que `M9._recubrimiento_aashto_detallado` las consulta.
+def _tabla_recubrimiento_aashto_mm() -> Dict[str, Dict[str, float]]:
+    from normativa import registro as _rn
+    tabla = _rn.construir().tabla("AASHTO_LRFD_9.T5.10.1-1")
+    return {
+        tabla.clave_corta(fila): {
+            "A": float(fila.valores["cat_a_mm"]),
+            "B": float(fila.valores["cat_b_mm"]),
+            "C": float(fila.valores["cat_c_mm"]),
+        }
+        for fila in tabla.filas
+    }
+
+
+_TABLA_RECUBRIMIENTO_AASHTO_MM = _tabla_recubrimiento_aashto_mm()
+
+
 CRITERIOS: Dict[str, Criterio] = {
 
     # ----------------------- SISMO: cadena unica -------------------------
@@ -1272,10 +1303,28 @@ CRITERIOS: Dict[str, Criterio] = {
                       "ALCANCE: solo afecta a los puntos cuyo q* cae dentro de "
                       "la ventana 3.5-4.0; fuera de ella rigen las dos "
                       "ecuaciones tal cual las escribe la tabla",
-        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Cap. IV y Apendice A "
-               "(curva de transicion tangente, sin ecuacion publicada). La "
-               "interpolacion lineal la prescribe Sec. 4.2 de la hoja de ruta, "
-               "no HDS-5",
+        fuente=(
+            "HDS-5 (FHWA) 3a ed., abril 2012: num. 3.1.3 'Inlet Control', "
+            "pag. impresa 3.4 (PDF 86) -- 'The flow transition zone between "
+            "the low headwater (weir control) and the high headwater (orifice "
+            "control) flow conditions is poorly defined. This zone is "
+            "approximated by plotting the unsubmerged and submerged flow "
+            "equations and connecting them with a line tangent to both "
+            "curves' -- y num. A.2 'INLET CONTROL EQUATIONS', pag. impresa "
+            "A.1 (PDF 190) -- 'The transition zone is defined empirically by "
+            "drawing a curve between and tangent to the curves defined by the "
+            "unsubmerged and submerged equations'. "
+            "NUMERAL CORREGIDO (NOR-HDS-06): esta fuente citaba 'Cap. IV', y "
+            "el Capitulo 4 de ESTA 3a edicion se titula 'CULVERT DESIGN FOR "
+            "AQUATIC ORGANISM PASSAGE (AOP)' -- paso de fauna acuatica, "
+            "biologia de peces y barreras de salto --, que no tiene nada que "
+            "ver con la zona de transicion. Es el mismo patron que "
+            "NOR-PUE-01: el numeral existe y su titulo no corresponde al "
+            "contenido que se le atribuye. Tampoco se salva leyendolo como la "
+            "edicion de 1985, cuyo Capitulo 4 es 'Tapered Inlets'. La mitad "
+            "'y Apendice A' de la cita vieja SI era correcta y se conserva. "
+            "La interpolacion lineal la prescribe Sec. 4.2 de la hoja de "
+            "ruta, no HDS-5"),
         reemplazado_por="Lectura directa de la carta de HDS-5 en la zona de "
                         "transicion, o el procedimiento tangente si el "
                         "expediente exige reproducir la curva original",
@@ -2307,6 +2356,85 @@ CRITERIOS: Dict[str, Criterio] = {
                                "del paquete estructural",
     ),
 
+    # -----------------------------------------------------------------------
+    # LAS DOS LAGUNAS DE LAS TABLAS DE h_eq, que estaban resueltas en duro
+    # -----------------------------------------------------------------------
+    # Las declaraba el registro (`Laguna(..., si_nadie_lo_cierra=BLOQUEA)`) y
+    # apuntaban a estas dos claves, que NO EXISTIAN: el codigo resolvia las
+    # dos a mano -- el clamp de `_interpolar_h_eq` y el `lejos = borde >= ...`
+    # de `h_eq_sobrecarga_trasdos` -- sin etiqueta, sin sensibilidad y sin
+    # excepcion. Es el «rellenar un vacio en silencio» que CLAUDE.md llama el
+    # peor error posible, cometido DENTRO del cluster que existe para
+    # eliminarlo, y lo encontro la auditoria adversarial de la propia sesion.
+    #
+    # Y NO ERA INOCUO. Con muro paralelo, borde 0.20 m y altura total 1.20 m
+    # las dos lagunas se apilan y la funcion devolvia 1.524 m -- 2.54 veces el
+    # piso del Manual -- sin decir de donde salia. Ahora se detiene.
+    "h_eq_bajo_altura_tabulada": Criterio(
+        valor=None,                 # VACIO: bloquea h_eq bajo 5.0 ft
+        etiqueta="A",
+        concepto="Que hacer con un muro de menos de 5.0 ft (1.524 m), altura "
+                 "por debajo de la primera fila de las Tablas 3.11.6.4-1 y "
+                 "-2 de AASHTO: 'primera_fila' o 'extrapolar_lineal'",
+        justificacion="LA FUENTE NO CUBRE ESTA ALTURA Y NO SE PUEDE FINGIR "
+                      "QUE SI. AASHTO manda interpolar 'for intermediate wall "
+                      "heights' -- ENTRE filas --, y por debajo de la primera "
+                      "no hay dos filas entre las que interpolar. Extrapolar "
+                      "el primer tramo no lo autoriza la fuente; tomar la "
+                      "primera fila tampoco lo dice, aunque va del lado "
+                      "conservador porque h_eq DECRECE con la altura. Las dos "
+                      "lecturas son elecciones del proyectista y por eso esto "
+                      "es [A] y no [N]. "
+                      "ES ALCANZABLE EN ESTE EXPEDIENTE: un cabezal de "
+                      "alcantarilla pequeña con H + espesor de zapata menor "
+                      "de 1.524 m cae aqui, y el corredor tiene puntos de "
+                      "diametro pequeño",
+        fuente="AASHTO LRFD 9a ed. (2020), Art. 3.11.6.4, Tablas 3.11.6.4-1 y "
+               "3.11.6.4-2, pag. impresa 3-151 (PDF 205). Las dos arrancan en "
+               "'5.0' y su regla de interpolacion es literal: 'Linear "
+               "interpolation shall be used for intermediate wall heights'. "
+               "Laguna registrada en normativa/tablas.py, tablas "
+               "AASHTO_LRFD_9.T3.11.6.4-1 y -2",
+        sensibilidad=("primera_fila (h_eq = 5.0 ft = 1.524 m para muro "
+                      "paralelo con borde 0.0, o 4.0 ft = 1.219 m para "
+                      "estribo perpendicular) frente a extrapolar_lineal "
+                      "(para 3.94 ft: 5.318 ft = 1.621 m en el caso paralelo, "
+                      "un +6.4 %). La extrapolacion es la MAS conservadora de "
+                      "las dos, de modo que ni siquiera 'el lado seguro' "
+                      "decide sola: hay que elegir",),
+    ),
+
+    "h_eq_banda_intermedia_borde": Criterio(
+        valor=None,                 # VACIO: bloquea h_eq en 0 < d < 1.0 ft
+        etiqueta="A",
+        concepto="Que columna de la Tabla 3.11.6.4-2 leer cuando la distancia "
+                 "del trasdos al borde de calzada cae ESTRICTAMENTE entre "
+                 "0.0 ft y 1.0 ft: 'columna_cero' o "
+                 "'interpolar_entre_columnas'",
+        justificacion="LA TABLA TIENE DOS COLUMNAS Y NINGUNA REGLA PARA EL "
+                      "MEDIO. Sus rotulos son '0.0 ft' y '1.0 ft or Further', "
+                      "y la unica interpolacion que la fuente autoriza es "
+                      "'for intermediate wall HEIGHTS' -- entre filas, no "
+                      "entre columnas. Leer la columna de 0.0 ft para toda "
+                      "distancia menor que 1.0 ft es el lado conservador y "
+                      "NO es lo que la tabla dice; interpolar entre columnas "
+                      "es inventarse una regla que la fuente no da. Los dos "
+                      "son elecciones y por eso esto es [A]. "
+                      "EL EFECTO ES GRANDE, no marginal: para un muro de 5.0 "
+                      "ft las dos columnas valen 5.0 y 2.0 ft, un factor 2.5",
+        fuente="AASHTO LRFD 9a ed. (2020), Tabla 3.11.6.4-2 'Equivalent "
+               "Height of Soil for Vehicular Loading on Retaining Walls "
+               "Parallel to Traffic', pag. impresa 3-151 (PDF 205), "
+               "encabezado superior 'heq (ft) Distance from wall backface to "
+               "edge of traffic'. Laguna registrada en normativa/tablas.py, "
+               "tabla AASHTO_LRFD_9.T3.11.6.4-2",
+        sensibilidad=("para un muro de 5.0 ft y borde 0.5 ft: columna_cero da "
+                      "5.0 ft (1.524 m) e interpolar_entre_columnas da 3.5 ft "
+                      "(1.067 m), un -30 %. Para un muro de 10.0 ft: 3.5 ft "
+                      "frente a 2.75 ft, un -21 %. La eleccion mueve el "
+                      "empuje LS en la misma proporcion",),
+    ),
+
     "condicion_pavimento": Criterio(
         valor=None,                 # VACIO: bloquea 7.A -- que fila de la tabla
         etiqueta="A",
@@ -2316,11 +2444,30 @@ CRITERIOS: Dict[str, Criterio] = {
         justificacion="LA TABLA ES [C] Y ELEGIR SU FILA ES [A]: mismo reparto "
                       "que F_PGA_TABLA / 'F_pga' y "
                       "REDUCCION_KH_POR_DESPLAZAMIENTO / "
-                      "'factor_muro_eleccion'. La Tabla 12.6.6.3-1 separa 'under "
-                      "unpaved areas', 'top of flexible pavement' y 'under "
-                      "bottom of rigid pavement', y cual de las tres es esta via "
-                      "no lo dice ninguna norma: lo dice la seccion tipica del "
-                      "expediente vial. "
+                      "'factor_muro_eleccion'. "
+                      "COMO ESTA HECHA DE VERDAD LA TABLA, corregido contra el "
+                      "PDF renderizado (pag. impresa 12-22 / PDF 1660): sus "
+                      "columnas son 'Type', 'Condition' y 'Minimum Cover*' -- "
+                      "TRES --, y las condiciones de pavimento son VALORES de la "
+                      "segunda columna que solo aparecen en 2 de los 13 tipos; "
+                      "los otros once llevan un em-dash IMPRESO. Esta "
+                      "justificacion decia que la tabla 'separa' tres "
+                      "condiciones, como si fueran tres columnas, y eso manda a "
+                      "buscar una matriz que no existe. Las cadenas literales "
+                      "son 'Under unpaved areas', 'Under paved roads', 'Under "
+                      "unpaved areas or top of flexible pavement' y 'Under "
+                      "bottom of rigid pavement'. "
+                      "Y LA AGRUPACION CAMBIA CON EL MATERIAL: en concreto las "
+                      "dos primeras opciones de este criterio caen en la MISMA "
+                      "fila; en HDPE la fuente agrupa al reves ('paved roads', "
+                      "sin separar flexible de rigido); en metal corrugado no "
+                      "hay condicion de pavimento en absoluto. Por eso el "
+                      "criterio conserva las tres opciones y es "
+                      "'cobertura_minima_aashto' quien las mapea material por "
+                      "material. La transcripcion completa de las catorce filas "
+                      "vive en el registro, tabla AASHTO_LRFD_9.T12.6.6.3-1. "
+                      "CUAL DE LAS TRES ES ESTA VIA no lo dice ninguna norma: "
+                      "lo dice la seccion tipica del expediente vial. "
                       "POR QUE NO SE DEDUCE DE LO QUE YA HAY: el CSV (Sec. 1.2) "
                       "trae cota de rasante y cota de subrasante, y su "
                       "diferencia -- el paquete estructural e_paq -- es positiva "
@@ -3244,39 +3391,7 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "tabla_recubrimiento_aashto_mm": Criterio(
-        valor={
-            # Tabla 5.10.1-1 COMPLETA, en mm, por (situacion, categoria).
-            # 1 in = 25.4 mm exacto. La pulgada de la fuente va al lado.
-            # -- Severe to Moderate Exposure --
-            "agua_salada":                {"A": 101.6, "B": 63.5, "C": 63.5},
-            "vaciado_contra_suelo":       {"A": 76.2, "B": 50.8, "C": 50.8},
-            "costera":                    {"A": 76.2, "B": 50.8, "C": 50.8},
-            "sales_anticongelantes":      {"A": 63.5, "B": 50.8, "C": 38.1},
-            "tableros_neumaticos_clavos": {"A": 63.5, "B": 63.5, "C": 50.8},
-            "exterior_no_superior":       {"A": 50.8, "B": 50.8, "C": 38.1},
-            # -- Limited Exposure --
-            "interior_hasta_n11":         {"A": 38.1, "B": 25.4, "C": 25.4},
-            "interior_n14_n18":           {"A": 50.8, "B": 50.8, "C": 50.8},
-            "losa_in_situ_inferior_hasta_n11": {"A": 25.4, "B": 25.4, "C": 25.4},
-            "losa_in_situ_inferior_n14_n18":   {"A": 50.8, "B": 50.8, "C": 50.8},
-            "paneles_prefabricados_encofrados": {"A": 20.32, "B": 20.32,
-                                                 "C": 20.32},
-            # -- Piling --
-            "pilote_prefab_armado_no_corrosivo": {"A": 50.8, "B": 38.1, "C": 25.4},
-            "pilote_prefab_armado_corrosivo":    {"A": 76.2, "B": 63.5, "C": 50.8},
-            "pilote_prefab_pretensado":          {"A": 50.8, "B": 25.4, "C": 25.4},
-            "pilote_in_situ_no_corrosivo":       {"A": 50.8, "B": 38.1, "C": 38.1},
-            "pilote_in_situ_corrosivo":          {"A": 76.2, "B": 63.5, "C": 50.8},
-            "pilote_in_situ_cascaras":           {"A": 50.8, "B": 38.1, "C": 25.4},
-            "pilote_in_situ_tremie_o_lechada":   {"A": 76.2, "B": 63.5, "C": 50.8},
-            # -- Precast Culverts --
-            "alcantarilla_cajon_prefab_losa_de_rodadura":  {"A": 63.5, "B": 50.8,
-                                                            "C": 38.1},
-            "alcantarilla_cajon_prefab_losa_menos_2_pies": {"A": 50.8, "B": 38.1,
-                                                            "C": 25.4},
-            "alcantarilla_cajon_prefab_otros_miembros":    {"A": 25.4, "B": 25.4,
-                                                            "C": 25.4},
-        },
+        valor=_TABLA_RECUBRIMIENTO_AASHTO_MM,
         etiqueta="C",
         concepto="Tabla 5.10.1-1 de AASHTO LRFD, 'Minimum Cover for Main "
                  "Reinforcing Steel', completa: las 21 situaciones por las "

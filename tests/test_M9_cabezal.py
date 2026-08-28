@@ -25,7 +25,7 @@ import pytest
 
 import criterios_adoptados as ca
 import datos_sitio as ds
-from constantes_fisicas import GAMMA_AGUA_KN_M3
+from constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
 from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    RECUBRIMIENTO_MP_EQUIVALENCIA,
                                    RECUBRIMIENTO_MP_MM,
@@ -35,7 +35,10 @@ from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    FS,
                                    REDUCCION_KH_POR_DESPLAZAMIENTO,
                                    NQ_ZAPATA_EN_TALUD,
+                                   ORIENTACION_PARALELO_AL_TRAFICO,
+                                   ORIENTACION_PERPENDICULAR_AL_TRAFICO,
                                    RECUBRIMIENTO, SOBRECARGA_TRASDOS_H_EQ,
+                                   SOBRECARGA_TRASDOS_PISO_MP_M,
                                    TABLA_GAMMA_P_FILAS)
 from modelos import (CondicionAnalisis, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError,
@@ -48,6 +51,7 @@ from modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
                                 altura_agua_sobre_base,
                                 angulo_inercia_sismica,
                                 aplica_sobrecarga_trasdos,
+                                h_eq_sobrecarga_trasdos,
                                 aviso_ambiente_corrosivo, brazo_incremento_sismico,
                                 cadena_sismica, capacidad_portante_zapata_en_talud,
                                 coeficiente_sismico_base,
@@ -339,23 +343,189 @@ def test_los_cuatro_angulos_de_sec_9_2_estan_declarados_vacios(clave):
 # ===========================================================================
 # 9.2 - Sobrecarga de trasdos y empujes
 # ===========================================================================
+# Los dos datos de sitio que la sobrecarga necesita valen None en el
+# expediente y por tanto DETIENEN el calculo. Estos ayudantes los declaran a
+# valores DE PRUEBA para poder ejercitar el camino; no son una propuesta de
+# proyecto y por eso viven aqui y no en datos_sitio.py, igual que los seis
+# criterios de tanteo de la cadena sismica.
 
-def test_la_sobrecarga_es_de_0_60_m_de_relleno_equivalente():
-    assert SOBRECARGA_TRASDOS_H_EQ == pytest.approx(0.60)
-    # p = gamma * 0.60 * ka   (num. 2.1.4.3.9)
-    p = presion_sobrecarga_trasdos(gamma_relleno=19.0, k_a=0.30)
-    assert p == pytest.approx(19.0 * 0.60 * 0.30)
+def _declarar_dato_de_sitio(monkeypatch, clave, valor):
+    original = ds.dato(clave)
+    monkeypatch.setitem(
+        ds.DATOS_SITIO, clave,
+        ds.DatoSitio(valor=valor, concepto=original.concepto,
+                     procedimiento=original.procedimiento,
+                     fuente=original.fuente,
+                     trazabilidad=original.trazabilidad,
+                     ambito=original.ambito))
 
 
-def test_el_empuje_de_sobrecarga_es_rectangular_no_triangular():
+def _declarar_orientacion(monkeypatch, orientacion):
+    _declarar_dato_de_sitio(monkeypatch,
+                            "orientacion_muro_respecto_al_trafico", orientacion)
+
+
+def _declarar_borde(monkeypatch, metros):
+    _declarar_dato_de_sitio(monkeypatch,
+                            "distancia_borde_calzada_al_trasdos_m", metros)
+
+
+
+def test_el_0_60_es_el_PISO_del_manual_y_no_el_h_eq_de_diseno():
     """
-    Es la diferencia entre 0.60 m de relleno EQUIVALENTE y 0.60 m de relleno
-    real encima: la presion es constante en toda la altura.
+    El numero no cambia y lo que significa, si. El Manual de Puentes escribe
+    «una sobrecarga vertical NO MENOR QUE la equivalente a 0.60 m de altura de
+    relleno» (num. 2.4.2.2, pag. impresa 102): es un PISO. El h_eq de diseño
+    lo tabula AASHTO por altura y orientacion, y los dos rigen a la vez.
     """
+    assert SOBRECARGA_TRASDOS_PISO_MP_M == pytest.approx(0.60)
+    # El alias viejo sigue existiendo y sigue valiendo lo mismo: lo que ya no
+    # es, es «el h_eq».
+    assert SOBRECARGA_TRASDOS_H_EQ == SOBRECARGA_TRASDOS_PISO_MP_M
+
+
+def test_el_h_eq_se_detiene_si_no_se_declara_la_orientacion_del_muro():
+    """
+    Conflicto vinculante #4: no hay contradiccion entre el 0.60 del Manual y
+    el 1.12 de AASHTO, hay un DATO FALTANTE. Sin la orientacion, la fuente no
+    dice cual de sus dos tablas aplica, y el calculo se detiene en vez de
+    elegir por su cuenta.
+    """
+    with pytest.raises(CriterioPendienteError):
+        h_eq_sobrecarga_trasdos(altura_muro_total=2.4)
+
+
+def test_el_h_eq_perpendicular_reproduce_la_interpolacion_de_AASHTO(
+        monkeypatch):
+    """
+    Tabla 3.11.6.4-1, filas 5.0 ft -> 4.0 ft y 10.0 ft -> 3.0 ft, con
+    interpolacion lineal obligatoria. Un muro de 2.00 m son 6.5617 ft, y de
+    ahi salen 3.6877 ft = 1.124 m: el 1.12 m que la auditoria calculo, contra
+    el 0.60 m que el expediente aplicaba (factor 1.87).
+    """
+    _declarar_orientacion(monkeypatch, ORIENTACION_PERPENDICULAR_AL_TRAFICO)
+    # 2.00 m = 6.5617 ft; 4.0 - (6.5617-5.0)/5.0 = 3.6877 ft = 1.1240 m
+    esperado = (4.0 - (2.00 / PIE_EN_METROS - 5.0) / 5.0) * PIE_EN_METROS
+    assert h_eq_sobrecarga_trasdos(altura_muro_total=2.00) == \
+        pytest.approx(esperado)
+    assert esperado == pytest.approx(1.1240, abs=1e-4)
+    # Y la altura de la primera fila da su valor tabulado sin interpolar.
+    assert h_eq_sobrecarga_trasdos(altura_muro_total=5.0 * PIE_EN_METROS) == \
+        pytest.approx(4.0 * PIE_EN_METROS)
+
+
+def test_el_h_eq_paralelo_depende_del_borde_de_calzada_y_el_umbral_es_exacto(
+        monkeypatch):
+    """
+    El umbral de la Tabla 3.11.6.4-2 es «1.0 ft or Further» = 0.3048 m
+    EXACTOS. Redondearlo a 0.30 relaja el criterio: un trasdos con el borde a
+    0.30 m justos NO alcanza el umbral.
+
+    LO QUE PASA POR DEBAJO DEL UMBRAL YA NO ES LEER LA OTRA COLUMNA: es la
+    banda abierta 0 < d < 1.0 ft, que la fuente no cubre y que un criterio [A]
+    VACIO detiene. La version anterior de este test afirmaba que 0.30 m daba
+    1.3812 m -- la columna de 0.0 ft --, y esa lectura la elegia el codigo en
+    duro. Con el criterio declarado, elegirla exige decirlo.
+    """
+    _declarar_orientacion(monkeypatch, ORIENTACION_PARALELO_AL_TRAFICO)
+    _declarar_borde(monkeypatch, 0.35)
+    assert h_eq_sobrecarga_trasdos(altura_muro_total=2.00) == \
+        pytest.approx(2.0 * PIE_EN_METROS)      # 0.6096 m
+    # El umbral EXACTO: 1.0 ft justo sigue siendo «or Further».
+    _declarar_borde(monkeypatch, PIE_EN_METROS)
+    assert h_eq_sobrecarga_trasdos(altura_muro_total=2.00) == \
+        pytest.approx(2.0 * PIE_EN_METROS)
+    # 0.30 m NO alcanza el umbral, y ahi la fuente calla: se detiene.
+    _declarar_borde(monkeypatch, 0.30)
+    with pytest.raises(CriterioPendienteError):
+        h_eq_sobrecarga_trasdos(altura_muro_total=2.00)
+    # Declarada la lectura, el numero es el de la columna de 0.0 ft.
+    ca.establecer_valor_dinamico("h_eq_banda_intermedia_borde", "columna_cero")
+    try:
+        assert h_eq_sobrecarga_trasdos(altura_muro_total=2.00) == \
+            pytest.approx(1.3812, abs=1e-4)
+    finally:
+        ca.limpiar_valores_dinamicos()
+    # Y el borde 0.0 SI esta tabulado: no es banda, es columna.
+    _declarar_borde(monkeypatch, 0.0)
+    assert h_eq_sobrecarga_trasdos(altura_muro_total=2.00) == \
+        pytest.approx(1.3812, abs=1e-4)
+
+
+def test_el_h_eq_bajo_la_primera_fila_de_la_tabla_se_detiene(monkeypatch):
+    """
+    AASHTO manda interpolar «for intermediate wall heights» -- ENTRE filas --
+    y sus dos tablas arrancan en 5.0 ft = 1.524 m. Por debajo no hay fila con
+    que interpolar: es laguna de la fuente, no lectura de la tabla.
+
+    LO ENCONTRO LA AUDITORIA ADVERSARIAL DE S12. El codigo tomaba la primera
+    fila en duro con el argumento de que era el lado conservador, y no lo
+    decide eso: extrapolar el primer tramo da un h_eq AUN MAYOR. Con muro
+    paralelo, borde 0.20 m y altura total 1.20 m las dos lagunas se apilaban y
+    la funcion devolvia 1.524 m -- 2.54 veces el piso del Manual -- sin decir
+    de donde salia.
+    """
+    _declarar_orientacion(monkeypatch, ORIENTACION_PERPENDICULAR_AL_TRAFICO)
+    with pytest.raises(CriterioPendienteError):
+        h_eq_sobrecarga_trasdos(altura_muro_total=1.20)
+    # La altura de la primera fila EXACTA no es laguna: la fila existe.
+    assert h_eq_sobrecarga_trasdos(altura_muro_total=5.0 * PIE_EN_METROS) == \
+        pytest.approx(4.0 * PIE_EN_METROS)
+    # Y las dos lecturas declarables dan numeros DISTINTOS, que es por lo que
+    # hay que elegir en vez de dejar que el codigo elija.
+    ca.establecer_valor_dinamico("h_eq_bajo_altura_tabulada", "primera_fila")
+    try:
+        primera = h_eq_sobrecarga_trasdos(altura_muro_total=1.20)
+    finally:
+        ca.limpiar_valores_dinamicos()
+    ca.establecer_valor_dinamico("h_eq_bajo_altura_tabulada", "extrapolar_lineal")
+    try:
+        extrapolada = h_eq_sobrecarga_trasdos(altura_muro_total=1.20)
+    finally:
+        ca.limpiar_valores_dinamicos()
+    assert primera == pytest.approx(4.0 * PIE_EN_METROS)
+    assert extrapolada > primera
+
+
+def test_el_h_eq_nunca_baja_del_piso_peruano(monkeypatch):
+    """La regla del mayor de Sec. 0.2, aplicada a la sobrecarga."""
+    _declarar_orientacion(monkeypatch, ORIENTACION_PARALELO_AL_TRAFICO)
+    _declarar_borde(monkeypatch, 1.0)
+    # La columna «1.0 ft or Further» vale 2.0 ft = 0.6096 m en toda la tabla,
+    # justo por encima del piso de 0.60 m; con un muro altisimo sigue ahi.
+    assert h_eq_sobrecarga_trasdos(altura_muro_total=30.0) >= \
+        SOBRECARGA_TRASDOS_PISO_MP_M
+
+
+def test_la_orientacion_fuera_de_las_dos_tabuladas_es_dato_invalido(
+        monkeypatch):
+    """
+    AASHTO no ofrece un eje libre de orientacion: ofrece dos binomios
+    acoplados y no hay tabla para ningun otro caso.
+    """
+    _declarar_orientacion(monkeypatch, "en_esviaje")
+    with pytest.raises(DatoInvalidoError):
+        h_eq_sobrecarga_trasdos(altura_muro_total=2.4)
+
+
+def test_la_presion_de_sobrecarga_usa_el_h_eq_resuelto(monkeypatch):
+    _declarar_orientacion(monkeypatch, ORIENTACION_PERPENDICULAR_AL_TRAFICO)
+    h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=2.00)
+    p = presion_sobrecarga_trasdos(gamma_relleno=19.0, k_a=0.30,
+                                   altura_muro_total=2.00)
+    assert p == pytest.approx(19.0 * h_eq * 0.30)
+
+
+def test_el_empuje_de_sobrecarga_es_rectangular_no_triangular(monkeypatch):
+    """
+    Es la diferencia entre h_eq de relleno EQUIVALENTE y h_eq de relleno real
+    encima: la presion es constante en toda la altura.
+    """
+    _declarar_orientacion(monkeypatch, ORIENTACION_PERPENDICULAR_AL_TRAFICO)
     gamma, k_a, H = 19.0, 0.30, 2.4
     E = empuje_sobrecarga_trasdos(gamma_relleno=gamma, k_a=k_a, H=H)
     assert E == pytest.approx(presion_sobrecarga_trasdos(
-        gamma_relleno=gamma, k_a=k_a) * H)
+        gamma_relleno=gamma, k_a=k_a, altura_muro_total=H) * H)
     # y por lo tanto NO es gamma*H^2*ka/2
     assert E != pytest.approx(empuje_activo_estatico(
         gamma_relleno=gamma, k_a=k_a, H=H))
@@ -369,7 +539,14 @@ def test_la_regla_de_H_medios_para_el_trafico():
 
 def test_en_cabezal_bajo_terraplen_siempre_aplica():
     texto = sobrecarga_trasdos_siempre_aplica()
-    assert "siempre" in texto and "0.60" in texto
+    assert "siempre" in texto
+    # El numeral que la declaracion imprime es el CORRECTO, no el retirado
+    # (NOR-PUE-01): 2.4.2.2 «Cargas de Suelo: EH, ES, y DD», no 2.1.4.3.9
+    # «Aparatos de Apoyo».
+    assert "2.4.2.2" in texto and "2.1.4.3.9" not in texto
+    # Y la declaracion nombra la exencion que el numeral concede y este
+    # expediente no invoca.
+    assert "losa de aproximacion" in texto
 
 
 def test_empuje_activo_estatico_es_triangular():
@@ -1095,6 +1272,10 @@ def test_la_cadena_completa_corre_cuando_los_vacios_se_declaran(monkeypatch,
                                         concepto=original.concepto,
                                         justificacion=original.justificacion,
                                         fuente=original.fuente))
+    # Y los dos datos de SITIO que la sobrecarga viva necesita (conflicto #4):
+    # sin ellos la Sec. 9.2 se detiene antes de llegar a la Sec. 9.3.
+    _declarar_orientacion(monkeypatch, ORIENTACION_PARALELO_AL_TRAFICO)
+    _declarar_borde(monkeypatch, 1.0)
 
     H = geometria.altura_total
     estatico = empujes_trasdos(geometria=geometria,

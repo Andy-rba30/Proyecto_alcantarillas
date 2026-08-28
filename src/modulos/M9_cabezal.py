@@ -153,11 +153,11 @@ Uso
 from __future__ import annotations
 
 import math
-from typing import Optional, Tuple
+from typing import Optional, Sequence, Tuple
 
 import criterios_adoptados as ca
 import datos_sitio as ds
-from constantes_fisicas import GAMMA_AGUA_KN_M3
+from constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    AMBIENTE_CORROSIVO_TEXTO,
                                    CARGA_VIVA,
@@ -227,6 +227,10 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_RECUBRIMIENTO_MP,
                                    NUMERAL_SULFATOS,
                                    NUMERAL_SOBRECARGA_TRASDOS,
+                                   NUMERAL_SOBRECARGA_TRASDOS_AASHTO,
+                                   NUMERAL_SOBRECARGA_TRASDOS_ALTURA,
+                                   NUMERAL_SOBRECARGA_TRASDOS_APLICA,
+                                   H_EQ_REPARTO_DE_TABLAS,
                                    NUMERAL_TABLA_GAMMA_P,
                                    NUMERAL_TEMPERATURA_DOS_CARAS,
                                    NUMERAL_ZAPATA_EN_TALUD,
@@ -242,7 +246,13 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    RECUBRIMIENTO_MP_PISO_MM,
                                    REDUCCION_KH_POR_DESPLAZAMIENTO,
                                    SECCION_CABEZALES,
-                                   SOBRECARGA_TRASDOS_H_EQ,
+                                   ORIENTACION_PARALELO_AL_TRAFICO,
+                                   ORIENTACION_PERPENDICULAR_AL_TRAFICO,
+                                   ORIENTACIONES_TABULADAS,
+                                   SOBRECARGA_TRASDOS_PISO_MP_M,
+                                   H_EQ_BORDE_UMBRAL_M,
+                                   H_EQ_ESTRIBO_PERPENDICULAR_FT,
+                                   H_EQ_MURO_PARALELO_FT,
                                    SULFATOS,
                                    TABLA_COMBINACIONES_FILAS,
                                    TABLA_GAMMA_P_FILAS)
@@ -311,6 +321,15 @@ CRITERIO_GEOMETRIA = "predimensionamiento_cabezal"
 CRITERIO_MEYERHOF = "N_cq_N_gammaq_meyerhof"
 CRITERIO_ESTABILIDAD_GLOBAL = "metodo_estabilidad_global"
 CRITERIO_TABLA_RECUBRIMIENTO = "tabla_recubrimiento_aashto_mm"
+# Las dos lagunas de las tablas de h_eq de AASHTO 3.11.6.4, que el registro
+# declara y que hasta esta sesion se resolvian en duro dentro del modulo.
+CRITERIO_H_EQ_BAJO_TABLA = "h_eq_bajo_altura_tabulada"
+CRITERIO_H_EQ_BANDA_BORDE = "h_eq_banda_intermedia_borde"
+H_EQ_BAJO_TABLA_PRIMERA_FILA = "primera_fila"
+H_EQ_BAJO_TABLA_EXTRAPOLAR = "extrapolar_lineal"
+H_EQ_BANDA_LEE_COLUMNA_CERO = "columna_cero"
+H_EQ_BANDA_INTERPOLA = "interpolar_entre_columnas"
+
 CRITERIO_CATEGORIA_REFUERZO = "categoria_refuerzo_aashto"
 CRITERIO_SITUACION_RECUBRIMIENTO = "situacion_recubrimiento_aashto"
 CRITERIO_EXPOSICION_QUIMICA = "exposicion_quimica_ems"
@@ -1021,9 +1040,17 @@ def k_ae_del_proyecto() -> EmpujeMononobeOkabe:
 
 def aplica_sobrecarga_trasdos(*, distancia_trafico: float, H: float) -> bool:
     """
-    Regla de Sec. 9.2 (num. 2.1.4.3.9): la sobrecarga vertical de trasdos
-    aplica con trafico a distancia horizontal <= H/2 desde la parte superior
-    de la estructura.
+    Regla de Sec. 9.2: la sobrecarga vertical de trasdos aplica con trafico a
+    distancia horizontal <= H/2 desde la parte superior de la estructura.
+
+    NUMERAL CORREGIDO (NOR-PUE-01, MAT-D5). Esta regla se citaba al num.
+    2.1.4.3.9 del Manual de Puentes, que se titula "Aparatos de Apoyo" y va de
+    la conexion entre superestructura y subestructura. El texto que la sostiene
+    esta en el num. 2.4.2.2 "Cargas de Suelo: EH, ES, y DD", pag. impresa 102:
+    "Cuando se prevea trafico a una distancia horizontal, medida desde la parte
+    superior de la estructura, menor o igual a la mitad de su altura, las
+    presiones seran incrementadas...". El numeral viejo estaba propagado a seis
+    puntos del repositorio.
 
     La hoja de ruta anade que "en un cabezal bajo terraplen vial siempre
     aplica" -- ver `sobrecarga_trasdos_siempre_aplica`. Esta funcion existe
@@ -1038,35 +1065,219 @@ def sobrecarga_trasdos_siempre_aplica() -> str:
     Declaracion, para la memoria, de que la sobrecarga de trasdos aplica sin
     medir distancia: Sec. 9.2 cierra el punto con "en un cabezal bajo
     terraplen vial SIEMPRE aplica". No es un supuesto de este modulo.
+
+    LA SEGUNDA MITAD DEL NUMERAL, que el expediente no declaraba: el 2.4.2.2
+    EXIME expresamente del incremento "cuando se diseñe una losa de
+    aproximacion soportada en un extremo del puente". Este proyecto no
+    proyecta losa de aproximacion en ningun cabezal, de modo que la exencion
+    no se invoca y la sobrecarga se aplica; se dice para que un revisor vea
+    que la salida existe y que no se tomo.
     """
     return (
         f"Sobrecarga de trasdos: aplica siempre en un cabezal bajo terraplen "
-        f"vial, con {SOBRECARGA_TRASDOS_H_EQ:.2f} m de relleno equivalente "
-        f"y carga viva {CARGA_VIVA} ({NUMERAL_SOBRECARGA_TRASDOS})"
+        f"vial, con carga viva {CARGA_VIVA} ({NUMERAL_SOBRECARGA_TRASDOS}). "
+        f"El numeral exime del incremento si hay losa de aproximacion; este "
+        f"expediente no proyecta ninguna, de modo que la exencion no se invoca"
     )
 
 
-def presion_sobrecarga_trasdos(*, gamma_relleno: float, k_a: float) -> float:
+def h_eq_sobrecarga_trasdos(*, altura_muro_total: float) -> float:
+    """
+    Altura de suelo equivalente de la sobrecarga viva de trafico, en m.
+
+    Sec. 9.2. Numerales: Manual de Puentes num. 2.4.2.2 (pag. impresa 102) y
+    AASHTO LRFD 9a ed. Art. 3.11.6.4 (pag. impresa 3-151).
+
+    LOS DOS RIGEN A LA VEZ Y GOBIERNA EL MAYOR, que es la misma regla del
+    mayor de la Sec. 0.2 que este proyecto ya aplica al recubrimiento:
+
+        h_eq = max( piso del Manual , h_eq tabulado por AASHTO )
+
+    El Manual escribe un PISO -- "una sobrecarga vertical NO MENOR QUE la
+    equivalente a 0.60 m de altura de relleno" -- y no tabula nada: su
+    traduccion de la Sec. 3.11 de AASHTO se corta en el empuje pasivo k_p y no
+    tiene subnumeral LS (verificado barriendo las 673 paginas). AASHTO SI
+    tabula, por altura del muro, y manda interpolar linealmente entre filas.
+
+    POR QUE ESTA FUNCION PUEDE DETENERSE. Cual de las dos tablas de AASHTO
+    aplica depende de la ORIENTACION del muro respecto del trafico, que es un
+    dato de sitio de este expediente y todavia no esta declarado. Es la
+    resolucion del conflicto vinculante #4 del plan de correcciones: "no hay
+    contradiccion sino un dato faltante". Con el dato sin declarar se lanza
+    `CriterioPendienteError` -- por la via que `datos_sitio.valor` ya usa, sin
+    inventar un camino nuevo -- en vez de aplicar 0.60 m plano, que es lo que
+    el expediente venia haciendo y que para un cabezal de 2.0 m con trafico
+    perpendicular subestima la sobrecarga en un factor 1.87.
+
+    `altura_muro_total` ES LA ALTURA CON ZAPATA, y no es un detalle: AASHTO lo
+    escribe con un `shall` -- "The wall height shall be taken as the distance
+    between the surface of the backfill and the bottom of the footing along
+    the pressure surface being considered" --. Con `GeometriaCabezal` eso es
+    `H + espesor_zapata`. Medirla sin la zapata subestima la altura y, como
+    h_eq DECRECE con ella, sobrestima h_eq: conservador, pero es la lectura
+    equivocada de la tabla.
+    """
+    orientacion = ds.valor("orientacion_muro_respecto_al_trafico")
+    altura_ft = altura_muro_total / PIE_EN_METROS
+
+    if orientacion == ORIENTACION_PERPENDICULAR_AL_TRAFICO:
+        # ANALOGIA DECLARADA [N->]: la Tabla 3.11.6.4-1 es de ESTRIBOS -- su
+        # variable se llama "Abutment Height" --, no de muros de contencion.
+        # AASHTO no publica tabla para un muro perpendicular al trafico. La
+        # analogia va del lado conservador: el propio comentario C3.11.6.4
+        # dice que h_eq es MAYOR para un estribo que para un muro.
+        puntos = sorted((a, h) for a, h in
+                        H_EQ_ESTRIBO_PERPENDICULAR_FT.values())
+    elif orientacion == ORIENTACION_PARALELO_AL_TRAFICO:
+        borde = ds.valor("distancia_borde_calzada_al_trasdos_m")
+        lejos = _columna_de_borde(borde)
+        puntos = sorted((f[0], f[2] if lejos else f[1])
+                        for f in H_EQ_MURO_PARALELO_FT.values())
+    else:
+        raise DatoInvalidoError(
+            f"orientacion_muro_respecto_al_trafico = {orientacion!r} no es "
+            f"una de las dos que AASHTO 3.11.6.4 tabula "
+            f"({', '.join(ORIENTACIONES_TABULADAS)}). La fuente no ofrece un "
+            f"eje libre de orientacion: ofrece dos binomios acoplados "
+            f"(estribo+perpendicular y muro+paralelo) y no hay tabla para "
+            f"ningun otro caso")
+
+    h_eq_ft = _interpolar_h_eq(altura_ft, puntos)
+    h_eq_aashto = h_eq_ft * PIE_EN_METROS
+    # La regla del mayor de Sec. 0.2: el piso peruano y el valor tabulado de
+    # AASHTO rigen a la vez.
+    return max(SOBRECARGA_TRASDOS_PISO_MP_M, h_eq_aashto)
+
+
+def _columna_de_borde(borde_m: float) -> bool:
+    """
+    Cual de las DOS columnas de la Tabla 3.11.6.4-2 aplica. True = la de
+    "1.0 ft or Further".
+
+    LA TABLA TIENE DOS COLUMNAS Y NADA EN MEDIO. Sus rotulos son "0.0 ft" y
+    "1.0 ft or Further", y la unica interpolacion que AASHTO autoriza es la de
+    ALTURAS ("for intermediate wall heights"), entre filas. La banda abierta
+    0 < d < 1.0 ft es laguna de la fuente y la cierra un criterio [A] vacio,
+    no un redondeo de este modulo: hasta que se declare, el calculo se detiene.
+
+    LA TOLERANCIA DECIDE IGUALDAD, NO LADO SEGURO, y la distincion es el
+    hallazgo que la corrigio. Antes la comparacion era
+    `borde >= UMBRAL - TOL`, que redondea hacia "lejos" -- la columna de h_eq
+    MENOR, o sea el lado RELAJADO --, justo la direccion que los comentarios de
+    alrededor condenan. Ahora la tolerancia solo sirve para reconocer los dos
+    valores que la tabla SI tabula (0.0 ft y 1.0 ft) pese a la representacion
+    binaria; lo que cae de verdad entre ellos no se redondea a ninguno de los
+    dos: bloquea.
+    """
+    if borde_m >= H_EQ_BORDE_UMBRAL_M - TOL_UMBRAL_NORMATIVO:
+        return True                       # columna "1.0 ft or Further"
+    if borde_m <= TOL_UMBRAL_NORMATIVO:
+        if borde_m < -TOL_UMBRAL_NORMATIVO:
+            raise DatoInvalidoError(
+                campo="distancia_borde_calzada_al_trasdos_m", valor=borde_m,
+                motivo="una distancia del trasdos al borde de calzada no "
+                       "puede ser negativa")
+        return False                      # columna "0.0 ft"
+    # La banda abierta: la fuente calla y el criterio esta vacio.
+    regla = ca.valor(CRITERIO_H_EQ_BANDA_BORDE)   # VACIO: detiene aqui
+    if regla == H_EQ_BANDA_LEE_COLUMNA_CERO:
+        return False
+    raise DatoInvalidoError(
+        campo=CRITERIO_H_EQ_BANDA_BORDE, valor=regla,
+        motivo="las lecturas declaradas de la banda 0 < d < 1.0 ft son "
+               f"'{H_EQ_BANDA_LEE_COLUMNA_CERO}' y "
+               f"'{H_EQ_BANDA_INTERPOLA}'; interpolar entre las dos columnas "
+               "exige ademas escribir la regla, que la fuente no da")
+
+
+def _interpolar_h_eq(altura_ft: float,
+                     puntos: Sequence[Tuple[float, float]]) -> float:
+    """
+    Interpolacion lineal entre filas de una tabla de h_eq, en pies.
+
+    "Linear interpolation shall be used for intermediate wall heights"
+    (AASHTO 3.11.6.4). Es EXIGENCIA, con `shall`.
+
+    FUERA DEL RANGO TABULADO la fuente calla y esta funcion NO extrapola:
+      - por encima de la ultima fila, esta se rotula ">=20.0" y su valor rige
+        para toda altura mayor -- eso SI lo escribe la tabla;
+      - por debajo de la primera (5.0 ft = 1.524 m) no hay fila con que
+        interpolar y extrapolar no lo autoriza nadie. Es una LAGUNA de la
+        fuente y la cierra un criterio [A] VACIO, no este modulo: hasta que se
+        declare, el calculo se detiene. Antes se tomaba la primera fila en
+        duro, con el argumento de que era el lado conservador; no lo decide
+        eso, porque extrapolar el primer tramo da un h_eq AUN MAYOR y las dos
+        lecturas son elegibles.
+    """
+    if altura_ft <= puntos[0][0]:
+        if altura_ft >= puntos[0][0] - TOL_UMBRAL_NORMATIVO:
+            return puntos[0][1]           # la fila existe: no hay laguna
+        regla = ca.valor(CRITERIO_H_EQ_BAJO_TABLA)    # VACIO: detiene aqui
+        if regla == H_EQ_BAJO_TABLA_PRIMERA_FILA:
+            return puntos[0][1]
+        if regla == H_EQ_BAJO_TABLA_EXTRAPOLAR:
+            (a0, h0), (a1, h1) = puntos[0], puntos[1]
+            return h0 + (h1 - h0) * (altura_ft - a0) / (a1 - a0)
+        raise DatoInvalidoError(
+            campo=CRITERIO_H_EQ_BAJO_TABLA, valor=regla,
+            motivo="las lecturas declaradas por debajo de la primera fila "
+                   f"son '{H_EQ_BAJO_TABLA_PRIMERA_FILA}' y "
+                   f"'{H_EQ_BAJO_TABLA_EXTRAPOLAR}'")
+    if altura_ft >= puntos[-1][0]:
+        return puntos[-1][1]
+    for (a0, h0), (a1, h1) in zip(puntos, puntos[1:]):
+        if a0 <= altura_ft <= a1:
+            return h0 + (h1 - h0) * (altura_ft - a0) / (a1 - a0)
+    raise DatoInvalidoError(
+        f"altura de muro {altura_ft} ft fuera de la tabla de h_eq")
+
+
+def presion_sobrecarga_trasdos(*, gamma_relleno: float, k_a: float,
+                               altura_muro_total: float) -> float:
     """
     Presion horizontal constante de la sobrecarga de trasdos, kPa:
 
-        p = gamma * 0.60 * k_a          (num. 2.1.4.3.9, Sec. 9.2)
+        p = gamma * h_eq * k_a       (num. 2.4.2.2 / AASHTO 3.11.6.4)
 
-    El 0.60 es `SOBRECARGA_TRASDOS_H_EQ`, [N] con numeral. La presion es
-    uniforme en toda la altura porque la sobrecarga equivale a una altura de
-    relleno adicional constante, no a una carga triangular.
+    El h_eq ya NO es el escalar 0.60: sale de `h_eq_sobrecarga_trasdos`, que
+    lo resuelve por altura y orientacion y se detiene si la orientacion no
+    esta declarada.
+
+    LA FORMA `p = gamma * h_eq * k_a` NO ESTA EN EL NUMERAL PERUANO: el
+    Manual escribe la sobrecarga como "altura de relleno equivalente" y el
+    paso a presion es derivacion del proyectista, correcta y declarada.
+    AASHTO SI la escribe, en su ec. 3.11.6.4-1 (Dp = k*gamma_s*h_eq).
+
+    La presion es uniforme en toda la altura porque la sobrecarga equivale a
+    una altura de relleno adicional constante, no a una carga triangular.
     """
-    return gamma_relleno * SOBRECARGA_TRASDOS_H_EQ * k_a
+    h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=altura_muro_total)
+    return gamma_relleno * h_eq * k_a
 
 
 def empuje_sobrecarga_trasdos(*, gamma_relleno: float, k_a: float,
-                              H: float) -> float:
+                              H: float,
+                              altura_muro_total: Optional[float] = None) -> float:
     """
     Empuje horizontal de la sobrecarga por metro de muro, kN/m: la presion
     uniforme de `presion_sobrecarga_trasdos` por la altura H. Su resultante
     actua a H/2, por ser un diagrama rectangular (geometria, no criterio).
+
+    LAS DOS ALTURAS NO SON LA MISMA, y por eso son dos argumentos:
+      `H`                  la altura sobre la que se integra el diagrama, que
+                           es la del empuje del punto;
+      `altura_muro_total`  la que ENTRA EN LA TABLA de h_eq, y que AASHTO
+                           define desde la superficie del relleno hasta el
+                           FONDO DE LA ZAPATA -- o sea con la zapata dentro.
+    Si no se pasa la segunda se usa la primera, y eso subestima la altura de
+    entrada: como h_eq decrece con ella, el resultado queda del lado
+    conservador. Se admite por compatibilidad con los llamadores que solo
+    tienen una altura; quien tenga la geometria completa pasa las dos.
     """
-    return presion_sobrecarga_trasdos(gamma_relleno=gamma_relleno, k_a=k_a) * H
+    return presion_sobrecarga_trasdos(
+        gamma_relleno=gamma_relleno, k_a=k_a,
+        altura_muro_total=H if altura_muro_total is None
+        else altura_muro_total) * H
 
 
 def empuje_activo_estatico(*, gamma_relleno: float, k_a: float,
@@ -1263,8 +1474,17 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
 
     E_a = empuje_activo_estatico(gamma_relleno=gamma, k_a=K_A_rankine,
                                  H=altura_empuje)
-    E_s = empuje_sobrecarga_trasdos(gamma_relleno=gamma, k_a=K_A_rankine,
-                                    H=altura_empuje)
+    # AASHTO mide la altura de entrada de h_eq desde la superficie del relleno
+    # hasta el FONDO DE LA ZAPATA, con un `shall`. `geometria.H` es la altura
+    # del muro SOBRE la zapata, de modo que la de la tabla es la suma.
+    altura_para_h_eq = geometria.H + geometria.espesor_zapata
+    # h_eq SE CALCULA APARTE Y VIAJA EN EL RESULTADO. Antes solo existia dentro
+    # de `empuje_sobrecarga_trasdos` y se perdia: la memoria recibia el empuje
+    # y no la altura equivalente, la orientacion ni la segunda fuente.
+    h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=altura_para_h_eq)
+    E_s = empuje_sobrecarga_trasdos(
+        gamma_relleno=gamma, k_a=K_A_rankine, H=altura_empuje,
+        altura_muro_total=altura_para_h_eq)
     h_agua = altura_agua_sobre_base(D_f=geometria.D_f,
                                     NF_profundidad_m=NF_profundidad_m)
     E_w = empuje_hidrostatico(h_agua=h_agua)
@@ -1292,6 +1512,10 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
         z_incremento=z_incremento,
         mononobe_okabe=mo,
         numeral=NUMERAL_9_2,
+        h_eq_sobrecarga=h_eq,
+        orientacion_muro=ds.valor("orientacion_muro_respecto_al_trafico"),
+        numeral_sobrecarga=(f"{NUMERAL_SOBRECARGA_TRASDOS} + "
+                            f"{NUMERAL_SOBRECARGA_TRASDOS_AASHTO}"),
     )
 
 
@@ -3082,6 +3306,18 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
         f"({NUMERAL_K_AE_MANUAL}; {NUMERAL_K_AE_AASHTO})",
         f"k_h0 en cimentacion sobre roca: {K_H0_ROCA_ERRATA} "
         f"({NUMERAL_K_H0})",
+        # LA SOBRECARGA VIVA DEL TRASDOS, con sus DOS fuentes. La memoria
+        # imprimia solo el numeral peruano, que fija un PISO de 0.60 m, para
+        # un h_eq que la tabla de AASHTO puede llevar a 1.12 m: el lector veia
+        # el numero grande citado contra la fuente del numero pequeño
+        # (NOR-PUE-01, NOR-PUE-02, MAT-O1, MAT-X1).
+        f"Sobrecarga viva en el trasdos: h_eq = max(piso del Manual, tabla de "
+        f"AASHTO por altura y orientacion). {NUMERAL_SOBRECARGA_TRASDOS} fija "
+        f"el piso -- «no menor que» -- y no tabula nada; el valor sale de "
+        f"{NUMERAL_SOBRECARGA_TRASDOS_AASHTO}. La altura de entrada es la del "
+        f"muro CON zapata: {NUMERAL_SOBRECARGA_TRASDOS_ALTURA}",
+        f"Cual de las dos tablas de AASHTO aplica: {H_EQ_REPARTO_DE_TABLAS}",
+        f"Cuando la sobrecarga se aplica: {NUMERAL_SOBRECARGA_TRASDOS_APLICA}",
         # La hipotesis del agua en el trasdos: desviacion conservadora de un
         # `shall` de AASHTO, declarada (MAT-O3, MAT-X3).
         f"Empuje bajo el nivel freatico: {HIPOTESIS_EMPUJE_BAJO_NF} "

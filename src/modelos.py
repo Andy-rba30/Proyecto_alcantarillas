@@ -870,6 +870,19 @@ class CamaApoyoRelleno:
     cama_apoyo: str
     sujecion_relleno_lateral: str
     numeral: str
+    # DE DONDE SALEN LOS PORCENTAJES DE COMPACTACION que la fila imprime, y
+    # es un campo y no un comentario porque la memoria tiene que poder
+    # decirlo. Al verificar las cuatro fichas contra el EG-2013 (NOR-EG-03)
+    # aparecio que en tres de ellas el "95 % MDS" NO es literal de la
+    # subseccion citada: llega por REMISION -- 506.07 y 507.08 remiten a la
+    # Subseccion 205.12(c)(1), que es la que imprime Di > 0.95 De para la
+    # corona y Di > 0.90 De para base y cuerpo --, y en la ficha del concreto
+    # simple el 95 % de la pagina vecina es de OTRO elemento (el terreno base
+    # de 505.06). El valor es correcto; lo que faltaba era decir por que via
+    # llega, que es la diferencia entre una cita y una deduccion.
+    # Vacio significa "todo lo que la fila imprime es literal de su
+    # subseccion", que es el caso del HDPE.
+    procedencia_de_los_porcentajes: str = ""
 
 
 @dataclass(frozen=True)
@@ -1387,6 +1400,16 @@ class EmpujesTrasdos:
     z_incremento: Optional[float] = None         # m sobre la base
     mononobe_okabe: Optional[EmpujeMononobeOkabe] = None
     numeral: str = "Sec. 9.2"
+    # LA CADENA DE LA SOBRECARGA VIVA, que salia del modulo sin dejar rastro.
+    # `E_sobrecarga` es un numero y hasta esta sesion era el unico testigo de
+    # una decision con tres eslabones: la altura del muro CON zapata, la
+    # orientacion respecto al trafico -- que decide CUAL de las dos tablas de
+    # AASHTO aplica -- y el h_eq que sale de ellas. Sin estos tres campos la
+    # memoria imprimia un empuje que puede valer 1.87 veces el del expediente
+    # anterior citando solo un numeral peruano que dice 0.60 m.
+    h_eq_sobrecarga: Optional[float] = None      # m - altura de suelo equivalente
+    orientacion_muro: Optional[str] = None       # respecto al trafico
+    numeral_sobrecarga: str = ""                 # las DOS fuentes que la sostienen
 
     @property
     def empuje_horizontal_total(self) -> float:

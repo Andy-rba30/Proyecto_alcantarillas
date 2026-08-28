@@ -55,5 +55,20 @@ RHO_AGUA = 1000.0   # kg/m3; densidad del agua dulce a temperatura ordinaria
 # calculo opera en kN (ver CLAUDE.md, Unidades), la fisica en N.
 N_POR_KN = 1000.0
 
+# 1 ft = 0.3048 m, EXACTO por definicion internacional del pie desde 1959 (y
+# 1 in = 25.4 mm, que es de donde sale). Es un factor de unidad, de la misma
+# clase que N_POR_KN, y por eso vive aqui y no en constantes_normativas.py:
+# no lo "fija" ningun numeral peruano y no cambia al cambiar de norma.
+#
+# HACE FALTA PORQUE HAY TABLAS EN PIES. Las dos de altura de suelo
+# equivalente de AASHTO (3.11.6.4-1 y -2) y la de recubrimiento (5.10.1-1)
+# imprimen sus valores en pies y en pulgadas, y el calculo opera en SI: la
+# conversion tiene que ocurrir en UN sitio y con el factor exacto. Redondearla
+# no es inocuo -- el umbral "1.0 ft or Further" de la Tabla 3.11.6.4-2 son
+# 0.3048 m y escribirlo 0.30 relaja el criterio --, y ese redondeo es
+# justamente uno de los defectos que el cluster C02 cerro.
+PIE_EN_METROS = 0.3048
+PULGADA_EN_MM = 25.4
+
 GAMMA_AGUA = RHO_AGUA * G                   # N/m3  = 9810.0
 GAMMA_AGUA_KN_M3 = GAMMA_AGUA / N_POR_KN    # kN/m3 = 9.81, unidad del calculo

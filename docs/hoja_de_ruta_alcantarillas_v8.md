@@ -204,12 +204,12 @@ cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion
 
 ### 1.4 Densidad de investigación geotécnica
 
-**Manual de Suelos, num. 4.2, Cuadro 4.1** (págs. 28-29). Nivel **Perfil**: número de calicatas del Cuadro 4.1 **espaciadas cada 4.0 km**.
+**Manual de Suelos, num. 4.2, Cuadro 4.1** (pág. impresa 28). Nivel **Perfil**: **si no existe información secundaria en el tramo**, número de calicatas del Cuadro 4.1 **espaciadas cada 4.0 km** — el orden de prelación que la fuente imprime es usar *primero* la información secundaria existente. Ese 4.0 km **no está en el Cuadro 4.1** sino en un párrafo del num. 4.2, pág. impresa 29; el mismo párrafo fija **2.0 km** para factibilidad y prefactibilidad, ése sí incondicional.
 
 | Clase | IMDA (veh/día) | Calicatas | Profundidad |
 |---|---|---|---|
-| Autopistas | > 6000 | 4 (6 si 4 carriles/sentido) × km × sentido | 1.50 m |
-| Duales / multicarril | 4001–6000 | 4 (o 6) × km × sentido | 1.50 m |
+| Autopistas | > 6000 | 2 carriles/sentido: 4 · 3 carriles/sentido: 4 · **4 carriles/sentido: 6** — × km × sentido | 1.50 m |
+| Duales / multicarril | 4001–6000 | 2 carriles/sentido: 4 · 3 carriles/sentido: 4 · **4 carriles/sentido: 6** — × km × sentido | 1.50 m |
 | 1ª clase | 2001–4000 | 4 × km | 1.50 m |
 | 2ª clase | 401–2000 | 3 × km | 1.50 m |
 | 3ª clase | 201–400 | 2 × km | 1.50 m |
@@ -528,7 +528,9 @@ La norma no protege del riesgo real, que es la **colmatación** en una llanura d
 
 $$d_{50} = \frac{V^{2}}{3.1\,g}$$
 
-d₅₀ en m, V en m/s, g = 9.8 m/s². **La constante 3.1 asume sistema métrico.**
+d₅₀ en m, V en m/s. **La constante 3.1 asume sistema métrico.**
+
+> **Corregido (`NOR-HID-01`, `MAT-O7`).** Esta hoja escribía «g = 9.8 m/s²» bajo el encabezado del num. 4.1.1.3.7 c), presentando el número como si ese numeral lo imprimiera. **No lo imprime**: verificado contra el PDF, su lista de variables dice sólo «g : Aceleración de la gravedad (m/s2)», sin valor. El **valor 9.8 sí es el del Manual** y sigue vigente, pero lo escriben otros dos numerales — **3.12.5 «Otras Metodologías», pág. impresa 63**, y **4.1.1.5.4 b.2.4) «Método de Laursen», pág. impresa 111** —; el 9.81 no aparece ni una vez en sus 225 páginas. Se corrige la atribución, no el número. Es el mismo género de defecto que el «19.62 = 2g» que este documento ya purgó: una cita que suena razonable, que nadie comprueba porque el número es correcto, y que manda al revisor a una página donde no está lo que promete.
 
 | V salida (m/s) | d₅₀ (m) |
 |---|---|
@@ -625,7 +627,15 @@ EG-2013 Sección 503 (Concreto Estructural), num. 503.01, pág. 905, describe el
 
 **Carga viva:** **HL-93** (num. 2.4.3.2.2.1, págs. 103-104).
 
-**Sobrecarga en el trasdós** (num. 2.1.4.3.9, pág. 91): con tráfico a distancia horizontal ≤ H/2 desde la parte superior de la estructura, se añade sobrecarga vertical **≥ 0.60 m de relleno equivalente**. Presión horizontal = γ · 0.60 · k_a. **En un cabezal bajo terraplén vial siempre aplica.**
+**Sobrecarga en el trasdós** (num. **2.4.2.2** «Cargas de Suelo: EH, ES, y DD», **pág. impresa 102**): con tráfico a distancia horizontal ≤ H/2 desde la parte superior de la estructura, se añade sobrecarga vertical **no menor que la equivalente a 0.60 m de relleno**. Presión horizontal = γ · h_eq · k_a. **En un cabezal bajo terraplén vial siempre aplica**, salvo que se diseñe una losa de aproximación, que el propio numeral exime; este expediente no proyecta ninguna.
+
+> **Corregido dos veces (`NOR-PUE-01`, `NOR-PUE-02`, `MAT-D5`, `MAT-O1`, `MAT-X1`; conflicto #4 del plan de correcciones).**
+>
+> **El numeral.** Esta hoja citaba el num. 2.1.4.3.9, pág. 91. Ese numeral existe y se titula **«Aparatos de Apoyo»**: va de la conexión entre superestructura y subestructura, y no contiene la palabra «sobrecarga», ni «trasdós», ni el valor 0.60. El texto real está en el **2.4.2.2**, pág. impresa 102. El numeral falso estaba propagado a seis puntos del repositorio.
+>
+> **El valor.** El 0.60 m es un **piso** —el Manual escribe «no menor que»—, no un valor de diseño, y el Manual **no transcribe** las tablas de altura de suelo equivalente de AASHTO: su traducción de la Sec. 3.11 se corta en el empuje pasivo k_p. El valor lo tabula **AASHTO LRFD 3.11.6.4** (pág. impresa 3-151) por altura del muro, con interpolación lineal obligatoria, y para un cabezal de 2.0 m con tráfico perpendicular da **1.12 m** — 1.87 veces el 0.60 adoptado, con γ_LS = 1.75.
+>
+> **Cómo se resuelve.** Los dos rigen y gobierna el mayor (regla del mayor de §0.2): `h_eq = max(0.60 m, h_eq_AASHTO(altura, orientación, borde))`. **Cuál de las dos tablas de AASHTO aplica depende de la orientación del muro respecto del tráfico**, que es un dato de sitio de este expediente y **está declarado como pendiente**: mientras no se declare, el cálculo se detiene. Tres matices de la fuente que hay que conservar: AASHTO ofrece **dos binomios acoplados** (estribo+perpendicular, muro+paralelo) y no un eje libre de orientación —aplicar la Tabla ‑1 a un cabezal es analogía declarada—; **ninguna frase del articulado reparte las dos tablas**, lo hacen sus títulos y el comentario C3.11.6.4; y el umbral de distancia es **1.0 ft = 0.3048 m exactos**, no 0.30 m.
 
 **Empuje de tierras:** activo, Ka = tan²(45 − φ/2). **Empuje hidrostático y subpresión:** con NF a 1.4 m no es opcional.
 

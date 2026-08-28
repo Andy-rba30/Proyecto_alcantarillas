@@ -1,0 +1,1062 @@
+{
+ "AGUA_TRASDOS_TEXTO_AASHTO": "Submerged unit weights of the soil shall be used to determine the lateral earth pressure below the groundwater table.",
+ "AMBIENTE_CORROSIVO_AUMENTAR": "E.060 Art. 7.7.5.1, pag. 55",
+ "AMBIENTE_CORROSIVO_TEXTO": "En ambientes corrosivos u otras condiciones severas de exposición, debe aumentarse adecuadamente el espesor del recubrimiento de concreto y debe tomarse en consideración su densidad y porosidad o debe disponerse de otro tipo de protección",
+ "CALICATAS_POR_KM": {
+  "autopista": 4,
+  "bajo_volumen": 1,
+  "dual": 4,
+  "primera_clase": 4,
+  "segunda_clase": 3,
+  "tercera_clase": 2
+ },
+ "CALICATAS_POR_SENTIDO": {
+  "autopista": true,
+  "bajo_volumen": false,
+  "dual": true,
+  "primera_clase": false,
+  "segunda_clase": false,
+  "tercera_clase": false
+ },
+ "CAMA_RELLENO_LATERAL": {
+  "concreto_reforzado": {
+   "cama_apoyo": "Subbase granular (Sec. 402) >= 15 cm, >= 95% MDS",
+   "numeral": "506.03/.07/.10/.11, pags. 959-960",
+   "sujecion_relleno_lateral": "Subbase hasta >= 1/6 del diametro exterior. Relleno Sec. 502"
+  },
+  "concreto_simple": {
+   "cama_apoyo": "Concreto Clase F (f'c = 14 MPa), >= 15 cm",
+   "numeral": "505.03/.07/.10/.11, pags. 950-951",
+   "sujecion_relleno_lateral": "Clase F hasta >= 1/4 del diametro exterior. Relleno Sec. 502 >= 95% MDS"
+  },
+  "hdpe": {
+   "cama_apoyo": "Arena gruesa, capas de 15 cm, espesor 15-30 cm (30 cm en roca o suelo blando)",
+   "numeral": "508.05/.07, pags. 981-982",
+   "sujecion_relleno_lateral": "Capas alternadas y simetricas de 15 cm a > 95%; los 30 cm superiores a >= 100%. Prohibida la anegacion"
+  },
+  "tmc": {
+   "cama_apoyo": "Subbase granular >= 15 cm, >= 95% MDS, con arena suelta de 12 mm",
+   "numeral": "507.06/.07/.08, pag. 970",
+   "sujecion_relleno_lateral": "Capas de 15-20 cm: >= 90% en base y cuerpo, >= 95% en corona"
+  }
+ },
+ "CARGA_VIVA": "HL-93",
+ "CBR_MIN_SUBRASANTE": 6.0,
+ "CICLOPEO_CLASE_G_TEXTO": "Se compone de concreto simple Clase F y agregado ciclópeo, en proporción de 30% del volumen total, como máximo",
+ "CICLOPEO_DISCREPANCIA_HOJA_RUTA": "La Sec. 9.4 de la hoja de ruta pide f'c de matriz >= 10 MPa citando solo el Art. 22.10 de E.060. Sobre el mismo material rige ademas la Clase G de la Tabla 503-07 del EG-2013 (14 MPa), que es la norma vial del MTC que este proyecto aplica, y por la regla del mayor gobierna esta. LA HOJA DE RUTA SIGUE INCOMPLETA mientras no recoja el segundo minimo",
+ "CICLOPEO_FC_MATRIZ_MIN": 10.0,
+ "CICLOPEO_FC_MATRIZ_MIN_APLICABLE": 14.0,
+ "CICLOPEO_FC_MATRIZ_MIN_EG2013": 14.0,
+ "CICLOPEO_FRACCION_PIEDRA_MAX": 0.3,
+ "CLASES_CONCRETO_EG2013_MPA": {
+  "A": 35.0,
+  "B": 32.0,
+  "C": 28.0,
+  "D": 21.0,
+  "E": 17.5,
+  "F": 14.0,
+  "G": 14.0
+ },
+ "COMBINACIONES_AASHTO": [
+  "Resistencia I",
+  "Servicio I",
+  "Evento Extremo I"
+ ],
+ "COMBINACION_NO_PARTICIPA": "--",
+ "COMPACTACION_CORONA": 0.95,
+ "COMPACTACION_CUERPO": 0.9,
+ "CONSTANTES_DE_REFERENCIA": [
+  "DIAMETRO_MIN",
+  "DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO",
+  "LONG_MAX_CUNETA",
+  "CBR_MIN_SUBRASANTE",
+  "COMPACTACION_CORONA",
+  "COMPACTACION_CUERPO",
+  "CALICATAS_POR_KM",
+  "CALICATAS_POR_SENTIDO",
+  "ESPACIAMIENTO_PERFIL_KM",
+  "SPT_PROF_MIN",
+  "SPT_ESPACIAMIENTO"
+ ],
+ "CUANTIA_MIN_MURO": {
+  "horizontal": 0.002,
+  "vertical": 0.0015
+ },
+ "DESPLAZAMIENTO_HABILITA_REDUCCION_M": 0.0254,
+ "DESPLAZAMIENTO_REFERENCIA_SUPERIOR_M": 0.0508,
+ "DIAMETRO_MIN": 0.9,
+ "DIAMETRO_MIN_AMBITO": "CONDICION 1 -- 'carreteras de alto volumen de transito': la clase de via del corredor NO esta cerrada (depende del IMDA del estudio de demanda), de modo que el proyecto no puede afirmar que se cumple. El piso se aplica igual a las Familias A y B, y esa es una ADOPCION declarada, no una lectura automatica del numeral. SU DIRECCION NO ES UNIFORMEMENTE CONSERVADORA, y decirlo importa porque lo contrario -- 'mas seccion nunca puede ser peor' -- es intuitivo y es falso. Mas diametro da mas capacidad y mas borde libre, o sea es conservador para V1; y da MENOS velocidad para el mismo caudal, o sea va CONTRA el piso de autolimpieza de V2. Ejemplo real, concreto con n_max = 0.013, S = 0.001 y Q = 0.0035 m3/s: D = 0.75 m da 0.2554 m/s y cumple V2; D = 0.90 m da 0.2488 m/s y NO cumple. En ese caudal, aplicar el piso sin que la condicion del numeral este establecida puede declarar no factible un punto que un conducto mas chico resolveria. Es una consecuencia de la adopcion, no un defecto del calculo, y se declara aqui para que quien cierre el IMDA sepa que hay algo que revisar. CONDICION 2 -- 'salvo en cruces de canales de riego': la Familia C de este expediente ES un conjunto de cruces de canal, y el numeral la EXCEPTUA expresamente: alli la seccion se adopta 'de acuerdo a cada diseno particular' y este piso no rige. El catalogo de conductos circulares no entrega candidatos para esa familia, de modo que ningun punto suyo recibe el piso -- pero hasta ahora la razon escrita era solo la forma de la seccion (Sec. 2.3 de la hoja de ruta) y no esta excepcion normativa, que es la que gobierna.",
+ "DIAMETRO_MIN_TEXTO": "En carreteras de alto volumen de transito y por necesidad de limpieza y mantenimiento de las alcantarillas, se adoptara una seccion minima circular de 0.90 m (36\") de diametro o su equivalente de otra seccion, salvo en cruces de canales de riego donde se adoptaran secciones de acuerdo a cada diseno particular.",
+ "DIAMETRO_MIN_TMC_SELVA_ALTA_CONDICIONES": "Las cuatro caracteristicas del parrafo anterior, que el numeral exige para que la recomendacion aplique: cauces encajonados, en V, inactivos o con flujo permanente de agua; pendientes entre 5% y 60%; suelo de taludes y lecho de material granular (aluvial, coluvial, con matriz fina de arena y limos, gravas y gravillas), vulnerable a erosion pluvial; vegetacion arbustiva en taludes. NO APLICA EN COSTA, que es donde esta este corredor (La Union, Piura).",
+ "DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO": 1.22,
+ "DIAMETRO_MIN_TMC_SELVA_ALTA_TEXTO": "Se recomienda utilizar, en zonas de selva alta, con las caracteristicas fisicas y geomorfologicos indicadas en el parrafo anterior, como diametro minimo alcantarillas TMC Ø 48\".",
+ "D_INICIO": 0.9,
+ "D_PASO": 0.15,
+ "E030_AMBITO_LECTURA": "El Art. 4 acota el ambito de E.030 a las edificaciones nuevas y al reforzamiento o reparacion de edificaciones existentes, y un cabezal de alcantarilla de una carretera no es una edificacion. PERO ESO SOLO NO BASTA, y creer que basta es el error que este campo cometia: E.030 NO guarda silencio sobre las obras que no son edificaciones. Su Art. 7.3 las nombra -- puentes y estructuras hidraulicas entre ellas -- y se las ATRAE, con una condicion suspensiva: 'mientras no se cuente con normas nacionales especificas'. De modo que 'no es una edificacion' no es lo que saca al cabezal de E.030: es el disparador del articulo que lo mete. LO QUE LO SACA es que la condicion NO SE CUMPLE: el MTC si tiene norma nacional especifica -- el Manual de Puentes --, y por eso el mandato de usar Z y S de E.030 no llega a activarse. Es un fundamento POSITIVO, y mas fuerte que el silencio que este campo invocaba: la propia E.030 cede el paso ante la norma sectorial. Ver E030_ART_7_3_TEXTO",
+ "E030_AMBITO_TEXTO": "La presente Norma Tecnica es de cumplimiento obligatorio a nivel nacional y se aplica a: a) El diseno de edificaciones nuevas. b) El reforzamiento de edificaciones existentes y la reparacion de estructuras que resulten danadas por la accion de los sismos (Capitulo VIII).",
+ "E030_ART_7_3_TEXTO": "Mientras no se cuente con normas nacionales especificas para estructuras tales como reservorios, tanques, silos, puentes, torres de transmision, muelles, estructuras hidraulicas, tuneles y todas aquellas cuyo comportamiento sismico difiera del de las edificaciones se deben utilizar los valores Z y S del Capitulo II de la presente Norma Tecnica amplificados de acuerdo a la importancia de la estructura, debiendo ser sustentado por el proyectista tomando en cuenta estandares internacionales.",
+ "E030_S5_LECTURA": "Es una prohibicion CONDICIONADA, no absoluta: la misma oracion la levanta con estudio especifico de sitio y mejoramiento del estrato. Leerla como bloqueo duro va mas alla de la fuente; leerla como referencia muerta se queda muy por debajo. La fila S5 se llama 'Suelos excepcionales' y su primera vineta es 'Suelos potencialmente licuables', que es la razon por la que este expediente se atribuye esa letra. La Tabla N 3 del num. 14.7 -- la que el num. 14.8 obliga a usar para clasificar -- NO tiene fila S5, solo S0 a S4, coherente con que 'estos casos no estan cubiertos'",
+ "E030_S5_TEXTO": "Estos casos no estan cubiertos en la clasificacion establecida en la Tabla N 2 de la presente Norma Tecnica. Se prohibe las construcciones apoyadas sobre estos perfiles, salvo que, se efectue un estudio especifico para el sitio, en el cual se debe considerar los mejoramientos en el estrato del perfil.",
+ "E030_S5_VS_CLASE_F": "E.030 clasifica los suelos potencialmente licuables en su perfil S5 'Suelos excepcionales' (Art. 14.6, Tabla N 2). AASHTO LRFD 9a ed. y el Manual de Puentes NO los nombran en su Clase de Sitio F y tratan la licuefaccion por via distinta de la clase de sitio (AASHTO Art. 10.5.4.2). Los dos esquemas discrepan justamente en el rasgo que motiva la clasificacion de este sitio, y el salto de uno al otro no lo escribe ninguno de los dos: es premisa abierta del expediente, no cita",
+ "E030_TR_DERIVACION": "Tr = 475 anios NO lo escribe el Art. 11: es la derivacion de la probabilidad que si escribe, Tr = -50/ln(0.90) = 474.6 ~ 475. La cifra aparece literal en el Anexo III de E.030 (pag. impresa 67), en el contenido minimo de los estudios de microzonificacion sismica, no en la definicion de Z",
+ "E030_Z_TEXTO": "A cada zona se asigna un factor Z segun se indica en la Tabla N 1 de la presente Norma Tecnica. Este factor representa la aceleracion maxima horizontal en suelo rigido con una probabilidad de 10% de ser excedida en 50 anios.",
+ "ESPACIAMIENTO_MAX_ABSOLUTO": 0.4,
+ "ESPACIAMIENTO_MAX_VECES_ESPESOR": 3.0,
+ "ESPACIAMIENTO_PERFIL_KM": 4.0,
+ "ESPESOR_DOS_CAPAS_REFUERZO": 0.2,
+ "ESPESOR_TEMPERATURA_DOS_CARAS": 0.25,
+ "EXCENTRICIDAD_ADMISIBLE_FRACCION_B": {
+  "0.0": 0.3333333333333333,
+  "1.0": 0.4
+ },
+ "EXCENTRICIDAD_ERRATA_MANUAL": "TERCERA ERRATA DE IMPRENTA DEL MANUAL en esta misma cadena sismica, y la unica que mueve un numero. El num. 2.8.1.1.14.1 traduce el 'middle two-thirds' de AASHTO como 'tercio central', que no es lo mismo: dos tercios centrales es e <= B/3 y el tercio central es e <= B/6, la mitad. Que es descuido de traduccion y no decision del MTC lo prueba el propio Manual, tres paginas antes: en su numeral ESTATICO traduce el MISMO giro correctamente -- 'dentro los dos tercios centrales del ancho de la base' -- y en el mismo parrafo sismico traduce bien 'eight-tenths' como 'ocho decimas centrales'. Solo degrada 'two-thirds', y solo ahi. Y LA LECTURA LITERAL ES NORMATIVAMENTE IMPOSIBLE: dejaria el limite bajo SISMO (e <= B/6) al doble de estricto que el mismo Manual exige bajo carga estatica permanente (e <= B/3, fundacion en suelo), lo que invierte la filosofia de estados limite -- Evento Extremo I es raro y mas tolerante que Resistencia I, no al reves. Con el texto de AASHTO el articulo es coherente: ANCLA en gamma_EQ = 0.0 sobre el mismo B/3 del limite estatico y desde ahi RELAJA a 0.4*B cuando gamma_EQ = 1.0. GANA AASHTO. Seguir la letra del Manual seria conservador -- por eso esto no cambia ningun resultado ya emitido -- pero rechazaria disenos que la norma acepta, y sobre todo dejaria la cita sin sostener",
+ "EXCENTRICIDAD_ESTATICA_FRACCION_B": {
+  "roca": 0.45,
+  "suelo": 0.3333333333333333
+ },
+ "EXCENTRICIDAD_ESTATICA_TEXTO": "En las fundaciones en suelo la ubicacion de la resultante de las fuerzas de reaccion debera estar dentro los dos tercios centrales del ancho de la base. En las fundaciones sobre roca la ubicacion de la resultante de las fuerzas de reaccion debera estar dentro de los nueve decimos centrales del ancho de la base. Los criterios especificados para la ubicacion de la resultante, junto con la investigacion de la presion de contacto, reemplaza la investigacion de la relacion entre el momento estabilizador y el momento de vuelco.",
+ "EXCENTRICIDAD_SISMICA_TEXTO": "Para la evaluacion de la excentricidad sismica de los muros que cimentan en suelo y roca, la ubicacion de la resultante de las fuerzas de reaccion estara dentro del tercio central de la base para gEQ = 0.0 y dentro de ocho decimas centrales para gEQ = 1.0. Para valores de gEQ entre 0.0 y 1.0 la ubicacion de la resultante se obtendra por interpolacion lineal entre los valores dados en este articulo.",
+ "EXCENTRICIDAD_SISMICA_TEXTO_AASHTO": "For seismic eccentricity evaluation of walls with foundations on soil and rock, the location of the resultant of the reaction forces shall be within the middle two-thirds of the base for gamma_EQ = 0.0 and within the middle eight-tenths of the base for gamma_EQ = 1.0. For values of gamma_EQ between 0.0 and 1.0, the resultant location restriction shall be obtained by linear interpolation of the values given in this Article.",
+ "EXCEPCION_DOS_CAPAS_REFUERZO": "excepto los muros de sótanos",
+ "EXCEPCION_REFUERZO_MIN_MURO_TEXTO": "El refuerzo mínimo será el indicado en 14.3. Este requisito podrá exceptuarse cuando el Ingeniero Proyectista disponga juntas de contracción y señale procedimientos constructivos que controlen los efectos de contracción y temperatura",
+ "EXPOSICION_ESPECIAL": {
+  "baja_permeabilidad": {
+   "a_c_max": 0.5,
+   "fc_min_MPa": 28,
+   "texto": "Concreto que se pretende tenga baja permeabilidad en exposición al agua"
+  },
+  "cloruros": {
+   "a_c_max": 0.4,
+   "fc_min_MPa": 35,
+   "texto": "Para proteger de la corrosión el refuerzo de acero cuando el concreto está expuesto a cloruros provenientes de productos descongelantes, sal, agua salobre, agua de mar o a salpicaduras del mismo origen"
+  },
+  "congelamiento_deshielo": {
+   "a_c_max": 0.45,
+   "fc_min_MPa": 31,
+   "texto": "Concreto expuesto a ciclos de congelamiento y deshielo en condición húmeda o a productos químicos descongelantes"
+  }
+ },
+ "FACTOR_MURO_CON_REDUCCION": "reduccion_por_desplazamiento",
+ "FACTOR_MURO_DECLARACIONES": [
+  "sin_reduccion",
+  "reduccion_por_desplazamiento"
+ ],
+ "FACTOR_MURO_SIN_REDUCCION": "sin_reduccion",
+ "FS": {
+  "capacidad_portante": {
+   "estatico": 3.0,
+   "sismico": 2.5
+  },
+  "deslizamiento": {
+   "estatico": 1.5,
+   "sismico": 1.25
+  },
+  "estabilidad_global": {
+   "estatico": 1.5,
+   "sismico": 1.25
+  },
+  "talud": {
+   "estatico": 1.5,
+   "sismico": 1.25
+  },
+  "volteo": {
+   "estatico": 1.5,
+   "sismico": 1.25
+  }
+ },
+ "FS_NUMERAL": {
+  "capacidad_portante": "E.050 Art. 21.1/21.2, pag. 34",
+  "deslizamiento": "E.050 num. 39.13.6 a), pag. 72",
+  "estabilidad_global": "E.050 num. 39.13.6 b), pag. 72",
+  "talud": "E.050 Art. 30.3, pag. 39",
+  "volteo": "E.050 num. 39.13.6 a), pag. 72"
+ },
+ "F_PGA_CLASES_EN_ROCA": [
+  "A",
+  "B"
+ ],
+ "F_PGA_CLASE_SIN_FACTOR": "F",
+ "F_PGA_EXIGE_ESTUDIO_DE_SITIO": "*",
+ "F_PGA_TABLA": {
+  "A": [
+   0.8,
+   0.8,
+   0.8,
+   0.8,
+   0.8
+  ],
+  "B": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ],
+  "C": [
+   1.2,
+   1.2,
+   1.1,
+   1.0,
+   1.0
+  ],
+  "D": [
+   1.6,
+   1.4,
+   1.2,
+   1.1,
+   1.0
+  ],
+  "E": [
+   2.5,
+   1.7,
+   1.2,
+   0.9,
+   0.9
+  ],
+  "F": [
+   "*",
+   "*",
+   "*",
+   "*",
+   "*"
+  ]
+ },
+ "F_PGA_TABLA_COLUMNAS": [
+  "Clase de Sitio",
+  "PGA < 0.10",
+  "PGA = 0.20",
+  "PGA = 0.30",
+  "PGA = 0.40",
+  "PGA > 0.50"
+ ],
+ "F_PGA_TABLA_ENCABEZADO_SUPERIOR": "Coeficiente Aceleracion Pico del Terreno (PGA)1",
+ "F_PGA_TABLA_NOTAS": [
+  "1. Usar linea recta de interpolacion para valores intermedios de PGA.",
+  "2. Llevar a cabo investigaciones geotecnicas especificas del sitio y analisis de respuesta dinamica de sitio, para todos los sitios en sitio clase F"
+ ],
+ "F_PGA_TABLA_PGA_COLUMNAS": [
+  0.1,
+  0.2,
+  0.3,
+  0.4,
+  0.5
+ ],
+ "F_PGA_TABLA_TITULO": "Tabla 2.4.3.11.2.1.2-1 Valores de Factor de Sitio, F_pga En Periodo-Cero en el Espectro de Aceleracion",
+ "GAMMA_EQ_TEXTO": "AASHTO LRFD 9a ed., Art. 3.4.1, pag. impresa 3-19: 'The load factor for live load in Extreme Event Load Combination I, gamma_EQ, shall be determined on a project-specific basis.' El comentario C3.4.1 (pag. impresa 3-10) agrega: 'Past editions of the Standard Specifications used gamma_EQ = 0.0. This issue is not resolved. The possibility of partial live load, i.e., gamma_EQ < 1.0, with earthquakes should be considered. Application of Turkstra's rule for combining uncorrelated loads indicates that gamma_EQ = 0.50 is reasonable for a wide range of values of average daily truck traffic (ADTT).' O sea: el 0.0 es practica HISTORICA de ediciones pasadas y el 0.50 una indicacion de razonabilidad, no dos opciones tabuladas; y quien lo determina es el PROYECTO ('project-specific basis'), no 'el propietario'",
+ "GAMMA_P_MARCA": "gamma_p",
+ "GAMMA_P_NO_APLICA": null,
+ "G_LAUSHEY": 9.8,
+ "HDS5_INLET": {
+  "circular_cmp_headwall": {
+   "K": 0.0078,
+   "Ks": -0.5,
+   "M": 2.0,
+   "Y": 0.69,
+   "c": 0.0379
+  },
+  "circular_cmp_mitered": {
+   "K": 0.021,
+   "Ks": 0.7,
+   "M": 1.33,
+   "Y": 0.75,
+   "c": 0.0463
+  },
+  "circular_concreto_square_edge_headwall": {
+   "K": 0.0098,
+   "Ks": -0.5,
+   "M": 2.0,
+   "Y": 0.67,
+   "c": 0.0398
+  }
+ },
+ "HIPOTESIS_EMPUJE_BAJO_NF": "El empuje activo de este proyecto se calcula con el peso especifico TOTAL del relleno en toda la altura y se le suma la hidrostatica completa bajo el NF. AASHTO 3.11.3 exige peso especifico SUMERGIDO bajo el nivel freatico, de modo que el agua de poros se cuenta dos veces en la zona sumergida. CUANTO ES, exactamente: el exceso de presion horizontal es Ka*(gamma - gamma')*h = Ka*gamma_agua*h, o sea CONSTANTE en toda la zona sumergida y proporcional solo a la profundidad bajo el NF. Con gamma_sat = 20 kN/m3 (gamma' = 10.19), Ka = 1/3 y h = 0.60 m son 1.96 kPa de mas, siempre. En porcentaje NO hay un solo numero, porque depende de la altura del muro: sobre un muro de 0.60 m -- todo el sumergido, que es el caso con que la ficha MAT-O3 lo calculo -- la presion en la base es 9.9 kPa contra 7.9 kPa, +25 %; sobre uno de 2.00 m con el freatico a 1.40 m es 19.2 contra 17.3 kPa, +11 %; y sigue bajando con la altura, porque el exceso no crece y el empuje si. La desviacion es CONSERVADORA en todos los casos (gamma > gamma' siempre). Se mantiene, y se declara, porque corregirla exige un peso especifico sumergido del relleno que este expediente todavia no tiene: aplicar AASHTO con el unico gamma declarado seria ALIVIAR el empuje sin dato que lo sostenga. La hoja de ruta no dice nada del NF en el empuje: solo que 'empuje hidrostatico y subpresion, con NF a 1.4 m, no son opcionales'",
+ "H_O_CONDICION_APLICACION": "h_o se calcula SIEMPRE, y de las tres condiciones que la fuente le pone el proyecto EVALUA dos y declara la tercera. SE EVALUAN, punto por punto, los dos limites sobre HW/D: por debajo de 1.2 la fuente pide cautela y por debajo de 0.75 dice que la aproximacion no debe usarse. Cuando el control de salida GOBIERNA un punto y su HW/D cae bajo alguno de los dos, la memoria de ese punto lo dice con esas palabras, junto al HW: un aviso general que no senala el punto afectado no le sirve al revisor, que es lo que este bloque venia haciendo. NO SE EVALUA la primera condicion -- que el barril fluya lleno en la mayor parte de su longitud --, y no por descuido: exige un perfil de la lamina de agua a lo largo del conducto, que este script no calcula. El criterio adoptado 'geometria_control_salida' = 'seccion_llena' PRESUPONE ademas lo mismo que ahi habria que verificar, de modo que esa premisa entra dos veces por dos puertas y no se comprueba por ninguna. No se sustituye por otra formula ni se inventa un criterio de llenado: se declara, y quien revise el expediente decide si el punto necesita el procedimiento de barril parcialmente lleno del Cap. III, que es la alternativa que el propio criterio ya cita. HAY UNA CIRCULARIDAD QUE CONVIENE VER: el HW con que se evaluan los dos limites es el que produce la propia aproximacion, de modo que un h_o sobreestimado puede hacer que el control de salida gobierne un punto donde no gobernaria. El aviso se emite igual; deshacer la circularidad exige el procedimiento completo, no otra lectura de esta pagina.",
+ "H_O_CONDICION_TEXTO": [
+  "Approximate hydraulic gradeline ho = (dc + D)/2 can only be used if the barrel flows full for most of its length. It should not be used if the inlet is not submerged.",
+  "If outlet control governs and the headwater depth (referenced to the inlet invert) is less than 1.2D, it is possible that the barrel flows partly full though its entire length. In this case, caution should be used in applying the approximate method of setting the downstream elevation based on the greater of tailwater or (dc + D)/2. If the headwater depth falls below 0.75D, the approximate method should not be used."
+ ],
+ "H_O_FORMA_MAXIMO_TEXTO": "ho = TW or (dc + D)/2 whichever is larger.",
+ "H_O_HW_SOBRE_D_CAUTELA": 1.2,
+ "H_O_HW_SOBRE_D_MIN": 0.75,
+ "H_O_NUMERAL": "HDS-5 (FHWA) 3a ed., abril 2012, num. 3.3.3 'Outlet Control', pag. impresa 3.24 (PDF 106)",
+ "H_RELLENO_MIN": {
+  "concreto": null,
+  "hdpe": 0.3,
+  "tmc": null
+ },
+ "KU_METRICO": 1.811,
+ "K_AE_ERRATA_ANOMALIA_ADICIONAL": "En la misma pagina el texto llama a la fuerza 'E_AE' y la formula imprime 'E_EA', con los subindices transpuestos: otro descuido de composicion del mismo apendice",
+ "K_AE_ERRATA_MANUAL": "ERRATA DE IMPRENTA DEL MANUAL. El Apendice A11 imprime el denominador de K_AE con '[1 - raiz(...)]', signo MENOS, verificado renderizando la pag. impresa 586 (PDF 587) a 6x: el trazo es horizontal unico, sin trazo vertical. AASHTO, del que el propio Manual declara transcribirlo, imprime '[1 + raiz(...)]' (pag. impresa 11-145). GANA AASHTO, y no por preferencia de fuente: con el signo menos K_AE DIVERGE cuando el radicando tiende a 1, y el caso limite k_h = k_v = 0 deja de devolver el Ka de Coulomb -- la formula se rompe donde el propio Manual la manda coincidir. EL CODIGO SIGUE A AASHTO. Quien 'corrija' M9 contra la letra impresa del Manual rompe la formula",
+ "K_FRICCION_SI": 19.63,
+ "K_H0_FACTOR_ROCA_A_B": 1.2,
+ "K_H0_ROCA_ERRATA": "ERRATA DE IMPRENTA DEL MANUAL, verificada como imagen en la pag. impresa 254 (PDF 255): el parentesis imprime '1.2 kh0=FpgaPGA', con el 1.2 del lado izquierdo. Leido al pie de la letra daria k_h0 = F_pga*PGA/1.2, una REDUCCION del 17 %, justo lo contrario de lo que la prosa de la misma frase acaba de decir. AASHTO LRFD 9a ed., Art. 11.6.5.2.1 'Characterization of Acceleration at Wall Base', pag. impresa 11-27 (PDF 1496), lo escribe sin ambiguedad: 'k_h0 shall be based on 1.2 times the site-adjusted peak ground acceleration coefficient (i.e., k_h0 = 1.2 F_pga PGA)'. GANA LA PROSA DEL MANUAL, coincidente con AASHTO. Es la segunda de las TRES erratas de imprenta de esta misma cadena sismica; las otras son K_AE_ERRATA_MANUAL y EXCENTRICIDAD_ERRATA_MANUAL",
+ "K_H0_ROCA_TEXTO": "Para muros cimentados sobre Sitio con suelos Clase A o B (roca dura o blanda), k h0 estara basado en 1.2 veces el coeficiente de aceleracion pico del suelo (es decir, 1.2 kh0=FpgaPGA).",
+ "K_H0_TEXTO": "kh0=FpgaPGA = As donde kh0 es el coeficiente de aceleracion sismico horizontal asumiendo que el desplazamiento del muro sea cero",
+ "K_V_CASO_RESERVADO": "El num. 2.8.1.1.14.2.1 reserva dos casos -- muro significativamente afectado por efectos de alguna falla cercana, y aceleraciones verticales relativamente altas simultaneas con la horizontal -- y no cuantifica ninguno: no hay distancia a la falla, no hay definicion de 'cercana' y no hay umbral de aceleracion vertical. El num. 2.8.1.1.14.3 (pag. impresa 255) reitera el cero remitiendo a este numeral. AASHTO SI cuantifica el primer caso, pero en otro articulo y sobre un mapa que no cubre el Peru: Art. 3.10.2.2, pag. impresa 3-100 (PDF 154), 'For sites located within 6 miles of an active surface or a shallow fault, as depicted in the USGS Active Fault Map, studies shall be considered to quantify near-fault effects'. El Manual, que es la norma aplicable, no traslada ni el umbral ni el mapa",
+ "K_V_DECLARACION_PRESCRITO": "prescrito_sin_caso_reservado",
+ "K_V_PRESCRITO": 0.0,
+ "K_V_TEXTO": "El coeficiente de aceleracion sismica vertical, kv, se asumira cero con el proposito de calcular las presiones laterales del terreno, a no ser que el muro este significativamente afectado por efectos de alguna falla cercana, o si son relativamente altas las aceleraciones verticales que probablemente esten actuando simultaneamente con la aceleracion horizontal.",
+ "LAUSHEY_K": 3.1,
+ "LECTURAS_COLUMNA_EXTREMA": [
+  "limite_inclusive",
+  "limite_estricto"
+ ],
+ "LECTURA_COLUMNA_EXTREMA_ESTRICTA": "limite_estricto",
+ "LECTURA_COLUMNA_EXTREMA_INCLUSIVE": "limite_inclusive",
+ "LONG_MAX_CUNETA": {
+  "muy_lluviosa": 200.0,
+  "seca": 250.0
+ },
+ "LUZ_MAX_ALCANTARILLA": 6.0,
+ "MANNING": {
+  "concreto_tubo_recto": [
+   0.01,
+   0.013
+  ],
+  "madera_duelas": [
+   0.01,
+   0.014
+  ],
+  "metal_corrugado_dren_aguas_lluvias": [
+   0.021,
+   0.03
+  ],
+  "metal_corrugado_subdren": [
+   0.017,
+   0.021
+  ]
+ },
+ "NOTA_COMBINACION_4_2_4_4": "Cuando se utilicen las Tablas 4.2 y 4.4 simultáneamente, se debe utilizar la menor relación máxima agua-material cementante aplicable y el mayor f'c mínimo",
+ "NQ_ZAPATA_EN_TALUD": 0.0,
+ "NUMERAL_AGUA_TRASDOS_AASHTO": "AASHTO LRFD 9a ed. (2020), Art. 3.11.3 'Presence of Water', pag. impresa 3-118 (PDF 172)",
+ "NUMERAL_CADENA_SISMICA": "Manual de Puentes (MTC) num. 2.8.1.1.14 'Diseno Sismico de Estribos y Muros de Contencion Convencionales' (11.6.5 AASHTO), pag. impresa 252 (PDF 253)",
+ "NUMERAL_CICLOPEO": "E.060 Art. 22.10, pags. 194-195",
+ "NUMERAL_CICLOPEO_APLICABLE": "E.060 Art. 22.10, pags. 194-195 / EG-2013 Seccion 503, num. 503.04 'Clases de concreto', Tabla 503-07 'Clases de concreto estructural', pag. impresa 912 (PDF 920)",
+ "NUMERAL_CICLOPEO_EG2013": "EG-2013 Seccion 503, num. 503.04 'Clases de concreto', Tabla 503-07 'Clases de concreto estructural', pag. impresa 912 (PDF 920)",
+ "NUMERAL_COMBINACIONES": "2.4.5.3 (AASHTO LRFD Sec. 3.4.1), pags. 140-143",
+ "NUMERAL_COMBINACION_4_2_4_4": "E.060, nota al pie de las Tablas 4.2 y 4.4, pags. impresas 37 y 38",
+ "NUMERAL_CUANTIA_MIN": "E.060 Art. 14.3.1, pag. 133",
+ "NUMERAL_C_PHI": "E.050 Art. 20, pag. 33",
+ "NUMERAL_DOS_CAPAS_REFUERZO": "E.060 Art. 14.3.2, pag. 133",
+ "NUMERAL_E030_AMBITO": "E.030 (RM 183-2026-VIVIENDA), Art. 4 'Ambito de aplicacion', pag. impresa 7 (PDF 7)",
+ "NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION": "E.030 (RM 183-2026-VIVIENDA), Art. 7.3, dentro del Art. 7 'Consideraciones para el diseno y comportamiento estructural', pag. impresa 8 (PDF 8)",
+ "NUMERAL_E030_S5": "E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla N 2, fila S5, pag. impresa 11 (PDF 11)",
+ "NUMERAL_E030_Z": "E.030 (RM 183-2026-VIVIENDA), Art. 11.1 y Tabla N 1, pag. impresa 9 (PDF 9)",
+ "NUMERAL_ESPACIAMIENTO": "E.060 Art. 14.3.3",
+ "NUMERAL_EXCENTRICIDAD_ESTATICA": "Manual de Puentes (MTC) num. 2.3.1.1.12.3 'Limites de Excentricidad' (11.6.3.3 AASHTO) -- el numeral se imprime asi, con 2.3 en vez de 2.8, errata del Manual que su propio indice repite --, pag. impresa 250 (PDF 251)",
+ "NUMERAL_EXCENTRICIDAD_SISMICA": "2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254)",
+ "NUMERAL_EXCENTRICIDAD_SISMICA_AASHTO": "AASHTO LRFD 9a ed. (2020), Art. 11.6.5.1 'General', pag. impresa 11-25 (PDF 1494)",
+ "NUMERAL_EXCEPCION_REFUERZO_MIN_MURO": "E.060 Art. 14.8.2, pag. 134",
+ "NUMERAL_EXPOSICION_ESPECIAL": "E.060 Tabla 4.2, pag. impresa 37, aplicada por el Art. 4.4.2, pag. impresa 39",
+ "NUMERAL_FACTOR_MURO": "2.8.1.1.14.2.2 'Estimacion de la Aceleracion que Actua Sobre la Masa del Muro' (11.6.5.2.2 AASHTO), pag. impresa 255 (PDF 256)",
+ "NUMERAL_F_PGA_TABLA": "Manual de Puentes (MTC) num. 2.4.3.11.2.1.2, Tabla 2.4.3.11.2.1.2-1 (Tabla 3.10.3.2-1 AASHTO), pag. impresa 123 (PDF 124)",
+ "NUMERAL_K_AE_AASHTO": "AASHTO LRFD 9a ed. (2020), Appendix A11, Art. A11.3.1 'Mononobe-Okabe Method', ec. A11.3.1-1, pag. impresa 11-145 (PDF 1614)",
+ "NUMERAL_K_AE_MANUAL": "Manual de Puentes (MTC), Apendice A11 'Diseno Sismico de Estructuras de Contencion', num. A.11.3.1 'Metodo de Mononobe -Okabe', ec. A.11.3.1-2, pag. impresa 586 (PDF 587)",
+ "NUMERAL_K_H0": "2.8.1.1.14.2.1 'Caracterizacion de la Aceleracion en la Base del Muro de Contencion' (11.6.5.2.1 AASHTO), pag. impresa 254 (PDF 255)",
+ "NUMERAL_PRESION_CONTACTO": "Manual de Puentes (MTC) num. 2.8.1.1.12.2 'Capacidad de Carga' (11.6.3.2 AASHTO), pag. impresa 248 (PDF 249)",
+ "NUMERAL_PROTECCION_CORROSION": "E.060 Art. 4.4.2, pag. impresa 39",
+ "NUMERAL_P_IR": "2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254)",
+ "NUMERAL_RECUBRIMIENTO": "E.060 Art. 7.7.1, pag. 54",
+ "NUMERAL_RECUBRIMIENTO_MP": "Manual de Puentes num. 2.9.1.5.5.3 'Recubrimiento de Concreto' (5.12.3 AASHTO) y Tabla 2.9.1.5.5.3-1, pags. impresas 377-378 (PDF 378-379)",
+ "NUMERAL_SOBRECARGA_TRASDOS": "2.1.4.3.9, pag. 91",
+ "NUMERAL_SULFATOS": "E.060 Tabla 4.4, pag. impresa 38",
+ "NUMERAL_TABLA_COMBINACIONES": "Manual de Puentes (MTC) num. 2.4.5.3.1, Tabla 2.4.5.3.1-1 'Combinaciones de Carga y Factores de Carga' (3.4.1-1 AASHTO), pag. impresa 143 (PDF 144)",
+ "NUMERAL_TABLA_GAMMA_P": "Manual de Puentes (MTC) num. 2.4.5.3.1, Tabla 2.4.5.3.1-2 'Factores de carga para cargas permanentes, gamma_p' (3.4.1-2 AASHTO), pag. impresa 143 (PDF 144)",
+ "NUMERAL_TEMPERATURA_DOS_CARAS": "E.060 Art. 14.8.3, pag. 134",
+ "NUMERAL_ZAPATA_EN_TALUD": "2.8.1.3.1.2c, pags. 272-273",
+ "NUMERAL_ZAPATA_TALUD_E050": "E.050 Art. 30.1-30.2",
+ "PRESION_CONTACTO_TEXTO": "Si el muro es soportado por una fundacion en suelo: La tension vertical se debera calcular suponiendo una presion uniformemente distribuida sobre el area de una base efectiva. La presion vertical se debera calcular de la siguiente manera: sigma_v = SumaV / (B - 2e) (2.8.1.1.12.2-1). Si el muro es soportado por una fundacion en roca: La presion vertical se debera calcular suponiendo una presion distribuida linealmente sobre el area de una base efectiva. Si la resultante cae dentro del tercio central de la base, sigma_vmax = (SumaV/B)(1 + 6 e/B) (2.8.1.1.12.2-2), sigma_vmin = (SumaV/B)(1 - 6 e/B) (2.8.1.1.12.2-3). Si la resultante cae fuera del tercio central de la base, sigma_vmax = 2 SumaV / {3[(B/2) - e)]} (2.8.1.1.12.2-4), sigma_vmin = 0 (2.8.1.1.12.2-5)",
+ "PROTECCION_CORROSION_TEXTO": "Cuando el concreto con refuerzo vaya a estar expuesto a cloruros de químicos descongelantes, sal, agua salobre, agua de mar o salpicaduras de las mismas, deben cumplirse los requisitos de la Tabla 4.2 para la máxima relación agua-material cementante y valor mínimo de f'c, y los requisitos de recubrimiento mínimo del concreto de 7.7",
+ "P_AE_EXCLUYE_SOBRECARGA": "La P_AE no incluye ninguna fuerza adicional lateral causada por cargas de sobrecarga permanente localizadas encima del muro (ejemplo. La fuerza estatica F_p y la fuerza dinamica k_h*W_surcharge ...)",
+ "P_AE_INCLUYE_ESTATICO": "Since P_AE is the combined lateral earth pressure force resulting from static earth pressure plus dynamic effects, the static earth pressure ... K_a, should not be added to the seismic earth pressure",
+ "P_IR_DEFINICIONES": [
+  "Ww = peso de la pared.",
+  "Ws = peso del suelo que esta inmediatamente encima del muro, incluyendo el talon del muro."
+ ],
+ "P_IR_TEXTO": "La fuerza lateral total debido al sismo sera aplicada al muro y la carga de presion del terreno, Pseis sera determinado teniendo en cuenta el efecto combinado de PAE y PIR, en el cual: PIR = kh (Ww + Ws)",
+ "P_SEIS_COMBINACIONES": [
+  [
+   "100% P_AE + 50% P_IR",
+   1.0,
+   0.5
+  ],
+  [
+   "50% P_AE + 100% P_IR",
+   0.5,
+   1.0
+  ]
+ ],
+ "P_SEIS_PISO_ESTATICO": "50% P_AE + 100% P_IR",
+ "P_SEIS_REGLA": "El resultado mas conservador de estos dos analisis",
+ "P_SEIS_TEXTO": "Para investigar la estabilidad de los muros de contencion, considerando que los efectos de la combinacion de PAE y PIR, no son simultaneos, la estabilidad se estudiara de la siguiente manera: Combinar el 100% de la presion sismica del terreno PAE con 50% de la fuerza de inercia del muro PIR, y Combinar el 50% de PAE, pero que no sea menor que la presion estatica activa del terreno (F = 1/2 gf h2 k), con el 100% de la fuerza de inercia del muro PIR. El resultado mas conservador de estos dos analisis se usara para el diseno del muro de contencion.",
+ "Q_LIM_NO_SUMERGIDO": 3.5,
+ "Q_LIM_SUMERGIDO": 4.0,
+ "RECUBRIMIENTO": {
+  "contra_suelo": 70,
+  "suelo_intemperie_ge_3_4": 50,
+  "suelo_intemperie_le_5_8": 40
+ },
+ "RECUBRIMIENTO_AC_UMBRAL_ALTO": 0.5,
+ "RECUBRIMIENTO_AC_UMBRAL_BAJO": 0.4,
+ "RECUBRIMIENTO_MP_EQUIVALENCIA": {
+  "agua_salada": [
+   "agua_salada"
+  ],
+  "alcantarilla_cajon_prefab_losa_de_rodadura": [
+   "alcantarilla_cajon_prefab_losa_de_rodadura"
+  ],
+  "alcantarilla_cajon_prefab_losa_menos_2_pies": [
+   "alcantarilla_cajon_prefab_losa_menos_2_pies"
+  ],
+  "alcantarilla_cajon_prefab_otros_miembros": [
+   "alcantarilla_cajon_prefab_otros_miembros"
+  ],
+  "costera": [
+   "costera"
+  ],
+  "exterior_no_superior": [
+   "exterior_no_superior"
+  ],
+  "interior_hasta_n11": [
+   "interior_hasta_n11"
+  ],
+  "interior_n14_n18": [
+   "interior_n14_n18"
+  ],
+  "losa_in_situ_inferior_hasta_n11": [
+   "losa_in_situ_inferior_hasta_n11"
+  ],
+  "losa_in_situ_inferior_n14_n18": [
+   "losa_in_situ_inferior_n14_n18"
+  ],
+  "paneles_prefabricados_encofrados": [
+   "paneles_prefabricados_encofrados"
+  ],
+  "pilote_in_situ_cascaras": [
+   "pilar_in_situ_cascaras"
+  ],
+  "pilote_in_situ_corrosivo": [
+   "pilar_in_situ_corrosivo_general",
+   "pilar_in_situ_corrosivo_protegida"
+  ],
+  "pilote_in_situ_no_corrosivo": [
+   "pilar_in_situ_no_corrosivo"
+  ],
+  "pilote_in_situ_tremie_o_lechada": [
+   "pilar_in_situ_tremie_o_lechada"
+  ],
+  "pilote_prefab_armado_corrosivo": [
+   "pilar_prefabricado_corrosivo"
+  ],
+  "pilote_prefab_armado_no_corrosivo": [
+   "pilar_prefabricado_no_corrosivo"
+  ],
+  "pilote_prefab_pretensado": [
+   "pilote_prefabricado_pretensado"
+  ],
+  "sales_anticongelantes": [
+   "sales_anticongelantes"
+  ],
+  "tableros_neumaticos_clavos": [
+   "tableros_neumaticos_clavos"
+  ],
+  "vaciado_contra_suelo": [
+   "vaciado_contra_suelo"
+  ]
+ },
+ "RECUBRIMIENTO_MP_FACTOR_AC": {
+  "a_c_mayor_igual_0_50": 1.2,
+  "a_c_menor_igual_0_40": 0.8
+ },
+ "RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA": "El Manual de Puentes imprime solo dos factores (W/C <= 0.40 -> 0.8 y W/C >= 0.50 -> 1.2) y deja sin factor la banda intermedia 0.40 < W/C < 0.50, que AASHTO LRFD 9a ed. Art. 5.10.1 (pag. impresa 5-167) si cubre con 1.0. LA BANDA ES ALCANZABLE EN ESTE PROYECTO: una version anterior de esta nota decia que no lo era 'porque su a/c maxima la fija la Tabla 4.2 de E.060 en 0.40 por cloruros', y eso daba por sabido justamente el dato que este cluster declaro VACIO ('exposicion_quimica_ems'). Con sulfatos severos y sin cloruros la a/c maxima resulta 0.45 y la banda intermedia se activa, de modo que la laguna del corpus peruano hay que cubrirla de verdad: lo hace el criterio [C] 'factor_recubrimiento_banda_intermedia_ac', no un literal del modulo",
+ "RECUBRIMIENTO_MP_FILA_TEXTO": {
+  "agua_salada": "Exposición directa al agua salada",
+  "alcantarilla_cajon_prefab_losa_menos_2_pies": "Alcantarillas de cajón de concreto prefabricados: forjados con inferior a 2 pies de relleno que no se utilicen como una superficie de conducción",
+  "costera": "Ubicaciones costeras",
+  "vaciado_contra_suelo": "Vaciado del concreto contra el suelo"
+ },
+ "RECUBRIMIENTO_MP_MM": {
+  "agua_salada": 101.6,
+  "alcantarilla_cajon_prefab_losa_de_rodadura": 63.5,
+  "alcantarilla_cajon_prefab_losa_menos_2_pies": 50.8,
+  "alcantarilla_cajon_prefab_otros_miembros": 25.4,
+  "costera": 76.2,
+  "exterior_no_superior": 50.8,
+  "interior_hasta_n11": 38.1,
+  "interior_n14_n18": 50.8,
+  "losa_in_situ_inferior_hasta_n11": 25.4,
+  "losa_in_situ_inferior_n14_n18": 50.8,
+  "paneles_prefabricados_encofrados": 20.32,
+  "pilar_in_situ_cascaras": 50.8,
+  "pilar_in_situ_corrosivo_general": 76.2,
+  "pilar_in_situ_corrosivo_protegida": 76.2,
+  "pilar_in_situ_no_corrosivo": 50.8,
+  "pilar_in_situ_tremie_o_lechada": 76.2,
+  "pilar_prefabricado_corrosivo": 76.2,
+  "pilar_prefabricado_no_corrosivo": 50.8,
+  "pilote_prefabricado_pretensado": 50.8,
+  "sales_anticongelantes": 63.5,
+  "tableros_neumaticos_clavos": 63.5,
+  "vaciado_contra_suelo": 76.2
+ },
+ "RECUBRIMIENTO_MP_PISO_MM": 25.4,
+ "RECUBRIMIENTO_MP_PISO_TEXTO": "El recubrimiento mínimo sobre las barras principales, incluyendo las barras protegidas con un recubrimiento de resina epóxico, deberá ser de 1.0 in (25 mm)",
+ "RECUBRIMIENTO_MP_TITULO": "Recubrimiento para las armaduras principales de aceros no protegidas",
+ "RECUBRIMIENTO_SALVEDAD_TEXTO": "Debe proporcionarse el siguiente recubrimiento mínimo de concreto al refuerzo, excepto cuando se requieran recubrimientos mayores según 7.7.5.1 ó se requiera protección especial contra el fuego",
+ "RECUBRIMIENTO_TEXTO": {
+  "contra_suelo": "Concreto colocado contra el suelo y expuesto permanentemente a él",
+  "suelo_intemperie_ge_3_4": "Concreto en contacto permanente con el suelo o la intemperie: barras de 3/4\" y mayores",
+  "suelo_intemperie_le_5_8": "Concreto en contacto permanente con el suelo o la intemperie: barras de 5/8\" y menores, mallas electrosoldadas"
+ },
+ "REDUCCION_KH_CONDICIONES": [
+  "el muro es libre de moverse lateralmente bajo la carga sismica",
+  "el movimiento lateral durante el evento de diseno es aceptable para el propietario ('acceptable to the Owner', AASHTO 11.6.5.2.2)",
+  "el muro es capaz de desplazamientos de 1.0 a 2.0 in o mas"
+ ],
+ "REDUCCION_KH_POR_DESPLAZAMIENTO": 0.5,
+ "REDUCCION_KH_TEXTO": "Donde el muro es capaz de desplazamientos de 1.0 a 2.0 in o mas durante el evento sismico de diseno, kh puede ser reducido a 0.5kh0 sin llevar a cabo un analisis de la deformacion mediante el metodo Newmark o una version simplificada de el.",
+ "RESGUARDO_NAPA_SUBRASANTE": [
+  [
+   20.0,
+   null,
+   0.6
+  ],
+  [
+   6.0,
+   20.0,
+   0.8
+  ],
+  [
+   3.0,
+   6.0,
+   1.0
+  ],
+  [
+   null,
+   3.0,
+   1.2
+  ]
+ ],
+ "RIESGO_ADMISIBLE": {
+  "quebrada_importante": {
+   "R": 0.3,
+   "n": 25
+  },
+  "quebrada_menor": {
+   "R": 0.35,
+   "n": 15
+  }
+ },
+ "SECCION_CABEZALES": "503",
+ "SECCION_EG2013": {
+  "concreto_reforzado": "506",
+  "concreto_simple": "505",
+  "hdpe": "508",
+  "tmc": "507"
+ },
+ "SOBRECARGA_TRASDOS_H_EQ": 0.6,
+ "SPT_ESPACIAMIENTO": 1.0,
+ "SPT_PROF_MIN": 15.0,
+ "SULFATOS": [
+  {
+   "a_c_max": null,
+   "cementos": [],
+   "exposicion": "insignificante",
+   "fc_min_MPa": null,
+   "limite_inferior_estricto": false,
+   "so4_agua_ppm": [
+    0,
+    150
+   ],
+   "so4_suelo_pct": [
+    0.0,
+    0.1
+   ]
+  },
+  {
+   "a_c_max": 0.5,
+   "cementos": [
+    "II",
+    "IP(MS)",
+    "IS(MS)",
+    "P(MS)",
+    "I(PM)(MS)",
+    "I(SM)(MS)"
+   ],
+   "exposicion": "moderada",
+   "fc_min_MPa": 28,
+   "limite_inferior_estricto": false,
+   "so4_agua_ppm": [
+    150,
+    1500
+   ],
+   "so4_suelo_pct": [
+    0.1,
+    0.2
+   ]
+  },
+  {
+   "a_c_max": 0.45,
+   "cementos": [
+    "V"
+   ],
+   "exposicion": "severa",
+   "fc_min_MPa": 31,
+   "limite_inferior_estricto": false,
+   "so4_agua_ppm": [
+    1500,
+    10000
+   ],
+   "so4_suelo_pct": [
+    0.2,
+    2.0
+   ]
+  },
+  {
+   "a_c_max": 0.45,
+   "cementos": [
+    "V más puzolana"
+   ],
+   "exposicion": "muy_severa",
+   "fc_min_MPa": 31,
+   "limite_inferior_estricto": true,
+   "so4_agua_ppm": [
+    10000,
+    null
+   ],
+   "so4_suelo_pct": [
+    2.0,
+    null
+   ]
+  }
+ ],
+ "SULFATOS_BORDE_ABIERTO_TEXTO": "La Tabla 4.4 imprime la fila severa como '< 2,0 %' y la muy severa como '2,0 % <': el valor 2,0 % exacto -- y 10 000 ppm exacto en la escala del agua -- no cae en ninguna de las dos. El hueco lo cierra la hoja de ruta, que en su Sec. 3.3 escribe 'Severa 0.20 - 2.00' y 'Muy severa > 2.00': el punto exacto queda en SEVERA (cemento V, a/c 0.45, f'c 31 MPa). Se sigue esa lectura y no la mas exigente porque la fuente primaria no contradice a la hoja de ruta en este punto: calla. Se declara porque es una lectura, no un dato -- la tabla impresa no la escribe -- y porque la unica diferencia practica entre las dos filas es el cemento (V frente a V mas puzolana): la relacion a/c y el f'c minimo son los mismos, de modo que el recubrimiento no cambia por este borde",
+ "SULFATOS_NOTA_AGUA_DE_MAR": "Se considera el caso del agua de mar como exposición moderada",
+ "SULFATOS_NOTA_PUZOLANA": "Puzolana que se ha comprobado por medio de ensayos, o por experiencia, que mejora la resistencia a sulfatos cuando se usa en concretos que contienen cemento tipo V",
+ "TABLAS_GAMMA_CORRESPONDENCIA_AASHTO": "Tabla 2.4.5.3.1-1 = Table 3.4.1-1 'Load Combinations and Load Factors', AASHTO LRFD 9a ed. (2020), pag. impresa 3-17 (PDF 71). Tabla 2.4.5.3.1-2 = Table 3.4.1-2 'Load Factors for Permanent Loads, gamma_p', pag. impresa 3-18 (PDF 72). EN LAS COLUMNAS Y FILAS QUE ESTE PROYECTO USA las dos fuentes coinciden digito a digito, y por eso la peruana basta y se cita ella. DIFERENCIAS verificadas, ninguna en lo que se usa aqui: (a) la 9a ed. agrega a la tabla de gamma_p cuatro filas que el Manual no trae -- las tres de estabilidad interna de muros MSE y la de muros de suelo claveteado; (b) la 9a ed. dice 'O'Neill and Reese (2010)' donde el Manual dice '(1999)'; (c) en la fila flexible de 1.50 la 9a ed. exige 'Structural Plate Culverts with DEEP Corrugations' y el Manual traduce 'planchas estructurales con corrugaciones', sin 'profundas' -- omision sustantiva, ver la eleccion del TMC en 'factores_carga_aashto'; (d) en la Tabla -1 difieren factores de WS (Resistencia III, Resistencia V, Servicio I y Servicio IV), el LL de Servicio III y los de Fatiga I y II: ninguna de esas columnas ni de esas combinaciones entra en Sec. 9.2",
+ "TABLA_02_COLUMNAS": [
+  "TIPO DE OBRA",
+  "RIESGO ADMISIBLE (**) ( %)"
+ ],
+ "TABLA_02_FILAS": {
+  "defensas_riberenas": {
+   "R": 0.25,
+   "fila": "Defensas Ribereñas",
+   "n": 40
+  },
+  "drenaje_plataforma": {
+   "R": 0.4,
+   "fila": "Drenaje de la plataforma (a nivel longitudinal)",
+   "n": 15
+  },
+  "puentes": {
+   "R": 0.25,
+   "fila": "Puentes (*)",
+   "n": 40
+  },
+  "quebrada_importante": {
+   "R": 0.3,
+   "fila": "Alcantarillas de paso de quebradas importantes y badenes",
+   "n": 25
+  },
+  "quebrada_menor": {
+   "R": 0.35,
+   "fila": "Alcantarillas de paso quebradas menores y descarga de agua de cunetas",
+   "n": 15
+  },
+  "subdrenes": {
+   "R": 0.4,
+   "fila": "Subdrenes",
+   "n": 15
+  }
+ },
+ "TABLA_02_NOTAS": [
+  "(*) - Para obtencion de la luz y nivel de aguas maximas extraordinarias. - Se recomienda un periodo de retorno T de 500 anios para el calculo de socavacion.",
+  "(**) Vida Util considerado (n): Puentes y Defensas Ribereñas n = 40 anios; Alcantarillas de quebradas importantes n = 25 anios; Alcantarillas de quebradas menores n = 15 anios; Drenaje de plataforma y Sub-drenes n = 15 anios.",
+  "Se tendra en cuenta, la importancia y la vida util de la obra a disenarse.",
+  "El Propietario de una Obra es el que define el riesgo admisible de falla y la vida util de las obras."
+ ],
+ "TABLA_02_NOTA_IMPORTANCIA": "Se tendra en cuenta, la importancia y la vida util de la obra a disenarse.",
+ "TABLA_02_NOTA_PROPIETARIO": "El Propietario de una Obra es el que define el riesgo admisible de falla y la vida util de las obras.",
+ "TABLA_02_NOTA_PUENTES": "(*) - Para obtencion de la luz y nivel de aguas maximas extraordinarias. - Se recomienda un periodo de retorno T de 500 anios para el calculo de socavacion.",
+ "TABLA_02_NOTA_VIDA_UTIL": "(**) Vida Util considerado (n): Puentes y Defensas Ribereñas n = 40 anios; Alcantarillas de quebradas importantes n = 25 anios; Alcantarillas de quebradas menores n = 15 anios; Drenaje de plataforma y Sub-drenes n = 15 anios.",
+ "TABLA_02_TEXTO_PREVIO": "De acuerdo a los valores presentados en la Tabla Nº 01 se recomienda utilizar como maximo, los siguientes valores de riesgo admisible de obras de drenaje:",
+ "TABLA_02_TITULO": "TABLA Nº 02: VALORES MAXIMOS RECOMENDADOS DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE",
+ "TABLA_09_COLUMNAS": [
+  "TIPO DE CANAL",
+  "MINIMO",
+  "NORMAL",
+  "MAXIMO"
+ ],
+ "TABLA_09_FILAS": {
+  "concreto_tubo_recto": {
+   "fila": "A.2 NO METALICOS - a. Concreto - tubo recto y libre de basuras",
+   "max": 0.013,
+   "min": 0.01,
+   "normal": 0.011
+  },
+  "madera_duelas": {
+   "fila": "A.2 NO METALICOS - b. Madera - duelas",
+   "max": 0.014,
+   "min": 0.01,
+   "normal": 0.012
+  },
+  "metal_corrugado_dren_aguas_lluvias": {
+   "fila": "A.1 METALICOS - c. Metal corrugado - dren para aguas lluvias",
+   "max": 0.03,
+   "min": 0.021,
+   "normal": 0.024
+  },
+  "metal_corrugado_subdren": {
+   "fila": "A.1 METALICOS - c. Metal corrugado - sub - dren",
+   "max": 0.021,
+   "min": 0.017,
+   "normal": 0.019
+  }
+ },
+ "TABLA_09_FUENTE_TABLA": "Hidraulica de Canales Abiertos, Ven Te Chow, 1983",
+ "TABLA_09_GRUPO": "A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- el unico grupo de la tabla que describe una alcantarilla; los grupos B (canales revestidos), C (excavado) y D (corrientes naturales) describen el cauce, no el conducto, y no se transcriben aqui porque ningun modulo dimensiona un cauce",
+ "TABLA_09_TITULO": "TABLA Nº 09: Valores del Coeficiente de Rugosidad de Manning (n)",
+ "TABLA_10_COLUMNAS": [
+  "TIPO DE REVESTIMIENTO",
+  "VELOCIDAD (M/S)"
+ ],
+ "TABLA_10_FILAS": {
+  "concreto": {
+   "fila": "Concreto",
+   "valores": [
+    3.0,
+    6.0
+   ]
+  },
+  "ladrillo_c_concreto": {
+   "fila": "Ladrillo con concreto",
+   "valores": [
+    2.5,
+    3.5
+   ]
+  },
+  "mamposteria_piedra": {
+   "fila": "Mamposteria de piedra y concreto",
+   "valores": [
+    2.0
+   ]
+  }
+ },
+ "TABLA_10_FUENTE_TABLA": "HCANALES, Maximo Villon B.",
+ "TABLA_10_INTERPRETACION_PROYECTO": "INTERPRETACION DEL PROYECTISTA, NO DEL MANUAL: que los dos numeros de una fila recorran la calidad del revestimiento -- el superior para el acabado de mejor calidad y el inferior para el mas pobre -- es una lectura que este proyecto adopta para poder elegir un techo mas conservador dentro de la fila ('v_max_concreto_eleccion'). El Manual NO la escribe: solo dice que la tabla da velocidades maximas admisibles. En contra de esta lectura juegan dos hechos de la propia fuente: la frase que introduce la tabla habla de un 'rango' con 'limites', y la fila de mamposteria trae un solo valor. A favor juega el titulo, que es lo unico que decide que ninguno de los dos numeros sea un piso. Se imprime SIEMPRE separada de la cita.",
+ "TABLA_10_TEXTO_PREVIO": "Se debe tener en cuenta la velocidad, parametro que es necesario verificar de tal manera que se encuentre dentro de un rango, cuyos limites se describen a continuacion.",
+ "TABLA_10_TITULO": "TABLA Nº 10: Velocidades maximas admisibles (m/s) en conductos revestidos",
+ "TABLA_COMBINACIONES_COLUMNAS": [
+  "DC DD DW EH EV ES EL PS CR SH",
+  "LL IM CE BR PL LS",
+  "WA",
+  "WS",
+  "WL",
+  "FR",
+  "TU",
+  "TG",
+  "SE",
+  "EQ",
+  "BL",
+  "IC",
+  "CT",
+  "CV"
+ ],
+ "TABLA_COMBINACIONES_COMPLETITUD": "PARCIAL POR FILAS, COMPLETA POR COLUMNAS: las tres combinaciones que Sec. 9.2 nombra (Resistencia I, Servicio I, Evento Extremo I), con las catorce columnas de la tabla. Las otras diez filas de la Tabla 2.4.5.3.1-1 no se transcriben porque ninguna fase del proyecto las evalua",
+ "TABLA_COMBINACIONES_FILAS": {
+  "Evento Extremo I": {
+   "BL": "--",
+   "CT": "--",
+   "CV": "--",
+   "EQ": {
+    "max": 1.0,
+    "min": 1.0
+   },
+   "FR": 1.0,
+   "IC": "--",
+   "LS": "gamma_EQ",
+   "SE": "--",
+   "TG": "--",
+   "TU": "--",
+   "WA": {
+    "max": 1.0,
+    "min": 1.0
+   },
+   "WL": "--",
+   "WS": "--",
+   "permanentes": {
+    "max": 1.0,
+    "min": 1.0
+   }
+  },
+  "Resistencia I": {
+   "BL": "--",
+   "CT": "--",
+   "CV": "--",
+   "EQ": "--",
+   "FR": 1.0,
+   "IC": "--",
+   "LS": 1.75,
+   "SE": "gamma_SE",
+   "TG": "gamma_TG",
+   "TU": [
+    0.5,
+    1.2
+   ],
+   "WA": {
+    "max": 1.0,
+    "min": 1.0
+   },
+   "WL": "--",
+   "WS": "--",
+   "permanentes": "gamma_p"
+  },
+  "Servicio I": {
+   "BL": "--",
+   "CT": "--",
+   "CV": "--",
+   "EQ": "--",
+   "FR": 1.0,
+   "IC": "--",
+   "LS": 1.0,
+   "SE": "gamma_SE",
+   "TG": "gamma_TG",
+   "TU": [
+    1.0,
+    1.2
+   ],
+   "WA": {
+    "max": 1.0,
+    "min": 1.0
+   },
+   "WL": 1.0,
+   "WS": 0.3,
+   "permanentes": {
+    "max": 1.0,
+    "min": 1.0
+   }
+  }
+ },
+ "TABLA_COMBINACIONES_NOTA_AL_PIE": "Usar solamente uno de los indicados en estas columnas en cada combinación",
+ "TABLA_COMBINACIONES_NOTA_EXTREMOS": "Donde la Tabla 2.4.5.3.1-1 imprime un solo 1.00 para la columna de cargas permanentes, aqui figura {max 1.00, min 1.00}: es el MISMO numero escrito en la forma de dos extremos con que se leen las filas de la Tabla -2, no un par elegido",
+ "TABLA_COMBINACIONES_TITULO": "Tabla 2.4.5.3.1-1 Combinaciones de Carga y Factores de Carga",
+ "TABLA_GAMMA_P_COLUMNAS": [
+  "Tipo de Carga, Tipo de Fundaciones, y Métodos Usados para Fuerza de Arrastre Hacia Abajo (Downdrag)",
+  "Maximo",
+  "Mínimo"
+ ],
+ "TABLA_GAMMA_P_ERRATAS": "Transcripcion literal, con las erratas de imprenta del Manual: 'Maximo' SIN tilde en el encabezado de columna (mientras 'Mínimo', a su lado, la lleva); 'EV: Presion vertical de la tierra' sin tilde en 'Presion' (mientras la fila hermana 'EH: Presión Horizontal de la tierra' si la lleva); 'Estructuras flexible enterradas', sin la 's' de flexibles; 'plancas' por 'planchas'; y 'Entre otros' donde AASHTO dice 'All others'. Se copian tal cual: la fila que la memoria imprime tiene que poder buscarse en el PDF",
+ "TABLA_GAMMA_P_FILAS": {
+  "DC_componentes_y_auxiliares": {
+   "fila": "DC: Componentes y Auxiliares.",
+   "grupo": "",
+   "max": 1.25,
+   "min": 0.9,
+   "subgrupo": ""
+  },
+  "DC_resistencia_IV_solamente": {
+   "fila": "DC: Resistencia IV Solamente.",
+   "grupo": "",
+   "max": 1.5,
+   "min": 0.9,
+   "subgrupo": ""
+  },
+  "DD_pilotes_metodo_lambda": {
+   "fila": "Pilotes, λ Método.",
+   "grupo": "DD: Downdrag",
+   "max": 1.05,
+   "min": 0.3,
+   "subgrupo": ""
+  },
+  "DD_pilotes_metodo_tomlinson": {
+   "fila": "Pilotes, α Método de Tomlinson.",
+   "grupo": "DD: Downdrag",
+   "max": 1.4,
+   "min": 0.25,
+   "subgrupo": ""
+  },
+  "DD_pilotes_perforados_oneill_reese": {
+   "fila": "Pilotes Perforados, (Drilled Shaft) Método de O’Neill and Reese (1999).",
+   "grupo": "DD: Downdrag",
+   "max": 1.25,
+   "min": 0.35,
+   "subgrupo": ""
+  },
+  "DW_superficie_de_rodadura_y_accesorios": {
+   "fila": "DW: Superficie de rodadura y accesorios.",
+   "grupo": "",
+   "max": 1.5,
+   "min": 0.65,
+   "subgrupo": ""
+  },
+  "EH_AEP_paredes_ancladas": {
+   "fila": "AEP Para paredes ancladas.",
+   "grupo": "EH: Presión Horizontal de la tierra.",
+   "max": 1.35,
+   "min": null,
+   "subgrupo": ""
+  },
+  "EH_activa": {
+   "fila": "Activa.",
+   "grupo": "EH: Presión Horizontal de la tierra.",
+   "max": 1.5,
+   "min": 0.9,
+   "subgrupo": ""
+  },
+  "EH_en_reposo": {
+   "fila": "En reposo.",
+   "grupo": "EH: Presión Horizontal de la tierra.",
+   "max": 1.35,
+   "min": 0.9,
+   "subgrupo": ""
+  },
+  "EL_esfuerzos_residuales": {
+   "fila": "EL: Esfuerzos residuales acumulados resultantes del proceso constructivo, (Locked-in construction Stresses.)",
+   "grupo": "",
+   "max": 1.0,
+   "min": 1.0,
+   "subgrupo": ""
+  },
+  "ES_carga_superficial_en_el_terreno": {
+   "fila": "ES: Carga superficial(Sobrecarga) en el terreno",
+   "grupo": "",
+   "max": 1.5,
+   "min": 0.75,
+   "subgrupo": ""
+  },
+  "EV_estabilidad_global": {
+   "fila": "Estabilidad global.",
+   "grupo": "EV: Presion vertical de la tierra",
+   "max": 1.0,
+   "min": null,
+   "subgrupo": ""
+  },
+  "EV_estructura_rigida_enterrada": {
+   "fila": "Estructura rígida enterrada.",
+   "grupo": "EV: Presion vertical de la tierra",
+   "max": 1.3,
+   "min": 0.9,
+   "subgrupo": ""
+  },
+  "EV_flexibles_alcantarillas_termoplasticas": {
+   "fila": "o Alcantarillas termoplásticas.",
+   "grupo": "EV: Presion vertical de la tierra",
+   "max": 1.3,
+   "min": 0.9,
+   "subgrupo": "Estructuras flexible enterradas"
+  },
+  "EV_flexibles_cajon_metalico_plancha_fibra_vidrio": {
+   "fila": "o Alcantarillas cajón metálicas, plancas estructurales con corrugaciones y alcantarillas de fibra de vidrio.",
+   "grupo": "EV: Presion vertical de la tierra",
+   "max": 1.5,
+   "min": 0.9,
+   "subgrupo": "Estructuras flexible enterradas"
+  },
+  "EV_flexibles_entre_otros": {
+   "fila": "o Entre otros.",
+   "grupo": "EV: Presion vertical de la tierra",
+   "max": 1.95,
+   "min": 0.9,
+   "subgrupo": "Estructuras flexible enterradas"
+  },
+  "EV_muros_y_estribos_de_retencion": {
+   "fila": "Muros y estribos de retención.",
+   "grupo": "EV: Presion vertical de la tierra",
+   "max": 1.35,
+   "min": 1.0,
+   "subgrupo": ""
+  },
+  "EV_porticos_rigidos": {
+   "fila": "Pórticos rígidos.",
+   "grupo": "EV: Presion vertical de la tierra",
+   "max": 1.35,
+   "min": 0.9,
+   "subgrupo": ""
+  }
+ },
+ "TABLA_GAMMA_P_TITULO": "Tabla 2.4.5.3.1-2 Factores de carga para cargas permanentes, γp",
+ "UMBRALES_DE_VERIFICACION": [
+  {
+   "aplicacion": "Se aplica como umbral DURO (un punto con y/D > 0.75 se marca 'NO cumple'). Es la lectura conservadora y es decision del proyecto, no exigencia del numeral.",
+   "caracter": "RECOMENDACION",
+   "codigo": "V1",
+   "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) 'Borde libre', pag. impresa 79",
+   "que": "Borde libre: y/D <= 0.75 (minimo 25 % de borde libre)",
+   "texto": [
+    "Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura."
+   ]
+  },
+  {
+   "aplicacion": "Se aplica como umbral DURO, y se evalua con la velocidad de la rama de n MAXIMO -- la estimacion BAJA de velocidad --, que es el extremo conservador para un piso. La razon del minimo es la sedimentacion que reduce capacidad, no el desgaste: por eso vale igual para todos los materiales.",
+   "caracter": "RECOMENDACION",
+   "codigo": "V2",
+   "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo posterior a la Tabla Nº 10; arranca en la pag. impresa 76 y el valor se imprime en la 77",
+   "que": "Velocidad minima de autolimpieza: V >= 0.25 m/s",
+   "texto": [
+    "Se debera verificar que la velocidad minima del flujo dentro del conducto no produzca sedimentacion que pueda incidir en una reduccion de su capacidad hidraulica, recomendandose que la velocidad minima sea igual a 0.25 m/s."
+   ]
+  },
+  {
+   "aplicacion": "Los DOS numeros de la fila son MAXIMOS: se verifica solo el superior, y el inferior NO es un piso. Se evalua con la velocidad de la rama de n MINIMO -- la estimacion ALTA --, que es el extremo conservador para un techo. TMC y HDPE no tienen fila en esta tabla: su techo sale de un criterio [C] con fuente WSDOT.",
+   "caracter": "EXIGENCIA (tabla de valores admisibles)",
+   "codigo": "V3",
+   "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 'Velocidades maximas admisibles (m/s) en conductos revestidos', num. 4.1.1.3.6, pag. impresa 76. Fuente de la tabla: HCANALES, Maximo Villon B.",
+   "que": "Velocidad maxima admisible del revestimiento",
+   "texto": [
+    "TABLA Nº 10: Velocidades maximas admisibles (m/s) en conductos revestidos",
+    "Se debe tener en cuenta la velocidad, parametro que es necesario verificar de tal manera que se encuentre dentro de un rango, cuyos limites se describen a continuacion."
+   ],
+   "transcripcion": "Filas de la Tabla Nº 10, con su nombre literal y los valores tal como la tabla los imprime: Concreto = 3.0 - 6.0 ; Ladrillo con concreto = 2.5 - 3.5 ; Mamposteria de piedra y concreto = 2.0 (m/s). No es una cita: es la tabla reordenada en una linea. La fila de mamposteria trae UN solo valor, no un par."
+  },
+  {
+   "aplicacion": "El proyecto adopta los valores maximos recomendados de la tabla (R = 30 % / n = 25 anios para quebrada importante; R = 35 % / n = 15 anios para quebrada menor y descarga de cunetas). ADVERTENCIA QUE HAY QUE LEER: adoptar el MAXIMO recomendado es el extremo MENOS conservador del margen que la tabla concede -- mas riesgo admisible da menos TR y menos caudal de diseno --, y a diferencia de V1 y V2 aqui la lectura conservadora seria adoptar MENOS. El Propietario tiene una via declarada para ejercer la decision que la nota al pie le asigna: el criterio adoptado 'riesgo_admisible_propietario', que aparece en el bloque de criterios de esta memoria y que solo admite endurecer el techo, nunca aflojarlo. Mientras no la use, esta adopcion gobierna el TR de todos los puntos.",
+   "caracter": "RECOMENDACION -- MAXIMOS, y la decision es del Propietario",
+   "codigo": "TR",
+   "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 02, num. 3.6, pag. impresa 25",
+   "que": "Riesgo admisible y vida util con que se calcula el periodo de retorno (Tabla Nº 02)",
+   "texto": [
+    "TABLA Nº 02: VALORES MAXIMOS RECOMENDADOS DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE",
+    "De acuerdo a los valores presentados en la Tabla Nº 01 se recomienda utilizar como maximo, los siguientes valores de riesgo admisible de obras de drenaje:",
+    "El Propietario de una Obra es el que define el riesgo admisible de falla y la vida util de las obras."
+   ]
+  },
+  {
+   "aplicacion": "CONDICION 1 -- 'carreteras de alto volumen de transito': la clase de via del corredor NO esta cerrada (depende del IMDA del estudio de demanda), de modo que el proyecto no puede afirmar que se cumple. El piso se aplica igual a las Familias A y B, y esa es una ADOPCION declarada, no una lectura automatica del numeral. SU DIRECCION NO ES UNIFORMEMENTE CONSERVADORA, y decirlo importa porque lo contrario -- 'mas seccion nunca puede ser peor' -- es intuitivo y es falso. Mas diametro da mas capacidad y mas borde libre, o sea es conservador para V1; y da MENOS velocidad para el mismo caudal, o sea va CONTRA el piso de autolimpieza de V2. Ejemplo real, concreto con n_max = 0.013, S = 0.001 y Q = 0.0035 m3/s: D = 0.75 m da 0.2554 m/s y cumple V2; D = 0.90 m da 0.2488 m/s y NO cumple. En ese caudal, aplicar el piso sin que la condicion del numeral este establecida puede declarar no factible un punto que un conducto mas chico resolveria. Es una consecuencia de la adopcion, no un defecto del calculo, y se declara aqui para que quien cierre el IMDA sepa que hay algo que revisar. CONDICION 2 -- 'salvo en cruces de canales de riego': la Familia C de este expediente ES un conjunto de cruces de canal, y el numeral la EXCEPTUA expresamente: alli la seccion se adopta 'de acuerdo a cada diseno particular' y este piso no rige. El catalogo de conductos circulares no entrega candidatos para esa familia, de modo que ningun punto suyo recibe el piso -- pero hasta ahora la razon escrita era solo la forma de la seccion (Sec. 2.3 de la hoja de ruta) y no esta excepcion normativa, que es la que gobierna.",
+   "caracter": "EXIGENCIA CONDICIONADA ('se adoptara', con dos condiciones)",
+   "codigo": "D_min",
+   "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.4 a), pag. impresa 72",
+   "que": "Seccion minima circular de 0.90 m",
+   "texto": [
+    "En carreteras de alto volumen de transito y por necesidad de limpieza y mantenimiento de las alcantarillas, se adoptara una seccion minima circular de 0.90 m (36\") de diametro o su equivalente de otra seccion, salvo en cruces de canales de riego donde se adoptaran secciones de acuerdo a cada diseno particular."
+   ]
+  },
+  {
+   "aplicacion": "h_o se calcula SIEMPRE, y de las tres condiciones que la fuente le pone el proyecto EVALUA dos y declara la tercera. SE EVALUAN, punto por punto, los dos limites sobre HW/D: por debajo de 1.2 la fuente pide cautela y por debajo de 0.75 dice que la aproximacion no debe usarse. Cuando el control de salida GOBIERNA un punto y su HW/D cae bajo alguno de los dos, la memoria de ese punto lo dice con esas palabras, junto al HW: un aviso general que no senala el punto afectado no le sirve al revisor, que es lo que este bloque venia haciendo. NO SE EVALUA la primera condicion -- que el barril fluya lleno en la mayor parte de su longitud --, y no por descuido: exige un perfil de la lamina de agua a lo largo del conducto, que este script no calcula. El criterio adoptado 'geometria_control_salida' = 'seccion_llena' PRESUPONE ademas lo mismo que ahi habria que verificar, de modo que esa premisa entra dos veces por dos puertas y no se comprueba por ninguna. No se sustituye por otra formula ni se inventa un criterio de llenado: se declara, y quien revise el expediente decide si el punto necesita el procedimiento de barril parcialmente lleno del Cap. III, que es la alternativa que el propio criterio ya cita. HAY UNA CIRCULARIDAD QUE CONVIENE VER: el HW con que se evaluan los dos limites es el que produce la propia aproximacion, de modo que un h_o sobreestimado puede hacer que el control de salida gobierne un punto donde no gobernaria. El aviso se emite igual; deshacer la circularidad exige el procedimiento completo, no otra lectura de esta pagina.",
+   "caracter": "APROXIMACION CON CONDICION DE USO EXPRESA",
+   "codigo": "h_o",
+   "numeral": "HDS-5 (FHWA) 3a ed., abril 2012, num. 3.3.3 'Outlet Control', pag. impresa 3.24 (PDF 106)",
+   "que": "Linea de energia a la salida del conducto: h_o = max(TW, (y_c + D)/2), Sec. 4.3",
+   "texto": [
+    "Approximate hydraulic gradeline ho = (dc + D)/2 can only be used if the barrel flows full for most of its length. It should not be used if the inlet is not submerged.",
+    "If outlet control governs and the headwater depth (referenced to the inlet invert) is less than 1.2D, it is possible that the barrel flows partly full though its entire length. In this case, caution should be used in applying the approximate method of setting the downstream elevation based on the greater of tailwater or (dc + D)/2. If the headwater depth falls below 0.75D, the approximate method should not be used."
+   ],
+   "transcripcion": "La forma con el MAXIMO, que es la que el proyecto implementa, la 3a ed. no la numera: la escribe en prosa ('the greater of tailwater or (dc + D)/2', misma pag. 3.24). Impresa como igualdad esta en la edicion de 1985 que tambien vive en normas/, dentro de su procedimiento paso a paso: <<ho = TW or (dc + D)/2 whichever is larger.>> Esta linea no es cita de la 3a ed.: es la union de las dos ediciones, y por eso va aqui y no arriba."
+  }
+ ],
+ "V_MAX": {
+  "concreto": [
+   3.0,
+   6.0
+  ],
+  "ladrillo_c_concreto": [
+   2.5,
+   3.5
+  ],
+  "mamposteria_piedra": [
+   2.0
+  ]
+ },
+ "V_MIN": 0.25,
+ "Y_SOBRE_D_MAX": 0.75
+}

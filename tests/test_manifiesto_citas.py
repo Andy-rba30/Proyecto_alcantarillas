@@ -62,9 +62,21 @@ DEFINICION = re.compile(
 # y no este vacia -- porque aterrizar en una linea en blanco es prueba directa
 # de que el enlace se movio.
 #
-# El cupo de abajo es un tope, no un objetivo: si crece, es que se estan
-# anadiendo citas sin identificador y conviene revisarlo. Si baja, se ajusta.
-MAX_REFERENCIAS_DE_PROSA = 90
+# EL CUPO ES UN TRINQUETE, no un tope: SOLO PUEDE BAJAR. Si crece, es que se
+# estan anadiendo citas sin identificador, y eso es lo que produjo NOR-MAN-04.
+#
+# LA META ES CERO (T9 del diseño del registro normativo) y hoy no se puede
+# cumplir, por una razon concreta y no por dejadez: una fila que no cita
+# ningun simbolo no tiene a que anclarse. Lo que la hace cumplible es que la
+# fila nazca de un OBJETO con id estable, y eso exige que el registro
+# normativo contenga el corpus entero. Hoy contiene las citas de C11, C12 y
+# C02 y las tablas que esos tres tocan; el resto sigue en prosa.
+#
+# Mientras tanto, lo que SI cambio es que las referencias con simbolo ya no se
+# mantienen a mano: las genera `src/normativa/manifiesto.py` desde el nombre
+# del simbolo, y el test de abajo regenera y compara. El numero de linea deja
+# de ser un dato que mantener y pasa a ser una comodidad regenerable.
+MAX_REFERENCIAS_DE_PROSA = 82
 
 
 def _codigo(rel: str) -> list:
@@ -148,6 +160,58 @@ def test_ninguna_referencia_aterriza_en_una_linea_vacia():
               if not _codigo(rel)[n - 1].strip()]
     assert not vacias, (
         "referencias que caen en una linea vacia:\n  " + "\n  ".join(vacias))
+
+
+def test_T9_el_cupo_de_referencias_de_prosa_solo_decrece():
+    """
+    El trinquete. Una referencia de prosa no se puede verificar contra el
+    codigo: es el hueco declarado del que salieron los 66 defectos que la
+    auditoria encontro, y por eso el cupo solo puede bajar.
+    """
+    _, prosa = _clasificadas()
+    assert len(prosa) <= MAX_REFERENCIAS_DE_PROSA, (
+        f"el manifiesto tiene {len(prosa)} referencias sin simbolo que anclar "
+        f"y el cupo esta en {MAX_REFERENCIAS_DE_PROSA}. Ancla la fila a un "
+        "simbolo (o a un id del registro) en vez de subir el cupo")
+
+
+def test_T8_el_manifiesto_esta_sincronizado_con_el_codigo():
+    """
+    T8 DEL DISEÑO, y es la CURA de NOR-MAN-04, no su parche.
+
+    Renumerar a mano las referencias rotas las arregla hoy y las rompe otra
+    vez con la proxima insercion: es lo que ya se hizo una vez y por lo que el
+    hallazgo existe. Lo que no se rompe solo es DERIVAR el numero de linea del
+    NOMBRE DEL SIMBOLO, cada vez, desde el codigo.
+
+    Este test regenera el manifiesto a memoria y compara. Si difiere, no se
+    edita el test ni se renumera a mano:
+
+        python3 -m src.normativa.manifiesto --escribir
+    """
+    from normativa.manifiesto import resincronizar
+    texto = MANIFIESTO.read_text(encoding="utf-8")
+    regenerado, cambios, _ = resincronizar(texto)
+    assert regenerado == texto, (
+        f"el manifiesto esta desincronizado en {len(cambios)} referencias.\n"
+        "Regeneralo con:  python3 -m src.normativa.manifiesto --escribir\n  "
+        + "\n  ".join(cambios[:15]))
+
+
+def test_T8_el_indice_del_registro_esta_sincronizado():
+    """
+    El OTRO manifiesto, el que se genera entero desde los objetos. Ahi no hay
+    numeros de linea que puedan romperse porque no hay lineas: hay ids.
+    """
+    from normativa.manifiesto import INDICE_REGISTRO, indice_del_registro
+    from normativa.registro import construir
+    assert INDICE_REGISTRO.exists(), (
+        "falta docs/manifiesto_registro_normativo.md: generalo con "
+        "python3 -m src.normativa.manifiesto --escribir")
+    assert INDICE_REGISTRO.read_text(encoding="utf-8") == \
+        indice_del_registro(construir()), (
+            "el indice del registro esta desincronizado. NO se edita a mano: "
+            "python3 -m src.normativa.manifiesto --escribir")
 
 
 def test_toda_referencia_cae_dentro_del_bloque_del_simbolo_que_cita():
