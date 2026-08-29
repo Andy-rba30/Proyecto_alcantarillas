@@ -2063,6 +2063,22 @@ T_COBERTURA_MINIMA = _tabla(
 # corridos que DEFINEN las categorias, sin marca que los ate a nada, y por eso
 # entran como notas de marca vacia -- que es lo que la pagina hace.
 #
+# LOS TRES TEXTOS QUE LA CONDICIONAN, Y SON TRES: la cadena «Table 5.10.1-1»
+# aparece en TRES paginas de toda la especificacion -- 5-167, 5-168 y 5-169 --
+# y en ninguna mas, de modo que esta lista esta CERRADA, no muestreada. En
+# 5-167 la remision con su modificador por W/CM (`texto_previo`); en 5-168 el
+# piso de 1.0 in sobre las barras principales y la regla de estribos y
+# zunchos, los dos como citas propias (`AASHTO_LRFD_9.5.10.1#PISO` y
+# `#ESTRIBOS`). La de estribos NO la consume este proyecto -- dimensiona
+# barras PRINCIPALES -- y aun asi se registra: «tabla transcrita completa»
+# incluye lo que la condiciona. Y NO entra como `Modificador` porque un
+# modificador del registro es multiplicativo y esa regla RESTA 0.5 in con
+# piso: inventarle un factor seria una lectura falsa del tipo.
+#
+# Ademas, y por si alguien lo busca: la Seccion 12 (estructuras enterradas) NO
+# remite a esta tabla por ese literal. El recubrimiento de alcantarillas
+# prefabricadas entra por la propia familia «Precast Culverts» de la tabla.
+#
 # QUE DECIDE ENTRE «Noncorrosive» Y «Corrosive», y donde vive: la definicion
 # («greater than or equal to 500 ppm of chlorides»…) esta en el COMENTARIO
 # C5.10.1, columna derecha de la pag. impresa 5-168, NO en el articulado. Es

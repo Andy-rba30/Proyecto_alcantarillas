@@ -1628,6 +1628,56 @@ AASHTO_5_10_1 = _cita(
           "el comentario. Sostiene NOR-AAS-05."),
 )
 
+AASHTO_5_10_1_ESTRIBOS = _cita(
+    id="AASHTO_LRFD_9.5.10.1#ESTRIBOS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.10.1",
+    titulo_numeral="Concrete Cover",
+    pagina_impresa="5-168",
+    pagina_pdf=527,
+    pagina_pdf_titulo=526,
+    texto_literal=Verbatim(
+        texto=("Cover to ties and stirrups may be 0.5 in. less than the "
+               "values specified in Table 5.10.1-1 for main bars but shall "
+               "not be less than 1.0 in. except for precast soffit form "
+               "panels noted in the table below."),
+        pagina_pdf=527),
+    caracter=Caracter.PERMISO,
+    metodo=AMBOS,
+    nota=("EL TERCER TEXTO QUE CONDICIONA LA TABLA 5.10.1-1, y el ultimo: la "
+          "cadena «Table 5.10.1-1» aparece en TRES paginas de toda la "
+          "especificacion -- 5-167, 5-168 y 5-169 -- y en ninguna mas, de "
+          "modo que la lista de condicionantes esta cerrada, no muestreada. "
+          "ESTE PROYECTO NO LO CONSUME: dimensiona barras PRINCIPALES, y la "
+          "regla es de estribos y zunchos. Se registra porque «tabla "
+          "transcrita completa» incluye lo que la condiciona, y porque su "
+          "forma -- restar 0.5 in con piso de 1.0 in -- NO es un "
+          "`Modificador` del registro, que es multiplicativo: meterla ahi "
+          "seria una lectura falsa del tipo, que es justo lo que el esquema "
+          "existe para impedir."),
+)
+
+AASHTO_5_10_1_PISO = _cita(
+    id="AASHTO_LRFD_9.5.10.1#PISO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.10.1",
+    titulo_numeral="Concrete Cover",
+    pagina_impresa="5-168",
+    pagina_pdf=527,
+    pagina_pdf_titulo=526,
+    texto_literal=Verbatim(
+        texto="Minimum cover to main bars shall be 1.0 in.",
+        pagina_pdf=527),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    corresponde_en=("MP.T2.9.1.5.5.3-1",),
+    nota=("El piso absoluto sobre las barras principales, que es lo que "
+          "impide que el factor de 0.8 del W/CM lleve el recubrimiento a "
+          "cualquier cosa. El Manual de Puentes lo traduce como «1.0 in "
+          "(25 mm)» y el proyecto aplica la PULGADA EXACTA (25.4 mm), que es "
+          "la mayor de las dos cifras que la propia fuente peruana escribe."),
+)
+
 AASHTO_T5_10_1_1 = _cita(
     id="AASHTO_LRFD_9.T5.10.1-1",
     fuente_id="AASHTO_LRFD_9",

@@ -82,6 +82,8 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.3.11.6.4#ALTURA` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.3.11.6.4#APLICA` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.1` | 5.10.1 | «Concrete Cover» | pág. impresa **5-167** · PDF 526 | exigencia | 2026-08-28 · ambos |
+| `AASHTO_LRFD_9.5.10.1#ESTRIBOS` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | permiso | 2026-08-28 · ambos |
+| `AASHTO_LRFD_9.5.10.1#PISO` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.A11.3.1#KAE` | A11.3.1, ec. A11.3.1-1 | «Mononobe–Okabe Method» | pág. impresa **11-145** · PDF 1614 | aproximacion | 2026-08-28 · imagen renderizada |
 | `AASHTO_LRFD_9.C3.11.6.4` | C3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | definicion | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.C3.4.1#GAMMA_EQ` | C3.4.1 | «3.4.1-Load Factors and Load Combinations» | pág. impresa **3-10** · PDF 64 | recomendacion | 2026-08-28 · ambos |
@@ -105,6 +107,10 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.3.11.6.4#ALTURA`** — La altura que entra en las tablas NO es la altura visible del muro: incluye la zapata. Con `GeometriaCabezal` eso es H + espesor_zapata. Medirla sin la zapata SUBESTIMA la altura y, como h_eq decrece con ella, SOBRESTIMA h_eq -- conservador, pero es la lectura equivocada de la tabla.
 
 > **`AASHTO_LRFD_9.5.10.1`** — El factor por relacion agua-cemento NO es opcional: la norma dice `shall`, y esta en el CUERPO ARTICULADO (columna izquierda), no en el comentario. Sostiene NOR-AAS-05.
+
+> **`AASHTO_LRFD_9.5.10.1#ESTRIBOS`** — EL TERCER TEXTO QUE CONDICIONA LA TABLA 5.10.1-1, y el ultimo: la cadena «Table 5.10.1-1» aparece en TRES paginas de toda la especificacion -- 5-167, 5-168 y 5-169 -- y en ninguna mas, de modo que la lista de condicionantes esta cerrada, no muestreada. ESTE PROYECTO NO LO CONSUME: dimensiona barras PRINCIPALES, y la regla es de estribos y zunchos. Se registra porque «tabla transcrita completa» incluye lo que la condiciona, y porque su forma -- restar 0.5 in con piso de 1.0 in -- NO es un `Modificador` del registro, que es multiplicativo: meterla ahi seria una lectura falsa del tipo, que es justo lo que el esquema existe para impedir.
+
+> **`AASHTO_LRFD_9.5.10.1#PISO`** — El piso absoluto sobre las barras principales, que es lo que impide que el factor de 0.8 del W/CM lleve el recubrimiento a cualquier cosa. El Manual de Puentes lo traduce como «1.0 in (25 mm)» y el proyecto aplica la PULGADA EXACTA (25.4 mm), que es la mayor de las dos cifras que la propia fuente peruana escribe.
 
 > **`AASHTO_LRFD_9.A11.3.1#KAE`** — El ENCABEZADO del articulo se imprime en la pag. impresa 11-144 (PDF 1613) y la ECUACION en la 11-145 (PDF 1614). La forma exacta del corchete -- «[1 + raiz(...)]» -- NO ES VERIFICABLE por extraccion de texto: la capa devuelve la formula rota. Se decide sobre la imagen renderizada, y por eso el metodo es IMAGEN. Las unidades de la fuente son imperiales (kcf, ft).
 
@@ -854,5 +860,5 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 76.
+Citas sin firma de verificación: **0** de 78.
 

@@ -2295,6 +2295,25 @@ RECUBRIMIENTO_MP_FACTOR_AC = {
 NUMERAL_FACTOR_AC_AASHTO = _reg.cita("AASHTO_LRFD_9.5.10.1").como_texto()
 NUMERAL_RECUBRIMIENTO_AASHTO = _reg.cita(
     "AASHTO_LRFD_9.T5.10.1-1").como_texto()
+# LOS OTROS DOS TEXTOS QUE CONDICIONAN LA TABLA 5.10.1-1, y son los ultimos:
+# la cadena "Table 5.10.1-1" aparece en TRES paginas de toda la especificacion
+# -- 5-167, 5-168 y 5-169 -- y en ninguna mas, de modo que la lista esta
+# CERRADA, no muestreada. Uno lo aplica el calculo (el piso de 1.0 in sobre
+# las barras principales) y el otro NO, y por eso se declaran los dos: quien
+# lea la transcripcion tiene que poder ver que la regla de estribos existe y
+# que este proyecto no la usa porque dimensiona barras principales.
+NUMERAL_RECUBRIMIENTO_PISO_AASHTO = _reg.cita(
+    "AASHTO_LRFD_9.5.10.1#PISO").como_texto()
+NUMERAL_RECUBRIMIENTO_ESTRIBOS_AASHTO = _reg.cita(
+    "AASHTO_LRFD_9.5.10.1#ESTRIBOS").como_texto()
+RECUBRIMIENTO_ESTRIBOS_TEXTO = (
+    "Cover to ties and stirrups may be 0.5 in. less than the values "
+    "specified in Table 5.10.1-1 for main bars but shall not be less than "
+    "1.0 in. except for precast soffit form panels noted in the table below.")
+# POR QUE NO ES UN `Modificador` DEL REGISTRO. Un modificador es
+# MULTIPLICATIVO -- factor y piso --, y esta regla RESTA 0.5 in con piso de
+# 1.0 in. Meterla ahi obligaria a inventarle un factor y seria una lectura
+# falsa del tipo, que es justo lo que el esquema existe para impedir.
 RECUBRIMIENTO_AC_UMBRAL_BAJO = 0.40    # "Para W/C <= 0.40 ... 0.8"
 RECUBRIMIENTO_AC_UMBRAL_ALTO = 0.50    # "Para W/C >= 0.50 ... 1.2"
 RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA = (
