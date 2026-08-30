@@ -82,6 +82,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.3.10.2.2` | 3.10.2.2 | «Site-Specific Procedure» | pág. impresa **3-100** · PDF 154 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.3.10.3.1` | 3.10.3.1 | «Site Class Definitions» | pág. impresa **3-101** · PDF 155 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES` | 3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1 | «Site Class Definitions» | pág. impresa **3-102** · PDF 156 | exigencia | 2026-08-29 · texto |
+| `AASHTO_LRFD_9.3.10.3.1#INVESTIGACION` | 3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1 | «Site Class Definitions» | pág. impresa **3-102** · PDF 156 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.3.11.3` | 3.11.3 | «Presence of Water» | pág. impresa **3-118** · PDF 172 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.3.11.6.4` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.3.11.6.4#ALTURA` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
@@ -118,6 +119,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.3.10.3.1`** — LA CLASE DE SITIO ES UNA MEDICION, y de ahi cuelga la etiqueta del criterio: se determina por la RIGIDEZ medida (v_s, N o s_u) sobre una profundidad fija, no por una eleccion del proyectista. PROFUNDIDAD: el articulado dice «the upper 100 ft» -- 30.48 m --, no «30 m»; ver DIS-HR-30M-VS-100FT. Y dos erratas de la fuente que se conservan en el verbatim de la primera oracion cuando se cite entera: «A though F» por «through», y la falta de punto tras «100 ft».
 
 > **`AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES`** — LA CITA QUE CIERRA EL CONFLICTO #8, y estaba en el articulado sin que nadie la hubiera leido. El expediente no necesitaba una autorizacion para suponer la Clase F: tenia una PROHIBICION expresa de suponerla, con dos puertas de salida que no tiene abiertas -- determinacion de la autoridad competente, o dato geotecnico -- porque el SPT esta pendiente. Y la misma nota trae un DEBER POSITIVO que es la otra mitad: «Where the soil properties are not known in sufficient detail to determine the site class, a site investigation shall be undertaken sufficient to determine the site class». No dice «no supongas y sigue»: dice INVESTIGA. ES ARTICULADO, no comentario: va al pie de la Tabla 3.10.3.1-1, en la columna de especificacion. El `should not` de AASHTO lo endurece el Manual de Puentes a «no seran supuestas».
+
+> **`AASHTO_LRFD_9.3.10.3.1#INVESTIGACION`** — Es la PRIMERA oracion del bloque «Exceptions» y precede a la prohibicion de suponer E o F: el orden de la fuente es investigar primero y no suponer despues. Se registra aparte porque es una exigencia distinta -- un deber de hacer, no una prohibicion -- y porque la memoria la cita por su cuenta al declarar que ensayo cierra el vacio.
 
 > **`AASHTO_LRFD_9.3.11.6.4`** — El articulo entero, sus dos tablas y su comentario C3.11.6.4 caben en la pag. impresa 3-151; no continua en la 3-152, donde empieza el 3.11.6.5. La frase de la interpolacion es EXIGENCIA («shall»); la de tomar valores de las tablas es PERMISO («may be taken»).
 
@@ -248,7 +251,7 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.A.2`** — NOR-HDS-03, confirmado: `Ku` y `Ks` estan en la LISTA DE VARIABLES de las ecuaciones del num. A.2.1, pag. impresa A.2, y NO en la Tabla A.1. La Tabla A.1 tiene nueve columnas y de constantes de la ecuacion solo cuatro -- K, M, c e Y --: no hay columna K_u ni columna K_s.
 
-> **`HDS5_3ED.A.2.1#QLIM`** — «apply up to ABOUT»: la fuente NO fija un umbral duro. Y los 3.5 son del sistema INGLES; su equivalente SI, entre parentesis, es 1.93. Como `caudal_adimensional` multiplica por KU_METRICO = 1.811, el q* que M4 compara ya esta en la escala inglesa y le corresponden 3.5 y 4.0: cambiarlos por los del parentesis seria aplicar dos veces la conversion.
+> **`HDS5_3ED.A.2.1#QLIM`** — «apply up to ABOUT»: la fuente NO fija un umbral duro. Y los 3.5 son del sistema INGLES; su equivalente SI, entre parentesis, es 1.93. Como `caudal_adimensional` multiplica por KU_SI = 1.811, el q* que M4 compara ya esta en la escala inglesa y le corresponden 3.5 y 4.0: cambiarlos por los del parentesis seria aplicar dos veces la conversion.
 
 > **`HDS5_3ED.TA.1`** — ERRATA DE LA PROPIA FUENTE, hallada al verificar: el titulo dice «for Charts in Appendix G» y en esta 3a edicion NO EXISTE un Apendice G -- las cartas estan en el Apendice C. Se transcribe como lo imprime, con la advertencia, para que quien lo busque lo encuentre.
 
@@ -921,5 +924,5 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 90.
+Citas sin firma de verificación: **0** de 91.
 

@@ -1,7 +1,7 @@
 """
 M5_verificaciones.py
 =====================
-Fase 5 de la hoja de ruta: las nueve verificaciones de la tabla principal
+Fase 5 de la hoja de ruta: las diez verificaciones de la tabla principal
 (V1 a V9), cada una como funcion propia que devuelve un `Verificacion` (nunca
 un bool desnudo), mas `verificar()`, el agregado que MD.py llama con la firma
 que declara su Protocol `Verificador`.
@@ -30,7 +30,7 @@ Por que son NUEVE funciones y la tabla de Fase 5 tiene ONCE filas
 -----------------------------------------------------------------
 La tabla de Fase 5 de la hoja de ruta lista once verificaciones -- V1, V2,
 **V2b**, V3, V4, **V4b**, V5, V6, V7, V8, V9 -- y este modulo implementa
-nueve. Las dos que faltan son V2b y V4b, y no faltan por lo mismo:
+DIEZ. La unica que falta es V2b:
 
 **V2b - sedimentacion / colmatacion. Diferida al expediente, con constancia.**
 Lo que V2b exige no es un umbral que este software pueda evaluar, sino ACCESO
@@ -44,31 +44,35 @@ prever el acceso de mantenimiento para limpieza en los planos de cada punto.
 verificaciones de cada punto -- que es donde el revisor cuenta las filas -- y
 el JSON la lleva en 'verificaciones_no_evaluadas'.
 
-**V4b - relacion HW/D. No implementada; la PROCEDENCIA del umbral ya esta
-cerrada, el cableado no.** El criterio existe ('HW_D_max', 1.5) y ningun
-modulo lo consume. Lo que estaba abierto -- de donde sale ese 1.5 y que
-etiqueta le corresponde -- se cerro contra el PDF: el rango 1.0-1.5 no es un
-criterio que el HDS-5 fije, sino la practica que su Sec. 2.2.5 d) "Agency
-Constraints" DESCRIBE de las agencias viales estadounidenses, y 1.5 es su
-extremo superior, el menos restrictivo. Por eso el criterio dejo de ser [C]
--- vacio cubierto por fuente tecnica -- y paso a [A]: es una adopcion del
-proyectista sobre una banda de practica ajena, con su rango de sensibilidad.
-Ver `criterios_adoptados.CRITERIOS['HW_D_max']`, que lleva la cita y el texto
-literal.
+**V4b - relacion HW/D. IMPLEMENTADA desde S14** (`v4b_relacion_hw_d`, en
+`verificar()`). Se cableo cuando se pudo y no antes: el conflicto #1 de la
+matriz de auditorias lo prohibia expresamente mientras la ETIQUETA del
+criterio siguiera abierta, porque implementar el chequeo sin saber de donde
+salia el 1.5 habria convertido una cita mal leida en un umbral que rechaza
+diametros. Lo que estaba abierto se cerro contra el PDF (C06): el rango
+1.0-1.5 no es un criterio que el HDS-5 fije, sino la practica que su
+Sec. 2.2.5 d) "Agency Constraints" DESCRIBE de las agencias viales
+estadounidenses, y 1.5 es su extremo superior, el menos restrictivo. Por eso
+el criterio dejo de ser [C] -- vacio cubierto por fuente tecnica -- y paso a
+[A]: es una adopcion del proyectista sobre una banda de practica ajena, con
+su rango de sensibilidad. Ver `criterios_adoptados.CRITERIOS['HW_D_max']`,
+que lleva la cita y el texto literal.
 
-Lo que sigue pendiente es el CABLEADO, y se hace aparte a proposito: es un
-cambio de comportamiento -- puntos que hoy pasan podrian dejar de pasar -- y
-no entra en el mismo paso que la reetiquetacion. Mientras tanto esta fila no
-se evalua y `verificaciones_no_evaluadas()` es su constancia en la memoria.
+Es un cambio de COMPORTAMIENTO -- un punto que hoy pasa puede dejar de
+pasar -- y por eso se hizo aparte de la reetiquetacion y no en el mismo paso.
+El HW que se divide entre D es el del control GOBERNANTE, no el del control
+de entrada: lo que la fuente acota es el embalse que la obra produce. La
+razon completa esta en el docstring de la funcion.
 
-Los dos docstrings que afirmaban lo CONTRARIO -- que M5 si ejecuta V4b --,
-en `modulos.M4_control` y en `modelos.ControlEntrada`, ya no lo afirman: se
-corrigieron junto con la reetiquetacion, que es lo que los hacia corregibles
-sin dejar el paquete a medias.
+Los dos docstrings que afirmaban que M5 ya ejecutaba V4b -- en
+`modulos.M4_control` y en `modelos.ControlEntrada` -- se habian corregido
+junto con la reetiquetacion, cuando la afirmacion era falsa. Hoy vuelven a
+poder decir que la verificacion existe, y lo dicen con la precision que
+entonces faltaba: cual es el HW que compara.
 
-Se dice con los dos numeros -- once filas, nueve funciones -- porque la
-diferencia importa: contarla mal (decir "una fila mas") tapa justamente la
-que sigue abierta.
+Se dice con los dos numeros -- once filas, diez funciones -- porque la
+diferencia importa: contarla mal (decir "las once") tapa justamente la que
+sigue abierta.
 Es la misma via documental que Fase 8 ya usa para el item 5 (rigidez de
 anillo, pandeo y costura): se declara diferido con su motivo, no se calcula
 un numero que nadie pidio.
@@ -116,7 +120,7 @@ los dos criterios de V7 sigan vacios, `verificar()` (y por lo tanto
 `MD.disenar_punto` / `MD.disenar_lote`) se detiene con
 `CriterioPendienteError` para CUALQUIER punto. No es un defecto de este
 modulo: es la misma regla que ya aplica a 'TW_receptor' o 'v_max_tmc' -- un
-vacio real bloquea el calculo, no lo esconde. Las nueve funciones
+vacio real bloquea el calculo, no lo esconde. Las diez funciones
 individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI son
 utilizables una por una hoy mismo; es el AGREGADO el que hereda el bloqueo de
 las pendientes.
@@ -244,6 +248,17 @@ NUMERAL_V4 = ReferenciaNormativa(
     numeral_norma="Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), "
                   "num. 4.5.4 y 9.1(3)",
 )
+# V4b NO tiene numeral normativo, y el rotulo lo dice: el HDS-5 describe la
+# banda de practica de las agencias de EE. UU., no la prescribe, y el MTC no
+# fija HW/D alguno (NOR-HDS-02). Escribir aqui "HDS-5 num. 2.2.5 d)" a secas
+# haria pasar por exigencia lo que la memoria tiene que presentar como
+# adopcion del proyectista.
+NUMERAL_V4B = ("Fase 5, V4b -- adopcion del proyectista ('HW_D_max' [A]). "
+               "NO es exigencia: el HDS-5, num. 2.2.5 d) 'Agency "
+               "Constraints', pag. impresa 2.10, DESCRIBE la banda 1.0-1.5 "
+               "que imponen las agencias viales de EE. UU., y el MTC no fija "
+               "HW/D alguno")
+
 NUMERAL_V5 = "Fase 5, V5 (DG-2018 + Ley 29338)"
 NUMERAL_V6 = "3.1"
 NUMERAL_V7 = ("Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; "
@@ -271,20 +286,23 @@ CRITERIO_V_MAX_CONCRETO = "v_max_concreto_eleccion"
 
 
 # ---------------------------------------------------------------------------
-# Las DOS filas de Fase 5 que este modulo no evalua: V2b y V4b
+# La UNICA fila de Fase 5 que este modulo no evalua: V2b
 # ---------------------------------------------------------------------------
+
+CLAVE_HW_D_MAX = "HW_D_max"
+
 
 def verificaciones_no_evaluadas() -> Tuple[str, ...]:
     """
-    Las dos filas de la tabla de Fase 5 que este modulo NO implementa como
-    verificacion -- V2b y V4b -- y por que cada una.
+    La fila de la tabla de Fase 5 que este modulo NO implementa como
+    verificacion -- V2b -- y por que.
 
     Misma forma y mismo proposito que
     `M8_estructural.verificacion_diferida_estructural`: lo que queda fuera del
     alcance del script no se calcula ni se aproxima, se declara con su
     fundamento para que la memoria lo imprima. Un requisito que desaparece sin
     dejar rastro es lo que este proyecto persigue; que la tabla tenga ONCE
-    filas y el modulo NUEVE funciones tiene que verse en la memoria, no
+    filas y el modulo DIEZ funciones tiene que verse en la memoria, no
     deducirse contando.
 
     V2b: la mitad [N] -- la velocidad minima que evita la sedimentacion -- SI
@@ -293,11 +311,23 @@ def verificaciones_no_evaluadas() -> Tuple[str, ...]:
     [A], el acceso de mantenimiento para limpieza, contenido de los PLANOS
     (Sec. 11, entregable 7) que este software no produce.
 
-    V4b: no se evalua porque su chequeo no esta cableado (ver el encabezado
-    del modulo; la procedencia del umbral si esta cerrada). El nombre de esta
-    funcion era
-    `verificacion_diferida_v2b` y se renombro al incorporarla: una funcion que
-    devuelve dos constancias no puede llamarse por una sola de ellas.
+    V4b YA NO ESTA AQUI. Devolvia una constancia de "no evaluada" porque su
+    chequeo no estaba cableado; se cableo en S14 -- `v4b_relacion_hw_d`, en
+    `verificar()` -- una vez cerrada la procedencia del umbral, que es la
+    secuencia que el conflicto #1 de la matriz de auditorias impone. El
+    criterio 'HW_D_max' llega hoy a la memoria por la via normal, la de
+    `criterios_usados()`, con su valor, su etiqueta y su rango: ya no hace
+    falta una constancia que los recitara.
+
+    Esta funcion sigue devolviendo una TUPLA, y no la cadena suelta que ahora
+    contiene, a proposito: su forma es la del conjunto de filas diferidas, no
+    la de la fila que hoy queda. El dia que otra se difiera, entra aqui sin
+    tocar a ningun llamador.
+
+    El nombre era `verificacion_diferida_v2b` y se renombro al incorporar la
+    de V4b: una funcion que devolvia dos constancias no podia llamarse por una
+    sola de ellas. Se conserva el nombre plural aunque hoy vuelva a devolver
+    una, por lo mismo que la tupla.
     """
     return (
         "V2b (sedimentacion / colmatacion): la condicion de velocidad la "
@@ -305,55 +335,7 @@ def verificaciones_no_evaluadas() -> Tuple[str, ...]:
         "limpieza queda DIFERIDO al expediente: es contenido de planos "
         "(Sec. 11, entregable 7), que este software no dibuja. Ningun "
         "punto se da por conforme en V2b por el hecho de cumplir V2",
-        _constancia_v4b(),
     )
-
-
-CLAVE_HW_D_MAX = "HW_D_max"
-
-
-def _constancia_v4b() -> str:
-    """
-    La constancia de V4b, con el VALOR y la ETIQUETA leidos del criterio en vez
-    de repetidos aqui.
-
-    Es la unica via por la que 'HW_D_max' llega a la memoria: no lo consume
-    ningun modulo, de modo que no entra en `criterios_usados()` y M11 no
-    imprime su ficha. Si esta constancia solo contara la historia en prosa, el
-    revisor no veria ni el 1.5, ni la etiqueta que la sesion de C06 corrigio,
-    ni el rango de sensibilidad -- que es justo el trabajo hecho para cerrar
-    NOR-HDS-02.
-
-    Se lee con `ca.criterio_efectivo`, que NO registra uso: leerlo para
-    imprimirlo no es consumirlo, y anotarlo como usado diria que alguna
-    verificacion se apoyo en el, que es exactamente lo que no ocurre. Leerlo
-    en vez de copiarlo evita ademas que esta cadena quede mintiendo el dia que
-    el criterio cambie.
-
-    La etiqueta se escribe SIN corchetes ("etiqueta A", no "[A]") y no es
-    cosmetica: esta cadena se imprime pegada a la tabla de verificaciones del
-    punto, y ahi un "[A]" entre corchetes es la marca con que M11 rotula el
-    criterio de UNA FILA de esa tabla. Dos usos del mismo simbolo a un
-    centimetro de distancia se leen como uno solo.
-    """
-    c = ca.criterio_efectivo(CLAVE_HW_D_MAX)
-    return (
-        f"V4b (relacion HW/D): NO evaluada. El criterio '{CLAVE_HW_D_MAX}' "
-        f"esta declarado con valor {c.valor!r}, etiqueta {c.etiqueta} "
-        f"(adopcion declarada) y sensibilidad {c.sensibilidad}, y ningun "
-        "modulo lo consume. Su "
-        "procedencia ya no esta abierta: el rango 1.0-1.5 no es un criterio "
-        "del HDS-5 sino la practica de agencias viales estadounidenses que su "
-        "num. 2.2.5 d) 'Agency Constraints' (pag. impresa 2.10) DESCRIBE "
-        "-- <<The allowable HW/D ratio varies throughout the country, but "
-        "commonly ranges from 1.0 to 1.5>> --, y 1.5 es el extremo superior, "
-        "el menos restrictivo. En el Peru la agencia es el MTC, que no fija "
-        "HW/D alguno, de modo que elegir un numero dentro de esa banda ajena "
-        "es adopcion del proyectista: por eso el criterio dejo de ser un "
-        "vacio cubierto por fuente tecnica. Lo que falta es cablear el "
-        "chequeo, que es un cambio de comportamiento y se hace aparte. El "
-        "control real del embalse aguas arriba es V5, que esta declarada y "
-        "bloquea")
 
 
 # ---------------------------------------------------------------------------
@@ -756,6 +738,64 @@ def v4_carga_entrada(*, punto: PuntoCritico,
 
 
 # ---------------------------------------------------------------------------
+# V4b - Relacion HW/D (adopcion del proyectista sobre la banda del HDS-5)
+# ---------------------------------------------------------------------------
+
+def v4b_relacion_hw_d(*, D: float,
+                      resultado: ResultadoHidraulico) -> Verificacion:
+    """
+    HW/D <= 'HW_D_max', Fase 5 fila V4b.
+
+    CUAL HW SE DIVIDE ENTRE D, que es la unica decision de esta funcion y la
+    que decide si el chequeo sirve. Se usa `resultado.HW` -- la carga del
+    control que GOBIERNA --, no el HWi/D del control de entrada. Lo que la
+    fuente acota es "the headwater produced by a culvert": el embalse real
+    aguas arriba, que es el mayor de los dos controles. Tomar el de entrada
+    cuando gobierna el de salida daria un numero menor que el embalse que la
+    obra produce, y un umbral que se relaja solo cuando el agua sube mas es
+    la direccion insegura exacta que este proyecto persigue.
+
+    Es una consecuencia que hay que dejar escrita porque contradice una
+    prediccion del propio repositorio: el docstring de
+    `modelos.ControlEntrada.HW_sobre_D` decia que ese campo "sera el
+    argumento del chequeo el dia que se cablee" (SIS-B-02). No lo es, por lo
+    anterior, y ese docstring se corrigio en la misma pasada.
+
+    DE DONDE SALE EL UMBRAL, y por que es [A] y no [N] ni [C]. El HDS-5 no
+    prescribe HW/D alguno: su num. 2.2.5 d) "Agency Constraints" (pag.
+    impresa 2.10) DESCRIBE lo que imponen las agencias viales
+    estadounidenses -- "The allowable HW/D ratio varies throughout the
+    country, but commonly ranges from 1.0 to 1.5" -- y en el Peru la agencia
+    es el MTC, que no fija ninguno (NOR-HDS-02). Elegir un numero dentro de
+    esa banda ajena es adopcion del proyectista, y por eso el criterio lleva
+    su rango de sensibilidad y esta funcion lo declara en
+    `criterio_aplicado`.
+
+    POR QUE SE CABLEA AHORA Y NO ANTES. El conflicto #1 de la matriz de
+    auditorias lo prohibia expresamente mientras la ETIQUETA del criterio
+    estuviese abierta: implementar el chequeo antes de saber de donde sale el
+    1.5 habria convertido una cita mal leida en un umbral que rechaza
+    diametros. Cerrada la procedencia (C06), el cableado es lo que quedaba
+    (MAT-D2, SIS-A-02, SIS-B-02).
+
+    NO SUSTITUYE A V5. El control real del embalse aguas arriba es V5
+    -- remanso dentro del derecho de via --, que es la que protege a
+    terceros y que sigue deteniendose por falta de dato. V4b es un tope de
+    practica, mas laxo, y cumplirlo no dice nada sobre V5.
+    """
+    HW_sobre_D = resultado.HW / D
+    admisible = ca.valor(CLAVE_HW_D_MAX)
+    return Verificacion(
+        cumple=HW_sobre_D <= admisible + TOL_UMBRAL_NORMATIVO,
+        numeral=NUMERAL_V4B,
+        valor_obtenido=HW_sobre_D,
+        valor_admisible=admisible,
+        criterio_aplicado=CLAVE_HW_D_MAX,
+        codigo="V4b",
+    )
+
+
+# ---------------------------------------------------------------------------
 # V5 - Remanso aguas arriba (DG-2018 + Ley 29338)
 # ---------------------------------------------------------------------------
 
@@ -966,7 +1006,7 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 def verificar(*, punto: PuntoCritico, material: Material, D: float,
              resultado: ResultadoHidraulico) -> Tuple[Verificacion, ...]:
     """
-    Las nueve verificaciones de la Fase 5, en el orden de la tabla. Coincide
+    Las diez verificaciones de la Fase 5, en el orden de la tabla. Coincide
     con la firma de `modulos.MD.Verificador`: MD la importa como
     `modulos.M5_verificaciones.verificar` cuando no se le inyecta otra.
 
@@ -980,6 +1020,7 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
         v2_velocidad_minima(resultado=resultado),
         v3_velocidad_maxima(material=material, resultado=resultado),
         v4_carga_entrada(punto=punto, resultado=resultado),
+        v4b_relacion_hw_d(D=D, resultado=resultado),
         v5_remanso(punto=punto, resultado=resultado),
         v6_material_solido_arrastre(),
         v7_flotacion(punto=punto, material=material, D=D, resultado=resultado),

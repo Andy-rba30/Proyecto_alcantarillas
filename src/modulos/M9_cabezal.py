@@ -161,6 +161,15 @@ from constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    AMBIENTE_CORROSIVO_TEXTO,
                                    CARGA_VIVA,
+                                   CLASE_DE_SITIO_COHERENCIA_INTERNA,
+                                   CLASE_DE_SITIO_INDETERMINADA,
+                                   CLASE_DE_SITIO_POR_QUE_DEJA_DE_DECIRSE,
+                                   CLASE_DE_SITIO_QUE_LA_CIERRA,
+                                   HOMONIMIA_CLASE_F,
+                                   homonimia_como_texto,
+                                   CLASE_SITIO_EF_NO_SUPUESTA_MP_TEXTO,
+                                   CLASE_SITIO_EF_NO_SUPUESTA_TEXTO,
+                                   CLASE_SITIO_INVESTIGACION_TEXTO,
                                    CICLOPEO_DISCREPANCIA_HOJA_RUTA,
                                    CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
@@ -210,6 +219,15 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_COMBINACIONES,
                                    NUMERAL_CUANTIA_MIN,
                                    NUMERAL_E030_AMBITO,
+                                   NUMERAL_CLASE_SITIO_AASHTO,
+                                   NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA,
+                                   NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA_MP,
+                                   NUMERAL_CLASE_SITIO_INVESTIGACION,
+                                   NUMERAL_CLASE_SITIO_MP,
+                                   NUMERAL_LICUEFACCION_AASHTO,
+                                   NUMERAL_LICUEFACCION_ESPECTRO,
+                                   NUMERAL_RESPUESTA_DE_SITIO_AASHTO,
+                                   NUMERAL_RESPUESTA_DE_SITIO_MP,
                                    NUMERAL_E030_S5,
                                    NUMERAL_ESPACIAMIENTO,
                                    NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION,
@@ -3358,6 +3376,40 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
         f"({NUMERAL_E030_AMBITO}; {NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION})",
         f"Texto literal del Art. 7.3 de E.030, que es el que cede el paso: "
         f"\"{E030_ART_7_3_TEXTO}\" ({NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION})",
+        # LA CLASE DE SITIO, y por que este expediente no se atribuye
+        # ninguna. Es la correccion de S13/S14 (conflicto #8): el expediente
+        # afirmaba la Clase de Sitio F y ninguna de las dos fuentes la
+        # sostiene -- pero lo que decide no es el silencio, es que las dos
+        # PROHIBEN suponer la clase E o F sin dato geotecnico. El texto va a
+        # la memoria entero, con las dos citas literales, porque un revisor
+        # que solo lea "indeterminada" no sabra que ya se busco
+        # (NOR-AAS-02, SIS-B-01, SIS-D-01, NOR-MEM-03).
+        f"{CLASE_DE_SITIO_INDETERMINADA} ({NUMERAL_CLASE_SITIO_AASHTO})",
+        f"Texto literal de la prohibicion, en el articulado y no en un "
+        f"comentario: \"{CLASE_SITIO_EF_NO_SUPUESTA_TEXTO}\" "
+        f"({NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA}). El Manual de Puentes lo "
+        f"endurece a un futuro imperativo: "
+        f"\"{CLASE_SITIO_EF_NO_SUPUESTA_MP_TEXTO}\" "
+        f"({NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA_MP})",
+        f"El deber positivo que abre la misma clausula, y que es lo que "
+        f"convierte a la clase de sitio en un dato pendiente de ensayo y no "
+        f"en un valor que el proyectista adopte: "
+        f"\"{CLASE_SITIO_INVESTIGACION_TEXTO}\" "
+        f"({NUMERAL_CLASE_SITIO_INVESTIGACION})",
+        f"{CLASE_DE_SITIO_POR_QUE_DEJA_DE_DECIRSE} "
+        f"({NUMERAL_CLASE_SITIO_MP}; {NUMERAL_LICUEFACCION_AASHTO}; "
+        f"{NUMERAL_E030_S5})",
+        f"{CLASE_DE_SITIO_COHERENCIA_INTERNA} "
+        f"({NUMERAL_LICUEFACCION_ESPECTRO})",
+        f"{CLASE_DE_SITIO_QUE_LA_CIERRA} "
+        f"({NUMERAL_RESPUESTA_DE_SITIO_AASHTO}; "
+        f"{NUMERAL_RESPUESTA_DE_SITIO_MP})",
+        # La homonimia, que llega a la memoria por dos caminos distintos y
+        # sin relacion entre si (NOR-VOC-04). Se imprime aqui, pegada a la
+        # cadena sismica, porque es donde el lector se encuentra el termino;
+        # el glosario completo de las cuatro homonimias del expediente lo
+        # imprime M11 (`bloque_homonimias`), leyendo esta MISMA declaracion.
+        homonimia_como_texto(HOMONIMIA_CLASE_F),
         # Lo que E.030 SI dice sobre este sitio, y que el expediente tenia
         # archivado como referencia muerta (NOR-E030-02).
         f"Perfil de suelo S5 de E.030: aunque la norma no gobierne el diseno "

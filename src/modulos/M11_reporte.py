@@ -86,7 +86,8 @@ import datos_sitio as ds
 # Los umbrales normativos con su CARACTER (recomendacion / exigencia) se leen
 # de su transcripcion, no se reescriben aqui: la memoria y el codigo tienen
 # que citar el mismo objeto o divergen, que es literalmente NOR-MEM-01.
-from constantes_normativas import (TABLA_10_INTERPRETACION_PROYECTO,
+from constantes_normativas import (HOMONIMIAS,
+                                   TABLA_10_INTERPRETACION_PROYECTO,
                                    UMBRALES_DE_VERIFICACION,
                                    H_O_HW_SOBRE_D_CAUTELA,
                                    H_O_HW_SOBRE_D_MIN, H_O_NUMERAL)
@@ -214,6 +215,7 @@ MARCADORES: Tuple[str, ...] = (
     "memorias_punto", "filas_resumen",
     "bloque_datos_sitio", "bloque_criterios", "bloque_pendientes",
     "bloque_alcance", "bloque_acotaciones", "bloque_umbrales",
+    "bloque_homonimias",
 )
 
 
@@ -842,8 +844,11 @@ def _tabla_verificaciones(informe: Any) -> str:
                             _td(_num(v.valor_admisible), "num"),
                             _td(umbral), _td(_marca(v.cumple))], clase))
     # La tabla de Fase 5 de la hoja de ruta trae ONCE filas y este software
-    # evalua nueve: V2b y V4b no. Se dice aqui, pegado a la tabla de
+    # evalua diez: la que falta es V2b. Se dice aqui, pegado a la tabla de
     # verificaciones, y no en una nota lejana: es donde el revisor cuenta.
+    # V4b se cableo en S14 y por eso ya no aparece como diferida: su ficha
+    # llega a la memoria por `criterios_usados()`, como cualquier criterio
+    # que el calculo consume.
     diferidas = "".join(
         f'<div class="nota"><p>{_esc(t)}</p></div>'
         for t in verificaciones_no_evaluadas())
@@ -1586,6 +1591,40 @@ def bloque_umbrales() -> str:
 # Ensamblado del documento
 # ===========================================================================
 
+def bloque_homonimias() -> str:
+    """
+    Glosario de las palabras que en este expediente significan dos o tres
+    cosas distintas y sin relacion, con los dos sentidos llegando a ESTA
+    misma memoria.
+
+    No es una nota de estilo. Los cuatro terminos -- «Clase F»,
+    «recubrimiento», «TW»/«cota_TW» y «luz»/«diametro» -- se leen mal sin
+    ruido: nadie ve un error, se ve un numero plausible en la unidad
+    equivocada. El caso extremo es `cota_TW`, que difiere de `TW` en la cota
+    de fondo de la salida entera, centenares de metros en este corredor
+    (NOR-VOC-01, NOR-VOC-02, NOR-VOC-03, NOR-VOC-04).
+
+    El texto se lee de `constantes_normativas.HOMONIMIAS`, que es donde vive
+    una sola vez. La de «Clase F» la imprime ademas M9, pegada a la cadena
+    sismica -- que es donde el lector se encuentra el termino --, leyendo la
+    MISMA declaracion por `homonimia_como_texto`.
+    """
+    partes = ['<div class="nota"><p>Cuatro palabras de este expediente '
+              "designan mas de una cosa, y en cada caso <b>los dos sentidos "
+              "llegan a esta memoria</b>. Leer uno con la definicion del otro "
+              "no produce un numero absurdo: produce un numero plausible y "
+              "equivocado, que es lo que hace falta declararlo.</p></div>"]
+    for termino, sentidos, lectura in HOMONIMIAS:
+        partes.append(f"<h3>{_esc(termino)}</h3><ul>")
+        partes.extend(f"<li>{_esc(s)}</li>" for s in sentidos)
+        partes.append(f"</ul><p><b>Como se resuelve:</b> {_esc(lectura)}</p>")
+    return "".join(partes)
+
+
+# ---------------------------------------------------------------------------
+# Alcance de la corrida
+# ---------------------------------------------------------------------------
+
 def bloque_alcance(informe: Any) -> str:
     """
     El alcance declarado de la corrida y TODO lo que difirio al expediente.
@@ -1712,6 +1751,7 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "bloque_alcance": bloque_alcance(informe),
         "bloque_acotaciones": bloque_acotaciones(alcance=informe.alcance),
         "bloque_umbrales": bloque_umbrales(),
+        "bloque_homonimias": bloque_homonimias(),
     }
     if set(valores) != set(MARCADORES):
         diferencia = set(valores).symmetric_difference(MARCADORES)

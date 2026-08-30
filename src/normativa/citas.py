@@ -1454,7 +1454,7 @@ HDS5_A21_QLIM = _cita(
     caracter=Caracter.APROXIMACION,
     nota=("«apply up to ABOUT»: la fuente NO fija un umbral duro. Y los 3.5 "
           "son del sistema INGLES; su equivalente SI, entre parentesis, es "
-          "1.93. Como `caudal_adimensional` multiplica por KU_METRICO = "
+          "1.93. Como `caudal_adimensional` multiplica por KU_SI = "
           "1.811, el q* que M4 compara ya esta en la escala inglesa y le "
           "corresponden 3.5 y 4.0: cambiarlos por los del parentesis seria "
           "aplicar dos veces la conversion."),
@@ -2061,6 +2061,35 @@ AASHTO_SITE_CLASS_EXCEPCIONES = _cita(
           "ES ARTICULADO, no comentario: va al pie de la Tabla 3.10.3.1-1, "
           "en la columna de especificacion. El `should not` de AASHTO lo "
           "endurece el Manual de Puentes a «no seran supuestas»."),
+)
+
+# El DEBER POSITIVO del mismo bloque «Exceptions», que hasta S14 vivia solo
+# en la `nota` de la cita anterior y por eso la memoria no lo podia citar sin
+# transcribirlo a mano por segunda vez. Es la otra mitad de la prohibicion y
+# la que dice que hacer: la norma no dice «no supongas y sigue», dice
+# INVESTIGA, y es lo que convierte a 'clase_sitio' en un [S] pendiente de
+# ensayo y no en un vacio que se adopta.
+AASHTO_SITE_CLASS_INVESTIGACION = _cita(
+    id="AASHTO_LRFD_9.3.10.3.1#INVESTIGACION",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1",
+    titulo_numeral="Site Class Definitions",
+    pagina_impresa="3-102",
+    pagina_pdf=156,
+    pagina_pdf_titulo=155,
+    texto_literal=Verbatim(
+        texto=("Where the soil properties are not known in sufficient detail "
+               "to determine the Site Class, a site investigation shall be "
+               "undertaken sufficient to determine the Site Class."),
+        pagina_pdf=156),
+    caracter=Caracter.EXIGENCIA,
+    sesion=S13,
+    nota=("Es la PRIMERA oracion del bloque «Exceptions» y precede a la "
+          "prohibicion de suponer E o F: el orden de la fuente es investigar "
+          "primero y no suponer despues. Se registra aparte porque es una "
+          "exigencia distinta -- un deber de hacer, no una prohibicion -- y "
+          "porque la memoria la cita por su cuenta al declarar que ensayo "
+          "cierra el vacio."),
 )
 
 AASHTO_T_SITE_CLASS_F = _cita(
