@@ -26,6 +26,7 @@ import pytest
 
 import cli
 import criterios_adoptados as ca
+from tests.apoyo.criterios import sin_valor
 from modulos.M11_reporte import PlantillaHTML
 from modelos import (CriterioPendienteError,
                      ControlGobernante, DatoInvalidoError,
@@ -166,9 +167,17 @@ def test_luz_declarada_clasifica_y_trae_la_verificacion_de_la_luz():
 
 
 def test_familia_a_se_detiene_en_el_umbral_de_quebrada_sin_categoria():
-    informe = _informe(luz_m=2.0)
-    assert "umbral_area_quebrada_importante_ha" in _claves_bloqueantes(
-        _punto(informe, "A-01"))
+    """
+    Sin umbral y sin categoria explicita, M1 no elige el TR por su cuenta.
+
+    El criterio quedo declarado en S20 (100 ha) al cerrarse el nivel de
+    perfil; el vacio se devuelve aqui dentro porque lo que este test fija es
+    la conducta ante un vacio, no el estado del expediente.
+    """
+    with sin_valor("umbral_area_quebrada_importante_ha"):
+        informe = _informe(luz_m=2.0)
+        assert "umbral_area_quebrada_importante_ha" in _claves_bloqueantes(
+            _punto(informe, "A-01"))
 
 
 def test_categoria_declarada_desbloquea_el_tr_de_la_familia_a():
@@ -191,9 +200,33 @@ def test_luz_de_puente_deja_el_punto_fuera_de_alcance():
 # ---------------------------------------------------------------------------
 
 def test_sin_tw_ni_longitud_se_bloquean_los_dos_insumos_de_md():
-    informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor")
-    claves = _claves_bloqueantes(_punto(informe, "A-01"))
-    assert {"TW_receptor", "talud_terraplen"} <= claves
+    """
+    Los dos insumos que MD necesita y que no son columna del CSV: la longitud
+    del conducto (7.B, criterio 'talud_terraplen') y el TW (Sec. 1.3).
+
+    SE COMPRUEBAN POR SEPARADO, y el orden no es un detalle de la prueba: es
+    el procedimiento. Desde S20 el TW se OBTIENE, y todas las vias de
+    Sec. 1.3 que parten de una cota de agua tienen que restarle la cota de
+    fondo de la SALIDA para convertirla en tirante -- y esa cota sale de 7.B,
+    que necesita la longitud. Sin longitud no hay TW que calcular, de modo
+    que el punto se detiene en el primero de los dos y el segundo no llega a
+    intentarse. Antes de S20 los dos aparecian a la vez porque el TW no se
+    calculaba: se leia de un criterio, y un criterio no necesita geometria.
+
+    EL TW NECESITA VACIAR DOS CRITERIOS, y ahi esta lo otro que S20 cambio:
+    la ultima puerta sigue siendo 'TW_receptor', pero antes se intentan las
+    vias de Sec. 1.3, y la cuarta -- los dos escenarios acotados -- solo
+    necesita la seccion del receptor. Con 'seccion_receptor' declarado el TW
+    SE RESUELVE, que es justamente lo que la implementacion vino a conseguir.
+    """
+    with sin_valor("talud_terraplen"):
+        informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor")
+        assert "talud_terraplen" in _claves_bloqueantes(_punto(informe, "A-01"))
+
+    with sin_valor("seccion_receptor"):
+        informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
+                           longitud_m=12.0)
+        assert "TW_receptor" in _claves_bloqueantes(_punto(informe, "A-01"))
 
 
 def test_con_tw_y_longitud_el_bucle_de_md_llega_a_la_fase_5():
@@ -585,17 +618,22 @@ def test_perfil_dimensiona_puntos_que_expediente_bloquea(monkeypatch):
 
 def test_perfil_intenta_v5_y_v8_pero_no_las_exige(monkeypatch):
     """
-    Las OCHO obligatorias estan en la tabla del punto; V5 y V8 no.
+    Las NUEVE obligatorias estan en la tabla del punto; V5 y V8 no.
 
-    Eran siete hasta S14, cuando V4b se cableo: su umbral es un criterio con
-    valor y no depende de ningun dato de expediente, de modo que al alcance
-    de perfil corre como cualquier otra obligatoria.
+    Eran siete hasta S14, cuando V4b se cableo, y ocho hasta S20, cuando se
+    cableo V2b. Las dos entran como obligatorias por la misma razon: su
+    umbral es un criterio con valor y no depende de ningun dato de
+    expediente, de modo que al alcance de perfil corren como cualquier otra.
+    Lo que el alcance difiere son las verificaciones que necesitan el
+    EXPEDIENTE -- el perfil de remanso y el derecho de via en V5, el caudal
+    del evento extremo en V8 --, no las que solo necesitan una declaracion
+    del proyectista.
     """
     _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
     perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
     codigos = [v.codigo for _, v in _punto(perfil, "A-01").verificaciones()
                if v.codigo and v.codigo.startswith("V")]
-    assert codigos == ["V1", "V2", "V3", "V4", "V4b", "V6", "V7", "V9"]
+    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V6", "V7", "V9"]
 
 
 def test_perfil_no_ejecuta_fase_8_ni_cabezal(monkeypatch):
@@ -629,19 +667,35 @@ def test_perfil_no_ejecuta_fase_8_ni_cabezal(monkeypatch):
     assert "cabezal" in llamadas
 
 
-def test_la_mina_de_v8_sigue_armada_en_perfil(monkeypatch):
+def test_v8_con_el_TR_declarado_se_difiere_en_vez_de_tumbar_la_corrida(monkeypatch):
     """
-    MINA de M5 (no desactivar): `v8_evento_extremo` termina en
-    AssertionError en cuanto 'TR_evento_extremo' tenga valor -- el criterio
-    tendria dato pero la logica de V8 no esta escrita. El verificador de
-    perfil captura SOLO ErrorProyecto, asi que esa AssertionError propaga y
-    tumba la corrida con su traza en vez de quedar "diferida": un modulo
-    incompleto no es un asunto de alcance. Antes de declarar ese criterio
-    hay que escribir el cuerpo de la funcion.
+    LA MINA DE V8, DESACTIVADA EN S20, y el test que la vigilaba invertido a
+    proposito.
+
+    `v8_evento_extremo` terminaba en `raise AssertionError` en cuanto
+    'TR_evento_extremo' tuviera valor. El aviso era cierto -- la logica de V8
+    no esta escrita -- y el medio, equivocado: `AssertionError` no desciende
+    de `ErrorProyecto`, de modo que `cli._etapa` no lo capturaba y declarar
+    ese criterio tumbaba la corrida ENTERA, con todos sus puntos, con una
+    traza de fallo de programa que la GUI no puede distinguir de un bug.
+
+    Hoy V8 lanza `DatoFaltanteError` sobre el dato que de verdad falta -- el
+    caudal del evento extremo, que este software no calcula porque no hace
+    hidrologia --, que es la MISMA solucion que V5 ya tenia desde antes y la
+    que CLAUDE.md contempla para el dato que un tablero externo tendria que
+    aportar. El aviso sigue siendo ruidoso; lo que cambio es que ahora es del
+    expediente y no del programa.
     """
     _declarar(monkeypatch, TR_evento_extremo=100.0, **CRITERIOS_CORRIDA_PERFIL)
-    with pytest.raises(AssertionError, match="TR_evento_extremo"):
-        _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+
+    v8 = [b for i in perfil.puntos for b in i.bloqueos
+          if b.diferido_por_alcance and "V8" in b.etapa]
+    assert v8, "V8 tiene que quedar diferida, no desaparecer"
+    assert all(b.tipo == "DatoFaltanteError" for b in v8)
+    assert all(b.campo == "Q_evento_extremo_m3s" for b in v8)
+    # Y el punto sigue dimensionandose: el fallo de V8 no mata la corrida.
+    assert any(i.dimensionado for i in perfil.puntos)
 
 
 def test_perfil_deja_constancia_en_texto_y_json(monkeypatch):
@@ -952,34 +1006,45 @@ def test_la_memoria_declara_el_criterio_dado_en_caliente_con_su_procedencia(tmp_
     """
     destino = tmp_path / "memoria.html"
     try:
-        cli.main([str(CSV), "--luz", "2.0", "--declarar", "TW_receptor=1.2",
+        cli.main([str(CSV), "--luz", "2.0", "--declarar", "talud_terraplen=1.8",
                   "--json", str(tmp_path / "i.json"), "--html", str(destino)])
         html = destino.read_text(encoding="utf-8")
 
-        assert "TW_receptor" in html
-        ficha = html.split("<code>TW_receptor</code>")[1].split("</dl>")[0]
-        assert "1.2" in ficha
+        assert "talud_terraplen" in html
+        ficha = html.split("<code>talud_terraplen</code>")[1].split("</dl>")[0]
+        assert "1.8" in ficha
         assert "sin valor declarado" not in ficha
         assert "DECLARADO PARA ESTA CORRIDA" in ficha
         assert "Criterios declarados solo para esta corrida" in html
     finally:
-        ca.quitar_valor_dinamico("TW_receptor")
+        ca.quitar_valor_dinamico("talud_terraplen")
 
 
 def test_el_json_lleva_el_valor_efectivo_y_la_procedencia(tmp_path):
+    """
+    EL CRITERIO DE LA PRUEBA CAMBIO EN S20, y por una razon que vale la pena
+    dejar escrita: era 'TW_receptor', y con la Sec. 1.3 implementada ese
+    criterio ya no lo invoca ninguna corrida normal -- es la ULTIMA puerta
+    del TW, la que se abre cuando no hay ni `cota_TW`, ni caudal del
+    receptor, ni seccion --, de modo que dejo de aparecer en
+    `criterios_usados()`. Un test sobre "el valor efectivo de un criterio
+    usado" tiene que pedirlo sobre uno que la corrida use de verdad, y
+    'talud_terraplen' lo es en todos los puntos: 7.B lo consume para la
+    longitud del conducto.
+    """
     salida = tmp_path / "i.json"
     try:
-        cli.main([str(CSV), "--luz", "2.0", "--declarar", "TW_receptor=1.2",
+        cli.main([str(CSV), "--luz", "2.0", "--declarar", "talud_terraplen=1.8",
                   "--json", str(salida)])
         datos = json.loads(salida.read_text(encoding="utf-8"))
         usados = {c["clave"]: c for c in datos["criterios"]["usados"]}
 
-        assert usados["TW_receptor"]["valor"] == pytest.approx(1.2)
-        assert usados["TW_receptor"]["declarado_en_caliente"] is True
-        assert "TW_receptor" in datos["criterios"]["declarados_en_caliente"]
+        assert usados["talud_terraplen"]["valor"] == pytest.approx(1.8)
+        assert usados["talud_terraplen"]["declarado_en_caliente"] is True
+        assert "talud_terraplen" in datos["criterios"]["declarados_en_caliente"]
         assert datos["criterios"]["verificacion_pendiente"]
     finally:
-        ca.quitar_valor_dinamico("TW_receptor")
+        ca.quitar_valor_dinamico("talud_terraplen")
 
 
 def test_un_dato_de_sitio_pendiente_sale_como_bloqueo_y_no_como_KeyError(monkeypatch):

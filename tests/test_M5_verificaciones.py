@@ -51,11 +51,13 @@ from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        resguardo_por_cbr, v1_borde_libre,
                                        v2_velocidad_minima,
                                        v3_velocidad_maxima,
+                                       v2b_sedimentacion,
                                        v4_carga_entrada, v5_remanso,
                                        v6_material_solido_arrastre,
                                        v7_flotacion, v8_evento_extremo,
                                        v9_disponibilidad_diametro, verificar)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.criterios import sin_valor
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP3_VELOCIDAD_MINIMA)
 
@@ -504,10 +506,11 @@ def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
     que los factores de carga en `v7_flotacion`.
     """
     punto = _punto()
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        v7_flotacion(punto=punto, material=concreto, D=0.90,
-                     resultado=_resultado())
-    assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
+    with sin_valor("peso_especifico_relleno_kn_m3"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            v7_flotacion(punto=punto, material=concreto, D=0.90,
+                         resultado=_resultado())
+        assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
 
 # La ELECCION de fila de gamma_p por estructura, que es lo que declara hoy
@@ -619,10 +622,41 @@ def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
     assert excinfo.value.clave == "TR_evento_extremo"
 
 
-def test_los_criterios_nuevos_estan_declarados_vacios():
-    for clave in ("remanso_derecho_via", "peso_especifico_relleno_kn_m3",
-                 "TR_evento_extremo"):
+def test_v8_con_el_TR_declarado_reclama_el_caudal_y_no_revienta():
+    """
+    La SEGUNDA rama de V8, que hasta S20 era un `raise AssertionError` desnudo
+    y tumbaba la corrida entera de la CLI (no desciende de `ErrorProyecto`, de
+    modo que `cli._etapa` no lo capturaba). Declarar el TR no cierra V8:
+    falta el CAUDAL de ese periodo de retorno, y este software no hace
+    hidrologia. Es la misma forma que V5 ya tenia.
+    """
+    from tests.apoyo.criterios import con_valor
+    punto = _punto()
+    with con_valor("TR_evento_extremo", 500,
+                   motivo="test: TR del evento extremo, para llegar a la "
+                          "segunda rama de V8"):
+        with pytest.raises(DatoFaltanteError) as excinfo:
+            v8_evento_extremo(punto=punto, resultado=_resultado())
+    assert excinfo.value.campo == "Q_evento_extremo_m3s"
+    assert isinstance(excinfo.value, ErrorProyecto)
+
+
+def test_los_dos_vacios_de_la_fase_5_son_los_que_el_alcance_de_perfil_difiere():
+    """
+    De los tres vacios que la Fase 5 tenia, quedan DOS -- y no es casualidad
+    cuales: son exactamente los de V5 y V8, las dos verificaciones que
+    `--alcance perfil` difiere al expediente. El tercero,
+    'peso_especifico_relleno_kn_m3', alimenta V7, que en perfil es
+    OBLIGATORIA, y por eso se cerro al cerrarse el nivel de perfil (S20).
+
+    La clasificacion no se afirma aqui a mano: se lee del campo `nivel`, que
+    es el que la GUI y la memoria consultan.
+    """
+    for clave in ("remanso_derecho_via", "TR_evento_extremo"):
         assert clave in ca.criterios_sin_valor()
+        assert ca.CRITERIOS[clave].nivel == ca.NIVEL_EXPEDIENTE
+    assert ca.CRITERIOS["peso_especifico_relleno_kn_m3"].valor is not None
+    assert ca.CRITERIOS["peso_especifico_relleno_kn_m3"].nivel == ca.NIVEL_PERFIL
     # 'factores_carga_aashto' no es un vacio: declara la fila de gamma_p de
     # cada estructura, y los gamma en si son [N] (NOR-PUE-04)
     assert "factores_carga_aashto" not in ca.criterios_sin_valor()
@@ -710,20 +744,18 @@ def test_verificar_tiene_la_firma_del_protocol_de_MD(concreto):
 
 def test_sin_declarar_el_origen_la_cota_de_entrada_detiene_el_calculo():
     """
-    La suite corre con la declaracion puesta (ver conftest). Aqui se retira a
-    proposito: es el unico sitio donde se comprueba que el vacio bloquea de
-    verdad y no que el conftest lo tape.
+    La regla nuclear del proyecto, comprobada: un criterio vacio DETIENE, no
+    se sustituye por un default. El criterio quedo declarado en S20 al
+    cerrarse el nivel de perfil, de modo que el vacio se devuelve aqui dentro
+    (`tests.apoyo.criterios.sin_valor`): lo que este test fija es la conducta
+    del modulo ante un vacio, que es permanente, y no el estado del
+    expediente, que no lo es.
     """
-    ca.quitar_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA)
-    try:
+    with sin_valor(CRITERIO_ORIGEN_COTA_ENTRADA):
         with pytest.raises(CriterioPendienteError) as excinfo:
             cota_entrada_supuesta(_punto())
         assert excinfo.value.clave == CRITERIO_ORIGEN_COTA_ENTRADA
-        assert ca.criterio(CRITERIO_ORIGEN_COTA_ENTRADA).valor is None, (
-            "el archivo no puede traer la eleccion hecha: la toma el "
-            "proyectista, no el programa")
-    finally:
-        ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+        assert ca.criterio(CRITERIO_ORIGEN_COTA_ENTRADA).valor is None
 
 
 def test_la_regla_declarada_es_la_que_se_aplica():
@@ -749,39 +781,39 @@ def test_una_regla_no_implementada_es_dato_invalido_no_un_fallo_de_programa():
         ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
 
 
-def test_la_fila_no_evaluada_se_declara_en_vez_de_desaparecer():
+def test_las_once_filas_de_la_fase_5_tienen_su_funcion():
     """
-    La tabla de Fase 5 tiene ONCE filas y este modulo DIEZ funciones. La que
-    falta -- V2b, el acceso de mantenimiento para limpieza -- no puede quedar
-    como un ejercicio de resta del lector: se declara con su fundamento, igual
-    que el item 5 de la Fase 8 (SIS-A-13 / MAT-O15).
+    La tabla de Fase 5 de la hoja de ruta tiene ONCE filas y este modulo tiene
+    ONCE funciones. Ninguna queda como ejercicio de resta del lector, que es
+    lo que SIS-A-13 y MAT-O15 reprochaban de V2b.
 
-    V4b SALIO DE ESTA LISTA EN S14, y es la mitad de lo que este test vigila
-    ahora: se cableo (`v4b_relacion_hw_d`) una vez cerrada la procedencia de
-    su umbral, que es la secuencia que el conflicto #1 impone. Una fila
-    cableada que siguiera declarandose "no evaluada" seria la misma clase de
-    afirmacion falsa que SIS-A-03 denuncio en ocho docstrings, solo que
-    impresa en la memoria.
+    LAS DOS QUE FALTABAN SE CABLEARON EN SESIONES DISTINTAS, y este test las
+    vigila a las dos: V4b en S14 (`v4b_relacion_hw_d`), una vez cerrada la
+    procedencia de su umbral -- que es la secuencia que el conflicto #1
+    impone --, y V2b en S20 (`v2b_sedimentacion`), una vez encontrado el
+    numeral que la sostiene, el 5.3.3 del HDS-5. Una fila cableada que
+    siguiera declarandose "no evaluada" seria la misma clase de afirmacion
+    falsa que SIS-A-03 denuncio en ocho docstrings, solo que impresa en la
+    memoria; y una fila sin cablear que no se declarara seria el defecto
+    contrario, que es el que V2b tenia.
     """
     from modulos import M11_reporte as M11
     from modulos.M5_verificaciones import verificaciones_no_evaluadas
 
     textos = verificaciones_no_evaluadas()
-    completo = " ".join(textos)
-    assert "V2b" in completo and "planos" in completo
-    assert "V4b" not in completo, (
-        "V4b volvio a declararse no evaluada. Si el cableado se retiro, "
-        "retiralo tambien de `verificar()`; si sigue ahi, esta constancia "
-        "esta mintiendo")
+    assert textos == (), (
+        "alguna fila de Fase 5 volvio a declararse no evaluada. Si es "
+        "cierto, el conteo de abajo tiene que cambiar con ella; si no lo es, "
+        "la constancia esta mintiendo")
 
     # El conteo, contra la hoja de ruta y contra este modulo: si alguno de los
-    # dos cambia, el texto de la constancia deja de ser cierto.
+    # dos cambia, la afirmacion de arriba deja de ser cierta.
     #
     # El patron de funciones lleva la `b` OPCIONAL a proposito. Sin ella
     # (`v\d+_`) no casaba `v4b_...` ni `v2b_...`, que son justo las dos que
-    # esta guardia vigila -- y gracias a ella `v4b_relacion_hw_d` entro en el
-    # conteo el dia que se cableo, en vez de dejar la constancia en verde
-    # diciendo que nadie la evalua.
+    # esta guardia vigila -- y gracias a ella entraron en el conteo el dia que
+    # se cablearon, en vez de dejar la constancia en verde diciendo que nadie
+    # las evalua.
     raiz = Path(__file__).resolve().parents[1]
     # La hoja se localiza como lo hace M11 -- que exige que haya exactamente
     # una --, no con el primer resultado de un glob.
@@ -790,8 +822,46 @@ def test_la_fila_no_evaluada_se_declara_en_vez_de_desaparecer():
     modulo = (raiz / "src" / "modulos" / "M5_verificaciones.py").read_text(encoding="utf-8")
     funciones = re.findall(r"^def (v\d+b?_\w+)", modulo, re.M)
     assert len(filas) == 11, f"la tabla de Fase 5 ya no tiene once filas: {filas}"
-    assert len(funciones) == 10, f"M5 ya no tiene diez verificaciones: {funciones}"
+    assert len(funciones) == 11, f"M5 ya no tiene once verificaciones: {funciones}"
     assert len(textos) == len(filas) - len(funciones)
+
+
+def test_v2b_compara_la_pendiente_del_conducto_con_la_del_cauce():
+    """
+    El indicador del HDS-5 num. 5.3.3: el conducto no se tiende mas plano que
+    el cauce que lo alimenta. Cumple con la pendiente del cauce (que es lo
+    normal, Sec. 7.B) y NO cumple en cuanto el diseño la baja.
+    """
+    punto = _punto()
+    igual = v2b_sedimentacion(punto=punto, resultado=_resultado(S=punto.S_cauce))
+    assert igual.cumple and igual.codigo == "V2b"
+    assert igual.criterio_aplicado == "acceso_mantenimiento_v2b"
+
+    mas_plano = v2b_sedimentacion(
+        punto=punto, resultado=_resultado(S=punto.S_cauce / 2))
+    assert not mas_plano.cumple
+    assert "colmatacion" in mas_plano.paso.veredicto.explicacion
+
+
+def test_v2b_se_detiene_sin_el_acceso_de_mantenimiento_declarado():
+    """
+    La mitad [A] de la fila V2b. Antes de S20 era un parrafo que la memoria
+    imprimia y que nadie tenia que contestar; ahora es un criterio que
+    DETIENE, de modo que el expediente no puede cerrar sin decir como se va a
+    limpiar cada punto.
+    """
+    with sin_valor("acceso_mantenimiento_v2b"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            v2b_sedimentacion(punto=_punto(), resultado=_resultado())
+        assert excinfo.value.clave == "acceso_mantenimiento_v2b"
+
+
+def test_v2b_sin_pendiente_de_cauce_reclama_la_columna():
+    """Sin S_cauce el indicador no tiene contra que comparar: Faltante."""
+    punto = _punto(S_cauce=None)
+    with pytest.raises(DatoFaltanteError) as excinfo:
+        v2b_sedimentacion(punto=punto, resultado=_resultado())
+    assert excinfo.value.campo == "S_cauce"
 
 
 # ===========================================================================

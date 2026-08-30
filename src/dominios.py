@@ -62,3 +62,10 @@ METROS_POR_KM = 1000      # literal-ok: definicion de la unidad, no valor de pro
 # Mismo caso que METROS_POR_KM: es la definicion de la unidad, no un valor de
 # proyecto. El calculo entero sigue en metros; esto solo lo escribe.
 CENTIMETROS_POR_METRO = 100   # literal-ok: definicion de la unidad, no valor de proyecto
+
+# Conversion al DIAMETRO DESIGNADO de las normas de producto, que tabulan en
+# milimetros enteros (AASHTO M 170M-04, ASTM A760, AASHTO M294) mientras el
+# calculo trabaja en metros. Mismo caso que los dos anteriores: es la
+# definicion de la unidad, no un valor de proyecto -- no dice que diametros
+# existen, solo como se escribe el mismo diametro en la otra unidad.
+MILIMETROS_POR_METRO = 1000   # literal-ok: definicion de la unidad, no valor de proyecto

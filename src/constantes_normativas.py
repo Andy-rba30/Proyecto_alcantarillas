@@ -815,6 +815,27 @@ UMBRALES_DE_VERIFICACION = (
                    "--, que es el extremo conservador para un piso. La razon "
                    "del minimo es la sedimentacion que reduce capacidad, no el "
                    "desgaste: por eso vale igual para todos los materiales."},
+    {"codigo": "V2b",
+     "fundamento": "F5.V2b",
+     "que": "Sedimentacion / colmatacion: pendiente del conducto no menor "
+            "que la del cauce natural (indicador del HDS-5 num. 5.3.3), "
+            "mas el acceso de mantenimiento declarado",
+     "citas": ("HDS5_3ED.5.3.3#INDICADORES", "HDS5_3ED.5.3.3#ALINEADO"),
+     "literales_de_tabla": (),
+     "matiz": "La fuente escribe «are key indicators of potential problems», "
+              "no un umbral: es un INDICADOR y no una prohibicion. El "
+              "proyecto lo endurece, igual que endurece las recomendaciones "
+              "de V1 y de V2.",
+     "aplicacion": "De los DOS indicadores que el numeral nombra se evalua "
+                   "UNO -- pendiente del barril frente a la del cauce --, "
+                   "porque el otro exige el n de Manning del CAUCE NATURAL, "
+                   "que no es columna de Sec. 1.2. Se aplica como umbral "
+                   "DURO sobre el indicador evaluable. La otra mitad de la "
+                   "fila V2b de la hoja de ruta -- el acceso de "
+                   "mantenimiento, contenido de planos -- no es un numero: "
+                   "entra por el criterio 'acceso_mantenimiento_v2b', que se "
+                   "declara y se imprime, y sin el la verificacion se "
+                   "detiene."},
     {"codigo": "V3",
      "fundamento": "F5.V3",
      "que": "Velocidad maxima admisible del revestimiento",

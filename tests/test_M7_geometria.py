@@ -22,6 +22,7 @@ import math
 from pathlib import Path
 
 import pytest
+from dataclasses import replace
 
 import criterios_adoptados as ca
 from constantes_normativas import H_RELLENO_MIN
@@ -45,6 +46,7 @@ from modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
                                   g2_cota_salida, longitud_conducto,
                                   proyeccion_taludes, tamizado_rasante)
 from tests.fixtures.casos_patron import CP9_GEOMETRIA_7B
+from tests.apoyo.criterios import sin_valor
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 # El HDPE es el unico material con minimo de relleno en EG-2013 (0.30 m,
@@ -439,18 +441,34 @@ def test_la_proyeccion_de_taludes_se_detiene_en_el_criterio_vacio():
     la trae como columna: el vacio se declara y detiene, no se rellena con un
     1.5:1 de practica corriente.
     """
-    with pytest.raises(CriterioPendienteError) as exc:
-        proyeccion_taludes(_punto())
-    assert exc.value.clave == CRITERIO_TALUD
+    with sin_valor(CRITERIO_TALUD):
+        with pytest.raises(CriterioPendienteError) as exc:
+            proyeccion_taludes(_punto())
+        assert exc.value.clave == CRITERIO_TALUD
 
-    with pytest.raises(CriterioPendienteError):
-        longitud_conducto(_punto())
+        with pytest.raises(CriterioPendienteError):
+            longitud_conducto(_punto())
 
 
-def test_el_criterio_del_talud_sigue_declarado_sin_valor():
-    """Si algun dia recibe valor, este test cae y hay que revisar 7.B entera."""
-    assert CRITERIO_TALUD in ca.criterios_sin_valor()
-    assert ca.criterio(CRITERIO_TALUD).etiqueta == "A"
+def test_el_talud_declarado_lleva_su_ventana_y_su_procedencia():
+    """
+    El criterio se declaro en S20, al cerrarse el nivel de perfil, y lo que
+    hay que vigilar cambio con el: ya no es que siga vacio, sino que no pueda
+    quedar declarado A SECAS. Un talud sin ventana es un numero que el revisor
+    no puede discutir, y sin procedencia es un numero del que la memoria no
+    puede decir de donde salio -- que es el criterio de salida del nivel de
+    perfil, escrito aqui sobre el criterio concreto que mas mueve la
+    longitud del conducto.
+    """
+    c = ca.criterio(CRITERIO_TALUD)
+    assert c.etiqueta == "A"
+    assert c.nivel == ca.NIVEL_PERFIL
+    assert c.valor is not None
+    assert c.sensibilidad is not None and c.resolucion is not None
+    minimo, maximo = c.sensibilidad
+    assert minimo <= c.valor <= maximo
+    # Y sigue habiendo un dato del expediente que lo cierra de verdad.
+    assert "seccion tipica" in c.reemplazado_por
 
 
 def test_cota_de_salida_es_la_entrada_menos_la_caida():
@@ -476,10 +494,11 @@ def test_g2_incumple_cuando_la_salida_queda_bajo_el_receptor():
 # ---------------------------------------------------------------------------
 
 def test_7B_se_detiene_en_el_talud_si_no_se_le_pasa_la_longitud(hdpe):
-    with pytest.raises(CriterioPendienteError) as exc:
-        compatibilidad_geometrica(punto=_punto(), material=hdpe, D=1.50,
-                                  resultado=_resultado())
-    assert exc.value.clave == CRITERIO_TALUD
+    with sin_valor(CRITERIO_TALUD):
+        with pytest.raises(CriterioPendienteError) as exc:
+            compatibilidad_geometrica(punto=_punto(), material=hdpe, D=1.50,
+                                      resultado=_resultado())
+        assert exc.value.clave == CRITERIO_TALUD
 
 
 def test_7B_con_longitud_dada_arma_la_geometria_y_las_dos_verificaciones(hdpe):
@@ -698,19 +717,41 @@ def _punto_7b(**cambios) -> PuntoCritico:
 @pytest.fixture
 def talud_declarado():
     """
-    Declara 'talud_terraplen' SOLO para este test y lo retira al salir.
+    Impone el talud de CP-9 SOLO para este test y lo retira al salir.
 
-    Las dos comprobaciones de los extremos no son adorno: fijan que el
-    criterio entra vacio y sale vacio, de modo que ninguna prueba de este
-    archivo pueda dejar el vacio tapado para las que corran despues.
+    LAS DOS COMPROBACIONES DE LOS EXTREMOS CAMBIARON DE OBJETO EN S20 y no de
+    proposito. Comprobaban que el criterio entra VACIO y sale VACIO, porque
+    'talud_terraplen' era uno de los vacios del expediente; al cerrarse el
+    nivel de perfil el criterio quedo declarado (2.0 H:V) y lo que hay que
+    fijar es lo mismo dicho sobre el nuevo estado: que este archivo no deja
+    tapado el valor del expediente para las pruebas que corran despues. Se
+    contrasta contra el valor del archivo, no contra una constante escrita
+    aqui, porque una copia del 2.0 en el test seria un segundo lugar donde
+    cambiarlo.
     """
-    assert CRITERIO_TALUD in ca.criterios_sin_valor()
-    ca.establecer_valor_dinamico(CRITERIO_TALUD, CP9["talud_de_prueba"])
+    del_archivo = ca.CRITERIOS[CRITERIO_TALUD]
+    assert ca.valor(CRITERIO_TALUD) == del_archivo.valor
+    # SE SUSTITUYE EL `Criterio` ENTERO, no solo su valor, y es la unica vez
+    # que este repositorio lo hace. `establecer_valor_dinamico` -- la via de
+    # la GUI y de la CLI -- pasa por `_verificar_criterio`, que EXIGE que el
+    # valor caiga dentro de la ventana declarada, y el 2.5 de CP-9 cae fuera
+    # de la del expediente (1.5 a 2.0 H:V) A PROPOSITO: el propio fixture
+    # explica que ni el 1.5 ni el 2.0 separan `2*t` de `t^2`, y ese poder de
+    # discriminacion es lo que hace util al caso patron. CP-9 no es este
+    # proyecto: es un cruce sintetico construido para que un error de formula
+    # no pueda pasar desapercibido. Imponerle la ventana del expediente seria
+    # confundir las dos cosas; usar la via de produccion para meter un valor
+    # fuera de ventana seria peor, porque ablandaria la guardia para todos.
+    ca.CRITERIOS[CRITERIO_TALUD] = replace(
+        del_archivo, valor=CP9["talud_de_prueba"],
+        sensibilidad=None,
+        justificacion="CASO PATRON CP-9, no el expediente: talud elegido "
+                      "para que 2*t, t^2 y 2/t den tres numeros distintos")
     try:
         yield CP9["talud_de_prueba"]
     finally:
-        ca.quitar_valor_dinamico(CRITERIO_TALUD)
-    assert CRITERIO_TALUD in ca.criterios_sin_valor()
+        ca.CRITERIOS[CRITERIO_TALUD] = del_archivo
+    assert ca.valor(CRITERIO_TALUD) == del_archivo.valor
 
 
 def test_la_proyeccion_son_dos_taludes_por_la_altura_de_terraplen(talud_declarado):

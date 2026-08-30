@@ -126,6 +126,44 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   (`Interpretacion`, `class="interpretacion"`) y lo que el proyecto **hace**.
   Pegadas, las tres se leen como norma: es NOR-HID-04.
 
+## Nivel de entrega: perfil o expediente
+
+La taxonomía de cinco etiquetas dice **cuánto se eligió** un valor. No dice a
+**qué entrega pertenece**, y son dos preguntas distintas: un [A] que gobierna
+el diámetro de una alcantarilla y un [A] que gobierna la cuantía del cabezal
+son igual de elegidos y no se cierran en la misma etapa del proyecto. Todo
+criterio lleva por eso un segundo campo, `Criterio.nivel`, con dos valores:
+`NIVEL_PERFIL` y `NIVEL_EXPEDIENTE`.
+
+- **El nivel de un criterio es el nivel de la etapa que lo consume**, y no es
+  una opinión: si una corrida `--alcance perfil` lo invoca sin que su etapa
+  quede diferida, es de perfil. `tests/test_cierre_perfil.py` lo comprueba
+  corriendo el pipeline y contrastando lo que invoca contra el campo, de modo
+  que la clasificación no puede quedar desincronizada del código — que es
+  exactamente como se desincronizan las clasificaciones escritas a mano.
+- **Todo criterio SIN VALOR tiene que declarar nivel.** Un vacío que no dice a
+  qué entrega pertenece no se puede planificar: no se sabe si frena el perfil o
+  si el alcance lo difiere.
+- **Todo criterio de PERFIL con etiqueta [A] lleva `sensibilidad` y
+  `resolucion`**, tenga valor o no. La ventana es parte de la FICHA y no del
+  valor: dice dentro de qué se va a poder elegir, y eso se sabe antes de
+  elegir. Sin ese matiz, un [A] de perfil sin declarar se quedaba sin ventana y
+  entonces la GUI y la CLI no lo podían declarar en caliente — el valor
+  aparecía y la ventana seguía sin estar.
+
+Las tres reglas están en `criterios_adoptados._verificar_nivel`, no en un
+documento. La tercera es el criterio de salida del nivel de perfil escrito como
+invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
+procedencia**.
+
+Qué NO es el nivel, porque las tres cosas se confunden: no es la **fase** del
+cálculo (eso es `variables_entrada`), no es la **etiqueta** (eso es la
+taxonomía de arriba) y no es el **alcance de una corrida** (eso es la bandera
+`--alcance`, que decide qué etapas se ejecutan). El nivel es una propiedad del
+criterio; el alcance, de la corrida. Coinciden porque el alcance de perfil
+difiere justamente las etapas cuyos criterios son de expediente, y esa
+coincidencia es lo que el test comprueba en vez de darla por hecha.
+
 ## Unidades
 - **Todo el código opera en SI: metros, m³/s, m/s, Pa, kN.** Ninguna función
   acepta ni devuelve pulgadas, pies ni kg/cm².
@@ -156,7 +194,16 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   `--datos-externos`, y el que un tablero externo tendría que aportar y
   todavía no aporta (`ancho_derecho_via_m` en V5 es el caso vivo). En esos
   casos el campo `campo` nombra el DATO, no una columna, y el mensaje dice de
-  dónde tendría que venir. Se amplió aquí en S16 (SIS-E-06): `modelos.py`
+  dónde tendría que venir. **En S20 se le sumaron tres casos vivos más, y los
+  tres son la misma forma:** el caudal del evento extremo que V8 pide una vez
+  declarado su TR (`Q_evento_extremo_m3s`; este software no hace hidrología),
+  y las dos entradas que `espesor_pared_conducto` puede no traer — el material
+  cuya norma de producto no está en `normas/`, y la fila de diámetro que nadie
+  transcribió—. Los tres eran `AssertionError` desnudos: **una excepción que no
+  desciende de `ErrorProyecto` tumba la corrida entera** porque `cli._etapa` no
+  la captura, y la GUI no la puede distinguir de un fallo del programa. La
+  regla que los separa sigue siendo la misma: si el revisor tiene que AÑADIR
+  algo es Faltante. Se amplió aquí en S16 (SIS-E-06): `modelos.py`
   llevaba tiempo declarando el contrato ancho — "del CSV (Sec. 1.2) o de un
   tablero externo" — y el código lo usaba así, de modo que la constitución
   describía una excepción más estrecha que la que el proyecto tiene. La

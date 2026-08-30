@@ -46,11 +46,14 @@ FECHA_S12 = "2026-08-28"
 POR_S12 = "fase1/S12 · verificador-normativo"
 FECHA_S13 = "2026-08-29"
 POR_S13 = "fase1/S13 · verificador-normativo"
+FECHA_S20 = "2026-08-30"
+POR_S20 = "fase1/S20 · verificador-normativo"
 
 # La firma va por SESION, no por archivo: una cita dice contra que lectura se
 # comprobo, y dos lecturas distintas del mismo PDF son dos hechos distintos.
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
+S20 = (FECHA_S20, POR_S20)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -1661,6 +1664,68 @@ HDS5_3_3_3_HO_1_2D = _cita(
           "dentro de algo rotulado «texto literal» es la misma clase de "
           "defecto que NOR-HID-06."),
 )
+
+# ---------------------------------------------------------------------------
+# V2b - Sedimentacion / colmatacion (Fase 5). Las dos citas que la sostienen.
+# ---------------------------------------------------------------------------
+# La fila V2b de la tabla de Fase 5 tiene dos mitades: la de SEDIMENTACION,
+# que hasta S20 no tenia mas apoyo que el motivo declarado del piso de V2, y
+# la del ACCESO DE MANTENIMIENTO en los planos, que sigue siendo entregable de
+# dibujo. Estas dos citas cierran la primera: el HDS-5 3.a ed. SI nombra los
+# indicadores, y los nombra en terminos de dos numeros que este software ya
+# tiene -- la pendiente del barril frente a la del cauce natural y la
+# rugosidad del barril frente a la del cauce.
+#
+# El caracter es DEFINICION y no EXIGENCIA a proposito: la fuente escribe
+# «are key indicators of potential problems», no un umbral que haya que
+# cumplir. Es el mismo reparto que V1 y V2 -- donde la fuente RECOMIENDA y el
+# proyecto endurece --, declarado en el `Fundamento` y no tapado.
+
+HDS5_5_3_3_INDICADORES = _cita(
+    id="HDS5_3ED.5.3.3#INDICADORES",
+    fuente_id="HDS5_3ED",
+    numeral="5.3.3",
+    titulo_numeral="Sedimentation",
+    pagina_impresa="5.11",
+    pagina_pdf=147,
+    texto_literal=Verbatim(
+        texto=("Therefore, barrel slope less than the natural channel and "
+               "roughness greater than the channel are key indicators of "
+               "potential problems at culvert sites."),
+        pagina_pdf=147),
+    caracter=Caracter.DEFINICION,
+    sesion=S20,
+    nota=("LOS DOS INDICADORES SON COMPARACIONES, NO UMBRALES. La fuente no "
+          "escribe ninguna cifra: nombra dos desigualdades entre el conducto "
+          "y el cauce natural. La primera -- S_conducto < S_cauce -- este "
+          "software la puede evaluar con dos columnas que ya tiene. La "
+          "segunda -- n_conducto > n_cauce -- necesita el n del CAUCE "
+          "NATURAL, que no es columna de Sec. 1.2 y por eso queda declarada, "
+          "no adivinada."),
+)
+
+HDS5_5_3_3_ALINEADO = _cita(
+    id="HDS5_3ED.5.3.3#ALINEADO",
+    fuente_id="HDS5_3ED",
+    numeral="5.3.3",
+    titulo_numeral="Sedimentation",
+    pagina_impresa="5.11",
+    pagina_pdf=147,
+    texto_literal=Verbatim(
+        texto=("Culverts which are located on and aligned with the natural "
+               "channel generally do not have a sedimentation problem."),
+        pagina_pdf=147),
+    caracter=Caracter.DEFINICION,
+    derivado_de="HDS5_3ED.5.3.3#INDICADORES",
+    sesion=S20,
+    nota=("Es la contracara del indicador y la que explica por que la "
+          "verificacion pasa en la inmensa mayoria de los puntos de este "
+          "corredor: Sec. 7.B fija que la alcantarilla sigue la pendiente "
+          "del cauce, de modo que S_conducto = S_cauce salvo que el punto "
+          "declare `S_conducto` aparte. El «generally» es de la fuente y se "
+          "conserva: no dice «nunca»."),
+)
+
 
 # LA FORMA CON EL MAXIMO NO SE INTERNA COMO `Cita`, Y HAY QUE DECIR POR QUE.
 # `M4.control_salida` implementa h_o = max(TW, (dc + D)/2) y la 3a ed. NO

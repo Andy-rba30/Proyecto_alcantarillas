@@ -529,11 +529,26 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "PERFIL_SUELO_PRESUNTO": _Meta(
         unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
     "TR_evento_extremo": _Meta(unidad="años"),
+    "acceso_mantenimiento_v2b": _Meta(
+        unidad="-",
+        nota="Es la mitad [A] de la fila V2b de la Fase 5. La otra mitad -- "
+             "el indicador de sedimentacion del HDS-5 num. 5.3.3 -- no "
+             "necesita declaracion: se calcula comparando la pendiente del "
+             "diseño con la del cauce, y las dos son datos que la corrida ya "
+             "tiene."),
     "TW_receptor": _Meta(
-        unidad="msnm",
-        fase_declarada="Fase 4 - Dimensionamiento hidraulico (el TW entra "
-                       "hoy por la columna `cota_TW` o por la opcion `--tw` "
-                       "de la CLI; ningun modulo invoca el criterio)"),
+        unidad="m sobre el fondo de la salida",
+        fase_declarada="Fase 1 - Datos de entrada (Sec. 1.3, ultima puerta "
+                       "del TW: `M3.tw_seccion_1_3` lo invoca solo cuando el "
+                       "expediente no trae ni `cota_TW`, ni el caudal del "
+                       "receptor, ni su seccion)",
+        nota="LA UNIDAD ESTABA MAL Y NO ERA INOCUO. Decia «msnm», que es la "
+             "unidad de `cota_TW` -- una COTA ABSOLUTA --, y este criterio "
+             "declara un TIRANTE sobre el fondo de la salida. Es exactamente "
+             "la homonimia que `constantes_normativas.HOMONIMIA_TW` existe "
+             "para senalar, y la tenia el tablero que la senala. Confundirlas "
+             "desplaza el control de salida en la magnitud entera de la cota "
+             "de fondo: centenares de metros en este corredor."),
     "angulo_aletas": _Meta(
         unidad="grados", fase_declarada="Fase 9 - Cabezal y aletas"),
     "c_phi_fundacion": _Meta(
@@ -587,6 +602,10 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "procedimiento_flexion_corte_aashto_sec5": _Meta(unidad="-"),
     "punto_aplicacion_incremento_sismico": _Meta(unidad="- (fraccion de H)"),
     "remanso_derecho_via": _Meta(unidad="m"),
+    "seccion_receptor": _Meta(
+        unidad="m, H:V, m/m, -",
+        fase_declarada="Fase 1 - Datos de entrada (Sec. 1.3, paso 2: Manning "
+                       "en la seccion del receptor)"),
     "resguardo_HW_subrasante": _Meta(unidad="m"),
     "riesgo_admisible_propietario": _Meta(unidad="% y años"),
     "situacion_recubrimiento_aashto": _Meta(unidad="-"),

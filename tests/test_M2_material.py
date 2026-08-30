@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 import criterios_adoptados as ca
-from modelos import DatoInvalidoError, Familia, Material, TipoMaterial
+from modelos import DatoFaltanteError, DatoInvalidoError, Familia, Material, TipoMaterial
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import (CRITERIO_ESPESOR_PARED, catalogo,
                                  espesor_pared, materiales_candidatos,
@@ -288,15 +288,17 @@ def test_familia_c_no_tiene_candidatos(punto_c):
 # C09 / SIS-F-10 - las dos guardas de 'espesor_pared_conducto'
 # ===========================================================================
 #
-# El criterio es un dict {material: espesor en metros} y lo leen DOS sitios,
-# con dos guardas distintas y motivos distintos:
+# El criterio es un dict {material: {diametro designado en mm: espesor en m}}
+# -- desde S20, cuando dejo de ser un escalar por material: el espesor de
+# pared depende del diametro y el bucle de MD recorre el catalogo entero -- y
+# lo leen DOS sitios, con dos guardas distintas y motivos distintos:
 #
 #   `catalogo()`       rechaza la declaracion MAL FORMADA -- un escalar donde
 #                      se espera el dict --, y la rechaza al construir el
 #                      material, antes de que nadie use el numero.
-#   `espesor_pared()`  rechaza el espesor que no es un numero, ya con el
-#                      material armado, en el punto donde el numero hace
-#                      falta de verdad.
+#   `espesor_pared()`  rechaza el espesor que no es un numero y la fila de
+#                      diametro que falta, ya con el material armado, en el
+#                      punto donde el numero hace falta de verdad.
 #
 # Ninguna de las dos tenia corrida que la ejecutara. Las dos son
 # DatoInvalidoError y no CriterioPendienteError a proposito: el criterio SI
@@ -324,7 +326,7 @@ def test_un_espesor_declarado_sin_separar_por_material_es_dato_invalido(
         ca.quitar_valor_dinamico(CRITERIO_ESPESOR_PARED)
 
     assert exc.value.campo == CRITERIO_ESPESOR_PARED
-    assert "un espesor por material" in exc.value.motivo
+    assert "una tabla de espesores por material" in exc.value.motivo
     # El motivo tiene que enseñar la forma esperada, con las tres claves:
     # es lo unico que le dice al revisor como se corrige.
     for tipo in TipoMaterial:
@@ -347,11 +349,12 @@ def test_un_espesor_de_pared_que_no_es_un_numero_se_detiene_al_usarlo(
     """
     ca.establecer_valor_dinamico(
         CRITERIO_ESPESOR_PARED,
-        {"concreto_reforzado": espesor_declarado, "tmc": 0.013, "hdpe": 0.050})
+        {"concreto_reforzado": {900: espesor_declarado},
+         "tmc": {900: 0.013}, "hdpe": {900: 0.050}})
     try:
         material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
         with pytest.raises(DatoInvalidoError) as exc:
-            espesor_pared(material)
+            espesor_pared(material, 0.90)
     finally:
         ca.quitar_valor_dinamico(CRITERIO_ESPESOR_PARED)
 
@@ -370,11 +373,34 @@ def test_los_otros_materiales_de_la_misma_declaracion_siguen_valiendo():
     """
     ca.establecer_valor_dinamico(
         CRITERIO_ESPESOR_PARED,
-        {"concreto_reforzado": "0.10", "tmc": 0.013, "hdpe": 0.050})
+        {"concreto_reforzado": {900: "0.10"},
+         "tmc": {900: 0.013}, "hdpe": {900: 0.050}})
     try:
-        assert espesor_pared(catalogo(TipoMaterial.TMC)) == pytest.approx(
+        assert espesor_pared(catalogo(TipoMaterial.TMC), 0.90) == pytest.approx(
             0.013, rel=REL_TRANSPORTE)
-        assert espesor_pared(catalogo(TipoMaterial.HDPE)) == pytest.approx(
+        assert espesor_pared(catalogo(TipoMaterial.HDPE), 0.90) == pytest.approx(
             0.050, rel=REL_TRANSPORTE)
     finally:
         ca.quitar_valor_dinamico(CRITERIO_ESPESOR_PARED)
+
+
+def test_un_diametro_sin_fila_en_la_tabla_de_espesores_se_reclama_por_su_nombre():
+    """
+    La guarda que el modelo anterior no podia dar. Con un espesor ESCALAR por
+    material, un punto que cerrara en 1.20 m se calculaba con el espesor del
+    de 0.90 m y nada avisaba -- y el bucle de MD recorre el catalogo entero,
+    de modo que no era un caso remoto. Ahora falta la fila y se dice cual.
+    """
+    ca.establecer_valor_dinamico(
+        CRITERIO_ESPESOR_PARED, {"concreto_reforzado": {900: 0.100}})
+    try:
+        material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+        assert espesor_pared(material, 0.90) == pytest.approx(
+            0.100, rel=REL_TRANSPORTE)
+        with pytest.raises(DatoFaltanteError) as exc:
+            espesor_pared(material, 1.20)
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_ESPESOR_PARED)
+
+    assert "1200" in exc.value.campo
+    assert "no se interpola" in exc.value.detalle

@@ -486,9 +486,12 @@ def test_los_simbolos_que_el_fixture_nombra_existen_de_verdad():
     AssertionError, que es lo que hace cierta la afirmacion.
     """
     texto = NO_APLICADOS.read_text(encoding="utf-8")
+    # DOS SITIOS SALIERON DE LA LISTA EN S20, y el test los vigila desde el
+    # otro lado, mas abajo: `v8_evento_extremo` y `espesor_pared` levantan
+    # hoy `DatoFaltanteError`, que SI es `ErrorProyecto`, de modo que
+    # declarar su criterio ya no tumba la corrida. Es el mismo movimiento que
+    # S16 hizo con `v5_remanso`.
     esperados = {
-        "M5_verificaciones.py::v8_evento_extremo":
-            ("src/modulos/M5_verificaciones.py", "v8_evento_extremo"),
         "M8_estructural.py::seleccionar_clase_calibre":
             ("src/modulos/M8_estructural.py", "seleccionar_clase_calibre"),
         "M9_cabezal.py::verificar_estabilidad_global":
@@ -506,6 +509,22 @@ def test_los_simbolos_que_el_fixture_nombra_existen_de_verdad():
         assert levanta, (
             f"'{funcion}' ya no levanta AssertionError: el fixture quedo caduco, "
             "como paso con remanso_derecho_via")
+
+    # Y LOS DOS QUE SALIERON, comprobados por lo contrario: si alguno volviera
+    # a levantar `AssertionError`, el .md tendria que volver a nombrarlo.
+    for archivo, funcion in (
+            ("src/modulos/M5_verificaciones.py", "v8_evento_extremo"),
+            ("src/modulos/M2_material.py", "espesor_pared")):
+        arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8-sig"))
+        nodo = next((n for n in ast.walk(arbol)
+                     if isinstance(n, ast.FunctionDef) and n.name == funcion), None)
+        assert nodo is not None, f"'{funcion}' ya no existe en {archivo}"
+        assert not [r for r in ast.walk(nodo)
+                    if isinstance(r, ast.Raise) and r.exc is not None
+                    and _nombre_de_excepcion(r.exc) == "AssertionError"], (
+            f"'{funcion}' volvio a levantar AssertionError: si es a proposito, "
+            "vuelve a nombrarlo en el .md de no aplicados; si no, es la mina "
+            "que S20 desactivo")
 
 
 def _nombre_de_excepcion(nodo):

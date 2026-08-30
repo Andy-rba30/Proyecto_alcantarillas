@@ -96,6 +96,11 @@ def _pasos_de(informe):
         if punto.resultado is not None and \
                 punto.resultado.resultado_hidraulico is not None:
             vistos.extend(punto.resultado.resultado_hidraulico.pasos)
+        # El TW de Sec. 1.3 tambien emite paso desde S20: es la unica traza
+        # de la Fase 1 que la memoria imprime, y sin recogerla aqui el
+        # fundamento F1.TW quedaria contado como "declarado y nunca usado".
+        if getattr(punto, "tw_sec13", None) is not None:
+            _anota(getattr(punto.tw_sec13, "paso", None))
         if punto.proteccion is not None:
             _anota(getattr(punto.proteccion, "paso", None))
         if punto.espaciamiento is not None:

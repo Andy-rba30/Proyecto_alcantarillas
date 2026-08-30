@@ -34,6 +34,7 @@ from pathlib import Path
 import pytest
 
 import criterios_adoptados as ca
+from tests.apoyo.criterios import sin_valor
 from constantes_fisicas import GAMMA_AGUA_KN_M3
 import modulos.M8_estructural as M8
 from modelos import (CamaApoyoRelleno, CriterioPendienteError,
@@ -93,9 +94,11 @@ def test_empuje_flotacion_crece_con_el_diametro():
 
 
 def test_peso_relleno_lanza_pendiente():
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        peso_relleno_kn_m(D_exterior=0.90, altura_relleno=1.0)
-    assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
+    """Sin el peso del relleno declarado, V7 se detiene y no supone ninguno."""
+    with sin_valor("peso_especifico_relleno_kn_m3"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            peso_relleno_kn_m(D_exterior=0.90, altura_relleno=1.0)
+        assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
 
 def test_peso_relleno_calcula_con_el_criterio_declarado(monkeypatch):

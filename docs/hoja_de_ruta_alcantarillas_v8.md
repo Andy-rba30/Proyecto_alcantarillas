@@ -202,6 +202,37 @@ cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion
 2. Manning en la sección del receptor con ese Q y su pendiente → tirante normal → cota de agua **[N]**
 3. Sin caudal documentado: **dos escenarios acotados** (salida libre / receptor a sección llena), cumplir en ambos **[A]**
 
+> **Los tres pasos piden un dato que esta hoja no lista en ninguna parte, y el
+> defecto es de esta hoja** (`SIS-B-04`, cerrado en S20). El paso 2 dice «Manning
+> **en la sección del receptor**» y el paso 3 dice «receptor **a sección
+> llena**»: los dos necesitan la **geometría de esa sección** —ancho de solera,
+> talud, pendiente longitudinal, n de Manning y **profundidad total del cauce**,
+> esta última porque sin ella «a sección llena» no es un nivel—. Ni la Sec. 1.1
+> ni el encabezado de la Sec. 1.2 la traen, y ningún numeral la fija: es la
+> geometría de una obra de terceros, el dren de la Junta de Usuarios, que hay
+> que ir a levantar.
+>
+> **Cómo lo resolvió el código, para que quien lea la hoja sin leer el código no
+> se quede con un procedimiento que no arranca.** La sección entra por el
+> criterio `seccion_receptor` **[A]**, con su ventana y su trazabilidad, y el
+> procedimiento vive en `M3_hidraulica.tw_seccion_1_3`, que recorre **cuatro**
+> vías en orden de precedencia —de lo más determinado a lo más supuesto—:
+>
+> 1. TW declarado por el proyectista (`--tw`).
+> 2. Columna **`cota_TW`** del CSV. El Tablero 3.1 la rotula «Calculada (1.3)»:
+>    es el paso 2 resuelto fuera, y lo que faltaba era la resta que la convierte
+>    en tirante, `TW = cota_TW − cota_fondo_salida`.
+> 3. Columna **`Q_receptor_m3s`** + `seccion_receptor`: los pasos 1 y 2 enteros.
+> 4. Sin caudal documentado: el paso 3, los dos escenarios acotados.
+>
+> **Sobre «cumplir en ambos» del paso 3.** El diseño corre con el escenario
+> **gobernante** —el TW mayor— y los dos se imprimen en la memoria. No es un
+> atajo: `h_o = max(TW, (y_c + D)/2)` no decrece con TW, `HW` de salida crece con
+> `h_o`, y el control que gobierna es el mayor de los dos HW; luego V4 y V4b,
+> que son las únicas verificaciones que dependen del TW, tienen su peor caso en
+> el TW mayor. Cumplir con el mayor implica cumplir con el otro, y la memoria
+> publica los dos números para que se pueda comprobar en vez de creerlo.
+
 ### 1.4 Densidad de investigación geotécnica
 
 **Manual de Suelos, num. 4.2, Cuadro 4.1** (pág. impresa 28). Nivel **Perfil**: **si no existe información secundaria en el tramo**, número de calicatas del Cuadro 4.1 **espaciadas cada 4.0 km** — el orden de prelación que la fuente imprime es usar *primero* la información secundaria existente. Ese 4.0 km **no está en el Cuadro 4.1** sino en un párrafo del num. 4.2, pág. impresa 29; el mismo párrafo fija **2.0 km** para factibilidad y prefactibilidad, ése sí incondicional.
@@ -481,7 +512,7 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 |---|---|---|---|
 | **V1** | Borde libre | Mínimo **25 % de altura, diámetro o flecha** → **y/D ≤ 0.75** | [N] 4.1.1.3.7 b), pág. 79 |
 | **V2** | Velocidad mínima | **V ≥ 0.25 m/s** | [N] 4.1.1.3.6, pág. 75 |
-| **V2b** | Sedimentación / colmatación | Material sólido de arrastre + **acceso de mantenimiento en planos** | [N] + [A] |
+| **V2b** | Sedimentación / colmatación | **S_conducto ≥ S_cauce** (indicador del HDS-5, num. 5.3.3) + **acceso de mantenimiento en planos** | **[C]** + [A] — *corregido desde* «Material sólido de arrastre + acceso de mantenimiento en planos», que era `[N] + [A]`; ver la nota de abajo (`SIS-A-13`, `MAT-O15`) |
 | **V3** | Velocidad máxima | **Solo techo admisible.** Concreto **V ≤ 6.0 m/s**; ladrillo con concreto **V ≤ 3.5**; mampostería de piedra **V ≤ 2.0**. El par de la Tabla Nº 10 es un rango de valores MÁXIMOS según calidad del revestimiento, **no** un piso y un techo: el extremo inferior es el máximo admisible del acabado más pobre, y V3 no lo exige como mínimo. El piso universal de autolimpieza es **V2** (0.25 m/s). **TMC y HDPE: PPI/FHWA, valor por extraer** | [N] Tabla Nº 10, num. 4.1.1.3.6, pág. 76 / [C] |
 | **V4** | Carga a la entrada HW | **cota de entrada + HW ≤ cota de subrasante − resguardo(CBR)** — *corregido desde* «HW ≤ cota de subrasante − resguardo(CBR)», que comparaba una **carga** con una **cota** (`MAT-O5`); ver la nota de datum en 5.1 | **[N→]** ver 5.1 |
 | **V4b** | Relación HW/D | 1.2 – 1.5 | **[A]** — *corregido desde `[C]`.* El HDS-5 **no fija** HW/D: su num. 2.2.5 d) «Agency Constraints», pág. impresa **2.10** (la v8 citaba la 2.14, que trata de espolones de escombros y seguridad vial) **describe** lo que imponen las agencias viales de EE. UU. — «The allowable HW/D ratio varies throughout the country, but commonly ranges from 1.0 to 1.5» — y en el Perú la agencia es el MTC, que no fija ninguno. Elegir 1.5, que es el extremo **menos restrictivo**, es adopción del proyectista. **Implementada** en `M5.v4b_relacion_hw_d` (S14), una vez cerrada la procedencia del umbral: el HW que se divide entre D es el del control **gobernante**, porque lo que la fuente acota es el embalse que la obra produce. Ref. `NOR-HDS-02`, `MAT-D2`, `SIS-A-02`, `SIS-B-02` |
@@ -519,6 +550,48 @@ Si no se cumple: subdrenes, capas drenantes/anticontaminantes o **elevar la rasa
 Para D = 0.90 m, y/D = 0.75 y n = 0.013, alcanzar 0.25 m/s requiere **S ≈ 0.00006 (0.006 %)**, muy por debajo de cualquier pendiente constructiva. **El piso normativo se cumple siempre y no restringe el diseño.**
 
 La norma no protege del riesgo real, que es la **colmatación** en una llanura de riego con alta carga de finos. Por eso V2b existe y el acceso de mantenimiento va en los planos.
+
+> **Dos correcciones a la fila V2b, y las dos son de esta hoja** (`SIS-A-13`,
+> `MAT-O15`; implementada en S20 como `M5.v2b_sedimentacion`).
+>
+> **1. La mitad [N] no era «material sólido de arrastre».** Ese es el asunto de
+> **V6**, dos filas más abajo, y ninguna de las dos filas puede ser la otra: V6
+> exige sección única frente a palizada y V2b trata de finos que se depositan.
+> Atribuir a V2b la mitad normativa de V6 dejaba a V2b, en la práctica, sin
+> ninguna: la fila entera quedaba en el aire y por eso **no existió en ninguna
+> línea de código** hasta S20.
+>
+> **2. «La norma no protege del riesgo real» es cierto del Manual peruano y
+> falso del cuerpo normativo que este proyecto ya aplica.** El **HDS-5 3.ª ed.
+> (FHWA-HIF-12-026)** —el mismo del que salen el control de salida y `h_o`, y
+> que vive en `normas/`— dedica su **num. 5.3.3 «Sedimentation», pág. impresa
+> 5.11**, exactamente a esto, y lo dice en términos de dos números que este
+> cálculo ya tiene:
+>
+> > «Therefore, barrel slope less than the natural channel and roughness greater
+> > than the channel are key indicators of potential problems at culvert sites.»
+>
+> y da la contracara en la misma página: «Culverts which are located on and
+> aligned with the natural channel generally do not have a sedimentation
+> problem.» Por eso la mitad evaluable de V2b es **[C]** y no [N]: es un vacío
+> del Manual peruano cubierto con fuente técnica reconocida, que es la
+> definición de esa etiqueta.
+>
+> **De los dos indicadores se evalúa uno, y hay que decir cuál.** El de
+> pendiente —`S_conducto ≥ S_cauce`— se evalúa: las dos pendientes están. El de
+> rugosidad exige el **n de Manning del cauce natural**, que no es columna de la
+> Sec. 1.2 ni lo fija esta hoja; queda declarado como pendiente y la memoria lo
+> imprime en la propia fila. Es el dato que cerraría la fila entera.
+>
+> **El carácter de la fuente se conserva.** El HDS-5 escribe «are key
+> indicators of potential problems», no un umbral: el proyecto lo endurece a
+> umbral duro por decisión propia, igual que hace con las recomendaciones de V1
+> y de V2, y lo declara en el bloque de umbrales de la memoria.
+>
+> **La mitad [A] dejó de ser un párrafo.** El acceso de mantenimiento entra por
+> el criterio `acceso_mantenimiento_v2b`, que **detiene** la corrida mientras
+> siga vacío. Antes era una constancia que la memoria imprimía y que nadie
+> tenía que contestar; ahora es una pregunta que el expediente responde.
 
 ---
 

@@ -29,11 +29,16 @@ escrita **en un solo lugar**». Este es ese lugar.
   hallazgo está atendido, y todos lo están —la decisión se tomó y se escribió—.
   Aquí se mide otra cosa: **cuántas no esperan nada**. Son **quince**. Las otras
   **siete** están cerradas Y siguen esperando algo que no depende de esta
-  decisión: SIS-A-04 (la cota levantada en campo), SIS-A-13 (que la hoja de ruta
-  fije el umbral), SIS-A-16 (que la Sec. 1.5 recoja las dos filas), SIS-B-04 (la
-  sección del receptor), SIS-B-07, SIS-B-08 (un discriminante en
-  `PeriodoRetorno`) y SIS-B-10 (que la §1.2 deje de nombrar `Tc.py`, o que su
-  procedimiento entre al calculador).
+  decisión: SIS-A-04 (la cota levantada en campo), SIS-A-13 (el n del cauce
+  natural, para el segundo indicador del num. 5.3.3), SIS-A-16 (que la Sec. 1.5
+  recoja las dos filas), SIS-B-04 (el levantamiento de la sección del receptor),
+  SIS-B-07, SIS-B-08 (un discriminante en `PeriodoRetorno`) y SIS-B-10 (que la
+  §1.2 deje de nombrar `Tc.py`, o que su procedimiento entre al calculador).
+  **Dos de las siete cambiaron de naturaleza en S20** y las fichas lo dicen:
+  SIS-A-13 y SIS-B-04 pasaron de «difierido» a IMPLEMENTADO, y lo que esperan
+  ya no es permiso para escribir el código sino un dato de campo que lo
+  alimente mejor. Es la distinción que el epígrafe de arriba adelanta: cerrado
+  no significa que el mundo no pueda cambiar.
 - **Un hallazgo `Cerrado` con «qué haría falta» lleno no es una contradicción**,
   y conviene decirlo porque lo parece: cerrado significa que la decisión está
   tomada y escrita, no que el mundo ya no pueda cambiar. El día que llegue la
@@ -65,18 +70,33 @@ registro.
   columna del CSV.
 - **Dónde vive:** `src/criterios_adoptados.py::origen_cota_fondo_entrada`
 
-## SIS-A-13 · V2b (sedimentación / colmatación) no existe en ninguna línea
+## SIS-A-13 · V2b (sedimentación / colmatación) — IMPLEMENTADA en S20
 
-- **Qué se difirió:** la Fase 5 de la hoja de ruta enuncia once verificaciones
-  y el programa implementa las que puede; V2b no está.
-- **Por qué:** la colmatación es contenido de planos y de mantenimiento, no un
-  cálculo con umbral que este programa pueda evaluar. El alcance reducido no
-  estaba escrito, y ese era el defecto: la tabla tiene once filas y el módulo
-  tiene hoy diez funciones `vN_` —eran nueve el día de la auditoría, antes de
-  que V4b se cableara—, y la diferencia había que contarla en vez de leerla.
-- **Qué haría falta:** que la hoja de ruta fije el umbral cuantitativo de
-  colmatación, que hoy no fija.
-- **Dónde vive:** `src/modulos/M5_verificaciones.py::verificaciones_no_evaluadas`
+- **Qué se difirió:** ya nada, y conviene decir qué se difería y por qué dejó
+  de estar bien difierido. La Fase 5 enuncia once verificaciones y el programa
+  implementaba diez; V2b no existía en ninguna línea de código y en su lugar
+  había una constancia: un párrafo que la memoria imprimía y que nadie tenía
+  que contestar.
+- **Por qué se cerró:** la premisa del diferimiento —«la colmatación no es un
+  cálculo con umbral que este programa pueda evaluar»— era cierta **del Manual
+  peruano** y falsa del cuerpo normativo que el proyecto ya aplica. El HDS-5
+  3.ª ed., que vive en `normas/` y del que salen el control de salida y `h_o`,
+  nombra los indicadores en su num. 5.3.3 «Sedimentation» (pág. impresa 5.11)
+  y los nombra en términos de **dos números que el cálculo ya tiene**: la
+  pendiente del barril frente a la del cauce natural, y la rugosidad de uno
+  frente a la del otro. El primero se evalúa; el segundo exige el n del cauce,
+  que no es columna, y queda declarado.
+- **Qué haría falta:** dos cosas, y ninguna bloquea. (1) El **n de Manning del
+  cauce natural** por punto, para evaluar el segundo indicador del mismo
+  numeral. (2) Que la hoja de ruta recoja el 5.3.3: hoy su fila V2b atribuye
+  la mitad [N] al «material sólido de arrastre», que es el asunto de V6, y
+  afirma que «la norma no protege del riesgo real» sin acotar de qué norma
+  habla. El defecto se reporta ahí, en su punto de uso.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::v2b_sedimentacion` y
+  `src/criterios_adoptados.py::acceso_mantenimiento_v2b`, que es la mitad [A]
+  —el acceso de mantenimiento en planos— y que **detiene** la corrida mientras
+  siga vacía: la obligación no se relajó al implementarse la otra mitad, se
+  endureció.
 
 ## SIS-A-16 · Dos validaciones cruzadas de M0 que no son fila de la tabla de Sec. 1.5
 
@@ -108,19 +128,30 @@ registro.
 - **Qué haría falta:** nada. Cerrado.
 - **Dónde vive:** `src/declaracion.py::restaurar_sesion`
 
-## SIS-B-04 · «TW se calcula, no se mide» (Sec. 1.3) no está implementado
+## SIS-B-04 · «TW se calcula, no se mide» (Sec. 1.3) — IMPLEMENTADO en S20
 
 - **Qué se difirió:** el procedimiento de tres pasos de Sec. 1.3 —Q del
   receptor → tirante normal del receptor → TW—. `Q_receptor_m3s` y `cota_TW`
-  se validan y no alimentan nada.
-- **Por qué:** el caudal del receptor lo fija el Tablero 3.1 (ANA / Junta de
-  Usuarios) y el expediente no lo tiene. Sin ese dato el procedimiento no
-  arranca, y calcular TW con un caudal inventado sería peor que pedirlo.
-- **Qué haría falta, y es más que el caudal:** el paso 2 entero. El TW sale de
-  correr Manning **en la sección transversal del receptor**, y esa sección no
-  es columna del CSV ni la trae ningún tablero. Con el caudal solo no se
-  arranca.
-- **Dónde vive:** `src/criterios_adoptados.py::TW_receptor`
+  se validaban y no alimentaban nada: un CSV con las dos columnas llenas
+  seguía exigiendo `--tw`.
+- **Por qué se cerró:** el diferimiento se apoyaba en que faltaba un dato —el
+  caudal del receptor— y en que el paso 2 necesita además la **sección
+  transversal del receptor**, que no es columna. Lo segundo sigue siendo
+  cierto y lo primero dejó de serlo: el dato es del Tablero 3.1 y el CSV lo
+  admite. Lo que faltaba no era esperar: era **declarar la sección** como el
+  vacío que es y escribir el procedimiento alrededor.
+- **Qué haría falta:** el **levantamiento de la sección del receptor** en cada
+  punto de descarga, que es una obra de terceros —el dren de la Junta de
+  Usuarios— y que hoy entra como adopción de perfil con su ventana. Mientras
+  no exista, la memoria dice que el nivel del receptor es una adopción; el día
+  que llegue, el criterio deja de aplicarse. Falta además que la hoja de ruta
+  lo recoja: su Sec. 1.3 pide correr Manning «en la sección del receptor» y ni
+  la Sec. 1.1 ni la Sec. 1.2 la traen. El defecto se reporta ahí.
+- **Dónde vive:** `src/modulos/M3_hidraulica.py::tw_seccion_1_3` (las cuatro
+  vías, en orden de precedencia) y `src/criterios_adoptados.py::seccion_receptor`.
+  `TW_receptor` sigue existiendo y sigue vacío a propósito: es la **última
+  puerta**, la que detiene cuando el expediente no aporta ni el nivel, ni el
+  caudal, ni la sección.
 
 ## SIS-B-05 · Entregable 5 (análisis de sensibilidad): su única API la consumían los tests
 

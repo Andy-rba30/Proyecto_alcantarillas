@@ -43,19 +43,34 @@ Es el mismo patron de `N_cq_N_gammaq_meyerhof` (M9_cabezal.py:1088), que ya
 estaba correctamente excluido. Darles valor no destraba nada: cambia un bloqueo
 declarado por un crash.
 
+> **S20 RETIRO DOS DE LOS CINCO SITIOS, y por el mismo argumento que S16 uso
+> para retirar `v5_remanso`.** `M5_verificaciones.v8_evento_extremo` y
+> `M2_material.espesor_pared` ya no levantan `AssertionError` cuando su
+> criterio tiene valor: levantan `DatoFaltanteError`, que SI es
+> `ErrorProyecto`. V8 reclama el CAUDAL del evento extremo --- que es el dato
+> que de verdad falta, porque este software no hace hidrologia --- y
+> `espesor_pared` reclama la entrada del material o la fila de diametro que no
+> se declaro. En los dos casos `cli._etapa` (o el bucle de MD) lo captura, lo
+> anota y sigue: declarar el criterio cambia un bloqueo por otro bloqueo mejor
+> explicado, no por un crash. El aviso que la mina daba era cierto --- la
+> logica de V8 no esta escrita --- y el medio era el equivocado.
+
 Sitios, ANCLADOS POR SIMBOLO y no por numero de linea (corregido en S16: las
 cinco referencias `archivo:linea` de esta lista estaban corridas, y una de las
 cinco ya no existe):
 
-    TR_evento_extremo            M5_verificaciones.py::v8_evento_extremo
     clases_producto_por_relleno  M8_estructural.py::seleccionar_clase_calibre
     metodo_estabilidad_global    M9_cabezal.py::verificar_estabilidad_global
 
 Y los `AssertionError` hermanos que NO cuelgan de este fixture, para que la
-lista este completa: `M9_cabezal.py::verificar_talud`,
+lista este completa: `M9_cabezal.py::verificar_talud` y
 `M9_cabezal.py::capacidad_portante_zapata_en_talud` (el caso
-`N_cq_N_gammaq_meyerhof` que ya estaba excluido) y
-`M2_material.py::espesor_pared`.
+`N_cq_N_gammaq_meyerhof` que ya estaba excluido).
+
+`TR_evento_extremo` sale de este grupo pero NO se puede aplicar igual, y por
+otra razon: declararlo deja a V8 pidiendo el caudal del evento extremo, que
+este software no calcula. El bloqueo es real y esta bien explicado; lo que ya
+no hay es un crash.
 
 Para destrabarlas hay que IMPLEMENTAR la verificacion (perfil de remanso, tabla
 de clase por altura de relleno, analisis de superficies de falla), no declarar

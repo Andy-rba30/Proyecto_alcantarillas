@@ -32,6 +32,7 @@ import pytest
 from dataclasses import replace
 
 import criterios_adoptados as ca
+from tests.apoyo.criterios import sin_valor
 import datos_sitio as ds
 from constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
 from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
@@ -796,9 +797,10 @@ def test_el_peso_propio_calcula_con_el_gamma_de_concreto_declarado(geometria):
 
 def test_el_relleno_del_trasdos_es_el_mismo_criterio_que_usa_M8():
     """Un cabezal con un relleno y un conducto con otro es incoherente."""
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        peso_especifico_relleno()
-    assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
+    with sin_valor("peso_especifico_relleno_kn_m3"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            peso_especifico_relleno()
+        assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
 
 def test_el_ensamble_de_empujes_se_detiene_en_el_primer_vacio(geometria):
