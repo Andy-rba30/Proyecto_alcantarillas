@@ -573,3 +573,19 @@ pasa además la comprobación nueva de que todo hallazgo cerrado cita un commit
 veces comprobado, y la acumulación es el argumento que faltaba: mientras nadie
 las borre entre sesiones, el `[FALLO]` crece una línea por sesión y el chequeo
 pierde valor de señal.
+
+**Saldo al cierre de S15 (modo de resolución de las variables): una, y las
+cuatro anteriores ya no están.** Buena noticia primero: al empezar S15,
+`verificar_sesion.py` daba `[OK] solo existe origin/main` — el propietario
+borró desde la web las cuatro ramas que S14 dejó anotadas, que es exactamente
+lo que aquella nota pedía. La única abierta es la de esta sesión,
+`claude/variable-entrada-modo-resolucion-7ezfh3`, fusionada en `main`
+(`5a200ff`) y sin un solo commit fuera de ella. Se intentó borrarla con las dos
+formas de siempre —`git push origin --delete` y el refspec explícito
+`git push origin :refs/heads/<rama>`— y las dos devolvieron el mismo `HTTP 403`
+seguido de `Everything up-to-date`, con el proxy de la sesión sano
+(`recentRelayFailures: []`). Séptima comprobación, y el diagnóstico no ha
+cambiado: **el permiso del token no alcanza para borrar ramas en el remoto, y
+la borra el propietario desde la web.** El `[FALLO]` de esta sesión es ese y
+solo ese; los cuatro chequeos que dependen de la sesión —suite, conteos, árbol
+limpio y tracker— están en `[OK]`.
