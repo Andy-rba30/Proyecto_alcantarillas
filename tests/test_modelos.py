@@ -434,6 +434,40 @@ MOMENTO_ESTATICO = 47.755         # 37.4*0.8 + 12.5*1.2 + 6.3*0.45
 MOMENTO_SISMICO = 61.723          # + 9.7*1.44
 
 
+def test_los_cuatro_totales_salen_de_las_ocho_componentes():
+    """
+    Los cuatro totales de arriba estan calculados A MANO en un comentario, y
+    hasta aqui nada comprobaba que siguieran saliendo de las ocho componentes.
+    Editar `EMPUJE_ACTIVO` y olvidar `MOMENTO_ESTATICO` dejaba la suite verde
+    con un dorado que ya no sale de su formula --- que es exactamente el
+    defecto MAT-O20 / SIS-F-03, el que hizo que los dorados de CP-1 estuvieran
+    mal toda su vida.
+
+    No van a `casos_patron.py`: no son dorados de una formula normativa sino
+    numeros de sondeo de la ARITMETICA DEL TIPO, elegidos para que ninguna
+    mutacion sobreviva (Sec. 9.2 no tiene caso patron, y el bloque de arriba
+    lo dice). Lo que faltaba no era moverlos, era recalcularlos.
+    """
+    assert EMPUJE_TOTAL_ESTATICO == pytest.approx(
+        EMPUJE_ACTIVO + EMPUJE_SOBRECARGA + EMPUJE_HIDROSTATICO,
+        rel=TOL_ARITMETICA)
+    assert EMPUJE_TOTAL_SISMICO == pytest.approx(
+        EMPUJE_TOTAL_ESTATICO + INCREMENTO_SISMICO, rel=TOL_ARITMETICA)
+    assert MOMENTO_ESTATICO == pytest.approx(
+        EMPUJE_ACTIVO * BRAZO_ACTIVO
+        + EMPUJE_SOBRECARGA * BRAZO_SOBRECARGA
+        + EMPUJE_HIDROSTATICO * BRAZO_HIDROSTATICO, rel=TOL_ARITMETICA)
+    assert MOMENTO_SISMICO == pytest.approx(
+        MOMENTO_ESTATICO + INCREMENTO_SISMICO * BRAZO_INCREMENTO,
+        rel=TOL_ARITMETICA)
+    # Y los brazos siguen siendo los de un muro de 2.40 m, que es lo que hace
+    # el objeto leible como lo que representa.
+    assert BRAZO_ACTIVO == pytest.approx(ALTURA_EMPUJE / 3, rel=TOL_ARITMETICA)
+    assert BRAZO_SOBRECARGA == pytest.approx(ALTURA_EMPUJE / 2, rel=TOL_ARITMETICA)
+    assert BRAZO_INCREMENTO == pytest.approx(0.6 * ALTURA_EMPUJE,
+                                             rel=TOL_ARITMETICA)
+
+
 def _empujes(condicion: CondicionAnalisis) -> EmpujesTrasdos:
     """Los empujes de una condicion, con la carga EQ solo en la sismica."""
     sismico = condicion is CondicionAnalisis.SISMICO

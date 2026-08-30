@@ -539,6 +539,65 @@ CP9_GEOMETRIA_7B = {
 # Indice para iterar todos los casos desde un solo import
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# CP-9 · Ensamble de empujes del trasdos CON AGUA (M9.empujes_trasdos)
+# ---------------------------------------------------------------------------
+#
+# Por que existe, y por que CON AGUA. El unico test que ejercitaba
+# `empujes_trasdos` de punta a punta usaba un tablero con `D_f = 1.00` y el NF
+# a 1.40 m: `h_agua = max(1.00 - 1.40, 0) = 0`, de modo que TODA la rama del
+# agua corria en cero y el propio test lo escribia
+# (`assert E_hidrostatico == approx(0.0)`). El resto de los asserts eran de
+# ORDEN (`sismico > estatico`) y de BRAZO (`z_activo == H/3`). Resultado
+# medido en una revision adversarial: once mutantes del ENSAMBLADOR sobrevivian
+# --- anular la hidrostatica y la subpresion, partir h_agua por dos, pasar
+# `B=D_f` a la subpresion, y pasar `H=geometria.H` en vez de `altura_empuje` a
+# los tres empujes y al incremento sismico. El peor, `k_v=mo.k_h`, bajaba el
+# incremento sismico un 80.6 % y era NO CONSERVADOR.
+#
+# El tablero cambia `D_f` de 1.00 a 2.00 para que haya 0.60 m de agua sobre la
+# base. Los dorados salen de la formula y NO del modulo, y el bloque
+# `__main__` los recalcula.
+CP9_ENSAMBLE_TRASDOS = {
+    "nombre": "Ensamble de empujes con 0.60 m de agua sobre la base",
+    # Geometria del cabezal de tanteo (no es propuesta de proyecto).
+    "H": 2.00,
+    "B": 1.60,
+    "D_f": 2.00,
+    "espesor_zapata": 0.40,
+    "altura_empuje": 2.40,          # H + espesor_zapata
+    "NF_profundidad_m": 1.40,
+    "h_agua_esperada": 0.60,        # D_f - NF
+    # Datos de prueba (los mismos que el test declara en caliente).
+    "gamma_relleno": 19.0,
+    "phi_grados": 34.0,
+    "gamma_agua": 9.81,
+    # h_eq de AASHTO 3.11.6.4 para muro paralelo al trafico, borde a 1.0 m y
+    # altura de tabla 2.40 m. Es LECTURA DE TABLA, no formula: por eso se
+    # escribe aqui como entrada del recalculo y no se deduce.
+    "h_eq": 0.6096,
+    # La misma lectura con la orientacion PERPENDICULAR, donde la tabla SI
+    # depende de la altura: 1.204 / 1.124 / 1.044 m para 1.60 / 2.00 / 2.40 m.
+    # Existe para poder ver `altura_para_h_eq`: con el tablero paralelo la
+    # tabla devuelve 0.6096 para las tres alturas, de modo que un ensamblador
+    # que pasara `geometria.H` o `H - espesor_zapata` en vez de
+    # `H + espesor_zapata` daba el mismo numero y era invisible.
+    "h_eq_perpendicular_a_2_40": 1.044,
+    "h_eq_perpendicular_a_1_60": 1.204,
+    # Dorados. Formula cerrada, recalculados en `__main__`:
+    #   Ka       = tan^2(45 - phi/2)
+    #   E_activo = 0.5 * gamma * Ka * He^2
+    #   E_sobrec = gamma * Ka * h_eq * He
+    #   E_hidro  = 0.5 * gamma_agua * h_agua^2
+    #   U        = gamma_agua * h_agua * B
+    "Ka_esperado": 0.28271491971777274,
+    "E_activo_esperado": 15.470160406956524,
+    "E_sobrecarga_esperado": 7.858841486733915,
+    "E_hidrostatico_esperado": 1.7658,
+    "U_subpresion_esperado": 9.4176,
+}
+
+
 TODOS_LOS_CASOS = {
     "CP1_PERIODO_RETORNO": CP1_PERIODO_RETORNO,
     "CP2_GEOMETRIA_MANNING": CP2_GEOMETRIA_MANNING,
@@ -554,6 +613,7 @@ TODOS_LOS_CASOS = {
     "CP9_MONONOBE_OKABE": CP9_MONONOBE_OKABE,
     "CP9_RANKINE_LIMITE": CP9_RANKINE_LIMITE,
     "CP9_EMPUJE_TRASDOS": CP9_EMPUJE_TRASDOS,
+    "CP9_ENSAMBLE_TRASDOS": CP9_ENSAMBLE_TRASDOS,
 }
 
 
@@ -771,3 +831,27 @@ if __name__ == "__main__":
     except ImportError:
         print("numpy/scipy no disponibles en este entorno; "
               "omite la autoverificacion.")
+
+    # --- CP-9: ensamble de empujes del trasdos con agua ---------------------
+    _c = CP9_ENSAMBLE_TRASDOS
+    _Ka = math.tan(math.radians(45 - _c["phi_grados"] / 2)) ** 2
+    _He, _g, _gw = _c["altura_empuje"], _c["gamma_relleno"], _c["gamma_agua"]
+    _h = _c["D_f"] - _c["NF_profundidad_m"]
+    _esperados = {
+        "h_agua_esperada": _h,
+        "Ka_esperado": _Ka,
+        "E_activo_esperado": 0.5 * _g * _Ka * _He ** 2,
+        "E_sobrecarga_esperado": _g * _Ka * _c["h_eq"] * _He,
+        "E_hidrostatico_esperado": 0.5 * _gw * _h ** 2,
+        "U_subpresion_esperado": _gw * _h * _c["B"],
+    }
+    for _clave, _valor in _esperados.items():
+        assert abs(_valor - _c[_clave]) < CP9_TOLERANCIA_RELATIVA * max(1.0, abs(_valor)), (
+            f"CP-9 ensamble: el dorado {_clave} = {_c[_clave]!r} no sale de la "
+            f"formula ({_valor!r})")
+    print(f"CP-9 ensamble verificado: h_agua={_h:.2f} "
+          f"E_a={_esperados['E_activo_esperado']:.6f} "
+          f"E_s={_esperados['E_sobrecarga_esperado']:.6f} "
+          f"E_w={_esperados['E_hidrostatico_esperado']:.6f} "
+          f"U={_esperados['U_subpresion_esperado']:.6f}")
+

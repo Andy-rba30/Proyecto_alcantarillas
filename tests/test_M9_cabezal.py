@@ -19,6 +19,9 @@ Y, transversalmente, que cada vacio declarado se detiene donde debe con
 """
 
 import math
+import os
+import subprocess
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -107,6 +110,7 @@ from modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
                                 verificar_volteo)
 from tests.fixtures.casos_patron import (CP7_CADENA_SISMICA,
                                          CP9_EMPUJE_TRASDOS,
+                                         CP9_ENSAMBLE_TRASDOS,
                                          CP9_MONONOBE_OKABE,
                                          CP9_RANKINE_LIMITE,
                                          CP9_TOLERANCIA_RELATIVA)
@@ -2162,7 +2166,7 @@ def test_k_v_declarado_como_numero_para_el_caso_reservado_si_se_devuelve(
           k_h=0.50, k_v=0.0), "delta+beta+psi"),
     (dict(phi_grados=34.0, i_grados=100.0, beta_grados=0.0, delta_grados=0.0,
           k_h=0.0, k_v=0.0), "i-beta"),
-    (dict(phi_grados=34.0, i_grados=0.0, beta_grados=0.0, delta_grados=0.0,
+    (dict(phi_grados=34.0, i_grados=0.0, beta_grados=0.0, delta_grados=-70.0,
           k_h=0.50, k_v=1.50), "psi"),
 ], ids=["delta_mas_beta_mas_psi", "i_menos_beta", "psi"])
 def test_un_coseno_no_positivo_del_denominador_detiene_mononobe_okabe(
@@ -2190,11 +2194,56 @@ def test_un_coseno_no_positivo_del_denominador_detiene_mononobe_okabe(
     `cos_psi <= 0` es falso y la ejecucion cae en la guarda siguiente. Eso es
     MAT-O18 y se corrige en produccion, no aqui: este test cubre la rama por
     la puerta que hoy existe y no toca el modulo.
+
+    EL CASO [psi] LLEVA delta = -70 Y NO delta = 0, y la razon es que la
+    primera version de este test estaba VERDE POR OTRA RAZON QUE LA QUE dice.
+    Con delta = 0 y k_v = 1.50, psi = 135 grados: cos_psi = -0.707, pero
+    tambien cos(delta+beta+psi) = cos(135) = -0.707, de modo que el `or`
+    cortaba por el SEGUNDO termino y el primero --- `cos_psi <= 0` --- era
+    codigo muerto para la suite. Medido: borrarlo entero dejaba la suite en
+    verde. Con delta = -70, cos_psi sigue en -0.707 y cos_dbp sube a +0.423:
+    el termino queda aislado.
+
+    Y el assert cambia con el: `coseno_roto in motivo` era trivialmente
+    cierto para "psi", porque el mensaje imprime `psi = ...` en los tres
+    casos. Se comprueba ahora el VALOR del coseno que rompio, que es lo que
+    distingue una guarda de otra.
     """
     with pytest.raises(DisenoNoFactibleError) as exc:
         k_ae_mononobe_okabe(**angulos)
     assert "algun coseno del denominador" in exc.value.motivo
     assert coseno_roto in exc.value.motivo
+
+
+def test_cada_termino_de_la_guarda_de_cosenos_esta_aislado():
+    """
+    El complemento del test de arriba: cada uno de los tres terminos del `or`
+    tiene un caso donde es el UNICO no positivo. Sin esta comprobacion, un
+    caso donde dos cosenos son negativos a la vez deja el otro termino como
+    codigo muerto sin que nada lo diga --- que es exactamente lo que pasaba.
+    """
+    casos = {
+        "psi": dict(phi_grados=34.0, i_grados=0.0, beta_grados=0.0,
+                    delta_grados=-70.0, k_h=0.50, k_v=1.50),
+        "delta+beta+psi": dict(phi_grados=34.0, i_grados=0.0, beta_grados=45.0,
+                               delta_grados=60.0, k_h=0.50, k_v=0.0),
+        "i-beta": dict(phi_grados=34.0, i_grados=100.0, beta_grados=0.0,
+                       delta_grados=0.0, k_h=0.0, k_v=0.0),
+    }
+    for esperado, a in casos.items():
+        psi = angulo_inercia_sismica(k_h=a["k_h"], k_v=a["k_v"])
+        cos = {
+            "psi": math.cos(math.radians(psi)),
+            "delta+beta+psi": math.cos(
+                math.radians(a["delta_grados"] + a["beta_grados"] + psi)),
+            "i-beta": math.cos(
+                math.radians(a["i_grados"] - a["beta_grados"])),
+        }
+        no_positivos = [nombre for nombre, v in cos.items() if v <= 0]
+        assert no_positivos == [esperado], (
+            f"el caso de '{esperado}' tiene {no_positivos} no positivos: si "
+            "hay mas de uno, el `or` corta por el primero y los demas "
+            f"terminos quedan sin cubrir. Cosenos: {cos}")
 
 
 # ---------------------------------------------------------------------------
@@ -2526,3 +2575,219 @@ def test_la_cadena_del_recubrimiento_aashto_se_detiene_en_cada_eslabon_roto(
             recubrimiento_aashto_mm(condicion="contra_suelo")
     assert exc.value.campo == campo
     assert motivo_esperado in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# 9.2 - El ENSAMBLADOR con agua: los once mutantes que sobrevivian
+# ---------------------------------------------------------------------------
+#
+# Una revision adversarial barrio `empujes_trasdos` y encontro ONCE mutantes
+# vivos que ninguna ficha nombra. La causa es una sola: el unico test que lo
+# ejecutaba de punta a punta usaba `D_f = 1.00` con el NF a 1.40 m, de modo que
+# `h_agua = 0` y toda la rama del agua corria en cero --- el propio test lo
+# escribia ---, y los demas asserts eran de ORDEN y de BRAZO, ninguno de VALOR.
+#
+# Los once, con su efecto medido sobre este mismo tablero:
+#   E_hidrostatico=0.0 / U_subpresion=0.0     la carga WA desaparece
+#   h_agua/2 en el empuje hidrostatico        la parte el agua por cuatro
+#   B=geometria.D_f en la subpresion          U baja 37.5 %: MAS normal en la
+#                                             base, y FS de deslizamiento y de
+#                                             capacidad portante MAS ALTOS
+#   H=geometria.H en E_a / E_s / incremento   -30.6 %, -16.7 %, -30.6 %
+#   k_v=mo.k_h en el incremento sismico       -80.6 %, NO CONSERVADOR
+#   h_eq_sobrecarga=0.0 / gamma_relleno=0.0   los campos de trazabilidad de LS
+#                                             que este mismo trabajo anadio
+#   altura_para_h_eq con `-` en vez de `+`    hoy inocuo POR ACCIDENTE: con el
+#                                             tablero paralelo al trafico la
+#                                             tabla da 0.6096 para 1.60, 2.00 y
+#                                             2.40; con la orientacion
+#                                             perpendicular si dependeria
+#
+# Los dorados NO se escriben aqui: salen de CP9_ENSAMBLE_TRASDOS, que se
+# recalcula solo en el bloque `__main__` del fixture. Duplicarlos como
+# literales en este archivo es el defecto SIS-F-14 y la fila 7 de la hoja
+# `Conflictos` lo prohibe expresamente.
+
+CP9E = CP9_ENSAMBLE_TRASDOS
+
+
+@pytest.fixture
+def geometria_con_agua():
+    """
+    El mismo cabezal de tanteo con la zapata mas profunda: `D_f = 2.00` con el
+    NF a 1.40 m deja 0.60 m de agua sobre la base. Es lo unico que cambia
+    respecto de `geometria`, y es lo que hace visible la rama WA.
+    """
+    return GeometriaCabezal(H=CP9E["H"], B=CP9E["B"], D_f=CP9E["D_f"],
+                            espesor_corona=0.25, espesor_base_muro=0.35,
+                            espesor_zapata=CP9E["espesor_zapata"])
+
+
+def _declarar_tablero_de_prueba(monkeypatch):
+    """Los criterios de tanteo del ensamble, declarados en caliente."""
+    valores = {
+        "phi_relleno_trasdos": CP9E["phi_grados"],
+        "pendiente_relleno_trasdos_i": 0.0,
+        "inclinacion_muro_beta": 0.0,
+        "friccion_muro_suelo_delta": 0.0,
+        "punto_aplicacion_incremento_sismico": 0.6,
+        "peso_especifico_relleno_kn_m3": CP9E["gamma_relleno"],
+    }
+    for clave, valor in valores.items():
+        original = ca.criterio(clave)
+        monkeypatch.setitem(ca.CRITERIOS, clave,
+                            ca.Criterio(valor=valor, etiqueta=original.etiqueta,
+                                        concepto=original.concepto,
+                                        justificacion=original.justificacion,
+                                        fuente=original.fuente))
+    _declarar_orientacion(monkeypatch, ORIENTACION_PARALELO_AL_TRAFICO)
+    _declarar_borde(monkeypatch, 1.0)
+
+
+def test_el_ensamble_con_agua_da_los_cinco_valores_de_su_caso_patron(
+        monkeypatch, geometria_con_agua):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que el ensamblador anulara una carga, la
+    partiera, o alimentara una funcion con la altura o el ancho equivocados.
+    Ninguno de esos lo veia nadie mientras el tablero corriera sin agua y los
+    asserts fueran de orden.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.ESTATICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+
+    assert e.K_A == pytest.approx(CP9E["Ka_esperado"], rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.E_activo == pytest.approx(CP9E["E_activo_esperado"],
+                                       rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.E_sobrecarga == pytest.approx(CP9E["E_sobrecarga_esperado"],
+                                           rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.E_hidrostatico == pytest.approx(CP9E["E_hidrostatico_esperado"],
+                                             rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.U_subpresion == pytest.approx(CP9E["U_subpresion_esperado"],
+                                           rel=CP9_TOLERANCIA_RELATIVA)
+
+
+def test_el_ensamble_lleva_a_la_memoria_la_trazabilidad_de_la_sobrecarga(
+        monkeypatch, geometria_con_agua):
+    """
+    `h_eq_sobrecarga` y `gamma_relleno` son los campos que este trabajo anadio
+    para que la memoria no imprima un empuje sin la altura equivalente que lo
+    produjo. Sin este assert, los dos pueden viajar en 0.0 y nadie se entera.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.ESTATICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+    assert e.h_eq_sobrecarga == pytest.approx(CP9E["h_eq"], rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.gamma_relleno == pytest.approx(CP9E["gamma_relleno"],
+                                            rel=CP9_TOLERANCIA_RELATIVA)
+    # Y la coherencia entre los dos: E_s = gamma * Ka * h_eq * He. Si el
+    # ensamblador alimenta el empuje con una altura y declara otra, cae aqui.
+    assert e.E_sobrecarga == pytest.approx(
+        e.gamma_relleno * e.K_A * e.h_eq_sobrecarga * CP9E["altura_empuje"],
+        rel=CP9_TOLERANCIA_RELATIVA)
+
+
+def test_el_incremento_sismico_usa_la_altura_de_empuje_y_el_k_v(
+        monkeypatch, geometria_con_agua):
+    """
+    Los dos mutantes no conservadores del ensamblador: `H=geometria.H` en vez
+    de `altura_empuje` (-30.6 %) y `k_v=mo.k_h` en vez de `k_v=mo.k_v`
+    (-80.6 %). El lado derecho se arma con la altura DEL TEST y con el k_v de
+    la cadena, no con lo que el objeto devuelve, que es lo que hace que el
+    assert no sea tautologico en la dimension que mide.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.SISMICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+    He = CP9E["altura_empuje"]
+    esperado = (0.5 * CP9E["gamma_relleno"]
+                * (e.mononobe_okabe.K_AE - e.mononobe_okabe.K_A)
+                * He ** 2 * (1 - cadena_sismica().k_v))
+    assert e.incremento_sismico == pytest.approx(esperado,
+                                                 rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.z_incremento == pytest.approx(0.6 * He,
+                                           rel=CP9_TOLERANCIA_RELATIVA)
+
+
+def test_la_subpresion_se_reparte_en_el_ancho_de_zapata_y_no_en_su_canto(
+        monkeypatch, geometria_con_agua):
+    """
+    El mutante `B=geometria.D_f` baja U un 37.5 % en este tablero. Menos
+    subpresion es MAS fuerza normal en la base, y por lo tanto FS de
+    deslizamiento y de capacidad portante MAS ALTOS de lo que son: la
+    direccion en la que un error no avisa.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.ESTATICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+    assert e.U_subpresion == pytest.approx(
+        CP9E["gamma_agua"] * CP9E["h_agua_esperada"] * geometria_con_agua.B,
+        rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.z_hidrostatico == pytest.approx(CP9E["h_agua_esperada"] / 3,
+                                             rel=CP9_TOLERANCIA_RELATIVA)
+
+
+def test_la_altura_de_entrada_de_h_eq_se_mide_hasta_el_fondo_de_la_zapata(
+        monkeypatch, geometria_con_agua):
+    """
+    AASHTO 3.11.6.4 mide la altura de entrada de h_eq desde la superficie del
+    relleno hasta el FONDO DE LA ZAPATA, con un `shall`: es
+    `geometria.H + geometria.espesor_zapata` y no `geometria.H`.
+
+    EL TEST USA LA ORIENTACION PERPENDICULAR y no la paralela, y esa es toda
+    su razon de ser. Con el tablero paralelo la tabla devuelve 0.6096 m para
+    1.60, 2.00 y 2.40 m --- las tres alturas candidatas ---, de modo que
+    equivocar la altura de entrada daba EL MISMO NUMERO y ningun assert podia
+    verlo: la correccion quedaba viva por accidente del tablero elegido.
+    Perpendicular, la tabla si depende de la altura (1.204 / 1.124 / 1.044) y
+    el error se hace visible.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    _declarar_orientacion(monkeypatch, ORIENTACION_PERPENDICULAR_AL_TRAFICO)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.ESTATICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+    assert e.h_eq_sobrecarga == pytest.approx(
+        CP9E["h_eq_perpendicular_a_2_40"], rel=CP9_TOLERANCIA_RELATIVA), (
+        "h_eq no corresponde a H + espesor_zapata = 2.40 m. Con "
+        f"{CP9E['h_eq_perpendicular_a_1_60']} la altura de entrada seria "
+        "1.60 m, que es H - espesor_zapata; con geometria.H sola seria 2.00.")
+
+
+def test_la_autoverificacion_del_fixture_la_corre_pytest():
+    """
+    El bloque `__main__` de `tests/fixtures/casos_patron.py` recalcula los
+    dorados desde la formula, y ES la defensa contra MAT-D7 / SIS-F-03 (los
+    dorados de CP-1 estuvieron mal toda su vida porque nadie los recalculaba).
+    Pero NINGUN test lo invocaba: la etiqueta "AUTOVERIFICADOS" solo era cierta
+    si alguien lo ejecutaba a mano, y una edicion futura de un dorado no la
+    habria detenido la suite.
+
+    Se ejecuta el archivo como script, en un proceso aparte, y se exige codigo
+    de salida 0. En proceso aparte a proposito: el bloque usa nombres con
+    guion bajo al nivel del modulo y reimportarlo dentro del interprete de
+    pytest ensuciaria el espacio de nombres del fixture que todos los demas
+    tests comparten.
+    """
+    fixture = Path(__file__).resolve().parent / "fixtures" / "casos_patron.py"
+    raiz = fixture.parents[2]
+    entorno = dict(os.environ)
+    entorno["PYTHONPATH"] = os.pathsep.join(
+        [str(raiz), str(raiz / "src"), entorno.get("PYTHONPATH", "")])
+    r = subprocess.run([sys.executable, str(fixture)], cwd=raiz,
+                       capture_output=True, text=True, env=entorno, timeout=120)
+    assert r.returncode == 0, (
+        "la autoverificacion de los casos patron fallo. Un dorado dejo de "
+        f"salir de su formula:\n{r.stdout[-2000:]}\n{r.stderr[-2000:]}")
+    assert "CP-9 ensamble verificado" in r.stdout, (
+        "el bloque corrio pero no llego a verificar CP-9: revisa si una "
+        "excepcion temprana lo dejo a medias")
