@@ -2331,8 +2331,10 @@ CRITERIOS: Dict[str, Criterio] = {
         # resultado es `altura_total_m`, y solo en la via 4 (escenarios
         # acotados): es el que fija el TW del escenario "receptor a seccion
         # llena". En la via 3 lo que gobierna es la terna b/z/n/S a traves de
-        # Manning, y un n de 0.030 frente a uno de 0.025 sube el tirante
-        # normal ~13 %, que se traslada al TW metro a metro.
+        # Manning, y el mas sensible de los cuatro es el n: MEDIDO sobre esta
+        # seccion con el caudal de A-01 (2.00 m3/s), pasar de n = 0.025 a
+        # n = 0.030 sube el tirante normal de 0.8258 a 0.9082 m, un +10.0 %,
+        # y esos 82 mm se trasladan al TW milimetro a milimetro.
         sensibilidad=("b_m: 1.5 a 3.0 m (dren colector de la red del Bajo Piura)",
                       "z_HV: 1.0 a 2.0 (talud de dren en suelo fino)",
                       "S: 0.0005 a 0.0015 m/m (llanura de riego)",
@@ -3658,13 +3660,33 @@ CRITERIOS: Dict[str, Criterio] = {
     # entrada. Lo que 7.B abre aparte es la LONGITUD del conducto.
 
     "talud_terraplen": Criterio(
-        # H:V. EXTREMO MAS TENDIDO del rango declarado, y es la eleccion
-        # conservadora: un talud mas tendido alarga el conducto (7.B), y con
-        # la longitud suben el termino de friccion del control de salida --
-        # medido: +0.004 m de HW por metro de conducto en este corredor, ya
-        # descontada la caida S*L-- y la exigencia de G2, porque la cota de
-        # salida baja S*L. Adoptar 1.5 daria un conducto mas corto y una
-        # verificacion mas facil.
+        # H:V. EXTREMO MAS TENDIDO del rango declarado. Es la eleccion
+        # conservadora PARA LA VERIFICACION QUE LA LONGITUD GOBIERNA, que es
+        # G2 --el amarre de la cota de salida al fondo del receptor, Sec. 7.B--:
+        # un talud mas tendido alarga el conducto y con el la caida S*L, de
+        # modo que la salida queda mas baja. Medido en A-01 al pasar de 1.5 a
+        # 2.0 H:V: L de 16.461 a 18.635 m y cota de salida de 42.001 a 41.988
+        # msnm, 13 mm mas cerca del fondo del receptor.
+        #
+        # Y HAY QUE DECIR DONDE EL SIGNO ES EL CONTRARIO, porque la version
+        # anterior de esta nota afirmaba lo que no es. Sobre el CONTROL DE
+        # SALIDA la longitud entra dos veces y con signos opuestos:
+        #
+        #     dHW/dL = K*n^2*V_llena^2 / (2*g*R_llena^(4/3))  -  S
+        #
+        # El primer termino es la friccion y el segundo la caida. Con los
+        # numeros de A-01 --V_llena = 1.8344 m/s, R_llena = D/4 = 0.225 m,
+        # n = 0.013, K = 19.63-- la friccion aporta 0.004158 m/m y la
+        # pendiente resta 0.006, de modo que dHW/dL = -0.00184 m/m: alargar el
+        # conducto BAJA el HW de salida. Medido: 0.997 -> 0.993 m entre los
+        # mismos dos taludes, que es exactamente lo que predice la formula.
+        # El signo se invierte cuando S cae por debajo de 0.004158 m/m con
+        # esta geometria, y por eso no es una propiedad general del talud sino
+        # de la pendiente de cada punto.
+        #
+        # Adoptar 2.0 es entonces conservador donde la longitud manda (G2) y
+        # no lo es donde manda la pendiente (el control de salida). La memoria
+        # imprime la ventana entera para que eso se pueda ver.
         valor=2.0,
         nivel=NIVEL_PERFIL,
         sensibilidad=(1.5, 2.0),     # H:V, banda de practica corriente en terraplenes viales
