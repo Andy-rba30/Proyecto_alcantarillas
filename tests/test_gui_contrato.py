@@ -65,6 +65,8 @@ from pathlib import Path
 
 import pytest
 
+import cli
+
 RAIZ = Path(__file__).resolve().parents[1]
 GUI = RAIZ / "gui" / "app.py"
 CLI = RAIZ / "cli.py"
@@ -959,3 +961,111 @@ def test_el_encabezado_enumera_las_pestanas_y_exportaciones_que_la_ventana_crea(
     linea_export = next(l for l in doc.splitlines() if "exportacion (" in l)
     assert all(f in linea_export for f in exportadores), (
         f"el encabezado no nombra todas las exportaciones: {linea_export}")
+
+
+# ---------------------------------------------------------------------------
+# La corrida de PERFIL, DE PUNTA A PUNTA, sobre una ventana de verdad
+# ---------------------------------------------------------------------------
+# Todo lo de arriba prueba la GUI sin construir un solo widget: unos leyendo el
+# arbol, otros con un doble de tkinter. Es lo correcto para lo que prueban, y
+# tiene un limite que la propia ficha SIS-F-01 declara: «el codigo que
+# construye widgets sigue sin ejecutarse».
+#
+# Esto lo ejecuta. Levanta un `Tk` real --- bajo un servidor X virtual, si hace
+# falta ---, construye la ventana entera, rellena los campos como los
+# rellenaria el proyectista, pulsa EJECUTAR y comprueba el informe que sale.
+# Es el criterio de salida de S20 escrito como test: «--alcance perfil corre de
+# punta a punta DESDE LA GUI y produce memoria completa».
+#
+# SE SALTA, NO FALLA, si no hay tkinter o no hay display, por la misma razon
+# por la que los tests de PDF se saltan sin PyMuPDF: `requirements.txt` es lo
+# que hace falta para CALCULAR y la ventana necesita ademas un entorno
+# grafico, que muchas imagenes de servidor no tienen. Saltarlo no deja el
+# hueco sin cubrir: los tests de arriba siguen vigilando el contrato, y este
+# anade la unica comprobacion que ellos no pueden dar.
+
+def _interprete_con_ventana():
+    """
+    Un interprete que pueda levantar un `Tk` DE VERDAD, o None.
+
+    Se prueba en un SUBPROCESO y no aqui, y las dos razones son la misma: este
+    proceso ya tiene dobles de `tkinter` y de `ttkbootstrap` instalados por los
+    tests de arriba --- de modo que importarlos aqui no diria nada --- y crear
+    y destruir un `Tk` en el proceso de pytest deja rastro en el estado global
+    de tkinter.
+
+    Se prueba el interprete de la suite primero. Si no tiene tkinter --- que es
+    lo corriente en una imagen de servidor: no viene con la biblioteca
+    estandar compilada --- se prueban los interpretes del sistema, porque el
+    paquete `python3-tk` de la distribucion suele estar instalado para UNO de
+    ellos y no para el que corre la suite. Lo que se busca es poder ejecutar la
+    ventana, no ejecutarla con un interprete concreto.
+    """
+    import shutil
+    import subprocess
+    import sys
+
+    sonda = ("import tkinter, ttkbootstrap; r = tkinter.Tk(); r.destroy()")
+    envoltorio = [] if shutil.which("xvfb-run") is None else ["xvfb-run", "-a"]
+    candidatos = [sys.executable, "python3.12", "python3.11", "python3"]
+    for interprete in candidatos:
+        if interprete != sys.executable and shutil.which(interprete) is None:
+            continue
+        try:
+            hecho = subprocess.run(envoltorio + [interprete, "-c", sonda],
+                                   capture_output=True, timeout=120)
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if hecho.returncode == 0:
+            return interprete, envoltorio
+    return None, envoltorio
+
+
+_INTERPRETE, _ENVOLTORIO = _interprete_con_ventana()
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
+    """
+    La ventana de verdad: se construye, se rellena, se ejecuta y se exporta.
+
+    El criterio de salida de S20 escrito como test: «--alcance perfil corre de
+    punta a punta DESDE LA GUI y produce memoria completa». Corre en un
+    proceso aparte --- ver `tests/apoyo/gui_corrida_perfil.py` --- porque este
+    ya tiene dobles de tkinter instalados y con ellos la ventana seria un
+    espejismo.
+    """
+    import json
+    import subprocess
+
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_corrida_perfil",
+                       str(tmp_path)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+
+    resumen = json.loads((tmp_path / "resumen_de_la_corrida.json")
+                         .read_text(encoding="utf-8"))
+    assert resumen["alcance"] == cli.ALCANCE_PERFIL
+    assert resumen["dimensionados"] == ["A-01", "A-02", "B-01"]
+    assert resumen["diferidos"] > 0, "nada diferido: no es alcance de perfil"
+    # La plantilla la elige el ALCANCE de la corrida, que es SIS-A-17.
+    assert resumen["plantilla"] == cli.NOMBRE_PLANTILLA_PERFIL
+    # Y el tablero de criterios pendientes de la ventana muestra EXACTAMENTE
+    # los dos que el alcance de perfil difiere: los de V5 y V8.
+    assert resumen["criterios_bloqueantes"] == ["TR_evento_extremo",
+                                                "remanso_derecho_via"]
+
+    memoria = (tmp_path / "memoria.html").read_text(encoding="utf-8")
+    assert "4. Alcance y diferimientos" in memoria
+    assert "Obtencion del TW en el cuerpo receptor" in memoria
+    assert "V2b" in memoria
+    assert len((tmp_path / "resumen.csv").read_text(
+        encoding="utf-8").splitlines()) == 5
+    informe = json.loads((tmp_path / "informe.json").read_text(
+        encoding="utf-8"))
+    assert informe["alcance"]["nivel"] == cli.ALCANCE_PERFIL
