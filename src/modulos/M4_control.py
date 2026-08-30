@@ -27,17 +27,24 @@ modulo entrega. M4 tampoco decide de donde sale el TW: lo recibe como dato.
 El TW del cuerpo receptor es el criterio pendiente 'TW_receptor' (ANA / Junta
 de Usuarios) y quien lo resuelva debe declararlo, no este modulo.
 
-    V4b (la relacion HW/D) NO LA VERIFICA NADIE, Y ESTE PARRAFO DECIA LO
-    CONTRARIO. Decia que "HW/D <= 1.5 (V4b) ... son verificaciones de la Fase
-    5 y las hace M5". M5 no la implementa y nunca la implemento (SIS-A-02,
-    MAT-D2): la fila V4b de la tabla de Fase 5 se declara NO EVALUADA en
-    `M5.verificaciones_no_evaluadas()`, que es donde vive su constancia y de
-    donde M11 la imprime. El umbral existe como criterio adoptado y su
-    etiqueta quedo cerrada -- [A], no [C]: el rango 1.0-1.5 es una encuesta
-    de practica de agencias estadounidenses que el HDS-5 describe, no un
-    criterio que el manual fije (NOR-HDS-02) --, y el cableado del chequeo es
-    trabajo aparte y posterior. Lo que M4 entrega para cuando ese cableado
-    llegue es `ControlEntrada.HW_sobre_D`.
+    V4b (la relacion HW/D) LA VERIFICA M5 DESDE S14, y conviene decir con
+    que numero: `M5.v4b_relacion_hw_d` divide entre D el HW del control
+    GOBERNANTE -- `ResultadoHidraulico.HW` --, no el HWi/D que este modulo
+    calcula. Los dos son "HW/D" y no son el mismo: el de aqui es la salida
+    adimensional de las ecuaciones de la Tabla A.1, valida solo si el control
+    de entrada gobierna; lo que V4b acota es el embalse que la obra produce,
+    que es el mayor de los dos controles.
+
+    Este parrafo tuvo las dos afirmaciones falsas, en este orden. Primero
+    decia que "HW/D <= 1.5 (V4b) ... son verificaciones de la Fase 5 y las
+    hace M5" cuando M5 no la implementaba (SIS-A-02, MAT-D2). Corregido eso,
+    decia que lo que M4 entregaba para el cableado futuro era
+    `ControlEntrada.HW_sobre_D`, y tampoco: ese campo no es el argumento del
+    chequeo, por la razon del parrafo anterior. El umbral es [A] y no [C]
+    -- el rango 1.0-1.5 es una encuesta de practica de agencias
+    estadounidenses que el HDS-5 describe, no un criterio que el manual fije
+    (NOR-HDS-02) --, y esa reetiquetacion es lo que permitio cablearlo
+    (conflicto #1 de la matriz de auditorias).
 
 Los dos solvers de Brent (Sec. 4.2.1)
 --------------------------------------
@@ -256,7 +263,7 @@ from scipy.optimize import brentq
 import criterios_adoptados as ca
 from constantes_fisicas import G
 from constantes_normativas import (H_O_HW_SOBRE_D_CAUTELA,
-                                   H_O_HW_SOBRE_D_MIN, KU_METRICO,
+                                   H_O_HW_SOBRE_D_MIN, KU_SI,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
 from modelos import (ConstantesHDS5, ControlEntrada, ControlGobernante,
@@ -386,7 +393,7 @@ def caudal_adimensional(Q: float, D: float) -> float:
     CP-5, que da A_llena = pi*D^2/4 = 0.63617 m2 para D = 0.90 m).
     """
     _validar_Q_D(Q, D)
-    return KU_METRICO * Q / (area_llena(D) * math.sqrt(D))
+    return KU_SI * Q / (area_llena(D) * math.sqrt(D))
 
 
 def _hw_sobre_D_no_sumergido(q_estrella: float, H_c: float, D: float,

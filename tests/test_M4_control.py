@@ -25,7 +25,7 @@ import pytest
 
 import criterios_adoptados as ca
 from constantes_fisicas import G
-from constantes_normativas import (KU_METRICO, K_FRICCION_SI,
+from constantes_normativas import (KU_SI, K_FRICCION_SI,
                                    Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO)
 from modelos import (ConstantesHDS5, ControlGobernante, DatoInvalidoError,
                      RegimenEntrada, ResultadoHidraulico, TiranteCritico)
@@ -157,7 +157,7 @@ def test_area_llena_y_radio_hidraulico_lleno():
 def test_ku_es_el_valor_metrico():
     """Ku = 1.811 (SI). El 1.0 imperial daria un q* 1.811 veces menor y
     cambiaria de rama sin avisar."""
-    assert KU_METRICO == pytest.approx(CP5_TRANSICION_HDS5["Ku"], abs=1e-9)
+    assert KU_SI == pytest.approx(CP5_TRANSICION_HDS5["Ku"], abs=1e-9)
 
 
 @pytest.mark.parametrize("caso, esperado", [
@@ -184,10 +184,10 @@ def test_el_area_de_q_estrella_es_la_llena_y_no_la_del_tirante():
     c = CP5_TRANSICION_HDS5
     # El area va sin redondear: CP-5 la publica a cinco decimales (0.63617) y
     # contra ese valor la igualdad solo vale hasta la tolerancia del fixture.
-    esperado = KU_METRICO * c["Q"] / (math.pi * c["D"] ** 2 / 4 * math.sqrt(c["D"]))
+    esperado = KU_SI * c["Q"] / (math.pi * c["D"] ** 2 / 4 * math.sqrt(c["D"]))
     assert caudal_adimensional(Q=c["Q"], D=c["D"]) == pytest.approx(esperado, rel=1e-12)
 
-    con_area_del_tirante = KU_METRICO * c["Q"] / (
+    con_area_del_tirante = KU_SI * c["Q"] / (
         CP2_GEOMETRIA_MANNING["A_esperado"] * math.sqrt(c["D"]))
     assert caudal_adimensional(Q=c["Q"], D=c["D"]) < con_area_del_tirante
 
@@ -311,7 +311,7 @@ def test_la_curva_empalma_continua_en_los_dos_limites(hds5):
     A_llena = area_llena(D)
 
     def Q_para(q_estrella):
-        return q_estrella * A_llena * math.sqrt(D) / KU_METRICO
+        return q_estrella * A_llena * math.sqrt(D) / KU_SI
 
     epsilon = 1e-7
     for limite in (Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO):

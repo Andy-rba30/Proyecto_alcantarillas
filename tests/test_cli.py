@@ -546,12 +546,18 @@ def test_perfil_dimensiona_puntos_que_expediente_bloquea(monkeypatch):
 
 
 def test_perfil_intenta_v5_y_v8_pero_no_las_exige(monkeypatch):
-    """Las siete obligatorias estan en la tabla del punto; V5 y V8 no."""
+    """
+    Las OCHO obligatorias estan en la tabla del punto; V5 y V8 no.
+
+    Eran siete hasta S14, cuando V4b se cableo: su umbral es un criterio con
+    valor y no depende de ningun dato de expediente, de modo que al alcance
+    de perfil corre como cualquier otra obligatoria.
+    """
     _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
     perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
     codigos = [v.codigo for _, v in _punto(perfil, "A-01").verificaciones()
                if v.codigo and v.codigo.startswith("V")]
-    assert codigos == ["V1", "V2", "V3", "V4", "V6", "V7", "V9"]
+    assert codigos == ["V1", "V2", "V3", "V4", "V4b", "V6", "V7", "V9"]
 
 
 def test_perfil_no_ejecuta_fase_8_ni_cabezal(monkeypatch):

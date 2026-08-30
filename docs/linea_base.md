@@ -383,7 +383,7 @@ Los 9 hallazgos de este lote verificaron **SÍ** sin excepción.
 
 Cada una en su propio commit, suite verde antes de cada uno. El conteo que se
 cita abajo es el de HOY, no el de entonces: este documento se mantiene al día
-con la suite vigente (843 passed, 1 skipped) y no como fotografía de S1 —
+con la suite vigente (846 passed, 1 skipped) y no como fotografía de S1 —
 `verificar_sesion.py` avisa si se desincroniza.
 
 | Hallazgo | Commit | Qué cambió |
@@ -395,7 +395,7 @@ con la suite vigente (843 passed, 1 skipped) y no como fotografía de S1 —
 
 Estas cinco correcciones son **documentales o de control de versión** —
 ninguna toca `src/`, `gui/` o `cli.py`. La suite se mantuvo verde en todo
-momento; hoy son **843 passed, 1 skipped (844 collected)** con `requirements-dev.txt` instalado, u **811 passed, 33 skipped** sin PyMuPDF — mismo `collected`, ver la tabla de §2.
+momento; hoy son **846 passed, 1 skipped (847 collected)** con `requirements-dev.txt` instalado, u **814 passed, 33 skipped** sin PyMuPDF — mismo `collected`, ver la tabla de §2.
 
 ---
 

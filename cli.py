@@ -608,11 +608,11 @@ def _diferir_verificacion(informe: InformePunto, codigo: str,
 
 def _verificador_perfil(informe: InformePunto):
     """
-    La Fase 5 al alcance de perfil: las nueve verificaciones de M5, en el
+    La Fase 5 al alcance de perfil: las diez verificaciones de M5, en el
     orden de la tabla, con V5 y V8 DIFERIDAS al expediente.
 
-    - Obligatorias (deciden si el diametro se acepta): V1, V2, V3, V4, V6,
-      V7 y V9. Corren exactamente como en M5.verificar y sus excepciones
+    - Obligatorias (deciden si el diametro se acepta): V1, V2, V3, V4, V4b,
+      V6, V7 y V9. Corren exactamente como en M5.verificar y sus excepciones
       suben igual: un criterio vacio en una obligatoria sigue bloqueando el
       material (y, por la regla de MD, el punto).
     - Diferidas: V5 (remanso / derecho de via) y V8 (evento extremo). Se
@@ -646,6 +646,13 @@ def _verificador_perfil(informe: InformePunto):
             M5.v2_velocidad_minima(resultado=resultado),
             M5.v3_velocidad_maxima(material=material, resultado=resultado),
             M5.v4_carga_entrada(punto=punto, resultado=resultado),
+            # V4b se cableo en S14 y entra aqui como OBLIGATORIA, igual que
+            # en `M5.verificar`: su umbral es un criterio con valor y no
+            # depende de ningun dato de expediente que el alcance de perfil
+            # difiera. Si alguien le quitara el valor a 'HW_D_max', la
+            # `CriterioPendienteError` subiria y bloquearia el material, que
+            # es lo que corresponde a un umbral sin declarar.
+            M5.v4b_relacion_hw_d(D=D, resultado=resultado),
         ]
         try:
             filas.append(M5.v5_remanso(punto=punto, resultado=resultado))
@@ -1140,11 +1147,11 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "iteraciones": [_paso_json(p) for p in informe.traza],
         "verificaciones": [_verificacion_json(fase, v)
                            for fase, v in informe.verificaciones()],
-        # Las filas V2b y V4b de la tabla de Fase 5 no se evaluan, y la
-        # constancia viaja con el punto igual que la del item 5 de Fase 8:
-        # contar nueve verificaciones donde la hoja de ruta lista ONCE no
-        # puede quedar como un ejercicio de resta del lector
-        # (SIS-A-13 / MAT-O15).
+        # La fila V2b de la tabla de Fase 5 no se evalua, y la constancia
+        # viaja con el punto igual que la del item 5 de Fase 8: contar diez
+        # verificaciones donde la hoja de ruta lista ONCE no puede quedar
+        # como un ejercicio de resta del lector (SIS-A-13 / MAT-O15). V4b
+        # salio de esta lista en S14, al cablearse.
         "verificaciones_no_evaluadas": list(M5.verificaciones_no_evaluadas()),
         "bloqueos": [_bloqueo_json(b) for b in informe.bloqueos],
     }

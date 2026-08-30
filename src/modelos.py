@@ -206,6 +206,57 @@ class ReferenciaNormativa(str):
                 f"{self.numeral_norma!r})")
 
 
+
+# ---------------------------------------------------------------------------
+# Las constantes NUMERAL_* de modulo que ningun lector de produccion consume
+# ---------------------------------------------------------------------------
+# SIS-B-09: ocho constantes `NUMERAL_*` estan declaradas en sus modulos y no
+# las lee nadie. Estaba decidido y no estaba escrito, que es el defecto: sin
+# esta nota, un mantenedor no puede distinguir "todavia no cableada" de "no le
+# corresponde cablearse", y las dos se ven igual leyendo el archivo.
+#
+# La razon se escribe AQUI, una sola vez, y aqui y no en cada modulo porque
+# las ocho son la MISMA cosa y esta es la clase que la define:
+# `ReferenciaNormativa` existe justamente para separar la coordenada interna
+# de la hoja de ruta -- `seccion_hoja_ruta` -- de la cita verificable --
+# `numeral_norma` --, y las ocho son de la primera clase.
+#
+# POR QUE NO SE BORRAN. Son la unica marca en el codigo de que apartado de la
+# hoja de ruta implementa cada modulo, y esa navegacion se usa en cada
+# revision: se lee el modulo y se va al apartado. Borrarlas ahorraria ocho
+# lineas y costaria el mapa.
+#
+# POR QUE NO SE IMPRIMEN. Porque no son citas. Meter "4.1" o "Fase 5, V5" en
+# una memoria como si fueran numerales es exactamente el defecto que
+# `ReferenciaNormativa` existe para impedir -- una verificacion externa salio
+# a buscar una "Sec. 9.1" en el EG-2013, que no existe --. El numeral REAL de
+# cada calculo viaja por su propia via: `Verificacion.numeral`, las constantes
+# de `constantes_normativas` y el registro de `src/normativa/`.
+#
+# Dos de las ocho tienen ademas una segunda razon, y es un bloqueo ya
+# declarado: `NUMERAL_V5` y `NUMERAL_V8` anotan las dos verificaciones de la
+# Fase 5 que se detienen antes de devolver una `Verificacion` -- V5 por falta
+# del perfil de remanso y del ancho de derecho de via, V8 porque su logica no
+# esta escrita --, de modo que su numeral no llega a la memoria porque no hay
+# fila que anotar. Cuando esas dos se resuelvan, sus constantes se leeran
+# solas y saldran de esta lista.
+#
+# Si alguna se cablea o se borra, sale de aqui EN EL MISMO COMMIT. La guardia
+# que lo vigile es trabajo de la fase de tests (S16), no de esta: escribir
+# hoy un test contra el estado actual congelaria los defectos que las fases de
+# correccion todavia estan cerrando.
+NUMERALES_DE_SECCION_SIN_LECTOR = (
+    "modulos.M2_material.NUMERAL_MATERIAL",       # "Sec. 3.4"
+    "modulos.M3_hidraulica.NUMERAL_MANNING",      # "4.1"
+    "modulos.M4_control.NUMERAL_SALIDA",          # "4.3"
+    "modulos.M5_verificaciones.NUMERAL_V5",       # bloqueo declarado
+    "modulos.M5_verificaciones.NUMERAL_V8",       # bloqueo declarado
+    "modulos.M8_estructural.NUMERAL_8_1_2",       # "Fase 8, items 1-2"
+    "modulos.M8_estructural.NUMERAL_8_1",         # encabezado del bloque
+    "modulos.MD.NUMERAL_BUCLE",                   # "Sec. 2 de la guia"
+)
+
+
 # ===========================================================================
 # Enumeraciones (categorias declaradas por la hoja de ruta, no valores)
 # ===========================================================================
@@ -478,7 +529,15 @@ class Material:
     n_max: float
     D_max: float                            # m - tope de CATALOGO adoptado (V9)
     D_max_de_catalogo: str                  # rotulo obligatorio de ese tope
-    norma_producto: str                     # ASTM C76 / AASHTO M36 / M294 ...
+    norma_producto: str                     # designacion METRICA de la norma
+                                            # de producto: "AASHTO M 170M-04 /
+                                            # ASTM C 76M-02 (metrica)",
+                                            # "AASHTO M 36 / ASTM A760/A760M-10",
+                                            # "AASHTO M294". Las imperiales
+                                            # (C76, M170) nombran documentos
+                                            # que este expediente no tiene y
+                                            # cuyas tablas van en pulgadas
+                                            # (NOR-PRO-05)
     hds5: ConstantesHDS5                    # carta adoptada en Sec. 4.2
     fila_manning: str                       # fila LITERAL de la Tabla N 09
     # Los dos techos de velocidad, separados porque son dos cosas distintas y
@@ -680,15 +739,26 @@ class ControlEntrada:
     HWi/D adimensional que devuelven las ecuaciones de la Tabla A.1, antes de
     multiplicar por D.
 
-    `HW_sobre_D` NO LO LEE HOY NINGUNA RUTA DE PRODUCCION, y este docstring
-    decia que era "lo que compara V4b (HW/D <= 1.5)" (SIS-B-02, SIS-A-02). Esa
-    comparacion no existe: M5 no implementa V4b y la declara no evaluada en
-    `verificaciones_no_evaluadas()`. El campo se conserva -- es la salida
-    literal de las ecuaciones de la Tabla A.1, la magnitud con la que HDS-5
-    razona, y multiplicarla por D para volver a dividirla despues seria
-    perderla y recomponerla -- y sera el argumento del chequeo el dia que se
-    cablee, pero mientras tanto lo que se dice de el es lo que se puede
-    sostener: que hoy solo lo leen los tests.
+    `HW_sobre_D` NO LO LEE NINGUNA RUTA DE PRODUCCION, y este docstring ha
+    dicho dos cosas falsas sobre el, las dos de la misma familia: predecir un
+    consumidor que no existia.
+
+    Primero decia que era "lo que compara V4b (HW/D <= 1.5)" (SIS-B-02,
+    SIS-A-02), cuando M5 ni siquiera implementaba V4b. Corregido eso, decia
+    que "sera el argumento del chequeo el dia que se cablee". El chequeo se
+    cableo en S14 y el argumento NO es este campo: `M5.v4b_relacion_hw_d`
+    divide entre D el HW del control GOBERNANTE, porque lo que la fuente
+    acota es el embalse que la obra produce, y este campo es el HWi/D del
+    control de ENTRADA, valido solo cuando ese control gobierna. Usarlo daria
+    un numero menor que el embalse real siempre que gobierne el de salida,
+    que es la direccion insegura.
+
+    El campo se conserva por lo que SI es -- la salida literal de las
+    ecuaciones de la Tabla A.1, la magnitud con la que HDS-5 razona, y
+    multiplicarla por D para volver a dividirla despues seria perderla y
+    recomponerla -- y lo que se dice de el es lo unico que se puede sostener:
+    que hoy solo lo leen los tests. Sin consumidor y con la razon escrita, no
+    sin consumidor y con un consumidor prometido.
     """
 
     HW: float                     # m  - HWi
