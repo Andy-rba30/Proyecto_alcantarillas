@@ -1175,6 +1175,39 @@ APARECE EN LA MEMORIA COMO DECLARADO (comprueba de punta a punta el cierre de
 SIS-A-01, arreglado en S2).
 ```
 
+> **Ejecutado en S17, y dos de los cinco casos de R4 de este prompt no eran del
+> alcance de una ventana.** El componente vive partido en dos: `src/ventana_normativa.py`
+> arma el CONTENIDO leyendo el registro —y por eso se compara campo a campo sin
+> escritorio, en `tests/test_ventana_normativa.py`—, y `gui/ventana_normativa.py`
+> lo pinta. Declarar es el tercer módulo, `src/declaracion.py`, y su único camino
+> al valor es `establecer_valor_dinamico`, comprobado sobre el AST.
+>
+> Las **cuatro caras** cubren los **seis modos** de la §4.3: `de_tabla` → TABLA,
+> `en_rango` → RANGO, `de_catalogo` → CATÁLOGO, y `libre` / `de_ensayo` /
+> `derivada` → CAMPO. `de_catalogo` **no** comparte cara con `de_tabla` aunque
+> las dos pinten una tabla: la cabecera de TABLA es «numeral · norma · edición ·
+> página», y esa cabecera sobre un tope de proveedor sería la cita falsa que
+> `NOR-PRO-01` y `NOR-PRO-02` retiraron.
+>
+> **De los cinco casos que este prompt identifica para R4, la ventana cubre
+> tres.** `NOR-SUE-01`, `NOR-AAS-01` y `NOR-AAS-05` están en el registro como
+> `CondicionAplicacion` sobre una fila, una columna o un tramo de modificador, y
+> la maquinaria los resuelve: el primero BLOQUEA (es un dato de sitio y no se
+> declara desde una ventana) y los otros dos PIDEN (son criterios). Los otros
+> dos **no son elecciones de fila**: `NOR-HDS-05` («solo si el barril fluye
+> lleno») condiciona una *fórmula* —`h_o`, que M4 calcula punto por punto— y no
+> una variable de entrada, y su enunciado vive hoy en
+> `constantes_normativas.H_O_CONDICION_TEXTO` sin estar declarado como
+> `CondicionAplicacion`; `NOR-AAS-06` («solo con refuerzo transversal mínimo»)
+> condiciona la expresión de β, que tampoco es variable de entrada y cuyo
+> numeral ni siquiera está transcrito como `Cita`. Mostrarlos en una ventana
+> exigiría inventarles la condición, que es lo que este proyecto viene
+> retirando. Los cinco quedan censados en `ventana_normativa.CASOS_R4`, con —para
+> los dos que faltan— qué habría que transcribir para traerlos, y un test lo
+> comprueba. **Es un defecto de este prompt, no del código:** la lista de
+> «casos identificados» mezcla condiciones de tabla con condiciones de fórmula,
+> y solo las primeras tienen ventana que abrir.
+
 ---
 
 ### S18 · La memoria sustentada

@@ -11,15 +11,44 @@ No reimplementa el pipeline: llama a las mismas funciones que usa `cli.py`
 `exportar_pdf`) para que la GUI y la linea de comandos vean siempre el mismo
 expediente.
 
-Pestanas
---------
+Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
+-----------------------------------------------------------
     1. Datos de entrada    CSV de Sec. 1.2 (M0) + datos declarados que no son
-                            columna (banderas de `cli.py`) + boton de ejecucion.
-    2. Resultados por punto  Un Treeview con el resumen de cada punto y, al
+                            columna (banderas de `cli.py`) + ALCANCE de la
+                            corrida + boton de ejecucion.
+    2. Criterios           Los criterios adoptados y su estado; la ventana
+                            normativa de cada variable (Sec. 4.2/4.3 del
+                            plan); y el unico sitio de la interfaz que
+                            REESCRIBE `criterios_adoptados.py` --- accion
+                            permanente, aparte y con confirmacion propia, que
+                            es justo la pestana que esta lista omitia.
+    3. Resultados por punto  Un Treeview con el resumen de cada punto y, al
                             seleccionar una fila, el detalle de verificaciones
                             y bloqueos de ese punto.
-    3. Resumen             Estado del expediente, criterios pendientes que
-                            bloquearon una etapa, y exportacion (JSON/HTML/PDF).
+    4. Resumen             Estado del expediente, criterios pendientes que
+                            bloquearon una etapa, lo diferido por alcance, y
+                            exportacion (JSON/HTML/PDF/CSV).
+
+El alcance de la corrida (SIS-A-17)
+-----------------------------------
+`cli.py` acepta `--alcance perfil|expediente` desde hace tiempo y la ventana
+no lo exponia: corria SIEMPRE «expediente», de modo que `memoria_perfil.html`
+--- una de las dos plantillas del proyecto --- era inalcanzable desde la
+interfaz y el nivel de perfil solo existia para quien usara la linea de
+comandos. El selector de la pestana 1 lo expone, y la exportacion elige la
+plantilla con `cli.plantilla_por_alcance`, que es la MISMA funcion que usa
+`cli.main`: dos reglas para elegir plantilla serian dos memorias distintas
+para la misma corrida.
+
+Los criterios en la sesion (SIS-A-18)
+-------------------------------------
+La sesion JSON guardaba el proyecto, el CSV y las cinco banderas, y NO las
+declaraciones de la corrida. Quien declaraba cinco criterios y volvia al dia
+siguiente recuperaba el nombre del archivo y perdia las cinco decisiones sin
+un aviso. Ahora se guardan y se restauran los valores Y SU PROCEDENCIA, por
+`declaracion.restaurar_sesion`, que repone por el mismo camino con guardia que
+usan la ventana y la CLI. Lo que la guardia rechace se muestra: una sesion es
+un archivo que alguien pudo editar a mano.
 """
 
 from __future__ import annotations
@@ -42,19 +71,25 @@ import json  # noqa: E402
 
 import cli  # noqa: E402
 import criterios_adoptados as ca  # noqa: E402
+import declaracion as dec  # noqa: E402
+import variables_entrada as ve  # noqa: E402
 from modelos import ErrorProyecto  # noqa: E402
+
+from gui import ventana_normativa as ventana_norma  # noqa: E402
+from gui.componentes import (COLOR_AVISO, COLOR_ERROR,  # noqa: E402
+                             COLOR_OK, MarcoScroll, Tooltip)
 
 try:
     import ttkbootstrap as tb
 except ImportError:
     tb = None
 
-COLOR_ERROR = "#e74c3c"
-COLOR_OK = "#27ae60"
-COLOR_AVISO = "#b9770e"
-
 APP_VERSION = "1.0"
-FORMATO_SESION = 1                      # version del JSON de sesion (patron Tc.py)
+# v2: la sesion guarda tambien el alcance de la corrida y los criterios
+# declarados con su procedencia (SIS-A-17, SIS-A-18). Una sesion v1 se sigue
+# leyendo: lo que no trae se queda en su valor por defecto y la ventana lo
+# dice, que es el patron de migracion de `legacy/Tc.py`.
+FORMATO_SESION = 2
 
 # Banderas globales que acepta `cli.py` fuera del CSV (ver docstring de
 # `cli.py`, seccion "Datos que NO estan en el CSV"). Cada tupla es
@@ -79,94 +114,6 @@ CAMPOS_EXTERNOS = (
 )
 
 
-class Tooltip:
-    """Globo de ayuda simple para cualquier widget (patron de legacy/Tc.py)."""
-
-    def __init__(self, widget, texto, retardo=400):  # literal-ok: retardo del tooltip, ms
-        self.widget = widget
-        self.texto = texto
-        self.retardo = retardo
-        self._after_id = None
-        self._tip = None
-        widget.bind("<Enter>", self._programar, add="+")
-        widget.bind("<Leave>", self._ocultar, add="+")
-        widget.bind("<ButtonPress>", self._ocultar, add="+")
-
-    def _programar(self, _evt=None):
-        self._cancelar()
-        self._after_id = self.widget.after(self.retardo, self._mostrar)
-
-    def _cancelar(self):
-        if self._after_id:
-            try:
-                self.widget.after_cancel(self._after_id)
-            except tk.TclError:
-                pass
-            self._after_id = None
-
-    def _mostrar(self):
-        if self._tip or not self.texto:
-            return
-        x = self.widget.winfo_rootx() + 18  # literal-ok: offset del tooltip, px
-        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6  # literal-ok: offset del tooltip, px
-        self._tip = tk.Toplevel(self.widget)
-        self._tip.wm_overrideredirect(True)
-        self._tip.wm_geometry(f"+{x}+{y}")
-        tk.Label(
-            self._tip, text=self.texto, justify="left", background="#ffffe0",
-            relief="solid", borderwidth=1, font=("Segoe UI", 8), padx=6, pady=3,
-        ).pack()
-
-    def _ocultar(self, _evt=None):
-        self._cancelar()
-        if self._tip:
-            self._tip.destroy()
-            self._tip = None
-
-
-class MarcoScroll(ttk.Frame):
-    """Contenedor con scroll vertical: el contenido se agrega en `.interior`."""
-
-    def __init__(self, master, **kw):
-        super().__init__(master, **kw)
-        self.canvas = tk.Canvas(self, highlightthickness=0, borderwidth=0)
-        self.vbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.vbar.set)
-
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.vbar.pack(side="right", fill="y")
-
-        self.interior = ttk.Frame(self.canvas, padding=14)
-        self._id_win = self.canvas.create_window((0, 0), window=self.interior, anchor="nw")
-
-        self.interior.bind("<Configure>", self._ajustar_region)
-        self.canvas.bind("<Configure>", self._ajustar_ancho)
-        self.canvas.bind("<Enter>", self._activar_rueda)
-        self.canvas.bind("<Leave>", self._desactivar_rueda)
-
-    def _ajustar_region(self, _evt=None):
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-
-    def _ajustar_ancho(self, evt):
-        self.canvas.itemconfigure(self._id_win, width=evt.width)
-
-    def _activar_rueda(self, _evt=None):
-        self.canvas.bind_all("<MouseWheel>", self._rueda)
-
-    def _desactivar_rueda(self, _evt=None):
-        self.canvas.unbind_all("<MouseWheel>")
-
-    def _rueda(self, evt):
-        if isinstance(evt.widget, (ttk.Treeview, tk.Listbox, tk.Text)):
-            return
-        # 120 es el "notch" estandar de la rueda en Windows: `event.delta`
-        # llega en multiplos de 120 y hay que dividirlo para obtener las
-        # unidades de scroll. Es aritmetica del evento, no geometria de
-        # widget, y por eso la regla de la capa de presentacion no la exime
-        # sola: va marcada.
-        self.canvas.yview_scroll(int(-evt.delta / 120), "units")  # literal-ok: notch de la rueda, unidades por delta
-
-
 class ExpedienteApp:
     def __init__(self, root):
         self.root = root
@@ -178,6 +125,10 @@ class ExpedienteApp:
         self.csv_var = tk.StringVar()
         self.datos_externos_var = tk.StringVar()
         self.externos_vars = {clave: tk.StringVar() for clave, *_r in CAMPOS_EXTERNOS}
+        # El defecto es el MISMO que el de `cli.py` (`--alcance`, choices con
+        # default `expediente`), y se lee de alli en vez de escribirse otra
+        # vez: dos defectos que puedan divergir son dos programas.
+        self.alcance_var = tk.StringVar(value=cli.ALCANCE_EXPEDIENTE)
 
         self.informe: Optional[cli.Informe] = None
 
@@ -286,6 +237,38 @@ class ExpedienteApp:
             ttk.Label(f_ext, text=unidad, style="Ayuda.TLabel").grid(row=fila, column=2, sticky="w")
             Tooltip(ent, ayuda)
 
+        ttk.Separator(p, orient="horizontal").pack(fill="x", pady=6)
+
+        ttk.Label(p, text="3. Alcance de la corrida (--alcance)",
+                  style="Header.TLabel").pack(anchor="w", pady=(8, 0))
+        ttk.Label(
+            p,
+            text="Es una bifurcacion DECLARADA, no una poda. Con 'expediente' "
+                 "todo corre como siempre. Con 'perfil', V5 y V8 se intentan "
+                 "pero su fallo se difiere al expediente en vez de frenar el "
+                 "dimensionamiento, y las Fases 8 y 9 no se ejecutan: nada de "
+                 "lo diferido se pierde -- queda registrado con su fundamento "
+                 "en el bloque de alcance del informe y de la memoria. El "
+                 "alcance elige ademas la plantilla por defecto de la memoria.",
+            style="Ayuda.TLabel", wraplength=820, justify="left",
+        ).pack(anchor="w", pady=(0, 6))
+
+        f_alc = ttk.Frame(p)
+        f_alc.pack(fill="x", pady=4)
+        for columna, (valor, etiqueta, ayuda) in enumerate((
+                (cli.ALCANCE_EXPEDIENTE, "Expediente (defecto)",
+                 "El pipeline completo: M0 a M10 mas la Fase 9.\n"
+                 "Plantilla por defecto de la memoria: memoria_alcantarillas.html."),
+                (cli.ALCANCE_PERFIL, "Perfil",
+                 "V5 y V8 diferidas al expediente y Fases 8 y 9 no ejecutadas,\n"
+                 "cada una con su constancia. Plantilla por defecto:\n"
+                 "memoria_perfil.html, que sin este selector era INALCANZABLE\n"
+                 "desde la ventana (SIS-A-17)."))):
+            rb = ttk.Radiobutton(f_alc, text=etiqueta, value=valor,
+                                 variable=self.alcance_var)
+            rb.grid(row=0, column=columna, sticky="w", padx=12, pady=4)
+            Tooltip(rb, ayuda)
+
         self.lbl_error_datos = ttk.Label(p, text="", style="Error.TLabel", wraplength=820, justify="left")
         self.lbl_error_datos.pack(anchor="w", padx=5, pady=(10, 0))
 
@@ -358,6 +341,10 @@ class ExpedienteApp:
                                                  foreground=COLOR_AVISO)
         self.tree_criterios_todos.tag_configure("resuelto", foreground=COLOR_OK)
         self.tree_criterios_todos.bind("<<TreeviewSelect>>", self._al_seleccionar_criterio)
+        # Doble clic = abrir la ventana normativa de ese criterio. Es el gesto
+        # que el usuario ya hace sobre una tabla, y el boton de abajo repite
+        # la accion para quien no lo descubra.
+        self.tree_criterios_todos.bind("<Double-1>", self._abrir_ventana_normativa)
 
         scroll_ct = ttk.Scrollbar(f_tabla, orient="vertical",
                                    command=self.tree_criterios_todos.yview)
@@ -409,6 +396,20 @@ class ExpedienteApp:
             relief="flat", cursor="hand2", state="disabled",
             command=self._quitar_valor_corrida)
         self.btn_quitar_declarado.pack(side="left", padx=8, ipadx=6, ipady=3)
+
+        self.btn_ventana_norma = tk.Button(
+            f_botones, text="Ver la norma y declarar desde la tabla...",
+            font=("Segoe UI", 9, "bold"), bg="#5d6d7e", fg="white",
+            relief="flat", cursor="hand2", state="disabled",
+            command=self._abrir_ventana_normativa)
+        self.btn_ventana_norma.pack(side="left", padx=8, ipadx=6, ipady=3)
+        Tooltip(self.btn_ventana_norma,
+                "Abre la ventana emergente de la variable: la tabla COMPLETA\n"
+                "con su numeral, su pagina impresa, sus notas al pie y sus\n"
+                "modificadores; o el rango con su semantica; o el catalogo con\n"
+                "la advertencia de que ninguna norma lo sostiene.\n"
+                "Al declarar desde alli queda registrada la procedencia: fila,\n"
+                "valor, alternativas descartadas, cita y fecha.")
 
         self.btn_guardar_archivo = tk.Button(
             f_botones, text="Guardar en archivo fuente (permanente)", font=("Segoe UI", 9, "bold"),
@@ -463,6 +464,7 @@ class ExpedienteApp:
             self.btn_aplicar_corrida.config(state="disabled")
             self.btn_quitar_declarado.config(state="disabled")
             self.btn_guardar_archivo.config(state="disabled")
+            self.btn_ventana_norma.config(state="disabled")
             self.txt_detalle_criterio.configure(state="disabled")
             return
 
@@ -474,7 +476,12 @@ class ExpedienteApp:
         lineas = [
             f"Justificacion : {c.justificacion}",
             f"Fuente        : {c.fuente}",
+            f"Se resuelve   : {ve.variable(clave).modo.value} "
+            "(doble clic abre su ventana normativa)",
         ]
+        procedencia = dec.procedencia_de(clave)
+        if procedencia is not None:
+            lineas.append(f"Procedencia   : {procedencia.como_texto()}")
         if c.reemplazado_por:
             lineas.append(f"Se sustituye por: {c.reemplazado_por}")
         if c.sensibilidad:
@@ -494,6 +501,31 @@ class ExpedienteApp:
         self.btn_aplicar_corrida.config(state="normal" if puede_declarar or c.valor is None else "disabled")
         self.btn_quitar_declarado.config(state="normal" if en_caliente else "disabled")
         self.btn_guardar_archivo.config(state="normal")
+        self.btn_ventana_norma.config(state="normal")
+
+    def _abrir_ventana_normativa(self, _evt=None):
+        """
+        Abre la ventana emergente del criterio seleccionado.
+
+        `al_declarar` refresca la tabla de esta pestana: la ventana declara
+        por `declaracion`, que declara por `establecer_valor_dinamico`, y sin
+        el refresco la fila seguiria diciendo PENDIENTE con el valor ya
+        gobernando el calculo --- que es la forma que tenia SIS-A-01.
+        """
+        clave = self._clave_criterio_seleccionado
+        if not clave:
+            return
+        ventana_norma.abrir(self.root, clave,
+                            al_declarar=self._tras_declarar_en_ventana)
+
+    def _tras_declarar_en_ventana(self, clave):
+        self.lbl_estado_criterio.config(
+            text=f"'{clave}' declarado desde su ventana normativa, SOLO para "
+                 "la proxima corrida, con su procedencia registrada. "
+                 "criterios_adoptados.py no se modifico.",
+            foreground=COLOR_AVISO)
+        self._llenar_tabla_criterios()
+        self.tree_criterios_todos.selection_set(clave)
 
     def _interpretar_valor_declarado(self, texto):
         """
@@ -552,7 +584,10 @@ class ExpedienteApp:
         clave = self._clave_criterio_seleccionado
         if not clave:
             return
-        ca.quitar_valor_dinamico(clave)
+        # `dec.olvidar` retira el valor Y su procedencia. Retirar solo el
+        # valor dejaria una procedencia hablando de un numero que ya no
+        # gobierna nada, que es peor que no tener procedencia.
+        dec.olvidar(clave)
         self.lbl_estado_criterio.config(
             text=f"Se quito la declaracion de '{clave}': vuelve a bloquear el calculo.",
             foreground=COLOR_AVISO)
@@ -670,8 +705,10 @@ class ExpedienteApp:
         f_res.pack(fill="x", pady=(8, 12))
         f_res.columnconfigure(1, weight=1)
 
-        etiquetas = ["CSV", "Puntos del expediente", "Puntos dimensionados",
-                     "Verificaciones incumplidas", "Etapas bloqueadas", "Expediente cerrado"]
+        etiquetas = ["CSV", "Alcance de la corrida", "Puntos del expediente",
+                     "Puntos dimensionados", "Verificaciones incumplidas",
+                     "Etapas bloqueadas", "Diferidas por alcance",
+                     "Expediente cerrado"]
         self.lbl_resumen = {}
         for fila, txt in enumerate(etiquetas):
             ttk.Label(f_res, text=f"{txt}:").grid(row=fila, column=0, sticky="w", pady=3)
@@ -780,7 +817,8 @@ class ExpedienteApp:
         self.root.update_idletasks()
         try:
             externos = cli.cargar_datos_externos(ruta_externos, self._leer_banderas())
-            self.informe = cli.correr(ruta_csv, externos)
+            self.informe = cli.correr(ruta_csv, externos,
+                                      alcance=self.alcance_var.get())
         # SIS-E-01. Este brazo capturaba (OSError, ValueError), y ValueError
         # es la excepcion mas comun de un fallo de PROGRAMA nacido dentro del
         # pipeline: cualquiera de ellos se mostraba al proyectista como "No se
@@ -863,7 +901,16 @@ class ExpedienteApp:
         informe = self.informe
         incumplidas = sum(len(i.incumplidas()) for i in informe.puntos)
         n_bloqueos = len(informe.bloqueos())
+        diferidas = len(informe.diferidos())
         self.lbl_resumen["CSV"].config(text=str(informe.csv))
+        self.lbl_resumen["Alcance de la corrida"].config(text=informe.alcance)
+        # Lo diferido por alcance NO es un bloqueo y no cuenta para `cerrado`:
+        # es una etapa que ESTA corrida declaro fuera de su alcance. Se
+        # imprime aparte, con su fundamento, porque «cerrado a nivel de
+        # perfil» no significa que el expediente este completo.
+        self.lbl_resumen["Diferidas por alcance"].config(
+            text=str(diferidas),
+            foreground=COLOR_AVISO if diferidas else COLOR_OK)
         self.lbl_resumen["Puntos del expediente"].config(text=str(len(informe.puntos)))
         self.lbl_resumen["Puntos dimensionados"].config(text=str(informe.dimensionados))
         self.lbl_resumen["Verificaciones incumplidas"].config(
@@ -885,6 +932,20 @@ class ExpedienteApp:
     # ------------------------------------------------------------------
     # Exportacion
     # ------------------------------------------------------------------
+    def _plantilla(self):
+        """
+        La plantilla de la memoria, por la MISMA via que `cli.main`.
+
+        Se lee del alcance del INFORME y no del selector: entre ejecutar y
+        exportar el usuario puede haber movido el radio, y la memoria tiene
+        que describir la corrida que se hizo, no la que se hara. Sin informe
+        --- los botones estan deshabilitados, pero el metodo es publico ---
+        manda el selector.
+        """
+        alcance = (self.informe.alcance if self.informe is not None
+                   else self.alcance_var.get())
+        return cli.plantilla_por_alcance(alcance)
+
     def exportar_json(self):
         if self.informe is None:
             return
@@ -923,7 +984,9 @@ class ExpedienteApp:
         if not ruta:
             return
         try:
-            cli.exportar_html(self.informe, Path(ruta), proyecto=self.proyecto_var.get())
+            cli.exportar_html(self.informe, Path(ruta),
+                              proyecto=self.proyecto_var.get(),
+                              ruta_plantilla=self._plantilla())
             messagebox.showinfo("Memoria exportada", f"Archivo: {ruta}")
         except (OSError, ErrorProyecto) as exc:
             messagebox.showerror("Error al exportar", f"{exc}")
@@ -941,7 +1004,9 @@ class ExpedienteApp:
         if not ruta:
             return
         try:
-            resultado = cli.exportar_pdf(self.informe, Path(ruta), proyecto=self.proyecto_var.get())
+            resultado = cli.exportar_pdf(self.informe, Path(ruta),
+                                         proyecto=self.proyecto_var.get(),
+                                         ruta_plantilla=self._plantilla())
             messagebox.showinfo("Memoria exportada", resultado.mensaje)
         except (OSError, ErrorProyecto) as exc:
             messagebox.showerror("Error al exportar", f"{exc}")
@@ -972,6 +1037,9 @@ class ExpedienteApp:
     # Sesion (JSON) - patron de legacy/Tc.py
     # ------------------------------------------------------------------
     def guardar_sesion(self):
+        # SIS-A-18. `criterios` y `alcance` son lo que faltaba: sin ellos, una
+        # sesion guardada describia DONDE estaba el expediente y no QUE se
+        # habia decidido sobre el, que es la parte que cuesta rehacer.
         data = {
             "formato_version": FORMATO_SESION,
             "app_version": APP_VERSION,
@@ -979,6 +1047,8 @@ class ExpedienteApp:
             "csv": self.csv_var.get(),
             "datos_externos": self.datos_externos_var.get(),
             "externos": {clave: var.get() for clave, var in self.externos_vars.items()},
+            "alcance": self.alcance_var.get(),
+            "criterios": dec.estado_de_sesion(),
         }
         ruta = filedialog.asksaveasfilename(
             title="Guardar sesion", defaultextension=".json",
@@ -1023,15 +1093,66 @@ class ExpedienteApp:
                 f"es un objeto con claves, y este trae {type(data).__name__}.")
             return
 
+        version = data.get("formato_version", 1)
+
         self.proyecto_var.set(data.get("proyecto", ""))
         self.csv_var.set(data.get("csv", ""))
         self.datos_externos_var.set(data.get("datos_externos", ""))
         for clave, valor in data.get("externos", {}).items():
             if clave in self.externos_vars:
                 self.externos_vars[clave].set(valor)
+        # Un alcance que la sesion no traiga (o que traiga escrito mal) NO se
+        # adopta en silencio: se queda el defecto de `cli.py`, que es el mismo
+        # que la ventana muestra al abrirse.
+        alcance = data.get("alcance", cli.ALCANCE_EXPEDIENTE)
+        if alcance not in (cli.ALCANCE_PERFIL, cli.ALCANCE_EXPEDIENTE):
+            alcance = cli.ALCANCE_EXPEDIENTE
+        self.alcance_var.set(alcance)
+
+        aviso = self._restaurar_criterios(data.get("criterios"))
 
         self.lbl_error_datos.config(text="")
+        self._llenar_tabla_criterios()
         self.nb.select(self.tab_datos)
+        if version < FORMATO_SESION:
+            aviso = (f"La sesion se guardo con el formato v{version} y se "
+                     f"leyo como v{FORMATO_SESION}. Las sesiones v1 no "
+                     "guardaban ni el alcance de la corrida ni los criterios "
+                     "declarados: revise las dos cosas antes de ejecutar. "
+                     + aviso)
+        if aviso:
+            messagebox.showinfo("Sesion cargada", aviso)
+
+    def _restaurar_criterios(self, bloque):
+        """
+        Repone los criterios declarados que la sesion traiga (SIS-A-18).
+
+        Todo pasa por `declaracion.restaurar_sesion`, que declara por
+        `establecer_valor_dinamico` -- la misma guardia que el archivo -- y
+        devuelve lo restaurado Y lo rechazado. Un JSON de sesion es un archivo
+        que alguien pudo editar a mano: aceptar sus valores sin guardia
+        convertiria el formato de sesion en la puerta de atras que este
+        proyecto no tiene, y descartarlos en silencio esconderia justo el caso
+        que importa -- el criterio que la sesion traia y que hoy la guardia
+        rechaza.
+        """
+        if bloque is None:
+            return ""
+        try:
+            resultado = dec.restaurar_sesion(bloque)
+        except (ValueError, KeyError) as exc:
+            return f"No se pudieron restaurar los criterios de la sesion: {exc}"
+        partes = []
+        if resultado.restaurados:
+            partes.append(
+                f"Criterios restaurados SOLO para esta corrida: "
+                f"{', '.join(resultado.restaurados)}. "
+                "criterios_adoptados.py no se modifico.")
+        if resultado.hubo_rechazos:
+            detalle = "; ".join(f"{clave}: {motivo}"
+                                for clave, motivo in resultado.rechazados)
+            partes.append(f"NO se restauraron: {detalle}")
+        return " ".join(partes)
 
 
 def main():

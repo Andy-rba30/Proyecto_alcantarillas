@@ -35,6 +35,28 @@ Los hallazgos que cierra
               su CSV. La CLI usaba el brazo estrecho correcto.
     SIS-E-03  los tres exportadores capturaban `Exception` sin traza, mientras
               el patron hermano de `ejecutar_pipeline` si la imprime.
+    SIS-A-17  la GUI no exponia `--alcance`: corria SIEMPRE "expediente" y
+              `memoria_perfil.html` era inalcanzable desde la interfaz. El
+              bloque nuevo comprueba que el selector existe, que llega a
+              `cli.correr` y que la plantilla se elige con la MISMA funcion que
+              usa `cli.main`.
+    SIS-A-18  la sesion JSON no guardaba ni restauraba los criterios
+              declarados. El bloque nuevo comprueba las dos mitades, y ademas
+              que la restauracion pase por la guardia.
+    SIS-A-01  cerrado en S2 y comprobado aqui DE PUNTA A PUNTA por primera
+              vez: un valor declarado desde la ventana emergente aparece en la
+              memoria HTML marcado como declarado para la corrida, y con la
+              procedencia --- fila, tabla, cita, alternativas --- que la regla
+              R1 del plan v12 exige.
+
+El arbol de la ventana emergente
+--------------------------------
+`gui/ventana_normativa.py` entra en los mismos barridos de AST que
+`gui/app.py`: un manejador desnudo o un `except BaseException` en la ventana
+nueva seria el mismo defecto en otro archivo. Lo que la ventana MUESTRA no se
+prueba aqui sino en `tests/test_ventana_normativa.py`, que lo compara campo a
+campo sin escritorio; aqui solo se comprueba lo que es propio de la pantalla:
+que recorra el orden visual que el plan declara.
 """
 
 import ast
@@ -46,8 +68,21 @@ RAIZ = Path(__file__).resolve().parents[1]
 GUI = RAIZ / "gui" / "app.py"
 CLI = RAIZ / "cli.py"
 
+VENTANA = RAIZ / "gui" / "ventana_normativa.py"
+COMPONENTES = RAIZ / "gui" / "componentes.py"
+
 ARBOL_GUI = ast.parse(GUI.read_text(encoding="utf-8-sig"), filename="app.py")
 ARBOL_CLI = ast.parse(CLI.read_text(encoding="utf-8-sig"), filename="cli.py")
+ARBOL_VENTANA = ast.parse(VENTANA.read_text(encoding="utf-8-sig"),
+                          filename="ventana_normativa.py")
+ARBOL_COMPONENTES = ast.parse(COMPONENTES.read_text(encoding="utf-8-sig"),
+                              filename="componentes.py")
+
+ARBOLES_DE_LA_GUI = {
+    "gui/app.py": ARBOL_GUI,
+    "gui/ventana_normativa.py": ARBOL_VENTANA,
+    "gui/componentes.py": ARBOL_COMPONENTES,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -254,18 +289,229 @@ def test_cada_exportador_separa_el_fallo_del_expediente(nombre):
 # La GUI no puede volver a quedarse sin ninguna guardia
 # ---------------------------------------------------------------------------
 
-def test_ningun_manejador_de_la_gui_captura_sin_nombrar_la_excepcion():
+@pytest.mark.parametrize("archivo", sorted(ARBOLES_DE_LA_GUI))
+def test_ningun_manejador_de_la_gui_captura_sin_nombrar_la_excepcion(archivo):
     """
     Un `except:` desnudo -- y un `except BaseException`, que hace lo mismo con
     otro nombre -- se tragan hasta un KeyboardInterrupt: el usuario pulsa
     Ctrl-C y la ventana se lo come.
+
+    Se barren los TRES archivos de la GUI y no solo `app.py`: el defecto no es
+    de un archivo, es de la capa, y la ventana emergente nacio despues de que
+    este test se escribiera.
     """
     culpables = [(nodo.lineno, _nombre_de_tipo(nodo.type) or "<desnudo>")
-                 for nodo in ast.walk(ARBOL_GUI)
+                 for nodo in ast.walk(ARBOLES_DE_LA_GUI[archivo])
                  if isinstance(nodo, ast.ExceptHandler)
                  and (nodo.type is None
                       or _nombre_de_tipo(nodo.type) == "BaseException")]
-    assert not culpables, f"manejador que se traga todo en gui/app.py: {culpables}"
+    assert not culpables, f"manejador que se traga todo en {archivo}: {culpables}"
+
+
+# ---------------------------------------------------------------------------
+# SIS-A-17 - el alcance de la corrida, expuesto
+# ---------------------------------------------------------------------------
+
+def _llamadas(arbol, nombre_func):
+    """Las llamadas cuyo callable se escribe exactamente `nombre_func`."""
+    return [nodo for nodo in ast.walk(arbol)
+            if isinstance(nodo, ast.Call)
+            and ast.unparse(nodo.func) == nombre_func]
+
+
+def test_la_gui_le_pasa_el_alcance_a_correr():
+    """
+    SIS-A-17. `cli.correr` acepta `alcance` desde hace tiempo y la ventana lo
+    llamaba sin el, de modo que TODA corrida de la GUI era de expediente.
+    """
+    llamadas = _llamadas(ARBOL_GUI, "cli.correr")
+    assert llamadas, "la GUI dejo de llamar a cli.correr"
+    for llamada in llamadas:
+        claves = {kw.arg for kw in llamada.keywords}
+        assert "alcance" in claves, (
+            "cli.correr sin `alcance`: la ventana volveria a correr siempre "
+            "en expediente")
+
+
+def test_la_gui_ofrece_los_dos_alcances_que_la_cli_acepta():
+    """
+    Ni uno mas ni uno menos: los valores del selector salen de las constantes
+    de `cli.py`, no de dos cadenas escritas otra vez. Dos listas de alcances
+    que puedan divergir son dos programas.
+    """
+    nombrados = {ast.unparse(nodo) for nodo in ast.walk(ARBOL_GUI)
+                 if isinstance(nodo, ast.Attribute)
+                 and nodo.attr in ("ALCANCE_PERFIL", "ALCANCE_EXPEDIENTE")}
+    assert nombrados == {"cli.ALCANCE_PERFIL", "cli.ALCANCE_EXPEDIENTE"}, (
+        f"la GUI nombra {nombrados}: los alcances salen de cli.py, no de dos "
+        "cadenas escritas otra vez")
+    radios = _llamadas(ARBOL_GUI, "ttk.Radiobutton")
+    assert radios, "el selector de alcance desaparecio"
+    for radio in radios:
+        atadas = {ast.unparse(kw.value) for kw in radio.keywords
+                  if kw.arg == "variable"}
+        assert atadas == {"self.alcance_var"}, atadas
+
+
+def test_la_gui_elige_la_plantilla_con_la_misma_funcion_que_la_cli():
+    """
+    `plantilla_por_alcance` es la regla, y tiene que haber UNA. Con la GUI
+    eligiendo por su cuenta, la misma corrida daria dos memorias distintas
+    segun por que puerta se exportara.
+    """
+    assert _llamadas(ARBOL_GUI, "cli.plantilla_por_alcance"), (
+        "la GUI elige la plantilla por su cuenta")
+    assert _llamadas(ARBOL_CLI, "plantilla_por_alcance"), (
+        "cli.main dejo de usar plantilla_por_alcance: el test quedo obsoleto")
+
+
+def test_los_dos_exportadores_de_memoria_pasan_la_plantilla():
+    """
+    HTML y PDF. Solo uno de los dos habria dejado la memoria de perfil
+    inalcanzable por la mitad, que es peor que no tenerla.
+    """
+    for nombre, funcion_cli in (("exportar_html", "cli.exportar_html"),
+                                ("exportar_pdf", "cli.exportar_pdf")):
+        llamadas = _llamadas(ARBOL_GUI, funcion_cli)
+        assert llamadas, f"la GUI dejo de llamar a {funcion_cli}"
+        for llamada in llamadas:
+            claves = {kw.arg for kw in llamada.keywords}
+            assert "ruta_plantilla" in claves, nombre
+
+
+# ---------------------------------------------------------------------------
+# SIS-A-18 - la sesion guarda lo que se decidio, no solo donde estaba
+# ---------------------------------------------------------------------------
+
+def _dict_de_sesion():
+    """El diccionario que `guardar_sesion` arma, leido del arbol."""
+    funcion = _funcion(ARBOL_GUI, "guardar_sesion")
+    for nodo in ast.walk(funcion):
+        if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
+                and isinstance(nodo.targets[0], ast.Name)
+                and nodo.targets[0].id == "data"
+                and isinstance(nodo.value, ast.Dict)):
+            return {clave.value for clave in nodo.value.keys
+                    if isinstance(clave, ast.Constant)}
+    raise AssertionError("guardar_sesion dejo de armar el dict `data`")
+
+
+def test_la_sesion_guarda_los_criterios_y_el_alcance():
+    """
+    SIS-A-18. Sin estas dos claves, una sesion describia DONDE estaba el
+    expediente y no QUE se habia decidido sobre el, que es la parte que cuesta
+    rehacer.
+    """
+    claves = _dict_de_sesion()
+    assert "criterios" in claves
+    assert "alcance" in claves
+
+
+def test_la_sesion_restaura_por_el_camino_con_guardia():
+    """
+    Un JSON de sesion es un archivo que alguien pudo editar a mano. Se repone
+    por `declaracion.restaurar_sesion`, que declara con
+    `establecer_valor_dinamico`; meterlo en `_OVERRIDES` a mano convertiria el
+    formato de sesion en la puerta de atras que este proyecto no tiene.
+    """
+    assert _llamadas(ARBOL_GUI, "dec.restaurar_sesion"), (
+        "la GUI restaura los criterios por otro camino")
+    assert _llamadas(ARBOL_GUI, "dec.estado_de_sesion"), (
+        "la GUI arma el bloque de criterios por su cuenta")
+
+
+def test_la_version_del_formato_de_sesion_subio():
+    """
+    El patron de `legacy/Tc.py`: una sesion vieja se sigue leyendo y se avisa
+    de lo que no traia. Sin subir la version, el aviso no se puede dar.
+    """
+    import re
+    texto = GUI.read_text(encoding="utf-8-sig")
+    version = re.search(r"^FORMATO_SESION = (\d+)", texto, re.MULTILINE)
+    assert version is not None
+    assert int(version.group(1)) >= 2
+
+
+# ---------------------------------------------------------------------------
+# La ventana emergente: lo unico suyo que es de pantalla
+# ---------------------------------------------------------------------------
+
+def test_la_ventana_recorre_el_orden_visual_declarado():
+    """
+    El orden de la Sec. 4.2/4.3 esta declarado como DATO en
+    `ventana_normativa.ORDEN_VISUAL_TABLA`, y la ventana lo RECORRE en vez de
+    llamar a siete metodos en fila. Cambiar el orden obliga a cambiar el dato,
+    que es donde el test lo mira.
+    """
+    funcion = _funcion(ARBOL_VENTANA, "_pintar_tabla")
+    fuente = ast.unparse(funcion)
+    assert "orden_visual" in fuente, (
+        "la ventana dejo de recorrer el orden declarado")
+
+
+def test_la_ventana_tiene_un_metodo_por_bloque_del_orden_visual():
+    """
+    El recorrido llama a `_bloque_<nombre>`: si falta uno, la ventana revienta
+    al abrirse en vez de pintar de menos en silencio. El test lo adelanta.
+    """
+    import sys
+    sys.path.insert(0, str(RAIZ / "src"))
+    import ventana_normativa as vn_src
+
+    metodos = {nodo.name for nodo in ast.walk(ARBOL_VENTANA)
+               if isinstance(nodo, ast.FunctionDef)}
+    for bloque in vn_src.ORDEN_VISUAL_TABLA:
+        assert f"_bloque_{bloque}" in metodos, bloque
+
+
+def test_la_ventana_declara_por_el_modulo_de_declaracion_y_no_por_su_cuenta():
+    """
+    La ventana pinta; declarar es de `declaracion.py`, que es quien pasa por
+    la guardia. Una llamada directa a `establecer_valor_dinamico` desde el
+    widget saltaria el registro de procedencia --- el valor entraria bien y la
+    memoria no podria decir de donde salio.
+    """
+    llamadas = {ast.unparse(nodo.func) for nodo in ast.walk(ARBOL_VENTANA)
+                if isinstance(nodo, ast.Call)}
+    assert {"dec.declarar_desde_tabla", "dec.declarar_en_rango",
+            "dec.declarar_valor"} <= llamadas
+    # Sobre el ARBOL y no sobre el texto (SIS-C-01/SIS-C-02): buscar la cadena
+    # la encontraria dentro del docstring que explica por que NO se llama, y
+    # el test quedaria rojo sobre un comentario --- el reverso exacto del
+    # `FACTOR_MURO_TABLA` que estuvo verde sobre uno.
+    culpables = [nombre for nombre in llamadas
+                 if nombre.endswith("establecer_valor_dinamico")]
+    assert not culpables, (
+        f"la ventana llama a {culpables}: declararia saltandose el registro "
+        "de procedencia, y la memoria no podria decir de donde salio el valor")
+
+
+def test_los_componentes_de_la_gui_estan_en_un_solo_sitio():
+    """
+    `CLAUDE.md`: «No reinventar los componentes». `Tooltip` y `MarcoScroll`
+    viven en `gui/componentes.py` y los DOS consumidores los importan de alli.
+    Una copia en cada ventana es como se separan.
+    """
+    definidos = {nodo.name for nodo in ast.walk(ARBOL_COMPONENTES)
+                 if isinstance(nodo, ast.ClassDef)}
+    assert {"Tooltip", "MarcoScroll", "CampoValidable"} <= definidos
+    for arbol, nombre in ((ARBOL_GUI, "gui/app.py"),
+                          (ARBOL_VENTANA, "gui/ventana_normativa.py")):
+        clases = {nodo.name for nodo in ast.walk(arbol)
+                  if isinstance(nodo, ast.ClassDef)}
+        assert not (clases & {"Tooltip", "MarcoScroll"}), (
+            f"{nombre} vuelve a definir un componente que ya es comun")
+
+
+def test_el_campo_validable_valida_al_escribir_y_no_al_calcular():
+    """
+    Sec. 4.3: «Valida al escribir, no al calcular». La traduccion literal de
+    esa frase es un `trace_add` sobre la variable; sin el, el campo solo se
+    revisaria al pulsar el boton, que es el patron de `legacy/Tc.py` y
+    justamente lo que el plan pide cambiar.
+    """
+    fuente = COMPONENTES.read_text(encoding="utf-8-sig")
+    assert "trace_add" in fuente
 
 
 # ---------------------------------------------------------------------------
@@ -427,3 +673,91 @@ def _banderas_de_la_cli():
             return {clave.value for clave in nodo.value.keys
                     if isinstance(clave, ast.Constant)}
     raise AssertionError("cli.main dejo de armar el dict `banderas`")
+
+
+# ---------------------------------------------------------------------------
+# De punta a punta: la ventana -> el calculo -> la memoria (SIS-A-01, R1)
+# ---------------------------------------------------------------------------
+# Es el criterio de salida de la sesion, y es el unico test del archivo que
+# corre el pipeline entero. Los demas leen arboles o llaman a logica pura;
+# este comprueba la cadena completa, que es donde SIS-A-01 se rompio: el valor
+# gobernaba los numeros de una pagina que lo declaraba «sin declarar».
+
+
+@pytest.fixture
+def _corrida_limpia():
+    """Deja el estado declarado como lo encontro (ver test_declaracion.py)."""
+    import criterios_adoptados as ca
+    import declaracion as dec
+
+    dec.limpiar()
+    previos = ca.valores_dinamicos()
+    yield
+    dec.limpiar()
+    for clave in list(ca.valores_dinamicos()):
+        if clave not in previos:
+            ca.quitar_valor_dinamico(clave)
+    for clave, valor in previos.items():
+        ca.establecer_valor_dinamico(clave, valor)
+
+
+def test_un_valor_declarado_desde_la_ventana_aparece_en_la_memoria(_corrida_limpia):
+    """
+    La cadena entera, sin saltarse un eslabon:
+
+      1. la ventana declara `ke_entrada` desde la fila de la Tabla C.2 del
+         HDS-5, por `declaracion.declarar_desde_tabla`;
+      2. el pipeline corre con ese valor;
+      3. la memoria HTML lo imprime marcado como DECLARADO PARA ESTA CORRIDA
+         (SIS-A-01, cerrado en S2 y nunca comprobado de punta a punta), y
+      4. ademas dice DE DONDE salio: la fila, la tabla, la cita y las
+         alternativas descartadas, que es lo que la regla R1 del plan v12
+         exige y lo que `_procedencia` sola no podia dar.
+    """
+    import cli
+    import declaracion as dec
+    from modulos import M11_reporte as M11
+
+    procedencia = dec.declarar_desde_tabla(
+        "ke_entrada", 0.5, filas=("concreto_headwall_square_edge",))
+
+    externos = cli.cargar_datos_externos(
+        None, {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 14.0,
+               "L_hidraulico_m": None, "categoria_tr": None})
+    informe = cli.correr(RAIZ / "tests" / "ejemplo_puntos.csv", externos)
+    memoria = M11.memoria_html(informe, proyecto="prueba de punta a punta")
+
+    assert "ke_entrada" in memoria, (
+        "el criterio declarado no llego siquiera a invocarse en la corrida: "
+        "sin invocacion no hay nada que comprobar y el test miente")
+    assert "DECLARADO PARA ESTA CORRIDA" in memoria
+    assert "Proviene de" in memoria
+    assert procedencia.tabla_id in memoria
+    assert "concreto_headwall_square_edge" in memoria
+    assert "Alternativas descartadas" in memoria
+    assert procedencia.fecha in memoria
+    assert "LA TABLA ES NORMATIVA; LA ELECCION DE FILA NO LO ES" in memoria
+
+
+def test_la_memoria_no_inventa_procedencia_para_lo_declarado_por_la_cli(_corrida_limpia):
+    """
+    El contrapeso. No toda declaracion en caliente pasa por la ventana:
+    `--declarar` y `conftest` no registran procedencia, y fingir una que nadie
+    registro seria peor que no imprimir ninguna.
+    """
+    import cli
+    import criterios_adoptados as ca
+    import declaracion as dec
+    from modulos import M11_reporte as M11
+
+    ca.establecer_valor_dinamico("ke_entrada", 0.5)
+    assert dec.procedencia_de("ke_entrada") is None
+
+    externos = cli.cargar_datos_externos(
+        None, {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 14.0,
+               "L_hidraulico_m": None, "categoria_tr": None})
+    informe = cli.correr(RAIZ / "tests" / "ejemplo_puntos.csv", externos)
+    memoria = M11.memoria_html(informe, proyecto="prueba de punta a punta")
+
+    assert "DECLARADO PARA ESTA CORRIDA" in memoria
+    assert "concreto_headwall_square_edge" not in memoria
