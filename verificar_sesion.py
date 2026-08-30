@@ -23,11 +23,20 @@ from pathlib import Path
 FALLOS = []
 AVISOS = []
 
-# Numero de fichas de la matriz cruzada de las tres auditorias. No es un valor
-# de proyecto -- no entra en ningun calculo --: es el tamaño del tracker, y si
-# cambia es que alguien añadio o retiro una ficha, que es justo lo que este
-# script comprueba.
-HALLAZGOS_EN_LA_MATRIZ = 234   # literal-ok: tamaño del tracker de auditorias
+# Numero de FILAS de la matriz cruzada. No es un valor de proyecto -- no entra
+# en ningun calculo --: es el tamaño del tracker, y si cambia es que alguien
+# añadio o retiro una ficha, que es justo lo que este script comprueba.
+#
+# 237 = 234 + 3, y los dos numeros son correctos, cada uno de lo suyo. Las tres
+# auditorias externas trajeron 234 hallazgos: ese es el numero que citan
+# CLAUDE.md y docs/hoja_de_ruta_correcciones_v12.md, y ahi NO se toca, porque
+# la frase que lo lleva dice «de tres auditorias externas». Las tres filas de
+# mas --- SIS-G-01, SIS-G-02 (S16.5) y SIS-G-03 (S19) --- son hallazgos que
+# encontraron las propias sesiones de correccion, no las auditorias. Quien vea
+# 237 aqui y 234 alli y los "cuadre" bajando este a 234 rompe el chequeo:
+# comprobado con `git show 799cba9:...xlsx` (234 filas) contra main (237), cuya
+# unica diferencia son esos tres IDs.
+HALLAZGOS_EN_LA_MATRIZ = 237   # literal-ok: tamaño del tracker de auditorias
 ANCHO_CONSOLA = 66             # literal-ok: ancho de la caja del resumen
 
 # Evidencia historica: no deben reflejar el estado actual.
