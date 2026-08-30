@@ -247,7 +247,16 @@ CONSTRUCTORES_DE_TRANSCRIPCION = {
 # constructores y metodos cuyo interior admite un entero de geometria.
 # Los .py que NO estan bajo src/ y que hasta S16 no vigilaba nadie. Los tres
 # son capa de presentacion o herramienta: ninguno calcula.
-CAPA_DE_PRESENTACION = ("cli.py", "gui/app.py", "verificar_sesion.py")
+# `gui/componentes.py` y `gui/ventana_normativa.py` entran aqui el dia que
+# nacen, y no despues: son capa de presentacion como `gui/app.py` --- el
+# primero son los componentes de `legacy/Tc.py` movidos a un modulo comun, el
+# segundo pinta la ventana emergente de las Sec. 4.2/4.3 --- y dejarlos fuera
+# habria reabierto SIS-C-06 con dos archivos nuevos en vez de con dos viejos.
+# Lo que la ventana AFIRMA sobre una norma no vive en ninguno de los dos: sale
+# de `src/normativa/` via `src/ventana_normativa.py`, de modo que ni un
+# numeral ni un valor de tabla pueden esconderse en su geometria de widget.
+CAPA_DE_PRESENTACION = ("cli.py", "gui/app.py", "gui/componentes.py",
+                        "gui/ventana_normativa.py", "verificar_sesion.py")
 
 # `conftest.py` queda fuera Y SE DECLARA POR QUE, que es la mitad que faltaba
 # en los hallazgos de esta familia. Sus numeros -- los espesores de pared de
@@ -819,7 +828,18 @@ def _detalle(faltas: dict) -> str:
 # nuevas sin que nadie las vea.
 CENSO_DE_MARCAS = {
     "cli.py": 4,
-    "gui/app.py": 28,
+    # 28 -> 24 + 4: `Tooltip` y `MarcoScroll` se MOVIERON a
+    # `gui/componentes.py` para que la ventana emergente los reutilice en vez
+    # de copiarlos, y sus cuatro marcas viajaron con ellos (tres de offset de
+    # tooltip, una del notch de la rueda). Ningun literal nacio ni murio: el
+    # censo lo demuestra sumando igual.
+    "gui/app.py": 24,
+    "gui/componentes.py": 4,
+    # Los tres cuerpos de letra de la ventana. Estan nombrados --- y no
+    # escritos dentro de cada llamada --- porque un tamano dentro de un
+    # condicional no es argumento DIRECTO de un widget y el barrido no lo
+    # exime; nombrarlos es ademas lo que se querria igual.
+    "gui/ventana_normativa.py": 3,
     "src/dominios.py": 4,
     "src/modulos/M3_hidraulica.py": 3,
     "src/modulos/M4_control.py": 5,

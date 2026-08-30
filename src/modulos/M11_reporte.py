@@ -83,6 +83,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import criterios_adoptados as ca
 import datos_sitio as ds
+import declaracion as _declaracion
 # Los umbrales normativos con su CARACTER (recomendacion / exigencia) se leen
 # de su transcripcion, no se reescriben aqui: la memoria y el codigo tienen
 # que citar el mismo objeto o divergen, que es literalmente NOR-MEM-01.
@@ -1223,7 +1224,63 @@ def _procedencia(clave: str) -> str:
             "corrio el calculo (GUI o CLI) y NO esta en "
             "<code>criterios_adoptados.py</code>: no es un valor transcrito "
             "de una norma y reproducir esta memoria exige repetir la "
-            "declaracion.</dd>")
+            "declaracion.</dd>" + _de_donde_salio(clave))
+
+
+def _de_donde_salio(clave: str) -> str:
+    """
+    La PROCEDENCIA de la ventana: de que fila de que tabla salio el valor, con
+    su cita, sus alternativas descartadas y la fecha.
+
+    Es la mitad que la regla R1 del plan v12 exige y que `_procedencia` sola
+    no puede dar: aquella dice que el valor no esta en el archivo, y esta dice
+    de donde SI esta. Sin ella, «6.0 m/s» y «6.0 m/s porque es la fila
+    Concreto de la Tabla N 10, descartando 3.0» son la misma linea en la
+    pagina y no son la misma decision.
+
+    Devuelve cadena vacia cuando el valor entro por otro camino
+    (`--declarar`, `conftest`): no toda declaracion en caliente pasa por la
+    ventana, y fingir una procedencia que nadie registro seria peor que no
+    imprimir ninguna.
+    """
+    procedencia = _declaracion.procedencia_de(clave)
+    if procedencia is None:
+        return ""
+    filas = []
+    if procedencia.filas:
+        filas.append("<dt>Proviene de</dt><dd>fila <code>"
+                     + "</code>, <code>".join(_esc(f) for f in procedencia.filas)
+                     + f"</code> de la tabla <code>{_esc(procedencia.tabla_id)}"
+                     f"</code> &mdash; {_esc(procedencia.titulo_de_la_tabla)}"
+                     "<br>LA TABLA ES NORMATIVA; LA ELECCION DE FILA NO LO ES: "
+                     "el valor de arriba es una adopcion del proyectista que "
+                     "PROVIENE de esa fila.</dd>")
+    elif procedencia.columnas:
+        filas.append("<dt>Proviene de</dt><dd>columna <code>"
+                     + "</code>, <code>".join(_esc(c)
+                                              for c in procedencia.columnas)
+                     + f"</code> de la tabla <code>{_esc(procedencia.tabla_id)}"
+                     f"</code> &mdash; {_esc(procedencia.titulo_de_la_tabla)}</dd>")
+    elif procedencia.catalogo_id:
+        filas.append("<dt>Proviene de</dt><dd>el catalogo <code>"
+                     f"{_esc(procedencia.catalogo_id)}</code>. "
+                     "<b>NO es una norma</b> y no tiene numeral.</dd>")
+    if procedencia.frase_del_rango:
+        filas.append(f"<dt>Rango de la fuente</dt><dd>{_esc(procedencia.rotulo_del_rango)}"
+                     f" {_esc(procedencia.frase_del_rango)} "
+                     f"[{_esc(procedencia.semantica)}]</dd>")
+    if procedencia.cita:
+        filas.append(f"<dt>Cita</dt><dd>{_esc(procedencia.cita)}</dd>")
+    if procedencia.alternativas_descartadas:
+        descartadas = "; ".join(
+            f"<code>{_esc(a.id)}</code> ({_esc(a.valor)}) &mdash; {_esc(a.motivo)}"
+            for a in procedencia.alternativas_descartadas)
+        filas.append(f"<dt>Alternativas descartadas</dt><dd>{descartadas}</dd>")
+    if procedencia.aviso:
+        filas.append('<dt class="pendiente">Aviso</dt>'
+                     f'<dd class="pendiente">{_esc(procedencia.aviso)}</dd>')
+    filas.append(f"<dt>Declarado el</dt><dd>{_esc(procedencia.fecha)}</dd>")
+    return "".join(filas)
 
 
 def bloque_criterios(solo_usados: bool = True) -> str:
