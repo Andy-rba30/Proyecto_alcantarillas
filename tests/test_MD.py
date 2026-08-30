@@ -801,14 +801,40 @@ def test_la_premisa_de_que_M5_no_existe_no_vuelve_como_afirmacion():
                     f"{ruta.name} afirma «{frase}» sin declararla caducada:\n"
                     f"  {plano[:200]}")
 
-    importados = {
-        nodo.module.split(".")[0]
-        for nodo in _ast.walk(_ast.parse(
-            (raiz / "src" / "modulos" / "M5_verificaciones.py")
-            .read_text(encoding="utf-8")))
-        if isinstance(nodo, _ast.ImportFrom) and nodo.module
-    }
-    assert "MD" not in importados and "modulos" not in {
-        n for n in importados if n == "MD"}, (
-        "si M5 pasara a importar MD habria ciclo de verdad y este parrafo "
-        "habria que reescribirlo otra vez")
+    # EL CICLO, DE VERDAD Y POR TRANSITIVIDAD. La primera version de este
+    # bloque era VACUA de tres formas a la vez: partia `nodo.module` por el
+    # punto y se quedaba con `modulos`, de modo que `from modulos.MD import X`
+    # nunca producia `MD`; su segunda clausula --- `"modulos" not in {n for n
+    # in importados if n == "MD"}` --- era una tautologia, porque ese conjunto
+    # solo puede ser vacio o `{"MD"}`; y solo miraba `ImportFrom`, asi que un
+    # `import modulos.MD` no se veia. Un test verde sobre el comentario en vez
+    # de sobre el hecho: el precedente FACTOR_MURO_TABLA, cometido en el
+    # docstring que lo invoca para presumir de no cometerlo.
+    def _importa(rel):
+        arbol = _ast.parse((raiz / rel).read_text(encoding="utf-8"))
+        modulos = set()
+        for nodo in _ast.walk(arbol):
+            if isinstance(nodo, _ast.ImportFrom) and nodo.module:
+                modulos.add(nodo.module)
+            elif isinstance(nodo, _ast.Import):
+                modulos |= {alias.name for alias in nodo.names}
+        return modulos
+
+    def _alcanza_MD(rel, vistos=None):
+        """Cierre transitivo: ¿desde `rel` se llega a `modulos.MD`?"""
+        vistos = vistos if vistos is not None else set()
+        if rel in vistos:
+            return False
+        vistos.add(rel)
+        for modulo in _importa(rel):
+            if modulo in ("modulos.MD", "MD") or modulo.endswith(".MD"):
+                return True
+            candidata = raiz / "src" / (modulo.replace(".", "/") + ".py")
+            if candidata.exists() and _alcanza_MD(
+                    str(candidata.relative_to(raiz)), vistos):
+                return True
+        return False
+
+    assert not _alcanza_MD("src/modulos/M5_verificaciones.py"), (
+        "M5 alcanza a MD: ahora SI hay ciclo y el parrafo de MD que dice que "
+        "no lo hay hay que reescribirlo")

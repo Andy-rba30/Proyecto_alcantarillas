@@ -116,12 +116,19 @@ class CriterioPendienteError(ErrorProyecto):
         SEIS columnas: clave, etiqueta, concepto, fuente, fases y puntos.
         Cablear esta propiedad ahi cambiaria ese tablero por un solo dato.
 
-        Y no es que sea la via mas rica de dos: es la UNICA. Dentro de
-        `cli.correr` lo unico que corre fuera de `_etapa` es
-        `M0_carga.cargar_puntos`, que no importa `criterios_adoptados` ni
-        `datos_sitio` y solo levanta `DatoFaltanteError`/`DatoInvalidoError`;
-        ningun `CriterioPendienteError` alcanza el `except ErrorProyecto` de
-        la ventana. No hay consumidor honesto que anadir.
+        Y no es que sea la via mas rica de dos: es la UNICA. Comprobado
+        vaciando el `valor` de los 46 criterios y de todos los datos de sitio:
+        `cli.correr` devuelve su informe sin levantar nada, con los bloqueos
+        archivados. Los tres unicos sitios que levantan
+        `CriterioPendienteError` --- `criterios_adoptados.valor`,
+        `datos_sitio.valor` y `GeometriaCabezal.exigir_ancho_talon` --- cuelgan
+        todos de etapas envueltas por `_etapa`, de modo que ninguno alcanza el
+        `except ErrorProyecto` de la ventana. (Si corre otro codigo fuera de
+        `_etapa` --- `correr_cabezal` llama a `condicion_normativa_cabezal`, y
+        varias fases piden `externos.valor` ---: decir «lo unico que corre
+        fuera de `_etapa` es `cargar_puntos`» era describir mal el archivo,
+        aunque la conclusion se sostenga.) No hay consumidor honesto que
+        anadir.
         """
         return f"falta declarar: {self.clave}"
 
@@ -904,6 +911,13 @@ class ControlSalida:
     salida esta ahogada)» frente a «(manda la aproximacion geometrica)» ---,
     de modo que hoy la rama llega a la memoria como texto y con su razon.
     Lo fija `tests/test_M4_control.py`.
+
+    AL JSON NO LLEGA, y la otra mitad de la ficha sigue viva. Tampoco llega
+    ninguna otra pieza del bloque h_o --- ni `h_o`, ni `TW`, ni los dos flags
+    de condicion de uso ---, de modo que la ausencia es del bloque entero y no
+    un olvido de este campo. Publicar la etiqueta de la rama sin los dos
+    numeros que la producen seria menos revisable que no publicarla: abrir el
+    JSON al bloque completo es una decision propia.
 
     `h_o_fuera_de_rango` y `h_o_requiere_cautela` son las DOS condiciones de
     uso que HDS-5 pone a esa aproximacion y que el proyecto puede evaluar
@@ -2380,7 +2394,7 @@ class PeriodoRetorno:
         cerrar SIS-B-02 en `ControlEntrada`.
 
         Los CINCO accesos de produccion al TR --- `M11._tabla_clasificacion`,
-        `M11.fila_resumen`, `M11.fila_resumen_plana`, `cli._clasificacion_json`
+        `M11.fila_resumen`, `M11._fila_resumen_csv`, `cli._clasificacion_json`
         y `cli._lineas_punto` --- leen `.anios` y tratan el `None`
         explicitamente: lo imprimen como ausente o lo propagan. Ninguno
         necesita el entero, porque el paso que si lo necesitaria --- «Tc.py +

@@ -78,11 +78,20 @@ def _fichas() -> dict:
     texto = REGISTRO.read_text(encoding="utf-8")
     fichas, actual, cuerpo = {}, None, []
     for linea in texto.split("\n"):
-        m = re.match(r"^##\s+((?:SIS|NOR)-[A-Z0-9]+-\d+)\s", linea)
-        if m:
+        # TODA ficha, no solo las tituladas con un ID. Las de las Partes II y
+        # IV llevan titulo en prosa («`M9.combinaciones()` prometia un
+        # consumidor...») y escapaban al chequeo de los cuatro campos: una de
+        # ellas, de hecho, no los tenia.
+        m = re.match(r"^##\s+(.+?)\s*$", linea)
+        if m and not linea.startswith("## Qué") and not linea.startswith("## Cómo"):
             if actual:
                 fichas[actual] = "\n".join(cuerpo)
-            actual, cuerpo = m.group(1), []
+            titulo = m.group(1)
+            # La clave es el ID cuando el titulo empieza por uno, para que
+            # `test_estan_las_veintidos_...` pueda buscarlo; el titulo entero
+            # cuando la ficha no lleva ID (Partes II y IV).
+            con_id = re.match(r"^((?:SIS|NOR|MAT)-[A-Z0-9]+-\d+)\s", titulo)
+            actual, cuerpo = (con_id.group(1) if con_id else titulo), []
             continue
         if re.match(r"^#\s", linea) and actual:
             fichas[actual] = "\n".join(cuerpo)
@@ -110,25 +119,50 @@ def _simbolos_declarados() -> list:
 
 
 def _nombres_de(ruta: Path) -> set:
-    """Todo nombre definido en el archivo: def, class, y asignaciones."""
+    """
+    Los nombres que el archivo DEFINE de verdad: funciones, clases, metodos,
+    campos de dataclass, nombres de modulo y claves de los diccionarios
+    grandes (`CRITERIOS`, `DATOS_SITIO`), que el registro cita una a una.
+
+    NO recoge variables LOCALES, y la diferencia no es teorica. Con
+    `ast.walk` sobre todo el arbol, un `mensaje_gui = "nada que ver"` dentro
+    de cualquier metodo bastaba para que la propiedad `mensaje_gui` pudiera
+    desaparecer de produccion con este test en verde. Comprobado: renombrada
+    la propiedad y dejado el homonimo local, 36 passed. La afirmacion de la
+    ficha SIS-B-07 --- «si alguien renombra `mensaje_gui`, el registro se
+    pone en rojo» --- solo valia si nadie dejaba un homonimo detras.
+    """
     arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
     nombres = set()
-    for nodo in ast.walk(arbol):
-        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            nombres.add(nodo.name)
-        elif isinstance(nodo, ast.Assign):
-            for destino in nodo.targets:
-                if isinstance(destino, ast.Name):
-                    nombres.add(destino.id)
-        elif isinstance(nodo, ast.AnnAssign) and isinstance(nodo.target, ast.Name):
-            nombres.add(nodo.target.id)
-        elif isinstance(nodo, ast.Constant) and isinstance(nodo.value, str):
+
+    def _definiciones(cuerpo, dentro_de_clase=False):
+        for nodo in cuerpo:
+            if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                nombres.add(nodo.name)
+                # Los metodos cuentan; el interior de un metodo, no.
+                if dentro_de_clase:
+                    continue
+                continue
+            if isinstance(nodo, ast.ClassDef):
+                nombres.add(nodo.name)
+                _definiciones(nodo.body, dentro_de_clase=True)
+                continue
+            if isinstance(nodo, ast.Assign):
+                for destino in nodo.targets:
+                    if isinstance(destino, ast.Name):
+                        nombres.add(destino.id)
+            elif isinstance(nodo, ast.AnnAssign) and isinstance(nodo.target, ast.Name):
+                nombres.add(nodo.target.id)
+
+    _definiciones(arbol.body)
+
+    # Las claves de los diccionarios de NIVEL DE MODULO --- CRITERIOS,
+    # DATOS_SITIO, FUNCIONES_SIN_CONSUMIDOR --- se citan fila por fila.
+    for nodo in arbol.body:
+        if not isinstance(nodo, (ast.Assign, ast.AnnAssign)):
             continue
-    # Las claves de los diccionarios grandes (CRITERIOS, DATOS_SITIO) se citan
-    # una a una en el registro, igual que en el manifiesto de citas.
-    for nodo in ast.walk(arbol):
-        if isinstance(nodo, ast.Dict):
-            for clave in nodo.keys:
+        if isinstance(nodo.value, ast.Dict):
+            for clave in nodo.value.keys:
                 if isinstance(clave, ast.Constant) and isinstance(clave.value, str):
                     nombres.add(clave.value)
     return nombres

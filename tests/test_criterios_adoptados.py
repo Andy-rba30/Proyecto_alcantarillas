@@ -11,6 +11,7 @@ plausible, estos tests lo detienen.
 Valores de referencia: tests/fixtures/casos_patron.py (no se recalculan aqui).
 """
 
+import ast
 import re
 from pathlib import Path
 
@@ -626,6 +627,60 @@ def test_la_escritura_permanente_se_niega_ante_un_valor_multilinea(
         "se nego a escribir pero el archivo ya se habia tocado")
     assert ca.CRITERIOS[clave].valor == suyo, (
         "se nego a escribir y aun asi cambio el valor en memoria")
+
+
+@pytest.mark.parametrize("clave", ["F_pga", "hds5_embocadura_hdpe",
+                                   "diametros_normalizados", "D_max_catalogo"])
+def test_la_escritura_permanente_se_niega_ante_un_valor_de_UNA_LINEA_con_comas(
+        tmp_path, criterios_restaurados, clave):
+    """
+    EL HUECO QUE DEJABA EL TEST DE ARRIBA, y era el peor de los dos.
+
+    SIS-F-19 cubrio los valores MULTILINEA: ahi el patron no casa y la funcion
+    se niega. Los valores de UNA LINEA QUE LLEVAN COMAS --- la tupla de
+    `F_pga`, el dict de `hds5_embocadura_hdpe` --- caian en medio: el patron
+    `valor=)([^,\n]*)(,)` SI casaba, se cortaba en la primera coma, y el
+    archivo quedaba con el resto del literal colgando. `criterios_adoptados.py`
+    dejaba de importar. Y la funcion VOLVIA SIN EXCEPCION, de modo que
+    `gui/app.py::_guardar_valor_en_archivo` pintaba el rotulo en verde y la
+    sesion seguia andando --- el valor ya estaba refrescado en memoria ---:
+    la corrupcion no aparecia hasta el siguiente arranque.
+
+    Es literalmente el desastre que el docstring del test de arriba describe
+    («lo dejaria a medias y con el resto del literal colgando») para un caso
+    que ese test no cubria. Salio al refutar el cierre de SIS-A-14, que habia
+    declarado «reescribe cualquier valor» sin comprobar este limite.
+
+    La guardia es `ast.parse` sobre el texto resultante, ANTES de escribir.
+    """
+    copia = tmp_path / "criterios_copia.py"
+    original = Path(ca.__file__).read_text(encoding="utf-8")
+    copia.write_text(original, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="sin poder importarse"):
+        ca.escribir_valor_en_archivo(clave, "C", ruta=str(copia))
+
+    texto = copia.read_text(encoding="utf-8")
+    assert texto == original, "se nego a escribir pero el archivo ya se toco"
+    ast.parse(texto)                      # y sigue siendo Python valido
+
+
+def test_la_escritura_permanente_si_alcanza_a_un_valor_escalar(tmp_path,
+                                                               criterios_restaurados):
+    """
+    Contrapeso del anterior: la guardia nueva no puede haber cerrado la
+    puerta a todos. Un valor escalar --- el caso corriente --- se escribe, y
+    el archivo sigue importando.
+    """
+    copia = tmp_path / "criterios_copia.py"
+    copia.write_text(Path(ca.__file__).read_text(encoding="utf-8"),
+                     encoding="utf-8")
+
+    ca.escribir_valor_en_archivo("ke_entrada", 0.7, ruta=str(copia))
+
+    texto = copia.read_text(encoding="utf-8")
+    ast.parse(texto)
+    assert "valor=0.7," in texto.replace(" ", "")
 
 
 def test_la_escritura_permanente_no_inventa_una_clave(tmp_path):

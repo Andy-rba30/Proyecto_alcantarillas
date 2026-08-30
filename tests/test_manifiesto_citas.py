@@ -92,22 +92,35 @@ DEFINICION = re.compile(
 #       linea de destino HABLE del simbolo que la fila nombra.
 #
 # Meter (b) en el saco de (a) es lo que dejaba pasar en verde una referencia
-# aterrizada en cualquier parte. Al separarlos aparecieron DIECISEIS
+# aterrizada en cualquier parte. Al separarlos aparecieron VEINTE
 # referencias desviadas -- entre ellas `e2_volteo()` y `empuje_flotacion()`,
 # nombres que el codigo ya no tiene, y `ESPACIAMIENTO_MAX_VECES_ESPESOR`
 # apuntando al bloque de `n_s_zapata_en_talud`, a 950 lineas de su uso --,
 # ninguna de las cuales se estaba buscando. La ficha decia que la tasa entre
-# las no ancladas era DESCONOCIDA; medida, era 16 de 68.
+# las no ancladas era DESCONOCIDA; medida con la regla de hoy sobre el arbol
+# anterior (f56360c), era 20 de 64. Y de las 39 que ni siquiera nombraban un
+# simbolo del proyecto, 27 tampoco llevaban a donde decian: se anclaron una a
+# una, leyendo la linea de destino.
 #
 # Las de (b) las vigila `test_toda_fila_que_cita_un_identificador_lo_nombra_
 # en_su_destino`, SIN CUPO: no son una excepcion declarada, son referencias
 # verificables que hasta ahora nadie verificaba.
-MAX_REFERENCIAS_DE_PROSA = 27
+MAX_REFERENCIAS_DE_PROSA = 26
 
 # El hueco de verdad -- el caso (a) --, con su propio trinquete. Se separa del
 # anterior para que bajar el total a base de anclar por USO no disimule que
 # las filas sin identificador siguen ahi. Esta es la que T9 quiere en cero.
-MAX_REFERENCIAS_SIN_IDENTIFICADOR = 2
+#
+# ESTUVO EN 2 UNAS HORAS Y SUBE A 4, y hay que decir por que porque un
+# trinquete que sube sin explicacion deja de serlo. No entraron dos filas
+# nuevas: la REGLA se estrecho. Al exigir que el token citado sea un simbolo
+# que `src/` define de verdad --- para que `py`, `max` o `Ks` dejaran de hacer
+# de comodin ---, las dos referencias de la fila de `FS_flotacion` pasaron de
+# «verificables por mencion» a «sin identificador», que es lo que son:
+# `FS_flotacion` se RETIRO del proyecto y la fila lo nombra justamente para
+# decirlo. Una fila que cita un simbolo que ya no existe no tiene a que
+# anclarse, y contarla como verificada era el mismo autoengaño en pequeño.
+MAX_REFERENCIAS_SIN_IDENTIFICADOR = 4
 
 
 def _codigo(rel: str) -> list:
@@ -155,7 +168,10 @@ def _simbolos_citados(fila: str) -> list:
         m = re.match(r"^([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)", limpio)
         if not m:
             continue
-        partes = m.group(1).split(".")
+        # `constantes_normativas.py` es una RUTA, no un nombre punteado: su
+        # cola es `py`, que casa con cualquier bloque que nombre cualquier
+        # archivo del proyecto.
+        partes = m.group(1).removesuffix(".py").split(".")
         for candidato in (partes[0], partes[-1]):
             if candidato not in simbolos:
                 simbolos.append(candidato)
@@ -191,21 +207,58 @@ def _bloque_que_contiene(rel: str, n: int):
 
 def _tramo_de_verificacion(rel: str, n: int):
     """
-    El TRAMO contra el que se comprueba una mencion. Nunca el archivo entero.
+    El TRAMO contra el que se comprueba una mencion: EL PARRAFO DE LLEGADA.
 
-    Una linea que no cae en ningun bloque cae en la CABECERA del modulo --- el
-    docstring y los comentarios anteriores a la primera definicion ---, y ese
-    es un tramo real y acotado. Tomar el archivo completo, como se hacia al
-    escribir esta guardia, degenera la comprobacion en «el archivo menciona el
-    simbolo en alguna parte», que en un archivo de 3000 lineas no comprueba
-    nada. Pasaba en 2 de 24 referencias.
+    Es decir, la linea referenciada y las contiguas no vacias a su alrededor.
+    Nada mas.
+
+    LA PRIMERA VERSION TOMABA EL BLOQUE, Y ERA UNA GUARDIA QUE SE SATISFACIA
+    SOLA. Un bloque de `criterios_adoptados.py` tiene noventa lineas y uno de
+    `constantes_normativas.py` puede tener quinientas: aceptar que el destino
+    «habla del simbolo» porque su bloque lo nombra setenta y cinco lineas mas
+    abajo no comprueba nada. Medido: seis referencias saboteadas a otro
+    archivo, o a 2900 lineas de su uso, pasaban con la suite entera en verde.
+
+    El parrafo es el tramo que un lector ve al abrir el enlace, y esa es
+    exactamente la propiedad que la referencia promete.
     """
+    lineas = _codigo(rel)
+    if not (1 <= n <= len(lineas)):
+        return "(fuera del archivo)", n, n
+    inicio = n
+    while inicio > 1 and lineas[inicio - 2].strip():
+        inicio -= 1
+    fin = n
+    while fin < len(lineas) and lineas[fin].strip():
+        fin += 1
     tramo = _bloque_que_contiene(rel, n)
-    if tramo:
-        return tramo[0], tramo[1], tramo[2]
-    primera = min((i for tramos in _bloques(rel).values()
-                   for i, _ in tramos), default=len(_codigo(rel)) + 1)
-    return "(cabecera del modulo)", 1, primera - 1
+    return (tramo[0] if tramo else "(cabecera del modulo)"), inicio, fin
+
+
+_CACHE_SIMBOLOS = []
+
+
+def _simbolos_del_proyecto() -> set:
+    """
+    Todo nombre que `src/` define. Ver la nota homologa en
+    `src/normativa/manifiesto.py`: separa un SIMBOLO de un token que solo lo
+    parece (`max`, `Ks`, `q`, y el peor de todos, `py`).
+    """
+    if not _CACHE_SIMBOLOS:
+        nombres = set()
+        campo = re.compile(r"^\s+([a-z_]\w*)\s*:\s*[A-Za-z\"']")
+        for ruta in sorted((RAIZ / "src").rglob("*.py")):
+            if "__pycache__" in ruta.parts:
+                continue
+            rel = str(ruta.relative_to(RAIZ))
+            nombres |= set(_bloques(rel))
+            # Los campos anotados de una dataclass (`seccion_eg2013: str`) son
+            # simbolos del proyecto y `_bloques` no los ve: no abren bloque,
+            # pero una fila del manifiesto los cita y el codigo los usa.
+            nombres |= {m.group(1) for l in _codigo(rel)
+                        for m in [campo.match(l)] if m}
+        _CACHE_SIMBOLOS.append(nombres)
+    return _CACHE_SIMBOLOS[0]
 
 
 def _prosa_repartida():
@@ -226,13 +279,17 @@ def _prosa_repartida():
         simbolos = _simbolos_citados(fila)
         if [s for s in simbolos if s in bloques]:
             continue                       # ya la cubre la via por definicion
-        if not simbolos:
+        # Una fila que cita un simbolo RETIRADO --- `FS_flotacion`, que se
+        # nombra justamente para decir que ya no existe --- no tiene nada que
+        # anclar: cuenta como prosa, no como referencia rota.
+        reales = [s for s in simbolos if s in _simbolos_del_proyecto()]
+        if not reales:
             sin_identificador.append((n_md, ref, rel, n))
             continue
         lineas = _codigo(rel)
         nombre, inicio, fin = _tramo_de_verificacion(rel, n)
         cuerpo = "\n".join(lineas[inicio - 1:fin])
-        nombrados = [s for s in simbolos
+        nombrados = [s for s in reales
                      if re.search(r"\b" + re.escape(s) + r"\b", cuerpo)]
         if nombrados:
             por_mencion.append((n_md, ref, rel, n, nombrados))
@@ -378,13 +435,13 @@ def test_la_cobertura_verificable_no_se_degrada():
         f"solo {len(por_simbolo)}/{total} referencias son verificables por "
         "simbolo: el manifiesto se esta llenando de citas sin identificador")
 
-    # El piso subio de 0.65 a 0.80 en S19 y es un trinquete como el cupo: al
-    # anclar por USO lo que estaba en el saco de prosa, la proporcion real
-    # paso de 258/326 a 270/326, y dejar el piso donde estaba habria vuelto
-    # inofensivo a este contrapeso. Contando tambien las verificadas por
-    # mencion, la cobertura es del 90 %.
+    # El piso subio de 0.65 a 0.90 en S19 y es un trinquete como el cupo: al
+    # anclar por simbolo las filas que solo lo nombraban en prosa, la
+    # proporcion real paso de 262/326 a 300/326, y dejar el piso en 0.65
+    # habria vuelto inofensivo a este contrapeso. Contando tambien las 22
+    # verificadas por mencion, la cobertura es 322/326 = 98.8 %.
     _, por_mencion, _ = _prosa_repartida()
-    assert (len(por_simbolo) + len(por_mencion)) / total >= 0.99, (
+    assert (len(por_simbolo) + len(por_mencion)) / total >= 0.98, (
         f"solo {len(por_simbolo) + len(por_mencion)}/{total} referencias son "
         "verificables (por definicion o por mencion)")
 
@@ -413,9 +470,15 @@ def test_toda_fila_que_cita_un_identificador_lo_nombra_en_su_destino():
 
     SIN CUPO, a diferencia de las de prosa. Estas no son una excepcion
     declarada: son referencias verificables. Al medirlas por primera vez
-    habia 16 rotas de 68 no ancladas, entre ellas dos nombres que el codigo
+    habia 20 rotas de 64 no ancladas, entre ellas dos nombres que el codigo
     ya no tiene (`e2_volteo`, `empuje_flotacion`) y uno que apuntaba 950
     lineas lejos de su uso (`ESPACIAMIENTO_MAX_VECES_ESPESOR`).
+
+    Y COMPRUEBA EL PARRAFO, NO EL BLOQUE. La primera version de esta guardia
+    miraba el bloque entero, y un bloque de `criterios_adoptados.py` tiene
+    noventa lineas: seis referencias saboteadas --- una a OTRO ARCHIVO, otra a
+    2900 lineas de su uso --- pasaban con la suite en verde. Es el mismo modo
+    de fallo que la guardia dice cerrar, cometido al cerrarlo.
     """
     _, _, rotas = _prosa_repartida()
     detalle = [f"md:{n_md}  {ref}  nombra {simbolos} y cae en el bloque "
@@ -462,8 +525,8 @@ def test_ninguna_etiqueta_declara_un_rango_imposible():
     La etiqueta `[CN:170-49]` anuncia un tramo que va de la 170 a la 49.
 
     Origen: la notacion era un rango real y `resincronizar` reescribia el
-    principio conservando el final VIEJO, de modo que cuarenta etiquetas
-    acabaron mintiendo sobre el tramo. Es un defecto de otra especie que los
+    principio conservando el final VIEJO, de modo que CINCUENTA de las 57
+    etiquetas con sufijo acabaron mintiendo sobre el tramo. Es un defecto de otra especie que los
     demas de este archivo --- no es que la referencia lleve a otro sitio, es
     que la etiqueta que el lector ve es imposible --- y por eso lleva su
     propio test. Nadie lo habia mirado nunca (SIS-G-03).

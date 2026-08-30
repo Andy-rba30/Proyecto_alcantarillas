@@ -1926,10 +1926,21 @@ def combinaciones() -> Tuple[CombinacionCarga, ...]:
     Es la misma forma de prometer un consumidor que este proyecto ya
     desterro en `ControlEntrada.HW_sobre_D` (SIS-B-02) --- «sin consumidor y
     con la razon escrita, no sin consumidor y con un consumidor prometido».
-    Se conserva porque las tres combinaciones son [N] y esta funcion es su
-    unica forma ejecutable; que la memoria las declare es una fase que no
-    esta escrita, no una llamada que falte. Hallazgo abierto en S19 al
-    cerrar SIS-B-18; anotado en `docs/decisiones_diferidas.md`.
+    Se conserva porque es la unica pieza que EMPAQUETA las tres combinaciones
+    con sus componentes y con el criterio del que cuelgan sus factores. Los
+    nombres sueltos ya son iterables --- `COMBINACIONES_AASHTO` es [N] y una
+    tupla ---, asi que lo que se perderia al borrarla no es acceso al dato
+    sino el objeto `CombinacionCarga` que la memoria necesitaria; que la
+    memoria las declare es una fase que no esta escrita, no una llamada que
+    falte.
+
+    SI LA NOMBRA EL REGISTRO NORMATIVO, y conviene decirlo para que nadie lea
+    una contradiccion donde no la hay: las tres filas de `T_MP_COMBINACIONES`
+    llevan `uso=Usada(por=(..., "M9.combinaciones"))`, y la ventana emergente
+    se lo muestra al proyectista. Es cierto --- esta funcion es la que lee la
+    transcripcion de esas etiquetas --- y no promete un pipeline: dice QUE
+    SIMBOLO lee la tabla, no que una corrida pase por el. Hallazgo abierto en
+    S19 al cerrar SIS-B-18; anotado en `docs/decisiones_diferidas.md`.
     """
     return tuple(
         CombinacionCarga(nombre=nombre, numeral=NUMERAL_COMBINACIONES,
