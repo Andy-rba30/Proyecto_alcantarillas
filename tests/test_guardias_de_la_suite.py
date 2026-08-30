@@ -723,7 +723,18 @@ def test_todo_modulo_de_calculo_consume_su_caso_patron():
         if not prueba.exists():
             sin_fixture.append(f"{modulo}: no tiene tests/test_{modulo}.py")
             continue
-        usa = "casos_patron" in prueba.read_text(encoding="utf-8")
+        # POR AST, NO POR SUBCADENA. `"casos_patron" in texto` fallaba en las
+        # dos direcciones: un modulo podia perder el import Y el test y quedar
+        # verde mientras sobreviviera la palabra en un comentario, y un exento
+        # que solo la mencionara disparaba la alarma contraria. La guardia que
+        # se escribe para cerrar SIS-F-13 cometia SIS-F-17 --- test verde sobre
+        # una cadena de texto --- al cerrarlo.
+        arbol = ast.parse(prueba.read_text(encoding="utf-8"), filename=prueba.name)
+        usa = any(
+            (isinstance(n, ast.ImportFrom) and (n.module or "").endswith("casos_patron"))
+            or (isinstance(n, ast.Import)
+                and any(a.name.endswith("casos_patron") for a in n.names))
+            for n in ast.walk(arbol))
         if usa and modulo in SIN_CASO_PATRON:
             exentos_que_ya_lo_usan.append(modulo)
         elif not usa and modulo not in SIN_CASO_PATRON:

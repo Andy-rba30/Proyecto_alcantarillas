@@ -918,9 +918,18 @@ def test_v2_contra_el_caso_patron_CP3_por_la_cadena_de_produccion():
     Los demas tests de V2 pasan un `_resultado(V=...)` fabricado, que es lo
     correcto para probar un umbral. Este NO: entra por el catalogo de M2,
     resuelve Manning con M3 a la pendiente de CP-3 y le da a V2 el resultado
-    que sale de ahi. Lo que fija es que la cadena entera --- catalogo, doble n,
-    umbral --- deje V2 exactamente EN EL FILO, que es lo que el caso patron
-    dice y lo que ningun test comprobaba de punta a punta.
+    que sale de ahi.
+
+    QUE VIGILA Y QUE NO, dicho con precision porque la primera version de este
+    docstring prometia de mas. Lo que aporta en EXCLUSIVA es el consumo del
+    caso patron por la cadena de produccion --- que es lo que SIS-F-13 pide y
+    lo que ningun test hacia ---. Lo que NO vigila, pese a que su mensaje de
+    assert lo insinuaba, es la tolerancia de umbral: `V_sedimentacion` sale
+    0.2500073 contra un `V_MIN` de 0.25, un margen de 7.3e-06, y
+    `TOL_UMBRAL_NORMATIVO` es 1e-09 --- siete mil veces mas estrecha ---, de
+    modo que quitarla no cambia el resultado. Tampoco discrimina la RAMA: eso
+    lo hace el test de mas abajo, y lo hace en exclusiva. «El filo» de CP-3 es
+    una coincidencia de tres cifras, no un empate.
     """
     from modulos.M3_hidraulica import resolver_manning
 
@@ -942,9 +951,8 @@ def test_v2_contra_el_caso_patron_CP3_por_la_cadena_de_produccion():
     assert v2.valor_admisible == pytest.approx(V_MIN, rel=REL_TRANSPORTE)
     assert v2.valor_obtenido == pytest.approx(c3["V_objetivo"], abs=c3["tolerancia_V"])
     assert v2.cumple, (
-        "en el filo de CP-3 la velocidad IGUALA el piso, y el umbral es "
-        ">=: si esto falla, o se invirtio la comparacion o se perdio la "
-        "tolerancia de umbral normativo")
+        "a la pendiente de CP-3 la velocidad iguala el piso y el umbral es "
+        ">=: si esto falla, se invirtio la comparacion")
 
     # Y V2 lee la rama de n MAXIMO (MAT-D1): la estimacion BAJA de velocidad,
     # que es la conservadora para un piso. Con la rama de erosion el punto
@@ -954,26 +962,46 @@ def test_v2_contra_el_caso_patron_CP3_por_la_cadena_de_produccion():
                                               rel=REL_TRANSPORTE)
 
 
-def test_la_conclusion_de_CP3_se_sostiene_a_la_pendiente_constructiva():
+def test_la_salvedad_de_CP3_es_cierta_y_no_solo_una_advertencia_escrita():
     """
-    La otra mitad del caso patron, y la que MAT-O20 obligo a condicionar: CP-3
-    concluye que «para D=0.90, y/D=0.75 y n=0.013, V2 se cumple para cualquier
-    S >= 0.001 y no gobierna el diseno». La conclusion va atada a SUS
-    entradas, y el propio fixture avisa de que no es universal. Este test la
-    ejercita en la unica direccion en que puede: a la pendiente constructiva
-    minima de referencia, V2 tiene que cumplir con holgura.
+    LA MITAD DE CP-3 QUE NADIE EJERCITABA, y es la que MAT-O20 obligo a
+    escribir. El fixture concluye que «para D=0.90, y/D=0.75 y n=0.013, V2 se
+    cumple para cualquier S >= 0.001 y no gobierna el diseno», y a continuacion
+    se desdice a si mismo con la salvedad: «No es universal: no vale para
+    tirantes relativos muy bajos --- con y/D < 0.056 (mismo D y n) V2 SI se
+    viola a S = 0.001».
+
+    Esa salvedad era una AFIRMACION ESCRITA Y NO COMPROBADA, que es justo lo
+    que este proyecto persigue. Aqui se comprueba: a la pendiente constructiva
+    minima, y bajando el caudal hasta un tirante relativo por debajo de 0.056,
+    V2 INCUMPLE. Y por encima de ese tirante cumple, de modo que el test fija
+    la salvedad Y su frontera, no solo un lado.
+
+    La primera version de este test hacia otra cosa y no lo decia: mantenia Q
+    fijo y subia S, con lo que el tirante caia a y/D = 0.32 --- fuera del
+    conjunto de condiciones de la conclusion que citaba --- y quedaba a 2.9
+    veces del piso, sin poder distinguir nada.
     """
     from modulos.M3_hidraulica import resolver_manning
 
-    c3, c2 = CP3_VELOCIDAD_MINIMA, CP2_GEOMETRIA_MANNING
+    c3 = CP3_VELOCIDAD_MINIMA
     material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
-    resolucion = resolver_manning(
-        D=c3["D"], Q=c3["V_objetivo"] * c2["A_esperado"],
-        S=c3["S_constructiva_minima_referencia"], material=material)
+    S = c3["S_constructiva_minima_referencia"]
 
-    assert resolucion is not None
-    v2 = v2_velocidad_minima(resultado=resolucion)
-    assert v2.cumple and v2.valor_obtenido > c3["V_objetivo"]
+    # Q pequeño -> tirante relativo por DEBAJO de la salvedad del fixture.
+    bajo = resolver_manning(D=c3["D"], Q=0.003, S=S, material=material)
+    assert bajo is not None
+    assert bajo.geometria.y_sobre_D < 0.056, (
+        "el caudal elegido ya no cae bajo el tirante relativo de la salvedad: "
+        "el test estaria comprobando otra cosa")
+    assert not v2_velocidad_minima(resultado=bajo).cumple, (
+        "la salvedad de CP-3 dice que con y/D < 0.056 V2 SI se viola a "
+        "S = 0.001, y aqui no se viola: o la salvedad es falsa o M3 cambio")
+
+    # Y por encima de ese tirante, la conclusion del fixture se sostiene.
+    alto = resolver_manning(D=c3["D"], Q=0.02, S=S, material=material)
+    assert alto is not None and alto.geometria.y_sobre_D > 0.056
+    assert v2_velocidad_minima(resultado=alto).cumple
 
 
 def test_v2_decide_con_la_rama_de_n_MAXIMO_y_no_con_la_de_erosion():

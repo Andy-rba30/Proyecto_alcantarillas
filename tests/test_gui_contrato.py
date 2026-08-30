@@ -888,14 +888,42 @@ def test_la_tabla_de_criterios_muestra_el_valor_efectivo_y_no_lo_recalcula():
     no» son tres sitios donde puede divergir, y esa divergencia fue el
     hallazgo bloqueante del expediente.
     """
-    llamadas = {
-        f"{n.func.value.id}.{n.func.attr}"
-        for n in ast.walk(_funcion(ARBOL_GUI, "_llenar_tabla_criterios"))
+    funcion = _funcion(ARBOL_GUI, "_llenar_tabla_criterios")
+
+    # NO BASTA CON QUE LA LLAMADA ESTE: tiene que ser la que ALIMENTA la
+    # columna. La primera version de este test solo buscaba la cadena
+    # `ca.criterio_efectivo` entre las llamadas, y con eso SIS-A-01 se reabria
+    # dejando la llamada en su sitio y leyendo el valor de otro lado --- la
+    # fila quedaba rotulada «declarado (corrida)» y con «(sin declarar)» en la
+    # columna de valor, contradiciendose en pantalla ---. Es el defecto
+    # FACTOR_MURO_TABLA otra vez: verde sobre la mencion del simbolo.
+    #
+    # Se sigue el DATO: que nombre recibe el resultado de
+    # `ca.criterio_efectivo(...).valor`, y que ese nombre entre en el
+    # `values=` del `insert`.
+    def _es_valor_efectivo(nodo):
+        return (isinstance(nodo, ast.Attribute) and nodo.attr == "valor"
+                and isinstance(nodo.value, ast.Call)
+                and isinstance(nodo.value.func, ast.Attribute)
+                and nodo.value.func.attr == "criterio_efectivo")
+
+    nombres = {d.id for n in ast.walk(funcion) if isinstance(n, ast.Assign)
+               and _es_valor_efectivo(n.value)
+               for d in n.targets if isinstance(d, ast.Name)}
+    assert nombres, (
+        "la tabla dejo de leer el valor efectivo por la funcion comun: "
+        "ningun nombre recibe `ca.criterio_efectivo(...).valor`")
+
+    insercion = next(
+        n for n in ast.walk(funcion)
         if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
-        and isinstance(n.func.value, ast.Name)
-    }
-    assert "ca.criterio_efectivo" in llamadas, (
-        "la tabla dejo de leer el valor efectivo por la funcion comun")
+        and n.func.attr == "insert")
+    valores = next(kw.value for kw in insercion.keywords if kw.arg == "values")
+    usados = {x.id for x in ast.walk(valores) if isinstance(x, ast.Name)}
+    assert nombres & usados, (
+        f"`ca.criterio_efectivo` se llama y su resultado ({sorted(nombres)}) "
+        f"NO entra en la fila ({sorted(usados)}): la tabla estaria mostrando "
+        "otro valor y SIS-A-01 quedaria reabierto")
 
 
 def test_el_encabezado_enumera_las_pestanas_y_exportaciones_que_la_ventana_crea():

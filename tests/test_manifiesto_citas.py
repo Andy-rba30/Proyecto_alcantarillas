@@ -463,10 +463,20 @@ def test_toda_fila_que_cita_un_identificador_lo_nombra_en_su_destino():
     movido justo a un renglon vacio.
 
     Lo verificable sin definicion es que el destino HABLE del simbolo: que el
-    bloque en el que cae la linea lo nombre. No exige transcribir nada -- que
-    seria una segunda copia divergible, prohibida por CLAUDE.md -- y no tiene
-    falsos positivos: si el bloque no nombra el simbolo, la referencia no
+    PARRAFO en el que cae la linea lo nombre. No exige transcribir nada --- que
+    seria una segunda copia divergible, prohibida por CLAUDE.md --- y no tiene
+    falsos positivos: si el parrafo no nombra el simbolo, la referencia no
     lleva a lo que dice llevar.
+
+    ES MAS DEBIL QUE T8, Y CONVIENE DECIRLO. Un parrafo de docstring puede
+    tener doce lineas, y un desplazamiento DENTRO del parrafo pasa por aqui y
+    lo caza `test_T8_el_manifiesto_esta_sincronizado_con_el_codigo`, que
+    regenera desde el nombre y compara. No se ha encontrado ningun sabotaje
+    del .md que esta guardia cace y T8 no. Su valor no es cazar lo que T8 deja
+    pasar: es ser una SEGUNDA IMPLEMENTACION, independiente del generador de
+    produccion, de la misma pregunta --- si el generador se equivocara, T8
+    seguiria verde porque compara contra si mismo ---, y es la que reparte las
+    referencias en las tres poblaciones que hacen medible el hueco.
 
     SIN CUPO, a diferencia de las de prosa. Estas no son una excepcion
     declarada: son referencias verificables. Al medirlas por primera vez
