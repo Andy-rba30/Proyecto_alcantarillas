@@ -298,10 +298,46 @@ en el "PASO 0" y no se dejó regla, así que volvió a pasar — siete commits y
 tests quedaron en una rama sin fusionar mientras se reportaba `main` como si
 los tuviera, y una auditoría posterior los dio por perdidos.
 
-Al reportar el conteo, distinguir **`passed` de `collected`**: hoy hay un test
-`skipped` permanente, de modo que `collected = passed + 1`. Decir cuál de los
-dos se está citando; la mayor parte de la confusión histórica de números sale
-de mezclarlos.
+Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
+conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
+`verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1538**; lo
+que se mueve es el reparto, porque **dos** tests se saltan según el entorno y
+**ninguno de los dos saltos es una regresión**:
+
+- `tests/test_MD.py:362` — el `skipped` **permanente**, y el único que lo es:
+  su `skipif` guarda una condición (que `M5_verificaciones` no exista) que ya
+  no puede darse.
+- `tests/test_gui_contrato.py:1027` — el test de **ventana real** que añadió
+  S20. Se salta cuando ningún intérprete disponible puede levantar un `Tk`:
+  falta `tkinter`, falta `ttkbootstrap` o falta entorno gráfico.
+- Y aparte, en bloque, los **32** de `tests/test_normativa_pdf.py`, que se
+  saltan sin PyMuPDF —dependencia de TEST, no de producción—. Ése es el eje
+  que S12 documentó.
+
+**No basta con que el intérprete de la suite tenga tkinter**, y conviene
+decirlo porque invita al error contrario: el test de ventana sondea primero
+`sys.executable` y después los intérpretes del sistema, de modo que un
+`1537 passed` **no** demuestra que la suite corra sobre un Python con tkinter
+—solo que alguno lo tenía—. Es exactamente lo que pasa hoy en el contenedor de
+desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
+igual, en un subproceso, sobre `python3.12`.
+
+Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
+independientes. Las cuatro medidas sobre el mismo árbol, no supuestas:
+
+| PyMuPDF | Ventana Tk | `passed` | `skipped` |
+|---|---|---|---|
+| sí | sí | 1537 | 1 |
+| sí | no | 1536 | 2 |
+| no | sí | 1505 | 33 |
+| no | no | 1504 | 34 |
+
+Decir cuál de los dos números se está citando **y con qué entorno**; la mayor
+parte de la confusión histórica de números sale de mezclarlos. La regla que no
+depende del entorno es la suma: si `passed + skipped` deja de dar `collected`,
+hay un fallo o un error de recolección —no una dependencia ausente—, y eso sí
+es una regresión.
 
 Si la fusión no se puede hacer (permisos, política de egress, conflicto), eso
 **no** convierte la tarea en terminada: se reporta explícitamente qué quedó sin
