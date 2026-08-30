@@ -52,14 +52,40 @@ Excepciones
 
 Uso
 ---
+    from modelos import CategoriaTR
     from modulos.M0_carga import cargar_puntos
     from modulos.M1_clasificacion import clasificar_puntos, exigir_alcance
 
     puntos = cargar_puntos("tests/ejemplo_puntos.csv")
+
+    # Los dos mapas van por id de punto y NINGUNO sale del CSV. Los ids son
+    # los del fixture del repositorio -- tests/ejemplo_puntos.csv --, no
+    # puntos del expediente: una obra real trae los suyos.
+    #   luces       luz del cruce (Sec. 2.1). No es columna de Sec. 1.2: la
+    #               pone quien llama, desde la topografia, como la pondria la
+    #               GUI. El 2.75 es el canal del ejemplo de Sec. 2.1 que si
+    #               es alcantarilla, no una medicion.
+    #   categorias  fila de la Tabla N 02 de cada punto de Familia A
+    #               (Sec. 2.2, cauce por cauce). SIN ELLA EL EJEMPLO NO CORRE:
+    #               se detiene con CriterioPendienteError sobre
+    #               'umbral_area_quebrada_importante_ha', como anuncia el
+    #               bloque de excepciones de arriba.
     luces = {"A-01": 2.75, "A-02": 1.80, "B-01": 1.20, "C-01": 2.75}
-    for clasificacion in clasificar_puntos(puntos, luces):
-        exigir_alcance(clasificacion)              # detiene los puentes
-        TR = clasificacion.periodo_retorno.anios
+    categorias = {"A-01": CategoriaTR.QUEBRADA_IMPORTANTE,
+                  "A-02": CategoriaTR.QUEBRADA_MENOR}
+
+    for clasificacion in clasificar_puntos(puntos, luces, categorias):
+        exigir_alcance(clasificacion)     # DisenoNoFactibleError si es puente
+        TR = clasificacion.periodo_retorno.anios   # 71, 35, 35 y None (Fam. C)
+
+SIS-C-12, y el hallazgo se quedaba corto: el ejemplo no solo daba las luces
+sin la salvedad que si lleva el test (`tests/test_M1_clasificacion.LUCES`,
+tres lineas explicando de donde sale cada numero) --- es que NO EJECUTABA.
+Llamaba a `clasificar_puntos` con dos argumentos de los tres, y el tercero,
+`categorias`, es justo el que evita el vacio declarado. Un ejemplo copiado
+del docstring abortaba en el primer punto. El comentario «detiene los
+puentes» tambien se reescribio: con estas cuatro luces, todas menores que
+6.0 m, no detiene ninguno.
 """
 
 from __future__ import annotations

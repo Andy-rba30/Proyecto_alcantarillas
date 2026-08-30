@@ -15,10 +15,17 @@ MD contra el bucle de diseño de Sec. 2 de la guia de sesiones:
     5. lo que MD no hace: no verifica por su cuenta (lee `Verificacion.cumple`
        y nada mas) y no acepta un diseño sin verificaciones.
 
-M5 todavia no existe en el repositorio, de modo que la Fase 5 entra aqui como
-verificador inyectado -- que es tambien como MD lo declara en su interfaz. Los
-verificadores de prueba son deliberadamente triviales (V1 sola, o un si/no
-constante): lo que se prueba es el BUCLE, no las verificaciones.
+ESTE PARRAFO DECIA "M5 todavia no existe en el repositorio" Y ESA PREMISA
+CADUCO (SIS-A-08). `src/modulos/M5_verificaciones.py` existe desde hace varias
+sesiones y tiene su propia suite; la frase sobrevivio aqui despues de que se
+retirara del docstring de MD, remitiendo ademas a un parrafo de MD que ya no
+dice eso. Se deja escrito que caduco, y no solo se borra, porque una premisa
+que se borra en silencio vuelve.
+
+La Fase 5 entra inyectada por la razon que estos tests demuestran: lo que se
+prueba es el BUCLE, no las verificaciones, y MD admite un doble por su
+parametro `verificar` justamente para eso. Los verificadores de prueba son
+deliberadamente triviales (V1 sola, o un si/no constante).
 """
 
 import importlib.util
@@ -755,3 +762,53 @@ def test_el_diagnostico_de_una_familia_con_candidatos_no_lleva_la_coletilla_de_C
 
     assert Familia.A.value in motivo
     assert "multicelda" not in motivo
+
+
+# ---------------------------------------------------------------------------
+# SIS-A-08: que la premisa caducada no vuelva, ni aqui ni en MD
+# ---------------------------------------------------------------------------
+
+def test_la_premisa_de_que_M5_no_existe_no_vuelve_como_afirmacion():
+    """
+    SIS-A-08 se cerro dos veces y las dos a medias. La primera retiro de MD la
+    frase «M5 todavia no existe en el repositorio» y la sustituyo por otra
+    razon --- «evita un ciclo de importacion» --- que TAMBIEN era falsa. La
+    segunda descubrio que la premisa original seguia viva, palabra por palabra,
+    en el docstring de este archivo.
+
+    El test mira los docstrings por AST y no el texto plano del archivo, y
+    ADMITE la mencion cuando el mismo parrafo la declara caducada. Es la
+    leccion que CLAUDE.md registra con `FACTOR_MURO_TABLA`: un test que busque
+    la cadena a secas se pone verde sobre el comentario que explica la
+    retirada, que es lo contrario de vigilar.
+
+    Tambien vigila el ciclo inexistente: M5 no importa MD ni por transitividad,
+    y afirmarlo es la misma clase de defecto con otro hecho.
+    """
+    import ast as _ast
+
+    raiz = Path(__file__).resolve().parents[1]
+    for ruta in (raiz / "src" / "modulos" / "MD.py", Path(__file__)):
+        arbol = _ast.parse(ruta.read_text(encoding="utf-8"))
+        doc = _ast.get_docstring(arbol) or ""
+        for parrafo in doc.split("\n\n"):
+            plano = " ".join(parrafo.split())
+            for frase in ("todavia no existe en el repositorio",
+                          "ciclo de importacion"):
+                if frase not in plano:
+                    continue
+                assert "CADUCO" in plano or "FALSO" in plano, (
+                    f"{ruta.name} afirma «{frase}» sin declararla caducada:\n"
+                    f"  {plano[:200]}")
+
+    importados = {
+        nodo.module.split(".")[0]
+        for nodo in _ast.walk(_ast.parse(
+            (raiz / "src" / "modulos" / "M5_verificaciones.py")
+            .read_text(encoding="utf-8")))
+        if isinstance(nodo, _ast.ImportFrom) and nodo.module
+    }
+    assert "MD" not in importados and "modulos" not in {
+        n for n in importados if n == "MD"}, (
+        "si M5 pasara a importar MD habria ciclo de verdad y este parrafo "
+        "habria que reescribirlo otra vez")

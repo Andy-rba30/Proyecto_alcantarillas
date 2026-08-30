@@ -3,8 +3,20 @@
 gui/app.py
 ==========
 Interfaz grafica del expediente de alcantarillas. Reutiliza el patron de
-`legacy/Tc.py`: Tkinter + ttkbootstrap, Notebook por pestanas, MarcoScroll,
-Tooltip y campo validable.
+`legacy/Tc.py`: Tkinter + ttkbootstrap, Notebook por pestanas, MarcoScroll y
+Tooltip, los dos por `gui/componentes.py`.
+
+Que NO reutiliza este archivo, dicho porque el encabezado lo afirmaba (SIS-A-12)
+---------------------------------------------------------------------------
+El **campo validable** de `legacy/Tc.py` (`_campo_validable` + `_marcar`)
+existe en el proyecto, pero no aqui: vive en `gui/componentes.CampoValidable`
+y lo usa la ventana emergente, `gui/ventana_normativa.py`, que es donde la
+Sec. 4.3 pide validar AL ESCRIBIR. Esta ventana valida al pulsar EJECUTAR y
+sus campos son `ttk.Entry` desnudos. De aquel componente quedaba ademas un
+resto muerto --- `self.color_borde_ok`, el color de fondo neutro que
+`_campo_validable` pintaba ---: se calculaba en `_crear_interfaz` y no lo
+leia nadie. Retirado; el color neutro que el componente necesita se lo pide
+hoy `CampoValidable` a su llamador.
 
 No reimplementa el pipeline: llama a las mismas funciones que usa `cli.py`
 (`cargar_datos_externos`, `correr`, `informe_json`, `exportar_html`,
@@ -154,11 +166,6 @@ class ExpedienteApp:
         self.style.configure("Error.TLabel", font=("Segoe UI", 8, "bold"), foreground=COLOR_ERROR)
         self.style.configure("Res.TLabel", font=("Consolas", 11, "bold"), foreground="#1b4f72")
 
-        try:
-            self.color_borde_ok = self.style.lookup("TFrame", "background") or "SystemButtonFace"
-        except tk.TclError:
-            self.color_borde_ok = "SystemButtonFace"
-
         contenedor = ttk.Frame(self.root, padding=10)
         contenedor.pack(fill="both", expand=True)
 
@@ -307,8 +314,23 @@ class ExpedienteApp:
                   style="Header.TLabel").pack(anchor="w")
         ttk.Label(
             f_cab,
-            text="Etiquetas: [N] normativo  [N->] normativo por analogia  "
+            # Las CUATRO que este archivo tiene, y solo esas (SIS-A-11).
+            # [N] no aparece, y conviene decir con precision por que: NO es
+            # que el codigo lo impida --- `ETIQUETAS_VALIDAS` admite 'N' y
+            # `_verificar_criterio` la aceptaria ---, es que un valor
+            # normativo vive en constantes_normativas.py, y lo que sostiene
+            # esa separacion es el guardian
+            # `test_ningun_criterio_adoptado_lleva_ya_la_etiqueta_N`.
+            # Anunciar [N] aqui invitaba a leer como norma lo que es
+            # adopcion. [S] SI esta -- hoy tres entradas, los datos de sitio
+            # pendientes de ensayo que comparten tablero con los criterios --
+            # y faltaba.
+            text="Etiquetas: [N->] normativo por analogia  "
+                 "[S] dato de sitio (procedimiento normativo sobre ESTE sitio: "
+                 "se defiende con trazabilidad, no con sensibilidad)  "
                  "[C] fuente tecnica reconocida  [A] adopcion sin norma unica. "
+                 "Ninguna fila de esta tabla es normativa: lo normativo vive "
+                 "en constantes_normativas.py y no se declara desde aqui. "
                  "Las filas en rojo son criterios PENDIENTES (valor=None): bloquean "
                  "cualquier calculo que los invoque hasta que se declare un valor.",
             style="Ayuda.TLabel", wraplength=980, justify="left",

@@ -102,13 +102,42 @@ def _bloques(rel: str) -> Dict[str, List[Tuple[int, int]]]:
     return bloques
 
 
+# Los ids de las tres auditorias -- `NOR-HDS-04`, `MAT-D3`, `SIS-B-10` -- van
+# entre backticks como cualquier simbolo y NO lo son. Sin este filtro, el
+# primer identificador de `NOR-E060-02` es `NOR`, que no existe en ningun
+# archivo de src/ y por eso no llegaba a resolver nada; el daño no era ese,
+# sino que la fila CONTABA como "cita un identificador" y la comprobacion de
+# mencion la daba por buena en cuanto el bloque de destino nombrara cualquier
+# otra ficha. Es la diferencia entre una guardia que verifica y una que se
+# satisface sola (SIS-G-03).
+ID_DE_FICHA = re.compile(r"^(?:NOR|MAT|SIS)-")
+
+
 def _simbolos_citados(fila: str) -> List[str]:
-    """Identificadores entre backticks en esa fila del manifiesto."""
+    """
+    Identificadores entre backticks en esa fila del manifiesto.
+
+    SE DEVUELVE TAMBIEN LA COLA DE UN NOMBRE PUNTEADO, y no es un detalle de
+    forma: el manifiesto escribe `M9.cuantia_de_diseno` o `M11.seccion_eg2013`
+    para decir "esta funcion, de este modulo", y quedarse con el primer
+    identificador convertia esa cita en `M9` -- un alias de archivo que no es
+    simbolo de nada --. La fila perdia su ancla y caia al saco de prosa, donde
+    lo unico que se comprueba es que la linea no este en blanco. Cuatro
+    referencias estaban desviadas justo asi, y las cuatro salieron a la luz al
+    devolver la cola (SIS-G-03).
+    """
     simbolos: List[str] = []
     for trozo in re.findall(r"`([^`]+)`", fila):
-        m = re.match(r"^([A-Za-z_]\w*)", trozo.strip().lstrip("↳↻⚠~✚⟳ "))
-        if m and m.group(1) not in simbolos:
-            simbolos.append(m.group(1))
+        limpio = trozo.strip().lstrip("↳↻⚠~✚⟳ ")
+        if ID_DE_FICHA.match(limpio):
+            continue
+        m = re.match(r"^([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)", limpio)
+        if not m:
+            continue
+        partes = m.group(1).split(".")
+        for candidato in (partes[0], partes[-1]):
+            if candidato not in simbolos:
+                simbolos.append(candidato)
     return simbolos
 
 
@@ -127,7 +156,7 @@ def _linea_del_simbolo(rel: str, simbolos: List[str],
     bloques = _bloques(rel)
     tramos = [t for s in simbolos for t in bloques.get(s, [])]
     if not tramos:
-        return None
+        return _linea_por_mencion(rel, simbolos, linea_actual)
     for inicio, fin in tramos:
         if inicio <= linea_actual <= fin:
             # DENTRO DEL BLOQUE NO BASTA: puede ser un renglon en blanco entre
@@ -140,6 +169,41 @@ def _linea_del_simbolo(rel: str, simbolos: List[str],
                  key=lambda x: abs(x - linea_actual)), None)
 
 
+def _linea_por_mencion(rel: str, simbolos: List[str],
+                       linea_actual: int) -> Optional[int]:
+    """
+    Cuando el archivo USA el simbolo sin definirlo.
+
+    Es el caso legitimo que SIS-G-03 saco del saco de prosa: `M5` consume
+    `V_MIN`, que vive en `constantes_normativas.py`, y una fila que cita
+    `V_MIN` y apunta a M5 esta apuntando a un USO. No hay bloque del simbolo
+    al que anclar, pero si hay algo que derivar del nombre: el BLOQUE QUE LO
+    NOMBRA.
+
+    Regla, y es la misma desambiguacion que ya usa `_linea_del_simbolo` para
+    los homonimos: si la linea actual sigue cayendo en un bloque que menciona
+    el simbolo, NO SE MUEVE --- el autor eligio ese renglon y una linea util
+    no se pierde por regenerar. Si dejo de caer, se va al bloque mas cercano
+    que si lo mencione. Sin candidatos, `None`: es prosa de verdad y el cupo
+    la cuenta.
+    """
+    lineas = _lineas(rel)
+    candidatos: List[Tuple[int, int]] = []
+    for tramos in _bloques(rel).values():
+        for inicio, fin in tramos:
+            cuerpo = "\n".join(lineas[inicio - 1:fin])
+            if any(re.search(r"\b" + re.escape(s) + r"\b", cuerpo)
+                   for s in simbolos):
+                candidatos.append((inicio, fin))
+    if not candidatos:
+        return None
+    for inicio, fin in candidatos:
+        if inicio <= linea_actual <= fin:
+            return linea_actual
+    inicio = min((i for i, _ in candidatos), key=lambda x: abs(x - linea_actual))
+    return _primer_renglon_con_texto(rel, inicio, None)
+
+
 def _primer_renglon_con_texto(rel: str, desde: int,
                               hasta: Optional[int]) -> int:
     lineas = (RAIZ / rel).read_text(encoding="utf-8").split("\n")
@@ -148,6 +212,32 @@ def _primer_renglon_con_texto(rel: str, desde: int,
         if lineas[n - 1].strip():
             return n
     return desde
+
+
+def _sin_rango_imposible(original: str, linea: int, sufijo: Optional[str],
+                         etiqueta: str, rel: str, cambios: List[str],
+                         n_md: int) -> str:
+    """
+    Quita el sufijo de rango cuando el rango NO PUEDE SER: `[CN:170-49]`.
+
+    La notacion `[ETQ:a-b]` era un rango real (de la linea a a la b). Al
+    resincronizar, esta funcion reescribia la `a` y conservaba la `b` vieja, de
+    modo que cuarenta etiquetas acabaron anunciando tramos imposibles --- el
+    final por delante del principio ---. Un rango cuyo final no se deriva de
+    nada no es informacion: es ruido con forma de dato, y ningun test lo
+    miraba (SIS-G-03).
+
+    Se quita SOLO el imposible. Un rango bien formado (`[CN:6-8]`) dice algo
+    cierto y se conserva.
+    """
+    if not sufijo:
+        return original
+    fin = int(sufijo[1:])
+    if fin > linea:
+        return original
+    cambios.append(f"md:{n_md}  {rel}:{linea}{sufijo} -> :{linea} "
+                   f"(rango imposible retirado)")
+    return f"[{etiqueta}:{linea}]({rel}:{linea})"
 
 
 def resincronizar(texto: str) -> Tuple[str, List[str], int]:
@@ -170,18 +260,29 @@ def resincronizar(texto: str) -> Tuple[str, List[str], int]:
             etiqueta, _, sufijo, rel, linea = m.groups()
             linea = int(linea)
             if not (RAIZ / rel).exists():
-                return m.group(0)
+                return _sin_rango_imposible(m.group(0), linea, sufijo,
+                                            etiqueta, rel, cambios, n_md)
             destino = _linea_del_simbolo(rel, simbolos, linea)
             if destino is None:
                 prosa += 1
-                return m.group(0)
+                return _sin_rango_imposible(m.group(0), linea, sufijo,
+                                            etiqueta, rel, cambios, n_md)
             if destino == linea:
-                return m.group(0)
+                return _sin_rango_imposible(m.group(0), linea, sufijo,
+                                            etiqueta, rel, cambios, n_md)
             cambios.append(f"md:{n_md}  {rel}:{linea} -> :{destino} "
                            f"({destino - linea:+d}, simbolo "
                            f"`{simbolos[0] if simbolos else '?'}`)")
-            nueva = f"{etiqueta}:{destino}{sufijo or ''}"
-            return f"[{nueva}]({rel}:{destino})"
+            # EL SUFIJO SE TIRA, NO SE ARRASTRA. La notacion original era un
+            # rango real -- `[CN:33-39]`, de la linea 33 a la 39 -- y esta
+            # funcion reescribia el inicio conservando el final viejo, de modo
+            # que 48 etiquetas acabaron mostrando rangos IMPOSIBLES como
+            # `[CN:170-49]`: la etiqueta que el lector ve mentia sobre el
+            # tramo, y ningun test lo miraba. Un rango cuyo final no se
+            # deriva de nada no es informacion, es ruido con forma de dato.
+            # La linea de llegada la fija el simbolo; el tramo lo fija su
+            # bloque, y quien quiera verlo abre el archivo (SIS-G-03).
+            return f"[{etiqueta}:{destino}]({rel}:{destino})"
 
         salida.append(REFERENCIA.sub(_reemplazo, fila))
     return "\n".join(salida), cambios, prosa

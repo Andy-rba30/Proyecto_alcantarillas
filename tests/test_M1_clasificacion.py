@@ -615,3 +615,60 @@ def test_una_vida_util_enorme_tambien_degenera_y_se_dice():
     with pytest.raises(DatoInvalidoError) as exc:
         tr_desde_riesgo(0.35, 10 ** 300)
     assert "degenera" in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# SIS-C-12: el ejemplo del docstring, EJECUTADO
+# ---------------------------------------------------------------------------
+
+def _bloque_uso(ruta: Path) -> str:
+    """El bloque `Uso` del docstring de modulo, tal cual esta escrito."""
+    import ast as _ast
+    import re as _re
+    import textwrap as _textwrap
+    doc = _ast.get_docstring(_ast.parse(ruta.read_text(encoding="utf-8")))
+    m = _re.search(r"^Uso\n-+\n(.*?)(?=\n\S|\Z)", doc, _re.S | _re.M)
+    assert m, f"{ruta.name} perdio su bloque Uso"
+    return _textwrap.dedent(m.group(1))
+
+
+def test_el_ejemplo_del_docstring_de_M1_ejecuta_y_da_los_TR_del_fixture():
+    """
+    SIS-C-12, y el hallazgo se quedaba corto: no era solo que el ejemplo diera
+    las luces sin la salvedad que si lleva `LUCES` aqui arriba --- es que
+    llamaba a `clasificar_puntos` con dos de sus tres argumentos y abortaba en
+    el primer punto con `CriterioPendienteError`. Un ejemplo que no corre es
+    peor que no tener ejemplo: el lector culpa a su entorno.
+
+    Este test EJECUTA el bloque tal como esta escrito en el docstring --- lo
+    extrae del archivo, no lo copia --- para que no puedan volver a divergir.
+    Los TR que asegura son los mismos de `test_clasificar_el_ejemplo_completo`.
+
+    Solo se ejercita el de M1. Los bloques `Uso` de los otros doce modulos son
+    FRAGMENTOS a proposito (parten de un `resultado` que el llamante ya tiene)
+    y ejecutarlos exigiria inventarles un contexto, que es justo lo que este
+    test evita. Queda anotado en `docs/decisiones_diferidas.md`.
+    """
+    ruta = Path(__file__).resolve().parents[1] / "src" / "modulos" / "M1_clasificacion.py"
+    ambito = {"__name__": "__uso_de_M1__"}
+    exec(compile(_bloque_uso(ruta), str(ruta), "exec"), ambito)   # noqa: S102
+
+    clasificaciones = ambito["clasificar_puntos"](
+        ambito["puntos"], ambito["luces"], ambito["categorias"])
+    assert [c.punto.id for c in clasificaciones] == ["A-01", "A-02", "B-01", "C-01"]
+    assert [c.periodo_retorno.anios for c in clasificaciones] == [71, 35, 35, None]
+
+
+def test_el_ejemplo_del_docstring_de_M1_declara_que_los_ids_son_del_fixture():
+    """
+    La otra mitad de SIS-C-12: los ids A-01..C-01 salen de
+    `tests/ejemplo_puntos.csv` y no son puntos del expediente. El ejemplo
+    tiene que decirlo, porque quien lo lea creera que son cuatro cruces
+    reales de La Union.
+    """
+    ruta = Path(__file__).resolve().parents[1] / "src" / "modulos" / "M1_clasificacion.py"
+    uso = " ".join(_bloque_uso(ruta).replace("#", " ").split()).lower()
+    assert "fixture" in uso, (
+        "el ejemplo volvio a dar los ids como si fueran del expediente")
+    assert "no es columna de sec. 1.2" in uso, (
+        "el ejemplo volvio a dar la luz sin decir que no sale del CSV")

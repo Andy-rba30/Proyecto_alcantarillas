@@ -14,6 +14,55 @@ Dependencias opcionales   : ttkbootstrap (tema visual), weasyprint (export PDF)
 
 La plantilla de la memoria vive en "plantilla_memoria.html", junto a este
 archivo, y se procesa con string.Template (delimitador "%%").
+
+
+ESTATUS EN ESTE REPOSITORIO — LÉASE ANTES QUE NADA (SIS-B-10)
+=============================================================
+Esto NO es un módulo del calculador de alcantarillas. Es OTRO PROGRAMA, el
+que está aguas arriba: calcula el tiempo de concentración y las curvas IDF,
+y de ahí sale el caudal de diseño Q. La §1.2 de
+`docs/hoja_de_ruta_alcantarillas_v8.md` lo dice por su nombre en la fila del
+caudal — «Caudal de diseño Q | m³/s | Tc.py + IDF con TR de Fase 2» —, de
+modo que Q entra al calculador como COLUMNA DEL CSV y este archivo es la
+herramienta que la produce, fuera de la corrida.
+
+Por eso se CONSERVA, y no por nostalgia. Lo que sí es cierto, y hay que
+decirlo entero porque quien lo lea sin esta nota lo deducirá mal:
+
+  * **Nadie lo importa, nadie lo prueba y el barrido de literales no lo
+    recorre.** Sus 185 literales numéricos prohibidos en 1320 líneas no son
+    una infracción pendiente: son código de otro programa, exento POR
+    DIRECTORIO en `tests/test_sin_literales.DIRECTORIOS_FUERA_DEL_BARRIDO`,
+    con la razón escrita ahí y comprobada por
+    `test_la_razon_por_la_que_legacy_esta_exento_sigue_siendo_cierta`, que
+    barre el AST del repositorio buscando importadores. Si alguien lo
+    importara, ese test se pone en rojo y la exención cae.
+
+  * **TAL COMO ESTÁ COMMITEADO NO CORRE AQUÍ**, y son dos cosas distintas:
+    `matplotlib` es import de nivel superior y NO está en `requirements.txt`
+    (ni debe estarlo: la §Estilo de CLAUDE.md fija las dependencias del
+    software calculado y matplotlib no es una de ellas); y
+    `plantilla_memoria.html`, que el encabezado de arriba anuncia «junto a
+    este archivo», no existe en ningún punto del repositorio — `exportar_html`
+    levanta `FileNotFoundError` con ese texto. Para volver a ejecutarlo hacen
+    falta las dos cosas: instalar matplotlib fuera de `requirements.txt` y
+    recuperar la plantilla del entorno donde este archivo se usó. Ninguna de
+    las dos es trabajo del calculador de alcantarillas y por eso no se hacen
+    aquí.
+
+  * **Ya se le sacó lo que había que sacarle.** Los componentes de interfaz
+    que `CLAUDE.md` manda reutilizar viven hoy en `gui/componentes.py`
+    (`Tooltip` y `MarcoScroll`, el MISMO código movido; `CampoValidable`, que
+    es su `_campo_validable` con la validación al escribir que pide la
+    Sec. 4.3) y el patrón de plantilla `%%` en
+    `M11_reporte.PlantillaMemoria`. Leer este archivo para «no reinventar los
+    componentes» ya no hace falta: están extraídos.
+
+Qué haría falta para BORRARLO: que la §1.2 de la hoja de ruta dejara de
+nombrarlo como origen de Q, o que su procedimiento entrara al calculador. Lo
+primero es del autor de la hoja; lo segundo es una fase que no existe. Hasta
+entonces, borrarlo dejaría al expediente sin la herramienta que produce una
+de las columnas obligatorias de su CSV.
 """
 
 import base64

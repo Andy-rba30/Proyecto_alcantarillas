@@ -103,7 +103,26 @@ class CriterioPendienteError(ErrorProyecto):
 
     @property
     def mensaje_gui(self) -> str:
-        """Texto que la GUI muestra al usuario, sin jerga de programa."""
+        """
+        La redaccion MINIMA que CLAUDE.md fija para esta excepcion, sin jerga
+        de programa. Se conserva sin consumidor de produccion, y esa es la
+        decision (SIS-B-07): ver `docs/decisiones_diferidas.md`, ficha
+        SIS-B-07.
+
+        NO ES POR AQUI POR DONDE LA GUI MUESTRA UN PENDIENTE, y el docstring
+        anterior --- «Texto que la GUI muestra al usuario» --- lo afirmaba. La
+        GUI llega por `cli._etapa` -> `cli._bloqueo` -> `Bloqueo` ->
+        `M11.criterios_bloqueantes` -> `gui/app.py::_llenar_resumen`, y pinta
+        SEIS columnas: clave, etiqueta, concepto, fuente, fases y puntos.
+        Cablear esta propiedad ahi cambiaria ese tablero por un solo dato.
+
+        Y no es que sea la via mas rica de dos: es la UNICA. Dentro de
+        `cli.correr` lo unico que corre fuera de `_etapa` es
+        `M0_carga.cargar_puntos`, que no importa `criterios_adoptados` ni
+        `datos_sitio` y solo levanta `DatoFaltanteError`/`DatoInvalidoError`;
+        ningun `CriterioPendienteError` alcanza el `except ErrorProyecto` de
+        la ventana. No hay consumidor honesto que anadir.
+        """
         return f"falta declarar: {self.clave}"
 
 
@@ -876,6 +895,15 @@ class ControlSalida:
     es True, el que gobierna el remanso es el nivel del cuerpo receptor y no
     la geometria del conducto. Es la situacion que Sec. 4.3 advierte
     expresamente para descargas a drenes con nivel propio.
+
+    Y SE IMPRIME (SIS-B-18). La ficha lo señalaba como el unico de cinco
+    campos escritos y nunca leidos que ademas no viajaba ni al JSON ni al
+    HTML: una rama que el codigo distingue y el revisor no ve. Dejo de serlo
+    en S18 sin que nadie lo buscara --- `M4._pasos_hidraulicos` lo lee para
+    redactar la procedencia de h_o en su `PasoDeMemoria`, «(manda TW: la
+    salida esta ahogada)» frente a «(manda la aproximacion geometrica)» ---,
+    de modo que hoy la rama llega a la memoria como texto y con su razon.
+    Lo fija `tests/test_M4_control.py`.
 
     `h_o_fuera_de_rango` y `h_o_requiere_cautela` son las DOS condiciones de
     uso que HDS-5 pone a esa aproximacion y que el proyecto puede evaluar
@@ -2341,9 +2369,40 @@ class PeriodoRetorno:
 
     def exigir_anios(self) -> int:
         """
-        Devuelve el TR o lanza. Unico acceso permitido cuando el modulo que
-        llama NECESITA el numero: un TR ausente nunca se sustituye por uno
+        Devuelve el TR o lanza: un TR ausente nunca se sustituye por uno
         plausible.
+
+        HOY NO LA LLAMA NADIE, y esa es la decision (SIS-B-08): ver
+        `docs/decisiones_diferidas.md`, ficha SIS-B-08. El docstring anterior
+        decia «Unico acceso permitido cuando el modulo que llama NECESITA el
+        numero», que es una condicion que no se cumple en ningun sitio --- la
+        misma forma de prometer un consumidor que este archivo ya desterro al
+        cerrar SIS-B-02 en `ControlEntrada`.
+
+        Los CINCO accesos de produccion al TR --- `M11._tabla_clasificacion`,
+        `M11.fila_resumen`, `M11.fila_resumen_plana`, `cli._clasificacion_json`
+        y `cli._lineas_punto` --- leen `.anios` y tratan el `None`
+        explicitamente: lo imprimen como ausente o lo propagan. Ninguno
+        necesita el entero, porque el paso que si lo necesitaria --- «Tc.py +
+        IDF con el TR de Fase 2», Sec. 1.1 --- ocurre fuera de este programa y
+        Q entra por columna del CSV.
+
+        Se conserva porque es la unica sentencia EJECUTABLE del invariante,
+        y `anios` esta anotado `Optional[int]`: sin ella, el consumidor que
+        llegue escribira `tr.anios or 35`, que es el default silencioso que
+        CLAUDE.md llama el peor error posible.
+
+        LIMITE CONOCIDO, declarado en vez de disimulado. Hay dos motivos por
+        los que `anios` es None y esta guardia solo distingue bien uno:
+        Familia C (el caudal es el de diseno del canal: falta el dato, y
+        `DatoFaltanteError('Q_m3s')` es correcto) y punto fuera de alcance
+        (es un puente: no falta nada, y lo que corresponde es
+        `DisenoNoFactibleError`, como en `M1_clasificacion.exigir_alcance`).
+        `PeriodoRetorno` no lleva hoy con que separarlos sin oler el texto de
+        `fundamento`, y el orden que el propio M1 documenta en su bloque de
+        Uso --- `exigir_alcance(...)` ANTES de leer el TR --- deja la segunda
+        rama fuera del camino. Cerrarlo del todo pide un discriminante en el
+        objeto, no una guardia mas: queda anotado en el registro.
         """
         if self.anios is None:
             raise DatoFaltanteError(
@@ -2363,6 +2422,36 @@ class PerfilFamilia:
     `verificaciones_aceptacion` es None cuando la hoja de ruta no declara un
     conjunto propio para esa familia. None significa "no declarado", no
     "ninguna": la tabla de la Fase 5 sigue aplicando punto por punto.
+
+    NADIE DESPACHA SOBRE ESTE CAMPO, Y ES DELIBERADO (SIS-B-13)
+    ----------------------------------------------------------
+    Lo escribe solo `M1_clasificacion.PERFILES` y lo leen solo dos asserts de
+    `tests/test_M1_clasificacion.py`. Cero lectores de produccion: `M5.verificar`
+    y el cierre `verificar` de `cli.py` corren la Fase 5 ENTERA sobre todo
+    punto, sin mirar la familia. La razon de que asi sea, dicha aqui porque es
+    lo que faltaba escrito: si algun modulo despachara sobre esta tupla, la
+    frase de la Sec. 2.3 se convertiria en un FILTRO y la Familia A se quedaria
+    sin V3 (velocidad maxima), V6, V7 (flotacion), V8 y V9 --- que la tabla de
+    la Fase 5 no exime por familia --- y las Familias B y C se quedarian sin
+    conjunto ninguno. Es la lectura no conservadora que este campo existe para
+    NO habilitar. Se conserva porque es la unica huella en el codigo de una
+    frase de la fuente de verdad, y el `None` carga una distincion que se
+    perderia al borrarlo.
+
+    DEFECTO CONTRA LA HOJA DE RUTA, que es la que hay que corregir (regla 7).
+    La Sec. 2.3 escribe «**A — Alcantarillas de paso.** Q hidrologico propio.
+    TR 71 o 35 anios. Aceptacion: V1 + V2 + V4 + V5.» --- un conjunto SOLO
+    para la Familia A y en una forma que se lee exhaustiva --- mientras la
+    Fase 5 tabula sus verificaciones sin calificarlas por familia, y para B y
+    C no declara nada. La hoja no dice si V1+V2+V4+V5 es «el minimo que A debe
+    pasar» o «las unicas que a A se le exigen». La fuente primaria no puede
+    dirimirlo: la taxonomia A/B/C y las etiquetas V1..V9 son de la hoja, no
+    del MTC (`M1.NUMERAL_FAMILIA = "Sec. 2.3"`, «sin numeral MTC propio»).
+    MIENTRAS NO SE CORRIJA, LA HOJA SIGUE MAL: quien la lea sin leer el codigo
+    disenara una alcantarilla de Familia A creyendo que no se le exige V7
+    (flotacion) ni V9 (disponibilidad de diametro). El codigo toma entretanto
+    la lectura conservadora --- aplicarlas todas ---, que es la unica que no
+    puede dejar un punto sin verificar.
     """
 
     familia: Familia

@@ -188,9 +188,9 @@ def test_pendiente_que_produce_v_objetivo_de_cp3():
 
     assert resolucion is not None, "la pendiente de CP-3 tiene que converger"
     assert resolucion.geometria.y_sobre_D == pytest.approx(c3["y_sobre_D"],
-                                                          abs=1e-3)
+                                                          abs=c3["tolerancia_V"])
     assert resolucion.V_sedimentacion == pytest.approx(c3["V_objetivo"],
-                                                       abs=1e-3)
+                                                       abs=c3["tolerancia_V"])
     # Y la doble n sigue separando las dos ramas: con n_min < n_max la
     # velocidad de erosion es la mayor de las dos (Sec. 4.1).
     assert resolucion.V_erosion > resolucion.V_sedimentacion

@@ -60,6 +60,7 @@ que recorra el orden visual que el plan declara.
 """
 
 import ast
+import re
 from pathlib import Path
 
 import pytest
@@ -773,3 +774,157 @@ def test_la_memoria_no_inventa_procedencia_para_lo_declarado_por_la_cli(_corrida
     # que este test vigila.
     assert "concreto_headwall_square_edge" in memoria
     assert "El valor en vigor NO salio por este camino" in memoria
+
+
+# ---------------------------------------------------------------------------
+# S19 -- lo que la GUI DECIDE, y que hasta aqui no ejercitaba nadie
+# ---------------------------------------------------------------------------
+# Estos tests siguen la misma linea que los de arriba: se prueba lo que la
+# ventana DECIDE, no lo que dibuja. La frontera declarada en SIS-F-01 no se
+# mueve --- el cableado de widgets sigue sin ejecutarse y probarlo con el
+# doble seria un espejismo ---, pero dentro de ella quedaban tres decisiones
+# sin cubrir: el estado con que se rotula cada criterio, la leyenda que
+# explica las etiquetas, y de donde saca la tabla el valor que muestra.
+
+
+def test_el_estado_de_un_criterio_distingue_los_tres_casos(ventana):
+    """
+    `_estado_criterio` es la unica regla de la ventana que decide como se
+    rotula una fila, y de ella salen tambien los colores. Los tres casos son
+    distintos y uno de ellos --- «declarado (corrida)» --- es el que SIS-A-01
+    dejo invisible durante toda la vida del proyecto: un valor que gobernaba
+    el calculo y que la memoria imprimia como sin declarar.
+    """
+    import criterios_adoptados as ca
+    import declaracion as dec
+
+    pendiente = next(c for c, v in ca.CRITERIOS.items() if v.valor is None)
+    resuelto = next(c for c, v in ca.CRITERIOS.items() if v.valor is not None)
+
+    assert ventana._estado_criterio(pendiente) == ("PENDIENTE", "pendiente")
+    assert ventana._estado_criterio(resuelto) == ("resuelto", "resuelto")
+
+    ca.establecer_valor_dinamico(pendiente, ca.CRITERIOS[resuelto].valor)
+    try:
+        assert ventana._estado_criterio(pendiente) == (
+            "declarado (corrida)", "declarado_corrida")
+    finally:
+        dec.olvidar(pendiente)
+        ca.limpiar_valores_dinamicos()
+
+
+def _leyenda_de_etiquetas() -> str:
+    """El texto de la leyenda de la pestana de Criterios, leido del arbol."""
+    for nodo in ast.walk(ARBOL_GUI):
+        if isinstance(nodo, ast.Constant) and isinstance(nodo.value, str) \
+                and nodo.value.startswith("Etiquetas:"):
+            return nodo.value
+    raise AssertionError("la pestana de Criterios perdio su leyenda de etiquetas")
+
+
+def test_la_leyenda_nombra_exactamente_las_etiquetas_que_el_archivo_puede_tener():
+    """
+    SIS-A-11. La leyenda anunciaba `[N]` --- imposible en criterios_adoptados.py,
+    porque un valor normativo vive en constantes_normativas.py --- y se comia
+    `[S]`, que si esta. Anunciar `[N]` invita a leer como norma lo que es
+    adopcion, que es el error que la taxonomia de CLAUDE.md existe para evitar.
+
+    El conjunto esperado NO se transcribe aqui: se DERIVA del archivo. Si
+    manana entra el primer `[N->]` nuevo o desaparece el ultimo `[S]`, este
+    test lo dice en vez de quedarse verde sobre una lista copiada.
+    """
+    import criterios_adoptados as ca
+
+    presentes = {c.etiqueta for c in ca.CRITERIOS.values()}
+    leyenda = _leyenda_de_etiquetas()
+    anunciadas = set(re.findall(r"\[([^\]]+)\]", leyenda))
+
+    assert anunciadas == presentes, (
+        f"la leyenda anuncia {sorted(anunciadas)} y el archivo tiene "
+        f"{sorted(presentes)}")
+    assert "N" not in anunciadas, (
+        "la leyenda volvio a anunciar [N], que este archivo no puede contener")
+    assert "constantes_normativas.py" in leyenda, (
+        "la leyenda tiene que decir DONDE vive lo normativo, no solo callarlo")
+
+
+def test_la_ventana_principal_no_afirma_reutilizar_el_campo_validable():
+    """
+    SIS-A-12. El encabezado decia reutilizar «MarcoScroll, Tooltip y campo
+    validable» de legacy/Tc.py, y de los tres este archivo usa dos: el campo
+    validable vive en `gui/componentes.CampoValidable` y lo cablea la ventana
+    emergente. Quedaba ademas `color_borde_ok`, el color neutro que aquel
+    componente pintaba, calculado y sin lector.
+    """
+    doc = ast.get_docstring(ARBOL_GUI) or ""
+    importados = {alias.name for nodo in ast.walk(ARBOL_GUI)
+                  if isinstance(nodo, ast.ImportFrom)
+                  and (nodo.module or "").endswith("componentes")
+                  for alias in nodo.names}
+
+    assert "CampoValidable" not in importados, (
+        "si gui/app.py pasa a usar CampoValidable, actualiza su encabezado: "
+        "este test existe para que las dos cosas no se separen otra vez")
+    assert "campo validable" in doc.lower(), (
+        "el encabezado tiene que seguir diciendo DONDE esta el campo validable")
+    assert "gui/componentes.CampoValidable" in doc, (
+        "el encabezado nombra el componente por su sitio, no de memoria")
+
+    asignados = {d.attr for nodo in ast.walk(ARBOL_GUI)
+                 if isinstance(nodo, ast.Assign)
+                 for d in nodo.targets if isinstance(d, ast.Attribute)}
+    assert "color_borde_ok" not in asignados, (
+        "volvio `color_borde_ok`: o lo lee alguien, o no se calcula")
+
+
+def test_la_tabla_de_criterios_muestra_el_valor_efectivo_y_no_lo_recalcula():
+    """
+    SIS-A-01 en su forma de guardia. La tabla tiene que leer el valor por
+    `criterios_adoptados.criterio_efectivo`, que es la MISMA funcion que usan
+    M11 y el JSON. Tres copias de la regla «override si lo hay, archivo si
+    no» son tres sitios donde puede divergir, y esa divergencia fue el
+    hallazgo bloqueante del expediente.
+    """
+    llamadas = {
+        f"{n.func.value.id}.{n.func.attr}"
+        for n in ast.walk(_funcion(ARBOL_GUI, "_llenar_tabla_criterios"))
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+        and isinstance(n.func.value, ast.Name)
+    }
+    assert "ca.criterio_efectivo" in llamadas, (
+        "la tabla dejo de leer el valor efectivo por la funcion comun")
+
+
+def test_el_encabezado_enumera_las_pestanas_y_exportaciones_que_la_ventana_crea():
+    """
+    SIS-A-10 fue exactamente esto: el encabezado listaba tres pestanas y la
+    aplicacion creaba cuatro, y la que faltaba era la unica que REESCRIBE
+    `criterios_adoptados.py`. Se cerro en S17 a mano; sin guardia, se vuelve a
+    abrir en cuanto alguien anada la quinta.
+
+    Cuenta las cosas en el ARBOL --- los `nb.add(...)` y los metodos
+    `exportar_*` --- y las contrasta con lo que el docstring numera. No compara
+    textos: compara cantidades y nombres de formato, que es lo unico que puede
+    envejecer sin que nadie lo note.
+    """
+    doc = ast.get_docstring(ARBOL_GUI) or ""
+
+    pestanas_en_codigo = sum(
+        1 for n in ast.walk(ARBOL_GUI)
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "add" and isinstance(n.func.value, ast.Attribute)
+        and n.func.value.attr == "nb")
+    numeradas = len(re.findall(r"^\s{4}(\d)\.\s", doc, re.M))
+    assert pestanas_en_codigo == numeradas == 4, (
+        f"el codigo crea {pestanas_en_codigo} pestanas y el encabezado numera "
+        f"{numeradas}")
+    assert "son CUATRO" in doc
+
+    exportadores = {n.name.removeprefix("exportar_").upper()
+                    for n in ast.walk(ARBOL_GUI)
+                    if isinstance(n, ast.FunctionDef)
+                    and n.name.startswith("exportar_")}
+    assert exportadores == {"JSON", "HTML", "PDF", "CSV"}
+    linea_export = next(l for l in doc.splitlines() if "exportacion (" in l)
+    assert all(f in linea_export for f in exportadores), (
+        f"el encabezado no nombra todas las exportaciones: {linea_export}")
