@@ -41,6 +41,7 @@ Uso
 from __future__ import annotations
 
 import csv
+import math
 from dataclasses import fields
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -236,13 +237,52 @@ def _texto(fila: Dict[str, Any], columna: str, id_punto: str, numero: int) -> st
 
 
 def _a_float(bruto: str, columna: str, id_punto: str) -> float:
+    """
+    La celda como float, EXIGIENDO QUE SEA FINITO (MAT-D14).
+
+    `float()` acepta los literales 'inf', '-inf', 'Infinity' y 'nan', y
+    ninguna validacion posterior los atrapa:
+
+      * `inf` FUGABA de verdad, y no solo por las columnas con piso: medido
+        sobre el codigo anterior, entraban `Q_m3s`, `area_ha`, `cota_rasante`,
+        `ancho_plataforma`, `Q_receptor_m3s`, `cota_TW`, `NF_profundidad_m` y
+        `cota_fondo_receptor` (esta ultima con `-inf`). `inf > 0` es cierto y
+        ninguna de esas columnas tiene techo.
+      * `nan` NO fugaba hoy, y conviene decirlo con precision en vez de
+        exagerarlo: `_valida_rangos` esta escrita en forma positiva
+        (`_exige(0 <= x < MAX)`) y `nan` es falso frente a `<=` y frente a
+        `>=` a la vez, de modo que las FALLA todas -- las catorce columnas lo
+        rechazan. Pero lo rechazan por casualidad de redaccion: basta con que
+        una sola se reescriba como "no esta fuera"
+        (`_exige(not (x < 0 or x > MAX))`) para que `nan` la atraviese. La
+        finitud se exige AQUI, en la conversion, para que esa proteccion no
+        dependa de como este redactado cada rango.
+
+    Un dato asi no detiene el pipeline: lo recorre y sale por el otro extremo
+    como una memoria con numeros que no son numeros -- un diagnostico falso,
+    que es peor que un fallo. Es exactamente el caso que CLAUDE.md llama
+    DatoInvalidoError: el dato ESTA pero no puede ser.
+
+    `cli.py::_numero_externo` ya lo exigia para los datos externos. Esta era
+    la mitad que faltaba, y la asimetria entre las dos puertas de entrada del
+    mismo pipeline es lo que delato el hueco.
+    """
     try:
-        return float(bruto)
+        valor = float(bruto)
     except ValueError:
         raise DatoInvalidoError(
             columna, valor=bruto, id_punto=id_punto,
             motivo="no es un numero (el separador decimal es el punto)",
         ) from None
+    if not math.isfinite(valor):
+        raise DatoInvalidoError(
+            columna, valor=bruto, id_punto=id_punto,
+            motivo="no es un numero finito: 'inf' y 'nan' son literales que "
+                   "float() acepta y que ninguna validacion de rango atrapa, "
+                   "de modo que entrarian al calculo y saldrian como una "
+                   "memoria con numeros que no lo son",
+        )
+    return valor
 
 
 def _familia(fila: Dict[str, Any], id_punto: str, numero: int) -> Familia:
@@ -361,6 +401,22 @@ def _valida_cruzadas(v: Dict[str, Optional[float]], id_punto: str) -> None:
            f"rasante ({v['cota_rasante']}): la separacion es el espesor del "
            "paquete estructural (Sec. 1.5)")
 
+    # LAS DOS VALIDACIONES QUE NO SON FILA DE LA TABLA DE Sec. 1.5 (SIS-A-16).
+    # Las dos que siguen -- altura libre terreno/subrasante positiva, y fondo
+    # del receptor bajo el terreno del cruce -- NO aparecen en la hoja de
+    # ruta, y conviene decir por que estan aqui en vez de dejarlo en dos
+    # comentarios de linea:
+    #
+    #   * no son criterios de factibilidad inventados. Son comprobaciones de
+    #     IMPOSIBILIDAD FISICA entre dos datos de la MISMA FILA, que es el
+    #     tercer supuesto que CLAUDE.md autoriza expresamente para
+    #     DatoInvalidoError ("contradice a otro dato de su misma fila");
+    #   * y no invaden a M7 ni a 7.A. La frontera es la que fija
+    #     `test_un_terraplen_bajo_pero_posible_lo_decide_M7_y_no_M0`: M0
+    #     rechaza lo IMPOSIBLE (altura nula o negativa) y deja pasar lo
+    #     POSIBLE PERO AJUSTADO, que es donde decide el tamizado con
+    #     DisenoNoFactibleError y un delta de rasante.
+    #
     # Diametro implicito: la altura libre entre el terreno natural y la
     # subrasante. Si no es positiva, no hay terraplen donde alojar conducto
     # alguno y el dato esta mal. Cuanto hace falta ademas para el diametro

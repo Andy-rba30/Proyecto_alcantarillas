@@ -194,12 +194,35 @@ def tirante_normal(D: float, Q: float, S: float, n: float) -> Optional[Geometria
     Resuelve el tirante normal de Manning (Sec. 4.1) para un D/Q/S/n dados,
     con Brent sobre theta en (0, 2*pi).
 
-    Devuelve None si el conducto no puede transportar Q en flujo libre a esa
-    pendiente y ese n: no hay theta en el intervalo donde Manning iguale Q
-    (el conducto trabajaria a presion). No es un fallo del programa -- es el
-    resultado de diseño "este material y este diametro no alcanzan" -- y el
-    orquestador de la Fase 4 lo lee como señal de pasar al siguiente
+    Devuelve None cuando la busqueda de Brent no encuentra raiz con el signo
+    esperado en los dos extremos del intervalo. No es un fallo del programa --
+    es el resultado de diseño "este material y este diametro no alcanzan" -- y
+    el orquestador de la Fase 4 lo lee como señal de pasar al siguiente
     diametro de la progresion de M2.
+
+    EL CONTRATO, DICHO CON PRECISION (MAT-O18). El texto que ocupaba este
+    lugar decia que None significa "no hay theta donde Manning iguale Q", y
+    eso NO es exacto: la curva Q(theta) de una seccion circular no es
+    monotona. Crece hasta un PICO en y/D = 0.93818 y despues BAJA hasta el
+    caudal a seccion llena, que es menor. Para D = 0.90 m, S = 0.005 y
+    n = 0.013 el pico vale 1.377 m3/s y el lleno 1.280 m3/s: en la banda
+    (1.280, 1.377] SI existe un theta que transporta Q -- dos, de hecho --,
+    y esta funcion devuelve None igual, porque `f(_THETA_MAX) < 0` y Brent no
+    tiene un cambio de signo que morder en el intervalo completo.
+
+    Se deja asi a proposito, y la direccion importa: devolver None de mas es
+    CONSERVADOR -- manda a M2 al siguiente diametro --, mientras que resolver
+    en esa banda daria un tirante por encima de y/D = 0.82 -- la RAIZ BAJA de
+    las dos, que es la que Brent devolveria con un bracket sobre la rama
+    creciente: 0.8203 en Q = 1.281, 0.8344 en Q = 1.30, 0.8806 en Q = 1.35 --,
+    por encima del 0.75 que V1 admite (Sec. 4.1.1.3.7 b), de modo que el
+    diseño se rechazaria igual una fase mas tarde. (El 0.94 es donde esta el
+    PICO de la curva, no el tirante que se obtendria: decir "por encima de
+    0.94" era confundir el maximo de Q con la raiz, y la conclusion se
+    sostiene igual pero con el numero correcto.) Lo que no se puede es que el
+    docstring afirme lo contrario de lo que el codigo hace: quien lea "no hay
+    theta" concluira que el conducto no da, cuando lo que pasa es que da por
+    encima del llenado admisible.
     """
     _validar_parametros(D, Q, S, n)
 
@@ -245,8 +268,7 @@ def resolver_manning(D: float, Q: float, S: float, material: Material) -> Option
     if geom is None:
         return None
 
-    # literal-ok: exponentes de Manning, ec. (47) del num. 4.1.1.3.6 / Sec. 4.1
-    factor_geometrico = geom.R ** (2 / 3) * S ** (1 / 2)
+    factor_geometrico = geom.R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, ec. (47) del num. 4.1.1.3.6 / Sec. 4.1
     return TiranteNormal(
         geometria=geom,
         V_erosion=factor_geometrico / material.n_para_velocidad_maxima,

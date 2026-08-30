@@ -27,6 +27,7 @@ from modelos import CriterioPendienteError, ErrorProyecto
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP7_CADENA_SISMICA,
                                          CP8_CONTROL_SALIDA)
+from tests.apoyo import estructura
 
 
 CLAVES_PENDIENTES = criterios_sin_valor()
@@ -84,6 +85,61 @@ def _aisla_registro_de_uso():
 # ---------------------------------------------------------------------------
 # Lo que exige la regla: un criterio pendiente detiene el calculo
 # ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("clave", [
+    "talud_terraplen",                       # [A] SIN rango de sensibilidad
+    "punto_aplicacion_incremento_sismico",   # [A] CON rango de sensibilidad
+    "v_max_concreto_eleccion",
+])
+@pytest.mark.parametrize("no_finito", [float("inf"), float("-inf"), float("nan")])
+def test_ningun_criterio_admite_un_numero_no_finito(clave, no_finito):
+    """
+    Criterio de salida de S16: "ningun dato no finito entra al pipeline como
+    diagnostico falso". El rango de sensibilidad NO basta para conseguirlo:
+    solo defiende a los criterios que declaran uno, y 'talud_terraplen' -- que
+    es [A] y no lo declara -- aceptaba inf y nan por los tres caminos.
+
+    Y el camino es real, no teorico: `cli.declarar_criterios` resuelve el
+    texto de --declarar con `ast.literal_eval`, y `ast.literal_eval("1e999")`
+    devuelve inf sin error. Con talud_terraplen = inf, M7 devolvia
+    proyeccion_taludes = inf, longitud_conducto = inf y cota_salida = -inf, y
+    la memoria imprimia un diagnostico entero construido sobre numeros que no
+    lo son.
+    """
+    try:
+        with pytest.raises(ValueError, match="infinito, con NaN"):
+            ca.establecer_valor_dinamico(clave, no_finito)
+        assert clave not in ca.valores_dinamicos()
+    finally:
+        ca.quitar_valor_dinamico(clave)
+
+
+def test_la_guardia_de_finitud_mira_dentro_de_las_estructuras():
+    """
+    Un criterio puede valer una tupla (la doble n de Sec. 4.1.1) o un dict (el
+    predimensionamiento del cabezal, la exposicion quimica del EMS). Un inf
+    escondido ahi dentro entra al calculo igual que uno escrito como escalar,
+    de modo que la guardia recorre la estructura entera y no solo el escalar.
+    """
+    from dataclasses import replace
+
+    base = ca.CRITERIOS["n_manning_hdpe"]
+    with pytest.raises(ValueError, match="infinito, con NaN"):
+        ca._verificar_criterio("n_manning_hdpe",
+                               replace(base, valor=(0.010, float("inf"))))
+    with pytest.raises(ValueError, match="infinito, con NaN"):
+        ca._verificar_criterio("n_manning_hdpe",
+                               replace(base, valor={"a": [1.0, float("nan")]}))
+
+
+def test_la_guardia_de_finitud_no_molesta_a_un_valor_normal():
+    """La guardia no puede llevarse por delante una declaracion legitima."""
+    try:
+        ca.establecer_valor_dinamico("talud_terraplen", 1.5)
+        assert ca.valor("talud_terraplen") == pytest.approx(1.5)
+    finally:
+        ca.quitar_valor_dinamico("talud_terraplen")
+
 
 def test_hay_criterios_pendientes_declarados():
     """Si algun dia se llenan todos, este test avisa para revisar los tableros."""
@@ -250,9 +306,13 @@ def test_el_perfil_de_suelo_es_referencia_declarada_y_no_calculo():
     assert "REFERENCIA MUERTA" in c.trazabilidad
 
     raiz = Path(__file__).resolve().parents[1]
+    # SIS-C-02: se pregunta al arbol, no al texto. Un comentario que explique
+    # POR QUE la referencia esta muerta es justo lo contrario de invocarla, y
+    # la version de subcadena la contaba como invocacion.
     invocaciones = [
         ruta.name for ruta in (raiz / "src" / "modulos").glob("*.py")
-        if "PERFIL_SUELO_PRESUNTO" in ruta.read_text(encoding="utf-8-sig")
+        if "PERFIL_SUELO_PRESUNTO" in estructura.nombres_usados(ruta)
+        or "PERFIL_SUELO_PRESUNTO" in estructura.textos_de_llamada_o_indice(ruta)
     ]
     assert not invocaciones, (
         f"'PERFIL_SUELO_PRESUNTO' dejo de ser referencia muerta ({invocaciones}): "
@@ -472,6 +532,109 @@ def test_un_override_a_None_se_rechaza_y_cierra_el_default_silencioso(_limpia_ov
     assert "phi_relleno_trasdos" not in ca.valores_dinamicos()
     with pytest.raises(CriterioPendienteError):
         valor("phi_relleno_trasdos")
+
+
+@pytest.fixture
+def criterios_restaurados():
+    """
+    `escribir_valor_en_archivo` MUTA `CRITERIOS` en memoria a proposito (para
+    que la sesion en curso vea el valor definitivo sin reiniciar). Un test que
+    la ejercite tiene que devolver el diccionario a su sitio, o el resto de la
+    suite veria un criterio con valor donde deberia haber un vacio.
+    """
+    copia = dict(ca.CRITERIOS)
+    yield
+    ca.CRITERIOS.clear()
+    ca.CRITERIOS.update(copia)
+    ca.limpiar_valores_dinamicos()
+
+
+def test_la_escritura_permanente_reescribe_el_valor_en_el_archivo(
+        tmp_path, criterios_restaurados):
+    """
+    SIS-F-02: la rama que SI escribe el archivo fuente no se ejecutaba nunca.
+    El unico test de la escritura permanente comprobaba el RECHAZO previo, de
+    modo que el `subn`, el `write_text` y la actualizacion en memoria -- todo
+    lo que de verdad hace la funcion -- estaban sin cubrir.
+
+    Se escribe sobre una COPIA en tmp_path: el archivo fuente del repositorio
+    no se toca, que es lo que el parametro `ruta` existe para permitir.
+    """
+    clave = "talud_terraplen"
+    copia = tmp_path / "criterios_copia.py"
+    original = Path(ca.__file__).read_text(encoding="utf-8")
+    copia.write_text(original, encoding="utf-8")
+    assert ca.CRITERIOS[clave].valor is None, (
+        f"'{clave}' dejo de estar vacio: este test necesita un criterio pendiente")
+
+    ca.establecer_valor_dinamico(clave, 1.5)
+    assert ca.declarado_en_caliente(clave)
+
+    ca.escribir_valor_en_archivo(clave, 1.5, ruta=str(copia))
+
+    escrito = copia.read_text(encoding="utf-8")
+    assert escrito != original, "el archivo no se toco"
+    assert f'"{clave}": Criterio(\n        valor=1.5,' in escrito, (
+        "el valor no quedo escrito en el bloque del criterio")
+    # ...y SOLO ese bloque: la escritura no puede arrastrar nada mas.
+    assert len(escrito.splitlines()) == len(original.splitlines())
+
+    # El estado en memoria: el valor pasa a ser el del archivo y el override
+    # en caliente se retira, porque ya no hace falta.
+    assert ca.CRITERIOS[clave].valor == pytest.approx(1.5)
+    assert not ca.declarado_en_caliente(clave)
+    # Los demas campos del Criterio no se tocan: describen POR QUE se adopto
+    # el valor y se revisan a mano, como dice el docstring de la funcion.
+    assert ca.CRITERIOS[clave].etiqueta == "A"
+    assert ca.CRITERIOS[clave].sensibilidad is None
+    assert ca.CRITERIOS[clave].fuente
+
+
+@pytest.mark.parametrize("clave", ["n_manning_hdpe", "v_max_hdpe", "v_max_tmc",
+                                   "cobertura_minima_aashto",
+                                   "factores_carga_aashto",
+                                   "procedimiento_flexion_corte_aashto_sec5"])
+def test_la_escritura_permanente_se_niega_ante_un_valor_multilinea(
+        tmp_path, criterios_restaurados, clave):
+    """
+    SIS-F-19: el patron de `escribir_valor_en_archivo` solo alcanza a los
+    criterios cuyo `valor=` cabe en una linea. Ese ValueError es LO UNICO que
+    impide escribir un escalar encima de un criterio cuyo valor es una tabla,
+    un dict o una tupla multilinea -- que lo dejaria a medias y con el resto
+    del literal colgando.
+
+    La ficha hablaba de DOS criterios; en el arbol de hoy son SEIS. El test se
+    parametriza sobre los seis y comprueba las dos mitades del contrato: que
+    se niega, y que NO toca el archivo al negarse.
+
+    Se reescribe el criterio con SU PROPIO valor actual, no con un numero
+    inventado: asi la guardia de `_verificar_criterio` lo acepta con
+    seguridad -- es el valor que el archivo ya declara -- y lo unico que puede
+    fallar es lo que este test mide, el alcance del patron. Con un escalar
+    cualquiera, los que declaran rango de sensibilidad caerian antes por el
+    rango y el test estaria probando otra cosa.
+    """
+    copia = tmp_path / "criterios_copia.py"
+    original = Path(ca.__file__).read_text(encoding="utf-8")
+    copia.write_text(original, encoding="utf-8")
+    suyo = ca.CRITERIOS[clave].valor
+
+    with pytest.raises(ValueError, match="No se encontro el bloque"):
+        ca.escribir_valor_en_archivo(clave, suyo, ruta=str(copia))
+
+    assert copia.read_text(encoding="utf-8") == original, (
+        "se nego a escribir pero el archivo ya se habia tocado")
+    assert ca.CRITERIOS[clave].valor == suyo, (
+        "se nego a escribir y aun asi cambio el valor en memoria")
+
+
+def test_la_escritura_permanente_no_inventa_una_clave(tmp_path):
+    copia = tmp_path / "criterios_copia.py"
+    copia.write_text(Path(ca.__file__).read_text(encoding="utf-8"),
+                     encoding="utf-8")
+    with pytest.raises(KeyError):
+        ca.escribir_valor_en_archivo("criterio_que_no_existe", 1.0,
+                                     ruta=str(copia))
 
 
 def test_la_escritura_permanente_valida_antes_de_tocar_el_disco(tmp_path):
@@ -904,10 +1067,23 @@ def test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor():
     textos = {ruta: ruta.read_text(encoding="utf-8-sig") for ruta in fuentes}
 
     for clave in ca.criterios_sin_consumidor():
-        invocaciones = [ruta.name for ruta, texto in textos.items()
-                        if clave in texto]
-        assert not invocaciones, (
-            f"'{clave}' declara `sin_consumidor` y aparece en {invocaciones}. "
+        # El GRAVE primero: la clave usada de verdad, leida del arbol. Si esto
+        # falla, la memoria esta declarando como no usado un criterio que si
+        # entra en el calculo (SIS-C-02).
+        usada_de_verdad = [ruta.name for ruta in textos
+                           if clave in estructura.textos_de_llamada_o_indice(ruta)
+                           or clave in estructura.nombres_usados(ruta)]
+        assert not usada_de_verdad, (
+            f"'{clave}' declara `sin_consumidor` y {usada_de_verdad} la INVOCA: "
+            "la memoria esta declarando como no usado un criterio que si entra "
+            "en el calculo")
+        # Y el MENOR despues, que es una comprobacion de TEXTO a proposito: el
+        # criterio pide que no quede ni la mencion, para que nadie lea una
+        # linea suelta y crea que el modulo lo consume.
+        menciones = [ruta.name for ruta, texto in textos.items()
+                     if clave in texto]
+        assert not menciones, (
+            f"'{clave}' declara `sin_consumidor` y aparece en {menciones}. "
             "O lo invoca alguien -- y entonces la memoria esta mintiendo -- o "
             "la mencion hay que quitarla")
 
@@ -942,3 +1118,354 @@ def test_ningun_diametro_de_alcantarilla_alcanza_la_luz_de_puente():
     assert max(valor(CLAVE_TOPES).values()) < CN.LUZ_MAX_ALCANTARILLA
     assert CN.DIAMETRO_MIN < CN.LUZ_MAX_ALCANTARILLA
 
+
+
+# ===========================================================================
+# Las guardas de este archivo que ninguna prueba alcanzaba (SIS-F-10)
+# ===========================================================================
+# SIS-F-10 conto trece `raise` sin cobertura sobre un arbol anterior; medida
+# de nuevo sobre el de S16 la cuenta es mayor, y una parte esta aqui. Ninguna
+# de las de abajo es de la taxonomia de `modelos.py`: son `ValueError` y
+# `KeyError` de ARQUITECTURA -- si saltan, el archivo esta mal escrito y
+# ninguna corrida deberia empezar --, y por eso importan tanto o mas: son las
+# unicas que impiden que una declaracion incoherente entre al tablero y de
+# ahi a la memoria, y borrarlas no rompia ninguna prueba.
+#
+# Van agrupadas en tablas y no una por test a proposito: lo que se lee de un
+# vistazo es la lista de formas de estar mal escrito, cada una con el trozo
+# de motivo que dice POR QUE.
+
+
+# ---------------------------------------------------------------------------
+# Una clave que nadie declaro no se inventa por NINGUNA de las tres lecturas
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("lectura", [
+    ca.valor,                    # ya cubierta: la lectura que bloquea
+    ca.valor_si_declarado,       # la de los criterios OPCIONALES
+    ca.declarado_en_caliente,    # la que dice de donde vino el valor
+])
+def test_ninguna_lectura_inventa_una_clave_no_declarada(lectura):
+    """
+    `valor()` tenia su prueba y las otras dos no. Falla si alguna devuelve
+    None o False ante una clave desconocida: un criterio mal tecleado se
+    leeria como "sin declarar" (y bloquearia) o como "no declarado en
+    caliente" (y la memoria escribiria una procedencia falsa), en vez de
+    delatar el error de tipeo.
+    """
+    with pytest.raises(KeyError) as exc:
+        lectura("parametro_que_nadie_declaro")
+    assert "parametro_que_nadie_declaro" in str(exc.value)
+    assert "criterios_adoptados.py" in str(exc.value)
+
+
+def test_valor_si_declarado_devuelve_none_solo_para_una_clave_que_SI_existe():
+    """
+    La contraparte que separa las dos situaciones: "no esta declarada" es
+    KeyError y "esta declarada y sigue vacia" es None. Confundirlas en
+    cualquiera de los dos sentidos rellena un vacio o esconde un tipeo.
+    """
+    pendiente = next(iter(CLAVES_PENDIENTES))
+    assert ca.valor_si_declarado(pendiente) is None
+    assert ca.declarado_en_caliente(pendiente) is False
+
+
+# ---------------------------------------------------------------------------
+# `verificar_resolucion`: el criterio de salida de la Sec. 4.3, hecho guardia
+# ---------------------------------------------------------------------------
+# Las resoluciones de prueba se derivan con `dataclasses.replace` de las que
+# el archivo YA declara, y no se escriben a mano: asi los ids de tabla, de
+# fila y de columna salen del registro normativo -- que es donde viven -- y
+# no de una transcripcion paralela que pueda quedar desfasada.
+
+_DE_TABLA_REAL = CRITERIOS["n_manning_hdpe"].resolucion          # con fila_id
+_DE_COLUMNA_REAL = CRITERIOS["h_eq_banda_intermedia_borde"].resolucion
+_EN_RANGO_REAL = CRITERIOS["v_max_concreto_eleccion"].resolucion
+_OTRA_TABLA_REAL = CRITERIOS["ke_entrada"].resolucion.tablas[0]
+
+
+def _sin(resolucion, **campos):
+    """La misma resolucion declarada, con un campo vaciado o cambiado."""
+    from dataclasses import replace
+    return replace(resolucion, **campos)
+
+
+RESOLUCIONES_INCOHERENTES = [
+    # --- libre -------------------------------------------------------------
+    (ca.Libre(que_lo_fija=""), "no dice QUIEN pone el numero"),
+    # --- de_tabla ----------------------------------------------------------
+    (_sin(_DE_TABLA_REAL, tablas=()), "no cita ninguna tabla"),
+    (_sin(_DE_TABLA_REAL, que_elige=""), "no dice QUE se elige"),
+    (_sin(_DE_TABLA_REAL, tablas=("TABLA_QUE_NADIE_TRANSCRIBIO",)),
+     "no esta en el registro normativo"),
+    (_sin(_DE_TABLA_REAL, tablas=_DE_TABLA_REAL.tablas + (_OTRA_TABLA_REAL,)),
+     "fija fila o columna y cita 2 tablas"),
+    (_sin(_DE_TABLA_REAL, fila_id="fila_que_la_tabla_no_tiene"),
+     "que la tabla no tiene"),
+    (_sin(_DE_COLUMNA_REAL, columna_id="columna_que_la_tabla_no_tiene"),
+     "que la tabla no tiene"),
+    (_sin(_DE_TABLA_REAL, elegido_por="criterio_que_nadie_declaro"),
+     "no es un criterio declarado"),
+    # --- en_rango ----------------------------------------------------------
+    (_sin(_EN_RANGO_REAL, columna_id="columna_que_la_tabla_no_tiene"),
+     "que la tabla no tiene"),
+    (_sin(_EN_RANGO_REAL, que_acota=""), "no dice QUE acota el rango"),
+    # --- derivada ----------------------------------------------------------
+    (ca.Derivada(de=(), regla="la regla"), "no declara de que se deriva"),
+    (ca.Derivada(de=("otra_variable",), regla=""), "no declara de que se deriva"),
+    # --- de_ensayo ---------------------------------------------------------
+    (ca.DeEnsayo(ensayo="", trazabilidad_exigida="la lectura"),
+     "no declara el procedimiento o la trazabilidad"),
+    (ca.DeEnsayo(ensayo="el ensayo", trazabilidad_exigida=""),
+     "no declara el procedimiento o la trazabilidad"),
+    # --- de_catalogo -------------------------------------------------------
+    (ca.DeCatalogo(catalogo_id="CATALOGO_QUE_NO_ESTA", que_elige="x",
+                   advertencia="que norma NO lo sostiene"),
+     "que no esta en el registro"),
+]
+
+
+@pytest.mark.parametrize("resolucion, motivo", RESOLUCIONES_INCOHERENTES,
+                         ids=lambda x: None)
+def test_la_resolucion_no_basta_con_ser_del_tipo_correcto(resolucion, motivo):
+    """
+    Falla si `verificar_resolucion` se conforma con el TIPO de la resolucion.
+    El modo correcto con los campos vacios o con un id que no resuelve es
+    peor que no declarar modo: la ventana abre una pestana que no puede
+    llenar, la memoria escribe una procedencia que nadie puede seguir, y el
+    `de_tabla` promete mostrar una tabla que no esta transcrita.
+    """
+    with pytest.raises(ValueError) as exc:
+        ca.verificar_resolucion("criterio_de_prueba", resolucion)
+    assert "criterio_de_prueba" in str(exc.value)
+    assert motivo in str(exc.value)
+
+
+@pytest.mark.parametrize("resolucion", [_DE_TABLA_REAL, _DE_COLUMNA_REAL,
+                                        _EN_RANGO_REAL])
+def test_las_resoluciones_del_archivo_pasan_su_propia_guardia(resolucion):
+    """
+    La contraparte que hace de la tabla de arriba una prueba y no una
+    tautologia: las resoluciones REALES de las que se derivaron los casos
+    malos pasan sin una queja, y devuelven su modo.
+    """
+    modo = ca.verificar_resolucion("criterio_de_prueba", resolucion)
+    assert modo is ca.modo_de(resolucion)
+
+
+# ---------------------------------------------------------------------------
+# `_verificar_criterio`: lo que hace valida a UNA declaracion
+# ---------------------------------------------------------------------------
+# El ancla del vacio verificado se LEE del unico criterio que hoy declara uno
+# ('cobertura_minima_aashto'): escribirla a mano crearia una segunda cita del
+# registro que puede divergir de la que el archivo usa de verdad.
+ANCLA_REAL = CRITERIOS["cobertura_minima_aashto"].vacio_verificado
+
+DECLARACIONES_INCOHERENTES = [
+    # (campos del criterio, trozo del motivo)
+    (dict(etiqueta="X"), "no es de la convencion"),
+    (dict(etiqueta="S", trazabilidad="como se leyo", sensibilidad=(1.0, 2.0)),
+     "es [S] y declara sensibilidad"),
+    (dict(trazabilidad="como se leyo"), "no es [S] y declara trazabilidad"),
+    (dict(sensibilidad=(1.0, 2.0, 3.0)), "de 3 extremos"),
+    (dict(etiqueta="N", de_catalogo=True), "no es una exigencia normativa"),
+    (dict(etiqueta="N->", de_catalogo=True), "ni una analogia normativa"),
+    (dict(valor=None, vacio_verificado=ANCLA_REAL, reemplazado_por="el ensayo"),
+     "declara vacio_verificado y no tiene valor"),
+    (dict(vacio_verificado=ANCLA_REAL), "no declara `reemplazado_por`"),
+    (dict(resolucion=None), "no declara `resolucion`"),
+]
+
+
+@pytest.mark.parametrize("campos, motivo", DECLARACIONES_INCOHERENTES,
+                         ids=lambda x: None)
+def test_la_guardia_rechaza_cada_forma_de_declaracion_incoherente(campos,
+                                                                  motivo):
+    """
+    Falla si se pierde cualquiera de estas ramas. Cada una deja entrar una
+    declaracion que la memoria imprimiria como buena:
+
+      etiqueta fuera de la convencion   una sexta etiqueta que M11 no ordena
+      [S] con sensibilidad              un hecho de sitio con rango elegible
+      trazabilidad sin ser [S]          un criterio que finge ser una lectura
+      rango de tres extremos            un "rango" que no acota nada
+      de_catalogo con etiqueta [N]/[N->] un tope de proveedor leido como
+                                        exigencia normativa (NOR-PRO-01/02)
+      vacio_verificado sin valor        decir que se cubre un vacio sin cubrirlo
+      vacio_verificado sin reemplazo    un vacio agotado que se lee como cerrado
+      sin resolucion                    una variable sin modo (Sec. 4.3)
+    """
+    with pytest.raises(ValueError) as exc:
+        ca._verificar_criterio("criterio_de_prueba",
+                               _criterio_de_prueba(**campos))
+    assert "criterio_de_prueba" in str(exc.value)
+    assert motivo in str(exc.value)
+
+
+ANCLAS_QUE_NO_RESUELVEN = [
+    ("manifiesto_citas.md Sec. 14.a", None),          # la real: no debe lanzar
+    ("Sec. 14.a", "no tiene la forma"),               # sin documento
+    ("manifiesto_citas.md 14.a", "no tiene la forma"),  # sin el rotulo 'Sec.'
+    ("documento_que_no_existe.md Sec. 14.a", "no existe"),
+    ("manifiesto_citas.md Sec. 999.z", "no tiene una Sec. 999.z"),
+]
+
+
+@pytest.mark.parametrize("ancla, motivo", ANCLAS_QUE_NO_RESUELVEN,
+                         ids=lambda x: None)
+def test_el_ancla_de_un_vacio_verificado_tiene_que_resolver(ancla, motivo):
+    """
+    Un valor que dice cubrir un vacio VERIFICADO y apunta a un registro que no
+    existe afirma una diligencia que nadie hizo, y es peor que no decir nada:
+    el revisor lee "vacio verificado", no encuentra donde, y no tiene forma de
+    saber si el vacio se agoto o si la cita esta mal.
+
+    Falla si desaparece cualquiera de los tres chequeos -- la forma del ancla,
+    que el documento exista, y que la seccion exista dentro de el --, que son
+    tres errores distintos y el mensaje los distingue. La primera fila es el
+    ancla que el archivo declara de verdad: tiene que pasar.
+    """
+    if motivo is None:
+        ca._verificar_ancla_de_vacio("criterio_de_prueba", ancla)
+        return
+    with pytest.raises(ValueError) as exc:
+        ca._verificar_ancla_de_vacio("criterio_de_prueba", ancla)
+    assert "criterio_de_prueba" in str(exc.value)
+    assert motivo in str(exc.value)
+
+
+def test_el_reporte_sin_invocaciones_lo_dice_en_vez_de_salir_vacio():
+    """
+    Falla si `reporte_criterios(solo_usados=True)` devuelve un bloque de
+    encabezados sin filas cuando el calculo no invoco ningun criterio. La
+    memoria de una corrida que se detuvo antes de usar nada tiene que decir
+    eso, no dejar una tabla vacia que se lee como "no hubo criterios que
+    declarar". Es el gemelo del que ya existe para `datos_sitio`.
+    """
+    assert not ca._USADOS                      # lo garantiza la fixture autouse
+    assert reporte_criterios(solo_usados=True) == (
+        "No se invoco ningun criterio adoptado.")
+
+# ---------------------------------------------------------------------------
+# SIS-E-05 / SIS-E-06: el contrato de las dos excepciones, fijado
+# ---------------------------------------------------------------------------
+
+def test_el_rechazo_de_una_declaracion_llega_legible_a_los_tres_llamadores():
+    """
+    SIS-E-05. El rechazo sale como `ValueError`, fuera de `ErrorProyecto`, y
+    la decision esta argumentada en el docstring de `establecer_valor_dinamico`.
+    Lo que la taxonomia persigue -- que la GUI no muestre una traza donde hay
+    un problema que el proyectista puede corregir -- se cumple por otra via:
+    los TRES llamadores capturan (ValueError, KeyError) a tres lineas.
+
+    Este test fija esa via. Si alguien estrecha uno de los tres brazos, el
+    rechazo pasaria a salir con traza y el argumento del docstring dejaria de
+    ser cierto sin que nada avisara.
+    """
+    import ast as _ast
+    from pathlib import Path as _Path
+
+    raiz = _Path(__file__).resolve().parents[1]
+    esperados = {
+        (raiz / "cli.py", "main"),
+        (raiz / "gui" / "app.py", "_aplicar_valor_corrida"),
+        (raiz / "gui" / "app.py", "_guardar_valor_en_archivo"),
+    }
+    for ruta, funcion in esperados:
+        arbol = _ast.parse(ruta.read_text(encoding="utf-8-sig"))
+        nodo = next((n for n in _ast.walk(arbol)
+                     if isinstance(n, _ast.FunctionDef) and n.name == funcion), None)
+        assert nodo is not None, f"'{funcion}' ya no existe en {ruta.name}"
+        capturados = set()
+        for manejador in _ast.walk(nodo):
+            if not isinstance(manejador, _ast.ExceptHandler) or manejador.type is None:
+                continue
+            tipos = (manejador.type.elts
+                     if isinstance(manejador.type, _ast.Tuple) else [manejador.type])
+            for t in tipos:
+                if isinstance(t, _ast.Name):
+                    capturados.add(t.id)
+        assert "ValueError" in capturados, (
+            f"{ruta.name}::{funcion} dejo de capturar ValueError: el rechazo "
+            "de una declaracion pasaria a salir con traza (SIS-E-05)")
+
+
+def test_el_rechazo_por_rango_sigue_siendo_ValueError_y_dice_el_rango():
+    """La otra mitad: el mensaje tiene que servir para corregir el valor."""
+    with pytest.raises(ValueError) as exc:
+        ca.establecer_valor_dinamico("punto_aplicacion_incremento_sismico", 9.9)
+    mensaje = str(exc.value)
+    assert "fuera del rango de sensibilidad" in mensaje
+    assert "0.333" in mensaje and "0.6" in mensaje, (
+        "el mensaje tiene que traer el rango, no solo decir que se salio")
+    assert not isinstance(exc.value, ErrorProyecto), (
+        "si esto cambia, hay que actualizar los tres brazos de los llamadores "
+        "y el argumento del docstring de establecer_valor_dinamico")
+
+
+def test_dato_faltante_admite_un_dato_que_no_es_columna_del_csv():
+    """
+    SIS-E-06. `modelos.py` declara el contrato ancho -- "del CSV (Sec. 1.2) o
+    de un tablero externo" -- y el codigo lo usa: V5 levanta
+    DatoFaltanteError('ancho_derecho_via_m'), que su propio detalle admite que
+    no es columna de Sec. 1.2. CLAUDE.md describia la excepcion mas estrecha
+    de lo que el proyecto la tiene; se amplio la constitucion, que era lo que
+    estaba desactualizado.
+    """
+    from modelos import DatoFaltanteError
+
+    assert "tablero externo" in (DatoFaltanteError.__doc__ or "")
+
+    raiz = Path(__file__).resolve().parents[1]
+    constitucion = (raiz / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "no es columna del CSV" in constitucion, (
+        "CLAUDE.md volvio a definir DatoFaltanteError solo sobre columnas del "
+        "CSV: el codigo la usa tambien para los datos externos y para los que "
+        "un tablero tendria que aportar")
+
+
+# ---------------------------------------------------------------------------
+# La segunda vuelta de MAT-D14: el no-finito ESCRITO COMO TEXTO
+# ---------------------------------------------------------------------------
+#
+# La primera version de este cierre puso la guardia del texto en `cli.py`, en
+# el brazo `except` de `ast.literal_eval`, y una revision adversarial la
+# esquivo con comillas: `--declarar "CLAVE='nan'"` hace que `literal_eval`
+# TENGA EXITO y devuelva la cadena 'nan', de modo que el brazo `except` nunca
+# se ejecuta. La cadena entraba entera y `M9_cabezal.cuantia_de_diseno` la
+# devolvia al calculo como `float('nan')`, con la memoria imprimiendo
+# `cuantia_adoptada = nan`. La guardia esta hoy en `_verificar_criterio`, que
+# es el cuello por donde pasan las tres vias de declaracion.
+
+@pytest.mark.parametrize("texto", ["nan", "inf", "-inf", "Infinity",
+                                   "-Infinity", "NaN", "  inf  ", "1e999"])
+def test_un_texto_que_se_lee_como_no_finito_no_entra_como_criterio(
+        criterios_restaurados, texto):
+    with pytest.raises(ValueError, match="infinito"):
+        ca.establecer_valor_dinamico("talud_terraplen", texto)
+
+
+def test_un_texto_categorico_sigue_entrando(criterios_restaurados):
+    """
+    El contraste que hace que la guardia no sea celo: el respaldo a texto
+    existe para los criterios CATEGORICOS, y esos no se leen como numero.
+    """
+    ca.establecer_valor_dinamico("metodo_estabilidad_global", "Bishop_Simplificado")
+    assert ca.valor("metodo_estabilidad_global") == "Bishop_Simplificado"
+
+
+def test_ninguna_clave_acepta_la_cadena_nan(criterios_restaurados):
+    """
+    El barrido entero, porque el agujero no era de una clave sino de la via:
+    la revision adversarial midio 46 claves que la aceptaban.
+    """
+    aceptadas = []
+    for clave in list(ca.CRITERIOS):
+        try:
+            ca.establecer_valor_dinamico(clave, "nan")
+            aceptadas.append(clave)
+        except (ValueError, KeyError):
+            pass
+    assert not aceptadas, (
+        f"estas claves aceptan la cadena 'nan': {aceptadas}. El primer "
+        "consumidor que haga float() sobre ellas la devuelve al calculo.")

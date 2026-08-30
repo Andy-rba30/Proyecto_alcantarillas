@@ -18,11 +18,14 @@ import pytest
 
 import constantes_normativas as CN
 import criterios_adoptados as ca
-from modelos import (ConstantesHDS5, ControlGobernante, CriterioPendienteError,
-                     DatoFaltanteError, DisenoNoFactibleError, ErrorProyecto,
-                     Familia, Geometria, Material, PuntoCritico,
-                     ReferenciaNormativa, ResultadoHidraulico, ResultadoPunto,
-                     TipoMaterial, Verificacion)
+from modelos import (CasoDemandaSismica, CondicionAnalisis, ConstantesHDS5,
+                     ControlGobernante, CriterioPendienteError,
+                     DatoFaltanteError, DatoInvalidoError,
+                     DemandaSismicaCabezal, DisenoNoFactibleError,
+                     EmpujesTrasdos, ErrorProyecto, Familia,
+                     FuerzaInerciaMuro, Geometria, Material, PasoDiseno,
+                     PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
+                     ResultadoPunto, TipoMaterial, Verificacion)
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING, CP8_CONTROL_SALIDA
 
 DIRECTORIO_TESTS = Path(__file__).resolve().parent
@@ -393,3 +396,419 @@ def test_la_referencia_normativa_sigue_siendo_un_string_para_quien_la_imprime():
     assert "4.1.2.1" in r
     assert "hoja de ruta" in str(r)          # la mitad interna, etiquetada
     assert str(r).startswith("num. 4.1.2.1")  # la cita verificable, delante
+
+
+# ---------------------------------------------------------------------------
+# Fase 9: los empujes del trasdos, con VALOR y no solo con orden (SIS-F-07)
+# ---------------------------------------------------------------------------
+# Tolerancia de las comparaciones de valor de este archivo. Las propiedades de
+# modelos.py son aritmetica pura sobre sus propios campos -- ni solver, ni
+# iteracion, ni acumulacion --, de modo que el unico ruido posible es el del
+# ultimo bit del double (37.4*0.8 no da 29.92 exacto). 1e-12 lo absorbe y
+# queda diez ordenes de magnitud por debajo del mutante mas fino que estos
+# tests tienen que matar: el menor de todos desvia el resultado un 5.4 %.
+TOL_ARITMETICA = 1e-12
+
+# Las cuatro cargas del trasdos y sus brazos. NO salen de ningun caso patron
+# -- Sec. 9.2 no tiene uno -- y por eso no se presentan como valores de
+# proyecto: son los numeros con que se contrasta la ARITMETICA del tipo, y
+# estan elegidos para que ninguna mutacion sobreviva. Los cuatro empujes son
+# distintos entre si, los cuatro brazos tambien, ninguno vale 0, 1 ni 2, y
+# ninguna suma coincide con ningun producto ni con ningun cociente. Los brazos
+# ademas son los de un muro de 2.40 m (H/3, H/2 y 0.6H), para que el objeto
+# siga siendo leible como lo que representa.
+ALTURA_EMPUJE = 2.4           # m
+EMPUJE_ACTIVO = 37.4          # kN/m - carga EH
+BRAZO_ACTIVO = 0.8            # m - H/3
+EMPUJE_SOBRECARGA = 12.5      # kN/m - carga LS
+BRAZO_SOBRECARGA = 1.2        # m - H/2
+EMPUJE_HIDROSTATICO = 6.3     # kN/m - carga WA
+BRAZO_HIDROSTATICO = 0.45     # m - un tercio de la columna de agua
+INCREMENTO_SISMICO = 9.7      # kN/m - carga EQ
+BRAZO_INCREMENTO = 1.44       # m - 0.6H
+SUBPRESION = 4.2              # kN/m - vertical: no entra en ninguna de las dos
+
+EMPUJE_TOTAL_ESTATICO = 56.2      # 37.4 + 12.5 + 6.3
+EMPUJE_TOTAL_SISMICO = 65.9       # + 9.7
+MOMENTO_ESTATICO = 47.755         # 37.4*0.8 + 12.5*1.2 + 6.3*0.45
+MOMENTO_SISMICO = 61.723          # + 9.7*1.44
+
+
+def test_los_cuatro_totales_salen_de_las_ocho_componentes():
+    """
+    Los cuatro totales de arriba estan calculados A MANO en un comentario, y
+    hasta aqui nada comprobaba que siguieran saliendo de las ocho componentes.
+    Editar `EMPUJE_ACTIVO` y olvidar `MOMENTO_ESTATICO` dejaba la suite verde
+    con un dorado que ya no sale de su formula --- que es exactamente el
+    defecto MAT-O20 / SIS-F-03, el que hizo que los dorados de CP-1 estuvieran
+    mal toda su vida.
+
+    No van a `casos_patron.py`: no son dorados de una formula normativa sino
+    numeros de sondeo de la ARITMETICA DEL TIPO, elegidos para que ninguna
+    mutacion sobreviva (Sec. 9.2 no tiene caso patron, y el bloque de arriba
+    lo dice). Lo que faltaba no era moverlos, era recalcularlos.
+    """
+    assert EMPUJE_TOTAL_ESTATICO == pytest.approx(
+        EMPUJE_ACTIVO + EMPUJE_SOBRECARGA + EMPUJE_HIDROSTATICO,
+        rel=TOL_ARITMETICA)
+    assert EMPUJE_TOTAL_SISMICO == pytest.approx(
+        EMPUJE_TOTAL_ESTATICO + INCREMENTO_SISMICO, rel=TOL_ARITMETICA)
+    assert MOMENTO_ESTATICO == pytest.approx(
+        EMPUJE_ACTIVO * BRAZO_ACTIVO
+        + EMPUJE_SOBRECARGA * BRAZO_SOBRECARGA
+        + EMPUJE_HIDROSTATICO * BRAZO_HIDROSTATICO, rel=TOL_ARITMETICA)
+    assert MOMENTO_SISMICO == pytest.approx(
+        MOMENTO_ESTATICO + INCREMENTO_SISMICO * BRAZO_INCREMENTO,
+        rel=TOL_ARITMETICA)
+    # Y los brazos siguen siendo los de un muro de 2.40 m, que es lo que hace
+    # el objeto leible como lo que representa.
+    assert BRAZO_ACTIVO == pytest.approx(ALTURA_EMPUJE / 3, rel=TOL_ARITMETICA)
+    assert BRAZO_SOBRECARGA == pytest.approx(ALTURA_EMPUJE / 2, rel=TOL_ARITMETICA)
+    assert BRAZO_INCREMENTO == pytest.approx(0.6 * ALTURA_EMPUJE,
+                                             rel=TOL_ARITMETICA)
+
+
+def _empujes(condicion: CondicionAnalisis) -> EmpujesTrasdos:
+    """Los empujes de una condicion, con la carga EQ solo en la sismica."""
+    sismico = condicion is CondicionAnalisis.SISMICO
+    return EmpujesTrasdos(
+        condicion=condicion,
+        altura_empuje=ALTURA_EMPUJE,
+        gamma_relleno=19.0,
+        E_activo=EMPUJE_ACTIVO,
+        z_activo=BRAZO_ACTIVO,
+        E_sobrecarga=EMPUJE_SOBRECARGA,
+        z_sobrecarga=BRAZO_SOBRECARGA,
+        E_hidrostatico=EMPUJE_HIDROSTATICO,
+        z_hidrostatico=BRAZO_HIDROSTATICO,
+        U_subpresion=SUBPRESION,
+        K_A=0.333,
+        incremento_sismico=INCREMENTO_SISMICO if sismico else None,
+        z_incremento=BRAZO_INCREMENTO if sismico else None,
+    )
+
+
+def test_el_empuje_horizontal_total_suma_las_cuatro_cargas_y_solo_esas():
+    """
+    Sec. 9.2: EH + LS + WA (+ EQ en la condicion sismica), sin factorar.
+
+    Hasta SIS-F-07 los unicos asserts sobre esta propiedad eran dos
+    comparaciones de ORDEN (`sismico > estatico`), y con ellas sobrevivian
+    cambiar el signo de LS, el de WA, sumar la subpresion y hasta devolver
+    solo E_activo: la suite quedaba en 895 passed con la suma rota.
+    """
+    estatico = _empujes(CondicionAnalisis.ESTATICO)
+    sismico = _empujes(CondicionAnalisis.SISMICO)
+
+    assert estatico.empuje_horizontal_total == pytest.approx(
+        EMPUJE_TOTAL_ESTATICO, rel=TOL_ARITMETICA)
+    assert sismico.empuje_horizontal_total == pytest.approx(
+        EMPUJE_TOTAL_SISMICO, rel=TOL_ARITMETICA)
+    # La diferencia entre las dos condiciones es EXACTAMENTE la carga EQ
+    assert (sismico.empuje_horizontal_total
+            - estatico.empuje_horizontal_total) == pytest.approx(
+        INCREMENTO_SISMICO, rel=TOL_ARITMETICA)
+
+
+def test_el_momento_volcante_es_cada_empuje_por_su_propio_brazo():
+    """
+    Sec. 9.2, respecto del pie de la zapata. Los cuatro brazos son distintos
+    entre si a proposito: cruzarlos (E_activo con z_sobrecarga y al reves) da
+    57.715 en vez de 47.755, y sin este assert de valor pasaba la suite.
+    Tambien sobrevivian `*` -> `/` en EH y en LS.
+    """
+    estatico = _empujes(CondicionAnalisis.ESTATICO)
+    sismico = _empujes(CondicionAnalisis.SISMICO)
+
+    assert estatico.momento_volcante == pytest.approx(
+        MOMENTO_ESTATICO, rel=TOL_ARITMETICA)
+    assert sismico.momento_volcante == pytest.approx(
+        MOMENTO_SISMICO, rel=TOL_ARITMETICA)
+    # La diferencia es el incremento sismico por SU brazo, no por otro
+    assert (sismico.momento_volcante
+            - estatico.momento_volcante) == pytest.approx(
+        INCREMENTO_SISMICO * BRAZO_INCREMENTO, rel=TOL_ARITMETICA)
+
+
+def test_la_condicion_estatica_no_arrastra_la_carga_EQ():
+    """`incremento_sismico` y `z_incremento` son None en estatica (Sec. 9.2)."""
+    estatico = _empujes(CondicionAnalisis.ESTATICO)
+    assert estatico.incremento_sismico is None
+    assert estatico.z_incremento is None
+    assert estatico.empuje_horizontal_total == pytest.approx(
+        EMPUJE_ACTIVO + EMPUJE_SOBRECARGA + EMPUJE_HIDROSTATICO,
+        rel=TOL_ARITMETICA)
+
+
+def test_la_subpresion_no_entra_ni_en_el_empuje_horizontal_ni_en_el_momento():
+    """
+    La subpresion es VERTICAL: reduce la normal en la base, no empuja ni
+    voltea (docstring de `EmpujesTrasdos`). Sumarla a cualquiera de las dos
+    propiedades pasaba la suite entera.
+    """
+    con = _empujes(CondicionAnalisis.SISMICO)
+    sin_subpresion = dataclasses.replace(con, U_subpresion=0.0)
+
+    assert con.U_subpresion == pytest.approx(SUBPRESION, rel=TOL_ARITMETICA)
+    assert con.empuje_horizontal_total == pytest.approx(
+        sin_subpresion.empuje_horizontal_total, rel=TOL_ARITMETICA)
+    assert con.momento_volcante == pytest.approx(
+        sin_subpresion.momento_volcante, rel=TOL_ARITMETICA)
+
+
+# ---------------------------------------------------------------------------
+# La relacion de llenado del punto dimensionado (M11 la imprime dos veces)
+# ---------------------------------------------------------------------------
+
+def test_la_relacion_de_llenado_del_punto_usa_el_diametro_adoptado():
+    """
+    `ResultadoPunto.y_sobre_D` = y_normal / D. Es el numero que M11 imprime en
+    la tabla del punto y en el cuadro resumen, y el mismo que V1 verifica.
+    Sin assert de valor, `y_normal * D` pasaba la suite: 0.81 en vez de
+    0.5625, o sea un llenado del 81 % donde el conducto va al 56 %.
+
+    El diametro se cambia a 1.20 m a proposito, para que el resultado no pueda
+    coincidir con el y/D de la geometria del fixture (0.75): asi el test
+    tambien caza a quien devuelva la relacion de la seccion en vez de la del
+    punto.
+    """
+    aceptado = dataclasses.replace(_resultado_punto(True), D=1.20)
+    assert aceptado.resultado_hidraulico.y_normal == pytest.approx(
+        0.675, rel=TOL_ARITMETICA)
+    assert aceptado.y_sobre_D == pytest.approx(0.5625, rel=TOL_ARITMETICA)
+
+
+def test_la_relacion_de_llenado_es_None_si_falta_cualquiera_de_los_dos():
+    """Basta con que falte UNO de los dos: no se inventa el que quede."""
+    aceptado = _resultado_punto(True)
+    assert dataclasses.replace(aceptado, D=None).y_sobre_D is None
+    assert dataclasses.replace(
+        aceptado, resultado_hidraulico=None).y_sobre_D is None
+
+
+# ---------------------------------------------------------------------------
+# Coherencia del resultado y traza del bucle
+# ---------------------------------------------------------------------------
+
+def _verificacion(codigo: str, cumple: bool) -> Verificacion:
+    """Una verificacion cualquiera con el codigo y el veredicto pedidos."""
+    return Verificacion(
+        cumple=cumple,
+        numeral="4.1.1.3.7 b)",
+        valor_obtenido=CN.Y_SOBRE_D_MAX,
+        valor_admisible=CN.Y_SOBRE_D_MAX,
+        criterio_aplicado=None,
+        codigo=codigo,
+    )
+
+
+def test_un_aceptado_con_motivo_de_rechazo_es_incoherente():
+    """
+    `coherente` exige LAS DOS COSAS: ni verificaciones incumplidas ni motivo
+    de rechazo. Con `and` -> `or` el objeto contradictorio pasaba por bueno.
+    """
+    incoherente = dataclasses.replace(
+        _resultado_punto(True), motivo_rechazo="V3: velocidad de erosion")
+    assert not incoherente.coherente
+
+
+def test_un_aceptado_con_una_verificacion_incumplida_es_incoherente():
+    """La otra mitad de la conjuncion: aceptar con una V en rojo no es coherente."""
+    aceptado = _resultado_punto(True)
+    incoherente = dataclasses.replace(
+        aceptado,
+        verificaciones=aceptado.verificaciones + (_verificacion("V3", False),))
+    assert not incoherente.coherente
+
+
+def test_el_paso_del_bucle_separa_las_verificaciones_que_lo_descartaron():
+    """
+    `PasoDiseno.incumplidas` alimenta la traza de iteraciones (entregable 1 de
+    la Fase 11): `cli.py` exporta con ella la lista de codigos de cada
+    escalon. Devolver las que CUMPLEN, o devolverlas todas, pasaba la suite
+    entera y la memoria publicaba como motivo del descarte justo las
+    verificaciones que no lo fueron.
+    """
+    paso = PasoDiseno(
+        material="Concreto reforzado",
+        D=CN.DIAMETRO_MIN,
+        aceptado=False,
+        motivo="V1: y/D por encima del maximo",
+        verificaciones=(_verificacion("V1", False),
+                        _verificacion("V2", True),
+                        _verificacion("V3", False)),
+    )
+    assert [v.codigo for v in paso.incumplidas] == ["V1", "V3"]
+    assert len(paso.verificaciones) == 3        # las filtra, no las consume
+
+    aceptado = dataclasses.replace(
+        paso, aceptado=True, motivo="",
+        verificaciones=(_verificacion("V1", True),))
+    assert aceptado.incumplidas == ()
+
+
+# ---------------------------------------------------------------------------
+# El caso sismico que gobierna: se comparan ANALISIS, no fuerzas
+# ---------------------------------------------------------------------------
+
+CASO_PAE = "100% P_AE + 50% P_IR"
+CASO_PIR = "50% P_AE + 100% P_IR"
+
+
+def _demanda_sismica() -> DemandaSismicaCabezal:
+    """
+    Los dos casos del contraejemplo que el propio docstring de
+    `mas_desfavorable` escribe: P_AE = 100 kN/m con brazo 1.20 m y
+    P_IR = 80 kN/m con brazo 2.00 m.
+    """
+    return DemandaSismicaCabezal(
+        casos=(
+            CasoDemandaSismica(nombre=CASO_PAE, fraccion_P_AE=1.0,
+                               fraccion_P_IR=0.5, P_AE_aplicado=100.0,
+                               P_IR_aplicado=40.0, total=140.0,
+                               piso_estatico_activo=False),
+            CasoDemandaSismica(nombre=CASO_PIR, fraccion_P_AE=0.5,
+                               fraccion_P_IR=1.0, P_AE_aplicado=50.0,
+                               P_IR_aplicado=80.0, total=130.0,
+                               piso_estatico_activo=False),
+        ),
+        P_AE=100.0,
+        P_A=60.0,
+        inercia=FuerzaInerciaMuro(P_IR=80.0, W_w=210.0, W_s=110.0, k_h=0.25,
+                                  numeral="num. 2.8.1.1.14.1"),
+        numeral="num. 2.8.1.1.14.1",
+    )
+
+
+def test_gobierna_el_caso_del_efecto_mayor_y_no_el_de_la_fuerza_mayor():
+    """
+    num. 2.8.1.1.14.1: manda comparar ANALISIS, no resultantes. Con los dos
+    casos del docstring el orden se INVIERTE segun que efecto se mida --
+    140 > 130 en fuerza, 220 > 200 en momento volcante --, de modo que un
+    `max` -> `min`, o un `casos[0]`, no pueden pasar los dos asserts a la vez.
+    Hoy no los pasaba ninguno: `mas_desfavorable` no tenia un solo test.
+    """
+    demanda = _demanda_sismica()
+    por_momento = {CASO_PAE: 200.0, CASO_PIR: 220.0}
+    por_fuerza = {caso.nombre: caso.total for caso in demanda.casos}
+
+    assert demanda.mas_desfavorable(por_momento).nombre == CASO_PIR
+    assert demanda.mas_desfavorable(por_fuerza).nombre == CASO_PAE
+
+
+def test_faltar_el_efecto_de_un_caso_detiene_la_comparacion():
+    """
+    Sin el efecto de los DOS casos no hay "el resultado mas conservador": se
+    detiene con la taxonomia del proyecto, no con un KeyError ni con el unico
+    caso que si vino.
+    """
+    demanda = _demanda_sismica()
+    with pytest.raises(DatoInvalidoError) as exc:
+        demanda.mas_desfavorable({CASO_PAE: 200.0})
+    assert exc.value.campo == "efectos"
+    assert CASO_PIR in str(exc.value)
+
+
+def test_la_carga_sismica_va_con_su_brazo_o_no_va():
+    """
+    El estado medio que nadie podia detectar y que es NO CONSERVADOR: con el
+    incremento sismico declarado y `z_incremento` en None, la carga EQ contaba
+    en `empuje_horizontal_total` y desaparecia de `momento_volcante`, de modo
+    que el FS de volteo salia MAS ALTO de lo que corresponde -- la direccion
+    en la que un error no avisa.
+
+    Se cierra en el tipo y no en el llamador: `M9.empujes_trasdos` pone hoy
+    los dos campos juntos, pero `EmpujesTrasdos` es publica y los dos campos
+    son Optional e independientes.
+
+    SALE FUERA DE `ErrorProyecto`, y el test lo fija en los dos sentidos. El
+    estado medio no es un dato del expediente que el proyectista pueda
+    corregir --- es inalcanzable desde el unico camino de produccion ---, de
+    modo que la taxonomia lo presentaria como "el expediente no se puede
+    cargar" y mandaria al revisor a buscar en el CSV un defecto que esta en
+    el codigo. Es la frontera que `M9_cabezal.py` declara para SIS-E-02 y la
+    misma lectura de SIS-E-05.
+    """
+    base = _empujes(CondicionAnalisis.SISMICO)
+
+    with pytest.raises(ValueError) as exc:
+        dataclasses.replace(base, z_incremento=None)
+    assert "volteo" in str(exc.value)
+    assert not isinstance(exc.value, ErrorProyecto), (
+        "un invariante roto del tipo es un fallo de programa: si sale como "
+        "ErrorProyecto, la GUI lo muestra como problema del expediente")
+
+    with pytest.raises(ValueError):
+        dataclasses.replace(base, incremento_sismico=None)
+
+    # Y los dos estados legitimos siguen construyendose.
+    assert dataclasses.replace(base, incremento_sismico=None,
+                               z_incremento=None).incremento_sismico is None
+    assert base.z_incremento == pytest.approx(BRAZO_INCREMENTO,
+                                              rel=TOL_ARITMETICA)
+
+
+# ---------------------------------------------------------------------------
+# El ancho del talon: la guarda de GeometriaCabezal que nadie alcanzaba
+# ---------------------------------------------------------------------------
+# Los dos nombres que esta seccion necesita se importan AQUI y no en la
+# cabecera del archivo, con el mismo criterio con que otras pruebas de la
+# suite hacen `from dataclasses import replace` dentro del test: la seccion
+# queda autocontenida y se puede mover entera.
+from modelos import GeometriaCabezal                             # noqa: E402
+from tests.apoyo.aproximacion import REL_TRANSPORTE              # noqa: E402
+
+
+# SIS-F-10 conto trece `raise` de la taxonomia sin cobertura; medido de nuevo
+# sobre el arbol de S16 el recuento es mayor, y este es uno de los que quedaba
+# en modelos.py. Es un metodo de un tipo que fluye entre modulos: borrarlo no
+# rompia ninguna prueba y el calculo seguia, con un talon de cero.
+
+# Geometria de tanteo, en metros. NO es del expediente: la geometria del
+# cabezal la aporta el criterio 'predimensionamiento_cabezal', que sigue
+# vacio. Estos numeros solo tienen que ser coherentes entre si.
+ANCHO_TALON_DECLARADO = 1.10
+
+
+def _geometria_cabezal(**cambios) -> GeometriaCabezal:
+    base = dict(H=3.00, B=2.40, D_f=1.20, espesor_corona=0.30,
+                espesor_base_muro=0.45, espesor_zapata=0.40)
+    base.update(cambios)
+    return GeometriaCabezal(**base)
+
+
+def test_el_ancho_del_talon_sin_declarar_detiene_y_no_vale_cero():
+    """
+    Falla si `exigir_ancho_talon` devuelve 0.0, None o el default de la
+    dataclase en vez de detenerse. El num. 2.8.1.1.14.1 define W_s como el
+    peso del suelo encima del muro INCLUYENDO EL TALON: un talon de cero
+    anula W_s y con el la mitad de P_IR, y lo hace en la direccion NO
+    conservadora -- el numero que sale es menor que el real y nada avisa.
+
+    Se detiene con la excepcion del CRITERIO y no con una de dato, y eso
+    tambien se prueba: la geometria del cabezal no sale del CSV, sale de
+    'predimensionamiento_cabezal', y la GUI tiene que poder ofrecer
+    declararla en vez de mostrar un error de programa.
+    """
+    geometria = _geometria_cabezal()
+    assert geometria.ancho_talon is None
+
+    with pytest.raises(CriterioPendienteError) as exc:
+        geometria.exigir_ancho_talon()
+
+    assert exc.value.clave == "predimensionamiento_cabezal"
+    assert "talon" in exc.value.concepto
+    assert "2.8.1.1.14.1" in exc.value.fuente
+    assert "W_s" in exc.value.fuente and "P_IR" in exc.value.fuente
+    assert exc.value.mensaje_gui == "falta declarar: predimensionamiento_cabezal"
+
+
+def test_el_ancho_del_talon_declarado_se_devuelve_tal_cual():
+    """
+    La otra mitad de la guarda, sin la cual la de arriba se satisface
+    lanzando siempre: con el talon declarado no hay excepcion y el numero se
+    transporta sin que nadie opere sobre el.
+    """
+    geometria = _geometria_cabezal(ancho_talon=ANCHO_TALON_DECLARADO)
+    assert geometria.exigir_ancho_talon() == pytest.approx(
+        ANCHO_TALON_DECLARADO, rel=REL_TRANSPORTE)

@@ -77,6 +77,8 @@ el calculo, igual que un criterio pendiente: un dato de sitio que todavia no
 se ha leido tampoco se sustituye por un default.
 """
 
+import math
+import numbers
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set
 
@@ -181,6 +183,60 @@ _OBLIGATORIOS = ("concepto", "procedimiento", "fuente", "trazabilidad",
                  "ambito")
 
 
+def _numeros_de(valor: Any):
+    """
+    Todos los numeros reales que hay DENTRO de un valor, sea escalar, tupla,
+    lista o dict. Homologa de `criterios_adoptados._numeros_de`: la finitud no
+    puede depender de la FORMA del valor. Ni del TIPO: un texto que se lee
+    como numero no finito cuenta como numero, por la misma razon que alli ---
+    el primer consumidor que haga `float()` sobre el lo devuelve al calculo
+    convertido en el infinito o el NaN que se rechazo.
+    """
+    if isinstance(valor, dict):
+        for v in valor.values():
+            yield from _numeros_de(v)
+    elif isinstance(valor, (tuple, list, set, frozenset)):
+        for v in valor:
+            yield from _numeros_de(v)
+    elif isinstance(valor, str):
+        try:
+            leido = float(valor)
+        except (TypeError, ValueError, OverflowError):
+            return
+        if not math.isfinite(leido):
+            yield leido
+    elif isinstance(valor, numbers.Real) and not isinstance(valor, bool):
+        yield valor
+
+
+def _verificar_finitud(nombre: str, d: "DatoSitio") -> None:
+    """
+    Ningun numero de un dato de sitio puede ser infinito ni NaN.
+
+    Es la hermana que faltaba de `criterios_adoptados._verificar_finitud`, y
+    la asimetria entre las dos guardias es lo que la delato: este archivo
+    declara que `_verificar_dato` es "hermana de `_verificar_criterio`, y con
+    el mismo caracter", y una de las dos comprobaba la finitud y la otra no.
+
+    Aqui el argumento es ademas mas fuerte que en los criterios: un dato de
+    sitio es una LECTURA -- un mapa, un ensayo, una medicion de campo -- y
+    ninguna lectura devuelve un infinito. Un [S] no finito no es un valor
+    extremo: es una transcripcion rota.
+    """
+    for x in _numeros_de(d.valor):
+        try:
+            finito = math.isfinite(float(x))
+        except OverflowError:
+            finito = False
+        if not finito:
+            raise ValueError(
+                f"'{nombre}' declara {d.valor!r}, que contiene {x!r}. Un dato "
+                "de sitio es una lectura: ningun mapa, ensayo ni medicion "
+                "devuelve un infinito ni un NaN, y el calculo lo propagaria "
+                "hasta la memoria sin detenerse en ningun sitio"
+            )
+
+
 def _verificar_dato(d: "DatoSitio") -> None:
     """
     Valida UN dato de sitio. Hermana de
@@ -189,6 +245,8 @@ def _verificar_dato(d: "DatoSitio") -> None:
     falla, el archivo esta mal escrito y ninguna corrida deberia empezar.
     """
     nombre = d.concepto.split(".")[0][:60] or "<dato sin concepto>"
+
+    _verificar_finitud(nombre, d)
 
     if d.etiqueta != ETIQUETA_SITIO:
         raise ValueError(

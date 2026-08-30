@@ -210,8 +210,15 @@ NOTA_ESTABILIDAD_CABEZAL = (
 )
 
 # Presentacion. Ninguno entra en un calculo: mueven columnas de texto.
-ANCHO = 78
+ANCHO = 78          # literal-ok: ancho de la caja de texto del volcado a consola
 SANGRIA = "  "
+# El segundo nivel de sangria del volcado. Se escribia `SANGRIA * 4` en seis
+# sitios -- un literal por sitio, y ademas ilegible: son cuatro sangrias, no
+# cuatro espacios. Es formato de consola, no un valor de proyecto.
+SANGRIA_DETALLE = SANGRIA * 4   # literal-ok: nivel de sangria del volcado
+# La pendiente se imprime con mas decimales que el resto: S = 0.005 m/m con
+# los tres decimales por defecto se veria como 0.005 y con dos como 0.01.
+DECIMALES_PENDIENTE = 4         # literal-ok: decimales del volcado de S
 MARCA_CUMPLE = "[OK]"
 MARCA_INCUMPLE = "[NO]"
 
@@ -293,6 +300,15 @@ def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         )
     # TW = 0 es salida libre y es un valor legitimo (ver MD.disenar_punto);
     # el resto de las claves son longitudes o caudales estrictamente positivos.
+    #
+    # `valor == 0` es la UNICA comparacion de float con igualdad que queda en
+    # produccion, y esta declarada a proposito: no compara dos resultados de
+    # calculo -- lo que la regla de CLAUDE.md prohibe, porque ahi la igualdad
+    # exacta es un accidente del ultimo bit -- sino un dato de entrada contra
+    # un CENTINELA. El cero de "salida libre" es el cero exacto que el
+    # proyectista escribe en el JSON o en la bandera; un TW de 1e-15 m no es
+    # salida libre, es un tirante absurdo, y taparlo con una tolerancia lo
+    # convertiria en salida libre en silencio.
     if valor < 0 or (valor == 0 and clave != "TW_m"):
         raise DatoInvalidoError(
             clave, valor=bruto,
@@ -517,7 +533,11 @@ def _bloqueo(fase: str, etapa: str, exc: ErrorProyecto) -> Bloqueo:
     """
     datos: Dict[str, Any] = {}
     if isinstance(exc, CriterioPendienteError):
-        declarado = ca.criterio(exc.clave)
+        # `ca.declaracion_de` y no `ca.criterio`: la misma excepcion la
+        # levanta `datos_sitio.valor` para un [S] de corredor sin leer, y
+        # resolverla solo contra CRITERIOS salia por KeyError -- un fallo de
+        # programa dentro de la funcion que existe para evitarlo (SIS-A-05).
+        declarado = ca.declaracion_de(exc.clave)
         datos = {"criterio": exc.clave, "etiqueta": declarado.etiqueta,
                  "concepto": declarado.concepto, "fuente": declarado.fuente}
     elif isinstance(exc, (DatoFaltanteError, DatoInvalidoError)):
@@ -1279,7 +1299,7 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
 # Volcado a stdout
 # ===========================================================================
 
-def _fmt(valor: Any, decimales: int = 3) -> str:
+def _fmt(valor: Any, decimales: int = 3) -> str:   # literal-ok: decimales por defecto del volcado
     """Un numero con decimales fijos; cualquier otra cosa, tal como viene."""
     if isinstance(valor, bool) or not isinstance(valor, (int, float)):
         return str(valor)
@@ -1309,7 +1329,7 @@ def _lineas_verificaciones(informe: InformePunto) -> List[str]:
             # reporte y no puede tumbar la memoria del punto.
             declarado = ca.CRITERIOS.get(v.criterio_aplicado)
             etiqueta = f" [{declarado.etiqueta}]" if declarado is not None else ""
-            out.append(f"{SANGRIA * 4}umbral del criterio "
+            out.append(f"{SANGRIA_DETALLE}umbral del criterio "
                        f"'{v.criterio_aplicado}'{etiqueta}")
     return out
 
@@ -1321,11 +1341,11 @@ def _lineas_bloqueos(bloqueos: Sequence[Bloqueo]) -> List[str]:
     for b in bloqueos:
         out.append(f"{SANGRIA * 2}[{b.tipo}] {b.fase} -> {b.etapa}")
         if b.criterio:
-            out.append(f"{SANGRIA * 4}falta declarar: {b.criterio} "
+            out.append(f"{SANGRIA_DETALLE}falta declarar: {b.criterio} "
                        f"[{b.etiqueta}] - {b.concepto}")
-            out.append(f"{SANGRIA * 4}fuente: {b.fuente}")
+            out.append(f"{SANGRIA_DETALLE}fuente: {b.fuente}")
         else:
-            out.append(f"{SANGRIA * 4}{b.mensaje}")
+            out.append(f"{SANGRIA_DETALLE}{b.mensaje}")
     return out
 
 
@@ -1358,7 +1378,7 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"y_c = {_fmt(h.y_critico)} m, "
                    f"V_erosion = {_fmt(h.V_erosion)} m/s (n min), "
                    f"V_sedimentacion = {_fmt(h.V_sedimentacion)} m/s (n max), "
-                   f"Q = {_fmt(h.Q)} m3/s, S = {_fmt(h.S, 4)} m/m")
+                   f"Q = {_fmt(h.Q)} m3/s, S = {_fmt(h.S, DECIMALES_PENDIENTE)} m/m")
         out.append(f"{SANGRIA}        Longitud : L = {_fmt(informe.longitud.valor)} m "
                    f"({informe.longitud.origen}) | TW = "
                    f"{_fmt(informe.tw.valor)} m ({informe.tw.origen})")
@@ -1373,7 +1393,7 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"{_fmt(p.espesor)} m, longitud {_fmt(p.longitud)} m "
                    f"(num. {p.numeral})")
         for advertencia in p.advertencias:
-            out.append(f"{SANGRIA * 4}aviso: {advertencia}")
+            out.append(f"{SANGRIA_DETALLE}aviso: {advertencia}")
     if informe.geometria is not None:
         g = informe.geometria
         # La cota de entrada NO es un dato del CSV: sale de la regla que el
@@ -1385,7 +1405,7 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"{_fmt(g.cota_entrada)} (ADOPTADA, criterio "
                    f"'{M5.CRITERIO_ORIGEN_COTA_ENTRADA}': no es cota medida) "
                    f"/ salida {_fmt(g.cota_salida)} msnm")
-        out.append(f"{SANGRIA * 4}{g.tamizado.mensaje}")
+        out.append(f"{SANGRIA_DETALLE}{g.tamizado.mensaje}")
     if informe.cama_apoyo is not None:
         out.append(f"{SANGRIA}Fase 8  cama: {informe.cama_apoyo.cama_apoyo} "
                    f"(num. {informe.cama_apoyo.numeral})")
@@ -1659,10 +1679,41 @@ def declarar_criterios(declaraciones: Sequence[str]) -> List[str]:
         try:
             valor_nuevo = ast.literal_eval(texto)
         except (ValueError, SyntaxError):
+            # 'nan', 'inf', '-inf' e 'Infinity' NO son literales de Python:
+            # `literal_eval` los rechaza y caian a este respaldo COMO CADENA,
+            # por debajo de la guardia de finitud de criterios_adoptados, que
+            # solo recorre numeros. Y la cadena no se queda quieta:
+            # `M9_cabezal.cuantia_de_diseno` -- y cualquier consumidor que
+            # haga float() sobre un criterio numerico -- la devuelve al
+            # calculo convertida en el mismo nan que se rechazo, y la memoria
+            # sale con `cuantia_adoptada = nan` y un gobernante declarado.
+            # El respaldo a texto existe para los criterios CATEGORICOS
+            # ('cota_terreno', 'flexible', 'A'), no para un numero disfrazado.
+            if _parece_numero_no_finito(texto):
+                raise ValueError(
+                    f"--declarar {declaracion!r} no es un numero declarable: "
+                    f"{texto!r} no es un literal de Python, entraria como "
+                    "TEXTO y el primer consumidor que haga float() lo "
+                    "devolveria al calculo como infinito o NaN"
+                ) from None
             valor_nuevo = texto
         ca.establecer_valor_dinamico(clave, valor_nuevo)
         aplicadas.append(clave)
     return aplicadas
+
+
+def _parece_numero_no_finito(texto: str) -> bool:
+    """
+    El texto se lee como un numero y ese numero no es finito.
+
+    Es la puerta que `ast.literal_eval` deja abierta: 'nan' e 'inf' no son
+    literales de Python -- son NOMBRES --, de modo que literal_eval los
+    rechaza y el respaldo a cadena los dejaba pasar como texto.
+    """
+    try:
+        return not math.isfinite(float(texto))
+    except (TypeError, ValueError, OverflowError):
+        return False
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -1685,7 +1736,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         externos = cargar_datos_externos(args.datos_externos, banderas)
         informe = correr(args.csv, externos, alcance=args.alcance)
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        # UnicodeDecodeError es subclase de ValueError y no entra sola: un CSV
+        # guardado en ANSI por Excel -- con las eñes del castellano -- salia
+        # con traza en vez de decir que el archivo no esta en UTF-8. Las dos
+        # puertas del pipeline tienen que fallar igual (SIS-E-01), y el test
+        # de simetria de tests/test_gui_contrato.py lo exige.
         print(f"No se pudo leer la entrada: {exc}", file=sys.stderr)
         return 2
     except ErrorProyecto as exc:

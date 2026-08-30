@@ -212,10 +212,61 @@ def tr_desde_riesgo(R: float, n: int) -> float:
         raise DatoInvalidoError(
             "R", valor=R, motivo="el riesgo admisible de falla es una "
                                  "probabilidad entre 0 y 1, no un porcentaje")
-    if n <= 0:
+    if not n > 0:
+        # EN POSITIVO, por la misma razon que la guarda del denominador mas
+        # abajo: `n <= 0` es FALSO para un NaN, de modo que un `n = nan`
+        # atravesaba esta comprobacion y llegaba a la formula. La condicion
+        # escrita en positivo y negada si lo atrapa.
         raise DatoInvalidoError(
-            "n", valor=n, motivo="la vida util son anios y es positiva")
-    return 1 / (1 - (1 - R) ** (1 / n))
+            "n", valor=n, motivo="la vida util son anios y es un numero "
+                                 "positivo")
+    # BORDE R -> 0 (MAT-D13). Con un riesgo suficientemente pequeño,
+    # (1-R)^(1/n) redondea a 1.0 en doble precision y el denominador se anula.
+    # El limite esta en R ~ n * eps/4 -- medido: 1.3877787807814459e-15 para
+    # n = 25 --, y es el CUARTO y no la mitad porque los floats inmediatamente
+    # por debajo de 1.0 estan espaciados eps/2, de modo que 1 - R/n redondea a
+    # 1.0 en cuanto R/n cae por debajo de eps/4. Sin esta guarda el resultado
+    # era un ZeroDivisionError: un fallo de PROGRAMA, fuera de la taxonomia
+    # ErrorProyecto que CLAUDE.md exige para todo problema del expediente.
+    #
+    # Se comprueba el DENOMINADOR y no se compara la potencia con 1.0: no hay
+    # umbral que declarar (seria un literal de precision disfrazado de valor
+    # normativo) y no se comparan floats con igualdad. Cuando el denominador
+    # es cero el TR no es "muy grande": no existe, porque la formula se
+    # degenero antes de calcularlo.
+    #
+    # La condicion se escribe EN POSITIVO y negada -- `not denominador > 0` y
+    # no `denominador <= 0` -- porque un NaN es falso frente a `<=` igual que
+    # frente a `>`: con n = nan las tres guardas de esta funcion se
+    # atravesaban y el TR salia nan, que es el mismo agujero que la guarda
+    # existe para cerrar.
+    denominador = 1 - (1 - R) ** (1 / n)
+    if not denominador > 0:
+        # EL MENSAJE NOMBRA EL PAR, no solo R. La degeneracion no es de un
+        # dato sino de la combinacion: (1-R)^(1/n) redondea a 1 cuando R es
+        # diminuto PARA ESA n, y una n grande la provoca con una R que seria
+        # perfectamente sana con otra vida util. La primera version acusaba
+        # siempre a 'R' y mandaba al revisor a corregir el dato equivocado la
+        # mitad de las veces; escribir un discriminante que reparta la culpa
+        # entre los dos seria falsa precision --- no hay un umbral que separe
+        # "culpa de R" de "culpa de n" ---, de modo que se dicen los DOS
+        # valores y se deja la eleccion a quien tiene el expediente delante.
+        #
+        # El `campo` sigue siendo 'R' porque es el que el Propietario declara
+        # y el que MAT-D13 describe; el motivo dice que n es la otra mitad.
+        raise DatoInvalidoError(
+            "R", valor=R,
+            motivo=f"el par (R = {R!r}, n = {n!r}) degenera: (1-R)^(1/n) no "
+                   "se distingue de 1 en doble precision y el periodo de "
+                   "retorno resultaria de una division por cero. No es un TR "
+                   "grande, es una division por cero. Puede corregirse por "
+                   "cualquiera de los dos lados --- un R mayor o una vida "
+                   "util menor ---, y NINGUNO sale de una celda del CSV: o "
+                   "son los de la Tabla N 02, o los declaro el Propietario "
+                   f"en '{CRITERIO_RIESGO_PROPIETARIO}'. Revisa ahi si R "
+                   "vino en porcentaje o si perdio digitos",
+        )
+    return 1 / denominador
 
 
 def _riesgo_del_propietario(cat: CategoriaTR, R: float, n: int):

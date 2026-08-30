@@ -82,7 +82,7 @@ CAMPOS_EXTERNOS = (
 class Tooltip:
     """Globo de ayuda simple para cualquier widget (patron de legacy/Tc.py)."""
 
-    def __init__(self, widget, texto, retardo=400):
+    def __init__(self, widget, texto, retardo=400):  # literal-ok: retardo del tooltip, ms
         self.widget = widget
         self.texto = texto
         self.retardo = retardo
@@ -107,8 +107,8 @@ class Tooltip:
     def _mostrar(self):
         if self._tip or not self.texto:
             return
-        x = self.widget.winfo_rootx() + 18
-        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6
+        x = self.widget.winfo_rootx() + 18  # literal-ok: offset del tooltip, px
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6  # literal-ok: offset del tooltip, px
         self._tip = tk.Toplevel(self.widget)
         self._tip.wm_overrideredirect(True)
         self._tip.wm_geometry(f"+{x}+{y}")
@@ -159,7 +159,12 @@ class MarcoScroll(ttk.Frame):
     def _rueda(self, evt):
         if isinstance(evt.widget, (ttk.Treeview, tk.Listbox, tk.Text)):
             return
-        self.canvas.yview_scroll(int(-evt.delta / 120), "units")
+        # 120 es el "notch" estandar de la rueda en Windows: `event.delta`
+        # llega en multiplos de 120 y hay que dividirlo para obtener las
+        # unidades de scroll. Es aritmetica del evento, no geometria de
+        # widget, y por eso la regla de la capa de presentacion no la exime
+        # sola: va marcada.
+        self.canvas.yview_scroll(int(-evt.delta / 120), "units")  # literal-ok: notch de la rueda, unidades por delta
 
 
 class ExpedienteApp:
@@ -335,12 +340,12 @@ class ExpedienteApp:
         self.tree_criterios_todos = ttk.Treeview(
             f_tabla, columns=cols, show="headings", height=14)
         encabezados = [
-            ("clave", "Clave", 190, "w"),
-            ("etiqueta", "Etq.", 45, "center"),
-            ("concepto", "Concepto", 260, "w"),
-            ("valor", "Valor actual", 160, "w"),
-            ("estado", "Estado", 110, "center"),
-            ("fuente", "Fuente", 300, "w"),
+            ("clave", "Clave", 190, "w"),  # literal-ok: ancho de columna, px
+            ("etiqueta", "Etq.", 45, "center"),  # literal-ok: ancho de columna, px
+            ("concepto", "Concepto", 260, "w"),  # literal-ok: ancho de columna, px
+            ("valor", "Valor actual", 160, "w"),  # literal-ok: ancho de columna, px
+            ("estado", "Estado", 110, "center"),  # literal-ok: ancho de columna, px
+            ("fuente", "Fuente", 300, "w"),  # literal-ok: ancho de columna, px
         ]
         for col, txt, ancho, anchor in encabezados:
             self.tree_criterios_todos.heading(col, text=txt)
@@ -491,6 +496,29 @@ class ExpedienteApp:
         self.btn_guardar_archivo.config(state="normal")
 
     def _interpretar_valor_declarado(self, texto):
+        """
+        Interpreta lo que el proyectista teclea en el campo de declaracion en
+        caliente: un numero si lo parece (admitiendo la coma decimal, que es
+        como se escribe aqui), y el texto tal cual si no.
+
+        SIS-E-04. El `ValueError` de abajo NO es de la taxonomia de
+        `ErrorProyecto`, y es deliberado: un widget vacio todavia no es un
+        dato del expediente -- no hay columna que añadir ni celda que
+        corregir --, y la excepcion NUNCA sale de esta clase: los dos
+        llamadores (`_aplicar_valor_corrida` y `_guardar_valor_en_archivo`) la
+        atrapan tres lineas mas abajo y la convierten en el rotulo rojo del
+        panel. Es control de flujo de un widget, no un problema que la GUI
+        tenga que distinguir de un fallo del programa, que es para lo que
+        CLAUDE.md pide la taxonomia.
+
+        DIVERGE de `cli.declarar_criterios`, y esta escrito para que se vea:
+        la CLI resuelve el texto con `ast.literal_eval` -- admite listas y
+        dicts, y leeria '1,5' como la TUPLA (1, 5) -- y aqui se admite la coma
+        decimal, que para quien teclea en la ventana es lo natural. Unificar
+        las dos por el lado de la CLI convertiria '1,5' en una tupla valida en
+        silencio, que es una regresion peor que la duplicacion. La divergencia
+        esta fijada por un test de contrato en tests/test_gui_contrato.py.
+        """
         texto = texto.strip()
         if texto == "":
             raise ValueError("El valor no puede quedar vacio.")
@@ -579,21 +607,21 @@ class ExpedienteApp:
                 "incumplidas", "bloqueos")
         self.tree_puntos = ttk.Treeview(f_tabla, columns=cols, show="headings", height=14)
         encabezados = [
-            ("id", "Punto", 70, "w"),
-            ("progresiva", "Progresiva", 90, "center"),
-            ("familia", "Familia", 60, "center"),
-            ("dimensionado", "Dimensionado", 90, "center"),
-            ("material", "Material", 140, "w"),
-            ("D", "D (m)", 65, "center"),
-            ("control", "Control", 75, "center"),
-            ("HW", "HW (m)", 70, "center"),
+            ("id", "Punto", 70, "w"),  # literal-ok: ancho de columna, px
+            ("progresiva", "Progresiva", 90, "center"),  # literal-ok: ancho de columna, px
+            ("familia", "Familia", 60, "center"),  # literal-ok: ancho de columna, px
+            ("dimensionado", "Dimensionado", 90, "center"),  # literal-ok: ancho de columna, px
+            ("material", "Material", 140, "w"),  # literal-ok: ancho de columna, px
+            ("D", "D (m)", 65, "center"),  # literal-ok: ancho de columna, px
+            ("control", "Control", 75, "center"),  # literal-ok: ancho de columna, px
+            ("HW", "HW (m)", 70, "center"),  # literal-ok: ancho de columna, px
             # Dos columnas, no una: la velocidad contra los techos (V3, d50)
             # y la del piso (V2) se calculan con n distinto y no son el mismo
             # numero (MAT-D1).
-            ("V_erosion", "V n min (m/s)", 90, "center"),
-            ("V_sedimentacion", "V n max (m/s)", 90, "center"),
-            ("incumplidas", "Verif. NO", 75, "center"),
-            ("bloqueos", "Bloqueos", 75, "center"),
+            ("V_erosion", "V n min (m/s)", 90, "center"),  # literal-ok: ancho de columna, px
+            ("V_sedimentacion", "V n max (m/s)", 90, "center"),  # literal-ok: ancho de columna, px
+            ("incumplidas", "Verif. NO", 75, "center"),  # literal-ok: ancho de columna, px
+            ("bloqueos", "Bloqueos", 75, "center"),  # literal-ok: ancho de columna, px
         ]
         for col, txt, ancho, anchor in encabezados:
             self.tree_puntos.heading(col, text=txt)
@@ -662,12 +690,12 @@ class ExpedienteApp:
         cols = ("clave", "etiqueta", "concepto", "fuente", "fases", "puntos")
         self.tree_criterios = ttk.Treeview(f_crit, columns=cols, show="headings", height=8)
         encabezados = [
-            ("clave", "Clave", 130, "w"),
-            ("etiqueta", "Etiqueta", 60, "center"),
-            ("concepto", "Concepto", 220, "w"),
-            ("fuente", "Fuente que lo resolveria", 220, "w"),
-            ("fases", "Fases", 140, "w"),
-            ("puntos", "Puntos", 140, "w"),
+            ("clave", "Clave", 130, "w"),  # literal-ok: ancho de columna, px
+            ("etiqueta", "Etiqueta", 60, "center"),  # literal-ok: ancho de columna, px
+            ("concepto", "Concepto", 220, "w"),  # literal-ok: ancho de columna, px
+            ("fuente", "Fuente que lo resolveria", 220, "w"),  # literal-ok: ancho de columna, px
+            ("fases", "Fases", 140, "w"),  # literal-ok: ancho de columna, px
+            ("puntos", "Puntos", 140, "w"),  # literal-ok: ancho de columna, px
         ]
         for col, txt, ancho, anchor in encabezados:
             self.tree_criterios.heading(col, text=txt)
@@ -753,7 +781,20 @@ class ExpedienteApp:
         try:
             externos = cli.cargar_datos_externos(ruta_externos, self._leer_banderas())
             self.informe = cli.correr(ruta_csv, externos)
-        except (OSError, ValueError) as exc:
+        # SIS-E-01. Este brazo capturaba (OSError, ValueError), y ValueError
+        # es la excepcion mas comun de un fallo de PROGRAMA nacido dentro del
+        # pipeline: cualquiera de ellos se mostraba al proyectista como "No se
+        # pudo leer la entrada", que le hace revisar el CSV en vez de reportar
+        # el defecto, y ademas se comia el brazo de abajo, que es el que
+        # imprime la traza. La CLI ya usaba el brazo estrecho correcto
+        # (cli.py::main). Las TRES formas en que la ENTRADA puede fallar al
+        # LEERSE: la de E/S (OSError), la del texto que no es UTF-8
+        # (UnicodeDecodeError, que es subclase de ValueError y por lo tanto no
+        # entra sola) y la del JSON mal formado. La segunda no es teorica en
+        # este expediente: un CSV o un JSON guardado en ANSI por Excel en
+        # Windows -- con las eñes del castellano -- estrellaria la ventana con
+        # una traza en vez de decir que el archivo no esta en UTF-8.
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             self._mostrar_error_entrada(f"No se pudo leer la entrada:\n{exc}")
             return
         except ErrorProyecto as exc:
@@ -860,8 +901,17 @@ class ExpedienteApp:
                            indent=2, allow_nan=False),
                 encoding="utf-8")
             messagebox.showinfo("JSON exportado", f"Archivo: {ruta}")
-        except OSError as exc:
+        except (OSError, ErrorProyecto) as exc:
             messagebox.showerror("Error al exportar", f"{exc}")
+        except Exception as exc:  # fallo de programa: se muestra con traza
+            # Son CUATRO exportadores, no tres. Este quedaba con `except
+            # OSError` a secas, y su cuerpo llama a `cli.informe_json` y a
+            # `json.dumps(..., allow_nan=False)`: un ErrorProyecto al armar el
+            # informe, o un ValueError de json por un NaN, escapaban del
+            # manejador entero y el usuario no veia NADA -- ni mensaje ni
+            # traza en la ventana.
+            traceback.print_exc()
+            messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
 
     def exportar_html(self):
         if self.informe is None:
@@ -875,8 +925,11 @@ class ExpedienteApp:
         try:
             cli.exportar_html(self.informe, Path(ruta), proyecto=self.proyecto_var.get())
             messagebox.showinfo("Memoria exportada", f"Archivo: {ruta}")
-        except Exception as exc:
-            messagebox.showerror("Error al exportar", f"{type(exc).__name__}: {exc}")
+        except (OSError, ErrorProyecto) as exc:
+            messagebox.showerror("Error al exportar", f"{exc}")
+        except Exception as exc:  # fallo de programa: se muestra con traza
+            traceback.print_exc()
+            messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
 
     def exportar_pdf(self):
         if self.informe is None:
@@ -890,8 +943,11 @@ class ExpedienteApp:
         try:
             resultado = cli.exportar_pdf(self.informe, Path(ruta), proyecto=self.proyecto_var.get())
             messagebox.showinfo("Memoria exportada", resultado.mensaje)
-        except Exception as exc:
-            messagebox.showerror("Error al exportar", f"{type(exc).__name__}: {exc}")
+        except (OSError, ErrorProyecto) as exc:
+            messagebox.showerror("Error al exportar", f"{exc}")
+        except Exception as exc:  # fallo de programa: se muestra con traza
+            traceback.print_exc()
+            messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
 
     def exportar_csv(self):
         if self.informe is None:
@@ -906,8 +962,11 @@ class ExpedienteApp:
         try:
             cli.exportar_csv(self.informe, Path(ruta))
             messagebox.showinfo("CSV exportado", f"Archivo: {ruta}")
-        except Exception as exc:
-            messagebox.showerror("Error al exportar", f"{type(exc).__name__}: {exc}")
+        except (OSError, ErrorProyecto) as exc:
+            messagebox.showerror("Error al exportar", f"{exc}")
+        except Exception as exc:  # fallo de programa: se muestra con traza
+            traceback.print_exc()
+            messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
 
     # ------------------------------------------------------------------
     # Sesion (JSON) - patron de legacy/Tc.py
@@ -943,8 +1002,25 @@ class ExpedienteApp:
         try:
             with open(ruta, "r", encoding="utf-8") as f:
                 data = json.load(f)
-        except (OSError, json.JSONDecodeError) as exc:
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            # `UnicodeDecodeError` va aqui por la MISMA razon que en
+            # `ejecutar_pipeline`, y faltaba: un JSON de sesion guardado en
+            # ANSI por un editor de Windows --- con las eñes del castellano ---
+            # estrellaba la ventana con una traza en vez de decir que el
+            # archivo no esta en UTF-8. Es subclase de ValueError, no de
+            # OSError ni de JSONDecodeError, de modo que este brazo no lo veia.
             messagebox.showerror("Error al cargar", f"No se pudo leer la sesion:\n{exc}")
+            return
+        if not isinstance(data, dict):
+            # Un JSON VALIDO que no sea objeto --- `[1, 2]`, `"texto"`, `3` ---
+            # pasa `json.load` sin error y revienta tres lineas mas abajo en
+            # `data.get(...)` con un `AttributeError` que nadie captura. Es un
+            # archivo mal formado, no un fallo del programa, y sale por el
+            # mismo sitio que los demas archivos mal formados.
+            messagebox.showerror(
+                "Error al cargar",
+                "El archivo es JSON valido pero no es una sesion: una sesion "
+                f"es un objeto con claves, y este trae {type(data).__name__}.")
             return
 
         self.proyecto_var.set(data.get("proyecto", ""))

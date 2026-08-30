@@ -5,8 +5,28 @@ verificados contra norma ni contra ensayo.**
 
 Son valores de destrabe para una corrida exploratoria: se cargan en caliente
 (`establecer_valor_dinamico`) o con `provisional=True`, se mira que puntos
-completan diseno, y se revierten. Los criterios de `criterios_adoptados.py`
-siguen en `valor=None` a proposito, y los tests de invariante lo exigen.
+completan diseno, y se revierten.
+
+**REVISADO EN S16 (SIS-F-15).** La frase que ocupaba este lugar --- «los
+criterios de `criterios_adoptados.py` siguen en `valor=None` a proposito» ---
+era cierta cuando se escribio y hoy NO lo es para dos de las entradas de este
+documento: `v_max_hdpe` y `v_max_tmc` ya NO estan vacios. Los cerro la fase de
+correccion con una fuente citada (WSDOT Hydraulics Manual M 23-03.12, Cap. 8,
+Tabla 8-4, pp. 8-27/8-28), etiqueta `[C]`, y con el valor en SI: **4.572 m/s**
+--- los 15 ft/s de la tabla, convertidos, no los 6.0 y 4.5 que este documento
+lista. Aplicar encima los numeros de aqui PISARIA un valor ya verificado con
+cita, que es exactamente lo que la nota de la version corregida (abajo)
+advierte para otras seis entradas.
+
+Del resto de la lista, lo que sigue vacio hoy: `v_max_concreto_eleccion`,
+`talud_terraplen`, `pendiente_relleno_trasdos_i`, `inclinacion_muro_beta`,
+`friccion_muro_suelo_delta`, `punto_aplicacion_incremento_sismico`,
+`angulo_aletas`, `predimensionamiento_cabezal`, `metodo_estabilidad_global`,
+`longitud_proteccion_salida`, `TR_evento_extremo`,
+`umbral_area_quebrada_importante_ha`, `clases_producto_por_relleno`,
+`c_phi_fundacion`, `capacidad_portante_adm`, `phi_relleno_trasdos`,
+`peso_especifico_relleno_kn_m3`, `TW_receptor` y `remanso_derecho_via`. Para
+esos, la frase original sigue valiendo y los tests de invariante lo exigen.
 
 (La rama `prueba-integral` en que se hizo esta corrida fue renombrada a
 `main`; el documento se conserva por sus hallazgos, no como receta a aplicar.)
@@ -31,8 +51,9 @@ valores encima pisaría trabajo ya verificado con cita.
 *   **longitud_proteccion_salida**: `3.0` (m)
 *   **TR_evento_extremo**: `100` (años)
 *   **umbral_area_quebrada_importante_ha**: `100.0` (ha)
-*   **v_max_hdpe**: `6.0` (m/s)
-*   **v_max_tmc**: `4.5` (m/s)
+*   ~~**v_max_hdpe**: `6.0` (m/s)~~ --- CERRADO en el codigo con otro valor y
+    otra fuente: `4.572` m/s [C], WSDOT Tabla 8-4. No aplicar.
+*   ~~**v_max_tmc**: `4.5` (m/s)~~ --- idem: `4.572` m/s [C]. No aplicar.
 
 ## 3. Normas de Producto
 *   **clases_producto_por_relleno**: `"Clase_III"`

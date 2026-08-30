@@ -878,8 +878,22 @@ def angulo_inercia_sismica(*, k_h: float, k_v: float) -> float:
     g, fisicamente absurdo pero declarable por error en un criterio) la
     division reventaria con ZeroDivisionError -- un fallo de programa, no del
     expediente. atan2 devuelve 90 grados y el caso se rechaza mas adelante,
-    donde cos(psi) = 0 hace degenerar el denominador de K_AE, con un
-    DisenoNoFactibleError que si explica que pasa.
+    con un DisenoNoFactibleError que es de la taxonomia.
+
+    POR QUE GUARDA LO RECHAZA, dicho con precision. El texto que ocupaba este
+    lugar decia "cos(psi) = 0 hace degenerar el denominador de K_AE", y eso es
+    falso en aritmetica de maquina: `math.cos(math.radians(90.0))` vale
+    6.123233995736766e-17, que es POSITIVO, de modo que la guarda de cosenos
+    no dispara por psi. Con delta = 0 el rechazo lo produce la guarda
+    siguiente, la de `phi - psi - i < 0` --- 34 - 90 - 0 = -56 grados ---, y
+    su mensaje manda al revisor a "reducir la pendiente del relleno o revisar
+    phi" cuando el disparate esta en k_v. Con delta > 0 dispara antes la de
+    cosenos, pero por `delta + beta + psi` y no por psi.
+
+    Se deja asi --- ninguna de las dos guardas nombra k_v --- porque las dos
+    son correctas para lo que verifican y anadir una tercera que mire k_v
+    exigiria un techo declarado para k_v que este expediente no tiene. Lo que
+    no puede quedar es el docstring afirmando un mecanismo que no ocurre.
     """
     return math.degrees(math.atan2(k_h, 1 - k_v))
 
@@ -1471,11 +1485,20 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
     (pag. impresa 3-118 / PDF 172) exige lo contrario, y con un `shall`:
     "Submerged unit weights of the soil shall be used to determine the
     lateral earth pressure below the groundwater table". La desviacion es
-    CONSERVADORA y esta acotada: el exceso es Ka*gamma_agua*h_agua, constante
-    en toda la zona sumergida -- 1.96 kPa con Ka = 1/3 y 0.60 m de agua --, de
-    modo que en porcentaje depende de la altura del muro: +25 % sobre un muro
-    de 0.60 m (el caso con que lo calculo la ficha MAT-O3), +11 % sobre uno de
-    2.00 m con el freatico a 1.40 m, y menos cuanto mas alto. Se
+    CONSERVADORA y esta acotada. El exceso NO es constante en la zona
+    sumergida: es TRIANGULAR, crece desde 0 en el nivel freatico hasta
+    Ka*gamma_agua*h_agua en la base --- 1.96 kPa con Ka = 1/3 y 0.60 m de
+    agua, que es el valor EN LA BASE y no una constante. (El texto que ocupaba
+    este lugar decia "constante en toda la zona sumergida" y se contradecia a
+    si mismo tres lineas mas abajo: con el diagrama rectangular el muro de
+    0.60 m daria +68 % y no el +25 % que el propio parrafo cita.)
+
+    En porcentaje sobre el empuje lateral total, recomputado a mano contra
+    AASHTO 3.11.3 con gamma = 19.0 kN/m3, gamma_agua = 9.81 kN/m3 y Ka = 1/3:
+    +25.4 % sobre un muro de 0.60 m enteramente sumergido (el caso con que lo
+    calculo la ficha MAT-O3) y +4.3 % sobre uno de 2.00 m con el freatico a
+    1.40 m --- no el +11 % que decia este parrafo, que corresponderia a un
+    muro de ~1.06 m. Menos cuanto mas alto el muro. Se
     mantiene porque corregirla exige un peso especifico SUMERGIDO del relleno
     que este expediente todavia no tiene: aplicar AASHTO con el unico gamma
     declarado seria aliviar el empuje sin dato que lo sostenga. El texto
@@ -2006,6 +2029,39 @@ def _gamma_permanente(carga: str, fila_combinacion: dict,
 # 9.3 - ESTABILIDAD (E.050)
 # Cinco verificaciones, codigos E1..E5, cada una en las dos condiciones.
 # ===========================================================================
+
+# ---------------------------------------------------------------------------
+# POR QUE ESTE MODULO VALIDA ARGUMENTOS INTERNOS CON `DatoInvalidoError`
+# ---------------------------------------------------------------------------
+# SIS-E-02. Cuatro funciones de aqui -- `fs_requerido` (verificacion),
+# `recubrimiento_e060_mm` y `recubrimiento_aashto_mm` (condicion) y
+# `verificar_cuantia` (direccion) -- validan cadenas que NO vienen del
+# expediente: las escribe el propio codigo o las itera desde la misma tabla
+# que se valida (cli.py recorre RECUBRIMIENTO y CUANTIA_MIN_MURO para
+# construir la memoria). Un `DatoInvalidoError` ahi disfraza un fallo de
+# PROGRAMA de problema del expediente, que es lo contrario de lo que la
+# taxonomia de CLAUDE.md persigue, y la eleccion estaba fijada por tests pero
+# no escrita en ninguna parte.
+#
+# SE MANTIENE, y esta es la razon: las cuatro cadenas son CLAVES DE UNA TABLA
+# NORMATIVA -- las filas de Sec. 9.3, del Art. 7.7.1 de E.060, de la Tabla
+# 5.10.1-1 de AASHTO y del Art. 14.3.1 --, y el mensaje que la excepcion
+# construye ENUMERA las filas admisibles. Ese mensaje es util al revisor y no
+# solo al programador: la forma en que una fila desaparece no es que alguien
+# escriba mal un literal, es que la tabla cambie de transcripcion y un
+# consumidor quede apuntando a una fila que ya no esta. Cuando eso pasa, el
+# problema SI es del expediente -- la transcripcion -- y la fila del informe
+# que produce `cli._bloqueo` dice exactamente cual falta.
+#
+# LA FRONTERA, para que no se estire: se usa `DatoInvalidoError` cuando el
+# argumento es una CLAVE DE TABLA NORMATIVA y el mensaje enumera las
+# admisibles. Para un argumento que no lo sea -- un flag, un modo interno --
+# el error correcto es el que el programa merece, no el del expediente. El
+# quinto sitio que la ficha SIS-E-02 listaba, `_recubrimiento_aashto_detallado`,
+# no pertenece a esta lista por la razon contraria: su tabla sale de
+# `ca.valor(CRITERIO_RECUBRIMIENTO_AASHTO)`, es decir del expediente, y ahi
+# `DatoInvalidoError` es sencillamente la excepcion correcta.
+
 
 def fs_requerido(*, verificacion: str, condicion: CondicionAnalisis) -> float:
     """

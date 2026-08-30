@@ -464,6 +464,21 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
     v8. Si la hoja cambia de forma y los tableros no se pueden leer, esto se
     detiene con ValueError: una memoria con el bloque de pendientes vacio diria
     que no queda nada pendiente, que es la mentira mas cara del expediente.
+
+    EL FALLO RUIDOSO CUBRE TAMBIEN LA DEGRADACION PARCIAL (SIS-C-13). La
+    version anterior solo se detenia cuando NINGUN tablero se podia leer. Un
+    cambio de formato que rompiera la tabla de UNO de los tres --- el caso
+    realista, porque el formato se toca tablero a tablero --- dejaba pasar los
+    otros dos en silencio: la memoria imprimia 10 filas donde hay 15 y
+    declaraba cerrado lo que no lo esta. Se comprueba, por lo tanto, que cada
+    encabezado `Tablero N` encontrado en la hoja produjo su tablero. Un
+    `Tablero N` que no produce tabla es inequivocamente un formato roto,
+    porque el tablero solo nace cuando aparece su fila de encabezados.
+
+    Lo que NO se comprueba, deliberadamente, es que cada tablero traiga
+    filas: una tabla bien formada con cero filas de datos es lo que se ve
+    cuando ese tablero ya no tiene pendientes, que es hacia donde el proyecto
+    trabaja. Ver el razonamiento en el punto de uso, mas abajo.
     """
     hoja = ruta_hoja_de_ruta() if ruta is None else ruta
     tableros: List[Tablero] = []
@@ -479,9 +494,11 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
                                     encabezados=encabezados,
                                     filas=tuple(filas)))
 
+    encabezados_hallados: List[str] = []
     for linea in hoja.read_text(encoding="utf-8").splitlines():
         cabecera = _RE_TITULO_TABLERO.match(linea)
         if cabecera:
+            encabezados_hallados.append(cabecera.group(1))
             cerrar()
             numero, titulo = cabecera.group(1), cabecera.group(2)
             glosa, encabezados, filas, dentro = "", (), [], True
@@ -515,6 +532,31 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
             "pendientes de la memoria sale de ahi y no se inventa: revisa si "
             "la hoja de ruta cambio el formato de esos encabezados."
         )
+
+    leidos = [t.numero for t in tableros]
+    perdidos = [n for n in encabezados_hallados if n not in leidos]
+    if perdidos:
+        raise ValueError(
+            f"En {hoja.name} hay encabezados de tablero que no produjeron "
+            f"ninguna tabla: {perdidos}. Se leyeron {leidos}. El bloque de "
+            "pendientes saldria incompleto y la memoria diria que queda menos "
+            "pendiente de lo que queda: revisa el formato de esas tablas."
+        )
+    # UN TABLERO CON CERO FILAS NO SE RECHAZA, y conviene decir por que se
+    # penso lo contrario. La primera version de este cierre añadia aqui un
+    # tercer `raise` --- "un tablero vacio no es un tablero sin pendientes, es
+    # un tablero que no se pudo leer" --- y esa frase es un supuesto sobre el
+    # FUTURO del expediente, no una propiedad del formato: el proyecto trabaja
+    # precisamente para vaciar los tableros, y el dia que uno cierre su ultima
+    # fila legitimamente la memoria entera habria dejado de generarse con un
+    # ValueError, sin forma de distinguirlo de un cambio de formato.
+    #
+    # La degradacion parcial que SIS-C-13 pide detectar la coge `perdidos`, y
+    # la coge sin ambiguedad: `cerrar()` solo produce un `Tablero` cuando
+    # encontro la FILA DE ENCABEZADOS, de modo que una tabla rota o retirada
+    # deja su `Tablero N` sin producir nada y cae ahi. Una tabla bien formada
+    # con cero filas de datos, en cambio, es exactamente lo que se ve cuando
+    # ya no queda nada pendiente en ese tablero.
     return tuple(tableros)
 
 
@@ -587,7 +629,9 @@ def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
 
     salida = []
     for clave in sorted(acumulado):
-        declarado = ca.criterio(clave)
+        # Ver `ca.declaracion_de`: un [S] de corredor pendiente levanta la
+        # misma CriterioPendienteError y no esta en CRITERIOS (SIS-A-05).
+        declarado = ca.declaracion_de(clave)
         salida.append(CriterioBloqueante(
             clave=clave, etiqueta=declarado.etiqueta,
             concepto=declarado.concepto, fuente=declarado.fuente,

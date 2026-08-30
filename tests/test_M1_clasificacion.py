@@ -27,12 +27,14 @@ from modelos import (CategoriaTR, Clasificacion, CriterioPendienteError,
                      DisenoNoFactibleError, ErrorProyecto, Familia,
                      Verificacion)
 from modulos.M0_carga import cargar_puntos
-from modulos.M1_clasificacion import (CRITERIO_CATEGORIA_A, PERFILES,
+from modulos.M1_clasificacion import (CRITERIO_CATEGORIA_A,
+                                      CRITERIO_RIESGO_PROPIETARIO, PERFILES,
                                       clasificar, clasificar_puntos,
                                       datos_pendientes, denominacion_por_luz,
                                       exigir_alcance, perfil_de,
                                       periodo_retorno_de, tr_de_categoria,
                                       tr_desde_riesgo, verificar_luz)
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.fixtures.casos_patron import CP1_PERIODO_RETORNO
 
 CSV_VALIDO = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
@@ -201,6 +203,59 @@ def test_no_se_adopta_ningun_TR_minimo_de_costumbre():
 def test_un_riesgo_imposible_no_devuelve_un_TR_plausible(R, n):
     with pytest.raises(DatoInvalidoError):
         tr_desde_riesgo(R, n)
+
+
+@pytest.mark.parametrize("R, n", [
+    (1e-16, 25),        # el caso de la ficha
+    (1e-16, 15),        # la otra fila de la Tabla N 02
+    (5e-18, 100),
+    (1e-17, 1),
+])
+def test_un_riesgo_que_degenera_la_formula_es_dato_invalido_y_no_un_fallo(R, n):
+    """
+    MAT-D13, borde R -> 0. Con un riesgo suficientemente pequeño
+    (1-R)^(1/n) redondea a 1.0 en doble precision y el denominador se anula.
+    Antes salia como ZeroDivisionError: un fallo de PROGRAMA, fuera de la
+    taxonomia ErrorProyecto que CLAUDE.md exige para todo problema del
+    expediente, y que la GUI muestra con traza en vez de como "corrige esta
+    celda".
+
+    El limite depende de n (esta en R ~ n*eps/2), y por eso la guarda mira el
+    DENOMINADOR y no un umbral escrito sobre R: un umbral seria un literal de
+    precision disfrazado de valor normativo, y ademas seria distinto para
+    cada vida util.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        tr_desde_riesgo(R, n)
+    assert exc.value.campo == "R"
+    assert "doble precision" in str(exc.value)
+
+
+def test_una_vida_util_no_finita_no_devuelve_un_TR_que_no_es_numero():
+    """
+    La guarda del denominador se escribe EN POSITIVO y negada. Con
+    `denominador <= 0` un NaN la atravesaba -- es falso frente a `<=` igual
+    que frente a `>` -- y `tr_desde_riesgo(0.2, nan)` DEVOLVIA nan: el mismo
+    agujero que la guarda existe para cerrar, dentro de la funcion que se
+    acababa de endurecer.
+    """
+    with pytest.raises(DatoInvalidoError):
+        tr_desde_riesgo(0.2, float("nan"))
+    with pytest.raises(DatoInvalidoError):
+        tr_desde_riesgo(0.2, float("inf"))
+
+
+def test_el_riesgo_pequeno_pero_representable_sigue_dando_un_TR():
+    """
+    La guarda no puede llevarse por delante un riesgo pequeño LEGITIMO: con
+    R = 1e-9 y n = 25 la formula sigue teniendo solucion y el TR es enorme,
+    que es la respuesta correcta -- un riesgo casi nulo exige un periodo de
+    retorno casi infinito.
+    """
+    TR = tr_desde_riesgo(1e-9, 25)
+    assert TR > 0
+    assert TR == pytest.approx(25 / 1e-9, rel=1e-6), (
+        "para R muy pequeño el TR tiende a n/R")
 
 
 def test_una_categoria_que_no_es_fila_de_la_tabla_se_rechaza():
@@ -381,3 +436,182 @@ def test_la_clasificacion_es_inmutable(punto_b):
     clasificacion = clasificar(punto_b, 1.20)
     with pytest.raises(dataclasses.FrozenInstanceError):
         clasificacion.denominacion = Denominacion.PUENTE
+
+
+# ===========================================================================
+# C09 / SIS-F-10 - las guardas de expediente de M1, alcanzadas de verdad
+# ===========================================================================
+#
+# La auditoria de sistema conto trece `raise` de ErrorProyecto sin ninguna
+# corrida que los ejecutara, y M1 ponia tres de ellos. Un `raise` sin test no
+# garantiza nada de lo que la GUI necesita: ni la CLASE de excepcion (que es
+# lo que separa "problema del expediente" de "fallo del programa"), ni el
+# CAMPO (que es lo que la GUI subraya), ni un motivo que diga POR QUE.
+#
+# Los tests de este bloque alcanzan cada guarda con una llamada normal y
+# afirman las tres cosas. La cuarta guarda de M1 -- la fila sin entrada en
+# RIESGO_ADMISIBLE -- no se alcanza: se demuestra inalcanzable, que es el
+# cierre correcto de una guarda defensiva (SIS-B-23).
+
+
+@pytest.mark.parametrize("luz, motivo_esperado", [
+    ("dos metros", "no es un numero"),      # texto que no convierte
+    ("", "no es un numero"),                # celda de la GUI en blanco
+    (object(), "no es un numero"),          # ni siquiera es convertible
+    ([2.75], "no es un numero"),            # la lista de luces, sin desempacar
+])
+def test_una_luz_que_no_es_un_numero_se_detiene_con_el_campo(
+        punto_a, luz, motivo_esperado):
+    """
+    Falla si `_luz_valida` deja pasar un valor no convertible -- por ejemplo
+    si alguien sustituye el `float(luz_m)` por un `try/except` que devuelve
+    un default --, o si la excepcion pierde el campo o el motivo: la GUI
+    subraya la casilla por `campo` y el revisor corrige por el motivo.
+
+    Es DatoInvalidoError y no DatoFaltanteError porque la luz SI llego: hay
+    que corregirla, no añadirla (CLAUDE.md, taxonomia de excepciones).
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        clasificar(punto_a, luz)
+
+    assert exc.value.campo == "luz_m"
+    assert exc.value.id_punto == punto_a.id
+    assert motivo_esperado in exc.value.motivo
+
+
+@pytest.mark.parametrize("declaracion, valor_rechazado, motivo_esperado", [
+    ({"R": 0.50}, 0.50, "COMO MAXIMO"),      # mas riesgo del recomendado
+    ({"n": 10}, 10, "vida util menor"),      # menos vida util que la tabla
+])
+def test_el_propietario_no_puede_ablandar_la_tabla_N_02(
+        declaracion, valor_rechazado, motivo_esperado):
+    """
+    NOR-HID-08: la Tabla N 02 publica VALORES MAXIMOS RECOMENDADOS y su nota
+    al pie deja la decision al Propietario. `_riesgo_del_propietario` solo
+    admite ENDURECER: R menor o n mayor suben el TR y el caudal de diseño.
+
+    Falla si la declaracion del Propietario deja de compararse contra la fila
+    de la tabla -- que es lo que convierte esta via en un refinamiento y no
+    en un portillo para bajar el caudal de diseño sin decirlo.
+
+    Los maximos NO se escriben aqui: salen de RIESGO_ADMISIBLE, que es donde
+    viven como [N].
+    """
+    fila = "quebrada_importante"
+    ca.establecer_valor_dinamico(CRITERIO_RIESGO_PROPIETARIO,
+                                 {fila: declaracion})
+    try:
+        with pytest.raises(DatoInvalidoError) as exc:
+            tr_de_categoria(fila)
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_RIESGO_PROPIETARIO)
+
+    assert exc.value.campo == CRITERIO_RIESGO_PROPIETARIO
+    assert exc.value.valor == pytest.approx(valor_rechazado,
+                                            rel=REL_TRANSPORTE)
+    assert motivo_esperado in exc.value.motivo
+    # El motivo tiene que decir contra QUE techo se rechazo, con el numero de
+    # la tabla dentro: sin el, el revisor no sabe hasta donde puede declarar.
+    assert str(RIESGO_ADMISIBLE[fila]["R" if "R" in declaracion else "n"]) \
+        in exc.value.motivo
+
+
+def test_una_declaracion_que_endurece_la_tabla_N_02_si_se_admite():
+    """
+    La cara opuesta del test anterior, y la que demuestra que la guarda no es
+    un "no se puede declarar nada": bajar R y subir n sube el TR, que es la
+    direccion segura, y el fundamento tiene que dejar dicho que los valores
+    los declaro el Propietario.
+    """
+    fila = "quebrada_importante"
+    maximos = RIESGO_ADMISIBLE[fila]
+    ca.establecer_valor_dinamico(
+        CRITERIO_RIESGO_PROPIETARIO,
+        {fila: {"R": maximos["R"] / 2, "n": maximos["n"] * 2}})
+    try:
+        con_declaracion = tr_de_categoria(fila)
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_RIESGO_PROPIETARIO)
+
+    por_defecto = tr_de_categoria(fila)
+    assert con_declaracion.anios > por_defecto.anios
+    assert CRITERIO_RIESGO_PROPIETARIO in con_declaracion.fundamento
+
+
+@pytest.mark.parametrize("familia", ["D", "a", "", "Familia A", 1])
+def test_una_familia_que_no_es_de_la_Sec_2_3_se_detiene_con_el_campo(familia):
+    """
+    Falla si `perfil_de` deja de validar la familia y revienta mas adentro con
+    un KeyError sobre PERFILES: eso seria un fallo de PROGRAMA para la GUI, y
+    lo que hay es un dato del expediente mal escrito.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        perfil_de(familia)
+
+    assert exc.value.campo == "familia"
+    # El motivo enumera las familias reales, leidas del enum: si mañana se
+    # añade una cuarta, el mensaje la lista sin que nadie lo edite.
+    for valida in Familia:
+        assert valida.value in exc.value.motivo
+
+
+# --- guarda defensiva: se demuestra inalcanzable, no se alcanza ------------
+
+def test_ninguna_fila_de_la_Tabla_N_02_se_queda_sin_riesgo_admisible():
+    """
+    SIS-B-23, aplicado a la segunda guarda de `_categoria`: el `raise` para
+    una CategoriaTR sin entrada en RIESGO_ADMISIBLE no lo alcanza ninguna
+    llamada, porque el enum y la tabla cubren exactamente las mismas filas.
+    Esa es la razon por la que no tiene test que lo ejecute, y este test es
+    la razon escrita: mientras pase, la guarda es inalcanzable por
+    construccion; el dia que alguien añada una fila al enum sin añadirla a la
+    tabla, falla AQUI -- con el nombre de la fila huerfana -- en vez de
+    esperar a que un punto de una obra caiga en el `raise`.
+    """
+    filas_del_enum = {c.value for c in CategoriaTR}
+    filas_de_la_tabla = set(RIESGO_ADMISIBLE)
+
+    assert filas_del_enum == filas_de_la_tabla, (
+        "CategoriaTR y RIESGO_ADMISIBLE dejaron de cubrir las mismas filas: "
+        f"sin tabla {sorted(filas_del_enum - filas_de_la_tabla)}, "
+        f"sin enum {sorted(filas_de_la_tabla - filas_del_enum)}")
+
+    # Y la consecuencia observable: toda fila del enum resuelve su TR.
+    for fila in CategoriaTR:
+        assert tr_de_categoria(fila).anios > 0
+
+
+# ---------------------------------------------------------------------------
+# MAT-D13, segunda vuelta: el mensaje nombra el PAR, y n en forma positiva
+# ---------------------------------------------------------------------------
+
+def test_el_mensaje_del_borde_de_tr_nombra_los_dos_datos():
+    """
+    La degeneracion es del par (R, n) y no de uno solo: con n grande, una R
+    perfectamente sana la provoca. La primera version acusaba siempre a 'R' y
+    mandaba a corregir el dato equivocado la mitad de las veces; escribir un
+    discriminante seria falsa precision, porque no hay umbral que separe "culpa
+    de R" de "culpa de n". Se dicen los dos.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        tr_desde_riesgo(1e-16, 25)
+    mensaje = str(exc.value)
+    assert "R = 1e-16" in mensaje and "n = 25" in mensaje
+    assert "cualquiera de los dos lados" in mensaje
+
+
+def test_una_vida_util_nan_no_atraviesa_la_guarda():
+    """
+    `n <= 0` es FALSO para un NaN y lo dejaba pasar hasta la formula. La
+    condicion escrita en positivo y negada si lo atrapa, y lo atrapa acusando
+    a 'n', que es el dato que hay que corregir.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        tr_desde_riesgo(0.35, float("nan"))
+    assert exc.value.campo == "n"
+
+
+def test_una_vida_util_enorme_tambien_degenera_y_se_dice():
+    with pytest.raises(DatoInvalidoError) as exc:
+        tr_desde_riesgo(0.35, 10 ** 300)
+    assert "degenera" in str(exc.value)

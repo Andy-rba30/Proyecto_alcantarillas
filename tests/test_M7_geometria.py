@@ -19,23 +19,32 @@ minima de 7.A, V4 tiene que cumplir al limite.
 """
 
 import math
+from pathlib import Path
 
 import pytest
 
 import criterios_adoptados as ca
 from constantes_normativas import H_RELLENO_MIN
+from dominios import ESVIAJE_MAX
 from modelos import (CondicionRasante, ControlGobernante, CriterioPendienteError,
                      DatoInvalidoError, DisenoNoFactibleError, Familia,
                      PuntoCritico, ResultadoHidraulico, TipoMaterial)
+from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import catalogo
+from tolerancias import TOL_UMBRAL_NORMATIVO
 from modulos.M5_verificaciones import v4_carga_entrada
-from modulos.M7_geometria import (CRITERIO_TALUD, altura_recubrimiento,
+from modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
+                                  CRITERIO_CONDICION_PAVIMENTO,
+                                  CRITERIO_TALUD, altura_recubrimiento,
                                   criterio_recubrimiento,
-                                  altura_terraplen, compatibilidad_geometrica,
+                                  altura_terraplen, cobertura_minima_aashto,
+                                  compatibilidad_geometrica,
                                   cota_clave, cota_salida, espesor_paquete,
                                   factor_esviaje, g1_rasante_congelada,
                                   g2_cota_salida, longitud_conducto,
                                   proyeccion_taludes, tamizado_rasante)
+from tests.fixtures.casos_patron import CP9_GEOMETRIA_7B
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 # El HDPE es el unico material con minimo de relleno en EG-2013 (0.30 m,
 # Subseccion 508.07, pag. 984). Ya NO es el h_rec del tamizado: desde C01,
@@ -96,6 +105,24 @@ def _resultado(*, HW_entrada=0.50, S=0.006) -> ResultadoHidraulico:
         HW_entrada=HW_entrada, HW_salida=0.20,
         control_gobernante=ControlGobernante.ENTRADA,
     )
+
+
+
+@pytest.fixture
+def declarar_condicion_pavimento():
+    """
+    Declara 'condicion_pavimento' por la via de la GUI y repone al salir la
+    que trae la corrida de pruebas (conftest.py). Se lee y se repone el valor
+    VIGENTE, no uno escrito aqui: si conftest cambia de fila, estos tests la
+    siguen sin editarse.
+    """
+    original = ca.valor(CRITERIO_CONDICION_PAVIMENTO)
+
+    def _declarar(condicion):
+        ca.establecer_valor_dinamico(CRITERIO_CONDICION_PAVIMENTO, condicion)
+
+    yield _declarar
+    ca.establecer_valor_dinamico(CRITERIO_CONDICION_PAVIMENTO, original)
 
 
 @pytest.fixture
@@ -383,7 +410,8 @@ def test_un_diametro_menor_sube_el_resguardo_relativo_al_recubrimiento(hdpe):
 # ---------------------------------------------------------------------------
 
 def test_esviaje_cero_no_alarga_el_conducto():
-    assert factor_esviaje(_punto(esviaje_grados=0.0)) == pytest.approx(1.0)
+    assert factor_esviaje(_punto(esviaje_grados=0.0)) == pytest.approx(
+        1.0, rel=REL_TRANSPORTE)
 
 
 def test_el_esviaje_alarga_por_el_inverso_del_coseno():
@@ -517,3 +545,323 @@ def test_7B_deduce_la_proyeccion_de_la_longitud_que_se_le_pasa(hdpe):
                                     resultado=_resultado(), longitud=20.0)
     assert geo.proyeccion_taludes == pytest.approx(10.40)
     assert geo.factor_esviaje == pytest.approx(1.0)
+
+
+# ===========================================================================
+# C09 / SIS-F-10 y SIS-B-23 - la guarda de la fila de AASHTO, y la del esviaje
+# ===========================================================================
+#
+# `cobertura_minima_aashto` elige fila de la Tabla 12.6.6.3-1 con
+# 'condicion_pavimento' [A]. Que la condicion declarada no exista en la tabla
+# no lo probaba nadie, y es el caso que la GUI produce sola: la pestaña de
+# criterios acepta texto, y "asfaltico" o "adoquinado" son lo primero que
+# alguien escribe.
+#
+# La segunda mitad del bloque es la contraria: la guarda del esviaje NEGATIVO
+# de `factor_esviaje` no la alcanza ningun punto, porque M0 rechaza el valor
+# al cargar el CSV. No se cubre por inyeccion: se demuestra que el rango que
+# M0 admite cae entero dentro del que M7 admite (SIS-B-23).
+
+
+@pytest.mark.parametrize("condicion", [
+    "asfaltico",        # el nombre corriente de la fila 'flexible'
+    "Flexible",         # la misma fila, con mayuscula
+    "afirmado",         # el nombre peruano de 'no_pavimentado'
+    "",
+])
+def test_una_condicion_de_pavimento_fuera_de_la_tabla_se_detiene(
+        hdpe, declarar_condicion_pavimento, condicion):
+    """
+    Falla si `cobertura_minima_aashto` deja de validar la condicion contra la
+    tabla y revienta mas adentro con un KeyError -- fallo de PROGRAMA para la
+    GUI -- por un criterio que el proyectista escribio mal. Y falla tambien
+    si el motivo deja de enumerar las filas: sin la lista, quien declaro
+    "asfaltico" no tiene como saber que la fila se llama "flexible".
+
+    Las filas NO se escriben aqui: se leen de la tabla transcrita, de modo
+    que si mañana se transcribe una cuarta, el test la exige en el mensaje
+    sin que nadie lo edite.
+    """
+    filas = sorted(ca.valor(CRITERIO_COBERTURA_AASHTO)[hdpe.tipo.value])
+    assert condicion not in filas, "el caso dejo de ser una condicion invalida"
+
+    declarar_condicion_pavimento(condicion)
+    with pytest.raises(DatoInvalidoError) as exc:
+        cobertura_minima_aashto(material=hdpe, D=1.50)
+
+    assert exc.value.campo == CRITERIO_CONDICION_PAVIMENTO
+    assert exc.value.valor == condicion
+    assert "12.6.6.3-1" in exc.value.motivo
+    for fila in filas:
+        assert fila in exc.value.motivo
+
+
+@pytest.mark.parametrize("tipo", list(TipoMaterial))
+def test_las_tres_filas_transcritas_si_dan_cobertura(
+        declarar_condicion_pavimento, tipo):
+    """
+    El contraste del test anterior: la guarda rechaza lo que no esta en la
+    tabla y no estorba a lo que si. Falla si al transcribir una fila nueva
+    alguien la deja sin entrada para alguno de los tres materiales.
+    """
+    material = catalogo(tipo)
+    filas = ca.valor(CRITERIO_COBERTURA_AASHTO)[tipo.value]
+
+    for condicion in sorted(filas):
+        declarar_condicion_pavimento(condicion)
+        assert cobertura_minima_aashto(material=material, D=1.50) > 0, condicion
+
+
+# --- guarda defensiva: se demuestra inalcanzable, no se alcanza ------------
+
+def test_M0_rechaza_el_esviaje_negativo_antes_de_que_M7_lo_vea(tmp_path):
+    """
+    SIS-B-23. `factor_esviaje` admite (-ESVIAJE_MAX, ESVIAJE_MAX) y M0 exige
+    [0, ESVIAJE_MAX) al cargar el CSV: el rango de M7 es un SUPERCONJUNTO del
+    que M0 deja entrar, de modo que la mitad negativa de su guarda no la
+    alcanza ningun PuntoCritico que venga del expediente. Ese es el motivo de
+    que no tenga test que la ejecute, y este es el motivo escrito.
+
+    Se demuestra por las dos vias: el hecho (M0 rechaza el valor, con el
+    campo, antes de construir el punto) y la contencion de los dos rangos.
+    Falla el dia que alguien relaje M0 y deje pasar un esviaje negativo:
+    entonces la guarda de M7 deja de ser defensiva y necesita su propio test.
+    """
+    origen = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
+    lineas = origen.read_text(encoding="utf-8-sig").splitlines()
+    cabecera = lineas[0].split(",")
+    columna = cabecera.index("esviaje_grados")
+
+    celdas = lineas[1].split(",")
+    celdas[columna] = "-15"
+    csv_negativo = tmp_path / "esviaje_negativo.csv"
+    csv_negativo.write_text("\n".join([lineas[0], ",".join(celdas)]),
+                            encoding="utf-8")
+
+    with pytest.raises(DatoInvalidoError) as exc:
+        cargar_puntos(csv_negativo)
+
+    assert exc.value.campo == "esviaje_grados"
+    assert "0 (cruce perpendicular)" in exc.value.motivo
+
+    # Y la contencion de los rangos, que es lo que hace defensiva a la guarda
+    # de M7: los dos extremos que M0 admite caen dentro de lo que M7 admite.
+    assert -ESVIAJE_MAX < 0 < ESVIAJE_MAX
+    assert -ESVIAJE_MAX < ESVIAJE_MAX - 0.1 < ESVIAJE_MAX
+
+
+def test_el_esviaje_perpendicular_y_el_casi_paralelo_si_los_admite_M7():
+    """
+    Los dos extremos del intervalo que M0 deja pasar los resuelve M7 sin
+    tocar su guarda: el perpendicular no alarga nada y el casi paralelo
+    alarga muchisimo, pero los dos tienen longitud definida.
+    """
+    assert factor_esviaje(_punto(esviaje_grados=0.0)) == pytest.approx(1.0)
+    assert factor_esviaje(_punto(esviaje_grados=ESVIAJE_MAX - 0.1)) > 1.0
+
+
+# ---------------------------------------------------------------------------
+# 7.B con el talud DECLARADO: la rama viva de longitud y proyeccion (CP-9)
+# ---------------------------------------------------------------------------
+#
+# 'talud_terraplen' sigue VACIO en criterios_adoptados.py y estos tests NO lo
+# rellenan: lo declaran solo mientras dura el test, por el MISMO camino que
+# usan la GUI y la CLI -- `establecer_valor_dinamico`, que pasa por la guardia
+# `_verificar_criterio` -- y lo retiran en el `finally`. El archivo de
+# criterios no se toca, `criterios_sin_valor()` vuelve a listarlo al salir y
+# `test_el_criterio_del_talud_sigue_declarado_sin_valor` sigue siendo el
+# canario del vacio.
+#
+# Los numeros no se escriben aqui: salen de CP9_GEOMETRIA_7B, que explica de
+# donde viene cada uno y se autoverifica con `python3
+# tests/fixtures/casos_patron.py`. Duplicarlos como literales en este archivo
+# es exactamente el defecto SIS-F-14.
+
+CP9 = CP9_GEOMETRIA_7B
+TOL_L = CP9["tolerancia_longitud"]
+TOL_COTA = CP9["tolerancia_cota"]
+
+
+def _punto_7b(**cambios) -> PuntoCritico:
+    """El punto de CP-9: la geometria de 7.B, sin tocar el resto de columnas."""
+    base = dict(ancho_plataforma=CP9["ancho_plataforma"],
+                cota_terreno=CP9["cota_terreno"],
+                cota_rasante=CP9["cota_rasante"],
+                cota_subrasante=CP9["cota_subrasante"],
+                cota_fondo_receptor=CP9["cota_fondo_receptor"],
+                esviaje_grados=CP9["esviaje_perpendicular_grados"])
+    base.update(cambios)
+    return _punto(**base)
+
+
+@pytest.fixture
+def talud_declarado():
+    """
+    Declara 'talud_terraplen' SOLO para este test y lo retira al salir.
+
+    Las dos comprobaciones de los extremos no son adorno: fijan que el
+    criterio entra vacio y sale vacio, de modo que ninguna prueba de este
+    archivo pueda dejar el vacio tapado para las que corran despues.
+    """
+    assert CRITERIO_TALUD in ca.criterios_sin_valor()
+    ca.establecer_valor_dinamico(CRITERIO_TALUD, CP9["talud_de_prueba"])
+    try:
+        yield CP9["talud_de_prueba"]
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_TALUD)
+    assert CRITERIO_TALUD in ca.criterios_sin_valor()
+
+
+def test_la_proyeccion_son_dos_taludes_por_la_altura_de_terraplen(talud_declarado):
+    """
+    proyeccion = 2 * talud * altura de terraplen (Sec. 7.B).
+
+        altura     = 45.00 - 42.10   = 2.90 m
+        proyeccion = 2 * 2.5 * 2.90  = 14.50 m
+
+    Lo que este numero separa (CP-9): 2/talud daria 2.32, talud al cuadrado
+    18.125, un solo talud 7.25 y dividir por la altura 1.724.
+    """
+    punto = _punto_7b()
+    assert altura_terraplen(punto) == pytest.approx(
+        CP9["altura_terraplen_esperada"], abs=TOL_COTA)
+    assert proyeccion_taludes(punto) == pytest.approx(
+        CP9["proyeccion_esperada"], abs=TOL_L)
+
+
+def test_la_longitud_suma_la_proyeccion_al_ancho_de_plataforma(talud_declarado):
+    """
+    longitud = (ancho de plataforma + proyeccion) / cos(esviaje). En el cruce
+    perpendicular el factor vale 1 y la longitud es la suma pura:
+
+        9.60 + 14.50 = 24.10 m
+
+    Restar en vez de sumar da -4.90 m: un conducto de longitud negativa, que
+    hoy no detecta nadie.
+    """
+    punto = _punto_7b(esviaje_grados=CP9["esviaje_perpendicular_grados"])
+    assert factor_esviaje(punto) == pytest.approx(
+        CP9["factor_esviaje_perpendicular_esperado"], abs=TOL_L)
+    assert longitud_conducto(punto) == pytest.approx(
+        CP9["longitud_perpendicular_esperada"], abs=TOL_L)
+
+
+def test_el_esviaje_alarga_la_longitud_dividiendo_por_el_coseno(talud_declarado):
+    """
+    La MISMA seccion transversal, cruzada a 30 grados, da un conducto mas
+    largo -- no mas corto:
+
+        (9.60 + 14.50) / cos(30 grados) = 24.10 * 1.15470054 = 27.828283 m
+
+    Multiplicar por el coseno en vez de dividir daria 20.8712122 m, menos que
+    el cruce perpendicular (24.10 m), que es geometricamente imposible. El
+    ultimo assert es el que lo dice sin depender del numero.
+    """
+    oblicuo = _punto_7b(esviaje_grados=CP9["esviaje_oblicuo_grados"])
+    perpendicular = _punto_7b(
+        esviaje_grados=CP9["esviaje_perpendicular_grados"])
+    L = longitud_conducto(oblicuo)
+    assert L == pytest.approx(CP9["longitud_oblicua_esperada"], abs=TOL_L)
+    assert L != pytest.approx(
+        CP9["longitud_oblicua_si_multiplica_por_el_coseno"], abs=TOL_L)
+    assert L > longitud_conducto(perpendicular)
+
+
+def test_7B_sin_longitud_dada_la_calcula_y_de_ahi_salen_caida_y_cota_de_salida(
+        hdpe, talud_declarado):
+    """
+    La rama VIVA de `compatibilidad_geometrica`: sin `longitud` la calcula con
+    'talud_terraplen', y de esa longitud cuelgan la caida y la cota de salida
+    que G2 verifica (CP-9).
+
+        proyeccion  = 2 * 2.5 * 2.90               = 14.50 m
+        longitud    = (9.60 + 14.50) / cos(30 gr)  = 27.828283 m
+        caida       = 0.006 * 27.828283            =  0.1669697 m
+        cota salida = 42.10 - 0.1669697            = 41.9330303 msnm
+    """
+    punto = _punto_7b(esviaje_grados=CP9["esviaje_oblicuo_grados"])
+    geo = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
+                                    resultado=_resultado(S=CP9["S"]))
+
+    assert geo.altura_terraplen == pytest.approx(
+        CP9["altura_terraplen_esperada"], abs=TOL_COTA)
+    assert geo.proyeccion_taludes == pytest.approx(
+        CP9["proyeccion_esperada"], abs=TOL_L)
+    assert geo.longitud == pytest.approx(
+        CP9["longitud_oblicua_esperada"], abs=TOL_L)
+    assert geo.longitud == pytest.approx(longitud_conducto(punto), abs=TOL_L)
+    assert geo.cota_entrada == pytest.approx(
+        CP9["cota_entrada_esperada"], abs=TOL_COTA)
+    assert geo.caida == pytest.approx(
+        CP9["caida_oblicua_esperada"], abs=TOL_COTA)
+    assert geo.cota_salida == pytest.approx(
+        CP9["cota_salida_oblicua_esperada"], abs=TOL_COTA)
+    assert geo.factible
+
+
+def test_las_dos_ramas_de_7B_componen_y_despejan_la_misma_proyeccion(
+        hdpe, talud_declarado):
+    """
+    Pasarle a 7.B la longitud que ella misma habria calculado tiene que
+    devolver la MISMA proyeccion: la rama con longitud dada despeja lo que la
+    rama viva compone. Ata las dos ramas, que hoy no se contrastan entre si.
+    """
+    punto = _punto_7b(esviaje_grados=CP9["esviaje_oblicuo_grados"])
+    viva = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
+                                     resultado=_resultado(S=CP9["S"]))
+    dada = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
+                                     resultado=_resultado(S=CP9["S"]),
+                                     longitud=viva.longitud)
+    assert dada.proyeccion_taludes == pytest.approx(
+        CP9["proyeccion_esperada"], abs=TOL_L)
+    assert dada.proyeccion_taludes == pytest.approx(viva.proyeccion_taludes,
+                                                    abs=TOL_L)
+
+
+def test_g2_es_inclusiva_en_el_fondo_del_receptor_y_absorbe_el_ruido_de_float():
+    """
+    G2 compara dos cotas y el umbral es INCLUSIVO: una salida que cae
+    exactamente sobre el fondo del receptor cumple, y el ruido de punto
+    flotante -- TOL_UMBRAL_NORMATIVO, sumado al lado admisible -- no la
+    convierte en incumplimiento.
+
+    Sin este test sobreviven dos mutantes de `g2_cota_salida`: cambiar `>=`
+    por `>` (que reprueba la igualdad exacta) y sumar la tolerancia en vez de
+    restarla (que la exige 1e-9 m por encima del fondo).
+    """
+    receptor = CP9_GEOMETRIA_7B["cota_fondo_receptor"]
+    punto = _punto(cota_fondo_receptor=receptor)
+
+    # exactamente sobre el fondo: cumple
+    assert g2_cota_salida(punto=punto, cota_salida_m=receptor).cumple
+    # justo en el borde inclusivo que la tolerancia abre: cumple
+    assert g2_cota_salida(punto=punto,
+                          cota_salida_m=receptor - TOL_UMBRAL_NORMATIVO).cumple
+    # un milimetro por debajo: no cumple, y la tolerancia no lo tapa
+    assert not g2_cota_salida(punto=punto,
+                              cota_salida_m=receptor - 1e-3).cumple
+
+
+def test_el_esviaje_casi_paralelo_pasa_M0_y_da_una_longitud_absurda():
+    """
+    MAT-O18, la parte que su ficha da por inalcanzable y NO lo es. M0 valida
+    `0 <= esviaje < 90`, de modo que 89.999999999 grados entra: el factor de
+    esviaje vale 5.7e10 y la longitud del conducto sale del orden de 1e11 m.
+
+    No se acota, y el docstring de `factor_esviaje` dice por que: no hay
+    esviaje maximo constructivo que citar -- ni Sec. 7.B ni EG-2013 lo fijan --
+    y elegir uno seria inventar un valor normativo. Este test existe para que
+    el numero este MEDIDO y a la vista, en vez de descrito como imposible.
+    """
+    casi_paralelo = _punto(esviaje_grados=ESVIAJE_MAX - 1e-9)
+    factor = factor_esviaje(casi_paralelo)
+
+    assert factor > 1e9, (
+        "el factor tiene que ser astronomico: si dejara de serlo, alguien "
+        "puso una cota y hay que declararla como criterio")
+    assert math.isfinite(factor), (
+        "y aun asi finito: el dominio es abierto en 90, no cerrado")
+
+    # El extremo cerrado si esta cubierto por la guarda.
+    with pytest.raises(DatoInvalidoError):
+        factor_esviaje(_punto(esviaje_grados=ESVIAJE_MAX))

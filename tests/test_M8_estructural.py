@@ -45,6 +45,8 @@ from modulos.M8_estructural import (cama_apoyo_relleno_lateral,
                                     peso_relleno_kn_m,
                                     seleccionar_clase_calibre,
                                     verificacion_diferida_estructural)
+from tests.apoyo import estructura
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 
 @pytest.fixture
@@ -138,7 +140,8 @@ def test_factores_carga_flotacion_calcula_con_el_criterio_real(concreto):
     decir de que fila sale.
     """
     g = factores_carga_flotacion(material=concreto)
-    assert (g.gamma_DC, g.gamma_EV, g.gamma_WA) == (0.90, 0.90, 1.00)
+    assert (g.gamma_DC, g.gamma_EV, g.gamma_WA) == pytest.approx(
+        (0.90, 0.90, 1.00), rel=REL_TRANSPORTE)
     assert g.criterio == "factores_carga_aashto"
     assert "Estructura rígida enterrada" in g.fila_gamma_EV
 
@@ -167,7 +170,8 @@ def test_los_gamma_de_v7_salen_de_la_fila_elegida_y_con_el_extremo_correcto(
     """
     _declarar(monkeypatch, "factores_carga_aashto", ELECCION_DEMO)
     g = factores_carga_flotacion(material=concreto)
-    assert (g.gamma_DC, g.gamma_EV, g.gamma_WA) == (0.90, 1.00, 1.00)
+    assert (g.gamma_DC, g.gamma_EV, g.gamma_WA) == pytest.approx(
+        (0.90, 1.00, 1.00), rel=REL_TRANSPORTE)
     assert g.criterio == "factores_carga_aashto"
 
 
@@ -222,9 +226,19 @@ def test_el_NF_ya_no_es_un_criterio_de_este_modulo():
         ca.valor("NF_profundidad_m")
     assert "NF_profundidad_m" in {f.name for f in fields(PuntoCritico)}
 
-    fuente = Path(M8.__file__).read_text(encoding="utf-8-sig")
-    assert 'ca.valor(CRITERIO_NF)' not in fuente
-    assert "CRITERIO_NF" not in fuente
+    # SIS-C-02. La version anterior comprobaba dos SUBCADENAS del texto
+    # fuente: `'ca.valor(CRITERIO_NF)' not in fuente` es ademas sensible al
+    # FORMATO -- reindentar la llamada a dos lineas la habria evadido sin
+    # cambiar nada del comportamiento. Se pregunta al arbol, que es donde
+    # esta la respuesta: ni el nombre esta ligado en el modulo, ni el modulo
+    # invoca la clave.
+    ruta_m8 = Path(M8.__file__)
+    assert "CRITERIO_NF" not in estructura.nombres_asignados(ruta_m8)
+    assert "CRITERIO_NF" not in estructura.nombres_usados(ruta_m8)
+    assert "NF_profundidad_m" not in estructura.textos_de_llamada_o_indice(
+        ruta_m8), (
+        "M8 volvio a invocar el NF del punto: la flotacion se evalua con el "
+        "conducto lleno de aire, no con el freatico medido")
 
 
 # ===========================================================================

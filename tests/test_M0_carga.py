@@ -100,8 +100,10 @@ def test_la_progresiva_se_parte_en_numero_y_notacion_vial():
     assert puntos["A-01"].progresiva_km == pytest.approx(0.380)
     assert puntos["A-02"].progresiva_display == "1+920"
     assert puntos["A-02"].progresiva_km == pytest.approx(1.920)
-    assert [p.progresiva_km for p in cargar_puntos(CSV_VALIDO)] == sorted(
-        p.progresiva_km for p in cargar_puntos(CSV_VALIDO))
+    progresivas = [p.progresiva_km for p in cargar_puntos(CSV_VALIDO)]
+    assert all(anterior <= siguiente
+               for anterior, siguiente in zip(progresivas, progresivas[1:])), (
+        "los puntos se cargan en el orden de progresiva del CSV")
 
 
 def test_la_progresiva_numerica_se_convierte_a_notacion_vial(tmp_path):
@@ -228,6 +230,31 @@ def test_el_error_nombra_toda_columna_que_falte_del_encabezado():
         assert columna in str(exc.value)
 
 
+@pytest.mark.parametrize("columna", ["id", "progresiva_km", "familia",
+                                     "sucs_fundacion"])
+def test_una_celda_de_texto_vacia_falla_nombrando_su_columna(tmp_path, columna):
+    """
+    SIS-F-12. `_texto` tiene dos ramas: la columna que falta del encabezado
+    (DatoFaltanteError, cubierta) y la CELDA VACIA, que es la otra mitad de la
+    definicion de DatoFaltanteError en CLAUDE.md ("falta la columna entera, o
+    la celda obligatoria viene vacia") y que la suite no ejecutaba nunca.
+
+    Es Faltante y no Invalido porque el revisor tiene que AÑADIR el dato, no
+    corregirlo: la celda no dice nada equivocado, no dice nada.
+    """
+    with pytest.raises(DatoFaltanteError) as exc:
+        cargar_puntos(_con(tmp_path, **{columna: ""}))
+    assert exc.value.campo == columna
+    assert "vacia" in str(exc.value)
+
+
+def test_una_celda_de_texto_con_solo_espacios_es_una_celda_vacia(tmp_path):
+    """`_celda` recorta antes de mirar: '   ' no es un id, es una celda vacia."""
+    with pytest.raises(DatoFaltanteError) as exc:
+        cargar_puntos(_con(tmp_path, id="   "))
+    assert exc.value.campo == "id"
+
+
 def test_una_celda_de_cbr_vacia_falla_nombrando_cbr_subrasante(tmp_path):
     """El CBR define el resguardo de V4 (Sec. 5.1): no admite vacio."""
     with pytest.raises(DatoFaltanteError) as exc:
@@ -324,6 +351,50 @@ def test_los_valores_fuera_del_rango_fisico_se_rechazan(tmp_path, columna, valor
     with pytest.raises(DatoInvalidoError) as exc:
         cargar_puntos(_con(tmp_path, **{columna: valor}))
     assert exc.value.campo == columna
+
+
+@pytest.mark.parametrize("columna", [
+    "Q_m3s", "area_ha", "cbr_subrasante", "ancho_plataforma",
+    "cota_rasante", "cota_terreno", "cota_subrasante", "cota_fondo_receptor",
+])
+@pytest.mark.parametrize("texto", ["inf", "Infinity", "-inf", "nan", "NaN"])
+def test_ningun_dato_no_finito_entra_al_pipeline(tmp_path, columna, texto):
+    """
+    MAT-D14. `float()` acepta 'inf' y 'nan' como literales, y ninguna
+    validacion de rango los atrapa: `inf > 0` es cierto, y `nan` es falso
+    frente a `<=` y frente a `>=` a la vez, de modo que pasa tanto una
+    validacion escrita como "esta dentro" como una escrita como "no esta
+    fuera". El dato recorria el pipeline entero y salia por el otro extremo
+    como una memoria con numeros que no son numeros.
+
+    Es DatoInvalidoError y no DatoFaltanteError: la celda ESTA, y el revisor
+    tiene que CORREGIRLA, no añadirla.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        cargar_puntos(_con(tmp_path, **{columna: texto}))
+    assert exc.value.campo == columna
+    assert "finito" in str(exc.value)
+
+
+def test_el_infinito_pasaba_todas_las_cotas_inferiores(tmp_path):
+    """
+    El caso concreto de la ficha: Q_m3s = 'inf' pasa `Q_m3s > 0` y produce un
+    diagnostico falso. Este test fija que la guarda de finitud corre ANTES de
+    la de rango, y que el mensaje no habla de un caudal negativo.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        cargar_puntos(_con(tmp_path, Q_m3s="inf"))
+    assert exc.value.campo == "Q_m3s"
+    assert "finito" in str(exc.value)
+    assert "positivo" not in str(exc.value), (
+        "la guarda que atrapa a inf tiene que ser la de finitud, no la de rango")
+
+
+def test_la_progresiva_no_finita_tambien_se_rechaza(tmp_path):
+    """La progresiva pasa por el mismo conversor, en sus dos formas."""
+    with pytest.raises(DatoInvalidoError) as exc:
+        cargar_puntos(_con(tmp_path, progresiva_km="inf"))
+    assert exc.value.campo == "progresiva_km"
 
 
 def test_el_esviaje_perpendicular_es_valido(tmp_path):

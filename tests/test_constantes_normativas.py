@@ -248,7 +248,9 @@ def test_el_resguardo_por_CBR_cubre_todo_el_rango_sin_huecos():
     """num. 4.5.4: a peor CBR, mayor resguardo. Los tramos deben encadenar."""
     tramos = CN.RESGUARDO_NAPA_SUBRASANTE
     resguardos = [r for _, _, r in tramos]
-    assert resguardos == sorted(resguardos), "el resguardo no crece al bajar el CBR"
+    assert all(anterior <= siguiente
+               for anterior, siguiente in zip(resguardos, resguardos[1:])), (
+        "el resguardo no crece al bajar el CBR")
     for (cbr_min, _, _), (_, cbr_max_siguiente, _) in zip(tramos, tramos[1:]):
         assert cbr_min == cbr_max_siguiente     # 20-6, 6-3, 3-...
 
