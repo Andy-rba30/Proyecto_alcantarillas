@@ -41,7 +41,8 @@ from modulos.M4_control import (CRITERIO_GEOMETRIA_SALIDA,
                                 hw_gobernante, perdida_carga,
                                 radio_hidraulico_lleno, resolver_control,
                                 tirante_critico)
-from modelos import TipoMaterial
+from modelos import (DatoInvalidoError, ErrorProyecto,
+                     LimiteNumericoError, TipoMaterial)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP5_TRANSICION_HDS5,
@@ -790,3 +791,90 @@ def test_una_seccion_de_referencia_distinta_de_la_llena_se_detiene(seleccion):
     # Y dice que haria falta para implementar la otra, que es lo que separa
     # "corregi el valor" de "hay que programar un procedimiento".
     assert "HDS-5" in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# SIS-G-02 y MAT-O18 - los dos extremos del caudal que la aritmetica no lleva
+# ---------------------------------------------------------------------------
+
+def test_un_caudal_diminuto_anula_el_area_despues_del_solver():
+    """
+    SIS-G-02. La guarda que ya existia protege el BRACKET de Brent; esta
+    protege la division de DESPUES.
+
+    Son dos cosas distintas y hasta S16.5 solo estaba la primera: con
+    Q = 1e-33 y D = 0.90 m el residuo cruza el cero limpiamente, brentq
+    converge sin quejarse, y el theta al que converge cae por debajo del
+    umbral en que el area se cancela. `V_c = Q / geom.A` era entonces un
+    `ZeroDivisionError` en crudo -- fuera de ErrorProyecto, de modo que la GUI
+    no sabia si era problema del expediente o fallo del programa.
+
+    EL UMBRAL ESTA MEDIDO, no supuesto: A = (D^2/8)(theta - sen theta) vale
+    exactamente 0.0 desde theta <= 2.149e-08, porque theta - sen(theta) ~
+    theta^3/6 cae bajo el ultimo bit de theta. Q = 1e-32 todavia da
+    theta = 2.979e-08 y area positiva; Q = 1e-33 ya no.
+
+    `Q_m3s` solo exige ser positivo y no se le puede poner un piso sin
+    inventar un valor de proyecto, que es la misma razon por la que SIS-G-01
+    no acota las cotas.
+    """
+    # El ultimo caudal que SI resuelve: la guarda no puede empezar antes.
+    assert tirante_critico(1e-32, 0.90).geometria.A > 0
+
+    with pytest.raises(LimiteNumericoError) as exc:
+        tirante_critico(1e-33, 0.90)
+    assert exc.value.campo == "Q"
+    # El mensaje nombra el PAR, no solo Q: la degeneracion es de la
+    # combinacion (Q, D), igual que en MAT-D13 lo es la de (R, n).
+    assert "D = 0.9" in str(exc.value)
+
+
+def test_un_caudal_enorme_no_revienta_con_overflow_crudo():
+    """
+    MAT-O18, la mitad que SI era alcanzable, remedida.
+
+    Su ficha situaba el desborde en `q*^2` y lo clasificaba "solo alcanzable
+    inyectando". LAS DOS COSAS SON FALSAS: esta en `Q ** 2` de
+    `_residuo_critico`, y `Q_m3s` no tiene techo en dominios.py, de modo que
+    un caudal de 1e155 llega entero desde un CSV que pasa las tres
+    validaciones de M0. Es la tercera correccion a esa ficha; S16 ya habia
+    encontrado dos.
+
+    `float.__pow__` lanza OverflowError donde `Q * Q` daria `inf`, asi que el
+    sintoma era una excepcion cruda y no un numero falso. Se traduce a la
+    taxonomia en vez de reescribir la potencia: el numero no existe de las dos
+    formas, y lo que hay que corregir es el dato.
+    """
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+
+    # Por debajo del umbral gobierna la guarda de bracket, que ya existia y
+    # sigue siendo la respuesta correcta: no hay raiz que buscar.
+    with pytest.raises(DatoInvalidoError):
+        control_entrada(Q=1e154, D=0.90, S=0.006, hds5=material.hds5)
+
+    with pytest.raises(LimiteNumericoError) as exc:
+        control_entrada(Q=1e155, D=0.90, S=0.006, hds5=material.hds5)
+    assert exc.value.campo == "Q"
+    assert "Q^2" in str(exc.value)
+
+
+def test_los_dos_extremos_son_errores_de_proyecto_no_crashes():
+    """
+    Lo que la clase nueva compra: la GUI atrapa los dos con el mismo `except
+    ErrorProyecto` con que atrapa un CBR de 250 %. Antes uno era
+    ZeroDivisionError y el otro OverflowError, y ninguno de los dos lo era.
+    """
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    with pytest.raises(ErrorProyecto):
+        tirante_critico(1e-33, 0.90)
+    with pytest.raises(ErrorProyecto):
+        control_entrada(Q=1e155, D=0.90, S=0.006, hds5=material.hds5)
+
+
+def test_el_caudal_de_proyecto_no_toca_ninguna_de_las_dos_guardas():
+    """El trinquete: con datos reales las dos guardas son invisibles."""
+    for Q in CP6_TIRANTE_CRITICO["Q_casos"]:
+        critico = tirante_critico(Q, CP6_TIRANTE_CRITICO["D"])
+        assert critico.geometria.A > 0
+        assert math.isfinite(critico.V)
+        assert math.isfinite(critico.H_c)

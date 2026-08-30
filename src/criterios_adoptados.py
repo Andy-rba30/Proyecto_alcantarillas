@@ -264,7 +264,26 @@ def quitar_valor_dinamico(clave: str) -> None:
 
 
 def limpiar_valores_dinamicos() -> None:
-    """Retira todas las declaraciones en caliente de la corrida."""
+    """
+    Retira todas las declaraciones en caliente de la corrida.
+
+    NO TIENE LLAMADOR DE PRODUCCION, Y ES DELIBERADO (SIS-B-22). La razon se
+    escribe aqui, que es donde la busca quien lee la funcion:
+
+    una corrida de la CLI es un proceso de un solo uso --- declara, calcula,
+    escribe la memoria y termina ---, de modo que "borrar todas las
+    declaraciones" no es una operacion que ninguna corrida necesite: el
+    proceso se acaba y el estado se va con el. La GUI tampoco la usa, porque
+    su boton retira UNA clave (`quitar_valor_dinamico`) y no todas: borrar de
+    golpe lo que el proyectista acaba de declarar seria un boton peligroso sin
+    caso de uso.
+
+    Quien SI la necesita es la suite: `conftest.py` la nombra al explicar por
+    que la declaracion de 'origen_cota_fondo_entrada' se repone en una fixture
+    autouse --- varios tests la llaman y sin reponer lo borrado el resto de la
+    suite caeria por orden de ejecucion. Es una utilidad de banco de pruebas
+    con un consumidor real, no codigo muerto, y por eso se conserva.
+    """
     _OVERRIDES.clear()
 
 
@@ -4603,23 +4622,39 @@ def _verificar_finitud(clave: str, c: Criterio) -> None:
 
     HASTA DONDE LLEGA ESTA GUARDIA, dicho para que no se sobreentienda. Cierra
     la PUERTA: ningun no-finito ENTRA. No cierra el OVERFLOW ARITMETICO, que
-    es otro defecto y no tiene ID de auditoria: con `talud_terraplen = 1e308`
-    --- finito, y sin rango de sensibilidad que lo acote --- `M7.
-    proyeccion_taludes` multiplica y devuelve `inf`, y el informe sale con
-    `"longitud_m": {"valor": "inf"}`. Se alcanza tambien sin criterio
-    absurdo, solo desde el CSV: una `cota_rasante = 1e308` pasa `_a_float`,
-    `_valida_rangos` y `_valida_cruzadas`, porque NINGUNA cota tiene techo en
-    dominios.py, y ponerle uno seria inventar un valor de proyecto, que es lo
-    que CLAUDE.md prohibe expresamente. Queda DECLARADO aqui y reportado como
-    hallazgo nuevo, sin cerrar: el criterio de salida de S16 habla de la
-    ENTRADA, y la entrada esta cerrada.
+    es otro defecto: con `talud_terraplen = 1e308` --- finito, y sin rango de
+    sensibilidad que lo acote --- `M7.proyeccion_taludes` multiplica y
+    devuelve `inf`, y el informe sale con `"longitud_m": {"valor": "inf"}`. Se
+    alcanza tambien sin criterio absurdo, solo desde el CSV: una
+    `cota_rasante = 1e308` pasa `_a_float`, `_valida_rangos` y
+    `_valida_cruzadas`, porque NINGUNA cota tiene techo en dominios.py, y
+    ponerle uno seria inventar un valor de proyecto, que es lo que CLAUDE.md
+    prohibe expresamente.
 
-    Y no todo `inf` que llega a la memoria es ese defecto: `M9.
-    verificar_volteo` devuelve `math.inf` A PROPOSITO como FS cuando el
-    momento volcante es nulo --- "no vuelca" no es un numero grande, es la
-    ausencia de la solicitacion ---, y `cli._num` lo renderiza como texto para
-    que el JSON siga siendo valido. Un barrido que prohibiera todo no-finito
-    en la SALIDA romperia ese caso legitimo, y por eso no se pone.
+    ESO YA NO ESTA ABIERTO. Cuando se escribio este parrafo el defecto no
+    tenia ID de auditoria y quedaba declarado aqui sin cerrar; S16.5 lo dio de
+    alta como SIS-G-01 y lo cerro donde corresponde, que NO es este archivo:
+    la guardia esta a la SALIDA de M7 (`M7_geometria._exigir_finito`), porque
+    un resultado no finito nacido de entradas finitas no es un dato mal
+    declarado del expediente sino el limite de la aritmetica, y por eso
+    tampoco sale como `DatoInvalidoError` sino con la clase que S16.5 anadio a
+    la taxonomia para nombrarlo, `modelos.LimiteNumericoError`. La misma
+    sesion cerro con esa clase sus dos hermanos de M4 --- SIS-G-02 (el area se
+    anula despues del solver) y la mitad alcanzable de MAT-O18 (`Q ** 2`
+    desborda) ---, que reventaban en crudo con ZeroDivisionError y
+    OverflowError. La division del trabajo se mantiene: aqui la ENTRADA, alla
+    la SALIDA.
+
+    Y no todo `inf` que llega a la memoria es ese defecto. SON DOS LOS
+    LEGITIMOS, no uno --- este parrafo nombraba solo el primero ---:
+    `M9.verificar_volteo` y `M9.verificar_deslizamiento` devuelven `math.inf`
+    A PROPOSITO como FS cuando la solicitacion es nula --- "no vuelca" no es
+    un numero grande, es la ausencia del momento volcante ---, y `cli._num`
+    los renderiza como texto para que el JSON siga siendo valido. Un barrido
+    que prohibiera todo no-finito en la SALIDA de todo el calculo romperia los
+    dos, y por eso la guardia de S16.5 vive solo en M7 y el censo de los dos
+    esta fijado en un test
+    (`test_los_dos_unicos_inf_deliberados_del_repositorio_siguen_ahi`).
     """
     for x in _numeros_de(c.valor):
         try:

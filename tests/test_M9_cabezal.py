@@ -959,6 +959,36 @@ def test_sin_momento_volcante_el_FS_es_infinito_y_no_una_division_por_cero():
     assert v.cumple and math.isinf(v.valor_obtenido)
 
 
+def test_los_dos_unicos_inf_deliberados_del_repositorio_siguen_ahi():
+    """
+    EL CONTRAPESO DE SIS-G-01, y por eso vive aqui y no en M7.
+
+    S16.5 puso guardas de finitud a la salida del calculo, y el riesgo obvio
+    de esa clase de guarda es barrer de paso los `inf` que SI significan algo.
+    En este repositorio son exactamente DOS, los dos en M9 y los dos por la
+    misma razon: un FS infinito no es un numero grande, es la AUSENCIA de la
+    solicitacion -- sin momento volcante no hay volteo posible, sin fuerza
+    actuante no hay deslizamiento posible.
+
+    Por eso `M7._exigir_finito` vive solo en M7 y no hay barrido global. Este
+    test fija el censo: si alguna vez alguien generaliza la guarda a todo el
+    calculo, cae aqui antes de llegar a la memoria.
+
+    El docstring de `criterios_adoptados._verificar_finitud` nombraba solo a
+    `verificar_volteo`; son los dos, y S16.5 lo corrigio ahi tambien.
+    """
+    volteo = verificar_volteo(momento_estabilizante=100.0, momento_volcante=0.0,
+                              condicion=CondicionAnalisis.ESTATICO)
+    deslizamiento = verificar_deslizamiento(fuerza_resistente=100.0,
+                                            fuerza_actuante=0.0,
+                                            condicion=CondicionAnalisis.ESTATICO)
+    for v in (volteo, deslizamiento):
+        assert math.isinf(v.valor_obtenido), (
+            "un FS sin solicitacion es infinito a proposito: si esto deja de "
+            "serlo, alguna guarda de finitud se paso de alcance")
+        assert v.cumple
+
+
 def test_el_agregado_devuelve_E1_a_E3_en_una_condicion(geometria):
     estabilidad = verificar_estabilidad(
         geometria=geometria, condicion=CondicionAnalisis.SISMICO,

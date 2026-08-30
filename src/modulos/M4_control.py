@@ -268,8 +268,8 @@ from constantes_normativas import (H_O_HW_SOBRE_D_CAUTELA,
                                    Q_LIM_SUMERGIDO)
 from modelos import (ConstantesHDS5, ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
-                     Material, RegimenEntrada, ResultadoHidraulico,
-                     TiranteCritico, TiranteNormal)
+                     LimiteNumericoError, Material, RegimenEntrada,
+                     ResultadoHidraulico, TiranteCritico, TiranteNormal)
 from modulos.M3_hidraulica import geometria, resolver_manning
 from tolerancias import TOL_BRENT, TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
 
@@ -333,7 +333,36 @@ def _residuo_critico(D: float, theta: float, Q: float) -> float:
     -Q^2/g en la seccion vacia a +infinito en la llena. La raiz es la misma.
     """
     geom = geometria(D, theta)
-    return geom.A ** 3 / geom.T - Q ** 2 / G  # literal-ok: A^3/T = Q^2/g, Sec. 4.2.1
+    # Q^2 DESBORDA ANTES QUE NADA MAS DE ESTA LINEA (MAT-O18, mitad alcanzable).
+    # `Q_m3s` no tiene techo en dominios.py -- y no se le puede inventar uno,
+    # igual que a las cotas de 7.B --, de modo que un Q >= ~1.34e154 llega
+    # entero desde un CSV que pasa las tres validaciones de M0 y `Q ** 2`
+    # lanza OverflowError. Medido: Q = 1e154 todavia cae como
+    # DatoInvalidoError por la guarda de bracket de `tirante_critico`, y
+    # Q = 1e155 revienta AQUI, en crudo, fuera de ErrorProyecto.
+    #
+    # La ficha de MAT-O18 lo situaba en q*^2 y lo clasificaba "solo alcanzable
+    # inyectando": las dos cosas son falsas. Esta en `Q ** 2` de este residuo,
+    # y se alcanza desde el CSV. Es la TERCERA correccion a esa ficha; S16 ya
+    # habia encontrado dos.
+    #
+    # `float.__pow__` lanza OverflowError donde `Q * Q` daria `inf`: se atrapa
+    # y se traduce, en vez de reescribir la potencia, porque el numero no
+    # existe de las dos formas y lo que hay que arreglar es el dato.
+    try:
+        q_al_cuadrado = Q ** 2  # literal-ok: exponente de Q^2 = g*A^3/T, Sec. 4.2.1
+    except OverflowError:
+        raise LimiteNumericoError(
+            "Q", valor=Q,
+            motivo=f"Q^2 no cabe en doble precision (Q = {Q!r} m3/s), y sin "
+                   f"Q^2 no hay residuo de {NUMERAL_CRITICO} que resolver. No "
+                   f"es un caudal fuera de rango -- 'Q_m3s' solo exige ser "
+                   f"positivo, y ponerle un techo seria inventar un valor de "
+                   f"proyecto --, es un caudal cuyo cuadrado no es "
+                   f"representable. Revisa si la celda perdio el separador "
+                   f"decimal o vino en otra unidad",
+        ) from None
+    return geom.A ** 3 / geom.T - q_al_cuadrado / G  # literal-ok: A^3/T = Q^2/g, Sec. 4.2.1
 
 
 def tirante_critico(Q: float, D: float) -> TiranteCritico:
@@ -372,6 +401,41 @@ def tirante_critico(Q: float, D: float) -> TiranteCritico:
 
     theta_critico = brentq(f, _THETA_MIN, _THETA_MAX, xtol=TOL_BRENT)
     geom = geometria(D, theta_critico)
+    # SIS-G-02. LA GUARDA DE ARRIBA PROTEGE EL BRACKET DE BRENT, NO ESTA
+    # DIVISION. Son dos cosas distintas y hasta aqui solo estaba la primera:
+    # el residuo cruza el cero limpiamente, brentq converge, y el theta al que
+    # converge puede estar POR DEBAJO del umbral en que el area se cancela.
+    #
+    # El umbral esta MEDIDO, no supuesto: A = (D^2/8)(theta - sen theta) vale
+    # exactamente 0.0 para theta <= 2.149e-08, porque theta - sen(theta) ~
+    # theta^3/6 cae bajo el ultimo bit de theta y la resta se cancela entera.
+    # Con D = 0.90 m eso lo produce un Q de 1e-33 (Q = 1e-32 todavia da
+    # theta = 2.979e-08 y area positiva), y sin esta guarda la division
+    # siguiente lanzaba ZeroDivisionError en crudo, fuera de ErrorProyecto.
+    #
+    # ES LA MISMA CANCELACION QUE `_residuo_critico` YA ESQUIVA, y ahi esta lo
+    # llamativo: el modulo la conocia y se defendia de ella EN EL RESIDUO --
+    # por eso lo escribe como A^3/T y no dividiendo entre A^3 --, pero no en
+    # la division de despues del solver.
+    #
+    # La condicion va EN POSITIVO Y NEGADA (`not geom.A > 0`, no
+    # `geom.A <= 0`) siguiendo la plantilla de MAT-D13: un NaN es falso frente
+    # a `<=` igual que frente a `>`, y escrita del otro modo se colaria.
+    if not geom.A > 0:
+        raise LimiteNumericoError(
+            "Q", valor=Q, motivo=(
+                f"el par (Q = {Q!r} m3/s, D = {D!r} m) degenera: el tirante "
+                f"critico existe -- Brent converge a theta = "
+                f"{theta_critico!r} rad -- pero a ese theta el area de la "
+                f"seccion se anula en doble precision, porque "
+                f"theta - sen(theta) queda por debajo del ultimo bit de theta "
+                f"y la resta se cancela entera (ocurre desde "
+                f"theta <= 2.149e-08). Sin area no hay velocidad critica que "
+                f"calcular. No es un caudal fuera de rango: 'Q_m3s' solo "
+                f"exige ser positivo. Revisa si la celda perdio digitos o si "
+                f"el caudal vino en otra unidad"
+            ),
+        )
     V_c = Q / geom.A
     return TiranteCritico(
         geometria=geom,

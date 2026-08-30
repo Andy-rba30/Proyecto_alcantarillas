@@ -135,6 +135,34 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   distintos del expediente y se corrigen de forma distinta. La regla para
   elegir: si el revisor tiene que **añadir** algo es Faltante, si tiene que
   **corregir** algo es Invalido.
+- **LimiteNumericoError: cada dato cumple su rango y es la ARITMÉTICA la que
+  no cabe.** Quinta de la taxonomía, añadida en S16.5. La regla que la separa
+  de DatoInvalidoError: si el dato, por sí solo, viola un límite de
+  dominios.py es Invalido; si **todos** los datos pasan **todas** las
+  validaciones y aun así la operación que los combina desborda a ±inf o anula
+  el denominador de una división, es LimiteNumerico. Ejemplos medidos:
+  `cota_rasante = 1e308` (finita, y ninguna cota tiene techo — ponérselo sería
+  inventar un valor de proyecto) hace que `M7.proyeccion_taludes` devuelva
+  `inf` y el informe imprima un diagnóstico entero sobre un número que no lo
+  es (SIS-G-01); un `Q_m3s` diminuto lleva a brentq a un θ donde el área se
+  cancela y `M4.tirante_critico` dividía por cero (SIS-G-02).
+  **No se corrige poniendo techos en dominios.py**: ese archivo acota lo que
+  un dato *puede ser*, no lo que la aritmética *puede llevar*. La guardia va
+  siempre a la **salida** del cálculo.
+  Precedente que conviene conocer antes de leer esto como una incoherencia:
+  **MAT-D13** (`M1_clasificacion.tr_desde_riesgo`) cerró un caso idéntico bajo
+  DatoInvalidoError **antes de que esta clase existiera**, y no se migró
+  porque es código verde. La clase nueva no llegó porque DatoInvalidoError
+  fuera la equivocada por definición: llegó a **nombrar algo que el proyecto
+  ya venía haciendo sin nombre**.
+  De MAT-D13 se hereda además la **forma** de la guardia: umbral **medido**
+  (nunca un `!= 0` genérico), condición escrita **en positivo y negada**
+  (`not A > 0`, porque un NaN es falso frente a `<=` igual que frente a `>`),
+  y mensaje que nombra al **par culpable**, no a un solo dato.
+  Contrapeso obligatorio: hay **dos** `inf` deliberados en el repositorio
+  (`M9.verificar_volteo` y `M9.verificar_deslizamiento`, donde un FS infinito
+  es la ausencia de la solicitación). Ninguna guardia de finitud puede
+  atraparlos; por eso no hay barrido global y el censo está fijado en un test.
 No usar Exception genérica en lógica de negocio. Un fallo de E/S (archivo
 inexistente) no es del expediente y sale como FileNotFoundError, fuera de
 ErrorProyecto.

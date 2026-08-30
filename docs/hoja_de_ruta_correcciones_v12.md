@@ -603,6 +603,14 @@ conflictos acoplados; una sesión por cluster mantiene la ventana de contexto li
 commit atómico. Orden: **C08** (el bloqueante) → **C09** (los dorados de CP-1, porque
 validan todo lo demás) → C01 → C05 → C06 → C13 → C03 → C04 → C07.
 
+> **Los números de la columna `Hallazgos` son estimaciones previas a ejecutar.**
+> Se calcularon antes de la primera sesión y no se actualizan solos; varias
+> sesiones han movido filas de fase y han abierto hallazgos que aquí no
+> figuran. **El conteo que manda es el `Estado` vivo de la hoja `Hallazgos`**
+> del `.xlsx`, no esta tabla ni la hoja `Plan_Fases`. Lo mismo vale para la
+> columna `Clusters`: en una fase ya ejecutada es histórica, y en una
+> pendiente es una lista de quién reclama qué residuo, no un alcance completo.
+
 **Por qué S2–S10 dice 16 y no 20.** La columna `Hallazgos` de esta tabla es el conteo de
 filas de la hoja `Hallazgos` por fase, no el de filas que la sesión tocó. Las nueve
 sesiones sí trabajaron veinte: cuatro —`MAT-D2`, `SIS-A-02` (S6) y `SIS-B-01`, `SIS-D-01`
@@ -1407,6 +1415,32 @@ Para que esto no se lea como una promesa de completitud:
   mitad TMC de `clases_producto_por_relleno`, y **M294** cierra `D_MAX["hdpe"]`.
 - **La lectura de los ábacos raster** (Meyerhof `N_cq`/`N_γq`, la isolínea de PGA sobre
   Piura). Existen y están correctamente numerados; los valores no son legibles por texto.
+- **Los casos patrón que M2, M8 y M10 no pueden tener todavía (SIS-F-13).** No es
+  pereza de la fase de tests: fabricarles un dorado sería inventar el valor de
+  referencia, que es exactamente lo que prohíbe el **conflicto #7** (el de CP-1,
+  donde dos auditorías coincidieron dígito a dígito en que los dorados no salían
+  de la fórmula que el fixture declaraba). Lo que habría que **traer** a cada uno:
+  - **M2** — la serie de diámetros nominales tabulada de las normas de producto
+    (AASHTO M 170M-04 / ASTM C 76M-02, ASTM A760/A760M + AASHTO M 36, AASHTO
+    M294). Cerraría de paso una pregunta abierta: si la progresión adoptada de
+    0.90 m + 0.15 m corresponde a alguna serie comercial real o es una
+    interpolación del proyecto.
+  - **M8** — AASHTO M 170M-04 Tablas 1 a 5 (clases D-load del concreto) y
+    **ASTM A796/A796M** (calibre por altura de cobertura del TMC). Son el insumo
+    del vacío `clases_producto_por_relleno`, y A796 ya figura arriba como una de
+    las dos fuentes "fáciles" que desbloquean cosas concretas.
+  - **M10** — no sale de ninguna norma sino del **expediente vial**: sección
+    transversal de la cuneta, su n de Manning, la fórmula de intensidad para
+    TR = 35 años y el método de área tributaria. Sec. 10 describe el
+    procedimiento y no fija ninguno de los cuatro. El brazo normativo
+    (`L_normativo`, 200/250 m) ya es [N] y un caso patrón sobre él sería
+    tautológico; lo que falta es `L_hidraulico`.
+
+  Dos módulos más no consumen `casos_patron` hoy y **no** por esta razón, dicho
+  para que el conteo no se lea como una sola deuda: **M5** sí tiene su caso en el
+  fixture (`CP3_VELOCIDAD_MINIMA`, Sec. 5.2), pero lo consumen `test_M3` y
+  `test_constantes_normativas` en vez de `test_M5`; y **M11** es el módulo de
+  reporte, al que no le corresponde un dorado numérico.
 - **La validación contra HY-8**, recomendada pero externa.
 - **El cálculo de expediente propiamente dicho.** Este plan lo *prepara*; no lo escribe.
 - **La portabilidad a otra carretera.** El §8 de la auditoría normativa (el corredor de

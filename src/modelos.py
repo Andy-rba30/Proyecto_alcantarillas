@@ -45,6 +45,11 @@ from dominios import CENTIMETROS_POR_METRO
 # Prohibido usar Exception generica en logica de negocio. Toda excepcion del
 # calculo desciende de ErrorProyecto, para que la GUI pueda distinguir un
 # problema del expediente de un fallo del programa.
+#
+# SON CINCO, NO CUATRO, desde S16.5. La quinta -- LimiteNumericoError -- no se
+# anade porque las otras cuatro fueran insuficientes en teoria, sino porque el
+# proyecto YA la estaba usando sin nombrarla: ver la nota de MAT-D13 en su
+# docstring.
 # ===========================================================================
 
 class ErrorProyecto(Exception):
@@ -148,6 +153,72 @@ class DatoInvalidoError(ErrorProyecto):
             texto += f": {motivo}"
         if valor is not None:
             texto += f" (valor leido: {valor!r})"
+        super().__init__(texto)
+
+
+class LimiteNumericoError(ErrorProyecto):
+    """
+    El dato individual CUMPLE su rango declarado en dominios.py, y es la
+    ARITMETICA que lo combina con otro dato o con una operacion la que no lo
+    puede representar en doble precision: o desborda a +-inf, o colapsa el
+    denominador de una division antes de que exista resultado.
+
+    NO ES una version mas de DatoInvalidoError, y tampoco es que
+    DatoInvalidoError sea la clase equivocada por definicion. La distincion es
+    de DONDE esta el problema:
+
+        DatoInvalidoError    el dato no puede ser: cae fuera del rango fisico
+                             de dominios.py, no es del tipo esperado, o
+                             contradice a otro dato de su fila.
+        LimiteNumericoError  cada dato, por separado, es perfectamente sano.
+                             Es la COMBINACION la que no cabe en un double.
+
+    POR QUE HACIA FALTA NOMBRARLA. Sin esta clase, un desbordamiento salia por
+    uno de dos caminos, y los dos son malos. O bien el calculo seguia con un
+    `inf` dentro y la memoria imprimia un diagnostico entero construido sobre
+    un numero que no lo es -- eso es SIS-G-01, medido en
+    `M7.proyeccion_taludes` --, o bien Python lanzaba `ZeroDivisionError` /
+    `OverflowError` en crudo, fuera de ErrorProyecto, y la GUI no sabia si eso
+    era un problema del expediente o un fallo del programa: son SIS-G-02 y la
+    mitad alcanzable de MAT-O18, las dos en `M4.tirante_critico`.
+
+    EL PRECEDENTE, dicho para que quien lea esta taxonomia no encuentre la
+    misma inconsistencia sin explicar: MAT-D13 cerro un caso IDENTICO a este
+    -- `M1_clasificacion.tr_desde_riesgo`, donde (1-R)^(1/n) redondea a 1 y el
+    denominador se anula con una R que esta DENTRO de su rango declarado --
+    bajo DatoInvalidoError, porque esta clase no existia todavia. No se migra
+    aqui: es codigo verde y su guarda funciona. Se deja escrito para que la
+    inconsistencia sea deliberada y visible, no un descuido.
+
+    De MAT-D13 se hereda, eso si, la FORMA de la guarda, que es lo que vale:
+    umbral MEDIDO en vez de un `!= 0` generico, condicion escrita EN POSITIVO
+    y negada (`not A > 0` y no `A <= 0`, porque un NaN es falso frente a las
+    dos y se colaria por la segunda), y mensaje que nombra al PAR culpable en
+    vez de acusar a un solo dato cuando la degeneracion es de la combinacion.
+
+    Desciende de ErrorProyecto y no de otra raiz aunque el diagnostico sea
+    aritmetico: lo que el revisor tiene delante es corregible desde el
+    expediente -- una cota absurda, un caudal absurdo --, y la GUI lo tiene que
+    mostrar como aviso y no como traza, que es justo el contrato de
+    ErrorProyecto. La firma es la de DatoInvalidoError a proposito: `motivo`
+    separa los casos igual que ya los separa ahi, sin un atributo nuevo.
+    """
+
+    def __init__(self, campo: str,
+                 valor: Any = None,
+                 id_punto: Optional[str] = None,
+                 motivo: Optional[str] = None) -> None:
+        self.campo = campo
+        self.valor = valor
+        self.id_punto = id_punto
+        self.motivo = motivo
+        texto = f"Limite de la aritmetica en '{campo}'"
+        if id_punto:
+            texto += f" del punto {id_punto}"
+        if motivo:
+            texto += f": {motivo}"
+        if valor is not None:
+            texto += f" (valor calculado: {valor!r})"
         super().__init__(texto)
 
 

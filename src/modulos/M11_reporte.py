@@ -220,7 +220,23 @@ MARCADORES: Tuple[str, ...] = (
 
 
 def marcadores_de_la_memoria() -> Tuple[str, ...]:
-    """Los marcadores que `memoria_html` sustituye en la plantilla."""
+    """
+    Los marcadores que `memoria_html` sustituye en la plantilla.
+
+    NO TIENE LLAMADOR DE PRODUCCION, Y ES DELIBERADO (SIS-B-22). Dentro de
+    este modulo el contrato se lee de `MARCADORES` directamente, y el test que
+    lo contrasta contra el archivo de plantilla en las dos direcciones hace lo
+    mismo: ninguno de los dos necesita pasar por una funcion.
+
+    Existe como PUERTA PUBLICA del contrato, que es distinto de existir por si
+    acaso. `MARCADORES` es una constante de modulo y leerla desde fuera ata al
+    consumidor al nombre de la variable; esta funcion es lo que una plantilla
+    alternativa --- o el `--plantilla` de la CLI el dia que valide la que le
+    pasan --- tiene que preguntar para saber que marcadores se le van a
+    sustituir, sin importar como esten guardados aqui dentro.
+
+    Si algun dia se cablea, sale de esta declaracion en el mismo commit.
+    """
     return MARCADORES
 
 

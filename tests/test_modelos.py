@@ -23,6 +23,7 @@ from modelos import (CasoDemandaSismica, CondicionAnalisis, ConstantesHDS5,
                      DatoFaltanteError, DatoInvalidoError,
                      DemandaSismicaCabezal, DisenoNoFactibleError,
                      EmpujesTrasdos, ErrorProyecto, Familia,
+                     LimiteNumericoError,
                      FuerzaInerciaMuro, Geometria, Material, PasoDiseno,
                      PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
                      ResultadoPunto, TipoMaterial, Verificacion)
@@ -321,8 +322,37 @@ def test_un_rechazo_sin_motivo_es_incoherente():
 
 def test_toda_excepcion_del_negocio_desciende_de_error_proyecto():
     for excepcion in (CriterioPendienteError, DisenoNoFactibleError,
-                      DatoFaltanteError):
+                      DatoFaltanteError, DatoInvalidoError,
+                      LimiteNumericoError):
         assert issubclass(excepcion, ErrorProyecto)
+
+
+def test_la_taxonomia_son_cinco_y_limite_numerico_no_es_dato_invalido():
+    """
+    S16.5 anadio la quinta. Este test fija las DOS mitades de la decision.
+
+    Que descienda de ErrorProyecto: gui/app.py importa `ErrorProyecto` y nada
+    mas, de modo que un desborde aritmetico tiene que caer en ese `except` y
+    mostrarse como aviso. El diagnostico es aritmetico pero el remedio esta en
+    el expediente -- una cota absurda, un caudal absurdo.
+
+    Que NO sea `DatoInvalidoError` ni descienda de el: son preguntas
+    distintas. DatoInvalido dice "este dato no puede ser" (fuera del rango de
+    dominios.py, del tipo equivocado, contradice a su fila). LimiteNumerico
+    dice "cada dato, por separado, es sano; es la combinacion la que no cabe
+    en un double". Si algun dia alguien las hace hermanas por herencia, un
+    `except DatoInvalidoError` empezaria a tragarse desbordes en silencio.
+    """
+    assert issubclass(LimiteNumericoError, ErrorProyecto)
+    assert not issubclass(LimiteNumericoError, DatoInvalidoError)
+    assert not issubclass(DatoInvalidoError, LimiteNumericoError)
+
+    # Firma igual a la de DatoInvalidoError, a proposito: `motivo` separa los
+    # casos sin necesidad de un atributo nuevo.
+    e = LimiteNumericoError("Q", valor=1e155, id_punto="A-01", motivo="Q^2 no cabe")
+    assert (e.campo, e.id_punto) == ("Q", "A-01")
+    assert e.valor == 1e155  # float-exacto: el valor solo se transporta al atributo, no se calcula
+    assert "A-01" in str(e) and "Q^2 no cabe" in str(e)
 
 
 def test_diseno_no_factible_lleva_motivo_y_delta_de_rasante():

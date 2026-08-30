@@ -27,8 +27,9 @@ import criterios_adoptados as ca
 from constantes_normativas import H_RELLENO_MIN
 from dominios import ESVIAJE_MAX
 from modelos import (CondicionRasante, ControlGobernante, CriterioPendienteError,
-                     DatoInvalidoError, DisenoNoFactibleError, Familia,
-                     PuntoCritico, ResultadoHidraulico, TipoMaterial)
+                     DatoInvalidoError, DisenoNoFactibleError, ErrorProyecto,
+                     Familia, LimiteNumericoError, PuntoCritico,
+                     ResultadoHidraulico, TipoMaterial)
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import catalogo
 from tolerancias import TOL_UMBRAL_NORMATIVO
@@ -865,3 +866,80 @@ def test_el_esviaje_casi_paralelo_pasa_M0_y_da_una_longitud_absurda():
     # El extremo cerrado si esta cubierto por la guarda.
     with pytest.raises(DatoInvalidoError):
         factor_esviaje(_punto(esviaje_grados=ESVIAJE_MAX))
+
+
+# ---------------------------------------------------------------------------
+# SIS-G-01 - el desborde aritmetico de 7.B
+# ---------------------------------------------------------------------------
+
+def test_una_cota_finita_pero_enorme_no_sale_como_inf_a_la_memoria():
+    """
+    SIS-G-01. La guarda de ENTRADA no puede cerrar esto y por eso hace falta
+    la de SALIDA.
+
+    `cota_rasante = 1e308` es finita: pasa `M0._a_float` (que solo rechaza
+    'inf' y 'nan', MAT-D14) y pasa `_valida_rangos`, porque NINGUNA cota tiene
+    techo en dominios.py. Con ella `altura_terraplen` sigue siendo finita
+    (1e308) y es la MULTIPLICACION de `proyeccion_taludes` -- 2 * talud *
+    altura -- la que desborda.
+
+    Antes de esta guarda el `inf` no paraba en ningun sitio: `longitud_conducto`
+    lo propagaba y el informe salia con `"longitud_m": {"valor": "inf"}`, un
+    diagnostico entero construido sobre un numero que no lo es. Que es peor
+    que un fallo, porque se lee como un resultado.
+
+    NO se cierra poniendole techo a la cota: eso seria inventar un valor de
+    proyecto, que CLAUDE.md prohibe. Ver `M7._exigir_finito`.
+    """
+    ca.establecer_valor_dinamico(CRITERIO_TALUD, 1.5)
+    try:
+        desmesurado = _punto(cota_rasante=1e308)
+
+        # La entrada es finita: el problema no esta en el dato.
+        assert math.isfinite(altura_terraplen(desmesurado))
+
+        with pytest.raises(LimiteNumericoError) as exc:
+            proyeccion_taludes(desmesurado)
+        assert exc.value.campo == "proyeccion_taludes"
+        assert exc.value.id_punto == "A-01"
+
+        # Y la guarda INTERNA gana a la externa: quien llama a
+        # `longitud_conducto` recibe el nombre de la magnitud que desbordo de
+        # verdad, no el de la que la contiene.
+        with pytest.raises(LimiteNumericoError) as exc_larga:
+            longitud_conducto(desmesurado)
+        assert exc_larga.value.campo == "proyeccion_taludes"
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_TALUD)
+
+
+def test_el_desborde_de_7b_es_un_error_de_proyecto_y_no_un_crash():
+    """
+    La razon de que `LimiteNumericoError` descienda de `ErrorProyecto`: la GUI
+    atrapa la raiz con un solo `except` (gui/app.py importa `ErrorProyecto` y
+    nada mas) y tiene que mostrar esto como aviso, no como traza.
+
+    El diagnostico es aritmetico, pero el remedio esta en el expediente: la
+    cota absurda se corrige en el CSV.
+    """
+    ca.establecer_valor_dinamico(CRITERIO_TALUD, 1.5)
+    try:
+        with pytest.raises(ErrorProyecto):
+            proyeccion_taludes(_punto(cota_rasante=1e308))
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_TALUD)
+
+
+def test_la_guarda_de_finitud_no_estorba_al_camino_feliz():
+    """
+    El trinquete de la guarda: con datos de proyecto tiene que ser invisible.
+    Si este test se rompe, alguien la escribio demasiado estrecha.
+    """
+    ca.establecer_valor_dinamico(CRITERIO_TALUD, 1.5)
+    try:
+        punto = _punto()
+        assert math.isfinite(altura_terraplen(punto))
+        assert math.isfinite(proyeccion_taludes(punto))
+        assert math.isfinite(longitud_conducto(punto))
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_TALUD)
