@@ -42,9 +42,23 @@ Las SEIS vias de evasion que este barrido tenia (S16, cluster C09)
 ------------------------------------------------------------------
 La auditoria de Sistema documento seis formas de meter un valor de proyecto
 bajo src/ sin que este archivo lo viera, y una septima omision de alcance.
-Todas estan cerradas aqui, y cada una tiene su propio test de regresion en el
+Estan cerradas aqui, y cada una tiene su propio test de regresion en el
 bloque "El detector probandose a si mismo": si alguien reabre la puerta, cae
 un test con el ID del hallazgo en el nombre.
+
+CINCO DE ELLAS SE CERRARON DOS VECES, y conviene decirlo porque explica la
+forma de las reglas de abajo. La primera version de este archivo declaraba
+estas mismas seis vias cerradas, y una revision adversarial abrio cinco otra
+vez con un solo parche --- 4.572, 1.35, 0.013, 500 y 4.5 dentro de
+`src/modulos/M3_hidraulica.py` y de `cli.py`, con la suite entera en verde.
+El patron era siempre el mismo: la correccion cerraba el EJEMPLO de la ficha
+en vez de la CLASE. Se arreglo el primer branch de exentos por ruta y se dejo
+el segundo comparando por nombre; se movio la marca de "linea siguiente" a
+"linea fisica" y quedo un `;`; se miro `args[0]` y quedaron el f-string, el
+`.strip()`, el `keyword`, `fromhex` y `literal_eval`; se dejo de eximir la
+clave de una tabla y se siguio eximiendo el subarbol entero del slice.
+Cada regla de abajo esta escrita, por eso, contra la clase y no contra el
+ejemplo, y el bloque de autopruebas incluye la variante que evadio.
 
     SIS-C-03  La marca se buscaba como SUBCADENA de la linea: valia dentro de
               un string o de un docstring. Ahora se busca con `tokenize`, como
@@ -142,17 +156,33 @@ retirada, satisfaciendo el assert con el simbolo ya inexistente.
 Lo que este barrido NO ve, dicho aqui para que no se sobreentienda
 ------------------------------------------------------------------
 Las seis vias de evasion DOCUMENTADAS estan cerradas; el barrido no es por eso
-hermetico, y conviene que quien lo lea sepa donde acaba:
+hermetico, y conviene que quien lo lea sepa donde acaba. La lista se amplio
+tras la revision adversarial: decia TRES limites y los reales son estos seis.
+Declararlos de menos es peor que no declararlos, porque un revisor que lea
+"cerrado" deja de mirar.
 
   * un valor compuesto solo con los numeros permitidos: `(1 + 2*2*2) / 2` es
     4.5 y ningun literal prohibido aparece;
   * una conversion desde texto cuyo argumento sea un NOMBRE y no un literal
     (`_TR = "500"` en una linea, `int(_TR)` en otra);
-  * un valor que llegue por un archivo de datos o por una variable de entorno.
+  * un valor que llegue por un archivo de datos o por una variable de entorno;
+  * una funcion propia que se LLAME como una tabla en MAYUSCULAS, o un objeto
+    con `__getitem__` cuya base sea un nombre en mayusculas: `_es_tabla_declarada`
+    y `_base_es_un_nombre` responden a la convencion de nombres del repositorio,
+    que es lo unico que hay sin ejecutar el modulo;
+  * varios literales legitimos bajo una sola marca en una sentencia larga: la
+    marca exime por linea porque un comentario no se cuelga de un nodo. Lo que
+    lo hace visible no es una regla sintactica sino `CENSO_DE_MARCAS`, que
+    obliga a que anadir uno mueva un numero en el diff;
+  * el arbol de `tests/` y el de `legacy/`, exentos por directorio. La razon
+    de `legacy` --- "sin importadores ni corrida" --- SI se comprueba, en
+    `test_la_razon_por_la_que_legacy_esta_exento_sigue_siendo_cierta`; la de
+    `tests/` se apoya en que su guardia es otra
+    (`tests/test_guardias_de_la_suite.py`).
 
-Las tres exigen ofuscacion deliberada. Contra eso la guardia no es el AST: es
-la revision humana, y por eso la marca `# literal-ok` existe -- para que lo
-declarado se VEA -- en vez de intentar que el detector lo adivine.
+Las tres primeras exigen ofuscacion deliberada. Contra eso la guardia no es el
+AST: es la revision humana, y por eso la marca `# literal-ok` existe -- para
+que lo declarado se VEA -- en vez de intentar que el detector lo adivine.
 
 El barrido esta parametrizado por directorio para poder probarse a si mismo
 sobre un arbol sintetico: un test que solo recorre un directorio vacio no
@@ -269,7 +299,66 @@ CONSTRUCTORES_DE_PRESENTACION = {
 NUMEROS_PERMITIDOS = {0, 1, 2}
 MARCA = "# literal-ok"
 # Las conversiones desde texto por las que un literal se escondia (SIS-C-09).
-CONVERSORES_DESDE_TEXTO = {"int", "float", "complex", "Decimal", "Fraction"}
+# Conversores de texto a numero. La lista incluye los constructores obvios y
+# tambien los EVALUADORES (`literal_eval`, `eval`, `loads`, `fromhex`), que
+# hacen exactamente lo mismo y que la primera version de este detector no
+# miraba: `float.fromhex("0x1.2p+2")` es 4.5 escrito de otra forma.
+CONVERSORES_DESDE_TEXTO = {"int", "float", "complex", "Decimal", "Fraction",
+                           "fromhex", "literal_eval", "eval", "loads"}
+
+
+def _como_numero(texto: str, base):
+    """
+    El numero que `texto` representa, o None si no representa ninguno.
+
+    Prueba las tres lecturas que un conversor puede hacer: la decimal, la de
+    base con prefijo (`0b111110100` es 500) y la hexadecimal de coma flotante
+    (`0x1.2p+2` es 4.5). Con `base` explicita se usa esa.
+    """
+    limpio = texto.strip()
+    if not limpio:
+        return None
+    if base is not None:
+        try:
+            return complex(int(limpio, base))
+        except (ValueError, TypeError):
+            return None
+    for lectura in (lambda x: complex(x),
+                    lambda x: complex(int(x, 0)),
+                    lambda x: complex(float.fromhex(x))):
+        try:
+            return lectura(limpio)
+        except (ValueError, TypeError, OverflowError):
+            continue
+    return None
+
+
+def _textos_de_la_llamada(nodo: ast.Call):
+    """
+    Los `Constant` de texto que alimentan la llamada, en TODO el subarbol de
+    sus argumentos y no solo en `args[0]`.
+
+    Recorrer el subarbol es lo que cierra las formas que la primera version
+    dejaba pasar: `f"4.572"` (un `JoinedStr`, no un `Constant`),
+    `"0.013"[:]`, `"1.35".strip()` y el argumento pasado por nombre,
+    `int(x="500")`.
+    """
+    textos = []
+    for parte in list(nodo.args) + [k.value for k in nodo.keywords]:
+        for hijo in ast.walk(parte):
+            if isinstance(hijo, ast.Constant) and isinstance(hijo.value, str):
+                textos.append(hijo)
+    return textos
+
+
+def _base_declarada(nodo: ast.Call):
+    """La base literal de un `int(texto, base)`, si la lleva."""
+    candidatos = [a for a in nodo.args[1:]]
+    candidatos += [k.value for k in nodo.keywords if k.arg == "base"]
+    for c in candidatos:
+        if isinstance(c, ast.Constant) and isinstance(c.value, int):
+            return c.value
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -293,8 +382,21 @@ def lineas_marcadas(codigo: str) -> set:
     Se exige ademas la razon: `# literal-ok:` con texto detras. CLAUDE.md
     escribe la marca con razon obligatoria, y una marca sin razon es
     justamente el literal silencioso que la marca existe para evitar.
+
+    Y NO VALE EN UNA LINEA COMPUESTA (SIS-C-07). Un `;` deja dos sentencias
+    bajo un solo comentario, y la marca -- que exime por linea, porque un
+    comentario no se puede colgar de un nodo -- blanquearia la segunda con la
+    razon de la primera:
+
+        _OCHO = 8; ANCHO_CALZADA_M = 4.572  # literal-ok: el 8 de la formula
+
+    Es el mismo dano que la ficha describe: un comentario que blanquea una
+    declaracion que no leyo. La linea compuesta se rechaza entera; partirla
+    en dos devuelve cada literal a su propia marca, que es donde el revisor
+    lo ve.
     """
     marcadas = set()
+    compuestas = _lineas_compuestas(codigo)
     try:
         tokens = tokenize.generate_tokens(io.StringIO(codigo).readline)
         for tok in tokens:
@@ -305,10 +407,24 @@ def lineas_marcadas(codigo: str) -> set:
                 continue
             if not texto[len(MARCA) + 1:].strip():
                 continue                   # marca sin razon: no vale
+            if tok.start[0] in compuestas:
+                continue                   # linea compuesta: la marca no vale
             marcadas.add(tok.start[0])
     except (tokenize.TokenError, IndentationError, SyntaxError):
         pass
     return marcadas
+
+
+def _lineas_compuestas(codigo: str) -> set:
+    """Lineas con un `;` fuera de un string: dos sentencias, una sola marca."""
+    lineas = set()
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(codigo).readline):
+            if tok.type == tokenize.OP and tok.string == ";":
+                lineas.add(tok.start[0])
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        pass
+    return lineas
 
 
 def _es_tabla_declarada(nodo) -> bool:
@@ -342,21 +458,55 @@ def _base_del_subscript(nodo):
     return nodo
 
 
+def _indices_directos(slice_):
+    """
+    Los `Constant` que son el INDICE MISMO y no algo dentro de el.
+
+    `x[3]` -> el 3. `x[1:5]` -> el 1 y el 5. `x[1, 2]` -> el 1 y el 2.
+    `x[TABLA[900]]` -> NADA: el 900 es la clave de otra tabla, no el indice
+    de x, y tiene que seguir su propio camino.
+    """
+    if isinstance(slice_, ast.Constant):
+        return [slice_]
+    if isinstance(slice_, ast.Slice):
+        return [n for n in (slice_.lower, slice_.upper, slice_.step)
+                if isinstance(n, ast.Constant)]
+    if isinstance(slice_, ast.Tuple):
+        return [n for n in slice_.elts if isinstance(n, ast.Constant)]
+    return []
+
+
+def _base_es_un_nombre(nodo) -> bool:
+    """
+    La base del subscript es un NOMBRE (o un atributo, o una cadena de
+    subscripts sobre uno), y no una expresion cualquiera.
+
+    Sin esta condicion, `_Clave()[4572]` -- una clase de tres lineas con
+    `__getitem__` -- convierte cualquier entero en "indice", porque la base es
+    un `Call` y `_es_tabla_declarada` responde False sobre el.
+    """
+    return isinstance(_base_del_subscript(nodo), (ast.Name, ast.Attribute))
+
+
 def _nodos_de_indice(arbol: ast.AST) -> set:
     """
     Constantes enteras que son indice o limite de rebanada: x[3], x[1:5].
 
     NO exime la clave de una tabla declarada: `CAUDAL_POR_TR[500]` cae
-    (SIS-C-04).
+    (SIS-C-04). Tampoco exime el SUBARBOL del slice, solo el indice directo:
+    `lector[TABLA['dual'][4]]` deja caer el 4, que es clave de TABLA y no
+    indice de `lector`. Ni acepta como base una expresion cualquiera.
     """
     exentos = set()
     for nodo in ast.walk(arbol):
         if not isinstance(nodo, ast.Subscript):
             continue
+        if not _base_es_un_nombre(nodo.value):
+            continue
         if _es_tabla_declarada(_base_del_subscript(nodo.value)):
             continue
-        for hijo in ast.walk(nodo.slice):
-            if isinstance(hijo, ast.Constant) and isinstance(hijo.value, int):
+        for hijo in _indices_directos(nodo.slice):
+            if isinstance(hijo.value, int) and not isinstance(hijo.value, bool):
                 exentos.add(id(hijo))
     return exentos
 
@@ -375,23 +525,33 @@ def _literales_escondidos_en_texto(arbol: ast.AST):
     """
     `int("13")`, `float("4.6")`, `int("500")`: un valor de proyecto escrito
     como texto y convertido (SIS-C-09). Devuelve [(linea, texto), ...].
+
+    LA BARRERA NO ES "el argumento es un Constant str en args[0]". Esa era la
+    primera version y tenia una pulgada de ancho: `float(f"4.572")`,
+    `float("0.013"[:])`, `float("1.35".strip())`, `int("0b111110100", 2)`,
+    `float.fromhex("0x1.2p+2")`, `ast.literal_eval("4.572")` y `int(x="500")`
+    la cruzaban todos. Hoy se mira TODO texto del subarbol de argumentos, con
+    las tres lecturas de `_como_numero` y con la base declarada si la hay.
+
+    Lo que sigue fuera, y se declara: si el texto llega por un NOMBRE
+    (`float(TECHO)`), este detector no lo ve -- resolverlo exigiria ejecutar
+    el modulo. Ese caso lo cubre el propio literal donde se declare el
+    nombre, que si esta en el arbol.
     """
     hallazgos = []
     for nodo in ast.walk(arbol):
-        if not isinstance(nodo, ast.Call) or not nodo.args:
+        if not isinstance(nodo, ast.Call):
             continue
         if _nombre_llamado(nodo) not in CONVERSORES_DESDE_TEXTO:
             continue
-        arg = nodo.args[0]
-        if not (isinstance(arg, ast.Constant) and isinstance(arg.value, str)):
-            continue
-        try:
-            valor = complex(arg.value.strip())
-        except ValueError:
-            continue                       # no era un numero: no es un literal
-        if valor.imag == 0 and _permitido(valor.real):
-            continue
-        hallazgos.append((nodo.lineno, arg.value))
+        base = _base_declarada(nodo)
+        for arg in _textos_de_la_llamada(nodo):
+            valor = _como_numero(arg.value, base)
+            if valor is None:
+                continue                   # no era un numero: no es un literal
+            if valor.imag == 0 and _permitido(valor.real):
+                continue
+            hallazgos.append((arg.lineno, arg.value))
     return hallazgos
 
 
@@ -500,14 +660,43 @@ def _nodos_de_argumento_directo(arbol: ast.AST, constructores: set) -> set:
               and isinstance(nodo.operand, ast.Constant)):
             directos.add(id(nodo.operand))
 
+    propios = _definidos_en_el_archivo(arbol)
     for nodo in ast.walk(arbol):
         if not isinstance(nodo, ast.Call):
             continue
-        if _nombre_llamado(nodo) not in constructores:
+        nombre = _nombre_llamado(nodo)
+        if nombre not in constructores or nombre in propios:
             continue
         for argumento in list(nodo.args) + [kw.value for kw in nodo.keywords]:
             marcar(argumento)
     return directos
+
+
+def _definidos_en_el_archivo(arbol: ast.AST) -> set:
+    """
+    Los nombres que el propio archivo define: funciones, clases y asignaciones.
+
+    La lista de constructores de presentacion se compara por NOMBRE, que es lo
+    unico que hay sin ejecutar el modulo. Sin esta condicion basta con LLAMAR
+    a una funcion propia como se llama un widget --
+
+        def Label(x): return x
+        DIAMETRO_MM = Label(4572)
+
+    -- para que sus enteros queden exentos. Un `Label` definido aqui no es el
+    de tkinter, y su argumento no es geometria de nada.
+    """
+    propios = set()
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            propios.add(nodo.name)
+        elif isinstance(nodo, ast.Assign):
+            for destino in nodo.targets:
+                if isinstance(destino, ast.Name):
+                    propios.add(destino.id)
+        elif isinstance(nodo, ast.AnnAssign) and isinstance(nodo.target, ast.Name):
+            propios.add(nodo.target.id)
+    return propios
 
 
 def literales_de_presentacion_prohibidos(codigo: str, nombre: str = "<memoria>"):
@@ -554,7 +743,14 @@ def literales_de_presentacion_prohibidos(codigo: str, nombre: str = "<memoria>")
             continue                      # geometria de widget: no es magnitud
         hallazgos.append((nodo.lineno, valor))
     for linea, texto in _literales_escondidos_en_texto(arbol):
-        if linea not in marcadas:
+        # AQUI LA MARCA TAMPOCO SALVA A UN NO-ENTERO, por la misma razon que
+        # arriba. `float(f"4.572")` es un float escrito de otra forma, y si la
+        # marca lo eximiera, el absoluto que este archivo declara --- "un
+        # float cae siempre" --- seria falso justo por la via que SIS-C-09
+        # describe.
+        valor = _como_numero(texto, None)
+        entero = valor is not None and valor.imag == 0 and valor.real.is_integer()
+        if linea not in marcadas or not entero:
             hallazgos.append((linea, texto))
     return sorted(hallazgos, key=lambda par: (par[0], repr(par[1])))
 
@@ -566,8 +762,18 @@ def barrido(raiz: Path) -> dict:
         relativa = ruta.relative_to(raiz)
         if str(relativa).replace("\\", "/") in EXENTOS:
             continue                       # por RUTA, no por nombre (SIS-C-05)
-        if PAQUETE_REGISTRO in relativa.parts:
+        if relativa.parts[:1] == (PAQUETE_REGISTRO,):
             # Exento del barrido general y sujeto al suyo, mas estrecho.
+            #
+            # LA COMPROBACION ES POR RUTA Y SOLO EN LA RAIZ, no por nombre a
+            # cualquier profundidad. Esta rama tenia el mismo defecto que
+            # SIS-C-05 denuncia de la lista de exentos, una linea mas arriba:
+            # con `PAQUETE_REGISTRO in relativa.parts`, un
+            # `src/modulos/normativa/valores.py` quedaba fuera del barrido
+            # general Y fuera del estrecho -- que solo mira
+            # `(SRC / "normativa").rglob(...)` --, de modo que no lo miraba
+            # NADIE. Arreglar el primer branch y dejar este era cerrar la
+            # puerta y dejar la ventana.
             continue
         # utf-8-sig y no utf-8: un editor de Windows puede dejar BOM y el
         # interprete de Python lo acepta. El barrido tiene que leer lo mismo
@@ -582,6 +788,105 @@ def _detalle(faltas: dict) -> str:
     return "\n".join(
         f"  {archivo}: " + ", ".join(f"linea {n} -> {v!r}" for n, v in hallazgos)
         for archivo, hallazgos in faltas.items()
+    )
+
+
+# ---------------------------------------------------------------------------
+# El censo de marcas: la exencion se declara, no se reparte
+# ---------------------------------------------------------------------------
+#
+# La marca exime POR LINEA, porque un comentario no se puede colgar de un nodo
+# del AST. Eso deja un resto de SIS-C-07 que ninguna regla sintactica cierra:
+# una sola sentencia con varios literales queda entera bajo una razon que solo
+# explica uno de ellos --
+#
+#     return (D ** 2 / 8) * (theta - sen(theta)) * 1.35 + 4.572
+#     # literal-ok: el 8 de A=(D^2/8)(theta - sen theta)
+#
+# -- y la linea es indistinguible en revision de la legitima.
+#
+# Se cierra con la herramienta que el proyecto ya usa para la deuda declarada
+# (`MAX_REFERENCIAS_DE_PROSA` en src/normativa/manifiesto.py, y los dos cupos
+# de tests/test_guardias_de_la_suite.py): un CENSO POR ARCHIVO, exacto. Cada
+# literal que una marca exime esta contado aqui. Anadir uno obliga a tocar
+# este numero en el mismo commit, que es exactamente la visibilidad en
+# revision que CLAUDE.md le pide a la marca ("la marca lo declara y lo hace
+# visible en revision"). Un literal colado bajo la razon de otro mueve el
+# conteo y el test lo dice, con archivo y con la diferencia.
+#
+# El censo es EXACTO y no un techo: retirar una marca tambien tiene que
+# declararse, o el numero se convierte en un colchon donde caben marcas
+# nuevas sin que nadie las vea.
+CENSO_DE_MARCAS = {
+    "cli.py": 4,
+    "gui/app.py": 28,
+    "src/dominios.py": 4,
+    "src/modulos/M3_hidraulica.py": 3,
+    "src/modulos/M4_control.py": 5,
+    "src/modulos/M8_estructural.py": 1,
+    "src/modulos/M9_cabezal.py": 6,
+    "src/normativa/extraccion/__main__.py": 5,
+    "src/normativa/extraccion/pdf.py": 6,
+    "src/normativa/manifiesto.py": 3,
+    "src/variables_entrada.py": 1,
+    "verificar_sesion.py": 2,
+}
+
+
+def _archivos_censados():
+    """Los .py vigilados: src/ entero mas la capa de presentacion."""
+    rutas = sorted(SRC.rglob("*.py"))
+    rutas += [RAIZ / nombre for nombre in CAPA_DE_PRESENTACION]
+    return [r for r in rutas if r.exists()]
+
+
+def _literales_eximidos_por_marca(codigo: str, nombre: str) -> int:
+    """Cuantos literales prohibidos exime la marca en este archivo."""
+    arbol = ast.parse(codigo, filename=nombre)
+    marcadas = lineas_marcadas(codigo)
+    if not marcadas:
+        return 0
+    de_indice = _nodos_de_indice(arbol)
+    n = 0
+    for nodo in ast.walk(arbol):
+        if not isinstance(nodo, ast.Constant):
+            continue
+        valor = nodo.value
+        if isinstance(valor, bool) or not isinstance(valor, (int, float, complex)):
+            continue
+        if id(nodo) in de_indice or _permitido(valor):
+            continue
+        if nodo.lineno in marcadas:
+            n += 1
+    for linea, _ in _literales_escondidos_en_texto(arbol):
+        if linea in marcadas:
+            n += 1
+    return n
+
+
+def test_el_censo_de_marcas_es_exacto():
+    """
+    Todo literal eximido por una marca esta contado en CENSO_DE_MARCAS.
+
+    Es el resto de SIS-C-07 que la sintaxis no cierra: la marca vale por
+    linea, y una sentencia larga puede llevar varios literales bajo una sola
+    razon. Contarlos hace que anadir uno sea un cambio VISIBLE en el diff.
+    """
+    real = {}
+    for ruta in _archivos_censados():
+        n = _literales_eximidos_por_marca(
+            ruta.read_text(encoding="utf-8-sig"), ruta.name)
+        if n:
+            real[str(ruta.relative_to(RAIZ)).replace("\\", "/")] = n
+    assert real == CENSO_DE_MARCAS, (
+        "el censo de marcas dejo de coincidir.\n"
+        f"  declarado: {CENSO_DE_MARCAS}\n"
+        f"  real:      {real}\n"
+        "Si anadiste una marca legitima, sube el numero de su archivo en "
+        "CENSO_DE_MARCAS en este mismo commit: la marca existe para hacer el "
+        "literal visible en revision, y el censo es lo que la hace visible. "
+        "Si NO anadiste ninguna, entonces un literal se colo bajo la razon de "
+        "otro en una linea que ya estaba marcada."
     )
 
 
@@ -684,6 +989,63 @@ def test_ningun_py_fuera_de_src_se_queda_sin_declarar():
         assert (RAIZ / directorio).is_dir(), (
             f"'{directorio}' ya no existe: su exencion caduco")
         assert razon.strip(), f"'{directorio}' se exime sin razon escrita"
+
+
+def test_ningun_py_se_esconde_en_un_directorio_de_cache():
+    """
+    `__pycache__` se salta porque es cache generada, no fuente. Un `.py`
+    escrito ahi a mano quedaria fuera del barrido y fuera de esta familia sin
+    que ningun documento lo dijera --- que es la forma exacta del hallazgo.
+    La exclusion vale para el `.pyc`; el `.py` no tiene por que estar ahi.
+    """
+    escondidos = sorted(
+        str(ruta.relative_to(RAIZ)).replace("\\", "/")
+        for ruta in RAIZ.rglob("__pycache__/*.py"))
+    assert not escondidos, (
+        f"fuente .py dentro de un __pycache__: {escondidos}. Ese directorio "
+        "es cache generada y el barrido lo salta; un modulo de verdad va "
+        "fuera, donde alguien lo mire.")
+
+
+def test_la_razon_por_la_que_legacy_esta_exento_sigue_siendo_cierta():
+    """
+    La razon escrita de `legacy/` es "sin importadores ni corrida". Este test
+    la COMPRUEBA en vez de creerla.
+
+    Una razon no verificada es peor que ninguna: `DIRECTORIOS_FUERA_DEL_BARRIDO`
+    solo exigia que la cadena no estuviera vacia, de modo que bastaba con
+    poner un archivo nuevo en `legacy/` e importarlo desde `cli.py` para meter
+    un valor de proyecto en la corrida con la suite entera en verde. El
+    directorio se exime PORQUE nadie lo importa; si alguien lo importa, la
+    premisa cayo y el estatus hay que rehacerlo, no reescribir la frase.
+    """
+    fuera_de_legacy = [r for r in RAIZ.rglob("*.py")
+                       if not r.is_relative_to(RAIZ / "legacy")
+                       and "__pycache__" not in r.parts
+                       and ".git" not in r.parts]
+    modulos_legacy = {r.stem for r in (RAIZ / "legacy").rglob("*.py")}
+    importadores = []
+    for ruta in fuera_de_legacy:
+        try:
+            arbol = ast.parse(ruta.read_text(encoding="utf-8-sig"))
+        except SyntaxError:
+            continue
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, ast.ImportFrom) and nodo.module:
+                raiz_mod = nodo.module.split(".")[0]
+                if raiz_mod == "legacy" or raiz_mod in modulos_legacy:
+                    importadores.append(f"{ruta.relative_to(RAIZ)}:{nodo.lineno}")
+            elif isinstance(nodo, ast.Import):
+                for alias in nodo.names:
+                    raiz_mod = alias.name.split(".")[0]
+                    if raiz_mod == "legacy" or raiz_mod in modulos_legacy:
+                        importadores.append(
+                            f"{ruta.relative_to(RAIZ)}:{nodo.lineno}")
+    assert not importadores, (
+        "'legacy' se exime del barrido con la razon 'sin importadores ni "
+        f"corrida', y estos lo importan: {sorted(set(importadores))}. La "
+        "premisa de la exencion cayo: o el import se retira, o legacy deja de "
+        "estar exento y sus literales entran al barrido.")
 
 
 # La numeracion de secciones de la memoria: `0.`, `0-bis`, `3.1`, y los
@@ -1159,3 +1521,118 @@ def test_el_barrido_respeta_la_lista_de_exentos(tmp_path):
     faltas = barrido(tmp_path)
 
     assert list(faltas) == ["M2_material.py"]
+
+
+# ---------------------------------------------------------------------------
+# La SEGUNDA vuelta: las variantes que reabrieron cinco de las seis vias
+# ---------------------------------------------------------------------------
+#
+# Una revision adversarial metio 4.572, 1.35, 0.013, 500 y 4.5 en dos modulos
+# vigilados con la suite entera en verde, DESPUES de que este archivo
+# declarara las seis vias cerradas. Cada test de aqui es una de esas variantes.
+# No repiten el ejemplo de la ficha --- ese ya tiene su test mas arriba ---
+# sino la forma con la que el ejemplo se esquiva, que es lo que hay que
+# defender: la regla se escribio contra la clase, no contra el caso.
+
+def test_sis_c_05_el_paquete_registro_tampoco_se_exime_por_nombre_anidado(tmp_path):
+    """
+    El segundo branch de `barrido` tenia el mismo defecto que el primero.
+
+    `PAQUETE_REGISTRO in relativa.parts` eximia `modulos/normativa/` a
+    cualquier profundidad, y el barrido estrecho del registro solo mira
+    `SRC / "normativa"`: el directorio anidado no lo miraba NADIE.
+    """
+    (tmp_path / PAQUETE_REGISTRO).mkdir()
+    (tmp_path / PAQUETE_REGISTRO / "tabla.py").write_text(
+        "ANCHO = 4.572\n", encoding="utf-8")
+    assert barrido(tmp_path) == {}, "el registro en la raiz si esta exento"
+
+    anidado = tmp_path / "modulos" / PAQUETE_REGISTRO
+    anidado.mkdir(parents=True)
+    (anidado / "valores.py").write_text("ANCHO = 4.572\n", encoding="utf-8")
+    faltas = barrido(tmp_path)
+    assert "modulos/normativa/valores.py" in {
+        k.replace("\\", "/") for k in faltas}, (
+        "un 'normativa' anidado no es el registro y tiene que caer")
+
+
+def test_sis_c_07_la_marca_no_vale_en_una_linea_compuesta():
+    """Un `;` no reparte la razon de la primera sentencia sobre la segunda."""
+    codigo = "_OCHO = 8; ANCHO = 4.572  # literal-ok: el 8 de la formula\n"
+    valores = [v for _, v in literales_prohibidos(codigo)]
+    assert 4.572 in valores and 8 in valores, (
+        "la linea compuesta tiene que caer entera: la marca explica una "
+        "sentencia y blanquearia la otra")
+
+
+def test_sis_c_09_la_conversion_desde_texto_cae_en_todas_sus_formas():
+    """
+    La barrera no es "`Constant` str en `args[0]`". Esa version dejaba pasar
+    todas estas, que son el mismo numero escrito de otra manera.
+    """
+    formas = {
+        'V = float(f"4.572")':                 "4.572",
+        'V = float("0.013"[:])':               "0.013",
+        'V = float("1.35".strip())':           "1.35",
+        'V = int("0b111110100", 2)':           "0b111110100",
+        'V = float.fromhex("0x1.2p+2")':       "0x1.2p+2",
+        'import ast\nV = ast.literal_eval("4.572")': "4.572",
+        'import json\nV = json.loads("4.572")': "4.572",
+        'V = int(x="500")':                    "500",
+    }
+    for codigo, texto in formas.items():
+        valores = [v for _, v in literales_prohibidos(codigo)]
+        assert texto in valores, f"evade: {codigo!r}"
+
+
+def test_sis_c_09_un_texto_que_no_es_numero_no_es_un_literal():
+    """
+    El contraste: la regla no puede convertir toda cadena en un hallazgo.
+
+    La base se escribe `2` y no `16` a proposito: un `16` suelto en el fuente
+    es un literal prohibido POR SI MISMO y caeria por la via ordinaria, que es
+    correcto y no lo que este test mide.
+    """
+    assert literales_prohibidos('V = int("no soy un numero", 2)') == []
+    assert literales_prohibidos('V = float("Sec. 4.1")') == []
+    assert literales_prohibidos('V = int("")') == []
+
+
+def test_sis_c_04_el_indice_exime_el_indice_y_no_el_subarbol():
+    """
+    `_nodos_de_indice` eximia `ast.walk(nodo.slice)` entero, de modo que la
+    clave de una tabla ANIDADA dentro de otro slice quedaba blanqueada.
+    """
+    codigo = 'T = {"d": {4: 6}}\nlector = {}\nV = lector[T["d"][4]]\n'
+    valores = [v for _, v in literales_prohibidos(codigo)]
+    assert 4 in valores, "el 4 es clave de T, no indice de lector"
+
+
+def test_sis_c_04_la_base_del_subscript_tiene_que_ser_un_nombre():
+    """Una clase con `__getitem__` no convierte cualquier entero en indice."""
+    codigo = ("class C:\n"
+              "    def __getitem__(self, k):\n"
+              "        return k\n"
+              "V = C()[4572]\n")
+    assert [v for _, v in literales_prohibidos(codigo)] == [4572]
+
+
+def test_la_capa_de_presentacion_no_exime_a_una_funcion_propia():
+    """
+    Los constructores de presentacion se comparan por NOMBRE, que es lo unico
+    que hay sin ejecutar el modulo. Definir una funcion propia llamada como un
+    widget no puede bastar para blanquear sus enteros.
+    """
+    codigo = "def Label(x):\n    return x\n\nD_MM = Label(4572)\n"
+    assert [v for _, v in literales_de_presentacion_prohibidos(codigo)] == [4572]
+
+
+def test_en_la_capa_de_presentacion_un_no_entero_cae_tambien_escondido_en_texto():
+    """
+    El absoluto que declara esta capa --- "un float cae siempre, tambien con
+    marca" --- tiene que valer tambien para el float escrito como texto, o es
+    falso justo por la via de SIS-C-09.
+    """
+    for codigo in ('V = float(f"4.572")  # literal-ok: razon',
+                   'V = float.fromhex("0x1.2p+2")  # literal-ok: razon'):
+        assert literales_de_presentacion_prohibidos(codigo), f"evade: {codigo!r}"

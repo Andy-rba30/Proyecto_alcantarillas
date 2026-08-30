@@ -41,6 +41,30 @@ def arbol(ruta) -> ast.Module:
     return _arbol(str(ruta))
 
 
+def _sentencias_de_modulo(nodo):
+    """
+    Las sentencias que se ejecutan al importar, incluidas las que estan
+    DENTRO de un `if`, un `try`, un `with` o un `for` de nivel de modulo.
+
+    No entra en `def` ni en `class`: ahi lo asignado es local o atributo, no
+    un nombre del modulo. Recorrer solo `arbol().body`, como hacia la primera
+    version, dejaba un escondite de un nivel --- `if True:` y dentro la
+    constante --- en el que el simbolo existe al importar y los asserts
+    negativos seguian verdes.
+    """
+    for hijo in nodo.body:
+        yield hijo
+        if isinstance(hijo, (ast.If, ast.Try, ast.With, ast.AsyncWith,
+                             ast.For, ast.AsyncFor, ast.While)):
+            yield from _sentencias_de_modulo(hijo)
+            for rama in ("orelse", "finalbody", "handlers"):
+                for parte in getattr(hijo, rama, []) or []:
+                    if isinstance(parte, ast.ExceptHandler):
+                        yield from _sentencias_de_modulo(parte)
+                    else:
+                        yield parte
+
+
 def nombres_asignados(ruta) -> Set[str]:
     """
     Nombres asignados A NIVEL DE MODULO (incluida la asignacion anotada).
@@ -48,7 +72,7 @@ def nombres_asignados(ruta) -> Set[str]:
     Sustituye a ``f"{nombre} =" in fuente``, que un comentario satisface.
     """
     nombres = set()
-    for nodo in arbol(ruta).body:
+    for nodo in _sentencias_de_modulo(arbol(ruta)):
         if isinstance(nodo, ast.Assign):
             for destino in nodo.targets:
                 if isinstance(destino, ast.Name):
@@ -60,7 +84,7 @@ def nombres_asignados(ruta) -> Set[str]:
 
 def valor_asignado(ruta, nombre: str) -> Optional[ast.AST]:
     """El nodo del valor asignado a `nombre` a nivel de modulo, o None."""
-    for nodo in arbol(ruta).body:
+    for nodo in _sentencias_de_modulo(arbol(ruta)):
         if isinstance(nodo, ast.Assign):
             for destino in nodo.targets:
                 if isinstance(destino, ast.Name) and destino.id == nombre:

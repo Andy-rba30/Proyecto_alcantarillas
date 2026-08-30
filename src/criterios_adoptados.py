@@ -4542,6 +4542,28 @@ def _numeros_de(valor: Any):
     elif isinstance(valor, (tuple, list, set, frozenset)):
         for v in valor:
             yield from _numeros_de(v)
+    elif isinstance(valor, str):
+        # UN TEXTO QUE SE LEE COMO NUMERO CUENTA COMO NUMERO. No es celo: es
+        # la puerta que quedaba abierta despues de cerrar `--declarar
+        # CLAVE=nan`. Con comillas -- `--declarar "CLAVE='nan'"` --
+        # `ast.literal_eval` tiene EXITO y devuelve la cadena 'nan', de modo
+        # que el respaldo a texto de `cli.py` no se ejecuta y su guardia no
+        # llega a mirar. El criterio queda con la cadena 'nan' guardada, y el
+        # primer consumidor que haga `float()` sobre el -- `M9_cabezal.
+        # cuantia_de_diseno` es el caso medido -- lo devuelve al calculo
+        # convertido en el mismo NaN que se rechazo, con la memoria
+        # imprimiendo `cuantia_adoptada = nan`.
+        #
+        # Solo cae el texto que se LEE como numero no finito. Un criterio
+        # categorico ('Bishop_Simplificado', 'cota_terreno', 'flexible') no
+        # se lee como numero y pasa intacto, que es para lo que el respaldo a
+        # texto existe.
+        try:
+            leido = float(valor)
+        except (TypeError, ValueError, OverflowError):
+            return
+        if not math.isfinite(leido):
+            yield leido
     elif _es_real(valor):
         yield valor
 
@@ -4567,6 +4589,37 @@ def _verificar_finitud(clave: str, c: Criterio) -> None:
     es FALSO frente a `<=` y frente a `>=` a la vez, de modo que atraviesa
     tanto una comprobacion escrita como "esta dentro del rango" como una
     escrita como "no esta fuera".
+
+    LA GUARDIA ES AQUI Y NO EN `cli.py` porque aqui es el cuello: pasan por
+    `_verificar_criterio` las tres vias de declaracion --- el `--declarar` de
+    la CLI, el boton de la GUI y la escritura permanente ---, y una guardia
+    puesta en una sola de ellas deja las otras dos. La primera version de
+    este cierre puso la del texto en `cli.py`, en el brazo `except` de
+    `ast.literal_eval`, y una revision adversarial la esquivo con comillas:
+    `--declarar "CLAVE='nan'"` hace que `literal_eval` tenga exito, el brazo
+    `except` no se ejecute, y la cadena 'nan' entre entera. La de `cli.py` se
+    conserva porque da un mensaje mejor en su caso; la que cierra la clase es
+    esta.
+
+    HASTA DONDE LLEGA ESTA GUARDIA, dicho para que no se sobreentienda. Cierra
+    la PUERTA: ningun no-finito ENTRA. No cierra el OVERFLOW ARITMETICO, que
+    es otro defecto y no tiene ID de auditoria: con `talud_terraplen = 1e308`
+    --- finito, y sin rango de sensibilidad que lo acote --- `M7.
+    proyeccion_taludes` multiplica y devuelve `inf`, y el informe sale con
+    `"longitud_m": {"valor": "inf"}`. Se alcanza tambien sin criterio
+    absurdo, solo desde el CSV: una `cota_rasante = 1e308` pasa `_a_float`,
+    `_valida_rangos` y `_valida_cruzadas`, porque NINGUNA cota tiene techo en
+    dominios.py, y ponerle uno seria inventar un valor de proyecto, que es lo
+    que CLAUDE.md prohibe expresamente. Queda DECLARADO aqui y reportado como
+    hallazgo nuevo, sin cerrar: el criterio de salida de S16 habla de la
+    ENTRADA, y la entrada esta cerrada.
+
+    Y no todo `inf` que llega a la memoria es ese defecto: `M9.
+    verificar_volteo` devuelve `math.inf` A PROPOSITO como FS cuando el
+    momento volcante es nulo --- "no vuelca" no es un numero grande, es la
+    ausencia de la solicitacion ---, y `cli._num` lo renderiza como texto para
+    que el JSON siga siendo valido. Un barrido que prohibiera todo no-finito
+    en la SALIDA romperia ese caso legitimo, y por eso no se pone.
     """
     for x in _numeros_de(c.valor):
         try:

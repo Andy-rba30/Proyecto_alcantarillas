@@ -187,7 +187,10 @@ def _numeros_de(valor: Any):
     """
     Todos los numeros reales que hay DENTRO de un valor, sea escalar, tupla,
     lista o dict. Homologa de `criterios_adoptados._numeros_de`: la finitud no
-    puede depender de la FORMA del valor.
+    puede depender de la FORMA del valor. Ni del TIPO: un texto que se lee
+    como numero no finito cuenta como numero, por la misma razon que alli ---
+    el primer consumidor que haga `float()` sobre el lo devuelve al calculo
+    convertido en el infinito o el NaN que se rechazo.
     """
     if isinstance(valor, dict):
         for v in valor.values():
@@ -195,6 +198,13 @@ def _numeros_de(valor: Any):
     elif isinstance(valor, (tuple, list, set, frozenset)):
         for v in valor:
             yield from _numeros_de(v)
+    elif isinstance(valor, str):
+        try:
+            leido = float(valor)
+        except (TypeError, ValueError, OverflowError):
+            return
+        if not math.isfinite(leido):
+            yield leido
     elif isinstance(valor, numbers.Real) and not isinstance(valor, bool):
         yield valor
 

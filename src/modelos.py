@@ -1500,18 +1500,33 @@ class EmpujesTrasdos:
         DESDE ESE CAMINO. Pero `EmpujesTrasdos` es una dataclass publica con
         los dos campos sueltos: la guarda va en el tipo, que es donde el
         estado imposible se hace imposible, y no en el llamador de turno.
+
+        POR QUE `ValueError` Y NO `DatoInvalidoError`. La primera version usaba
+        la taxonomia del expediente, y contradecia la frontera que este mismo
+        trabajo escribio en `M9_cabezal.py` (SIS-E-02): `DatoInvalidoError` es
+        para un argumento que ES una clave de tabla normativa, con el mensaje
+        enumerando las filas admisibles; para un estado interno no lo es. Y
+        este estado no es un dato del expediente que el proyectista pueda
+        corregir --- el docstring de arriba dice que es INALCANZABLE desde el
+        unico camino de produccion ---, de modo que presentarlo en la GUI como
+        "el expediente no se puede cargar" mandaria al revisor a buscar en el
+        CSV un defecto que esta en el codigo. Fuera de `ErrorProyecto`, cae en
+        el brazo de programa de la GUI y sale con traza, que es lo que un
+        invariante roto merece. Es la misma lectura que
+        `criterios_adoptados.establecer_valor_dinamico` (SIS-E-05).
         """
         completo = (self.incremento_sismico is not None
                     and self.z_incremento is not None)
         vacio = self.incremento_sismico is None and self.z_incremento is None
         if not (completo or vacio):
-            raise DatoInvalidoError(
-                campo="incremento_sismico",
-                valor=(self.incremento_sismico, self.z_incremento),
-                motivo="la carga EQ va con su brazo o no va: con el incremento "
-                       "sismico declarado y z_incremento en None, el empuje "
-                       "horizontal lo suma y el momento volcante no, de modo "
-                       "que el volteo saldria mas seguro de lo que es",
+            raise ValueError(
+                "EmpujesTrasdos: la carga EQ va con su brazo o no va. Se "
+                f"recibio incremento_sismico={self.incremento_sismico!r} y "
+                f"z_incremento={self.z_incremento!r}: el empuje horizontal lo "
+                "sumaria y el momento volcante no, de modo que el volteo "
+                "saldria mas seguro de lo que es. Es un invariante del tipo, "
+                "no un dato del expediente: si esto se levanta, el defecto "
+                "esta en quien construyo el objeto."
             )
 
     @property

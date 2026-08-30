@@ -579,3 +579,39 @@ def test_ninguna_fila_de_la_Tabla_N_02_se_queda_sin_riesgo_admisible():
     # Y la consecuencia observable: toda fila del enum resuelve su TR.
     for fila in CategoriaTR:
         assert tr_de_categoria(fila).anios > 0
+
+
+# ---------------------------------------------------------------------------
+# MAT-D13, segunda vuelta: el mensaje nombra el PAR, y n en forma positiva
+# ---------------------------------------------------------------------------
+
+def test_el_mensaje_del_borde_de_tr_nombra_los_dos_datos():
+    """
+    La degeneracion es del par (R, n) y no de uno solo: con n grande, una R
+    perfectamente sana la provoca. La primera version acusaba siempre a 'R' y
+    mandaba a corregir el dato equivocado la mitad de las veces; escribir un
+    discriminante seria falsa precision, porque no hay umbral que separe "culpa
+    de R" de "culpa de n". Se dicen los dos.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        tr_desde_riesgo(1e-16, 25)
+    mensaje = str(exc.value)
+    assert "R = 1e-16" in mensaje and "n = 25" in mensaje
+    assert "cualquiera de los dos lados" in mensaje
+
+
+def test_una_vida_util_nan_no_atraviesa_la_guarda():
+    """
+    `n <= 0` es FALSO para un NaN y lo dejaba pasar hasta la formula. La
+    condicion escrita en positivo y negada si lo atrapa, y lo atrapa acusando
+    a 'n', que es el dato que hay que corregir.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        tr_desde_riesgo(0.35, float("nan"))
+    assert exc.value.campo == "n"
+
+
+def test_una_vida_util_enorme_tambien_degenera_y_se_dice():
+    with pytest.raises(DatoInvalidoError) as exc:
+        tr_desde_riesgo(0.35, 10 ** 300)
+    assert "degenera" in str(exc.value)

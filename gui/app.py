@@ -1002,8 +1002,25 @@ class ExpedienteApp:
         try:
             with open(ruta, "r", encoding="utf-8") as f:
                 data = json.load(f)
-        except (OSError, json.JSONDecodeError) as exc:
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            # `UnicodeDecodeError` va aqui por la MISMA razon que en
+            # `ejecutar_pipeline`, y faltaba: un JSON de sesion guardado en
+            # ANSI por un editor de Windows --- con las eñes del castellano ---
+            # estrellaba la ventana con una traza en vez de decir que el
+            # archivo no esta en UTF-8. Es subclase de ValueError, no de
+            # OSError ni de JSONDecodeError, de modo que este brazo no lo veia.
             messagebox.showerror("Error al cargar", f"No se pudo leer la sesion:\n{exc}")
+            return
+        if not isinstance(data, dict):
+            # Un JSON VALIDO que no sea objeto --- `[1, 2]`, `"texto"`, `3` ---
+            # pasa `json.load` sin error y revienta tres lineas mas abajo en
+            # `data.get(...)` con un `AttributeError` que nadie captura. Es un
+            # archivo mal formado, no un fallo del programa, y sale por el
+            # mismo sitio que los demas archivos mal formados.
+            messagebox.showerror(
+                "Error al cargar",
+                "El archivo es JSON valido pero no es una sesion: una sesion "
+                f"es un objeto con claves, y este trae {type(data).__name__}.")
             return
 
         self.proyecto_var.set(data.get("proyecto", ""))

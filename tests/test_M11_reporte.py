@@ -766,17 +766,46 @@ class TestBloquePendientes:
         with pytest.raises(ValueError, match="no produjeron"):
             M11.tableros_pendientes(hoja)
 
-    def test_un_tablero_con_cabecera_pero_sin_filas_detiene_el_reporte(self, tmp_path):
+    def test_un_tablero_bien_formado_y_sin_filas_es_un_tablero_sin_pendientes(self, tmp_path):
         """
-        Un tablero vacio NO es un tablero sin pendientes: es un tablero que no
-        se pudo leer, y la memoria no puede confundir las dos lecturas.
+        Y NO un error. Este test afirmaba lo contrario y fijaba un supuesto
+        sobre el futuro del expediente en vez de una propiedad del formato: el
+        proyecto trabaja para VACIAR los tableros, y con la regla anterior el
+        dia que uno cerrara su ultima fila legitimamente la memoria entera
+        dejaba de generarse con un ValueError, sin forma de distinguir ese dia
+        de un cambio de formato.
+
+        La degradacion parcial que SIS-C-13 pide detectar la sigue cogiendo el
+        otro `raise`, y sin ambiguedad: un `Tablero N` solo produce tablero
+        cuando aparece su FILA DE ENCABEZADOS, de modo que una tabla rota o
+        retirada no produce ninguno. Eso lo prueba el test de arriba.
         """
         hoja = tmp_path / "hoja_de_ruta_alcantarillas_v9.md"
         hoja.write_text(
             "### Tablero 1 — Verificaciones documentales\n\n"
             "| Item | Estado |\n| --- | --- |\n",
             encoding="utf-8")
-        with pytest.raises(ValueError, match="sin ninguna"):
+        tableros = M11.tableros_pendientes(hoja)
+        assert [t.numero for t in tableros] == ["1"]
+        assert tableros[0].filas == ()
+        assert tableros[0].encabezados, (
+            "la fila de encabezados es lo que distingue una tabla vacia de "
+            "una tabla que no se pudo leer")
+
+    def test_un_tablero_sin_tabla_alguna_si_detiene_el_reporte(self, tmp_path):
+        """
+        El contraste, y la mitad de SIS-C-13 que si es inequivoca: un
+        encabezado `Tablero N` sin NINGUNA tabla debajo es formato roto, no un
+        tablero cerrado.
+        """
+        hoja = tmp_path / "hoja_de_ruta_alcantarillas_v9.md"
+        hoja.write_text(
+            "### Tablero 1 — Verificaciones documentales\n\n"
+            "| Item | Estado |\n| --- | --- |\n| V1 | abierto |\n\n"
+            "### Tablero 2 — Decisiones de diseño\n\n"
+            "aqui iba una tabla y ya no esta\n",
+            encoding="utf-8")
+        with pytest.raises(ValueError, match="no produjeron"):
             M11.tableros_pendientes(hoja)
 
     def test_una_hoja_sin_tableros_detiene_el_reporte(self, tmp_path):

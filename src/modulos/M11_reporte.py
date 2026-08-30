@@ -471,10 +471,14 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
     realista, porque el formato se toca tablero a tablero --- dejaba pasar los
     otros dos en silencio: la memoria imprimia 10 filas donde hay 15 y
     declaraba cerrado lo que no lo esta. Se comprueba, por lo tanto, que cada
-    encabezado `Tablero N` encontrado en la hoja produjo su tablero Y que
-    ninguno quedo sin filas. Un tablero vacio no es "un tablero sin
-    pendientes": es un tablero que no se pudo leer, y la diferencia entre las
-    dos lecturas es justo la que el expediente no puede permitirse.
+    encabezado `Tablero N` encontrado en la hoja produjo su tablero. Un
+    `Tablero N` que no produce tabla es inequivocamente un formato roto,
+    porque el tablero solo nace cuando aparece su fila de encabezados.
+
+    Lo que NO se comprueba, deliberadamente, es que cada tablero traiga
+    filas: una tabla bien formada con cero filas de datos es lo que se ve
+    cuando ese tablero ya no tiene pendientes, que es hacia donde el proyecto
+    trabaja. Ver el razonamiento en el punto de uso, mas abajo.
     """
     hoja = ruta_hoja_de_ruta() if ruta is None else ruta
     tableros: List[Tablero] = []
@@ -538,13 +542,21 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
             "pendientes saldria incompleto y la memoria diria que queda menos "
             "pendiente de lo que queda: revisa el formato de esas tablas."
         )
-    vacios = [t.numero for t in tableros if not t.filas]
-    if vacios:
-        raise ValueError(
-            f"Los tableros {vacios} de {hoja.name} se leyeron sin ninguna "
-            "fila. Un tablero vacio no es un tablero sin pendientes: es un "
-            "tablero que no se pudo leer."
-        )
+    # UN TABLERO CON CERO FILAS NO SE RECHAZA, y conviene decir por que se
+    # penso lo contrario. La primera version de este cierre añadia aqui un
+    # tercer `raise` --- "un tablero vacio no es un tablero sin pendientes, es
+    # un tablero que no se pudo leer" --- y esa frase es un supuesto sobre el
+    # FUTURO del expediente, no una propiedad del formato: el proyecto trabaja
+    # precisamente para vaciar los tableros, y el dia que uno cierre su ultima
+    # fila legitimamente la memoria entera habria dejado de generarse con un
+    # ValueError, sin forma de distinguirlo de un cambio de formato.
+    #
+    # La degradacion parcial que SIS-C-13 pide detectar la coge `perdidos`, y
+    # la coge sin ambiguedad: `cerrar()` solo produce un `Tablero` cuando
+    # encontro la FILA DE ENCABEZADOS, de modo que una tabla rota o retirada
+    # deja su `Tablero N` sin producir nada y cae ahi. Una tabla bien formada
+    # con cero filas de datos, en cambio, es exactamente lo que se ve cuando
+    # ya no queda nada pendiente en ese tablero.
     return tuple(tableros)
 
 

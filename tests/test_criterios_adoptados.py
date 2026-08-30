@@ -1422,3 +1422,50 @@ def test_dato_faltante_admite_un_dato_que_no_es_columna_del_csv():
         "CLAUDE.md volvio a definir DatoFaltanteError solo sobre columnas del "
         "CSV: el codigo la usa tambien para los datos externos y para los que "
         "un tablero tendria que aportar")
+
+
+# ---------------------------------------------------------------------------
+# La segunda vuelta de MAT-D14: el no-finito ESCRITO COMO TEXTO
+# ---------------------------------------------------------------------------
+#
+# La primera version de este cierre puso la guardia del texto en `cli.py`, en
+# el brazo `except` de `ast.literal_eval`, y una revision adversarial la
+# esquivo con comillas: `--declarar "CLAVE='nan'"` hace que `literal_eval`
+# TENGA EXITO y devuelva la cadena 'nan', de modo que el brazo `except` nunca
+# se ejecuta. La cadena entraba entera y `M9_cabezal.cuantia_de_diseno` la
+# devolvia al calculo como `float('nan')`, con la memoria imprimiendo
+# `cuantia_adoptada = nan`. La guardia esta hoy en `_verificar_criterio`, que
+# es el cuello por donde pasan las tres vias de declaracion.
+
+@pytest.mark.parametrize("texto", ["nan", "inf", "-inf", "Infinity",
+                                   "-Infinity", "NaN", "  inf  ", "1e999"])
+def test_un_texto_que_se_lee_como_no_finito_no_entra_como_criterio(
+        criterios_restaurados, texto):
+    with pytest.raises(ValueError, match="infinito"):
+        ca.establecer_valor_dinamico("talud_terraplen", texto)
+
+
+def test_un_texto_categorico_sigue_entrando(criterios_restaurados):
+    """
+    El contraste que hace que la guardia no sea celo: el respaldo a texto
+    existe para los criterios CATEGORICOS, y esos no se leen como numero.
+    """
+    ca.establecer_valor_dinamico("metodo_estabilidad_global", "Bishop_Simplificado")
+    assert ca.valor("metodo_estabilidad_global") == "Bishop_Simplificado"
+
+
+def test_ninguna_clave_acepta_la_cadena_nan(criterios_restaurados):
+    """
+    El barrido entero, porque el agujero no era de una clave sino de la via:
+    la revision adversarial midio 46 claves que la aceptaban.
+    """
+    aceptadas = []
+    for clave in list(ca.CRITERIOS):
+        try:
+            ca.establecer_valor_dinamico(clave, "nan")
+            aceptadas.append(clave)
+        except (ValueError, KeyError):
+            pass
+    assert not aceptadas, (
+        f"estas claves aceptan la cadena 'nan': {aceptadas}. El primer "
+        "consumidor que haga float() sobre ellas la devuelve al calculo.")

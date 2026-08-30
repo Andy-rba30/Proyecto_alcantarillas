@@ -203,7 +203,7 @@ def tirante_normal(D: float, Q: float, S: float, n: float) -> Optional[Geometria
     EL CONTRATO, DICHO CON PRECISION (MAT-O18). El texto que ocupaba este
     lugar decia que None significa "no hay theta donde Manning iguale Q", y
     eso NO es exacto: la curva Q(theta) de una seccion circular no es
-    monotona. Crece hasta un PICO cerca de y/D ~ 0.94 y despues BAJA hasta el
+    monotona. Crece hasta un PICO en y/D = 0.93818 y despues BAJA hasta el
     caudal a seccion llena, que es menor. Para D = 0.90 m, S = 0.005 y
     n = 0.013 el pico vale 1.377 m3/s y el lleno 1.280 m3/s: en la banda
     (1.280, 1.377] SI existe un theta que transporta Q -- dos, de hecho --,
@@ -212,9 +212,14 @@ def tirante_normal(D: float, Q: float, S: float, n: float) -> Optional[Geometria
 
     Se deja asi a proposito, y la direccion importa: devolver None de mas es
     CONSERVADOR -- manda a M2 al siguiente diametro --, mientras que resolver
-    en esa banda daria un tirante por encima de y/D = 0.94, muy por encima
-    del 0.75 que V1 admite (Sec. 4.1.1.3.7 b), de modo que el diseño se
-    rechazaria igual una fase mas tarde. Lo que no se puede es que el
+    en esa banda daria un tirante por encima de y/D = 0.82 -- la RAIZ BAJA de
+    las dos, que es la que Brent devolveria con un bracket sobre la rama
+    creciente: 0.8203 en Q = 1.281, 0.8344 en Q = 1.30, 0.8806 en Q = 1.35 --,
+    por encima del 0.75 que V1 admite (Sec. 4.1.1.3.7 b), de modo que el
+    diseño se rechazaria igual una fase mas tarde. (El 0.94 es donde esta el
+    PICO de la curva, no el tirante que se obtendria: decir "por encima de
+    0.94" era confundir el maximo de Q con la raiz, y la conclusion se
+    sostiene igual pero con el numero correcto.) Lo que no se puede es que el
     docstring afirme lo contrario de lo que el codigo hace: quien lea "no hay
     theta" concluira que el conducto no da, cuando lo que pasa es que da por
     encima del llenado admisible.

@@ -136,6 +136,52 @@ def test_los_brazos_de_la_gui_y_de_la_cli_leen_la_entrada_igual():
         "entrada tiene que fallar igual por las dos puertas")
 
 
+# El brazo de lectura de entrada, en TODAS las funciones que abren un archivo
+# que el proyectista elige. Comparar solo `brazos[0]` de `ejecutar_pipeline`
+# --- como hacia la primera version de este archivo --- dejaba fuera la otra
+# puerta que abre un archivo del usuario, `cargar_sesion`, que capturaba
+# `(OSError, JSONDecodeError)` SIN `UnicodeDecodeError`: el mismo JSON en ANSI
+# que `ejecutar_pipeline` explica por escrito estrellaba la ventana dos
+# funciones mas abajo.
+PUERTAS_QUE_LEEN_UN_ARCHIVO = ("ejecutar_pipeline", "cargar_sesion")
+
+
+@pytest.mark.parametrize("nombre", PUERTAS_QUE_LEEN_UN_ARCHIVO)
+def test_toda_puerta_que_lee_un_archivo_atrapa_el_error_de_codificacion(nombre):
+    """
+    `UnicodeDecodeError` es subclase de `ValueError`, no de `OSError` ni de
+    `JSONDecodeError`: un brazo escrito como `(OSError, JSONDecodeError)` no
+    lo ve, y un archivo guardado en ANSI sale como traza en vez de como
+    "el archivo no esta en UTF-8".
+    """
+    brazos = _brazos(_funcion(ARBOL_GUI, nombre))
+    lectura = [caps for caps, _ in brazos if "OSError" in caps]
+    assert lectura, f"'{nombre}' dejo de tener brazo de lectura de entrada"
+    assert "UnicodeDecodeError" in lectura[0], (
+        f"'{nombre}' captura {lectura[0]} y le falta UnicodeDecodeError")
+
+
+def test_la_divergencia_de_la_gui_con_la_cli_es_solo_el_brazo_de_programa():
+    """
+    La GUI tiene un brazo que la CLI no tiene, y es DELIBERADO: una ventana no
+    se puede caer con una traza en la consola que nadie mira, de modo que
+    `ejecutar_pipeline` termina en `except Exception` + `traceback.print_exc()`.
+    La CLI no lo necesita porque ahi la traza SI es la salida.
+
+    El test fija esa divergencia para que no crezca: cualquier OTRA diferencia
+    entre las dos puertas es la asimetria que SIS-E-01 denuncia. La primera
+    version comparaba solo el primer brazo y por eso no habria visto una
+    segunda divergencia aparecer.
+    """
+    gui = [set(caps) for caps, _ in _brazos(_funcion(ARBOL_GUI, "ejecutar_pipeline"))]
+    cli_ = [set(caps) for caps, _ in _brazos(_funcion(ARBOL_CLI, "main"))]
+    solo_en_la_gui = [b for b in gui if b not in cli_]
+    assert solo_en_la_gui == [{"Exception"}], (
+        f"la GUI tiene brazos que la CLI no: {solo_en_la_gui}. El unico "
+        "admitido es {'Exception'}, el que imprime la traza en vez de dejar "
+        "caer la ventana; cualquier otro es la asimetria de SIS-E-01.")
+
+
 def test_el_brazo_de_expediente_va_antes_del_de_programa():
     """
     `ErrorProyecto` tiene que capturarse ANTES que `Exception`: al reves, un

@@ -23,7 +23,17 @@ CONFTEST = RAIZ / "conftest.py"
 
 # Los directorios de la suite. `conftest.py` entra porque declara los
 # criterios de la corrida y podria comparar floats igual que un test.
-ARCHIVOS_DE_PRUEBA = sorted(TESTS.rglob("test_*.py")) + [CONFTEST]
+# TODO el arbol de la suite, no solo los `test_*.py`. Dejar fuera
+# `tests/fixtures/casos_patron.py` era el peor de los huecos posibles: es el
+# archivo que CLAUDE.md hace obligatorio para todo modulo de calculo ("Todo
+# modulo de calculo se contrasta contra tests/fixtures/casos_patron.py") y el
+# objeto de la fila 7 de la hoja `Conflictos`. Sus asserts de autoverificacion
+# no los miraba este guardian, y sus `approx` no entraban en el censo, de modo
+# que los cupos subcontaban. `tests/apoyo/` estaba fuera por lo mismo.
+ARCHIVOS_DE_PRUEBA = sorted(
+    ruta for ruta in TESTS.rglob("*.py")
+    if "__pycache__" not in ruta.parts
+) + [CONFTEST]
 
 MARCA_APPROX = "approx"
 
@@ -57,6 +67,62 @@ def _operandos_de_igualdad(nodo_assert: ast.Assert):
             yield comparacion, list(comparacion.comparators)
 
 
+# Llamadas que TRANSPORTAN el literal en vez de consumirlo: el valor que se
+# compara sigue siendo el que esta escrito dentro.
+LLAMADAS_QUE_TRANSPORTAN = {
+    "float", "int", "complex", "Decimal", "Fraction", "abs", "round",
+    "min", "max", "sum", "list", "tuple", "set", "frozenset", "dict",
+    "sorted", "reversed",
+}
+
+
+def _aritmetica_de_literales(nodo):
+    """
+    El valor de una expresion aritmetica hecha SOLO de literales, o None.
+
+    `ast.literal_eval` no sirve: admite `+` y `-` unicamente para reconstruir
+    complejos, de modo que `9 / 2` --- un 4.5 escrito en dos trozos --- le
+    devuelve ValueError y quedaba invisible.
+    """
+    if isinstance(nodo, ast.Constant):
+        return nodo.value if isinstance(nodo.value, (int, float)) and not isinstance(nodo.value, bool) else None
+    if isinstance(nodo, ast.UnaryOp) and isinstance(nodo.op, (ast.USub, ast.UAdd)):
+        valor = _aritmetica_de_literales(nodo.operand)
+        if valor is None:
+            return None
+        return -valor if isinstance(nodo.op, ast.USub) else valor
+    if not isinstance(nodo, ast.BinOp):
+        return None
+    izq = _aritmetica_de_literales(nodo.left)
+    der = _aritmetica_de_literales(nodo.right)
+    if izq is None or der is None:
+        return None
+    try:
+        if isinstance(nodo.op, ast.Add):
+            return izq + der
+        if isinstance(nodo.op, ast.Sub):
+            return izq - der
+        if isinstance(nodo.op, ast.Mult):
+            return izq * der
+        if isinstance(nodo.op, ast.Div):
+            return izq / der
+        if isinstance(nodo.op, ast.Pow):
+            return izq ** der
+    except (ZeroDivisionError, OverflowError, ValueError):
+        return None
+    return None
+
+
+def _nombre_de_llamada(nodo: ast.Call):
+    """`f(...)` -> 'f'; `a.b(...)` -> 'b'."""
+    f = nodo.func
+    if isinstance(f, ast.Name):
+        return f.id
+    if isinstance(f, ast.Attribute):
+        return f.attr
+    return None
+
+
 def _floats_escritos(nodo):
     """
     Los float ESCRITOS COMO LITERAL en el operando, a cualquier profundidad de
@@ -70,9 +136,28 @@ def _floats_escritos(nodo):
         argumento -- `nota_temperatura_dos_caras(espesor=0.30)` -- no es un
         valor comparado: es una entrada. Contarlo convertiria en falta cada
         test que pase un numero a la funcion que prueba.
+
+    Esa tercera regla abria un falso NEGATIVO que la primera version no
+    declaraba: envolver el literal en cualquier llamada lo hacia invisible.
+    `== float(4.5)`, `== abs(-0.5)`, `== max(0.5, 0.2)`, `== list((0.5, 0.7))`
+    y `== dict(maximo=1.25)` comparaban exacto y el guardian no los veia. Se
+    cierra distinguiendo la llamada que TRANSPORTA el literal --- un conversor
+    o un constructor de contenedor, donde el valor comparado sigue siendo el
+    literal --- de la que lo CONSUME, que es la que se exime. Y un `BinOp` de
+    literales (`== 9 / 2`) es un literal escrito en dos trozos.
     """
     if isinstance(nodo, ast.Call):
+        if _nombre_de_llamada(nodo) in LLAMADAS_QUE_TRANSPORTAN:
+            for hijo in list(nodo.args) + [k.value for k in nodo.keywords]:
+                yield from _floats_escritos(hijo)
         return
+    if isinstance(nodo, ast.BinOp):
+        valor = _aritmetica_de_literales(nodo)
+        if isinstance(valor, float) and not isinstance(valor, bool):
+            yield valor
+            return
+        # No era aritmetica cerrada de literales (`4.5 + tolerancia`): se
+        # sigue descendiendo, o se perderia el 4.5 que si esta escrito.
     if isinstance(nodo, ast.Constant):
         if isinstance(nodo.value, float) and not isinstance(nodo.value, bool):
             yield nodo.value
@@ -102,6 +187,18 @@ def _es_approx(nodo) -> bool:
     return nombre == MARCA_APPROX
 
 
+def _lineas_compuestas(codigo: str) -> set:
+    """Lineas con un `;` fuera de un string: dos sentencias, una sola marca."""
+    lineas = set()
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(codigo).readline):
+            if tok.type == tokenize.OP and tok.string == ";":
+                lineas.add(tok.start[0])
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        pass
+    return lineas
+
+
 def _lineas_exentas(codigo: str) -> set:
     """
     Lineas con la marca `# float-exacto: <razon>`, como COMENTARIO.
@@ -112,12 +209,22 @@ def _lineas_exentas(codigo: str) -> set:
     los propios detectores comparan la lista de literales que encontraron
     contra los mismos dobles que parsearon, y aproximarla la vaciaria de
     sentido.
+
+    Y NO VALE EN UNA LINEA COMPUESTA. Un `;` pone dos asserts bajo un solo
+    comentario --- `assert a() == 1.5; assert b() == 2.5  # float-exacto: solo
+    el primero` --- y la marca eximiria el segundo con la razon del primero.
+    Es el mismo problema que `# literal-ok` tiene en
+    tests/test_sin_literales.py, y se cierra igual: la linea compuesta se
+    rechaza entera.
     """
     exentas = set()
+    compuestas = _lineas_compuestas(codigo)
     try:
         for tok in tokenize.generate_tokens(io.StringIO(codigo).readline):
             if tok.type != tokenize.COMMENT:
                 continue
+            if tok.start[0] in compuestas:
+                continue           # la marca explica UNA sentencia, no dos
             texto = tok.string.strip()
             if texto.startswith(MARCA_EXACTO + ":") and texto[len(MARCA_EXACTO) + 1:].strip():
                 exentas.add(tok.start[0])

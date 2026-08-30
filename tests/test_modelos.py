@@ -686,15 +686,25 @@ def test_la_carga_sismica_va_con_su_brazo_o_no_va():
     Se cierra en el tipo y no en el llamador: `M9.empujes_trasdos` pone hoy
     los dos campos juntos, pero `EmpujesTrasdos` es publica y los dos campos
     son Optional e independientes.
+
+    SALE FUERA DE `ErrorProyecto`, y el test lo fija en los dos sentidos. El
+    estado medio no es un dato del expediente que el proyectista pueda
+    corregir --- es inalcanzable desde el unico camino de produccion ---, de
+    modo que la taxonomia lo presentaria como "el expediente no se puede
+    cargar" y mandaria al revisor a buscar en el CSV un defecto que esta en
+    el codigo. Es la frontera que `M9_cabezal.py` declara para SIS-E-02 y la
+    misma lectura de SIS-E-05.
     """
     base = _empujes(CondicionAnalisis.SISMICO)
 
-    with pytest.raises(DatoInvalidoError) as exc:
+    with pytest.raises(ValueError) as exc:
         dataclasses.replace(base, z_incremento=None)
-    assert exc.value.campo == "incremento_sismico"
     assert "volteo" in str(exc.value)
+    assert not isinstance(exc.value, ErrorProyecto), (
+        "un invariante roto del tipo es un fallo de programa: si sale como "
+        "ErrorProyecto, la GUI lo muestra como problema del expediente")
 
-    with pytest.raises(DatoInvalidoError):
+    with pytest.raises(ValueError):
         dataclasses.replace(base, incremento_sismico=None)
 
     # Y los dos estados legitimos siguen construyendose.
