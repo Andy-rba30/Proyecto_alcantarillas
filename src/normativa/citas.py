@@ -2,8 +2,8 @@
 Las citas del proyecto, una por objeto y con id estable (D1).
 
 TODAS las que llevan `verificado` pasaron por el subagente
-`verificador-normativo` en la sesion S12, contra el PDF cuyo sha1 declara la
-`Fuente`. Ninguna se acepto sin ese paso, y ninguna pagina se calculo a ojo
+`verificador-normativo` -- en la sesion S12 las primeras, en la S13 el bloque
+de clase de sitio -- contra el PDF cuyo sha1 declara la `Fuente`. Ninguna se acepto sin ese paso, y ninguna pagina se calculo a ojo
 desde el desfase: donde el verificador no pudo leer, el campo queda en
 `POR_TRANSCRIBIR` y la cita NO lleva firma.
 
@@ -45,6 +45,13 @@ from .esquema import (
 
 FECHA_S12 = "2026-08-28"
 POR_S12 = "fase1/S12 · verificador-normativo"
+FECHA_S13 = "2026-08-29"
+POR_S13 = "fase1/S13 · verificador-normativo"
+
+# La firma va por SESION, no por archivo: una cita dice contra que lectura se
+# comprobo, y dos lecturas distintas del mismo PDF son dos hechos distintos.
+S12 = (FECHA_S12, POR_S12)
+S13 = (FECHA_S13, POR_S13)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -66,17 +73,19 @@ _TODAS = []
 
 
 def _firmado(fuente_id: str,
-             metodo: MetodoDeVerificacion = MetodoDeVerificacion.TEXTO
-             ) -> Verificado:
-    return Verificado(fecha=FECHA_S12, por=POR_S12,
+             metodo: MetodoDeVerificacion = MetodoDeVerificacion.TEXTO,
+             sesion: tuple = S12) -> Verificado:
+    fecha, por = sesion
+    return Verificado(fecha=fecha, por=por,
                       sha1_pdf=_SHA[fuente_id], metodo=metodo)
 
 
 def _cita(*, verificada: bool = True,
           metodo: MetodoDeVerificacion = MetodoDeVerificacion.TEXTO,
+          sesion: tuple = S12,
           **kw) -> Cita:
     if verificada:
-        kw["verificado"] = _firmado(kw["fuente_id"], metodo)
+        kw["verificado"] = _firmado(kw["fuente_id"], metodo, sesion)
     c = Cita(**kw)
     _TODAS.append(c)
     return c
@@ -1964,6 +1973,382 @@ MP_T_RECUBRIMIENTO = _cita(
           "columna porque cubre UNA categoria de acero: la no protegida, que "
           "AASHTO llama Categoria A. El acero epoxico o galvanizado el Manual "
           "lo trata en un numeral aparte, el 2.9.1.5.5.4."),
+)
+
+
+# ===========================================================================
+# CLASE DE SITIO  (S13 - conflicto #8: NOR-AAS-02, NOR-VOC-04, NOR-E030-02,
+#                  NOR-MEM-03, SIS-B-01)
+# ===========================================================================
+# LAS DOCE CITAS SOBRE LAS QUE SE DECIDE LA PREMISA, y estan aqui y no en un
+# comentario porque la pregunta que el expediente tenia abierta -- si el sitio
+# «es Clase de Sitio F por licuefaccion» -- solo se contesta leyendo tres
+# documentos a la vez. Ver docs/resolucion_clase_sitio.md.
+#
+# QUE SE COMPROBO, dicho corto, porque es lo que cambia la decision:
+#
+#   1. Ninguno de los dos documentos que el criterio 'clase_sitio' invoca
+#      escribe el salto «suelo licuable -> Clase F». La palabra `liquef` no
+#      aparece en la pagina de la Tabla 3.10.3.1-1 (PDF 156), y en las 1905
+#      paginas de AASHTO los conjuntos {paginas con `liquef`} y {paginas con
+#      «Site Class F»} son DISJUNTOS.
+#   2. Pero la fila F se abre con «such as», que deja la lista ABIERTA: de la
+#      ausencia NO se sigue la exclusion. La afirmacion defendible es la
+#      negativa -- la norma no lo escribe --, no la contraria.
+#   3. Y hay algo mas fuerte que el silencio, que es lo que cierra la
+#      cuestion: las dos fuentes PROHIBEN SUPONER la clase F sin dato
+#      geotecnico ni determinacion de la autoridad. No es que no autoricen el
+#      salto: es que lo vedan expresamente.
+#
+# La Nota 2 de la tabla de factores, que es lo que el repositorio venia
+# citando, dice «should»; el `shall` esta en el Art. 3.10.2. Se cita el
+# fuerte.
+
+# --------------------------- AASHTO LRFD 9a ed. ----------------------------
+
+AASHTO_SITE_CLASS = _cita(
+    id="AASHTO_LRFD_9.3.10.3.1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.10.3.1",
+    titulo_numeral="Site Class Definitions",
+    pagina_impresa="3-101",
+    pagina_pdf=155,
+    texto_literal=Verbatim(
+        texto=("Sites shall be classified by their stiffness as determined "
+               "by the shear wave velocity in the upper 100 ft"),
+        pagina_pdf=155),
+    caracter=Caracter.EXIGENCIA,
+    sesion=S13,
+    nota=("LA CLASE DE SITIO ES UNA MEDICION, y de ahi cuelga la etiqueta del "
+          "criterio: se determina por la RIGIDEZ medida (v_s, N o s_u) sobre "
+          "una profundidad fija, no por una eleccion del proyectista. "
+          "PROFUNDIDAD: el articulado dice «the upper 100 ft» -- 30.48 m --, "
+          "no «30 m»; ver DIS-HR-30M-VS-100FT. Y dos erratas de la fuente que "
+          "se conservan en el verbatim de la primera oracion cuando se cite "
+          "entera: «A though F» por «through», y la falta de punto tras "
+          "«100 ft»."),
+)
+
+AASHTO_SITE_CLASS_EXCEPCIONES = _cita(
+    id="AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1",
+    titulo_numeral="Site Class Definitions",
+    pagina_impresa="3-102",
+    pagina_pdf=156,
+    # El numeral abre en la 3-101 y la nota va al pie de la tabla, en la 3-102.
+    pagina_pdf_titulo=155,
+    texto_literal=Verbatim(
+        texto=("Site classes E or F should not be assumed unless the "
+               "authority having jurisdiction determines that site classes E "
+               "or F could be present at the site or in the event that site "
+               "classes E or F are established by geotechnical data."),
+        pagina_pdf=156),
+    caracter=Caracter.EXIGENCIA,
+    sesion=S13,
+    corresponde_en=("MP.2.4.3.11.2.1.1#EXCEPCIONES",),
+    nota=("LA CITA QUE CIERRA EL CONFLICTO #8, y estaba en el articulado sin "
+          "que nadie la hubiera leido. El expediente no necesitaba una "
+          "autorizacion para suponer la Clase F: tenia una PROHIBICION "
+          "expresa de suponerla, con dos puertas de salida que no tiene "
+          "abiertas -- determinacion de la autoridad competente, o dato "
+          "geotecnico -- porque el SPT esta pendiente. "
+          "Y la misma nota trae un DEBER POSITIVO que es la otra mitad: "
+          "«Where the soil properties are not known in sufficient detail to "
+          "determine the site class, a site investigation shall be undertaken "
+          "sufficient to determine the site class». No dice «no supongas y "
+          "sigue»: dice INVESTIGA. "
+          "ES ARTICULADO, no comentario: va al pie de la Tabla 3.10.3.1-1, "
+          "en la columna de especificacion. El `should not` de AASHTO lo "
+          "endurece el Manual de Puentes a «no seran supuestas»."),
+)
+
+AASHTO_T_SITE_CLASS_F = _cita(
+    id="AASHTO_LRFD_9.T3.10.3.1-1#F",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Tabla 3.10.3.1-1, fila F",
+    titulo_numeral="Site Class Definitions",
+    pagina_impresa="3-102",
+    pagina_pdf=156,
+    texto_literal=Verbatim(
+        texto="Soils requiring site-specific evaluations, such as:",
+        pagina_pdf=156),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=S13,
+    corresponde_en=("MP.2.4.3.11.2.1.1",),
+    nota=("LAS TRES CATEGORIAS Y EL «SUCH AS». La celda enumera turbas o "
+          "arcillas altamente organicas (H > 10.0 ft), arcillas de muy alta "
+          "plasticidad (H > 25.0 ft con PI > 75) y estratos potentes de "
+          "arcilla blanda o semirrigida (H > 120 ft). NINGUNA es "
+          "licuefaccion: la busqueda de `liquef` sobre la pagina PDF 156 "
+          "entera da cero, y en las 1905 paginas del documento los conjuntos "
+          "{paginas con `liquef`} y {paginas con «Site Class F»} son "
+          "disjuntos. "
+          "PERO el encabezado es «such as», lista abierta, de modo que lo que "
+          "se sostiene es la afirmacion NEGATIVA -- la norma no escribe el "
+          "salto -- y no la contraria. La tension con el «the three "
+          "categories» del comentario esta declarada en "
+          "DIS-AASHTO-F-LISTA-ABIERTA, y la decision no depende de como se "
+          "resuelva: por las dos lecturas el salto sigue sin estar escrito. "
+          "Verificada tambien por imagen: los tres bullets son glifos Symbol."),
+)
+
+AASHTO_C_PASOS_CLASE_SITIO = _cita(
+    id="AASHTO_LRFD_9.C3.10.3.1-1#PASO1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Tabla C3.10.3.1-1, paso 1",
+    titulo_numeral="Steps for Site Classification",
+    pagina_impresa="3-103",
+    pagina_pdf=157,
+    texto_literal=Verbatim(
+        texto=("Check for the three categories of Site Class F in Table "
+               "3.10.3.1-1 requiring site-specific evaluation."),
+        pagina_pdf=157),
+    caracter=Caracter.RECOMENDACION,
+    sesion=S13,
+    nota=("ES COMENTARIO Y POR ESO NO ESTRECHA EL ARTICULADO -- lleva prefijo "
+          "`C` y cuelga del epigrafe C3.10.3.1 --, pero importa por algo que "
+          "el debate «lista abierta o cerrada» estaba tapando: el paso 1 no "
+          "es retorico, es un PROCEDIMIENTO. Manda comprobar esas categorias "
+          "y, si el sitio no cae en ninguna, seguir al paso 2 (capa blanda -> "
+          "Clase E) y al paso 3 (calcular v_s, N o s_u sobre los 100 ft "
+          "superiores -> Clase A a E). En ninguno de los tres pasos hay una "
+          "ruta que lleve de «suelo licuable» a la Clase F. "
+          "Refuta por su cuenta la version fuerte de NOR-AAS-02 que la "
+          "refutacion adversarial R95-073 ya habia tumbado: el «the three "
+          "categories» existe, pero esta aqui, no en el articulado."),
+)
+
+AASHTO_PELIGRO_SISMICO_CLASE_F = _cita(
+    id="AASHTO_LRFD_9.3.10.2#CLASE_F",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.10.2",
+    titulo_numeral="Seismic Hazard",
+    pagina_impresa="3-71",
+    pagina_pdf=125,
+    texto_literal=Verbatim(
+        texto=("A Site-Specific Procedure shall be used if any one of the "
+               "following conditions exist:"),
+        pagina_pdf=125),
+    caracter=Caracter.EXIGENCIA,
+    sesion=S13,
+    corresponde_en=("MP.2.4.3.11.2#CLASE_F",),
+    nota=("AQUI ESTA EL `SHALL`, Y EL REPOSITORIO CITABA EL TEXTO MAS DEBIL "
+          "DE LOS TRES. La segunda condicion de la lista es «The site is "
+          "classified as Site Class F (Article 3.10.3.1),», y el verbo de la "
+          "frase que la introduce es `shall`. La Nota 2 de las tablas de "
+          "factores -- que es lo que Sec. 0.5 y el criterio venian citando -- "
+          "dice `should`, y el Art. 3.10.2.2 (pag. impresa 3-100) repite el "
+          "`shall`. La afirmacion del expediente («AASHTO exige de forma "
+          "incondicional un estudio de respuesta de sitio para la Clase F») "
+          "es CIERTA; lo que estaba mal era el anclaje, que se apoyaba en una "
+          "recomendacion para sostener una exigencia. No es una discrepancia "
+          "-- las fuentes no se contradicen --, es una cita corta."),
+)
+
+AASHTO_LICUEFACCION = _cita(
+    id="AASHTO_LRFD_9.10.5.4.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.5.4.2",
+    titulo_numeral="Liquefaction Design Requirements",
+    pagina_impresa="10-34",
+    pagina_pdf=1323,
+    texto_literal=Verbatim(
+        texto=("A liquefaction assessment shall be conducted for Seismic "
+               "Zones 3 and 4 if both of the following conditions are "
+               "present:"),
+        pagina_pdf=1323),
+    caracter=Caracter.EXIGENCIA,
+    sesion=S13,
+    nota=("POR DONDE ENTRA LA LICUEFACCION EN AASHTO, que no es por la clase "
+          "de sitio: es la Seccion 10, Cimentaciones, bajo 10.5.4 «Extreme "
+          "Events Limit States». Y el disparador lo dice todo -- zona sismica "
+          "3 o 4, MAS napa freatica en los 50 ft superiores, MAS "
+          "caracteristicas de suelo por (N1)60, q_ciN, V_s1 o unidad "
+          "geologica con antecedente de licuefaccion --: ninguna de las tres "
+          "condiciones menciona la clase de sitio. "
+          "«Site Class F» no aparece en NINGUNA pagina de la Seccion 10."),
+)
+
+AASHTO_LICUEFACCION_ESPECTRO = _cita(
+    id="AASHTO_LRFD_9.10.5.4.2#ESPECTRO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.5.4.2, configuracion licuada",
+    titulo_numeral="Liquefaction Design Requirements",
+    pagina_impresa="10-34",
+    pagina_pdf=1323,
+    texto_literal=Verbatim(
+        texto=("The design spectrum should be the same as that used in the "
+               "nonliquefied configuration."),
+        pagina_pdf=1323),
+    caracter=Caracter.RECOMENDACION,
+    sesion=S13,
+    nota=("EL ARGUMENTO POSITIVO, y es el que convierte NOR-AAS-02 de "
+          "argumento por silencio en argumento por coherencia interna de la "
+          "fuente. Si un suelo licuable fuera Clase F por serlo, su fila no "
+          "tendria factor -- son cinco asteriscos -- y no habria espectro "
+          "«no licuado» con que empezar. AASHTO manda justo lo contrario: "
+          "analizar primero SIN licuefaccion y despues CON ella, con el mismo "
+          "espectro; y en la pag. impresa 10-35 acota el espectro especifico "
+          "de sitio a no menos de dos tercios del que da el procedimiento "
+          "general «modified by the site factors in Article 3.10.3.2». Es "
+          "decir: AASHTO ESPERA que a un sitio licuable le aplique un factor "
+          "de sitio TABULADO de 3.10.3.2. Eso es incompatible con que la "
+          "licuefaccion lo hiciera Clase F por si sola."),
+)
+
+# ---------------------------- Manual de Puentes ----------------------------
+
+MP_DEFINICION_CLASE_SITIO = _cita(
+    id="MP.2.4.3.11.2.1.1",
+    fuente_id="MP",
+    numeral="2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F",
+    titulo_numeral="Definiciones de Clases de Sitio",
+    pagina_impresa="122",
+    pagina_pdf=123,
+    texto_literal=Verbatim(
+        texto=("Suelos que requieren evaluaciones específicas de sitio, "
+               "tales como:"),
+        pagina_pdf=123),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=S13,
+    corresponde_en=("AASHTO_LRFD_9.T3.10.3.1-1#F",),
+    nota=("LA TRADUCCION ES FIEL: las tres categorias son las mismas de "
+          "AASHTO -- turbas o arcillas altamente organicas (H > 10 ft), "
+          "arcillas de alta plasticidad (H > 25 ft con PI > 75), estratos de "
+          "arcillas de buen espesor blandas o semirrigidas (H > 120 ft) -- y "
+          "el «tales como» traduce el «such as», de modo que la lista queda "
+          "abierta tambien aqui. TAMPOCO nombra la licuefaccion. "
+          "El Manual la trata en otros sitios -- num. 2.4.3.11.1, 2.8.0.3, "
+          "2.8.2.1.1.1, 2.8.2.1.1.3, 2.8.2.1.1.6.2 y Apendice A11 --, once "
+          "apariciones en ocho paginas, y NINGUNA en este numeral ni en su "
+          "tabla. No existe en el Manual un solo numeral titulado "
+          "«Licuefaccion»."),
+)
+
+MP_CLASE_SITIO_EXCEPCIONES = _cita(
+    id="MP.2.4.3.11.2.1.1#EXCEPCIONES",
+    fuente_id="MP",
+    numeral="2.4.3.11.2.1.1, bloque «Excepciones»",
+    titulo_numeral="Definiciones de Clases de Sitio",
+    pagina_impresa="122",
+    pagina_pdf=123,
+    texto_literal=Verbatim(
+        texto=("Las clases de Sitio E o F no serán supuestas a no ser que la "
+               "Entidaddetermine la clase de sitio E o F o estas sean "
+               "establecidas por datos geotécnicos."),
+        pagina_pdf=123),
+    caracter=Caracter.EXIGENCIA,
+    sesion=S13,
+    corresponde_en=("AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES",),
+    nota=("LA MISMA PROHIBICION QUE AASHTO, Y MAS DURA: donde AASHTO dice "
+          "«should not be assumed», el Manual escribe «NO SERAN SUPUESTAS». "
+          "La norma nacional endurece la traduccion, de modo que por la Via 1 "
+          "(AASHTO) o por la Via 2 (Manual) el resultado es el mismo y el "
+          "expediente no puede elegir la version blanda. "
+          "«Entidaddetermine», sin espacio, es errata del impreso y se "
+          "transcribe tal cual (T21). "
+          "DOS PUERTAS Y UN DEBER: la prohibicion cede si la Entidad "
+          "determina la clase -- via autonoma, sin dato geotecnico -- o si la "
+          "establecen datos geotecnicos; y la oracion anterior manda "
+          "«se emprenderá una investigación de sitio suficiente para definir "
+          "su clase». Este expediente no tiene ninguna de las dos puertas "
+          "abiertas y si tiene el deber pendiente."),
+)
+
+MP_PELIGRO_SISMICO_CLASE_F = _cita(
+    id="MP.2.4.3.11.2#CLASE_F",
+    fuente_id="MP",
+    numeral="2.4.3.11.2",
+    titulo_numeral="Peligro Sísmico",
+    pagina_impresa="121",
+    pagina_pdf=122,
+    texto_literal=Verbatim(
+        texto=("El procedimiento especificado de sitio será usado si existen "
+               "las siguientes condiciones:"),
+        pagina_pdf=122),
+    caracter=Caracter.EXIGENCIA,
+    sesion=S13,
+    corresponde_en=("AASHTO_LRFD_9.3.10.2#CLASE_F",),
+    nota=("LA SEGUNDA VIA, INDEPENDIENTE DE LA NOTA 2 DE LA TABLA. La segunda "
+          "condicion de la lista es «Si el sitio está clasificado como sitio "
+          "clase F (Articulo. 2.4.3.11.2.1.1) (3.10.3.1 AASHTO).», y el verbo "
+          "es «sera usado», imperativo. De modo que la exigencia de estudio "
+          "para la Clase F esta DOS veces en el Manual -- aqui en el "
+          "articulado y en la Nota 2 de las tres tablas de factores -- y "
+          "ninguna de las dos admite dispensa. "
+          "Barrido completo: «sitio clase F» aparece 4 veces en las 673 "
+          "paginas (esta y las tres Notas 2); no hay ninguna salvedad por "
+          "periodo fundamental corto. La quinta aparicion de «clase F» en el "
+          "Manual es ACERO ASTM A668 Clase F (pag. impresa 289) y no guarda "
+          "relacion: es la tercera homonimia de «Clase F» del corpus, junto "
+          "al concreto Clase F de EG-2013 (NOR-VOC-04)."),
+)
+
+# --------------------------------- E.030 -----------------------------------
+
+E030_PERFIL_S5 = _cita(
+    id="E030.T2#S5",
+    fuente_id="E030",
+    numeral="Art. 14.6, Tabla Nº 2, fila S5",
+    titulo_numeral="Tipos de perfiles de suelo",
+    pagina_impresa="11",
+    pagina_pdf=11,
+    texto_literal=Verbatim(
+        texto=("Estos casos no están cubiertos en la clasificación "
+               "establecida en la Tabla Nº2 de la presente Norma Técnica. Se "
+               "prohíbe las construcciones apoyadas sobre estos perfiles, "
+               "salvo que, se efectúe un estudio específico para el sitio, en "
+               "el cual se debe considerar los mejoramientos en el estrato "
+               "del perfil."),
+        pagina_pdf=11),
+    caracter=Caracter.EXIGENCIA,
+    sesion=S13,
+    nota=("LA PRIMERA CITA DE E.030 DEL REGISTRO, y llego tarde por un "
+          "artefacto: el PDF emite la ligadura U+FB01 seguida de un espacio "
+          "-- «clasiﬁ cación», «perﬁ les», «especíﬁ co» --, de modo que "
+          "ninguna frase entera de esta norma se encontraba en su propia "
+          "pagina hasta que `extraccion.pdf` aprendio a deshacerlo. "
+          "EL ESTATUTO DE S5, con precision: es fila de la Tabla Nº 2 -- "
+          "sexta y ultima, «Suelos excepcionales», con diez viñetas de las "
+          "que la PRIMERA es «Suelos potencialmente licuables» y esta es la "
+          "decima --, y a la vez NO tiene fila en la Tabla Nº 3 del num. 14.7 "
+          "ni columna en las Tablas Nº 4 y Nº 5. Es decir: nominal en la "
+          "tabla que la define, laguna en las tres que dan numeros. "
+          "La prohibicion es CONDICIONADA: la misma oracion la levanta con "
+          "estudio especifico y mejoramiento del estrato. La hoja de ruta la "
+          "cita mal por tres sitios -- ver DIS-HR-CLASE-DE-SITIO-F --, "
+          "mientras que constantes_normativas.E030_S5_TEXTO la transcribe "
+          "exacta."),
+)
+
+E030_FACTOR_SUELO = _cita(
+    id="E030.T4",
+    fuente_id="E030",
+    numeral="Art. 17, Tabla Nº 4",
+    titulo_numeral="Factor de suelo",
+    pagina_impresa="13",
+    pagina_pdf=13,
+    texto_literal=Verbatim(
+        texto="Requiere un análisis de respuesta de sitio",
+        pagina_pdf=13),
+    caracter=Caracter.EXIGENCIA,
+    sesion=S13,
+    nota=("DONDE LOS DOS ESQUEMAS CONVERGEN, que es lo que faltaba mirar. "
+          "E.030 no tiene F_pga, Fa ni Fv: su aparato es S, T_P y T_L. Y su "
+          "Tabla Nº 4 «Factor de suelo S» tiene columnas S0, S1, S2, S3 y S4 "
+          "-- NO tiene columna S5 --, de modo que a su categoria excepcional "
+          "no le asigna factor, igual que AASHTO y el Manual no se lo asignan "
+          "a la Clase F. "
+          "El verbatim es la celda de la fila Z4, columna S4: en la zona "
+          "sismica de esta obra, E.030 ya exige analisis de respuesta de "
+          "sitio un escalon ANTES de la categoria excepcional. Con S5 no hay "
+          "siquiera celda que leer. "
+          "Los dos esquemas discrepan en el CRITERIO -- E.030 nombra los "
+          "suelos licuables, AASHTO no -- y coinciden en la CONSECUENCIA: "
+          "ninguno tabula un factor para su categoria excepcional."),
 )
 
 

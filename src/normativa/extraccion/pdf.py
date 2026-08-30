@@ -140,6 +140,21 @@ _COMA_DECIMAL = re.compile(r"(?<=\d),(?=\d)")
 # «Condición Pseudo - dinámico» asi, con los dos espacios, y esa es una
 # errata de la fuente que hay que conservar.
 _GUION_DE_FIN_DE_LINEA = re.compile(r"(?<=[^\W\d_])-\s+(?=[^\W\d_])")
+# EL ESPACIO QUE SIGUE A UNA LIGADURA. Mismo genero que el guion de arriba --
+# artefacto del extractor, no del documento -- y descubierto al citar E.030
+# por primera vez: su pag. impresa 11 imprime «clasificación», «perfiles» y
+# «específico», y el volcado devuelve «clasiﬁ cación», «perﬁ les» y
+# «especíﬁ co», con la ligadura U+FB01 seguida de un espacio que la pagina no
+# tiene. Sin deshacerlo, ninguna cita de E.030 puede ser una frase entera: la
+# prohibicion de la fila S5 -- la afirmacion normativa mas fuerte que el
+# expediente hace sobre este sitio -- cruza tres ligaduras rotas.
+#
+# La regla es aun mas ESTRECHA que la del guion, y por eso es segura: solo
+# dispara pegada a un codepoint de ligadura (U+FB00-U+FB06), que en un texto
+# normal no aparece nunca. Y va ANTES de la descomposicion NFKD a proposito:
+# despues, la ligadura ya seria una «fi» corriente y la regla borraria
+# espacios legitimos detras de cualquier palabra terminada en esas letras.
+_ESPACIO_TRAS_LIGADURA = re.compile(r"([\uFB00-\uFB06])\s+(?=[^\W\d_])")
 _ESPACIOS = re.compile(r"\s+")
 
 
@@ -154,6 +169,7 @@ def normalizar(texto: str) -> str:
         texto = texto.replace(origen, destino)
     texto = _COMA_DECIMAL.sub(".", texto)
     texto = _GUION_DE_FIN_DE_LINEA.sub("-", texto)
+    texto = _ESPACIO_TRAS_LIGADURA.sub(r"\1", texto)
     texto = unicodedata.normalize("NFKD", texto)
     texto = "".join(c for c in texto if not unicodedata.combining(c))
     texto = texto.casefold()
