@@ -252,6 +252,33 @@ qué imprimir.
 > tabulan hasta 3600 mm**. No son topes normativos: son topes de catálogo, y hoy descartan
 > materiales en silencio. Mostrarlos rotulados como «norma» sería crear una cita falsa nueva.
 
+> **Implementado en S15, y cuatro de los ejemplos de esta tabla no sobrevivieron al
+> contraste.** El censo vive en `src/variables_entrada.py` (83 variables: 17 columnas + 7
+> datos de sitio + 59 criterios) y el modo es el **tipo** del objeto `resolucion`, que
+> `Criterio` y `DatoSitio` llevan ahora como campo. Las desviaciones están declaradas una a
+> una, con su razón, en `variables_entrada.DESVIACIONES_DEL_PLAN`, y un test comprueba que
+> siguen siendo desviaciones. Las cuatro se apartan **hacia el modo que promete menos**:
+>
+> - **`HW_D_max`** no es `en_rango` sino `libre`. El num. 2.2.5 d) del HDS-5 *describe* lo
+>   que imponen las agencias de EE.UU. y no prescribe HW/D alguno (`NOR-HDS-02`, y el
+>   conflicto vinculante **#1** de la §6 de este mismo plan). Un rango con cita normativa
+>   devolvería la cita que ese hallazgo retiró.
+> - **`factor_muro_eleccion`** no es `de_tabla` sino `libre`: el num. 2.8.1.1.14.2.2 **no
+>   tabula nada**, autoriza una reducción, y el 1.0 adoptado es la *ausencia* de reducción.
+> - **`resguardo(CBR)`** no es `de_tabla` todavía: su tabla existe y es `[N]`, pero vive como
+>   escalares en `constantes_normativas.py` y no está transcrita al registro, y el criterio de
+>   salida de esta misma §4.3 prohíbe un `de_tabla` sin tabla en el registro. Queda `libre`
+>   con la tabla **nombrada** como pendiente.
+> - **`diametros_normalizados`** no es `de_catalogo`: el ejemplo apunta al `max` que ese
+>   criterio tenía cuando se escribió este plan, y **S4 lo mudó a `D_max_catalogo`** al cerrar
+>   `NOR-PRO-01`/`NOR-PRO-02`. Lo que queda es la serie verificada contra ASTM A760 Tabla 1.
+>
+> **Defecto de la §1.1 de este plan, para corregir:** la fila «Datos de sitio de corredor
+> (`datos_sitio.py`) | 17» es errónea. En el commit sobre el que se midió el inventario
+> (`b8d70e5`) el archivo declaraba **3** datos; hoy son **7**. El 17 es el de la fila
+> siguiente —las columnas del CSV— repetido. Mientras no se corrija, quien lea el plan sin
+> abrir el archivo dimensionará esa población por seis.
+
 ### 4.4 La memoria: `PasoDeMemoria`
 
 El cambio de fondo: hoy M11 **reconstruye** la memoria leyendo resultados —y declara en su

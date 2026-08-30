@@ -34,7 +34,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, fields
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 from dominios import CENTIMETROS_POR_METRO
 
@@ -1986,3 +1986,241 @@ class PasoDiseno:
     def incumplidas(self) -> Tuple[Verificacion, ...]:
         """Las verificaciones que hicieron descartar este escalon."""
         return tuple(v for v in self.verificaciones if not v.cumple)
+
+
+# ===========================================================================
+# Modo de resolucion de una variable de entrada (Sec. 4.3 del plan v12)
+# ===========================================================================
+# Cada variable de entrada declara COMO SE RESUELVE. Eso es lo que le dice a
+# la GUI que ventana abrir y a M11 que imprimir, y es informacion que hoy no
+# existe en ninguna parte: el usuario ve una sola cosa -- "un dato que hay que
+# llenar" -- donde el repositorio tiene tres poblaciones separadas (las
+# columnas del CSV, los datos de sitio de corredor y los criterios adoptados)
+# y seis maneras distintas de llegar al numero.
+#
+# LA SEMANTICA ES EL TIPO, igual que en `normativa/esquema.py` §7. No hay un
+# campo `modo: str` que alguien pueda escribir mal: el modo se LEE del tipo
+# del objeto `resolucion` (`modo_de()`), de forma que declarar una resolucion
+# y declarar un modo son el mismo acto y no pueden divergir.
+#
+# COMO SE ELIGE EL MODO. La escalera se recorre de arriba abajo y se para en
+# el primer peldaño que aplica; esta escrita aqui para que la clasificacion
+# de las 83 variables sea reproducible y no dependa del gusto de quien la
+# hizo:
+#
+#   1. El valor es una fila, una columna o una regla de lectura de una tabla
+#      normativa TRANSCRITA EN EL REGISTRO   ->  DeTabla
+#   2. Es un numero que una fuente acota con un piso, un techo o un
+#      intervalo escritos por ella                ->  EnRango
+#   3. El programa lo calcula desde otras variables ya declaradas y el
+#      usuario no puede editarlo                  ->  Derivada
+#   4. Sale de un catalogo o de la disponibilidad del mercado, y NO de una
+#      norma                                      ->  DeCatalogo
+#   5. Lo DETERMINA un procedimiento real aplicado a este sitio -- ensayo,
+#      medicion de campo, lectura de mapa o de plano, estudio de un tercero
+#      -- y por eso se defiende con trazabilidad y no con un rango de
+#      sensibilidad                               ->  DeEnsayo
+#   6. En cualquier otro caso                     ->  Libre
+#
+# ELEGIR (peldaño 6) Y DETERMINAR (peldaño 5) NO SON LO MISMO, y es lo que
+# separa `Libre` de `DeEnsayo`: un metodo de analisis lo elige el
+# proyectista aunque salga del mismo EMS del que sale la capacidad portante.
+# Por eso `metodo_estabilidad_global` es `Libre` y `capacidad_portante_adm`
+# es `DeEnsayo`.
+#
+# `DeEnsayo` cubre TODA determinacion por procedimiento, no solo el ensayo de
+# laboratorio: es la misma extension que CLAUDE.md le da a la etiqueta [S]
+# ("mapa, ensayo, medicion de campo"). Se llama asi porque asi lo nombra la
+# Sec. 4.3 del plan, y la ventana que abre es la misma en los tres casos:
+# campo mas TRAZABILIDAD OBLIGATORIA.
+
+
+class ModoDeResolucion(str, Enum):
+    """Los seis modos de la Sec. 4.3. Familia cerrada."""
+    LIBRE = "libre"
+    DE_TABLA = "de_tabla"
+    EN_RANGO = "en_rango"
+    DERIVADA = "derivada"
+    DE_ENSAYO = "de_ensayo"
+    DE_CATALOGO = "de_catalogo"
+
+
+@dataclass(frozen=True)
+class Libre:
+    """
+    Campo con su dominio fisico. Ninguna tabla, ningun rango de fuente y
+    ninguna medicion lo determinan: el numero lo pone quien firma.
+
+    `opciones` es para el conjunto cerrado de valores admisibles cuando la
+    variable no es numerica (la Familia de un punto). En un criterio NO se
+    usa: alli el conjunto ya vive en `Criterio.sensibilidad`, y repetirlo
+    aqui crearia dos listas que pueden divergir.
+
+    `tabla_pendiente` es la lista de trabajo que este censo produce: nombra
+    la tabla de la fuente que convertiria esta variable en `DeTabla` el dia
+    que se transcriba al registro. No es una excusa, es un pendiente con
+    nombre.
+    """
+    que_lo_fija: str
+    dominio: str = ""
+    opciones: Tuple[str, ...] = ()
+    tabla_pendiente: str = ""
+
+
+@dataclass(frozen=True)
+class DeTabla:
+    """
+    El valor es una fila, una columna, o la regla con que se lee una tabla
+    del registro. La ventana MUESTRA LA TABLA ENTERA -- con su numeral, su
+    pagina, sus notas y sus condiciones -- y el usuario elige sobre ella.
+
+    `tablas` es una tupla porque hay elecciones que se hacen mirando dos: la
+    de estribos y la de muros de AASHTO 3.11.6.4 se leen juntas o no se
+    entiende ninguna de las dos.
+
+    `laguna` se llena cuando lo que se elige NO es una fila sino una REGLA DE
+    LECTURA que la tabla no resuelve. Es la diferencia entre "elegi la fila
+    de 10 ft" y "elegi que hacer con un muro de 4 ft, que la tabla no
+    tabula": la memoria tiene que poder decir cual de las dos cosas paso.
+
+    `elegido_por` dice que OTRA variable elige la fila cuando esta transcribe
+    la tabla completa en vez de elegir dentro de ella.
+    """
+    tablas: Tuple[str, ...]
+    que_elige: str
+    fila_id: Optional[str] = None
+    columna_id: Optional[str] = None
+    elegido_por: Optional[str] = None
+    laguna: str = ""
+
+
+@dataclass(frozen=True)
+class EnRango:
+    """
+    El valor tiene que caer dentro de un rango que una fuente escribe.
+
+    NO COPIA EL RANGO: lo referencia por (tabla, fila, columna) del registro,
+    donde vive como `IntervaloAdmisible`, `TechoUnico`, `PisoUnico`,
+    `ConjuntoDeMaximos` o `BandaDeInterpolacion`. Copiarlo aqui pondria los
+    numeros de la norma fuera de su unico sitio y, peor, dejaria que la
+    ventana pintara como "minimo" el primero de dos maximos (NOR-HID-04),
+    que es exactamente el error que el tipo del registro existe para impedir.
+    """
+    tabla_id: str
+    fila_id: str
+    columna_id: str
+    que_acota: str
+
+
+@dataclass(frozen=True)
+class Derivada:
+    """
+    No editable: la calcula el programa desde otras variables ya declaradas.
+    La ventana muestra DE QUE se deriva y la memoria escribe la regla con su
+    numeral.
+    """
+    de: Tuple[str, ...]
+    regla: str
+
+
+@dataclass(frozen=True)
+class DeEnsayo:
+    """
+    La determina un procedimiento real aplicado a este sitio. La ventana pide
+    el valor Y LA TRAZABILIDAD, y la memoria escribe la trazabilidad -- nunca
+    una sensibilidad: no hay rango que elegir, hay una lectura que reproducir.
+    """
+    ensayo: str
+    trazabilidad_exigida: str
+
+
+@dataclass(frozen=True)
+class DeCatalogo:
+    """
+    Igual que `DeTabla` pero ROTULADO COMO CATALOGO, no como norma.
+
+    Existe por `NOR-PRO-01` y `NOR-PRO-02`: los topes de diametro estaban
+    atribuidos a AASHTO M170 y ASTM A760, que tabulan hasta 3600 mm.
+    Mostrarlos en una ventana rotulada "norma" seria crear una cita falsa
+    nueva, y por eso `advertencia` es obligatoria y dice que norma NO lo
+    sostiene.
+    """
+    catalogo_id: str
+    que_elige: str
+    advertencia: str
+
+
+Resolucion = Union[Libre, DeTabla, EnRango, Derivada, DeEnsayo, DeCatalogo]
+
+_MODO_DE_TIPO: Dict[type, ModoDeResolucion] = {
+    Libre: ModoDeResolucion.LIBRE,
+    DeTabla: ModoDeResolucion.DE_TABLA,
+    EnRango: ModoDeResolucion.EN_RANGO,
+    Derivada: ModoDeResolucion.DERIVADA,
+    DeEnsayo: ModoDeResolucion.DE_ENSAYO,
+    DeCatalogo: ModoDeResolucion.DE_CATALOGO,
+}
+
+
+def modo_de(resolucion: Resolucion) -> ModoDeResolucion:
+    """
+    El modo de una resolucion. Es una lectura del TIPO, no de un campo: una
+    variable no puede quedarse sin modo ni declarar uno que no corresponda a
+    como se resuelve.
+    """
+    try:
+        return _MODO_DE_TIPO[type(resolucion)]
+    except KeyError:
+        raise TypeError(
+            f"{resolucion!r} no es una resolucion de la familia cerrada de "
+            f"la Sec. 4.3: {tuple(t.__name__ for t in _MODO_DE_TIPO)}"
+        ) from None
+
+
+class Poblacion(str, Enum):
+    """
+    Las TRES poblaciones que el repositorio mantiene separadas y que el
+    usuario ve como una sola cosa -- "los datos que hay que llenar".
+
+    Estan separadas por buenas razones (una es del CSV y varia punto a punto,
+    otra es del corredor, la tercera es lo que el proyectista decidio donde la
+    norma calla) y esas razones no se tocan. Lo que faltaba era la vista
+    unica: sin ella, la GUI tiene tres pestañas que no se pueden comparar y la
+    memoria tres bloques que no suman.
+    """
+    COLUMNA_CSV = "columna_csv"
+    DATO_SITIO = "dato_sitio"
+    CRITERIO = "criterio"
+
+
+@dataclass(frozen=True)
+class VariableDeEntrada:
+    """
+    Una variable que el expediente tiene que traer, con todo lo que la GUI
+    necesita para pintarla y M11 para imprimirla.
+
+    `criterio_destino` es el criterio [A] que RECIBE la eleccion cuando la
+    variable la alimenta sin ser ella misma un criterio: el CBR de la fila
+    entra en `resguardo_HW_subrasante`, la cota TW en `TW_receptor`. Para una
+    variable que ES un criterio, es su propia clave.
+
+    `dominio` nombra el limite de `dominios.py` que acota la celda, POR
+    NOMBRE y no por valor: el dominio fisico no es normativo -- fuera de el
+    la celda esta mal llenada -- y la ventana tiene que rotularlo asi
+    (§4.2 del plan).
+    """
+    clave: str
+    concepto: str
+    unidad: str
+    poblacion: Poblacion
+    resolucion: Resolucion
+    fase: str
+    consumido_por: Tuple[str, ...] = ()
+    criterio_destino: Optional[str] = None
+    dominio: Optional[str] = None
+    nota: str = ""
+
+    @property
+    def modo(self) -> ModoDeResolucion:
+        """El modo de la Sec. 4.3, leido del tipo de `resolucion`."""
+        return modo_de(self.resolucion)

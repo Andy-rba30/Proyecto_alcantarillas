@@ -231,7 +231,8 @@ def test_la_guardia_de_coherencia_rechaza_un_S_sin_trazabilidad(monkeypatch):
     monkeypatch.setitem(
         CRITERIOS, "criterio_de_prueba",
         ca.Criterio(valor=1.0, etiqueta="S", concepto="c",
-                    justificacion="j", fuente="f"))
+                    justificacion="j", fuente="f",
+                    resolucion=ca.DeEnsayo(ensayo="e", trazabilidad_exigida="t")))
     with pytest.raises(ValueError, match="trazabilidad"):
         ca._coherencia_de_etiquetas()
 
@@ -320,8 +321,11 @@ def test_los_parametros_sensibilizables_traen_rango_de_dos_extremos():
 # GUI, y la escritura permanente. Los tests de abajo entran por los tres.
 
 def _criterio_de_prueba(**campos):
+    # `resolucion` es obligatoria desde S15 (Sec. 4.3): el criterio de
+    # prueba declara la mas simple, porque lo que estos tests ejercitan es la
+    # guardia de sensibilidad y no la del modo de resolucion.
     base = dict(valor=1.0, etiqueta="A", concepto="c", justificacion="j",
-                fuente="f")
+                fuente="f", resolucion=ca.Libre(que_lo_fija="prueba"))
     base.update(campos)
     return ca.Criterio(**base)
 

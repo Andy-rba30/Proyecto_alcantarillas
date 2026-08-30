@@ -67,7 +67,11 @@ from typing import Any, Optional, Tuple, Dict, List, Set
 
 from constantes_normativas import (H_O_CONDICION_TEXTO, H_O_NUMERAL,
                                    MANNING)
-from modelos import CriterioPendienteError
+from normativa import esquema as _esquema
+from normativa import registro as _registro_normativo
+from modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
+                     DeTabla, EnRango, Libre, ModoDeResolucion, Resolucion,
+                     modo_de)
 
 # Las TRES importaciones de constantes normativas que hace este archivo
 # entran por la misma razon, y ninguna transcribe nada: referencian lo que ya
@@ -107,6 +111,23 @@ class Criterio:
     vacio_verificado: str = ""                 # ancla al vacio registrado que este valor cubre
     sin_consumidor: str = ""                   # por que NINGUN modulo lo invoca
     de_catalogo: str = ""                      # rotulo: el valor es de CATALOGO, no de norma
+    resolucion: Optional[Resolucion] = None    # COMO se resuelve (Sec. 4.3): tabla, rango, ensayo...
+
+    # `resolucion` es el vinculo que faltaba: dice DE DONDE SALIO el valor --
+    # de que tabla y de que fila, de que rango, de que ensayo, de que catalogo
+    # -- y con el la memoria puede escribir "el valor X vino de la fila R de la
+    # tabla T" en vez de dejar al revisor cruzando a mano la prosa de `fuente`
+    # con el registro normativo (regla R1 del plan v12).
+    #
+    # No es un `str` con el nombre del modo: es un objeto de la familia cerrada
+    # de `modelos.py` (Libre / DeTabla / EnRango / Derivada / DeEnsayo /
+    # DeCatalogo) y EL MODO ES SU TIPO. Un criterio no puede quedarse sin modo
+    # ni declarar uno que no corresponda a como se resuelve, porque no hay dos
+    # campos que puedan contradecirse: hay uno.
+    #
+    # Es `Optional` solo por la firma; la guardia lo exige a toda entrada del
+    # archivo. El default existe para que `replace()` -- los dos caminos
+    # dinamicos -- no tenga que repetirlo.
 
     # `de_catalogo` marca el valor que se PARECE a una exigencia normativa y
     # no lo es: un tope de proveedor, una disponibilidad de mercado. Lleva el
@@ -572,6 +593,14 @@ CRITERIOS: Dict[str, Criterio] = {
                        "criterio invocado. Se conserva declarado, y no "
                        "borrado, para que el ensayo que lo cerraria siga "
                        "pedido",
+        resolucion=DeEnsayo(
+            ensayo="clasificacion del perfil de suelo de E.030 (S0-S5) "
+                   "sobre la caracterizacion geotecnica del corredor",
+            trazabilidad_exigida="el EMS del que sale la caracterizacion y "
+                                 "la vineta de la Tabla N 2 de E.030 que se "
+                                 "leyo; hoy es PRESUNTO y el ensayo lo "
+                                 "confirma o lo cambia",
+        ),
     ),
 
     # `clase_sitio` NO es un criterio [A] con valor, y tampoco es un vacio
@@ -762,6 +791,14 @@ CRITERIOS: Dict[str, Criterio] = {
                        "`M9.condicion_normativa_cabezal()`. Eso es lo que "
                        "cierra SIS-B-01: el defecto era el valor, no la falta "
                        "de cableado",
+        resolucion=DeEnsayo(
+            ensayo="medicion de la rigidez de los 30.48 m superiores (Vs30, "
+                   "N o su) segun AASHTO Art. 3.10.3.1",
+            trazabilidad_exigida="el ensayo geofisico o geotecnico, su "
+                                 "profundidad y el laboratorio; una clase de "
+                                 "sitio DECLARADA sin medicion no es una "
+                                 "clase de sitio",
+        ),
     ),
 
     # F_pga deja de guardar el RESULTADO y pasa a guardar la ELECCION, que es
@@ -859,6 +896,12 @@ CRITERIOS: Dict[str, Criterio] = {
                      "desde la columna anterior -- que no se declara porque "
                      "no la sostiene la Nota 1, que habla de interpolar entre "
                      "valores y no de extrapolar mas alla del ultimo",
+        resolucion=DeTabla(
+            tablas=("MP.TFPGA",),
+            que_elige="las filas de clase de sitio sobre las que se lee "
+                      "F_pga; el factor adoptado es la envolvente (el mayor) "
+                      "de las filas elegidas",
+        ),
     ),
 
     # La tabla se lee por columnas de PGA y sus dos rotulos extremos son
@@ -899,6 +942,14 @@ CRITERIOS: Dict[str, Criterio] = {
                                "valor sigue siendo exactamente 0.50: si "
                                "cayera dentro de una columna, este criterio "
                                "deja de gobernar nada y se retira",
+        resolucion=DeTabla(
+            tablas=("MP.TFPGA",),
+            que_elige="como se leen los dos rotulos extremos de columna "
+                      "cuando el PGA cae justo sobre uno de ellos",
+            laguna="los rotulos extremos se imprimen con < y >, de modo que "
+                   "la tabla no dice a que columna pertenece el PGA que cae "
+                   "exactamente en el limite. La eleccion es del proyectista",
+        ),
     ),
 
     # No es una fila de una tabla: el num. 2.8.1.1.14.2.2 no presenta ninguna
@@ -944,6 +995,16 @@ CRITERIOS: Dict[str, Criterio] = {
                                "contrastar contra "
                                "DESPLAZAMIENTO_HABILITA_REDUCCION_M y no "
                                "contra el rango redondeado",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando si el cabezal admite el "
+                        "desplazamiento lateral que la reduccion supone. NO "
+                        "es `DeTabla`, aunque la Sec. 4.3 del plan lo ponga "
+                        "de ejemplo: el num. 2.8.1.1.14.2.2 NO TABULA NADA "
+                        "-- autoriza una reduccion -- y el 1.0 no es una "
+                        "fila sino la ausencia de reduccion, que es la "
+                        "definicion misma de k_h0",
+            dominio="declaracion entre los dos regimenes del numeral",
+        ),
     ),
 
     # k_v no es una adopcion: lo fija el mismo numeral del que la cadena toma
@@ -1005,6 +1066,15 @@ CRITERIOS: Dict[str, Criterio] = {
                                "declaracion se apoya en la ausencia de "
                                "hallazgo, no en un hallazgo de ausencia, y "
                                "hay que decirlo asi en la memoria",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando cual de los dos "
+                        "regimenes del num. 2.8.1.1.14.2.1 rige. Con el "
+                        "regimen prescrito declarado, el k_v = 0 que resulta "
+                        "es [N] y no una adopcion; para el caso reservado el "
+                        "numeral no escribe ningun k_v alternativo",
+            dominio="declaracion de regimen, o k_v adimensional del "
+                    "proyectista en el caso reservado",
+        ),
     ),
 
     # gamma_EQ existia como PROSA dentro de la verificacion pendiente de
@@ -1050,6 +1120,15 @@ CRITERIOS: Dict[str, Criterio] = {
                         "de la via y el fundamento que la sostenga, "
                         "declarada en la memoria",
         sensibilidad=(0.0, 0.5),   # el 0.0 historico y el 0.50 de Turkstra
+        resolucion=Libre(
+            que_lo_fija="el proyectista, 'on a project-specific basis' "
+                        "(AASHTO Art. 3.4.1). La Tabla 2.4.5.3.1-1 imprime "
+                        "el SIMBOLO gamma_EQ en la columna de LS, no un "
+                        "numero, y el 0.0 y el 0.50 del comentario C3.4.1 "
+                        "son historia e indicacion de razonabilidad, no dos "
+                        "opciones tabuladas",
+            dominio="adimensional, 0 <= gamma_EQ <= 1",
+        ),
     ),
 
     # Los cuatro angulos que Sec. 9.2 exige ADEMAS de la cadena sismica para
@@ -1086,6 +1165,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "contra el muro (i = 0) o continua con el "
                                "talud del terraplen: son dos detalles "
                                "constructivos distintos, no un matiz",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre la seccion tipica del "
+                        "expediente vial o el detalle de coronacion del "
+                        "terraplen",
+            dominio="grados sobre la horizontal",
+        ),
     ),
 
     "inclinacion_muro_beta": Criterio(
@@ -1106,6 +1191,11 @@ CRITERIOS: Dict[str, Criterio] = {
                "'predimensionamiento_cabezal', del que este angulo es parte",
         reemplazado_por="Plano de encofrado del cabezal del expediente",
         sensibilidad=(0.0, 10.0),   # grados
+        resolucion=Libre(
+            que_lo_fija="el predimensionamiento del cabezal, del que este "
+                        "angulo es parte (ver `predimensionamiento_cabezal`)",
+            dominio="grados respecto de la vertical",
+        ),
     ),
 
     "friccion_muro_suelo_delta": Criterio(
@@ -1130,6 +1220,12 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Declararlo como FRACCION de phi y no como "
                                "angulo suelto, para que al ajustar "
                                "'phi_relleno_trasdos' no queden incoherentes",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, como fraccion de "
+                        "`phi_relleno_trasdos` con la fuente tecnica que la "
+                        "sostenga, o medido",
+            dominio="grados, 0 <= delta <= phi_relleno_trasdos",
+        ),
     ),
 
     "punto_aplicacion_incremento_sismico": Criterio(
@@ -1153,6 +1249,12 @@ CRITERIOS: Dict[str, Criterio] = {
                "fuente en la memoria",
         reemplazado_por="Convencion adoptada y escrita en la memoria de calculo",
         sensibilidad=(0.333, 0.6),   # H/3 (empuje total en el centroide) a 0.6H
+        resolucion=Libre(
+            que_lo_fija="el proyectista: Sec. 9.2 entrega K_AE y se detiene "
+                        "ahi. Seed-Whitman (0.6H) o AASHTO LRFD Sec. 11, "
+                        "declarado con su fuente",
+            dominio="fraccion adimensional de la altura H del muro",
+        ),
     ),
 
     # ----------------------- HIDROLOGIA -----------------------------------
@@ -1189,6 +1291,11 @@ CRITERIOS: Dict[str, Criterio] = {
                                "detenido nada. Quien reciba un CSV con Q ya "
                                "calculado tiene que exigir, aparte, el "
                                "analisis de homogeneidad que lo respalda",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al tratar la poblacion mixta de la "
+                        "serie (años FEN frente a años neutros)",
+            dominio="declaracion del tratamiento estadistico",
+        ),
     ),
 
     "riesgo_admisible_propietario": Criterio(
@@ -1256,6 +1363,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "R = 20 % con n = 25 da TR = 113 anios --, y con el "
                       "crece el caudal de diseno"),
         opcional=True,      # sin declarar, rigen los maximos de la Tabla N 02
+        resolucion=DeTabla(
+            tablas=("MC_HHD.T02",),
+            que_elige="la fila de tipo de obra con su R y su n, cuando el "
+                      "Propietario adopta valores distintos de los maximos "
+                      "recomendados que el proyecto toma por defecto",
+        ),
     ),
 
     "umbral_area_quebrada_importante_ha": Criterio(
@@ -1307,6 +1420,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "que puntos quedan a cada lado y correr la "
                                "sensibilidad del Q con TR 71 y TR 35: es la "
                                "misma alcantarilla con dos caudales de diseno",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el Manual nombra las categorias de "
+                        "cauce y las tarifa, y NO da regla de asignacion "
+                        "fisica -- ni area, ni caudal, ni orden de cauce",
+            dominio="ha > 0",
+        ),
     ),
 
     # ----------------------- HIDRAULICA: vacios ---------------------------
@@ -1355,6 +1474,13 @@ CRITERIOS: Dict[str, Criterio] = {
                                "corrugado, corresponde otra fila y la "
                                "alternativa de la sensibilidad pasa a ser la "
                                "adoptada",
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TA1",),
+            fila_id="circular_concreto_square_edge_headwall",
+            que_elige="la fila de embocadura de la que se toman K, M, c, Y y "
+                      "Ks para el HDPE, por analogia con el concreto de "
+                      "borde recto con muro de cabecera",
+        ),
     ),
 
     "metodo_transicion_hds5": Criterio(
@@ -1411,6 +1537,13 @@ CRITERIOS: Dict[str, Criterio] = {
                                "caen con q* entre 3.5 y 4.0: si ninguno lo hace, "
                                "esta simplificacion no toca ningun resultado y "
                                "basta con dejarla enunciada",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: HDS-5 traza a mano una curva "
+                        "tangente a las dos ramas y no publica ecuacion "
+                        "cerrada, de modo que el procedimiento programable "
+                        "no sale de la fuente",
+            dominio="declaracion del metodo de empalme",
+        ),
     ),
 
     "n_manning_hdpe": Criterio(
@@ -1458,6 +1591,13 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Confirmar que el HDPE especificado es de INTERIOR "
                                "LISO. El de interior corrugado tiene n del orden de "
                                "0.018-0.025 y la analogia seria gruesamente insegura",
+        resolucion=DeTabla(
+            tablas=("MC_HHD.T09",),
+            fila_id="concreto_tubo_recto",
+            que_elige="la fila cuyo par (minimo, maximo) se aplica al HDPE "
+                      "POR ANALOGIA. La analogia es la etiqueta [N->]: la "
+                      "Tabla N 09 no tabula el HDPE",
+        ),
     ),
 
     "v_max_hdpe": Criterio(
@@ -1511,6 +1651,16 @@ CRITERIOS: Dict[str, Criterio] = {
         # Marcarlo como vacio verificado lo imprimiria en el bloque de
         # acotaciones de la memoria, que dice "el proyectista adopto esto
         # donde la norma no dice nada": seria falso.
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando el techo de la Tabla 8-4 "
+                        "del WSDOT Hydraulics Manual, que es fuente tecnica "
+                        "reconocida y no norma peruana",
+            dominio="m/s > 0",
+            tabla_pendiente="WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 "
+                            "'Pipe Abrasion Levels'. WSDOT_HM es una fuente "
+                            "AUSENTE del registro: el documento no esta en "
+                            "normas/",
+        ),
     ),
 
     "v_max_tmc": Criterio(
@@ -1547,6 +1697,16 @@ CRITERIOS: Dict[str, Criterio] = {
         # Mismo motivo que en 'v_max_hdpe' para no llevar `vacio_verificado`:
         # cita cerrada sobre fuente tecnica (Sec. 10-bis del manifiesto), no
         # dossier de vacio agotado (SIS-D-12).
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando el mismo techo que el "
+                        "HDPE porque la fuente NO fija techo absoluto para "
+                        "el metal",
+            dominio="m/s > 0",
+            tabla_pendiente="WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 "
+                            "'Pipe Abrasion Levels'. WSDOT_HM es una fuente "
+                            "AUSENTE del registro: el documento no esta en "
+                            "normas/",
+        ),
     ),
 
     "v_max_concreto_eleccion": Criterio(
@@ -1623,6 +1783,15 @@ CRITERIOS: Dict[str, Criterio] = {
                "[A] y no [N]",
         sensibilidad=(3.0, 6.0),
         opcional=True,      # sin declarar, V3 aplica el techo [N] de 6.0 m/s
+        resolucion=EnRango(
+            tabla_id="MC_HHD.T10",
+            fila_id="MC_HHD.T10#concreto",
+            columna_id="velocidad",
+            que_acota="el techo de velocidad adoptado para el concreto. LA "
+                      "FILA TRAE DOS MAXIMOS Y NINGUN PISO (NOR-HID-04): la "
+                      "celda es un `ConjuntoDeMaximos` y la ventana no puede "
+                      "pintar el 3.0 como minimo",
+        ),
     ),
 
     "ke_entrada": Criterio(
@@ -1668,6 +1837,13 @@ CRITERIOS: Dict[str, Criterio] = {
         reemplazado_por="Fila de HDS-5 que corresponda si cambia el detalle de "
                         "embocadura del cabezal (Tablero 2.3). La Tabla C.2 "
                         "trae las demas configuraciones de borde",
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TC2",),
+            fila_id="concreto_headwall_square_edge",
+            que_elige="la fila de embocadura de la que sale ke; el 0.5 lo "
+                      "fija la pertenencia de la fila al rotulo de "
+                      "agrupacion 'Headwall or headwall and wingwalls'",
+        ),
     ),
 
     "geometria_control_salida": Criterio(
@@ -1720,6 +1896,11 @@ CRITERIOS: Dict[str, Criterio] = {
             "que la propia fuente declara. Lo que la cerraria es el "
             "procedimiento de barril parcialmente lleno del Cap. III, que es "
             "lo que ya dice `reemplazado_por`"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista: Sec. 4.3 escribe la ecuacion y no "
+                        "dice a que seccion pertenecen V y R",
+            dominio="declaracion entre seccion llena y tirante normal",
+        ),
     ),
 
     "HW_D_max": Criterio(
@@ -1790,6 +1971,17 @@ CRITERIOS: Dict[str, Criterio] = {
                "de HDS-5 que hay en normas/ (la edicion de 1985): el rango es "
                "exclusivo de la 3a ed.",
         sensibilidad=(1.2, 1.5),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre una BANDA DE PRACTICA AJENA. "
+                        "NO es `EnRango`, aunque la Sec. 4.3 del plan lo "
+                        "ponga de ejemplo: el num. 2.2.5 d) del HDS-5 "
+                        "DESCRIBE lo que imponen las agencias viales de "
+                        "EE.UU. y no prescribe HW/D alguno (NOR-HDS-02, "
+                        "conflicto vinculante #1 del plan). Un rango con "
+                        "cita normativa aqui seria la cita falsa que ese "
+                        "hallazgo vino a retirar",
+            dominio="adimensional > 0",
+        ),
     ),
 
     "resguardo_HW_subrasante": Criterio(
@@ -1826,6 +2018,20 @@ CRITERIOS: Dict[str, Criterio] = {
                                "Cerrarla exige una fuente que trate el "
                                "remanso de avenida sobre la subrasante, no una "
                                "lectura mas del mismo numeral",
+        resolucion=Libre(
+            que_lo_fija="la tabla de resguardo por CBR del Manual de Suelos, "
+                        "aplicada POR ANALOGIA (el num. 4.5.4 regula la "
+                        "separacion frente al freatico, no frente a un nivel "
+                        "de avenida). NO es `DeTabla` todavia, aunque la "
+                        "Sec. 4.3 del plan ponga `resguardo(CBR)` de "
+                        "ejemplo: esa tabla vive como escalares [N] en "
+                        "`constantes_normativas.py` y no esta transcrita "
+                        "como `TablaNormativa` en el registro, de modo que "
+                        "no hay tabla que la ventana pueda mostrar entera",
+            tabla_pendiente="Manual de Suelos MTC num. 4.5.4 (pags. 41-42) "
+                            "y 9.1(3) (pags. 89-90), tabla de resguardo por "
+                            "CBR",
+        ),
     ),
 
     "TW_receptor": Criterio(
@@ -1837,6 +2043,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "escenarios acotados (salida libre / seccion llena)",
         fuente="PENDIENTE: ANA / Junta de Usuarios del Bajo Piura",
         reemplazado_por="Caudal de diseno documentado del dren o canal receptor",
+        resolucion=DeEnsayo(
+            ensayo="nivel de agua en el cuerpo receptor durante la avenida, "
+                   "de la ANA / Junta de Usuarios del Bajo Piura",
+            trazabilidad_exigida="el oficio o estudio del que sale el nivel, "
+                                 "su fecha y el periodo de retorno al que "
+                                 "corresponde (Tablero 3.1)",
+        ),
     ),
 
     "long_max_cuneta": Criterio(
@@ -1849,6 +2062,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "zona se comporta como region muy lluviosa. Se adopta 200 m",
         fuente="Manual MTC, numeral 4.1.2.1 d), pag. 178",
         sensibilidad=(200.0, 250.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al declarar el regimen de la zona: "
+                        "el num. 4.1.2.1 d) da 250 m para region seca y "
+                        "200 m para region muy lluviosa, y el evento de "
+                        "diseño relevante en Piura es el FEN",
+            dominio="m > 0",
+            tabla_pendiente="Manual de Hidrologia num. 4.1.2.1 d): los dos "
+                            "valores por region no estan transcritos como "
+                            "`TablaNormativa` en el registro",
+        ),
     ),
 
     # ----------------------- FASE 5: VACIOS DE VERIFICACION ---------------
@@ -1919,6 +2142,11 @@ CRITERIOS: Dict[str, Criterio] = {
                                "diferencia entre esta adopcion y el invert "
                                "real, y es la que decide si V4 y 7.A quedaron "
                                "del lado seguro en ese punto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: NINGUNA norma fija esta regla "
+                        "mientras el expediente no entregue la cota medida",
+            dominio="declaracion de la regla de obtencion",
+        ),
     ),
 
     "remanso_derecho_via": Criterio(
@@ -1943,6 +2171,13 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Definir si el ancho de derecho de via es un "
                                "dato por punto (nueva columna del CSV) o un "
                                "criterio unico del tramo",
+        resolucion=DeEnsayo(
+            ensayo="perfil de remanso aguas arriba (paso a paso o HEC-RAS) y "
+                   "ancho de derecho de via del expediente",
+            trazabilidad_exigida="el modelo hidraulico con sus secciones, y "
+                                 "la lamina del expediente vial de la que "
+                                 "sale el derecho de via",
+        ),
     ),
 
     "TR_evento_extremo": Criterio(
@@ -1962,6 +2197,12 @@ CRITERIOS: Dict[str, Criterio] = {
         reemplazado_por="TR del evento extremo (p.ej. el de la serie FEN de "
                         "la Fase 1-bis) y definicion tecnica de colapso de "
                         "la via, ambos declarados en la memoria",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: V8 de la hoja de ruta pide la "
+                        "verificacion y no fija ni el TR ni el umbral de "
+                        "'la via no colapsa aunque desborde'",
+            dominio="años > 0",
+        ),
     ),
 
     # ----------------------- GEOTECNIA -----------------------------------
@@ -1975,6 +2216,12 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="PENDIENTE",
         reemplazado_por="Ensayo de corte directo sobre el material de cantera",
         sensibilidad=(30.0, 38.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el ensayo del material de "
+                        "cantera del trasdos o un valor de practica "
+                        "corriente declarado con su fuente",
+            dominio="grados, 0 < phi < 90",
+        ),
     ),
 
     "c_phi_fundacion": Criterio(
@@ -1992,6 +2239,14 @@ CRITERIOS: Dict[str, Criterio] = {
                        "corrida imprime. Se declara igual, y vacio, para que "
                        "el bloque de pendientes lo pida al expediente en vez "
                        "de que aparezca el dia del ensamblaje",
+        resolucion=DeEnsayo(
+            ensayo="parametros de resistencia del suelo de fundacion (c y "
+                   "phi), del EMS del expediente",
+            trazabilidad_exigida="ensayo (corte directo o triaxial), "
+                                 "calicata, profundidad y laboratorio; la "
+                                 "columna `sucs_fundacion` del CSV es su "
+                                 "entrada por correlacion",
+        ),
     ),
 
     "capacidad_portante_adm": Criterio(
@@ -2004,6 +2259,13 @@ CRITERIOS: Dict[str, Criterio] = {
         sin_consumidor="Mismo motivo que 'c_phi_fundacion', del que deriva: "
                        "lo consumen E1-E5 (Sec. 9.3), no ensambladas en esta "
                        "CLI",
+        resolucion=DeEnsayo(
+            ensayo="capacidad portante admisible del terreno de fundacion, "
+                   "del EMS del expediente",
+            trazabilidad_exigida="calicata, profundidad de desplante, metodo "
+                                 "de calculo y factor de seguridad "
+                                 "adoptados por el EMS",
+        ),
     ),
 
     "Mw_licuefaccion": Criterio(
@@ -2022,6 +2284,15 @@ CRITERIOS: Dict[str, Criterio] = {
                        "modo que nada invoca el MSF ni su Mw. Se declara "
                        "vacio para que el expediente lo programe, no porque "
                        "falte cablearlo",
+        resolucion=DeEnsayo(
+            ensayo="desagregacion del peligro sismico del sitio, o adopcion "
+                   "justificada del sismo de diseño de la subduccion del "
+                   "norte peruano",
+            trazabilidad_exigida="el estudio de peligro y el periodo de "
+                                 "retorno sobre el que se desagrego; si en "
+                                 "vez del estudio se adopta el sismo de "
+                                 "subduccion, la fuente que lo caracteriza",
+        ),
     ),
 
     "demanda_sismica_licuefaccion": Criterio(
@@ -2048,6 +2319,11 @@ CRITERIOS: Dict[str, Criterio] = {
                        "estar en la memoria aunque este calculo no corra: es "
                        "la que fija la demanda que el estudio geotecnico del "
                        "expediente debe exigirle al suelo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por coherencia de niveles de "
+                        "seguridad con el marco del Manual de Puentes",
+            dominio="años > 0",
+        ),
     ),
 
     "diametros_normalizados": Criterio(
@@ -2089,6 +2365,21 @@ CRITERIOS: Dict[str, Criterio] = {
                "canal, o sea el caso que el numeral EXCEPTUA. El detalle esta "
                "en constantes_normativas.DIAMETRO_MIN_AMBITO, que la memoria "
                "imprime",
+        resolucion=Libre(
+            que_lo_fija="la serie de diametro nominal de la norma de "
+                        "producto para el paso, y el proyecto para el "
+                        "inicio (0.90 m frente a los 0.9144 m = 36 in de la "
+                        "serie real, ~3 % del lado seguro). NO es "
+                        "`DeCatalogo`, aunque la Sec. 4.3 del plan lo ponga "
+                        "de ejemplo: el ejemplo apunta al 'max' que este "
+                        "criterio ya no tiene -- S4 mudo los topes a "
+                        "`D_max_catalogo`, que si es de catalogo -- y la "
+                        "neutralidad comercial en obra publica prohibe "
+                        "justamente resolver la serie por catalogo",
+            tabla_pendiente="ASTM A760/A760M-10, Tabla 1 'Tamaños de "
+                            "tuberia' (100 a 3600 mm). Su PDF no entrega "
+                            "texto utilizable y por eso no esta transcrita",
+        ),
     ),
 
     "D_max_catalogo": Criterio(
@@ -2162,6 +2453,18 @@ CRITERIOS: Dict[str, Criterio] = {
                                "El de HDPE (1.50 m) es el mas restrictivo y es "
                                "el unico cuya norma de producto (AASHTO M294) ni "
                                "siquiera esta en normas/ para poder contrastarlo",
+        resolucion=DeCatalogo(
+            catalogo_id="CAT_TUBERIA_LOCAL",
+            que_elige="el tope de diametro por material que el proyecto "
+                      "admite por DISPONIBILIDAD en el mercado local",
+            advertencia="NINGUNA norma sostiene estos topes. ASTM "
+                        "A760/A760M-10 tabula de 100 a 3600 mm y AASHTO M "
+                        "170M-04 de 300 a 3600 mm con diseños especiales por "
+                        "encima (NOR-PRO-01, NOR-PRO-02). Imprimirlos "
+                        "rotulados como norma seria una cita falsa, y "
+                        "ademas descartan material: la memoria tiene que "
+                        "decir que el descarte es de catalogo",
+        ),
     ),
 
     # 'h_relleno_min_concreto_tmc' SE RETIRO. Declaraba 0.30 m [N->] para
@@ -2443,6 +2746,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "datum -- ver la SIMPLIFICACION CONSERVADORA de "
                                "la justificacion --, que necesita el desglose "
                                "del paquete estructural",
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T12.6.6.3-1",),
+            que_elige="nada por si mismo: el valor es la tabla por material. "
+                      "La fila la elige `condicion_pavimento`",
+            elegido_por="condicion_pavimento",
+        ),
     ),
 
     # -----------------------------------------------------------------------
@@ -2491,6 +2800,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "un +6.4 %). La extrapolacion es la MAS conservadora de "
                       "las dos, de modo que ni siquiera 'el lado seguro' "
                       "decide sola: hay que elegir",),
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T3.11.6.4-1",
+                    "AASHTO_LRFD_9.T3.11.6.4-2"),
+            que_elige="que hacer con un muro por debajo de la primera fila "
+                      "tabulada (5.0 ft): tomar esa primera fila o "
+                      "extrapolar linealmente",
+            laguna="las dos tablas arrancan en 5.0 ft y su regla de "
+                   "interpolacion habla de alturas INTERMEDIAS; por debajo "
+                   "de la primera fila la fuente no se pronuncia",
+        ),
     ),
 
     "h_eq_banda_intermedia_borde": Criterio(
@@ -2522,6 +2841,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "(1.067 m), un -30 %. Para un muro de 10.0 ft: 3.5 ft "
                       "frente a 2.75 ft, un -21 %. La eleccion mueve el "
                       "empuje LS en la misma proporcion",),
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T3.11.6.4-2",),
+            columna_id="borde_0_0_ft",
+            que_elige="que columna leer cuando la distancia del trasdos al "
+                      "borde de calzada cae estrictamente entre 0.0 ft y "
+                      "1.0 ft",
+            laguna="la tabla manda interpolar entre FILAS (alturas) y no "
+                   "autoriza interpolar entre estas dos columnas: la banda "
+                   "0.0 < d < 1.0 ft es una laguna de la fuente",
+        ),
     ),
 
     "condicion_pavimento": Criterio(
@@ -2586,6 +2915,11 @@ CRITERIOS: Dict[str, Criterio] = {
                                "criterio de corredor porque la seccion tipica "
                                "lo es; si el expediente trae tramos con "
                                "superficie distinta, pasa a ser columna del CSV",
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T12.6.6.3-1",),
+            que_elige="la fila de condicion de la superficie de rodadura "
+                      "sobre el cruce: no pavimentado, flexible o rigido",
+        ),
     ),
 
     "espesor_pared_conducto": Criterio(
@@ -2664,6 +2998,15 @@ CRITERIOS: Dict[str, Criterio] = {
                                "declararlo para el diametro MAYOR que el "
                                "material vaya a usar, que es donde el espesor "
                                "es mayor y la clave queda mas alta",
+        resolucion=Libre(
+            que_lo_fija="la clase o el calibre del producto especificado; "
+                        "mientras no se especifique, el proyectista lo "
+                        "declara con la fuente que lo sostenga",
+            dominio="m > 0, y menor que el radio interior",
+            tabla_pendiente="AASHTO M 170M-04, Tablas 1 a 5, columna 'Wall "
+                            "Thickness' por diametro designado. Esta en "
+                            "normas/ y su PDF no entrega texto",
+        ),
     ),
 
     # ----------------------- FASE 8: ESTRUCTURAL DEL CONDUCTO -------------
@@ -2743,6 +3086,14 @@ CRITERIOS: Dict[str, Criterio] = {
                                "'v_max_hdpe', que fueron [C] sin valor por la "
                                "misma razon y hoy valen 4.572 sin haber cambiado "
                                "de etiqueta",
+        resolucion=Libre(
+            que_lo_fija="la clase o el calibre del producto que el proyecto "
+                        "especifique para cada altura de relleno",
+            tabla_pendiente="AASHTO M 170M-04 Tablas 1 a 5 (concreto) y "
+                            "ASTM A796/A796M (calibre TMC). La primera esta "
+                            "en normas/ pero su PDF no entrega texto; la "
+                            "segunda no esta",
+        ),
     ),
 
     # 'FS_flotacion' SE RETIRO. Declaraba el factor de seguridad global de
@@ -2784,6 +3135,12 @@ CRITERIOS: Dict[str, Criterio] = {
         reemplazado_por="Peso especifico medido del material de relleno "
                         "efectivamente especificado en el proyecto",
         sensibilidad=(17.0, 20.0),   # kN/m3, rango corriente de rellenos compactados
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el ensayo de peso especifico "
+                        "del material de cantera propuesto o un valor de "
+                        "practica corriente declarado con su fuente",
+            dominio="kN/m3 > 0",
+        ),
     ),
 
     # ----------------------- FASE 7: COMPATIBILIDAD GEOMETRICA ------------
@@ -2828,6 +3185,14 @@ CRITERIOS: Dict[str, Criterio] = {
                                "natural del cruce), que es lo unico que el CSV "
                                "permite calcular: si la seccion es asimetrica, "
                                "la longitud se mide y no se deduce",
+        resolucion=DeEnsayo(
+            ensayo="lectura del talud del terraplen en la seccion tipica del "
+                   "expediente vial (DG-2018)",
+            trazabilidad_exigida="lamina y progresiva de la seccion leida; "
+                                 "el talud depende de la altura del "
+                                 "terraplen y del material del cuerpo, asi "
+                                 "que la lectura es del cruce, no generica",
+        ),
     ),
 
     # ----------------------- PROTECCION Y DETALLE -------------------------
@@ -2841,6 +3206,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "Se adopta el rango corriente 1.5-2.0 d50",
         fuente="Practica corriente de diseno de enrocado",
         sensibilidad=(1.5, 2.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre la practica corriente de "
+                        "diseño de enrocado, como multiplo de d50",
+            dominio="multiplo adimensional de d50 > 0",
+        ),
     ),
 
     "longitud_proteccion_salida": Criterio(
@@ -2859,6 +3229,11 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Con pendientes bajas los d50 son de 3-13 cm y lo "
                                "probable es que gobierne el emboquillado de piedra "
                                "por razones constructivas, no el enrocado",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre practica corriente de "
+                        "enrocado o HEC-14; Sec. 6 la marca [A] sin valor",
+            dominio="m > 0",
+        ),
     ),
 
     "angulo_aletas": Criterio(
@@ -2879,6 +3254,11 @@ CRITERIOS: Dict[str, Criterio] = {
                        "(Fase 9) y remite el despiece al plano del "
                        "expediente. Se declara para que el vacio se pida, no "
                        "para que se calcule aqui",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ni el Manual de Hidrologia ni el "
+                        "Manual de Puentes fijan el angulo de las aletas",
+            dominio="grados, 0 < angulo < 90",
+        ),
     ),
 
     # ----------------------- FASE 9: CABEZAL Y ALETAS ---------------------
@@ -3100,6 +3480,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "tabulado en la pag. impresa 3-16, pero es de "
                                "gamma_TG (gradiente de temperatura), otra "
                                "carga",
+        resolucion=DeTabla(
+            tablas=("MP.TGAMMA_P", "MP.TCOMB"),
+            que_elige="que fila de gamma_p describe a cada estructura de "
+                      "esta obra: los tres conductos por material y el "
+                      "cabezal como muro de retencion",
+        ),
     ),
 
     "peso_especifico_concreto_kn_m3": Criterio(
@@ -3119,6 +3505,13 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., Tabla "
                "3.5.1-1 + Comentario C3.5.1, pag. 3-21 (0.150 kcf, concreto "
                "normal armado)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando el concreto normal armado "
+                        "de la Tabla 3.5.1-1 de AASHTO",
+            dominio="kN/m3 > 0",
+            tabla_pendiente="AASHTO LRFD 9a ed., Tabla 3.5.1-1 'Unit "
+                            "Weights', no transcrita al registro",
+        ),
     ),
 
     "predimensionamiento_cabezal": Criterio(
@@ -3154,6 +3547,11 @@ CRITERIOS: Dict[str, Criterio] = {
                                "altura de terraplen de la Fase 7: un cabezal "
                                "declarado aparte del conducto que remata es "
                                "una incoherencia de expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, o el plano tipo de cabezal del "
+                        "expediente vial",
+            dominio="geometria en m, todas las dimensiones > 0",
+        ),
     ),
 
     "N_cq_N_gammaq_meyerhof": Criterio(
@@ -3193,6 +3591,14 @@ CRITERIOS: Dict[str, Criterio] = {
                                "global del talud con la estructura "
                                "cargandolo: son dos comprobaciones, no una "
                                "(Sec. 9.3, 'doble verificacion')",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, leyendo las figuras 2.8.1.3.1.2c-1 "
+                        "y -2 del Manual de Puentes (Meyerhof 1957)",
+            dominio="factores adimensionales > 0",
+            tabla_pendiente="Manual de Puentes num. 2.8.1.3.1.2c: son "
+                            "FIGURAS (abacos), no tablas, y el registro no "
+                            "tiene hoy tipo para un abaco",
+        ),
     ),
 
     "metodo_estabilidad_global": Criterio(
@@ -3215,6 +3621,13 @@ CRITERIOS: Dict[str, Criterio] = {
                "umbral, no el metodo. El analisis es del EMS del expediente",
         reemplazado_por="Analisis de estabilidad de taludes del estudio "
                         "geotecnico, con su metodo y sus superficies criticas",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: E.050 Art. 30.3 y num. 39.13.6 b) "
+                        "fijan el umbral, no el metodo. Es una ELECCION de "
+                        "metodo y por eso no es `DeEnsayo`, aunque el "
+                        "analisis lo corra el mismo EMS",
+            dominio="declaracion del metodo de equilibrio limite",
+        ),
     ),
 
     # ---- El recubrimiento del refuerzo: la CADENA, no un numero -----------
@@ -3325,6 +3738,12 @@ CRITERIOS: Dict[str, Criterio] = {
                         "(norma de producto del acero que se compra), o la "
                         "decision expresa del proyectista de proteger o no el "
                         "refuerzo en ambiente salino",
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T5.10.1-1",),
+            que_elige="la COLUMNA de categoria de material de refuerzo: A "
+                      "(acero sin recubrir), B (epoxico o galvanizado) o C "
+                      "(AASHTO M 334M)",
+        ),
     ),
 
     "factor_recubrimiento_banda_intermedia_ac": Criterio(
@@ -3363,6 +3782,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "la fila costera con categoria A) y seria mas "
                       "conservador, pero contradice la fuente de la que sale "
                       "la propia tabla, que si escribe el 1.0",),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, cubriendo la banda 0.40 < a/c < "
+                        "0.50 que el Art. 5.10.1 no imprime",
+            dominio="factor adimensional > 0",
+        ),
     ),
 
     "exposicion_quimica_ems": Criterio(
@@ -3441,6 +3865,14 @@ CRITERIOS: Dict[str, Criterio] = {
                      "mas exigente",
         reemplazado_por="El analisis quimico del EMS. Mientras no exista, "
                         "ningun recubrimiento de 9.4 se puede calcular",
+        resolucion=DeEnsayo(
+            ensayo="analisis quimico del EMS: sulfato soluble en suelo y en "
+                   "agua freatica, y cloruros",
+            trazabilidad_exigida="calicata, profundidad, laboratorio, fecha "
+                                 "e informe de ensayo; las tablas contra las "
+                                 "que se clasifica (E060.T4.2 y E060.T4.4) "
+                                 "ya estan en el registro",
+        ),
     ),
 
     "situacion_recubrimiento_aashto": Criterio(
@@ -3485,6 +3917,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "directa a agua salada: 4.0/2.5/2.5 in",
                       "exterior_no_superior, en una obra no costera: "
                       "2.0/2.0/1.5 in"),
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T5.10.1-1",),
+            que_elige="que FILA de la tabla se contrasta con cada condicion "
+                      "de E.060 Art. 7.7.1, para poder evaluar la regla del "
+                      "mayor entre las dos normas",
+        ),
     ),
 
     "tabla_recubrimiento_aashto_mm": Criterio(
@@ -3524,6 +3962,13 @@ CRITERIOS: Dict[str, Criterio] = {
                "categorias; Art. 5.10.1 'Concrete Cover', pag. impresa 5-167 "
                "(PDF 526), para el modificador por W/CM; pag. impresa 5-168 "
                "(PDF 527) para el piso de 1.0 in sobre barras principales",
+        resolucion=Derivada(
+            de=("AASHTO_LRFD_9.T5.10.1-1",),
+            regla="transcripcion de la tabla del registro con las columnas "
+                  "en mm; la arma `_tabla_recubrimiento_aashto_mm()` leyendo "
+                  "`normativa.registro`, no una copia a mano. La conversion "
+                  "in -> mm es exacta (1 in = 25.4 mm)",
+        ),
     ),
 
     "cortante_alto_muro_e060_art_11_10_10_2": Criterio(
@@ -3599,6 +4044,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "decidio, y si el minimo aplicado es el 0.0020 "
                                "del Art. 14.3.1 o el 0.0025 del "
                                "Art. 11.10.10.2",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando si el muro esta en la "
+                        "condicion de cortante alto. El Art. 11.10.10.2 es "
+                        "una sola frase y NO define umbral (NOR-E060-03)",
+            dominio="declaracion si/no",
+        ),
     ),
 
     "procedimiento_flexion_corte_aashto_sec5": Criterio(
@@ -3696,6 +4147,11 @@ CRITERIOS: Dict[str, Criterio] = {
                "de unidades. PAGINAS CORREGIDAS: la fuente declaraba el rango "
                "'pags. 5-70 a 5-243', que NO contiene ni al 5.7.3.3 (5-67) ni "
                "al 5.7.2.8 (5-64), los dos anteriores a su limite inferior",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al declarar que subconjunto de la "
+                        "Seccion 5 de AASHTO aplica al muro del cabezal",
+            dominio="declaracion del procedimiento y de sus factores phi",
+        ),
     ),
 }
 
@@ -3772,6 +4228,172 @@ def _verificar_ancla_de_vacio(clave: str, ancla: str) -> None:
             "valor dice cubrir no esta registrado: o se registra, o el campo "
             "no se declara"
         )
+
+
+# ---------------------------------------------------------------------------
+# El modo de resolucion (Sec. 4.3 del plan v12)
+# ---------------------------------------------------------------------------
+
+# Los cinco rangos de `normativa/esquema.py` §7. Se importan por NOMBRE y no
+# por el alias `RangoNormativo` porque `isinstance` no acepta un `Union`, y
+# porque la lista explicita hace visible en revision que la familia es cerrada.
+_RANGOS_NORMATIVOS = (_esquema.IntervaloAdmisible, _esquema.TechoUnico,
+                      _esquema.PisoUnico, _esquema.ConjuntoDeMaximos,
+                      _esquema.BandaDeInterpolacion)
+
+
+@lru_cache(maxsize=1)
+def _registro():
+    """
+    El registro normativo, armado una sola vez. La guardia lo necesita para
+    comprobar que una tabla citada por una `resolucion` EXISTE: un
+    `DeTabla` que apunta a una tabla que nadie transcribio prometeria una
+    ventana que no se puede pintar.
+    """
+    return _registro_normativo.construir()
+
+
+def verificar_resolucion(clave: str, r: Resolucion) -> ModoDeResolucion:
+    """
+    Forma de la resolucion y, cuando apunta al registro, que lo apuntado
+    exista. Es el criterio de salida de la Sec. 4.3 hecho guardia:
+
+        ninguna variable sin modo
+        ningun `DeTabla` sin tabla existente en el registro
+        ningun `EnRango` sin rango con semantica declarada
+
+    El tercero se comprueba por TIPO: la celda del registro tiene que ser uno
+    de los cinco rangos de `normativa/esquema.py` §7, donde la semantica ES el
+    tipo. Un float suelto no es un rango, y un rango sin semantica no existe.
+
+    ES PUBLICA Y VIVE AQUI, aunque no sea exclusiva de los criterios, por dos
+    razones: aqui esta la poblacion mas grande de las tres (59 de las 83
+    variables de entrada) y aqui ya esta el registro, del que este archivo
+    depende por `constantes_normativas`. `variables_entrada.py` la reutiliza
+    para las 17 columnas del CSV en vez de escribir una segunda copia que
+    pudiera divergir. Las reglas que valen SOLO para un criterio -- que
+    `Libre.opciones` este vacio, que un `de_ensayo` no lleve sensibilidad, que
+    el rotulo `de_catalogo` y el modo digan lo mismo -- no estan aqui sino en
+    `_verificar_criterio`.
+
+    Devuelve el modo, para que quien llame no tenga que volver a deducirlo.
+    """
+    modo = modo_de(r)          # levanta TypeError si no es de la familia
+
+    if isinstance(r, Libre):
+        if not r.que_lo_fija:
+            raise ValueError(
+                f"'{clave}' se resuelve `libre` y no dice QUIEN pone el "
+                "numero. Sin eso la ventana ofrece un campo vacio y la "
+                "memoria no puede escribir su procedencia"
+            )
+
+    elif isinstance(r, DeTabla):
+        if not r.tablas:
+            raise ValueError(f"'{clave}' se resuelve `de_tabla` y no cita "
+                             "ninguna tabla")
+        if not r.que_elige:
+            raise ValueError(f"'{clave}' se resuelve `de_tabla` y no dice "
+                             "QUE se elige sobre la tabla")
+        if (r.fila_id or r.columna_id) and len(r.tablas) != 1:
+            raise ValueError(
+                f"'{clave}' fija fila o columna y cita {len(r.tablas)} "
+                "tablas: no se sabe de cual. La fila y la columna solo "
+                "tienen sentido con una tabla"
+            )
+        for tabla_id in r.tablas:
+            tabla = _tabla_del_registro(clave, tabla_id)
+            if r.fila_id:
+                try:
+                    tabla.fila(r.fila_id)
+                except KeyError:
+                    raise ValueError(
+                        f"'{clave}' apunta a la fila '{r.fila_id}' de "
+                        f"'{tabla_id}', que la tabla no tiene"
+                    ) from None
+            if r.columna_id:
+                try:
+                    tabla.columna(r.columna_id)
+                except KeyError:
+                    raise ValueError(
+                        f"'{clave}' apunta a la columna '{r.columna_id}' de "
+                        f"'{tabla_id}', que la tabla no tiene"
+                    ) from None
+        if r.elegido_por and r.elegido_por not in CRITERIOS:
+            raise ValueError(
+                f"'{clave}' dice que la fila la elige '{r.elegido_por}', que "
+                "no es un criterio declarado"
+            )
+
+    elif isinstance(r, EnRango):
+        tabla = _tabla_del_registro(clave, r.tabla_id)
+        try:
+            celda = tabla.fila(r.fila_id).valores[r.columna_id]
+        except KeyError:
+            raise ValueError(
+                f"'{clave}' apunta a la celda "
+                f"({r.fila_id}, {r.columna_id}) de '{r.tabla_id}', que la "
+                "tabla no tiene"
+            ) from None
+        if not isinstance(celda, _RANGOS_NORMATIVOS):
+            raise ValueError(
+                f"'{clave}' se resuelve `en_rango` y la celda "
+                f"({r.fila_id}, {r.columna_id}) de '{r.tabla_id}' es "
+                f"{type(celda).__name__}, no un rango. Un `en_rango` sin "
+                "rango con SEMANTICA declarada es lo que deja a la ventana "
+                "pintar como minimo el primero de dos maximos (NOR-HID-04)"
+            )
+        if not r.que_acota:
+            raise ValueError(f"'{clave}' se resuelve `en_rango` y no dice "
+                             "QUE acota el rango")
+
+    elif isinstance(r, Derivada):
+        if not r.de or not r.regla:
+            raise ValueError(
+                f"'{clave}' se resuelve `derivada` y no declara de que se "
+                "deriva o con que regla. La ventana no lo deja editar: si no "
+                "dice de donde sale, el usuario se queda sin nada que leer"
+            )
+
+    elif isinstance(r, DeEnsayo):
+        if not r.ensayo or not r.trazabilidad_exigida:
+            raise ValueError(
+                f"'{clave}' se resuelve `de_ensayo` y no declara el "
+                "procedimiento o la trazabilidad que hay que exigir. Un dato "
+                "determinado se defiende con la lectura que lo reproduce"
+            )
+
+    elif isinstance(r, DeCatalogo):
+        if not r.advertencia:
+            raise ValueError(
+                f"'{clave}' se resuelve `de_catalogo` y no lleva "
+                "advertencia. El rotulo es todo el punto del modo: sin el, "
+                "un tope de proveedor se lee como exigencia normativa "
+                "(NOR-PRO-01, NOR-PRO-02)"
+            )
+        if r.catalogo_id not in _ids_de_catalogo():
+            raise ValueError(
+                f"'{clave}' cita el catalogo '{r.catalogo_id}', que no esta "
+                f"en el registro (hay: {sorted(_ids_de_catalogo())})"
+            )
+
+    return modo
+
+
+def _tabla_del_registro(clave: str, tabla_id: str):
+    try:
+        return _registro().tabla(tabla_id)
+    except KeyError:
+        raise ValueError(
+            f"'{clave}' declara que su valor sale de la tabla '{tabla_id}', "
+            "que no esta en el registro normativo. Una tabla que no esta "
+            "transcrita no se puede mostrar entera, que es lo que el modo "
+            "`de_tabla` promete"
+        ) from None
+
+
+def _ids_de_catalogo() -> frozenset:
+    return frozenset(c.id for c in _registro().catalogos)
 
 
 def _es_real(x: Any) -> bool:
@@ -3941,6 +4563,41 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
                 "como si el vacio ya estuviera resuelto"
             )
         _verificar_ancla_de_vacio(clave, c.vacio_verificado)
+
+    if c.resolucion is None:
+        raise ValueError(
+            f"'{clave}' no declara `resolucion`. Toda variable de entrada "
+            "dice COMO se resuelve (Sec. 4.3): de que tabla, de que rango, "
+            "de que ensayo, de que catalogo, de que se deriva, o que se "
+            "declara libre. Sin eso la GUI no sabe que ventana abrir y la "
+            "memoria no puede escribir de donde salio el valor"
+        )
+    modo = verificar_resolucion(clave, c.resolucion)
+
+    if isinstance(c.resolucion, Libre) and c.resolucion.opciones:
+        raise ValueError(
+            f"'{clave}' declara `Libre.opciones="
+            f"{c.resolucion.opciones!r}`. En un CRITERIO el conjunto cerrado "
+            "de valores admisibles vive en `sensibilidad`, que es lo que M11 "
+            "imprime: repetirlo aqui crea dos listas que pueden divergir. El "
+            "campo es para las variables que no son criterios -- la Familia "
+            "de un punto del CSV -- que no tienen `sensibilidad` donde "
+            "ponerlo"
+        )
+
+    if modo is ModoDeResolucion.DE_ENSAYO and c.sensibilidad is not None:
+        raise ValueError(
+            f"'{clave}' se resuelve `de_ensayo` y declara sensibilidad. Un "
+            "dato determinado por un procedimiento no tiene rango que "
+            "elegir: se defiende con la trazabilidad de la lectura. Si "
+            "hubiera rango, la resolucion no es `de_ensayo`"
+        )
+    if bool(c.de_catalogo) != (modo is ModoDeResolucion.DE_CATALOGO):
+        raise ValueError(
+            f"'{clave}' rotula `de_catalogo`={c.de_catalogo!r} y se resuelve "
+            f"`{modo.value}`. El rotulo y el modo son la misma afirmacion "
+            "dicha dos veces, y no pueden discrepar"
+        )
 
     _verificar_sensibilidad(clave, c)
 
