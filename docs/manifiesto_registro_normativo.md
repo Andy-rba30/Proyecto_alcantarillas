@@ -236,6 +236,8 @@ línea que se pueda romper.
 | `HDS5_3ED.3.1.3#TRANSICION` | 3.1.3 | «Inlet Control» | pág. impresa **3.4** · PDF 86 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.3.1.4#K` | 3.1.4, ec. (3.4b) | «Outlet Control» | pág. impresa **3.10** · PDF 92 | definicion | 2026-08-28 · texto |
 | `HDS5_3ED.3.3.3#HO` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | aproximacion | 2026-08-28 · texto |
+| `HDS5_3ED.3.3.3#HO_1_2D` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | exigencia | 2026-08-28 · texto |
+| `HDS5_3ED.3.3.3#HO_SUMERGIDA` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | exigencia | 2026-08-28 · texto |
 | `HDS5_3ED.A.2` | A.2, A.2.1 | «INLET CONTROL EQUATIONS» | pág. impresa **A.2** · PDF 191 | definicion | 2026-08-28 · texto |
 | `HDS5_3ED.A.2.1#KS` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.2** · PDF 191 | definicion | 2026-08-28 · texto |
 | `HDS5_3ED.A.2.1#QLIM` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.1** · PDF 190 | aproximacion | 2026-08-28 · texto |
@@ -248,6 +250,10 @@ línea que se pueda romper.
 > **`HDS5_3ED.3.1.4#K`** — El 19.63 ESTA en la fuente, no es derivacion. El numeral abre en la pag. impresa 3.5 y la ecuacion esta en la 3.10.
 
 > **`HDS5_3ED.3.3.3#HO`** — Las TRES condiciones estan en esta pagina, y la primera tiene una SEGUNDA MITAD que el expediente no recogia: «It should not be used if the inlet is not submerged». Son dos condiciones, no una. Ademas la fuente no escribe la razon HW/D: escribe «the headwater depth (referenced to the inlet invert) is less than 1.2D», y la referencia al invert de entrada es parte de la definicion. Las tres son `should` / `can only`, no `shall`.
+
+> **`HDS5_3ED.3.3.3#HO_1_2D`** — De aqui salen los DOS limites que `M4` evalua punto por punto: 1.2D (cautela) y 0.75D (no usar). La transcripcion anterior del expediente se saltaba, sin marcarlo, la oracion sobre las backwater calculations -- que es justamente la que dice QUE HACER cuando el punto cae en la banda de cautela. Una elision no marcada dentro de algo rotulado «texto literal» es la misma clase de defecto que NOR-HID-06.
+
+> **`HDS5_3ED.3.3.3#HO_SUMERGIDA`** — Segunda mitad de la vineta de h_o, y es una condicion DISTINTA de la primera: aquella acota por llenado del barril, esta por sumergencia de la entrada. El expediente las leia como una sola.
 
 > **`HDS5_3ED.A.2`** — NOR-HDS-03, confirmado: `Ku` y `Ks` estan en la LISTA DE VARIABLES de las ecuaciones del num. A.2.1, pag. impresa A.2, y NO en la Tabla A.1. La Tabla A.1 tiene nueve columnas y de constantes de la ecuacion solo cuatro -- K, M, c e Y --: no hay columna K_u ni columna K_s.
 
@@ -270,6 +276,7 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.3.6#T09` | 4.1.1.3.6, Tabla Nº 09 | «Diseño hidráulico» | pág. impresa **75** · PDF 78 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.6#T10` | 4.1.1.3.6, Tabla Nº 10 | «Diseño hidráulico» | pág. impresa **76** · PDF 79 | exigencia | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.6#VMIN` | 4.1.1.3.6, párrafo posterior a la Tabla Nº 10 | «Diseño hidráulico» | pág. impresa **77** · PDF 80 | recomendacion | 2026-08-28 · ambos |
+| `MC_HHD.4.1.1.3.6#VMIN_INICIO` | 4.1.1.3.6, párrafo posterior a la Tabla Nº 10 (primera mitad) | «Diseño hidráulico» | pág. impresa **76** · PDF 79 | exigencia | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.7a` | 4.1.1.3.7 a) | 4.1.1.3.7  Consideraciones para el diseño › «a)   Material sólido de arrastre» | pág. impresa **79** · PDF 82 | recomendacion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.7b` | 4.1.1.3.7 b) | 4.1.1.3.7  Consideraciones para el diseño › «b)  Borde libre» | pág. impresa **79** · PDF 82 | recomendacion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.7c` | 4.1.1.3.7 c), ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | aproximacion | 2026-08-28 · imagen renderizada |
@@ -289,6 +296,8 @@ línea que se pueda romper.
 > **`MC_HHD.4.1.1.3.6#T10`** — El titulo se imprime en DOS renglones y el segundo dice solo «revestidos»; el `texto_literal` es el primero, que es el que se puede buscar de corrido. El titulo completo esta en `TablaNormativa.titulo_literal`.
 
 > **`MC_HHD.4.1.1.3.6#VMIN`** — El parrafo cruza el salto de pagina: arranca en la impresa 76 («Se deberá verificar que la velocidad mínima del flujo dentro del conducto no produzca sedimentación que pueda incidir en una») y el numero se imprime en la 77. El `texto_literal` es la mitad que contiene el valor, porque es la que T5 tiene que poder encontrar en la pagina que la cita declara.
+
+> **`MC_HHD.4.1.1.3.6#VMIN_INICIO`** — La frase se corta donde la corta la PAGINA, no donde conviene: «...incidir en una» es literalmente el ultimo renglon de la pag. impresa 76, y completarla aqui con «reducción de su capacidad hidráulica» produciria un texto que no esta en esta pagina y que el buscador de un lector no encuentra. La continuacion es `MC_HHD.4.1.1.3.6#VMIN`, y las dos juntas son la oracion entera.
 
 > **`MC_HHD.4.1.1.3.7a`** — Las CUATRO caracteristicas a las que «el párrafo anterior» remite estan en la pag. impresa 78 (PDF 81), no en la 79: la cita del repositorio decia solo «pag. 79» y con eso el condicionante quedaba fuera del rango citado. El rango correcto es 78-79. El valor 1.22 m NO esta en la fuente: el Manual escribe «Ф 48”» y la conversion (48 in = 1.2192 m) es del proyecto.
 
@@ -810,6 +819,32 @@ escrita, y el test la exige.
 | `COND-PERFIL-SIN-INFO-SECUNDARIA` | cita:MS.4.2#PERFIL | `existe_informacion_secundaria_tramo` | bloquea |
 | `COND-SELVA-ALTA` | cita:MC_HHD.4.1.1.3.7a | `region == 'selva_alta'` | excluye |
 
+## 6-bis. Fundamentos: por qué se hace cada paso
+
+El campo `por_que` de `PasoDeMemoria` (§4.4 del plan v12) sale de aquí,
+no del docstring del módulo que calcula. El `verbo` está sostenido por
+el `caracter` de al menos una de sus citas — invariante T11 —, que es
+lo que impide escribir «la norma obliga» sobre un párrafo que
+recomienda.
+
+| id | Fase | Paso | Verbo | Citas |
+|---|---|---|---|---|
+| `F10.CUNETA` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud maxima de recorrido de la cuneta, que fija el espaciamiento de las alcantarillas de alivio | **obliga** | `MC_HHD.4.1.2.1d` |
+| `F2.LUZ` | Fase 2 - Clasificacion y periodo de retorno | Denominacion de la obra por su luz: alcantarilla o puente | **define** | `MC_HHD.4.1.1.3.1`, `MC_HHD.4.1.1.5.1` |
+| `F2.TR` | Fase 2 - Clasificacion y periodo de retorno | Periodo de retorno del caudal de diseno, obtenido del riesgo admisible y la vida util de la Tabla N 02 | **recomienda** | `MC_HHD.3.6` |
+| `F3.D_MIN` | Fase 3 - Tipo, material y durabilidad | Seccion minima circular de 0.90 m (36") | **obliga** | `MC_HHD.4.1.1.3.4a` |
+| `F4.CONTROL` | Fase 4 - Dimensionamiento hidraulico | Carga a la entrada HW por los dos controles del HDS-5, entrada y salida, y adopcion del mayor | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.3.1.4#K` |
+| `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D` |
+| `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning, resueltos con las DOS rugosidades del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
+| `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y/D <= 0.75 | **recomienda** | `MC_HHD.4.1.1.3.7b` |
+| `F5.V2` | Fase 5 - Verificaciones | V2 - Velocidad minima de autolimpieza: V >= 0.25 m/s | **recomienda** | `MC_HHD.4.1.1.3.6#VMIN_INICIO`, `MC_HHD.4.1.1.3.6#VMIN` |
+| `F5.V3` | Fase 5 - Verificaciones | V3 - Velocidad maxima admisible del revestimiento (Tabla N 10) | **obliga** | `MC_HHD.4.1.1.3.6#T10` |
+| `F5.V4` | Fase 5 - Verificaciones | V4 - Carga a la entrada bajo la subrasante, con el resguardo que fija el CBR | **obliga** | `MS.4.5.4`, `MS.9.1.3` |
+| `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
+| `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
+| `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | **obliga** | `AASHTO_LRFD_9.12.6.6.3#COBERTURA`, `EG2013.508.07#RELLENO_MIN` |
+| `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | **obliga** | `E060.7.7.1`, `AASHTO_LRFD_9.T5.10.1-1` |
+
 ## 7. Discrepancias declaradas
 
 `CLAUDE.md` obliga, cuando la fuente primaria gana a la hoja de ruta, a
@@ -924,5 +959,5 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 91.
+Citas sin firma de verificación: **0** de 94.
 

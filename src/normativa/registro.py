@@ -22,6 +22,7 @@ from __future__ import annotations
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from .esquema import (
+    VERBO_COMPATIBLE_CON,
     Cita,
     CondicionAplicacion,
     CorrespondenciaDeTablas,
@@ -86,6 +87,19 @@ class Registro:
         except KeyError:
             raise KeyError(f"no hay tabla «{id_}» en el registro") from None
 
+    def fundamento(self, id_: str) -> Fundamento:
+        try:
+            return self._fundamentos[id_]
+        except KeyError:
+            raise KeyError(
+                f"no hay fundamento «{id_}» en el registro. El «por que» de "
+                "un paso de la memoria no se escribe en el modulo de calculo: "
+                "se declara en `normativa/fundamentos.py` y se referencia por "
+                "id (Sec. 4.4 del plan v12)") from None
+
+    def fundamentos_de_fase(self, fase: str) -> Tuple[Fundamento, ...]:
+        return tuple(f for f in self._fundamentos.values() if f.fase == fase)
+
     def discrepancia(self, id_: str) -> Discrepancia:
         return self._discrepancias[id_]
 
@@ -124,6 +138,43 @@ class Registro:
     @property
     def fundamentos(self) -> Tuple[Fundamento, ...]:
         return tuple(self._fundamentos.values())
+
+    def textos_literales(self) -> frozenset:
+        """
+        TODO texto que el registro sostiene como literal de una fuente: el
+        `Verbatim` de cada cita, el titulo y el texto previo de cada tabla, y
+        sus notas al pie.
+
+        ES LA LISTA CONTRA LA QUE SE COMPRUEBA LA MEMORIA. El criterio de
+        salida de la §4.4 del plan v12 dice «ninguna cita textual que no este
+        en el registro», y sin esta vista esa frase no es comprobable: habria
+        que ir objeto por objeto. Lo que la hace necesaria es historia del
+        repositorio --- `constantes_normativas` llevaba SEGUNDAS
+        transcripciones de parrafos que el registro ya tenia, de-acentuadas y
+        libres de divergir, y dos de las seis divergian ya (el titulo de la
+        Tabla Nº 10 y la tercera condicion de h_o, esta ultima con una elision
+        sin marcar bajo el rotulo «texto literal») ---.
+
+        No incluye `Interpretacion` ni `Transcripcion`: esos NO son literales
+        de la fuente y no deben poder colarse por esta puerta. Es la misma
+        separacion que los tipos de `TextoDeFuente` existen para imponer.
+        """
+        textos = set()
+        for c in self._citas.values():
+            texto = getattr(c.texto_literal, "texto", None)
+            if texto:
+                textos.add(texto)
+        for t in self._tablas.values():
+            if t.titulo_literal:
+                textos.add(t.titulo_literal)
+            previo = getattr(t.texto_previo, "texto", None)
+            if previo:
+                textos.add(previo)
+            for nota in t.notas_al_pie:
+                texto = getattr(nota.texto, "texto", None)
+                if texto:
+                    textos.add(texto)
+        return frozenset(textos)
 
     def ids_de_fuente(self) -> Tuple[str, ...]:
         return tuple(self._fuentes) + tuple(self._ausentes)
@@ -264,6 +315,25 @@ class Registro:
                 if cita_id not in ids_cita:
                     fallos.append(
                         f"fundamento {f.id}: cita «{cita_id}» no existe")
+            # INVARIANTE T11: el verbo del fundamento tiene que estar
+            # sostenido por al menos UNA de sus citas. Se pide una y no todas
+            # a proposito: el parrafo de V2 es una sola oracion que contiene
+            # una exigencia («se debera verificar») y una recomendacion sobre
+            # el valor («recomendandose que... 0.25 m/s»), y las dos citas
+            # tienen que poder colgar del mismo fundamento. Lo que la regla
+            # impide es lo contrario, que es el defecto real: escribir
+            # «la norma OBLIGA» sin que ninguna cita sea una exigencia.
+            admitidos = VERBO_COMPATIBLE_CON[f.verbo]
+            caracteres = tuple(self._citas[c].caracter for c in f.citas
+                               if c in ids_cita)
+            if caracteres and not any(k in admitidos for k in caracteres):
+                fallos.append(
+                    f"fundamento {f.id}: dice «{f.verbo.value}» y ninguna de "
+                    f"sus citas lo sostiene (caracteres: "
+                    f"{[k.value for k in caracteres]}; admitidos: "
+                    f"{[k.value for k in admitidos]}). Es el defecto que "
+                    "NOR-MEM-01 y MAT-O13 dejaron escrito: presentar una "
+                    "recomendacion con la fuerza de una exigencia, o al reves")
 
         for f in self._fuentes.values():
             for otra in f.convive_con:
@@ -311,6 +381,7 @@ def construir() -> Registro:
     from . import citas as _citas
     from . import discrepancias as _discrepancias
     from . import fuentes as _fuentes
+    from . import fundamentos as _fundamentos
     from . import tablas as _tablas
 
     return Registro(
@@ -321,5 +392,5 @@ def construir() -> Registro:
         tablas=_tablas.TABLAS,
         discrepancias=_discrepancias.DISCREPANCIAS,
         correspondencias=_tablas.CORRESPONDENCIAS,
-        fundamentos=_citas.FUNDAMENTOS,
+        fundamentos=_fundamentos.FUNDAMENTOS,
     )

@@ -98,6 +98,51 @@
   dl.acotacion dt { font-weight: bold; margin-top: .5em; }
   dl.acotacion dd { margin: .1em 0 0 1.2em; }
 
+
+  /* ---------------------------------------------------------------------
+     LA REGLA TIPOGRAFICA DE LA §4.4, que no es estilo sino contenido.
+
+     Tres cosas distintas que en una memoria se leen igual si se imprimen
+     igual, y confundirlas es lo que convierte una recomendacion en una
+     exigencia inventada (NOR-HID-04, NOR-MEM-01):
+
+       .fuente          lo que el DOCUMENTO dice. Entre comillas, en
+                        cursiva, sobre fondo neutro y con barra al margen.
+       .interpretacion  lo que el PROYECTO lee en el documento. Fondo
+                        ambar y rotulo propio: nunca se pega a la cita.
+       (texto normal)   lo que el proyecto HACE con ello.
+
+     El caso testigo: «el rango recorre la calidad del revestimiento» no
+     esta en el Manual --- nada dice por que hay dos numeros --- y hasta
+     S18 se imprimia dentro del mismo parrafo que la cita.
+     ------------------------------------------------------------------ */
+  .fuente {
+    font-style: italic; background: #f7f7f4; border-left: 3px solid #8a8a7a;
+    padding: .35em .7em; margin: .35em 0; font-size: .95rem;
+  }
+  .interpretacion {
+    background: #fdf8ee; border-left: 3px solid #d0a95f;
+    padding: .1em .5em;
+  }
+  dl.acotacion dt.interpretacion, dl.acotacion dd.interpretacion {
+    display: block;
+  }
+  .procedencia-cita {
+    display: block; font-style: normal; font-size: .82rem; color: #55616f;
+    margin-top: .15em;
+  }
+
+  /* Un paso de la memoria (PasoDeMemoria, §4.4) -------------------------- */
+  .paso {
+    border: 1px solid #c9d3e0; border-left: 4px solid #16324f;
+    padding: .4em .9em .7em .9em; margin: .8em 0; background: #fcfdff;
+  }
+  .paso > h5 {
+    margin: .3em 0 .5em 0; font-size: 1rem; color: #16324f;
+  }
+  .paso ul.sustitucion, .paso ul.elecciones { margin: .2em 0 .2em 1.1em; }
+  .paso ul.sustitucion li, .paso ul.elecciones li { margin-bottom: .35em; }
+
   /* Punto critico ------------------------------------------------------- */
   .punto { border: 1px solid #c3cede; padding: .2em 1em 1em 1em; margin: 1.2em 0; }
   .punto > h3 {
@@ -127,6 +172,7 @@
     h2 { page-break-after: avoid; }
     h3, h4 { page-break-after: avoid; }
     table, .criterio, .nota, .aviso, .bloqueo { page-break-inside: avoid; }
+    .paso { page-break-inside: avoid; }
     .punto { page-break-inside: avoid; }
     .salto { page-break-before: always; }
   }

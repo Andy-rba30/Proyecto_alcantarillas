@@ -99,6 +99,32 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   M11 imprima solo los usados.
 - Cada verificación devuelve un objeto Verificacion(cumple, numeral, valor,
   criterio_aplicado), nunca un bool desnudo.
+- **La memoria la EMITE el cálculo; M11 la formatea.** Cada función de cálculo
+  devuelve, junto a su resultado, el `PasoDeMemoria` que lo explica: qué,
+  **por qué**, fórmula con su cita, sustitución con la **procedencia** de cada
+  valor, resultado, umbral con su **carácter en la fuente**, veredicto con
+  margen, y las citas textuales. M11 elige etiquetas y CSS y no hace
+  aritmética sobre magnitudes — un test barre su AST. La regla nace de
+  SIS-A-07: el reporte declaraba «no calcula nada nuevo» mientras calculaba
+  `y/D` en dos sitios, que es un segundo motor de cálculo sin tests.
+- **El `por_qué` no se escribe en el módulo que calcula.** Sale de un
+  `Fundamento` de `src/normativa/fundamentos.py`, que lleva `verbo` y citas, y
+  el registro comprueba que el verbo esté sostenido por el `caracter` de
+  alguna de sus citas. Es lo que impide escribir «la norma obliga a…» encima
+  del párrafo que dice «recomendándose que la velocidad mínima sea igual a
+  0.25 m/s» (NOR-MEM-01, MAT-O13). Un paso sin `por_qué` no se construye, y un
+  umbral sin `cita_id` tampoco.
+- **Ningún texto literal se transcribe dos veces.** Toda frase que la memoria
+  entrecomille como cita sale de `Registro.textos_literales()` — el `Verbatim`
+  de una cita, o el título, el texto previo o una nota al pie de una tabla —,
+  verificada contra su página. Las segundas transcripciones a mano no son un
+  duplicado inocuo: divergen sin que nada avise, y dos de las seis que había
+  ya divergían (el título de la Tabla N° 10, y la tercera condición de `h_o`,
+  con una **elisión sin marcar** bajo el rótulo «texto literal»).
+- **Tres cosas se imprimen separadas, y no es estilo:** lo que la fuente
+  **dice** (cita, `class="fuente"`), lo que el proyecto **lee** en ella
+  (`Interpretacion`, `class="interpretacion"`) y lo que el proyecto **hace**.
+  Pegadas, las tres se leen como norma: es NOR-HID-04.
 
 ## Unidades
 - **Todo el código opera en SI: metros, m³/s, m/s, Pa, kN.** Ninguna función

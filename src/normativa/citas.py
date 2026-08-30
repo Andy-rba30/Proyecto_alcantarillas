@@ -32,7 +32,6 @@ from .esquema import (
     Cita,
     CondicionAplicacion,
     Efecto,
-    Fundamento,
     Interpretacion,
     MetodoDeVerificacion,
     NoEvaluable,
@@ -302,6 +301,40 @@ MC_HHD_V_MIN = _cita(
           "numero se imprime en la 77. El `texto_literal` es la mitad que "
           "contiene el valor, porque es la que T5 tiene que poder encontrar "
           "en la pagina que la cita declara."),
+)
+
+# LA OTRA MITAD DEL MISMO PARRAFO, y no es un duplicado: cambia el CARACTER.
+# La frase que arranca en la pag. impresa 76 dice «se deberá verificar», que es
+# una EXIGENCIA -- verificar el minimo es obligatorio --, y la que termina en la
+# 77 dice «recomendándose que la velocidad minima sea igual a 0.25 m/s», que es
+# una RECOMENDACION sobre el VALOR. Son dos afirmaciones normativas distintas
+# dentro de una sola oracion, y la memoria las tiene que poder imprimir por
+# separado: sin esta mitad, «V2 es una recomendacion» se lee como que verificar
+# el piso es opcional, que no es lo que el Manual dice. Vivia dentro de la
+# `nota` de #VMIN -- o sea como prosa del proyecto, no como cita citable -- y
+# por eso ninguna verificacion podia apoyarse en ella.
+MC_HHD_4_1_1_3_6_VMIN_INICIO = _cita(
+    id="MC_HHD.4.1.1.3.6#VMIN_INICIO",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.6, párrafo posterior a la Tabla Nº 10 (primera mitad)",
+    titulo_numeral="Diseño hidráulico",
+    pagina_impresa="76",
+    pagina_pdf=79,
+    pagina_pdf_titulo=77,
+    texto_literal=Verbatim(
+        texto=("Se deberá verificar que la velocidad mínima del flujo dentro "
+               "del conducto no produzca sedimentación que pueda incidir en "
+               "una"),
+        pagina_pdf=79),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    derivado_de="MC_HHD.4.1.1.3.6#VMIN",
+    nota=("La frase se corta donde la corta la PAGINA, no donde conviene: "
+          "«...incidir en una» es literalmente el ultimo renglon de la pag. "
+          "impresa 76, y completarla aqui con «reducción de su capacidad "
+          "hidráulica» produciria un texto que no esta en esta pagina y que "
+          "el buscador de un lector no encuentra. La continuacion es "
+          "`MC_HHD.4.1.1.3.6#VMIN`, y las dos juntas son la oracion entera."),
 )
 
 MC_HHD_4_1_1_3_7a = _cita(
@@ -1576,6 +1609,76 @@ HDS5_3_3_3 = _cita(
 )
 
 
+# LAS OTRAS DOS CONDICIONES DE h_o, cada una con su cita. Vivian como prosa
+# dentro de `constantes_normativas.H_O_CONDICION_TEXTO`, o sea transcritas a
+# mano una segunda vez y de-acentuadas; y la segunda venia ademas con una
+# ELISION SIN MARCAR -- se saltaba la oracion sobre el calculo de remanso --
+# bajo un rotulo que decia "Texto literal". Aqui estan enteras y verificadas
+# contra la pagina.
+HDS5_3_3_3_HO_SUMERGIDA = _cita(
+    id="HDS5_3ED.3.3.3#HO_SUMERGIDA",
+    fuente_id="HDS5_3ED",
+    numeral="3.3.3",
+    titulo_numeral="Outlet Control",
+    pagina_impresa="3.24",
+    pagina_pdf=106,
+    texto_literal=Verbatim(
+        texto="It should not be used if the inlet is not submerged.",
+        pagina_pdf=106),
+    caracter=Caracter.EXIGENCIA,
+    derivado_de="HDS5_3ED.3.3.3#HO",
+    nota=("Segunda mitad de la vineta de h_o, y es una condicion DISTINTA de "
+          "la primera: aquella acota por llenado del barril, esta por "
+          "sumergencia de la entrada. El expediente las leia como una sola."),
+)
+
+HDS5_3_3_3_HO_1_2D = _cita(
+    id="HDS5_3ED.3.3.3#HO_1_2D",
+    fuente_id="HDS5_3ED",
+    numeral="3.3.3",
+    titulo_numeral="Outlet Control",
+    pagina_impresa="3.24",
+    pagina_pdf=106,
+    texto_literal=Verbatim(
+        texto=("If outlet control governs and the headwater depth "
+               "(referenced to the inlet invert) is less than 1.2D, it is "
+               "possible that the barrel flows partly full though its entire "
+               "length.  In this case, caution should be used in applying "
+               "the approximate method of setting the downstream elevation "
+               "based on the greater of tailwater or (dc + D)/2.  If a more "
+               "accurate headwater is necessary, backwater calculations "
+               "(Section 3.5) should be used to check the result from the "
+               "approximate method. If the headwater depth falls below "
+               "0.75D, the approximate method should not be used."),
+        pagina_pdf=106),
+    caracter=Caracter.EXIGENCIA,
+    derivado_de="HDS5_3ED.3.3.3#HO",
+    nota=("De aqui salen los DOS limites que `M4` evalua punto por punto: "
+          "1.2D (cautela) y 0.75D (no usar). La transcripcion anterior del "
+          "expediente se saltaba, sin marcarlo, la oracion sobre las "
+          "backwater calculations -- que es justamente la que dice QUE HACER "
+          "cuando el punto cae en la banda de cautela. Una elision no marcada "
+          "dentro de algo rotulado «texto literal» es la misma clase de "
+          "defecto que NOR-HID-06."),
+)
+
+# LA FORMA CON EL MAXIMO NO SE INTERNA COMO `Cita`, Y HAY QUE DECIR POR QUE.
+# `M4.control_salida` implementa h_o = max(TW, (dc + D)/2) y la 3a ed. NO
+# imprime esa igualdad: la escribe en prosa («the greater of tailwater or
+# (dc + D)/2», pag. 3.24). Impresa como igualdad esta en la edicion SI de 1985,
+# que tambien vive en normas/ -- «ho = TW or (dc + D)/2 whichever is larger.»,
+# PDF 67, comprobado con `aparece_en_pagina` --, y aun asi no puede entrar aqui:
+# la `Paginacion` de `HDS5_SI_1985` es `SinDeterminar` (esa copia electronica no
+# imprime numeros de pagina propios) y el invariante T6 prohibe que una cita
+# suya declare pagina PDF firmada. La prohibicion es correcta y no se toca por
+# conveniencia: es la que impide que una pagina supuesta pase por medida.
+#
+# Consecuencia, declarada donde se usa: el texto de 1985 viaja en
+# `constantes_normativas.H_O_FORMA_MAXIMO_TEXTO` y M11 lo imprime bajo el
+# rotulo TRANSCRIPCION, nunca bajo "texto literal de la fuente" -- la memoria
+# dice de que edicion sale y que la 3a ed. no lo escribe asi.
+
+
 # ===========================================================================
 # AASHTO LRFD 9a ed. -- el resto
 # ===========================================================================
@@ -2381,18 +2484,13 @@ E030_FACTOR_SUELO = _cita(
 )
 
 
-# ===========================================================================
-# Fundamentos (§3.10). Se pueblan aqui los que el registro ya puede sostener;
-# la carga completa es trabajo de S18 y la decision abierta #4 del diseño.
-# ===========================================================================
-
-FUNDAMENTOS: Dict[str, Fundamento] = {}
-
-
-def _fundamento(**kw) -> Fundamento:
-    f = Fundamento(**kw)
-    FUNDAMENTOS[f.id] = f
-    return f
+# Los Fundamentos (§3.10) NO viven aqui: la decision abierta #4 del diseño del
+# registro los difirio a S18 y S18 les dio archivo propio,
+# `normativa/fundamentos.py`. El motivo es de lectura, no de tamaño: una cita
+# dice QUE dice la fuente y un fundamento dice POR QUE se hace el paso, y
+# mezclarlos en el mismo archivo invita a redactar el segundo como si fuera lo
+# primero -- que es la confusion que NOR-MEM-01 y NOR-HID-04 dejaron por
+# escrito. `registro.construir()` los toma de alli.
 
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

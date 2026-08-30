@@ -841,6 +841,17 @@ CENSO_DE_MARCAS = {
     # exime; nombrarlos es ademas lo que se querria igual.
     "gui/ventana_normativa.py": 3,
     "src/dominios.py": 4,
+    # UNA sola: `CIFRAS_MAGNITUD = 3`, los decimales con que la traza de la
+    # memoria imprime una magnitud (§4.4). Es de la misma naturaleza que los
+    # `FMT_*` de M11 --- cuantos decimales se escriben, no cuanto vale nada ---
+    # y por eso se nombra una vez aqui en vez de repetirse como un 3 suelto en
+    # cada `Magnitud(...)` de cada modulo de calculo: asi el barrido tiene una
+    # linea que mirar y no ochenta. `CIFRAS_FACTOR = 2` y
+    # `CIFRAS_PORCENTAJE = 1` no cuentan porque la regla exime el 0, el 1 y
+    # el 2. La segunda es `CIFRAS_FINA = 4`, los cuatro decimales de la
+    # pendiente y de n: con tres, una S de 0.0006 se imprime 0.001 y la caida
+    # S*L deja de poder recomputarse desde la memoria (MAT-D9).
+    "src/modelos.py": 2,
     "src/modulos/M3_hidraulica.py": 3,
     "src/modulos/M4_control.py": 5,
     "src/modulos/M8_estructural.py": 1,

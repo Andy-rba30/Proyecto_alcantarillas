@@ -56,7 +56,9 @@ from __future__ import annotations
 import math
 
 import criterios_adoptados as ca
-from modelos import (DatoInvalidoError, Espaciamiento,
+from modelos import (CIFRAS_FACTOR, DatoInvalidoError, EleccionDeProyecto,
+                     Espaciamiento, Magnitud, TipoDeVeredicto, Umbral,
+                     Veredicto, paso,
                      GobiernaEspaciamiento, ReferenciaNormativa)
 
 NUMERAL_FASE_10 = ReferenciaNormativa(
@@ -100,6 +102,62 @@ def espaciamiento_alivio(L_hidraulico: float) -> Espaciamiento:
         espaciamiento_max = L_normativo
 
     return Espaciamiento(
+        paso=paso(
+            "F10.CUNETA",
+            codigo="10.1",
+            que="Espaciamiento maximo entre alcantarillas de alivio",
+            formula="espaciamiento_max = min(L_normativo, L_hidraulico)",
+            formula_cita_id="MC_HHD.4.1.2.1d",
+            citas_textuales=("MC_HHD.4.1.2.1d",),
+            sustitucion=(
+                Magnitud("L_normativo", L_normativo, "m",
+                         f"criterio adoptado '{CRITERIO_LONG_MAX_CUNETA}': el "
+                         "numeral da DOS cifras con distinta fuerza y esta es "
+                         "la elegida", cifras=CIFRAS_FACTOR),
+                Magnitud("L_hidraulico", L_hidraulico, "m",
+                         "longitud a la que la cuneta agota su capacidad con "
+                         "borde libre frente al caudal aportante de TR = 35 "
+                         "anios; llega resuelta por quien llama",
+                         cifras=CIFRAS_FACTOR)),
+            resultado=Magnitud("espaciamiento_max", espaciamiento_max, "m",
+                               f"gobierna el limite {gobierna.value}",
+                               cifras=CIFRAS_FACTOR),
+            umbral=Umbral(
+                descripcion="longitud maxima de recorrido de la cuneta",
+                valor=L_normativo, unidad="m",
+                cita_id="MC_HHD.4.1.2.1d",
+                caracter="EXIGENCIA para el maximo de region seca ('sera de "
+                         "250 m como maximo') y RECOMENDACION para el de "
+                         "region muy lluviosa ('se recomienda reducir esta "
+                         "longitud maxima a 200 m'). No son dos lecturas de "
+                         "lo mismo: son dos cifras con distinta fuerza en la "
+                         "misma frase",
+                aplicacion="El proyecto adopta los 200 m -- la cifra "
+                           "RECOMENDADA, no la exigida -- por el regimen FEN "
+                           "del corredor, que es la lectura conservadora. La "
+                           "eleccion es del proyectista y esta declarada en "
+                           f"'{CRITERIO_LONG_MAX_CUNETA}'",
+                criterio_aplicado=CRITERIO_LONG_MAX_CUNETA),
+            veredicto=Veredicto(
+                tipo=TipoDeVeredicto.CUMPLE,
+                margen=L_normativo - espaciamiento_max, unidad="m",
+                explicacion="el espaciamiento adoptado no excede el limite "
+                            "de recorrido de la cuneta"),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="longitud maxima de recorrido de la cuneta",
+                valor=f"{L_normativo} m",
+                entre=("250 m (region seca o poco lluviosa; «sera ... como "
+                       "maximo»)",
+                       "200 m (region muy lluviosa; «se recomienda reducir»)"),
+                de_donde="el num. 4.1.2.1 d) «Desague de las cunetas», pag. "
+                         "impresa 179",
+                por_que="el corredor esta en regimen FEN: la region no es "
+                        "seca en el evento que dimensiona la obra. Se adopta "
+                        "la cifra menor, que es la recomendada y la "
+                        "conservadora",
+                cita_id="MC_HHD.4.1.2.1d",
+                clave_criterio=CRITERIO_LONG_MAX_CUNETA),),
+        ),
         L_normativo=L_normativo,
         L_hidraulico=L_hidraulico,
         espaciamiento_max=espaciamiento_max,

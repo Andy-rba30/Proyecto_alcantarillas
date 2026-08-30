@@ -159,12 +159,14 @@ Registrador = Callable[[PasoDiseno], None]
 
 def _registrar(registrador: Optional[Registrador], material: Material,
                D: float, *, aceptado: bool, motivo: str,
-               verificaciones: Tuple[Verificacion, ...] = ()) -> None:
+               verificaciones: Tuple[Verificacion, ...] = (),
+               resultado: Optional[ResultadoHidraulico] = None) -> None:
     """Anota un escalon del bucle si hay observador; si no, no hace nada."""
     if registrador is None:
         return
     registrador(PasoDiseno(material=material.nombre, D=D, aceptado=aceptado,
-                           motivo=motivo, verificaciones=verificaciones))
+                           motivo=motivo, verificaciones=verificaciones,
+                           resultado_hidraulico=resultado))
 
 
 # ---------------------------------------------------------------------------
@@ -308,6 +310,13 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     ultimo_motivo = "el catalogo no ofrecio ningun diametro"
 
     while D is not None:
+        # Fuera del `try` a proposito: si la Fase 5 revienta, el escalon que
+        # revento tiene que quedar en la traza CON la hidraulica que M3 y M4
+        # si alcanzaron a resolver. Es lo unico que llega a la memoria cuando
+        # ningun punto cierra, que es el estado de este expediente mientras
+        # V5 siga sin `ancho_derecho_via_m` (§4.4, y la leccion de
+        # NOR-MEM-01: el codigo lo calcula y el producto no lo muestra).
+        resultado = None
         try:
             normal = resolver_manning(D=D, Q=Q, S=S, material=material)
 
@@ -333,7 +342,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
 
                 if all(v.cumple for v in verificaciones):
                     _registrar(registrar, material, D, aceptado=True,
-                               motivo="", verificaciones=verificaciones)
+                               motivo="", verificaciones=verificaciones,
+                               resultado=resultado)
                     return ResultadoPunto(
                         punto=punto,
                         material=material,
@@ -346,15 +356,24 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                 ultimo_motivo = _motivo_incumplimiento(D, verificaciones)
                 _registrar(registrar, material, D, aceptado=False,
                            motivo=ultimo_motivo,
-                           verificaciones=verificaciones)
+                           verificaciones=verificaciones,
+                           resultado=resultado)
         except ErrorProyecto as exc:
             # El escalon probado queda en la traza ANTES de que la excepcion
             # siga subiendo: un escalon que revento es parte de lo que se
             # intento, y la memoria de un punto que no cerro es justamente la
             # que hay que publicar entera. Solo ErrorProyecto: un ValueError o
             # un ImportError es un fallo de programa y sube sin anotarse.
+            # Las verificaciones que la Fase 5 SI alcanzo a evaluar viajan
+            # dentro de la excepcion. Sin ellas, un escalon que revento en V5
+            # --- que en este expediente son todos --- llegaba a la memoria
+            # como un motivo de una linea, tirando el desarrollo de V1 a V4b
+            # que si se calculo. Ver el docstring de `M5.verificar`.
             _registrar(registrar, material, D, aceptado=False,
-                       motivo=_motivo_escalon_fallido(D, exc))
+                       motivo=_motivo_escalon_fallido(D, exc),
+                       verificaciones=getattr(
+                           exc, "verificaciones_completadas", ()),
+                       resultado=resultado)
             raise
 
         D = siguiente_diametro(material.tipo, D)

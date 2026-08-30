@@ -33,10 +33,10 @@ CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
 PLANTILLA = M11.DIR_PLANTILLAS / M11.NOMBRE_PLANTILLA
 PLANTILLA_PERFIL = M11.DIR_PLANTILLAS / M11.NOMBRE_PLANTILLA_PERFIL
 
-# Las dos plantillas de la memoria. El contrato de marcadores se valida sobre
-# AMBAS en la direccion que las obliga a las dos (no pedir lo que M11 no
-# entrega); la direccion contraria -- usarlos todos -- solo sobre la de
-# expediente: ver `test_ningun_marcador_declarado_sin_usar`.
+# Las dos plantillas de la memoria. Desde S18 el contrato de marcadores se
+# valida sobre AMBAS y en las DOS direcciones: no pedir lo que M11 no entrega,
+# y no dejar sin imprimir lo que M11 si produce. La segunda mitad faltaba, y
+# esa falta era SIS-B-06.
 PLANTILLAS = (PLANTILLA, PLANTILLA_PERFIL)
 
 
@@ -138,24 +138,79 @@ class TestPlantillaSinPorcentajesLibres:
             "Ese contenido no llega a la memoria."
         )
 
-    def test_la_de_perfil_usa_un_subconjunto_estricto(self):
+    def test_las_dos_plantillas_comparten_EL_MISMO_contrato_de_marcadores(self):
         """
-        La de perfil no puede degenerar en una copia de la de expediente: si
-        alguien le pega de vuelta el volcado de tableros, este test lo dice.
-        Y al reves, tampoco puede quedarse sin el bloque que la justifica.
+        ESTE TEST DECIA LO CONTRARIO HASTA S18, y lo que vigilaba era el
+        defecto (SIS-B-06).
+
+        Exigia que la plantilla de perfil usara un subconjunto ESTRICTO y que
+        `bloque_pendientes` NO estuviera en ella. Esa omision es justo el
+        mecanismo del hallazgo: `substitute` no se queja de un valor sobrante,
+        de modo que forzar la hoja de perfil sobre una corrida de EXPEDIENTE
+        --- que la propia CLI invita a hacer, porque su docstring dice que las
+        dos «comparten el contrato de marcadores» y su help remata con «las
+        dos aceptan cualquier corrida» --- descartaba 13 647 caracteres en
+        silencio, los criterios bloqueantes del expediente entre ellos.
+
+        Lo que distingue a la hoja de perfil no es que le falte un marcador:
+        es lo que va DENTRO de ese marcador, y eso lo decide el ALCANCE DE LA
+        CORRIDA. Es lo que comprueba
+        `test_el_contenido_de_pendientes_lo_decide_el_alcance`.
         """
-        texto = PLANTILLA_PERFIL.read_text(encoding="utf-8")
-        usados = {m.group(2) for m in self.TODOS.finditer(texto) if m.group(2)}
-        assert usados < self._marcadores_declarados(), (
-            "la plantilla de perfil deberia usar un subconjunto ESTRICTO de "
-            "los marcadores; si los usa todos, ya no se distingue de la de "
-            "expediente")
-        assert "bloque_pendientes" not in usados, (
-            "la plantilla de perfil no imprime el volcado de Tableros 1-2-3: "
-            "es justo lo que su bloque 4 reemplaza")
-        assert "bloque_alcance" in usados, (
+        de_expediente = {m.group(2) for m in
+                         self.TODOS.finditer(
+                             PLANTILLA.read_text(encoding="utf-8"))
+                         if m.group(2)}
+        de_perfil = {m.group(2) for m in
+                     self.TODOS.finditer(
+                         PLANTILLA_PERFIL.read_text(encoding="utf-8"))
+                     if m.group(2)}
+        assert de_perfil == de_expediente, (
+            "las dos plantillas tienen que llevar los MISMOS marcadores: es "
+            "lo que la CLI promete y lo que impide que forzar una sobre la "
+            "otra pierda contenido en silencio (SIS-B-06). Diferencia: "
+            f"{sorted(de_perfil ^ de_expediente)}")
+        assert "bloque_alcance" in de_perfil, (
             "sin el bloque de alcance, una memoria de perfil no declara que "
             "difirio: es su seccion 4 y la razon de existir de la plantilla")
+
+    def test_el_contenido_de_pendientes_lo_decide_el_alcance(self):
+        """
+        Lo que separa de verdad a las dos memorias: con `--alcance perfil` el
+        bloque de pendientes NO vuelca los Tableros 1-2-3 y lo DICE; con
+        `--alcance expediente` los vuelca. La decision es de la corrida, no de
+        la hoja, que es de donde tenia que salir desde el principio.
+        """
+        tableros = M11.tableros_pendientes()
+        del_expediente = M11.bloque_pendientes(
+            tableros, (), alcance=M11.ALCANCE_EXPEDIENTE)
+        del_perfil = M11.bloque_pendientes(
+            tableros, (), alcance=M11.ALCANCE_PERFIL)
+        assert tableros, "sin tableros la comparacion no prueba nada"
+        assert len(del_expediente) > len(del_perfil)
+        assert "nivel de perfil" in del_perfil
+        assert "--alcance expediente" in del_perfil
+
+    def test_una_plantilla_que_pierde_contenido_revienta(self, tmp_path):
+        """
+        La guardia de SIS-B-06 sobre el contenido REAL de la corrida: si la
+        hoja no imprime un bloque que esta corrida si produjo, `memoria_html`
+        se detiene en vez de emitir una memoria a la que le faltan paginas.
+
+        Se comprueba con una plantilla mutilada a proposito --- la de
+        expediente sin `%%bloque_pendientes` ---, que es exactamente lo que la
+        hoja de perfil era antes de esta correccion.
+        """
+        informe = _informe_de_ejemplo()
+        mutilada = tmp_path / "sin_pendientes.html"
+        mutilada.write_text(
+            PLANTILLA.read_text(encoding="utf-8")
+            .replace("%%bloque_pendientes", "(aqui no se imprime nada)"),
+            encoding="utf-8")
+        with pytest.raises(ValueError) as exc:
+            M11.memoria_html(informe, ruta_plantilla=mutilada)
+        assert "bloque_pendientes" in str(exc.value)
+        assert "SIS-B-06" in str(exc.value)
 
     def test_el_detector_atrapa_un_delimitador_en_texto_libre(self):
         """

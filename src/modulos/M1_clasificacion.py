@@ -67,12 +67,15 @@ from __future__ import annotations
 from typing import Dict, List, Mapping, Optional, Tuple, Union
 
 from constantes_normativas import (LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE,
-                                   TABLA_02_FILAS)
+                                   TABLA_02_FILAS, UMBRALES_POR_CODIGO,
+                                   caracter_del_umbral)
 from criterios_adoptados import valor, valor_si_declarado
-from modelos import (CategoriaTR, Clasificacion, DatoFaltanteError,
+from modelos import (CIFRAS_FACTOR, CIFRAS_MAGNITUD, CategoriaTR,
+                     Clasificacion, DatoFaltanteError,
                      DatoInvalidoError, Denominacion, DisenoNoFactibleError,
-                     Familia, PerfilFamilia, PeriodoRetorno, PuntoCritico,
-                     Verificacion)
+                     EleccionDeProyecto, Familia, Magnitud, PerfilFamilia,
+                     PeriodoRetorno, PuntoCritico, TipoDeVeredicto, Umbral,
+                     Veredicto, Verificacion, paso)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
 # Numerales que sustentan cada decision de la fase.
@@ -136,12 +139,49 @@ def verificar_luz(luz_m: Optional[float],
     la denominacion es alcantarilla.
     """
     denominacion = denominacion_por_luz(luz_m, id_punto)
+    es_alcantarilla = denominacion is Denominacion.ALCANTARILLA
     return Verificacion(
-        cumple=denominacion is Denominacion.ALCANTARILLA,
+        cumple=es_alcantarilla,
         numeral=NUMERAL_LUZ,
         valor_obtenido=float(luz_m),
         valor_admisible=LUZ_MAX_ALCANTARILLA,
         criterio_aplicado=None,           # umbral [N] puro, sin criterio adoptado
+        paso=paso(
+            "F2.LUZ",
+            codigo="2.1",
+            que="Denominacion de la obra: alcantarilla o puente",
+            formula="luz < 6.0 m -> alcantarilla; luz >= 6.0 m -> puente",
+            formula_cita_id="MC_HHD.4.1.1.3.1",
+            citas_textuales=("MC_HHD.4.1.1.3.1", "MC_HHD.4.1.1.5.1"),
+            sustitucion=(
+                Magnitud("luz", float(luz_m), "m",
+                         "luz del cruce, declarada con --luz o por "
+                         "--datos-externos: NO es columna del CSV",
+                         cifras=CIFRAS_FACTOR),),
+            resultado=Magnitud("denominacion", denominacion.value, "",
+                               "lectura del umbral de los dos numerales"),
+            umbral=Umbral(
+                descripcion="luz maxima de una alcantarilla",
+                valor=LUZ_MAX_ALCANTARILLA, unidad="m",
+                cita_id="MC_HHD.4.1.1.3.1",
+                caracter="DEFINICION",
+                aplicacion="La tolerancia se aplica del lado exigente: una "
+                           "luz que el punto flotante deja en 5.999999999 es "
+                           "6.0 m mal representada, y 6.0 m es puente. "
+                           "Sumarla al lado de la alcantarilla convertiria un "
+                           "puente en alcantarilla por ruido de aritmetica."),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.CUMPLE if es_alcantarilla
+                      else TipoDeVeredicto.NO_CUMPLE),
+                margen=LUZ_MAX_ALCANTARILLA - float(luz_m), unidad="m",
+                explicacion=(
+                    "dentro del alcance de este script"
+                    if es_alcantarilla else
+                    "la obra es un PUENTE: la gobierna el Manual de Puentes, "
+                    "con otro tren de cargas y otro procedimiento sismico. "
+                    "El pipeline se detiene en vez de emitir una memoria que "
+                    "cite numerales de un manual que no la gobierna")),
+        ),
     )
 
 
@@ -321,6 +361,100 @@ def _riesgo_del_propietario(cat: CategoriaTR, R: float, n: int):
     return R_declarado, n_declarado, True
 
 
+def _paso_tr(*, cat, R, n, exacto, del_propietario: bool):
+    """
+    El paso de memoria del periodo de retorno.
+
+    ES EL CASO MAS CLARO DE LA REGLA R1 ("se adopto X, elegido entre X1...Xn
+    de la Tabla T, por la razon R"): la Tabla Nº 02 tiene SEIS filas, el
+    calculo usa dos, y de esas dos el TR sale de la que describe a este punto.
+    Sin las alternativas, «TR = 71 años» es un numero que el revisor tiene que
+    creer; con ellas, es una decision que puede discutir.
+
+    Y HAY UNA SEGUNDA ELECCION, que es la que la memoria callaba: adoptar los
+    MAXIMOS recomendados de la tabla es el extremo MENOS conservador del
+    margen que la tabla concede -- mas riesgo admisible da menos TR y menos
+    caudal de diseño --, al reves que en V1 y V2, donde la lectura dura es la
+    conservadora. La nota al pie deja esa decision al Propietario y el
+    proyecto tiene una via declarada para que la ejerza.
+    """
+    filas = tuple(
+        f"«{datos['fila']}» (R = {RIESGO_ADMISIBLE[clave]['R']}, "
+        f"n = {RIESGO_ADMISIBLE[clave]['n']} anios)"
+        for clave, datos in TABLA_02_FILAS.items()
+        if clave in RIESGO_ADMISIBLE)
+    elecciones = [EleccionDeProyecto(
+        que_se_adopto="fila de la Tabla Nº 02 que describe a este cruce",
+        valor=f"«{TABLA_02_FILAS[cat.value]['fila']}»",
+        entre=filas,
+        de_donde="la Tabla Nº 02 del num. 3.6, pag. impresa 25",
+        por_que="es la fila que corresponde a la familia y al area tributaria "
+                "del punto (Sec. 2.2 y 2.3). LA TABLA ES NORMATIVA; QUE FILA "
+                "DESCRIBE A ESTE CRUCE NO LO ES",
+        cita_id="MC_HHD.3.6")]
+    if del_propietario:
+        elecciones.append(EleccionDeProyecto(
+            que_se_adopto="riesgo admisible y vida util",
+            valor=f"R = {R}, n = {n} anios",
+            entre=(f"R = {RIESGO_ADMISIBLE[cat.value]['R']}, "
+                   f"n = {RIESGO_ADMISIBLE[cat.value]['n']} anios "
+                   "(maximos recomendados por la tabla)",),
+            de_donde=f"el criterio '{CRITERIO_RIESGO_PROPIETARIO}'",
+            por_que="el Propietario ejercio la decision que la nota al pie de "
+                    "la tabla le asigna, por debajo de los maximos "
+                    "recomendados. La via solo admite ENDURECER el techo",
+            cita_id="MC_HHD.3.6",
+            clave_criterio=CRITERIO_RIESGO_PROPIETARIO))
+    else:
+        elecciones.append(EleccionDeProyecto(
+            que_se_adopto="riesgo admisible y vida util",
+            valor=f"R = {R}, n = {n} anios",
+            entre=("cualquier R menor, que daria un TR mayor y un caudal de "
+                   "diseño mayor",),
+            de_donde="los MAXIMOS RECOMENDADOS de la propia tabla",
+            por_que="el Propietario no ha declarado otros por la via que "
+                    f"tiene para hacerlo ('{CRITERIO_RIESGO_PROPIETARIO}'). "
+                    "ADVERTENCIA: adoptar el maximo recomendado es el extremo "
+                    "MENOS conservador del margen que la tabla concede, al "
+                    "reves que en V1 y V2",
+            cita_id="MC_HHD.3.6",
+            clave_criterio=CRITERIO_RIESGO_PROPIETARIO))
+    u = UMBRALES_POR_CODIGO["TR"]
+    return paso(
+        "F2.TR",
+        codigo="2.2",
+        que="Periodo de retorno del caudal de diseño",
+        formula="R = 1 - (1 - 1/T)^n, despejada en T: "
+                "T = 1 / (1 - (1 - R)^(1/n))",
+        formula_cita_id="MC_HHD.3.6",
+        citas_textuales=("MC_HHD.3.6",),
+        sustitucion=(
+            Magnitud("R", R, "",
+                     f"riesgo admisible de falla de la fila "
+                     f"«{TABLA_02_FILAS[cat.value]['fila']}»",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("n", n, "anios",
+                     "vida util de la misma fila, que la tabla escribe en su "
+                     "nota al pie (**)")),
+        resultado=Magnitud("TR", round(exacto), "anios",
+                           f"redondeo al anio de {exacto:.2f}, que es el "
+                           f"valor que la columna «TR de diseño» de la tabla "
+                           f"publica", cifras=None),
+        umbral=Umbral(
+            descripcion="riesgo admisible maximo recomendado para esta fila",
+            valor=RIESGO_ADMISIBLE[cat.value]["R"], unidad="",
+            cita_id="MC_HHD.3.6",
+            caracter=caracter_del_umbral(u),
+            aplicacion=u["aplicacion"]),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.CUMPLE,
+            margen=RIESGO_ADMISIBLE[cat.value]["R"] - R, unidad="",
+            explicacion="el riesgo adoptado no excede el maximo recomendado "
+                        "de la tabla"),
+        elecciones=tuple(elecciones),
+    )
+
+
 def tr_de_categoria(categoria: CategoriaLike,
                     id_punto: Optional[str] = None,
                     fundamento: str = "") -> PeriodoRetorno:
@@ -347,6 +481,8 @@ def tr_de_categoria(categoria: CategoriaLike,
     R, n, adoptado_por_propietario = _riesgo_del_propietario(cat, R, n)
     exacto = tr_desde_riesgo(R, n)
     return PeriodoRetorno(
+        paso=_paso_tr(cat=cat, R=R, n=n, exacto=exacto,
+                      del_propietario=adoptado_por_propietario),
         procede=True,
         categoria=cat,
         R=R,

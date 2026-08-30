@@ -34,6 +34,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, fields
 from enum import Enum
+from functools import lru_cache
 from typing import Any, Dict, Optional, Tuple, Union
 
 from dominios import CENTIMETROS_POR_METRO
@@ -53,7 +54,27 @@ from dominios import CENTIMETROS_POR_METRO
 # ===========================================================================
 
 class ErrorProyecto(Exception):
-    """Raiz de la taxonomia. La GUI la trata como aviso, no como crash."""
+    """
+    Raiz de la taxonomia. La GUI la trata como aviso, no como crash.
+
+    `verificaciones_completadas` es lo que la Fase 5 ALCANZO A VERIFICAR antes
+    de detenerse. No es un dato de la excepcion --- la excepcion sigue
+    significando lo mismo --- sino la parte del trabajo que ya estaba hecha
+    cuando el vacio aparecio, y que sin esto se tiraba.
+
+    Hace falta porque en este expediente ninguna combinacion pasa de V5:
+    `v5_remanso` se detiene siempre en `ancho_derecho_via_m`, que ningun
+    tablero aporta todavia. V1 a V4b SI se evaluaron, con su tirante, su
+    velocidad y su margen, y ese calculo no llegaba a la memoria --- ni el
+    veredicto ni el desarrollo ---, de modo que el revisor veia «no
+    dimensionado» sin ver nada de lo que si se comprobo. Es la misma trampa
+    que NOR-MEM-01: cierto sobre el codigo y falso sobre el producto.
+
+    Vacia por defecto, y solo la rellena `M5.verificar`. Ninguna otra
+    excepcion de la taxonomia la usa hoy.
+    """
+
+    verificaciones_completadas: Tuple["Verificacion", ...] = ()
 
 
 class CriterioPendienteError(ErrorProyecto):
@@ -958,6 +979,11 @@ class ResultadoHidraulico:
     # por si el control de salida gobierna (NOR-HDS-05). Ver `ControlSalida`.
     h_o_fuera_de_rango: bool = False
     h_o_requiere_cautela: bool = False
+    # LA TRAZA HIDRAULICA (§4.4). Los pasos que M3 y M4 emitieron al resolver
+    # esta combinacion, en el orden en que se calcularon: Manning, tirante
+    # critico, control de entrada, control de salida y adopcion del
+    # gobernante. M11 los formatea; no los reconstruye.
+    pasos: Tuple["PasoDeMemoria", ...] = ()
 
     @property
     def HW(self) -> float:
@@ -997,6 +1023,7 @@ class ProteccionSalida:
     criterio_longitud: str                # clave en criterios_adoptados.py
     advertencias: Tuple[str, ...]
     numeral: str = "4.1.1.3.7 c)"
+    paso: Optional["PasoDeMemoria"] = None
 
 
 @dataclass(frozen=True)
@@ -1088,6 +1115,363 @@ class Verificacion:
     valor_admisible: Any
     criterio_aplicado: Optional[str]
     codigo: Optional[str] = None          # "V1" .. "V9" (Fase 5)
+    # LA TRAZA DE LA MEMORIA, emitida por la propia funcion que verifica.
+    #
+    # Va aqui y no en un canal aparte porque es lo mismo que `cumple`: el
+    # resultado de la verificacion. Lo que cambia es a quien se lo cuenta --
+    # `cumple` al pipeline, `paso` al lector de la memoria -- y separarlos en
+    # dos objetos permitiria que dijeran cosas distintas, que es exactamente
+    # lo que pasaba cuando M11 reconstruia el relato leyendo resultados
+    # (SIS-A-07).
+    #
+    # `None` NO significa "sin fundamentar": significa que esa verificacion
+    # todavia no puede tener `Fundamento`, y las razones estan censadas una a
+    # una en `normativa.fundamentos.SIN_FUNDAMENTO` -- V4b, V5, V6, V8 y V9,
+    # cada una con lo que habria que transcribir para traerla. M11 imprime esa
+    # razon en el sitio del paso ausente, en vez de dejar el hueco callado.
+    paso: Optional["PasoDeMemoria"] = None
+
+
+# ===========================================================================
+# La traza de la memoria (Sec. 4.4 del plan de correcciones v12)
+# ---------------------------------------------------------------------------
+# EL CAMBIO DE FONDO. Hasta S18 la memoria se RECONSTRUIA: M11 leia los
+# resultados y volvia a armar el relato -- y, para poder armarlo, volvia a
+# calcular (`y/D` en dos sitios, contra su propio docstring; SIS-A-07). Un
+# reporte que recalcula es un segundo motor de calculo sin tests, y lo que
+# imprime puede divergir de lo que el pipeline verifico sin que nada avise.
+#
+# A partir de aqui el calculo EMITE la traza y M11 la FORMATEA. `PasoDeMemoria`
+# es la unidad de esa traza: los ocho campos de la §4.4, y cada uno responde a
+# una pregunta que un revisor hace en voz alta delante de la memoria.
+#
+#     que              que se esta calculando
+#     por_que          por que la norma obliga o recomienda hacerlo
+#     formula          la expresion como la escribe la fuente, con su cita
+#     sustitucion      los valores que entran, con unidad y PROCEDENCIA
+#     resultado        el numero, con unidad y cifras declaradas
+#     umbral           contra que se compara, con cita y CARACTER
+#     veredicto        cumple / no cumple / diferido, con el margen
+#     citas_textuales  las transcripciones literales que lo sostienen
+#
+# TRES REGLAS ESTAN EN LOS TIPOS, no en un test que alguien puede no correr:
+#
+#   1. `por_que` es obligatorio y no vacio. Un paso sin fundamento no se
+#      construye. (Criterio de salida de la §4.4: "ningun PasoDeMemoria sin
+#      por_que".)
+#   2. Un `Umbral` sin `cita_id` no se construye. ("ningun umbral sin cita".)
+#   3. Un veredicto de cumplimiento sin umbral no se construye: decir "cumple"
+#      sin decir contra que es lo que hace indefendible una memoria.
+#
+# La cuarta -- que toda cita referenciada EXISTA en el registro -- no puede
+# vivir aqui: este archivo no importa `normativa`, y no debe. La comprueba
+# `modelos.paso()`, que si lo consulta, y la vuelve a comprobar el test sobre
+# la memoria generada.
+# ===========================================================================
+
+# DECIMALES DE PRESENTACION de la traza. Son de la misma naturaleza que los
+# `FMT_*` de M11 -- cuantos decimales se imprimen -- y por eso no son valores
+# de proyecto: `Magnitud` guarda el float entero y `cifras` solo dice como
+# escribirlo. Viven aqui, con nombre y una sola vez, en lugar de repetirse
+# como enteros sueltos en cada llamada de cada modulo de calculo: asi el
+# barrido de literales tiene tres lineas que mirar y no ochenta.
+CIFRAS_MAGNITUD = 3        # literal-ok: decimales de presentacion; no entra en ningun calculo
+# Cuatro para la PENDIENTE y para n: con tres, una S de 0.0006 se imprime
+# 0.001 y la caida S*L deja de poder recomputarse desde la memoria, que es
+# justo lo que esas filas existen para permitir (MAT-D9). Es la misma razon
+# por la que M11 tiene un FMT_4.
+CIFRAS_FINA = 4            # literal-ok: decimales de presentacion; no entra en ningun calculo
+CIFRAS_FACTOR = 2          # el 2 y el 1 no necesitan marca: la regla los exime
+CIFRAS_PORCENTAJE = 1
+
+
+# Alcance de la corrida. Rotulos, no valores de proyecto: con "expediente"
+# (el defecto) todo corre como siempre; con "perfil" V5 y V8 se INTENTAN pero
+# su fallo se difiere, y las Fases 8 y 9 no se ejecutan.
+#
+# VIVEN AQUI DESDE S18, y no en `cli.py`, porque dejaron de ser de la CLI:
+# M11 los necesita para decidir que va dentro de `bloque_pendientes` (el
+# volcado de los Tableros 1-2-3 es de la corrida de expediente), y M11 no
+# puede importar `cli` --- es `cli` quien importa M11 ---. La alternativa era
+# que M11 llevara su propia copia de las dos cadenas, que es como nacen las
+# dos fuentes de verdad que este proyecto persigue: `bloque_acotaciones` ya
+# comparaba contra un "expediente" escrito a mano.
+ALCANCE_PERFIL = "perfil"
+ALCANCE_EXPEDIENTE = "expediente"
+
+
+class TipoDeVeredicto(str, Enum):
+    """
+    CUATRO estados, y el cuarto no es relleno. Un paso puede calcular sin
+    juzgar --el tirante normal es un numero, no un aprobado-- y forzarlo a
+    "cumple" o "no cumple" obligaria a inventarle un umbral, que es la forma
+    exacta de la cita falsa que este proyecto viene retirando.
+
+    DIFERIDO es distinto de NO_CUMPLE y de SIN_VEREDICTO: la verificacion
+    existe, tiene umbral y no se evaluo porque el alcance de la corrida la
+    dejo fuera (`--alcance perfil`). Imprimirla como "cumple" seria mentir y
+    como "no cumple" tambien.
+    """
+
+    CUMPLE = "cumple"
+    NO_CUMPLE = "no cumple"
+    DIFERIDO = "diferido"
+    SIN_VEREDICTO = "sin veredicto"
+
+
+@dataclass(frozen=True)
+class Magnitud:
+    """
+    Un numero de la memoria con las tres cosas que lo hacen rastreable: su
+    unidad, sus cifras y DE DONDE SALIO.
+
+    `procedencia` es obligatoria y es la mitad que faltaba. "V = 2.31 m/s" y
+    "V = 2.31 m/s, de M3 por Manning con la rama de n maximo" son la misma
+    linea en la pagina y no son la misma informacion: la primera obliga al
+    revisor a abrir el codigo, que es justo lo que el criterio de salida de la
+    §4.4 prohibe.
+
+    `cifras` es de PRESENTACION: cuantos decimales se imprimen. No redondea el
+    valor almacenado -- el calculo sigue con el float entero -- y por eso no
+    es un valor de proyecto.
+    """
+
+    simbolo: str
+    valor: Any
+    unidad: str
+    procedencia: str
+    cifras: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if not str(self.simbolo).strip():
+            raise ValueError("Magnitud sin simbolo: no se puede citar")
+        if not str(self.procedencia).strip():
+            raise ValueError(
+                f"Magnitud «{self.simbolo}» sin procedencia. La §4.4 exige "
+                "que la sustitucion diga de donde sale cada valor; un numero "
+                "sin origen es el que obliga a abrir el codigo")
+
+    @property
+    def texto(self) -> str:
+        """El valor con su unidad, como lo imprime la memoria."""
+        v = self.valor
+        if isinstance(v, float) and math.isfinite(v) and self.cifras is not None:
+            texto = f"{v:.{self.cifras}f}"
+        elif isinstance(v, float) and not math.isfinite(v):
+            texto = "no finito"
+        else:
+            texto = str(v)
+        return f"{texto} {self.unidad}".strip()
+
+
+@dataclass(frozen=True)
+class Umbral:
+    """
+    Contra que se compara un resultado, con su cita y con su CARACTER.
+
+    `cita_id` es obligatorio: es la regla 2 de arriba y el corazon de
+    NOR-MEM-01. Un umbral sin cita es un numero que la memoria presenta como
+    normativo sin poder decir de donde sale.
+
+    `caracter` y `aplicacion` van SEPARADOS a proposito. El primero es lo que
+    la FUENTE hace con el numero (exigencia, recomendacion, aproximacion); el
+    segundo es lo que el PROYECTO hace con el. Los dos coinciden casi siempre,
+    y donde no coinciden esta lo unico que hay que declarar: el 0.25 m/s de V2
+    y el 0.75 de V1 los RECOMIENDA el Manual y este proyecto los aplica como
+    umbral duro por decision conservadora propia (NOR-MEM-01, MAT-O13).
+    Fundirlos en un campo es como se fabrica una exigencia que la norma no
+    escribio.
+    """
+
+    descripcion: str
+    valor: Any
+    unidad: str
+    cita_id: str
+    caracter: str
+    aplicacion: str
+    criterio_aplicado: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not str(self.cita_id).strip():
+            raise ValueError(
+                f"Umbral «{self.descripcion}» sin `cita_id`. La §4.4 exige "
+                "que todo umbral de aceptacion lleve la frase de la fuente "
+                "que lo fija; sin id no hay frase que buscar en el registro")
+        if not str(self.aplicacion).strip():
+            raise ValueError(
+                f"Umbral «{self.descripcion}» sin `aplicacion`: hay que decir "
+                "que hace el proyecto con el, que es lo que separa una "
+                "recomendacion aplicada como dura de una exigencia")
+
+
+@dataclass(frozen=True)
+class Veredicto:
+    """
+    El resultado del contraste, con el MARGEN.
+
+    El margen es lo que convierte "cumple" en informacion: un punto que pasa
+    por 0.002 y otro que pasa por 0.4 se imprimen igual sin el, y no son el
+    mismo diseno.
+    """
+
+    tipo: TipoDeVeredicto
+    margen: Optional[float] = None
+    unidad: str = ""
+    explicacion: str = ""
+
+    @property
+    def cumple(self) -> bool:
+        return self.tipo is TipoDeVeredicto.CUMPLE
+
+
+@dataclass(frozen=True)
+class EleccionDeProyecto:
+    """
+    La PROCEDENCIA de una eleccion, que es la regla R1 del plan v12: «se
+    adopto X, elegido entre X1...Xn de la Tabla T (numeral N, pag. P), por la
+    razon R».
+
+    `entre` no es decorado: es lo que da sentido al analisis de sensibilidad.
+    Sin las alternativas, el rango declarado de un criterio [A] es un par de
+    numeros sueltos al pie de una ficha -- que es como estaba, consumido solo
+    por los tests (SIS-B-05).
+
+    `de_donde` es texto legible y `cita_id` el ancla al registro. `cita_id`
+    queda VACIO a proposito cuando la eleccion no sale de una norma: un tope
+    de catalogo no tiene numeral, y ponerle uno seria la cita falsa que
+    NOR-PRO-01 y NOR-PRO-02 retiraron. Por eso el vacio esta permitido aqui y
+    prohibido en `Umbral`.
+    """
+
+    que_se_adopto: str
+    valor: Any
+    entre: Tuple[str, ...]
+    de_donde: str
+    por_que: str
+    cita_id: str = ""
+    clave_criterio: str = ""
+
+    def __post_init__(self) -> None:
+        if not str(self.por_que).strip():
+            raise ValueError(
+                f"EleccionDeProyecto «{self.que_se_adopto}» sin `por_que`. La "
+                "R1 pide las tres cosas: que se eligio, entre que, y por que")
+
+    @property
+    def texto(self) -> str:
+        entre = ", ".join(str(x) for x in self.entre)
+        alternativas = f", elegido entre {entre}" if entre else ""
+        de = f" de {self.de_donde}" if self.de_donde else ""
+        return (f"se adopto {self.que_se_adopto} = {self.valor}"
+                f"{alternativas}{de}, por: {self.por_que}")
+
+
+@dataclass(frozen=True)
+class PasoDeMemoria:
+    """
+    Un paso de la memoria, emitido por la funcion que lo calcula.
+
+    No es un registro de depuracion ni una traza de ejecucion: es el parrafo
+    de la memoria, con sus numeros ya atados a su fuente, escrito por quien
+    tiene delante los valores. Por eso lo emite el calculo y no el reporte --
+    M11 no puede saber de donde salio un numero que le llega suelto.
+    """
+
+    que: str
+    por_que: str
+    formula: str
+    sustitucion: Tuple[Magnitud, ...]
+    resultado: Magnitud
+    umbral: Optional[Umbral] = None
+    veredicto: Optional[Veredicto] = None
+    citas_textuales: Tuple[str, ...] = ()
+    fundamento_id: str = ""
+    formula_cita_id: str = ""
+    elecciones: Tuple[EleccionDeProyecto, ...] = ()
+    fase: str = ""
+    codigo: str = ""
+    nota_del_proyecto: str = ""
+
+    def __post_init__(self) -> None:
+        if not str(self.que).strip():
+            raise ValueError("PasoDeMemoria sin `que`")
+        if not str(self.por_que).strip():
+            raise ValueError(
+                f"PasoDeMemoria «{self.que}» sin `por_que`. Es la regla 1 de "
+                "la §4.4 y no admite excepcion: el fundamento se declara en "
+                "`normativa/fundamentos.py` y se trae con `modelos.paso()`, "
+                "nunca se escribe suelto en el modulo de calculo")
+        if self.veredicto is not None and self.umbral is None and \
+                self.veredicto.tipo in (TipoDeVeredicto.CUMPLE,
+                                        TipoDeVeredicto.NO_CUMPLE):
+            raise ValueError(
+                f"PasoDeMemoria «{self.que}»: veredicto "
+                f"«{self.veredicto.tipo.value}» sin umbral. Decir que algo "
+                "cumple sin decir contra que es lo que hace indefendible una "
+                "memoria")
+        if self.umbral is not None and \
+                self.umbral.cita_id not in self.citas_textuales:
+            raise ValueError(
+                f"PasoDeMemoria «{self.que}»: la cita del umbral "
+                f"«{self.umbral.cita_id}» no esta en `citas_textuales`. El "
+                "umbral y su frase se imprimen juntos o el revisor lee el "
+                "numero sin la frase que lo fija")
+
+    @property
+    def juzga(self) -> bool:
+        """True si el paso contrasta contra un umbral."""
+        return self.umbral is not None
+
+
+@lru_cache(maxsize=1)
+def _registro_normativo():
+    """
+    El registro, armado una sola vez. Mismo patron y misma razon que
+    `criterios_adoptados._registro`: `paso()` lo consulta en cada llamada y
+    reconstruirlo por paso convertiria la traza en el cuello de botella del
+    pipeline.
+    """
+    from normativa import registro as _rn
+
+    return _rn.construir()
+
+
+def paso(fundamento_id: str, **kw: Any) -> PasoDeMemoria:
+    """
+    Construye un `PasoDeMemoria` trayendo el `por_que` del registro.
+
+    ES LA UNICA PUERTA que los modulos de calculo usan, y por eso el `por_que`
+    no se puede escribir a mano en un modulo: sale del `Fundamento`, que a su
+    vez esta atado a sus citas y a su verbo por la invariante T11. Escribirlo
+    suelto permitiria redactar «la norma obliga» encima de un parrafo que
+    recomienda, que es el defecto que NOR-MEM-01 y MAT-O13 dejaron por escrito.
+
+    El import del registro es DIFERIDO, igual que en
+    `criterios_adoptados.tabla_del_criterio`: `modelos.py` no depende de
+    `normativa` en su cabecera y no debe -- es el tipo que fluye entre modulos,
+    y la regla de dependencias del registro pone a `normativa` a la izquierda
+    de todo.
+
+    Comprueba ademas que toda cita referenciada EXISTA: es la unica de las
+    cuatro reglas de la §4.4 que este archivo no puede poner en un
+    `__post_init__`.
+    """
+    reg = _registro_normativo()
+    f = reg.fundamento(fundamento_id)
+    citas = tuple(kw.pop("citas_textuales", ()) or ())
+    umbral = kw.get("umbral")
+    if umbral is not None and umbral.cita_id not in citas:
+        citas = (umbral.cita_id,) + citas
+    for cita_id in citas:
+        reg.cita(cita_id)                       # KeyError si no existe
+    for eleccion in kw.get("elecciones", ()):
+        if eleccion.cita_id:
+            reg.cita(eleccion.cita_id)
+    if kw.get("formula_cita_id"):
+        reg.cita(kw["formula_cita_id"])
+    kw.setdefault("fase", f.fase)
+    return PasoDeMemoria(por_que=f.por_que, fundamento_id=f.id,
+                         citas_textuales=citas, **kw)
 
 
 # ===========================================================================
@@ -1243,6 +1627,7 @@ class Espaciamiento:
         numeral_norma="Manual de Hidrologia, Hidraulica y Drenaje (MTC), "
                       "num. 4.1.2.1 d), pag. 178",
     )
+    paso: Optional["PasoDeMemoria"] = None
 
 
 @dataclass(frozen=True)
@@ -1865,6 +2250,7 @@ class RecubrimientoDiseno:
     corpus_tabla: str = ""                # "[N] Manual de Puentes" / "[C] AASHTO LRFD"
     origen_factor: str = ""               # por que ese factor por a/c
     requisitos: Optional["RequisitosDurabilidad"] = None
+    paso: Optional["PasoDeMemoria"] = None
 
 
 @dataclass(frozen=True)
@@ -1949,6 +2335,9 @@ class PeriodoRetorno:
     numeral: str
     fundamento: str                       # por que esta fila y no la otra
     id_punto: Optional[str] = None
+    # El paso de memoria del TR (§4.4). `None` cuando `procede` es False: no
+    # hay TR que fundar, y el motivo lo lleva `fundamento`.
+    paso: Optional["PasoDeMemoria"] = None
 
     def exigir_anios(self) -> int:
         """
@@ -2100,6 +2489,20 @@ class PasoDiseno:
     aceptado: bool
     motivo: str                           # por que se descarto; "" si aceptado
     verificaciones: Tuple[Verificacion, ...] = ()
+    # EL RESULTADO HIDRAULICO DEL ESCALON, con su traza (§4.4).
+    #
+    # Viaja aqui, y no solo en el `ResultadoPunto` ganador, por la MISMA razon
+    # que existe `M11.bloque_umbrales`: en este expediente ningun punto llega
+    # a dimensionarse --- V5 se detiene siempre en `ancho_derecho_via_m`, que
+    # ningun tablero aporta todavia --- y `ResultadoPunto.resultado_hidraulico`
+    # es None en los cuatro puntos. Sin este campo, el desarrollo hidraulico
+    # que M3 y M4 SI calcularon no llegaria nunca al revisor, que es
+    # literalmente la forma de NOR-MEM-01: cierto sobre el codigo y falso
+    # sobre el producto.
+    #
+    # None cuando el escalon ni siquiera transporto el caudal en flujo libre
+    # (M3 no hallo tirante normal) o cuando revento antes de resolver M4.
+    resultado_hidraulico: Optional["ResultadoHidraulico"] = None
 
     @property
     def incumplidas(self) -> Tuple[Verificacion, ...]:

@@ -266,10 +266,13 @@ from constantes_normativas import (H_O_HW_SOBRE_D_CAUTELA,
                                    H_O_HW_SOBRE_D_MIN, KU_SI,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
-from modelos import (ConstantesHDS5, ControlEntrada, ControlGobernante,
+from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+                     ConstantesHDS5,
+                     ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
-                     LimiteNumericoError, Material, RegimenEntrada,
-                     ResultadoHidraulico, TiranteCritico, TiranteNormal)
+                     LimiteNumericoError, Magnitud, Material, RegimenEntrada,
+                     ResultadoHidraulico, TiranteCritico, TipoDeVeredicto,
+                     TiranteNormal, Umbral, Veredicto, paso)
 from modulos.M3_hidraulica import geometria, resolver_manning
 from tolerancias import TOL_BRENT, TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
 
@@ -762,6 +765,213 @@ def hw_gobernante(entrada: ControlEntrada,
     return entrada.HW, ControlGobernante.ENTRADA
 
 
+# ---------------------------------------------------------------------------
+# La traza hidraulica de la memoria (§4.4)
+# ---------------------------------------------------------------------------
+# Los cuatro pasos que un revisor necesita leer de corrido para reconstruir el
+# HW de un punto: el tirante normal, el tirante critico, cada control y la
+# adopcion del que gobierna. Los emite ESTA funcion --- la que tiene los
+# numeros delante --- y no M11, que solo los formatea.
+#
+# Ninguno de los cuatro lleva `umbral`: no verifican nada, calculan. Es para
+# lo que existe `TipoDeVeredicto.SIN_VEREDICTO`; forzarles un "cumple"
+# obligaria a inventarles un umbral, que es la cita falsa que este proyecto
+# viene retirando. El unico que si juzga es el de h_o, y su umbral son las
+# CONDICIONES DE USO que la propia fuente le pone (NOR-HDS-05).
+
+def _pasos_hidraulicos(*, D, Q, S, L, TW, material, normal, critico, entrada,
+                       salida, control, gobierna_salida):
+    """La traza de M3 + M4 para una combinacion, en orden de calculo."""
+    de_manning = paso(
+        "F4.MANNING",
+        codigo="4.1",
+        que="Tirante normal y velocidades en el conducto",
+        formula="Q = (1/n) * A * R^(2/3) * S^(1/2), resuelta en theta con "
+                "Brent; A, P y R son los de la seccion circular parcialmente "
+                "llena",
+        formula_cita_id="MC_HHD.4.1.1.3.6",
+        sustitucion=(
+            Magnitud("Q", Q, "m3/s",
+                     "caudal de diseño CON QUE CORRIO el punto: la columna "
+                     "Q_m3s del CSV en la Familia A, y el caudal declarado "
+                     "del drenaje longitudinal o del canal en las B y C",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("S", S, "m/m",
+                     "pendiente con que corrio el diseño: la del cauce salvo "
+                     "que el punto declare 'S_conducto'. Es la MISMA que usa "
+                     "la Fase 7 (MAT-D9)", cifras=CIFRAS_FINA),
+            Magnitud("D", D, "m", "diametro probado por el bucle de diseño",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("n_max", material.n_para_capacidad, "",
+                     f"extremo superior del rango de la Tabla Nº 09 para "
+                     f"«{material.nombre}»: rama de CAPACIDAD", cifras=CIFRAS_FINA),
+            Magnitud("n_min", material.n_para_velocidad_maxima, "",
+                     f"extremo inferior del mismo rango: rama de EROSION",
+                     cifras=CIFRAS_FINA)),
+        resultado=Magnitud("y_normal", normal.geometria.y, "m",
+                           "resuelto con n_max, que da mas tirante para el "
+                           "mismo Q", cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="paso de calculo: no contrasta contra "
+                                        "ningun umbral"),
+        nota_del_proyecto=(
+            f"La seccion se resuelve DOS veces, una por extremo del rango de "
+            f"n: V_erosion = {normal.V_erosion:.3f} m/s con n_min (estimacion "
+            f"ALTA, para los techos: V3 y el d50 de la Fase 6) y "
+            f"V_sedimentacion = {normal.V_sedimentacion:.3f} m/s con n_max "
+            f"(estimacion BAJA, para el piso de V2). No hay una «la» "
+            f"velocidad: un piso y un techo tienen extremos conservadores "
+            f"opuestos."),
+    )
+
+    de_critico = paso(
+        "F4.CONTROL",
+        codigo="4.2.1",
+        que="Tirante critico de la seccion",
+        formula="Q^2 / g = A^3 / T, resuelta en theta con Brent",
+        sustitucion=(
+            Magnitud("Q", Q, "m3/s", "el mismo caudal de diseño",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("D", D, "m", "diametro probado", cifras=CIFRAS_FACTOR)),
+        resultado=Magnitud("y_c", critico.y_c, "m",
+                           "tirante critico; no depende de n",
+                           cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="paso de calculo"),
+        nota_del_proyecto="Entra en las dos piezas siguientes: en la Forma 1 "
+                          "del control de entrada (por H_c) y en h_o del "
+                          "control de salida. Se resuelve UNA vez.",
+    )
+
+    de_entrada = paso(
+        "F4.CONTROL",
+        codigo="4.2",
+        que="Carga a la entrada bajo CONTROL DE ENTRADA",
+        formula=("HW/D = H_c/D + K*(q*)^M + Ks*S (no sumergido, q* <= 3.5) o "
+                 "HW/D = c*(q*)^2 + Y + Ks*S (sumergido, q* >= 4.0); entre "
+                 "3.5 y 4.0, recta entre los extremos de validez"),
+        formula_cita_id="HDS5_3ED.A.2",
+        sustitucion=(
+            Magnitud("q*", entrada.q_estrella, "",
+                     "caudal adimensional Ku*Q/(A_llena*D^0.5); decide la "
+                     "rama", cifras=CIFRAS_MAGNITUD),
+            Magnitud("Ks", material.hds5.Ks, "",
+                     "correccion por pendiente de la formulacion del HDS-5; "
+                     "NO figura en la Tabla A.1", cifras=CIFRAS_FACTOR)),
+        resultado=Magnitud("HW_entrada", entrada.HW, "m",
+                           f"carga sobre el fondo de la entrada, regimen "
+                           f"«{entrada.regimen.value}»",
+                           cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="paso de calculo"),
+        nota_del_proyecto=(
+            "Las constantes K, M, c e Y salen de la Tabla A.1, carta y "
+            "escala de la embocadura adoptada; las ECUACIONES salen del num. "
+            "A.2, no de esa tabla (NOR-HDS-03)."),
+    )
+
+    de_salida = paso(
+        "F4.HO",
+        codigo="4.3",
+        que="Carga a la entrada bajo CONTROL DE SALIDA, y las condiciones de "
+            "uso que la fuente pone a h_o",
+        formula="HW = H + h_o - S*L, con h_o = max(TW, (y_c + D)/2)",
+        formula_cita_id="HDS5_3ED.3.3.3#HO",
+        citas_textuales=("HDS5_3ED.3.3.3#HO", "HDS5_3ED.3.3.3#HO_SUMERGIDA"),
+        sustitucion=(
+            Magnitud("H", salida.H, "m",
+                     "perdida de carga en el barril, con n_max y la longitud "
+                     "del conducto", cifras=CIFRAS_MAGNITUD),
+            Magnitud("TW", TW, "m",
+                     "tirante en el receptor durante la avenida, sobre el "
+                     "fondo de la SALIDA. No es una cota",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("(y_c + D)/2", (critico.y_c + D) / 2, "m",
+                     "aproximacion de la linea de energia del HDS-5",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("h_o", salida.h_o, "m",
+                     "el mayor de los dos anteriores"
+                     + (" (manda TW: la salida esta ahogada)"
+                        if salida.ahogado_por_TW else
+                        " (manda la aproximacion geometrica)"),
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("S*L", salida.caida, "m",
+                     "caida del conducto entre entrada y salida",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("HW_salida", salida.HW, "m",
+                           "carga sobre el fondo de la entrada",
+                           cifras=CIFRAS_MAGNITUD),
+        umbral=Umbral(
+            descripcion="HW/D minimo por debajo del cual la fuente dice que "
+                        "la aproximacion de h_o NO debe usarse",
+            valor=H_O_HW_SOBRE_D_MIN, unidad="",
+            cita_id="HDS5_3ED.3.3.3#HO_1_2D",
+            caracter="EXIGENCIA sobre el USO de la aproximacion, no sobre el "
+                     "diseño: la fuente no prohibe el conducto, dice que su "
+                     "propio numero no es de fiar ahi",
+            aplicacion="h_o se calcula SIEMPRE; los dos limites se evaluan "
+                       "punto por punto y solo cuentan si el control de "
+                       "SALIDA gobierna, que es como la fuente los escribe. "
+                       "La tercera condicion --que el barril fluya lleno en "
+                       "la mayor parte de su longitud-- no se puede evaluar "
+                       "sin un perfil de la lamina de agua, que este script "
+                       "no calcula: se declara."),
+        veredicto=Veredicto(
+            tipo=(TipoDeVeredicto.NO_CUMPLE
+                  if (gobierna_salida and salida.h_o_fuera_de_rango)
+                  else TipoDeVeredicto.CUMPLE if gobierna_salida
+                  else TipoDeVeredicto.SIN_VEREDICTO),
+            margen=salida.HW_sobre_D - H_O_HW_SOBRE_D_MIN,
+            unidad="",
+            explicacion=(
+                "gobierna el control de ENTRADA: el HW de salida no es la "
+                "carga de este punto y las condiciones de h_o no aplican, "
+                "que es como la fuente las condiciona"
+                if not gobierna_salida else
+                "HW/D por debajo de 0.75: la aproximacion de h_o esta FUERA "
+                "del rango que su fuente declara"
+                if salida.h_o_fuera_de_rango else
+                "HW/D por debajo de 1.2: la fuente pide cautela, el barril "
+                "puede fluir parcialmente lleno"
+                if salida.h_o_requiere_cautela else
+                "HW/D dentro del rango de validez que la fuente declara")),
+        nota_del_proyecto=(
+            "HAY UNA CIRCULARIDAD QUE CONVIENE VER: el HW con que se evaluan "
+            "los dos limites es el que produce la propia aproximacion, de "
+            "modo que un h_o sobreestimado puede hacer que el control de "
+            "salida gobierne un punto donde no gobernaria. Deshacerla exige "
+            "el procedimiento de barril parcialmente lleno del Cap. III."),
+    )
+
+    de_gobernante = paso(
+        "F4.CONTROL",
+        codigo="4.4",
+        que="Cual de los dos controles gobierna",
+        formula="HW = max(HW_entrada, HW_salida)",
+        formula_cita_id="HDS5_3ED.A.2",
+        sustitucion=(
+            Magnitud("HW_entrada", entrada.HW, "m", "pieza 4.2",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("HW_salida", salida.HW, "m", "pieza 4.3",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud(
+            "HW", salida.HW if gobierna_salida else entrada.HW, "m",
+            f"carga de diseño del punto; gobierna el control de "
+            f"{control.value}", cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="adopcion, no verificacion"),
+        nota_del_proyecto=(
+            "Cada control es una restriccion independiente sobre la misma "
+            "estructura y manda la que exige MAS carga. El par se conserva "
+            "entero y no solo el maximo: si gobierna la entrada se trabaja la "
+            "embocadura o el diametro; si gobierna la salida, el problema "
+            "esta aguas abajo (TW del receptor) y agrandar el tubo puede no "
+            "mover el HW."),
+    )
+
+    return (de_manning, de_critico, de_entrada, de_salida, de_gobernante)
+
+
 def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
                      material: Material,
                      normal: Optional[TiranteNormal] = None
@@ -823,4 +1033,8 @@ def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
         control_gobernante=control,
         h_o_fuera_de_rango=gobierna_salida and salida.h_o_fuera_de_rango,
         h_o_requiere_cautela=gobierna_salida and salida.h_o_requiere_cautela,
+        pasos=_pasos_hidraulicos(
+            D=D, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
+            critico=critico, entrada=entrada, salida=salida, control=control,
+            gobierna_salida=gobierna_salida),
     )

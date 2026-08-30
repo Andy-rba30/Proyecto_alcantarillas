@@ -1,8 +1,34 @@
 """
 M11_reporte.py
 ==============
-Fase 11 - Memoria de calculo. Convierte el `Informe` de una corrida en el
-documento que se entrega, sin calcular nada nuevo.
+Fase 11 - Memoria de calculo. FORMATEA la traza que el calculo emitio y la
+convierte en el documento que se entrega. No calcula nada.
+
+Que cambio en S18, y por que importa (Sec. 4.4 del plan v12)
+------------------------------------------------------------
+Este modulo RECONSTRUIA la memoria: leia los resultados y volvia a armar el
+relato. Para armarlo tenia que calcular, y lo hacia --- `y_normal / D` en dos
+sitios --- contra este mismo docstring, que ya decia "sin calcular nada nuevo"
+(SIS-A-07). Un reporte que recalcula es un segundo motor de calculo sin tests,
+y lo que imprime puede divergir de lo que el pipeline verifico sin que nada
+avise.
+
+Ahora cada funcion de calculo emite un `PasoDeMemoria` (`modelos.py`) con los
+ocho campos de la §4.4 --- que, por que, formula, sustitucion, resultado,
+umbral, veredicto, citas textuales --- y este modulo elige etiquetas y clases
+de CSS. La frase "sin calcular nada nuevo" pasa de ser una intencion escrita a
+ser una propiedad comprobada: `test_memoria_sustentada.test_M11_no_calcula_y_
+sobre_D` barre el AST de este archivo.
+
+Tres cosas que este modulo imprime SEPARADAS, y que no son estilo
+-----------------------------------------------------------------
+    .fuente          lo que el documento DICE. Entrecomillado, con su numeral.
+    .interpretacion  lo que el PROYECTO lee en el documento.
+    texto normal     lo que el proyecto HACE con ello.
+
+Pegadas, las tres se leen como norma. El caso testigo es NOR-HID-04: «el rango
+recorre la calidad del revestimiento» no esta en el Manual --- nada dice por
+que hay dos numeros --- y se imprimia dentro del mismo parrafo que la cita.
 
 Estructura del documento (Sec. "Fase 11 - Entregables")
 -------------------------------------------------------
@@ -88,10 +114,18 @@ import declaracion as _declaracion
 # de su transcripcion, no se reescriben aqui: la memoria y el codigo tienen
 # que citar el mismo objeto o divergen, que es literalmente NOR-MEM-01.
 from constantes_normativas import (HOMONIMIAS,
-                                   TABLA_10_INTERPRETACION_PROYECTO,
                                    UMBRALES_DE_VERIFICACION,
                                    H_O_HW_SOBRE_D_CAUTELA,
-                                   H_O_HW_SOBRE_D_MIN, H_O_NUMERAL)
+                                   H_O_HW_SOBRE_D_MIN, H_O_NUMERAL,
+                                   caracter_del_umbral,
+                                   fundamento_del_umbral,
+                                   literales_del_umbral,
+                                   numeral_del_umbral)
+# El registro, para leer de el los textos literales y las interpretaciones en
+# vez de que M11 lleve una copia. La memoria y el codigo tienen que citar el
+# mismo objeto o divergen, que es literalmente NOR-MEM-01.
+from normativa import fundamentos as _fundamentos
+from normativa import registro as _registro_M11
 # La clave del criterio que fija la cota de fondo de entrada se importa de su
 # modulo, no se reescribe aqui: si se renombrara, una copia literal en el
 # reporte apuntaria a un criterio inexistente sin que nada avisara. Es el
@@ -99,6 +133,12 @@ from constantes_normativas import (HOMONIMIAS,
 from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        verificaciones_no_evaluadas)
 from modulos.M8_estructural import verificacion_diferida_estructural
+# Los rotulos de alcance viven en modelos.py, no en cli.py: M11 los necesita y
+# no puede importar la CLI --- es la CLI quien importa M11 ---. Ver la nota de
+# su declaracion.
+from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, TipoDeVeredicto)
+
+_reg_M11 = _registro_M11.construir()
 
 try:
     from weasyprint import HTML as WeasyHTML
@@ -860,6 +900,216 @@ def _tabla_diseno(informe: Any) -> str:
            '<table class="compacta">' + "".join(filas) + "</table>"
 
 
+# ===========================================================================
+# La traza: M11 FORMATEA lo que el calculo emitio
+# ---------------------------------------------------------------------------
+# Aqui esta el cambio de fondo de la §4.4. Hasta S18 este modulo RECONSTRUIA
+# la memoria leyendo resultados, y para reconstruirla calculaba (`y/D` en dos
+# sitios, contra su propio docstring de modulo: SIS-A-07). Ahora los modulos
+# de calculo emiten `PasoDeMemoria` --- que ya trae de donde salio cada
+# numero, contra que se compara y con que margen --- y estas funciones solo lo
+# escriben en HTML.
+#
+# LA REGLA TIPOGRAFICA, que es lo que NOR-HID-04 pide y no una preferencia de
+# estilo: tres clases distintas y nunca en el mismo parrafo.
+#
+#   .fuente          lo que el documento DICE, entre comillas y con su cita
+#   .interpretacion  lo que el PROYECTO lee en ella
+#   (texto normal)   lo que el proyecto HACE
+#
+# Pegadas, las tres se leen como norma. El caso testigo: «el rango recorre la
+# calidad del revestimiento» no esta en el Manual --- nada dice por que hay
+# dos numeros --- y se imprimia dentro del mismo parrafo que la cita.
+
+def _sin_fundamento_por_codigo() -> Dict[str, Tuple[str, str]]:
+    """
+    El censo de `normativa.fundamentos.SIN_FUNDAMENTO`, indexado por codigo de
+    verificacion.
+
+    Existe para que un paso AUSENTE se imprima con su razon en el sitio donde
+    estaria, en vez de dejar el hueco callado. Un hueco callado en una memoria
+    se lee como un olvido; con la razon delante se lee como lo que es --- una
+    verificacion que hoy no puede tener fundamento normativo --- y ademas dice
+    que haria falta para traerlo.
+    """
+    salida = {}
+    for id_paso, por_que, que_haria_falta in _fundamentos.SIN_FUNDAMENTO:
+        salida[id_paso.split(".")[-1]] = (por_que, que_haria_falta)
+    return salida
+
+
+def _cita_como_texto(cita_id: str) -> str:
+    return _reg_M11.cita(cita_id).como_texto()
+
+
+def _citas_del_paso(paso: Any) -> str:
+    """Las transcripciones literales del paso, cada una con su numeral."""
+    if not paso.citas_textuales:
+        return ""
+    partes = []
+    for cita_id in paso.citas_textuales:
+        c = _reg_M11.cita(cita_id)
+        texto = getattr(c.texto_literal, "texto", "")
+        partes.append(
+            f'<p class="fuente">&laquo;{_esc(texto)}&raquo;'
+            f'<span class="procedencia-cita">{_esc(c.como_texto())}'
+            f"</span></p>")
+    return ("<dt>Lo que dice la fuente</dt><dd>" + "".join(partes) + "</dd>")
+
+
+def _sustitucion_del_paso(paso: Any) -> str:
+    """
+    Los valores que entran, cada uno con unidad y PROCEDENCIA.
+
+    La procedencia no es un adorno: es la mitad que hace que la memoria se
+    lea "sin abrir el codigo", que es el criterio de salida de la §4.4. Un
+    numero sin origen obliga al revisor a buscar quien lo produjo.
+    """
+    if not paso.sustitucion:
+        return ""
+    filas = "".join(
+        f"<li><code>{_esc(m.simbolo)}</code> = <b>{_esc(m.texto)}</b>"
+        f'<span class="procedencia-cita">{_esc(m.procedencia)}</span></li>'
+        for m in paso.sustitucion)
+    return f"<dt>Con que valores</dt><dd><ul class=\"sustitucion\">{filas}</ul></dd>"
+
+
+def _umbral_del_paso(paso: Any) -> str:
+    """Contra que se compara: valor, CARACTER de la fuente y aplicacion."""
+    u = paso.umbral
+    if u is None:
+        return ""
+    criterio = ""
+    if u.criterio_aplicado:
+        declarado = ca.CRITERIOS.get(u.criterio_aplicado)
+        etiqueta = (_etiqueta_html(declarado.etiqueta) + " "
+                    if declarado is not None else "")
+        criterio = (f"<br>El umbral pasa por el criterio adoptado "
+                    f"{etiqueta}<code>{_esc(u.criterio_aplicado)}</code>, "
+                    "cuya ficha esta en el bloque 3 de esta memoria.")
+    valor = f"{u.valor} {u.unidad}".strip()
+    return (
+        "<dt>Contra que se compara</dt><dd>"
+        f"<b>{_esc(u.descripcion)} = {_esc(valor)}</b><br>"
+        f"<b>Caracter en la fuente:</b> {_esc(u.caracter)}<br>"
+        f"<b>Que hace el proyecto con el:</b> {_esc(u.aplicacion)}"
+        f"{criterio}</dd>")
+
+
+def _veredicto_del_paso(paso: Any) -> str:
+    v = paso.veredicto
+    if v is None:
+        return ""
+    if v.tipo is TipoDeVeredicto.CUMPLE:
+        marca = f'<span class="{MARCA_CUMPLE}">cumple</span>'
+    elif v.tipo is TipoDeVeredicto.NO_CUMPLE:
+        marca = f'<span class="incumple">NO cumple</span>'
+    else:
+        marca = f"<b>{_esc(v.tipo.value)}</b>"
+    margen = ""
+    if v.margen is not None and isinstance(v.margen, float) \
+            and math.isfinite(v.margen):
+        margen = (f" &mdash; margen {_num(v.margen)} "
+                  f"{_esc(v.unidad)}".rstrip())
+    return (f"<dt>Veredicto</dt><dd>{marca}{margen}<br>"
+            f"{_esc(v.explicacion)}</dd>")
+
+
+def _elecciones_del_paso(paso: Any) -> str:
+    """
+    La PROCEDENCIA de cada eleccion (regla R1): que se adopto, entre que, de
+    donde y por que.
+
+    Es lo que hace defendible una memoria y lo que da sentido al analisis de
+    sensibilidad, que existia y solo lo consumian los tests (SIS-B-05). Sin
+    las alternativas, un valor adoptado y un valor normativo se imprimen
+    igual.
+    """
+    if not paso.elecciones:
+        return ""
+    filas = []
+    for e in paso.elecciones:
+        entre = ("<br>Elegido entre: "
+                 + "; ".join(f"<i>{_esc(x)}</i>" for x in e.entre)
+                 if e.entre else "")
+        de_donde = f"<br>De: {_esc(e.de_donde)}" if e.de_donde else ""
+        cita = (f"<br>Cita: {_esc(_cita_como_texto(e.cita_id))}"
+                if e.cita_id else "")
+        clave = (f"<br>Criterio adoptado: <code>{_esc(e.clave_criterio)}"
+                 "</code>" if e.clave_criterio else "")
+        filas.append(
+            f"<li><b>{_esc(e.que_se_adopto)}: {_esc(e.valor)}</b>"
+            f"{entre}{de_donde}{cita}"
+            f'<br><span class="interpretacion">Por que: {_esc(e.por_que)}'
+            f"</span>{clave}</li>")
+    return ("<dt>Que se eligio, entre que y por que</dt>"
+            f"<dd><ul class=\"elecciones\">{''.join(filas)}</ul></dd>")
+
+
+def bloque_paso(paso: Any) -> str:
+    """
+    Un `PasoDeMemoria` completo, en el orden en que se lee de arriba abajo:
+    que, por que, formula, con que valores, resultado, contra que, veredicto,
+    la frase de la norma, y las elecciones con su procedencia.
+
+    NO CALCULA NADA. Todos los numeros vienen ya formados desde el modulo que
+    los produjo; esta funcion elige etiquetas y clases de CSS.
+    """
+    codigo = f"<code>{_esc(paso.codigo)}</code> &mdash; " if paso.codigo else ""
+    formula_cita = (f'<span class="procedencia-cita">'
+                    f"{_esc(_cita_como_texto(paso.formula_cita_id))}</span>"
+                    if paso.formula_cita_id else "")
+    campos = [
+        f"<dt>Por que se hace</dt><dd>{_esc(paso.por_que)}</dd>",
+        f"<dt>Formula</dt><dd><code>{_esc(paso.formula)}</code>"
+        f"{formula_cita}</dd>",
+        _sustitucion_del_paso(paso),
+        f"<dt>Resultado</dt><dd><b>{_esc(paso.resultado.simbolo)} = "
+        f"{_esc(paso.resultado.texto)}</b>"
+        f'<span class="procedencia-cita">'
+        f"{_esc(paso.resultado.procedencia)}</span></dd>",
+        _umbral_del_paso(paso),
+        _veredicto_del_paso(paso),
+        _citas_del_paso(paso),
+        _elecciones_del_paso(paso),
+    ]
+    if paso.nota_del_proyecto:
+        campos.append('<dt class="interpretacion">Lo que pone el proyecto'
+                      "</dt>"
+                      f'<dd class="interpretacion">'
+                      f"{_esc(paso.nota_del_proyecto)}</dd>")
+    return (f'<div class="paso"><h5>{codigo}{_esc(paso.que)}</h5>'
+            f'<dl class="acotacion">' + "".join(campos) + "</dl></div>")
+
+
+def bloque_pasos(pasos: Sequence[Any], titulo: str) -> str:
+    """Una serie de pasos bajo su encabezado. Vacia si no hay ninguno."""
+    if not pasos:
+        return ""
+    return (f"<h4>{_esc(titulo)}</h4>"
+            + "".join(bloque_paso(p) for p in pasos))
+
+
+def _paso_ausente(codigo: str) -> str:
+    """
+    El hueco DECLARADO de una verificacion sin `PasoDeMemoria`.
+
+    Ver `_sin_fundamento_por_codigo`: cinco verificaciones no pueden tener
+    fundamento normativo hoy --- V4b, V5, V6, V8 y V9 --- y cada una por una
+    razon distinta que esta escrita. Imprimir el hueco con su razon es lo
+    contrario de esconderlo.
+    """
+    censo = _sin_fundamento_por_codigo().get(codigo)
+    if censo is None:
+        return ""
+    por_que, que_haria_falta = censo
+    return ('<div class="paso nota"><h5><code>' + _esc(codigo)
+            + "</code> &mdash; sin fundamento normativo declarado</h5>"
+            f"<p><b>Por que no lo tiene:</b> {_esc(por_que)}</p>"
+            f"<p><b>Que haria falta para traerlo:</b> "
+            f"{_esc(que_haria_falta)}</p></div>")
+
+
 def _tabla_verificaciones(informe: Any) -> str:
     """
     Cada verificacion como cumple / no cumple JUNTO A SU NUMERAL (entregable 1).
@@ -869,9 +1119,32 @@ def _tabla_verificaciones(informe: Any) -> str:
     contrasto contra la norma de lo que se contrasto contra una adopcion.
     """
     verificaciones = informe.verificaciones()
+    # `getattr` y no acceso directo: esta funcion se prueba tambien con un
+    # informe minimo que solo expone `verificaciones()`, y un reporte no se
+    # cae por un atributo que no le hace falta para la fila que esta pintando.
+    if not getattr(informe, "dimensionado", True):
+        # EL PUNTO NO CERRO Y AUN ASI HAY FASE 5 QUE PUBLICAR. `Informe.
+        # verificaciones()` solo trae las del RESULTADO ADOPTADO, y un punto
+        # sin dimensionar no tiene ninguno: lo unico que queda ahi es el
+        # umbral de luz de la Fase 2. Las de la Fase 5 que si se evaluaron
+        # viven en el ultimo escalon de la traza, y son justamente las que
+        # explican por que se descarto.
+        #
+        # No es un caso de borde: en este expediente NINGUN punto se
+        # dimensiona --- V5 se detiene siempre en `ancho_derecho_via_m` ---,
+        # de modo que sin esto la memoria no lleva una sola verificacion
+        # hidraulica de ningun punto. Es la misma trampa de NOR-MEM-01.
+        escalones = [p for p in getattr(informe, "traza", ())
+                     if getattr(p, "verificaciones", ())]
+        if escalones:
+            ultimo = escalones[-1]
+            verificaciones = verificaciones + tuple(
+                (f"Fase 5 - ultimo escalon evaluado ({ultimo.material}, "
+                 f"D = {ultimo.D:.2f} m)", v)
+                for v in ultimo.verificaciones)
     if not verificaciones:
-        return ('<div class="nota"><p>Sin verificaciones registradas: el punto '
-                "no alcanzo la Fase 5.</p></div>")
+        return ('<div class="nota"><p>Sin verificaciones registradas: el '
+                "punto no alcanzo la Fase 5.</p></div>")
 
     filas = [_fila(["<th>Codigo</th>", "<th>Numeral</th>", "<th>Obtenido</th>",
                     "<th>Admisible</th>", "<th>Umbral</th>",
@@ -913,8 +1186,25 @@ def _tabla_verificaciones(informe: Any) -> str:
     diferidas = "".join(
         f'<div class="nota"><p>{_esc(t)}</p></div>'
         for t in verificaciones_no_evaluadas())
+    # EL DESARROLLO DE CADA VERIFICACION, debajo de la tabla-resumen. La tabla
+    # dice el veredicto de un vistazo; el desarrollo dice de donde sale cada
+    # numero, contra que se compara y con que frase de la norma. Sin el, la
+    # memoria se lee solo con el codigo al lado, que es lo que el criterio de
+    # salida de la §4.4 prohibe.
+    #
+    # Las que no traen paso NO se saltan: se imprimen con la razon censada de
+    # por que no pueden tener fundamento normativo hoy (`_paso_ausente`).
+    desarrollo = []
+    for _fase, v in verificaciones:
+        if v.paso is not None:
+            desarrollo.append(bloque_paso(v.paso))
+        elif v.codigo:
+            desarrollo.append(_paso_ausente(v.codigo))
+    detalle = ("<h4>Desarrollo de cada verificacion</h4>"
+               + "".join(desarrollo)) if any(desarrollo) else ""
     return "<h4>Verificaciones</h4>" \
-           '<table class="compacta">' + "".join(filas) + "</table>" + diferidas
+           '<table class="compacta">' + "".join(filas) + "</table>" \
+           + diferidas + detalle
 
 
 def _bloques_fases_finales(informe: Any) -> str:
@@ -1016,6 +1306,60 @@ def _tabla_bloqueos(bloqueos: Sequence[Any]) -> str:
     return "".join(partes)
 
 
+def _pasos_de_clasificacion(informe: Any) -> str:
+    """La traza de la Fase 2: denominacion por luz y periodo de retorno."""
+    clasificacion = getattr(informe, "clasificacion", None)
+    if clasificacion is None:
+        return ""
+    pasos = []
+    luz = getattr(clasificacion.verificacion_luz, "paso", None)
+    if luz is not None:
+        pasos.append(luz)
+    tr = getattr(clasificacion.periodo_retorno, "paso", None)
+    if tr is not None:
+        pasos.append(tr)
+    return bloque_pasos(pasos, "Desarrollo de la clasificacion (Fase 2)")
+
+
+def _pasos_hidraulicos_del_punto(informe: Any) -> str:
+    """
+    La traza de las Fases 3 y 4: Manning, tirante critico, los dos controles y
+    la adopcion del que gobierna.
+
+    Sale de `ResultadoHidraulico.pasos`, que M4 emitio al resolver la
+    combinacion adoptada. M11 no vuelve a calcular nada: hasta S18 este modulo
+    obtenia `y/D` dividiendo aqui mismo, que es SIS-A-07.
+    """
+    resultado = getattr(informe, "resultado", None)
+    if resultado is not None and resultado.resultado_hidraulico is not None:
+        return bloque_pasos(resultado.resultado_hidraulico.pasos,
+                            "Desarrollo del calculo hidraulico (Fases 3 y 4)")
+    # EL PUNTO NO CERRO, Y AUN ASI HAY CALCULO QUE PUBLICAR. Se toma el ULTIMO
+    # escalon del bucle que llego a resolver la hidraulica. No es un premio de
+    # consolacion: en este expediente NINGUN punto se dimensiona --- V5 se
+    # detiene siempre en `ancho_derecho_via_m` ---, de modo que sin esto el
+    # desarrollo hidraulico que M3 y M4 si calcularon no llegaria jamas al
+    # revisor. Es la misma trampa de NOR-MEM-01: cierto sobre el codigo y
+    # falso sobre el producto.
+    escalones = [p for p in getattr(informe, "traza", ())
+                 if getattr(p, "resultado_hidraulico", None) is not None]
+    if not escalones:
+        return ""
+    ultimo = escalones[-1]
+    aviso = (
+        '<div class="aviso"><p><b>Este desarrollo es el del ultimo escalon '
+        f"evaluado &mdash; {_esc(ultimo.material)}, D = "
+        f"{_num(ultimo.D, FMT_2)} m &mdash;, no el de un diseño adoptado: "
+        "el punto <b>no se dimensiono</b>. Se publica porque es calculo que "
+        "el pipeline hizo de verdad y que el revisor necesita para juzgar por "
+        "que se descarto ese escalon; el motivo esta en la tabla de "
+        "iteraciones.</p></div>")
+    return (aviso
+            + bloque_pasos(ultimo.resultado_hidraulico.pasos,
+                           "Desarrollo del calculo hidraulico del ultimo "
+                           "escalon evaluado (Fases 3 y 4)"))
+
+
 def memoria_de_punto(informe: Any) -> str:
     """Bloque completo de un punto critico (entregable 1 de la Fase 11)."""
     punto = informe.punto
@@ -1030,8 +1374,10 @@ def memoria_de_punto(informe: Any) -> str:
         "<h4>Datos de partida y su fuente</h4>",
         _tabla_datos(informe),
         _tabla_clasificacion(informe),
+        _pasos_de_clasificacion(informe),
         _tabla_iteraciones(informe),
         _tabla_diseno(informe),
+        _pasos_hidraulicos_del_punto(informe),
         _tabla_verificaciones(informe),
         _bloques_fases_finales(informe),
         _tabla_bloqueos(informe.bloqueos),
@@ -1283,6 +1629,131 @@ def _de_donde_salio(clave: str) -> str:
     return "".join(filas)
 
 
+def _de_donde_sale_el_valor(clave: str) -> str:
+    """
+    La PROCEDENCIA de un criterio transcrito en el archivo (regla R1): de que
+    tabla, de que rango, de que catalogo o de que ensayo sale su valor.
+
+    ES LA OTRA MITAD DE `_de_donde_salio`, y hacia falta. Aquella solo dispara
+    para los valores declarados EN CALIENTE por la ventana emergente ---
+    `declaracion.procedencia_de` no registra nada de lo que esta escrito en
+    `criterios_adoptados.py` ---, de modo que los 40 y pico criterios del
+    archivo, que son la inmensa mayoria de los que gobiernan una corrida, se
+    imprimian sin decir de donde salen. Esta funcion lee `Criterio.resolucion`,
+    que es el objeto que S15 puso justamente para eso y que la memoria no
+    consumia.
+
+    El MODO ES EL TIPO de la resolucion (Sec. 4.3): no hay dos campos que
+    puedan contradecirse.
+    """
+    c = ca.CRITERIOS.get(clave)
+    r = getattr(c, "resolucion", None) if c is not None else None
+    if r is None:
+        return ""
+    # CUIDADO CON EL VALOR EN CALIENTE. `resolucion` describe como el ARCHIVO
+    # resuelve este criterio. Si el valor en vigor se declaro al lanzar la
+    # corrida y NO paso por la ventana --- `--declarar`, la GUI sin ventana ---
+    # entonces no salio por ese camino, y decirlo sin mas convertiria esta
+    # ficha en la procedencia inventada que `_de_donde_salio` existe para no
+    # fingir. Se imprime igual, porque el revisor necesita saber que camino
+    # deberia haber seguido, y con la advertencia delante.
+    en_caliente = (ca.declarado_en_caliente(clave)
+                   and _declaracion.procedencia_de(clave) is None)
+    aviso = (
+        '<br><b class="pendiente">El valor en vigor NO salio por este '
+        "camino:</b> se declaro al lanzar la corrida y nadie registro de "
+        "donde. Lo de arriba es como <code>criterios_adoptados.py</code> "
+        "resuelve este criterio, no de donde vino el numero que gobierna "
+        "esta memoria." if en_caliente else "")
+    nombre = type(r).__name__
+    if nombre == "DeTabla":
+        tablas = ", ".join(f"<code>{_esc(t)}</code>" for t in r.tablas)
+        detalle = f"tabla(s) {tablas} del registro normativo; elige "
+        detalle += _esc(r.que_elige)
+        if r.fila_id:
+            detalle += f", fila <code>{_esc(r.fila_id)}</code>"
+        if r.columna_id:
+            detalle += f", columna <code>{_esc(r.columna_id)}</code>"
+        if r.laguna:
+            detalle += ("<br><b>No es una fila, es una REGLA DE LECTURA que "
+                        f"la tabla no resuelve:</b> {_esc(r.laguna)}")
+        if r.elegido_por:
+            detalle += (f"<br>La fila la elige <code>{_esc(r.elegido_por)}"
+                        "</code>, no este criterio.")
+        return ("<dt>De donde sale (R1)</dt><dd><b>De tabla.</b> "
+                + detalle + aviso + "</dd>")
+    if nombre == "EnRango":
+        return ("<dt>De donde sale (R1)</dt><dd><b>De un rango de la "
+                f"fuente.</b> Acota {_esc(r.que_acota)}; el rango vive en la "
+                f"tabla <code>{_esc(r.tabla_id)}</code>, fila "
+                f"<code>{_esc(r.fila_id)}</code>, columna "
+                f"<code>{_esc(r.columna_id)}</code> del registro. "
+                "El valor NO se copia aqui: se referencia, para que la "
+                "memoria no pueda imprimir como «minimo» el primero de dos "
+                "maximos (NOR-HID-04)." + aviso + "</dd>")
+    if nombre == "DeCatalogo":
+        return ('<dt class="pendiente">De donde sale (R1)</dt>'
+                '<dd class="pendiente"><b>De CATALOGO, no de norma.</b> '
+                f"Catalogo <code>{_esc(r.catalogo_id)}</code>; elige "
+                f"{_esc(r.que_elige)}.<br><b>Advertencia obligatoria:</b> "
+                f"{_esc(r.advertencia)}" + aviso + "</dd>")
+    if nombre == "DeEnsayo":
+        return ("<dt>De donde sale (R1)</dt><dd><b>De un ensayo.</b> "
+                f"{_esc(r.ensayo)}.<br><b>Trazabilidad exigida:</b> "
+                f"{_esc(r.trazabilidad_exigida)}" + aviso + "</dd>")
+    if nombre == "Derivada":
+        de = ", ".join(f"<code>{_esc(x)}</code>" for x in r.de)
+        return ("<dt>De donde sale (R1)</dt><dd><b>Derivada.</b> No es "
+                f"editable: se calcula desde {de} con la regla "
+                f"{_esc(r.regla)}." + aviso + "</dd>")
+    # Libre
+    pendiente = (f"<br><b>Tabla pendiente de transcribir:</b> "
+                 f"{_esc(r.tabla_pendiente)}" if r.tabla_pendiente else "")
+    dominio = f"<br>Dominio fisico: {_esc(r.dominio)}" if r.dominio else ""
+    opciones = ("<br>Valores admisibles: "
+                + ", ".join(f"<i>{_esc(o)}</i>" for o in r.opciones)
+                if r.opciones else "")
+    return ("<dt>De donde sale (R1)</dt><dd><b>Libre.</b> Ninguna tabla, "
+            "ningun rango de fuente y ninguna medicion lo determinan: el "
+            f"numero lo pone {_esc(r.que_lo_fija)}."
+            + dominio + opciones + pendiente + aviso + "</dd>")
+
+
+def _sensibilidad_declarada(clave: str, criterio: Any) -> str:
+    """
+    El rango de sensibilidad de un criterio, IMPRESO COMO ANALISIS y no como
+    un par de numeros sueltos.
+
+    SIS-B-05: `criterios_adoptados.parametros_sensibilizables()` existia y solo
+    la consumian los tests, mientras la plantilla anunciaba «con analisis de
+    sensibilidad obligatorio». El insumo llegaba al documento --- el rango se
+    imprimia --- pero sin decir que era ni para que servia, de modo que nadie
+    podia leerlo como un analisis. Aqui se dice: que se adopto, dentro de que
+    margen se movio la eleccion, y que un barrido tendria que recorrer.
+
+    Los rangos NO NUMERICOS --- una sensibilidad expresada en funcion de otro
+    criterio, o un conjunto de opciones --- se imprimen igual y se marcan como
+    no recorribles: `parametros_sensibilizables` los excluye de su barrido a
+    proposito, porque hacerles `float()` los falsearia.
+    """
+    rango = criterio.sensibilidad
+    if not rango:
+        return ""
+    recorribles = ca.parametros_sensibilizables(solo_numericos=True)
+    if clave in recorribles:
+        nota = ("Rango numerico: un barrido de sensibilidad lo recorre "
+                "entero. Es lo que hay que mover para saber si el resultado "
+                "de esta memoria depende de la adopcion o no.")
+    else:
+        nota = ("Rango NO numerico o simbolico: se declara y se imprime, pero "
+                "un barrido no lo puede recorrer sin resolver antes la "
+                "variable de la que depende. Forzarlo a numero lo falsearia.")
+    return ("<dt>Sensibilidad declarada</dt><dd>"
+            f"Valor adoptado <b>{_valor_legible(criterio.valor)}</b> dentro "
+            f"de <b>{_valor_legible(rango)}</b>.<br>"
+            f'<span class="interpretacion">{_esc(nota)}</span></dd>')
+
+
 def bloque_criterios(solo_usados: bool = True) -> str:
     """
     El contenido de `criterios_adoptados.reporte_criterios` como HTML: cada
@@ -1319,6 +1790,7 @@ def bloque_criterios(solo_usados: bool = True) -> str:
                "NO verificado]</b>" if c.provisional else "")
             + "</dd>",
             _procedencia(clave),
+            _de_donde_sale_el_valor(clave),
             f"<dt>Justificacion</dt><dd>{_esc(c.justificacion)}</dd>",
             f"<dt>Fuente</dt><dd>{_esc(c.fuente)}</dd>",
         ]
@@ -1326,8 +1798,7 @@ def bloque_criterios(solo_usados: bool = True) -> str:
             campos.append("<dt>Lo sustituye</dt>"
                           f"<dd>{_esc(c.reemplazado_por)}</dd>")
         if c.sensibilidad:
-            campos.append("<dt>Sensibilidad</dt>"
-                          f"<dd>{_valor_legible(c.sensibilidad)}</dd>")
+            campos.append(_sensibilidad_declarada(clave, c))
         if c.trazabilidad:
             campos.append("<dt>Trazabilidad</dt>"
                           f"<dd>{_esc(c.trazabilidad)}</dd>")
@@ -1382,7 +1853,8 @@ def _tabla_tablero(tablero: Tablero) -> str:
 
 
 def bloque_pendientes(tableros: Sequence[Tablero],
-                      bloqueantes: Sequence[CriterioBloqueante]) -> str:
+                      bloqueantes: Sequence[CriterioBloqueante],
+                      alcance: str = ALCANCE_EXPEDIENTE) -> str:
     """
     Bloque 5 del entregable: los pendientes de los Tableros 1, 2 y 3, mas los
     criterios que esta corrida dejo sin valor.
@@ -1390,8 +1862,37 @@ def bloque_pendientes(tableros: Sequence[Tablero],
     Va separado de la declaracion de criterios a proposito (ver el docstring
     del modulo). Se imprime siempre, incluso vacio de bloqueos: que una corrida
     no haya tropezado con un pendiente no significa que el pendiente no exista.
+
+    EL VOLCADO DE LOS TABLEROS DEPENDE DEL ALCANCE, y es lo que cierra
+    SIS-B-06. La plantilla de perfil se diseño sin ese volcado --- a nivel de
+    perfil los Tableros 1-2-3 no son la lista de trabajo, y en su lugar va el
+    bloque de alcance ---, y para conseguirlo simplemente OMITIA el marcador.
+    Omitir un marcador no es una decision de contenido: `substitute` no se
+    queja de un valor sobrante, de modo que forzar esa plantilla sobre una
+    corrida de EXPEDIENTE tiraba 13 647 caracteres --- los criterios
+    bloqueantes del expediente entre ellos --- sin decir nada. Y la propia CLI
+    invita a esa combinacion: su docstring dice que las dos plantillas
+    «comparten el contrato de marcadores» y su help remata con «las dos
+    aceptan cualquier corrida».
+    Ahora las dos plantillas imprimen el marcador --- el contrato es de verdad
+    el que la CLI promete --- y quien decide que va dentro es el ALCANCE DE LA
+    CORRIDA, que es de donde tenia que salir la decision desde el principio.
     """
-    partes = ["".join(_tabla_tablero(t) for t in tableros)]
+    if alcance == ALCANCE_PERFIL:
+        # A nivel de perfil los tableros no se vuelcan, y eso NO cambia:
+        # cambia que ahora se dice, en el sitio donde estarian, en vez de
+        # desaparecer con el marcador.
+        partes = [
+            '<div class="nota"><p>Esta es una corrida a <b>nivel de '
+            "perfil</b>: el volcado de los Tableros 1, 2 y 3 de la hoja de "
+            "ruta no se imprime, porque a este nivel la lista de trabajo es "
+            "el bloque de alcance y no los tableros. Los criterios que "
+            "<b>esta corrida</b> dejo sin valor si se listan abajo: son los "
+            "que detuvieron una etapa de verdad.</p><p>Para el volcado "
+            "completo de los tres tableros, correr con "
+            "<code>--alcance expediente</code>.</p></div>"]
+    else:
+        partes = ["".join(_tabla_tablero(t) for t in tableros)]
 
     partes.append("<h3>Criterios declarados todavia sin valor</h3>")
     sin_valor = ca.criterios_sin_valor()
@@ -1547,7 +2048,7 @@ def acotaciones_declaradas() -> list:
         key=lambda k: (ca.CRITERIOS[k].etiqueta, k))
 
 
-def bloque_acotaciones(alcance: str = "expediente") -> str:
+def bloque_acotaciones(alcance: str = ALCANCE_EXPEDIENTE) -> str:
     """
     Bloque 6: lo que el proyectista adopto donde la norma no dice nada.
 
@@ -1580,7 +2081,7 @@ def bloque_acotaciones(alcance: str = "expediente") -> str:
                 "en el calculo tiene norma que lo fija o ensayo que lo "
                 "determina.</p></div>")
 
-    de_expediente = alcance == "expediente"
+    de_expediente = alcance == ALCANCE_EXPEDIENTE
     partes = []
     if de_expediente:
         partes.append(
@@ -1629,6 +2130,32 @@ def bloque_acotaciones(alcance: str = "expediente") -> str:
 # Umbrales normativos y su caracter
 # ---------------------------------------------------------------------------
 
+def _interpretacion_tabla_10() -> str:
+    """
+    La lectura del proyectista sobre la Tabla Nº 10, impresa APARTE y marcada
+    como interpretacion, con los hechos que juegan EN CONTRA delante.
+
+    Es NOR-HID-04 y es el caso testigo de la regla tipografica: «el rango
+    recorre la calidad del revestimiento» no esta en el Manual -- nada dice
+    por que hay dos numeros --, y se imprimia pegada a la cita, dentro del
+    mismo parrafo, como si fuera norma. El texto sale ahora del registro
+    (`TablaNormativa.interpretacion`, del tipo `Interpretacion`), que es el
+    unico objeto del proyecto que EXIGE declarar lo que juega en contra: una
+    lectura que no encuentra nada en contra no se ha buscado a si misma.
+    """
+    interp = _reg_M11.tabla("MC_HHD.T10").interpretacion
+    contra = "".join(f"<li>{_esc(x)}</li>" for x in interp.en_contra)
+    favor = "".join(f"<li>{_esc(x)}</li>" for x in interp.a_favor)
+    return (
+        '<div class="aviso interpretacion">'
+        "<p><b>Interpretacion del proyectista sobre la Tabla N&deg; 10 "
+        "&mdash; esto NO lo dice el Manual.</b></p>"
+        f"<p>{_esc(interp.texto)}</p>"
+        f"<p><b>Lo que juega EN CONTRA de esta lectura:</b></p><ul>{contra}"
+        "</ul>"
+        f"<p><b>Lo que juega a favor:</b></p><ul>{favor}</ul></div>")
+
+
 def bloque_umbrales() -> str:
     """
     Los umbrales normativos que el proyecto verifica -- y las CONDICIONES DE
@@ -1671,25 +2198,46 @@ def bloque_umbrales() -> str:
     No calcula nada: formatea `constantes_normativas.UMBRALES_DE_VERIFICACION`.
     """
     partes = [
-        '<div class="nota"><p>De cada umbral se dicen tres cosas por separado: '
-        "el texto <b>literal</b> de la fuente, el <b>caracter</b> que esa "
-        "fuente le da, y lo que el <b>proyecto</b> hace con el. Juntas se "
-        "confunden, y confundirlas es lo que convierte una recomendacion en "
-        "una exigencia inventada.</p></div>"]
+        '<div class="nota"><p>De cada umbral se dicen <b>cuatro</b> cosas, y '
+        "cada una con su tipografia, porque confundirlas es lo que convierte "
+        "una recomendacion en una exigencia inventada: la "
+        "<span class=\'fuente\'>frase literal de la fuente</span>, "
+        "entrecomillada y con su numeral; el <b>caracter</b> que esa fuente le "
+        "da, leido de la cita y no redactado aqui; la "
+        "<span class=\'interpretacion\'>lectura del proyectista</span> "
+        "cuando la hay; y lo que el <b>proyecto</b> hace con el.</p>"
+        "<p>Las tres primeras son distintas entre si. Una cita es lo que el "
+        "documento dice. Una interpretacion es lo que este proyecto lee en "
+        "ella, y va marcada como tal aunque sea razonable: es lo que permite "
+        "a un revisor discutirla sin discutir la norma "
+        "(<code>NOR-HID-04</code>). Y lo que el proyecto HACE con el umbral "
+        "no es ninguna de las dos.</p></div>"]
     for u in UMBRALES_DE_VERIFICACION:
-        # Cada cita, entre comillas y por separado. Unirlas en un parrafo con
-        # conectores del proyecto convertia la cita en parafrasis sin que se
-        # notara, bajo un rotulo que decia "literal".
-        citas = "".join(f"<p>&laquo;{_esc(cita)}&raquo;</p>"
-                        for cita in u["texto"])
+        # Cada cita, entre comillas, por separado y CON SU PROCEDENCIA. Los
+        # textos se leen del registro (`literales_del_umbral`), no de una
+        # segunda transcripcion escrita en este archivo: hasta S18 cada
+        # umbral llevaba su `texto` copiado a mano y de-acentuado, o sea
+        # imposible de encontrar en el PDF con el buscador de un lector.
+        citas = "".join(
+            f'<p class="fuente">&laquo;{_esc(texto)}&raquo;'
+            f'<span class="procedencia-cita">{_esc(rotulo)}</span></p>'
+            for rotulo, texto in literales_del_umbral(u))
+        f = fundamento_del_umbral(u)
         campos = [
-            f"<dt>Numeral y pagina</dt><dd>{_esc(u['numeral'])}</dd>",
+            f"<dt>Por que se hace</dt><dd>{_esc(f.por_que)}<br>"
+            f"<b>Si no se hace:</b> {_esc(f.que_pasa_si_no_se_hace)}</dd>",
+            f"<dt>Numeral y pagina</dt><dd>{_esc(numeral_del_umbral(u))}</dd>",
             f"<dt>Caracter en la fuente</dt>"
-            f"<dd><b>{_esc(u['caracter'])}</b></dd>",
+            f"<dd><b>{_esc(caracter_del_umbral(u))}</b></dd>",
             f"<dt>Texto literal de la fuente</dt><dd>{citas}</dd>",
         ]
+        if u.get("matiz"):
+            campos.append(
+                '<dt class="interpretacion">Como lo lee el proyecto</dt>'
+                f'<dd class="interpretacion">{_esc(u["matiz"])}</dd>')
         if u.get("transcripcion"):
-            campos.append("<dt>Transcripcion de la tabla (no es cita)</dt>"
+            campos.append("<dt>Transcripcion (NO es cita: es del proyecto)"
+                          "</dt>"
                           f"<dd>{_esc(u['transcripcion'])}</dd>")
         campos.append("<dt>Que hace el proyecto con el</dt>"
                       f"<dd>{_esc(u['aplicacion'])}</dd>")
@@ -1697,10 +2245,7 @@ def bloque_umbrales() -> str:
             f'<h3><code>{_esc(u["codigo"])}</code> &mdash; '
             f'{_esc(u["que"])}</h3>'
             f'<dl class="acotacion">' + "".join(campos) + "</dl>")
-    partes.append(
-        '<div class="aviso"><p><b>Interpretacion del proyectista sobre la '
-        "Tabla N&deg; 10.</b> "
-        f"{_esc(TABLA_10_INTERPRETACION_PROYECTO)}</p></div>")
+    partes.append(_interpretacion_tabla_10())
     return "".join(partes)
 
 
@@ -1801,6 +2346,48 @@ def cargar_plantilla(ruta: Optional[Path] = None) -> PlantillaHTML:
     return PlantillaHTML(destino.read_text(encoding="utf-8"))
 
 
+def _exigir_que_la_plantilla_no_pierda_contenido(
+        plantilla: PlantillaHTML, valores: Dict[str, str],
+        ruta: Optional[Path]) -> None:
+    """
+    La otra mitad del contrato de marcadores, y la que faltaba (SIS-B-06).
+
+    `substitute` ya revienta cuando la plantilla pide un marcador que M11 no
+    entrega. La direccion contraria --- M11 calcula contenido y la plantilla
+    no lo imprime --- no se queja de nada: `substitute` ignora los valores
+    sobrantes. El comentario de contrato de este mismo modulo lo dice desde
+    hace tiempo: «un marcador que M11 calcula y la plantilla no imprime es
+    contenido de la memoria que se pierde en silencio». No habia guardia.
+
+    Se comprueba sobre el contenido REAL de esta corrida, no sobre la lista de
+    marcadores: un marcador cuyo valor sale vacio no es contenido perdido, es
+    contenido que no habia. Asi la guardia no obliga a ninguna plantilla a
+    imprimir bloques vacios, y salta exactamente cuando hay algo que decir y
+    la hoja no tiene donde decirlo.
+
+    Es `ValueError` y no un aviso impreso porque no hay donde imprimirlo: el
+    problema es justamente que falta el hueco. Y no es un error del
+    expediente sino de la plantilla que se le paso al script, que es la misma
+    clase que la plantilla ausente.
+    """
+    presentes = {m.group("named") or m.group("braced")
+                 for m in plantilla.pattern.finditer(plantilla.template)}
+    perdidos = sorted(clave for clave, texto in valores.items()
+                      if clave not in presentes and str(texto).strip())
+    if not perdidos:
+        return
+    nombre = ruta.name if ruta is not None else NOMBRE_PLANTILLA
+    detalle = ", ".join(
+        f"{clave} ({len(valores[clave])} caracteres)" for clave in perdidos)
+    raise ValueError(
+        f"La plantilla «{nombre}» no imprime {len(perdidos)} bloque(s) que "
+        f"esta corrida SI produjo: {detalle}. Eso es contenido de la memoria "
+        "que se perderia en silencio, que es lo que el contrato de marcadores "
+        "de este modulo prohibe (SIS-B-06). Las dos plantillas del proyecto "
+        "llevan los mismos marcadores a proposito: quien decide que va dentro "
+        "de cada bloque es el ALCANCE de la corrida, no la plantilla.")
+
+
 def _resumen_expediente(informe: Any) -> str:
     """Las cuatro cifras que resumen la corrida, bajo el encabezado."""
     incumplidas = sum(len(i.incumplidas()) for i in informe.puntos)
@@ -1864,7 +2451,8 @@ def memoria_html(informe: Any, *, proyecto: str = "",
                                  for p in informe.puntos),
         "bloque_datos_sitio": bloque_datos_sitio(solo_usados=True),
         "bloque_criterios": bloque_criterios(solo_usados=True),
-        "bloque_pendientes": bloque_pendientes(tableros, bloqueantes),
+        "bloque_pendientes": bloque_pendientes(tableros, bloqueantes,
+                                              alcance=informe.alcance),
         "bloque_alcance": bloque_alcance(informe),
         "bloque_acotaciones": bloque_acotaciones(alcance=informe.alcance),
         "bloque_umbrales": bloque_umbrales(),
@@ -1877,9 +2465,12 @@ def memoria_html(informe: Any, *, proyecto: str = "",
             "`MARCADORES` y el diccionario de `memoria_html` tienen que decir "
             "lo mismo, porque el test de la plantilla se apoya en esa lista."
         )
+    plantilla = cargar_plantilla(ruta_plantilla)
+    _exigir_que_la_plantilla_no_pierda_contenido(plantilla, valores,
+                                                 ruta_plantilla)
     # `substitute`, no `safe_substitute`: un marcador que la plantilla pide y
     # este modulo no entrega tiene que reventar aqui, no imprimirse.
-    return cargar_plantilla(ruta_plantilla).substitute(valores)
+    return plantilla.substitute(valores)
 
 
 # ===========================================================================

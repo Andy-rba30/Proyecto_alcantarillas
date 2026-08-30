@@ -246,10 +246,12 @@ from typing import Optional, Tuple
 
 import criterios_adoptados as ca
 from dominios import ESVIAJE_MAX
-from modelos import (CompatibilidadGeometrica, CondicionRasante,
-                     DatoInvalidoError, LimiteNumericoError, Material,
+from modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
+                     CondicionRasante,
+                     DatoInvalidoError, EleccionDeProyecto, LimiteNumericoError,
+                     Magnitud, Material,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
-                     Verificacion)
+                     TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
 from modulos.M2_material import diametro_exterior, espesor_pared
 from modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
                                        cota_entrada_supuesta,
@@ -556,6 +558,8 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
     Lo que cambio no es esta funcion sino lo que hay que declarar antes de
     llegar a ella.
     """
+    manda_recubrimiento = (tamizado.condicion_gobernante
+                           is CondicionRasante.RECUBRIMIENTO)
     return Verificacion(
         cumple=tamizado.factible,
         numeral=NUMERAL_G1,
@@ -563,6 +567,75 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
         valor_admisible=tamizado.cota_rasante_min,
         criterio_aplicado=tamizado.criterio_gobernante,
         codigo="G1",
+        paso=paso(
+            "F7.RELLENO",
+            codigo="G1",
+            que="Rasante minima: la que el conducto exige bajo la via",
+            formula="cota_rasante_min = max(cota_clave + h_rec + e_paquete, "
+                    "cota_entrada + HW + resguardo + e_paquete)",
+            formula_cita_id="AASHTO_LRFD_9.12.6.6.3#COBERTURA",
+            citas_textuales=("AASHTO_LRFD_9.12.6.6.3#COBERTURA",
+                             "EG2013.508.07#RELLENO_MIN"),
+            sustitucion=(
+                Magnitud("cota_clave", tamizado.cota_clave, "msnm",
+                         "cota de entrada + D + espesor de pared: es la clave "
+                         "FISICA, la exterior. Medirla sobre el diametro "
+                         "interior dejaba la rasante minima corta en t "
+                         "(MAT-D3, MAT-D4)", cifras=CIFRAS_MAGNITUD),
+                Magnitud("h_rec", tamizado.h_recubrimiento, "m",
+                         "relleno minimo sobre la clave: el MAYOR entre el "
+                         "minimo de la EG-2013 y la cobertura minima de la "
+                         "Tabla 12.6.6.3-1 de AASHTO",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("e_paquete", tamizado.espesor_paquete, "m",
+                         "cota de rasante menos cota de subrasante del CSV",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("resguardo", tamizado.resguardo, "m",
+                         "tabla de resguardo por CBR del Manual de Suelos, la "
+                         "misma que consume V4", cifras=CIFRAS_MAGNITUD)),
+            resultado=Magnitud("cota_rasante_min", tamizado.cota_rasante_min,
+                               "msnm",
+                               f"gobierna la condicion "
+                               f"{tamizado.condicion_gobernante.value}",
+                               cifras=CIFRAS_MAGNITUD),
+            umbral=Umbral(
+                descripcion="cota de rasante minima que el conducto exige",
+                valor=tamizado.cota_rasante_min, unidad="msnm",
+                cita_id="AASHTO_LRFD_9.12.6.6.3#COBERTURA",
+                caracter="EXIGENCIA",
+                aplicacion="REGLA DEL MAYOR entre la EG-2013 y AASHTO, la "
+                           "misma que la Sec. 0.2 aplica al recubrimiento de "
+                           "concreto: los dos minimos regulan lo mismo desde "
+                           "dos corpus y ninguno deroga al otro. Cumplir el "
+                           "menor dejaria el otro incumplido.",
+                criterio_aplicado=tamizado.criterio_gobernante),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.CUMPLE if tamizado.factible
+                      else TipoDeVeredicto.NO_CUMPLE),
+                margen=(tamizado.cota_rasante_actual
+                        - tamizado.cota_rasante_min),
+                unidad="m",
+                explicacion=(
+                    "la rasante del expediente ya alcanza la minima"
+                    if tamizado.factible else
+                    f"no factible: hay que subir la rasante "
+                    f"{tamizado.delta_rasante_m:.3f} m")),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="condicion que gobierna la rasante minima",
+                valor=tamizado.condicion_gobernante.value,
+                entre=(f"recubrimiento: {tamizado.cota_por_recubrimiento:.3f} "
+                       "msnm",
+                       f"resguardo bajo subrasante: "
+                       f"{tamizado.cota_por_resguardo:.3f} msnm"),
+                de_donde="las dos condiciones de la Sec. 7.A, evaluadas para "
+                         "este punto",
+                por_que=("manda el RECUBRIMIENTO: el conducto necesita mas "
+                         "relleno encima del que el agua necesita por debajo"
+                         if manda_recubrimiento else
+                         "manda el RESGUARDO: la carga a la entrada exige mas "
+                         "rasante que la cobertura del conducto"),
+                clave_criterio=tamizado.criterio_gobernante or ""),),
+        ),
     )
 
 

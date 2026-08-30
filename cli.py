@@ -121,6 +121,8 @@ for _ruta in (RAIZ, SRC):
 import criterios_adoptados as ca                                    # noqa: E402
 import datos_sitio as ds                                            # noqa: E402
 from constantes_normativas import CUANTIA_MIN_MURO, RECUBRIMIENTO   # noqa: E402
+from modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE       # noqa: E402
+from modelos import ALCANCE_PERFIL as _ALCANCE_PERFIL               # noqa: E402
 from modelos import (Clasificacion, CompatibilidadGeometrica,       # noqa: E402
                      CriterioPendienteError, DatoFaltanteError,
                      DatoInvalidoError, DisenoNoFactibleError,
@@ -168,8 +170,14 @@ from modulos.MD import disenar_punto                                # noqa: E402
 # se pierde: queda registrado como Bloqueo con `diferido_por_alcance=True`,
 # se imprime con su fundamento, y deja de contar solo para `Informe.cerrado`.
 # Son rotulos de la corrida, no valores de proyecto.
-ALCANCE_PERFIL = "perfil"
-ALCANCE_EXPEDIENTE = "expediente"
+#
+# SE IMPORTAN DE `modelos.py` DESDE S18, donde se mudaron: M11 los necesita
+# para decidir que va dentro del bloque de pendientes y no puede importar esta
+# CLI. Los nombres siguen expuestos aqui para todo lo que ya los lee de
+# `cli.ALCANCE_*` --- la GUI y los tests --- y son el MISMO objeto, no una
+# copia.
+ALCANCE_PERFIL = _ALCANCE_PERFIL
+ALCANCE_EXPEDIENTE = _ALCANCE_EXPEDIENTE
 
 # Etiquetas de fase. Son rotulos del informe, no valores de proyecto: cada uno
 # nombra el modulo y la seccion de la hoja de ruta que ejecuta esa etapa.

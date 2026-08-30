@@ -72,6 +72,8 @@ con comentarios de linea. Queda escrita aqui para que no haya que deducirla.
 # Los nombres publicos de este archivo NO CAMBIAN. Un consumidor sigue
 # leyendo `MANNING`, `V_MAX` o `SOBRECARGA_TRASDOS_H_EQ` con la misma forma y
 # el mismo valor; lo unico que cambia es de donde salen.
+from typing import Tuple
+
 from normativa import registro as _registro_normativo
 
 _reg = _registro_normativo.construir()
@@ -432,17 +434,20 @@ TABLA_10_FILAS = {
 # mamposteria, con un solo numero, no encaja con una lectura de acabados. Es
 # INTERPRETACION DEL PROYECTISTA, razonable y declarada como tal; lo que la
 # fuente sostiene es solo que los dos numeros son maximos.
+# SE LEE DEL REGISTRO, no se reescribe aqui. La interpretacion vive como
+# `Interpretacion` en `TablaNormativa.interpretacion` de `MC_HHD.T10`, que es
+# el unico tipo del proyecto que OBLIGA a declarar lo que juega en contra: una
+# lectura que no encuentra nada en contra no se ha buscado a si misma. Tenerla
+# ademas escrita aqui era una segunda redaccion de la misma cosa -- justo lo
+# que NOR-HID-04 pide separar de la cita, duplicado.
+_INTERPRETACION_T10 = _reg.tabla("MC_HHD.T10").interpretacion
 TABLA_10_INTERPRETACION_PROYECTO = (
-    "INTERPRETACION DEL PROYECTISTA, NO DEL MANUAL: que los dos numeros de una "
-    "fila recorran la calidad del revestimiento -- el superior para el acabado "
-    "de mejor calidad y el inferior para el mas pobre -- es una lectura que "
-    "este proyecto adopta para poder elegir un techo mas conservador dentro de "
-    "la fila ('v_max_concreto_eleccion'). El Manual NO la escribe: solo dice "
-    "que la tabla da velocidades maximas admisibles. En contra de esta lectura "
-    "juegan dos hechos de la propia fuente: la frase que introduce la tabla "
-    "habla de un 'rango' con 'limites', y la fila de mamposteria trae un solo "
-    "valor. A favor juega el titulo, que es lo unico que decide que ninguno de "
-    "los dos numeros sea un piso. Se imprime SIEMPRE separada de la cita.")
+    "INTERPRETACION DEL PROYECTISTA, NO DEL MANUAL: "
+    + _INTERPRETACION_T10.texto
+    + " En contra de esta lectura juegan hechos de la propia fuente: "
+    + "; ".join(_INTERPRETACION_T10.en_contra)
+    + ". A favor: " + "; ".join(_INTERPRETACION_T10.a_favor)
+    + ". Se imprime SIEMPRE separada de la cita.")
 # Vista de calculo: los valores de la fila, tal cual. V3 aplica el MAYOR (el
 # techo del acabado de mejor calidad) y no verifica el menor: el piso de
 # velocidad es V_MIN, no el extremo inferior de esta fila.
@@ -745,40 +750,76 @@ H_O_CONDICION_APLICACION = (
 # Rotular como literal lo que no lo es es exactamente el defecto NOR-HID-06,
 # reintroducido por el bloque construido para cerrarlo. Lo que no es cita
 # verbatim va en `transcripcion`, con su propio rotulo.
+def _literal_de_cita(cita_id: str) -> str:
+    """El texto VERBATIM de una cita del registro. Una sola transcripcion."""
+    return _reg.cita(cita_id).texto_literal.texto
+
+
+def _literal_de_tabla(tabla_id: str, campo: str) -> str:
+    """
+    El titulo o el texto previo de una tabla del registro, verbatim.
+
+    Estan en `TablaNormativa` y no en `Cita` porque son de la tabla; pero son
+    igual de literales y la memoria los imprime igual de entrecomillados, de
+    modo que tienen que salir de la misma fuente unica.
+    """
+    t = _reg.tabla(tabla_id)
+    if campo == "titulo":
+        return t.titulo_literal
+    if campo == "previo":
+        return t.texto_previo.texto
+    raise KeyError(f"campo de tabla no soportado: {campo}")
+
+
+def _nota_de_tabla(tabla_id: str, empieza_con: str) -> str:
+    """
+    Una nota al pie de una tabla del registro, localizada POR SU TEXTO y no
+    por su posicion: la Tabla Nº 02 tiene cuatro y dos de ellas no llevan
+    marca, de modo que un indice numerico las ataria al orden en que alguien
+    las tecleo.
+    """
+    t = _reg.tabla(tabla_id)
+    for nota in t.notas_al_pie:
+        if nota.texto.texto.startswith(empieza_con):
+            return nota.texto.texto
+    raise KeyError(f"{tabla_id}: ninguna nota empieza por «{empieza_con}»")
+
+
 UMBRALES_DE_VERIFICACION = (
     {"codigo": "V1",
+     "fundamento": "F5.V1",
      "que": "Borde libre: y/D <= 0.75 (minimo 25 % de borde libre)",
-     "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) 'Borde libre', "
-                "pag. impresa 79",
-     "caracter": "RECOMENDACION",
-     "texto": ("Se recomienda que el diseño hidraulico considere como minimo "
-               "el 25 % de la altura, diametro o flecha de la estructura.",),
+     "citas": ("MC_HHD.4.1.1.3.7b",),
+     "literales_de_tabla": (),
      "aplicacion": "Se aplica como umbral DURO (un punto con y/D > 0.75 se "
                    "marca 'NO cumple'). Es la lectura conservadora y es "
-                   "decision del proyecto, no exigencia del numeral."},
+                   "decision del proyecto, no exigencia del numeral. El 0.75 "
+                   "es ademas una DERIVACION aritmetica del 25 % que la "
+                   "fuente escribe (1 - 0.25): el numeral no imprime ni el "
+                   "0.75 ni la razon y/D."},
     {"codigo": "V2",
+     "fundamento": "F5.V2",
      "que": "Velocidad minima de autolimpieza: V >= 0.25 m/s",
-     "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo posterior "
-                "a la Tabla Nº 10; arranca en la pag. impresa 76 y el valor se "
-                "imprime en la 77",
-     "caracter": "RECOMENDACION",
-     "texto": ("Se debera verificar que la velocidad minima del flujo dentro "
-               "del conducto no produzca sedimentacion que pueda incidir en "
-               "una reduccion de su capacidad hidraulica, recomendandose que "
-               "la velocidad minima sea igual a 0.25 m/s.",),
+     # DOS citas para una sola oracion del Manual, y no es redundancia: la
+     # primera mitad («se debera verificar») es EXIGENCIA y la segunda
+     # («recomendandose que... 0.25 m/s») es RECOMENDACION. Verificar el piso
+     # es obligatorio; el valor del piso es lo recomendado. Con una sola cita,
+     # cualquiera de las dos lecturas queda falseada.
+     "citas": ("MC_HHD.4.1.1.3.6#VMIN_INICIO", "MC_HHD.4.1.1.3.6#VMIN"),
+     "literales_de_tabla": (),
+     "matiz": "La oracion contiene las dos cosas: la OBLIGACION de verificar "
+              "el minimo y la RECOMENDACION sobre su valor. El proyecto "
+              "cumple la primera y endurece la segunda.",
      "aplicacion": "Se aplica como umbral DURO, y se evalua con la velocidad "
                    "de la rama de n MAXIMO -- la estimacion BAJA de velocidad "
                    "--, que es el extremo conservador para un piso. La razon "
                    "del minimo es la sedimentacion que reduce capacidad, no el "
                    "desgaste: por eso vale igual para todos los materiales."},
     {"codigo": "V3",
+     "fundamento": "F5.V3",
      "que": "Velocidad maxima admisible del revestimiento",
-     "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 'Velocidades maximas "
-                "admisibles (m/s) en conductos revestidos', num. 4.1.1.3.6, "
-                "pag. impresa 76. Fuente de la tabla: HCANALES, Maximo Villon B.",
-     "caracter": "EXIGENCIA (tabla de valores admisibles)",
-     "texto": (TABLA_10_TITULO,
-               TABLA_10_TEXTO_PREVIO),
+     "citas": ("MC_HHD.4.1.1.3.6#T10",),
+     "literales_de_tabla": (("MC_HHD.T10", "previo"),),
      "transcripcion": ("Filas de la Tabla Nº 10, con su nombre literal y los "
                        "valores tal como la tabla los imprime: "
                        + " ; ".join(
@@ -794,17 +835,53 @@ UMBRALES_DE_VERIFICACION = (
                    "que es el extremo conservador para un techo. TMC y HDPE no "
                    "tienen fila en esta tabla: su techo sale de un criterio [C] "
                    "con fuente WSDOT."},
+    {"codigo": "V4",
+     "fundamento": "F5.V4",
+     "que": "Carga a la entrada bajo la subrasante: cota_entrada + HW <= "
+            "cota_subrasante - resguardo(CBR)",
+     "citas": ("MS.4.5.4", "MS.9.1.3"),
+     "literales_de_tabla": (),
+     "matiz": "El numeral regula el nivel de la NAPA FREATICA bajo la "
+              "subrasante, no el de una avenida. Aplicarlo al HW es una "
+              "ANALOGIA declarada del proyecto -- por eso el criterio "
+              "'resguardo_HW_subrasante' es [N->] y no [N] --: la exigencia "
+              "sobre el numero es de la fuente, la extension del numero a "
+              "otro fenomeno es del proyectista.",
+     "aplicacion": "Se aplica el resguardo por CBR de la tabla del num. 4.5.4 "
+                   "a un nivel transitorio (la carga de la avenida de "
+                   "diseño), que es mas exigente que aplicarlo solo a la napa "
+                   "permanente. La regla con que se obtiene la cota de fondo "
+                   "de entrada NO la elige el codigo: sale del criterio "
+                   "'origen_cota_fondo_entrada', que aparece en el bloque de "
+                   "criterios de esta memoria."},
+    {"codigo": "V7",
+     "fundamento": "F5.V7",
+     "que": "Flotacion del conducto vacio: gamma_DC_min*DC + gamma_EV_min*EV "
+            ">= gamma_WA*U",
+     "citas": ("MP.T2.4.5.3.1-1", "MP.T2.4.5.3.1-2"),
+     "literales_de_tabla": (),
+     "matiz": "La fila V7 de la hoja de ruta lo enuncia como SUMA_W >= FS*U, "
+              "que es lenguaje de tension admisible. El proyecto no lo aplica "
+              "asi: la Sec. 0.2 adopta LRFD de extremo a extremo y en LRFD el "
+              "margen lo hacen los propios gamma. Conservar ademas un FS "
+              "global seria contar dos veces el mismo margen.",
+     "aplicacion": "Se minoran las acciones que estabilizan (DC y EV, con sus "
+                   "gamma MINIMOS) y se mayora la que desestabiliza (WA). La "
+                   "FILA de gamma_p se elige por tipo de estructura y esa "
+                   "eleccion es del proyectista ('factores_carga_aashto'): la "
+                   "tabla es normativa, la fila que describe a esta obra no "
+                   "lo es. El peso propio del conducto se omite (DC = 0), que "
+                   "reduce el lado estabilizante y es del lado conservador."},
     {"codigo": "TR",
+     "fundamento": "F2.TR",
      "que": "Riesgo admisible y vida util con que se calcula el periodo de "
             "retorno (Tabla Nº 02)",
-     "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 02, num. 3.6, "
-                "pag. impresa 25",
-     "caracter": "RECOMENDACION -- MAXIMOS, y la decision es del Propietario",
-     # Las tres citas van SEPARADAS y verbatim, incluida la mayuscula del
-     # titulo impreso: unidas en un parrafo explicativo dejaban de ser citas.
-     "texto": (TABLA_02_TITULO,
-               TABLA_02_TEXTO_PREVIO,
-               TABLA_02_NOTA_PROPIETARIO),
+     "citas": ("MC_HHD.3.6",),
+     "literales_de_tabla": (("MC_HHD.T02", "titulo"),),
+     "notas_de_tabla": (("MC_HHD.T02", "El Propietario de una Obra"),),
+     "matiz": "El titulo dice «MAXIMOS RECOMENDADOS» y la nota al pie asigna "
+              "la decision al Propietario: la tabla no impone el riesgo, "
+              "acota lo que recomienda como techo.",
      "aplicacion": "El proyecto adopta los valores maximos recomendados de la "
                    "tabla (R = 30 % / n = 25 anios para quebrada importante; "
                    "R = 35 % / n = 15 anios para quebrada menor y descarga de "
@@ -820,28 +897,127 @@ UMBRALES_DE_VERIFICACION = (
                    "endurecer el techo, nunca aflojarlo. Mientras no la use, "
                    "esta adopcion gobierna el TR de todos los puntos."},
     {"codigo": "D_min",
+     "fundamento": "F3.D_MIN",
      "que": "Seccion minima circular de 0.90 m",
-     "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.4 a), pag. impresa 72",
-     "caracter": "EXIGENCIA CONDICIONADA ('se adoptara', con dos condiciones)",
-     "texto": (DIAMETRO_MIN_TEXTO,),
+     "citas": ("MC_HHD.4.1.1.3.4a",),
+     "literales_de_tabla": (),
+     "matiz": "«Se adoptara» es exigencia, pero la oracion la CONDICIONA dos "
+              "veces: solo en carreteras de alto volumen de transito, y "
+              "exceptuando los cruces de canales de riego.",
      "aplicacion": DIAMETRO_MIN_AMBITO},
     {"codigo": "h_o",
+     "fundamento": "F4.HO",
      "que": "Linea de energia a la salida del conducto: "
             "h_o = max(TW, (y_c + D)/2), Sec. 4.3",
-     "numeral": H_O_NUMERAL,
-     "caracter": "APROXIMACION CON CONDICION DE USO EXPRESA",
-     "texto": H_O_CONDICION_TEXTO,
+     # TRES citas, que son las tres condiciones de uso. La segunda -- «It
+     # should not be used if the inlet is not submerged» -- vivia dentro de la
+     # `nota` de la primera y por eso no se podia imprimir aparte; la tercera
+     # se transcribia a mano CON UNA ELISION SIN MARCAR (se saltaba la oracion
+     # sobre las backwater calculations) bajo el rotulo "texto literal".
+     "citas": ("HDS5_3ED.3.3.3#HO", "HDS5_3ED.3.3.3#HO_SUMERGIDA",
+               "HDS5_3ED.3.3.3#HO_1_2D"),
+     "literales_de_tabla": (),
+     "matiz": "Las tres son «can only» / «should», no «shall»: la fuente "
+              "acota su propia aproximacion, no prohibe un diseño.",
      "transcripcion": ("La forma con el MAXIMO, que es la que el proyecto "
                        "implementa, la 3a ed. no la numera: la escribe en "
                        "prosa ('the greater of tailwater or (dc + D)/2', "
                        "misma pag. 3.24). Impresa como igualdad esta en la "
                        "edicion de 1985 que tambien vive en normas/, dentro "
-                       "de su procedimiento paso a paso: <<"
+                       "de su procedimiento paso a paso (PDF 67): <<"
                        + H_O_FORMA_MAXIMO_TEXTO + ">> Esta linea no es cita "
-                       "de la 3a ed.: es la union de las dos ediciones, y por "
-                       "eso va aqui y no arriba."),
+                       "de la 3a ed., y NO PUEDE INTERNARSE COMO CITA de la "
+                       "de 1985: la paginacion de esa copia electronica es "
+                       "`SinDeterminar` y el invariante T6 del registro "
+                       "prohibe que una cita suya declare pagina PDF "
+                       "firmada. Por eso va aqui, rotulada como "
+                       "transcripcion, y no arriba."),
      "aplicacion": H_O_CONDICION_APLICACION},
 )
+
+
+def fundamento_del_umbral(umbral: dict):
+    """
+    El `Fundamento` de un umbral: POR QUE se hace ese paso.
+
+    Es el mismo objeto que consume `PasoDeMemoria.por_que`, y por eso el
+    bloque fijo de umbrales y el desarrollo de un punto no pueden decir cosas
+    distintas del mismo umbral. Hace falta ademas porque hay umbrales que
+    NINGUN paso emite: el minimo de 0.90 m no se verifica sobre un resultado,
+    es el PISO de la serie de diametros candidatos, y su «por que» --- que por
+    debajo de 0.90 m no entra una persona a limpiar el conducto --- solo tiene
+    este sitio donde llegar al revisor.
+    """
+    return _reg.fundamento(umbral["fundamento"])
+
+
+def literales_del_umbral(umbral: dict) -> Tuple[Tuple[str, str], ...]:
+    """
+    Las transcripciones LITERALES que sostienen un umbral, leidas del
+    registro, como pares (de donde sale, texto).
+
+    POR QUE ESTO ES UNA FUNCION Y NO UN CAMPO. Hasta S18 cada entrada llevaba
+    su `texto` escrito a mano aqui: una SEGUNDA transcripcion del mismo
+    parrafo, de-acentuada -- o sea imposible de encontrar en el PDF con el
+    buscador de un lector-- y libre de divergir de la del registro sin que
+    nada avisara. Dos de las seis divergian ya: la del titulo de la Tabla Nº
+    10 (espaciado distinto) y la de la tercera condicion de h_o, que se
+    saltaba una oracion entera SIN MARCAR LA ELISION bajo un rotulo que decia
+    "texto literal". Ahora hay un solo original y esta verificado contra su
+    pagina.
+    """
+    salida = []
+    for cita_id in umbral.get("citas", ()):
+        c = _reg.cita(cita_id)
+        salida.append((c.como_texto(), _literal_de_cita(cita_id)))
+    for tabla_id, campo in umbral.get("literales_de_tabla", ()):
+        t = _reg.tabla(tabla_id)
+        rotulo = ("titulo de la tabla" if campo == "titulo"
+                  else "parrafo que introduce la tabla")
+        salida.append((f"{tabla_id} ({rotulo})",
+                       _literal_de_tabla(tabla_id, campo)))
+    for tabla_id, prefijo in umbral.get("notas_de_tabla", ()):
+        salida.append((f"{tabla_id} (nota al pie)",
+                       _nota_de_tabla(tabla_id, prefijo)))
+    return tuple(salida)
+
+
+def caracter_del_umbral(umbral: dict) -> str:
+    """
+    El CARACTER que la fuente le da, leido de sus citas y no escrito a mano.
+
+    Se compone de los `Caracter` de las citas que lo sostienen -- que es donde
+    el registro los tiene verificados -- en vez de una cadena redactada aqui.
+    Una cadena redactada es como se escribio "EXIGENCIA" encima de un parrafo
+    que recomienda, que es NOR-MEM-01 leido al reves.
+
+    El `matiz` NO entra aqui: se imprime aparte, porque es lectura del
+    proyecto sobre la fuente y no el dato del registro.
+    """
+    vistos = []
+    for cita_id in umbral.get("citas", ()):
+        v = _reg.cita(cita_id).caracter.value.upper()
+        if v not in vistos:
+            vistos.append(v)
+    for tabla_id, _campo in umbral.get("literales_de_tabla", ()):
+        v = _reg.cita(_reg.tabla(tabla_id).cita_id).caracter.value.upper()
+        if v not in vistos:
+            vistos.append(v)
+    return " + ".join(vistos) if vistos else "SIN CITA"
+
+
+def numeral_del_umbral(umbral: dict) -> str:
+    """El numeral y la pagina, compuestos por la `Cita`, no reescritos aqui."""
+    partes = [_reg.cita(c).como_texto() for c in umbral.get("citas", ())]
+    for tabla_id, _campo in umbral.get("literales_de_tabla", ()):
+        cita = _reg.cita(_reg.tabla(tabla_id).cita_id).como_texto()
+        if cita not in partes:
+            partes.append(cita)
+    return " | ".join(partes)
+
+
+UMBRALES_POR_CODIGO = {u["codigo"]: u for u in UMBRALES_DE_VERIFICACION}
+
 
 # ================= Diametros normalizados (ASTM / AASHTO) ==================
 D_PASO = 0.15                       # m; reproduce las series de 6" y 150 mm

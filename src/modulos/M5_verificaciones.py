@@ -187,11 +187,16 @@ from __future__ import annotations
 from typing import Tuple
 
 import criterios_adoptados as ca
-from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
-                                   Y_SOBRE_D_MAX)
-from modelos import (DatoFaltanteError, DatoInvalidoError, Material, PuntoCritico,
-                     ReferenciaNormativa, ResultadoHidraulico, TipoMaterial,
-                     Verificacion)
+from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE,
+                                   UMBRALES_POR_CODIGO, V_MIN,
+                                   Y_SOBRE_D_MAX, caracter_del_umbral)
+from modelos import (CIFRAS_FACTOR, CIFRAS_MAGNITUD, CIFRAS_PORCENTAJE,
+                     DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
+                     ErrorProyecto,
+                     Magnitud, Material,
+                     PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
+                     TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
+                     Verificacion, paso)
 from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO, CRITERIO_V_MAX,
                                  diametro_exterior, espesor_pared)
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
@@ -339,6 +344,55 @@ def verificaciones_no_evaluadas() -> Tuple[str, ...]:
 
 
 # ---------------------------------------------------------------------------
+# La traza de la memoria: como este modulo la emite
+# ---------------------------------------------------------------------------
+# Cada verificacion devuelve su `Verificacion` COMO SIEMPRE y ademas el
+# `PasoDeMemoria` que la explica. No es informacion nueva: es la que la
+# funcion ya tenia delante -- de donde salio cada numero, contra que se
+# compara, con que margen -- y que hasta S18 se perdia al devolver solo el
+# veredicto, obligando a M11 a reconstruirla desde los resultados (SIS-A-07).
+#
+# `_umbral_de` arma el `Umbral` desde `UMBRALES_DE_VERIFICACION`, que es donde
+# viven el caracter de la fuente y lo que el proyecto hace con el. NO se
+# escriben aqui: la memoria y el codigo tienen que citar el mismo objeto o
+# divergen, que es literalmente NOR-MEM-01.
+
+# codigo de verificacion -> id de la cita del registro que fija SU umbral. Es
+# la cita que lleva el NUMERO, que no siempre es la primera del bloque: la de
+# V2 es la segunda mitad del parrafo ("recomendandose que la velocidad minima
+# sea igual a 0.25 m/s"), porque la primera obliga a verificar y no dice
+# cuanto.
+CITA_DEL_UMBRAL = {
+    "V1": "MC_HHD.4.1.1.3.7b",
+    "V2": "MC_HHD.4.1.1.3.6#VMIN",
+    "V3": "MC_HHD.4.1.1.3.6#T10",
+    "V4": "MS.4.5.4",
+    "V7": "MP.T2.4.5.3.1-2",
+}
+
+
+def _umbral_de(codigo: str, *, valor, unidad: str,
+               descripcion: str, criterio: str = None) -> Umbral:
+    """
+    El `Umbral` de una verificacion, con su caracter y su aplicacion leidos de
+    `UMBRALES_DE_VERIFICACION` y no reescritos aqui.
+    """
+    u = UMBRALES_POR_CODIGO[codigo]
+    return Umbral(descripcion=descripcion, valor=valor, unidad=unidad,
+                  cita_id=CITA_DEL_UMBRAL[codigo],
+                  caracter=caracter_del_umbral(u),
+                  aplicacion=u["aplicacion"],
+                  criterio_aplicado=criterio)
+
+
+def _veredicto(cumple: bool, margen: float, unidad: str,
+               explicacion: str) -> Veredicto:
+    return Veredicto(
+        tipo=TipoDeVeredicto.CUMPLE if cumple else TipoDeVeredicto.NO_CUMPLE,
+        margen=margen, unidad=unidad, explicacion=explicacion)
+
+
+# ---------------------------------------------------------------------------
 # V1 - Borde libre (Sec. 4.1.1.3.7 b)
 # ---------------------------------------------------------------------------
 
@@ -366,13 +420,48 @@ def v1_borde_libre(*, D: float, resultado: ResultadoHidraulico) -> Verificacion:
     conservador para una verificacion de borde libre.
     """
     y_sobre_D = resultado.y_normal / D
+    cumple = y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO
+    umbral = _umbral_de(
+        "V1", valor=Y_SOBRE_D_MAX, unidad="",
+        descripcion="y/D maximo admisible (borde libre >= 25 % de D)")
     return Verificacion(
-        cumple=y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO,
+        cumple=cumple,
         numeral=NUMERAL_V1,
         valor_obtenido=y_sobre_D,
         valor_admisible=Y_SOBRE_D_MAX,
         criterio_aplicado=None,          # [N] puro, sin criterio adoptado
         codigo="V1",
+        paso=paso(
+            "F5.V1",
+            codigo="V1",
+            que="Borde libre: relacion de llenado del conducto",
+            formula="y/D <= 0.75, donde 0.75 = 1 - 0.25 (el 25 % que el "
+                    "numeral escribe como borde libre minimo)",
+            formula_cita_id="MC_HHD.4.1.1.3.7b",
+            sustitucion=(
+                Magnitud("y_normal", resultado.y_normal, "m",
+                         "M3, tirante normal por Manning con la rama de n "
+                         "MAXIMO (mas rugosidad da mas tirante para el mismo "
+                         "Q: el extremo conservador para un borde libre)",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("D", D, "m",
+                         "diametro adoptado por el bucle de diseño (MD), de "
+                         "la serie normalizada", cifras=CIFRAS_FACTOR)),
+            resultado=Magnitud("y/D", y_sobre_D, "",
+                               "y_normal / D, calculado en esta verificacion",
+                               cifras=CIFRAS_MAGNITUD),
+            umbral=umbral,
+            veredicto=_veredicto(
+                cumple, Y_SOBRE_D_MAX - y_sobre_D, "",
+                "margen de borde libre por encima del 25 % exigido"
+                if cumple else
+                "el conducto trabaja con menos borde libre del recomendado"),
+            nota_del_proyecto=(
+                "El numeral RECOMIENDA este borde libre; aqui se aplica como "
+                "umbral duro por decision conservadora del proyecto. La "
+                "fuente no escribe el 0.75 ni la razon y/D: escribe «el 25 % "
+                "de la altura, diametro o flecha de la estructura»."),
+        ),
     )
 
 
@@ -436,19 +525,133 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
     ya modelaba el umbral de V2 con n = 0.013 (n_max): el repositorio se
     contradecia a si mismo.
     """
+    cumple = resultado.V_sedimentacion >= V_MIN - TOL_UMBRAL_NORMATIVO
+    umbral = _umbral_de("V2", valor=V_MIN, unidad="m/s",
+                        descripcion="velocidad minima de autolimpieza")
     return Verificacion(
-        cumple=resultado.V_sedimentacion >= V_MIN - TOL_UMBRAL_NORMATIVO,
+        cumple=cumple,
         numeral=NUMERAL_V2,
         valor_obtenido=resultado.V_sedimentacion,
         valor_admisible=V_MIN,
         criterio_aplicado=None,
         codigo="V2",
+        paso=paso(
+            "F5.V2",
+            codigo="V2",
+            que="Velocidad minima: comprobacion de autolimpieza",
+            formula="V >= 0.25 m/s",
+            formula_cita_id="MC_HHD.4.1.1.3.6#VMIN",
+            # LAS DOS MITADES DEL PARRAFO, y en este orden: primero la que
+            # obliga a verificar, despues la que recomienda el valor. Leida
+            # sola, la segunda hace parecer opcional lo que el Manual manda.
+            citas_textuales=("MC_HHD.4.1.1.3.6#VMIN_INICIO",),
+            sustitucion=(
+                Magnitud("V_sedimentacion", resultado.V_sedimentacion, "m/s",
+                         "M3, velocidad de la rama de n MAXIMO -- la "
+                         "estimacion BAJA de velocidad, que es el extremo "
+                         "conservador contra un PISO. No es la de V3, que "
+                         "verifica un techo y usa la rama opuesta (MAT-D1)",
+                         cifras=CIFRAS_MAGNITUD),),
+            resultado=Magnitud("V_sedimentacion", resultado.V_sedimentacion,
+                               "m/s", "la misma velocidad, contrastada contra "
+                               "el piso", cifras=CIFRAS_MAGNITUD),
+            umbral=umbral,
+            veredicto=_veredicto(
+                cumple, resultado.V_sedimentacion - V_MIN, "m/s",
+                "por encima del piso de autolimpieza" if cumple else
+                "por debajo del piso: el conducto puede sedimentar y perder "
+                "capacidad hidraulica"),
+            nota_del_proyecto=(
+                "La oracion del Manual dice dos cosas con fuerza distinta: "
+                "«se debera verificar» (EXIGENCIA de comprobar) y "
+                "«recomendandose que la velocidad minima sea igual a 0.25 "
+                "m/s» (RECOMENDACION sobre el valor). El proyecto cumple la "
+                "primera y aplica la segunda como umbral duro, por decision "
+                "conservadora propia."),
+        ),
     )
 
 
 # ---------------------------------------------------------------------------
 # V3 - Velocidad maxima (Tabla N 10 / vacios PPI-FHWA)
 # ---------------------------------------------------------------------------
+
+def _paso_v3(*, resultado: ResultadoHidraulico, v_max: float,
+             clave, cumple: bool, material: Material, de_tabla: bool):
+    """
+    El paso de memoria de V3, comun a sus dos ramas.
+
+    LA ELECCION SE IMPRIME, que es la regla R1: el techo de un material de la
+    Tabla Nº 10 sale de una FILA, y la fila tiene alternativas -- las otras
+    filas de la tabla, y en el concreto ademas el segundo numero de la propia
+    fila. Sin decir entre que se eligio, «6.0 m/s» y «6.0 m/s porque es el
+    mayor de la fila Concreto, descartando 3.0» son la misma linea en la
+    pagina y no son la misma decision.
+    """
+    elecciones = []
+    if de_tabla:
+        fila = ", ".join(f"{v}" for v in material.v_max_tabla10)
+        elecciones.append(EleccionDeProyecto(
+            que_se_adopto="techo de velocidad del revestimiento",
+            valor=f"{v_max} m/s",
+            entre=tuple(f"{v} m/s" for v in material.v_max_tabla10),
+            de_donde=f"la fila «{material.nombre}» de la Tabla Nº 10 "
+                     f"({fila} m/s)",
+            por_que="los DOS numeros de la fila son MAXIMOS -- lo dice el "
+                    "titulo de la tabla --, de modo que se verifica contra el "
+                    "mayor y el menor NO es un piso. El piso de velocidad es "
+                    "V2 y sale de otro parrafo",
+            cita_id="MC_HHD.4.1.1.3.6#T10"))
+        if clave is not None:
+            elecciones.append(EleccionDeProyecto(
+                que_se_adopto="techo mas conservador dentro de la fila",
+                valor=f"{v_max} m/s",
+                entre=tuple(f"{v} m/s" for v in material.v_max_tabla10),
+                de_donde="el criterio adoptado 'v_max_concreto_eleccion'",
+                por_que="el proyectista bajo el techo dentro de la fila del "
+                        "concreto. Esa posibilidad se apoya en una "
+                        "INTERPRETACION del proyectista -- que el par recorra "
+                        "la calidad del acabado --, no en el Manual: se "
+                        "declara aparte, en el bloque de umbrales",
+                clave_criterio=clave))
+    elif clave is not None:
+        elecciones.append(EleccionDeProyecto(
+            que_se_adopto="techo de velocidad",
+            valor=f"{v_max} m/s",
+            entre=(),
+            de_donde=f"el criterio adoptado '{clave}' [C], con fuente WSDOT "
+                     "Hydraulics Manual",
+            por_que="la Tabla Nº 10 NO lista este material: no tiene fila. El "
+                    "vacio esta verificado (afirmacion negativa del registro) "
+                    "y se cubre con fuente tecnica reconocida, que es lo que "
+                    "la etiqueta [C] declara",
+            clave_criterio=clave))
+    return paso(
+        "F5.V3",
+        codigo="V3",
+        que="Velocidad maxima: comprobacion contra el techo del revestimiento",
+        formula="V <= v_max del revestimiento",
+        formula_cita_id="MC_HHD.4.1.1.3.6#T10",
+        sustitucion=(
+            Magnitud("V_erosion", resultado.V_erosion, "m/s",
+                     "M3, velocidad de la rama de n MINIMO -- la estimacion "
+                     "ALTA de velocidad, que es el extremo conservador contra "
+                     "un TECHO. No es la de V2, que verifica un piso y usa la "
+                     "rama opuesta", cifras=CIFRAS_MAGNITUD),),
+        resultado=Magnitud("V_erosion", resultado.V_erosion, "m/s",
+                           "la misma velocidad, contrastada contra el techo",
+                           cifras=CIFRAS_MAGNITUD),
+        umbral=_umbral_de("V3", valor=v_max, unidad="m/s",
+                          descripcion=f"velocidad maxima admisible de "
+                                      f"«{material.nombre}»",
+                          criterio=clave),
+        veredicto=_veredicto(
+            cumple, v_max - resultado.V_erosion, "m/s",
+            "por debajo del maximo admisible del revestimiento" if cumple else
+            "por encima del maximo: el flujo abrasiona el revestimiento"),
+        elecciones=tuple(elecciones),
+    )
+
 
 def v3_velocidad_maxima(*, material: Material,
                         resultado: ResultadoHidraulico) -> Verificacion:
@@ -519,13 +722,16 @@ def v3_velocidad_maxima(*, material: Material,
     if material.tipo in CRITERIO_V_MAX:
         clave = CRITERIO_V_MAX[material.tipo]
         v_max = ca.valor(clave)     # CriterioPendienteError mientras falte
+        cumple = resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO
         return Verificacion(
-            cumple=resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO,
+            cumple=cumple,
             numeral=NUMERAL_V3,
             valor_obtenido=resultado.V_erosion,
             valor_admisible=v_max,
             criterio_aplicado=clave,
             codigo="V3",
+            paso=_paso_v3(resultado=resultado, v_max=v_max, clave=clave,
+                          cumple=cumple, material=material, de_tabla=False),
         )
 
     # Solo el techo: los valores de la fila de la Tabla N 10 son todos
@@ -542,13 +748,16 @@ def v3_velocidad_maxima(*, material: Material,
             v_max = adoptado
             clave = CRITERIO_V_MAX_CONCRETO
 
+    cumple = resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO
     return Verificacion(
-        cumple=resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO,
+        cumple=cumple,
         numeral=NUMERAL_V3,
         valor_obtenido=resultado.V_erosion,
         valor_admisible=v_max,
         criterio_aplicado=clave,   # None = [N] puro de la Tabla N 10
         codigo="V3",
+        paso=_paso_v3(resultado=resultado, v_max=v_max, clave=clave,
+                      cumple=cumple, material=material, de_tabla=True),
     )
 
 
@@ -690,6 +899,15 @@ def resguardo_por_cbr(cbr: float) -> float:
     )
 
 
+def _banda(inf, sup) -> str:
+    """La fila de la tabla de resguardo, escrita como la lee un revisor."""
+    if inf is None:
+        return f"< {sup} %"
+    if sup is None:
+        return f">= {inf} %"
+    return f"{inf}-{sup} %"
+
+
 def v4_carga_entrada(*, punto: PuntoCritico,
                      resultado: ResultadoHidraulico) -> Verificacion:
     """
@@ -727,13 +945,65 @@ def v4_carga_entrada(*, punto: PuntoCritico,
     HW_cota = cota_entrada + resultado.HW
     admisible = punto.cota_subrasante - resguardo_m
 
+    cumple = HW_cota <= admisible + TOL_UMBRAL_NORMATIVO
     return Verificacion(
-        cumple=HW_cota <= admisible + TOL_UMBRAL_NORMATIVO,
+        cumple=cumple,
         numeral=NUMERAL_V4,
         valor_obtenido=HW_cota,
         valor_admisible=admisible,
         criterio_aplicado=CRITERIO_RESGUARDO,   # su etiqueta en ca.criterio() es "N->"
         codigo="V4",
+        paso=paso(
+            "F5.V4",
+            codigo="V4",
+            que="Carga a la entrada: el agua embalsada frente a la subrasante",
+            formula="cota_entrada + HW <= cota_subrasante - resguardo(CBR)",
+            formula_cita_id="MS.4.5.4",
+            sustitucion=(
+                Magnitud("cota_entrada", cota_entrada, "msnm",
+                         "regla declarada en el criterio "
+                         "'origen_cota_fondo_entrada' [A]; el codigo NO la "
+                         "elige", cifras=CIFRAS_MAGNITUD),
+                Magnitud("HW", resultado.HW, "m",
+                         "M4, carga a la entrada del control que GOBIERNA "
+                         "(entrada o salida, el mayor de los dos)", cifras=CIFRAS_MAGNITUD),
+                Magnitud("cota_subrasante", punto.cota_subrasante, "msnm",
+                         "columna cota_subrasante del CSV (Sec. 1.2)",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("CBR", punto.cbr_subrasante, "%",
+                         "columna cbr_subrasante del CSV (Sec. 1.2)",
+                         cifras=CIFRAS_PORCENTAJE),
+                Magnitud("resguardo", resguardo_m, "m",
+                         "tabla del num. 4.5.4 del Manual de Suelos, entrando "
+                         "con el CBR de la fila", cifras=CIFRAS_FACTOR)),
+            resultado=Magnitud("cota alcanzada por el agua", HW_cota, "msnm",
+                               "cota_entrada + HW", cifras=CIFRAS_MAGNITUD),
+            umbral=_umbral_de(
+                "V4", valor=admisible, unidad="msnm",
+                descripcion="cota maxima que el agua puede alcanzar "
+                            "(subrasante menos resguardo)",
+                criterio=CRITERIO_RESGUARDO),
+            veredicto=_veredicto(
+                cumple, admisible - HW_cota, "m",
+                "el agua queda por debajo de la subrasante con su resguardo"
+                if cumple else
+                "el agua embalsada invade el resguardo bajo la subrasante"),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="resguardo bajo la subrasante",
+                valor=f"{resguardo_m} m",
+                entre=tuple(f"{resguardo} m (CBR {_banda(inf, sup)})"
+                            for inf, sup, resguardo in
+                            RESGUARDO_NAPA_SUBRASANTE),
+                de_donde="la tabla de resguardo por CBR del num. 4.5.4 del "
+                         "Manual de Suelos",
+                por_que=f"es la fila que corresponde al CBR "
+                        f"{punto.cbr_subrasante} % de ESTE punto. La tabla es "
+                        "normativa; extenderla del nivel freatico a la carga "
+                        "de una avenida es la ANALOGIA que el criterio "
+                        "'resguardo_HW_subrasante' declara como [N->]",
+                cita_id="MS.4.5.4",
+                clave_criterio=CRITERIO_RESGUARDO),),
+        ),
     )
 
 
@@ -945,13 +1215,72 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     estabilizante = g.gamma_DC * DC + g.gamma_EV * EV
     desestabilizante = g.gamma_WA * U
 
+    cumple = estabilizante >= desestabilizante - TOL_UMBRAL_NORMATIVO
     return Verificacion(
-        cumple=estabilizante >= desestabilizante - TOL_UMBRAL_NORMATIVO,
+        cumple=cumple,
         numeral=NUMERAL_V7,
         valor_obtenido=estabilizante,
         valor_admisible=desestabilizante,
         criterio_aplicado=CRITERIO_FACTORES_CARGA,
         codigo="V7",
+        paso=paso(
+            "F5.V7",
+            codigo="V7",
+            que="Flotacion: equilibrio del conducto vacio bajo el freatico",
+            formula="gamma_DC_min*DC + gamma_EV_min*EV >= gamma_WA*U",
+            formula_cita_id="MP.T2.4.5.3.1-2",
+            sustitucion=(
+                Magnitud("D_ext", D_ext, "m",
+                         "M2, diametro EXTERIOR = D + 2*espesor de pared. La "
+                         "subpresion actua sobre el volumen desplazado, que "
+                         "es el exterior, no el interior (MAT-D3)", cifras=CIFRAS_MAGNITUD),
+                Magnitud("altura_relleno", altura_relleno, "m",
+                         "cota de subrasante menos cota de clave FISICA del "
+                         "punto: el relleno que de verdad hay encima, no el "
+                         "minimo admisible de 7.A", cifras=CIFRAS_MAGNITUD),
+                Magnitud("U", U, "kN/m",
+                         "subpresion sobre el conducto vacio "
+                         "(num. 2.4.3.8.2 del Manual de Puentes)", cifras=CIFRAS_MAGNITUD),
+                Magnitud("EV", EV, "kN/m",
+                         "peso del relleno sobre la clave", cifras=CIFRAS_MAGNITUD),
+                Magnitud("DC", DC, "kN/m",
+                         "peso propio del conducto, OMITIDO a proposito: "
+                         "reduce el lado estabilizante y es del lado "
+                         "conservador", cifras=CIFRAS_MAGNITUD),
+                Magnitud("gamma_EV_min", g.gamma_EV, "",
+                         "minimo de la fila de gamma_p que describe a este "
+                         "material en la Tabla 2.4.5.3.1-2", cifras=CIFRAS_FACTOR),
+                Magnitud("gamma_WA", g.gamma_WA, "",
+                         "factor de la carga de agua, Tabla 2.4.5.3.1-1",
+                         cifras=CIFRAS_FACTOR)),
+            resultado=Magnitud("accion estabilizante", estabilizante, "kN/m",
+                               "gamma_DC*DC + gamma_EV*EV", cifras=CIFRAS_MAGNITUD),
+            umbral=_umbral_de(
+                "V7", valor=desestabilizante, unidad="kN/m",
+                descripcion="accion desestabilizante mayorada (gamma_WA*U)",
+                criterio=CRITERIO_FACTORES_CARGA),
+            veredicto=_veredicto(
+                cumple, estabilizante - desestabilizante, "kN/m",
+                "el conducto vacio no flota" if cumple else
+                "la subpresion supera lo que lo sujeta: el conducto flota"),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="fila de gamma_p que describe a esta estructura",
+                valor=f"gamma_EV min = {g.gamma_EV}",
+                entre=("Estructura rigida enterrada",
+                       "Alcantarillas termoplasticas",
+                       "Estructuras flexibles, entre otros",
+                       "Muros y estribos de retencion"),
+                de_donde="la Tabla 2.4.5.3.1-2 del Manual de Puentes "
+                         "(= 3.4.1-2 de AASHTO LRFD), pag. impresa 143",
+                por_que=f"el conducto es de «{material.nombre}». LA TABLA ES "
+                        "NORMATIVA; QUE FILA DESCRIBE A ESTA OBRA NO LO ES: "
+                        "es la eleccion que el criterio "
+                        "'factores_carga_aashto' declara. La fila de muros y "
+                        "estribos -- que es la del cabezal de la Fase 9 -- "
+                        "tiene otro minimo y no vale aqui",
+                cita_id="MP.T2.4.5.3.1-2",
+                clave_criterio=CRITERIO_FACTORES_CARGA),),
+        ),
     )
 
 
@@ -1014,16 +1343,35 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
     o V8 que este pendiente: son excepciones, no verificaciones incumplidas,
     y el bucle de MD no debe tratarlas como un diametro rechazado sino como
     lo que son, un calculo que no puede completarse todavia.
+
+    PERO LO QUE YA SE VERIFICO NO SE TIRA. Al detenerse, la excepcion se lleva
+    en `verificaciones_completadas` las que si se evaluaron, con su veredicto y
+    con su `PasoDeMemoria`. En ESTE expediente eso no es un detalle: ninguna
+    combinacion pasa de V5 --- `v5_remanso` se detiene siempre en
+    `ancho_derecho_via_m` ---, de modo que sin esto el desarrollo de V1 a V4b,
+    que si se calculo entero, no llegaba nunca a la memoria y el revisor solo
+    veia «no dimensionado». Es la misma trampa de NOR-MEM-01: cierto sobre el
+    codigo y falso sobre el producto. Escribirlo como una lista y no como una
+    tupla literal es lo que permite conservarlas.
     """
-    return (
-        v1_borde_libre(D=D, resultado=resultado),
-        v2_velocidad_minima(resultado=resultado),
-        v3_velocidad_maxima(material=material, resultado=resultado),
-        v4_carga_entrada(punto=punto, resultado=resultado),
-        v4b_relacion_hw_d(D=D, resultado=resultado),
-        v5_remanso(punto=punto, resultado=resultado),
-        v6_material_solido_arrastre(),
-        v7_flotacion(punto=punto, material=material, D=D, resultado=resultado),
-        v8_evento_extremo(punto=punto, resultado=resultado),
-        v9_disponibilidad_diametro(D=D, material=material),
+    hechas: list = []
+    piezas = (
+        lambda: v1_borde_libre(D=D, resultado=resultado),
+        lambda: v2_velocidad_minima(resultado=resultado),
+        lambda: v3_velocidad_maxima(material=material, resultado=resultado),
+        lambda: v4_carga_entrada(punto=punto, resultado=resultado),
+        lambda: v4b_relacion_hw_d(D=D, resultado=resultado),
+        lambda: v5_remanso(punto=punto, resultado=resultado),
+        lambda: v6_material_solido_arrastre(),
+        lambda: v7_flotacion(punto=punto, material=material, D=D,
+                             resultado=resultado),
+        lambda: v8_evento_extremo(punto=punto, resultado=resultado),
+        lambda: v9_disponibilidad_diametro(D=D, material=material),
     )
+    for pieza in piezas:
+        try:
+            hechas.append(pieza())
+        except ErrorProyecto as exc:
+            exc.verificaciones_completadas = tuple(hechas)
+            raise
+    return tuple(hechas)

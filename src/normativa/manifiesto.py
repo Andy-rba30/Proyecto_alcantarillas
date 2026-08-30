@@ -403,6 +403,23 @@ def indice_del_registro(registro) -> str:
           f"{cond.efecto_si_indeterminada.value} |")
     A("")
 
+    # -- Fundamentos -------------------------------------------------------
+    A("## 6-bis. Fundamentos: por qué se hace cada paso")
+    A("")
+    A("El campo `por_que` de `PasoDeMemoria` (§4.4 del plan v12) sale de aquí,")
+    A("no del docstring del módulo que calcula. El `verbo` está sostenido por")
+    A("el `caracter` de al menos una de sus citas — invariante T11 —, que es")
+    A("lo que impide escribir «la norma obliga» sobre un párrafo que")
+    A("recomienda.")
+    A("")
+    A("| id | Fase | Paso | Verbo | Citas |")
+    A("|---|---|---|---|---|")
+    for f in sorted(registro.fundamentos, key=lambda x: x.id):
+        citas = ", ".join(f"`{c}`" for c in f.citas)
+        A(f"| `{f.id}` | {f.fase} | {f.que_paso} | **{f.verbo.value}** | "
+          f"{citas} |")
+    A("")
+
     # -- Discrepancias -----------------------------------------------------
     A("## 7. Discrepancias declaradas")
     A("")

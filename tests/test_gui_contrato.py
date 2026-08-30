@@ -760,4 +760,16 @@ def test_la_memoria_no_inventa_procedencia_para_lo_declarado_por_la_cli(_corrida
     memoria = M11.memoria_html(informe, proyecto="prueba de punta a punta")
 
     assert "DECLARADO PARA ESTA CORRIDA" in memoria
-    assert "concreto_headwall_square_edge" not in memoria
+    # La ficha de procedencia DE LA VENTANA no aparece: no hubo ventana.
+    assert "Alternativas descartadas" not in memoria
+    assert "LA TABLA ES NORMATIVA; LA ELECCION DE FILA NO LO ES" not in memoria
+    # Lo que SI aparece desde S18 --- y es una garantia nueva, no una fuga ---
+    # es la fila que el ARCHIVO declara en `Criterio.resolucion`: la regla R1
+    # exige que toda eleccion diga de donde sale, y hasta S18 los criterios
+    # transcritos en el archivo (la inmensa mayoria de los que gobiernan una
+    # corrida) se imprimian sin decirlo. Para que eso no se lea como la
+    # procedencia del valor EN VIGOR --- que aqui entro por `--declarar` y no
+    # por ese camino --- va con la advertencia delante, y es la advertencia lo
+    # que este test vigila.
+    assert "concreto_headwall_square_edge" in memoria
+    assert "El valor en vigor NO salio por este camino" in memoria

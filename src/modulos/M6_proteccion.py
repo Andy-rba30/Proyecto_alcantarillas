@@ -80,7 +80,8 @@ from typing import Tuple
 
 import criterios_adoptados as ca
 from constantes_normativas import G_LAUSHEY, LAUSHEY_K
-from modelos import ProteccionSalida
+from modelos import (CIFRAS_MAGNITUD, EleccionDeProyecto, Magnitud,
+                     ProteccionSalida, TipoDeVeredicto, Veredicto, paso)
 
 NUMERAL_LAUSHEY = "4.1.1.3.7 c)"
 
@@ -144,6 +145,50 @@ def proteccion_salida(*, V: float) -> ProteccionSalida:
     longitud = ca.valor(CRITERIO_LONGITUD)   # CriterioPendienteError mientras falte
 
     return ProteccionSalida(
+        paso=paso(
+            "F6.LAUSHEY",
+            codigo="6.1",
+            que="Diametro medio del enrocado de proteccion a la salida",
+            formula="d50 = V^2 / (3.1 * g)",
+            formula_cita_id="MC_HHD.4.1.1.3.7c",
+            citas_textuales=("MC_HHD.4.1.1.3.7c",),
+            sustitucion=(
+                Magnitud("V", V, "m/s",
+                         "M3, velocidad de la rama de n MINIMO -- la "
+                         "estimacion ALTA --, que es el lado conservador para "
+                         "una proteccion contra socavacion: d50 crece con el "
+                         "CUADRADO de V", cifras=CIFRAS_MAGNITUD),
+                Magnitud("g", G_LAUSHEY, "m/s2",
+                         "gravedad tal como la escribe el Manual de "
+                         "Hidrologia. EL NUMERAL DE LAUSHEY NO IMPRIME "
+                         "NINGUN VALOR DE g: define el simbolo y su unidad. "
+                         "El 9.8 se toma de los num. 3.12.5 (pag. impresa 63) "
+                         "y 4.1.1.5.4 b.2.4) (pag. impresa 111), que son los "
+                         "dos unicos sitios donde ese Manual lo escribe "
+                         "(NOR-HID-01, MAT-O7)")),
+            resultado=Magnitud("d50", d50, "m",
+                               "diametro medio de la piedra",
+                               cifras=CIFRAS_MAGNITUD),
+            veredicto=Veredicto(
+                tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                explicacion="dimensionamiento, no verificacion: la fuente no "
+                            "pone umbral al d50"),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="espesor de la proteccion",
+                valor=f"{espesor:.3f} m",
+                entre=(f"multiplicador {mult_espesor} de d50",),
+                de_donde=f"el criterio adoptado '{CRITERIO_ESPESOR}' [A]",
+                por_que="ni el Manual de Hidrologia ni el de Puentes fijan el "
+                        "espesor del enrocado: es practica corriente, y por "
+                        "eso el valor es una adopcion declarada y no una cita",
+                clave_criterio=CRITERIO_ESPESOR),),
+            nota_del_proyecto=(
+                "ESTO NO ES UN DISEÑO DE ENROCADO. La Sec. 6 de la hoja de "
+                "ruta dice expresamente que faltan la granulometria completa "
+                "y el FILTRO, y que sin filtro el enrocado se socava por "
+                "debajo y falla. El HDS-5 dimensiona el apron por HEC-14, que "
+                "es otro procedimiento."),
+        ),
         d50=d50,
         espesor=espesor,
         longitud=longitud,

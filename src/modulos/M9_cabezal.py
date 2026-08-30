@@ -274,7 +274,9 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    SULFATOS,
                                    TABLA_COMBINACIONES_FILAS,
                                    TABLA_GAMMA_P_FILAS)
-from modelos import (CadenaSismica, CasoDemandaSismica, CombinacionCarga,
+from modelos import (CIFRAS_FACTOR, CadenaSismica, CasoDemandaSismica,
+                     CombinacionCarga, EleccionDeProyecto, Magnitud,
+                     TipoDeVeredicto, Umbral, Veredicto, paso,
                      CondicionAnalisis, CuantiaRefuerzo, DatoInvalidoError,
                      DemandaSismicaCabezal, DisenoNoFactibleError,
                      EmpujeMononobeOkabe, EmpujesTrasdos, EstabilidadCabezal,
@@ -2824,6 +2826,9 @@ def recubrimiento_de_diseno(*, condicion: str) -> RecubrimientoDiseno:
     else:
         adoptado, origen = e060, "E.060"
     return RecubrimientoDiseno(
+        paso=_paso_recubrimiento(condicion=condicion, e060=e060, aashto=aashto,
+                                 adoptado=adoptado, origen=origen,
+                                 detalle=detalle),
         condicion=condicion, e060_mm=e060, aashto_mm=aashto,
         adoptado_mm=adoptado, origen=origen,
         criterio_aashto=CRITERIO_TABLA_RECUBRIMIENTO,
@@ -2834,6 +2839,71 @@ def recubrimiento_de_diseno(*, condicion: str) -> RecubrimientoDiseno:
         piso_aplicado=detalle["piso_aplicado"], corpus_tabla=detalle["corpus"],
         origen_factor=detalle["origen_factor"],
         requisitos=detalle["requisitos"],
+    )
+
+
+def _paso_recubrimiento(*, condicion, e060, aashto, adoptado, origen,
+                        detalle):
+    """
+    El paso de memoria del recubrimiento, con la regla del mayor a la vista.
+
+    LA ELECCION QUE HAY QUE IMPRIMIR NO ES «cuanto recubrimiento»: es DE QUE
+    CORPUS sale. Los dos regulan la misma pieza y ninguno deroga al otro, de
+    modo que un revisor que vea «70 mm» sin ver el otro numero no puede saber
+    si se cumplieron las dos normas o solo una. Es ademas la casilla donde el
+    modificador por relacion a/c invierte la conclusion (NOR-AAS-05, conflicto
+    vinculante n.3 del plan v12): sin el, AASHTO gobernaba las tres
+    condiciones; con el, E.060 gana una.
+    """
+    return paso(
+        "F8.RECUBRIMIENTO",
+        codigo="8.R",
+        que="Recubrimiento del refuerzo, por la regla del mayor",
+        formula="recubrimiento = max(E.060 Art. 7.7.1, AASHTO 5.10.1 con su "
+                "modificador por relacion a/c)",
+        formula_cita_id="E060.7.7.1",
+        citas_textuales=("E060.7.7.1", "AASHTO_LRFD_9.T5.10.1-1"),
+        sustitucion=(
+            Magnitud("E.060", e060, "mm",
+                     f"Art. 7.7.1, condicion «{condicion}»",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("AASHTO", aashto, "mm",
+                     f"{detalle['corpus']}, fila «{detalle['situacion']}», "
+                     f"categoria {detalle['categoria']}: "
+                     f"{detalle['tabulado_mm']} mm tabulados x factor "
+                     f"{detalle['factor_ac']} por relacion a/c",
+                     cifras=CIFRAS_FACTOR)),
+        resultado=Magnitud("recubrimiento adoptado", adoptado, "mm",
+                           f"el mayor de los dos; gobierna {origen}",
+                           cifras=CIFRAS_FACTOR),
+        umbral=Umbral(
+            descripcion="recubrimiento minimo del refuerzo",
+            valor=adoptado, unidad="mm",
+            cita_id="E060.7.7.1",
+            caracter="EXIGENCIA en los dos corpus",
+            aplicacion="REGLA DEL MAYOR (Sec. 0.2): cumplir el menor de los "
+                       "dos dejaria el otro incumplido. Este numero es el "
+                       "MINIMO ANTES del aumento por ambiente corrosivo que "
+                       "el Art. 7.7.5.1 manda y no cuantifica; ese aumento se "
+                       "declara aparte y no se calcula aqui.",
+            criterio_aplicado=CRITERIO_TABLA_RECUBRIMIENTO),
+        veredicto=Veredicto(
+            tipo=TipoDeVeredicto.CUMPLE,
+            margen=abs(aashto - e060), unidad="mm",
+            explicacion=f"gobierna {origen}; la diferencia entre los dos "
+                        f"corpus es la holgura con que se cumple el que no "
+                        f"gobierna"),
+        elecciones=(EleccionDeProyecto(
+            que_se_adopto="corpus normativo que gobierna el recubrimiento",
+            valor=f"{origen}, {adoptado} mm",
+            entre=(f"E.060 Art. 7.7.1: {e060} mm",
+                   f"AASHTO 5.10.1: {aashto} mm"),
+            de_donde="la regla del mayor de la Sec. 0.2 del expediente",
+            por_que=detalle["origen_factor"] or
+                    "los dos corpus regulan la misma pieza y ninguno deroga "
+                    "al otro",
+            cita_id="AASHTO_LRFD_9.T5.10.1-1",
+            clave_criterio=CRITERIO_TABLA_RECUBRIMIENTO),),
     )
 
 
