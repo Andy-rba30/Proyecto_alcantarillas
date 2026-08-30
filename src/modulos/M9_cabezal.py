@@ -922,8 +922,21 @@ def k_ae_mononobe_okabe(*, phi_grados: float, i_grados: float,
 
     Caso limite verificado en los tests: con k_h = k_v = 0 y
     i = beta = delta = 0, esta expresion devuelve exactamente
-    tan^2(45 - phi/2), el Ka de Rankine que cita Sec. 9.2. Es la comprobacion
-    que garantiza que los signos estan bien puestos.
+    tan^2(45 - phi/2), el Ka de Rankine que cita Sec. 9.2.
+
+    ESE CASO LIMITE NO GARANTIZA LOS SIGNOS, y aqui decia que si (SIS-F-04,
+    mitad documental). Con i = beta = delta = 0 los cuatro cosenos son PARES
+    y por lo tanto insensibles al signo: de los quince mutantes de signo y
+    operador de esta formula, DOCE devuelven el mismo double que el original
+    en ese caso --- medido, 0.28271491971777263 para phi = 34 ---, y siete de
+    ellos atravesaban la suite entera. Una comprobacion con todos los angulos
+    en cero no puede ver una convencion de signo: no hay signo que ver.
+
+    Lo que si los cubre es CP9_MONONOBE_OKABE (tests/fixtures/casos_patron.py),
+    tres juegos con phi, i, beta, delta, k_h y k_v todos distintos y todos
+    distintos de cero, autoverificados por recomputacion independiente. El
+    caso limite se conserva porque prueba otra cosa --- la reduccion a
+    Rankine, que es la que cita Sec. 9.2 --- y esa si la prueba.
 
     EL SIGNO DEL CORCHETE: [1 + R], Y EL MANUAL DE PUENTES IMPRIME [1 - R].
     Hay que decirlo aqui, en el punto de uso, porque un revisor que compare

@@ -370,9 +370,12 @@ CP9_RANKINE_LIMITE = {
     "K_AE_errata_1_menos_R_esperado": (2.4639128110106694, 3.0000000000000004,
                                        3.537132037454108, 4.203745842794819,
                                        5.04468118973006),
-    "tolerancia_relativa": 1e-12,
 }
 
+# La tolerancia de TODOS los casos CP-9. Vivio un tiempo tambien como clave
+# `tolerancia_relativa` dentro de CP9_RANKINE_LIMITE, con el mismo valor y sin
+# un solo lector: dos nombres para una cosa, y el que nadie leia podia
+# cambiarse sin que ningun test lo notara. Se retiro la clave muerta.
 CP9_TOLERANCIA_RELATIVA = 1e-12
 
 
@@ -673,7 +676,7 @@ if __name__ == "__main__":
                - _cp9["longitud_oblicua_si_multiplica_por_el_coseno"]) < _tl
     assert abs(_caida - _cp9["caida_oblicua_esperada"]) < _tc
     assert abs(_salida - _cp9["cota_salida_oblicua_esperada"]) < _tc
-    print(f"CP-9 verificado: proyeccion={_proy:.2f} L(0)={_L0:.2f} "
+    print(f"CP-9 geometria 7.B verificado: proyeccion={_proy:.2f} L(0)={_L0:.2f} "
           f"L(30)={_L30:.6f} cota_salida={_salida:.7f}")
 
 
@@ -722,7 +725,7 @@ if __name__ == "__main__":
         assert abs(_kae_r - _ka_r) <= 1e-12 * _ka_r      # [1+R] SI reproduce Ka
         assert abs(_err_r - _err_d) <= 1e-12 * _err_d
         assert abs(_err_r * _ka_r - 1.0) < 1e-12          # la errata es 1/Ka
-    print("CP-9 verificado: los tres casos de angulos no nulos y el caso "
+    print("CP-9 Mononobe-Okabe verificado: los tres casos de angulos no nulos y el caso "
           "limite de Rankine (donde [1-R] da exactamente 1/Ka).")
 
     # --- CP-9: empuje del trasdos (formula cerrada, sin scipy) --------------
@@ -794,7 +797,7 @@ if __name__ == "__main__":
     # Con i = beta = delta = 0 el K_A de Coulomb TIENE que ser el de Rankine
     _cerca(_K_A_B, math.tan(math.radians(45 - _cp9["B_phi_grados"] / 2)) ** 2,
            "B_K_A_esperado (contra Rankine)")
-    print(f"CP-9 verificado: P_AE(A)={_P_AE_A:.6f}  K_AE(B)={_K_AE_B:.6f}  "
+    print(f"CP-9 empujes verificado: P_AE(A)={_P_AE_A:.6f}  K_AE(B)={_K_AE_B:.6f}  "
           f"P_AE(B)={_P_AE_B:.6f}  dP_AE(B)={_P_AE_B - _P_A_B:.6f}")
     # --- CP-2 y CP-8 --------------------------------------------------------
     try:
