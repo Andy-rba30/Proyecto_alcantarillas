@@ -878,3 +878,37 @@ def test_el_caudal_de_proyecto_no_toca_ninguna_de_las_dos_guardas():
         assert critico.geometria.A > 0
         assert math.isfinite(critico.V)
         assert math.isfinite(critico.H_c)
+
+
+# ---------------------------------------------------------------------------
+# SIS-B-18: la rama de h_o llega a la memoria, y no solo al booleano
+# ---------------------------------------------------------------------------
+
+def test_la_rama_de_ho_que_goberno_sale_escrita_en_la_memoria(concreto):
+    """
+    `ahogado_por_TW` era, segun SIS-B-18, el unico de cinco campos escritos y
+    nunca leidos que ademas «no se emite ni al JSON ni al HTML»: una rama que
+    el codigo distinguia y el revisor no veia. Dejo de serlo en S18, cuando
+    `_pasos_hidraulicos` empezo a leerlo para redactar la procedencia de h_o.
+
+    Los dos tests de arriba asertan el BOOLEANO; este aserta el TEXTO que sale
+    impreso, que es lo que el revisor lee. Sin el, el campo asoma al
+    entregable por una sola frase y nada la protege --- que es la forma exacta
+    del precedente `FACTOR_MURO_TABLA` que CLAUDE.md registra: un test verde
+    sobre el comentario en vez de sobre el hecho.
+    """
+    from modulos.M11_reporte import bloque_pasos
+
+    c = CP2_GEOMETRIA_MANNING
+    def _memoria(TW):
+        r = resolver_control(D=c["D"], Q=c["Q_con_n_max_esperado"], S=c["S"],
+                             L=20.0, TW=TW, material=concreto)
+        return bloque_pasos(r.pasos, "Fases 3 y 4")
+
+    ahogada = _memoria(2.50)
+    libre = _memoria(0.0)
+
+    assert "manda TW: la salida esta ahogada" in ahogada
+    assert "manda la aproximacion geometrica" not in ahogada
+    assert "manda la aproximacion geometrica" in libre
+    assert "manda TW: la salida esta ahogada" not in libre

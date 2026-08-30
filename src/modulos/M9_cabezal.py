@@ -1917,9 +1917,19 @@ def combinaciones() -> Tuple[CombinacionCarga, ...]:
     las cargas que participan en cada una.
 
     Describe, no evalua: nombra que cargas entran en cada combinacion. Esta
-    funcion no se detiene -- es la que M11 usa para declarar QUE
-    combinaciones rigen aunque no se hayan evaluado. Los factores los
-    entrega `factores_de_carga`, que si necesita la eleccion de fila.
+    funcion no se detiene, a diferencia de `factores_de_carga`, que si
+    necesita la eleccion de fila y por eso puede quedarse bloqueada.
+
+    NO LA LLAMA M11, Y EL DOCSTRING LO AFIRMABA. Decia «es la que M11 usa
+    para declarar QUE combinaciones rigen aunque no se hayan evaluado», y
+    `M11_reporte` no la referencia: sus unicos llamadores son cuatro tests.
+    Es la misma forma de prometer un consumidor que este proyecto ya
+    desterro en `ControlEntrada.HW_sobre_D` (SIS-B-02) --- «sin consumidor y
+    con la razon escrita, no sin consumidor y con un consumidor prometido».
+    Se conserva porque las tres combinaciones son [N] y esta funcion es su
+    unica forma ejecutable; que la memoria las declare es una fase que no
+    esta escrita, no una llamada que falte. Hallazgo abierto en S19 al
+    cerrar SIS-B-18; anotado en `docs/decisiones_diferidas.md`.
     """
     return tuple(
         CombinacionCarga(nombre=nombre, numeral=NUMERAL_COMBINACIONES,

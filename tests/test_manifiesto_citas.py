@@ -76,7 +76,38 @@ DEFINICION = re.compile(
 # mantienen a mano: las genera `src/normativa/manifiesto.py` desde el nombre
 # del simbolo, y el test de abajo regenera y compara. El numero de linea deja
 # de ser un dato que mantener y pasa a ser una comodidad regenerable.
-MAX_REFERENCIAS_DE_PROSA = 82
+#
+# EL SACO DE PROSA NO ERA UNO, ERAN DOS (SIS-G-03)
+# ------------------------------------------------
+# Hasta S19 «de prosa» significaba, literalmente, «la fila no cita ningun
+# simbolo QUE ESTE DEFINIDO EN EL ARCHIVO DE DESTINO». Eso mete en el mismo
+# saco dos cosas que no se parecen:
+#
+#   (a) la fila no cita NINGUN identificador -- la afirmacion negativa, la
+#       nota al pie. No hay nada que anclar y no lo habra: es el hueco real.
+#
+#   (b) la fila SI cita un identificador, y el archivo al que apunta no lo
+#       define porque lo USA (M5 consume `V_MIN`, que vive en
+#       constantes_normativas.py). Ahi si hay algo que comprobar: que la
+#       linea de destino HABLE del simbolo que la fila nombra.
+#
+# Meter (b) en el saco de (a) es lo que dejaba pasar en verde una referencia
+# aterrizada en cualquier parte. Al separarlos aparecieron DIECISEIS
+# referencias desviadas -- entre ellas `e2_volteo()` y `empuje_flotacion()`,
+# nombres que el codigo ya no tiene, y `ESPACIAMIENTO_MAX_VECES_ESPESOR`
+# apuntando al bloque de `n_s_zapata_en_talud`, a 950 lineas de su uso --,
+# ninguna de las cuales se estaba buscando. La ficha decia que la tasa entre
+# las no ancladas era DESCONOCIDA; medida, era 16 de 68.
+#
+# Las de (b) las vigila `test_toda_fila_que_cita_un_identificador_lo_nombra_
+# en_su_destino`, SIN CUPO: no son una excepcion declarada, son referencias
+# verificables que hasta ahora nadie verificaba.
+MAX_REFERENCIAS_DE_PROSA = 27
+
+# El hueco de verdad -- el caso (a) --, con su propio trinquete. Se separa del
+# anterior para que bajar el total a base de anclar por USO no disimule que
+# las filas sin identificador siguen ahi. Esta es la que T9 quiere en cero.
+MAX_REFERENCIAS_SIN_IDENTIFICADOR = 2
 
 
 def _codigo(rel: str) -> list:
@@ -99,13 +130,35 @@ def _bloques(rel: str) -> dict:
     return bloques
 
 
+# Ids de ficha de auditoria (`NOR-HDS-04`, `MAT-D3`, `SIS-B-10`): van entre
+# backticks y no son simbolos. Ver la nota homologa en
+# src/normativa/manifiesto.py, donde esto vive duplicado a proposito.
+ID_DE_FICHA = re.compile(r"^(?:NOR|MAT|SIS)-")
+
+
 def _simbolos_citados(fila: str) -> list:
-    """Identificadores entre backticks en esa fila del manifiesto."""
+    """
+    Identificadores entre backticks en esa fila del manifiesto.
+
+    Devuelve el modulo Y la cola de un nombre punteado: `M9.cuantia_de_diseno`
+    aporta `M9` y `cuantia_de_diseno`. Quedarse con el primero dejaba la fila
+    anclada a un alias de archivo que no es simbolo de nada, y la mandaba al
+    saco de prosa -- donde lo unico que se comprueba es que la linea exista y
+    no este en blanco. Cuatro referencias llevaban asi, desviadas, desde antes
+    de S16.5 (SIS-G-03).
+    """
     simbolos = []
     for trozo in re.findall(r"`([^`]+)`", fila):
-        m = re.match(r"^([A-Za-z_]\w*)", trozo.strip().lstrip("↳↻⚠~ "))
-        if m and m.group(1) not in simbolos:
-            simbolos.append(m.group(1))
+        limpio = trozo.strip().lstrip("↳↻⚠~✚⟳ ")
+        if ID_DE_FICHA.match(limpio):
+            continue
+        m = re.match(r"^([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)", limpio)
+        if not m:
+            continue
+        partes = m.group(1).split(".")
+        for candidato in (partes[0], partes[-1]):
+            if candidato not in simbolos:
+                simbolos.append(candidato)
     return simbolos
 
 
@@ -125,6 +178,67 @@ def _clasificadas():
         destino = por_simbolo if candidatos else prosa
         destino.append((n_md, ref, rel, n, candidatos))
     return por_simbolo, prosa
+
+
+def _bloque_que_contiene(rel: str, n: int):
+    """(simbolo, inicio, fin) del bloque en el que cae la linea n, o None."""
+    for simbolo, tramos in _bloques(rel).items():
+        for inicio, fin in tramos:
+            if inicio <= n <= fin:
+                return simbolo, inicio, fin
+    return None
+
+
+def _tramo_de_verificacion(rel: str, n: int):
+    """
+    El TRAMO contra el que se comprueba una mencion. Nunca el archivo entero.
+
+    Una linea que no cae en ningun bloque cae en la CABECERA del modulo --- el
+    docstring y los comentarios anteriores a la primera definicion ---, y ese
+    es un tramo real y acotado. Tomar el archivo completo, como se hacia al
+    escribir esta guardia, degenera la comprobacion en «el archivo menciona el
+    simbolo en alguna parte», que en un archivo de 3000 lineas no comprueba
+    nada. Pasaba en 2 de 24 referencias.
+    """
+    tramo = _bloque_que_contiene(rel, n)
+    if tramo:
+        return tramo[0], tramo[1], tramo[2]
+    primera = min((i for tramos in _bloques(rel).values()
+                   for i, _ in tramos), default=len(_codigo(rel)) + 1)
+    return "(cabecera del modulo)", 1, primera - 1
+
+
+def _prosa_repartida():
+    """
+    Parte el saco de prosa en las dos poblaciones que no son la misma cosa.
+
+    Devuelve (sin_identificador, por_mencion, rotas):
+
+      sin_identificador  la fila no nombra ningun identificador. Hueco real.
+      por_mencion        la fila nombra uno y la linea de destino cae en un
+                         bloque que LO NOMBRA. Verificada.
+      rotas              la fila nombra uno y el destino no habla de el. Es
+                         una referencia que no lleva a lo que dice llevar.
+    """
+    sin_identificador, por_mencion, rotas = [], [], []
+    for n_md, fila, ref, rel, n in _referencias():
+        bloques = _bloques(rel)
+        simbolos = _simbolos_citados(fila)
+        if [s for s in simbolos if s in bloques]:
+            continue                       # ya la cubre la via por definicion
+        if not simbolos:
+            sin_identificador.append((n_md, ref, rel, n))
+            continue
+        lineas = _codigo(rel)
+        nombre, inicio, fin = _tramo_de_verificacion(rel, n)
+        cuerpo = "\n".join(lineas[inicio - 1:fin])
+        nombrados = [s for s in simbolos
+                     if re.search(r"\b" + re.escape(s) + r"\b", cuerpo)]
+        if nombrados:
+            por_mencion.append((n_md, ref, rel, n, nombrados))
+        else:
+            rotas.append((n_md, ref, rel, n, simbolos, nombre))
+    return sin_identificador, por_mencion, rotas
 
 
 # ---------------------------------------------------------------------------
@@ -260,6 +374,126 @@ def test_la_cobertura_verificable_no_se_degrada():
     """
     por_simbolo, prosa = _clasificadas()
     total = len(por_simbolo) + len(prosa)
-    assert len(por_simbolo) / total >= 0.65, (
+    assert len(por_simbolo) / total >= 0.90, (
         f"solo {len(por_simbolo)}/{total} referencias son verificables por "
         "simbolo: el manifiesto se esta llenando de citas sin identificador")
+
+    # El piso subio de 0.65 a 0.80 en S19 y es un trinquete como el cupo: al
+    # anclar por USO lo que estaba en el saco de prosa, la proporcion real
+    # paso de 258/326 a 270/326, y dejar el piso donde estaba habria vuelto
+    # inofensivo a este contrapeso. Contando tambien las verificadas por
+    # mencion, la cobertura es del 90 %.
+    _, por_mencion, _ = _prosa_repartida()
+    assert (len(por_simbolo) + len(por_mencion)) / total >= 0.99, (
+        f"solo {len(por_simbolo) + len(por_mencion)}/{total} referencias son "
+        "verificables (por definicion o por mencion)")
+
+
+# ---------------------------------------------------------------------------
+# SIS-G-03: el hueco que quedaba entre "por simbolo" y "de prosa"
+# ---------------------------------------------------------------------------
+
+def test_toda_fila_que_cita_un_identificador_lo_nombra_en_su_destino():
+    """
+    LA COMPROBACION QUE FALTABA, y por la que SIS-G-03 existe.
+
+    Una fila que cita `V_MIN` y apunta a M5 no se puede verificar por la via
+    de arriba -- `V_MIN` no se DEFINE en M5, se USA --, y hasta S19 caia al
+    saco de prosa, donde lo unico que se miraba era que la linea no estuviera
+    en blanco. Una linea con contenido EQUIVOCADO pasaba en verde, y por eso
+    las dos desviaciones que S16.5 corrigio salieron por casualidad: las
+    encontro el test por el OTRO motivo, porque una insercion las habia
+    movido justo a un renglon vacio.
+
+    Lo verificable sin definicion es que el destino HABLE del simbolo: que el
+    bloque en el que cae la linea lo nombre. No exige transcribir nada -- que
+    seria una segunda copia divergible, prohibida por CLAUDE.md -- y no tiene
+    falsos positivos: si el bloque no nombra el simbolo, la referencia no
+    lleva a lo que dice llevar.
+
+    SIN CUPO, a diferencia de las de prosa. Estas no son una excepcion
+    declarada: son referencias verificables. Al medirlas por primera vez
+    habia 16 rotas de 68 no ancladas, entre ellas dos nombres que el codigo
+    ya no tiene (`e2_volteo`, `empuje_flotacion`) y uno que apuntaba 950
+    lineas lejos de su uso (`ESPACIAMIENTO_MAX_VECES_ESPESOR`).
+    """
+    _, _, rotas = _prosa_repartida()
+    detalle = [f"md:{n_md}  {ref}  nombra {simbolos} y cae en el bloque "
+               f"`{bloque}` de {rel}:{n}, que no lo menciona"
+               for n_md, ref, rel, n, simbolos, bloque in rotas]
+    assert not rotas, (
+        f"{len(rotas)} referencias nombran un identificador y aterrizan donde "
+        "no se habla de el.\nCorrige el destino en docs/manifiesto_citas.md "
+        "LEYENDO la linea de llegada (no restando el desfase):\n  "
+        + "\n  ".join(detalle))
+
+
+def test_el_hueco_sin_identificador_solo_decrece():
+    """
+    El trinquete del caso (a): filas que no nombran NINGUN identificador.
+
+    Se cuenta aparte del cupo total a proposito. Bajar el total anclando por
+    USO es progreso real, pero no cierra este hueco, y un solo numero dejaria
+    creer que si. Esta es la cifra que T9 quiere en cero.
+    """
+    sin_identificador, _, _ = _prosa_repartida()
+    assert len(sin_identificador) <= MAX_REFERENCIAS_SIN_IDENTIFICADOR, (
+        f"{len(sin_identificador)} referencias no nombran ningun identificador, "
+        f"por encima del trinquete de {MAX_REFERENCIAS_SIN_IDENTIFICADOR}. "
+        "Nombra en la fila el simbolo del que habla (entre backticks) en vez "
+        "de subir el numero.")
+
+
+def test_las_tres_poblaciones_suman_el_total():
+    """
+    Que el reparto no pierda ni duplique referencias: si `_prosa_repartida`
+    dejara de ver una, el test de arriba pasaria a vigilar de menos sin que
+    nada avisara. Es la guardia de la guardia.
+    """
+    por_simbolo, prosa = _clasificadas()
+    sin_identificador, por_mencion, rotas = _prosa_repartida()
+    assert len(sin_identificador) + len(por_mencion) + len(rotas) == len(prosa), (
+        "el reparto de las referencias de prosa no cuadra con su total")
+    assert len(por_simbolo) + len(prosa) == sum(1 for _ in _referencias())
+
+
+def test_ninguna_etiqueta_declara_un_rango_imposible():
+    """
+    La etiqueta `[CN:170-49]` anuncia un tramo que va de la 170 a la 49.
+
+    Origen: la notacion era un rango real y `resincronizar` reescribia el
+    principio conservando el final VIEJO, de modo que cuarenta etiquetas
+    acabaron mintiendo sobre el tramo. Es un defecto de otra especie que los
+    demas de este archivo --- no es que la referencia lleve a otro sitio, es
+    que la etiqueta que el lector ve es imposible --- y por eso lleva su
+    propio test. Nadie lo habia mirado nunca (SIS-G-03).
+    """
+    texto = MANIFIESTO.read_text(encoding="utf-8")
+    imposibles = [m.group(0)
+                  for m in re.finditer(r"\[([A-Za-z0-9_.]+):(\d+)(-\d+)\]", texto)
+                  if int(m.group(3)[1:]) <= int(m.group(2))]
+    assert not imposibles, (
+        f"{len(imposibles)} etiquetas anuncian un tramo imposible (el final "
+        f"por delante del principio): {imposibles[:8]}. Regeneralo con "
+        "python3 -m src.normativa.manifiesto --escribir")
+
+
+def test_ninguna_mencion_se_verifica_contra_el_archivo_entero():
+    """
+    Contrapeso de la guardia por mencion: el tramo contra el que se busca el
+    simbolo tiene que estar ACOTADO. Si una referencia se validara contra el
+    archivo completo, «el bloque lo menciona» pasaria a significar «el archivo
+    lo menciona en alguna parte», que en constantes_normativas.py --- 3350
+    lineas --- no es una comprobacion.
+    """
+    _, por_mencion, _ = _prosa_repartida()
+    holgados = []
+    for n_md, ref, rel, n, _nombrados in por_mencion:
+        _, inicio, fin = _tramo_de_verificacion(rel, n)
+        total = len(_codigo(rel))
+        if fin - inicio + 1 > total * 0.5:
+            holgados.append(f"md:{n_md} {ref}: tramo de {fin - inicio + 1} "
+                            f"lineas sobre {total}")
+    assert not holgados, (
+        "referencias verificadas contra un tramo que es casi el archivo "
+        "entero:\n  " + "\n  ".join(holgados))

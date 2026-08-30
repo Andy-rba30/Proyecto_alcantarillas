@@ -137,8 +137,17 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
 ## Excepciones (taxonomía)
 Todas descienden de ErrorProyecto, definidas en modelos.py, para que la GUI
 distinga un problema del expediente de un fallo del programa con un solo except.
-- CriterioPendienteError: criterio [A] sin valor. La GUI la muestra como
-  "falta declarar: <clave>", no como error del programa.
+- CriterioPendienteError: criterio [A] sin valor. La GUI la muestra como un
+  pendiente declarable, no como error del programa. **Y no la muestra con esa
+  sola línea**, que es lo que esta cláusula decía: llega por la vía del
+  `Bloqueo` — `cli._etapa` → `cli._bloqueo` → `M11.criterios_bloqueantes` →
+  `gui/app.py::_llenar_resumen` — y pinta seis columnas: clave, etiqueta,
+  concepto, fuente, fases y puntos. `CriterioPendienteError.mensaje_gui`
+  conserva la redacción mínima («falta declarar: <clave>») y **no tiene
+  consumidor de producción a propósito**: cablearla cambiaría ese tablero por
+  un solo dato. Se corrige aquí en S19 porque quien leyera la constitución sin
+  leer el código diseñaría la ventana con la línea equivocada (SIS-B-07); la
+  decisión entera está en `docs/decisiones_diferidas.md`.
 - DisenoNoFactibleError: ninguna combinación material/diámetro cumple.
   Debe llevar el motivo y, si aplica, el delta de rasante requerido.
 - DatoFaltanteError: falta un dato de entrada. Falta la **columna** entera
@@ -204,7 +213,21 @@ ErrorProyecto.
 - Reutilizar el patrón de legacy/Tc.py:
   Tkinter + ttkbootstrap, Notebook por pestañas, MarcoScroll, Tooltip, campo
   validable, plantilla con marcadores %%, sesión en JSON, export HTML/PDF/CSV.
-  Leer esos archivos antes de escribir GUI. No reinventar los componentes.
+  No reinventar los componentes.
+- **Dónde están hoy esos componentes, que ya no es `legacy/Tc.py`.** La regla
+  decía «leer esos archivos antes de escribir GUI», y mandaba a un programa
+  que ya no se puede ni importar en este repositorio: `matplotlib` es import de
+  nivel superior y no está en `requirements.txt`, y la `plantilla_memoria.html`
+  que su encabezado anuncia no existe (SIS-B-10). La extracción ya se hizo:
+  `Tooltip` y `MarcoScroll` son el MISMO código movido a `gui/componentes.py`;
+  `CampoValidable` es su `_campo_validable` con la validación al escribir que
+  exige la Sec. 4.3; y el patrón de plantilla `%%` vive en
+  `M11_reporte.PlantillaMemoria`. Se escribe GUI leyendo `gui/componentes.py`.
+  `legacy/Tc.py` **se conserva** —no es código muerto: la §1.2 de la hoja de
+  ruta lo nombra como origen del caudal de diseño Q, que entra al calculador
+  como columna del CSV— pero se lee como ANTECEDENTE, no como plantilla viva.
+  Su estatus completo está en su propio encabezado y en
+  `docs/decisiones_diferidas.md`.
 
 ## Tests
 - pytest en tests/. Mínimo un test por módulo.
@@ -246,6 +269,17 @@ Este repositorio tiene 234 hallazgos de tres auditorías externas
 conflictos resueltos). Ese archivo es el TRACKER: el estado de cada hallazgo se
 marca ahí, en las columnas Estado / Responsable / Commit. El PLAN es
 `docs/hoja_de_ruta_correcciones_v12.md`.
+
+**Dónde vive una decisión DIFERIDA**, que no es lo mismo que su estado:
+`docs/decisiones_diferidas.md`. Un objeto que se conserva sin consumidor, un
+barrido con un directorio exento, un procedimiento que no se implementa
+todavía — cada uno con **qué se difirió, por qué, qué haría falta para
+cerrarlo y dónde vive el símbolo**. El tracker dice en qué estado está un
+hallazgo; ese registro dice qué se decidió y con qué argumento. No se
+transcribe la razón: se cita el símbolo donde ya está escrita, y
+`tests/test_decisiones_diferidas.py` comprueba que el símbolo siga existiendo.
+Nació de los 22 hallazgos que la auditoría de sistema clasificó «deliberado
+sin documentar», que eran decisiones correctas y mudas.
 
 1. Antes de tocar un archivo, busca su cluster en la hoja `Clusters` y abre la
    ficha de cada ID citado (MAT-, SIS-, NOR-) para leer su evidencia completa.

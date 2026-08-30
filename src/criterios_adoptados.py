@@ -381,13 +381,30 @@ def criterios_opcionales_sin_declarar() -> List[str]:
 def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
                               ruta: Optional[str] = None) -> None:
     """
-    Reescribe, EN EL ARCHIVO FUENTE, el ``valor=None`` del criterio `clave`
-    por `valor_nuevo`. Accion permanente y distinta de
+    Reescribe, EN EL ARCHIVO FUENTE, el ``valor=`` del criterio `clave` por
+    `valor_nuevo`. Accion permanente y distinta de
     `establecer_valor_dinamico`: se usa solo cuando el usuario confirma de
     forma explicita que quiere dejar de tratar el criterio como pendiente
-    (la GUI pide confirmacion aparte antes de llamarla). No toca ningun otro
-    campo del Criterio (etiqueta, justificacion, fuente, sensibilidad): esos
-    se revisan y editan a mano, porque describen POR QUE se adopto el valor.
+    (la GUI pide confirmacion aparte antes de llamarla).
+
+    REESCRIBE CUALQUIER VALOR, NO SOLO `None` (SIS-A-14). El docstring decia
+    «el ``valor=None``» y el patron es `valor=)([^,\\n]*)(,)`, que casa con lo
+    que haya: un criterio YA declarado se puede volver a escribir por esta
+    misma via, y el boton de la GUI esta disponible para toda fila, no solo
+    para las pendientes. Es deliberado --- corregir un valor adoptado es tan
+    legitimo como declararlo por primera vez, y obligar a editar el archivo a
+    mano para eso empujaria a saltarse la guardia --- y lo que faltaba era
+    decirlo. Se declara aqui porque la frase anterior describia una funcion
+    mas estrecha que la que existe, y quien la leyera creeria tener una
+    proteccion contra la sobreescritura que el codigo no da.
+
+    LO QUE NO TOCA, y ahi si es estrecha a proposito: ningun otro campo del
+    Criterio (etiqueta, justificacion, fuente, sensibilidad, resolucion). Esos
+    describen POR QUE se adopto el valor y se revisan a mano; reescribir el
+    numero y dejar la justificacion del anterior es la forma de que el archivo
+    afirme una cosa y valga otra. La GUI lo advierte con esas palabras en su
+    confirmacion (`gui/app.py::_guardar_valor_en_archivo`), y es advertencia,
+    no impedimento: el revisor decide.
     """
     import re
 

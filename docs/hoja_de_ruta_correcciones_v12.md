@@ -1261,12 +1261,21 @@ que no esté en el registro.
 
 ### S19 · Deuda: GUI, código muerto, documentación
 
-**Opus 5 · `ultracode`.** 73 hallazgos, casi todos mecánicos o de redacción. Nada de aquí
-cambia un número. Perfil ideal para el reparto.
+**Opus 5 · `ultracode`.** Nada de aquí cambia un número. Perfil ideal para el reparto.
+
+> **EL «73» ERA FALSO y conviene decir por qué, porque el error es reproducible.**
+> Salía de sumar los clusters enteros que `Plan_Fases` asigna a F5 (C04, C05,
+> C07, C10, C11, C12, C14 + residuos), y la mayoría de esos hallazgos ya se
+> habían cerrado en fases anteriores: un cluster entra a una fase, pero sus
+> hallazgos se cierran donde toque. La cifra que vale se lee de la hoja
+> `Hallazgos` del tracker: **diez con Estado='Pendiente'** (todos C14 salvo
+> SIS-G-03) **más seis 'Cerrado parcial'** que `Plan_Fases` reclama aquí
+> (NOR-E060-02, NOR-HDS-05, NOR-PRO-04, NOR-ANA-03, SIS-F-01, SIS-F-13).
+> Dieciséis, no setenta y tres. Cualquier suma por cluster completo
+> sobreestima, y así quedó anotado en la propia celda de `Plan_Fases`.
 
 ```
-Cluster C14 y el resto de la deuda. 73 hallazgos. Nada de aquí cambia un número
-hoy.
+Cluster C14 y el resto de la deuda. Nada de aquí cambia un número hoy.
 
 Buena parte se cierra ESCRIBIENDO LA DECISIÓN donde un revisor la busque, no
 borrando código. Los 22 hallazgos clasificados "deliberado sin documentar" son
@@ -1474,6 +1483,18 @@ Para que esto no se lea como una promesa de completitud:
   fixture (`CP3_VELOCIDAD_MINIMA`, Sec. 5.2), pero lo consumen `test_M3` y
   `test_constantes_normativas` en vez de `test_M5`; y **M11** es el módulo de
   reporte, al que no le corresponde un dorado numérico.
+
+  **S19 cerró la mitad de M5.** `test_M5_verificaciones.py` consume ya CP-3 por
+  la cadena de producción entera —catálogo de M2, Manning de M3, umbral de
+  M5— sin fabricar ningún dorado: todos los números salen de CP-2, CP-3 o de
+  la constante `[N]` `V_MIN`. Quedan **M2, M8 y M10** por la razón de arriba
+  (falta la fuente) y **M11** por no corresponderle. Y la regla de `CLAUDE.md`
+  «todo módulo de cálculo se contrasta contra `casos_patron`» dejó de vivir
+  solo en la constitución: la ejecuta
+  `tests/test_guardias_de_la_suite.py::test_todo_modulo_de_calculo_consume_su_caso_patron`,
+  con la lista de exentos declarada y su razón, que además **falla si un
+  exento deja de serlo** —el día que llegue A796 o M294, el test señala solo
+  qué exención retirar—.
 - **La validación contra HY-8**, recomendada pero externa.
 - **El cálculo de expediente propiamente dicho.** Este plan lo *prepara*; no lo escribe.
 - **La portabilidad a otra carretera.** El §8 de la auditoría normativa (el corredor de

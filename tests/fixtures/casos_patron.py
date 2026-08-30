@@ -129,6 +129,12 @@ CP3_VELOCIDAD_MINIMA = {
     "n": 0.013,
     "V_objetivo": 0.25,          # m/s, V2 del Manual MTC
     "S_que_produce_V_objetivo": 6.008e-5,   # adimensional
+    # La pendiente esta redondeada a cuatro cifras significativas, y esa es
+    # toda la precision que el caso patron sostiene: la V que devuelve Manning
+    # a partir de ella iguala la V objetivo hasta el milimetro por segundo, no
+    # mas alla. Se declara aqui, con el caso, en vez de repetirse a mano en
+    # cada test que lo consuma (regla de tests/apoyo/aproximacion.py).
+    "tolerancia_V": 1e-3,        # m/s
     "S_constructiva_minima_referencia": 0.001,
     # La conclusion va condicionada a SUS entradas (MAT-O20): escrita sin
     # ellas era falsa. Con y/D < 0.056 (mismo D y n) V2 SI se viola a

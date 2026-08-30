@@ -69,8 +69,21 @@ apareciera:
     debe conocer la implementacion de lo que orquesta. La inyeccion por
     argumento es lo que permite a un test pasarle un doble, a la GUI pasarle
     una version instrumentada y a una sesion futura sustituir M5 sin tocar
-    este archivo. La importacion perezosa evita ademas un ciclo de importacion
-    en el arranque.
+    este archivo.
+
+Y LA IMPORTACION PEREZOSA NO ES POR UN CICLO. Este parrafo cerraba con «evita
+ademas un ciclo de importacion en el arranque», y ESO TAMBIEN ES FALSO: M5
+importa `criterios_adoptados`, `constantes_normativas`, `modelos`, M2, M8 y
+`tolerancias`, y ninguno de los seis vuelve a MD. Sustituir una premisa falsa
+por otra es no cerrar el hallazgo, solo cambiarle el hecho (SIS-A-08, segunda
+pasada en S19). La razon que si se sostiene con el codigo de hoy es otra y es
+mas modesta: `import_module` es el MECANISMO con que se resuelve el valor por
+defecto del parametro `verificar` --- no hay defensa contra ciclo alguno ---, y
+de paso hace que un M5 ausente o sin `verificar` falle EN LA LLAMADA, con el
+mensaje de `_verificador_de_M5` que nombra la firma esperada, en vez de
+reventar el import de MD y llevarse por delante lo que MD publica sin
+necesitar M5 (`NUMERAL_BUCLE`, `MENSAJE_DIAMETRO_SUPERADO` y el Protocol
+`Verificador`).
 
 Lo que MD fija es la unica pieza que un orquestador esta obligado a fijar: la
 FIRMA con la que llama a M5.

@@ -56,7 +56,8 @@ from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        v7_flotacion, v8_evento_extremo,
                                        v9_disponibilidad_diametro, verificar)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
-from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
+                                         CP3_VELOCIDAD_MINIMA)
 
 D_REFERENCIA = 0.90
 
@@ -899,3 +900,110 @@ def test_la_tabla_de_resguardo_no_deja_ningun_CBR_sin_fila():
         + [0.1, CBR_MAX_FISICO, CBR_MAX_FISICO * 10]))
     for cbr in muestras:
         assert resguardo_por_cbr(cbr) > 0, f"CBR = {cbr} se quedo sin fila"
+
+
+# ---------------------------------------------------------------------------
+# SIS-F-13: M5 contra su caso patron, por la cadena de produccion entera
+# ---------------------------------------------------------------------------
+
+def test_v2_contra_el_caso_patron_CP3_por_la_cadena_de_produccion():
+    """
+    SIS-F-13 contaba a M5 entre los modulos «sin caso patron», y no es cierto:
+    CP-3 (Sec. 5.2) es SUYO --- fija la V objetivo de V2 y la pendiente que la
+    produce --- y lo que pasaba es que lo consumian `test_M3` y
+    `test_constantes_normativas` en vez de este archivo. Aqui se cierra esa
+    tercera razon, y sin fabricar ningun dorado nuevo: el conflicto n.7 del
+    plan lo prohibe y no hace falta.
+
+    Los demas tests de V2 pasan un `_resultado(V=...)` fabricado, que es lo
+    correcto para probar un umbral. Este NO: entra por el catalogo de M2,
+    resuelve Manning con M3 a la pendiente de CP-3 y le da a V2 el resultado
+    que sale de ahi. Lo que fija es que la cadena entera --- catalogo, doble n,
+    umbral --- deje V2 exactamente EN EL FILO, que es lo que el caso patron
+    dice y lo que ningun test comprobaba de punta a punta.
+    """
+    from modulos.M3_hidraulica import resolver_manning
+
+    c3, c2 = CP3_VELOCIDAD_MINIMA, CP2_GEOMETRIA_MANNING
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    assert material.n_para_velocidad_minima == pytest.approx(
+        c3["n"], rel=REL_TRANSPORTE), (
+        "CP-3 se escribio para el n mas alto del concreto: si el catalogo "
+        "cambia, el caso patron se revisa antes que este test")
+
+    resolucion = resolver_manning(D=c3["D"],
+                                  Q=c3["V_objetivo"] * c2["A_esperado"],
+                                  S=c3["S_que_produce_V_objetivo"],
+                                  material=material)
+    assert resolucion is not None
+
+    v2 = v2_velocidad_minima(resultado=resolucion)
+    assert v2.codigo == "V2"
+    assert v2.valor_admisible == pytest.approx(V_MIN, rel=REL_TRANSPORTE)
+    assert v2.valor_obtenido == pytest.approx(c3["V_objetivo"], abs=c3["tolerancia_V"])
+    assert v2.cumple, (
+        "en el filo de CP-3 la velocidad IGUALA el piso, y el umbral es "
+        ">=: si esto falla, o se invirtio la comparacion o se perdio la "
+        "tolerancia de umbral normativo")
+
+    # Y V2 lee la rama de n MAXIMO (MAT-D1): la estimacion BAJA de velocidad,
+    # que es la conservadora para un piso. Con la rama de erosion el punto
+    # pasaria con holgura y el filo del caso patron no se veria.
+    assert resolucion.V_erosion > resolucion.V_sedimentacion
+    assert v2.valor_obtenido == pytest.approx(resolucion.V_sedimentacion,
+                                              rel=REL_TRANSPORTE)
+
+
+def test_la_conclusion_de_CP3_se_sostiene_a_la_pendiente_constructiva():
+    """
+    La otra mitad del caso patron, y la que MAT-O20 obligo a condicionar: CP-3
+    concluye que «para D=0.90, y/D=0.75 y n=0.013, V2 se cumple para cualquier
+    S >= 0.001 y no gobierna el diseno». La conclusion va atada a SUS
+    entradas, y el propio fixture avisa de que no es universal. Este test la
+    ejercita en la unica direccion en que puede: a la pendiente constructiva
+    minima de referencia, V2 tiene que cumplir con holgura.
+    """
+    from modulos.M3_hidraulica import resolver_manning
+
+    c3, c2 = CP3_VELOCIDAD_MINIMA, CP2_GEOMETRIA_MANNING
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    resolucion = resolver_manning(
+        D=c3["D"], Q=c3["V_objetivo"] * c2["A_esperado"],
+        S=c3["S_constructiva_minima_referencia"], material=material)
+
+    assert resolucion is not None
+    v2 = v2_velocidad_minima(resultado=resolucion)
+    assert v2.cumple and v2.valor_obtenido > c3["V_objetivo"]
+
+
+def test_v2_decide_con_la_rama_de_n_MAXIMO_y_no_con_la_de_erosion():
+    """
+    MAT-D1, DEFENDIDO. La correccion decia que V2 --- el PISO de velocidad ---
+    tiene que leer la rama de n maximo, la estimacion BAJA, porque para un
+    piso la conservadora es la baja; leer la de erosion invierte el
+    conservadurismo y deja pasar un punto que sedimenta.
+
+    Estaba corregida y NO LA DEFENDIA NADIE. Se comprobo mutando
+    `v2_velocidad_minima` a `resultado.V_erosion >= V_MIN` y corriendo la
+    suite entera: 1497 tests en verde. La razon es que todos los tests de V2
+    usan `_resultado(V=...)`, que fija LAS DOS ramas al mismo numero, y con
+    las dos iguales la mutacion es invisible.
+
+    Este test las separa a los dos lados del piso --- exactamente la ventana
+    que el propio docstring de la funcion describe, S entre 3.55e-5 y 6.01e-5
+    --- de modo que solo hay una respuesta correcta y la mutacion la falla.
+    """
+    a_los_dos_lados = _resultado(V_erosion=0.297, V_sedimentacion=0.228)
+
+    v2 = v2_velocidad_minima(resultado=a_los_dos_lados)
+    assert not v2.cumple, (
+        "V2 esta leyendo la rama de EROSION: con n_min por encima del piso y "
+        "n_max por debajo, el punto sedimenta y tiene que rechazarse (MAT-D1)")
+    assert v2.valor_obtenido == pytest.approx(0.228, rel=REL_TRANSPORTE), (
+        "y lo que la memoria imprime tiene que ser la MISMA rama que decide")
+
+    # La direccion contraria, para que el test no pase por casualidad con
+    # cualquier par: con las dos por encima, cumple.
+    v2 = v2_velocidad_minima(resultado=_resultado(V_erosion=0.60,
+                                                  V_sedimentacion=0.30))
+    assert v2.cumple

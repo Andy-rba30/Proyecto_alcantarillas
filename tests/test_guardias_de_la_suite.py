@@ -565,7 +565,37 @@ def test_el_fixture_ya_no_afirma_un_conteo_de_tests_congelado():
 # contada: baja el cupo y sigue.
 
 CUPO_APPROX_SIN_TOLERANCIA = 208
-CUPO_APPROX_CON_TOLERANCIA_LITERAL = 101
+
+# BAJA DE 101 A 72 EN S19, y no porque se hayan reescrito treinta llamadas:
+# porque el clasificador estaba contando como «literal» la forma que el propio
+# `tests/apoyo/aproximacion.py` manda usar --- `abs=c3["tolerancia_V"]`, la
+# tolerancia que DECLARA el caso patron ---, de modo que el cupo empujaba a
+# escribir `abs=1e-3` a mano al lado del caso que ya lo dice. El numero no
+# medía lo que decía medir. Ver `_es_tolerancia_nombrada`.
+CUPO_APPROX_CON_TOLERANCIA_LITERAL = 72
+
+
+def _es_tolerancia_nombrada(nodo) -> bool:
+    """
+    Una tolerancia esta NOMBRADA si se la puede leer sin adivinar de que clase
+    de igualdad habla. Dos formas valen:
+
+      `REL_TRANSPORTE`      un nombre de tests/apoyo/aproximacion.py;
+      `c3["tolerancia_V"]`  la que DECLARA el caso patron.
+
+    La segunda faltaba, y es la que el propio `aproximacion.py` manda usar con
+    todas las letras: «un test que contrasta un valor CALCULADO contra un caso
+    patron usa la tolerancia que el propio caso patron declara, no estas dos».
+    Contarla como literal empujaba a lo contrario --- a escribir `abs=1e-3` a
+    mano al lado del caso que ya lo dice ---, que es exactamente la
+    duplicacion que el cupo existe para frenar (S19).
+    """
+    if isinstance(nodo, ast.Name):
+        return True
+    return (isinstance(nodo, ast.Subscript)
+            and isinstance(nodo.slice, ast.Constant)
+            and isinstance(nodo.slice.value, str)
+            and "toleranc" in nodo.slice.value.lower())
 
 
 def _llamadas_a_approx(codigo: str, nombre: str = "<memoria>"):
@@ -578,7 +608,7 @@ def _llamadas_a_approx(codigo: str, nombre: str = "<memoria>"):
         tolerancias = [kw for kw in nodo.keywords if kw.arg in ("rel", "abs")]
         if not tolerancias:
             clase = "sin"
-        elif all(isinstance(kw.value, ast.Name) for kw in tolerancias):
+        elif all(_es_tolerancia_nombrada(kw.value) for kw in tolerancias):
             clase = "nombrada"
         else:
             clase = "literal"
@@ -636,3 +666,86 @@ def test_el_cupo_esta_escrito_con_su_razon_y_no_es_una_meta():
         "el cupo tiene que remitir al precedente del proyecto")
     censo = _censo_de_approx()
     assert censo["nombrada"], "ninguna tolerancia nombrada: el patron se perdio"
+
+
+# ---------------------------------------------------------------------------
+# SIS-F-13: la regla del caso patron, con guardia
+# ---------------------------------------------------------------------------
+# `CLAUDE.md`, seccion Tests: «Todo modulo de calculo se contrasta contra
+# tests/fixtures/casos_patron.py». Hasta S19 esa regla no la ejecutaba nadie:
+# vivia en la constitucion y su incumplimiento se descubrio en una AUDITORIA
+# EXTERNA, no en la suite. Las exenciones tampoco estaban en ningun sitio que
+# corriera --- vivian en una celda de un .xlsx y en la §15 del plan ---, de
+# modo que el dia que llegara la fuente que falta nadie se enteraria de que ya
+# se puede retirar la exencion.
+#
+# Cada exencion lleva su razon Y LO QUE HARIA FALTA para retirarla. No son
+# equivalentes: M2, M8 y M10 esperan una FUENTE que el repositorio no tiene
+# (fabricarles un dorado seria inventar el valor de referencia, que es lo que
+# prohibe el conflicto n.7 del plan); M11 no espera nada, porque es el modulo
+# de reporte y un dorado numerico no tendria contra que contrastarse --- lo
+# que a el se le exige es lo contrario, no calcular, y eso ya lo vigila
+# `tests/test_memoria_sustentada.py::test_M11_no_calcula_y_sobre_D`.
+SIN_CASO_PATRON = {
+    "M2_material":
+        "falta la serie de diametros nominales tabulada de las normas de "
+        "producto (AASHTO M 170M-04 / ASTM C 76M-02, ASTM A760 + AASHTO M 36, "
+        "AASHTO M294). Cerraria de paso si la progresion 0.90 + 0.15 es una "
+        "serie comercial real o una interpolacion del proyecto (§15 del plan)",
+    "M8_estructural":
+        "faltan AASHTO M 170M-04 Tablas 1 a 5 (clases D-load del concreto) y "
+        "ASTM A796/A796M (calibre por altura de cobertura del TMC). Son el "
+        "insumo del vacio 'clases_producto_por_relleno' (§15 del plan)",
+    "M10_espaciamiento":
+        "no lo cierra una norma sino el EXPEDIENTE VIAL: seccion de cuneta, su "
+        "n de Manning, la intensidad de TR = 35 y el metodo de area "
+        "tributaria. Su brazo normativo (`L_normativo`) ya es [N] y un caso "
+        "patron sobre el seria tautologico; falta `L_hidraulico` (§15)",
+    "M11_reporte":
+        "NO es deuda: es el modulo de reporte y no le corresponde dorado "
+        "numerico. Lo que se le exige es que no calcule, y lo vigila "
+        "tests/test_memoria_sustentada.py::test_M11_no_calcula_y_sobre_D",
+}
+
+
+def test_todo_modulo_de_calculo_consume_su_caso_patron():
+    """
+    SIS-F-13. La lista de exentos es la que la §15 del plan declara, y este
+    test la convierte en condicion que la suite defiende: si alguien anade un
+    modulo de calculo sin caso patron, falla; y si trae la fuente que falta y
+    conecta el caso, falla tambien --- pidiendo que se retire la exencion, que
+    es la mitad que un .xlsx nunca avisa.
+    """
+    modulos = sorted(p.stem for p in (RAIZ / "src" / "modulos").glob("M*.py"))
+    sin_fixture, exentos_que_ya_lo_usan = [], []
+    for modulo in modulos:
+        prueba = RAIZ / "tests" / f"test_{modulo}.py"
+        if not prueba.exists():
+            sin_fixture.append(f"{modulo}: no tiene tests/test_{modulo}.py")
+            continue
+        usa = "casos_patron" in prueba.read_text(encoding="utf-8")
+        if usa and modulo in SIN_CASO_PATRON:
+            exentos_que_ya_lo_usan.append(modulo)
+        elif not usa and modulo not in SIN_CASO_PATRON:
+            sin_fixture.append(
+                f"{modulo}: no importa casos_patron y no esta exento. O trae "
+                "su dorado, o declara la exencion con lo que haria falta")
+
+    assert not sin_fixture, "\n  ".join([""] + sin_fixture)
+    assert not exentos_que_ya_lo_usan, (
+        f"{exentos_que_ya_lo_usan} YA consumen casos_patron: retira su "
+        "entrada de SIN_CASO_PATRON y actualiza la §15 del plan. Una "
+        "exencion que sobrevive a su motivo es deuda inventada")
+
+
+def test_cada_exencion_de_caso_patron_dice_que_haria_falta():
+    """
+    Una exencion sin «que haria falta» es un «no se puede» sin fecha. La
+    §15 del plan las escribe con su fuente concreta; este test impide que
+    alguien anada una vacia.
+    """
+    for modulo, razon in SIN_CASO_PATRON.items():
+        assert len(razon) > 80, f"{modulo}: la razon es demasiado corta"
+        assert ("falta" in razon or "no le corresponde" in razon
+                or "NO es deuda" in razon), (
+            f"{modulo}: la razon no dice que haria falta para retirarla")
