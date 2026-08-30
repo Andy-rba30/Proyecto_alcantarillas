@@ -46,7 +46,7 @@ se llama `hoja_de_ruta_correcciones_v12.md` y no colisiona — pero no renombres
 | Criterios con rango de sensibilidad numérico | 15 |
 | Tablas normativas (dicts) en `constantes_normativas.py` | **18** |
 | Escalares `[N]` en el mismo archivo | 26 |
-| Datos de sitio de corredor (`datos_sitio.py`) | 17 |
+| Datos de sitio de corredor (`datos_sitio.py`) | 7 |
 | Columnas del CSV por punto | 17 |
 | GUI | 4 pestañas, 958 líneas, **584 sentencias ejecutables, 0 tests** |
 | Plantillas de memoria | 2, con 21 marcadores `%%` |
@@ -273,11 +273,13 @@ qué imprimir.
 >   criterio tenía cuando se escribió este plan, y **S4 lo mudó a `D_max_catalogo`** al cerrar
 >   `NOR-PRO-01`/`NOR-PRO-02`. Lo que queda es la serie verificada contra ASTM A760 Tabla 1.
 >
-> **Defecto de la §1.1 de este plan, para corregir:** la fila «Datos de sitio de corredor
-> (`datos_sitio.py`) | 17» es errónea. En el commit sobre el que se midió el inventario
-> (`b8d70e5`) el archivo declaraba **3** datos; hoy son **7**. El 17 es el de la fila
-> siguiente —las columnas del CSV— repetido. Mientras no se corrija, quien lea el plan sin
-> abrir el archivo dimensionará esa población por seis.
+> **Defecto de la §1.1 de este plan, corregido:** la fila «Datos de sitio de corredor
+> (`datos_sitio.py`)» decía **17**, que es el de la fila siguiente —las columnas del CSV—
+> repetido. Ahora dice **7**, los que el archivo declara hoy. Queda anotado que el número
+> **no** es el del inventario original: en el commit sobre el que se midió (`b8d70e5`) el
+> archivo declaraba **3** datos; S2 añadió `corredor_del_proyecto` y S12 los tres de
+> geometría vial respecto del tráfico. Con el 17, quien leyera el plan sin abrir el archivo
+> dimensionaba esa población por seis.
 
 ### 4.4 La memoria: `PasoDeMemoria`
 
