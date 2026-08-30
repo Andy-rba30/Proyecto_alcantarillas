@@ -156,10 +156,44 @@ def test_hdpe_tambien_aplica_doble_n_por_el_rango_de_criterios_adoptados(hdpe):
 # ---------------------------------------------------------------------------
 
 def test_pendiente_que_produce_v_objetivo_de_cp3():
-    c = CP3_VELOCIDAD_MINIMA
-    R = CP2_GEOMETRIA_MANNING["R_esperado"]
-    V = (1 / c["n"]) * R ** (2 / 3) * c["S_que_produce_V_objetivo"] ** (1 / 2)
-    assert V == pytest.approx(c["V_objetivo"], abs=1e-3)
+    """
+    SIS-F-17. Este test NO INVOCABA CODIGO DE PRODUCCION: reescribia la
+    formula de Manning dentro del propio assert y la contrastaba contra el
+    dorado del fixture, de modo que comprobaba que el fixture es coherente
+    consigo mismo -- que es trabajo del bloque `__main__` de casos_patron.py,
+    no de la suite -- y no protegia ni una linea de M3. Contaba en el conteo
+    de tests sin defender nada.
+
+    Ahora entra por `resolver_manning`, que es la funcion que el pipeline usa,
+    con el caudal que corresponde a la geometria de CP-2: la pendiente de CP-3
+    tiene que devolver, en la rama de velocidad MINIMA (n = 0.013, el n mas
+    alto del concreto), exactamente la V objetivo de V2. Si M3 aplicara la
+    misma n a las dos ramas, o resolviera theta con la pendiente equivocada,
+    este test cae.
+    """
+    c3 = CP3_VELOCIDAD_MINIMA
+    c2 = CP2_GEOMETRIA_MANNING
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    assert material.n_para_velocidad_minima == pytest.approx(c3["n"]), (
+        "CP-3 se escribio para el n mas alto del concreto: si el catalogo "
+        "cambia, el caso patron tiene que revisarse antes que este test")
+
+    # El caudal que llena el conducto hasta el y/D de CP-2 a la velocidad
+    # objetivo de V2. Sale del dorado de area de CP-2, no de una cuenta nueva.
+    Q = c3["V_objetivo"] * c2["A_esperado"]
+
+    resolucion = resolver_manning(D=c3["D"], Q=Q,
+                                  S=c3["S_que_produce_V_objetivo"],
+                                  material=material)
+
+    assert resolucion is not None, "la pendiente de CP-3 tiene que converger"
+    assert resolucion.geometria.y_sobre_D == pytest.approx(c3["y_sobre_D"],
+                                                          abs=1e-3)
+    assert resolucion.V_sedimentacion == pytest.approx(c3["V_objetivo"],
+                                                       abs=1e-3)
+    # Y la doble n sigue separando las dos ramas: con n_min < n_max la
+    # velocidad de erosion es la mayor de las dos (Sec. 4.1).
+    assert resolucion.V_erosion > resolucion.V_sedimentacion
 
 
 # ---------------------------------------------------------------------------
@@ -202,3 +236,47 @@ def test_parametros_invalidos_lanzan_dato_invalido(kwargs, campo):
     with pytest.raises(DatoInvalidoError) as exc:
         tirante_normal(**kwargs)
     assert exc.value.campo == campo
+
+
+# ---------------------------------------------------------------------------
+# MAT-O18: el contrato de None, con el numero que lo hace exacto
+# ---------------------------------------------------------------------------
+
+def test_el_None_de_tirante_normal_es_conservador_y_no_literal():
+    """
+    MAT-O18. El docstring decia que None significa "no hay theta donde
+    Manning iguale Q". No es exacto: la curva Q(theta) de una seccion
+    circular tiene un PICO cerca de y/D ~ 0.94 y despues BAJA hasta el caudal
+    a seccion llena. En la banda (Q_lleno, Q_pico] SI existe theta -- dos, de
+    hecho -- y la funcion devuelve None igual, porque Brent no encuentra
+    cambio de signo en el intervalo completo.
+
+    El test fija las DOS cosas: que la banda existe de verdad (se recomputa
+    Manning aqui, sin llamar a la funcion bajo prueba) y que la funcion
+    devuelve None en ella. La direccion importa y por eso no se "arregla":
+    devolver None de mas es conservador -- manda a M2 al siguiente diametro --
+    y un tirante por encima de y/D = 0.94 lo rechazaria V1 una fase mas tarde.
+    """
+    D, S, n = 0.90, 0.005, 0.013
+
+    def caudal(theta):
+        A = (D ** 2 / 8) * (theta - math.sin(theta))
+        P = D * theta / 2
+        return (1 / n) * (A / P) ** (2 / 3) * S ** 0.5 * A
+
+    Q_lleno = caudal(2 * math.pi - 1e-9)
+    Q_pico = max(caudal(1e-6 + k * (2 * math.pi - 2e-6) / 20000)
+                 for k in range(20001))
+
+    assert Q_pico > Q_lleno, (
+        "si la curva fuera monotona el contrato literal seria cierto y este "
+        "test sobraria")
+
+    en_la_banda = (Q_lleno + Q_pico) / 2
+    assert tirante_normal(D, en_la_banda, S, n) is None, (
+        "la funcion devuelve None en la banda, y eso es lo que el docstring "
+        "tiene que decir")
+
+    # Y por debajo del lleno si resuelve, que es el otro lado del contrato.
+    resuelto = tirante_normal(D, Q_lleno * 0.9, S, n)
+    assert resuelto is not None and resuelto.y_sobre_D < 1.0

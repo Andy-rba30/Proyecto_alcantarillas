@@ -18,6 +18,7 @@ Dos cosas que estas pruebas fijan a proposito:
    archivo de criterios, solo simula que el Tablero 3 se cerro.
 """
 
+import csv
 import json
 from pathlib import Path
 
@@ -26,11 +27,14 @@ import pytest
 import cli
 import criterios_adoptados as ca
 from modulos.M11_reporte import PlantillaHTML
-from modelos import (ControlGobernante, DatoInvalidoError,
+from modelos import (CriterioPendienteError,
+                     ControlGobernante, DatoInvalidoError,
                      ResultadoHidraulico, ResultadoPunto, TipoMaterial,
                      Verificacion)
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import catalogo
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
+from modulos import M11_reporte as M11
 
 CSV = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
 
@@ -96,7 +100,7 @@ def test_seccion_desconocida_es_dato_invalido(tmp_path):
 
 def test_tw_cero_se_admite_porque_es_salida_libre():
     externos = _externos(TW_m=0.0)
-    assert externos.valor("A-01", "TW_m") == 0.0
+    assert externos.valor("A-01", "TW_m") == pytest.approx(0.0, abs=ABS_CERO)
 
 
 def test_longitud_cero_o_negativa_es_dato_invalido():
@@ -111,8 +115,8 @@ def test_dato_por_punto_pisa_al_global(tmp_path):
                                 "puntos": {"A-01": {"luz_m": 4.0}}}),
                     encoding="utf-8")
     externos = cli.cargar_datos_externos(ruta, {})
-    assert externos.valor("A-01", "luz_m") == 4.0
-    assert externos.valor("A-02", "luz_m") == 2.0
+    assert externos.valor("A-01", "luz_m") == pytest.approx(4.0, rel=REL_TRANSPORTE)
+    assert externos.valor("A-02", "luz_m") == pytest.approx(2.0, rel=REL_TRANSPORTE)
 
 
 def test_bandera_pisa_al_global_del_archivo(tmp_path):
@@ -120,7 +124,7 @@ def test_bandera_pisa_al_global_del_archivo(tmp_path):
     ruta.write_text(json.dumps({"globales": {"luz_m": 2.0}}), encoding="utf-8")
     externos = cli.cargar_datos_externos(ruta, {"luz_m": 5.0})
     dato = externos.dato("A-01", "luz_m")
-    assert dato.valor == 5.0
+    assert dato.valor == pytest.approx(5.0, rel=REL_TRANSPORTE)
     assert "linea de comandos" in dato.origen
 
 
@@ -204,7 +208,7 @@ def test_con_tw_y_longitud_el_bucle_de_md_llega_a_la_fase_5():
 def test_la_longitud_declarada_se_registra_con_su_origen():
     informe = _informe(luz_m=2.0, TW_m=0.0, longitud_m=12.0)
     b01 = _punto(informe, "B-01")
-    assert b01.longitud.valor == 12.0
+    assert b01.longitud.valor == pytest.approx(12.0, rel=REL_TRANSPORTE)
     assert "linea de comandos" in b01.longitud.origen
     assert b01.tw.origen == "linea de comandos (--TW_m)"
 
@@ -234,7 +238,7 @@ def test_familia_c_con_caudal_declarado_no_tiene_material_candidato():
 
 def test_espaciamiento_de_alivio_solo_en_familia_b():
     informe = _informe(luz_m=2.0, L_hidraulico_m=180.0)
-    assert _punto(informe, "B-01").espaciamiento.espaciamiento_max == 180.0
+    assert _punto(informe, "B-01").espaciamiento.espaciamiento_max == pytest.approx(180.0, rel=REL_TRANSPORTE)
     for id_punto in ("A-01", "A-02", "C-01"):
         assert _punto(informe, id_punto).espaciamiento is None
 
@@ -343,11 +347,45 @@ def informe_dimensionado(monkeypatch):
                     longitud_m=12.0)
 
 
+def test_el_cuadro_resumen_csv_lleva_el_contenido_del_punto_dimensionado(
+        informe_dimensionado, tmp_path):
+    """
+    SIS-F-09. La rama `if informe.dimensionado:` de `M11.exportar_csv` -- la
+    que ESCRIBE las celdas -- no se ejecutaba nunca: el unico test corria
+    sobre una corrida sin ningun punto dimensionado y comprobaba la cabecera y
+    el numero de filas, de modo que un cuadro entero de celdas vacias lo
+    pasaba igual. Aqui se asserta el CONTENIDO.
+    """
+    destino = tmp_path / "resumen.csv"
+    M11.exportar_csv(informe_dimensionado, destino)
+    filas = list(csv.DictReader(destino.read_text(encoding="utf-8").splitlines()))
+
+    por_id = {fila["id"]: fila for fila in filas}
+    assert set(por_id) == {"A-01", "A-02", "B-01", "C-01"}
+
+    a01 = por_id["A-01"]
+    assert a01["familia"] == "A"
+    assert a01["material"], "el material del punto dimensionado quedo vacio"
+    assert a01["D_m"] == "0.60"
+    assert a01["control_gobernante"] == "entrada"
+    assert a01["V_erosion_ms"] and a01["V_sedimentacion_ms"]
+    assert a01["V_erosion_ms"] != a01["V_sedimentacion_ms"], (
+        "la doble n de Sec. 4.1.1 tiene que dar dos velocidades distintas")
+
+    # Y el contraste que hace util al cuadro: C-01 es Familia C, no se
+    # dimensiona, y sus celdas de diseño quedan vacias en vez de traer un
+    # numero inventado.
+    c01 = por_id["C-01"]
+    assert c01["familia"] == "C"
+    assert c01["material"] == ""
+    assert c01["D_m"] == ""
+
+
 def test_reporta_material_diametro_y_control_gobernante(informe_dimensionado):
     a01 = _punto(informe_dimensionado, "A-01")
     assert a01.dimensionado
     assert a01.resultado.material.tipo is TipoMaterial.HDPE
-    assert a01.resultado.D == 0.60
+    assert a01.resultado.D == pytest.approx(0.60, rel=REL_TRANSPORTE)
     assert (a01.resultado.resultado_hidraulico.control_gobernante
             is ControlGobernante.ENTRADA)
 
@@ -364,7 +402,7 @@ def test_las_fases_6_7_y_8_corren_sobre_el_punto_dimensionado(informe_dimensiona
     a01 = _punto(informe_dimensionado, "A-01")
     assert a01.proteccion.d50 > 0
     assert a01.proteccion.advertencias, "Sec. 6 exige el aviso de filtro"
-    assert a01.geometria.longitud == 12.0
+    assert a01.geometria.longitud == pytest.approx(12.0, rel=REL_TRANSPORTE)
     assert a01.cama_apoyo is not None
 
 
@@ -401,7 +439,7 @@ def test_el_json_es_serializable_y_lleva_las_tres_listas_de_criterios(
     assert all("declarado_en_caliente" in c for c in datos["criterios"]["usados"])
     a01 = next(p for p in datos["puntos"] if p["id"] == "A-01")
     assert a01["diseno"]["control_gobernante"] == "entrada"
-    assert a01["diseno"]["D_m"] == 0.60
+    assert a01["diseno"]["D_m"] == pytest.approx(0.60, rel=REL_TRANSPORTE)
     assert all(v["numeral"] for v in a01["verificaciones"])
 
 
@@ -742,6 +780,157 @@ def test_declarar_pasa_por_la_guardia_del_archivo():
         ca.quitar_valor_dinamico("v_max_concreto_eleccion")
 
 
+# ---------------------------------------------------------------------------
+# SIS-F-11 - las seis banderas del CLI que no ejercitaba nadie
+# ---------------------------------------------------------------------------
+# --criterios, --csv-resumen, --datos-externos, --pdf, --plantilla y --proyecto
+# estaban definidas en el parser y ningun test las pasaba por `main`: el
+# cableado bandera -> funcion no se ejercitaba, de modo que un `dest` mal
+# escrito o una llamada cambiada de sitio dejaban la suite en verde. Cada test
+# de aqui asserta el EFECTO de la bandera, no solo que no revienta.
+
+def test_bandera_criterios_anade_el_bloque_de_declaracion(tmp_path, capsys):
+    base = cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json")])
+    sin = capsys.readouterr().out
+    con_bandera = cli.main([str(CSV), "--luz", "2.0", "--criterios",
+                            "--json", str(tmp_path / "b.json")])
+    con = capsys.readouterr().out
+    assert base == con_bandera
+    assert len(con) > len(sin), "--criterios no anadio nada al volcado"
+    assert "DATOS DE SITIO" in con.upper()
+    assert "DATOS DE SITIO" not in sin.upper()
+
+
+def test_bandera_csv_resumen_escribe_el_entregable_3(tmp_path, capsys):
+    destino = tmp_path / "resumen.csv"
+    cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json"),
+              "--csv-resumen", str(destino)])
+    salida = capsys.readouterr().out
+    assert destino.is_file(), "--csv-resumen no escribio el archivo"
+    assert str(destino) in salida, "el volcado no dice donde quedo el CSV"
+    lineas = destino.read_text(encoding="utf-8").strip().splitlines()
+    assert lineas[0] == ",".join(M11.COLUMNAS_RESUMEN_CSV)
+    assert len(lineas) == 1 + 4, "una fila por punto critico del ejemplo"
+
+
+def test_bandera_datos_externos_entra_por_main(tmp_path, capsys):
+    """La bandera y el archivo son el mismo camino: `main` los combina."""
+    ruta = tmp_path / "externos.json"
+    ruta.write_text(json.dumps({"globales": {"luz_m": 2.0}}),
+                    encoding="utf-8")
+    codigo = cli.main([str(CSV), "--datos-externos", str(ruta),
+                       "--json", str(tmp_path / "a.json")])
+    capsys.readouterr()
+    assert codigo == 1, "sin luz no se clasifica ningun punto: la bandera no llego"
+
+
+def test_bandera_proyecto_encabeza_la_memoria(tmp_path, capsys):
+    destino = tmp_path / "memoria.html"
+    cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json"),
+              "--html", str(destino), "--proyecto", "Via de Evitamiento X"])
+    capsys.readouterr()
+    assert "Via de Evitamiento X" in destino.read_text(encoding="utf-8")
+
+
+def test_bandera_plantilla_fuerza_la_plantilla_de_la_memoria(tmp_path, capsys):
+    """
+    La plantilla forzada gana al defecto del alcance: es lo que declara
+    `plantilla_por_alcance`, y hasta ahora nadie lo ejercitaba por `main`.
+    """
+    forzada = cli.DIR_PLANTILLAS / cli.NOMBRE_PLANTILLA_PERFIL
+    destino = tmp_path / "memoria.html"
+    cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json"),
+              "--alcance", "expediente", "--plantilla", str(forzada),
+              "--html", str(destino)])
+    salida = capsys.readouterr().out
+    assert forzada.name in salida, (
+        "el volcado tiene que decir que plantilla se uso, y ser la forzada")
+    assert destino.is_file()
+
+
+def test_bandera_pdf_escribe_o_deja_el_html_con_su_mensaje(tmp_path, capsys):
+    """
+    --pdf tiene dos finales declarados: con weasyprint escribe el PDF; sin el,
+    deja el HTML y lo dice. El test acepta los dos y comprueba que el mensaje
+    corresponde al que ocurrio, que es lo que la bandera promete.
+    """
+    destino = tmp_path / "memoria.pdf"
+    cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json"),
+              "--pdf", str(destino)])
+    salida = capsys.readouterr().out
+    if destino.is_file():
+        assert destino.stat().st_size > 0
+        assert str(destino) in salida
+    else:
+        alternativo = destino.with_suffix(".html")
+        assert alternativo.is_file(), (
+            "sin weasyprint la bandera tiene que dejar el HTML en su lugar")
+        assert "html" in salida.lower()
+
+
+def test_declarar_no_deja_entrar_un_infinito_por_la_notacion_cientifica():
+    """
+    `ast.literal_eval("1e999")` devuelve inf sin error, de modo que --declarar
+    era una puerta abierta al pipeline para un numero que no existe. El
+    criterio elegido no declara rango de sensibilidad: es el que quedaba sin
+    defensa (MAT-D14 / criterio de salida de S16).
+    """
+    try:
+        with pytest.raises(ValueError, match="infinito, con NaN"):
+            cli.declarar_criterios(["talud_terraplen=1e999"])
+        assert "talud_terraplen" not in ca.valores_dinamicos()
+    finally:
+        ca.quitar_valor_dinamico("talud_terraplen")
+
+
+@pytest.mark.parametrize("texto", ["nan", "NaN", "inf", "-inf", "Infinity"])
+def test_declarar_no_deja_entrar_un_no_numero_disfrazado_de_texto(texto):
+    """
+    LA PUERTA QUE QUEDABA ABIERTA. 'nan' e 'inf' no son literales de Python:
+    son NOMBRES. `ast.literal_eval` los rechaza y caian al respaldo a CADENA,
+    por debajo de la guardia de finitud de criterios_adoptados -- que solo
+    recorre numeros. Y la cadena no se quedaba quieta: el primer consumidor
+    que hiciera `float()` sobre el criterio la devolvia al calculo convertida
+    en el mismo NaN que se acababa de rechazar, y la memoria salia con
+    `cuantia_adoptada = nan` y un gobernante declarado. Ese es exactamente el
+    "diagnostico falso" que el criterio de salida de esta sesion prohibe.
+
+    El respaldo a texto sigue existiendo, y debe: los criterios CATEGORICOS
+    ('cota_terreno', 'flexible', 'A') entran por ahi.
+    """
+    try:
+        with pytest.raises(ValueError, match="no es un numero declarable"):
+            cli.declarar_criterios([f"talud_terraplen={texto}"])
+        assert "talud_terraplen" not in ca.valores_dinamicos()
+    finally:
+        ca.quitar_valor_dinamico("talud_terraplen")
+
+
+def test_declarar_no_revienta_con_un_entero_que_no_cabe_en_un_double():
+    """
+    Un `int` de Python no tiene tope. Uno de 401 cifras no cabe en un double y
+    `float(x)` lanza OverflowError, que no es ValueError ni KeyError y que
+    `cli.main` no atrapa: la corrida moriria con traza en vez de con el
+    mensaje del expediente. Entra por la misma puerta que el infinito.
+    """
+    enorme = "1" + "0" * 400
+    try:
+        with pytest.raises(ValueError, match="doble precision"):
+            cli.declarar_criterios([f"talud_terraplen={enorme}"])
+        assert "talud_terraplen" not in ca.valores_dinamicos()
+    finally:
+        ca.quitar_valor_dinamico("talud_terraplen")
+
+
+def test_declarar_sigue_admitiendo_un_criterio_categorico():
+    """El otro lado: el respaldo a texto existe para estos y no puede caer."""
+    try:
+        cli.declarar_criterios(["origen_cota_fondo_entrada=cota_terreno"])
+        assert ca.valores_dinamicos()["origen_cota_fondo_entrada"] == "cota_terreno"
+    finally:
+        ca.establecer_valor_dinamico("origen_cota_fondo_entrada", "cota_terreno")
+
+
 def test_declarar_admite_texto_y_exige_la_forma_clave_igual_valor():
     try:
         cli.declarar_criterios(["origen_cota_fondo_entrada=cota_terreno"])
@@ -791,3 +980,184 @@ def test_el_json_lleva_el_valor_efectivo_y_la_procedencia(tmp_path):
         assert datos["criterios"]["verificacion_pendiente"]
     finally:
         ca.quitar_valor_dinamico("TW_receptor")
+
+
+def test_un_dato_de_sitio_pendiente_sale_como_bloqueo_y_no_como_KeyError(monkeypatch):
+    """
+    SIS-A-05. `cli._bloqueo` resolvia TODA clave con `ca.criterio()`, y
+    `CriterioPendienteError` no la levanta solo criterios_adoptados: la misma
+    excepcion sale de `datos_sitio.valor` cuando un [S] de corredor todavia no
+    se ha leido. Con un [S] pendiente la corrida moria con KeyError -- un
+    fallo de PROGRAMA dentro de la funcion que existe para convertir un
+    problema del expediente en una fila del informe.
+
+    Hoy los tres datos de corredor tienen valor, de modo que el camino es
+    inalcanzable desde el expediente; se provoca vaciando uno, que es el
+    estado que el proyecto admite y para el que existe el mecanismo.
+    """
+    import datos_sitio as ds
+    from dataclasses import replace
+
+    clave = "PGA_roca_B"
+    monkeypatch.setitem(ds.DATOS_SITIO, clave,
+                        replace(ds.DATOS_SITIO[clave], valor=None))
+
+    with pytest.raises(CriterioPendienteError) as exc:
+        ds.valor(clave)
+
+    bloqueo = cli._bloqueo("Fase 9", "cadena sismica", exc.value)
+
+    assert bloqueo.tipo == "CriterioPendienteError"
+    assert bloqueo.criterio == clave
+    assert bloqueo.etiqueta == "S", (
+        "la etiqueta tiene que ser la del dato de sitio, no la de un criterio")
+    assert bloqueo.concepto and bloqueo.fuente
+    assert bloqueo.fuente == ds.dato(clave).fuente, (
+        "el informe tiene que citar la fuente del DATO DE SITIO, que es el "
+        "mapa del que se lee, y no la de un criterio que no existe")
+
+
+def test_el_resolvedor_comun_encuentra_las_dos_familias_y_nombra_la_que_falta():
+    """La otra mitad del contrato de `ca.declaracion_de`."""
+    import datos_sitio as ds
+
+    assert ca.declaracion_de("talud_terraplen").etiqueta == "A"
+    assert ca.declaracion_de("PGA_roca_B").etiqueta == "S"
+    assert ca.declaracion_de("PGA_roca_B") is ds.dato("PGA_roca_B")
+    with pytest.raises(KeyError, match="ni en datos_sitio.py"):
+        ca.declaracion_de("clave_que_no_existe_en_ninguno")
+
+
+# ---------------------------------------------------------------------------
+# Las guardas de los datos externos que ninguna prueba alcanzaba (SIS-F-10)
+# ---------------------------------------------------------------------------
+# SIS-F-10 conto trece `raise` de la taxonomia sin cobertura; medida de nuevo
+# sobre el arbol de S16 la cuenta es 51, y cuatro de ellas son de este archivo:
+# los dos rechazos de `_numero_externo` y los dos de `cargar_datos_externos`.
+# Que no las alcanzara nadie es exactamente la forma del cluster C09: la suite
+# estaba verde y no habria detectado que cualquiera de las cuatro se borrara.
+#
+# Cada caso asserta las TRES cosas: la clase de la excepcion, el `campo` que
+# lleva -- que es lo que la GUI usa para senalar el dato -- y un trozo del
+# motivo que diga POR QUE, no solo que fallo. Un mensaje que dijera "dato
+# invalido" a secas pasaria la primera y la segunda y no la tercera.
+
+# (bruto, trozo del motivo). El motivo tiene que nombrar el sistema de
+# unidades: el dato entra en SI y el error no puede limitarse a "no es un
+# numero" sin decir en que se esperaba.
+NO_SON_NUMEROS = [
+    ("dos", "no es un numero"),
+    ("", "no es un numero"),
+    ([2.0], "no es un numero"),
+    ({"valor": 2.0}, "no es un numero"),
+]
+
+
+@pytest.mark.parametrize("bruto, motivo", NO_SON_NUMEROS)
+def test_un_dato_externo_que_no_es_numero_dice_que_se_esperaba(bruto, motivo):
+    """
+    Falla si `_numero_externo` deja de convertir el bruto -- o si atrapa el
+    fallo de `float()` con un default silencioso en vez de detenerse.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        _externos(luz_m=bruto)
+    assert exc.value.campo == "luz_m"
+    assert motivo in exc.value.motivo
+    assert "SI, metros o m3/s" in exc.value.motivo
+    assert "linea de comandos" in exc.value.motivo
+
+
+@pytest.mark.parametrize("bruto", [float("inf"), float("-inf"), float("nan")])
+def test_un_dato_externo_no_finito_no_entra_al_pipeline(bruto):
+    """
+    Falla si desaparece la comprobacion de finitud: un inf o un nan pasan
+    `float()` sin protestar y despues salen del pipeline como diagnostico
+    falso, que es lo que el criterio de salida de S16 cierra. Es el gemelo,
+    por la via de los datos externos, de lo que
+    `test_declarar_no_deja_entrar_un_infinito_por_la_notacion_cientifica`
+    cierra por la via de --declarar.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        _externos(longitud_m=bruto)
+    assert exc.value.campo == "longitud_m"
+    assert "no es finito" in exc.value.motivo
+
+
+@pytest.mark.parametrize("crudo", [
+    [{"globales": {"luz_m": 2.0}}],      # una lista de objetos
+    2.0,                                 # un numero suelto
+    "globales",                          # el nombre de la seccion, no la seccion
+])
+def test_el_json_de_datos_externos_tiene_que_ser_un_objeto(tmp_path, crudo):
+    """
+    Falla si `cargar_datos_externos` deja de comprobar la forma del JSON: un
+    archivo que no es un objeto se recorreria con `.get` y reventaria con un
+    AttributeError -- un fallo del programa -- en vez de con el error del
+    expediente que la GUI sabe mostrar.
+    """
+    ruta = tmp_path / "datos.json"
+    ruta.write_text(json.dumps(crudo), encoding="utf-8")
+    with pytest.raises(DatoInvalidoError) as exc:
+        cli.cargar_datos_externos(ruta, {})
+    assert exc.value.campo == "datos_externos"
+    assert "tiene que ser un objeto JSON" in exc.value.motivo
+    assert "datos.json" in exc.value.motivo
+    assert exc.value.valor == type(crudo).__name__
+
+
+def test_un_punto_que_no_lleva_su_objeto_de_datos_se_rechaza_con_su_id(tmp_path):
+    """
+    Falla si se acepta `{"puntos": {"A-01": 2.0}}` -- la forma en que alguien
+    escribe el dato de un punto olvidando la clave. Sin la guarda, el bucle
+    siguiente iteraria sobre el float y el punto se quedaria sin ningun dato
+    declarado en silencio. El id tiene que viajar en la excepcion: es lo unico
+    que dice CUAL de los puntos esta mal escrito.
+    """
+    ruta = tmp_path / "datos.json"
+    ruta.write_text(json.dumps({"puntos": {"A-01": 2.0}}), encoding="utf-8")
+    with pytest.raises(DatoInvalidoError) as exc:
+        cli.cargar_datos_externos(ruta, {})
+    assert exc.value.campo == "datos_externos"
+    assert exc.value.valor == "A-01"
+    assert "cada punto lleva un objeto" in exc.value.motivo
+
+
+# --- La otra guarda de --declarar, que tampoco alcanzaba nadie -------------
+
+def test_declarar_sin_valor_no_declara_la_cadena_vacia():
+    """
+    `ast.literal_eval("")` lanza SyntaxError, el texto cae al respaldo de
+    cadena y `--declarar clave=` declararia la CADENA VACIA: un valor que
+    nadie quiso declarar entrando por la puerta de una errata, y ademas por
+    el camino que CLAUDE.md senala como el peor error del proyecto -- un
+    vacio relleno en silencio.
+
+    Falla si se pierde la comprobacion del texto vacio. Es la hermana de
+    `test_declarar_no_deja_entrar_un_infinito_por_la_notacion_cientifica`:
+    las dos cierran la misma puerta, una por el valor imposible y la otra
+    por el valor ausente.
+    """
+    try:
+        with pytest.raises(ValueError, match="no trae valor"):
+            cli.declarar_criterios(["origen_cota_fondo_entrada="])
+        assert ca.valores_dinamicos()["origen_cota_fondo_entrada"] != ""
+    finally:
+        ca.establecer_valor_dinamico("origen_cota_fondo_entrada", "cota_terreno")
+
+
+def test_una_declaracion_mal_escrita_devuelve_dos_y_no_corre_el_pipeline(
+        tmp_path, capsys):
+    """
+    El error de una declaracion no puede salir como traza de Python: `main`
+    lo atrapa, lo escribe en stderr y devuelve 2, igual que hace con el CSV
+    que no existe. Falla si el except desaparece -- la CLI reventaria con la
+    excepcion cruda -- o si el codigo de salida pasa a ser 0, que un guion
+    que encadene corridas leeria como exito.
+    """
+    salida_json = tmp_path / "i.json"
+    assert cli.main([str(CSV), "--declarar", "origen_cota_fondo_entrada=",
+                     "--json", str(salida_json)]) == 2
+    err = capsys.readouterr().err
+    assert "No se pudo declarar el criterio" in err
+    assert "no trae valor" in err
+    assert not salida_json.exists(), "no debe correr el pipeline"

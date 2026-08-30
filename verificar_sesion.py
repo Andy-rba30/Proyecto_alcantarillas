@@ -23,6 +23,13 @@ from pathlib import Path
 FALLOS = []
 AVISOS = []
 
+# Numero de fichas de la matriz cruzada de las tres auditorias. No es un valor
+# de proyecto -- no entra en ningun calculo --: es el tamaño del tracker, y si
+# cambia es que alguien añadio o retiro una ficha, que es justo lo que este
+# script comprueba.
+HALLAZGOS_EN_LA_MATRIZ = 234   # literal-ok: tamaño del tracker de auditorias
+ANCHO_CONSOLA = 66             # literal-ok: ancho de la caja del resumen
+
 # Evidencia historica: no deben reflejar el estado actual.
 DOCS_CONGELADOS = {
     "docs/auditorias/auditoria_matematica.md",
@@ -128,10 +135,10 @@ if openpyxl:
     i = {h: n for n, h in enumerate(cab)}
     filas = [r for r in ws.iter_rows(min_row=2, values_only=True) if r[0]]
 
-    if len(filas) != 234:
-        fallo(f"{len(filas)} filas, se esperaban 234")
+    if len(filas) != HALLAZGOS_EN_LA_MATRIZ:
+        fallo(f"{len(filas)} filas, se esperaban {HALLAZGOS_EN_LA_MATRIZ}")
     else:
-        ok("234 filas")
+        ok(f"{HALLAZGOS_EN_LA_MATRIZ} filas")
 
     estados = Counter(r[i["Estado"]] for r in filas)
     print(f"          {dict(estados)}")
@@ -179,12 +186,12 @@ if openpyxl:
            f"{len(parciales) - len(huerfanos_fase)} esperan una fase futura")
 
 # ----------------------------------------------------------------- resumen
-print("\n" + "=" * 66)
+print("\n" + "=" * ANCHO_CONSOLA)
 if FALLOS:
     print(f"FALLA: {len(FALLOS)} problema(s). La sesion no esta cerrada.")
 elif AVISOS:
     print(f"PASA con {len(AVISOS)} aviso(s) para revisar a mano.")
 else:
     print("PASA: sesion cerrada limpiamente.")
-print("=" * 66)
+print("=" * ANCHO_CONSOLA)
 sys.exit(1 if FALLOS else 0)

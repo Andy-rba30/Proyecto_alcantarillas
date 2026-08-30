@@ -579,6 +579,22 @@ def factor_esviaje(punto: PuntoCritico) -> float:
     hipotenusa del ancho que atraviesa. Vale 1 en el cruce perpendicular.
     A 90 grados el conducto seria paralelo a la via y no habria cruce que
     resolver -- `dominios.ESVIAJE_MAX`, que M0 ya exige a la entrada.
+
+    LA ASINTOTA NO ESTA ACOTADA, Y SE DECLARA (MAT-O18). El dominio es
+    abierto en 90 grados, no cerrado, de modo que un esviaje que M0 acepta
+    puede estar arbitrariamente cerca del limite: con 89.999999999 grados el
+    factor vale 5.73e10 y `longitud_conducto` devuelve del orden de 1e11 m.
+    La ficha MAT-O18 lo clasifica como "no alcanzable desde el CSV validado",
+    y eso es INEXACTO: M0 valida `0 <= esviaje < 90` y ese valor pasa.
+
+    No se pone cota de cordura porque no hay ninguna que citar: ni la Sec.
+    7.B ni EG-2013 fijan un esviaje maximo constructivo, y elegir uno --
+    45, 60 grados -- seria inventar un valor normativo, que es lo que
+    CLAUDE.md prohibe expresamente. Lo que corresponde es que el numero se
+    VEA: una longitud de 1e11 m es absurda a simple vista en la memoria, y
+    G2 la contrasta contra la cota del receptor. Si el proyecto quiere una
+    cota, el camino es declararla como criterio [A] con su sensibilidad, no
+    escribirla aqui.
     """
     if not (-ESVIAJE_MAX < punto.esviaje_grados < ESVIAJE_MAX):
         raise DatoInvalidoError(

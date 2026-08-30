@@ -27,6 +27,7 @@ from datos_sitio import (DATOS_SITIO, DatoSitio, dato, datos_sin_valor,
                          datos_usados, reporte_datos_sitio, valor)
 from modelos import CriterioPendienteError, ErrorProyecto
 from tests.fixtures.casos_patron import CP7_CADENA_SISMICA
+from tests.apoyo import estructura
 
 
 @pytest.fixture(autouse=True)
@@ -174,8 +175,15 @@ def test_los_dos_valores_de_E030_siguen_siendo_solo_referencia():
     raiz = Path(__file__).resolve().parents[1]
     for clave in ("ZONA_SISMICA_LA_UNION", "Z_E030"):
         assert clave in DATOS_SITIO
+        # SIS-C-02. La version anterior preguntaba `clave in <texto fuente>`,
+        # y eso falla en las dos direcciones: un comentario que solo MENCIONE
+        # la clave tumba el test en falso, y una invocacion con la clave
+        # partida (`ds.valor("Z" + "_E030")`) lo deja verde. Se pregunta al
+        # arbol: que nombres LEE el modulo y que claves de texto pasa como
+        # argumento o como indice.
         invocan = [ruta.name for ruta in (raiz / "src" / "modulos").glob("*.py")
-                   if clave in ruta.read_text(encoding="utf-8-sig")]
+                   if clave in estructura.nombres_usados(ruta)
+                   or clave in estructura.textos_de_llamada_o_indice(ruta)]
         assert not invocan, f"'{clave}' dejo de ser referencia: lo usa {invocan}"
 
     assert valor("Z_E030") != pytest.approx(CP7_CADENA_SISMICA["PGA"])
@@ -344,3 +352,113 @@ def test_el_unico_dato_derivado_es_el_factor_de_zona_de_E030():
     assert set(derivados) == {"Z_E030"}
     assert derivados["Z_E030"].de == ("ZONA_SISMICA_LA_UNION",)
     assert derivados["Z_E030"].de[0] in DATOS_SITIO
+
+
+@pytest.mark.parametrize("no_finito", [float("inf"), float("-inf"), float("nan")])
+def test_ningun_dato_de_sitio_admite_un_numero_no_finito(no_finito):
+    """
+    La hermana que faltaba de `criterios_adoptados._verificar_finitud`. La
+    asimetria entre las dos guardias es lo que la delato: este archivo declara
+    que `_verificar_dato` es "hermana de `_verificar_criterio`, y con el mismo
+    caracter", y una comprobaba la finitud y la otra no.
+
+    Aqui el argumento es mas fuerte que en los criterios: un dato de sitio es
+    una LECTURA -- un mapa, un ensayo, una medicion --, y ninguna lectura
+    devuelve un infinito. Un [S] no finito no es un valor extremo: es una
+    transcripcion rota.
+    """
+    from dataclasses import replace
+
+    base = ds.DATOS_SITIO["PGA_roca_B"]
+    with pytest.raises(ValueError, match="infinito ni un NaN"):
+        ds._verificar_dato(replace(base, valor=no_finito))
+
+
+def test_la_guardia_de_finitud_del_sitio_mira_dentro_de_las_estructuras():
+    """Un inf escondido en una tupla entra al calculo igual que uno suelto."""
+    from dataclasses import replace
+
+    base = ds.DATOS_SITIO["PGA_roca_B"]
+    with pytest.raises(ValueError, match="infinito ni un NaN"):
+        ds._verificar_dato(replace(base, valor=(0.5, float("inf"))))
+
+
+def test_la_guardia_de_finitud_del_sitio_no_molesta_a_los_datos_reales():
+    """Los datos declarados hoy la atraviesan: la guardia no cambia nada."""
+    for nombre, dato in ds.DATOS_SITIO.items():
+        ds._verificar_dato(dato)
+
+
+# ---------------------------------------------------------------------------
+# Las dos ramas de `_verificar_dato` que ninguna prueba alcanzaba (SIS-F-10)
+# ---------------------------------------------------------------------------
+# La guardia de este archivo tiene seis ramas y la suite alcanzaba cuatro. Las
+# dos que faltaban son las que miran DENTRO de la resolucion: un `de_ensayo`
+# que no dice que trazabilidad hay que exigirle a la lectura y una `derivada`
+# que no dice de que se deriva. Las dos dejan un dato de sitio que parece
+# declarado y no se puede reproducir, que es exactamente lo que la etiqueta
+# [S] existe para impedir -- y borrarlas no rompia ninguna prueba.
+#
+# Van con la misma forma de tabla que las de arriba: la resolucion incompleta
+# y el trozo del motivo que dice POR QUE, no solo que fallo.
+
+@pytest.mark.parametrize("resolucion, motivo", [
+    (ds.DeEnsayo(ensayo="e", trazabilidad_exigida=""),
+     "no dice que trazabilidad"),
+    (ds.Derivada(de=(), regla="r"),
+     "no dice de que se deriva"),
+])
+def test_la_guardia_mira_dentro_de_la_resolucion_y_no_solo_su_tipo(
+        resolucion, motivo):
+    """
+    Falla si la guardia se conforma con que la resolucion sea de la familia
+    admitida. El modo correcto con los campos vacios es peor que no declarar
+    modo: la ventana abre la pestana de ensayo sin decir que exigirle a la
+    lectura, o pinta un derivado sin decir de que, y la memoria escribe una
+    trazabilidad que nadie puede seguir.
+
+    `_dato_valido` ya trae `trazabilidad` de la ENTRADA rellena, de modo que
+    lo que estas dos filas aislan es la trazabilidad de la RESOLUCION, que es
+    otra cosa: una dice como se leyo el valor, la otra que hay que exigirle a
+    quien repita la lectura.
+    """
+    with pytest.raises(ValueError, match=motivo):
+        _dato_valido(resolucion=resolucion)
+
+
+def test_una_resolucion_completa_de_las_dos_familias_no_levanta():
+    """
+    La contraparte que hace de las dos filas de arriba una prueba y no una
+    tautologia: con los campos llenos, los mismos dos modos se construyen sin
+    una queja. Falla si alguien "arregla" la guardia rechazando el modo
+    entero en vez de su campo vacio.
+    """
+    _dato_valido(resolucion=ds.DeEnsayo(ensayo="e", trazabilidad_exigida="te"))
+    _dato_valido(resolucion=ds.Derivada(de=("ZONA_SISMICA_LA_UNION",),
+                                        regla="r"))
+
+
+# --- y las dos ramas de la guardia de finitud que quedaron sin recorrer ----
+
+@pytest.mark.parametrize("valor_roto", [
+    10 ** 400,                          # el entero suelto
+    {"lectura": 10 ** 400},             # el mismo, dentro de un dict
+])
+def test_la_guardia_de_finitud_del_sitio_atrapa_el_entero_sin_tope(valor_roto):
+    """
+    Un `int` de Python no tiene tope y `float(x)` sobre uno de 401 cifras
+    lanza OverflowError, que NO es `math.isfinite` devolviendo False: sin el
+    `except`, la guardia de finitud moriria con una excepcion que no es de la
+    taxonomia -- ni ValueError de arquitectura ni ErrorProyecto -- y el
+    archivo dejaria de importarse con una traza en vez de con su mensaje.
+
+    La segunda fila recorre ademas la rama de DICCIONARIO de `_numeros_de`:
+    la finitud no puede depender de la FORMA del valor, y un [S] cuyo valor
+    sea un mapa (una lectura por estrato, por ejemplo) tiene que mirarse
+    dentro igual que una tupla.
+    """
+    from dataclasses import replace
+
+    base = ds.DATOS_SITIO["PGA_roca_B"]
+    with pytest.raises(ValueError, match="infinito ni un NaN"):
+        ds._verificar_dato(replace(base, valor=valor_roto))

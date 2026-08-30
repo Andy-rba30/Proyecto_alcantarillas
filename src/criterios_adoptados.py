@@ -58,6 +58,7 @@ que ademas siguen sujetos a un ensayo pendiente y por eso comparten tablero
 con los criterios adoptados.
 """
 
+import math
 import numbers
 import re
 from dataclasses import dataclass, replace
@@ -222,6 +223,25 @@ def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
     el valor es None, de modo que un override a None devolvia None en vez de
     lanzar `CriterioPendienteError`, que es justo lo que este archivo existe
     para impedir.
+
+    POR QUE EL RECHAZO SALE COMO `ValueError` Y NO COMO `DatoInvalidoError`
+    (SIS-E-05). La pregunta es legitima: CLAUDE.md define DatoInvalidoError
+    como "el dato esta pero no puede ser", y un valor fuera del rango de
+    sensibilidad encaja en esa frase. La respuesta es que lo que se rechaza
+    aqui NO es un dato del expediente: es una DECLARACION que el proyectista
+    acaba de teclear, y el rango contra el que se compara lo declara el
+    propio criterio, en este archivo. `_verificar_criterio` es la misma
+    guardia que corre AL IMPORTAR, donde un fallo significa que el archivo
+    fuente esta mal escrito y ninguna corrida deberia empezar -- ahi
+    `ValueError` es exactamente lo que corresponde --, y hacerla lanzar dos
+    excepciones distintas segun por cual de sus tres caminos entre convertiria
+    la guardia en dos guardias.
+    Lo que la taxonomia persigue -- que la GUI distinga un problema del
+    expediente de un fallo del programa -- se cumple igual y esta comprobado:
+    los tres llamadores (`cli.main`, `gui/app.py::_aplicar_valor_corrida` y
+    `::_guardar_valor_en_archivo`) capturan `(ValueError, KeyError)` a tres
+    lineas y muestran el mensaje; ninguno deja escapar una traza. El contrato
+    esta fijado por test en tests/test_criterios_adoptados.py.
     """
     if clave not in CRITERIOS:
         raise KeyError(
@@ -383,6 +403,40 @@ def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
     # ya no hace falta, el valor "real" es ahora este.
     CRITERIOS[clave] = replace(CRITERIOS[clave], valor=valor_nuevo)
     _OVERRIDES.pop(clave, None)
+
+
+def declaracion_de(clave: str):
+    """
+    El objeto DECLARADO de `clave`, venga de este archivo o de datos_sitio.py.
+
+    SIS-A-05. `cli._bloqueo` y `M11.criterios_bloqueantes` resolvian toda
+    clave con `criterio()`, y `CriterioPendienteError` no la levanta solo este
+    archivo: `datos_sitio.valor` levanta LA MISMA excepcion cuando un [S] de
+    corredor todavia no se ha leido -- deliberadamente, porque el error que se
+    evita es el mismo. Con un [S] pendiente, los dos consumidores salian por
+    `KeyError`: un fallo de PROGRAMA en el codigo que existe justamente para
+    convertir un problema del expediente en una fila del informe.
+
+    Hoy es inalcanzable porque los datos de sitio de corredor tienen valor,
+    pero eso es una propiedad del expediente de este mes, no del codigo: el
+    dia que se añada un [S] pendiente -- y el proyecto tiene el mecanismo para
+    ello -- la corrida moriria con traza en vez de listar el bloqueo.
+
+    Los dos tipos declaran los mismos campos que el informe necesita
+    (`etiqueta`, `concepto`, `fuente`, `reemplazado_por`), de modo que el
+    consumidor no tiene que saber de cual de los dos archivos vino.
+    """
+    if clave in CRITERIOS:
+        return criterio(clave)
+    import datos_sitio as ds
+
+    if clave in ds.DATOS_SITIO:
+        return ds.dato(clave)
+    raise KeyError(
+        f"'{clave}' no esta declarado ni en criterios_adoptados.py ni en "
+        "datos_sitio.py. Ningun valor no normativo puede usarse sin "
+        "declararse en uno de los dos."
+    )
 
 
 def criterios_usados() -> List[str]:
@@ -4472,6 +4526,69 @@ def _verificar_sensibilidad(clave: str, c: Criterio) -> None:
             )
 
 
+def _numeros_de(valor: Any):
+    """
+    Todos los numeros reales que hay DENTRO de un valor de criterio, sea un
+    escalar, una tupla (la doble n de Sec. 4.1.1), una lista o un dict (el
+    predimensionamiento del cabezal, la exposicion quimica del EMS).
+
+    Existe para que la guardia de finitud no dependa de la FORMA del valor:
+    un `inf` escondido dentro de un dict entra al calculo igual que uno
+    escrito como escalar.
+    """
+    if isinstance(valor, dict):
+        for v in valor.values():
+            yield from _numeros_de(v)
+    elif isinstance(valor, (tuple, list, set, frozenset)):
+        for v in valor:
+            yield from _numeros_de(v)
+    elif _es_real(valor):
+        yield valor
+
+
+def _verificar_finitud(clave: str, c: Criterio) -> None:
+    """
+    Ningun numero de un criterio puede ser infinito ni NaN, tenga o no rango
+    de sensibilidad declarado.
+
+    Por que hace falta aparte del rango (MAT-D14, criterio de salida de S16:
+    "ningun dato no finito entra al pipeline como diagnostico falso"): el
+    rango solo defiende a los criterios que declaran uno. Un criterio [A] con
+    `sensibilidad=None` -- 'talud_terraplen' es el caso vivo -- aceptaba
+    `inf` y `nan` por los tres caminos de declaracion. Y el camino existe de
+    verdad: `cli.py::declarar_criterios` resuelve el texto de `--declarar`
+    con `ast.literal_eval`, y `ast.literal_eval("1e999")` devuelve `inf` sin
+    error. Con `talud_terraplen = inf`, `M7.proyeccion_taludes` devuelve
+    `inf`, `longitud_conducto` devuelve `inf` y `cota_salida` devuelve
+    `-inf`: la memoria imprime un diagnostico entero construido sobre un
+    numero que no lo es.
+
+    `nan` es peor que `inf` y por eso no basta con acotar por rango: `nan`
+    es FALSO frente a `<=` y frente a `>=` a la vez, de modo que atraviesa
+    tanto una comprobacion escrita como "esta dentro del rango" como una
+    escrita como "no esta fuera".
+    """
+    for x in _numeros_de(c.valor):
+        try:
+            finito = math.isfinite(float(x))
+        except OverflowError:
+            # Un `int` de Python no tiene tope, y uno de 401 cifras no cabe en
+            # un double: `float(x)` lanza OverflowError, que no es ValueError
+            # ni KeyError y que ni `cli.main` ni la GUI atrapan. Entra por la
+            # misma puerta que el infinito y sale por el mismo mensaje, no por
+            # una traza: para el calculo son el mismo problema.
+            finito = False
+        if not finito:
+            raise ValueError(
+                f"'{clave}' recibe el valor {c.valor!r}, que contiene "
+                f"{x!r}: un criterio no puede declararse con un numero "
+                "infinito, con NaN ni con un entero que no quepa en doble "
+                "precision. No es un valor grande, es un valor que no existe, "
+                "y el calculo lo propagaria hasta la memoria sin detenerse en "
+                "ningun sitio"
+            )
+
+
 def _verificar_criterio(clave: str, c: Criterio) -> None:
     """
     Valida UNA entrada. No lee CRITERIOS: recibe el objeto ya armado.
@@ -4494,6 +4611,7 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
     reproducir, y un [S] con sensibilidad seria un hecho al que se le ofrece
     un rango de valores alternativos, que es justo lo que un hecho no tiene.
     """
+    _verificar_finitud(clave, c)
     if c.etiqueta not in ETIQUETAS_VALIDAS:
         raise ValueError(
             f"'{clave}' lleva la etiqueta {c.etiqueta!r}, que no es de la "

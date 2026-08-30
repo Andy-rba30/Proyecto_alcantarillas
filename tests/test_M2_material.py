@@ -22,7 +22,11 @@ import pytest
 import criterios_adoptados as ca
 from modelos import DatoInvalidoError, Familia, Material, TipoMaterial
 from modulos.M0_carga import cargar_puntos
-from modulos.M2_material import catalogo, materiales_candidatos, siguiente_diametro
+from modulos.M2_material import (CRITERIO_ESPESOR_PARED, catalogo,
+                                 espesor_pared, materiales_candidatos,
+                                 siguiente_diametro)
+from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 CSV_VALIDO = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
 
@@ -128,8 +132,10 @@ def test_la_velocidad_maxima_declarada_llega_al_catalogo():
     """
     tmc = catalogo(TipoMaterial.TMC)
     hdpe = catalogo(TipoMaterial.HDPE)
-    assert tmc.v_max_adoptado == ca.valor("v_max_tmc")
-    assert hdpe.v_max_adoptado == ca.valor("v_max_hdpe")
+    assert tmc.v_max_adoptado == pytest.approx(ca.valor("v_max_tmc"),
+                                               rel=REL_TRANSPORTE)
+    assert hdpe.v_max_adoptado == pytest.approx(ca.valor("v_max_hdpe"),
+                                                rel=REL_TRANSPORTE)
     assert tmc.v_max_tabla10 is None and hdpe.v_max_tabla10 is None
     assert tmc.v_max_definida
     assert hdpe.v_max_definida
@@ -189,7 +195,8 @@ def test_el_n_de_manning_del_hdpe_declarado_en_caliente_llega_al_catalogo(
     ca.establecer_valor_dinamico("n_manning_hdpe", (0.011, 0.012))
     try:
         hdpe = catalogo(TipoMaterial.HDPE)
-        assert (hdpe.n_min, hdpe.n_max) == (0.011, 0.012)
+        assert (hdpe.n_min, hdpe.n_max) == pytest.approx((0.011, 0.012),
+                                                    rel=REL_TRANSPORTE)
     finally:
         ca.quitar_valor_dinamico("n_manning_hdpe")
 
@@ -237,7 +244,8 @@ def test_la_declaracion_en_caliente_pisa_al_valor_del_archivo():
         assert catalogo(TipoMaterial.TMC).v_max_adoptado == pytest.approx(3.9)
     finally:
         ca.quitar_valor_dinamico("v_max_tmc")
-    assert catalogo(TipoMaterial.TMC).v_max_adoptado == ca.valor("v_max_tmc")
+    assert catalogo(TipoMaterial.TMC).v_max_adoptado == pytest.approx(
+        ca.valor("v_max_tmc"), rel=REL_TRANSPORTE)
 
 
 def test_solo_el_hdpe_tiene_minimo_de_relleno_en_eg2013():
@@ -274,3 +282,99 @@ def test_familia_c_no_tiene_candidatos(punto_c):
     """Sec. 2.3: la Familia C es marco o multicelda, no un conducto circular."""
     assert punto_c.familia is Familia.C
     assert materiales_candidatos(punto_c) == ()
+
+
+# ===========================================================================
+# C09 / SIS-F-10 - las dos guardas de 'espesor_pared_conducto'
+# ===========================================================================
+#
+# El criterio es un dict {material: espesor en metros} y lo leen DOS sitios,
+# con dos guardas distintas y motivos distintos:
+#
+#   `catalogo()`       rechaza la declaracion MAL FORMADA -- un escalar donde
+#                      se espera el dict --, y la rechaza al construir el
+#                      material, antes de que nadie use el numero.
+#   `espesor_pared()`  rechaza el espesor que no es un numero, ya con el
+#                      material armado, en el punto donde el numero hace
+#                      falta de verdad.
+#
+# Ninguna de las dos tenia corrida que la ejecutara. Las dos son
+# DatoInvalidoError y no CriterioPendienteError a proposito: el criterio SI
+# esta declarado -- hay que corregirlo, no declararlo (CLAUDE.md).
+
+
+@pytest.mark.parametrize("declaracion", [
+    0.10,               # el float que la GUI sabe ofrecer
+    "0.10",             # el texto crudo de la casilla
+    [0.10, 0.013, 0.05],  # los tres espesores sin la clave de cada material
+])
+def test_un_espesor_declarado_sin_separar_por_material_es_dato_invalido(
+        declaracion):
+    """
+    Falla si `catalogo()` deja de comprobar la FORMA de la declaracion: sin
+    esta guarda un escalar declarado desde la GUI reventaba mas adentro con
+    un `TypeError` -- un fallo de programa para la GUI -- en vez de salir
+    como problema del expediente con el nombre del criterio.
+    """
+    ca.establecer_valor_dinamico(CRITERIO_ESPESOR_PARED, declaracion)
+    try:
+        with pytest.raises(DatoInvalidoError) as exc:
+            catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_ESPESOR_PARED)
+
+    assert exc.value.campo == CRITERIO_ESPESOR_PARED
+    assert "un espesor por material" in exc.value.motivo
+    # El motivo tiene que enseñar la forma esperada, con las tres claves:
+    # es lo unico que le dice al revisor como se corrige.
+    for tipo in TipoMaterial:
+        assert tipo.value in exc.value.motivo
+
+
+@pytest.mark.parametrize("espesor_declarado", [
+    "0.10",             # el numero, pero como texto
+    (0.10,),            # empaquetado, como si fuera un rango
+    "diez centimetros",
+])
+def test_un_espesor_de_pared_que_no_es_un_numero_se_detiene_al_usarlo(
+        espesor_declarado):
+    """
+    La declaracion tiene la forma correcta (dict por material) y el valor de
+    dentro no es un numero. Falla si `espesor_pared()` deja pasar el valor:
+    el espesor entra en la cota de clave (M5) y en la cobertura de AASHTO
+    (M7), y un texto ahi revienta con TypeError a dos modulos de distancia
+    del dato que lo causo.
+    """
+    ca.establecer_valor_dinamico(
+        CRITERIO_ESPESOR_PARED,
+        {"concreto_reforzado": espesor_declarado, "tmc": 0.013, "hdpe": 0.050})
+    try:
+        material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+        with pytest.raises(DatoInvalidoError) as exc:
+            espesor_pared(material)
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_ESPESOR_PARED)
+
+    assert exc.value.campo == CRITERIO_ESPESOR_PARED
+    assert "no es un numero" in exc.value.motivo
+    # Y dice PARA QUE MATERIAL, que es lo que el revisor tiene que corregir:
+    # los otros dos de la misma declaracion estaban bien.
+    assert TipoMaterial.CONCRETO_REFORZADO.value in exc.value.motivo
+
+
+def test_los_otros_materiales_de_la_misma_declaracion_siguen_valiendo():
+    """
+    La guarda es por material, no por declaracion entera: falla si alguien la
+    sube a `catalogo()` y un espesor mal escrito en concreto deja sin
+    catalogo al TMC y al HDPE, que estan bien.
+    """
+    ca.establecer_valor_dinamico(
+        CRITERIO_ESPESOR_PARED,
+        {"concreto_reforzado": "0.10", "tmc": 0.013, "hdpe": 0.050})
+    try:
+        assert espesor_pared(catalogo(TipoMaterial.TMC)) == pytest.approx(
+            0.013, rel=REL_TRANSPORTE)
+        assert espesor_pared(catalogo(TipoMaterial.HDPE)) == pytest.approx(
+            0.050, rel=REL_TRANSPORTE)
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_ESPESOR_PARED)

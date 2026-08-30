@@ -215,7 +215,40 @@ def tr_desde_riesgo(R: float, n: int) -> float:
     if n <= 0:
         raise DatoInvalidoError(
             "n", valor=n, motivo="la vida util son anios y es positiva")
-    return 1 / (1 - (1 - R) ** (1 / n))
+    # BORDE R -> 0 (MAT-D13). Con un riesgo suficientemente pequeño,
+    # (1-R)^(1/n) redondea a 1.0 en doble precision y el denominador se anula.
+    # El limite esta en R ~ n * eps/4 -- medido: 1.3877787807814459e-15 para
+    # n = 25 --, y es el CUARTO y no la mitad porque los floats inmediatamente
+    # por debajo de 1.0 estan espaciados eps/2, de modo que 1 - R/n redondea a
+    # 1.0 en cuanto R/n cae por debajo de eps/4. Sin esta guarda el resultado
+    # era un ZeroDivisionError: un fallo de PROGRAMA, fuera de la taxonomia
+    # ErrorProyecto que CLAUDE.md exige para todo problema del expediente.
+    #
+    # Se comprueba el DENOMINADOR y no se compara la potencia con 1.0: no hay
+    # umbral que declarar (seria un literal de precision disfrazado de valor
+    # normativo) y no se comparan floats con igualdad. Cuando el denominador
+    # es cero el TR no es "muy grande": no existe, porque la formula se
+    # degenero antes de calcularlo.
+    #
+    # La condicion se escribe EN POSITIVO y negada -- `not denominador > 0` y
+    # no `denominador <= 0` -- porque un NaN es falso frente a `<=` igual que
+    # frente a `>`: con n = nan las tres guardas de esta funcion se
+    # atravesaban y el TR salia nan, que es el mismo agujero que la guarda
+    # existe para cerrar.
+    denominador = 1 - (1 - R) ** (1 / n)
+    if not denominador > 0:
+        raise DatoInvalidoError(
+            "R", valor=R,
+            motivo=f"el riesgo admisible es tan pequeño que (1-R)^(1/{n}) no "
+                   "se distingue de 1 en doble precision: el periodo de "
+                   "retorno que resultaria no es un numero grande, es una "
+                   "division por cero. R no sale de ninguna celda del CSV: o "
+                   "es el maximo recomendado de la Tabla N 02, o lo declaro "
+                   f"el Propietario en el criterio "
+                   f"'{CRITERIO_RIESGO_PROPIETARIO}'. Revisa ahi si vino en "
+                   "porcentaje o si perdio digitos",
+        )
+    return 1 / denominador
 
 
 def _riesgo_del_propietario(cat: CategoriaTR, R: float, n: int):

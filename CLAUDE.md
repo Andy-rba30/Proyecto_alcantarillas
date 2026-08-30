@@ -52,9 +52,17 @@ varía punto a punto, es columna del CSV (NF_profundidad_m, cbr_subrasante). Un
 quedar en criterios_adoptados.py con el campo `trazabilidad`.
 
 Tabla y elección se separan siempre: los valores de una tabla normativa son
-[N] y viven en constantes_normativas.py (F_PGA_TABLA, FACTOR_MURO_TABLA); cuál
-fila aplica a esta obra es [A] y vive en criterios_adoptados.py ('F_pga',
-'factor_muro_eleccion').
+[N] y viven en constantes_normativas.py (F_PGA_TABLA,
+REDUCCION_KH_POR_DESPLAZAMIENTO); cuál fila aplica a esta obra es [A] y vive
+en criterios_adoptados.py ('F_pga', 'factor_muro_eleccion'). El segundo
+ejemplo decía FACTOR_MURO_TABLA hasta S16, y ese símbolo ya no existe: lo
+retiró NOR-PUE-07 porque el numeral no presenta tabla alguna, y en su lugar
+quedó el único valor normativo, REDUCCION_KH_POR_DESPLAZAMIENTO = 0.5. Se
+corrige aquí porque un símbolo colgado en la constitución no es inocuo: un
+test de la suite estaba VERDE SOBRE EL COMENTARIO que explica la retirada
+—`"FACTOR_MURO_TABLA = {" in fuente` lo satisfacía— y así estuvo hasta que
+S16 lo pasó al AST. El ejemplo sigue valiendo con el par que sí existe:
+el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
 
 ## Arquitectura
 - Ningún módulo declara valores no normativos. Todo literal numérico fuera de
@@ -107,8 +115,19 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   "falta declarar: <clave>", no como error del programa.
 - DisenoNoFactibleError: ninguna combinación material/diámetro cumple.
   Debe llevar el motivo y, si aplica, el delta de rasante requerido.
-- DatoFaltanteError: falta un dato de entrada del CSV. Falta la **columna**
-  entera, o la celda obligatoria viene vacía. Lleva el nombre de la columna.
+- DatoFaltanteError: falta un dato de entrada. Falta la **columna** entera
+  del CSV, o la celda obligatoria viene vacía. Lleva el nombre de la columna.
+  **También cubre el dato que no es columna del CSV**: el que llega por
+  `--datos-externos`, y el que un tablero externo tendría que aportar y
+  todavía no aporta (`ancho_derecho_via_m` en V5 es el caso vivo). En esos
+  casos el campo `campo` nombra el DATO, no una columna, y el mensaje dice de
+  dónde tendría que venir. Se amplió aquí en S16 (SIS-E-06): `modelos.py`
+  llevaba tiempo declarando el contrato ancho — "del CSV (Sec. 1.2) o de un
+  tablero externo" — y el código lo usaba así, de modo que la constitución
+  describía una excepción más estrecha que la que el proyecto tiene. La
+  alternativa —estrechar el código— habría obligado a inventar una excepción
+  nueva para el mismo problema del revisor: falta un dato que hay que
+  conseguir.
 - DatoInvalidoError: el dato **está** pero no puede ser: no es del tipo
   esperado, cae fuera del rango físico de dominios.py, o contradice a otro
   dato de su misma fila (§1.5). Hermana de DatoFaltanteError y no la misma:

@@ -2007,6 +2007,39 @@ def _gamma_permanente(carga: str, fila_combinacion: dict,
 # Cinco verificaciones, codigos E1..E5, cada una en las dos condiciones.
 # ===========================================================================
 
+# ---------------------------------------------------------------------------
+# POR QUE ESTE MODULO VALIDA ARGUMENTOS INTERNOS CON `DatoInvalidoError`
+# ---------------------------------------------------------------------------
+# SIS-E-02. Cuatro funciones de aqui -- `fs_requerido` (verificacion),
+# `recubrimiento_e060_mm` y `recubrimiento_aashto_mm` (condicion) y
+# `verificar_cuantia` (direccion) -- validan cadenas que NO vienen del
+# expediente: las escribe el propio codigo o las itera desde la misma tabla
+# que se valida (cli.py recorre RECUBRIMIENTO y CUANTIA_MIN_MURO para
+# construir la memoria). Un `DatoInvalidoError` ahi disfraza un fallo de
+# PROGRAMA de problema del expediente, que es lo contrario de lo que la
+# taxonomia de CLAUDE.md persigue, y la eleccion estaba fijada por tests pero
+# no escrita en ninguna parte.
+#
+# SE MANTIENE, y esta es la razon: las cuatro cadenas son CLAVES DE UNA TABLA
+# NORMATIVA -- las filas de Sec. 9.3, del Art. 7.7.1 de E.060, de la Tabla
+# 5.10.1-1 de AASHTO y del Art. 14.3.1 --, y el mensaje que la excepcion
+# construye ENUMERA las filas admisibles. Ese mensaje es util al revisor y no
+# solo al programador: la forma en que una fila desaparece no es que alguien
+# escriba mal un literal, es que la tabla cambie de transcripcion y un
+# consumidor quede apuntando a una fila que ya no esta. Cuando eso pasa, el
+# problema SI es del expediente -- la transcripcion -- y la fila del informe
+# que produce `cli._bloqueo` dice exactamente cual falta.
+#
+# LA FRONTERA, para que no se estire: se usa `DatoInvalidoError` cuando el
+# argumento es una CLAVE DE TABLA NORMATIVA y el mensaje enumera las
+# admisibles. Para un argumento que no lo sea -- un flag, un modo interno --
+# el error correcto es el que el programa merece, no el del expediente. El
+# quinto sitio que la ficha SIS-E-02 listaba, `_recubrimiento_aashto_detallado`,
+# no pertenece a esta lista por la razon contraria: su tabla sale de
+# `ca.valor(CRITERIO_RECUBRIMIENTO_AASHTO)`, es decir del expediente, y ahi
+# `DatoInvalidoError` es sencillamente la excepcion correcta.
+
+
 def fs_requerido(*, verificacion: str, condicion: CondicionAnalisis) -> float:
     """
     FS de la tabla de Sec. 9.3 para una verificacion y una condicion. [N]

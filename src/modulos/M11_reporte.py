@@ -464,6 +464,17 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
     v8. Si la hoja cambia de forma y los tableros no se pueden leer, esto se
     detiene con ValueError: una memoria con el bloque de pendientes vacio diria
     que no queda nada pendiente, que es la mentira mas cara del expediente.
+
+    EL FALLO RUIDOSO CUBRE TAMBIEN LA DEGRADACION PARCIAL (SIS-C-13). La
+    version anterior solo se detenia cuando NINGUN tablero se podia leer. Un
+    cambio de formato que rompiera la tabla de UNO de los tres --- el caso
+    realista, porque el formato se toca tablero a tablero --- dejaba pasar los
+    otros dos en silencio: la memoria imprimia 10 filas donde hay 15 y
+    declaraba cerrado lo que no lo esta. Se comprueba, por lo tanto, que cada
+    encabezado `Tablero N` encontrado en la hoja produjo su tablero Y que
+    ninguno quedo sin filas. Un tablero vacio no es "un tablero sin
+    pendientes": es un tablero que no se pudo leer, y la diferencia entre las
+    dos lecturas es justo la que el expediente no puede permitirse.
     """
     hoja = ruta_hoja_de_ruta() if ruta is None else ruta
     tableros: List[Tablero] = []
@@ -479,9 +490,11 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
                                     encabezados=encabezados,
                                     filas=tuple(filas)))
 
+    encabezados_hallados: List[str] = []
     for linea in hoja.read_text(encoding="utf-8").splitlines():
         cabecera = _RE_TITULO_TABLERO.match(linea)
         if cabecera:
+            encabezados_hallados.append(cabecera.group(1))
             cerrar()
             numero, titulo = cabecera.group(1), cabecera.group(2)
             glosa, encabezados, filas, dentro = "", (), [], True
@@ -514,6 +527,23 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
             f"No se pudo leer ningun 'Tablero N' en {hoja.name}. El bloque de "
             "pendientes de la memoria sale de ahi y no se inventa: revisa si "
             "la hoja de ruta cambio el formato de esos encabezados."
+        )
+
+    leidos = [t.numero for t in tableros]
+    perdidos = [n for n in encabezados_hallados if n not in leidos]
+    if perdidos:
+        raise ValueError(
+            f"En {hoja.name} hay encabezados de tablero que no produjeron "
+            f"ninguna tabla: {perdidos}. Se leyeron {leidos}. El bloque de "
+            "pendientes saldria incompleto y la memoria diria que queda menos "
+            "pendiente de lo que queda: revisa el formato de esas tablas."
+        )
+    vacios = [t.numero for t in tableros if not t.filas]
+    if vacios:
+        raise ValueError(
+            f"Los tableros {vacios} de {hoja.name} se leyeron sin ninguna "
+            "fila. Un tablero vacio no es un tablero sin pendientes: es un "
+            "tablero que no se pudo leer."
         )
     return tuple(tableros)
 
@@ -587,7 +617,9 @@ def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
 
     salida = []
     for clave in sorted(acumulado):
-        declarado = ca.criterio(clave)
+        # Ver `ca.declaracion_de`: un [S] de corredor pendiente levanta la
+        # misma CriterioPendienteError y no esta en CRITERIOS (SIS-A-05).
+        declarado = ca.declaracion_de(clave)
         salida.append(CriterioBloqueante(
             clave=clave, etiqueta=declarado.etiqueta,
             concepto=declarado.concepto, fuente=declarado.fuente,
