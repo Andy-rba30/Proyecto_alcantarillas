@@ -222,3 +222,125 @@ def test_el_reporte_advierte_de_la_trazabilidad_incompleta():
     texto = reporte_datos_sitio(solo_usados=True)
     assert "ADVERTENCIA" in texto
     assert "PGA_roca_B" in texto
+
+
+# ===========================================================================
+# La guardia al importar (SIS-D-09)
+# ===========================================================================
+# El hallazgo: `criterios_adoptados._verificar_criterio` rechazaba al importar
+# un [S] sin trazabilidad, y aqui el mismo objeto se construia sin una queja.
+# La regla estaba escrita con las mismas palabras en los dos archivos y se
+# hacia cumplir en uno solo, sin que ninguna nota declarara la asimetria.
+#
+# La guardia va en `__post_init__` y no solo en un barrido al importar porque
+# este archivo NO tiene API de escritura: el unico camino para meter un dato
+# invalido es construir un `DatoSitio`, que es exactamente lo que el hallazgo
+# hace.
+
+def _dato_valido(**campos):
+    base = dict(valor=1.0, concepto="c", procedimiento="p", fuente="f",
+                trazabilidad="t",
+                resolucion=ds.DeEnsayo(ensayo="e", trazabilidad_exigida="te"))
+    base.update(campos)
+    return DatoSitio(**base)
+
+
+def test_la_guardia_rechaza_el_caso_exacto_del_hallazgo():
+    """`DatoSitio(trazabilidad='', etiqueta='A')` -- SIS-D-09, literal."""
+    with pytest.raises(ValueError, match="etiqueta"):
+        _dato_valido(trazabilidad="", etiqueta="A")
+
+
+def test_la_guardia_rechaza_un_dato_de_sitio_sin_trazabilidad():
+    """Es la misma regla que `criterios_adoptados` ya hacia cumplir."""
+    with pytest.raises(ValueError, match="trazabilidad"):
+        _dato_valido(trazabilidad="")
+    with pytest.raises(ValueError, match="trazabilidad"):
+        _dato_valido(trazabilidad="   ")
+
+
+@pytest.mark.parametrize("campo",
+                         ["concepto", "procedimiento", "fuente", "ambito"])
+def test_la_guardia_exige_los_campos_con_que_un_S_se_reproduce(campo):
+    with pytest.raises(ValueError, match=campo):
+        _dato_valido(**{campo: ""})
+
+
+def test_la_guardia_rechaza_un_dato_sin_modo_de_resolucion():
+    """Sec. 4.3: ninguna variable de entrada se queda sin modo."""
+    with pytest.raises(ValueError, match="resolucion"):
+        _dato_valido(resolucion=None)
+
+
+def test_un_dato_de_sitio_no_se_elige_ni_se_compra():
+    """
+    `libre` seria un dato de sitio que alguien DECIDE -- y entonces es un
+    criterio [A] -- y `de_catalogo` un hecho del terreno comprado a un
+    proveedor. Los dos modos estan cerrados para esta poblacion.
+    """
+    with pytest.raises(ValueError, match="libre"):
+        _dato_valido(resolucion=ds.Libre(que_lo_fija="alguien"))
+    with pytest.raises(ValueError, match="de_catalogo"):
+        _dato_valido(resolucion=ds.DeCatalogo(catalogo_id="X", que_elige="y",
+                                              advertencia="z"))
+
+
+def test_el_barrido_al_importar_da_el_mensaje_con_la_clave(monkeypatch):
+    """
+    `__post_init__` no puede conocer la clave del diccionario -- a esa altura
+    la entrada todavia no tiene nombre --, y el barrido si. Por eso los dos
+    existen y no sobra ninguno.
+    """
+    malo = DatoSitio.__new__(DatoSitio)      # sin pasar por __post_init__
+    object.__setattr__(malo, "valor", 1.0)
+    for campo, v in (("concepto", "c"), ("procedimiento", "p"),
+                     ("fuente", "f"), ("trazabilidad", ""),
+                     ("ambito", ds.AMBITO_CORREDOR), ("etiqueta", "S"),
+                     ("reemplazado_por", None), ("verificacion_pendiente", None),
+                     ("resolucion", None)):
+        object.__setattr__(malo, campo, v)
+    monkeypatch.setitem(DATOS_SITIO, "dato_de_prueba", malo)
+    with pytest.raises(ValueError, match="dato_de_prueba"):
+        ds._coherencia_de_datos_sitio()
+
+
+def test_la_guardia_es_simetrica_con_la_de_criterios():
+    """
+    Lo que cerraba SIS-D-09: los dos archivos declaran la misma regla y ahora
+    los dos la hacen cumplir al importar. La simetria se comprueba sobre el
+    MISMO objeto conceptual -- un [S] sin trazabilidad -- por los dos caminos.
+
+    Los caminos no son identicos y no tienen por que serlo: `criterios_adoptados`
+    valida en `_verificar_criterio`, al que llegan sus tres vias de escritura, y
+    `datos_sitio` valida en el constructor, que es su unica via. Lo que se exige
+    aqui es que el resultado sea el mismo, no que el mecanismo lo sea.
+    """
+    sin_trazabilidad = ca.Criterio(
+        valor=1.0, etiqueta="S", concepto="c", justificacion="j", fuente="f",
+        trazabilidad="",
+        resolucion=ca.DeEnsayo(ensayo="e", trazabilidad_exigida="te"))
+    with pytest.raises(ValueError, match="trazabilidad"):
+        ca._verificar_criterio("criterio_de_prueba", sin_trazabilidad)
+    with pytest.raises(ValueError, match="trazabilidad"):
+        _dato_valido(trazabilidad="")
+
+
+def test_cada_dato_declara_como_se_resuelve():
+    """Sec. 4.3, criterio de salida: ninguna variable de entrada sin modo."""
+    for clave, d in DATOS_SITIO.items():
+        assert d.resolucion is not None, clave
+        ds.modo_de(d.resolucion)          # levanta si no es de la familia
+
+
+def test_el_unico_dato_derivado_es_el_factor_de_zona_de_E030():
+    """
+    `Z_E030` no se lee de ningun mapa: se DERIVA de la zona sismica entrando
+    en la tabla del Art. 11.1. Sin el modo, la ventana ofreceria editarlo como
+    si fuera una lectura independiente, y un Z cambiado sin cambiar la zona
+    contradice la tabla.
+    """
+    derivados = {k: d.resolucion for k, d in DATOS_SITIO.items()
+                 if isinstance(d.resolucion, ds.Derivada)}
+    assert set(derivados) == {"Z_E030"}
+    assert derivados["Z_E030"].de == ("ZONA_SISMICA_LA_UNION",)
+    assert derivados["Z_E030"].de[0] in DATOS_SITIO

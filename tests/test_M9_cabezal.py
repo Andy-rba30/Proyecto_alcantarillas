@@ -22,6 +22,7 @@ import math
 from pathlib import Path
 
 import pytest
+from dataclasses import replace
 
 import criterios_adoptados as ca
 import datos_sitio as ds
@@ -353,11 +354,7 @@ def _declarar_dato_de_sitio(monkeypatch, clave, valor):
     original = ds.dato(clave)
     monkeypatch.setitem(
         ds.DATOS_SITIO, clave,
-        ds.DatoSitio(valor=valor, concepto=original.concepto,
-                     procedimiento=original.procedimiento,
-                     fuente=original.fuente,
-                     trazabilidad=original.trazabilidad,
-                     ambito=original.ambito))
+        replace(original, valor=valor))
 
 
 def _declarar_orientacion(monkeypatch, orientacion):

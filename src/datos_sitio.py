@@ -80,7 +80,8 @@ se ha leido tampoco se sustituye por un default.
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set
 
-from modelos import CriterioPendienteError
+from modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
+                     Libre, ModoDeResolucion, Resolucion, modo_de)
 
 
 ETIQUETA_SITIO = "S"
@@ -128,6 +129,107 @@ class DatoSitio:
     etiqueta: str = ETIQUETA_SITIO
     reemplazado_por: Optional[str] = None      # ensayo/dato que lo sustituye
     verificacion_pendiente: Optional[str] = None   # lo que falta confirmar
+    resolucion: Optional[Resolucion] = None    # COMO se resuelve (Sec. 4.3)
+
+    # `resolucion` dice COMO SE LLEGA al valor, y para un dato de sitio la
+    # respuesta casi siempre es la misma -- se determino con un procedimiento
+    # -- pero no siempre: `Z_E030` no se lee de ningun mapa, se DERIVA de la
+    # zona sismica entrando en la tabla del Art. 11.1. Sin el campo, la
+    # ventana pintaria las dos cosas iguales y ofreceria editar un valor que
+    # no se elige. El modo es el TIPO del objeto (`modelos.modo_de`), no un
+    # texto: declarar la resolucion y declarar el modo son el mismo acto.
+
+    def __post_init__(self) -> None:
+        """
+        LA GUARDIA QUE FALTABA (SIS-D-09).
+
+        `criterios_adoptados._verificar_criterio` rechaza al importar un [S]
+        sin trazabilidad; aqui `DatoSitio(trazabilidad="", etiqueta="A")` se
+        construia sin una queja, de modo que la MISMA regla -- escrita con
+        las mismas palabras en el encabezado de este archivo y en CLAUDE.md
+        -- se hacia cumplir en un archivo y no en el otro. La asimetria no
+        estaba declarada en ninguna parte: no era una decision, era un olvido.
+
+        Va en `__post_init__` y no solo en un barrido al importar, y ahi esta
+        la diferencia con el homologo: `criterios_adoptados` puede permitirse
+        el barrido porque sus otros dos caminos de escritura
+        (`establecer_valor_dinamico`, `escribir_valor_en_archivo`) pasan por
+        la guardia a mano. Este archivo no tiene API de escritura, asi que el
+        unico camino es CONSTRUIR un `DatoSitio` -- que es exactamente lo que
+        el hallazgo hace --, y validar en el constructor lo cierra entero:
+        el diccionario del archivo, un test, la GUI o cualquier cosa futura.
+        """
+        _verificar_dato(self)
+
+
+# ---------------------------------------------------------------------------
+# La guardia
+# ---------------------------------------------------------------------------
+# Vive AQUI ARRIBA, y no al final como su homologa de `criterios_adoptados`,
+# porque `DatoSitio.__post_init__` la llama al construir cada entrada del
+# diccionario: si se declarara despues, la primera entrada no la encontraria.
+
+# Un dato de sitio se DETERMINA, no se elige y no se compra. `Libre` seria un
+# dato de sitio que alguien decide -- y entonces es un criterio [A], no un [S]
+# -- y `DeCatalogo` seria un hecho del terreno comprado a un proveedor.
+_MODOS_DE_UN_DATO_DE_SITIO = (ModoDeResolucion.DE_ENSAYO,
+                              ModoDeResolucion.DERIVADA,
+                              ModoDeResolucion.DE_TABLA,
+                              ModoDeResolucion.EN_RANGO)
+
+_OBLIGATORIOS = ("concepto", "procedimiento", "fuente", "trazabilidad",
+                 "ambito")
+
+
+def _verificar_dato(d: "DatoSitio") -> None:
+    """
+    Valida UN dato de sitio. Hermana de
+    `criterios_adoptados._verificar_criterio`, y con el mismo caracter: es
+    una guardia de ARQUITECTURA, no una validacion de dato de entrada. Si
+    falla, el archivo esta mal escrito y ninguna corrida deberia empezar.
+    """
+    nombre = d.concepto.split(".")[0][:60] or "<dato sin concepto>"
+
+    if d.etiqueta != ETIQUETA_SITIO:
+        raise ValueError(
+            f"'{nombre}' esta en datos_sitio.py con la etiqueta "
+            f"{d.etiqueta!r}. Este archivo es el de los [S] y solo el: un "
+            "valor que el proyectista ELIGE es un criterio y va en "
+            "criterios_adoptados.py, con su sensibilidad"
+        )
+    for campo in _OBLIGATORIOS:
+        if not str(getattr(d, campo) or "").strip():
+            raise ValueError(
+                f"'{nombre}' no declara `{campo}`. Un dato de sitio se "
+                "defiende diciendo como reproducir la lectura: sin "
+                "procedimiento, fuente, trazabilidad y ambito no hay nada "
+                "que reproducir"
+            )
+    if d.resolucion is None:
+        raise ValueError(
+            f"'{nombre}' no declara `resolucion`. Toda variable de entrada "
+            "dice COMO se resuelve (Sec. 4.3): sin eso la GUI no sabe que "
+            "ventana abrir"
+        )
+    # `modo_de` levanta TypeError si la resolucion no es de la familia.
+    modo = modo_de(d.resolucion)
+    if modo not in _MODOS_DE_UN_DATO_DE_SITIO:
+        raise ValueError(
+            f"'{nombre}' se resuelve `{modo.value}`, que no es una manera de "
+            "llegar a un dato de sitio. Un [S] se determina (`de_ensayo`), "
+            "se deriva de otro dato ya determinado (`derivada`) o se lee de "
+            "una tabla; no se elige libremente ni sale de un catalogo"
+        )
+    if isinstance(d.resolucion, DeEnsayo) and \
+            not d.resolucion.trazabilidad_exigida:
+        raise ValueError(
+            f"'{nombre}' se resuelve `de_ensayo` y no dice que trazabilidad "
+            "hay que exigirle a la lectura"
+        )
+    if isinstance(d.resolucion, Derivada) and not d.resolucion.de:
+        raise ValueError(
+            f"'{nombre}' se resuelve `derivada` y no dice de que se deriva"
+        )
 
 
 _USADOS: Set[str] = set()
@@ -167,6 +269,15 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                                "~5 km del corredor: si cambiara, este dato "
                                "deja de ser unico para el tramo y pasa a ser "
                                "columna del CSV, como NF_profundidad_m",
+        resolucion=DeEnsayo(
+            ensayo="lectura del mapa de isoaceleraciones espectrales del "
+                   "Apendice A3 del Manual de Puentes sobre la ubicacion del "
+                   "proyecto (periodo estructural 0.0 s, suelo tipo B)",
+            trazabilidad_exigida="la COORDENADA y la CURVA de isoaceleracion "
+                                 "sobre las que se leyo. Hoy la lectura llega "
+                                 "hasta el nombre del distrito y no hasta el "
+                                 "punto del mapa: pendiente 1.4, abierto",
+        ),
     ),
 
     # --------------------- E.030 - solo referencia -----------------------
@@ -219,6 +330,14 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                                "vigente para el distrito antes de citar este "
                                "valor en la memoria. No gobierna ningun "
                                "calculo (Sec. 0.4), por lo que no bloquea",
+        resolucion=DeEnsayo(
+            ensayo="consulta del Anexo II de E.030 -- zonificacion sismica "
+                   "por distritos -- sobre el distrito del proyecto",
+            trazabilidad_exigida="el distrito consultado y la edicion del "
+                                 "Anexo II. El reparto es POR DISTRITO: la "
+                                 "lectura no es reproducible mas fino, y "
+                                 "declarar una coordenada fingiria precision",
+        ),
     ),
 
     "Z_E030": DatoSitio(
@@ -280,6 +399,15 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                                "contrasto contra la norma vigente. No "
                                "gobierna ningun calculo (Sec. 0.4), por lo "
                                "que no bloquea",
+        resolucion=Derivada(
+            de=("ZONA_SISMICA_LA_UNION",),
+            regla="entrada en la Tabla N 1 de factores de zona del Art. 11.1 "
+                  "de E.030 con la zona leida. NO SE EDITA: cambiar el Z sin "
+                  "cambiar la zona seria contradecir la tabla. Y el periodo "
+                  "de retorno de referencia tampoco se lee: se DERIVA de la "
+                  "probabilidad que el Art. 11.1 escribe, "
+                  "Tr = -50/ln(0.90) = 474.6 ~ 475 años (NOR-E030-01)",
+        ),
     ),
 
     "corredor_del_proyecto": DatoSitio(
@@ -302,6 +430,15 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         reemplazado_por="Progresiva inicial y final del tramo, del expediente "
                         "vial, cuando el proyecto declare su cabecera de "
                         "obra en vez de una longitud aproximada",
+        resolucion=DeEnsayo(
+            ensayo="definicion del tramo en la Fase 0-bis de la hoja de ruta "
+                   "(num. 150): el terraplen sobre el que se distribuyen los "
+                   "puntos criticos del CSV",
+            trazabilidad_exigida="la progresiva inicial y final del tramo, "
+                                 "del expediente vial. Hoy hay una longitud "
+                                 "aproximada y no una cabecera de obra, y esa "
+                                 "es la lectura que falta cerrar",
+        ),
     ),
 
     # ----------------------------------------------------------------------
@@ -361,6 +498,16 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             "Declarar la orientacion sobre el plano de planta del expediente. "
             "Mientras siga en None, `M9.h_eq_sobrecarga_trasdos` se detiene y "
             "el empuje de sobrecarga viva del cabezal no se calcula"),
+        resolucion=DeEnsayo(
+            ensayo="lectura del plano de planta: angulo entre el eje del "
+                   "conducto y el eje de la via",
+            trazabilidad_exigida="la lamina y la progresiva de la lectura. Y "
+                                 "el aviso de que la orientacion NO es un eje "
+                                 "libre: elegir 'perpendicular' obliga a leer "
+                                 "la tabla de ESTRIBOS, lo que es una "
+                                 "analogia declarada [N->] y no una lectura "
+                                 "directa (C3.11.6.4)",
+        ),
     ),
 
     "distancia_borde_calzada_al_trasdos_m": DatoSitio(
@@ -390,6 +537,15 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             "Solo hace falta si la orientacion resulta 'paralelo_al_trafico'. "
             "Con 'perpendicular_al_trafico' la Tabla 3.11.6.4-1 no tiene "
             "columna de distancia y este dato no se invoca"),
+        resolucion=DeEnsayo(
+            ensayo="medicion sobre la seccion transversal del expediente "
+                   "vial, del paramento interior del cabezal al borde de la "
+                   "calzada",
+            trazabilidad_exigida="la lamina y la progresiva de la seccion "
+                                 "medida. El umbral de la fuente es 1.0 ft = "
+                                 "0.3048 m EXACTOS, no 0.30 m: la medicion se "
+                                 "compara contra ese numero",
+        ),
     ),
 
     "carriles_por_sentido": DatoSitio(
@@ -426,6 +582,14 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             "Declararlo al cerrar la clase de via. El Cuadro tabula 2, 3 y 4 "
             "carriles por sentido y NO dice que hacer con 5 o mas: esa es una "
             "laguna de la fuente, declarada en el registro"),
+        resolucion=DeEnsayo(
+            ensayo="lectura del diseño geometrico de la via (seccion "
+                   "transversal tipo)",
+            trazabilidad_exigida="la lamina de la seccion tipo y la clase de "
+                                 "via del estudio de demanda (IMDA) de la que "
+                                 "esa seccion sale: mientras la clase de via "
+                                 "no este cerrada, este dato tampoco",
+        ),
     ),
 }
 
@@ -526,6 +690,27 @@ def reporte_datos_sitio(solo_usados: bool = True) -> str:
         out.append("-" * 78)
 
     return "\n".join(out)
+
+
+def _coherencia_de_datos_sitio() -> None:
+    """
+    Somete TODO el archivo a la guardia al importar, igual que
+    `criterios_adoptados._coherencia_de_etiquetas()`.
+
+    Es redundante con `__post_init__` -- que ya valido cada entrada al
+    construirla -- y se conserva por dos razones: deja la simetria a la vista
+    de quien compare los dos archivos, y da el mensaje CON LA CLAVE del
+    diccionario, que `__post_init__` no puede conocer porque a esa altura la
+    entrada todavia no tiene nombre.
+    """
+    for clave, d in DATOS_SITIO.items():
+        try:
+            _verificar_dato(d)
+        except ValueError as e:
+            raise ValueError(f"datos_sitio['{clave}']: {e}") from None
+
+
+_coherencia_de_datos_sitio()
 
 
 if __name__ == "__main__":

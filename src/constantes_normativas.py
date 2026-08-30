@@ -509,8 +509,17 @@ LONG_MAX_CUNETA_LAGUNA = (
 #
 # Todo valor de este bloque sale de la 3a ed. Leer la copia de 1985 "en SI"
 # reproduce exactamente el error del 29 (ver K_FRICCION_SI).
-KU_METRICO = 1.811                  # q* = KU*Q/(A*D**0.5)
-NUMERAL_KU_METRICO = _reg.cita("HDS5_3ED.A.2").como_texto()
+# EL NOMBRE LLEVA EL SUFIJO _SI, como manda la regla de CLAUDE.md para toda
+# constante empirica dependiente de unidades (MAT-O19). Se llamaba
+# `KU_METRICO`, y ese nombre no dice cual es el otro valor: en el sistema
+# INGLES Ku vale 1.0, y la fuente los imprime juntos en una linea -- "Ku Unit
+# conversion 1.0 (1.811 SI)". Usar el 1.0 en metrico es el error silencioso
+# SIMETRICO al del 29 de K_FRICCION_SI: no falla ruidosamente, devuelve un q*
+# 1.811 veces mas chico, que cae en la rama no sumergida cuando le tocaba la
+# sumergida y sale un HW plausible y equivocado. Por eso el imperial se
+# nombra aqui y NO se usa en ninguna parte.
+KU_SI = 1.811                       # q* = KU*Q/(A*D**0.5). Imperial: 1.0
+NUMERAL_KU_SI = _reg.cita("HDS5_3ED.A.2").como_texto()
 NUMERAL_KS_PENDIENTE = _reg.cita("HDS5_3ED.A.2.1#KS").como_texto()
 NUMERAL_TABLA_A1 = _reg.cita("HDS5_3ED.TA.1").como_texto()
 # El 1.811 no esta en la Tabla A.1 (pag. A.8) sino en la lista de variables de
@@ -524,7 +533,7 @@ NUMERAL_TABLA_A1 = _reg.cita("HDS5_3ED.TA.1").como_texto()
 # La Tabla A.1 de la pag. A.8 contiene SOLO las constantes K, M, c e Y por
 # carta. Y son los limites del sistema INGLES a proposito: HDS-5 los escribe
 # sobre Q/(A*D^0.5) y da entre parentesis su equivalente SI, mas chico; como
-# `caudal_adimensional` multiplica por KU_METRICO = 1.811, el q* que compara
+# `caudal_adimensional` multiplica por KU_SI = 1.811, el q* que compara
 # M4 esta ya en la escala inglesa y los umbrales que le corresponden son 3.5 y
 # 4.0. Cambiarlos por los del parentesis seria aplicar dos veces la conversion.
 Q_LIM_NO_SUMERGIDO = 3.5
@@ -887,11 +896,17 @@ D_INICIO = 0.90                     # m; el piso del num. 4.1.1.3.4 a), que
 # transporta a la obra. Superado el tope: "material descartado por diametro
 # requerido" -- y ese descarte es ADOPTADO, no normativo.
 #
-# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: su Anexo B (linea 806 de
-# docs/hoja_de_ruta_alcantarillas_v8.md) declara estos mismos topes bajo el
-# rotulo "topes por norma de producto - VERIFICAR" y con las mismas
-# atribuciones. Gana la fuente primaria -- las tablas de A760 y M 170M,
-# leidas de los PDF -- y la hoja de ruta SIGUE MAL mientras no se corrija.
+# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: su Anexo B declara estos mismos
+# topes bajo el rotulo "topes por norma de producto - VERIFICAR" -- es el
+# comentario de la asignacion `D_MAX = {` -- y con las mismas atribuciones.
+# Gana la fuente primaria -- las tablas de A760 y M 170M, leidas de los PDF --
+# y la hoja de ruta SIGUE MAL mientras no se corrija.
+#
+# LA REFERENCIA SE DA POR SIMBOLO Y TEXTO, NO POR LINEA (NOR-COH-03). Este
+# comentario decia "linea 806 de docs/hoja_de_ruta_alcantarillas_v8.md" y esa
+# linea es hoy la de la longitud maxima de cuneta: el documento se movio y la
+# cita quedo apuntando a otra cosa. Es la regla 4 de CLAUDE.md -- anclar por
+# nombre de simbolo, nunca por numero de linea -- aplicada a una cita interna.
 
 # ================= Manual de Suelos (RD 10-2014-MTC/14) ====================
 # ---------------------------------------------------------------------------
@@ -1122,16 +1137,23 @@ H_RELLENO_MIN = {
 # aqui se corrige, y quien la lea sin leer el codigo diseñara con el valor
 # equivocado:
 #
-#   linea 523 (tabla de Sec. 7.A): "Concreto y TMC | No fijado. Remite al
+#   TABLA DE SEC. 7.A, fila "Concreto y TMC": "No fijado. Remite al
 #     Proyecto, AASHTO M-170M (clases I-V) o ASTM A-807 | [C] norma de
 #     producto". Las dos remisiones son falsas: M 170M no da alturas de
 #     relleno y A-807 no es la norma que se le atribuye (ver NOR-PRO-04). Y
 #     "no fijado" ya no es cierto: lo fija AASHTO LRFD Art. 12.6.6.3, que el
 #     propio Sec. 0.2 adopta.
-#   linea 546 (tabla de Fase 8): "TMC | ASTM A-807 / AASHTO M36 -- calibre
-#     segun altura". El calibre por altura de cobertura es de ASTM A796/A796M.
-#   linea 832 (Anexo B): repite la remision a A-807 en el comentario de
-#     H_RELLENO_MIN["tmc"].
+#   TABLA DE FASE 8, fila "TMC": "ASTM A-807 / AASHTO M36 -- calibre segun
+#     altura". El calibre por altura de cobertura es de ASTM A796/A796M.
+#   ANEXO B, comentario de `H_RELLENO_MIN["tmc"]`: repite la remision a
+#     A-807.
+#
+# LAS TRES SE CITAN POR TABLA Y FILA, NO POR LINEA (NOR-COH-03). Este bloque
+# decia "linea 523", "linea 546" y "linea 832", y las tres estaban corridas:
+# hoy son la 565, la 590 y la 909, y las dos primeras de aquel juego caian en
+# separadores "---". Una cita interna que no se puede comprobar es
+# indistinguible de una inventada, igual que una externa; la regla 4 de
+# CLAUDE.md -- anclar por simbolo, nunca por linea -- vale tambien aqui.
 #
 # Aqui gana la fuente primaria por verificacion externa contra los PDF de
 # normas/, como en K_FRICCION_SI. La hoja de ruta SIGUE MAL mientras no se
@@ -2372,7 +2394,16 @@ H_EQ_REPARTO_DE_TABLAS = (
 # un sitio donde estar dicho y para que un test tenga contra que fallar si
 # alguien lo reactiva.
 NUMERAL_SOBRECARGA_TRASDOS_RETIRADO = _reg.cita("MP.2.1.4.3.9").como_texto()
-NUMERAL_ZAPATA_EN_TALUD = "2.8.1.3.1.2c, pags. 272-273"
+# El rango de paginas DEJABA FUERA LA SEGUNDA FIGURA (NOR-PUE-13). Decia
+# "pags. 272-273", y verificado contra el PDF: el texto del numeral esta en la
+# pag. impresa 272 (PDF 273), la Figura 2.8.1.3.1.2c-1 -- suelos COHESIVOS --
+# en la 273 (PDF 274) y la Figura 2.8.1.3.1.2c-2 -- suelos NO COHESIVOS -- en
+# la 274 (PDF 275). Un revisor que abriera el rango declarado encontraria una
+# de las dos figuras y no la otra, y son las dos las que hay que leer: cual
+# aplica lo decide el tipo de suelo de fundacion.
+NUMERAL_ZAPATA_EN_TALUD = ("2.8.1.3.1.2c, pags. impresas 272-274 (PDF "
+                           "273-275): texto en la 272, Figura -1 (cohesivos) "
+                           "en la 273, Figura -2 (no cohesivos) en la 274")
 # NUMERAL_K_H0 se declaraba aqui por segunda vez, como "2.8.1.1.14.2" a secas,
 # y esta segunda asignacion pisaba a la primera. Vive ahora una sola vez, en
 # el bloque de la cadena sismica, con el subnumeral que de verdad escribe la
@@ -2860,8 +2891,17 @@ E030_S5_LECTURA = (
 # su Clase de Sitio F, y tratan la licuefaccion por otra via (AASHTO LRFD 9a
 # ed., Art. 10.5.4.2 'Liquefaction Design Requirements'). El salto
 # "licuable -> Clase F" no esta escrito en ninguno de los dos documentos que
-# el criterio 'clase_sitio' invoca (NOR-AAS-02). Resolverlo no es materia de
-# este archivo: es la premisa que el expediente tiene abierta.
+# el criterio 'clase_sitio' invoca (NOR-AAS-02).
+#
+# LA PREMISA YA NO ESTA ABIERTA -- este comentario decia que si, y desde S13
+# es falso. Se resolvio contra las fuentes primarias, y no por el silencio
+# sino por algo mas fuerte: las dos PROHIBEN suponer la clase E o F sin dato
+# geotecnico ni determinacion de la autoridad. El expediente dejo de
+# atribuirse la Clase F y 'clase_sitio' es hoy un [S] SIN VALOR. Fundamento
+# en docs/resolucion_clase_sitio.md; discrepancia DIS-HR-CLASE-DE-SITIO-F.
+# Esta constante sigue siendo util y no cambia: describe la discrepancia
+# entre los DOS ESQUEMAS, que es un hecho de las normas y no una premisa del
+# expediente.
 E030_S5_VS_CLASE_F = (
     "E.030 clasifica los suelos potencialmente licuables en su perfil S5 "
     "'Suelos excepcionales' (Art. 14.6, Tabla N 2). AASHTO LRFD 9a ed. y el "
@@ -2871,6 +2911,223 @@ E030_S5_VS_CLASE_F = (
     "la clasificacion de este sitio, y el salto de uno al otro no lo escribe "
     "ninguno de los dos: es premisa abierta del expediente, no cita")
 
+
+# ---------------------------------------------------------------------------
+# La clase de sitio, y por que este expediente no se atribuye ninguna
+# ---------------------------------------------------------------------------
+# Lo que la memoria tiene que imprimir sobre la clase de sitio, segun la
+# seccion 4 de docs/resolucion_clase_sitio.md (S13, conflicto #8). Vive aqui
+# y no en M9 por la razon de siempre: los textos entrecomillados son
+# transcripciones normativas y salen del REGISTRO, no de una segunda copia a
+# mano. M9.condicion_normativa_cabezal los lleva a las dos plantillas.
+#
+# Cierra NOR-AAS-02 (la premisa), SIS-B-01 (la memoria nunca lo declaraba),
+# SIS-D-01 (F_pga y clase_sitio se defendian con premisas contradictorias) y
+# NOR-MEM-03 (la convergencia C/D/E omitia la fila que el expediente
+# reclamaba).
+NUMERAL_CLASE_SITIO_AASHTO = _reg.cita("AASHTO_LRFD_9.3.10.3.1").como_texto()
+NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA = _reg.cita(
+    "AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES").como_texto()
+NUMERAL_CLASE_SITIO_INVESTIGACION = _reg.cita(
+    "AASHTO_LRFD_9.3.10.3.1#INVESTIGACION").como_texto()
+NUMERAL_CLASE_SITIO_MP = _reg.cita("MP.2.4.3.11.2.1.1").como_texto()
+NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA_MP = _reg.cita(
+    "MP.2.4.3.11.2.1.1#EXCEPCIONES").como_texto()
+NUMERAL_CLASE_SITIO_F_AASHTO = _reg.cita(
+    "AASHTO_LRFD_9.T3.10.3.1-1#F").como_texto()
+NUMERAL_RESPUESTA_DE_SITIO_AASHTO = _reg.cita(
+    "AASHTO_LRFD_9.3.10.2#CLASE_F").como_texto()
+NUMERAL_RESPUESTA_DE_SITIO_MP = _reg.cita("MP.2.4.3.11.2#CLASE_F").como_texto()
+NUMERAL_LICUEFACCION_AASHTO = _reg.cita("AASHTO_LRFD_9.10.5.4.2").como_texto()
+NUMERAL_LICUEFACCION_ESPECTRO = _reg.cita(
+    "AASHTO_LRFD_9.10.5.4.2#ESPECTRO").como_texto()
+
+# Los textos literales, del registro y no copiados: conservan sus tildes
+# (invariante T21) aunque el resto de este bloque se escriba sin ellas.
+CLASE_SITIO_EF_NO_SUPUESTA_TEXTO = _reg.cita(
+    "AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES").texto_literal.texto
+CLASE_SITIO_EF_NO_SUPUESTA_MP_TEXTO = _reg.cita(
+    "MP.2.4.3.11.2.1.1#EXCEPCIONES").texto_literal.texto
+CLASE_SITIO_INVESTIGACION_TEXTO = _reg.cita(
+    "AASHTO_LRFD_9.3.10.3.1#INVESTIGACION").texto_literal.texto
+CLASE_SITIO_F_TEXTO = _reg.cita(
+    "AASHTO_LRFD_9.T3.10.3.1-1#F").texto_literal.texto
+
+CLASE_DE_SITIO_INDETERMINADA = (
+    "Clase de sitio sismica: INDETERMINADA. Este expediente NO se atribuye la "
+    "Clase de Sitio F, y no puede: el articulado que la define prohibe "
+    "suponerla. Este expediente no tiene determinacion de la Entidad ni datos "
+    "geotecnicos: el SPT esta pendiente. La misma clausula fija el deber "
+    "positivo que queda abierto -- investigar hasta poder determinar la "
+    "clase --, y por eso la clase de sitio es un dato de sitio [S] SIN VALOR "
+    "y no una adopcion del proyectista")
+
+CLASE_DE_SITIO_POR_QUE_DEJA_DE_DECIRSE = (
+    "Por que el expediente decia Clase F, y por que deja de decirlo: el salto "
+    "de 'suelo potencialmente licuable' a 'Clase de Sitio F' NO lo escribe "
+    "ninguno de los dos documentos que la cadena sismica invoca. La fila F de "
+    "la Tabla 3.10.3.1-1 enumera turbas o arcillas altamente organicas, "
+    "arcillas de muy alta plasticidad y estratos potentes de arcilla blanda, "
+    "y ninguna es licuefaccion; en las 1905 paginas de AASHTO no hay una sola "
+    "donde coincidan 'liquefaction' y 'Site Class F'. La licuefaccion la "
+    "trata el Art. 10.5.4.2 'Liquefaction Design Requirements', por via de "
+    "cimentaciones y disparada por zona sismica, napa freatica y "
+    "caracteristicas de suelo, nunca por la clase de sitio. Quien SI "
+    "clasifica los suelos licuables en su categoria excepcional es E.030, en "
+    "el perfil S5, que es de donde el expediente sacaba la letra: son dos "
+    "esquemas distintos y discrepan justo en el rasgo que motivaba la "
+    "clasificacion de este sitio")
+
+CLASE_DE_SITIO_COHERENCIA_INTERNA = (
+    "Y no es solo que la norma calle: el Art. 10.5.4.2 manda analizar el "
+    "sitio licuable en configuracion no licuada y licuada con el mismo "
+    "espectro de diseno, y acota el espectro especifico de sitio a no menos "
+    "de dos tercios del general 'modified by the site factors in Article "
+    "3.10.3.2'. AASHTO ESPERA que a un sitio licuable le aplique un factor de "
+    "sitio tabulado, cosa imposible si la licuefaccion lo hiciera Clase F, "
+    "porque la fila F no tiene factor. El reparto coherente es el que este "
+    "expediente ya hace: clasificar por rigidez medida y evaluar la "
+    "licuefaccion aparte, con el SPT de 15 m del Art. 38 de E.050")
+
+CLASE_DE_SITIO_QUE_LA_CIERRA = (
+    "Lo que cierra este vacio, y son DOS ensayos de profundidades distintas "
+    "que conviene pedir juntos: (1) la caracterizacion de los 100 ft "
+    "(30.48 m) superiores -- Vs30 o N_barra --, que es la profundidad que el "
+    "Art. 3.10.3.1 escribe y con la que se lee la clase; y (2) si esa "
+    "caracterizacion diera Clase F, el analisis de respuesta dinamica de "
+    "sitio, que el Art. 3.10.2 exige con 'shall' y el num. 2.4.3.11.2 del "
+    "Manual con 'sera usado'. NO lo cierra el SPT de licuefaccion de 15 m de "
+    "E.050 Art. 38: ese ensayo responde a otra pregunta y se detiene a mitad "
+    "de la columna que esta clase necesita")
+
+
+# ---------------------------------------------------------------------------
+# HOMONIMIAS: las palabras que significan dos o tres cosas en este expediente
+# ---------------------------------------------------------------------------
+# Cuatro terminos del corpus designan cosas distintas y sin relacion, y los
+# dos sentidos de cada uno llegan a la MISMA memoria. Un revisor que lea el
+# segundo con la definicion del primero no comete un error de calculo: comete
+# un error de lectura, que es peor, porque no deja rastro.
+#
+# Se declaran AQUI, en un solo sitio, y M11 los imprime como glosario
+# (`bloque_homonimias`). Antes cada uno vivia -- cuando vivia -- pegado a la
+# constante que lo sufria, de modo que el lector lo encontraba solo si ya
+# estaba mirando esa constante, que es justo cuando no le hace falta.
+#
+# Cierra NOR-VOC-01, NOR-VOC-02, NOR-VOC-03 y NOR-VOC-04.
+#
+# El formato es (TERMINO, SENTIDOS, LECTURA): los sentidos numerados, cada uno
+# con su fuente, y la lectura que resuelve cual aplica.
+
+HOMONIMIA_RECUBRIMIENTO = (
+    "«Recubrimiento»",
+    (
+        "(a) ALTURA DE RELLENO DE TIERRA sobre la clave del conducto. Es "
+        "vocabulario de este proyecto y de la Sec. 12 de AASHTO LRFD "
+        "('cover', Art. 12.6.6.3): la que fija la rasante minima y la que "
+        "gobierna 'cobertura_minima_aashto'. En metros.",
+        "(b) RECUBRIMIENTO DE CONCRETO sobre el acero de refuerzo. Manual de "
+        "Puentes, Tabla 2.9.1.5.5.3-1, pag. impresa 378; AASHTO LRFD Tabla "
+        "5.10.1-1. En milimetros o pulgadas.",
+        "(c) REVESTIMIENTO METALICO O BITUMINOSO de la plancha de acero. "
+        "EG-2013 Seccion 507, Tabla 507-02 «Recubrimiento en peso de zinc, "
+        "de acuerdo al espesor del acero base», pag. impresa 971 (610 a "
+        "915 g/m2 por las dos caras), y el recubrimiento bituminoso del "
+        "mismo numeral, que remite a AASHTO M-190. En gramos por metro "
+        "cuadrado. Es el sentido que gobierna la proteccion del TMC en el "
+        "ambiente agresivo de este proyecto, y el que faltaba declarar "
+        "(NOR-VOC-02).",
+    ),
+    "Y NO SON TRES SENTIDOS INDEPENDIENTES, que es la otra mitad de la "
+    "correccion: el repositorio afirmaba que (a) y (b) «no tienen ninguna "
+    "relacion», y la fila que se citaba para decirlo los ACOPLA en su propio "
+    "renglon -- «forjados con inferior a 2 pies de relleno que no se "
+    "utilicen como una superficie de conduccion: 2.0 in» --, donde el "
+    "recubrimiento del acero depende de la altura de relleno. Lo que se "
+    "sostiene es lo mas debil y lo suficiente: son magnitudes distintas, con "
+    "unidades distintas, y ninguna se puede usar en lugar de la otra.",
+)
+
+HOMONIMIA_TW = (
+    "«TW» y «cota_TW»",
+    (
+        "TW es un TIRANTE: la altura de agua en el cuerpo receptor medida "
+        "SOBRE EL FONDO DE LA SALIDA del conducto, en metros. Es lo que "
+        "consume el control de salida (Sec. 4.3) y lo que declara el "
+        "criterio 'TW_receptor'; la opcion de linea de comandos es `--tw`.",
+        "cota_TW es una COTA ABSOLUTA, en msnm. Es columna del CSV de "
+        "Sec. 1.2 y viene del tablero del ANA.",
+    ),
+    "Las separa exactamente la cota de fondo de la salida: "
+    "cota_TW = cota_fondo_salida + TW. Confundirlas desplaza el control de "
+    "salida en la magnitud ENTERA de esa cota -- centenares de metros en "
+    "este corredor --, y el error no se ve porque los dos numeros son "
+    "plausibles. Hoy no se puede ejercitar la confusion: las cuatro filas "
+    "del CSV traen `cota_TW` vacia y el TW entra declarado. Se anota como "
+    "riesgo de nomenclatura, no como error demostrado (NOR-VOC-01).",
+)
+
+HOMONIMIA_LUZ = (
+    "«Luz» y «diametro»",
+    (
+        "LUZ es un dato de ENTRADA del cruce -- el ancho del canal o de la "
+        "quebrada que hay que salvar -- y lo unico que decide con ella este "
+        "software es si el cruce es alcantarilla o puente: «alcantarilla... "
+        "cuya luz sea menor a 6.0 m» (num. 4.1.1.3.1, pag. impresa 70) y "
+        "«puente... cuya luz sea mayor o igual a 6.0 m» (num. 4.1.1.5.1, "
+        "pag. impresa 87). Entra por `--luz`, no es columna de Sec. 1.2.",
+        "DIAMETRO es un RESULTADO: el del conducto que M2 y MD seleccionan "
+        "del catalogo circular de Sec. 3.2, que arranca en 0.90 m.",
+    ),
+    "EL MANUAL NO DEFINE LA «LUZ» DE UN CONDUCTO CIRCULAR, y este proyecto "
+    "NO LA NECESITA: ningun modulo convierte una en otra. La luz clasifica "
+    "el cruce en la Fase 2 y el diametro se dimensiona despues, con el "
+    "caudal, sin que la luz vuelva a entrar. Se declara porque el riesgo es "
+    "de lectura: un revisor puede suponer que el 6.0 m del umbral y el "
+    "0.90 m del catalogo estan en la misma escala. El num. 4.1.1.3.4 a) "
+    "(pag. impresa 72) admite ademas «seccion minima circular de 0.90 m de "
+    "diametro o su equivalente de otra seccion», y esa equivalencia no esta "
+    "declarada en ninguna parte -- ni hace falta mientras el catalogo de "
+    "Sec. 3.2 sea solo circular. El dia que se ofrezca una seccion no "
+    "circular, hay que declararla antes (NOR-VOC-03).",
+)
+
+HOMONIMIA_CLASE_F = (
+    "«Clase F»",
+    (
+        "CLASE DE SITIO SISMICA: AASHTO LRFD Tabla 3.10.3.1-1 / Manual de "
+        "Puentes Tabla 2.4.3.11.2.1.1-1, «suelos que requieren evaluaciones "
+        "especificas de sitio». Es la del eje de la Sec. 0.5, y este "
+        "expediente NO se la atribuye: ver 'clase_sitio'.",
+        "CONCRETO CLASE F: resistencia, EG-2013 Tabla 503-07, pag. impresa "
+        "912 -- concreto simple, f'c = 14 MPa. Es la del relleno lateral y "
+        "la cama de apoyo.",
+        "ACERO ASTM A668 CLASE F: el propio Manual de Puentes lo tabula en "
+        "su pag. impresa 289. No llega a esta memoria; se anota para que "
+        "nadie lo cruce con los otros dos.",
+    ),
+    "Las dos primeras llegan a esta memoria, y por eso toda aparicion de "
+    "«Clase F» lleva su calificador -- «Clase de Sitio F» o «Concreto "
+    "Clase F» --, siempre, sin excepcion de contexto (NOR-VOC-04).",
+)
+
+HOMONIMIAS = (HOMONIMIA_CLASE_F, HOMONIMIA_RECUBRIMIENTO,
+              HOMONIMIA_TW, HOMONIMIA_LUZ)
+
+
+def homonimia_como_texto(homonimia) -> str:
+    """
+    Una homonimia en un parrafo, como la imprime una memoria en texto plano.
+
+    La compone esta funcion y no un campo, por lo mismo que `Cita.como_texto`:
+    los separadores son del proyecto y no de ninguna fuente. Existe para que
+    M9 -- que imprime la de «Clase F» pegada a la cadena sismica, donde el
+    lector se encuentra el termino -- y M11 -- que las imprime todas como
+    glosario -- lean la MISMA declaracion en vez de dos copias que pueden
+    desviarse.
+    """
+    termino, sentidos, lectura = homonimia
+    return f"{termino} en este expediente: " + " ".join(sentidos) + f" {lectura}"
 
 # ===========================================================================
 # Constantes de REFERENCIA: transcritas del Anexo B, sin consumidor de calculo

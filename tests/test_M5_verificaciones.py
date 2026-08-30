@@ -741,12 +741,19 @@ def test_una_regla_no_implementada_es_dato_invalido_no_un_fallo_de_programa():
         ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
 
 
-def test_las_dos_filas_no_evaluadas_se_declaran_en_vez_de_desaparecer():
+def test_la_fila_no_evaluada_se_declara_en_vez_de_desaparecer():
     """
-    La tabla de Fase 5 tiene ONCE filas y este modulo NUEVE funciones. Las dos
-    que faltan -- V2b (sedimentacion / colmatacion) y V4b (relacion HW/D) --
-    no pueden quedar como un ejercicio de resta del lector: se declaran con su
-    fundamento, igual que el item 5 de la Fase 8 (SIS-A-13 / MAT-O15).
+    La tabla de Fase 5 tiene ONCE filas y este modulo DIEZ funciones. La que
+    falta -- V2b, el acceso de mantenimiento para limpieza -- no puede quedar
+    como un ejercicio de resta del lector: se declara con su fundamento, igual
+    que el item 5 de la Fase 8 (SIS-A-13 / MAT-O15).
+
+    V4b SALIO DE ESTA LISTA EN S14, y es la mitad de lo que este test vigila
+    ahora: se cableo (`v4b_relacion_hw_d`) una vez cerrada la procedencia de
+    su umbral, que es la secuencia que el conflicto #1 impone. Una fila
+    cableada que siguiera declarandose "no evaluada" seria la misma clase de
+    afirmacion falsa que SIS-A-03 denuncio en ocho docstrings, solo que
+    impresa en la memoria.
     """
     from modulos import M11_reporte as M11
     from modulos.M5_verificaciones import verificaciones_no_evaluadas
@@ -754,15 +761,19 @@ def test_las_dos_filas_no_evaluadas_se_declaran_en_vez_de_desaparecer():
     textos = verificaciones_no_evaluadas()
     completo = " ".join(textos)
     assert "V2b" in completo and "planos" in completo
-    assert "V4b" in completo and "HW_D_max" in completo
+    assert "V4b" not in completo, (
+        "V4b volvio a declararse no evaluada. Si el cableado se retiro, "
+        "retiralo tambien de `verificar()`; si sigue ahi, esta constancia "
+        "esta mintiendo")
 
     # El conteo, contra la hoja de ruta y contra este modulo: si alguno de los
     # dos cambia, el texto de la constancia deja de ser cierto.
     #
     # El patron de funciones lleva la `b` OPCIONAL a proposito. Sin ella
     # (`v\d+_`) no casaba `v4b_...` ni `v2b_...`, que son justo las dos que
-    # esta guardia vigila: el dia que V4b se cablee con su nombre natural, el
-    # test seguiria en verde con la constancia diciendo que nadie la evalua.
+    # esta guardia vigila -- y gracias a ella `v4b_relacion_hw_d` entro en el
+    # conteo el dia que se cableo, en vez de dejar la constancia en verde
+    # diciendo que nadie la evalua.
     raiz = Path(__file__).resolve().parents[1]
     # La hoja se localiza como lo hace M11 -- que exige que haya exactamente
     # una --, no con el primer resultado de un glob.
@@ -771,5 +782,5 @@ def test_las_dos_filas_no_evaluadas_se_declaran_en_vez_de_desaparecer():
     modulo = (raiz / "src" / "modulos" / "M5_verificaciones.py").read_text(encoding="utf-8")
     funciones = re.findall(r"^def (v\d+b?_\w+)", modulo, re.M)
     assert len(filas) == 11, f"la tabla de Fase 5 ya no tiene once filas: {filas}"
-    assert len(funciones) == 9, f"M5 ya no tiene nueve verificaciones: {funciones}"
+    assert len(funciones) == 10, f"M5 ya no tiene diez verificaciones: {funciones}"
     assert len(textos) == len(filas) - len(funciones)

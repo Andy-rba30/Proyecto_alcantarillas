@@ -73,10 +73,16 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `AASHTO_LRFD_9.10.5.4.2` | 10.5.4.2 | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | exigencia | 2026-08-29 · texto |
+| `AASHTO_LRFD_9.10.5.4.2#ESPECTRO` | 10.5.4.2, configuracion licuada | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | recomendacion | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.11.6.5.1#EXC` | 11.6.5.1 | «General» | pág. impresa **11-25** · PDF 1494 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.11.6.5.2.1#ROCA` | 11.6.5.2.1 | «Characterization of Acceleration at Wall Base» | pág. impresa **11-27** · PDF 1496 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.12.6.6.3#COBERTURA` | 12.6.6.3 | «Minimum Cover» | pág. impresa **12-21** · PDF 1659 | exigencia | 2026-08-28 · ambos |
+| `AASHTO_LRFD_9.3.10.2#CLASE_F` | 3.10.2 | «Seismic Hazard» | pág. impresa **3-71** · PDF 125 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.3.10.2.2` | 3.10.2.2 | «Site-Specific Procedure» | pág. impresa **3-100** · PDF 154 | exigencia | 2026-08-28 · texto |
+| `AASHTO_LRFD_9.3.10.3.1` | 3.10.3.1 | «Site Class Definitions» | pág. impresa **3-101** · PDF 155 | exigencia | 2026-08-29 · texto |
+| `AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES` | 3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1 | «Site Class Definitions» | pág. impresa **3-102** · PDF 156 | exigencia | 2026-08-29 · texto |
+| `AASHTO_LRFD_9.3.10.3.1#INVESTIGACION` | 3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1 | «Site Class Definitions» | pág. impresa **3-102** · PDF 156 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.3.11.3` | 3.11.3 | «Presence of Water» | pág. impresa **3-118** · PDF 172 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.3.11.6.4` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.3.11.6.4#ALTURA` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
@@ -85,14 +91,20 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.5.10.1#ESTRIBOS` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | permiso | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.1#PISO` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.A11.3.1#KAE` | A11.3.1, ec. A11.3.1-1 | «Mononobe–Okabe Method» | pág. impresa **11-145** · PDF 1614 | aproximacion | 2026-08-28 · imagen renderizada |
+| `AASHTO_LRFD_9.C3.10.3.1-1#PASO1` | Tabla C3.10.3.1-1, paso 1 | «Steps for Site Classification» | pág. impresa **3-103** · PDF 157 | recomendacion | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.C3.11.6.4` | C3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | definicion | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.C3.4.1#GAMMA_EQ` | C3.4.1 | «3.4.1-Load Factors and Load Combinations» | pág. impresa **3-10** · PDF 64 | recomendacion | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.T12.6.6.3-1` | Table 12.6.6.3-1 | 12.6.6.3 › Minimum Cover › «Minimum Cover» | pág. impresa **12-22** · PDF 1660 | exigencia | 2026-08-28 · imagen renderizada |
+| `AASHTO_LRFD_9.T3.10.3.1-1#F` | Tabla 3.10.3.1-1, fila F | «Site Class Definitions» | pág. impresa **3-102** · PDF 156 | definicion | 2026-08-29 · ambos |
 | `AASHTO_LRFD_9.T3.11.6.4-1` | Table 3.11.6.4-1 | «Equivalent Height of Soil for Vehicular Loading on Abutments Perpendicular to Traffic» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.T3.11.6.4-2` | Table 3.11.6.4-2 | «Equivalent Height of Soil for Vehicular Loading on Retaining Walls Parallel to Traffic» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.T3.4.1-1` | Table 3.4.1-1 | «Load Combinations and Load Factors» | pág. impresa **3-17** · PDF 71 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.T3.4.1-2` | Table 3.4.1-2 | «Load Factors for Permanent Loads» | pág. impresa **3-18** · PDF 72 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.T5.10.1-1` | Table 5.10.1-1 | «Minimum Cover for Main Reinforcing Steel (in.)» | pág. impresa **5-169** · PDF 528 | exigencia | 2026-08-28 · ambos |
+
+> **`AASHTO_LRFD_9.10.5.4.2`** — POR DONDE ENTRA LA LICUEFACCION EN AASHTO, que no es por la clase de sitio: es la Seccion 10, Cimentaciones, bajo 10.5.4 «Extreme Events Limit States». Y el disparador lo dice todo -- zona sismica 3 o 4, MAS napa freatica en los 50 ft superiores, MAS caracteristicas de suelo por (N1)60, q_ciN, V_s1 o unidad geologica con antecedente de licuefaccion --: ninguna de las tres condiciones menciona la clase de sitio. «Site Class F» no aparece en NINGUNA pagina de la Seccion 10.
+
+> **`AASHTO_LRFD_9.10.5.4.2#ESPECTRO`** — EL ARGUMENTO POSITIVO, y es el que convierte NOR-AAS-02 de argumento por silencio en argumento por coherencia interna de la fuente. Si un suelo licuable fuera Clase F por serlo, su fila no tendria factor -- son cinco asteriscos -- y no habria espectro «no licuado» con que empezar. AASHTO manda justo lo contrario: analizar primero SIN licuefaccion y despues CON ella, con el mismo espectro; y en la pag. impresa 10-35 acota el espectro especifico de sitio a no menos de dos tercios del que da el procedimiento general «modified by the site factors in Article 3.10.3.2». Es decir: AASHTO ESPERA que a un sitio licuable le aplique un factor de sitio TABULADO de 3.10.3.2. Eso es incompatible con que la licuefaccion lo hiciera Clase F por si sola.
 
 > **`AASHTO_LRFD_9.11.6.5.1#EXC`** — «middle two-thirds», no «tercio central»: es la parte de AASHTO que gana a la errata de traduccion del Manual. Y su comentario C11.6.5.1 ARRANCA en esta misma pagina (columna derecha), no en la 11-26; lo que si esta en la 11-26 es el texto que el repositorio le atribuye.
 
@@ -100,7 +112,15 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.12.6.6.3#COBERTURA`** — El ARTICULO abre en la pag. impresa 12-21; solo la TABLA esta en la 12-22. Y una correccion contra la ficha de auditoria, no contra el repositorio: NOR-VAC-01 transcribe la fila de Reinforced Concrete Pipe como «raiz(Bc)/8» y el PDF imprime «B'c/8», con Bc' definido en 12-21 como «out-to-out vertical rise of pipe». Es una PRIMA, no un radical: artefacto de la linearizacion de la capa de texto. Corregir en la ficha antes de derivar cualquier numero.
 
+> **`AASHTO_LRFD_9.3.10.2#CLASE_F`** — AQUI ESTA EL `SHALL`, Y EL REPOSITORIO CITABA EL TEXTO MAS DEBIL DE LOS TRES. La segunda condicion de la lista es «The site is classified as Site Class F (Article 3.10.3.1),», y el verbo de la frase que la introduce es `shall`. La Nota 2 de las tablas de factores -- que es lo que Sec. 0.5 y el criterio venian citando -- dice `should`, y el Art. 3.10.2.2 (pag. impresa 3-100) repite el `shall`. La afirmacion del expediente («AASHTO exige de forma incondicional un estudio de respuesta de sitio para la Clase F») es CIERTA; lo que estaba mal era el anclaje, que se apoyaba en una recomendacion para sostener una exigencia. No es una discrepancia -- las fuentes no se contradicen --, es una cita corta.
+
 > **`AASHTO_LRFD_9.3.10.2.2`** — «6 miles» esta literal; cualquier conversion a km (9.66) es del proyecto. Y `shall be CONSIDERED`: obliga a considerar el estudio, no a hacerlo. La remision al USGS Active Fault Map tambien es literal, y es el punto: ese mapa no cubre el Peru.
+
+> **`AASHTO_LRFD_9.3.10.3.1`** — LA CLASE DE SITIO ES UNA MEDICION, y de ahi cuelga la etiqueta del criterio: se determina por la RIGIDEZ medida (v_s, N o s_u) sobre una profundidad fija, no por una eleccion del proyectista. PROFUNDIDAD: el articulado dice «the upper 100 ft» -- 30.48 m --, no «30 m»; ver DIS-HR-30M-VS-100FT. Y dos erratas de la fuente que se conservan en el verbatim de la primera oracion cuando se cite entera: «A though F» por «through», y la falta de punto tras «100 ft».
+
+> **`AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES`** — LA CITA QUE CIERRA EL CONFLICTO #8, y estaba en el articulado sin que nadie la hubiera leido. El expediente no necesitaba una autorizacion para suponer la Clase F: tenia una PROHIBICION expresa de suponerla, con dos puertas de salida que no tiene abiertas -- determinacion de la autoridad competente, o dato geotecnico -- porque el SPT esta pendiente. Y la misma nota trae un DEBER POSITIVO que es la otra mitad: «Where the soil properties are not known in sufficient detail to determine the site class, a site investigation shall be undertaken sufficient to determine the site class». No dice «no supongas y sigue»: dice INVESTIGA. ES ARTICULADO, no comentario: va al pie de la Tabla 3.10.3.1-1, en la columna de especificacion. El `should not` de AASHTO lo endurece el Manual de Puentes a «no seran supuestas».
+
+> **`AASHTO_LRFD_9.3.10.3.1#INVESTIGACION`** — Es la PRIMERA oracion del bloque «Exceptions» y precede a la prohibicion de suponer E o F: el orden de la fuente es investigar primero y no suponer despues. Se registra aparte porque es una exigencia distinta -- un deber de hacer, no una prohibicion -- y porque la memoria la cita por su cuenta al declarar que ensayo cierra el vacio.
 
 > **`AASHTO_LRFD_9.3.11.6.4`** — El articulo entero, sus dos tablas y su comentario C3.11.6.4 caben en la pag. impresa 3-151; no continua en la 3-152, donde empieza el 3.11.6.5. La frase de la interpolacion es EXIGENCIA («shall»); la de tomar valores de las tablas es PERMISO («may be taken»).
 
@@ -114,11 +134,15 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.A11.3.1#KAE`** — El ENCABEZADO del articulo se imprime en la pag. impresa 11-144 (PDF 1613) y la ECUACION en la 11-145 (PDF 1614). La forma exacta del corchete -- «[1 + raiz(...)]» -- NO ES VERIFICABLE por extraccion de texto: la capa devuelve la formula rota. Se decide sobre la imagen renderizada, y por eso el metodo es IMAGEN. Las unidades de la fuente son imperiales (kcf, ft).
 
+> **`AASHTO_LRFD_9.C3.10.3.1-1#PASO1`** — ES COMENTARIO Y POR ESO NO ESTRECHA EL ARTICULADO -- lleva prefijo `C` y cuelga del epigrafe C3.10.3.1 --, pero importa por algo que el debate «lista abierta o cerrada» estaba tapando: el paso 1 no es retorico, es un PROCEDIMIENTO. Manda comprobar esas categorias y, si el sitio no cae en ninguna, seguir al paso 2 (capa blanda -> Clase E) y al paso 3 (calcular v_s, N o s_u sobre los 100 ft superiores -> Clase A a E). En ninguno de los tres pasos hay una ruta que lleve de «suelo licuable» a la Clase F. Refuta por su cuenta la version fuerte de NOR-AAS-02 que la refutacion adversarial R95-073 ya habia tumbado: el «the three categories» existe, pero esta aqui, no en el articulado.
+
 > **`AASHTO_LRFD_9.C3.11.6.4`** — HALLAZGO DE S12, y es el que obliga a matizar el conflicto #4: NO EXISTE en el articulado ninguna frase que reparta las dos tablas. El cuerpo normativo las cita JUNTAS Y SIN CONDICIONANTE («may be taken from Tables 3.11.6.4-1 and 3.11.6.4-2»). Lo que las reparte son (a) los TITULOS de las tablas y (b) este comentario, que no es articulado. Y no ofrecen un eje libre «orientacion»: ofrecen dos BINOMIOS ACOPLADOS -- estribo+perpendicular y muro de contencion+paralelo --. No hay tabla para «muro perpendicular» ni para «estribo paralelo».
 
 > **`AASHTO_LRFD_9.C3.4.1#GAMMA_EQ`** — EL 0.50 ESTA LITERAL EN LA FUENTE, pero como COMENTARIO y con el calificador «is reasonable»: no es una exigencia ni una de dos opciones tabuladas. Y el 0.0 aparece solo como referencia a ediciones pasadas del Standard Specifications, seguido de «This issue is not resolved». Quien lo determina es el PROYECTO («project-specific basis», Art. 3.4.1, pag. impresa 3-19), no «el propietario».
 
 > **`AASHTO_LRFD_9.T12.6.6.3-1`** — LA TABLA VIVE UNA PAGINA DESPUES QUE SU NUMERAL, y por eso lleva cita propia: el articulado 12.6.6.3 abre en la 12-21 (PDF 1659) y la tabla entera esta en la 12-22 (PDF 1660). Citarlas con la misma pagina manda al revisor a la pagina donde la tabla no esta. SUS COLUMNAS NO SON LAS QUE EL EXPEDIENTE SUPONIA: son «Type», «Condition» y «Minimum Cover*», TRES, y las condiciones de pavimento son VALORES de la segunda columna que solo aparecen en 2 de los 13 tipos. No es una matriz tipo x condicion de pavimento. El repositorio ya la leia asi -- repite la misma fila en las tres condiciones para el metal corrugado, en vez de inventarle dos que la tabla no trae --, y esta verificacion lo confirma.
+
+> **`AASHTO_LRFD_9.T3.10.3.1-1#F`** — LAS TRES CATEGORIAS Y EL «SUCH AS». La celda enumera turbas o arcillas altamente organicas (H > 10.0 ft), arcillas de muy alta plasticidad (H > 25.0 ft con PI > 75) y estratos potentes de arcilla blanda o semirrigida (H > 120 ft). NINGUNA es licuefaccion: la busqueda de `liquef` sobre la pagina PDF 156 entera da cero, y en las 1905 paginas del documento los conjuntos {paginas con `liquef`} y {paginas con «Site Class F»} son disjuntos. PERO el encabezado es «such as», lista abierta, de modo que lo que se sostiene es la afirmacion NEGATIVA -- la norma no escribe el salto -- y no la contraria. La tension con el «the three categories» del comentario esta declarada en DIS-AASHTO-F-LISTA-ABIERTA, y la decision no depende de como se resuelva: por las dos lecturas el salto sigue sin estar escrito. Verificada tambien por imagen: los tres bullets son glifos Symbol.
 
 > **`AASHTO_LRFD_9.T3.11.6.4-1`** — Su variable de entrada se llama literalmente «Abutment Height (ft)»: es una tabla de ESTRIBOS. Aplicarla a un cabezal de alcantarilla es analogia declarada, no lectura directa.
 
@@ -129,6 +153,17 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.T3.4.1-2`** — Confirma dos hallazgos abiertos: EV «Retaining Walls and Abutments» = 1.35 / 1.00 (no 0.90; sostiene NOR-PUE-03) y EH At-Rest = 1.35 / 0.90, CON minimo declarado -- lo que refuta la afirmacion negativa de NOR-AAS-04, que sostenia que la fuente no declara minimo para EH en reposo. El N/A pertenece a la fila siguiente, «AEP for anchored walls».
 
 > **`AASHTO_LRFD_9.T5.10.1-1`** — TRES categorias de acero -- A, B y C --, bajo el encabezado de grupo «Reinforcing Material Category», y la tabla peruana tiene UNA sola columna porque cubre una sola categoria: la no protegida. Es la clave de NOR-AAS-01: los 3.0 in de «Coastal» son de la Categoria A, y con B o C la tabla baja a 2.0 in = 50.8 mm, con lo que la regla del mayor la pasaria a ganar E.060.
+
+### Norma Tecnica E.030 «Diseño Sismorresistente»  (`E030`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `E030.T2#S5` | Art. 14.6, Tabla Nº 2, fila S5 | «Tipos de perfiles de suelo» | pág. impresa **11** · PDF 11 | exigencia | 2026-08-29 · texto |
+| `E030.T4` | Art. 17, Tabla Nº 4 | «Factor de suelo» | pág. impresa **13** · PDF 13 | exigencia | 2026-08-29 · texto |
+
+> **`E030.T2#S5`** — LA PRIMERA CITA DE E.030 DEL REGISTRO, y llego tarde por un artefacto: el PDF emite la ligadura U+FB01 seguida de un espacio -- «clasiﬁ cación», «perﬁ les», «especíﬁ co» --, de modo que ninguna frase entera de esta norma se encontraba en su propia pagina hasta que `extraccion.pdf` aprendio a deshacerlo. EL ESTATUTO DE S5, con precision: es fila de la Tabla Nº 2 -- sexta y ultima, «Suelos excepcionales», con diez viñetas de las que la PRIMERA es «Suelos potencialmente licuables» y esta es la decima --, y a la vez NO tiene fila en la Tabla Nº 3 del num. 14.7 ni columna en las Tablas Nº 4 y Nº 5. Es decir: nominal en la tabla que la define, laguna en las tres que dan numeros. La prohibicion es CONDICIONADA: la misma oracion la levanta con estudio especifico y mejoramiento del estrato. La hoja de ruta la cita mal por tres sitios -- ver DIS-HR-CLASE-DE-SITIO-F --, mientras que constantes_normativas.E030_S5_TEXTO la transcribe exacta.
+
+> **`E030.T4`** — DONDE LOS DOS ESQUEMAS CONVERGEN, que es lo que faltaba mirar. E.030 no tiene F_pga, Fa ni Fv: su aparato es S, T_P y T_L. Y su Tabla Nº 4 «Factor de suelo S» tiene columnas S0, S1, S2, S3 y S4 -- NO tiene columna S5 --, de modo que a su categoria excepcional no le asigna factor, igual que AASHTO y el Manual no se lo asignan a la Clase F. El verbatim es la celda de la fila Z4, columna S4: en la zona sismica de esta obra, E.030 ya exige analisis de respuesta de sitio un escalon ANTES de la categoria excepcional. Con S5 no hay siquiera celda que leer. Los dos esquemas discrepan en el CRITERIO -- E.030 nombra los suelos licuables, AASHTO no -- y coinciden en la CONSECUENCIA: ninguno tabula un factor para su categoria excepcional.
 
 ### Norma Tecnica E.050 «Suelos y Cimentaciones»  (`E050`)
 
@@ -216,7 +251,7 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.A.2`** — NOR-HDS-03, confirmado: `Ku` y `Ks` estan en la LISTA DE VARIABLES de las ecuaciones del num. A.2.1, pag. impresa A.2, y NO en la Tabla A.1. La Tabla A.1 tiene nueve columnas y de constantes de la ecuacion solo cuatro -- K, M, c e Y --: no hay columna K_u ni columna K_s.
 
-> **`HDS5_3ED.A.2.1#QLIM`** — «apply up to ABOUT»: la fuente NO fija un umbral duro. Y los 3.5 son del sistema INGLES; su equivalente SI, entre parentesis, es 1.93. Como `caudal_adimensional` multiplica por KU_METRICO = 1.811, el q* que M4 compara ya esta en la escala inglesa y le corresponden 3.5 y 4.0: cambiarlos por los del parentesis seria aplicar dos veces la conversion.
+> **`HDS5_3ED.A.2.1#QLIM`** — «apply up to ABOUT»: la fuente NO fija un umbral duro. Y los 3.5 son del sistema INGLES; su equivalente SI, entre parentesis, es 1.93. Como `caudal_adimensional` multiplica por KU_SI = 1.811, el q* que M4 compara ya esta en la escala inglesa y le corresponden 3.5 y 4.0: cambiarlos por los del parentesis seria aplicar dos veces la conversion.
 
 > **`HDS5_3ED.TA.1`** — ERRATA DE LA PROPIA FUENTE, hallada al verificar: el titulo dice «for Charts in Appendix G» y en esta 3a edicion NO EXISTE un Apendice G -- las cartas estan en el Apendice C. Se transcribe como lo imprime, con la advertencia, para que quien lo busque lo encuentre.
 
@@ -275,6 +310,9 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `MP.2.1.4.3.9` | 2.1.4.3.9 | «Aparatos de Apoyo» | pág. impresa **91** · PDF 92 | exigencia | 2026-08-28 · ambos |
 | `MP.2.4.2.2#SOBRECARGA` | 2.4.2.2 | «Cargas de Suelo: EH, ES, y DD» | pág. impresa **102** · PDF 103 | exigencia | 2026-08-28 · ambos |
+| `MP.2.4.3.11.2#CLASE_F` | 2.4.3.11.2 | «Peligro Sísmico» | pág. impresa **121** · PDF 122 | exigencia | 2026-08-29 · texto |
+| `MP.2.4.3.11.2.1.1` | 2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F | «Definiciones de Clases de Sitio» | pág. impresa **122** · PDF 123 | definicion | 2026-08-29 · ambos |
+| `MP.2.4.3.11.2.1.1#EXCEPCIONES` | 2.4.3.11.2.1.1, bloque «Excepciones» | «Definiciones de Clases de Sitio» | pág. impresa **122** · PDF 123 | exigencia | 2026-08-29 · texto |
 | `MP.T2.4.3.11.2.1.2-1` | Tabla 2.4.3.11.2.1.2-1 | «Efectos de Sitio» | pág. impresa **123** · PDF 124 | exigencia | 2026-08-28 · imagen renderizada |
 | `MP.T2.4.5.3.1-1` | 2.4.5.3.1, Tabla 2.4.5.3.1-1 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
 | `MP.T2.4.5.3.1-2` | 2.4.5.3.1, Tabla 2.4.5.3.1-2 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
@@ -283,6 +321,12 @@ línea que se pueda romper.
 > **`MP.2.1.4.3.9`** — NOR-PUE-01 / MAT-D5. ESTE NUMERAL NO SOSTIENE LA SOBRECARGA DE TRASDOS y esta aqui para que se vea que no la sostiene. No contiene la palabra «sobrecarga», ni «trasdós», ni «relleno equivalente», ni el valor 0.60: va de aparatos de apoyo (bearings), y su contexto lo confirma (2.1.4.3.7 Drenaje, 2.1.4.3.8 Pavimentación, 2.1.4.3.9 Aparatos de Apoyo, 2.1.5 Señalización). El texto que si sostiene la sobrecarga esta en el num. 2.4.2.2 — ver MP.2.4.2.2#SOBRECARGA. El numeral falso estaba propagado a seis puntos del repositorio.
 
 > **`MP.2.4.2.2#SOBRECARGA`** — EL 0.60 ES UN PISO, NO UN VALOR DE DISEÑO: la fuente dice «no menor que». Y esta expresado como ALTURA DE RELLENO EQUIVALENTE, no como presion: el paso a p = γ·0.60·Ka es derivacion del proyectista, correcta pero no escrita en este numeral. El titulo del numeral nombra EH, ES y DD y NO incluye LS.
+
+> **`MP.2.4.3.11.2#CLASE_F`** — LA SEGUNDA VIA, INDEPENDIENTE DE LA NOTA 2 DE LA TABLA. La segunda condicion de la lista es «Si el sitio está clasificado como sitio clase F (Articulo. 2.4.3.11.2.1.1) (3.10.3.1 AASHTO).», y el verbo es «sera usado», imperativo. De modo que la exigencia de estudio para la Clase F esta DOS veces en el Manual -- aqui en el articulado y en la Nota 2 de las tres tablas de factores -- y ninguna de las dos admite dispensa. Barrido completo: «sitio clase F» aparece 4 veces en las 673 paginas (esta y las tres Notas 2); no hay ninguna salvedad por periodo fundamental corto. La quinta aparicion de «clase F» en el Manual es ACERO ASTM A668 Clase F (pag. impresa 289) y no guarda relacion: es la tercera homonimia de «Clase F» del corpus, junto al concreto Clase F de EG-2013 (NOR-VOC-04).
+
+> **`MP.2.4.3.11.2.1.1`** — LA TRADUCCION ES FIEL: las tres categorias son las mismas de AASHTO -- turbas o arcillas altamente organicas (H > 10 ft), arcillas de alta plasticidad (H > 25 ft con PI > 75), estratos de arcillas de buen espesor blandas o semirrigidas (H > 120 ft) -- y el «tales como» traduce el «such as», de modo que la lista queda abierta tambien aqui. TAMPOCO nombra la licuefaccion. El Manual la trata en otros sitios -- num. 2.4.3.11.1, 2.8.0.3, 2.8.2.1.1.1, 2.8.2.1.1.3, 2.8.2.1.1.6.2 y Apendice A11 --, once apariciones en ocho paginas, y NINGUNA en este numeral ni en su tabla. No existe en el Manual un solo numeral titulado «Licuefaccion».
+
+> **`MP.2.4.3.11.2.1.1#EXCEPCIONES`** — LA MISMA PROHIBICION QUE AASHTO, Y MAS DURA: donde AASHTO dice «should not be assumed», el Manual escribe «NO SERAN SUPUESTAS». La norma nacional endurece la traduccion, de modo que por la Via 1 (AASHTO) o por la Via 2 (Manual) el resultado es el mismo y el expediente no puede elegir la version blanda. «Entidaddetermine», sin espacio, es errata del impreso y se transcribe tal cual (T21). DOS PUERTAS Y UN DEBER: la prohibicion cede si la Entidad determina la clase -- via autonoma, sin dato geotecnico -- o si la establecen datos geotecnicos; y la oracion anterior manda «se emprenderá una investigación de sitio suficiente para definir su clase». Este expediente no tiene ninguna de las dos puertas abiertas y si tiene el deber pendiente.
 
 > **`MP.T2.4.3.11.2.1.2-1`** — TRES DE SUS RASGOS SOLO SE VEN RENDERIZANDO, y los tres deciden una lectura: el signo `>` de la ultima columna, el asterisco de la fila F y el «1» del encabezado superior, que es la llamada a la Nota 1 y no un exponente.
 
@@ -775,6 +819,10 @@ corrija**. La tercera obligación vive aquí.
 
 ### abierta_contra_hoja_de_ruta
 
+- **`DIS-HR-30M-VS-100FT` — la profundidad sobre la que se define la clase de sitio.** Gana **AASHTO_LRFD_9**: 100 ft son 30.48 m: la profundidad de campaña que hay que pedir es la misma y el numero es defendible, de modo que esto NO es una contradiccion de fondo sino una atribucion -- el mismo genero que DIS-HR-G-LAUSHEY, donde el 9.8 era correcto y la pagina no lo imprimia. Trabajar en SI es la regla del proyecto y es legitimo; atribuirle a AASHTO un texto que no imprime, no. Y la correccion no debilita nada: el argumento de que el SPT de 15 m de E.050 Art. 38 no cierra este criterio se sostiene con MAS margen sobre 30.48 m que sobre 30
+  - Si se sigue la otra: un revisor que abra el Art. 3.10.3.1 buscando los «30 m» no los encuentra, y una cita que no se puede comprobar es indistinguible de una inventada -- en el campo que precisamente define que ensayo hay que contratar
+  - *hoja_de_ruta*: Sec. 0.5 pide «la caracterizacion de los 30 m superiores (Vs30 o N) que define la clase», y el criterio 'clase_sitio' se lo atribuye al articulado: «Los 30 m son parte de la DEFINICION de la clase (AASHTO LRFD Art. 3.10.3.1)»
+  - *AASHTO_LRFD_9*: el Art. 3.10.3.1 dice «the upper 100 ft», y la Tabla 3.10.3.1-1 define v_s, N y s_u «for the upper 100 ft of the soil profile». La cifra «30 m» no esta impresa en el numeral
 - **`DIS-HR-A807` — la norma que fija el calibre de la plancha de TMC por altura de relleno.** Gana **ASTM_A796**: la remision de la hoja de ruta es falsa. A-807 no es la norma que se le atribuye
   - Si se sigue la otra: se busca el calibre en un documento que no lo tiene, y la busqueda termina en un vacio aparente que no es tal
   - *hoja_de_ruta*: lo remite a «ASTM A-807» en su Sec. 7.A, en su Fase 8 y en su Anexo B
@@ -783,6 +831,13 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: quien lea la hoja de ruta sin leer el codigo dimensionara un cabezal de ciclopeo con una matriz de 10 MPa que este calculo va a rechazar
   - *hoja_de_ruta*: su Sec. 9.4 pide f'c de matriz >= 10 MPa citando solo el Art. 22.10 de E.060
   - *EG2013*: la Clase G de la Tabla 503-07 -- concreto ciclopeo -- pide 14 MPa, y la Seccion 503 es la que este proyecto cita para los cabezales
+- **`DIS-HR-CLASE-DE-SITIO-F` — la premisa de Sec. 0.5: «el sitio clasifica como Clase de Sitio F por susceptibilidad a licuefaccion».** Gana **AASHTO_LRFD_9**: porque la hoja de ruta no tiene con que sostener el salto y las fuentes tienen con que vedarlo, y son dos cosas distintas: (1) NINGUNO de los dos documentos que el criterio invoca escribe «suelo licuable -> Clase F»; en las 1905 paginas de AASHTO los conjuntos de paginas con `liquef` y con «Site Class F» son DISJUNTOS, y en las 673 del Manual la licuefaccion vive en once pasajes de cimentaciones y del Apendice A11, ninguno en el numeral de clases de sitio. (2) Pero el «such as» deja la lista abierta, de modo que el silencio solo daria una premisa NO SOSTENIDA, no una premisa falsa -- y esa es la parte del hallazgo que la refutacion adversarial R95-073 habia acotado con razon. (3) Lo que cierra la cuestion es que las dos fuentes PROHIBEN suponer la clase E o F sin determinacion de la autoridad o dato geotecnico. El expediente no tiene ninguna de las dos: el SPT esta pendiente. Suponerla no es una adopcion declarable del proyectista, es lo que la norma veda. El Manual y E.030 concurren, cada uno por su via, y por eso el resultado no depende de que Via de Sec. 0.2 se elija
+  - Si se sigue la otra: la memoria declara formalmente una clase de sitio que ninguna fuente sostiene y que las dos prohiben suponer, y la declara ademas para nada: la fila F no tiene factor -- son cinco asteriscos en las cinco columnas --, de modo que la premisa no aporta un numero al calculo y si aporta al expediente una afirmacion refutable de un vistazo. Es la forma exacta del defecto que la propia Sec. 0.5 llama el mas grave que ha tenido este expediente
+  - *hoja_de_ruta*: Sec. 0.5: «El sitio clasifica como Clase de Sitio F por susceptibilidad a licuefaccion: arenas saturadas con NF a 1.4 m en la llanura del Bajo Piura. Clasificarlo como D o E mientras la Fase 0-bis advierte riesgo de licuefaccion seria una contradiccion interna del expediente. Eso no ha cambiado.» Y en Fase 0-bis, punto 2, escribe «la condicion S5 / Clase F», con una barra que asimila las dos taxonomias
+  - *AASHTO_LRFD_9*: PROHIBE SUPONERLA: «Site classes E or F should not be assumed unless the authority having jurisdiction determines that... or... are established by geotechnical data», en el articulado, al pie de la Tabla 3.10.3.1-1. Y manda investigar: «a site investigation shall be undertaken sufficient to determine the site class»
+  - *MP*: lo mismo y mas duro: «Las clases de Sitio E o F NO SERAN SUPUESTAS a no ser que la Entidad determine la clase de sitio E o F o estas sean establecidas por datos geotecnicos»
+  - *E030*: es la fuente de la letra, y su letra es OTRA: los suelos potencialmente licuables son la primera viñeta del perfil S5 «Suelos excepcionales» de su Tabla Nº 2, que es un esquema distinto (S0-S5, por descripcion) del de AASHTO (A-F, por rigidez medida sobre los 100 ft superiores)
+  - *E030 · Tabla Nº 4*: y tampoco da factor a su categoria excepcional: la Tabla Nº 4 «Factor de suelo S» tiene columnas S0 a S4 y ninguna S5. En la zona 4, ya la columna S4 dice «Requiere un analisis de respuesta de sitio»
 - **`DIS-HR-D-MAX` — los topes de diametro por material (2.70 / 2.10 / 1.50 m).** Gana **ASTM_A760**: la fuente primaria, leida de los PDF de normas/, desmiente las dos atribuciones contrastables. No son topes normativos: son topes de CATALOGO, y como tales descartaban material en silencio con una cita que ninguna norma sostiene. AASHTO M294 no esta en normas/ y el tope del HDPE no se pudo contrastar
   - Si se sigue la otra: un punto que necesite mas de 2.10 m de TMC se declara no factible por una razon que la norma citada no sostiene
   - *hoja_de_ruta*: su Anexo B los declara bajo el rotulo «topes por norma de producto - VERIFICAR», atribuidos a ASTM C76 / AASHTO M170, AASHTO M36 / ASTM A760 y AASHTO M294
@@ -801,9 +856,18 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: se declara vacio lo que la norma adoptada tabula, y la cobertura minima queda sin piso
   - *hoja_de_ruta*: su Sec. 7.A dice «No fijado. Remite al Proyecto, AASHTO M-170M (clases I-V) o ASTM A-807»
   - *AASHTO_LRFD_9*: el Art. 12.6.6.3 y la Tabla 12.6.6.3-1 tabulan la cobertura minima para los tres tipos de conducto del catalogo
+- **`DIS-HR-VIA-DE-LA-LICUEFACCION` — por que via entra la licuefaccion en el diseño sismico.** Gana **AASHTO_LRFD_9**: es el argumento POSITIVO, y por eso vale mas que el silencio: si la licuefaccion hiciera Clase F por si sola, la fila del sitio no tendria factor -- cinco asteriscos -- y el procedimiento del num. 10.5.4.2 no podria arrancar, porque empieza por un espectro «no licuado» que exige un factor de sitio de 3.10.3.2 aplicable. Las dos reglas solo son coherentes si un suelo licuable puede clasificar A-E y evaluarse aparte, que es exactamente el reparto que el expediente ya hace con su SPT de 15 m
+  - Si se sigue la otra: el riesgo de licuefaccion se contabiliza dos veces o ninguna: entra por el factor de sitio -- donde no hay numero que leer -- y deja sin disparar la evaluacion del num. 10.5.4.2, que es la que produce las verificaciones que este sitio necesita (perdida de resistencia, asentamiento, desplazamiento lateral)
+  - *hoja_de_ruta*: Sec. 0.5 hace de la licuefaccion la CAUSA de la clase de sitio -- «Clase de Sitio F POR susceptibilidad a licuefaccion» --, de modo que el riesgo geotecnico entra al calculo por el factor de sitio
+  - *AASHTO_LRFD_9*: la evalua en la Seccion 10, Cimentaciones, num. 10.5.4.2 «Liquefaction Design Requirements», y la dispara por zona sismica 3 o 4 MAS napa freatica en los 50 ft superiores MAS caracteristicas de suelo. Ninguna de las tres condiciones es la clase de sitio, y «Site Class F» no aparece en ninguna pagina de la Seccion 10
+  - *AASHTO_LRFD_9 · 10.5.4.2 in fine*: y ademas ESPERA que a un sitio licuable le aplique un factor de sitio tabulado: manda analizar en configuracion no licuada y licuada con el mismo espectro, y acota el espectro especifico a no menos de dos tercios del general «modified by the site factors in Article 3.10.3.2»
 
 ### resuelta
 
+- **`DIS-AASHTO-F-LISTA-ABIERTA` — si la enumeracion de la Clase de Sitio F es abierta o cerrada.** Gana **AASHTO_LRFD_9 · articulado**: por jerarquia: el comentario explica el articulado y no puede estrecharlo. Se declara, y no se archiva, porque un revisor puede apoyarse en el comentario y hay que poder responderle. LO QUE IMPORTA ES QUE LA DECISION NO DEPENDE DE ESTO: si la lista es cerrada, un suelo licuable NO es Clase F y la premisa es falsa; si es abierta, la norma calla y la premisa es no sostenida. Por las dos lecturas el salto sigue sin estar escrito, y por las dos rige la prohibicion de suponer la clase sin dato geotecnico. La resolucion se apoya en esa prohibicion -- que es articulado y no admite lectura doble -- y no en el recuento de categorias
+  - Si se sigue la otra: citar el «the three categories» como si fuera articulado da un argumento mas fuerte del que la fuente permite, y es refutable en el acto: fue exactamente lo que la refutacion adversarial R95-073 hizo con la primera version de NOR-AAS-02
+  - *AASHTO_LRFD_9 · articulado*: la fila F de la Tabla 3.10.3.1-1 abre con «Soils requiring site-specific evaluations, SUCH AS:», que es lista ejemplificativa: no dice «the following» ni «limited to» ni cuenta las categorias
+  - *AASHTO_LRFD_9 · comentario*: la Tabla C3.10.3.1-1, paso 1, la llama «THE THREE CATEGORIES of Site Class F», que la lee como cerrada
 - **`DIS-CN-CALICATAS` — si el Cuadro 4.1 dice cuando son 4 calicatas y cuando 6.** Gana **MS**: verificado contra el PDF. Afirmar que la fuente calla donde habla es la forma inversa del mismo defecto que persigue este cluster: en vez de citar lo que no dice, se niega lo que si dice, y el resultado es igual de invisible -- un vacio inventado que convierte en [A] lo que es [N]
   - Si se sigue la otra: la densidad de la campaña geotecnica se elegiria como criterio [A] cuando la norma la determina, y una autopista de 4 carriles por sentido saldria con la mitad de las calicatas que el Cuadro exige
   - *codigo*: el comentario de CALICATAS_POR_SENTIDO afirmaba: «El Cuadro admite ademas 6 en vez de 4 para autopistas con 4 carriles por sentido, y «4 (o 6)» para duales. Ese 6 NO se transcribe aqui: el Cuadro lo da como alternativa SIN DECIR CUANDO APLICA CADA UNA, de modo que la eleccion entre 4 y 6 no es [N]»
@@ -860,5 +924,5 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 78.
+Citas sin firma de verificación: **0** de 91.
 

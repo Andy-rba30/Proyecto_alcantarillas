@@ -11,6 +11,7 @@ plausible, estos tests lo detienen.
 Valores de referencia: tests/fixtures/casos_patron.py (no se recalculan aqui).
 """
 
+import re
 from pathlib import Path
 
 import pytest
@@ -230,7 +231,8 @@ def test_la_guardia_de_coherencia_rechaza_un_S_sin_trazabilidad(monkeypatch):
     monkeypatch.setitem(
         CRITERIOS, "criterio_de_prueba",
         ca.Criterio(valor=1.0, etiqueta="S", concepto="c",
-                    justificacion="j", fuente="f"))
+                    justificacion="j", fuente="f",
+                    resolucion=ca.DeEnsayo(ensayo="e", trazabilidad_exigida="t")))
     with pytest.raises(ValueError, match="trazabilidad"):
         ca._coherencia_de_etiquetas()
 
@@ -263,7 +265,8 @@ def test_la_licuefaccion_y_la_clase_de_sitio_piden_profundidades_distintas():
     Dos ensayos, dos profundidades, y no son intercambiables:
 
         PERFIL_SUELO_PRESUNTO   licuefaccion -> SPT de 15 m (E.050 Art. 38)
-        clase_sitio             clase sismica -> 30 m (Vs30 / N_barra)
+        clase_sitio             clase sismica -> 100 ft = 30.48 m
+                                (Vs30 / N_barra)
 
     'clase_sitio' decia antes que lo cerraba un SPT de ">= 15 m", que es la
     profundidad del OTRO requisito: con 15 m no se lee un Vs30. Este test
@@ -273,7 +276,11 @@ def test_la_licuefaccion_y_la_clase_de_sitio_piden_profundidades_distintas():
     clase = criterio("clase_sitio").reemplazado_por
 
     assert "15 m" in licuefaccion and "Art. 38" in licuefaccion
-    assert "30 m" in clase
+    # La profundidad de la clase es la que el articulado imprime -- «the
+    # upper 100 ft» --, no los «30 m» que la hoja de ruta le atribuye. La
+    # cifra de la hoja de ruta aparece aqui SOLO citada como discrepancia,
+    # y por eso no basta con buscar «30 m»: hay que exigir las dos.
+    assert "100 ft" in clase and "30.48 m" in clase
     assert "15 m" not in clase.split("NO LO CIERRA")[0]
 
 
@@ -314,8 +321,11 @@ def test_los_parametros_sensibilizables_traen_rango_de_dos_extremos():
 # GUI, y la escritura permanente. Los tests de abajo entran por los tres.
 
 def _criterio_de_prueba(**campos):
+    # `resolucion` es obligatoria desde S15 (Sec. 4.3): el criterio de
+    # prueba declara la mas simple, porque lo que estos tests ejercitan es la
+    # guardia de sensibilidad y no la del modo de resolucion.
     base = dict(valor=1.0, etiqueta="A", concepto="c", justificacion="j",
-                fuente="f")
+                fuente="f", resolucion=ca.Libre(que_lo_fija="prueba"))
     base.update(campos)
     return ca.Criterio(**base)
 
@@ -618,8 +628,18 @@ def test_el_n_de_hdpe_es_un_rango_y_no_un_valor_puntual():
 
 
 # ===========================================================================
-# Clase de sitio F: la dispensa de periodo corto no existe en AASHTO
+# Clase de sitio: un [S] sin valor, y la dispensa de periodo corto no existe
 # ===========================================================================
+# S14 aplica la decision de docs/resolucion_clase_sitio.md (S13, conflicto #8):
+# el expediente deja de atribuirse la Clase de Sitio F porque las DOS fuentes
+# prohiben suponer la clase E o F sin dato geotecnico ni determinacion de la
+# autoridad, y este expediente no tiene ninguna de las dos. 'clase_sitio' pasa
+# de [A] con valor a [S] SIN VALOR: no es una eleccion mal acotada, es un
+# HECHO QUE FALTA.
+#
+# Estos tests se reescriben con la correccion y siguen vigilando lo mismo que
+# vigilaban -- que nadie le atribuya a AASHTO una dispensa que no concede --,
+# mas lo que la decision anade: que no vuelva a aparecer un valor.
 
 # Criterios que arma la cadena sismica de Sec. 0.4-0.5 y que M11 imprime en la
 # seccion sismica de la memoria. 'PERFIL_SUELO_PRESUNTO' entra porque es la
@@ -629,59 +649,165 @@ CRITERIOS_SISMICOS = ("clase_sitio", "PERFIL_SUELO_PRESUNTO", "F_pga",
                       "k_v", "gamma_EQ", "Mw_licuefaccion")
 
 
-def test_la_clase_de_sitio_es_adopcion_declarada_y_no_dispensa_normativa():
+def test_la_clase_de_sitio_no_se_supone_y_queda_como_dato_de_sitio_vacio():
     """
-    AASHTO LRFD 9a ed. (2020) NO concede dispensa por periodo corto a la
-    Clase F: ni el Art. 3.10.3.1, ni el comentario C3.10.3.1, ni tabla o nota
-    alguna. Exige estudio de respuesta de sitio especifico, sin condiciones.
+    Las dos fuentes PROHIBEN suponer la clase E o F sin dato geotecnico ni
+    determinacion de la autoridad competente, y este expediente no tiene
+    ninguna de las dos (AASHTO LRFD Art. 3.10.3.1, al pie de la Tabla
+    3.10.3.1-1, pag. impresa 3-102; Manual de Puentes num. 2.4.3.11.2.1.1,
+    pag. impresa 122, que lo endurece a "no seran supuestas").
 
-    Por eso el criterio dejo de ser [C] -- un vacio CUBIERTO con fuente
-    reconocida -- y paso a [A]: usar los factores de sitio tabulados es una
-    adopcion del proyectista y no un permiso de la norma. Si alguien vuelve a
-    poner [C] aqui, esta volviendo a atribuirle a AASHTO algo que no dice.
+    Por eso el criterio no lleva valor y no es [A]: lo que falta no es la
+    regla -- la norma dice como se determina la clase, con que variables y
+    sobre que profundidad --, falta la MEDICION. Eso es un [S] pendiente de
+    ensayo, y se defiende con trazabilidad, no con un rango.
+
+    Si alguien vuelve a ponerle valor aqui, esta volviendo a suponer la clase
+    que las dos fuentes vedan suponer.
     """
     c = criterio("clase_sitio")
-    assert c.etiqueta == "A", (
-        "clase_sitio volvio a etiquetarse como vacio cubierto por una fuente. "
-        "No hay fuente que lo cubra: la dispensa de periodo corto no existe")
-    assert c.valor == "F_con_factores_tabulados_por_adopcion"
-    assert "no concede" in c.fuente or "NINGUNA" in c.fuente
+    assert c.valor is None, (
+        "'clase_sitio' volvio a tener valor. Atribuirse una clase de sitio "
+        "sin dato geotecnico es lo que las dos fuentes prohiben "
+        "expresamente: no es una adopcion declarable del proyectista")
+    assert c.etiqueta == "S", (
+        "'clase_sitio' no es una eleccion del proyectista ni un vacio "
+        "normativo: es un hecho de sitio que se mide (Art. 3.10.3.1, «by "
+        "their stiffness as determined by the shear wave velocity in the "
+        "upper 100 ft»). Cambia al mover la obra y no al cambiar de "
+        "proyectista, que es la regla que separa [S] de [N] y de [A]")
+    assert c.trazabilidad and c.sensibilidad is None
+    assert "clase_sitio" in criterios_sin_valor(), (
+        "el vacio tiene que entrar por `criterios_sin_valor()`, que es la "
+        "puerta de M11 que le corresponde: es la via por la que la memoria "
+        "lo declara sin que nadie lo invoque (SIS-B-01)")
 
 
-def test_la_memoria_no_presenta_ninguna_excepcion_en_la_seccion_sismica():
+def test_la_cadena_sismica_no_se_detiene_por_la_clase_de_sitio_indeterminada():
     """
-    La palabra 'excepcion' desaparece de todo lo que M11 imprime de la cadena
-    sismica. No es cosmetica: el expediente llego a afirmar que AASHTO
-    autorizaba una dispensa para la Clase F, y un revisor con AASHTO a mano
-    lee 'excepcion' y busca el numeral que la concede. No hay ninguno.
+    Un `valor=None` invocado detiene el calculo, y eso es correcto para un
+    vacio que el calculo necesita. Este no lo es: la cadena sismica consume
+    el FACTOR -- 'F_pga' --, no la clase. Invocar 'clase_sitio' desde
+    produccion pararia el dimensionamiento entero del cabezal sin que
+    ninguna norma lo exija.
 
-    La excepcion declarada de DURABILIDAD (Sec. 0.2, E.060 Cap. 4 y Art. 7.7)
-    si existe y es legitima -- por eso este test mira solo los criterios
-    sismicos y no el archivo entero.
+    El vacio se DECLARA, no se interpone. La guardia de que nadie lo invoca
+    la pone `test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor`
+    sobre el campo `sin_consumidor`; aqui se fija la otra mitad: que el
+    factor que la cadena si consume sigue teniendo valor y rango.
+    """
+    assert criterio("clase_sitio").sin_consumidor.strip()
+    f_pga = criterio("F_pga")
+    assert f_pga.valor == ("C", "D", "E")
+    assert f_pga.etiqueta == "A" and f_pga.sensibilidad
+
+
+# Sustantivos con que se nombra una concesion normativa. La palabra sola no
+# es el defecto: el defecto es AFIRMAR que una norma la concede.
+_CONCESION = re.compile(r"\bexcepcion(?:es)?\b|\bdispensa(?:s)?\b"
+                        r"|\bexencion(?:es)?\b", re.IGNORECASE)
+
+# El ancla de una cita registrada -- `AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES` --
+# no es prosa del expediente: es el IDENTIFICADOR del pasaje en el registro,
+# y ese pasaje se llama asi porque la fuente titula el bloque «Exceptions».
+# Se borra antes de leer las frases, para que un identificador no cuente como
+# una afirmacion.
+_ANCLA_DE_CITA = re.compile(r"#[A-Z0-9_]+")
+
+# Marcas que hacen de la frase lo CONTRARIO de una concesion: una negacion,
+# una prohibicion, la denuncia de que la concesion era falsa, o la cita del
+# bloque que las dos fuentes titulan «Exceptions» / «Excepciones» -- que es,
+# justamente, donde vive la PROHIBICION de suponer la clase.
+_NO_ES_CONCESION = re.compile(
+    r"\bno\b|\bning|\bnunca\b|\bsin\b|\btampoco\b|prohib|veda|vedad"
+    r"|falsa|falso|inventad|«excepciones»|«exceptions»|bloque «", re.IGNORECASE)
+
+
+def test_la_seccion_sismica_no_afirma_ninguna_dispensa_normativa():
+    """
+    El expediente llego a afirmar que AASHTO concedia una EXCEPCION para la
+    Clase F -- una dispensa por periodo fundamental T <= 0.5 s --, y un
+    revisor con AASHTO a mano lee "excepcion" y busca el numeral que la
+    concede. No hay ninguno: se busco sobre las 1905 paginas de AASHTO LRFD
+    9a ed. (2020) con cero coincidencias.
+
+    POR QUE ESTA GUARDIA SE ESTRECHO EN S14. Perseguia la SUBCADENA "excep",
+    y con eso rechazaba la cita mas fuerte del archivo: el texto que resuelve
+    la cuestion vive en un bloque que las dos fuentes titulan literalmente
+    «Exceptions» / «Excepciones», y la fila de E.030 de la que salia la letra
+    se llama «Suelos excepcionales». Borrar la palabra para pasar el test
+    dejaria la decision sin su cita, que es el modo exacto en que este
+    expediente perdio la premisa la primera vez.
+
+    Lo que se persigue ahora es la AFIRMACION, frase por frase: nombrar una
+    excepcion o una dispensa solo vale si la frase la niega, la prohibe, la
+    denuncia como falsa, o cita el titulo del bloque de la fuente.
     """
     for clave in CRITERIOS_SISMICOS:
         c = criterio(clave)
         texto = " ".join(str(campo) for campo in
                          (c.concepto, c.justificacion, c.fuente,
                           c.reemplazado_por, c.trazabilidad,
-                          c.verificacion_pendiente) if campo)
-        assert "excep" not in texto.lower(), (
-            f"'{clave}' vuelve a hablar de una excepcion en la seccion "
-            "sismica de la memoria")
+                          c.sin_consumidor, c.verificacion_pendiente) if campo)
+        texto = _ANCLA_DE_CITA.sub("", texto)
+        for frase in re.split(r"(?<=[.;:])\s+", texto):
+            if not _CONCESION.search(frase):
+                continue
+            assert _NO_ES_CONCESION.search(frase), (
+                f"'{clave}' nombra una excepcion o dispensa sin negarla ni "
+                f"atribuirla al titulo de un bloque de la fuente:\n\n"
+                f"    {frase}\n\n"
+                "AASHTO no concede ninguna dispensa a la Clase F, y el "
+                "Manual tampoco. Si la frase cita el bloque «Excepciones» de "
+                "la fuente, escribelo entre comillas angulares; si afirma "
+                "una concesion, es una cita inventada")
 
 
-def test_lo_que_cierra_la_clase_de_sitio_es_el_estudio_de_respuesta_de_sitio():
+def test_la_dispensa_por_periodo_corto_se_declara_inexistente_donde_se_nombra():
     """
-    Antes lo cerraba una lectura de Vs30/N_barra sobre 30 m. Sigue haciendo
-    falta -- define la clase -- pero ya no basta: la Clase F exige ADEMAS el
-    estudio de respuesta de sitio especifico. Pedir solo los 30 m volveria a
-    programar la campana corta, que es el error que este bloque de tests
-    lleva dos correcciones intentando evitar.
+    La mitad positiva de la guardia anterior, y el nucleo que sobrevive a la
+    correccion de S14: no basta con no afirmar la dispensa, hay que dejar
+    dicho que NO EXISTE. Si no, el proximo que lea el expediente sin abrir
+    AASHTO no sabra que ya se busco.
     """
     c = criterio("clase_sitio")
-    pendiente = f"{c.reemplazado_por} {c.verificacion_pendiente}"
-    assert "30 m" in c.reemplazado_por
-    assert "respuesta de sitio" in pendiente
+    texto = f"{c.justificacion} {c.fuente}".upper()
+    assert "DISPENSA POR PERIODO CORTO NO EXISTE" in texto, (
+        "'clase_sitio' dejo de decir que la dispensa por periodo corto no "
+        "existe. Es la unica afirmacion negativa del bloque sismico que se "
+        "verifico contra la fuente primaria, con 0 coincidencias en 1905 "
+        "paginas, y borrarla pierde esa verificacion")
+
+
+def test_lo_que_cierra_la_clase_de_sitio_son_dos_ensayos_y_no_uno():
+    """
+    Son DOS ensayos, de profundidades distintas, y conviene pedirlos juntos:
+
+        (1) la caracterizacion de los 100 ft (30.48 m) superiores -- Vs30 o
+            N_barra --, que es la profundidad que el Art. 3.10.3.1 escribe y
+            con la que se LEE la clase;
+        (2) si esa caracterizacion diera Clase F, el analisis de respuesta
+            dinamica de sitio.
+
+    Pedir solo (1) volveria a programar la campana corta. Y (2) se ancla en
+    el ARTICULADO -- Art. 3.10.2 «shall», num. 2.4.3.11.2 del Manual «sera
+    usado» --, no en la Nota 2 al pie de la tabla de factores, que lo repite
+    y no lo funda: era donde el repositorio lo tenia colgado.
+    """
+    c = criterio("clase_sitio")
+    texto = f"{c.reemplazado_por} {c.trazabilidad}"
+
+    assert "100 ft" in c.reemplazado_por and "30.48 m" in c.reemplazado_por, (
+        "la profundidad volvio a escribirse como «30 m». El Art. 3.10.3.1 "
+        "imprime «the upper 100 ft» y no esa cifra: atribuirsela es la "
+        "discrepancia DIS-HR-30M-VS-100FT")
+    assert "3.10.2" in c.reemplazado_por, (
+        "el analisis de respuesta de sitio volvio a anclarse en la Nota 2 de "
+        "la tabla. La exige el articulado: Art. 3.10.2 / num. 2.4.3.11.2")
+    assert "respuesta dinamica de sitio" in texto.lower()
+    assert "15 m" in c.reemplazado_por and "Art. 38" in c.reemplazado_por, (
+        "se perdio la advertencia de que el SPT de licuefaccion de 15 m NO "
+        "cierra este criterio")
 
 
 # ---------------------------------------------------------------------------
