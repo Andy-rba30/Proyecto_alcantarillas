@@ -170,6 +170,33 @@ def _nombres_de(ruta: Path) -> set:
 
 # ---------------------------------------------------------------------------
 
+def test_el_campo_donde_vive_se_puede_leer_de_todas_las_fichas():
+    """
+    EL PARAMETRIZE PODIA QUEDARSE VACIO, y con el las 32 comprobaciones de
+    anclaje desaparecian EN SILENCIO.
+
+    `_simbolos_declarados()` raspa el .md con una regex que exige backticks
+    alrededor del valor. Quitar los backticks --- un cambio de formato que no
+    toca la etiqueta `**Dónde vive:**`, de modo que
+    `test_cada_ficha_dice_las_cuatro_cosas` sigue verde --- vaciaba la lista,
+    pytest colapsaba los 32 casos en un unico `skipped` y no fallaba nada. De
+    paso rompia el invariante que CLAUDE.md declara: «hay un test skipped
+    permanente, de modo que collected = passed + 1».
+
+    Este test es el censo: tantos anclajes legibles como fichas.
+    """
+    fichas = _fichas()
+    anclajes = _simbolos_declarados()
+    assert anclajes, (
+        "no se pudo leer NINGUN campo «Dónde vive»: la regex y el formato del "
+        "documento se separaron, y con ellos se apagaron todas las "
+        "comprobaciones de anclaje")
+    assert len(anclajes) == len(fichas), (
+        f"{len(fichas)} fichas y {len(anclajes)} anclajes legibles: alguna "
+        "ficha escribe su «Dónde vive» de una forma que la regex no ve, y esa "
+        "ficha deja de vigilarse sin que nada falle")
+
+
 def test_el_registro_existe():
     assert REGISTRO.exists(), (
         "falta docs/decisiones_diferidas.md: es el «un solo lugar» que el plan "
