@@ -5,9 +5,12 @@ Fase 9 (M9_cabezal.py). Cuatro bloques, en el orden de la hoja de ruta:
 
     9.2 cadena sismica    los seis pasos horizontales por separado, k_v
                           aparte, y el ensamble `cadena_sismica()`.
-    9.2 Mononobe-Okabe    el caso limite contra tan^2(45 - phi/2) -- el test
-                          que garantiza que los signos estan bien puestos --,
-                          la monotonia frente a k_h y el dominio de validez.
+    9.2 Mononobe-Okabe    los tres juegos de CP9_MONONOBE_OKABE, con los seis
+                          parametros distintos de cero -- son los que cubren
+                          las convenciones de signo --, el caso limite contra
+                          tan^2(45 - phi/2), que prueba la reduccion a Rankine
+                          y NO los signos (SIS-F-04), la monotonia frente a
+                          k_h y el dominio de validez.
     9.2 cargas            sobrecarga de 0.60 m equivalente, empujes, agua,
                           subpresion y las tres combinaciones AASHTO.
     9.3 estabilidad       los FS de la tabla en sus dos condiciones.
@@ -280,9 +283,18 @@ def test_una_eleccion_de_factor_de_muro_fuera_de_la_tabla_es_dato_invalido(monke
 @pytest.mark.parametrize("phi", [25.0, 28.0, 30.0, 34.0, 38.0, 42.0])
 def test_caso_limite_mononobe_okabe_es_el_ka_de_rankine(phi):
     """
-    EL test de esta formula. Con k_h = k_v = 0 e i = beta = delta = 0,
+    La reduccion a Rankine. Con k_h = k_v = 0 e i = beta = delta = 0,
     Mononobe-Okabe tiene que devolver EXACTAMENTE tan^2(45 - phi/2), el Ka
-    que cita Sec. 9.2. Si un signo esta cambiado, aqui se ve.
+    que cita Sec. 9.2.
+
+    NO ES "EL test de esta formula" NI "si un signo esta cambiado, aqui se
+    ve", que es lo que decia este docstring y lo que SIS-F-04 cita como la
+    documentacion que afirma lo que el codigo no da. Con los tres angulos en
+    cero los cosenos son PARES: doce de los quince mutantes de signo dan aqui
+    el mismo double que el original. Los signos los cubre
+    `test_k_ae_contra_caso_patron_con_los_seis_parametros_no_nulos`, sobre
+    CP9_MONONOBE_OKABE. Este test prueba la reduccion, que tambien hay que
+    probar, y solo eso.
     """
     K_AE = k_ae_mononobe_okabe(phi_grados=phi, i_grados=0.0, beta_grados=0.0,
                                delta_grados=0.0, k_h=0.0, k_v=0.0)
@@ -1820,14 +1832,26 @@ def test_convenciones_de_i_beta_y_k_v_van_en_la_direccion_declarada():
     delta (con beta = 20 tiene un minimo cerca de delta = 5 grados y crece
     despues), y por eso `test_delta_mayor_reduce_k_ae` solo vale en su propia
     configuracion.
+
+    LOS SEIS PARAMETROS SE LEEN DE CP9_MONONOBE_OKABE y no se escriben aqui.
+    Estaban duplicados como literales --- los mismos seis numeros de CP9-A,
+    digito a digito --- y eso es el defecto SIS-F-14: corregir el fixture no
+    llegaba a este test. La resolucion de la fila 7 de la hoja `Conflictos`
+    es vinculante y dice exactamente "hacer que los tests de M9 lean del
+    fixture en vez de literales".
     """
-    base = dict(phi_grados=40.0, i_grados=5.0, beta_grados=20.0,
-                delta_grados=25.0, k_h=0.15, k_v=0.05)
+    base = {clave: CP9_MONONOBE_OKABE[0][clave]
+            for clave in ("phi_grados", "i_grados", "beta_grados",
+                          "delta_grados", "k_h", "k_v")}
     referencia = k_ae_mononobe_okabe(**base)
-    assert k_ae_mononobe_okabe(**{**base, "i_grados": 12.0}) > referencia
-    assert k_ae_mononobe_okabe(**{**base, "beta_grados": 28.0}) > referencia
-    assert k_ae_mononobe_okabe(**{**base, "k_v": 0.20}) > referencia
-    assert k_ae_mononobe_okabe(**{**base, "k_h": 0.25}) > referencia
+    # Las perturbaciones SI son del test --- no son dorados, son "un poco mas
+    # que el caso" --- y se derivan del propio caso para que no queden
+    # colgando de un numero fijo si el fixture cambia de configuracion.
+    mas = lambda clave, delta: {**base, clave: base[clave] + delta}   # noqa: E731
+    assert k_ae_mononobe_okabe(**mas("i_grados", 7.0)) > referencia
+    assert k_ae_mononobe_okabe(**mas("beta_grados", 8.0)) > referencia
+    assert k_ae_mononobe_okabe(**mas("k_v", 0.15)) > referencia
+    assert k_ae_mononobe_okabe(**mas("k_h", 0.10)) > referencia
 
 
 # ---------------------------------------------------------------------------
