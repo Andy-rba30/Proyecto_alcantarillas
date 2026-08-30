@@ -76,58 +76,67 @@ import criterios_adoptados as _ca  # noqa: E402
 
 CLAVE_ORIGEN_COTA = "origen_cota_fondo_entrada"
 ORIGEN_COTA_DE_PRUEBA = "cota_terreno"
-
-# ---------------------------------------------------------------------------
-# La corrida de pruebas declara tambien la geometria fisica del conducto
-# ---------------------------------------------------------------------------
-# Cluster C01. El tamizado de 7.A y la flotacion V7 dejaron de correr con el
-# diametro interior: la clave se mide sobre la superficie EXTERIOR (EG-2013
-# 508.07, MAT-D4) y la subpresion sobre el volumen desplazado real (num.
-# 2.4.3.8.2, MAT-D3). Eso pide dos datos que el proyecto NO tiene:
-#
-#   'espesor_pared_conducto'  el t de cada material. Es consecuencia de la
-#                             clase, calibre o perfil que se especifique, y esa
-#                             seleccion es el vacio que
-#                             'clases_producto_por_relleno' ya declara abierto.
-#   'condicion_pavimento'     que fila de la Tabla 12.6.6.3-1 de AASHTO LRFD
-#                             aplica a esta via (NOR-VAC-01).
-#
-# LOS VALORES DE ABAJO SON DE LA CORRIDA DE PRUEBAS, NO DEL EXPEDIENTE. Entran
-# por el mismo camino que usan la GUI y la CLI -- `establecer_valor_dinamico`,
-# que pasa por la guardia `_verificar_criterio` -- y por eso la memoria los
-# imprime en el bloque "DECLARADOS SOLO PARA ESTA CORRIDA": no estan en
-# criterios_adoptados.py y no valen para ninguna otra corrida. Se eligieron
-# para que sean RASTREABLES, no por comodidad:
-#
-#   concreto 0.100 m  espesor de pared B de C76/M 170M para D = 0.90 m
-#                     (t = D/12 + 25 mm), la cifra que la propia ficha MAT-D4
-#                     usa en su evidencia numerica.
-#   tmc      0.013 m  altura de la corrugacion 68 x 13 mm, tamaño estandar
-#                     para 900 mm en la Tabla 1 de ASTM A760/A760M-10. Es el
-#                     espesor de perfil, sin el calibre de la plancha, que
-#                     sigue abierto en 'clases_producto_por_relleno'.
-#   hdpe     0.050 m  extremo BAJO del rango de altura de perfil corrugado que
-#                     cita MAT-D4 (0.05-0.08 m); AASHTO M294 no esta en normas/.
-#
-# El proyectista que cierre el expediente no hereda ninguno de los tres: los
-# declara el mismo, con la clase o el calibre que especifique.
-ESPESOR_PARED_DE_PRUEBA = {
-    "concreto_reforzado": 0.100,
-    "tmc": 0.013,
-    "hdpe": 0.050,
-}
 CLAVE_ESPESOR_PARED = "espesor_pared_conducto"
-
-# 'flexible' es la fila de pavimento asfaltico, la corriente en un corredor
-# vial de este tipo. No es la mas exigente de las tres ni la mas benigna: en
-# concreto pide lo mismo que 'no_pavimentado' (Bc/8 >= 12 in) y mas que
-# 'rigido' (9 in); en HDPE pide ID/2 >= 24 in, mucho mas que 'no_pavimentado'.
 CLAVE_CONDICION_PAVIMENTO = "condicion_pavimento"
 CONDICION_PAVIMENTO_DE_PRUEBA = "flexible"
 
 # ---------------------------------------------------------------------------
-# ...y las dos declaraciones de las que cuelga el recubrimiento del refuerzo
+# Los DOS materiales que el expediente no puede declarar, para la corrida de
+# pruebas
 # ---------------------------------------------------------------------------
+# 'espesor_pared_conducto' quedo declarado en el expediente SOLO para el
+# concreto reforzado, y no por descuido: es el unico de los tres materiales
+# cuya norma de producto esta en `normas/` (AASHTO M 170M-04, columna «Wall
+# Thickness» de la pared B). El TMC depende del calibre de plancha que fija la
+# Fase 8 -- 'clases_producto_por_relleno', que es de expediente y sigue
+# abierto -- y el HDPE sale de AASHTO M294, que no esta en el repositorio. En
+# una corrida real los dos se descartan como candidatos con su causa escrita,
+# y el punto se dimensiona en concreto.
+#
+# LOS TESTS UNITARIOS DE M7 Y M5 SI LOS NECESITAN, porque prueban FORMULAS --
+# la clave fisica, el volumen desplazado, el tamizado de 7.A -- sobre
+# materiales sinteticos, y una formula no se puede probar con un material que
+# se detiene antes de entrar en ella. Se declaran aqui, con el mismo rotulo
+# que siempre: valores DE LA CORRIDA DE PRUEBAS, que la memoria imprime en el
+# bloque "DECLARADOS SOLO PARA ESTA CORRIDA".
+#
+#   tmc   0.013 m  altura de la corrugacion 68 x 13 mm, tamaño estandar para
+#                  900 mm en la Tabla 1 de ASTM A760/A760M-10. Es el espesor
+#                  de perfil, sin el calibre de la plancha.
+#   hdpe  0.050 m  extremo BAJO del rango de altura de perfil corrugado que
+#                  cita la ficha MAT-D4 (0.05-0.08 m).
+#
+# La columna del concreto NO se copia: se LEE del criterio y se le añaden los
+# dos materiales que faltan. Copiarla aqui crearia una segunda transcripcion
+# de trece filas de una tabla normativa, que es exactamente lo que este
+# repositorio persigue.
+ESPESOR_TMC_DE_PRUEBA = 0.013      # m
+ESPESOR_HDPE_DE_PRUEBA = 0.050     # m
+
+# ---------------------------------------------------------------------------
+# TRES DECLARACIONES SE RETIRARON DE AQUI EN S20, y hay que decir por que
+# ---------------------------------------------------------------------------
+# 'origen_cota_fondo_entrada', 'espesor_pared_conducto' y
+# 'condicion_pavimento' se declaraban en este archivo, como valores DE LA
+# CORRIDA DE PRUEBAS, porque el expediente los tenia vacios y sin ellos la
+# suite entera se detenia. En S20 los tres se cerraron en
+# `criterios_adoptados.py` -- son criterios de NIVEL DE PERFIL y el cierre de
+# ese nivel era la tarea --, de modo que declararlos aqui ya no rellenaba un
+# vacio: TAPABA el valor del expediente con otro.
+#
+# El caso que lo hizo visible es 'espesor_pared_conducto'. Este archivo lo
+# declaraba como un espesor por material {concreto: 0.100, tmc: 0.013, hdpe:
+# 0.050}, que era la forma correcta cuando el espesor se creia unico por
+# material. Al pasar el criterio a la columna «Wall Thickness» completa por
+# DIAMETRO DESIGNADO, esa declaracion dejo de ser un valor de prueba
+# razonable y paso a ser un valor de la forma equivocada, con el que la suite
+# fallaba en veintitantos tests a la vez.
+#
+# Las claves y los rotulos se conservan porque varios tests los importan para
+# RETIRAR la declaracion y comprobar el bloqueo (`quitar_valor_dinamico`), y
+# esa es la prueba que no se puede perder: si mañana alguien vacia el
+# criterio en el archivo, esos tests siguen probando lo suyo.
+
 # Cluster C07. El lado AASHTO de la regla del recubrimiento mayor dejo de ser
 # un valor declarado (75 mm) y pasa a calcularse -- fila de la tabla, columna
 # por categoria de acero, modificador por relacion a/c, piso de 1.0 in --, de
@@ -138,7 +147,13 @@ CONDICION_PAVIMENTO_DE_PRUEBA = "flexible"
 #   'exposicion_quimica_ems'     el analisis quimico del EMS, del que sale la
 #                                relacion a/c maxima y con ella el modificador.
 #
-# TAMBIEN SON VALORES DE LA CORRIDA DE PRUEBAS, elegidos para ser rastreables:
+# LAS DOS SIGUEN SIENDO VALORES DE LA CORRIDA DE PRUEBAS, y siguen aqui
+# porque las dos son de NIVEL DE EXPEDIENTE: el cierre del nivel de perfil no
+# las alcanza, y la Fase 9 que las consume la difiere `--alcance perfil`.
+# Entran por el mismo camino que usan la GUI y la CLI --
+# `establecer_valor_dinamico`, que pasa por la guardia `_verificar_criterio`
+# -- y por eso la memoria las imprime en el bloque "DECLARADOS SOLO PARA ESTA
+# CORRIDA". Se eligieron para ser RASTREABLES, no por comodidad:
 #
 #   categoria "A"   acero sin recubrir. Es la columna que el expediente venia
 #                   usando sin decirlo (los 75 mm eran sus 3.0 in redondeados
@@ -173,10 +188,30 @@ EXPOSICION_QUIMICA_DE_PRUEBA = {
     },
 }
 
+# El barrido de diametros de la corrida de pruebas. Va de 300 a 3600 mm en
+# pasos de 75 -- un superconjunto de las tres series de producto -- porque
+# varios tests unitarios usan diametros SINTETICOS que ninguna serie tiene
+# (0.60 m, por ejemplo, que esta por debajo del piso normativo de 0.90 m y se
+# usa a proposito para probar que la formula no depende del catalogo). Es un
+# rango de PRUEBA: el expediente declara solo los trece diametros que la
+# norma de producto imprime.
+_DIAMETROS_DE_PRUEBA_MM = tuple(range(300, 3601, 75))
+
+
+def _espesor_pared_de_prueba():
+    """La columna del expediente mas los dos materiales que no puede tener."""
+    del_expediente = _ca.CRITERIOS[CLAVE_ESPESOR_PARED].valor
+    return {
+        **del_expediente,
+        "tmc": {mm: ESPESOR_TMC_DE_PRUEBA for mm in _DIAMETROS_DE_PRUEBA_MM},
+        "hdpe": {mm: ESPESOR_HDPE_DE_PRUEBA for mm in _DIAMETROS_DE_PRUEBA_MM},
+    }
+
+
+ESPESOR_PARED_DE_PRUEBA = _espesor_pared_de_prueba()
+
 _DECLARACIONES_DE_PRUEBA = {
-    CLAVE_ORIGEN_COTA: ORIGEN_COTA_DE_PRUEBA,
     CLAVE_ESPESOR_PARED: ESPESOR_PARED_DE_PRUEBA,
-    CLAVE_CONDICION_PAVIMENTO: CONDICION_PAVIMENTO_DE_PRUEBA,
     CLAVE_CATEGORIA_REFUERZO: CATEGORIA_REFUERZO_DE_PRUEBA,
     CLAVE_EXPOSICION_QUIMICA: EXPOSICION_QUIMICA_DE_PRUEBA,
 }

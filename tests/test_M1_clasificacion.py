@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 import criterios_adoptados as ca
+from tests.apoyo.criterios import sin_valor
 from constantes_normativas import LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE
 from modelos import (CategoriaTR, Clasificacion, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError, Denominacion,
@@ -273,13 +274,14 @@ def test_familia_A_sin_categoria_detiene_el_calculo(punto_a):
     Sec. 2.3 dice 'TR 71 o 35 anios' sin regla de asignacion. M1 no elige por
     su cuenta: lee el criterio, que sigue vacio, y se detiene.
     """
-    with pytest.raises(CriterioPendienteError) as exc:
-        periodo_retorno_de(punto_a)
-    assert exc.value.clave == CRITERIO_CATEGORIA_A
-    assert exc.value.mensaje_gui == f"falta declarar: {CRITERIO_CATEGORIA_A}"
-    assert isinstance(exc.value, ErrorProyecto)
-    # Nadie relleno el vacio al pasar por aqui.
-    assert ca.CRITERIOS[CRITERIO_CATEGORIA_A].valor is None
+    with sin_valor(CRITERIO_CATEGORIA_A):
+        with pytest.raises(CriterioPendienteError) as exc:
+            periodo_retorno_de(punto_a)
+        assert exc.value.clave == CRITERIO_CATEGORIA_A
+        assert exc.value.mensaje_gui == f"falta declarar: {CRITERIO_CATEGORIA_A}"
+        assert isinstance(exc.value, ErrorProyecto)
+        # Nadie relleno el vacio al pasar por aqui.
+        assert ca.CRITERIOS[CRITERIO_CATEGORIA_A].valor is None
 
 
 def test_familia_A_con_categoria_declarada_no_necesita_el_criterio(punto_a):
@@ -309,8 +311,9 @@ def test_con_umbral_declarado_el_area_de_cuenca_decide(puntos, umbral_declarado)
 def test_el_criterio_del_umbral_queda_registrado_como_usado(punto_a):
     """M11 debe poder decir que el calculo intento usarlo."""
     ca._USADOS.discard(CRITERIO_CATEGORIA_A)
-    with pytest.raises(CriterioPendienteError):
-        periodo_retorno_de(punto_a)
+    with sin_valor(CRITERIO_CATEGORIA_A):
+        with pytest.raises(CriterioPendienteError):
+            periodo_retorno_de(punto_a)
     assert CRITERIO_CATEGORIA_A in ca._USADOS
 
 

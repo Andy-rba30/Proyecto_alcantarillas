@@ -1,7 +1,7 @@
 """
 M5_verificaciones.py
 =====================
-Fase 5 de la hoja de ruta: las diez verificaciones de la tabla principal
+Fase 5 de la hoja de ruta: las ONCE verificaciones de la tabla principal
 (V1 a V9), cada una como funcion propia que devuelve un `Verificacion` (nunca
 un bool desnudo), mas `verificar()`, el agregado que MD.py llama con la firma
 que declara su Protocol `Verificador`.
@@ -12,6 +12,12 @@ que declara su Protocol `Verificador`.
                                   (RECOMENDACION aplicada como umbral duro;
                                   se evalua con la rama n_max, la estimacion
                                   BAJA de velocidad -- ver `v2_velocidad_minima`)
+    V2b Sedimentacion/colmatacion S_conducto >= S_cauce   [C] HDS-5 num. 5.3.3
+                                  + acceso de mantenimiento    [A]
+                                  (INDICADOR aplicado como umbral duro; el
+                                  segundo indicador del numeral queda
+                                  declarado pendiente -- ver
+                                  `v2b_sedimentacion`)
     V3  Velocidad maxima          concreto: fila de la Tabla N 10 [N]
                                   TMC / HDPE: 'v_max_tmc' / 'v_max_hdpe',
                                   CERRADOS con valor 4.572 m/s     [C]
@@ -26,23 +32,33 @@ que declara su Protocol `Verificador`.
     V8  Evento extremo (FEN)      sin TR mayor ni umbral -> pendiente      [A]
     V9  Disponibilidad de diametro  D <= tope de M2                        [C]
 
-Por que son NUEVE funciones y la tabla de Fase 5 tiene ONCE filas
------------------------------------------------------------------
+Por que ya son ONCE funciones para las ONCE filas de la tabla de Fase 5
+----------------------------------------------------------------------
 La tabla de Fase 5 de la hoja de ruta lista once verificaciones -- V1, V2,
-**V2b**, V3, V4, **V4b**, V5, V6, V7, V8, V9 -- y este modulo implementa
-DIEZ. La unica que falta es V2b:
+**V2b**, V3, V4, **V4b**, V5, V6, V7, V8, V9 -- y este modulo implementa las
+ONCE. Las dos que faltaban se cablearon en sesiones distintas y por la misma
+regla: cuando se pudo sostener el umbral con su fuente, no antes.
 
-**V2b - sedimentacion / colmatacion. Diferida al expediente, con constancia.**
-Lo que V2b exige no es un umbral que este software pueda evaluar, sino ACCESO
-DE MANTENIMIENTO EN LOS PLANOS -- el entregable 7 de Sec. 11, que este script
-no produce (no dibuja planos). La mitad [N] de esa fila -- la velocidad
-minima que evita la sedimentacion -- SI esta implementada, y es V2 (0.25 m/s,
-num. 4.1.1.3.6, cuyo motivo declarado en la norma es justamente la
-sedimentacion). Queda una obligacion viva y de expediente que no desaparece:
-prever el acceso de mantenimiento para limpieza en los planos de cada punto.
-`verificaciones_no_evaluadas()` la declara, M11 la imprime pegada a la tabla de
-verificaciones de cada punto -- que es donde el revisor cuenta las filas -- y
-el JSON la lleva en 'verificaciones_no_evaluadas'.
+**V2b - sedimentacion / colmatacion. IMPLEMENTADA desde S20**
+(`v2b_sedimentacion`, en `verificar()`). Hasta entonces no existia en ninguna
+linea de codigo (SIS-A-13, MAT-O15) y en su lugar habia una CONSTANCIA de
+diferimiento: un parrafo que la memoria imprimia y que nadie tenia que
+responder. Lo que la desbloqueo fue encontrar la fuente que este repositorio
+ya tenia y no habia leido: el **HDS-5 3.a ed., num. 5.3.3 «Sedimentation»,
+pag. impresa 5.11**, que nombra los indicadores de colmatacion en terminos de
+dos numeros que el calculo ya tiene -- la pendiente del barril frente a la
+del cauce natural --. La fila es [N] + [A] en la hoja de ruta y esa
+estructura se conserva entera: el indicador de pendiente es la mitad
+evaluable y el ACCESO DE MANTENIMIENTO es la mitad [A], que entra por el
+criterio 'acceso_mantenimiento_v2b' y **detiene la corrida mientras siga
+vacio**. Ya no es un parrafo: es una pregunta que el expediente tiene que
+contestar.
+
+De los dos indicadores del numeral se evalua UNO. El segundo -- «roughness
+greater than the channel» -- exige el n de Manning del CAUCE NATURAL, que no
+es columna de Sec. 1.2; queda declarado en la `verificacion_pendiente` del
+criterio y la memoria lo imprime en la propia fila. Ver el docstring de la
+funcion.
 
 **V4b - relacion HW/D. IMPLEMENTADA desde S14** (`v4b_relacion_hw_d`, en
 `verificar()`). Se cableo cuando se pudo y no antes: el conflicto #1 de la
@@ -115,15 +131,15 @@ procedimiento: el peso especifico del relleno
 son [N] y estan en constantes_normativas). Ver el docstring de `v7_flotacion`
 mas abajo.
 
-Consecuencia practica: mientras 'remanso_derecho_via', 'TR_evento_extremo' y
-los dos criterios de V7 sigan vacios, `verificar()` (y por lo tanto
-`MD.disenar_punto` / `MD.disenar_lote`) se detiene con
-`CriterioPendienteError` para CUALQUIER punto. No es un defecto de este
-modulo: es la misma regla que ya aplica a 'TW_receptor' o 'v_max_tmc' -- un
-vacio real bloquea el calculo, no lo esconde. Las diez funciones
-individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI son
-utilizables una por una hoy mismo; es el AGREGADO el que hereda el bloqueo de
-las pendientes.
+Consecuencia practica: mientras 'remanso_derecho_via', 'TR_evento_extremo',
+'acceso_mantenimiento_v2b' y los dos criterios de V7 sigan vacios,
+`verificar()` (y por lo tanto `MD.disenar_punto` / `MD.disenar_lote`) se
+detiene con `CriterioPendienteError` para CUALQUIER punto. No es un defecto
+de este modulo: es la misma regla que ya aplica a 'TW_receptor' o
+'v_max_tmc' -- un vacio real bloquea el calculo, no lo esconde. Las once
+funciones individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI
+son utilizables una por una hoy mismo; es el AGREGADO el que hereda el
+bloqueo de las pendientes.
 
 V4 -- la cota de entrada es un CRITERIO DECLARADO, no un supuesto del codigo
 ----------------------------------------------------------------------------
@@ -190,7 +206,8 @@ import criterios_adoptados as ca
 from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE,
                                    UMBRALES_POR_CODIGO, V_MIN,
                                    Y_SOBRE_D_MAX, caracter_del_umbral)
-from modelos import (CIFRAS_FACTOR, CIFRAS_MAGNITUD, CIFRAS_PORCENTAJE,
+from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+                     CIFRAS_PORCENTAJE,
                      DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
                      ErrorProyecto,
                      Magnitud, Material,
@@ -264,6 +281,22 @@ NUMERAL_V4B = ("Fase 5, V4b -- adopcion del proyectista ('HW_D_max' [A]). "
                "que imponen las agencias viales de EE. UU., y el MTC no fija "
                "HW/D alguno")
 
+# V2b lleva numeral y pagina porque la mitad evaluable SI los tiene desde
+# S20 -- el HDS-5 3.a ed. num. 5.3.3 --, y lleva ademas el matiz por la misma
+# razon que V1 y V2: la fuente nombra un INDICADOR y el proyecto lo aplica
+# como umbral duro. Un numeral pelado haria pasar por exigencia lo que la
+# fuente escribe como sintoma.
+NUMERAL_V2B = ('HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 "Sedimentation", '
+               'pag. impresa 5.11. El numeral NO fija un umbral: nombra dos '
+               'INDICADORES ("barrel slope less than the natural channel and '
+               'roughness greater than the channel are key indicators of '
+               'potential problems"). Aqui se evalua el PRIMERO como umbral '
+               'duro, por decision conservadora del proyecto; el segundo '
+               'exige el n de Manning del cauce natural, que no es columna de '
+               'Sec. 1.2, y queda declarado pendiente. La otra mitad de la '
+               'fila V2b de la hoja de ruta -- el acceso de mantenimiento en '
+               'planos -- entra por el criterio '
+               "'acceso_mantenimiento_v2b' [A]")
 NUMERAL_V5 = "Fase 5, V5 (DG-2018 + Ley 29338)"
 NUMERAL_V6 = "3.1"
 NUMERAL_V7 = ("Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; "
@@ -277,6 +310,8 @@ NUMERAL_V9 = "Sec. 3.2 (V9, nuevo en v7)"
 CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
+# La mitad [A] de la fila V2b: el acceso de mantenimiento en planos.
+CRITERIO_ACCESO_MANTENIMIENTO = "acceso_mantenimiento_v2b"
 # La regla con la que se obtiene la cota de fondo de entrada (V4, V7 y 7.A).
 CRITERIO_ORIGEN_COTA_ENTRADA = "origen_cota_fondo_entrada"
 # Reglas IMPLEMENTADAS: clave = valor que el proyectista declara en el
@@ -291,7 +326,7 @@ CRITERIO_V_MAX_CONCRETO = "v_max_concreto_eleccion"
 
 
 # ---------------------------------------------------------------------------
-# La UNICA fila de Fase 5 que este modulo no evalua: V2b
+# Filas de Fase 5 que este modulo no evalua: desde S20, ninguna
 # ---------------------------------------------------------------------------
 
 CLAVE_HW_D_MAX = "HW_D_max"
@@ -299,48 +334,36 @@ CLAVE_HW_D_MAX = "HW_D_max"
 
 def verificaciones_no_evaluadas() -> Tuple[str, ...]:
     """
-    La fila de la tabla de Fase 5 que este modulo NO implementa como
-    verificacion -- V2b -- y por que.
+    Las filas de la tabla de Fase 5 que este modulo NO implementa como
+    verificacion. Desde S20 la tupla esta VACIA: las once se evaluan.
 
     Misma forma y mismo proposito que
     `M8_estructural.verificacion_diferida_estructural`: lo que queda fuera del
     alcance del script no se calcula ni se aproxima, se declara con su
     fundamento para que la memoria lo imprima. Un requisito que desaparece sin
-    dejar rastro es lo que este proyecto persigue; que la tabla tenga ONCE
-    filas y el modulo DIEZ funciones tiene que verse en la memoria, no
-    deducirse contando.
+    dejar rastro es lo que este proyecto persigue.
 
-    V2b: la mitad [N] -- la velocidad minima que evita la sedimentacion -- SI
-    se verifica, y es V2 (0.25 m/s, num. 4.1.1.3.6, cuyo motivo declarado en
-    el propio numeral es la sedimentacion). Lo que queda fuera es la mitad
-    [A], el acceso de mantenimiento para limpieza, contenido de los PLANOS
-    (Sec. 11, entregable 7) que este software no produce.
+    POR QUE SIGUE EXISTIENDO UNA FUNCION QUE HOY DEVUELVE (). Porque su forma
+    es la del CONJUNTO de filas diferidas, no la de la fila que en un momento
+    dado lo este. Ya paso dos veces: contenia dos constancias (V2b y V4b),
+    quedo con una al cablearse V4b en S14, y quedo con ninguna al cablearse
+    V2b en S20. El dia que otra se difiera entra aqui sin tocar a ningun
+    llamador, y mientras tanto M11 imprime la afirmacion positiva -- que
+    ninguna queda sin evaluar --, que es informacion y no un hueco.
 
-    V4b YA NO ESTA AQUI. Devolvia una constancia de "no evaluada" porque su
-    chequeo no estaba cableado; se cableo en S14 -- `v4b_relacion_hw_d`, en
-    `verificar()` -- una vez cerrada la procedencia del umbral, que es la
-    secuencia que el conflicto #1 de la matriz de auditorias impone. El
-    criterio 'HW_D_max' llega hoy a la memoria por la via normal, la de
-    `criterios_usados()`, con su valor, su etiqueta y su rango: ya no hace
-    falta una constancia que los recitara.
-
-    Esta funcion sigue devolviendo una TUPLA, y no la cadena suelta que ahora
-    contiene, a proposito: su forma es la del conjunto de filas diferidas, no
-    la de la fila que hoy queda. El dia que otra se difiera, entra aqui sin
-    tocar a ningun llamador.
+    QUE PASO CON LA CONSTANCIA DE V2b, para que nadie la busque. No se
+    BORRO: se CONVIRTIO. Su mitad evaluable es hoy `v2b_sedimentacion`, con
+    el numeral 5.3.3 del HDS-5 que la sostiene; su mitad de expediente -- el
+    acceso de mantenimiento en planos -- es hoy el criterio
+    'acceso_mantenimiento_v2b', que DETIENE la corrida mientras siga vacio en
+    vez de imprimir un parrafo que nadie tiene que contestar. La obligacion
+    no se relajo: se endurecio.
 
     El nombre era `verificacion_diferida_v2b` y se renombro al incorporar la
     de V4b: una funcion que devolvia dos constancias no podia llamarse por una
-    sola de ellas. Se conserva el nombre plural aunque hoy vuelva a devolver
-    una, por lo mismo que la tupla.
+    sola de ellas. El nombre plural se conserva por lo mismo que la tupla.
     """
-    return (
-        "V2b (sedimentacion / colmatacion): la condicion de velocidad la "
-        f"verifica V2 ({NUMERAL_V2}). El acceso de mantenimiento para "
-        "limpieza queda DIFERIDO al expediente: es contenido de planos "
-        "(Sec. 11, entregable 7), que este software no dibuja. Ningun "
-        "punto se da por conforme en V2b por el hecho de cumplir V2",
-    )
+    return ()
 
 
 # ---------------------------------------------------------------------------
@@ -365,6 +388,8 @@ def verificaciones_no_evaluadas() -> Tuple[str, ...]:
 CITA_DEL_UMBRAL = {
     "V1": "MC_HHD.4.1.1.3.7b",
     "V2": "MC_HHD.4.1.1.3.6#VMIN",
+    # V2b: la cita que lleva la COMPARACION, no la que da la contracara.
+    "V2b": "HDS5_3ED.5.3.3#INDICADORES",
     "V3": "MC_HHD.4.1.1.3.6#T10",
     "V4": "MS.4.5.4",
     "V7": "MP.T2.4.5.3.1-2",
@@ -568,6 +593,146 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
                 "m/s» (RECOMENDACION sobre el valor). El proyecto cumple la "
                 "primera y aplica la segunda como umbral duro, por decision "
                 "conservadora propia."),
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# V2b - Sedimentacion / colmatacion (HDS-5 3.a ed., num. 5.3.3)
+# ---------------------------------------------------------------------------
+
+def v2b_sedimentacion(*, punto: PuntoCritico,
+                      resultado: ResultadoHidraulico) -> Verificacion:
+    """
+    S_conducto >= S_cauce, el indicador de sedimentacion del HDS-5, mas el
+    acceso de mantenimiento declarado en 'acceso_mantenimiento_v2b'.
+
+    POR QUE ESTA FILA EXISTE SI YA ESTA V2. Porque V2 pone un piso de
+    VELOCIDAD en el caudal de DISEÑO, y la colmatacion de una alcantarilla en
+    una llanura de riego no la produce la avenida: la producen los caudales
+    bajos y frecuentes sobre un conducto tendido mas plano que el cauce que lo
+    alimenta. Un punto puede cumplir V2 con holgura y colmatarse igual. El
+    HDS-5 3.a ed. lo nombra con todas las letras (num. 5.3.3 «Sedimentation»,
+    pag. impresa 5.11):
+
+        "Therefore, barrel slope less than the natural channel and roughness
+        greater than the channel are key indicators of potential problems at
+        culvert sites."
+
+    y da la contracara en la misma pagina:
+
+        "Culverts which are located on and aligned with the natural channel
+        generally do not have a sedimentation problem."
+
+    DE LOS DOS INDICADORES SE EVALUA UNO, Y HAY QUE DECIR CUAL Y POR QUE. El
+    primero -- pendiente del barril frente a la del cauce -- son dos numeros
+    que este calculo ya tiene: `resultado.S` es la pendiente CON QUE CORRIO EL
+    DISEÑO y `punto.S_cauce` la del cauce natural (Sec. 1.5). El segundo --
+    rugosidad del barril frente a la del cauce -- exige el n de Manning del
+    CAUCE NATURAL, que no es columna de Sec. 1.2 y que la hoja de ruta no
+    fija: no se aproxima con el n del conducto ni con un valor de practica,
+    se declara pendiente en `acceso_mantenimiento_v2b.verificacion_pendiente`
+    y la memoria lo imprime en la propia fila. Media verificacion declarada es
+    defendible; media verificacion callada no.
+
+    ES UN INDICADOR APLICADO COMO UMBRAL DURO, igual que V1 y V2 aplican como
+    umbral duro dos recomendaciones. La fuente escribe «are key indicators of
+    potential problems», no «shall»: el matiz viaja en `NUMERAL_V2B` y en
+    `UMBRALES_DE_VERIFICACION`, que es lo que M11 imprime siempre.
+
+    POR QUE CASI NUNCA GOBIERNA EN ESTE CORREDOR, y se dice para que nadie lo
+    lea como una verificacion decorativa: Sec. 7.B fija que la alcantarilla
+    sigue la pendiente del cauce, de modo que `S_conducto = S_cauce` salvo que
+    el punto declare `S_conducto` aparte. La fila existe para el punto que SI
+    lo declara -- una entrada deprimida, un conducto tendido mas plano para
+    ganar recubrimiento -- que es exactamente el caso que el HDS-5 describe
+    como «built with an upstream depression» y del que dice «Sedimentation is
+    the likely result».
+
+    LA MITAD [A] DETIENE, y esa es la diferencia con lo que habia antes. Hasta
+    S20 la obligacion de prever el acceso de limpieza viajaba como un texto en
+    `verificaciones_no_evaluadas()`: un parrafo que la memoria imprimia y que
+    nadie tenia que responder. Ahora es un criterio sin valor, de modo que la
+    corrida se detiene con `CriterioPendienteError` hasta que el proyectista
+    declare como se limpia cada punto (SIS-A-13, MAT-O15).
+    """
+    # `exigir` y no `punto.S_cauce`: sin la pendiente del cauce el indicador
+    # no tiene contra que comparar, y el revisor tiene que AÑADIR el dato
+    # (DatoFaltanteError, no Invalido). MD descarta el material con la causa
+    # citada entera, no mata el punto.
+    S_cauce = punto.exigir("S_cauce")
+    acceso = ca.valor(CRITERIO_ACCESO_MANTENIMIENTO)   # CriterioPendienteError
+    cumple = resultado.S >= S_cauce - TOL_UMBRAL_NORMATIVO
+    umbral = _umbral_de(
+        "V2b", valor=S_cauce, unidad="m/m",
+        descripcion="pendiente del cauce natural: el conducto no se tiende "
+                    "mas plano que ella",
+        criterio=CRITERIO_ACCESO_MANTENIMIENTO)
+    return Verificacion(
+        cumple=cumple,
+        numeral=NUMERAL_V2B,
+        valor_obtenido=resultado.S,
+        valor_admisible=S_cauce,
+        criterio_aplicado=CRITERIO_ACCESO_MANTENIMIENTO,
+        codigo="V2b",
+        paso=paso(
+            "F5.V2b",
+            codigo="V2b",
+            que="Sedimentacion / colmatacion: indicador de pendiente y "
+                "acceso de mantenimiento",
+            formula="S_conducto >= S_cauce",
+            formula_cita_id="HDS5_3ED.5.3.3#INDICADORES",
+            citas_textuales=("HDS5_3ED.5.3.3#INDICADORES",
+                             "HDS5_3ED.5.3.3#ALINEADO"),
+            sustitucion=(
+                Magnitud("S_conducto", resultado.S, "m/m",
+                         "pendiente CON QUE CORRIO EL DISEÑO (la del cauce, "
+                         "salvo que el punto declare `S_conducto`)",
+                         cifras=CIFRAS_FINA),
+                Magnitud("S_cauce", S_cauce, "m/m",
+                         "pendiente del CAUCE NATURAL, columna del CSV "
+                         "(Sec. 1.5: no es la de la alcantarilla)",
+                         cifras=CIFRAS_FINA)),
+            resultado=Magnitud("S_conducto - S_cauce", resultado.S - S_cauce,
+                               "m/m",
+                               "diferencia de pendientes: negativa es el "
+                               "indicador que el HDS-5 nombra",
+                               cifras=CIFRAS_FINA),
+            umbral=umbral,
+            veredicto=_veredicto(
+                cumple, resultado.S - S_cauce, "m/m",
+                "el conducto no queda mas plano que el cauce que lo "
+                "alimenta: el indicador de sedimentacion del num. 5.3.3 no "
+                "se dispara" if cumple else
+                "el conducto queda MAS PLANO que el cauce natural, que es el "
+                "indicador de colmatacion del num. 5.3.3; el HDS-5 lo llama "
+                "«built with an upstream depression» y dice que la "
+                "sedimentacion es el resultado probable"),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="dispositivo de acceso de mantenimiento para "
+                              "limpieza del conducto",
+                valor=str(acceso),
+                entre=tuple(str(v) for v in
+                            ca.criterio(CRITERIO_ACCESO_MANTENIMIENTO)
+                              .sensibilidad),
+                de_donde="el criterio 'acceso_mantenimiento_v2b' [A]: "
+                         "ninguna norma de normas/ prescribe el dispositivo",
+                por_que="la fila V2b de la hoja de ruta es [N] + [A], y esta "
+                        "es la mitad [A]. El indicador de pendiente dice si "
+                        "el punto TIENDE a colmatarse; el acceso dice si se "
+                        "va a poder limpiar cuando lo haga. El diametro "
+                        "minimo de 0.90 m garantiza que una persona quepa, "
+                        "no que pueda entrar",
+                clave_criterio=CRITERIO_ACCESO_MANTENIMIENTO),),
+            nota_del_proyecto=(
+                "SE EVALUA UNO DE LOS DOS INDICADORES DEL NUMERAL. El "
+                "segundo -- «roughness greater than the channel» -- exige el "
+                "n de Manning del cauce natural, que no es columna de "
+                "Sec. 1.2 ni lo fija la hoja de ruta. No se aproxima: queda "
+                "declarado como pendiente. Y el caracter de la fuente es "
+                "INDICADOR («are key indicators of potential problems»), no "
+                "exigencia: el proyecto lo endurece a umbral duro por "
+                "decision propia, igual que hace con V1 y con V2."),
         ),
     )
 
@@ -822,7 +987,7 @@ def cota_clave(*, punto: PuntoCritico, material: Material, D: float) -> float:
     Se detiene con `CriterioPendienteError` en 'origen_cota_fondo_entrada'
     (la cota de entrada) o en 'espesor_pared_conducto' (el espesor).
     """
-    return cota_entrada_supuesta(punto) + D + espesor_pared(material)
+    return cota_entrada_supuesta(punto) + D + espesor_pared(material, D)
 
 
 def altura_relleno_sobre_clave(*, punto: PuntoCritico, material: Material,
@@ -1295,10 +1460,44 @@ def v8_evento_extremo(*, punto: PuntoCritico,
     hoja de ruta no fija ese TR mayor ni un umbral cuantitativo de colapso
     (p.ej. HW sobre la corona del terraplen): sin el TR no hay Q que correr
     aparte del de diseño, y sin el umbral no hay con que comparar el HW
-    resultante. Se detiene en el criterio 'TR_evento_extremo'.
+    resultante.
+
+    LOS DOS VACIOS SE DETIENEN POR SEPARADO, y ninguno con un fallo de
+    programa -- misma forma que `v5_remanso`, y por la misma razon:
+
+    - Criterio SIN valor -> `CriterioPendienteError` (la lanza `ca.valor`).
+    - Criterio CON valor -> `DatoFaltanteError`. Declarar el TR del evento
+      extremo NO cierra V8: sigue faltando el CAUDAL que a ese TR le
+      corresponde. Este software no hace hidrologia -- el Q de diseño entra
+      como columna del CSV, calculado aparte (Sec. 1.2, `legacy/Tc.py`) --,
+      de modo que un TR de 500 años sin su Q es un numero sin nada que
+      correr por M3/M4. El revisor tiene que AÑADIR ese caudal, y por eso es
+      Faltante y no Invalido (CLAUDE.md).
+
+    Hasta S20 esta segunda rama era un `raise AssertionError` desnudo, y
+    estaba declarada como «mina deliberada» en `cli._verificador_perfil`. La
+    mina avisaba de algo cierto -- la logica de V8 no esta escrita -- por el
+    medio equivocado: `AssertionError` no desciende de `ErrorProyecto`, de
+    modo que `cli._etapa` no lo capturaba y una corrida con el criterio
+    declarado abortaba entera, con todos sus puntos, en vez de anotar el
+    bloqueo y seguir. Es palabra por palabra el defecto que V5 ya habia
+    tenido y que se corrigio antes; V8 se quedo con el.
     """
     ca.valor(CRITERIO_EVENTO_EXTREMO)   # CriterioPendienteError: sin TR ni umbral
-    raise AssertionError("inalcanzable mientras 'TR_evento_extremo' este vacio")
+    raise DatoFaltanteError(
+        "Q_evento_extremo_m3s",
+        id_punto=punto.id,
+        detalle=(
+            f"el criterio '{CRITERIO_EVENTO_EXTREMO}' esta declarado, pero V8 "
+            "sigue sin poder resolverse: falta el CAUDAL correspondiente a "
+            "ese periodo de retorno mayor. Este software no calcula "
+            "hidrologia -- el Q de diseño entra como columna del CSV "
+            "(Sec. 1.2) --, de modo que sin ese segundo caudal no hay nada "
+            "que correr por M3/M4 ni HW que comparar contra la corona del "
+            "terraplen. La hoja de ruta fija el requisito y no el metodo: "
+            "mientras no exista, V8 no se declara cumplida"
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1358,6 +1557,7 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
     piezas = (
         lambda: v1_borde_libre(D=D, resultado=resultado),
         lambda: v2_velocidad_minima(resultado=resultado),
+        lambda: v2b_sedimentacion(punto=punto, resultado=resultado),
         lambda: v3_velocidad_maxima(material=material, resultado=resultado),
         lambda: v4_carga_entrada(punto=punto, resultado=resultado),
         lambda: v4b_relacion_hw_d(D=D, resultado=resultado),

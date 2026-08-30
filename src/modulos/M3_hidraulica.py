@@ -5,6 +5,16 @@ Fase 4.1 de la hoja de ruta: motor hidraulico. Geometria de la seccion
 circular parcialmente llena y tirante normal por Manning, resuelto con
 scipy.optimize.brentq sobre theta en (0, 2*pi).
 
+Y la Sec. 1.3: TW en el cuerpo receptor
+---------------------------------------
+Desde S20 este modulo lleva ademas el procedimiento de tres pasos de Sec. 1.3
+("TW se calcula, no se mide"): Manning en la seccion TRAPECIAL del receptor,
+con su propio caudal de diseño, para obtener la cota de agua y de ahi el TW
+que consume el control de salida. Vive aqui y no en un modulo nuevo por la
+misma razon por la que `G_LAUSHEY` vive con las constantes normativas: es
+Manning, y Manning se resuelve en un solo sitio. Dos solvers de Manning en el
+mismo repositorio son dos formulas que pueden divergir.
+
 Lo que M3 NO hace
 -----------------
 M3 no resuelve el control de entrada (HDS-5) ni el control de salida, ni el
@@ -120,7 +130,11 @@ from typing import Optional
 
 from scipy.optimize import brentq
 
-from modelos import DatoInvalidoError, Geometria, Material, TiranteNormal
+import criterios_adoptados as ca
+from modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
+                     Geometria, LimiteNumericoError, Magnitud, Material,
+                     PuntoCritico, SeccionReceptor, TiranteNormal,
+                     TWDeterminado, ViaDelTW, paso)
 from tolerancias import TOL_BRENT, TOL_THETA_BORDE
 
 NUMERAL_MANNING = "4.1"
@@ -274,3 +288,354 @@ def resolver_manning(D: float, Q: float, S: float, material: Material) -> Option
         V_erosion=factor_geometrico / material.n_para_velocidad_maxima,
         V_sedimentacion=factor_geometrico / material.n_para_velocidad_minima,
     )
+
+
+# ===========================================================================
+# Sec. 1.3 - TW: se calcula, no se mide
+# ===========================================================================
+# LOS TRES PASOS DE LA HOJA DE RUTA, tal como los escribe (Sec. 1.3):
+#
+#   1. Obtener Q de diseño del receptor (ANA / Junta de Usuarios)     [N]
+#   2. Manning en la seccion del receptor con ese Q y su pendiente ->
+#      tirante normal -> cota de agua                                 [N]
+#   3. Sin caudal documentado: dos escenarios acotados (salida libre /
+#      receptor a seccion llena), cumplir en ambos                    [A]
+#
+# QUE HABIA ANTES DE S20 (SIS-B-04). Nada de esto. `Q_receptor_m3s` y
+# `cota_TW` se cargaban del CSV, se validaban -- una contra cero, la otra
+# contra el fondo del receptor -- y no las leia ningun modulo: viajaban a la
+# tabla de datos de la memoria y ahi morian. La consecuencia, que la ficha
+# midio con un CSV construido a proposito, era que un expediente con las dos
+# columnas LLENAS seguia deteniendose en `CriterioPendienteError('TW_receptor')`
+# y exigiendo `--tw`. El bloqueo era ruidoso y por eso nunca hubo un numero
+# inventado; pero el procedimiento que la hoja de ruta escribe no existia.
+
+CRITERIO_SECCION_RECEPTOR = "seccion_receptor"
+CRITERIO_TW_RECEPTOR = "TW_receptor"
+
+# Escenarios del paso 3, con el nombre que la hoja de ruta les da. Son
+# rotulos, no valores de proyecto.
+ESCENARIO_SALIDA_LIBRE = "salida libre (receptor vacio)"
+ESCENARIO_SECCION_LLENA = "receptor a seccion llena"
+
+# TW de la salida libre. NO es un valor de proyecto ni una adopcion: es la
+# definicion del escenario -- "el receptor no aporta lamina de agua sobre el
+# fondo de la salida" es TW = 0 por construccion, no un numero elegido. Se
+# nombra para que el escenario se lea en la formula y no como un cero suelto.
+TW_SALIDA_LIBRE = 0.0            # literal-ok: definicion del escenario, no un valor adoptado
+
+
+# Cuantas veces se duplica el corchete antes de declarar que el caudal no
+# cabe. 40 duplicaciones sobre una semilla de 1 m llegan a ~1e12 m: no es un
+# limite de proyecto (no dice cuan hondo puede ser un dren), es el punto en
+# que seguir buscando ya no distingue "muy hondo" de "imposible".
+DUPLICACIONES_MAX_CORCHETE = 40   # literal-ok: tope de la busqueda, no un valor de proyecto
+
+
+def area_trapecial(*, b: float, z: float, y: float) -> float:
+    """A = (b + z*y)*y, seccion trapecial de solera b y talud z (H:V)."""
+    return (b + z * y) * y
+
+
+def perimetro_trapecial(*, b: float, z: float, y: float) -> float:
+    """P = b + 2*y*sqrt(1 + z^2), seccion trapecial."""
+    return b + 2 * y * math.sqrt(1 + z ** 2)   # literal-ok: los DOS taludes de un trapecio
+
+
+def caudal_manning_trapecial(*, b: float, z: float, y: float,
+                             n: float, S: float) -> float:
+    """
+    Q = (1/n)*A*R^(2/3)*S^(1/2) sobre la seccion trapecial (misma formula de
+    Manning que la seccion circular; lo unico que cambia es la geometria).
+    """
+    A = area_trapecial(b=b, z=z, y=y)
+    P = perimetro_trapecial(b=b, z=z, y=y)
+    if not P > 0:
+        raise DatoInvalidoError(
+            "seccion_receptor", valor=(b, z),
+            motivo="perimetro mojado nulo: una seccion con solera b = 0 y "
+                   "talud z = 0 no es una seccion, es una linea")
+    R = A / P
+    return (1 / n) * A * R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
+
+
+def tirante_normal_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:
+    """
+    Tirante normal del receptor por Manning (paso 2 de Sec. 1.3), m.
+
+    POR QUE ESTE SOLVER NO SE PARECE AL DE LA SECCION CIRCULAR. En un conducto
+    circular Q(theta) NO es monotona -- tiene un pico en y/D = 0.938 y por eso
+    `tirante_normal` tiene que devolver `None` en la banda (Q_lleno, Q_pico) --.
+    En una seccion trapecial ABIERTA, en cambio, A y R crecen los dos con y sin
+    limite, de modo que Q(y) es estrictamente creciente y la raiz es UNICA.
+    Eso es lo que permite abrir el corchete por duplicacion en vez de tener
+    que razonar sobre el pico: no hay pico.
+
+    La busqueda no tiene techo normativo -- un dren puede ser tan hondo como
+    sea --, de modo que el corchete se duplica hasta cubrir el Q pedido. Si el
+    caudal es tan grande que ni con un tirante absurdo se alcanza, es un
+    `LimiteNumericoError` y no un dato fuera de rango: cada dato cumple lo
+    suyo y es la aritmetica la que no cierra (CLAUDE.md, quinta excepcion).
+    """
+    if not Q > 0:
+        raise DatoInvalidoError(
+            "Q_receptor_m3s", valor=Q,
+            motivo="el caudal del receptor debe ser positivo para que "
+                   "Manning tenga solucion real")
+    if not seccion.n > 0 or not seccion.S > 0:
+        raise DatoInvalidoError(
+            CRITERIO_SECCION_RECEPTOR, valor=(seccion.n, seccion.S),
+            motivo="la seccion del receptor declara n y S que tienen que ser "
+                   "positivos: sin ellos Manning no tiene solucion real")
+
+    def f(y: float) -> float:
+        return caudal_manning_trapecial(b=seccion.b_m, z=seccion.z_HV, y=y,
+                                        n=seccion.n, S=seccion.S) - Q
+
+    # Corchete: y_lo justo por encima de cero (en y = 0 el area es nula y
+    # f = -Q < 0, siempre) y y_hi duplicando hasta que f cambie de signo.
+    y_lo = TOL_THETA_BORDE
+    y_hi = max(seccion.altura_total_m, seccion.b_m, 1.0)   # literal-ok: semilla del corchete, no un valor de proyecto
+    for _ in range(DUPLICACIONES_MAX_CORCHETE):
+        if f(y_hi) > 0:
+            return brentq(f, y_lo, y_hi, xtol=TOL_BRENT)
+        y_hi *= 2                                          # literal-ok: duplicacion del corchete
+    raise LimiteNumericoError(
+        "tirante_normal_receptor", valor=Q,
+        motivo=f"el caudal del receptor ({Q} m3/s) no se alcanza en la "
+               f"seccion declarada ni con un tirante de {y_hi:g} m. Los datos "
+               "por separado son admisibles -- Q positivo, n y S positivos, "
+               "seccion con area -- y lo que no cierra es la combinacion: una "
+               "solera de "
+               f"{seccion.b_m} m con talud {seccion.z_HV} H:V, n = "
+               f"{seccion.n} y S = {seccion.S} m/m no transporta ese caudal "
+               "en ninguna profundidad con sentido fisico")
+
+
+def _seccion_declarada() -> SeccionReceptor:
+    """
+    La seccion del receptor, del criterio 'seccion_receptor' [A].
+
+    `CriterioPendienteError` mientras siga vacia, que es lo correcto: la
+    seccion de una obra de terceros no se aproxima.
+    """
+    d = ca.valor(CRITERIO_SECCION_RECEPTOR)   # CriterioPendienteError si falta
+    if not isinstance(d, dict):
+        raise DatoInvalidoError(
+            CRITERIO_SECCION_RECEPTOR, valor=d,
+            motivo="se declara como un dict con los cinco campos de la "
+                   "seccion: {'b_m': ..., 'z_HV': ..., 'S': ..., 'n': ..., "
+                   "'altura_total_m': ...}")
+    faltan = [c for c in ("b_m", "z_HV", "S", "n", "altura_total_m")
+              if c not in d]
+    if faltan:
+        raise DatoInvalidoError(
+            CRITERIO_SECCION_RECEPTOR, valor=sorted(d),
+            motivo=f"le faltan los campos {faltan}: sin ellos no hay "
+                   "geometria con que correr Manning en el receptor "
+                   "(Sec. 1.3, paso 2)")
+    return SeccionReceptor(b_m=d["b_m"], z_HV=d["z_HV"], S=d["S"], n=d["n"],
+                           altura_total_m=d["altura_total_m"])
+
+
+def _paso_tw(*, punto: PuntoCritico, cota_fondo_salida: float,
+             tw: float, cota_agua: Optional[float], via: ViaDelTW,
+             sustitucion, escenarios=()):
+    """El `PasoDeMemoria` del TW, comun a las cuatro vias de Sec. 1.3."""
+    nota = (
+        "TW ES UN TIRANTE, NO UNA COTA, y las dos cosas conviven en este "
+        "expediente: `cota_TW` es una elevacion en msnm y TW es la altura de "
+        "agua SOBRE EL FONDO DE LA SALIDA del conducto. Las separa "
+        "exactamente esa cota: cota_TW = cota_fondo_salida + TW. Confundirlas "
+        "desplaza el control de salida en la magnitud entera de la cota."
+    )
+    if escenarios:
+        nota += (
+            " ESCENARIOS DEL PASO 3: se calculan los dos que la hoja de ruta "
+            "nombra y el diseño corre con el GOBERNANTE, que es el mayor. "
+            "Cumplir con el mayor implica cumplir con el otro, y no es una "
+            "conveniencia: h_o = max(TW, (y_c + D)/2) es no decreciente en "
+            "TW, HW_salida = H + h_o - S*L es creciente en h_o, y el control "
+            "que gobierna es max(HW_entrada, HW_salida); luego todas las "
+            "verificaciones que dependen del TW (V4 y V4b) son monotonas y su "
+            "peor caso es el TW mayor. Los dos numeros se imprimen igual, "
+            "para que el revisor lo compruebe en vez de creerlo."
+        )
+    return paso(
+        "F1.TW",
+        codigo="1.3",
+        que="TW en el cuerpo receptor durante la avenida",
+        formula="TW = cota_TW - cota_fondo_salida",
+        formula_cita_id="MC_HHD.4.1.1.3.6",
+        citas_textuales=("MC_HHD.4.1.1.3.6",),
+        sustitucion=tuple(sustitucion),
+        resultado=Magnitud("TW", tw, "m",
+                           f"tirante en el receptor sobre el fondo de la "
+                           f"salida; via: {via.value}",
+                           cifras=CIFRAS_MAGNITUD),
+        nota_del_proyecto=nota,
+    )
+
+
+def tw_seccion_1_3(*, punto: PuntoCritico,
+                   cota_fondo_salida: Optional[float],
+                   tw_declarado: Optional[float] = None) -> TWDeterminado:
+    """
+    El TW del punto por el procedimiento de Sec. 1.3, con la via por la que
+    salio (SIS-B-04).
+
+    CUATRO VIAS, EN ORDEN DE PRECEDENCIA -- de lo mas determinado a lo mas
+    supuesto --, y cada una queda escrita en `TWDeterminado.via`:
+
+    1. `tw_declarado` (`--tw` / `TW_m`). El proyectista lo pone a mano y manda
+       sobre todo lo demas: un dato entregado no se recalcula.
+    2. Columna `cota_TW` del CSV. Tablero 3.1 la rotula «Calculada (1.3)»: ES
+       el paso 2 resuelto fuera, y lo que falta aqui es la resta que lo
+       convierte en tirante. Era exactamente lo que SIS-B-04 media -- «un CSV
+       con `cota_TW` llena sigue exigiendo --tw» --, y el arreglo no es una
+       conversion suelta: es que esta funcion existe.
+    3. Columna `Q_receptor_m3s` + criterio 'seccion_receptor': pasos 1 y 2
+       enteros, Manning en el receptor.
+    4. Sin caudal documentado: paso 3, los DOS escenarios acotados que la hoja
+       de ruta nombra -- salida libre y receptor a seccion llena --, con el
+       gobernante para el diseño y los dos impresos.
+
+    Si ninguna de las cuatro se puede recorrer, se cae al criterio
+    'TW_receptor', que es donde el proyecto estuvo hasta S20 y sigue siendo la
+    ultima puerta: `CriterioPendienteError`, nunca un relleno.
+
+    POR QUE EL PASO 3 NECESITA LA SECCION IGUAL. «Receptor a seccion llena» es
+    un nivel, y para conocerlo hay que saber hasta donde llega el bordo:
+    `SeccionReceptor.altura_total_m`. Sin ese numero el segundo escenario no
+    se puede escribir, y un escenario que no se puede escribir no acota nada.
+    La salida libre, en cambio, es TW = 0 por definicion del escenario, sin
+    dato ninguno.
+
+    EL SIGNO DE LA RESTA, que es donde esta el error facil: si la cota de agua
+    del receptor queda POR DEBAJO del fondo de la salida, TW no es negativo:
+    es salida libre, TW = 0. Un TW negativo no significa nada fisico -- el
+    conducto no puede tener menos que nada de agua encima -- y dejarlo pasar
+    daria un h_o menor que el de la salida libre, que es imposible.
+    """
+    # --- Via 1: declarado por el proyectista
+    #
+    # `cota_fondo_salida` puede llegar None por esta via, y solo por esta: un
+    # TW declarado no se obtiene restando cotas, de modo que quien llama no
+    # tiene por que haberla podido calcular. La cota absoluta se compone si se
+    # conoce y se omite si no; el TIRANTE, que es lo que consume el control de
+    # salida, esta completo en los dos casos.
+    if tw_declarado is not None:
+        return TWDeterminado(
+            valor=tw_declarado, via=ViaDelTW.DECLARADO,
+            cota_TW_msnm=(None if cota_fondo_salida is None
+                          else cota_fondo_salida + tw_declarado),
+            paso=_paso_tw(
+                punto=punto, cota_fondo_salida=cota_fondo_salida,
+                tw=tw_declarado, cota_agua=None, via=ViaDelTW.DECLARADO,
+                sustitucion=(
+                    Magnitud("TW", tw_declarado, "m",
+                             "declarado por el proyectista (--tw o TW_m de "
+                             "--datos-externos): manda sobre el calculo",
+                             cifras=CIFRAS_MAGNITUD),)))
+
+    # --- Via 2: la columna `cota_TW`, que ES el paso 2 resuelto fuera
+    if punto.cota_TW is not None:
+        tw = _tw_desde_cota(punto.cota_TW, cota_fondo_salida)
+        return TWDeterminado(
+            valor=tw, via=ViaDelTW.COTA_TW, cota_TW_msnm=punto.cota_TW,
+            paso=_paso_tw(
+                punto=punto, cota_fondo_salida=cota_fondo_salida, tw=tw,
+                cota_agua=punto.cota_TW, via=ViaDelTW.COTA_TW,
+                sustitucion=(
+                    Magnitud("cota_TW", punto.cota_TW, "msnm",
+                             "columna del CSV (Sec. 1.2). Tablero 3.1 la "
+                             "rotula «Calculada (1.3)»: es el paso 2 "
+                             "resuelto fuera de este script",
+                             cifras=CIFRAS_MAGNITUD),
+                    Magnitud("cota_fondo_salida", cota_fondo_salida, "msnm",
+                             "M7 (7.B): cota de entrada - S*L",
+                             cifras=CIFRAS_MAGNITUD))))
+
+    # --- Via 3: el caudal del receptor + su seccion (pasos 1 y 2)
+    if punto.Q_receptor_m3s is not None:
+        seccion = _seccion_declarada()
+        y_n = tirante_normal_trapecial(Q=punto.Q_receptor_m3s, seccion=seccion)
+        cota_agua = punto.cota_fondo_receptor + y_n
+        tw = _tw_desde_cota(cota_agua, cota_fondo_salida)
+        return TWDeterminado(
+            valor=tw, via=ViaDelTW.MANNING_RECEPTOR, cota_TW_msnm=cota_agua,
+            paso=_paso_tw(
+                punto=punto, cota_fondo_salida=cota_fondo_salida, tw=tw,
+                cota_agua=cota_agua, via=ViaDelTW.MANNING_RECEPTOR,
+                sustitucion=(
+                    Magnitud("Q_receptor", punto.Q_receptor_m3s, "m3/s",
+                             "columna del CSV (Sec. 1.2), paso 1: caudal de "
+                             "diseño del receptor (ANA / Junta de Usuarios)",
+                             cifras=CIFRAS_MAGNITUD),
+                    Magnitud("b", seccion.b_m, "m",
+                             "solera de la seccion del receptor, criterio "
+                             "'seccion_receptor' [A]", cifras=CIFRAS_MAGNITUD),
+                    Magnitud("z", seccion.z_HV, "H:V",
+                             "talud de la seccion del receptor, criterio "
+                             "'seccion_receptor' [A]", cifras=CIFRAS_MAGNITUD),
+                    Magnitud("n_receptor", seccion.n, "",
+                             "Manning del receptor -- NO el del conducto --, "
+                             "criterio 'seccion_receptor' [A]",
+                             cifras=CIFRAS_FINA),
+                    Magnitud("S_receptor", seccion.S, "m/m",
+                             "pendiente del receptor, criterio "
+                             "'seccion_receptor' [A]", cifras=CIFRAS_FINA),
+                    Magnitud("y_n", y_n, "m",
+                             "tirante normal en el receptor, paso 2: Manning "
+                             "sobre la seccion trapecial",
+                             cifras=CIFRAS_MAGNITUD),
+                    Magnitud("cota_fondo_receptor", punto.cota_fondo_receptor,
+                             "msnm", "columna del CSV (Sec. 1.2)",
+                             cifras=CIFRAS_MAGNITUD),
+                    Magnitud("cota_fondo_salida", cota_fondo_salida, "msnm",
+                             "M7 (7.B): cota de entrada - S*L",
+                             cifras=CIFRAS_MAGNITUD))))
+
+    # --- Via 4: paso 3, los dos escenarios acotados
+    seccion = _seccion_declarada()
+    cota_llena = punto.cota_fondo_receptor + seccion.altura_total_m
+    tw_llena = _tw_desde_cota(cota_llena, cota_fondo_salida)
+    escenarios = ((ESCENARIO_SALIDA_LIBRE, TW_SALIDA_LIBRE),
+                  (ESCENARIO_SECCION_LLENA, tw_llena))
+    gobernante = max(tw for _rotulo, tw in escenarios)
+    return TWDeterminado(
+        valor=gobernante, via=ViaDelTW.ESCENARIOS_ACOTADOS,
+        cota_TW_msnm=cota_fondo_salida + gobernante,
+        escenarios=escenarios,
+        paso=_paso_tw(
+            punto=punto, cota_fondo_salida=cota_fondo_salida, tw=gobernante,
+            cota_agua=cota_fondo_salida + gobernante,
+            via=ViaDelTW.ESCENARIOS_ACOTADOS, escenarios=escenarios,
+            sustitucion=(
+                Magnitud("TW (salida libre)", TW_SALIDA_LIBRE, "m",
+                         "primer escenario del paso 3: el receptor no aporta "
+                         "lamina sobre el fondo de la salida. Es la "
+                         "definicion del escenario, no un valor adoptado",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("altura_total", seccion.altura_total_m, "m",
+                         "profundidad de la seccion del receptor, criterio "
+                         "'seccion_receptor' [A]: es lo que acota el segundo "
+                         "escenario", cifras=CIFRAS_MAGNITUD),
+                Magnitud("TW (seccion llena)", tw_llena, "m",
+                         "segundo escenario del paso 3: el receptor corre a "
+                         "seccion llena y su agua llega a la corona del bordo",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("cota_fondo_salida", cota_fondo_salida, "msnm",
+                         "M7 (7.B): cota de entrada - S*L",
+                         cifras=CIFRAS_MAGNITUD))))
+
+
+def _tw_desde_cota(cota_agua: float, cota_fondo_salida: float) -> float:
+    """
+    TW = cota_agua - cota_fondo_salida, acotado por abajo en la salida libre.
+
+    Ver el docstring de `tw_seccion_1_3` sobre el signo: una cota de agua por
+    debajo del fondo de la salida es salida libre, no un TW negativo.
+    """
+    return max(TW_SALIDA_LIBRE, cota_agua - cota_fondo_salida)
+

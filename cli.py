@@ -128,12 +128,13 @@ from modelos import (Clasificacion, CompatibilidadGeometrica,       # noqa: E402
                      DatoInvalidoError, DisenoNoFactibleError,
                      ErrorProyecto, Espaciamiento, Familia, PasoDiseno,
                      ProteccionSalida, PuntoCritico, ResultadoPunto,
-                     Verificacion)
+                     TWDeterminado, Verificacion)
 from modulos.M0_carga import cargar_puntos                          # noqa: E402
 from modulos.M1_clasificacion import clasificar, exigir_alcance     # noqa: E402
 from modulos.M6_proteccion import proteccion_salida                 # noqa: E402
+from modulos import M3_hidraulica as M3                             # noqa: E402
 from modulos.M7_geometria import (compatibilidad_geometrica,        # noqa: E402
-                                  longitud_conducto)
+                                  cota_salida, longitud_conducto)
 # `altura_relleno_sobre_clave` vive en M5 y no aqui: la comparten V7 -- que
 # pesa ese relleno como EV -- y la Fase 8, que con el entra a la norma de
 # producto. La resta estaba escrita en los dos sitios y la copia de esta CLI
@@ -191,6 +192,8 @@ FASE_CABEZAL = "Fase 9 - Cabezal y aletas (M9)"
 FASE_ALIVIO = "Fase 10 - Espaciamiento de alivio (M10)"
 
 CRITERIO_TW = "TW_receptor"
+# La seccion del receptor, que el paso 2 de Sec. 1.3 necesita.
+CRITERIO_SECCION_RECEPTOR = "seccion_receptor"
 
 # Claves admitidas en --datos-externos. Cada una es un dato de entrada que
 # Sec. 1.2 no trae como columna (ver el docstring del modulo). Las de texto van
@@ -439,6 +442,11 @@ class InformePunto:
     categoria_tr: Optional[DatoDeclarado] = None
     longitud: Optional[DatoDeclarado] = None
     tw: Optional[DatoDeclarado] = None
+    # El TW con su PROCEDENCIA: por cual de las cuatro vias de Sec. 1.3 salio,
+    # con que cota de agua y -- si fue por escenarios acotados -- con los dos
+    # numeros del paso 3. `tw` sigue siendo el float que MD consume; esto es
+    # lo que la memoria imprime, y son dos cosas distintas a proposito.
+    tw_sec13: Optional[TWDeterminado] = None
     proteccion: Optional[ProteccionSalida] = None
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
@@ -603,17 +611,68 @@ def _resolver_longitud(informe: InformePunto,
     return DatoDeclarado("longitud_m", longitud, "M7.longitud_conducto (Sec. 7.B)")
 
 
-def _resolver_tw(informe: InformePunto,
-                 externos: DatosExternos) -> Optional[DatoDeclarado]:
-    """TW: el declarado, o el criterio 'TW_receptor' (Tablero 3.1)."""
-    declarado = externos.dato(informe.punto.id, "TW_m")
-    if declarado is not None:
-        return declarado
-    tw = _etapa(informe.bloqueos, FASE_DISENO,
-                "tirante en el receptor (TW)", lambda: ca.valor(CRITERIO_TW))
-    if tw is None:
+def _resolver_tw(informe: InformePunto, externos: DatosExternos,
+                 longitud: DatoDeclarado) -> Optional[DatoDeclarado]:
+    """
+    TW por el procedimiento de Sec. 1.3 (`M3.tw_seccion_1_3`), con el criterio
+    'TW_receptor' como ultima puerta.
+
+    LA CLI NO DECIDE NADA AQUI, y ese es el punto. Las cuatro vias de Sec. 1.3
+    -- declarado, `cota_TW`, Manning en el receptor, escenarios acotados --
+    las recorre M3, que es quien emite el `PasoDeMemoria` con la via por la
+    que salio el numero. Esta funcion aporta lo unico que M3 no puede saber:
+    la cota de fondo de la SALIDA, que sale de 7.B y necesita la longitud y la
+    pendiente del diseño.
+
+    LA PENDIENTE QUE SE USA ES LA MISMA DEL DISEÑO, no otra: `S_conducto` si
+    el punto lo declara y la del cauce si no, que es lo que `disenar_punto`
+    hara despues con el TW que esta funcion devuelve. Dos pendientes distintas
+    darian dos cotas de salida distintas para el mismo punto, que es el
+    defecto que MAT-D9 cerro en 7.B.
+
+    SI 'TW_receptor' TIENE VALOR, MANDA SOBRE LAS VIAS 3 Y 4 pero no sobre las
+    dos primeras. Es deliberado: el criterio es una declaracion del
+    proyectista sobre el nivel del receptor, del mismo rango que `--tw`, y no
+    tiene sentido calcular por Manning un numero que ya se declaro. Lo que si
+    manda sobre el es un dato del expediente: una `cota_TW` en el CSV es una
+    medicion o un calculo con procedencia, y no se pisa con una adopcion.
+    """
+    punto = informe.punto
+    declarado = externos.dato(punto.id, "TW_m")
+    S = externos.valor(punto.id, "S_conducto")
+
+    def resolver():
+        declarado_a_mano = (declarado.valor if declarado is not None else None)
+        if declarado_a_mano is None and punto.cota_TW is None \
+                and punto.Q_receptor_m3s is None \
+                and ca.valor_si_declarado(CRITERIO_SECCION_RECEPTOR) is None:
+            # Ninguna de las cuatro vias de Sec. 1.3 es recorrible: se cae al
+            # criterio, que es la ultima puerta y la que detiene con su ficha
+            # entera. Se consulta con `valor`, no con `valor_si_declarado`,
+            # justamente para que detenga.
+            declarado_a_mano = ca.valor(CRITERIO_TW)
+        # LA COTA DE FONDO DE LA SALIDA SOLO SE CALCULA SI HACE FALTA. Con el
+        # TW declarado a mano no hay ninguna cota que restar, y exigir la
+        # pendiente del cauce para un dato que ya esta seria pedir un dato
+        # para no usarlo: un punto de Familia C, cuya `S_cauce` va vacia
+        # porque su pendiente es la del canal (Sec. 2.3), quedaria bloqueado
+        # en el TW en vez de llegar al bloqueo que de verdad tiene.
+        fondo_salida = None
+        if declarado_a_mano is None:
+            pendiente = S if S is not None else punto.exigir("S_cauce")
+            fondo_salida = cota_salida(punto=punto, longitud=longitud.valor,
+                                       S=pendiente)
+        return M3.tw_seccion_1_3(punto=punto, cota_fondo_salida=fondo_salida,
+                                 tw_declarado=declarado_a_mano)
+
+    resuelto = _etapa(informe.bloqueos, FASE_DISENO,
+                      "tirante en el receptor (TW, Sec. 1.3)", resolver)
+    if resuelto is None:
         return None
-    return DatoDeclarado("TW_m", tw, f"criterio '{CRITERIO_TW}'")
+    informe.tw_sec13 = resuelto
+    origen = (declarado.origen if declarado is not None
+              else f"Sec. 1.3 -- {resuelto.via.value}")
+    return DatoDeclarado("TW_m", resuelto.valor, origen)
 
 
 def _diferir_verificacion(informe: InformePunto, codigo: str,
@@ -636,13 +695,13 @@ def _diferir_verificacion(informe: InformePunto, codigo: str,
 
 def _verificador_perfil(informe: InformePunto):
     """
-    La Fase 5 al alcance de perfil: las diez verificaciones de M5, en el
+    La Fase 5 al alcance de perfil: las ONCE verificaciones de M5, en el
     orden de la tabla, con V5 y V8 DIFERIDAS al expediente.
 
-    - Obligatorias (deciden si el diametro se acepta): V1, V2, V3, V4, V4b,
-      V6, V7 y V9. Corren exactamente como en M5.verificar y sus excepciones
-      suben igual: un criterio vacio en una obligatoria sigue bloqueando el
-      material (y, por la regla de MD, el punto).
+    - Obligatorias (deciden si el diametro se acepta): V1, V2, V2b, V3, V4,
+      V4b, V6, V7 y V9. Corren exactamente como en M5.verificar y sus
+      excepciones suben igual: un criterio vacio en una obligatoria sigue
+      bloqueando el material (y, por la regla de MD, el punto).
     - Diferidas: V5 (remanso / derecho de via) y V8 (evento extremo). Se
       INTENTAN igual en cada escalon -- si algun dia su logica existe y
       devuelven una Verificacion, entra a la tabla en su posicion y vuelve a
@@ -656,15 +715,21 @@ def _verificador_perfil(informe: InformePunto):
     y no sabe de alcances; la decision de diferir es de la corrida, y entra
     por el parametro `verificar` que MD ya expone.
 
-    MINA DELIBERADA (no desactivar): `M5.v8_evento_extremo` termina en
-    `raise AssertionError` en cuanto 'TR_evento_extremo' tenga valor -- el
-    criterio tendria dato pero la LOGICA de V8 no esta escrita. Aqui solo se
-    captura ErrorProyecto, de modo que esa AssertionError PROPAGA y tumba la
-    corrida con su traza: es un modulo incompleto, no un asunto de alcance, y
-    diferirlo lo escondería. Antes de declarar ese criterio hay que escribir
-    el cuerpo de la funcion. (La mina hermana, `M8.seleccionar_clase_calibre`
-    con 'clases_producto_por_relleno', esta documentada donde se salta la
-    Fase 8 en `correr_punto`.)
+    LA MINA DE V8 SE DESACTIVO EN S20, y hay que decir como. `v8_evento_extremo`
+    terminaba en `raise AssertionError` en cuanto 'TR_evento_extremo' tuviera
+    valor: aqui solo se captura `ErrorProyecto`, de modo que declarar ese
+    criterio tumbaba la corrida ENTERA -- todos sus puntos -- con una traza de
+    fallo de programa. La mina cumplia su proposito (avisar de que la logica
+    de V8 no esta escrita) por el medio equivocado: un `AssertionError` no
+    desciende de `ErrorProyecto` y la GUI no lo puede distinguir de un bug.
+    Hoy V8 lanza `DatoFaltanteError` sobre el dato que de verdad falta -- el Q
+    del evento extremo --, que es la MISMA solucion que ya se le habia dado a
+    V5 y que CLAUDE.md contempla expresamente para el dato que un tablero
+    externo tendria que aportar. El aviso sigue siendo ruidoso y ahora es del
+    expediente, no del programa. (La mina hermana,
+    `M8.seleccionar_clase_calibre` con 'clases_producto_por_relleno', esta
+    documentada donde se salta la Fase 8 en `correr_punto`; y la de
+    `M2.espesor_pared` se cerro en la misma sesion y por la misma razon.)
     """
     ya_registrados: set = set()
 
@@ -672,6 +737,13 @@ def _verificador_perfil(informe: InformePunto):
         filas: List[Verificacion] = [
             M5.v1_borde_libre(D=D, resultado=resultado),
             M5.v2_velocidad_minima(resultado=resultado),
+            # V2b entra como OBLIGATORIA, y no diferida: su indicador se
+            # calcula con dos numeros que la corrida de perfil ya tiene (la
+            # pendiente del diseño y la del cauce) y su criterio no depende
+            # de ningun dato de expediente. Lo que difiere el alcance de
+            # perfil son las verificaciones que necesitan el expediente, no
+            # las que solo necesitan una declaracion del proyectista.
+            M5.v2b_sedimentacion(punto=punto, resultado=resultado),
             M5.v3_velocidad_maxima(material=material, resultado=resultado),
             M5.v4_carga_entrada(punto=punto, resultado=resultado),
             # V4b se cableo en S14 y entra aqui como OBLIGATORIA, igual que
@@ -742,7 +814,11 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
     """
     punto = informe.punto
     informe.longitud = _resolver_longitud(informe, externos)
-    informe.tw = _resolver_tw(informe, externos)
+    # El TW se resuelve DESPUES de la longitud y con ella: la cota de fondo de
+    # la salida que Sec. 1.3 necesita para convertir una cota de agua en un
+    # tirante sale de 7.B, y 7.B necesita la longitud.
+    informe.tw = (None if informe.longitud is None
+                  else _resolver_tw(informe, externos, informe.longitud))
     if informe.longitud is None or informe.tw is None:
         return
 
@@ -1175,11 +1251,13 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "iteraciones": [_paso_json(p) for p in informe.traza],
         "verificaciones": [_verificacion_json(fase, v)
                            for fase, v in informe.verificaciones()],
-        # La fila V2b de la tabla de Fase 5 no se evalua, y la constancia
-        # viaja con el punto igual que la del item 5 de Fase 8: contar diez
-        # verificaciones donde la hoja de ruta lista ONCE no puede quedar
-        # como un ejercicio de resta del lector (SIS-A-13 / MAT-O15). V4b
-        # salio de esta lista en S14, al cablearse.
+        # Las filas de la tabla de Fase 5 que no se evaluan viajan con el
+        # punto igual que la constancia del item 5 de Fase 8: contar menos
+        # verificaciones de las ONCE que la hoja de ruta lista no puede
+        # quedar como un ejercicio de resta del lector (SIS-A-13 / MAT-O15).
+        # Desde S20 la lista esta VACIA -- V4b se cableo en S14 y V2b en S20
+        # --, y la clave se conserva por lo mismo que la funcion: su forma es
+        # la del conjunto, no la de su contenido de hoy.
         "verificaciones_no_evaluadas": list(M5.verificaciones_no_evaluadas()),
         "bloqueos": [_bloqueo_json(b) for b in informe.bloqueos],
     }

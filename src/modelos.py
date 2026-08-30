@@ -953,6 +953,90 @@ class ControlSalida:
 
 
 # ===========================================================================
+# Sec. 1.3 - TW: se calcula, no se mide
+# ===========================================================================
+# LOS DOS TIPOS DE LA SEC. 1.3, Y POR QUE SON DOS. `SeccionReceptor` es el
+# DATO -- la geometria del dren o canal que recibe la descarga --, y
+# `TWDeterminado` es el RESULTADO, con la via por la que se obtuvo. Separarlos
+# permite que la memoria diga las dos cosas que un revisor pregunta delante de
+# un TW: de que seccion salio, y si salio de un caudal documentado o de un
+# escenario acotado.
+
+@dataclass(frozen=True)
+class SeccionReceptor:
+    """
+    Seccion transversal del cuerpo receptor, para el paso 2 de Sec. 1.3.
+
+    TRAPECIAL, que cubre los tres casos del corredor: un dren de tierra
+    (z > 0), un canal revestido rectangular (z = 0) y una cuneta triangular
+    (b = 0). No se modela seccion irregular: eso es un levantamiento
+    topografico del receptor, y el dia que exista el TW entra medido y esta
+    seccion sobra.
+
+    `altura_total_m` NO es el tirante: es la PROFUNDIDAD DE LA SECCION, del
+    fondo a la corona del bordo. Existe para el paso 3 -- el escenario de
+    "receptor a seccion llena" --, que sin ella no se puede acotar. Un
+    escenario acotado por un numero que nadie declaro no es un escenario
+    acotado.
+
+    Ninguno de los cuatro numeros sale de una norma: los declara el
+    proyectista en el criterio 'seccion_receptor' [A], con su trazabilidad.
+    """
+
+    b_m: float                 # m   - ancho de solera
+    z_HV: float                # H:V - talud lateral, proyeccion horizontal por unidad de altura
+    S: float                   # m/m - pendiente del receptor
+    n: float                   # -   - Manning del receptor
+    altura_total_m: float      # m   - profundidad de la seccion (fondo a corona)
+
+
+class ViaDelTW(str, Enum):
+    """
+    Por cual de los cuatro caminos de Sec. 1.3 se obtuvo el TW de un punto.
+
+    El orden es el de precedencia y no es arbitrario: va del dato mas
+    determinado al escenario mas supuesto. Un TW medido no se sustituye por
+    uno calculado, y uno calculado no se sustituye por un escenario.
+    """
+
+    DECLARADO = "declarado por el proyectista (--tw / TW_m)"
+    COTA_TW = "columna `cota_TW` del CSV (paso 2 de Sec. 1.3, resuelto fuera)"
+    MANNING_RECEPTOR = ("Manning en la seccion del receptor con su Q de "
+                        "diseño (pasos 1 y 2 de Sec. 1.3)")
+    ESCENARIOS_ACOTADOS = ("dos escenarios acotados, sin caudal documentado "
+                           "(paso 3 de Sec. 1.3)")
+    CRITERIO = "criterio 'TW_receptor' (Tablero 3.1)"
+
+
+@dataclass(frozen=True)
+class TWDeterminado:
+    """
+    El TW de un punto y de donde salio (Sec. 1.3).
+
+    `valor` es un TIRANTE sobre el fondo de la SALIDA del conducto, en metros
+    -- no una cota --, que es lo que consume el control de salida. La
+    homonimia con `cota_TW` esta declarada en
+    `constantes_normativas.HOMONIMIA_TW` y es exactamente la que este tipo
+    existe para no volver a permitir: aqui el nombre del campo dice cual de
+    las dos es, y `cota_TW_msnm` viaja aparte cuando se conoce.
+
+    `escenarios` lleva los DOS del paso 3 cuando la via es
+    `ESCENARIOS_ACOTADOS`: (TW de salida libre, TW de receptor a seccion
+    llena). La hoja de ruta pide "cumplir en ambos" y el diseño corre con el
+    GOBERNANTE, que es el mayor; por que eso equivale a cumplir en los dos
+    esta demostrado en el docstring de `M3_hidraulica.tw_seccion_1_3`, y los
+    dos numeros viajan hasta la memoria para que el revisor lo pueda
+    comprobar en vez de creerlo.
+    """
+
+    valor: float                                   # m - tirante sobre el fondo de la salida
+    via: "ViaDelTW"
+    cota_TW_msnm: Optional[float] = None           # msnm - cuando se conoce
+    escenarios: Tuple[Tuple[str, float], ...] = ()
+    paso: Optional["PasoDeMemoria"] = None
+
+
+# ===========================================================================
 # Resultados
 # ===========================================================================
 

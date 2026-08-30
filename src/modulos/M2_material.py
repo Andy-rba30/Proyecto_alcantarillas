@@ -197,8 +197,9 @@ from typing import Any, Optional, Tuple, Union
 import criterios_adoptados as ca
 from constantes_normativas import (HDS5_INLET, H_RELLENO_MIN, MANNING,
                                    SECCION_EG2013, TABLA_09_FILAS, V_MAX)
-from modelos import (ConstantesHDS5, DatoInvalidoError, Familia, Material,
-                     PuntoCritico, TipoMaterial)
+from dominios import MILIMETROS_POR_METRO
+from modelos import (ConstantesHDS5, DatoFaltanteError, DatoInvalidoError,
+                     Familia, Material, PuntoCritico, TipoMaterial)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_CATALOGO = "Sec. 3.2"     # nuevo en v7, sin numeral MTC propio
@@ -349,32 +350,98 @@ def _topes() -> dict:
 # Sec. 3.2 - Geometria fisica del conducto: espesor de pared y D exterior
 # ---------------------------------------------------------------------------
 
-def espesor_pared(material: Material) -> float:
+def espesor_pared(material: Material, D: float) -> float:
     """
-    t, espesor de pared del conducto, m ('espesor_pared_conducto', [A]).
+    t, espesor de pared del conducto para el diametro D, m
+    ('espesor_pared_conducto', [A]).
 
-    Se detiene con `CriterioPendienteError` mientras el criterio siga vacio.
-    Aqui es donde el vacio bloquea, no en `catalogo()`: el catalogo tiene que
-    poder listarse aunque el espesor no este declarado (ver "Campos que el
-    catalogo puede dejar en None" en el docstring del modulo), y el bloqueo
-    salta en el punto donde el numero hace falta de verdad.
+    EL ESPESOR DEPENDE DEL DIAMETRO, y por eso esta funcion recibe D. La
+    AASHTO M 170M-04 tabula la columna «Wall Thickness» por diametro
+    designado, no un numero por material: entre el tubo de 0.90 m y el de
+    2.70 m hay 150 mm de diferencia de pared. Mientras el criterio fue un
+    escalar por material, un punto que cerrara en un diametro distinto del que
+    se tuvo en mente al declararlo se calculaba con el espesor equivocado sin
+    que nada avisara -- y el bucle de MD recorre el catalogo entero, de modo
+    que no era un caso remoto.
+
+    LA CLAVE DEL DICT ES EL DIAMETRO DESIGNADO EN MILIMETROS, entero, que es
+    como lo imprime la norma de producto y como se pide un tubo. El D del
+    calculo es un float en metros: la conversion es `round(D * 1000)`, y no
+    hay comparacion de floats de por medio -- que es lo que la regla de
+    CLAUDE.md prohibe -- porque el redondeo a entero de una serie que avanza
+    de 150 en 150 mm no tiene ambiguedad.
+
+    CUATRO VACIOS DISTINTOS Y CUATRO DETENCIONES DISTINTAS, ninguna un fallo
+    de programa:
+
+    - Criterio SIN valor -> `CriterioPendienteError` (la lanza `ca.valor`).
+    - Criterio CON valor pero SIN ESTE MATERIAL -> `DatoFaltanteError`. El
+      criterio es un dict por material y puede estar declarado para unos y no
+      para otros; es el caso vivo del expediente, donde el espesor del
+      concreto sale de una tabla que esta en `normas/` y el del HDPE de la
+      AASHTO M294, que no esta. El revisor tiene que AÑADIR la entrada de ese
+      material, y por eso es Faltante y no Invalido (CLAUDE.md). MD descarta
+      el material con su causa citada entera y sigue con el siguiente
+      candidato: un material sin fuente no mata el punto.
+    - Material declarado pero SIN ESTE DIAMETRO -> `DatoFaltanteError`
+      tambien, y es la deteccion que el modelo anterior no podia dar: dice
+      exactamente que fila de la tabla falta transcribir.
+    - Entrada declarada que no es un numero -> `DatoInvalidoError`.
+
+    Hasta S20 la segunda rama era un `raise AssertionError` desnudo -- la
+    misma mina que V8 tenia --: declarar el criterio para un solo material
+    tumbaba la corrida entera con un fallo de programa en vez de descartar
+    ese material.
     """
     if material.espesor_pared is None:
-        ca.valor(CRITERIO_ESPESOR_PARED)      # CriterioPendienteError
-        raise AssertionError(
-            f"inalcanzable mientras '{CRITERIO_ESPESOR_PARED}' este vacio"
+        ca.valor(CRITERIO_ESPESOR_PARED)      # CriterioPendienteError si esta vacio
+        raise DatoFaltanteError(
+            f"{CRITERIO_ESPESOR_PARED}[{material.tipo.value}]",
+            detalle=(
+                f"el criterio '{CRITERIO_ESPESOR_PARED}' esta declarado, pero "
+                f"no trae entrada para «{material.tipo.value}». Es un dict "
+                "por material y cada entrada necesita su propia fuente: la "
+                "del concreto es la columna 'Wall Thickness' de las Tablas 1 "
+                "a 5 de AASHTO M 170M-04, la del TMC depende del calibre que "
+                "fije la Fase 8 ('clases_producto_por_relleno') y la del "
+                "HDPE sale de AASHTO M294, que NO esta en normas/. Sin "
+                "espesor no hay diametro exterior, y sin diametro exterior no "
+                "hay clave fisica (7.A) ni volumen desplazado (V7)"
+            ),
         )
     ca.valor(CRITERIO_ESPESOR_PARED)          # registra el uso para M11
-    if not isinstance(material.espesor_pared, numbers.Real):
+    por_diametro = material.espesor_pared
+    if not isinstance(por_diametro, dict):
         raise DatoInvalidoError(
-            campo=CRITERIO_ESPESOR_PARED, valor=material.espesor_pared,
-            motivo="el espesor de pared declarado para "
-                   f"'{material.tipo.value}' no es un numero. Este criterio "
-                   "se declara como un dict con un espesor en metros por "
-                   "material: {'concreto_reforzado': ..., 'tmc': ..., "
-                   "'hdpe': ...}",
+            campo=CRITERIO_ESPESOR_PARED, valor=por_diametro,
+            motivo=f"el espesor declarado para '{material.tipo.value}' no es "
+                   "una tabla por diametro. Este criterio se declara como un "
+                   "dict de dicts: {'concreto_reforzado': {900: 0.100, 1050: "
+                   "0.113, ...}}, con el diametro designado en MILIMETROS "
+                   "como clave y el espesor en METROS como valor")
+    designado = round(D * MILIMETROS_POR_METRO)
+    if designado not in por_diametro:
+        raise DatoFaltanteError(
+            f"{CRITERIO_ESPESOR_PARED}[{material.tipo.value}][{designado}]",
+            detalle=(
+                f"el criterio '{CRITERIO_ESPESOR_PARED}' declara "
+                f"«{material.tipo.value}» pero no la fila de {designado} mm. "
+                f"Los diametros declarados son "
+                f"{sorted(por_diametro)}. Falta transcribir esa fila de la "
+                "columna 'Wall Thickness' de la norma de producto: no se "
+                "interpola ni se toma la fila vecina, porque el espesor "
+                "gobierna la clave fisica (7.A) y el volumen desplazado de V7 "
+                "y los dos quedan del lado inseguro si se estima por lo bajo"
+            ),
         )
-    return material.espesor_pared
+    t = por_diametro[designado]
+    if not isinstance(t, numbers.Real):
+        raise DatoInvalidoError(
+            campo=CRITERIO_ESPESOR_PARED, valor=t,
+            motivo=f"el espesor declarado para '{material.tipo.value}' en el "
+                   f"diametro {designado} mm no es un numero. Los valores de "
+                   "la tabla son espesores en METROS")
+    return t
 
 
 def diametro_exterior(*, material: Material, D: float) -> float:
@@ -391,7 +458,7 @@ def diametro_exterior(*, material: Material, D: float) -> float:
     Se detiene con `CriterioPendienteError` mientras 'espesor_pared_conducto'
     siga vacio (ver `espesor_pared`).
     """
-    return D + 2 * espesor_pared(material)
+    return D + 2 * espesor_pared(material, D)
 
 
 def siguiente_diametro(material: MaterialLike,
@@ -474,9 +541,11 @@ def catalogo(material: MaterialLike) -> Material:
         # que solo sabe ofrecer float o str -- reventaba aqui con TypeError.
         raise DatoInvalidoError(
             campo=CRITERIO_ESPESOR_PARED, valor=espesores,
-            motivo="se declaro un valor unico donde el criterio espera un "
-                   "espesor por material: {'concreto_reforzado': ..., "
-                   "'tmc': ..., 'hdpe': ...}, en metros",
+            motivo="se declaro un valor unico donde el criterio espera una "
+                   "tabla de espesores por material: "
+                   "{'concreto_reforzado': {900: 0.100, 1050: 0.113, ...}, "
+                   "'tmc': ..., 'hdpe': ...}, con el diametro designado en "
+                   "MILIMETROS como clave y el espesor en METROS como valor",
         )
 
     return Material(

@@ -52,6 +52,7 @@ def _fundamento(**kw) -> Fundamento:
 # Los rotulos de fase, escritos una vez. No son los de `cli.FASE_*` --este
 # paquete no puede importar la capa de reporte-- sino los de la hoja de ruta,
 # que es de donde sale el texto.
+F1 = "Fase 1 - Datos de entrada"
 F2 = "Fase 2 - Clasificacion y periodo de retorno"
 F3 = "Fase 3 - Tipo, material y durabilidad"
 F4 = "Fase 4 - Dimensionamiento hidraulico"
@@ -60,6 +61,38 @@ F6 = "Fase 6 - Proteccion de entrada y salida"
 F7 = "Fase 7 - Compatibilidad geometrica"
 F8 = "Fase 8 - Verificacion estructural del conducto"
 F10 = "Fase 10 - Alcantarillas de alivio: espaciamiento"
+
+
+# ===========================================================================
+# Fase 1 - Datos de entrada
+# ===========================================================================
+
+TW = _fundamento(
+    id="F1.TW",
+    fase=F1,
+    que_paso=("TW en el cuerpo receptor: nivel de agua durante la avenida, "
+              "por Manning en la seccion del receptor (Sec. 1.3)"),
+    por_que=(
+        "El TW no es una propiedad de la alcantarilla: es el nivel que el "
+        "cuerpo receptor tiene MIENTRAS pasa la avenida, y de el depende que "
+        "el control de salida ahogue o no la descarga. Medirlo no sirve --lo "
+        "que se mediria es el nivel de HOY, no el de la avenida de diseño-- y "
+        "por eso Sec. 1.3 lo hace CALCULAR: con el caudal de diseño del "
+        "propio receptor, su pendiente y su seccion, Manning da el tirante "
+        "normal y de ahi la cota de agua. La alternativa que este paso "
+        "sustituye no es un TW peor: es un TW supuesto, del que la memoria no "
+        "puede decir de donde salio."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.4.1.1.3.6",),
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta S20 (SIS-B-04): las dos columnas que el "
+        "procedimiento consume --`Q_receptor_m3s` y `cota_TW`-- se cargaban, "
+        "se validaban y no las leia nadie, de modo que un expediente con las "
+        "dos llenas seguia exigiendo un TW declarado a mano por la linea de "
+        "comandos. El numero que gobierna el control de salida entraba como "
+        "una opcion de la corrida en vez de como el resultado de un "
+        "procedimiento con fuente."),
+)
 
 
 # ===========================================================================
@@ -250,6 +283,35 @@ V2 = _fundamento(
         "El expediente entregaria conductos que sedimentan, y el caudal de "
         "diseno de la memoria seria el de una seccion que la obra no va a "
         "tener despues de la primera avenida."),
+)
+
+V2B = _fundamento(
+    id="F5.V2b",
+    fase=F5,
+    que_paso=("V2b - Sedimentacion / colmatacion: el indicador de pendiente "
+              "del HDS-5 mas el acceso de mantenimiento declarado"),
+    por_que=(
+        "V2 pone un PISO DE VELOCIDAD y con eso protege el caso normal, pero "
+        "no ve el caso que de verdad colmata una alcantarilla en una llanura "
+        "de riego: el conducto tendido MAS PLANO que el cauce que lo "
+        "alimenta. Ahi el agua llega con su carga de finos, pierde pendiente "
+        "al entrar y la deja dentro, y puede hacerlo aun cumpliendo el piso "
+        "de V2 en el caudal de diseno, porque la colmatacion la producen los "
+        "caudales bajos y frecuentes, no la avenida. El HDS-5 nombra "
+        "exactamente esa comparacion como indicador, y es una comparacion "
+        "entre dos numeros que este calculo ya tiene: la pendiente del barril "
+        "y la del cauce natural. La otra mitad de la fila --el acceso de "
+        "mantenimiento-- existe porque ningun indicador evita la limpieza: la "
+        "evita el acceso, y el acceso se dibuja o no existe."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.5.3.3#INDICADORES", "HDS5_3ED.5.3.3#ALINEADO"),
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta S20: la fila V2b de la tabla de Fase 5 no "
+        "existia en ninguna linea de codigo (SIS-A-13, MAT-O15). Un punto con "
+        "el conducto mas plano que su cauce salia de la memoria sin una sola "
+        "linea sobre colmatacion, y la obligacion de prever el acceso de "
+        "limpieza no la recordaba nada -- de modo que los planos podian "
+        "omitirla sin que el expediente se enterara."),
 )
 
 V3 = _fundamento(

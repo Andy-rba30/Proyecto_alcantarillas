@@ -1178,14 +1178,24 @@ def _tabla_verificaciones(informe: Any) -> str:
                             _td(_num(v.valor_admisible), "num"),
                             _td(umbral), _td(_marca(v.cumple))], clase))
     # La tabla de Fase 5 de la hoja de ruta trae ONCE filas y este software
-    # evalua diez: la que falta es V2b. Se dice aqui, pegado a la tabla de
+    # evalua las once desde S20. Se dice aqui, pegado a la tabla de
     # verificaciones, y no en una nota lejana: es donde el revisor cuenta.
-    # V4b se cableo en S14 y por eso ya no aparece como diferida: su ficha
-    # llega a la memoria por `criterios_usados()`, como cualquier criterio
-    # que el calculo consume.
+    # V4b se cableo en S14 y V2b en S20; las dos llegan hoy por la via normal
+    # -- su fila en la tabla y su criterio en `criterios_usados()` --, no como
+    # una constancia de ausencia.
+    #
+    # LA AFIRMACION POSITIVA SE IMPRIME IGUAL, y por la misma razon por la que
+    # se imprimian las constancias: el revisor que cuenta filas necesita saber
+    # si el numero que ve es el numero completo. Un bloque vacio le deja la
+    # resta a el, que es lo que SIS-A-13 y MAT-O15 reprochan.
     diferidas = "".join(
         f'<div class="nota"><p>{_esc(t)}</p></div>'
-        for t in verificaciones_no_evaluadas())
+        for t in verificaciones_no_evaluadas()) or (
+        '<div class="nota"><p>Las ONCE filas de la tabla de Fase 5 de la '
+        'hoja de ruta (V1, V2, V2b, V3, V4, V4b, V5, V6, V7, V8, V9) se '
+        'evaluan: ninguna queda diferida por falta de metodo. Lo que una '
+        'corrida concreta no alcance a evaluar aparece como bloqueo de ese '
+        'punto, con su causa, no como una fila que no existe.</p></div>')
     # EL DESARROLLO DE CADA VERIFICACION, debajo de la tabla-resumen. La tabla
     # dice el veredicto de un vistazo; el desarrollo dice de donde sale cada
     # numero, contra que se compara y con que frase de la norma. Sin el, la
@@ -1321,6 +1331,47 @@ def _pasos_de_clasificacion(informe: Any) -> str:
     return bloque_pasos(pasos, "Desarrollo de la clasificacion (Fase 2)")
 
 
+def _paso_del_tw(informe: Any) -> str:
+    """
+    El desarrollo de Sec. 1.3: por que via salio el TW de este punto.
+
+    Va ANTES del desarrollo hidraulico y no dentro de el, porque el TW es un
+    DATO DE ENTRADA de la Fase 4, no un resultado suyo: se obtiene en la Fase
+    1 y el control de salida lo consume. Imprimirlo dentro haria parecer que
+    el calculo hidraulico lo produce.
+
+    Hasta S20 no habia nada que imprimir: el TW entraba por un criterio o por
+    una opcion de la linea de comandos, y la memoria lo mostraba como un
+    numero en la tabla de diseño, sin procedencia (SIS-B-04).
+    """
+    tw = getattr(informe, "tw_sec13", None)
+    paso = None if tw is None else getattr(tw, "paso", None)
+    if paso is None:
+        return ""
+    escenarios = ""
+    if getattr(tw, "escenarios", ()):
+        filas = "".join(
+            _fila([_td(_esc(rotulo)), _td(_num(valor), "num")])
+            for rotulo, valor in tw.escenarios)
+        escenarios = (
+            "<h5>Los dos escenarios acotados del paso 3</h5>"
+            "<table>"
+            + _fila(["<th>Escenario</th>", "<th>TW (m)</th>"])
+            + filas
+            + "</table>"
+            + '<div class="nota"><p>La hoja de ruta pide cumplir en AMBOS. El '
+              'diseño corre con el gobernante &mdash; el mayor &mdash;, y eso '
+              'implica cumplir con el otro: h_o = max(TW, (y_c + D)/2) no '
+              'decrece con TW, HW de salida crece con h_o, y el control que '
+              'gobierna es el mayor de los dos HW; luego V4 y V4b, que son '
+              'las unicas verificaciones que dependen del TW, tienen su peor '
+              'caso en el TW mayor. Los dos numeros se imprimen para que se '
+              'pueda comprobar en vez de creerlo.</p></div>')
+    return bloque_pasos((paso,),
+                        "Obtencion del TW en el cuerpo receptor "
+                        "(Sec. 1.3)") + escenarios
+
+
 def _pasos_hidraulicos_del_punto(informe: Any) -> str:
     """
     La traza de las Fases 3 y 4: Manning, tirante critico, los dos controles y
@@ -1377,6 +1428,7 @@ def memoria_de_punto(informe: Any) -> str:
         _pasos_de_clasificacion(informe),
         _tabla_iteraciones(informe),
         _tabla_diseno(informe),
+        _paso_del_tw(informe),
         _pasos_hidraulicos_del_punto(informe),
         _tabla_verificaciones(informe),
         _bloques_fases_finales(informe),

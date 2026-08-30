@@ -345,13 +345,23 @@ def test_la_guardia_del_censo_detecta_una_variable_sin_censar(monkeypatch):
 
 def test_el_consumidor_sale_del_codigo_y_no_de_los_comentarios():
     """
-    Nueve variables se nombran en docstrings de modulos que NO las invocan.
-    `TW_receptor` sale en cuatro sitios de M4 y M5, todos prosa: un `grep`
-    -- o una lista escrita a mano a partir de un grep -- le atribuiria dos
-    consumidores que no tiene.
+    Varias variables se nombran en docstrings de modulos que NO las invocan:
+    un `grep` -- o una lista escrita a mano a partir de un grep -- les
+    atribuiria consumidores que no tienen.
+
+    `TW_receptor` ERA EL EJEMPLO DE ESTE TEST Y DEJO DE SERLO EN S20, y el
+    cambio es justamente la demostracion de que el censo se lee del codigo:
+    salia en cuatro sitios de M4 y M5, todos prosa, y no lo invocaba nadie.
+    Al implementarse la Sec. 1.3 gano un consumidor REAL --
+    `M3.tw_seccion_1_3`, la ultima puerta del TW -- y el censo lo recogio
+    solo, sin que nadie editara una lista. Se conserva aqui, con el
+    consumidor que ahora tiene, porque el contraste es la prueba: los otros
+    tres siguen en cero.
     """
-    assert ve.variable("TW_receptor").consumido_por == ()
-    assert "TW_receptor" in ve.variables_sin_consumidor()
+    assert ve.variable("TW_receptor").consumido_por == ("M3_hidraulica",)
+    for clave in ("angulo_aletas", "capacidad_portante_adm", "clase_sitio"):
+        assert ve.variable(clave).consumido_por == (), clave
+        assert clave in ve.variables_sin_consumidor()
     assert ve.variable("ke_entrada").consumido_por == ("M4_control",)
 
 

@@ -97,6 +97,25 @@ from modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
 # Estructura
 # ---------------------------------------------------------------------------
 
+# LOS DOS NIVELES DE ENTREGA. No son etiquetas de la taxonomia de CLAUDE.md
+# (esas son [N], [N->], [S], [C], [A]) ni fases del calculo: dicen a que
+# ENTREGA pertenece el criterio. Un estudio de PERFIL cierra con los primeros
+# declarados; los segundos son del expediente tecnico, y `--alcance perfil`
+# difiere sus etapas con su fundamento en el bloque de alcance.
+NIVEL_PERFIL = "perfil"
+NIVEL_EXPEDIENTE = "expediente"
+NIVELES = (NIVEL_PERFIL, NIVEL_EXPEDIENTE)
+
+# La etiqueta que exige ventana, y es UNA. CLAUDE.md lo escribe en la propia
+# definicion de la taxonomia: «[A] Sin norma ni fuente unica. Adopcion
+# declarada + sensibilidad». Las otras cuatro quedan fuera y cada una por su
+# razon: [N] y [N->] no se eligieron, se leyeron -- darles rango seria decir
+# que la norma admite otro numero --; [C] esta cubierto por una fuente tecnica
+# reconocida, que es su procedencia y su defensa; y [S] se defiende con
+# `trazabilidad`, no con rango, que es la regla que separa [S] de [A].
+ETIQUETAS_DE_ELECCION = ("A",)
+
+
 @dataclass(frozen=True)
 class Criterio:
     valor: Any
@@ -114,6 +133,22 @@ class Criterio:
     sin_consumidor: str = ""                   # por que NINGUN modulo lo invoca
     de_catalogo: str = ""                      # rotulo: el valor es de CATALOGO, no de norma
     resolucion: Optional[Resolucion] = None    # COMO se resuelve (Sec. 4.3): tabla, rango, ensayo...
+    nivel: str = ""                            # NIVEL_PERFIL / NIVEL_EXPEDIENTE / "" sin clasificar
+
+    # `nivel` responde a UNA pregunta y no a dos: si este criterio hay que
+    # tenerlo declarado para cerrar el nivel de PERFIL, o si su etapa la
+    # difiere el alcance de perfil al expediente. No es la fase (eso es
+    # `variables_entrada`) ni la etiqueta (eso es la taxonomia de CLAUDE.md):
+    # es a que ENTREGA pertenece.
+    #
+    # La regla que lo decide, y es empirica, no de opinion: el nivel de un
+    # criterio es el nivel de la etapa que lo consume. Si una corrida
+    # `--alcance perfil` lo invoca sin que su etapa quede diferida, es de
+    # perfil. `tests/test_criterios_adoptados.py` lo comprueba corriendo el
+    # pipeline y contrastando `criterios_usados()` contra este campo, de modo
+    # que la clasificacion no puede quedar desincronizada del codigo -- que
+    # es exactamente como se desincronizan las clasificaciones escritas a
+    # mano en un documento.
 
     # `resolucion` es el vinculo que faltaba: dice DE DONDE SALIO el valor --
     # de que tabla y de que fila, de que rango, de que ensayo, de que catalogo
@@ -746,6 +781,7 @@ CRITERIOS: Dict[str, Criterio] = {
     # SIS-D-01).
     "clase_sitio": Criterio(
         valor=None,
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="S",
         concepto="Clase de sitio sismica (AASHTO LRFD Art. 3.10.3.1 / Manual "
                  "de Puentes num. 2.4.3.11.2.1.1). Es la rigidez MEDIDA de "
@@ -1214,6 +1250,7 @@ CRITERIOS: Dict[str, Criterio] = {
     # (MAT-O16).
     "gamma_EQ": Criterio(
         valor=None,                 # VACIO: bloquea el limite de excentricidad
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Factor de carga de la carga viva en la combinacion Evento "
                  "Extremo I, adimensional",
@@ -1268,6 +1305,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "pendiente_relleno_trasdos_i": Criterio(
         valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Inclinacion de la superficie del relleno del trasdos sobre "
                  "la horizontal (i), en grados, para Mononobe-Okabe",
@@ -1303,6 +1341,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "inclinacion_muro_beta": Criterio(
         valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Inclinacion del paramento interior (trasdos) del cabezal "
                  "respecto de la VERTICAL (beta), en grados, positiva cuando "
@@ -1328,6 +1367,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "friccion_muro_suelo_delta": Criterio(
         valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Angulo de friccion entre el paramento del muro y el relleno "
                  "(delta), en grados, para Mononobe-Okabe",
@@ -1358,6 +1398,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "punto_aplicacion_incremento_sismico": Criterio(
         valor=None,                 # VACIO: bloquea el momento de volteo sismico
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Altura de aplicacion del incremento sismico de empuje "
                  "(P_AE - P_A), como fraccion de la altura H del muro",
@@ -1388,8 +1429,31 @@ CRITERIOS: Dict[str, Criterio] = {
     # ----------------------- HIDROLOGIA -----------------------------------
 
     "homogeneidad_serie_fen": Criterio(
+        # EL UNICO CRITERIO DE PERFIL QUE S20 NO PUDO DECLARAR, y hay que
+        # decir por que no: no es una eleccion que el proyectista pueda tomar
+        # sentado. Las dos ramas que la Fase 1-bis abre --la serie CONTIENE
+        # 1983, 1998 y 2017, o NO los contiene-- son un HECHO sobre un
+        # conjunto de datos, no una adopcion; y ese conjunto de datos -- la
+        # serie SENAMHI de la estacion, con su longitud de registro y sus
+        # años faltantes -- no esta en este expediente. Elegir una de las dos
+        # ramas seria afirmar algo sobre un archivo que nadie ha abierto, que
+        # es la clase de relleno silencioso que CLAUDE.md llama "el peor error
+        # posible en este proyecto".
         valor=None,                 # VACIO: bloquea el Q de diseno de TODOS los puntos
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
+        # LAS DOS RAMAS QUE LA FASE 1-bis ABRE, que son la ventana entera: la
+        # serie contiene los años FEN o no los contiene, y cada rama tiene su
+        # tratamiento escrito en la hoja de ruta. No hay un tercer camino, y
+        # por eso la ventana es simbolica y cerrada. Se escribe aunque el
+        # criterio siga vacio -- ver la nota sobre el valor --: cual de las
+        # dos aplica es un HECHO sobre la serie SENAMHI, y el hecho no se
+        # puede declarar sin la serie; la ventana, en cambio, se conoce desde
+        # el primer dia.
+        sensibilidad=("la serie CONTIENE 1983, 1998 y 2017: reportar el "
+                      "ajuste con y sin ellos y adoptar el mas conservador",
+                      "la serie NO los contiene: el Q de diseño esta "
+                      "subestimado y es una limitacion central declarada"),
         concepto="Tratamiento de la poblacion mixta de la serie de precipitacion "
                  "maxima anual (anios FEN frente a anios neutros)",
         justificacion="La serie de Piura no es de poblacion unica: 1983, 1998 y "
@@ -1500,7 +1564,17 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "umbral_area_quebrada_importante_ha": Criterio(
-        valor=None,                 # VACIO: bloquea el TR de toda la Familia A
+        # ha. ADOPCION CONSERVADORA Y ESTABLE PARA ESTE CORREDOR: por
+        # debajo de las areas de sus dos puntos de Familia A (A-01, 850 ha;
+        # A-02, 210 ha), de modo que los DOS quedan como "quebrada
+        # importante" y toman el TR mayor de la Tabla N 02 (71 años en vez de
+        # 35). El rango declarado entero, (50, 200) ha, da esa misma
+        # clasificacion: la adopcion no cambia de resultado en ningun punto
+        # de su propia ventana, que es lo que la hace defendible sin tener el
+        # estudio hidrologico de la cuenca.
+        valor=100.0,
+        nivel=NIVEL_PERFIL,
+        sensibilidad=(50.0, 200.0),  # ha; toda la ventana deja los dos puntos de Familia A en TR 71
         etiqueta="A",
         concepto="Area de cuenca a partir de la cual el cauce de un punto de "
                  "Familia A se clasifica como 'quebrada importante' (TR 71) en "
@@ -1560,6 +1634,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "hds5_embocadura_hdpe": Criterio(
         valor={"K": 0.0098, "M": 2.00, "c": 0.0398, "Y": 0.67, "Ks": -0.5},
+        nivel=NIVEL_PERFIL,
         etiqueta="C",
         concepto="Constantes de control de entrada HDS-5 para tuberia HDPE",
         justificacion="La Tabla A.1 se organiza en cartas por forma/material y, "
@@ -1613,6 +1688,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "metodo_transicion_hds5": Criterio(
         valor="interpolacion_lineal_entre_extremos",
+        nivel=NIVEL_PERFIL,
         etiqueta="C",
         concepto="Metodo con que se cubre la zona de transicion del control de "
                  "entrada de HDS-5, 3.5 < q* < 4.0",
@@ -1681,6 +1757,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # corrigiera la Tabla N 09, esta seguiria con el valor viejo y la
         # "analogia" habria dejado de serlo en silencio (SIS-D-11).
         valor=MANNING["concreto_tubo_recto"],   # RANGO (n_min, n_max), no puntual
+        nivel=NIVEL_PERFIL,
         etiqueta="N->",             # analogia normativa declarada, no adopcion
         concepto="Coeficiente de rugosidad de Manning para HDPE de interior liso",
         justificacion="La Tabla N 09 del Manual MTC no lista HDPE. Se adopta el "
@@ -1737,6 +1814,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # hace falta redondear ninguno de los dos lados porque la conversion es
         # exacta.
         valor=4.572,
+        nivel=NIVEL_PERFIL,
         etiqueta="C",               # Anexo A y Sec. 0.1: la fuente (WSDOT)
                                     # es tecnica reconocida, no una adopcion libre
         concepto="Velocidad maxima admisible en HDPE",
@@ -1797,6 +1875,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # adopcion conservadora del proyecto anclada en el mismo umbral, de
         # modo que redondear hacia arriba tampoco tiene apoyo.
         valor=4.572,
+        nivel=NIVEL_PERFIL,
         etiqueta="C",               # idem v_max_hdpe: Anexo A lo etiqueta [C]
         concepto="Velocidad maxima admisible en TMC",
         justificacion="La Tabla N 10 del Manual MTC no cubre materiales flexibles",
@@ -1924,6 +2003,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "ke_entrada": Criterio(
         valor=0.5,
+        nivel=NIVEL_PERFIL,
         etiqueta="C",
         concepto="Coeficiente de perdida de carga en la embocadura (ke)",
         justificacion="La ecuacion de control de salida de la hoja de ruta, "
@@ -1976,6 +2056,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "geometria_control_salida": Criterio(
         valor="seccion_llena",
+        nivel=NIVEL_PERFIL,
         etiqueta="C",
         concepto="Seccion de referencia de la que se toman V y R en la ecuacion "
                  "de control de salida H = (1 + ke + 19.63*n^2*L/R^(4/3))*V^2/(2g)",
@@ -2033,6 +2114,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "HW_D_max": Criterio(
         valor=1.5,
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         concepto="Relacion maxima de carga a la entrada sobre diametro",
         justificacion="ADOPCION DEL PROYECTISTA SOBRE UNA BANDA DE PRACTICA "
@@ -2114,6 +2196,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "resguardo_HW_subrasante": Criterio(
         valor="segun_CBR",          # 0.60 / 0.80 / 1.00 / 1.20 m
+        nivel=NIVEL_PERFIL,
         etiqueta="N->",
         concepto="Resguardo entre nivel de agua a la entrada y subrasante",
         justificacion="El numeral 4.5.4 regula la separacion frente al NIVEL "
@@ -2163,25 +2246,169 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "TW_receptor": Criterio(
-        valor=None,                 # VACIO hasta obtener Q del receptor
+        # SIGUE VACIO A PROPOSITO, Y DESDE S20 POR OTRA RAZON. Hasta S20 era
+        # la UNICA puerta del TW y por eso detenia toda corrida: el
+        # procedimiento de Sec. 1.3 no existia en src/ (SIS-B-04). Hoy existe
+        # -- `M3.tw_seccion_1_3` -- y este criterio quedo donde le corresponde:
+        # la ULTIMA puerta, la que se abre cuando el expediente no aporta ni
+        # `cota_TW`, ni `Q_receptor_m3s`, ni la seccion del receptor. Con
+        # 'seccion_receptor' declarado, ninguna corrida lo invoca, y por eso
+        # no aparece en la memoria: `reporte_criterios(solo_usados=True)`
+        # imprime lo que el calculo consumio.
+        #
+        # NO SE DECLARA, y es deliberado: declararlo seria volver a poner un
+        # TW a mano donde Sec. 1.3 dice «se calcula, no se mide». Su ficha
+        # sigue aqui porque el dia que un punto descargue a un receptor del
+        # que no se sepa ni el caudal ni la seccion, esta es la puerta que
+        # tiene que detener la corrida en vez de inventar un nivel.
+        valor=None,
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
+        # LA VENTANA DE ESTE CRITERIO SON LOS DOS ESCENARIOS DEL PASO 3 de
+        # Sec. 1.3, y no es una analogia: son literalmente las dos opciones
+        # que la hoja de ruta ofrece cuando no hay caudal documentado del
+        # receptor, que es exactamente la situacion en la que esta puerta se
+        # abre. Es simbolica y no numerica porque un TW no tiene banda de
+        # practica: tiene dos escenarios acotados, y lo que se declara es en
+        # cual se esta. Se escribe aunque el criterio siga vacio: la ventana
+        # es parte de la ficha, no del valor, y sin ella ni la GUI ni la CLI
+        # podrian declararlo en caliente.
+        sensibilidad=("salida libre (TW = 0): el receptor no aporta lamina "
+                      "sobre el fondo de la salida",
+                      "receptor a seccion llena: el agua llega a la corona "
+                      "del bordo del dren",
+                      "nivel documentado por la ANA / Junta de Usuarios para "
+                      "el periodo de retorno de diseño"),
         concepto="Nivel de agua en el cuerpo receptor durante la avenida",
         justificacion="No se mide: se calcula con Manning en el receptor usando "
                       "su propio caudal de diseno. Sin ese dato se adoptan dos "
                       "escenarios acotados (salida libre / seccion llena)",
         fuente="PENDIENTE: ANA / Junta de Usuarios del Bajo Piura",
         reemplazado_por="Caudal de diseno documentado del dren o canal receptor",
-        resolucion=DeEnsayo(
-            ensayo="nivel de agua en el cuerpo receptor durante la avenida, "
-                   "de la ANA / Junta de Usuarios del Bajo Piura",
-            trazabilidad_exigida="el oficio o estudio del que sale el nivel, "
-                                 "su fecha y el periodo de retorno al que "
-                                 "corresponde (Tablero 3.1)",
+        # `Libre` Y NO `DeEnsayo`, y el cambio lo trajo la propia Sec. 1.3.
+        # Mientras este criterio fue la UNICA puerta del TW, su resolucion
+        # decia la verdad: el numero saldria de un dato de la ANA. Hoy ese
+        # dato entra por otro sitio -- la columna `cota_TW`, o el caudal del
+        # receptor con su seccion -- y lo que queda aqui es la ultima puerta,
+        # la que se abre cuando no hay ninguno de los tres: entonces lo que
+        # se declara no es una lectura, es EN CUAL DE LOS DOS ESCENARIOS
+        # ACOTADOS del paso 3 se esta. Eso es una eleccion, y la invariante de
+        # este archivo lo exige: un `de_ensayo` con ventana es una
+        # contradiccion. La lectura de la ANA no se pierde: es el
+        # `reemplazado_por`, y sigue siendo lo que cierra esto de verdad.
+        resolucion=Libre(
+            que_lo_fija="el proyectista, eligiendo escenario, cuando el "
+                        "expediente no aporta ni el nivel del receptor "
+                        "(`cota_TW`) ni su caudal de diseño con la seccion "
+                        "para correr Manning (Sec. 1.3, pasos 1 y 2)",
+            dominio="m >= 0 sobre el fondo de la salida; 0 es salida libre",
+        ),
+    ),
+
+    # El DATO que el paso 2 de Sec. 1.3 necesita, y que la hoja de ruta no
+    # entrega: la seccion del receptor. Sin ella el paso 2 no es una formula
+    # que falte, es una geometria que nadie declaro.
+    "seccion_receptor": Criterio(
+        # SECCION ADOPTADA A NIVEL DE PERFIL, con la ventana de cada campo
+        # en `sensibilidad`. Es la unica de las declaraciones de esta sesion
+        # que describe una obra de TERCEROS -- el dren colector de la Junta
+        # de Usuarios --, y por eso su `verificacion_pendiente` es la mas
+        # exigente: mientras no exista el levantamiento, la memoria tiene que
+        # decir que el nivel del receptor es una adopcion.
+        #
+        # QUE NO GOBIERNA ESTA ADOPCION, que es lo primero que hay que mirar
+        # antes de leerla como un numero peligroso: en los puntos cuyo CSV
+        # trae `cota_TW`, la via 2 de Sec. 1.3 gana y este criterio ni se
+        # invoca. Solo entra donde el expediente aporta el CAUDAL del
+        # receptor y no su nivel, que es la situacion que Sec. 1.3 describe.
+        valor={"b_m": 2.0, "z_HV": 1.5, "S": 0.0008, "n": 0.030,
+               "altura_total_m": 1.80},
+        nivel=NIVEL_PERFIL,
+        # VENTANA POR CAMPO, escrita como la lista de rangos que el
+        # levantamiento tiene que confirmar. Simbolica y no numerica porque el
+        # valor es un dict de cinco campos y un solo par (min, max) no puede
+        # acotar cinco magnitudes distintas. El campo que mas mueve el
+        # resultado es `altura_total_m`, y solo en la via 4 (escenarios
+        # acotados): es el que fija el TW del escenario "receptor a seccion
+        # llena". En la via 3 lo que gobierna es la terna b/z/n/S a traves de
+        # Manning, y un n de 0.030 frente a uno de 0.025 sube el tirante
+        # normal ~13 %, que se traslada al TW metro a metro.
+        sensibilidad=("b_m: 1.5 a 3.0 m (dren colector de la red del Bajo Piura)",
+                      "z_HV: 1.0 a 2.0 (talud de dren en suelo fino)",
+                      "S: 0.0005 a 0.0015 m/m (llanura de riego)",
+                      "n: 0.025 a 0.035 (canal en tierra con vegetacion "
+                      "estacional)",
+                      "altura_total_m: 1.2 a 2.5 m"),
+        etiqueta="A",
+        concepto="Seccion transversal del cuerpo receptor (dren o canal) en "
+                 "el punto de descarga, con su pendiente y su n de Manning: "
+                 "b_m (solera), z_HV (talud), S, n y altura_total_m "
+                 "(profundidad de la seccion, del fondo a la corona del "
+                 "bordo)",
+        justificacion="SEC. 1.3 DICE «TW SE CALCULA, NO SE MIDE» Y DA TRES "
+                      "PASOS; el paso 2 es «Manning en la seccion del "
+                      "receptor con ese Q y su pendiente». La formula esta "
+                      "(es la misma de Manning que ya usa M3) y el caudal "
+                      "esta (columna `Q_receptor_m3s` del CSV, Sec. 1.2). Lo "
+                      "que NO esta en ninguna parte es LA SECCION: ni "
+                      "Sec. 1.1 ni Sec. 1.2 la traen, la hoja de ruta no la "
+                      "describe y no hay norma que la fije, porque es la "
+                      "geometria de una obra de terceros -- el dren de la "
+                      "Junta de Usuarios -- que hay que ir a levantar. "
+                      "POR QUE BLOQUEA Y NO SE APROXIMA: porque el TW entra "
+                      "en el control de salida y de ahi al HW, y el HW "
+                      "decide V4 (carga bajo la subrasante) y V4b. Una "
+                      "seccion inventada mueve la cota de agua del receptor "
+                      "y con ella el diametro de la alcantarilla, sin que "
+                      "nada en la memoria diga de donde salio. "
+                      "`altura_total_m` NO ES DECORATIVA: es lo que acota el "
+                      "SEGUNDO escenario del paso 3 -- «receptor a seccion "
+                      "llena» --, que sin ella no se puede escribir. La "
+                      "hoja de ruta pide «cumplir en ambos» escenarios y uno "
+                      "de los dos necesita saber hasta donde llega el bordo. "
+                      "QUE HACE ESTE CRITERIO CUANDO EL CSV YA TRAE "
+                      "`cota_TW`: nada. Esa columna ES el resultado del paso "
+                      "2 resuelto fuera (Tablero 3.1 la rotula «Calculada "
+                      "(1.3)»), y un dato entregado no se recalcula: "
+                      "`M3.tw_seccion_1_3` la usa y ni siquiera invoca este "
+                      "criterio",
+        fuente="PENDIENTE - levantamiento de la seccion del dren o canal "
+               "receptor en el punto de descarga (ANA / Junta de Usuarios "
+               "del Bajo Piura). Sec. 1.3 de la hoja de ruta describe el "
+               "procedimiento y NO entrega la seccion; Sec. 1.2 no la trae "
+               "como columna",
+        reemplazado_por="Seccion levantada por punto (si los puntos "
+                        "descargan a drenes distintos, deja de ser un "
+                        "criterio de corredor y pasa a ser columna del CSV), "
+                        "o directamente la `cota_TW` medida, que la hace "
+                        "innecesaria",
+        verificacion_pendiente="Declarar si los cuatro puntos del corredor "
+                               "descargan al MISMO receptor. Un criterio "
+                               "unico afirma que si, y esa afirmacion es "
+                               "parte de la adopcion: si descargan a drenes "
+                               "distintos, un solo juego de b/z/S/n asigna a "
+                               "todos la seccion de uno",
+        # `Libre`, POR LO MISMO QUE 'talud_terraplen': mientras el criterio
+        # estaba vacio su resolucion era `DeEnsayo`, porque el numero iba a
+        # salir de un levantamiento. Declarado a nivel de perfil sale de una
+        # ELECCION dentro de una banda, y la invariante de este archivo no
+        # admite un `de_ensayo` con ventana -- con razon: un dato levantado no
+        # tiene rango que elegir. El levantamiento no desaparece: es el
+        # `reemplazado_por`, y es lo unico que cierra este criterio de verdad.
+        resolucion=Libre(
+            que_lo_fija="el proyectista, mientras no exista el levantamiento "
+                        "topografico de la seccion del receptor en el punto "
+                        "de descarga. La seccion es de una obra de TERCEROS "
+                        "-- el dren de la Junta de Usuarios --: ninguna norma "
+                        "la fija y este proyecto no la diseña",
+            dominio="b_m >= 0, z_HV >= 0, S > 0, n > 0, altura_total_m > 0; "
+                    "b_m y z_HV no pueden ser cero a la vez",
         ),
     ),
 
     "long_max_cuneta": Criterio(
         valor=200.0,
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         concepto="Longitud maxima de cuneta -> espaciamiento de alcantarillas de alivio",
         justificacion="El Manual fija 250 m para region seca y 200 m para region "
@@ -2217,7 +2444,15 @@ CRITERIOS: Dict[str, Criterio] = {
     # escritos.
 
     "origen_cota_fondo_entrada": Criterio(
-        valor=None,                 # VACIO: bloquea V4, V7 y el tamizado 7.A
+        # UNICA REGLA IMPLEMENTADA (`M5.ORIGENES_COTA_ENTRADA`), y la
+        # ventana lo dice: no hay una segunda opcion entre la que elegir
+        # mientras el expediente no entregue la cota medida. Declararla con
+        # una ventana de un solo elemento no es una formalidad -- es la
+        # diferencia entre "se eligio esta" y "esta es la unica que el
+        # programa sabe calcular".
+        valor="cota_terreno",
+        nivel=NIVEL_PERFIL,
+        sensibilidad=("cota_terreno",),
         etiqueta="A",
         concepto="Regla con la que se obtiene la cota del FONDO DE LA ENTRADA "
                  "(invert) de cada punto, msnm, mientras el expediente no la "
@@ -2279,6 +2514,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "remanso_derecho_via": Criterio(
         valor=None,                 # VACIO: bloquea V5 para todo punto
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Extension del remanso aguas arriba de la alcantarilla y "
                  "ancho de derecho de via disponible en el punto, para V5 "
@@ -2308,8 +2544,80 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # V2b, la mitad [A] de la fila: el acceso de mantenimiento. La mitad
+    # evaluable de V2b -- el indicador de pendiente del HDS-5 num. 5.3.3 -- la
+    # calcula `M5.v2b_sedimentacion` y NO pasa por aqui: es una comparacion
+    # entre dos numeros de la fuente y del CSV, no una adopcion.
+    "acceso_mantenimiento_v2b": Criterio(
+        # LA OPCION QUE RESUELVE EL PROBLEMA, no la que sale gratis. Las
+        # tres de la ventana son declaraciones legitimas y solo una prevé la
+        # obra: un buzon o camara de limpieza en cabecera deja entrar al
+        # personal de mantenimiento sin desmontar nada. La segunda supone que
+        # el cabezal alcanza y no anade obra; la tercera es la declaracion
+        # honesta de que el punto NO se va a poder limpiar, y existe para que
+        # esa decision se tenga que escribir en vez de ocurrir por omision --
+        # que es lo que pasaba antes de S20, cuando V2b no existia.
+        valor="camara_o_buzon_en_cabecera",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        concepto="Como se resuelve el acceso de mantenimiento para limpieza "
+                 "del conducto en cada punto, que es la mitad [A] de la fila "
+                 "V2b de la Fase 5 y contenido de los PLANOS (Sec. 11, "
+                 "entregable 7)",
+        justificacion="LA FILA V2b TIENE DOS MITADES Y ESTE CRITERIO ES LA "
+                      "SEGUNDA. La primera -- el indicador de sedimentacion "
+                      "-- si se evalua desde S20: el HDS-5 3.a ed., "
+                      "num. 5.3.3, nombra dos indicadores y uno de ellos, "
+                      "'barrel slope less than the natural channel', son dos "
+                      "numeros que este calculo ya tiene (la pendiente del "
+                      "conducto y la del cauce). La segunda mitad no es un "
+                      "numero que se pueda verificar: es una decision de "
+                      "PROYECTO sobre como se va a poder limpiar la "
+                      "alcantarilla, y se materializa en un plano que este "
+                      "software no dibuja. QUE ESTABA MAL: V2b no existia en "
+                      "ninguna linea de codigo (SIS-A-13, MAT-O15) y la mitad "
+                      "[A] ni siquiera estaba declarada como vacio, de modo "
+                      "que un expediente podia cerrar con los planos sin "
+                      "acceso de limpieza y nada lo recordaba. POR QUE NO "
+                      "BASTA EL DIAMETRO MINIMO DE 0.90 m: ese piso "
+                      "(num. 4.1.1.3.4 a) garantiza que una persona QUEPA en "
+                      "el conducto, no que pueda ENTRAR en el -- lo segundo "
+                      "depende del cabezal, de las aletas y de si hay una "
+                      "camara o buzon en cabecera, que es justo lo que aqui "
+                      "se declara. POR QUE NO SE ELIGE UNA OPCION POR "
+                      "DEFECTO: porque cada una tiene consecuencia de obra y "
+                      "de costo, y ninguna norma peruana la impone",
+        fuente="PENDIENTE - Fase 5, fila V2b de la hoja de ruta ('[N] + [A]') "
+               "y Sec. 11, entregable 7 (planos). Ninguna norma de normas/ "
+               "prescribe el dispositivo de acceso: el HDS-5 num. 5.3.3 "
+               "describe el fenomeno y el Manual de Hidrologia fija el "
+               "diametro minimo por mantenibilidad, no el acceso",
+        sensibilidad=("camara_o_buzon_en_cabecera",
+                      "acceso_por_cabezal_sin_obra_adicional",
+                      "sin_acceso_declarado_como_limitacion"),
+        reemplazado_por="La lamina de planos del expediente que dibuje el "
+                        "dispositivo de acceso de cada punto. El dia que "
+                        "exista, este criterio deja de ser una declaracion y "
+                        "pasa a ser la referencia a esa lamina",
+        verificacion_pendiente="El SEGUNDO indicador del num. 5.3.3 -- "
+                               "'roughness greater than the channel' -- NO se "
+                               "evalua: exige el n de Manning del CAUCE "
+                               "NATURAL, que no es columna de Sec. 1.2 ni la "
+                               "fija la hoja de ruta. Mientras no exista, V2b "
+                               "verifica un indicador de los dos, y la "
+                               "memoria lo dice en la propia fila",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, en los planos: ninguna norma de "
+                        "normas/ prescribe el dispositivo de acceso para "
+                        "limpieza de una alcantarilla",
+            dominio="declaracion del dispositivo de acceso; el conjunto "
+                    "cerrado de valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
     "TR_evento_extremo": Criterio(
         valor=None,                 # VACIO: bloquea V8 para todo punto
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Periodo de retorno del evento extremo de V8 y el umbral "
                  "que define 'la via no colapsa aunque desborde'",
@@ -2337,6 +2645,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "phi_relleno_trasdos": Criterio(
         valor=None,                 # completar
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Angulo de friccion interna del material de cantera del trasdos",
         justificacion="Estimado por correlacion desde granulometria y grado de "
@@ -2354,6 +2663,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "c_phi_fundacion": Criterio(
         valor=None,                 # completar
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Parametros de resistencia del suelo de fundacion",
         justificacion="Correlacion desde clasificacion SUCS de calicatas. E.050 "
@@ -2379,6 +2689,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "capacidad_portante_adm": Criterio(
         valor=None,                 # completar
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Capacidad portante admisible del terreno de fundacion",
         justificacion="Derivada de c_phi_fundacion, que es a su vez adoptado",
@@ -2398,6 +2709,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "Mw_licuefaccion": Criterio(
         valor=None,                 # VACIO: bloquea la evaluacion de licuefaccion
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Magnitud sismica para el factor de escala de magnitud (MSF)",
         justificacion="El procedimiento simplificado de evaluacion de licuefaccion "
@@ -2456,6 +2768,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "diametros_normalizados": Criterio(
         valor={"inicio": 0.90, "paso": 0.15},
+        nivel=NIVEL_PERFIL,
         etiqueta="C",
         concepto="Progresion de diametros normalizados (inicio y paso)",
         justificacion="Neutralidad comercial exigible en obra publica: no se usan "
@@ -2512,6 +2825,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "D_max_catalogo": Criterio(
         valor={"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50},
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         concepto="Diametro maximo que el proyecto admite por material, como "
                  "tope de DISPONIBILIDAD (catalogo), no como tope normativo",
@@ -2697,6 +3011,7 @@ CRITERIOS: Dict[str, Criterio] = {
                            "piso_m": 0.6096},
             },
         },
+        nivel=NIVEL_PERFIL,
         etiqueta="C",
         concepto="Cobertura minima sobre la clave del conducto, por material y "
                  "condicion de pavimento (Tabla 12.6.6.3-1 de AASHTO LRFD)",
@@ -2898,6 +3213,7 @@ CRITERIOS: Dict[str, Criterio] = {
     # piso del Manual -- sin decir de donde salia. Ahora se detiene.
     "h_eq_bajo_altura_tabulada": Criterio(
         valor=None,                 # VACIO: bloquea h_eq bajo 5.0 ft
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Que hacer con un muro de menos de 5.0 ft (1.524 m), altura "
                  "por debajo de la primera fila de las Tablas 3.11.6.4-1 y "
@@ -2942,6 +3258,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "h_eq_banda_intermedia_borde": Criterio(
         valor=None,                 # VACIO: bloquea h_eq en 0 < d < 1.0 ft
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Que columna de la Tabla 3.11.6.4-2 leer cuando la distancia "
                  "del trasdos al borde de calzada cae ESTRICTAMENTE entre "
@@ -2982,7 +3299,15 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "condicion_pavimento": Criterio(
-        valor=None,                 # VACIO: bloquea 7.A -- que fila de la tabla
+        # LA MAS EXIGENTE DE LAS TRES, y ademas la realista para una via de
+        # evitamiento pavimentada. Medido sobre `cobertura_minima_aashto`
+        # para D = 0.90 m: concreto 0.305 m con 'flexible' y con
+        # 'no_pavimentado' frente a 0.229 m con 'rigido'; HDPE 0.610 m con
+        # 'flexible' y con 'rigido' frente a 0.305 m con 'no_pavimentado'.
+        # 'flexible' es el maximo en las tres columnas de material a la vez:
+        # no hay eleccion mas conservadora dentro de la ventana.
+        valor="flexible",
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         concepto="Condicion de la superficie de rodadura sobre el cruce, para "
                  "elegir la fila de la Tabla 12.6.6.3-1: 'no_pavimentado', "
@@ -3051,7 +3376,53 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "espesor_pared_conducto": Criterio(
-        valor=None,                 # VACIO: bloquea la clave fisica y el empuje de V7
+        # LA COLUMNA «WALL B» ENTERA DE AASHTO M 170M-04, en metros, por
+        # DIAMETRO DESIGNADO en mm -- no un espesor unico por material, que
+        # era el modelo equivocado: el espesor de pared depende del diametro,
+        # y el bucle de MD recorre el catalogo entero. Con un escalar, un
+        # punto que cerrara en 1.20 m se habria calculado con el espesor del
+        # de 0.90 m sin que nada avisara; con la columna, un diametro que no
+        # este declarado DETIENE el material con su causa.
+        #
+        # DE DONDE SALEN LOS TRECE NUMEROS. AASHTO M 170M-04, columna «Wall
+        # Thickness» de la PARED B, Tabla 2 (Clase II) y Tabla 3 (Clase III),
+        # que imprimen los MISMOS espesores para el mismo diametro designado:
+        # el espesor lo fija la pared, no la clase, y eso es lo que
+        # independiza este criterio de 'clases_producto_por_relleno'
+        # (Fase 8), que sigue abierto. Leidos sobre la IMAGEN renderizada del
+        # PDF, no sobre su texto: el archivo de normas/ es un escaneo con OCR
+        # inservible para tablas (`Wa8 A`, `y,‹g|;`, `iOU`). La lectura se
+        # cruzo ademas contra la regularidad que las trece filas cumplen sin
+        # excepcion, t = D/12 + 25 mm, que reproduce cada valor con el mismo
+        # redondeo que imprime la tabla (1050 -> 112.5 -> 113;
+        # 1350 -> 137.5 -> 138; 2250 -> 212.5 -> 213).
+        #
+        # TMC Y HDPE NO SE DECLARAN, y no es un olvido: el espesor util del
+        # TMC es altura de corrugacion mas calibre de plancha, y el calibre
+        # es 'clases_producto_por_relleno', que es de Fase 8 -- expediente --;
+        # el del HDPE sale de AASHTO M294, que NO esta en normas/ y por lo
+        # tanto no se puede citar. Los dos materiales se detienen con
+        # `DatoFaltanteError` nombrando su fuente ausente, MD los descarta
+        # como candidatos con esa causa escrita, y el punto sigue
+        # dimensionandose en concreto. Es la diferencia entre un material sin
+        # fuente y un numero inventado.
+        valor={"concreto_reforzado": {900: 0.100, 1050: 0.113, 1200: 0.125,
+                                      1350: 0.138, 1500: 0.150, 1650: 0.163,
+                                      1800: 0.175, 1950: 0.188, 2100: 0.200,
+                                      2250: 0.213, 2400: 0.225, 2550: 0.238,
+                                      2700: 0.250}},
+        nivel=NIVEL_PERFIL,
+        # LA VENTANA ES SIMBOLICA PORQUE LA ELECCION LO ES: M 170M-04 tabula
+        # TRES paredes por diametro (A, B y C) y no dice cual usar. La B es la
+        # intermedia y la que las tablas imprimen como referencia de diseño;
+        # la A daria una clave mas baja y un volumen desplazado menor -- las
+        # dos cosas del lado inseguro, que es lo que MAT-D3 y MAT-D4 miden --
+        # y la C, mas espesor, seria conservadora en los dos frentes a costa
+        # de una rasante mas alta. Un rango numerico no puede defender un
+        # valor que es una tabla: lo que se defiende es la COLUMNA elegida.
+        sensibilidad=("Pared A (AASHTO M 170M-04, Tablas 1 a 5)",
+                      "Pared B (AASHTO M 170M-04, Tablas 1 a 5) -- adoptada",
+                      "Pared C (AASHTO M 170M-04, Tablas 1 a 5)"),
         etiqueta="A",
         concepto="Espesor de pared del conducto por material, en metros: la "
                  "distancia entre la superficie interior y la exterior que "
@@ -3154,6 +3525,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "clases_producto_por_relleno": Criterio(
         valor=None,                 # VACIO: bloquea la seleccion de Fase 8, items 1-2
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
         concepto="Tabla de clase (concreto, AASHTO M 170M-04, Clases I a V) o "
                  "calibre (TMC, ASTM A796/A796M) admisible segun la altura de "
@@ -3243,7 +3615,13 @@ CRITERIOS: Dict[str, Criterio] = {
     # de factores de carga distintos.
 
     "peso_especifico_relleno_kn_m3": Criterio(
-        valor=None,                 # VACIO: bloquea el termino Sigma W de V7
+        # kN/m3. EXTREMO INFERIOR del rango declarado, y es la eleccion
+        # conservadora sin discusion posible: en V7 el peso del relleno esta
+        # del lado ESTABILIZANTE (EV, minorado por gamma_EV_min), de modo que
+        # cuanto menos pese, mas cerca de flotar queda el conducto. Adoptar
+        # 20.0 haria pasar V7 en puntos donde 17.0 la reprueba.
+        valor=17.0,
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         concepto="Peso especifico del material de relleno sobre la clave, "
                  "para el termino ΣW de V7 (peso del prisma de relleno que "
@@ -3280,7 +3658,16 @@ CRITERIOS: Dict[str, Criterio] = {
     # entrada. Lo que 7.B abre aparte es la LONGITUD del conducto.
 
     "talud_terraplen": Criterio(
-        valor=None,                 # VACIO: bloquea la longitud del conducto en 7.B
+        # H:V. EXTREMO MAS TENDIDO del rango declarado, y es la eleccion
+        # conservadora: un talud mas tendido alarga el conducto (7.B), y con
+        # la longitud suben el termino de friccion del control de salida --
+        # medido: +0.004 m de HW por metro de conducto en este corredor, ya
+        # descontada la caida S*L-- y la exigencia de G2, porque la cota de
+        # salida baja S*L. Adoptar 1.5 daria un conducto mas corto y una
+        # verificacion mas facil.
+        valor=2.0,
+        nivel=NIVEL_PERFIL,
+        sensibilidad=(1.5, 2.0),     # H:V, banda de practica corriente en terraplenes viales
         etiqueta="A",
         concepto="Inclinacion del talud del terraplen en el punto de cruce, "
                  "como proyeccion horizontal por unidad de altura (H:V), para "
@@ -3313,13 +3700,21 @@ CRITERIOS: Dict[str, Criterio] = {
                                "natural del cruce), que es lo unico que el CSV "
                                "permite calcular: si la seccion es asimetrica, "
                                "la longitud se mide y no se deduce",
-        resolucion=DeEnsayo(
-            ensayo="lectura del talud del terraplen en la seccion tipica del "
-                   "expediente vial (DG-2018)",
-            trazabilidad_exigida="lamina y progresiva de la seccion leida; "
-                                 "el talud depende de la altura del "
-                                 "terraplen y del material del cuerpo, asi "
-                                 "que la lectura es del cruce, no generica",
+        # `Libre` Y NO `DeEnsayo`, y el cambio no es cosmetico. Mientras el
+        # criterio estuvo VACIO su resolucion decia la verdad: el numero
+        # saldria de LEER la seccion tipica del expediente vial. Al declararlo
+        # a nivel de perfil deja de salir de una lectura y pasa a salir de una
+        # ELECCION dentro de una banda de practica, que es lo que `Libre`
+        # nombra -- y la invariante de este archivo lo exige: un `de_ensayo`
+        # con `sensibilidad` es una contradiccion, porque un dato leido no
+        # tiene rango que elegir. La lectura no se pierde: sigue entera en
+        # `reemplazado_por`, que es lo que cierra el criterio de verdad.
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre practica corriente de "
+                        "terraplenes viales, mientras el expediente vial no "
+                        "entregue la seccion tipica del cruce. El DG-2018 no "
+                        "esta en normas/ y no se puede citar",
+            dominio="H:V > 0",
         ),
     ),
 
@@ -3327,6 +3722,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "espesor_proteccion_salida": Criterio(
         valor=1.75,                 # multiplicador de d50
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         concepto="Espesor de la capa de proteccion, como multiplo de d50",
         justificacion="El Manual solo entrega d50 (Laushey). El espesor, la "
@@ -3342,7 +3738,19 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "longitud_proteccion_salida": Criterio(
-        valor=None,                 # VACIO: completa el diseno de la Fase 6
+        # m. NO SALE DE NINGUNA NORMA DE normas/ y hay que decirlo asi: el
+        # Manual MTC (num. 4.1.1.3.7 c) entrega d50 y nada mas, y el HDS-5
+        # 3.a ed. remite el dimensionamiento del apron a HEC-14 Sec. 10.2,
+        # que NO esta en el repositorio (comprobado: la unica mencion de
+        # `apron` en su Cap. 5 es esa remision). Es una adopcion del
+        # proyectista sobre practica corriente de enrocado a la salida, con
+        # su ventana declarada, y NO gobierna ninguna verificacion: la
+        # longitud de la proteccion no entra en V1-V9 ni en 7.A/7.B. Se
+        # declara para que la Fase 6 entregue una pieza dimensionada y para
+        # que el expediente sepa exactamente que numero tiene que confirmar.
+        valor=5.0,
+        nivel=NIVEL_PERFIL,
+        sensibilidad=(3.0, 8.0),     # m; banda de practica de aprons de enrocado en conductos de 0.9-1.2 m
         etiqueta="A",
         concepto="Longitud de la proteccion aguas abajo de la salida",
         justificacion="Laushey (num. 4.1.1.3.7 c) entrega d50 y nada mas. La "
@@ -3366,6 +3774,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "angulo_aletas": Criterio(
         valor=None,                 # completar segun esviaje
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Angulo de las aletas del cabezal",
         justificacion="Ajustado al esviaje del cauce en cada punto",
@@ -3446,6 +3855,7 @@ CRITERIOS: Dict[str, Criterio] = {
             "cabezal": {"EV": "EV_muros_y_estribos_de_retencion",
                         "EH": "EH_activa"},
         },
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         concepto="Que fila de la Tabla 2.4.5.3.1-2 (factores gamma_p de "
                  "cargas permanentes) describe a cada estructura de esta "
@@ -3644,6 +4054,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "predimensionamiento_cabezal": Criterio(
         valor=None,                 # VACIO: bloquea la estabilidad automatica
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Geometria del cabezal (altura H sobre zapata, ancho de "
                  "zapata B, profundidad de desplante D_f, espesor de la "
@@ -3684,6 +4095,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "N_cq_N_gammaq_meyerhof": Criterio(
         valor=None,                 # VACIO: bloquea la capacidad portante en talud
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Factores de capacidad de carga N_cq y N_gamma_q para zapata "
                  "proxima a talud (Meyerhof 1957), leidos de las figuras "
@@ -3731,6 +4143,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "metodo_estabilidad_global": Criterio(
         valor=None,                 # VACIO: bloquea las filas E4 y E5 de Sec. 9.3
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Metodo de analisis de estabilidad global del muro y del "
                  "talud que lo soporta (equilibrio limite: Bishop "
@@ -3793,6 +4206,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "categoria_refuerzo_aashto": Criterio(
         valor=None,                 # VACIO: bloquea la regla del mayor de 9.4
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Categoria de material de refuerzo de la Tabla 5.10.1-1 de "
                  "AASHTO LRFD ('A' acero sin recubrir, 'B' epoxico o "
@@ -3919,6 +4333,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "exposicion_quimica_ems": Criterio(
         valor=None,                 # VACIO: bloquea el factor por a/c de 9.4
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="S",
         concepto="Agresividad quimica del suelo y del agua freatica en el "
                  "corredor, y condiciones de exposicion del concreto, en las "
@@ -4101,6 +4516,7 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "cortante_alto_muro_e060_art_11_10_10_2": Criterio(
         valor=None,                 # VACIO: bloquea el escalon de rho a 0.0025
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Si el muro del cabezal esta en la condicion de CORTANTE "
                  "ALTO de E.060 Art. 11.10.10.2, que escalona la cuantia "
@@ -4860,7 +5276,80 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
             "dicha dos veces, y no pueden discrepar"
         )
 
+    _verificar_nivel(clave, c)
     _verificar_sensibilidad(clave, c)
+
+
+def _verificar_nivel(clave: str, c: Criterio) -> None:
+    """
+    Las tres reglas del `nivel`, y las tres nacen del cierre del nivel de
+    perfil (S20):
+
+    1. El valor, si esta, es uno de los dos NIVELES.
+    2. Un criterio SIN VALOR tiene que declarar nivel. Un vacio que no dice a
+       que entrega pertenece no se puede planificar: no se sabe si bloquea el
+       perfil o si lo difiere el alcance.
+    3. Un criterio DE PERFIL con etiqueta [A] tiene que llevar `sensibilidad`
+       Y `resolucion`. Es el criterio de salida del nivel de perfil escrito
+       como invariante: "ningun [A] de perfil sin valor, sin sensibilidad y
+       sin procedencia". Las otras cuatro etiquetas quedan fuera por lo que
+       dice `ETIQUETAS_DE_ELECCION`.
+
+       LA REGLA NO MIRA SI HAY VALOR, y esa fue una correccion dentro de la
+       propia S20. Mirandolo, un criterio [A] de perfil sin declarar podia
+       quedarse sin ventana -- y entonces la GUI o la CLI no lo podian
+       declarar en caliente, porque el valor aparecia y la ventana seguia sin
+       estar --. La ventana es parte de la FICHA, no del valor: dice dentro de
+       que se va a poder elegir, y eso se sabe antes de elegir. Los dos que la
+       sesion no pudo cerrar ('TW_receptor' y 'homogeneidad_serie_fen') tienen
+       hoy su ventana escrita precisamente por esto.
+    """
+    if c.nivel and c.nivel not in NIVELES:
+        raise ValueError(
+            f"'{clave}' declara nivel={c.nivel!r}, que no es ninguno de "
+            f"{NIVELES}")
+    if c.valor is None and not c.opcional and not c.nivel:
+        raise ValueError(
+            f"'{clave}' esta sin valor y no declara `nivel`. Un vacio que no "
+            "dice a que entrega pertenece no se puede planificar: no se sabe "
+            f"si bloquea el nivel de perfil o si `--alcance {NIVEL_PERFIL}` "
+            "difiere su etapa al expediente")
+    if c.nivel == NIVEL_PERFIL and c.etiqueta in ETIQUETAS_DE_ELECCION:
+        if c.sensibilidad is None:
+            raise ValueError(
+                f"'{clave}' es de nivel {NIVEL_PERFIL} y esta declarado con "
+                f"etiqueta [{c.etiqueta}], pero no lleva `sensibilidad`. El "
+                "criterio de salida del nivel de perfil no admite un valor "
+                "elegido sin la ventana dentro de la que se eligio: sin ella "
+                "la memoria imprime un numero y el revisor no puede saber si "
+                "moverlo cambia el diseño")
+        if c.resolucion is None:
+            raise ValueError(
+                f"'{clave}' es de nivel {NIVEL_PERFIL} y esta declarado con "
+                f"etiqueta [{c.etiqueta}], pero no lleva `resolucion`. Un "
+                "valor sin procedencia no se puede defender: la memoria tiene "
+                "que poder escribir de que tabla, de que rango o de que "
+                "ensayo salio")
+
+
+def criterios_por_nivel(nivel: str) -> List[str]:
+    """Las claves de un nivel de entrega, en orden alfabetico."""
+    if nivel not in NIVELES:
+        raise ValueError(f"nivel {nivel!r} desconocido; hay {NIVELES}")
+    return sorted(k for k, c in CRITERIOS.items() if c.nivel == nivel)
+
+
+def criterios_de_perfil_sin_valor() -> List[str]:
+    """
+    Los criterios de PERFIL que siguen vacios: lo que le falta al nivel de
+    perfil para cerrar, sin mezclarlo con lo que es del expediente.
+
+    Es el corte que la lista plana de `criterios_sin_valor()` no hace y que
+    obligaba a leer los 24 vacios uno por uno para saber cuales frenaban esta
+    entrega.
+    """
+    return [k for k in criterios_por_nivel(NIVEL_PERFIL)
+            if CRITERIOS[k].valor is None and not CRITERIOS[k].opcional]
 
 
 def _coherencia_de_etiquetas() -> None:

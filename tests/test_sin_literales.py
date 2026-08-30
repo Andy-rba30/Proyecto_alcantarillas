@@ -840,7 +840,12 @@ CENSO_DE_MARCAS = {
     # condicional no es argumento DIRECTO de un widget y el barrido no lo
     # exime; nombrarlos es ademas lo que se querria igual.
     "gui/ventana_normativa.py": 3,
-    "src/dominios.py": 4,
+    # 4 -> 5 en S20: `MILIMETROS_POR_METRO`, la conversion al DIAMETRO
+    # DESIGNADO de las normas de producto, que tabulan en milimetros enteros
+    # mientras el calculo trabaja en metros. Misma naturaleza que
+    # `METROS_POR_KM` y `CENTIMETROS_POR_METRO`, que ya estaban: es la
+    # definicion de la unidad, no un valor de proyecto.
+    "src/dominios.py": 5,
     # UNA sola: `CIFRAS_MAGNITUD = 3`, los decimales con que la traza de la
     # memoria imprime una magnitud (§4.4). Es de la misma naturaleza que los
     # `FMT_*` de M11 --- cuantos decimales se escriben, no cuanto vale nada ---
@@ -852,7 +857,13 @@ CENSO_DE_MARCAS = {
     # pendiente y de n: con tres, una S de 0.0006 se imprime 0.001 y la caida
     # S*L deja de poder recomputarse desde la memoria (MAT-D9).
     "src/modelos.py": 2,
-    "src/modulos/M3_hidraulica.py": 3,
+    # 3 -> 5 en S20, con la Sec. 1.3 ("TW se calcula, no se mide"): el 2 de
+    # `perimetro_trapecial` (los DOS taludes de un trapecio), la semilla y la
+    # duplicacion del corchete de Brent sobre el tirante del receptor, y el
+    # tope de duplicaciones. Ninguno es un valor de proyecto: dos son
+    # geometria de la seccion y los otros el alcance de una busqueda -- no
+    # dicen cuan hondo puede ser un dren, dicen cuando dejar de buscar.
+    "src/modulos/M3_hidraulica.py": 5,
     "src/modulos/M4_control.py": 5,
     "src/modulos/M8_estructural.py": 1,
     "src/modulos/M9_cabezal.py": 6,

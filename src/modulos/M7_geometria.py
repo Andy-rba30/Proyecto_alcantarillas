@@ -497,7 +497,7 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
     h_rec = altura_recubrimiento(material=material, D=D_supuesto)
     entrada = cota_entrada_supuesta(punto)
     clave = cota_clave(punto=punto, material=material, D=D_supuesto)
-    t_pared = espesor_pared(material)
+    t_pared = espesor_pared(material, D_supuesto)
     D_ext = diametro_exterior(material=material, D=D_supuesto)
 
     ca.valor(CRITERIO_RESGUARDO)      # registra el uso; "segun_CBR" no es numerico
