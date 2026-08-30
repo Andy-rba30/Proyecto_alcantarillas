@@ -86,7 +86,8 @@ import datos_sitio as ds
 # Los umbrales normativos con su CARACTER (recomendacion / exigencia) se leen
 # de su transcripcion, no se reescriben aqui: la memoria y el codigo tienen
 # que citar el mismo objeto o divergen, que es literalmente NOR-MEM-01.
-from constantes_normativas import (TABLA_10_INTERPRETACION_PROYECTO,
+from constantes_normativas import (HOMONIMIAS,
+                                   TABLA_10_INTERPRETACION_PROYECTO,
                                    UMBRALES_DE_VERIFICACION,
                                    H_O_HW_SOBRE_D_CAUTELA,
                                    H_O_HW_SOBRE_D_MIN, H_O_NUMERAL)
@@ -214,11 +215,28 @@ MARCADORES: Tuple[str, ...] = (
     "memorias_punto", "filas_resumen",
     "bloque_datos_sitio", "bloque_criterios", "bloque_pendientes",
     "bloque_alcance", "bloque_acotaciones", "bloque_umbrales",
+    "bloque_homonimias",
 )
 
 
 def marcadores_de_la_memoria() -> Tuple[str, ...]:
-    """Los marcadores que `memoria_html` sustituye en la plantilla."""
+    """
+    Los marcadores que `memoria_html` sustituye en la plantilla.
+
+    NO TIENE LLAMADOR DE PRODUCCION, Y ES DELIBERADO (SIS-B-22). Dentro de
+    este modulo el contrato se lee de `MARCADORES` directamente, y el test que
+    lo contrasta contra el archivo de plantilla en las dos direcciones hace lo
+    mismo: ninguno de los dos necesita pasar por una funcion.
+
+    Existe como PUERTA PUBLICA del contrato, que es distinto de existir por si
+    acaso. `MARCADORES` es una constante de modulo y leerla desde fuera ata al
+    consumidor al nombre de la variable; esta funcion es lo que una plantilla
+    alternativa --- o el `--plantilla` de la CLI el dia que valide la que le
+    pasan --- tiene que preguntar para saber que marcadores se le van a
+    sustituir, sin importar como esten guardados aqui dentro.
+
+    Si algun dia se cablea, sale de esta declaracion en el mismo commit.
+    """
     return MARCADORES
 
 
@@ -462,6 +480,21 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
     v8. Si la hoja cambia de forma y los tableros no se pueden leer, esto se
     detiene con ValueError: una memoria con el bloque de pendientes vacio diria
     que no queda nada pendiente, que es la mentira mas cara del expediente.
+
+    EL FALLO RUIDOSO CUBRE TAMBIEN LA DEGRADACION PARCIAL (SIS-C-13). La
+    version anterior solo se detenia cuando NINGUN tablero se podia leer. Un
+    cambio de formato que rompiera la tabla de UNO de los tres --- el caso
+    realista, porque el formato se toca tablero a tablero --- dejaba pasar los
+    otros dos en silencio: la memoria imprimia 10 filas donde hay 15 y
+    declaraba cerrado lo que no lo esta. Se comprueba, por lo tanto, que cada
+    encabezado `Tablero N` encontrado en la hoja produjo su tablero. Un
+    `Tablero N` que no produce tabla es inequivocamente un formato roto,
+    porque el tablero solo nace cuando aparece su fila de encabezados.
+
+    Lo que NO se comprueba, deliberadamente, es que cada tablero traiga
+    filas: una tabla bien formada con cero filas de datos es lo que se ve
+    cuando ese tablero ya no tiene pendientes, que es hacia donde el proyecto
+    trabaja. Ver el razonamiento en el punto de uso, mas abajo.
     """
     hoja = ruta_hoja_de_ruta() if ruta is None else ruta
     tableros: List[Tablero] = []
@@ -477,9 +510,11 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
                                     encabezados=encabezados,
                                     filas=tuple(filas)))
 
+    encabezados_hallados: List[str] = []
     for linea in hoja.read_text(encoding="utf-8").splitlines():
         cabecera = _RE_TITULO_TABLERO.match(linea)
         if cabecera:
+            encabezados_hallados.append(cabecera.group(1))
             cerrar()
             numero, titulo = cabecera.group(1), cabecera.group(2)
             glosa, encabezados, filas, dentro = "", (), [], True
@@ -513,6 +548,31 @@ def tableros_pendientes(ruta: Optional[Path] = None) -> Tuple[Tablero, ...]:
             "pendientes de la memoria sale de ahi y no se inventa: revisa si "
             "la hoja de ruta cambio el formato de esos encabezados."
         )
+
+    leidos = [t.numero for t in tableros]
+    perdidos = [n for n in encabezados_hallados if n not in leidos]
+    if perdidos:
+        raise ValueError(
+            f"En {hoja.name} hay encabezados de tablero que no produjeron "
+            f"ninguna tabla: {perdidos}. Se leyeron {leidos}. El bloque de "
+            "pendientes saldria incompleto y la memoria diria que queda menos "
+            "pendiente de lo que queda: revisa el formato de esas tablas."
+        )
+    # UN TABLERO CON CERO FILAS NO SE RECHAZA, y conviene decir por que se
+    # penso lo contrario. La primera version de este cierre añadia aqui un
+    # tercer `raise` --- "un tablero vacio no es un tablero sin pendientes, es
+    # un tablero que no se pudo leer" --- y esa frase es un supuesto sobre el
+    # FUTURO del expediente, no una propiedad del formato: el proyecto trabaja
+    # precisamente para vaciar los tableros, y el dia que uno cierre su ultima
+    # fila legitimamente la memoria entera habria dejado de generarse con un
+    # ValueError, sin forma de distinguirlo de un cambio de formato.
+    #
+    # La degradacion parcial que SIS-C-13 pide detectar la coge `perdidos`, y
+    # la coge sin ambiguedad: `cerrar()` solo produce un `Tablero` cuando
+    # encontro la FILA DE ENCABEZADOS, de modo que una tabla rota o retirada
+    # deja su `Tablero N` sin producir nada y cae ahi. Una tabla bien formada
+    # con cero filas de datos, en cambio, es exactamente lo que se ve cuando
+    # ya no queda nada pendiente en ese tablero.
     return tuple(tableros)
 
 
@@ -585,7 +645,9 @@ def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
 
     salida = []
     for clave in sorted(acumulado):
-        declarado = ca.criterio(clave)
+        # Ver `ca.declaracion_de`: un [S] de corredor pendiente levanta la
+        # misma CriterioPendienteError y no esta en CRITERIOS (SIS-A-05).
+        declarado = ca.declaracion_de(clave)
         salida.append(CriterioBloqueante(
             clave=clave, etiqueta=declarado.etiqueta,
             concepto=declarado.concepto, fuente=declarado.fuente,
@@ -842,8 +904,11 @@ def _tabla_verificaciones(informe: Any) -> str:
                             _td(_num(v.valor_admisible), "num"),
                             _td(umbral), _td(_marca(v.cumple))], clase))
     # La tabla de Fase 5 de la hoja de ruta trae ONCE filas y este software
-    # evalua nueve: V2b y V4b no. Se dice aqui, pegado a la tabla de
+    # evalua diez: la que falta es V2b. Se dice aqui, pegado a la tabla de
     # verificaciones, y no en una nota lejana: es donde el revisor cuenta.
+    # V4b se cableo en S14 y por eso ya no aparece como diferida: su ficha
+    # llega a la memoria por `criterios_usados()`, como cualquier criterio
+    # que el calculo consume.
     diferidas = "".join(
         f'<div class="nota"><p>{_esc(t)}</p></div>'
         for t in verificaciones_no_evaluadas())
@@ -1586,6 +1651,40 @@ def bloque_umbrales() -> str:
 # Ensamblado del documento
 # ===========================================================================
 
+def bloque_homonimias() -> str:
+    """
+    Glosario de las palabras que en este expediente significan dos o tres
+    cosas distintas y sin relacion, con los dos sentidos llegando a ESTA
+    misma memoria.
+
+    No es una nota de estilo. Los cuatro terminos -- «Clase F»,
+    «recubrimiento», «TW»/«cota_TW» y «luz»/«diametro» -- se leen mal sin
+    ruido: nadie ve un error, se ve un numero plausible en la unidad
+    equivocada. El caso extremo es `cota_TW`, que difiere de `TW` en la cota
+    de fondo de la salida entera, centenares de metros en este corredor
+    (NOR-VOC-01, NOR-VOC-02, NOR-VOC-03, NOR-VOC-04).
+
+    El texto se lee de `constantes_normativas.HOMONIMIAS`, que es donde vive
+    una sola vez. La de «Clase F» la imprime ademas M9, pegada a la cadena
+    sismica -- que es donde el lector se encuentra el termino --, leyendo la
+    MISMA declaracion por `homonimia_como_texto`.
+    """
+    partes = ['<div class="nota"><p>Cuatro palabras de este expediente '
+              "designan mas de una cosa, y en cada caso <b>los dos sentidos "
+              "llegan a esta memoria</b>. Leer uno con la definicion del otro "
+              "no produce un numero absurdo: produce un numero plausible y "
+              "equivocado, que es lo que hace falta declararlo.</p></div>"]
+    for termino, sentidos, lectura in HOMONIMIAS:
+        partes.append(f"<h3>{_esc(termino)}</h3><ul>")
+        partes.extend(f"<li>{_esc(s)}</li>" for s in sentidos)
+        partes.append(f"</ul><p><b>Como se resuelve:</b> {_esc(lectura)}</p>")
+    return "".join(partes)
+
+
+# ---------------------------------------------------------------------------
+# Alcance de la corrida
+# ---------------------------------------------------------------------------
+
 def bloque_alcance(informe: Any) -> str:
     """
     El alcance declarado de la corrida y TODO lo que difirio al expediente.
@@ -1712,6 +1811,7 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "bloque_alcance": bloque_alcance(informe),
         "bloque_acotaciones": bloque_acotaciones(alcance=informe.alcance),
         "bloque_umbrales": bloque_umbrales(),
+        "bloque_homonimias": bloque_homonimias(),
     }
     if set(valores) != set(MARCADORES):
         diferencia = set(valores).symmetric_difference(MARCADORES)

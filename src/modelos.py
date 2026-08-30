@@ -34,7 +34,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, fields
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 from dominios import CENTIMETROS_POR_METRO
 
@@ -45,6 +45,11 @@ from dominios import CENTIMETROS_POR_METRO
 # Prohibido usar Exception generica en logica de negocio. Toda excepcion del
 # calculo desciende de ErrorProyecto, para que la GUI pueda distinguir un
 # problema del expediente de un fallo del programa.
+#
+# SON CINCO, NO CUATRO, desde S16.5. La quinta -- LimiteNumericoError -- no se
+# anade porque las otras cuatro fueran insuficientes en teoria, sino porque el
+# proyecto YA la estaba usando sin nombrarla: ver la nota de MAT-D13 en su
+# docstring.
 # ===========================================================================
 
 class ErrorProyecto(Exception):
@@ -151,6 +156,72 @@ class DatoInvalidoError(ErrorProyecto):
         super().__init__(texto)
 
 
+class LimiteNumericoError(ErrorProyecto):
+    """
+    El dato individual CUMPLE su rango declarado en dominios.py, y es la
+    ARITMETICA que lo combina con otro dato o con una operacion la que no lo
+    puede representar en doble precision: o desborda a +-inf, o colapsa el
+    denominador de una division antes de que exista resultado.
+
+    NO ES una version mas de DatoInvalidoError, y tampoco es que
+    DatoInvalidoError sea la clase equivocada por definicion. La distincion es
+    de DONDE esta el problema:
+
+        DatoInvalidoError    el dato no puede ser: cae fuera del rango fisico
+                             de dominios.py, no es del tipo esperado, o
+                             contradice a otro dato de su fila.
+        LimiteNumericoError  cada dato, por separado, es perfectamente sano.
+                             Es la COMBINACION la que no cabe en un double.
+
+    POR QUE HACIA FALTA NOMBRARLA. Sin esta clase, un desbordamiento salia por
+    uno de dos caminos, y los dos son malos. O bien el calculo seguia con un
+    `inf` dentro y la memoria imprimia un diagnostico entero construido sobre
+    un numero que no lo es -- eso es SIS-G-01, medido en
+    `M7.proyeccion_taludes` --, o bien Python lanzaba `ZeroDivisionError` /
+    `OverflowError` en crudo, fuera de ErrorProyecto, y la GUI no sabia si eso
+    era un problema del expediente o un fallo del programa: son SIS-G-02 y la
+    mitad alcanzable de MAT-O18, las dos en `M4.tirante_critico`.
+
+    EL PRECEDENTE, dicho para que quien lea esta taxonomia no encuentre la
+    misma inconsistencia sin explicar: MAT-D13 cerro un caso IDENTICO a este
+    -- `M1_clasificacion.tr_desde_riesgo`, donde (1-R)^(1/n) redondea a 1 y el
+    denominador se anula con una R que esta DENTRO de su rango declarado --
+    bajo DatoInvalidoError, porque esta clase no existia todavia. No se migra
+    aqui: es codigo verde y su guarda funciona. Se deja escrito para que la
+    inconsistencia sea deliberada y visible, no un descuido.
+
+    De MAT-D13 se hereda, eso si, la FORMA de la guarda, que es lo que vale:
+    umbral MEDIDO en vez de un `!= 0` generico, condicion escrita EN POSITIVO
+    y negada (`not A > 0` y no `A <= 0`, porque un NaN es falso frente a las
+    dos y se colaria por la segunda), y mensaje que nombra al PAR culpable en
+    vez de acusar a un solo dato cuando la degeneracion es de la combinacion.
+
+    Desciende de ErrorProyecto y no de otra raiz aunque el diagnostico sea
+    aritmetico: lo que el revisor tiene delante es corregible desde el
+    expediente -- una cota absurda, un caudal absurdo --, y la GUI lo tiene que
+    mostrar como aviso y no como traza, que es justo el contrato de
+    ErrorProyecto. La firma es la de DatoInvalidoError a proposito: `motivo`
+    separa los casos igual que ya los separa ahi, sin un atributo nuevo.
+    """
+
+    def __init__(self, campo: str,
+                 valor: Any = None,
+                 id_punto: Optional[str] = None,
+                 motivo: Optional[str] = None) -> None:
+        self.campo = campo
+        self.valor = valor
+        self.id_punto = id_punto
+        self.motivo = motivo
+        texto = f"Limite de la aritmetica en '{campo}'"
+        if id_punto:
+            texto += f" del punto {id_punto}"
+        if motivo:
+            texto += f": {motivo}"
+        if valor is not None:
+            texto += f" (valor calculado: {valor!r})"
+        super().__init__(texto)
+
+
 # ===========================================================================
 # Citas: la seccion interna y el numeral de la norma, separados
 # ===========================================================================
@@ -204,6 +275,57 @@ class ReferenciaNormativa(str):
         return (f"ReferenciaNormativa(seccion_hoja_ruta="
                 f"{self.seccion_hoja_ruta!r}, numeral_norma="
                 f"{self.numeral_norma!r})")
+
+
+
+# ---------------------------------------------------------------------------
+# Las constantes NUMERAL_* de modulo que ningun lector de produccion consume
+# ---------------------------------------------------------------------------
+# SIS-B-09: ocho constantes `NUMERAL_*` estan declaradas en sus modulos y no
+# las lee nadie. Estaba decidido y no estaba escrito, que es el defecto: sin
+# esta nota, un mantenedor no puede distinguir "todavia no cableada" de "no le
+# corresponde cablearse", y las dos se ven igual leyendo el archivo.
+#
+# La razon se escribe AQUI, una sola vez, y aqui y no en cada modulo porque
+# las ocho son la MISMA cosa y esta es la clase que la define:
+# `ReferenciaNormativa` existe justamente para separar la coordenada interna
+# de la hoja de ruta -- `seccion_hoja_ruta` -- de la cita verificable --
+# `numeral_norma` --, y las ocho son de la primera clase.
+#
+# POR QUE NO SE BORRAN. Son la unica marca en el codigo de que apartado de la
+# hoja de ruta implementa cada modulo, y esa navegacion se usa en cada
+# revision: se lee el modulo y se va al apartado. Borrarlas ahorraria ocho
+# lineas y costaria el mapa.
+#
+# POR QUE NO SE IMPRIMEN. Porque no son citas. Meter "4.1" o "Fase 5, V5" en
+# una memoria como si fueran numerales es exactamente el defecto que
+# `ReferenciaNormativa` existe para impedir -- una verificacion externa salio
+# a buscar una "Sec. 9.1" en el EG-2013, que no existe --. El numeral REAL de
+# cada calculo viaja por su propia via: `Verificacion.numeral`, las constantes
+# de `constantes_normativas` y el registro de `src/normativa/`.
+#
+# Dos de las ocho tienen ademas una segunda razon, y es un bloqueo ya
+# declarado: `NUMERAL_V5` y `NUMERAL_V8` anotan las dos verificaciones de la
+# Fase 5 que se detienen antes de devolver una `Verificacion` -- V5 por falta
+# del perfil de remanso y del ancho de derecho de via, V8 porque su logica no
+# esta escrita --, de modo que su numeral no llega a la memoria porque no hay
+# fila que anotar. Cuando esas dos se resuelvan, sus constantes se leeran
+# solas y saldran de esta lista.
+#
+# Si alguna se cablea o se borra, sale de aqui EN EL MISMO COMMIT. La guardia
+# que lo vigile es trabajo de la fase de tests (S16), no de esta: escribir
+# hoy un test contra el estado actual congelaria los defectos que las fases de
+# correccion todavia estan cerrando.
+NUMERALES_DE_SECCION_SIN_LECTOR = (
+    "modulos.M2_material.NUMERAL_MATERIAL",       # "Sec. 3.4"
+    "modulos.M3_hidraulica.NUMERAL_MANNING",      # "4.1"
+    "modulos.M4_control.NUMERAL_SALIDA",          # "4.3"
+    "modulos.M5_verificaciones.NUMERAL_V5",       # bloqueo declarado
+    "modulos.M5_verificaciones.NUMERAL_V8",       # bloqueo declarado
+    "modulos.M8_estructural.NUMERAL_8_1_2",       # "Fase 8, items 1-2"
+    "modulos.M8_estructural.NUMERAL_8_1",         # encabezado del bloque
+    "modulos.MD.NUMERAL_BUCLE",                   # "Sec. 2 de la guia"
+)
 
 
 # ===========================================================================
@@ -478,7 +600,15 @@ class Material:
     n_max: float
     D_max: float                            # m - tope de CATALOGO adoptado (V9)
     D_max_de_catalogo: str                  # rotulo obligatorio de ese tope
-    norma_producto: str                     # ASTM C76 / AASHTO M36 / M294 ...
+    norma_producto: str                     # designacion METRICA de la norma
+                                            # de producto: "AASHTO M 170M-04 /
+                                            # ASTM C 76M-02 (metrica)",
+                                            # "AASHTO M 36 / ASTM A760/A760M-10",
+                                            # "AASHTO M294". Las imperiales
+                                            # (C76, M170) nombran documentos
+                                            # que este expediente no tiene y
+                                            # cuyas tablas van en pulgadas
+                                            # (NOR-PRO-05)
     hds5: ConstantesHDS5                    # carta adoptada en Sec. 4.2
     fila_manning: str                       # fila LITERAL de la Tabla N 09
     # Los dos techos de velocidad, separados porque son dos cosas distintas y
@@ -680,15 +810,26 @@ class ControlEntrada:
     HWi/D adimensional que devuelven las ecuaciones de la Tabla A.1, antes de
     multiplicar por D.
 
-    `HW_sobre_D` NO LO LEE HOY NINGUNA RUTA DE PRODUCCION, y este docstring
-    decia que era "lo que compara V4b (HW/D <= 1.5)" (SIS-B-02, SIS-A-02). Esa
-    comparacion no existe: M5 no implementa V4b y la declara no evaluada en
-    `verificaciones_no_evaluadas()`. El campo se conserva -- es la salida
-    literal de las ecuaciones de la Tabla A.1, la magnitud con la que HDS-5
-    razona, y multiplicarla por D para volver a dividirla despues seria
-    perderla y recomponerla -- y sera el argumento del chequeo el dia que se
-    cablee, pero mientras tanto lo que se dice de el es lo que se puede
-    sostener: que hoy solo lo leen los tests.
+    `HW_sobre_D` NO LO LEE NINGUNA RUTA DE PRODUCCION, y este docstring ha
+    dicho dos cosas falsas sobre el, las dos de la misma familia: predecir un
+    consumidor que no existia.
+
+    Primero decia que era "lo que compara V4b (HW/D <= 1.5)" (SIS-B-02,
+    SIS-A-02), cuando M5 ni siquiera implementaba V4b. Corregido eso, decia
+    que "sera el argumento del chequeo el dia que se cablee". El chequeo se
+    cableo en S14 y el argumento NO es este campo: `M5.v4b_relacion_hw_d`
+    divide entre D el HW del control GOBERNANTE, porque lo que la fuente
+    acota es el embalse que la obra produce, y este campo es el HWi/D del
+    control de ENTRADA, valido solo cuando ese control gobierna. Usarlo daria
+    un numero menor que el embalse real siempre que gobierne el de salida,
+    que es la direccion insegura.
+
+    El campo se conserva por lo que SI es -- la salida literal de las
+    ecuaciones de la Tabla A.1, la magnitud con la que HDS-5 razona, y
+    multiplicarla por D para volver a dividirla despues seria perderla y
+    recomponerla -- y lo que se dice de el es lo unico que se puede sostener:
+    que hoy solo lo leen los tests. Sin consumidor y con la razon escrita, no
+    sin consumidor y con un consumidor prometido.
     """
 
     HW: float                     # m  - HWi
@@ -1411,6 +1552,54 @@ class EmpujesTrasdos:
     orientacion_muro: Optional[str] = None       # respecto al trafico
     numeral_sobrecarga: str = ""                 # las DOS fuentes que la sostienen
 
+    def __post_init__(self) -> None:
+        """
+        La carga EQ va ENTERA o no va: el empuje y su brazo son un solo dato.
+
+        Los dos campos son Optional e independientes, y con solo uno de ellos
+        el objeto quedaba en un estado medio que NADIE podia detectar y que es
+        NO CONSERVADOR: `empuje_horizontal_total` suma el incremento sismico
+        con la guarda `incremento_sismico is not None`, y `momento_volcante`
+        lo suma con `incremento_sismico is not None AND z_incremento is not
+        None`. Con `incremento_sismico = 9.7` y `z_incremento = None` la carga
+        EQ contaba en la FUERZA y desaparecia en silencio del VOLTEO -- que es
+        justo la direccion en la que un error no avisa, porque el FS de volteo
+        sale mas alto de lo que corresponde.
+
+        Hoy `M9_cabezal.empujes_trasdos` pone los dos juntos dentro del mismo
+        `if condicion is SISMICO`, de modo que el estado medio es inalcanzable
+        DESDE ESE CAMINO. Pero `EmpujesTrasdos` es una dataclass publica con
+        los dos campos sueltos: la guarda va en el tipo, que es donde el
+        estado imposible se hace imposible, y no en el llamador de turno.
+
+        POR QUE `ValueError` Y NO `DatoInvalidoError`. La primera version usaba
+        la taxonomia del expediente, y contradecia la frontera que este mismo
+        trabajo escribio en `M9_cabezal.py` (SIS-E-02): `DatoInvalidoError` es
+        para un argumento que ES una clave de tabla normativa, con el mensaje
+        enumerando las filas admisibles; para un estado interno no lo es. Y
+        este estado no es un dato del expediente que el proyectista pueda
+        corregir --- el docstring de arriba dice que es INALCANZABLE desde el
+        unico camino de produccion ---, de modo que presentarlo en la GUI como
+        "el expediente no se puede cargar" mandaria al revisor a buscar en el
+        CSV un defecto que esta en el codigo. Fuera de `ErrorProyecto`, cae en
+        el brazo de programa de la GUI y sale con traza, que es lo que un
+        invariante roto merece. Es la misma lectura que
+        `criterios_adoptados.establecer_valor_dinamico` (SIS-E-05).
+        """
+        completo = (self.incremento_sismico is not None
+                    and self.z_incremento is not None)
+        vacio = self.incremento_sismico is None and self.z_incremento is None
+        if not (completo or vacio):
+            raise ValueError(
+                "EmpujesTrasdos: la carga EQ va con su brazo o no va. Se "
+                f"recibio incremento_sismico={self.incremento_sismico!r} y "
+                f"z_incremento={self.z_incremento!r}: el empuje horizontal lo "
+                "sumaria y el momento volcante no, de modo que el volteo "
+                "saldria mas seguro de lo que es. Es un invariante del tipo, "
+                "no un dato del expediente: si esto se levanta, el defecto "
+                "esta en quien construyo el objeto."
+            )
+
     @property
     def empuje_horizontal_total(self) -> float:
         """
@@ -1916,3 +2105,241 @@ class PasoDiseno:
     def incumplidas(self) -> Tuple[Verificacion, ...]:
         """Las verificaciones que hicieron descartar este escalon."""
         return tuple(v for v in self.verificaciones if not v.cumple)
+
+
+# ===========================================================================
+# Modo de resolucion de una variable de entrada (Sec. 4.3 del plan v12)
+# ===========================================================================
+# Cada variable de entrada declara COMO SE RESUELVE. Eso es lo que le dice a
+# la GUI que ventana abrir y a M11 que imprimir, y es informacion que hoy no
+# existe en ninguna parte: el usuario ve una sola cosa -- "un dato que hay que
+# llenar" -- donde el repositorio tiene tres poblaciones separadas (las
+# columnas del CSV, los datos de sitio de corredor y los criterios adoptados)
+# y seis maneras distintas de llegar al numero.
+#
+# LA SEMANTICA ES EL TIPO, igual que en `normativa/esquema.py` §7. No hay un
+# campo `modo: str` que alguien pueda escribir mal: el modo se LEE del tipo
+# del objeto `resolucion` (`modo_de()`), de forma que declarar una resolucion
+# y declarar un modo son el mismo acto y no pueden divergir.
+#
+# COMO SE ELIGE EL MODO. La escalera se recorre de arriba abajo y se para en
+# el primer peldaño que aplica; esta escrita aqui para que la clasificacion
+# de las 83 variables sea reproducible y no dependa del gusto de quien la
+# hizo:
+#
+#   1. El valor es una fila, una columna o una regla de lectura de una tabla
+#      normativa TRANSCRITA EN EL REGISTRO   ->  DeTabla
+#   2. Es un numero que una fuente acota con un piso, un techo o un
+#      intervalo escritos por ella                ->  EnRango
+#   3. El programa lo calcula desde otras variables ya declaradas y el
+#      usuario no puede editarlo                  ->  Derivada
+#   4. Sale de un catalogo o de la disponibilidad del mercado, y NO de una
+#      norma                                      ->  DeCatalogo
+#   5. Lo DETERMINA un procedimiento real aplicado a este sitio -- ensayo,
+#      medicion de campo, lectura de mapa o de plano, estudio de un tercero
+#      -- y por eso se defiende con trazabilidad y no con un rango de
+#      sensibilidad                               ->  DeEnsayo
+#   6. En cualquier otro caso                     ->  Libre
+#
+# ELEGIR (peldaño 6) Y DETERMINAR (peldaño 5) NO SON LO MISMO, y es lo que
+# separa `Libre` de `DeEnsayo`: un metodo de analisis lo elige el
+# proyectista aunque salga del mismo EMS del que sale la capacidad portante.
+# Por eso `metodo_estabilidad_global` es `Libre` y `capacidad_portante_adm`
+# es `DeEnsayo`.
+#
+# `DeEnsayo` cubre TODA determinacion por procedimiento, no solo el ensayo de
+# laboratorio: es la misma extension que CLAUDE.md le da a la etiqueta [S]
+# ("mapa, ensayo, medicion de campo"). Se llama asi porque asi lo nombra la
+# Sec. 4.3 del plan, y la ventana que abre es la misma en los tres casos:
+# campo mas TRAZABILIDAD OBLIGATORIA.
+
+
+class ModoDeResolucion(str, Enum):
+    """Los seis modos de la Sec. 4.3. Familia cerrada."""
+    LIBRE = "libre"
+    DE_TABLA = "de_tabla"
+    EN_RANGO = "en_rango"
+    DERIVADA = "derivada"
+    DE_ENSAYO = "de_ensayo"
+    DE_CATALOGO = "de_catalogo"
+
+
+@dataclass(frozen=True)
+class Libre:
+    """
+    Campo con su dominio fisico. Ninguna tabla, ningun rango de fuente y
+    ninguna medicion lo determinan: el numero lo pone quien firma.
+
+    `opciones` es para el conjunto cerrado de valores admisibles cuando la
+    variable no es numerica (la Familia de un punto). En un criterio NO se
+    usa: alli el conjunto ya vive en `Criterio.sensibilidad`, y repetirlo
+    aqui crearia dos listas que pueden divergir.
+
+    `tabla_pendiente` es la lista de trabajo que este censo produce: nombra
+    la tabla de la fuente que convertiria esta variable en `DeTabla` el dia
+    que se transcriba al registro. No es una excusa, es un pendiente con
+    nombre.
+    """
+    que_lo_fija: str
+    dominio: str = ""
+    opciones: Tuple[str, ...] = ()
+    tabla_pendiente: str = ""
+
+
+@dataclass(frozen=True)
+class DeTabla:
+    """
+    El valor es una fila, una columna, o la regla con que se lee una tabla
+    del registro. La ventana MUESTRA LA TABLA ENTERA -- con su numeral, su
+    pagina, sus notas y sus condiciones -- y el usuario elige sobre ella.
+
+    `tablas` es una tupla porque hay elecciones que se hacen mirando dos: la
+    de estribos y la de muros de AASHTO 3.11.6.4 se leen juntas o no se
+    entiende ninguna de las dos.
+
+    `laguna` se llena cuando lo que se elige NO es una fila sino una REGLA DE
+    LECTURA que la tabla no resuelve. Es la diferencia entre "elegi la fila
+    de 10 ft" y "elegi que hacer con un muro de 4 ft, que la tabla no
+    tabula": la memoria tiene que poder decir cual de las dos cosas paso.
+
+    `elegido_por` dice que OTRA variable elige la fila cuando esta transcribe
+    la tabla completa en vez de elegir dentro de ella.
+    """
+    tablas: Tuple[str, ...]
+    que_elige: str
+    fila_id: Optional[str] = None
+    columna_id: Optional[str] = None
+    elegido_por: Optional[str] = None
+    laguna: str = ""
+
+
+@dataclass(frozen=True)
+class EnRango:
+    """
+    El valor tiene que caer dentro de un rango que una fuente escribe.
+
+    NO COPIA EL RANGO: lo referencia por (tabla, fila, columna) del registro,
+    donde vive como `IntervaloAdmisible`, `TechoUnico`, `PisoUnico`,
+    `ConjuntoDeMaximos` o `BandaDeInterpolacion`. Copiarlo aqui pondria los
+    numeros de la norma fuera de su unico sitio y, peor, dejaria que la
+    ventana pintara como "minimo" el primero de dos maximos (NOR-HID-04),
+    que es exactamente el error que el tipo del registro existe para impedir.
+    """
+    tabla_id: str
+    fila_id: str
+    columna_id: str
+    que_acota: str
+
+
+@dataclass(frozen=True)
+class Derivada:
+    """
+    No editable: la calcula el programa desde otras variables ya declaradas.
+    La ventana muestra DE QUE se deriva y la memoria escribe la regla con su
+    numeral.
+    """
+    de: Tuple[str, ...]
+    regla: str
+
+
+@dataclass(frozen=True)
+class DeEnsayo:
+    """
+    La determina un procedimiento real aplicado a este sitio. La ventana pide
+    el valor Y LA TRAZABILIDAD, y la memoria escribe la trazabilidad -- nunca
+    una sensibilidad: no hay rango que elegir, hay una lectura que reproducir.
+    """
+    ensayo: str
+    trazabilidad_exigida: str
+
+
+@dataclass(frozen=True)
+class DeCatalogo:
+    """
+    Igual que `DeTabla` pero ROTULADO COMO CATALOGO, no como norma.
+
+    Existe por `NOR-PRO-01` y `NOR-PRO-02`: los topes de diametro estaban
+    atribuidos a AASHTO M170 y ASTM A760, que tabulan hasta 3600 mm.
+    Mostrarlos en una ventana rotulada "norma" seria crear una cita falsa
+    nueva, y por eso `advertencia` es obligatoria y dice que norma NO lo
+    sostiene.
+    """
+    catalogo_id: str
+    que_elige: str
+    advertencia: str
+
+
+Resolucion = Union[Libre, DeTabla, EnRango, Derivada, DeEnsayo, DeCatalogo]
+
+_MODO_DE_TIPO: Dict[type, ModoDeResolucion] = {
+    Libre: ModoDeResolucion.LIBRE,
+    DeTabla: ModoDeResolucion.DE_TABLA,
+    EnRango: ModoDeResolucion.EN_RANGO,
+    Derivada: ModoDeResolucion.DERIVADA,
+    DeEnsayo: ModoDeResolucion.DE_ENSAYO,
+    DeCatalogo: ModoDeResolucion.DE_CATALOGO,
+}
+
+
+def modo_de(resolucion: Resolucion) -> ModoDeResolucion:
+    """
+    El modo de una resolucion. Es una lectura del TIPO, no de un campo: una
+    variable no puede quedarse sin modo ni declarar uno que no corresponda a
+    como se resuelve.
+    """
+    try:
+        return _MODO_DE_TIPO[type(resolucion)]
+    except KeyError:
+        raise TypeError(
+            f"{resolucion!r} no es una resolucion de la familia cerrada de "
+            f"la Sec. 4.3: {tuple(t.__name__ for t in _MODO_DE_TIPO)}"
+        ) from None
+
+
+class Poblacion(str, Enum):
+    """
+    Las TRES poblaciones que el repositorio mantiene separadas y que el
+    usuario ve como una sola cosa -- "los datos que hay que llenar".
+
+    Estan separadas por buenas razones (una es del CSV y varia punto a punto,
+    otra es del corredor, la tercera es lo que el proyectista decidio donde la
+    norma calla) y esas razones no se tocan. Lo que faltaba era la vista
+    unica: sin ella, la GUI tiene tres pestañas que no se pueden comparar y la
+    memoria tres bloques que no suman.
+    """
+    COLUMNA_CSV = "columna_csv"
+    DATO_SITIO = "dato_sitio"
+    CRITERIO = "criterio"
+
+
+@dataclass(frozen=True)
+class VariableDeEntrada:
+    """
+    Una variable que el expediente tiene que traer, con todo lo que la GUI
+    necesita para pintarla y M11 para imprimirla.
+
+    `criterio_destino` es el criterio [A] que RECIBE la eleccion cuando la
+    variable la alimenta sin ser ella misma un criterio: el CBR de la fila
+    entra en `resguardo_HW_subrasante`, la cota TW en `TW_receptor`. Para una
+    variable que ES un criterio, es su propia clave.
+
+    `dominio` nombra el limite de `dominios.py` que acota la celda, POR
+    NOMBRE y no por valor: el dominio fisico no es normativo -- fuera de el
+    la celda esta mal llenada -- y la ventana tiene que rotularlo asi
+    (§4.2 del plan).
+    """
+    clave: str
+    concepto: str
+    unidad: str
+    poblacion: Poblacion
+    resolucion: Resolucion
+    fase: str
+    consumido_por: Tuple[str, ...] = ()
+    criterio_destino: Optional[str] = None
+    dominio: Optional[str] = None
+    nota: str = ""
+
+    @property
+    def modo(self) -> ModoDeResolucion:
+        """El modo de la Sec. 4.3, leido del tipo de `resolucion`."""
+        return modo_de(self.resolucion)

@@ -383,7 +383,7 @@ Los 9 hallazgos de este lote verificaron **SÍ** sin excepción.
 
 Cada una en su propio commit, suite verde antes de cada uno. El conteo que se
 cita abajo es el de HOY, no el de entonces: este documento se mantiene al día
-con la suite vigente (843 passed, 1 skipped) y no como fotografía de S1 —
+con la suite vigente (895 passed, 1 skipped) y no como fotografía de S1 —
 `verificar_sesion.py` avisa si se desincroniza.
 
 | Hallazgo | Commit | Qué cambió |
@@ -395,7 +395,7 @@ con la suite vigente (843 passed, 1 skipped) y no como fotografía de S1 —
 
 Estas cinco correcciones son **documentales o de control de versión** —
 ninguna toca `src/`, `gui/` o `cli.py`. La suite se mantuvo verde en todo
-momento; hoy son **843 passed, 1 skipped (844 collected)** con `requirements-dev.txt` instalado, u **811 passed, 33 skipped** sin PyMuPDF — mismo `collected`, ver la tabla de §2.
+momento; hoy son **895 passed, 1 skipped (896 collected)** con `requirements-dev.txt` instalado, u **863 passed, 33 skipped** sin PyMuPDF — mismo `collected`, ver la tabla de §2.
 
 ---
 
@@ -543,3 +543,49 @@ solo por eso: los cuatro chequeos que dependen de la sesión —suite, conteos,
 árbol limpio y tracker— están en `[OK]`. **Las borra el propietario desde la
 web**; no hay nada más que la sesión pueda hacer, y ya van cinco veces
 comprobado.
+
+**Saldo al cierre de S14 (vacíos y cableado, clusters C01/C04/C06/C08/C11):
+cuatro.** Sexta reincidencia, y la primera en la que se acumulan **cuatro**
+ramas a la vez: las dos que S12 dejó anotadas siguen ahí, más la de S13 —que
+tampoco se borró entre sesiones— y la de S14. Se intentaron las cuatro, una a
+una, con `git push origin --delete` y después con el refspec explícito
+(`git push origin :refs/heads/<rama>`), y las dos formas devolvieron lo mismo
+de siempre: `HTTP 403` y `send-pack: unexpected disconnect while reading
+sideband packet`, seguidos de un `Everything up-to-date` que delata que el
+borrado ni siquiera llegó a proponerse. Se comprobó además, esta vez, que el
+proxy de la sesión está sano y sin fallos de relay
+(`$HTTPS_PROXY/__agentproxy/status`, `recentRelayFailures: []`): la negativa es
+del permiso del token sobre el remoto, no del transporte.
+
+| Rama | Sesión | Fusionada en `main` |
+|---|---|---|
+| `claude/diseno-registro-normativo-607nkm` | S11 | sí (`66bf252`) |
+| `claude/registro-normativo-pymupdf-0fo35b` | S12 | sí (`66fde80`) |
+| `claude/conflicto-8-clasificacion-sitio-r5dpf1` | S13 | sí (`6f7e780`) |
+| `claude/clusters-vacios-criterios-wku6xo` | S14 | sí (`5b379ec`) |
+
+Las cuatro pasan la comprobación de «sin commits fuera de `main`».
+`verificar_sesion.py` dará el `[FALLO]` **cuatro** veces y el resultado global
+será `FALLA` por eso y solo por eso: los cuatro chequeos que dependen de la
+sesión —suite, conteos, árbol limpio y tracker— están en `[OK]`, y el tracker
+pasa además la comprobación nueva de que todo hallazgo cerrado cita un commit
+**presente en `main`**. **Las borra el propietario desde la web.** Van seis
+veces comprobado, y la acumulación es el argumento que faltaba: mientras nadie
+las borre entre sesiones, el `[FALLO]` crece una línea por sesión y el chequeo
+pierde valor de señal.
+
+**Saldo al cierre de S15 (modo de resolución de las variables): una, y las
+cuatro anteriores ya no están.** Buena noticia primero: al empezar S15,
+`verificar_sesion.py` daba `[OK] solo existe origin/main` — el propietario
+borró desde la web las cuatro ramas que S14 dejó anotadas, que es exactamente
+lo que aquella nota pedía. La única abierta es la de esta sesión,
+`claude/variable-entrada-modo-resolucion-7ezfh3`, fusionada en `main`
+(`5a200ff`) y sin un solo commit fuera de ella. Se intentó borrarla con las dos
+formas de siempre —`git push origin --delete` y el refspec explícito
+`git push origin :refs/heads/<rama>`— y las dos devolvieron el mismo `HTTP 403`
+seguido de `Everything up-to-date`, con el proxy de la sesión sano
+(`recentRelayFailures: []`). Séptima comprobación, y el diagnóstico no ha
+cambiado: **el permiso del token no alcanza para borrar ramas en el remoto, y
+la borra el propietario desde la web.** El `[FALLO]` de esta sesión es ese y
+solo ese; los cuatro chequeos que dependen de la sesión —suite, conteos, árbol
+limpio y tracker— están en `[OK]`.

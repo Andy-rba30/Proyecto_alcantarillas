@@ -541,4 +541,208 @@ DIS_HDS5_APENDICE_G = _d(
 )
 
 
+# ---------------------------------------------------------------------------
+# Clase de sitio (S13, conflicto #8). Las cuatro que salen de leer los tres
+# documentos a la vez. Ver docs/resolucion_clase_sitio.md.
+# ---------------------------------------------------------------------------
+DIS_CLASE_DE_SITIO_F = _d(
+    id="DIS-HR-CLASE-DE-SITIO-F",
+    objeto="la premisa de Sec. 0.5: «el sitio clasifica como Clase de Sitio F "
+           "por susceptibilidad a licuefaccion»",
+    partes=(
+        Parte(quien="hoja_de_ruta",
+              que_dice=("Sec. 0.5: «El sitio clasifica como Clase de Sitio F "
+                        "por susceptibilidad a licuefaccion: arenas saturadas "
+                        "con NF a 1.4 m en la llanura del Bajo Piura. "
+                        "Clasificarlo como D o E mientras la Fase 0-bis "
+                        "advierte riesgo de licuefaccion seria una "
+                        "contradiccion interna del expediente. Eso no ha "
+                        "cambiado.» Y en Fase 0-bis, punto 2, escribe «la "
+                        "condicion S5 / Clase F», con una barra que asimila "
+                        "las dos taxonomias")),
+        Parte(quien="AASHTO_LRFD_9",
+              que_dice=("PROHIBE SUPONERLA: «Site classes E or F should not "
+                        "be assumed unless the authority having jurisdiction "
+                        "determines that... or... are established by "
+                        "geotechnical data», en el articulado, al pie de la "
+                        "Tabla 3.10.3.1-1. Y manda investigar: «a site "
+                        "investigation shall be undertaken sufficient to "
+                        "determine the site class»"),
+              cita_id="AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES"),
+        Parte(quien="MP",
+              que_dice=("lo mismo y mas duro: «Las clases de Sitio E o F NO "
+                        "SERAN SUPUESTAS a no ser que la Entidad determine la "
+                        "clase de sitio E o F o estas sean establecidas por "
+                        "datos geotecnicos»"),
+              cita_id="MP.2.4.3.11.2.1.1#EXCEPCIONES"),
+        Parte(quien="E030",
+              que_dice=("es la fuente de la letra, y su letra es OTRA: los "
+                        "suelos potencialmente licuables son la primera "
+                        "viñeta del perfil S5 «Suelos excepcionales» de su "
+                        "Tabla Nº 2, que es un esquema distinto (S0-S5, por "
+                        "descripcion) del de AASHTO (A-F, por rigidez medida "
+                        "sobre los 100 ft superiores)"),
+              cita_id="E030.T2#S5"),
+        Parte(quien="E030 · Tabla Nº 4",
+              que_dice=("y tampoco da factor a su categoria excepcional: la "
+                        "Tabla Nº 4 «Factor de suelo S» tiene columnas S0 a "
+                        "S4 y ninguna S5. En la zona 4, ya la columna S4 dice "
+                        "«Requiere un analisis de respuesta de sitio»"),
+              cita_id="E030.T4"),
+    ),
+    gana="AASHTO_LRFD_9",
+    por_que=("porque la hoja de ruta no tiene con que sostener el salto y las "
+             "fuentes tienen con que vedarlo, y son dos cosas distintas: "
+             "(1) NINGUNO de los dos documentos que el criterio invoca "
+             "escribe «suelo licuable -> Clase F»; en las 1905 paginas de "
+             "AASHTO los conjuntos de paginas con `liquef` y con «Site Class "
+             "F» son DISJUNTOS, y en las 673 del Manual la licuefaccion vive "
+             "en once pasajes de cimentaciones y del Apendice A11, ninguno en "
+             "el numeral de clases de sitio. (2) Pero el «such as» deja la "
+             "lista abierta, de modo que el silencio solo daria una premisa "
+             "NO SOSTENIDA, no una premisa falsa -- y esa es la parte del "
+             "hallazgo que la refutacion adversarial R95-073 habia acotado "
+             "con razon. (3) Lo que cierra la cuestion es que las dos fuentes "
+             "PROHIBEN suponer la clase E o F sin determinacion de la "
+             "autoridad o dato geotecnico. El expediente no tiene ninguna de "
+             "las dos: el SPT esta pendiente. Suponerla no es una adopcion "
+             "declarable del proyectista, es lo que la norma veda. "
+             "El Manual y E.030 concurren, cada uno por su via, y por eso el "
+             "resultado no depende de que Via de Sec. 0.2 se elija"),
+    efecto_si_se_sigue_la_otra=("la memoria declara formalmente una clase de "
+                                "sitio que ninguna fuente sostiene y que las "
+                                "dos prohiben suponer, y la declara ademas "
+                                "para nada: la fila F no tiene factor -- son "
+                                "cinco asteriscos en las cinco columnas --, "
+                                "de modo que la premisa no aporta un numero "
+                                "al calculo y si aporta al expediente una "
+                                "afirmacion refutable de un vistazo. Es la "
+                                "forma exacta del defecto que la propia "
+                                "Sec. 0.5 llama el mas grave que ha tenido "
+                                "este expediente"),
+    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+)
+
+DIS_F_LISTA_ABIERTA = _d(
+    id="DIS-AASHTO-F-LISTA-ABIERTA",
+    objeto="si la enumeracion de la Clase de Sitio F es abierta o cerrada",
+    partes=(
+        Parte(quien="AASHTO_LRFD_9 · articulado",
+              que_dice=("la fila F de la Tabla 3.10.3.1-1 abre con «Soils "
+                        "requiring site-specific evaluations, SUCH AS:», que "
+                        "es lista ejemplificativa: no dice «the following» ni "
+                        "«limited to» ni cuenta las categorias"),
+              cita_id="AASHTO_LRFD_9.T3.10.3.1-1#F"),
+        Parte(quien="AASHTO_LRFD_9 · comentario",
+              que_dice=("la Tabla C3.10.3.1-1, paso 1, la llama «THE THREE "
+                        "CATEGORIES of Site Class F», que la lee como cerrada"),
+              cita_id="AASHTO_LRFD_9.C3.10.3.1-1#PASO1"),
+    ),
+    gana="AASHTO_LRFD_9 · articulado",
+    por_que=("por jerarquia: el comentario explica el articulado y no puede "
+             "estrecharlo. Se declara, y no se archiva, porque un revisor "
+             "puede apoyarse en el comentario y hay que poder responderle. "
+             "LO QUE IMPORTA ES QUE LA DECISION NO DEPENDE DE ESTO: si la "
+             "lista es cerrada, un suelo licuable NO es Clase F y la premisa "
+             "es falsa; si es abierta, la norma calla y la premisa es no "
+             "sostenida. Por las dos lecturas el salto sigue sin estar "
+             "escrito, y por las dos rige la prohibicion de suponer la clase "
+             "sin dato geotecnico. La resolucion se apoya en esa prohibicion "
+             "-- que es articulado y no admite lectura doble -- y no en el "
+             "recuento de categorias"),
+    efecto_si_se_sigue_la_otra=("citar el «the three categories» como si "
+                               "fuera articulado da un argumento mas fuerte "
+                               "del que la fuente permite, y es refutable en "
+                               "el acto: fue exactamente lo que la refutacion "
+                               "adversarial R95-073 hizo con la primera "
+                               "version de NOR-AAS-02"),
+    estado=EstadoDiscrepancia.RESUELTA,
+)
+
+DIS_30M_VS_100FT = _d(
+    id="DIS-HR-30M-VS-100FT",
+    objeto="la profundidad sobre la que se define la clase de sitio",
+    partes=(
+        Parte(quien="hoja_de_ruta",
+              que_dice=("Sec. 0.5 pide «la caracterizacion de los 30 m "
+                        "superiores (Vs30 o N) que define la clase», y el "
+                        "criterio 'clase_sitio' se lo atribuye al articulado: "
+                        "«Los 30 m son parte de la DEFINICION de la clase "
+                        "(AASHTO LRFD Art. 3.10.3.1)»")),
+        Parte(quien="AASHTO_LRFD_9",
+              que_dice=("el Art. 3.10.3.1 dice «the upper 100 ft», y la Tabla "
+                        "3.10.3.1-1 define v_s, N y s_u «for the upper 100 ft "
+                        "of the soil profile». La cifra «30 m» no esta "
+                        "impresa en el numeral"),
+              cita_id="AASHTO_LRFD_9.3.10.3.1"),
+    ),
+    gana="AASHTO_LRFD_9",
+    por_que=("100 ft son 30.48 m: la profundidad de campaña que hay que pedir "
+             "es la misma y el numero es defendible, de modo que esto NO es "
+             "una contradiccion de fondo sino una atribucion -- el mismo "
+             "genero que DIS-HR-G-LAUSHEY, donde el 9.8 era correcto y la "
+             "pagina no lo imprimia. Trabajar en SI es la regla del proyecto "
+             "y es legitimo; atribuirle a AASHTO un texto que no imprime, no. "
+             "Y la correccion no debilita nada: el argumento de que el SPT de "
+             "15 m de E.050 Art. 38 no cierra este criterio se sostiene con "
+             "MAS margen sobre 30.48 m que sobre 30"),
+    efecto_si_se_sigue_la_otra=("un revisor que abra el Art. 3.10.3.1 "
+                                "buscando los «30 m» no los encuentra, y una "
+                                "cita que no se puede comprobar es "
+                                "indistinguible de una inventada -- en el "
+                                "campo que precisamente define que ensayo "
+                                "hay que contratar"),
+    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+)
+
+DIS_VIA_DE_LA_LICUEFACCION = _d(
+    id="DIS-HR-VIA-DE-LA-LICUEFACCION",
+    objeto="por que via entra la licuefaccion en el diseño sismico",
+    partes=(
+        Parte(quien="hoja_de_ruta",
+              que_dice=("Sec. 0.5 hace de la licuefaccion la CAUSA de la "
+                        "clase de sitio -- «Clase de Sitio F POR "
+                        "susceptibilidad a licuefaccion» --, de modo que el "
+                        "riesgo geotecnico entra al calculo por el factor de "
+                        "sitio")),
+        Parte(quien="AASHTO_LRFD_9",
+              que_dice=("la evalua en la Seccion 10, Cimentaciones, num. "
+                        "10.5.4.2 «Liquefaction Design Requirements», y la "
+                        "dispara por zona sismica 3 o 4 MAS napa freatica en "
+                        "los 50 ft superiores MAS caracteristicas de suelo. "
+                        "Ninguna de las tres condiciones es la clase de "
+                        "sitio, y «Site Class F» no aparece en ninguna pagina "
+                        "de la Seccion 10"),
+              cita_id="AASHTO_LRFD_9.10.5.4.2"),
+        Parte(quien="AASHTO_LRFD_9 · 10.5.4.2 in fine",
+              que_dice=("y ademas ESPERA que a un sitio licuable le aplique "
+                        "un factor de sitio tabulado: manda analizar en "
+                        "configuracion no licuada y licuada con el mismo "
+                        "espectro, y acota el espectro especifico a no menos "
+                        "de dos tercios del general «modified by the site "
+                        "factors in Article 3.10.3.2»"),
+              cita_id="AASHTO_LRFD_9.10.5.4.2#ESPECTRO"),
+    ),
+    gana="AASHTO_LRFD_9",
+    por_que=("es el argumento POSITIVO, y por eso vale mas que el silencio: "
+             "si la licuefaccion hiciera Clase F por si sola, la fila del "
+             "sitio no tendria factor -- cinco asteriscos -- y el "
+             "procedimiento del num. 10.5.4.2 no podria arrancar, porque "
+             "empieza por un espectro «no licuado» que exige un factor de "
+             "sitio de 3.10.3.2 aplicable. Las dos reglas solo son coherentes "
+             "si un suelo licuable puede clasificar A-E y evaluarse aparte, "
+             "que es exactamente el reparto que el expediente ya hace con su "
+             "SPT de 15 m"),
+    efecto_si_se_sigue_la_otra=("el riesgo de licuefaccion se contabiliza dos "
+                                "veces o ninguna: entra por el factor de "
+                                "sitio -- donde no hay numero que leer -- y "
+                                "deja sin disparar la evaluacion del num. "
+                                "10.5.4.2, que es la que produce las "
+                                "verificaciones que este sitio necesita "
+                                "(perdida de resistencia, asentamiento, "
+                                "desplazamiento lateral)"),
+    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+)
+
+
 DISCREPANCIAS: Dict[str, Discrepancia] = {d.id: d for d in _TODAS}

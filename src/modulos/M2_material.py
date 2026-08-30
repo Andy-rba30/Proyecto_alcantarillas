@@ -228,9 +228,23 @@ _NOMBRE = {
     TipoMaterial.TMC: "TMC galvanizada",
     TipoMaterial.HDPE: "HDPE",
 }
+# LAS DESIGNACIONES SON LAS METRICAS, QUE SON LAS QUE EL PROYECTO TIENE
+# (NOR-PRO-05). Este dict escribia "ASTM C76 / AASHTO M170", que son las
+# versiones EN PULGADAS, y la memoria las imprimia en un expediente que opera
+# en SI de punta a punta. El documento que hay en normas/ se designa a si
+# mismo "AASHTO Designation: M 170M-04 / ASTM Designation: C 76M-02", se
+# titula "... [Metric]" y su num. 1.2 dice "This specification is the metric
+# counterpart of M 170": no son la misma norma con otro nombre, son la
+# contraparte metrica. Citar la imperial manda al revisor a un documento que
+# el expediente no tiene y cuyas tablas estan en pulgadas.
+#
+# La de TMC lleva la designacion DUAL tal como la norma se nombra
+# -- A760/A760M cubre los dos sistemas --, que es lo que el registro tiene
+# catalogado (`normativa.fuentes.ASTM_A760`, edicion "A760/A760M-10"). No se
+# le inventa una metrica que la norma no separa.
 _NORMA_PRODUCTO = {
-    TipoMaterial.CONCRETO_REFORZADO: "ASTM C76 / AASHTO M170",
-    TipoMaterial.TMC: "AASHTO M36 / ASTM A760",
+    TipoMaterial.CONCRETO_REFORZADO: "AASHTO M 170M-04 / ASTM C 76M-02 (metrica)",
+    TipoMaterial.TMC: "AASHTO M 36 / ASTM A760/A760M-10",
     TipoMaterial.HDPE: "AASHTO M294",
 }
 

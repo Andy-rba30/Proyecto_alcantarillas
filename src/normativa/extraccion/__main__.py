@@ -69,15 +69,14 @@ def main(argv: list[str]) -> int:
         frase = normalizar(resto[1])
         # literal-ok: indices de argumentos de la linea de ordenes
         desde = int(resto[2]) if len(resto) > 2 else 1
-        hasta = int(resto[3]) if len(resto) > 3 else numero_de_paginas(pdf)  # literal-ok
+        hasta = int(resto[3]) if len(resto) > 3 else numero_de_paginas(pdf)  # literal-ok: indice de argumento
         encontrados = 0
         for p in range(desde, min(hasta, numero_de_paginas(pdf)) + 1):
             plano = normalizar(texto_de_pagina(pdf, p))
             if frase in plano:
                 encontrados += 1
                 i = plano.index(frase)
-                # literal-ok: 160 caracteres de contexto alrededor de la coincidencia
-                print(f"[PDF {p}] ...{plano[max(0, i - 160):i + len(frase) + 160]}...")
+                print(f"[PDF {p}] ...{plano[max(0, i - 160):i + len(frase) + 160]}...")  # literal-ok: 160 caracteres de contexto
         print(f"-- {encontrados} paginas con la frase")
         return 0
 
@@ -89,8 +88,7 @@ def main(argv: list[str]) -> int:
 
     if orden == "png":
         pdf = _resolver(resto[0])
-        # literal-ok: indice de argumento y escala de renderizado por defecto
-        escala = float(resto[3]) if len(resto) > 3 else 4.0
+        escala = float(resto[3]) if len(resto) > 3 else 4.0  # literal-ok: indice de argumento y escala de renderizado por defecto
         print(renderizar_pagina(pdf, int(resto[1]), Path(resto[2]), escala))
         return 0
 

@@ -35,7 +35,9 @@ from pathlib import Path
 import pytest
 
 import criterios_adoptados as ca
-from constantes_normativas import V_MIN, Y_SOBRE_D_MAX
+from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
+                                   Y_SOBRE_D_MAX)
+from dominios import CBR_MAX_FISICO
 from modelos import (ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
                      Familia, PuntoCritico, ResultadoHidraulico, TipoMaterial)
@@ -43,8 +45,9 @@ from modulos.M2_material import catalogo
 from modulos.M8_estructural import factores_carga_flotacion
 from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        CRITERIO_V_MAX_CONCRETO,
-                                       NUMERAL_V2, NUMERAL_V3,
-                                       cota_entrada_supuesta,
+                                       NUMERAL_V2, NUMERAL_V3, NUMERAL_V7,
+                                       altura_relleno_sobre_clave,
+                                       cota_clave, cota_entrada_supuesta,
                                        resguardo_por_cbr, v1_borde_libre,
                                        v2_velocidad_minima,
                                        v3_velocidad_maxima,
@@ -52,6 +55,8 @@ from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        v6_material_solido_arrastre,
                                        v7_flotacion, v8_evento_extremo,
                                        v9_disponibilidad_diametro, verificar)
+from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 D_REFERENCIA = 0.90
 
@@ -593,7 +598,9 @@ def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
         original.__class__(**{**original.__dict__, "valor": 18.0}),
     )
     g = factores_carga_flotacion(material=concreto)
-    assert (g.gamma_EV, g.gamma_WA) == (0.90, 1.00)   # anclados, no derivados
+    # anclados, no derivados
+    assert (g.gamma_EV, g.gamma_WA) == pytest.approx((0.90, 1.00),
+                                                     rel=REL_TRANSPORTE)
     v = v7_flotacion(punto=_punto(), material=concreto, D=0.90,
                      resultado=_resultado())
     assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
@@ -741,12 +748,19 @@ def test_una_regla_no_implementada_es_dato_invalido_no_un_fallo_de_programa():
         ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
 
 
-def test_las_dos_filas_no_evaluadas_se_declaran_en_vez_de_desaparecer():
+def test_la_fila_no_evaluada_se_declara_en_vez_de_desaparecer():
     """
-    La tabla de Fase 5 tiene ONCE filas y este modulo NUEVE funciones. Las dos
-    que faltan -- V2b (sedimentacion / colmatacion) y V4b (relacion HW/D) --
-    no pueden quedar como un ejercicio de resta del lector: se declaran con su
-    fundamento, igual que el item 5 de la Fase 8 (SIS-A-13 / MAT-O15).
+    La tabla de Fase 5 tiene ONCE filas y este modulo DIEZ funciones. La que
+    falta -- V2b, el acceso de mantenimiento para limpieza -- no puede quedar
+    como un ejercicio de resta del lector: se declara con su fundamento, igual
+    que el item 5 de la Fase 8 (SIS-A-13 / MAT-O15).
+
+    V4b SALIO DE ESTA LISTA EN S14, y es la mitad de lo que este test vigila
+    ahora: se cableo (`v4b_relacion_hw_d`) una vez cerrada la procedencia de
+    su umbral, que es la secuencia que el conflicto #1 impone. Una fila
+    cableada que siguiera declarandose "no evaluada" seria la misma clase de
+    afirmacion falsa que SIS-A-03 denuncio en ocho docstrings, solo que
+    impresa en la memoria.
     """
     from modulos import M11_reporte as M11
     from modulos.M5_verificaciones import verificaciones_no_evaluadas
@@ -754,15 +768,19 @@ def test_las_dos_filas_no_evaluadas_se_declaran_en_vez_de_desaparecer():
     textos = verificaciones_no_evaluadas()
     completo = " ".join(textos)
     assert "V2b" in completo and "planos" in completo
-    assert "V4b" in completo and "HW_D_max" in completo
+    assert "V4b" not in completo, (
+        "V4b volvio a declararse no evaluada. Si el cableado se retiro, "
+        "retiralo tambien de `verificar()`; si sigue ahi, esta constancia "
+        "esta mintiendo")
 
     # El conteo, contra la hoja de ruta y contra este modulo: si alguno de los
     # dos cambia, el texto de la constancia deja de ser cierto.
     #
     # El patron de funciones lleva la `b` OPCIONAL a proposito. Sin ella
     # (`v\d+_`) no casaba `v4b_...` ni `v2b_...`, que son justo las dos que
-    # esta guardia vigila: el dia que V4b se cablee con su nombre natural, el
-    # test seguiria en verde con la constancia diciendo que nadie la evalua.
+    # esta guardia vigila -- y gracias a ella `v4b_relacion_hw_d` entro en el
+    # conteo el dia que se cableo, en vez de dejar la constancia en verde
+    # diciendo que nadie la evalua.
     raiz = Path(__file__).resolve().parents[1]
     # La hoja se localiza como lo hace M11 -- que exige que haya exactamente
     # una --, no con el primer resultado de un glob.
@@ -771,5 +789,113 @@ def test_las_dos_filas_no_evaluadas_se_declaran_en_vez_de_desaparecer():
     modulo = (raiz / "src" / "modulos" / "M5_verificaciones.py").read_text(encoding="utf-8")
     funciones = re.findall(r"^def (v\d+b?_\w+)", modulo, re.M)
     assert len(filas) == 11, f"la tabla de Fase 5 ya no tiene once filas: {filas}"
-    assert len(funciones) == 9, f"M5 ya no tiene nueve verificaciones: {funciones}"
+    assert len(funciones) == 10, f"M5 ya no tiene diez verificaciones: {funciones}"
     assert len(textos) == len(filas) - len(funciones)
+
+
+# ===========================================================================
+# C09 / SIS-F-10 y SIS-B-23 - la guarda de la altura de relleno, y la que no
+# ===========================================================================
+#
+# `altura_relleno_sobre_clave` es la magnitud que consumen V7 (Fase 5) y la
+# tabla de la norma de producto (Fase 8). Su guarda estaba escrita y no la
+# ejecutaba ninguna corrida: sin test, nada garantizaba que la GUI reciba
+# DatoInvalidoError sobre 'cota_subrasante' -- que es la casilla que el
+# revisor tiene que CORREGIR -- en vez de un numero negativo que sigue
+# viajando hasta elegir una clase de tubo contra un relleno que no existe.
+#
+# La segunda mitad del bloque es la contraria: `resguardo_por_cbr` lleva un
+# `raise` que NO se alcanza, y lo que se escribe no es un test que lo alcance
+# por inyeccion sino la demostracion de por que es inalcanzable (SIS-B-23).
+
+
+@pytest.mark.parametrize("delta_sobre_la_clave, descripcion", [
+    (0.00, "la subrasante coincide exactamente con la clave"),
+    (-0.45, "la clave asoma por encima de la subrasante"),
+    (-2.00, "la clave asoma casi entera"),
+])
+def test_una_clave_al_nivel_de_la_subrasante_o_encima_es_una_cota_a_corregir(
+        hdpe, delta_sobre_la_clave, descripcion):
+    """
+    Falla si la resta pierde su guarda -- que es exactamente el defecto de
+    SIS-A-21: la copia de `cli._fase_8` hacia la misma resta SIN comprobar el
+    signo, y solo no hacia daño porque la Fase 8 se detenia antes por otro
+    motivo. El dia que ese otro motivo se declare, un relleno negativo entra
+    a la tabla de la norma de producto y elige una clase contra un numero sin
+    sentido fisico.
+
+    Se comprueba la CLASE (DatoInvalidoError, no CriterioPendienteError: la
+    cota esta, hay que corregirla), el CAMPO ('cota_subrasante', que es la
+    casilla del CSV) y que el motivo diga por que -- con el numero del
+    relleno que salio, para que el revisor sepa cuanto le falta.
+    """
+    D = 1.50
+    punto_base = _punto()
+    clave = cota_clave(punto=punto_base, material=hdpe, D=D)
+    subrasante = clave + delta_sobre_la_clave
+
+    with pytest.raises(DatoInvalidoError) as exc:
+        altura_relleno_sobre_clave(
+            punto=_punto(cota_subrasante=subrasante), material=hdpe, D=D)
+
+    assert exc.value.campo == "cota_subrasante", descripcion
+    assert exc.value.id_punto == punto_base.id
+    assert "no hay relleno sobre la clave" in exc.value.motivo
+    # El motivo NO cita numeral de fase, a proposito: la misma magnitud la
+    # consumen V7 y la Fase 8, y nombrar una sola mandaria al revisor a la
+    # etapa equivocada la mitad de las veces.
+    assert NUMERAL_V7 not in exc.value.motivo
+
+
+def test_con_la_subrasante_por_encima_de_la_clave_la_altura_es_la_resta(hdpe):
+    """
+    El contraste: la guarda no rechaza rellenos pequeños, solo los nulos o
+    negativos. Falla si alguien la endurece con un minimo inventado.
+    """
+    D = 1.50
+    clave = cota_clave(punto=_punto(), material=hdpe, D=D)
+    holgura = 0.40
+
+    altura = altura_relleno_sobre_clave(
+        punto=_punto(cota_subrasante=clave + holgura), material=hdpe, D=D)
+
+    assert altura == pytest.approx(holgura, rel=REL_TRANSPORTE)
+
+
+# --- guarda defensiva: se demuestra inalcanzable, no se alcanza ------------
+
+def test_la_tabla_de_resguardo_no_deja_ningun_CBR_sin_fila():
+    """
+    SIS-B-23. `resguardo_por_cbr` termina en un `raise ValueError` que ningun
+    CBR alcanza, porque las cuatro filas de RESGUARDO_NAPA_SUBRASANTE son
+    exhaustivas por construccion: la primera no tiene techo, la ultima no
+    tiene piso, y las intermedias encadenan sin hueco. Por eso ese `raise` no
+    lleva un test que lo ejecute -- lleva este, que demuestra por que no se
+    puede ejecutar.
+
+    Falla el dia que alguien edite la tabla y abra un hueco (o le ponga techo
+    a la fila de arriba, o piso a la de abajo): entonces el `raise` deja de
+    ser inalcanzable y este test lo dice AQUI, con la fila culpable, en vez
+    de esperar a que el CBR de una obra caiga en el agujero.
+    """
+    filas = list(RESGUARDO_NAPA_SUBRASANTE)
+
+    # Los dos extremos abiertos: sin ellos la tabla no cubre la recta entera.
+    assert filas[0][1] is None, "la fila de CBR mas alto dejo de ser ilimitada"
+    assert filas[-1][0] is None, "la fila de CBR mas bajo dejo de ser ilimitada"
+
+    # Y el encadenado, sin hueco ni solape, entre filas consecutivas.
+    for (cbr_min, _, _), (_, techo_siguiente, _) in zip(filas, filas[1:]):
+        assert cbr_min == techo_siguiente, (
+            f"hueco o solape en la tabla: {cbr_min} frente a {techo_siguiente}")
+
+    # La consecuencia observable, barrida sobre el dominio fisico del dato
+    # (dominios.CBR_MAX_FISICO, que es lo que M0 admite) y mas alla de sus dos
+    # extremos: toda entrada devuelve resguardo, ninguna llega al `raise`.
+    bordes = [b for fila in filas for b in fila[:2] if b is not None]
+    muestras = sorted(set(
+        bordes
+        + [b - 0.1 for b in bordes] + [b + 0.1 for b in bordes]
+        + [0.1, CBR_MAX_FISICO, CBR_MAX_FISICO * 10]))
+    for cbr in muestras:
+        assert resguardo_por_cbr(cbr) > 0, f"CBR = {cbr} se quedo sin fila"

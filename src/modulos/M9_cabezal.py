@@ -161,6 +161,15 @@ from constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    AMBIENTE_CORROSIVO_TEXTO,
                                    CARGA_VIVA,
+                                   CLASE_DE_SITIO_COHERENCIA_INTERNA,
+                                   CLASE_DE_SITIO_INDETERMINADA,
+                                   CLASE_DE_SITIO_POR_QUE_DEJA_DE_DECIRSE,
+                                   CLASE_DE_SITIO_QUE_LA_CIERRA,
+                                   HOMONIMIA_CLASE_F,
+                                   homonimia_como_texto,
+                                   CLASE_SITIO_EF_NO_SUPUESTA_MP_TEXTO,
+                                   CLASE_SITIO_EF_NO_SUPUESTA_TEXTO,
+                                   CLASE_SITIO_INVESTIGACION_TEXTO,
                                    CICLOPEO_DISCREPANCIA_HOJA_RUTA,
                                    CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
@@ -210,6 +219,15 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_COMBINACIONES,
                                    NUMERAL_CUANTIA_MIN,
                                    NUMERAL_E030_AMBITO,
+                                   NUMERAL_CLASE_SITIO_AASHTO,
+                                   NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA,
+                                   NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA_MP,
+                                   NUMERAL_CLASE_SITIO_INVESTIGACION,
+                                   NUMERAL_CLASE_SITIO_MP,
+                                   NUMERAL_LICUEFACCION_AASHTO,
+                                   NUMERAL_LICUEFACCION_ESPECTRO,
+                                   NUMERAL_RESPUESTA_DE_SITIO_AASHTO,
+                                   NUMERAL_RESPUESTA_DE_SITIO_MP,
                                    NUMERAL_E030_S5,
                                    NUMERAL_ESPACIAMIENTO,
                                    NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION,
@@ -860,8 +878,22 @@ def angulo_inercia_sismica(*, k_h: float, k_v: float) -> float:
     g, fisicamente absurdo pero declarable por error en un criterio) la
     division reventaria con ZeroDivisionError -- un fallo de programa, no del
     expediente. atan2 devuelve 90 grados y el caso se rechaza mas adelante,
-    donde cos(psi) = 0 hace degenerar el denominador de K_AE, con un
-    DisenoNoFactibleError que si explica que pasa.
+    con un DisenoNoFactibleError que es de la taxonomia.
+
+    POR QUE GUARDA LO RECHAZA, dicho con precision. El texto que ocupaba este
+    lugar decia "cos(psi) = 0 hace degenerar el denominador de K_AE", y eso es
+    falso en aritmetica de maquina: `math.cos(math.radians(90.0))` vale
+    6.123233995736766e-17, que es POSITIVO, de modo que la guarda de cosenos
+    no dispara por psi. Con delta = 0 el rechazo lo produce la guarda
+    siguiente, la de `phi - psi - i < 0` --- 34 - 90 - 0 = -56 grados ---, y
+    su mensaje manda al revisor a "reducir la pendiente del relleno o revisar
+    phi" cuando el disparate esta en k_v. Con delta > 0 dispara antes la de
+    cosenos, pero por `delta + beta + psi` y no por psi.
+
+    Se deja asi --- ninguna de las dos guardas nombra k_v --- porque las dos
+    son correctas para lo que verifican y anadir una tercera que mire k_v
+    exigiria un techo declarado para k_v que este expediente no tiene. Lo que
+    no puede quedar es el docstring afirmando un mecanismo que no ocurre.
     """
     return math.degrees(math.atan2(k_h, 1 - k_v))
 
@@ -890,8 +922,21 @@ def k_ae_mononobe_okabe(*, phi_grados: float, i_grados: float,
 
     Caso limite verificado en los tests: con k_h = k_v = 0 y
     i = beta = delta = 0, esta expresion devuelve exactamente
-    tan^2(45 - phi/2), el Ka de Rankine que cita Sec. 9.2. Es la comprobacion
-    que garantiza que los signos estan bien puestos.
+    tan^2(45 - phi/2), el Ka de Rankine que cita Sec. 9.2.
+
+    ESE CASO LIMITE NO GARANTIZA LOS SIGNOS, y aqui decia que si (SIS-F-04,
+    mitad documental). Con i = beta = delta = 0 los cuatro cosenos son PARES
+    y por lo tanto insensibles al signo: de los quince mutantes de signo y
+    operador de esta formula, DOCE devuelven el mismo double que el original
+    en ese caso --- medido, 0.28271491971777263 para phi = 34 ---, y siete de
+    ellos atravesaban la suite entera. Una comprobacion con todos los angulos
+    en cero no puede ver una convencion de signo: no hay signo que ver.
+
+    Lo que si los cubre es CP9_MONONOBE_OKABE (tests/fixtures/casos_patron.py),
+    tres juegos con phi, i, beta, delta, k_h y k_v todos distintos y todos
+    distintos de cero, autoverificados por recomputacion independiente. El
+    caso limite se conserva porque prueba otra cosa --- la reduccion a
+    Rankine, que es la que cita Sec. 9.2 --- y esa si la prueba.
 
     EL SIGNO DEL CORCHETE: [1 + R], Y EL MANUAL DE PUENTES IMPRIME [1 - R].
     Hay que decirlo aqui, en el punto de uso, porque un revisor que compare
@@ -1453,11 +1498,20 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
     (pag. impresa 3-118 / PDF 172) exige lo contrario, y con un `shall`:
     "Submerged unit weights of the soil shall be used to determine the
     lateral earth pressure below the groundwater table". La desviacion es
-    CONSERVADORA y esta acotada: el exceso es Ka*gamma_agua*h_agua, constante
-    en toda la zona sumergida -- 1.96 kPa con Ka = 1/3 y 0.60 m de agua --, de
-    modo que en porcentaje depende de la altura del muro: +25 % sobre un muro
-    de 0.60 m (el caso con que lo calculo la ficha MAT-O3), +11 % sobre uno de
-    2.00 m con el freatico a 1.40 m, y menos cuanto mas alto. Se
+    CONSERVADORA y esta acotada. El exceso NO es constante en la zona
+    sumergida: es TRIANGULAR, crece desde 0 en el nivel freatico hasta
+    Ka*gamma_agua*h_agua en la base --- 1.96 kPa con Ka = 1/3 y 0.60 m de
+    agua, que es el valor EN LA BASE y no una constante. (El texto que ocupaba
+    este lugar decia "constante en toda la zona sumergida" y se contradecia a
+    si mismo tres lineas mas abajo: con el diagrama rectangular el muro de
+    0.60 m daria +68 % y no el +25 % que el propio parrafo cita.)
+
+    En porcentaje sobre el empuje lateral total, recomputado a mano contra
+    AASHTO 3.11.3 con gamma = 19.0 kN/m3, gamma_agua = 9.81 kN/m3 y Ka = 1/3:
+    +25.4 % sobre un muro de 0.60 m enteramente sumergido (el caso con que lo
+    calculo la ficha MAT-O3) y +4.3 % sobre uno de 2.00 m con el freatico a
+    1.40 m --- no el +11 % que decia este parrafo, que corresponderia a un
+    muro de ~1.06 m. Menos cuanto mas alto el muro. Se
     mantiene porque corregirla exige un peso especifico SUMERGIDO del relleno
     que este expediente todavia no tiene: aplicar AASHTO con el unico gamma
     declarado seria aliviar el empuje sin dato que lo sostenga. El texto
@@ -1988,6 +2042,39 @@ def _gamma_permanente(carga: str, fila_combinacion: dict,
 # 9.3 - ESTABILIDAD (E.050)
 # Cinco verificaciones, codigos E1..E5, cada una en las dos condiciones.
 # ===========================================================================
+
+# ---------------------------------------------------------------------------
+# POR QUE ESTE MODULO VALIDA ARGUMENTOS INTERNOS CON `DatoInvalidoError`
+# ---------------------------------------------------------------------------
+# SIS-E-02. Cuatro funciones de aqui -- `fs_requerido` (verificacion),
+# `recubrimiento_e060_mm` y `recubrimiento_aashto_mm` (condicion) y
+# `verificar_cuantia` (direccion) -- validan cadenas que NO vienen del
+# expediente: las escribe el propio codigo o las itera desde la misma tabla
+# que se valida (cli.py recorre RECUBRIMIENTO y CUANTIA_MIN_MURO para
+# construir la memoria). Un `DatoInvalidoError` ahi disfraza un fallo de
+# PROGRAMA de problema del expediente, que es lo contrario de lo que la
+# taxonomia de CLAUDE.md persigue, y la eleccion estaba fijada por tests pero
+# no escrita en ninguna parte.
+#
+# SE MANTIENE, y esta es la razon: las cuatro cadenas son CLAVES DE UNA TABLA
+# NORMATIVA -- las filas de Sec. 9.3, del Art. 7.7.1 de E.060, de la Tabla
+# 5.10.1-1 de AASHTO y del Art. 14.3.1 --, y el mensaje que la excepcion
+# construye ENUMERA las filas admisibles. Ese mensaje es util al revisor y no
+# solo al programador: la forma en que una fila desaparece no es que alguien
+# escriba mal un literal, es que la tabla cambie de transcripcion y un
+# consumidor quede apuntando a una fila que ya no esta. Cuando eso pasa, el
+# problema SI es del expediente -- la transcripcion -- y la fila del informe
+# que produce `cli._bloqueo` dice exactamente cual falta.
+#
+# LA FRONTERA, para que no se estire: se usa `DatoInvalidoError` cuando el
+# argumento es una CLAVE DE TABLA NORMATIVA y el mensaje enumera las
+# admisibles. Para un argumento que no lo sea -- un flag, un modo interno --
+# el error correcto es el que el programa merece, no el del expediente. El
+# quinto sitio que la ficha SIS-E-02 listaba, `_recubrimiento_aashto_detallado`,
+# no pertenece a esta lista por la razon contraria: su tabla sale de
+# `ca.valor(CRITERIO_RECUBRIMIENTO_AASHTO)`, es decir del expediente, y ahi
+# `DatoInvalidoError` es sencillamente la excepcion correcta.
+
 
 def fs_requerido(*, verificacion: str, condicion: CondicionAnalisis) -> float:
     """
@@ -3358,6 +3445,40 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
         f"({NUMERAL_E030_AMBITO}; {NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION})",
         f"Texto literal del Art. 7.3 de E.030, que es el que cede el paso: "
         f"\"{E030_ART_7_3_TEXTO}\" ({NUMERAL_E030_ESTRUCTURAS_NO_EDIFICACION})",
+        # LA CLASE DE SITIO, y por que este expediente no se atribuye
+        # ninguna. Es la correccion de S13/S14 (conflicto #8): el expediente
+        # afirmaba la Clase de Sitio F y ninguna de las dos fuentes la
+        # sostiene -- pero lo que decide no es el silencio, es que las dos
+        # PROHIBEN suponer la clase E o F sin dato geotecnico. El texto va a
+        # la memoria entero, con las dos citas literales, porque un revisor
+        # que solo lea "indeterminada" no sabra que ya se busco
+        # (NOR-AAS-02, SIS-B-01, SIS-D-01, NOR-MEM-03).
+        f"{CLASE_DE_SITIO_INDETERMINADA} ({NUMERAL_CLASE_SITIO_AASHTO})",
+        f"Texto literal de la prohibicion, en el articulado y no en un "
+        f"comentario: \"{CLASE_SITIO_EF_NO_SUPUESTA_TEXTO}\" "
+        f"({NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA}). El Manual de Puentes lo "
+        f"endurece a un futuro imperativo: "
+        f"\"{CLASE_SITIO_EF_NO_SUPUESTA_MP_TEXTO}\" "
+        f"({NUMERAL_CLASE_SITIO_EF_NO_SUPUESTA_MP})",
+        f"El deber positivo que abre la misma clausula, y que es lo que "
+        f"convierte a la clase de sitio en un dato pendiente de ensayo y no "
+        f"en un valor que el proyectista adopte: "
+        f"\"{CLASE_SITIO_INVESTIGACION_TEXTO}\" "
+        f"({NUMERAL_CLASE_SITIO_INVESTIGACION})",
+        f"{CLASE_DE_SITIO_POR_QUE_DEJA_DE_DECIRSE} "
+        f"({NUMERAL_CLASE_SITIO_MP}; {NUMERAL_LICUEFACCION_AASHTO}; "
+        f"{NUMERAL_E030_S5})",
+        f"{CLASE_DE_SITIO_COHERENCIA_INTERNA} "
+        f"({NUMERAL_LICUEFACCION_ESPECTRO})",
+        f"{CLASE_DE_SITIO_QUE_LA_CIERRA} "
+        f"({NUMERAL_RESPUESTA_DE_SITIO_AASHTO}; "
+        f"{NUMERAL_RESPUESTA_DE_SITIO_MP})",
+        # La homonimia, que llega a la memoria por dos caminos distintos y
+        # sin relacion entre si (NOR-VOC-04). Se imprime aqui, pegada a la
+        # cadena sismica, porque es donde el lector se encuentra el termino;
+        # el glosario completo de las cuatro homonimias del expediente lo
+        # imprime M11 (`bloque_homonimias`), leyendo esta MISMA declaracion.
+        homonimia_como_texto(HOMONIMIA_CLASE_F),
         # Lo que E.030 SI dice sobre este sitio, y que el expediente tenia
         # archivado como referencia muerta (NOR-E030-02).
         f"Perfil de suelo S5 de E.030: aunque la norma no gobierne el diseno "

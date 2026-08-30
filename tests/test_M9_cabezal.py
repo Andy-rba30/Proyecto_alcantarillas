@@ -5,9 +5,12 @@ Fase 9 (M9_cabezal.py). Cuatro bloques, en el orden de la hoja de ruta:
 
     9.2 cadena sismica    los seis pasos horizontales por separado, k_v
                           aparte, y el ensamble `cadena_sismica()`.
-    9.2 Mononobe-Okabe    el caso limite contra tan^2(45 - phi/2) -- el test
-                          que garantiza que los signos estan bien puestos --,
-                          la monotonia frente a k_h y el dominio de validez.
+    9.2 Mononobe-Okabe    los tres juegos de CP9_MONONOBE_OKABE, con los seis
+                          parametros distintos de cero -- son los que cubren
+                          las convenciones de signo --, el caso limite contra
+                          tan^2(45 - phi/2), que prueba la reduccion a Rankine
+                          y NO los signos (SIS-F-04), la monotonia frente a
+                          k_h y el dominio de validez.
     9.2 cargas            sobrecarga de 0.60 m equivalente, empujes, agua,
                           subpresion y las tres combinaciones AASHTO.
     9.3 estabilidad       los FS de la tabla en sus dos condiciones.
@@ -19,9 +22,14 @@ Y, transversalmente, que cada vacio declarado se detiene donde debe con
 """
 
 import math
+import os
+import subprocess
+import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
+from dataclasses import replace
 
 import criterios_adoptados as ca
 import datos_sitio as ds
@@ -32,7 +40,16 @@ from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO, CUANTIA_MIN_MURO,
                                    ESPACIAMIENTO_MAX_ABSOLUTO,
+                                   EXPOSICION_ESPECIAL,
+                                   F_PGA_CLASES_EN_ROCA,
+                                   F_PGA_EXIGE_ESTUDIO_DE_SITIO,
+                                   F_PGA_TABLA,
+                                   F_PGA_TABLA_PGA_COLUMNAS,
                                    FS,
+                                   K_V_DECLARACION_PRESCRITO,
+                                   LECTURA_COLUMNA_EXTREMA_ESTRICTA,
+                                   LECTURA_COLUMNA_EXTREMA_INCLUSIVE,
+                                   LECTURAS_COLUMNA_EXTREMA,
                                    REDUCCION_KH_POR_DESPLAZAMIENTO,
                                    NQ_ZAPATA_EN_TALUD,
                                    ORIENTACION_PARALELO_AL_TRAFICO,
@@ -44,8 +61,20 @@ from modelos import (CondicionAnalisis, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError,
                      DisenoNoFactibleError, GeometriaCabezal)
 from modulos.M0_carga import cargar_puntos
+from modulos import M9_cabezal as M9
 from modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
+                                cimentacion_en_roca,
+                                clase_exposicion_sulfatos,
+                                clases_de_sitio_plausibles,
+                                demanda_sismica_cabezal,
+                                factor_sitio_desde_tabla,
+                                fuerza_inercia_muro,
+                                lectura_columna_extrema,
                                 NUMERAL_9_1,
+                                excentricidad_admisible_sismica,
+                                excentricidad_resultante,
+                                presion_contacto_base,
+                                verificar_excentricidad_sismica,
                                 aceleracion_ajustada_sitio,
                                 cuantia_de_diseno,
                                 altura_agua_sobre_base,
@@ -82,14 +111,32 @@ from modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
                                 verificar_espaciamiento, verificar_estabilidad,
                                 verificar_estabilidad_global, verificar_talud,
                                 verificar_volteo)
-from tests.fixtures.casos_patron import CP7_CADENA_SISMICA
+from tests.fixtures.casos_patron import (CP7_CADENA_SISMICA,
+                                         CP9_EMPUJE_TRASDOS,
+                                         CP9_ENSAMBLE_TRASDOS,
+                                         CP9_MONONOBE_OKABE,
+                                         CP9_RANKINE_LIMITE,
+                                         CP9_TOLERANCIA_RELATIVA)
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
+from tolerancias import TOL_UMBRAL_NORMATIVO
 
 TOL = 1e-12
+
+# Mil veces el umbral normativo: un incumplimiento que la banda NO debe tapar.
+TOL_MIL_VECES_EL_UMBRAL = 1000 * TOL_UMBRAL_NORMATIVO
 
 # Los dorados de la cadena sismica se LEEN del caso patron, no se reescriben
 # como literales aqui (SIS-F-14): duplicarlos hacia que corregir el fixture no
 # llegara nunca a estos tests.
 CP7 = CP7_CADENA_SISMICA
+CP9 = CP9_EMPUJE_TRASDOS
+
+# Tolerancia RELATIVA del contraste contra los dorados de CP-9 (SIS-F-05).
+# No sale de src/tolerancias.py a proposito: aquellas tres miden la precision
+# del CALCULO (convergencia de Brent, borde del intervalo, ruido en un umbral
+# normativo) y esta mide el REDONDEO con que el dorado esta ESCRITO en el
+# fixture. Se usa siempre como `rel=`, nunca `==` sobre floats (SIS-F-16).
+REL_CP9 = CP9["tolerancia_relativa"]
 
 CSV_EJEMPLO = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
 
@@ -236,9 +283,18 @@ def test_una_eleccion_de_factor_de_muro_fuera_de_la_tabla_es_dato_invalido(monke
 @pytest.mark.parametrize("phi", [25.0, 28.0, 30.0, 34.0, 38.0, 42.0])
 def test_caso_limite_mononobe_okabe_es_el_ka_de_rankine(phi):
     """
-    EL test de esta formula. Con k_h = k_v = 0 e i = beta = delta = 0,
+    La reduccion a Rankine. Con k_h = k_v = 0 e i = beta = delta = 0,
     Mononobe-Okabe tiene que devolver EXACTAMENTE tan^2(45 - phi/2), el Ka
-    que cita Sec. 9.2. Si un signo esta cambiado, aqui se ve.
+    que cita Sec. 9.2.
+
+    NO ES "EL test de esta formula" NI "si un signo esta cambiado, aqui se
+    ve", que es lo que decia este docstring y lo que SIS-F-04 cita como la
+    documentacion que afirma lo que el codigo no da. Con los tres angulos en
+    cero los cosenos son PARES: doce de los quince mutantes de signo dan aqui
+    el mismo double que el original. Los signos los cubre
+    `test_k_ae_contra_caso_patron_con_los_seis_parametros_no_nulos`, sobre
+    CP9_MONONOBE_OKABE. Este test prueba la reduccion, que tambien hay que
+    probar, y solo eso.
     """
     K_AE = k_ae_mononobe_okabe(phi_grados=phi, i_grados=0.0, beta_grados=0.0,
                                delta_grados=0.0, k_h=0.0, k_v=0.0)
@@ -258,7 +314,9 @@ def test_k_ae_crece_con_k_h():
                                    beta_grados=0.0, delta_grados=0.0,
                                    k_h=k_h, k_v=0.0)
                for k_h in (0.0, 0.1, 0.2, 0.3, 0.4, 0.5)]
-    assert previos == sorted(previos)
+    assert all(anterior <= siguiente
+               for anterior, siguiente in zip(previos, previos[1:])), (
+        "K_AE tiene que crecer con k_h")
     assert previos[-1] > previos[0]
 
 
@@ -353,11 +411,7 @@ def _declarar_dato_de_sitio(monkeypatch, clave, valor):
     original = ds.dato(clave)
     monkeypatch.setitem(
         ds.DATOS_SITIO, clave,
-        ds.DatoSitio(valor=valor, concepto=original.concepto,
-                     procedimiento=original.procedimiento,
-                     fuente=original.fuente,
-                     trazabilidad=original.trazabilidad,
-                     ambito=original.ambito))
+        replace(original, valor=valor))
 
 
 def _declarar_orientacion(monkeypatch, orientacion):
@@ -555,17 +609,125 @@ def test_empuje_activo_estatico_es_triangular():
         pytest.approx(gamma * H ** 2 * k_a / 2))
 
 
+# ---------------------------------------------------------------------------
+# SIS-F-05 - Los tests de VALOR del empuje del trasdos, contra CP-9
+# ---------------------------------------------------------------------------
+# Lo que habia era `test_empuje_sismico_total_y_su_incremento` con un unico
+# assert, `incremento == pytest.approx(P_AE - P_A)`, y una tautologia:
+# `incremento_sismico` calcula justamente P_AE - P_A llamando a las mismas dos
+# funciones que el test llama para armar el lado derecho. Cualquier mutante
+# dentro de `empuje_activo_sismico_total` se propaga identico a los dos lados
+# y la igualdad se sigue cumpliendo. Cuatro mutantes de esa unica linea
+# sobrevivian a la suite entera.
+
+def _declarar_criterio(monkeypatch, clave, valor):
+    """Declara un criterio [A] vacio a un valor DE PRUEBA, no de proyecto."""
+    original = ca.criterio(clave)
+    monkeypatch.setitem(ca.CRITERIOS, clave,
+                        ca.Criterio(valor=valor, etiqueta=original.etiqueta,
+                                    concepto=original.concepto,
+                                    justificacion=original.justificacion,
+                                    fuente=original.fuente))
+
+
+def test_empuje_sismico_total_es_gamma_H2_por_1_menos_kv_por_KAE_medios():
+    """
+    P_AE = gamma*H^2*(1-k_v)*K_AE/2, kN/m (Sec. 9.2), contra el dorado del
+    bloque A de CP-9.
+
+    El K_AE entra DADO y no desde Mononobe-Okabe: aqui se prueba la formula
+    del empuje, no el coeficiente (eso es el bloque B). Las cuatro entradas
+    son distintas entre si y ninguna vale 1 ni 2, que es lo que hace visible
+    la diferencia entre multiplicar y dividir.
+    """
+    c = CP9
+    P_AE = empuje_activo_sismico_total(gamma_relleno=c["A_gamma_relleno"],
+                                       K_AE=c["A_K_AE"], H=c["A_H"],
+                                       k_v=c["A_k_v"])
+    assert P_AE == pytest.approx(c["A_P_AE_esperado"], rel=REL_CP9)
+    # Y lejos de cada uno de los cuatro mutantes que sobrevivian: el assert de
+    # arriba ya los mata, y estos dejan escrito CUALES eran y a que distancia.
+    for clave in ("A_mutante_1_mas_kv", "A_mutante_por_dos",
+                  "A_mutante_divide_kv", "A_mutante_divide_KAE"):
+        assert P_AE != pytest.approx(c[clave], rel=REL_CP9)
+
+
+def test_el_factor_vertical_es_uno_menos_kv_y_no_uno_mas():
+    """
+    Con k_v = 0 el factor vale 1 y el mutante (1 + k_v) es indetectable POR
+    CONSTRUCCION -- y k_v = 0.0 era lo que usaba el test viejo. Con k_v > 0 la
+    aceleracion vertical hacia arriba descarga el relleno: el empuje TIENE que
+    bajar, y bajar exactamente en la proporcion (1 - k_v).
+    """
+    c = CP9
+    sin_kv = empuje_activo_sismico_total(gamma_relleno=c["A_gamma_relleno"],
+                                         K_AE=c["A_K_AE"], H=c["A_H"], k_v=0.0)
+    con_kv = empuje_activo_sismico_total(gamma_relleno=c["A_gamma_relleno"],
+                                         K_AE=c["A_K_AE"], H=c["A_H"],
+                                         k_v=c["A_k_v"])
+    assert con_kv < sin_kv
+    assert con_kv == pytest.approx(sin_kv * (1 - c["A_k_v"]), rel=REL_CP9)
+
+
 def test_empuje_sismico_total_y_su_incremento():
-    gamma, H = 19.0, 2.4
-    mo = empuje_mononobe_okabe(phi_grados=34.0, i_grados=0.0, beta_grados=0.0,
-                               delta_grados=0.0, k_h=0.50, k_v=0.0)
-    P_AE = empuje_activo_sismico_total(gamma_relleno=gamma, K_AE=mo.K_AE,
-                                       H=H, k_v=mo.k_v)
-    P_A = empuje_activo_estatico(gamma_relleno=gamma, k_a=mo.K_A, H=H)
-    incremento = incremento_sismico(gamma_relleno=gamma, K_AE=mo.K_AE,
-                                    K_A=mo.K_A, H=H, k_v=mo.k_v)
-    assert incremento == pytest.approx(P_AE - P_A)
-    assert incremento > 0
+    """
+    La cadena coherente del bloque B de CP-9: phi -> psi -> K_AE -> P_AE, y el
+    incremento Delta P_AE = P_AE - P_A contrastado contra SU DORADO, no contra
+    si mismo (SIS-F-05).
+    """
+    c = CP9
+    mo = empuje_mononobe_okabe(phi_grados=c["B_phi_grados"],
+                               i_grados=c["B_i_grados"],
+                               beta_grados=c["B_beta_grados"],
+                               delta_grados=c["B_delta_grados"],
+                               k_h=c["B_k_h"], k_v=c["B_k_v"])
+    assert mo.psi_grados == pytest.approx(c["B_psi_grados_esperado"],
+                                          rel=REL_CP9)
+    assert mo.K_AE == pytest.approx(c["B_K_AE_esperado"], rel=REL_CP9)
+    assert mo.K_A == pytest.approx(c["B_K_A_esperado"], rel=REL_CP9)
+    assert mo.incremento == pytest.approx(c["B_incremento_K_esperado"],
+                                          rel=REL_CP9)
+
+    P_AE = empuje_activo_sismico_total(gamma_relleno=c["B_gamma_relleno"],
+                                       K_AE=mo.K_AE, H=c["B_H"], k_v=mo.k_v)
+    P_A = empuje_activo_estatico(gamma_relleno=c["B_gamma_relleno"],
+                                 k_a=mo.K_A, H=c["B_H"])
+    incremento = incremento_sismico(gamma_relleno=c["B_gamma_relleno"],
+                                    K_AE=mo.K_AE, K_A=mo.K_A, H=c["B_H"],
+                                    k_v=mo.k_v)
+    assert P_AE == pytest.approx(c["B_P_AE_esperado"], rel=REL_CP9)
+    assert P_A == pytest.approx(c["B_P_A_esperado"], rel=REL_CP9)
+    assert incremento == pytest.approx(c["B_incremento_P_esperado"],
+                                       rel=REL_CP9)
+    # El incremento es la PARTE sismica del total: positivo y menor que P_AE.
+    assert 0 < incremento < P_AE
+
+
+def test_empuje_activo_estatico_contra_su_dorado():
+    """
+    P_A = gamma*H^2*K_A/2, kN/m (Sec. 9.2), contra el dorado del bloque B.
+    El test hermano (`..._es_triangular`) reescribe la formula en el propio
+    assert: comprueba la transcripcion, no el valor. Este cierra el circulo
+    con un numero recalculado fuera del repo.
+    """
+    c = CP9
+    assert empuje_activo_estatico(gamma_relleno=c["B_gamma_relleno"],
+                                  k_a=c["B_K_A_esperado"],
+                                  H=c["B_H"]) == pytest.approx(
+        c["B_P_A_esperado"], rel=REL_CP9)
+
+
+def test_el_brazo_del_incremento_sismico_es_la_fraccion_por_H(monkeypatch):
+    """
+    Declarado el criterio, z = fraccion * H (Sec. 9.2). La fraccion (0.6) y H
+    (2.4) son distintas y ninguna vale 1: multiplicar da 1.44 m y dividir
+    daria 0.25 m. Complementa a `..._no_se_inventa`, que prueba el camino SIN
+    declarar (`CriterioPendienteError`).
+    """
+    _declarar_criterio(monkeypatch, "punto_aplicacion_incremento_sismico",
+                       CP9["B_brazo_fraccion"])
+    assert brazo_incremento_sismico(H=CP9["B_H"]) == pytest.approx(
+        CP9["B_z_incremento_esperado"], rel=REL_CP9)
 
 
 def test_el_agua_no_lleva_coeficiente_de_empuje():
@@ -703,16 +865,21 @@ def test_describir_las_combinaciones_no_se_detiene_y_evaluarlas_tampoco():
     assert len(combinaciones()) == 3          # describir: los nombres son [N]
 
     resistencia = factores_de_carga("Resistencia I")
-    assert resistencia["DC"] == {"max": 1.25, "min": 0.90}
-    assert resistencia["EV"] == {"max": 1.35, "min": 1.00}
-    assert resistencia["EH"] == {"max": 1.50, "min": 0.90}
+    assert resistencia["DC"] == pytest.approx({"max": 1.25, "min": 0.90},
+                                              rel=REL_TRANSPORTE)
+    assert resistencia["EV"] == pytest.approx({"max": 1.35, "min": 1.00},
+                                              rel=REL_TRANSPORTE)
+    assert resistencia["EH"] == pytest.approx({"max": 1.50, "min": 0.90},
+                                              rel=REL_TRANSPORTE)
     assert resistencia["LS"] == pytest.approx(1.75)
 
     servicio = factores_de_carga("Servicio I")
-    assert servicio["DC"] == {"max": 1.00, "min": 1.00}
+    assert servicio["DC"] == pytest.approx({"max": 1.00, "min": 1.00},
+                                           rel=REL_TRANSPORTE)
 
     extremo = factores_de_carga("Evento Extremo I")
-    assert extremo["EQ"] == {"max": 1.00, "min": 1.00}
+    assert extremo["EQ"] == pytest.approx({"max": 1.00, "min": 1.00},
+                                          rel=REL_TRANSPORTE)
     assert extremo["LS"] == "gamma_EQ"       # a criterio del propietario
 
 
@@ -758,8 +925,8 @@ def test_volteo_cumple_en_estatico_y_no_en_sismico_con_el_mismo_FS():
                                condicion=CondicionAnalisis.SISMICO)
     assert not estatico.cumple and sismico.cumple
     assert estatico.valor_obtenido == pytest.approx(1.30)
-    assert estatico.valor_admisible == 1.50
-    assert sismico.valor_admisible == 1.25
+    assert estatico.valor_admisible == pytest.approx(1.50, rel=REL_TRANSPORTE)
+    assert sismico.valor_admisible == pytest.approx(1.25, rel=REL_TRANSPORTE)
     assert estatico.codigo == "E2" and sismico.codigo == "E2"
 
 
@@ -790,6 +957,36 @@ def test_sin_momento_volcante_el_FS_es_infinito_y_no_una_division_por_cero():
     v = verificar_volteo(momento_estabilizante=100.0, momento_volcante=0.0,
                          condicion=CondicionAnalisis.SISMICO)
     assert v.cumple and math.isinf(v.valor_obtenido)
+
+
+def test_los_dos_unicos_inf_deliberados_del_repositorio_siguen_ahi():
+    """
+    EL CONTRAPESO DE SIS-G-01, y por eso vive aqui y no en M7.
+
+    S16.5 puso guardas de finitud a la salida del calculo, y el riesgo obvio
+    de esa clase de guarda es barrer de paso los `inf` que SI significan algo.
+    En este repositorio son exactamente DOS, los dos en M9 y los dos por la
+    misma razon: un FS infinito no es un numero grande, es la AUSENCIA de la
+    solicitacion -- sin momento volcante no hay volteo posible, sin fuerza
+    actuante no hay deslizamiento posible.
+
+    Por eso `M7._exigir_finito` vive solo en M7 y no hay barrido global. Este
+    test fija el censo: si alguna vez alguien generaliza la guarda a todo el
+    calculo, cae aqui antes de llegar a la memoria.
+
+    El docstring de `criterios_adoptados._verificar_finitud` nombraba solo a
+    `verificar_volteo`; son los dos, y S16.5 lo corrigio ahi tambien.
+    """
+    volteo = verificar_volteo(momento_estabilizante=100.0, momento_volcante=0.0,
+                              condicion=CondicionAnalisis.ESTATICO)
+    deslizamiento = verificar_deslizamiento(fuerza_resistente=100.0,
+                                            fuerza_actuante=0.0,
+                                            condicion=CondicionAnalisis.ESTATICO)
+    for v in (volteo, deslizamiento):
+        assert math.isinf(v.valor_obtenido), (
+            "un FS sin solicitacion es infinito a proposito: si esto deja de "
+            "serlo, alguna guarda de finitud se paso de alcance")
+        assert v.cumple
 
 
 def test_el_agregado_devuelve_E1_a_E3_en_una_condicion(geometria):
@@ -834,27 +1031,189 @@ def test_E4_y_E5_tienen_umbral_pero_no_metodo(funcion):
     assert excinfo.value.clave == "metodo_estabilidad_global"
 
 
+# --- E3 deslizamiento: los asserts de VALOR que faltaban (SIS-F-06) --------
+
+def test_deslizamiento_cumple_en_sismico_y_no_en_estatico_con_el_mismo_FS():
+    """
+    Gemelo de `test_volteo_cumple_en_estatico_y_no_en_sismico_con_el_mismo_FS`
+    para E3, que era la unica de las tres filas vivas sin assert de valor
+    (SIS-F-06): FS = F_resistente / F_actuante = 65/50 = 1.30 pasa el umbral
+    sismico (1.25) y no el estatico (1.50).
+    """
+    estatico = verificar_deslizamiento(fuerza_resistente=65.0,
+                                       fuerza_actuante=50.0,
+                                       condicion=CondicionAnalisis.ESTATICO)
+    sismico = verificar_deslizamiento(fuerza_resistente=65.0,
+                                      fuerza_actuante=50.0,
+                                      condicion=CondicionAnalisis.SISMICO)
+
+    assert estatico.valor_obtenido == pytest.approx(1.30, abs=TOL)
+    assert sismico.valor_obtenido == pytest.approx(1.30, abs=TOL)
+    assert estatico.valor_admisible == pytest.approx(
+        FS["deslizamiento"]["estatico"], abs=TOL)
+    assert sismico.valor_admisible == pytest.approx(
+        FS["deslizamiento"]["sismico"], abs=TOL)
+    assert not estatico.cumple and sismico.cumple
+    assert estatico.codigo == "E3" and sismico.codigo == "E3"
+    assert estatico.criterio_aplicado is None
+    assert "39.13.6 a" in estatico.numeral
+
+
+def test_el_FS_de_deslizamiento_es_el_cociente_y_no_el_producto():
+    """
+    El mutante que SIS-F-06 documenta -- `fs = R * A` -- da 4500 donde la
+    division da 1.80. Se fija el cociente con dos pares que comparten
+    producto y no cociente.
+    """
+    uno = verificar_deslizamiento(fuerza_resistente=90.0, fuerza_actuante=50.0,
+                                  condicion=CondicionAnalisis.ESTATICO)
+    otro = verificar_deslizamiento(fuerza_resistente=50.0, fuerza_actuante=90.0,
+                                   condicion=CondicionAnalisis.ESTATICO)
+    assert uno.valor_obtenido == pytest.approx(1.8, abs=TOL)
+    assert otro.valor_obtenido == pytest.approx(0.5555555555555556, abs=TOL)
+    assert uno.cumple and not otro.cumple
+
+
+def test_sin_fuerza_actuante_el_FS_de_deslizamiento_es_infinito():
+    """
+    Gemelo de `test_sin_momento_volcante_el_FS_es_infinito...` para E3: con
+    F_actuante = 0 no hay deslizamiento posible y el FS es infinito. Mata las
+    dos mutaciones de la guarda: `> 0` (que manda el 0.0 a la division) y
+    `< 0` (idem).
+    """
+    v = verificar_deslizamiento(fuerza_resistente=90.0, fuerza_actuante=0.0,
+                                condicion=CondicionAnalisis.SISMICO)
+    assert math.isinf(v.valor_obtenido) and v.valor_obtenido > 0
+    assert v.cumple and v.codigo == "E3"
+
+
+def test_con_fuerza_actuante_negativa_el_FS_de_deslizamiento_sigue_infinito():
+    """La guarda es `<= 0`, no `== 0`: un actuante negativo tampoco desliza."""
+    v = verificar_deslizamiento(fuerza_resistente=90.0, fuerza_actuante=-10.0,
+                                condicion=CondicionAnalisis.ESTATICO)
+    assert math.isinf(v.valor_obtenido) and v.cumple
+
+
+# --- E2 volteo: lo que faltaba del gemelo ----------------------------------
+
+def test_el_volteo_lleva_numeral_de_E050_y_no_criterio_adoptado():
+    """
+    E2 tenia assert de valor pero no de numeral ni de `criterio_aplicado`:
+    los FS de Sec. 9.3 son [N] puros.
+    """
+    v = verificar_volteo(momento_estabilizante=130.0, momento_volcante=100.0,
+                         condicion=CondicionAnalisis.ESTATICO)
+    assert v.criterio_aplicado is None
+    assert "39.13.6 a" in v.numeral
+
+
+def test_el_FS_de_volteo_es_el_cociente_y_no_el_producto():
+    uno = verificar_volteo(momento_estabilizante=200.0, momento_volcante=100.0,
+                           condicion=CondicionAnalisis.ESTATICO)
+    otro = verificar_volteo(momento_estabilizante=100.0, momento_volcante=200.0,
+                            condicion=CondicionAnalisis.ESTATICO)
+    assert uno.valor_obtenido == pytest.approx(2.0, abs=TOL)
+    assert otro.valor_obtenido == pytest.approx(0.5, abs=TOL)
+    assert uno.cumple and not otro.cumple
+
+
+# --- El borde de TOL_UMBRAL_NORMATIVO en _verificacion_por_fs (SIS-F-21) ---
+
+def test_el_borde_de_la_tolerancia_del_umbral_cumple_y_mil_veces_mas_no():
+    """
+    SIS-F-21, la parte de M9. `_verificacion_por_fs` resta la tolerancia del
+    lado ADMISIBLE, que aqui es una cota inferior. La banda
+    [requerido - TOL, requerido) no la alcanza ningun FS de diseno -- 1e-9
+    sobre un FS de orden 1 --, pero SI la alcanza una entrada de unidad, y es
+    lo unico que fija de que lado se aplica la tolerancia.
+
+    Mata tres mutantes de una vez: signo invertido (`requerido + TOL`),
+    tolerancia borrada (`>= requerido`) y comparacion estricta
+    (`> requerido - TOL`).
+    """
+    requerido = fs_requerido(verificacion="deslizamiento",
+                             condicion=CondicionAnalisis.ESTATICO)
+
+    borde = verificar_deslizamiento(
+        fuerza_resistente=requerido - TOL_UMBRAL_NORMATIVO,
+        fuerza_actuante=1.0, condicion=CondicionAnalisis.ESTATICO)
+    assert borde.cumple and borde.codigo == "E3"
+
+    fuera = verificar_deslizamiento(
+        fuerza_resistente=requerido - TOL_MIL_VECES_EL_UMBRAL,
+        fuerza_actuante=1.0, condicion=CondicionAnalisis.ESTATICO)
+    assert not fuera.cumple
+
+
+def test_el_borde_de_la_tolerancia_vale_igual_para_el_volteo():
+    """La banda vive en `_verificacion_por_fs`: E2 y E3 la comparten."""
+    requerido = fs_requerido(verificacion="volteo",
+                             condicion=CondicionAnalisis.SISMICO)
+
+    borde = verificar_volteo(
+        momento_estabilizante=requerido - TOL_UMBRAL_NORMATIVO,
+        momento_volcante=1.0, condicion=CondicionAnalisis.SISMICO)
+    assert borde.cumple and borde.codigo == "E2"
+
+    fuera = verificar_volteo(
+        momento_estabilizante=requerido - TOL_MIL_VECES_EL_UMBRAL,
+        momento_volcante=1.0, condicion=CondicionAnalisis.SISMICO)
+    assert not fuera.cumple
+
+
+# --- El agregado propaga la condicion a las tres filas ---------------------
+
+def test_el_agregado_propaga_la_condicion_a_las_tres_filas(geometria):
+    """
+    Las tres verificaciones tienen que leer el umbral de la MISMA condicion
+    que se le pidio al agregado: con FS entre los dos umbrales, el veredicto
+    de las tres cambia de condicion a condicion.
+    """
+    demandas = dict(geometria=geometria,
+                    q_actuante=100.0, q_ultima=260.0,      # E1 = 2.60
+                    momento_estabilizante=130.0, momento_volcante=100.0,
+                    fuerza_resistente=65.0, fuerza_actuante=50.0)
+
+    sismico = verificar_estabilidad(condicion=CondicionAnalisis.SISMICO,
+                                    **demandas)
+    estatico = verificar_estabilidad(condicion=CondicionAnalisis.ESTATICO,
+                                     **demandas)
+
+    assert [v.valor_obtenido for v in sismico.verificaciones] == [
+        pytest.approx(2.60, abs=TOL), pytest.approx(1.30, abs=TOL),
+        pytest.approx(1.30, abs=TOL)]
+    assert [v.valor_admisible for v in sismico.verificaciones] == [
+        pytest.approx(2.50, abs=TOL), pytest.approx(1.25, abs=TOL),
+        pytest.approx(1.25, abs=TOL)]
+    assert [v.valor_admisible for v in estatico.verificaciones] == [
+        pytest.approx(3.00, abs=TOL), pytest.approx(1.50, abs=TOL),
+        pytest.approx(1.50, abs=TOL)]
+    assert sismico.estable
+    assert [v.codigo for v in estatico.verificaciones_incumplidas] == [
+        "E1", "E2", "E3"]
+
+
 # --- E.050 Art. 20: c y phi no se combinan --------------------------------
 
 def test_en_cohesivo_phi_se_anula():
     c, phi = parametros_resistencia_art20(c=25.0, phi_grados=28.0, cohesivo=True)
-    assert (c, phi) == (25.0, 0.0)
+    assert (c, phi) == pytest.approx((25.0, 0.0), abs=ABS_CERO)
 
 
 def test_en_friccionante_c_se_anula():
     c, phi = parametros_resistencia_art20(c=25.0, phi_grados=32.0, cohesivo=False)
-    assert (c, phi) == (0.0, 32.0)
+    assert (c, phi) == pytest.approx((0.0, 32.0), abs=ABS_CERO)
 
 
 # --- Zapata proxima al talud ----------------------------------------------
 
 def test_N_q_es_cero_en_zapata_proxima_al_talud():
     assert n_q_zapata_en_talud() == pytest.approx(0.0)
-    assert NQ_ZAPATA_EN_TALUD == 0.0
+    assert NQ_ZAPATA_EN_TALUD == pytest.approx(0.0, abs=ABS_CERO)
 
 
 def test_N_s_es_cero_si_B_menor_que_Hs():
-    assert n_s_zapata_en_talud(B=1.6, H_s=3.0, gamma=19.0, c=20.0) == 0.0
+    assert n_s_zapata_en_talud(B=1.6, H_s=3.0, gamma=19.0, c=20.0) == pytest.approx(0.0, abs=ABS_CERO)
 
 
 def test_N_s_es_gamma_Hs_sobre_c_si_B_mayor_o_igual_que_Hs():
@@ -968,7 +1327,7 @@ def test_la_regla_del_mayor_toma_el_aashto_cuando_gobierna():
         assert manda_aashto.adoptado_mm == pytest.approx(40.64)
         assert manda_aashto.origen == "AASHTO"
         # los dos operandos viajan en el resultado, no solo el ganador
-        assert manda_aashto.e060_mm == 40.0
+        assert manda_aashto.e060_mm == pytest.approx(40.0, rel=REL_TRANSPORTE)
     finally:
         ca.establecer_valor_dinamico("categoria_refuerzo_aashto", "A")
 
@@ -1378,3 +1737,1111 @@ def test_los_factores_de_carga_son_tabla_N_mas_eleccion_A():
             assert fila in TABLA_GAMMA_P_FILAS, (
                 f"'{elemento}'/'{carga}' nombra la fila '{fila}', que no "
                 "esta en la Tabla 2.4.5.3.1-2")
+
+
+# ===========================================================================
+# 9.2 - Mononobe-Okabe: LOS SIGNOS (SIS-F-04)
+# ===========================================================================
+# El caso limite de Rankine no prueba los signos: con i = beta = delta = 0 y
+# k_h = k_v = 0 los cuatro cosenos tienen argumento nulo y cos es par, de modo
+# que doce de los quince mutantes de signo de la formula lo dejan intacto
+# hasta el ultimo bit. Los tests de abajo contrastan contra CP-9, que tiene
+# los seis parametros distintos entre si y distintos de cero.
+
+@pytest.mark.parametrize("caso", CP9_MONONOBE_OKABE, ids=lambda c: c["nombre"])
+def test_k_ae_contra_caso_patron_con_los_cuatro_angulos_no_nulos(caso):
+    """
+    EL test de valor de K_AE (Sec. 9.2), el que el caso limite de Rankine no
+    podia ser (SIS-F-04). Dorados en CP-9, recomputados alli con la formula
+    escrita otra vez y sin importar este modulo.
+    """
+    K_AE = k_ae_mononobe_okabe(
+        phi_grados=caso["phi_grados"], i_grados=caso["i_grados"],
+        beta_grados=caso["beta_grados"], delta_grados=caso["delta_grados"],
+        k_h=caso["k_h"], k_v=caso["k_v"])
+    assert K_AE == pytest.approx(caso["K_AE_esperado"],
+                                 rel=CP9_TOLERANCIA_RELATIVA)
+
+
+@pytest.mark.parametrize("caso", CP9_MONONOBE_OKABE, ids=lambda c: c["nombre"])
+def test_k_a_coulomb_contra_caso_patron_con_angulos_no_nulos(caso):
+    """
+    El K_A estatico con i, beta y delta NO nulos: es Coulomb, no Rankine, y
+    hasta hoy no tenia ningun contraste de valor fuera del caso de los tres
+    angulos en cero. Fija las convenciones de angulo sin la cadena sismica de
+    por medio (psi = 0), de modo que un signo que falle aqui es del bloque
+    estatico y no del sismico.
+    """
+    K_A = k_a_coulomb(phi_grados=caso["phi_grados"], i_grados=caso["i_grados"],
+                      beta_grados=caso["beta_grados"],
+                      delta_grados=caso["delta_grados"])
+    assert K_A == pytest.approx(caso["K_A_esperado"],
+                                rel=CP9_TOLERANCIA_RELATIVA)
+
+
+@pytest.mark.parametrize("caso", CP9_MONONOBE_OKABE, ids=lambda c: c["nombre"])
+def test_psi_contra_caso_patron_con_k_v_no_nulo(caso):
+    """
+    psi = arctan[k_h / (1 - k_v)] en grados. Con k_v = 0 el signo del
+    denominador es invisible: los tres casos de CP-9 lo tienen no nulo.
+    """
+    assert angulo_inercia_sismica(k_h=caso["k_h"], k_v=caso["k_v"]) == (
+        pytest.approx(caso["psi_esperado"], rel=CP9_TOLERANCIA_RELATIVA))
+
+
+@pytest.mark.parametrize("caso", CP9_MONONOBE_OKABE, ids=lambda c: c["nombre"])
+def test_empuje_mononobe_okabe_empaqueta_los_dorados_de_cp9(caso):
+    """
+    El objeto que viaja a la memoria lleva los tres numeros contrastados y no
+    solo K_AE: si `empuje_mononobe_okabe` cableara mal cualquiera de los tres,
+    la memoria publicaria un coeficiente que nadie recalculo.
+    """
+    mo = empuje_mononobe_okabe(
+        phi_grados=caso["phi_grados"], i_grados=caso["i_grados"],
+        beta_grados=caso["beta_grados"], delta_grados=caso["delta_grados"],
+        k_h=caso["k_h"], k_v=caso["k_v"])
+    assert mo.K_AE == pytest.approx(caso["K_AE_esperado"], rel=CP9_TOLERANCIA_RELATIVA)
+    assert mo.K_A == pytest.approx(caso["K_A_esperado"], rel=CP9_TOLERANCIA_RELATIVA)
+    assert mo.psi_grados == pytest.approx(caso["psi_esperado"], rel=CP9_TOLERANCIA_RELATIVA)
+    assert mo.incremento == pytest.approx(
+        caso["K_AE_esperado"] - caso["K_A_esperado"], rel=CP9_TOLERANCIA_RELATIVA)
+
+
+@pytest.mark.parametrize("caso", CP9_MONONOBE_OKABE, ids=lambda c: c["nombre"])
+def test_el_corchete_es_1_mas_R_de_aashto_y_no_1_menos_R_del_manual(caso):
+    """
+    El denominador lleva [1 + R] (AASHTO, Art. A11.3.1, ec. A11.3.1-1) y NO
+    el [1 - R] que el Manual de Puentes imprime por errata (Apendice A11,
+    num. A.11.3.1, pag. impresa 586). La declaracion completa esta en
+    `constantes_normativas.K_AE_ERRATA_MANUAL` y en el docstring de
+    `k_ae_mononobe_okabe`.
+
+    Este test existe para que "corregir" el mas a menos falle en rojo: el
+    dorado de la errata esta en CP-9 y el modulo no puede producirlo. Con
+    estos angulos el [1 - R] da entre 8 y 126 veces el valor correcto.
+    """
+    K_AE = k_ae_mononobe_okabe(
+        phi_grados=caso["phi_grados"], i_grados=caso["i_grados"],
+        beta_grados=caso["beta_grados"], delta_grados=caso["delta_grados"],
+        k_h=caso["k_h"], k_v=caso["k_v"])
+    assert K_AE == pytest.approx(caso["K_AE_esperado"], rel=CP9_TOLERANCIA_RELATIVA)
+    assert K_AE != pytest.approx(caso["K_AE_errata_1_menos_R_esperado"], rel=1e-3)
+
+
+def test_la_errata_1_menos_R_daria_el_reciproco_de_rankine():
+    """
+    Por que el [1 - R] del Manual es errata de imprenta y no una variante
+    peruana: en el caso limite (i = beta = delta = 0, k_h = k_v = 0) la
+    formula con [1 - R] no da un valor "parecido" al Ka de Rankine, da su
+    RECIPROCO exacto -- (1+sen phi)/(1-sen phi) en vez de
+    (1-sen phi)/(1+sen phi) --, es decir un empuje activo mayor que 1. El
+    modulo tiene que dar Ka, no 1/Ka.
+    """
+    for phi, ka_dorado, errata in zip(
+            CP9_RANKINE_LIMITE["phi_casos"],
+            CP9_RANKINE_LIMITE["Ka_rankine_esperado"],
+            CP9_RANKINE_LIMITE["K_AE_errata_1_menos_R_esperado"]):
+        K_AE = k_ae_mononobe_okabe(phi_grados=phi, i_grados=0.0,
+                                   beta_grados=0.0, delta_grados=0.0,
+                                   k_h=0.0, k_v=0.0)
+        # el Ka de Rankine tambien contra dorado, y no solo como patron movil:
+        # hasta hoy `ka_rankine` no tenia ningun test de valor propio
+        assert ka_rankine(phi_grados=phi) == pytest.approx(
+            ka_dorado, rel=CP9_TOLERANCIA_RELATIVA)
+        assert K_AE == pytest.approx(ka_dorado, rel=CP9_TOLERANCIA_RELATIVA)
+        assert K_AE != pytest.approx(errata, rel=1e-3)
+        assert errata * ka_dorado == pytest.approx(1.0, rel=1e-12)
+
+
+def test_convenciones_de_i_beta_y_k_v_van_en_la_direccion_declarada():
+    """
+    Red secundaria y documentacion ejecutable de las convenciones que el
+    docstring declara: i sobre la HORIZONTAL, beta sobre la VERTICAL positiva
+    cuando el muro se aleja del relleno, k_v en el denominador de psi. Los
+    tres aumentan K_AE. No se afirma nada sobre delta: K_AE NO es monotono en
+    delta (con beta = 20 tiene un minimo cerca de delta = 5 grados y crece
+    despues), y por eso `test_delta_mayor_reduce_k_ae` solo vale en su propia
+    configuracion.
+
+    LOS SEIS PARAMETROS SE LEEN DE CP9_MONONOBE_OKABE y no se escriben aqui.
+    Estaban duplicados como literales --- los mismos seis numeros de CP9-A,
+    digito a digito --- y eso es el defecto SIS-F-14: corregir el fixture no
+    llegaba a este test. La resolucion de la fila 7 de la hoja `Conflictos`
+    es vinculante y dice exactamente "hacer que los tests de M9 lean del
+    fixture en vez de literales".
+    """
+    base = {clave: CP9_MONONOBE_OKABE[0][clave]
+            for clave in ("phi_grados", "i_grados", "beta_grados",
+                          "delta_grados", "k_h", "k_v")}
+    referencia = k_ae_mononobe_okabe(**base)
+    # Las perturbaciones SI son del test --- no son dorados, son "un poco mas
+    # que el caso" --- y se derivan del propio caso para que no queden
+    # colgando de un numero fijo si el fixture cambia de configuracion.
+    mas = lambda clave, delta: {**base, clave: base[clave] + delta}   # noqa: E731
+    assert k_ae_mononobe_okabe(**mas("i_grados", 7.0)) > referencia
+    assert k_ae_mononobe_okabe(**mas("beta_grados", 8.0)) > referencia
+    assert k_ae_mononobe_okabe(**mas("k_v", 0.15)) > referencia
+    assert k_ae_mononobe_okabe(**mas("k_h", 0.10)) > referencia
+
+
+# ---------------------------------------------------------------------------
+# E6 y la presion de contacto: la fila que no tenia NI UNA llamada en la suite
+# ---------------------------------------------------------------------------
+# Hallazgo abierto en S16 al cerrar SIS-F-06, sin ID de auditoria propio: un
+# sondeo de llamadas sobre la suite entera daba CERO para
+# `presion_contacto_base`, `excentricidad_resultante`,
+# `excentricidad_admisible_sismica`, `verificar_excentricidad_sismica` y
+# `gamma_eq`. La fila E6 completa y el productor del `q_actuante` que consume
+# E1 no se ejercitaban nunca.
+#
+# Que esten en `M9.FUNCIONES_SIN_CONSUMIDOR` no los exime: esa declaracion
+# dice que la CLI no los ensambla todavia -- heredan el vacio de
+# 'predimensionamiento_cabezal' y de 'gamma_EQ' --, no que no haya que
+# probarlos. En ese mismo diccionario estan `verificar_estabilidad`,
+# `empujes_trasdos` y `peso_propio_cabezal`, que si tienen tests.
+
+def test_la_presion_de_contacto_en_suelo_es_uniforme_sobre_el_ancho_efectivo():
+    """
+    Suelo, resultante dentro del nucleo: Meyerhof reparte la normal sobre el
+    ancho EFECTIVO B - 2e, no sobre B, y la presion es uniforme.
+    """
+    p = presion_contacto_base(N=200.0, momento_neto=40.0, B=1.60,
+                              cimentacion_en_roca=False)
+    assert p.e == pytest.approx(0.20, abs=TOL)
+    assert p.ancho_efectivo == pytest.approx(1.20, abs=TOL)
+    assert p.q_max == pytest.approx(166.66666666666666, abs=1e-9)
+    assert p.q_min == pytest.approx(p.q_max, abs=TOL)
+    assert "uniforme" in p.distribucion
+
+
+def test_en_roca_las_dos_ramas_empalman_en_el_borde_del_nucleo():
+    """
+    El docstring lo afirma y nadie lo comprobaba: en e = B/6 la expresion
+    trapecial y la triangular dan el mismo q_max = 2N/B, con q_min = 0.
+    Es el unico punto donde las dos ramas tienen que coincidir, y por eso es
+    el que fija que ninguna de las dos esta escrita al reves.
+    """
+    B, N = 1.60, 200.0
+    p = presion_contacto_base(N=N, momento_neto=(B / 6) * N, B=B,
+                              cimentacion_en_roca=True)
+    assert p.q_max == pytest.approx(2 * N / B, abs=1e-9)
+    assert p.q_min == pytest.approx(0.0, abs=1e-9)
+
+
+def test_en_roca_fuera_del_nucleo_la_distribucion_es_triangular():
+    p = presion_contacto_base(N=200.0, momento_neto=60.0, B=1.60,
+                              cimentacion_en_roca=True)
+    assert not p.dentro_del_nucleo
+    assert p.q_max == pytest.approx(266.6666666666667, abs=1e-9)
+    assert p.q_min == pytest.approx(0.0, abs=TOL)
+
+
+def test_la_resultante_fuera_de_la_zapata_no_es_factible():
+    """e > B/2: la resultante cae fuera de la base y no hay contacto que repartir."""
+    with pytest.raises(DisenoNoFactibleError):
+        presion_contacto_base(N=200.0, momento_neto=160.0, B=1.60,
+                              cimentacion_en_roca=False)
+
+
+def test_una_normal_no_comprimida_es_dato_invalido():
+    with pytest.raises(DatoInvalidoError):
+        excentricidad_resultante(N=-1.0, momento_neto=10.0, B=1.60)
+
+
+def test_E6_interpola_el_limite_de_excentricidad_entre_B_tercios_y_04B():
+    """
+    El limite sismico de la excentricidad NO es "el tercio central" a secas
+    -- esa es la tercera errata del Manual en esta cadena --: depende de
+    gamma_EQ, y es la unica de las tres que MUEVE un numero.
+    """
+    B = 1.60
+    assert excentricidad_admisible_sismica(B=B, gamma_EQ=0.0) == pytest.approx(
+        B / 3, abs=TOL)
+    assert excentricidad_admisible_sismica(B=B, gamma_EQ=1.0) == pytest.approx(
+        0.4 * B, abs=TOL)
+    assert excentricidad_admisible_sismica(B=B, gamma_EQ=0.5) == pytest.approx(
+        0.5866666666666668, abs=TOL)
+
+
+def test_E6_cumple_dentro_del_limite_y_no_fuera():
+    v = verificar_excentricidad_sismica(N=200.0, momento_neto=40.0, B=1.60,
+                                        gamma_EQ=0.0)
+    assert v.cumple and v.codigo == "E6" and v.criterio_aplicado == "gamma_EQ"
+    assert v.valor_obtenido == pytest.approx(0.20, abs=TOL)
+    assert v.valor_admisible == pytest.approx(1.60 / 3, abs=TOL)
+
+    fuera = verificar_excentricidad_sismica(N=200.0, momento_neto=120.0,
+                                            B=1.60, gamma_EQ=0.0)
+    assert not fuera.cumple
+    assert fuera.valor_obtenido == pytest.approx(0.60, abs=TOL)
+
+
+def test_un_gamma_EQ_fuera_de_la_tabla_es_dato_invalido():
+    with pytest.raises(DatoInvalidoError):
+        verificar_excentricidad_sismica(N=200.0, momento_neto=10.0, B=1.60,
+                                        gamma_EQ=1.5)
+
+
+# ===========================================================================
+# SIS-F-10 (cluster C09) - LAS GUARDAS DE `ErrorProyecto` DE M9, EJERCITADAS
+# ===========================================================================
+# El hallazgo dice "trece raise de ErrorProyecto sin ninguna cobertura, dos de
+# ellos alcanzables con una llamada normal". Medida de nuevo sobre el arbol de
+# esta sesion la cuenta es mayor, y M9 es el modulo que mas aporta: treinta y
+# tres `raise` que ninguna prueba ejecutaba.
+#
+# QUE PRUEBA CADA UNO DE ESTOS TESTS, y por que no basta con `pytest.raises`
+# a secas: una guarda sin cobertura puede estar rota de tres formas que la
+# suite verde no distingue -- no dispararse nunca (y dejar pasar el dato
+# malo), disparar la excepcion EQUIVOCADA (y la GUI la muestra como fallo del
+# programa en vez de como problema del expediente), o disparar la correcta con
+# un motivo que no dice QUE hay que corregir. Por eso cada caso afirma las
+# tres cosas: la CLASE, el `campo` cuando la excepcion lo lleva, y un trozo
+# del motivo que explica POR QUE se detuvo.
+#
+# Los valores con que se provocan las detenciones son DE PRUEBA, no de
+# proyecto: entran por `_declarar_criterio` (monkeypatch sobre `CRITERIOS`) o
+# por `establecer_valor_dinamico` con su retirada en `finally`, nunca
+# escribiendo nada en criterios_adoptados.py.
+
+# Los dos criterios que el conftest declara EN CALIENTE para toda la corrida:
+# sobre estos, parchear `CRITERIOS` no cambia nada, porque `ca.valor` mira
+# primero `_OVERRIDES`. Se declaran y se retiran por el mismo camino que usan
+# la GUI y la CLI.
+_CRITERIOS_DECLARADOS_EN_LA_CORRIDA = (M9.CRITERIO_CATEGORIA_REFUERZO,
+                                       M9.CRITERIO_EXPOSICION_QUIMICA)
+
+
+@contextmanager
+def _con_criterios(monkeypatch, declaraciones):
+    """
+    Declara varios criterios a la vez con valores DE PRUEBA y los devuelve a
+    su estado anterior al salir, tome cada uno el camino que tome.
+    """
+    previos = {}
+    for clave, valor in declaraciones.items():
+        if clave in _CRITERIOS_DECLARADOS_EN_LA_CORRIDA:
+            previos[clave] = ca.valores_dinamicos().get(clave)
+            ca.establecer_valor_dinamico(clave, valor)
+        else:
+            _declarar_criterio(monkeypatch, clave, valor)
+    try:
+        yield
+    finally:
+        for clave, previo in previos.items():
+            if previo is None:
+                ca.quitar_valor_dinamico(clave)
+            else:
+                ca.establecer_valor_dinamico(clave, previo)
+
+
+# ---------------------------------------------------------------------------
+# 9.2 - La declaracion de filas de F_pga y la lectura de sus rotulos extremos
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("declarado, motivo_esperado", [
+    ("C", "tupla de filas"),                 # una cadena NO es una tupla de filas
+    (1.0, "tupla de filas"),                 # el defecto viejo: el factor ya resuelto
+    ((), "no declara ninguna fila"),
+    (("Z",), "no es una fila de"),
+    (("C", "Z"), "no es una fila de"),        # basta que UNA no exista
+    (("F",), "no trae factor"),
+    (("C", "F"), "no trae factor"),           # basta que UNA sea la fila del asterisco
+], ids=["cadena", "factor_resuelto", "vacia", "fila_inexistente",
+        "una_fila_inexistente", "fila_F", "una_fila_F"])
+def test_la_declaracion_de_filas_de_F_pga_se_rechaza_entera(
+        monkeypatch, declarado, motivo_esperado):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `clases_de_sitio_plausibles` aceptara una
+    declaracion que no es "la tupla de filas de la tabla". Las cuatro formas
+    de declararla mal no son intercambiables -- un factor ya resuelto (el
+    defecto NOR-MEM-03 que el reparto R1 vino a cerrar), una tupla vacia, una
+    fila que la tabla no tiene, y la fila F, que la fuente marca con asterisco
+    y cuya Nota 2 exige estudio de respuesta dinamica de sitio en vez de dar
+    un numero --, y cada una tiene que decir cual es.
+
+    Si una sola de ellas dejara de detenerse, la cadena sismica entera saldria
+    de un F_pga que nadie leyo de la tabla.
+    """
+    with _con_criterios(monkeypatch, {M9.CRITERIO_F_PGA: declarado}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            clases_de_sitio_plausibles()
+    assert exc.value.campo == M9.CRITERIO_F_PGA
+    assert motivo_esperado in exc.value.motivo
+    # y la fila del asterisco se rechaza por lo que ES, no por su nombre
+    if motivo_esperado == "no trae factor":
+        assert F_PGA_EXIGE_ESTUDIO_DE_SITIO in F_PGA_TABLA[exc.value.valor]
+
+
+@pytest.mark.parametrize("clase, lectura, campo, motivo_esperado", [
+    ("Z", LECTURA_COLUMNA_EXTREMA_INCLUSIVE, "clase", "no es una fila de"),
+    ("C", "a_ojo", "lectura_extremos", "tiene que ser una de"),
+    ("F", LECTURA_COLUMNA_EXTREMA_INCLUSIVE, "clase", "no tiene factor tabulado"),
+], ids=["fila_inexistente", "lectura_inventada", "fila_F"])
+def test_factor_sitio_desde_tabla_rechaza_la_fila_y_la_lectura_inexistentes(
+        clase, lectura, campo, motivo_esperado):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que la lectura de UNA fila de la tabla
+    aceptara una fila que no existe, una lectura de rotulos que no es ninguna
+    de las dos declarables, o la fila F -- que no tiene numero que leer --.
+    La tercera sale con la MISMA excepcion que en `clases_de_sitio_plausibles`
+    y es deliberado: el hecho es el mismo y dos excepciones distintas para un
+    mismo hecho obligarian a quien atrapa a saber por cual de las dos puertas
+    entro.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        factor_sitio_desde_tabla(clase=clase, PGA=F_PGA_TABLA_PGA_COLUMNAS[-1],
+                                 lectura_extremos=lectura)
+    assert exc.value.campo == campo
+    assert motivo_esperado in exc.value.motivo
+
+
+@pytest.mark.parametrize("extremo", [0, -1], ids=["rotulo_inferior",
+                                                  "rotulo_superior"])
+def test_la_lectura_estricta_detiene_en_los_dos_rotulos_extremos(extremo):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que con la lectura 'limite_estricto' el
+    modulo eligiera una columna igual. Los dos rotulos extremos de la tabla
+    son desigualdades ESTRICTAS ("PGA < 0.10" y "PGA > 0.50") y el PGA de este
+    proyecto cae justo sobre el superior (NOR-PUE-11): con esa lectura no hay
+    columna que leer ni dos valores entre los que interpolar, y el calculo se
+    detiene en vez de elegir por el proyectista.
+
+    El contraste con la otra lectura va en el mismo test a proposito: es lo
+    que demuestra que la declaracion NO es neutra.
+    """
+    PGA = F_PGA_TABLA_PGA_COLUMNAS[extremo]
+    with pytest.raises(DisenoNoFactibleError) as exc:
+        factor_sitio_desde_tabla(clase="D", PGA=PGA,
+                                 lectura_extremos=LECTURA_COLUMNA_EXTREMA_ESTRICTA)
+    assert "rotulo extremo" in exc.value.motivo
+    assert "desigualdades" in exc.value.motivo
+    # con la lectura que este proyecto declara, el mismo PGA SI lee columna
+    assert factor_sitio_desde_tabla(
+        clase="D", PGA=PGA,
+        lectura_extremos=LECTURA_COLUMNA_EXTREMA_INCLUSIVE) == pytest.approx(
+            F_PGA_TABLA["D"][extremo], rel=REL_TRANSPORTE)
+
+
+def test_la_lectura_de_los_rotulos_extremos_no_admite_un_tercer_nombre(
+        monkeypatch):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `lectura_columna_extrema` devolviera lo
+    que el criterio diga, sin comprobar que es una de las dos lecturas
+    declarables. Un nombre inventado llegaria a `factor_sitio_desde_tabla`, no
+    coincidiria con 'limite_estricto' y se comportaria en silencio como
+    'limite_inclusive': la declaracion dejaria de significar nada.
+    """
+    with _con_criterios(monkeypatch, {M9.CRITERIO_F_PGA_LECTURA: "a_ojo"}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            lectura_columna_extrema()
+    assert exc.value.campo == M9.CRITERIO_F_PGA_LECTURA
+    assert "tiene que ser una de" in exc.value.motivo
+    assert all(x in exc.value.motivo for x in LECTURAS_COLUMNA_EXTREMA)
+
+
+@pytest.mark.parametrize("filas", [("B", "C"), ("A", "D", "E"), ("C", "A")],
+                         ids=["roca_y_suelo", "roca_y_dos_suelos",
+                              "suelo_y_roca"])
+def test_una_declaracion_mixta_de_roca_y_suelo_no_elige_rama(monkeypatch, filas):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `cimentacion_en_roca` resolviera una
+    declaracion mixta por mayoria o por el lado conservador. El
+    num. 2.8.1.1.14.2.1 da a cada grupo una expresion distinta de k_h0
+    (`K_H0_FACTOR_ROCA_A_B` multiplica en una y no en la otra), de modo que
+    elegir una seria decidir por el proyectista en el eslabon del que cuelga
+    la cadena sismica entera.
+    """
+    with _con_criterios(monkeypatch, {M9.CRITERIO_F_PGA: filas}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            cimentacion_en_roca()
+    assert exc.value.campo == M9.CRITERIO_F_PGA
+    assert "mezcla filas de roca" in exc.value.motivo
+    assert "expresion" in exc.value.motivo
+
+
+@pytest.mark.parametrize("filas, en_roca", [
+    (F_PGA_CLASES_EN_ROCA, True),
+    (("C", "D", "E"), False),
+], ids=["todas_roca", "todas_suelo"])
+def test_una_declaracion_homogenea_si_resuelve_la_rama(monkeypatch, filas,
+                                                       en_roca):
+    """
+    El reverso del test anterior: la detencion no puede ser el unico camino.
+    Con las filas todas de roca la clausula del numeral se activa, y con las
+    filas todas de suelo se descarta de forma trazable -- que es lo que
+    pedian MAT-O4 y NOR-PUE-12 --.
+    """
+    with _con_criterios(monkeypatch, {M9.CRITERIO_F_PGA: filas}):
+        assert cimentacion_en_roca() is en_roca
+
+
+@pytest.mark.parametrize("declarado", ["0.15", True, [0.15], (0.15,)],
+                         ids=["texto", "booleano", "lista", "tupla"])
+def test_k_v_solo_admite_la_cadena_prescrita_o_un_numero(monkeypatch,
+                                                         declarado):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que 'k_v' aceptara cualquier cosa. El
+    criterio declara UNA de dos cosas -- el regimen prescrito, y entonces rige
+    el cero [N] del num. 2.8.1.1.14.2.1, o el numero que el proyectista aporta
+    para el caso que ese numeral reserva y no cuantifica --, y el booleano
+    entra en la lista porque en Python `True` es un entero: sin la
+    comprobacion explicita de `bool`, un 'k_v' declarado a `True` se
+    convertiria en k_v = 1.0 y con el psi = 90 grados.
+    """
+    with _con_criterios(monkeypatch, {M9.CRITERIO_K_V: declarado}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            coeficiente_sismico_vertical()
+    assert exc.value.campo == M9.CRITERIO_K_V
+    assert K_V_DECLARACION_PRESCRITO in exc.value.motivo
+    assert "reserva" in exc.value.motivo
+
+
+def test_k_v_declarado_como_numero_para_el_caso_reservado_si_se_devuelve(
+        monkeypatch):
+    """
+    El reverso: el numeral reserva dos casos y no los cuantifica, asi que un
+    k_v numerico declarado por el proyectista es una declaracion VALIDA y
+    tiene que llegar al calculo. Si esta rama se rompiera, el unico k_v
+    posible seria el cero y el caso reservado no seria representable.
+    """
+    k_v_de_prueba = 0.25
+    with _con_criterios(monkeypatch, {M9.CRITERIO_K_V: k_v_de_prueba}):
+        assert coeficiente_sismico_vertical() == pytest.approx(
+            k_v_de_prueba, rel=REL_TRANSPORTE)
+
+
+# ---------------------------------------------------------------------------
+# 9.2 - El dominio de Mononobe-Okabe: los cosenos del denominador
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("angulos, coseno_roto", [
+    (dict(phi_grados=34.0, i_grados=0.0, beta_grados=45.0, delta_grados=60.0,
+          k_h=0.50, k_v=0.0), "delta+beta+psi"),
+    (dict(phi_grados=34.0, i_grados=100.0, beta_grados=0.0, delta_grados=0.0,
+          k_h=0.0, k_v=0.0), "i-beta"),
+    (dict(phi_grados=34.0, i_grados=0.0, beta_grados=0.0, delta_grados=-70.0,
+          k_h=0.50, k_v=1.50), "psi"),
+], ids=["delta_mas_beta_mas_psi", "i_menos_beta", "psi"])
+def test_un_coseno_no_positivo_del_denominador_detiene_mononobe_okabe(
+        angulos, coseno_roto):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que la formula siguiera adelante con un
+    coseno nulo o negativo en el denominador. Los tres cosenos --
+    cos(psi), cos(delta+beta+psi) y cos(i-beta) -- multiplican abajo, y uno
+    negativo no da un K_AE grande: da un K_AE con el SIGNO cambiado, que
+    aguas abajo se convierte en un empuje que empuja al reves. Tiene que
+    salir como `DisenoNoFactibleError` con los tres angulos impresos, nunca
+    como un numero.
+
+    LOS TRES CASOS SON DISTINTOS a proposito, porque la guarda es un `or` de
+    tres condiciones y cualquiera de las tres podria estar rota sola:
+      * delta+beta+psi > 90 grados, con un trasdos muy inclinado y friccion
+        muro-suelo alta;
+      * i-beta > 90 grados, con un relleno mas empinado que el trasdos;
+      * psi > 90 grados, que exige k_v > 1 -- una aceleracion vertical mayor
+        que g --, fisicamente absurdo pero declarable por error.
+
+    POR QUE psi = 90 EXACTO NO SIRVE PARA CUBRIR ESTA GUARDA, y no se usa:
+    con k_v = 1 el psi que devuelve `angulo_inercia_sismica` es 90 grados
+    exactos, pero `cos(radians(90))` vale 6.12e-17 y no cero, de modo que
+    `cos_psi <= 0` es falso y la ejecucion cae en la guarda siguiente. Eso es
+    MAT-O18 y se corrige en produccion, no aqui: este test cubre la rama por
+    la puerta que hoy existe y no toca el modulo.
+
+    EL CASO [psi] LLEVA delta = -70 Y NO delta = 0, y la razon es que la
+    primera version de este test estaba VERDE POR OTRA RAZON QUE LA QUE dice.
+    Con delta = 0 y k_v = 1.50, psi = 135 grados: cos_psi = -0.707, pero
+    tambien cos(delta+beta+psi) = cos(135) = -0.707, de modo que el `or`
+    cortaba por el SEGUNDO termino y el primero --- `cos_psi <= 0` --- era
+    codigo muerto para la suite. Medido: borrarlo entero dejaba la suite en
+    verde. Con delta = -70, cos_psi sigue en -0.707 y cos_dbp sube a +0.423:
+    el termino queda aislado.
+
+    Y el assert cambia con el: `coseno_roto in motivo` era trivialmente
+    cierto para "psi", porque el mensaje imprime `psi = ...` en los tres
+    casos. Se comprueba ahora el VALOR del coseno que rompio, que es lo que
+    distingue una guarda de otra.
+    """
+    with pytest.raises(DisenoNoFactibleError) as exc:
+        k_ae_mononobe_okabe(**angulos)
+    assert "algun coseno del denominador" in exc.value.motivo
+    assert coseno_roto in exc.value.motivo
+
+
+def test_cada_termino_de_la_guarda_de_cosenos_esta_aislado():
+    """
+    El complemento del test de arriba: cada uno de los tres terminos del `or`
+    tiene un caso donde es el UNICO no positivo. Sin esta comprobacion, un
+    caso donde dos cosenos son negativos a la vez deja el otro termino como
+    codigo muerto sin que nada lo diga --- que es exactamente lo que pasaba.
+    """
+    casos = {
+        "psi": dict(phi_grados=34.0, i_grados=0.0, beta_grados=0.0,
+                    delta_grados=-70.0, k_h=0.50, k_v=1.50),
+        "delta+beta+psi": dict(phi_grados=34.0, i_grados=0.0, beta_grados=45.0,
+                               delta_grados=60.0, k_h=0.50, k_v=0.0),
+        "i-beta": dict(phi_grados=34.0, i_grados=100.0, beta_grados=0.0,
+                       delta_grados=0.0, k_h=0.0, k_v=0.0),
+    }
+    for esperado, a in casos.items():
+        psi = angulo_inercia_sismica(k_h=a["k_h"], k_v=a["k_v"])
+        cos = {
+            "psi": math.cos(math.radians(psi)),
+            "delta+beta+psi": math.cos(
+                math.radians(a["delta_grados"] + a["beta_grados"] + psi)),
+            "i-beta": math.cos(
+                math.radians(a["i_grados"] - a["beta_grados"])),
+        }
+        no_positivos = [nombre for nombre, v in cos.items() if v <= 0]
+        assert no_positivos == [esperado], (
+            f"el caso de '{esperado}' tiene {no_positivos} no positivos: si "
+            "hay mas de uno, el `or` corta por el primero y los demas "
+            f"terminos quedan sin cubrir. Cosenos: {cos}")
+
+
+# ---------------------------------------------------------------------------
+# 9.2 - Las dos lagunas de las tablas de h_eq de AASHTO 3.11.6.4
+# ---------------------------------------------------------------------------
+
+def test_una_distancia_al_borde_de_calzada_negativa_es_dato_invalido(
+        monkeypatch):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que una distancia negativa del trasdos al
+    borde de calzada se leyera como la columna "0.0 ft". Un negativo no es un
+    cero medido con ruido: es un dato del expediente que hay que CORREGIR, y
+    por eso sale como `DatoInvalidoError` con el nombre de la columna, y no
+    como una lectura de tabla.
+    """
+    _declarar_orientacion(monkeypatch, ORIENTACION_PARALELO_AL_TRAFICO)
+    _declarar_borde(monkeypatch, -0.50)
+    with pytest.raises(DatoInvalidoError) as exc:
+        h_eq_sobrecarga_trasdos(altura_muro_total=2.00)
+    assert exc.value.campo == "distancia_borde_calzada_al_trasdos_m"
+    assert "no puede ser negativa" in exc.value.motivo
+
+
+@pytest.mark.parametrize("regla", [M9.H_EQ_BANDA_INTERPOLA, "a_ojo"],
+                         ids=["interpolar_sin_regla_escrita", "regla_inventada"])
+def test_la_banda_del_borde_solo_se_lee_con_la_columna_cero_declarada(
+        monkeypatch, regla):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que la banda abierta 0 < d < 1.0 ft de la
+    Tabla 3.11.6.4-2 se resolviera con cualquier declaracion. La tabla tiene
+    DOS columnas y nada en medio, y la unica interpolacion que AASHTO autoriza
+    es la de ALTURAS. De las dos lecturas que el criterio nombra, solo
+    'columna_cero' esta implementada: 'interpolar_entre_columnas' exige ademas
+    ESCRIBIR la regla de interpolacion, que la fuente no da, y mientras no se
+    escriba el calculo se detiene en vez de inventarla.
+    """
+    _declarar_orientacion(monkeypatch, ORIENTACION_PARALELO_AL_TRAFICO)
+    _declarar_borde(monkeypatch, 0.15)
+    with _con_criterios(monkeypatch, {M9.CRITERIO_H_EQ_BANDA_BORDE: regla}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            h_eq_sobrecarga_trasdos(altura_muro_total=2.00)
+    assert exc.value.campo == M9.CRITERIO_H_EQ_BANDA_BORDE
+    assert "la fuente no da" in exc.value.motivo
+
+
+def test_la_regla_bajo_la_primera_fila_solo_admite_las_dos_declaradas(
+        monkeypatch):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `_interpolar_h_eq` aceptara cualquier
+    rotulo en 'h_eq_bajo_altura_tabulada' y, al no coincidir con ninguna de
+    las dos lecturas implementadas, siguiera adelante devolviendo lo que
+    tocara. Por debajo de la primera fila (5.0 ft) no hay fila con que
+    interpolar: la laguna la cierra una declaracion, y una declaracion que no
+    se entiende no es una declaracion.
+    """
+    _declarar_orientacion(monkeypatch, ORIENTACION_PERPENDICULAR_AL_TRAFICO)
+    with _con_criterios(monkeypatch, {M9.CRITERIO_H_EQ_BAJO_TABLA: "a_ojo"}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            h_eq_sobrecarga_trasdos(altura_muro_total=1.20)
+    assert exc.value.campo == M9.CRITERIO_H_EQ_BAJO_TABLA
+    assert M9.H_EQ_BAJO_TABLA_PRIMERA_FILA in exc.value.motivo
+    assert M9.H_EQ_BAJO_TABLA_EXTRAPOLAR in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# 9.2 - El piso estatico de P_seis se identifica por NOMBRE
+# ---------------------------------------------------------------------------
+
+def test_el_piso_estatico_tiene_que_nombrar_una_combinacion_que_existe(
+        monkeypatch):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `demanda_sismica_cabezal` confiara en que
+    `P_SEIS_PISO_ESTATICO` coincide con el nombre de una de las combinaciones
+    de `P_SEIS_COMBINACIONES`. Si las dos constantes se desincronizaran -- al
+    reescribir un nombre de combinacion, por ejemplo --, el piso del empuje
+    activo estatico que exige el num. 2.8.1.1.14.1 no se aplicaria A NINGUNA
+    combinacion, EN SILENCIO y en la direccion no conservadora.
+
+    La desincronizacion se simula parcheando la constante en el modulo, que es
+    exactamente el accidente contra el que la guarda existe.
+    """
+    nombres = [nombre for nombre, _, _ in M9.P_SEIS_COMBINACIONES]
+    assert M9.P_SEIS_PISO_ESTATICO in nombres      # el invariante que protege
+    monkeypatch.setattr(M9, "P_SEIS_PISO_ESTATICO",
+                        "un nombre que la tabla no tiene")
+    inercia = fuerza_inercia_muro(k_h=0.50, W_w=100.0, W_s=50.0)
+    with pytest.raises(DatoInvalidoError) as exc:
+        demanda_sismica_cabezal(P_AE=100.0, P_A=40.0, inercia=inercia)
+    assert exc.value.campo == "P_SEIS_PISO_ESTATICO"
+    assert "no se estaria aplicando a ninguna" in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# 9.3 - La excentricidad exige una base con ancho
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("B", [0.0, -1.60], ids=["ancho_nulo",
+                                                 "ancho_negativo"])
+def test_un_ancho_de_zapata_no_positivo_es_dato_invalido(B):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `excentricidad_resultante` devolviera
+    igual `|momento/N|` con un B nulo o negativo. La excentricidad se compara
+    despues contra un limite que es una fraccion de B (`B/3`, `0.4*B`), de
+    modo que con B <= 0 la verificacion E6 pasaria a compararse contra un
+    limite nulo o negativo y "cumpliria" o "no cumpliria" por una razon que no
+    tiene nada que ver con la estabilidad. El gemelo con N <= 0 ya tiene su
+    test; este cubre el otro operando.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        excentricidad_resultante(N=200.0, momento_neto=40.0, B=B)
+    assert exc.value.campo == "B"
+    assert "positivo" in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# 9.2 - Los factores de carga: la eleccion de fila de gamma_p
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("eleccion", [
+    {"tmc": {"EV": "EV_flexibles_entre_otros"}},      # falta el cabezal
+    "EV_muros_y_estribos_de_retencion",               # no es un mapa
+    {M9.ELEMENTO_CABEZAL: "EV_muros_y_estribos_de_retencion"},   # el cabezal no es un mapa
+], ids=["sin_cabezal", "no_es_mapa", "cabezal_no_es_mapa"])
+def test_la_eleccion_de_filas_de_gamma_p_tiene_que_describir_al_cabezal(
+        monkeypatch, eleccion):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `factores_de_carga` bajara a la Tabla
+    2.4.5.3.1-2 sin saber que fila describe al cabezal. La declaracion [A]
+    dice de que FILA cuelga cada estructura, y sin la entrada del cabezal el
+    modulo no tiene con que elegir: con `.get()` a secas eso habria dado None
+    y un AttributeError mas abajo -- un fallo del programa en vez de un
+    problema del expediente, que es justo la frontera que la taxonomia de
+    excepciones existe para mantener.
+    """
+    with _con_criterios(monkeypatch, {M9.CRITERIO_FACTORES_CARGA: eleccion}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            factores_de_carga("Resistencia I")
+    assert exc.value.campo == M9.CRITERIO_FACTORES_CARGA
+    assert M9.ELEMENTO_CABEZAL in exc.value.motivo
+
+
+@pytest.mark.parametrize("filas_del_cabezal, carga, fila_esperada", [
+    ({"EV": "EV_inventada", "EH": "EH_activa"}, "EV", "EV_inventada"),
+    ({"EV": "EV_muros_y_estribos_de_retencion", "EH": "EH_inventada"},
+     "EH", "EH_inventada"),
+    ({"EH": "EH_activa"}, "EV", None),                 # la carga sin declarar
+], ids=["EV_fuera_de_la_tabla", "EH_fuera_de_la_tabla", "EV_sin_declarar"])
+def test_una_fila_de_gamma_p_que_no_esta_en_la_tabla_detiene_la_combinacion(
+        monkeypatch, filas_del_cabezal, carga, fila_esperada):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `_gamma_permanente` indexara
+    `TABLA_GAMMA_P_FILAS` con lo que la declaracion diga. Una fila inventada
+    daria KeyError -- fallo del programa -- y una carga sin declarar daria
+    `None`, que tampoco es una fila: los dos casos son el mismo problema del
+    expediente (la declaracion no dice de que fila cuelga esa carga del
+    cabezal) y salen con el mismo `DatoInvalidoError`, nombrando la carga y
+    la fila que se intento leer.
+
+    Se prueba sobre 'Resistencia I' porque es la combinacion cuya columna de
+    permanentes imprime el simbolo gamma_p; en Servicio I y Evento Extremo I
+    la tabla imprime 1.00 y no se baja a la Tabla -2.
+    """
+    assert fila_esperada not in TABLA_GAMMA_P_FILAS
+    with _con_criterios(monkeypatch, {
+            M9.CRITERIO_FACTORES_CARGA: {M9.ELEMENTO_CABEZAL: filas_del_cabezal}}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            factores_de_carga("Resistencia I")
+    assert exc.value.campo == M9.CRITERIO_FACTORES_CARGA
+    assert exc.value.valor == fila_esperada
+    assert carga in exc.value.motivo
+    assert "no es una fila de" in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# 9.4 - Durabilidad: las dos escalas de la Tabla 4.4 y la forma del dato
+# ---------------------------------------------------------------------------
+
+def test_la_tabla_4_4_exige_al_menos_una_de_sus_dos_escalas():
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `clase_exposicion_sulfatos` clasificara
+    sin ninguna medida. Las dos escalas -- sulfato en el SUELO (% en peso) y
+    sulfato en el AGUA (ppm) -- son alternativas y el expediente puede traer
+    una, la otra o las dos; lo que no puede es no traer ninguna, porque
+    entonces el bucle no alcanza ninguna fila y devolveria la primera, que es
+    la exposicion "insignificante": el requisito MAS BAJO de la tabla,
+    adoptado por omision.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        clase_exposicion_sulfatos(so4_suelo_pct=None, so4_agua_ppm=None)
+    assert exc.value.campo == M9.CRITERIO_EXPOSICION_QUIMICA
+    assert "ninguna de las dos escalas" in exc.value.motivo
+    # con UNA sola escala si clasifica: son alternativas, no acumulativas
+    for medidas in ({"so4_suelo_pct": 0.05, "so4_agua_ppm": None},
+                    {"so4_suelo_pct": None, "so4_agua_ppm": 200}):
+        assert "exposicion" in clase_exposicion_sulfatos(**medidas)
+
+
+_TABLA_4_2_DE_PRUEBA = {clave: False for clave in EXPOSICION_ESPECIAL}
+_EXPOSICION_DE_PRUEBA = {"so4_suelo_pct": 0.0, "so4_agua_ppm": None,
+                         "tabla_4_2": dict(_TABLA_4_2_DE_PRUEBA)}
+
+
+def _sin(diccionario, clave):
+    """El mismo diccionario sin una de sus claves."""
+    return {k: v for k, v in diccionario.items() if k != clave}
+
+
+def _con(diccionario, **cambios):
+    """El mismo diccionario con algunas claves cambiadas o anadidas."""
+    return {**diccionario, **cambios}
+
+
+@pytest.mark.parametrize("declarado, motivo_esperado", [
+    (0.45, "se declara como un diccionario"),
+    ("cloruros", "se declara como un diccionario"),
+    (_sin(_EXPOSICION_DE_PRUEBA, "so4_agua_ppm"), "falta la escala"),
+    (_con(_EXPOSICION_DE_PRUEBA, so4_agua_ppm="muchos"), "magnitud medida"),
+    (_con(_EXPOSICION_DE_PRUEBA, so4_suelo_pct=True), "magnitud medida"),
+    (_sin(_EXPOSICION_DE_PRUEBA, "tabla_4_2"), "falta 'tabla_4_2'"),
+    (_con(_EXPOSICION_DE_PRUEBA,
+          tabla_4_2=_con(_TABLA_4_2_DE_PRUEBA, cloruros="si")),
+     "aplica o no aplica"),
+    (_con(_EXPOSICION_DE_PRUEBA,
+          tabla_4_2=_con(_TABLA_4_2_DE_PRUEBA, carbonatacion=True)),
+     "tres filas y no mas"),
+], ids=["numero", "texto", "falta_una_escala", "escala_no_numerica",
+        "escala_booleana", "falta_tabla_4_2", "fila_no_booleana",
+        "fila_sobrante"])
+def test_el_analisis_quimico_del_ems_se_valida_antes_de_usarlo(declarado,
+                                                               motivo_esperado):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que `_exposicion_quimica_validada` leyera el
+    dato con `.get()` y siguiera. Es el unico dato del expediente que no es
+    un numero ni un rotulo sino un diccionario, y la unica via por la que hoy
+    se puede declarar desde la ventana produce float o str: sin comprobar la
+    FORMA, declararlo mal no daba un problema del expediente sino un
+    AttributeError.
+
+    Las siete formas de declararlo mal tienen motivos distintos porque exigen
+    correcciones distintas -- anadir un ensayo, corregir una unidad, quitar
+    una fila que la Tabla 4.2 no tiene --. El booleano entra en la tabla
+    porque `True` es un entero en Python y sin la comprobacion explicita se
+    leeria como "1 % de sulfatos" o "1 ppm". La octava forma -- que falte una
+    de las tres filas de la Tabla 4.2 -- tiene su propio test mas arriba,
+    anclado al hallazgo que la descubrio.
+    """
+    previo = ca.valores_dinamicos().get(M9.CRITERIO_EXPOSICION_QUIMICA)
+    ca.establecer_valor_dinamico(M9.CRITERIO_EXPOSICION_QUIMICA, declarado)
+    try:
+        with pytest.raises(DatoInvalidoError) as exc:
+            requisitos_durabilidad_concreto()
+    finally:
+        if previo is None:
+            ca.quitar_valor_dinamico(M9.CRITERIO_EXPOSICION_QUIMICA)
+        else:
+            ca.establecer_valor_dinamico(M9.CRITERIO_EXPOSICION_QUIMICA, previo)
+    assert exc.value.campo == M9.CRITERIO_EXPOSICION_QUIMICA
+    assert motivo_esperado in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# 9.4 - La cadena del lado AASHTO del recubrimiento, eslabon por eslabon
+# ---------------------------------------------------------------------------
+
+def test_una_condicion_inexistente_tambien_se_rechaza_en_el_lado_aashto():
+    """
+    QUE DEFECTO LO HARIA FALLAR: que el lado AASHTO de la regla del mayor
+    aceptara una condicion que el Art. 7.7.1 de E.060 no tiene. Las dos
+    tablas se indexan de forma distinta -- E.060 por diametro de barra,
+    AASHTO por severidad de exposicion -- y el emparejamiento cuelga de la
+    condicion de E.060: sin ella no hay nada que emparejar. El gemelo de
+    `recubrimiento_e060_mm` ya tiene su test; este cubre el otro lado.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        recubrimiento_aashto_mm(condicion="sumergido")
+    assert exc.value.campo == "condicion"
+    assert "Art. 7.7.1" in exc.value.motivo
+    assert all(fila in exc.value.motivo for fila in RECUBRIMIENTO)
+
+
+# Una fila que existe en la tabla de AASHTO transcrita y NO en el mapa de
+# equivalencias con la del Manual de Puentes: es la desincronizacion contra la
+# que existe la ultima guarda de la cadena.
+FILA_SIN_EQUIVALENCIA = "fila_que_solo_existe_en_una_de_las_dos_tablas"
+
+
+def _tabla_recubrimiento_con_fila_huerfana():
+    tabla = dict(ca.criterio(M9.CRITERIO_TABLA_RECUBRIMIENTO).valor)
+    tabla[FILA_SIN_EQUIVALENCIA] = dict(next(iter(tabla.values())))
+    return tabla
+
+
+@pytest.mark.parametrize("declaraciones, campo, motivo_esperado", [
+    ({M9.CRITERIO_SITUACION_RECUBRIMIENTO: {"suelo_intemperie_ge_3_4": "costera"}},
+     "condicion", "no tiene fila emparejada"),
+    ({M9.CRITERIO_SITUACION_RECUBRIMIENTO: {"contra_suelo": "fila_inventada"}},
+     "situacion", "no es una fila de la Tabla 5.10.1-1"),
+    ({M9.CRITERIO_CATEGORIA_REFUERZO: "Z"},
+     M9.CRITERIO_CATEGORIA_REFUERZO, "las categorias de la Tabla 5.10.1-1"),
+    ({M9.CRITERIO_TABLA_RECUBRIMIENTO: _tabla_recubrimiento_con_fila_huerfana(),
+      M9.CRITERIO_SITUACION_RECUBRIMIENTO: {"contra_suelo": FILA_SIN_EQUIVALENCIA}},
+     "situacion", "no tiene fila equivalente declarada"),
+], ids=["condicion_sin_emparejar", "situacion_fuera_de_la_tabla",
+        "categoria_fuera_de_la_tabla", "tablas_desincronizadas"])
+def test_la_cadena_del_recubrimiento_aashto_se_detiene_en_cada_eslabon_roto(
+        monkeypatch, declaraciones, campo, motivo_esperado):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que el lado AASHTO se calculara igual con un
+    eslabon roto. Son cuatro y cada uno rompe por su lado:
+
+      * la condicion de E.060 sin fila emparejada en
+        'situacion_recubrimiento_aashto' -- el emparejamiento no lo dice
+        ninguna de las dos normas y por eso se declara;
+      * la situacion emparejada que no existe en la transcripcion de la
+        Tabla 5.10.1-1;
+      * la categoria de acero fuera de las columnas A/B/C, que es el vacio
+        NOR-AAS-01 y el que puede invertir quien gobierna la regla del mayor;
+      * la fila sin correspondencia declarada en
+        `RECUBRIMIENTO_MP_EQUIVALENCIA`, que significa que las dos
+        transcripciones se han desincronizado. Ahi seguir seria calcular el
+        recubrimiento con UNA sola de las dos fuentes creyendo que se
+        compararon -- el defecto que ya vivio esta cadena cuando el cruce se
+        hacia por nombre de clave y se saltaba en silencio las 8 filas de la
+        familia de pilotes.
+    """
+    assert FILA_SIN_EQUIVALENCIA not in RECUBRIMIENTO_MP_EQUIVALENCIA
+    with _con_criterios(monkeypatch, declaraciones):
+        with pytest.raises(DatoInvalidoError) as exc:
+            recubrimiento_aashto_mm(condicion="contra_suelo")
+    assert exc.value.campo == campo
+    assert motivo_esperado in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# 9.2 - El ENSAMBLADOR con agua: los once mutantes que sobrevivian
+# ---------------------------------------------------------------------------
+#
+# Una revision adversarial barrio `empujes_trasdos` y encontro ONCE mutantes
+# vivos que ninguna ficha nombra. La causa es una sola: el unico test que lo
+# ejecutaba de punta a punta usaba `D_f = 1.00` con el NF a 1.40 m, de modo que
+# `h_agua = 0` y toda la rama del agua corria en cero --- el propio test lo
+# escribia ---, y los demas asserts eran de ORDEN y de BRAZO, ninguno de VALOR.
+#
+# Los once, con su efecto medido sobre este mismo tablero:
+#   E_hidrostatico=0.0 / U_subpresion=0.0     la carga WA desaparece
+#   h_agua/2 en el empuje hidrostatico        la parte el agua por cuatro
+#   B=geometria.D_f en la subpresion          U baja 37.5 %: MAS normal en la
+#                                             base, y FS de deslizamiento y de
+#                                             capacidad portante MAS ALTOS
+#   H=geometria.H en E_a / E_s / incremento   -30.6 %, -16.7 %, -30.6 %
+#   k_v=mo.k_h en el incremento sismico       -80.6 %, NO CONSERVADOR
+#   h_eq_sobrecarga=0.0 / gamma_relleno=0.0   los campos de trazabilidad de LS
+#                                             que este mismo trabajo anadio
+#   altura_para_h_eq con `-` en vez de `+`    hoy inocuo POR ACCIDENTE: con el
+#                                             tablero paralelo al trafico la
+#                                             tabla da 0.6096 para 1.60, 2.00 y
+#                                             2.40; con la orientacion
+#                                             perpendicular si dependeria
+#
+# Los dorados NO se escriben aqui: salen de CP9_ENSAMBLE_TRASDOS, que se
+# recalcula solo en el bloque `__main__` del fixture. Duplicarlos como
+# literales en este archivo es el defecto SIS-F-14 y la fila 7 de la hoja
+# `Conflictos` lo prohibe expresamente.
+
+CP9E = CP9_ENSAMBLE_TRASDOS
+
+
+@pytest.fixture
+def geometria_con_agua():
+    """
+    El mismo cabezal de tanteo con la zapata mas profunda: `D_f = 2.00` con el
+    NF a 1.40 m deja 0.60 m de agua sobre la base. Es lo unico que cambia
+    respecto de `geometria`, y es lo que hace visible la rama WA.
+    """
+    return GeometriaCabezal(H=CP9E["H"], B=CP9E["B"], D_f=CP9E["D_f"],
+                            espesor_corona=0.25, espesor_base_muro=0.35,
+                            espesor_zapata=CP9E["espesor_zapata"])
+
+
+def _declarar_tablero_de_prueba(monkeypatch):
+    """Los criterios de tanteo del ensamble, declarados en caliente."""
+    valores = {
+        "phi_relleno_trasdos": CP9E["phi_grados"],
+        "pendiente_relleno_trasdos_i": 0.0,
+        "inclinacion_muro_beta": 0.0,
+        "friccion_muro_suelo_delta": 0.0,
+        "punto_aplicacion_incremento_sismico": 0.6,
+        "peso_especifico_relleno_kn_m3": CP9E["gamma_relleno"],
+    }
+    for clave, valor in valores.items():
+        original = ca.criterio(clave)
+        monkeypatch.setitem(ca.CRITERIOS, clave,
+                            ca.Criterio(valor=valor, etiqueta=original.etiqueta,
+                                        concepto=original.concepto,
+                                        justificacion=original.justificacion,
+                                        fuente=original.fuente))
+    _declarar_orientacion(monkeypatch, ORIENTACION_PARALELO_AL_TRAFICO)
+    _declarar_borde(monkeypatch, 1.0)
+
+
+def test_el_ensamble_con_agua_da_los_cinco_valores_de_su_caso_patron(
+        monkeypatch, geometria_con_agua):
+    """
+    QUE DEFECTO LO HARIA FALLAR: que el ensamblador anulara una carga, la
+    partiera, o alimentara una funcion con la altura o el ancho equivocados.
+    Ninguno de esos lo veia nadie mientras el tablero corriera sin agua y los
+    asserts fueran de orden.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.ESTATICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+
+    assert e.K_A == pytest.approx(CP9E["Ka_esperado"], rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.E_activo == pytest.approx(CP9E["E_activo_esperado"],
+                                       rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.E_sobrecarga == pytest.approx(CP9E["E_sobrecarga_esperado"],
+                                           rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.E_hidrostatico == pytest.approx(CP9E["E_hidrostatico_esperado"],
+                                             rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.U_subpresion == pytest.approx(CP9E["U_subpresion_esperado"],
+                                           rel=CP9_TOLERANCIA_RELATIVA)
+
+
+def test_el_ensamble_lleva_a_la_memoria_la_trazabilidad_de_la_sobrecarga(
+        monkeypatch, geometria_con_agua):
+    """
+    `h_eq_sobrecarga` y `gamma_relleno` son los campos que este trabajo anadio
+    para que la memoria no imprima un empuje sin la altura equivalente que lo
+    produjo. Sin este assert, los dos pueden viajar en 0.0 y nadie se entera.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.ESTATICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+    assert e.h_eq_sobrecarga == pytest.approx(CP9E["h_eq"], rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.gamma_relleno == pytest.approx(CP9E["gamma_relleno"],
+                                            rel=CP9_TOLERANCIA_RELATIVA)
+    # Y la coherencia entre los dos: E_s = gamma * Ka * h_eq * He. Si el
+    # ensamblador alimenta el empuje con una altura y declara otra, cae aqui.
+    assert e.E_sobrecarga == pytest.approx(
+        e.gamma_relleno * e.K_A * e.h_eq_sobrecarga * CP9E["altura_empuje"],
+        rel=CP9_TOLERANCIA_RELATIVA)
+
+
+def test_el_incremento_sismico_usa_la_altura_de_empuje_y_el_k_v(
+        monkeypatch, geometria_con_agua):
+    """
+    Los dos mutantes no conservadores del ensamblador: `H=geometria.H` en vez
+    de `altura_empuje` (-30.6 %) y `k_v=mo.k_h` en vez de `k_v=mo.k_v`
+    (-80.6 %). El lado derecho se arma con la altura DEL TEST y con el k_v de
+    la cadena, no con lo que el objeto devuelve, que es lo que hace que el
+    assert no sea tautologico en la dimension que mide.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.SISMICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+    He = CP9E["altura_empuje"]
+    esperado = (0.5 * CP9E["gamma_relleno"]
+                * (e.mononobe_okabe.K_AE - e.mononobe_okabe.K_A)
+                * He ** 2 * (1 - cadena_sismica().k_v))
+    assert e.incremento_sismico == pytest.approx(esperado,
+                                                 rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.z_incremento == pytest.approx(0.6 * He,
+                                           rel=CP9_TOLERANCIA_RELATIVA)
+
+
+def test_la_subpresion_se_reparte_en_el_ancho_de_zapata_y_no_en_su_canto(
+        monkeypatch, geometria_con_agua):
+    """
+    El mutante `B=geometria.D_f` baja U un 37.5 % en este tablero. Menos
+    subpresion es MAS fuerza normal en la base, y por lo tanto FS de
+    deslizamiento y de capacidad portante MAS ALTOS de lo que son: la
+    direccion en la que un error no avisa.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.ESTATICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+    assert e.U_subpresion == pytest.approx(
+        CP9E["gamma_agua"] * CP9E["h_agua_esperada"] * geometria_con_agua.B,
+        rel=CP9_TOLERANCIA_RELATIVA)
+    assert e.z_hidrostatico == pytest.approx(CP9E["h_agua_esperada"] / 3,
+                                             rel=CP9_TOLERANCIA_RELATIVA)
+
+
+def test_la_altura_de_entrada_de_h_eq_se_mide_hasta_el_fondo_de_la_zapata(
+        monkeypatch, geometria_con_agua):
+    """
+    AASHTO 3.11.6.4 mide la altura de entrada de h_eq desde la superficie del
+    relleno hasta el FONDO DE LA ZAPATA, con un `shall`: es
+    `geometria.H + geometria.espesor_zapata` y no `geometria.H`.
+
+    EL TEST USA LA ORIENTACION PERPENDICULAR y no la paralela, y esa es toda
+    su razon de ser. Con el tablero paralelo la tabla devuelve 0.6096 m para
+    1.60, 2.00 y 2.40 m --- las tres alturas candidatas ---, de modo que
+    equivocar la altura de entrada daba EL MISMO NUMERO y ningun assert podia
+    verlo: la correccion quedaba viva por accidente del tablero elegido.
+    Perpendicular, la tabla si depende de la altura (1.204 / 1.124 / 1.044) y
+    el error se hace visible.
+    """
+    _declarar_tablero_de_prueba(monkeypatch)
+    _declarar_orientacion(monkeypatch, ORIENTACION_PERPENDICULAR_AL_TRAFICO)
+    e = empujes_trasdos(geometria=geometria_con_agua,
+                        condicion=CondicionAnalisis.ESTATICO,
+                        altura_empuje=CP9E["altura_empuje"],
+                        NF_profundidad_m=CP9E["NF_profundidad_m"])
+    assert e.h_eq_sobrecarga == pytest.approx(
+        CP9E["h_eq_perpendicular_a_2_40"], rel=CP9_TOLERANCIA_RELATIVA), (
+        "h_eq no corresponde a H + espesor_zapata = 2.40 m. Con "
+        f"{CP9E['h_eq_perpendicular_a_1_60']} la altura de entrada seria "
+        "1.60 m, que es H - espesor_zapata; con geometria.H sola seria 2.00.")
+
+
+def test_la_autoverificacion_del_fixture_la_corre_pytest():
+    """
+    El bloque `__main__` de `tests/fixtures/casos_patron.py` recalcula los
+    dorados desde la formula, y ES la defensa contra MAT-D7 / SIS-F-03 (los
+    dorados de CP-1 estuvieron mal toda su vida porque nadie los recalculaba).
+    Pero NINGUN test lo invocaba: la etiqueta "AUTOVERIFICADOS" solo era cierta
+    si alguien lo ejecutaba a mano, y una edicion futura de un dorado no la
+    habria detenido la suite.
+
+    Se ejecuta el archivo como script, en un proceso aparte, y se exige codigo
+    de salida 0. En proceso aparte a proposito: el bloque usa nombres con
+    guion bajo al nivel del modulo y reimportarlo dentro del interprete de
+    pytest ensuciaria el espacio de nombres del fixture que todos los demas
+    tests comparten.
+    """
+    fixture = Path(__file__).resolve().parent / "fixtures" / "casos_patron.py"
+    raiz = fixture.parents[2]
+    entorno = dict(os.environ)
+    entorno["PYTHONPATH"] = os.pathsep.join(
+        [str(raiz), str(raiz / "src"), entorno.get("PYTHONPATH", "")])
+    r = subprocess.run([sys.executable, str(fixture)], cwd=raiz,
+                       capture_output=True, text=True, env=entorno, timeout=120)
+    assert r.returncode == 0, (
+        "la autoverificacion de los casos patron fallo. Un dorado dejo de "
+        f"salir de su formula:\n{r.stdout[-2000:]}\n{r.stderr[-2000:]}")
+    assert "CP-9 ensamble verificado" in r.stdout, (
+        "el bloque corrio pero no llego a verificar CP-9: revisa si una "
+        "excepcion temprana lo dejo a medias")

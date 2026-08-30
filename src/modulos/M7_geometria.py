@@ -247,8 +247,8 @@ from typing import Optional, Tuple
 import criterios_adoptados as ca
 from dominios import ESVIAJE_MAX
 from modelos import (CompatibilidadGeometrica, CondicionRasante,
-                     DatoInvalidoError, Material, PuntoCritico,
-                     ResultadoHidraulico, TamizadoRasante,
+                     DatoInvalidoError, LimiteNumericoError, Material,
+                     PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      Verificacion)
 from modulos.M2_material import diametro_exterior, espesor_pared
 from modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
@@ -579,6 +579,22 @@ def factor_esviaje(punto: PuntoCritico) -> float:
     hipotenusa del ancho que atraviesa. Vale 1 en el cruce perpendicular.
     A 90 grados el conducto seria paralelo a la via y no habria cruce que
     resolver -- `dominios.ESVIAJE_MAX`, que M0 ya exige a la entrada.
+
+    LA ASINTOTA NO ESTA ACOTADA, Y SE DECLARA (MAT-O18). El dominio es
+    abierto en 90 grados, no cerrado, de modo que un esviaje que M0 acepta
+    puede estar arbitrariamente cerca del limite: con 89.999999999 grados el
+    factor vale 5.73e10 y `longitud_conducto` devuelve del orden de 1e11 m.
+    La ficha MAT-O18 lo clasifica como "no alcanzable desde el CSV validado",
+    y eso es INEXACTO: M0 valida `0 <= esviaje < 90` y ese valor pasa.
+
+    No se pone cota de cordura porque no hay ninguna que citar: ni la Sec.
+    7.B ni EG-2013 fijan un esviaje maximo constructivo, y elegir uno --
+    45, 60 grados -- seria inventar un valor normativo, que es lo que
+    CLAUDE.md prohibe expresamente. Lo que corresponde es que el numero se
+    VEA: una longitud de 1e11 m es absurda a simple vista en la memoria, y
+    G2 la contrasta contra la cota del receptor. Si el proyecto quiere una
+    cota, el camino es declararla como criterio [A] con su sensibilidad, no
+    escribirla aqui.
     """
     if not (-ESVIAJE_MAX < punto.esviaje_grados < ESVIAJE_MAX):
         raise DatoInvalidoError(
@@ -590,6 +606,62 @@ def factor_esviaje(punto: PuntoCritico) -> float:
     return 1.0 / math.cos(math.radians(punto.esviaje_grados))
 
 
+def _exigir_finito(campo: str, valor: float, punto: PuntoCritico) -> float:
+    """
+    Devuelve `valor` si es finito; si no, LimiteNumericoError (SIS-G-01).
+
+    ES UNA GUARDA DE SALIDA, Y AHI ESTA LA GRACIA. La de ENTRADA ya existe y
+    esta cerrada por los dos lados: `M0_carga._a_float` rechaza 'inf' y 'nan'
+    en cualquier celda del CSV (MAT-D14) y `criterios_adoptados.
+    _verificar_finitud` los rechaza en cualquier criterio declarado. Lo que
+    ninguna de las dos puede cerrar es que una ARITMETICA entre numeros
+    finitos desborde: 2 * 1.5 * 1e308 no es un dato mal declarado, es una
+    multiplicacion que no cabe en un double.
+
+    POR QUE NO SE CIERRA PONIENDOLE TECHO A LA COTA, que es el remedio que
+    parece obvio: porque ese techo seria un VALOR DE PROYECTO inventado --
+    "una rasante no pasa de N msnm" no lo dice ninguna norma, no lo dice la
+    hoja de ruta, y CLAUDE.md lo prohibe expresamente. `dominios.py` acota lo
+    que un dato PUEDE SER (un CBR sobre 100 esta en otra escala; un esviaje de
+    120 grados no existe); la altura de una rasante no tiene un limite de esa
+    naturaleza. Por eso la guarda va donde el problema aparece de verdad -- la
+    salida del calculo -- y no donde seria comodo ponerla.
+
+    Se aplica a las cuatro salidas de 7.B que se MIDIERON capaces de desbordar
+    desde un CSV que pasa las tres validaciones de M0: `altura_terraplen` (una
+    resta de cotas de signo opuesto), `proyeccion_taludes`, `longitud_conducto`
+    y `cota_salida`. Las tres ultimas heredan el desborde de la primera y
+    ademas lo pueden producir por su cuenta.
+
+    QUE UNA GUARDA INTERNA DISPARE ANTES QUE LA EXTERNA ES LO QUE SE BUSCA, no
+    un solapamiento: `longitud_conducto` llama a `proyeccion_taludes`, que ya
+    esta guardada, de modo que el error nombra la magnitud concreta que
+    desbordo en vez de la que la contiene.
+
+    NO HAY GUARDA EQUIVALENTE EN M9, y es deliberado: `verificar_volteo` y
+    `verificar_deslizamiento` devuelven `math.inf` A PROPOSITO como FS cuando
+    la solicitacion es nula -- "no vuelca" no es un numero grande, es la
+    ausencia del momento volcante --, y un barrido que prohibiera todo
+    no-finito en la salida de todo el calculo mataria ese caso legitimo. Son
+    los dos unicos productores deliberados de `inf` del repositorio.
+    """
+    if not math.isfinite(valor):
+        raise LimiteNumericoError(
+            campo, valor=valor, id_punto=punto.id,
+            motivo=f"el calculo de 7.B desbordo la doble precision partiendo "
+                   f"de datos que SI son finitos (cota de rasante "
+                   f"{punto.cota_rasante!r}, cota de terreno "
+                   f"{punto.cota_terreno!r}, ancho de plataforma "
+                   f"{punto.ancho_plataforma!r}). No es un dato fuera de "
+                   f"rango -- ninguna cota tiene techo en dominios.py, y no "
+                   f"se le puede inventar uno --, es que la aritmetica entre "
+                   f"ellos no cabe en un numero. Sin esta guarda el valor "
+                   f"seguiria hasta la memoria y el informe imprimiria un "
+                   f"diagnostico entero construido sobre un 'inf'"
+        )
+    return valor
+
+
 def altura_terraplen(punto: PuntoCritico) -> float:
     """
     Altura del terraplen en el cruce, m: cota de rasante - cota de terreno.
@@ -598,7 +670,8 @@ def altura_terraplen(punto: PuntoCritico) -> float:
     (esa es h_rec + el diametro y sale de la subrasante): son dos alturas
     distintas y confundirlas alarga el conducto.
     """
-    return punto.cota_rasante - punto.cota_terreno
+    return _exigir_finito("altura_terraplen",
+                          punto.cota_rasante - punto.cota_terreno, punto)
 
 
 def proyeccion_taludes(punto: PuntoCritico) -> float:
@@ -619,7 +692,8 @@ def proyeccion_taludes(punto: PuntoCritico) -> float:
     se declare.
     """
     talud = ca.valor(CRITERIO_TALUD)      # CriterioPendienteError mientras falte
-    return 2 * talud * altura_terraplen(punto)
+    return _exigir_finito("proyeccion_taludes",
+                          2 * talud * altura_terraplen(punto), punto)
 
 
 def longitud_conducto(punto: PuntoCritico) -> float:
@@ -631,7 +705,10 @@ def longitud_conducto(punto: PuntoCritico) -> float:
     Se detiene con CriterioPendienteError mientras 'talud_terraplen' siga
     vacio (ver `proyeccion_taludes`).
     """
-    return (punto.ancho_plataforma + proyeccion_taludes(punto)) * factor_esviaje(punto)
+    return _exigir_finito(
+        "longitud_conducto",
+        (punto.ancho_plataforma + proyeccion_taludes(punto)) * factor_esviaje(punto),
+        punto)
 
 
 def cota_salida(*, punto: PuntoCritico, longitud: float, S: float) -> float:
@@ -647,7 +724,8 @@ def cota_salida(*, punto: PuntoCritico, longitud: float, S: float) -> float:
     geometrica sobre la pendiente que reciba, y no le corresponde decidir
     cual es (MAT-D9).
     """
-    return cota_entrada_supuesta(punto) - S * longitud
+    return _exigir_finito("cota_salida",
+                          cota_entrada_supuesta(punto) - S * longitud, punto)
 
 
 def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion:

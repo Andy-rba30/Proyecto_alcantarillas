@@ -279,8 +279,327 @@ CP8_CONTROL_SALIDA = {
 
 
 # ---------------------------------------------------------------------------
+# CP-9 · Mononobe-Okabe con los CUATRO angulos no nulos (Sec. 9.2)
+# ---------------------------------------------------------------------------
+#                 cos^2(phi - psi - beta)
+# K_AE = ----------------------------------------------------------
+#        cos(psi) cos^2(beta) cos(delta + beta + psi) [1 + R]^2
+#
+#              /  sen(phi + delta) sen(phi - psi - i)
+# con   R = _ /  --------------------------------------      psi = atan[k_h/(1-k_v)]
+#          V    cos(delta + beta + psi) cos(i - beta)
+#
+# POR QUE EXISTE ESTE CASO (SIS-F-04). El unico contraste de valor que tenia
+# Mononobe-Okabe era su caso limite de Rankine: i = beta = delta = 0 y
+# k_h = k_v = 0. En ese punto la formula es CIEGA a los signos, porque los
+# cuatro cosenos tienen argumento nulo y cos es par: cos(i-beta) y cos(i+beta)
+# valen los dos 1, cos(delta+beta+psi) y cos(delta+beta-psi) valen los dos 1,
+# y phi-psi-beta = phi+psi-beta = phi. Medido: de quince mutantes de signo de
+# la formula, DOCE dejan el caso limite intacto hasta el ultimo bit. El
+# docstring de la funcion decia "es la comprobacion que garantiza que los
+# signos estan bien puestos" y el del test "si un signo esta cambiado, aqui se
+# ve": las dos afirmaciones eran falsas.
+#
+# Los tres casos de abajo tienen phi, i, beta, delta, k_h y k_v distintos
+# entre si y distintos de cero, que es la unica configuracion en la que cada
+# suma y cada resta de la formula deja huella en el resultado. Con estos
+# dorados, el mutante que menos se aparta lo hace en 3.7e-3 relativo
+# (CP9-B, cos_dbp*cos_ib -> cos_dbp/cos_ib), nueve ordenes por encima de la
+# tolerancia 1e-12 que se propone.
+#
+# AUTOVERIFICADOS por el bloque __main__ de este archivo: formula cerrada,
+# recomputada ahi con math y sin importar ningun modulo del repo.
+#
+# 'K_AE_errata_1_menos_R_esperado' NO es un valor a producir: es el valor que
+# saldria de escribir el denominador [1 - R] que el Manual de Puentes imprime
+# por errata (Apendice A11, num. A.11.3.1, pag. impresa 586). El codigo sigue
+# a AASHTO con [1 + R] (Art. A11.3.1, ec. A11.3.1-1) y esta declarado en
+# constantes_normativas.K_AE_ERRATA_MANUAL. El dorado esta aqui para que un
+# test pueda exigir que el modulo NO lo produzca.
+
+CP9_MONONOBE_OKABE = (
+    {
+        "nombre": "CP9-A",
+        "phi_grados": 40.0, "i_grados": 5.0,
+        "beta_grados": 20.0, "delta_grados": 25.0,
+        "k_h": 0.15, "k_v": 0.05,
+        "psi_esperado": 8.972626614896393,
+        "K_AE_esperado": 0.5567083864792189,
+        "K_A_esperado": 0.40338013713689563,
+        "K_AE_errata_1_menos_R_esperado": 70.38546372456175,
+        "nota": "El mas discriminante de los tres: el mutante mas cercano "
+                "(cos(i-beta) -> cos(i+beta)) se aparta 2.9e-2 relativo.",
+    },
+    {
+        "nombre": "CP9-B",
+        "phi_grados": 38.0, "i_grados": 12.0,
+        "beta_grados": 6.0, "delta_grados": 20.0,
+        "k_h": 0.20, "k_v": 0.10,
+        "psi_esperado": 12.528807709151511,
+        "K_AE_esperado": 0.5203195665286864,
+        "K_A_esperado": 0.2990004513187056,
+        "K_AE_errata_1_menos_R_esperado": 4.7818805476967166,
+        "nota": "Invierte el orden relativo de i y beta respecto de CP9-A "
+                "(aqui i > beta): cos(i-beta) cambia de lado.",
+    },
+    {
+        "nombre": "CP9-C",
+        "phi_grados": 40.0, "i_grados": 5.0,
+        "beta_grados": 15.0, "delta_grados": 22.0,
+        "k_h": 0.50, "k_v": 0.10,
+        "psi_esperado": 29.054604099077146,
+        "K_AE_esperado": 1.3753494480822512,
+        "K_A_esperado": 0.3393072702172859,
+        "K_AE_errata_1_menos_R_esperado": 11.045723439981058,
+        "nota": "k_h = 0.50, el de la cadena sismica de CP-7. psi = 29.05 "
+                "grados deja phi-psi-i = 5.95: cerca del borde del dominio, "
+                "que es donde el proyecto va a operar de verdad.",
+    },
+)
+
+# Caso limite de Rankine, con su dorado y con el valor que produce la errata
+# del Manual: con [1 - R] y todos los angulos nulos, K_AE resulta ser el
+# RECIPROCO EXACTO del Ka de Rankine ((1+sen phi)/(1-sen phi) en vez de
+# (1-sen phi)/(1+sen phi)), no un valor parecido. Verificado en el bloque
+# __main__: |K_AE(1-R) * Ka - 1| < 1e-15 para los cinco phi.
+CP9_RANKINE_LIMITE = {
+    "phi_casos": (25.0, 30.0, 34.0, 38.0, 42.0),
+    "Ka_rankine_esperado": (0.4058585172053274, 0.3333333333333333,
+                            0.28271491971777274, 0.23788307794915586,
+                            0.19822858222156756),
+    "K_AE_errata_1_menos_R_esperado": (2.4639128110106694, 3.0000000000000004,
+                                       3.537132037454108, 4.203745842794819,
+                                       5.04468118973006),
+}
+
+# La tolerancia de TODOS los casos CP-9. Vivio un tiempo tambien como clave
+# `tolerancia_relativa` dentro de CP9_RANKINE_LIMITE, con el mismo valor y sin
+# un solo lector: dos nombres para una cosa, y el que nadie leia podia
+# cambiarse sin que ningun test lo notara. Se retiro la clave muerta.
+CP9_TOLERANCIA_RELATIVA = 1e-12
+
+
+# ---------------------------------------------------------------------------
+# CP-9 · Empuje del trasdos: estatico, sismico total e incremento (Sec. 9.2)
+# ---------------------------------------------------------------------------
+# P_A   = gamma * H^2 * K_A / 2
+# P_AE  = gamma * H^2 * (1 - k_v) * K_AE / 2
+# dP_AE = P_AE - P_A
+#
+# POR QUE EXISTE (SIS-F-05). CP-7 cubre la cadena sismica y se detiene en el
+# COEFICIENTE: ningun caso patron llegaba al EMPUJE. Sin dorado, cuatro
+# mutantes de `empuje_activo_sismico_total` sobrevivian a la suite entera,
+# porque el unico assert que la tocaba --
+#     assert incremento == pytest.approx(P_AE - P_A)
+# -- llama a las MISMAS dos funciones en los dos lados de la igualdad: el
+# mutante se propaga identico a ambos y la igualdad se cumple igual. No era un
+# assert debil, era una tautologia.
+#
+# EL BLOQUE A ES DELIBERADAMENTE INDEPENDIENTE DE MONONOBE-OKABE: prueba la
+# formula cerrada del empuje con cuatro entradas dadas, todas distintas entre
+# si y ninguna igual a 1 ni a 2, para que multiplicar frente a dividir y el
+# signo de (1 - k_v) den numeros separados por un 35 % como minimo. k_v = 0.15
+# NO es el k_v del proyecto (ese es 0.0, criterio 'k_v', CP-7): es el valor DE
+# PRUEBA que hace visible el factor (1 - k_v). Con k_v = 0 el factor vale 1 y
+# el mutante (1 + k_v) es indetectable por construccion -- y k_v = 0.0 era
+# justamente lo que usaba el test viejo.
+#
+# El bloque B es la cadena coherente: los mismos angulos llevados desde phi
+# hasta el empuje y el incremento, para que el contraste no dependa de un K_AE
+# inventado. k_h = 0.25 (muro desplazable de CP-7) y no 0.50: con 0.50 y k_v
+# distinto de cero, phi - psi - i queda a 3 grados del limite de existencia de
+# la formula y el dorado seria de mala condicion.
+#
+# DORADOS: double exacto redondeado a 9 decimales; el residuo relativo maximo
+# es 1.0e-9 (en B_K_A_esperado). La tolerancia declarada abajo, 1e-7, lo cubre
+# con dos ordenes de margen y sigue siendo seis ordenes mas estrecha que la
+# separacion del mutante mas cercano. Autoverificados por el bloque __main__
+# de este archivo, recalculando sin importar ningun modulo del repo.
+
+CP9_EMPUJE_TRASDOS = {
+    # --- Bloque A: formula cerrada de P_AE, con K_AE DADO -----------------
+    "A_gamma_relleno": 18.5,          # kN/m3
+    "A_H": 2.4,                       # m
+    "A_K_AE": 0.55,                   # adimensional, dado (no sale de M-O)
+    "A_k_v": 0.15,                    # de prueba; el del proyecto es 0.0
+    "A_P_AE_esperado": 24.908400000,  # kN/m
+
+    # Los cuatro mutantes que sobrevivian, con el valor que devuelven. No son
+    # dorados: son la MEDIDA DE LA SEPARACION -- el mas cercano queda a +35 %,
+    # de modo que la tolerancia de 1e-7 no tiene nada que ver con si mueren.
+    "A_mutante_1_mas_kv": 33.699600000,    # (1 - k_v)   -> (1 + k_v)
+    "A_mutante_por_dos": 99.633600000,     # K_AE / 2    -> K_AE * 2
+    "A_mutante_divide_kv": 34.475294118,   # * (1 - k_v) -> / (1 - k_v)
+    "A_mutante_divide_KAE": 82.341818182,  # * K_AE      -> / K_AE
+
+    # --- Bloque B: cadena coherente phi -> K_AE -> P_AE -> dP_AE ----------
+    "B_phi_grados": 34.0,
+    "B_i_grados": 0.0,
+    "B_beta_grados": 0.0,
+    "B_delta_grados": 0.0,
+    "B_k_h": 0.25,
+    "B_k_v": 0.15,
+    "B_gamma_relleno": 18.5,               # kN/m3
+    "B_H": 2.4,                            # m
+    "B_psi_grados_esperado": 16.389540334,
+    "B_K_AE_esperado": 0.489557368,
+    "B_K_A_esperado": 0.282714920,         # Coulomb con k = 0; con i=beta=
+                                           # delta=0 coincide con Rankine
+    "B_incremento_K_esperado": 0.206842448,
+    "B_P_AE_esperado": 22.171074072,       # kN/m
+    "B_P_A_esperado": 15.063050923,        # kN/m
+    "B_incremento_P_esperado": 7.108023149,   # kN/m
+    "B_brazo_fraccion": 0.6,               # 'punto_aplicacion_incremento_sismico'
+    "B_z_incremento_esperado": 1.440000000,   # m; el mutante `/ H` daria 0.25
+
+    # Tolerancia RELATIVA del contraste. Vive aqui y no como literal en
+    # tests/test_M9_cabezal.py por la misma razon que los dorados (SIS-F-14).
+    "tolerancia_relativa": 1e-7,
+}
+
+# ---------------------------------------------------------------------------
+# CP-9 · Sec. 7.B -- longitud del conducto, proyeccion de taludes y cota de
+#        salida (SIS-F-08 / SIS-F-13)
+# ---------------------------------------------------------------------------
+# Las tres son IDENTIDADES GEOMETRICAS, no valores normativos. Sec. 7.B fija
+# COMO se obtienen -- "longitud = ancho de plataforma + proyeccion de taludes,
+# afectada por esviaje", "cotas de entrada y salida amarradas al perfil del
+# cauce y a la cota de fondo del receptor" -- y no da ningun ejemplo numerico:
+# se busco en docs/hoja_de_ruta_alcantarillas_v8.md y la Sec. 7.B no tiene
+# tabla ni cifra que copiar. Por eso este caso es un RECALCULO INDEPENDIENTE
+# de las formulas que la propia Sec. 7.B escribe, no una cita:
+#
+#     altura      = cota_rasante - cota_terreno
+#     proyeccion  = 2 * talud * altura
+#     longitud    = (ancho_plataforma + proyeccion) / cos(esviaje)
+#     caida       = S * longitud
+#     cota_salida = cota_entrada - caida
+#
+# EL TALUD DE ESTE CASO NO ES UN VALOR DE PROYECTO Y NO CIERRA NINGUN VACIO.
+# 'talud_terraplen' sigue en valor=None en criterios_adoptados.py, a proposito
+# (Sec. 7.B pide la proyeccion y no da la inclinacion), y este fixture no lo
+# toca: los tests lo declaran EN CALIENTE, solo para su duracion, con
+# `establecer_valor_dinamico`, y lo retiran al salir. El 2.5 esta elegido para
+# que los tres errores tipicos den resultados que un assert pueda separar --
+#
+#     2 * talud = 5.00      2 / talud = 0.80      talud^2 = 6.25
+#
+# -- cosa que no consiguen ni el 1.5 "de practica corriente" que el criterio
+# prohibe adoptar en silencio (2*t = 3.00 contra t^2 = 2.25) ni el 2.0, con el
+# que 2*t y t^2 colapsan en 4.00. El talud REAL sale de la seccion tipica del
+# expediente vial (DG-2018) y lo declara el proyectista.
+#
+# Los 30 grados de esviaje separan multiplicar de dividir por el coseno: el
+# factor vale 1.15470054 y el error da 20.8712122 m donde lo correcto son
+# 27.828283 m, o sea un conducto MAS CORTO que el mismo cruce perpendicular
+# (24.10 m), que es geometricamente imposible.
+#
+# Autoverificado por el bloque `__main__` de este archivo: formula cerrada,
+# sin scipy.
+
+CP9_GEOMETRIA_7B = {
+    # --- entradas (las cinco columnas de Sec. 1.2 que 7.B necesita) --------
+    "ancho_plataforma": 9.60,        # m
+    "cota_terreno": 42.10,           # msnm
+    "cota_rasante": 45.00,           # msnm
+    "cota_subrasante": 44.85,        # msnm  (e_paq = 0.15 m)
+    "cota_fondo_receptor": 41.30,    # msnm
+    "S": 0.006,                      # pendiente del diseno (ResultadoHidraulico.S)
+
+    # --- declaracion en caliente de la corrida de pruebas, NO del proyecto -
+    "talud_de_prueba": 2.5,          # H:V
+
+    # --- dorados -----------------------------------------------------------
+    "altura_terraplen_esperada": 2.90,      # m   45.00 - 42.10
+    "proyeccion_esperada": 14.50,           # m   2 * 2.5 * 2.90
+
+    "esviaje_perpendicular_grados": 0.0,
+    "factor_esviaje_perpendicular_esperado": 1.0,
+    "longitud_perpendicular_esperada": 24.10,       # m   9.60 + 14.50
+
+    "esviaje_oblicuo_grados": 30.0,
+    "factor_esviaje_oblicuo_esperado": 1.15470054,
+    "longitud_oblicua_esperada": 27.828283,         # m   24.10 / cos(30)
+    # El error clasico, para que el test pueda decir de que se defiende:
+    "longitud_oblicua_si_multiplica_por_el_coseno": 20.8712122,
+
+    "cota_entrada_esperada": 42.10,   # msnm, con 'origen_cota_fondo_entrada'
+                                      # = "cota_terreno" (la de la corrida)
+    "caida_oblicua_esperada": 0.1669697,        # m     0.006 * 27.828283
+    "cota_salida_oblicua_esperada": 41.9330303,  # msnm  42.10 - 0.1669697
+
+    # Tolerancias nombradas: el proyecto prohibe comparar floats sueltos. Son
+    # 0.1 mm en longitud y 0.01 mm en cota -- tres a cinco ordenes por encima
+    # del error de doble precision del propio dorado (2.5e-8 y 2.2e-9) y seis
+    # a nueve ordenes por debajo del salto que cualquiera de los mutantes
+    # produce (el mas cercano se aparta 3.73 m en longitud y 0.33 m en cota).
+    "tolerancia_longitud": 1e-4,     # m
+    "tolerancia_cota": 1e-5,         # m
+}
+
+
+# ---------------------------------------------------------------------------
 # Indice para iterar todos los casos desde un solo import
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# CP-9 · Ensamble de empujes del trasdos CON AGUA (M9.empujes_trasdos)
+# ---------------------------------------------------------------------------
+#
+# Por que existe, y por que CON AGUA. El unico test que ejercitaba
+# `empujes_trasdos` de punta a punta usaba un tablero con `D_f = 1.00` y el NF
+# a 1.40 m: `h_agua = max(1.00 - 1.40, 0) = 0`, de modo que TODA la rama del
+# agua corria en cero y el propio test lo escribia
+# (`assert E_hidrostatico == approx(0.0)`). El resto de los asserts eran de
+# ORDEN (`sismico > estatico`) y de BRAZO (`z_activo == H/3`). Resultado
+# medido en una revision adversarial: once mutantes del ENSAMBLADOR sobrevivian
+# --- anular la hidrostatica y la subpresion, partir h_agua por dos, pasar
+# `B=D_f` a la subpresion, y pasar `H=geometria.H` en vez de `altura_empuje` a
+# los tres empujes y al incremento sismico. El peor, `k_v=mo.k_h`, bajaba el
+# incremento sismico un 80.6 % y era NO CONSERVADOR.
+#
+# El tablero cambia `D_f` de 1.00 a 2.00 para que haya 0.60 m de agua sobre la
+# base. Los dorados salen de la formula y NO del modulo, y el bloque
+# `__main__` los recalcula.
+CP9_ENSAMBLE_TRASDOS = {
+    "nombre": "Ensamble de empujes con 0.60 m de agua sobre la base",
+    # Geometria del cabezal de tanteo (no es propuesta de proyecto).
+    "H": 2.00,
+    "B": 1.60,
+    "D_f": 2.00,
+    "espesor_zapata": 0.40,
+    "altura_empuje": 2.40,          # H + espesor_zapata
+    "NF_profundidad_m": 1.40,
+    "h_agua_esperada": 0.60,        # D_f - NF
+    # Datos de prueba (los mismos que el test declara en caliente).
+    "gamma_relleno": 19.0,
+    "phi_grados": 34.0,
+    "gamma_agua": 9.81,
+    # h_eq de AASHTO 3.11.6.4 para muro paralelo al trafico, borde a 1.0 m y
+    # altura de tabla 2.40 m. Es LECTURA DE TABLA, no formula: por eso se
+    # escribe aqui como entrada del recalculo y no se deduce.
+    "h_eq": 0.6096,
+    # La misma lectura con la orientacion PERPENDICULAR, donde la tabla SI
+    # depende de la altura: 1.204 / 1.124 / 1.044 m para 1.60 / 2.00 / 2.40 m.
+    # Existe para poder ver `altura_para_h_eq`: con el tablero paralelo la
+    # tabla devuelve 0.6096 para las tres alturas, de modo que un ensamblador
+    # que pasara `geometria.H` o `H - espesor_zapata` en vez de
+    # `H + espesor_zapata` daba el mismo numero y era invisible.
+    "h_eq_perpendicular_a_2_40": 1.044,
+    "h_eq_perpendicular_a_1_60": 1.204,
+    # Dorados. Formula cerrada, recalculados en `__main__`:
+    #   Ka       = tan^2(45 - phi/2)
+    #   E_activo = 0.5 * gamma * Ka * He^2
+    #   E_sobrec = gamma * Ka * h_eq * He
+    #   E_hidro  = 0.5 * gamma_agua * h_agua^2
+    #   U        = gamma_agua * h_agua * B
+    "Ka_esperado": 0.28271491971777274,
+    "E_activo_esperado": 15.470160406956524,
+    "E_sobrecarga_esperado": 7.858841486733915,
+    "E_hidrostatico_esperado": 1.7658,
+    "U_subpresion_esperado": 9.4176,
+}
+
 
 TODOS_LOS_CASOS = {
     "CP1_PERIODO_RETORNO": CP1_PERIODO_RETORNO,
@@ -293,13 +612,18 @@ TODOS_LOS_CASOS = {
     "CP6_TIRANTE_CRITICO": CP6_TIRANTE_CRITICO,
     "CP7_CADENA_SISMICA": CP7_CADENA_SISMICA,
     "CP8_CONTROL_SALIDA": CP8_CONTROL_SALIDA,
+    "CP9_GEOMETRIA_7B": CP9_GEOMETRIA_7B,
+    "CP9_MONONOBE_OKABE": CP9_MONONOBE_OKABE,
+    "CP9_RANKINE_LIMITE": CP9_RANKINE_LIMITE,
+    "CP9_EMPUJE_TRASDOS": CP9_EMPUJE_TRASDOS,
+    "CP9_ENSAMBLE_TRASDOS": CP9_ENSAMBLE_TRASDOS,
 }
 
 
 if __name__ == "__main__":
-    # Recalculo independiente de verificacion. CP-1 y CP-7 son formula cerrada
-    # y no necesitan scipy: se autoverifican siempre. CP-2 resuelve una raiz
-    # (brentq) y CP-8 se recalcula junto a el.
+    # Recalculo independiente de verificacion. CP-1, CP-7 y CP-9 son formula
+    # cerrada y no necesitan scipy: se autoverifican siempre. CP-2 resuelve una
+    # raiz (brentq) y CP-8 se recalcula junto a el.
 
     # --- CP-1: TR = 1 / (1 - (1-R)^(1/n)) -----------------------------------
     # Esta autoverificacion no existia (MAT-O20) y por eso los dorados de
@@ -333,6 +657,148 @@ if __name__ == "__main__":
           f"{_cp7['factor_muro_desplazable'] * _k_h0:.2f} "
           f"k_h(F_pga clase E)={_cp7['factor_muro_rigido'] * _A_s_E:.2f}")
 
+    # --- CP-9: geometria de 7.B (formula cerrada) ---------------------------
+    _cp9 = CP9_GEOMETRIA_7B
+    _h = _cp9["cota_rasante"] - _cp9["cota_terreno"]
+    _proy = 2 * _cp9["talud_de_prueba"] * _h
+    _f30 = 1.0 / math.cos(math.radians(_cp9["esviaje_oblicuo_grados"]))
+    _L0 = (_cp9["ancho_plataforma"] + _proy)
+    _L30 = _L0 * _f30
+    _caida = _cp9["S"] * _L30
+    _salida = _cp9["cota_entrada_esperada"] - _caida
+    _tl, _tc = _cp9["tolerancia_longitud"], _cp9["tolerancia_cota"]
+    assert abs(_h - _cp9["altura_terraplen_esperada"]) < _tc
+    assert abs(_proy - _cp9["proyeccion_esperada"]) < _tl
+    assert abs(_f30 - _cp9["factor_esviaje_oblicuo_esperado"]) < 1e-8
+    assert abs(_L0 - _cp9["longitud_perpendicular_esperada"]) < _tl
+    assert abs(_L30 - _cp9["longitud_oblicua_esperada"]) < _tl
+    assert abs(_L0 / _f30
+               - _cp9["longitud_oblicua_si_multiplica_por_el_coseno"]) < _tl
+    assert abs(_caida - _cp9["caida_oblicua_esperada"]) < _tc
+    assert abs(_salida - _cp9["cota_salida_oblicua_esperada"]) < _tc
+    print(f"CP-9 geometria 7.B verificado: proyeccion={_proy:.2f} L(0)={_L0:.2f} "
+          f"L(30)={_L30:.6f} cota_salida={_salida:.7f}")
+
+
+    # --- CP-9: Mononobe-Okabe con los cuatro angulos no nulos ---------------
+    # Recomputacion independiente de la formula del docstring de
+    # M9_cabezal.k_ae_mononobe_okabe, escrita aqui otra vez y sin importar el
+    # modulo: si el dorado y el modulo comparten implementacion, el caso
+    # patron no verifica nada (la leccion de CP-1 / MAT-D7).
+    def _kae_cp9(phi_g, i_g, beta_g, delta_g, k_h, k_v, signo=1.0):
+        p = math.radians(phi_g); ii = math.radians(i_g)
+        b = math.radians(beta_g); d = math.radians(delta_g)
+        ps = math.atan2(k_h, 1.0 - k_v)
+        R = math.sqrt(math.sin(p + d) * math.sin(p - ps - ii)
+                      / (math.cos(d + b + ps) * math.cos(ii - b)))
+        return (math.cos(p - ps - b) ** 2
+                / (math.cos(ps) * math.cos(b) ** 2 * math.cos(d + b + ps)
+                   * (1.0 + signo * R) ** 2))
+
+    for _c in CP9_MONONOBE_OKABE:
+        _psi = math.degrees(math.atan2(_c["k_h"], 1.0 - _c["k_v"]))
+        _kae = _kae_cp9(_c["phi_grados"], _c["i_grados"], _c["beta_grados"],
+                        _c["delta_grados"], _c["k_h"], _c["k_v"])
+        _ka = _kae_cp9(_c["phi_grados"], _c["i_grados"], _c["beta_grados"],
+                       _c["delta_grados"], 0.0, 0.0)
+        _err = _kae_cp9(_c["phi_grados"], _c["i_grados"], _c["beta_grados"],
+                        _c["delta_grados"], _c["k_h"], _c["k_v"], signo=-1.0)
+        for _clave, _obtenido in (("psi_esperado", _psi),
+                                  ("K_AE_esperado", _kae),
+                                  ("K_A_esperado", _ka),
+                                  ("K_AE_errata_1_menos_R_esperado", _err)):
+            assert abs(_obtenido - _c[_clave]) <= CP9_TOLERANCIA_RELATIVA * abs(_c[_clave]), (
+                f"{_c['nombre']}: el dorado {_clave} = {_c[_clave]} no sale "
+                f"de la formula ({_obtenido!r})")
+        print(f"Recalculo {_c['nombre']}: psi={_psi:.6f} K_AE={_kae:.10f} "
+              f"K_A={_ka:.10f} K_AE(errata 1-R)={_err:.6f}")
+
+    # El caso limite de Rankine, y la prueba de que la errata [1 - R] devuelve
+    # el RECIPROCO exacto de Ka -- no un valor parecido.
+    for _phi, _ka_d, _err_d in zip(CP9_RANKINE_LIMITE["phi_casos"],
+                                   CP9_RANKINE_LIMITE["Ka_rankine_esperado"],
+                                   CP9_RANKINE_LIMITE["K_AE_errata_1_menos_R_esperado"]):
+        _ka_r = math.tan(math.radians(45.0 - _phi / 2.0)) ** 2
+        _kae_r = _kae_cp9(_phi, 0.0, 0.0, 0.0, 0.0, 0.0)
+        _err_r = _kae_cp9(_phi, 0.0, 0.0, 0.0, 0.0, 0.0, signo=-1.0)
+        assert abs(_ka_r - _ka_d) <= 1e-12 * _ka_d
+        assert abs(_kae_r - _ka_r) <= 1e-12 * _ka_r      # [1+R] SI reproduce Ka
+        assert abs(_err_r - _err_d) <= 1e-12 * _err_d
+        assert abs(_err_r * _ka_r - 1.0) < 1e-12          # la errata es 1/Ka
+    print("CP-9 Mononobe-Okabe verificado: los tres casos de angulos no nulos y el caso "
+          "limite de Rankine (donde [1-R] da exactamente 1/Ka).")
+
+    # --- CP-9: empuje del trasdos (formula cerrada, sin scipy) --------------
+    # Recalculo independiente: esta funcion NO importa M9_cabezal, se escribe
+    # aqui a partir de la formula de Mononobe-Okabe. Si algun dia el modulo y
+    # este bloque discrepan, uno de los dos esta mal y hay que mirarlos.
+    _cp9 = CP9_EMPUJE_TRASDOS
+    _tol9 = _cp9["tolerancia_relativa"]
+
+    def _cerca(obtenido, dorado, quien):
+        assert abs(obtenido - dorado) <= _tol9 * abs(dorado), (
+            f"CP-9 {quien}: el dorado {dorado} no sale de la formula "
+            f"({obtenido!r})")
+
+    def _k_ae_independiente(phi_g, i_g, beta_g, delta_g, k_h, k_v):
+        psi = math.atan2(k_h, 1 - k_v)
+        phi, i, beta, delta = (math.radians(a)
+                               for a in (phi_g, i_g, beta_g, delta_g))
+        cos_dbp = math.cos(delta + beta + psi)
+        cos_ib = math.cos(i - beta)
+        radicando = (math.sin(phi + delta) * math.sin(phi - psi - i)
+                     / (cos_dbp * cos_ib))
+        R_mo = math.sqrt(max(radicando, 0.0))
+        K = (math.cos(phi - psi - beta) ** 2
+             / (math.cos(psi) * math.cos(beta) ** 2 * cos_dbp * (1 + R_mo) ** 2))
+        return K, math.degrees(psi)
+
+    # Bloque A: la formula cerrada del empuje, con K_AE dado
+    _P_AE_A = (_cp9["A_gamma_relleno"] * _cp9["A_H"] ** 2
+               * (1 - _cp9["A_k_v"]) * _cp9["A_K_AE"] / 2)
+    _cerca(_P_AE_A, _cp9["A_P_AE_esperado"], "A_P_AE_esperado")
+    # y los cuatro mutantes, para que su distancia quede verificada y no dicha
+    _g, _H, _K, _kv = (_cp9["A_gamma_relleno"], _cp9["A_H"],
+                       _cp9["A_K_AE"], _cp9["A_k_v"])
+    _cerca(_g * _H**2 * (1 + _kv) * _K / 2,
+           _cp9["A_mutante_1_mas_kv"], "A_mutante_1_mas_kv")
+    _cerca(_g * _H**2 * (1 - _kv) * _K * 2,
+           _cp9["A_mutante_por_dos"], "A_mutante_por_dos")
+    _cerca(_g * _H**2 / (1 - _kv) * _K / 2,
+           _cp9["A_mutante_divide_kv"], "A_mutante_divide_kv")
+    _cerca(_g * _H**2 * (1 - _kv) / _K / 2,
+           _cp9["A_mutante_divide_KAE"], "A_mutante_divide_KAE")
+    assert min(_cp9["A_mutante_1_mas_kv"], _cp9["A_mutante_por_dos"],
+               _cp9["A_mutante_divide_kv"], _cp9["A_mutante_divide_KAE"]) \
+        > 1.3 * _cp9["A_P_AE_esperado"], \
+        "CP-9: algun mutante quedo a menos del 30 % del dorado"
+
+    # Bloque B: la cadena coherente
+    _K_AE_B, _psi_B = _k_ae_independiente(
+        _cp9["B_phi_grados"], _cp9["B_i_grados"], _cp9["B_beta_grados"],
+        _cp9["B_delta_grados"], _cp9["B_k_h"], _cp9["B_k_v"])
+    _K_A_B, _ = _k_ae_independiente(
+        _cp9["B_phi_grados"], _cp9["B_i_grados"], _cp9["B_beta_grados"],
+        _cp9["B_delta_grados"], 0.0, 0.0)
+    _P_AE_B = (_cp9["B_gamma_relleno"] * _cp9["B_H"] ** 2
+               * (1 - _cp9["B_k_v"]) * _K_AE_B / 2)
+    _P_A_B = _cp9["B_gamma_relleno"] * _cp9["B_H"] ** 2 * _K_A_B / 2
+    _cerca(_psi_B, _cp9["B_psi_grados_esperado"], "B_psi_grados_esperado")
+    _cerca(_K_AE_B, _cp9["B_K_AE_esperado"], "B_K_AE_esperado")
+    _cerca(_K_A_B, _cp9["B_K_A_esperado"], "B_K_A_esperado")
+    _cerca(_K_AE_B - _K_A_B, _cp9["B_incremento_K_esperado"],
+           "B_incremento_K_esperado")
+    _cerca(_P_AE_B, _cp9["B_P_AE_esperado"], "B_P_AE_esperado")
+    _cerca(_P_A_B, _cp9["B_P_A_esperado"], "B_P_A_esperado")
+    _cerca(_P_AE_B - _P_A_B, _cp9["B_incremento_P_esperado"],
+           "B_incremento_P_esperado")
+    _cerca(_cp9["B_brazo_fraccion"] * _cp9["B_H"],
+           _cp9["B_z_incremento_esperado"], "B_z_incremento_esperado")
+    # Con i = beta = delta = 0 el K_A de Coulomb TIENE que ser el de Rankine
+    _cerca(_K_A_B, math.tan(math.radians(45 - _cp9["B_phi_grados"] / 2)) ** 2,
+           "B_K_A_esperado (contra Rankine)")
+    print(f"CP-9 empujes verificado: P_AE(A)={_P_AE_A:.6f}  K_AE(B)={_K_AE_B:.6f}  "
+          f"P_AE(B)={_P_AE_B:.6f}  dP_AE(B)={_P_AE_B - _P_A_B:.6f}")
     # --- CP-2 y CP-8 --------------------------------------------------------
     try:
         import numpy as np
@@ -368,3 +834,27 @@ if __name__ == "__main__":
     except ImportError:
         print("numpy/scipy no disponibles en este entorno; "
               "omite la autoverificacion.")
+
+    # --- CP-9: ensamble de empujes del trasdos con agua ---------------------
+    _c = CP9_ENSAMBLE_TRASDOS
+    _Ka = math.tan(math.radians(45 - _c["phi_grados"] / 2)) ** 2
+    _He, _g, _gw = _c["altura_empuje"], _c["gamma_relleno"], _c["gamma_agua"]
+    _h = _c["D_f"] - _c["NF_profundidad_m"]
+    _esperados = {
+        "h_agua_esperada": _h,
+        "Ka_esperado": _Ka,
+        "E_activo_esperado": 0.5 * _g * _Ka * _He ** 2,
+        "E_sobrecarga_esperado": _g * _Ka * _c["h_eq"] * _He,
+        "E_hidrostatico_esperado": 0.5 * _gw * _h ** 2,
+        "U_subpresion_esperado": _gw * _h * _c["B"],
+    }
+    for _clave, _valor in _esperados.items():
+        assert abs(_valor - _c[_clave]) < CP9_TOLERANCIA_RELATIVA * max(1.0, abs(_valor)), (
+            f"CP-9 ensamble: el dorado {_clave} = {_c[_clave]!r} no sale de la "
+            f"formula ({_valor!r})")
+    print(f"CP-9 ensamble verificado: h_agua={_h:.2f} "
+          f"E_a={_esperados['E_activo_esperado']:.6f} "
+          f"E_s={_esperados['E_sobrecarga_esperado']:.6f} "
+          f"E_w={_esperados['E_hidrostatico_esperado']:.6f} "
+          f"U={_esperados['U_subpresion_esperado']:.6f}")
+

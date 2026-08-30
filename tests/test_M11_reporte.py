@@ -403,7 +403,9 @@ class TestIteraciones:
         assert all(not p.aceptado for p in recogidos)
         # Los escalones van en orden ascendente de diametro (catalogo Sec. 3.2)
         diametros = [p.D for p in recogidos]
-        assert diametros == sorted(diametros)
+        assert all(anterior <= siguiente for anterior, siguiente
+                   in zip(diametros, diametros[1:])), (
+            "los escalones van en orden ascendente de diametro")
 
     def test_sin_observador_MD_se_comporta_igual(self):
         """El observador no puede alterar el diseño."""
@@ -719,6 +721,92 @@ class TestBloquePendientes:
         for tablero in tableros:
             for fila in tablero.filas:
                 assert M11._md_texto(fila[1]) not in codigo
+
+    def _hoja_sin_la_tabla_del_tablero(self, tmp_path, numero):
+        """La hoja real, con el ENCABEZADO de un tablero pero sin su tabla."""
+        origen = M11.ruta_hoja_de_ruta()
+        salida, dentro = [], False
+        for linea in origen.read_text(encoding="utf-8").splitlines():
+            cabecera = M11._RE_TITULO_TABLERO.match(linea)
+            if cabecera:
+                dentro = cabecera.group(1) == numero
+                salida.append(linea)
+                continue
+            if dentro and linea.startswith("|"):
+                continue
+            salida.append(linea)
+        destino = tmp_path / origen.name
+        destino.write_text("\n".join(salida), encoding="utf-8")
+        return destino
+
+    def test_la_hoja_real_trae_los_tres_tableros_con_sus_filas(self):
+        """
+        El contrato que la memoria promete: tres tableros, ninguno vacio. El
+        numero total de filas NO se escribe aqui -- seria una segunda fuente
+        de verdad, que es justo lo que este modulo evita -- pero si se exige
+        que cada tablero traiga alguna.
+        """
+        tableros = M11.tableros_pendientes()
+        assert [t.numero for t in tableros] == ["1", "2", "3"]
+        assert all(t.filas for t in tableros)
+        assert all(t.titulo and t.encabezados for t in tableros)
+
+    @pytest.mark.parametrize("numero", ["1", "2", "3"])
+    def test_un_tablero_que_pierde_su_tabla_detiene_el_reporte(self, tmp_path,
+                                                               numero):
+        """
+        SIS-C-13. El fallo ruidoso solo cubria la perdida TOTAL: si la hoja
+        cambiaba de formato en UNO de los tres tableros -- el caso realista,
+        porque el formato se toca tablero a tablero -- los otros dos pasaban
+        en silencio y la memoria imprimia menos pendientes de los que hay.
+        Medido antes de la correccion: quitando la tabla del Tablero 2 se
+        leian 2 tableros y 10 filas en vez de 3 y 15, sin un solo aviso.
+        """
+        hoja = self._hoja_sin_la_tabla_del_tablero(tmp_path, numero)
+        with pytest.raises(ValueError, match="no produjeron"):
+            M11.tableros_pendientes(hoja)
+
+    def test_un_tablero_bien_formado_y_sin_filas_es_un_tablero_sin_pendientes(self, tmp_path):
+        """
+        Y NO un error. Este test afirmaba lo contrario y fijaba un supuesto
+        sobre el futuro del expediente en vez de una propiedad del formato: el
+        proyecto trabaja para VACIAR los tableros, y con la regla anterior el
+        dia que uno cerrara su ultima fila legitimamente la memoria entera
+        dejaba de generarse con un ValueError, sin forma de distinguir ese dia
+        de un cambio de formato.
+
+        La degradacion parcial que SIS-C-13 pide detectar la sigue cogiendo el
+        otro `raise`, y sin ambiguedad: un `Tablero N` solo produce tablero
+        cuando aparece su FILA DE ENCABEZADOS, de modo que una tabla rota o
+        retirada no produce ninguno. Eso lo prueba el test de arriba.
+        """
+        hoja = tmp_path / "hoja_de_ruta_alcantarillas_v9.md"
+        hoja.write_text(
+            "### Tablero 1 — Verificaciones documentales\n\n"
+            "| Item | Estado |\n| --- | --- |\n",
+            encoding="utf-8")
+        tableros = M11.tableros_pendientes(hoja)
+        assert [t.numero for t in tableros] == ["1"]
+        assert tableros[0].filas == ()
+        assert tableros[0].encabezados, (
+            "la fila de encabezados es lo que distingue una tabla vacia de "
+            "una tabla que no se pudo leer")
+
+    def test_un_tablero_sin_tabla_alguna_si_detiene_el_reporte(self, tmp_path):
+        """
+        El contraste, y la mitad de SIS-C-13 que si es inequivoca: un
+        encabezado `Tablero N` sin NINGUNA tabla debajo es formato roto, no un
+        tablero cerrado.
+        """
+        hoja = tmp_path / "hoja_de_ruta_alcantarillas_v9.md"
+        hoja.write_text(
+            "### Tablero 1 — Verificaciones documentales\n\n"
+            "| Item | Estado |\n| --- | --- |\n| V1 | abierto |\n\n"
+            "### Tablero 2 — Decisiones de diseño\n\n"
+            "aqui iba una tabla y ya no esta\n",
+            encoding="utf-8")
+        with pytest.raises(ValueError, match="no produjeron"):
+            M11.tableros_pendientes(hoja)
 
     def test_una_hoja_sin_tableros_detiene_el_reporte(self, tmp_path):
         muda = tmp_path / "hoja_de_ruta_alcantarillas_v7.md"

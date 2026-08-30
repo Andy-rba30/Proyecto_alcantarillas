@@ -46,7 +46,7 @@ se llama `hoja_de_ruta_correcciones_v12.md` y no colisiona — pero no renombres
 | Criterios con rango de sensibilidad numérico | 15 |
 | Tablas normativas (dicts) en `constantes_normativas.py` | **18** |
 | Escalares `[N]` en el mismo archivo | 26 |
-| Datos de sitio de corredor (`datos_sitio.py`) | 17 |
+| Datos de sitio de corredor (`datos_sitio.py`) | 7 |
 | Columnas del CSV por punto | 17 |
 | GUI | 4 pestañas, 958 líneas, **584 sentencias ejecutables, 0 tests** |
 | Plantillas de memoria | 2, con 21 marcadores `%%` |
@@ -251,6 +251,35 @@ qué imprimir.
 > `D_MAX` (2.70 / 2.10 / 1.50 m) están atribuidos a AASHTO M170 y ASTM A760, y **esas normas
 > tabulan hasta 3600 mm**. No son topes normativos: son topes de catálogo, y hoy descartan
 > materiales en silencio. Mostrarlos rotulados como «norma» sería crear una cita falsa nueva.
+
+> **Implementado en S15, y cuatro de los ejemplos de esta tabla no sobrevivieron al
+> contraste.** El censo vive en `src/variables_entrada.py` (83 variables: 17 columnas + 7
+> datos de sitio + 59 criterios) y el modo es el **tipo** del objeto `resolucion`, que
+> `Criterio` y `DatoSitio` llevan ahora como campo. Las desviaciones están declaradas una a
+> una, con su razón, en `variables_entrada.DESVIACIONES_DEL_PLAN`, y un test comprueba que
+> siguen siendo desviaciones. Las cuatro se apartan **hacia el modo que promete menos**:
+>
+> - **`HW_D_max`** no es `en_rango` sino `libre`. El num. 2.2.5 d) del HDS-5 *describe* lo
+>   que imponen las agencias de EE.UU. y no prescribe HW/D alguno (`NOR-HDS-02`, y el
+>   conflicto vinculante **#1** de la §6 de este mismo plan). Un rango con cita normativa
+>   devolvería la cita que ese hallazgo retiró.
+> - **`factor_muro_eleccion`** no es `de_tabla` sino `libre`: el num. 2.8.1.1.14.2.2 **no
+>   tabula nada**, autoriza una reducción, y el 1.0 adoptado es la *ausencia* de reducción.
+> - **`resguardo(CBR)`** no es `de_tabla` todavía: su tabla existe y es `[N]`, pero vive como
+>   escalares en `constantes_normativas.py` y no está transcrita al registro, y el criterio de
+>   salida de esta misma §4.3 prohíbe un `de_tabla` sin tabla en el registro. Queda `libre`
+>   con la tabla **nombrada** como pendiente.
+> - **`diametros_normalizados`** no es `de_catalogo`: el ejemplo apunta al `max` que ese
+>   criterio tenía cuando se escribió este plan, y **S4 lo mudó a `D_max_catalogo`** al cerrar
+>   `NOR-PRO-01`/`NOR-PRO-02`. Lo que queda es la serie verificada contra ASTM A760 Tabla 1.
+>
+> **Defecto de la §1.1 de este plan, corregido:** la fila «Datos de sitio de corredor
+> (`datos_sitio.py`)» decía **17**, que es el de la fila siguiente —las columnas del CSV—
+> repetido. Ahora dice **7**, los que el archivo declara hoy. Queda anotado que el número
+> **no** es el del inventario original: en el commit sobre el que se midió (`b8d70e5`) el
+> archivo declaraba **3** datos; S2 añadió `corredor_del_proyecto` y S12 los tres de
+> geometría vial respecto del tráfico. Con el 17, quien leyera el plan sin abrir el archivo
+> dimensionaba esa población por seis.
 
 ### 4.4 La memoria: `PasoDeMemoria`
 
@@ -573,6 +602,14 @@ y en suscripción no cuesta extra.
 conflictos acoplados; una sesión por cluster mantiene la ventana de contexto limpia y el
 commit atómico. Orden: **C08** (el bloqueante) → **C09** (los dorados de CP-1, porque
 validan todo lo demás) → C01 → C05 → C06 → C13 → C03 → C04 → C07.
+
+> **Los números de la columna `Hallazgos` son estimaciones previas a ejecutar.**
+> Se calcularon antes de la primera sesión y no se actualizan solos; varias
+> sesiones han movido filas de fase y han abierto hallazgos que aquí no
+> figuran. **El conteo que manda es el `Estado` vivo de la hoja `Hallazgos`**
+> del `.xlsx`, no esta tabla ni la hoja `Plan_Fases`. Lo mismo vale para la
+> columna `Clusters`: en una fase ya ejecutada es histórica, y en una
+> pendiente es una lista de quién reclama qué residuo, no un alcance completo.
 
 **Por qué S2–S10 dice 16 y no 20.** La columna `Hallazgos` de esta tabla es el conteo de
 filas de la hoja `Hallazgos` por fase, no el de filas que la sesión tocó. Las nueve
@@ -1378,6 +1415,32 @@ Para que esto no se lea como una promesa de completitud:
   mitad TMC de `clases_producto_por_relleno`, y **M294** cierra `D_MAX["hdpe"]`.
 - **La lectura de los ábacos raster** (Meyerhof `N_cq`/`N_γq`, la isolínea de PGA sobre
   Piura). Existen y están correctamente numerados; los valores no son legibles por texto.
+- **Los casos patrón que M2, M8 y M10 no pueden tener todavía (SIS-F-13).** No es
+  pereza de la fase de tests: fabricarles un dorado sería inventar el valor de
+  referencia, que es exactamente lo que prohíbe el **conflicto #7** (el de CP-1,
+  donde dos auditorías coincidieron dígito a dígito en que los dorados no salían
+  de la fórmula que el fixture declaraba). Lo que habría que **traer** a cada uno:
+  - **M2** — la serie de diámetros nominales tabulada de las normas de producto
+    (AASHTO M 170M-04 / ASTM C 76M-02, ASTM A760/A760M + AASHTO M 36, AASHTO
+    M294). Cerraría de paso una pregunta abierta: si la progresión adoptada de
+    0.90 m + 0.15 m corresponde a alguna serie comercial real o es una
+    interpolación del proyecto.
+  - **M8** — AASHTO M 170M-04 Tablas 1 a 5 (clases D-load del concreto) y
+    **ASTM A796/A796M** (calibre por altura de cobertura del TMC). Son el insumo
+    del vacío `clases_producto_por_relleno`, y A796 ya figura arriba como una de
+    las dos fuentes "fáciles" que desbloquean cosas concretas.
+  - **M10** — no sale de ninguna norma sino del **expediente vial**: sección
+    transversal de la cuneta, su n de Manning, la fórmula de intensidad para
+    TR = 35 años y el método de área tributaria. Sec. 10 describe el
+    procedimiento y no fija ninguno de los cuatro. El brazo normativo
+    (`L_normativo`, 200/250 m) ya es [N] y un caso patrón sobre él sería
+    tautológico; lo que falta es `L_hidraulico`.
+
+  Dos módulos más no consumen `casos_patron` hoy y **no** por esta razón, dicho
+  para que el conteo no se lea como una sola deuda: **M5** sí tiene su caso en el
+  fixture (`CP3_VELOCIDAD_MINIMA`, Sec. 5.2), pero lo consumen `test_M3` y
+  `test_constantes_normativas` en vez de `test_M5`; y **M11** es el módulo de
+  reporte, al que no le corresponde un dorado numérico.
 - **La validación contra HY-8**, recomendada pero externa.
 - **El cálculo de expediente propiamente dicho.** Este plan lo *prepara*; no lo escribe.
 - **La portabilidad a otra carretera.** El §8 de la auditoría normativa (el corredor de

@@ -52,9 +52,17 @@ varía punto a punto, es columna del CSV (NF_profundidad_m, cbr_subrasante). Un
 quedar en criterios_adoptados.py con el campo `trazabilidad`.
 
 Tabla y elección se separan siempre: los valores de una tabla normativa son
-[N] y viven en constantes_normativas.py (F_PGA_TABLA, FACTOR_MURO_TABLA); cuál
-fila aplica a esta obra es [A] y vive en criterios_adoptados.py ('F_pga',
-'factor_muro_eleccion').
+[N] y viven en constantes_normativas.py (F_PGA_TABLA,
+REDUCCION_KH_POR_DESPLAZAMIENTO); cuál fila aplica a esta obra es [A] y vive
+en criterios_adoptados.py ('F_pga', 'factor_muro_eleccion'). El segundo
+ejemplo decía FACTOR_MURO_TABLA hasta S16, y ese símbolo ya no existe: lo
+retiró NOR-PUE-07 porque el numeral no presenta tabla alguna, y en su lugar
+quedó el único valor normativo, REDUCCION_KH_POR_DESPLAZAMIENTO = 0.5. Se
+corrige aquí porque un símbolo colgado en la constitución no es inocuo: un
+test de la suite estaba VERDE SOBRE EL COMENTARIO que explica la retirada
+—`"FACTOR_MURO_TABLA = {" in fuente` lo satisfacía— y así estuvo hasta que
+S16 lo pasó al AST. El ejemplo sigue valiendo con el par que sí existe:
+el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
 
 ## Arquitectura
 - Ningún módulo declara valores no normativos. Todo literal numérico fuera de
@@ -107,8 +115,19 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   "falta declarar: <clave>", no como error del programa.
 - DisenoNoFactibleError: ninguna combinación material/diámetro cumple.
   Debe llevar el motivo y, si aplica, el delta de rasante requerido.
-- DatoFaltanteError: falta un dato de entrada del CSV. Falta la **columna**
-  entera, o la celda obligatoria viene vacía. Lleva el nombre de la columna.
+- DatoFaltanteError: falta un dato de entrada. Falta la **columna** entera
+  del CSV, o la celda obligatoria viene vacía. Lleva el nombre de la columna.
+  **También cubre el dato que no es columna del CSV**: el que llega por
+  `--datos-externos`, y el que un tablero externo tendría que aportar y
+  todavía no aporta (`ancho_derecho_via_m` en V5 es el caso vivo). En esos
+  casos el campo `campo` nombra el DATO, no una columna, y el mensaje dice de
+  dónde tendría que venir. Se amplió aquí en S16 (SIS-E-06): `modelos.py`
+  llevaba tiempo declarando el contrato ancho — "del CSV (Sec. 1.2) o de un
+  tablero externo" — y el código lo usaba así, de modo que la constitución
+  describía una excepción más estrecha que la que el proyecto tiene. La
+  alternativa —estrechar el código— habría obligado a inventar una excepción
+  nueva para el mismo problema del revisor: falta un dato que hay que
+  conseguir.
 - DatoInvalidoError: el dato **está** pero no puede ser: no es del tipo
   esperado, cae fuera del rango físico de dominios.py, o contradice a otro
   dato de su misma fila (§1.5). Hermana de DatoFaltanteError y no la misma:
@@ -116,6 +135,34 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   distintos del expediente y se corrigen de forma distinta. La regla para
   elegir: si el revisor tiene que **añadir** algo es Faltante, si tiene que
   **corregir** algo es Invalido.
+- **LimiteNumericoError: cada dato cumple su rango y es la ARITMÉTICA la que
+  no cabe.** Quinta de la taxonomía, añadida en S16.5. La regla que la separa
+  de DatoInvalidoError: si el dato, por sí solo, viola un límite de
+  dominios.py es Invalido; si **todos** los datos pasan **todas** las
+  validaciones y aun así la operación que los combina desborda a ±inf o anula
+  el denominador de una división, es LimiteNumerico. Ejemplos medidos:
+  `cota_rasante = 1e308` (finita, y ninguna cota tiene techo — ponérselo sería
+  inventar un valor de proyecto) hace que `M7.proyeccion_taludes` devuelva
+  `inf` y el informe imprima un diagnóstico entero sobre un número que no lo
+  es (SIS-G-01); un `Q_m3s` diminuto lleva a brentq a un θ donde el área se
+  cancela y `M4.tirante_critico` dividía por cero (SIS-G-02).
+  **No se corrige poniendo techos en dominios.py**: ese archivo acota lo que
+  un dato *puede ser*, no lo que la aritmética *puede llevar*. La guardia va
+  siempre a la **salida** del cálculo.
+  Precedente que conviene conocer antes de leer esto como una incoherencia:
+  **MAT-D13** (`M1_clasificacion.tr_desde_riesgo`) cerró un caso idéntico bajo
+  DatoInvalidoError **antes de que esta clase existiera**, y no se migró
+  porque es código verde. La clase nueva no llegó porque DatoInvalidoError
+  fuera la equivocada por definición: llegó a **nombrar algo que el proyecto
+  ya venía haciendo sin nombre**.
+  De MAT-D13 se hereda además la **forma** de la guardia: umbral **medido**
+  (nunca un `!= 0` genérico), condición escrita **en positivo y negada**
+  (`not A > 0`, porque un NaN es falso frente a `<=` igual que frente a `>`),
+  y mensaje que nombra al **par culpable**, no a un solo dato.
+  Contrapeso obligatorio: hay **dos** `inf` deliberados en el repositorio
+  (`M9.verificar_volteo` y `M9.verificar_deslizamiento`, donde un FS infinito
+  es la ausencia de la solicitación). Ninguna guardia de finitud puede
+  atraparlos; por eso no hay barrido global y el censo está fijado en un test.
 No usar Exception genérica en lógica de negocio. Un fallo de E/S (archivo
 inexistente) no es del expediente y sale como FileNotFoundError, fuera de
 ErrorProyecto.

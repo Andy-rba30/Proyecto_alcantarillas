@@ -58,6 +58,7 @@ que ademas siguen sujetos a un ensayo pendiente y por eso comparten tablero
 con los criterios adoptados.
 """
 
+import math
 import numbers
 import re
 from dataclasses import dataclass, replace
@@ -67,7 +68,11 @@ from typing import Any, Optional, Tuple, Dict, List, Set
 
 from constantes_normativas import (H_O_CONDICION_TEXTO, H_O_NUMERAL,
                                    MANNING)
-from modelos import CriterioPendienteError
+from normativa import esquema as _esquema
+from normativa import registro as _registro_normativo
+from modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
+                     DeTabla, EnRango, Libre, ModoDeResolucion, Resolucion,
+                     modo_de)
 
 # Las TRES importaciones de constantes normativas que hace este archivo
 # entran por la misma razon, y ninguna transcribe nada: referencian lo que ya
@@ -107,6 +112,23 @@ class Criterio:
     vacio_verificado: str = ""                 # ancla al vacio registrado que este valor cubre
     sin_consumidor: str = ""                   # por que NINGUN modulo lo invoca
     de_catalogo: str = ""                      # rotulo: el valor es de CATALOGO, no de norma
+    resolucion: Optional[Resolucion] = None    # COMO se resuelve (Sec. 4.3): tabla, rango, ensayo...
+
+    # `resolucion` es el vinculo que faltaba: dice DE DONDE SALIO el valor --
+    # de que tabla y de que fila, de que rango, de que ensayo, de que catalogo
+    # -- y con el la memoria puede escribir "el valor X vino de la fila R de la
+    # tabla T" en vez de dejar al revisor cruzando a mano la prosa de `fuente`
+    # con el registro normativo (regla R1 del plan v12).
+    #
+    # No es un `str` con el nombre del modo: es un objeto de la familia cerrada
+    # de `modelos.py` (Libre / DeTabla / EnRango / Derivada / DeEnsayo /
+    # DeCatalogo) y EL MODO ES SU TIPO. Un criterio no puede quedarse sin modo
+    # ni declarar uno que no corresponda a como se resuelve, porque no hay dos
+    # campos que puedan contradecirse: hay uno.
+    #
+    # Es `Optional` solo por la firma; la guardia lo exige a toda entrada del
+    # archivo. El default existe para que `replace()` -- los dos caminos
+    # dinamicos -- no tenga que repetirlo.
 
     # `de_catalogo` marca el valor que se PARECE a una exigencia normativa y
     # no lo es: un tope de proveedor, una disponibilidad de mercado. Lleva el
@@ -201,6 +223,25 @@ def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
     el valor es None, de modo que un override a None devolvia None en vez de
     lanzar `CriterioPendienteError`, que es justo lo que este archivo existe
     para impedir.
+
+    POR QUE EL RECHAZO SALE COMO `ValueError` Y NO COMO `DatoInvalidoError`
+    (SIS-E-05). La pregunta es legitima: CLAUDE.md define DatoInvalidoError
+    como "el dato esta pero no puede ser", y un valor fuera del rango de
+    sensibilidad encaja en esa frase. La respuesta es que lo que se rechaza
+    aqui NO es un dato del expediente: es una DECLARACION que el proyectista
+    acaba de teclear, y el rango contra el que se compara lo declara el
+    propio criterio, en este archivo. `_verificar_criterio` es la misma
+    guardia que corre AL IMPORTAR, donde un fallo significa que el archivo
+    fuente esta mal escrito y ninguna corrida deberia empezar -- ahi
+    `ValueError` es exactamente lo que corresponde --, y hacerla lanzar dos
+    excepciones distintas segun por cual de sus tres caminos entre convertiria
+    la guardia en dos guardias.
+    Lo que la taxonomia persigue -- que la GUI distinga un problema del
+    expediente de un fallo del programa -- se cumple igual y esta comprobado:
+    los tres llamadores (`cli.main`, `gui/app.py::_aplicar_valor_corrida` y
+    `::_guardar_valor_en_archivo`) capturan `(ValueError, KeyError)` a tres
+    lineas y muestran el mensaje; ninguno deja escapar una traza. El contrato
+    esta fijado por test en tests/test_criterios_adoptados.py.
     """
     if clave not in CRITERIOS:
         raise KeyError(
@@ -223,7 +264,26 @@ def quitar_valor_dinamico(clave: str) -> None:
 
 
 def limpiar_valores_dinamicos() -> None:
-    """Retira todas las declaraciones en caliente de la corrida."""
+    """
+    Retira todas las declaraciones en caliente de la corrida.
+
+    NO TIENE LLAMADOR DE PRODUCCION, Y ES DELIBERADO (SIS-B-22). La razon se
+    escribe aqui, que es donde la busca quien lee la funcion:
+
+    una corrida de la CLI es un proceso de un solo uso --- declara, calcula,
+    escribe la memoria y termina ---, de modo que "borrar todas las
+    declaraciones" no es una operacion que ninguna corrida necesite: el
+    proceso se acaba y el estado se va con el. La GUI tampoco la usa, porque
+    su boton retira UNA clave (`quitar_valor_dinamico`) y no todas: borrar de
+    golpe lo que el proyectista acaba de declarar seria un boton peligroso sin
+    caso de uso.
+
+    Quien SI la necesita es la suite: `conftest.py` la nombra al explicar por
+    que la declaracion de 'origen_cota_fondo_entrada' se repone en una fixture
+    autouse --- varios tests la llaman y sin reponer lo borrado el resto de la
+    suite caeria por orden de ejecucion. Es una utilidad de banco de pruebas
+    con un consumidor real, no codigo muerto, y por eso se conserva.
+    """
     _OVERRIDES.clear()
 
 
@@ -362,6 +422,40 @@ def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
     # ya no hace falta, el valor "real" es ahora este.
     CRITERIOS[clave] = replace(CRITERIOS[clave], valor=valor_nuevo)
     _OVERRIDES.pop(clave, None)
+
+
+def declaracion_de(clave: str):
+    """
+    El objeto DECLARADO de `clave`, venga de este archivo o de datos_sitio.py.
+
+    SIS-A-05. `cli._bloqueo` y `M11.criterios_bloqueantes` resolvian toda
+    clave con `criterio()`, y `CriterioPendienteError` no la levanta solo este
+    archivo: `datos_sitio.valor` levanta LA MISMA excepcion cuando un [S] de
+    corredor todavia no se ha leido -- deliberadamente, porque el error que se
+    evita es el mismo. Con un [S] pendiente, los dos consumidores salian por
+    `KeyError`: un fallo de PROGRAMA en el codigo que existe justamente para
+    convertir un problema del expediente en una fila del informe.
+
+    Hoy es inalcanzable porque los datos de sitio de corredor tienen valor,
+    pero eso es una propiedad del expediente de este mes, no del codigo: el
+    dia que se añada un [S] pendiente -- y el proyecto tiene el mecanismo para
+    ello -- la corrida moriria con traza en vez de listar el bloqueo.
+
+    Los dos tipos declaran los mismos campos que el informe necesita
+    (`etiqueta`, `concepto`, `fuente`, `reemplazado_por`), de modo que el
+    consumidor no tiene que saber de cual de los dos archivos vino.
+    """
+    if clave in CRITERIOS:
+        return criterio(clave)
+    import datos_sitio as ds
+
+    if clave in ds.DATOS_SITIO:
+        return ds.dato(clave)
+    raise KeyError(
+        f"'{clave}' no esta declarado ni en criterios_adoptados.py ni en "
+        "datos_sitio.py. Ningun valor no normativo puede usarse sin "
+        "declararse en uno de los dos."
+    )
 
 
 def criterios_usados() -> List[str]:
@@ -522,7 +616,8 @@ CRITERIOS: Dict[str, Criterio] = {
                         "15 m de profundidad con ensayo cada 1.00 m (E.050 "
                         "Art. 38). Es la profundidad que cierra ESTE criterio "
                         "-- la presuncion de suelo licuable del Art. 14.6 -- y "
-                        "no la del criterio 'clase_sitio', que necesita 30 m",
+                        "no la del criterio 'clase_sitio', que necesita los "
+                        "100 ft (30.48 m) del Art. 3.10.3.1 de AASHTO",
         trazabilidad="Clasificacion del Art. 14.6 de E.030 aplicada a la "
                      "caracterizacion geotecnica disponible del corredor "
                      "(llanura del Bajo Piura, distrito de La Union), sin "
@@ -530,8 +625,10 @@ CRITERIOS: Dict[str, Criterio] = {
                      "sea presuncion; con SPT pasa a ser dato por calicata y "
                      "entonces le corresponde una columna del CSV, no esta "
                      "entrada. NO LO INVOCA NINGUN MODULO DE src/modulos/ -- "
-                     "la clase de sitio que si entra en el calculo es la de "
-                     "AASHTO, criterio 'clase_sitio' --, pero LLAMARLO "
+                     "y la clase de sitio de AASHTO tampoco entra en el "
+                     "calculo: el criterio 'clase_sitio' es hoy un [S] SIN "
+                     "VALOR y lo que la cadena sismica consume es el factor "
+                     "'F_pga' --, pero LLAMARLO "
                      "'REFERENCIA MUERTA', como decia este campo, se queda "
                      "muy por debajo de lo que la fuente dice: la fila S5 de "
                      "la Tabla N 2 trae en su ultima vineta la afirmacion "
@@ -546,9 +643,13 @@ CRITERIOS: Dict[str, Criterio] = {
                      "lectura en constantes_normativas.E030_S5_TEXTO y "
                      "E030_S5_LECTURA; la nota llega a la memoria por "
                      "M9.condicion_normativa_cabezal. Se conserva declarado, "
-                     "y no borrado, porque es la presuncion geotecnica sobre "
-                     "la que se apoyan tanto 'clase_sitio' como la hipotesis "
-                     "de licuefaccion de Sec. 0.5",
+                     "y no borrado, porque es la presuncion geotecnica que "
+                     "sostiene la hipotesis de licuefaccion de Sec. 0.5. Lo "
+                     "que YA NO sostiene -- y es la correccion de S13/S14 --, "
+                     "es la clase de sitio de AASHTO: son dos taxonomias "
+                     "distintas, una por descripcion y otra por rigidez "
+                     "medida, y trasladar esta a aquella era justamente el "
+                     "salto no escrito (NOR-AAS-02)",
         verificacion_pendiente="Al llegar el SPT, confirmar el perfil y "
                                "decidir si es unico para el tramo o varia por "
                                "calicata; si varia, no se corrige el valor: se "
@@ -565,150 +666,212 @@ CRITERIOS: Dict[str, Criterio] = {
                        "criterio invocado. Se conserva declarado, y no "
                        "borrado, para que el ensayo que lo cerraria siga "
                        "pedido",
+        resolucion=DeEnsayo(
+            ensayo="clasificacion del perfil de suelo de E.030 (S0-S5) "
+                   "sobre la caracterizacion geotecnica del corredor",
+            trazabilidad_exigida="el EMS del que sale la caracterizacion y "
+                                 "la vineta de la Tabla N 2 de E.030 que se "
+                                 "leyo; hoy es PRESUNTO y el ensayo lo "
+                                 "confirma o lo cambia",
+        ),
     ),
 
+    # `clase_sitio` NO es un criterio [A] con valor, y tampoco es un vacio
+    # normativo: es un DATO DE SITIO pendiente de ensayo, y por eso pasa a
+    # [S] SIN VALOR. La decision, su fundamento y las doce citas verificadas
+    # que la sostienen estan en docs/resolucion_clase_sitio.md (S13,
+    # conflicto #8); aqui se APLICA y no se reabre.
+    #
+    # El valor que se retira -- "F_con_factores_tabulados_por_adopcion" --
+    # pegaba DOS COSAS DISTINTAS en una sola cadena: una clasificacion que la
+    # fuente no sostiene (`F`) y una decision de procedimiento que si es del
+    # proyectista (con que filas se lee la tabla mientras el hecho falta). La
+    # segunda no desaparece: ya vive, bien etiquetada y con su rango, en
+    # 'F_pga'. Separarlas es toda la correccion (NOR-AAS-02, SIS-B-01,
+    # SIS-D-01).
     "clase_sitio": Criterio(
-        valor="F_con_factores_tabulados_por_adopcion",
-        etiqueta="A",
-        concepto="Clase de sitio sismica AASHTO y base sobre la que se toman "
-                 "los factores de sitio de la cadena sismica",
-        justificacion="LA PREMISA -- QUE EL SITIO ES CLASE F POR "
-                      "LICUEFACCION -- ESTA ABIERTA, Y ESTE CAMPO DECIA LO "
-                      "CONTRARIO: 'esa parte no cambia'. Cambia, o al menos "
-                      "no esta sostenida. El salto de 'suelo potencialmente "
-                      "licuable' a 'Clase de Sitio F' NO LO ESCRIBE NINGUNO "
-                      "de los dos documentos que este criterio invoca. La "
-                      "Clase F de AASHTO LRFD 9a ed. (Art. 3.10.3.1, Tabla "
-                      "3.10.3.1-1, pag. impresa 3-102) enumera suelos que "
-                      "requieren evaluacion especifica -- turbas y arcillas "
-                      "muy organicas, arcillas de plasticidad muy alta, "
-                      "arcillas blandas muy potentes -- introducidos por un "
-                      "'such as' que deja la lista abierta, de modo que de la "
-                      "ausencia de la licuefaccion en la enumeracion no se "
-                      "sigue que este fuera; pero la 9a ed. trata la "
-                      "licuefaccion por VIA DISTINTA de la clase de sitio, en "
-                      "su Art. 10.5.4.2 'Liquefaction Design Requirements'. "
-                      "Quien clasifica los suelos licuables en su categoria "
-                      "aparte es E.030, en el perfil S5 (Art. 14.6, Tabla "
-                      "N 2), que es de donde el expediente saca la letra. Los "
-                      "dos esquemas discrepan justamente en el rasgo que "
-                      "motiva la clasificacion de este sitio, y el expediente "
-                      "trasladaba uno al otro sin declararlo (NOR-AAS-02). La "
-                      "transcripcion de esa discrepancia esta en "
-                      "constantes_normativas.E030_S5_VS_CLASE_F. "
-                      "RESOLVERLA NO ES MATERIA DE ESTE CAMPO ni de esta "
-                      "correccion: es una decision normativa abierta del "
-                      "expediente, y hasta que se tome, lo que este criterio "
-                      "declara es que el proyecto sigue el calculo con "
-                      "factores de sitio tabulados. "
-                      "LO QUE SI ESTA CERRADO ES QUE LA DISPENSA POR PERIODO "
-                      "CORTO NO EXISTE. Se verifico contra AASHTO LRFD Bridge Design "
-                      "Specifications, 9a edicion (2020): no esta en el "
-                      "Art. 3.10.3.1, no esta en su comentario C3.10.3.1, y "
-                      "no esta en ninguna tabla ni nota de tabla de clases de "
-                      "sitio. AASHTO exige, de forma incondicional, un estudio de "
-                      "respuesta de sitio especifico para la Clase F, y el "
-                      "Manual de Puentes lo repite en la tabla misma: su "
-                      "Tabla 2.4.3.11.2.1.2-1 pone asterisco a la fila F en "
-                      "las cinco columnas de PGA y su Nota 2 manda 'llevar a "
-                      "cabo investigaciones geotecnicas especificas del sitio "
-                      "y analisis de respuesta dinamica de sitio, para todos "
-                      "los sitios en sitio clase F'. El repositorio afirmaba "
-                      "justo lo contrario -- que el Manual NO tipifica nada "
-                      "para la Clase F -- y esa afirmacion negativa era falsa "
-                      "(NOR-PUE-09). La "
-                      "redaccion anterior de este criterio y de Sec. 0.5 "
-                      "atribuia a AASHTO una dispensa por periodo "
+        valor=None,
+        etiqueta="S",
+        concepto="Clase de sitio sismica (AASHTO LRFD Art. 3.10.3.1 / Manual "
+                 "de Puentes num. 2.4.3.11.2.1.1). Es la rigidez MEDIDA de "
+                 "los 100 ft (30.48 m) superiores leida en la tabla de "
+                 "definiciones: un hecho del sitio, no una eleccion del "
+                 "proyectista. Sin ella la cadena sismica no se detiene, "
+                 "porque lo que consume es el factor -- 'F_pga' -- y no la "
+                 "clase",
+        justificacion="ESTE EXPEDIENTE NO SE ATRIBUYE NINGUNA CLASE DE SITIO, "
+                      "y en particular deja de atribuirse la Clase F. No "
+                      "porque la fuente diga que el sitio no lo es -- eso lo "
+                      "decide la campana geotecnica --, sino por algo mas "
+                      "fuerte: LAS DOS FUENTES PROHIBEN SUPONER la clase E o "
+                      "F sin dato geotecnico ni determinacion de la autoridad "
+                      "competente, y este expediente no tiene ninguna de las "
+                      "dos. AASHTO LRFD 9a ed., Art. 3.10.3.1, al pie de la "
+                      "Tabla 3.10.3.1-1 (pag. impresa 3-102): «Site classes E "
+                      "or F should not be assumed unless the authority having "
+                      "jurisdiction determines that site classes E or F could "
+                      "be present at the site or in the event that site "
+                      "classes E or F are established by geotechnical data». "
+                      "El Manual de Puentes lo endurece en su num. "
+                      "2.4.3.11.2.1.1 (pag. impresa 122): «Las clases de "
+                      "Sitio E o F no seran supuestas a no ser que la Entidad "
+                      "determine la clase de sitio E o F o estas sean "
+                      "establecidas por datos geotecnicos». Suponerla no es "
+                      "una adopcion declarable del proyectista: es lo que la "
+                      "norma veda. "
+                      "DE DONDE SALIA LA LETRA, Y POR QUE NO SE SOSTIENE. El "
+                      "salto de «suelo potencialmente licuable» a «Clase de "
+                      "Sitio F» no lo escribe ninguno de los dos documentos "
+                      "que este criterio invoca: en las 1905 paginas de "
+                      "AASHTO los conjuntos de paginas con `liquef` y con "
+                      "«Site Class F» son DISJUNTOS, y en las 673 del Manual "
+                      "la licuefaccion vive en cimentaciones y en el Apendice "
+                      "A11, nunca en el numeral de clases de sitio. Quien SI "
+                      "clasifica los suelos licuables en su categoria "
+                      "excepcional es E.030, en el perfil S5 de su Tabla "
+                      "N 2 -- de ahi venia la letra --, y son dos esquemas "
+                      "distintos que discrepan justo en el rasgo que motivaba "
+                      "la clasificacion de este sitio (DIS-HR-CLASE-DE-SITIO-F, "
+                      "constantes_normativas.E030_S5_VS_CLASE_F). Ademas el "
+                      "Art. 10.5.4.2 ESPERA factor de sitio tabulado para un "
+                      "sitio licuable -- acota el espectro especifico a no "
+                      "menos de dos tercios del general «modified by the site "
+                      "factors in Article 3.10.3.2» --, cosa imposible si la "
+                      "licuefaccion lo hiciera Clase F, porque la fila F no "
+                      "da factor. "
+                      "POR QUE ES [S] Y NO [A]. La regla que separa las dos "
+                      "etiquetas es que un [A] se defiende con un rango de "
+                      "sensibilidad porque hubo eleccion, y un [S] no tiene "
+                      "rango que elegir. La clase de sitio no se elige: el "
+                      "Art. 3.10.3.1 dice que se determina «by their "
+                      "stiffness as determined by the shear wave velocity in "
+                      "the upper 100 ft» y el paso 3 de la Tabla C3.10.3.1-1 "
+                      "da el procedimiento de calculo. Es una MEDICION, y "
+                      "cambia al mover la obra de sitio y no al cambiar de "
+                      "proyectista. El propio archivo lo estaba confesando "
+                      "sin sacar la consecuencia: mientras tuvo valor, este "
+                      "fue el UNICO [A] con valor que no declaraba "
+                      "sensibilidad (SIS-D-08), y la razon escrita era que "
+                      "declarar un rango de clases alternativas seria fijar "
+                      "la respuesta antes de resolver la pregunta. Un valor "
+                      "que no puede declarar rango porque la pregunta no esta "
+                      "resuelta no es una eleccion: es un HECHO QUE FALTA. "
+                      "POR QUE NO ES UN VACIO NORMATIVO. La regla de los "
+                      "vacios gobierna el caso en que la norma no fija el "
+                      "valor y hay que adoptarlo. Aqui la norma SI dice como "
+                      "se determina la clase, con que variables y sobre que "
+                      "profundidad, e incluso que hacer mientras no se sepa: "
+                      "investigar, y no suponer E ni F. Lo que falta no es la "
+                      "regla, es la MEDICION -- y eso es un dato de sitio "
+                      "pendiente de ensayo. "
+                      "LO QUE EL PROYECTO SI ELIGE no desaparece y ya estaba "
+                      "en su sitio: sobre que filas lee la tabla mientras el "
+                      "hecho falta, que es 'F_pga' = (C, D, E), [A], con su "
+                      "sensibilidad 0.9-1.0 declarada. Es el mismo reparto R1 "
+                      "de siempre -- la tabla es [N], la fila es [A] -- y "
+                      "esta correccion no lo toca. "
+                      "LO QUE QUEDA CERRADO, ademas, es que LA DISPENSA POR "
+                      "PERIODO CORTO NO EXISTE: se busco sobre las 1905 "
+                      "paginas de AASHTO LRFD 9a ed. (2020) con cero "
+                      "coincidencias. No esta en el Art. 3.10.3.1, no esta en "
+                      "su comentario C3.10.3.1, y no esta en ninguna tabla ni "
+                      "nota de tabla de clases de sitio. La redaccion "
+                      "historica de este criterio y de la Sec. 0.5 de la hoja "
+                      "de ruta le atribuia a AASHTO una dispensa por periodo "
                       "fundamental T <= 0.5 s que AASHTO no concede: no fue "
-                      "un vacio rellenado en silencio, fue una autorizacion "
+                      "un vacio relleno en silencio, fue una autorizacion "
                       "normativa inventada, que es peor, porque un vacio se "
-                      "ve y una cita falsa se cree. "
-                      "CONSECUENCIA SOBRE LA ETIQUETA: deja de ser [C]. Un "
-                      "[C] es un vacio normativo CUBIERTO con fuente tecnica "
-                      "reconocida, y aqui no hay fuente que cubra nada -- la "
-                      "que se citaba no dice lo que se le hacia decir. Pasa a "
-                      "[A]: seguir el calculo con los factores de sitio "
-                      "tabulados, mientras no exista el estudio de respuesta "
-                      "de sitio, es una ADOPCION DECLARADA DEL PROYECTISTA y "
-                      "no un permiso de la norma. La memoria lo dice con esas "
-                      "palabras; no hay forma honesta de escribirlo mas "
-                      "corto. "
-                      "ALCANCE, ahora sin coartada: los factores tabulados "
-                      "permiten DIMENSIONAR el elemento; no evaluan el riesgo "
-                      "de licuefaccion (Fase 0-bis), y los efectos de la "
-                      "licuefaccion -- asentamiento, desplazamiento lateral, "
-                      "perdida de capacidad portante -- quedan fuera del "
-                      "alcance del script y remitidos al estudio geotecnico "
-                      "del expediente. Un analisis de respuesta especifica de "
-                      "sitio puede arrojar valores MAYORES que los tabulados: "
-                      "la adopcion no es conservadora por construccion, y por "
-                      "eso es [A] y no [N->]",
-        fuente="NINGUNA autoriza la adopcion. AASHTO LRFD 9a ed. (2020), "
-               "Art. 3.10.3.1 y C3.10.3.1: la Clase F exige estudio de "
-               "respuesta de sitio especifico, sin dispensa alguna por periodo "
-               "corto. El Manual de Puentes tampoco tipifica dispensas "
-               "para Clase F en su Tabla 2.4.3.11.2.1.2-1. La adopcion es "
-               "del proyectista y se declara como tal",
-        reemplazado_por="CARACTERIZACION DE SITIO SOBRE LOS 30 m SUPERIORES: "
-                        "Vs30, o N_barra promediado en esos 30 m, con el que "
-                        "se lee la clase de sitio. Los 30 m son parte de la "
-                        "DEFINICION de la clase (AASHTO LRFD Art. 3.10.3.1, "
-                        "coherente con el perfil de E.030): una clase de sitio "
-                        "leida sobre menos profundidad no es la misma "
-                        "variable. "
+                      "ve y una cita falsa se cree",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
+               "Art. 3.10.3.1 «Site Class Definitions» y su Tabla 3.10.3.1-1 "
+               "(pag. impresa 3-101 y 3-102); Manual de Puentes (MTC), num. "
+               "2.4.3.11.2.1.1 «Definiciones de Clases de Sitio» y su Tabla "
+               "2.4.3.11.2.1.1-1 (pag. impresa 122). Las dos definen la clase "
+               "y las dos prohiben suponer E o F sin dato. Citas verificadas "
+               "en el registro: AASHTO_LRFD_9.3.10.3.1, "
+               "AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES, "
+               "MP.2.4.3.11.2.1.1#EXCEPCIONES, AASHTO_LRFD_9.T3.10.3.1-1#F y "
+               "E030.T2#S5. La fuente NO da el valor: da el procedimiento "
+               "para medirlo",
+        trazabilidad="NO SE HA EJECUTADO NINGUNA LECTURA: este [S] esta "
+                     "vacio, y eso es lo que la memoria declara. "
+                     "COMO SE REPRODUCIRA cuando el ensayo exista, en el "
+                     "orden en que la fuente lo escribe: (1) caracterizar los "
+                     "100 ft (30.48 m) superiores del perfil bajo el nivel de "
+                     "cimentacion del cabezal, obteniendo v_s, N o s_u; "
+                     "(2) promediarlos por el procedimiento del paso 3 de la "
+                     "Tabla C3.10.3.1-1, que es media armonica ponderada por "
+                     "espesor y no media aritmetica; (3) entrar con ese "
+                     "promedio en la Tabla 3.10.3.1-1 (equivalente: Tabla "
+                     "2.4.3.11.2.1.1-1 del Manual, pag. impresa 122) y leer "
+                     "la letra; (4) antes de esos tres pasos, comprobar la "
+                     "fila F, que el paso 1 de la misma tabla manda mirar "
+                     "primero. "
+                     "ALCANCE: es un dato DE CORREDOR mientras el perfil "
+                     "geotecnico no muestre variacion, no un dato por punto; "
+                     "si la campana devuelve columnas distintas entre "
+                     "progresivas, deja de serlo y pasa a columna del CSV. "
+                     "QUIEN LO FIRMA: el estudio de mecanica de suelos del "
+                     "expediente. Este archivo no lo puede rellenar por "
+                     "analogia ni por presuncion, y esa es toda la diferencia "
+                     "con 'PERFIL_SUELO_PRESUNTO', que si conserva valor: "
+                     "aquel perfil se alcanza por DESCRIPCION -- la Tabla "
+                     "N 2 de E.030 tiene columna «Descripcion» y su fila S5 "
+                     "es una lista de condiciones cualitativas -- y este se "
+                     "alcanza por NUMEROS que nadie ha medido. Una se puede "
+                     "presumir declarandolo; la otra la norma prohibe "
+                     "presumirla",
+        reemplazado_por="DOS ENSAYOS DE PROFUNDIDADES DISTINTAS, que conviene "
+                        "pedir juntos al programar la campana geotecnica. "
+                        "(1) LA CARACTERIZACION DE LOS 100 ft (30.48 m) "
+                        "SUPERIORES -- Vs30 o N_barra --, que es la "
+                        "profundidad que el Art. 3.10.3.1 escribe («the upper "
+                        "100 ft») y con la que se lee la clase. La hoja de "
+                        "ruta pide «30 m» y se lo atribuye al articulado: el "
+                        "numeral no imprime esa cifra, y la discrepancia esta "
+                        "declarada en DIS-HR-30M-VS-100FT. Los 30.48 m son "
+                        "parte de la DEFINICION de la clase: una clase leida "
+                        "sobre menos profundidad no es la misma variable. "
+                        "(2) SI ESA CARACTERIZACION DIERA CLASE F, el "
+                        "ANALISIS DE RESPUESTA DINAMICA DE SITIO, que el "
+                        "Art. 3.10.2 exige con «shall» -- «A Site-Specific "
+                        "Procedure shall be used if any one of the following "
+                        "conditions exist» -- y el num. 2.4.3.11.2 del Manual "
+                        "con «sera usado». La exigencia se ancla ahi, en el "
+                        "articulado, y no en la Nota 2 al pie de la tabla de "
+                        "factores, que es donde el repositorio la anclaba: la "
+                        "nota la repite, no la funda. "
                         "NO LO CIERRA el SPT de 15 m de E.050 Art. 38: ese "
                         "ensayo responde a la pregunta de licuefaccion "
-                        "(criterio PERFIL_SUELO_PRESUNTO) y se detiene a mitad "
-                        "de la columna que esta clase necesita. Este criterio "
-                        "decia antes '>= 15 m -> N_barra o Vs30', que mezclaba "
-                        "las dos profundidades y daba por cerrada con 15 m una "
-                        "lectura que exige 30. Son dos requisitos de campana "
-                        "distintos y conviene pedirlos juntos al programar la "
-                        "campana geotecnica",
-        verificacion_pendiente="La verificacion que este campo pedia -- si la "
-                               "dispensa estaba en articulado o en comentario "
-                               "-- YA SE HIZO y la respuesta fue que no esta "
-                               "en ninguno de los dos. Lo que queda pendiente "
-                               "es otra cosa: mientras la adopcion siga en "
-                               "pie, la memoria debe declararla como decision "
-                               "del proyectista contra una exigencia expresa "
-                               "de AASHTO, y el expediente debe programar el "
-                               "estudio de respuesta de sitio especifico. No "
-                               "se cita AASHTO como respaldo de la adopcion. "
-                               "POR QUE NO DECLARA SENSIBILIDAD, siendo el "
-                               "unico [A] con valor que no la declara: un "
-                               "rango de sensibilidad dice entre que dos "
-                               "valores pudo moverse la ELECCION, y aqui la "
-                               "eleccion no esta cerrada por arriba porque "
-                               "la PREMISA -- que el sitio es Clase F por "
-                               "licuefaccion -- esta bajo REVISION ABIERTA "
-                               "del expediente, no resuelta ni en un sentido "
-                               "ni en el otro. Hasta que esa revision "
-                               "termine, declarar un rango de clases "
-                               "alternativas seria fijar la respuesta antes "
-                               "de resolver la pregunta, y la memoria "
-                               "imprimiria como acotada una adopcion que "
-                               "todavia no lo esta. El rango se declara "
-                               "cuando la premisa se cierre, y no antes; "
-                               "hasta entonces lo que la memoria dice es lo "
-                               "unico defendible hoy: que no hay norma que "
-                               "respalde la adopcion. "
-                               "Y QUEDA ABIERTO EL CABLEADO. Ningun modulo de "
-                               "produccion invoca este criterio, de modo que "
-                               "no entra en `criterios_usados()` y la memoria "
-                               "no imprime la adopcion que la Sec. 0.5 de la "
-                               "hoja de ruta obliga a escribir con esas "
-                               "palabras (SIS-B-01). No se cablea en esta "
-                               "correccion a proposito: cablearlo antes de "
-                               "resolver la premisa haria que la memoria "
-                               "DECLARARA FORMALMENTE una clasificacion que "
-                               "la fuente no sostiene, que es peor que no "
-                               "declararla. Lo que si se cerro aqui es la "
-                               "incoherencia entre este criterio y 'F_pga' "
-                               "(SIS-D-01): la tabla esta completa, su fila F "
-                               "figura con su asterisco y su Nota 2, y "
-                               "'F_pga' dice ahora sobre que filas se lee y "
-                               "por que la F no esta entre ellas",
+                        "(criterio 'PERFIL_SUELO_PRESUNTO') y se detiene a "
+                        "mitad de la columna que esta clase necesita",
+        sin_consumidor="NINGUN MODULO DE PRODUCCION LO INVOCA, Y ES "
+                       "DELIBERADO: el vacio se DECLARA, no se interpone. La "
+                       "cadena sismica no consume la clase de sitio, consume "
+                       "el FACTOR, y el factor esta declarado por 'F_pga' con "
+                       "su fundamento propio y su rango. Invocar este "
+                       "criterio desde `M9.cadena_sismica()` detendria el "
+                       "dimensionamiento entero del cabezal -- todo valor "
+                       "None invocado lanza CriterioPendienteError -- sin que "
+                       "ninguna norma lo exija, y contra el hecho de que el "
+                       "proyecto PUEDE dimensionar hoy bajo la eleccion de "
+                       "filas declarada. La memoria no lo pierde por no "
+                       "invocarlo: entra por `criterios_sin_valor()`, que es "
+                       "la puerta que le corresponde a un vacio declarado, y "
+                       "la nota normativa completa -- por que el expediente "
+                       "decia Clase F y por que deja de decirlo -- viaja a "
+                       "las dos plantillas por "
+                       "`M9.condicion_normativa_cabezal()`. Eso es lo que "
+                       "cierra SIS-B-01: el defecto era el valor, no la falta "
+                       "de cableado",
+        resolucion=DeEnsayo(
+            ensayo="medicion de la rigidez de los 30.48 m superiores (Vs30, "
+                   "N o su) segun AASHTO Art. 3.10.3.1",
+            trazabilidad_exigida="el ensayo geofisico o geotecnico, su "
+                                 "profundidad y el laboratorio; una clase de "
+                                 "sitio DECLARADA sin medicion no es una "
+                                 "clase de sitio",
+        ),
     ),
 
     # F_pga deja de guardar el RESULTADO y pasa a guardar la ELECCION, que es
@@ -724,48 +887,74 @@ CRITERIOS: Dict[str, Criterio] = {
                  "factor de sitio de la cadena sismica. El factor adoptado es "
                  "la ENVOLVENTE (el mayor) de esas filas al PGA del proyecto; "
                  "hoy vale 1.0",
-        justificacion="Sin la caracterizacion de los 30 m superiores no hay "
-                      "clase de sitio definitiva, y por eso lo que se declara "
-                      "es el conjunto de filas plausibles y no una. Al PGA de "
-                      "este proyecto la tabla da 1.0 para C, 1.0 para D y 0.9 "
-                      "para E, de modo que la envolvente es 1.0: conservador "
-                      "o exacto frente a las tres. "
-                      "LAS FILAS QUE NO SE DECLARAN, Y POR QUE, que es la "
-                      "mitad que faltaba. (a) A y B son las filas de ROCA "
-                      "(0.8 y 1.0): no se declaran porque la cimentacion es "
-                      "la llanura arenosa del Bajo Piura, y esa omision no es "
-                      "cosmetica -- el num. 2.8.1.1.14.2.1 da a las "
-                      "cimentaciones en Clase A o B una expresion distinta de "
-                      "k_h0 (1.2*F_pga*PGA en vez de A_s), de modo que "
-                      "declarar C/D/E es lo que descarta esa rama de forma "
-                      "trazable. Mientras la tabla del repositorio solo tuvo "
-                      "C, D y E, la regla no se implementaba ni se descartaba. "
-                      "(b) F no se declara porque NO TIENE FACTOR: la tabla le "
-                      "pone asterisco en las cinco columnas y su Nota 2 exige "
-                      "investigaciones geotecnicas especificas del sitio y "
-                      "analisis de respuesta dinamica. Y eso importa aqui mas "
-                      "que en ninguna otra fila, porque el expediente se "
-                      "atribuye a si mismo la Clase F en el criterio "
-                      "'clase_sitio': la convergencia con que este valor se "
-                      "defendia dejaba fuera justamente la fila que el propio "
-                      "expediente reclama, y esa fila no da numero, pide un "
-                      "estudio. Se declara aqui para que las dos afirmaciones "
-                      "dejen de convivir sin cruzarse. Que la premisa de la "
-                      "Clase F se sostenga o no es cuestion ABIERTA -- ver "
-                      "'clase_sitio' y constantes_normativas.E030_S5_VS_CLASE_F "
-                      "--, y este criterio no la resuelve: declara con que "
-                      "filas se leyo la tabla mientras siga abierta",
+        justificacion="LA CLASE DE SITIO ESTA INDETERMINADA -- ver "
+                      "'clase_sitio', que es un [S] SIN VALOR --, y por eso "
+                      "lo que se declara es el conjunto de filas plausibles y "
+                      "no una. Al PGA de este proyecto la tabla da 1.0 para "
+                      "C, 1.0 para D y 0.9 para E, de modo que el factor "
+                      "adoptado es la ENVOLVENTE de esas tres: 1.0, "
+                      "conservador o exacto frente a las tres. La tabla es "
+                      "[N] y la ELECCION DE FILAS es [A]; ese reparto es todo "
+                      "lo que este criterio decide. "
+                      "LAS FILAS QUE NO SE DECLARAN, Y POR QUE. (a) A y B son "
+                      "las filas de ROCA (0.8 y 1.0): quedan fuera porque la "
+                      "cimentacion es la llanura arenosa del Bajo Piura, y "
+                      "esa exclusion no es cosmetica -- el num. "
+                      "2.8.1.1.14.2.1 da a las cimentaciones en Clase A o B "
+                      "una expresion distinta de k_h0 (1.2*F_pga*PGA en vez "
+                      "de A_s), de modo que declarar C/D/E es lo que descarta "
+                      "esa rama de forma trazable. Mientras la tabla del "
+                      "repositorio solo tuvo C, D y E, la regla no se "
+                      "implementaba ni se descartaba. "
+                      "(b) POR QUE LA FILA F NO ESTA ENTRE LAS LEIDAS, dicho "
+                      "con precision para que no se lea al reves: NO porque "
+                      "se haya descartado que el sitio sea Clase F -- eso lo "
+                      "decide la campana geotecnica --, sino por dos razones "
+                      "que valen hoy. La primera, que esa fila NO DA FACTOR: "
+                      "la tabla le pone asterisco en las cinco columnas y su "
+                      "Nota 2 remite a «investigaciones geotecnicas "
+                      "especificas del sitio y analisis de respuesta dinamica "
+                      "de sitio, para todos los sitios en sitio clase F». "
+                      "Elegirla no seria leer un valor, seria leer una "
+                      "exigencia de estudio. La segunda, que SUPONERLA ESTA "
+                      "EXPRESAMENTE VEDADO mientras no haya dato geotecnico "
+                      "ni determinacion de la Entidad (AASHTO Art. 3.10.3.1 "
+                      "al pie de la Tabla 3.10.3.1-1; Manual num. "
+                      "2.4.3.11.2.1.1). Si la campana devolviera Clase F, no "
+                      "queda fila con factor: queda el estudio de respuesta "
+                      "dinamica que exige el Art. 3.10.2, y esta memoria no "
+                      "podria cerrarse sin el. "
+                      "ALCANCE DE «CONSERVADOR», SIN COARTADA: los factores "
+                      "tabulados permiten DIMENSIONAR el elemento estructural "
+                      "dentro del marco tabulado. No constituyen una "
+                      "evaluacion del riesgo de licuefaccion, que sigue "
+                      "siendo el condicionante tecnico no resuelto del "
+                      "proyecto, y los efectos de la licuefaccion "
+                      "-- perdida de resistencia, asentamiento, "
+                      "desplazamiento lateral -- quedan fuera del alcance de "
+                      "este calculo y remitidos al estudio geotecnico del "
+                      "expediente. Un analisis de respuesta especifica de "
+                      "sitio puede arrojar valores MAYORES que los tabulados: "
+                      "la adopcion no es conservadora por construccion, y por "
+                      "eso la eleccion de filas es [A] y no [N->]",
         fuente="Manual de Puentes (MTC), Tabla 2.4.3.11.2.1.2-1 (Tabla "
                "3.10.3.2-1 AASHTO), pag. impresa 123 (PDF 124), transcrita "
                "COMPLETA -- seis filas y cinco columnas, con sus dos notas al "
                "pie -- en constantes_normativas.F_PGA_TABLA. Los valores son "
                "[N]; QUE FILAS describen a este sitio es [A] y es lo unico "
                "que se declara aqui",
-        reemplazado_por="Caracterizacion de sitio sobre los 30 m superiores "
-                        "(Vs30 o N_barra), que cierra la clase y deja una "
-                        "sola fila. Si esa caracterizacion diera Clase F, no "
-                        "queda fila con factor: queda el estudio de respuesta "
-                        "dinamica de sitio que pide la Nota 2",
+        reemplazado_por="Caracterizacion de sitio sobre los 100 ft "
+                        "(30.48 m) superiores -- Vs30 o N_barra --, que "
+                        "cierra 'clase_sitio' y deja una sola fila. La "
+                        "profundidad es la que imprime el Art. 3.10.3.1 «the "
+                        "upper 100 ft»; la hoja de ruta dice «30 m» y se lo "
+                        "atribuye al articulado (DIS-HR-30M-VS-100FT). Si esa "
+                        "caracterizacion diera Clase F, no queda fila con "
+                        "factor: queda el ANALISIS DE RESPUESTA DINAMICA DE "
+                        "SITIO que exige el Art. 3.10.2 con «shall» y el num. "
+                        "2.4.3.11.2 del Manual con «sera usado». La Nota 2 al "
+                        "pie de esta tabla lo repite; no lo funda, y anclarlo "
+                        "ahi dejaba la exigencia colgando de una nota",
         sensibilidad="entre 0.9 (fila E) y 1.0 (filas C y D) al PGA de este "
                      "proyecto, con la lectura declarada en "
                      "'F_pga_lectura_columna_extrema'. Ese es TODO el rango "
@@ -780,6 +969,12 @@ CRITERIOS: Dict[str, Criterio] = {
                      "desde la columna anterior -- que no se declara porque "
                      "no la sostiene la Nota 1, que habla de interpolar entre "
                      "valores y no de extrapolar mas alla del ultimo",
+        resolucion=DeTabla(
+            tablas=("MP.TFPGA",),
+            que_elige="las filas de clase de sitio sobre las que se lee "
+                      "F_pga; el factor adoptado es la envolvente (el mayor) "
+                      "de las filas elegidas",
+        ),
     ),
 
     # La tabla se lee por columnas de PGA y sus dos rotulos extremos son
@@ -820,6 +1015,14 @@ CRITERIOS: Dict[str, Criterio] = {
                                "valor sigue siendo exactamente 0.50: si "
                                "cayera dentro de una columna, este criterio "
                                "deja de gobernar nada y se retira",
+        resolucion=DeTabla(
+            tablas=("MP.TFPGA",),
+            que_elige="como se leen los dos rotulos extremos de columna "
+                      "cuando el PGA cae justo sobre uno de ellos",
+            laguna="los rotulos extremos se imprimen con < y >, de modo que "
+                   "la tabla no dice a que columna pertenece el PGA que cae "
+                   "exactamente en el limite. La eleccion es del proyectista",
+        ),
     ),
 
     # No es una fila de una tabla: el num. 2.8.1.1.14.2.2 no presenta ninguna
@@ -865,6 +1068,16 @@ CRITERIOS: Dict[str, Criterio] = {
                                "contrastar contra "
                                "DESPLAZAMIENTO_HABILITA_REDUCCION_M y no "
                                "contra el rango redondeado",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando si el cabezal admite el "
+                        "desplazamiento lateral que la reduccion supone. NO "
+                        "es `DeTabla`, aunque la Sec. 4.3 del plan lo ponga "
+                        "de ejemplo: el num. 2.8.1.1.14.2.2 NO TABULA NADA "
+                        "-- autoriza una reduccion -- y el 1.0 no es una "
+                        "fila sino la ausencia de reduccion, que es la "
+                        "definicion misma de k_h0",
+            dominio="declaracion entre los dos regimenes del numeral",
+        ),
     ),
 
     # k_v no es una adopcion: lo fija el mismo numeral del que la cadena toma
@@ -926,6 +1139,15 @@ CRITERIOS: Dict[str, Criterio] = {
                                "declaracion se apoya en la ausencia de "
                                "hallazgo, no en un hallazgo de ausencia, y "
                                "hay que decirlo asi en la memoria",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando cual de los dos "
+                        "regimenes del num. 2.8.1.1.14.2.1 rige. Con el "
+                        "regimen prescrito declarado, el k_v = 0 que resulta "
+                        "es [N] y no una adopcion; para el caso reservado el "
+                        "numeral no escribe ningun k_v alternativo",
+            dominio="declaracion de regimen, o k_v adimensional del "
+                    "proyectista en el caso reservado",
+        ),
     ),
 
     # gamma_EQ existia como PROSA dentro de la verificacion pendiente de
@@ -971,6 +1193,15 @@ CRITERIOS: Dict[str, Criterio] = {
                         "de la via y el fundamento que la sostenga, "
                         "declarada en la memoria",
         sensibilidad=(0.0, 0.5),   # el 0.0 historico y el 0.50 de Turkstra
+        resolucion=Libre(
+            que_lo_fija="el proyectista, 'on a project-specific basis' "
+                        "(AASHTO Art. 3.4.1). La Tabla 2.4.5.3.1-1 imprime "
+                        "el SIMBOLO gamma_EQ en la columna de LS, no un "
+                        "numero, y el 0.0 y el 0.50 del comentario C3.4.1 "
+                        "son historia e indicacion de razonabilidad, no dos "
+                        "opciones tabuladas",
+            dominio="adimensional, 0 <= gamma_EQ <= 1",
+        ),
     ),
 
     # Los cuatro angulos que Sec. 9.2 exige ADEMAS de la cadena sismica para
@@ -1007,6 +1238,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "contra el muro (i = 0) o continua con el "
                                "talud del terraplen: son dos detalles "
                                "constructivos distintos, no un matiz",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre la seccion tipica del "
+                        "expediente vial o el detalle de coronacion del "
+                        "terraplen",
+            dominio="grados sobre la horizontal",
+        ),
     ),
 
     "inclinacion_muro_beta": Criterio(
@@ -1027,6 +1264,11 @@ CRITERIOS: Dict[str, Criterio] = {
                "'predimensionamiento_cabezal', del que este angulo es parte",
         reemplazado_por="Plano de encofrado del cabezal del expediente",
         sensibilidad=(0.0, 10.0),   # grados
+        resolucion=Libre(
+            que_lo_fija="el predimensionamiento del cabezal, del que este "
+                        "angulo es parte (ver `predimensionamiento_cabezal`)",
+            dominio="grados respecto de la vertical",
+        ),
     ),
 
     "friccion_muro_suelo_delta": Criterio(
@@ -1051,6 +1293,12 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Declararlo como FRACCION de phi y no como "
                                "angulo suelto, para que al ajustar "
                                "'phi_relleno_trasdos' no queden incoherentes",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, como fraccion de "
+                        "`phi_relleno_trasdos` con la fuente tecnica que la "
+                        "sostenga, o medido",
+            dominio="grados, 0 <= delta <= phi_relleno_trasdos",
+        ),
     ),
 
     "punto_aplicacion_incremento_sismico": Criterio(
@@ -1074,6 +1322,12 @@ CRITERIOS: Dict[str, Criterio] = {
                "fuente en la memoria",
         reemplazado_por="Convencion adoptada y escrita en la memoria de calculo",
         sensibilidad=(0.333, 0.6),   # H/3 (empuje total en el centroide) a 0.6H
+        resolucion=Libre(
+            que_lo_fija="el proyectista: Sec. 9.2 entrega K_AE y se detiene "
+                        "ahi. Seed-Whitman (0.6H) o AASHTO LRFD Sec. 11, "
+                        "declarado con su fuente",
+            dominio="fraccion adimensional de la altura H del muro",
+        ),
     ),
 
     # ----------------------- HIDROLOGIA -----------------------------------
@@ -1110,6 +1364,11 @@ CRITERIOS: Dict[str, Criterio] = {
                                "detenido nada. Quien reciba un CSV con Q ya "
                                "calculado tiene que exigir, aparte, el "
                                "analisis de homogeneidad que lo respalda",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al tratar la poblacion mixta de la "
+                        "serie (años FEN frente a años neutros)",
+            dominio="declaracion del tratamiento estadistico",
+        ),
     ),
 
     "riesgo_admisible_propietario": Criterio(
@@ -1177,6 +1436,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "R = 20 % con n = 25 da TR = 113 anios --, y con el "
                       "crece el caudal de diseno"),
         opcional=True,      # sin declarar, rigen los maximos de la Tabla N 02
+        resolucion=DeTabla(
+            tablas=("MC_HHD.T02",),
+            que_elige="la fila de tipo de obra con su R y su n, cuando el "
+                      "Propietario adopta valores distintos de los maximos "
+                      "recomendados que el proyecto toma por defecto",
+        ),
     ),
 
     "umbral_area_quebrada_importante_ha": Criterio(
@@ -1228,6 +1493,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "que puntos quedan a cada lado y correr la "
                                "sensibilidad del Q con TR 71 y TR 35: es la "
                                "misma alcantarilla con dos caudales de diseno",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el Manual nombra las categorias de "
+                        "cauce y las tarifa, y NO da regla de asignacion "
+                        "fisica -- ni area, ni caudal, ni orden de cauce",
+            dominio="ha > 0",
+        ),
     ),
 
     # ----------------------- HIDRAULICA: vacios ---------------------------
@@ -1276,6 +1547,13 @@ CRITERIOS: Dict[str, Criterio] = {
                                "corrugado, corresponde otra fila y la "
                                "alternativa de la sensibilidad pasa a ser la "
                                "adoptada",
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TA1",),
+            fila_id="circular_concreto_square_edge_headwall",
+            que_elige="la fila de embocadura de la que se toman K, M, c, Y y "
+                      "Ks para el HDPE, por analogia con el concreto de "
+                      "borde recto con muro de cabecera",
+        ),
     ),
 
     "metodo_transicion_hds5": Criterio(
@@ -1332,6 +1610,13 @@ CRITERIOS: Dict[str, Criterio] = {
                                "caen con q* entre 3.5 y 4.0: si ninguno lo hace, "
                                "esta simplificacion no toca ningun resultado y "
                                "basta con dejarla enunciada",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: HDS-5 traza a mano una curva "
+                        "tangente a las dos ramas y no publica ecuacion "
+                        "cerrada, de modo que el procedimiento programable "
+                        "no sale de la fuente",
+            dominio="declaracion del metodo de empalme",
+        ),
     ),
 
     "n_manning_hdpe": Criterio(
@@ -1379,6 +1664,13 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Confirmar que el HDPE especificado es de INTERIOR "
                                "LISO. El de interior corrugado tiene n del orden de "
                                "0.018-0.025 y la analogia seria gruesamente insegura",
+        resolucion=DeTabla(
+            tablas=("MC_HHD.T09",),
+            fila_id="concreto_tubo_recto",
+            que_elige="la fila cuyo par (minimo, maximo) se aplica al HDPE "
+                      "POR ANALOGIA. La analogia es la etiqueta [N->]: la "
+                      "Tabla N 09 no tabula el HDPE",
+        ),
     ),
 
     "v_max_hdpe": Criterio(
@@ -1432,6 +1724,16 @@ CRITERIOS: Dict[str, Criterio] = {
         # Marcarlo como vacio verificado lo imprimiria en el bloque de
         # acotaciones de la memoria, que dice "el proyectista adopto esto
         # donde la norma no dice nada": seria falso.
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando el techo de la Tabla 8-4 "
+                        "del WSDOT Hydraulics Manual, que es fuente tecnica "
+                        "reconocida y no norma peruana",
+            dominio="m/s > 0",
+            tabla_pendiente="WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 "
+                            "'Pipe Abrasion Levels'. WSDOT_HM es una fuente "
+                            "AUSENTE del registro: el documento no esta en "
+                            "normas/",
+        ),
     ),
 
     "v_max_tmc": Criterio(
@@ -1468,6 +1770,16 @@ CRITERIOS: Dict[str, Criterio] = {
         # Mismo motivo que en 'v_max_hdpe' para no llevar `vacio_verificado`:
         # cita cerrada sobre fuente tecnica (Sec. 10-bis del manifiesto), no
         # dossier de vacio agotado (SIS-D-12).
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando el mismo techo que el "
+                        "HDPE porque la fuente NO fija techo absoluto para "
+                        "el metal",
+            dominio="m/s > 0",
+            tabla_pendiente="WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 "
+                            "'Pipe Abrasion Levels'. WSDOT_HM es una fuente "
+                            "AUSENTE del registro: el documento no esta en "
+                            "normas/",
+        ),
     ),
 
     "v_max_concreto_eleccion": Criterio(
@@ -1544,6 +1856,15 @@ CRITERIOS: Dict[str, Criterio] = {
                "[A] y no [N]",
         sensibilidad=(3.0, 6.0),
         opcional=True,      # sin declarar, V3 aplica el techo [N] de 6.0 m/s
+        resolucion=EnRango(
+            tabla_id="MC_HHD.T10",
+            fila_id="MC_HHD.T10#concreto",
+            columna_id="velocidad",
+            que_acota="el techo de velocidad adoptado para el concreto. LA "
+                      "FILA TRAE DOS MAXIMOS Y NINGUN PISO (NOR-HID-04): la "
+                      "celda es un `ConjuntoDeMaximos` y la ventana no puede "
+                      "pintar el 3.0 como minimo",
+        ),
     ),
 
     "ke_entrada": Criterio(
@@ -1589,6 +1910,13 @@ CRITERIOS: Dict[str, Criterio] = {
         reemplazado_por="Fila de HDS-5 que corresponda si cambia el detalle de "
                         "embocadura del cabezal (Tablero 2.3). La Tabla C.2 "
                         "trae las demas configuraciones de borde",
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TC2",),
+            fila_id="concreto_headwall_square_edge",
+            que_elige="la fila de embocadura de la que sale ke; el 0.5 lo "
+                      "fija la pertenencia de la fila al rotulo de "
+                      "agrupacion 'Headwall or headwall and wingwalls'",
+        ),
     ),
 
     "geometria_control_salida": Criterio(
@@ -1641,6 +1969,11 @@ CRITERIOS: Dict[str, Criterio] = {
             "que la propia fuente declara. Lo que la cerraria es el "
             "procedimiento de barril parcialmente lleno del Cap. III, que es "
             "lo que ya dice `reemplazado_por`"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista: Sec. 4.3 escribe la ecuacion y no "
+                        "dice a que seccion pertenecen V y R",
+            dominio="declaracion entre seccion llena y tirante normal",
+        ),
     ),
 
     "HW_D_max": Criterio(
@@ -1676,11 +2009,21 @@ CRITERIOS: Dict[str, Criterio] = {
                       "(1.0, 1.5). Se conserva a proposito y se deja dicho "
                       "que es un SUBRANGO, para que nadie la confunda con lo "
                       "que dice HDS-5. "
-                      "NINGUN MODULO LO CONSUME HOY: el chequeo V4b no esta "
-                      "cableado, y la fila se declara no evaluada en "
-                      "`M5.verificaciones_no_evaluadas()`, que es donde M11 "
-                      "la imprime. Cablearlo es un cambio de comportamiento "
-                      "y se hace aparte de esta reetiquetacion",
+                      "LO CONSUME `M5.v4b_relacion_hw_d`, DESDE S14. El "
+                      "chequeo estuvo declarado y sin cablear a proposito: "
+                      "el conflicto #1 de la matriz de auditorias prohibia "
+                      "implementarlo mientras la etiqueta de este criterio "
+                      "siguiera abierta, porque un umbral que rechaza "
+                      "diametros apoyado en una cita mal leida es peor que "
+                      "un umbral que no se evalua. Cerrada la procedencia, "
+                      "el cableado era lo que quedaba (MAT-D2, SIS-A-02, "
+                      "SIS-B-02). "
+                      "QUE HW SE DIVIDE ENTRE D: el del control GOBERNANTE, "
+                      "no el del control de entrada. Lo que la fuente acota "
+                      "es 'the headwater produced by a culvert', o sea el "
+                      "embalse real aguas arriba; tomar el HWi/D de la Tabla "
+                      "A.1 cuando gobierna el control de salida daria un "
+                      "numero menor que el embalse que la obra produce",
         fuente="HDS-5 (FHWA) 3a ed., abril 2012, num. 2.2.5 'Allowable "
                "Headwater' (arranca en la pag. impresa 2.9), apartado "
                "d. 'Agency Constraints', pag. impresa 2.10 (PDF 72). Texto "
@@ -1701,6 +2044,17 @@ CRITERIOS: Dict[str, Criterio] = {
                "de HDS-5 que hay en normas/ (la edicion de 1985): el rango es "
                "exclusivo de la 3a ed.",
         sensibilidad=(1.2, 1.5),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre una BANDA DE PRACTICA AJENA. "
+                        "NO es `EnRango`, aunque la Sec. 4.3 del plan lo "
+                        "ponga de ejemplo: el num. 2.2.5 d) del HDS-5 "
+                        "DESCRIBE lo que imponen las agencias viales de "
+                        "EE.UU. y no prescribe HW/D alguno (NOR-HDS-02, "
+                        "conflicto vinculante #1 del plan). Un rango con "
+                        "cita normativa aqui seria la cita falsa que ese "
+                        "hallazgo vino a retirar",
+            dominio="adimensional > 0",
+        ),
     ),
 
     "resguardo_HW_subrasante": Criterio(
@@ -1737,6 +2091,20 @@ CRITERIOS: Dict[str, Criterio] = {
                                "Cerrarla exige una fuente que trate el "
                                "remanso de avenida sobre la subrasante, no una "
                                "lectura mas del mismo numeral",
+        resolucion=Libre(
+            que_lo_fija="la tabla de resguardo por CBR del Manual de Suelos, "
+                        "aplicada POR ANALOGIA (el num. 4.5.4 regula la "
+                        "separacion frente al freatico, no frente a un nivel "
+                        "de avenida). NO es `DeTabla` todavia, aunque la "
+                        "Sec. 4.3 del plan ponga `resguardo(CBR)` de "
+                        "ejemplo: esa tabla vive como escalares [N] en "
+                        "`constantes_normativas.py` y no esta transcrita "
+                        "como `TablaNormativa` en el registro, de modo que "
+                        "no hay tabla que la ventana pueda mostrar entera",
+            tabla_pendiente="Manual de Suelos MTC num. 4.5.4 (pags. 41-42) "
+                            "y 9.1(3) (pags. 89-90), tabla de resguardo por "
+                            "CBR",
+        ),
     ),
 
     "TW_receptor": Criterio(
@@ -1748,6 +2116,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "escenarios acotados (salida libre / seccion llena)",
         fuente="PENDIENTE: ANA / Junta de Usuarios del Bajo Piura",
         reemplazado_por="Caudal de diseno documentado del dren o canal receptor",
+        resolucion=DeEnsayo(
+            ensayo="nivel de agua en el cuerpo receptor durante la avenida, "
+                   "de la ANA / Junta de Usuarios del Bajo Piura",
+            trazabilidad_exigida="el oficio o estudio del que sale el nivel, "
+                                 "su fecha y el periodo de retorno al que "
+                                 "corresponde (Tablero 3.1)",
+        ),
     ),
 
     "long_max_cuneta": Criterio(
@@ -1760,6 +2135,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "zona se comporta como region muy lluviosa. Se adopta 200 m",
         fuente="Manual MTC, numeral 4.1.2.1 d), pag. 178",
         sensibilidad=(200.0, 250.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al declarar el regimen de la zona: "
+                        "el num. 4.1.2.1 d) da 250 m para region seca y "
+                        "200 m para region muy lluviosa, y el evento de "
+                        "diseño relevante en Piura es el FEN",
+            dominio="m > 0",
+            tabla_pendiente="Manual de Hidrologia num. 4.1.2.1 d): los dos "
+                            "valores por region no estan transcritos como "
+                            "`TablaNormativa` en el registro",
+        ),
     ),
 
     # ----------------------- FASE 5: VACIOS DE VERIFICACION ---------------
@@ -1830,6 +2215,11 @@ CRITERIOS: Dict[str, Criterio] = {
                                "diferencia entre esta adopcion y el invert "
                                "real, y es la que decide si V4 y 7.A quedaron "
                                "del lado seguro en ese punto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: NINGUNA norma fija esta regla "
+                        "mientras el expediente no entregue la cota medida",
+            dominio="declaracion de la regla de obtencion",
+        ),
     ),
 
     "remanso_derecho_via": Criterio(
@@ -1854,6 +2244,13 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Definir si el ancho de derecho de via es un "
                                "dato por punto (nueva columna del CSV) o un "
                                "criterio unico del tramo",
+        resolucion=DeEnsayo(
+            ensayo="perfil de remanso aguas arriba (paso a paso o HEC-RAS) y "
+                   "ancho de derecho de via del expediente",
+            trazabilidad_exigida="el modelo hidraulico con sus secciones, y "
+                                 "la lamina del expediente vial de la que "
+                                 "sale el derecho de via",
+        ),
     ),
 
     "TR_evento_extremo": Criterio(
@@ -1873,6 +2270,12 @@ CRITERIOS: Dict[str, Criterio] = {
         reemplazado_por="TR del evento extremo (p.ej. el de la serie FEN de "
                         "la Fase 1-bis) y definicion tecnica de colapso de "
                         "la via, ambos declarados en la memoria",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: V8 de la hoja de ruta pide la "
+                        "verificacion y no fija ni el TR ni el umbral de "
+                        "'la via no colapsa aunque desborde'",
+            dominio="años > 0",
+        ),
     ),
 
     # ----------------------- GEOTECNIA -----------------------------------
@@ -1886,6 +2289,12 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="PENDIENTE",
         reemplazado_por="Ensayo de corte directo sobre el material de cantera",
         sensibilidad=(30.0, 38.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el ensayo del material de "
+                        "cantera del trasdos o un valor de practica "
+                        "corriente declarado con su fuente",
+            dominio="grados, 0 < phi < 90",
+        ),
     ),
 
     "c_phi_fundacion": Criterio(
@@ -1903,6 +2312,14 @@ CRITERIOS: Dict[str, Criterio] = {
                        "corrida imprime. Se declara igual, y vacio, para que "
                        "el bloque de pendientes lo pida al expediente en vez "
                        "de que aparezca el dia del ensamblaje",
+        resolucion=DeEnsayo(
+            ensayo="parametros de resistencia del suelo de fundacion (c y "
+                   "phi), del EMS del expediente",
+            trazabilidad_exigida="ensayo (corte directo o triaxial), "
+                                 "calicata, profundidad y laboratorio; la "
+                                 "columna `sucs_fundacion` del CSV es su "
+                                 "entrada por correlacion",
+        ),
     ),
 
     "capacidad_portante_adm": Criterio(
@@ -1915,6 +2332,13 @@ CRITERIOS: Dict[str, Criterio] = {
         sin_consumidor="Mismo motivo que 'c_phi_fundacion', del que deriva: "
                        "lo consumen E1-E5 (Sec. 9.3), no ensambladas en esta "
                        "CLI",
+        resolucion=DeEnsayo(
+            ensayo="capacidad portante admisible del terreno de fundacion, "
+                   "del EMS del expediente",
+            trazabilidad_exigida="calicata, profundidad de desplante, metodo "
+                                 "de calculo y factor de seguridad "
+                                 "adoptados por el EMS",
+        ),
     ),
 
     "Mw_licuefaccion": Criterio(
@@ -1933,6 +2357,15 @@ CRITERIOS: Dict[str, Criterio] = {
                        "modo que nada invoca el MSF ni su Mw. Se declara "
                        "vacio para que el expediente lo programe, no porque "
                        "falte cablearlo",
+        resolucion=DeEnsayo(
+            ensayo="desagregacion del peligro sismico del sitio, o adopcion "
+                   "justificada del sismo de diseño de la subduccion del "
+                   "norte peruano",
+            trazabilidad_exigida="el estudio de peligro y el periodo de "
+                                 "retorno sobre el que se desagrego; si en "
+                                 "vez del estudio se adopta el sismo de "
+                                 "subduccion, la fuente que lo caracteriza",
+        ),
     ),
 
     "demanda_sismica_licuefaccion": Criterio(
@@ -1959,6 +2392,11 @@ CRITERIOS: Dict[str, Criterio] = {
                        "estar en la memoria aunque este calculo no corra: es "
                        "la que fija la demanda que el estudio geotecnico del "
                        "expediente debe exigirle al suelo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por coherencia de niveles de "
+                        "seguridad con el marco del Manual de Puentes",
+            dominio="años > 0",
+        ),
     ),
 
     "diametros_normalizados": Criterio(
@@ -2000,6 +2438,21 @@ CRITERIOS: Dict[str, Criterio] = {
                "canal, o sea el caso que el numeral EXCEPTUA. El detalle esta "
                "en constantes_normativas.DIAMETRO_MIN_AMBITO, que la memoria "
                "imprime",
+        resolucion=Libre(
+            que_lo_fija="la serie de diametro nominal de la norma de "
+                        "producto para el paso, y el proyecto para el "
+                        "inicio (0.90 m frente a los 0.9144 m = 36 in de la "
+                        "serie real, ~3 % del lado seguro). NO es "
+                        "`DeCatalogo`, aunque la Sec. 4.3 del plan lo ponga "
+                        "de ejemplo: el ejemplo apunta al 'max' que este "
+                        "criterio ya no tiene -- S4 mudo los topes a "
+                        "`D_max_catalogo`, que si es de catalogo -- y la "
+                        "neutralidad comercial en obra publica prohibe "
+                        "justamente resolver la serie por catalogo",
+            tabla_pendiente="ASTM A760/A760M-10, Tabla 1 'Tamaños de "
+                            "tuberia' (100 a 3600 mm). Su PDF no entrega "
+                            "texto utilizable y por eso no esta transcrita",
+        ),
     ),
 
     "D_max_catalogo": Criterio(
@@ -2073,6 +2526,18 @@ CRITERIOS: Dict[str, Criterio] = {
                                "El de HDPE (1.50 m) es el mas restrictivo y es "
                                "el unico cuya norma de producto (AASHTO M294) ni "
                                "siquiera esta en normas/ para poder contrastarlo",
+        resolucion=DeCatalogo(
+            catalogo_id="CAT_TUBERIA_LOCAL",
+            que_elige="el tope de diametro por material que el proyecto "
+                      "admite por DISPONIBILIDAD en el mercado local",
+            advertencia="NINGUNA norma sostiene estos topes. ASTM "
+                        "A760/A760M-10 tabula de 100 a 3600 mm y AASHTO M "
+                        "170M-04 de 300 a 3600 mm con diseños especiales por "
+                        "encima (NOR-PRO-01, NOR-PRO-02). Imprimirlos "
+                        "rotulados como norma seria una cita falsa, y "
+                        "ademas descartan material: la memoria tiene que "
+                        "decir que el descarte es de catalogo",
+        ),
     ),
 
     # 'h_relleno_min_concreto_tmc' SE RETIRO. Declaraba 0.30 m [N->] para
@@ -2354,6 +2819,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "datum -- ver la SIMPLIFICACION CONSERVADORA de "
                                "la justificacion --, que necesita el desglose "
                                "del paquete estructural",
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T12.6.6.3-1",),
+            que_elige="nada por si mismo: el valor es la tabla por material. "
+                      "La fila la elige `condicion_pavimento`",
+            elegido_por="condicion_pavimento",
+        ),
     ),
 
     # -----------------------------------------------------------------------
@@ -2402,6 +2873,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "un +6.4 %). La extrapolacion es la MAS conservadora de "
                       "las dos, de modo que ni siquiera 'el lado seguro' "
                       "decide sola: hay que elegir",),
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T3.11.6.4-1",
+                    "AASHTO_LRFD_9.T3.11.6.4-2"),
+            que_elige="que hacer con un muro por debajo de la primera fila "
+                      "tabulada (5.0 ft): tomar esa primera fila o "
+                      "extrapolar linealmente",
+            laguna="las dos tablas arrancan en 5.0 ft y su regla de "
+                   "interpolacion habla de alturas INTERMEDIAS; por debajo "
+                   "de la primera fila la fuente no se pronuncia",
+        ),
     ),
 
     "h_eq_banda_intermedia_borde": Criterio(
@@ -2433,6 +2914,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "(1.067 m), un -30 %. Para un muro de 10.0 ft: 3.5 ft "
                       "frente a 2.75 ft, un -21 %. La eleccion mueve el "
                       "empuje LS en la misma proporcion",),
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T3.11.6.4-2",),
+            columna_id="borde_0_0_ft",
+            que_elige="que columna leer cuando la distancia del trasdos al "
+                      "borde de calzada cae estrictamente entre 0.0 ft y "
+                      "1.0 ft",
+            laguna="la tabla manda interpolar entre FILAS (alturas) y no "
+                   "autoriza interpolar entre estas dos columnas: la banda "
+                   "0.0 < d < 1.0 ft es una laguna de la fuente",
+        ),
     ),
 
     "condicion_pavimento": Criterio(
@@ -2497,6 +2988,11 @@ CRITERIOS: Dict[str, Criterio] = {
                                "criterio de corredor porque la seccion tipica "
                                "lo es; si el expediente trae tramos con "
                                "superficie distinta, pasa a ser columna del CSV",
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T12.6.6.3-1",),
+            que_elige="la fila de condicion de la superficie de rodadura "
+                      "sobre el cruce: no pavimentado, flexible o rigido",
+        ),
     ),
 
     "espesor_pared_conducto": Criterio(
@@ -2575,6 +3071,15 @@ CRITERIOS: Dict[str, Criterio] = {
                                "declararlo para el diametro MAYOR que el "
                                "material vaya a usar, que es donde el espesor "
                                "es mayor y la clave queda mas alta",
+        resolucion=Libre(
+            que_lo_fija="la clase o el calibre del producto especificado; "
+                        "mientras no se especifique, el proyectista lo "
+                        "declara con la fuente que lo sostenga",
+            dominio="m > 0, y menor que el radio interior",
+            tabla_pendiente="AASHTO M 170M-04, Tablas 1 a 5, columna 'Wall "
+                            "Thickness' por diametro designado. Esta en "
+                            "normas/ y su PDF no entrega texto",
+        ),
     ),
 
     # ----------------------- FASE 8: ESTRUCTURAL DEL CONDUCTO -------------
@@ -2654,6 +3159,14 @@ CRITERIOS: Dict[str, Criterio] = {
                                "'v_max_hdpe', que fueron [C] sin valor por la "
                                "misma razon y hoy valen 4.572 sin haber cambiado "
                                "de etiqueta",
+        resolucion=Libre(
+            que_lo_fija="la clase o el calibre del producto que el proyecto "
+                        "especifique para cada altura de relleno",
+            tabla_pendiente="AASHTO M 170M-04 Tablas 1 a 5 (concreto) y "
+                            "ASTM A796/A796M (calibre TMC). La primera esta "
+                            "en normas/ pero su PDF no entrega texto; la "
+                            "segunda no esta",
+        ),
     ),
 
     # 'FS_flotacion' SE RETIRO. Declaraba el factor de seguridad global de
@@ -2695,6 +3208,12 @@ CRITERIOS: Dict[str, Criterio] = {
         reemplazado_por="Peso especifico medido del material de relleno "
                         "efectivamente especificado en el proyecto",
         sensibilidad=(17.0, 20.0),   # kN/m3, rango corriente de rellenos compactados
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el ensayo de peso especifico "
+                        "del material de cantera propuesto o un valor de "
+                        "practica corriente declarado con su fuente",
+            dominio="kN/m3 > 0",
+        ),
     ),
 
     # ----------------------- FASE 7: COMPATIBILIDAD GEOMETRICA ------------
@@ -2739,6 +3258,14 @@ CRITERIOS: Dict[str, Criterio] = {
                                "natural del cruce), que es lo unico que el CSV "
                                "permite calcular: si la seccion es asimetrica, "
                                "la longitud se mide y no se deduce",
+        resolucion=DeEnsayo(
+            ensayo="lectura del talud del terraplen en la seccion tipica del "
+                   "expediente vial (DG-2018)",
+            trazabilidad_exigida="lamina y progresiva de la seccion leida; "
+                                 "el talud depende de la altura del "
+                                 "terraplen y del material del cuerpo, asi "
+                                 "que la lectura es del cruce, no generica",
+        ),
     ),
 
     # ----------------------- PROTECCION Y DETALLE -------------------------
@@ -2752,6 +3279,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "Se adopta el rango corriente 1.5-2.0 d50",
         fuente="Practica corriente de diseno de enrocado",
         sensibilidad=(1.5, 2.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre la practica corriente de "
+                        "diseño de enrocado, como multiplo de d50",
+            dominio="multiplo adimensional de d50 > 0",
+        ),
     ),
 
     "longitud_proteccion_salida": Criterio(
@@ -2770,6 +3302,11 @@ CRITERIOS: Dict[str, Criterio] = {
         verificacion_pendiente="Con pendientes bajas los d50 son de 3-13 cm y lo "
                                "probable es que gobierne el emboquillado de piedra "
                                "por razones constructivas, no el enrocado",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre practica corriente de "
+                        "enrocado o HEC-14; Sec. 6 la marca [A] sin valor",
+            dominio="m > 0",
+        ),
     ),
 
     "angulo_aletas": Criterio(
@@ -2790,6 +3327,11 @@ CRITERIOS: Dict[str, Criterio] = {
                        "(Fase 9) y remite el despiece al plano del "
                        "expediente. Se declara para que el vacio se pida, no "
                        "para que se calcule aqui",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ni el Manual de Hidrologia ni el "
+                        "Manual de Puentes fijan el angulo de las aletas",
+            dominio="grados, 0 < angulo < 90",
+        ),
     ),
 
     # ----------------------- FASE 9: CABEZAL Y ALETAS ---------------------
@@ -3011,6 +3553,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "tabulado en la pag. impresa 3-16, pero es de "
                                "gamma_TG (gradiente de temperatura), otra "
                                "carga",
+        resolucion=DeTabla(
+            tablas=("MP.TGAMMA_P", "MP.TCOMB"),
+            que_elige="que fila de gamma_p describe a cada estructura de "
+                      "esta obra: los tres conductos por material y el "
+                      "cabezal como muro de retencion",
+        ),
     ),
 
     "peso_especifico_concreto_kn_m3": Criterio(
@@ -3030,6 +3578,13 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., Tabla "
                "3.5.1-1 + Comentario C3.5.1, pag. 3-21 (0.150 kcf, concreto "
                "normal armado)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando el concreto normal armado "
+                        "de la Tabla 3.5.1-1 de AASHTO",
+            dominio="kN/m3 > 0",
+            tabla_pendiente="AASHTO LRFD 9a ed., Tabla 3.5.1-1 'Unit "
+                            "Weights', no transcrita al registro",
+        ),
     ),
 
     "predimensionamiento_cabezal": Criterio(
@@ -3065,6 +3620,11 @@ CRITERIOS: Dict[str, Criterio] = {
                                "altura de terraplen de la Fase 7: un cabezal "
                                "declarado aparte del conducto que remata es "
                                "una incoherencia de expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, o el plano tipo de cabezal del "
+                        "expediente vial",
+            dominio="geometria en m, todas las dimensiones > 0",
+        ),
     ),
 
     "N_cq_N_gammaq_meyerhof": Criterio(
@@ -3086,8 +3646,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "geometria concreta de cada punto. Usar N_c y N_gamma "
                       "de terreno horizontal aqui seria exactamente la "
                       "sobrestimacion que la hoja de ruta advierte",
-        fuente="PENDIENTE - Manual de Puentes num. 2.8.1.3.1.2c, figuras "
-               "2.8.1.3.1.2c-1 y 2.8.1.3.1.2c-2 (Meyerhof 1957), pags. 272-273",
+        fuente="PENDIENTE - Manual de Puentes num. 2.8.1.3.1.2c (Meyerhof "
+               "1957). CADA FIGURA EN SU PAGINA, verificado contra el PDF: "
+               "el texto del numeral en la pag. impresa 272 (PDF 273); la "
+               "Figura 2.8.1.3.1.2c-1, suelos COHESIVOS, en la pag. impresa "
+               "273 (PDF 274); la Figura 2.8.1.3.1.2c-2, suelos NO "
+               "COHESIVOS, en la pag. impresa 274 (PDF 275). El rango que "
+               "este campo declaraba -- 'pags. 272-273' -- dejaba fuera la "
+               "segunda figura (NOR-PUE-13), y son las dos las que hay que "
+               "leer: cual aplica lo decide el tipo de suelo de fundacion, "
+               "que es el dato de 'c_phi_fundacion'",
         reemplazado_por="Lectura de los abacos para la geometria real de cada "
                         "cabezal, adjuntada a la memoria",
         verificacion_pendiente="E.050 Art. 30.1-30.2 exige ADEMAS la "
@@ -3096,6 +3664,14 @@ CRITERIOS: Dict[str, Criterio] = {
                                "global del talud con la estructura "
                                "cargandolo: son dos comprobaciones, no una "
                                "(Sec. 9.3, 'doble verificacion')",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, leyendo las figuras 2.8.1.3.1.2c-1 "
+                        "y -2 del Manual de Puentes (Meyerhof 1957)",
+            dominio="factores adimensionales > 0",
+            tabla_pendiente="Manual de Puentes num. 2.8.1.3.1.2c: son "
+                            "FIGURAS (abacos), no tablas, y el registro no "
+                            "tiene hoy tipo para un abaco",
+        ),
     ),
 
     "metodo_estabilidad_global": Criterio(
@@ -3118,6 +3694,13 @@ CRITERIOS: Dict[str, Criterio] = {
                "umbral, no el metodo. El analisis es del EMS del expediente",
         reemplazado_por="Analisis de estabilidad de taludes del estudio "
                         "geotecnico, con su metodo y sus superficies criticas",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: E.050 Art. 30.3 y num. 39.13.6 b) "
+                        "fijan el umbral, no el metodo. Es una ELECCION de "
+                        "metodo y por eso no es `DeEnsayo`, aunque el "
+                        "analisis lo corra el mismo EMS",
+            dominio="declaracion del metodo de equilibrio limite",
+        ),
     ),
 
     # ---- El recubrimiento del refuerzo: la CADENA, no un numero -----------
@@ -3228,6 +3811,12 @@ CRITERIOS: Dict[str, Criterio] = {
                         "(norma de producto del acero que se compra), o la "
                         "decision expresa del proyectista de proteger o no el "
                         "refuerzo en ambiente salino",
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T5.10.1-1",),
+            que_elige="la COLUMNA de categoria de material de refuerzo: A "
+                      "(acero sin recubrir), B (epoxico o galvanizado) o C "
+                      "(AASHTO M 334M)",
+        ),
     ),
 
     "factor_recubrimiento_banda_intermedia_ac": Criterio(
@@ -3266,6 +3855,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "la fila costera con categoria A) y seria mas "
                       "conservador, pero contradice la fuente de la que sale "
                       "la propia tabla, que si escribe el 1.0",),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, cubriendo la banda 0.40 < a/c < "
+                        "0.50 que el Art. 5.10.1 no imprime",
+            dominio="factor adimensional > 0",
+        ),
     ),
 
     "exposicion_quimica_ems": Criterio(
@@ -3344,6 +3938,14 @@ CRITERIOS: Dict[str, Criterio] = {
                      "mas exigente",
         reemplazado_por="El analisis quimico del EMS. Mientras no exista, "
                         "ningun recubrimiento de 9.4 se puede calcular",
+        resolucion=DeEnsayo(
+            ensayo="analisis quimico del EMS: sulfato soluble en suelo y en "
+                   "agua freatica, y cloruros",
+            trazabilidad_exigida="calicata, profundidad, laboratorio, fecha "
+                                 "e informe de ensayo; las tablas contra las "
+                                 "que se clasifica (E060.T4.2 y E060.T4.4) "
+                                 "ya estan en el registro",
+        ),
     ),
 
     "situacion_recubrimiento_aashto": Criterio(
@@ -3388,6 +3990,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "directa a agua salada: 4.0/2.5/2.5 in",
                       "exterior_no_superior, en una obra no costera: "
                       "2.0/2.0/1.5 in"),
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T5.10.1-1",),
+            que_elige="que FILA de la tabla se contrasta con cada condicion "
+                      "de E.060 Art. 7.7.1, para poder evaluar la regla del "
+                      "mayor entre las dos normas",
+        ),
     ),
 
     "tabla_recubrimiento_aashto_mm": Criterio(
@@ -3427,6 +4035,13 @@ CRITERIOS: Dict[str, Criterio] = {
                "categorias; Art. 5.10.1 'Concrete Cover', pag. impresa 5-167 "
                "(PDF 526), para el modificador por W/CM; pag. impresa 5-168 "
                "(PDF 527) para el piso de 1.0 in sobre barras principales",
+        resolucion=Derivada(
+            de=("AASHTO_LRFD_9.T5.10.1-1",),
+            regla="transcripcion de la tabla del registro con las columnas "
+                  "en mm; la arma `_tabla_recubrimiento_aashto_mm()` leyendo "
+                  "`normativa.registro`, no una copia a mano. La conversion "
+                  "in -> mm es exacta (1 in = 25.4 mm)",
+        ),
     ),
 
     "cortante_alto_muro_e060_art_11_10_10_2": Criterio(
@@ -3502,6 +4117,12 @@ CRITERIOS: Dict[str, Criterio] = {
                                "decidio, y si el minimo aplicado es el 0.0020 "
                                "del Art. 14.3.1 o el 0.0025 del "
                                "Art. 11.10.10.2",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando si el muro esta en la "
+                        "condicion de cortante alto. El Art. 11.10.10.2 es "
+                        "una sola frase y NO define umbral (NOR-E060-03)",
+            dominio="declaracion si/no",
+        ),
     ),
 
     "procedimiento_flexion_corte_aashto_sec5": Criterio(
@@ -3599,6 +4220,11 @@ CRITERIOS: Dict[str, Criterio] = {
                "de unidades. PAGINAS CORREGIDAS: la fuente declaraba el rango "
                "'pags. 5-70 a 5-243', que NO contiene ni al 5.7.3.3 (5-67) ni "
                "al 5.7.2.8 (5-64), los dos anteriores a su limite inferior",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al declarar que subconjunto de la "
+                        "Seccion 5 de AASHTO aplica al muro del cabezal",
+            dominio="declaracion del procedimiento y de sus factores phi",
+        ),
     ),
 }
 
@@ -3677,6 +4303,172 @@ def _verificar_ancla_de_vacio(clave: str, ancla: str) -> None:
         )
 
 
+# ---------------------------------------------------------------------------
+# El modo de resolucion (Sec. 4.3 del plan v12)
+# ---------------------------------------------------------------------------
+
+# Los cinco rangos de `normativa/esquema.py` §7. Se importan por NOMBRE y no
+# por el alias `RangoNormativo` porque `isinstance` no acepta un `Union`, y
+# porque la lista explicita hace visible en revision que la familia es cerrada.
+_RANGOS_NORMATIVOS = (_esquema.IntervaloAdmisible, _esquema.TechoUnico,
+                      _esquema.PisoUnico, _esquema.ConjuntoDeMaximos,
+                      _esquema.BandaDeInterpolacion)
+
+
+@lru_cache(maxsize=1)
+def _registro():
+    """
+    El registro normativo, armado una sola vez. La guardia lo necesita para
+    comprobar que una tabla citada por una `resolucion` EXISTE: un
+    `DeTabla` que apunta a una tabla que nadie transcribio prometeria una
+    ventana que no se puede pintar.
+    """
+    return _registro_normativo.construir()
+
+
+def verificar_resolucion(clave: str, r: Resolucion) -> ModoDeResolucion:
+    """
+    Forma de la resolucion y, cuando apunta al registro, que lo apuntado
+    exista. Es el criterio de salida de la Sec. 4.3 hecho guardia:
+
+        ninguna variable sin modo
+        ningun `DeTabla` sin tabla existente en el registro
+        ningun `EnRango` sin rango con semantica declarada
+
+    El tercero se comprueba por TIPO: la celda del registro tiene que ser uno
+    de los cinco rangos de `normativa/esquema.py` §7, donde la semantica ES el
+    tipo. Un float suelto no es un rango, y un rango sin semantica no existe.
+
+    ES PUBLICA Y VIVE AQUI, aunque no sea exclusiva de los criterios, por dos
+    razones: aqui esta la poblacion mas grande de las tres (59 de las 83
+    variables de entrada) y aqui ya esta el registro, del que este archivo
+    depende por `constantes_normativas`. `variables_entrada.py` la reutiliza
+    para las 17 columnas del CSV en vez de escribir una segunda copia que
+    pudiera divergir. Las reglas que valen SOLO para un criterio -- que
+    `Libre.opciones` este vacio, que un `de_ensayo` no lleve sensibilidad, que
+    el rotulo `de_catalogo` y el modo digan lo mismo -- no estan aqui sino en
+    `_verificar_criterio`.
+
+    Devuelve el modo, para que quien llame no tenga que volver a deducirlo.
+    """
+    modo = modo_de(r)          # levanta TypeError si no es de la familia
+
+    if isinstance(r, Libre):
+        if not r.que_lo_fija:
+            raise ValueError(
+                f"'{clave}' se resuelve `libre` y no dice QUIEN pone el "
+                "numero. Sin eso la ventana ofrece un campo vacio y la "
+                "memoria no puede escribir su procedencia"
+            )
+
+    elif isinstance(r, DeTabla):
+        if not r.tablas:
+            raise ValueError(f"'{clave}' se resuelve `de_tabla` y no cita "
+                             "ninguna tabla")
+        if not r.que_elige:
+            raise ValueError(f"'{clave}' se resuelve `de_tabla` y no dice "
+                             "QUE se elige sobre la tabla")
+        if (r.fila_id or r.columna_id) and len(r.tablas) != 1:
+            raise ValueError(
+                f"'{clave}' fija fila o columna y cita {len(r.tablas)} "
+                "tablas: no se sabe de cual. La fila y la columna solo "
+                "tienen sentido con una tabla"
+            )
+        for tabla_id in r.tablas:
+            tabla = _tabla_del_registro(clave, tabla_id)
+            if r.fila_id:
+                try:
+                    tabla.fila(r.fila_id)
+                except KeyError:
+                    raise ValueError(
+                        f"'{clave}' apunta a la fila '{r.fila_id}' de "
+                        f"'{tabla_id}', que la tabla no tiene"
+                    ) from None
+            if r.columna_id:
+                try:
+                    tabla.columna(r.columna_id)
+                except KeyError:
+                    raise ValueError(
+                        f"'{clave}' apunta a la columna '{r.columna_id}' de "
+                        f"'{tabla_id}', que la tabla no tiene"
+                    ) from None
+        if r.elegido_por and r.elegido_por not in CRITERIOS:
+            raise ValueError(
+                f"'{clave}' dice que la fila la elige '{r.elegido_por}', que "
+                "no es un criterio declarado"
+            )
+
+    elif isinstance(r, EnRango):
+        tabla = _tabla_del_registro(clave, r.tabla_id)
+        try:
+            celda = tabla.fila(r.fila_id).valores[r.columna_id]
+        except KeyError:
+            raise ValueError(
+                f"'{clave}' apunta a la celda "
+                f"({r.fila_id}, {r.columna_id}) de '{r.tabla_id}', que la "
+                "tabla no tiene"
+            ) from None
+        if not isinstance(celda, _RANGOS_NORMATIVOS):
+            raise ValueError(
+                f"'{clave}' se resuelve `en_rango` y la celda "
+                f"({r.fila_id}, {r.columna_id}) de '{r.tabla_id}' es "
+                f"{type(celda).__name__}, no un rango. Un `en_rango` sin "
+                "rango con SEMANTICA declarada es lo que deja a la ventana "
+                "pintar como minimo el primero de dos maximos (NOR-HID-04)"
+            )
+        if not r.que_acota:
+            raise ValueError(f"'{clave}' se resuelve `en_rango` y no dice "
+                             "QUE acota el rango")
+
+    elif isinstance(r, Derivada):
+        if not r.de or not r.regla:
+            raise ValueError(
+                f"'{clave}' se resuelve `derivada` y no declara de que se "
+                "deriva o con que regla. La ventana no lo deja editar: si no "
+                "dice de donde sale, el usuario se queda sin nada que leer"
+            )
+
+    elif isinstance(r, DeEnsayo):
+        if not r.ensayo or not r.trazabilidad_exigida:
+            raise ValueError(
+                f"'{clave}' se resuelve `de_ensayo` y no declara el "
+                "procedimiento o la trazabilidad que hay que exigir. Un dato "
+                "determinado se defiende con la lectura que lo reproduce"
+            )
+
+    elif isinstance(r, DeCatalogo):
+        if not r.advertencia:
+            raise ValueError(
+                f"'{clave}' se resuelve `de_catalogo` y no lleva "
+                "advertencia. El rotulo es todo el punto del modo: sin el, "
+                "un tope de proveedor se lee como exigencia normativa "
+                "(NOR-PRO-01, NOR-PRO-02)"
+            )
+        if r.catalogo_id not in _ids_de_catalogo():
+            raise ValueError(
+                f"'{clave}' cita el catalogo '{r.catalogo_id}', que no esta "
+                f"en el registro (hay: {sorted(_ids_de_catalogo())})"
+            )
+
+    return modo
+
+
+def _tabla_del_registro(clave: str, tabla_id: str):
+    try:
+        return _registro().tabla(tabla_id)
+    except KeyError:
+        raise ValueError(
+            f"'{clave}' declara que su valor sale de la tabla '{tabla_id}', "
+            "que no esta en el registro normativo. Una tabla que no esta "
+            "transcrita no se puede mostrar entera, que es lo que el modo "
+            "`de_tabla` promete"
+        ) from None
+
+
+def _ids_de_catalogo() -> frozenset:
+    return frozenset(c.id for c in _registro().catalogos)
+
+
 def _es_real(x: Any) -> bool:
     """
     Un numero real de verdad. `bool` queda fuera a proposito: en Python es
@@ -3753,6 +4545,138 @@ def _verificar_sensibilidad(clave: str, c: Criterio) -> None:
             )
 
 
+def _numeros_de(valor: Any):
+    """
+    Todos los numeros reales que hay DENTRO de un valor de criterio, sea un
+    escalar, una tupla (la doble n de Sec. 4.1.1), una lista o un dict (el
+    predimensionamiento del cabezal, la exposicion quimica del EMS).
+
+    Existe para que la guardia de finitud no dependa de la FORMA del valor:
+    un `inf` escondido dentro de un dict entra al calculo igual que uno
+    escrito como escalar.
+    """
+    if isinstance(valor, dict):
+        for v in valor.values():
+            yield from _numeros_de(v)
+    elif isinstance(valor, (tuple, list, set, frozenset)):
+        for v in valor:
+            yield from _numeros_de(v)
+    elif isinstance(valor, str):
+        # UN TEXTO QUE SE LEE COMO NUMERO CUENTA COMO NUMERO. No es celo: es
+        # la puerta que quedaba abierta despues de cerrar `--declarar
+        # CLAVE=nan`. Con comillas -- `--declarar "CLAVE='nan'"` --
+        # `ast.literal_eval` tiene EXITO y devuelve la cadena 'nan', de modo
+        # que el respaldo a texto de `cli.py` no se ejecuta y su guardia no
+        # llega a mirar. El criterio queda con la cadena 'nan' guardada, y el
+        # primer consumidor que haga `float()` sobre el -- `M9_cabezal.
+        # cuantia_de_diseno` es el caso medido -- lo devuelve al calculo
+        # convertido en el mismo NaN que se rechazo, con la memoria
+        # imprimiendo `cuantia_adoptada = nan`.
+        #
+        # Solo cae el texto que se LEE como numero no finito. Un criterio
+        # categorico ('Bishop_Simplificado', 'cota_terreno', 'flexible') no
+        # se lee como numero y pasa intacto, que es para lo que el respaldo a
+        # texto existe.
+        try:
+            leido = float(valor)
+        except (TypeError, ValueError, OverflowError):
+            return
+        if not math.isfinite(leido):
+            yield leido
+    elif _es_real(valor):
+        yield valor
+
+
+def _verificar_finitud(clave: str, c: Criterio) -> None:
+    """
+    Ningun numero de un criterio puede ser infinito ni NaN, tenga o no rango
+    de sensibilidad declarado.
+
+    Por que hace falta aparte del rango (MAT-D14, criterio de salida de S16:
+    "ningun dato no finito entra al pipeline como diagnostico falso"): el
+    rango solo defiende a los criterios que declaran uno. Un criterio [A] con
+    `sensibilidad=None` -- 'talud_terraplen' es el caso vivo -- aceptaba
+    `inf` y `nan` por los tres caminos de declaracion. Y el camino existe de
+    verdad: `cli.py::declarar_criterios` resuelve el texto de `--declarar`
+    con `ast.literal_eval`, y `ast.literal_eval("1e999")` devuelve `inf` sin
+    error. Con `talud_terraplen = inf`, `M7.proyeccion_taludes` devuelve
+    `inf`, `longitud_conducto` devuelve `inf` y `cota_salida` devuelve
+    `-inf`: la memoria imprime un diagnostico entero construido sobre un
+    numero que no lo es.
+
+    `nan` es peor que `inf` y por eso no basta con acotar por rango: `nan`
+    es FALSO frente a `<=` y frente a `>=` a la vez, de modo que atraviesa
+    tanto una comprobacion escrita como "esta dentro del rango" como una
+    escrita como "no esta fuera".
+
+    LA GUARDIA ES AQUI Y NO EN `cli.py` porque aqui es el cuello: pasan por
+    `_verificar_criterio` las tres vias de declaracion --- el `--declarar` de
+    la CLI, el boton de la GUI y la escritura permanente ---, y una guardia
+    puesta en una sola de ellas deja las otras dos. La primera version de
+    este cierre puso la del texto en `cli.py`, en el brazo `except` de
+    `ast.literal_eval`, y una revision adversarial la esquivo con comillas:
+    `--declarar "CLAVE='nan'"` hace que `literal_eval` tenga exito, el brazo
+    `except` no se ejecute, y la cadena 'nan' entre entera. La de `cli.py` se
+    conserva porque da un mensaje mejor en su caso; la que cierra la clase es
+    esta.
+
+    HASTA DONDE LLEGA ESTA GUARDIA, dicho para que no se sobreentienda. Cierra
+    la PUERTA: ningun no-finito ENTRA. No cierra el OVERFLOW ARITMETICO, que
+    es otro defecto: con `talud_terraplen = 1e308` --- finito, y sin rango de
+    sensibilidad que lo acote --- `M7.proyeccion_taludes` multiplica y
+    devuelve `inf`, y el informe sale con `"longitud_m": {"valor": "inf"}`. Se
+    alcanza tambien sin criterio absurdo, solo desde el CSV: una
+    `cota_rasante = 1e308` pasa `_a_float`, `_valida_rangos` y
+    `_valida_cruzadas`, porque NINGUNA cota tiene techo en dominios.py, y
+    ponerle uno seria inventar un valor de proyecto, que es lo que CLAUDE.md
+    prohibe expresamente.
+
+    ESO YA NO ESTA ABIERTO. Cuando se escribio este parrafo el defecto no
+    tenia ID de auditoria y quedaba declarado aqui sin cerrar; S16.5 lo dio de
+    alta como SIS-G-01 y lo cerro donde corresponde, que NO es este archivo:
+    la guardia esta a la SALIDA de M7 (`M7_geometria._exigir_finito`), porque
+    un resultado no finito nacido de entradas finitas no es un dato mal
+    declarado del expediente sino el limite de la aritmetica, y por eso
+    tampoco sale como `DatoInvalidoError` sino con la clase que S16.5 anadio a
+    la taxonomia para nombrarlo, `modelos.LimiteNumericoError`. La misma
+    sesion cerro con esa clase sus dos hermanos de M4 --- SIS-G-02 (el area se
+    anula despues del solver) y la mitad alcanzable de MAT-O18 (`Q ** 2`
+    desborda) ---, que reventaban en crudo con ZeroDivisionError y
+    OverflowError. La division del trabajo se mantiene: aqui la ENTRADA, alla
+    la SALIDA.
+
+    Y no todo `inf` que llega a la memoria es ese defecto. SON DOS LOS
+    LEGITIMOS, no uno --- este parrafo nombraba solo el primero ---:
+    `M9.verificar_volteo` y `M9.verificar_deslizamiento` devuelven `math.inf`
+    A PROPOSITO como FS cuando la solicitacion es nula --- "no vuelca" no es
+    un numero grande, es la ausencia del momento volcante ---, y `cli._num`
+    los renderiza como texto para que el JSON siga siendo valido. Un barrido
+    que prohibiera todo no-finito en la SALIDA de todo el calculo romperia los
+    dos, y por eso la guardia de S16.5 vive solo en M7 y el censo de los dos
+    esta fijado en un test
+    (`test_los_dos_unicos_inf_deliberados_del_repositorio_siguen_ahi`).
+    """
+    for x in _numeros_de(c.valor):
+        try:
+            finito = math.isfinite(float(x))
+        except OverflowError:
+            # Un `int` de Python no tiene tope, y uno de 401 cifras no cabe en
+            # un double: `float(x)` lanza OverflowError, que no es ValueError
+            # ni KeyError y que ni `cli.main` ni la GUI atrapan. Entra por la
+            # misma puerta que el infinito y sale por el mismo mensaje, no por
+            # una traza: para el calculo son el mismo problema.
+            finito = False
+        if not finito:
+            raise ValueError(
+                f"'{clave}' recibe el valor {c.valor!r}, que contiene "
+                f"{x!r}: un criterio no puede declararse con un numero "
+                "infinito, con NaN ni con un entero que no quepa en doble "
+                "precision. No es un valor grande, es un valor que no existe, "
+                "y el calculo lo propagaria hasta la memoria sin detenerse en "
+                "ningun sitio"
+            )
+
+
 def _verificar_criterio(clave: str, c: Criterio) -> None:
     """
     Valida UNA entrada. No lee CRITERIOS: recibe el objeto ya armado.
@@ -3775,6 +4699,7 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
     reproducir, y un [S] con sensibilidad seria un hecho al que se le ofrece
     un rango de valores alternativos, que es justo lo que un hecho no tiene.
     """
+    _verificar_finitud(clave, c)
     if c.etiqueta not in ETIQUETAS_VALIDAS:
         raise ValueError(
             f"'{clave}' lleva la etiqueta {c.etiqueta!r}, que no es de la "
@@ -3844,6 +4769,41 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
                 "como si el vacio ya estuviera resuelto"
             )
         _verificar_ancla_de_vacio(clave, c.vacio_verificado)
+
+    if c.resolucion is None:
+        raise ValueError(
+            f"'{clave}' no declara `resolucion`. Toda variable de entrada "
+            "dice COMO se resuelve (Sec. 4.3): de que tabla, de que rango, "
+            "de que ensayo, de que catalogo, de que se deriva, o que se "
+            "declara libre. Sin eso la GUI no sabe que ventana abrir y la "
+            "memoria no puede escribir de donde salio el valor"
+        )
+    modo = verificar_resolucion(clave, c.resolucion)
+
+    if isinstance(c.resolucion, Libre) and c.resolucion.opciones:
+        raise ValueError(
+            f"'{clave}' declara `Libre.opciones="
+            f"{c.resolucion.opciones!r}`. En un CRITERIO el conjunto cerrado "
+            "de valores admisibles vive en `sensibilidad`, que es lo que M11 "
+            "imprime: repetirlo aqui crea dos listas que pueden divergir. El "
+            "campo es para las variables que no son criterios -- la Familia "
+            "de un punto del CSV -- que no tienen `sensibilidad` donde "
+            "ponerlo"
+        )
+
+    if modo is ModoDeResolucion.DE_ENSAYO and c.sensibilidad is not None:
+        raise ValueError(
+            f"'{clave}' se resuelve `de_ensayo` y declara sensibilidad. Un "
+            "dato determinado por un procedimiento no tiene rango que "
+            "elegir: se defiende con la trazabilidad de la lectura. Si "
+            "hubiera rango, la resolucion no es `de_ensayo`"
+        )
+    if bool(c.de_catalogo) != (modo is ModoDeResolucion.DE_CATALOGO):
+        raise ValueError(
+            f"'{clave}' rotula `de_catalogo`={c.de_catalogo!r} y se resuelve "
+            f"`{modo.value}`. El rotulo y el modo son la misma afirmacion "
+            "dicha dos veces, y no pueden discrepar"
+        )
 
     _verificar_sensibilidad(clave, c)
 
@@ -3995,7 +4955,12 @@ if __name__ == "__main__":
 
     A_s = ds.valor("PGA_roca_B") * valor("F_pga")
     k_h = valor("factor_muro_eleccion") * A_s
-    valor("clase_sitio")
+
+    # 'clase_sitio' NO se invoca, aqui tampoco. Es un [S] sin valor y lo que
+    # la cadena consume es el factor: invocarlo lanzaria
+    # CriterioPendienteError y esta demostracion dejaria de correr por un
+    # dato que la cadena no necesita. Aparece en el reporte de abajo por
+    # `criterios_sin_valor()`, que es su puerta.
 
     print(f"A_s = {A_s:.2f} g")
     print(f"k_h = {k_h:.2f}")

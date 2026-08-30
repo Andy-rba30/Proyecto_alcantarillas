@@ -275,7 +275,7 @@ def indice_del_registro(registro) -> str:
     # barato a mas caro. No es un valor de proyecto: es como se ordena una
     # tabla.
     orden = {"facil, es descarga publica": 0, "compra o suscripcion": 1,
-             "gabinete": 2, "de campo": 3}   # literal-ok
+             "gabinete": 2, "de campo": 3}   # literal-ok: orden de presentacion, no valor de proyecto
     _sin_orden = 9   # literal-ok: los que no esten en el orden, al final
     for f in sorted(registro.fuentes_ausentes,
                     key=lambda x: (orden.get(x.ausencia.esfuerzo.value,

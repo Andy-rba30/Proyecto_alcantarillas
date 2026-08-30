@@ -19,6 +19,7 @@ from modulos.M6_proteccion import (ADVERTENCIA_FALTA_FILTRO,
                                    CRITERIO_ESPESOR, CRITERIO_LONGITUD,
                                    laushey_d50, proteccion_salida)
 from tests.fixtures.casos_patron import CP4_LAUSHEY
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 
 
 @pytest.mark.parametrize("caso", CP4_LAUSHEY)
@@ -55,7 +56,7 @@ def test_proteccion_salida_calcula_espesor_antes_de_detenerse(monkeypatch):
     assert isinstance(resultado, ProteccionSalida)
     assert resultado.d50 == pytest.approx(0.13167, abs=1e-4)
     assert resultado.espesor == pytest.approx(1.75 * resultado.d50, abs=1e-9)
-    assert resultado.longitud == 5.0
+    assert resultado.longitud == pytest.approx(5.0, rel=REL_TRANSPORTE)
     assert resultado.criterio_espesor == CRITERIO_ESPESOR
     assert resultado.criterio_longitud == CRITERIO_LONGITUD
     assert ADVERTENCIA_NO_ES_DISENO in resultado.advertencias

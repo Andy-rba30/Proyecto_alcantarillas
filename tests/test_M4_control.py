@@ -25,24 +25,31 @@ import pytest
 
 import criterios_adoptados as ca
 from constantes_fisicas import G
-from constantes_normativas import (KU_METRICO, K_FRICCION_SI,
+from constantes_normativas import (KU_SI, K_FRICCION_SI,
                                    Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO)
+from dominios import S_CAUCE_MAX
 from modelos import (ConstantesHDS5, ControlGobernante, DatoInvalidoError,
-                     RegimenEntrada, ResultadoHidraulico, TiranteCritico)
+                     DisenoNoFactibleError, RegimenEntrada, ResultadoHidraulico,
+                     TiranteCritico)
 from modulos.M2_material import catalogo
 from modulos.M3_hidraulica import geometria
-from modulos.M4_control import (CRITERIO_TRANSICION, area_llena,
+from modulos.M4_control import (CRITERIO_GEOMETRIA_SALIDA,
+                                CRITERIO_TRANSICION, NUMERAL_CRITICO,
+                                NUMERAL_ENTRADA, area_llena,
                                 caudal_adimensional,
                                 control_entrada, control_salida,
                                 hw_gobernante, perdida_carga,
                                 radio_hidraulico_lleno, resolver_control,
                                 tirante_critico)
-from modelos import TipoMaterial
+from modelos import (DatoInvalidoError, ErrorProyecto,
+                     LimiteNumericoError, TipoMaterial)
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP5_TRANSICION_HDS5,
                                          CP5B_NO_SUMERGIDO, CP5C_SUMERGIDO,
                                          CP6_TIRANTE_CRITICO,
                                          CP8_CONTROL_SALIDA)
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 
 @pytest.fixture
@@ -116,7 +123,12 @@ def test_el_tirante_critico_no_depende_de_n_ni_de_S():
     criticos = [tirante_critico(Q=Q, D=c["D"]) for Q in c["Q_casos"]]
     tirantes = [k.y_c for k in criticos]
 
-    assert tirantes == sorted(tirantes), "y_c debe crecer monotono con Q"
+    # Monotonia, no igualdad: `lista == sorted(lista)` compara floats con
+    # `==` (aunque sea contra una permutacion de si misma) y ademas dice
+    # menos de lo que se quiere afirmar.
+    assert all(anterior <= siguiente
+               for anterior, siguiente in zip(tirantes, tirantes[1:])), (
+        "y_c debe crecer monotono con Q")
     assert all(0 < k.y_c < c["D"] for k in criticos)
 
 
@@ -157,7 +169,7 @@ def test_area_llena_y_radio_hidraulico_lleno():
 def test_ku_es_el_valor_metrico():
     """Ku = 1.811 (SI). El 1.0 imperial daria un q* 1.811 veces menor y
     cambiaria de rama sin avisar."""
-    assert KU_METRICO == pytest.approx(CP5_TRANSICION_HDS5["Ku"], abs=1e-9)
+    assert KU_SI == pytest.approx(CP5_TRANSICION_HDS5["Ku"], abs=1e-9)
 
 
 @pytest.mark.parametrize("caso, esperado", [
@@ -184,10 +196,10 @@ def test_el_area_de_q_estrella_es_la_llena_y_no_la_del_tirante():
     c = CP5_TRANSICION_HDS5
     # El area va sin redondear: CP-5 la publica a cinco decimales (0.63617) y
     # contra ese valor la igualdad solo vale hasta la tolerancia del fixture.
-    esperado = KU_METRICO * c["Q"] / (math.pi * c["D"] ** 2 / 4 * math.sqrt(c["D"]))
+    esperado = KU_SI * c["Q"] / (math.pi * c["D"] ** 2 / 4 * math.sqrt(c["D"]))
     assert caudal_adimensional(Q=c["Q"], D=c["D"]) == pytest.approx(esperado, rel=1e-12)
 
-    con_area_del_tirante = KU_METRICO * c["Q"] / (
+    con_area_del_tirante = KU_SI * c["Q"] / (
         CP2_GEOMETRIA_MANNING["A_esperado"] * math.sqrt(c["D"]))
     assert caudal_adimensional(Q=c["Q"], D=c["D"]) < con_area_del_tirante
 
@@ -311,7 +323,7 @@ def test_la_curva_empalma_continua_en_los_dos_limites(hds5):
     A_llena = area_llena(D)
 
     def Q_para(q_estrella):
-        return q_estrella * A_llena * math.sqrt(D) / KU_METRICO
+        return q_estrella * A_llena * math.sqrt(D) / KU_SI
 
     epsilon = 1e-7
     for limite in (Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO):
@@ -335,7 +347,8 @@ def test_ks_esta_en_todas_las_cartas_de_la_tabla_a1():
 
     for nombre, fila in HDS5_INLET.items():
         assert "Ks" in fila, f"la carta '{nombre}' perdio el Ks"
-        assert fila["Ks"] in (-0.5, 0.7), (
+        assert any(fila["Ks"] == pytest.approx(k, rel=REL_TRANSPORTE)
+               for k in (-0.5, 0.7)), (
             f"la carta '{nombre}' tiene Ks={fila['Ks']}: la formulacion solo "
             "admite -0.5 (sin inglete) y +0.7 (inglete)"
         )
@@ -623,7 +636,10 @@ def test_la_geometria_critica_es_la_misma_en_las_dos_piezas(hds5):
 
     assert entrada.critico is critico
     assert salida.critico is critico
-    assert entrada.critico.y_c == salida.critico.y_c
+    # Es identidad de OBJETO, no igualdad de float: las dos lineas de
+    # arriba ya afirman que los dos son `critico`, y compararlos por valor
+    # afirmaba menos con una igualdad de punto flotante de por medio.
+    assert entrada.critico is salida.critico
 
 
 def test_la_geometria_critica_inyectada_da_lo_mismo_que_la_resuelta_dentro(hds5):
@@ -645,3 +661,220 @@ def test_las_tres_piezas_son_tipos_de_modelos(hds5):
     assert isinstance(critico.geometria, type(geometria(D, 1.0)))
     assert isinstance(control_entrada(Q=Q, D=D, S=S, hds5=hds5).regimen,
                       RegimenEntrada)
+
+
+# ===========================================================================
+# C09 / SIS-F-10 - las tres guardas de M4 que no ejecutaba nadie
+# ===========================================================================
+#
+# Las tres salen por vias distintas de la taxonomia, y esa distincion es
+# justamente lo que ningun test fijaba:
+#
+#   tirante_critico          DatoInvalidoError sobre 'Q'      -- el dato
+#   _exigir_hw_no_negativo   DisenoNoFactibleError            -- la combinacion
+#   _geometria_de_referencia DatoInvalidoError sobre el criterio
+#
+# Que la segunda sea DisenoNoFactibleError y no DatoInvalidoError esta
+# razonado en el docstring de `_exigir_hw_no_negativo` (MAT-D10): con esa Q,
+# esa D y esa S ningun dato esta mal -- lo que no se sostiene es la
+# combinacion --, y una pendiente medida en campo no se "corrige".
+
+
+def test_un_caudal_que_no_deja_residuo_critico_se_detiene_en_Q():
+    """
+    `tirante_critico` declara en su docstring que el residuo cambia de signo
+    "para un Q y un D de proyecto", y deja la guarda explicita para que un
+    caso degenerado salga como ErrorProyecto y no como el ValueError de
+    `brentq`, que la GUI no sabria clasificar.
+
+    El caso degenerado es un caudal tan pequeño que el area del extremo
+    inferior del intervalo se cancela en doble precision y el residuo llega a
+    cero exacto. Falla si alguien retira la guarda confiando en que brentq
+    "siempre encuentra raiz": entonces esta llamada saldria como ValueError
+    -- fallo de programa -- por un dato del expediente.
+    """
+    Q_degenerado = 1e-200        # m3/s; M0 solo exige Q > 0
+    with pytest.raises(DatoInvalidoError) as exc:
+        tirante_critico(Q=Q_degenerado, D=CP6_TIRANTE_CRITICO["D"])
+
+    assert exc.value.campo == "Q"
+    assert exc.value.valor == pytest.approx(Q_degenerado, rel=REL_TRANSPORTE)
+    assert "no cambia de signo" in exc.value.motivo
+    assert NUMERAL_CRITICO in exc.value.motivo
+
+
+@pytest.mark.parametrize("Q", CP6_TIRANTE_CRITICO["Q_casos"])
+def test_ningun_caudal_de_proyecto_llega_a_esa_guarda(Q):
+    """
+    La otra mitad del test anterior, y la que sostiene lo que el docstring de
+    `tirante_critico` afirma: con los caudales de CP-6 la guarda no se
+    dispara y el solver entrega tirante. Falla si la condicion del `if` se
+    invierte o se endurece y empieza a rechazar caudales normales.
+    """
+    assert tirante_critico(Q=Q, D=CP6_TIRANTE_CRITICO["D"]).y_c > 0
+
+
+@pytest.mark.parametrize("Q, D", [
+    (0.05, 2.40),      # q* muy bajo: el termino de la carta casi no aporta
+    (0.30, 2.40),
+    (0.05, 1.20),
+])
+def test_la_correccion_por_pendiente_no_puede_dejar_la_carga_bajo_cero(
+        hds5, Q, D):
+    """
+    MAT-D10. HWi/D = H_c/D + K*(q*)^M + Ks*S con Ks = -0.5 (sin inglete): con
+    un q* chico y una pendiente fuerte, el termino Ks*S se come a los otros
+    dos y la carta devuelve una carga a la entrada negativa, que no existe.
+
+    Sec. 4.2 no acota ese termino y ni la hoja de ruta ni el HDS-5 fijan un
+    piso, de modo que adoptar uno aqui seria rellenar un vacio en silencio.
+    Falla si alguien "arregla" el numero con un max(0, ...) o con un piso
+    inventado: entonces esta llamada devolveria un HW publicable que no lo es.
+
+    La pendiente del caso esta DENTRO del dominio fisico del dato (se
+    comprueba contra `dominios.S_CAUCE_MAX`, no contra un numero escrito
+    aqui): el punto de la ficha es justamente que ningun dato esta mal.
+    """
+    S = 0.40                      # m/m
+    assert 0 < S < S_CAUCE_MAX, "el caso dejo de ser una pendiente posible"
+
+    with pytest.raises(DisenoNoFactibleError) as exc:
+        control_entrada(Q=Q, D=D, S=S, hds5=hds5)
+
+    motivo = str(exc.value)
+    assert NUMERAL_ENTRADA in motivo
+    # El motivo tiene que nombrar el termino culpable y su constante: sin eso
+    # el revisor no sabe que lo que fallo fue la correccion por pendiente.
+    assert "Ks" in motivo and str(hds5.Ks) in motivo
+    assert "negativa" in motivo
+    # Y los tres numeros con que se reproduce el caso.
+    assert f"D={D}" in motivo and f"S={S}" in motivo
+
+
+def test_con_la_misma_D_y_una_pendiente_corriente_la_carta_si_entrega_carga(hds5):
+    """
+    El contraste del test anterior: lo que no se sostiene es la COMBINACION,
+    no la D ni el Q. Falla si la guarda se endurece y empieza a rechazar
+    pendientes normales de alcantarilla.
+    """
+    entrada = control_entrada(Q=0.05, D=2.40, S=0.005, hds5=hds5)
+    assert entrada.HW_sobre_D > 0
+    assert entrada.HW > 0
+
+
+@pytest.mark.parametrize("seleccion", [
+    "barril_parcialmente_lleno",
+    "seccion_llena_hasta_y_normal",
+    "",
+])
+def test_una_seccion_de_referencia_distinta_de_la_llena_se_detiene(seleccion):
+    """
+    Sec. 4.3 se evalua sobre la seccion que elige 'geometria_control_salida'
+    [C], y M4 solo implementa la seccion llena. Falla si alguien declara otra
+    seleccion y M4 la ignora en silencio: el HW de control de salida saldria
+    calculado con la seccion llena mientras la memoria declara otra cosa --
+    el caso en que el numero y su justificacion dejan de corresponderse.
+
+    Es DatoInvalidoError sobre el nombre del criterio, no CriterioPendiente:
+    el criterio esta declarado, lo que no existe es el procedimiento.
+    """
+    ca.establecer_valor_dinamico(CRITERIO_GEOMETRIA_SALIDA, seleccion)
+    try:
+        with pytest.raises(DatoInvalidoError) as exc:
+            control_salida(Q=1.0, D=0.90, S=0.005, L=20.0, TW=0.0, n=0.013)
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_GEOMETRIA_SALIDA)
+
+    assert exc.value.campo == CRITERIO_GEOMETRIA_SALIDA
+    assert exc.value.valor == seleccion
+    assert "seccion llena" in exc.value.motivo
+    # Y dice que haria falta para implementar la otra, que es lo que separa
+    # "corregi el valor" de "hay que programar un procedimiento".
+    assert "HDS-5" in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# SIS-G-02 y MAT-O18 - los dos extremos del caudal que la aritmetica no lleva
+# ---------------------------------------------------------------------------
+
+def test_un_caudal_diminuto_anula_el_area_despues_del_solver():
+    """
+    SIS-G-02. La guarda que ya existia protege el BRACKET de Brent; esta
+    protege la division de DESPUES.
+
+    Son dos cosas distintas y hasta S16.5 solo estaba la primera: con
+    Q = 1e-33 y D = 0.90 m el residuo cruza el cero limpiamente, brentq
+    converge sin quejarse, y el theta al que converge cae por debajo del
+    umbral en que el area se cancela. `V_c = Q / geom.A` era entonces un
+    `ZeroDivisionError` en crudo -- fuera de ErrorProyecto, de modo que la GUI
+    no sabia si era problema del expediente o fallo del programa.
+
+    EL UMBRAL ESTA MEDIDO, no supuesto: A = (D^2/8)(theta - sen theta) vale
+    exactamente 0.0 desde theta <= 2.149e-08, porque theta - sen(theta) ~
+    theta^3/6 cae bajo el ultimo bit de theta. Q = 1e-32 todavia da
+    theta = 2.979e-08 y area positiva; Q = 1e-33 ya no.
+
+    `Q_m3s` solo exige ser positivo y no se le puede poner un piso sin
+    inventar un valor de proyecto, que es la misma razon por la que SIS-G-01
+    no acota las cotas.
+    """
+    # El ultimo caudal que SI resuelve: la guarda no puede empezar antes.
+    assert tirante_critico(1e-32, 0.90).geometria.A > 0
+
+    with pytest.raises(LimiteNumericoError) as exc:
+        tirante_critico(1e-33, 0.90)
+    assert exc.value.campo == "Q"
+    # El mensaje nombra el PAR, no solo Q: la degeneracion es de la
+    # combinacion (Q, D), igual que en MAT-D13 lo es la de (R, n).
+    assert "D = 0.9" in str(exc.value)
+
+
+def test_un_caudal_enorme_no_revienta_con_overflow_crudo():
+    """
+    MAT-O18, la mitad que SI era alcanzable, remedida.
+
+    Su ficha situaba el desborde en `q*^2` y lo clasificaba "solo alcanzable
+    inyectando". LAS DOS COSAS SON FALSAS: esta en `Q ** 2` de
+    `_residuo_critico`, y `Q_m3s` no tiene techo en dominios.py, de modo que
+    un caudal de 1e155 llega entero desde un CSV que pasa las tres
+    validaciones de M0. Es la tercera correccion a esa ficha; S16 ya habia
+    encontrado dos.
+
+    `float.__pow__` lanza OverflowError donde `Q * Q` daria `inf`, asi que el
+    sintoma era una excepcion cruda y no un numero falso. Se traduce a la
+    taxonomia en vez de reescribir la potencia: el numero no existe de las dos
+    formas, y lo que hay que corregir es el dato.
+    """
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+
+    # Por debajo del umbral gobierna la guarda de bracket, que ya existia y
+    # sigue siendo la respuesta correcta: no hay raiz que buscar.
+    with pytest.raises(DatoInvalidoError):
+        control_entrada(Q=1e154, D=0.90, S=0.006, hds5=material.hds5)
+
+    with pytest.raises(LimiteNumericoError) as exc:
+        control_entrada(Q=1e155, D=0.90, S=0.006, hds5=material.hds5)
+    assert exc.value.campo == "Q"
+    assert "Q^2" in str(exc.value)
+
+
+def test_los_dos_extremos_son_errores_de_proyecto_no_crashes():
+    """
+    Lo que la clase nueva compra: la GUI atrapa los dos con el mismo `except
+    ErrorProyecto` con que atrapa un CBR de 250 %. Antes uno era
+    ZeroDivisionError y el otro OverflowError, y ninguno de los dos lo era.
+    """
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    with pytest.raises(ErrorProyecto):
+        tirante_critico(1e-33, 0.90)
+    with pytest.raises(ErrorProyecto):
+        control_entrada(Q=1e155, D=0.90, S=0.006, hds5=material.hds5)
+
+
+def test_el_caudal_de_proyecto_no_toca_ninguna_de_las_dos_guardas():
+    """El trinquete: con datos reales las dos guardas son invisibles."""
+    for Q in CP6_TIRANTE_CRITICO["Q_casos"]:
+        critico = tirante_critico(Q, CP6_TIRANTE_CRITICO["D"])
+        assert critico.geometria.A > 0
+        assert math.isfinite(critico.V)
+        assert math.isfinite(critico.H_c)

@@ -119,10 +119,10 @@ def test_laushey_reproduce_los_d50_de_CP4(caso):
 
 def test_el_caudal_adimensional_reproduce_CP5():
     cp = CP5_TRANSICION_HDS5
-    assert CN.KU_METRICO == pytest.approx(cp["Ku"])
+    assert CN.KU_SI == pytest.approx(cp["Ku"])
     A_llena = math.pi * cp["D"] ** 2 / 4
     assert A_llena == pytest.approx(cp["A_llena_esperada"], abs=cp["tolerancia"])
-    q = CN.KU_METRICO * cp["Q"] / (A_llena * cp["D"] ** 0.5)
+    q = CN.KU_SI * cp["Q"] / (A_llena * cp["D"] ** 0.5)
     assert q == pytest.approx(cp["q_estrella_esperado"], abs=cp["tolerancia"])
     assert CN.Q_LIM_NO_SUMERGIDO < q < CN.Q_LIM_SUMERGIDO      # zona de transicion
 
@@ -131,7 +131,7 @@ def test_el_caudal_adimensional_reproduce_CP5():
                                         (CP5C_SUMERGIDO, "sumergido")])
 def test_las_ramas_puras_caen_fuera_de_la_zona_de_transicion(cp, dentro):
     A_llena = math.pi * cp["D"] ** 2 / 4
-    q = CN.KU_METRICO * cp["Q"] / (A_llena * cp["D"] ** 0.5)
+    q = CN.KU_SI * cp["Q"] / (A_llena * cp["D"] ** 0.5)
     assert q == pytest.approx(cp["q_estrella_aprox"], abs=CP5_TRANSICION_HDS5["tolerancia"])
     if dentro == "no_sumergido":
         assert q <= CN.Q_LIM_NO_SUMERGIDO
@@ -248,7 +248,9 @@ def test_el_resguardo_por_CBR_cubre_todo_el_rango_sin_huecos():
     """num. 4.5.4: a peor CBR, mayor resguardo. Los tramos deben encadenar."""
     tramos = CN.RESGUARDO_NAPA_SUBRASANTE
     resguardos = [r for _, _, r in tramos]
-    assert resguardos == sorted(resguardos), "el resguardo no crece al bajar el CBR"
+    assert all(anterior <= siguiente
+               for anterior, siguiente in zip(resguardos, resguardos[1:])), (
+        "el resguardo no crece al bajar el CBR")
     for (cbr_min, _, _), (_, cbr_max_siguiente, _) in zip(tramos, tramos[1:]):
         assert cbr_min == cbr_max_siguiente     # 20-6, 6-3, 3-...
 
