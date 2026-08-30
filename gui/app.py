@@ -439,10 +439,17 @@ class ExpedienteApp:
             state="disabled", command=self._guardar_valor_en_archivo)
         self.btn_guardar_archivo.pack(side="left", padx=8, ipadx=6, ipady=3)
         Tooltip(self.btn_guardar_archivo,
-                "Reescribe 'valor=None' por este valor DIRECTAMENTE en\n"
-                "criterios_adoptados.py. Pide confirmacion. Etiqueta,\n"
-                "justificacion y fuente no se tocan: revisalas a mano si\n"
-                "el criterio deja de ser [A]/pendiente.")
+                # SIS-A-14: decia 'Reescribe \'valor=None\'', y reescribe
+                # CUALQUIER valor -- tambien el de un criterio ya declarado --.
+                # El texto que lee el usuario tiene que decir lo mismo que el
+                # docstring de `escribir_valor_en_archivo`, o la correccion
+                # solo llega a quien lee el codigo.
+                "Reescribe el 'valor=' del criterio -- este declarado o no --\n"
+                "DIRECTAMENTE en criterios_adoptados.py. Pide confirmacion.\n"
+                "Etiqueta, justificacion y fuente no se tocan: revisalas a\n"
+                "mano si la razon del valor cambio.\n"
+                "No alcanza a los valores que son tabla, dict o tupla: esos\n"
+                "se rechazan y se editan a mano.")
 
         self.lbl_estado_criterio = ttk.Label(p, text="", style="Ayuda.TLabel",
                                               wraplength=980, justify="left")

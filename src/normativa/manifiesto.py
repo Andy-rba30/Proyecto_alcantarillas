@@ -134,11 +134,47 @@ def _simbolos_citados(fila: str) -> List[str]:
         m = re.match(r"^([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)", limpio)
         if not m:
             continue
-        partes = m.group(1).split(".")
+        # `constantes_normativas.py` es una RUTA, no un nombre punteado: su
+        # cola es `py`, que casa con cualquier bloque que nombre cualquier
+        # archivo del proyecto.
+        partes = m.group(1).removesuffix(".py").split(".")
         for candidato in (partes[0], partes[-1]):
             if candidato not in simbolos:
                 simbolos.append(candidato)
     return simbolos
+
+
+_CACHE_SIMBOLOS: List[set] = []
+
+
+def _SIMBOLOS_DEL_PROYECTO() -> set:
+    """
+    Todo nombre que `src/` define en alguna parte.
+
+    Sirve para separar un SIMBOLO de un token que solo lo parece. El
+    manifiesto escribe formulas y rutas entre backticks, y de ahi salian
+    `max`, `Ks`, `q`, `t` y --- el peor --- `py`, cola de
+    `constantes_normativas.py`, que casa con cualquier bloque que nombre
+    cualquier archivo del proyecto. Un comodin en una comprobacion es una
+    comprobacion que se satisface sola, que es el defecto que el filtro
+    `ID_DE_FICHA` ya cerro para los ids de auditoria y este cierra para el
+    resto.
+    """
+    if not _CACHE_SIMBOLOS:
+        nombres: set = set()
+        campo = re.compile(r"^\s+([a-z_]\w*)\s*:\s*[A-Za-z\"']")
+        for ruta in sorted((RAIZ / "src").rglob("*.py")):
+            if "__pycache__" in ruta.parts:
+                continue
+            rel = str(ruta.relative_to(RAIZ))
+            nombres |= set(_bloques(rel))
+            # Los campos anotados de una dataclass (`seccion_eg2013: str`) son
+            # simbolos del proyecto y `_bloques` no los ve: no abren bloque,
+            # pero una fila del manifiesto los cita y el codigo los usa.
+            nombres |= {m.group(1) for l in _lineas(rel)
+                        for m in [campo.match(l)] if m}
+        _CACHE_SIMBOLOS.append(nombres)
+    return _CACHE_SIMBOLOS[0]
 
 
 def _linea_del_simbolo(rel: str, simbolos: List[str],
@@ -177,31 +213,37 @@ def _linea_por_mencion(rel: str, simbolos: List[str],
     Es el caso legitimo que SIS-G-03 saco del saco de prosa: `M5` consume
     `V_MIN`, que vive en `constantes_normativas.py`, y una fila que cita
     `V_MIN` y apunta a M5 esta apuntando a un USO. No hay bloque del simbolo
-    al que anclar, pero si hay algo que derivar del nombre: el BLOQUE QUE LO
-    NOMBRA.
+    al que anclar, pero si hay algo que derivar del nombre: LA LINEA QUE LO
+    NOMBRA, la mas cercana a la que el manifiesto ya declara.
 
-    Regla, y es la misma desambiguacion que ya usa `_linea_del_simbolo` para
-    los homonimos: si la linea actual sigue cayendo en un bloque que menciona
-    el simbolo, NO SE MUEVE --- el autor eligio ese renglon y una linea util
-    no se pierde por regenerar. Si dejo de caer, se va al bloque mas cercano
-    que si lo mencione. Sin candidatos, `None`: es prosa de verdad y el cupo
-    la cuenta.
+    LA PRIMERA VERSION ANCLABA AL BLOQUE, Y ERA DEMASIADO FLOJA. Bastaba con
+    que cualquier bloque del archivo nombrara el simbolo en cualquier parte:
+    una referencia sabotada a 2900 lineas de su uso pasaba en verde, y la
+    regla «si sigue cayendo en un bloque que lo menciona, no se mueve»
+    remataba el agujero impidiendo que el regenerador la devolviera a su
+    sitio. Un bloque de `criterios_adoptados.py` tiene noventa lineas: decir
+    que el destino «habla del simbolo» porque su bloque lo nombra noventa
+    lineas mas abajo no es una comprobacion.
+
+    Ahora se ancla al RENGLON. Se descartan las lineas de `import`, que
+    nombran el simbolo sin decir nada de el, y se descartan los tokens que no
+    son simbolos del proyecto --- `py` sacado de un backtick
+    `constantes_normativas.py`, o el `max` de una formula ---, que hacian de
+    comodin. Sin menciones reales, `None`: es prosa de verdad y el cupo la
+    cuenta.
     """
     lineas = _lineas(rel)
-    candidatos: List[Tuple[int, int]] = []
-    for tramos in _bloques(rel).values():
-        for inicio, fin in tramos:
-            cuerpo = "\n".join(lineas[inicio - 1:fin])
-            if any(re.search(r"\b" + re.escape(s) + r"\b", cuerpo)
-                   for s in simbolos):
-                candidatos.append((inicio, fin))
-    if not candidatos:
+    reales = [s for s in simbolos if s in _SIMBOLOS_DEL_PROYECTO()]
+    if not reales:
         return None
-    for inicio, fin in candidatos:
-        if inicio <= linea_actual <= fin:
-            return linea_actual
-    inicio = min((i for i, _ in candidatos), key=lambda x: abs(x - linea_actual))
-    return _primer_renglon_con_texto(rel, inicio, None)
+    menciones = [
+        n for n, linea in enumerate(lineas, 1)
+        if not linea.lstrip().startswith(("import ", "from "))
+        and any(re.search(r"\b" + re.escape(s) + r"\b", linea) for s in reales)
+    ]
+    if not menciones:
+        return None
+    return min(menciones, key=lambda n: abs(n - linea_actual))
 
 
 def _primer_renglon_con_texto(rel: str, desde: int,
@@ -222,7 +264,8 @@ def _sin_rango_imposible(original: str, linea: int, sufijo: Optional[str],
 
     La notacion `[ETQ:a-b]` era un rango real (de la linea a a la b). Al
     resincronizar, esta funcion reescribia la `a` y conservaba la `b` vieja, de
-    modo que cuarenta etiquetas acabaron anunciando tramos imposibles --- el
+    modo que CINCUENTA de las 57 con sufijo acabaron anunciando tramos
+    imposibles --- el
     final por delante del principio ---. Un rango cuyo final no se deriva de
     nada no es informacion: es ruido con forma de dato, y ningun test lo
     miraba (SIS-G-03).
@@ -276,7 +319,7 @@ def resincronizar(texto: str) -> Tuple[str, List[str], int]:
             # EL SUFIJO SE TIRA, NO SE ARRASTRA. La notacion original era un
             # rango real -- `[CN:33-39]`, de la linea 33 a la 39 -- y esta
             # funcion reescribia el inicio conservando el final viejo, de modo
-            # que 48 etiquetas acabaron mostrando rangos IMPOSIBLES como
+            # que 50 etiquetas acabaron mostrando rangos IMPOSIBLES como
             # `[CN:170-49]`: la etiqueta que el lector ve mentia sobre el
             # tramo, y ningun test lo miraba. Un rango cuyo final no se
             # deriva de nada no es informacion, es ruido con forma de dato.

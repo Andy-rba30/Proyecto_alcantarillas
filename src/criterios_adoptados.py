@@ -58,6 +58,7 @@ que ademas siguen sujetos a un ensayo pendiente y por eso comparten tablero
 con los criterios adoptados.
 """
 
+import ast
 import math
 import numbers
 import re
@@ -398,11 +399,19 @@ def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
     mas estrecha que la que existe, y quien la leyera creeria tener una
     proteccion contra la sobreescritura que el codigo no da.
 
+    PERO NO REESCRIBE CUALQUIER FORMA DE VALOR, y esto es un limite del
+    patron, no una decision: `valor=)([^,\n]*)(,)` se corta en la PRIMERA
+    coma. Un valor cuyo literal lleve comas --- la tupla de `F_pga`, el dict
+    de `hds5_embocadura_hdpe` --- no cabe en esa mordida, y hasta S19 el
+    intento DESTRUIA el archivo y volvia sin excepcion. Ahora se rechaza con
+    `ValueError` y el archivo no se toca: la comprobacion es `ast.parse` sobre
+    el texto resultante, ANTES de escribir. Esos criterios se editan a mano.
+
     LO QUE NO TOCA, y ahi si es estrecha a proposito: ningun otro campo del
     Criterio (etiqueta, justificacion, fuente, sensibilidad, resolucion). Esos
     describen POR QUE se adopto el valor y se revisan a mano; reescribir el
     numero y dejar la justificacion del anterior es la forma de que el archivo
-    afirme una cosa y valga otra. La GUI lo advierte con esas palabras en su
+    afirme una cosa y valga otra. La GUI advierte de los TRES primeros en su
     confirmacion (`gui/app.py::_guardar_valor_en_archivo`), y es advertencia,
     no impedimento: el revisor decide.
     """
@@ -431,6 +440,35 @@ def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
             f"No se encontro el bloque 'valor=' de '{clave}' en {ruta_archivo}. "
             "No se modifico el archivo."
         )
+
+    # EL ARCHIVO RESULTANTE TIENE QUE SEGUIR SIENDO PYTHON. Sin esta guardia
+    # la funcion DESTRUIA el archivo y volvia sin excepcion, que es la peor
+    # combinacion posible: el patron `valor=)([^,\n]*)(,)` se corta en la
+    # PRIMERA coma, de modo que un valor de UNA LINEA que lleve comas
+    # --- `("C", "D", "E")` de `F_pga`, o el dict de `hds5_embocadura_hdpe` ---
+    # quedaba partido, con el resto del literal colgando, y
+    # `criterios_adoptados.py` dejaba de importar. La GUI, que solo mira si
+    # hubo excepcion, pintaba «escrito» en verde; y como despues se refresca
+    # `CRITERIOS` en memoria, la sesion en curso seguia funcionando y la
+    # corrupcion no aparecia hasta el siguiente arranque.
+    #
+    # El proyecto YA conocia este modo de fallo: SIS-F-19 lo describe con
+    # estas palabras --- «lo dejaria a medias y con el resto del literal
+    # colgando» --- y su ValueError solo cubria los valores MULTILINEA. Los de
+    # una linea con comas caian justo en el hueco. Encontrado al refutar el
+    # cierre de SIS-A-14, que habia declarado «reescribe cualquier valor» sin
+    # comprobar este limite.
+    try:
+        ast.parse(texto_nuevo, filename=str(ruta_archivo))
+    except SyntaxError as exc:
+        raise ValueError(
+            f"Reescribir 'valor=' de '{clave}' dejaria {ruta_archivo} sin "
+            f"poder importarse ({exc.msg}, linea {exc.lineno}). El valor "
+            "actual ocupa mas de lo que el patron alcanza a ver --- una tupla "
+            "o un dict con comas --- y hay que editarlo a mano. NO se "
+            "modifico el archivo."
+        ) from exc
+
     Path(ruta_archivo).write_text(texto_nuevo, encoding="utf-8")
 
     # El archivo ya quedo escrito; se refleja tambien en memoria para que el

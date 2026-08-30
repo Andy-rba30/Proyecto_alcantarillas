@@ -222,7 +222,7 @@ ErrorProyecto.
   `Tooltip` y `MarcoScroll` son el MISMO código movido a `gui/componentes.py`;
   `CampoValidable` es su `_campo_validable` con la validación al escribir que
   exige la Sec. 4.3; y el patrón de plantilla `%%` vive en
-  `M11_reporte.PlantillaMemoria`. Se escribe GUI leyendo `gui/componentes.py`.
+  `M11_reporte.PlantillaHTML`. Se escribe GUI leyendo `gui/componentes.py`.
   `legacy/Tc.py` **se conserva** —no es código muerto: la §1.2 de la hoja de
   ruta lo nombra como origen del caudal de diseño Q, que entra al calculador
   como columna del CSV— pero se lee como ANTECEDENTE, no como plantilla viva.

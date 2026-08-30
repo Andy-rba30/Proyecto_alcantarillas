@@ -824,10 +824,13 @@ def _leyenda_de_etiquetas() -> str:
 
 def test_la_leyenda_nombra_exactamente_las_etiquetas_que_el_archivo_puede_tener():
     """
-    SIS-A-11. La leyenda anunciaba `[N]` --- imposible en criterios_adoptados.py,
-    porque un valor normativo vive en constantes_normativas.py --- y se comia
-    `[S]`, que si esta. Anunciar `[N]` invita a leer como norma lo que es
-    adopcion, que es el error que la taxonomia de CLAUDE.md existe para evitar.
+    SIS-A-11. La leyenda anunciaba `[N]` --- que este archivo no tiene, y se
+    comia `[S]`, que si ---. No es que el codigo lo impida: `ETIQUETAS_VALIDAS`
+    admite 'N' y `_verificar_criterio` la aceptaria; lo que sostiene la
+    separacion es el guardian
+    `tests/test_criterios_adoptados.py::test_ningun_criterio_adoptado_lleva_ya_la_etiqueta_N`.
+    Anunciar `[N]` invita a leer como norma lo que es adopcion, que es el error
+    que la taxonomia de CLAUDE.md existe para evitar.
 
     El conjunto esperado NO se transcribe aqui: se DERIVA del archivo. Si
     manana entra el primer `[N->]` nuevo o desaparece el ultimo `[S]`, este
@@ -843,7 +846,7 @@ def test_la_leyenda_nombra_exactamente_las_etiquetas_que_el_archivo_puede_tener(
         f"la leyenda anuncia {sorted(anunciadas)} y el archivo tiene "
         f"{sorted(presentes)}")
     assert "N" not in anunciadas, (
-        "la leyenda volvio a anunciar [N], que este archivo no puede contener")
+        "la leyenda volvio a anunciar [N], que este archivo no tiene")
     assert "constantes_normativas.py" in leyenda, (
         "la leyenda tiene que decir DONDE vive lo normativo, no solo callarlo")
 

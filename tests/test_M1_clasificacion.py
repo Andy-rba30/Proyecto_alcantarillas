@@ -644,10 +644,8 @@ def test_el_ejemplo_del_docstring_de_M1_ejecuta_y_da_los_TR_del_fixture():
     extrae del archivo, no lo copia --- para que no puedan volver a divergir.
     Los TR que asegura son los mismos de `test_clasificar_el_ejemplo_completo`.
 
-    Solo se ejercita el de M1. Los bloques `Uso` de los otros doce modulos son
-    FRAGMENTOS a proposito (parten de un `resultado` que el llamante ya tiene)
-    y ejecutarlos exigiria inventarles un contexto, que es justo lo que este
-    test evita. Queda anotado en `docs/decisiones_diferidas.md`.
+    El test de abajo hace lo mismo con TODOS los bloques `Uso` que se sostienen
+    solos, no solo con este.
     """
     ruta = Path(__file__).resolve().parents[1] / "src" / "modulos" / "M1_clasificacion.py"
     ambito = {"__name__": "__uso_de_M1__"}
@@ -672,3 +670,57 @@ def test_el_ejemplo_del_docstring_de_M1_declara_que_los_ids_son_del_fixture():
         "el ejemplo volvio a dar los ids como si fueran del expediente")
     assert "no es columna de sec. 1.2" in uso, (
         "el ejemplo volvio a dar la luz sin decir que no sale del CSV")
+
+
+# Los bloques `Uso` que se sostienen solos. NO es una lista de deseos: es el
+# resultado de ejecutarlos todos y quedarse con los que corren. Los demas son
+# FRAGMENTOS a proposito --- parten de un `resultado` o de un `material` que el
+# llamante ya tiene --- y ejecutarlos exigiria inventarles un contexto, que es
+# justo lo que este test evita.
+#
+# LA LISTA SE MIDE, NO SE DECLARA. La primera version de este bloque afirmaba
+# que «los bloques Uso de los otros doce modulos son fragmentos», y era falso:
+# dos de ellos corren enteros. La afirmacion es la misma especie de defecto que
+# SIS-C-12 --- una razon escrita en un docstring que nadie ejecuto antes de
+# escribirla --- cometida al cerrarlo.
+MODULOS_CON_USO_EJECUTABLE = ("M0_carga", "M1_clasificacion", "M10_espaciamiento")
+
+
+@pytest.mark.parametrize("modulo", MODULOS_CON_USO_EJECUTABLE)
+def test_los_bloques_uso_que_se_sostienen_solos_ejecutan(modulo):
+    """
+    Un ejemplo de docstring que no corre es peor que no tener ejemplo: el
+    lector culpa a su entorno. Este test los ejecuta tal como estan escritos
+    --- los extrae del archivo, no los copia ---, de modo que no puedan
+    divergir del codigo que ilustran.
+    """
+    ruta = Path(__file__).resolve().parents[1] / "src" / "modulos" / f"{modulo}.py"
+    exec(compile(_bloque_uso(ruta), str(ruta), "exec"),   # noqa: S102
+         {"__name__": f"__uso_de_{modulo}__"})
+
+
+def test_ningun_otro_bloque_uso_se_qued_o_fuera_de_la_lista_por_descuido():
+    """
+    El contrapeso: si alguien arregla el bloque `Uso` de otro modulo para que
+    corra, este test lo dice y la lista de arriba crece. Sin el, la lista se
+    escribiria una vez y envejeceria --- que es exactamente como nacio la
+    afirmacion falsa que este bloque sustituye.
+    """
+    raiz = Path(__file__).resolve().parents[1] / "src" / "modulos"
+    corren = []
+    for ruta in sorted(raiz.glob("*.py")):
+        if ruta.stem in MODULOS_CON_USO_EJECUTABLE:
+            continue
+        try:
+            bloque = _bloque_uso(ruta)
+        except AssertionError:
+            continue                       # ese modulo no tiene bloque Uso
+        try:
+            exec(compile(bloque, str(ruta), "exec"),      # noqa: S102
+                 {"__name__": "__uso_de_prueba__"})
+        except Exception:
+            continue                       # fragmento: lo esperado
+        corren.append(ruta.stem)
+    assert not corren, (
+        f"el bloque Uso de {corren} ya corre entero: anadelo a "
+        "MODULOS_CON_USO_EJECUTABLE en vez de dejarlo sin ejercitar")

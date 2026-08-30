@@ -30,7 +30,7 @@ Por eso se CONSERVA, y no por nostalgia. Lo que sí es cierto, y hay que
 decirlo entero porque quien lo lea sin esta nota lo deducirá mal:
 
   * **Nadie lo importa, nadie lo prueba y el barrido de literales no lo
-    recorre.** Sus 185 literales numéricos prohibidos en 1320 líneas no son
+    recorre.** Sus 185 literales numéricos prohibidos no son
     una infracción pendiente: son código de otro programa, exento POR
     DIRECTORIO en `tests/test_sin_literales.DIRECTORIOS_FUERA_DEL_BARRIDO`,
     con la razón escrita ahí y comprobada por
@@ -55,7 +55,7 @@ decirlo entero porque quien lo lea sin esta nota lo deducirá mal:
     (`Tooltip` y `MarcoScroll`, el MISMO código movido; `CampoValidable`, que
     es su `_campo_validable` con la validación al escribir que pide la
     Sec. 4.3) y el patrón de plantilla `%%` en
-    `M11_reporte.PlantillaMemoria`. Leer este archivo para «no reinventar los
+    `M11_reporte.PlantillaHTML`. Leer este archivo para «no reinventar los
     componentes» ya no hace falta: están extraídos.
 
 Qué haría falta para BORRARLO: que la §1.2 de la hoja de ruta dejara de

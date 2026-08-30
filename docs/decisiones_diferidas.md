@@ -23,11 +23,21 @@ escrita **en un solo lugar**». Este es ese lugar.
   párrafo. Dos copias de la misma razón divergen sin que nada avise, y ese
   defecto ya lo tuvo el proyecto con las transcripciones normativas
   (NOR-MEM-01).
-- **No es** una lista de deuda pendiente. Diecinueve de las veintidós están
-  **cerradas**: la decisión se tomó y se escribió. Lo que sigue abierto lleva
-  su fila en el tracker (`docs/auditorias/matriz_cruzada_auditorias.xlsx`,
-  hoja `Hallazgos`), que es donde se sigue el estado. Aquí se registra la
-  DECISIÓN; allí, el ESTADO.
+- **No es** el tracker, y los dos números no miden lo mismo. En el tracker
+  (`docs/auditorias/matriz_cruzada_auditorias.xlsx`, hoja `Hallazgos`) **las 22
+  figuran como `Cerrado`**, y con razón: lo que el tracker sigue es si el
+  hallazgo está atendido, y todos lo están —la decisión se tomó y se escribió—.
+  Aquí se mide otra cosa: **cuántas no esperan nada**. Son **quince**. Las otras
+  **siete** están cerradas Y siguen esperando algo que no depende de esta
+  decisión: SIS-A-04 (la cota levantada en campo), SIS-A-13 (que la hoja de ruta
+  fije el umbral), SIS-A-16 (que la Sec. 1.5 recoja las dos filas), SIS-B-04 (la
+  sección del receptor), SIS-B-07, SIS-B-08 (un discriminante en
+  `PeriodoRetorno`) y SIS-B-10 (que la §1.2 deje de nombrar `Tc.py`, o que su
+  procedimiento entre al calculador).
+- **Un hallazgo `Cerrado` con «qué haría falta» lleno no es una contradicción**,
+  y conviene decirlo porque lo parece: cerrado significa que la decisión está
+  tomada y escrita, no que el mundo ya no pueda cambiar. El día que llegue la
+  cota levantada, SIS-A-04 no se reabre — se rehace la decisión con el dato.
 
 ## Cómo se mantiene
 
@@ -61,7 +71,9 @@ registro.
   y el programa implementa las que puede; V2b no está.
 - **Por qué:** la colmatación es contenido de planos y de mantenimiento, no un
   cálculo con umbral que este programa pueda evaluar. El alcance reducido no
-  estaba escrito, y ese era el defecto: un lector contaba nueve y esperaba once.
+  estaba escrito, y ese era el defecto: la tabla tiene once filas y el módulo
+  tiene hoy diez funciones `vN_` —eran nueve el día de la auditoría, antes de
+  que V4b se cableara—, y la diferencia había que contarla en vez de leerla.
 - **Qué haría falta:** que la hoja de ruta fije el umbral cuantitativo de
   colmatación, que hoy no fija.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::verificaciones_no_evaluadas`
@@ -139,10 +151,16 @@ registro.
   `CLAUDE.md` manda para esta excepción, y cablearla **degradaría** lo que la
   GUI muestra hoy: seis columnas (clave, etiqueta, concepto, fuente, fases,
   puntos) por la vía del `Bloqueo`, contra un solo dato. Además esa vía no es
-  la más rica de dos: es la **única**. Dentro de `cli.correr`, lo único que
-  corre fuera de `_etapa` es `M0_carga.cargar_puntos`, que no toca criterios y
-  solo levanta `DatoFaltanteError`/`DatoInvalidoError`; ningún
-  `CriterioPendienteError` alcanza el `except ErrorProyecto` de la ventana.
+  la más rica de dos: es la **única**. Lo comprobé vaciando el `valor` de los
+  46 criterios y de todos los datos de sitio: `cli.correr` devuelve su informe
+  sin levantar nada, con los bloqueos archivados. Ningún `CriterioPendienteError`
+  alcanza el `except ErrorProyecto` de la ventana, porque los tres únicos sitios
+  que lo levantan —`criterios_adoptados.valor`, `datos_sitio.valor` y
+  `GeometriaCabezal.exigir_ancho_talon`— cuelgan todos de etapas envueltas por
+  `_etapa`. (Sí corre otro código fuera de `_etapa` —`correr_cabezal` llama a
+  `condicion_normativa_cabezal`, y varias fases piden `externos.valor`—: la
+  conclusión se sostiene, pero decir «lo único que corre fuera de `_etapa` es
+  `cargar_puntos`» era describir mal el archivo.)
 - **Qué haría falta:** un consumidor que necesitara la frase corta y no el
   tablero. Hoy no existe y no se ve de dónde saldría.
 - **Dónde vive:** `src/modelos.py::mensaje_gui`
@@ -171,7 +189,9 @@ registro.
   `DisenoNoFactibleError`, como en `M1_clasificacion.exigir_alcance`). Hoy no
   hay con qué separarlos sin oler el texto de `fundamento`, y el orden que M1
   documenta —`exigir_alcance` antes de leer el TR— deja la segunda rama fuera
-  del camino. **Declarado, no cerrado.**
+  del camino. **La decisión sobre `exigir_anios` está cerrada; este límite
+  queda declarado y sin cerrar**, y no se puede cerrar sin tocar el modelo, que
+  no es trabajo de esta fase.
 - **Dónde vive:** `src/modelos.py::exigir_anios`
 
 ## SIS-B-09 · Constantes `NUMERAL_*` de módulo declaradas y nunca leídas
@@ -183,8 +203,11 @@ registro.
 
 ## SIS-B-10 · `legacy/Tc.py`: sin importadores, sin tests, sin barrido y sin estatus
 
-- **Qué se difirió:** conservar 1320 líneas y 185 literales prohibidos que
-  nadie importa, nadie prueba y ningún barrido recorre.
+- **Qué se difirió:** conservar un archivo de más de mil trescientas líneas y
+  185 literales prohibidos que nadie importa, nadie prueba y ningún barrido
+  recorre. (Eran 1320 antes de que esta sesión le añadiera su encabezado de
+  estatus; los 185 literales sí siguen siendo 185, medidos con el detector del
+  propio repositorio.)
 - **Por qué, y no es nostalgia:** **no es código muerto, es otro programa.**
   La §1.2 de `docs/hoja_de_ruta_alcantarillas_v8.md` lo nombra por su nombre en
   la fila del caudal —«Caudal de diseño Q | m³/s | Tc.py + IDF con TR de Fase
@@ -209,7 +232,7 @@ registro.
 > `MarcoScroll` son el mismo código movido a `gui/componentes.py`,
 > `CampoValidable` es su `_campo_validable` con la validación al escribir que
 > pide la Sec. 4.3, y el patrón de plantilla `%%` vive en
-> `M11_reporte.PlantillaMemoria`.
+> `M11_reporte.PlantillaHTML`.
 
 ## SIS-C-06 · `barrido()` solo recorría `src/`
 
@@ -237,11 +260,15 @@ registro.
   `umbral_area_quebrada_importante_ha`.
 - **Por qué:** un ejemplo que no corre es peor que no tener ejemplo, porque el
   lector culpa a su entorno.
-- **Qué haría falta:** nada para M1. Queda declarado que **los demás bloques
-  `Uso` no se ejecutan en la suite**: los de los otros doce módulos son
-  fragmentos a propósito (parten de un `resultado` que el llamante ya tiene) y
-  ejecutarlos exigiría inventarles un contexto, que es justo lo que el test
-  evita.
+- **Qué haría falta:** nada para M1, y de paso se cerró más de lo que la ficha
+  pedía. La primera versión de esta ficha decía que «los otros doce bloques
+  `Uso` son fragmentos a propósito» — **y era falso**: los de `M0_carga` y
+  `M10_espaciamiento` corren enteros. Era la misma especie de defecto que
+  SIS-C-12 denuncia —una razón escrita que nadie ejecutó antes de escribirla—,
+  cometida al cerrarlo. Hoy la suite **ejecuta los tres que se sostienen
+  solos**, y un segundo test hace crecer la lista si alguien arregla otro. Los
+  que quedan sí son fragmentos —parten de un `resultado` o un `material` que
+  el llamante ya tiene—, medido ejecutándolos, no declarado.
 - **Dónde vive:** `tests/test_M1_clasificacion.py::test_el_ejemplo_del_docstring_de_M1_ejecuta_y_da_los_TR_del_fixture`
 
 ## SIS-D-08 · `clase_sitio` es el único `[A]` con valor y sin sensibilidad
@@ -334,6 +361,12 @@ el sitio donde un revisor las buscaría es este.
   falte.
 - **Qué haría falta:** que M11 imprima las combinaciones vigentes, que hoy no
   imprime.
+- **Matiz que hay que leer con esto**, o parece una contradicción: el registro
+  normativo **sí la nombra** —las tres filas de `T_MP_COMBINACIONES` llevan
+  `uso=Usada(por=(…, "M9.combinaciones"))`, y la ventana emergente se lo
+  muestra al proyectista. No es una promesa incumplida: ese campo dice **qué
+  símbolo lee la tabla**, no que una corrida pase por él, y esta función es en
+  efecto la que lee la transcripción de esas etiquetas.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::combinaciones`
 
 > Su docstring afirmaba «es la que M11 usa para declarar QUÉ combinaciones
@@ -482,15 +515,19 @@ condición escrita.
 
 ## MAT-D1 estaba corregido y no lo defendía ningún test
 
-- **Qué pasó:** MAT-D1 —«V2 se evalúa con la rama `n_min`, que es la
-  estimación alta: el conservadurismo queda invertido»— se corrigió hace
-  varias sesiones. Al escribir el caso patrón de M5 se mutó
-  `v2_velocidad_minima` de vuelta a `resultado.V_erosion` y **la suite entera
-  quedó en verde**: 1497 tests.
+- **Qué se difirió:** nada — es lo contrario. MAT-D1 («V2 se evalúa con la
+  rama `n_min`, que es la estimación alta: el conservadurismo queda
+  invertido») se corrigió hace varias sesiones y **la corrección no la
+  defendía ningún test**. Al escribir el caso patrón de M5 se mutó
+  `v2_velocidad_minima` de vuelta a `resultado.V_erosion` y la suite entera
+  quedó en verde: 1497 tests.
 - **Por qué era invisible:** todos los tests de V2 usaban `_resultado(V=...)`,
   que fija **las dos ramas al mismo número**. Con las dos iguales, la rama que
   se lea da igual y la mutación no cambia nada.
-- **Qué se hizo:** un test que las separa a los dos lados del piso —la ventana
-  que el propio docstring de la función describe, S entre 3.55e-5 y 6.01e-5—,
-  de modo que solo hay una respuesta correcta. Verificado: mata la mutación.
+- **Qué haría falta:** nada para MAT-D1 — el test nuevo separa las dos ramas a
+  los dos lados del piso (la ventana que el propio docstring de la función
+  describe, S entre 3.55e-5 y 6.01e-5) y mata la mutación. Lo que sí queda
+  abierto es la pregunta general: **cuántas otras correcciones cerradas están
+  sin defender**. Esta salió por casualidad, al escribir otra cosa; no hay
+  barrido que las busque.
 - **Dónde vive:** `tests/test_M5_verificaciones.py::test_v2_decide_con_la_rama_de_n_MAXIMO_y_no_con_la_de_erosion`
