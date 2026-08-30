@@ -16,8 +16,12 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
     1. Datos de entrada    CSV de Sec. 1.2 (M0) + datos declarados que no son
                             columna (banderas de `cli.py`) + ALCANCE de la
                             corrida + boton de ejecucion.
-    2. Criterios           Los criterios adoptados, su estado y la ventana
-                            normativa de cada variable (Sec. 4.2/4.3 del plan).
+    2. Criterios           Los criterios adoptados y su estado; la ventana
+                            normativa de cada variable (Sec. 4.2/4.3 del
+                            plan); y el unico sitio de la interfaz que
+                            REESCRIBE `criterios_adoptados.py` --- accion
+                            permanente, aparte y con confirmacion propia, que
+                            es justo la pestana que esta lista omitia.
     3. Resultados por punto  Un Treeview con el resumen de cada punto y, al
                             seleccionar una fila, el detalle de verificaciones
                             y bloqueos de ese punto.
