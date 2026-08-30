@@ -543,3 +543,33 @@ solo por eso: los cuatro chequeos que dependen de la sesión —suite, conteos,
 árbol limpio y tracker— están en `[OK]`. **Las borra el propietario desde la
 web**; no hay nada más que la sesión pueda hacer, y ya van cinco veces
 comprobado.
+
+**Saldo al cierre de S14 (vacíos y cableado, clusters C01/C04/C06/C08/C11):
+cuatro.** Sexta reincidencia, y la primera en la que se acumulan **cuatro**
+ramas a la vez: las dos que S12 dejó anotadas siguen ahí, más la de S13 —que
+tampoco se borró entre sesiones— y la de S14. Se intentaron las cuatro, una a
+una, con `git push origin --delete` y después con el refspec explícito
+(`git push origin :refs/heads/<rama>`), y las dos formas devolvieron lo mismo
+de siempre: `HTTP 403` y `send-pack: unexpected disconnect while reading
+sideband packet`, seguidos de un `Everything up-to-date` que delata que el
+borrado ni siquiera llegó a proponerse. Se comprobó además, esta vez, que el
+proxy de la sesión está sano y sin fallos de relay
+(`$HTTPS_PROXY/__agentproxy/status`, `recentRelayFailures: []`): la negativa es
+del permiso del token sobre el remoto, no del transporte.
+
+| Rama | Sesión | Fusionada en `main` |
+|---|---|---|
+| `claude/diseno-registro-normativo-607nkm` | S11 | sí (`66bf252`) |
+| `claude/registro-normativo-pymupdf-0fo35b` | S12 | sí (`66fde80`) |
+| `claude/conflicto-8-clasificacion-sitio-r5dpf1` | S13 | sí (`6f7e780`) |
+| `claude/clusters-vacios-criterios-wku6xo` | S14 | sí (`5b379ec`) |
+
+Las cuatro pasan la comprobación de «sin commits fuera de `main`».
+`verificar_sesion.py` dará el `[FALLO]` **cuatro** veces y el resultado global
+será `FALLA` por eso y solo por eso: los cuatro chequeos que dependen de la
+sesión —suite, conteos, árbol limpio y tracker— están en `[OK]`, y el tracker
+pasa además la comprobación nueva de que todo hallazgo cerrado cita un commit
+**presente en `main`**. **Las borra el propietario desde la web.** Van seis
+veces comprobado, y la acumulación es el argumento que faltaba: mientras nadie
+las borre entre sesiones, el `[FALLO]` crece una línea por sesión y el chequeo
+pierde valor de señal.
