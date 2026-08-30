@@ -1333,6 +1333,38 @@ hidráulico contra HY-8 (FHWA, gratuito) en 3-4 puntos. Es la comprobación más
 barata de que el motor no se desvió.
 ```
 
+> **RESULTADO DE S20** (`3e52483` + `1d4432d`; suite 1537 `passed`, 1
+> `skipped`). Se anota aquí y no solo en el tracker porque **una de las cinco
+> cosas que cerró no tiene ficha de hallazgo**: la limitación `R48-041` no es
+> un hallazgo publicado —la refutación la declaró REFUTADA— pero sí **acotó el
+> alcance del bloque G de la auditoría normativa**, que se midió sobre una
+> corrida detenida en la Fase 2 por falta de `luz_m`. Sin fila en el tracker,
+> el cierre no tendría dónde constar.
+>
+> | Qué cerró | Cómo |
+> |---|---|
+> | `R48-041` (limitación del bloque G) | `tests/ejemplo_puntos_perfil.csv`: el mismo corredor con los datos externos que el nivel de perfil sí tiene. La corrida llega a la Fase 5 y `tests/test_cierre_perfil.py` fija las nueve verificaciones obligatorias del alcance de perfil, con V4 y 7.A ejecutadas. |
+> | `SIS-B-04` | `M3.tw_seccion_1_3`: las cuatro vías de Sec. 1.3 con su precedencia y su paso de memoria. Un CSV con `cota_TW` llena ya no exige `--tw`. |
+> | `SIS-A-13`, `MAT-O15` | `M5.v2b_sedimentacion` sobre el HDS-5 num. 5.3.3, con sus dos citas verificadas contra el PDF. Once filas, ONCE funciones. |
+> | Criterio de salida del nivel | `Criterio.nivel` + la invariante de `_verificar_nivel`. De 33 vacíos quedan 24 y **solo dos son de perfil**. |
+>
+> **Los dos vacíos de perfil que quedan, y por qué no se cerraron.**
+> `TW_receptor` cambió de papel: con Sec. 1.3 implementada es la última puerta
+> —la que detiene cuando el expediente no aporta ni nivel, ni caudal, ni
+> sección— y ninguna corrida normal lo invoca; declararlo sería volver a poner
+> un TW a mano donde la hoja dice «se calcula, no se mide».
+> `homogeneidad_serie_fen` **no es una elección**: sus dos ramas son un HECHO
+> sobre la serie SENAMHI —si contiene o no 1983, 1998 y 2017— y esa serie no
+> está en el expediente. Elegir una sería afirmar algo sobre un archivo que
+> nadie ha abierto.
+>
+> **Dos minas desactivadas de paso**, y no eran del guion: `v8_evento_extremo`
+> y `M2.espesor_pared` terminaban en `AssertionError` en cuanto su criterio
+> tuviera valor. El aviso era cierto y el medio equivocado —`AssertionError`
+> no desciende de `ErrorProyecto`, así que tumbaba la corrida entera con todos
+> sus puntos—. Hoy levantan `DatoFaltanteError` sobre el dato que de verdad
+> falta, que es lo que S16 ya había hecho con `v5_remanso`.
+
 ---
 
 ### S21 · Contrato de expediente
