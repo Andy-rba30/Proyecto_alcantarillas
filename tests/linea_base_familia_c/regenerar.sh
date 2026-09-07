@@ -29,6 +29,23 @@
 #       ofrece marco. Ese bloqueo es justo lo que C4 y C5 van a cambiar, de
 #       modo que a partir de aqui el cambio se ve en el diff.
 #
+# LO QUE ENSANCHA C4, Y ES UN EJE QUE NO EXISTIA
+# ---------------------------------------------------------------------------
+# Las cuatro corridas de arriba son de la CLI, y por eso ninguna puede llevar
+# una seccion que no sea circular: `MD.disenar_material` construye
+# `SeccionCircular(D)` sobre la progresion de diametros de M2, y abrir ese
+# catalogo al marco es C5. Consecuencia medida y declarada por C3.5 en
+# `tests/test_linea_base.py`: de tres mutaciones ensayadas, cablear
+# `forma = 1` NO se ve, porque las tres cartas circulares del catalogo son
+# Forma 1 y suponerla no mueve un byte.
+#
+# La corrida 5 cierra esa ceguera por el unico camino que no invade C5: un
+# driver que llama a M3 y a M4 con la `SeccionRectangular` que C4 trae y con
+# una carta de cajon de la Tabla A.1 -- Forma 2 --, y publica los siete pasos
+# de memoria por el mismo `M11.bloque_pasos` de produccion. NO es un diseño y
+# el propio archivo lleva la advertencia: es un fixture, igual que
+# `entradas_ampliadas.json`.
+#
 # LAS ENTRADAS AMPLIADAS SON UN FIXTURE, NO DATOS DE PROYECTO, y viven en
 # `entradas_ampliadas.json` con esa advertencia escrita. El TW y el caudal de
 # C-01 estan ahi para EJERCITAR CAMINOS DE CODIGO; no son una medicion de
@@ -104,6 +121,12 @@ python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance expediente \
         --html "$TMP/memoria_exp.html" \
         --csv-resumen "$TMP/resumen_exp.csv" > "$TMP/cli_exp.txt" 2>&1 || true
 
+# --- 5 · el PUNTO DE CAJON, que no pasa por la CLI --------------------------
+# Ver el bloque "LO QUE ENSANCHA C4" de arriba y el docstring del driver. No
+# lleva `|| true`: si este falla, la linea base tiene que fallar con el, y no
+# quedarse con el archivo de la corrida anterior.
+python3 tests/linea_base_familia_c/punto_cajon.py > "$TMP/cajon.html"
+
 # Los patrones son especificos a proposito: un barrido de fechas generico
 # pisaria texto normativo. Medido en C0: en el HTML hay TRES fechas y las tres
 # son volatiles; ninguna otra cadena coincide.
@@ -127,4 +150,6 @@ norm "$TMP/cli_exp.txt"       > "$DIR/cli_expediente.txt"
 norm "$TMP/memoria_exp.html"  > "$DIR/memoria_expediente.html"
 norm "$TMP/informe_exp.json"  > "$DIR/informe_expediente.json"
 norm "$TMP/resumen_exp.csv"   > "$DIR/resumen_expediente.csv"
-echo "linea base regenerada en $DIR (12 archivos: 2 de la ventana estrecha de C0 + 10 de la ancha)"
+
+norm "$TMP/cajon.html"        > "$DIR/memoria_punto_cajon.html"
+echo "linea base regenerada en $DIR (13 archivos: 2 de la ventana estrecha de C0, 10 de la ancha y 1 del punto de cajon)"

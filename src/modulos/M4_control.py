@@ -305,7 +305,7 @@ from constantes_normativas import (FORMA_1, FORMA_2,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
-                     Seccion,
+                     Geometria, Seccion,
                      ConstantesHDS5,
                      ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
@@ -339,9 +339,13 @@ def _validar_positivo(nombre: str, dato: float, motivo: str) -> None:
 
 def _validar_Q_D(Q: float, seccion: Seccion) -> None:
     _validar_positivo("Q", Q, "el caudal debe ser positivo")
-    # "D" y el motivo de antes: ver la nota de `M3._validar_parametros`. Se
-    # imprimen los dos, dentro del mismo `str(exc)`, y C1 no mueve salida.
-    _validar_positivo("D", seccion.altura, "el diametro debe ser positivo")
+    # EL NOMBRE DEL DATO LO PONE LA SECCION (anotacion A-4 de §16.4, cerrada
+    # en C4). Aqui estaba escrita la SEGUNDA copia de la pareja
+    # ("D", "el diametro debe ser positivo") -- la primera vivia en
+    # `M3._validar_parametros` -- y las dos se imprimen, en la memoria y en el
+    # JSON. La circular sigue diciendo exactamente eso; un marco dice "B" y
+    # "H", que es como se llaman sus datos. La razon completa esta en M3.
+    seccion.exigir_dimensiones_positivas()
 
 
 # ---------------------------------------------------------------------------
@@ -418,25 +422,15 @@ def _residuo_critico(seccion: Seccion, theta: float, Q: float) -> float:
     return geom.A ** 3 / geom.T - q_al_cuadrado / G  # literal-ok: A^3/T = Q^2/g, Sec. 4.2.1
 
 
-def tirante_critico(Q: float, seccion: Seccion) -> TiranteCritico:
+def _critico_por_brent(Q: float, seccion: Seccion) -> Geometria:
     """
-    Tirante critico de la seccion circular (Sec. 4.2.1), raiz de
+    La via de siempre: Brent sobre el parametro propio de la seccion.
 
-        Q^2 * T / (g * A^3) = 1        T = D*sen(theta/2)
-
-    resuelta con Brent sobre theta en (0, 2*pi) -- el SEGUNDO solver que exige
-    la hoja de ruta, distinto del de Manning: no interviene ni n ni S.
-
-    Devuelve `TiranteCritico` con la geometria critica, la velocidad critica
-    V_c = Q/A_c y la energia especifica critica H_c = y_c + V_c^2/(2g), que es
-    lo que consume la Forma 1 del control de entrada.
-
-    Siempre existe solucion para Q > 0 (el residuo cruza el cero una sola vez
-    sobre el intervalo), de modo que esta funcion no tiene el caso "None" de
-    `M3.tirante_normal`: un Q desmedido no deja al solver sin raiz, solo
-    acerca y_c a D, y eso lo juzga V1 (y/D <= 0.75), no este solver.
+    Es el cuerpo que `tirante_critico` tenia entero hasta C4, letra por letra
+    y con sus dos guardias. Se separo para que la seccion que SI despeja el
+    critico no tenga que pasar por aqui, no para cambiarlo: la circular
+    recorre exactamente el mismo codigo y converge al mismo bit.
     """
-    _validar_Q_D(Q, seccion)
 
     def f(theta: float) -> float:
         return _residuo_critico(seccion, theta, Q)
@@ -492,11 +486,78 @@ def tirante_critico(Q: float, seccion: Seccion) -> TiranteCritico:
                 f"el caudal vino en otra unidad"
             ),
         )
+    return geom
+
+
+def _critico_cerrado(Q: float, seccion: Seccion, llenado: float) -> Geometria:
+    """
+    La via de la solucion cerrada, con la guardia que la cerrada NO retira.
+
+    La seccion ya devolvio su parametro propio en estado critico y ya guardo
+    su propia aritmetica (desborde de q^2, y_c no finito, y_c nulo). Lo que
+    queda es lo que no puede guardar sola: que el AREA construida con ese
+    tirante sea utilizable. Es alcanzable y esta medido -- con B = Q = 5e-324
+    el tirante critico vale 0.4671363512679737 m y el area B*y_c se anula en
+    doble precision --, y sin esta guardia la division de `tirante_critico`
+    lanzaria ZeroDivisionError en crudo, fuera de `ErrorProyecto`.
+
+    Condicion en positivo y negada (plantilla de MAT-D13) y mensaje que nombra
+    al PAR, no a un solo dato: ninguno de los dos esta fuera de rango.
+    """
+    geom = geometria(seccion, llenado)
+    if not geom.A > 0:
+        raise LimiteNumericoError(
+            "Q", valor=Q, motivo=(
+                f"el par (Q = {Q!r} m3/s, seccion {seccion.etiqueta()}) "
+                f"degenera: el tirante critico sale de la solucion cerrada "
+                f"con un valor positivo -- {geom.y!r} m -- y aun asi el area "
+                f"de la seccion a ese tirante se anula en doble precision. "
+                f"Sin area no hay velocidad critica que calcular. Cada dato "
+                f"cumple su rango por separado; lo que no cabe es la "
+                f"operacion que los combina"),
+        )
+    return geom
+
+
+def tirante_critico(Q: float, seccion: Seccion) -> TiranteCritico:
+    """
+    Tirante critico de la seccion (Sec. 4.2.1), por la via que la seccion
+    tenga: cerrada si la despeja, y Brent si no.
+
+        Q^2 * T / (g * A^3) = 1
+
+    LA SECCION DECIDE, Y M4 NO PREGUNTA DE QUE FORMA ES. `llenado_critico_
+    cerrado` devuelve `None` cuando la ecuacion es trascendente en el
+    parametro propio --la circular, donde A = (D^2/8)(theta - sen theta) y
+    T = D*sen(theta/2)-- y devuelve el valor cuando se despeja --el marco,
+    donde T = B es constante y y_c = (q^2/g)^(1/3) con q = Q/B--. Un
+    `isinstance` aqui seria la forma de la seccion cableada en el modulo de
+    calculo, que es justo lo que C1 retiro.
+
+    Devuelve `TiranteCritico` con la geometria critica, la velocidad critica
+    V_c = Q/A_c y la energia especifica critica H_c = y_c + V_c^2/(2g), que es
+    lo que consume la Forma 1 del control de entrada. `cerrado` dice por cual
+    de las dos vias se resolvio: lo necesita la traza de la memoria, que tiene
+    que imprimir la formula que de verdad se uso.
+
+    Por la via de Brent siempre existe solucion para Q > 0 (el residuo cruza
+    el cero una sola vez sobre el intervalo), de modo que esta funcion no
+    tiene el caso "None" de `M3.tirante_normal`: un Q desmedido no deja al
+    solver sin raiz, solo acerca y_c a D, y eso lo juzga V1 (y/D <= 0.75), no
+    este solver.
+    """
+    _validar_Q_D(Q, seccion)
+    llenado_cerrado = seccion.llenado_critico_cerrado(Q, G)
+    if llenado_cerrado is None:
+        geom = _critico_por_brent(Q, seccion)
+    else:
+        geom = _critico_cerrado(Q, seccion, llenado_cerrado)
     V_c = Q / geom.A
     return TiranteCritico(
         geometria=geom,
         V=V_c,
         H_c=geom.y + V_c ** 2 / (2 * G),
+        cerrado=llenado_cerrado is not None,
     )
 
 
@@ -909,13 +970,64 @@ def hw_gobernante(entrada: ControlEntrada,
 def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entrada,
                        salida, control, gobierna_salida):
     """La traza de M3 + M4 para una combinacion, en orden de calculo."""
+    # EL PASO QUE DICE COMO SE CALCULAN A, P Y R, y va PRIMERO porque es el
+    # que hace legible al siguiente: Manning define Q en funcion de A y de R,
+    # y el num. 4.1.1.3.6 NO dice como se calcula ninguno de los dos. Ese
+    # hueco lo llena la forma de la seccion, y hasta C4 la memoria lo daba por
+    # sabido -- el paso de Manning afirmaba «A, P y R son los de la seccion
+    # circular parcialmente llena» sin escribir ninguna de las tres formulas,
+    # y con un marco esa frase habria sido ademas falsa --.
+    #
+    # LAS FORMULAS LAS PONE LA SECCION (`formula_geometria`), no este modulo:
+    # es la misma razon por la que M4 no sabe de que forma es. Y los valores
+    # que se sustituyen son los que el `Geometria` YA TRAE -- `g.A`, `g.P`,
+    # `g.R`, `g.y` --: no se recalculan con `seccion.area(y)` ni con
+    # `seccion.perimetro(y)`, que es exactamente lo que la regla vinculante
+    # #12 existe para impedir.
+    geometria_normal = normal.geometria
+    de_seccion = paso(
+        "F4.SECCION",
+        codigo="4.1",
+        que="Area, perimetro mojado y radio hidraulico de la seccion, para el "
+            "tirante de trabajo",
+        formula=seccion.formula_geometria(),
+        formula_cita_id="MC_HHD.4.1.1.3.6",
+        sustitucion=seccion.magnitudes_de_forma() + (
+            Magnitud("y", geometria_normal.y, "m",
+                     "tirante normal, que es el que resuelve el paso "
+                     "siguiente: Brent recorre ESTA misma seccion hasta que "
+                     "Manning iguala el caudal de diseño",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("A", geometria_normal.A, "m2",
+                     "area hidraulica a ese tirante; sale de la formula de "
+                     "arriba y no se vuelve a calcular en ningun otro sitio",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("P", geometria_normal.P, "m",
+                     "perimetro mojado a ese tirante, por la misma via",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("R", geometria_normal.R, "m",
+                           "radio hidraulico A/P: es el unico de los tres que "
+                           "entra en Manning, y con el la seccion queda "
+                           "resuelta", cifras=CIFRAS_MAGNITUD),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="paso de calculo: no contrasta contra "
+                                        "ningun umbral"),
+        nota_del_proyecto=(
+            f"La seccion es «{seccion.etiqueta()}», la que esta corrida "
+            f"esta resolviendo. El numeral prescribe Manning y "
+            f"define A, P y R, y no fija la forma del conducto: por eso las "
+            f"formulas de arriba no son una eleccion del proyecto sino la "
+            f"geometria de la seccion adoptada, y por eso mismo cambian con "
+            f"ella sin que cambie el procedimiento."),
+    )
+
     de_manning = paso(
         "F4.MANNING",
         codigo="4.1",
         que="Tirante normal y velocidades en el conducto",
-        formula="Q = (1/n) * A * R^(2/3) * S^(1/2), resuelta en theta con "
-                "Brent; A, P y R son los de la seccion circular parcialmente "
-                "llena",
+        formula="Q = (1/n) * A * R^(2/3) * S^(1/2), resuelta con Brent "
+                "sobre el parametro de llenado de la seccion; A, P y R son "
+                "los del paso anterior",
         formula_cita_id="MC_HHD.4.1.1.3.6",
         sustitucion=(
             Magnitud("Q", Q, "m3/s",
@@ -927,8 +1039,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      "pendiente con que corrio el diseño: la del cauce salvo "
                      "que el punto declare 'S_conducto'. Es la MISMA que usa "
                      "la Fase 7 (MAT-D9)", cifras=CIFRAS_FINA),
-            Magnitud("D", seccion.altura, "m", "diametro probado por el bucle de diseño",
-                     cifras=CIFRAS_FACTOR),
+            *seccion.magnitudes_de_forma(),
             Magnitud("n_max", material.n_para_capacidad, "",
                      f"extremo superior del rango de la Tabla Nº 09 para "
                      f"«{material.nombre}»: rama de CAPACIDAD", cifras=CIFRAS_FINA),
@@ -951,15 +1062,41 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             f"opuestos."),
     )
 
+    # SU FUNDAMENTO YA NO ES `F4.CONTROL`, Y NO ES UN CAMBIO COSMETICO. Ese
+    # fundamento dice, literalmente, «Carga a la entrada HW por los dos
+    # controles del HDS-5, entrada y salida, y adopcion del mayor»: describe
+    # OTRO paso, y este lo tomaba prestado porque no habia uno propio. El
+    # propio lo redacto CN en la §15.7 del plan de la Familia C -- `F4.YC_RECT`
+    # --, y explica por que el critico se calcula: porque DOS pasos
+    # posteriores lo consumen (la Forma 1 por H_c, y h_o del control de
+    # salida). Vale para las dos formas, y por eso lo usan las dos.
+    #
+    # LA FORMULA SI DEPENDE DE LA VIA, y `critico.cerrado` es quien lo sabe.
+    # Imprimir «resuelta con Brent» sobre un numero que salio de una formula
+    # cerrada dejaria al revisor sin poder rehacerlo, que es exactamente el
+    # defecto que C3 tuvo que corregir en el paso de la Forma 2.
+    magnitudes_criticas = [
+        Magnitud("Q", Q, "m3/s", "el mismo caudal de diseño",
+                 cifras=CIFRAS_MAGNITUD),
+        *seccion.magnitudes_de_forma()]
+    if critico.cerrado:
+        magnitudes_criticas.append(
+            Magnitud("T", critico.geometria.T, "m",
+                     "ancho superficial en el estado critico. Es el que la "
+                     "solucion cerrada divide (q = Q/T), y la solucion es "
+                     "cerrada precisamente porque en esta forma NO depende "
+                     "del tirante", cifras=CIFRAS_FACTOR))
+
     de_critico = paso(
-        "F4.CONTROL",
+        "F4.YC_RECT",
         codigo="4.2.1",
         que="Tirante critico de la seccion",
-        formula="Q^2 / g = A^3 / T, resuelta en theta con Brent",
-        sustitucion=(
-            Magnitud("Q", Q, "m3/s", "el mismo caudal de diseño",
-                     cifras=CIFRAS_MAGNITUD),
-            Magnitud("D", seccion.altura, "m", "diametro probado", cifras=CIFRAS_FACTOR)),
+        formula=("y_c = (q^2/g)^(1/3) con q = Q/T: la solucion CERRADA de "
+                 "Q^2/g = A^3/T cuando T no depende del tirante -- sin Brent"
+                 if critico.cerrado else
+                 "Q^2 / g = A^3 / T, resuelta con Brent sobre el parametro de "
+                 "llenado de la seccion"),
+        sustitucion=tuple(magnitudes_criticas),
         resultado=Magnitud("y_c", critico.y_c, "m",
                            "tirante critico; no depende de n",
                            cifras=CIFRAS_MAGNITUD),
@@ -969,14 +1106,21 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         # el critico entra «en la Forma 1 del control de entrada», y bajo
         # Forma 2 la ec. (A.2) NO usa H_c. Se imprimia igual en las dos.
         nota_del_proyecto=(
-            "Entra en las dos piezas siguientes: en la Forma 1 del control "
-            "de entrada (por H_c) y en h_o del control de salida. Se "
-            "resuelve UNA vez."
-            if material.hds5.forma == FORMA_1 else
-            "Esta carta es de FORMA 2 y su ecuacion de control de entrada "
-            "-- la (A.2) -- NO usa H_c. El tirante critico se resuelve igual "
-            "porque lo necesita h_o del control de salida, y solo para eso. "
-            "Se resuelve UNA vez."),
+            ("Entra en las dos piezas siguientes: en la Forma 1 del control "
+             "de entrada (por H_c) y en h_o del control de salida. Se "
+             "resuelve UNA vez."
+             if material.hds5.forma == FORMA_1 else
+             "Esta carta es de FORMA 2 y su ecuacion de control de entrada "
+             "-- la (A.2) -- NO usa H_c. El tirante critico se resuelve igual "
+             "porque lo necesita h_o del control de salida, y solo para eso. "
+             "Se resuelve UNA vez.")
+            + (" La seccion despeja el critico y la solucion es EXACTA: con "
+               "ella no hay convergencia que fallar, que es la clase de fallo "
+               "que la via por Brent tiene que guardar (SIS-G-02)."
+               if critico.cerrado else
+               " En esta forma la ecuacion es trascendente en el parametro de "
+               "llenado y hace falta un segundo Brent, distinto del de "
+               "Manning: no interviene ni n ni S.")),
     )
 
     # EL PASO QUE DICE QUE ECUACION SE USO, y va ANTES del control de entrada
@@ -1176,8 +1320,8 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             "mover el HW."),
     )
 
-    return (de_manning, de_critico, de_forma, de_entrada, de_salida,
-            de_gobernante)
+    return (de_seccion, de_manning, de_critico, de_forma, de_entrada,
+            de_salida, de_gobernante)
 
 
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,

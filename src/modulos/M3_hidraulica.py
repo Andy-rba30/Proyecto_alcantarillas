@@ -150,26 +150,29 @@ NUMERAL_MANNING = "4.1"
 # ---------------------------------------------------------------------------
 
 def _validar_parametros(seccion: Seccion, Q: float, S: float, n: float) -> None:
-    if seccion.altura <= 0:
-        # EL CAMPO Y EL MOTIVO SIGUEN SIENDO LOS DE ANTES, Y ES DELIBERADO.
-        # C1 es un refactor: no mueve ni un digito de la salida impresa, y de
-        # esta excepcion se imprimen LAS DOS CADENAS -- `campo` y `motivo`
-        # viajan juntos dentro de `str(exc)`, que `cli._bloqueo` guarda como
-        # `mensaje`, `cli._bloqueo_json` publica y `M11._tabla_bloqueos`
-        # pinta --. C1 llego a renombrar el motivo a "la altura interior de la
-        # seccion debe ser positiva" y ESO SI MOVIO SALIDA: es alcanzable con
-        # un solo `--declarar diametros_normalizados={"inicio": -0.90, ...}`,
-        # que da 12 apariciones en el JSON y una en el HTML, y ademas dejaba
-        # el peor de los dos mundos -- "campo D" pegado a una frase que habla
-        # de altura, dos vocabularios para el mismo dato en la misma linea --.
-        # Renombrar es una correccion de vocabulario y las correcciones no van
-        # en esta sesion. Con quien nombra el dato cuando la seccion deja de
-        # ser circular tiene que quedarse C4, que es la sesion que trae la
-        # rectangular y la unica que puede decidirlo viendo las dos formas a
-        # la vez.
-        raise DatoInvalidoError(
-            "D", valor=seccion.altura,
-            motivo="el diametro debe ser positivo")
+    # QUIEN NOMBRA EL DATO ES LA SECCION, Y ESA ES LA RESPUESTA DE C4 A LA
+    # ANOTACION A-4 DE §16.4. C1 llego a renombrar el `campo` a "altura" y lo
+    # devolvio a "D", porque de esta excepcion se imprimen LAS DOS CADENAS --
+    # `campo` y `motivo` viajan juntos dentro de `str(exc)`, que `cli._bloqueo`
+    # guarda como `mensaje`, `cli._bloqueo_json` publica y `M11._tabla_bloqueos`
+    # pinta -- y renombrar movia salida. La anotacion quedaba para C4 "que es
+    # la primera sesion en que 'D' es falso -- una SeccionRectangular no tiene
+    # diametro -- y la unica que puede elegir el nombre viendo las dos formas
+    # a la vez".
+    #
+    # Vistas las dos: "D" NO ERA FALSO AQUI. Un tubo tiene diametro y el dato
+    # que un revisor corregiria se llama asi. Lo falso era SUPONER QUE HAY UN
+    # SOLO NOMBRE. El nombre del dato es una propiedad de la forma, y por eso
+    # la validacion entera --campo y motivo-- se le pide a la seccion:
+    # `SeccionCircular` sigue diciendo "D" y "el diametro debe ser positivo",
+    # letra por letra, de modo que la rama de error de la linea base no se
+    # mueve; `SeccionRectangular` dice "B" y "H" con sus propios motivos.
+    #
+    # Y ADEMAS RETIRA UNA COPIA: la misma pareja de cadenas estaba escrita dos
+    # veces, aqui y en `M4._validar_Q_D`. Eran dos sitios que habia que editar
+    # juntos para siempre, que es el defecto que este repositorio persigue en
+    # todas partes.
+    seccion.exigir_dimensiones_positivas()
     if Q <= 0:
         raise DatoInvalidoError("Q", valor=Q, motivo="el caudal debe ser positivo")
     if S <= 0:

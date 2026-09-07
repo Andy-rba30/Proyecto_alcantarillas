@@ -657,3 +657,89 @@ FORMA_HDS5 = _fundamento(
         "MAT-D10, pero por una via que ninguna guardia de signo detecta, "
         "porque el resultado sigue siendo positivo."),
 )
+
+
+# ===========================================================================
+# La seccion rectangular: los dos `Fundamento` que C4 emite (§15.7)
+# ===========================================================================
+# LOS DOS ESTABAN REDACTADOS EN §15.7 y C2 los dejo sin escribir a proposito
+# --"su sitio es la sesion que escribe el paso que los emite"--. Esa sesion es
+# esta: `M4._pasos_hidraulicos` emite `de_seccion` con el primero y
+# `de_critico` con el segundo, en TODA corrida que dimensione un punto, sea la
+# seccion circular o rectangular.
+#
+# NINGUNO DE LOS DOS SALE DE `sin_alcanzar` DE test_memoria_sustentada.py,
+# porque ninguno estaba ahi: los tres que quedan en esa lista --F3.TIPO_MARCO,
+# F3.MANTENIMIENTO y F3.CELDAS-- son de C5, y se dice aqui porque el prompt de
+# C4 daba por hecho que alguno era suyo. El que salio en su sesion fue
+# `F4.FORMA_HDS5`, en C3.
+#
+# QUE NO LLEVAN, Y ES LA MITAD DEL TRABAJO (§15.7): `y_c = (q^2/g)^(1/3)` es
+# ALGEBRA, no norma -- sale de la condicion de energia minima, no de un
+# numeral --. El fundamento funda POR QUE EL PASO EXISTE; la formula viaja en
+# `PasoDeMemoria.formula` y su `formula_cita_id` apunta al numeral que LA
+# EXIGE, no a uno que la imprima. Inventarle una cita a la formula seria la
+# clase de defecto que `SIN_FUNDAMENTO` existe para no cometer.
+
+# UNA PALABRA SE APARTA DE LA REDACCION DE §15.7, Y LA CAMBIO LA FUENTE
+# PRIMARIA. CN escribio «eso depende de la forma, y EL MANUAL no fija
+# ninguna». Verificado contra el PDF: el num. 4.1.1.3.6 (impresa 74 / PDF 77)
+# efectivamente prescribe Manning, define A, P y R por su significado y su
+# unidad --«A : Area de la seccion hidraulica (m2)», «P : Perimetro mojado
+# (m)», «R : Radio hidraulico (m)»--, escribe como unica relacion entre ellas
+# R = A/P, y NO escribe ninguna geometria de seccion. Hasta ahi la frase es
+# exacta. Lo que no lo es es el SUJETO: el MANUAL si enumera formas y si
+# impone una, en el num. 4.1.1.3.4 a) (impresa 72 / PDF 75) --«Las secciones
+# mas usuales son circulares, rectangulares y cuadradas...» y la seccion
+# minima de 0.90 m--, que este mismo repositorio cita en otro sitio. Lo que no
+# fija ninguna forma es ESTE numeral, y asi queda escrito. Corregido tambien
+# en §15.9 del plan.
+SECCION = _fundamento(
+    id="F4.SECCION",
+    fase=F4,
+    que_paso=("Area, perimetro mojado y radio hidraulico de la seccion, para "
+              "el tirante de trabajo"),
+    por_que=(
+        "El num. 4.1.1.3.6 prescribe Manning y define sus variables -- A "
+        "'area de la seccion hidraulica', P 'perimetro mojado', R = A/P -- "
+        "pero NO dice como se calcula A ni como se calcula P: eso depende de "
+        "la forma, y ESTE numeral no fija ninguna. Ahi es donde entra la "
+        "seccion como abstraccion: no es una generalizacion que el proyecto "
+        "se inventa para que le quepan dos formas, es el hueco que el propio "
+        "numeral deja al calculo. Un circulo lo llena por el angulo mojado y "
+        "un rectangulo por B*y; el numeral es el mismo para los dos, y por "
+        "eso el procedimiento tambien."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.4.1.1.3.6",),    # DEFINICION -> sostiene DEFINE
+    que_pasa_si_no_se_hace=(
+        "Se escribe un segundo motor de calculo para la otra forma. Es "
+        "SIS-A-07 y es el antipatron numero uno de la §12: dos motores, uno "
+        "con casos patron y otro sin ellos, que empiezan iguales y divergen "
+        "en la primera correccion que solo se aplique a uno."),
+)
+
+YC_RECT = _fundamento(
+    id="F4.YC_RECT",
+    fase=F4,
+    que_paso="Tirante critico de la seccion, y la energia critica H_c",
+    por_que=(
+        "El tirante critico no se calcula porque interese por si mismo: se "
+        "calcula porque DOS pasos posteriores lo consumen. La Forma 1 del "
+        "control de entrada arranca de H_c/D, y el control de salida necesita "
+        "h_o = max(TW, (d_c + D)/2). En la seccion circular no hay solucion "
+        "cerrada y hace falta un segundo Brent; en la rectangular el ancho "
+        "superficial es constante y la condicion de energia minima se "
+        "despeja: y_c = (q^2/g)^(1/3) con q = Q/B. Que sea exacta no es un "
+        "lujo de elegancia -- retira la clase entera de fallos de "
+        "convergencia que LimiteNumericoError cubre en la circular "
+        "(SIS-G-02), donde un Q diminuto lleva el resolutor a un angulo "
+        "donde el area se cancela."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.3.3.3#HO",     # sostiene DEFINE (definicion/aproximacion)
+           "HDS5_3ED.A.2"),         # DEFINICION
+    que_pasa_si_no_se_hace=(
+        "El control de salida se queda sin h_o y la Forma 1 sin H_c: los dos "
+        "pasos que producen el HW gobernante. Y si en vez de la solucion "
+        "cerrada se reusa el Brent de la circular, se arrastra a la "
+        "rectangular una fragilidad numerica que en ella NO existe."),
+)

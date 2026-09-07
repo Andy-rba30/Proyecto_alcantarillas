@@ -862,7 +862,14 @@ CENSO_DE_MARCAS = {
     # radio hidraulico lleno D/4 --. NO son literales nuevos: son los mismos
     # que M3.area, M4.area_llena y M4.radio_hidraulico_lleno traian marcados,
     # y por eso el censo de esos dos archivos baja en la misma medida.
-    "src/modelos.py": 5,
+    # 5 -> 6 en C4, con `SeccionRectangular`: el exponente 1/3 de
+    # y_c = (q^2/g)^(1/3), la solucion cerrada del tirante critico. Es UNO y
+    # no dos aunque la sesion marcara dos lineas: el `2` del cuadrado lleva su
+    # marca -- el prompt de C4 la pedia, y hace visible en revision que ese 2
+    # es el de la formula -- pero no cuenta aqui, porque la regla ya exime el
+    # 0, el 1 y el 2. Los otros dos numeros de la clase --- el 2 de
+    # P = B + 2y y el 2 de R = B*H/(2(B+H)) --- son el mismo caso.
+    "src/modelos.py": 6,
     # 3 -> 5 en S20, con la Sec. 1.3 ("TW se calcula, no se mide"): el 2 de
     # `perimetro_trapecial` (los DOS taludes de un trapecio), la semilla y la
     # duplicacion del corchete de Brent sobre el tirante del receptor, y el

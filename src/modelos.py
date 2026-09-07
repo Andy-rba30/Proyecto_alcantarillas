@@ -834,14 +834,30 @@ class Seccion(Protocol):
             A 5.2e-15   P 1.5e-15   T 8.8e-15
         theta = 1e-6 rad
             P y T: 4.4e-5
-        en los DOS EXTREMOS de `bracket_llenado()`
-            100 %: la via por tirante devuelve 0.0 EXACTO para P y para T
 
-    Y esa ultima fila es peor que una deriva. `T` es el denominador de `A^3/T`
-    en `M4_control._residuo_critico`: quien reescriba el residuo sobre
-    `ancho_superficial(y)` no mete un 1e-12, DIVIDE POR CERO en el extremo
-    inferior del bracket -- de los primeros puntos donde Brent evalua --, y
-    reintroduce la clase de fallo que SIS-G-02 cerro.
+    Y EN LOS EXTREMOS DEL BRACKET, con la correccion que midio C4. C1 escribio
+    aqui "en los DOS extremos la via por tirante devuelve 0.0 EXACTO para P y
+    para T", y eso vale ENTERO en uno solo de los dos. Medido sobre D = 0.90:
+
+        theta = 1e-9 (extremo INFERIOR)
+            canonica    P = T = 4.5e-10
+            por tirante P = T = 0.0            <- 100 %, y cero EXACTO
+        theta = 2*pi - 1e-9 (extremo SUPERIOR)
+            canonica    T = 4.500001474513789e-10
+            por tirante T = 1.1021821192326179e-16   <- ~100 % relativo, pero
+                                                        NO es cero exacto
+            canonica    P = 2.8274333877808138
+            por tirante P = 2.827433388230814        <- 1.6e-10 relativo: el
+                                                        perimetro NO se anula
+
+    La consecuencia no cambia y sigue siendo peor que una deriva: `T` es el
+    denominador de `A^3/T` en `M4_control._residuo_critico`, y el cero exacto
+    esta justo en el extremo INFERIOR, que es de los primeros puntos donde
+    Brent evalua. Quien reescriba el residuo sobre `ancho_superficial(y)` no
+    mete un 1e-12: DIVIDE POR CERO, y reintroduce la clase de fallo que
+    SIS-G-02 cerro. Lo unico que se corrige es el enunciado -- en el extremo
+    superior el perimetro coincide en los ultimos bits --, y se corrige porque
+    una regla vinculante que dice de mas se deja de creer entera.
 
     En el centro del rango las dos vias coinciden BIT A BIT (theta = pi:
     divergencia 0.0 exacta en las tres magnitudes), de modo que una
@@ -874,6 +890,75 @@ class Seccion(Protocol):
 
     def etiqueta(self) -> str:
         """Como se nombra la seccion en la memoria."""
+        ...
+
+    @property
+    def simbolo_altura(self) -> str:
+        """
+        Como se llama, EN ESTA SECCION, el dato que fija la altura interior.
+
+        NO es el "D" de HDS-5, y la distincion es la que C4 tuvo que decidir
+        (anotacion A-4 de §16.4). Son dos vocabularios que coinciden en la
+        circular y se separan en cuanto hay una forma que no es un circulo:
+
+          * En las ECUACIONES DE HDS-5 --q*, HW/D, h_o-- "D" es correcto para
+            cualquier forma: la fuente lo define como *"D - Interior height of
+            culvert barrel"* (regla vinculante #4 de la Familia C). Esas
+            formulas siguen escribiendo "D" y no se tocan.
+          * En el DATO DE ENTRADA que el revisor tiene que corregir, "D"
+            significa diametro. Una `SeccionRectangular` no tiene diametro: su
+            dato es la altura H. Este simbolo es ese, el del dato, y por eso
+            lo publica la seccion y no lo cablea el modulo que valida.
+        """
+        ...
+
+    def exigir_dimensiones_positivas(self) -> None:
+        """
+        Valida la altura interior y lanza `DatoInvalidoError` si no la cumple.
+
+        VIVE AQUI Y NO EN M3/M4 por dos razones. La primera es que el mensaje
+        nombra el dato --`campo` y `motivo` se imprimen los dos, en la memoria
+        y en el JSON-- y quien sabe como se llama el dato es la seccion. La
+        segunda es que hasta C4 la MISMA pareja de cadenas estaba escrita dos
+        veces, en `M3._validar_parametros` y en `M4._validar_Q_D`: dos copias
+        que hay que editar juntas para siempre.
+        """
+        ...
+
+    def magnitudes_de_forma(self) -> Tuple["Magnitud", ...]:
+        """
+        Las dimensiones que DEFINEN esta seccion, como `Magnitud` de memoria.
+
+        Una circular se define con un numero y una rectangular con dos: la
+        sustitucion de un paso no puede cablear cuantos son ni como se llaman.
+        """
+        ...
+
+    def formula_geometria(self) -> str:
+        """
+        Como se calculan A, P y R en esta forma, para imprimirlo en la memoria.
+
+        Es el hueco que el num. 4.1.1.3.6 deja abierto: prescribe Manning y
+        define A, P y R --por su significado y su unidad, con R = A/P como
+        unica relacion entre ellos-- y NO escribe ninguna geometria de
+        seccion. Lo rellena la seccion, y por eso la frase sale de aqui.
+
+        EL SUJETO ES EL NUMERAL Y NO EL MANUAL, y la precision importa: el
+        Manual SI enumera formas y SI impone una, en el num. 4.1.1.3.4 a).
+        El que no fija ninguna es este numeral.
+        """
+        ...
+
+    def llenado_critico_cerrado(self, Q: float, g: float) -> Optional[float]:
+        """
+        El parametro propio en estado CRITICO, si esta forma lo despeja; si no,
+        `None` y quien llama resuelve con Brent.
+
+        `g` LLEGA COMO ARGUMENTO Y NO SE IMPORTA AQUI, a proposito: la seccion
+        conoce el algebra de su forma, no cuanto vale la gravedad. Este modulo
+        declara tipos y geometria; que g valga 9.81 lo dice
+        `constantes_fisicas`, y quien lo consume es el modulo de calculo.
+        """
         ...
 
     def area(self, y: float) -> float:
@@ -949,6 +1034,51 @@ class SeccionCircular:
         """
         return f"Ø {self.D:.2f} m"
 
+    @property
+    def simbolo_altura(self) -> str:
+        """En un circulo el dato de la altura ES el diametro, y se llama D."""
+        return "D"
+
+    def exigir_dimensiones_positivas(self) -> None:
+        """
+        EL TEXTO ES EL DE ANTES, LETRA POR LETRA, y eso es lo que hace que
+        renombrar no fuera la respuesta a la anotacion A-4 de §16.4. Un tubo
+        SI tiene diametro: "D" no era falso aqui, lo era en la otra forma. La
+        correccion consiste en que el nombre lo ponga la seccion, no en
+        cambiarselo a la que lo tenia bien.
+
+        La condicion se escribe EN POSITIVO Y NEGADA (`not ... > 0`) con la
+        plantilla de MAT-D13: `<= 0` deja pasar un NaN --es falso frente a los
+        dos operadores-- y un diametro NaN llegaba hasta Brent, que revienta
+        fuera de `ErrorProyecto`. Es la tercera anotacion que C1 dejo abierta.
+        """
+        if not self.D > 0:
+            raise DatoInvalidoError(
+                "D", valor=self.D, motivo="el diametro debe ser positivo")
+
+    def magnitudes_de_forma(self) -> Tuple["Magnitud", ...]:
+        """El diametro, que es la unica dimension que define un circulo."""
+        return (Magnitud("D", self.D, "m",
+                         "diametro interior del barril, que en un circulo es "
+                         "tambien su altura interior: el «D» de HDS-5",
+                         cifras=CIFRAS_FACTOR),)
+
+    def formula_geometria(self) -> str:
+        """Las tres de la Sec. 4.1, escritas sobre el angulo mojado."""
+        return ("A = (D^2/8)(theta - sen theta), P = D*theta/2, R = A/P, "
+                "con theta el angulo mojado")
+
+    def llenado_critico_cerrado(self, Q: float, g: float) -> Optional[float]:
+        """
+        `None`: en la circular el critico NO se despeja.
+
+        A^3/T = Q^2/g con A = (D^2/8)(theta - sen theta) y T = D*sen(theta/2)
+        es trascendente en theta, y por eso M4 le pone su segundo Brent. Este
+        `None` no es un hueco: es la respuesta, y es la que hace que el modulo
+        de calculo no tenga que preguntar de que forma es la seccion.
+        """
+        return None
+
     # --- interfaz por TIRANTE (Sec. 4.1) -----------------------------------
     # Es la que una seccion rectangular usa directamente. En la circular pasa
     # por la inversion theta(y) = 2*arccos(1 - 2y/D), que es cerrada y exacta.
@@ -1009,6 +1139,252 @@ class SeccionCircular:
         P = self._perimetro_en_theta(theta)
         return Geometria(seccion=self, llenado=theta, A=A, P=P, R=A / P,
                          y=self._tirante_en_theta(theta))
+
+
+@dataclass(frozen=True)
+class SeccionRectangular:
+    """
+    Marco rectangular parcialmente lleno (Sec. 4.1 del plan de la Familia C):
+
+        A = B*y        P = B + 2y        R = A/P        T = B
+
+    MODELA UNA CELDA, Y ESO NO ES UN DETALLE DE IMPLEMENTACION. Es la regla
+    vinculante #3: los coeficientes de HDS-5, el radio hidraulico y el control
+    de entrada son POR BARRIL. Con N celdas se diseña UNA celda con Q/N y se
+    declara N; el numero de celdas no entra aqui ni multiplica nada de esta
+    clase. Meterlo dentro seria construir una seccion de area N*B*H cuyo
+    perimetro mojado no es el de ningun barril real, y con ella un R que no
+    corresponde a ninguna celda: el q* saldria de una abertura que no existe.
+    Donde vive N es en la Fase 3 (criterio de celdas, C5), fuera de la
+    geometria.
+
+    SU PARAMETRO PROPIO ES EL TIRANTE, y por eso las dos parametrizaciones de
+    `Seccion` COINCIDEN EXACTAMENTE aqui: `geometria_en(y)` y `area(y)` dan el
+    mismo numero, bit a bit, porque no hay ninguna inversion por medio. ESO NO
+    AUTORIZA A CAMBIAR DE VIA EN M3 NI EN M4 (regla vinculante #12): en la
+    circular la via por tirante pasa por `theta_desde_tirante`, que esta mal
+    condicionada, y en los dos extremos del bracket devuelve 0.0 exacto para P
+    y para T --y T es el denominador de A^3/T en `M4._residuo_critico`--. La
+    coincidencia es una propiedad de ESTA forma, no del protocolo.
+
+    LAS DOS "R" DE UN MARCO NO SON LA MISMA, y conviene verlo antes de
+    compararlas. `geometria_en(y).R` es de LAMINA LIBRE: su perimetro mojado
+    es B + 2y y NO incluye la losa superior, porque a esa altura el agua no la
+    toca. `radio_hidraulico_lleno` es de SECCION LLENA A PRESION: su perimetro
+    es 2(B+H), con la losa dentro. En y = H las dos existen y NO coinciden --
+    con B = 2.00 m y H = 1.50 m dan 0.600 m y 0.4286 m, un 40 % de diferencia
+    --, y no es un error de ninguna de las dos: son dos regimenes distintos, y
+    cada consumidor usa el suyo (Manning, el de lamina libre; el control de
+    salida de la Sec. 4.3, el lleno). En la CIRCULAR esta distincion no se ve
+    porque las dos convergen: en theta = 2*pi el ancho de la lamina se anula y
+    el perimetro de lamina libre YA es el perimetro completo, pi*D. En un
+    marco el ancho de la lamina vale B hasta el final y nunca convergen.
+    """
+
+    B: float          # m - ancho interior de UNA celda
+    H: float          # m - altura interior del barril
+
+    @property
+    def altura(self) -> float:
+        """La altura interior es H. Es el "D" de HDS-5 (regla #4)."""
+        return self.H
+
+    @property
+    def area_llena(self) -> float:
+        """A = B*H. La usan q* (Sec. 4.2) y el control de salida (Sec. 4.3)."""
+        return self.B * self.H
+
+    @property
+    def radio_hidraulico_lleno(self) -> float:
+        """
+        R = A/P = B*H / (2(B+H)), seccion llena (Sec. 4.3).
+
+        El perimetro lleva la losa superior: a seccion llena el agua moja los
+        cuatro lados. Es el de PRESION, no el de lamina libre; ver el
+        docstring de la clase.
+        """
+        return self.B * self.H / (2 * (self.B + self.H))
+
+    def etiqueta(self) -> str:
+        """El rotulo que fija la §4.1 del plan: "marco 2.00 × 1.50 m"."""
+        return f"marco {self.B:.2f} × {self.H:.2f} m"
+
+    @property
+    def simbolo_altura(self) -> str:
+        """
+        "H", y no "D". Un marco NO TIENE DIAMETRO: el dato que un revisor
+        tendria que corregir se llama altura interior. Es la mitad de la
+        anotacion A-4 de §16.4 que solo esta sesion podia decidir, porque es
+        la primera que ve las dos formas a la vez.
+        """
+        return "H"
+
+    def exigir_dimensiones_positivas(self) -> None:
+        """
+        Las DOS dimensiones, y en el orden en que se declaran. Un marco se
+        define con dos numeros: validar solo la altura dejaria pasar un ancho
+        nulo, y con B = 0 el caudal por unidad de ancho q = Q/B no existe.
+
+        Condicion en positivo y negada, plantilla de MAT-D13.
+        """
+        if not self.B > 0:
+            raise DatoInvalidoError(
+                "B", valor=self.B,
+                motivo="el ancho interior del marco debe ser positivo")
+        if not self.H > 0:
+            raise DatoInvalidoError(
+                "H", valor=self.H,
+                motivo="la altura interior del marco debe ser positiva")
+
+    def magnitudes_de_forma(self) -> Tuple["Magnitud", ...]:
+        """
+        LAS DOS, y en este orden. Una circular se define con un numero y un
+        marco con dos: es la razon por la que la sustitucion de un paso pide
+        esta tupla a la seccion en vez de escribir "D".
+        """
+        return (
+            Magnitud("B", self.B, "m",
+                     "ancho interior de UNA celda; con N celdas se diseña una "
+                     "celda con Q/N (regla #3: el control de entrada y el "
+                     "radio hidraulico son POR BARRIL)",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("H", self.H, "m",
+                     "altura interior del barril: el «D» de HDS-5, que la "
+                     "fuente define como *interior height of culvert barrel*",
+                     cifras=CIFRAS_FACTOR),
+        )
+
+    def formula_geometria(self) -> str:
+        """Las tres, escritas sobre el tirante, que es el parametro propio."""
+        return "A = B*y, P = B + 2y, R = A/P, con y el tirante"
+
+    # --- interfaz por TIRANTE (Sec. 4.1) -----------------------------------
+    # AQUI ES LA MISMA QUE LA DE ABAJO: el parametro propio de un marco es el
+    # tirante. Las dos vias no se unifican porque en la circular no coinciden
+    # (regla vinculante #12) y el protocolo es uno solo para las dos.
+
+    def area(self, y: float) -> float:
+        return self.B * y
+
+    def perimetro(self, y: float) -> float:
+        """
+        P = B + 2y: fondo y dos hastiales. NO lleva la losa superior, ni
+        siquiera en y = H, porque este es el perimetro de LAMINA LIBRE.
+        """
+        return self.B + 2 * y
+
+    def ancho_superficial(self, y: float) -> float:
+        """T = B, constante. Es lo que cierra el tirante critico."""
+        return self.B
+
+    # --- parametrizacion propia: el propio tirante --------------------------
+
+    def bracket_llenado(self) -> Tuple[float, float]:
+        """
+        (0, H): el intervalo entero, SIN margen de borde.
+
+        La circular necesita `TOL_THETA_BORDE` porque en theta = 0 y en
+        theta = 2*pi el area y el perimetro se anulan los dos y R = 0/0 queda
+        indeterminado. Aqui no pasa: en y = 0 el area vale 0 pero el perimetro
+        vale B > 0, de modo que R = 0/B = 0 esta definido y el residuo de
+        Manning vale -Q, que es el signo que Brent necesita. Copiarle el
+        margen a la circular seria arrastrar una defensa contra una
+        singularidad que esta forma no tiene.
+        """
+        return 0.0, self.H
+
+    def ancho_superficial_en_llenado(self, y: float) -> float:
+        """El mismo B: el parametro propio ES el tirante."""
+        return self.B
+
+    def geometria_en(self, y: float) -> "Geometria":
+        """
+        `Geometria` completa (A, P, R, y) para un tirante dado.
+
+        `llenado` y `y` valen lo mismo, y eso es correcto: el parametro propio
+        de esta forma es el tirante. No se "aprovecha" para nada -- quien
+        consuma un `Geometria` sigue leyendo `g.y` y `g.llenado` por su nombre.
+        """
+        A = self.area(y)
+        P = self.perimetro(y)
+        return Geometria(seccion=self, llenado=y, A=A, P=P, R=A / P, y=y)
+
+    def llenado_critico_cerrado(self, Q: float, g: float) -> Optional[float]:
+        """
+        y_c = (q^2/g)^(1/3), con q = Q/B. EXACTA: aqui no hay Brent.
+
+        Sale de la condicion de energia minima Q^2*T/(g*A^3) = 1 con T = B
+        constante y A = B*y: Q^2*B/(g*B^3*y^3) = 1, de donde y^3 = q^2/g. No
+        es una aproximacion ni una linealizacion; es la misma ecuacion que la
+        circular resuelve con Brent, despejada.
+
+        Y NO ES SOLO ELEGANCIA: retira la clase entera de fallos de
+        convergencia que `LimiteNumericoError` cubre en la circular (SIS-G-02,
+        donde un Q diminuto lleva el resolutor a un theta en que el area se
+        cancela). Lo que NO retira es la aritmetica, y por eso hay tres
+        guardias A LA SALIDA, con la forma de MAT-D13 -- umbral MEDIDO,
+        condicion en positivo y negada, mensaje que nombra al PAR culpable --.
+        Las tres se midieron sobre este mismo codigo:
+
+          1. `q ** 2` desborda para q >= 1.3407807929942597e+154 (con
+             B = 2.00 m eso es Q >= 2.6815615859885194e+154). `float.__pow__`
+             lanza OverflowError donde `q*q` daria `inf`.
+          2. `Q/B` puede dar `inf` SIN excepcion --Q = 1e308 con B = 1e-5--, y
+             entonces y_c sale `inf`: un tirante que no es un numero, y con el
+             un informe entero de diagnosticos sobre algo que no lo es
+             (SIS-G-01).
+          3. `q^2/g` se cancela a 0.0 exacto para q <= 4.715183354107886e-162
+             (el primer q que deja y_c > 0 es 4.715183354107887e-162, y da
+             y_c = 1.7031839360032837e-108). Con y_c = 0 no hay velocidad
+             critica que calcular.
+
+        La cuarta --que y_c salga positivo y aun asi A = B*y_c se anule-- NO
+        se guarda aqui: la atrapa la guardia de area de `M4.tirante_critico`,
+        que es comun a las dos formas. Es alcanzable, y medido: con
+        B = Q = 5e-324 (el denormal mas pequeño) y_c vale 0.4671363512679737 y
+        A vale 0.0 exacto.
+        """
+        q = Q / self.B
+        try:
+            q_al_cuadrado = q ** 2  # literal-ok: el cuadrado de q en y_c = (q^2/g)^(1/3)
+        except OverflowError:
+            raise LimiteNumericoError(
+                "Q", valor=Q, motivo=(
+                    f"el par (Q = {Q!r} m3/s, B = {self.B!r} m) da un caudal "
+                    f"por unidad de ancho q = Q/B = {q!r} m2/s cuyo cuadrado "
+                    f"no cabe en doble precision, y sin q^2 no hay tirante "
+                    f"critico que despejar. No es un caudal fuera de rango "
+                    f"--'Q_m3s' solo exige ser positivo, y ponerle un techo "
+                    f"seria inventar un valor de proyecto--: es un caudal "
+                    f"cuyo cuadrado por unidad de ancho no es representable. "
+                    f"Revisa si la celda perdio el separador decimal, si el "
+                    f"caudal vino en otra unidad, o si el ancho de celda es "
+                    f"el de una celda y no el del conjunto")
+            ) from None
+        y_c = (q_al_cuadrado / g) ** (1 / 3)  # literal-ok: exponente de la raiz cubica de (q^2/g)
+        if not y_c < math.inf:
+            raise LimiteNumericoError(
+                "Q", valor=Q, motivo=(
+                    f"el par (Q = {Q!r} m3/s, B = {self.B!r} m) desborda al "
+                    f"despejar el tirante critico: q = Q/B = {q!r} m2/s y "
+                    f"y_c = (q^2/g)^(1/3) = {y_c!r} m, que no es un numero "
+                    f"finito. Cada dato cumple su rango por separado --el "
+                    f"ancho es positivo y el caudal tambien--; lo que no cabe "
+                    f"es la operacion que los combina")
+            )
+        if not y_c > 0:
+            raise LimiteNumericoError(
+                "Q", valor=Q, motivo=(
+                    f"el par (Q = {Q!r} m3/s, B = {self.B!r} m) degenera: el "
+                    f"caudal por unidad de ancho q = Q/B = {q!r} m2/s es tan "
+                    f"pequeño que q^2/g se cancela entero en doble precision "
+                    f"(ocurre desde q <= 4.715183354107886e-162) y el tirante "
+                    f"critico sale {y_c!r} m. Sin tirante no hay area y sin "
+                    f"area no hay velocidad critica. No es un caudal fuera de "
+                    f"rango: revisa si la celda perdio digitos o si el caudal "
+                    f"vino en otra unidad")
+            )
+        return y_c
 
 
 @dataclass(frozen=True)
@@ -1105,8 +1481,16 @@ class TiranteNormal:
 @dataclass(frozen=True)
 class TiranteCritico:
     """
-    Salida del primer solver de M4 (Sec. 4.2.1): tirante critico de la seccion
-    circular, raiz de Q^2*T/(g*A^3) = 1, resuelta con Brent sobre theta.
+    Salida de la primera pieza de M4 (Sec. 4.2.1): tirante critico de la
+    seccion, raiz de Q^2*T/(g*A^3) = 1.
+
+    `cerrado` DICE POR CUAL DE LAS DOS VIAS SE RESOLVIO, y no es un detalle de
+    implementacion: es lo que la memoria tiene que imprimir. En la circular la
+    ecuacion es trascendente en theta y hace falta un segundo Brent; en un
+    marco T = B es constante y se despeja, y_c = (q^2/g)^(1/3). Un revisor que
+    lea "resuelta con Brent" sobre un numero que salio de una formula cerrada
+    no puede rehacerlo, y al reves tampoco. Lo pone la seccion y no lo deduce
+    el que imprime.
 
     `geometria` es la seccion en estado critico (de ella salen y_c, A_c y T_c);
     `V` = Q/A_c es la velocidad critica, y `H_c` = y_c + V^2/(2g) la energia
@@ -1122,6 +1506,7 @@ class TiranteCritico:
     geometria: Geometria      # seccion en estado critico
     V: float                  # m/s - velocidad critica, Q/A_c
     H_c: float                # m  - energia especifica critica, y_c + V^2/(2g)
+    cerrado: bool             # True si la seccion lo despejo; False si Brent
 
     @property
     def y_c(self) -> float:
