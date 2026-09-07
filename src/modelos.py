@@ -753,25 +753,46 @@ class Seccion(Protocol):
     propio parametro para que el solver no tenga que elegir uno, y asi M3 y M4
     quedan ciegos a la forma SIN mover un digito.
 
-    LAS DOS MITADES NO SON INTERCAMBIABLES, Y ESTE ES EL AVISO. En la
-    circular, `area(y)` / `perimetro(y)` / `ancho_superficial(y)` llegan al
-    resultado pasando por `theta_desde_tirante(y)`, que es la inversa
-    ALGEBRAICA de `_tirante_en_theta` pero no su inversa en punto flotante:
-    el viaje de ida y vuelta pierde bits. MEDIDO en C1 sobre 15992 puntos --
-    ocho diametros de 0.30 a 3.00 m por 1999 angulos repartidos sobre
-    `bracket_llenado()` --, la divergencia relativa maxima entre las dos vias
-    es A: 5.4e-12, P: 4.7e-12 y T: 9.3e-11, y las tres se dan en el diametro
-    mas chico y cerca de los extremos del intervalo; en el centro del rango
-    las dos vias coinciden bit a bit, de modo que una comprobacion puntual las
-    aprueba.
+    LAS DOS MITADES NO SON INTERCAMBIABLES, Y ESTE ES EL AVISO. La CANONICA
+    es la del parametro propio -- es la que consumen M3 y M4 y sobre la que
+    resuelve Brent --. La del tirante es de LECTURA y hoy no tiene ningun
+    consumidor en produccion. Esta escrito como regla vinculante #12 de
+    docs/ruta_familia_c.md; aqui va lo imprescindible.
 
-    Consecuencia practica: el valor que ya viene en un `Geometria` -- `g.A`,
-    `g.P`, `g.T` -- NO se recalcula con estos metodos. Sustituir `g.A` por
-    `seccion.area(g.y)` mete 5e-12 en `A^3/T - Q^2/g` del residuo critico,
-    corre la raiz de Brent y tumba los `rel=1e-12` de la suite con un fallo
-    que se lee como un error de hidraulica y no como lo que es. Hoy la mitad
-    por tirante NO TIENE NINGUN CONSUMIDOR: existe porque es el lenguaje de
-    la Sec. 4.1 y porque la rectangular la usara directamente.
+    En la circular, `area(y)` / `perimetro(y)` / `ancho_superficial(y)` pasan
+    por `theta_desde_tirante(y)`, que es la inversa ALGEBRAICA de
+    `_tirante_en_theta` pero no su inversa en punto flotante. El error del
+    viaje de ida y vuelta NO ESTA ACOTADO POR UNA CONSTANTE: es un problema de
+    CONDICIONAMIENTO concentrado en los dos extremos del llenado. Medido en C1
+    sobre ocho diametros de 0.30 a 3.00 m:
+
+        y/D en [0.10, 0.75] (la ventana que admite V1)
+            A 9.7e-16   P 3.9e-16   T 4.0e-16      -- ultimos bits
+        y/D en [0.01, 0.99]
+            A 5.2e-15   P 1.5e-15   T 8.8e-15
+        theta = 1e-6 rad
+            P y T: 4.4e-5
+        en los DOS EXTREMOS de `bracket_llenado()`
+            100 %: la via por tirante devuelve 0.0 EXACTO para P y para T
+
+    Y esa ultima fila es peor que una deriva. `T` es el denominador de `A^3/T`
+    en `M4_control._residuo_critico`: quien reescriba el residuo sobre
+    `ancho_superficial(y)` no mete un 1e-12, DIVIDE POR CERO en el extremo
+    inferior del bracket -- de los primeros puntos donde Brent evalua --, y
+    reintroduce la clase de fallo que SIS-G-02 cerro.
+
+    En el centro del rango las dos vias coinciden BIT A BIT (theta = pi:
+    divergencia 0.0 exacta en las tres magnitudes), de modo que una
+    comprobacion puntual las aprueba. Por eso el aviso esta aqui y no en un
+    test: no se detecta mirando.
+
+    En una seccion rectangular el parametro propio ES el tirante y las dos
+    vias coinciden exactamente. Eso no autoriza a pasar M3 y M4 a la via por
+    tirante: en la circular movería todos los numeros.
+
+    Regla operativa: el valor que ya viene en un `Geometria` -- `g.A`, `g.P`,
+    `g.T`, `g.R` -- NO se recalcula. La via por tirante solo se usa donde el
+    llamador tenga un tirante y ningun `Geometria`, nunca dentro de un solver.
     """
 
     @property
@@ -854,9 +875,17 @@ class SeccionCircular:
         Como la memoria nombra la seccion. Su consumidor llega con el reporte
         de la Familia C; hoy no lo invoca ningun modulo y se declara igual,
         porque es parte del contrato de `Seccion` y una implementacion que no
-        lo cumpliera no seria sustituible por otra.
+        lo cumpliera no seria sustituible por otra. Su ficha esta en
+        `docs/decisiones_diferidas.md` (C1-02).
+
+        El rotulo es el que fija la §4.1 del plan de la Familia C -- "Ø 0.90 m"
+        frente al "marco 2.00 x 1.50 m" de la rectangular --. C1 lo escribio
+        primero como "D 0.90 m", que no era el de la especificacion desde la
+        que se escribio la clase; corregido al cierre. Los dos decimales son
+        PRESENTACION, de la misma naturaleza que los `FMT_*` de M11: no dicen
+        cuanto vale nada.
         """
-        return f"D {self.D:.2f} m"
+        return f"Ø {self.D:.2f} m"
 
     # --- interfaz por TIRANTE (Sec. 4.1) -----------------------------------
     # Es la que una seccion rectangular usa directamente. En la circular pasa

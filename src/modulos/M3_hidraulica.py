@@ -151,17 +151,25 @@ NUMERAL_MANNING = "4.1"
 
 def _validar_parametros(seccion: Seccion, Q: float, S: float, n: float) -> None:
     if seccion.altura <= 0:
-        # EL CAMPO SIGUE SIENDO "D", Y ES DELIBERADO. C1 es un refactor: no
-        # mueve ni un digito de la salida impresa, y `DatoInvalidoError.campo`
-        # SE IMPRIME -- M11 lo pinta en la memoria y la CLI lo publica en el
-        # JSON --. Renombrarlo a "altura" seria una correccion de vocabulario,
-        # y las correcciones no van en esta sesion. Con quien nombra el dato
-        # cuando la seccion deja de ser circular tiene que quedarse C4, que es
-        # la sesion que trae la rectangular y la unica que puede decidirlo
-        # viendo las dos formas a la vez.
+        # EL CAMPO Y EL MOTIVO SIGUEN SIENDO LOS DE ANTES, Y ES DELIBERADO.
+        # C1 es un refactor: no mueve ni un digito de la salida impresa, y de
+        # esta excepcion se imprimen LAS DOS CADENAS -- `campo` y `motivo`
+        # viajan juntos dentro de `str(exc)`, que `cli._bloqueo` guarda como
+        # `mensaje`, `cli._bloqueo_json` publica y `M11._tabla_bloqueos`
+        # pinta --. C1 llego a renombrar el motivo a "la altura interior de la
+        # seccion debe ser positiva" y ESO SI MOVIO SALIDA: es alcanzable con
+        # un solo `--declarar diametros_normalizados={"inicio": -0.90, ...}`,
+        # que da 12 apariciones en el JSON y una en el HTML, y ademas dejaba
+        # el peor de los dos mundos -- "campo D" pegado a una frase que habla
+        # de altura, dos vocabularios para el mismo dato en la misma linea --.
+        # Renombrar es una correccion de vocabulario y las correcciones no van
+        # en esta sesion. Con quien nombra el dato cuando la seccion deja de
+        # ser circular tiene que quedarse C4, que es la sesion que trae la
+        # rectangular y la unica que puede decidirlo viendo las dos formas a
+        # la vez.
         raise DatoInvalidoError(
             "D", valor=seccion.altura,
-            motivo="la altura interior de la seccion debe ser positiva")
+            motivo="el diametro debe ser positivo")
     if Q <= 0:
         raise DatoInvalidoError("Q", valor=Q, motivo="el caudal debe ser positivo")
     if S <= 0:
@@ -177,9 +185,29 @@ def _validar_parametros(seccion: Seccion, Q: float, S: float, n: float) -> None:
 
 # LA FORMA YA NO VIVE AQUI. Las formulas de area, perimetro y tirante se
 # mudaron a `modelos.SeccionCircular` en C1a: M3 pide la geometria y no sabe
-# de que forma es. Estas tres siguen existiendo porque son la API publica que
-# la suite contrasta contra `geometria()` -- y porque nombran, en el lenguaje
+# de que forma es. Las tres siguen existiendo porque nombran, en el lenguaje
 # de la Sec. 4.1, lo que la seccion devuelve junto.
+#
+# QUIEN LAS LLAMA, MEDIDO Y NO SUPUESTO. La primera redaccion de este
+# comentario decia "son la API publica que la suite contrasta contra
+# `geometria()`", y eso es cierto de DOS de las tres:
+# `test_M3_hidraulica.test_area_y_perimetro_funciones_sueltas_coinciden_con_geometria`
+# contrasta `area` y `perimetro`. `tirante` NO LO LLAMA NADIE, ni produccion
+# ni la suite: lo llamaba `M3.geometria` antes de C1, y desde que `geometria`
+# delega se quedo sin consumidor. Predecirle uno que no existe es el
+# antipatron que este repositorio ya tiene fichado; su ficha esta en
+# `docs/decisiones_diferidas.md`.
+#
+# Y OJO CON EL CASO DEGENERADO, QUE C1 MOVIO. Las tres pasan ahora por
+# `geometria_en()`, que construye la `Geometria` entera y con ella el
+# `R = A/P`. En `llenado = 0` el perimetro vale 0 y sale ZeroDivisionError,
+# donde antes `area(D, 0.0)` devolvia 0.0. No es alcanzable desde produccion
+# -- el bracket arranca en TOL_THETA_BORDE, nunca en 0, y `geometria()` ya
+# dividia igual antes de C1 --, pero es un modo de fallo nuevo de estas tres,
+# y ZeroDivisionError no desciende de ErrorProyecto. Queda ANOTADO en §16.4 y
+# no corregido: evitarlo pide tres miembros nuevos en el protocolo `Seccion`,
+# y reestructurar el protocolo al cierre de la sesion de mayor riesgo del
+# plan arriesga mas de lo que arregla.
 #
 # `llenado` es el PARAMETRO PROPIO de la seccion, opaco para M3: en la
 # circular es el angulo mojado theta y en una rectangular seria el tirante.

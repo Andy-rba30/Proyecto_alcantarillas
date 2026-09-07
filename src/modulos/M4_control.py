@@ -301,10 +301,9 @@ def _validar_positivo(nombre: str, dato: float, motivo: str) -> None:
 
 def _validar_Q_D(Q: float, seccion: Seccion) -> None:
     _validar_positivo("Q", Q, "el caudal debe ser positivo")
-    # "D" y no "altura": ver la nota de `M3._validar_parametros`. El campo se
-    # imprime y C1 no mueve salida.
-    _validar_positivo("D", seccion.altura,
-                      "la altura interior de la seccion debe ser positiva")
+    # "D" y el motivo de antes: ver la nota de `M3._validar_parametros`. Se
+    # imprimen los dos, dentro del mismo `str(exc)`, y C1 no mueve salida.
+    _validar_positivo("D", seccion.altura, "el diametro debe ser positivo")
 
 
 # ---------------------------------------------------------------------------

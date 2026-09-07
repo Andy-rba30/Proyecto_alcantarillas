@@ -146,15 +146,22 @@ def test_el_tirante_critico_de_cp2_queda_bajo_el_normal_en_pendiente_suave():
     assert critico.y_c < y_normal
 
 
-@pytest.mark.parametrize("kwargs, campo", [
-    ({"Q": 0.0, "seccion": SeccionCircular(0.90)}, "Q"),
-    ({"Q": -1.0, "seccion": SeccionCircular(0.90)}, "Q"),
-    ({"Q": 1.0, "seccion": SeccionCircular(0.0)}, "D"),
+# El motivo se comprueba junto al campo: los dos se imprimen dentro del mismo
+# `str(exc)`. Ver la nota larga en `test_M3_hidraulica`, que es donde C1 se
+# comio la regresion por pinear solo la mitad de la cadena.
+@pytest.mark.parametrize("kwargs, campo, motivo", [
+    ({"Q": 0.0, "seccion": SeccionCircular(0.90)}, "Q",
+     "el caudal debe ser positivo"),
+    ({"Q": -1.0, "seccion": SeccionCircular(0.90)}, "Q",
+     "el caudal debe ser positivo"),
+    ({"Q": 1.0, "seccion": SeccionCircular(0.0)}, "D",
+     "el diametro debe ser positivo"),
 ])
-def test_tirante_critico_valida_sus_parametros(kwargs, campo):
+def test_tirante_critico_valida_sus_parametros(kwargs, campo, motivo):
     with pytest.raises(DatoInvalidoError) as exc:
         tirante_critico(**kwargs)
     assert exc.value.campo == campo
+    assert exc.value.motivo == motivo
 
 
 # ===========================================================================

@@ -227,21 +227,35 @@ def test_none_no_es_una_excepcion():
 # Validacion de parametros
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("kwargs, campo", [
+# EL MOTIVO SE COMPRUEBA, Y NO ES CELO: ES LA REGRESION QUE C1 SE COMIO.
+# Este test solo miraba `campo`, y por eso paso en verde mientras C1 renombraba
+# el MOTIVO de "el diametro debe ser positivo" a "la altura interior de la
+# seccion debe ser positiva". Los dos viajan juntos dentro de `str(exc)` --
+# `cli._bloqueo` lo guarda como `mensaje`, `cli._bloqueo_json` lo publica y
+# `M11._tabla_bloqueos` lo pinta --, de modo que renombrar el motivo MUEVE
+# SALIDA igual que renombrar el campo: medido, 12 apariciones en el JSON y una
+# en el HTML con un solo `--declarar`. Un test que pinea la mitad de una cadena
+# impresa no defiende la cadena.
+@pytest.mark.parametrize("kwargs, campo, motivo", [
     # El campo sigue siendo "D" despues de C1 aunque M3 ya no reciba un
-    # diametro: `campo` se imprime, y C1 no mueve salida. La nota del porque
-    # esta en `M3._validar_parametros`.
-    ({"D": 0.0, "Q": 1.0, "S": 0.005, "n": 0.013}, "D"),
-    ({"D": 0.90, "Q": -1.0, "S": 0.005, "n": 0.013}, "Q"),
-    ({"D": 0.90, "Q": 1.0, "S": 0.0, "n": 0.013}, "S"),
-    ({"D": 0.90, "Q": 1.0, "S": 0.005, "n": 0.0}, "n"),
+    # diametro, y el motivo sigue hablando de diametro: los dos se imprimen, y
+    # C1 no mueve salida. La nota del porque esta en `M3._validar_parametros`.
+    ({"D": 0.0, "Q": 1.0, "S": 0.005, "n": 0.013}, "D",
+     "el diametro debe ser positivo"),
+    ({"D": 0.90, "Q": -1.0, "S": 0.005, "n": 0.013}, "Q",
+     "el caudal debe ser positivo"),
+    ({"D": 0.90, "Q": 1.0, "S": 0.0, "n": 0.013}, "S",
+     "la pendiente debe ser positiva para que Manning tenga solucion real"),
+    ({"D": 0.90, "Q": 1.0, "S": 0.005, "n": 0.0}, "n",
+     "el coeficiente de Manning debe ser positivo"),
 ])
-def test_parametros_invalidos_lanzan_dato_invalido(kwargs, campo):
+def test_parametros_invalidos_lanzan_dato_invalido(kwargs, campo, motivo):
     kwargs = dict(kwargs)
     kwargs["seccion"] = SeccionCircular(kwargs.pop("D"))
     with pytest.raises(DatoInvalidoError) as exc:
         tirante_normal(**kwargs)
     assert exc.value.campo == campo
+    assert exc.value.motivo == motivo
 
 
 # ---------------------------------------------------------------------------

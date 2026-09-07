@@ -562,3 +562,79 @@ condición escrita.
   sin defender**. Esta salió por casualidad, al escribir otra cosa; no hay
   barrido que las busque.
 - **Dónde vive:** `tests/test_M5_verificaciones.py::test_v2_decide_con_la_rama_de_n_MAXIMO_y_no_con_la_de_erosion`
+
+---
+
+# Parte V — Los tres símbolos que C1 introdujo sin consumidor
+
+La sesión **C1** (abstracción `Seccion`) creó tres cosas que hoy no llama
+nadie. No son residuo: las tres existen por una razón y las tres tienen fecha
+de consumidor —**C4**, la sesión que implementa `SeccionRectangular`—. Se
+fichan aquí porque `CLAUDE.md` lo exige para *todo* objeto que se conserva sin
+consumidor, y porque el precedente propio del repositorio es exactamente éste:
+`M9_cabezal.combinaciones()` prometía un consumidor que no existía, y
+`PeriodoRetorno.exigir_anios` lleva su ficha desde S19.
+
+Las tres las descubrió la auditoría adversarial del cierre de C1, no la
+sesión: C1 las escribió, documentó su razón en el código y **no abrió ficha**,
+que es literalmente el defecto que este registro existe para impedir.
+
+## C1-01 · La mitad por tirante de `Seccion` no tiene consumidor
+
+- **Qué se difirió:** conservar `area(y)`, `perimetro(y)`,
+  `ancho_superficial(y)` y el auxiliar `theta_desde_tirante(y)` sin llamador.
+- **Por qué:** es el vocabulario de la Sec. 4.1 y la vía que
+  `SeccionRectangular` usará directamente, porque en la rectangular el
+  parámetro propio **es** el tirante. Retirarla ahora obligaría a C4 a
+  reabrir el protocolo.
+- **Qué haría falta:** que C4 la consuma desde `SeccionRectangular`. Y ojo:
+  **no puede consumirla desde M3 ni M4**, que es la trampa que la regla
+  vinculante **#12** de `docs/ruta_familia_c.md` §6 documenta con su
+  medición — en la circular esta vía está mal condicionada y en los extremos
+  de `bracket_llenado()` devuelve `0.0` exacto para P y para T.
+- **Dónde vive:** `src/modelos.py::Seccion` (el docstring lleva la medición) y
+  `src/modelos.py::SeccionCircular.theta_desde_tirante`
+
+## C1-02 · `SeccionCircular.etiqueta()` no la invoca ningún módulo
+
+- **Qué se difirió:** conservar el método sin llamador.
+- **Por qué:** es el miembro del protocolo con el que la memoria nombrará la
+  sección cuando haya dos formas que distinguir. Con una sola forma, M11
+  imprime `D` y no necesita preguntarle a la sección cómo se llama.
+- **Qué haría falta:** que M11 lo consuma. Es de **C8** (la memoria del
+  marco), no de C4: hasta que la memoria tenga que decir «marco 2.00 × 1.50 m»
+  en vez de un diámetro, no hay a quién preguntárselo.
+- **Dónde vive:** `src/modelos.py::etiqueta`
+
+## C1-03 · `Geometria.y_sobre_D` se quedó sin consumidor de producción
+
+- **Qué se difirió:** conservar la propiedad, y **conservar su nombre**.
+- **Por qué:** el número sí llega al entregable, pero **por otra expresión** —
+  `ResultadoPunto.y_sobre_D`, que es `y_normal / self.D` —, y V1 calcula la
+  suya por tercera vez dentro de `M5_verificaciones.v1_borde_libre`. Los
+  consumidores de *esta* propiedad son los tests del motor. El nombre se
+  conserva porque es el de la columna `y_sobre_D` del CSV entregable
+  (`M11_reporte.COLUMNAS_RESUMEN_CSV`) y el que la suite pinea.
+- **Qué haría falta:** unificar las **tres** expresiones del mismo número en
+  una. No es de C1 (mover el número era exactamente lo prohibido) ni de C4;
+  quien las toque tiene que saber que son tres y que hoy no hay nada que
+  avise si divergen.
+- **Dónde vive:** `src/modelos.py::y_sobre_D` — el de `Geometria`. Las otras
+  dos expresiones del mismo número están en `ResultadoPunto.y_sobre_D` (mismo
+  archivo) y en `src/modulos/M5_verificaciones.py::v1_borde_libre`
+
+## C1-04 · `M3_hidraulica.tirante` se quedó huérfana
+
+- **Qué se difirió:** conservar la función sin llamador.
+- **Por qué:** la llamaba `M3.geometria` antes de C1; desde que `geometria`
+  delega en `seccion.geometria_en()`, nadie la llama — ni producción ni la
+  suite, que sí contrasta sus dos hermanas `area` y `perimetro`. Se conserva
+  porque las tres nombran juntas, en el lenguaje de la Sec. 4.1, lo que la
+  sección devuelve de una vez, y romper el trío por asimetría de llamadores
+  deja peor la lectura del módulo.
+- **Qué haría falta:** o un consumidor, o retirarla con sus dos hermanas
+  cuando alguien decida que `geometria()` basta. **La primera redacción del
+  comentario que la acompaña le inventó un consumidor** («la API pública que
+  la suite contrasta»), que es el antipatrón de esta misma parte del
+  registro; está corregido y medido en el propio comentario.
+- **Dónde vive:** `src/modulos/M3_hidraulica.py::tirante`
