@@ -1534,3 +1534,63 @@ def test_ninguna_clave_acepta_la_cadena_nan(criterios_restaurados):
     assert not aceptadas, (
         f"estas claves aceptan la cadena 'nan': {aceptadas}. El primer "
         "consumidor que haga float() sobre ellas la devuelve al calculo.")
+
+
+# ===========================================================================
+# C6 - las dos reglas vinculantes de §6 que no medía ningún test
+# ===========================================================================
+# C5 descubrió que la regla #3 (Q/N por barril) no tenía uno solo: mutada a
+# `return Q`, la suite entera seguía verde. C6 recorrió las doce y encontró
+# estas dos en el mismo estado. Las dos son de catálogo, no de cálculo, y por
+# eso se cierran aquí.
+#
+# QUE LA LINEA BASE LAS ATRAPE NO ES TENERLAS MEDIDAS, y conviene decirlo
+# porque las dos mutaciones SI la rompen: los dos textos se imprimen en la
+# memoria, de modo que cambiarlos mueve bytes del artefacto. Pero una línea
+# base dice «algo cambió», no «la regla se rompió», y se regenera en cada
+# sesión: el día que alguien regenere con la regla ya rota, la guardia
+# desaparece sin que nada avise.
+
+def test_regla_7_la_tabla_10_sirve_tal_cual_y_no_hay_criterio_de_v_max_cajon():
+    """
+    REGLA VINCULANTE #7. La Tabla Nº 10 clasifica por TIPO DE REVESTIMIENTO,
+    no por forma de sección, de modo que su fila de concreto sirve al marco
+    tal cual. Abrir un `v_max_cajon` sería INVENTAR UN VACÍO, que es el error
+    simétrico del que los cinco criterios del cajón evitan.
+
+    Es una regla sobre una AUSENCIA, y por eso el test la comprueba como tal:
+    no hay forma de mutar código para romperla, sólo de añadir la clave. Este
+    test es lo único que haría ruidoso ese añadido.
+    """
+    del_cajon = [c for c in ca.CRITERIOS if "cajon" in c]
+    assert "v_max_cajon" not in ca.CRITERIOS, (
+        "se abrió un criterio de velocidad máxima para el cajón. La Tabla Nº "
+        "10 clasifica por revestimiento y no por forma: su fila de concreto "
+        "ya cubre al marco (regla vinculante #7 de docs/ruta_familia_c.md §6)")
+    # Y la contraparte: los que SÍ existen sí son un vacío real.
+    assert set(del_cajon) == {
+        "secciones_cajon_normalizadas", "n_manning_cajon", "embocadura_cajon",
+        "n_celdas_cajon", "ke_entrada_cajon"}
+
+
+def test_regla_8_la_fila_de_gamma_EV_del_cajon_es_porticos_rigidos():
+    """
+    REGLA VINCULANTE #8, verificada contra el Manual de Puentes, Tabla
+    2.4.5.3.1-2, pág. impresa 143: la fila del cajón es «Pórticos rígidos»
+    (1.35/0.90) y NO «Estructura rígida enterrada» (1.30/0.90), que es la del
+    tubo. Un pórtico es un marco con patas.
+
+    LOS DOS MÍNIMOS VALEN 0.90 y por eso el número que V7 usa hoy no cambia:
+    lo que cambia es el MÁXIMO, que gobierna la Fase 8. Es decir que una fila
+    mal puesta aquí no rompe ningún número de la corrida de perfil — se
+    manifestaría el día que la Fase 8 se ejecute, y sólo en la memoria antes.
+    Justamente por eso hace falta un test que la nombre.
+    """
+    eleccion = ca.CRITERIOS["factores_carga_aashto"].valor
+    assert eleccion["cajon"]["EV"] == "EV_porticos_rigidos"
+    assert eleccion["concreto_reforzado"]["EV"] == "EV_estructura_rigida_enterrada"
+    # Las dos filas existen en la tabla [N] y no son la misma.
+    from constantes_normativas import TABLA_GAMMA_P_FILAS
+    porticos = TABLA_GAMMA_P_FILAS["EV_porticos_rigidos"]
+    tubo = TABLA_GAMMA_P_FILAS["EV_estructura_rigida_enterrada"]
+    assert porticos != tubo

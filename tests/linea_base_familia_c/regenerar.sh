@@ -51,6 +51,16 @@
 # C-01 estan ahi para EJERCITAR CAMINOS DE CODIGO; no son una medicion de
 # campo ni pretenden serlo.
 #
+# LO QUE AÑADE C6: `S_cauce` para C-01, y hay que decir por que vale lo mismo
+# que su `S_conducto`. No es pereza: la Sec. 7.B fija que la alcantarilla
+# sigue la pendiente del cauce, de modo que `S_conducto = S_cauce` es el caso
+# NORMAL y el punto que declara otra cosa es la excepcion. Con los dos iguales
+# el fixture recorre la rama de IGUALDAD de V2b -- el borde exacto del
+# indicador del num. 5.3.3 del HDS-5 --, que es una rama real y la que un
+# cruce de canal tiene por defecto. Inventarle al canal una pendiente distinta
+# para «hacer mas interesante» la verificacion seria inventar un valor de
+# proyecto, que es justo lo que este fixture no hace.
+#
 # LA CORRIDA ESTRECHA DE C0 SE CONSERVA INTACTA -- misma linea de comando y
 # mismos dos archivos -- para que el diff historico siga siendo comparable.
 #

@@ -399,9 +399,22 @@ def test_el_TR_que_procede_se_puede_exigir_sin_sobresaltos(punto_b):
     assert periodo_retorno_de(punto_b).exigir_anios() == 35
 
 
-def test_la_familia_C_del_ejemplo_llega_con_su_caudal_pendiente(punto_c):
-    """C-01 trae Q_m3s vacio por el Tablero 3.1: se marca, no se rechaza."""
-    assert datos_pendientes(punto_c) == ("Q_m3s",)
+def test_la_familia_C_del_ejemplo_llega_con_sus_dos_datos_de_tablero_pendientes(
+        punto_c):
+    """
+    C-01 trae `Q_m3s` y `S_cauce` vacios por el Tablero 3.1: se marcan, no se
+    rechazan.
+
+    ERAN UNO Y SON DOS DESDE C6, y el cambio no es de forma. Mientras la
+    Familia C no se dimensionaba, el unico dato que hacia falta reclamar era
+    el caudal: el punto se detenia mucho antes de necesitar nada mas. Ahora se
+    dimensiona, y V2b compara la pendiente del barril contra la del CAUCE
+    (num. 5.3.3 del HDS-5), de modo que sin `S_cauce` el material entero queda
+    no evaluable. Los dos los aporta el mismo tablero, y lo que este test fija
+    es que el informe los RECLAME los dos: un dato que hace falta y que nadie
+    pide es un dato que nadie va a conseguir.
+    """
+    assert datos_pendientes(punto_c) == ("Q_m3s", "S_cauce")
     assert datos_pendientes(punto_c) == tuple(
         c for c in perfil_de(Familia.C).campos_requeridos if c in
         punto_c.pendientes_externos)

@@ -1389,3 +1389,85 @@ def test_el_bloque_de_alcance_declara_que_no_difirio_nada_sin_familia_c(
     html = destino.read_text(encoding="utf-8")
     assert "Ninguna etapa quedo diferida por alcance" in html
     assert "NO EVALUA ese requisito" not in html
+
+
+# ===========================================================================
+# C6 - `S_cauce` por --datos-externos: el vehículo del Tablero 3.1
+# ===========================================================================
+
+def test_s_cauce_declarada_llega_a_V2b_y_sale_con_su_procedencia(tmp_path):
+    """
+    EL AGUJERO QUE C6 CIERRA, medido en C5: un punto de Familia C con `Q_m3s` y
+    `S_conducto` declarados llegaba hasta V2b y se detenía ahí con
+    `DatoFaltanteError('S_cauce')`, porque su columna va vacía por Tablero 3.1
+    y no había clave por la que entregarla.
+
+    NO SE SUSTITUYE POR `S_conducto`, y este test lo fija declarando las dos
+    con valores DISTINTOS: `S_conducto` es la pendiente con que se tiende el
+    barril y `S_cauce` la del cauce que lo alimenta, y V2b compara una contra
+    otra (indicador de sedimentación del num. 5.3.3 del HDS-5). Si alguien
+    igualara las dos, la verificación se volvería una tautología y este test
+    dejaría de distinguir nada.
+    """
+    origen = _csv_con(tmp_path, FILA_C_SIN_S_CAUCE)
+    destino = tmp_path / "memoria.html"
+    externos = tmp_path / "ext.json"
+    externos.write_text(json.dumps({"puntos": {"C-02": {
+        "Q_m3s": 0.85, "S_conducto": 0.004, "S_cauce": 0.006}}}),
+        encoding="utf-8")
+    argumentos = [str(origen), "--luz", "2.75", "--tw", "0.30",
+                  "--alcance", "perfil", "--datos-externos", str(externos),
+                  "--html", str(destino), "--json", str(tmp_path / "i.json")]
+    for declaracion in DECLARACIONES_CAJON:
+        argumentos += ["--declarar", declaracion]
+    try:
+        cli.main(argumentos)
+    finally:
+        for declaracion in DECLARACIONES_CAJON:
+            ca.quitar_valor_dinamico(declaracion.split("=")[0])
+
+    html = destino.read_text(encoding="utf-8")
+    # V2b se evaluó: sin la clave, el material entero quedaba no evaluable.
+    assert "DatoFaltanteError: Falta el dato &#x27;S_cauce&#x27;" not in html
+    assert "V2b" in html
+    # Y el dato sale CON SU PROCEDENCIA, no como un número suelto.
+    assert "Pendiente del cauce (efectiva)" in html
+    assert "datos externos (punto C-02)" in html
+
+
+def test_la_columna_del_csv_gana_sobre_el_dato_externo():
+    """
+    Una fila del CSV es un dato del expediente y un JSON de corrida no lo
+    corrige en silencio. Y aun así se REGISTRA, con la procedencia de la
+    columna: la fila de la memoria dice cuál es la pendiente efectiva, y
+    «no declarada» sobre un punto que la trae en su columna sería falso.
+    """
+    informe = _informe_por_punto(
+        dict(luz_m=2.0), {"A-01": {"S_cauce": 0.999}})
+    a01 = informe.puntos[0]
+    assert a01.punto.id == "A-01"
+    assert a01.punto_completado is None            # no se sustituyo el punto
+    assert a01.s_cauce.valor == pytest.approx(a01.punto.S_cauce,
+                                              rel=REL_TRANSPORTE)
+    assert "columna S_cauce" in a01.s_cauce.origen
+
+
+def test_una_pendiente_externa_en_porcentaje_es_dato_invalido():
+    """
+    LA MISMA MAGNITUD POR DOS PUERTAS TIENE QUE ACOTARSE IGUAL. `M0` rechaza
+    un `S_cauce` de 6.0 en la columna contra `S_CAUCE_MAX` -- que existe para
+    atrapar «una celda cargada en porcentaje» --, y hasta C6 la puerta de
+    `--datos-externos` lo admitía tan campante. Medido antes de cerrarlo. La
+    puerta laxa era justamente la que usan los puntos de Familia C, que traen
+    la columna vacía.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        cli._numero_externo("S_cauce", 6.0, "prueba")
+    assert "PORCENTAJE" in exc.value.motivo
+    # Y el valor legítimo pasa.
+    assert cli._numero_externo("S_cauce", 0.004, "prueba").valor == \
+        pytest.approx(0.004, rel=REL_TRANSPORTE)
+
+
+FILA_C_SIN_S_CAUCE = (
+    "C-02,3+200,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,")

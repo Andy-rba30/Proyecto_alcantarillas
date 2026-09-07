@@ -681,3 +681,49 @@ M8 y de M11 que su propio alcance excluye.
   retirar la rama de `M4.ke_declarado` que devuelve los dos rótulos vacíos.
   No tiene sesión asignada; es una limpieza, no un defecto.
 - **Dónde vive:** `src/constantes_normativas.py::KE_HDS5_C2`
+
+
+---
+
+# Parte VII — Lo que C6 revisó y decidió NO cablear
+
+## C6-01 · `sucs_fundacion` se carga, se valida y no la lee ningún módulo
+
+- **Qué se difirió:** conectar la columna al num. 4.1.1.3.4 a), que recomienda
+  el marco según la calidad del suelo de fundación. Es el **segundo**
+  consumidor plausible; el declarado, `c_phi_fundacion`, es de expediente y lo
+  consumen E1–E5 de la Sec. 9.3, que esta CLI no ensambla.
+- **Por qué:** **el vacío es del Manual, no del proyecto.** La fuente
+  recomienda el marco según esa calidad y **no define «mala calidad»** — sin
+  umbral, sin lista de grupos SUCS, sin remisión a otra norma —, de modo que el
+  mapeo SUCS → «mala calidad» habría que **inventarlo**, que es el peor error
+  posible de este repositorio. La medición, con el literal verificado y su
+  página, está en `COND-MARCO-SUELO-MALA-CALIDAD`, que por eso lo resuelve como
+  `NoEvaluable` y no como un dato pendiente. Dos razones más, medidas en §15.5:
+  el párrafo es **recomendación atenuada** y no soporta una regla dura (un
+  `Fundamento` con `verbo=OBLIGA` lo rechazaría T11); y **no cambiaría ningún
+  resultado**, porque en la Familia C el tipo ya lo fija la Sec. 2.3.
+- **Qué haría falta:** una fuente que respalde el mapeo — la candidata peruana
+  es la **E.050**; la tabla de calidad por CBR del Manual de Suelos num. 4.5.4
+  **no sirve**, clasifica la *subrasante* y no el suelo de *fundación* — y,
+  con ella, el cambio de esquema de `_Columna.criterio_destino`, que hoy admite
+  **un solo** destino. **Abrir el criterio «para declarar el vacío» no vale**:
+  un `Criterio(valor=None)` entraría en `criterios_sin_valor()` como vacío
+  bloqueante que nadie tiene obligación de contestar, y `opcional=True` está
+  definido para el criterio que refina un valor que la norma ya fija — aquí no
+  hay valor normativo por defecto.
+- **Dónde vive:** `src/variables_entrada.py::sucs_fundacion`
+
+## C6-02 · `_Columna.criterio_destino` admite un solo destino
+
+- **Qué se difirió:** decidir si el campo pasa a tupla.
+- **Por qué:** es **cambio de esquema**. Hoy `sucs_fundacion` apunta a
+  `c_phi_fundacion` y no hay un segundo consumidor cableado (ver C6-01), de
+  modo que **nada lo fuerza todavía**: cambiarlo ahora sería mover el contrato
+  que la memoria y la GUI leen para explicar dónde aterriza cada columna, sin
+  un caso que lo pida. C6 lo midió y lo deja **propuesto**, que es lo que su
+  brief pide: proponer y parar.
+- **Qué haría falta:** el primer segundo consumidor real. Cuando llegue, hay
+  que decidir entre tupla (una columna alimenta varios criterios) o cambio de
+  destino (la columna cambia de dueño), y arrastrar `test_variables_entrada.py`.
+- **Dónde vive:** `src/variables_entrada.py::criterio_destino`

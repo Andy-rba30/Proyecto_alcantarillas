@@ -1011,7 +1011,8 @@
         "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
         "TR_fundamento": "Familia C: el caudal es el de diseno del canal o dren (ANA / Junta de Usuarios, Tablero 3.1), no un caudal hidrologico con periodo de retorno propio (Sec. 2.3)",
         "datos_pendientes": [
-          "Q_m3s"
+          "Q_m3s",
+          "S_cauce"
         ]
       },
       "diseno": null,

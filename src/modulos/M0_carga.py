@@ -76,6 +76,36 @@ _NUMERICAS: Tuple[str, ...] = (
 
 # Vacios admitidos por tablero, no por comodidad.
 _VACIAS_TODA_FAMILIA = ("Q_receptor_m3s", "cota_TW")        # Tablero 3.1
+
+# REVISADA COLUMNA POR COLUMNA EN C6, y no ha cambiado. La lista se escribio
+# cuando la Familia C NO se dimensionaba -- M2 no le ofrecia candidato -- y
+# desde C5 si lo hace, de modo que habia que volver a mirarla con el criterio
+# correcto: NO es si el bloqueo incomoda, es si el dato es EXIGIBLE a quien
+# escribe el CSV. Las tres siguen sin serlo, y la razon es la misma para las
+# tres: la Sec. 2.3 de la hoja de ruta dice de esta familia «Bloqueada por
+# falta del dato de ANA -- ver Tablero 3», y el Tablero 3.1 cubre «la Familia
+# C completa». Quien llena el CSV es el proyectista vial, no la Junta.
+#
+#   Q_m3s     el caudal de un cruce de canal NO es el hidrologico de la
+#             cuenca: es el de diseno del canal (Sec. 2.3). Poner el de la
+#             cuenca seria dimensionar con el caudal equivocado. Sin el se
+#             detiene `MD.disenar_punto`, que lo exige antes de pedir
+#             candidatos. Vehiculo: clave `Q_m3s` de `cli.CLAVES_EXTERNAS`.
+#   area_ha   Sec. 1.1 la llama «solo clasificador» y su unico lector es
+#             `M1._categoria_por_area`, que sirve a la Familia A para elegir
+#             fila de la Tabla N 02. La Familia C no tiene TR --su caudal no
+#             es hidrologico-- y por tanto NUNCA llega a ese lector: medido,
+#             `PERFILES[Familia.C].categoria_tr` es None. No se detiene nada
+#             sin ella, y por eso tampoco tiene vehiculo: darselo seria
+#             pedir un dato para no usarlo.
+#   S_cauce   la pendiente del canal la da el mismo tablero. SI se detiene
+#             algo sin ella, y desde C5: `M5.v2b_sedimentacion` compara la
+#             pendiente del barril contra la del cauce (indicador del num.
+#             5.3.3 del HDS-5) y el material entero queda no evaluable. Lo
+#             que C6 corrigio NO fue la lista sino la AUSENCIA DE VEHICULO:
+#             la columna podia ir vacia y no habia por donde entregarla
+#             cuando el tablero la diera. Hoy la clave `S_cauce` existe y
+#             `PERFILES[Familia.C].campos_requeridos` la reclama.
 _VACIAS_FAMILIA_C = ("Q_m3s", "area_ha", "S_cauce")          # Tablero 3.1
 
 # Vacio admitido por el estudio geotecnico, que es otro tablero y no el 3.1: el

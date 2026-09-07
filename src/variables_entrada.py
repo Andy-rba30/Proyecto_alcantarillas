@@ -334,10 +334,19 @@ _COLUMNAS: Dict[str, _Columna] = {
 
     "S_cauce": _Columna(
         concepto="Pendiente del CAUCE en el cruce -- no la del conducto, que "
-                 "es otra cosa y se confunden (Sec. 1.5)",
+                 "es otra cosa y se confunden (Sec. 1.5). En un cruce de "
+                 "canal el «cauce» es el canal",
         unidad="m/m",
         resolucion=Libre(
-            que_lo_fija="el perfil del cauce del levantamiento topografico",
+            que_lo_fija="el perfil del cauce del levantamiento topografico. "
+                        "EN LA FAMILIA C NO, y es el matiz que C6 tuvo que "
+                        "escribir: en un cruce de canal el cauce es el canal, "
+                        "su perfil no lo levanta el proyectista vial y la "
+                        "columna va vacia por el Tablero 3.1 (ANA / Junta de "
+                        "Usuarios del Bajo Piura). Para esos puntos el valor "
+                        "entra por la clave `S_cauce` de "
+                        "`cli.CLAVES_EXTERNAS`, y la memoria lo imprime con "
+                        "esa procedencia en vez de con la de la columna",
             dominio="m/m, 0 < S < S_CAUCE_MAX; un valor >= 1 delata una celda "
                     "cargada en porcentaje",
         ),
@@ -454,8 +463,28 @@ _COLUMNAS: Dict[str, _Columna] = {
             trazabilidad_exigida="calicata, profundidad de muestreo, "
                                  "laboratorio y fecha. Es obligatoria en el "
                                  "encabezado de Sec. 1.2 aunque hoy ningun "
-                                 "modulo la lea: su consumidor previsto es "
-                                 "`c_phi_fundacion`, todavia vacio",
+                                 "modulo la lea, y las dos cosas son "
+                                 "correctas a la vez. HAY DOS CONSUMIDORES "
+                                 "PLAUSIBLES Y NINGUNO ESTA CABLEADO, por "
+                                 "razones distintas. (1) `c_phi_fundacion`, "
+                                 "el destino declarado: es de EXPEDIENTE y lo "
+                                 "consumen E1-E5 de la Sec. 9.3, que esta CLI "
+                                 "no ensambla; el dia que se ensamblen, el "
+                                 "dato ya esta. (2) El num. 4.1.1.3.4 a), que "
+                                 "recomienda el marco segun la calidad del "
+                                 "suelo de fundacion: ese NO se cablea, y EL "
+                                 "VACIO ES DEL MANUAL, NO DEL PROYECTO -- la "
+                                 "fuente no define «mala calidad», no da "
+                                 "umbral ni clasificacion ni remision, de "
+                                 "modo que el mapeo SUCS -> mala calidad "
+                                 "habria que INVENTARLO --. Esta medido y "
+                                 "escrito, con su literal verificado, en la "
+                                 "condicion `COND-MARCO-SUELO-MALA-CALIDAD` "
+                                 "de `normativa/citas.py`, que por eso la "
+                                 "resuelve como `NoEvaluable` y no como un "
+                                 "dato pendiente. C6 lo reviso y confirmo la "
+                                 "decision; la ficha esta en "
+                                 "`docs/decisiones_diferidas.md`",
         ),
         criterio_destino="c_phi_fundacion",
     ),
