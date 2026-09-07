@@ -296,12 +296,14 @@ la condición. El bloque «Box, Reinforced Concrete» tiene once filas propias, 
 rótulos de aletas y siete valores.
 
 **Y aquí está la trampa, que es peor que un valor equivocado.** Para la embocadura que el
-proyecto adopta —cabezal a ras, sin aletas (§9.1: «tubo a ras del muro (*square edge*)»)—
+proyecto adopta —cabezal a ras, sin aletas (Sec. 9.1 de la v8: «tubo a ras del muro (*square edge*)»)—
 la fila del cajón es «Headwall parallel to embankment (no wingwalls) → Square-edged on 3
 edges» y vale **0.5 también**. El número coincide; **lo que no coincide es la procedencia**,
 porque `resolucion` apunta a `fila_id='concreto_headwall_square_edge'`, del bloque de tubo.
 Es exactamente el precedente `NOR-HID-01`: *el número es defendible y la cita no lo era*.
-Un valor que no falla ruidosamente es el que nadie comprueba.
+**Y la coincidencia hace el defecto PEOR, no menor:** un valor que acierta por casualidad
+no falla nunca de forma ruidosa, de modo que nadie lo comprueba, **mientras la cita sigue
+siendo falsa**. Quien lea esta regla sin leer §15 tiene que salir sabiendo esto.
 
 **Lo que lo hace peligroso es que no se detiene.** El criterio tiene `valor=0.5`,
 `etiqueta="C"`, `nivel=NIVEL_PERFIL` y **`sensibilidad=None`**: con un cajón corre el
@@ -666,16 +668,47 @@ No toques ningún módulo de cálculo en esta sesión.
    Concrete», y que C5 tendrá que abrirlo por forma (regla vinculante #11). NO lo
    toques en esta sesión: aquí solo se transcribe.
 
-3. En modelos.ConstantesHDS5 añadí el campo `forma: int` (1 o 2) y actualizá
+3. LAS SEIS CITAS DEL MANUAL MTC QUE §15.7 ENUMERA, Y QUE HOY NO EXISTEN. Sin
+   ellas, TRES de los ocho Fundamento de §15.7 no se pueden construir y C5 se
+   detiene: está medido en §15.7. Sus páginas están en §15.3 y §15.4.
+   - `MC_HHD.4.1.1.3.4a#TIPOS` (impresa 71 / PDF 74), DEFINICION
+   - `MC_HHD.4.1.1.3.4a#NIVELES` (impresa 72 / PDF 75), PERMISO
+   - `MC_HHD.4.1.1.3.4a#MARCO` (impresa 72 / PDF 75), RECOMENDACION
+     Ojo: son DOS citas y no una. El párrafo tiene dos caracteres —«pueden
+     ubicarse» y «Generalmente, se recomienda»— y `Cita.caracter` es escalar.
+   - `MC_HHD.4.1.1.3.4a#MULTIPLES` (impresa 72 / PDF 75), RECOMENDACION
+   - `MC_HHD.4.1.1.3.7d` (impresa 80 / PDF 83), EXIGENCIA. Es la única exigencia
+     sin número que acota la sección del cajón una vez levantado el piso de 0.90 m.
+   - `MC_HHD.LAMINA_03` (impresa 209 / PDF 212), DEFINICION, `metodo=IMAGEN`.
+     Es un plano: leerlo por extracción de texto es lo que MetodoDeVerificacion
+     existe para obligar a declarar. Cuelga de ella una `AfirmacionNegativa`: la
+     lámina NO acota ninguna dimensión —el único token numérico de la página es el
+     folio y el número de lámina—, de modo que sostiene el TIPO y ninguna magnitud.
+   Y una `Discrepancia` de estado ABIERTA: el cuerpo del Manual describe mal su
+   propia Lámina Nº 03 —dice «secciones típicas de alcantarillas tipo marco de
+   concreto» (impresa 73) y la primera de sus TRES figuras es tubería metálica
+   corrugada—. Es contradicción interna de la fuente primaria, no contra la v8.
+
+4. Tabla Nº 09, dos cosas que faltan y son de esta sesión:
+   - transcribí la fila `afinado` del ítem «a. Concreto» del grupo A. Es la única
+     del ítem cuyo rótulo no dice «tubo», y por eso es candidata a la analogía del
+     cajón (regla #6). C5 elige y declara cuál toma; vos solo la ponés disponible.
+   - `constantes_normativas.TABLA_09_FILAS` no remite a
+     `DIS-MCHHD-T09-A2-DESPLAZADA`, que sí está declarada en `normativa/tablas.py`.
+     Sus valores de A.2 son la lectura CORREGIDA del corrimiento, y quien lea solo
+     `constantes_normativas` y abra la página encuentra otros tres números. Una
+     línea de remisión; la discrepancia ya existe y NO hay que volver a demostrarla.
+
+5. En modelos.ConstantesHDS5 añadí el campo `forma: int` (1 o 2) y actualizá
    `desde_dict`. Poné Forma 1 en las tres filas circulares existentes: es lo que
    hoy hacen, y así el cambio no mueve ningún número.
 
-4. En constantes_normativas.HDS5_INLET añadí las filas del cajón con la misma
+6. En constantes_normativas.HDS5_INLET añadí las filas del cajón con la misma
    convención de clave que las circulares ("cajon_concreto_<borde>"), DERIVADAS de
    la transcripción del punto 1, nunca escritas a mano. Es el mismo patrón que
    MANNING deriva de TABLA_09_FILAS.
 
-5. Actualizá docs/manifiesto_citas.md y comprobá test_manifiesto_citas.py.
+7. Actualizá docs/manifiesto_citas.md y comprobá test_manifiesto_citas.py.
 
 Criterio de salida:
 - test_normativa_pdf.py corre COMPLETO (no saltado) y en verde
@@ -818,6 +851,11 @@ El tesista los declara después, y la memoria imprime de dónde vino cada uno.
    devuelve el candidato de marco de concreto. `catalogo` gana la forma. REESCRIBÍ
    el epígrafe "Familia C queda sin candidatos" del docstring del módulo: describe
    un estado que deja de ser cierto, y dejarlo es peor que no haberlo escrito.
+   Y por lo mismo, en el MISMO barrido: el comentario de
+   criterios_adoptados['factores_carga_aashto'] justifica la fila del tubo diciendo
+   «No es "Pórticos rígidos" ... la Familia C, de marco o multicelda, sale sin
+   candidatos». Esa premisa la destruye esta sesión. Reescribilo y añadí la clave
+   del cajón; QUÉ fila le toca lo fija la regla vinculante #8 y lo aplica C7.
 
 3. MD._motivo_sin_candidatos: NO lo borres. Se estrecha — sigue siendo el camino
    correcto para una familia futura sin candidatos — y su rama de Familia C sale.
@@ -832,6 +870,14 @@ El tesista los declara después, y la memoria imprime de dónde vino cada uno.
    - v6_material_solido_arrastre: mientras `n_celdas_cajon` fije 1, V6 sigue
      valiendo trivialmente, PERO su docstring tiene que decir que ahora depende de
      un criterio declarado y no de que MD no sepa hacer multibarril.
+     OJO CON EL ANCLA DE V6: la fila V6 de la Fase 5 de la v8 lleva etiqueta «[N]»
+     y NINGÚN numeral, y su enunciado —«con palizada: sección única mayor»— sale de
+     una frase que RECOMIENDA («recomendándose utilizar obras con mayor sección
+     transversal libre, sin subdivisiones», num. 4.1.1.3.4 a, impresa 72 / PDF 75).
+     No escribas un Fundamento con verbo=OBLIGA sobre ella. El que corresponde es
+     `F3.CELDAS` con verbo=RECOMIENDA, que funda el paso que ADOPTA el número de
+     celdas; `F5.V6` se queda en SIN_FUNDAMENTO, porque V6 no es un cálculo. Está
+     redactado en §15.7 y el defecto contra la v8 es D-3 de §15.8.
 
 5. Implementá la declaración que CN redactó en §15 punto 4, por el vehículo que CN
    determinó: `bloque_alcance` más `PasoDeMemoria.nota_del_proyecto` en el punto.
@@ -848,7 +894,7 @@ El tesista los declara después, y la memoria imprime de dónde vino cada uno.
    NIVEL_PERFIL y sensibilidad None, y su `fuente` lo ata al bloque «Pipe,
    Concrete» de la Tabla C.2, fila «Square-edge» bajo el rótulo de agrupación
    «Headwall or headwall and wingwalls». OJO: para el cabezal a ras sin aletas
-   que adopta §9.1, la fila del cajón vale 0.5 TAMBIÉN — el número coincide y la
+   que adopta la Sec. 9.1 de la v8, la fila del cajón vale 0.5 TAMBIÉN — el número coincide y la
    PROCEDENCIA no, que es el precedente NOR-HID-01. Y en cuanto la embocadura
    declare aletas deja de coincidir (0.4 / 0.5 / 0.7 según el ángulo). Con un
    cajón NADA lo detiene: no hay bloqueo, no hay ventana, no hay marca en la
@@ -903,7 +949,33 @@ Lee CLAUDE.md y docs/ruta_familia_c.md (§4.5 y §5-F5).
 4. M0_carga._VACIAS_FAMILIA_C: revisá si sigue siendo la lista correcta ahora que
    la Familia C se dimensiona. Si una columna deja de poder ir vacía, decilo.
 
-5. Añadí al fixture tests/ejemplo_puntos.csv lo que haga falta para que C-01
+5. `sucs_fundacion` NO SE CABLEA EN ESTA SESIÓN, y este punto existe para que no
+   la cablees. Vas a encontrarte una columna OBLIGATORIA que se carga, se valida y
+   NO LA LEE NINGÚN MÓDULO, con `criterio_destino="c_phi_fundacion"`, que es de
+   EXPEDIENTE. Es tentador conectarla, porque el num. 4.1.1.3.4 a) recomienda el
+   marco «cuando se tiene la presencia de suelos de fundación de mala calidad» y
+   la Sec. 3.1 de la v8 lo recoge. NO LO HAGAS, por tres razones medidas en §15.5:
+   - LA NORMA NO DEFINE «MALA CALIDAD». No da umbral, ni lista de símbolos SUCS,
+     ni CBR. El mapeo SUCS -> «mala calidad» habría que INVENTARLO, que es el peor
+     error posible de este proyecto. Y la tabla de calidad por CBR del Manual de
+     Suelos num. 4.5.4 NO sirve: clasifica la SUBRASANTE, no el suelo de
+     FUNDACIÓN, y confundirlas es el género de NOR-PUE-01.
+   - EL CARÁCTER NO SOPORTA UNA REGLA DURA. El párrafo es recomendación atenuada
+     («Generalmente, se recomienda»). Autoriza a ORIENTAR, no a imponer ni a
+     descartar. Un Fundamento con verbo=OBLIGA sobre él lo rechaza T11.
+   - NO CAMBIARÍA NINGÚN RESULTADO. En la Familia C el tipo ya lo fija Sec. 2.3.
+   Y NO ABRAS el criterio de mapeo «para declarar el vacío»: `Criterio(valor=None)`
+   detiene el cálculo si alguien lo invoca, y si no lo invoca nadie entra en
+   `criterios_sin_valor()` y la memoria y la GUI lo anuncian como vacío bloqueante
+   que nadie tiene obligación de contestar. `opcional=True` tampoco vale: el
+   catálogo lo define para el criterio que «refina un valor que la norma ya fija»,
+   y aquí no hay valor normativo por defecto.
+   LO QUE SÍ HACÉS: comprobar y REPORTAR que `variables_entrada._Columna.
+   criterio_destino` es `Optional[str]` —un solo destino—, de modo que un segundo
+   consumidor exige decidir si el campo pasa a tupla. Es CAMBIO DE ESQUEMA, toca
+   `variables_entrada` y su test, y no se decide de paso: proponelo y pará.
+
+6. Añadí al fixture tests/ejemplo_puntos.csv lo que haga falta para que C-01
    corra, SIN inventar valores de proyecto: si un dato es del expediente, va vacío
    y el informe lo reclama.
 
@@ -2284,20 +2356,45 @@ Una fila por sesión cerrada. El estado de detalle vive en §15 (normativa) y en
 `docs/decisiones_diferidas.md` (lo conservado sin consumidor); esta tabla es solo el índice
 de qué se corrió, con qué y con qué resultado medido.
 
-| Sesión | SHA | Suite (config) | Qué dejó | Qué quedó propuesto y no aplicado |
+| Sesión | SHA | Suite (config) | Qué dejó | Qué queda abierto |
 |---|---|---|---|---|
-| **CN** | `e2da067` (PR #2, fusionado en `d469409`) | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §15: tabla numeral-por-paso, ocho `Fundamento`, la declaración del hueco de aceptación, 8 defectos contra la v8, 8 huecos del repo | regla vinculante #11 (`k_e`), la corrección de la #6, el contrato de §4.5 y el punto 6 de C5 — **todos aplicados por CP**. Los 8 defectos contra la v8 siguen abiertos: son de la v9 |
-| **CP** | *(este commit)* | 1536 p / 2 s, «PyMuPDF sí / Tk no» | Consolidación del parche v2 en §4.5, §6, §8, §9, §10, §11 y §12: regla #6 reescrita, regla #11 nueva, séptimo vehículo de memoria, C5 punto 6, C2 punto 2 ampliado, §16 abierta | Lo que §15 dejó y CP **no** convirtió en regla: ver §16.1 |
+| **CN** | `e2da067` · PR #2, fusionado en `d469409` | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §15: tabla numeral-por-paso, ocho `Fundamento`, la declaración del hueco de aceptación, 8 defectos contra la v8 y 10 huecos del repo (`R-5` retirado por la auditoría: 9 vivos) | nada de CN: lo que dejó propuesto lo aplicó CP |
+| **CP** | `53e431a` (consolidación) · `bb8cdfa` (docstrings) · PR #3 | 1536 p / 2 s, «PyMuPDF sí / Tk no» | Consolidación en §4.5, §6, §8, §9, §10, §11 y §12; los cuatro puntos de prompt de §16.2; y las tres correcciones de código de `R-9` | los 8 defectos contra la v8 (`D-1`…`D-8`): son de una **v9** |
 
-### 16.1 Lo que sigue propuesto y no aplicado
+**No hay archivo de parche.** El parche v2 se aplicó y se retiró del repositorio, con el
+precedente que `docs/hoja_de_ruta_correcciones_v12.md` fija en su primera línea para los
+borradores v10 y v11 — *«no deben subirse: todo su contenido vivo está aquí»*. Un parche ya
+aplicado es una **segunda copia** de lo que vive en §6 y §10, y puede divergir sin que nada
+avise. Lo consolidado está en el commit **`53e431a`**; ahí se lee qué se cambió y contra qué.
 
-De los ocho defectos contra la v8 (`D-1`…`D-8`) y los ocho huecos del repositorio
-(`R-1`…`R-10`, con `R-5` retirado) que §15.8 enumera, **CP no convierte ninguno en regla
-vinculante ni en punto de prompt por su cuenta**: la propuesta está en la respuesta de la
-sesión CP y espera decisión. Lo que sí quedó cerrado en este documento es lo que el parche
-v2 traía y las dos cifras que CP corrigió contra la fuente dentro de la regla #11.
+### 16.1 Qué se cerró y qué sigue abierto
 
-**Los ocho defectos contra la v8 no se corrigen desde aquí.** La v8 es la fuente normativa
-única y `M11.ruta_hoja_de_ruta()` la localiza por patrón de nombre; su corrección es una
-**v9**, y hasta que exista, cada defecto vive en §15.8 con el símbolo del código donde se
-ve.
+**Cerrado por CP en este documento.** Las diez ediciones del parche v2 —regla #6 reescrita,
+regla #11 nueva, séptimo vehículo de memoria en §4.5, C5 punto 6, C2 punto 2 ampliado, §8,
+§9, §11 y §12— más **cuatro puntos de prompt** decididos sobre los defectos y huecos de
+§15.8, que §16.2 enumera. Y dos cifras del parche corregidas contra la fuente dentro de la
+propia regla #11.
+
+**Cerrado por CP en el código**, en su propio commit (`bb8cdfa`): las **tres** frases
+«hoy sin valor» que describían un bloqueo inexistente. `R-9` de §15.8 nombraba una
+—`M6_proteccion.proteccion_salida`—; el barrido encontró dos más, en el docstring de módulo
+de `M1_clasificacion` (`umbral_area_quebrada_importante_ha`, que vale 100.0 con ventana
+50–200) y en el epígrafe de V7 de `M8_estructural` (`espesor_pared_conducto`, que trae la
+serie de concreto reforzado y se contradecía con el «ya está declarado» de su misma línea).
+Las tres se cierran juntas porque son **un solo defecto de diseño**, no tres hallazgos.
+
+**Abierto, y no se cierra desde aquí: los ocho defectos contra la v8** (`D-1`…`D-8`). La v8
+es la fuente normativa única y `M11.ruta_hoja_de_ruta()` la localiza por patrón de nombre;
+su corrección es una **v9**. Hasta que exista, cada defecto vive en §15.8 con el símbolo del
+código donde se ve, y las reglas de §6 son lo que impide que una sesión los herede: **#1**
+cubre `D-1`, **#6** cubre `D-4` y `D-5`, **#8** cubre `D-8`, y `D-3` y `D-7` viajan dentro
+de los prompts de C5.
+
+### 16.2 Los cuatro puntos de prompt que CP añadió
+
+| Punto | Sesión | Qué cubre de §15.8 | Por qué hacía falta |
+|---|---|---|---|
+| **P-1** | **C2**, puntos 3 y 4 nuevos | `D-6`, `R-1`, `R-2`, `R-3`, `R-4`, `R-7` | **Era bloqueante y está medido.** El prompt de C2 nombraba solo las Tablas A.1 y C.2, y **ninguna** de las seis citas que §15.7 exige. Sin ellas, `F3.TIPO_MARCO`, `F3.MANTENIMIENTO` y `F3.CELDAS` no se construyen y **C5 se detiene** |
+| **P-2** | **C6**, punto 5 nuevo | `D-2`, `R-6` | El riesgo es el **inverso** del habitual: un C6 diligente ve una columna obligatoria sin lector y la conecta, **inventando** el mapeo SUCS → «mala calidad» que la norma no da. El punto existe para decir que NO se cablea, y por qué |
+| **P-3** | **C5**, punto 2 | `R-8` | C7 ya resuelve *qué fila* de γ_EV toca al cajón (regla #8); nadie resolvía el **comentario rancio** de `factores_carga_aashto` ni la clave que falta |
+| **D-3** | **C5**, punto 4 | `D-3` | La fila V6 de la v8 lleva «[N]» **sin numeral**, sobre una frase que recomienda. Sin el aviso, un `Fundamento` con `verbo=OBLIGA` sobre ella es el error natural |

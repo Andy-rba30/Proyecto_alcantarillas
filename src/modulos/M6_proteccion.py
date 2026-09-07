@@ -128,11 +128,22 @@ def laushey_d50(*, V: float) -> float:
 def proteccion_salida(*, V: float) -> ProteccionSalida:
     """
     d50 de Laushey mas espesor y longitud, leidos de `criterios_adoptados.py`
-    (ambos [A], Sec. 6). El espesor es el multiplicador de
-    'espesor_proteccion_salida' (1.75) aplicado a d50; la longitud es
-    'longitud_proteccion_salida', hoy sin valor -- la llamada se detiene con
-    `CriterioPendienteError` hasta que se declare (ver el criterio en
-    criterios_adoptados.py: la hoja de ruta no entrega un procedimiento).
+    (ambos [A] de nivel PERFIL, Sec. 6, y los dos DECLARADOS). El espesor es el
+    multiplicador de 'espesor_proteccion_salida' (1.75, ventana 1.5-2.0)
+    aplicado a d50; la longitud es 'longitud_proteccion_salida' (5.0 m, ventana
+    3.0-8.0), que el expediente reemplaza por el diseno del disipador o de la
+    transicion. La hoja de ruta no entrega procedimiento para ninguno de los
+    dos: por eso son adopciones con ventana declarada y no valores normativos.
+
+    ESTE DOCSTRING DECIA QUE LA LONGITUD ESTABA «hoy sin valor» Y QUE LA LLAMADA
+    SE DETENIA CON `CriterioPendienteError`. Era falso: el criterio esta
+    declarado con 5.0 y sensibilidad (3.0, 8.0), de modo que esta funcion NO se
+    detiene. Se corrige porque el efecto de la frase no era inocuo -- anunciaba
+    un bloqueo inexistente, y una etapa que se lee como detenida es una etapa
+    que nadie comprueba --. Es la misma clase de defecto que el proyecto
+    persigue en las citas: una afirmacion que suena razonable, que nadie
+    verifica porque no choca con nada, y que manda al lector a un estado que no
+    existe.
 
     Devuelve siempre las TRES advertencias: las dos de Sec. 6 -- d50 no es un
     diseño de enrocado, y falta el filtro -- y la del alcance frente a HDS-5,
@@ -142,7 +153,7 @@ def proteccion_salida(*, V: float) -> ProteccionSalida:
     d50 = laushey_d50(V=V)
     mult_espesor = ca.valor(CRITERIO_ESPESOR)
     espesor = mult_espesor * d50
-    longitud = ca.valor(CRITERIO_LONGITUD)   # CriterioPendienteError mientras falte
+    longitud = ca.valor(CRITERIO_LONGITUD)   # [A] declarado; `valor()` se detendria solo si se vaciara
 
     return ProteccionSalida(
         paso=paso(
