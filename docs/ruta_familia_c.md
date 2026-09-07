@@ -2948,6 +2948,8 @@ refactor de tipos cuyo criterio de éxito es que la salida no se mueva, y no se 
 eso no hubo cita que pasar por `verificador-normativo`, y por eso **no hay defecto nuevo
 contra la v8 que sumar a §15.8**: los ocho (`D-1`…`D-8`) siguen siendo los de CN, sin
 alta ni baja.
+| **C3** | `df2edac` · `396a9b7` · `17d36ba` · `a9e9028` · `C3d` · `C3e` · PR #8 | **1554 p / 2 s**, «PyMuPDF sí / Tk no» | La **Forma 2** de HDS-5 implementada: `M4._hw_sobre_D_no_sumergido` bifurca por `hds5.forma`; el paso de memoria que dice **qué forma se usó y por qué**, con `F4.FORMA_HDS5`; casos patrón `CP5D_*` calculados a mano; y la **línea base ensanchada a 12 archivos** (JSON, CSV, expediente, rama de error, 3 de 4 puntos dimensionados) | La transición bajo Forma 2 **decrece con el caudal** para S > 0.2365 — declarada, no corregida: corregirla es sustituir el criterio `metodo_transicion_hds5`. **D-10** nuevo y **D-9** corregido contra la v8. `R-11` (pág. A.8 inferida) y `R-12` (elisión sin marcar) anotados |
+
 
 ### 16.5 C2 — lo que se transcribió, lo que se corrigió y lo que se anotó
 
@@ -3080,3 +3082,79 @@ por columna, y su informe corrigió cinco cosas —las de la tabla de arriba—.
 procedimiento se aplicó al marco en esta sesión: C2 transcribe, y quien aplique tiene que
 citar el numeral que §15 le asigna. Toda cita nueva entra por `Registro.textos_literales()`;
 ninguna se copió a mano a un docstring.
+
+### 16.6 C3 — la Forma 2, y lo que la auditoría encontró en ella
+
+**El punto 0 fue primero y en su propio commit**, que era la instrucción y también la
+lección de C1 y C2: la ventana con que se comprueba «no se movió nada» tiene que ser ancha
+**antes** del cambio, o no prueba nada. Pasó de mirar una corrida a mirar **12 archivos** —
+JSON, CSV de resumen, alcance expediente, rama de error, y de **1 a 3** puntos
+dimensionados, con C-01 llegando a su bloqueo real—. Los dos archivos de C0 se conservan y
+**se reprodujeron byte a byte** antes de tocar M4.
+
+**La ecuación se verificó en la fuente, no en lo que dijo C2** — y con razón, porque C2 la
+había escrito mal. La (A.2) es `HWi/D = K[Ku·Q/(A·D^0.5)]^M` y ahí termina; la sumergida
+(A.3) es una sola, común a las dos formas.
+
+#### Lo que la auditoría refutó, y era todo cierto
+
+**La grave: el defecto de esta sesión se había mudado del docstring al reporte.** Bajo
+Forma 2, el paso del control de entrada **imprimía la ec. (A.1) entera** —con su `H_c/D` y
+su `Ks·S`— y metía `Ks` en la sustitución, para explicar un número salido de la (A.2). Y el
+paso nuevo, dos líneas antes, **prometía por escrito que eso no pasaba**. Corregido: la
+fórmula y la sustitución dependen ahora de la rama.
+
+**El paso nuevo era el único bloque de la sesión sin cobertura.** Quitarlo del `return`
+rompía un test, pero **cablear `forma = 1` dentro de él dejaba la suite en verde**, igual
+que invertir la etiqueta de ecuación, igual que escribir «La Forma 2 SÍ lleva `Ks·S`» en su
+nota. El paso que existe para que el defecto no vuelva sin auditor era, él mismo, invisible
+a la suite. Cuatro tests nuevos matan las tres mutaciones.
+
+**El num. A.3 no prohíbe cruzar coeficientes entre formas de ecuación, y yo lo escribí en
+tres sitios.** Prohíbe cruzarlos entre **formas geométricas**. Y la Tabla A.1 lo zanja sola:
+medido sobre sus 36 filas, **forma y geometría son ortogonales** — «Rect. Box Concrete»
+aparece con Forma 1 y con Forma 2, y «Circular» también—. Una prohibición sobre geometrías
+no puede ser la regla que separa las formas, porque la misma geometría vive en las dos.
+Quien lo dice es la **columna «Equation Form»**, fila por fila. Uno de los tres sitios era
+el docstring que yo había declarado «releído entero».
+
+**Y el eje que motivaba el ensanche era el único que no ensanché**: C3a invoca que «la rama
+de error necesita un `--declarar`», y las tres corridas nuevas usaban `--datos-externos`.
+Añadida una cuarta con el comando exacto de la regresión de C1: la cadena
+`Dato invalido en 'D': el diametro debe ser positivo` aparece ahora **3 veces en el CLI y
+12 en el JSON**.
+
+#### La propiedad que se declara y no se corrige
+
+**Bajo Forma 2, la transición decrece con el caudal para `S > 0.236495 m/m`.** Con Forma 1
+los dos extremos de la recta llevan `Ks·S` y el término se cancela en la diferencia; con
+Forma 2 el extremo inferior lo pierde. Con `D = 0.90` y `S = 0.30`, un `q*` de 3.50 da
+1.0585 m y uno de 4.00 da 1.0300 m: **28.6 mm menos de carga con 14 % más de caudal**, del
+lado no conservador, y **ninguna guardia lo atrapa** porque el número es positivo.
+
+No se corrige: sale de combinar la (A.2), la (A.3) y la recta del criterio `[C]`
+`metodo_transicion_hds5`, y sustituir ese método no es de esta sesión. Se **declara**, con
+caso patrón y test que fijan las dos mitades del umbral.
+
+#### Lo que queda anotado y no corregido
+
+- **La ventana sigue sin mirar** el código de salida (los cuatro comandos llevan `|| true`),
+  `--pdf`, `--criterios`, y **ningún test la consume**: solo «mira» si alguien corre el
+  script a mano. La auditoría lo demostró — una mutación que cambiaba la etiqueta de
+  ecuación impresa en las tres memorias dejaba la suite verde.
+- **La memoria generada no lleva la advertencia de fixture**: quien abra
+  `memoria_perfil_ancha.html` suelto ve una memoria completa con TW = 0.300 m y nada que
+  diga que es una sonda.
+- **`R-11`** (la pág. impresa A.8, que no está impresa) y **`R-12`** (la elisión final sin
+  marcar en el `Verbatim` de la zona de transición), en §15.8.
+- La confusión «num. A.3 separa las formas» **nace antes de C3**: está en la `nota` de la
+  cita `HDS5_3ED.A.3#FORMAS` que escribió C2 y en la **regla vinculante #5** de §6. C3
+  corrigió sus tres sitios; **los dos anteriores siguen mal** y hay que corregirlos donde
+  viven.
+
+#### Sobre la cláusula normativa de §9-bis
+
+Los valores `[N]` que C3 toca son las dos ecuaciones y los dos límites de rama.
+**Pasaron por `verificador-normativo` antes de aceptarse**, punto por punto, y su informe
+confirmó los ocho: numeral, título, páginas impresa y PDF, y el texto de cada ecuación. De
+paso corrigió el defecto **D-9** que C2 había registrado contra la v8.
