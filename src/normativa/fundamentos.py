@@ -359,6 +359,14 @@ V4 = _fundamento(
         "pavimento que esta debajo del terraplen que la cubre."),
 )
 
+# EL VERBO DECIA «OBLIGA» Y NINGUNA DE SUS CITAS HABLABA DE FLOTACION. Hasta
+# C7 este fundamento colgaba de `MP.T2.4.5.3.1-1` y `-2` y de nada mas: dos
+# TABLAS DE FACTORES cuyos textos literales son «Combinaciones de Carga y
+# Factores de Carga» y «Factores de carga para cargas permanentes». Las dos
+# son EXIGENCIA, de modo que T11 pasaba -- T11 comprueba el `caracter` de la
+# cita, no de que trata --, y aun asi el fundamento afirmaba una obligacion
+# que ninguna de sus fuentes enunciaba. V7 corre a perfil desde el inicio del
+# proyecto: el defecto es anterior a la Familia C y lo cierra C7.
 V7 = _fundamento(
     id="F5.V7",
     fase=F5,
@@ -367,18 +375,87 @@ V7 = _fundamento(
         "Un conducto vacio bajo el nivel freatico es un flotador: la "
         "subpresion sobre su superficie exterior puede superar el peso propio "
         "mas el del relleno que lo cubre y levantarlo. En el Bajo Piura, con "
-        "NF somero y arenas saturadas, no es un caso de laboratorio. La "
-        "verificacion se plantea como equilibrio de factores de carga LRFD "
-        "--las acciones que estabilizan minoradas, la que desestabiliza "
-        "mayorada--, no como un factor de seguridad global, porque el marco "
-        "adoptado por el expediente es LRFD de extremo a extremo."),
+        "NF somero y arenas saturadas, no es un caso de laboratorio. "
+        "QUE PARTE DE ESTO ES DE LA FUENTE Y CUAL ES DEL PROYECTO, que es lo "
+        "que hay que poder separar al leer la memoria. De la fuente: que la "
+        "subpresion se considere una fuerza de levantamiento sobre todos los "
+        "componentes bajo el agua, y que haya que evaluarla cuando el invert "
+        "queda bajo el freatico; y que a la carga permanente que AUMENTA la "
+        "estabilidad se le investigue su factor MINIMO, que es lo que "
+        "autoriza a minorar el relleno en vez de mayorarlo. Del proyecto: la "
+        "desigualdad concreta con que se comprueba. Ninguna de las dos "
+        "fuentes la escribe -- lo mas cercano es un COMENTARIO de AASHTO que "
+        "dice, con `should`, que el peso sobre la clave supere el empuje --, "
+        "de modo que la inecuacion es un ensamblaje: se arma con los gamma "
+        "tabulados, la regla del minimo y la definicion de la fuerza. Se "
+        "plantea en LRFD y no como factor de seguridad global porque el marco "
+        "que el expediente adopta es LRFD de extremo a extremo."),
     verbo=Verbo.OBLIGA,
-    citas=("MP.T2.4.5.3.1-1", "MP.T2.4.5.3.1-2"),
+    citas=("MP.2.4.3.8.2",                      # EXIGENCIA -> sostiene OBLIGA
+           "AASHTO_LRFD_9.12.6.1#FLOTACION",    # EXIGENCIA -> lo sostiene
+           "AASHTO_LRFD_9.12.6.2.3#UPLIFT",     # EXIGENCIA -> lo sostiene
+           "AASHTO_LRFD_9.3.7.2",               # EXIGENCIA (gemelo del peruano)
+           "MP.2.4.5.3.1#MINIMO",               # EXIGENCIA: autoriza minorar
+           "MP.2.4.5.2#EV",                     # DEFINICION: que es EV
+           "AASHTO_LRFD_9.C12.6.2.3",           # RECOMENDACION: la FORMA
+           "MP.T2.4.5.3.1-1",                   # EXIGENCIA: los valores
+           "MP.T2.4.5.3.1-2"),                  # EXIGENCIA: los valores
     que_pasa_si_no_se_hace=(
         "El conducto se dimensionaria solo por capacidad hidraulica y "
         "resistencia, que es el estado en que se pierden las alcantarillas de "
         "zonas con freatico alto: no fallan, flotan."),
 )
+
+
+# LA ELECCION DE FILA, QUE HASTA C7 NO TENIA FUNDAMENTO PROPIO y viajaba
+# dentro del de V7 como si fuera parte de la misma afirmacion. No lo es: que
+# haya que verificar la flotacion es EXIGENCIA de tres numerales, y que ESTA
+# obra sea un «portico rigido» y no una «estructura rigida enterrada» no lo
+# dice ninguna fuente. Separarlo es lo que permite imprimir cada cosa con su
+# peso.
+V7_FILA_GAMMA = _fundamento(
+    id="F5.V7_FILA",
+    fase=F5,
+    que_paso=("Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta "
+              "estructura"),
+    por_que=(
+        "La tabla desglosa el empuje vertical de tierra por TIPO DE "
+        "ESTRUCTURA, y ahi se acaba lo que la norma decide. Ni el Manual de "
+        "Puentes ni AASHTO definen en ningun numeral que es una «estructura "
+        "rigida enterrada» ni un «portico rigido»: barridas las 673 paginas "
+        "del Manual, fuera de la propia tabla las unicas apariciones son un "
+        "parrafo de estructuras de contencion y un detalle de armadura, y "
+        "ninguno clasifica una alcantarilla. La frontera entre las dos filas "
+        "es lectura del proyectista. Lo que si esta verificado es que NO hay "
+        "una fila mejor: el unico «cajon» de la tabla es «Alcantarillas cajon "
+        "METALICAS», que cuelga de las estructuras FLEXIBLES enterradas, la "
+        "categoria opuesta a un marco de concreto. De modo que la eleccion es "
+        "defendible y sigue siendo una eleccion, y la memoria tiene que "
+        "imprimirla como tal y no como si la tabla la impusiera."),
+    verbo=Verbo.DEFINE,
+    citas=("MP.2.4.5.2#EV",         # DEFINICION -> sostiene DEFINE
+           "MP.T2.4.5.3.1-2"),      # EXIGENCIA: la tabla con las filas
+    que_pasa_si_no_se_hace=(
+        "Se imprime una eleccion del proyectista con la autoridad de la "
+        "tabla, que es el precedente NOR-HID-01: un valor defendible con una "
+        "cita que no lo sostiene. Y con el marco es peor que con el tubo, "
+        "porque el MINIMO de las dos filas vale 0.90 y el numero de V7 no "
+        "cambia: nada falla de forma ruidosa mientras la fila impresa es la "
+        "equivocada."),
+)
+
+# EL VERBO ES `DEFINE` Y NO `OBLIGA`, y es el mismo cuidado que F4.FORMA_HDS5
+# documenta: lo que este paso hace es ELEGIR una fila, y lo que la fuente hace
+# es DEFINIR la magnitud que esa fila afecta. Escribir OBLIGA pasaria T11 --la
+# tabla es EXIGENCIA-- y diria algo falso: la tabla no obliga a elegir esta
+# fila, no dice nada sobre cual toca.
+#
+# QUIEN SOSTIENE EL VERBO ES LA DEFINICION DE EV, no la tabla, y eso no es un
+# rodeo para pasar T11: es la lectura correcta. Lo unico que la fuente DEFINE
+# aqui es que EV es la presion vertical del peso propio del suelo de relleno;
+# el reparto de esa magnitud en filas por tipo de estructura la tabla lo
+# IMPONE, y a cual pertenece esta obra no lo dice nadie. Por eso la cita
+# definitoria va primera y la tabla segunda.
 
 
 # ===========================================================================

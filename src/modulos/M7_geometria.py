@@ -337,8 +337,16 @@ def cobertura_minima_aashto(*, material: Material, D: float) -> float:
     whichever is greater" de la fila del concreto tampoco aparece aqui: B'c es
     la "out-to-out vertical rise of pipe" del propio articulo, que en un
     conducto CIRCULAR es el diametro exterior, o sea Bc. El maximo de dos
-    terminos iguales es uno solo. Ver la nota del criterio: para una seccion
-    no circular la reduccion deja de valer.
+    terminos iguales es uno solo.
+
+    Y ESTA FUNCION NO ATIENDE AL CAJON, que es distinto de "todavia no lo
+    atiende". Este parrafo remitia a "la nota del criterio: para una seccion
+    no circular la reduccion deja de valer", dando por hecho que el marco
+    entraba por aqui con el segundo termino. C7 lo verifico contra AASHTO y no
+    es asi: las dos filas de concreto de la Tabla 12.6.6.3-1 dicen
+    "Reinforced Concrete PIPE" y no hay fila de cajon de concreto. La
+    cobertura minima del marco sale de `cobertura_minima_cajon`, que es un
+    vacio declarado, no de esta tabla.
 
     QUE DIAMETRO ENTRA lo dice la nomenclatura del articulo, y no es el mismo
     en las tres filas: Bc ("outside diameter or width of the structure") en el

@@ -1958,6 +1958,108 @@ AASHTO_T5_10_1_1 = _cita(
           "que la regla del mayor la pasaria a ganar E.060."),
 )
 
+# EL GEMELO DE 2.4.3.8.2, y se transcribe para que la correspondencia sea
+# comprobable y no una afirmacion: el Manual de Puentes traduce este articulo
+# casi palabra por palabra. La Sec. 0.2 adopta AASHTO LRFD de extremo a
+# extremo, de modo que tener las dos permite ver que el corpus peruano y el
+# adoptado dicen lo mismo aqui -- que es justo lo que el proyecto necesita
+# poder ensenar cuando aplica una a un caso que la otra no cubre.
+AASHTO_3_7_2 = _cita(
+    id="AASHTO_LRFD_9.3.7.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.7.2",
+    titulo_numeral="Buoyancy",
+    pagina_impresa="3-45",
+    pagina_pdf=99,
+    texto_literal=Verbatim(
+        texto=("Buoyancy shall be considered to be an uplift force, taken as "
+               "the sum of the vertical components of static pressures, as "
+               "specified in Article 3.7.1, acting on all components below "
+               "design water level."),
+        pagina_pdf=99),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP.2.4.3.8.2",),
+    nota=("«all components below design water level»: el mismo ambito neutro "
+          "que el numeral peruano. Es DEFINITORIA de la fuerza; quien pone la "
+          "condicion de disparo para una estructura enterrada es el 12.6.1, "
+          "que remite aqui expresamente."),
+)
+
+
+# LAS DOS EXIGENCIAS DE FLOTACION DE LA SEC. 12, que V7 no citaba. Hasta C7
+# el unico respaldo de V7 en el registro eran las dos TABLAS de factores del
+# Manual de Puentes, que dan gamma y no obligan a verificar nada. Estas dos si
+# obligan, con `shall`, y su ambito -- «buried structures» -- alcanza al cajon
+# de concreto por el 12.1 SCOPE, que lo nombra: «reinforced concrete
+# cast-in-place and precast arch, box and elliptical structures».
+AASHTO_12_6_1 = _cita(
+    id="AASHTO_LRFD_9.12.6.1#FLOTACION",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.1",
+    titulo_numeral="Loading",
+    pagina_impresa="12-14",
+    pagina_pdf=1652,
+    texto_literal=Verbatim(
+        texto=("Water buoyancy loads shall be evaluated for buried "
+               "structures with inverts below the water table to control "
+               "flotation, as indicated in Article 3.7.2."),
+        pagina_pdf=1652),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP.2.4.3.8.2",),
+    nota=("ES LA UNICA APARICION DE «flotation» EN LAS 1905 PAGINAS del PDF, "
+          "medida. Y trae su propia CONDICION DE DISPARO -- «with inverts "
+          "below the water table» --, que es la que hace de esta verificacion "
+          "algo que no siempre aplica: sin freatico sobre el invert no hay "
+          "nada que evaluar."),
+)
+
+AASHTO_12_6_2_3 = _cita(
+    id="AASHTO_LRFD_9.12.6.2.3#UPLIFT",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.2.3",
+    titulo_numeral="Uplift",
+    pagina_impresa="12-19",
+    pagina_pdf=1657,
+    texto_literal=Verbatim(
+        texto=("Uplift shall be considered where structures are installed "
+               "below the highest anticipated groundwater level."),
+        pagina_pdf=1657),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP.2.4.3.8.2",),
+    nota=("SEGUNDA exigencia, acumulativa con la del 12.6.1 y no redundante: "
+          "aquella manda EVALUAR la carga de flotacion y esta manda "
+          "CONSIDERAR el levantamiento. Su condicion de disparo es el nivel "
+          "freatico MAS ALTO previsto, que es la hipotesis que V7 adopta."),
+)
+
+# EL COMENTARIO QUE DA LA FORMA DE LA COMPARACION, y hay que leerlo con su
+# caracter puesto: es un COMENTARIO y dice `should`. Es lo mas cercano que
+# existe -- en cualquiera de las dos fuentes -- a la desigualdad que V7
+# evalua, y aun asi NO la escribe: no menciona factores concretos ni
+# extremos. Por eso la inecuacion del proyecto es ENSAMBLAJE y se imprime
+# como `Interpretacion`, no como cita (NOR-HID-04).
+AASHTO_C12_6_2_3 = _cita(
+    id="AASHTO_LRFD_9.C12.6.2.3",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C12.6.2.3",
+    titulo_numeral="Uplift",
+    pagina_impresa="12-19",
+    pagina_pdf=1657,
+    texto_literal=Verbatim(
+        texto=("To satisfy this provision, the dead load on the crown of the "
+               "structure should exceed the buoyancy of the culvert, using "
+               "load factors as appropriate."),
+        pagina_pdf=1657),
+    caracter=Caracter.RECOMENDACION,
+    nota=("DICE «the culvert», NO «pipe», y eso importa: es de las pocas "
+          "frases de la Sec. 12 sobre flotacion que no se restringe a "
+          "tuberia. Pero es comentario y dice `should`: sostiene la FORMA de "
+          "la comparacion -- peso de la clave contra empuje -- y no el "
+          "criterio de aceptacion. Un factor de seguridad numerico NO sale de "
+          "aqui, y atribuirselo seria inventarle una exigencia."),
+)
+
+
 AASHTO_12_6_6_3 = _cita(
     id="AASHTO_LRFD_9.12.6.6.3#COBERTURA",
     fuente_id="AASHTO_LRFD_9",
@@ -2130,6 +2232,86 @@ AASHTO_C3_4_1 = _cita(
 # ===========================================================================
 # Manual de Puentes -- el resto de la cadena
 # ===========================================================================
+
+# EL NUMERAL QUE OBLIGA, que el codigo llevaba doce veces como CADENA y cero
+# como cita. `M8.NUMERAL_V7`, `M5.NUMERAL_V7`, el docstring de
+# `empuje_flotacion_kn_m`, `M9.NUMERAL_SUBPRESION` y `criterios_adoptados` lo
+# nombran; ningun test lo habia contrastado nunca contra su pagina. Se
+# transcribe en C7 y dice lo que se le atribuia -- que es el resultado bueno,
+# porque el malo habria sido descubrir que no.
+MP_SUBPRESIONES = _cita(
+    id="MP.2.4.3.8.2",
+    fuente_id="MP",
+    numeral="2.4.3.8.2",
+    titulo_numeral="Subpresiones",
+    pagina_impresa="113",
+    pagina_pdf=114,
+    texto_literal=Verbatim(
+        texto=("La subpresión (flotabilidad) se deberá considerar como una "
+               "fuerza de levantamiento, tomada como la sumatoria de las "
+               "componentes verticales de las presiones hidrostáticas, según "
+               "lo especificado en el Artículo 2.4.3.8.1 (3.7.1 AASHTO) que "
+               "actúa sobre todos los componentes de la estructura que se "
+               "encuentran debajo del nivel de agua de diseño."),
+        pagina_pdf=114),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("AASHTO_LRFD_9.3.7.2",),
+    nota=("SU AMBITO ES NEUTRO RESPECTO DE LA FORMA y por eso el marco entra "
+          "DIRECTO, sin analogia que declarar: dice «todos los componentes de "
+          "la estructura», no «la tuberia». DEFINE LA FUERZA U y nada mas: no "
+          "fija estado limite, ni combinacion, ni criterio de aceptacion. La "
+          "desigualdad que V7 evalua NO sale de aqui -- ver el `por_que` de "
+          "F5.V7 --. El «2.4.3.8.1» al que remite es el empuje hidrostatico "
+          "general, del que esta es la componente vertical."),
+)
+
+MP_FACTOR_MINIMO = _cita(
+    id="MP.2.4.5.3.1#MINIMO",
+    fuente_id="MP",
+    numeral="2.4.5.3.1",
+    titulo_numeral="Factores de Carga y Combinaciones de Carga",
+    pagina_impresa="142",
+    pagina_pdf=143,
+    pagina_pdf_titulo=141,
+    texto_literal=Verbatim(
+        texto=("Si la carga permanente aumenta la estabilidad o la capacidad "
+               "de carga de un componente o puente, también se deberá "
+               "investigar el valor mínimo del factor de carga para dicha "
+               "carga permanente."),
+        pagina_pdf=143),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("AASHTO_LRFD_9.T3.4.1-2",),
+    nota=("ES EL ESLABON QUE FALTABA, y faltaba entero: es lo que AUTORIZA a "
+          "V7 a minorar EV y DC. Sin esta frase, tomar el extremo minimo de "
+          "la fila de gamma_p seria una eleccion del proyectista sin "
+          "respaldo; con ella es lo que la fuente manda hacer cuando la carga "
+          "permanente ESTABILIZA, que es exactamente el caso de la flotacion. "
+          "El titulo del numeral se imprime en la pag. impresa 140 (PDF 141) "
+          "y el texto en la 142 (PDF 143): por eso `pagina_pdf_titulo`."),
+)
+
+MP_EV = _cita(
+    id="MP.2.4.5.2#EV",
+    fuente_id="MP",
+    numeral="2.4.5.2",
+    titulo_numeral="Cargas y Denominación de las Cargas",
+    pagina_impresa="140",
+    pagina_pdf=141,
+    pagina_pdf_titulo=140,
+    texto_literal=Verbatim(
+        texto="presión vertical del peso propio del suelo de relleno",
+        pagina_pdf=141),
+    caracter=Caracter.DEFINICION,
+    nota=("LO QUE LA DEFINICION NO DICE, y hay que decirlo porque el proyecto "
+          "lo da por supuesto: no aparecen las palabras «sobre», «encima» ni "
+          "«cobertura». Que EV sea el relleno que descansa SOBRE la "
+          "estructura es una lectura -- razonable y estandar, y sostenida por "
+          "la fila «enterrada» que se elige, no por esta frase --. Se "
+          "transcribe el predicado y no la linea entera («EV = presion...») "
+          "porque la tabla de simbolos separa el simbolo del texto y el "
+          "volcado los reordena."),
+)
+
 
 MP_T_COMBINACIONES = _cita(
     id="MP.T2.4.5.3.1-1",

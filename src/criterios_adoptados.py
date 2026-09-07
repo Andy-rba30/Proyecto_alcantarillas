@@ -3403,28 +3403,34 @@ CRITERIOS: Dict[str, Criterio] = {
                 # exterior, de modo que B'c = Bc por geometria y el maximo de
                 # los dos terminos se reduce a Bc/8.
                 #
-                # ESA PREMISA DEJO DE SER CIERTA EN C5 Y HAY QUE DECIRLO AQUI,
-                # porque es la que sostiene una OMISION DE CALCULO. Este
-                # comentario decia que «el catalogo de Sec. 3.2 es
-                # exclusivamente circular (...; la Familia C, de marco o
-                # multicelda, sale sin candidatos), asi que la reduccion vale
-                # para todo lo que este proyecto calcula». C5 abrio el marco:
-                # `materiales_candidatos` devuelve hoy un candidato de cajon.
-                # En un marco B'c (canto exterior) y Bc (ancho exterior) son
-                # DISTINTOS, de modo que el maximo de los dos terminos ya no
-                # se reduce a uno y esta reduccion pide DE MENOS. Medido sobre
-                # un marco de 3.00 x 1.50 m con t = 0.150: el codigo exigiria
-                # 0.3048 m y la tabla exige max(3.30/8, 1.80/8, 12 in) =
-                # 0.4125 m, un 26 % mas de recubrimiento minimo.
+                # ESTA REDUCCION ES CORRECTA PARA EL CIRCULAR Y LA PREGUNTA
+                # DEL CAJON NO SE CONTESTA AQUI. Dos versiones anteriores de
+                # este comentario se equivocaron, cada una por su lado, y
+                # conviene separar que parte de cada una se sostiene.
                 #
-                # HOY NO SE ALCANZA, y por eso la reduccion no publica ningun
-                # numero equivocado: la Fase 5 de un marco se detiene en V7 --
-                # `M2.espesor_pared` no tiene fila para un marco -- y sin
-                # dimensionado no hay Fase 7. Lo que queda es la deuda: traer
-                # el segundo termino, y llevarle a `M7.cobertura_minima_aashto`
-                # el ANCHO, que hoy no recibe. Es el punto 3 del brief de C7 y
-                # la regla vinculante #9; queda anotado tambien en
-                # `verificacion_pendiente`.
+                # LO QUE SE SOSTIENE, y es de C5: la lectura de B'c como
+                # «out-to-out vertical rise», verificada contra la pag.
+                # impresa 12-21. Es ademas la que corrigio el «sqrt(Bc)/8» que
+                # la ficha NOR-VAC-01 habia inventado leyendo la prima como un
+                # radical.
+                #
+                # LO QUE NO SE SOSTIENE, tambien de C5: que «en un marco B'c y
+                # Bc son DISTINTOS, de modo que esta reduccion pide DE MENOS»,
+                # con la medicion «un marco de 3.00 x 1.50 m: el codigo
+                # exigiria 0.3048 m y la tabla exige 0.4125 m, un 26 % mas».
+                # Esa medicion APLICA AL CAJON UNA FILA ROTULADA «Reinforced
+                # Concrete PIPE», y la tabla no le exige nada a un marco:
+                # verificado en C7 contra AASHTO LRFD 9a ed., leida
+                # renderizada. No hay fila de cajon de concreto; `B'c` se
+                # define «of pipe» y no esta definido para seccion rectangular
+                # en las 110 paginas de la Sec. 12; y el «whichever is
+                # greater» aparece UNA vez en toda la seccion, dentro de esa
+                # celda, sin articulado que lo extienda.
+                #
+                # DONDE VA EL CAJON: a `cobertura_minima_cajon`, vacio
+                # declarado [A], con su AfirmacionNegativa. La regla
+                # vinculante #9 pedia lo contrario y SE RETIRO en C7 -- no
+                # estaba pendiente, estaba mal enunciada --. Ver §6 y §16.12.
                 "no_pavimentado": {"divisor": 8.0, "sobre": "exterior",
                                    "piso_m": 0.3048},
                 "flexible": {"divisor": 8.0, "sobre": "exterior",
@@ -3620,11 +3626,31 @@ CRITERIOS: Dict[str, Criterio] = {
                         "trae como columna",
         vacio_verificado="manifiesto_citas.md Sec. 14.a",
         verificacion_pendiente="EL SEGUNDO TERMINO DE LA FILA DEL CONCRETO "
-                               "(B'c/8) no esta en el dato: se reduce a Bc/8 "
-                               "porque el catalogo es circular y ahi B'c = Bc. "
-                               "Si algun dia entra un tubo-arco o una seccion "
-                               "no circular, la reduccion deja de valer y hay "
-                               "que traer el termino. "
+                               "(B'c/8) no esta en el dato, y se reduce a "
+                               "Bc/8 porque en un CIRCULO B'c = Bc. "
+                               "ESTE CAMPO SE CONTRADECIA CON EL COMENTARIO "
+                               "DE ARRIBA Y HAY QUE DECIR EN QUE, porque es "
+                               "un dato sobre como se escribio el criterio y "
+                               "no solo un error a pisar: decia que la "
+                               "reduccion vale «porque el catalogo es "
+                               "circular» y que el termino haria falta «si "
+                               "algun dia entra una seccion no circular», "
+                               "mientras el comentario del `valor`, reescrito "
+                               "en C5, ya afirmaba que ese dia habia llegado. "
+                               "C5 reescribio el comentario que leyo y no el "
+                               "campo que no leyo, de modo que el criterio "
+                               "afirmaba a la vez que el caso ya llego y que "
+                               "todavia no. Las DOS versiones eran "
+                               "incorrectas, por motivos distintos: la vieja "
+                               "por obsoleta, la nueva por extender una fila "
+                               "fuera de su rotulo. "
+                               "LO QUE QUEDA PENDIENTE DE VERDAD es otra "
+                               "cosa: si algun dia entra un TUBO-ARCO -- que "
+                               "sigue siendo `pipe` y por tanto sigue dentro "
+                               "de esta fila --, ahi B'c y Bc si difieren y "
+                               "el termino hace falta. Un CAJON no es ese "
+                               "caso: no tiene fila aqui (C7, regla #9 "
+                               "retirada). "
                                "Las filas que el catalogo de este proyecto NO "
                                "usa quedaron fuera de la transcripcion "
                                "(Spiral Rib, Structural Plate, Fiberglass, "

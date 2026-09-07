@@ -403,6 +403,16 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F8.RECUBRIMIENTO",  # 9.4 se detiene en 'categoria_refuerzo_aashto'
         "F10.CUNETA",       # falta el dato 'L_hidraulico_m'
         "F6.LAUSHEY",       # Fase 6 cuelga de un punto dimensionado
+        # F5.V7_FILA, y su razon es la MAS ESTRECHA de esta lista: el paso que
+        # lo emitiria SI se ejecuta -- V7 corre a perfil sobre todo punto que
+        # dimensione --, pero lo que hoy publica la eleccion de fila es la
+        # `EleccionDeProyecto` de `M5.v7_flotacion`, que no cuelga de ningun
+        # fundamento propio. C7 abre el fundamento en su punto 0 (la tabla
+        # numeral-por-paso de V7) y lo CABLEA en su punto 3, cuando toque M8
+        # para abrir la rama de «Porticos rigidos». Entre los dos puntos
+        # existe declarado y sin consumidor, que es exactamente lo que esta
+        # lista sirve para decir en voz alta.
+        "F5.V7_FILA",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve
