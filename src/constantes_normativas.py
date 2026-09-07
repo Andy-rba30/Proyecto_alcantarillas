@@ -368,6 +368,23 @@ TABLA_09_GRUPO = ("A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO "
                   "(corrientes naturales) describen el cauce, no el conducto, y "
                   "no se transcriben aqui porque ningun modulo dimensiona un "
                   "cauce")
+# R-4: LOS VALORES DEL BLOQUE A.2 SON LA LECTURA CORREGIDA, NO LA IMPRESA.
+# La pagina imprime las tres columnas del bloque «A.2 NO METALICOS» UN RENGLON
+# POR ENCIMA de sus rotulos, de modo que quien lea `concreto_tubo_recto` al
+# pie de la letra en la pag. impresa 75 encuentra 0.011/0.013/0.014 y no los
+# 0.010/0.011/0.013 que estan aqui. La errata esta demostrada y declarada en
+# `normativa/discrepancias.py::DIS-MCHHD-T09-A2-DESPLAZADA` -- por coordenadas
+# de linea base, por contraprueba con el bloque A.1 de la misma pagina, que NO
+# esta desplazado, y por correspondencia una a una con Ven Te Chow 1983, que
+# la propia tabla declara como su fuente --.
+#
+# LA REMISION LA AÑADE C2 y no es adorno: hasta ahora la errata vivia en
+# `normativa/` y este archivo transcribia la lectura corregida SIN DECIR QUE
+# LO ERA. Quien leyera solo `constantes_normativas` y fuera a la pagina
+# encontraba otros tres numeros y no tenia con que explicarse la diferencia.
+# Afecta a las tres filas de A.2 que hay aqui: `concreto_tubo_recto`,
+# `concreto_afinado` y `madera_duelas`. El bloque A.1 -- las dos de metal
+# corrugado -- no esta afectado.
 TABLA_09_FILAS = {
     "metal_corrugado_subdren": {
         "fila": "A.1 METALICOS - c. Metal corrugado - sub - dren",

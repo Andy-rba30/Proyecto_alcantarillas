@@ -2842,5 +2842,26 @@ HDS5_A3_FORMAS = _cita(
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
 
+# LA LAMINA Nº 03 NO ACOTA NADA, y hay que decirlo en el registro porque esta
+# cita es TENTADORA: es un plano, y un plano invita a leerle dimensiones. Sin
+# esta afirmacion, antes o despues alguien la usara para respaldar un ancho,
+# una altura, un espesor o una longitud de solado, y esa constante llevaria la
+# etiqueta equivocada. La lamina respalda el TIPO, no el TAMAÑO.
+SIN_COTAS_LAMINA_03 = AfirmacionNegativa(
+    que_no_dice=("la Lamina Nº 03 no acota ninguna dimension: no da ancho, "
+                 "altura, espesor ni longitud de solado"),
+    ambito_barrido=("las TRES figuras de la pag. impresa 209 (PDF 212), "
+                    "leidas sobre la pagina renderizada y barridas con "
+                    "expresion regular sobre todo token con digito. El "
+                    "resultado completo de ese barrido es ['209', '03'] -- el "
+                    "folio y el numero de lamina --. Toda dimension esta "
+                    "acotada como «VARIABLE» (nueve veces) o con literal "
+                    "alfabetico «a», «b», «c» sin tabla de valores. El "
+                    "contraste que demuestra que la ausencia es deliberada y "
+                    "no un fallo del extractor: la Lamina Nº 04 (impresa 210, "
+                    "PDF 213) SI acota -- 0.15m, 0.20m, 0.30m, 0.40m, 0.60m, "
+                    "0.80 min., 1.00m --"),
+    cita_id="MC_HHD.LAMINA_03")
+
 AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
-                          SIN_TABLAS_HEQ_EN_MP)
+                          SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03)
