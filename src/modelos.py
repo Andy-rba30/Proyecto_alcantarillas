@@ -627,14 +627,26 @@ class ConstantesHDS5:
     not be used for nonrectangular (circular, arch, pipe-arch, etc.) shapes
     and vice-versa».
 
-    Las tres cartas circulares del catalogo son Forma 1, que es lo que M4
-    implementa hoy: declararlo no mueve ningun numero. Las cinco cartas del
-    cajon que C2 transcribio son Forma 1 la Carta 8 y Forma 2 las Cartas 9 a
-    12. QUIEN IMPLEMENTE LA FORMA 2 ES C3; este campo solo la hace visible,
-    y esa visibilidad es la guardia: sin el, las constantes de una carta de
-    Forma 2 entrarian en la ecuacion de Forma 1 -- que lleva Ks*S y la
-    Forma 2 no --, con Ks = -0.5 restando carga, y el HW saldria MENOR que el
-    real sin que ninguna guardia de signo lo detecte.
+    Las tres cartas circulares del catalogo son Forma 1. De las cinco del
+    cajon que transcribio C2, la Carta 8 es Forma 1 y las Cartas 9 a 12 son
+    Forma 2.
+
+    LAS DOS FORMAS ESTAN IMPLEMENTADAS DESDE C3, en
+    `M4_control._hw_sobre_D_no_sumergido`, que bifurca por este campo. Este
+    parrafo decia «quien implemente la Forma 2 es C3; este campo solo la hace
+    visible», y era cierto hasta que C3 la implemento: se corrige aqui porque
+    una frase que describe un estado que dejo de ser cierto es el mismo
+    defecto que este docstring ya cometio una vez, solo que en prosa en vez
+    de en una ecuacion.
+
+    Que el campo exista sigue siendo la guardia: sin el, las constantes de una
+    carta de Forma 2 entrarian en la ecuacion de Forma 1 -- que lleva Ks*S y
+    la Forma 2 no --, con Ks = -0.5 restando carga, y el HW saldria MENOR que
+    el real sin que ninguna guardia de signo lo detecte. Lo que C3 añade es
+    que ahora tambien hay TESTS que lo detectan: `CP5D_FORMA2_KS_ESPUREO` fija
+    la diferencia de 30 mm, y tres tests de `test_M4_control` se ponen rojos
+    si alguien vuelve a sumar Ks*S en la Forma 2 -- comprobado mutando el
+    codigo, no supuesto --.
     """
     K: float
     M: float

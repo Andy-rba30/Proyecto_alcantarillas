@@ -414,7 +414,12 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F3.TIPO_MARCO",     # el paso que asigna el tipo de estructura: C5
         "F3.MANTENIMIENTO",  # la cota inferior de la progresion B*H: C5
         "F3.CELDAS",         # la adopcion del numero de celdas: C5
-        "F4.FORMA_HDS5",     # la eleccion de forma de ecuacion: C3
+        # `F4.FORMA_HDS5` SALIO DE ESTA LISTA EN C3, que es lo que C2 dejo
+        # dicho que tenia que pasar: «salen de esta lista en cuanto C4 y C5
+        # escriban los pasos que los imprimen; si en esa sesion siguen aqui,
+        # es que el paso se escribio sin su fundamento». C3 escribio el paso
+        # -- `M4._pasos_hidraulicos::de_forma` -- y ahora lo emite toda
+        # corrida que dimensione un punto.
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar

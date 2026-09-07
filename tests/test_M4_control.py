@@ -48,6 +48,8 @@ from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP5_TRANSICION_HDS5,
                                          CP5B_NO_SUMERGIDO, CP5C_SUMERGIDO,
+                                         CP5D_FORMA2,
+                                         CP5D_FORMA2_KS_ESPUREO,
                                          CP6_TIRANTE_CRITICO,
                                          CP8_CONTROL_SALIDA)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
@@ -920,3 +922,184 @@ def test_la_rama_de_ho_que_goberno_sale_escrita_en_la_memoria(concreto):
     assert "manda la aproximacion geometrica" not in ahogada
     assert "manda la aproximacion geometrica" in libre
     assert "manda TW: la salida esta ahogada" not in libre
+
+
+# ===========================================================================
+# CP-5D - HDS-5 Forma 2 (ec. A.2): la bifurcacion por `hds5.forma`
+# ===========================================================================
+# La carta 9 es de CAJON y aqui se evalua sobre una seccion circular: es una
+# SONDA DE LA ECUACION, no un diseño -- el num. A.3 prohibe justamente ese
+# cruce --. Aisla la bifurcacion por forma de la forma de la seccion, que es
+# lo unico probable en C3 porque `SeccionRectangular` la trae C4. La
+# advertencia entera esta en el fixture.
+
+def _carta(forma, K=None, M=None, c=None, Y=None, Ks=None):
+    """Una `ConstantesHDS5` de la carta 9 escala 1, con la forma que se pida."""
+    d = CP5D_FORMA2
+    return ConstantesHDS5(K=d["K"] if K is None else K,
+                          M=d["M"] if M is None else M,
+                          c=d["c"] if c is None else c,
+                          Y=d["Y"] if Y is None else Y,
+                          Ks=d["Ks"] if Ks is None else Ks,
+                          forma=forma)
+
+
+def _q_para(q_estrella, D):
+    """El Q que produce ese q* en una circular de diametro D."""
+    from constantes_normativas import KU_SI
+    return q_estrella * (math.pi * D ** 2 / 4) * math.sqrt(D) / KU_SI
+
+
+def test_la_forma_2_no_lleva_el_termino_Ks_por_S():
+    """
+    EL TEST QUE FIJA EL DEFECTO QUE C2 ESCRIBIO Y UN AUDITOR ENCONTRO.
+
+    La ec. (A.2) es HW/D = K*(q*)^M y ahi termina; el «+ Ks*S» es de la (A.1)
+    y de la (A.3). Nadie ve el error mirando el resultado -- sigue siendo
+    positivo y ninguna guardia de signo se dispara --, de modo que sin este
+    test hace falta otro auditor para volver a encontrarlo.
+    """
+    from modulos.M4_control import _hw_sobre_D_no_sumergido
+    caso = CP5D_FORMA2["no_sumergido"]
+    hds5 = _carta(forma=2)
+    obtenido = _hw_sobre_D_no_sumergido(
+        caso["q_estrella"], H_c=99.0,       # H_c no entra en la Forma 2
+        seccion=SeccionCircular(0.90), S=caso["S"], hds5=hds5)
+
+    assert obtenido == pytest.approx(caso["hw_sobre_D_esperado"],
+                                     abs=caso["tolerancia"])
+    # Y NO el valor que sale de dejarse el Ks*S por copiar la Forma 1.
+    assert obtenido != pytest.approx(caso["hw_sobre_D_si_se_cuela_Ks_S"],
+                                     abs=CP5D_FORMA2["tolerancia_distincion"])
+
+
+def test_la_forma_2_ignora_H_c_y_la_forma_1_no():
+    """
+    La otra mitad de la (A.2): tampoco arranca del tirante critico. Con dos
+    H_c muy distintos la Forma 2 da lo MISMO y la Forma 1 no, que es la
+    comprobacion que distingue las dos ecuaciones sin mirar constantes.
+    """
+    from modulos.M4_control import _hw_sobre_D_no_sumergido
+    caso = CP5D_FORMA2["no_sumergido"]
+    sec, S = SeccionCircular(0.90), caso["S"]
+    f2 = [_hw_sobre_D_no_sumergido(caso["q_estrella"], H_c=h, seccion=sec,
+                                   S=S, hds5=_carta(forma=2))
+          for h in (0.30, 0.75)]
+    f1 = [_hw_sobre_D_no_sumergido(caso["q_estrella"], H_c=h, seccion=sec,
+                                   S=S, hds5=_carta(forma=1))
+          for h in (0.30, 0.75)]
+    assert f2[0] == pytest.approx(f2[1],
+                                  abs=CP5D_FORMA2["tolerancia_identidad"])
+    assert f1[0] != pytest.approx(f1[1],
+                                  abs=CP5D_FORMA2["tolerancia_distincion"])
+
+
+def test_la_magnitud_del_defecto_de_forma_2_es_la_medida():
+    """
+    30 mm de HW en el caso del fixture, y SIEMPRE del lado no conservador: con
+    Ks = -0.5 el termino resta, de modo que el HW espureo es MENOR que el
+    real y V4, V4b y el tamizado de 7.A pasan mas facil.
+    """
+    from modulos.M4_control import _hw_sobre_D_no_sumergido
+    d = CP5D_FORMA2_KS_ESPUREO
+    hds5 = _carta(forma=2, K=d["K"], M=d["M"], Ks=d["Ks"])
+    correcto = _hw_sobre_D_no_sumergido(
+        d["q_estrella"], H_c=99.0, seccion=SeccionCircular(0.90),
+        S=d["S"], hds5=hds5)
+
+    assert correcto == pytest.approx(d["hw_sobre_D_correcto"],
+                                     abs=d["tolerancia"])
+    espureo = correcto + hds5.Ks * d["S"]
+    assert espureo == pytest.approx(d["hw_sobre_D_con_Ks_espureo"],
+                                    abs=d["tolerancia"])
+    delta_mm = (correcto - espureo) * d["altura_m"] * 1000
+    assert delta_mm == pytest.approx(d["delta_mm_esperado"],
+                                     abs=d["tolerancia_mm"])
+    assert espureo < correcto, "el defecto va del lado NO conservador"
+
+
+def test_la_rama_sumergida_es_comun_a_las_dos_formas():
+    """
+    La ec. (A.3) es el num. A.2.2 y NO se bifurca: su encabezado remite a las
+    variables de A.2.1 sin distinguir forma, y la Tabla A.1 da c e Y para
+    todas sus cartas. Con la misma carta, cambiar `forma` no la mueve.
+    """
+    from modulos.M4_control import _hw_sobre_D_sumergido
+    caso = CP5D_FORMA2["sumergido"]
+    valores = [_hw_sobre_D_sumergido(caso["q_estrella"], caso["S"],
+                                     _carta(forma=f)) for f in (1, 2)]
+    assert valores[0] == pytest.approx(caso["hw_sobre_D_esperado"],
+                                       abs=caso["tolerancia"])
+    assert valores[0] == pytest.approx(
+        valores[1], abs=CP5D_FORMA2["tolerancia_identidad"])
+
+
+def test_la_transicion_interpola_desde_la_forma_2_cuando_es_la_que_toca():
+    """
+    La recta va del valor de la rama NO SUMERGIDA en q* = 3.5 al de la
+    SUMERGIDA en q* = 4.0. Con Forma 2 el extremo inferior es K*(3.5)^M, sin
+    Ks*S: si la interpolacion siguiera tomando el extremo de la Forma 1, este
+    test cae.
+    """
+    from modulos.M4_control import (_hw_sobre_D_no_sumergido,
+                                    _hw_sobre_D_sumergido)
+    caso = CP5D_FORMA2["transicion"]
+    hds5 = _carta(forma=2)
+    sec, S = SeccionCircular(0.90), caso["S"]
+    lo = _hw_sobre_D_no_sumergido(Q_LIM_NO_SUMERGIDO, 99.0, sec, S, hds5)
+    hi = _hw_sobre_D_sumergido(Q_LIM_SUMERGIDO, S, hds5)
+    assert lo == pytest.approx(caso["extremo_inferior_esperado"],
+                               abs=caso["tolerancia"])
+    assert hi == pytest.approx(caso["extremo_superior_esperado"],
+                               abs=caso["tolerancia"])
+    peso = ((caso["q_estrella"] - Q_LIM_NO_SUMERGIDO)
+            / (Q_LIM_SUMERGIDO - Q_LIM_NO_SUMERGIDO))
+    assert lo + peso * (hi - lo) == pytest.approx(
+        caso["hw_sobre_D_esperado"], abs=caso["tolerancia"])
+
+
+def test_control_entrada_con_forma_2_recorre_las_tres_ramas():
+    """
+    De punta a punta, por `control_entrada`, para que la bifurcacion no viva
+    solo en la funcion privada. Y la CONTINUIDAD de la transicion: en q* = 3.5
+    y en q* = 4.0 la recta tiene que empalmar con las dos ramas puras.
+    """
+    from modulos.M4_control import (control_entrada, _hw_sobre_D_no_sumergido,
+                                    _hw_sobre_D_sumergido)
+    D, S = 0.90, CP5D_FORMA2["no_sumergido"]["S"]
+    sec, hds5 = SeccionCircular(D), _carta(forma=2)
+    for zona, q_obj, esperado in (
+            ("no_sumergido", CP5D_FORMA2["no_sumergido"]["q_estrella"],
+             RegimenEntrada.NO_SUMERGIDO),
+            ("transicion", CP5D_FORMA2["transicion"]["q_estrella"],
+             RegimenEntrada.TRANSICION),
+            ("sumergido", CP5D_FORMA2["sumergido"]["q_estrella"],
+             RegimenEntrada.SUMERGIDO)):
+        r = control_entrada(Q=_q_para(q_obj, D), seccion=sec, S=S, hds5=hds5)
+        assert r.regimen is esperado, zona
+        assert r.constantes.forma == 2
+
+    # Continuidad en los dos bordes: la recta arranca y termina EXACTAMENTE
+    # sobre las ramas puras evaluadas en los limites.
+    lo = _hw_sobre_D_no_sumergido(Q_LIM_NO_SUMERGIDO, 99.0, sec, S, hds5)
+    hi = _hw_sobre_D_sumergido(Q_LIM_SUMERGIDO, S, hds5)
+    borde_bajo = control_entrada(Q=_q_para(Q_LIM_NO_SUMERGIDO, D), seccion=sec,
+                                 S=S, hds5=hds5)
+    borde_alto = control_entrada(Q=_q_para(Q_LIM_SUMERGIDO, D), seccion=sec,
+                                 S=S, hds5=hds5)
+    tol = CP5D_FORMA2["tolerancia_continuidad"]
+    assert borde_bajo.HW_sobre_D == pytest.approx(lo, rel=tol)
+    assert borde_alto.HW_sobre_D == pytest.approx(hi, rel=tol)
+
+
+def test_una_forma_que_la_tabla_A1_no_define_se_detiene():
+    """
+    La columna «Equation Form» solo toma 1 y 2. Una carta con otra forma no es
+    de esta tabla, y el calculo no puede elegirle una por defecto.
+    """
+    from modulos.M4_control import _hw_sobre_D_no_sumergido
+    with pytest.raises(DatoInvalidoError) as exc:
+        _hw_sobre_D_no_sumergido(2.70, 0.75, SeccionCircular(0.90), 0.03,
+                                 _carta(forma=3))
+    assert exc.value.campo == "forma"
+    assert exc.value.valor == 3

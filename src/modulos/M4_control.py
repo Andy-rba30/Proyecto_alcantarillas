@@ -262,7 +262,8 @@ from scipy.optimize import brentq
 
 import criterios_adoptados as ca
 from constantes_fisicas import G
-from constantes_normativas import (H_O_HW_SOBRE_D_CAUTELA,
+from constantes_normativas import (FORMA_1, FORMA_2,
+                                   H_O_HW_SOBRE_D_CAUTELA,
                                    H_O_HW_SOBRE_D_MIN, KU_SI,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
@@ -480,13 +481,65 @@ def caudal_adimensional(Q: float, seccion: Seccion) -> float:
 
 def _hw_sobre_D_no_sumergido(q_estrella: float, H_c: float, seccion: Seccion,
                              S: float, hds5: ConstantesHDS5) -> float:
-    """HWi/D = H_c/D + K*(q*)^M + Ks*S, Forma 1 de Sec. 4.2 (q* <= 3.5)."""
-    return H_c / seccion.altura + hds5.K * q_estrella ** hds5.M + hds5.Ks * S
+    """
+    HWi/D no sumergido, num. A.2.1 de HDS-5 (q* <= 3.5). DOS FORMAS:
+
+        Forma 1   HWi/D = H_c/D + K*(q*)^M + Ks*S          ec. (A.1)
+        Forma 2   HWi/D = K*(q*)^M                         ec. (A.2)
+
+    LA FORMA 2 NO LLEVA EL TERMINO Ks*S. Verificado en esta sesion contra
+    `normas/hif12026.pdf`, pag. impresa A.2 (PDF 191): la ec. (A.2) se imprime
+    como HWi/D = K[Ku*Q/(A*D^0.5)]^M y ahi termina. El contraste esta en la
+    MISMA pagina y es lo que cierra la lectura: la ec. (A.3), sumergida, si
+    escribe «+ Y + Ks*S», y la (A.1) de la pagina anterior tambien lleva su
+    «+ Ks*S». No es que la (A.2) lo omita por brevedad: es que no lo tiene.
+
+    Cual de las dos se usa NO LO ELIGE EL PROYECTISTA: lo fija la carta de la
+    Tabla A.1 a la que pertenece la seccion, en su columna «Equation Form».
+    El propio num. A.2.1 explica por que hay dos -- «Form (1) is based on the
+    specific head at critical depth... Form (2) is an exponential equation
+    similar to a weir equation... Form (2) is easier to apply and is the only
+    documented form of equation for some of the inlet control equations» --,
+    y el num. A.3 prohibe cruzar sus coeficientes entre formas.
+
+    POR QUE IMPORTA, CON EL NUMERO. Copiar la Forma 1 y cambiarle las
+    constantes deja el Ks*S en una ecuacion que no lo tiene, y con Ks = -0.5
+    ese termino RESTA: el HW sale MENOR que el real, del lado NO conservador,
+    y ninguna guardia de signo lo detecta porque el resultado sigue siendo
+    positivo. Medido sobre la Carta 9 escala 1 (K = 0.510, M = 0.667) con un
+    cajon de 2.00 x 2.00 m, Q = 8 m3/s y S = 0.03: 1.910 m contra 1.880 m,
+    30 mm, y la diferencia crece lineal con la pendiente. El caso patron
+    CP5D_FORMA2_KS_ESPUREO lo fija para que un regreso rompa un test.
+    """
+    directo = hds5.K * q_estrella ** hds5.M
+    if hds5.forma == FORMA_2:
+        return directo
+    if hds5.forma != FORMA_1:
+        raise DatoInvalidoError(
+            "forma", valor=hds5.forma,
+            motivo=("la columna «Equation Form» de la Tabla A.1 solo toma los "
+                    "valores 1 y 2, y HDS-5 no define ninguna tercera forma "
+                    "de la ecuacion no sumergida. Una carta con otra forma no "
+                    "es una carta de esta tabla"))
+    return H_c / seccion.altura + directo + hds5.Ks * S
 
 
 def _hw_sobre_D_sumergido(q_estrella: float, S: float,
                           hds5: ConstantesHDS5) -> float:
-    """HWi/D = c*(q*)^2 + Y + Ks*S, regimen sumergido de Sec. 4.2 (q* >= 4.0)."""
+    """
+    HWi/D = c*(q*)^2 + Y + Ks*S, regimen sumergido (q* >= 4.0), ec. (A.3).
+
+    NO SE BIFURCA POR FORMA, y esa es una lectura de la fuente y no un olvido:
+    la division en dos formas la hace el num. A.2.1, que es el de las
+    ecuaciones NO SUMERGIDAS. La sumergida es el num. A.2.2 y tiene UNA sola
+    ecuacion, la (A.3), cuyo encabezado remite a las variables de A.2.1 sin
+    distinguir forma; y la Tabla A.1 da c e Y para TODAS sus cartas, sean de
+    Forma 1 o de Forma 2. Verificado en la pag. impresa A.2 (PDF 191).
+
+    Y esta si lleva Ks*S -- comprobado en la misma pagina, no deducido de que
+    lo lleve la (A.1) --: es la confusion numeral/pagina que NOR-HDS-01 ya
+    cerro una vez y que C2 volvio a encontrar al citar el num. A.3.
+    """
     return hds5.c * q_estrella ** 2 + hds5.Y + hds5.Ks * S
 
 
@@ -859,6 +912,49 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                           "control de salida. Se resuelve UNA vez.",
     )
 
+    # EL PASO QUE DICE QUE ECUACION SE USO, y va ANTES del control de entrada
+    # porque es lo primero que un revisor necesita saber para poder rehacer el
+    # numero: ver K y M sin saber en que ecuacion entraron no permite
+    # reconstruir nada. Su `por_que` es `F4.FORMA_HDS5` TAL CUAL lo dejo C2 en
+    # el registro, con sus tres citas ya verificadas -- no se redacta otra vez
+    # aqui, que seria la segunda copia que NOR-MEM-01 persigue --.
+    forma = material.hds5.forma
+    de_forma = paso(
+        "F4.FORMA_HDS5",
+        codigo="4.2",
+        que="Forma de la ecuacion de control de entrada del HDS-5",
+        formula=("Forma 1: HW/D = H_c/D + K*(q*)^M + Ks*S, ec. (A.1)  |  "
+                 "Forma 2: HW/D = K*(q*)^M, ec. (A.2), SIN el termino Ks*S"),
+        formula_cita_id="HDS5_3ED.A.2",
+        sustitucion=(
+            Magnitud("Equation Form", forma, "",
+                     "columna de la Tabla A.1 para la carta de esta "
+                     "embocadura; no la elige el proyectista",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("K", material.hds5.K, "",
+                     f"constante de la carta, ajustada a la Forma {forma}",
+                     cifras=CIFRAS_FINA),
+            Magnitud("M", material.hds5.M, "",
+                     f"exponente de la carta, ajustado a la Forma {forma}",
+                     cifras=CIFRAS_FINA)),
+        resultado=Magnitud("forma aplicada", forma, "",
+                           f"se resuelve con la ecuacion "
+                           f"({'A.1' if forma == FORMA_1 else 'A.2'}) del "
+                           f"num. A.2.1", cifras=CIFRAS_FACTOR),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="paso de calculo"),
+        citas_textuales=("HDS5_3ED.A.3#FORMAS",),
+        nota_del_proyecto=(
+            f"Esta corrida usa la FORMA {forma}. "
+            + ("La Forma 1 lleva el termino de correccion por pendiente "
+               "Ks*S; la Forma 2 no lo lleva, y por eso no aparece en la "
+               "sustitucion del paso siguiente cuando gobierna la Forma 2."
+               if forma == FORMA_1 else
+               "La Forma 2 NO lleva el termino Ks*S: no se omite aqui, es "
+               "que la ec. (A.2) no lo tiene. Ks sigue entrando en la rama "
+               "SUMERGIDA, que es la ec. (A.3) y es comun a las dos formas.")),
+    )
+
     de_entrada = paso(
         "F4.CONTROL",
         codigo="4.2",
@@ -985,7 +1081,8 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             "mover el HW."),
     )
 
-    return (de_manning, de_critico, de_entrada, de_salida, de_gobernante)
+    return (de_manning, de_critico, de_forma, de_entrada, de_salida,
+            de_gobernante)
 
 
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,

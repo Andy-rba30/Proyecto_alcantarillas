@@ -597,6 +597,18 @@ NUMERAL_TABLA_KE = _reg.cita("HDS5_3ED.TC.2").como_texto()
 #            SOBRE EL ROTULO LITERAL de la fila, que es donde la fuente
 #            escribe «mitered». Ninguna de las quince filas del cajon lo es.
 _TA1 = _reg.tabla("HDS5_3ED.TA1")
+# LOS DOS VALORES QUE TOMA LA COLUMNA «Equation Form» DE LA TABLA A.1, con
+# nombre porque el 1 y el 2 sueltos en una comparacion no dicen nada. No son
+# una eleccion del proyecto: el num. A.2.1 escribe DOS ecuaciones no
+# sumergidas y la tabla dice, carta por carta, cual le toca a cada una.
+#
+#   FORMA_1   HWi/D = H_c/D + K*(q*)^M + Ks*S      ec. (A.1)
+#   FORMA_2   HWi/D = K*(q*)^M                     ec. (A.2), SIN Ks*S
+#
+# La regla que las separa la escribe el num. A.3 y esta citada en
+# `HDS5_3ED.A.3#FORMAS`: los coeficientes de una forma no valen para la otra.
+FORMA_1 = 1
+FORMA_2 = 2
 KS_INGLETE = 0.7                    # num. A.2.1, pag. impresa A.2 (PDF 191)
 KS_SIN_INGLETE = -0.5
 
