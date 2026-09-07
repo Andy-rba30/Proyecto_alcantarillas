@@ -3166,5 +3166,57 @@ SIN_COTAS_LAMINA_03 = AfirmacionNegativa(
                     "0.80 min., 1.00m --"),
     cita_id="MC_HHD.LAMINA_03")
 
+# LA SECCION 12 NO TABULA LA COBERTURA DE UN CAJON DE CONCRETO, y hace falta
+# decirlo EN EL REGISTRO porque la tentacion aqui no es una lamina sino una
+# tabla que casi encaja: tiene fila de concreto, tiene cajon, y ninguna de las
+# dos es la que hace falta -- la de concreto es de TUBO y la de cajon es
+# METALICA --. La regla vinculante #9 de la Familia C mandaba traer «B'c/8»
+# para el marco desde esa misma tabla, y se retiro en C7 por esto.
+#
+# TRES FALSOS AMIGOS, y el orden es de menos a mas peligroso. El primero es de
+# titulo: `12.11.5.4—Minimum Cover for Precast Box Structures` esta en el
+# articulo de los cajones, se titula «Minimum Cover» y su cuerpo entero es
+# «The provisions of Article 5.10.1 shall apply» -- y el 5.10.1 es «Concrete
+# Cover», recubrimiento de armadura --. El segundo es de NUMERO, y es peor
+# porque el numero SI es una altura de relleno: las cuatro apariciones de
+# «2.0 ft» en 12.11 son umbrales que CONMUTAN EL METODO de reparto de la carga
+# de rueda, y las cuatro presuponen que existe la alcantarilla con menos de
+# 2.0 ft encima. Leer cualquiera como «cobertura minima = 0.61 m» invierte el
+# sentido de la frase. El tercero solo se ve renderizado: las Figuras
+# 12.11.2.2.1-1 y -2 rotulan «LEVELING COURSE (FINE GRANULAR FILL MATERIAL
+# 2" MIN.)», que es la cama BAJO el cajon y no cobertura encima.
+SIN_CAJON_DE_CONCRETO_T12663 = AfirmacionNegativa(
+    que_no_dice=("la Tabla 12.6.6.3-1 no tiene fila de alcantarilla CAJON DE "
+                 "CONCRETO -- ni vaciada in situ ni prefabricada --, y el "
+                 "Art. 12.11, que es el de los cajones de concreto, no fija "
+                 "altura minima de cobertura de suelo ni se remite al "
+                 "Art. 12.6.6.3"),
+    ambito_barrido=(
+        "las CATORCE filas de la tabla, leidas sobre la pagina RENDERIZADA "
+        "(impresa 12-22, PDF 1660): sus dos filas de concreto dicen "
+        "«Reinforced Concrete PIPE» y la unica que trae la palabra «box» es "
+        "«Structural Plate Box Structures», que es metalica y ni siquiera da "
+        "cobertura -- remite al Art. 12.9.1 --. Mas el Art. 12.11 completo, "
+        "«REINFORCED CONCRETE CAST-IN-PLACE AND PRECAST BOX CULVERTS AND "
+        "REINFORCED CAST-IN-PLACE ARCHES», SIETE paginas impresas de la 12-68 "
+        "a la 12-74, delimitadas por encabezado impreso (12.10.5 cierra "
+        "antes; 12.12 «THERMOPLASTIC PIPES» abre en la 12-74) y leidas las "
+        "siete renderizadas ademas del volcado. Censo dentro de ese ambito, "
+        "insensible a mayusculas: «12.6.6» 0 veces, «12.6.6.3» 0, «table "
+        "12.6.6.3-1» 0, «fill height» 0, «depth of fill» 0, «soil cover» 0, "
+        "«earth cover» 0; «minimum cover» 1, y es el titulo del falso amigo "
+        "12.11.5.4; «cover» 3 y «fill» 7, que se reparten entre ese titulo, "
+        "los cuatro umbrales de metodo de «2.0 ft» y cinco «backfill» del "
+        "num. 12.11.2.2.1, donde H es «depth of backfill», la VARIABLE de la "
+        "carga de tierra, sin cota inferior. Lo unico que remite hacia fuera "
+        "es el paraguas generico del 12.11.1 -- «Designs shall conform to "
+        "applicable Articles of these Specifications, except as provided "
+        "otherwise herein» --, que no es la remision especifica a 12.6.6.3. "
+        "Paginacion medida sobre encabezados impresos: pagina PDF 1-based = "
+        "folio + 1638 (en indice 0-based, + 1637); comprobada en los folios "
+        "12-67, 12-68, 12-69 y 12-74"),
+    cita_id="AASHTO_LRFD_9.T12.6.6.3-1")
+
 AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
-                          SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03)
+                          SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03,
+                          SIN_CAJON_DE_CONCRETO_T12663)

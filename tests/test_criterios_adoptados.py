@@ -1569,18 +1569,33 @@ def test_regla_7_la_tabla_10_sirve_tal_cual_y_no_hay_criterio_de_v_max_cajon():
         "ya cubre al marco (regla vinculante #7 de docs/ruta_familia_c.md §6)")
     # Y la contraparte: los que SÍ existen sí son un vacío real.
     #
-    # ESTE ASSERT SALTÓ EN C7 Y ESO ES LO QUE TIENE QUE HACER. El sexto,
-    # `espesor_pared_cajon`, es un vacío real y no un `v_max_cajon`: la
-    # diferencia es si la tabla de la que saldría el valor enumera sus filas
-    # por algo que el marco ES o por algo que NO es. La Tabla Nº 10 clasifica
-    # por REVESTIMIENTO —el marco es de concreto y le sirve tal cual—; la
-    # columna «Wall Thickness» de AASHTO M 170M-04 enumera por DIÁMETRO
-    # DESIGNADO DE TUBERÍA, y ahí el marco no tiene fila. Añadir la clave sin
-    # que este test se quejara sería el fallo; que se queje y haya que
-    # contestarle por escrito es el mecanismo.
+    # ESTE ASSERT SALTÓ DOS VECES EN C7 Y ESO ES LO QUE TIENE QUE HACER. La
+    # pregunta que hay que contestarle por escrito es siempre la misma: si la
+    # tabla de la que saldría el valor enumera sus filas por algo que el marco
+    # ES o por algo que NO es.
+    #
+    # EL SEXTO, `espesor_pared_cajon`: la Tabla Nº 10 clasifica por
+    # REVESTIMIENTO —el marco es de concreto y le sirve tal cual, de ahí que
+    # `v_max_cajon` sería inventado—; la columna «Wall Thickness» de AASHTO
+    # M 170M-04 enumera por DIÁMETRO DESIGNADO DE TUBERÍA, y ahí el marco no
+    # tiene fila.
+    #
+    # EL SÉPTIMO, `cobertura_minima_cajon`, es el mismo caso y con la trampa
+    # añadida de que la tabla CASI encaja: la Tabla 12.6.6.3-1 de AASHTO LRFD
+    # enumera por TIPO DE CONDUCTO, y sus dos filas de concreto dicen
+    # «Reinforced Concrete PIPE» —algo que el marco no es—. Su única fila con
+    # la palabra «box» es «Structural Plate Box Structures», metálica, que ni
+    # siquiera da cobertura. La regla vinculante #9 mandaba lo contrario —
+    # traer `B'c/8` desde esa misma tabla— y se retiró en C7 contra la fuente
+    # primaria: era falsa, no pendiente. El barrido que lo sostiene está en la
+    # `AfirmacionNegativa` SIN_CAJON_DE_CONCRETO_T12663.
+    #
+    # Añadir una clave sin que este test se quejara sería el fallo; que se
+    # queje y haya que contestarle por escrito es el mecanismo.
     assert set(del_cajon) == {
         "secciones_cajon_normalizadas", "n_manning_cajon", "embocadura_cajon",
-        "n_celdas_cajon", "ke_entrada_cajon", "espesor_pared_cajon"}
+        "n_celdas_cajon", "ke_entrada_cajon", "espesor_pared_cajon",
+        "cobertura_minima_cajon"}
 
 
 def test_regla_8_la_fila_de_gamma_EV_del_cajon_es_porticos_rigidos():

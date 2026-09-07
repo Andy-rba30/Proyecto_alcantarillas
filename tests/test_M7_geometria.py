@@ -29,13 +29,14 @@ from constantes_normativas import H_RELLENO_MIN
 from dominios import ESVIAJE_MAX
 from modelos import (CondicionRasante, ControlGobernante, CriterioPendienteError,
                      DatoInvalidoError, DisenoNoFactibleError, ErrorProyecto,
-                     Familia, LimiteNumericoError, PuntoCritico,
+                     Familia, FormaSeccion, LimiteNumericoError, PuntoCritico,
                      ResultadoHidraulico, TipoMaterial)
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import catalogo
 from tolerancias import TOL_UMBRAL_NORMATIVO
 from modulos.M5_verificaciones import v4_carga_entrada
 from modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
+                                  CRITERIO_COBERTURA_CAJON,
                                   CRITERIO_CONDICION_PAVIMENTO,
                                   CRITERIO_TALUD, altura_recubrimiento,
                                   criterio_recubrimiento,
@@ -46,8 +47,8 @@ from modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
                                   g2_cota_salida, longitud_conducto,
                                   proyeccion_taludes, tamizado_rasante)
 from tests.fixtures.casos_patron import CP9_GEOMETRIA_7B
-from tests.apoyo.criterios import sin_valor
-from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.criterios import declarados, sin_valor
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 
 # El HDPE es el unico material con minimo de relleno en EG-2013 (0.30 m,
 # Subseccion 508.07, pag. 984). Ya NO es el h_rec del tamizado: desde C01,
@@ -630,6 +631,135 @@ def test_las_tres_filas_transcritas_si_dan_cobertura(
     for condicion in sorted(filas):
         declarar_condicion_pavimento(condicion)
         assert cobertura_minima_aashto(material=material, D=1.50) > 0, condicion
+
+
+# ---------------------------------------------------------------------------
+# El marco NO entra por esa tabla (C7, punto 4)
+# ---------------------------------------------------------------------------
+# EL TEST DE ARRIBA ITERA `list(TipoMaterial)` Y ESO SIGUE SIENDO CORRECTO,
+# aunque el marco exista: 'cobertura_minima_aashto' es la transcripcion de una
+# tabla indexada por MATERIAL, y el cajon no es una clave suya ni debe serlo.
+# La bifurcacion ocurre antes, por FORMA. Si algun dia alguien le anadiera una
+# clave "cajon" a esa tabla, ese test quedaria ciego -- pero el de aqui abajo
+# no, porque exige que el marco se DETENGA.
+
+DECLARACIONES_CAJON = {
+    "embocadura_cajon": "cajon_concreto_aletas_30_75",
+    "n_manning_cajon": "concreto_afinado",
+    "n_celdas_cajon": 1,
+    "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+    "secciones_cajon_normalizadas": ((1.50, 1.20), (2.00, 1.50)),
+    "espesor_pared_cajon": 0.15,
+}
+
+
+def _marco():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                    forma=FormaSeccion.RECTANGULAR)
+
+
+def test_un_marco_no_toma_la_fila_del_tubo_y_se_detiene(
+        declarar_condicion_pavimento):
+    """
+    LA REGLA VINCULANTE #9 PEDIA LO CONTRARIO Y ERA FALSA. Mandaba traer el
+    segundo termino «B'c/8» de la Tabla 12.6.6.3-1 para el marco; C7 verifico
+    contra la fuente primaria que esa tabla NO TIENE FILA de cajon de
+    concreto -- sus dos filas de concreto dicen «Reinforced Concrete PIPE» --,
+    de modo que no hay termino que devolver porque no hay fila de donde.
+
+    LO QUE ESTE TEST MATA, y es lo que hacia falta medir: antes de C7 un marco
+    ENTRABA por esa tabla en silencio. `cobertura_minima_aashto` indexaba por
+    `material.tipo.value`, y un marco de concreto y un tubo de concreto son el
+    MISMO `TipoMaterial`. Ahora se detiene con `CriterioPendienteError`, que
+    es la excepcion correcta: el revisor tiene que DECIDIR, no conseguir.
+    """
+    declarar_condicion_pavimento("flexible")
+    with declarados(DECLARACIONES_CAJON), sin_valor(CRITERIO_COBERTURA_CAJON):
+        with pytest.raises(CriterioPendienteError) as exc:
+            cobertura_minima_aashto(material=_marco(), D=1.50)
+    assert exc.value.clave == CRITERIO_COBERTURA_CAJON
+
+
+def test_el_numero_que_el_marco_recibia_era_el_piso_de_la_fila_del_tubo(
+        declarar_condicion_pavimento):
+    """
+    LA MEDICION QUE EXPLICA POR QUE ESTUVO TAPADO TANTO TIEMPO, y es la razon
+    de que este test exista al lado del anterior: el numero que salia no era
+    absurdo. Era 0.3048 m -- el piso de 12.0 in de la fila del TUBO --, que es
+    un valor perfectamente presentable.
+
+    Y HAY UN SEGUNDO DEFECTO DENTRO DEL PRIMERO, medido aqui: ese numero NO
+    DEPENDIA DEL ANCHO DEL MARCO. `D` en un marco vale la ALTURA, de modo que
+    `diametro_exterior` devolvia H + 2t = B'c y lo metia en la ranura de Bc.
+    O sea que ni siquiera era «la fila del tubo bien aplicada»: era la fila
+    del tubo con la dimension cambiada. Por eso el arreglo no es traer un
+    termino mas sino detenerse, y por eso M7 necesita ademas la `Seccion`
+    entera (punto 5 de C7) y no un escalar.
+
+    La medicion de C5 -- «la tabla exige 0.4125 m» para un marco de 3.00 x
+    1.50 -- llamaba a ese numero «el segundo termino B'c/8», y no lo es:
+    3.30/8 = 0.4125 es Bc/8, el PRIMERO. B'c/8 vale 0.225, el MENOR de los
+    tres. Se comprueba aritmeticamente aqui para que no haya que rehacerlo.
+    """
+    B, H, t = 3.00, 1.50, 0.15
+    Bc, Bc_prima = B + 2 * t, H + 2 * t
+    assert Bc / 8 == pytest.approx(0.4125, rel=REL_TRANSPORTE)   # el de C5
+    assert Bc_prima / 8 == pytest.approx(0.2250, rel=REL_TRANSPORTE)  # el menor
+    piso_del_tubo = ca.valor(CRITERIO_COBERTURA_AASHTO)[
+        TipoMaterial.CONCRETO_REFORZADO.value]["flexible"]["piso_m"]
+    assert piso_del_tubo == pytest.approx(0.3048, rel=REL_TRANSPORTE)
+    # Y el numero que el marco recibia era ese piso, porque con B'c en la
+    # ranura de Bc el termino proporcional (1.80/8 = 0.225) nunca lo alcanza.
+    assert Bc_prima / 8 < piso_del_tubo
+
+    # Declarado el criterio, el que gobierna es el declarado y NO el piso.
+    declarar_condicion_pavimento("flexible")
+    declaraciones = dict(DECLARACIONES_CAJON)
+    declaraciones[CRITERIO_COBERTURA_CAJON] = 0.45
+    with declarados(declaraciones):
+        assert cobertura_minima_aashto(material=_marco(), D=H) == \
+            pytest.approx(0.45, rel=REL_TRANSPORTE)
+
+
+def test_la_cobertura_del_marco_admite_cero_y_rechaza_el_negativo(
+        declarar_condicion_pavimento):
+    """
+    EL CERO ES DECLARABLE Y NO ES UN DESCUIDO: es la unica rama que AASHTO
+    cubre EXPRESAMENTE para un cajon de concreto -- «If soil cover is not
+    provided, the top of precast or cast-in-place reinforced concrete box
+    structures shall be designed for direct application of vehicular loads»,
+    pag. impresa 12-22 --. La ficha del criterio dice con que exigencia
+    estructural viene.
+
+    El negativo no: seria una clave por encima de la subrasante. Guarda en la
+    forma de MAT-D13 -- umbral MEDIDO (el cero, no un piso inventado) y
+    condicion en positivo y negada, para que un NaN tampoco pase --.
+    """
+    declarar_condicion_pavimento("flexible")
+    cero = dict(DECLARACIONES_CAJON, **{CRITERIO_COBERTURA_CAJON: 0.0})
+    with declarados(cero):
+        assert cobertura_minima_aashto(material=_marco(), D=1.50) == \
+            pytest.approx(0.0, abs=ABS_CERO)
+
+    negativo = dict(DECLARACIONES_CAJON, **{CRITERIO_COBERTURA_CAJON: -0.10})
+    with declarados(negativo):
+        with pytest.raises(DatoInvalidoError) as exc:
+            cobertura_minima_aashto(material=_marco(), D=1.50)
+    assert exc.value.campo == CRITERIO_COBERTURA_CAJON
+
+
+def test_la_memoria_de_un_marco_no_dice_que_su_h_rec_sale_de_aashto():
+    """
+    `criterio_recubrimiento` es lo que viaja a `Verificacion.criterio_aplicado`
+    de G1 y lo que M11 imprime. Con una sola clave, la memoria de un marco
+    habria dicho que su cobertura sale de la Tabla 12.6.6.3-1 -- que no tiene
+    fila de cajon de concreto --, que es exactamente la cita falsa que el
+    precedente NOR-HID-01 describe.
+    """
+    with declarados(DECLARACIONES_CAJON):
+        assert criterio_recubrimiento(_marco()) == CRITERIO_COBERTURA_CAJON
+    assert criterio_recubrimiento(
+        catalogo(TipoMaterial.CONCRETO_REFORZADO)) == CRITERIO_COBERTURA_AASHTO
 
 
 # --- guarda defensiva: se demuestra inalcanzable, no se alcanza ------------

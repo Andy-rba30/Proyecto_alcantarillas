@@ -593,6 +593,7 @@ _META_CRITERIOS: Dict[str, _Meta] = {
         unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
     "clases_producto_por_relleno": _Meta(unidad="-"),
     "cobertura_minima_aashto": _Meta(unidad="m"),
+    "cobertura_minima_cajon": _Meta(unidad="m"),
     "condicion_pavimento": _Meta(unidad="-"),
     "cortante_alto_muro_e060_art_11_10_10_2": _Meta(unidad="-"),
     "demanda_sismica_licuefaccion": _Meta(

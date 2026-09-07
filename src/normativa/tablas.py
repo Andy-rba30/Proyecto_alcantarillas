@@ -2412,6 +2412,14 @@ T_COBERTURA_MINIMA = _tabla(
                    "of flexible pavement"),
             pagina_pdf=1660)),
     ),
+    # LO QUE ESTA TABLA NO DICE, y hace falta que lo diga el registro porque
+    # esta tabla CASI encaja con el marco: tiene fila de concreto y tiene una
+    # fila con la palabra «box», y ninguna de las dos sirve. Es lo que
+    # autoriza a 'cobertura_minima_cajon' a ser un vacio [A] en vez de un [C]
+    # cubierto con esta misma tabla, y es la leccion de NOR-VAC-01 al reves:
+    # alli el «vacio verificado» no era un vacio porque la tabla SI lo
+    # tabulaba; aqui el vacio si lo es, y por eso se registra con su barrido.
+    afirmaciones_negativas=(_c.SIN_CAJON_DE_CONCRETO_T12663,),
     alcance=Integra(),
     vistas_de_calculo=("cobertura_minima_aashto",),
 )

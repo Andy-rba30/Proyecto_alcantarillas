@@ -248,7 +248,8 @@ import criterios_adoptados as ca
 from dominios import ESVIAJE_MAX
 from modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
                      CondicionRasante,
-                     DatoInvalidoError, EleccionDeProyecto, LimiteNumericoError,
+                     DatoInvalidoError, EleccionDeProyecto, FormaSeccion,
+                     LimiteNumericoError,
                      Magnitud, Material,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
@@ -273,6 +274,7 @@ NUMERAL_G2 = "Sec. 7.B (cotas amarradas al fondo del receptor)"
 
 CRITERIO_TALUD = "talud_terraplen"
 CRITERIO_COBERTURA_AASHTO = "cobertura_minima_aashto"
+CRITERIO_COBERTURA_CAJON = "cobertura_minima_cajon"
 CRITERIO_CONDICION_PAVIMENTO = "condicion_pavimento"
 
 # Claves de la fila de 'cobertura_minima_aashto'. Los nombres reproducen la
@@ -324,6 +326,37 @@ def espesor_paquete(punto: PuntoCritico) -> float:
 # defecto: la calculaban como cota_entrada + D, sin espesor de pared (MAT-D4).
 
 
+def _cobertura_declarada_del_cajon() -> float:
+    """
+    La cobertura minima del marco, m: la que el proyectista DECLARO, porque no
+    hay tabla de la que leerla.
+
+    Se detiene con `CriterioPendienteError` mientras 'cobertura_minima_cajon'
+    siga vacio -- que es lo correcto: el revisor tiene que DECIDIR, no
+    conseguir un dato --. Su ficha lleva las tres lecturas candidatas con su
+    consecuencia, y la `AfirmacionNegativa` SIN_CAJON_DE_CONCRETO_T12663 fija
+    el barrido que sostiene el vacio.
+
+    LA GUARDA ES DE LIMITE Y NO DE DOMINIO, en la forma de MAT-D13: umbral
+    MEDIDO -- una cobertura negativa no es "un dato raro", es una cota de
+    clave por encima de la subrasante --, condicion escrita en positivo y
+    negada, y mensaje que nombra la clave culpable. Cero SI es admisible: es
+    la unica rama que AASHTO cubre expresamente para un cajon, y la ficha del
+    criterio dice con que exigencia estructural viene.
+    """
+    h = ca.valor(CRITERIO_COBERTURA_CAJON)      # CriterioPendienteError si falta
+    if not h >= 0.0:
+        raise DatoInvalidoError(
+            CRITERIO_COBERTURA_CAJON, valor=h,
+            motivo="la cobertura minima de un marco no puede ser negativa: "
+                   "seria una clave por encima de la subrasante. El cero SI "
+                   "es declarable -- AASHTO lo cubre expresamente, a cambio "
+                   "de disenar la losa superior para carga vehicular directa "
+                   "--, y por eso el limite es el cero y no un piso positivo",
+        )
+    return float(h)
+
+
 def cobertura_minima_aashto(*, material: Material, D: float) -> float:
     """
     Cobertura minima sobre la clave, m, segun la Tabla 12.6.6.3-1 de AASHTO
@@ -348,6 +381,17 @@ def cobertura_minima_aashto(*, material: Material, D: float) -> float:
     cobertura minima del marco sale de `cobertura_minima_cajon`, que es un
     vacio declarado, no de esta tabla.
 
+    LA BIFURCACION ES POR FORMA Y NO POR MATERIAL, por lo mismo que en
+    `M8._elemento_de`: un marco de concreto y un tubo de concreto comparten
+    `TipoMaterial`, de modo que indexar la tabla por material no los separa.
+    Hasta C7 no se separaban, y el marco recibia la fila del tubo -- y encima
+    con la dimension equivocada dentro, porque `D` en un marco vale la ALTURA
+    y `diametro_exterior` la convierte en H + 2t, que es B'c y no Bc. Medido:
+    para un marco de 3.00 x 1.50 m con t = 0.15 salia 0.3048 m, el piso de la
+    fila del tubo, SIN QUE EL ANCHO ENTRARA EN EL CALCULO -- B no es argumento
+    de esta funcion --. Ese es el motivo de que la respuesta no sea traer un
+    termino mas sino detenerse: no hay fila que aplicar.
+
     QUE DIAMETRO ENTRA lo dice la nomenclatura del articulo, y no es el mismo
     en las tres filas: Bc ("outside diameter or width of the structure") en el
     concreto reforzado, S ("diameter of pipe") en el metal corrugado e ID
@@ -361,8 +405,11 @@ def cobertura_minima_aashto(*, material: Material, D: float) -> float:
     en concreto la fila de pavimento rigido pide MENOS que las otras dos -- y
     porque adoptarlo moveria la rasante de todos los puntos sin declararlo.
 
-    Se detiene tambien en 'espesor_pared_conducto' cuando la fila usa Bc.
+    Se detiene tambien en 'espesor_pared_conducto' cuando la fila usa Bc, y en
+    'cobertura_minima_cajon' cuando la seccion es rectangular.
     """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        return _cobertura_declarada_del_cajon()
     tabla = ca.valor(CRITERIO_COBERTURA_AASHTO)
     condicion = ca.valor(CRITERIO_CONDICION_PAVIMENTO)   # CriterioPendienteError
     filas = tabla[material.tipo.value]
@@ -446,8 +493,15 @@ def altura_recubrimiento(*, material: Material, D: float) -> float:
 
 def criterio_recubrimiento(material: Material) -> Optional[str]:
     """
-    Clave del criterio del que sale h_rec: hoy siempre
-    'cobertura_minima_aashto'.
+    Clave del criterio del que sale h_rec: 'cobertura_minima_aashto' en las
+    secciones circulares y 'cobertura_minima_cajon' en el marco.
+
+    QUE DEVUELVA CLAVES DISTINTAS ES EL PUNTO, no un detalle: esta clave es la
+    que viaja a `Verificacion.criterio_aplicado` de G1 y la que M11 imprime.
+    Con una sola clave, la memoria de un marco habria dicho que su h_rec sale
+    de la Tabla 12.6.6.3-1 de AASHTO -- que no tiene fila de cajon de
+    concreto: ver la `AfirmacionNegativa` SIN_CAJON_DE_CONCRETO_T12663 --, que
+    es la cita falsa que este proyecto persigue.
 
     Devolvia None en HDPE -- donde el 0.30 m se leia como [N] puro de EG-2013
     -- y 'h_relleno_min_concreto_tmc' en los otros dos. Ahora la tabla de
@@ -461,6 +515,8 @@ def criterio_recubrimiento(material: Material) -> Optional[str]:
     habra criterio adoptado que declarar, y la `Verificacion` de G1 tiene que
     poder decirlo. `Material` guarda los valores pero no su procedencia.
     """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        return CRITERIO_COBERTURA_CAJON
     return CRITERIO_COBERTURA_AASHTO
 
 
