@@ -898,14 +898,16 @@ recomienda.
 | `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES` |
 | `F3.D_MIN` | Fase 3 - Tipo, material y durabilidad | Seccion minima circular de 0.90 m (36") | **obliga** | `MC_HHD.4.1.1.3.4a` |
 | `F3.MANTENIMIENTO` | Fase 3 - Tipo, material y durabilidad | Cota inferior de la progresion de secciones: dimension interior que permite mantener y limpiar el conducto | **obliga** | `MC_HHD.4.1.1.3.7d` |
+| `F3.SECCION_CANAL` | Fase 3 - Tipo, material y durabilidad | Adopcion de la seccion del cajon en un cruce de canal de riego, fuera del piso de 0.90 m | **obliga** | `MC_HHD.4.1.1.3.4a` |
 | `F3.TIPO_MARCO` | Fase 3 - Tipo, material y durabilidad | Tipo de estructura del cruce: alcantarilla tipo marco de concreto de seccion rectangular | **recomienda** | `MC_HHD.4.1.1.3.4a#TIPOS`, `MC_HHD.4.1.1.3.4a#NIVELES`, `MC_HHD.4.1.1.3.4a#MARCO`, `MC_HHD.LAMINA_03` |
 | `F4.CONTROL` | Fase 4 - Dimensionamiento hidraulico | Carga a la entrada HW por los dos controles del HDS-5, entrada y salida, y adopcion del mayor | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.3.1.4#K` |
 | `F4.FORMA_HDS5` | Fase 4 - Dimensionamiento hidraulico | Forma de la ecuacion de control de entrada del HDS-5 que aplica a esta seccion, y por que | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.TA.1`, `HDS5_3ED.A.3#FORMAS` |
 | `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D` |
 | `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning, resueltos con las DOS rugosidades del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
+| `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.SECCION` | Fase 4 - Dimensionamiento hidraulico | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | **define** | `MC_HHD.4.1.1.3.6` |
 | `F4.YC_RECT` | Fase 4 - Dimensionamiento hidraulico | Tirante critico de la seccion, y la energia critica H_c | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.A.2` |
-| `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y/D <= 0.75 | **recomienda** | `MC_HHD.4.1.1.3.7b` |
+| `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y <= 0.75 de la altura, diametro o flecha de la estructura | **recomienda** | `MC_HHD.4.1.1.3.7b` |
 | `F5.V2` | Fase 5 - Verificaciones | V2 - Velocidad minima de autolimpieza: V >= 0.25 m/s | **recomienda** | `MC_HHD.4.1.1.3.6#VMIN_INICIO`, `MC_HHD.4.1.1.3.6#VMIN` |
 | `F5.V2b` | Fase 5 - Verificaciones | V2b - Sedimentacion / colmatacion: el indicador de pendiente del HDS-5 mas el acceso de mantenimiento declarado | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO` |
 | `F5.V3` | Fase 5 - Verificaciones | V3 - Velocidad maxima admisible del revestimiento (Tabla N 10) | **obliga** | `MC_HHD.4.1.1.3.6#T10` |
