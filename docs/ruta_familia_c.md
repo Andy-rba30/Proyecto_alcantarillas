@@ -2980,7 +2980,7 @@ alta ni baja.
 | **C3** | `df2edac` · `396a9b7` · `17d36ba` · `a9e9028` · `C3d` · `C3e` · PR #8 | **1554 p / 2 s**, «PyMuPDF sí / Tk no» | La **Forma 2** de HDS-5 implementada: `M4._hw_sobre_D_no_sumergido` bifurca por `hds5.forma`; el paso de memoria que dice **qué forma se usó y por qué**, con `F4.FORMA_HDS5`; casos patrón `CP5D_*` calculados a mano; y la **línea base ensanchada a 12 archivos** (JSON, CSV, expediente, rama de error, 3 de 4 puntos dimensionados) | La transición bajo Forma 2 **decrece con el caudal** para S > 0.2365 — declarada, no corregida: corregirla es sustituir el criterio `metodo_transicion_hds5`. **D-10** nuevo y **D-9** corregido contra la v8. `R-11` (pág. A.8 inferida) y `R-12` (elisión sin marcar) anotados |
 
 
-| **C3.5** | `C3.5` (un commit) | **1558 p / 2 s**, «PyMuPDF sí / Tk no» | Dos correcciones de raíz pedidas al cerrar C3: la **regla vinculante #5** reenunciada con la medición de la Tabla A.1, y su origen corregido en `citas.py`; y **`tests/test_linea_base.py`**, que hace que la ventana deje de depender de que alguien corra el script | El límite de la ventana, **declarado y medido**: no ve cablear `forma = 1` porque ningún punto del fixture usa Forma 2 todavía. Lo cazan los tests unitarios; se vuelve visible aquí cuando C4 meta un cajón |
+| **C3.5** | `3050af8` · `e6e408c` · merge `7507991` | **1558 p / 2 s** (collected 1560), «PyMuPDF sí / Tk no» — **leído de `origin/main` en checkout limpio**, no del clon local | Dos correcciones de raíz pedidas al cerrar C3: la **regla vinculante #5** reenunciada con la medición de la Tabla A.1, y su origen corregido en `citas.py`; y **`tests/test_linea_base.py`**, que hace que la ventana deje de depender de que alguien corra el script | El límite de la ventana, **declarado y medido**: no ve cablear `forma = 1` porque ningún punto del fixture usa Forma 2 todavía. Lo cazan los tests unitarios; se vuelve visible aquí cuando C4 meta un cajón |
 ### 16.5 C2 — lo que se transcribió, lo que se corrigió y lo que se anotó
 
 **El gate de entorno se comprobó antes de transcribir nada, y no es formalismo.** PyMuPDF
@@ -3190,6 +3190,24 @@ confirmó los ocho: numeral, título, páginas impresa y PDF, y el texto de cada
 paso corrigió el defecto **D-9** que C2 había registrado contra la v8.
 
 ### 16.7 C3.5 — las dos correcciones de raíz
+
+**Entregada en `origin/main` = `7507991`**, con los tres punteros coincidiendo: `main` y
+`origin/main` en `7507991`, y la rama en `e6e408c`, **contenida en `main`** (cero commits
+fuera), de modo que no queda PR abierto ni haría falta: uno de C3.5 tendría el diff vacío.
+
+**El par, leído de un checkout limpio de `origin/main` y no del clon local:** `1558 passed /
+2 skipped`, `collected 1560`, configuración «PyMuPDF sí / ventana Tk no» —
+`test_normativa_pdf.py` corrió completo, 32 passed—. Sube 4 respecto de C3 por los cuatro
+tests nuevos de `test_linea_base.py`, que **pasan desde el checkout limpio**: era lo que
+había que comprobar, porque el test ejecuta el script y podía depender del árbol local.
+
+> **El push falló primero, y conviene que quede escrito.** Al cerrar C3.5 el remoto devolvió
+> **403** —«Claude doesn't have GitHub access… for your organization»— y se reintentó cuatro
+> veces con espera creciente. No es transitorio: es un permiso. Durante ese rato el trabajo
+> estuvo **commiteado y sin entregar**, y se reportó así, con rama y SHA, en vez de darlo por
+> cerrado. Es exactamente el caso que la regla de cierre de `CLAUDE.md` anticipa —«si la
+> fusión no se puede hacer, eso **no** convierte la tarea en terminada»— y la segunda vez que
+> el proyecto lo ejerce.
 
 **La regla vinculante #5 estaba mal enunciada, y es la que C4 y C5 citan.** Decía «no se
 cruzan coeficientes entre formas» apoyándose en el num. A.3, y ese numeral prohíbe cruzarlos
