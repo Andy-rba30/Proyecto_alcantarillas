@@ -856,7 +856,13 @@ CENSO_DE_MARCAS = {
     # el 2. La segunda es `CIFRAS_FINA = 4`, los cuatro decimales de la
     # pendiente y de n: con tres, una S de 0.0006 se imprime 0.001 y la caida
     # S*L deja de poder recomputarse desde la memoria (MAT-D9).
-    "src/modelos.py": 2,
+    # 2 -> 5 en C1, con la abstraccion `Seccion`: los tres literales que
+    # bajaron de M3 y M4 al mudarse ahi la geometria del barril -- el 8 de
+    # A = (D^2/8)(theta - sen theta), el 4 del area llena pi*D^2/4 y el 4 del
+    # radio hidraulico lleno D/4 --. NO son literales nuevos: son los mismos
+    # que M3.area, M4.area_llena y M4.radio_hidraulico_lleno traian marcados,
+    # y por eso el censo de esos dos archivos baja en la misma medida.
+    "src/modelos.py": 5,
     # 3 -> 5 en S20, con la Sec. 1.3 ("TW se calcula, no se mide"): el 2 de
     # `perimetro_trapecial` (los DOS taludes de un trapecio), la semilla y la
     # duplicacion del corchete de Brent sobre el tirante del receptor, y el

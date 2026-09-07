@@ -132,6 +132,7 @@ from scipy.optimize import brentq
 
 import criterios_adoptados as ca
 from modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
+                     SeccionCircular,
                      Geometria, LimiteNumericoError, Magnitud, Material,
                      PuntoCritico, SeccionReceptor, TiranteNormal,
                      TWDeterminado, ViaDelTW, paso)
@@ -186,9 +187,7 @@ def tirante(D: float, theta: float) -> float:
 
 def geometria(D: float, theta: float) -> Geometria:
     """Arma el `Geometria` completo (A, P, R, y) para un D y un theta dados."""
-    A = area(D, theta)
-    P = perimetro(D, theta)
-    return Geometria(D=D, theta=theta, A=A, P=P, R=A / P, y=tirante(D, theta))
+    return SeccionCircular(D).geometria_en(theta)
 
 
 def _caudal_manning(D: float, theta: float, n: float, S: float) -> float:

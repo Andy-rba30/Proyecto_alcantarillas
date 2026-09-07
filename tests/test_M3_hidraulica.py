@@ -69,7 +69,7 @@ def test_tirante_normal_resuelve_el_theta_de_cp2_desde_Q():
     g = tirante_normal(D=c["D"], Q=c["Q_con_n_max_esperado"], S=c["S"], n=c["n_max"])
 
     assert g is not None
-    assert g.theta == pytest.approx(c["theta_esperado"], rel=1e-4)
+    assert g.llenado == pytest.approx(c["theta_esperado"], rel=1e-4)
     assert g.A == pytest.approx(c["A_esperado"], abs=c["tolerancia_geometria"])
 
 
@@ -91,7 +91,7 @@ def test_resolver_manning_aplica_doble_n(concreto):
     resolucion = resolver_manning(D=c["D"], Q=Q, S=c["S"], material=concreto)
 
     assert isinstance(resolucion, TiranteNormal)
-    assert resolucion.geometria.theta == pytest.approx(c["theta_esperado"], rel=1e-4)
+    assert resolucion.geometria.llenado == pytest.approx(c["theta_esperado"], rel=1e-4)
     assert resolucion.V_erosion == pytest.approx(
         c["V_con_n_min_esperado"], abs=c["tolerancia_hidraulica"])
     assert resolucion.V_sedimentacion == pytest.approx(
