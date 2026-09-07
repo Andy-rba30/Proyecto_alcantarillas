@@ -267,6 +267,7 @@ from constantes_normativas import (H_O_HW_SOBRE_D_CAUTELA,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+                     SeccionCircular,
                      ConstantesHDS5,
                      ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
@@ -335,7 +336,7 @@ def _residuo_critico(D: float, theta: float, Q: float) -> float:
     (T no se anula en ese extremo) y el residuo queda monotono CRECIENTE, de
     -Q^2/g en la seccion vacia a +infinito en la llena. La raiz es la misma.
     """
-    geom = geometria(D, theta)
+    geom = geometria(SeccionCircular(D), theta)
     # Q^2 DESBORDA ANTES QUE NADA MAS DE ESTA LINEA (MAT-O18, mitad alcanzable).
     # `Q_m3s` no tiene techo en dominios.py -- y no se le puede inventar uno,
     # igual que a las cotas de 7.B --, de modo que un Q >= ~1.34e154 llega
@@ -403,7 +404,7 @@ def tirante_critico(Q: float, D: float) -> TiranteCritico:
         )
 
     theta_critico = brentq(f, _THETA_MIN, _THETA_MAX, xtol=TOL_BRENT)
-    geom = geometria(D, theta_critico)
+    geom = geometria(SeccionCircular(D), theta_critico)
     # SIS-G-02. LA GUARDA DE ARRIBA PROTEGE EL BRACKET DE BRENT, NO ESTA
     # DIVISION. Son dos cosas distintas y hasta aqui solo estaba la primera:
     # el residuo cruza el cero limpiamente, brentq converge, y el theta al que
@@ -1000,7 +1001,8 @@ def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
     lo necesitan (Forma 1 del control de entrada y h_o del control de salida).
     """
     if normal is None:
-        normal = resolver_manning(D=D, Q=Q, S=S, material=material)
+        normal = resolver_manning(seccion=SeccionCircular(D), Q=Q, S=S,
+                                  material=material)
     if normal is None:
         return None
 

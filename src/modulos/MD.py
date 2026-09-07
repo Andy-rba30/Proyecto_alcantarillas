@@ -140,6 +140,7 @@ from modelos import (CriterioPendienteError, DisenoNoFactibleError,
                      PasoDiseno, PuntoCritico, ResultadoHidraulico,
                      ResultadoPunto, Verificacion)
 from modulos.M2_material import materiales_candidatos, siguiente_diametro
+from modelos import SeccionCircular
 from modulos.M3_hidraulica import resolver_manning
 from modulos.M4_control import resolver_control
 
@@ -331,7 +332,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
         # NOR-MEM-01: el codigo lo calcula y el producto no lo muestra).
         resultado = None
         try:
-            normal = resolver_manning(D=D, Q=Q, S=S, material=material)
+            normal = resolver_manning(seccion=SeccionCircular(D), Q=Q, S=S,
+                                      material=material)
 
             if normal is None:
                 ultimo_motivo = _motivo_sin_flujo_libre(D, Q, S, material)

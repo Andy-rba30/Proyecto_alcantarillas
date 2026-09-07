@@ -32,6 +32,7 @@ from modelos import (ConstantesHDS5, ControlGobernante, DatoInvalidoError,
                      DisenoNoFactibleError, RegimenEntrada, ResultadoHidraulico,
                      TiranteCritico)
 from modulos.M2_material import catalogo
+from modelos import SeccionCircular
 from modulos.M3_hidraulica import geometria
 from modulos.M4_control import (CRITERIO_GEOMETRIA_SALIDA,
                                 CRITERIO_TRANSICION, NUMERAL_CRITICO,
@@ -658,7 +659,7 @@ def test_las_tres_piezas_son_tipos_de_modelos(hds5):
     critico = tirante_critico(Q, D)
 
     assert isinstance(critico, TiranteCritico)
-    assert isinstance(critico.geometria, type(geometria(D, 1.0)))
+    assert isinstance(critico.geometria, type(geometria(SeccionCircular(D), 1.0)))
     assert isinstance(control_entrada(Q=Q, D=D, S=S, hds5=hds5).regimen,
                       RegimenEntrada)
 

@@ -1001,6 +1001,7 @@ def test_v2_contra_el_caso_patron_CP3_por_la_cadena_de_produccion():
     lo hace el test de mas abajo, y lo hace en exclusiva. «El filo» de CP-3 es
     una coincidencia de tres cifras, no un empate.
     """
+    from modelos import SeccionCircular
     from modulos.M3_hidraulica import resolver_manning
 
     c3, c2 = CP3_VELOCIDAD_MINIMA, CP2_GEOMETRIA_MANNING
@@ -1010,7 +1011,7 @@ def test_v2_contra_el_caso_patron_CP3_por_la_cadena_de_produccion():
         "CP-3 se escribio para el n mas alto del concreto: si el catalogo "
         "cambia, el caso patron se revisa antes que este test")
 
-    resolucion = resolver_manning(D=c3["D"],
+    resolucion = resolver_manning(seccion=SeccionCircular(c3["D"]),
                                   Q=c3["V_objetivo"] * c2["A_esperado"],
                                   S=c3["S_que_produce_V_objetivo"],
                                   material=material)
@@ -1052,6 +1053,7 @@ def test_la_salvedad_de_CP3_es_cierta_y_no_solo_una_advertencia_escrita():
     conjunto de condiciones de la conclusion que citaba --- y quedaba a 2.9
     veces del piso, sin poder distinguir nada.
     """
+    from modelos import SeccionCircular
     from modulos.M3_hidraulica import resolver_manning
 
     c3 = CP3_VELOCIDAD_MINIMA
@@ -1059,7 +1061,7 @@ def test_la_salvedad_de_CP3_es_cierta_y_no_solo_una_advertencia_escrita():
     S = c3["S_constructiva_minima_referencia"]
 
     # Q pequeño -> tirante relativo por DEBAJO de la salvedad del fixture.
-    bajo = resolver_manning(D=c3["D"], Q=0.003, S=S, material=material)
+    bajo = resolver_manning(seccion=SeccionCircular(c3["D"]), Q=0.003, S=S, material=material)
     assert bajo is not None
     assert bajo.geometria.y_sobre_D < 0.056, (
         "el caudal elegido ya no cae bajo el tirante relativo de la salvedad: "
@@ -1069,7 +1071,7 @@ def test_la_salvedad_de_CP3_es_cierta_y_no_solo_una_advertencia_escrita():
         "S = 0.001, y aqui no se viola: o la salvedad es falsa o M3 cambio")
 
     # Y por encima de ese tirante, la conclusion del fixture se sostiene.
-    alto = resolver_manning(D=c3["D"], Q=0.02, S=S, material=material)
+    alto = resolver_manning(seccion=SeccionCircular(c3["D"]), Q=0.02, S=S, material=material)
     assert alto is not None and alto.geometria.y_sobre_D > 0.056
     assert v2_velocidad_minima(resultado=alto).cumple
 

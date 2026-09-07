@@ -869,7 +869,11 @@ CENSO_DE_MARCAS = {
     # tope de duplicaciones. Ninguno es un valor de proyecto: dos son
     # geometria de la seccion y los otros el alcance de una busqueda -- no
     # dicen cuan hondo puede ser un dren, dicen cuando dejar de buscar.
-    "src/modulos/M3_hidraulica.py": 5,
+    # 5 -> 4 en C1: el 8 de A = (D^2/8)(theta - sen theta) se fue a
+    # `modelos.SeccionCircular` con el resto de la geometria del barril. Los
+    # cuatro que quedan son los exponentes de Manning (dos veces), el tope de
+    # duplicaciones del corchete y el 2/3 de la rama de velocidades.
+    "src/modulos/M3_hidraulica.py": 4,
     "src/modulos/M4_control.py": 5,
     "src/modulos/M8_estructural.py": 1,
     "src/modulos/M9_cabezal.py": 6,
