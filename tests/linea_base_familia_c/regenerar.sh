@@ -49,9 +49,22 @@
 #      por CLON -- en un checkout nuevo es la hora del clon --, de modo que el
 #      diff daria rojo en otra maquina aunque el codigo fuera identico.
 # Las rutas de salida tambien entran en la salida de la CLI, y por eso son fijas.
+#
+# ---------------------------------------------------------------------------
+# ADMITE UN DESTINO, y es lo que permite que la suite lo consuma
+# ---------------------------------------------------------------------------
+#     sh tests/linea_base_familia_c/regenerar.sh            -> reescribe la linea base
+#     sh tests/linea_base_familia_c/regenerar.sh /tmp/x     -> escribe en /tmp/x
+#
+# Sin el argumento, `tests/test_linea_base.py` tendria que REPETIR estos cuatro
+# comandos para poder comparar sin pisar el arbol de trabajo, y entonces
+# habria dos copias de la definicion de la linea base que pueden divergir --
+# que es el defecto que este repositorio persigue en todas partes --. Con el,
+# hay UNA definicion y el test la ejecuta.
 set -e
-DIR="tests/linea_base_familia_c"
-EXT="$DIR/entradas_ampliadas.json"
+DIR="${1:-tests/linea_base_familia_c}"
+mkdir -p "$DIR"
+EXT="tests/linea_base_familia_c/entradas_ampliadas.json"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

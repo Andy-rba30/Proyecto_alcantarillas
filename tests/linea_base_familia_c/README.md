@@ -114,9 +114,16 @@ positivo` aparece **3 veces en el CLI y 12 en el JSON**. Un renombre del `campo`
 - **El código de salida**: los cuatro comandos llevan `|| true`. Una regresión de exit code
   es invisible.
 - **`--pdf` y `--criterios`**: sin cobertura.
-- **Ningún test consume esta línea base.** Solo «mira» si alguien corre el script a mano.
-  La auditoría de C3 lo demostró: una mutación que cambiaba la etiqueta de ecuación
-  impresa en las tres memorias dejaba la suite en **verde**.
+- ~~**Ningún test consume esta línea base.**~~ **CERRADO**: `tests/test_linea_base.py` corre
+  el script contra un destino temporal y compara. Es la razón de que `regenerar.sh` admita
+  un argumento de destino — sin él, el test tendría que repetir los cuatro comandos y
+  habría **dos** definiciones de la línea base que podrían divergir.
+
+  **Lo que el test sí ve y lo que no, medido con tres mutaciones:** ve invertir la etiqueta
+  de ecuación (la que dejaba la suite verde) y ve renombrar el `motivo` de un
+  `DatoInvalidoError` (la regresión de C1). **No** ve cablear `forma = 1` en el paso de
+  memoria, porque hoy ningún punto del fixture usa Forma 2 — las tres cartas circulares son
+  Forma 1—; a ésa la caza un test unitario. Las dos capas son complementarias.
 - **La memoria generada no lleva la advertencia de fixture.** Quien abra
   `memoria_perfil_ancha.html` suelto ve una memoria completa con TW = 0.300 m y nada que
   diga que es una sonda; la advertencia vive en este README y en el script.

@@ -2880,9 +2880,29 @@ HDS5_A3_FORMAS = _cita(
                "not be used for nonrectangular (circular, arch, pipe-arch, "
                "etc.) shapes and vice-versa."),
         pagina_pdf=191),
-    # EXIGENCIA: «should not be used» es la prohibicion que separa las dos
-    # formas de ecuacion. Es la cita que impide el error que C3 existe para
-    # evitar -- copiar la Forma 1 y cambiarle las constantes --.
+    # EXIGENCIA: «should not be used» es una prohibicion, y hay que ser preciso
+    # sobre QUE prohibe, porque este comentario lo dijo mal y el error se
+    # propago a cuatro archivos.
+    #
+    # PROHIBE CRUZAR COEFICIENTES ENTRE GEOMETRIAS -- «rectangular (box)
+    # shapes» frente a «nonrectangular» --. En esa lectura es vinculante y
+    # directa para la Familia C: el cajon usa una carta DE CAJON, no la
+    # circular de concreto con otras constantes.
+    #
+    # NO PROHIBE NADA SOBRE LAS DOS FORMAS DE ECUACION. Este comentario decia
+    # «es la prohibicion que separa las dos formas de ecuacion», y es falso.
+    # Cual de las dos aplica lo decide la COLUMNA «Equation Form» de la Tabla
+    # A.1, fila por fila. La prueba de que son ejes ortogonales esta en la
+    # propia tabla, medida sobre sus 36 filas en C3: «Rect. Box Concrete»
+    # aparece con Forma 1 (Carta 8) Y con Forma 2 (Cartas 9 a 11), y
+    # «Circular» tambien (Carta 3 Forma 1, Carta 55 Forma 2). La misma
+    # geometria vive en las dos formas; una prohibicion sobre geometrias no
+    # puede ser la regla que separa las formas.
+    #
+    # De aqui salio el error: la regla vinculante #5 de §6 lo enunciaba asi, y
+    # C3 lo copio a `constantes_normativas`, a `M4._hw_sobre_D_no_sumergido` y
+    # a `modelos.ConstantesHDS5` creyendo que lo verificaba. Los cuatro sitios
+    # estan corregidos.
     caracter=Caracter.EXIGENCIA,
     sesion=C2,
 )
