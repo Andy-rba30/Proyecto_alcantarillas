@@ -134,7 +134,15 @@ def test_la_corrida_de_perfil_pasa_de_la_fase_2_y_dimensiona(informe_perfil):
     c01 = _punto(informe_perfil, "C-01")
     assert not c01.dimensionado
     motivos = " ".join(b.mensaje for b in c01.bloqueos)
-    assert "no es no-factible, es de otra forma de estructura" in motivos
+    # EL BLOQUEO DE C-01 CAMBIO DE NATURALEZA EN C5, y es el criterio de
+    # salida de esa sesion. Antes: "M2 no ofrece material candidato para la
+    # Familia C ... es de otra forma de estructura", que era una afirmacion
+    # sobre el CATALOGO y que no se podia resolver declarando nada. Ahora: un
+    # criterio del cajon sin declarar, que es una afirmacion sobre el
+    # EXPEDIENTE y una linea de la lista de trabajo del tesista.
+    assert "embocadura_cajon" in motivos
+    assert "VACIO sin valor asignado" in motivos
+    assert "no ofrece material candidato" not in motivos
 
 
 def test_las_nueve_verificaciones_de_perfil_llegan_a_la_memoria(informe_perfil):
@@ -366,13 +374,31 @@ def test_ningun_A_de_perfil_invocado_queda_sin_valor(informe_perfil):
     que la propia memoria imprime. Un criterio que gobierna un numero de esta
     memoria y no esta declarado seria un numero sin defensa.
     """
+    declarados_vacios = set(ca.criterios_de_perfil_sin_valor())
     for clave in sorted(USADOS_POR_LA_CORRIDA):
         c = ca.criterio_efectivo(clave)
         if c.etiqueta != "A":
             continue
         if c.nivel == ca.NIVEL_EXPEDIENTE:
             continue        # V5 y V8: los difiere el alcance, con fundamento
-        assert c.valor is not None, f"[A] de perfil sin valor: {clave}"
+        # C5 REABRIO EL NIVEL DE PERFIL, y esta es la unica forma honesta de
+        # escribirlo. Hasta C4 la asercion era `c.valor is not None` a secas,
+        # porque S20 habia cerrado el nivel y no quedaba ningun [A] de perfil
+        # invocado sin valor. C5 abre los del cajon -- la Familia C es un
+        # cruce de canal y el num. 4.1.1.3.4 a) remite su seccion a "cada
+        # diseño particular", de modo que el proyecto NO PUEDE escribirlos --,
+        # y con el marco en el catalogo la corrida de perfil los invoca.
+        #
+        # Lo que NO se relaja es el fondo: un [A] de perfil sin valor solo es
+        # admisible si esta DECLARADO como vacio abierto, y aun asi tiene que
+        # llevar ventana y procedencia. Lo que la asercion pierde en dureza lo
+        # gana en verdad: antes decia "no hay ninguno" y ahora dice "los que
+        # hay estan todos declarados", que es lo que se puede sostener.
+        if c.valor is None:
+            assert clave in declarados_vacios, (
+                f"[A] de perfil sin valor y sin declarar como vacio abierto: "
+                f"{clave}. Un vacio que la corrida invoca y que no figura en "
+                f"`criterios_de_perfil_sin_valor()` no se puede planificar")
         assert c.sensibilidad is not None, f"[A] de perfil sin ventana: {clave}"
         assert c.resolucion is not None, f"[A] de perfil sin procedencia: {clave}"
 
@@ -398,10 +424,28 @@ def test_todo_criterio_que_la_corrida_de_perfil_invoca_esta_clasificado(
                 "de perfil lo invoca sin que su etapa quede diferida")
 
 
-def test_los_dos_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
+# LOS VACIOS DE PERFIL SON SIETE Y NO DOS, y los cinco nuevos son de C5. Se
+# separan en dos grupos porque no son la misma clase de hueco:
+#
+#   NO INVOCADOS -- los dos de S20. Existen y esta corrida no llega a ellos.
+#   INVOCADOS    -- los cinco del cajon. La corrida SI llega a ellos, y por eso
+#                   detienen el punto de Familia C. Ese es su trabajo.
+VACIOS_DE_PERFIL_NO_INVOCADOS = ["TW_receptor", "homogeneidad_serie_fen"]
+VACIOS_DE_PERFIL_DEL_CAJON = [
+    "secciones_cajon_normalizadas",   # la progresion B*H
+    "n_manning_cajon",                # la fila de la Tabla N 09
+    "embocadura_cajon",               # la carta de la Tabla A.1
+    "n_celdas_cajon",                 # una celda o multicelda
+    "ke_entrada_cajon",               # la fila de la Tabla C.2
+]
+
+
+def test_los_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
     """
-    Quedan dos, y ninguno es una omision: los dos declaran por que no se
-    pudieron cerrar, y ninguno lo invoca esta corrida.
+    Son SIETE, y ninguno es una omision: los siete declaran por que no se
+    pudieron cerrar.
+
+    LOS DOS DE S20, que esta corrida no invoca:
 
     'TW_receptor'          Sec. 1.3 lo dejo como ULTIMA puerta. Con el
                            expediente aportando el caudal del receptor, la
@@ -410,14 +454,34 @@ def test_los_dos_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
                            SENAMHI, que no esta en el expediente. Elegir una
                            de sus dos ramas seria afirmar algo sobre un
                            archivo que nadie abrio.
+
+    LOS CINCO DEL CAJON (C5), que esta corrida SI invoca, y por una razon que
+    no es un olvido del proyecto sino una instruccion del numeral: el num.
+    4.1.1.3.4 a) exceptua a los cruces de canal de riego del piso de 0.90 m y
+    los remite a "cada diseño particular". Lo que ese numeral hace no es
+    liberar la seccion: la traslada del catalogo al DISEÑO. Escribirles un
+    valor aqui seria inventar lo que la norma manda decidir caso por caso.
     """
-    assert ca.criterios_de_perfil_sin_valor() == ["TW_receptor",
-                                                  "homogeneidad_serie_fen"]
+    # La funcion devuelve ORDENADO ALFABETICAMENTE, no por declaracion: se
+    # compara contra la union ordenada para que la asercion diga lo que mide.
+    assert (ca.criterios_de_perfil_sin_valor()
+            == sorted(VACIOS_DE_PERFIL_NO_INVOCADOS
+                      + VACIOS_DE_PERFIL_DEL_CAJON))
+
     for clave in ca.criterios_de_perfil_sin_valor():
-        assert clave not in USADOS_POR_LA_CORRIDA
         assert ca.CRITERIOS[clave].sensibilidad is not None, (
             f"'{clave}' esta vacio y sin ventana: la ventana es parte de la "
             "ficha, no del valor")
+        assert ca.CRITERIOS[clave].resolucion is not None, (
+            f"'{clave}' esta vacio y sin procedencia")
+
+    for clave in VACIOS_DE_PERFIL_NO_INVOCADOS:
+        assert clave not in USADOS_POR_LA_CORRIDA
+
+    # Y el que la corrida SI invoca es el que detiene al punto de Familia C.
+    # Uno y no cinco: `cli._etapa` registra UN bloqueo por etapa, de modo que
+    # el revisor ve el primero y los demas aparecen a medida que los declara.
+    assert "embocadura_cajon" in USADOS_POR_LA_CORRIDA
 
 
 # ===========================================================================

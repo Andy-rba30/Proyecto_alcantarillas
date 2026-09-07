@@ -2581,8 +2581,11 @@ celdas**, no la verificación. Confundirlos metería un `Fundamento` en un paso 
 **La v8 no se edita desde aquí** (§0). Se acumulan, con el símbolo del código donde cada
 discrepancia se ve, para que quien la corrija sepa contra qué contrastarla. Ninguno de los
 ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
-`normativa/discrepancias.py` se revisaron una a una. *(C3 añadió D-10 y C4 añade D-11 y
-D-12; los doce siguen sin duplicar ninguna `DIS-HR-*`.)*
+`normativa/discrepancias.py` se revisaron una a una. *(C3 añadió D-10, C4 añadió D-11 y D-12,
+y C5 añade D-13 y D-14; los catorce siguen sin duplicar ninguna `DIS-HR-*`. **D-13 roza
+`DIS-HR-D-MAX` y no la duplica**, y conviene decir por qué: aquella discrepancia es contra las
+tres normas de producto —A760 y M170M no topan el diámetro donde el Anexo B decía—, y D-13 es
+contra la **forma de la pregunta**, que presupone que lo que se verifica es un diámetro.)*
 
 | Id | Dónde | Qué dice la v8 | Qué dice la fuente primaria | Dónde se ve en el código |
 |---|---|---|---|---|
@@ -2602,6 +2605,9 @@ D-12; los doce siguen sin duplicar ninguna `DIS-HR-*`.)*
 | **D-11** *(C4)* | **«Notas críticas de programación»** (la lista que un programador lee como checklist) | Enuncia **sin condición** dos propiedades que sólo valen para la sección circular: *«**Q(y/D) no es monótona** cerca de sección llena (máximo en y/D ≈ 0.938)»* y *«**M4 necesita tirante crítico:** Q²T/(gA³) = 1, **segundo Brent sobre θ**»* | Las dos son **falsas para el marco**, medido: barrido de 400 tirantes entre 0 y H sobre 2.00 × 1.50 → **Q(y) es estrictamente creciente, sin pico**; y el crítico **se despeja**, `y_c = (q²/g)^(1/3)`, sin segundo solver y sin θ. **La v8 se contradice a sí misma**: su §4.2.1 lo condiciona bien —*«El tirante crítico **en sección circular** no tiene solución cerrada»*—, pero la versión sin condición es la que está en el checklist | `SeccionRectangular.llenado_critico_cerrado` y `M4.tirante_critico`, que bifurca por lo que la sección responde. **La consecuencia no es cosmética:** quien implemente desde el checklist pone un Brent donde hay fórmula cerrada, y con él **reintroduce la clase de fallo de `SIS-G-02`** que la forma cerrada retira |
 | **D-12** *(C4)* | **Fase 4, §4.3**, ecuación de pérdida de carga | Escribe `H = (1 + k_e + 19.63·n²·L/R^(4/3))·V²/(2g)` **sin decir qué `R`**, y la única R que la v8 define es la de §4.1, `R = A/P` de la sección circular parcialmente llena | Para un marco hay **dos R distintas y las dos son correctas**, cada una en su régimen: la de **lámina libre** (`P = B + 2y`, sin la losa superior) y la de **sección llena a presión** (`P = 2(B+H)`, con ella). Medido sobre 2.00 × 1.50 m: en `y = H` valen **0.600 m** y **0.4286 m** — un **40 %** —. En la circular **convergen** (en θ = 2π el ancho de la lámina se anula y el perímetro de lámina libre ya es πD), y por eso la ambigüedad de la v8 no se nota | `SeccionRectangular.radio_hidraulico_lleno` frente a `geometria_en(y).R`, con la distinción escrita en el docstring de la clase y fijada en `CP2R_GEOMETRIA_MANNING_RECTANGULAR`. El proyecto **sí** la resuelve, por el criterio `geometria_control_salida = "seccion_llena"`; lo que no la resuelve es la v8, y quien generalice su `R = A/P` al marco se equivoca en un 40 % en el término de fricción |
 
+| **D-13** *(C5)* | **Fase 5, fila V9** | *«**V9** · **Disponibilidad de diámetro** · D requerido ≤ **tope de la norma de producto del material** · **[C]** — nuevo en v7»* (línea 523 de la v8) | Tres cosas y las tres son falsas para el marco. **(a)** La atribución a la norma de producto ya estaba desmentida para el tubo (`DIS-HR-D-MAX`, `NOR-PRO-01`/`-02`) y la v8 la conserva. **(b)** Lo que un marco vaciado in situ tiene no es un tope de producto sino una **serie declarada por el proyectista**: la dimensión que se arma es la que se encofra. **(c)** La etiqueta **[C]** —vacío cubierto con fuente técnica— no se sostiene: no hay fuente técnica ninguna detrás, es **[A]** | `M5.v9_disponibilidad_diametro` bifurca desde C5: para el tubo cita `'D_max_catalogo'`, para el marco `'secciones_cajon_normalizadas'`, y `M2.catalogo` resuelve el `D_max` del marco como la mayor altura de esa serie. La v8 sigue mandando a leer una norma de producto que ni topa el tubo ni existe para el marco |
+| **D-14** *(C5)* | **Fase 4, §4.3** (la nota de `k_e`, línea 503) y **el Anexo de etiquetas** (línea 872) | *«Ningún numeral del Manual MTC ni del Manual de Puentes fija el coeficiente de pérdida de entrada k_e. Para la embocadura *square edge with headwall* (adoptada en §9.1), se toma **k_e = 0.5** de **las tablas** de coeficiente de pérdida de entrada del HDS-5»* | **Ni número de tabla, ni página, ni fila, ni rótulo de agrupación** — «las tablas», en plural, para un valor que sale de **una** fila de **una** tabla (C.2, pág. impresa C.6 / PDF 216) —. Y sobre todo: **no dice que esa tabla tenga un bloque propio para el cajón**. Medido: el bloque «Box, Reinforced Concrete» tiene **siete filas con coeficiente** bajo **cuatro rótulos de agrupación**, con valores **0.2, 0.4, 0.5 y 0.7**; una de ellas vale 0.5, igual que la del tubo | Es la regla vinculante **#11** escrita como defecto de la v8. `M4.criterio_ke_de` elige hoy el criterio por forma y `M4.ke_declarado` resuelve el del marco desde una **clave de fila** de `constantes_normativas.KE_HDS5_C2`. Con la v8 en la mano, quien implemente el cajón escribe `ke = 0.5` y **acierta el número con la cita equivocada** — el precedente `NOR-HID-01` —, y deja de acertar en cuanto la embocadura declare aletas |
+
 **Recordatorio, no defecto nuevo:** `DIS-HR-G-LAUSHEY` sigue en estado
 `ABIERTA_CONTRA_HOJA_DE_RUTA` y esta sesión la **reconfirmó por segunda vía independiente**
 (§15.3.4): el num. 4.1.1.3.7 c) define `g` sin número. **La v8 sigue mal ahí.**
@@ -2616,13 +2622,14 @@ D-12; los doce siguen sin duplicar ninguna `DIS-HR-*`.)*
 | ~~**R-4**~~ **cerrado en C2** | `constantes_normativas.TABLA_09_FILAS` | Sus valores de A.2 son la lectura **corregida** del corrimiento y el bloque **no remite a `DIS-MCHHD-T09-A2-DESPLAZADA`**, que está declarada en `normativa/tablas.py`. Quien lea sólo `constantes_normativas` y vaya a la página encuentra otros tres números | **C2** — una línea de remisión; la discrepancia ya existe y **no hay que volver a demostrarla** |
 | ~~**R-5**~~ | ~~`SIN_FUNDAMENTO` de `F5.V6`~~ | **RETIRADO por la auditoría adversarial (§15.10, punto 7).** CN afirmó que la ficha remitía al numeral equivocado, y es falso por partida doble: el num. **4.1.1.3.7 a) se titula literalmente «Material sólido de arrastre»** —el mismo nombre que V6— y contiene *«alcantarillas de mayor sección hidráulica»*; y la cláusula prospectiva de la ficha apunta al Ø48" **para lo que esa cláusula dice**, que es un diámetro mínimo por zona. **La ficha está bien y no se toca.** *(De paso: `SIN_FUNDAMENTO` es una `Tuple[Tuple[str,str,str], ...]`, no un dict — la notación con corchetes que CN usó sería un `TypeError`.)* | — |
 | **R-9** | `M6_proteccion.proteccion_salida` (docstring) | Afirma que `longitud_proteccion_salida` está *«hoy sin valor — la llamada se detiene con `CriterioPendienteError`»*. **Medido: vale `5.0` con `sensibilidad=(3.0, 8.0)`.** Docstring que describe un estado que dejó de ser cierto | fuera del alcance de este plan; se registra aquí porque salió al comprobar que la Fase 6 no se toca |
-| ~~**R-10**~~ **cerrado en C2** en su mitad de transcripción; el acoplamiento de `ke_entrada` sigue en C5 | `normativa/tablas.py::T_HDS5_C2.alcance` | Es `Acotada` con la razón *«…el catálogo de conductos de la Sec. 3.2 **no ofrece sección cajón**: ninguna de esas filas puede aplicarse a un punto de este corredor»*. **C5 destruye esa premisa** en cuanto M2 devuelva un candidato de marco. Es el antipatrón que §12 enumera: *«No dejar un `Acotada` describiendo un alcance que ya no es el suyo»* | **C2** transcribe las once filas de «Box, Reinforced Concrete»; **C5** amplía la `Acotada` y acopla `ke_entrada` a `embocadura_cajon` |
+| ~~**R-10**~~ **cerrado del todo en C5** (transcripción en C2; acoplamiento y `Acotada`, en C5) | `normativa/tablas.py::T_HDS5_C2.alcance` | Es `Acotada` con la razón *«…el catálogo de conductos de la Sec. 3.2 **no ofrece sección cajón**: ninguna de esas filas puede aplicarse a un punto de este corredor»*. **C5 destruye esa premisa** en cuanto M2 devuelva un candidato de marco. Es el antipatrón que §12 enumera: *«No dejar un `Acotada` describiendo un alcance que ya no es el suyo»* | **C2** transcribió el bloque «Box, Reinforced Concrete» y **ya reescribió la `Acotada`**, que hoy dice *«desde C2 la transcripción cubre las tres familias que la tabla imprime»* — C5 lo comprobó y no había nada que ampliar allí —. Lo que **sí** quedaba era el comentario de cierre de la tabla, que decía *«ABRIRLO POR FORMA ES DE C5»*: eso ya pasó, y C5 lo reescribió declarando los **dos** consumidores. El acoplamiento lo cierra `ke_entrada_cajon`, criterio **nuevo**, y no una modificación de `ke_entrada` |
 | **R-11** | `normativa/citas.py::HDS5_TA1`, campo `pagina_impresa` | Dice `"A.8"`, y **esa página no imprime folio**. C2 lo anotó en la `nota` de la cita; C3 lo reconfirmó por una vía distinta (rango vertical del texto de la página) y **sigue sin corregirse**: el campo afirma un número que el documento no imprime. Lo que sí es sólido e inequívoco es **PDF 197** más el título literal de la tabla | fuera del alcance de C3 (punto 9): tocar `pagina_impresa` mueve un campo que **T6** usa para predecir la página desde la regla de paginación, y esa interacción hay que resolverla, no esquivarla |
 | **R-12** | `normativa/citas.py::HDS5_3ED.3.1.3#TRANSICION` | Su `Verbatim` termina en *«…connecting them with a line tangent to both curves»* y **la fuente continúa** *«, as shown in Figure 3.4.»*. Es una **elisión final sin marcar** bajo el rótulo «texto literal»: el mismo patrón que `CLAUDE.md` denuncia en la tercera condición de `h_o` y que C2 ya corrigió en `#MULTIPLES`. Las palabras citadas son exactas; lo que falta es la marca de corte. Verificado contra PDF 86 | **anotado y no corregido en C3** (punto 9). Es una línea, y va con quien cierre la familia de elisiones: arreglarla mezclada con la bifurcación de forma la volvería invisible, que es lo que C1 y C2 dejaron por escrito |
 | **R-13** *(C4)* | `M3_hidraulica`, línea de import | Importa `SeccionCircular` y **no la usa**: las tres apariciones restantes del nombre en el archivo son comentarios, y un comentario no sostiene un import. Es **anterior a C4** —medido sobre `05d8a5e`, el `origin/main` con que arrancó la sesión— y es de C1, que mudó la geometría a `modelos` y dejó el import detrás | anotado y no corregido (punto 11 del prompt de C4: un defecto ajeno se anota y se sigue). Es una línea, y va con quien toque los imports de M3 — probablemente **C6**, que reescribe las entradas |
 | **R-6** | `variables_entrada._Columna.criterio_destino` | Es `Optional[str]`, un solo destino. Un segundo consumidor de `sucs_fundacion` obliga a decidir tupla o cambio de destino: **es cambio de esquema** | **C6**, no C5 (§15.5) |
 | ~~**R-7**~~ **cerrado en C2** (`DIS-MCHHD-LAMINA-03-TMC`) | `normativa/discrepancias.py` | El cuerpo del Manual describe **mal su propia Lámina Nº 03**: dice *«se aprecia secciones típicas de alcantarillas tipo marco de concreto»* (impresa 73) y la **primera de sus tres figuras es tubería metálica corrugada** (impresa 209). Contradicción **interna de la fuente primaria**, no contra la v8 | **C2** — una `Discrepancia` de estado `ABIERTA`, para que un revisor que cuente las figuras no crea que la cita está mal puesta |
-| **R-8** | `criterios_adoptados['factores_carga_aashto']` | Su comentario justifica la fila del tubo diciendo *«No es "Pórticos rígidos" … la Familia C, de marco o multicelda, sale sin candidatos»*: **describe un estado que C5 deja de ser cierto**. Falta además la clave del cajón | **C5** — junto con el epígrafe «Familia C queda sin candidatos» de `M2_material`, que tiene el mismo problema y ya está en el prompt de C5 |
+| ~~**R-8**~~ **cerrado en C5** | `criterios_adoptados['factores_carga_aashto']` | Su comentario justificaba la fila del tubo diciendo *«No es "Pórticos rígidos" … la Familia C, de marco o multicelda, sale sin candidatos»*: describía un estado que C5 deja de ser cierto. Faltaba además la clave del cajón | **C5** reescribió el comentario —lo que separa las dos filas no era nunca el catálogo, era el **tipo de estructura**— y añadió `"cajon": {"EV": "EV_porticos_rigidos"}` por la regla vinculante **#8**. **La clave queda sin consumidor hasta C7**, y eso está escrito en los dos extremos: en el propio comentario y en el docstring de `M5.v7_flotacion`, que es quien consume `M8.factores_carga_flotacion` |
+| **R-14** *(C5)* | `M8.factores_carga_flotacion`, `M8.empuje_flotacion_kn_m`, `M8.peso_relleno_kn_m`, `M2.diametro_exterior` | **V7 corre sobre un marco y todavía no es correcta**, y el defecto lo **abre C5**: antes ningún punto de Familia C llegaba a la Fase 5. Son tres cosas: los dos cálculos de M8 suponen un **cilindro**; `diametro_exterior = D + 2t` y `espesor_pared` indexan por diámetro designado en mm, que es la columna «Wall Thickness» de una norma de **tubería**; y `factores_carga_flotacion` indexa por `material.tipo.value`, de modo que el marco recibe la fila del **tubo**. El mínimo de las dos filas es 0.90 y por eso **el número de V7 no cambia**: lo que sale mal es la **fila que la memoria imprime** (`NOR-HID-01` otra vez) | **C7**, puntos 1, 2 y 6 de su brief. C5 lo deja **declarado en el consumidor** —docstring de `M5.v7_flotacion`— y no lo silencia |
 
 ### 15.9 Correcciones a ESTE documento
 
@@ -2694,6 +2701,55 @@ está en la misma oración) y la **#7** (la Tabla Nº 10 clasifica por `TIPO DE 
    imprime *«A : Área de la sección hidráulica (m2)»*, con tilde, con dos puntos y con la
    unidad—. Reescrito sin comillas, diciendo lo mismo. Traer las frases de verdad exige un
    `Verbatim` nuevo en la cita, verificado contra su página: anotado como **C4-6**.
+
+8. **§15.2, fila V9 — «NO APLICA a marco vaciado in situ» es media verdad, y la media que
+   falta cambia el código (C5).** Lo que no aplica a un marco es la **disponibilidad de
+   mercado**: una alcantarilla que se encofra en obra no tiene catálogo de proveedor. Pero
+   V9 **sí corre** sobre un marco, y tiene que correr, porque el bucle de MD recorre la serie
+   que `secciones_cajon_normalizadas` declara y hace falta decir en la memoria **contra qué
+   tope se aceptó la sección**. Lo que cambia no es si la verificación aplica: es **qué
+   significa superar el tope**. En el tubo significa *«fuera del catálogo adoptado»*; en el
+   marco, *«fuera de la serie que el expediente declaró»*, y se levanta declarando más serie,
+   no buscando otro proveedor. Está escrito así en `M2.catalogo` (el rótulo de
+   `D_max_de_catalogo` del marco) y en el docstring de `M5.v9_disponibilidad_diametro`.
+   **El nombre del símbolo no cambió**, y es deliberado: `v9_disponibilidad_diametro` lo
+   nombran la §4.4 del plan de correcciones, la fila V9 de la Fase 5 y los marcadores de las
+   plantillas de M11; renombrarlo por precisión semántica costaba arrastrar cuatro sitios sin
+   ganar un número.
+
+9. **§15.9 punto 4, el borrador de la regla #11 — «va de 0.4 a 0.7» es falso; va de 0.2 a
+   0.7 (C5).** El texto que este mismo apartado propuso para la #11 decía *«el bloque «Box,
+   Reinforced Concrete» tiene once filas y **va de 0.4 a 0.7** según las aletas»*. Medido
+   sobre la transcripción de `T_HDS5_C2`, los siete coeficientes del bloque son **0.5, 0.2,
+   0.4, 0.2, 0.5, 0.7 y 0.2**: el mínimo es **0.2**, no 0.4. La regla #11 tal como quedó
+   redactada en §6 **no repite el rango** y por eso no arrastra el error; se corrige aquí
+   porque el borrador sigue impreso en este documento y porque el 0.2 es justamente el
+   extremo que más pesa —es el de los bordes redondeados o biselados, el que **hay que
+   dibujar** para poder cobrarlo—. La `sensibilidad` de `ke_entrada_cajon` lo declara así.
+   *(El conteo «once filas» sí es correcto: son **once líneas impresas** — cuatro rótulos de
+   agrupación más siete filas con coeficiente —, y así lo dice la #11 final.)*
+
+10. **§15.6.3, la tabla de vehículos — la advertencia va en V1 y en **V4**, no en V1 y V4b
+    (C5).** El apartado asigna la `nota_del_proyecto` a *«el desarrollo de V1 y de V4b del
+    punto»*, y **V4b no puede llevarla**: no emite `PasoDeMemoria`. Su fundamento está
+    censado en `normativa.fundamentos.SIN_FUNDAMENTO` con la razón exacta —el rango HW/D
+    1.0–1.5 lo **describe** el HDS-5 y no lo prescribe, de modo que darle una cita para poder
+    colgarle la nota **convertiría en exigencia una adopción del proyectista**—, y ésa es una
+    decisión que no se revierte para hacerle sitio a un aviso. La segunda nota va en **V4**,
+    que además sirve mejor al argumento de §15.6.2: V4 es **la** verificación que mide contra
+    la subrasante de la **vía**, que es exactamente la cota que aquel párrafo contrapone a la
+    del canal. `tests/test_M5_verificaciones.py::test_v4b_no_puede_llevar_la_advertencia_y_su_razon_esta_censada`
+    fija el hueco como decisión comprobada: el día que V4b tenga fundamento, ese test cae y
+    hay que ponerle la nota.
+
+11. **§15.6.3, «Cómo se le da forma al mensaje» — se tomó la primera de las dos salidas
+    (C5).** El apartado daba dos y prohibía una tercera: o prosa corrida sin marcas, o una
+    rama nueva en `bloque_alcance`, pero *«que no se deje el texto entrando por `_esc` con
+    las negritas puestas»*. `cli.DECLARACION_ALCANCE_FAMILIA_C` está redactado **en prosa
+    corrida**, sin un solo asterisco, conservando entero el argumento y usando mayúsculas
+    donde el original llevaba negrita. La jerarquía visual se pierde y M11 no se toca, que es
+    lo que el punto 11 del brief de C5 exige. La rama de `bloque_alcance` sigue disponible
+    para **C8**, que es quien abre el reporte.
 
 ### 15.10 Lo que la auditoría adversarial encontró
 
@@ -3698,3 +3754,208 @@ es el **40 %** que mide esta misma sección.
 | **C4-7** | `M4._validar_positivo` usa `if dato <= 0`, que **deja pasar un NaN** — es la forma que MAT-D13 fijó y que C4 corrigió en `exigir_dimensiones_positivas`, pendiente en el resto. Medido: `Q = nan` atraviesa la validación y llega hasta el despeje, donde la guardia de finitud sí lo atrapa; en la circular llegaría hasta Brent | es **anterior a C4** y toca cinco llamadas de tres piezas distintas (`S`, `L`, `V`, `R`, `n`), cada una con su mensaje impreso. Corregirlas es una sesión de vocabulario, no un renglón |
 | **C4-4** | El paso `de_salida` de `M4._pasos_hidraulicos` escribe la fórmula *«HW = H + h_o − S·L, con h_o = max(TW, (y_c + D)/2)»* con `formula_cita_id = "HDS5_3ED.3.3.3#HO"`, y **ese numeral no escribe el máximo como ecuación** (verificado en C4: lo dice en prosa y sin nombrar `ho`; con forma de ecuación está en las impresas 3.12, 3.32 y 3.43) | es **anterior a C4** y la v8 **ya lo declara** en su §4.3 —*«La forma con el máximo … la 3.ª ed. no la numera: la escribe en prosa»*—, de modo que no es una atribución oculta. Corregirlo es elegir entre citar el numeral que aproxima y citar el que imprime la igualdad, y esa decisión toca los tres pasos de salida a la vez |
 | **C4-3** | `M8_estructural` sigue codificando geometría circular en producción (`(π/4)·D_ext²`, prisma de ancho `D_ext`) | es del frente **F4**. Lo que sí corrigió C4 es la palabra «completo» de §2-bis, que declaraba un alcance que el censo no tiene |
+
+
+---
+
+### 16.9 C5 — el catálogo y los criterios del cajón, y el vacío como entregable
+
+**La regla que gobernó la sesión entera fue no elegir.** Donde la v8 no habla del marco se
+abre un `Criterio(valor=None)` con nivel, sensibilidad, resolución y justificación, y el
+cálculo se detiene con `CriterioPendienteError`. **Cinco criterios nuevos, cinco sin valor.**
+El entregable de C5 no es un número: es que la lista de lo que al tesista le falta declarar
+exista, esté completa y salga impresa con su fuente.
+
+#### Los cinco criterios, y por qué son cinco y no cuatro
+
+El brief pedía cuatro. El quinto —`ke_entrada_cajon`— sale de la regla vinculante **#11**,
+que el propio brief manda aplicar en su punto 6, y es un criterio y no un valor nuevo del
+existente por la razón que la #11 explica: `ke_entrada` está atado por su campo `fuente` al
+bloque «Pipe, Concrete», y cambiarle el valor habría dejado la cita apuntando a la familia
+equivocada.
+
+| Clave | Etiqueta | Qué decide | Acoplado a |
+|---|---|---|---|
+| `secciones_cajon_normalizadas` | **[A]** | la progresión B×H, entera y en su orden | `n_celdas_cajon` (B×H es **por celda**) |
+| `n_manning_cajon` | **[N→]** | de qué fila de la Tabla Nº 09 se toma la analogía | — |
+| `embocadura_cajon` | **[A]** | qué carta y escala de la Tabla A.1 | `ke_entrada_cajon` y el detalle de Sec. 9.1 |
+| `n_celdas_cajon` | **[A]** | una celda o multicelda (Sec. 3.1) | `secciones_cajon_normalizadas` |
+| `ke_entrada_cajon` | **[C]** | qué **fila** del bloque «Box» de la Tabla C.2 | `embocadura_cajon` |
+
+**`v_max_cajon` NO se abrió**, y el brief tenía razón: la Tabla Nº 10 clasifica por
+`TIPO DE REVESTIMIENTO`, no por forma, y su fila «Concreto 3.0 – 6.0» sirve al marco tal
+cual. Abrir un criterio ahí habría sido **inventar un vacío**, que es el error simétrico del
+que los cinco evitan.
+
+#### El catálogo del marco NO SE PUEDE LISTAR, y es deliberado
+
+`M2.catalogo` tiene una regla escrita —*«un catálogo que no se puede ni listar no es un
+catálogo, es un candado»*— y los cuatro campos opcionales se leen con `_valor_si_declarado()`.
+**Con el marco esa salida no existe**, por dos razones que se acumulan: `Material.hds5` no es
+`Optional` y **no hay carta por defecto que poner** (este repositorio tiene **quince** filas de
+cajón de concreto **transcritas** de la Tabla A.1 —Cartas 8 a 12—, tres de Forma 1 y doce de
+Forma 2; la tabla trae más, y lo que queda fuera lo censa el `Acotada` de `T_HDS5_A1`); y el
+`n` del marco tiene el problema que el
+propio módulo dejó advertido para `n_manning_hdpe` —un `None` que se desempaqueta en
+`n_min, n_max` sale como `TypeError`, un fallo de **programa**, en vez de como
+`CriterioPendienteError` del **expediente**—. Se lee primero la embocadura y no el `n`, y el
+orden decide qué ve el revisor: `cli._etapa` registra **un** bloqueo por etapa, y la
+embocadura es la que arrastra más decisiones detrás (la carta, la forma de ecuación y el ke).
+
+#### El modo de fallo silencioso que `siguiente_seccion` cierra
+
+Hasta C5, MD pedía `siguiente_diametro(material.tipo)` y construía `SeccionCircular(D)` con
+lo que recibiera. **Un marco de concreto tiene el mismo `TipoMaterial` que un tubo de
+concreto**, de modo que esa llamada le habría devuelto 0.90, 1.05, 1.20… —la progresión
+**circular**— y el punto se habría dimensionado como un tubo con las constantes de HDS-5 de
+un cajón. Ningún número habría salido negativo ni infinito: **sólo equivocado**. Preguntar
+por la SECCIÓN y no por el diámetro cierra esa puerta, porque la progresión la elige la
+forma.
+
+El mismo patrón se repitió tres veces más y las tres se cerraron igual, preguntando por la
+forma en vez de por el material:
+
+- **`ke`** — `M4.criterio_ke_de(material)`. La trampa está medida: para la embocadura a ras
+  sin aletas las dos filas valen **0.5**, de modo que un `ke` único habría dado el número
+  correcto con la cita falsa, y **como acierta por casualidad no falla nunca de forma
+  ruidosa**.
+- **`D_max`** — `M2.catalogo`. El tope de un marco es la mayor altura de **su** progresión
+  declarada; heredar el 2.70 m del tubo habría dado a V9 un umbral verdadero en número y
+  falso en procedencia.
+- **`n_celdas`** — `MD._caudal_por_barril` y `M5.v6_material_solido_arrastre`. El tubo **no
+  consulta** el criterio: leerlo registraría como usado un criterio del marco en una corrida
+  que no tiene ninguno.
+
+#### El `ke` del marco se declara como FILA, no como coeficiente
+
+Es la corrección de diseño que la sesión no tenía prevista y que sale de una medición. En el
+bloque «Box, Reinforced Concrete» de la Tabla C.2 hay **siete filas con coeficiente** y los
+valores se repiten: el **0.2 está en tres**, el **0.5 en dos**, y **tres filas comparten el
+rótulo literal «Square-edged at crown»** bajo rótulos de agrupación distintos. Un criterio
+que declarase «ke = 0.2» sería por tanto **indecidible**: la memoria no podría decir de qué
+fila salió, que es exactamente la condición que el propio criterio advierte que se pierde.
+
+Por eso `ke_entrada_cajon` declara **la clave de la fila** —igual que `embocadura_cajon`
+declara una carta y no un juego de K, M, c, Y— y el número lo resuelve `M4.ke_declarado()`
+desde `constantes_normativas.KE_HDS5_C2`, una vista **derivada** de la transcripción y no
+copiada de ella (mismo patrón que `HDS5_INLET`). `ke_entrada` (el tubo) **sigue siendo un
+número** y no se tocó: tiene valor, tiene consumidor y funciona, y cambiarle la forma por
+simetría sería mover un dato de proyecto que nadie pidió mover. La asimetría queda escrita en
+`KE_HDS5_C2`, con su condición de cierre.
+
+**Y el `ke` no salía en la memoria en absoluto.** El paso de control de salida publicaba `H`
+sin decir de dónde venía su término de entrada: es el único sumando de `H` que sale de una
+**declaración** y no de la geometría. Ahora entra en la sustitución del paso 4.3, con su
+fila y su rótulo de agrupación cuando la forma es rectangular. Se ve en la línea base
+(`memoria_punto_cajon.html`), y es la única línea que ese artefacto movió en la regeneración
+final.
+
+#### La declaración de §15.6, por sus dos vehículos
+
+**El primero, `bloque_alcance`**, vía un `Bloqueo(tipo="DiferidoPorAlcance",
+diferido_por_alcance=True)` que `cli.correr_punto` emite **una vez por punto de Familia C**,
+antes de intentar nada. Se eligió midiendo, no por estilo: `bloque_acotaciones` filtra por
+`valor is not None` y la advertencia habría sido **invisible durante todo el nivel de
+perfil**, que es justo cuando hace falta; y `bloque_umbrales` habría **roto la construcción
+del bloque**, porque `fundamento_del_umbral` es incondicional y un `Fundamento` exige al
+menos una cita, que VC1 no tiene. El texto va en **prosa corrida sin marcas**, que es la
+primera de las dos salidas que §15.6.3 admite: `bloque_alcance` pinta el fundamento con
+`_esc` en una celda de tabla, y volcar ahí siete párrafos con negritas los habría impreso con
+los asteriscos puestos.
+
+**Se emite aunque el punto no dimensione, y es deliberado**: hoy ningún punto de Familia C
+dimensiona con el fixture, y es justamente cuando el revisor necesita saber con qué criterio
+se va a aceptar el punto el día que declare los cinco criterios.
+
+**El segundo, `PasoDeMemoria.nota_del_proyecto`**, en **V1 y V4** —no en V4b, por lo que
+dice §15.9 punto 10—. Cada nota nombra **contra qué cota mide ese umbral**, que es lo que
+convierte el argumento general de §15.6.2 («la sustitución no es conservadora porque los tres
+umbrales miden contra otra cota») en una lectura del número que el revisor tiene delante.
+
+Las **dos** comprobaciones que §15.6.3 exige están en verde y en `tests/test_cli.py`:
+`test_la_declaracion_de_alcance_sale_antes_de_declarar_ningun_criterio` (con la premisa
+asertada: los cinco criterios en `None`) y
+`test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4`, que construye el punto
+de Familia C **que llega a las verificaciones** —el que §15.6.3 declaraba imposible con el
+fixture tal como está, porque C-01 trae `Q_m3s` vacío a propósito—.
+
+#### V1, V6 y V9: lo que cambió y lo que no
+
+- **V1** sigue siendo **[N] puro** también para el marco, y no por analogía: el num.
+  4.1.1.3.7 b) escribe *«el 25 % de la altura, diámetro o flecha de la estructura»* —las
+  **tres** magnitudes en la misma oración—, de modo que el cajón está cubierto por el
+  **texto**. Lo único que cambia es **cuál de las tres se sustituye**, y la memoria lo dice
+  (`y/H` frente a `y/D`). De paso se completó la paráfrasis de `F5.V1`, que decía «el 25 % de
+  la altura de la estructura» y **recortaba justamente la enumeración** que hace que el
+  numeral cubra al marco.
+- **V6** no cambió de veredicto sino de **qué depende**. Decía que valía True porque *«M2/MD
+  no ofrecen diseño multibarril»*, y esa premisa la destruyó esta misma sesión. Ahora lee
+  `n_celdas_cajon` y **se pone en rojo con dos celdas declaradas**, que es lo que fija
+  `test_v6_no_cumple_si_el_expediente_declara_multicelda`. Un veredicto que dependía de lo
+  que el código no sabía hacer era el peor sitio donde tenerlo: se habría vuelto falso en
+  silencio.
+- **V9** pasó a ser disponibilidad de **sección** sin cambiar de nombre (§15.9 punto 8), y lo
+  que se corrigió es **de dónde sale el tope**.
+
+#### El diff de la línea base
+
+Se movieron **once** de los trece archivos; los dos `.csv` de resumen quedaron **idénticos
+byte a byte**. Cuatro categorías y ninguna más:
+
+| Qué se movió | Dónde | Por qué |
+|---|---|---|
+| La declaración de alcance de la Familia C, **dos veces por corrida** (en los bloqueos del punto y en el bloque de alcance) | las 4 salidas de CLI, los 3 JSON y las 3 memorias | `_declarar_alcance_familia_c` |
+| El contador «Diferidas por alcance» **+1** | las 4 salidas de CLI | la misma |
+| El `valor_obtenido` de **V6** | las 4 salidas de CLI y las 3 memorias | ya no dice «M2/MD no ofrecen diseño multibarril» |
+| El bloqueo de **C-01**: `DisenoNoFactibleError` → `CriterioPendienteError` con clave, concepto, fuente y puntos | `cli_perfil_ancho.txt` e `informe_perfil_ancho.json` | **es el criterio de salida de C5** |
+| La paráfrasis de `F5.V1`, el `ke` en la sustitución del paso 4.3 y la magnitud de llenado nombrada | las 3 memorias | V1 y el `ke` |
+| El **SHA-1 de `criterios_adoptados.py`** | las 3 memorias | el encabezado identifica el archivo por su hash; cambia siempre que el archivo cambia |
+
+**Ningún número se movió en la regeneración final.** El único número que C5 movió en toda la
+sesión es el `HW salida` del artefacto del cajón, **1.510203 → 1.489816 m**, y es exactamente
+lo que la regla #11 existe para producir: el marco dejó de calcularse con el `ke = 0.5` del
+**tubo** y pasó a usar el **0.4** de su propia fila. La diferencia, `(0.5 − 0.4)·V²/2g`, son
+los 0.0204 m que se ven.
+
+#### El criterio de salida, medido con precisión
+
+El brief pide que `cli.py tests/ejemplo_puntos.csv --luz 2.75` sobre C-01 «ya NO diga *no
+ofrece material candidato*» y que «diga que faltan declarar los criterios nuevos, con su
+concepto, su fuente y qué los resuelve, en el bloque de pendientes». **La primera mitad se
+cumple con el comando literal; la segunda necesita dos datos más, y no por culpa de C5.**
+
+Medido sobre el árbol de cierre:
+
+| Comando | Dónde se detiene C-01 |
+|---|---|
+| `--luz 2.75` | `DatoFaltanteError: falta 'S_cauce'` — al resolver el **TW** (Sec. 1.3), que va **antes** del bucle de diseño |
+| `--luz 2.75 --tw 0.30` | `DatoFaltanteError: falta 'Q_m3s'` — en `MD.disenar_punto`, que exige el caudal **antes** de pedir candidatos a M2 |
+| `--luz 2.75 --datos-externos …` (la corrida ancha de la línea base) | **`CriterioPendienteError: embocadura_cajon`**, con concepto, fuente, «lo resuelve», etapa bloqueada y puntos afectados |
+
+La razón es `M0_carga._VACIAS_FAMILIA_C = ("Q_m3s", "area_ha", "S_cauce")`: la fila C-01 del
+fixture deja **los tres vacíos a propósito**, porque el Tablero 3.1 es quien los aporta. El
+mensaje que el brief quería ver desaparecido —*«M2 (Sec. 3.4) no ofrece material candidato
+para la Familia C»*— **ya no existe en el repositorio para la Familia C** en ningún camino, y
+eso sí se cumple con el comando desnudo. Lo que el comando desnudo no puede es *llegar* a los
+criterios nuevos, porque el punto se detiene dos etapas antes por falta de datos de entrada.
+Está visible en la línea base (`cli_perfil_ancho.txt` e `informe_perfil_ancho.json`), que es
+la corrida que sí trae esos datos. **Revisar si `_VACIAS_FAMILIA_C` sigue siendo la lista
+correcta ahora que la Familia C se dimensiona es el punto 4 del brief de C6**, y ahí es donde
+esta observación tiene que aterrizar.
+
+#### Lo que C5 abre y no cierra
+
+**V7 corre sobre un marco y todavía no es correcta** (`R-14`). El defecto lo **abre esta
+sesión** —antes ningún punto de Familia C llegaba a la Fase 5— y su arreglo es de **C7**:
+los cálculos de flotación de M8 suponen un cilindro, `espesor_pared` indexa por diámetro
+designado de una norma de **tubería**, y `factores_carga_flotacion` indexa por
+`material.tipo.value`, de modo que el marco recibe la fila del tubo. El mínimo de las dos
+filas es 0.90 y por eso **el número no cambia**; lo que sale mal es la **fila que la memoria
+imprime**. Queda declarado en el consumidor —docstring de `M5.v7_flotacion`— y no silencioso,
+y la clave `"cajon"` ya está puesta en `factores_carga_aashto` esperando a que C7 la lea.
+
+**Y `ResultadoPunto.D` sigue siendo un float**, de modo que la CLI imprime «Diámetro
+adoptado: D = 0.900 m» para un marco de 1.20 × 0.90 m. **El ancho no se pierde** —los pasos
+de Fase 3 y 4 publican la sección entera, «1.20 × 0.90», y así se ve en la memoria—, pero la
+tabla de diseño y el cuadro resumen siguen hablando de un diámetro. Es el punto 1 del brief
+de **C8**, y por eso C5 no añadió un campo que ningún consumidor leería todavía.

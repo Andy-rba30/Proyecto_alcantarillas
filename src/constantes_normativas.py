@@ -576,6 +576,39 @@ NUMERAL_ZONA_TRANSICION = _reg.cita("HDS5_3ED.3.1.3#TRANSICION").como_texto()
 # Y la Tabla C.2, de donde sale ke: pag. impresa C.6, no C.2 (NOR-HDS-01).
 NUMERAL_TABLA_KE = _reg.cita("HDS5_3ED.TC.2").como_texto()
 
+# LA VISTA DE CALCULO DE LA TABLA C.2, y por que el cajon la necesita y el
+# tubo no. Mismo patron que `HDS5_INLET`: se DERIVA de la transcripcion, no se
+# copia, de modo que no puede divergir de ella.
+#
+# EL PROBLEMA QUE RESUELVE ES QUE EL NUMERO NO IDENTIFICA LA FILA. En el
+# bloque «Box, Reinforced Concrete» el ke 0.2 aparece en TRES filas, el 0.5 en
+# DOS y el 0.7 en UNA, y tres de las siete se rotulan con el mismo texto
+# --«Square-edged at crown»-- bajo rotulos de agrupacion distintos. Un
+# criterio que declarase «ke = 0.2» seria por tanto INDECIDIBLE: la memoria no
+# podria decir de que fila salio, que es justo la condicion que el propio
+# criterio 'ke_entrada_cajon' advierte que se pierde. Por eso lo que se
+# declara en el marco es la CLAVE DE LA FILA, y el numero se lee de aqui --
+# igual que 'embocadura_cajon' declara una carta y no un juego de K, M, c, Y.
+#
+# 'ke_entrada' (el circular) SIGUE SIENDO UN NUMERO y no se toca en C5: su
+# valor esta declarado, tiene consumidor y funciona, y cambiar la forma de un
+# criterio con valor por simetria es mover un dato de proyecto sin que nadie
+# lo haya pedido. La asimetria queda escrita aqui para que se lea como lo que
+# es -- una diferencia deliberada, no un descuido -- y su cierre es la
+# migracion de 'ke_entrada' al mismo patron, que no es de esta sesion.
+_TC2 = _reg.tabla("HDS5_3ED.TC2")
+KE_HDS5_C2 = {
+    _TC2.clave_corta(f): {
+        "ke": f.valores["ke"],
+        # Los dos textos que la memoria tiene que imprimir JUNTOS: la fila
+        # suelta no identifica nada.
+        "fila": f.etiqueta_literal,
+        "agrupacion": f.jerarquia[-1] if f.jerarquia else "",
+        "bloque": f.jerarquia[0] if f.jerarquia else "",
+    }
+    for f in _TC2.filas if "ke" in f.valores
+}
+
 # LA VISTA DE CALCULO, DERIVADA DE LA TRANSCRIPCION Y NO COPIADA DE ELLA.
 # Hasta C2 este diccionario estaba ESCRITO A MANO con los mismos numeros que
 # `normativa/tablas.py::T_HDS5_A1` ya transcribia: dos copias que podian

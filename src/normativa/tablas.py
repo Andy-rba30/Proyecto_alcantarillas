@@ -2012,9 +2012,11 @@ T_HDS5_C2 = _tabla(
                        etiqueta_literal=("Type of Structure and Design of "
                                          "Entrance"),
                        unidad="",
-                       uso=Usada(por=("criterios_adoptados['ke_entrada']",))),
+                       uso=Usada(por=("criterios_adoptados['ke_entrada']",
+                                      "criterios_adoptados['ke_entrada_cajon']"))),
         ColumnaDeTabla(id="ke", etiqueta_literal="Coefficient Ke", unidad="",
-                       uso=Usada(por=("M4.control_salida",))),
+                       uso=Usada(por=("M4.control_salida",
+                                      "constantes_normativas.KE_HDS5_C2"))),
     ),
     filas=(
         FilaDeTabla(
@@ -2226,13 +2228,18 @@ T_HDS5_C2 = _tabla(
                          "pagina imprime como imagen y que M4 implementa en "
                          "`perdida_carga`"),
         donde_leerlo="HDS-5 3a ed., Tabla C.2, pag. impresa C.6 (PDF 216)"),
-    # EL CONSUMIDOR DE ESTA TABLA ES `ke_entrada`, y hoy vale 0.5 tomado del
-    # bloque «Pipe, Concrete», fila «Square-edge» bajo el rotulo «Headwall or
-    # headwall and wingwalls». Con un cajon ese valor NO CORRESPONDE, y lo
-    # que lo hace peligroso es que el bloque de cajon tiene una fila que
-    # coincide en valor -- «Square-edged on 3 edges», tambien 0.5 --: el
-    # numero saldria igual y la cita seria falsa. ABRIRLO POR FORMA ES DE C5
-    # (regla vinculante #11); C2 solo transcribe.
+    # ESTA TABLA TIENE HOY DOS CONSUMIDORES, uno por forma de seccion, y esa
+    # separacion la hizo C5 (regla vinculante #11). `ke_entrada` vale 0.5
+    # tomado del bloque «Pipe, Concrete», fila «Square-edge» bajo el rotulo
+    # «Headwall or headwall and wingwalls». Con un cajon ese valor NO
+    # CORRESPONDE, y lo que lo hacia peligroso es que el bloque de cajon tiene
+    # una fila que coincide en valor -- «Square-edged on 3 edges», tambien
+    # 0.5 --: el numero habria salido igual y la cita habria sido falsa.
+    # `ke_entrada_cajon` cierra esa puerta y declara la CLAVE DE LA FILA en
+    # vez del coeficiente, porque en este bloque el numero no identifica la
+    # fila (el 0.2 esta en tres y el 0.5 en dos). La vista de calculo que
+    # traduce clave -> coeficiente es `constantes_normativas.KE_HDS5_C2`,
+    # DERIVADA de estas filas y no copiada de ellas.
     vistas_de_calculo=(),
 )
 

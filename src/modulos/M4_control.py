@@ -301,11 +301,11 @@ import criterios_adoptados as ca
 from constantes_fisicas import G
 from constantes_normativas import (FORMA_1, FORMA_2,
                                    H_O_HW_SOBRE_D_CAUTELA,
-                                   H_O_HW_SOBRE_D_MIN, KU_SI,
+                                   H_O_HW_SOBRE_D_MIN, KE_HDS5_C2, KU_SI,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
-                     Geometria, Seccion,
+                     FormaSeccion, Geometria, Seccion,
                      ConstantesHDS5,
                      ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
@@ -320,6 +320,13 @@ NUMERAL_ENTRADA = "4.2"
 NUMERAL_SALIDA = "4.3"
 
 CRITERIO_KE = "ke_entrada"
+# EL ke DEL MARCO ES OTRO CRITERIO, no el mismo con otro valor (regla
+# vinculante #11 de la Familia C). La Tabla C.2 tiene familia propia para el
+# cajon -- «Box, Reinforced Concrete», siete filas bajo cuatro rotulos de
+# agrupacion -- y la trampa es que para la embocadura a ras sin aletas el
+# numero COINCIDE con el del tubo: 0.5 en las dos. El valor acertaria por
+# casualidad y la cita seria falsa, que es el precedente NOR-HID-01.
+CRITERIO_KE_CAJON = "ke_entrada_cajon"
 CRITERIO_GEOMETRIA_SALIDA = "geometria_control_salida"
 CRITERIO_TRANSICION = "metodo_transicion_hds5"
 
@@ -818,8 +825,45 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
 # Pieza 3 - Control de salida (Sec. 4.3)
 # ---------------------------------------------------------------------------
 
+def ke_declarado(criterio_ke: str = CRITERIO_KE) -> Tuple[str, str, float]:
+    """
+    (fila, agrupacion, ke) del criterio de perdida de entrada que se le pase.
+
+    DOS CRITERIOS, DOS FORMAS DE DECLARACION, y la asimetria es deliberada
+    (esta razonada en `constantes_normativas.KE_HDS5_C2`):
+
+      * 'ke_entrada' (tubo) declara UN NUMERO. Los dos rotulos salen vacios:
+        el criterio no dice de que fila salio, y este modulo no lo puede
+        deducir sin inventarlo.
+      * 'ke_entrada_cajon' declara LA CLAVE DE UNA FILA de la Tabla C.2. Se
+        declara asi porque en el bloque «Box, Reinforced Concrete» el numero
+        NO identifica la fila -- el 0.2 esta en tres, el 0.5 en dos, y tres
+        filas comparten el rotulo «Square-edged at crown» --, de modo que un
+        numero suelto dejaria a la memoria sin poder decir de donde salio.
+
+    Una clave que no este en la tabla es `DatoInvalidoError` y no un
+    `KeyError`: quien la escribio fue el expediente, no el programa.
+    """
+    valor = ca.valor(criterio_ke)
+    if criterio_ke != CRITERIO_KE_CAJON:
+        return "", "", valor
+    fila = KE_HDS5_C2.get(valor) if isinstance(valor, str) else None
+    if fila is None:
+        raise DatoInvalidoError(
+            criterio_ke, valor=valor,
+            motivo="se espera la CLAVE de una fila del bloque «Box, "
+                   "Reinforced Concrete» de la Tabla C.2 del HDS-5, no un "
+                   "coeficiente: en ese bloque el numero no identifica la "
+                   "fila. Claves admitidas: "
+                   + ", ".join(sorted(k for k in KE_HDS5_C2 if
+                                      KE_HDS5_C2[k]["bloque"].startswith("Box"))),
+        )
+    return fila["fila"], fila["agrupacion"], fila["ke"]
+
+
 def perdida_carga(V: float, R: float, n: float, L: float,
-                  ke: Optional[float] = None) -> float:
+                  ke: Optional[float] = None,
+                  criterio_ke: str = CRITERIO_KE) -> float:
     """
     H = (1 + ke + K_friccion*n^2*L/R^(4/3)) * V^2/(2g), Sec. 4.3, en SI.
 
@@ -843,7 +887,7 @@ def perdida_carga(V: float, R: float, n: float, L: float,
     _validar_positivo("L", L, "la longitud del conducto debe ser positiva")
 
     if ke is None:
-        ke = ca.valor(CRITERIO_KE)
+        ke = ke_declarado(criterio_ke)[2]
 
     friccion = K_FRICCION_SI * n ** 2 * L / R ** (4 / 3)  # literal-ok: exponente 4/3 de Sec. 4.3
     return (1 + ke + friccion) * V ** 2 / (2 * G)
@@ -852,8 +896,15 @@ def perdida_carga(V: float, R: float, n: float, L: float,
 def _geometria_de_referencia(Q: float, seccion: Seccion) -> Tuple[float, float]:
     """
     (V, R) de la seccion con la que se evalua Sec. 4.3, segun el criterio
-    'geometria_control_salida' [C]. Hoy: seccion llena -- V = Q/(pi*D^2/4),
-    R = D/4. Ver la justificacion completa en criterios_adoptados.py.
+    'geometria_control_salida' [C]. Hoy: seccion LLENA.
+
+    NI A NI R SE ESCRIBEN AQUI, y desde C5 este docstring tampoco los escribe:
+    decia "V = Q/(pi*D^2/4), R = D/4", que es la aritmetica de un tubo y de
+    ningun marco (para el de 2.00 x 1.50 m el R lleno es B*H/(2*(B+H)) =
+    0.4286 m, no H/4). Los dos salen de la seccion -- `area_llena` y
+    `radio_hidraulico_lleno` --, que es exactamente lo que permite que el
+    mismo criterio gobierne las dos formas. Ver la justificacion completa en
+    criterios_adoptados.py.
     """
     seleccion = ca.valor(CRITERIO_GEOMETRIA_SALIDA)
     if seleccion != "seccion_llena":
@@ -869,7 +920,8 @@ def _geometria_de_referencia(Q: float, seccion: Seccion) -> Tuple[float, float]:
 
 def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
                    n: float, ke: Optional[float] = None,
-                   critico: Optional[TiranteCritico] = None) -> ControlSalida:
+                   critico: Optional[TiranteCritico] = None,
+                   criterio_ke: str = CRITERIO_KE) -> ControlSalida:
     """
     Carga a la entrada bajo control de salida (Sec. 4.3):
 
@@ -905,7 +957,15 @@ def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
         critico = tirante_critico(Q, seccion)
 
     V, R = _geometria_de_referencia(Q, seccion)
-    H = perdida_carga(V=V, R=R, n=n, L=L, ke=ke)
+    # Se resuelve UNA vez y se guarda: el numero que entra en H y el que la
+    # memoria imprime tienen que ser el mismo objeto, no dos lecturas.
+    ke_fila, ke_agrupacion, ke_valor = ke_declarado(criterio_ke)
+    if ke is not None:
+        # `ke` explicito es la via de los tests de la pieza aislada y de CP-8:
+        # gana sobre el criterio y se declara como lo que es, sin procedencia
+        # de tabla.
+        ke_valor, ke_fila, ke_agrupacion = ke, "", ""
+    H = perdida_carga(V=V, R=R, n=n, L=L, ke=ke_valor)
 
     h_o_geometrico = (critico.y_c + seccion.altura) / 2
     h_o = max(TW, h_o_geometrico)
@@ -928,6 +988,10 @@ def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
         R=R,
         ahogado_por_TW=TW > h_o_geometrico,
         critico=critico,
+        ke=ke_valor,
+        ke_criterio="" if ke is not None else criterio_ke,
+        ke_fila=ke_fila,
+        ke_agrupacion=ke_agrupacion,
         HW_sobre_D=HW_sobre_D,
         h_o_fuera_de_rango=HW_sobre_D < H_O_HW_SOBRE_D_MIN,
         h_o_requiere_cautela=HW_sobre_D < H_O_HW_SOBRE_D_CAUTELA,
@@ -937,6 +1001,55 @@ def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
 # ---------------------------------------------------------------------------
 # Pieza 4 - Cual de los dos gobierna
 # ---------------------------------------------------------------------------
+
+def _procedencia_ke(salida: ControlSalida) -> str:
+    """
+    De donde salio el ke que entro en H, escrito para el revisor.
+
+    TRES REDACCIONES Y NO DOS, porque hay tres situaciones reales: el ke que
+    llega por una clave de fila de la Tabla C.2 (el marco), el que llega como
+    numero declarado en un criterio (el tubo) y el que llega explicito por
+    argumento (los casos patron y los tests de la pieza suelta). Confundir el
+    tercero con el segundo pondria en la memoria una cita de criterio que la
+    corrida no leyo.
+    """
+    if not salida.ke_criterio:
+        return ("coeficiente pasado explicito a `control_salida`: esta "
+                "corrida NO lo leyo de ningun criterio")
+    if not salida.ke_fila:
+        return (f"criterio '{salida.ke_criterio}', declarado como NUMERO: la "
+                f"fila de la Tabla C.2 de la que sale se lee en el campo "
+                f"`fuente` del criterio, no en el valor")
+    return (f"criterio '{salida.ke_criterio}': fila «{salida.ke_fila}» bajo "
+            f"el rotulo de agrupacion «{salida.ke_agrupacion}» del bloque "
+            f"«Box, Reinforced Concrete» de la Tabla C.2 del HDS-5 (pag. "
+            f"impresa C.6). Los dos rotulos van juntos a proposito: tres "
+            f"filas del bloque se imprimen con el mismo texto y distinto "
+            f"coeficiente")
+
+
+def criterio_ke_de(material: Material) -> str:
+    """
+    Cual de los dos criterios de ke le toca a este material (regla #11).
+
+    NO ES GEOMETRIA, y por eso no rompe la ceguera de forma que C1 y C4
+    dejaron: M4 no calcula nada distinto segun la respuesta -- la ecuacion de
+    `perdida_carga` es la misma -- ni le pregunta a la seccion por sus
+    dimensiones. Lo que elige es DE QUE FILA DE QUE TABLA sale un coeficiente
+    declarado, y esa eleccion la manda la familia del catalogo: la Tabla C.2
+    de HDS-5 tiene bloques separados para «Pipe, Concrete» y para «Box,
+    Reinforced Concrete», y el num. A.3 prohibe cruzarlos.
+
+    LA TRAMPA, POR SI ALGUIEN PIENSA EN SIMPLIFICARLO: para la embocadura que
+    la Sec. 9.1 adopta -- cabezal a ras, sin aletas -- las dos filas valen
+    0.5. Un `ke` unico daria el mismo numero y la cita seria falsa, y como
+    acierta por casualidad no fallaria nunca de forma ruidosa. En cuanto la
+    embocadura declare aletas deja de coincidir: 0.4, 0.5 o 0.7 segun el
+    angulo.
+    """
+    return (CRITERIO_KE_CAJON if material.forma is FormaSeccion.RECTANGULAR
+            else CRITERIO_KE)
+
 
 def hw_gobernante(entrada: ControlEntrada,
                   salida: ControlSalida) -> Tuple[float, ControlGobernante]:
@@ -1254,6 +1367,15 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             Magnitud("H", salida.H, "m",
                      "perdida de carga en el barril, con n_max y la longitud "
                      "del conducto", cifras=CIFRAS_MAGNITUD),
+            # ke ENTRA EN LA SUSTITUCION AUNQUE NO ESTE EN LA FORMULA DE
+            # ARRIBA, y hace falta: es el unico sumando de H que sale de una
+            # DECLARACION y no de la geometria, de modo que sin el la memoria
+            # publicaba un H sin decir de donde venia su termino de entrada.
+            # Con el marco la procedencia lleva ademas la fila Y su rotulo de
+            # agrupacion, porque en el bloque «Box, Reinforced Concrete» tres
+            # filas se rotulan igual y el numero no identifica ninguna.
+            Magnitud("ke", salida.ke, "",
+                     _procedencia_ke(salida), cifras=CIFRAS_FACTOR),
             Magnitud("TW", TW, "m",
                      "tirante en el receptor durante la avenida, sobre el "
                      "fondo de la SALIDA. No es una cota",
@@ -1341,8 +1463,15 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             "mover el HW."),
     )
 
-    return (de_seccion, de_manning, de_critico, de_forma, de_entrada,
-            de_salida, de_gobernante)
+    # LA TRAZA DE FASE 3 VA DELANTE, y no la emite M4: la trae el material.
+    # M2 decide en Fase 3 que tipo de estructura, que progresion de secciones,
+    # cuantas celdas y que fila de rugosidad, y emite un `PasoDeMemoria` por
+    # cada una. Llegan por aqui porque este es el canal que M11 imprime bajo
+    # «Fases 3 y 4»; abrir uno nuevo en el reporte es de otra sesion. En la
+    # circular la tupla viene VACIA y no se mueve nada: el tubo no elige en
+    # Fase 3 -- su fila y su carta son lectura directa de una tabla --.
+    return material.pasos + (de_seccion, de_manning, de_critico, de_forma,
+                             de_entrada, de_salida, de_gobernante)
 
 
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
@@ -1381,7 +1510,8 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
     critico = tirante_critico(Q, seccion)
     entrada = control_entrada(Q=Q, seccion=seccion, S=S, hds5=material.hds5, critico=critico)
     salida = control_salida(Q=Q, seccion=seccion, S=S, L=L, TW=TW,
-                            n=material.n_para_capacidad, critico=critico)
+                            n=material.n_para_capacidad, critico=critico,
+                            criterio_ke=criterio_ke_de(material))
     _, control = hw_gobernante(entrada, salida)
 
     # HDS-5 escribe las dos condiciones de uso de h_o condicionadas a que el

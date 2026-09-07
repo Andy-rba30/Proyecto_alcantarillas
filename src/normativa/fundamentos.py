@@ -248,15 +248,22 @@ HO = _fundamento(
 V1 = _fundamento(
     id="F5.V1",
     fase=F5,
-    que_paso="V1 - Borde libre: y/D <= 0.75",
+    que_paso=("V1 - Borde libre: y <= 0.75 de la altura, diametro o flecha "
+              "de la estructura"),
     por_que=(
         "Una alcantarilla que trabaja a seccion llena deja de comportarse como "
         "un canal y pasa a comportarse como un conducto a presion: la "
         "capacidad se vuelve sensible a la entrada, el aire atrapado pulsa y "
         "cualquier obstruccion parcial embalsa aguas arriba. El borde libre es "
         "el margen que mantiene el flujo en regimen libre. El Manual lo "
-        "escribe como el 25 % de la altura de la estructura; el 0.75 es su "
-        "complemento aritmetico, no una cifra impresa."),
+        "escribe como el 25 % de «la altura, diametro o flecha de la "
+        "estructura»; el 0.75 es su complemento aritmetico, no una cifra "
+        "impresa. LA PARAFRASIS ESTABA RECORTADA -- decia «el 25 % de la "
+        "altura de la estructura» -- y el recorte importa desde C5: es "
+        "justamente la enumeracion de tres magnitudes la que hace que el "
+        "numeral cubra al marco sin analogia ninguna. Con «altura» a secas "
+        "un lector podia entender que la fuente habla de una sola forma y "
+        "que el cajon entra por extension; entra por el texto."),
     verbo=Verbo.RECOMIENDA,
     citas=("MC_HHD.4.1.1.3.7b",),
     que_pasa_si_no_se_hace=(
@@ -796,4 +803,75 @@ YC_RECT = _fundamento(
         "de auditoria bajo el rotulo «por que se hace». Es la convencion que "
         "ya siguen F4.MANNING, F5.V2b y F4.FORMA_HDS5, y que este fundamento "
         "rompia hasta que la auditoria de C4 lo vio."),
+)
+
+
+# ===========================================================================
+# El catalogo del cajon: los dos `Fundamento` que C5 emite (§15.7)
+# ===========================================================================
+# LOS OTROS TRES DE ESTE GRUPO --F3.TIPO_MARCO, F3.MANTENIMIENTO y F3.CELDAS--
+# LOS ESCRIBIO C2, que transcribio sus citas y no podia dejarlas sin
+# consumidor (T4 rechaza una cita que nadie referencia). Estos dos no: sus
+# citas ya existian antes de C2, de modo que no creaban ninguna huerfana, y su
+# sitio era la sesion que escribe el paso que los emite. Esa sesion es C5:
+# `M2_material._pasos_del_marco` emite los CINCO cuando el catalogo resuelve
+# un candidato de marco.
+#
+# QUE SIGNIFICA QUE LOS CINCO SIGAN EN `sin_alcanzar` DE
+# test_memoria_sustentada.py, y no es lo mismo que antes: hasta C5 estaban ahi
+# porque EL PASO NO EXISTIA. Ahora existe, y lo que falta es que el expediente
+# declare los criterios del cajon -- sin ellos ningun punto de Familia C
+# dimensiona y la corrida por defecto no llega a emitirlos --. Es la misma
+# categoria que F7.RELLENO, F8.RECUBRIMIENTO o F10.CUNETA: una fase que la
+# corrida no alcanza por un vacio del expediente. La prueba de que el paso
+# existe la da `test_M2_material`, declarando los criterios en caliente.
+
+SECCION_CANAL = _fundamento(
+    id="F3.SECCION_CANAL",
+    fase=F3,
+    que_paso=("Adopcion de la seccion del cajon en un cruce de canal de "
+              "riego, fuera del piso de 0.90 m"),
+    por_que=(
+        "El piso de 0.90 m del num. 4.1.1.3.4 a) NO se aplica aqui, y no "
+        "porque el proyecto decida saltarselo: el mismo numeral que lo fija "
+        "lo EXCEPTUA, en la misma oracion, para los cruces de canales de "
+        "riego, y ordena adoptar alli la seccion segun cada diseno "
+        "particular. La Familia C ES ese conjunto de cruces. Lo que el "
+        "numeral hace no es liberar la seccion: la traslada del catalogo al "
+        "diseno, y por eso la progresion B*H de este proyecto es una "
+        "adopcion declarada y no una lectura de la norma."),
+    verbo=Verbo.OBLIGA,
+    citas=("MC_HHD.4.1.1.3.4a",),   # EXIGENCIA -> sostiene OBLIGA
+    que_pasa_si_no_se_hace=(
+        "Se hereda al cajon un piso que su propio numeral le levanta, o -- al "
+        "reves -- se lee 'de acuerdo a cada diseno particular' como si fuera "
+        "un valor. Las dos contradicen la fuente, por lados opuestos."),
+)
+
+N_CAJON = _fundamento(
+    id="F4.N_CAJON",
+    fase=F4,
+    que_paso=("Coeficiente de rugosidad de Manning del cajon de concreto, "
+              "por analogia declarada dentro del grupo A de la Tabla N 09"),
+    por_que=(
+        "La Tabla N 09 SI cubre al cajon por el TITULO DE SU GRUPO, que "
+        "habla de conducto cerrado con escurrimiento parcialmente lleno y no "
+        "de tuberia: es el unico grupo de la tabla que describe una "
+        "alcantarilla. Lo que no tiene es una FILA que nombre la seccion "
+        "rectangular. El vacio es de fila y no de grupo, y por eso la "
+        "analogia se declara DENTRO del grupo que ya cubre la estructura "
+        "-- entre filas separadas por un atributo que no es la forma -- y es "
+        "mas estrecha que la de 'n_manning_hdpe', que cruza material. El "
+        "rango se toma completo, minimo y maximo: la regla de doble n pide "
+        "los dos extremos, porque n_max es conservador para capacidad y "
+        "n_min para velocidad y socavacion."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.4.1.1.3.6",          # DEFINICION -> sostiene DEFINE
+           "MC_HHD.4.1.1.3.6#T09"),     # DEFINICION
+    que_pasa_si_no_se_hace=(
+        "Se toma el n del concreto 'porque el cajon es de concreto', que es "
+        "una analogia igual de real pero SIN DECLARAR: la memoria imprimiria "
+        "un valor [N] apoyado en una fila cuyo rotulo dice 'tubo', y un "
+        "revisor que abra la pag. impresa 75 no encontraria el cajon por "
+        "ninguna parte."),
 )

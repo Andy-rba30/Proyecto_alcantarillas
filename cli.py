@@ -735,7 +735,8 @@ def _verificador_perfil(informe: InformePunto):
 
     def verificar(*, punto: PuntoCritico, material, D: float, resultado):
         filas: List[Verificacion] = [
-            M5.v1_borde_libre(D=D, resultado=resultado),
+            M5.v1_borde_libre(D=D, material=material, punto=punto,
+                              resultado=resultado),
             M5.v2_velocidad_minima(resultado=resultado),
             # V2b entra como OBLIGATORIA, y no diferida: su indicador se
             # calcula con dos numeros que la corrida de perfil ya tiene (la
@@ -759,7 +760,7 @@ def _verificador_perfil(informe: InformePunto):
         except ErrorProyecto as exc:
             _diferir_verificacion(informe, "V5", exc, ya_registrados)
         filas.extend([
-            M5.v6_material_solido_arrastre(),
+            M5.v6_material_solido_arrastre(material=material),
             M5.v7_flotacion(punto=punto, material=material, D=D,
                             resultado=resultado),
         ])
@@ -951,6 +952,95 @@ def _diferir_fase_8(informe: InformePunto) -> None:
         diferido_por_alcance=True))
 
 
+# ---------------------------------------------------------------------------
+# La declaracion de alcance de la Familia C (§15.6)
+# ---------------------------------------------------------------------------
+# EL TEXTO ES EL QUE CN REDACTO EN §15.6.2 Y EL VEHICULO EL QUE CN MIDIO. Las
+# otras dos opciones se descartaron por razones medidas, no de estilo:
+#
+#   `bloque_acotaciones` no puede llevarla por DOS motivos y cada uno basta.
+#   Mecanico: `M11.acotaciones_declaradas()` filtra por `vacio_verificado` Y
+#   por `valor is not None`, de modo que una acotacion seria invisible
+#   exactamente durante todo el nivel de perfil, que es cuando la advertencia
+#   hace falta. Y categorico, que es el que manda: acotaciones es «lo que el
+#   proyectista adopto donde la norma no dice nada», y aqui la fuente NO
+#   calla -- la Sec. 2.3 dice que hay que cumplir algo y el proyecto no lo
+#   cumple todavia --. Eso es un diferimiento de una exigencia declarada, no
+#   una adopcion sobre un vacio: meterlo ahi seria reetiquetar una deuda como
+#   una decision.
+#
+#   `bloque_umbrales` tampoco: `M11.fundamento_del_umbral` es incondicional y
+#   un `Fundamento` exige al menos una cita del registro. VC1 no tiene
+#   ninguna -- se apoyaria en la Ley 29338 y la DG-2018, fuentes ausentes --,
+#   de modo que una entrada de VC1 en `UMBRALES_DE_VERIFICACION` romperia la
+#   construccion del bloque.
+#
+# LO QUE SI LA LLEVA es `bloque_alcance`, que imprime SIEMPRE -- tambien con
+# el expediente abierto -- y que no depende de que ningun criterio tenga
+# valor. Y es POR PUNTO, de modo que nombra los puntos afectados: es la
+# leccion de NOR-HDS-05, un aviso que no señala el punto afectado es el «nadie
+# se entera».
+DECLARACION_ALCANCE_FAMILIA_C = (
+    "SUSTITUCION DEL CRITERIO DE DIMENSIONAMIENTO -- FAMILIA C (cruces de "
+    "canal y dren). "
+    "La Sec. 2.3 de la hoja de ruta enuncia, para la Familia C, un requisito "
+    "que ninguna otra familia tiene: la obra NO PUEDE ALTERAR LA RASANTE "
+    "HIDRAULICA NI EL BORDE LIBRE DEL CANAL. Esta corrida NO EVALUA ese "
+    "requisito. La verificacion que lo evaluaria -- VC1 -- necesita el nivel "
+    "de agua de diseño del canal y su borde libre, que no son columna de la "
+    "Sec. 1.2 ni los aporta ningun tablero, y queda DIFERIDA AL EXPEDIENTE. "
+    "Lo que esta corrida evalua en su lugar es la bateria general de la Fase "
+    "5, cuyos numerales son neutros respecto de la forma de la seccion: V1 "
+    "acota el tirante dentro del barril al 75 % de su altura interior (num. "
+    "4.1.1.3.7 b); V4 acota la carga a la entrada bajo la subrasante de la "
+    "VIA (Manual de Suelos num. 4.5.4, por la analogia ya declarada); y V4b "
+    "acota la relacion entre esa carga y la altura del barril contra un tope "
+    "adoptado por el proyectista. Los tres son el criterio de aceptacion de "
+    "una ALCANTARILLA DE PASO. "
+    "LA SUSTITUCION NO ES CONSERVADORA, y por eso se declara en vez de "
+    "suponerse. Los tres protegen la carretera y el conducto; NINGUNO protege "
+    "el canal. Y no lo hacen porque MIDEN CONTRA OTRA COTA: V1 compara el "
+    "tirante contra la altura del propio barril, y V4 compara la carga a la "
+    "entrada contra la subrasante de la VIA. El nivel que el requisito de la "
+    "Sec. 2.3 protege -- la rasante hidraulica del canal mas su borde libre "
+    "-- es un dato que este calculo no tiene, y ningun umbral puede acotar un "
+    "nivel que no conoce. Por tanto no hay relacion de orden garantizada "
+    "entre los tres umbrales evaluados y el que no se evalua: un punto puede "
+    "cumplir V1, V4 y V4b Y AUN ASI elevar el nivel de agua aguas arriba por "
+    "encima del borde del canal, sin que nada en esta memoria lo señale. "
+    "POR TANTO, Y MIENTRAS VC1 NO EXISTA: un veredicto «cumple» en un punto "
+    "de Familia C significa que la obra es admisible COMO ALCANTARILLA DE "
+    "PASO. NO significa que sea admisible COMO CRUCE DE CANAL. "
+    "QUE CIERRA ESTA DECLARACION: el nivel de agua de diseño y el borde libre "
+    "del canal (ANA o Junta de Usuarios del Bajo Piura), y la implementacion "
+    "de VC1."
+)
+
+
+def _declarar_alcance_familia_c(informe: InformePunto) -> None:
+    """
+    La declaracion de §15.6, emitida UNA VEZ por punto de Familia C.
+
+    NO ES UN BLOQUEO DEL EXPEDIENTE y por eso lleva
+    `diferido_por_alcance=True`: lo que dice no es que falte un dato para
+    seguir, es que hay una exigencia de la Sec. 2.3 que esta corrida no
+    evalua. Sin esa marca contaria ademas como defecto en `Informe.cerrado`,
+    que seria contar dos veces la misma deuda.
+
+    SE EMITE AUNQUE EL PUNTO NO DIMENSIONE, y es deliberado: hoy ningun punto
+    de Familia C dimensiona -- sus criterios estan sin declarar -- y es
+    justamente cuando el revisor necesita saber con que criterio se va a
+    aceptar el punto el dia que los declare.
+    """
+    informe.bloqueos.append(Bloqueo(
+        fase="Fase 5 - Verificaciones",
+        etapa="VC1 - no alteracion de la rasante hidraulica ni del borde "
+              "libre del canal",
+        tipo="DiferidoPorAlcance",
+        mensaje=DECLARACION_ALCANCE_FAMILIA_C,
+        diferido_por_alcance=True))
+
+
 def correr_punto(punto: PuntoCritico, externos: DatosExternos,
                  alcance: str = ALCANCE_EXPEDIENTE) -> InformePunto:
     """
@@ -963,6 +1053,9 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     diferido con su fundamento (ver `_diferir_fase_8`).
     """
     informe = InformePunto(punto=punto)
+
+    if punto.familia is Familia.C:
+        _declarar_alcance_familia_c(informe)
 
     if _fase_2(informe, externos):
         _fase_diseno(informe, externos, alcance)

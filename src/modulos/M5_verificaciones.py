@@ -209,12 +209,14 @@ from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE,
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      CIFRAS_PORCENTAJE,
                      DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
-                     ErrorProyecto,
+                     ErrorProyecto, Familia, FormaSeccion,
                      Magnitud, Material,
                      PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
                      Verificacion, paso)
-from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO, CRITERIO_V_MAX,
+from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
+                                 CRITERIO_N_CELDAS_CAJON,
+                                 CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
                                  diametro_exterior, espesor_pared)
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
@@ -418,12 +420,83 @@ def _veredicto(cumple: bool, margen: float, unidad: str,
 
 
 # ---------------------------------------------------------------------------
+# La advertencia de alcance de la Familia C, junto al numero (§15.6.3)
+# ---------------------------------------------------------------------------
+# LA DECLARACION ENTERA NO VIVE AQUI, y es deliberado: vive en
+# `cli.DECLARACION_ALCANCE_FAMILIA_C` y sale UNA VEZ por punto en el bloque de
+# alcance de la memoria. Lo que sale aqui es la mitad que aquel bloque no
+# puede dar -- el aviso PEGADO AL NUMERO que se acaba de calcular --, y es la
+# leccion de NOR-HDS-05: un aviso que no señala el punto afectado es el «nadie
+# se entera». Repetir la declaracion entera en cada paso seria el defecto
+# contrario, y por eso esta nota REMITE a ella en vez de transcribirla.
+#
+# `contra` es lo que hace util a esta nota y no un adorno: el argumento de
+# §15.6.2 es que la sustitucion NO es conservadora porque los umbrales que si
+# se evaluan MIDEN CONTRA OTRA COTA. Nombrar en cada verificacion contra que
+# mide ESA es lo que convierte el argumento general en una lectura del numero
+# que el revisor tiene delante.
+NOTA_ALCANCE_FAMILIA_C = (
+    "ALCANCE (Familia C -- cruce de canal o dren): el unico requisito que la "
+    "Sec. 2.3 le da a esta familia -- no alterar la rasante hidraulica ni el "
+    "borde libre del canal -- NO se evalua en esta corrida. La verificacion "
+    "que lo evaluaria (VC1) necesita el nivel de agua de diseño del canal y "
+    "su borde libre, que no son columna de la Sec. 1.2 ni los aporta ningun "
+    "tablero. ESTE umbral mide contra {contra}, no contra el canal: "
+    "cumplirlo acredita la obra como ALCANTARILLA DE PASO y no dice nada "
+    "sobre su admisibilidad COMO CRUCE DE CANAL. La declaracion entera, con "
+    "el argumento de por que la sustitucion no es conservadora, esta en el "
+    "bloque «Alcance declarado de la corrida», etapa «VC1»."
+)
+
+
+def _nota_de_alcance(punto: PuntoCritico, contra: str) -> str:
+    """La nota de §15.6.3 si el punto es de Familia C; cadena vacia si no."""
+    if punto.familia is not Familia.C:
+        return ""
+    return NOTA_ALCANCE_FAMILIA_C.format(contra=contra)
+
+
+def _magnitud_de_llenado(material: Material) -> Tuple[str, str, str]:
+    """
+    Contra que dimension se mide el llenado del barril: simbolo, nombre y
+    PROCEDENCIA, elegidos por la forma de la seccion.
+
+    NO ES COSMETICA. El num. 4.1.1.3.7 b) no escribe «D»: escribe «el 25 % de
+    la altura, diametro o flecha de la estructura», y esa enumeracion de tres
+    magnitudes es lo que hace que el numeral cubra al marco SIN ANALOGIA
+    NINGUNA -- por eso V1 sigue siendo [N] puro tambien para el cajon --. Lo
+    que cambia con la forma es cual de las tres se sustituye, y la memoria
+    tiene que decir cual, porque «D = 1.50 m» al lado de un cajon de 2.00 x
+    1.50 es un numero que el revisor no puede ubicar.
+    """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        return ("H", "la altura interior de la celda",
+                "altura interior H de la seccion adoptada por el bucle de "
+                "diseño (MD), de la progresion que el expediente declara en "
+                "'secciones_cajon_normalizadas'")
+    return ("D", "el diametro interior",
+            "diametro adoptado por el bucle de diseño (MD), de la serie "
+            "normalizada")
+
+
+# ---------------------------------------------------------------------------
 # V1 - Borde libre (Sec. 4.1.1.3.7 b)
 # ---------------------------------------------------------------------------
 
-def v1_borde_libre(*, D: float, resultado: ResultadoHidraulico) -> Verificacion:
+def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
+                  resultado: ResultadoHidraulico) -> Verificacion:
     """
     y/D <= 0.75: minimo 25 % de borde libre sobre el tirante normal.
+
+    `D` ES LA ALTURA INTERIOR DEL BARRIL, cualquiera que sea su forma, y por
+    eso esta funcion sirve al marco sin analogia: el numeral escribe "el 25 %
+    de la altura, diametro o flecha de la estructura" -- las tres magnitudes
+    en la misma oracion --, de modo que un cajon esta cubierto por el TEXTO y
+    no por extension. Lo unico que cambia es COMO SE LLAMA la dimension que se
+    sustituye, y eso lo resuelve `_magnitud_de_llenado` a partir de
+    `material.forma`. `material` y `punto` entraron en la firma en C5 por esto
+    y por la nota de alcance; hasta entonces V1 no necesitaba saber nada del
+    punto.
 
     Texto que lo sustenta, literal (MC-HHD, RD 20-2011-MTC/14,
     num. 4.1.1.3.7 b) "Borde libre", pag. impresa 79):
@@ -444,11 +517,21 @@ def v1_borde_libre(*, D: float, resultado: ResultadoHidraulico) -> Verificacion:
     capacidad): mas rugosidad da mas tirante para el mismo Q, o sea el extremo
     conservador para una verificacion de borde libre.
     """
+    simbolo, nombre, procedencia = _magnitud_de_llenado(material)
     y_sobre_D = resultado.y_normal / D
     cumple = y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO
     umbral = _umbral_de(
         "V1", valor=Y_SOBRE_D_MAX, unidad="",
-        descripcion="y/D maximo admisible (borde libre >= 25 % de D)")
+        descripcion=f"y/{simbolo} maximo admisible (borde libre >= 25 % de "
+                    f"{nombre})")
+    nota = (
+        "El numeral RECOMIENDA este borde libre; aqui se aplica como umbral "
+        "duro por decision conservadora del proyecto. La fuente no escribe "
+        f"el 0.75 ni la razon y/{simbolo}: escribe «el 25 % de la altura, "
+        "diametro o flecha de la estructura», y en esta seccion la magnitud "
+        f"que corresponde de las tres es {nombre}.")
+    de_alcance = _nota_de_alcance(
+        punto, "la altura interior del propio barril")
     return Verificacion(
         cumple=cumple,
         numeral=NUMERAL_V1,
@@ -460,8 +543,10 @@ def v1_borde_libre(*, D: float, resultado: ResultadoHidraulico) -> Verificacion:
             "F5.V1",
             codigo="V1",
             que="Borde libre: relacion de llenado del conducto",
-            formula="y/D <= 0.75, donde 0.75 = 1 - 0.25 (el 25 % que el "
-                    "numeral escribe como borde libre minimo)",
+            formula=f"y/{simbolo} <= 0.75, donde 0.75 = 1 - 0.25 (el 25 % que "
+                    f"el numeral escribe como borde libre minimo) y "
+                    f"{simbolo} es {nombre}, una de las tres magnitudes "
+                    f"que el numeral enumera",
             formula_cita_id="MC_HHD.4.1.1.3.7b",
             sustitucion=(
                 Magnitud("y_normal", resultado.y_normal, "m",
@@ -469,23 +554,17 @@ def v1_borde_libre(*, D: float, resultado: ResultadoHidraulico) -> Verificacion:
                          "MAXIMO (mas rugosidad da mas tirante para el mismo "
                          "Q: el extremo conservador para un borde libre)",
                          cifras=CIFRAS_MAGNITUD),
-                Magnitud("D", D, "m",
-                         "diametro adoptado por el bucle de diseño (MD), de "
-                         "la serie normalizada", cifras=CIFRAS_FACTOR)),
-            resultado=Magnitud("y/D", y_sobre_D, "",
-                               "y_normal / D, calculado en esta verificacion",
-                               cifras=CIFRAS_MAGNITUD),
+                Magnitud(simbolo, D, "m", procedencia, cifras=CIFRAS_FACTOR)),
+            resultado=Magnitud(f"y/{simbolo}", y_sobre_D, "",
+                               f"y_normal / {simbolo}, calculado en esta "
+                               f"verificacion", cifras=CIFRAS_MAGNITUD),
             umbral=umbral,
             veredicto=_veredicto(
                 cumple, Y_SOBRE_D_MAX - y_sobre_D, "",
                 "margen de borde libre por encima del 25 % exigido"
                 if cumple else
                 "el conducto trabaja con menos borde libre del recomendado"),
-            nota_del_proyecto=(
-                "El numeral RECOMIENDA este borde libre; aqui se aplica como "
-                "umbral duro por decision conservadora del proyecto. La "
-                "fuente no escribe el 0.75 ni la razon y/D: escribe «el 25 % "
-                "de la altura, diametro o flecha de la estructura»."),
+            nota_del_proyecto=f"{nota} {de_alcance}".strip(),
         ),
     )
 
@@ -1168,6 +1247,18 @@ def v4_carga_entrada(*, punto: PuntoCritico,
                         "'resguardo_HW_subrasante' declara como [N->]",
                 cita_id="MS.4.5.4",
                 clave_criterio=CRITERIO_RESGUARDO),),
+            # V4 es la SEGUNDA de las dos verificaciones que pueden llevar la
+            # advertencia de §15.6.3, y no la que aquel apartado nombra. La
+            # que nombra -- V4b -- no emite `PasoDeMemoria`: su `Fundamento`
+            # esta censado en `normativa.fundamentos.SIN_FUNDAMENTO` porque el
+            # rango HW/D 1.0-1.5 lo DESCRIBE el HDS-5 y no lo prescribe, y
+            # darle una cita para poder colgarle la nota seria convertir en
+            # exigencia una adopcion del proyectista. V4 sirve mejor al
+            # argumento: es LA verificacion que mide contra la subrasante de
+            # la VIA, que es justamente la cota que §15.6.2 contrapone a la
+            # del canal.
+            nota_del_proyecto=_nota_de_alcance(
+                punto, "la subrasante de la VIA, con su resguardo por CBR"),
         ),
     )
 
@@ -1280,22 +1371,51 @@ def v5_remanso(*, punto: PuntoCritico,
 # V6 - Material solido de arrastre (Sec. 3.1)
 # ---------------------------------------------------------------------------
 
-def v6_material_solido_arrastre() -> Verificacion:
+def v6_material_solido_arrastre(*, material: Material) -> Verificacion:
     """
-    Con palizada: seccion unica mayor, nunca multiple (Sec. 3.1). El
-    catalogo de M2 (Sec. 3.2) y el bucle de MD solo ofrecen conductos
-    circulares de UNA seccion -- el diseño multiceldular es Familia C
-    (marco/multicelda, Sec. 2.3) y queda fuera del alcance de M2/MD. Por
-    construccion del pipeline, esta verificacion nunca puede fallar hoy: si
-    el proyecto alguna vez agrega diseño multibarril, esta funcion deja de
-    ser trivial y hay que darle logica real.
+    Con palizada: seccion unica mayor, nunca multiple (Sec. 3.1).
+
+    LO QUE C5 CAMBIO, Y NO ES EL VEREDICTO SINO DE QUE DEPENDE. Este
+    docstring decia que "el catalogo de M2 y el bucle de MD solo ofrecen
+    conductos circulares de UNA seccion" y que "el diseño multiceldular es
+    Familia C ... y queda fuera del alcance de M2/MD". Las dos frases dejaron
+    de ser ciertas en esta misma sesion: M2 devuelve candidato de marco y MD
+    reparte el caudal entre celdas. La verificacion sigue valiendo
+    trivialmente, pero ya NO por una incapacidad del programa: vale porque el
+    expediente declara UNA celda en el criterio 'n_celdas_cajon', y el dia que
+    declare mas de una este veredicto se pone en NO CUMPLE por si solo. Un
+    veredicto que dependia de lo que el codigo no sabia hacer era el peor
+    lugar donde tenerlo: se habria vuelto falso en silencio.
+
+    NO LLEVA `PasoDeMemoria`, y la razon esta censada en
+    `normativa.fundamentos.SIN_FUNDAMENTO` bajo F5.V6: la fila V6 de la Fase 5
+    de la v8 lleva etiqueta [N] y NINGUN numeral, y su enunciado sale de una
+    frase que RECOMIENDA ("recomendandose utilizar obras con mayor seccion
+    transversal libre, sin subdivisiones", num. 4.1.1.3.4 a). El fundamento
+    que si existe es F3.CELDAS, con verbo RECOMIENDA, y funda el paso que
+    ADOPTA el numero de celdas -- que es donde esta la decision --. V6 solo
+    la comprueba.
+
+    EL CONDUCTO CIRCULAR NO CONSULTA EL CRITERIO, y es la misma regla que
+    `MD._caudal_por_barril`: un tubo es una celda por construccion de su
+    catalogo, y leer alli 'n_celdas_cajon' registraria como usado un criterio
+    del marco en una corrida que no tiene ninguno.
     """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        celdas = ca.valor(CRITERIO_N_CELDAS_CAJON)
+        procedencia = f"criterio '{CRITERIO_N_CELDAS_CAJON}' [A]"
+        criterio = CRITERIO_N_CELDAS_CAJON
+    else:
+        celdas = 1
+        procedencia = ("por construccion del catalogo circular de la Sec. "
+                       "3.2: un tubo es un solo barril")
+        criterio = None
     return Verificacion(
-        cumple=True,
+        cumple=celdas == 1,
         numeral=NUMERAL_V6,
-        valor_obtenido="sección única (M2/MD no ofrecen diseño multibarril)",
+        valor_obtenido=f"{celdas} celda(s) -- {procedencia}",
         valor_admisible="sección única con palizada",
-        criterio_aplicado=None,
+        criterio_aplicado=criterio,
         codigo="V6",
     )
 
@@ -1317,6 +1437,28 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     2.4.5.3.1-2 -- y se mayora la subpresion, que desestabiliza (WA, Tabla
     2.4.5.3.1-1). Para un conducto enterrado es la forma
     0.90*(DC + EV) >= 1.00*U.
+
+    CON UN MARCO ESTA VERIFICACION CORRE Y NO ES CORRECTA TODAVIA. Se declara
+    aqui, en su consumidor, porque desde C5 la Familia C llega hasta este
+    punto y antes no llegaba, de modo que el defecto lo ABRE esta sesion
+    aunque su arreglo sea de la siguiente. Son tres cosas y las tres son de
+    C7 (puntos 1, 2 y 6 de su brief):
+
+      1. `M8.empuje_flotacion_kn_m` y `M8.peso_relleno_kn_m` suponen un
+         CILINDRO: reciben `D_exterior` y calculan sobre pi*D^2/4. Con un
+         marco el volumen desplazado y el peso de relleno salen de un prisma,
+         y los numeros de U y de EV son otros.
+      2. `M2.diametro_exterior` = D + 2t y `M2.espesor_pared` indexan por
+         DIAMETRO DESIGNADO en milimetros, que es la columna «Wall Thickness»
+         de una norma de TUBERIA. Un marco vaciado in situ no tiene fila ahi.
+      3. `M8.factores_carga_flotacion` indexa `factores_carga_aashto` por
+         `material.tipo.value`, de modo que un marco recibe hoy la fila del
+         TUBO -- «Estructura rigida enterrada» -- y no la suya, «Porticos
+         rigidos», que la regla vinculante #8 le asigna y que C5 ya dejo
+         declarada bajo la clave 'cajon'. El minimo de las dos filas es 0.90
+         y por eso el NUMERO no cambia: lo que sale mal es la FILA que la
+         memoria imprime, o sea una cita falsa sobre un valor correcto
+         (precedente NOR-HID-01).
 
     EL gamma DE EV DEPENDE DEL MATERIAL, y por eso esta funcion le pasa el
     suyo a `factores_carga_flotacion`. La Tabla 2.4.5.3.1-2 desglosa el
@@ -1506,23 +1648,43 @@ def v8_evento_extremo(*, punto: PuntoCritico,
 
 def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     """
-    D requerido <= tope de CATALOGO del material. El tope es `material.D_max`,
-    que M2 resuelve desde el criterio 'D_max_catalogo' -- V9 solo lo consulta,
-    no lo recalcula.
+    Disponibilidad de SECCION: la dimension requerida <= el tope de CATALOGO
+    del material. El tope es `material.D_max`, que M2 resuelve -- V9 solo lo
+    consulta, no lo recalcula.
 
-    NO ES UN UMBRAL NORMATIVO (NOR-PRO-01, NOR-PRO-02, MAT-O8). El tope se
-    atribuia a ASTM C76/AASHTO M170, AASHTO M36/ASTM A760 y AASHTO M294, y
-    ninguna de las tres lo sostiene: A760 tabula diametros nominales hasta
-    3600 mm y M 170M igual. Es una adopcion del proyecto sobre la
-    disponibilidad de mercado, y por eso `criterio_aplicado` apunta ahora a
-    'D_max_catalogo': un punto rechazado por V9 no lo rechaza la norma.
+    ES DISPONIBILIDAD DE SECCION Y NO DE DIAMETRO DESDE C5, y el nombre no
+    cambio a proposito: `v9_disponibilidad_diametro` es el simbolo que
+    nombran la Sec. 4.4 del plan, la fila V9 de la Fase 5 y los marcadores de
+    las plantillas de M11, y renombrarlo por precision semantica habria
+    costado arrastrar los cuatro sitios para no ganar ningun numero. Lo que si
+    cambio es DE DONDE SALE EL TOPE, porque atribuirlo mal era una cita falsa:
+
+      * circular: el tope sale del criterio 'D_max_catalogo' [A] y se compara
+        contra el diametro interior;
+      * marco: el tope es la MAYOR altura interior de la progresion que el
+        expediente declara en 'secciones_cajon_normalizadas' [A], y se compara
+        contra la altura de la seccion adoptada. Atribuir el tope de un cajon
+        a 'D_max_catalogo' -- cuyo valor es un diametro de tubo por material
+        -- habria puesto en la memoria un numero verdadero bajo una
+        procedencia falsa.
+
+    NO ES UN UMBRAL NORMATIVO EN NINGUNA DE LAS DOS FORMAS (NOR-PRO-01,
+    NOR-PRO-02, MAT-O8). El tope circular se atribuia a ASTM C76/AASHTO M170,
+    AASHTO M36/ASTM A760 y AASHTO M294, y ninguna de las tres lo sostiene:
+    A760 tabula diametros nominales hasta 3600 mm y M 170M igual. Es una
+    adopcion del proyecto sobre la disponibilidad de mercado, y el tope del
+    marco lo es todavia mas claramente: es la serie que el proyectista
+    escribio. Por eso `criterio_aplicado` apunta al criterio y no a una norma:
+    un punto rechazado por V9 no lo rechaza la norma.
     """
+    de_cajon = material.forma is FormaSeccion.RECTANGULAR
     return Verificacion(
         cumple=D <= material.D_max + TOL_UMBRAL_NORMATIVO,
         numeral=NUMERAL_V9,
         valor_obtenido=D,
         valor_admisible=material.D_max,
-        criterio_aplicado=CRITERIO_D_MAX_CATALOGO,
+        criterio_aplicado=(CRITERIO_SECCIONES_CAJON if de_cajon
+                           else CRITERIO_D_MAX_CATALOGO),
         codigo="V9",
     )
 
@@ -1555,14 +1717,15 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
     """
     hechas: list = []
     piezas = (
-        lambda: v1_borde_libre(D=D, resultado=resultado),
+        lambda: v1_borde_libre(D=D, material=material, punto=punto,
+                               resultado=resultado),
         lambda: v2_velocidad_minima(resultado=resultado),
         lambda: v2b_sedimentacion(punto=punto, resultado=resultado),
         lambda: v3_velocidad_maxima(material=material, resultado=resultado),
         lambda: v4_carga_entrada(punto=punto, resultado=resultado),
         lambda: v4b_relacion_hw_d(D=D, resultado=resultado),
         lambda: v5_remanso(punto=punto, resultado=resultado),
-        lambda: v6_material_solido_arrastre(),
+        lambda: v6_material_solido_arrastre(material=material),
         lambda: v7_flotacion(punto=punto, material=material, D=D,
                              resultado=resultado),
         lambda: v8_evento_extremo(punto=punto, resultado=resultado),

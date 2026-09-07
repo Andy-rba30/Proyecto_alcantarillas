@@ -294,16 +294,23 @@ def test_el_motivo_cita_la_verificacion_incumplida():
     assert "4.1.1.3.7 b)" in str(excinfo.value)
 
 
-def test_familia_C_no_es_no_factible_sino_otra_forma_de_estructura():
+def test_familia_C_se_detiene_en_los_criterios_del_cajon_y_no_en_el_catalogo():
     """
-    M2 no ofrece candidatos: Sec. 2.3 le asigna marco o multicelda y el
-    catalogo es de conductos circulares. El motivo tiene que decirlo.
+    C5 CAMBIO LA EXCEPCION, y el cambio es el punto. Antes salia
+    `DisenoNoFactibleError` -- "M2 no ofrece material candidato ... es de otra
+    forma de estructura" -- porque el catalogo era circular. Ahora el catalogo
+    ofrece el marco y lo que falta son sus criterios, de modo que sale
+    `CriterioPendienteError`.
+
+    Las dos excepciones mandan al revisor a sitios distintos, y por eso la
+    distincion se fija: una decia que el programa no sabia hacer ese punto, y
+    la otra dice que el expediente no ha declarado como se hace.
     """
-    with pytest.raises(DisenoNoFactibleError) as excinfo:
+    with pytest.raises(CriterioPendienteError) as excinfo:
         disenar_punto(_punto(familia=Familia.C), L=L_CONDUCTO, TW=TW_LIBRE,
                       verificar=_todo_cumple)
 
-    assert "multicelda" in str(excinfo.value)
+    assert excinfo.value.clave == "embocadura_cajon"
 
 
 # ===========================================================================
@@ -744,11 +751,14 @@ def test_el_diagnostico_de_familia_C_dice_que_es_otra_forma_de_estructura():
 
     motivo = _motivo_sin_candidatos(c01)
 
+    # LA RAMA DE FAMILIA C SALIO EN C5 (regla vinculante #10: no se borra, se
+    # estrecha). Desde que M2 ofrece el marco, esa familia no llega aqui, y el
+    # mensaje generico es lo que queda -- y sigue siendo el camino correcto
+    # para una familia futura sin candidatos --.
     assert Familia.C.value in motivo
-    assert "marco o multicelda" in motivo
-    assert "no es no-factible" in motivo
-    # Y dice por que el catalogo no sirve, que es la causa: es de circulares.
-    assert "circulares" in motivo
+    assert "no ofrece material candidato" in motivo
+    assert "marco o multicelda" not in motivo
+    assert "circulares" not in motivo
 
 
 def test_el_diagnostico_de_una_familia_con_candidatos_no_lleva_la_coletilla_de_C():

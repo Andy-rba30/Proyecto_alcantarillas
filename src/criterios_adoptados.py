@@ -2065,8 +2065,24 @@ CRITERIOS: Dict[str, Criterio] = {
                       "pertenecen V y R, y la eleccion no es cosmetica: con la "
                       "seccion llena de un tubo de 0.90 m, R = D/4 = 0.225 m; con "
                       "el tirante normal de y/D = 0.75, R = 0.2715 m. La misma "
-                      "formula da dos H distintas. Se adopta la SECCION LLENA "
-                      "(A = pi*D^2/4, R = D/4, V = Q/A) porque es la seccion para "
+                      "formula da dos H distintas. "
+                      "LA ELECCION ES DE LA SECCION, NO DE UNA FORMULA, y hasta "
+                      "C5 esta justificacion no lo decia: razonaba entera sobre "
+                      "un tubo -- 'A = pi*D^2/4, R = D/4' -- de modo que quien "
+                      "la leyera con un marco delante no encontraba aqui su "
+                      "caso. Lo que se adopta es la SECCION LLENA; COMO se "
+                      "calculan A y R a partir de ella es asunto de la "
+                      "geometria de cada forma (`Seccion.area_llena` y "
+                      "`Seccion.radio_hidraulico_lleno`), y M4 no los escribe: "
+                      "los pide. Medido sobre el marco de 2.00 x 1.50 m, el "
+                      "R de la seccion llena es B*H/(2*(B+H)) = 0.4286 m -- que "
+                      "NO es H/4 = 0.375 m -- y el del tirante de y/H = 0.75 es "
+                      "0.5294 m: un +23.5 % frente a un +20.7 % en el tubo. La "
+                      "eleccion pesa lo mismo en las dos formas y por eso el "
+                      "criterio vale para las dos, pero la aritmetica de una no "
+                      "sirve para la otra. "
+                      "Se adopta la seccion llena "
+                      "porque es la seccion para "
                       "la que HDS-5 deriva esa expresion: los tres sumandos "
                       "(1 = carga de velocidad, ke = perdida de entrada, "
                       "19.63*n^2*L/R^(4/3) = perdida por friccion) son las "
@@ -2823,6 +2839,410 @@ CRITERIOS: Dict[str, Criterio] = {
             tabla_pendiente="ASTM A760/A760M-10, Tabla 1 'Tamaños de "
                             "tuberia' (100 a 3600 mm). Su PDF no entrega "
                             "texto utilizable y por eso no esta transcrita",
+        ),
+    ),
+
+    # =======================================================================
+    # LOS CUATRO DEL CAJON (C5). NINGUNO LLEVA VALOR, Y NO ES UN OLVIDO.
+    # =======================================================================
+    # La Familia C es el conjunto de cruces de canal de riego, y el propio
+    # numeral que fija el piso de 0.90 m la EXCEPTUA de el: "salvo en cruces
+    # de canales de riego donde se adoptaran secciones de acuerdo a cada
+    # diseno particular". Lo que el numeral hace no es liberar la seccion --
+    # la traslada del catalogo al DISENO --, y por eso estos cuatro son
+    # adopciones declaradas y no lecturas de la norma.
+    #
+    # LOS CUATRO SE MUEVEN JUNTOS EN DOS PARES, y quien declare uno tiene que
+    # mirar su pareja:
+    #   'embocadura_cajon'  <->  'ke_entrada_cajon'   (Tabla A.1 y Tabla C.2)
+    #   'secciones_cajon_normalizadas'  <->  'n_celdas_cajon'  (B*H por celda)
+    #
+    # NO SE ABRE 'v_max_cajon', y conviene decir por que se decidio NO abrirlo:
+    # la Tabla N 10 clasifica por TIPO DE REVESTIMIENTO --"Concreto 3.0 - 6.0
+    # m/s"-- y no por forma de seccion, de modo que su fila sirve al marco tal
+    # cual. Abrir un criterio ahi seria inventar un vacio que no existe, que
+    # es el error simetrico del que estos cuatro evitan.
+
+    "secciones_cajon_normalizadas": Criterio(
+        valor=None,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        concepto="Progresion de secciones normalizadas del marco: ancho B y "
+                 "altura H interiores de UNA celda",
+        justificacion="EL MARCO NO HEREDA EL PISO DE 0.90 m, y no porque el "
+                      "proyecto decida saltarselo: el mismo numeral que lo "
+                      "fija lo EXCEPTUA, en la misma oracion, para los cruces "
+                      "de canales de riego, que es lo que la Familia C es. El "
+                      "texto literal y su ambito estan transcritos en "
+                      "constantes_normativas.DIAMETRO_MIN_TEXTO y "
+                      "DIAMETRO_MIN_AMBITO y no se repiten aqui. "
+                      "PERO LEVANTAR EL PISO NO DEJA LA SECCION SIN COTA "
+                      "INFERIOR NORMATIVA: el num. 4.1.1.3.7 d) exige, sin "
+                      "distinguir forma alguna, que las dimensiones permitan "
+                      "el mantenimiento y la limpieza en el interior del "
+                      "conducto. Es una exigencia SIN NUMERO -- obliga a que "
+                      "exista un minimo y deja al proyecto decir cual --, y "
+                      "esa es exactamente la forma de un vacio declarable. "
+                      "(La pagina de ese numeral es la impresa 80, no la 79 "
+                      "que este campo decia: la 79 termina en el apartado c). "
+                      "El resto del repositorio ya la tenia bien -- "
+                      "`citas.MANTENIMIENTO_Y_LIMPIEZA` dice 80 / PDF 83 --, "
+                      "de modo que la que estaba mal era esta sola cadena.) "
+                      "POR ESO ESTE CRITERIO ES [A] Y NO [N]: la norma pide "
+                      "el requisito y no da la cifra. Un valor escrito aqui "
+                      "por el programa seria inventarla. "
+                      "QUE TIENE QUE DECLARAR EL TESISTA: la progresion "
+                      "entera, no un solo par. El bucle de MD la recorre de "
+                      "menor a mayor igual que recorre los diametros, de modo "
+                      "que hace falta la serie y su orden, no el resultado.",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.4 a) 'Tipo y seccion', pag. "
+               "impresa 72 -- la excepcion de los cruces de canal --, y num. "
+               "4.1.1.3.7 d) 'Mantenimiento y limpieza', pag. impresa 80 "
+               "(PDF 83) -- la exigencia de "
+               "mantenimiento que pone la cota inferior sin darle numero --. "
+               "Los dos literales estan en el registro normativo "
+               "(`MC_HHD.4.1.1.3.4a` y `MC_HHD.4.1.1.3.7d`) y se citan desde "
+               "los `Fundamento` F3.SECCION_CANAL y F3.MANTENIMIENTO",
+        reemplazado_por="La seccion que el proyectista adopte para el cruce, "
+                        "con el ancho de solera y el tirante de diseno del "
+                        "canal (ANA / Junta de Usuarios del Bajo Piura) y con "
+                        "la dimension interior que permita mantenerlo",
+        sensibilidad=(
+            "cota inferior: la MINIMA dimension interior que permita entrar a "
+            "limpiar el conducto (num. 4.1.1.3.7 d). El numeral la exige y no "
+            "la cifra; bajarla convierte la obra en no mantenible y el "
+            "requisito se incumple sin que ningun numero lo señale",
+            "cota superior: la seccion que el canal y la rasante admitan. Por "
+            "arriba no manda la hidraulica sino la geometria del cruce -- "
+            "recubrimiento sobre la clave y cota de subrasante --, que es lo "
+            "que verifican V4 y la Fase 7",
+        ),
+        # `vacio_verificado` NO SE PUEDE PONER TODAVIA, y no es un olvido:
+        # `_verificar_criterio` lo rechaza en un criterio sin valor -- «el
+        # campo es para el valor que CUBRE un vacio registrado; un criterio
+        # todavia vacio no cubre nada» --, y `M11.acotaciones_declaradas()`
+        # filtra ademas por `valor is not None`. Mientras este vacio, el hueco
+        # normativo que este criterio va a cubrir NO sale por
+        # `bloque_acotaciones` sino por `bloque_pendientes`, que es donde
+        # tiene que salir: todavia no hay adopcion que acotar, hay una deuda.
+        # QUIEN DECLARE EL VALOR TIENE QUE AÑADIRLO, con este texto: el num.
+        # 4.1.1.3.7 d) exige dimensiones que permitan el mantenimiento y la
+        # limpieza interior y NO da ninguna cifra (verificado contra el PDF en
+        # la fase CN; el literal esta en el registro como
+        # `MC_HHD.4.1.1.3.7d`).
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el ancho y el tirante de diseno "
+                        "del canal que se cruza y con la dimension interior "
+                        "que el num. 4.1.1.3.7 d) exige para poder mantener "
+                        "el conducto",
+            dominio="serie de pares (B, H) en metros, de menor a mayor, con "
+                    "B y H interiores de UNA celda",
+            tabla_pendiente="ninguna: el num. 4.1.1.3.4 a) remite "
+                            "expresamente a 'cada diseno particular', de modo "
+                            "que aqui NO hay tabla que transcribir. Esa "
+                            "ausencia es la lectura correcta del numeral, no "
+                            "una laguna del registro",
+        ),
+    ),
+
+    "n_manning_cajon": Criterio(
+        valor=None,
+        nivel=NIVEL_PERFIL,
+        etiqueta="N->",
+        concepto="Coeficiente de rugosidad de Manning del marco de concreto: "
+                 "fila de la Tabla N 09 que se le aplica por analogia",
+        justificacion="EL VACIO ES DE FILA, NO DE GRUPO, y la distincion "
+                      "cambia lo que hay que declarar. El grupo que gobierna "
+                      "se titula 'A. CONDUCTO CERRADO CON ESCURRIMIENTO "
+                      "PARCIALMENTE LLENO' y cubre al marco POR SU PROPIO "
+                      "TITULO: un cajon es un conducto cerrado, y ese es el "
+                      "unico grupo de la tabla que describe una alcantarilla "
+                      "(constantes_normativas.TABLA_09_GRUPO). Lo que falta "
+                      "es la FILA. "
+                      "ESO HACE LA ANALOGIA MAS ESTRECHA QUE LA DEL HDPE, no "
+                      "equivalente, y por eso este criterio NO puede copiar "
+                      "el argumento de 'n_manning_hdpe': aquella cruza "
+                      "MATERIAL -- el HDPE no esta en la tabla por ninguna "
+                      "parte -- y esta se queda DENTRO del grupo que ya cubre "
+                      "la estructura, cruzando un atributo que no es la "
+                      "forma. De las siete subfilas de 'a. Concreto', SEIS "
+                      "dicen 'tubo' y la septima -- 'afinado' -- no dice nada "
+                      "de forma: es la unica del item que no excluye al marco "
+                      "por su propio rotulo. "
+                      "QUE DECLARA EL TESISTA: cual de las dos filas toma, y "
+                      "por que. El proyecto no la elige por el porque las dos "
+                      "son defendibles y dan rangos distintos, y la eleccion "
+                      "mueve el tirante y las dos velocidades. "
+                      "EL RANGO SE TOMA COMPLETO, minimo y maximo, sea cual "
+                      "sea la fila: la regla de doble n pide los dos extremos "
+                      "-- n_max es conservador para capacidad y tirante, "
+                      "n_min para velocidad y socavacion -- y un valor "
+                      "puntual dejaria una de las dos verificaciones sin lado "
+                      "seguro.",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.6 'Diseno hidraulico', Tabla N "
+               "09, pags. impresas 75-76. Transcrita completa en "
+               "constantes_normativas.TABLA_09_FILAS y leida por "
+               "constantes_normativas.MANNING. La tabla NO tiene fila de "
+               "seccion rectangular: verificado contra el PDF en la fase CN, "
+               "y es el hueco que este criterio declara",
+        reemplazado_por="Ficha tecnica del acabado interior que se "
+                        "especifique para el marco vaciado in situ",
+        sensibilidad=(
+            "'A.2 NO METALICOS - a. Concreto - afinado' (0.011 - 0.014): la "
+            "unica subfila del item cuyo rotulo NO dice 'tubo', y por eso la "
+            "unica que no excluye al marco por su propia letra. Da mas "
+            "tirante en la rama de capacidad",
+            "'A.2 NO METALICOS - a. Concreto - tubo recto y libre de basuras' "
+            "(0.010 - 0.013): la fila que 'n_manning_hdpe' ya usa por "
+            "analogia. Su rotulo dice 'tubo', o sea que la analogia tiene que "
+            "cruzar la forma explicitamente",
+        ),
+        # `vacio_verificado` pendiente por la misma razon que en
+        # 'secciones_cajon_normalizadas': el campo exige valor. Quien lo
+        # declare tiene que añadirlo con este texto: la Tabla N 09 del num.
+        # 4.1.1.3.6 cubre al marco por el TITULO de su grupo A y NINGUNA de
+        # sus filas nombra la seccion rectangular (verificado contra el PDF en
+        # la fase CN).
+        resolucion=DeTabla(
+            tablas=("MC_HHD.T09",),
+            que_elige="la fila del grupo A cuyo par (minimo, maximo) se "
+                      "aplica al marco POR ANALOGIA. La analogia es la "
+                      "etiqueta [N->]: la Tabla N 09 no tabula la seccion "
+                      "rectangular",
+            laguna="la tabla no trae fila de cajon. El vacio es de FILA y no "
+                   "de grupo: el rotulo del grupo A -- conducto cerrado con "
+                   "escurrimiento parcialmente lleno -- ya cubre al marco",
+        ),
+    ),
+
+    "embocadura_cajon": Criterio(
+        valor=None,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        concepto="Detalle de embocadura del marco: carta y escala de la Tabla "
+                 "A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, "
+                 "esviaje)",
+        justificacion="LA EMBOCADURA NO ES UN DETALLE DE ACABADO: es lo que "
+                      "elige la carta, y con ella las constantes K, M, c e Y "
+                      "del control de entrada Y la forma de ecuacion (1 o 2) "
+                      "con que se aplican. De las QUINCE FILAS DE CAJON QUE "
+                      "ESTE REPOSITORIO TIENE TRANSCRITAS -- Cartas 8 a 12, "
+                      "no todas las que la Tabla A.1 imprime: ver mas abajo "
+                      "--, TRES son de Forma 1 (Carta 8) y DOCE de Forma 2 "
+                      "(Cartas 9 a 12), y las dos "
+                      "ecuaciones no se parecen: la Forma 1 arranca de H_c/D "
+                      "y corrige por pendiente, la Forma 2 no lleva ninguno "
+                      "de los dos terminos. "
+                      "EL CENSO ES DE LA TRANSCRIPCION Y NO DE LA TABLA, y la "
+                      "distincion se escribe porque la redaccion anterior la "
+                      "borraba: decia «de las quince filas de cajon de "
+                      "concreto DE LA TABLA A.1», atribuyendo a la fuente un "
+                      "numero que describe al repositorio, y ademas cerraba "
+                      "el parentesis en la Carta 11 cuando las doce llegan "
+                      "hasta la 12 (medido: Carta 9 -> 2 filas, Carta 10 -> "
+                      "3, Carta 11 -> 4, Carta 12 -> 3). La tabla trae mas "
+                      "cajon del que este proyecto alcanza, y lo que queda "
+                      "fuera esta censado fila por fila en el `Acotada` de "
+                      "`normativa/tablas.py::T_HDS5_A1` -- las tres de la "
+                      "Carta 13 «Rect. Box Top Bev. Conc.» y las cinco de "
+                      "«Rectangular Concrete» de las Cartas 57 a 59, que son "
+                      "gargantas de tapered inlet --. Quien declare una "
+                      "embocadura que caiga en esas ocho tiene que "
+                      "transcribirlas primero. "
+                      "SE MUEVE JUNTO CON DOS COSAS MAS, y hay que declararlas "
+                      "a la vez: (1) el detalle del cabezal de la Sec. 9.1, "
+                      "que es donde el proyecto dibuja la embocadura -- "
+                      "cambiar el detalle obliga a cambiar la carta, igual "
+                      "que en la circular --; y (2) 'ke_entrada_cajon', que "
+                      "sale de la fila de la Tabla C.2 que corresponde a ESA "
+                      "misma embocadura. Declarar una sin la otra deja el "
+                      "control de entrada y el de salida hablando de dos "
+                      "embocaduras distintas. "
+                      "POR QUE ES [A] Y NO [N]: la Tabla A.1 es normativa y "
+                      "sus constantes son [N], pero CUAL FILA le toca a esta "
+                      "obra no lo dice ninguna tabla: lo decide el detalle "
+                      "que el proyectista dibuje. Es la separacion que "
+                      "CLAUDE.md fija entre la tabla y la eleccion.",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, "
+               "bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo "
+               "sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. "
+               "EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo "
+               "contaba como tal --decia «y los tres que lo siguen (chaflan, "
+               "bisel y esviaje)»--: es un valor de la columna 'Inlet "
+               "Configuration' DENTRO de la Carta 11, bajo 'Rect. Box "
+               "Concrete'. Y el del bisel superior es la Carta 13, que este "
+               "proyecto NO tiene transcrita. Transcrita en "
+               "normativa/tablas.py::T_HDS5_A1 y leida por "
+               "constantes_normativas.HDS5_INLET, donde las quince filas de "
+               "cajon transcritas estan como claves 'cajon_concreto_*'",
+        reemplazado_por="El detalle de embocadura del cabezal que fije el "
+                        "expediente (Sec. 9.1), del que salen la carta y la "
+                        "fila de ke a la vez",
+        sensibilidad=(
+            "Carta 8 (Forma 1), aletas de 30 a 75 grados: K = 0.026, M = "
+            "1.00. Es la unica familia de cajon que usa la ecuacion (A.1), la "
+            "que arranca de H_c/D",
+            "Cartas 9 a 11 (Forma 2), chaflan, bisel o esviaje: K entre 0.486 "
+            "y 0.545 con M = 0.667. La ecuacion (A.2) no lleva H_c/D ni Ks*S, "
+            "de modo que entre una carta de Forma 1 y una de Forma 2 no "
+            "cambia solo una constante: cambia la ecuacion",
+        ),
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TA1", "HDS5_3ED.TC2"),
+            que_elige="la carta y escala de la Tabla A.1 de la que salen K, "
+                      "M, c, Y y la forma de ecuacion; y, emparejada con "
+                      "ella, la fila de la Tabla C.2 de la que sale ke",
+            # SIN `elegido_por`, y a proposito: ese campo tiene que nombrar
+            # un CRITERIO declarado --`verificar_resolucion` lo comprueba-- y
+            # aqui no hay ninguno detras. Quien elige la fila es el detalle de
+            # embocadura del cabezal (Sec. 9.1), que es un DIBUJO del
+            # expediente y no un criterio. El acoplamiento en el otro sentido
+            # si es de criterio a criterio, y esta escrito donde corresponde:
+            # `ke_entrada_cajon` lleva `elegido_por="embocadura_cajon"`.
+        ),
+    ),
+
+    "n_celdas_cajon": Criterio(
+        valor=None,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        concepto="Numero de celdas del marco: una sola o multicelda",
+        justificacion="EL MANUAL TOMA PARTIDO Y HAY QUE CITARLO DONDE SE "
+                      "DECIDE: ante capacidad de arrastre del curso -- "
+                      "palizada, troncos, material de cauce -- RECOMIENDA "
+                      "obras con mayor seccion transversal libre, SIN "
+                      "SUBDIVISIONES, porque cada tabique es un punto donde "
+                      "la palizada se traba. La multicelda no esta prohibida: "
+                      "lo que el numeral hace es invertir la carga de la "
+                      "prueba, y quien la adopte tiene que decir por que. "
+                      "QUE CAMBIA EN EL CALCULO. El numero de celdas NO entra "
+                      "en la geometria: los coeficientes de HDS-5, el radio "
+                      "hidraulico y el control de entrada son POR BARRIL, de "
+                      "modo que con N celdas se dimensiona UNA con Q/N y se "
+                      "declara N. Es la razon por la que "
+                      "`modelos.SeccionRectangular` modela una celda y no el "
+                      "conjunto. "
+                      "Y QUE CAMBIA EN V6, que es lo que este criterio "
+                      "arregla de raiz: hasta hoy V6 (material solido de "
+                      "arrastre) se cumplia trivialmente porque MD no sabe "
+                      "hacer multibarril -- una propiedad del PROGRAMA, no "
+                      "del diseno -- y el dia que supiera la verificacion se "
+                      "habria vuelto falsa en silencio. Con este criterio "
+                      "declarado, V6 pasa a depender de una DECISION escrita.",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.4 a) 'Tipo y seccion', pag. "
+               "impresa 72: 'recomendandose utilizar obras con mayor seccion "
+               "transversal libre, sin subdivisiones'. RECOMENDACION, no "
+               "exigencia: el literal esta en el registro como "
+               "`MC_HHD.4.1.1.3.4a#MULTIPLES` y lo cita el `Fundamento` "
+               "F3.CELDAS con verbo RECOMIENDA",
+        reemplazado_por="La decision de tipologia del cruce, con el ancho "
+                        "disponible en la rasante y la capacidad de arrastre "
+                        "observada en el canal",
+        sensibilidad=(
+            "N = 1 (celda unica): lo que el numeral recomienda ante arrastre "
+            "de solidos. V6 se cumple sin tabiques que trabar, y el ancho "
+            "necesario lo da una sola celda",
+            "N > 1 (multicelda): admisible y no recomendado por defecto. "
+            "Baja el canto necesario cuando la rasante no da altura, y a "
+            "cambio mete tabiques en el paso del arrastre; ademas obliga a "
+            "dimensionar cada celda con Q/N",
+        ),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con la capacidad de arrastre del "
+                        "curso y el ancho disponible bajo la rasante. El "
+                        "numeral recomienda una sola celda y no lo impone",
+            dominio="entero >= 1",
+        ),
+    ),
+
+    "ke_entrada_cajon": Criterio(
+        valor=None,
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        concepto="Coeficiente de perdida de carga en la embocadura (ke) del "
+                 "marco de concreto",
+        justificacion="EL ke DEL TUBO NO SIRVE PARA EL MARCO, y el peligro es "
+                      "que el numero coincide. La Tabla C.2 tiene familia "
+                      "propia para el cajon -- 'Box, Reinforced Concrete', "
+                      "siete filas con valor bajo cuatro rotulos de "
+                      "agrupacion -- y para la embocadura a ras sin aletas "
+                      "que la Sec. 9.1 adopta hoy, la fila del cajon vale 0.5 "
+                      "TAMBIEN. El valor acertaria por casualidad y la CITA "
+                      "seria falsa, que es el precedente NOR-HID-01; y un "
+                      "valor que acierta por casualidad no falla nunca de "
+                      "forma ruidosa, de modo que nadie lo comprueba. "
+                      "Y DEJA DE COINCIDIR EN CUANTO HAYA ALETAS, que es lo "
+                      "que la Lamina N 03 dibuja: 0.4 con aletas a 30-75 "
+                      "grados, 0.5 a 10-25 grados y 0.7 con aletas paralelas. "
+                      "Con 0.5 -> 0.7 y V = 3 m/s son 0.2*V^2/2g = 0.092 m de "
+                      "carga que el calculo no veria, contra V4 y contra el "
+                      "tamizado de la Fase 7. "
+                      "POR ESO SE ABRE SIN VALOR: el ke del marco sale de la "
+                      "fila que 'embocadura_cajon' declare, y las dos "
+                      "decisiones se mueven juntas. Escribirle 0.5 aqui seria "
+                      "repetir el defecto con otra etiqueta. "
+                      "TRES FILAS DEL BLOQUE SE ROTULAN IGUAL -- "
+                      "'Square-edged at crown', con ke 0.4, 0.5 y 0.7 -- y "
+                      "sin su rotulo de agrupacion son indistinguibles: la "
+                      "fila suelta pierde la condicion, y por eso la memoria "
+                      "tiene que imprimir las dos cosas. "
+                      "LO QUE SE DECLARA AQUI ES LA CLAVE DE LA FILA, NO EL "
+                      "COEFICIENTE, y es consecuencia directa de lo anterior: "
+                      "en el bloque del cajon el 0.2 esta en TRES filas y el "
+                      "0.5 en DOS, de modo que un numero declarado no permite "
+                      "decir de donde salio -- la memoria imprimiria el "
+                      "coeficiente y la condicion que lo justifica se "
+                      "perderia, que es exactamente el defecto que este "
+                      "criterio existe para impedir --. Las claves admitidas "
+                      "son las de `constantes_normativas.KE_HDS5_C2`, "
+                      "derivadas de la transcripcion y no copiadas de ella. "
+                      "El criterio hermano 'ke_entrada' (tubo) sigue "
+                      "declarando un numero: tiene valor y consumidor, y "
+                      "cambiarle la forma por simetria seria mover un dato de "
+                      "proyecto que nadie pidio mover. La asimetria esta "
+                      "escrita en KE_HDS5_C2.",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice C, Tabla C.2 "
+               "'Entrance Loss Coefficients', pag. impresa C.6 (PDF 216), "
+               "bloque 'Box, Reinforced Concrete': siete filas con "
+               "coeficiente repartidas bajo cuatro rotulos de agrupacion -- "
+               "'Headwall parallel to embankment (no wingwalls)', 'Wingwalls "
+               "at 30 to 75 degrees to barrel', 'Wingwall at 10 to 25 degrees "
+               "to barrel' y 'Wingwalls parallel (extension of sides)' --, "
+               "con ke entre 0.2 y 0.7. Transcritas en "
+               "normativa/tablas.py::T_HDS5_C2",
+        reemplazado_por="La fila de la Tabla C.2 que corresponda a la "
+                        "embocadura que declare 'embocadura_cajon'",
+        # LA SENSIBILIDAD ES SIMBOLICA Y NO UN PAR DE NUMEROS, y el motivo es
+        # el mismo que hace que este criterio declare una clave: lo que se
+        # elige es una FILA, no un punto de un intervalo. Un rango (0.2, 0.7)
+        # aqui seria ademas rechazado por `_verificar_sensibilidad` -- un
+        # rango numerico no puede defender un valor que no es numero --, y esa
+        # guardia tiene razon: el recorrido del coeficiente es la CONSECUENCIA
+        # de la eleccion, no su dominio.
+        sensibilidad=(
+            "extremo bajo: ke = 0.2, en las tres filas de borde redondeado, "
+            "biselado o de entrada abocinada del bloque. Es el minimo del "
+            "bloque y solo se alcanza construyendo ese detalle: declararlo "
+            "sin dibujarlo en la Lamina de embocadura es cobrar una perdida "
+            "que la obra no tendra",
+            "extremo alto: ke = 0.7, fila «Square-edged at crown» bajo "
+            "«Wingwalls parallel (extension of sides)». Entre los dos "
+            "extremos hay 0.5*V^2/2g de carga -- 0.229 m con V = 3 m/s --, "
+            "que se descuenta de V4 y del tamizado de la Fase 7",
+        ),
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TC2",),
+            que_elige="la fila del bloque 'Box, Reinforced Concrete' de la "
+                      "que sale ke. Lo que se declara es la CLAVE de la fila "
+                      "y no el coeficiente: el valor lo fija la fila JUNTO "
+                      "CON su rotulo de agrupacion, porque tres filas del "
+                      "bloque se imprimen con el mismo texto y distinto "
+                      "coeficiente. Claves en "
+                      "`constantes_normativas.KE_HDS5_C2`",
+            elegido_por="embocadura_cajon",
         ),
     ),
 
@@ -3847,9 +4267,41 @@ CRITERIOS: Dict[str, Criterio] = {
 
             # Tubo de concreto reforzado enterrado bajo el terraplen. No es
             # "Porticos rigidos" (1.35/0.90): un portico es un marco con
-            # patas, y el catalogo de Sec. 3.2 es circular -- la Familia C,
-            # de marco o multicelda, sale sin candidatos.
+            # patas, y ESTA clave es la del TUBO.
+            #
+            # LA RAZON QUE ESTE COMENTARIO DABA YA NO VALE, y por eso se
+            # reescribio en C5. Decia: «el catalogo de Sec. 3.2 es circular
+            # -- la Familia C, de marco o multicelda, sale sin candidatos».
+            # Esa premisa la destruyo esta misma sesion: `materiales_candidatos`
+            # devuelve hoy un marco de concreto para la Familia C. Lo que
+            # separa las dos filas no era nunca el catalogo, era la ESTRUCTURA:
+            # un tubo enterrado y un marco son dos tipos distintos en la Tabla
+            # 2.4.5.3.1-2, y ahora las dos claves existen.
             "concreto_reforzado": {"EV": "EV_estructura_rigida_enterrada"},
+
+            # EL MARCO DE LA FAMILIA C. La fila la fija la regla vinculante #8
+            # de docs/ruta_familia_c.md §6 -- «Porticos rigidos» (1.35/0.90)
+            # y no «Estructura rigida enterrada» --, que no es eleccion de esta
+            # sesion sino una decision ya tomada y verificada contra el Manual
+            # de Puentes, Tabla 2.4.5.3.1-2, pag. impresa 143.
+            #
+            # LA CLAVE ES 'cajon' Y NO UN TipoMaterial, y tiene que serlo: un
+            # marco de concreto y un tubo de concreto son el MISMO
+            # `TipoMaterial`, de modo que indexar por material no puede
+            # distinguirlos. Es la misma razon por la que 'cabezal' tampoco es
+            # un material.
+            #
+            # HOY NO TIENE CONSUMIDOR, y hay que decirlo entero porque es un
+            # numero que se lee mal en silencio: `M8.factores_carga_flotacion`
+            # indexa por `material.tipo.value`, de modo que un marco recibe
+            # HOY la fila del TUBO. El minimo de las dos filas es 0.90, o sea
+            # que el NUMERO que V7 usa es el mismo y lo que sale mal es la
+            # FILA QUE LA MEMORIA IMPRIME -- el precedente NOR-HID-01, valor
+            # que acierta por casualidad y cita falsa --. Cablearlo es de C7
+            # (punto 2 de su brief), que generaliza M8 a la seccion; C5 deja
+            # la clave puesta y el defecto declarado en §15.8 y en el
+            # docstring de `M5.v7_flotacion`, que es su consumidor.
+            "cajon": {"EV": "EV_porticos_rigidos"},
 
             # TMC. Es estructura flexible enterrada, y de las tres subfilas
             # flexibles le toca la de "Entre otros" (1.95/0.90): no es
