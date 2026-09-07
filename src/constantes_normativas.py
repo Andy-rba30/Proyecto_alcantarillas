@@ -368,6 +368,23 @@ TABLA_09_GRUPO = ("A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO "
                   "(corrientes naturales) describen el cauce, no el conducto, y "
                   "no se transcriben aqui porque ningun modulo dimensiona un "
                   "cauce")
+# R-4: LOS VALORES DEL BLOQUE A.2 SON LA LECTURA CORREGIDA, NO LA IMPRESA.
+# La pagina imprime las tres columnas del bloque «A.2 NO METALICOS» UN RENGLON
+# POR ENCIMA de sus rotulos, de modo que quien lea `concreto_tubo_recto` al
+# pie de la letra en la pag. impresa 75 encuentra 0.011/0.013/0.014 y no los
+# 0.010/0.011/0.013 que estan aqui. La errata esta demostrada y declarada en
+# `normativa/discrepancias.py::DIS-MCHHD-T09-A2-DESPLAZADA` -- por coordenadas
+# de linea base, por contraprueba con el bloque A.1 de la misma pagina, que NO
+# esta desplazado, y por correspondencia una a una con Ven Te Chow 1983, que
+# la propia tabla declara como su fuente --.
+#
+# LA REMISION LA AÑADE C2 y no es adorno: hasta ahora la errata vivia en
+# `normativa/` y este archivo transcribia la lectura corregida SIN DECIR QUE
+# LO ERA. Quien leyera solo `constantes_normativas` y fuera a la pagina
+# encontraba otros tres numeros y no tenia con que explicarse la diferencia.
+# Afecta a las tres filas de A.2 que hay aqui: `concreto_tubo_recto`,
+# `concreto_afinado` y `madera_duelas`. El bloque A.1 -- las dos de metal
+# corrugado -- no esta afectado.
 TABLA_09_FILAS = {
     "metal_corrugado_subdren": {
         "fila": "A.1 METALICOS - c. Metal corrugado - sub - dren",
@@ -379,6 +396,13 @@ TABLA_09_FILAS = {
         "fila": ("A.2 NO METALICOS - a. Concreto - tubo recto y libre de "
                  "basuras"),
         "min": 0.010, "normal": 0.011, "max": 0.013},
+    # C2: la fila que sostiene la analogia del cajon. Se transcribe con sus
+    # valores de la LECTURA CORREGIDA (errata DIS-MCHHD-T09-A2-DESPLAZADA),
+    # igual que sus hermanas. Ningun material la consume todavia: el criterio
+    # que la declara lo abre C5.
+    "concreto_afinado": {
+        "fila": "A.2 NO METALICOS - a. Concreto - afinado",
+        "min": 0.011, "normal": 0.012, "max": 0.014},
     "madera_duelas": {
         "fila": "A.2 NO METALICOS - b. Madera - duelas",
         "min": 0.010, "normal": 0.012, "max": 0.014},
@@ -552,13 +576,52 @@ NUMERAL_ZONA_TRANSICION = _reg.cita("HDS5_3ED.3.1.3#TRANSICION").como_texto()
 # Y la Tabla C.2, de donde sale ke: pag. impresa C.6, no C.2 (NOR-HDS-01).
 NUMERAL_TABLA_KE = _reg.cita("HDS5_3ED.TC.2").como_texto()
 
+# LA VISTA DE CALCULO, DERIVADA DE LA TRANSCRIPCION Y NO COPIADA DE ELLA.
+# Hasta C2 este diccionario estaba ESCRITO A MANO con los mismos numeros que
+# `normativa/tablas.py::T_HDS5_A1` ya transcribia: dos copias que podian
+# divergir sin que nada avisara, que es exactamente lo que D2 del diseño del
+# registro prohibe y lo que MANNING, V_MAX y RIESGO_ADMISIBLE ya evitaban.
+# C2 lo pasa al patron. Los tres valores circulares NO SE MUEVEN: la
+# transcripcion ya decia lo mismo, y T14 ahora lo comprueba en vez de
+# confiarlo.
+#
+# DOS CAMPOS NO SALEN DE LA TABLA, Y CADA UNO POR UNA RAZON DISTINTA:
+#
+#   `forma`  SI es columna de la Tabla A.1 -- «Equation Form» --, y C2 la
+#            transcribio. Sale de la tabla como los demas.
+#   `Ks`     NO es columna de ninguna tabla: vive en la lista de variables
+#            del num. A.2.1, pag. impresa A.2 (PDF 191), que lo escribe en
+#            una linea -- «Ks Slope correction, -0.5 (mitered inlets +0.7)» --.
+#            Es decir: la fuente lo da como REGLA sobre la configuracion de
+#            borde, no como dato por carta. Se aplica esa regla, y se aplica
+#            SOBRE EL ROTULO LITERAL de la fila, que es donde la fuente
+#            escribe «mitered». Ninguna de las quince filas del cajon lo es.
+_TA1 = _reg.tabla("HDS5_3ED.TA1")
+KS_INGLETE = 0.7                    # num. A.2.1, pag. impresa A.2 (PDF 191)
+KS_SIN_INGLETE = -0.5
+
+
+def _ks_de(configuracion: str) -> float:
+    """
+    El Ks que el num. A.2.1 asigna a una configuracion de borde.
+
+    Se decide sobre el rotulo LITERAL de la carta -- «Mitered to slope» --
+    porque es ahi donde la fuente pone la condicion. No hay tercera rama: si
+    manana una carta trajera otra palabra para el inglete, este predicado
+    daria -0.5 en silencio, y por eso `test_ks_esta_en_todas_las_cartas_de_la_tabla_a1`
+    comprueba que todo Ks del diccionario sea uno de los dos valores.
+    """
+    return KS_INGLETE if "mitered" in configuracion.casefold() else KS_SIN_INGLETE
+
+
 HDS5_INLET = {   # cartas por forma/material; dentro de cada una, por borde
-    "circular_concreto_square_edge_headwall": {"K": 0.0098, "M": 2.00,
-                                               "c": 0.0398, "Y": 0.67, "Ks": -0.5},
-    "circular_cmp_headwall":                  {"K": 0.0078, "M": 2.00,
-                                               "c": 0.0379, "Y": 0.69, "Ks": -0.5},
-    "circular_cmp_mitered":                   {"K": 0.0210, "M": 1.33,
-                                               "c": 0.0463, "Y": 0.75, "Ks":  0.7},
+    _TA1.clave_corta(f): {
+        "K": f.valores["K"], "M": f.valores["M"],
+        "c": f.valores["c"], "Y": f.valores["Y"],
+        "Ks": _ks_de(f.valores["inlet_configuration"]),
+        "forma": f.valores["equation_form"],
+    }
+    for f in _TA1.filas
 }
 # Ks NO figura en la Tabla A.1: proviene de la formulacion (-0.5 / +0.7). No
 # omitir. Su sitio exacto en la 3a ed., verificado contra el PDF, es la lista

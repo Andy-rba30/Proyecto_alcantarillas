@@ -522,3 +522,138 @@ SIN_FUNDAMENTO: Tuple[Tuple[str, str, str], ...] = (
      "Emitir `PasoDeMemoria` desde M9 en la corrida de expediente; las citas "
      "ya estan."),
 )
+
+
+# ===========================================================================
+# El cajon: los cuatro `Fundamento` que C2 desbloquea (§15.7)
+# ===========================================================================
+# LOS CUATRO ESTABAN REDACTADOS EN §15.7 DE docs/ruta_familia_c.md Y NO SE
+# PODIAN CONSTRUIR: sus citas no existian. C2 las transcribe y por eso los
+# escribe aqui -- no es adelantar trabajo de C3 ni de C5, es que el registro
+# no admite la alternativa: T4 rechaza una cita que nadie referencia, de modo
+# que transcribir `MC_HHD.4.1.1.3.7d`, `MC_HHD.LAMINA_03` y
+# `HDS5_3ED.A.3#FORMAS` sin su consumidor deja el registro en rojo.
+#
+# LOS OTROS CUATRO DE §15.7 NO SE ESCRIBEN AQUI -- F4.SECCION, F4.YC_RECT,
+# F3.SECCION_CANAL y F4.N_CAJON --: sus citas ya existian antes de C2, de modo
+# que no crean ninguna huerfana, y su sitio es la sesion que escribe el paso
+# que los emite (C4 y C5). Escribirlos ahora seria fundar pasos que todavia no
+# existen.
+#
+# EL `verbo` DE CADA UNO ESTA ELEGIDO CONTRA EL `caracter` DE SUS CITAS, que
+# es lo que T11 comprueba, y el reparto NO es obvio en dos de ellos: ver la
+# nota de F4.FORMA_HDS5 y la de F3.TIPO_MARCO.
+
+TIPO_MARCO = _fundamento(
+    id="F3.TIPO_MARCO",
+    fase=F3,
+    que_paso=("Tipo de estructura del cruce: alcantarilla tipo marco de "
+              "concreto de seccion rectangular"),
+    por_que=(
+        "El marco de concreto no es una importacion ni una excepcion en este "
+        "Manual: lo nombra el PRIMERO entre los tipos comunmente utilizados "
+        "en carreteras del pais, cuenta la seccion rectangular y la cuadrada "
+        "entre las mas usuales, PERMITE expresamente ubicarlo a la cota que "
+        "se requiera -- que es justo lo que un cruce a nivel de canal "
+        "necesita -- y RECOMIENDA emplearlo con suelos de fundacion de mala "
+        "calidad. Ademas lo DIBUJA para este caso exacto: la Lamina Nº 03 "
+        "trae una figura de marco de concreto en cruce de canal de riego. La "
+        "asignacion del tipo a la Familia C la hace la Sec. 2.3 de la hoja "
+        "de ruta; lo que estas citas aportan es que esa asignacion tiene "
+        "respaldo en la fuente primaria y no solo en la hoja."),
+    # RECOMIENDA y no DEFINE: de las cuatro citas, la que sostiene el verbo es
+    # `#MARCO`, la unica RECOMENDACION. Las otras tres describen el tipo
+    # (DEFINICION), lo permiten a cualquier nivel (PERMISO) y lo dibujan
+    # (DEFINICION): ninguna de las tres RECOMIENDA nada, y ninguna OBLIGA.
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.4a#TIPOS",      # definicion
+           "MC_HHD.4.1.1.3.4a#NIVELES",    # permiso
+           "MC_HHD.4.1.1.3.4a#MARCO",      # recomendacion -> sostiene el verbo
+           "MC_HHD.LAMINA_03"),            # definicion
+    que_pasa_si_no_se_hace=(
+        "El tipo de estructura de la Familia C se apoya solo en la Sec. 2.3 "
+        "de la hoja de ruta, que no es fuente primaria, y la memoria no "
+        "puede citar ningun numeral para la decision que gobierna todo lo "
+        "demas del punto."),
+)
+
+MANTENIMIENTO = _fundamento(
+    id="F3.MANTENIMIENTO",
+    fase=F3,
+    que_paso=("Cota inferior de la progresion de secciones: dimension "
+              "interior que permite mantener y limpiar el conducto"),
+    por_que=(
+        "Levantado el piso de 0.90 m, la seccion del cajon NO queda sin cota "
+        "inferior normativa. El num. 4.1.1.3.7 d) exige, sin distinguir "
+        "forma alguna, que las dimensiones permitan efectuar el "
+        "mantenimiento y la limpieza EN SU INTERIOR de manera factible. Es "
+        "una exigencia SIN NUMERO: obliga a que exista un minimo y deja al "
+        "proyecto decir cual. Esa es exactamente la forma de un vacio "
+        "declarable -- la norma pide el requisito y no da la cifra --, y por "
+        "eso 'secciones_cajon_normalizadas' es [A] con vacio verificado y no "
+        "una eleccion libre."),
+    verbo=Verbo.OBLIGA,
+    citas=("MC_HHD.4.1.1.3.7d",),   # exigencia -> sostiene OBLIGA
+    que_pasa_si_no_se_hace=(
+        "La progresion de secciones del cajon se lee como una decision "
+        "puramente economica o hidraulica, y el minimo se fija por el caudal. "
+        "Es como se llega a un cruce que pasa el agua y no se puede limpiar, "
+        "que es el mismo fallo que el piso de 0.90 m evita en las Familias A "
+        "y B por otra via."),
+)
+
+CELDAS = _fundamento(
+    id="F3.CELDAS",
+    fase=F3,
+    que_paso="Numero de celdas del cajon: una sola, o multicelda",
+    por_que=(
+        "El Manual toma partido y hay que citarlo donde se decide: ante "
+        "capacidad de arrastre del curso -- palizada, troncos, material de "
+        "cauce -- RECOMIENDA usar obras con mayor seccion transversal libre, "
+        "SIN SUBDIVISIONES, porque cada tabique es un punto donde la palizada "
+        "se traba. La multicelda no esta prohibida; lo que el numeral hace es "
+        "invertir la carga de la prueba: quien la adopte tiene que decir por "
+        "que, y no al reves. Por eso el numero de celdas es un criterio "
+        "declarado y no un supuesto del codigo."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.4a#MULTIPLES",),  # recomendacion
+    que_pasa_si_no_se_hace=(
+        "V6 sigue siendo trivialmente verdadera porque MD no sabe hacer "
+        "multibarril -- que es una propiedad del PROGRAMA, no del diseno --, "
+        "y el dia que sepa, la verificacion se vuelve falsa en silencio. Es "
+        "la trampa que la regla vinculante #10 anticipa."),
+)
+
+FORMA_HDS5 = _fundamento(
+    id="F4.FORMA_HDS5",
+    fase=F4,
+    que_paso=("Forma de la ecuacion de control de entrada del HDS-5 que "
+              "aplica a esta seccion, y por que"),
+    por_que=(
+        "El HDS-5 no tiene UNA ecuacion de control de entrada no sumergido: "
+        "tiene DOS formas, y cual se usa no lo elige el proyectista, lo fija "
+        "la carta de la Tabla A.1 a la que pertenece la seccion. La Forma 1 "
+        "arranca del tirante critico y corrige por pendiente; la Forma 2 es "
+        "un ajuste directo sobre el caudal adimensional y NO lleva el termino "
+        "Ks*S. La diferencia no es de precision: son dos regresiones "
+        "distintas sobre dos conjuntos de ensayos, y sus constantes K y M "
+        "estan ajustadas cada una a SU forma. Por eso la memoria imprime que "
+        "forma se uso: un lector que vea K y M sin saber en que ecuacion "
+        "entraron no puede rehacer el numero."),
+    # DEFINE y no OBLIGA, aunque `#FORMAS` sea una EXIGENCIA. Lo que el paso
+    # hace es ELEGIR una ecuacion, y el HDS-5 la DEFINE; la exigencia de no
+    # cruzar coeficientes es la RESTRICCION sobre esa eleccion, no el motivo
+    # del paso. Escribir OBLIGA pasaria T11 y diria algo falso (§15.7).
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.A.2",          # definicion -> sostiene DEFINE
+           "HDS5_3ED.TA.1",         # definicion
+           "HDS5_3ED.A.3#FORMAS"),  # exigencia
+    que_pasa_si_no_se_hace=(
+        "Es el error que la sesion C3 existe para evitar: copiar la Forma 1 y "
+        "cambiarle las constantes. El termino Ks*S sobreviviria en una "
+        "ecuacion que no lo tiene, y con Ks = -0.5 RESTA carga: el HW saldria "
+        "menor que el real y V4, V4b y el tamizado de 7.A se evaluarian del "
+        "lado no conservador, sin que nada avise -- exactamente la forma de "
+        "MAT-D10, pero por una via que ninguna guardia de signo detecta, "
+        "porque el resultado sigue siendo positivo."),
+)

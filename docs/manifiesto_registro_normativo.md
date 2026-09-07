@@ -244,6 +244,7 @@ línea que se pueda romper.
 | `HDS5_3ED.A.2.1#KS` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.2** · PDF 191 | definicion | 2026-08-28 · texto |
 | `HDS5_3ED.A.2.1#QLIM` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.1** · PDF 190 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.A.2.2#QLIM` | A.2.2 | «Submerged Inlet Control Equations» | pág. impresa **A.2** · PDF 191 | aproximacion | 2026-08-28 · texto |
+| `HDS5_3ED.A.3#FORMAS` | A.3 | «A.3  INLET CONTROL DIMENSIONLESS DESIGN CURVES» | pág. impresa **A.2** · PDF 191 | exigencia | 2026-09-07 · texto |
 | `HDS5_3ED.TA.1` | Table A.1 | «Constants for Inlet Control Equations for Charts in Appendix G.» | pág. impresa **A.8** · PDF 197 | definicion | 2026-08-28 · ambos |
 | `HDS5_3ED.TC.2` | Table C.2 | «Entrance Loss Coefficients.» | pág. impresa **C.6** · PDF 216 | definicion | 2026-08-28 · ambos |
 
@@ -265,7 +266,7 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.A.2.1#QLIM`** — «apply up to ABOUT»: la fuente NO fija un umbral duro. Y los 3.5 son del sistema INGLES; su equivalente SI, entre parentesis, es 1.93. Como `caudal_adimensional` multiplica por KU_SI = 1.811, el q* que M4 compara ya esta en la escala inglesa y le corresponden 3.5 y 4.0: cambiarlos por los del parentesis seria aplicar dos veces la conversion.
 
-> **`HDS5_3ED.TA.1`** — ERRATA DE LA PROPIA FUENTE, hallada al verificar: el titulo dice «for Charts in Appendix G» y en esta 3a edicion NO EXISTE un Apendice G -- las cartas estan en el Apendice C. Se transcribe como lo imprime, con la advertencia, para que quien lo busque lo encuentre.
+> **`HDS5_3ED.TA.1`** — ERRATA DE LA PROPIA FUENTE, hallada al verificar: el titulo dice «for Charts in Appendix G» y en esta 3a edicion NO EXISTE un Apendice G -- las cartas estan en el Apendice C. Se transcribe como lo imprime, con la advertencia, para que quien lo busque lo encuentre. SEGUNDA REMISION RANCIA DE LA MISMA FUENTE, hallada en C2 y sin ID propio todavia: el num. A.3.1 (pag. impresa A.2, PDF 191) dice «From Table A.1, Chart 34, Scale 3», y la carta 34 -- Pipe Arch CM -- esta en la Tabla A.2 de esta edicion, no en la A.1. Explica por que el repositorio llego a afirmar que la Tabla A.1 trae pipe-arch, que no lo trae. Y LA PAGINA IMPRESA «A.8» ES INFERIDA, NO LEIDA: PDF 197 no lleva folio -- las cuatro paginas apaisadas de tablas del apendice van sin numerar --. La inferencia por secuencia es correcta (PDF 196 lleva A.7) y la regla de paginacion la predice; queda dicho aqui porque «pagina impresa» nombra algo que en esta pagina no esta impreso.
 
 > **`HDS5_3ED.TC.2`** — NOR-HDS-01, confirmado contra el PDF. La cita original decia «pagina C.2», que es EL NUMERO DE LA TABLA LEIDO COMO PAGINA: la pag. impresa C.2 (PDF 212) es la continuacion del indice de cartas del apendice. La tabla esta en la C.6 (PDF 216).
 
@@ -277,6 +278,10 @@ línea que se pueda romper.
 | `MC_HHD.3.6` | 3.6 | «Selección del Período de Retorno» | pág. impresa **25** · PDF 28 | recomendacion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.1` | 4.1.1.3.1 | «Aspectos generales» | pág. impresa **70** · PDF 73 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.4a` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | exigencia | 2026-08-28 · texto |
+| `MC_HHD.4.1.1.3.4a#MARCO` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | recomendacion | 2026-09-07 · texto |
+| `MC_HHD.4.1.1.3.4a#MULTIPLES` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | recomendacion | 2026-09-07 · texto |
+| `MC_HHD.4.1.1.3.4a#NIVELES` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | permiso | 2026-09-07 · texto |
+| `MC_HHD.4.1.1.3.4a#TIPOS` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **71** · PDF 74 | definicion | 2026-09-07 · texto |
 | `MC_HHD.4.1.1.3.5` | 4.1.1.3.5 | «Recomendaciones y factores a tomar en cuenta para el diseño de una alcantarilla» | pág. impresa **73** · PDF 76 | recomendacion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.6` | 4.1.1.3.6 | «Diseño hidráulico» | pág. impresa **74** · PDF 77 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.6#T09` | 4.1.1.3.6, Tabla Nº 09 | «Diseño hidráulico» | pág. impresa **75** · PDF 78 | definicion | 2026-08-28 · ambos |
@@ -287,9 +292,11 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.3.7b` | 4.1.1.3.7 b) | 4.1.1.3.7  Consideraciones para el diseño › «b)  Borde libre» | pág. impresa **79** · PDF 82 | recomendacion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.7c` | 4.1.1.3.7 c), ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | aproximacion | 2026-08-28 · imagen renderizada |
 | `MC_HHD.4.1.1.3.7c#G` | 4.1.1.3.7 c), lista de variables de la ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | definicion | 2026-08-28 · ambos |
+| `MC_HHD.4.1.1.3.7d` | 4.1.1.3.7 d) | 4.1.1.3.7  Consideraciones para el diseño › «d)  Mantenimiento y limpieza» | pág. impresa **80** · PDF 83 | exigencia | 2026-09-07 · texto |
 | `MC_HHD.4.1.1.5.1` | 4.1.1.5.1 | 4.1.1.5  PUENTES › «Aspectos generales» | pág. impresa **87** · PDF 90 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.5.4b24#G` | 4.1.1.5.4 b.2.4), ec. (63) | b.2.) Socavación General › «Método de Laursen» | pág. impresa **111** · PDF 114 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.2.1d` | 4.1.2.1 d) | 4.1.2.1 Cunetas › «d) Desagüe de las cunetas» | pág. impresa **179** · PDF 182 | exigencia | 2026-08-28 · ambos |
+| `MC_HHD.LAMINA_03` | Lámina Nº 03 | «SECCIONES TÍPICAS DE ALCANTARILLAS» | pág. impresa **209** · PDF 212 | definicion | 2026-09-07 · imagen renderizada |
 
 > **`MC_HHD.3.12.5#G`** — Primera de las DOS paginas del Manual donde 9.8 figura como gravedad.
 
@@ -555,13 +562,28 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `HDS5_3ED.TA1` — Table A.1.  Constants for Inlet Control Equations for Charts in Appendix G.
 
 - Cita: `HDS5_3ED.TA.1`
-- Transcripcion acotada · el calculo usa 7 de 10 columnas y 2 de 3 filas
-- **Transcripción acotada.** Razón: la tabla cubre todas las cartas del Apendice C -- cajon, eliptica, arco, pipe-arch, long span -- y el catalogo de conductos de la Sec. 3.2 de este proyecto ofrece solo seccion CIRCULAR en concreto, TMC y HDPE. Las filas de otras formas no pueden aplicarse a ningun punto del corredor
-  - Qué queda fuera: las cartas de secciones cajon, eliptica, pipe-arch, arco y long span, y las demas configuraciones de borde de las circulares
-  - Dónde leerlo: HDS-5 3a ed., Tabla A.1, pag. impresa A.8 (PDF 197)
+- Transcripcion acotada · el calculo usa 7 de 10 columnas y 2 de 18 filas
+- **Transcripción acotada.** Razón: de las 36 filas de la tabla, este proyecto transcribe las que su catalogo puede alcanzar: las TRES CIRCULARES que sus materiales usan -- concreto a ras del muro, y las dos de metal corrugado, cabezal e inglete --, y, desde C2, las quince del cajon rectangular de concreto de las Cartas 8 a 12, que son las que la Familia C necesita. Las demas describen bordes o formas que ningun punto del corredor puede tener
+  - Qué queda fuera: de las circulares, las configuraciones de borde no adoptadas -- «Groove end w/headwall», «Groove end projecting», «Projecting» y los dos «Beveled ring» de la Carta 3 --. Del cajon rectangular de concreto, OCHO filas mas que la tabla si trae y que este proyecto no puede alcanzar: las tres de la Carta 13 «Rect. Box Top Bev. Conc.» (bisel superior con aletas desplazadas) y las cinco de «Rectangular Concrete» de las Cartas 57, 58 y 59, que son GARGANTAS DE TAPERED INLET y no embocaduras de barril. Y las cinco de tapered inlet circular y de cara eliptica, Cartas 55 y 56
+  - Dónde leerlo: HDS-5 3a ed., Tabla A.1, PDF 197. La pagina NO LLEVA FOLIO IMPRESO -- verificado sobre la pagina renderizada: las cuatro paginas apaisadas de tablas del apendice, PDF 197 a 200, van sin numerar --, de modo que la «pag. impresa A.8» que el repositorio declara es una INFERENCIA por secuencia (PDF 196 lleva A.7) y no una lectura. La inferencia es correcta y la regla de paginacion la predice; lo que no es, es una pagina leida. Anotado en C2, no corregido: tocar `pagina_impresa` de la cita `HDS5_3ED.TA.1` movería un campo que T6 usa
 - Columna «Nomograph Scale» transcrita y **no usada**: identifica la escala del nomograma impreso; este programa resuelve las ecuaciones y no lee nomogramas
 - Columna «Equation Form» transcrita y **no usada**: las tres filas del catalogo son Form 1 y M4 implementa esa forma; se transcribe porque una carta de Form 2 usaria otra ecuacion y sin esta columna eso no se veria
 - Columna «References» transcrita y **no usada**: son las referencias bibliograficas de cada carta (Bossy 1963, FHWA 1974, NBS 5th, HEC 13); no entran en ninguna formula
+- Fila «8 -- Rect. Box Concrete -- 30° to 75° wingwall flares»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «8 -- Rect. Box Concrete -- 90° and 15° wingwall flares»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «8 -- Rect. Box Concrete -- 0° wingwall flares»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «9 -- Rect. Box Concrete -- 45° wingwall flare d = .043D»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «9 -- Rect. Box Concrete -- 18° to 33.7° wingwall flare d = .083D»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «10 -- Rect. Box Concrete -- 90° headwall w/3/4" chamfers»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «10 -- Rect. Box Concrete -- 90° headwall w/45° bevels»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «10 -- Rect. Box Concrete -- 90° headwall w/33.7° bevels»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «11 -- Rect. Box Concrete -- 3/4" chamfers; 45° skewed headwall»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «11 -- Rect. Box Concrete -- 3/4" chamfers; 30° skewed headwall»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «11 -- Rect. Box Concrete -- 3/4" chamfers; 15° skewed headwall»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «11 -- Rect. Box Concrete -- 45° bevels; 10°-45° skewed headw.»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «12 -- Rect. Box 3/4" chamf. Conc. -- 45° non-offset wingwall flares»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «12 -- Rect. Box 3/4" chamf. Conc. -- 18.4° non-offset wingwall flares»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «12 -- Rect. Box 3/4" chamf. Conc. -- 18.4° non-offset wingwall flares 30° skewed barrel»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
 - **Errata declarada**: `DIS-HDS5-APENDICE-G`
 - Vistas de cálculo derivadas: `HDS5_INLET`
 
@@ -570,16 +592,38 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | 1 -- Circular Concrete -- Square edge w/headwall | 1 | Circular Concrete | 1 | Square edge w/headwall | 1 | 0.0098 | 2.0 | 0.0398 | 0.67 | 1, 2 | usada |
 | 2 -- Circular CM -- Headwall | 2 | Circular CM | 1 | Headwall | 1 | 0.0078 | 2.0 | 0.0379 | 0.69 | 1, 2 | usada |
 | 2 -- Circular CM -- Mitered to slope | 2 | Circular CM | 2 | Mitered to slope | 1 | 0.021 | 1.33 | 0.0463 | 0.75 | 1, 2 | no usada |
+| 8 -- Rect. Box Concrete -- 30° to 75° wingwall flares | 8 | Rect. Box Concrete | 1 | 30° to 75° wingwall flares | 1 | 0.026 | 1.0 | 0.0347 | 0.81 | 1, 3 | pendiente |
+| 8 -- Rect. Box Concrete -- 90° and 15° wingwall flares | 8 | Rect. Box Concrete | 2 | 90° and 15° wingwall flares | 1 | 0.061 | 0.75 | 0.04 | 0.8 | 1, 3 | pendiente |
+| 8 -- Rect. Box Concrete -- 0° wingwall flares | 8 | Rect. Box Concrete | 3 | 0° wingwall flares | 1 | 0.061 | 0.75 | 0.0423 | 0.82 | 1, 3 | pendiente |
+| 9 -- Rect. Box Concrete -- 45° wingwall flare d = .043D | 9 | Rect. Box Concrete | 1 | 45° wingwall flare d = .043D | 2 | 0.51 | 0.667 | 0.0309 | 0.8 | 3 | pendiente |
+| 9 -- Rect. Box Concrete -- 18° to 33.7° wingwall flare d = .083D | 9 | Rect. Box Concrete | 2 | 18° to 33.7° wingwall flare d = .083D | 2 | 0.486 | 0.667 | 0.0249 | 0.83 | 3 | pendiente |
+| 10 -- Rect. Box Concrete -- 90° headwall w/3/4" chamfers | 10 | Rect. Box Concrete | 1 | 90° headwall w/3/4" chamfers | 2 | 0.515 | 0.667 | 0.0375 | 0.79 | 3 | pendiente |
+| 10 -- Rect. Box Concrete -- 90° headwall w/45° bevels | 10 | Rect. Box Concrete | 2 | 90° headwall w/45° bevels | 2 | 0.495 | 0.667 | 0.0314 | 0.82 | 3 | pendiente |
+| 10 -- Rect. Box Concrete -- 90° headwall w/33.7° bevels | 10 | Rect. Box Concrete | 3 | 90° headwall w/33.7° bevels | 2 | 0.486 | 0.667 | 0.0252 | 0.865 | 3 | pendiente |
+| 11 -- Rect. Box Concrete -- 3/4" chamfers; 45° skewed headwall | 11 | Rect. Box Concrete | 1 | 3/4" chamfers; 45° skewed headwall | 2 | 0.545 | 0.667 | 0.04505 | 0.73 | 3 | pendiente |
+| 11 -- Rect. Box Concrete -- 3/4" chamfers; 30° skewed headwall | 11 | Rect. Box Concrete | 2 | 3/4" chamfers; 30° skewed headwall | 2 | 0.533 | 0.667 | 0.0425 | 0.705 | 3 | pendiente |
+| 11 -- Rect. Box Concrete -- 3/4" chamfers; 15° skewed headwall | 11 | Rect. Box Concrete | 3 | 3/4" chamfers; 15° skewed headwall | 2 | 0.522 | 0.667 | 0.0402 | 0.68 | 3 | pendiente |
+| 11 -- Rect. Box Concrete -- 45° bevels; 10°-45° skewed headw. | 11 | Rect. Box Concrete | 4 | 45° bevels; 10°-45° skewed headw. | 2 | 0.498 | 0.667 | 0.0327 | 0.75 | 3 | pendiente |
+| 12 -- Rect. Box 3/4" chamf. Conc. -- 45° non-offset wingwall flares | 12 | Rect. Box 3/4" chamf. Conc. | 1 | 45° non-offset wingwall flares | 2 | 0.497 | 0.667 | 0.0339 | 0.803 | 3 | pendiente |
+| 12 -- Rect. Box 3/4" chamf. Conc. -- 18.4° non-offset wingwall flares | 12 | Rect. Box 3/4" chamf. Conc. | 2 | 18.4° non-offset wingwall flares | 2 | 0.493 | 0.667 | 0.0361 | 0.806 | 3 | pendiente |
+| 12 -- Rect. Box 3/4" chamf. Conc. -- 18.4° non-offset wingwall flares 30° skewed barrel | 12 | Rect. Box 3/4" chamf. Conc. | 3 | 18.4° non-offset wingwall flares 30° skewed barrel | 2 | 0.495 | 0.667 | 0.0386 | 0.71 | 3 | pendiente |
 
 > ¹²³⁴ Bossy 1963
 
 ### `HDS5_3ED.TC2` — Table C.2.  Entrance Loss Coefficients.
 
 - Cita: `HDS5_3ED.TC.2`
-- Transcripcion acotada · el calculo usa 2 de 2 columnas y 2 de 15 filas
-- **Transcripción acotada.** Razón: la tabla trae ademas la familia «Box, Reinforced Concrete» con sus once filas de aletas y bordes, y el catalogo de conductos de la Sec. 3.2 no ofrece seccion cajon: ninguna de esas filas puede aplicarse a un punto de este corredor
-  - Qué queda fuera: «Box, Reinforced Concrete»: Headwall parallel to embankment (no wingwalls), Wingwalls at 30° to 75° to barrel, Wingwall at 10° to 25° to barrel y Wingwalls parallel (extension of sides), con sus sub-bordes
+- Transcripcion acotada · el calculo usa 2 de 2 columnas y 2 de 22 filas
+- **Transcripción acotada.** Razón: desde C2 la transcripcion cubre las tres familias que la tabla imprime: «Pipe, Concrete», «Pipe. or Pipe-Arch. Corrugated Metal» y «Box, Reinforced Concrete». Lo que queda fuera ya no es una familia entera sino la eleccion de borde dentro de cada una, y eso no lo decide el alcance de la transcripcion sino el criterio que elige la embocadura
+  - Qué queda fuera: nada del cuerpo de la tabla: las tres familias estan transcritas enteras -- nueve filas de tubo de concreto, seis de metal corrugado y siete de cajon de concreto bajo sus cuatro rotulos de agrupacion, 22 filas con coeficiente en total --. Fuera queda la formula H_e = Ke(V^2/2g) del encabezado, que la pagina imprime como imagen y que M4 implementa en `perdida_carga`
   - Dónde leerlo: HDS-5 3a ed., Tabla C.2, pag. impresa C.6 (PDF 216)
+- Fila «Box, Reinforced Concrete -- Headwall parallel to embankment (no wingwalls) -- Square-edged on 3 edges»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Headwall parallel to embankment (no wingwalls) -- Rounded on 3 edges to radius of D/12 or B/12 or beveled edges on 3 sides»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwalls at 30⁰ to 75⁰ to barrel -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwalls at 30⁰ to 75⁰ to barrel -- Crown edge rounded to radius of D/12 or beveled top edge»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwall at 10⁰ to 25⁰ to barrel -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Side- or slope-tapered inlet»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
 
 | Fila | Type of Structure and Design of Entrance | Coefficient Ke | Uso |
 |---|---|---|---|
@@ -598,6 +642,13 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | Pipe. or Pipe-Arch. Corrugated Metal -- *End-Section conforming to fill slope |  | 0.5 | no usada |
 | Pipe. or Pipe-Arch. Corrugated Metal -- Beveled edges, 33.7⁰ or 45⁰ bevels |  | 0.2 | no usada |
 | Pipe. or Pipe-Arch. Corrugated Metal -- Side- or slope-tapered inlet |  | 0.2 | no usada |
+| Box, Reinforced Concrete -- Headwall parallel to embankment (no wingwalls) -- Square-edged on 3 edges |  | 0.5 | pendiente |
+| Box, Reinforced Concrete -- Headwall parallel to embankment (no wingwalls) -- Rounded on 3 edges to radius of D/12 or B/12 or beveled edges on 3 sides |  | 0.2 | pendiente |
+| Box, Reinforced Concrete -- Wingwalls at 30⁰ to 75⁰ to barrel -- Square-edged at crown |  | 0.4 | pendiente |
+| Box, Reinforced Concrete -- Wingwalls at 30⁰ to 75⁰ to barrel -- Crown edge rounded to radius of D/12 or beveled top edge |  | 0.2 | pendiente |
+| Box, Reinforced Concrete -- Wingwall at 10⁰ to 25⁰ to barrel -- Square-edged at crown |  | 0.5 | pendiente |
+| Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Square-edged at crown |  | 0.7 | pendiente |
+| Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Side- or slope-tapered inlet |  | 0.2 | pendiente |
 
 > * Note: "End Sections conforming to fill slope," made of either metal or concrete, are the sections commonly available from manufacturers.  From limited hydraulic tests they are equivalent in operation to a headwall in both inlet and outlet control.
 
@@ -627,10 +678,10 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `MC_HHD.T09` — TABLA  Nº  09:  Valores del Coeficiente de Rugosidad de Manning (n)
 
 - Cita: `MC_HHD.4.1.1.3.6#T09`
-- Transcripcion acotada · el calculo usa 3 de 4 columnas y 2 de 4 filas
+- Transcripcion acotada · el calculo usa 3 de 4 columnas y 2 de 5 filas
 - Fuente que la tabla se atribuye: *Hidráulica de Canales Abiertos, Ven Te Chow, 1983.*
 - **Transcripción acotada.** Razón: el grupo A es el unico de la tabla que describe una alcantarilla; los grupos B (canales revestidos o desarmables), C (excavado o dragado) y D (corrientes naturales) describen el CAUCE, no el conducto, y ningun modulo dimensiona un cauce. Dentro del grupo A se transcriben las cuatro subfilas que el catalogo de la Sec. 3.2 puede alcanzar
-  - Qué queda fuera: del grupo A: «a. Bronce Polido», «b. Acero» (soldado, con remaches) y las seis subfilas restantes de «a. Concreto» y «b. Madera», mas «c. Albañilería de piedra.». Fuera del grupo A: «B.CANALES REVESTIDOS», «C. EXCAVADO» y «D. CORRIENTES NATURALES»
+  - Qué queda fuera: del grupo A: «a. Bronce Polido», «b. Acero» (soldado, con remaches), las CINCO subfilas restantes de «a. Concreto» -- «tubo con curvas, conexiones», «tubo de alcantarillado con cámaras, entradas.», «Tubo con moldaje de acero.», «Tubo de moldaje madera cepillada» y «Tubo con moldaje madera en bruto» --, la «laminada y tratada» de «b. Madera» y «c. Albañilería de piedra.». Fuera del grupo A: «B.CANALES REVESTIDOS», «C. EXCAVADO» y «D. CORRIENTES NATURALES». (Eran seis subfilas de «a. Concreto» hasta C2, que transcribio «afinado».)
   - Dónde leerlo: MC_HHD, num. 4.1.1.3.6, Tabla Nº 09: los grupos A, B y C en la pag. impresa 75 (PDF 78) y el grupo D con la linea de Fuente en la 76 (PDF 79)
 - Columna «NORMAL» transcrita y **no usada**: la regla de doble n (Sec. 4.1 de la hoja de ruta) no pide el valor corriente sino los dos EXTREMOS -- n maximo para capacidad y tirante, n minimo para velocidad maxima y socavacion --, de modo que cada verificacion se resuelve con el extremo que la deja del lado seguro. El valor NORMAL entraria en un calculo de un solo n, que es justo lo que la regla prohibe
 - **Afirmación negativa**: la Tabla Nº 09 no lista HDPE. Ámbito barrido: las 225 paginas del PDF: «HDPE» aparece 0 veces y «polietileno» solo en la pag. impresa 71 (listado de tipos de alcantarilla) y en la de subdrenes. Ninguna fila de la Tabla Nº 09 lo nombra
@@ -642,6 +693,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.1. METÁLICOS -- c. Metal corrugado -- sub - dren |  | 0.017 | 0.019 | 0.021 | no usada |
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.1. METÁLICOS -- c. Metal corrugado -- dren para aguas lluvias |  | 0.021 | 0.024 | 0.03 | usada |
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- tubo recto y libre de basuras |  | 0.01 | 0.011 | 0.013 | usada |
+| A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- afinado |  | 0.011 | 0.012 | 0.014 | no usada |
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- b. Madera -- duelas |  | 0.01 | 0.012 | 0.014 | no usada |
 
 ### `MC_HHD.T10` — TABLA  Nº  10:    Velocidades máximas  admisibles (m/s)  en conductos revestidos
@@ -819,9 +871,13 @@ escrita, y el test la exige.
 | `COND-CLASE-DE-VIA` | tabla:MS.C41#MS.C41#dual | `clase_de_via` | bloquea |
 | `COND-DMIN-ALTO-VOLUMEN` | cita:MC_HHD.4.1.1.3.4a | `clase_de_via` | advierte |
 | `COND-DMIN-CANAL-RIEGO` | cita:MC_HHD.4.1.1.3.4a | `familia == 'C'` | excluye |
+| `COND-EMBOCADURA-CAJON` | cita:HDS5_3ED.TA.1 | `embocadura_cajon` | bloquea |
+| `COND-EMBOCADURA-CAJON-KE` | cita:HDS5_3ED.TC.2 | `embocadura_cajon` | bloquea |
 | `COND-EXPOSICION-QUIMICA-EMS` | cita:E060.T4.4 | `exposicion_quimica_ems` | bloquea |
 | `COND-LS-DISTANCIA-H-MEDIO` | cita:MP.2.4.2.2#SOBRECARGA | `distancia_trafico <= H / 2` | advierte |
 | `COND-LS-LOSA-APROXIMACION` | cita:MP.2.4.2.2#SOBRECARGA | `losa_de_aproximacion` | excluye |
+| `COND-MARCO-SUELO-MALA-CALIDAD` | cita:MC_HHD.4.1.1.3.4a#MARCO | `el Manual recomienda el marco «cuando se tiene la presencia de suelos de fundacion de mala calidad» y NO define «mala calidad»: no da umbral, ni clasificacion, ni remision a otra norma. La columna `sucs_fundacion` del CSV trae el grupo SUCS del punto, y traducirlo a «mala calidad» seria inventar el mapeo que la fuente calla` | advierte |
+| `COND-MULTICELDA-ARRASTRE` | cita:MC_HHD.4.1.1.3.4a#MULTIPLES | `la capacidad de arrastre del curso -- palizada, troncos, material de cauce -- no es una magnitud que este programa calcule ni una columna del CSV: se establece con inspeccion del cauce` | advierte |
 | `COND-PERFIL-SIN-INFO-SECUNDARIA` | cita:MS.4.2#PERFIL | `existe_informacion_secundaria_tramo` | bloquea |
 | `COND-SELVA-ALTA` | cita:MC_HHD.4.1.1.3.7a | `region == 'selva_alta'` | excluye |
 
@@ -839,8 +895,12 @@ recomienda.
 | `F10.CUNETA` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud maxima de recorrido de la cuneta, que fija el espaciamiento de las alcantarillas de alivio | **obliga** | `MC_HHD.4.1.2.1d` |
 | `F2.LUZ` | Fase 2 - Clasificacion y periodo de retorno | Denominacion de la obra por su luz: alcantarilla o puente | **define** | `MC_HHD.4.1.1.3.1`, `MC_HHD.4.1.1.5.1` |
 | `F2.TR` | Fase 2 - Clasificacion y periodo de retorno | Periodo de retorno del caudal de diseno, obtenido del riesgo admisible y la vida util de la Tabla N 02 | **recomienda** | `MC_HHD.3.6` |
+| `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES` |
 | `F3.D_MIN` | Fase 3 - Tipo, material y durabilidad | Seccion minima circular de 0.90 m (36") | **obliga** | `MC_HHD.4.1.1.3.4a` |
+| `F3.MANTENIMIENTO` | Fase 3 - Tipo, material y durabilidad | Cota inferior de la progresion de secciones: dimension interior que permite mantener y limpiar el conducto | **obliga** | `MC_HHD.4.1.1.3.7d` |
+| `F3.TIPO_MARCO` | Fase 3 - Tipo, material y durabilidad | Tipo de estructura del cruce: alcantarilla tipo marco de concreto de seccion rectangular | **recomienda** | `MC_HHD.4.1.1.3.4a#TIPOS`, `MC_HHD.4.1.1.3.4a#NIVELES`, `MC_HHD.4.1.1.3.4a#MARCO`, `MC_HHD.LAMINA_03` |
 | `F4.CONTROL` | Fase 4 - Dimensionamiento hidraulico | Carga a la entrada HW por los dos controles del HDS-5, entrada y salida, y adopcion del mayor | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.3.1.4#K` |
+| `F4.FORMA_HDS5` | Fase 4 - Dimensionamiento hidraulico | Forma de la ecuacion de control de entrada del HDS-5 que aplica a esta seccion, y por que | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.TA.1`, `HDS5_3ED.A.3#FORMAS` |
 | `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D` |
 | `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning, resueltos con las DOS rugosidades del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y/D <= 0.75 | **recomienda** | `MC_HHD.4.1.1.3.7b` |
@@ -934,6 +994,10 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: quien busque el «Apendice G» no lo encuentra y puede concluir que la tabla no esta
   - *HDS5_3ED*: su Tabla A.1 se titula «Constants for Inlet Control Equations for Charts in Appendix G» y en esta 3a edicion NO EXISTE un Apendice G
   - *codigo*: las cartas estan en el Apendice C, «DESIGN CHARTS, TABLES, AND FORMS», que abre en la pag. impresa C.1 (PDF 211)
+- **`DIS-MCHHD-LAMINA-03-TMC` — que dibuja la Lamina Nº 03 del Manual, segun el cuerpo del propio Manual y segun la lamina.** Gana **MC_HHD (Lamina Nº 03)**: es la pagina que contiene el dibujo. El cuerpo la ANUNCIA y la lamina la CONTIENE: ante una discrepancia entre el anuncio y la cosa anunciada, gana la cosa. Ademas la contradiccion es verificable en un sentido y no en el otro -- se puede contar las figuras de la lamina; no se puede deducir su contenido del anuncio --. Se registra porque un revisor que lea el cuerpo, vaya a la lamina y encuentre una TMC en la primera figura pensara que la cita del proyecto esta mal puesta, y no lo esta: lo que esta mal es el anuncio del propio Manual
+  - Si se sigue la otra: ninguno sobre ningun numero: la lamina no acota nada (ver la afirmacion negativa `SIN_COTAS_LAMINA_03`). El efecto es sobre la CREDIBILIDAD de la cita -- el revisor cuenta tres figuras donde el Manual anuncia una clase --, y por eso se declara en vez de corregirse en silencio
+  - *MC_HHD (cuerpo del num. 4.1.1.3.4 a))*: el cuerpo del num. 4.1.1.3.4 a), pag. impresa 73 (PDF 76), anuncia la lamina asi: «En la Lámina Nº 03, se aprecia secciones típicas de alcantarillas tipo marco de concreto con protecciones de entrada y salida.» -- solo marco de concreto
+  - *MC_HHD (Lamina Nº 03)*: la lamina misma, pag. impresa 209 (PDF 212), trae TRES figuras y la PRIMERA no es de marco: se titula «ALCANTARILLA TIPO TUBERÍA METÁLICA CORRUGADA». Las otras dos si lo son -- «ALCANTARILLA TIPO MARCO DE CONCRETO» y «ALCANTARILLA TIPO MARCO DE CONCRETO EN CRUCE DE CANAL DE RIEGO» --. El cajetin las cubre a las tres con un titulo que no menciona material: «SECCIONES TÍPICAS DE ALCANTARILLAS»
 - **`DIS-MCHHD-T09-A2-DESPLAZADA` — la alineacion de la columna de valores con sus rotulos en el bloque A.2 NO METALICOS de la Tabla Nº 09.** Gana **Ven Te Chow 1983**: es un descuido de composicion del bloque A.2 -- el A.1 de la MISMA tabla no lo tiene --, y la lectura corrida es la unica que deja a cada hoja con su valor y coincide fila por fila con la fuente que la tabla se atribuye. HALLAZGO DE S12: el repositorio ya transcribia la lectura corregida y NO lo declaraba, de modo que su valor de Manning mas usado -- MANNING['concreto_tubo_recto'] -- se apoyaba en una lectura corregida que ningun revisor podia reproducir abriendo la pagina
   - Si se sigue la otra: MANNING['concreto_tubo_recto'] pasaria de (0.010, 0.013) a (0.011, 0.014): +10 % en el n minimo, que es el que gobierna V3 y la socavacion, y +7.7 % en el maximo, que gobierna capacidad y tirante
   - *MC_HHD*: en la pag. impresa 75 los valores del bloque A.2 se imprimen UN RENGLON MAS ARRIBA que sus rotulos: «0.010 0.011 0.013» queda a la altura de «a. Concreto» y «0.010 0.012 0.014» a la de «b. Madera», que son rotulos de categoria sin valores propios -- como «b. Acero» y «c. Metal corrugado» del bloque A.1, que SI quedan en blanco. Leida al pie de la letra, la pagina deja sin valor a «Tubo con moldaje madera en bruto» y a «c. Albañilería de piedra.», que son hojas de la jerarquia
@@ -967,5 +1031,5 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 96.
+Citas sin firma de verificación: **0** de 103.
 

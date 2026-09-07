@@ -51,9 +51,13 @@ POR_S20 = "fase1/S20 · verificador-normativo"
 
 # La firma va por SESION, no por archivo: una cita dice contra que lectura se
 # comprobo, y dos lecturas distintas del mismo PDF son dos hechos distintos.
+FECHA_C2 = "2026-09-07"
+POR_C2 = "familiaC/C2 · verificador-normativo"
+
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
 S20 = (FECHA_S20, POR_S20)
+C2 = (FECHA_C2, POR_C2)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -1524,11 +1528,43 @@ HDS5_TA1 = _cita(
         pagina_pdf=197),
     caracter=Caracter.DEFINICION,
     metodo=AMBOS,
+    condiciones=(
+        # LA CONDICION QUE C2 DEJA ABIERTA, y que es la razon de que las
+        # quince filas del cajon entren como `PendienteDeCondicion` y no como
+        # `Usada`. La tabla elige fila por CONFIGURACION DE BORDE -- es una
+        # columna suya --, y para el cajon esa configuracion no esta
+        # declarada en ninguna parte: el criterio que la elegiria,
+        # 'embocadura_cajon', lo abre C5 y HOY NO EXISTE.
+        #
+        # Por D4 BLOQUEA, y tiene que bloquear: las quince filas no son
+        # equivalentes ni parecidas. Entre la Carta 8 escala 1 (K = 0.026,
+        # Forma 1) y la Carta 11 escala 1 (K = 0.545, Forma 2) no hay un
+        # matiz, hay dos ecuaciones distintas. Elegir una por defecto seria
+        # rellenar un vacio en silencio.
+        CondicionAplicacion(
+            id="COND-EMBOCADURA-CAJON",
+            texto=Verbatim(texto="Inlet Configuration", pagina_pdf=197),
+            cita_id="HDS5_3ED.TA.1",
+            resuelve=PorCriterio(clave="embocadura_cajon"),
+            efecto_si_indeterminada=Efecto.BLOQUEA),
+    ),
     nota=("ERRATA DE LA PROPIA FUENTE, hallada al verificar: el titulo dice "
           "«for Charts in Appendix G» y en esta 3a edicion NO EXISTE un "
           "Apendice G -- las cartas estan en el Apendice C. Se transcribe "
           "como lo imprime, con la advertencia, para que quien lo busque lo "
-          "encuentre."),
+          "encuentre. "
+          "SEGUNDA REMISION RANCIA DE LA MISMA FUENTE, hallada en C2 y sin "
+          "ID propio todavia: el num. A.3.1 (pag. impresa A.2, PDF 191) dice "
+          "«From Table A.1, Chart 34, Scale 3», y la carta 34 -- Pipe Arch "
+          "CM -- esta en la Tabla A.2 de esta edicion, no en la A.1. Explica "
+          "por que el repositorio llego a afirmar que la Tabla A.1 trae "
+          "pipe-arch, que no lo trae. "
+          "Y LA PAGINA IMPRESA «A.8» ES INFERIDA, NO LEIDA: PDF 197 no lleva "
+          "folio -- las cuatro paginas apaisadas de tablas del apendice van "
+          "sin numerar --. La inferencia por secuencia es correcta (PDF 196 "
+          "lleva A.7) y la regla de paginacion la predice; queda dicho aqui "
+          "porque «pagina impresa» nombra algo que en esta pagina no esta "
+          "impreso."),
 )
 
 HDS5_TC2 = _cita(
@@ -1543,6 +1579,24 @@ HDS5_TC2 = _cita(
         pagina_pdf=216),
     caracter=Caracter.DEFINICION,
     metodo=AMBOS,
+    condiciones=(
+        # LA HERMANA DE `COND-EMBOCADURA-CAJON`, Y VA APARTE A PROPOSITO. Las
+        # siete filas de cajon de ESTA tabla tambien esperan a que se declare
+        # la embocadura, pero colgarlas de la condicion de la Tabla A.1 hacia
+        # que la ventana pintara, como razon de que una fila de la C.2 no se
+        # pueda elegir, un `Verbatim` de la pagina 197 -- «Inlet
+        # Configuration», que es un encabezado de columna de OTRA tabla --.
+        # La evidencia de una condicion tiene que salir de la pagina que la
+        # impone.
+        CondicionAplicacion(
+            id="COND-EMBOCADURA-CAJON-KE",
+            texto=Verbatim(
+                texto="Type of Structure and Design of Entrance",
+                pagina_pdf=216),
+            cita_id="HDS5_3ED.TC.2",
+            resuelve=PorCriterio(clave="embocadura_cajon"),
+            efecto_si_indeterminada=Efecto.BLOQUEA),
+    ),
     nota=("NOR-HDS-01, confirmado contra el PDF. La cita original decia "
           "«pagina C.2», que es EL NUMERO DE LA TABLA LEIDO COMO PAGINA: la "
           "pag. impresa C.2 (PDF 212) es la continuacion del indice de cartas "
@@ -2549,6 +2603,291 @@ E030_FACTOR_SUELO = _cita(
 )
 
 
+# ===========================================================================
+# LAS SIETE CITAS DEL CAJON (sesion C2)
+# ===========================================================================
+# Las transcribe C2 porque §15.7 de docs/ruta_familia_c.md las declaro
+# BLOQUEANTES: sin ellas, tres de los ocho `Fundamento` que C3, C4 y C5
+# consumen -- F3.TIPO_MARCO, F3.MANTENIMIENTO y F3.CELDAS -- no se pueden
+# construir, y C5 se detiene sin aviso previo.
+#
+# LAS CUATRO PRIMERAS CUELGAN DEL MISMO NUMERAL, 4.1.1.3.4 a), que ya tiene
+# cita propia (`MC_HHD.4.1.1.3.4a`, el piso de 0.90 m). No se amplia aquella:
+# una `Cita` sostiene UNA frase, y estas cuatro dicen cosas distintas con
+# CARACTERES DISTINTOS -- una define, una permite y dos recomiendan --. Meter
+# las cinco en un solo objeto obligaria a elegirle un caracter unico al
+# numeral, y entonces `VERBO_COMPATIBLE_CON` dejaria de poder distinguir
+# «la norma obliga» de «la norma recomienda», que es justo lo que T11 existe
+# para impedir (NOR-MEM-01).
+
+CAJON_TIPOS = _cita(
+    id="MC_HHD.4.1.1.3.4a#TIPOS",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.4 a)",
+    titulo_numeral="a)  Tipo y sección",
+    jerarquia_numeral=("4.1.1.3.4  Elección del tipo de alcantarilla",),
+    pagina_impresa="71",
+    pagina_pdf=74,
+    pagina_pdf_titulo=74,
+    texto_literal=Verbatim(
+        texto=("Los tipos de alcantarillas comúnmente utilizadas en proyectos "
+               "de carreteras en nuestro país son; marco de concreto, "
+               "tuberías metálicas corrugadas, tuberías de concreto y "
+               "tuberías de polietileno de alta densidad."),
+        pagina_pdf=74),
+    caracter=Caracter.DEFINICION,
+    sesion=C2,
+)
+
+CAJON_NIVELES = _cita(
+    id="MC_HHD.4.1.1.3.4a#NIVELES",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.4 a)",
+    titulo_numeral="a)  Tipo y sección",
+    jerarquia_numeral=("4.1.1.3.4  Elección del tipo de alcantarilla",),
+    pagina_impresa="72",
+    pagina_pdf=75,
+    pagina_pdf_titulo=74,
+    texto_literal=Verbatim(
+        texto=("Las alcantarillas tipo marco de concreto de sección "
+               "rectangular o cuadrada pueden ubicarse a niveles que se "
+               "requiera, como colocarse de tal manera que el nivel de la "
+               "rasante coincida con el nivel superior de la losa o debajo "
+               "del terraplén."),
+        pagina_pdf=75),
+    # PERMISO y no EXIGENCIA: el verbo de la fuente es «pueden ubicarse». Es
+    # lo que hace citable el cruce a nivel de canal de riego -- la rasante
+    # coincidiendo con la losa -- sin convertirlo en obligacion.
+    caracter=Caracter.PERMISO,
+    sesion=C2,
+)
+
+CAJON_MARCO = _cita(
+    id="MC_HHD.4.1.1.3.4a#MARCO",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.4 a)",
+    titulo_numeral="a)  Tipo y sección",
+    jerarquia_numeral=("4.1.1.3.4  Elección del tipo de alcantarilla",),
+    pagina_impresa="72",
+    pagina_pdf=75,
+    pagina_pdf_titulo=74,
+    # «ESTE TIPO» TIENE SU ANTECEDENTE EN LA ORACION ANTERIOR, que es la de
+    # `#NIVELES`: las dos son la primera y la segunda oracion del MISMO
+    # parrafo. Se citan separadas porque su `caracter` difiere -- permiso y
+    # recomendacion --, y se deja dicho aqui para que nadie lea «este tipo»
+    # como si el numeral recomendara cualquier alcantarilla.
+    texto_literal=Verbatim(
+        texto=("Generalmente, se recomienda emplear este tipo de "
+               "alcantarillas cuando se tiene la presencia de suelos de "
+               "fundación de mala calidad."),
+        pagina_pdf=75),
+    caracter=Caracter.RECOMENDACION,
+    condiciones=(
+        CondicionAplicacion(
+            id="COND-MARCO-SUELO-MALA-CALIDAD",
+            texto=Verbatim(
+                texto=("cuando se tiene la presencia de suelos de fundación "
+                       "de mala calidad"),
+                pagina_pdf=75),
+            cita_id="MC_HHD.4.1.1.3.4a#MARCO",
+            # `NoEvaluable` Y NO `PorDatoDeSitio`, y la primera redaccion lo
+            # tuvo mal. Escribia `PorDatoDeSitio(clave="sucs_fundacion")` con
+            # el comentario «la clave existe y hoy no tiene valor», y las dos
+            # mitades eran falsas: `sucs_fundacion` NO esta en
+            # `datos_sitio.DATOS_SITIO` -- es COLUMNA DEL CSV, porque es un
+            # dato que varia punto a punto --. El efecto era peor que el
+            # error: `ventana_normativa.disponibilidad_de` corta por la rama
+            # «la clave no esta en datos_sitio» ANTES de mirar el efecto, de
+            # modo que esta condicion BLOQUEABA declarando que advertia, la
+            # `justificacion_de_no_bloquear` que T15 obliga a escribir era
+            # texto muerto, y la ventana mandaba al revisor a declarar en
+            # `datos_sitio.py` un dato que CLAUDE.md manda poner en el CSV.
+            #
+            # Lo que la condicion dice de verdad es que el Manual NO DEFINE
+            # «mala calidad»: no hay mapeo SUCS -> mala calidad en la fuente,
+            # y inventarlo es lo que §15.5 dejo dicho que NO se haga. Eso es
+            # `NoEvaluable`, y ahi el ADVIERTE si se honra.
+            resuelve=NoEvaluable(
+                por_que=("el Manual recomienda el marco «cuando se tiene la "
+                         "presencia de suelos de fundacion de mala calidad» y "
+                         "NO define «mala calidad»: no da umbral, ni "
+                         "clasificacion, ni remision a otra norma. La columna "
+                         "`sucs_fundacion` del CSV trae el grupo SUCS del "
+                         "punto, y traducirlo a «mala calidad» seria inventar "
+                         "el mapeo que la fuente calla"),
+                que_lo_cerraria=("un criterio declarado que fije que grupos "
+                                 "SUCS cuentan como mala calidad, con su "
+                                 "fuente tecnica y su ventana. §15.5 lo "
+                                 "difiere a C6, junto con el cambio de "
+                                 "esquema de `_Columna.criterio_destino`")),
+            efecto_si_indeterminada=Efecto.ADVIERTE,
+            justificacion_de_no_bloquear=(
+                "la frase RECOMIENDA el marco cuando el suelo es malo; no lo "
+                "PROHIBE cuando es bueno. Un suelo de fundacion sin declarar "
+                "deja sin apoyo a la recomendacion, no al tipo: la asignacion "
+                "del marco a la Familia C se sostiene ademas en el permiso de "
+                "niveles y en la Lamina Nº 03. Bloquear aqui detendria el "
+                "calculo por un dato que solo REFUERZA la eleccion")),
+    ),
+    sesion=C2,
+)
+
+CAJON_MULTIPLES = _cita(
+    id="MC_HHD.4.1.1.3.4a#MULTIPLES",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.4 a)",
+    titulo_numeral="a)  Tipo y sección",
+    jerarquia_numeral=("4.1.1.3.4  Elección del tipo de alcantarilla",),
+    pagina_impresa="72",
+    pagina_pdf=75,
+    pagina_pdf_titulo=74,
+    # LA ORACION ENTERA, Y NO EL FRAGMENTO. §15.7 la proponia recortada --
+    # «...recomendandose utilizar obras con mayor seccion transversal libre,
+    # sin subdivisiones.» --, y eso es una ELISION SIN MARCAR bajo el rotulo
+    # «texto literal»: exactamente el defecto que CLAUDE.md nombra a proposito
+    # de la tercera condicion de h_o. Ademas el recorte se lee como una
+    # preferencia GENERAL por la celda unica, y no lo es: la recomendacion
+    # esta condicionada al supuesto de alcantarillas multiples en cauce con
+    # arrastre, que es lo que la oracion completa dice y el fragmento esconde.
+    texto_literal=Verbatim(
+        texto=("En cauces naturales que presentan caudales de diseño "
+               "importantes donde la rasante no permite el emplazamiento de "
+               "una alcantarilla de dimensión considerable, se suelen colocar "
+               "alcantarillas múltiples, sin embargo, este diseño debe tener "
+               "en cuenta la capacidad de arrastre del curso natural "
+               "(palizada, troncos y material de cauce) y su pendiente "
+               "longitudinal para evitar obstrucciones, recomendándose "
+               "utilizar obras con mayor sección transversal libre, sin "
+               "subdivisiones."),
+        pagina_pdf=75),
+    # RECOMENDACION y no EXIGENCIA: el verbo de la fuente es
+    # «recomendandose». El «debe tener en cuenta» de la misma oracion recae
+    # sobre el DISEÑO MULTIPLE, no sobre la eleccion de celda unica.
+    caracter=Caracter.RECOMENDACION,
+    condiciones=(
+        CondicionAplicacion(
+            id="COND-MULTICELDA-ARRASTRE",
+            texto=Verbatim(
+                texto=("este diseño debe tener en cuenta la capacidad de "
+                       "arrastre del curso natural (palizada, troncos y "
+                       "material de cauce) y su pendiente longitudinal para "
+                       "evitar obstrucciones"),
+                pagina_pdf=75),
+            cita_id="MC_HHD.4.1.1.3.4a#MULTIPLES",
+            resuelve=NoEvaluable(
+                por_que=("la capacidad de arrastre del curso -- palizada, "
+                         "troncos, material de cauce -- no es una magnitud "
+                         "que este programa calcule ni una columna del CSV: "
+                         "se establece con inspeccion del cauce"),
+                que_lo_cerraria=("una caracterizacion del arrastre por punto, "
+                                 "que hoy no entra al calculador por ninguna "
+                                 "via")),
+            efecto_si_indeterminada=Efecto.ADVIERTE,
+            justificacion_de_no_bloquear=(
+                "la recomendacion apunta a la seccion UNICA, que es la que "
+                "este proyecto adopta: mientras no haya multicelda, seguir la "
+                "recomendacion no exige evaluar la condicion. El dia que "
+                "alguien adopte multicelda, es su adopcion la que tiene que "
+                "justificarse -- la carga de la prueba la invierte el "
+                "numeral --, y entonces esta condicion deja de ser "
+                "indeterminada y pasa a ser el argumento que falta")),
+    ),
+    sesion=C2,
+)
+
+MANTENIMIENTO_Y_LIMPIEZA = _cita(
+    id="MC_HHD.4.1.1.3.7d",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 d)",
+    titulo_numeral="d)  Mantenimiento y limpieza",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="80",
+    pagina_pdf=83,
+    pagina_pdf_titulo=83,
+    texto_literal=Verbatim(
+        texto=("Las dimensiones de las alcantarillas deben permitir efectuar "
+               "trabajos de mantenimiento y limpieza en su interior de manera "
+               "factible."),
+        pagina_pdf=83),
+    # EXIGENCIA SIN NUMERO, y ese es todo su valor. Levantado el piso de
+    # 0.90 m para los cruces de canal, esta frase es lo que impide que la
+    # seccion del cajon quede sin cota inferior normativa: obliga a que
+    # exista un minimo y deja al proyecto decir cual. Es la forma exacta de
+    # un vacio declarable.
+    caracter=Caracter.EXIGENCIA,
+    sesion=C2,
+)
+
+LAMINA_03 = _cita(
+    id="MC_HHD.LAMINA_03",
+    fuente_id="MC_HHD",
+    numeral="Lámina Nº 03",
+    # EL TITULO DEL CAJETIN SE GUARDA A MEDIAS, Y ES UNA LIMITACION DEL
+    # REGISTRO, NO UNA LECTURA. Medido sobre la pagina: el cajetin imprime el
+    # titulo en DOS RENGLONES APILADOS del mismo bloque -- «SECCIONES TÍPICAS
+    # DE ALCANTARILLAS» en y = 671.4 y «CON PROTECCIÓN A LA ENTRADA Y SALIDA»
+    # en y = 689.2, con la x solapada --, de modo que VISUALMENTE el titulo es
+    # uno solo y §15.4 tiene razon al darlo entero.
+    #
+    # Aqui va solo el primer renglon porque T3 verifica `titulo_numeral`
+    # BUSCANDOLO EN LA CAPA DE TEXTO, y esa capa entrega los dos renglones
+    # como corridas independientes y ademas en orden inverso: la cadena
+    # compuesta no aparece y T3 la rechazaria. Es una limitacion de la
+    # maquinaria de verificacion -- un titulo repartido en dos corridas no se
+    # puede guardar entero y seguir siendo verificable --, y se declara como
+    # tal en vez de disfrazarse de decision.
+    #
+    # LA PRIMERA REDACCION DE ESTE COMENTARIO DECIA DOS COSAS QUE NO ERAN: que
+    # unirlas seria una `Transcripcion` -- no lo seria, la pagina las imprime
+    # apiladas como un titulo --, y que la segunda mitad «viaja como
+    # texto_previo», que es campo de `TablaNormativa` y NO de `Cita`. La
+    # segunda mitad hoy no viaja a ninguna parte, y eso es lo que hay que
+    # saber al leer esto.
+    titulo_numeral="SECCIONES TÍPICAS DE ALCANTARILLAS",
+    jerarquia_numeral=(),
+    pagina_impresa="209",
+    pagina_pdf=212,
+    pagina_pdf_titulo=212,
+    texto_literal=Verbatim(
+        texto="ALCANTARILLA TIPO MARCO DE CONCRETO EN CRUCE DE CANAL DE RIEGO",
+        pagina_pdf=212),
+    # DEFINICION: la lamina no manda nada, TIPIFICA. Es el respaldo de fuente
+    # primaria del TIPO de estructura de la Familia C -- hasta hoy apoyado
+    # solo en la Sec. 2.3 de la hoja de ruta, que no es fuente primaria --.
+    caracter=Caracter.DEFINICION,
+    # Es un PLANO: se leyo sobre la pagina renderizada. Declararlo es lo que
+    # `MetodoDeVerificacion` existe para obligar (§15.4).
+    metodo=IMAGEN,
+    sesion=C2,
+)
+
+HDS5_A3_FORMAS = _cita(
+    id="HDS5_3ED.A.3#FORMAS",
+    fuente_id="HDS5_3ED",
+    numeral="A.3",
+    titulo_numeral="A.3  INLET CONTROL DIMENSIONLESS DESIGN CURVES",
+    jerarquia_numeral=(),
+    # EL NUMERAL ES A.3 Y LA PAGINA IMPRESA ES A.2, y no es un desliz: el
+    # numeral ABRE al pie de la pagina anterior a la que lleva su nombre. La
+    # §15.7 de docs/ruta_familia_c.md escribio «A.3» en la columna de pagina,
+    # que es la confusion numeral/folio que NOR-HDS-01 ya cerro una vez -- el
+    # ke citado a la pag. «C.2» cuando la Tabla C.2 esta en la C.6 --.
+    pagina_impresa="A.2",
+    pagina_pdf=191,
+    pagina_pdf_titulo=191,
+    texto_literal=Verbatim(
+        texto=("Note that coefficients for rectangular (box) shapes should "
+               "not be used for nonrectangular (circular, arch, pipe-arch, "
+               "etc.) shapes and vice-versa."),
+        pagina_pdf=191),
+    # EXIGENCIA: «should not be used» es la prohibicion que separa las dos
+    # formas de ecuacion. Es la cita que impide el error que C3 existe para
+    # evitar -- copiar la Forma 1 y cambiarle las constantes --.
+    caracter=Caracter.EXIGENCIA,
+    sesion=C2,
+)
+
+
 # Los Fundamentos (§3.10) NO viven aqui: la decision abierta #4 del diseño del
 # registro los difirio a S18 y S18 les dio archivo propio,
 # `normativa/fundamentos.py`. El motivo es de lectura, no de tamaño: una cita
@@ -2560,5 +2899,26 @@ E030_FACTOR_SUELO = _cita(
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
 
+# LA LAMINA Nº 03 NO ACOTA NADA, y hay que decirlo en el registro porque esta
+# cita es TENTADORA: es un plano, y un plano invita a leerle dimensiones. Sin
+# esta afirmacion, antes o despues alguien la usara para respaldar un ancho,
+# una altura, un espesor o una longitud de solado, y esa constante llevaria la
+# etiqueta equivocada. La lamina respalda el TIPO, no el TAMAÑO.
+SIN_COTAS_LAMINA_03 = AfirmacionNegativa(
+    que_no_dice=("la Lamina Nº 03 no acota ninguna dimension: no da ancho, "
+                 "altura, espesor ni longitud de solado"),
+    ambito_barrido=("las TRES figuras de la pag. impresa 209 (PDF 212), "
+                    "leidas sobre la pagina renderizada y barridas con "
+                    "expresion regular sobre todo token con digito. El "
+                    "resultado completo de ese barrido es ['209', '03'] -- el "
+                    "folio y el numero de lamina --. Toda dimension esta "
+                    "acotada como «VARIABLE» (nueve veces) o con literal "
+                    "alfabetico «a», «b», «c» sin tabla de valores. El "
+                    "contraste que demuestra que la ausencia es deliberada y "
+                    "no un fallo del extractor: la Lamina Nº 04 (impresa 210, "
+                    "PDF 213) SI acota -- 0.15m, 0.20m, 0.30m, 0.40m, 0.60m, "
+                    "0.80 min., 1.00m --"),
+    cita_id="MC_HHD.LAMINA_03")
+
 AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
-                          SIN_TABLAS_HEQ_EN_MP)
+                          SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03)

@@ -443,6 +443,54 @@ DIS_T09_A2_DESPLAZADA = _d(
 )
 
 
+DIS_MCHHD_LAMINA_03_TMC = _d(
+    id="DIS-MCHHD-LAMINA-03-TMC",
+    objeto=("que dibuja la Lamina Nº 03 del Manual, segun el cuerpo del "
+            "propio Manual y segun la lamina"),
+    partes=(
+        Parte(quien="MC_HHD (cuerpo del num. 4.1.1.3.4 a))",
+              que_dice=("el cuerpo del num. 4.1.1.3.4 a), pag. impresa 73 "
+                        "(PDF 76), anuncia la lamina asi: «En la Lámina Nº "
+                        "03, se aprecia secciones típicas de alcantarillas "
+                        "tipo marco de concreto con protecciones de entrada y "
+                        "salida.» -- solo marco de concreto"),
+              cita_id="MC_HHD.4.1.1.3.4a"),
+        Parte(quien="MC_HHD (Lamina Nº 03)",
+              que_dice=("la lamina misma, pag. impresa 209 (PDF 212), trae "
+                        "TRES figuras y la PRIMERA no es de marco: se titula "
+                        "«ALCANTARILLA TIPO TUBERÍA METÁLICA CORRUGADA». Las "
+                        "otras dos si lo son -- «ALCANTARILLA TIPO MARCO DE "
+                        "CONCRETO» y «ALCANTARILLA TIPO MARCO DE CONCRETO EN "
+                        "CRUCE DE CANAL DE RIEGO» --. El cajetin las cubre a "
+                        "las tres con un titulo que no menciona material: "
+                        "«SECCIONES TÍPICAS DE ALCANTARILLAS»"),
+              cita_id="MC_HHD.LAMINA_03"),
+    ),
+    gana="MC_HHD (Lamina Nº 03)",
+    por_que=("es la pagina que contiene el dibujo. El cuerpo la ANUNCIA y la "
+             "lamina la CONTIENE: ante una discrepancia entre el anuncio y la "
+             "cosa anunciada, gana la cosa. Ademas la contradiccion es "
+             "verificable en un sentido y no en el otro -- se puede contar "
+             "las figuras de la lamina; no se puede deducir su contenido del "
+             "anuncio --. Se registra porque un revisor que lea el cuerpo, "
+             "vaya a la lamina y encuentre una TMC en la primera figura "
+             "pensara que la cita del proyecto esta mal puesta, y no lo esta: "
+             "lo que esta mal es el anuncio del propio Manual"),
+    efecto_si_se_sigue_la_otra=("ninguno sobre ningun numero: la lamina no "
+                                "acota nada (ver la afirmacion negativa "
+                                "`SIN_COTAS_LAMINA_03`). El efecto es sobre "
+                                "la CREDIBILIDAD de la cita -- el revisor "
+                                "cuenta tres figuras donde el Manual anuncia "
+                                "una clase --, y por eso se declara en vez de "
+                                "corregirse en silencio"),
+    # ERRATA DE LA FUENTE y no discrepancia abierta contra la hoja de ruta:
+    # las dos partes son del MISMO documento, y la v8 no dice nada de esta
+    # lamina -- eso es otro defecto, el D-6 de §15.8 de docs/ruta_familia_c.md,
+    # y es contra la v8, no contra el Manual.
+    estado=EstadoDiscrepancia.ERRATA_DE_IMPRENTA,
+)
+
+
 DIS_E060_BORDE = _d(
     id="DIS-E060-BORDE-2-0",
     objeto=("en que fila de la Tabla 4.4 cae un SO4 de 2,0 % exacto en el "

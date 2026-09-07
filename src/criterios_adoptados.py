@@ -1633,7 +1633,8 @@ CRITERIOS: Dict[str, Criterio] = {
     # ----------------------- HIDRAULICA: vacios ---------------------------
 
     "hds5_embocadura_hdpe": Criterio(
-        valor={"K": 0.0098, "M": 2.00, "c": 0.0398, "Y": 0.67, "Ks": -0.5},
+        valor={"K": 0.0098, "M": 2.00, "c": 0.0398, "Y": 0.67, "Ks": -0.5,
+               "forma": 1},
         nivel=NIVEL_PERFIL,
         etiqueta="C",
         concepto="Constantes de control de entrada HDS-5 para tuberia HDPE",

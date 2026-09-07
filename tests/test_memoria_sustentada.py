@@ -403,6 +403,18 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F8.RECUBRIMIENTO",  # 9.4 se detiene en 'categoria_refuerzo_aashto'
         "F10.CUNETA",       # falta el dato 'L_hidraulico_m'
         "F6.LAUSHEY",       # Fase 6 cuelga de un punto dimensionado
+        # LOS CUATRO DEL CAJON, y su razon NO es la misma que la de los de
+        # arriba. Aquellos no se alcanzan porque al expediente le falta un
+        # dato; estos porque EL PASO QUE LOS EMITIRIA TODAVIA NO EXISTE: la
+        # seccion rectangular la implementa C4 y su catalogo y criterios C5.
+        # C2 los declara porque transcribio sus citas, y una cita sin
+        # consumidor la rechaza T4 del registro. Salen de esta lista en
+        # cuanto C4 y C5 escriban los pasos que los imprimen; si en esa
+        # sesion siguen aqui, es que el paso se escribio sin su fundamento.
+        "F3.TIPO_MARCO",     # el paso que asigna el tipo de estructura: C5
+        "F3.MANTENIMIENTO",  # la cota inferior de la progresion B*H: C5
+        "F3.CELDAS",         # la adopcion del numero de celdas: C5
+        "F4.FORMA_HDS5",     # la eleccion de forma de ecuacion: C3
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar

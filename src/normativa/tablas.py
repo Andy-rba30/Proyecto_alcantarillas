@@ -266,6 +266,53 @@ T09 = _tabla(
             valores={"minimo": 0.010, "normal": 0.011, "maximo": 0.013},
             uso=Usada(por=("M2._MANNING_CLAVE",
                            "criterios_adoptados['n_manning_hdpe']"))),
+        # LA FILA QUE SOSTIENE LA ANALOGIA DEL CAJON (sesion C2). Es la
+        # SEPTIMA subfila de «a. Concreto» y la UNICA de las siete que no
+        # dice «tubo»: las otras seis son «tubo recto y libre de basuras»,
+        # «tubo con curvas, conexiones», «tubo de alcantarillado con camaras,
+        # entradas.», «Tubo con moldaje de acero.», «Tubo de moldaje madera
+        # cepillada» y «Tubo con moldaje madera en bruto» -- tres en
+        # minuscula y tres con mayuscula inicial, y una comparacion sensible
+        # a caja contaria tres, no seis --.
+        #
+        # ES LO QUE HACE QUE EL VACIO SEA DE FILA Y NO DE GRUPO (regla
+        # vinculante #6): el grupo A ya cubre al cajon por su titulo -- un
+        # cajon es un conducto cerrado con escurrimiento parcialmente lleno --
+        # y «afinado» describe un ACABADO, no una forma. La analogia del cajon
+        # sale de aqui y es mas estrecha que la del HDPE, que cruza material.
+        # EL CRITERIO QUE LA DECLARE LO ABRE C5, no esta sesion.
+        #
+        # SUS VALORES SALEN DE LA LECTURA CORREGIDA, igual que los de sus
+        # hermanas: la errata `DIS-MCHHD-T09-A2-DESPLAZADA` desplaza un
+        # renglon hacia arriba las tres columnas del bloque A.2 entero.
+        # Verificado por coordenadas de linea base sobre la pagina, y por
+        # correspondencia con Ven Te Chow 1983, que asigna 0.011/0.012/0.014
+        # a «finished».
+        #
+        # LA LECTURA LITERAL DE ESTA FILA ES 0.013/0.015/0.017, y conviene
+        # decirlo bien porque la primera redaccion de este comentario la
+        # escribio al reves -- decia 0.011/0.013/0.014 --, aplicando el
+        # corrimiento en sentido contrario al que la errata declara. Medido
+        # por coordenadas de linea base en la pag. impresa 75 (PDF 78): a la
+        # altura del rotulo «afinado» (y = 273.8) la pagina imprime
+        # 0.013/0.015/0.017; los 0.011/0.012/0.014 que van aqui son los del
+        # renglon de ARRIBA (y = 264.1). Un revisor que use el comentario para
+        # reproducir la lectura literal tiene que encontrar los mismos tres
+        # numeros que la pagina, o la remision no sirve de nada -- que es
+        # justo el defecto que R-4 se abrio a cerrar --.
+        FilaDeTabla(
+            id="MC_HHD.T09#concreto_afinado",
+            jerarquia=("A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO",
+                       "A.2 NO METÁLICOS", "a. Concreto"),
+            etiqueta_literal="afinado",
+            valores={"minimo": 0.011, "normal": 0.012, "maximo": 0.014},
+            uso=NoUsada(por_que_no=(
+                "el catalogo de la Sec. 3.2 no ofrece cajon todavia: la "
+                "seccion rectangular entra en C4 y el criterio que declara "
+                "esta analogia lo abre C5. Se transcribe ahora porque es la "
+                "fila que sostiene que el vacio de la Tabla Nº 09 es DE FILA "
+                "y no de grupo, y sin ella esa afirmacion de la regla "
+                "vinculante #6 no tiene respaldo en el registro"))),
         FilaDeTabla(
             id="MC_HHD.T09#madera_duelas",
             jerarquia=("A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO",
@@ -288,11 +335,17 @@ T09 = _tabla(
                "las cuatro subfilas que el catalogo de la Sec. 3.2 puede "
                "alcanzar"),
         que_queda_fuera=("del grupo A: «a. Bronce Polido», «b. Acero» "
-                         "(soldado, con remaches) y las seis subfilas "
-                         "restantes de «a. Concreto» y «b. Madera», mas "
-                         "«c. Albañilería de piedra.». Fuera del grupo A: "
-                         "«B.CANALES REVESTIDOS», «C. EXCAVADO» y "
-                         "«D. CORRIENTES NATURALES»"),
+                         "(soldado, con remaches), las CINCO subfilas "
+                         "restantes de «a. Concreto» -- «tubo con curvas, "
+                         "conexiones», «tubo de alcantarillado con cámaras, "
+                         "entradas.», «Tubo con moldaje de acero.», «Tubo de "
+                         "moldaje madera cepillada» y «Tubo con moldaje "
+                         "madera en bruto» --, la «laminada y tratada» de "
+                         "«b. Madera» y «c. Albañilería de piedra.». Fuera "
+                         "del grupo A: «B.CANALES REVESTIDOS», "
+                         "«C. EXCAVADO» y «D. CORRIENTES NATURALES». "
+                         "(Eran seis subfilas de «a. Concreto» hasta C2, que "
+                         "transcribio «afinado».)"),
         donde_leerlo=("MC_HHD, num. 4.1.1.3.6, Tabla Nº 09: los grupos A, B y "
                       "C en la pag. impresa 75 (PDF 78) y el grupo D con la "
                       "linea de Fuente en la 76 (PDF 79)")),
@@ -1700,21 +1753,240 @@ T_HDS5_A1 = _tabla(
                 "porque su Ks de +0.7 es el que se confunde con el ke de 0.7 "
                 "de la Tabla C.2 -- dos coeficientes distintos con el mismo "
                 "numero"))),
+
+        # =================================================================
+        # CARTAS 8 A 12 - CAJON RECTANGULAR DE CONCRETO (sesion C2)
+        # =================================================================
+        # LAS CINCO CARTAS DEL CAJON, con su COLUMNA DE FORMA DE ECUACION,
+        # que es lo que las hace utiles: la Carta 8 es Forma 1 y las Cartas
+        # 9, 10, 11 y 12 son Forma 2. Sin esa columna, las constantes K y M
+        # de una carta de Forma 2 entrarian en la ecuacion de Forma 1 -- que
+        # lleva el termino Ks*S y la Forma 2 NO --, y el HW saldria menor que
+        # el real sin que ninguna guardia de signo lo detecte.
+        #
+        # EL 0.667 SE REPITE EN LAS DOCE FILAS DE FORMA 2 y no es un error de
+        # transcripcion: la Forma 2 ajusta M a 2/3 en todas ellas. El 1.0 y
+        # el 0.75 de la Carta 8, que si varian, son de Forma 1.
+        #
+        # LA CARTA 12 ES OTRO «Shape and Material»: la tabla lo escribe
+        # «Rect. Box 3/4" chamf. Conc.», con el chaflan en el nombre de la
+        # forma y no en la configuracion de borde. Se transcribe como lo
+        # imprime; unificarlo con «Rect. Box Concrete» borraria una
+        # distincion de la fuente.
+        #
+        # TODAS QUEDAN `PendienteDeCondicion` Y NO `Usada`: el borde del
+        # cajon lo elige el criterio 'embocadura_cajon', que C5 abre y que
+        # hoy NO EXISTE. Es la unica etiqueta honesta -- no es que el
+        # proyecto haya decidido no usarlas (`NoUsada`), es que falta el dato
+        # que elegiria fila --, y por D4 bloquea.
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_aletas_30_75",
+            etiqueta_literal="30° to 75° wingwall flares",
+            jerarquia=("8", "Rect. Box Concrete"),
+            valores={"chart_no": 8, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 1,
+                     "inlet_configuration": "30° to 75° wingwall flares",
+                     "equation_form": 1, "K": 0.026, "M": 1.0,
+                     "c": 0.0347, "Y": 0.81, "references": "1, 3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_aletas_90_15",
+            etiqueta_literal="90° and 15° wingwall flares",
+            jerarquia=("8", "Rect. Box Concrete"),
+            valores={"chart_no": 8, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 2,
+                     "inlet_configuration": "90° and 15° wingwall flares",
+                     "equation_form": 1, "K": 0.061, "M": 0.75,
+                     "c": 0.04, "Y": 0.8, "references": "1, 3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_aletas_0",
+            etiqueta_literal="0° wingwall flares",
+            jerarquia=("8", "Rect. Box Concrete"),
+            valores={"chart_no": 8, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 3,
+                     "inlet_configuration": "0° wingwall flares",
+                     "equation_form": 1, "K": 0.061, "M": 0.75,
+                     "c": 0.0423, "Y": 0.82, "references": "1, 3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_aleta_45_d043",
+            etiqueta_literal="45° wingwall flare d = .043D",
+            jerarquia=("9", "Rect. Box Concrete"),
+            valores={"chart_no": 9, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 1,
+                     "inlet_configuration": "45° wingwall flare d = .043D",
+                     "equation_form": 2, "K": 0.51, "M": 0.667,
+                     "c": 0.0309, "Y": 0.8, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_aleta_18_337_d083",
+            etiqueta_literal="18° to 33.7° wingwall flare d = .083D",
+            jerarquia=("9", "Rect. Box Concrete"),
+            valores={"chart_no": 9, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 2,
+                     "inlet_configuration": "18° to 33.7° wingwall flare d = .083D",
+                     "equation_form": 2, "K": 0.486, "M": 0.667,
+                     "c": 0.0249, "Y": 0.83, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_cabezal_90_chaflan",
+            etiqueta_literal="90° headwall w/3/4\" chamfers",
+            jerarquia=("10", "Rect. Box Concrete"),
+            valores={"chart_no": 10, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 1,
+                     "inlet_configuration": "90° headwall w/3/4\" chamfers",
+                     "equation_form": 2, "K": 0.515, "M": 0.667,
+                     "c": 0.0375, "Y": 0.79, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_cabezal_90_bisel_45",
+            etiqueta_literal="90° headwall w/45° bevels",
+            jerarquia=("10", "Rect. Box Concrete"),
+            valores={"chart_no": 10, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 2,
+                     "inlet_configuration": "90° headwall w/45° bevels",
+                     "equation_form": 2, "K": 0.495, "M": 0.667,
+                     "c": 0.0314, "Y": 0.82, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_cabezal_90_bisel_337",
+            etiqueta_literal="90° headwall w/33.7° bevels",
+            jerarquia=("10", "Rect. Box Concrete"),
+            valores={"chart_no": 10, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 3,
+                     "inlet_configuration": "90° headwall w/33.7° bevels",
+                     "equation_form": 2, "K": 0.486, "M": 0.667,
+                     "c": 0.0252, "Y": 0.865, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_chaflan_esviaje_45",
+            etiqueta_literal="3/4\" chamfers; 45° skewed headwall",
+            jerarquia=("11", "Rect. Box Concrete"),
+            valores={"chart_no": 11, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 1,
+                     "inlet_configuration": "3/4\" chamfers; 45° skewed headwall",
+                     "equation_form": 2, "K": 0.545, "M": 0.667,
+                     "c": 0.04505, "Y": 0.73, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_chaflan_esviaje_30",
+            etiqueta_literal="3/4\" chamfers; 30° skewed headwall",
+            jerarquia=("11", "Rect. Box Concrete"),
+            valores={"chart_no": 11, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 2,
+                     "inlet_configuration": "3/4\" chamfers; 30° skewed headwall",
+                     "equation_form": 2, "K": 0.533, "M": 0.667,
+                     "c": 0.0425, "Y": 0.705, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_chaflan_esviaje_15",
+            etiqueta_literal="3/4\" chamfers; 15° skewed headwall",
+            jerarquia=("11", "Rect. Box Concrete"),
+            valores={"chart_no": 11, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 3,
+                     "inlet_configuration": "3/4\" chamfers; 15° skewed headwall",
+                     "equation_form": 2, "K": 0.522, "M": 0.667,
+                     "c": 0.0402, "Y": 0.68, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_bisel_45_esviaje_10_45",
+            etiqueta_literal="45° bevels; 10°-45° skewed headw.",
+            jerarquia=("11", "Rect. Box Concrete"),
+            valores={"chart_no": 11, "shape_and_material": "Rect. Box Concrete",
+                     "nomograph_scale": 4,
+                     "inlet_configuration": "45° bevels; 10°-45° skewed headw.",
+                     "equation_form": 2, "K": 0.498, "M": 0.667,
+                     "c": 0.0327, "Y": 0.75, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_chaflan_aletas_45",
+            etiqueta_literal="45° non-offset wingwall flares",
+            jerarquia=("12", "Rect. Box 3/4\" chamf. Conc."),
+            valores={"chart_no": 12, "shape_and_material": "Rect. Box 3/4\" chamf. Conc.",
+                     "nomograph_scale": 1,
+                     "inlet_configuration": "45° non-offset wingwall flares",
+                     "equation_form": 2, "K": 0.497, "M": 0.667,
+                     "c": 0.0339, "Y": 0.803, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_chaflan_aletas_184",
+            etiqueta_literal="18.4° non-offset wingwall flares",
+            jerarquia=("12", "Rect. Box 3/4\" chamf. Conc."),
+            valores={"chart_no": 12, "shape_and_material": "Rect. Box 3/4\" chamf. Conc.",
+                     "nomograph_scale": 2,
+                     "inlet_configuration": "18.4° non-offset wingwall flares",
+                     "equation_form": 2, "K": 0.493, "M": 0.667,
+                     "c": 0.0361, "Y": 0.806, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_chaflan_aletas_184_esviaje_30",
+            etiqueta_literal="18.4° non-offset wingwall flares 30° skewed barrel",
+            jerarquia=("12", "Rect. Box 3/4\" chamf. Conc."),
+            valores={"chart_no": 12, "shape_and_material": "Rect. Box 3/4\" chamf. Conc.",
+                     "nomograph_scale": 3,
+                     "inlet_configuration": "18.4° non-offset wingwall flares 30° skewed barrel",
+                     "equation_form": 2, "K": 0.495, "M": 0.667,
+                     "c": 0.0386, "Y": 0.71, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
     ),
     notas_al_pie=(
         NotaAlPie(marca="¹²³⁴", texto=Verbatim(
             texto="Bossy 1963", pagina_pdf=197)),
     ),
     alcance=Acotada(
-        razon=("la tabla cubre todas las cartas del Apendice C -- cajon, "
-               "eliptica, arco, pipe-arch, long span -- y el catalogo de "
-               "conductos de la Sec. 3.2 de este proyecto ofrece solo seccion "
-               "CIRCULAR en concreto, TMC y HDPE. Las filas de otras formas "
-               "no pueden aplicarse a ningun punto del corredor"),
-        que_queda_fuera=("las cartas de secciones cajon, eliptica, "
-                         "pipe-arch, arco y long span, y las demas "
-                         "configuraciones de borde de las circulares"),
-        donde_leerlo="HDS-5 3a ed., Tabla A.1, pag. impresa A.8 (PDF 197)"),
+        # REESCRITO EN C2, y no solo porque el alcance se ensancho: LO QUE
+        # DECIA ERA FALSO. Afirmaba que la Tabla A.1 trae cartas «eliptica,
+        # arco, pipe-arch, long span» y que las de CAJON quedaban fuera. Las
+        # dos mitades estaban al reves. Censadas las 36 filas de datos de la
+        # tabla, sus `Shape and Material` son SOLO estos: Circular Concrete,
+        # Circular CM, Circular, Rect. Box Concrete, Rect. Box 3/4" chamf.
+        # Conc., Rect. Box Top Bev. Conc., Ellipital Face (sic, por
+        # «Elliptical») y Rectangular Concrete. NO HAY NI UNA FILA de
+        # pipe-arch, de arco ni de long span: el pipe-arch y el arco viven en
+        # las Tablas A.2 y A.4 del mismo apendice, y el long span no aparece
+        # en ninguna. Y de cajon rectangular de concreto hay VEINTITRES.
+        #
+        # El «Ellipital Face» de la carta 56 tampoco es un barril eliptico:
+        # es la CARA de un tapered inlet, como sus vecinas 55 a 59.
+        #
+        # Origen plausible del error, que conviene conocer porque es de la
+        # fuente y no del repositorio: el num. A.3.1 (pag. impresa A.2, PDF
+        # 191) remite «From Table A.1, Chart 34, Scale 3», y la carta 34
+        # -- Pipe Arch CM -- esta en la Tabla A.2 en esta 3a edicion, no en
+        # la A.1. Es una remision no actualizada al reorganizar el apendice,
+        # hermana de la errata `DIS-HDS5-APENDICE-G` que esta tabla ya
+        # declara. Queda ANOTADA y sin ID propio: abrir una `Discrepancia`
+        # nueva no es trabajo de C2.
+        razon=("de las 36 filas de la tabla, este proyecto transcribe las "
+               "que su catalogo puede alcanzar: las TRES CIRCULARES que sus "
+               "materiales usan -- concreto a ras del muro, y las dos de "
+               "metal corrugado, cabezal e inglete --, y, desde C2, "
+               "las quince del cajon rectangular de concreto de las Cartas 8 "
+               "a 12, que son las que la Familia C necesita. Las demas "
+               "describen bordes o formas que ningun punto del corredor "
+               "puede tener"),
+        que_queda_fuera=(
+            "de las circulares, las configuraciones de borde no adoptadas "
+            "-- «Groove end w/headwall», «Groove end projecting», "
+            "«Projecting» y los dos «Beveled ring» de la Carta 3 --. Del "
+            "cajon rectangular de concreto, OCHO filas mas que la tabla si "
+            "trae y que este proyecto no puede alcanzar: las tres de la "
+            "Carta 13 «Rect. Box Top Bev. Conc.» (bisel superior con aletas "
+            "desplazadas) y las cinco de «Rectangular Concrete» de las "
+            "Cartas 57, 58 y 59, que son GARGANTAS DE TAPERED INLET y no "
+            "embocaduras de barril. Y las cinco de tapered inlet circular y "
+            "de cara eliptica, Cartas 55 y 56"),
+        donde_leerlo=(
+            "HDS-5 3a ed., Tabla A.1, PDF 197. La pagina NO LLEVA FOLIO "
+            "IMPRESO -- verificado sobre la pagina renderizada: las cuatro "
+            "paginas apaisadas de tablas del apendice, PDF 197 a 200, van "
+            "sin numerar --, de modo que la «pag. impresa A.8» que el "
+            "repositorio declara es una INFERENCIA por secuencia (PDF 196 "
+            "lleva A.7) y no una lectura. La inferencia es correcta y la "
+            "regla de paginacion la predice; lo que no es, es una pagina "
+            "leida. Anotado en C2, no corregido: tocar `pagina_impresa` de "
+            "la cita `HDS5_3ED.TA.1` movería un campo que T6 usa"),),
     erratas=("DIS-HDS5-APENDICE-G",),
     vistas_de_calculo=("HDS5_INLET",),
 )
@@ -1846,6 +2118,83 @@ T_HDS5_C2 = _tabla(
             etiqueta_literal="Side- or slope-tapered inlet",
             valores={"ke": 0.2},
             uso=NoUsada(por_que_no="alternativa no adoptada")),
+        # =================================================================
+        # BOX, REINFORCED CONCRETE (sesion C2)
+        # =================================================================
+        # SIETE FILAS CON VALOR, NO ONCE. El `Acotada` de abajo decia «sus
+        # once filas de aletas y bordes» y once es el numero de LINEAS del
+        # bloque: cuatro de ellas son ROTULOS DE AGRUPACION sin coeficiente.
+        # La correccion no es aritmetica, es la misma que sostiene el ke del
+        # tubo: en esta tabla el valor lo fija la fila MAS su rotulo, y
+        # llamar «fila» a un encabezado destruye justo esa distincion.
+        #
+        # Y AQUI SE VE POR QUE IMPORTA: TRES de las siete filas se rotulan
+        # IDENTICAMENTE «Square-edged at crown», con ke 0.4, 0.5 y 0.7. Sin
+        # su rotulo de agrupacion son indistinguibles, y la diferencia entre
+        # la primera y la ultima es de casi el doble.
+        #
+        # EL GRADO SE ESCRIBE CON CERO VOLADO (U+2070) Y NO CON EL SIGNO DE
+        # GRADO. Lo que la pagina IMPRIME aqui es un cero volado -- span
+        # aparte, 6.96 pt contra 11.04 del cuerpo, linea base elevada --, y la
+        # capa de texto lo entrega como un «0» ASCII: el volcado dice «300 to
+        # 750». Escribirlo con U+2070 es lo que hace que NFKD lo descomponga a
+        # «0» y la busqueda case; con «°» no casaria. La pag. 197 de la Tabla
+        # A.1 SI trae el signo de grado de verdad (28 apariciones de U+00B0,
+        # cero en esta pagina), de modo que cada transcripcion lleva el de SU
+        # pagina. No es una convencion nueva: las dos filas «Beveled edges,
+        # 33.7⁰ or 45⁰ bevels» de esta misma tabla ya lo usaban.
+        #
+        # OJO AL SINGULAR DEL TERCER ROTULO: «Wingwall at 10 a 25», sin ese,
+        # frente a «Wingwalls» en los otros tres. Esta asi impreso.
+        FilaDeTabla(
+            id="HDS5_3ED.TC2#cajon_sin_aletas_escuadra_3",
+            jerarquia=("Box, Reinforced Concrete", "Headwall parallel to embankment (no wingwalls)"),
+            etiqueta_literal="Square-edged on 3 edges",
+            valores={"ke": 0.5},
+            # LA FILA QUE COINCIDE EN VALOR CON LA DEL TUBO QUE EL PROYECTO
+            # USA HOY, y por eso la mas peligrosa de la tabla: 'ke_entrada'
+            # vale 0.5 tomado del bloque «Pipe, Concrete», y con un cajon el
+            # numero seguiria saliendo igual mientras la CITA seria falsa.
+            # Coinciden por casualidad; son coeficientes distintos.
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON-KE")),
+        FilaDeTabla(
+            id="HDS5_3ED.TC2#cajon_sin_aletas_redondeado_3",
+            jerarquia=("Box, Reinforced Concrete", "Headwall parallel to embankment (no wingwalls)"),
+            etiqueta_literal=("Rounded on 3 edges to radius of D/12 or B/12 "
+                              "or beveled edges on 3 sides"),
+            valores={"ke": 0.2},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON-KE")),
+        FilaDeTabla(
+            id="HDS5_3ED.TC2#cajon_aletas_30_75_escuadra",
+            jerarquia=("Box, Reinforced Concrete", "Wingwalls at 30⁰ to 75⁰ to barrel"),
+            etiqueta_literal="Square-edged at crown",
+            valores={"ke": 0.4},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON-KE")),
+        FilaDeTabla(
+            id="HDS5_3ED.TC2#cajon_aletas_30_75_redondeado",
+            jerarquia=("Box, Reinforced Concrete", "Wingwalls at 30⁰ to 75⁰ to barrel"),
+            etiqueta_literal=("Crown edge rounded to radius of D/12 or "
+                              "beveled top edge"),
+            valores={"ke": 0.2},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON-KE")),
+        FilaDeTabla(
+            id="HDS5_3ED.TC2#cajon_aletas_10_25_escuadra",
+            jerarquia=("Box, Reinforced Concrete", "Wingwall at 10⁰ to 25⁰ to barrel"),
+            etiqueta_literal="Square-edged at crown",
+            valores={"ke": 0.5},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON-KE")),
+        FilaDeTabla(
+            id="HDS5_3ED.TC2#cajon_aletas_paralelas_escuadra",
+            jerarquia=("Box, Reinforced Concrete", "Wingwalls parallel (extension of sides)"),
+            etiqueta_literal="Square-edged at crown",
+            valores={"ke": 0.7},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON-KE")),
+        FilaDeTabla(
+            id="HDS5_3ED.TC2#cajon_aletas_paralelas_tapered",
+            jerarquia=("Box, Reinforced Concrete", "Wingwalls parallel (extension of sides)"),
+            etiqueta_literal="Side- or slope-tapered inlet",
+            valores={"ke": 0.2},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON-KE")),
     ),
     notas_al_pie=(
         NotaAlPie(marca="*", texto=Verbatim(
@@ -1857,16 +2206,33 @@ T_HDS5_C2 = _tabla(
             pagina_pdf=216)),
     ),
     alcance=Acotada(
-        razon=("la tabla trae ademas la familia «Box, Reinforced Concrete» "
-               "con sus once filas de aletas y bordes, y el catalogo de "
-               "conductos de la Sec. 3.2 no ofrece seccion cajon: ninguna de "
-               "esas filas puede aplicarse a un punto de este corredor"),
-        que_queda_fuera=("«Box, Reinforced Concrete»: Headwall parallel to "
-                         "embankment (no wingwalls), Wingwalls at 30° to 75° "
-                         "to barrel, Wingwall at 10° to 25° to barrel y "
-                         "Wingwalls parallel (extension of sides), con sus "
-                         "sub-bordes"),
+        # REESCRITO EN C2. La razon anterior -- «el catalogo de conductos de
+        # la Sec. 3.2 no ofrece seccion cajon» -- era una premisa que la
+        # Familia C destruye, y un `Acotada` que describe un alcance que ya no
+        # es el suyo es el antipatron de §12. De paso se corrige el conteo:
+        # decia «once filas» y son SIETE con coeficiente mas CUATRO rotulos.
+        razon=("desde C2 la transcripcion cubre las tres familias que la "
+               "tabla imprime: «Pipe, Concrete», «Pipe. or Pipe-Arch. "
+               "Corrugated Metal» y «Box, Reinforced Concrete». Lo que queda "
+               "fuera ya no es una familia entera sino la eleccion de borde "
+               "dentro de cada una, y eso no lo decide el alcance de la "
+               "transcripcion sino el criterio que elige la embocadura"),
+        que_queda_fuera=("nada del cuerpo de la tabla: las tres familias "
+                         "estan transcritas enteras -- nueve filas de tubo de "
+                         "concreto, seis de metal corrugado y siete de cajon "
+                         "de concreto bajo sus cuatro rotulos de agrupacion, "
+                         "22 filas con coeficiente en total --. Fuera queda "
+                         "la formula H_e = Ke(V^2/2g) del encabezado, que la "
+                         "pagina imprime como imagen y que M4 implementa en "
+                         "`perdida_carga`"),
         donde_leerlo="HDS-5 3a ed., Tabla C.2, pag. impresa C.6 (PDF 216)"),
+    # EL CONSUMIDOR DE ESTA TABLA ES `ke_entrada`, y hoy vale 0.5 tomado del
+    # bloque «Pipe, Concrete», fila «Square-edge» bajo el rotulo «Headwall or
+    # headwall and wingwalls». Con un cajon ese valor NO CORRESPONDE, y lo
+    # que lo hace peligroso es que el bloque de cajon tiene una fila que
+    # coincide en valor -- «Square-edged on 3 edges», tambien 0.5 --: el
+    # numero saldria igual y la cita seria falsa. ABRIRLO POR FORMA ES DE C5
+    # (regla vinculante #11); C2 solo transcribe.
     vistas_de_calculo=(),
 )
 

@@ -597,18 +597,61 @@ class ConstantesHDS5:
 
     Ks NO figura en la Tabla A.1: proviene de la formulacion de las ecuaciones
     (-0.5 sin inglete, +0.7 con inglete). No omitirlo.
+
+    `forma` SI figura en la Tabla A.1 -- es su columna «Equation Form» -- y
+    hasta C2 no se transcribia. Vale 1 o 2, y no es un matiz de precision:
+
+        Forma 1   HWi/D = H_c/D + K*(q*)^M + Ks*S     ec. (A.1)
+        Forma 2   HWi/D = K*(q*)^M                     ec. (A.2)
+
+    La Forma 2 NO LLEVA EL TERMINO Ks*S. Esta escrito asi arriba porque la
+    primera redaccion de este docstring SI se lo puso -- «HWi/D = K*(q*)^M +
+    Ks*S» -- y se contradecia con su propio parrafo de mas abajo, que ya decia
+    que la Forma 2 no lo lleva. Verificado contra la fuente: `normas/
+    hif12026.pdf`, pag. impresa A.2 (PDF 191), imprime la ec. (A.2) como
+    HWi/D = K[Ku*Q/(A*D^0.5)]^M y nada mas. El contraste que lo cierra esta en
+    la MISMA pagina: la ec. (A.3), sumergida, si extrae «+ Y + Ks*S».
+
+    El error no era inocuo y por eso queda dicho: con Ks = -0.5 el termino
+    RESTA, de modo que copiarlo a la Forma 2 daria un HW MENOR que el real
+    -- del lado no conservador --. Medido sobre la Carta 9 escala 1
+    (K = 0.510, M = 0.667) con un cajon de 2.00 x 2.00 m, Q = 8 m3/s y
+    S = 0.03: 1.910 m contra 1.880 m, 30 mm de diferencia, y crece lineal con
+    la pendiente. Es exactamente el fallo que `F4.FORMA_HDS5` describe, y
+    estaba escrito en el sitio donde C3 lo iba a leer primero.
+
+    Son DOS REGRESIONES DISTINTAS sobre dos conjuntos de ensayos, y sus K y M
+    estan ajustadas cada una a SU ecuacion. El HDS-5 lo dice con todas las
+    letras en el num. A.3 (pag. impresa A.2, PDF 191, cita
+    `HDS5_3ED.A.3#FORMAS`): «coefficients for rectangular (box) shapes should
+    not be used for nonrectangular (circular, arch, pipe-arch, etc.) shapes
+    and vice-versa».
+
+    Las tres cartas circulares del catalogo son Forma 1, que es lo que M4
+    implementa hoy: declararlo no mueve ningun numero. Las cinco cartas del
+    cajon que C2 transcribio son Forma 1 la Carta 8 y Forma 2 las Cartas 9 a
+    12. QUIEN IMPLEMENTE LA FORMA 2 ES C3; este campo solo la hace visible,
+    y esa visibilidad es la guardia: sin el, las constantes de una carta de
+    Forma 2 entrarian en la ecuacion de Forma 1 -- que lleva Ks*S y la
+    Forma 2 no --, con Ks = -0.5 restando carga, y el HW saldria MENOR que el
+    real sin que ninguna guardia de signo lo detecte.
     """
     K: float
     M: float
     c: float
     Y: float
     Ks: float
+    forma: int          # columna «Equation Form» de la Tabla A.1: 1 o 2
 
     @classmethod
     def desde_dict(cls, datos: Dict[str, float]) -> "ConstantesHDS5":
         """Construye desde una fila de `HDS5_INLET` o de un criterio adoptado."""
+        # `forma` se exige, no se rellena: un KeyError aqui dice que la fila
+        # o el criterio no declara su ecuacion, y ese es un dato que hay que
+        # anadir, no adivinar. Un `datos.get("forma", 1)` seria el default
+        # silencioso que CLAUDE.md llama el peor error posible.
         return cls(K=datos["K"], M=datos["M"], c=datos["c"],
-                   Y=datos["Y"], Ks=datos["Ks"])
+                   Y=datos["Y"], Ks=datos["Ks"], forma=datos["forma"])
 
 
 @dataclass(frozen=True)
