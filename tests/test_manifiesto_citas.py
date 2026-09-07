@@ -122,6 +122,27 @@ MAX_REFERENCIAS_DE_PROSA = 26
 # anclarse, y contarla como verificada era el mismo autoengaño en pequeño.
 MAX_REFERENCIAS_SIN_IDENTIFICADOR = 4
 
+# EL TERCER TRINQUETE, y el que R-16 hizo falta para nombrar: una referencia
+# que se resuelve POR MENCION y cuyo archivo de destino menciona el simbolo en
+# mas de un renglon. No esta rota -- hoy apunta a donde dice --, pero puede
+# deslizarse al renglon equivocado sin que nada falle, porque
+# `_linea_por_mencion` elige la mencion mas cercana al numero escrito y
+# cualquier mencion es un punto fijo del regenerador.
+#
+# MEDIDO, no supuesto. La fila de `NF_profundidad_m` se deslizo asi: C6
+# inserto 30 lineas en `M0_carga.py`, la definicion paso de 87 a 117 y el
+# regenerador la reancló a 74, dentro de `_NUMERICAS`. C6d le puso el numero
+# bueno y la segunda auditoria midio que le duraba 22 lineas. Lo que la cerro
+# de verdad fue anclarla al SIMBOLO QUE LA DEFINE
+# (`_VACIAS_ESTUDIO_GEOTECNICO`), porque una definicion tiene bloque y un
+# bloque no se desliza: comprobado insertando las mismas 22 lineas, el ancla
+# siguio al simbolo.
+#
+# Esa es la salida para las 17 que quedan, y por eso esto es un TECHO y no una
+# medicion: cada fila que se ancle a su definicion lo baja. Subirlo es admitir
+# una fila nueva expuesta al mismo deslizamiento.
+MAX_REFERENCIAS_QUE_PUEDEN_DESLIZARSE = 17
+
 
 def _codigo(rel: str) -> list:
     return (RAIZ / rel).read_text(encoding="utf-8").split("\n")
@@ -515,6 +536,81 @@ def test_el_hueco_sin_identificador_solo_decrece():
         f"por encima del trinquete de {MAX_REFERENCIAS_SIN_IDENTIFICADOR}. "
         "Nombra en la fila el simbolo del que habla (entre backticks) en vez "
         "de subir el numero.")
+
+
+def _expuestas_al_deslizamiento():
+    """
+    Referencias que se resuelven por MENCION y tienen mas de una candidata.
+
+    Se replica aqui la clasificacion del generador --- definicion primero,
+    mencion despues --- por la misma razon por la que `DEFINICION` vive
+    duplicada en los dos lados: si el test importara del generador, un cambio
+    en el generador cambiaria lo que el test comprueba.
+    """
+    fuera = []
+    for fila in MANIFIESTO.read_text(encoding="utf-8").split("\n"):
+        simbolos = _simbolos_citados(fila)
+        if not simbolos:
+            continue
+        for m in REFERENCIA.finditer(fila):
+            rel = m.group(4)
+            if not (RAIZ / rel).exists():
+                continue
+            bloques = _bloques(rel)
+            if any(bloques.get(s) for s in simbolos):
+                continue                       # ancla por definicion: firme
+            reales = [s for s in simbolos if s in _simbolos_del_proyecto()]
+            if not reales:
+                continue                       # prosa: la vigilan T9 y (a)
+            menciones = [
+                n for n, linea in enumerate(_codigo(rel), 1)
+                if not linea.lstrip().startswith(("import ", "from "))
+                and any(re.search(r"\b" + re.escape(s) + r"\b", linea)
+                        for s in reales)
+            ]
+            if len(menciones) > 1:
+                fuera.append((rel, int(m.group(5)), len(menciones)))
+    return fuera
+
+
+def test_el_ancla_por_mencion_ambigua_solo_decrece():
+    """
+    El trinquete de R-16. Un ancla que puede deslizarse al renglon equivocado
+    sin que nada falle es la forma exacta del defecto que la auditoría midió:
+    el manifiesto seguía verde, el generador seguía diciendo «0 referencias
+    resincronizadas», y la fila apuntaba a otro símbolo.
+
+    Se cierra una fila anclándola al símbolo que la DEFINE, no corrigiéndole
+    el número.
+    """
+    expuestas = _expuestas_al_deslizamiento()
+    assert len(expuestas) <= MAX_REFERENCIAS_QUE_PUEDEN_DESLIZARSE, (
+        f"{len(expuestas)} referencias se anclan por mención ambigua, por "
+        f"encima del trinquete de {MAX_REFERENCIAS_QUE_PUEDEN_DESLIZARSE}. "
+        "Ancla la fila a un símbolo que el archivo DEFINA (entre backticks) "
+        "en vez de subir el número. Expuestas: "
+        f"{sorted(expuestas)}")
+
+
+def test_la_fila_de_NF_profundidad_m_se_ancla_a_su_definicion():
+    """
+    R-16 en concreto, y no sólo en el trinquete. La fila habla de la columna
+    que se carga vacía porque el dato lo da el estudio geotécnico, y ese es
+    `_VACIAS_ESTUDIO_GEOTECNICO`; el nombre del dato, en cambio, aparece siete
+    veces en `M0_carga.py` y fue entre esas siete que el ancla se deslizó.
+    """
+    filas = [f for f in MANIFIESTO.read_text(encoding="utf-8").split("\n")
+             if "NF_profundidad_m" in f and "ya no es un valor declarado" in f]
+    assert len(filas) == 1, filas
+    fila = filas[0]
+    assert "_VACIAS_ESTUDIO_GEOTECNICO" in fila, (
+        "la fila cita sólo el nombre del dato, que M0 menciona siete veces: "
+        "el ancla vuelve a poder deslizarse (R-16)")
+    ref = [m for m in REFERENCIA.finditer(fila)
+           if m.group(4).endswith("M0_carga.py")]
+    assert len(ref) == 1, fila
+    destino = _codigo(ref[0].group(4))[int(ref[0].group(5)) - 1]
+    assert destino.startswith("_VACIAS_ESTUDIO_GEOTECNICO"), destino
 
 
 def test_las_tres_poblaciones_suman_el_total():

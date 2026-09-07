@@ -20,6 +20,7 @@ Dos cosas que estas pruebas fijan a proposito:
 
 import csv
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,7 @@ from modelos import (CriterioPendienteError,
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import catalogo
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
+from dominios import S_CAUCE_MAX
 from modulos import M11_reporte as M11
 
 CSV = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
@@ -1491,8 +1493,15 @@ def test_la_columna_del_csv_gana_sobre_el_dato_externo():
     # Y LA DECLARACION DESCARTADA SE NOMBRA. Descartarla en silencio deja a
     # quien escribio el JSON mirando una V2b resuelta contra un numero que no
     # es el suyo, sin nada que se lo explique.
-    assert "0.999" in a01.s_cauce.origen
+    #
+    # SE EXTRAE EL NUMERO Y SE COMPARA COMO NUMERO. La primera version de este
+    # assert decia `"0.999" in origen`, y la segunda auditoria lo objeto con
+    # razon: es un substring, y `0.9995` tambien lo contiene. Es el mismo
+    # genero que R1 condena.
     assert "descarto" in a01.s_cauce.origen
+    m = re.search(r"declaracion externa \(([-\d.eE+]+) m/m", a01.s_cauce.origen)
+    assert m is not None, a01.s_cauce.origen
+    assert float(m.group(1)) == pytest.approx(0.999, rel=REL_TRANSPORTE)
 
 
 def test_sin_declaracion_externa_la_columna_no_arrastra_nota_de_descarte():
@@ -1528,43 +1537,108 @@ FILA_C_SIN_S_CAUCE = (
     "C-02,3+200,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,")
 
 
+# Cardinales en palabra y en cifra. Es la lista cerrada del castellano hasta
+# doce, que es de sobra: la coleccion que se cuenta tiene hoy ocho elementos y
+# el defecto aparece al escribir CUALQUIER numero, no uno grande.
+_CARDINALES = (r"un[oa]?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|"
+               r"once|doce|\d+")
+
+# Un conteo de las CLAVES, en las tres formas que caben en este parrafo.
+_CONTEO_DE_CLAVES = (
+    # (1) el cardinal pegado al sustantivo: «cinco magnitudes», «8 claves».
+    re.compile(r"\b(?:" + _CARDINALES + r")\s+(?:claves?|magnitudes?)\b",
+               re.IGNORECASE),
+    # (2) la forma ELIPTICA, que es la que el bloque escribio dos veces:
+    # «las cinco», «las siete» -- el sustantivo omitido son las claves --.
+    # Se reconoce por lo que NO lleva detras: un cardinal seguido de otra
+    # palabra cuenta esa palabra («las dos clases», «las dos pendientes») y no
+    # las claves. Sin IGNORECASE en el lookahead a proposito: bajo IGNORECASE
+    # `[a-z]` tambien casa mayusculas y la elipsis dejaria de distinguirse.
+    re.compile(r"\b(?:[Ll]as|[Ll]os|LAS|LOS)\s+(?:" + _CARDINALES +
+               r")\b(?!\s+\w)"),
+    # (3) el predicado: «las claves son ocho».
+    re.compile(r"\b(?:claves?|magnitudes?)\s+(?:son|hay)\s+(?:" +
+               _CARDINALES + r")\b", re.IGNORECASE),
+)
+
+
+def _bloque_de_claves() -> str:
+    bloque = cli.__doc__.split("Datos que NO estan en el CSV")[1]
+    return bloque.split("Que hace con un criterio pendiente")[0]
+
+
 def test_el_bloque_de_claves_del_docstring_no_lleva_un_conteo_a_mano():
     """
     EL CONTEO COLGADO, TRES VECES. El bloque «Datos que NO estan en el CSV»
     decía «cinco magnitudes» cuando `CLAVES_EXTERNAS` tenía siete; C6 lo
     corrigió a «siete» **y añadió la octava en la misma sesión**. Lo midió la
-    auditoría adversarial. La cuenta que no envejece es la que no se escribe:
-    este test fija que el bloque enumere las claves y no las cuente.
+    auditoría adversarial. La cuenta que no envejece es la que no se escribe.
 
-    Y fija la otra mitad del defecto: que **todas** estén enumeradas. C6 dejó
-    `S_conducto` fuera de las dos clases que el propio párrafo define, diciendo
-    a cuál no pertenece y sin decir a cuál sí.
+    ESTE TEST ERA UNA LISTA NEGRA DEL PASADO y lo refutó la segunda auditoría:
+    prohibía cinco **cadenas literales** —`"cinco magnitudes"`, `"las siete"`,
+    `"OCHO CLAVES"`…— mientras su docstring declaraba fijar «que el bloque
+    enumere las claves y no las cuente». Medido entonces: insertar «Son OCHO
+    MAGNITUDES en total» pasaba en verde. Es el patrón que este proyecto tiene
+    escrito —una declaración que ninguna guardia sostiene— cometido en la
+    guardia misma.
+
+    Ahora la prohibición es de FORMA, no de cadena: ningún cardinal puede
+    cuantificar las claves, ni pegado al sustantivo, ni en elipsis, ni como
+    predicado. Y sigue fijando la otra mitad: que **todas** estén enumeradas
+    en las dos clases que el párrafo define —C6 dejó `S_conducto` fuera,
+    diciendo a cuál no pertenece y sin decir a cuál sí—.
     """
-    bloque = cli.__doc__.split("Datos que NO estan en el CSV")[1]
-    bloque = bloque.split("Que hace con un criterio pendiente")[0]
+    bloque = _bloque_de_claves()
 
-    for numeral in ("cinco magnitudes", "las cinco", "las siete",
-                    "SIETE CLAVES", "OCHO CLAVES"):
-        assert numeral not in bloque, (
-            f"el bloque escribe un conteo a mano ({numeral!r}). Enumerá las "
-            "claves; contarlas envejece con la siguiente que se añada")
+    for patron in _CONTEO_DE_CLAVES:
+        m = patron.search(bloque)
+        # El mensaje solo se evalua cuando el assert falla, es decir cuando
+        # `m` no es None: `m.group(0)` es seguro ahi y nombra al culpable.
+        assert m is None, (
+            f"el bloque escribe un conteo a mano: {m.group(0)!r}. Enumerá las "
+            "claves; contarlas envejece con la siguiente que se añada, y ya "
+            "envejeció tres veces")
 
+    # LA CUENTA QUE NO ENVEJECE, calculada aqui y no escrita alli. Hasta la
+    # segunda auditoria `len(CLAVES_EXTERNAS)` era una frase de la prosa que
+    # NADIE calculaba -- grep daba una sola aparicion en todo el repositorio,
+    # la propia frase --.
+    nombradas = {c for c in cli.CLAVES_EXTERNAS if c in bloque}
+    assert len(nombradas) == len(cli.CLAVES_EXTERNAS), (
+        "faltan en el bloque: "
+        f"{sorted(set(cli.CLAVES_EXTERNAS) - nombradas)}")
+
+
+def test_toda_clave_esta_en_una_de_las_dos_clases_que_el_bloque_define():
+    """
+    La otra mitad de R2, y la que de verdad se le escapó a C6: no basta con
+    que la clave aparezca en el bloque —`S_conducto` aparecía— sino que tiene
+    que estar CLASIFICADA. El párrafo define dos clases, (a) y (b), y una
+    clave que no está en ninguna es una clave que el lector no sabe dónde
+    corregir.
+    """
+    bloque = _bloque_de_claves()
+    clases = bloque.split("  (a)")[1].split("Entran declaradas")[0]
     for clave in cli.CLAVES_EXTERNAS:
-        assert clave in bloque, (
-            f"la clave {clave!r} de CLAVES_EXTERNAS no aparece en el bloque "
-            "que documenta las claves admitidas")
+        assert clave in clases, (
+            f"{clave!r} no está en ninguna de las dos clases (a)/(b) del "
+            "bloque: se dice que existe y no dónde vive")
 
 
-def test_toda_clave_que_tambien_es_columna_se_acota_igual_por_las_dos_puertas():
+def test_las_dos_pendientes_se_acotan_igual_por_las_dos_puertas():
     """
-    LA MISMA MAGNITUD POR DOS PUERTAS TIENE QUE ACOTARSE IGUAL, y este test
-    lo fija como invariante en vez de como intención: toda clave externa que
-    nombre una magnitud con dominio físico declarado tiene que pasar por
-    `_DOMINIO_DE_CLAVE`.
+    LA MISMA MAGNITUD POR DOS PUERTAS TIENE QUE ACOTARSE IGUAL. `S_cauce` es
+    columna y `S_conducto` no, pero son la MISMA magnitud física, con el mismo
+    error de transcripción, y `S_conducto` es además la que entra en Manning.
+    C6 cerró sólo la primera.
 
-    Las dos pendientes son el caso: `S_cauce` es columna y `S_conducto` no,
-    pero son la MISMA magnitud física, con el mismo error de transcripción, y
-    `S_conducto` es además la que entra en Manning. C6 cerró sólo la primera.
+    POR QUÉ LA TUPLA VA A MANO, que es lo que la segunda auditoría objetó al
+    nombre anterior de este test («toda clave que también es columna…», que
+    además era falso para `S_conducto`, que no lo es): **no existe un mapa
+    clave → símbolo de `dominios.py`** del que derivar el universo. Derivarlo
+    exigiría inventarlo, y ese mapa es una decisión de diseño, no un test. Lo
+    que este test fija es lo que sí se puede fijar sin inventar nada: las dos
+    pendientes, y que las dos puertas coincidan EN EL BORDE.
     """
     for clave in ("S_cauce", "S_conducto"):
         assert clave in cli._DOMINIO_DE_CLAVE, (
@@ -1574,6 +1648,58 @@ def test_toda_clave_que_tambien_es_columna_se_acota_igual_por_las_dos_puertas():
             cli._numero_externo(clave, 6.0, "prueba")
         assert cli._numero_externo(clave, 0.004, "prueba").valor == \
             pytest.approx(0.004, rel=REL_TRANSPORTE)
+        # EL BORDE, que es donde dos guardias escritas por separado se
+        # despegan sin que nadie lo note: `M0` exige `S_cauce < S_CAUCE_MAX`
+        # (estricto) y esta puerta rechaza `>= techo`. El propio techo tiene
+        # que caer del mismo lado en las dos.
+        with pytest.raises(DatoInvalidoError):
+            cli._numero_externo(clave, S_CAUCE_MAX, "prueba")
+
+
+def test_la_trazabilidad_de_s_cauce_sale_en_los_TRES_formatos():
+    """
+    «Publicar la trazabilidad en un solo formato es publicarla a medias» — y
+    la corrección de C6c la publicó en **dos de tres**. La segunda auditoría
+    midió el tercero: el volcado de texto de la CLI, que también es línea
+    base, imprimía `longitud` y `tw` **con su origen** y `s_cauce` no
+    (`grep -c S_cauce` daba 0 sobre `cli_perfil_ancho.txt`).
+
+    Este test los mide juntos, y a propósito: el defecto no fue olvidar un
+    formato, fue no tener dónde ver que faltaba.
+    """
+    informe = _informe_por_punto(
+        dict(luz_m=2.0), {"C-01": {"S_cauce": 0.006}})
+
+    # (1) el JSON
+    c01 = [p for p in cli.informe_json(informe)["puntos"]
+           if p["id"] == "C-01"][0]
+    declarado = c01["datos_declarados"]["S_cauce"]
+    assert declarado["valor"] == pytest.approx(0.006, rel=REL_TRANSPORTE)
+    assert declarado["origen"]
+
+    # (2) el volcado de texto -- el que faltaba. Se acota al bloque de C-01:
+    # los puntos de Familia A y B traen la columna llena y publican la suya
+    # con el origen del CSV, de modo que buscar la primera aparicion en el
+    # volcado entero mide otro punto.
+    texto = cli.volcar(informe)
+    assert "C-01  |" in texto
+    # Del encabezado de C-01 al del punto siguiente, si lo hay. La linea de
+    # guiones separa DOS veces por punto (encima y debajo del encabezado), de
+    # modo que partir por ella deja el encabezado solo.
+    bloque = texto.split("C-01  |")[1].split("|  progresiva")[0]
+    fila = [l for l in bloque.split("\n") if "S_cauce  :" in l]
+    assert fila, (
+        "el volcado de texto no publica `S_cauce`, y sí publica `longitud` y "
+        "`tw` con su origen: dos formatos de tres")
+    assert declarado["origen"] in fila[0], fila[0]
+    assert float(fila[0].split(":")[1].split("m/m")[0]) == \
+        pytest.approx(0.006, rel=REL_TRANSPORTE)
+
+    # (3) el HTML lo cubre `test_s_cauce_declarada_llega_a_V2b_...`, que
+    # además asierta el veredicto de V2b. Aquí se comprueba que el rótulo con
+    # el que la memoria lo publica sigue existiendo, que es lo que enlaza los
+    # tres formatos.
+    assert any(clave == "s_cauce" for clave, _, _ in M11.DATOS_DECLARADOS)
 
 
 def test_la_trazabilidad_de_s_cauce_sale_en_el_JSON_y_no_solo_en_el_HTML():

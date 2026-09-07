@@ -232,9 +232,13 @@ CRITERIO_TW = "TW_receptor"
 # La seccion del receptor, que el paso 2 de Sec. 1.3 necesita.
 CRITERIO_SECCION_RECEPTOR = "seccion_receptor"
 
-# Claves admitidas en --datos-externos. Cada una es un dato de entrada que
-# Sec. 1.2 no trae como columna (ver el docstring del modulo). Las de texto van
-# aparte porque no se validan como numero.
+# Claves admitidas en --datos-externos: los datos de entrada que una corrida
+# puede declarar sin tocar el CSV. NO son «las que Sec. 1.2 no trae como
+# columna» -- esa frase estuvo aqui hasta que la auditoria de C6 la encontro
+# sobreviviendo al docstring que la retiro --: `Q_m3s` y `S_cauce` SI son
+# columnas, y entran por aqui porque una familia las deja vacias por tablero.
+# Las dos clases estan en el docstring del modulo. Las de texto van aparte
+# porque no se validan como numero.
 CLAVES_TEXTO: Tuple[str, ...] = ("categoria_tr",)
 CLAVES_EXTERNAS: Tuple[str, ...] = ("luz_m", "TW_m", "longitud_m", "Q_m3s",
                                     "S_conducto", "S_cauce",
@@ -344,12 +348,19 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
 # precisamente para atrapar «una celda cargada en porcentaje», el error de
 # transcripcion mas frecuente de esa columna.
 #
-# El mapa tiene UNA entrada y se escribe como mapa igualmente: las otras seis
-# claves no son columnas de Sec. 1.2 y ninguna tiene dominio declarado en
-# `dominios.py` -- el de `Q_m3s` esta ausente A PROPOSITO (ver `modelos.py`:
-# «'Q_m3s' solo exige ser positivo, y ponerle un techo...»). La forma de mapa
-# es lo que hace que la proxima clave con dominio lo herede en vez de que haya
-# que acordarse.
+# EL MAPA NO SE CUBRE ENTERO, Y AQUI NO SE ESCRIBE CUANTAS ENTRADAS TIENE.
+# Este parrafo decia «tiene UNA entrada» y «las otras seis claves no son
+# columnas de Sec. 1.2», y las dos mitades caducaron: la primera en el commit
+# que anadio `S_conducto` veinte lineas mas abajo, y la segunda contra el
+# docstring del modulo, que dice que `Q_m3s` SI es columna. Un conteo escrito
+# a mano al lado de la coleccion que cuenta es la forma de comentario que este
+# modulo ya vio envejecer tres veces.
+#
+# Lo que sigue siendo cierto sin numero: hay claves FUERA del mapa, y estan
+# fuera porque `dominios.py` no les declara techo. El de `Q_m3s` esta ausente
+# A PROPOSITO (ver `modelos.py`: «'Q_m3s' solo exige ser positivo, y ponerle un
+# techo...»). La forma de mapa es lo que hace que la proxima clave con dominio
+# lo herede en vez de que haya que acordarse.
 _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
     "S_cauce": (S_CAUCE_MAX,
                 "una pendiente de cauce en m/m: un valor >= 1 (100 %) delata "
@@ -1192,6 +1203,35 @@ def _declarar_alcance_familia_c(informe: InformePunto) -> None:
         diferido_por_alcance=True))
 
 
+def _valor_descartado(valor: float) -> str:
+    """
+    Un valor RECHAZADO, escrito para que quien lo declaro lo reconozca.
+
+    NO ES EL FORMATO DE UNA MAGNITUD DEL PROYECTO y por eso no es exactamente
+    `_fmt`: las magnitudes del expediente se redondean para leerse, pero un
+    dato que se devuelve al remitente tiene que ser identificable. Con tres
+    decimales a secas, un `1e-05` declarado se imprimiria «0.000» -- que no es
+    lo que nadie escribio y no se puede buscar en el JSON --.
+
+    De modo que se usa la precision del documento mientras alcanza, y por
+    debajo de ella el numero entero. La auditoria adversarial de C6 lo encontro
+    al ver un `1e-05` crudo -- del `repr` de Python -- conviviendo con un
+    `0.006` de tres decimales en la misma celda, y hay que decir exactamente
+    que cambio y que no: lo que se corrige son los valores QUE EL DOCUMENTO SI
+    PUEDE ESCRIBIR, que antes salian con todos sus decimales (`1.23456` en vez
+    de `1.235`). Un `1e-05` sigue imprimiendose asi, y a proposito: no hay
+    forma de escribirlo con tres decimales sin borrarlo.
+    """
+    escrito = _fmt(valor)
+    # El umbral NO se escribe: se le PREGUNTA a `_fmt`. Un `10.0 ** -3` aqui
+    # seria una segunda copia de la precision del volcado, que ya vive en su
+    # firma, y las segundas copias divergen. La condicion va en positivo y
+    # negada, como la de MAT-D13, para que un NaN caiga del lado seguro.
+    if not abs(float(escrito)) > 0 and abs(valor) > 0:
+        return f"{valor:g}"
+    return escrito
+
+
 def _completar_s_cauce(informe: InformePunto,
                        externos: DatosExternos) -> None:
     """
@@ -1241,8 +1281,9 @@ def _completar_s_cauce(informe: InformePunto,
         origen = "CSV Sec. 1.2, columna S_cauce"
         if declarado is not None:
             origen += (
-                f"; se descarto la declaracion externa ({declarado.valor} "
-                f"m/m, {declarado.origen}) porque la columna tiene valor")
+                f"; se descarto la declaracion externa "
+                f"({_valor_descartado(declarado.valor)} m/m, "
+                f"{declarado.origen}) porque la columna tiene valor")
         informe.s_cauce = DatoDeclarado("S_cauce", punto.S_cauce, origen)
         return
     if declarado is None:
@@ -1782,6 +1823,18 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"{_fmt(informe.tw.valor)} m ({informe.tw.origen})")
     else:
         out.append(f"{SANGRIA}Fase 4  sin dimensionar")
+
+    # LA PENDIENTE DEL CAUCE, JUSTO ENCIMA DE LA VERIFICACION QUE LA CONSUME.
+    # Va aqui y no dentro de la rama de `dimensionado` porque el punto que se
+    # detiene antes tambien la declaro, y porque V2b es lo siguiente que se
+    # imprime. La segunda auditoria de C6 midio que este volcado -- que es
+    # linea base como los otros dos -- publicaba `longitud` y `tw` CON su
+    # procedencia y `s_cauce` no: dos formatos de tres, sobre el argumento de
+    # que publicarla en uno solo es publicarla a medias.
+    if informe.s_cauce is not None:
+        out.append(f"{SANGRIA}        S_cauce  : "
+                   f"{_fmt(informe.s_cauce.valor, DECIMALES_PENDIENTE)} m/m "
+                   f"({informe.s_cauce.origen})")
 
     out.extend(_lineas_verificaciones(informe))
 

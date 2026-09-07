@@ -8,6 +8,7 @@ A-01  |  progresiva 0+380  |  Familia A
 ------------------------------------------------------------------------------
   Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 71 anios
   Fase 4  sin dimensionar
+          S_cauce  : 0.0060 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
   Bloqueos:
@@ -20,6 +21,7 @@ A-02  |  progresiva 1+920  |  Familia A
 ------------------------------------------------------------------------------
   Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 71 anios
   Fase 4  sin dimensionar
+          S_cauce  : 0.0080 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
   Bloqueos:
@@ -32,6 +34,7 @@ B-01  |  progresiva 2+450  |  Familia B
 ------------------------------------------------------------------------------
   Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 35 anios
   Fase 4  sin dimensionar
+          S_cauce  : 0.0100 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
   Bloqueos:
@@ -46,6 +49,7 @@ C-01  |  progresiva 3+100  |  Familia C
 ------------------------------------------------------------------------------
   Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR no procede (ver fundamento en el JSON)
   Fase 4  sin dimensionar
+          S_cauce  : 0.0060 m/m (datos externos (punto C-01))
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
   Bloqueos:
