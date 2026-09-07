@@ -3084,7 +3084,9 @@ CRITERIOS: Dict[str, Criterio] = {
             "Carta 8 (Forma 1), aletas de 30 a 75 grados: K = 0.026, M = "
             "1.00. Es la unica familia de cajon que usa la ecuacion (A.1), la "
             "que arranca de H_c/D",
-            "Cartas 9 a 11 (Forma 2), chaflan, bisel o esviaje: K entre 0.486 "
+            "Cartas 9 a 12 (Forma 2) -- aletas, chaflan, bisel o esviaje; la "
+            "12 es la familia 'Rect. Box 3/4\" chamf. Conc.', que la "
+            "redaccion anterior dejaba fuera de esta ventana --: K entre 0.486 "
             "y 0.545 con M = 0.667. La ecuacion (A.2) no lleva H_c/D ni Ks*S, "
             "de modo que entre una carta de Forma 1 y una de Forma 2 no "
             "cambia solo una constante: cambia la ecuacion",
@@ -3133,11 +3135,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "declarado, V6 pasa a depender de una DECISION escrita.",
         fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
                "20-2011-MTC/14), num. 4.1.1.3.4 a) 'Tipo y seccion', pag. "
-               "impresa 72: 'recomendandose utilizar obras con mayor seccion "
-               "transversal libre, sin subdivisiones'. RECOMENDACION, no "
-               "exigencia: el literal esta en el registro como "
-               "`MC_HHD.4.1.1.3.4a#MULTIPLES` y lo cita el `Fundamento` "
-               "F3.CELDAS con verbo RECOMIENDA",
+               "impresa 72. RECOMENDACION, no exigencia. "
+               "EL LITERAL NO SE REPITE AQUI, y este campo lo repetia: "
+               "traia a mano un FRAGMENTO de la oracion del numeral, sin "
+               "acentos y por tanto ya divergente de su `Verbatim`, y "
+               "ademas recortado -- que es la elision sin marcar que "
+               "`MC_HHD.4.1.1.3.4a#MULTIPLES` documenta y rechaza en su "
+               "propio comentario, y que CLAUDE.md nombra --. El texto vive "
+               "en el registro, en esa "
+               "cita, con la ORACION ENTERA, y lo trae a la memoria el "
+               "`Fundamento` F3.CELDAS con verbo RECOMIENDA",
         reemplazado_por="La decision de tipologia del cruce, con el ancho "
                         "disponible en la rasante y la capacidad de arrastre "
                         "observada en el canal",
@@ -3394,13 +3401,30 @@ CRITERIOS: Dict[str, Criterio] = {
                 # "out-to-out vertical rise of pipe (ft)". En un conducto
                 # CIRCULAR la altura exterior de punta a punta ES el diametro
                 # exterior, de modo que B'c = Bc por geometria y el maximo de
-                # los dos terminos se reduce a Bc/8. El catalogo de Sec. 3.2
-                # es exclusivamente circular (Material.D es un diametro; la
-                # Familia C, de marco o multicelda, sale sin candidatos), asi
-                # que la reduccion vale para todo lo que este proyecto
-                # calcula. Para un tubo-arco o una seccion no circular B'c
-                # deja de ser Bc y hay que traer el segundo termino: queda
-                # anotado en `verificacion_pendiente`.
+                # los dos terminos se reduce a Bc/8.
+                #
+                # ESA PREMISA DEJO DE SER CIERTA EN C5 Y HAY QUE DECIRLO AQUI,
+                # porque es la que sostiene una OMISION DE CALCULO. Este
+                # comentario decia que «el catalogo de Sec. 3.2 es
+                # exclusivamente circular (...; la Familia C, de marco o
+                # multicelda, sale sin candidatos), asi que la reduccion vale
+                # para todo lo que este proyecto calcula». C5 abrio el marco:
+                # `materiales_candidatos` devuelve hoy un candidato de cajon.
+                # En un marco B'c (canto exterior) y Bc (ancho exterior) son
+                # DISTINTOS, de modo que el maximo de los dos terminos ya no
+                # se reduce a uno y esta reduccion pide DE MENOS. Medido sobre
+                # un marco de 3.00 x 1.50 m con t = 0.150: el codigo exigiria
+                # 0.3048 m y la tabla exige max(3.30/8, 1.80/8, 12 in) =
+                # 0.4125 m, un 26 % mas de recubrimiento minimo.
+                #
+                # HOY NO SE ALCANZA, y por eso la reduccion no publica ningun
+                # numero equivocado: la Fase 5 de un marco se detiene en V7 --
+                # `M2.espesor_pared` no tiene fila para un marco -- y sin
+                # dimensionado no hay Fase 7. Lo que queda es la deuda: traer
+                # el segundo termino, y llevarle a `M7.cobertura_minima_aashto`
+                # el ANCHO, que hoy no recibe. Es el punto 3 del brief de C7 y
+                # la regla vinculante #9; queda anotado tambien en
+                # `verificacion_pendiente`.
                 "no_pavimentado": {"divisor": 8.0, "sobre": "exterior",
                                    "piso_m": 0.3048},
                 "flexible": {"divisor": 8.0, "sobre": "exterior",

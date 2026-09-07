@@ -848,3 +848,68 @@ def test_la_premisa_de_que_M5_no_existe_no_vuelve_como_afirmacion():
     assert not _alcanza_MD("src/modulos/M5_verificaciones.py"), (
         "M5 alcanza a MD: ahora SI hay ciclo y el parrafo de MD que dice que "
         "no lo hay hay que reescribirlo")
+
+
+# ===========================================================================
+# Regla vinculante #3 - el caudal se reparte entre celdas (Q/N)
+# ===========================================================================
+# LA AUDITORIA ADVERSARIAL DE C5 MIDIO QUE ESTO NO LO FIJABA NADIE: mutado
+# `_caudal_por_barril` a `return Q`, la suite entera seguia en verde. Toda la
+# mitad multibarril de la sesion estaba verde sobre nada. Estos tests la matan.
+
+from modelos import FormaSeccion                                  # noqa: E402
+from modulos.M2_material import numero_de_celdas                  # noqa: E402
+from modulos.MD import _caudal_por_barril                         # noqa: E402
+from tests.apoyo.criterios import declarados, sin_valor           # noqa: E402
+
+_CAJON_MD = {
+    "embocadura_cajon": "cajon_concreto_aletas_30_75",
+    "n_manning_cajon": "concreto_afinado",
+    "n_celdas_cajon": 1,
+    "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+    "secciones_cajon_normalizadas": ((2.00, 1.50),),
+}
+
+
+def _marco_md():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                    forma=FormaSeccion.RECTANGULAR)
+
+
+def test_el_caudal_del_marco_se_reparte_entre_las_celdas_declaradas():
+    """
+    Regla #3: el control de entrada de HDS-5 y el radio hidraulico son POR
+    BARRIL, de modo que una multicelda se dimensiona con Q/N. Con tres celdas
+    declaradas, una celda recibe un tercio.
+    """
+    with declarados({**_CAJON_MD, "n_celdas_cajon": 3}):
+        assert _caudal_por_barril(9.0, _marco_md()) == pytest.approx(
+            3.0, rel=REL_TRANSPORTE)
+
+
+def test_el_tubo_no_reparte_nada_ni_consulta_el_criterio_del_cajon():
+    """
+    La otra mitad, y es la que impide que el reparto se cuele en la circular:
+    un tubo devuelve Q intacto Y NO INVOCA 'n_celdas_cajon'. Invocarlo lo
+    registraria como criterio USADO -- M11 imprime los usados -- en una
+    corrida que no tiene ningun marco.
+    """
+    tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    with sin_valor("n_celdas_cajon"):          # sin valor: si lo leyera, lanza
+        assert _caudal_por_barril(9.0, tubo) == pytest.approx(
+            9.0, rel=REL_TRANSPORTE)
+
+
+@pytest.mark.parametrize("celdas", [2.5, 0, -1, "dos"])
+def test_un_numero_de_celdas_que_no_es_un_entero_mayor_que_cero_es_invalido(
+        celdas):
+    """
+    `2.5` es el caso que la auditoria midio: la guardia anterior era
+    `not celdas >= 1` y lo dejaba pasar, de modo que `Q/2.5` salia sin
+    quejarse y la memoria habria impreso «2.5 celdas». Un barril y medio no se
+    construye.
+    """
+    with declarados({**_CAJON_MD, "n_celdas_cajon": celdas}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            numero_de_celdas(_marco_md())
+    assert "ENTERO" in exc.value.motivo

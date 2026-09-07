@@ -215,7 +215,8 @@ import numbers
 from typing import Any, Optional, Tuple, Union
 
 import criterios_adoptados as ca
-from constantes_normativas import (HDS5_INLET, H_RELLENO_MIN, MANNING,
+from constantes_normativas import (CARTAS_CAJON_TA1,
+                                   FILAS_MANNING_CONCRETO,HDS5_INLET, H_RELLENO_MIN, MANNING,
                                    SECCION_EG2013, TABLA_09_FILAS, V_MAX)
 from dominios import MILIMETROS_POR_METRO
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, ConstantesHDS5,
@@ -429,7 +430,50 @@ def espesor_pared(material: Material, D: float) -> float:
     misma mina que V8 tenia --: declarar el criterio para un solo material
     tumbaba la corrida entera con un fallo de programa en vez de descartar
     ese material.
+
+    Y HAY UN QUINTO VACIO, QUE ES EL DEL MARCO, y se detiene ANTES que los
+    cuatro. Lo encontro la auditoria adversarial de C5 midiendo lo que pasaba
+    sin el, y no era una imprecision de texto: era un NUMERO INSEGURO. La
+    tabla que este criterio declara es la columna «Wall Thickness» de una
+    norma de TUBERIA, indexada por diametro designado en milimetros, y las
+    alturas de marco plausibles caen sobre esa misma serie de 900 + 150k mm.
+    De modo que un marco de 2.00 x 1.50 m NO se detenia: recibia t = 0.150 m,
+    la pared del tubo de 1500 mm, y con ella `diametro_exterior` le daba a V7
+    un cilindro de 1.80 m. Medido sobre esa seccion: la subpresion real de un
+    prisma es 40.6 kN/m y la del cilindro 25.0 kN/m -- un 63 % menos --,
+    mientras el peso de relleno cae solo un 28 %, de modo que V7 SOBREESTIMA
+    la seguridad del marco alrededor de un 27 %. Es la direccion insegura, y
+    es MAT-D3 reintroducido para el cajon.
+
+    El docstring de `M5.v7_flotacion` que C5 escribio decia que «un marco
+    vaciado in situ no tiene fila ahi». La frase era verdadera sobre la NORMA
+    y falsa sobre el DICT, que es lo que el codigo lee, y una declaracion en
+    un docstring no detiene ningun calculo. Por eso la deteccion esta aqui:
+    `DatoFaltanteError`, porque lo que falta es un dato que hay que CONSEGUIR
+    -- el espesor de pared de un marco sale de su calculo estructural, no de
+    una tabla de producto --, y porque asi la Fase 5 de un marco se detiene en
+    V7 en vez de publicar un margen que no es. Levantarla es de C7, que
+    generaliza M8 a la seccion.
     """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        raise DatoFaltanteError(
+            f"{CRITERIO_ESPESOR_PARED}[marco]",
+            detalle=(
+                f"el criterio '{CRITERIO_ESPESOR_PARED}' tabula la pared por "
+                "DIAMETRO DESIGNADO de una norma de tuberia (columna 'Wall "
+                "Thickness' de AASHTO M 170M-04), y un marco vaciado in situ "
+                "no tiene fila ahi: su espesor sale de su propio calculo "
+                "estructural. NO SE PUEDE LEER LA FILA DEL TUBO DE LA MISMA "
+                "ALTURA, aunque exista: la altura de un marco cae sobre la "
+                "misma serie de 900 + 150k mm por coincidencia, y con esa "
+                "pared el volumen desplazado se calcula como un CILINDRO -- "
+                "V7 sobreestima la seguridad alrededor de un 27 % sobre un "
+                "marco de 2.00 x 1.50 m, que es la direccion insegura. "
+                "Mientras esto no se declare, la Fase 5 de un marco se "
+                "detiene en V7 y no publica un margen que no es. Lo cierra la "
+                "generalizacion de M8 a la seccion"
+            ),
+        )
     if material.espesor_pared is None:
         ca.valor(CRITERIO_ESPESOR_PARED)      # CriterioPendienteError si esta vacio
         raise DatoFaltanteError(
@@ -564,6 +608,22 @@ def siguiente_seccion(material: Material,
     return None if D is None else SeccionCircular(D)
 
 
+def _misma_seccion(a: Seccion, b: Seccion) -> bool:
+    """
+    Dos secciones rectangulares son la misma escalon del catalogo.
+
+    CON TOLERANCIA Y NO CON `==`, igual que `siguiente_diametro` compara su
+    progresion: CLAUDE.md prohibe comparar floats con `==` sin excepcion. Hoy
+    las dos secciones se reconstruyen del mismo criterio y el `==` acertaba
+    siempre; deja de acertar en cuanto una llegue de otro sitio -- de un JSON
+    de tablero, de la GUI, de un round-trip por texto --, y entonces el bucle
+    de MD dejaria de reconocer su propio escalon y levantaria un
+    `DatoInvalidoError` sobre una seccion que si esta en la serie.
+    """
+    return (abs(a.B - b.B) <= TOL_UMBRAL_NORMATIVO
+            and abs(a.altura - b.altura) <= TOL_UMBRAL_NORMATIVO)
+
+
 def _siguiente_seccion_cajon(actual: Optional[Seccion]) -> Optional[Seccion]:
     """
     Siguiente par (B, H) de la progresion declarada, en el orden en que el
@@ -575,15 +635,13 @@ def _siguiente_seccion_cajon(actual: Optional[Seccion]) -> Optional[Seccion]:
     y cual conviene depende de la rasante y del canal --. El orden es parte de
     lo que el proyectista declara, y este bucle lo respeta tal cual.
     """
-    progresion = ca.valor(CRITERIO_SECCIONES_CAJON)
-    secciones = [SeccionRectangular(float(B), float(H)) for B, H in progresion]
+    secciones = [SeccionRectangular(B, H) for B, H in progresion_de_cajon()]
     if actual is None:
         return secciones[0] if secciones else None
     for anterior, siguiente in zip(secciones, secciones[1:]):
-        if (anterior.B == actual.B) and (anterior.H == actual.H):
+        if _misma_seccion(anterior, actual):
             return siguiente
-    if secciones and (secciones[-1].B == actual.B
-                      and secciones[-1].H == actual.H):
+    if secciones and _misma_seccion(secciones[-1], actual):
         return None
     raise DatoInvalidoError(
         "seccion", valor=(actual.B, actual.H),
@@ -596,6 +654,131 @@ def _siguiente_seccion_cajon(actual: Optional[Seccion]) -> Optional[Seccion]:
 # ---------------------------------------------------------------------------
 # Sec. 3.4 - Catalogo de material
 # ---------------------------------------------------------------------------
+
+def _carta_de_cajon() -> str:
+    """
+    La clave de la carta de la Tabla A.1 que 'embocadura_cajon' declara,
+    comprobada contra las CARTAS DE CAJON y no contra la tabla entera.
+
+    LAS DOS GUARDIAS SON DE LA MISMA FAMILIA Y LAS DOS LAS PIDIO LA AUDITORIA
+    ADVERSARIAL DE C5, que midio los dos agujeros:
+
+      * `HDS5_INLET[ca.valor(...)]` a pelo acepta
+        «circular_concreto_square_edge_headwall» y le da a un MARCO las
+        constantes de la Carta 1 CIRCULAR -- y ademas la Forma 1, con su
+        Ks*S --, mientras el paso de memoria imprime que la carta es «del
+        bloque de CAJON» invocando el num. A.3, que es la regla que se estaria
+        violando. Este es el unico punto del codigo donde la regla vinculante
+        #5 se puede hacer cumplir.
+      * y una ERRATA en la clave --«cajon_concreto_aleta_45_d04»-- sale como
+        `KeyError` desnudo, que no desciende de `ErrorProyecto`: `cli._etapa`
+        no lo captura, tumba la corrida entera y la GUI no lo puede distinguir
+        de un fallo del programa. Es la mina que S20 desactivo tres veces.
+
+    Es `DatoInvalidoError` y no `CriterioPendienteError` porque el criterio SI
+    esta declarado: hay que CORREGIRLO, no declararlo.
+    """
+    clave = ca.valor(CRITERIO_EMBOCADURA_CAJON)
+    if not isinstance(clave, str) or clave not in CARTAS_CAJON_TA1:
+        raise DatoInvalidoError(
+            CRITERIO_EMBOCADURA_CAJON, valor=clave,
+            motivo="se espera la CLAVE de una carta de CAJON de la Tabla A.1 "
+                   "del HDS-5. El num. A.3 prohibe expresamente cruzar "
+                   "coeficientes entre geometrias -- «coefficients for "
+                   "rectangular (box) shapes should not be used for "
+                   "nonrectangular ... shapes and vice-versa» --, de modo que "
+                   "una carta circular aqui no es un valor discutible: es "
+                   "otra geometria. Claves admitidas: "
+                   + ", ".join(sorted(CARTAS_CAJON_TA1)),
+        )
+    return clave
+
+
+def _fila_manning_de_cajon() -> str:
+    """
+    La fila de la Tabla N 09 de la que 'n_manning_cajon' toma su analogia.
+
+    ACOTADA AL SUBGRUPO «a. Concreto», que es lo que el criterio declara: un
+    marco de concreto no puede tomar prestada la n de un metal corrugado ni la
+    de unas duelas de madera, y sin esta guardia `MANNING[...]` las aceptaba
+    -- y una errata en la clave salia como `KeyError` desnudo --.
+    """
+    clave = ca.valor(CRITERIO_N_MANNING_CAJON)
+    if not isinstance(clave, str) or clave not in FILAS_MANNING_CONCRETO:
+        raise DatoInvalidoError(
+            CRITERIO_N_MANNING_CAJON, valor=clave,
+            motivo="se espera la CLAVE de una fila del subgrupo «a. Concreto» "
+                   "del grupo A de la Tabla N 09: la analogia que este "
+                   "criterio declara es DENTRO del material del conducto, no "
+                   "entre materiales. Claves admitidas: "
+                   + ", ".join(sorted(FILAS_MANNING_CONCRETO)),
+        )
+    return clave
+
+
+def numero_de_celdas(material: Material) -> int:
+    """
+    N, el numero de barriles del marco ('n_celdas_cajon'), validado.
+
+    LA INTEGRALIDAD SE COMPRUEBA, y no es celo: la guardia anterior era
+    `not celdas >= 1`, que deja pasar `2.5` -- lo midio la auditoria
+    adversarial de C5: `Q/2.5` sale sin quejarse y la memoria imprimiria «2.5
+    celdas» --. Un barril y medio no se construye, y el propio `dominio` del
+    criterio dice «entero >= 1».
+
+    LA GUARDIA VA ESCRITA EN POSITIVO Y NEGADA, que es la forma que MAT-D13
+    dejo fijada: `not (... >= 1)` atrapa tambien un NaN, que frente a `< 1`
+    seria falso y pasaria.
+
+    VIVE EN M2 Y NO EN MD porque tiene DOS consumidores y los dos estan
+    debajo del orquestador: `MD._caudal_por_barril`, que reparte el caudal, y
+    `M5.v6_material_solido_arrastre`, que compara el numero contra la Sec.
+    3.1. Ponerlo en MD obligaba a M5 a importar al modulo que lo orquesta.
+    Leerlo dos veces con dos guardias distintas es como divergen los numeros.
+    """
+    celdas = ca.valor(CRITERIO_N_CELDAS_CAJON)
+    entero = isinstance(celdas, int) and not isinstance(celdas, bool)
+    if not entero or not celdas >= 1:
+        raise DatoInvalidoError(
+            CRITERIO_N_CELDAS_CAJON, valor=celdas,
+            motivo="el numero de celdas del marco tiene que ser un ENTERO "
+                   "mayor o igual que 1: es cuantos barriles se construyen, "
+                   "y el caudal de diseño se reparte entre ellos. Un valor "
+                   "fraccionario no es un numero de barriles")
+    return celdas
+
+
+def progresion_de_cajon() -> tuple:
+    """
+    La serie (B, H) que 'secciones_cajon_normalizadas' declara, validada.
+
+    SIN ESTA GUARDIA, UN ESCALAR DECLARADO DESDE LA GUI REVIENTA CON
+    `TypeError`. Es exactamente el modo de fallo que este mismo modulo ya
+    tenia documentado para 'espesor_pared_conducto' --«la GUI solo sabe
+    ofrecer float o str»-- y que C5 no habia replicado aqui; lo midio la
+    auditoria adversarial. Se valida ademas lo que un revisor no puede ver a
+    ojo en una serie de pares: que cada dimension sea un numero POSITIVO. Lo
+    que NO se valida es el ORDEN, y es deliberado -- `_siguiente_seccion_cajon`
+    explica por que en dos dimensiones «el siguiente» no es una relacion que
+    el programa pueda deducir --.
+    """
+    progresion = ca.valor(CRITERIO_SECCIONES_CAJON)
+    forma_mala = DatoInvalidoError(
+        CRITERIO_SECCIONES_CAJON, valor=progresion,
+        motivo="se espera una serie de pares (B, H) en metros -- por ejemplo "
+               "((1.50, 1.20), (2.00, 1.50)) --, con B y H interiores de UNA "
+               "celda y los dos POSITIVOS. No es un escalar ni un solo par: "
+               "el bucle de MD recorre la serie entera, igual que recorre los "
+               "diametros",
+    )
+    try:
+        pares = tuple((float(B), float(H)) for B, H in progresion)
+    except (TypeError, ValueError):
+        raise forma_mala from None
+    if not pares or any(B <= 0 or H <= 0 for B, H in pares):
+        raise forma_mala
+    return pares
+
 
 def catalogo(material: MaterialLike,
              forma: FormaSeccion = FormaSeccion.CIRCULAR) -> Material:
@@ -655,9 +838,8 @@ def catalogo(material: MaterialLike,
         # forma de ecuacion, y con ella el ke del control de salida, de modo
         # que es la que arrastra mas decisiones detras. Los otros tres
         # aparecen en cuanto este se declare.
-        hds5 = ConstantesHDS5.desde_dict(
-            HDS5_INLET[ca.valor(CRITERIO_EMBOCADURA_CAJON)])
-        n_min, n_max = MANNING[ca.valor(CRITERIO_N_MANNING_CAJON)]
+        hds5 = ConstantesHDS5.desde_dict(HDS5_INLET[_carta_de_cajon()])
+        n_min, n_max = MANNING[_fila_manning_de_cajon()]
     elif tipo is TipoMaterial.HDPE:
         n_min, n_max = _valor_si_declarado(CRITERIO_N_MANNING_HDPE)
         hds5 = ConstantesHDS5.desde_dict(ca.valor(CRITERIO_HDS5_HDPE))
@@ -696,7 +878,7 @@ def catalogo(material: MaterialLike,
     # numero y falso en procedencia, que es la clase de defecto que
     # NOR-PRO-01 cerro para el circular.
     if forma is FormaSeccion.RECTANGULAR:
-        D_max = max(float(H) for _, H in ca.valor(CRITERIO_SECCIONES_CAJON))
+        D_max = max(H for _, H in progresion_de_cajon())
         D_max_rotulo = (
             "TOPE DE CATALOGO, NO DE NORMA: mayor altura interior de la "
             f"progresion que el expediente declara en "

@@ -734,41 +734,69 @@ def _verificador_perfil(informe: InformePunto):
     ya_registrados: set = set()
 
     def verificar(*, punto: PuntoCritico, material, D: float, resultado):
-        filas: List[Verificacion] = [
-            M5.v1_borde_libre(D=D, material=material, punto=punto,
-                              resultado=resultado),
-            M5.v2_velocidad_minima(resultado=resultado),
+        # LO QUE YA SE VERIFICO NO SE TIRA, y hasta C5 aqui SI se tiraba.
+        # `M5.verificar` lo resolvio en su dia --su docstring lo cuenta-- y
+        # este verificador, que es el del alcance de perfil, se quedo con la
+        # lista literal: cualquier `ErrorProyecto` de una obligatoria subia
+        # sin `verificaciones_completadas` y el desarrollo de V1 a V4b, que si
+        # se habia calculado entero, no llegaba nunca a la memoria. Dejo de
+        # ser teorico en C5: un marco se detiene en V7 --su espesor de pared
+        # no existe todavia-- y con la lista literal la advertencia de alcance
+        # de §15.6.3, que viaja en los pasos de V1 y de V4, se perdia con
+        # ellos. Es la trampa de NOR-MEM-01 otra vez: cierto sobre el codigo y
+        # falso sobre el producto.
+        filas: List[Verificacion] = []
+        obligatorias_previas = (
+            lambda: M5.v1_borde_libre(D=D, material=material, punto=punto,
+                                      resultado=resultado),
+            lambda: M5.v2_velocidad_minima(resultado=resultado),
             # V2b entra como OBLIGATORIA, y no diferida: su indicador se
             # calcula con dos numeros que la corrida de perfil ya tiene (la
             # pendiente del diseño y la del cauce) y su criterio no depende
             # de ningun dato de expediente. Lo que difiere el alcance de
             # perfil son las verificaciones que necesitan el expediente, no
             # las que solo necesitan una declaracion del proyectista.
-            M5.v2b_sedimentacion(punto=punto, resultado=resultado),
-            M5.v3_velocidad_maxima(material=material, resultado=resultado),
-            M5.v4_carga_entrada(punto=punto, resultado=resultado),
+            lambda: M5.v2b_sedimentacion(punto=punto, resultado=resultado),
+            lambda: M5.v3_velocidad_maxima(material=material,
+                                           resultado=resultado),
+            lambda: M5.v4_carga_entrada(punto=punto, resultado=resultado),
             # V4b se cableo en S14 y entra aqui como OBLIGATORIA, igual que
             # en `M5.verificar`: su umbral es un criterio con valor y no
             # depende de ningun dato de expediente que el alcance de perfil
             # difiera. Si alguien le quitara el valor a 'HW_D_max', la
             # `CriterioPendienteError` subiria y bloquearia el material, que
             # es lo que corresponde a un umbral sin declarar.
-            M5.v4b_relacion_hw_d(D=D, resultado=resultado),
-        ]
+            lambda: M5.v4b_relacion_hw_d(D=D, resultado=resultado),
+        )
+        for pieza in obligatorias_previas:
+            try:
+                filas.append(pieza())
+            except ErrorProyecto as exc:
+                exc.verificaciones_completadas = tuple(filas)
+                raise
         try:
             filas.append(M5.v5_remanso(punto=punto, resultado=resultado))
         except ErrorProyecto as exc:
             _diferir_verificacion(informe, "V5", exc, ya_registrados)
-        filas.extend([
-            M5.v6_material_solido_arrastre(material=material),
-            M5.v7_flotacion(punto=punto, material=material, D=D,
-                            resultado=resultado),
-        ])
+        for pieza in (
+            lambda: M5.v6_material_solido_arrastre(material=material),
+            lambda: M5.v7_flotacion(punto=punto, material=material, D=D,
+                                    resultado=resultado),
+        ):
+            try:
+                filas.append(pieza())
+            except ErrorProyecto as exc:
+                exc.verificaciones_completadas = tuple(filas)
+                raise
         try:
             filas.append(M5.v8_evento_extremo(punto=punto, resultado=resultado))
         except ErrorProyecto as exc:
             _diferir_verificacion(informe, "V8", exc, ya_registrados)
-        filas.append(M5.v9_disponibilidad_diametro(D=D, material=material))
+        try:
+            filas.append(M5.v9_disponibilidad_diametro(D=D, material=material))
+        except ErrorProyecto as exc:
+            exc.verificaciones_completadas = tuple(filas)
+            raise
         return tuple(filas)
 
     return verificar
@@ -990,13 +1018,22 @@ DECLARACION_ALCANCE_FAMILIA_C = (
     "de agua de diseño del canal y su borde libre, que no son columna de la "
     "Sec. 1.2 ni los aporta ningun tablero, y queda DIFERIDA AL EXPEDIENTE. "
     "Lo que esta corrida evalua en su lugar es la bateria general de la Fase "
-    "5, cuyos numerales son neutros respecto de la forma de la seccion: V1 "
-    "acota el tirante dentro del barril al 75 % de su altura interior (num. "
+    "5. TRES de sus verificaciones tienen numerales neutros respecto de la "
+    "forma de la seccion, y son las que sostienen la aceptacion: V1 acota el "
+    "tirante dentro del barril al 75 % de su altura interior (num. "
     "4.1.1.3.7 b); V4 acota la carga a la entrada bajo la subrasante de la "
     "VIA (Manual de Suelos num. 4.5.4, por la analogia ya declarada); y V4b "
     "acota la relacion entre esa carga y la altura del barril contra un tope "
     "adoptado por el proyectista. Los tres son el criterio de aceptacion de "
     "una ALCANTARILLA DE PASO. "
+    "LAS DEMAS DE LA BATERIA NO SON TODAS NEUTRAS, y decir que lo eran seria "
+    "afirmar de esta corrida algo que no es. V7 (flotacion) y G1 "
+    "(recubrimiento minimo) se calculan hoy sobre geometria CIRCULAR: V7 se "
+    "detiene por eso -- el espesor de pared de un marco no sale de la tabla "
+    "de una norma de tuberia, y sin el no hay volumen desplazado --, y por "
+    "tanto un marco NO CIERRA la Fase 5 en esta version. Cuando cierre, hay "
+    "que volver a leer esta declaracion: la generalizacion de la geometria a "
+    "la seccion es lo que la completa. "
     "LA SUSTITUCION NO ES CONSERVADORA, y por eso se declara en vez de "
     "suponerse. Los tres protegen la carretera y el conducto; NINGUNO protege "
     "el canal. Y no lo hacen porque MIDEN CONTRA OTRA COTA: V1 compara el "

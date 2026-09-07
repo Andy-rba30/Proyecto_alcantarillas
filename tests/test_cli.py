@@ -1328,6 +1328,17 @@ def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
     `PasoDeMemoria.nota_del_proyecto`, que M11 imprime bajo
     "Lo que pone el proyecto". Sin esta mitad, §15.6.3 queda con la mitad de
     su diseño sin prueba.
+
+    EL PUNTO NO DIMENSIONA, Y ESO ES LO CORRECTO. Este test asertaba
+    `cli.main(...) == 0` -- «el punto de cajon tiene que dimensionar» -- y la
+    auditoria adversarial de C5 mostro que ese cierre era el sintoma de un
+    numero inseguro: el marco recibia la pared del TUBO de su misma altura y
+    V7 se calculaba sobre un cilindro, sobreestimando la seguridad. Con la
+    guardia de `M2.espesor_pared` el marco se detiene en V7, y la nota llega
+    IGUAL: la trae `ErrorProyecto.verificaciones_completadas`, que
+    `cli._verificador_perfil` no adjuntaba y ahora si. Que la advertencia de
+    alcance sobreviva a un punto que no cierra es mas fuerte que lo anterior,
+    no menos: es justamente cuando el revisor solo veria «no dimensionado».
     """
     origen = _csv_con(tmp_path, FILA_C_QUE_DIMENSIONA)
     destino = tmp_path / "memoria.html"
@@ -1342,8 +1353,7 @@ def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
     # calculo empiezan a fallar en otro archivo. Es el efecto de orden que
     # `tests/apoyo/criterios.py` explica en su encabezado.
     try:
-        assert cli.main(argumentos) == 0, (
-            "el punto de cajon tiene que dimensionar")
+        cli.main(argumentos)
     finally:
         for declaracion in DECLARACIONES_CAJON:
             ca.quitar_valor_dinamico(declaracion.split("=")[0])
@@ -1356,6 +1366,9 @@ def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
     assert "la subrasante de la VIA, con su resguardo por CBR" in html
     # Y sale por el canal de interpretacion, no pegada a una cita (NOR-HID-04).
     assert 'class="interpretacion"' in html
+    # La otra mitad, y la que fija que el marco NO se calcula con la pared del
+    # tubo: la Fase 5 se detiene en V7 y lo dice con el dato que falta.
+    assert "espesor_pared_conducto[marco]" in html
 
 
 def test_el_bloque_de_alcance_declara_que_no_difirio_nada_sin_familia_c(

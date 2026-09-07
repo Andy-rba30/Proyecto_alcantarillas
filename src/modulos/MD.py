@@ -99,10 +99,13 @@ FileNotFoundError). Que M5 devuelva CERO verificaciones no es un diseño
 aceptado: es ValueError, porque un punto aceptado sin verificaciones no es
 defendible en la memoria.
 
-Ninguno de estos nombres es un valor de proyecto: MD no lee
-`criterios_adoptados` ni `constantes_normativas` en ninguna linea. Todo numero
-del bucle -- el 0.90 inicial, el paso de 0.15, los topes por material -- entra
-por M2 desde el criterio 'diametros_normalizados'.
+Ningun numero del bucle es un valor de proyecto escrito aqui: el 0.90 inicial,
+el paso de 0.15 y los topes por material entran por M2 desde el criterio
+'diametros_normalizados', y la progresion del MARCO desde
+'secciones_cajon_normalizadas'. Desde C5 MD si lee un criterio directamente y
+uno solo, 'n_celdas_cajon' (ver `_caudal_por_barril`): el reparto del caudal
+entre celdas es una decision del bucle, no del catalogo, y hasta entonces la
+frase «MD no lee `criterios_adoptados` en ninguna linea» era cierta.
 
 El mensaje de descarte
 ----------------------
@@ -115,7 +118,11 @@ Excepciones
 -----------
     DisenoNoFactibleError   ningun material candidato cumple, con el motivo
                             del ultimo fallo de CADA material; o M2 no ofrece
-                            candidatos (Familia C, Sec. 2.3).
+                            candidatos. El ejemplo que esta linea daba -- «la
+                            Familia C» -- dejo de valer en C5, que le abrio
+                            catalogo: hoy la rama de `_motivo_sin_candidatos`
+                            no la alcanza ninguna familia y se conserva para
+                            la que venga.
     DatoFaltanteError       el punto no trae Q ni S y no se pasaron como
                             argumento (llega desde `PuntoCritico.exigir`).
     DatoInvalidoError       llega desde M3 / M4: un dato que no puede ser.
@@ -141,9 +148,9 @@ from modelos import (CriterioPendienteError, DatoInvalidoError,
                      ErrorProyecto, Familia, FormaSeccion, Material,
                      PasoDiseno, PuntoCritico, ResultadoHidraulico,
                      ResultadoPunto, Verificacion)
-from modulos.M2_material import (CRITERIO_N_CELDAS_CAJON,
-                                 CRITERIO_SECCIONES_CAJON,
-                                 materiales_candidatos, siguiente_seccion)
+from modulos.M2_material import (CRITERIO_SECCIONES_CAJON,
+                                 materiales_candidatos, numero_de_celdas,
+                                 siguiente_seccion)
 from modulos.M3_hidraulica import resolver_manning
 from modulos.M4_control import resolver_control
 
@@ -445,14 +452,10 @@ def _caudal_por_barril(Q: float, material: Material) -> float:
     """
     if material.forma is not FormaSeccion.RECTANGULAR:
         return Q
-    celdas = ca.valor(CRITERIO_N_CELDAS_CAJON)
-    if not celdas >= 1:
-        raise DatoInvalidoError(
-            CRITERIO_N_CELDAS_CAJON, valor=celdas,
-            motivo="el numero de celdas del marco tiene que ser un entero "
-                   "mayor o igual que 1: es cuantos barriles se construyen, "
-                   "y el caudal de diseño se reparte entre ellos")
+    celdas = numero_de_celdas(material)
     return Q / celdas
+
+
 
 
 # ---------------------------------------------------------------------------

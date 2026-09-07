@@ -306,13 +306,15 @@ T09 = _tabla(
                        "A.2 NO METÁLICOS", "a. Concreto"),
             etiqueta_literal="afinado",
             valores={"minimo": 0.011, "normal": 0.012, "maximo": 0.014},
-            uso=NoUsada(por_que_no=(
-                "el catalogo de la Sec. 3.2 no ofrece cajon todavia: la "
-                "seccion rectangular entra en C4 y el criterio que declara "
-                "esta analogia lo abre C5. Se transcribe ahora porque es la "
-                "fila que sostiene que el vacio de la Tabla Nº 09 es DE FILA "
-                "y no de grupo, y sin ella esa afirmacion de la regla "
-                "vinculante #6 no tiene respaldo en el registro"))),
+            # C5 ABRIO EL CRITERIO Y ESTA FILA DEJO DE ESTAR SIN USAR. Su
+            # `NoUsada` decia «el catalogo de la Sec. 3.2 no ofrece cajon
+            # todavia: ... el criterio que declara esta analogia lo abre C5»,
+            # y C5 lo abrio: 'n_manning_cajon' [N->] la nombra la primera en
+            # su ventana de sensibilidad y `M2._fila_manning_de_cajon` la
+            # admite. Sigue siendo la fila que sostiene que el vacio de la
+            # Tabla Nº 09 es DE FILA y no de grupo (regla vinculante #6).
+            uso=PendienteDeCondicion(
+                condicion_id="COND-N-MANNING-CAJON"),),
         FilaDeTabla(
             id="MC_HHD.T09#madera_duelas",
             jerarquia=("A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO",
@@ -2239,8 +2241,11 @@ T_HDS5_C2 = _tabla(
     # vez del coeficiente, porque en este bloque el numero no identifica la
     # fila (el 0.2 esta en tres y el 0.5 en dos). La vista de calculo que
     # traduce clave -> coeficiente es `constantes_normativas.KE_HDS5_C2`,
-    # DERIVADA de estas filas y no copiada de ellas.
-    vistas_de_calculo=(),
+    # DERIVADA de estas filas y no copiada de ellas, y por eso va declarada
+    # abajo: `vistas_de_calculo` es el campo que las censa -- `T_HDS5_A1` ya
+    # declaraba la suya -- y dejarlo vacio con una vista viva es exactamente
+    # el hueco que el campo existe para cerrar.
+    vistas_de_calculo=("KE_HDS5_C2",),
 )
 
 

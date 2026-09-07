@@ -217,7 +217,8 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
 from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
-                                 diametro_exterior, espesor_pared)
+                                 diametro_exterior, espesor_pared,
+                                 numero_de_celdas)
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
@@ -1390,8 +1391,10 @@ def v6_material_solido_arrastre(*, material: Material) -> Verificacion:
     NO LLEVA `PasoDeMemoria`, y la razon esta censada en
     `normativa.fundamentos.SIN_FUNDAMENTO` bajo F5.V6: la fila V6 de la Fase 5
     de la v8 lleva etiqueta [N] y NINGUN numeral, y su enunciado sale de una
-    frase que RECOMIENDA ("recomendandose utilizar obras con mayor seccion
-    transversal libre, sin subdivisiones", num. 4.1.1.3.4 a). El fundamento
+    frase del num. 4.1.1.3.4 a) que RECOMIENDA -- el literal esta en el
+    registro, en `MC_HHD.4.1.1.3.4a#MULTIPLES`, y no se transcribe aqui: una
+    segunda copia a mano diverge de su `Verbatim` sin que nada avise, que es
+    NOR-MEM-01 --. El fundamento
     que si existe es F3.CELDAS, con verbo RECOMIENDA, y funda el paso que
     ADOPTA el numero de celdas -- que es donde esta la decision --. V6 solo
     la comprueba.
@@ -1402,7 +1405,12 @@ def v6_material_solido_arrastre(*, material: Material) -> Verificacion:
     del marco en una corrida que no tiene ninguno.
     """
     if material.forma is FormaSeccion.RECTANGULAR:
-        celdas = ca.valor(CRITERIO_N_CELDAS_CAJON)
+        # Por `MD.numero_de_celdas` y no por `ca.valor` a secas: el numero que
+        # V6 verifica tiene que ser EL MISMO que reparte el caudal, con la
+        # misma guardia. Dos lecturas con dos guardias distintas es como
+        # divergen los numeros -- un 2.5 declarado pasaba por una y no por la
+        # otra --.
+        celdas = numero_de_celdas(material)
         procedencia = f"criterio '{CRITERIO_N_CELDAS_CAJON}' [A]"
         criterio = CRITERIO_N_CELDAS_CAJON
     else:

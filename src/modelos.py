@@ -1709,6 +1709,12 @@ class ControlSalida:
     ke_criterio: str = ""         # clave en criterios_adoptados.py
     ke_fila: str = ""             # rotulo LITERAL de la fila de la Tabla C.2
     ke_agrupacion: str = ""       # rotulo de agrupacion de esa fila
+    ke_bloque: str = ""           # familia de la tabla: «Box, Reinforced
+                                  # Concrete», «Pipe, Concrete»... Viaja con
+                                  # los otros dos porque la memoria lo IMPRIME,
+                                  # y estuvo CABLEADO en el texto hasta que la
+                                  # auditoria de C5 mostro que asi la
+                                  # procedencia no se podia desmentir
     numeral: str = "Sec. 4.3"
 
 

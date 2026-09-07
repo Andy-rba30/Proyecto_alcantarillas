@@ -84,6 +84,7 @@ from modulos.M2_material import catalogo                             # noqa: E40
 from modulos import M11_reporte as M11                               # noqa: E402
 from modulos.M3_hidraulica import resolver_manning                   # noqa: E402
 from modulos.M4_control import (control_entrada, control_salida,      # noqa: E402
+                                criterio_ke_de,
                                 resolver_control, tirante_critico)
 
 # --- el punto, entero y en un solo sitio ------------------------------------
@@ -183,8 +184,15 @@ def main() -> None:
     # dos resultados posibles que puedan divergir.
     critico = tirante_critico(Q, seccion)
     entrada = control_entrada(Q, seccion, S, marco.hds5, critico)
+    # `criterio_ke` EXPLICITO, y hace falta: su valor por defecto es
+    # `CRITERIO_KE`, el del TUBO, de modo que este artefacto -- que es el del
+    # CAJON -- registraba como usado el criterio de la otra forma. No mueve
+    # ningun numero impreso (de esta llamada solo se publica `h_o`), y por eso
+    # justamente habria pasado inadvertido. Lo midio la auditoria adversarial
+    # de C5.
     salida = control_salida(Q, seccion, S, L, TW,
-                            marco.n_para_capacidad, critico=critico)
+                            marco.n_para_capacidad, critico=critico,
+                            criterio_ke=criterio_ke_de(marco))
     print(f"y_critico          {critico.y_c:.6f} m")
     print(f"critico cerrado    {critico.cerrado}")
     print(f"V_critica          {critico.V:.6f} m/s")

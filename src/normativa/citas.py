@@ -264,6 +264,25 @@ MC_HHD_T09 = _cita(
         pagina_pdf=78),
     caracter=Caracter.DEFINICION,
     metodo=AMBOS,
+    condiciones=(
+        # LA FILA `afinado` ESPERA A QUE SE DECLARE LA ANALOGIA DEL MARCO, y
+        # es la hermana de `COND-EMBOCADURA-CAJON-KE` en la Tabla C.2. Su
+        # `uso` era `NoUsada` con la razon «el catalogo de la Sec. 3.2 no
+        # ofrece cajon todavia ... el criterio que declara esta analogia lo
+        # abre C5»; C5 lo abrio, de modo que la fila dejo de estar sin usar y
+        # paso a estar PENDIENTE de una declaracion. La evidencia sale de la
+        # pagina de ESTA tabla y no de otra, que es la leccion que dejo la
+        # condicion de la C.2.
+        CondicionAplicacion(
+            id="COND-N-MANNING-CAJON",
+            texto=Verbatim(
+                texto=("TABLA  Nº  09:  Valores del Coeficiente de Rugosidad "
+                       "de Manning (n)"),
+                pagina_pdf=78),
+            cita_id="MC_HHD.4.1.1.3.6#T09",
+            resuelve=PorCriterio(clave="n_manning_cajon"),
+            efecto_si_indeterminada=Efecto.BLOQUEA),
+    ),
     nota=("La tabla ocupa dos paginas impresas: los grupos A, B y C en la 75 "
           "(PDF 78) y el grupo D con la linea de Fuente en la 76 (PDF 79)."),
 )

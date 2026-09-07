@@ -441,6 +441,87 @@ def test_siguiente_seccion_del_tubo_no_lee_ningun_criterio_del_cajon():
         1.05, rel=REL_TRANSPORTE)
 
 
+# ---------------------------------------------------------------------------
+# Las guardias que la auditoria adversarial de C5 exigio
+# ---------------------------------------------------------------------------
+# Las cuatro cierran el mismo modo de fallo con dos caras: una clave de OTRA
+# FAMILIA que produce un numero plausible con la cita equivocada, y una ERRATA
+# que salia como excepcion de PROGRAMA en vez de del expediente.
+
+@pytest.mark.parametrize("clave,valor,en_el_mensaje", [
+    # La carta CIRCULAR: le daba a un marco las constantes de la Carta 1 y la
+    # Forma 1 con su Ks*S, mientras el paso de memoria imprimia que la carta
+    # era «del bloque de CAJON» invocando el num. A.3 -- la regla que estaba
+    # violando --. Es el unico punto donde la regla vinculante #5 se puede
+    # hacer cumplir.
+    ("embocadura_cajon", "circular_concreto_square_edge_headwall", "num. A.3"),
+    # La ERRATA: salia como `KeyError` desnudo, que no desciende de
+    # `ErrorProyecto`, y tumbaba la corrida entera.
+    ("embocadura_cajon", "cajon_concreto_aleta_45_d04", "Claves admitidas"),
+    # Un metal corrugado no es la analogia de un marco de CONCRETO.
+    ("n_manning_cajon", "metal_corrugado_subdren", "a. Concreto"),
+    ("n_manning_cajon", "concreto_afinad", "Claves admitidas"),
+    # El escalar que la GUI sabe ofrecer: reventaba con `TypeError`. La misma
+    # guardia que este modulo ya tenia escrita para 'espesor_pared_conducto'.
+    ("secciones_cajon_normalizadas", 1.50, "serie de pares"),
+    ("secciones_cajon_normalizadas", ((2.00, -1.50),), "POSITIVOS"),
+])
+def test_una_declaracion_de_otra_familia_o_con_errata_es_dato_invalido(
+        clave, valor, en_el_mensaje):
+    with declarados({**DECLARACIONES_CAJON, clave: valor}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            _marco()
+    assert exc.value.campo == clave
+    assert en_el_mensaje in exc.value.motivo
+
+
+def test_el_marco_no_toma_prestada_la_pared_del_tubo_de_su_misma_altura():
+    """
+    EL HALLAZGO MAS GRAVE DE LA AUDITORIA DE C5, y no era de texto: era un
+    numero INSEGURO. `espesor_pared_conducto` tabula por diametro designado en
+    mm de una norma de TUBERIA, y las alturas de marco plausibles caen sobre
+    esa misma serie de 900 + 150k mm. Un marco de 2.00 x 1.50 m NO se detenia:
+    recibia t = 0.150 m -- la pared del tubo de 1500 mm -- y con ella V7 se
+    calculaba sobre un CILINDRO de 1.80 m, sobreestimando la seguridad
+    alrededor de un 27 % (la subpresion real de un prisma es un 63 % mayor y
+    el peso de relleno solo un 28 %).
+
+    Es `DatoFaltanteError` y no `DatoInvalidoError` porque el revisor tiene
+    que AÑADIR algo -- el espesor de pared de un marco sale de su calculo
+    estructural, no de una tabla de producto --, que es la regla de CLAUDE.md.
+    Levantarla es de C7.
+    """
+    with declarados(DECLARACIONES_CAJON):
+        marco = _marco()
+        with pytest.raises(DatoFaltanteError) as exc:
+            espesor_pared(marco, 1.50)
+    assert exc.value.campo == "espesor_pared_conducto[marco]"
+    assert "CILINDRO" in exc.value.detalle
+    # Y el tubo de la misma altura SI tiene fila: es lo que hace peligrosa la
+    # coincidencia, y por eso se fija aqui al lado.
+    assert espesor_pared(catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                         1.50) == pytest.approx(0.150, rel=REL_TRANSPORTE)
+
+
+def test_la_progresion_del_marco_se_reconoce_con_tolerancia_y_no_con_igualdad():
+    """
+    CLAUDE.md prohibe comparar floats con `==` sin excepcion, y
+    `_siguiente_seccion_cajon` los comparaba. Hoy acertaba siempre porque las
+    dos secciones se reconstruyen del mismo criterio; deja de acertar en
+    cuanto una llegue de otro sitio -- un JSON de tablero, la GUI, un
+    round-trip por texto --, y entonces el bucle levantaria un
+    `DatoInvalidoError` sobre una seccion que SI esta en la serie.
+    """
+    from modelos import SeccionRectangular
+    with declarados(DECLARACIONES_CAJON):
+        marco = _marco()
+        # La misma seccion, con el ultimo bit movido.
+        casi = SeccionRectangular(1.50 + 1e-13, 1.20 - 1e-13)
+        siguiente = siguiente_seccion(marco, casi)
+    assert (siguiente.B, siguiente.altura) == pytest.approx(
+        (2.00, 1.50), rel=REL_TRANSPORTE)
+
+
 # ===========================================================================
 # C09 / SIS-F-10 - las dos guardas de 'espesor_pared_conducto'
 # ===========================================================================

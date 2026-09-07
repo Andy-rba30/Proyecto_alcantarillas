@@ -301,7 +301,8 @@ import criterios_adoptados as ca
 from constantes_fisicas import G
 from constantes_normativas import (FORMA_1, FORMA_2,
                                    H_O_HW_SOBRE_D_CAUTELA,
-                                   H_O_HW_SOBRE_D_MIN, KE_HDS5_C2, KU_SI,
+                                   H_O_HW_SOBRE_D_MIN, KE_CAJON_C2,
+                                   KE_HDS5_C2, KU_SI,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
@@ -825,14 +826,19 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
 # Pieza 3 - Control de salida (Sec. 4.3)
 # ---------------------------------------------------------------------------
 
-def ke_declarado(criterio_ke: str = CRITERIO_KE) -> Tuple[str, str, float]:
+def ke_declarado(criterio_ke: str = CRITERIO_KE
+                 ) -> Tuple[str, str, str, float]:
     """
-    (fila, agrupacion, ke) del criterio de perdida de entrada que se le pase.
+    (fila, agrupacion, bloque, ke) del criterio de perdida de entrada.
+
+    EL BLOQUE VIAJA CON LOS OTROS DOS y no se deduce despues: es lo que
+    permite que la memoria diga de que familia de la Tabla C.2 salio el
+    coeficiente sin que ningun modulo lo escriba a mano.
 
     DOS CRITERIOS, DOS FORMAS DE DECLARACION, y la asimetria es deliberada
     (esta razonada en `constantes_normativas.KE_HDS5_C2`):
 
-      * 'ke_entrada' (tubo) declara UN NUMERO. Los dos rotulos salen vacios:
+      * 'ke_entrada' (tubo) declara UN NUMERO. Los tres rotulos salen vacios:
         el criterio no dice de que fila salio, y este modulo no lo puede
         deducir sin inventarlo.
       * 'ke_entrada_cajon' declara LA CLAVE DE UNA FILA de la Tabla C.2. Se
@@ -843,22 +849,31 @@ def ke_declarado(criterio_ke: str = CRITERIO_KE) -> Tuple[str, str, float]:
 
     Una clave que no este en la tabla es `DatoInvalidoError` y no un
     `KeyError`: quien la escribio fue el expediente, no el programa.
+
+    SE VALIDA CONTRA EL BLOQUE, NO CONTRA LA TABLA, y la diferencia la
+    encontro la auditoria adversarial de C5 midiendo esta misma funcion: con
+    `KE_HDS5_C2` entera como dominio, declarar
+    «concreto_headwall_square_edge» -- fila del bloque «Pipe, Concrete» --
+    devolvia ke = 0.5 sin quejarse, y la memoria lo imprimia como fila de
+    cajon. Es NOR-HID-01 exacto, cometido por la guardia escrita para
+    cerrarlo, y con el numero que la regla vinculante #11 avisa que coincide.
+    El dominio del criterio son las SIETE de `KE_CAJON_C2`.
     """
     valor = ca.valor(criterio_ke)
     if criterio_ke != CRITERIO_KE_CAJON:
-        return "", "", valor
-    fila = KE_HDS5_C2.get(valor) if isinstance(valor, str) else None
-    if fila is None:
+        return "", "", "", valor
+    if not isinstance(valor, str) or valor not in KE_CAJON_C2:
         raise DatoInvalidoError(
             criterio_ke, valor=valor,
             motivo="se espera la CLAVE de una fila del bloque «Box, "
                    "Reinforced Concrete» de la Tabla C.2 del HDS-5, no un "
-                   "coeficiente: en ese bloque el numero no identifica la "
-                   "fila. Claves admitidas: "
-                   + ", ".join(sorted(k for k in KE_HDS5_C2 if
-                                      KE_HDS5_C2[k]["bloque"].startswith("Box"))),
+                   "coeficiente ni una fila de otro bloque: en ese bloque el "
+                   "numero no identifica la fila, y el num. A.3 prohibe "
+                   "cruzar coeficientes entre geometrias. Claves admitidas: "
+                   + ", ".join(sorted(KE_CAJON_C2)),
         )
-    return fila["fila"], fila["agrupacion"], fila["ke"]
+    fila = KE_HDS5_C2[valor]
+    return fila["fila"], fila["agrupacion"], fila["bloque"], fila["ke"]
 
 
 def perdida_carga(V: float, R: float, n: float, L: float,
@@ -887,7 +902,10 @@ def perdida_carga(V: float, R: float, n: float, L: float,
     _validar_positivo("L", L, "la longitud del conducto debe ser positiva")
 
     if ke is None:
-        ke = ke_declarado(criterio_ke)[2]
+        # Se desempaqueta por posicion y no por indice: los tres rotulos no
+        # los usa esta funcion -- son de la memoria, y los guarda
+        # `control_salida` --, y un `[3]` suelto es un literal sin nombre.
+        *_, ke = ke_declarado(criterio_ke)
 
     friccion = K_FRICCION_SI * n ** 2 * L / R ** (4 / 3)  # literal-ok: exponente 4/3 de Sec. 4.3
     return (1 + ke + friccion) * V ** 2 / (2 * G)
@@ -959,12 +977,12 @@ def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
     V, R = _geometria_de_referencia(Q, seccion)
     # Se resuelve UNA vez y se guarda: el numero que entra en H y el que la
     # memoria imprime tienen que ser el mismo objeto, no dos lecturas.
-    ke_fila, ke_agrupacion, ke_valor = ke_declarado(criterio_ke)
+    ke_fila, ke_agrupacion, ke_bloque, ke_valor = ke_declarado(criterio_ke)
     if ke is not None:
         # `ke` explicito es la via de los tests de la pieza aislada y de CP-8:
         # gana sobre el criterio y se declara como lo que es, sin procedencia
         # de tabla.
-        ke_valor, ke_fila, ke_agrupacion = ke, "", ""
+        ke_valor, ke_fila, ke_agrupacion, ke_bloque = ke, "", "", ""
     H = perdida_carga(V=V, R=R, n=n, L=L, ke=ke_valor)
 
     h_o_geometrico = (critico.y_c + seccion.altura) / 2
@@ -992,6 +1010,7 @@ def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
         ke_criterio="" if ke is not None else criterio_ke,
         ke_fila=ke_fila,
         ke_agrupacion=ke_agrupacion,
+        ke_bloque=ke_bloque,
         HW_sobre_D=HW_sobre_D,
         h_o_fuera_de_rango=HW_sobre_D < H_O_HW_SOBRE_D_MIN,
         h_o_requiere_cautela=HW_sobre_D < H_O_HW_SOBRE_D_CAUTELA,
@@ -1020,9 +1039,14 @@ def _procedencia_ke(salida: ControlSalida) -> str:
         return (f"criterio '{salida.ke_criterio}', declarado como NUMERO: la "
                 f"fila de la Tabla C.2 de la que sale se lee en el campo "
                 f"`fuente` del criterio, no en el valor")
+    # EL BLOQUE SE LEE DE LA TABLA, NO SE CABLEA. Esta linea decia
+    # «del bloque «Box, Reinforced Concrete»» como literal, de modo que
+    # imprimia esa procedencia CUALQUIERA que fuese la fila declarada -- y
+    # `ke_declarado` aceptaba entonces filas de tubo (ver su docstring) --.
+    # Un texto de procedencia que no puede desmentirse no es una procedencia.
     return (f"criterio '{salida.ke_criterio}': fila «{salida.ke_fila}» bajo "
             f"el rotulo de agrupacion «{salida.ke_agrupacion}» del bloque "
-            f"«Box, Reinforced Concrete» de la Tabla C.2 del HDS-5 (pag. "
+            f"«{salida.ke_bloque}» de la Tabla C.2 del HDS-5 (pag. "
             f"impresa C.6). Los dos rotulos van juntos a proposito: tres "
             f"filas del bloque se imprimen con el mismo texto y distinto "
             f"coeficiente")

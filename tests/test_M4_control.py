@@ -1312,10 +1312,29 @@ def test_el_criterio_de_ke_lo_elige_la_forma_y_no_el_material():
 
 def test_ke_del_marco_llega_con_su_fila_y_su_rotulo_de_agrupacion():
     with declarados(_CAJON):
-        fila, agrupacion, ke = ke_declarado(CRITERIO_KE_CAJON)
+        fila, agrupacion, bloque, ke = ke_declarado(CRITERIO_KE_CAJON)
     assert ke == pytest.approx(0.4, rel=REL_TRANSPORTE)
     assert fila == "Square-edged at crown"
     assert agrupacion == "Wingwalls at 30⁰ to 75⁰ to barrel"
+    assert bloque == "Box, Reinforced Concrete"
+
+
+def test_una_fila_del_bloque_de_TUBO_no_vale_como_ke_de_marco():
+    """
+    LA GUARDIA QUE LA AUDITORIA ADVERSARIAL DE C5 EXIGIO, y el caso que mide
+    es EL caso: «concreto_headwall_square_edge» es la fila «Square-edge» del
+    bloque «Pipe, Concrete» y vale 0.5, que es exactamente el numero del que
+    avisa la regla vinculante #11. Con `KE_HDS5_C2` entera como dominio, la
+    funcion la aceptaba y la memoria la imprimia como fila de cajon: numero
+    plausible y cita falsa, o sea NOR-HID-01 cometido por la guardia escrita
+    para cerrarlo.
+    """
+    with declarados({**_CAJON,
+                     "ke_entrada_cajon": "concreto_headwall_square_edge"}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            ke_declarado(CRITERIO_KE_CAJON)
+    assert "num. A.3" in exc.value.motivo
+    assert "concreto_headwall_square_edge" not in exc.value.motivo
 
 
 def test_ke_del_tubo_es_un_numero_y_no_trae_fila():
@@ -1324,9 +1343,9 @@ def test_ke_del_tubo_es_un_numero_y_no_trae_fila():
     que el dia que se migre al mismo patron este test lo diga, en vez de que
     la migracion pase inadvertida.
     """
-    fila, agrupacion, ke = ke_declarado(CRITERIO_KE)
+    fila, agrupacion, bloque, ke = ke_declarado(CRITERIO_KE)
     assert ke == pytest.approx(0.5, rel=REL_TRANSPORTE)
-    assert fila == "" and agrupacion == ""
+    assert fila == "" and agrupacion == "" and bloque == ""
 
 
 def test_declarar_un_coeficiente_donde_va_una_fila_es_dato_invalido():

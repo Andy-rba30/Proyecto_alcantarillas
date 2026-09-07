@@ -3959,3 +3959,119 @@ adoptado: D = 0.900 m» para un marco de 1.20 × 0.90 m. **El ancho no se pierde
 de Fase 3 y 4 publican la sección entera, «1.20 × 0.90», y así se ve en la memoria—, pero la
 tabla de diseño y el cuadro resumen siguen hablando de un diámetro. Es el punto 1 del brief
 de **C8**, y por eso C5 no añadió un campo que ningún consumidor leería todavía.
+
+
+---
+
+### 16.10 C5 — lo que la auditoría adversarial refutó, y cómo quedó
+
+`auditor-adversarial` corrió sobre C5 ya commiteado (`884d5a1`) con el encargo de romperla en
+sus propios términos. **Encontró diez refutaciones y siete ajustes, y no eran de estilo: cuatro
+tocaban números o citas que la sesión existía para proteger.** Todas están corregidas; lo que
+sigue es qué eran y qué se hizo.
+
+#### Las cuatro que rompían la sesión en su propio terreno
+
+**R1 · `ke_declarado` aceptaba una fila del bloque «Pipe, Concrete» para el marco.** La guardia
+validaba contra `KE_HDS5_C2` **entera** —las 22 filas de la Tabla C.2— y sólo usaba el filtro
+por bloque para redactar el mensaje de error. Medido: declarando
+`ke_entrada_cajon = "concreto_headwall_square_edge"` devolvía **ke = 0.5** sin quejarse, y
+`_procedencia_ke` lo imprimía «del bloque «Box, Reinforced Concrete»» porque ese literal estaba
+**cableado en el texto**. Es `NOR-HID-01` exacto —número plausible, cita falsa— y con el 0.5 del
+que avisa la regla vinculante #11: **la guardia escrita para cerrar el defecto lo cometía**.
+Cerrado con `constantes_normativas.KE_CAJON_C2` (las siete del bloque, derivadas del propio
+campo `bloque` de la transcripción) y sacando el literal del texto: el bloque viaja ahora en
+`ControlSalida.ke_bloque` y se **lee**, de modo que una procedencia que no puede desmentirse
+dejó de existir.
+
+**R2 · `M2.catalogo` aceptaba una carta CIRCULAR para `embocadura_cajon`.** Con
+`"circular_concreto_square_edge_headwall"` el marco quedaba con las constantes de la Carta 1 y
+con **Forma 1**, la que lleva `Ks·S`; y el paso `F4.N_CAJON` imprimía que la carta era «del
+bloque de CAJON» **invocando el num. A.3**, que es la regla que se estaría violando. Éste es el
+único punto del código donde la regla vinculante #5 se puede hacer cumplir. Cerrado con
+`CARTAS_CAJON_TA1`, derivada del rótulo «Shape and Material» y no de un prefijo de clave.
+
+**R3 · Una errata en una clave tumbaba la corrida entera.**
+`--declarar embocadura_cajon=cajon_concreto_aleta_45_d04` salía como **`KeyError` desnudo**, que
+no desciende de `ErrorProyecto`: `cli._etapa` no lo captura y la GUI no lo distingue de un fallo
+del programa. Es la mina que S20 desactivó tres veces. Y `secciones_cajon_normalizadas`
+declarado como escalar —**lo único que la GUI sabe ofrecer**— daba `TypeError`, con la guardia
+modelo escrita tres funciones más arriba en el mismo archivo, para `espesor_pared_conducto`, y
+sin replicar. Cerrado con `_carta_de_cajon`, `_fila_manning_de_cajon` y `progresion_de_cajon`,
+las tres con `DatoInvalidoError` y la lista de claves admitidas.
+
+**R4 · El marco recibía la pared de un TUBO y V7 se calculaba sobre un cilindro — y el número
+era INSEGURO.** El docstring que C5 escribió en `M5.v7_flotacion` decía que «un marco vaciado in
+situ no tiene fila ahí». Es verdadero sobre la **norma** y falso sobre el **dict**, que es lo que
+el código lee: las alturas de marco plausibles caen sobre la misma serie de 900 + 150k mm. Un
+marco de 2.00 × 1.50 m recibía **t = 0.150 m** —la pared del tubo de 1500 mm— y con ella
+`diametro_exterior` le daba a V7 un cilindro de 1.80 m. Medido: la subpresión real de un prisma
+es **40.6 kN/m** y la del cilindro **25.0 kN/m** (−63 %), mientras el peso de relleno cae sólo un
+28 %, de modo que **V7 sobreestimaba la seguridad del marco alrededor de un 27 %**. Es la
+dirección insegura, y es `MAT-D3` reintroducido para el cajón.
+
+> **La lección, escrita porque es la que más cuesta:** una declaración en un docstring **no
+> detiene ningún cálculo**. El propio brief de C5 lo dice de la declaración de §15 —«esto NO
+> puede quedar en un docstring»— y aquí se repitió el error en el sitio contrario, sobre un
+> número. La guardia va donde el número se lee: `M2.espesor_pared` levanta hoy
+> `DatoFaltanteError` para toda sección rectangular, y **la Fase 5 de un marco se detiene en V7
+> en vez de publicar un margen que no es**. Levantarla es de C7.
+
+#### Las otras seis, y los siete ajustes
+
+- **R5** · La declaración de alcance afirmaba que los numerales de la batería de la Fase 5 «son
+  neutros respecto de la forma de la sección», y la corrida imprime **once** verificaciones, de
+  las que **V7 y G1 no lo son**. Reescrita: nombra las tres que sostienen la aceptación y dice
+  que las demás no son todas neutras y que por eso un marco **no cierra** la Fase 5 hoy.
+- **R6** · El entregable reportaba el marco como un tubo («Diametro D = 0.900 m», ASTM C 76M-02,
+  EG-2013 Sección 506, cabezal «tubo a ras del muro»), y `B` no aparecía en ninguna salida. Con
+  R4 cerrado el punto ya no dimensiona, de modo que **ninguna de esas atribuciones llega al
+  entregable**; las tres que quedan en el `Material` (`norma_producto`, `seccion_eg2013` y la
+  fila de γ_EV) son de **C7**, que es quien abre esas ramas.
+- **R7** · Segunda transcripción a mano de un literal del registro, con **elisión sin marcar** —
+  el mismo defecto que `MC_HHD.4.1.1.3.4a#MULTIPLES` documenta y rechaza en su propio comentario,
+  y sin acentos, o sea ya divergente de su `Verbatim`—, en `n_celdas_cajon.fuente` y en el
+  docstring de V6. **Y salía impreso.** Retiradas las dos: se cita el símbolo.
+- **R8** · «Cartas 9 a 11» donde son **9 a 12** —la 12 es `Rect. Box 3/4" chamf. Conc.`, tres
+  filas— en la `sensibilidad` de `embocadura_cajon`, que es la ventana que el tesista lee para
+  elegir. Corregido (la `justificacion` ya lo estaba).
+- **R9** · **La regla vinculante #3 (Q/N) no tenía un solo test**: mutado
+  `_caudal_por_barril` a `return Q`, la suite entera seguía verde. Tres tests nuevos en
+  `test_MD.py`; la mutación ahora cae.
+- **R10** · Tres comentarios que describían un estado que C5 destruyó, en archivos que C5 no
+  tocó. El peor sostenía una **omisión de cálculo**: `cobertura_minima_aashto` justifica omitir
+  el «or B'c/8, whichever is greater» diciendo que «la Familia C sale sin candidatos». Para un
+  marco de 3.00 × 1.50 m el código exigiría 0.3048 m y la tabla exige 0.4125 m —**26 % menos de
+  recubrimiento mínimo**—. Reescrito con la medición y apuntado a C7 (su punto 3); hoy no se
+  alcanza porque la Fase 5 se detiene antes. Los otros dos: el docstring de módulo de `MD` y el
+  `NoUsada` de la fila `MC_HHD.T09#concreto_afinado`, que pasó a `PendienteDeCondicion` con una
+  condición nueva, `COND-N-MANNING-CAJON`, hermana de la de la Tabla C.2.
+- **Ajustes** · `n_celdas_cajon` aceptaba **2.5 celdas** (guardia `not celdas >= 1`, que deja
+  pasar un fraccionario) → `numero_de_celdas`, con integralidad, en **M2** y no en MD, para que
+  el reparto del caudal y V6 lean **el mismo número con la misma guardia**. La progresión
+  aceptaba dimensiones negativas → validada. `_siguiente_seccion_cajon` comparaba floats con
+  `==`, contra la regla de estilo → `_misma_seccion`, con tolerancia. `T_HDS5_C2` declara ahora
+  su vista de cálculo. Y el driver de la línea base del **cajón** llamaba a `control_salida` sin
+  `criterio_ke`, o sea leyendo el `ke_entrada` del **tubo**: no movía ningún número impreso, y
+  por eso justamente habría pasado inadvertido.
+
+#### Lo que el auditor confirmó
+
+Que **ningún valor del cajón se eligió** —los cinco criterios están `valor=None` en el archivo y
+todo lo que probó exigió `--declarar`—, que no hay ningún `.get()` con fallback ni default
+numérico silencioso en los criterios nuevos, que la regla vinculante #7 se respetó (no se abrió
+`v_max_cajon`), que `criterio_ke_de`, `_magnitud_de_llenado`, `v9` y `siguiente_seccion` están
+correctamente pinneados —sus mutaciones caen—, y que el censo de la Tabla C.2 es exacto contra
+la transcripción.
+
+#### Un efecto de segundo orden que conviene entender
+
+Adjuntar `verificaciones_completadas` en `cli._verificador_perfil` **cambió lo que la memoria
+publica de los puntos que no dimensionan**, y para bien. A-01 y B-01 pasaron de mostrar nueve
+verificaciones a mostrar seis, y la razón es que las nueve **no eran del escalón que la memoria
+decía**: el último escalón de A-01 es **HDPE, D = 0.90 m** —así lo nombra ya el bloque de
+desarrollo hidráulico— y ese escalón revienta dentro de V7, de modo que sólo llegó a V6. Antes,
+la excepción no llevaba nada, `_tabla_verificaciones` descartaba ese escalón por vacío y caía en
+uno **anterior**, publicando sus nueve bajo el rótulo «último escalón evaluado». Los dos bloques
+de la misma memoria describían escalones distintos. Ahora describen el mismo, que es la regla de
+§4.5.
