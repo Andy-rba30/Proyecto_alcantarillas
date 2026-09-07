@@ -3301,14 +3301,13 @@ la caza un test unitario. Las dos capas son complementarias y ninguna sustituye 
 ### 16.8 C4 — `SeccionRectangular`, y las tres cosas que la medición corrigió
 
 **Qué se implementó.** `modelos.SeccionRectangular(B, H)` con las dos parametrizaciones del
-protocolo, el **tirante crítico cerrado** `y_c = (q²/g)^(1/3)`, y cinco miembros nuevos en
-`Seccion` que retiran del motor lo que quedaba de forma cableada. M3 y M4 no ganaron ni un
-`isinstance`: la sección responde, el módulo pregunta.
+protocolo, el **tirante crítico cerrado** `y_c = (q²/g)^(1/3)`, y **cuatro** miembros nuevos
+en `Seccion` que retiran del motor lo que quedaba de forma cableada. M3 y M4 no ganaron ni
+un `isinstance`: la sección responde, el módulo pregunta.
 
 | Miembro nuevo de `Seccion` | Qué retira del módulo |
 |---|---|
-| `simbolo_altura` | el `"D"` cableado en la validación y en la sustitución de dos pasos |
-| `exigir_dimensiones_positivas()` | **dos copias** de la pareja `("D", "el diametro debe ser positivo")`, una en `M3._validar_parametros` y otra en `M4._validar_Q_D` |
+| `exigir_dimensiones_positivas()` | **dos copias** de la pareja `("D", "el diametro debe ser positivo")`, una en `M3._validar_parametros` y otra en `M4._validar_Q_D`; y con ellas el `"D"` cableado en la validación |
 | `magnitudes_de_forma()` | que la memoria supiera que una sección se define con **un** número |
 | `formula_geometria()` | la frase «A, P y R son los de la sección circular parcialmente llena», que con un marco además sería falsa |
 | `llenado_critico_cerrado(Q, g)` | que M4 tuviera que preguntar de qué forma es la sección para elegir método |
@@ -3316,6 +3315,18 @@ protocolo, el **tirante crítico cerrado** `y_c = (q²/g)^(1/3)`, y cinco miembr
 `g` llega **como argumento** y no se importa en `modelos.py`: la sección conoce el álgebra
 de su forma, no cuánto vale la gravedad. Es la misma separación que `constantes_fisicas`
 declara.
+
+> **Eran cinco, y el quinto se retiró antes de cerrar.** El primer diseño añadía además
+> `simbolo_altura` —`"D"` en la circular, `"H"` en el marco—, y al buscarle consumidores
+> **no tenía ninguno**: ni en producción, ni en la suite. Lo habían dejado sin trabajo sus
+> dos vecinos, `exigir_dimensiones_positivas()` (que ya emite el nombre dentro del mensaje)
+> y `magnitudes_de_forma()` (que ya publica los símbolos para la memoria). Un miembro de
+> protocolo sin consumidor es exactamente el símbolo colgado que `CLAUDE.md` denuncia en su
+> cláusula de taxonomía, y **predecirle un consumidor futuro es el antipatrón que este
+> repositorio ya tiene fichado**. Se retiró y su explicación —la distinción entre el `"D"`
+> de las ecuaciones de HDS-5, que vale para cualquier forma, y el `"D"` del dato de
+> entrada, que significa diámetro— se mudó al docstring de
+> `Seccion.exigir_dimensiones_positivas`, que es el miembro que sí lo usa.
 
 #### La trampa de la regla #12, y por qué la medición la corrigió a ella también
 

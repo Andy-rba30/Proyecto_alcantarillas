@@ -892,29 +892,10 @@ class Seccion(Protocol):
         """Como se nombra la seccion en la memoria."""
         ...
 
-    @property
-    def simbolo_altura(self) -> str:
-        """
-        Como se llama, EN ESTA SECCION, el dato que fija la altura interior.
-
-        NO es el "D" de HDS-5, y la distincion es la que C4 tuvo que decidir
-        (anotacion A-4 de §16.4). Son dos vocabularios que coinciden en la
-        circular y se separan en cuanto hay una forma que no es un circulo:
-
-          * En las ECUACIONES DE HDS-5 --q*, HW/D, h_o-- "D" es correcto para
-            cualquier forma: la fuente lo define como *"D - Interior height of
-            culvert barrel"* (regla vinculante #4 de la Familia C). Esas
-            formulas siguen escribiendo "D" y no se tocan.
-          * En el DATO DE ENTRADA que el revisor tiene que corregir, "D"
-            significa diametro. Una `SeccionRectangular` no tiene diametro: su
-            dato es la altura H. Este simbolo es ese, el del dato, y por eso
-            lo publica la seccion y no lo cablea el modulo que valida.
-        """
-        ...
-
     def exigir_dimensiones_positivas(self) -> None:
         """
-        Valida la altura interior y lanza `DatoInvalidoError` si no la cumple.
+        Valida las dimensiones que definen la seccion y lanza
+        `DatoInvalidoError` --con el NOMBRE del dato-- si alguna no la cumple.
 
         VIVE AQUI Y NO EN M3/M4 por dos razones. La primera es que el mensaje
         nombra el dato --`campo` y `motivo` se imprimen los dos, en la memoria
@@ -922,6 +903,20 @@ class Seccion(Protocol):
         segunda es que hasta C4 la MISMA pareja de cadenas estaba escrita dos
         veces, en `M3._validar_parametros` y en `M4._validar_Q_D`: dos copias
         que hay que editar juntas para siempre.
+
+        Y EL NOMBRE NO ES EL "D" DE HDS-5, que es la distincion que C4 tuvo
+        que decidir (anotacion A-4 de §16.4). Son dos vocabularios que
+        coinciden en la circular y se separan en cuanto hay una forma que no
+        es un circulo:
+
+          * En las ECUACIONES DE HDS-5 --q*, HW/D, h_o-- "D" es correcto para
+            cualquier forma: la fuente lo define como *"D - Interior height of
+            culvert barrel"* (regla vinculante #4 de la Familia C). Esas
+            formulas siguen escribiendo "D" y no se tocan.
+          * En el DATO DE ENTRADA que el revisor tiene que corregir, "D"
+            significa diametro. Una `SeccionRectangular` no tiene diametro:
+            sus datos son el ancho B y la altura H. Los nombres de aqui son
+            esos, y por eso los pone la seccion.
         """
         ...
 
@@ -1033,11 +1028,6 @@ class SeccionCircular:
         cuanto vale nada.
         """
         return f"Ø {self.D:.2f} m"
-
-    @property
-    def simbolo_altura(self) -> str:
-        """En un circulo el dato de la altura ES el diametro, y se llama D."""
-        return "D"
 
     def exigir_dimensiones_positivas(self) -> None:
         """
@@ -1209,21 +1199,15 @@ class SeccionRectangular:
         """El rotulo que fija la §4.1 del plan: "marco 2.00 × 1.50 m"."""
         return f"marco {self.B:.2f} × {self.H:.2f} m"
 
-    @property
-    def simbolo_altura(self) -> str:
-        """
-        "H", y no "D". Un marco NO TIENE DIAMETRO: el dato que un revisor
-        tendria que corregir se llama altura interior. Es la mitad de la
-        anotacion A-4 de §16.4 que solo esta sesion podia decidir, porque es
-        la primera que ve las dos formas a la vez.
-        """
-        return "H"
-
     def exigir_dimensiones_positivas(self) -> None:
         """
         Las DOS dimensiones, y en el orden en que se declaran. Un marco se
         define con dos numeros: validar solo la altura dejaria pasar un ancho
         nulo, y con B = 0 el caudal por unidad de ancho q = Q/B no existe.
+
+        Y LOS NOMBRES SON "B" Y "H", no "D": un marco no tiene diametro. Es la
+        mitad de la anotacion A-4 de §16.4 que solo esta sesion podia decidir,
+        porque es la primera que ve las dos formas a la vez.
 
         Condicion en positivo y negada, plantilla de MAT-D13.
         """
