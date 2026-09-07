@@ -681,6 +681,19 @@ FORMA_HDS5 = _fundamento(
 # EXIGE, no a uno que la imprima. Inventarle una cita a la formula seria la
 # clase de defecto que `SIN_FUNDAMENTO` existe para no cometer.
 
+# DOS COSAS SE APARTAN DE LA REDACCION DE §15.7, Y LAS DOS LAS CAMBIO LA
+# FUENTE PRIMARIA. La segunda, primero, porque es de forma y no de fondo:
+# §15.7 escribia las tres variables ENTRECOMILLADAS -- «A 'area de la seccion
+# hidraulica', P 'perimetro mojado'» --, o sea transcribia texto de la fuente
+# A MANO y FUERA DEL REGISTRO. Ninguna de las dos frases esta en
+# `Registro.textos_literales()`, y la copia ya divergia de la pagina: la
+# fuente imprime «A : Área de la sección hidráulica (m2)», con tilde, con dos
+# puntos y con la unidad. Es «ningun texto literal se transcribe dos veces»
+# (CLAUDE.md, §4.5) incumplido en el sitio peor: un `por_que` SE IMPRIME. Se
+# reescribe SIN comillas, diciendo lo mismo. Traer las frases de verdad exige
+# un `Verbatim` nuevo en la cita, verificado contra su pagina; queda anotado
+# como C4-6 en §16.8.
+#
 # UNA PALABRA SE APARTA DE LA REDACCION DE §15.7, Y LA CAMBIO LA FUENTE
 # PRIMARIA. CN escribio «eso depende de la forma, y EL MANUAL no fija
 # ninguna». Verificado contra el PDF: el num. 4.1.1.3.6 (impresa 74 / PDF 77)
@@ -700,15 +713,17 @@ SECCION = _fundamento(
     que_paso=("Area, perimetro mojado y radio hidraulico de la seccion, para "
               "el tirante de trabajo"),
     por_que=(
-        "El num. 4.1.1.3.6 prescribe Manning y define sus variables -- A "
-        "'area de la seccion hidraulica', P 'perimetro mojado', R = A/P -- "
-        "pero NO dice como se calcula A ni como se calcula P: eso depende de "
-        "la forma, y ESTE numeral no fija ninguna. Ahi es donde entra la "
-        "seccion como abstraccion: no es una generalizacion que el proyecto "
-        "se inventa para que le quepan dos formas, es el hueco que el propio "
-        "numeral deja al calculo. Un circulo lo llena por el angulo mojado y "
-        "un rectangulo por B*y; el numeral es el mismo para los dos, y por "
-        "eso el procedimiento tambien."),
+        "El num. 4.1.1.3.6 prescribe Manning y define sus tres variables de "
+        "seccion -- area hidraulica, perimetro mojado y radio hidraulico -- "
+        "por su significado y su unidad, y escribe R = A/P como unica "
+        "relacion entre ellas. Lo que NO dice es como se calcula A ni como se "
+        "calcula P: eso depende de la forma, y ESTE numeral no fija ninguna. "
+        "Ahi es donde entra la seccion como abstraccion: no es una "
+        "generalizacion que el proyecto se inventa para que le quepan dos "
+        "formas, es el hueco que el propio numeral deja al calculo. Un "
+        "circulo lo llena por el angulo mojado y un rectangulo por B*y; el "
+        "numeral es el mismo para los dos, y por eso el procedimiento "
+        "tambien."),
     verbo=Verbo.DEFINE,
     citas=("MC_HHD.4.1.1.3.6",),    # DEFINICION -> sostiene DEFINE
     que_pasa_si_no_se_hace=(
@@ -760,10 +775,12 @@ YC_RECT = _fundamento(
         "cerrada y hace falta un segundo Brent; en la rectangular el ancho "
         "superficial es constante y la condicion de energia minima se "
         "despeja: y_c = (q^2/g)^(1/3) con q = Q/B. Que sea exacta no es un "
-        "lujo de elegancia -- retira la clase entera de fallos de "
-        "convergencia que LimiteNumericoError cubre en la circular "
-        "(SIS-G-02), donde un Q diminuto lleva el resolutor a un angulo "
-        "donde el area se cancela."),
+        "lujo de elegancia: retira la clase entera de fallos de convergencia "
+        "que la via por resolutor tiene en la circular, donde un caudal "
+        "diminuto la lleva a un angulo en que el area de la seccion se anula. "
+        "Lo que la solucion cerrada NO retira es el techo: el tirante critico "
+        "no puede exceder la altura interior del barril, y eso lo escribe el "
+        "HDS-5 en su num. 3.3.3."),
     verbo=Verbo.DEFINE,
     citas=("HDS5_3ED.3.3.3#HO",     # sostiene DEFINE (definicion/aproximacion)
            "HDS5_3ED.A.2"),         # DEFINICION
@@ -771,5 +788,12 @@ YC_RECT = _fundamento(
         "El control de salida se queda sin h_o y la Forma 1 sin H_c: los dos "
         "pasos que producen el HW gobernante. Y si en vez de la solucion "
         "cerrada se reusa el Brent de la circular, se arrastra a la "
-        "rectangular una fragilidad numerica que en ella NO existe."),
+        "rectangular una fragilidad numerica que en ella NO existe: es la "
+        "clase de fallo que `LimiteNumericoError` cubre en `M4.tirante_"
+        "critico` (SIS-G-02). Los identificadores internos viven AQUI y no en "
+        "el `por_que` a proposito: este campo no se imprime en la memoria y "
+        "aquel si, y un informe de tesis no publica el codigo de un hallazgo "
+        "de auditoria bajo el rotulo «por que se hace». Es la convencion que "
+        "ya siguen F4.MANNING, F5.V2b y F4.FORMA_HDS5, y que este fundamento "
+        "rompia hasta que la auditoria de C4 lo vio."),
 )

@@ -22,7 +22,7 @@ ESTO NO ES UN DISEÑO, Y NINGUN NUMERO DE AQUI ES UNA ADOPCION DEL PROYECTO
 =============================================================================
 Es un FIXTURE, de la misma naturaleza que `entradas_ampliadas.json` -- que
 lleva escrita la misma advertencia -- y con la misma finalidad: EJERCITAR
-CAMINOS DE CODIGO. Tres cosas de las de abajo son decisiones que le tocan a
+CAMINOS DE CODIGO. CUATRO cosas de las de abajo son decisiones que le tocan a
 C5 y que aqui se toman SOLO para poder correr:
 
   * LA FILA DE LA TABLA N 09. Se usa `concreto_afinado` (0.011-0.014). La
@@ -40,6 +40,16 @@ C5 y que aqui se toman SOLO para poder correr:
     tal cual esta, y por eso su control de SALIDA no es defendible como
     diseño. Como oraculo de diff sirve igual: lo que se vigila es que el
     numero no se mueva sin que nadie lo mire.
+  * `geometria_control_salida`. LO ENCONTRO LA AUDITORIA DE C4 instrumentando
+    `criterios_adoptados.valor`: esta corrida invoca DOS criterios, no uno, y
+    este banner solo nombraba el otro. Es un `[C]` de nivel de perfil que
+    elige la seccion de referencia del control de salida --"seccion llena"--
+    y TODA su justificacion esta escrita sobre un tubo: razona con
+    R = D/4 = 0.225 m frente a R = 0.2715 m del tirante normal, que en un
+    marco no existen. Esta corrida es lo primero del repositorio que lo aplica
+    a una seccion no circular, donde la diferencia entre las dos R no es el
+    ~20 % de aquel razonamiento sino el 40 % que §16.8 mide. Elegir la seccion
+    de referencia del marco es de C5, igual que `ke_entrada`.
 
 El punto tampoco pasa por la Fase 5 ni por MD: no hay verificaciones, no hay
 eleccion de material y no hay iteracion de catalogo. Es UNA combinacion,

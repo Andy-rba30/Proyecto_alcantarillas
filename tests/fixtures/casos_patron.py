@@ -842,15 +842,70 @@ CP6R_TIRANTE_CRITICO_RECTANGULAR = {
          "y_c_esperado": 0.9716827674320039,
          "V_c_esperado": 3.0874273997145196,
          "H_c_esperado": 1.457524151148006},
-        {"Q": 12.00, "q": 6.0,
-         "y_c_esperado": 1.5424502472009343,
-         "V_c_esperado": 3.8899147709225157,
-         "H_c_esperado": 2.3136753708014015},
+        # EL TERCERO ERA Q = 12.00 m3/s Y HUBO QUE CAMBIARLO, y conviene
+        # saber por que: daba y_c = 1.5424 m sobre un barril de H = 1.50 m, o
+        # sea un tirante critico IMPOSIBLE, y este mismo fixture lo dio por
+        # bueno hasta que la auditoria adversarial de C4 encontro el techo que
+        # faltaba (ver `CP6R_TECHO_DEL_CRITICO`). Se sustituye por Q = 10.00,
+        # que sigue siendo un caudal grande --y_c = 1.366 m, el 91 % de la
+        # altura-- y cae por debajo del techo, que es lo que este caso quiere
+        # medir: la formula cerrada, no el tope.
+        {"Q": 10.00, "q": 5.0,
+         "y_c_esperado": 1.3659149772715913,
+         "V_c_esperado": 3.66054994871458,
+         "H_c_esperado": 2.048872465907387},
     ),
     "H_c_sobre_y_c": 1.5,
     "froude_esperado": 1.0,
     "tolerancia": 1e-12,
     "tolerancia_identidad": 1e-14,   # H_c/y_c = 3/2 y Froude = 1
+}
+
+# EL TECHO DEL TIRANTE CRITICO, que la solucion cerrada retiro sin querer.
+# En la circular el limite lo pone la geometria del bracket: y = (D/2)(1 -
+# cos(theta/2)) no puede pasar de D, y por eso un Q desmedido solo acerca y_c
+# a D (medido: D = 0.90 da y_c = 0.8999649945 con Q = 15 y 0.8999999823 con
+# Q = 100). El despeje y_c = (q^2/g)^(1/3) no tiene ese limite.
+#
+# El caso que lo destapo es un punto VIABLE, y eso es lo que lo hace grave: el
+# tirante normal cae dentro del 0.75 que admite V1 y ninguna verificacion se
+# queja, mientras el informe imprime un area critica MAYOR que la del barril
+# entero. El numero era positivo y finito, de modo que ninguna guardia de
+# signo ni de finitud lo veia.
+#
+# El techo NO es una decision del proyecto: HDS-5 3a ed., num. 3.3.3, pag.
+# impresa 3.24 (PDF 106), establece que el tirante critico no puede exceder la
+# altura interior del barril, y las cartas del Apendice C lo acotan igual.
+CP6R_TECHO_DEL_CRITICO = {
+    "B": 2.00,
+    "H": 1.50,
+    "Q": 15.00,             # m3/s
+    "S": 0.05,              # m/m -- pendiente alta, punto supercritico
+    "n_max": 0.014,
+
+    # Lo que hace que el caso NO se descarte antes: el punto es viable.
+    "y_normal_esperado": 0.8045885708471225,
+    "y_sobre_H_esperado": 0.5363923805647484,   # dentro del 0.75 de V1
+
+    # Lo que el despeje SIN techo daba, y por que es imposible.
+    "y_c_sin_techo": 1.7898549609527818,        # (7.5^2/9.81)^(1/3)
+    "A_c_sin_techo": 3.5797099219055637,        # B*y_c, MAYOR que A_llena
+    "A_llena": 3.0,
+
+    # Lo que da CON el techo: el critico se topa en H y el area critica pasa a
+    # ser la del barril lleno.
+    "y_c_esperado": 1.50,
+    "A_c_esperado": 3.0,
+    "V_c_esperado": 5.0,                        # Q/A_llena, exacta
+    "H_c_esperado": 2.77420998980632,           # H + V_c^2/(2g)
+
+    # La circular, en cambio, se acota sola: dos caudales desmedidos sobre el
+    # mismo tubo, y los dos por debajo de D.
+    "D_circular": 0.90,
+    "y_c_circular_Q15": 0.8999649945473036,
+    "y_c_circular_Q100": 0.8999999822791347,
+
+    "tolerancia": 1e-12,
 }
 
 # Control de entrada sobre el MARCO, por las DOS formas de la Tabla A.1. Las
@@ -877,6 +932,13 @@ CP5R_CONTROL_ENTRADA_RECTANGULAR = {
     "zona": "no_sumergido",                      # q* <= 3.5
     "y_c_esperado": 0.9716827674320039,
     "H_c_esperado": 1.457524151148006,
+    # UN ULP DE DISTANCIA DE `y_c_esperado`, Y NO ES UN DESCUIDO. Con H = 1.5
+    # el algebra dice que H_c/H = 1.5*y_c/1.5 = y_c, pero en doble precision
+    # `(y_c + V_c^2/(2g))/H` y `y_c` NO son el mismo float: dan
+    # 0.971682767432004 y 0.9716827674320039. El dorado es el PRIMERO, que es
+    # el que la memoria imprime y el que el paso sustituye; rehacerlo por la
+    # identidad da el segundo. Se dice aqui porque un revisor que rehaga la
+    # cuenta a mano llegara al segundo y tiene que saber por que difieren.
     "H_c_sobre_D_esperado": 0.971682767432004,
 
     # -- Carta 9 escala 1, FORMA 2: HW/D = K*(q*)^M, ec. (A.2). Sin H_c/D y

@@ -430,6 +430,14 @@ def _critico_por_brent(Q: float, seccion: Seccion) -> Geometria:
     y con sus dos guardias. Se separo para que la seccion que SI despeja el
     critico no tenga que pasar por aqui, no para cambiarlo: la circular
     recorre exactamente el mismo codigo y converge al mismo bit.
+
+    SUS DOS MENSAJES SIGUEN NOMBRANDO «theta», «(0, 2*pi)» y «D», y no es un
+    descuido del renombre: la UNICA seccion que llega hasta aqui es la que NO
+    despeja su critico, y hoy esa es la circular. Los dos textos se imprimen
+    --`cli._bloqueo` los publica-- y generalizarlos sin una segunda forma sin
+    solucion cerrada seria cambiar salida por una hipotesis. Quien traiga una
+    tercera forma sin despeje tiene que generalizarlos con ella delante; lo
+    encontro la auditoria de C4 y queda dicho aqui, que es donde se lee.
     """
 
     def f(theta: float) -> float:
@@ -1114,13 +1122,26 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
              "-- la (A.2) -- NO usa H_c. El tirante critico se resuelve igual "
              "porque lo necesita h_o del control de salida, y solo para eso. "
              "Se resuelve UNA vez.")
-            + (" La seccion despeja el critico y la solucion es EXACTA: con "
-               "ella no hay convergencia que fallar, que es la clase de fallo "
-               "que la via por Brent tiene que guardar (SIS-G-02)."
+            + (" La seccion despeja el critico y la solucion es EXACTA: no "
+               "hay convergencia que pueda fallar."
                if critico.cerrado else
                " En esta forma la ecuacion es trascendente en el parametro de "
                "llenado y hace falta un segundo Brent, distinto del de "
-               "Manning: no interviene ni n ni S.")),
+               "Manning: no interviene ni n ni S.")
+            # EL TECHO, IMPRESO SOLO CUANDO MUERDE. La comparacion es ciega a
+            # la forma --`seccion.altura` es el contrato del protocolo-- y en
+            # la circular no se dispara nunca, porque alli el tirante critico
+            # se acerca a D sin alcanzarlo. Sin esta linea, un punto con el
+            # critico topado imprimiria el numero topado sin decir que lo
+            # esta, que es la mitad silenciosa del defecto.
+            + (f" El tirante critico ALCANZA la altura interior del barril "
+               f"({seccion.altura:.{CIFRAS_MAGNITUD}f} m) y queda topado ahi: "
+               f"el HDS-5 (num. 3.3.3, pag. impresa 3.24) establece que el "
+               f"tirante critico no puede exceder la altura interior, y sus "
+               f"cartas del Apendice C lo acotan igual. Sin ese techo el "
+               f"calculo daria un area critica MAYOR que la del barril "
+               f"entero."
+               if critico.y_c >= seccion.altura else "")),
     )
 
     # EL PASO QUE DICE QUE ECUACION SE USO, y va ANTES del control de entrada

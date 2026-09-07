@@ -1342,6 +1342,12 @@ class SeccionRectangular:
         que es comun a las dos formas. Es alcanzable, y medido: con
         B = Q = 5e-324 (el denormal mas pequeño) y_c vale 0.4671363512679737 y
         A vale 0.0 exacto.
+
+        Y HAY UNA QUINTA COSA QUE NO ES ARITMETICA, y por eso no esta en esa
+        lista: el TECHO. La forma cerrada retiro, sin que nadie lo notara, el
+        limite que en la circular ponia la geometria del bracket. Lo repone la
+        ultima linea, y la razon la escribe la fuente, no el proyecto: ver el
+        comentario junto a ella.
         """
         q = Q / self.B
         try:
@@ -1383,6 +1389,32 @@ class SeccionRectangular:
                     f"rango: revisa si la celda perdio digitos o si el caudal "
                     f"vino en otra unidad")
             )
+        # EL TECHO, QUE LA FORMA CERRADA RETIRO SIN QUERER Y LA FUENTE SI PONE.
+        # VA DESPUES DE LAS DOS GUARDIAS Y NO ANTES, y el orden importa: con
+        # q = inf el `min` se tragaria el infinito --min(inf, H) = H-- y la
+        # guardia de finitud no llegaria a verlo nunca. Medido al escribirlo:
+        # puesto arriba, el par (Q = 1e308, B = 1e-5) devolvia 1.5 m tan
+        # tranquilo en vez de lanzar `LimiteNumericoError`.
+        # La circular lo tenia por geometria: su bracket es (0, 2*pi) y
+        # y = (D/2)(1 - cos(theta/2)) no puede pasar de D, de modo que un Q
+        # desmedido solo acerca y_c a D. Medido: `SeccionCircular(0.90)` da
+        # y_c = 0.8999649945 con Q = 15 y 0.8999999823 con Q = 100. El despeje
+        # no tiene ese limite: con el marco 2.00 x 1.50, Q = 15 m3/s y
+        # S = 0.05 m/m -- un punto VIABLE, y_n = 0.805 m, y/H = 0.54, dentro
+        # del 0.75 que admite V1 -- daba y_c = 1.7899 m, o sea un area critica
+        # de 3.58 m2 sobre un barril cuya area llena es 3.00 m2. El informe
+        # imprimia una seccion critica mas grande que el conducto entero, sin
+        # decir nada, porque el numero era positivo y finito.
+        #
+        # Y NO ES UNA DECISION DEL PROYECTO: lo escribe la fuente. HDS-5 3a
+        # ed., num. 3.3.3 «Outlet Control», pag. impresa 3.24 (PDF 106), en la
+        # misma lista de vinetas que la condicion de h_o, dice que el tirante
+        # critico no puede exceder D -- la altura interior del barril --. Las
+        # cartas del Apendice C lo acotan igual. La frase no se transcribe
+        # aqui: el registro no tiene todavia su `Verbatim`, y una segunda
+        # transcripcion a mano es lo que CLAUDE.md prohibe. Queda anotado
+        # como C4-5 en §16.8.
+        y_c = min(y_c, self.H)
         return y_c
 
 

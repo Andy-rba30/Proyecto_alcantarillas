@@ -39,6 +39,7 @@ from tests.fixtures.casos_patron import (CP2R_GEOMETRIA_MANNING_RECTANGULAR,
                                          CP5D_FORMA2,
                                          CP5DR_TRANSICION_CAJON,
                                          CP5R_CONTROL_ENTRADA_RECTANGULAR,
+                                         CP6R_TECHO_DEL_CRITICO,
                                          CP6R_TIRANTE_CRITICO_RECTANGULAR,
                                          CP8R_CONTROL_SALIDA_RECTANGULAR)
 
@@ -600,19 +601,20 @@ def test_la_transicion_no_monotona_tambien_en_carta_de_cajon_y_marco():
 # 7 - La traza de memoria de los pasos nuevos
 # ===========================================================================
 
-def _pasos_del_marco(carta="cajon_concreto_aleta_45_d043"):
+def _pasos_del_marco(carta="cajon_concreto_aleta_45_d043", Q=None, S=None):
+    Q = CP5R["Q"] if Q is None else Q
+    S = CP5R["S"] if S is None else S
     m = SeccionRectangular(CP5R["B"], CP5R["H"])
     material = _material(carta=carta, n_min=CP2R["n_min"],
                          n_max=CP2R["n_max"])
-    normal = resolver_manning(seccion=m, Q=CP5R["Q"], S=CP5R["S"],
-                              material=material)
-    critico = tirante_critico(CP5R["Q"], m)
-    entrada = control_entrada(CP5R["Q"], m, CP5R["S"], material.hds5, critico)
-    salida = control_salida(CP5R["Q"], m, CP5R["S"], CP8R["L"], CP8R["TW"],
+    normal = resolver_manning(seccion=m, Q=Q, S=S, material=material)
+    critico = tirante_critico(Q, m)
+    entrada = control_entrada(Q, m, S, material.hds5, critico)
+    salida = control_salida(Q, m, S, CP8R["L"], CP8R["TW"],
                             material.n_para_capacidad, critico=critico)
     gobierna_salida = salida.HW > entrada.HW
     return _pasos_hidraulicos(
-        seccion=m, Q=CP5R["Q"], S=CP5R["S"], L=CP8R["L"], TW=CP8R["TW"],
+        seccion=m, Q=Q, S=S, L=CP8R["L"], TW=CP8R["TW"],
         material=material, normal=normal, critico=critico, entrada=entrada,
         salida=salida,
         control=(ControlGobernante.SALIDA if gobierna_salida
@@ -742,3 +744,197 @@ def test_las_dos_secciones_implementan_el_protocolo_entero():
             assert (inspect.signature(del_p).parameters.keys()
                     == inspect.signature(del_i).parameters.keys()), (
                 f"{clase.__name__}.{nombre} no tiene la firma del protocolo")
+
+
+# ===========================================================================
+# 9 - El techo del tirante critico, que la forma cerrada retiro sin querer
+# ===========================================================================
+
+def test_el_tirante_critico_no_puede_exceder_la_altura_del_barril():
+    """
+    LO ENCONTRO LA AUDITORIA ADVERSARIAL DE C4, y es el unico modo de fallo
+    que las cuatro guardias de aritmetica no cubren, porque no es aritmetica.
+
+    En la circular el limite lo pone la GEOMETRIA del bracket:
+    y = (D/2)(1 - cos(theta/2)) no puede pasar de D, de modo que un Q
+    desmedido solo acerca y_c a D. El despeje y_c = (q^2/g)^(1/3) no tiene ese
+    limite, y sin techo un punto VIABLE --tirante normal dentro del 0.75 que
+    admite V1-- imprimia un area critica MAYOR que la del barril entero, en
+    silencio, porque el numero es positivo y finito.
+
+    El techo no es una decision del proyecto: HDS-5, num. 3.3.3, pag. impresa
+    3.24, establece que el tirante critico no puede exceder la altura interior
+    del barril.
+    """
+    caso = CP6R_TECHO_DEL_CRITICO
+    tol = caso["tolerancia"]
+    m = SeccionRectangular(caso["B"], caso["H"])
+
+    # (a) el punto es VIABLE: no se descarta antes de llegar aqui
+    normal = tirante_normal(m, caso["Q"], caso["S"], caso["n_max"])
+    assert normal is not None
+    assert normal.y == pytest.approx(caso["y_normal_esperado"], abs=tol)
+    assert normal.y_sobre_D == pytest.approx(caso["y_sobre_H_esperado"], abs=tol)
+
+    # (b) el despeje SIN techo daria un area critica mayor que el barril
+    q = caso["Q"] / caso["B"]
+    sin_techo = (q * q / G) ** (1 / 3)
+    assert sin_techo == pytest.approx(caso["y_c_sin_techo"], abs=tol)
+    assert caso["B"] * sin_techo == pytest.approx(caso["A_c_sin_techo"], abs=tol)
+    assert caso["A_c_sin_techo"] > caso["A_llena"]
+
+    # (c) con techo, el critico se topa en H y el area critica es la llena
+    critico = tirante_critico(caso["Q"], m)
+    assert critico.y_c == pytest.approx(caso["y_c_esperado"], abs=tol)
+    assert critico.geometria.A == pytest.approx(caso["A_c_esperado"], abs=tol)
+    assert critico.V == pytest.approx(caso["V_c_esperado"], abs=tol)
+    assert critico.H_c == pytest.approx(caso["H_c_esperado"], abs=tol)
+
+    # (d) la circular se acota SOLA, y por eso el defecto no existia antes
+    circular = SeccionCircular(caso["D_circular"])
+    for clave, Q in (("y_c_circular_Q15", 15.0), ("y_c_circular_Q100", 100.0)):
+        y_c = tirante_critico(Q, circular).y_c
+        assert y_c == pytest.approx(caso[clave], abs=tol)
+        assert y_c < caso["D_circular"]
+
+
+def test_la_memoria_dice_cuando_el_critico_queda_topado():
+    """
+    Topar el numero y no decirlo es la mitad silenciosa del defecto: el
+    informe imprimiria un tirante critico igual a la altura del barril sin que
+    nada explique por que se detuvo ahi.
+
+    La frase se imprime SOLO cuando el techo muerde, y la comprobacion es
+    ciega a la forma (`seccion.altura`, que es contrato del protocolo).
+    """
+    caso = CP6R_TECHO_DEL_CRITICO
+    topado = _paso(_pasos_del_marco(Q=caso["Q"], S=caso["S"]), "F4.YC_RECT")
+    assert "queda topado" in topado.nota_del_proyecto
+    assert "num. 3.3.3" in topado.nota_del_proyecto
+
+    # Y NO se imprime cuando no muerde, ni en el marco ni en la circular.
+    assert "queda topado" not in _paso(_pasos_del_marco(),
+                                       "F4.YC_RECT").nota_del_proyecto
+    assert "queda topado" not in _paso(_pasos_circulares(),
+                                       "F4.YC_RECT").nota_del_proyecto
+
+
+def test_la_guardia_de_finitud_esta_escrita_en_positivo_y_negada():
+    """
+    Plantilla de MAT-D13, y el caso que la separa de un `== math.inf`: un
+    caudal NaN. `_validar_positivo` lo deja pasar --`nan <= 0` es falso, que
+    es el mismo defecto que MAT-D13 fijo-- y llega hasta aqui, donde
+    `not y_c < math.inf` SI lo atrapa y lo devuelve como error del expediente.
+    """
+    m = SeccionRectangular(2.00, 1.50)
+    with pytest.raises(LimiteNumericoError) as exc:
+        tirante_critico(float("nan"), m)
+    assert "no es un numero finito" in str(exc.value)
+
+
+# ===========================================================================
+# 10 - LA REGLA VINCULANTE #12, VIGILADA POR LA SUITE Y NO POR UN COMENTARIO
+# ===========================================================================
+# LO ENCONTRO LA AUDITORIA ADVERSARIAL DE C4 y era su hallazgo mas fuerte.
+# `M4._pasos_hidraulicos` lleva escrito, ocho lineas encima de la sustitucion,
+# que sustituir `g.A` por `seccion.area(g.y)` «es exactamente lo que la regla
+# vinculante #12 existe para impedir». El auditor hizo esa sustitucion exacta
+# y LA SUITE QUEDO EN VERDE: 1594 passed. La regla estaba vigilada por un
+# comentario, que es justo lo que §6 #12 dice de si misma que no basta --
+# «no se detecta mirando» --.
+#
+# Este censo lo cierra. Es el mismo patron que `CENSO_DE_MARCAS` en
+# `test_sin_literales.py`: no prohibe la via por tirante --tiene un uso
+# legitimo-- sino que obliga a que ANADIR una llamada mueva un numero en el
+# diff y haya que declararla aqui, con su razon.
+
+VIA_POR_TIRANTE = {"area", "perimetro", "ancho_superficial"}
+
+# Las UNICAS llamadas legitimas hoy, con el simbolo que las contiene. Las dos
+# estan dentro de `SeccionRectangular.geometria_en`, que es el sitio donde la
+# via por tirante NO puede equivocarse: en esa forma el parametro propio ES el
+# tirante y las dos vias coinciden bit a bit. Cualquier otra llamada desde
+# produccion --y sobre todo desde M3, M4 o un solver-- es el defecto.
+CENSO_VIA_POR_TIRANTE = {
+    ("src/modelos.py", "SeccionRectangular.geometria_en", "area"),
+    ("src/modelos.py", "SeccionRectangular.geometria_en", "perimetro"),
+}
+
+
+def _censo_de_la_via_por_tirante():
+    """Cada llamada a la via por tirante en produccion, con quien la contiene."""
+    import ast
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parents[1]
+    archivos = sorted((raiz / "src").rglob("*.py"))
+    archivos += [raiz / "cli.py"] + sorted((raiz / "gui").glob("*.py"))
+
+    encontradas = set()
+    for ruta in archivos:
+        if not ruta.exists():
+            continue
+        arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=str(ruta))
+        # De cada nodo al simbolo que lo contiene: se recorre el arbol
+        # llevando el nombre cualificado, en vez de buscar por linea.
+        def recorrer(nodo, prefijo):
+            for hijo in ast.iter_child_nodes(nodo):
+                if isinstance(hijo, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                     ast.ClassDef)):
+                    dentro = f"{prefijo}.{hijo.name}" if prefijo else hijo.name
+                    recorrer(hijo, dentro)
+                    continue
+                if (isinstance(hijo, ast.Call)
+                        and isinstance(hijo.func, ast.Attribute)
+                        and hijo.func.attr in VIA_POR_TIRANTE):
+                    encontradas.add((str(ruta.relative_to(raiz)),
+                                     prefijo or "<modulo>", hijo.func.attr))
+                recorrer(hijo, prefijo)
+        recorrer(arbol, "")
+    return encontradas
+
+
+def test_la_via_por_tirante_no_gana_consumidores_sin_declararlos():
+    """
+    LA REGLA #12, MEDIDA. `area(y)`, `perimetro(y)` y `ancho_superficial(y)`
+    pasan, en la circular, por `theta_desde_tirante`, que esta MAL
+    CONDICIONADA: en el extremo inferior del bracket devuelve 0.0 exacto para
+    P y para T donde la via canonica devuelve 4.5e-10, y T es el denominador
+    de A^3/T en `_residuo_critico`. No es una deriva de 1e-12: es dividir por
+    cero donde Brent evalua primero.
+
+    Si este test falla porque anadiste una llamada, NO subas el censo sin
+    leer: preguntate si el llamador tiene delante un `Geometria`. Si lo tiene,
+    el valor ya esta ahi --`g.A`, `g.P`, `g.T`, `g.R`-- y recalcularlo es el
+    defecto. La via por tirante solo se usa donde haya un tirante y NINGUN
+    `Geometria`, y nunca dentro de un solver.
+    """
+    real = _censo_de_la_via_por_tirante()
+    assert real == CENSO_VIA_POR_TIRANTE, (
+        "el censo de llamadas a la via por tirante dejo de coincidir.\n"
+        f"  nuevas:      {sorted(real - CENSO_VIA_POR_TIRANTE)}\n"
+        f"  desaparecidas: {sorted(CENSO_VIA_POR_TIRANTE - real)}\n"
+        "Lee la regla vinculante #12 de docs/ruta_familia_c.md antes de tocar "
+        "este censo.")
+
+
+def test_el_censo_ve_la_mutacion_que_la_auditoria_encontro():
+    """
+    El censo tiene que ATRAPAR la sustitucion exacta que sobrevivio en verde:
+    `Magnitud("A", geometria_normal.A, ...)` por
+    `Magnitud("A", seccion.area(geometria_normal.y), ...)` en
+    `M4._pasos_hidraulicos`. Se comprueba sobre un arbol sintetico, sin tocar
+    el modulo: un test que solo mira el arbol real no prueba que sepa ver.
+    """
+    import ast
+    codigo = (
+        "def _pasos_hidraulicos(seccion, normal):\n"
+        "    return Magnitud('A', seccion.area(normal.geometria.y), 'm2')\n")
+    arbol = ast.parse(codigo)
+    llamadas = [n for n in ast.walk(arbol)
+                if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Attribute)
+                and n.func.attr in VIA_POR_TIRANTE]
+    assert len(llamadas) == 1
+    assert ("src/modulos/M4_control.py", "_pasos_hidraulicos", "area") \
+        not in CENSO_VIA_POR_TIRANTE

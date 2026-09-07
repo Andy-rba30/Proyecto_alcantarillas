@@ -515,7 +515,19 @@ del parámetro propio.** La añadió C1 y la va a pisar C4.
 | Vía | Miembros | Estado |
 |---|---|---|
 | **Por parámetro propio — CANÓNICA** | `bracket_llenado()`, `geometria_en(llenado)`, `ancho_superficial_en_llenado(llenado)` | La que consumen M3 y M4. Es la que resuelve Brent |
-| **Por tirante — de lectura** | `area(y)`, `perimetro(y)`, `ancho_superficial(y)` | **Cero consumidores en producción.** Es el vocabulario de la Sec. 4.1 |
+| **Por tirante — de lectura** | `area(y)`, `perimetro(y)`, `ancho_superficial(y)` | **DOS consumidores, los dos dentro de `SeccionRectangular.geometria_en`** *(medido en C4; hasta entonces eran cero)*. Es el vocabulario de la Sec. 4.1 |
+
+> **La celda decía «cero consumidores» y C4 le dio dos.** Los dos están en el único sitio
+> donde esta vía no puede equivocarse — `SeccionRectangular.geometria_en`, donde el
+> parámetro propio **es** el tirante y las dos vías coinciden bit a bit —, y **están
+> censados**: `tests/test_seccion_rectangular.py::test_la_via_por_tirante_no_gana_consumidores_sin_declararlos`
+> barre el AST de `src/`, `cli.py` y `gui/` y falla si aparece un tercero sin declararlo.
+> El censo lo obligó la auditoría de C4: hasta entonces la regla la vigilaba **un
+> comentario**, y el auditor demostró que no bastaba — sustituyó `g.A` por
+> `seccion.area(g.y)` en `M4._pasos_hidraulicos`, ocho líneas debajo del comentario que
+> dice que eso *«es exactamente lo que la regla vinculante #12 existe para impedir»*, y la
+> suite quedó **en verde**. Es la propia regla cumpliéndose sobre sí misma: «no se detecta
+> mirando».
 
 **Por qué la canónica es la del parámetro propio, y no la del tirante** —que es la que
 «se lee mejor» y por eso es la trampa—:
@@ -2331,10 +2343,12 @@ SECCION = _fundamento(
     que_paso=("Area, perimetro mojado y radio hidraulico de la seccion, para "
               "el tirante de trabajo"),
     por_que=(
-        "El num. 4.1.1.3.6 prescribe Manning y define sus variables -- A "
-        "'area de la seccion hidraulica', P 'perimetro mojado', R = A/P -- "
-        "pero NO dice como se calcula A ni como se calcula P: eso depende de "
-        "la forma, y el Manual no fija ninguna. Ahi es donde entra la "
+        "El num. 4.1.1.3.6 prescribe Manning y define sus tres variables de "
+        "seccion -- area hidraulica, perimetro mojado y radio hidraulico -- "
+        "por su significado y su unidad, y escribe R = A/P como unica "
+        "relacion entre ellas. Lo que NO dice es como se calcula A ni como se "
+        "calcula P: eso depende de "
+        "la forma, y ESTE numeral no fija ninguna. Ahi es donde entra la "
         "seccion como abstraccion: no es una generalizacion que el proyecto "
         "se inventa para que le quepan dos formas, es el hueco que el propio "
         "numeral deja al calculo. Un circulo lo llena por el angulo mojado y "
@@ -2589,8 +2603,8 @@ D-12; los doce siguen sin duplicar ninguna `DIS-HR-*`.)*
 
 Las cinco primeras salen de la verificación de CN y **se corrigen aquí porque §6 y §13 son
 vinculantes**: una regla vinculante mal fundada se cita literal en una memoria y ahí ya es una
-cita falsa. **La sexta la añadió C4** y es de la misma familia, con el agravante de que el
-texto corregido **se imprime**.
+cita falsa. **La sexta y la séptima las añadió C4** y son de la misma familia, con el
+agravante de que el texto corregido **se imprime**.
 
 1. **Regla vinculante #6 de §6 — el porqué, no la conclusión.** Dice *«El subgrupo "a.
    Concreto" del grupo A trae solo filas de **tubo**»*. **Seis de sus siete filas dicen «tubo»;
@@ -2640,9 +2654,21 @@ está en la misma oración) y la **#7** (la Tabla Nº 10 clasifica por `TIPO DE 
    num. **4.1.1.3.4 a)**, pág. impresa 72 — *«Las secciones mas usuales son circulares,
    rectangulares y cuadradas…»* y la sección mínima de 0.90 m —, que este mismo repositorio cita
    en otro sitio. El que no fija ninguna es **este numeral**, y así queda escrito en
-   `normativa/fundamentos.py` y en `modelos.SeccionRectangular.formula_geometria`. Es una
-   palabra, y es la diferencia entre una afirmación verificada y una sobreafirmación impresa
-   bajo el rótulo «por qué se hace».
+   `normativa/fundamentos.py` y en el docstring de **`Seccion.formula_geometria`** — el del
+   **protocolo**, que es donde vive el texto; `SeccionRectangular.formula_geometria` solo
+   lleva una línea, y la primera redacción de este punto la anclaba ahí (regla 4 de
+   `CLAUDE.md`: se ancla por nombre de símbolo, y el símbolo tiene que llevar lo que se dice
+   que lleva). Es una palabra, y es la diferencia entre una afirmación verificada y una
+   sobreafirmación impresa bajo el rótulo «por qué se hace».
+
+7. **§15.7, `F4.SECCION` otra vez — las comillas (C4, tras la auditoría).** La misma
+   redacción entrecomillaba las tres variables: *«A 'area de la seccion hidraulica', P
+   'perimetro mojado'»*. Eso es **transcribir texto de la fuente a mano y fuera del
+   registro**, en el sitio peor: un `por_qué` **se imprime**. Ninguna de las dos frases está
+   en `Registro.textos_literales()`, y la copia **ya divergía** de la página —la fuente
+   imprime *«A : Área de la sección hidráulica (m2)»*, con tilde, con dos puntos y con la
+   unidad—. Reescrito sin comillas, diciendo lo mismo. Traer las frases de verdad exige un
+   `Verbatim` nuevo en la cita, verificado contra su página: anotado como **C4-6**.
 
 ### 15.10 Lo que la auditoría adversarial encontró
 
@@ -3361,9 +3387,15 @@ class="paso">` y no sobre líneas, porque el HTML mete un punto entero por líne
 
 **Y no se movió ningún número, y eso se midió, no se declaró.** Multiconjunto de todos los
 números impresos, antes y después, en las tres memorias: **«sólo en la base: {}»** en las
-tres — ninguno desapareció ni cambió de valor —. Lo que aparece son **12 apariciones nuevas
-por memoria**, y son exactamente `y`, `A`, `P` y `R` de los tres puntos dimensionados:
-números que el cálculo ya tenía y que la memoria no imprimía.
+tres — ninguno desapareció ni cambió de valor —. Confirmado además por la auditoría con su
+propio método y su propia expresión regular, y por `git show --stat`, que enseña que los
+otros nueve artefactos (cuatro `.txt`, tres `.json`, dos `.csv`) **no aparecen en el commit**.
+
+Lo que aparece son **15 magnitudes nuevas por memoria**, no 12 — la primera redacción de
+este párrafo contaba de menos y lo corrigió la auditoría —: las 12 de `y`, `A`, `P` y `R`
+de los tres puntos dimensionados, **más las tres del `D = 0.90 m`** que la sustitución del
+paso de geometría añade. Las quince son números que el cálculo ya tenía y que la memoria no
+imprimía.
 
 #### El punto de cajón en el fixture, y la mutación que ahora muere
 
@@ -3455,7 +3487,12 @@ falso frente a los dos operadores— y llegaba hasta Brent, que revienta fuera d
 
 La solución cerrada retira la clase de fallos de **convergencia** (SIS-G-02); no retira la
 aritmética. Cada guardia lleva umbral **medido**, condición en positivo y negada, y mensaje
-que nombra al **par**:
+que nombra al **par**. De las cuatro, **dos están fijadas por un test que muere si alguien
+las reescribe con `<=`** — la de finitud, con un caudal NaN, y las de
+`exigir_dimensiones_positivas` —; la del **área** no, y se dice: el auditor no encontró
+ninguna entrada alcanzable que haga NaN el área ahí, porque un `y_c` NaN lo atrapa antes la
+guardia de finitud, de modo que la forma negada en ese sitio es **defensiva** y no está
+pineada. Decirlo es más honesto que inventarle un test:
 
 | Qué falla | Par que lo dispara | Dónde está la guardia |
 |---|---|---|
@@ -3530,11 +3567,108 @@ cuatro memorias, «sólo en la base: {}» en las cuatro.
   **y firma por firma**, y además que una propiedad sea propiedad en las dos. Sin él,
   «M3 y M4 quedan ciegos a la forma» es una intención y no una propiedad.
 
+#### Lo que la auditoría adversarial encontró, y lo que le refuté
+
+Se invocó `auditor-adversarial` sobre los dos primeros commits (`07a9c7a`, `3fcff37`), con
+trece afirmaciones concretas que refutar y con el encargo de mutar el código nuevo. **Volvió
+con cuatro mutaciones vivas y siete hallazgos.** Todos los que seguían abiertos están
+corregidos; los que se cerraron mientras auditaba se marcan como tales.
+
+**Lo que confirmó, y no es poco.** Los cuatro pares de las guardias, **bit a bit**
+(`sqrt(sys.float_info.max) = 1.3407807929942596e+154`, de modo que el sucesor desborda y él
+no); que `M4._critico_cerrado` **no es código muerto**; la corrección a la regla #12,
+**medida sobre siete diámetros de 0.30 a 3.00 m** —el `0.0` exacto en el extremo inferior
+vale para los siete, y el error relativo del perímetro en el superior es 1.592e-10 para los
+siete—; la inmovilidad numérica de las tres memorias, con su propio método; la atribución
+completa de los seis textos (21 *hunks* = 7 por punto × 3 puntos, mapeados uno a uno); los
+veintitantos dorados nuevos, rehechos desde las ecuaciones; las dos mutaciones de la línea
+base; el barrido de 12 + 3 cartas de cajón; y la neutralidad de forma de
+`caudal_adimensional`.
+
+**El hallazgo que valía la auditoría: la regla #12 estaba vigilada por un comentario.** El
+auditor hizo la sustitución exacta que `M4._pasos_hidraulicos` declara prohibida ocho líneas
+más arriba —`g.A` por `seccion.area(g.y)`— y **la suite quedó en verde**. Cerrado con
+`test_la_via_por_tirante_no_gana_consumidores_sin_declararlos`, un censo del AST de `src/`,
+`cli.py` y `gui/` con la misma forma que `CENSO_DE_MARCAS`: no prohíbe la vía —tiene un uso
+legítimo— sino que obliga a que **añadir una llamada mueva un número en el diff**. Vuelto a
+medir con la mutación del auditor: ahora **muere** (y además mueve la línea base, porque en
+la circular las dos vías difieren en los últimos bits).
+
+**El hallazgo que era un defecto de cálculo: el tirante crítico no tenía techo.** La forma
+cerrada retiró, sin que nadie lo notara, un límite que en la circular ponía la **geometría
+del bracket** (`y = (D/2)(1 − cos(θ/2)) ≤ D`; medido: Ø 0.90 da y_c = 0.8999649945 con
+Q = 15 y 0.8999999823 con Q = 100). El despeje no lo tiene, y con el marco 2.00 × 1.50,
+**Q = 15 m³/s y S = 0.05 m/m — un punto viable, y_n = 0.805 m, y/H = 0.54, dentro del 0.75
+que admite V1 —** daba **y_c = 1.7899 m**, o sea un **área crítica de 3.58 m² sobre un
+barril de 3.00 m²**. En silencio: el número es positivo y finito, y ninguna de las cuatro
+guardias mira eso.
+
+**Y no es una decisión del proyecto: lo escribe la fuente.** HDS-5 3.ª ed., num. 3.3.3, pág.
+impresa **3.24** (PDF 106), en la misma lista de viñetas que la condición de `h_o`, dice que
+el tirante crítico **no puede exceder D** — verificado con PyMuPDF por esta sesión, no sólo
+por el agente —. Puesto el techo, con su caso patrón (`CP6R_TECHO_DEL_CRITICO`) y con la
+frase que la memoria imprime **sólo cuando muerde**. Dos cosas que salieron de ponerlo:
+
+- **el orden importa**, y se midió: con el `min` **antes** de las guardias, el par
+  (Q = 1e308, B = 1e-5) devolvía «1.5 m» tan tranquilo en vez de lanzar
+  `LimiteNumericoError`, porque `min(inf, H)` se traga el infinito. Va después;
+- **el propio caso patrón `CP6R` tenía un caso imposible**: su tercer caudal, Q = 12 m³/s,
+  daba y_c = 1.5425 m sobre un barril de 1.50 m, y el fixture lo daba por bueno. Sustituido
+  por Q = 10 m³/s (y_c = 1.366 m, el 91 % de la altura), que es lo que ese caso quiere
+  medir: la fórmula, no el tope.
+
+**Dos defectos en el texto que se IMPRIME**, los dos míos y los dos de la misma familia que
+las cuatro correcciones del verificador:
+
+- **`F4.SECCION` entrecomillaba texto de la fuente transcrito a mano**: *«A 'area de la
+  seccion hidraulica', P 'perimetro mojado'»*. Ninguna de las dos frases está en
+  `Registro.textos_literales()`, y la copia **ya divergía** de la página (la fuente imprime
+  *«A : Área de la sección hidráulica (m2)»*). Reescrito sin comillas. Es §15.9 punto 7.
+- **`F4.YC_RECT` publicaba un identificador de auditoría (`SIS-G-02`) y un nombre de clase
+  de excepción (`LimiteNumericoError`) bajo el rótulo «por qué se hace».** Medido: era el
+  **único** `por_qué` del registro con un identificador interno, y los otros tres que los
+  llevan (`F4.MANNING`, `F5.V2b`, `F4.FORMA_HDS5`) los tienen en `que_pasa_si_no_se_hace`,
+  **que no se imprime**. Movidos ahí, con la convención escrita.
+
+**Tres hallazgos menores, corregidos:** la celda de §6 #12 seguía diciendo «cero
+consumidores en producción» cuando C4 le había dado dos; §16.8 contaba **12** apariciones
+nuevas por memoria cuando son **15** (las tres del `D` de la sustitución nueva); y §15.9
+punto 6 anclaba a `SeccionRectangular.formula_geometria` cuando el texto vive en el
+**protocolo**.
+
+**Uno que corregí en el fixture, no en el código:** el banner de `punto_cajon.py` enumeraba
+**tres** decisiones prestadas de C5 y el auditor instrumentó `criterios_adoptados.valor`
+para descubrir que la corrida invoca **dos** criterios, no uno: `ke_entrada` y
+**`geometria_control_salida`**, que no estaba nombrado. Es un `[C]` de perfil cuya
+justificación entera está escrita sobre un tubo —razona con `R = D/4 = 0.225 m`— y esta
+corrida es lo primero del repositorio que lo aplica a una sección no circular, donde esa
+`R` no existe. Nombrado, con la magnitud del asunto: no es el ~20 % de aquel razonamiento,
+es el **40 %** que mide esta misma sección.
+
+**Dos que le refuté, o que quedaron como estaban:**
+
+- **«`_critico_por_brent` esconde la circular en un mensaje que llega a la GUI»** — cierto
+  que el mensaje nombra `theta`, `(0, 2π)` y `D`, y **se queda**: la única sección que llega
+  a esa función es la que **no** despeja su crítico, y hoy esa es la circular. Generalizar
+  el texto sin una segunda forma sin solución cerrada sería cambiar salida impresa por una
+  hipótesis. Queda dicho en el docstring, que es donde lo lee quien traiga la tercera forma.
+- **«las mutaciones #4 y #11 sobreviven, luego la forma de MAT-D13 no está fijada para las
+  guardias nuevas»** — medio cierto, y la mitad que no lo es importa. La #11 se fija ahora
+  (`test_la_guardia_de_finitud_esta_escrita_en_positivo_y_negada`, con un caudal NaN, que
+  `_validar_positivo` deja pasar porque `nan <= 0` es falso). La #4 **no se puede fijar**:
+  el propio auditor no encontró ninguna entrada alcanzable que haga NaN el área ahí, porque
+  un `y_c` NaN lo atrapa antes la guardia de finitud. Se corrige el texto de §16.8 en vez de
+  inventarle un test: la forma negada en ese sitio es **defensiva**, y decirlo es más
+  honesto que dar por fijado lo que no lo está.
+
 #### Anotado y no corregido
 
 | # | Qué | Por qué no aquí |
 |---|---|---|
 | **C4-1** | `de_critico` **no lleva `formula_cita_id`**, y §4.5 pide fórmula con cita. La cita correcta depende de la forma de ecuación: bajo Forma 1 la exige la (A.2) por `H_c`, bajo Forma 2 sólo `h_o` (`HDS5_3ED.3.3.3#HO`) | elegir entre dos citas según la forma es una decisión de reporte que toca los dos pasos; C4 ya mueve la memoria por otras cinco razones y mezclarlo la haría ilegible |
 | **C4-2** | El `id` `F4.YC_RECT` nombra sólo a la rectangular y funda el paso de **las dos** formas | renombrar un `id` del registro a mitad del plan mueve las referencias de C5 |
+| **C4-6** | Las tres variables del num. 4.1.1.3.6 —*«A : Área de la sección hidráulica (m2)»*, *«P : Perímetro mojado (m)»*, *«R : Radio hidráulico (m)»*— **no están en el registro**: el único `Verbatim` de `MC_HHD.4.1.1.3.6` es la línea del coeficiente de Manning. Sin ellas, ningún paso puede **citarlas**; sólo parafrasearlas, que es lo que hace `F4.SECCION` desde la auditoría | traerlas exige un `Verbatim` nuevo —derivado, como `#HO_SUMERGIDA`— verificado contra su página y con su test en `test_normativa_pdf.py`. Es transcripción, y la transcripción es el oficio de C2/C5, no el de la sesión que implementa la sección |
+| **C4-5** | La frase de HDS-5 que fija el techo del tirante crítico —el num. 3.3.3 establece que no puede exceder la altura interior— **tampoco está transcrita**: el techo se aplica citando el numeral, sin `Verbatim` | mismo caso que C4-6, y la misma razón. El número ya no es falso; lo que falta es poder **entrecomillar** la frase en la memoria |
+| **C4-7** | `M4._validar_positivo` usa `if dato <= 0`, que **deja pasar un NaN** — es la forma que MAT-D13 fijó y que C4 corrigió en `exigir_dimensiones_positivas`, pendiente en el resto. Medido: `Q = nan` atraviesa la validación y llega hasta el despeje, donde la guardia de finitud sí lo atrapa; en la circular llegaría hasta Brent | es **anterior a C4** y toca cinco llamadas de tres piezas distintas (`S`, `L`, `V`, `R`, `n`), cada una con su mensaje impreso. Corregirlas es una sesión de vocabulario, no un renglón |
 | **C4-4** | El paso `de_salida` de `M4._pasos_hidraulicos` escribe la fórmula *«HW = H + h_o − S·L, con h_o = max(TW, (y_c + D)/2)»* con `formula_cita_id = "HDS5_3ED.3.3.3#HO"`, y **ese numeral no escribe el máximo como ecuación** (verificado en C4: lo dice en prosa y sin nombrar `ho`; con forma de ecuación está en las impresas 3.12, 3.32 y 3.43) | es **anterior a C4** y la v8 **ya lo declara** en su §4.3 —*«La forma con el máximo … la 3.ª ed. no la numera: la escribe en prosa»*—, de modo que no es una atribución oculta. Corregirlo es elegir entre citar el numeral que aproxima y citar el que imprime la igualdad, y esa decisión toca los tres pasos de salida a la vez |
 | **C4-3** | `M8_estructural` sigue codificando geometría circular en producción (`(π/4)·D_ext²`, prisma de ancho `D_ext`) | es del frente **F4**. Lo que sí corrigió C4 es la palabra «completo» de §2-bis, que declaraba un alcance que el censo no tiene |
