@@ -1579,6 +1579,24 @@ HDS5_TC2 = _cita(
         pagina_pdf=216),
     caracter=Caracter.DEFINICION,
     metodo=AMBOS,
+    condiciones=(
+        # LA HERMANA DE `COND-EMBOCADURA-CAJON`, Y VA APARTE A PROPOSITO. Las
+        # siete filas de cajon de ESTA tabla tambien esperan a que se declare
+        # la embocadura, pero colgarlas de la condicion de la Tabla A.1 hacia
+        # que la ventana pintara, como razon de que una fila de la C.2 no se
+        # pueda elegir, un `Verbatim` de la pagina 197 -- «Inlet
+        # Configuration», que es un encabezado de columna de OTRA tabla --.
+        # La evidencia de una condicion tiene que salir de la pagina que la
+        # impone.
+        CondicionAplicacion(
+            id="COND-EMBOCADURA-CAJON-KE",
+            texto=Verbatim(
+                texto="Type of Structure and Design of Entrance",
+                pagina_pdf=216),
+            cita_id="HDS5_3ED.TC.2",
+            resuelve=PorCriterio(clave="embocadura_cajon"),
+            efecto_si_indeterminada=Efecto.BLOQUEA),
+    ),
     nota=("NOR-HDS-01, confirmado contra el PDF. La cita original decia "
           "«pagina C.2», que es EL NUMERO DE LA TABLA LEIDO COMO PAGINA: la "
           "pag. impresa C.2 (PDF 212) es la continuacion del indice de cartas "
@@ -2672,11 +2690,36 @@ CAJON_MARCO = _cita(
                        "de mala calidad"),
                 pagina_pdf=75),
             cita_id="MC_HHD.4.1.1.3.4a#MARCO",
-            # La clave existe y HOY NO TIENE VALOR. No se cablea aqui ningun
-            # mapeo SUCS -> «mala calidad»: el Manual no lo da, y inventarlo
-            # es lo que §15.5 dejo dicho que NO se haga. La condicion se
-            # declara para que el vacio se vea, no para resolverlo.
-            resuelve=PorDatoDeSitio(clave="sucs_fundacion"),
+            # `NoEvaluable` Y NO `PorDatoDeSitio`, y la primera redaccion lo
+            # tuvo mal. Escribia `PorDatoDeSitio(clave="sucs_fundacion")` con
+            # el comentario «la clave existe y hoy no tiene valor», y las dos
+            # mitades eran falsas: `sucs_fundacion` NO esta en
+            # `datos_sitio.DATOS_SITIO` -- es COLUMNA DEL CSV, porque es un
+            # dato que varia punto a punto --. El efecto era peor que el
+            # error: `ventana_normativa.disponibilidad_de` corta por la rama
+            # «la clave no esta en datos_sitio» ANTES de mirar el efecto, de
+            # modo que esta condicion BLOQUEABA declarando que advertia, la
+            # `justificacion_de_no_bloquear` que T15 obliga a escribir era
+            # texto muerto, y la ventana mandaba al revisor a declarar en
+            # `datos_sitio.py` un dato que CLAUDE.md manda poner en el CSV.
+            #
+            # Lo que la condicion dice de verdad es que el Manual NO DEFINE
+            # «mala calidad»: no hay mapeo SUCS -> mala calidad en la fuente,
+            # y inventarlo es lo que §15.5 dejo dicho que NO se haga. Eso es
+            # `NoEvaluable`, y ahi el ADVIERTE si se honra.
+            resuelve=NoEvaluable(
+                por_que=("el Manual recomienda el marco «cuando se tiene la "
+                         "presencia de suelos de fundacion de mala calidad» y "
+                         "NO define «mala calidad»: no da umbral, ni "
+                         "clasificacion, ni remision a otra norma. La columna "
+                         "`sucs_fundacion` del CSV trae el grupo SUCS del "
+                         "punto, y traducirlo a «mala calidad» seria inventar "
+                         "el mapeo que la fuente calla"),
+                que_lo_cerraria=("un criterio declarado que fije que grupos "
+                                 "SUCS cuentan como mala calidad, con su "
+                                 "fuente tecnica y su ventana. §15.5 lo "
+                                 "difiere a C6, junto con el cambio de "
+                                 "esquema de `_Columna.criterio_destino`")),
             efecto_si_indeterminada=Efecto.ADVIERTE,
             justificacion_de_no_bloquear=(
                 "la frase RECOMIENDA el marco cuando el suelo es malo; no lo "
@@ -2779,13 +2822,27 @@ LAMINA_03 = _cita(
     id="MC_HHD.LAMINA_03",
     fuente_id="MC_HHD",
     numeral="Lámina Nº 03",
-    # EL CAJETIN IMPRIME EL TITULO EN DOS CORRIDAS DE TEXTO SEPARADAS, y en
-    # el volcado aparecen en orden inverso: «CON PROTECCIÓN A LA ENTRADA Y
-    # SALIDA» sale antes que «SECCIONES TÍPICAS DE ALCANTARILLAS». Unirlas en
-    # una sola cadena daria una frase que la pagina NO imprime como tal --
-    # seria una `Transcripcion` rotulada de `Verbatim`, que es el defecto de
-    # NOR-HID-06 --, y T3 la rechazaria con razon. Se cita la corrida que
-    # encabeza, y la segunda mitad viaja como texto_previo.
+    # EL TITULO DEL CAJETIN SE GUARDA A MEDIAS, Y ES UNA LIMITACION DEL
+    # REGISTRO, NO UNA LECTURA. Medido sobre la pagina: el cajetin imprime el
+    # titulo en DOS RENGLONES APILADOS del mismo bloque -- «SECCIONES TÍPICAS
+    # DE ALCANTARILLAS» en y = 671.4 y «CON PROTECCIÓN A LA ENTRADA Y SALIDA»
+    # en y = 689.2, con la x solapada --, de modo que VISUALMENTE el titulo es
+    # uno solo y §15.4 tiene razon al darlo entero.
+    #
+    # Aqui va solo el primer renglon porque T3 verifica `titulo_numeral`
+    # BUSCANDOLO EN LA CAPA DE TEXTO, y esa capa entrega los dos renglones
+    # como corridas independientes y ademas en orden inverso: la cadena
+    # compuesta no aparece y T3 la rechazaria. Es una limitacion de la
+    # maquinaria de verificacion -- un titulo repartido en dos corridas no se
+    # puede guardar entero y seguir siendo verificable --, y se declara como
+    # tal en vez de disfrazarse de decision.
+    #
+    # LA PRIMERA REDACCION DE ESTE COMENTARIO DECIA DOS COSAS QUE NO ERAN: que
+    # unirlas seria una `Transcripcion` -- no lo seria, la pagina las imprime
+    # apiladas como un titulo --, y que la segunda mitad «viaja como
+    # texto_previo», que es campo de `TablaNormativa` y NO de `Cita`. La
+    # segunda mitad hoy no viaja a ninguna parte, y eso es lo que hay que
+    # saber al leer esto.
     titulo_numeral="SECCIONES TÍPICAS DE ALCANTARILLAS",
     jerarquia_numeral=(),
     pagina_impresa="209",

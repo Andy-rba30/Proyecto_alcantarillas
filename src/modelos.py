@@ -601,12 +601,24 @@ class ConstantesHDS5:
     `forma` SI figura en la Tabla A.1 -- es su columna «Equation Form» -- y
     hasta C2 no se transcribia. Vale 1 o 2, y no es un matiz de precision:
 
-        Forma 1   HWi/D = H_c/D + K*(q*)^M + Ks*S      (arranca del critico,
-                                                        y LLEVA el termino de
-                                                        pendiente)
-        Forma 2   HWi/D = K*(q*)^M + Ks*S              (ajuste directo sobre
-                                                        el caudal
-                                                        adimensional)
+        Forma 1   HWi/D = H_c/D + K*(q*)^M + Ks*S     ec. (A.1)
+        Forma 2   HWi/D = K*(q*)^M                     ec. (A.2)
+
+    La Forma 2 NO LLEVA EL TERMINO Ks*S. Esta escrito asi arriba porque la
+    primera redaccion de este docstring SI se lo puso -- «HWi/D = K*(q*)^M +
+    Ks*S» -- y se contradecia con su propio parrafo de mas abajo, que ya decia
+    que la Forma 2 no lo lleva. Verificado contra la fuente: `normas/
+    hif12026.pdf`, pag. impresa A.2 (PDF 191), imprime la ec. (A.2) como
+    HWi/D = K[Ku*Q/(A*D^0.5)]^M y nada mas. El contraste que lo cierra esta en
+    la MISMA pagina: la ec. (A.3), sumergida, si extrae «+ Y + Ks*S».
+
+    El error no era inocuo y por eso queda dicho: con Ks = -0.5 el termino
+    RESTA, de modo que copiarlo a la Forma 2 daria un HW MENOR que el real
+    -- del lado no conservador --. Medido sobre la Carta 9 escala 1
+    (K = 0.510, M = 0.667) con un cajon de 2.00 x 2.00 m, Q = 8 m3/s y
+    S = 0.03: 1.910 m contra 1.880 m, 30 mm de diferencia, y crece lineal con
+    la pendiente. Es exactamente el fallo que `F4.FORMA_HDS5` describe, y
+    estaba escrito en el sitio donde C3 lo iba a leer primero.
 
     Son DOS REGRESIONES DISTINTAS sobre dos conjuntos de ensayos, y sus K y M
     estan ajustadas cada una a SU ecuacion. El HDS-5 lo dice con todas las
