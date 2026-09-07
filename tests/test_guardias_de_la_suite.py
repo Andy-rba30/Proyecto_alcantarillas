@@ -711,10 +711,19 @@ SIN_CASO_PATRON = {
         "producto (AASHTO M 170M-04 / ASTM C 76M-02, ASTM A760 + AASHTO M 36, "
         "AASHTO M294). Cerraria de paso si la progresion 0.90 + 0.15 es una "
         "serie comercial real o una interpolacion del proyecto (§15 del plan)",
-    "M8_estructural":
-        "faltan AASHTO M 170M-04 Tablas 1 a 5 (clases D-load del concreto) y "
-        "ASTM A796/A796M (calibre por altura de cobertura del TMC). Son el "
-        "insumo del vacio 'clases_producto_por_relleno' (§15 del plan)",
+    # M8_estructural SALIO DE LA LISTA EN C7, y el motivo por el que estaba
+    # sigue siendo cierto -- lo que cambio es que ya no cubre al modulo
+    # ENTERO --. La exencion decia: «faltan AASHTO M 170M-04 Tablas 1 a 5
+    # (clases D-load del concreto) y ASTM A796/A796M (calibre por altura de
+    # cobertura del TMC). Son el insumo del vacio
+    # 'clases_producto_por_relleno'». Eso sigue faltando y `seleccionar_clase_
+    # calibre` sigue sin dorado por esa razon; pero la FLOTACION no necesitaba
+    # ninguna de esas dos fuentes -- se calcula con geometria y con los gamma
+    # de una tabla que si esta transcrita --, de modo que la exencion estaba
+    # cubriendo de mas. C7 aporta `CP10_FLOTACION_MARCO`, con los dos numeros
+    # que midio la auditoria de C5: prisma 40.61 kN/m contra cilindro 24.96.
+    # Una exencion que sobrevive a su motivo es deuda inventada, y este test
+    # es lo que lo hizo ruidoso en cuanto dejo de ser cierta.
     "M10_espaciamiento":
         "no lo cierra una norma sino el EXPEDIENTE VIAL: seccion de cuneta, su "
         "n de Manning, la intensidad de TR = 35 y el metodo de area "

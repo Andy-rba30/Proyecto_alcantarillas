@@ -95,17 +95,17 @@ def _verificacion(cumple: bool, obtenido=None, admisible=None) -> Verificacion:
     )
 
 
-def _todo_cumple(*, punto, material, D, resultado):
+def _todo_cumple(*, punto, material, seccion, resultado):
     return (_verificacion(True),)
 
 
-def _nada_cumple(*, punto, material, D, resultado):
+def _nada_cumple(*, punto, material, seccion, resultado):
     return (_verificacion(False, obtenido="lo que sea", admisible="otra cosa"),)
 
 
-def _solo_borde_libre(*, punto, material, D, resultado):
+def _solo_borde_libre(*, punto, material, seccion, resultado):
     """V1 sola: y/D <= 0.75 (num. 4.1.1.3.7 b), el unico criterio del bucle."""
-    y_sobre_D = resultado.y_normal / D
+    y_sobre_D = resultado.y_normal / seccion.altura
     return (_verificacion(y_sobre_D <= Y_SOBRE_D_MAX,
                           obtenido=y_sobre_D, admisible=Y_SOBRE_D_MAX),)
 
@@ -117,7 +117,8 @@ class _Registro:
         self.decision = decision
         self.llamadas = []
 
-    def __call__(self, *, punto, material, D, resultado):
+    def __call__(self, *, punto, material, seccion, resultado):
+        D = seccion.altura
         self.llamadas.append((material.tipo, round(D, 2)))
         return (_verificacion(self.decision(D)),)
 
@@ -138,7 +139,8 @@ class _RevientaMaterial:
         self.exc = exc
         self.llamadas = []
 
-    def __call__(self, *, punto, material, D, resultado):
+    def __call__(self, *, punto, material, seccion, resultado):
+        D = seccion.altura
         self.llamadas.append((material.tipo, round(D, 2)))
         if material.tipo in self.tipos and D >= self.desde_D:
             if self.exc is DatoInvalidoError:
@@ -323,7 +325,7 @@ def test_no_reinterpreta_las_verificaciones():
     lee el booleano de M5 y no vuelve a juzgarlo. Si una verificacion esta
     mal, se corrige en M5, no aqui.
     """
-    def cumple_pese_a_todo(*, punto, material, D, resultado):
+    def cumple_pese_a_todo(*, punto, material, seccion, resultado):
         return (_verificacion(True, obtenido=9.99, admisible=Y_SOBRE_D_MAX),)
 
     resultado = disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
@@ -333,7 +335,7 @@ def test_no_reinterpreta_las_verificaciones():
 
 
 def test_cero_verificaciones_no_es_un_diseño_aceptado():
-    def sin_verificaciones(*, punto, material, D, resultado):
+    def sin_verificaciones(*, punto, material, seccion, resultado):
         return ()
 
     with pytest.raises(ValueError, match="cero verificaciones"):
@@ -564,7 +566,7 @@ def test_un_fallo_de_programa_sigue_propagandose():
     del script, no un problema del expediente, y no puede quedar disfrazado
     de "material descartado".
     """
-    def revienta_feo(*, punto, material, D, resultado):
+    def revienta_feo(*, punto, material, seccion, resultado):
         raise ValueError("defecto del programa")
 
     with pytest.raises(ValueError):

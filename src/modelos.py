@@ -934,6 +934,49 @@ class Seccion(Protocol):
         """m - radio hidraulico de la seccion llena (Sec. 4.3)."""
         ...
 
+    def ancho_exterior(self, espesor: float) -> float:
+        """
+        m - `Bc`: ancho exterior de la seccion en planta, con la pared.
+
+        La nomenclatura es la del Art. 12.6.6.3 de AASHTO LRFD, que define
+        `Bc` como *"outside diameter or width of the structure"*: es la
+        dimension HORIZONTAL. Lo consume el peso del relleno de V7 -- el
+        prisma de suelo tiene el ancho que el conducto ocupa de verdad en
+        planta -- y es tambien el termino `Bc/8` de la cobertura minima.
+        """
+        ...
+
+    def canto_exterior(self, espesor: float) -> float:
+        """
+        m - `B'c`: canto exterior de la seccion, con la pared.
+
+        El mismo articulo lo define como *"out-to-out vertical rise of pipe"*:
+        es la dimension VERTICAL, y por eso NO es intercambiable con
+        `ancho_exterior`. En una circular las dos coinciden -- por eso el
+        proyecto pudo vivir hasta C7 con un solo `D_exterior` --; en un marco
+        no, y confundirlas es el error que la regla vinculante #9 estuvo a
+        punto de introducir.
+        """
+        ...
+
+    def area_exterior(self, espesor: float) -> float:
+        """
+        m2 - area que encierra la superficie EXTERIOR de la seccion.
+
+        Es el volumen desplazado por metro lineal, o sea la subpresion de V7
+        dividida por el peso especifico del agua (num. 2.4.3.8.2 del Manual de
+        Puentes: la fuerza actua sobre "todos los componentes de la estructura
+        que se encuentran debajo del nivel de agua de diseno").
+
+        NO SE DERIVA DE LOS DOS ANTERIORES, y por eso es un miembro propio: en
+        un rectangulo el area exterior SI es `Bc * B'c`, pero en una circular
+        es `pi/4 * D_ext^2`, que no es el producto de sus dos dimensiones
+        exteriores. Calcularla como producto le daria a la circular un 27 % de
+        area de mas -- la del cuadrado circunscrito --, que es la direccion
+        insegura al reves: mas subpresion de la real.
+        """
+        ...
+
     def etiqueta(self) -> str:
         """Como se nombra la seccion en la memoria."""
         ...
@@ -1057,6 +1100,35 @@ class SeccionCircular:
     def radio_hidraulico_lleno(self) -> float:
         """R = A/P = (pi*D^2/4)/(pi*D) = D/4, seccion llena (Sec. 4.3)."""
         return self.D / 4  # literal-ok: R = A/P de la seccion llena, D/4
+
+    # -- Geometria EXTERIOR: la que ve el agua y el relleno, no el caudal.
+    #
+    # EN UNA CIRCULAR LAS DOS DIMENSIONES EXTERIORES COINCIDEN, y esa
+    # coincidencia es la que dejo pasar el error que la regla #9 estuvo a
+    # punto de introducir: mientras el catalogo fue circular, `Bc` y `B'c`
+    # eran el mismo numero y nadie tenia que distinguirlos. Se implementan
+    # como dos miembros aunque aqui devuelvan lo mismo, porque el protocolo
+    # los separa y un marco los separa de verdad.
+
+    def ancho_exterior(self, espesor: float) -> float:
+        """Bc = D + 2t: el diametro exterior."""
+        return self.D + 2 * espesor
+
+    def canto_exterior(self, espesor: float) -> float:
+        """B'c = D + 2t. En un circulo el canto exterior ES el ancho."""
+        return self.D + 2 * espesor
+
+    def area_exterior(self, espesor: float) -> float:
+        """
+        pi/4 * (D + 2t)^2 -- el volumen desplazado por metro lineal.
+
+        NO es `ancho_exterior * canto_exterior`: eso seria el cuadrado
+        circunscrito, un 4/pi = 27 % mas de area, y en V7 mas area es mas
+        subpresion, o sea el lado inseguro al reves. Es la razon por la que
+        `area_exterior` es un miembro del protocolo y no una derivacion de
+        los otros dos.
+        """
+        return math.pi * self.ancho_exterior(espesor) ** 2 / 4  # literal-ok: area del circulo
 
     def etiqueta(self) -> str:
         """
@@ -1241,6 +1313,34 @@ class SeccionRectangular:
     def altura(self) -> float:
         """La altura interior es H. Es el "D" de HDS-5 (regla #4)."""
         return self.H
+
+    # -- Geometria EXTERIOR: aqui las dos dimensiones SI se separan, y es la
+    # razon por la que el protocolo tiene dos miembros y no uno.
+
+    def ancho_exterior(self, espesor: float) -> float:
+        """Bc = B + 2t: el ancho exterior en planta."""
+        return self.B + 2 * espesor
+
+    def canto_exterior(self, espesor: float) -> float:
+        """
+        B'c = H + 2t: el canto exterior.
+
+        DISTINTO DE `ancho_exterior`, y esa es toda la diferencia con la
+        circular. Un marco de 2.00 x 1.50 m con t = 0.15 tiene Bc = 2.30 m y
+        B'c = 1.80 m: intercambiarlos cambia la subpresion y el peso de
+        relleno en sentidos opuestos.
+        """
+        return self.H + 2 * espesor
+
+    def area_exterior(self, espesor: float) -> float:
+        """
+        (B + 2t)*(H + 2t) -- el volumen desplazado por metro lineal.
+
+        En un prisma el area exterior SI es el producto de sus dos
+        dimensiones exteriores. Es mas simple que en la circular, no mas
+        dificil: el rectangulo exterior no tiene nada que descontar.
+        """
+        return self.ancho_exterior(espesor) * self.canto_exterior(espesor)
 
     @property
     def area_llena(self) -> float:

@@ -857,7 +857,11 @@ def _verificador_perfil(informe: InformePunto):
     """
     ya_registrados: set = set()
 
-    def verificar(*, punto: PuntoCritico, material, D: float, resultado):
+    def verificar(*, punto: PuntoCritico, material, seccion, resultado):
+        # La altura para las tres que solo necesitan la altura. V7 pide la
+        # SECCION entera, porque la subpresion actua sobre la superficie
+        # exterior y ahi un prisma y un cilindro dejan de parecerse.
+        D = seccion.altura
         # LO QUE YA SE VERIFICO NO SE TIRA, y hasta C5 aqui SI se tiraba.
         # `M5.verificar` lo resolvio en su dia --su docstring lo cuenta-- y
         # este verificador, que es el del alcance de perfil, se quedo con la
@@ -904,8 +908,8 @@ def _verificador_perfil(informe: InformePunto):
             _diferir_verificacion(informe, "V5", exc, ya_registrados)
         for pieza in (
             lambda: M5.v6_material_solido_arrastre(material=material),
-            lambda: M5.v7_flotacion(punto=punto, material=material, D=D,
-                                    resultado=resultado),
+            lambda: M5.v7_flotacion(punto=punto, material=material,
+                                    seccion=seccion, resultado=resultado),
         ):
             try:
                 filas.append(pieza())

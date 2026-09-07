@@ -41,7 +41,7 @@ from dominios import CBR_MAX_FISICO
 from modelos import (ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
                      Familia, FormaSeccion, PuntoCritico, ResultadoHidraulico,
-                     TipoMaterial)
+                     SeccionCircular, TipoMaterial)
 from modulos.M2_material import catalogo
 from modulos.M8_estructural import factores_carga_flotacion
 from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
@@ -671,7 +671,8 @@ def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
     punto = _punto()
     with sin_valor("peso_especifico_relleno_kn_m3"):
         with pytest.raises(CriterioPendienteError) as excinfo:
-            v7_flotacion(punto=punto, material=concreto, D=0.90,
+            v7_flotacion(punto=punto, material=concreto,
+                         seccion=SeccionCircular(D=0.90),
                          resultado=_resultado())
         assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
@@ -699,7 +700,8 @@ def test_v7_calcula_completo_en_cuanto_declara_el_peso_del_relleno(
         original.__class__(**{**original.__dict__, "valor": 18.0}),
     )
     punto = _punto()
-    v = v7_flotacion(punto=punto, material=concreto, D=0.90,
+    v = v7_flotacion(punto=punto, material=concreto,
+                         seccion=SeccionCircular(D=0.90),
                      resultado=_resultado())
     assert v.codigo == "V7"
     assert v.criterio_aplicado == "factores_carga_aashto"
@@ -736,7 +738,8 @@ def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
             original.__class__(**{**original.__dict__, "valor": val}),
         )
     punto = _punto()
-    v = v7_flotacion(punto=punto, material=concreto, D=0.90,
+    v = v7_flotacion(punto=punto, material=concreto,
+                         seccion=SeccionCircular(D=0.90),
                      resultado=_resultado())
     assert v.codigo == "V7"
     assert v.criterio_aplicado == "factores_carga_aashto"
@@ -768,7 +771,8 @@ def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
     # anclados, no derivados
     assert (g.gamma_EV, g.gamma_WA) == pytest.approx((0.90, 1.00),
                                                      rel=REL_TRANSPORTE)
-    v = v7_flotacion(punto=_punto(), material=concreto, D=0.90,
+    v = v7_flotacion(punto=_punto(), material=concreto,
+                     seccion=SeccionCircular(D=0.90),
                      resultado=_resultado())
     assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
     assert v.valor_admisible == pytest.approx(
@@ -873,7 +877,8 @@ def test_verificar_se_detiene_en_V5_la_primera_pendiente_en_orden(concreto):
     """
     punto = _punto()
     with pytest.raises(CriterioPendienteError) as excinfo:
-        verificar(punto=punto, material=concreto, D=0.90,
+        verificar(punto=punto, material=concreto,
+                  seccion=SeccionCircular(D=0.90),
                  resultado=_resultado(y_normal=0.60, V=1.5))
     assert excinfo.value.clave == "remanso_derecho_via"
 
@@ -886,7 +891,8 @@ def test_verificar_con_tmc_ya_pasa_v3_y_se_detiene_en_v5(tmc):
     """
     punto = _punto()
     with pytest.raises(CriterioPendienteError) as excinfo:
-        verificar(punto=punto, material=tmc, D=0.90,
+        verificar(punto=punto, material=tmc,
+                  seccion=SeccionCircular(D=0.90),
                  resultado=_resultado(y_normal=0.60, V=1.5))
     assert excinfo.value.clave == "remanso_derecho_via"
 
@@ -894,7 +900,8 @@ def test_verificar_con_tmc_ya_pasa_v3_y_se_detiene_en_v5(tmc):
 def test_verificar_tiene_la_firma_del_protocol_de_MD(concreto):
     """MD.Verificador exige (punto=, material=, D=, resultado=), por keyword."""
     with pytest.raises(CriterioPendienteError):
-        verificar(punto=_punto(), material=concreto, D=0.90,
+        verificar(punto=_punto(), material=concreto,
+                  seccion=SeccionCircular(D=0.90),
                  resultado=_resultado())
 
 

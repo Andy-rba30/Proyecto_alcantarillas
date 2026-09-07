@@ -212,6 +212,7 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      ErrorProyecto, Familia, FormaSeccion,
                      Magnitud, Material,
                      PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
+                     Seccion,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
                      Verificacion, paso)
 from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
@@ -1432,7 +1433,8 @@ def v6_material_solido_arrastre(*, material: Material) -> Verificacion:
 # V7 - Flotacion del conducto (Manual de Puentes num. 2.4.3.8.2 + Fase 8.3)
 # ---------------------------------------------------------------------------
 
-def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
+def v7_flotacion(*, punto: PuntoCritico, material: Material,
+                 seccion: Seccion,
                  resultado: ResultadoHidraulico) -> Verificacion:
     """
     Flotacion del conducto por EQUILIBRIO DE FACTORES DE CARGA LRFD, tuberia
@@ -1518,12 +1520,14 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     que le faltan al procedimiento -- no en un vacio de METODO: ver el
     docstring del modulo.
     """
+    D = seccion.altura
     altura_relleno = altura_relleno_sobre_clave(punto=punto, material=material,
                                                 D=D)
 
-    D_ext = diametro_exterior(material=material, D=D)
-    U = empuje_flotacion_kn_m(D_exterior=D_ext)
-    EV = peso_relleno_kn_m(D_exterior=D_ext, altura_relleno=altura_relleno)
+    t = espesor_pared(material, D)
+    U = empuje_flotacion_kn_m(seccion=seccion, espesor=t)
+    EV = peso_relleno_kn_m(seccion=seccion, espesor=t,
+                           altura_relleno=altura_relleno)
     DC = 0.0                 # peso propio omitido, del lado conservador
     g = factores_carga_flotacion(material=material)   # CriterioPendienteError si EV no se detuvo antes
 
@@ -1545,10 +1549,15 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
             formula="gamma_DC_min*DC + gamma_EV_min*EV >= gamma_WA*U",
             formula_cita_id="MP.T2.4.5.3.1-2",
             sustitucion=(
-                Magnitud("D_ext", D_ext, "m",
-                         "M2, diametro EXTERIOR = D + 2*espesor de pared. La "
-                         "subpresion actua sobre el volumen desplazado, que "
-                         "es el exterior, no el interior (MAT-D3)", cifras=CIFRAS_MAGNITUD),
+                Magnitud("Bc", seccion.ancho_exterior(t), "m",
+                         "ancho EXTERIOR en planta (Art. 12.6.6.3 de AASHTO: "
+                         "«outside diameter or width of the structure»). Es "
+                         "el ancho del prisma de relleno", cifras=CIFRAS_MAGNITUD),
+                Magnitud("B'c", seccion.canto_exterior(t), "m",
+                         "canto EXTERIOR («out-to-out vertical rise»). En un "
+                         "marco NO coincide con Bc; en una circular si, y esa "
+                         "coincidencia es la que oculto el defecto hasta C7",
+                         cifras=CIFRAS_MAGNITUD),
                 Magnitud("altura_relleno", altura_relleno, "m",
                          "cota de subrasante menos cota de clave FISICA del "
                          "punto: el relleno que de verdad hay encima, no el "
@@ -1701,7 +1710,8 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 # Agregado: la firma que llama MD.py
 # ---------------------------------------------------------------------------
 
-def verificar(*, punto: PuntoCritico, material: Material, D: float,
+def verificar(*, punto: PuntoCritico, material: Material,
+             seccion: Seccion,
              resultado: ResultadoHidraulico) -> Tuple[Verificacion, ...]:
     """
     Las diez verificaciones de la Fase 5, en el orden de la tabla. Coincide
@@ -1723,6 +1733,12 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
     codigo y falso sobre el producto. Escribirlo como una lista y no como una
     tupla literal es lo que permite conservarlas.
     """
+    # LAS OTRAS TRES SIGUEN PIDIENDO LA ALTURA, y eso no es suponer una
+    # forma: `Seccion.altura` es la altura interior de cualquiera de ellas --
+    # el "D" de HDS-5, regla vinculante #4 --. Quien necesita mas que la
+    # altura es V7, porque la subpresion actua sobre la superficie EXTERIOR y
+    # ahi un prisma y un cilindro dejan de parecerse.
+    D = seccion.altura
     hechas: list = []
     piezas = (
         lambda: v1_borde_libre(D=D, material=material, punto=punto,
@@ -1734,8 +1750,8 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
         lambda: v4b_relacion_hw_d(D=D, resultado=resultado),
         lambda: v5_remanso(punto=punto, resultado=resultado),
         lambda: v6_material_solido_arrastre(material=material),
-        lambda: v7_flotacion(punto=punto, material=material, D=D,
-                             resultado=resultado),
+        lambda: v7_flotacion(punto=punto, material=material,
+                             seccion=seccion, resultado=resultado),
         lambda: v8_evento_extremo(punto=punto, resultado=resultado),
         lambda: v9_disponibilidad_diametro(D=D, material=material),
     )

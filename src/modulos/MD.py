@@ -88,7 +88,7 @@ necesitar M5 (`NUMERAL_BUCLE`, `MENSAJE_DIAMETRO_SUPERADO` y el Protocol
 Lo que MD fija es la unica pieza que un orquestador esta obligado a fijar: la
 FIRMA con la que llama a M5.
 
-    verificar(punto=..., material=..., D=..., resultado=...) -> Sequence[Verificacion]
+    verificar(punto=..., material=..., seccion=..., resultado=...) -> Sequence[Verificacion]
 
 Se pasa siempre por palabra clave, para que M5 pueda ampliar la firma sin
 romper este archivo. La funcion se toma del argumento `verificar`; si no se
@@ -384,7 +384,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                                              material=material, normal=normal)
                 verificaciones = tuple(verificar(punto=punto,
                                                  material=material,
-                                                 D=D, resultado=resultado))
+                                                 seccion=seccion,
+                                                 resultado=resultado))
                 if not verificaciones:
                     raise ValueError(
                         f"la Fase 5 devolvio cero verificaciones para "
