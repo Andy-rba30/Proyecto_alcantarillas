@@ -2699,7 +2699,7 @@ de qué se corrió, con qué y con qué resultado medido.
 | **CP** | `53e431a` (consolidación) · `bb8cdfa` (docstrings) · `a6d6543` (prompts) · PR #3 y #4 | 1536 p / 2 s, «PyMuPDF sí / Tk no» | Consolidación en §4.5, §6, §8, §9, §10, §11 y §12; los cuatro puntos de prompt de §16.2; y las tres correcciones de código de `R-9` | los 8 defectos contra la v8 (`D-1`…`D-8`): son de una **v9** |
 | **C0** | medida sobre `origin/main` **`4f6cf69`** | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §2-bis (censo de 59 símbolos), §14 (las dos decisiones de alcance), la línea base de `tests/linea_base_familia_c/`, el punto 5 de C1 y §16.3 | el anclaje por línea del manifiesto: **se mide, no se arregla** (§16.3) |
 | **C1** | `56677a4` · `b535176` · `a25ce7a` · `f99764a` · `d46256f` · `C1f` · `C1g` · PR #6 | **refactor: 1536 p / 2 s** (collected 1538, el par de C0). **Cierre: 1540 p / 2 s** (collected **1542**), «PyMuPDF sí / Tk no» | La abstracción `Seccion` y su única implementación `SeccionCircular`; `Geometria` lleva la sección y el `llenado` en vez de `D` y `theta`; M3 y M4 dejan de saber la forma del barril; manifiesto regenerado dos veces (11 + 1 ocurrencias); **regla vinculante #12**; punto 0 nuevo en el prompt de C4; **Parte V** de `decisiones_diferidas.md` | ensanchar `regenerar.sh` (tira el JSON, no corre expediente, dimensiona 1 punto de 4) → **C4**. `M8_estructural` fuera del censo de §2-bis → **F4**. `_validar_parametros` sin la forma `not A > 0` de MAT-D13 |
-| **C2** | `c8404ad` · `f7526be` · `1874d80` · `ebc114d` | **1540 p / 2 s** (collected 1542), «PyMuPDF sí / Tk no» — **y `test_normativa_pdf.py` corrió COMPLETO, 32 passed, ninguno saltado** | Tabla A.1: las 15 filas del cajón (Cartas 8–12) con su columna de **forma de ecuación**. Tabla C.2: el bloque Box, **7 filas con valor bajo 4 rótulos**. Las **7 citas** de §15.7, la fila `afinado` de la Tabla Nº 09, **4 `Fundamento`** (F3.TIPO_MARCO, F3.MANTENIMIENTO, F3.CELDAS, F4.FORMA_HDS5), `ConstantesHDS5.forma`, `HDS5_INLET` **derivado** de la transcripción, `DIS-MCHHD-LAMINA-03-TMC` y `SIN_COTAS_LAMINA_03`. Cierra R-1, R-2, R-3, R-4, R-7 y la mitad de R-10 | **D-9** nuevo contra la v8 (las dos formas de ecuación de HDS-5). `ke_entrada` sigue en 0.5 de tubo → **C5** (regla #11). La «pág. impresa A.8» de la Tabla A.1 es **inferida, no leída** — esa página no lleva folio |
+| **C2** | `c8404ad` · `f7526be` · `1874d80` · `ebc114d` · `2018403` · `C2f` · `C2g` · PR #7 | **1540 p / 2 s** (collected 1542), «PyMuPDF sí / Tk no» — **y `test_normativa_pdf.py` corrió COMPLETO, 32 passed, ninguno saltado** | Tabla A.1: las 15 filas del cajón (Cartas 8–12) con su columna de **forma de ecuación**. Tabla C.2: el bloque Box, **7 filas con valor bajo 4 rótulos**. Las **7 citas** de §15.7, la fila `afinado` de la Tabla Nº 09, **4 `Fundamento`** (F3.TIPO_MARCO, F3.MANTENIMIENTO, F3.CELDAS, F4.FORMA_HDS5), `ConstantesHDS5.forma`, `HDS5_INLET` **derivado** de la transcripción, `DIS-MCHHD-LAMINA-03-TMC` y `SIN_COTAS_LAMINA_03`. Cierra R-1, R-2, R-3, R-4, R-7 y la mitad de R-10 | **D-9** nuevo contra la v8 (las dos formas de ecuación de HDS-5). `ke_entrada` sigue en 0.5 de tubo → **C5** (regla #11). La «pág. impresa A.8» de la Tabla A.1 es **inferida, no leída** — esa página no lleva folio |
 
 
 > **Los dos pares de C1, y por qué son dos.** El refactor cierra con **el par de C0 sin mover**: `1536 passed / 2 skipped`, `collected 1538`, medido sobre los cuatro commits del refactor. Las correcciones de la auditoría añaden **cuatro tests y ni uno más**: las cuatro fichas nuevas de `docs/decisiones_diferidas.md` (`C1-01`…`C1-04`), de las que `tests/test_decisiones_diferidas.py` deriva una comprobación de existencia de símbolo por ficha — 34 fichas antes, 38 ahora. De ahí `collected 1542`. **Ningún test nuevo pinea comportamiento de cálculo**, que es lo que el criterio de salida protegía; los dos asserts de `motivo` que se añadieron caen dentro de casos parametrizados que ya existían y no cambian el conteo.
@@ -3025,6 +3025,48 @@ rehacer el número. HW, tirantes y velocidades no se mueven.
   y lo deja escrito en el propio objeto.
 - **La «pág. impresa A.8»** de la Tabla A.1 es inferida y no leída (arriba).
 - **La remisión rancia del num. A.3.1** del propio HDS-5 (arriba).
+
+#### Lo que la auditoría adversarial refutó, y estaba todo en pie
+
+Se invocó `auditor-adversarial` sobre los commits de C2 con el encargo de refutar nueve
+afirmaciones. **Cinco confirmadas, cuatro ajustadas, y cuatro refutaciones concretas — las
+cuatro reales**, verificadas contra el PDF antes de corregir nada.
+
+**La que podía mover un número, y es la lección de la sesión.** El docstring de
+`ConstantesHDS5` escribía la Forma 2 como `HWi/D = K·(q*)^M + Ks·S` **y se contradecía a sí
+mismo once líneas más abajo**, donde ya decía que la Forma 2 no lleva ese término. La ec.
+(A.2), pág. impresa A.2 / PDF 191, es `HWi/D = K[Ku·Q/(A·D^0.5)]^M` y nada más; el contraste
+está en la misma página, porque la ec. (A.3) sumergida **sí** extrae `+ Y + Ks·S`. Medido el
+daño sobre la Carta 9 escala 1, cajón 2.00 × 2.00 m, `Q = 8 m³/s`, `S = 0.03`: **1.910 m
+contra 1.880 m — 30 mm menos de carga, del lado no conservador**, creciendo lineal con la
+pendiente. Es **exactamente el fallo que `F4.FORMA_HDS5` describe**, escrito por error en el
+archivo que C3 abre primero. El campo `forma` se justificó como «la guardia», y la guardia
+traía la fórmula mal transcrita dentro.
+
+**La segunda decía una cosa y el programa hacía otra.** `#MARCO` declaraba `ADVIERTE` y en
+ejecución **bloqueaba**: resolvía por `PorDatoDeSitio(clave="sucs_fundacion")` con el
+comentario «la clave existe y hoy no tiene valor», y **las dos mitades eran falsas** —
+`sucs_fundacion` no está en `datos_sitio`, es **columna del CSV**, porque varía punto a
+punto—. `disponibilidad_de` corta por la rama «la clave no está en datos_sitio» **antes** de
+mirar el efecto, de modo que la `justificacion_de_no_bloquear` que T15 obliga a escribir era
+texto muerto y la ventana mandaba al revisor al archivo equivocado. Pasa a `NoEvaluable`,
+que es lo que la condición dice de verdad: **el Manual no define «mala calidad»**.
+
+**Las otras dos eran de explicación, no de valor.** El comentario de `afinado` aplicaba el
+corrimiento de la errata **al revés** —la lectura literal a la altura de ese rótulo es
+0.013/0.015/0.017, no lo que decía—, y el valor transcrito seguía siendo el correcto; y
+`LAMINA_03` prometía que la segunda mitad del cajetín «viaja como `texto_previo`», campo que
+`Cita` **no tiene**. La razón verdadera del recorte es otra y ahora está escrita: T3 busca
+`titulo_numeral` en la capa de texto, que entrega los dos renglones como corridas
+independientes y en orden inverso. **Es una limitación de la maquinaria, no una decisión de
+lectura**, y §15.4 tiene razón al dar el título entero.
+
+Y tres apuntes menores, corregidos: la `razon` del `Acotada` de la Tabla A.1 describía una
+correspondencia fila↔material que no existe (el HDPE no tiene fila); la afirmación sobre la
+**codificación** del grado era imprecisa —lo que es cero volado es el glifo *impreso*; la
+capa de texto entrega un `0` ASCII—; y las siete filas de la Tabla C.2 colgaban de una
+condición cuya evidencia era un `Verbatim` **de otra tabla y otra página**. Ahora tienen la
+suya, anclada a la cita de la C.2.
 
 #### Sobre la cláusula normativa de §9-bis
 
