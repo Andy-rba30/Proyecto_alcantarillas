@@ -1,0 +1,87 @@
+Criterio declarado SOLO para esta corrida: diametros_normalizados = {'inicio': -0.9, 'paso': 0.15} (criterios_adoptados.py no se modifico)
+==============================================================================
+EXPEDIENTE DE ALCANTARILLAS - M0 -> M1 -> MD -> M6 -> M7 -> M8 -> M9 -> M10
+==============================================================================
+CSV: tests/ejemplo_puntos.csv    generado (UTC): <UTC>
+
+------------------------------------------------------------------------------
+A-01  |  progresiva 0+380  |  Familia A
+------------------------------------------------------------------------------
+  Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 71 anios
+  Fase 4  sin dimensionar
+  Verificaciones:
+    [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  Bloqueos:
+    [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        Diseno no factible en el punto A-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)
+
+------------------------------------------------------------------------------
+A-02  |  progresiva 1+920  |  Familia A
+------------------------------------------------------------------------------
+  Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 71 anios
+  Fase 4  sin dimensionar
+  Verificaciones:
+    [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  Bloqueos:
+    [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        Diseno no factible en el punto A-02: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)
+
+------------------------------------------------------------------------------
+B-01  |  progresiva 2+450  |  Familia B
+------------------------------------------------------------------------------
+  Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 35 anios
+  Fase 4  sin dimensionar
+  Verificaciones:
+    [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  Bloqueos:
+    [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)
+    [DatoFaltanteError] Fase 10 - Espaciamiento de alivio (M10) -> espaciamiento maximo entre alivios
+        Falta el dato 'L_hidraulico_m'. Sec. 10 describe el procedimiento de la cuneta pero no fija su seccion, su n de Manning ni la formula de intensidad: la longitud por capacidad hidraulica se declara, no se deduce
+
+------------------------------------------------------------------------------
+C-01  |  progresiva 3+100  |  Familia C
+------------------------------------------------------------------------------
+  Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR no procede (ver fundamento en el JSON)
+  Fase 4  sin dimensionar
+  Verificaciones:
+    [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  Bloqueos:
+    [DatoFaltanteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> tirante en el receptor (TW, Sec. 1.3)
+        Falta el dato 'S_cauce' en el punto C-01
+
+------------------------------------------------------------------------------
+Fase 9 - Cabezal y aletas (M9) - del proyecto, no del punto
+------------------------------------------------------------------------------
+  Bloqueos:
+    [DiferidoPorAlcance] Fase 9 - Cabezal y aletas (M9) -> Fase 9 completa diferida al expediente (alcance perfil)
+        cadena sismica, Mononobe-Okabe, predimensionamiento, recubrimientos y cuantias del cabezal no se ejecutan en alcance de perfil: dependen de datos del expediente (ensayos de fundacion y relleno del Tablero 3 y criterios C.3) y de la estabilidad E1-E5 que la propia Fase 9 remite al expediente. Disponibles sin cambios con --alcance expediente
+
+==============================================================================
+ALCANCE DE LA CORRIDA
+==============================================================================
+Alcance declarado: perfil (bandera --alcance; por defecto expediente)
+Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como bloqueo para el cierre):
+  [proyecto] Fase 9 - Cabezal y aletas (M9)
+    Fase 9 completa diferida al expediente (alcance perfil)
+    cadena sismica, Mononobe-Okabe, predimensionamiento, recubrimientos y cuantias del cabezal no se ejecutan en alcance de perfil: dependen de datos del expediente (ensayos de fundacion y relleno del Tablero 3 y criterios C.3) y de la estabilidad E1-E5 que la propia Fase 9 remite al expediente. Disponibles sin cambios con --alcance expediente
+
+==============================================================================
+CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA
+==============================================================================
+Ninguno: ningun criterio sin valor se invoco en esta corrida.
+==============================================================================
+RESUMEN
+==============================================================================
+CSV                     : tests/ejemplo_puntos.csv
+Alcance de la corrida   : perfil
+Puntos del expediente   : 4
+Puntos dimensionados    : 0
+Verificaciones incumplidas: 0
+Etapas bloqueadas       : 5
+Diferidas por alcance   : 1 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
+Expediente cerrado      : no
+
+El expediente NO cierra. Mientras un criterio siga sin valor, la etapa que lo invoca se detiene: no se sustituye por un defecto (Sec. 0.7).
+
+JSON del expediente: <SALIDA>/informe_err.json

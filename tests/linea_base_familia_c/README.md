@@ -93,3 +93,30 @@ pretenden serlo, y ninguna constante `[N]` puede apoyarse en ellos.
 
 Los diez archivos se comprobaron **deterministas**: dos corridas consecutivas del script
 producen bytes idénticos.
+
+### La auditoría de C3 encontró que faltaba el eje que motivaba todo
+
+El README y el commit de C3a invocan como motivo del ensanche que *«la rama de error
+necesita un `--declarar` para alcanzarse»* —la regresión de C1—, y las tres corridas nuevas
+usaban `--datos-externos` y **ninguna usaba `--declarar`**. El único eje que justificaba el
+ensanche era el único que no se ensanchó.
+
+Corregido: una **cuarta corrida** fuerza un diámetro de arranque negativo con el comando
+exacto con que se reprodujo aquella regresión, y captura `cli_rama_error.txt` e
+`informe_rama_error.json`. Medido: la cadena `Dato invalido en 'D': el diametro debe ser
+positivo` aparece **3 veces en el CLI y 12 en el JSON**. Un renombre del `campo` o del
+`motivo` —que es exactamente lo que C1 hizo sin verlo— ahora mueve el diff.
+
+**Son 12 archivos**, los 12 deterministas.
+
+### Lo que la ventana sigue sin mirar, y queda dicho
+
+- **El código de salida**: los cuatro comandos llevan `|| true`. Una regresión de exit code
+  es invisible.
+- **`--pdf` y `--criterios`**: sin cobertura.
+- **Ningún test consume esta línea base.** Solo «mira» si alguien corre el script a mano.
+  La auditoría de C3 lo demostró: una mutación que cambiaba la etiqueta de ecuación
+  impresa en las tres memorias dejaba la suite en **verde**.
+- **La memoria generada no lleva la advertencia de fixture.** Quien abra
+  `memoria_perfil_ancha.html` suelto ve una memoria completa con TW = 0.300 m y nada que
+  diga que es una sonda; la advertencia vive en este README y en el script.

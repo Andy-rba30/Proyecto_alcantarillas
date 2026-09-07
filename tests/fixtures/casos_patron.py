@@ -251,6 +251,36 @@ CP5D_FORMA2 = {
     },
 }
 
+# LA TRANSICION BAJO FORMA 2 PUEDE DECRECER CON EL CAUDAL, y hay que fijarlo
+# porque no lo atrapa ninguna guardia: `_exigir_hw_no_negativo` solo mira el
+# signo y aqui el numero es positivo. Lo encontro la auditoria de C3.
+#
+# Con Forma 1 los DOS extremos de la recta llevan Ks*S y el termino se cancela
+# en la diferencia: la pendiente de la recta no depende de S. Con Forma 2 el
+# extremo inferior lo pierde, y por encima de un umbral de pendiente la recta
+# BAJA al subir el caudal. Umbral exacto, para esta carta:
+#
+#     S* = (c*4^2 + Y - K*3.5^M) / |Ks| = 0.236495 m/m
+#
+# NO ES UN DEFECTO A CORREGIR: sale de combinar la (A.2), la (A.3) y la recta
+# del criterio [C] `metodo_transicion_hds5`. Se DECLARA. Este caso existe para
+# que si alguien cambia el metodo de transicion, el cambio de esta propiedad
+# se vea en un test en vez de descubrirse en obra.
+CP5D_FORMA2_TRANSICION_NO_MONOTONA = {
+    "K": 0.510, "M": 0.667, "c": 0.0309, "Y": 0.80, "Ks": -0.5, "forma": 2,
+    "altura_m": 0.90,
+    "S_umbral": 0.23649540275508807,     # (c*16 + Y - K*3.5^M)/|Ks|
+    "S_ensayada": 0.30,                  # por encima del umbral
+    "HW_en_q_3_5_m": 1.0585370687602105,
+    "HW_en_q_4_0_m": 1.0299600000000002,
+    "delta_mm": -28.577068760210288,     # NEGATIVO: baja al subir el caudal
+    "tolerancia": 1e-12,
+    "nota": "Con S por DEBAJO del umbral la recta crece, que es lo esperable. "
+            "El caso fija las dos mitades: que crece abajo y que decrece "
+            "arriba, y donde esta la frontera.",
+}
+
+
 # EL CASO QUE FIJA EL DEFECTO DE C2, con la magnitud que el auditor midio.
 # C2 escribio en el docstring de `ConstantesHDS5` que la Forma 2 era
 # «HW/D = K*(q*)^M + Ks*S», y esa frase estaba a once lineas de otra que decia
@@ -262,13 +292,19 @@ CP5D_FORMA2 = {
 # que la diferencia salga en milimetros redondos y sea legible en el mensaje.
 CP5D_FORMA2_KS_ESPUREO = {
     "K": 0.510, "M": 0.667, "Ks": -0.5, "forma": 2,
-    "q_estrella": 2.5613,
+    # q* del caso que describen los docstrings -- cajon 2.00 x 2.00 m,
+    # Q = 8 m3/s, Ku = 1.811 -> q* = 1.811*8/(4.0*sqrt(2)) --, escrito con
+    # TODOS sus digitos. La primera version puso 2.5613 redondeado, y el
+    # quinto digito no se reproducia desde los datos que el docstring da: son
+    # 0.08 mm de diferencia, invisibles a tres decimales y suficientes para
+    # que un revisor que rehaga la cuenta no llegue al mismo numero.
+    "q_estrella": 2.5611407614576747,
     "S": 0.030,
     "altura_m": 2.00,
-    "hw_sobre_D_correcto": 0.9550218235438076,     # K*q^M
-    "hw_sobre_D_con_Ks_espureo": 0.9400218235438076,  # K*q^M + Ks*S
-    "HW_correcto_m": 1.9100436470876152,
-    "HW_con_Ks_espureo_m": 1.8800436470876152,
+    "hw_sobre_D_correcto": 0.9549822202443748,     # K*q^M
+    "hw_sobre_D_con_Ks_espureo": 0.9399822202443748,  # K*q^M + Ks*S
+    "HW_correcto_m": 1.9099644404887497,
+    "HW_con_Ks_espureo_m": 1.8799644404887497,
     "delta_mm_esperado": 30.0,          # y con S = 0.08 son 80 mm: crece lineal
     "tolerancia": 1e-12,
     "tolerancia_mm": 1e-6,              # la del delta, que va en milimetros

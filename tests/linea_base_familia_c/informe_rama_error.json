@@ -1,0 +1,619 @@
+{
+  "expediente": {
+    "csv": "tests/ejemplo_puntos.csv",
+    "generado_utc": "<UTC>",
+    "puntos": 4,
+    "dimensionados": 0,
+    "cerrado": false
+  },
+  "alcance": {
+    "nivel": "perfil",
+    "diferidos": [
+      {
+        "punto": null,
+        "fase": "Fase 9 - Cabezal y aletas (M9)",
+        "etapa": "Fase 9 completa diferida al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "cadena sismica, Mononobe-Okabe, predimensionamiento, recubrimientos y cuantias del cabezal no se ejecutan en alcance de perfil: dependen de datos del expediente (ensayos de fundacion y relleno del Tablero 3 y criterios C.3) y de la estabilidad E1-E5 que la propia Fase 9 remite al expediente. Disponibles sin cambios con --alcance expediente"
+      }
+    ]
+  },
+  "puntos": [
+    {
+      "id": "A-01",
+      "progresiva": "0+380",
+      "familia": "A",
+      "pendientes_externos": [
+        "Q_receptor_m3s",
+        "cota_TW",
+        "NF_profundidad_m"
+      ],
+      "dimensionado": false,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.75,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": null,
+        "longitud_m": {
+          "valor": 18.6349712473815,
+          "origen": "M7.longitud_conducto (Sec. 7.B)"
+        },
+        "TW_m": {
+          "valor": 1.1118098274842794,
+          "origen": "Sec. 1.3 -- dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)"
+        }
+      },
+      "clasificacion": {
+        "luz_m": 2.75,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "A",
+        "origen_del_caudal": "Q hidrologico propio de la cuenca (Tc.py + IDF con el TR de la Fase 2)",
+        "TR_procede": true,
+        "TR_anios": 71,
+        "TR_categoria": "quebrada_importante",
+        "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
+        "TR_fundamento": "categoria derivada del area de cuenca (850.0 ha) con el criterio 'umbral_area_quebrada_importante_ha'",
+        "datos_pendientes": []
+      },
+      "diseno": null,
+      "proteccion_salida": null,
+      "geometria": null,
+      "estructural": null,
+      "espaciamiento_alivio": null,
+      "iteraciones": [
+        {
+          "material": "Concreto reforzado",
+          "D_m": -0.9,
+          "aceptado": false,
+          "motivo": "D = -0.90 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)",
+          "incumplidas": []
+        },
+        {
+          "material": "TMC galvanizada",
+          "D_m": -0.9,
+          "aceptado": false,
+          "motivo": "D = -0.90 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)",
+          "incumplidas": []
+        },
+        {
+          "material": "HDPE",
+          "D_m": -0.9,
+          "aceptado": false,
+          "motivo": "D = -0.90 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)",
+          "incumplidas": []
+        }
+      ],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "cumple": true,
+          "valor_obtenido": 2.75,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        }
+      ],
+      "verificaciones_no_evaluadas": [],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "material y diametro (bucle de MD)",
+          "tipo": "DisenoNoFactibleError",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": false,
+          "mensaje": "Diseno no factible en el punto A-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)"
+        }
+      ]
+    },
+    {
+      "id": "A-02",
+      "progresiva": "1+920",
+      "familia": "A",
+      "pendientes_externos": [
+        "Q_receptor_m3s",
+        "cota_TW",
+        "NF_profundidad_m"
+      ],
+      "dimensionado": false,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.75,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": null,
+        "longitud_m": {
+          "valor": 18.26952104328892,
+          "origen": "M7.longitud_conducto (Sec. 7.B)"
+        },
+        "TW_m": {
+          "valor": 1.196156168346306,
+          "origen": "Sec. 1.3 -- dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)"
+        }
+      },
+      "clasificacion": {
+        "luz_m": 2.75,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "A",
+        "origen_del_caudal": "Q hidrologico propio de la cuenca (Tc.py + IDF con el TR de la Fase 2)",
+        "TR_procede": true,
+        "TR_anios": 71,
+        "TR_categoria": "quebrada_importante",
+        "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
+        "TR_fundamento": "categoria derivada del area de cuenca (210.0 ha) con el criterio 'umbral_area_quebrada_importante_ha'",
+        "datos_pendientes": []
+      },
+      "diseno": null,
+      "proteccion_salida": null,
+      "geometria": null,
+      "estructural": null,
+      "espaciamiento_alivio": null,
+      "iteraciones": [
+        {
+          "material": "Concreto reforzado",
+          "D_m": -0.9,
+          "aceptado": false,
+          "motivo": "D = -0.90 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)",
+          "incumplidas": []
+        },
+        {
+          "material": "TMC galvanizada",
+          "D_m": -0.9,
+          "aceptado": false,
+          "motivo": "D = -0.90 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)",
+          "incumplidas": []
+        },
+        {
+          "material": "HDPE",
+          "D_m": -0.9,
+          "aceptado": false,
+          "motivo": "D = -0.90 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)",
+          "incumplidas": []
+        }
+      ],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "cumple": true,
+          "valor_obtenido": 2.75,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        }
+      ],
+      "verificaciones_no_evaluadas": [],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "material y diametro (bucle de MD)",
+          "tipo": "DisenoNoFactibleError",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": false,
+          "mensaje": "Diseno no factible en el punto A-02: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)"
+        }
+      ]
+    },
+    {
+      "id": "B-01",
+      "progresiva": "2+450",
+      "familia": "B",
+      "pendientes_externos": [
+        "Q_receptor_m3s",
+        "cota_TW",
+        "NF_profundidad_m"
+      ],
+      "dimensionado": false,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.75,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": null,
+        "longitud_m": {
+          "valor": 18.400000000000013,
+          "origen": "M7.longitud_conducto (Sec. 7.B)"
+        },
+        "TW_m": {
+          "valor": 1.4839999999999947,
+          "origen": "Sec. 1.3 -- dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)"
+        }
+      },
+      "clasificacion": {
+        "luz_m": 2.75,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "B",
+        "origen_del_caudal": "Q del drenaje longitudinal (cuneta)",
+        "TR_procede": true,
+        "TR_anios": 35,
+        "TR_categoria": "quebrada_menor",
+        "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
+        "TR_fundamento": "Familia B (Alcantarillas de alivio): Q del drenaje longitudinal (cuneta), que es la fila 'quebrada_menor' de la Tabla N 02 (Sec. 2.3)",
+        "datos_pendientes": []
+      },
+      "diseno": null,
+      "proteccion_salida": null,
+      "geometria": null,
+      "estructural": null,
+      "espaciamiento_alivio": null,
+      "iteraciones": [
+        {
+          "material": "Concreto reforzado",
+          "D_m": -0.9,
+          "aceptado": false,
+          "motivo": "D = -0.90 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)",
+          "incumplidas": []
+        },
+        {
+          "material": "TMC galvanizada",
+          "D_m": -0.9,
+          "aceptado": false,
+          "motivo": "D = -0.90 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)",
+          "incumplidas": []
+        },
+        {
+          "material": "HDPE",
+          "D_m": -0.9,
+          "aceptado": false,
+          "motivo": "D = -0.90 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)",
+          "incumplidas": []
+        }
+      ],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "cumple": true,
+          "valor_obtenido": 2.75,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        }
+      ],
+      "verificaciones_no_evaluadas": [],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "material y diametro (bucle de MD)",
+          "tipo": "DisenoNoFactibleError",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": false,
+          "mensaje": "Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9) | HDPE: material no evaluable: DatoInvalidoError: Dato invalido en 'D': el diametro debe ser positivo (valor leido: -0.9)"
+        },
+        {
+          "fase": "Fase 10 - Espaciamiento de alivio (M10)",
+          "etapa": "espaciamiento maximo entre alivios",
+          "tipo": "DatoFaltanteError",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": "L_hidraulico_m",
+          "delta_rasante_m": null,
+          "diferido_por_alcance": false,
+          "mensaje": "Falta el dato 'L_hidraulico_m'. Sec. 10 describe el procedimiento de la cuneta pero no fija su seccion, su n de Manning ni la formula de intensidad: la longitud por capacidad hidraulica se declara, no se deduce"
+        }
+      ]
+    },
+    {
+      "id": "C-01",
+      "progresiva": "3+100",
+      "familia": "C",
+      "pendientes_externos": [
+        "Q_m3s",
+        "area_ha",
+        "S_cauce",
+        "Q_receptor_m3s",
+        "cota_TW",
+        "NF_profundidad_m"
+      ],
+      "dimensionado": false,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.75,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": null,
+        "longitud_m": {
+          "valor": 21.24648990617824,
+          "origen": "M7.longitud_conducto (Sec. 7.B)"
+        },
+        "TW_m": null
+      },
+      "clasificacion": {
+        "luz_m": 2.75,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "C",
+        "origen_del_caudal": "Q de diseno del canal (ANA / Junta de Usuarios del Bajo Piura)",
+        "TR_procede": false,
+        "TR_anios": null,
+        "TR_categoria": null,
+        "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
+        "TR_fundamento": "Familia C: el caudal es el de diseno del canal o dren (ANA / Junta de Usuarios, Tablero 3.1), no un caudal hidrologico con periodo de retorno propio (Sec. 2.3)",
+        "datos_pendientes": [
+          "Q_m3s"
+        ]
+      },
+      "diseno": null,
+      "proteccion_salida": null,
+      "geometria": null,
+      "estructural": null,
+      "espaciamiento_alivio": null,
+      "iteraciones": [],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "cumple": true,
+          "valor_obtenido": 2.75,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        }
+      ],
+      "verificaciones_no_evaluadas": [],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "tirante en el receptor (TW, Sec. 1.3)",
+          "tipo": "DatoFaltanteError",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": "S_cauce",
+          "delta_rasante_m": null,
+          "diferido_por_alcance": false,
+          "mensaje": "Falta el dato 'S_cauce' en el punto C-01"
+        }
+      ]
+    }
+  ],
+  "cabezal": {
+    "cadena_sismica": null,
+    "mononobe_okabe": null,
+    "geometria": null,
+    "recubrimientos": [],
+    "cuantias_minimas": {},
+    "notas": [],
+    "bloqueos": [
+      {
+        "fase": "Fase 9 - Cabezal y aletas (M9)",
+        "etapa": "Fase 9 completa diferida al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "cadena sismica, Mononobe-Okabe, predimensionamiento, recubrimientos y cuantias del cabezal no se ejecutan en alcance de perfil: dependen de datos del expediente (ensayos de fundacion y relleno del Tablero 3 y criterios C.3) y de la estabilidad E1-E5 que la propia Fase 9 remite al expediente. Disponibles sin cambios con --alcance expediente"
+      }
+    ]
+  },
+  "datos_sitio": {
+    "usados": [],
+    "sin_valor_declarados": [
+      "carriles_por_sentido",
+      "distancia_borde_calzada_al_trasdos_m",
+      "orientacion_muro_respecto_al_trafico"
+    ],
+    "trazabilidad_incompleta": [
+      "PGA_roca_B",
+      "ZONA_SISMICA_LA_UNION",
+      "Z_E030",
+      "carriles_por_sentido",
+      "distancia_borde_calzada_al_trasdos_m",
+      "orientacion_muro_respecto_al_trafico"
+    ]
+  },
+  "criterios": {
+    "usados": [
+      {
+        "clave": "D_max_catalogo",
+        "etiqueta": "A",
+        "valor": {
+          "concreto_reforzado": 2.7,
+          "tmc": 2.1,
+          "hdpe": 1.5
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Diametro maximo que el proyecto admite por material, como tope de DISPONIBILIDAD (catalogo), no como tope normativo"
+      },
+      {
+        "clave": "diametros_normalizados",
+        "etiqueta": "C",
+        "valor": {
+          "inicio": -0.9,
+          "paso": 0.15
+        },
+        "declarado_en_caliente": true,
+        "concepto": "Progresion de diametros normalizados (inicio y paso)"
+      },
+      {
+        "clave": "espesor_pared_conducto",
+        "etiqueta": "A",
+        "valor": {
+          "concreto_reforzado": {
+            "900": 0.1,
+            "1050": 0.113,
+            "1200": 0.125,
+            "1350": 0.138,
+            "1500": 0.15,
+            "1650": 0.163,
+            "1800": 0.175,
+            "1950": 0.188,
+            "2100": 0.2,
+            "2250": 0.213,
+            "2400": 0.225,
+            "2550": 0.238,
+            "2700": 0.25
+          }
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Espesor de pared del conducto por material, en metros: la distancia entre la superficie interior y la exterior que separa el diametro hidraulico D del diametro exterior D_ext = D + 2*t"
+      },
+      {
+        "clave": "hds5_embocadura_hdpe",
+        "etiqueta": "C",
+        "valor": {
+          "K": 0.0098,
+          "M": 2.0,
+          "c": 0.0398,
+          "Y": 0.67,
+          "Ks": -0.5,
+          "forma": 1
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Constantes de control de entrada HDS-5 para tuberia HDPE"
+      },
+      {
+        "clave": "n_manning_hdpe",
+        "etiqueta": "N->",
+        "valor": [
+          0.01,
+          0.013
+        ],
+        "declarado_en_caliente": false,
+        "concepto": "Coeficiente de rugosidad de Manning para HDPE de interior liso"
+      },
+      {
+        "clave": "origen_cota_fondo_entrada",
+        "etiqueta": "A",
+        "valor": "cota_terreno",
+        "declarado_en_caliente": false,
+        "concepto": "Regla con la que se obtiene la cota del FONDO DE LA ENTRADA (invert) de cada punto, msnm, mientras el expediente no la entregue medida"
+      },
+      {
+        "clave": "seccion_receptor",
+        "etiqueta": "A",
+        "valor": {
+          "b_m": 2.0,
+          "z_HV": 1.5,
+          "S": 0.0008,
+          "n": 0.03,
+          "altura_total_m": 1.8
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Seccion transversal del cuerpo receptor (dren o canal) en el punto de descarga, con su pendiente y su n de Manning: b_m (solera), z_HV (talud), S, n y altura_total_m (profundidad de la seccion, del fondo a la corona del bordo)"
+      },
+      {
+        "clave": "talud_terraplen",
+        "etiqueta": "A",
+        "valor": 2.0,
+        "declarado_en_caliente": false,
+        "concepto": "Inclinacion del talud del terraplen en el punto de cruce, como proyeccion horizontal por unidad de altura (H:V), para la 'proyeccion de taludes' que Sec. 7.B suma al ancho de plataforma al calcular la longitud del conducto"
+      },
+      {
+        "clave": "umbral_area_quebrada_importante_ha",
+        "etiqueta": "A",
+        "valor": 100.0,
+        "declarado_en_caliente": false,
+        "concepto": "Area de cuenca a partir de la cual el cauce de un punto de Familia A se clasifica como 'quebrada importante' (TR 71) en vez de 'quebrada menor' (TR 35) en la Tabla N 02"
+      },
+      {
+        "clave": "v_max_hdpe",
+        "etiqueta": "C",
+        "valor": 4.572,
+        "declarado_en_caliente": false,
+        "concepto": "Velocidad maxima admisible en HDPE"
+      },
+      {
+        "clave": "v_max_tmc",
+        "etiqueta": "C",
+        "valor": 4.572,
+        "declarado_en_caliente": false,
+        "concepto": "Velocidad maxima admisible en TMC"
+      }
+    ],
+    "sin_valor_declarados": [
+      "Mw_licuefaccion",
+      "N_cq_N_gammaq_meyerhof",
+      "TR_evento_extremo",
+      "TW_receptor",
+      "angulo_aletas",
+      "c_phi_fundacion",
+      "capacidad_portante_adm",
+      "categoria_refuerzo_aashto",
+      "clase_sitio",
+      "clases_producto_por_relleno",
+      "cortante_alto_muro_e060_art_11_10_10_2",
+      "exposicion_quimica_ems",
+      "friccion_muro_suelo_delta",
+      "gamma_EQ",
+      "h_eq_bajo_altura_tabulada",
+      "h_eq_banda_intermedia_borde",
+      "homogeneidad_serie_fen",
+      "inclinacion_muro_beta",
+      "metodo_estabilidad_global",
+      "pendiente_relleno_trasdos_i",
+      "phi_relleno_trasdos",
+      "predimensionamiento_cabezal",
+      "punto_aplicacion_incremento_sismico",
+      "remanso_derecho_via"
+    ],
+    "declarados_en_caliente": [
+      "diametros_normalizados"
+    ],
+    "verificacion_pendiente": [
+      "D_max_catalogo",
+      "F_pga_lectura_columna_extrema",
+      "PERFIL_SUELO_PRESUNTO",
+      "acceso_mantenimiento_v2b",
+      "cobertura_minima_aashto",
+      "condicion_pavimento",
+      "espesor_pared_conducto",
+      "factor_muro_eleccion",
+      "factores_carga_aashto",
+      "geometria_control_salida",
+      "hds5_embocadura_hdpe",
+      "k_v",
+      "longitud_proteccion_salida",
+      "metodo_transicion_hds5",
+      "n_manning_hdpe",
+      "origen_cota_fondo_entrada",
+      "resguardo_HW_subrasante",
+      "seccion_receptor",
+      "talud_terraplen",
+      "umbral_area_quebrada_importante_ha"
+    ],
+    "sin_consumidor": [
+      "Mw_licuefaccion",
+      "PERFIL_SUELO_PRESUNTO",
+      "angulo_aletas",
+      "c_phi_fundacion",
+      "capacidad_portante_adm",
+      "clase_sitio",
+      "demanda_sismica_licuefaccion"
+    ],
+    "bloquearon": []
+  }
+}

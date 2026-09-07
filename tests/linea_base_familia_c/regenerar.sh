@@ -67,7 +67,22 @@ python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance perfil \
         --html "$TMP/memoria_ancha.html" \
         --csv-resumen "$TMP/resumen_ancho.csv" > "$TMP/cli_ancho.txt" 2>&1 || true
 
-# --- 3 · la corrida ANCHA, a nivel de EXPEDIENTE ----------------------------
+# --- 3 · la RAMA DE ERROR, que es la que motivo todo esto ------------------
+# EL EJE QUE FALTABA, y lo señalo la auditoria de C3: el README y el commit de
+# C3a invocan como motivo del ensanche que «la rama de error necesita un
+# --declarar para alcanzarse» -- la regresion de C1 --, y despues las tres
+# corridas usaban `--datos-externos` y NINGUNA usaba `--declarar`. El unico
+# eje que justificaba el ensanche era el unico que no se ensancho.
+#
+# Esta corrida fuerza un diametro de arranque NEGATIVO. Es exactamente el
+# comando con que se reprodujo la regresion de C1, y produce el
+# DatoInvalidoError cuyo `campo` y cuyo `motivo` se imprimen en el JSON y en
+# el HTML. Sin ella, un renombre de esos dos textos vuelve a ser invisible.
+python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance perfil \
+        --declarar 'diametros_normalizados={"inicio": -0.90, "paso": 0.15}' \
+        --json "$TMP/informe_err.json" > "$TMP/cli_err.txt" 2>&1 || true
+
+# --- 4 · la corrida ANCHA, a nivel de EXPEDIENTE ----------------------------
 # Otra plantilla (memoria_alcantarillas.html) y otras fases: las 8 y 9 se
 # ejecutan en vez de diferirse.
 python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance expediente \
@@ -92,8 +107,11 @@ norm "$TMP/memoria_ancha.html" > "$DIR/memoria_perfil_ancha.html"
 norm "$TMP/informe_ancho.json" > "$DIR/informe_perfil_ancho.json"
 norm "$TMP/resumen_ancho.csv"  > "$DIR/resumen_perfil_ancho.csv"
 
+norm "$TMP/cli_err.txt"       > "$DIR/cli_rama_error.txt"
+norm "$TMP/informe_err.json"  > "$DIR/informe_rama_error.json"
+
 norm "$TMP/cli_exp.txt"       > "$DIR/cli_expediente.txt"
 norm "$TMP/memoria_exp.html"  > "$DIR/memoria_expediente.html"
 norm "$TMP/informe_exp.json"  > "$DIR/informe_expediente.json"
 norm "$TMP/resumen_exp.csv"   > "$DIR/resumen_expediente.csv"
-echo "linea base regenerada en $DIR (10 archivos: 2 de la ventana estrecha de C0 + 8 de la ancha)"
+echo "linea base regenerada en $DIR (12 archivos: 2 de la ventana estrecha de C0 + 10 de la ancha)"

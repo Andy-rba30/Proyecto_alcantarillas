@@ -621,11 +621,18 @@ class ConstantesHDS5:
     estaba escrito en el sitio donde C3 lo iba a leer primero.
 
     Son DOS REGRESIONES DISTINTAS sobre dos conjuntos de ensayos, y sus K y M
-    estan ajustadas cada una a SU ecuacion. El HDS-5 lo dice con todas las
-    letras en el num. A.3 (pag. impresa A.2, PDF 191, cita
-    `HDS5_3ED.A.3#FORMAS`): «coefficients for rectangular (box) shapes should
-    not be used for nonrectangular (circular, arch, pipe-arch, etc.) shapes
-    and vice-versa».
+    estan ajustadas cada una a SU ecuacion. Quien dice cual es cual es la
+    COLUMNA «Equation Form» de la Tabla A.1, fila por fila.
+
+    ESTE PARRAFO ATRIBUIA ESO AL NUM. A.3 -- «el HDS-5 lo dice con todas las
+    letras» -- Y ERA FALSO. El num. A.3 prohibe cruzar coeficientes entre
+    FORMAS GEOMETRICAS («rectangular (box) shapes» frente a «nonrectangular»),
+    no entre formas de ecuacion. La Tabla A.1 lo zanja: forma y geometria son
+    ORTOGONALES -- «Rect. Box Concrete» aparece con Forma 1 y con Forma 2, y
+    «Circular» tambien --, de modo que una prohibicion sobre geometrias no
+    puede ser la regla que separa las formas. Lo encontro la auditoria de C3,
+    y es el mismo genero de defecto que este docstring ya cometio con la
+    ecuacion: una afirmacion sobre la fuente que la fuente no sostiene.
 
     Las tres cartas circulares del catalogo son Forma 1. De las cinco del
     cajon que transcribio C2, la Carta 8 es Forma 1 y las Cartas 9 a 12 son
