@@ -2580,6 +2580,7 @@ D-12; los doce siguen sin duplicar ninguna `DIS-HR-*`.)*
 | ~~**R-10**~~ **cerrado en C2** en su mitad de transcripción; el acoplamiento de `ke_entrada` sigue en C5 | `normativa/tablas.py::T_HDS5_C2.alcance` | Es `Acotada` con la razón *«…el catálogo de conductos de la Sec. 3.2 **no ofrece sección cajón**: ninguna de esas filas puede aplicarse a un punto de este corredor»*. **C5 destruye esa premisa** en cuanto M2 devuelva un candidato de marco. Es el antipatrón que §12 enumera: *«No dejar un `Acotada` describiendo un alcance que ya no es el suyo»* | **C2** transcribe las once filas de «Box, Reinforced Concrete»; **C5** amplía la `Acotada` y acopla `ke_entrada` a `embocadura_cajon` |
 | **R-11** | `normativa/citas.py::HDS5_TA1`, campo `pagina_impresa` | Dice `"A.8"`, y **esa página no imprime folio**. C2 lo anotó en la `nota` de la cita; C3 lo reconfirmó por una vía distinta (rango vertical del texto de la página) y **sigue sin corregirse**: el campo afirma un número que el documento no imprime. Lo que sí es sólido e inequívoco es **PDF 197** más el título literal de la tabla | fuera del alcance de C3 (punto 9): tocar `pagina_impresa` mueve un campo que **T6** usa para predecir la página desde la regla de paginación, y esa interacción hay que resolverla, no esquivarla |
 | **R-12** | `normativa/citas.py::HDS5_3ED.3.1.3#TRANSICION` | Su `Verbatim` termina en *«…connecting them with a line tangent to both curves»* y **la fuente continúa** *«, as shown in Figure 3.4.»*. Es una **elisión final sin marcar** bajo el rótulo «texto literal»: el mismo patrón que `CLAUDE.md` denuncia en la tercera condición de `h_o` y que C2 ya corrigió en `#MULTIPLES`. Las palabras citadas son exactas; lo que falta es la marca de corte. Verificado contra PDF 86 | **anotado y no corregido en C3** (punto 9). Es una línea, y va con quien cierre la familia de elisiones: arreglarla mezclada con la bifurcación de forma la volvería invisible, que es lo que C1 y C2 dejaron por escrito |
+| **R-13** *(C4)* | `M3_hidraulica`, línea de import | Importa `SeccionCircular` y **no la usa**: las tres apariciones restantes del nombre en el archivo son comentarios, y un comentario no sostiene un import. Es **anterior a C4** —medido sobre `05d8a5e`, el `origin/main` con que arrancó la sesión— y es de C1, que mudó la geometría a `modelos` y dejó el import detrás | anotado y no corregido (punto 11 del prompt de C4: un defecto ajeno se anota y se sigue). Es una línea, y va con quien toque los imports de M3 — probablemente **C6**, que reescribe las entradas |
 | **R-6** | `variables_entrada._Columna.criterio_destino` | Es `Optional[str]`, un solo destino. Un segundo consumidor de `sucs_fundacion` obliga a decidir tupla o cambio de destino: **es cambio de esquema** | **C6**, no C5 (§15.5) |
 | ~~**R-7**~~ **cerrado en C2** (`DIS-MCHHD-LAMINA-03-TMC`) | `normativa/discrepancias.py` | El cuerpo del Manual describe **mal su propia Lámina Nº 03**: dice *«se aprecia secciones típicas de alcantarillas tipo marco de concreto»* (impresa 73) y la **primera de sus tres figuras es tubería metálica corrugada** (impresa 209). Contradicción **interna de la fuente primaria**, no contra la v8 | **C2** — una `Discrepancia` de estado `ABIERTA`, para que un revisor que cuente las figuras no crea que la cita está mal puesta |
 | **R-8** | `criterios_adoptados['factores_carga_aashto']` | Su comentario justifica la fila del tubo diciendo *«No es "Pórticos rígidos" … la Familia C, de marco o multicelda, sale sin candidatos»*: **describe un estado que C5 deja de ser cierto**. Falta además la clave del cajón | **C5** — junto con el epígrafe «Familia C queda sin candidatos» de `M2_material`, que tiene el mismo problema y ya está en el prompt de C5 |
@@ -3480,6 +3481,54 @@ controles del HDS-5, entrada y salida, y adopción del mayor» — describe **ot
 crítico lo tomaba prestado porque no había uno propio. Queda **anotado** que su `id` es hoy
 más estrecho que su uso: se conserva el de §15.7 verbatim en vez de renombrarlo, porque C5
 lo cita.
+
+#### Lo que la verificación normativa encontró, y estaba en el texto que se IMPRIME
+
+Se invocó `verificador-normativo` sobre las citas de los dos `Fundamento` nuevos. Las citas
+—numeral, título, página impresa, página PDF y `caracter`— **salieron confirmadas las tres**
+(`MC_HHD.4.1.1.3.6`, `HDS5_3ED.A.2`, `HDS5_3ED.3.3.3#HO`), y el `verbo` `DEFINE` está bien
+elegido y sostenido por el `caracter`. **Lo que no salió limpio es la PROSA**, que es
+justamente lo que T11 no gobierna: el invariante comprueba que el verbo declarado sea
+compatible con el carácter de las citas, y no comprueba que las frases del `por_qué`
+respeten ese carácter. Cuatro correcciones, todas verificadas de nuevo contra el PDF por
+esta sesión antes de aplicarlas:
+
+1. **El `Verbatim` de `HDS5_3ED.3.3.3#HO` estaba TRUNCADO, y la truncadura se llevaba la
+   condición.** Terminaba en *«…can only be used if the barrel flows full for»* — que es
+   donde el PDF parte la línea — y la oración de la fuente sigue: *«…**most of its
+   length**.»* Leído bajo el rótulo «texto literal», publicaba un requisito **más laxo** que
+   el de la fuente: «que el barril fluya lleno» en vez de «que fluya lleno **en la mayor
+   parte de su longitud**». Es la elisión sin marcar que `CLAUDE.md` persigue, y
+   `test_normativa_pdf` no la veía **porque verifica por subcadena y una truncadura siempre
+   lo es**. Corregido contra la PDF 106.
+2. **«h_o = max(TW, (d_c + D)/2)» no es la ecuación que escribe el num. 3.3.3.** Esa página
+   escribe *«Approximate hydraulic gradeline ho = (dc + D)/2 can only be used if…»* — el
+   símbolo atado **sólo a la semisuma** — y el máximo lo dice en **prosa**, en el párrafo
+   siguiente y **sin nombrar `ho`**: *«the greater of tailwater or (dc + D)/2»*. Con forma de
+   ecuación, el máximo está en **otros** numerales (impresas 3.12, 3.32 y 3.43). La v8 ya lo
+   declaraba en su §4.3; el `Fundamento` lo había perdido. Reescrito: la fuente **aproxima**,
+   y el máximo **lo toma el proyecto**.
+3. **«DOS pasos posteriores lo consumen» es cierto de ESTE pipeline y falso del HDS-5**, que
+   le da un tercer uso —el área para la velocidad de salida bajo control de salida, num.
+   3.1.6, impresa 3.18 / PDF 100—. Acotado el sujeto.
+4. **«La Forma 1 arranca de H_c/D» se imprimía igual bajo Forma 2**, donde la ec. (A.2) no
+   usa `H_c`. Es el defecto que C3 corrigió en la **nota** del paso y que volvía por la
+   puerta del **fundamento**, que es texto fijo. Condicionado.
+
+Las cuatro mueven texto impreso y **ningún número**: multiconjunto vuelto a medir sobre las
+cuatro memorias, «sólo en la base: {}» en las cuatro.
+
+#### Dos cosas que encontró la propia sesión al auditarse, antes del auditor
+
+- **`simbolo_altura` no tenía consumidor** — retirado; la razón completa está arriba.
+- **Las dos implementaciones no eran sustituibles por palabra clave.** El `Protocol` nombra
+  su parámetro `llenado`, `SeccionCircular` lo nombraba `theta` y la rectangular `y`: un
+  `seccion.geometria_en(llenado=x)` habría reventado en una forma y no en la otra. Y nada lo
+  comprobaba — `Seccion` no lleva `@runtime_checkable`, y aunque lo llevara, `isinstance`
+  contra un `Protocol` mira los **nombres** y no las firmas —. Alineados los tres, y añadido
+  `test_las_dos_secciones_implementan_el_protocolo_entero`, que compara miembro por miembro
+  **y firma por firma**, y además que una propiedad sea propiedad en las dos. Sin él,
+  «M3 y M4 quedan ciegos a la forma» es una intención y no una propiedad.
 
 #### Anotado y no corregido
 

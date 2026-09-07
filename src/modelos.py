@@ -1113,18 +1113,32 @@ class SeccionCircular:
         """
         return (self.D / 2) * (1 - math.cos(theta / 2))
 
-    def ancho_superficial_en_llenado(self, theta: float) -> float:
+    def ancho_superficial_en_llenado(self, llenado: float) -> float:
         """
-        Ancho superficial, T = D*sen(theta/2).
+        Ancho superficial, T = D*sen(theta/2), con theta = `llenado`.
+
+        EL PARAMETRO SE LLAMA COMO EN EL PROTOCOLO y no `theta`, aunque aqui
+        theta sea. Un `Protocol` con nombres distintos en cada implementacion
+        no es sustituible por palabra clave --`seccion.geometria_en(llenado=x)`
+        reventaria en una forma y no en la otra--, y la sustituibilidad es
+        justamente la propiedad que hace que M3 y M4 puedan quedarse ciegos a
+        la forma. Lo comprueba
+        `test_seccion_rectangular::test_las_dos_secciones_implementan_el_protocolo_entero`.
 
         Identidad geometrica de la seccion circular, no un valor normativo:
         se deriva de y = (D/2)(1 - cos(theta/2)). La necesita M4 para el
         tirante critico, Q^2*T/(g*A^3) = 1 (Sec. 4.2).
         """
-        return self.D * math.sin(theta / 2)
+        return self.D * math.sin(llenado / 2)
 
-    def geometria_en(self, theta: float) -> "Geometria":
-        """Arma la `Geometria` completa (A, P, R, y) para un theta dado."""
+    def geometria_en(self, llenado: float) -> "Geometria":
+        """
+        Arma la `Geometria` completa (A, P, R, y) para un theta dado.
+
+        `llenado` es theta; se llama asi por el protocolo (ver
+        `ancho_superficial_en_llenado`).
+        """
+        theta = llenado
         A = self._area_en_theta(theta)
         P = self._perimetro_en_theta(theta)
         return Geometria(seccion=self, llenado=theta, A=A, P=P, R=A / P,
@@ -1277,11 +1291,11 @@ class SeccionRectangular:
         """
         return 0.0, self.H
 
-    def ancho_superficial_en_llenado(self, y: float) -> float:
+    def ancho_superficial_en_llenado(self, llenado: float) -> float:
         """El mismo B: el parametro propio ES el tirante."""
         return self.B
 
-    def geometria_en(self, y: float) -> "Geometria":
+    def geometria_en(self, llenado: float) -> "Geometria":
         """
         `Geometria` completa (A, P, R, y) para un tirante dado.
 
@@ -1289,6 +1303,7 @@ class SeccionRectangular:
         de esta forma es el tirante. No se "aprovecha" para nada -- quien
         consuma un `Geometria` sigue leyendo `g.y` y `g.llenado` por su nombre.
         """
+        y = llenado
         A = self.area(y)
         P = self.perimetro(y)
         return Geometria(seccion=self, llenado=y, A=A, P=P, R=A / P, y=y)

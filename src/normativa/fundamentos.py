@@ -718,15 +718,45 @@ SECCION = _fundamento(
         "en la primera correccion que solo se aplique a uno."),
 )
 
+# TRES FRASES SE APARTAN DE LA REDACCION DE §15.7, Y LAS TRES LAS CAMBIO LA
+# FUENTE PRIMARIA. Este `por_que` SE IMPRIME bajo el rotulo «Por que se hace»,
+# de modo que una imprecision aqui es una afirmacion publicada. Verificado
+# contra `normas/hif12026.pdf`:
+#
+#   1. «h_o = max(TW, (d_c + D)/2)» NO es la ecuacion que escribe el num.
+#      3.3.3. Esa pagina (impresa 3.24 / PDF 106) escribe «Approximate
+#      hydraulic gradeline ho = (dc + D)/2 can only be used if...» -- el
+#      simbolo atado SOLO a la semisuma -- y el maximo lo dice en PROSA, en el
+#      parrafo siguiente y sin nombrar ho: «the greater of tailwater or
+#      (dc + D)/2». Con forma de ecuacion, el maximo esta en OTROS numerales
+#      (impresas 3.12, 3.32 y 3.43). La v8 ya lo declara en su §4.3. Aqui se
+#      escribe como lo que es: la fuente APROXIMA, y el maximo lo toma el
+#      proyecto.
+#   2. «DOS pasos posteriores lo consumen» es cierto de ESTE pipeline y falso
+#      del HDS-5, que le da un tercer uso: el area de la seccion para la
+#      velocidad de salida bajo control de salida (num. 3.1.6, impresa 3.18 /
+#      PDF 100). Se acota el sujeto.
+#   3. «La Forma 1 arranca de H_c/D» sin condicionar se imprimia igual bajo
+#      Forma 2, donde la ec. (A.2) no usa H_c -- que es el defecto que C3
+#      corrigio en la nota del paso y que aqui volvia por el fundamento --.
+#
+# Lo que NO cambia: el `verbo`. DEFINE esta sostenido por el `caracter` de las
+# dos citas (A.2 es DEFINICION, 3.3.3#HO es APROXIMACION) y es el correcto:
+# el paso no afirma una obligacion, afirma una cadena de dependencias.
 YC_RECT = _fundamento(
     id="F4.YC_RECT",
     fase=F4,
     que_paso="Tirante critico de la seccion, y la energia critica H_c",
     por_que=(
         "El tirante critico no se calcula porque interese por si mismo: se "
-        "calcula porque DOS pasos posteriores lo consumen. La Forma 1 del "
-        "control de entrada arranca de H_c/D, y el control de salida necesita "
-        "h_o = max(TW, (d_c + D)/2). En la seccion circular no hay solucion "
+        "calcula porque DOS PASOS DE ESTE CALCULO lo consumen. La Forma 1 del "
+        "control de entrada arranca de H_c/D --la Forma 2 no lo usa, y la "
+        "rama sumergida tampoco--, y el control de salida necesita la altura "
+        "de la linea de energia a la salida, que el HDS-5 APROXIMA con "
+        "ho = (dc + D)/2 y que el proyecto toma como el mayor entre esa y el "
+        "TW. Son dos en ESTE pipeline: el HDS-5 le da un tercer uso que aqui "
+        "no se implementa --el area de la velocidad de salida bajo control "
+        "de salida, num. 3.1.6--. En la seccion circular no hay solucion "
         "cerrada y hace falta un segundo Brent; en la rectangular el ancho "
         "superficial es constante y la condicion de energia minima se "
         "despeja: y_c = (q^2/g)^(1/3) con q = Q/B. Que sea exacta no es un "

@@ -698,3 +698,47 @@ def test_la_sustitucion_de_los_pasos_nombra_las_dimensiones_de_la_forma():
             simbolos = [mag.simbolo for mag in paso.sustitucion]
             assert "B" in simbolos and "H" in simbolos
             assert "D" not in simbolos
+
+
+# ===========================================================================
+# 8 - Que las dos implementaciones sean SUSTITUIBLES, y no de palabra
+# ===========================================================================
+
+def test_las_dos_secciones_implementan_el_protocolo_entero():
+    """
+    NADIE LO COMPROBABA, y el `Protocol` no lo comprueba solo: no lleva
+    `@runtime_checkable` y, aunque lo llevara, `isinstance` contra un Protocol
+    mira los NOMBRES y no las firmas. Una erratа en el nombre de un metodo
+    --`geometria_em` por `geometria_en`-- daria una clase que funciona por los
+    caminos que los tests recorren y revienta por el primero que no.
+
+    Lo que se comprueba es la sustituibilidad: MISMOS miembros publicos, y con
+    la MISMA firma. Es lo que hace que M3 y M4 puedan quedarse ciegos a la
+    forma; sin ello, «ciegos» es una intencion, no una propiedad.
+    """
+    import inspect
+    from modelos import Seccion
+
+    del_protocolo = {n for n in vars(Seccion)
+                     if not n.startswith("_")}
+    assert del_protocolo, "el protocolo se quedo sin miembros publicos"
+
+    for implementacion in (SeccionCircular(0.90), SeccionRectangular(2.0, 1.5)):
+        clase = type(implementacion)
+        faltan = del_protocolo - set(dir(clase))
+        assert not faltan, f"{clase.__name__} no implementa {sorted(faltan)}"
+
+        for nombre in sorted(del_protocolo):
+            del_p = getattr(Seccion, nombre)
+            del_i = getattr(clase, nombre)
+            # Las propiedades se comparan como propiedades; los metodos, por
+            # firma. Confundir las dos es la otra mitad del defecto: una
+            # `altura` que en una forma es propiedad y en otra metodo obliga a
+            # quien la consume a saber cual tiene delante.
+            assert isinstance(del_p, property) == isinstance(del_i, property), (
+                f"{clase.__name__}.{nombre}: una es propiedad y la otra no")
+            if isinstance(del_p, property):
+                continue
+            assert (inspect.signature(del_p).parameters.keys()
+                    == inspect.signature(del_i).parameters.keys()), (
+                f"{clase.__name__}.{nombre} no tiene la firma del protocolo")
