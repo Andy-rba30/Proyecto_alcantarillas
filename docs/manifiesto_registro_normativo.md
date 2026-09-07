@@ -624,6 +624,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 - Fila «Box, Reinforced Concrete -- Wingwall at 10⁰ to 25⁰ to barrel -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
 - Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
 - Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Side- or slope-tapered inlet»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Vistas de cálculo derivadas: `KE_HDS5_C2`
 
 | Fila | Type of Structure and Design of Entrance | Coefficient Ke | Uso |
 |---|---|---|---|
@@ -684,6 +685,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
   - Qué queda fuera: del grupo A: «a. Bronce Polido», «b. Acero» (soldado, con remaches), las CINCO subfilas restantes de «a. Concreto» -- «tubo con curvas, conexiones», «tubo de alcantarillado con cámaras, entradas.», «Tubo con moldaje de acero.», «Tubo de moldaje madera cepillada» y «Tubo con moldaje madera en bruto» --, la «laminada y tratada» de «b. Madera» y «c. Albañilería de piedra.». Fuera del grupo A: «B.CANALES REVESTIDOS», «C. EXCAVADO» y «D. CORRIENTES NATURALES». (Eran seis subfilas de «a. Concreto» hasta C2, que transcribio «afinado».)
   - Dónde leerlo: MC_HHD, num. 4.1.1.3.6, Tabla Nº 09: los grupos A, B y C en la pag. impresa 75 (PDF 78) y el grupo D con la linea de Fuente en la 76 (PDF 79)
 - Columna «NORMAL» transcrita y **no usada**: la regla de doble n (Sec. 4.1 de la hoja de ruta) no pide el valor corriente sino los dos EXTREMOS -- n maximo para capacidad y tirante, n minimo para velocidad maxima y socavacion --, de modo que cada verificacion se resuelve con el extremo que la deja del lado seguro. El valor NORMAL entraria en un calculo de un solo n, que es justo lo que la regla prohibe
+- Fila «A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- afinado»: **elección pendiente** (`COND-N-MANNING-CAJON`)
 - **Afirmación negativa**: la Tabla Nº 09 no lista HDPE. Ámbito barrido: las 225 paginas del PDF: «HDPE» aparece 0 veces y «polietileno» solo en la pag. impresa 71 (listado de tipos de alcantarilla) y en la de subdrenes. Ninguna fila de la Tabla Nº 09 lo nombra
 - **Errata declarada**: `DIS-MCHHD-T09-A2-DESPLAZADA`
 - Vistas de cálculo derivadas: `TABLA_09_FILAS`, `MANNING`
@@ -693,7 +695,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.1. METÁLICOS -- c. Metal corrugado -- sub - dren |  | 0.017 | 0.019 | 0.021 | no usada |
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.1. METÁLICOS -- c. Metal corrugado -- dren para aguas lluvias |  | 0.021 | 0.024 | 0.03 | usada |
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- tubo recto y libre de basuras |  | 0.01 | 0.011 | 0.013 | usada |
-| A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- afinado |  | 0.011 | 0.012 | 0.014 | no usada |
+| A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- afinado |  | 0.011 | 0.012 | 0.014 | pendiente |
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- b. Madera -- duelas |  | 0.01 | 0.012 | 0.014 | no usada |
 
 ### `MC_HHD.T10` — TABLA  Nº  10:    Velocidades máximas  admisibles (m/s)  en conductos revestidos
@@ -878,6 +880,7 @@ escrita, y el test la exige.
 | `COND-LS-LOSA-APROXIMACION` | cita:MP.2.4.2.2#SOBRECARGA | `losa_de_aproximacion` | excluye |
 | `COND-MARCO-SUELO-MALA-CALIDAD` | cita:MC_HHD.4.1.1.3.4a#MARCO | `el Manual recomienda el marco «cuando se tiene la presencia de suelos de fundacion de mala calidad» y NO define «mala calidad»: no da umbral, ni clasificacion, ni remision a otra norma. La columna `sucs_fundacion` del CSV trae el grupo SUCS del punto, y traducirlo a «mala calidad» seria inventar el mapeo que la fuente calla` | advierte |
 | `COND-MULTICELDA-ARRASTRE` | cita:MC_HHD.4.1.1.3.4a#MULTIPLES | `la capacidad de arrastre del curso -- palizada, troncos, material de cauce -- no es una magnitud que este programa calcule ni una columna del CSV: se establece con inspeccion del cauce` | advierte |
+| `COND-N-MANNING-CAJON` | cita:MC_HHD.4.1.1.3.6#T09 | `n_manning_cajon` | bloquea |
 | `COND-PERFIL-SIN-INFO-SECUNDARIA` | cita:MS.4.2#PERFIL | `existe_informacion_secundaria_tramo` | bloquea |
 | `COND-SELVA-ALTA` | cita:MC_HHD.4.1.1.3.7a | `region == 'selva_alta'` | excluye |
 
