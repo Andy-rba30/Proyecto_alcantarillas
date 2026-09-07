@@ -563,7 +563,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 
 - Cita: `HDS5_3ED.TA.1`
 - Transcripcion acotada · el calculo usa 7 de 10 columnas y 2 de 18 filas
-- **Transcripción acotada.** Razón: de las 36 filas de la tabla, este proyecto transcribe las que su catalogo puede alcanzar: las tres circulares de la Sec. 3.2 (concreto, TMC y HDPE por analogia) y, desde C2, las quince del cajon rectangular de concreto de las Cartas 8 a 12, que son las que la Familia C necesita. Las demas describen bordes o formas que ningun punto del corredor puede tener
+- **Transcripción acotada.** Razón: de las 36 filas de la tabla, este proyecto transcribe las que su catalogo puede alcanzar: las TRES CIRCULARES que sus materiales usan -- concreto a ras del muro, y las dos de metal corrugado, cabezal e inglete --, y, desde C2, las quince del cajon rectangular de concreto de las Cartas 8 a 12, que son las que la Familia C necesita. Las demas describen bordes o formas que ningun punto del corredor puede tener
   - Qué queda fuera: de las circulares, las configuraciones de borde no adoptadas -- «Groove end w/headwall», «Groove end projecting», «Projecting» y los dos «Beveled ring» de la Carta 3 --. Del cajon rectangular de concreto, OCHO filas mas que la tabla si trae y que este proyecto no puede alcanzar: las tres de la Carta 13 «Rect. Box Top Bev. Conc.» (bisel superior con aletas desplazadas) y las cinco de «Rectangular Concrete» de las Cartas 57, 58 y 59, que son GARGANTAS DE TAPERED INLET y no embocaduras de barril. Y las cinco de tapered inlet circular y de cara eliptica, Cartas 55 y 56
   - Dónde leerlo: HDS-5 3a ed., Tabla A.1, PDF 197. La pagina NO LLEVA FOLIO IMPRESO -- verificado sobre la pagina renderizada: las cuatro paginas apaisadas de tablas del apendice, PDF 197 a 200, van sin numerar --, de modo que la «pag. impresa A.8» que el repositorio declara es una INFERENCIA por secuencia (PDF 196 lleva A.7) y no una lectura. La inferencia es correcta y la regla de paginacion la predice; lo que no es, es una pagina leida. Anotado en C2, no corregido: tocar `pagina_impresa` de la cita `HDS5_3ED.TA.1` movería un campo que T6 usa
 - Columna «Nomograph Scale» transcrita y **no usada**: identifica la escala del nomograma impreso; este programa resuelve las ecuaciones y no lee nomogramas
@@ -617,13 +617,13 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 - **Transcripción acotada.** Razón: desde C2 la transcripcion cubre las tres familias que la tabla imprime: «Pipe, Concrete», «Pipe. or Pipe-Arch. Corrugated Metal» y «Box, Reinforced Concrete». Lo que queda fuera ya no es una familia entera sino la eleccion de borde dentro de cada una, y eso no lo decide el alcance de la transcripcion sino el criterio que elige la embocadura
   - Qué queda fuera: nada del cuerpo de la tabla: las tres familias estan transcritas enteras -- nueve filas de tubo de concreto, seis de metal corrugado y siete de cajon de concreto bajo sus cuatro rotulos de agrupacion, 22 filas con coeficiente en total --. Fuera queda la formula H_e = Ke(V^2/2g) del encabezado, que la pagina imprime como imagen y que M4 implementa en `perdida_carga`
   - Dónde leerlo: HDS-5 3a ed., Tabla C.2, pag. impresa C.6 (PDF 216)
-- Fila «Box, Reinforced Concrete -- Headwall parallel to embankment (no wingwalls) -- Square-edged on 3 edges»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
-- Fila «Box, Reinforced Concrete -- Headwall parallel to embankment (no wingwalls) -- Rounded on 3 edges to radius of D/12 or B/12 or beveled edges on 3 sides»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
-- Fila «Box, Reinforced Concrete -- Wingwalls at 30⁰ to 75⁰ to barrel -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
-- Fila «Box, Reinforced Concrete -- Wingwalls at 30⁰ to 75⁰ to barrel -- Crown edge rounded to radius of D/12 or beveled top edge»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
-- Fila «Box, Reinforced Concrete -- Wingwall at 10⁰ to 25⁰ to barrel -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
-- Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
-- Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Side- or slope-tapered inlet»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «Box, Reinforced Concrete -- Headwall parallel to embankment (no wingwalls) -- Square-edged on 3 edges»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Headwall parallel to embankment (no wingwalls) -- Rounded on 3 edges to radius of D/12 or B/12 or beveled edges on 3 sides»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwalls at 30⁰ to 75⁰ to barrel -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwalls at 30⁰ to 75⁰ to barrel -- Crown edge rounded to radius of D/12 or beveled top edge»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwall at 10⁰ to 25⁰ to barrel -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Side- or slope-tapered inlet»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
 
 | Fila | Type of Structure and Design of Entrance | Coefficient Ke | Uso |
 |---|---|---|---|
@@ -872,10 +872,11 @@ escrita, y el test la exige.
 | `COND-DMIN-ALTO-VOLUMEN` | cita:MC_HHD.4.1.1.3.4a | `clase_de_via` | advierte |
 | `COND-DMIN-CANAL-RIEGO` | cita:MC_HHD.4.1.1.3.4a | `familia == 'C'` | excluye |
 | `COND-EMBOCADURA-CAJON` | cita:HDS5_3ED.TA.1 | `embocadura_cajon` | bloquea |
+| `COND-EMBOCADURA-CAJON-KE` | cita:HDS5_3ED.TC.2 | `embocadura_cajon` | bloquea |
 | `COND-EXPOSICION-QUIMICA-EMS` | cita:E060.T4.4 | `exposicion_quimica_ems` | bloquea |
 | `COND-LS-DISTANCIA-H-MEDIO` | cita:MP.2.4.2.2#SOBRECARGA | `distancia_trafico <= H / 2` | advierte |
 | `COND-LS-LOSA-APROXIMACION` | cita:MP.2.4.2.2#SOBRECARGA | `losa_de_aproximacion` | excluye |
-| `COND-MARCO-SUELO-MALA-CALIDAD` | cita:MC_HHD.4.1.1.3.4a#MARCO | `sucs_fundacion` | advierte |
+| `COND-MARCO-SUELO-MALA-CALIDAD` | cita:MC_HHD.4.1.1.3.4a#MARCO | `el Manual recomienda el marco «cuando se tiene la presencia de suelos de fundacion de mala calidad» y NO define «mala calidad»: no da umbral, ni clasificacion, ni remision a otra norma. La columna `sucs_fundacion` del CSV trae el grupo SUCS del punto, y traducirlo a «mala calidad» seria inventar el mapeo que la fuente calla` | advierte |
 | `COND-MULTICELDA-ARRASTRE` | cita:MC_HHD.4.1.1.3.4a#MULTIPLES | `la capacidad de arrastre del curso -- palizada, troncos, material de cauce -- no es una magnitud que este programa calcule ni una columna del CSV: se establece con inspeccion del cauce` | advierte |
 | `COND-PERFIL-SIN-INFO-SECUNDARIA` | cita:MS.4.2#PERFIL | `existe_informacion_secundaria_tramo` | bloquea |
 | `COND-SELVA-ALTA` | cita:MC_HHD.4.1.1.3.7a | `region == 'selva_alta'` | excluye |
