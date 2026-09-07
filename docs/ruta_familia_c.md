@@ -114,6 +114,114 @@ Y la consecuencia declarada: `M2_material.materiales_candidatos()` devuelve `()`
 `Familia.C`, con la razón escrita en el docstring del módulo bajo el epígrafe *«Familia C
 queda sin candidatos — por DOS razones, y la normativa faltaba»*.
 
+
+---
+
+## 2-bis. Censo de acoplamiento al diámetro (C0)
+
+La tabla de §2 nombra cinco símbolos como muestra. Éste es el barrido completo de `src/`,
+`cli.py` y `gui/`, y es **lo que C1 tiene delante**. Todo va anclado por **nombre de
+símbolo**, nunca por línea — regla 4 de `CLAUDE.md`, y aquí importa el doble porque C1
+mueve cientos de líneas.
+
+**Cómo leer la columna (d).** Marca los símbolos que hoy tienen al menos un localizador
+`archivo:línea` en `docs/manifiesto_citas.md`. **No son los que más acoplan: son los que
+van a romper `tests/test_manifiesto_citas.py` en cuanto C1 mueva una línea**, aunque el
+número no cambie. Las cifras y el procedimiento están en §16.3.
+
+**Lo primero que hay que saber, y no estaba escrito:** de las veinte funciones de M3 y M4
+que tocan el diámetro, **una sola emite la traza de memoria de toda la hidráulica** —
+`M4_control._pasos_hidraulicos`, que construye los tres pasos `F4.MANNING`, `F4.CONTROL` y
+`F4.HO`—. La obligación de C1 de que «el `PasoDeMemoria` siga imprimiendo lo mismo» se
+concentra ahí, no está repartida.
+
+### (a) Geometría del barril — lo que C1 abstrae detrás de `Seccion`
+
+| (b) símbolo | (c) paso que emite | (d) manifiesto |
+|---|---|---|
+| `M3_hidraulica.area(D, theta)` | — | |
+| `M3_hidraulica.perimetro(D, theta)` | — | |
+| `M3_hidraulica.tirante(D, theta)` | — | |
+| `M3_hidraulica.geometria(D, theta)` | — | |
+| `M3_hidraulica._caudal_manning(D, theta, n, S)` | — | |
+| `M3_hidraulica._validar_parametros(D, Q, S, n)` | — | |
+| `M3_hidraulica.tirante_normal(D, Q, S, n)` | — | |
+| `M3_hidraulica.resolver_manning(D, Q, S, material)` | — | |
+| `M4_control.area_llena(D)` | — | |
+| `M4_control.radio_hidraulico_lleno(D)` | — | |
+| `M4_control._residuo_critico(D, theta, Q)` | — | |
+| `M4_control.tirante_critico(Q, D)` | — | |
+| `M4_control._geometria_de_referencia(Q, D)` | — | |
+| `M4_control._validar_Q_D(Q, D)` | — | |
+| `modelos.Geometria` | — | |
+| `modelos.Geometria.y_sobre_D` | — | **conserva el nombre** (§4.1) |
+| `modelos.Geometria.T` | — | |
+| `modelos.TiranteNormal` | — | |
+| `modelos.TiranteCritico` | — | |
+
+### (b) Consumidores de la geometría
+
+| (b) símbolo | (c) paso que emite | (d) manifiesto |
+|---|---|---|
+| `M4_control.caudal_adimensional(Q, D)` | — | |
+| `M4_control._hw_sobre_D_no_sumergido(q*, H_c, D, S, hds5)` | — | **SÍ** |
+| `M4_control._exigir_hw_no_negativo(HW/D, S, D, q*, hds5)` | — | |
+| `M4_control.control_entrada(Q, D, S, hds5, critico)` | — | **SÍ** |
+| `M4_control.control_salida(Q, D, S, L, TW, n, ke, critico)` | — | |
+| `M4_control._pasos_hidraulicos(...)` | **`F4.MANNING`, `F4.CONTROL`, `F4.HO`** | |
+| `M4_control.resolver_control(D, Q, S, L, TW, material, normal)` | — | |
+| `modelos.ControlEntrada` · `ControlSalida` · `ResultadoHidraulico` | — | |
+| `M5_verificaciones.v1_borde_libre(D, resultado)` | `F5.V1` | |
+| `M5_verificaciones.v2_velocidad_minima(resultado)` | `F5.V2` | **SÍ** |
+| `M5_verificaciones._paso_v3(...)` | `F5.V3` | |
+| `M5_verificaciones.cota_clave(punto, material, D)` | — | |
+| `M5_verificaciones.altura_relleno_sobre_clave(punto, material, D)` | — | |
+| `M5_verificaciones.v4b_relacion_hw_d(D, resultado)` | — | |
+| `M5_verificaciones.v7_flotacion(punto, material, D, resultado)` | `F5.V7` | |
+| `M5_verificaciones.v9_disponibilidad_diametro(D, material)` | — | |
+| `M5_verificaciones.verificar(punto, material, D, resultado)` | — | |
+| `M2_material.espesor_pared(material, D)` | — | |
+| `M2_material.diametro_exterior(material, D)` | — | |
+| `M2_material.siguiente_diametro(material, D)` | — | |
+| `M2_material.catalogo(material)` | — | |
+| `M7_geometria.cobertura_minima_aashto(material, D)` | — | |
+| `M7_geometria.altura_recubrimiento(material, D)` | — | **SÍ** |
+| `M7_geometria.criterio_recubrimiento(material)` | — | |
+| `M7_geometria.tamizado_rasante(punto, material, D_supuesto, HW)` | — | **SÍ** |
+| `M7_geometria.compatibilidad_geometrica(punto, material, D, resultado, longitud)` | — | |
+| `modelos.TamizadoRasante` · `CompatibilidadGeometrica` · `Material.D_max` | — | |
+| `MD.disenar_material(...)` — el bucle «para cada D» | — | |
+| `MD._motivo_sin_flujo_libre(D, Q, S, material)` | — | |
+| `MD._motivo_incumplimiento(D, verificaciones)` | — | |
+| `MD._motivo_escalon_fallido(D, exc)` | — | |
+
+### (c) Presentación — no calcula, formatea
+
+| (b) símbolo | (c) paso que emite | (d) manifiesto |
+|---|---|---|
+| `M11_reporte._pasos_hidraulicos_del_punto(informe)` | — | |
+| `M11_reporte.memoria_de_punto(informe)` | — | |
+| `M11_reporte.memoria_html(informe, ...)` | — | |
+| `M11_reporte._tabla_diseno(...)` — consume `y_sobre_D` | — | **SÍ** |
+
+### Constantes y criterios que SON un diámetro
+
+`constantes_normativas.DIAMETRO_MIN` (0.90 m) · `DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO`
+(1.22 m) · `D_PASO` (0.15) · `D_INICIO` (0.90) · y los criterios
+`diametros_normalizados`, `D_max_catalogo`, `espesor_pared_conducto` y
+`cobertura_minima_aashto`, los cuatro indexados por diámetro o por material.
+
+### Dos símbolos que NO acoplan al diámetro y aun así rompen
+
+`M4_control.perdida_carga(V, R, n, L, ke)` recibe **R ya calculado**, no `D`; y
+`modelos.PuntoCritico` es la fila del CSV. **Ninguno de los dos toca el diámetro** — pero
+los dos viven en archivos que C1 reescribe y los dos tienen localizador en el manifiesto.
+Están aquí para que C1 no los busque como acoplamiento y no se sorprenda cuando el test del
+manifiesto los señale.
+
+**Las 54 filas nombran 59 símbolos, y los 59 se comprobaron uno a uno contra el árbol:
+los 59 existen.** Ninguno es inventado; el censo se midió, no se recordó.
+
 ---
 
 ## 3. Principio rector
@@ -586,7 +694,9 @@ la línea base del punto 2 guardada y reproducible.
 **ningún valor cambie**.
 
 ```
-Lee CLAUDE.md y docs/ruta_familia_c.md (§2, §4.1, §4.5, §5-F1 y §7).
+Lee CLAUDE.md y docs/ruta_familia_c.md (§2, §2-bis, §4.1, §4.5, §5-F1, §7 y §16.3).
+§2-bis es el censo que C0 midió: los 59 símbolos que tocan el diámetro, con
+cuáles emiten PasoDeMemoria y cuáles tienen localizador en el manifiesto.
 
 Objetivo: introducir la abstracción `Seccion` y hacer que M3 y M4 dejen de saber
 qué forma tiene el barril. En esta sesión NO se añade la sección rectangular.
@@ -615,13 +725,32 @@ El comportamiento del cálculo tiene que quedar IDÉNTICO, valor por valor.
    MISMO: misma fórmula, misma cita, misma sustitución con la misma procedencia,
    mismo umbral con el mismo carácter. Si una sustitución nombraba "D" y ahora la
    magnitud viene de la sección, el rótulo impreso no cambia.
+   ATAJO QUE C0 MIDIÓ: toda la traza hidráulica sale de UNA función,
+   `M4_control._pasos_hidraulicos`, que construye los tres pasos F4.MANNING,
+   F4.CONTROL y F4.HO. No está repartida por el módulo; comprobala ahí.
+
+5. EL MANIFIESTO VA EN COMMIT APARTE DEL REFACTOR. `docs/manifiesto_citas.md`
+   ancla por archivo:línea y vos vas a mover cientos de líneas: 12 localizadores
+   viven en los tres archivos que reescribís y 23 más en los consumidores que
+   arrastrás (§16.3). Regeneralo con
+       python3 -m src.normativa.manifiesto --escribir
+   y ponelo en su PROPIO commit, después del refactor.
+   POR QUÉ, y no es orden por gusto: si van juntos, un rojo de
+   test_manifiesto_citas.py NO SE PUEDE ATRIBUIR — puede ser el anclaje corrido
+   o puede ser un número que se movió, y tu criterio de salida entero depende de
+   poder separar esas dos cosas. CP lo topó con TRES ediciones de docstring:
+   rompió cuatro tests y hubo que regenerar 12 localizadores.
+   No arregles el anclaje por línea: es un defecto conocido del manifiesto y su
+   corrección no es de esta sesión.
 
 Criterio de salida, y es duro:
 - tests/fixtures/casos_patron.py en verde SIN tocar un solo valor esperado
 - el par passed/skipped idéntico al de C0
-- diff de la salida de `cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance
-  perfil` contra la línea base guardada en C0: VACÍO, salvo lo no numérico
-- la memoria HTML generada: diff vacío salvo marcas de tiempo y SHA
+- `sh tests/linea_base_familia_c/regenerar.sh` y después
+  `git diff --stat tests/linea_base_familia_c/` : VACÍO, los dos archivos.
+  La línea base está NORMALIZADA — C0 le quitó los tres campos volátiles, uno de
+  ellos un mtime que cambia por clon —, de modo que aquí no se admite "salvo
+  marcas de tiempo": el diff es vacío o el refactor movió algo
 
 Si algún caso patrón exige cambiar un número esperado, PARATE y explicá por qué
 antes de tocarlo. Un valor que se mueve en un refactor puro es un defecto
@@ -1183,7 +1312,90 @@ que faltan, está en **§15.5**.
 
 ## 14. Decisiones de alcance
 
-*(La rellena C0. Dos decisiones: vaciado in situ o prefabricado; una celda o multicelda.)*
+*Las cerró **C0**. Se escriben aquí para que las sesiones siguientes las LEAN en vez de
+volver a decidirlas — y para que quien quiera reabrirlas tenga contra qué argumentar.*
+
+### 14.1 El marco es VACIADO IN SITU, no prefabricado
+
+**Decisión: vaciado in situ.** Y el argumento no es constructivo, es de trazabilidad.
+
+**Lo que decide, medido sobre `normas/`:** el directorio tiene trece documentos, y **ninguno
+es una norma de producto de cajón prefabricado**. No están AASHTO M 259 ni M 273, ni ASTM
+C1433 ni C1577. Lo que sí está es **AASHTO LRFD 9.ª ed. (2020)**, que es una norma de
+**diseño**, no de producto.
+
+Elegir prefabricado sin su norma de producto obligaría a que **cada dimensión del cajón
+—ancho, altura, espesores, clases por altura de relleno— fuera un `[A]` sin fuente
+verificable**. Es exactamente lo que este proyecto persigue: `NOR-PRO-01` y `NOR-PRO-02`
+retiraron ya la atribución de los topes de diámetro a AASHTO M170 y ASTM A760 *porque esas
+normas tabulan otra cosa*. Repetirlo con un catálogo de cajón que ni siquiera está en
+`normas/` sería el mismo defecto, cometido a sabiendas.
+
+**Tres cosas más apuntan al mismo lado, y ninguna es opinión:**
+
+1. La **Fase 8 de la v8** ya lo dice para este cruce: *«Para el **marco de concreto** del
+   canal de 2.75 m no aplica la simplificación: diseño completo por AASHTO LRFD Sección
+   5»*. Un elemento que se diseña por Sección 5 es un elemento **diseñado**, no elegido de
+   un catálogo.
+2. El **num. 4.1.1.3.4 a)** manda, en cruces de canal de riego, adoptar *«secciones de
+   acuerdo a cada diseño particular»* (regla vinculante **#1**). Ése es el lenguaje de una
+   estructura que se proyecta, no de un producto que se pide.
+3. La **Lámina Nº 03** dibuja el marco en cruce de canal de riego con **todas sus cotas
+   como `VARIABLE`** y ninguna dimensión numérica (§15.4). Un producto de catálogo no se
+   dibuja así.
+
+**Qué se sigue de la decisión, y es lo que las sesiones necesitan:**
+
+- `secciones_cajon_normalizadas` es un **`[A]` honesto**: una progresión B×H **adoptada por
+  el proyectista**, no una serie de catálogo. Su `sensibilidad` es la ventana de esa
+  adopción y su `resolucion` no es `DeCatalogo`.
+- **`espesor_pared_conducto` no aplica al marco**, y no hay que buscarle una fila: el
+  espesor de un cajón vaciado in situ es **salida del diseño estructural**, no entrada. La
+  Fase 8 lo produce, y `--alcance perfil` la difiere entera. `M2.espesor_pared` ya levanta
+  `DatoFaltanteError` para un material sin fila (§15.2.2), que es el comportamiento
+  correcto: pide un dato que hay que conseguir, no inventa uno.
+- **`V9` no aplica al marco tal como está escrita.** Verifica `D ≤ D_max` contra un tope de
+  catálogo, y un cajón vaciado in situ no tiene tope de catálogo. C5 la reescribe como
+  disponibilidad de **sección**; lo que la acota no es un producto sino el propio diseño.
+
+**Qué habría costado prefabricado, para que la decisión sea auditable.** Traer M 259 / M 273
+o C1433 / C1577 a `normas/`, transcribir sus tablas de clases por altura de relleno con
+verificación contra PDF —trabajo de **C2**, del mismo orden que la Tabla A.1 entera—, y
+volver a abrir `espesor_pared_conducto` y `V9` por forma en **C5**. No se descarta por caro:
+se descarta porque **hoy no hay fuente**, y sin fuente el trabajo no se puede hacer bien.
+
+### 14.2 Una sola celda, `N = 1` por criterio declarado
+
+**Decisión: `n_celdas_cajon` se declara y se fija en 1 para este alcance. La multicelda
+queda diferida, no descartada.**
+
+**Lo que lo decide es la propia fuente.** El num. 4.1.1.3.4 a), impresa 72 / PDF 75, ante
+capacidad de arrastre del curso *«recomienda utilizar obras con mayor sección transversal
+libre, **sin subdivisiones**»*. La Sec. 2.3 dice «marco o multicelda», de modo que **la
+elección es del proyecto y la norma ya tomó partido sobre cuál prefiere**. Eso es
+exactamente lo que `F3.CELDAS` funda, con `verbo=RECOMIENDA` (§15.7): la multicelda no está
+prohibida, pero **quien la adopte tiene que decir por qué**, y no al revés.
+
+**Y hay una razón de alcance que pesa igual.** La regla vinculante **#10** lo deja escrito:
+mientras `N = 1` esté fijado **por criterio declarado**, `V6` sigue valiendo — pero *«hay
+que decirlo en el criterio, no darlo por hecho»*. Hoy V6 es trivialmente verdadera **por una
+propiedad del programa** (MD no sabe hacer multibarril), no por una decisión de diseño. Fijar
+N = 1 en un criterio convierte esa casualidad en una declaración, que es lo que la regla #10
+pide y lo que hace que V6 no se vuelva falsa en silencio el día que MD aprenda.
+
+**Qué costaría abrir multicelda, sesión por sesión.** Se escribe aunque la decisión sea no
+abrirla, porque una deuda sin precio no se puede planificar:
+
+| Sesión | Trabajo adicional que añade la multicelda |
+|---|---|
+| **C4** | El reparto `Q/N` y su `PasoDeMemoria`: qué caudal entra en cada barril y por qué. La `Seccion` **no** cambia — regla **#3**: modela UNA celda, y el número de celdas vive fuera |
+| **C5** | `n_celdas_cajon` deja de ser un valor fijo y pasa a ser una **elección con ventana**; y `V6` deja de ser una constancia y pasa a ser una **verificación real** contra la recomendación de sección única, con umbral y veredicto que hoy **no tienen método escrito** |
+| **C7** | La separación entre barriles entra en la geometría. El num. 4.1.1.3.4 a) trae una regla de separación **escrita para tuberías** y **no dice nada del marco**: sería otro `[N→]` con analogía declarada, o un `[A]`. *C0 NO verificó sus valores y por eso no los transcribe aquí — es alcance de C2, con `verificador-normativo`* |
+| **C8** | El reporte deja de tener «una sección adoptada» y pasa a tener N; `M11._tabla_diseno`, el CSV resumen y las dos plantillas cambian de forma |
+
+**El precio de diferirla es bajo y el de abrirla no**: la regla #3 ya garantiza que el motor
+hidráulico no cambia —se diseña **una celda** con `Q/N`—, de modo que abrirla más tarde no
+invalida nada de C1 a C4. Es una decisión reversible, y por eso se difiere.
 
 ## 15. Numeral por paso, y defectos abiertos contra la hoja de ruta v8
 
@@ -2359,7 +2571,8 @@ de qué se corrió, con qué y con qué resultado medido.
 | Sesión | SHA | Suite (config) | Qué dejó | Qué queda abierto |
 |---|---|---|---|---|
 | **CN** | `e2da067` · PR #2, fusionado en `d469409` | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §15: tabla numeral-por-paso, ocho `Fundamento`, la declaración del hueco de aceptación, 8 defectos contra la v8 y 10 huecos del repo (`R-5` retirado por la auditoría: 9 vivos) | nada de CN: lo que dejó propuesto lo aplicó CP |
-| **CP** | `53e431a` (consolidación) · `bb8cdfa` (docstrings) · PR #3 | 1536 p / 2 s, «PyMuPDF sí / Tk no» | Consolidación en §4.5, §6, §8, §9, §10, §11 y §12; los cuatro puntos de prompt de §16.2; y las tres correcciones de código de `R-9` | los 8 defectos contra la v8 (`D-1`…`D-8`): son de una **v9** |
+| **CP** | `53e431a` (consolidación) · `bb8cdfa` (docstrings) · `a6d6543` (prompts) · PR #3 y #4 | 1536 p / 2 s, «PyMuPDF sí / Tk no» | Consolidación en §4.5, §6, §8, §9, §10, §11 y §12; los cuatro puntos de prompt de §16.2; y las tres correcciones de código de `R-9` | los 8 defectos contra la v8 (`D-1`…`D-8`): son de una **v9** |
+| **C0** | medida sobre `origin/main` **`4f6cf69`** | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §2-bis (censo de 59 símbolos), §14 (las dos decisiones de alcance), la línea base de `tests/linea_base_familia_c/`, el punto 5 de C1 y §16.3 | el anclaje por línea del manifiesto: **se mide, no se arregla** (§16.3) |
 
 **No hay archivo de parche.** El parche v2 se aplicó y se retiró del repositorio, con el
 precedente que `docs/hoja_de_ruta_correcciones_v12.md` fija en su primera línea para los
@@ -2390,6 +2603,35 @@ código donde se ve, y las reglas de §6 son lo que impide que una sesión los h
 cubre `D-1`, **#6** cubre `D-4` y `D-5`, **#8** cubre `D-8`, y `D-3` y `D-7` viajan dentro
 de los prompts de C5.
 
+### 16.1-bis La línea base de la Familia C, y por qué está normalizada
+
+Vive en **`tests/linea_base_familia_c/`**, medida sobre `origin/main` **`4f6cf69`** con la
+configuración de referencia («PyMuPDF sí / ventana Tk no», `1536 passed / 2 skipped`,
+collected 1538). Tres archivos:
+
+| Archivo | Qué es |
+|---|---|
+| `cli_perfil.txt` | salida completa de `cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance perfil` |
+| `memoria_perfil.html` | la memoria HTML de **esa misma** corrida |
+| `regenerar.sh` | el comando exacto **y la normalización**. Se corre desde la raíz |
+
+**Está normalizada, y no es cosmética.** Corrida cruda, la salida **no es reproducible**:
+C0 la generó dos veces seguidas y difería. Tres campos, medidos:
+
+1. `generado (UTC): <iso>` en la salida de la CLI.
+2. `corrida UTC: <iso>` y la misma fecha en formato local, en el HTML.
+3. **`Fecha de criterios_adoptados.py`** en el HTML, que `M11_reporte` saca de
+   `ruta.stat().st_mtime`. **Éste es el que importa:** no cambia por corrida sino por
+   **CLON** — en un checkout nuevo es la hora del clon —, de modo que el diff de C1 daría
+   rojo en otra máquina con el código idéntico. Sin retirarlo, la línea base no sirve para
+   lo único para lo que existe.
+
+Los patrones de la normalización son específicos a propósito: un barrido de fechas genérico
+pisaría texto normativo. Medido: en el HTML hay **tres** fechas y las tres son volátiles.
+
+Con eso, el criterio de salida de C1 deja de ser «diff vacío salvo marcas de tiempo» y pasa
+a ser **diff vacío**, que es comprobable.
+
 ### 16.2 Los cuatro puntos de prompt que CP añadió
 
 | Punto | Sesión | Qué cubre de §15.8 | Por qué hacía falta |
@@ -2398,3 +2640,28 @@ de los prompts de C5.
 | **P-2** | **C6**, punto 5 nuevo | `D-2`, `R-6` | El riesgo es el **inverso** del habitual: un C6 diligente ve una columna obligatoria sin lector y la conecta, **inventando** el mapeo SUCS → «mala calidad» que la norma no da. El punto existe para decir que NO se cablea, y por qué |
 | **P-3** | **C5**, punto 2 | `R-8` | C7 ya resuelve *qué fila* de γ_EV toca al cajón (regla #8); nadie resolvía el **comentario rancio** de `factores_carga_aashto` ni la clave que falta |
 | **D-3** | **C5**, punto 4 | `D-3` | La fila V6 de la v8 lleva «[N]» **sin numeral**, sobre una frase que recomienda. Sin el aviso, un `Fundamento` con `verbo=OBLIGA` sobre ella es el error natural |
+
+### 16.3 El manifiesto ancla por línea, y C1 va a mover cientos
+
+`docs/manifiesto_citas.md` referencia el código por **`archivo:línea`**. Es lo contrario de
+la regla 4 de `CLAUDE.md` —*anclar por NOMBRE DE SÍMBOLO, nunca por número de línea*— y es
+un defecto conocido del propio manifiesto, que **C0 mide y no arregla**: corregir el
+esquema de anclaje no es de esta sesión ni de C1.
+
+**Medido sobre `origin/main` `4f6cf69`:**
+
+| | Localizadores |
+|---|---|
+| **Total en `docs/manifiesto_citas.md`** | **326**, en 19 archivos, que caen dentro de **38 símbolos** |
+| En los **tres archivos que C1 reescribe** | **12** — `M4_control` 9, `M3_hidraulica` 2, `modelos` 1 |
+| En los **consumidores que C1 arrastra** | **23** — `M5_verificaciones` 13, `M2_material` 4, `M7_geometria` 4, `MD` 1, `M11_reporte` 1 |
+| Símbolos **del censo de §2-bis** que llevan uno | **6** — marcados «SÍ» en su columna (d) |
+
+**Regeneración:** `python3 -m src.normativa.manifiesto --escribir`. Vuelve a calcular los
+326 localizadores desde el árbol; el contenido del manifiesto no cambia, solo los números.
+
+**Y va en COMMIT APARTE del refactor** (punto 5 de C1). No es orden por gusto: juntos, un
+rojo de `test_manifiesto_citas.py` no se puede atribuir — puede ser el anclaje corrido o
+puede ser un número que se movió, y el criterio de salida de C1 depende entero de poder
+separar esas dos cosas. **CP lo topó con tres ediciones de docstring**: rompió cuatro tests
+y hubo que regenerar 12 localizadores.
