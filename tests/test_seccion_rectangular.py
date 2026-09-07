@@ -195,7 +195,8 @@ def test_que_coincidan_en_el_marco_no_las_hace_intercambiables():
 
     g_max = c.geometria_en(theta_max)
     assert g_max.T > 0
-    # No es cero exacto, pero esta siete ordenes por debajo del canonico.
+    # No es cero exacto, pero esta 6.6 ordenes por debajo del canonico: la
+    # razon medida es 2.45e-7, la misma para los siete diametros barridos.
     assert 0 < c.ancho_superficial(g_max.y) < g_max.T / 1e6
     # Y el perimetro, en cambio, coincide en los ultimos bits.
     assert c.perimetro(g_max.y) == pytest.approx(

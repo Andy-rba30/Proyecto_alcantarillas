@@ -556,23 +556,34 @@ problema de **condicionamiento** que se concentra en los dos extremos del llenad
 | `y/D` ∈ [0.01, 0.99] | A 5.2e-15 · P 1.5e-15 · T 8.8e-15 |
 | θ = 1e-5 rad (`y/D` ≈ 6e-12) | **P y T: 4.1e-8** |
 | θ = 1e-6 rad | **P y T: 4.4e-5** |
-| **Extremo INFERIOR de `bracket_llenado()`** (θ = 1e-9) | **100 %: la vía por tirante devuelve `0.0` exacto para P y para T** (canónica: 4.5e-10) |
-| **Extremo SUPERIOR** (θ = 2π − 1e-9) | **T: ~100 % relativo pero NO cero exacto** — 1.1021821192326179e-16 frente a 4.500001474513789e-10. **P: 1.6e-10 relativo**, no se anula |
+| **Extremo INFERIOR de `bracket_llenado()`** (θ = 1e-9) | **100 %: la vía por tirante devuelve `0.0` EXACTO para P y para T**, donde la canónica devuelve D·5e-10 |
+| **Extremo SUPERIOR** (θ = 2π − 1e-9) | **P: 1.5915e-10 relativo — NO se anula.** `T` cae a 2.45e-7 de la canónica (6.6 órdenes) y **tampoco llega a cero** |
 
-> **La última fila la corrigió C4, y la enunciación vieja decía de más.** Esta tabla
-> decía «en los **dos** extremos … devuelve `0.0` exacto para P y para T», y medido
-> sobre D = 0.90 eso vale **entero en uno solo**: en el inferior, donde `y ≈ 0` y
-> `theta_desde_tirante` devuelve 0 exacto. En el superior `y = D` exactamente, la
-> inversa devuelve 2π y **el perímetro coincide en los últimos bits** (2.8274333877808138
-> frente a 2.827433388230814); sólo `T` cae siete órdenes, y tampoco a cero.
+> **Esta enunciación decía de más, y la corrigió C4 con su medición.** La tabla decía «en
+> los **dos** extremos … devuelve `0.0` exacto para P y para T», y eso vale **entero en uno
+> solo**. Medido sobre **siete diámetros de 0.30 a 3.00 m**, no sobre uno:
+>
+> | | extremo INFERIOR (θ = 1e-9) | extremo SUPERIOR (θ = 2π − 1e-9) |
+> |---|---|---|
+> | `perimetro(y)` | **`0.0` exacto en los siete** | **1.5915e-10 relativo en los siete** — no se anula |
+> | `ancho_superficial(y)` | **`0.0` exacto en los siete** | 2.45e-7 de la canónica en los siete — no llega a cero |
+>
+> Para D = 0.90: en el superior `y = D` exactamente, `theta_desde_tirante` devuelve 2π y el
+> perímetro sale 2.827433388230814 frente a los 2.8274333877808138 de la canónica — los
+> últimos bits —, mientras `T` da 1.1021821192326179e-16 frente a 4.500001474513789e-10.
+> **La razón de que el inferior sí se anule y el superior no** es que en el inferior
+> `y ≈ 0` y la inversa devuelve `theta = 0`, con lo que P = D·0/2 y T = D·sen(0) son **cero
+> por construcción**; en el superior la inversa devuelve 2π y P = πD, que es el perímetro
+> completo y verdadero.
 >
 > **La consecuencia no cambia ni un ápice** —el cero exacto está en el extremo
 > **inferior**, que es de los primeros puntos donde Brent evalúa, y `T` es el
 > denominador de `A³/T`—, pero el enunciado sí, y se corrige por la misma razón por la
-> que se corrigió la #5 en C3.5: una regla vinculante que dice de más se deja de creer
-> entera, y ésta la citan C4 y C5. La medición está fijada en
+> que se corrigió la #5 en C3.5: **una regla vinculante que dice de más se deja de creer
+> entera**, y ésta la cita C5. La medición está fijada en
 > `tests/test_seccion_rectangular.py::test_que_coincidan_en_el_marco_no_las_hace_intercambiables`
-> y en el docstring de `modelos.Seccion`.
+> y en el docstring de `modelos.Seccion`; el docstring de `SeccionRectangular` llevaba una
+> **tercera copia** del enunciado viejo y se corrigió también.
 
 Grilla: 8 diámetros de 0.30 a 3.00 m; las filas de rango, sobre 20 000 ángulos repartidos
 en `bracket_llenado()` (73 896 a 139 592 puntos según la ventana); las tres últimas, sobre
@@ -1129,6 +1140,20 @@ nuevos.
 
 [pegar aquí la CLÁUSULA NORMATIVA COMÚN de §9-bis]
 ```
+
+> **Dos frases de este prompt envejecieron con la sesión que lo ejecutó, y se dicen aquí en
+> vez de reescribirlo** — un prompt es el encargo tal como se dio, y corregirlo por dentro
+> borraría lo que la sesión tuvo delante:
+>
+> - *«DE LECTURA, hoy con CERO consumidores en producción»* — **desde C4 tiene dos**, los dos
+>   dentro de `SeccionRectangular.geometria_en`, que es el único sitio donde esa vía no puede
+>   equivocarse. Que sigan siendo dos lo vigila un censo del AST, no un comentario.
+> - *«en los dos extremos de `bracket_llenado()` devuelve 0.0 exacto para P y para T»* —
+>   **vale entero en el inferior y no en el superior**, medido sobre siete diámetros. La
+>   consecuencia que el prompt saca de ahí —la división por cero donde Brent evalúa primero—
+>   **es correcta**, porque el cero exacto está justamente en el inferior.
+>
+> Las dos están corregidas en la **regla vinculante #12 de §6**, que es la que C5 cita.
 
 ---
 

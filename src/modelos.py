@@ -817,9 +817,15 @@ class Seccion(Protocol):
 
     LAS DOS MITADES NO SON INTERCAMBIABLES, Y ESTE ES EL AVISO. La CANONICA
     es la del parametro propio -- es la que consumen M3 y M4 y sobre la que
-    resuelve Brent --. La del tirante es de LECTURA y hoy no tiene ningun
-    consumidor en produccion. Esta escrito como regla vinculante #12 de
-    docs/ruta_familia_c.md; aqui va lo imprescindible.
+    resuelve Brent --. La del tirante es de LECTURA, y desde C4 tiene DOS
+    consumidores en produccion, los dos dentro de
+    `SeccionRectangular.geometria_en`: el unico sitio donde no puede
+    equivocarse, porque en esa forma el parametro propio ES el tirante y las
+    dos vias coinciden bit a bit. Que sean dos y no mas lo vigila un censo del
+    AST --`test_seccion_rectangular::test_la_via_por_tirante_no_gana_
+    consumidores_sin_declararlos`--, y no un comentario: la auditoria de C4
+    demostro que un comentario no basta. Esta escrito como regla vinculante
+    #12 de docs/ruta_familia_c.md; aqui va lo imprescindible.
 
     En la circular, `area(y)` / `perimetro(y)` / `ancho_superficial(y)` pasan
     por `theta_desde_tirante(y)`, que es la inversa ALGEBRAICA de
@@ -1167,9 +1173,12 @@ class SeccionRectangular:
     mismo numero, bit a bit, porque no hay ninguna inversion por medio. ESO NO
     AUTORIZA A CAMBIAR DE VIA EN M3 NI EN M4 (regla vinculante #12): en la
     circular la via por tirante pasa por `theta_desde_tirante`, que esta mal
-    condicionada, y en los dos extremos del bracket devuelve 0.0 exacto para P
-    y para T --y T es el denominador de A^3/T en `M4._residuo_critico`--. La
-    coincidencia es una propiedad de ESTA forma, no del protocolo.
+    condicionada. En el extremo INFERIOR del bracket devuelve 0.0 EXACTO para
+    P y para T --y T es el denominador de A^3/T en `M4._residuo_critico`, o
+    sea una division por cero en uno de los primeros puntos donde Brent
+    evalua--. En el SUPERIOR no: alli el perimetro coincide en los ultimos
+    bits (1.6e-10 relativo) y solo T cae, sin llegar a cero. La coincidencia
+    de las dos vias es una propiedad de ESTA forma, no del protocolo.
 
     LAS DOS "R" DE UN MARCO NO SON LA MISMA, y conviene verlo antes de
     compararlas. `geometria_en(y).R` es de LAMINA LIBRE: su perimetro mojado
