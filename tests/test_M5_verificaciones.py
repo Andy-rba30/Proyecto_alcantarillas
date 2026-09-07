@@ -40,7 +40,8 @@ from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
 from dominios import CBR_MAX_FISICO
 from modelos import (ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
-                     Familia, PuntoCritico, ResultadoHidraulico, TipoMaterial)
+                     Familia, FormaSeccion, PuntoCritico, ResultadoHidraulico,
+                     TipoMaterial)
 from modulos.M2_material import catalogo
 from modulos.M8_estructural import factores_carga_flotacion
 from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
@@ -52,12 +53,13 @@ from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        v2_velocidad_minima,
                                        v3_velocidad_maxima,
                                        v2b_sedimentacion,
-                                       v4_carga_entrada, v5_remanso,
+                                       v4_carga_entrada, v4b_relacion_hw_d,
+                                       v5_remanso,
                                        v6_material_solido_arrastre,
                                        v7_flotacion, v8_evento_extremo,
                                        v9_disponibilidad_diametro, verificar)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
-from tests.apoyo.criterios import sin_valor
+from tests.apoyo.criterios import declarados, sin_valor
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP3_VELOCIDAD_MINIMA)
 
@@ -130,7 +132,8 @@ def hdpe():
 # ===========================================================================
 
 def test_v1_cumple_dentro_del_borde_libre():
-    v = v1_borde_libre(D=0.90, resultado=_resultado(y_normal=0.60))
+    v = v1_borde_libre(D=0.90, material=catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                       punto=_punto(), resultado=_resultado(y_normal=0.60))
     assert v.cumple
     assert v.codigo == "V1"
     # El numeral ya no viaja pelado: lleva RD, pagina, texto literal y el
@@ -144,14 +147,174 @@ def test_v1_cumple_dentro_del_borde_libre():
 
 
 def test_v1_incumple_sobre_el_borde_libre():
-    v = v1_borde_libre(D=0.90, resultado=_resultado(y_normal=0.80))
+    v = v1_borde_libre(D=0.90, material=catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                       punto=_punto(), resultado=_resultado(y_normal=0.80))
     assert not v.cumple
     assert v.valor_obtenido == pytest.approx(0.80 / 0.90)
 
 
 def test_v1_en_el_limite_exacto_cumple():
-    v = v1_borde_libre(D=0.90, resultado=_resultado(y_normal=0.90 * Y_SOBRE_D_MAX))
+    v = v1_borde_libre(D=0.90, material=catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                       punto=_punto(),
+                       resultado=_resultado(y_normal=0.90 * Y_SOBRE_D_MAX))
     assert v.cumple
+
+
+# ---------------------------------------------------------------------------
+# V1 con un MARCO, y la advertencia de alcance de la Familia C (§15.6.3)
+# ---------------------------------------------------------------------------
+
+DECLARACIONES_CAJON = {
+    "embocadura_cajon": "cajon_concreto_aletas_30_75",
+    "n_manning_cajon": "concreto_afinado",
+    "n_celdas_cajon": 1,
+    "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+    "secciones_cajon_normalizadas": ((1.50, 1.20), (2.00, 1.50)),
+}
+
+
+def _marco():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                    forma=FormaSeccion.RECTANGULAR)
+
+
+def test_v1_de_un_marco_sustituye_la_altura_y_no_un_diametro():
+    """
+    El num. 4.1.1.3.7 b) escribe "el 25 % de la altura, diametro o flecha de
+    la estructura": las TRES magnitudes en la misma oracion. Por eso V1 cubre
+    al marco sin analogia y sigue siendo [N] puro; lo unico que cambia es cual
+    de las tres se sustituye, y la memoria tiene que decir cual.
+    """
+    with declarados(DECLARACIONES_CAJON):
+        v = v1_borde_libre(D=1.50, material=_marco(), punto=_punto(),
+                           resultado=_resultado(y_normal=1.00))
+    assert v.criterio_aplicado is None          # sigue siendo [N] puro
+    assert "y/H" in v.paso.formula
+    assert "altura interior de la celda" in v.paso.formula
+    simbolos = [m.simbolo for m in v.paso.sustitucion]
+    assert "H" in simbolos and "D" not in simbolos
+    procedencia = [m.procedencia for m in v.paso.sustitucion if m.simbolo == "H"]
+    assert "secciones_cajon_normalizadas" in procedencia[0]
+    assert v.paso.resultado.simbolo == "y/H"
+
+
+def test_v1_de_un_tubo_sigue_sustituyendo_el_diametro(concreto):
+    """La contraparte: el circular no se mueve ni un texto."""
+    v = v1_borde_libre(D=0.90, material=concreto, punto=_punto(),
+                       resultado=_resultado(y_normal=0.60))
+    assert "y/D" in v.paso.formula
+    assert [m.simbolo for m in v.paso.sustitucion] == ["y_normal", "D"]
+    assert v.paso.resultado.simbolo == "y/D"
+
+
+def test_v1_de_un_punto_de_familia_c_lleva_la_advertencia_de_alcance(concreto):
+    """
+    §15.6.3, segundo vehiculo: la advertencia PEGADA AL NUMERO.
+
+    La declaracion entera sale una vez por punto en `bloque_alcance`; lo que
+    esta nota aporta es lo que aquel bloque no puede dar -- decir, junto a
+    ESTE umbral, contra que cota mide --. Es la leccion de NOR-HDS-05: un
+    aviso que no señala el punto afectado es el «nadie se entera».
+    """
+    nota = v1_borde_libre(D=0.90, material=concreto,
+                          punto=_punto(familia=Familia.C),
+                          resultado=_resultado(y_normal=0.60)
+                          ).paso.nota_del_proyecto
+    assert "ALCANCE (Familia C" in nota
+    assert "la altura interior del propio barril" in nota
+    assert "ALCANTARILLA DE PASO" in nota
+    # Y sigue llevando lo que ya llevaba: la nota se suma, no sustituye.
+    assert "umbral duro" in nota
+
+
+def test_v4_de_un_punto_de_familia_c_lleva_la_advertencia_con_SU_cota():
+    """
+    La segunda de las dos que la pueden llevar, y la que sostiene el argumento
+    de §15.6.2: V4 mide contra la subrasante de la VIA, no contra el canal.
+    """
+    nota = v4_carga_entrada(punto=_punto(familia=Familia.C),
+                            resultado=_resultado()).paso.nota_del_proyecto
+    assert "ALCANCE (Familia C" in nota
+    assert "la subrasante de la VIA" in nota
+
+
+def test_un_punto_que_no_es_de_familia_c_no_lleva_advertencia_de_alcance(
+        concreto):
+    assert "ALCANCE (Familia C" not in v1_borde_libre(
+        D=0.90, material=concreto, punto=_punto(familia=Familia.A),
+        resultado=_resultado(y_normal=0.60)).paso.nota_del_proyecto
+    assert v4_carga_entrada(punto=_punto(familia=Familia.A),
+                            resultado=_resultado()).paso.nota_del_proyecto == ""
+
+
+def test_v4b_no_puede_llevar_la_advertencia_y_su_razon_esta_censada():
+    """
+    §15.6.3 nombra V1 y V4b como sitio de la advertencia, y V4b NO PUEDE
+    llevarla: no emite `PasoDeMemoria`. La razon esta censada en
+    `normativa.fundamentos.SIN_FUNDAMENTO` -- el rango HW/D 1.0-1.5 lo
+    DESCRIBE el HDS-5 y no lo prescribe, de modo que darle una cita para poder
+    colgarle la nota convertiria en exigencia una adopcion del proyectista --.
+    Se fija aqui para que el hueco sea una decision comprobada y no un olvido:
+    el dia que V4b tenga fundamento, este test cae y hay que ponerle la nota.
+    """
+    from normativa.fundamentos import SIN_FUNDAMENTO
+    v = v4b_relacion_hw_d(D=0.90, resultado=_resultado())
+    assert v.paso is None
+    censados = {id_: razon for id_, razon, _ in SIN_FUNDAMENTO}
+    assert "F5.V4b" in censados
+    assert "DESCRIBE" in censados["F5.V4b"]
+
+
+# ---------------------------------------------------------------------------
+# V6 y V9 con un marco
+# ---------------------------------------------------------------------------
+
+def test_v6_de_un_marco_depende_del_criterio_y_no_de_lo_que_MD_no_sabe_hacer():
+    with declarados(DECLARACIONES_CAJON):
+        v = v6_material_solido_arrastre(material=_marco())
+    assert v.cumple
+    assert v.criterio_aplicado == "n_celdas_cajon"
+    assert "1 celda" in v.valor_obtenido
+
+
+def test_v6_no_cumple_si_el_expediente_declara_multicelda():
+    """
+    EL VEREDICTO SE PUEDE PONER EN ROJO, que es lo que antes no pasaba: V6
+    valia True por construccion del programa -- "M2/MD no ofrecen diseño
+    multibarril" -- y ese enunciado dejo de ser cierto en C5. Con dos celdas
+    declaradas, la Sec. 3.1 no se cumple y V6 lo dice.
+    """
+    with declarados({**DECLARACIONES_CAJON, "n_celdas_cajon": 2}):
+        v = v6_material_solido_arrastre(material=_marco())
+    assert not v.cumple
+    assert "2 celda" in v.valor_obtenido
+
+
+def test_v6_de_un_tubo_no_consulta_ningun_criterio_del_cajon(concreto):
+    v = v6_material_solido_arrastre(material=concreto)
+    assert v.cumple and v.criterio_aplicado is None
+    assert "catalogo circular" in v.valor_obtenido
+
+
+def test_v9_de_un_marco_cita_la_progresion_y_no_el_tope_del_tubo():
+    """
+    V9 es disponibilidad de SECCION desde C5. El tope de un marco es la mayor
+    altura de su progresion declarada; atribuirlo a 'D_max_catalogo' -- un
+    diametro de tuberia por material -- seria un numero verdadero con
+    procedencia falsa.
+    """
+    with declarados(DECLARACIONES_CAJON):
+        v = v9_disponibilidad_diametro(D=1.50, material=_marco())
+        fuera = v9_disponibilidad_diametro(D=1.80, material=_marco())
+    assert v.cumple and v.criterio_aplicado == "secciones_cajon_normalizadas"
+    assert v.valor_admisible == pytest.approx(1.50, rel=REL_TRANSPORTE)
+    assert not fuera.cumple
+
+
+def test_v9_de_un_tubo_sigue_citando_el_tope_de_catalogo(concreto):
+    v = v9_disponibilidad_diametro(D=0.90, material=concreto)
+    assert v.criterio_aplicado == "D_max_catalogo"
+    assert v.valor_admisible == pytest.approx(2.70, rel=REL_TRANSPORTE)
 
 
 # ===========================================================================
@@ -667,7 +830,8 @@ def test_los_dos_vacios_de_la_fase_5_son_los_que_el_alcance_de_perfil_difiere():
 # ===========================================================================
 
 def test_v6_cumple_por_construccion():
-    v = v6_material_solido_arrastre()
+    v = v6_material_solido_arrastre(
+        material=catalogo(TipoMaterial.CONCRETO_REFORZADO))
     assert v.cumple
     assert v.codigo == "V6"
     assert v.criterio_aplicado is None

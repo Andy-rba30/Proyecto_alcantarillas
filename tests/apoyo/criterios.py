@@ -100,6 +100,37 @@ def con_valor(clave: str, valor, *, motivo: str):
             ca.establecer_valor_dinamico(clave, dinamico)
 
 
+@contextmanager
+def declarados(valores: dict):
+    """
+    Declara varios criterios A LA VEZ mientras dure el bloque, y los retira.
+
+    Existe para los cinco del cajon (C5), que son SIN VALOR por mandato del
+    num. 4.1.1.3.4 a) -- el numeral remite la seccion del cruce de canal a
+    "cada diseño particular" -- y que aun asi hay que poder ejercitar: un
+    camino de codigo que solo se recorre cuando alguien declara no se puede
+    dejar sin tests, y declararlos EN EL ARCHIVO seria inventar el valor que
+    la norma manda decidir caso por caso.
+
+    Entra por `establecer_valor_dinamico`, que es la via de la GUI y de la
+    CLI y la que ATRAVIESA la guardia de `_verificar_criterio`: lo que estos
+    tests declaran pasa por el mismo filtro que una declaracion real. Para
+    esquivar la guardia -- que a veces hace falta y siempre hay que
+    justificar -- esta `con_valor`, que exige motivo.
+    """
+    previos = {clave: ca.valores_dinamicos().get(clave, _SIN_DECLARAR)
+               for clave in valores}
+    for clave, valor in valores.items():
+        ca.establecer_valor_dinamico(clave, valor)
+    try:
+        yield valores
+    finally:
+        for clave, previo in previos.items():
+            ca.quitar_valor_dinamico(clave)
+            if previo is not _SIN_DECLARAR:
+                ca.establecer_valor_dinamico(clave, previo)
+
+
 # Centinela: `None` es un valor legitimo de un criterio y no puede significar
 # "no habia declaracion de corrida".
 _SIN_DECLARAR = object()

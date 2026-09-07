@@ -403,17 +403,28 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F8.RECUBRIMIENTO",  # 9.4 se detiene en 'categoria_refuerzo_aashto'
         "F10.CUNETA",       # falta el dato 'L_hidraulico_m'
         "F6.LAUSHEY",       # Fase 6 cuelga de un punto dimensionado
-        # LOS CUATRO DEL CAJON, y su razon NO es la misma que la de los de
-        # arriba. Aquellos no se alcanzan porque al expediente le falta un
-        # dato; estos porque EL PASO QUE LOS EMITIRIA TODAVIA NO EXISTE: la
-        # seccion rectangular la implementa C4 y su catalogo y criterios C5.
-        # C2 los declara porque transcribio sus citas, y una cita sin
-        # consumidor la rechaza T4 del registro. Salen de esta lista en
-        # cuanto C4 y C5 escriban los pasos que los imprimen; si en esa
-        # sesion siguen aqui, es que el paso se escribio sin su fundamento.
-        "F3.TIPO_MARCO",     # el paso que asigna el tipo de estructura: C5
-        "F3.MANTENIMIENTO",  # la cota inferior de la progresion B*H: C5
-        "F3.CELDAS",         # la adopcion del numero de celdas: C5
+        # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
+        # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
+        # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve
+        # un candidato de marco, y viajan en `Material.pasos` hasta el bloque
+        # que M11 titula «Fases 3 y 4».
+        #
+        # SIGUEN AQUI POR LA MISMA RAZON QUE LOS CUATRO DE ARRIBA, y esa es la
+        # diferencia: por un VACIO DEL EXPEDIENTE. Los cinco criterios del
+        # cajon estan sin valor -- el num. 4.1.1.3.4 a) remite la seccion del
+        # cruce de canal a "cada diseno particular" y el proyecto no puede
+        # escribirla --, de modo que ningun punto de Familia C dimensiona y la
+        # corrida por defecto no llega a emitirlos. Es la categoria de
+        # F7.RELLENO, F8.RECUBRIMIENTO y F10.CUNETA, no la de antes.
+        #
+        # QUE LOS PASOS EXISTEN SE COMPRUEBA, no se afirma:
+        # `test_M2_material::test_los_cinco_pasos_de_fase_3_del_marco_salen_
+        # con_su_fundamento` declara los criterios en caliente y los mide.
+        "F3.TIPO_MARCO",      # tipo de estructura del cruce
+        "F3.SECCION_CANAL",   # la progresion, fuera del piso de 0.90 m
+        "F3.MANTENIMIENTO",   # la cota inferior de esa progresion
+        "F3.CELDAS",          # una celda o multicelda
+        "F4.N_CAJON",         # la fila de la Tabla N 09 por analogia
         # `F4.FORMA_HDS5` SALIO DE ESTA LISTA EN C3, que es lo que C2 dejo
         # dicho que tenia que pasar: «salen de esta lista en cuanto C4 y C5
         # escriban los pasos que los imprimen; si en esa sesion siguen aqui,

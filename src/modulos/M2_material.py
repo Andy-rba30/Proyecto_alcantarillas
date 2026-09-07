@@ -149,25 +149,42 @@ dos tablas del Manual MTC: su n sale del criterio 'n_manning_hdpe' (la subfila
 completa del concreto por analogia, [N->]) y su velocidad maxima del criterio
 'v_max_hdpe'.
 
-Familia C queda sin candidatos -- por DOS razones, y la normativa faltaba
--------------------------------------------------------------------------
-Sec. 2.3 (recogido en M1_clasificacion.PERFILES) dice que la Familia C usa
-"seccion: marco o multicelda", no un conducto circular. El catalogo de este
-modulo es exclusivamente de conductos circulares (Material.D es un diametro),
-de modo que `materiales_candidatos()` devuelve la tupla vacia para un punto
-de Familia C: no es que ningun material circular pase el filtro, es que la
-pregunta de conducto circular no aplica a esa familia.
+El marco de la Familia C -- ANTES "sin candidatos", y ya no
+-------------------------------------------------------------
+ESTE EPIGRAFE DESCRIBIA UN ESTADO QUE C5 TERMINO, y se reescribe entero en vez
+de anotarse: un docstring que describe un estado superado es peor que no
+haberlo escrito, y este proyecto ya se tropezo dos veces con eso (SIS-A-03).
+Lo que decia: que `materiales_candidatos()` devolvia la tupla vacia para la
+Familia C por dos razones acumuladas -- el catalogo era solo de conductos
+circulares, y el num. 4.1.1.3.4 a) exceptua a los cruces de canal del piso de
+0.90 m --. La primera dejo de ser cierta; la segunda sigue, y ahora es lo que
+SOSTIENE el candidato en vez de excluirlo.
 
-La segunda razon es NORMATIVA y no estaba escrita (NOR-HID-03). El
-num. 4.1.1.3.4 a) del Manual de Hidrologia, que es de donde sale el piso de
-0.90 m que este catalogo aplica como primer escalon, EXCEPTUA expresamente a
-los cruces de canal de riego: "...salvo en cruces de canales de riego donde se
-adoptaran secciones de acuerdo a cada diseno particular". La Familia C de este
-expediente ES el conjunto de cruces de canal. Que la exclusion se apoyara solo
-en la forma de la seccion dejaba el piso normativo aplicandose "por defecto" a
-una familia que el numeral exime: mismo resultado, razon incompleta. El texto
-literal y su ambito estan en `constantes_normativas.DIAMETRO_MIN_TEXTO` y
-`DIAMETRO_MIN_AMBITO`.
+LO QUE HAY HOY. `materiales_candidatos()` devuelve UN candidato para la
+Familia C: el marco de concreto reforzado, con `FormaSeccion.RECTANGULAR`.
+Uno y no tres, porque el TMC y el HDPE son productos de seccion circular y no
+hay catalogo de marco en ninguno de los dos. La asignacion del tipo la hace la
+Sec. 2.3 de la hoja de ruta, y tiene respaldo en la fuente primaria: el num.
+4.1.1.3.4 a) nombra al marco de concreto el PRIMERO entre los tipos comunmente
+utilizados, cuenta la seccion rectangular entre las mas usuales y permite
+ubicarlo a la cota que se requiera; y la Lamina N 03 lo DIBUJA para este caso
+exacto, un marco de concreto en cruce de canal de riego.
+
+Y LO QUE PASA AL PEDIRLO: se detiene. Los cuatro criterios del cajon estan sin
+valor por mandato -- el numeral remite la seccion a "cada diseno particular",
+de modo que el proyecto no puede escribirla --, y `catalogo()` levanta
+`CriterioPendienteError` en el primero que falte. La detencion CAMBIO DE
+NATURALEZA y eso es lo que importa: antes el programa afirmaba algo sobre el
+CATALOGO ("no hay material candidato para esta familia"), y ahora afirma algo
+sobre el EXPEDIENTE ("falta declarar la embocadura del marco"). La primera no
+se podia resolver declarando nada; la segunda es una lista de trabajo.
+
+EL PISO DE 0.90 m NO SE HEREDA, y ahora se ve en el codigo y no solo en el
+comentario: la progresion del marco no sale de 'diametros_normalizados' sino
+de 'secciones_cajon_normalizadas', que es un criterio distinto y sin valor. El
+literal del numeral y su ambito siguen en
+`constantes_normativas.DIAMETRO_MIN_TEXTO` y `DIAMETRO_MIN_AMBITO`; no se
+transcriben aqui.
 
 Excepciones
 -----------
@@ -181,12 +198,15 @@ Excepciones
 
 Uso
 ---
-    from modulos.M2_material import catalogo, materiales_candidatos, siguiente_diametro
+    from modulos.M2_material import (catalogo, materiales_candidatos,
+                                     siguiente_seccion)
 
-    candidatos = materiales_candidatos(punto)            # () en Familia C
+    candidatos = materiales_candidatos(punto)   # el marco, en Familia C
     concreto = catalogo(TipoMaterial.CONCRETO_REFORZADO)
-    D = siguiente_diametro(TipoMaterial.CONCRETO_REFORZADO)   # 0.90
-    D = siguiente_diametro(TipoMaterial.CONCRETO_REFORZADO, D)  # 1.05
+    marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                     forma=FormaSeccion.RECTANGULAR)     # bloquea sin declarar
+    seccion = siguiente_seccion(concreto)                # Ø 0.90 m
+    seccion = siguiente_seccion(concreto, seccion)       # Ø 1.05 m
 """
 
 from __future__ import annotations
@@ -195,11 +215,16 @@ import numbers
 from typing import Any, Optional, Tuple, Union
 
 import criterios_adoptados as ca
-from constantes_normativas import (HDS5_INLET, H_RELLENO_MIN, MANNING,
+from constantes_normativas import (CARTAS_CAJON_TA1,
+                                   FILAS_MANNING_CONCRETO,HDS5_INLET, H_RELLENO_MIN, MANNING,
                                    SECCION_EG2013, TABLA_09_FILAS, V_MAX)
 from dominios import MILIMETROS_POR_METRO
-from modelos import (ConstantesHDS5, DatoFaltanteError, DatoInvalidoError,
-                     Familia, Material, PuntoCritico, TipoMaterial)
+from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, ConstantesHDS5,
+                     DatoFaltanteError, DatoInvalidoError,
+                     EleccionDeProyecto, Familia, FormaSeccion, Magnitud,
+                     Material, PasoDeMemoria, PuntoCritico, Seccion,
+                     SeccionCircular, SeccionRectangular, TipoDeVeredicto,
+                     TipoMaterial, Veredicto, paso)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_CATALOGO = "Sec. 3.2"     # nuevo en v7, sin numeral MTC propio
@@ -210,6 +235,19 @@ CRITERIO_D_MAX_CATALOGO = "D_max_catalogo"
 CRITERIO_ESPESOR_PARED = "espesor_pared_conducto"
 CRITERIO_N_MANNING_HDPE = "n_manning_hdpe"
 CRITERIO_HDS5_HDPE = "hds5_embocadura_hdpe"
+# Los cinco del cajon (C5). Los cuatro primeros los lee ESTE modulo; el quinto
+# lo lee M4 cuando llega al control de salida, y aqui solo viaja su CLAVE
+# dentro del `Material`.
+CRITERIO_SECCIONES_CAJON = "secciones_cajon_normalizadas"
+CRITERIO_N_MANNING_CAJON = "n_manning_cajon"
+CRITERIO_EMBOCADURA_CAJON = "embocadura_cajon"
+CRITERIO_N_CELDAS_CAJON = "n_celdas_cajon"
+# LAS DOS CLAVES DEL ke NO ESTAN AQUI, y no es un olvido: `variables_entrada`
+# deduce el consumidor de una variable de los LITERALES de cada modulo, de
+# modo que nombrarlas aqui haria figurar a M2 como consumidor de un criterio
+# que M2 no lee nunca -- y `consumido_por` es lo que la memoria imprime bajo
+# «de donde sale este dato» --. Quien las lee es M4, en el control de salida,
+# y por eso viven en `M4_control` con el resto de sus claves.
 CRITERIO_V_MAX = {
     TipoMaterial.TMC: "v_max_tmc",
     TipoMaterial.HDPE: "v_max_hdpe",
@@ -392,7 +430,50 @@ def espesor_pared(material: Material, D: float) -> float:
     misma mina que V8 tenia --: declarar el criterio para un solo material
     tumbaba la corrida entera con un fallo de programa en vez de descartar
     ese material.
+
+    Y HAY UN QUINTO VACIO, QUE ES EL DEL MARCO, y se detiene ANTES que los
+    cuatro. Lo encontro la auditoria adversarial de C5 midiendo lo que pasaba
+    sin el, y no era una imprecision de texto: era un NUMERO INSEGURO. La
+    tabla que este criterio declara es la columna «Wall Thickness» de una
+    norma de TUBERIA, indexada por diametro designado en milimetros, y las
+    alturas de marco plausibles caen sobre esa misma serie de 900 + 150k mm.
+    De modo que un marco de 2.00 x 1.50 m NO se detenia: recibia t = 0.150 m,
+    la pared del tubo de 1500 mm, y con ella `diametro_exterior` le daba a V7
+    un cilindro de 1.80 m. Medido sobre esa seccion: la subpresion real de un
+    prisma es 40.6 kN/m y la del cilindro 25.0 kN/m -- un 63 % menos --,
+    mientras el peso de relleno cae solo un 28 %, de modo que V7 SOBREESTIMA
+    la seguridad del marco alrededor de un 27 %. Es la direccion insegura, y
+    es MAT-D3 reintroducido para el cajon.
+
+    El docstring de `M5.v7_flotacion` que C5 escribio decia que «un marco
+    vaciado in situ no tiene fila ahi». La frase era verdadera sobre la NORMA
+    y falsa sobre el DICT, que es lo que el codigo lee, y una declaracion en
+    un docstring no detiene ningun calculo. Por eso la deteccion esta aqui:
+    `DatoFaltanteError`, porque lo que falta es un dato que hay que CONSEGUIR
+    -- el espesor de pared de un marco sale de su calculo estructural, no de
+    una tabla de producto --, y porque asi la Fase 5 de un marco se detiene en
+    V7 en vez de publicar un margen que no es. Levantarla es de C7, que
+    generaliza M8 a la seccion.
     """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        raise DatoFaltanteError(
+            f"{CRITERIO_ESPESOR_PARED}[marco]",
+            detalle=(
+                f"el criterio '{CRITERIO_ESPESOR_PARED}' tabula la pared por "
+                "DIAMETRO DESIGNADO de una norma de tuberia (columna 'Wall "
+                "Thickness' de AASHTO M 170M-04), y un marco vaciado in situ "
+                "no tiene fila ahi: su espesor sale de su propio calculo "
+                "estructural. NO SE PUEDE LEER LA FILA DEL TUBO DE LA MISMA "
+                "ALTURA, aunque exista: la altura de un marco cae sobre la "
+                "misma serie de 900 + 150k mm por coincidencia, y con esa "
+                "pared el volumen desplazado se calcula como un CILINDRO -- "
+                "V7 sobreestima la seguridad alrededor de un 27 % sobre un "
+                "marco de 2.00 x 1.50 m, que es la direccion insegura. "
+                "Mientras esto no se declare, la Fase 5 de un marco se "
+                "detiene en V7 y no publica un margen que no es. Lo cierra la "
+                "generalizacion de M8 a la seccion"
+            ),
+        )
     if material.espesor_pared is None:
         ca.valor(CRITERIO_ESPESOR_PARED)      # CriterioPendienteError si esta vacio
         raise DatoFaltanteError(
@@ -496,11 +577,211 @@ def siguiente_diametro(material: MaterialLike,
     return siguiente
 
 
+def siguiente_seccion(material: Material,
+                      actual: Optional[Seccion] = None) -> Optional[Seccion]:
+    """
+    Siguiente escalon del catalogo COMO SECCION, o None si se agoto (Sec. 3.2).
+
+    ES LA PUERTA QUE C5 TIENE QUE PONER, y la razon es un modo de fallo
+    silencioso: hasta aqui MD pedia `siguiente_diametro(material.tipo)` y
+    construia `SeccionCircular(D)` con lo que recibiera. Un material de MARCO
+    tiene el mismo `TipoMaterial` que un tubo de concreto, de modo que esa
+    llamada le habria devuelto 0.90, 1.05, 1.20... -- la progresion CIRCULAR
+    -- y el punto se habria dimensionado como un tubo con las constantes de
+    HDS-5 de un cajon. Ningun numero habria salido negativo ni infinito: solo
+    equivocado. Preguntar por la SECCION y no por el diametro cierra esa
+    puerta, porque la progresion la elige la forma.
+
+    `actual` es la seccion del escalon anterior, no un numero: quien recorre
+    el catalogo no tiene por que saber sobre que magnitud avanza.
+
+    Con `FormaSeccion.RECTANGULAR` la progresion sale del criterio
+    'secciones_cajon_normalizadas', que hoy esta SIN VALOR por mandato de la
+    Sec. 4.1.1.3.4 a) -- el numeral exceptua a los cruces de canal del piso de
+    0.90 m y los remite a "cada diseno particular" --. La llamada se detiene
+    con `CriterioPendienteError`, que es lo que tiene que pasar.
+    """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        return _siguiente_seccion_cajon(actual)
+    D = siguiente_diametro(material.tipo,
+                           None if actual is None else actual.altura)
+    return None if D is None else SeccionCircular(D)
+
+
+def _misma_seccion(a: Seccion, b: Seccion) -> bool:
+    """
+    Dos secciones rectangulares son la misma escalon del catalogo.
+
+    CON TOLERANCIA Y NO CON `==`, igual que `siguiente_diametro` compara su
+    progresion: CLAUDE.md prohibe comparar floats con `==` sin excepcion. Hoy
+    las dos secciones se reconstruyen del mismo criterio y el `==` acertaba
+    siempre; deja de acertar en cuanto una llegue de otro sitio -- de un JSON
+    de tablero, de la GUI, de un round-trip por texto --, y entonces el bucle
+    de MD dejaria de reconocer su propio escalon y levantaria un
+    `DatoInvalidoError` sobre una seccion que si esta en la serie.
+    """
+    return (abs(a.B - b.B) <= TOL_UMBRAL_NORMATIVO
+            and abs(a.altura - b.altura) <= TOL_UMBRAL_NORMATIVO)
+
+
+def _siguiente_seccion_cajon(actual: Optional[Seccion]) -> Optional[Seccion]:
+    """
+    Siguiente par (B, H) de la progresion declarada, en el orden en que el
+    criterio la declara.
+
+    NO SE ORDENA AQUI, y conviene decir por que: en una progresion de dos
+    dimensiones "el siguiente" no es una relacion de orden que el programa
+    pueda deducir -- crecer en ancho y crecer en canto no son intercambiables,
+    y cual conviene depende de la rasante y del canal --. El orden es parte de
+    lo que el proyectista declara, y este bucle lo respeta tal cual.
+    """
+    secciones = [SeccionRectangular(B, H) for B, H in progresion_de_cajon()]
+    if actual is None:
+        return secciones[0] if secciones else None
+    for anterior, siguiente in zip(secciones, secciones[1:]):
+        if _misma_seccion(anterior, actual):
+            return siguiente
+    if secciones and _misma_seccion(secciones[-1], actual):
+        return None
+    raise DatoInvalidoError(
+        "seccion", valor=(actual.B, actual.H),
+        motivo=f"no pertenece a la progresion declarada en "
+               f"'{CRITERIO_SECCIONES_CAJON}': este catalogo no reconoce "
+               f"secciones fuera de la serie que el expediente declara",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Sec. 3.4 - Catalogo de material
 # ---------------------------------------------------------------------------
 
-def catalogo(material: MaterialLike) -> Material:
+def _carta_de_cajon() -> str:
+    """
+    La clave de la carta de la Tabla A.1 que 'embocadura_cajon' declara,
+    comprobada contra las CARTAS DE CAJON y no contra la tabla entera.
+
+    LAS DOS GUARDIAS SON DE LA MISMA FAMILIA Y LAS DOS LAS PIDIO LA AUDITORIA
+    ADVERSARIAL DE C5, que midio los dos agujeros:
+
+      * `HDS5_INLET[ca.valor(...)]` a pelo acepta
+        «circular_concreto_square_edge_headwall» y le da a un MARCO las
+        constantes de la Carta 1 CIRCULAR -- y ademas la Forma 1, con su
+        Ks*S --, mientras el paso de memoria imprime que la carta es «del
+        bloque de CAJON» invocando el num. A.3, que es la regla que se estaria
+        violando. Este es el unico punto del codigo donde la regla vinculante
+        #5 se puede hacer cumplir.
+      * y una ERRATA en la clave --«cajon_concreto_aleta_45_d04»-- sale como
+        `KeyError` desnudo, que no desciende de `ErrorProyecto`: `cli._etapa`
+        no lo captura, tumba la corrida entera y la GUI no lo puede distinguir
+        de un fallo del programa. Es la mina que S20 desactivo tres veces.
+
+    Es `DatoInvalidoError` y no `CriterioPendienteError` porque el criterio SI
+    esta declarado: hay que CORREGIRLO, no declararlo.
+    """
+    clave = ca.valor(CRITERIO_EMBOCADURA_CAJON)
+    if not isinstance(clave, str) or clave not in CARTAS_CAJON_TA1:
+        raise DatoInvalidoError(
+            CRITERIO_EMBOCADURA_CAJON, valor=clave,
+            motivo="se espera la CLAVE de una carta de CAJON de la Tabla A.1 "
+                   "del HDS-5. El num. A.3 prohibe expresamente cruzar "
+                   "coeficientes entre geometrias -- «coefficients for "
+                   "rectangular (box) shapes should not be used for "
+                   "nonrectangular ... shapes and vice-versa» --, de modo que "
+                   "una carta circular aqui no es un valor discutible: es "
+                   "otra geometria. Claves admitidas: "
+                   + ", ".join(sorted(CARTAS_CAJON_TA1)),
+        )
+    return clave
+
+
+def _fila_manning_de_cajon() -> str:
+    """
+    La fila de la Tabla N 09 de la que 'n_manning_cajon' toma su analogia.
+
+    ACOTADA AL SUBGRUPO «a. Concreto», que es lo que el criterio declara: un
+    marco de concreto no puede tomar prestada la n de un metal corrugado ni la
+    de unas duelas de madera, y sin esta guardia `MANNING[...]` las aceptaba
+    -- y una errata en la clave salia como `KeyError` desnudo --.
+    """
+    clave = ca.valor(CRITERIO_N_MANNING_CAJON)
+    if not isinstance(clave, str) or clave not in FILAS_MANNING_CONCRETO:
+        raise DatoInvalidoError(
+            CRITERIO_N_MANNING_CAJON, valor=clave,
+            motivo="se espera la CLAVE de una fila del subgrupo «a. Concreto» "
+                   "del grupo A de la Tabla N 09: la analogia que este "
+                   "criterio declara es DENTRO del material del conducto, no "
+                   "entre materiales. Claves admitidas: "
+                   + ", ".join(sorted(FILAS_MANNING_CONCRETO)),
+        )
+    return clave
+
+
+def numero_de_celdas(material: Material) -> int:
+    """
+    N, el numero de barriles del marco ('n_celdas_cajon'), validado.
+
+    LA INTEGRALIDAD SE COMPRUEBA, y no es celo: la guardia anterior era
+    `not celdas >= 1`, que deja pasar `2.5` -- lo midio la auditoria
+    adversarial de C5: `Q/2.5` sale sin quejarse y la memoria imprimiria «2.5
+    celdas» --. Un barril y medio no se construye, y el propio `dominio` del
+    criterio dice «entero >= 1».
+
+    LA GUARDIA VA ESCRITA EN POSITIVO Y NEGADA, que es la forma que MAT-D13
+    dejo fijada: `not (... >= 1)` atrapa tambien un NaN, que frente a `< 1`
+    seria falso y pasaria.
+
+    VIVE EN M2 Y NO EN MD porque tiene DOS consumidores y los dos estan
+    debajo del orquestador: `MD._caudal_por_barril`, que reparte el caudal, y
+    `M5.v6_material_solido_arrastre`, que compara el numero contra la Sec.
+    3.1. Ponerlo en MD obligaba a M5 a importar al modulo que lo orquesta.
+    Leerlo dos veces con dos guardias distintas es como divergen los numeros.
+    """
+    celdas = ca.valor(CRITERIO_N_CELDAS_CAJON)
+    entero = isinstance(celdas, int) and not isinstance(celdas, bool)
+    if not entero or not celdas >= 1:
+        raise DatoInvalidoError(
+            CRITERIO_N_CELDAS_CAJON, valor=celdas,
+            motivo="el numero de celdas del marco tiene que ser un ENTERO "
+                   "mayor o igual que 1: es cuantos barriles se construyen, "
+                   "y el caudal de diseño se reparte entre ellos. Un valor "
+                   "fraccionario no es un numero de barriles")
+    return celdas
+
+
+def progresion_de_cajon() -> tuple:
+    """
+    La serie (B, H) que 'secciones_cajon_normalizadas' declara, validada.
+
+    SIN ESTA GUARDIA, UN ESCALAR DECLARADO DESDE LA GUI REVIENTA CON
+    `TypeError`. Es exactamente el modo de fallo que este mismo modulo ya
+    tenia documentado para 'espesor_pared_conducto' --«la GUI solo sabe
+    ofrecer float o str»-- y que C5 no habia replicado aqui; lo midio la
+    auditoria adversarial. Se valida ademas lo que un revisor no puede ver a
+    ojo en una serie de pares: que cada dimension sea un numero POSITIVO. Lo
+    que NO se valida es el ORDEN, y es deliberado -- `_siguiente_seccion_cajon`
+    explica por que en dos dimensiones «el siguiente» no es una relacion que
+    el programa pueda deducir --.
+    """
+    progresion = ca.valor(CRITERIO_SECCIONES_CAJON)
+    forma_mala = DatoInvalidoError(
+        CRITERIO_SECCIONES_CAJON, valor=progresion,
+        motivo="se espera una serie de pares (B, H) en metros -- por ejemplo "
+               "((1.50, 1.20), (2.00, 1.50)) --, con B y H interiores de UNA "
+               "celda y los dos POSITIVOS. No es un escalar ni un solo par: "
+               "el bucle de MD recorre la serie entera, igual que recorre los "
+               "diametros",
+    )
+    try:
+        pares = tuple((float(B), float(H)) for B, H in progresion)
+    except (TypeError, ValueError):
+        raise forma_mala from None
+    if not pares or any(B <= 0 or H <= 0 for B, H in pares):
+        raise forma_mala
+    return pares
+
+
+def catalogo(material: MaterialLike,
+             forma: FormaSeccion = FormaSeccion.CIRCULAR) -> Material:
     """
     Reune en un `Material` todo lo que la Fase 4 y la Fase 5 necesitan de ese
     material: doble n de Manning, tope de diametro (Sec. 3.2), constantes
@@ -517,10 +798,49 @@ def catalogo(material: MaterialLike) -> Material:
     `h_relleno_min_eg2013` NO es de esa familia aunque tambien sea Optional:
     su None no es un vacio pendiente sino el hecho normativo de que EG-2013
     fija la altura minima de relleno solo para HDPE. Nadie lo declarara nunca.
+
+    LA FORMA ES UN PARAMETRO DESDE C5, y no se deduce del `tipo`: un marco de
+    concreto y un tubo de concreto son el mismo `TipoMaterial`, y lo que los
+    separa es de que progresion sale su seccion, de que fila su n y de que
+    carta sus constantes de HDS-5.
+
+    EL CATALOGO DEL MARCO NO SE PUEDE LISTAR MIENTRAS SUS CRITERIOS ESTEN
+    VACIOS, y es deliberado. La regla general de este modulo -- escrita en
+    "Campos que el catalogo puede dejar en None" -- es que un catalogo que no
+    se puede ni listar no es un catalogo, es un candado, y por eso los cuatro
+    criterios Optional se leen con `_valor_si_declarado()`. Con el marco esa
+    salida NO existe, por dos razones que se acumulan:
+
+      * `Material.hds5` NO es Optional. Sin `embocadura_cajon` no hay carta, y
+        no hay carta por defecto que poner: este repositorio tiene QUINCE
+        filas de cajon de concreto transcritas de la Tabla A.1 -- Cartas 8 a
+        12; la tabla trae mas, y lo que queda fuera lo censa el `Acotada` de
+        `normativa/tablas.py::T_HDS5_A1` --, tres de Forma 1 y doce de Forma
+        2, y elegir una por el proyectista seria exactamente lo que esta
+        sesion existe para no hacer.
+      * El n del marco tiene el problema que este mismo modulo dejo advertido
+        para 'n_manning_hdpe': su None se desempaqueta en `n_min, n_max` y
+        saldria como `TypeError` -- un fallo de PROGRAMA -- en vez de como
+        `CriterioPendienteError` del expediente. El aviso decia «antes de
+        vaciarlo, hay que darle un punto de uso que bloquee». El punto de uso
+        que bloquea es esta lectura, y por eso el marco lee con `ca.valor()`.
+
+    De modo que para un marco esta funcion LEVANTA `CriterioPendienteError` en
+    el primer criterio sin declarar, y eso es lo correcto: el revisor tiene
+    que ver que le falta antes de que el programa dimensione nada.
     """
     tipo = _tipo_material(material)
 
-    if tipo is TipoMaterial.HDPE:
+    if forma is FormaSeccion.RECTANGULAR:
+        # EL ORDEN DE ESTAS DOS LECTURAS DECIDE QUE CRITERIO VE EL REVISOR
+        # PRIMERO, porque `cli._etapa` registra UN bloqueo por etapa. Se lee
+        # primero la embocadura y no el n: la embocadura elige la carta Y la
+        # forma de ecuacion, y con ella el ke del control de salida, de modo
+        # que es la que arrastra mas decisiones detras. Los otros tres
+        # aparecen en cuanto este se declare.
+        hds5 = ConstantesHDS5.desde_dict(HDS5_INLET[_carta_de_cajon()])
+        n_min, n_max = MANNING[_fila_manning_de_cajon()]
+    elif tipo is TipoMaterial.HDPE:
         n_min, n_max = _valor_si_declarado(CRITERIO_N_MANNING_HDPE)
         hds5 = ConstantesHDS5.desde_dict(ca.valor(CRITERIO_HDS5_HDPE))
     else:
@@ -548,19 +868,38 @@ def catalogo(material: MaterialLike) -> Material:
                    "MILIMETROS como clave y el espesor en METROS como valor",
         )
 
+    # EL TOPE DEL MARCO NO SALE DE 'D_max_catalogo', y no es un detalle de
+    # atribucion: el valor de ese criterio es un DIAMETRO DE TUBO por material
+    # -- lo que el mercado entrega en tuberia de concreto, de TMC o de HDPE --
+    # y no dice nada sobre hasta donde llega una serie de marcos vaciados in
+    # situ. El tope de un marco es la mayor altura interior que su propia
+    # progresion declarada ofrece, y por eso se lee de ella. Un cajon con
+    # `D_max` prestado del tubo habria dado a V9 un umbral verdadero en
+    # numero y falso en procedencia, que es la clase de defecto que
+    # NOR-PRO-01 cerro para el circular.
+    if forma is FormaSeccion.RECTANGULAR:
+        D_max = max(H for _, H in progresion_de_cajon())
+        D_max_rotulo = (
+            "TOPE DE CATALOGO, NO DE NORMA: mayor altura interior de la "
+            f"progresion que el expediente declara en "
+            f"'{CRITERIO_SECCIONES_CAJON}' [A]. Superarlo NO significa "
+            "'seccion inexistente' -- un marco se vacia in situ en la "
+            "dimension que se arme -- sino 'fuera de la serie declarada', y "
+            "se levanta declarando la serie completa")
+    else:
+        D_max = _topes()[tipo.value]
+        D_max_rotulo = ca.criterio(CRITERIO_D_MAX_CATALOGO).de_catalogo
+
     return Material(
         tipo=tipo,
         nombre=_NOMBRE[tipo],
         n_min=n_min,
         n_max=n_max,
-        D_max=_topes()[tipo.value],
-        D_max_de_catalogo=ca.criterio(CRITERIO_D_MAX_CATALOGO).de_catalogo,
+        D_max=D_max,
+        D_max_de_catalogo=D_max_rotulo,
         norma_producto=_NORMA_PRODUCTO[tipo],
         hds5=hds5,
-        fila_manning=(TABLA_09_FILAS[_MANNING_CLAVE[tipo]]["fila"]
-                      if tipo in _MANNING_CLAVE else
-                      f"no listado en la Tabla N 09; analogia declarada en el "
-                      f"criterio '{CRITERIO_N_MANNING_HDPE}'"),
+        fila_manning=_fila_manning(tipo, forma),
         v_max_tabla10=v_max_tabla10,
         v_max_adoptado=v_max_adoptado,
         # [N] directo de EG-2013 508.07 y SOLO para HDPE: los otros dos
@@ -568,7 +907,242 @@ def catalogo(material: MaterialLike) -> Material:
         h_relleno_min_eg2013=H_RELLENO_MIN[_EG2013_CLAVE[tipo]],
         espesor_pared=None if espesores is None else espesores.get(tipo.value),
         seccion_eg2013=SECCION_EG2013[tipo.value],
+        forma=forma,
+        pasos=(_pasos_del_marco() if forma is FormaSeccion.RECTANGULAR
+               else ()),
     )
+
+
+def _pasos_del_marco() -> Tuple[PasoDeMemoria, ...]:
+    """
+    La traza de Fase 3 del marco: las CINCO decisiones que lo definen, cada
+    una con su fundamento, su cita y la eleccion que la resolvio.
+
+    POR QUE LA EMITE EL CATALOGO Y NO EL REPORTE. Es la regla de §4.5: la
+    memoria la emite el calculo, y estas cinco se deciden aqui. Viajan en
+    `Material.pasos` y `M4._pasos_hidraulicos` las antepone a las suyas, de
+    modo que llegan a la memoria por el canal que ya existe -- el bloque que
+    M11 titula «Fases 3 y 4» -- sin abrir uno nuevo.
+
+    POR QUE EL TUBO NO TIENE NINGUNA. Su fila de la Tabla N 09 y su carta de
+    la Tabla A.1 son LECTURA DIRECTA de una tabla normativa: no hay eleccion
+    que desarrollar, y lo que hay ya sale en el bloque de criterios. El marco
+    tiene cuatro criterios declarados por el proyectista y uno mas -- el ke --
+    que se mueve con ellos: una memoria que no los desarrolle no los puede
+    defender.
+    """
+    progresion = [(float(B), float(H))
+                  for B, H in ca.valor(CRITERIO_SECCIONES_CAJON)]
+    celdas = ca.valor(CRITERIO_N_CELDAS_CAJON)
+    fila = ca.valor(CRITERIO_N_MANNING_CAJON)
+    carta = ca.valor(CRITERIO_EMBOCADURA_CAJON)
+    n_min, n_max = MANNING[fila]
+    menor = min(progresion, key=lambda par: par[0] * par[1])
+
+    tipo_marco = paso(
+        "F3.TIPO_MARCO",
+        codigo="3.1",
+        que="Tipo de estructura del cruce",
+        formula="Familia C (cruce de canal de riego, Sec. 2.3) -> alcantarilla "
+                "tipo marco de concreto, de seccion rectangular",
+        formula_cita_id="MC_HHD.4.1.1.3.4a#TIPOS",
+        citas_textuales=("MC_HHD.4.1.1.3.4a#TIPOS", "MC_HHD.LAMINA_03"),
+        sustitucion=(
+            Magnitud("familia", Familia.C.value, "",
+                     "clasificacion del punto (Sec. 2.3 de la hoja de ruta): "
+                     "cruce de canal o dren de riego",
+                     cifras=None),),
+        resultado=Magnitud("tipo de estructura", "marco de concreto armado", "",
+                           "asignado por la Sec. 2.3 y respaldado por el "
+                           "numeral y por la Lamina N 03, que dibuja un marco "
+                           "de concreto en cruce de canal de riego",
+                           cifras=None),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="adopcion de tipologia, no verificacion"),
+        nota_del_proyecto=(
+            "La ASIGNACION del tipo la hace la Sec. 2.3 de la hoja de ruta, "
+            "que no es fuente primaria. Lo que aportan las citas de arriba es "
+            "que esa asignacion tiene respaldo en el Manual: el marco de "
+            "concreto encabeza los tipos comunmente utilizados, la seccion "
+            "rectangular esta entre las mas usuales, y la Lamina N 03 lo "
+            "dibuja para este caso exacto."),
+    )
+
+    seccion_canal = paso(
+        "F3.SECCION_CANAL",
+        codigo="3.2",
+        que="Progresion de secciones del marco, fuera del piso de 0.90 m",
+        formula="cruce de canal de riego -> el piso de 0.90 m NO aplica; la "
+                "seccion se adopta 'de acuerdo a cada diseno particular'",
+        formula_cita_id="MC_HHD.4.1.1.3.4a",
+        citas_textuales=("MC_HHD.4.1.1.3.4a",),
+        sustitucion=(
+            Magnitud("escalones", len(progresion), "",
+                     f"pares (B, H) que declara el criterio "
+                     f"'{CRITERIO_SECCIONES_CAJON}', en el orden en que el "
+                     f"bucle de diseno los recorre", cifras=None),),
+        resultado=Magnitud(
+            "progresion", " ; ".join(f"{B:.2f} x {H:.2f}" for B, H in progresion),
+            "m", "serie adoptada de anchos por alturas interiores de UNA "
+            "celda", cifras=None),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="adopcion, no verificacion"),
+        elecciones=(EleccionDeProyecto(
+            que_se_adopto="la progresion de secciones normalizadas del marco",
+            valor=progresion,
+            entre=("cualquier serie creciente de pares (B, H) que respete la "
+                   "cota inferior de mantenimiento y quepa bajo la rasante",),
+            de_donde="adopcion del proyectista",
+            por_que="el num. 4.1.1.3.4 a) EXCEPTUA a los cruces de canal de "
+                    "riego del piso de 0.90 m y los remite a 'cada diseno "
+                    "particular': el numeral no libera la seccion, la "
+                    "traslada del catalogo al diseno",
+            cita_id="MC_HHD.4.1.1.3.4a",
+            clave_criterio=CRITERIO_SECCIONES_CAJON),),
+        nota_del_proyecto=(
+            "El marco NO hereda el piso de 0.90 m, y no porque el proyecto "
+            "decida saltarselo: lo levanta el mismo numeral que lo fija, en "
+            "la misma oracion. Por eso esta progresion es un criterio "
+            "declarado y no una lectura de la norma."),
+    )
+
+    mantenimiento = paso(
+        "F3.MANTENIMIENTO",
+        codigo="3.2",
+        que="Cota inferior de la progresion: la seccion mas chica que se "
+            "puede mantener",
+        formula="dimensiones que permitan el mantenimiento y la limpieza en "
+                "el interior del conducto -- exigencia SIN numero",
+        formula_cita_id="MC_HHD.4.1.1.3.7d",
+        citas_textuales=("MC_HHD.4.1.1.3.7d",),
+        sustitucion=(
+            Magnitud("B_min", menor[0], "m",
+                     "ancho interior del escalon mas chico de la progresion "
+                     "declarada", cifras=CIFRAS_FACTOR),
+            Magnitud("H_min", menor[1], "m",
+                     "altura interior del mismo escalon", cifras=CIFRAS_FACTOR)),
+        resultado=Magnitud("seccion minima", f"{menor[0]:.2f} x {menor[1]:.2f}",
+                           "m", "la mas chica que el proyecto admite para "
+                           "este cruce", cifras=None),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="adopcion, no verificacion"),
+        nota_del_proyecto=(
+            "Levantar el piso de 0.90 m NO deja la seccion sin cota inferior "
+            "normativa. El num. 4.1.1.3.7 d) exige, sin distinguir forma "
+            "alguna, que se pueda mantener y limpiar el conducto por dentro. "
+            "Es una exigencia SIN NUMERO: obliga a que exista un minimo y "
+            "deja al proyecto decir cual, que es exactamente la forma de un "
+            "vacio declarable."),
+    )
+
+    n_celdas = paso(
+        "F3.CELDAS",
+        codigo="3.3",
+        que="Numero de celdas del marco",
+        formula="con capacidad de arrastre del curso: seccion transversal "
+                "libre mayor, SIN subdivisiones",
+        formula_cita_id="MC_HHD.4.1.1.3.4a#MULTIPLES",
+        citas_textuales=("MC_HHD.4.1.1.3.4a#MULTIPLES",),
+        sustitucion=(
+            Magnitud("N", celdas, "celdas",
+                     f"adoptado en el criterio '{CRITERIO_N_CELDAS_CAJON}'",
+                     cifras=None),),
+        resultado=Magnitud("Q por barril", f"Q / {celdas}", "m3/s",
+                           "el caudal de diseno se reparte entre las celdas: "
+                           "los coeficientes de HDS-5, el radio hidraulico y "
+                           "el control de entrada son POR BARRIL",
+                           cifras=None),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="adopcion, no verificacion"),
+        elecciones=(EleccionDeProyecto(
+            que_se_adopto="el numero de celdas del marco",
+            valor=celdas,
+            entre=("una celda -- lo que el numeral recomienda ante arrastre "
+                   "de solidos", "multicelda, admisible y no recomendada por "
+                   "defecto"),
+            de_donde="adopcion del proyectista",
+            por_que="el Manual RECOMIENDA obras de mayor seccion libre y sin "
+                    "subdivisiones ante palizada, porque cada tabique es un "
+                    "punto donde el arrastre se traba. No lo prohibe: invierte "
+                    "la carga de la prueba",
+            cita_id="MC_HHD.4.1.1.3.4a#MULTIPLES",
+            clave_criterio=CRITERIO_N_CELDAS_CAJON),),
+        nota_del_proyecto=(
+            "La cita RECOMIENDA y no obliga, y por eso el numero de celdas es "
+            "un criterio declarado. Lo que cambia con el no es solo la "
+            "geometria: V6 (material solido de arrastre) pasa a depender de "
+            "esta decision escrita en vez de depender de que el programa no "
+            "supiera hacer multibarril."),
+    )
+
+    n_manning = paso(
+        "F4.N_CAJON",
+        codigo="4.1",
+        que="Coeficiente de rugosidad de Manning del marco",
+        formula="analogia DENTRO del grupo A de la Tabla N 09 -- conducto "
+                "cerrado con escurrimiento parcialmente lleno --, que cubre "
+                "al marco por su titulo y no tiene fila de seccion "
+                "rectangular",
+        formula_cita_id="MC_HHD.4.1.1.3.6",
+        citas_textuales=("MC_HHD.4.1.1.3.6#T09",),
+        sustitucion=(
+            Magnitud("n_min", n_min, "",
+                     f"extremo inferior de la fila adoptada: rama de EROSION",
+                     cifras=CIFRAS_FINA),
+            Magnitud("n_max", n_max, "",
+                     f"extremo superior de la misma fila: rama de CAPACIDAD",
+                     cifras=CIFRAS_FINA)),
+        resultado=Magnitud("fila adoptada", TABLA_09_FILAS[fila]["fila"], "",
+                           "la fila de la Tabla N 09 que se aplica al marco "
+                           "por analogia declarada", cifras=None),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="adopcion, no verificacion"),
+        elecciones=(EleccionDeProyecto(
+            que_se_adopto="la fila de la Tabla N 09 que se aplica al marco",
+            valor=fila,
+            entre=("A.2 NO METALICOS - a. Concreto - afinado",
+                   "A.2 NO METALICOS - a. Concreto - tubo recto y libre de "
+                   "basuras"),
+            de_donde="Tabla N 09, num. 4.1.1.3.6, grupo A",
+            por_que="el vacio es de FILA y no de grupo: seis de las siete "
+                    "subfilas de 'a. Concreto' dicen 'tubo' y la septima, "
+                    "'afinado', no dice nada de forma. La analogia se queda "
+                    "DENTRO del grupo que ya cubre al conducto cerrado, y por "
+                    "eso es mas estrecha que la del HDPE, que cruza material",
+            cita_id="MC_HHD.4.1.1.3.6#T09",
+            clave_criterio=CRITERIO_N_MANNING_CAJON),),
+        nota_del_proyecto=(
+            f"El rango se toma COMPLETO -- {n_min} a {n_max} -- y no un valor "
+            f"corriente: la regla de doble n pide los dos extremos, porque "
+            f"n_max es conservador para capacidad y tirante y n_min para "
+            f"velocidad y socavacion. Y la carta de HDS-5 que acompana a esta "
+            f"decision es '{carta}', del bloque de CAJON de la Tabla A.1: el "
+            f"num. A.3 prohibe cruzar coeficientes entre geometrias."),
+    )
+
+    return (tipo_marco, seccion_canal, mantenimiento, n_celdas, n_manning)
+
+
+def _fila_manning(tipo: TipoMaterial, forma: FormaSeccion) -> str:
+    """
+    La fila LITERAL de la Tabla N 09 con que se resolvio el n, para el reporte.
+
+    Tres casos y los tres se imprimen distinto, porque son tres situaciones
+    normativas distintas: el material que TIENE fila; el que no esta en la
+    tabla por ninguna parte (HDPE, analogia que cruza MATERIAL); y el marco,
+    que esta cubierto por el TITULO de su grupo y no tiene fila propia
+    -- analogia que se queda DENTRO del grupo, y por eso es mas estrecha --.
+    """
+    if forma is FormaSeccion.RECTANGULAR:
+        return (f"{TABLA_09_FILAS[ca.valor(CRITERIO_N_MANNING_CAJON)]['fila']} "
+                f"-- aplicada al MARCO por analogia declarada en el criterio "
+                f"'{CRITERIO_N_MANNING_CAJON}': el grupo A de la tabla cubre "
+                f"al cajon por su titulo y ninguna de sus filas nombra la "
+                f"seccion rectangular")
+    if tipo in _MANNING_CLAVE:
+        return TABLA_09_FILAS[_MANNING_CLAVE[tipo]]["fila"]
+    return (f"no listado en la Tabla N 09; analogia declarada en el "
+            f"criterio '{CRITERIO_N_MANNING_HDPE}'")
 
 
 # ---------------------------------------------------------------------------
@@ -581,13 +1155,23 @@ def materiales_candidatos(punto: PuntoCritico) -> Tuple[Material, ...]:
     Sec. 3.4). No elige uno: entrega el catalogo completo de los que tienen
     sentido para la familia del punto.
 
-    Familia C queda con la tupla vacia, por dos razones que se acumulan: su
-    seccion es marco o multicelda (Sec. 2.3), no un conducto circular que este
-    catalogo cubra; y el num. 4.1.1.3.4 a), del que sale el piso de 0.90 m con
-    que arranca la progresion, exceptua a los cruces de canal de riego -- que
-    es lo que la Familia C es -- remitiendolos a "cada diseno particular". Ver
-    "Familia C queda sin candidatos" en el docstring del modulo.
+    LA FAMILIA C YA NO DEVUELVE LA TUPLA VACIA, y es el cambio que abre C5.
+    Devuelve UN candidato: el marco de concreto reforzado, que es la seccion
+    que la Sec. 2.3 le asigna y la que la Lamina N 03 del Manual dibuja para
+    este caso exacto -- un marco de concreto en cruce de canal de riego --.
+    No devuelve tres: el TMC y el HDPE son productos de seccion circular y no
+    hay catalogo de marco en ninguno de los dos.
+
+    OJO CON LO QUE ESO SIGNIFICA HOY: el candidato existe y NO se puede
+    construir todavia, porque sus criterios estan sin declarar. La llamada se
+    detiene con `CriterioPendienteError` en el primero que falte, que es lo
+    que tiene que pasar -- y es una detencion distinta de la de antes: antes
+    el programa decia "no hay material", que era una afirmacion sobre el
+    CATALOGO, y ahora dice "falta declarar la embocadura del marco", que es
+    una afirmacion sobre el EXPEDIENTE. Ver "El marco de la Familia C" en el
+    docstring del modulo.
     """
     if punto.familia is Familia.C:
-        return ()
+        return (catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                         forma=FormaSeccion.RECTANGULAR),)
     return tuple(catalogo(tipo) for tipo in TipoMaterial)

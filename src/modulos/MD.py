@@ -99,10 +99,13 @@ FileNotFoundError). Que M5 devuelva CERO verificaciones no es un diseño
 aceptado: es ValueError, porque un punto aceptado sin verificaciones no es
 defendible en la memoria.
 
-Ninguno de estos nombres es un valor de proyecto: MD no lee
-`criterios_adoptados` ni `constantes_normativas` en ninguna linea. Todo numero
-del bucle -- el 0.90 inicial, el paso de 0.15, los topes por material -- entra
-por M2 desde el criterio 'diametros_normalizados'.
+Ningun numero del bucle es un valor de proyecto escrito aqui: el 0.90 inicial,
+el paso de 0.15 y los topes por material entran por M2 desde el criterio
+'diametros_normalizados', y la progresion del MARCO desde
+'secciones_cajon_normalizadas'. Desde C5 MD si lee un criterio directamente y
+uno solo, 'n_celdas_cajon' (ver `_caudal_por_barril`): el reparto del caudal
+entre celdas es una decision del bucle, no del catalogo, y hasta entonces la
+frase «MD no lee `criterios_adoptados` en ninguna linea» era cierta.
 
 El mensaje de descarte
 ----------------------
@@ -115,7 +118,11 @@ Excepciones
 -----------
     DisenoNoFactibleError   ningun material candidato cumple, con el motivo
                             del ultimo fallo de CADA material; o M2 no ofrece
-                            candidatos (Familia C, Sec. 2.3).
+                            candidatos. El ejemplo que esta linea daba -- «la
+                            Familia C» -- dejo de valer en C5, que le abrio
+                            catalogo: hoy la rama de `_motivo_sin_candidatos`
+                            no la alcanza ninguna familia y se conserva para
+                            la que venga.
     DatoFaltanteError       el punto no trae Q ni S y no se pasaron como
                             argumento (llega desde `PuntoCritico.exigir`).
     DatoInvalidoError       llega desde M3 / M4: un dato que no puede ser.
@@ -135,12 +142,15 @@ from importlib import import_module
 from typing import (Callable, List, Optional, Protocol, Sequence, Tuple,
                     Iterable)
 
-from modelos import (CriterioPendienteError, DisenoNoFactibleError,
-                     ErrorProyecto, Familia, Material,
+import criterios_adoptados as ca
+from modelos import (CriterioPendienteError, DatoInvalidoError,
+                     DisenoNoFactibleError,
+                     ErrorProyecto, Familia, FormaSeccion, Material,
                      PasoDiseno, PuntoCritico, ResultadoHidraulico,
                      ResultadoPunto, Verificacion)
-from modulos.M2_material import materiales_candidatos, siguiente_diametro
-from modelos import SeccionCircular
+from modulos.M2_material import (CRITERIO_SECCIONES_CAJON,
+                                 materiales_candidatos, numero_de_celdas,
+                                 siguiente_seccion)
 from modulos.M3_hidraulica import resolver_manning
 from modulos.M4_control import resolver_control
 
@@ -283,9 +293,19 @@ def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
     hasta 3600 mm y M 170M tambien (NOR-PRO-01, NOR-PRO-02) --, de modo que
     un punto descartado aqui parecia rechazado por la norma cuando lo rechaza
     el catalogo adoptado.
+
+    Y EL CRITERIO QUE SE CITA DEPENDE DE LA FORMA desde C5, por la misma
+    razon exacta: el tope de un marco no sale de 'D_max_catalogo' -- cuyo
+    valor es un diametro de tubo por material -- sino de la mayor altura de
+    la progresion declarada en 'secciones_cajon_normalizadas'. Dejar la clave
+    cableada habria repuesto la cita falsa que este mismo mensaje habia
+    retirado, solo que un nivel mas abajo.
     """
+    clave = (CRITERIO_SECCIONES_CAJON
+             if material.forma is FormaSeccion.RECTANGULAR
+             else "D_max_catalogo")
     return (f"{MENSAJE_DIAMETRO_SUPERADO} (tope de catalogo adoptado "
-            f"{material.D_max:.2f} m, criterio 'D_max_catalogo'; NO es un "
+            f"{material.D_max:.2f} m, criterio '{clave}'; NO es un "
             f"tope de {material.norma_producto}). Ultimo intento: "
             f"{ultimo_motivo}")
 
@@ -320,10 +340,27 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     escalon probado, en orden. Es lo que M11 necesita para publicar las
     iteraciones (Fase 11, entregable 1). No altera el diseño ni el retorno.
     """
-    D = siguiente_diametro(material.tipo)     # primer escalon: minimo normativo
-    ultimo_motivo = "el catalogo no ofrecio ningun diametro"
+    # EL BUCLE RECORRE SECCIONES, NO DIAMETROS (C5). Pedia
+    # `siguiente_diametro(material.tipo)` y construia `SeccionCircular(D)` con
+    # lo que recibiera; un material de MARCO tiene el mismo `TipoMaterial` que
+    # un tubo de concreto, de modo que esa llamada le habria devuelto la
+    # progresion CIRCULAR y el punto se habria dimensionado como un tubo con
+    # las constantes de HDS-5 de un cajon. Ningun numero habria salido
+    # negativo ni infinito: solo equivocado. La progresion la elige la forma, y
+    # quien la sabe es el catalogo.
+    #
+    # EL CAUDAL QUE ENTRA AL BARRIL ES Q/N, y esa es la otra mitad. Los
+    # coeficientes de HDS-5, el radio hidraulico y el control de entrada son
+    # POR BARRIL (regla vinculante #3): con N celdas se dimensiona UNA con
+    # Q/N. Para la circular N vale 1 -- el catalogo no ofrece multibarril -- y
+    # `_caudal_por_barril` lo devuelve tal cual, sin invocar ningun criterio y
+    # por lo tanto sin cambiar nada de lo que ya se imprimia.
+    Q_barril = _caudal_por_barril(Q, material)
+    seccion = siguiente_seccion(material)    # primer escalon del catalogo
+    ultimo_motivo = "el catalogo no ofrecio ninguna seccion"
 
-    while D is not None:
+    while seccion is not None:
+        D = seccion.altura
         # Fuera del `try` a proposito: si la Fase 5 revienta, el escalon que
         # revento tiene que quedar en la traza CON la hidraulica que M3 y M4
         # si alcanzaron a resolver. Es lo unico que llega a la memoria cuando
@@ -332,12 +369,11 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
         # NOR-MEM-01: el codigo lo calcula y el producto no lo muestra).
         resultado = None
         try:
-            seccion = SeccionCircular(D)
-            normal = resolver_manning(seccion=seccion, Q=Q, S=S,
+            normal = resolver_manning(seccion=seccion, Q=Q_barril, S=S,
                                       material=material)
 
             if normal is None:
-                ultimo_motivo = _motivo_sin_flujo_libre(D, Q, S, material)
+                ultimo_motivo = _motivo_sin_flujo_libre(D, Q_barril, S, material)
                 _registrar(registrar, material, D, aceptado=False,
                            motivo=ultimo_motivo)
             else:
@@ -393,9 +429,33 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                        resultado=resultado)
             raise
 
-        D = siguiente_diametro(material.tipo, D)
+        seccion = siguiente_seccion(material, seccion)
 
     return None, _motivo_descarte(material, ultimo_motivo)
+
+
+def _caudal_por_barril(Q: float, material: Material) -> float:
+    """
+    El caudal que entra a UNA celda: Q/N (regla vinculante #3).
+
+    LA CIRCULAR NO INVOCA NINGUN CRITERIO, y es deliberado: su catalogo no
+    ofrece multibarril, N vale 1 por construccion del catalogo y no por una
+    decision del proyectista. Invocar 'n_celdas_cajon' aqui la registraria
+    como criterio USADO en toda corrida -- M11 imprime los usados -- y estaria
+    diciendo que el tubo eligio tener una celda, que es falso.
+
+    EL MARCO SI LO INVOCA, y ahi esta lo que este criterio arregla: hasta hoy
+    V6 (material solido de arrastre) se cumplia trivialmente porque MD no
+    sabia hacer multibarril, que es una propiedad del PROGRAMA. Con el
+    criterio declarado, el numero de celdas es una DECISION escrita y V6 pasa
+    a depender de ella.
+    """
+    if material.forma is not FormaSeccion.RECTANGULAR:
+        return Q
+    celdas = numero_de_celdas(material)
+    return Q / celdas
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -556,14 +616,23 @@ def _exigir_criterios_declarados(
 
 
 def _motivo_sin_candidatos(punto: PuntoCritico) -> str:
-    """M2 devolvio la tupla vacia. Hoy solo ocurre en Familia C (Sec. 2.3)."""
-    motivo = (f"M2 (Sec. 3.4) no ofrece material candidato para la Familia "
-              f"{punto.familia.value}")
-    if punto.familia is Familia.C:
-        motivo += (": Sec. 2.3 le asigna seccion de marco o multicelda, y el "
-                   "catalogo de Sec. 3.2 es de conductos circulares. El punto "
-                   "no es no-factible, es de otra forma de estructura")
-    return motivo
+    """
+    M2 devolvio la tupla vacia.
+
+    NO SE BORRA, SE ESTRECHA (regla vinculante #10 de la Familia C). Su rama
+    de Familia C SALIO en C5 -- desde que M2 ofrece el marco, esa familia ya
+    no llega aqui --, y la funcion se queda porque sigue siendo el camino
+    correcto para una familia futura sin candidatos: el dia que la Sec. 2.3
+    gane una Familia D, este es el mensaje que la va a recibir.
+
+    Y NO ES CODIGO MUERTO ENTRE TANTO. `materiales_candidatos` puede devolver
+    la tupla vacia por una via que no es la familia: `TipoMaterial` es
+    iterable y una version futura que filtre por criterio -- por tope de
+    diametro, por disponibilidad -- puede vaciarla. El mensaje generico lo
+    cubre.
+    """
+    return (f"M2 (Sec. 3.4) no ofrece material candidato para la Familia "
+            f"{punto.familia.value}")
 
 
 # ---------------------------------------------------------------------------

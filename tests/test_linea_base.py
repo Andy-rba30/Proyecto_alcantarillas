@@ -183,9 +183,16 @@ def test_la_ventana_cubre_los_ejes_que_dice_cubrir(recien_generada):
     assert ancho.count("Fase 4  sin dimensionar") == 1
     assert lee("cli_perfil.txt").count("Fase 4  sin dimensionar") == 3
 
-    # (d) C-01, el punto de Familia C, llega a su bloqueo REAL -- el que C4 y
-    # C5 van a cambiar -- y no se detiene antes por falta de TW.
-    assert "no ofrece material candidato para la Familia C" in ancho
+    # (d) C-01, el punto de Familia C, llega a su bloqueo REAL. C5 lo CAMBIO,
+    # y el cambio es su criterio de salida: hasta C4 el punto se detenia en
+    # «no ofrece material candidato para la Familia C», que era una afirmacion
+    # sobre el CATALOGO y que no se podia resolver declarando nada; ahora se
+    # detiene en un criterio del cajon sin declarar, que es una afirmacion
+    # sobre el EXPEDIENTE. Se comprueban las dos mitades -- que aparece la
+    # nueva y que NO queda la vieja -- porque dejar las dos seria no haber
+    # cambiado nada.
+    assert "embocadura_cajon" in ancho
+    assert "no ofrece material candidato" not in ancho
 
     # (d-bis) EL PUNTO DE CAJON, el eje que añadio C4: una seccion NO
     # circular resuelta por una carta de FORMA 2. Es lo que hace visible aqui

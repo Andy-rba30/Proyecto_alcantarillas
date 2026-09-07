@@ -415,6 +415,17 @@ TABLA_09_FILAS = {
 MANNING = {clave: (fila["min"], fila["max"])
            for clave, fila in TABLA_09_FILAS.items()}
 
+# LAS FILAS ENTRE LAS QUE 'n_manning_cajon' PUEDE ELEGIR SU ANALOGIA. Un marco
+# de concreto no puede tomar prestada la n de un metal corrugado ni la de unas
+# duelas de madera: la analogia que el criterio declara es DENTRO del subgrupo
+# «a. Concreto» del grupo A, que es el unico que describe el material del
+# conducto. Se deriva del rotulo literal de la fila, no de una lista escrita a
+# mano, para que traer una fila nueva del subgrupo la incluya sola.
+_SUBGRUPO_CONCRETO_T09 = "A.2 NO METALICOS - a. Concreto"
+FILAS_MANNING_CONCRETO = frozenset(
+    clave for clave, fila in TABLA_09_FILAS.items()
+    if fila["fila"].startswith(_SUBGRUPO_CONCRETO_T09))
+
 # ---------------------------------------------------------------------------
 # Tabla N 10 -- velocidades maximas admisibles (num. 4.1.1.3.6, pag. 76)
 # ---------------------------------------------------------------------------
@@ -576,6 +587,48 @@ NUMERAL_ZONA_TRANSICION = _reg.cita("HDS5_3ED.3.1.3#TRANSICION").como_texto()
 # Y la Tabla C.2, de donde sale ke: pag. impresa C.6, no C.2 (NOR-HDS-01).
 NUMERAL_TABLA_KE = _reg.cita("HDS5_3ED.TC.2").como_texto()
 
+# LA VISTA DE CALCULO DE LA TABLA C.2, y por que el cajon la necesita y el
+# tubo no. Mismo patron que `HDS5_INLET`: se DERIVA de la transcripcion, no se
+# copia, de modo que no puede divergir de ella.
+#
+# EL PROBLEMA QUE RESUELVE ES QUE EL NUMERO NO IDENTIFICA LA FILA. En el
+# bloque «Box, Reinforced Concrete» el ke 0.2 aparece en TRES filas, el 0.5 en
+# DOS y el 0.7 en UNA, y tres de las siete se rotulan con el mismo texto
+# --«Square-edged at crown»-- bajo rotulos de agrupacion distintos. Un
+# criterio que declarase «ke = 0.2» seria por tanto INDECIDIBLE: la memoria no
+# podria decir de que fila salio, que es justo la condicion que el propio
+# criterio 'ke_entrada_cajon' advierte que se pierde. Por eso lo que se
+# declara en el marco es la CLAVE DE LA FILA, y el numero se lee de aqui --
+# igual que 'embocadura_cajon' declara una carta y no un juego de K, M, c, Y.
+#
+# 'ke_entrada' (el circular) SIGUE SIENDO UN NUMERO y no se toca en C5: su
+# valor esta declarado, tiene consumidor y funciona, y cambiar la forma de un
+# criterio con valor por simetria es mover un dato de proyecto sin que nadie
+# lo haya pedido. La asimetria queda escrita aqui para que se lea como lo que
+# es -- una diferencia deliberada, no un descuido -- y su cierre es la
+# migracion de 'ke_entrada' al mismo patron, que no es de esta sesion.
+_TC2 = _reg.tabla("HDS5_3ED.TC2")
+KE_HDS5_C2 = {
+    _TC2.clave_corta(f): {
+        "ke": f.valores["ke"],
+        # Los dos textos que la memoria tiene que imprimir JUNTOS: la fila
+        # suelta no identifica nada.
+        "fila": f.etiqueta_literal,
+        "agrupacion": f.jerarquia[-1] if f.jerarquia else "",
+        "bloque": f.jerarquia[0] if f.jerarquia else "",
+    }
+    for f in _TC2.filas if "ke" in f.valores
+}
+# LAS CLAVES QUE 'ke_entrada_cajon' PUEDE TOMAR, y no son las 22 de arriba.
+# La auditoria adversarial de C5 lo midio: `KE_HDS5_C2` trae la tabla entera y
+# una guardia que valide contra ella ACEPTA UNA FILA DE TUBO para el marco --
+# «concreto_headwall_square_edge», ke = 0.5, numero plausible y cita falsa --,
+# que es NOR-HID-01 cometido por la guardia escrita para cerrarlo. El
+# subconjunto se deriva del BLOQUE de la propia transcripcion, no de un
+# prefijo de la clave.
+KE_CAJON_C2 = frozenset(
+    k for k, v in KE_HDS5_C2.items() if v["bloque"].startswith("Box"))
+
 # LA VISTA DE CALCULO, DERIVADA DE LA TRANSCRIPCION Y NO COPIADA DE ELLA.
 # Hasta C2 este diccionario estaba ESCRITO A MANO con los mismos numeros que
 # `normativa/tablas.py::T_HDS5_A1` ya transcribia: dos copias que podian
@@ -651,6 +704,18 @@ HDS5_INLET = {   # cartas por forma/material; dentro de cada una, por borde
     }
     for f in _TA1.filas
 }
+# LAS CARTAS DE CAJON, para validar 'embocadura_cajon'. Misma leccion que
+# `KE_CAJON_C2` y el mismo hallazgo de la auditoria de C5: sin este
+# subconjunto, `M2.catalogo` acepta una carta CIRCULAR para un marco -- se
+# midio con «circular_concreto_square_edge_headwall», que le da a un cajon las
+# constantes de la Carta 1 y ademas la Forma 1 con su Ks*S --, y el paso de
+# memoria imprime que la carta es «del bloque de CAJON» invocando el num. A.3,
+# que es justo la regla que se estaria violando. Se deriva del rotulo
+# «Shape and Material» de la transcripcion, no de un prefijo de la clave.
+CARTAS_CAJON_TA1 = frozenset(
+    _TA1.clave_corta(f) for f in _TA1.filas
+    if "box" in str(f.valores["shape_and_material"]).casefold())
+
 # Ks NO figura en la Tabla A.1: proviene de la formulacion (-0.5 / +0.7). No
 # omitir. Su sitio exacto en la 3a ed., verificado contra el PDF, es la lista
 # de variables del num. A.2.1 "Unsubmerged Inlet Control Equations",

@@ -588,6 +588,47 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "inclinacion_muro_beta": _Meta(unidad="grados"),
     "k_v": _Meta(unidad="-"),
     "ke_entrada": _Meta(unidad="-"),
+    # ---------------- los cinco del cajon (C5) --------------------------
+    # Los cinco entran SIN VALOR y con `fase_declarada` escrita donde hace
+    # falta: `_fase` la deduce del consumidor cuando lo hay, y estos se
+    # consumen desde M2 -- que es Fase 3 -- salvo el ke, que lo consume M4.
+    # SIN `dominio`, y no por descuido: ese campo nombra un simbolo de
+    # `dominios.py` -- se comprueba por nombre, justamente para que no pueda
+    # apuntar a nada -- y hoy ese archivo no tiene ningun limite fisico para
+    # la seccion de un marco. Ponerle uno es abrir un valor de proyecto en un
+    # archivo exento del barrido de literales, y ademas es del frente F5
+    # (entradas y dominios, sesion C6). Queda anotado ahi.
+    "secciones_cajon_normalizadas": _Meta(
+        unidad="m (pares B x H interiores de UNA celda)",
+        nota="La serie se declara en el orden en que el bucle de MD tiene que "
+             "recorrerla: en dos dimensiones «el siguiente escalon» no es una "
+             "relacion que el programa pueda deducir, porque crecer en ancho "
+             "y crecer en canto no son intercambiables."),
+    "n_manning_cajon": _Meta(
+        unidad="- (par n_min, n_max)",
+        nota="Se declara la FILA de la Tabla N 09, no el par: el rango se lee "
+             "de la fila para que la analogia y la tabla no puedan divergir, "
+             "que es como ya se resuelve 'n_manning_hdpe'."),
+    "embocadura_cajon": _Meta(
+        unidad="-",
+        nota="El valor es una de las claves 'cajon_concreto_*' de "
+             "constantes_normativas.HDS5_INLET. Se mueve JUNTO con 'ke_entrada_cajon' y con el detalle de "
+             "embocadura del cabezal (Sec. 9.1): las tres son la misma "
+             "decision leida en tres sitios."),
+    "n_celdas_cajon": _Meta(
+        unidad="celdas",
+        nota="Entero >= 1. El caudal de diseño se reparte entre las celdas "
+             "-- `MD._caudal_por_barril` --, porque los coeficientes de HDS-5 "
+             "y el radio hidraulico son POR BARRIL."),
+    "ke_entrada_cajon": _Meta(
+        unidad="-",
+        nota="EL VALOR NO ES EL COEFICIENTE: es una de las claves "
+             "'cajon_*' de constantes_normativas.KE_HDS5_C2, o sea la FILA "
+             "del bloque «Box, Reinforced Concrete» de la Tabla C.2. Se "
+             "declara asi porque en ese bloque el numero no identifica la "
+             "fila -- el 0.2 esta en tres y el 0.5 en dos --. Lo elige "
+             "'embocadura_cajon': su fila de la Tabla C.2 es la del "
+             "mismo detalle de embocadura con que se lee la Tabla A.1."),
     "long_max_cuneta": _Meta(unidad="m"),
     "longitud_proteccion_salida": _Meta(unidad="m"),
     "metodo_estabilidad_global": _Meta(unidad="-"),

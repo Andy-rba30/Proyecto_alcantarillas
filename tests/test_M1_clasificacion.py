@@ -349,6 +349,18 @@ def test_las_familias_sin_conjunto_declarado_no_lo_inventan():
     Sec. 2.3 solo declara el conjunto de aceptacion de la Familia A. None
     significa 'no declarado', y no debe confundirse con una tupla vacia, que
     se leeria como 'ninguna verificacion'.
+
+    ESTE TEST SOSTIENE LA DECLARACION DE ALCANCE DE LA FAMILIA C, y por eso se
+    deja dicho aqui: `cli.DECLARACION_ALCANCE_FAMILIA_C` afirma que la Sec.
+    2.3 NUNCA le dio a la Familia C un conjunto de aceptacion --le dio un
+    REQUISITO, «no alterar la rasante hidraulica ni el borde libre del
+    canal», y ninguna verificacion lo implementa--, y ese `None` es el hecho
+    medido en que se apoya. Si algun dia alguien le pone una tupla aqui, la
+    declaracion pasa a decir algo falso y este test es el que avisa.
+
+    C5 LO REVISO Y NO LO CAMBIO. El brief lo listaba entre los que pinnean el
+    contrato viejo, y su premisa sobrevive entera: lo que C5 abre es el
+    CATALOGO de la Familia C, no su conjunto de verificaciones.
     """
     for familia in (Familia.B, Familia.C):
         assert perfil_de(familia).verificaciones_aceptacion is None

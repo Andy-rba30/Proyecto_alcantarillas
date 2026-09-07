@@ -424,6 +424,26 @@ class TipoMaterial(str, Enum):
     HDPE = "hdpe"
 
 
+class FormaSeccion(str, Enum):
+    """
+    La forma del barril que el CATALOGO ofrece (Sec. 3.2 y §4.4 del plan de la
+    Familia C), que NO es lo mismo que la `Seccion` que la resuelve.
+
+    `Seccion` es la geometria ya construida, con sus dimensiones; esto es la
+    familia a la que pertenece, y es lo que el catalogo necesita para saber de
+    que progresion sacar el siguiente escalon y de que criterios leer el n y
+    la carta de HDS-5. Un `Material` de marco y uno de tubo son los dos de
+    concreto reforzado -- el mismo `TipoMaterial` --, y lo que los separa es
+    esto.
+
+    Hasta C5 el catalogo era exclusivamente circular y esta distincion no
+    hacia falta: `Material.tipo` bastaba.
+    """
+
+    CIRCULAR = "circular"
+    RECTANGULAR = "rectangular"
+
+
 class ControlGobernante(str, Enum):
     """Cual de los dos controles fija la carga a la entrada."""
     ENTRADA = "entrada"   # Sec. 4.2, HDS-5
@@ -737,6 +757,26 @@ class Material:
     h_relleno_min_eg2013: Optional[float]   # m sobre la clave; None = EG-2013 no lo fija
     espesor_pared: Optional[float]          # m - t; None = criterio sin declarar
     seccion_eg2013: str                     # 505 / 506 / 507 / 508 (Capitulo V)
+    # EL QUE AÑADE C5: el catalogo dejo de ser solo circular y hay decisiones
+    # que YA NO se pueden deducir del `tipo`. Un marco de concreto y un tubo
+    # de concreto son el mismo `TipoMaterial`, y lo que los separa es de que
+    # progresion sale su seccion, de que fila su n y de que carta de HDS-5 sus
+    # constantes de control de entrada.
+    forma: FormaSeccion                     # de que progresion sale la seccion
+    # LA TRAZA DE FASE 3, y viaja con el material porque es donde se decide.
+    # M2 la emite al resolver el catalogo -- que tipo de estructura, que
+    # seccion, cuantas celdas, que fila de rugosidad -- y `M4._pasos_
+    # hidraulicos` la antepone a la suya, de modo que llega a la memoria por
+    # el MISMO canal que ya existe (`ResultadoHidraulico.pasos`, que M11
+    # imprime bajo «Fases 3 y 4»). Sin este campo habria que abrir un canal
+    # nuevo en el reporte, que es de otra sesion.
+    #
+    # VACIA EN LA CIRCULAR, y no por olvido: el tubo no elige nada en Fase 3
+    # que no este ya en el bloque de criterios -- su fila de la Tabla N 09 y
+    # su carta de HDS-5 son lectura directa, no adopcion --. El marco si:
+    # cuatro de sus cinco decisiones son criterios declarados por el
+    # proyectista, y una memoria que no las desarrolle no las puede defender.
+    pasos: Tuple["PasoDeMemoria", ...] = ()
 
     @property
     def n_para_capacidad(self) -> float:
@@ -1656,6 +1696,25 @@ class ControlSalida:
                                   # condiciones de uso de h_o
     h_o_fuera_de_rango: bool = False      # HW/D < 0.75 (num. 3.3.3)
     h_o_requiere_cautela: bool = False    # HW/D < 1.2  (num. 3.3.3)
+    # EL ke CON QUE SE CALCULO H, y no es redundante con el criterio: quien
+    # lea el criterio lee lo que el expediente DECLARO; este campo dice lo que
+    # la ecuacion USO. Viaja desde C5 porque el marco lo declara como CLAVE DE
+    # FILA de la Tabla C.2 y no como numero -- en el bloque del cajon el mismo
+    # coeficiente aparece hasta en tres filas --, de modo que sin este campo
+    # el paso de memoria tendria que volver a resolver la clave y habria dos
+    # sitios donde el numero se decide. `ke_fila` y `ke_agrupacion` van con el
+    # porque la fila suelta no identifica nada (ver 'ke_entrada_cajon'); en el
+    # tubo salen vacios: alli el criterio es un numero declarado.
+    ke: float = 0.0               # adimensional - coef. de perdida de entrada
+    ke_criterio: str = ""         # clave en criterios_adoptados.py
+    ke_fila: str = ""             # rotulo LITERAL de la fila de la Tabla C.2
+    ke_agrupacion: str = ""       # rotulo de agrupacion de esa fila
+    ke_bloque: str = ""           # familia de la tabla: «Box, Reinforced
+                                  # Concrete», «Pipe, Concrete»... Viaja con
+                                  # los otros dos porque la memoria lo IMPRIME,
+                                  # y estuvo CABLEADO en el texto hasta que la
+                                  # auditoria de C5 mostro que asi la
+                                  # procedencia no se podia desmentir
     numeral: str = "Sec. 4.3"
 
 

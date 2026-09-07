@@ -638,3 +638,46 @@ que es literalmente el defecto que este registro existe para impedir.
   la suite contrasta»), que es el antipatrón de esta misma parte del
   registro; está corregido y medido en el propio comentario.
 - **Dónde vive:** `src/modulos/M3_hidraulica.py::tirante`
+
+
+---
+
+# Parte VI — Lo que C5 dejó puesto y todavía sin consumidor
+
+C5 abrió el catálogo del cajón (Familia C). Dos cosas quedan **escritas y sin
+leer** hasta la sesión siguiente, y las dos por la misma razón: el frente que
+las consumiría es de otra sesión, y adelantarlo habría metido en C5 cambios de
+M8 y de M11 que su propio alcance excluye.
+
+## C5-01 · La clave `"cajon"` de `factores_carga_aashto` no tiene consumidor
+
+- **Qué se difirió:** dejar declarada la fila de γ_EV del marco —«Pórticos
+  rígidos»— **sin cablear el consumidor que la leería**.
+- **Por qué:** la fila la fija la regla vinculante #8 de
+  `docs/ruta_familia_c.md` §6, no esta sesión, y el consumidor
+  (`M8.factores_carga_flotacion`) indexa por `material.tipo.value`, que **no
+  distingue un marco de un tubo de concreto**. Generalizar ese índice es el
+  punto 2 del brief de C7. Mientras tanto un marco recibe la fila del tubo;
+  el mínimo de las dos es 0.90, de modo que **el número de V7 no cambia** y lo
+  que sale mal es la fila que la memoria imprime. Está escrito entero en el
+  comentario de la clave y en el docstring de `M5.v7_flotacion`, que es quien
+  consume la función.
+- **Qué haría falta:** que `M8.factores_carga_flotacion` elija la clave por
+  **forma** y no por material, como ya hace `M4.criterio_ke_de`. Es C7.
+- **Dónde vive:** `src/criterios_adoptados.py::factores_carga_aashto`
+
+## C5-02 · `ke_entrada` sigue declarando un número y `ke_entrada_cajon` una fila
+
+- **Qué se difirió:** **no** migrar `ke_entrada` (el circular) al patrón de
+  clave de fila que C5 estrenó para el marco.
+- **Por qué:** en el bloque «Box, Reinforced Concrete» de la Tabla C.2 el
+  coeficiente **no identifica la fila** —el 0.2 está en tres y el 0.5 en dos—,
+  y por eso el criterio del marco declara la clave. En el bloque «Pipe,
+  Concrete» esa presión no existe hoy, `ke_entrada` tiene valor y consumidor, y
+  **cambiarle la forma por simetría es mover un dato de proyecto que nadie
+  pidió mover**. La asimetría, con su medición, está escrita en el comentario
+  de la vista derivada.
+- **Qué haría falta:** migrar `ke_entrada` a una clave de `KE_HDS5_C2` y
+  retirar la rama de `M4.ke_declarado` que devuelve los dos rótulos vacíos.
+  No tiene sesión asignada; es una limpieza, no un defecto.
+- **Dónde vive:** `src/constantes_normativas.py::KE_HDS5_C2`

@@ -34,12 +34,14 @@ from modelos import (ConstantesHDS5, ControlGobernante, DatoInvalidoError,
 from modulos.M2_material import catalogo
 from modelos import SeccionCircular
 from modulos.M3_hidraulica import geometria
-from modulos.M4_control import (CRITERIO_GEOMETRIA_SALIDA,
+from modulos.M4_control import (CRITERIO_GEOMETRIA_SALIDA, CRITERIO_KE,
+                                CRITERIO_KE_CAJON,
                                 CRITERIO_TRANSICION, NUMERAL_CRITICO,
                                 NUMERAL_ENTRADA, area_llena,
                                 caudal_adimensional,
                                 control_entrada, control_salida,
-                                hw_gobernante, perdida_carga,
+                                criterio_ke_de, hw_gobernante, ke_declarado,
+                                perdida_carga,
                                 radio_hidraulico_lleno, resolver_control,
                                 tirante_critico)
 from modelos import (DatoInvalidoError, ErrorProyecto,
@@ -1273,3 +1275,120 @@ def test_bajo_forma_2_la_transicion_puede_decrecer_con_el_caudal():
         dif.append(b - a)
     assert dif[0] == pytest.approx(dif[1],
                                    abs=CP5D_FORMA2["tolerancia_identidad"])
+
+
+# ===========================================================================
+# C5 - el ke del marco: una FILA de la Tabla C.2, no un coeficiente
+# ===========================================================================
+# La regla vinculante #11 abre `ke_entrada` por forma. Lo que estos tests
+# fijan es la mitad que no se ve en el numero: que la memoria pueda decir de
+# QUE FILA salio. En el bloque «Box, Reinforced Concrete» el 0.2 esta en tres
+# filas y el 0.5 en dos, y tres filas comparten el rotulo «Square-edged at
+# crown»: un coeficiente declarado a secas es indecidible.
+
+from modelos import FormaSeccion, SeccionRectangular          # noqa: E402
+from tests.apoyo.criterios import declarados                  # noqa: E402
+
+_CAJON = {
+    "embocadura_cajon": "cajon_concreto_aletas_30_75",
+    "n_manning_cajon": "concreto_afinado",
+    "n_celdas_cajon": 1,
+    "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+    "secciones_cajon_normalizadas": ((2.00, 1.50),),
+}
+
+
+def test_el_criterio_de_ke_lo_elige_la_forma_y_no_el_material():
+    tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    with declarados(_CAJON):
+        marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                         forma=FormaSeccion.RECTANGULAR)
+    # Mismo TipoMaterial, criterio distinto: es exactamente la trampa que la
+    # regla #11 existe para cerrar.
+    assert tubo.tipo is marco.tipo
+    assert criterio_ke_de(tubo) == CRITERIO_KE
+    assert criterio_ke_de(marco) == CRITERIO_KE_CAJON
+
+
+def test_ke_del_marco_llega_con_su_fila_y_su_rotulo_de_agrupacion():
+    with declarados(_CAJON):
+        fila, agrupacion, bloque, ke = ke_declarado(CRITERIO_KE_CAJON)
+    assert ke == pytest.approx(0.4, rel=REL_TRANSPORTE)
+    assert fila == "Square-edged at crown"
+    assert agrupacion == "Wingwalls at 30⁰ to 75⁰ to barrel"
+    assert bloque == "Box, Reinforced Concrete"
+
+
+def test_una_fila_del_bloque_de_TUBO_no_vale_como_ke_de_marco():
+    """
+    LA GUARDIA QUE LA AUDITORIA ADVERSARIAL DE C5 EXIGIO, y el caso que mide
+    es EL caso: «concreto_headwall_square_edge» es la fila «Square-edge» del
+    bloque «Pipe, Concrete» y vale 0.5, que es exactamente el numero del que
+    avisa la regla vinculante #11. Con `KE_HDS5_C2` entera como dominio, la
+    funcion la aceptaba y la memoria la imprimia como fila de cajon: numero
+    plausible y cita falsa, o sea NOR-HID-01 cometido por la guardia escrita
+    para cerrarlo.
+    """
+    with declarados({**_CAJON,
+                     "ke_entrada_cajon": "concreto_headwall_square_edge"}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            ke_declarado(CRITERIO_KE_CAJON)
+    assert "num. A.3" in exc.value.motivo
+    assert "concreto_headwall_square_edge" not in exc.value.motivo
+
+
+def test_ke_del_tubo_es_un_numero_y_no_trae_fila():
+    """
+    La asimetria declarada: 'ke_entrada' sigue siendo un numero. Se fija para
+    que el dia que se migre al mismo patron este test lo diga, en vez de que
+    la migracion pase inadvertida.
+    """
+    fila, agrupacion, bloque, ke = ke_declarado(CRITERIO_KE)
+    assert ke == pytest.approx(0.5, rel=REL_TRANSPORTE)
+    assert fila == "" and agrupacion == "" and bloque == ""
+
+
+def test_declarar_un_coeficiente_donde_va_una_fila_es_dato_invalido():
+    """
+    Es DatoInvalidoError y no CriterioPendienteError: el criterio ESTA
+    declarado y hay que CORREGIRLO, no declararlo (CLAUDE.md).
+    """
+    with declarados({**_CAJON, "ke_entrada_cajon": "no_existe"}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            ke_declarado(CRITERIO_KE_CAJON)
+    assert "no identifica la fila" in exc.value.motivo
+    assert "cajon_aletas_30_75_escuadra" in exc.value.motivo
+
+
+def test_el_ke_usado_sale_en_la_memoria_con_su_procedencia_completa():
+    """
+    §C5 punto 6: "comproba que el ke elegido sale en la memoria con SU FILA Y
+    SU ROTULO DE AGRUPACION". Antes de C5 el ke no salia en absoluto: la
+    sustitucion del paso de control de salida publicaba H sin decir de donde
+    venia su termino de entrada.
+    """
+    with declarados(_CAJON):
+        marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                         forma=FormaSeccion.RECTANGULAR)
+        pasos = resolver_control(seccion=SeccionRectangular(2.00, 1.50),
+                                 Q=6.0, S=0.004, L=20.0, TW=0.30,
+                                 material=marco).pasos
+    salida = [p for p in pasos if p.codigo == "4.3"][0]
+    ke = [m for m in salida.sustitucion if m.simbolo == "ke"][0]
+    assert ke.valor == pytest.approx(0.4, rel=REL_TRANSPORTE)
+    assert "ke_entrada_cajon" in ke.procedencia
+    assert "Square-edged at crown" in ke.procedencia
+    assert "Wingwalls at 30" in ke.procedencia
+    assert "Box, Reinforced Concrete" in ke.procedencia
+
+
+def test_un_ke_pasado_explicito_no_se_atribuye_a_ningun_criterio():
+    """
+    La tercera redaccion de `_procedencia_ke`, y hace falta: CP-8 y los tests
+    de la pieza suelta pasan `ke` por argumento. Atribuirlo a un criterio que
+    la corrida no leyo seria una cita falsa.
+    """
+    salida = control_salida(Q=1.0, seccion=SeccionCircular(0.90), S=0.01,
+                            L=12.0, TW=0.0, n=0.013, ke=0.9)
+    assert salida.ke == pytest.approx(0.9, rel=REL_TRANSPORTE)
+    assert salida.ke_criterio == ""

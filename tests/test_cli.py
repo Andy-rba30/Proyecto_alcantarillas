@@ -254,15 +254,21 @@ def test_familia_c_sin_caudal_reclama_la_columna():
                for b in c01.bloqueos)
 
 
-def test_familia_c_con_caudal_declarado_no_tiene_material_candidato():
-    """El catalogo de Sec. 3.2 es circular; la Familia C es marco o multicelda."""
+def test_familia_c_con_caudal_declarado_se_detiene_en_los_criterios_del_cajon():
+    """
+    C5: el bloqueo de un punto de Familia C dejo de ser del CATALOGO y paso a
+    ser del EXPEDIENTE. Antes era `DisenoNoFactibleError` ("no hay material
+    candidato"); ahora es `CriterioPendienteError`, que es lo que el bloque de
+    pendientes de la memoria sabe convertir en lista de trabajo.
+    """
     informe = _informe_por_punto(
         {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 12.0},
         {"C-01": {"Q_m3s": 0.9, "S_conducto": 0.004}})
     c01 = _punto(informe, "C-01")
-    motivos = [b.mensaje for b in c01.bloqueos
-               if b.tipo == "DisenoNoFactibleError"]
-    assert motivos and "Familia C" in motivos[0]
+    pendientes = [b for b in c01.bloqueos if b.tipo == "CriterioPendienteError"]
+    assert pendientes, [b.tipo for b in c01.bloqueos]
+    assert pendientes[0].criterio == "embocadura_cajon"
+    assert not [b for b in c01.bloqueos if b.tipo == "DisenoNoFactibleError"]
 
 
 # ---------------------------------------------------------------------------
@@ -573,11 +579,26 @@ def _informe_alcance(alcance, **globales):
 
 
 def test_el_alcance_por_defecto_es_expediente():
-    """Quien no pasa la bandera corre exactamente lo de siempre."""
+    """
+    Quien no pasa la bandera corre exactamente lo de siempre.
+
+    LA ASERCION DE LOS DIFERIDOS CAMBIO EN C5, y el cambio es el contenido de
+    la sesion: `diferidos() == ()` decia "a nivel de expediente no se difiere
+    nada", y desde C5 hay UNA cosa que se difiere en los dos alcances -- la
+    verificacion VC1 de la Familia C, que no existe todavia (§15.6) --. No es
+    un diferimiento de la BANDERA sino de la ausencia de la verificacion, y
+    viaja por el mismo canal a proposito: `bloque_alcance` es el unico que
+    imprime tambien con el expediente abierto. Lo que este test sigue
+    fijando, ahora dicho con precision, es que la bandera de expediente no
+    difiere NINGUNA etapa por si misma.
+    """
     assert cli._parser().parse_args(["x.csv"]).alcance == cli.ALCANCE_EXPEDIENTE
     informe = _informe(luz_m=2.0)
     assert informe.alcance == cli.ALCANCE_EXPEDIENTE
-    assert informe.diferidos() == ()
+    etapas = {b.etapa for _, b in informe.diferidos()}
+    assert etapas == {"VC1 - no alteracion de la rasante hidraulica ni del "
+                      "borde libre del canal"}
+    assert {id_punto for id_punto, _ in informe.diferidos()} == {"C-01"}
 
 
 def test_alcance_expediente_es_identico_al_comportamiento_actual():
@@ -724,8 +745,13 @@ def test_perfil_deja_constancia_en_texto_y_json(monkeypatch):
 
 def test_expediente_tambien_declara_su_alcance():
     informe = _informe(luz_m=2.0)
-    assert cli.informe_json(informe)["alcance"] == {
-        "nivel": "expediente", "diferidos": []}
+    alcance = cli.informe_json(informe)["alcance"]
+    assert alcance["nivel"] == "expediente"
+    # Lo unico diferido a nivel de expediente es VC1 (§15.6): ver
+    # `test_el_alcance_por_defecto_es_expediente`.
+    assert [d["etapa"] for d in alcance["diferidos"]] == [
+        "VC1 - no alteracion de la rasante hidraulica ni del borde libre del "
+        "canal"]
     assert "Alcance declarado: expediente" in cli.volcar(informe)
 
 
@@ -812,7 +838,15 @@ def test_la_memoria_de_expediente_conserva_el_volcado_de_tableros(tmp_path):
     html = destino.read_text(encoding="utf-8")
     assert "Pendientes &mdash; Tableros 1, 2 y 3" in html
     assert "0.1 Alcance de la corrida" in html
-    assert "Ninguna etapa quedo diferida por alcance" in html
+    # LA FRASE QUE ESTE TEST FIJABA -- "Ninguna etapa quedo diferida por
+    # alcance" -- ya no sale con este CSV, y no porque el bloque haya
+    # cambiado: el fixture trae C-01, de Familia C, y desde C5 su VC1 se
+    # difiere en los dos alcances (§15.6). Lo que se comprueba aqui es que el
+    # bloque sigue imprimiendo con el expediente abierto, que es la premisa
+    # medida del vehiculo; la rama "ninguna etapa" la ejercita
+    # `test_el_bloque_de_alcance_declara_que_no_difirio_nada_sin_familia_c`.
+    assert "Alcance declarado de la corrida" in html
+    assert "Etapas diferidas al expediente" in html
 
 
 # ---------------------------------------------------------------------------
@@ -1226,3 +1260,132 @@ def test_una_declaracion_mal_escrita_devuelve_dos_y_no_corre_el_pipeline(
     assert "No se pudo declarar el criterio" in err
     assert "no trae valor" in err
     assert not salida_json.exists(), "no debe correr el pipeline"
+
+
+# ===========================================================================
+# §15.6.3 - los DOS vehiculos de la declaracion de alcance de la Familia C
+# ===========================================================================
+# El apartado exige DOS comprobaciones y no una, "porque la auditoria mostro
+# que una sola verifica media declaracion". Van juntas aqui para que no se
+# pueda borrar una sin ver que falta la otra.
+
+FILA_C_QUE_DIMENSIONA = (
+    "C-02,3+200,C,0.85,,0.004,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,")
+
+DECLARACIONES_CAJON = [
+    "embocadura_cajon=cajon_concreto_aleta_45_d043",
+    "n_manning_cajon=concreto_afinado",
+    "secciones_cajon_normalizadas=[[1.20,0.90],[1.50,1.20],[2.00,1.50]]",
+    "n_celdas_cajon=1",
+    "ke_entrada_cajon=cajon_aletas_30_75_escuadra",
+]
+
+
+def _csv_con(tmp_path, *filas) -> Path:
+    """Un CSV con el encabezado de Sec. 1.2 y las filas que se le pasen."""
+    destino = tmp_path / "puntos.csv"
+    encabezado = CSV.read_text(encoding="utf-8").splitlines()[0]
+    destino.write_text("\n".join((encabezado,) + filas) + "\n",
+                       encoding="utf-8")
+    return destino
+
+
+def test_la_declaracion_de_alcance_sale_antes_de_declarar_ningun_criterio(
+        tmp_path):
+    """
+    COMPROBACION 1 de §15.6.3, y la que decide el vehiculo: la declaracion
+    tiene que verse CON EL EXPEDIENTE ABIERTO, o sea antes de que ninguno de
+    los criterios del cajon tenga valor. Es exactamente la condicion en la que
+    una acotacion NO se veria -- `M11.acotaciones_declaradas()` filtra por
+    `valor is not None` --, y por eso el vehiculo es `bloque_alcance`.
+    """
+    destino = tmp_path / "memoria.html"
+    cli.main([str(CSV), "--luz", "2.0",
+              "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+    html = destino.read_text(encoding="utf-8")
+
+    assert "NO EVALUA ese requisito" in html
+    assert "COMO CRUCE DE CANAL" in html
+    # Y el punto afectado va nombrado (NOR-HDS-05): un aviso sin punto es el
+    # "nadie se entera".
+    assert "C-01" in html
+    # La premisa: ninguno de los cinco criterios del cajon tiene valor aqui.
+    assert all(ca.criterio_efectivo(c).valor is None for c in (
+        "embocadura_cajon", "n_manning_cajon", "n_celdas_cajon",
+        "ke_entrada_cajon", "secciones_cajon_normalizadas"))
+
+
+def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
+        tmp_path):
+    """
+    COMPROBACION 2 de §15.6.3, la que el apartado declara imposible con el
+    fixture tal como esta: C-01 trae `Q_m3s` vacio a proposito y se detiene
+    antes de V1 y de V4. Hace falta un punto de Familia C que LLEGUE a las
+    verificaciones, y este test lo construye -- misma fila que C-01 con su
+    caudal, su area y su pendiente de canal declarados --.
+
+    Lo que fija es que la nota viaja hasta el HTML por el canal de
+    `PasoDeMemoria.nota_del_proyecto`, que M11 imprime bajo
+    "Lo que pone el proyecto". Sin esta mitad, §15.6.3 queda con la mitad de
+    su diseño sin prueba.
+
+    EL PUNTO NO DIMENSIONA, Y ESO ES LO CORRECTO. Este test asertaba
+    `cli.main(...) == 0` -- «el punto de cajon tiene que dimensionar» -- y la
+    auditoria adversarial de C5 mostro que ese cierre era el sintoma de un
+    numero inseguro: el marco recibia la pared del TUBO de su misma altura y
+    V7 se calculaba sobre un cilindro, sobreestimando la seguridad. Con la
+    guardia de `M2.espesor_pared` el marco se detiene en V7, y la nota llega
+    IGUAL: la trae `ErrorProyecto.verificaciones_completadas`, que
+    `cli._verificador_perfil` no adjuntaba y ahora si. Que la advertencia de
+    alcance sobreviva a un punto que no cierra es mas fuerte que lo anterior,
+    no menos: es justamente cuando el revisor solo veria «no dimensionado».
+    """
+    origen = _csv_con(tmp_path, FILA_C_QUE_DIMENSIONA)
+    destino = tmp_path / "memoria.html"
+    argumentos = [str(origen), "--luz", "2.75", "--tw", "0.30",
+                  "--alcance", "perfil",
+                  "--json", str(tmp_path / "i.json"), "--html", str(destino)]
+    for declaracion in DECLARACIONES_CAJON:
+        argumentos += ["--declarar", declaracion]
+    # `--declarar` entra por `establecer_valor_dinamico` y NO se deshace solo:
+    # sin este `finally` los cinco criterios quedan declarados para el resto
+    # de la suite, y los tests que comprueban que un criterio vacio DETIENE el
+    # calculo empiezan a fallar en otro archivo. Es el efecto de orden que
+    # `tests/apoyo/criterios.py` explica en su encabezado.
+    try:
+        cli.main(argumentos)
+    finally:
+        for declaracion in DECLARACIONES_CAJON:
+            ca.quitar_valor_dinamico(declaracion.split("=")[0])
+
+    html = destino.read_text(encoding="utf-8")
+    assert "ALCANCE (Familia C" in html
+    # Las dos cotas contra las que miden los dos umbrales, que es el argumento
+    # de por que la sustitucion NO es conservadora.
+    assert "la altura interior del propio barril" in html
+    assert "la subrasante de la VIA, con su resguardo por CBR" in html
+    # Y sale por el canal de interpretacion, no pegada a una cita (NOR-HID-04).
+    assert 'class="interpretacion"' in html
+    # La otra mitad, y la que fija que el marco NO se calcula con la pared del
+    # tubo: la Fase 5 se detiene en V7 y lo dice con el dato que falta.
+    assert "espesor_pared_conducto[marco]" in html
+
+
+def test_el_bloque_de_alcance_declara_que_no_difirio_nada_sin_familia_c(
+        tmp_path):
+    """
+    La rama contraria del bloque, que el CSV del fixture ya no ejercita porque
+    trae C-01: sin ningun punto de Familia C y a alcance de expediente, no hay
+    NADA diferido y el bloque lo dice. Que la memoria del expediente afirme
+    "corri el pipeline completo" vale tanto como que la de perfil afirme lo
+    contrario.
+    """
+    fila_a = [l for l in CSV.read_text(encoding="utf-8").splitlines()
+              if l.startswith("A-01")][0]
+    origen = _csv_con(tmp_path, fila_a)
+    destino = tmp_path / "memoria.html"
+    cli.main([str(origen), "--luz", "2.0",
+              "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+    html = destino.read_text(encoding="utf-8")
+    assert "Ninguna etapa quedo diferida por alcance" in html
+    assert "NO EVALUA ese requisito" not in html

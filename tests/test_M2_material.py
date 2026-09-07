@@ -20,13 +20,15 @@ from pathlib import Path
 import pytest
 
 import criterios_adoptados as ca
-from modelos import DatoFaltanteError, DatoInvalidoError, Familia, Material, TipoMaterial
+from modelos import (CriterioPendienteError, DatoFaltanteError,
+                     DatoInvalidoError, Familia, FormaSeccion, Material,
+                     TipoMaterial)
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import (CRITERIO_ESPESOR_PARED, catalogo,
                                  espesor_pared, materiales_candidatos,
-                                 siguiente_diametro)
+                                 siguiente_diametro, siguiente_seccion)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
-from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.criterios import declarados
 
 CSV_VALIDO = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
 
@@ -278,10 +280,246 @@ def test_familia_a_tiene_los_tres_materiales_candidatos(punto_a):
     assert {m.tipo for m in candidatos} == set(TipoMaterial)
 
 
-def test_familia_c_no_tiene_candidatos(punto_c):
-    """Sec. 2.3: la Familia C es marco o multicelda, no un conducto circular."""
+def test_familia_c_ofrece_el_marco_y_se_detiene_en_sus_criterios(punto_c):
+    """
+    C5 ABRIO LA FAMILIA C, y este test cambio de contrato con ella. Decia
+    `materiales_candidatos(punto_c) == ()` -- Sec. 2.3 le asigna marco o
+    multicelda y el catalogo era de conductos circulares --, y esa premisa ya
+    no vale: el catalogo tiene forma y ofrece el marco.
+
+    LO QUE SE COMPRUEBA AHORA ES LA DETENCION, que es lo que de verdad
+    importa: el candidato existe y NO se puede construir todavia, porque sus
+    criterios estan sin declarar por mandato del num. 4.1.1.3.4 a). La
+    diferencia con antes no es de forma: "no hay material" no se podia
+    resolver declarando nada, y "falta declarar la embocadura del marco" es
+    una linea de la lista de trabajo del tesista.
+    """
     assert punto_c.familia is Familia.C
-    assert materiales_candidatos(punto_c) == ()
+    with pytest.raises(CriterioPendienteError) as exc:
+        materiales_candidatos(punto_c)
+    assert exc.value.clave == "embocadura_cajon"
+
+
+def test_con_los_criterios_del_cajon_declarados_la_familia_c_da_un_candidato(
+        punto_c):
+    """
+    La otra mitad, y hace falta: sin ella el test de arriba pasaria igual si
+    `materiales_candidatos` levantara la excepcion y no ofreciera nada.
+
+    Los valores se declaran EN CALIENTE y solo para este test, por el mismo
+    camino que usan la GUI y la CLI. No son adopciones del expediente: lo que
+    se ejercita es que el candidato se arma, que es de MARCO y que arrastra la
+    fila de la Tabla N 09 con su analogia escrita.
+    """
+    with declarados({"embocadura_cajon": "cajon_concreto_aletas_30_75",
+                     "n_manning_cajon": "concreto_afinado",
+                     "n_celdas_cajon": 1,
+                     "secciones_cajon_normalizadas": ((1.50, 1.20),
+                                                      (2.00, 1.50))}):
+        candidatos = materiales_candidatos(punto_c)
+
+        assert len(candidatos) == 1, (
+            "la Familia C tiene UN candidato: el marco de concreto. El TMC y "
+            "el HDPE son productos de seccion circular")
+        marco = candidatos[0]
+        assert marco.forma is FormaSeccion.RECTANGULAR
+        assert marco.tipo is TipoMaterial.CONCRETO_REFORZADO
+        assert "afinado" in marco.fila_manning
+        assert "analogia declarada" in marco.fila_manning
+        # La carta es de CAJON, no la circular con otras constantes (regla #5).
+        assert marco.hds5.forma in (1, 2)
+
+
+# ---------------------------------------------------------------------------
+# Los CINCO pasos de Fase 3 del marco, y el tope de catalogo que trae con ellos
+# ---------------------------------------------------------------------------
+# Este bloque es el que `tests/test_memoria_sustentada.py` nombra por su
+# nombre al declarar los cinco fundamentos del cajon como «inalcanzables en
+# esta corrida»: alli se declara que los pasos EXISTEN aunque la corrida por
+# defecto no llegue a emitirlos, y aqui se mide.
+
+DECLARACIONES_CAJON = {
+    "embocadura_cajon": "cajon_concreto_aletas_30_75",
+    "n_manning_cajon": "concreto_afinado",
+    "n_celdas_cajon": 1,
+    "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+    "secciones_cajon_normalizadas": ((1.50, 1.20), (2.00, 1.50), (2.50, 2.00)),
+}
+
+
+def _marco():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                    forma=FormaSeccion.RECTANGULAR)
+
+
+def test_los_cinco_pasos_de_fase_3_del_marco_salen_con_su_fundamento():
+    """
+    Los cinco pasos que `M2._pasos_del_marco` emite, con su fundamento.
+
+    NO ES UN TEST DE ADORNO. `test_memoria_sustentada` deja los cinco
+    fundamentos del cajon en `sin_alcanzar` -- la lista de los que ninguna
+    corrida por defecto imprime -- y la unica razon por la que eso no es un
+    hueco es que los pasos existen y se pueden ejercitar declarando los
+    criterios. Si este test desaparece, aquella lista pasa a tapar cinco
+    fundamentos huerfanos sin que nada avise.
+    """
+    with declarados(DECLARACIONES_CAJON):
+        ids = [p.fundamento_id for p in _marco().pasos]
+    assert ids == ["F3.TIPO_MARCO", "F3.SECCION_CANAL", "F3.MANTENIMIENTO",
+                   "F3.CELDAS", "F4.N_CAJON"]
+
+
+def test_el_tubo_no_emite_ningun_paso_de_fase_3():
+    """
+    La contraparte, y es la que fija que los cinco no son decoracion: el tubo
+    NO elige nada en Fase 3 -- su fila de la Tabla N 09 y su carta de la Tabla
+    A.1 son lectura directa -- y por eso su tupla viene vacia.
+    """
+    assert catalogo(TipoMaterial.CONCRETO_REFORZADO).pasos == ()
+
+
+def test_el_tope_de_catalogo_del_marco_sale_de_su_propia_progresion():
+    """
+    `D_max` del marco es la MAYOR altura declarada, no el tope del tubo.
+
+    Es lo que impide que V9 rechace o acepte un marco citando
+    'D_max_catalogo', cuyo valor es un diametro de TUBERIA por material: el
+    numero habria sido verdadero (2.70 m existe) y la procedencia falsa, que
+    es el defecto que NOR-PRO-01 cerro para el circular.
+    """
+    with declarados(DECLARACIONES_CAJON):
+        marco = _marco()
+        tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    assert marco.D_max == pytest.approx(2.00, rel=REL_TRANSPORTE)   # max H
+    assert tubo.D_max == pytest.approx(2.70, rel=REL_TRANSPORTE)    # tubo
+    assert "secciones_cajon_normalizadas" in marco.D_max_de_catalogo
+    assert "NO DE NORMA" in marco.D_max_de_catalogo
+
+
+# ---------------------------------------------------------------------------
+# siguiente_seccion: la puerta que impide diseñar un tubo con datos de cajon
+# ---------------------------------------------------------------------------
+
+def test_siguiente_seccion_del_marco_recorre_la_progresion_declarada():
+    with declarados(DECLARACIONES_CAJON):
+        marco = _marco()
+        s0 = siguiente_seccion(marco)
+        s1 = siguiente_seccion(marco, s0)
+        s2 = siguiente_seccion(marco, s1)
+        assert (s0.B, s0.altura) == pytest.approx((1.50, 1.20),
+                                                  rel=REL_TRANSPORTE)
+        assert (s1.B, s1.altura) == pytest.approx((2.00, 1.50),
+                                                  rel=REL_TRANSPORTE)
+        assert (s2.B, s2.altura) == pytest.approx((2.50, 2.00),
+                                                  rel=REL_TRANSPORTE)
+        assert siguiente_seccion(marco, s2) is None
+
+
+def test_una_seccion_fuera_de_la_progresion_declarada_es_dato_invalido():
+    """
+    El catalogo no reconoce secciones "de proveedor", igual que no reconoce
+    diametros fuera de la progresion (Sec. 3.2).
+    """
+    from modelos import SeccionRectangular
+    with declarados(DECLARACIONES_CAJON):
+        with pytest.raises(DatoInvalidoError) as exc:
+            siguiente_seccion(_marco(), SeccionRectangular(1.75, 1.35))
+    assert "secciones_cajon_normalizadas" in exc.value.motivo
+
+
+def test_siguiente_seccion_del_tubo_no_lee_ningun_criterio_del_cajon():
+    """
+    LA PUERTA, dicha al reves: un tubo recorre su progresion sin tocar ningun
+    criterio del marco. Sin esto, abrir la forma habria bastado para que una
+    corrida circular se bloqueara pidiendo la seccion de un cajon que no
+    tiene.
+    """
+    tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    s0 = siguiente_seccion(tubo)                 # no lanza CriterioPendiente
+    assert s0.altura == pytest.approx(0.90, rel=REL_TRANSPORTE)
+    assert siguiente_seccion(tubo, s0).altura == pytest.approx(
+        1.05, rel=REL_TRANSPORTE)
+
+
+# ---------------------------------------------------------------------------
+# Las guardias que la auditoria adversarial de C5 exigio
+# ---------------------------------------------------------------------------
+# Las cuatro cierran el mismo modo de fallo con dos caras: una clave de OTRA
+# FAMILIA que produce un numero plausible con la cita equivocada, y una ERRATA
+# que salia como excepcion de PROGRAMA en vez de del expediente.
+
+@pytest.mark.parametrize("clave,valor,en_el_mensaje", [
+    # La carta CIRCULAR: le daba a un marco las constantes de la Carta 1 y la
+    # Forma 1 con su Ks*S, mientras el paso de memoria imprimia que la carta
+    # era «del bloque de CAJON» invocando el num. A.3 -- la regla que estaba
+    # violando --. Es el unico punto donde la regla vinculante #5 se puede
+    # hacer cumplir.
+    ("embocadura_cajon", "circular_concreto_square_edge_headwall", "num. A.3"),
+    # La ERRATA: salia como `KeyError` desnudo, que no desciende de
+    # `ErrorProyecto`, y tumbaba la corrida entera.
+    ("embocadura_cajon", "cajon_concreto_aleta_45_d04", "Claves admitidas"),
+    # Un metal corrugado no es la analogia de un marco de CONCRETO.
+    ("n_manning_cajon", "metal_corrugado_subdren", "a. Concreto"),
+    ("n_manning_cajon", "concreto_afinad", "Claves admitidas"),
+    # El escalar que la GUI sabe ofrecer: reventaba con `TypeError`. La misma
+    # guardia que este modulo ya tenia escrita para 'espesor_pared_conducto'.
+    ("secciones_cajon_normalizadas", 1.50, "serie de pares"),
+    ("secciones_cajon_normalizadas", ((2.00, -1.50),), "POSITIVOS"),
+])
+def test_una_declaracion_de_otra_familia_o_con_errata_es_dato_invalido(
+        clave, valor, en_el_mensaje):
+    with declarados({**DECLARACIONES_CAJON, clave: valor}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            _marco()
+    assert exc.value.campo == clave
+    assert en_el_mensaje in exc.value.motivo
+
+
+def test_el_marco_no_toma_prestada_la_pared_del_tubo_de_su_misma_altura():
+    """
+    EL HALLAZGO MAS GRAVE DE LA AUDITORIA DE C5, y no era de texto: era un
+    numero INSEGURO. `espesor_pared_conducto` tabula por diametro designado en
+    mm de una norma de TUBERIA, y las alturas de marco plausibles caen sobre
+    esa misma serie de 900 + 150k mm. Un marco de 2.00 x 1.50 m NO se detenia:
+    recibia t = 0.150 m -- la pared del tubo de 1500 mm -- y con ella V7 se
+    calculaba sobre un CILINDRO de 1.80 m, sobreestimando la seguridad
+    alrededor de un 27 % (la subpresion real de un prisma es un 63 % mayor y
+    el peso de relleno solo un 28 %).
+
+    Es `DatoFaltanteError` y no `DatoInvalidoError` porque el revisor tiene
+    que AÑADIR algo -- el espesor de pared de un marco sale de su calculo
+    estructural, no de una tabla de producto --, que es la regla de CLAUDE.md.
+    Levantarla es de C7.
+    """
+    with declarados(DECLARACIONES_CAJON):
+        marco = _marco()
+        with pytest.raises(DatoFaltanteError) as exc:
+            espesor_pared(marco, 1.50)
+    assert exc.value.campo == "espesor_pared_conducto[marco]"
+    assert "CILINDRO" in exc.value.detalle
+    # Y el tubo de la misma altura SI tiene fila: es lo que hace peligrosa la
+    # coincidencia, y por eso se fija aqui al lado.
+    assert espesor_pared(catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                         1.50) == pytest.approx(0.150, rel=REL_TRANSPORTE)
+
+
+def test_la_progresion_del_marco_se_reconoce_con_tolerancia_y_no_con_igualdad():
+    """
+    CLAUDE.md prohibe comparar floats con `==` sin excepcion, y
+    `_siguiente_seccion_cajon` los comparaba. Hoy acertaba siempre porque las
+    dos secciones se reconstruyen del mismo criterio; deja de acertar en
+    cuanto una llegue de otro sitio -- un JSON de tablero, la GUI, un
+    round-trip por texto --, y entonces el bucle levantaria un
+    `DatoInvalidoError` sobre una seccion que SI esta en la serie.
+    """
+    from modelos import SeccionRectangular
+    with declarados(DECLARACIONES_CAJON):
+        marco = _marco()
+        # La misma seccion, con el ultimo bit movido.
+        casi = SeccionRectangular(1.50 + 1e-13, 1.20 - 1e-13)
+        siguiente = siguiente_seccion(marco, casi)
+    assert (siguiente.B, siguiente.altura) == pytest.approx(
+        (2.00, 1.50), rel=REL_TRANSPORTE)
 
 
 # ===========================================================================

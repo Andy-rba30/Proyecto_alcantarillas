@@ -294,16 +294,23 @@ def test_el_motivo_cita_la_verificacion_incumplida():
     assert "4.1.1.3.7 b)" in str(excinfo.value)
 
 
-def test_familia_C_no_es_no_factible_sino_otra_forma_de_estructura():
+def test_familia_C_se_detiene_en_los_criterios_del_cajon_y_no_en_el_catalogo():
     """
-    M2 no ofrece candidatos: Sec. 2.3 le asigna marco o multicelda y el
-    catalogo es de conductos circulares. El motivo tiene que decirlo.
+    C5 CAMBIO LA EXCEPCION, y el cambio es el punto. Antes salia
+    `DisenoNoFactibleError` -- "M2 no ofrece material candidato ... es de otra
+    forma de estructura" -- porque el catalogo era circular. Ahora el catalogo
+    ofrece el marco y lo que falta son sus criterios, de modo que sale
+    `CriterioPendienteError`.
+
+    Las dos excepciones mandan al revisor a sitios distintos, y por eso la
+    distincion se fija: una decia que el programa no sabia hacer ese punto, y
+    la otra dice que el expediente no ha declarado como se hace.
     """
-    with pytest.raises(DisenoNoFactibleError) as excinfo:
+    with pytest.raises(CriterioPendienteError) as excinfo:
         disenar_punto(_punto(familia=Familia.C), L=L_CONDUCTO, TW=TW_LIBRE,
                       verificar=_todo_cumple)
 
-    assert "multicelda" in str(excinfo.value)
+    assert excinfo.value.clave == "embocadura_cajon"
 
 
 # ===========================================================================
@@ -744,11 +751,14 @@ def test_el_diagnostico_de_familia_C_dice_que_es_otra_forma_de_estructura():
 
     motivo = _motivo_sin_candidatos(c01)
 
+    # LA RAMA DE FAMILIA C SALIO EN C5 (regla vinculante #10: no se borra, se
+    # estrecha). Desde que M2 ofrece el marco, esa familia no llega aqui, y el
+    # mensaje generico es lo que queda -- y sigue siendo el camino correcto
+    # para una familia futura sin candidatos --.
     assert Familia.C.value in motivo
-    assert "marco o multicelda" in motivo
-    assert "no es no-factible" in motivo
-    # Y dice por que el catalogo no sirve, que es la causa: es de circulares.
-    assert "circulares" in motivo
+    assert "no ofrece material candidato" in motivo
+    assert "marco o multicelda" not in motivo
+    assert "circulares" not in motivo
 
 
 def test_el_diagnostico_de_una_familia_con_candidatos_no_lleva_la_coletilla_de_C():
@@ -838,3 +848,68 @@ def test_la_premisa_de_que_M5_no_existe_no_vuelve_como_afirmacion():
     assert not _alcanza_MD("src/modulos/M5_verificaciones.py"), (
         "M5 alcanza a MD: ahora SI hay ciclo y el parrafo de MD que dice que "
         "no lo hay hay que reescribirlo")
+
+
+# ===========================================================================
+# Regla vinculante #3 - el caudal se reparte entre celdas (Q/N)
+# ===========================================================================
+# LA AUDITORIA ADVERSARIAL DE C5 MIDIO QUE ESTO NO LO FIJABA NADIE: mutado
+# `_caudal_por_barril` a `return Q`, la suite entera seguia en verde. Toda la
+# mitad multibarril de la sesion estaba verde sobre nada. Estos tests la matan.
+
+from modelos import FormaSeccion                                  # noqa: E402
+from modulos.M2_material import numero_de_celdas                  # noqa: E402
+from modulos.MD import _caudal_por_barril                         # noqa: E402
+from tests.apoyo.criterios import declarados, sin_valor           # noqa: E402
+
+_CAJON_MD = {
+    "embocadura_cajon": "cajon_concreto_aletas_30_75",
+    "n_manning_cajon": "concreto_afinado",
+    "n_celdas_cajon": 1,
+    "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+    "secciones_cajon_normalizadas": ((2.00, 1.50),),
+}
+
+
+def _marco_md():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                    forma=FormaSeccion.RECTANGULAR)
+
+
+def test_el_caudal_del_marco_se_reparte_entre_las_celdas_declaradas():
+    """
+    Regla #3: el control de entrada de HDS-5 y el radio hidraulico son POR
+    BARRIL, de modo que una multicelda se dimensiona con Q/N. Con tres celdas
+    declaradas, una celda recibe un tercio.
+    """
+    with declarados({**_CAJON_MD, "n_celdas_cajon": 3}):
+        assert _caudal_por_barril(9.0, _marco_md()) == pytest.approx(
+            3.0, rel=REL_TRANSPORTE)
+
+
+def test_el_tubo_no_reparte_nada_ni_consulta_el_criterio_del_cajon():
+    """
+    La otra mitad, y es la que impide que el reparto se cuele en la circular:
+    un tubo devuelve Q intacto Y NO INVOCA 'n_celdas_cajon'. Invocarlo lo
+    registraria como criterio USADO -- M11 imprime los usados -- en una
+    corrida que no tiene ningun marco.
+    """
+    tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    with sin_valor("n_celdas_cajon"):          # sin valor: si lo leyera, lanza
+        assert _caudal_por_barril(9.0, tubo) == pytest.approx(
+            9.0, rel=REL_TRANSPORTE)
+
+
+@pytest.mark.parametrize("celdas", [2.5, 0, -1, "dos"])
+def test_un_numero_de_celdas_que_no_es_un_entero_mayor_que_cero_es_invalido(
+        celdas):
+    """
+    `2.5` es el caso que la auditoria midio: la guardia anterior era
+    `not celdas >= 1` y lo dejaba pasar, de modo que `Q/2.5` salia sin
+    quejarse y la memoria habria impreso «2.5 celdas». Un barril y medio no se
+    construye.
+    """
+    with declarados({**_CAJON_MD, "n_celdas_cajon": celdas}):
+        with pytest.raises(DatoInvalidoError) as exc:
+            numero_de_celdas(_marco_md())
+    assert "ENTERO" in exc.value.motivo

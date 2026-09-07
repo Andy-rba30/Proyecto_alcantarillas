@@ -25,7 +25,7 @@ import criterios_adoptados as ca
 import datos_sitio as ds
 from cli import (Bloqueo, DatoDeclarado, Informe, InformePunto,
                  cargar_datos_externos, correr)
-from modelos import PasoDiseno, Verificacion
+from modelos import FormaSeccion, PasoDiseno, Verificacion
 from modulos import M11_reporte as M11
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -441,7 +441,8 @@ class TestIteraciones:
                          "libre de basuras",
             v_max_tabla10=(3.0, 6.0), v_max_adoptado=None,
             h_relleno_min_eg2013=0.30,
-            espesor_pared=0.10, seccion_eg2013="505")
+            espesor_pared=0.10, seccion_eg2013="505",
+            forma=FormaSeccion.CIRCULAR)
 
         # Verificador que rechaza todo: interesa la traza, no el diseño.
         def rechazar(*, punto, material, D, resultado):

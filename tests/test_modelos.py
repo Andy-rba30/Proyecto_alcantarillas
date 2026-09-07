@@ -19,6 +19,7 @@ import pytest
 import constantes_normativas as CN
 import criterios_adoptados as ca
 from modelos import (CasoDemandaSismica, CondicionAnalisis, ConstantesHDS5,
+                     FormaSeccion,
                      ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError,
                      DemandaSismicaCabezal, DisenoNoFactibleError,
@@ -188,6 +189,9 @@ def _material_concreto() -> Material:
         h_relleno_min_eg2013=CN.H_RELLENO_MIN["concreto"],
         espesor_pared=ca.valor("espesor_pared_conducto")["concreto_reforzado"],
         seccion_eg2013=CN.SECCION_EG2013["concreto_reforzado"],
+        # C5: el catalogo gano forma. Un tubo y un marco de concreto son el
+        # mismo `TipoMaterial`, y este campo es lo que los separa.
+        forma=FormaSeccion.CIRCULAR,
     )
 
 

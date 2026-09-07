@@ -624,6 +624,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 - Fila «Box, Reinforced Concrete -- Wingwall at 10⁰ to 25⁰ to barrel -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
 - Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Square-edged at crown»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
 - Fila «Box, Reinforced Concrete -- Wingwalls parallel (extension of sides) -- Side- or slope-tapered inlet»: **elección pendiente** (`COND-EMBOCADURA-CAJON-KE`)
+- Vistas de cálculo derivadas: `KE_HDS5_C2`
 
 | Fila | Type of Structure and Design of Entrance | Coefficient Ke | Uso |
 |---|---|---|---|
@@ -684,6 +685,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
   - Qué queda fuera: del grupo A: «a. Bronce Polido», «b. Acero» (soldado, con remaches), las CINCO subfilas restantes de «a. Concreto» -- «tubo con curvas, conexiones», «tubo de alcantarillado con cámaras, entradas.», «Tubo con moldaje de acero.», «Tubo de moldaje madera cepillada» y «Tubo con moldaje madera en bruto» --, la «laminada y tratada» de «b. Madera» y «c. Albañilería de piedra.». Fuera del grupo A: «B.CANALES REVESTIDOS», «C. EXCAVADO» y «D. CORRIENTES NATURALES». (Eran seis subfilas de «a. Concreto» hasta C2, que transcribio «afinado».)
   - Dónde leerlo: MC_HHD, num. 4.1.1.3.6, Tabla Nº 09: los grupos A, B y C en la pag. impresa 75 (PDF 78) y el grupo D con la linea de Fuente en la 76 (PDF 79)
 - Columna «NORMAL» transcrita y **no usada**: la regla de doble n (Sec. 4.1 de la hoja de ruta) no pide el valor corriente sino los dos EXTREMOS -- n maximo para capacidad y tirante, n minimo para velocidad maxima y socavacion --, de modo que cada verificacion se resuelve con el extremo que la deja del lado seguro. El valor NORMAL entraria en un calculo de un solo n, que es justo lo que la regla prohibe
+- Fila «A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- afinado»: **elección pendiente** (`COND-N-MANNING-CAJON`)
 - **Afirmación negativa**: la Tabla Nº 09 no lista HDPE. Ámbito barrido: las 225 paginas del PDF: «HDPE» aparece 0 veces y «polietileno» solo en la pag. impresa 71 (listado de tipos de alcantarilla) y en la de subdrenes. Ninguna fila de la Tabla Nº 09 lo nombra
 - **Errata declarada**: `DIS-MCHHD-T09-A2-DESPLAZADA`
 - Vistas de cálculo derivadas: `TABLA_09_FILAS`, `MANNING`
@@ -693,7 +695,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.1. METÁLICOS -- c. Metal corrugado -- sub - dren |  | 0.017 | 0.019 | 0.021 | no usada |
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.1. METÁLICOS -- c. Metal corrugado -- dren para aguas lluvias |  | 0.021 | 0.024 | 0.03 | usada |
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- tubo recto y libre de basuras |  | 0.01 | 0.011 | 0.013 | usada |
-| A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- afinado |  | 0.011 | 0.012 | 0.014 | no usada |
+| A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- a. Concreto -- afinado |  | 0.011 | 0.012 | 0.014 | pendiente |
 | A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO -- A.2 NO METÁLICOS -- b. Madera -- duelas |  | 0.01 | 0.012 | 0.014 | no usada |
 
 ### `MC_HHD.T10` — TABLA  Nº  10:    Velocidades máximas  admisibles (m/s)  en conductos revestidos
@@ -878,6 +880,7 @@ escrita, y el test la exige.
 | `COND-LS-LOSA-APROXIMACION` | cita:MP.2.4.2.2#SOBRECARGA | `losa_de_aproximacion` | excluye |
 | `COND-MARCO-SUELO-MALA-CALIDAD` | cita:MC_HHD.4.1.1.3.4a#MARCO | `el Manual recomienda el marco «cuando se tiene la presencia de suelos de fundacion de mala calidad» y NO define «mala calidad»: no da umbral, ni clasificacion, ni remision a otra norma. La columna `sucs_fundacion` del CSV trae el grupo SUCS del punto, y traducirlo a «mala calidad» seria inventar el mapeo que la fuente calla` | advierte |
 | `COND-MULTICELDA-ARRASTRE` | cita:MC_HHD.4.1.1.3.4a#MULTIPLES | `la capacidad de arrastre del curso -- palizada, troncos, material de cauce -- no es una magnitud que este programa calcule ni una columna del CSV: se establece con inspeccion del cauce` | advierte |
+| `COND-N-MANNING-CAJON` | cita:MC_HHD.4.1.1.3.6#T09 | `n_manning_cajon` | bloquea |
 | `COND-PERFIL-SIN-INFO-SECUNDARIA` | cita:MS.4.2#PERFIL | `existe_informacion_secundaria_tramo` | bloquea |
 | `COND-SELVA-ALTA` | cita:MC_HHD.4.1.1.3.7a | `region == 'selva_alta'` | excluye |
 
@@ -898,14 +901,16 @@ recomienda.
 | `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES` |
 | `F3.D_MIN` | Fase 3 - Tipo, material y durabilidad | Seccion minima circular de 0.90 m (36") | **obliga** | `MC_HHD.4.1.1.3.4a` |
 | `F3.MANTENIMIENTO` | Fase 3 - Tipo, material y durabilidad | Cota inferior de la progresion de secciones: dimension interior que permite mantener y limpiar el conducto | **obliga** | `MC_HHD.4.1.1.3.7d` |
+| `F3.SECCION_CANAL` | Fase 3 - Tipo, material y durabilidad | Adopcion de la seccion del cajon en un cruce de canal de riego, fuera del piso de 0.90 m | **obliga** | `MC_HHD.4.1.1.3.4a` |
 | `F3.TIPO_MARCO` | Fase 3 - Tipo, material y durabilidad | Tipo de estructura del cruce: alcantarilla tipo marco de concreto de seccion rectangular | **recomienda** | `MC_HHD.4.1.1.3.4a#TIPOS`, `MC_HHD.4.1.1.3.4a#NIVELES`, `MC_HHD.4.1.1.3.4a#MARCO`, `MC_HHD.LAMINA_03` |
 | `F4.CONTROL` | Fase 4 - Dimensionamiento hidraulico | Carga a la entrada HW por los dos controles del HDS-5, entrada y salida, y adopcion del mayor | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.3.1.4#K` |
 | `F4.FORMA_HDS5` | Fase 4 - Dimensionamiento hidraulico | Forma de la ecuacion de control de entrada del HDS-5 que aplica a esta seccion, y por que | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.TA.1`, `HDS5_3ED.A.3#FORMAS` |
 | `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D` |
 | `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning, resueltos con las DOS rugosidades del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
+| `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.SECCION` | Fase 4 - Dimensionamiento hidraulico | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | **define** | `MC_HHD.4.1.1.3.6` |
 | `F4.YC_RECT` | Fase 4 - Dimensionamiento hidraulico | Tirante critico de la seccion, y la energia critica H_c | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.A.2` |
-| `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y/D <= 0.75 | **recomienda** | `MC_HHD.4.1.1.3.7b` |
+| `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y <= 0.75 de la altura, diametro o flecha de la estructura | **recomienda** | `MC_HHD.4.1.1.3.7b` |
 | `F5.V2` | Fase 5 - Verificaciones | V2 - Velocidad minima de autolimpieza: V >= 0.25 m/s | **recomienda** | `MC_HHD.4.1.1.3.6#VMIN_INICIO`, `MC_HHD.4.1.1.3.6#VMIN` |
 | `F5.V2b` | Fase 5 - Verificaciones | V2b - Sedimentacion / colmatacion: el indicador de pendiente del HDS-5 mas el acceso de mantenimiento declarado | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO` |
 | `F5.V3` | Fase 5 - Verificaciones | V3 - Velocidad maxima admisible del revestimiento (Tabla N 10) | **obliga** | `MC_HHD.4.1.1.3.6#T10` |
