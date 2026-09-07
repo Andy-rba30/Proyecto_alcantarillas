@@ -755,6 +755,293 @@ TODOS_LOS_CASOS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# CP-*R · LA SECCION RECTANGULAR (C4) -- las cuatro piezas sobre el marco
+# ---------------------------------------------------------------------------
+# CALCULADOS A MANO DESDE LA ECUACION, nunca desde la salida del codigo. La
+# seccion es el marco 2.00 x 1.50 m que la §4.1 del plan de la Familia C usa
+# de ejemplo, y las formulas son las de esa misma seccion:
+#
+#     A = B*y      P = B + 2y      R = A/P      T = B
+#     A_llena = B*H          R_lleno = B*H / (2(B+H))
+#
+# LAS DOS "R" NO SON LA MISMA, y estos casos lo fijan a proposito: la de
+# lamina libre (P = B + 2y, sin la losa) y la de seccion llena a presion
+# (P = 2(B+H), con ella). En la circular las dos convergen y la distincion no
+# se ve; en un marco no convergen nunca, porque el ancho de la lamina vale B
+# hasta el final.
+#
+# NO SON DATOS DE PROYECTO: son entradas de prueba elegidas para que cada
+# numero se pueda rehacer a mano en una hoja.
+
+CP2R_GEOMETRIA_MANNING_RECTANGULAR = {
+    "B": 2.00,
+    "H": 1.50,
+    "y": 0.90,             # y/H = 0.60, dentro del 0.75 que admite V1
+    "S": 0.005,
+    "n_max": 0.014,        # rama de capacidad / tirante  (fila `concreto_afinado`)
+    "n_min": 0.011,        # rama de velocidad / socavacion
+
+    "A_esperado": 1.8,                       # B*y
+    "P_esperado": 3.8,                       # B + 2y
+    "R_esperado": 0.4736842105263158,        # A/P
+    "T_esperado": 2.00,                      # = B, CONSTANTE con el tirante
+    "A_llena_esperada": 3.0,                 # B*H
+    "R_lleno_esperado": 0.42857142857142855,  # B*H/(2(B+H)) -- NO es A/P al tirante H
+
+    # V = (1/n) * R^(2/3) * S^(1/2); Q = V*A. Igual que en CP-2: NO dividir Q
+    # entre A para obtener V.
+    "V_con_n_max_esperado": 3.0691367451089424,
+    "V_con_n_min_esperado": 3.906174039229563,
+    "Q_con_n_max_esperado": 5.524446141196097,
+
+    # El radio hidraulico de LAMINA LIBRE en y = H, para poder contrastarlo
+    # con `R_lleno_esperado` y ver que no coinciden: 3.0/5.0 = 0.60 m frente a
+    # 0.4285... m, un 40 %.
+    "R_lamina_libre_en_H": 0.6,
+
+    "tolerancia_geometria": 1e-12,
+    "tolerancia_hidraulica": 1e-12,
+    # La circular NO llega exacta al borde: su bracket se separa de theta =
+    # 2*pi por TOL_THETA_BORDE = 1e-9 rad, y a esa distancia el radio
+    # hidraulico de lamina libre difiere del de seccion llena en ~3.6e-11 m.
+    # Es convergencia del bracket, no una diferencia de formula, y por eso
+    # tiene tolerancia propia: compararla con 1e-12 seria medir el margen del
+    # bracket creyendo medir la geometria.
+    "tolerancia_convergencia_circular": 1e-9,
+    # La del tirante que devuelve Brent. `TOL_BRENT` vale 1e-10 sobre el
+    # PARAMETRO PROPIO, y en el marco ese parametro es el tirante EN METROS
+    # -- en la circular es theta en radianes, que sobre un tubo de 0.90 m
+    # equivale a ~1e-11 m --. O sea que aqui la tolerancia del solver se lee
+    # directamente en metros, y 1e-9 m es una millonesima de milimetro.
+    "tolerancia_brent": 1e-9,
+}
+
+# El tirante critico rectangular tiene solucion CERRADA, y por eso este caso
+# no se parece a CP-6: alli habia que comprobar autoconsistencia porque no hay
+# valor cerrado, y aqui hay tres identidades que se rehacen en una linea:
+#
+#     y_c = (q^2/g)^(1/3)   con q = Q/B
+#     V_c = q/y_c   y   V_c^2 = g*y_c   (porque y_c^3 = q^2/g)
+#     H_c = y_c + V_c^2/(2g) = 1.5*y_c  <- EXACTA, y no depende de Q ni de B
+#     Froude = V_c / sqrt(g*A/T) = 1
+#
+# La tercera es la mas util como oraculo: H_c/y_c = 3/2 es una propiedad de la
+# seccion rectangular que se demuestra en dos renglones y que ningun error de
+# transcripcion de constantes reproduce por casualidad.
+CP6R_TIRANTE_CRITICO_RECTANGULAR = {
+    "B": 2.00,
+    "H": 1.50,
+    "g": 9.81,             # constantes_fisicas.G, no los 9.8 de G_LAUSHEY
+    "casos": (
+        {"Q": 2.00,  "q": 1.0,
+         "y_c_esperado": 0.4671363512679737,
+         "V_c_esperado": 2.1407025963311255,
+         "H_c_esperado": 0.7007045269019605},
+        {"Q": 6.00,  "q": 3.0,
+         "y_c_esperado": 0.9716827674320039,
+         "V_c_esperado": 3.0874273997145196,
+         "H_c_esperado": 1.457524151148006},
+        # EL TERCERO ERA Q = 12.00 m3/s Y HUBO QUE CAMBIARLO, y conviene
+        # saber por que: daba y_c = 1.5424 m sobre un barril de H = 1.50 m, o
+        # sea un tirante critico IMPOSIBLE, y este mismo fixture lo dio por
+        # bueno hasta que la auditoria adversarial de C4 encontro el techo que
+        # faltaba (ver `CP6R_TECHO_DEL_CRITICO`). Se sustituye por Q = 10.00,
+        # que sigue siendo un caudal grande --y_c = 1.366 m, el 91 % de la
+        # altura-- y cae por debajo del techo, que es lo que este caso quiere
+        # medir: la formula cerrada, no el tope.
+        {"Q": 10.00, "q": 5.0,
+         "y_c_esperado": 1.3659149772715913,
+         "V_c_esperado": 3.66054994871458,
+         "H_c_esperado": 2.048872465907387},
+    ),
+    "H_c_sobre_y_c": 1.5,
+    "froude_esperado": 1.0,
+    "tolerancia": 1e-12,
+    "tolerancia_identidad": 1e-14,   # H_c/y_c = 3/2 y Froude = 1
+}
+
+# EL TECHO DEL TIRANTE CRITICO, que la solucion cerrada retiro sin querer.
+# En la circular el limite lo pone la geometria del bracket: y = (D/2)(1 -
+# cos(theta/2)) no puede pasar de D, y por eso un Q desmedido solo acerca y_c
+# a D (medido: D = 0.90 da y_c = 0.8999649945 con Q = 15 y 0.8999999823 con
+# Q = 100). El despeje y_c = (q^2/g)^(1/3) no tiene ese limite.
+#
+# El caso que lo destapo es un punto VIABLE, y eso es lo que lo hace grave: el
+# tirante normal cae dentro del 0.75 que admite V1 y ninguna verificacion se
+# queja, mientras el informe imprime un area critica MAYOR que la del barril
+# entero. El numero era positivo y finito, de modo que ninguna guardia de
+# signo ni de finitud lo veia.
+#
+# El techo NO es una decision del proyecto: HDS-5 3a ed., num. 3.3.3, pag.
+# impresa 3.24 (PDF 106), establece que el tirante critico no puede exceder la
+# altura interior del barril, y las cartas del Apendice C lo acotan igual.
+CP6R_TECHO_DEL_CRITICO = {
+    "B": 2.00,
+    "H": 1.50,
+    "Q": 15.00,             # m3/s
+    "S": 0.05,              # m/m -- pendiente alta, punto supercritico
+    "n_max": 0.014,
+
+    # Lo que hace que el caso NO se descarte antes: el punto es viable.
+    "y_normal_esperado": 0.8045885708471225,
+    "y_sobre_H_esperado": 0.5363923805647484,   # dentro del 0.75 de V1
+
+    # Lo que el despeje SIN techo daba, y por que es imposible.
+    "y_c_sin_techo": 1.7898549609527818,        # (7.5^2/9.81)^(1/3)
+    "A_c_sin_techo": 3.5797099219055637,        # B*y_c, MAYOR que A_llena
+    "A_llena": 3.0,
+
+    # Lo que da CON el techo: el critico se topa en H y el area critica pasa a
+    # ser la del barril lleno.
+    "y_c_esperado": 1.50,
+    "A_c_esperado": 3.0,
+    "V_c_esperado": 5.0,                        # Q/A_llena, exacta
+    "H_c_esperado": 2.77420998980632,           # H + V_c^2/(2g)
+
+    # La circular, en cambio, se acota sola: dos caudales desmedidos sobre el
+    # mismo tubo, y los dos por debajo de D.
+    "D_circular": 0.90,
+    "y_c_circular_Q15": 0.8999649945473036,
+    "y_c_circular_Q100": 0.8999999822791347,
+
+    "tolerancia": 1e-12,
+}
+
+# Control de entrada sobre el MARCO, por las DOS formas de la Tabla A.1. Las
+# dos cartas son de cajon --regla vinculante #5: no se cruzan geometrias-- y
+# la eleccion entre ellas la fija la columna «Equation Form», no el
+# proyectista:
+#
+#     Carta 8  esc. 1  «30 to 75 degree wingwall flares»  Forma 1
+#     Carta 9  esc. 1  «45 degree wingwall flare d = .043D»  Forma 2
+#
+# El punto es el mismo para las dos: marco 2.00 x 1.50 m, Q = 6.00 m3/s,
+# S = 0.004 m/m. Con q* = 2.957 < 3.5 la rama es la NO SUMERGIDA en las dos, o
+# sea la (A.1) pura frente a la (A.2) pura, que es donde la diferencia entre
+# formas se ve entera y sin interpolar.
+CP5R_CONTROL_ENTRADA_RECTANGULAR = {
+    "B": 2.00,
+    "H": 1.50,
+    "Q": 6.00,
+    "S": 0.004,
+    "Ku": 1.811,
+
+    "A_llena_esperada": 3.0,
+    "q_estrella_esperado": 2.9573506161202237,   # Ku*Q/(A_llena*H^0.5)
+    "zona": "no_sumergido",                      # q* <= 3.5
+    "y_c_esperado": 0.9716827674320039,
+    "H_c_esperado": 1.457524151148006,
+    # UN ULP DE DISTANCIA DE `y_c_esperado`, Y NO ES UN DESCUIDO. Con H = 1.5
+    # el algebra dice que H_c/H = 1.5*y_c/1.5 = y_c, pero en doble precision
+    # `(y_c + V_c^2/(2g))/H` y `y_c` NO son el mismo float: dan
+    # 0.971682767432004 y 0.9716827674320039. El dorado es el PRIMERO, que es
+    # el que la memoria imprime y el que el paso sustituye; rehacerlo por la
+    # identidad da el segundo. Se dice aqui porque un revisor que rehaga la
+    # cuenta a mano llegara al segundo y tiene que saber por que difieren.
+    "H_c_sobre_D_esperado": 0.971682767432004,
+
+    # -- Carta 9 escala 1, FORMA 2: HW/D = K*(q*)^M, ec. (A.2). Sin H_c/D y
+    #    sin Ks*S.
+    "forma_2": {
+        "carta": "cajon_concreto_aleta_45_d043",
+        "K": 0.510, "M": 0.667, "Ks": -0.5, "forma": 2,
+        "hw_sobre_D_esperado": 1.0511443364335622,
+        "HW_esperado": 1.5767165046503433,
+    },
+    # -- Carta 8 escala 1, FORMA 1: HW/D = H_c/D + K*(q*)^M + Ks*S, ec. (A.1).
+    #    Con M = 1.0 el termino K*(q*)^M es K*q* y se rehace de cabeza:
+    #    0.026 * 2.9573506161202237 = 0.07689111601912581.
+    "forma_1": {
+        "carta": "cajon_concreto_aletas_30_75",
+        "K": 0.026, "M": 1.0, "Ks": -0.5, "forma": 1,
+        "termino_directo": 0.07689111601912581,
+        "hw_sobre_D_esperado": 1.0465738834511298,
+        "HW_esperado": 1.5698608251766948,
+    },
+    "tolerancia": 1e-12,
+}
+
+# Control de salida sobre el marco LLENO. Misma ecuacion que CP-8 y misma
+# constante SI; lo que cambia es de donde sale la R, y ese es justamente el
+# punto: aqui es B*H/(2(B+H)) y no D/4.
+CP8R_CONTROL_SALIDA_RECTANGULAR = {
+    "B": 2.00,
+    "H": 1.50,
+    "Q": 6.00,
+    "S": 0.004,
+    "L": 20.0,
+    "n": 0.014,
+    "ke": 0.5,
+    "TW": 0.30,
+
+    "R_lleno_esperado": 0.42857142857142855,
+    "V_esperada": 2.0,                  # Q/A_llena = 6.0/3.0, exacta
+    "K_friccion_SI_correcto": 19.63,
+    "K_friccion_imperial_incorrecto": 29.0,
+    "H_esperado_con_K_SI": 0.3543619441312314,
+    "H_con_29_incorrecto": 0.37753708378651335,
+
+    # h_o = max(TW, (y_c + D)/2) con D = H: manda la aproximacion geometrica.
+    "h_o_esperado": 1.2358413837160018,
+    "HW_salida_esperado": 1.510203327847233,   # H + h_o - S*L
+    "tolerancia": 1e-12,
+}
+
+
+# LA TRANSICION NO MONOTONA, AHORA SOBRE LAS CARTAS QUE DE VERDAD SON DE
+# CAJON. `CP5D_FORMA2_TRANSICION_NO_MONOTONA` fijo la propiedad con la Carta 9
+# escala 1 evaluada sobre una seccion CIRCULAR, porque en C3 no habia otra.
+# C4 la repite donde corresponde -- seccion rectangular y carta de cajon -- y
+# ademas barre las DOCE cartas de cajon con Forma 2 de la Tabla A.1 para
+# quedarse con la peor:
+#
+#     S* = (c*4^2 + Y - K*3.5^M) / |Ks|
+#
+#     cajon_concreto_aleta_18_337_d083     0.215192   <- la MINIMA de las doce
+#     cajon_concreto_aleta_45_d043         0.236495
+#     cajon_concreto_chaflan_esviaje_15    0.238747
+#     ...
+#     cajon_concreto_chaflan_aletas_184    0.493306   <- la maxima
+#
+# Las TRES cartas de cajon con Forma 1 (Cartas 8, escalas 1 a 3) no tienen
+# umbral: con Forma 1 los dos extremos de la recta llevan Ks*S y el termino se
+# cancela en la diferencia.
+#
+# QUE SIGNIFICA PARA ESTE PROYECTO, con el numero delante: la pendiente mas
+# alta del expediente de prueba es 0.010 m/m (`tests/ejemplo_puntos.csv`) y la
+# que C-01 declara para su conducto es 0.004. La minima de las doce, 0.215192,
+# esta 21.5 veces por encima de la primera. NO MUERDE. Pero tampoco esta
+# excluida por ninguna guardia: `dominios.S_CAUCE_MAX` vale 1.0, de modo que
+# un CSV valido puede traer una pendiente por encima del umbral y el calculo
+# la aceptaria sin decir nada -- el numero sigue siendo positivo --. Por eso
+# se fija aqui en vez de darse por descartada.
+CP5DR_TRANSICION_CAJON = {
+    "carta": "cajon_concreto_aleta_18_337_d083",
+    "K": 0.486, "M": 0.667, "c": 0.0249, "Y": 0.83, "Ks": -0.5, "forma": 2,
+    "B": 2.00,
+    "H": 1.50,
+    "S_umbral": 0.21519208968426007,      # (c*16 + Y - K*3.5^M)/|Ks|
+    "S_umbral_minimo_de_las_doce": 0.21519208968426007,
+    "S_umbral_maximo_de_las_doce": 0.4933055559965851,
+    "cartas_cajon_forma_2": 12,
+    "cartas_cajon_forma_1": 3,
+
+    "S_ensayada": 0.30,                   # por encima del umbral
+    "HW_en_q_3_5_m": 1.681205932736805,   # ec. (A.2) pura, sin Ks*S
+    "HW_en_q_4_0_m": 1.6176,              # ec. (A.3), con Ks*S
+    "delta_mm": -63.60593273680482,       # NEGATIVO: baja al subir el caudal
+
+    "S_baja": 0.05,                       # por debajo del umbral
+    "delta_mm_con_S_baja": 123.89406726319518,   # POSITIVO: crece, lo esperable
+
+    "S_maxima_del_expediente": 0.010,     # tests/ejemplo_puntos.csv
+    "S_maxima_admitida_por_dominios": 1.0,   # dominios.S_CAUCE_MAX
+    "tolerancia": 1e-12,
+    "tolerancia_mm": 1e-6,      # la del delta, que va en milimetros
+}
+
+
 if __name__ == "__main__":
     # Recalculo independiente de verificacion. CP-1, CP-7 y CP-9 son formula
     # cerrada y no necesitan scipy: se autoverifican siempre. CP-2 resuelve una

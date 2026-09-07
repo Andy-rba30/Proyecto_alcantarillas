@@ -109,6 +109,34 @@ positivo` aparece **3 veces en el CLI y 12 en el JSON**. Un renombre del `campo`
 
 **Son 12 archivos**, los 12 deterministas.
 
+## Lo que ensanchó C4: la quinta corrida, que no es la CLI
+
+`punto_cajon.py` resuelve **una sección rectangular con una carta de cajón de la Tabla A.1
+— Forma 2 —** y publica `memoria_punto_cajon.html`: un `<pre>` con los números que la
+memoria no imprime (los dos HW, el que gobierna, las dos velocidades, q\*, h_o) más los
+**siete pasos de memoria** pintados por el mismo `M11.bloque_pasos` de producción.
+
+**Por qué no pasa por la CLI, que habría sido lo natural.** Porque la CLI todavía no puede
+producir un cajón: `MD.disenar_material` construye `SeccionCircular(D)` sobre la progresión
+de diámetros de M2, y abrir ese catálogo al marco es **C5**. El límite de alcance de C4 lo
+dice con todas las letras. La alternativa era dejar la ceguera abierta una sesión más.
+
+**Qué cierra, medido.** Hasta C3.5 la mutación «cablear `forma = 1`» no movía un byte,
+porque las tres cartas circulares del catálogo son Forma 1. Vuelto a medir con esta corrida:
+
+| Mutación | Antes | Ahora |
+|---|---|---|
+| `forma = FORMA_1` en `_pasos_hidraulicos` (la **etiqueta**) | no movía nada | **mueve `memoria_punto_cajon.html`** |
+| la Forma 2 deja de bifurcar en el **cálculo** (se aplica la ec. A.1) | no movía nada | **HW de entrada 1.576717 m → 3.031241 m** |
+
+**NO ES UN DISEÑO, y el driver lo lleva escrito.** Es un fixture, igual que
+`entradas_ampliadas.json`. Toma prestadas tres decisiones que son de C5 sólo para poder
+correr —la fila de la Tabla Nº 09 (`concreto_afinado`), la carta de HDS-5 y el `ke_entrada`
+del bloque de tubo (regla vinculante #11)— y no pasa por la Fase 5: no hay verificaciones,
+ni elección de material, ni iteración de catálogo.
+
+**Son 13 archivos**, los 13 deterministas.
+
 ### Lo que la ventana sigue sin mirar, y queda dicho
 
 - **El código de salida**: los cuatro comandos llevan `|| true`. Una regresión de exit code
@@ -121,9 +149,10 @@ positivo` aparece **3 veces en el CLI y 12 en el JSON**. Un renombre del `campo`
 
   **Lo que el test sí ve y lo que no, medido con tres mutaciones:** ve invertir la etiqueta
   de ecuación (la que dejaba la suite verde) y ve renombrar el `motivo` de un
-  `DatoInvalidoError` (la regresión de C1). **No** ve cablear `forma = 1` en el paso de
-  memoria, porque hoy ningún punto del fixture usa Forma 2 — las tres cartas circulares son
-  Forma 1—; a ésa la caza un test unitario. Las dos capas son complementarias.
+  `DatoInvalidoError` (la regresión de C1). ~~**No** ve cablear `forma = 1`.~~ **CERRADO en
+  C4** con la quinta corrida: ver el bloque de arriba, con las dos mutaciones vueltas a
+  medir. Las dos capas siguen siendo complementarias — los tests unitarios cubren caminos
+  que el corredor no recorre —.
 - **La memoria generada no lleva la advertencia de fixture.** Quien abra
   `memoria_perfil_ancha.html` suelto ve una memoria completa con TW = 0.300 m y nada que
   diga que es una sonda; la advertencia vive en este README y en el script.

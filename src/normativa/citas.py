@@ -1653,7 +1653,7 @@ HDS5_3_3_3 = _cita(
     pagina_pdf=106,
     texto_literal=Verbatim(
         texto=("Approximate hydraulic gradeline ho = (dc + D)/2 can only be "
-               "used if the barrel flows full for"),
+               "used if the barrel flows full for most of its length."),
         pagina_pdf=106),
     caracter=Caracter.APROXIMACION,
     nota=("Las TRES condiciones estan en esta pagina, y la primera tiene una "
@@ -1662,7 +1662,16 @@ HDS5_3_3_3 = _cita(
           "Ademas la fuente no escribe la razon HW/D: escribe «the headwater "
           "depth (referenced to the inlet invert) is less than 1.2D», y la "
           "referencia al invert de entrada es parte de la definicion. Las "
-          "tres son `should` / `can only`, no `shall`."),
+          "tres son `should` / `can only`, no `shall`. "
+          "C4: EL VERBATIM ESTABA TRUNCADO EN «flows full for», que es donde "
+          "el PDF parte la linea, y la truncadura se llevaba «most of its "
+          "length» -- o sea LA CONDICION MISMA --. Leido asi, el rotulo "
+          "«texto literal» publicaba un requisito MAS LAXO que el de la "
+          "fuente: «que el barril fluya lleno» en vez de «que fluya lleno en "
+          "la mayor parte de su longitud». Es la elision sin marcar que "
+          "CLAUDE.md persigue, y `test_normativa_pdf` no la veia porque "
+          "verifica por subcadena y una truncadura siempre lo es. Verificado "
+          "contra la PDF 106: la oracion termina en «most of its length.»"),
 )
 
 

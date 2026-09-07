@@ -29,20 +29,39 @@ de una sola linea, y la diferencia entre las dos lecturas se decidio leyendola.
 LO QUE ESTE TEST NO PUEDE VER, Y HAY QUE SABERLO PARA NO CONFIARSE. La linea
 base solo ve lo que el FIXTURE EJERCITA. Medido con tres mutaciones:
 
-    A · cablear `forma = 1` en el paso de memoria     -> NO lo ve
+    A · cablear `forma = 1` en el paso de memoria     -> NO lo ve  (hasta C3.5)
     B · invertir la etiqueta de ecuacion (A.1)/(A.2)  -> lo ve
     C · renombrar el `motivo` de un DatoInvalidoError -> lo ve
 
-La A se le escapa porque HOY NINGUN PUNTO DEL FIXTURE USA FORMA 2: las tres
-cartas circulares del catalogo son Forma 1, de modo que suponerla no mueve un
-byte. Quien la caza es `test_M4_control::test_el_paso_de_forma_declara_LA_forma_que_se_uso`,
-que construye una carta de Forma 2 a proposito.
+LA A YA NO SE ESCAPA, Y ESO ES LO QUE C4 CAMBIO. Se le escapaba porque
+NINGUN PUNTO DEL FIXTURE USABA FORMA 2: las tres cartas circulares del
+catalogo son Forma 1, de modo que suponerla no movia un byte. C4 añadio la
+quinta corrida --`punto_cajon.py`, una seccion rectangular con una carta de
+cajon de la Tabla A.1, que es Forma 2--. Vuelto a medir sobre este mismo
+arbol, con las dos mutaciones que la Forma 2 admite:
 
-Las dos capas son COMPLEMENTARIAS y ninguna sustituye a la otra: los tests
-unitarios cubren caminos que el corredor no recorre; la linea base cubre la
-composicion entera -- las cuatro corridas, los dos alcances, el JSON y el CSV
-que ningun test unitario mira --. El dia que C4 meta una seccion de cajon en
-el fixture, la A pasara a ser visible tambien aqui.
+    A · `forma = FORMA_1` cableada en `_pasos_hidraulicos` (la ETIQUETA)
+        -> MUEVE `memoria_punto_cajon.html`. Antes no movia nada.
+    B · la Forma 2 deja de bifurcar en el CALCULO y se aplica la ec. (A.1)
+        -> HW de control de entrada  1.576717 m  ->  3.031241 m
+           (+1.454524 m, que es H_c/D + Ks*S sobre la altura del marco)
+
+La direccion de B es al ALZA en este punto, y conviene no confundirla con la
+de `CP5D_FORMA2_KS_ESPUREO`: aquella mide la mitad Ks*S sola --30 mm a la
+BAJA, no conservadora-- y esta mide las dos mitades juntas, con el H_c/D
+dominando. Las dos son la misma familia de defecto y solo una de ellas tiene
+signo peligroso; por eso el caso patron fija la que lo tiene y la linea base
+fija que el conjunto se mueve.
+
+Las dos capas siguen siendo COMPLEMENTARIAS y ninguna sustituye a la otra:
+los tests unitarios cubren caminos que el corredor no recorre; la linea base
+cubre la composicion entera -- las cinco corridas, los dos alcances, el JSON,
+el CSV y ahora las dos formas de seccion --.
+
+LA QUINTA CORRIDA NO ES LA CLI, y hay que saberlo: la CLI no puede producir
+un cajon hasta que C5 abra el catalogo de M2. El driver llama a M3 y a M4
+directamente. No es un diseño --no pasa por la Fase 5-- y su propio docstring
+declara las tres decisiones de C5 que toma prestadas para poder correr.
 """
 
 import os
@@ -58,7 +77,8 @@ SCRIPT = DIR / "regenerar.sh"
 
 # Los generados. `regenerar.sh`, `README.md` y `entradas_ampliadas.json` son
 # ENTRADAS del proceso, no salidas, y por eso no se comparan.
-NO_GENERADOS = {"regenerar.sh", "README.md", "entradas_ampliadas.json"}
+NO_GENERADOS = {"regenerar.sh", "README.md", "entradas_ampliadas.json",
+                "punto_cajon.py"}
 
 
 def _generados_comprometidos():
@@ -166,6 +186,19 @@ def test_la_ventana_cubre_los_ejes_que_dice_cubrir(recien_generada):
     # (d) C-01, el punto de Familia C, llega a su bloqueo REAL -- el que C4 y
     # C5 van a cambiar -- y no se detiene antes por falta de TW.
     assert "no ofrece material candidato para la Familia C" in ancho
+
+    # (d-bis) EL PUNTO DE CAJON, el eje que añadio C4: una seccion NO
+    # circular resuelta por una carta de FORMA 2. Es lo que hace visible aqui
+    # la mutacion A, que hasta C3.5 solo cazaban los tests unitarios. Se
+    # comprueban las tres cosas que la hacen visible -- que la seccion es un
+    # marco, que la carta es de Forma 2 y que la rama aplicada es la que usa
+    # la ec. (A.2) pura --, porque si cualquiera de las tres se pierde la
+    # ceguera vuelve sin que nada avise.
+    cajon = lee("memoria_punto_cajon.html")
+    assert "marco 2.00 × 1.50 m" in cajon
+    assert "Equation Form 2" in cajon
+    assert "regimen entrada    no_sumergido" in cajon
+    assert "critico cerrado    True" in cajon
 
     # (e) LA RAMA DE ERROR, que es la que motivo el ensanche: es la que C1
     # movio sin que nada lo viera. Se comprueban las DOS cadenas -- `campo` y

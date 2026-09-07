@@ -657,3 +657,143 @@ FORMA_HDS5 = _fundamento(
         "MAT-D10, pero por una via que ninguna guardia de signo detecta, "
         "porque el resultado sigue siendo positivo."),
 )
+
+
+# ===========================================================================
+# La seccion rectangular: los dos `Fundamento` que C4 emite (§15.7)
+# ===========================================================================
+# LOS DOS ESTABAN REDACTADOS EN §15.7 y C2 los dejo sin escribir a proposito
+# --"su sitio es la sesion que escribe el paso que los emite"--. Esa sesion es
+# esta: `M4._pasos_hidraulicos` emite `de_seccion` con el primero y
+# `de_critico` con el segundo, en TODA corrida que dimensione un punto, sea la
+# seccion circular o rectangular.
+#
+# NINGUNO DE LOS DOS SALE DE `sin_alcanzar` DE test_memoria_sustentada.py,
+# porque ninguno estaba ahi: los tres que quedan en esa lista --F3.TIPO_MARCO,
+# F3.MANTENIMIENTO y F3.CELDAS-- son de C5, y se dice aqui porque el prompt de
+# C4 daba por hecho que alguno era suyo. El que salio en su sesion fue
+# `F4.FORMA_HDS5`, en C3.
+#
+# QUE NO LLEVAN, Y ES LA MITAD DEL TRABAJO (§15.7): `y_c = (q^2/g)^(1/3)` es
+# ALGEBRA, no norma -- sale de la condicion de energia minima, no de un
+# numeral --. El fundamento funda POR QUE EL PASO EXISTE; la formula viaja en
+# `PasoDeMemoria.formula` y su `formula_cita_id` apunta al numeral que LA
+# EXIGE, no a uno que la imprima. Inventarle una cita a la formula seria la
+# clase de defecto que `SIN_FUNDAMENTO` existe para no cometer.
+
+# DOS COSAS SE APARTAN DE LA REDACCION DE §15.7, Y LAS DOS LAS CAMBIO LA
+# FUENTE PRIMARIA. La segunda, primero, porque es de forma y no de fondo:
+# §15.7 escribia las tres variables ENTRECOMILLADAS -- «A 'area de la seccion
+# hidraulica', P 'perimetro mojado'» --, o sea transcribia texto de la fuente
+# A MANO y FUERA DEL REGISTRO. Ninguna de las dos frases esta en
+# `Registro.textos_literales()`, y la copia ya divergia de la pagina: la
+# fuente imprime «A : Área de la sección hidráulica (m2)», con tilde, con dos
+# puntos y con la unidad. Es «ningun texto literal se transcribe dos veces»
+# (CLAUDE.md, §4.5) incumplido en el sitio peor: un `por_que` SE IMPRIME. Se
+# reescribe SIN comillas, diciendo lo mismo. Traer las frases de verdad exige
+# un `Verbatim` nuevo en la cita, verificado contra su pagina; queda anotado
+# como C4-6 en §16.8.
+#
+# UNA PALABRA SE APARTA DE LA REDACCION DE §15.7, Y LA CAMBIO LA FUENTE
+# PRIMARIA. CN escribio «eso depende de la forma, y EL MANUAL no fija
+# ninguna». Verificado contra el PDF: el num. 4.1.1.3.6 (impresa 74 / PDF 77)
+# efectivamente prescribe Manning, define A, P y R por su significado y su
+# unidad --«A : Area de la seccion hidraulica (m2)», «P : Perimetro mojado
+# (m)», «R : Radio hidraulico (m)»--, escribe como unica relacion entre ellas
+# R = A/P, y NO escribe ninguna geometria de seccion. Hasta ahi la frase es
+# exacta. Lo que no lo es es el SUJETO: el MANUAL si enumera formas y si
+# impone una, en el num. 4.1.1.3.4 a) (impresa 72 / PDF 75) --«Las secciones
+# mas usuales son circulares, rectangulares y cuadradas...» y la seccion
+# minima de 0.90 m--, que este mismo repositorio cita en otro sitio. Lo que no
+# fija ninguna forma es ESTE numeral, y asi queda escrito. Corregido tambien
+# en §15.9 del plan.
+SECCION = _fundamento(
+    id="F4.SECCION",
+    fase=F4,
+    que_paso=("Area, perimetro mojado y radio hidraulico de la seccion, para "
+              "el tirante de trabajo"),
+    por_que=(
+        "El num. 4.1.1.3.6 prescribe Manning y define sus tres variables de "
+        "seccion -- area hidraulica, perimetro mojado y radio hidraulico -- "
+        "por su significado y su unidad, y escribe R = A/P como unica "
+        "relacion entre ellas. Lo que NO dice es como se calcula A ni como se "
+        "calcula P: eso depende de la forma, y ESTE numeral no fija ninguna. "
+        "Ahi es donde entra la seccion como abstraccion: no es una "
+        "generalizacion que el proyecto se inventa para que le quepan dos "
+        "formas, es el hueco que el propio numeral deja al calculo. Un "
+        "circulo lo llena por el angulo mojado y un rectangulo por B*y; el "
+        "numeral es el mismo para los dos, y por eso el procedimiento "
+        "tambien."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.4.1.1.3.6",),    # DEFINICION -> sostiene DEFINE
+    que_pasa_si_no_se_hace=(
+        "Se escribe un segundo motor de calculo para la otra forma. Es "
+        "SIS-A-07 y es el antipatron numero uno de la §12: dos motores, uno "
+        "con casos patron y otro sin ellos, que empiezan iguales y divergen "
+        "en la primera correccion que solo se aplique a uno."),
+)
+
+# TRES FRASES SE APARTAN DE LA REDACCION DE §15.7, Y LAS TRES LAS CAMBIO LA
+# FUENTE PRIMARIA. Este `por_que` SE IMPRIME bajo el rotulo «Por que se hace»,
+# de modo que una imprecision aqui es una afirmacion publicada. Verificado
+# contra `normas/hif12026.pdf`:
+#
+#   1. «h_o = max(TW, (d_c + D)/2)» NO es la ecuacion que escribe el num.
+#      3.3.3. Esa pagina (impresa 3.24 / PDF 106) escribe «Approximate
+#      hydraulic gradeline ho = (dc + D)/2 can only be used if...» -- el
+#      simbolo atado SOLO a la semisuma -- y el maximo lo dice en PROSA, en el
+#      parrafo siguiente y sin nombrar ho: «the greater of tailwater or
+#      (dc + D)/2». Con forma de ecuacion, el maximo esta en OTROS numerales
+#      (impresas 3.12, 3.32 y 3.43). La v8 ya lo declara en su §4.3. Aqui se
+#      escribe como lo que es: la fuente APROXIMA, y el maximo lo toma el
+#      proyecto.
+#   2. «DOS pasos posteriores lo consumen» es cierto de ESTE pipeline y falso
+#      del HDS-5, que le da un tercer uso: el area de la seccion para la
+#      velocidad de salida bajo control de salida (num. 3.1.6, impresa 3.18 /
+#      PDF 100). Se acota el sujeto.
+#   3. «La Forma 1 arranca de H_c/D» sin condicionar se imprimia igual bajo
+#      Forma 2, donde la ec. (A.2) no usa H_c -- que es el defecto que C3
+#      corrigio en la nota del paso y que aqui volvia por el fundamento --.
+#
+# Lo que NO cambia: el `verbo`. DEFINE esta sostenido por el `caracter` de las
+# dos citas (A.2 es DEFINICION, 3.3.3#HO es APROXIMACION) y es el correcto:
+# el paso no afirma una obligacion, afirma una cadena de dependencias.
+YC_RECT = _fundamento(
+    id="F4.YC_RECT",
+    fase=F4,
+    que_paso="Tirante critico de la seccion, y la energia critica H_c",
+    por_que=(
+        "El tirante critico no se calcula porque interese por si mismo: se "
+        "calcula porque DOS PASOS DE ESTE CALCULO lo consumen. La Forma 1 del "
+        "control de entrada arranca de H_c/D --la Forma 2 no lo usa, y la "
+        "rama sumergida tampoco--, y el control de salida necesita la altura "
+        "de la linea de energia a la salida, que el HDS-5 APROXIMA con "
+        "ho = (dc + D)/2 y que el proyecto toma como el mayor entre esa y el "
+        "TW. Son dos en ESTE pipeline: el HDS-5 le da un tercer uso que aqui "
+        "no se implementa --el area de la velocidad de salida bajo control "
+        "de salida, num. 3.1.6--. En la seccion circular no hay solucion "
+        "cerrada y hace falta un segundo Brent; en la rectangular el ancho "
+        "superficial es constante y la condicion de energia minima se "
+        "despeja: y_c = (q^2/g)^(1/3) con q = Q/B. Que sea exacta no es un "
+        "lujo de elegancia: retira la clase entera de fallos de convergencia "
+        "que la via por resolutor tiene en la circular, donde un caudal "
+        "diminuto la lleva a un angulo en que el area de la seccion se anula. "
+        "Lo que la solucion cerrada NO retira es el techo: el tirante critico "
+        "no puede exceder la altura interior del barril, y eso lo escribe el "
+        "HDS-5 en su num. 3.3.3."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.3.3.3#HO",     # sostiene DEFINE (definicion/aproximacion)
+           "HDS5_3ED.A.2"),         # DEFINICION
+    que_pasa_si_no_se_hace=(
+        "El control de salida se queda sin h_o y la Forma 1 sin H_c: los dos "
+        "pasos que producen el HW gobernante. Y si en vez de la solucion "
+        "cerrada se reusa el Brent de la circular, se arrastra a la "
+        "rectangular una fragilidad numerica que en ella NO existe: es la "
+        "clase de fallo que `LimiteNumericoError` cubre en `M4.tirante_"
+        "critico` (SIS-G-02). Los identificadores internos viven AQUI y no en "
+        "el `por_que` a proposito: este campo no se imprime en la memoria y "
+        "aquel si, y un informe de tesis no publica el codigo de un hallazgo "
+        "de auditoria bajo el rotulo «por que se hace». Es la convencion que "
+        "ya siguen F4.MANNING, F5.V2b y F4.FORMA_HDS5, y que este fundamento "
+        "rompia hasta que la auditoria de C4 lo vio."),
+)

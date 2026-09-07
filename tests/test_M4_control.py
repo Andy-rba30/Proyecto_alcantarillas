@@ -1220,8 +1220,8 @@ def test_bajo_forma_2_la_nota_del_critico_no_dice_que_entra_en_el_control_de_ent
     (por H_c)». Bajo Forma 2 la ec. (A.2) NO usa H_c, y el critico se resuelve
     solo porque lo necesita h_o del control de salida.
     """
-    nota_f2 = _paso(_pasos_con(_carta(forma=2)), "F4.CONTROL", "4.2.1").nota_del_proyecto
-    nota_f1 = _paso(_pasos_con(_carta(forma=1)), "F4.CONTROL", "4.2.1").nota_del_proyecto
+    nota_f2 = _paso(_pasos_con(_carta(forma=2)), "F4.YC_RECT", "4.2.1").nota_del_proyecto
+    nota_f1 = _paso(_pasos_con(_carta(forma=1)), "F4.YC_RECT", "4.2.1").nota_del_proyecto
     assert "NO usa H_c" in nota_f2
     assert "h_o del control de salida" in nota_f2
     assert "en la Forma 1 del control de entrada" in nota_f1

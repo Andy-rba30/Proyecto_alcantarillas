@@ -119,10 +119,24 @@ queda sin candidatos — por DOS razones, y la normativa faltaba»*.
 
 ## 2-bis. Censo de acoplamiento al diámetro (C0)
 
-La tabla de §2 nombra cinco símbolos como muestra. Éste es el barrido completo de `src/`,
+La tabla de §2 nombra cinco símbolos como muestra. Éste es el barrido de `src/`,
 `cli.py` y `gui/`, y es **lo que C1 tiene delante**. Todo va anclado por **nombre de
 símbolo**, nunca por línea — regla 4 de `CLAUDE.md`, y aquí importa el doble porque C1
 mueve cientos de líneas.
+
+> **SU ALCANCE REAL, declarado por C4, porque decía «completo» y no lo era.** Este censo
+> cubre el acoplamiento al diámetro del **motor hidráulico** — M3, M4, `modelos`, MD, M5 y
+> la capa de presentación —, que es lo que C1 tenía que refactorizar. **No cubre
+> `M8_estructural`**, que codifica geometría circular en producción por dos símbolos
+> nombrados y verificados contra el árbol:
+>
+> - `M8_estructural.empuje_flotacion_kn_m` — `GAMMA_AGUA_KN_M3 * (math.pi / 4) * D_exterior ** 2`, o sea el área del **círculo**;
+> - `M8_estructural.peso_relleno_kn_m` — `gamma_relleno * D_exterior * altura_relleno`, un prisma de ancho `D_ext`.
+>
+> Los dos son de la Fase 8 y el frente que los abre es **F4** (§5), no C1 ni C4. Lo que
+> corrige C4 es la palabra: **«completo» era falso**, y quien ejecute F4 no puede leer este
+> censo como exhaustivo. La anotación venía de la auditoría de C1 (§16.4) y se confirmó
+> midiendo de nuevo los dos símbolos en esta sesión.
 
 **Cómo leer la columna (d).** Marca los símbolos que hoy tienen al menos un localizador
 `archivo:línea` en `docs/manifiesto_citas.md`. **No son los que más acoplan: son los que
@@ -501,7 +515,19 @@ del parámetro propio.** La añadió C1 y la va a pisar C4.
 | Vía | Miembros | Estado |
 |---|---|---|
 | **Por parámetro propio — CANÓNICA** | `bracket_llenado()`, `geometria_en(llenado)`, `ancho_superficial_en_llenado(llenado)` | La que consumen M3 y M4. Es la que resuelve Brent |
-| **Por tirante — de lectura** | `area(y)`, `perimetro(y)`, `ancho_superficial(y)` | **Cero consumidores en producción.** Es el vocabulario de la Sec. 4.1 |
+| **Por tirante — de lectura** | `area(y)`, `perimetro(y)`, `ancho_superficial(y)` | **DOS consumidores, los dos dentro de `SeccionRectangular.geometria_en`** *(medido en C4; hasta entonces eran cero)*. Es el vocabulario de la Sec. 4.1 |
+
+> **La celda decía «cero consumidores» y C4 le dio dos.** Los dos están en el único sitio
+> donde esta vía no puede equivocarse — `SeccionRectangular.geometria_en`, donde el
+> parámetro propio **es** el tirante y las dos vías coinciden bit a bit —, y **están
+> censados**: `tests/test_seccion_rectangular.py::test_la_via_por_tirante_no_gana_consumidores_sin_declararlos`
+> barre el AST de `src/`, `cli.py` y `gui/` y falla si aparece un tercero sin declararlo.
+> El censo lo obligó la auditoría de C4: hasta entonces la regla la vigilaba **un
+> comentario**, y el auditor demostró que no bastaba — sustituyó `g.A` por
+> `seccion.area(g.y)` en `M4._pasos_hidraulicos`, ocho líneas debajo del comentario que
+> dice que eso *«es exactamente lo que la regla vinculante #12 existe para impedir»*, y la
+> suite quedó **en verde**. Es la propia regla cumpliéndose sobre sí misma: «no se detecta
+> mirando».
 
 **Por qué la canónica es la del parámetro propio, y no la del tirante** —que es la que
 «se lee mejor» y por eso es la trampa—:
@@ -530,7 +556,23 @@ problema de **condicionamiento** que se concentra en los dos extremos del llenad
 | `y/D` ∈ [0.01, 0.99] | A 5.2e-15 · P 1.5e-15 · T 8.8e-15 |
 | θ = 1e-5 rad (`y/D` ≈ 6e-12) | **P y T: 4.1e-8** |
 | θ = 1e-6 rad | **P y T: 4.4e-5** |
-| **En los dos extremos de `bracket_llenado()`** (θ = 1e-9 y θ = 2π − 1e-9) | **100 %: la vía por tirante devuelve `0.0` exacto para P y para T** |
+| **Extremo INFERIOR de `bracket_llenado()`** (θ = 1e-9) | **100 %: la vía por tirante devuelve `0.0` exacto para P y para T** (canónica: 4.5e-10) |
+| **Extremo SUPERIOR** (θ = 2π − 1e-9) | **T: ~100 % relativo pero NO cero exacto** — 1.1021821192326179e-16 frente a 4.500001474513789e-10. **P: 1.6e-10 relativo**, no se anula |
+
+> **La última fila la corrigió C4, y la enunciación vieja decía de más.** Esta tabla
+> decía «en los **dos** extremos … devuelve `0.0` exacto para P y para T», y medido
+> sobre D = 0.90 eso vale **entero en uno solo**: en el inferior, donde `y ≈ 0` y
+> `theta_desde_tirante` devuelve 0 exacto. En el superior `y = D` exactamente, la
+> inversa devuelve 2π y **el perímetro coincide en los últimos bits** (2.8274333877808138
+> frente a 2.827433388230814); sólo `T` cae siete órdenes, y tampoco a cero.
+>
+> **La consecuencia no cambia ni un ápice** —el cero exacto está en el extremo
+> **inferior**, que es de los primeros puntos donde Brent evalúa, y `T` es el
+> denominador de `A³/T`—, pero el enunciado sí, y se corrige por la misma razón por la
+> que se corrigió la #5 en C3.5: una regla vinculante que dice de más se deja de creer
+> entera, y ésta la citan C4 y C5. La medición está fijada en
+> `tests/test_seccion_rectangular.py::test_que_coincidan_en_el_marco_no_las_hace_intercambiables`
+> y en el docstring de `modelos.Seccion`.
 
 Grilla: 8 diámetros de 0.30 a 3.00 m; las filas de rango, sobre 20 000 ángulos repartidos
 en `bracket_llenado()` (73 896 a 139 592 puntos según la ventana); las tres últimas, sobre
@@ -2301,10 +2343,12 @@ SECCION = _fundamento(
     que_paso=("Area, perimetro mojado y radio hidraulico de la seccion, para "
               "el tirante de trabajo"),
     por_que=(
-        "El num. 4.1.1.3.6 prescribe Manning y define sus variables -- A "
-        "'area de la seccion hidraulica', P 'perimetro mojado', R = A/P -- "
-        "pero NO dice como se calcula A ni como se calcula P: eso depende de "
-        "la forma, y el Manual no fija ninguna. Ahi es donde entra la "
+        "El num. 4.1.1.3.6 prescribe Manning y define sus tres variables de "
+        "seccion -- area hidraulica, perimetro mojado y radio hidraulico -- "
+        "por su significado y su unidad, y escribe R = A/P como unica "
+        "relacion entre ellas. Lo que NO dice es como se calcula A ni como se "
+        "calcula P: eso depende de "
+        "la forma, y ESTE numeral no fija ninguna. Ahi es donde entra la "
         "seccion como abstraccion: no es una generalizacion que el proyecto "
         "se inventa para que le quepan dos formas, es el hueco que el propio "
         "numeral deja al calculo. Un circulo lo llena por el angulo mojado y "
@@ -2512,7 +2556,8 @@ celdas**, no la verificación. Confundirlos metería un `Fundamento` en un paso 
 **La v8 no se edita desde aquí** (§0). Se acumulan, con el símbolo del código donde cada
 discrepancia se ve, para que quien la corrija sepa contra qué contrastarla. Ninguno de los
 ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
-`normativa/discrepancias.py` se revisaron una a una.
+`normativa/discrepancias.py` se revisaron una a una. *(C3 añadió D-10 y C4 añade D-11 y
+D-12; los doce siguen sin duplicar ninguna `DIS-HR-*`.)*
 
 | Id | Dónde | Qué dice la v8 | Qué dice la fuente primaria | Dónde se ve en el código |
 |---|---|---|---|---|
@@ -2528,6 +2573,9 @@ ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
 | **D-9** *(C2, redacción corregida por C3)* | **Fase 4, §4.2**, control de entrada | Escribe **una** ecuación de control de entrada no sumergido —la que lleva `Ks·S`— y presenta las constantes `K, M, c, Y` de la Tabla A.1 como si una sola ecuación las consumiera. **C2 escribió que «no menciona que HDS-5 tiene DOS formas», y eso es inexacto: la v8 rotula su ecuación «Forma 1».** Medido sobre el documento entero: la palabra «Forma» aparece **tres veces** y las tres son «Forma 1»; **«Forma 2» no aparece nunca**. La omisión no es más leve por eso, es **más aguda**: rotula una forma y jamás dice que exista otra, de modo que el lector no tiene por dónde enterarse. Y en la línea del `MAT-D10` usa «las dos formas» para nombrar las dos **ramas** (no sumergida y sumergida), que **colisiona con el término del propio HDS-5** | La Tabla A.1 tiene una columna **«Equation Form»** con valores 1 y 2, y el num. A.3 (pág. impresa **A.2** / PDF 191) prohíbe cruzarlas: *«coefficients for rectangular (box) shapes should not be used for nonrectangular … shapes and vice-versa»*. Para el cajón la cosa es inmediata: **la Carta 8 es Forma 1 y las Cartas 9, 10, 11 y 12 son Forma 2**, y la Forma 2 **no lleva `Ks·S`** | `modelos.ConstantesHDS5.forma` y la columna `equation_form` de `T_HDS5_A1`, ambos añadidos por C2. Con la v8 en la mano, quien implemente el cajón copiará la Forma 1 y le cambiará las constantes: con `Ks = -0.5` el término **resta** carga y el HW sale **menor que el real**, del lado no conservador, sin que ninguna guardia de signo lo detecte |
 
 | **D-10** *(C3)* | **Fase 4, §4.2**, encabezado «Fuente a citar», y el bloque de código de la §12 | Cita la Tabla A.1 como *«Apéndice A, Tabla A.1, **pág. A.8**»*, en **dos** sitios | **Esa página no lleva folio impreso.** La numeración del Apéndice A termina en **A.7**; las cuatro hojas apaisadas de tablas (PDF 197–200) van **sin numerar** y el Apéndice B reinicia en B.1. Verificado dos veces y de dos formas independientes: en C2 por render del pie, y en C3 midiendo el rango vertical de todo el texto de la página —no hay una sola palabra en la banda del pie— | El repositorio ya lo declara en la `nota` de `citas.HDS5_TA1` y en el `donde_leerlo` de `T_HDS5_A1`: «A.8» es una **inferencia por secuencia**, correcta y predicha por la regla de paginación, pero **no una lectura**. La v8 la escribe como si lo fuera, y es la única referencia que le da al lector para encontrar la tabla |
+
+| **D-11** *(C4)* | **«Notas críticas de programación»** (la lista que un programador lee como checklist) | Enuncia **sin condición** dos propiedades que sólo valen para la sección circular: *«**Q(y/D) no es monótona** cerca de sección llena (máximo en y/D ≈ 0.938)»* y *«**M4 necesita tirante crítico:** Q²T/(gA³) = 1, **segundo Brent sobre θ**»* | Las dos son **falsas para el marco**, medido: barrido de 400 tirantes entre 0 y H sobre 2.00 × 1.50 → **Q(y) es estrictamente creciente, sin pico**; y el crítico **se despeja**, `y_c = (q²/g)^(1/3)`, sin segundo solver y sin θ. **La v8 se contradice a sí misma**: su §4.2.1 lo condiciona bien —*«El tirante crítico **en sección circular** no tiene solución cerrada»*—, pero la versión sin condición es la que está en el checklist | `SeccionRectangular.llenado_critico_cerrado` y `M4.tirante_critico`, que bifurca por lo que la sección responde. **La consecuencia no es cosmética:** quien implemente desde el checklist pone un Brent donde hay fórmula cerrada, y con él **reintroduce la clase de fallo de `SIS-G-02`** que la forma cerrada retira |
+| **D-12** *(C4)* | **Fase 4, §4.3**, ecuación de pérdida de carga | Escribe `H = (1 + k_e + 19.63·n²·L/R^(4/3))·V²/(2g)` **sin decir qué `R`**, y la única R que la v8 define es la de §4.1, `R = A/P` de la sección circular parcialmente llena | Para un marco hay **dos R distintas y las dos son correctas**, cada una en su régimen: la de **lámina libre** (`P = B + 2y`, sin la losa superior) y la de **sección llena a presión** (`P = 2(B+H)`, con ella). Medido sobre 2.00 × 1.50 m: en `y = H` valen **0.600 m** y **0.4286 m** — un **40 %** —. En la circular **convergen** (en θ = 2π el ancho de la lámina se anula y el perímetro de lámina libre ya es πD), y por eso la ambigüedad de la v8 no se nota | `SeccionRectangular.radio_hidraulico_lleno` frente a `geometria_en(y).R`, con la distinción escrita en el docstring de la clase y fijada en `CP2R_GEOMETRIA_MANNING_RECTANGULAR`. El proyecto **sí** la resuelve, por el criterio `geometria_control_salida = "seccion_llena"`; lo que no la resuelve es la v8, y quien generalice su `R = A/P` al marco se equivoca en un 40 % en el término de fricción |
 
 **Recordatorio, no defecto nuevo:** `DIS-HR-G-LAUSHEY` sigue en estado
 `ABIERTA_CONTRA_HOJA_DE_RUTA` y esta sesión la **reconfirmó por segunda vía independiente**
@@ -2546,14 +2594,17 @@ ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
 | ~~**R-10**~~ **cerrado en C2** en su mitad de transcripción; el acoplamiento de `ke_entrada` sigue en C5 | `normativa/tablas.py::T_HDS5_C2.alcance` | Es `Acotada` con la razón *«…el catálogo de conductos de la Sec. 3.2 **no ofrece sección cajón**: ninguna de esas filas puede aplicarse a un punto de este corredor»*. **C5 destruye esa premisa** en cuanto M2 devuelva un candidato de marco. Es el antipatrón que §12 enumera: *«No dejar un `Acotada` describiendo un alcance que ya no es el suyo»* | **C2** transcribe las once filas de «Box, Reinforced Concrete»; **C5** amplía la `Acotada` y acopla `ke_entrada` a `embocadura_cajon` |
 | **R-11** | `normativa/citas.py::HDS5_TA1`, campo `pagina_impresa` | Dice `"A.8"`, y **esa página no imprime folio**. C2 lo anotó en la `nota` de la cita; C3 lo reconfirmó por una vía distinta (rango vertical del texto de la página) y **sigue sin corregirse**: el campo afirma un número que el documento no imprime. Lo que sí es sólido e inequívoco es **PDF 197** más el título literal de la tabla | fuera del alcance de C3 (punto 9): tocar `pagina_impresa` mueve un campo que **T6** usa para predecir la página desde la regla de paginación, y esa interacción hay que resolverla, no esquivarla |
 | **R-12** | `normativa/citas.py::HDS5_3ED.3.1.3#TRANSICION` | Su `Verbatim` termina en *«…connecting them with a line tangent to both curves»* y **la fuente continúa** *«, as shown in Figure 3.4.»*. Es una **elisión final sin marcar** bajo el rótulo «texto literal»: el mismo patrón que `CLAUDE.md` denuncia en la tercera condición de `h_o` y que C2 ya corrigió en `#MULTIPLES`. Las palabras citadas son exactas; lo que falta es la marca de corte. Verificado contra PDF 86 | **anotado y no corregido en C3** (punto 9). Es una línea, y va con quien cierre la familia de elisiones: arreglarla mezclada con la bifurcación de forma la volvería invisible, que es lo que C1 y C2 dejaron por escrito |
+| **R-13** *(C4)* | `M3_hidraulica`, línea de import | Importa `SeccionCircular` y **no la usa**: las tres apariciones restantes del nombre en el archivo son comentarios, y un comentario no sostiene un import. Es **anterior a C4** —medido sobre `05d8a5e`, el `origin/main` con que arrancó la sesión— y es de C1, que mudó la geometría a `modelos` y dejó el import detrás | anotado y no corregido (punto 11 del prompt de C4: un defecto ajeno se anota y se sigue). Es una línea, y va con quien toque los imports de M3 — probablemente **C6**, que reescribe las entradas |
 | **R-6** | `variables_entrada._Columna.criterio_destino` | Es `Optional[str]`, un solo destino. Un segundo consumidor de `sucs_fundacion` obliga a decidir tupla o cambio de destino: **es cambio de esquema** | **C6**, no C5 (§15.5) |
 | ~~**R-7**~~ **cerrado en C2** (`DIS-MCHHD-LAMINA-03-TMC`) | `normativa/discrepancias.py` | El cuerpo del Manual describe **mal su propia Lámina Nº 03**: dice *«se aprecia secciones típicas de alcantarillas tipo marco de concreto»* (impresa 73) y la **primera de sus tres figuras es tubería metálica corrugada** (impresa 209). Contradicción **interna de la fuente primaria**, no contra la v8 | **C2** — una `Discrepancia` de estado `ABIERTA`, para que un revisor que cuente las figuras no crea que la cita está mal puesta |
 | **R-8** | `criterios_adoptados['factores_carga_aashto']` | Su comentario justifica la fila del tubo diciendo *«No es "Pórticos rígidos" … la Familia C, de marco o multicelda, sale sin candidatos»*: **describe un estado que C5 deja de ser cierto**. Falta además la clave del cajón | **C5** — junto con el epígrafe «Familia C queda sin candidatos» de `M2_material`, que tiene el mismo problema y ya está en el prompt de C5 |
 
 ### 15.9 Correcciones a ESTE documento
 
-Las tres salen de la verificación y **se corrigen aquí porque §6 y §13 son vinculantes**: una
-regla vinculante mal fundada se cita literal en una memoria y ahí ya es una cita falsa.
+Las cinco primeras salen de la verificación de CN y **se corrigen aquí porque §6 y §13 son
+vinculantes**: una regla vinculante mal fundada se cita literal en una memoria y ahí ya es una
+cita falsa. **La sexta y la séptima las añadió C4** y son de la misma familia, con el
+agravante de que el texto corregido **se imprime**.
 
 1. **Regla vinculante #6 de §6 — el porqué, no la conclusión.** Dice *«El subgrupo "a.
    Concreto" del grupo A trae solo filas de **tubo**»*. **Seis de sus siete filas dicen «tubo»;
@@ -2589,6 +2640,35 @@ regla vinculante mal fundada se cita literal en una memoria y ahí ya es una cit
 las correcciones:** la **#1** (el cajón no hereda el piso de 0.90 m: la excepción es expresa y
 está en la misma oración) y la **#7** (la Tabla Nº 10 clasifica por `TIPO DE REVESTIMIENTO`;
 **no** se abre `v_max_cajon`).
+
+6. **§15.7, `F4.SECCION` — el sujeto de la frase, corregido contra la fuente primaria (C4).**
+   La redacción decía *«eso depende de la forma, y **el Manual** no fija ninguna»*, y ese texto
+   **se imprime en la memoria**: es el `por_qué` de un paso. Verificado contra el PDF, num.
+   **4.1.1.3.6**, pág. impresa **74** / PDF **77**: el numeral prescribe Manning, define A, P y
+   R **por su significado y su unidad** —*«A : Área de la sección hidráulica (m2)»*, *«P :
+   Perímetro mojado (m)»*, *«R : Radio hidráulico (m)»*—, escribe `R = A/P` como única relación
+   entre ellos y **no escribe ninguna geometría de sección** (comprobado además sobre las cuatro
+   páginas del numeral y sobre las 225 del PDF: los aciertos de `θ` están todos en la prueba de
+   bondad de ajuste del Cap. III y en el capítulo de socavación). Hasta ahí la frase es exacta.
+   **Lo que no lo es es el sujeto:** el Manual **sí** enumera formas y **sí** impone una, en el
+   num. **4.1.1.3.4 a)**, pág. impresa 72 — *«Las secciones mas usuales son circulares,
+   rectangulares y cuadradas…»* y la sección mínima de 0.90 m —, que este mismo repositorio cita
+   en otro sitio. El que no fija ninguna es **este numeral**, y así queda escrito en
+   `normativa/fundamentos.py` y en el docstring de **`Seccion.formula_geometria`** — el del
+   **protocolo**, que es donde vive el texto; `SeccionRectangular.formula_geometria` solo
+   lleva una línea, y la primera redacción de este punto la anclaba ahí (regla 4 de
+   `CLAUDE.md`: se ancla por nombre de símbolo, y el símbolo tiene que llevar lo que se dice
+   que lleva). Es una palabra, y es la diferencia entre una afirmación verificada y una
+   sobreafirmación impresa bajo el rótulo «por qué se hace».
+
+7. **§15.7, `F4.SECCION` otra vez — las comillas (C4, tras la auditoría).** La misma
+   redacción entrecomillaba las tres variables: *«A 'area de la seccion hidraulica', P
+   'perimetro mojado'»*. Eso es **transcribir texto de la fuente a mano y fuera del
+   registro**, en el sitio peor: un `por_qué` **se imprime**. Ninguna de las dos frases está
+   en `Registro.textos_literales()`, y la copia **ya divergía** de la página —la fuente
+   imprime *«A : Área de la sección hidráulica (m2)»*, con tilde, con dos puntos y con la
+   unidad—. Reescrito sin comillas, diciendo lo mismo. Traer las frases de verdad exige un
+   `Verbatim` nuevo en la cita, verificado contra su página: anotado como **C4-6**.
 
 ### 15.10 Lo que la auditoría adversarial encontró
 
@@ -2906,7 +2986,8 @@ sobre 20 000 ángulos repartidos en `bracket_llenado()`):
 | `y/D` ∈ [0.10, 0.75] — la ventana que V1 admite | A 9.7e-16 · P 3.9e-16 · T 4.0e-16 |
 | `y/D` ∈ [0.01, 0.99] | A 5.2e-15 · P 1.5e-15 · T 8.8e-15 |
 | θ = 1e-6 rad | P y T: 4.4e-5 |
-| **Extremos de `bracket_llenado()`** | **100 %: la vía por tirante devuelve `0.0` exacto para P y T** |
+| **Extremo INFERIOR de `bracket_llenado()`** | **100 %: la vía por tirante devuelve `0.0` exacto para P y T** |
+| **Extremo SUPERIOR** *(medido por C4)* | T ~100 % relativo y **no** cero exacto; **P: 1.6e-10** — no se anula. Ver la corrección en §6 #12 |
 
 **Y la consecuencia es peor que una deriva.** `T` es el denominador de `A^3/T` en
 `M4_control._residuo_critico`. Quien reescriba el residuo sobre
@@ -3241,3 +3322,353 @@ etiqueta de ecuación y ve renombrar el `motivo` de un `DatoInvalidoError` —la
 C1—, y **no** ve cablear `forma = 1`, porque hoy ningún punto del fixture usa Forma 2. A ésa
 la caza un test unitario. Las dos capas son complementarias y ninguna sustituye a la otra;
 **cuando C4 meta un cajón en el fixture, esa mutación se vuelve visible aquí también**.
+
+---
+
+### 16.8 C4 — `SeccionRectangular`, y las tres cosas que la medición corrigió
+
+**Qué se implementó.** `modelos.SeccionRectangular(B, H)` con las dos parametrizaciones del
+protocolo, el **tirante crítico cerrado** `y_c = (q²/g)^(1/3)`, y **cuatro** miembros nuevos
+en `Seccion` que retiran del motor lo que quedaba de forma cableada. M3 y M4 no ganaron ni
+un `isinstance`: la sección responde, el módulo pregunta.
+
+| Miembro nuevo de `Seccion` | Qué retira del módulo |
+|---|---|
+| `exigir_dimensiones_positivas()` | **dos copias** de la pareja `("D", "el diametro debe ser positivo")`, una en `M3._validar_parametros` y otra en `M4._validar_Q_D`; y con ellas el `"D"` cableado en la validación |
+| `magnitudes_de_forma()` | que la memoria supiera que una sección se define con **un** número |
+| `formula_geometria()` | la frase «A, P y R son los de la sección circular parcialmente llena», que con un marco además sería falsa |
+| `llenado_critico_cerrado(Q, g)` | que M4 tuviera que preguntar de qué forma es la sección para elegir método |
+
+`g` llega **como argumento** y no se importa en `modelos.py`: la sección conoce el álgebra
+de su forma, no cuánto vale la gravedad. Es la misma separación que `constantes_fisicas`
+declara.
+
+> **Eran cinco, y el quinto se retiró antes de cerrar.** El primer diseño añadía además
+> `simbolo_altura` —`"D"` en la circular, `"H"` en el marco—, y al buscarle consumidores
+> **no tenía ninguno**: ni en producción, ni en la suite. Lo habían dejado sin trabajo sus
+> dos vecinos, `exigir_dimensiones_positivas()` (que ya emite el nombre dentro del mensaje)
+> y `magnitudes_de_forma()` (que ya publica los símbolos para la memoria). Un miembro de
+> protocolo sin consumidor es exactamente el símbolo colgado que `CLAUDE.md` denuncia en su
+> cláusula de taxonomía, y **predecirle un consumidor futuro es el antipatrón que este
+> repositorio ya tiene fichado**. Se retiró y su explicación —la distinción entre el `"D"`
+> de las ecuaciones de HDS-5, que vale para cualquier forma, y el `"D"` del dato de
+> entrada, que significa diámetro— se mudó al docstring de
+> `Seccion.exigir_dimensiones_positivas`, que es el miembro que sí lo usa.
+
+#### La trampa de la regla #12, y por qué la medición la corrigió a ella también
+
+La regla se respetó: **M3 y M4 siguen entrando por el parámetro propio**, ningún valor que
+un `Geometria` ya trae se recalcula, y el solver de la circular sigue recorriendo θ. Los
+tests lo fijan (`test_que_coincidan_en_el_marco_no_las_hace_intercambiables`).
+
+Pero al escribir ese test hubo que medir el enunciado, y **decía de más**: la tabla afirmaba
+que «en los **dos** extremos de `bracket_llenado()` la vía por tirante devuelve `0.0` exacto
+para P y para T», y eso vale entero **en uno solo**. En el superior `y = D` exactamente, la
+inversa devuelve 2π y el **perímetro coincide en los últimos bits**. La consecuencia no
+cambia —el cero exacto está en el extremo **inferior**, que es donde Brent evalúa primero, y
+`T` es el denominador de `A³/T`—, pero el enunciado sí, y **una regla vinculante que dice de
+más se deja de creer entera**. Corregida en §6 #12, en §16.4 y en el docstring de
+`modelos.Seccion`, las tres con la medición.
+
+#### El diff de la línea base, línea por línea
+
+Se movieron **tres archivos** —las tres memorias HTML— y **ninguno de los otros nueve**: ni
+las cuatro salidas de CLI, ni los tres JSON, ni los dos CSV. Contado sobre bloques `<div
+class="paso">` y no sobre líneas, porque el HTML mete un punto entero por línea:
+
+| Qué se movió | Cuántas veces | Por qué |
+|---|---|---|
+| **Bloque `4.1 — Área, perímetro mojado y radio hidráulico` NUEVO** | 3 por memoria (una por punto dimensionado) | el paso `de_seccion`, que emite `F4.SECCION` |
+| Fórmula de `4.1 — Tirante normal` | 3 | decía «resuelta en theta … sección circular parcialmente llena»; ahora el paso de geometría lo dice y éste no lo repite |
+| Procedencia de la magnitud `D` en `4.1` y en `4.2.1` | 3 + 3 | la pone la sección (`magnitudes_de_forma`) y ya no dice «diámetro probado por el bucle de diseño» |
+| «Por qué se hace» de `4.2.1` | 3 | el paso dejó de tomar prestado `F4.CONTROL` |
+| Fórmula de `4.2.1` | 3 | «resuelta en theta» → «sobre el parámetro de llenado de la sección» |
+| Nota de `4.2.1` | 3 | se le añadió por qué vía se resolvió |
+
+**Y no se movió ningún número, y eso se midió, no se declaró.** Multiconjunto de todos los
+números impresos, antes y después, en las tres memorias: **«sólo en la base: {}»** en las
+tres — ninguno desapareció ni cambió de valor —. Confirmado además por la auditoría con su
+propio método y su propia expresión regular, y por `git show --stat`, que enseña que los
+otros nueve artefactos (cuatro `.txt`, tres `.json`, dos `.csv`) **no aparecen en el commit**.
+
+Lo que aparece son **15 magnitudes nuevas por memoria**, no 12 — la primera redacción de
+este párrafo contaba de menos y lo corrigió la auditoría —: las 12 de `y`, `A`, `P` y `R`
+de los tres puntos dimensionados, **más las tres del `D = 0.90 m`** que la sustitución del
+paso de geometría añade. Las quince son números que el cálculo ya tenía y que la memoria no
+imprimía.
+
+#### El punto de cajón en el fixture, y la mutación que ahora muere
+
+C3.5 dejó el límite escrito: la línea base **no veía** cablear `forma = 1`. C4 añade la
+**quinta corrida**, `tests/linea_base_familia_c/punto_cajon.py`, y la ceguera se cierra.
+
+**No pasa por la CLI, y hay que decir por qué:** `MD.disenar_material` construye
+`SeccionCircular(D)` sobre la progresión de diámetros de M2, y abrir ese catálogo es **C5**
+(punto 11 del prompt). El driver llama a M3 y a M4 con la sección que C4 sí trae. Es un
+**fixture** —lleva la advertencia escrita, como `entradas_ampliadas.json`— y toma prestadas
+tres decisiones de C5 sólo para poder correr: la fila `concreto_afinado` de la Tabla Nº 09,
+la carta `cajon_concreto_aleta_45_d043` y el `ke_entrada` del bloque de tubo (regla #11).
+
+Vueltas a medir las mutaciones sobre este mismo árbol:
+
+| Mutación | Antes de C4 | Ahora |
+|---|---|---|
+| `forma = FORMA_1` en `_pasos_hidraulicos` (**la etiqueta**) | no movía un byte | **mueve `memoria_punto_cajon.html`** |
+| la Forma 2 deja de bifurcar en el **cálculo** | no movía un byte | **HW de entrada 1.576717 m → 3.031241 m** |
+
+El punto: marco 2.00 × 1.50 m, Q = 6.00 m³/s, S = 0.004 m/m, L = 20 m, TW = 0.30 m. Cae
+donde se quiere mirar y se dice cuál es cada cosa: **y/H = 0.694** (dentro del 0.75 de V1),
+régimen **subcrítico** (y_n = 1.040 m frente a y_c = 0.972 m) y **q\* = 2.957**, o sea la
+rama no sumergida — la única en que la ec. (A.2) se aplica pura, sin interpolar —.
+
+#### Lo que se contestó midiendo, y no opinando
+
+**Manning converge en el marco sin tocar el solver** (punto 3). Brent resuelve sobre el
+parámetro propio, que aquí es el propio tirante, y devuelve el tirante del caso patrón.
+Barrido de 400 tirantes entre 0 y H: **Q(y) es estrictamente creciente, sin pico**. Es una
+diferencia con la circular y no un detalle — allí la curva tiene un máximo en y/D = 0.938 y
+después baja (MAT-O18) —: en el marco el `None` de `tirante_normal` significa, literalmente,
+«no hay tirante que transporte ese caudal en lámina libre».
+
+**Dos cosas que conviene saber del bracket.** No lleva margen de borde —en y = 0 el área
+vale 0 pero el perímetro vale B > 0, de modo que R = 0/B está definido, a diferencia de la
+circular, donde R = 0/0—; y `TOL_BRENT = 1e-10` se lee aquí **directamente en metros**,
+porque el parámetro propio es el tirante (en la circular son radianes, ~1e-11 m sobre un
+tubo de 0.90 m).
+
+**Las dos «R» de un marco no son la misma, y en la circular la distinción no se ve.**
+`geometria_en(y).R` es de **lámina libre** (P = B + 2y, sin la losa superior);
+`radio_hidraulico_lleno` es de **presión** (P = 2(B+H), con ella). En y = H las dos existen
+y **no coinciden**: con 2.00 × 1.50 dan **0.600 m y 0.4286 m, un 40 %**. En la circular
+convergen —en θ = 2π el ancho de la lámina se anula y el perímetro de lámina libre ya es
+πD—, y por eso nadie las había tenido que separar. Cada consumidor usa la suya: Manning la
+primera, el control de salida de la Sec. 4.3 la segunda.
+
+**La transición no monótona, sobre las cartas que de verdad son de cajón** (punto 8).
+Barridas las **12 cartas de cajón con Forma 2** de la Tabla A.1:
+
+    S* = (c·4² + Y − K·3.5^M) / |Ks|
+    mínimo  0.215192 m/m   (cajon_concreto_aleta_18_337_d083)
+    máximo  0.493306 m/m   (cajon_concreto_chaflan_aletas_184)
+
+Las **3** cartas de cajón con Forma 1 no tienen umbral: con Forma 1 los dos extremos de la
+recta llevan `Ks·S` y el término se cancela en la diferencia. **No muerde en este proyecto**:
+la pendiente más alta del expediente de prueba es **0.010 m/m** y la de C-01, 0.004 — el
+umbral más bajo está **21 veces** por encima. **Pero no está excluida por ninguna guardia**:
+`dominios.S_CAUCE_MAX` vale 1.0, de modo que un CSV válido puede traer una pendiente por
+encima del umbral y el cálculo la aceptaría sin decir nada, porque el número sigue siendo
+positivo. Queda fijada como caso patrón (`CP5DR_TRANSICION_CAJON`) en vez de darse por
+descartada de vista.
+
+**Los CP5D_\* se repiten sobre la rectangular sin cambiar un número** (punto 7), y se
+comprobó en vez de suponerse: para cada rama se despeja el B que produce **exactamente** el
+q\* del caso y se contrasta el HW/D contra el mismo dorado que C3 calculó a mano. Las tres
+ramas coinciden. Y la pareja carta/sección pasa a ser además la correcta: en C3 la Carta 9
+—de cajón— se evaluaba sobre una circular como **sonda de la ecuación**, que el num. A.3 no
+admitiría como diseño.
+
+#### La anotación A-4, cerrada, y la respuesta no era renombrar
+
+C1 dejó `DatoInvalidoError.campo = "D"` para C4, «la primera sesión en que "D" es falso».
+Vistas las dos formas a la vez: **"D" no era falso en la circular**. Un tubo tiene diámetro y
+el dato que un revisor corregiría se llama así. Lo falso era **suponer que hay un solo
+nombre**. El nombre del dato es una propiedad de la forma, y por eso la validación entera
+—campo y motivo— se le pide a la sección: `SeccionCircular` sigue diciendo `"D"` y `"el
+diametro debe ser positivo"` **letra por letra** (por eso la rama de error de la línea base
+no se movió) y `SeccionRectangular` dice `"B"` y `"H"` con sus propios motivos. De paso
+retira una copia: la pareja estaba escrita **dos veces**.
+
+Y con ella se cerró la **tercera anotación de C1**: la condición pasa a estar escrita en
+positivo y negada (`not self.D > 0`), plantilla de MAT-D13. Con `<= 0` un NaN se colaba —es
+falso frente a los dos operadores— y llegaba hasta Brent, que revienta fuera de
+`ErrorProyecto`.
+
+#### Las cuatro guardias del crítico cerrado, con su par medido
+
+La solución cerrada retira la clase de fallos de **convergencia** (SIS-G-02); no retira la
+aritmética. Cada guardia lleva umbral **medido**, condición en positivo y negada, y mensaje
+que nombra al **par**. De las cuatro, **dos están fijadas por un test que muere si alguien
+las reescribe con `<=`** — la de finitud, con un caudal NaN, y las de
+`exigir_dimensiones_positivas` —; la del **área** no, y se dice: el auditor no encontró
+ninguna entrada alcanzable que haga NaN el área ahí, porque un `y_c` NaN lo atrapa antes la
+guardia de finitud, de modo que la forma negada en ese sitio es **defensiva** y no está
+pineada. Decirlo es más honesto que inventarle un test:
+
+| Qué falla | Par que lo dispara | Dónde está la guardia |
+|---|---|---|
+| `q ** 2` desborda | q ≥ 1.3407807929942597e+154 (con B = 2.00, Q ≥ 2.68e+154) | `SeccionRectangular.llenado_critico_cerrado` |
+| `Q/B` da `inf` **sin excepción** y y_c sale `inf` | Q = 1e308 con B = 1e-5 | ídem |
+| `q²/g` se cancela a `0.0` | q ≤ 4.715183354107886e-162 (el primero que deja y_c > 0 es …887e-162, y da y_c = 1.703e-108) | ídem |
+| y_c positivo y **A = B·y_c nulo** | B = Q = 5e-324 → y_c = 0.4671363512679737 m, A = 0.0 | `M4._critico_cerrado` — la sección no puede guardarla sola |
+
+#### Los `Fundamento`, y una lista que no era de C4
+
+El prompt daba por hecho que alguno de los cuatro `Fundamento` que C2 dejó en `sin_alcanzar`
+era de esta sesión. **Medido: ninguno.** `F4.FORMA_HDS5` salió en C3 y los tres que quedan
+—`F3.TIPO_MARCO`, `F3.MANTENIMIENTO`, `F3.CELDAS`— son de **C5**, y sus propios comentarios
+lo dicen. Los de C4 son `F4.SECCION` y `F4.YC_RECT`, que **no existían**: C2 los dejó sin
+escribir a propósito («su sitio es la sesión que escribe el paso que los emite»). C4 los
+escribe con el texto de §15.7 y los emite en **toda** corrida que dimensione un punto, sea
+la sección circular o rectangular — que es lo que impide que entren en `sin_alcanzar` por la
+puerta de atrás —.
+
+`F4.YC_RECT` pasa a fundar el paso del crítico **también en la circular**, y eso movió la
+memoria. No es cosmético: `F4.CONTROL` dice literalmente «Carga a la entrada HW por los dos
+controles del HDS-5, entrada y salida, y adopción del mayor» — describe **otro paso**, y el
+crítico lo tomaba prestado porque no había uno propio. Queda **anotado** que su `id` es hoy
+más estrecho que su uso: se conserva el de §15.7 verbatim en vez de renombrarlo, porque C5
+lo cita.
+
+#### Lo que la verificación normativa encontró, y estaba en el texto que se IMPRIME
+
+Se invocó `verificador-normativo` sobre las citas de los dos `Fundamento` nuevos. Las citas
+—numeral, título, página impresa, página PDF y `caracter`— **salieron confirmadas las tres**
+(`MC_HHD.4.1.1.3.6`, `HDS5_3ED.A.2`, `HDS5_3ED.3.3.3#HO`), y el `verbo` `DEFINE` está bien
+elegido y sostenido por el `caracter`. **Lo que no salió limpio es la PROSA**, que es
+justamente lo que T11 no gobierna: el invariante comprueba que el verbo declarado sea
+compatible con el carácter de las citas, y no comprueba que las frases del `por_qué`
+respeten ese carácter. Cuatro correcciones, todas verificadas de nuevo contra el PDF por
+esta sesión antes de aplicarlas:
+
+1. **El `Verbatim` de `HDS5_3ED.3.3.3#HO` estaba TRUNCADO, y la truncadura se llevaba la
+   condición.** Terminaba en *«…can only be used if the barrel flows full for»* — que es
+   donde el PDF parte la línea — y la oración de la fuente sigue: *«…**most of its
+   length**.»* Leído bajo el rótulo «texto literal», publicaba un requisito **más laxo** que
+   el de la fuente: «que el barril fluya lleno» en vez de «que fluya lleno **en la mayor
+   parte de su longitud**». Es la elisión sin marcar que `CLAUDE.md` persigue, y
+   `test_normativa_pdf` no la veía **porque verifica por subcadena y una truncadura siempre
+   lo es**. Corregido contra la PDF 106.
+2. **«h_o = max(TW, (d_c + D)/2)» no es la ecuación que escribe el num. 3.3.3.** Esa página
+   escribe *«Approximate hydraulic gradeline ho = (dc + D)/2 can only be used if…»* — el
+   símbolo atado **sólo a la semisuma** — y el máximo lo dice en **prosa**, en el párrafo
+   siguiente y **sin nombrar `ho`**: *«the greater of tailwater or (dc + D)/2»*. Con forma de
+   ecuación, el máximo está en **otros** numerales (impresas 3.12, 3.32 y 3.43). La v8 ya lo
+   declaraba en su §4.3; el `Fundamento` lo había perdido. Reescrito: la fuente **aproxima**,
+   y el máximo **lo toma el proyecto**.
+3. **«DOS pasos posteriores lo consumen» es cierto de ESTE pipeline y falso del HDS-5**, que
+   le da un tercer uso —el área para la velocidad de salida bajo control de salida, num.
+   3.1.6, impresa 3.18 / PDF 100—. Acotado el sujeto.
+4. **«La Forma 1 arranca de H_c/D» se imprimía igual bajo Forma 2**, donde la ec. (A.2) no
+   usa `H_c`. Es el defecto que C3 corrigió en la **nota** del paso y que volvía por la
+   puerta del **fundamento**, que es texto fijo. Condicionado.
+
+Las cuatro mueven texto impreso y **ningún número**: multiconjunto vuelto a medir sobre las
+cuatro memorias, «sólo en la base: {}» en las cuatro.
+
+#### Dos cosas que encontró la propia sesión al auditarse, antes del auditor
+
+- **`simbolo_altura` no tenía consumidor** — retirado; la razón completa está arriba.
+- **Las dos implementaciones no eran sustituibles por palabra clave.** El `Protocol` nombra
+  su parámetro `llenado`, `SeccionCircular` lo nombraba `theta` y la rectangular `y`: un
+  `seccion.geometria_en(llenado=x)` habría reventado en una forma y no en la otra. Y nada lo
+  comprobaba — `Seccion` no lleva `@runtime_checkable`, y aunque lo llevara, `isinstance`
+  contra un `Protocol` mira los **nombres** y no las firmas —. Alineados los tres, y añadido
+  `test_las_dos_secciones_implementan_el_protocolo_entero`, que compara miembro por miembro
+  **y firma por firma**, y además que una propiedad sea propiedad en las dos. Sin él,
+  «M3 y M4 quedan ciegos a la forma» es una intención y no una propiedad.
+
+#### Lo que la auditoría adversarial encontró, y lo que le refuté
+
+Se invocó `auditor-adversarial` sobre los dos primeros commits (`07a9c7a`, `3fcff37`), con
+trece afirmaciones concretas que refutar y con el encargo de mutar el código nuevo. **Volvió
+con cuatro mutaciones vivas y siete hallazgos.** Todos los que seguían abiertos están
+corregidos; los que se cerraron mientras auditaba se marcan como tales.
+
+**Lo que confirmó, y no es poco.** Los cuatro pares de las guardias, **bit a bit**
+(`sqrt(sys.float_info.max) = 1.3407807929942596e+154`, de modo que el sucesor desborda y él
+no); que `M4._critico_cerrado` **no es código muerto**; la corrección a la regla #12,
+**medida sobre siete diámetros de 0.30 a 3.00 m** —el `0.0` exacto en el extremo inferior
+vale para los siete, y el error relativo del perímetro en el superior es 1.592e-10 para los
+siete—; la inmovilidad numérica de las tres memorias, con su propio método; la atribución
+completa de los seis textos (21 *hunks* = 7 por punto × 3 puntos, mapeados uno a uno); los
+veintitantos dorados nuevos, rehechos desde las ecuaciones; las dos mutaciones de la línea
+base; el barrido de 12 + 3 cartas de cajón; y la neutralidad de forma de
+`caudal_adimensional`.
+
+**El hallazgo que valía la auditoría: la regla #12 estaba vigilada por un comentario.** El
+auditor hizo la sustitución exacta que `M4._pasos_hidraulicos` declara prohibida ocho líneas
+más arriba —`g.A` por `seccion.area(g.y)`— y **la suite quedó en verde**. Cerrado con
+`test_la_via_por_tirante_no_gana_consumidores_sin_declararlos`, un censo del AST de `src/`,
+`cli.py` y `gui/` con la misma forma que `CENSO_DE_MARCAS`: no prohíbe la vía —tiene un uso
+legítimo— sino que obliga a que **añadir una llamada mueva un número en el diff**. Vuelto a
+medir con la mutación del auditor: ahora **muere** (y además mueve la línea base, porque en
+la circular las dos vías difieren en los últimos bits).
+
+**El hallazgo que era un defecto de cálculo: el tirante crítico no tenía techo.** La forma
+cerrada retiró, sin que nadie lo notara, un límite que en la circular ponía la **geometría
+del bracket** (`y = (D/2)(1 − cos(θ/2)) ≤ D`; medido: Ø 0.90 da y_c = 0.8999649945 con
+Q = 15 y 0.8999999823 con Q = 100). El despeje no lo tiene, y con el marco 2.00 × 1.50,
+**Q = 15 m³/s y S = 0.05 m/m — un punto viable, y_n = 0.805 m, y/H = 0.54, dentro del 0.75
+que admite V1 —** daba **y_c = 1.7899 m**, o sea un **área crítica de 3.58 m² sobre un
+barril de 3.00 m²**. En silencio: el número es positivo y finito, y ninguna de las cuatro
+guardias mira eso.
+
+**Y no es una decisión del proyecto: lo escribe la fuente.** HDS-5 3.ª ed., num. 3.3.3, pág.
+impresa **3.24** (PDF 106), en la misma lista de viñetas que la condición de `h_o`, dice que
+el tirante crítico **no puede exceder D** — verificado con PyMuPDF por esta sesión, no sólo
+por el agente —. Puesto el techo, con su caso patrón (`CP6R_TECHO_DEL_CRITICO`) y con la
+frase que la memoria imprime **sólo cuando muerde**. Dos cosas que salieron de ponerlo:
+
+- **el orden importa**, y se midió: con el `min` **antes** de las guardias, el par
+  (Q = 1e308, B = 1e-5) devolvía «1.5 m» tan tranquilo en vez de lanzar
+  `LimiteNumericoError`, porque `min(inf, H)` se traga el infinito. Va después;
+- **el propio caso patrón `CP6R` tenía un caso imposible**: su tercer caudal, Q = 12 m³/s,
+  daba y_c = 1.5425 m sobre un barril de 1.50 m, y el fixture lo daba por bueno. Sustituido
+  por Q = 10 m³/s (y_c = 1.366 m, el 91 % de la altura), que es lo que ese caso quiere
+  medir: la fórmula, no el tope.
+
+**Dos defectos en el texto que se IMPRIME**, los dos míos y los dos de la misma familia que
+las cuatro correcciones del verificador:
+
+- **`F4.SECCION` entrecomillaba texto de la fuente transcrito a mano**: *«A 'area de la
+  seccion hidraulica', P 'perimetro mojado'»*. Ninguna de las dos frases está en
+  `Registro.textos_literales()`, y la copia **ya divergía** de la página (la fuente imprime
+  *«A : Área de la sección hidráulica (m2)»*). Reescrito sin comillas. Es §15.9 punto 7.
+- **`F4.YC_RECT` publicaba un identificador de auditoría (`SIS-G-02`) y un nombre de clase
+  de excepción (`LimiteNumericoError`) bajo el rótulo «por qué se hace».** Medido: era el
+  **único** `por_qué` del registro con un identificador interno, y los otros tres que los
+  llevan (`F4.MANNING`, `F5.V2b`, `F4.FORMA_HDS5`) los tienen en `que_pasa_si_no_se_hace`,
+  **que no se imprime**. Movidos ahí, con la convención escrita.
+
+**Tres hallazgos menores, corregidos:** la celda de §6 #12 seguía diciendo «cero
+consumidores en producción» cuando C4 le había dado dos; §16.8 contaba **12** apariciones
+nuevas por memoria cuando son **15** (las tres del `D` de la sustitución nueva); y §15.9
+punto 6 anclaba a `SeccionRectangular.formula_geometria` cuando el texto vive en el
+**protocolo**.
+
+**Uno que corregí en el fixture, no en el código:** el banner de `punto_cajon.py` enumeraba
+**tres** decisiones prestadas de C5 y el auditor instrumentó `criterios_adoptados.valor`
+para descubrir que la corrida invoca **dos** criterios, no uno: `ke_entrada` y
+**`geometria_control_salida`**, que no estaba nombrado. Es un `[C]` de perfil cuya
+justificación entera está escrita sobre un tubo —razona con `R = D/4 = 0.225 m`— y esta
+corrida es lo primero del repositorio que lo aplica a una sección no circular, donde esa
+`R` no existe. Nombrado, con la magnitud del asunto: no es el ~20 % de aquel razonamiento,
+es el **40 %** que mide esta misma sección.
+
+**Dos que le refuté, o que quedaron como estaban:**
+
+- **«`_critico_por_brent` esconde la circular en un mensaje que llega a la GUI»** — cierto
+  que el mensaje nombra `theta`, `(0, 2π)` y `D`, y **se queda**: la única sección que llega
+  a esa función es la que **no** despeja su crítico, y hoy esa es la circular. Generalizar
+  el texto sin una segunda forma sin solución cerrada sería cambiar salida impresa por una
+  hipótesis. Queda dicho en el docstring, que es donde lo lee quien traiga la tercera forma.
+- **«las mutaciones #4 y #11 sobreviven, luego la forma de MAT-D13 no está fijada para las
+  guardias nuevas»** — medio cierto, y la mitad que no lo es importa. La #11 se fija ahora
+  (`test_la_guardia_de_finitud_esta_escrita_en_positivo_y_negada`, con un caudal NaN, que
+  `_validar_positivo` deja pasar porque `nan <= 0` es falso). La #4 **no se puede fijar**:
+  el propio auditor no encontró ninguna entrada alcanzable que haga NaN el área ahí, porque
+  un `y_c` NaN lo atrapa antes la guardia de finitud. Se corrige el texto de §16.8 en vez de
+  inventarle un test: la forma negada en ese sitio es **defensiva**, y decirlo es más
+  honesto que dar por fijado lo que no lo está.
+
+#### Anotado y no corregido
+
+| # | Qué | Por qué no aquí |
+|---|---|---|
+| **C4-1** | `de_critico` **no lleva `formula_cita_id`**, y §4.5 pide fórmula con cita. La cita correcta depende de la forma de ecuación: bajo Forma 1 la exige la (A.2) por `H_c`, bajo Forma 2 sólo `h_o` (`HDS5_3ED.3.3.3#HO`) | elegir entre dos citas según la forma es una decisión de reporte que toca los dos pasos; C4 ya mueve la memoria por otras cinco razones y mezclarlo la haría ilegible |
+| **C4-2** | El `id` `F4.YC_RECT` nombra sólo a la rectangular y funda el paso de **las dos** formas | renombrar un `id` del registro a mitad del plan mueve las referencias de C5 |
+| **C4-6** | Las tres variables del num. 4.1.1.3.6 —*«A : Área de la sección hidráulica (m2)»*, *«P : Perímetro mojado (m)»*, *«R : Radio hidráulico (m)»*— **no están en el registro**: el único `Verbatim` de `MC_HHD.4.1.1.3.6` es la línea del coeficiente de Manning. Sin ellas, ningún paso puede **citarlas**; sólo parafrasearlas, que es lo que hace `F4.SECCION` desde la auditoría | traerlas exige un `Verbatim` nuevo —derivado, como `#HO_SUMERGIDA`— verificado contra su página y con su test en `test_normativa_pdf.py`. Es transcripción, y la transcripción es el oficio de C2/C5, no el de la sesión que implementa la sección |
+| **C4-5** | La frase de HDS-5 que fija el techo del tirante crítico —el num. 3.3.3 establece que no puede exceder la altura interior— **tampoco está transcrita**: el techo se aplica citando el numeral, sin `Verbatim` | mismo caso que C4-6, y la misma razón. El número ya no es falso; lo que falta es poder **entrecomillar** la frase en la memoria |
+| **C4-7** | `M4._validar_positivo` usa `if dato <= 0`, que **deja pasar un NaN** — es la forma que MAT-D13 fijó y que C4 corrigió en `exigir_dimensiones_positivas`, pendiente en el resto. Medido: `Q = nan` atraviesa la validación y llega hasta el despeje, donde la guardia de finitud sí lo atrapa; en la circular llegaría hasta Brent | es **anterior a C4** y toca cinco llamadas de tres piezas distintas (`S`, `L`, `V`, `R`, `n`), cada una con su mensaje impreso. Corregirlas es una sesión de vocabulario, no un renglón |
+| **C4-4** | El paso `de_salida` de `M4._pasos_hidraulicos` escribe la fórmula *«HW = H + h_o − S·L, con h_o = max(TW, (y_c + D)/2)»* con `formula_cita_id = "HDS5_3ED.3.3.3#HO"`, y **ese numeral no escribe el máximo como ecuación** (verificado en C4: lo dice en prosa y sin nombrar `ho`; con forma de ecuación está en las impresas 3.12, 3.32 y 3.43) | es **anterior a C4** y la v8 **ya lo declara** en su §4.3 —*«La forma con el máximo … la 3.ª ed. no la numera: la escribe en prosa»*—, de modo que no es una atribución oculta. Corregirlo es elegir entre citar el numeral que aproxima y citar el que imprime la igualdad, y esa decisión toca los tres pasos de salida a la vez |
+| **C4-3** | `M8_estructural` sigue codificando geometría circular en producción (`(π/4)·D_ext²`, prisma de ancho `D_ext`) | es del frente **F4**. Lo que sí corrigió C4 es la palabra «completo» de §2-bis, que declaraba un alcance que el censo no tiene |
