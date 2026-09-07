@@ -51,15 +51,25 @@
 # C-01 estan ahi para EJERCITAR CAMINOS DE CODIGO; no son una medicion de
 # campo ni pretenden serlo.
 #
-# LO QUE AÑADE C6: `S_cauce` para C-01, y hay que decir por que vale lo mismo
-# que su `S_conducto`. No es pereza: la Sec. 7.B fija que la alcantarilla
-# sigue la pendiente del cauce, de modo que `S_conducto = S_cauce` es el caso
-# NORMAL y el punto que declara otra cosa es la excepcion. Con los dos iguales
-# el fixture recorre la rama de IGUALDAD de V2b -- el borde exacto del
-# indicador del num. 5.3.3 del HDS-5 --, que es una rama real y la que un
-# cruce de canal tiene por defecto. Inventarle al canal una pendiente distinta
-# para «hacer mas interesante» la verificacion seria inventar un valor de
-# proyecto, que es justo lo que este fixture no hace.
+# LO QUE AÑADE C6: `S_cauce` para C-01, DISTINTA de su `S_conducto`, y hay
+# que decir por que, porque la primera version las puso iguales y eso dejaba
+# CIEGO al artefacto.
+#
+# El razonamiento de aquella version era que la Sec. 7.B fija que la
+# alcantarilla sigue la pendiente del cauce, de modo que `S_conducto =
+# S_cauce` es el caso normal. Cierto, y aun asi equivocado como fixture: con
+# los dos numeros iguales, sustituir `S_cauce` por `S_conducto` -- la
+# tautologia que C6 declara prohibida en cuatro sitios -- NO MUEVE UN SOLO
+# BYTE de esta linea base. Lo midio la auditoria adversarial. Un fixture cuyo
+# valor hace indistinguible el defecto que su sesion existe para cerrar no es
+# un caso normal: es un punto ciego.
+#
+# Con 0.006 contra 0.004 el artefacto distingue las dos: el conducto va mas
+# TENDIDO que el cauce, que es exactamente el caso que el HDS-5 describe como
+# «built with an upstream depression» y del que dice «Sedimentation is the
+# likely result» -- o sea la rama en que V2b tiene algo que decir --. Sigue
+# sin ser una medicion de campo, igual que el TW y el caudal: es un valor para
+# EJERCITAR UN CAMINO, y el encabezado de este bloque ya lo declara.
 #
 # LA CORRIDA ESTRECHA DE C0 SE CONSERVA INTACTA -- misma linea de comando y
 # mismos dos archivos -- para que el diff historico siga siendo comparable.

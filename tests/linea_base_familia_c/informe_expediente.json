@@ -49,6 +49,10 @@
         "TW_m": {
           "valor": 0.3,
           "origen": "datos externos (globales)"
+        },
+        "S_cauce": {
+          "valor": 0.006,
+          "origen": "CSV Sec. 1.2, columna S_cauce"
         }
       },
       "clasificacion": {
@@ -157,6 +161,10 @@
         "TW_m": {
           "valor": 0.3,
           "origen": "datos externos (globales)"
+        },
+        "S_cauce": {
+          "valor": 0.008,
+          "origen": "CSV Sec. 1.2, columna S_cauce"
         }
       },
       "clasificacion": {
@@ -251,6 +259,10 @@
         "TW_m": {
           "valor": 0.3,
           "origen": "datos externos (globales)"
+        },
+        "S_cauce": {
+          "valor": 0.01,
+          "origen": "CSV Sec. 1.2, columna S_cauce"
         }
       },
       "clasificacion": {
@@ -361,6 +373,10 @@
         "TW_m": {
           "valor": 0.3,
           "origen": "datos externos (globales)"
+        },
+        "S_cauce": {
+          "valor": 0.006,
+          "origen": "datos externos (punto C-01)"
         }
       },
       "clasificacion": {

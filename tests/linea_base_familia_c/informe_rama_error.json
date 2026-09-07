@@ -63,6 +63,10 @@
         "TW_m": {
           "valor": 1.1118098274842794,
           "origen": "Sec. 1.3 -- dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)"
+        },
+        "S_cauce": {
+          "valor": 0.006,
+          "origen": "CSV Sec. 1.2, columna S_cauce"
         }
       },
       "clasificacion": {
@@ -157,6 +161,10 @@
         "TW_m": {
           "valor": 1.196156168346306,
           "origen": "Sec. 1.3 -- dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)"
+        },
+        "S_cauce": {
+          "valor": 0.008,
+          "origen": "CSV Sec. 1.2, columna S_cauce"
         }
       },
       "clasificacion": {
@@ -251,6 +259,10 @@
         "TW_m": {
           "valor": 1.4839999999999947,
           "origen": "Sec. 1.3 -- dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)"
+        },
+        "S_cauce": {
+          "valor": 0.01,
+          "origen": "CSV Sec. 1.2, columna S_cauce"
         }
       },
       "clasificacion": {
@@ -358,7 +370,8 @@
           "valor": 21.24648990617824,
           "origen": "M7.longitud_conducto (Sec. 7.B)"
         },
-        "TW_m": null
+        "TW_m": null,
+        "S_cauce": null
       },
       "clasificacion": {
         "luz_m": 2.75,

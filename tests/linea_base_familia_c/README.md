@@ -39,9 +39,20 @@ normativo. Medido en C0: en el HTML hay **tres** fechas y las tres son volátile
 
 ## Dónde se detiene C-01 hoy, y con qué
 
-Reproducible con el fixture del repositorio. Los tres datos declarados por
+Reproducible con el fixture del repositorio. Los datos declarados por
 `--datos-externos` son **valores de sonda**, no datos de proyecto: sirven para llegar al
 bloqueo, y ninguno se escribe en el CSV.
+
+**RE-MEDIDA EN C6, y la última fila había caducado dos veces.** Decía «los **tres** datos
+declarados» cuando el fixture trae cuatro desde C6, y su fila final seguía prometiendo un
+`DisenoNoFactibleError` con «M2 no ofrece material candidato para la Familia C», que **C5
+retiró** al abrirle catálogo al marco. Una tabla de «dónde para hoy» que describe dónde
+paraba hace dos sesiones es peor que no tenerla: se lee como medición.
+
+La columna «dónde para» nombra el **bloqueo sustantivo**. En las siete filas lo precede
+el mismo `DiferidoPorAlcance` que C5 emite para todo punto de Familia C —la declaración de
+sustitución del criterio de dimensionamiento—, que no es un bloqueo del expediente y no
+distingue una fila de otra.
 
 | Declarado para C-01 | Dónde para | Símbolo |
 |---|---|---|
@@ -50,11 +61,18 @@ bloqueo, y ninguno se escribe en el CSV.
 | `S_conducto` | `DatoFaltanteError` · «Falta el dato `Q_m3s`» en *material y diámetro (bucle de MD)* | `MD.disenar_punto` → `PuntoCritico.exigir` |
 | `TW_m` | igual que la anterior | igual |
 | `TW_m` + `Q_m3s` | `DatoFaltanteError` · «Falta el dato `S_cauce`» en *material y diámetro* | `MD.disenar_punto` → `PuntoCritico.exigir` |
-| **`Q_m3s` + `S_conducto`** | **`DisenoNoFactibleError`** · «M2 (Sec. 3.4) no ofrece material candidato para la Familia C…» | **`MD._motivo_sin_candidatos`** |
+| **`Q_m3s` + `S_conducto`** | **`CriterioPendienteError`** · «falta declarar: `embocadura_cajon`», con concepto, fuente, qué lo resuelve y los puntos | **`M2.catalogo`** → `criterios_adoptados.valor` |
+| `Q_m3s` + `S_conducto` + `S_cauce` | igual que la anterior | igual |
 
-**El par mínimo que llega al bloqueo real es `Q_m3s` + `S_conducto`.** `TW_m` es
-redundante: declarar la pendiente cubre a la vez la vía de Sec. 1.3 y la que MD necesita.
-El detalle está en §16.1-bis y §1.1 de `docs/ruta_familia_c.md`.
+**El par mínimo que llega al bloqueo real sigue siendo `Q_m3s` + `S_conducto`**, y `TW_m`
+sigue siendo redundante: declarar la pendiente del conducto cubre a la vez la vía de
+Sec. 1.3 y la que MD necesita.
+
+**Y `S_cauce` no cambia dónde para C-01 hoy, a propósito.** El punto se detiene ANTES, en
+el catálogo del marco, porque sus cinco criterios están sin declarar. La clave hace falta
+para el escalón siguiente —con los criterios declarados, V2b se detenía sin ella— y por eso
+el fixture la trae: para que el día que se declaren, el artefacto no vuelva a moverse por un
+dato de entrada. El detalle está en §16.1-bis, §1.1 y §16.11 de `docs/ruta_familia_c.md`.
 
 ## Regeneraciones posteriores
 

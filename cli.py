@@ -23,25 +23,29 @@ Que reporta por punto
 
 Datos que NO estan en el CSV
 ----------------------------
-SIETE CLAVES, Y DE DOS CLASES DISTINTAS. El encabezado de este bloque decia
-«cinco magnitudes» y `CLAVES_EXTERNAS` tenia siete desde antes de C6: un
-conteo colgado, que es lo que `CLAUDE.md` denuncia en su clausula de
-taxonomia. Y decia ademas que las siete «no son columnas de Sec. 1.2», que
-tampoco: `Q_m3s` y `S_cauce` SI lo son. Las dos clases son estas, y la
+DOS CLASES DE CLAVE, Y NINGUN CONTEO ESCRITO A MANO. Este bloque las enumera
+y no las cuenta, a proposito: un numero escrito aqui envejece con la clave
+siguiente, y ya envejecio dos veces -- la historia esta en §16.11-bis de
+`docs/ruta_familia_c.md`, no aqui, porque contarla en el propio parrafo vuelve
+a dejar el numero escrito --. La cuenta que no envejece es
+`len(CLAVES_EXTERNAS)`, y `test_cli` contrasta esta lista contra ella.
+
+NO TODAS SON AJENAS AL CSV, aunque el titulo del bloque lo sugiera: `Q_m3s` y
+`S_cauce` SI son columnas de Sec. 1.2. Las dos clases son estas, y la
 diferencia importa porque se corrigen en sitios distintos:
 
   (a) MAGNITUDES QUE NO SON COLUMNA. `luz_m`, `TW_m`, `longitud_m`,
-      `L_hidraulico_m` y `categoria_tr`. Sec. 1.2 no las trae y ningun numeral
-      las deduce.
+      `S_conducto`, `L_hidraulico_m` y `categoria_tr`. Sec. 1.2 no las trae y
+      ningun numeral las deduce.
   (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
       La columna existe y para la Familia C va vacia a proposito
       (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el
       CSV sino el Tablero 3.1 (ANA / Junta de Usuarios del Bajo Piura), que la
       Sec. 2.3 de la hoja de ruta nombra como el que bloquea la familia
       entera. La clave es el vehiculo por el que ese dato entra el dia que el
-      tablero lo entrega. `S_conducto` NO pertenece a esta clase: no es
-      ninguna columna, es la pendiente del CONDUCTO cuando difiere de la del
-      cauce.
+      tablero lo entrega. `S_conducto` esta en la clase (a) y no en esta, y
+      conviene decirlo porque se confunde: no es ninguna columna, es la
+      pendiente del CONDUCTO cuando difiere de la del cauce.
 
 Entran declaradas por quien corre el calculo -- por bandera o por el JSON de
 `--datos-externos` -- y el informe registra de donde salio cada una, igual que
@@ -81,7 +85,7 @@ MD recibe L y TW en vez de derivarlos:
                           ella la Familia A se detiene en
                           'umbral_area_quebrada_importante_ha'.
 
-Ninguna de las siete tiene valor por defecto. Sin declararla, la etapa que la
+Ninguna tiene valor por defecto. Sin declararla, la etapa que la
 necesita queda bloqueada y el informe lo dice; no se sustituye por un numero
 plausible.
 
@@ -351,6 +355,26 @@ _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
                 "una pendiente de cauce en m/m: un valor >= 1 (100 %) delata "
                 "una celda cargada en PORCENTAJE, que es el error de "
                 "transcripcion mas frecuente de esta columna"),
+    # `S_conducto` ENTRO AQUI POR LA AUDITORIA ADVERSARIAL DE C6, y su
+    # argumento es mas fuerte que el de la clave de arriba: es LA MISMA
+    # MAGNITUD FISICA -- una pendiente en m/m, con el mismo error de
+    # transcripcion -- y ademas es la que va DIRECTA a Manning
+    # (`MD.disenar_punto` -> `M3.resolver_manning`), cuya unica guardia es
+    # `S <= 0`. `S_cauce`, en cambio, solo alimenta una comparacion en V2b.
+    # C6 la habia dejado fuera con un argumento cierto -- «no es columna y no
+    # tiene dominio declarado» -- que no cubre el principio que ella misma
+    # enuncia: la misma magnitud por dos puertas tiene que acotarse igual.
+    #
+    # SE REUSA `S_CAUCE_MAX` Y NO SE INVENTA UN TECHO NUEVO. El nombre dice
+    # «cauce» y el limite es de PENDIENTES: el 1.0 no acota un cauce en
+    # particular, acota la ESCRITURA de cualquier pendiente en m/m. Ningun
+    # numeral fija un maximo de pendiente -- `verificador-normativo` barrio el
+    # Manual entero en C6 --, de modo que separarlos exigiria inventar el
+    # segundo techo. El dia que haga falta uno distinto, se separan.
+    "S_conducto": (S_CAUCE_MAX,
+                   "una pendiente de conducto en m/m: es la MISMA magnitud "
+                   "que `S_cauce` y el mismo error de transcripcion, y ademas "
+                   "esta es la que entra en Manning"),
 }
 
 
@@ -1193,25 +1217,38 @@ def _completar_s_cauce(informe: InformePunto,
     la procedencia se imprime en su propia fila (`M11.DATOS_DECLARADOS`).
 
     Si la columna trae valor, el externo NO la pisa: una fila del CSV es un
-    dato del expediente y un JSON de corrida no lo corrige en silencio. Y si
-    no hay externo, no pasa nada aqui: quien se detiene es el consumidor, con
-    el nombre del dato que falta.
+    dato del expediente y un JSON de corrida no lo corrige en silencio --
+    pero la memoria NOMBRA la declaracion descartada, porque «no la use» sin
+    decirlo deja a quien la escribio mirando una V2b resuelta contra otro
+    numero. Y si no hay externo, no pasa nada aqui: quien se detiene es el
+    consumidor, con el nombre del dato que falta.
     """
     punto = informe.punto
+    declarado = externos.dato(punto.id, "S_cauce")
     if punto.S_cauce is not None:
         # LA COLUMNA GANA, y aun asi se registra. El externo NO la pisa: una
         # fila del CSV es un dato del expediente y un JSON de corrida no lo
         # corrige en silencio. Se anota igual porque la fila de la memoria
         # dice cual es la pendiente EFECTIVA, la que V2b comparo, y «no
         # declarada» sobre un punto que la trae en su columna seria falso.
-        informe.s_cauce = DatoDeclarado(
-            "S_cauce", punto.S_cauce, "CSV Sec. 1.2, columna S_cauce")
+        #
+        # Y SI ADEMAS SE DECLARO UNA, LA MEMORIA LO DICE. Descartar en
+        # silencio la declaracion es lo que convierte una precedencia
+        # correcta en un resultado inexplicable: quien escribio el JSON ve
+        # V2b resuelta contra un numero que no es el suyo y no tiene donde
+        # leer por que. No es un error del expediente -- no se detiene nada --
+        # pero tampoco es callable.
+        origen = "CSV Sec. 1.2, columna S_cauce"
+        if declarado is not None:
+            origen += (
+                f"; se descarto la declaracion externa ({declarado.valor} "
+                f"m/m, {declarado.origen}) porque la columna tiene valor")
+        informe.s_cauce = DatoDeclarado("S_cauce", punto.S_cauce, origen)
         return
-    dato = externos.dato(punto.id, "S_cauce")
-    if dato is None:
+    if declarado is None:
         return
-    informe.s_cauce = dato
-    informe.punto_completado = replace(punto, S_cauce=dato.valor)
+    informe.s_cauce = declarado
+    informe.punto_completado = replace(punto, S_cauce=declarado.valor)
 
 
 def correr_punto(punto: PuntoCritico, externos: DatosExternos,
@@ -1501,10 +1538,17 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "familia": punto.familia.value,
         "pendientes_externos": list(punto.pendientes_externos),
         "dimensionado": informe.dimensionado,
+        # `S_cauce` ENTRO AQUI POR LA AUDITORIA ADVERSARIAL DE C6. C6 añadio
+        # la fila a la memoria HTML y no a este JSON, de modo que el
+        # artefacto legible por MAQUINA -- que es ademas el de la linea base
+        # -- declaraba `S_cauce` en `datos_pendientes` sobre una corrida que
+        # la habia usado, y no publicaba nada que lo contradijera. Publicar
+        # la trazabilidad en un solo formato es publicarla a medias.
         "datos_declarados": {"luz_m": _dato_json(informe.luz),
                              "categoria_tr": _dato_json(informe.categoria_tr),
                              "longitud_m": _dato_json(informe.longitud),
-                             "TW_m": _dato_json(informe.tw)},
+                             "TW_m": _dato_json(informe.tw),
+                             "S_cauce": _dato_json(informe.s_cauce)},
         "clasificacion": (None if informe.clasificacion is None
                           else _clasificacion_json(informe.clasificacion)),
         "diseno": (None if not informe.dimensionado

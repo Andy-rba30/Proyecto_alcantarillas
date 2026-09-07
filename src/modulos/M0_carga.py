@@ -13,8 +13,11 @@ contradiga a otro dato de su propia fila.
 
 M0 NO valida COMPLETITUD de lo que depende de terceros. Una fila de Familia C
 sin Q_m3s, sin area_ha y sin S_cauce no es una fila invalida: es una fila cuyo
-caudal lo fija el canal (ANA / Junta de Usuarios del Bajo Piura, Tablero 3.1),
-dato que a la fecha no ha llegado. Se carga con esos campos en None y con la
+caudal Y CUYA PENDIENTE los fija el canal (ANA / Junta de Usuarios del Bajo
+Piura, Tablero 3.1), datos que a la fecha no han llegado. Eran «el caudal» y
+«el dato», en singular, hasta que C6 midio que la pendiente del canal tambien
+hace falta -- V2b la compara contra la del barril -- y que sale del mismo
+tablero. Se carga con esos campos en None y con la
 columna anotada en `pendientes_externos`. Lo mismo vale para cota_TW y
 Q_receptor_m3s, que estan bloqueadas para TODAS las familias por el mismo
 tablero. Rechazar esas filas aqui equivaldria a decidir en el modulo de lectura

@@ -695,8 +695,11 @@ PERFILES: Dict[Familia, PerfilFamilia] = {
             "No puede alterar la rasante hidraulica ni el borde libre del canal.",
             "Requiere autorizacion de obras en fuente natural / faja marginal.",
             "Seccion: marco o multicelda.",
-            "Bloqueada por falta del dato de la ANA (Tablero 3.1): el Q propio "
-            "del canal es el que fija el diseno.",
+            "Bloqueada por falta de los datos de la ANA (Tablero 3.1): el Q "
+            "propio del canal es el que fija el diseno, y la pendiente del "
+            "canal es la que V2b compara contra la del barril. Son DOS y del "
+            "mismo tablero; esta nota decia «el dato» en singular hasta C6, "
+            "que midio el segundo.",
         ),
         numeral=NUMERAL_FAMILIA,
     ),

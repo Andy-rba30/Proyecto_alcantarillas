@@ -1434,6 +1434,44 @@ def test_s_cauce_declarada_llega_a_V2b_y_sale_con_su_procedencia(tmp_path):
     assert "Pendiente del cauce (efectiva)" in html
     assert "datos externos (punto C-02)" in html
 
+    # EL NÚMERO, Y EL VEREDICTO QUE PRODUCE. Sin estos dos asserts el test
+    # NO MEDÍA LO QUE SU DOCSTRING DICE: declaraba las dos pendientes
+    # distintas y después no asertaba ninguna, de modo que sustituir
+    # `S_cauce` por `S_conducto` en `_completar_s_cauce` -- la tautología que
+    # esta sesión prohíbe -- dejaba la suite ENTERA en verde. Lo midió la
+    # auditoría adversarial de C6. Las tres cadenas que sí asertaba se
+    # cumplen bajo la tautología porque el `origen` de las dos claves es la
+    # misma cadena.
+    #
+    # Con 0.006 contra 0.004 el conducto va más TENDIDO que el cauce, que es
+    # el caso del num. 5.3.3 del HDS-5: V2b tiene que decir NO CUMPLE, con
+    # margen -0.002. Bajo la tautología diría «cumple» con margen 0.000, y es
+    # la inversión de un veredicto de verificación.
+    assert _celda_de(html, "Pendiente del cauce (efectiva)") == "0.006"
+    fila_v2b = _fila_de_verificacion(html, "V2b")
+    assert "NO cumple" in fila_v2b
+    assert "0.004" in fila_v2b        # obtenido: la pendiente del BARRIL
+    assert "0.006" in fila_v2b        # admisible: la del CAUCE
+
+
+def _celda_de(html: str, rotulo: str) -> str:
+    """El valor de la fila `rotulo` de la tabla de datos de partida."""
+    import re
+    m = re.search(re.escape(rotulo) + r"</td><td[^>]*>([^<]*)</td>", html)
+    assert m is not None, f"no se encontro la fila «{rotulo}»"
+    return m.group(1).strip()
+
+
+def _fila_de_verificacion(html: str, codigo: str) -> str:
+    """La fila entera de la tabla de verificaciones cuyo codigo es `codigo`."""
+    import re
+    # `<tr[^>]*>` y no `<tr>`: la fila que INCUMPLE lleva
+    # `class="fila-incumple"`, que es justamente la que este test busca.
+    m = re.search(r"<tr[^>]*><td>" + re.escape(codigo) + r"</td>.*?</tr>",
+                  html, re.S)
+    assert m is not None, f"no se encontro la verificacion {codigo}"
+    return m.group(0)
+
 
 def test_la_columna_del_csv_gana_sobre_el_dato_externo():
     """
@@ -1450,6 +1488,23 @@ def test_la_columna_del_csv_gana_sobre_el_dato_externo():
     assert a01.s_cauce.valor == pytest.approx(a01.punto.S_cauce,
                                               rel=REL_TRANSPORTE)
     assert "columna S_cauce" in a01.s_cauce.origen
+    # Y LA DECLARACION DESCARTADA SE NOMBRA. Descartarla en silencio deja a
+    # quien escribio el JSON mirando una V2b resuelta contra un numero que no
+    # es el suyo, sin nada que se lo explique.
+    assert "0.999" in a01.s_cauce.origen
+    assert "descarto" in a01.s_cauce.origen
+
+
+def test_sin_declaracion_externa_la_columna_no_arrastra_nota_de_descarte():
+    """
+    Contrapeso del anterior: la nota de descarte solo aparece cuando hubo algo
+    que descartar. Sin ella, un punto de columna llena arrastraria en cada
+    corrida un texto sobre una declaracion que nadie escribio.
+    """
+    informe = _informe(luz_m=2.0)
+    a01 = informe.puntos[0]
+    assert a01.punto.id == "A-01"
+    assert a01.s_cauce.origen == "CSV Sec. 1.2, columna S_cauce"
 
 
 def test_una_pendiente_externa_en_porcentaje_es_dato_invalido():
@@ -1471,3 +1526,76 @@ def test_una_pendiente_externa_en_porcentaje_es_dato_invalido():
 
 FILA_C_SIN_S_CAUCE = (
     "C-02,3+200,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,")
+
+
+def test_el_bloque_de_claves_del_docstring_no_lleva_un_conteo_a_mano():
+    """
+    EL CONTEO COLGADO, TRES VECES. El bloque «Datos que NO estan en el CSV»
+    decía «cinco magnitudes» cuando `CLAVES_EXTERNAS` tenía siete; C6 lo
+    corrigió a «siete» **y añadió la octava en la misma sesión**. Lo midió la
+    auditoría adversarial. La cuenta que no envejece es la que no se escribe:
+    este test fija que el bloque enumere las claves y no las cuente.
+
+    Y fija la otra mitad del defecto: que **todas** estén enumeradas. C6 dejó
+    `S_conducto` fuera de las dos clases que el propio párrafo define, diciendo
+    a cuál no pertenece y sin decir a cuál sí.
+    """
+    bloque = cli.__doc__.split("Datos que NO estan en el CSV")[1]
+    bloque = bloque.split("Que hace con un criterio pendiente")[0]
+
+    for numeral in ("cinco magnitudes", "las cinco", "las siete",
+                    "SIETE CLAVES", "OCHO CLAVES"):
+        assert numeral not in bloque, (
+            f"el bloque escribe un conteo a mano ({numeral!r}). Enumerá las "
+            "claves; contarlas envejece con la siguiente que se añada")
+
+    for clave in cli.CLAVES_EXTERNAS:
+        assert clave in bloque, (
+            f"la clave {clave!r} de CLAVES_EXTERNAS no aparece en el bloque "
+            "que documenta las claves admitidas")
+
+
+def test_toda_clave_que_tambien_es_columna_se_acota_igual_por_las_dos_puertas():
+    """
+    LA MISMA MAGNITUD POR DOS PUERTAS TIENE QUE ACOTARSE IGUAL, y este test
+    lo fija como invariante en vez de como intención: toda clave externa que
+    nombre una magnitud con dominio físico declarado tiene que pasar por
+    `_DOMINIO_DE_CLAVE`.
+
+    Las dos pendientes son el caso: `S_cauce` es columna y `S_conducto` no,
+    pero son la MISMA magnitud física, con el mismo error de transcripción, y
+    `S_conducto` es además la que entra en Manning. C6 cerró sólo la primera.
+    """
+    for clave in ("S_cauce", "S_conducto"):
+        assert clave in cli._DOMINIO_DE_CLAVE, (
+            f"{clave} es una pendiente en m/m y no pasa por el dominio: un "
+            "6.0 mal transcrito (6 %) entraría como 600 %")
+        with pytest.raises(DatoInvalidoError):
+            cli._numero_externo(clave, 6.0, "prueba")
+        assert cli._numero_externo(clave, 0.004, "prueba").valor == \
+            pytest.approx(0.004, rel=REL_TRANSPORTE)
+
+
+def test_la_trazabilidad_de_s_cauce_sale_en_el_JSON_y_no_solo_en_el_HTML():
+    """
+    Publicar la trazabilidad en un solo formato es publicarla a medias. C6
+    añadió la fila a la memoria HTML y no al JSON, de modo que el artefacto
+    legible por máquina —que es además el de la línea base— declaraba
+    `S_cauce` en `datos_pendientes` sobre una corrida que la había usado, y no
+    publicaba nada que lo contradijera.
+    """
+    informe = _informe_por_punto(
+        dict(luz_m=2.0), {"C-01": {"S_cauce": 0.004}})
+    c01 = [p for p in cli.informe_json(informe)["puntos"]
+           if p["id"] == "C-01"][0]
+    declarado = c01["datos_declarados"]["S_cauce"]
+    assert declarado is not None, (
+        "el JSON no publica `S_cauce` mientras el HTML sí: la trazabilidad "
+        "no puede depender del formato que se abra")
+    assert declarado["valor"] == pytest.approx(0.004, rel=REL_TRANSPORTE)
+    # La procedencia viaja TAL CUAL desde la declaracion -- aqui la del
+    # helper -- y no se reescribe con la del CSV. La distincion no es
+    # cosmetica: sobre un punto cuya columna va vacia, imprimir «columna
+    # S_cauce» seria atribuir al expediente un dato que no trae.
+    assert declarado["origen"] == "prueba"
+    assert "columna" not in declarado["origen"]
