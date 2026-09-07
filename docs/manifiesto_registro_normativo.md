@@ -77,6 +77,8 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.10.5.4.2#ESPECTRO` | 10.5.4.2, configuracion licuada | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | recomendacion | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.11.6.5.1#EXC` | 11.6.5.1 | «General» | pág. impresa **11-25** · PDF 1494 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.11.6.5.2.1#ROCA` | 11.6.5.2.1 | «Characterization of Acceleration at Wall Base» | pág. impresa **11-27** · PDF 1496 | exigencia | 2026-08-28 · texto |
+| `AASHTO_LRFD_9.12.6.1#FLOTACION` | 12.6.1 | «Loading» | pág. impresa **12-14** · PDF 1652 | exigencia | 2026-08-28 · texto |
+| `AASHTO_LRFD_9.12.6.2.3#UPLIFT` | 12.6.2.3 | «Uplift» | pág. impresa **12-19** · PDF 1657 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.12.6.6.3#COBERTURA` | 12.6.6.3 | «Minimum Cover» | pág. impresa **12-21** · PDF 1659 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.3.10.2#CLASE_F` | 3.10.2 | «Seismic Hazard» | pág. impresa **3-71** · PDF 125 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.3.10.2.2` | 3.10.2.2 | «Site-Specific Procedure» | pág. impresa **3-100** · PDF 154 | exigencia | 2026-08-28 · texto |
@@ -87,10 +89,12 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.3.11.6.4` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.3.11.6.4#ALTURA` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.3.11.6.4#APLICA` | 3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | exigencia | 2026-08-28 · ambos |
+| `AASHTO_LRFD_9.3.7.2` | 3.7.2 | «Buoyancy» | pág. impresa **3-45** · PDF 99 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.5.10.1` | 5.10.1 | «Concrete Cover» | pág. impresa **5-167** · PDF 526 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.1#ESTRIBOS` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | permiso | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.1#PISO` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.A11.3.1#KAE` | A11.3.1, ec. A11.3.1-1 | «Mononobe–Okabe Method» | pág. impresa **11-145** · PDF 1614 | aproximacion | 2026-08-28 · imagen renderizada |
+| `AASHTO_LRFD_9.C12.6.2.3` | C12.6.2.3 | «Uplift» | pág. impresa **12-19** · PDF 1657 | recomendacion | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.C3.10.3.1-1#PASO1` | Tabla C3.10.3.1-1, paso 1 | «Steps for Site Classification» | pág. impresa **3-103** · PDF 157 | recomendacion | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.C3.11.6.4` | C3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | definicion | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.C3.4.1#GAMMA_EQ` | C3.4.1 | «3.4.1-Load Factors and Load Combinations» | pág. impresa **3-10** · PDF 64 | recomendacion | 2026-08-28 · ambos |
@@ -110,6 +114,10 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.11.6.5.2.1#ROCA`** — El 1.2 esta literal, y del lado correcto de la igualdad: es lo que resuelve la errata de imprenta del Manual, cuyo parentesis lo pone a la izquierda.
 
+> **`AASHTO_LRFD_9.12.6.1#FLOTACION`** — ES LA UNICA APARICION DE «flotation» EN LAS 1905 PAGINAS del PDF, medida. Y trae su propia CONDICION DE DISPARO -- «with inverts below the water table» --, que es la que hace de esta verificacion algo que no siempre aplica: sin freatico sobre el invert no hay nada que evaluar.
+
+> **`AASHTO_LRFD_9.12.6.2.3#UPLIFT`** — SEGUNDA exigencia, acumulativa con la del 12.6.1 y no redundante: aquella manda EVALUAR la carga de flotacion y esta manda CONSIDERAR el levantamiento. Su condicion de disparo es el nivel freatico MAS ALTO previsto, que es la hipotesis que V7 adopta.
+
 > **`AASHTO_LRFD_9.12.6.6.3#COBERTURA`** — El ARTICULO abre en la pag. impresa 12-21; solo la TABLA esta en la 12-22. Y una correccion contra la ficha de auditoria, no contra el repositorio: NOR-VAC-01 transcribe la fila de Reinforced Concrete Pipe como «raiz(Bc)/8» y el PDF imprime «B'c/8», con Bc' definido en 12-21 como «out-to-out vertical rise of pipe». Es una PRIMA, no un radical: artefacto de la linearizacion de la capa de texto. Corregir en la ficha antes de derivar cualquier numero.
 
 > **`AASHTO_LRFD_9.3.10.2#CLASE_F`** — AQUI ESTA EL `SHALL`, Y EL REPOSITORIO CITABA EL TEXTO MAS DEBIL DE LOS TRES. La segunda condicion de la lista es «The site is classified as Site Class F (Article 3.10.3.1),», y el verbo de la frase que la introduce es `shall`. La Nota 2 de las tablas de factores -- que es lo que Sec. 0.5 y el criterio venian citando -- dice `should`, y el Art. 3.10.2.2 (pag. impresa 3-100) repite el `shall`. La afirmacion del expediente («AASHTO exige de forma incondicional un estudio de respuesta de sitio para la Clase F») es CIERTA; lo que estaba mal era el anclaje, que se apoyaba en una recomendacion para sostener una exigencia. No es una discrepancia -- las fuentes no se contradicen --, es una cita corta.
@@ -126,6 +134,8 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.3.11.6.4#ALTURA`** — La altura que entra en las tablas NO es la altura visible del muro: incluye la zapata. Con `GeometriaCabezal` eso es H + espesor_zapata. Medirla sin la zapata SUBESTIMA la altura y, como h_eq decrece con ella, SOBRESTIMA h_eq -- conservador, pero es la lectura equivocada de la tabla.
 
+> **`AASHTO_LRFD_9.3.7.2`** — «all components below design water level»: el mismo ambito neutro que el numeral peruano. Es DEFINITORIA de la fuerza; quien pone la condicion de disparo para una estructura enterrada es el 12.6.1, que remite aqui expresamente.
+
 > **`AASHTO_LRFD_9.5.10.1`** — El factor por relacion agua-cemento NO es opcional: la norma dice `shall`, y esta en el CUERPO ARTICULADO (columna izquierda), no en el comentario. Sostiene NOR-AAS-05.
 
 > **`AASHTO_LRFD_9.5.10.1#ESTRIBOS`** — EL TERCER TEXTO QUE CONDICIONA LA TABLA 5.10.1-1, y el ultimo: la cadena «Table 5.10.1-1» aparece en TRES paginas de toda la especificacion -- 5-167, 5-168 y 5-169 -- y en ninguna mas, de modo que la lista de condicionantes esta cerrada, no muestreada. ESTE PROYECTO NO LO CONSUME: dimensiona barras PRINCIPALES, y la regla es de estribos y zunchos. Se registra porque «tabla transcrita completa» incluye lo que la condiciona, y porque su forma -- restar 0.5 in con piso de 1.0 in -- NO es un `Modificador` del registro, que es multiplicativo: meterla ahi seria una lectura falsa del tipo, que es justo lo que el esquema existe para impedir.
@@ -133,6 +143,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.5.10.1#PISO`** — El piso absoluto sobre las barras principales, que es lo que impide que el factor de 0.8 del W/CM lleve el recubrimiento a cualquier cosa. El Manual de Puentes lo traduce como «1.0 in (25 mm)» y el proyecto aplica la PULGADA EXACTA (25.4 mm), que es la mayor de las dos cifras que la propia fuente peruana escribe.
 
 > **`AASHTO_LRFD_9.A11.3.1#KAE`** — El ENCABEZADO del articulo se imprime en la pag. impresa 11-144 (PDF 1613) y la ECUACION en la 11-145 (PDF 1614). La forma exacta del corchete -- «[1 + raiz(...)]» -- NO ES VERIFICABLE por extraccion de texto: la capa devuelve la formula rota. Se decide sobre la imagen renderizada, y por eso el metodo es IMAGEN. Las unidades de la fuente son imperiales (kcf, ft).
+
+> **`AASHTO_LRFD_9.C12.6.2.3`** — DICE «the culvert», NO «pipe», y eso importa: es de las pocas frases de la Sec. 12 sobre flotacion que no se restringe a tuberia. Pero es comentario y dice `should`: sostiene la FORMA de la comparacion -- peso de la clave contra empuje -- y no el criterio de aceptacion. Un factor de seguridad numerico NO sale de aqui, y atribuirselo seria inventarle una exigencia.
 
 > **`AASHTO_LRFD_9.C3.10.3.1-1#PASO1`** — ES COMENTARIO Y POR ESO NO ESTRECHA EL ARTICULADO -- lleva prefijo `C` y cuelga del epigrafe C3.10.3.1 --, pero importa por algo que el debate «lista abierta o cerrada» estaba tapando: el paso 1 no es retorico, es un PROCEDIMIENTO. Manda comprobar esas categorias y, si el sitio no cae en ninguna, seguir al paso 2 (capa blanda -> Clase E) y al paso 3 (calcular v_s, N o s_u sobre los 100 ft superiores -> Clase A a E). En ninguno de los tres pasos hay una ruta que lleve de «suelo licuable» a la Clase F. Refuta por su cuenta la version fuerte de NOR-AAS-02 que la refutacion adversarial R95-073 ya habia tumbado: el «the three categories» existe, pero esta aqui, no en el articulado.
 
@@ -335,6 +347,9 @@ línea que se pueda romper.
 | `MP.2.4.3.11.2#CLASE_F` | 2.4.3.11.2 | «Peligro Sísmico» | pág. impresa **121** · PDF 122 | exigencia | 2026-08-29 · texto |
 | `MP.2.4.3.11.2.1.1` | 2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F | «Definiciones de Clases de Sitio» | pág. impresa **122** · PDF 123 | definicion | 2026-08-29 · ambos |
 | `MP.2.4.3.11.2.1.1#EXCEPCIONES` | 2.4.3.11.2.1.1, bloque «Excepciones» | «Definiciones de Clases de Sitio» | pág. impresa **122** · PDF 123 | exigencia | 2026-08-29 · texto |
+| `MP.2.4.3.8.2` | 2.4.3.8.2 | «Subpresiones» | pág. impresa **113** · PDF 114 | exigencia | 2026-08-28 · texto |
+| `MP.2.4.5.2#EV` | 2.4.5.2 | «Cargas y Denominación de las Cargas» | pág. impresa **140** · PDF 141 | definicion | 2026-08-28 · texto |
+| `MP.2.4.5.3.1#MINIMO` | 2.4.5.3.1 | «Factores de Carga y Combinaciones de Carga» | pág. impresa **142** · PDF 143 | exigencia | 2026-08-28 · texto |
 | `MP.T2.4.3.11.2.1.2-1` | Tabla 2.4.3.11.2.1.2-1 | «Efectos de Sitio» | pág. impresa **123** · PDF 124 | exigencia | 2026-08-28 · imagen renderizada |
 | `MP.T2.4.5.3.1-1` | 2.4.5.3.1, Tabla 2.4.5.3.1-1 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
 | `MP.T2.4.5.3.1-2` | 2.4.5.3.1, Tabla 2.4.5.3.1-2 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
@@ -349,6 +364,12 @@ línea que se pueda romper.
 > **`MP.2.4.3.11.2.1.1`** — LA TRADUCCION ES FIEL: las tres categorias son las mismas de AASHTO -- turbas o arcillas altamente organicas (H > 10 ft), arcillas de alta plasticidad (H > 25 ft con PI > 75), estratos de arcillas de buen espesor blandas o semirrigidas (H > 120 ft) -- y el «tales como» traduce el «such as», de modo que la lista queda abierta tambien aqui. TAMPOCO nombra la licuefaccion. El Manual la trata en otros sitios -- num. 2.4.3.11.1, 2.8.0.3, 2.8.2.1.1.1, 2.8.2.1.1.3, 2.8.2.1.1.6.2 y Apendice A11 --, once apariciones en ocho paginas, y NINGUNA en este numeral ni en su tabla. No existe en el Manual un solo numeral titulado «Licuefaccion».
 
 > **`MP.2.4.3.11.2.1.1#EXCEPCIONES`** — LA MISMA PROHIBICION QUE AASHTO, Y MAS DURA: donde AASHTO dice «should not be assumed», el Manual escribe «NO SERAN SUPUESTAS». La norma nacional endurece la traduccion, de modo que por la Via 1 (AASHTO) o por la Via 2 (Manual) el resultado es el mismo y el expediente no puede elegir la version blanda. «Entidaddetermine», sin espacio, es errata del impreso y se transcribe tal cual (T21). DOS PUERTAS Y UN DEBER: la prohibicion cede si la Entidad determina la clase -- via autonoma, sin dato geotecnico -- o si la establecen datos geotecnicos; y la oracion anterior manda «se emprenderá una investigación de sitio suficiente para definir su clase». Este expediente no tiene ninguna de las dos puertas abiertas y si tiene el deber pendiente.
+
+> **`MP.2.4.3.8.2`** — SU AMBITO ES NEUTRO RESPECTO DE LA FORMA y por eso el marco entra DIRECTO, sin analogia que declarar: dice «todos los componentes de la estructura», no «la tuberia». DEFINE LA FUERZA U y nada mas: no fija estado limite, ni combinacion, ni criterio de aceptacion. La desigualdad que V7 evalua NO sale de aqui -- ver el `por_que` de F5.V7 --. El «2.4.3.8.1» al que remite es el empuje hidrostatico general, del que esta es la componente vertical.
+
+> **`MP.2.4.5.2#EV`** — LO QUE LA DEFINICION NO DICE, y hay que decirlo porque el proyecto lo da por supuesto: no aparecen las palabras «sobre», «encima» ni «cobertura». Que EV sea el relleno que descansa SOBRE la estructura es una lectura -- razonable y estandar, y sostenida por la fila «enterrada» que se elige, no por esta frase --. Se transcribe el predicado y no la linea entera («EV = presion...») porque la tabla de simbolos separa el simbolo del texto y el volcado los reordena.
+
+> **`MP.2.4.5.3.1#MINIMO`** — ES EL ESLABON QUE FALTABA, y faltaba entero: es lo que AUTORIZA a V7 a minorar EV y DC. Sin esta frase, tomar el extremo minimo de la fila de gamma_p seria una eleccion del proyectista sin respaldo; con ella es lo que la fuente manda hacer cuando la carga permanente ESTABILIZA, que es exactamente el caso de la flotacion. El titulo del numeral se imprime en la pag. impresa 140 (PDF 141) y el texto en la 142 (PDF 143): por eso `pagina_pdf_titulo`.
 
 > **`MP.T2.4.3.11.2.1.2-1`** — TRES DE SUS RASGOS SOLO SE VEN RENDERIZANDO, y los tres deciden una lectura: el signo `>` de la ultima columna, el asterisco de la fila F y el «1» del encabezado superior, que es la llamada a la Nota 1 y no un exponente.
 
@@ -915,7 +936,8 @@ recomienda.
 | `F5.V2b` | Fase 5 - Verificaciones | V2b - Sedimentacion / colmatacion: el indicador de pendiente del HDS-5 mas el acceso de mantenimiento declarado | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO` |
 | `F5.V3` | Fase 5 - Verificaciones | V3 - Velocidad maxima admisible del revestimiento (Tabla N 10) | **obliga** | `MC_HHD.4.1.1.3.6#T10` |
 | `F5.V4` | Fase 5 - Verificaciones | V4 - Carga a la entrada bajo la subrasante, con el resguardo que fija el CBR | **obliga** | `MS.4.5.4`, `MS.9.1.3` |
-| `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
+| `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
+| `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | **define** | `MP.2.4.5.2#EV`, `MP.T2.4.5.3.1-2` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | **obliga** | `AASHTO_LRFD_9.12.6.6.3#COBERTURA`, `EG2013.508.07#RELLENO_MIN` |
 | `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | **obliga** | `E060.7.7.1`, `AASHTO_LRFD_9.T5.10.1-1` |
@@ -1038,5 +1060,5 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 103.
+Citas sin firma de verificación: **0** de 110.
 
