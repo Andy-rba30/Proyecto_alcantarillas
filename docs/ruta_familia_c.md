@@ -1075,8 +1075,9 @@ degradaría a `[N→]` algo que el Manual ya dice, y una memoria que declara ana
 vuelve indistinguible de una que las declara de menos.
 
 **3. El vacío se abre en un solo sitio, y siempre con la misma forma: donde el valor sale de
-una TABLA cuyas FILAS están enumeradas por un objeto que el marco no es.** Son tres, y solo
-tres, en todo el procedimiento:
+una TABLA cuyas FILAS están enumeradas por un objeto que el marco no es.** Son **cuatro** en
+todo el procedimiento —CN escribió «tres» y la auditoría adversarial encontró la cuarta; ver
+§15.10—:
 
 - **Tabla Nº 09** (Manning): sus filas de concreto dicen «tubo». → `n_manning_cajon` **[N→]**.
 - **Tabla A.1 del HDS-5** (control de entrada): sus cartas son por forma y material. → **hay
@@ -1084,6 +1085,10 @@ tres, en todo el procedimiento:
   misma tabla. **[C]**, la misma etiqueta que hoy. *Este dato no lo verificó CN —su fuente es
   `normas/hif12026.pdf`, no el Manual MTC—: se toma de la regla vinculante **#2** de §6, y
   **C3 lo re-verifica** contra las ecs. (A.1) y (A.2) antes de escribir la bifurcación.*
+- **Tabla C.2 del HDS-5** (`k_e`, pérdida de entrada, control de salida): tiene una familia
+  **«Box, Reinforced Concrete»** aparte de la de **«Pipe, Concrete»** de la que el proyecto toma
+  hoy su 0.5. → como la Tabla A.1, **no es un vacío**: es otra familia de la misma tabla. **[C]**,
+  pero con un valor y una elección nuevos. **Ésta es la que CN no vio** (§15.10, punto 1).
 - **Normas de producto** (AASHTO M170 = *pipe*): no tabulan un marco vaciado in situ. →
   `V9` y `espesor_pared_conducto` quedan **fuera de su alcance declarado**, no en analogía.
 
@@ -1130,14 +1135,31 @@ alcance) o `FUERA DEL MANUAL` (lo sostiene otra fuente). Las páginas son **impr
 |---|---|---|---|---|
 | **Manning** (`M3.resolver_manning`, `F4.MANNING`) | **4.1.1.3.6**, 74 / 77: *«El cálculo hidráulico considerado para establecer las dimensiones mínimas de la sección para **las alcantarillas a proyectarse**, es lo establecido por la fórmula de Robert Manning\* **para canales abiertos y tuberías**…»* | El numeral **declara su propio ámbito**: «las alcantarillas a proyectarse». Cero adjetivos de forma en sus cuatro páginas | **DIRECTO por el ámbito que el numeral se da a sí mismo**, no por analogía: el marco es una alcantarilla (4.1.1.3.1 y 4.1.1.3.4 a). *Refuerzo, y va marcado como lectura del proyecto: un marco con `y < H` escurre como canal abierto, una de las dos clases que la oración nombra.* | **[N]** |
 | **Área, perímetro y radio hidráulico** (`Seccion.area/perimetro`, `R = A/P`) | **4.1.1.3.6**, 74 / 77: *«A : Área de la sección hidráulica (m2)»*, *«P : Perímetro mojado (m)»*, *«R : Radio hidráulico (m)»*, `R = A/P` | Define las variables **sin geometría**: no dice cómo se calcula A ni P | **DIRECTO** — y por eso la abstracción `Seccion` de §4.1 **no inventa nada**: rellena lo que el numeral deja al cálculo | **[N]** las definiciones; las fórmulas de A y P del rectángulo son geometría elemental, `# literal-ok` |
-| **n de Manning del cajón** (criterio nuevo `n_manning_cajon`) | **Tabla Nº 09**, 75 / 78 — **grupo A**: *«A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO»* | **El grupo es neutro** («conducto cerrado»): el marco cae dentro. **Las FILAS de «a. Concreto» no**: seis de siete dicen «tubo» | **ANALOGÍA declarable, DENTRO del grupo que ya lo cubre** | **[N→]** — ver §15.3.2, que es el hallazgo que corrige la regla #6 |
+| **n de Manning del cajón** (criterio nuevo `n_manning_cajon`) | **Tabla Nº 09**, 75 / 78 — **grupo A**: *«A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO»* | **El grupo es neutro** («conducto cerrado»): el marco cae dentro. **Las FILAS de «a. Concreto» no**: seis de siete dicen «tubo» | **ANALOGÍA declarable, DENTRO del grupo que ya lo cubre** | **[N→]** — ver §15.3.2, que es el hallazgo que corrige la regla #6 |
 | **Tirante crítico** (`M4.tirante_critico`) | *ninguno del Manual* — HDS-5 | — | **FUERA DEL MANUAL**; la solución cerrada rectangular es álgebra, no norma | **[C]** (como hoy) |
 | **Control de entrada** (`M4.control_entrada`) | **HDS-5** num. A.2/A.2.1, Tabla A.1 (A.8) | Cartas **por forma y material**; hay cartas de cajón (regla #2 de §6, **no verificada por CN**: su fuente es `hif12026.pdf`) | **DIRECTO a otra fila de la misma tabla** — **no** es analogía | **[C]** |
-| **Control de salida** (`M4.control_salida`, `F4.HO`) | **HDS-5** 3.1.4 y 3.3.3 | `k_e`, fricción, `h_o`. Neutro respecto de forma | **DIRECTO** | **[C]** |
+| **Control de salida** (`M4.control_salida`, `F4.HO`) | **HDS-5** 3.1.4 y 3.3.3 · **Tabla C.2** (`k_e`), pág. impresa C.6 / PDF 216 | La fricción y `h_o` son neutros. **`k_e` NO lo es**: la Tabla C.2 lo tabula por **familia de conducto**, y el 0.5 del proyecto sale de la fila `Square-edge` del bloque **«Pipe, Concrete»** | **DIRECTO** salvo `k_e`, que **cambia de familia de tabla**: hay un bloque «Box, Reinforced Concrete» con once filas por configuración de aletas | **[C]**, y **`ke_entrada` deja de ser un valor fijo**: para el cajón depende de la embocadura, o sea queda acoplado a `embocadura_cajon` |
 | **HW gobernante** (`M4.hw_gobernante`, `F4.CONTROL`) | **HDS-5** | Neutro | **DIRECTO** | **[C]** |
 
-> **Lo único que cambia de etiqueta en toda la Fase 4 es el n de Manning.** Todo lo demás
-> conserva la que ya tiene para el circular.
+> **DOS pasos de la Fase 4 cambian, no uno, y el segundo lo encontró la auditoría (§15.10).**
+> El **n de Manning** cambia de **etiqueta** —pasa a `[N→]`—; y **`ke_entrada` cambia de fila y de
+> valor** sin cambiar de etiqueta, que es la forma más peligrosa de las dos porque nada se
+> detiene: hoy vale `0.5` fijo, con `sensibilidad=None`, leído de `DeTabla(fila_id=
+> "concreto_headwall_square_edge")` — una fila de **tubo**. En la familia «Box, Reinforced
+> Concrete» de la misma Tabla C.2 el coeficiente va de **0.4 a 0.7** según las aletas, y el 0.7
+> sube `H = (1 + k_e + 19.63·n²L/R^(4/3))·V²/2g` en `0.2·V²/2g`, o sea del orden de una décima de
+> metro **menos** de HW que el real — contra V4 y contra el tamizado de 7.A. Todo lo demás de la
+> Fase 4 conserva lo que ya tiene para el circular.
+>
+> **Y el repositorio ya lo había anticipado, con la premisa que este plan destruye.**
+> `normativa/tablas.py::T_HDS5_C2.alcance` es `Acotada` con esta razón, literal: *«la tabla trae
+> ademas la familia "Box, Reinforced Concrete" con sus once filas de aletas y bordes, y **el
+> catalogo de conductos de la Sec. 3.2 no ofrece seccion cajon**: ninguna de esas filas puede
+> aplicarse a un punto de este corredor»*. En cuanto C5 haga que M2 devuelva un candidato de
+> marco, esa razón deja de ser cierta. Es exactamente el antipatrón que §12 enumera —**«No dejar
+> un `Acotada` describiendo un alcance que ya no es el suyo»**— y **C5 tiene que ampliar la
+> `Acotada` y transcribir las filas de cajón**, o el punto de Familia C tomará el `k_e` de un
+> tubo sin que nada se detenga.
 
 #### 15.2.4 Fase 5 — Verificaciones
 
@@ -1203,11 +1225,18 @@ alcance) o `FUERA DEL MANUAL` (lo sostiene otra fuente). Las páginas son **impr
 | **DIFERIDOS por alcance**, con su constancia | **2** | V5, V8 |
 | **Sin numeral por naturaleza** (geometría elemental o regla de la propia v8) | **5** | perfil de familia, longitud, tamizado 7.A, cotas, G1/G2 |
 
-**Un solo paso de los 42 cambia de etiqueta al pasar del circular al marco**, y es el n de
-Manning. Ése es el resultado de esta sesión y conviene decirlo así de crudo: **el
-procedimiento del Manual peruano es casi enteramente neutro respecto de la forma de la
-sección**, y lo poco que no lo es, no lo es por descuido sino porque copia sus filas de
-Ven Te Chow.
+**Del Manual MTC, un solo paso de los 42 cambia de etiqueta**, y es el **n de Manning**. Ése es
+el resultado de esta sesión y conviene decirlo así de crudo: **el procedimiento del Manual
+peruano es casi enteramente neutro respecto de la forma de la sección**, y lo poco que no lo
+es, no lo es por descuido sino porque copia sus filas de Ven Te Chow.
+
+**Pero un segundo paso cambia de FILA sin cambiar de etiqueta, y CN no lo vio.** Es
+`ke_entrada`, del control de salida, y su fuente no es el Manual MTC sino el HDS-5: la
+auditoría adversarial lo encontró y está en §15.10, punto 1. Que la etiqueta no cambie es
+justamente lo que lo hace peligroso — **nada se detiene** —, y la lección general es la que
+conviene llevarse de esta sección: *no basta con preguntar qué numeral sostiene un paso; hay
+que preguntar además si la TABLA de la que sale su valor enumera sus filas por algo que el
+marco no es.* Con esa segunda pregunta, `ke_entrada` salta a la primera lectura.
 
 ### 15.3 Los cuatro numerales que deciden — resultado literal
 
@@ -1231,6 +1260,15 @@ diverge. El original escribe **«son;» con punto y coma**; **«mas» sin tilde*
 Manual: reproducirla es la transcripción fiel, corregirla en silencio es alterar la fuente);
 el **`36”` con comilla tipográfica U+201D**, no con comilla recta; y **«Nº» con o volada
 (U+00BA)**.
+
+> **POR QUÉ SON DOS IDS Y NO UNO, y es la corrección que la auditoría obligó (§15.10, punto 5).**
+> `Cita.caracter` es un campo **escalar**: un id lleva un solo carácter. El párrafo de la pág.
+> impresa 72 tiene **dos**, permiso y recomendación, en dos oraciones. Meterlos en un id obliga
+> a elegir uno, y entonces la fila «Libertad de cota de emplazamiento — carácter PERMISO» de
+> §15.2.2 quedaría apoyada sobre una cita cuyo carácter es RECOMENDACION: **el mismo defecto que
+> el párrafo de abajo denuncia**, cometido dos páginas después de denunciarlo. Son dos ids, y
+> `F3.TIPO_MARCO` cita los dos. Es la misma partición que el registro ya hizo con
+> `MC_HHD.4.1.1.3.6#VMIN_INICIO` / `#VMIN`, por la misma razón exacta.
 
 > **CONSECUENCIA VINCULANTE PARA C5, y es nueva.** La cita
 > `MC_HHD.4.1.1.3.4a` del registro **transcribe hoy sólo el tercer párrafo** —el del 0.90 m—
@@ -1274,7 +1312,7 @@ coordenadas: en su línea hay **una sola palabra** en la columna de rótulos, y 
 
 Y hay un segundo hecho que la regla #6 no recoge y que es el que de verdad decide: **el
 GRUPO que contiene esas filas ya cubre al marco por su propio título**. Se llama
-*«A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO»* — «conducto cerrado», no
+*«A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO»* (así, **sin espacio tras el punto**, que es como el PDF lo imprime) — «conducto cerrado», no
 «tubería» —, y `constantes_normativas.TABLA_09_GRUPO` ya lo tiene declarado como *«el único
 grupo de la tabla que describe una alcantarilla»*.
 
@@ -1296,12 +1334,24 @@ las elige esta sesión, porque elegir es lo que el tesista declara:
 | `tubo recto y libre de basuras` | **(0.010, 0.013)** | Es la que el proyecto **ya usa** para el concreto (`MANNING["concreto_tubo_recto"]`) y la que `n_manning_hdpe` toma por analogía: una obra con dos n distintos para el mismo concreto es peor que una analogía discutible | Su rótulo dice **tubo**, que es exactamente lo que el marco no es |
 | **`afinado`** | **(0.011, 0.014)** | Es la **única fila del ítem sin forma en el rótulo**, y describe el acabado que un marco vaciado in situ tiene | El repositorio **no la transcribe todavía** (`TABLA_09_FILAS` sólo trae cuatro filas): exige transcripción y verificación en C2 |
 
-> **Aviso a C5, y no es menor: `afinado` NO es «más conservador» sin más.** Sus dos valores
-> son mayores, y por la regla de doble n eso mueve las dos ramas **en sentidos opuestos**: un
-> `n_máx` mayor (0.014 frente a 0.013) es **más conservador** para capacidad y tirante, y un
-> `n_mín` mayor (0.011 frente a 0.010) da **menos velocidad**, o sea es **menos conservador**
-> para V3 y para el d₅₀ de Laushey. La dirección **no es uniforme** y el criterio tiene que
-> decirlo, igual que `DIAMETRO_MIN_AMBITO` lo dice del piso de 0.90 m.
+> **Aviso a C5, y no es menor: `afinado` NO es «más conservador» sin más.** Y el mecanismo hay
+> que decirlo bien, porque CN lo escribió mal en su primera redacción (§15.10, punto 8): **las
+> dos ramas se mueven en el MISMO sentido** —con n mayor, los dos tirantes suben y las dos
+> velocidades bajan, porque `V = Q/A` es monótona decreciente en n—. Lo que cambia de signo es
+> **el sentido de la exigencia de cada verificación**. Recomputado a mano sobre un marco
+> B = 2.00 m, H = 1.50 m, S = 0.001, Q = 2.0 m³/s:
+>
+> | | y/H (rama n_máx) | V de sedimentación (n_máx) | V de erosión (n_mín) | d₅₀ |
+> |---|---|---|---|---|
+> | `tubo recto` (0.010, 0.013) | 0.4870 | 1.3689 m/s | 1.6509 m/s | 0.0897 m |
+> | `afinado` (0.011, 0.014) | **0.5139** | **1.2973 m/s** | **1.5430 m/s** | **0.0784 m** |
+>
+> O sea: `afinado` **aprieta** V1 (y/H sube un 5.5 %, se acerca al techo de 0.75) y **aprieta
+> V2** (la velocidad de la rama n_máx, que es la que evalúa el piso de autolimpieza, baja un
+> 5.2 %); y **afloja** V3 (la velocidad de erosión baja un 6.5 %, pasa con más holgura) y
+> **afloja el d₅₀ de Laushey** (cae un **12.6 %**, o sea piedra más chica). **Son cuatro
+> verificaciones afectadas, dos en cada sentido.** La dirección **no es uniforme** y el criterio
+> tiene que decirlo, igual que `DIAMETRO_MIN_AMBITO` lo dice del piso de 0.90 m.
 
 **Dónde NO se puede ir a buscar el n, y conviene dejarlo escrito antes de que a alguien se le
 ocurra:** el grupo **B. CANALES REVESTIDOS** tiene un ítem «b. Concreto» con la fila
@@ -1583,7 +1633,7 @@ alcance:**
 
 | Pieza de la declaración | Vehículo | Por qué ése |
 |---|---|---|
-| **La declaración entera**, una vez por punto de Familia C | **`bloque_alcance`**, vía un `Bloqueo(fase="Fase 5 - Verificaciones", etapa="VC1 - no alteración de la rasante hidráulica ni del borde libre del canal", tipo="DiferidoPorAlcance", diferido_por_alcance=True, mensaje=<el texto de §15.6.2>)` emitido por `cli` | Es el bloque que **imprime SIEMPRE** —su propio docstring dice que en alcance de expediente tampoco desaparece— y **no depende de que ningún criterio tenga valor**. Es **por punto**, de modo que nombra los puntos afectados. Y ya existe el precedente exacto: `cli._cabezal_diferido` y `cli._fase8_diferida`. `diferido_por_alcance=True` es lo que impide que además cuente como defecto del expediente en `Informe.cerrado` |
+| **La declaración entera**, una vez por punto de Familia C | **`bloque_alcance`**, vía un `Bloqueo(fase="Fase 5 - Verificaciones", etapa="VC1 - no alteración de la rasante hidráulica ni del borde libre del canal", tipo="DiferidoPorAlcance", diferido_por_alcance=True, mensaje=<el texto de §15.6.2>)` emitido por `cli` | Es el bloque que **imprime SIEMPRE** —su propio docstring dice que en alcance de expediente tampoco desaparece— y **no depende de que ningún criterio tenga valor**. Es **por punto**, de modo que nombra los puntos afectados. Y ya existen los precedentes exactos: `cli._cabezal_diferido` (cli.py) y `cli._diferir_fase_8` — **ese es el nombre; CN escribió `_fase8_diferida`, que no existe (§15.10, punto 4)**. `diferido_por_alcance=True` es lo que impide que además cuente como defecto del expediente en `Informe.cerrado` |
 | **La advertencia junto al número**, en el desarrollo de V1 y de V4b del punto | **`PasoDeMemoria.nota_del_proyecto`**, que M11 imprime bajo `<dt class="interpretacion">Lo que pone el proyecto</dt>` (`M11_reporte`, ~1076) | **Aquí el prompt tenía razón: es una interpretación.** Sólo que el objeto que lleva una interpretación **por punto** a la memoria no es `esquema.Interpretacion` sino este campo, que M4 y M5 ya usan. Y es la lección de `NOR-HDS-05`: *un aviso que no señala el punto afectado es el «nadie se entera»* |
 | **La deuda, para que no se pierda de vista** | **§13 de este documento** (ya está) + la actualización del tracker | El registro de deuda no es la memoria |
 
@@ -1602,10 +1652,29 @@ corrida» y el conteo «Etapas diferidas al expediente: **8**». Es decir: **el 
 con el expediente abierto**, que es exactamente la condición en la que la declaración tiene que
 verse y en la que una acotación no se vería.
 
-**Comprobación que C5 debe dejar en verde** (criterio de aceptación #6 de §11): repetir esa
-misma corrida y comprobar que la cadena «no evalúa ese requisito» aparece en el HTML **antes**
-de que ningún criterio nuevo tenga valor. Si sólo aparece con los criterios declarados, el
-vehículo elegido está mal y hay que volver a esta sección.
+**Cómo se le da forma al mensaje, porque el vehículo tiene una restricción que hay que
+respetar.** `bloque_alcance` pinta el fundamento con `_esc(b.mensaje)`: **escapa el HTML y lo
+mete en UNA celda de tabla**. El texto de §15.6.2 son siete párrafos con negritas; volcado tal
+cual saldría con los asteriscos literales y en un solo bloque ilegible. **C5 tiene dos salidas
+y ninguna es reescribir `_esc`:** o el `mensaje` se redacta en prosa corrida sin marcas —
+perdiendo la jerarquía visual pero conservando entero el argumento —, o `bloque_alcance` gana
+una rama para el diferimiento de una verificación, como ya tiene una para el diferimiento por
+criterio (`if b.criterio: … else: …`). **La segunda es la que conserva el texto**, y es un
+cambio de M11 que C8 puede absorber; la primera cabe en C5 sola. Que se elija una u otra,
+pero que **no se deje el texto entrando por `_esc` con las negritas puestas**.
+
+**Comprobación que C5 debe dejar en verde** (criterio de aceptación #6 de §11), y son **dos**,
+porque la auditoría mostró que una sola verifica media declaración (§15.10, punto 4):
+
+1. **El primer vehículo.** Repetir la corrida de arriba y comprobar que la cadena «no evalúa ese
+   requisito» aparece en el HTML **antes** de que ningún criterio nuevo tenga valor. Si sólo
+   aparece con los criterios declarados, el vehículo elegido está mal.
+2. **El segundo vehículo, que hoy NO se puede ejercitar con el fixture tal como está.** C-01
+   trae `Q_m3s` vacío a propósito (`M0_carga._VACIAS_FAMILIA_C`) y **se detiene antes de llegar a
+   V1 y a V4b**, de modo que su `nota_del_proyecto` no se emite nunca. Hace falta un caso —fila
+   nueva del fixture o `--datos-externos` en el test— que **llegue a las verificaciones**, y
+   comprobar allí que la nota sale junto al número. Sin ese segundo caso, la mitad del diseño de
+   §15.6.3 queda sin prueba.
 
 ### 15.7 (b) Los `Fundamento` que C3, C4 y C5 necesitan
 
@@ -1616,7 +1685,7 @@ vehículo elegido está mal y hay que volver a esta sección.
 recomendación a la vez). Por eso **cada bloque de abajo lleva el carácter de cada cita
 anotado**: es lo que hay que comprobar antes de escribirlo, no después.
 
-**Seis citas no existen todavía.** Van marcadas `⛔ POR TRANSCRIBIR (C2)` y **ningún
+**Ocho citas no existen todavía.** Van marcadas `⛔ POR TRANSCRIBIR (C2)` y **ningún
 fundamento que dependa de ellas se puede construir hasta que C2 las transcriba y
 `test_normativa_pdf.py` las verifique** — cuáles quedan bloqueados y cuáles no está medido más
 abajo. Sus páginas están en §15.3 y §15.4:
@@ -1624,11 +1693,13 @@ abajo. Sus páginas están en §15.3 y §15.4:
 | Id propuesto | Qué transcribe | Impresa / PDF | `caracter` |
 |---|---|---|---|
 | `MC_HHD.4.1.1.3.4a#TIPOS` | *«Los tipos de alcantarillas comúnmente utilizadas … son; marco de concreto, …»* | 71 / 74 | `DEFINICION` |
-| `MC_HHD.4.1.1.3.4a#MARCO` | *«Las alcantarillas tipo marco de concreto de sección rectangular o cuadrada pueden ubicarse… Generalmente, se recomienda emplear este tipo… suelos de fundación de mala calidad.»* | 72 / 75 | **dos citas**: `PERMISO` la 1.ª oración, `RECOMENDACION` la 2.ª |
+| `MC_HHD.4.1.1.3.4a#NIVELES` | *«Las alcantarillas tipo marco de concreto de sección rectangular o cuadrada **pueden** ubicarse a niveles que se requiera…»* | 72 / 75 | `PERMISO` |
+| `MC_HHD.4.1.1.3.4a#MARCO` | *«Generalmente, **se recomienda** emplear este tipo de alcantarillas cuando se tiene la presencia de suelos de fundación de mala calidad.»* | 72 / 75 | `RECOMENDACION` |
 | `MC_HHD.4.1.1.3.4a#MULTIPLES` | *«…recomendándose utilizar obras con mayor sección transversal libre, sin subdivisiones.»* | 72 / 75 | `RECOMENDACION` |
 | `MC_HHD.4.1.1.3.7d` | *«Las dimensiones de las alcantarillas deben permitir efectuar trabajos de mantenimiento y limpieza en su interior de manera factible.»* | 80 / 83 | `EXIGENCIA` |
 | `MC_HHD.LAMINA_03` | rótulo de la 3.ª figura, `metodo=IMAGEN` | 209 / 212 | `DEFINICION` |
 | `HDS5_3ED.A.3#FORMAS` | *«coefficients for rectangular (box) shapes should not be used for nonrectangular … shapes and vice-versa»* | A.3 | `EXIGENCIA` |
+| `HDS5_3ED.TC2#cajon_*` | **las once filas de la familia «Box, Reinforced Concrete»** de la Tabla C.2, con sus configuraciones de aletas (0.4 – 0.7). Obliga además a **ampliar el `Acotada` de `T_HDS5_C2`**, cuya razón deja de ser cierta | C.6 / 216 | `DEFINICION` |
 
 **Comprobación ejecutada de los ocho, contra el registro construido** (no a ojo): los **ocho ids
 están libres** —ninguno colisiona con los diecisiete de `fundamentos.py`— y las seis citas que
@@ -1643,6 +1714,13 @@ construir hoy**, porque al menos una cita existente sostiene su verbo. Los otros
 —`F3.TIPO_MARCO`, `F3.MANTENIMIENTO` y `F3.CELDAS`— tienen **todas** sus citas por transcribir y
 **están completamente bloqueados por C2**. Son justamente los tres que sostienen el tipo de
 estructura, el mínimo de mantenimiento y el número de celdas: **C2 no es opcional antes de C5.**
+
+**Y un patrón del archivo que los ocho tienen que respetar, medido sobre los diecisiete
+vigentes:** ninguno de sus `por_qué` entrecomilla texto de la fuente — `F5.V1` dice *«El Manual
+lo escribe como el 25 % de la altura de la estructura»*, que es **paráfrasis sin comillas**. El
+`por_qué` se imprime en la memoria, de modo que una frase entrecomillada ahí sería una **segunda
+transcripción** fuera de `Registro.textos_literales()`. Los bloques de abajo llevan ya la
+corrección; la denuncia y su origen están en §15.10, punto 5.
 
 ---
 
@@ -1762,19 +1840,19 @@ TIPO_MARCO = _fundamento(
         "El marco de concreto no es una importacion ni una excepcion en este "
         "Manual: lo nombra el PRIMERO entre los tipos comunmente utilizados "
         "en carreteras del pais, cuenta la seccion rectangular y la cuadrada "
-        "entre las 'mas usuales', PERMITE expresamente ubicarlo a la cota "
-        "que se requiera -- que es justo lo que un cruce a nivel de canal "
+        "entre las mas usuales, PERMITE expresamente ubicarlo a la cota que "
+        "se requiera -- que es justo lo que un cruce a nivel de canal "
         "necesita -- y RECOMIENDA emplearlo con suelos de fundacion de mala "
         "calidad. Ademas lo DIBUJA para este caso exacto: la Lamina N 03 "
-        "trae una figura titulada 'ALCANTARILLA TIPO MARCO DE CONCRETO EN "
-        "CRUCE DE CANAL DE RIEGO'. La asignacion del tipo a la Familia C la "
-        "hace la Sec. 2.3 de la hoja de ruta; lo que estas citas aportan es "
-        "que esa asignacion tiene respaldo en la fuente primaria y no solo "
-        "en la hoja."),
+        "trae una figura de marco de concreto en cruce de canal de riego. La "
+        "asignacion del tipo a la Familia C la hace la Sec. 2.3 de la hoja "
+        "de ruta; lo que estas citas aportan es que esa asignacion tiene "
+        "respaldo en la fuente primaria y no solo en la hoja."),
     verbo=Verbo.RECOMIENDA,
-    citas=("MC_HHD.4.1.1.3.4a#TIPOS",    # DEFINICION   ⛔ POR TRANSCRIBIR (C2)
-           "MC_HHD.4.1.1.3.4a#MARCO",    # RECOMENDACION -> sostiene RECOMIENDA
-           "MC_HHD.LAMINA_03"),          # DEFINICION   ⛔ POR TRANSCRIBIR (C2)
+    citas=("MC_HHD.4.1.1.3.4a#TIPOS",     # DEFINICION    ⛔ POR TRANSCRIBIR (C2)
+           "MC_HHD.4.1.1.3.4a#NIVELES",   # PERMISO       ⛔ POR TRANSCRIBIR (C2)
+           "MC_HHD.4.1.1.3.4a#MARCO",     # RECOMENDACION -> sostiene RECOMIENDA
+           "MC_HHD.LAMINA_03"),           # DEFINICION    ⛔ POR TRANSCRIBIR (C2)
     que_pasa_si_no_se_hace=(
         "El tipo de estructura de la Familia C se apoya solo en la Sec. 2.3 "
         "de la hoja de ruta, que no es fuente primaria, y la memoria no "
@@ -1791,8 +1869,8 @@ SECCION_CANAL = _fundamento(
         "El piso de 0.90 m del num. 4.1.1.3.4 a) NO se aplica aqui, y no "
         "porque el proyecto decida saltarselo: el mismo numeral que lo fija "
         "lo EXCEPTUA, en la misma oracion, para los cruces de canales de "
-        "riego, y ordena adoptar alli secciones 'de acuerdo a cada diseno "
-        "particular'. La Familia C ES ese conjunto de cruces. Lo que el "
+        "riego, y ordena adoptar alli la seccion segun cada diseno "
+        "particular. La Familia C ES ese conjunto de cruces. Lo que el "
         "numeral hace no es liberar la seccion: la traslada del catalogo al "
         "diseno, y por eso la progresion B*H de este proyecto es una "
         "adopcion declarada y no una lectura de la norma."),
@@ -1835,18 +1913,17 @@ N_CAJON = _fundamento(
     que_paso=("Coeficiente de rugosidad de Manning del cajon de concreto, "
               "por analogia declarada dentro del grupo A de la Tabla N 09"),
     por_que=(
-        "La Tabla N 09 SI cubre al cajon por el titulo de su grupo -- 'A. "
-        "CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO' --, que es "
-        "el unico grupo de la tabla que describe una alcantarilla. Lo que no "
-        "tiene es una FILA que nombre la seccion rectangular: seis de las "
-        "siete filas de su item 'a. Concreto' estan enumeradas por 'tubo' y "
-        "la septima, 'afinado', por el acabado. El vacio es de fila y no de "
-        "grupo, y por eso la analogia se declara DENTRO del grupo que ya "
-        "cubre la estructura -- entre filas separadas por un atributo que no "
-        "es la forma -- y es mas estrecha que la de 'n_manning_hdpe', que "
-        "cruza material. El rango se toma completo, minimo y maximo: la "
-        "regla de doble n pide los dos extremos, porque n_max es "
-        "conservador para capacidad y n_min para velocidad y socavacion."),
+        "La Tabla N 09 SI cubre al cajon por el TITULO DE SU GRUPO, que "
+        "habla de conducto cerrado con escurrimiento parcialmente lleno y no "
+        "de tuberia: es el unico grupo de la tabla que describe una "
+        "alcantarilla. Lo que no tiene es una FILA que nombre la seccion "
+        "rectangular. El vacio es de fila y no de grupo, y por eso la "
+        "analogia se declara DENTRO del grupo que ya cubre la estructura "
+        "-- entre filas separadas por un atributo que no es la forma -- y es "
+        "mas estrecha que la de 'n_manning_hdpe', que cruza material. El "
+        "rango se toma completo, minimo y maximo: la regla de doble n pide "
+        "los dos extremos, porque n_max es conservador para capacidad y "
+        "n_min para velocidad y socavacion."),
     verbo=Verbo.DEFINE,
     citas=("MC_HHD.4.1.1.3.6",          # DEFINICION -> sostiene DEFINE
            "MC_HHD.4.1.1.3.6#T09"),     # DEFINICION
@@ -1914,9 +1991,9 @@ ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
 |---|---|---|---|---|
 | **D-1** | **Sec. 3.1**, «Reglas duras **[N]**» · y **Sec. 3.2** | *«**Diámetro mínimo 0.90 m (36")** — num. 4.1.1.3.4 a), pág. 72»*, sin condición; y *«desde 0.90 m (mínimo normativo MTC)»* | La misma oración lo condiciona **dos veces**: *«En carreteras de alto volumen de tránsito…»* y *«**salvo en cruces de canales de riego**…»*. Impresa 72 / PDF 75 | `constantes_normativas.DIAMETRO_MIN_AMBITO` y las dos `CondicionAplicacion` de `MC_HHD.4.1.1.3.4a` ya llevan las dos condiciones. **La v8 no.** Un lector de la v8 aplicaría el piso a la Familia C |
 | **D-2** | **Sec. 3.1**, bajo «Reglas duras **[N]**» | *«Suelo de fundación deficiente → orientar a marco de concreto»* | *«**Generalmente, se recomienda** emplear este tipo de alcantarillas cuando se tiene la presencia de suelos de fundación de mala calidad.»* — **recomendación atenuada**, impresa 72 / PDF 75. Y la fuente **no define «mala calidad»** | El párrafo **no está transcrito en el repositorio**: `MC_HHD.4.1.1.3.4a` sólo transcribe el del 0.90 m. Es `NOR-MEM-01` en su forma exacta: una regla dura escrita encima de un «se recomienda» |
-| **D-3** | **Sec. 3.1** y **fila V6 de la Fase 5** | *«Con palizada: sección única mayor, no múltiple»* como regla dura, y la fila V6 con ancla **«[N]» y NINGÚN numeral** | *«…**recomendándose** utilizar obras con mayor sección transversal libre, sin subdivisiones.»* — **recomendación**, impresa 72 / PDF 75 | Un `[N]` sin numeral es lo que `CLAUDE.md` prohíbe de entrada. Y `fundamentos.SIN_FUNDAMENTO["F5.V6"]` remite al num. **4.1.1.3.7 a)**, que es la recomendación de TMC Ø48" en selva alta: **otro numeral** |
+| **D-3** | **Sec. 3.1** y **fila V6 de la Fase 5** | *«Con palizada: sección única mayor, no múltiple»* como regla dura, y la fila V6 con ancla **«[N]» y NINGÚN numeral** | La frase que más se le parece dice *«…**recomendándose** utilizar obras con mayor sección transversal libre, sin subdivisiones»* (impresa 72 / PDF 75): **recomendación, no exigencia**. Y el requisito lo sostienen **dos** párrafos de **dos** numerales distintos — ése, y el de 4.1.1.3.7 a) que habla de *«alcantarillas de mayor sección hidráulica»* (impresa 78 / PDF 81) | Un `[N]` sin numeral es lo que `CLAUDE.md` prohíbe de entrada. **La v8 no nombra ninguno de los dos.** Lo que falta transcribir es el de la 72, que es el único que habla de **subdivisiones**, o sea de multicelda |
 | **D-4** | **Sec. 3.4**, «Matriz de decisión de material» | *«Concreto reforzado · Vacíos normativos: **Ninguno.** n y velocidad máxima en Tablas Nº 09 y Nº 10…»* | Cierto para la sección **circular** y **falso para el marco**: la Tabla Nº 09 no tiene fila de sección rectangular (§15.3.2). La velocidad de la Tabla Nº 10 sí sirve, porque clasifica por revestimiento | El criterio nuevo `n_manning_cajon` **[N→]** es la prueba: si el concreto no tuviera vacíos, no haría falta |
-| **D-5** | **Fase 4, §4.1**, tabla «Tabla Nº 09 — Manning» | Lista cuatro filas y ninguna nota sobre el ámbito de la tabla | El grupo que gobierna se titula *«A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO»* y **cubre al marco**; lo que falta es la **fila**. La v8 no distingue una cosa de la otra | `constantes_normativas.TABLA_09_GRUPO` ya declara que el grupo A es *«el único grupo de la tabla que describe una alcantarilla»*. La v8 no lo recoge |
+| **D-5** | **Fase 4, §4.1**, tabla «Tabla Nº 09 — Manning» | Lista cuatro filas y ninguna nota sobre el ámbito de la tabla | El grupo que gobierna se titula *«A.CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO»* y **cubre al marco**; lo que falta es la **fila**. La v8 no distingue una cosa de la otra | `constantes_normativas.TABLA_09_GRUPO` ya declara que el grupo A es *«el único grupo de la tabla que describe una alcantarilla»*. La v8 no lo recoge |
 | **D-6** | **todo el documento** | La **Lámina Nº 03 no se menciona ni una vez** en la v8, ni en su Fase 3, ni en su Fase 6, ni en su Anexo B | El Manual trae, impresa 209 / PDF 212, una figura titulada **«ALCANTARILLA TIPO MARCO DE CONCRETO EN CRUCE DE CANAL DE RIEGO»**: el respaldo gráfico normativo del tipo de estructura de la Familia C | Hoy no está citada **en ninguna parte del repositorio**. Ver §15.4 para la forma en que entra |
 | **D-7** | **Sec. 2.3**, Familia C | Enuncia el requisito *«No puede alterar la rasante hidráulica ni el borde libre del canal»* **sin etiqueta, sin numeral y sin verificación asignada**, mientras que a la Familia A sí le da conjunto de aceptación (V1+V2+V4+V5) | El requisito no sale de ningún numeral del Manual: se apoyaría en la Ley 29338 y la DG-2018, **fuentes ausentes** del registro | `M1_clasificacion.PERFILES[Familia.C].verificaciones_aceptacion = None`, con el comentario *«Sec. 2.3 no declara conjunto propio»*. Es el hueco que §13 llama **VC1** y lo que obliga a la declaración de §15.6 |
 | **D-8** | **Fila V7 de la Fase 5** | Enumera cuatro filas de la Tabla 2.4.5.3.1-2 —«Estructura rígida enterrada» 1.30/0.90, «Alcantarillas termoplásticas» 1.30/0.90, flexibles «Entre otros» 1.95/0.90 y «Muros y estribos de retención» 1.35/1.00— y **omite «Pórticos rígidos» (1.35/0.90)** | Es la fila que la regla vinculante **#8** asigna al cajón: la v8 desglosa la tabla por tipo de estructura y deja fuera precisamente el tipo de la Familia C | `constantes_normativas.TABLA_GAMMA_P_FILAS` **sí la tiene** (`EV_porticos_rigidos`, 1.35/0.90). El que no la contempla es el desglose de la v8 |
@@ -1933,7 +2010,9 @@ ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
 | **R-2** | `citas` / `tablas` | **No existe cita del num. 4.1.1.3.7 d)**, que es la única exigencia sin número que acota la sección del cajón tras levantarse el piso de 0.90 m | **C2** — `MC_HHD.4.1.1.3.7d` |
 | **R-3** | `constantes_normativas.TABLA_09_FILAS` | Transcribe cuatro filas del grupo A. **`afinado` no está**, y es la única fila del ítem sin forma en el rótulo: la candidata a la analogía del cajón | **C2**, y **C5** elige y declara cuál toma (§15.3.2) |
 | **R-4** | `constantes_normativas.TABLA_09_FILAS` | Sus valores de A.2 son la lectura **corregida** del corrimiento y el bloque **no remite a `DIS-MCHHD-T09-A2-DESPLAZADA`**, que está declarada en `normativa/tablas.py`. Quien lea sólo `constantes_normativas` y vaya a la página encuentra otros tres números | **C2** — una línea de remisión; la discrepancia ya existe y **no hay que volver a demostrarla** |
-| **R-5** | `fundamentos.SIN_FUNDAMENTO["F5.V6"]` | Remite al numeral equivocado (ver **D-3**) | **C5** |
+| ~~**R-5**~~ | ~~`SIN_FUNDAMENTO` de `F5.V6`~~ | **RETIRADO por la auditoría adversarial (§15.10, punto 7).** CN afirmó que la ficha remitía al numeral equivocado, y es falso por partida doble: el num. **4.1.1.3.7 a) se titula literalmente «Material sólido de arrastre»** —el mismo nombre que V6— y contiene *«alcantarillas de mayor sección hidráulica»*; y la cláusula prospectiva de la ficha apunta al Ø48" **para lo que esa cláusula dice**, que es un diámetro mínimo por zona. **La ficha está bien y no se toca.** *(De paso: `SIN_FUNDAMENTO` es una `Tuple[Tuple[str,str,str], ...]`, no un dict — la notación con corchetes que CN usó sería un `TypeError`.)* | — |
+| **R-9** | `M6_proteccion.proteccion_salida` (docstring) | Afirma que `longitud_proteccion_salida` está *«hoy sin valor — la llamada se detiene con `CriterioPendienteError`»*. **Medido: vale `5.0` con `sensibilidad=(3.0, 8.0)`.** Docstring que describe un estado que dejó de ser cierto | fuera del alcance de este plan; se registra aquí porque salió al comprobar que la Fase 6 no se toca |
+| **R-10** | `normativa/tablas.py::T_HDS5_C2.alcance` | Es `Acotada` con la razón *«…el catálogo de conductos de la Sec. 3.2 **no ofrece sección cajón**: ninguna de esas filas puede aplicarse a un punto de este corredor»*. **C5 destruye esa premisa** en cuanto M2 devuelva un candidato de marco. Es el antipatrón que §12 enumera: *«No dejar un `Acotada` describiendo un alcance que ya no es el suyo»* | **C2** transcribe las once filas de «Box, Reinforced Concrete»; **C5** amplía la `Acotada` y acopla `ke_entrada` a `embocadura_cajon` |
 | **R-6** | `variables_entrada._Columna.criterio_destino` | Es `Optional[str]`, un solo destino. Un segundo consumidor de `sucs_fundacion` obliga a decidir tupla o cambio de destino: **es cambio de esquema** | **C6**, no C5 (§15.5) |
 | **R-7** | `normativa/discrepancias.py` | El cuerpo del Manual describe **mal su propia Lámina Nº 03**: dice *«se aprecia secciones típicas de alcantarillas tipo marco de concreto»* (impresa 73) y la **primera de sus tres figuras es tubería metálica corrugada** (impresa 209). Contradicción **interna de la fuente primaria**, no contra la v8 | **C2** — una `Discrepancia` de estado `ABIERTA`, para que un revisor que cuente las figuras no crea que la cita está mal puesta |
 | **R-8** | `criterios_adoptados['factores_carga_aashto']` | Su comentario justifica la fila del tubo diciendo *«No es "Pórticos rígidos" … la Familia C, de marco o multicelda, sale sin candidatos»*: **describe un estado que C5 deja de ser cierto**. Falta además la clave del cajón | **C5** — junto con el epígrafe «Familia C queda sin candidatos» de `M2_material`, que tiene el mismo problema y ya está en el prompt de C5 |
@@ -1960,7 +2039,148 @@ regla vinculante mal fundada se cita literal en una memoria y ahí ya es una cit
    corre la batería general sobre un punto cuyo **único requisito propio queda sin evaluar**.
    La declaración de §15.6.2 está redactada sobre esta lectura, no sobre la del prompt.
 
+4. **§6 necesita una regla vinculante más, y la trae la auditoría (§15.10, punto 1).** Ninguna
+   de las diez reglas cubre `k_e`. Propuesta de **#11**, con la forma de las otras: *«El `k_e` de
+   la Tabla C.2 del HDS-5 tiene familia propia para el cajón. El 0.5 que el proyecto usa sale de
+   la fila `Square-edge` del bloque «Pipe, Concrete»; el bloque «Box, Reinforced Concrete» tiene
+   once filas y va de 0.4 a 0.7 según las aletas. `ke_entrada` deja de ser un valor fijo y queda
+   acoplado a `embocadura_cajon`, y el `Acotada` de `T_HDS5_C2` — cuya razón es que el catálogo
+   no ofrece sección cajón — hay que ampliarlo.»*
+5. **§10-CN punto 1 pedía «fase por fase, paso por paso, qué numeral lo sostiene», y esa pregunta
+   sola no basta.** `ke_entrada` tiene numeral, tiene fuente y tiene etiqueta correcta, y aun así
+   cambia con la forma. La pregunta que hay que añadir, y que §15.1 ahora lleva, es: **¿la TABLA
+   de la que sale el valor enumera sus filas por algo que el marco no es?** Con la primera
+   pregunta sola, `ke_entrada` pasa desapercibido; con la segunda, salta a la primera lectura.
+
 **Reglas que la verificación CONFIRMA sin matices, y conviene decirlo tan explícitamente como
 las correcciones:** la **#1** (el cajón no hereda el piso de 0.90 m: la excepción es expresa y
 está en la misma oración) y la **#7** (la Tabla Nº 10 clasifica por `TIPO DE REVESTIMIENTO`;
 **no** se abre `v_max_cajon`).
+
+### 15.10 Lo que la auditoría adversarial encontró
+
+`auditor-adversarial` corrió sobre esta misma sección con el encargo de refutarla en ocho
+frentes. **Encontró una refutación y cuatro ajustes**, y los cinco están ya incorporados
+arriba. Se deja el registro entero —incluido lo que confirmó y lo que le refuté a él— porque
+un informe de auditoría del que sólo se conserva lo cómodo no es una auditoría.
+
+| # | Frente | Veredicto |
+|---|---|---|
+| 1 | La regla de lectura de §15.1 | **REFUTADO** |
+| 2 | Las cuatro afirmaciones sobre la Tabla Nº 09 | CONFIRMADO, con una salvedad de transcripción |
+| 3 | La prohibición de tomar el n del grupo B | CONFIRMADO |
+| 4 | Las tres mediciones que deciden el vehículo | CONFIRMADO en las tres; **AJUSTADO** en tres detalles |
+| 5 | Los ocho `Fundamento` | verbos e ids correctos; **AJUSTADO** en tres |
+| 6 | «La Fase 6 no se toca» | CONFIRMADO |
+| 7 | Los defectos D-1…D-8 | seis confirmados; **una mitad REFUTADA** |
+| 8 | La dirección del conservadurismo de `afinado` | conclusión confirmada; **mecanismo AJUSTADO** |
+
+#### 1 · La refutación, y es la que valía la sesión entera
+
+**CN escribió que el vacío se abre en «tres, y sólo tres» tablas. Son cuatro.** La que faltaba
+es la **Tabla C.2 del HDS-5**, de donde sale `k_e`, y el caso es idéntico al de la Tabla A.1
+que CN sí resolvió: la tabla tiene una familia **«Box, Reinforced Concrete»** aparte de la
+**«Pipe, Concrete»** de la que el proyecto toma su 0.5.
+
+Lo que hace grave el descuido no es la omisión, es la **asimetría**: CN razonó correctamente
+sobre la Tabla A.1 —«hay cartas de cajón, no es un vacío, es otra fila de la misma tabla»— y
+**no aplicó el mismo razonamiento a la Tabla C.2**, que tiene `alcance=Acotada` por exactamente
+la misma razón y la consume la misma función, `M4.control_salida`.
+
+Comprobado sobre el registro construido, no sobre el PDF:
+
+- `criterios_adoptados['ke_entrada']` → `valor=0.5`, **`sensibilidad=None`**, `etiqueta="C"`,
+  `resolucion=DeTabla(tablas=('HDS5_3ED.TC2',), fila_id='concreto_headwall_square_edge')`.
+- `registro.tabla("HDS5_3ED.TC2").filas` → **quince filas, todas de `Pipe, Concrete` o de
+  `Pipe. or Pipe-Arch. Corrugated Metal`**. Ninguna de cajón.
+- `…TC2.alcance.que_queda_fuera` → *«"Box, Reinforced Concrete": Headwall parallel to
+  embankment (no wingwalls), Wingwalls at 30° to 75° to barrel, Wingwall at 10° to 25° to
+  barrel y Wingwalls parallel (extension of sides), con sus sub-bordes»*.
+
+**Por qué importa el número.** `H = (1 + k_e + 19.63·n²L/R^(4/3))·V²/2g`. Pasar de 0.5 a 0.7
+—la fila de aletas paralelas— sube `H` en `0.2·V²/2g`: con V = 3 m/s son **0.092 m** de HW que
+el cálculo no vería, contra V4 y contra el tamizado de 7.A. Es el mismo género y el mismo orden
+de magnitud que el 0.18 m que `F4.FORMA_HDS5` invoca como *«exactamente la forma de MAT-D10»*.
+Y con `sensibilidad=None` y etiqueta `[C]`, **nada se detiene**: un punto de Familia C tomaría
+el `k_e` de un tubo en silencio, que es la regla nuclear del proyecto.
+
+**Qué cambió arriba:** §15.1 punto 3 pasa a enumerar cuatro tablas; §15.2.3 gana la fila
+corregida del control de salida y la nota de `T_HDS5_C2`; el recuento de §15.2 dice «un paso
+del Manual MTC cambia de etiqueta, **y un segundo cambia de fila sin cambiarla**»; §15.8 gana
+**R-10**; y §15.9 propone la **regla vinculante #11** para §6.
+
+#### 2, 3 y 6 · Lo que confirmó
+
+- **Tabla Nº 09**: las cuatro afirmaciones, leídas por coordenadas de línea base. Siete filas
+  hoja, `afinado` es una sola palabra en la columna de rótulos, el grupo A cubre al marco por su
+  título, y la lectura corregida de `afinado` es 0.011 / 0.012 / 0.014. Corroboró además por una
+  vía interna que CN no usó: `T09.alcance.que_queda_fuera` dice «las **seis** subfilas restantes
+  de "a. Concreto"», y 6 + la transcrita = 7. **Salvedad aceptada:** el PDF imprime
+  `A.CONDUCTO` **sin espacio** tras el punto; corregido en las tres ocurrencias.
+- **Grupo B**: la prohibición no la inventa §15, ya está en `TABLA_09_GRUPO` y en
+  `T09.alcance.razon`.
+- **Fase 6**: leyó el módulo entero y confirmó que sus dos funciones toman sólo `V`. Añadió un
+  matiz correcto —«es cierto del código, no del resultado»: `V` sale de la rama n_mín y cambia
+  con la sección— y, de paso, encontró **R-9**.
+
+#### 4 y 5 · Los ajustes, todos aceptados
+
+| Ajuste | Qué se corrigió |
+|---|---|
+| `cli._fase8_diferida` **no existe**; es `cli._diferir_fase_8` | §15.6.3. Es la regla 4 de `CLAUDE.md`: anclar por nombre de símbolo |
+| El `mensaje` del `Bloqueo` entra por `_esc()` **a una celda de tabla** | §15.6.3 gana el párrafo de cómo se le da forma, con las dos salidas posibles |
+| La comprobación de aceptación **no ejercita el segundo vehículo**: C-01 se detiene antes de V1 y V4b | §15.6.3 pasa a tener **dos** comprobaciones |
+| «Cinco citas no existen» y la tabla tenía seis | corregido — y con las de la Tabla C.2 y la partición de `#MARCO` son **ocho** |
+| `MC_HHD.4.1.1.3.4a#MARCO` llevaba **dos caracteres en un `Cita.caracter` escalar** | partido en `#NIVELES` (`PERMISO`) y `#MARCO` (`RECOMENDACION`). Era el defecto que §15.3.1 denuncia, cometido dos páginas después |
+| Tres `por_qué` **transcribían texto literal a mano**, y ninguno de los 17 vigentes lo hace | reescritos en paráfrasis. Es la regla de `CLAUDE.md` que §15 se autoimpone en su propio encabezado |
+
+#### 7 · Lo que le refuté al auditor, y lo que él me refutó a mí
+
+**Me refutó, y tiene razón: la segunda mitad de D-3 y el hallazgo R-5 eran falsos.** CN escribió
+que la ficha de `F5.V6` remitía al numeral equivocado. No es así: el num. **4.1.1.3.7 a) se
+titula «Material sólido de arrastre»** —el mismo nombre que la fila V6; título en la pág.
+impresa 77 / PDF 80— y su pág. impresa **78 / PDF 81** dice *«…mediante la construcción de
+alcantarillas de mayor sección hidráulica acorde al estudio puntualizado de la cuenca de
+aporte»*. La ficha del
+repositorio está bien y **R-5 queda retirado**; D-3 se reescribe para decir lo que sí es cierto:
+que la v8 pone `[N]` **sin numeral ninguno**, y que el requisito lo sostienen **dos** párrafos de
+dos numerales, de los cuales el único que habla de **subdivisiones** —el de la impresa 72— no
+está transcrito.
+
+**Y una corrección menor suya que también acepto:** `SIN_FUNDAMENTO` es una
+`Tuple[Tuple[str, str, str], ...]`, no un dict; la notación `SIN_FUNDAMENTO["F5.V6"]` que CN usó
+sería un `TypeError`.
+
+**Lo que NO acepto, y queda dicho para que nadie lo reabra:** el auditor apunta que §15 escribe
+«Cartas 8–12» y que serían 8–13. **CN no verificó ese dato y lo declara así en dos sitios**: su
+fuente es `normas/hif12026.pdf`, no el Manual MTC, y §15 lo toma de la regla vinculante #2 de §6
+marcándolo como no verificado por esta sesión. **La numeración de cartas la cierra C3**, contra
+las ecs. (A.1) y (A.2), que es donde el plan la puso.
+
+#### 8 · El conservadurismo: conclusión confirmada, mecanismo mal explicado
+
+El auditor recomputó a mano y obtuvo los mismos números que CN. **La conclusión se sostiene**:
+`afinado` es más exigente para el tirante y más laxo para la velocidad y el d₅₀.
+
+Pero encontró dos defectos en cómo estaba explicado, y los dos son de los que llevan a un lector
+de la memoria a la conclusión contraria:
+
+1. CN escribió que la regla de doble n *«mueve las dos ramas en sentidos opuestos»*. **Falso:
+   las dos ramas se mueven en el mismo sentido** —con n mayor los dos tirantes suben y las dos
+   velocidades bajan—. Lo que cambia de signo es **el sentido de la exigencia de cada
+   verificación**.
+2. CN enumeró tres verificaciones afectadas y **son cuatro**: faltaba **V2**, que sale de la rama
+   n_máx (`MANNING`: *«El piso de velocidad (V2) NO sale de n_min: sale de n_max»*) y con
+   `afinado` también se aprieta.
+
+El aviso de §15.3.2 está reescrito con la tabla de los cuatro números y las cuatro
+verificaciones.
+
+---
+
+**Estado de §15 tras la auditoría:** una refutación cerrada con una regla vinculante nueva
+propuesta y dos entradas de tracker (`R-10`, y la #11 de §6), cuatro ajustes aplicados, un
+hallazgo propio retirado por falso, y ninguna afirmación pendiente de resolver. **El criterio
+de salida de §10-CN —que ningún paso quede como «se aplica igual» sin numeral o sin analogía
+declarada— se cumple sobre los 42 pasos**, y la lección que la auditoría añade es que ese
+criterio, solo, no basta: hay que preguntar además de qué tabla sale cada valor.
