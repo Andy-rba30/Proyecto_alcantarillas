@@ -2573,6 +2573,7 @@ de qué se corrió, con qué y con qué resultado medido.
 | **CN** | `e2da067` · PR #2, fusionado en `d469409` | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §15: tabla numeral-por-paso, ocho `Fundamento`, la declaración del hueco de aceptación, 8 defectos contra la v8 y 10 huecos del repo (`R-5` retirado por la auditoría: 9 vivos) | nada de CN: lo que dejó propuesto lo aplicó CP |
 | **CP** | `53e431a` (consolidación) · `bb8cdfa` (docstrings) · `a6d6543` (prompts) · PR #3 y #4 | 1536 p / 2 s, «PyMuPDF sí / Tk no» | Consolidación en §4.5, §6, §8, §9, §10, §11 y §12; los cuatro puntos de prompt de §16.2; y las tres correcciones de código de `R-9` | los 8 defectos contra la v8 (`D-1`…`D-8`): son de una **v9** |
 | **C0** | medida sobre `origin/main` **`4f6cf69`** | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §2-bis (censo de 59 símbolos), §14 (las dos decisiones de alcance), la línea base de `tests/linea_base_familia_c/`, el punto 5 de C1 y §16.3 | el anclaje por línea del manifiesto: **se mide, no se arregla** (§16.3) |
+| **C1** | `56677a4` · `b535176` · `a25ce7a` · `f99764a` (+ el commit de documentación que trae esta bitácora) | 1536 p / 2 s, «PyMuPDF sí / Tk no» | La abstracción `Seccion` y su única implementación `SeccionCircular`; `Geometria` lleva la sección y el `llenado` en vez de `D` y `theta`; M3 y M4 dejan de saber la forma del barril; manifiesto regenerado (10 localizadores) | cuatro anotaciones de §16.4, ninguna corregida: C1 refactoriza y no corrige |
 
 **No hay archivo de parche.** El parche v2 se aplicó y se retiró del repositorio, con el
 precedente que `docs/hoja_de_ruta_correcciones_v12.md` fija en su primera línea para los
@@ -2665,3 +2666,63 @@ rojo de `test_manifiesto_citas.py` no se puede atribuir — puede ser el anclaje
 puede ser un número que se movió, y el criterio de salida de C1 depende entero de poder
 separar esas dos cosas. **CP lo topó con tres ediciones de docstring**: rompió cuatro tests
 y hubo que regenerar 12 localizadores.
+### 16.4 C1 — lo que se midió, lo que se decidió y lo que quedó anotado
+
+**El criterio de salida se cumplió, y no de vista.** Diff contra la línea base normalizada
+de C0, por su propio `regenerar.sh`: **vacío**, en la salida de la CLI y en el HTML de la
+memoria. `tests/fixtures/casos_patron.py` verde **sin tocar un solo valor esperado**. Par
+de la suite `1536 passed / 2 skipped`, `collected 1538`, configuración «PyMuPDF sí /
+ventana Tk no» — el par de C0, sin mover.
+
+**La traza de memoria se comparó campo por campo, no de vista** (punto 6 del prompt).
+Sonda propia: los cinco `PasoDeMemoria` que emite `M4_control._pasos_hidraulicos` sobre
+una malla de 5 diámetros × 4 caudales × 3 pendientes × 3 TW — **144 combinaciones, 720
+pasos** —, volcando de cada uno `codigo`, `fase`, `que`, `por_que`, `formula`,
+`formula_cita_id`, `fundamento_id`, `nota_del_proyecto`, el `Umbral` entero con su
+`cita_id` y su `caracter`, y **cada `Magnitud` con su valor en hexadecimal exacto**
+(`float.hex`), contra un *worktree* de `8d5e54b`. Resultado: **12 564 líneas idénticas,
+`cmp` limpio**. De los 720 pasos, 144 llevan `Umbral` real —el de `h_o`, `HDS5_3ED.3.3.3#HO_1_2D`—
+y también coincide. El hexadecimal importa: `pytest.approx` habría aprobado una deriva de
+1e-12, que es exactamente la que este refactor podía introducir.
+
+**Por qué no se movió nada, en una frase:** cada sustitución es un renombre con el mismo
+árbol de expresión. `SeccionCircular.altura` es `return self.D`, y `_area_en_theta`,
+`_perimetro_en_theta`, `area_llena` y `radio_hidraulico_lleno` conservan operandos y
+paréntesis de las fórmulas que tenían M3 y M4. Brent recibe la misma `f` y el mismo
+bracket, luego la misma sucesión de iterados y la misma raíz.
+
+#### Las cuatro anotaciones (punto 9: se anota y se sigue)
+
+| # | Qué | Dónde se ve | Por qué no se corrige aquí |
+|---|---|---|---|
+| **A-1** | `M4_control.perdida_carga` está en la lista de migración del punto 3 del prompt y **no recibe ningún diámetro**: le llega la `R` ya calculada. No se migró | `M4_control.perdida_carga(V, R, n, L, ke)` | No hay nada que migrar. La lista del prompt quedó **desactualizada respecto del propio §2-bis de C0**, que ya lo había medido |
+| **A-2** | §4.1 y el punto 2 del prompt dicen que `y_sobre_D` «lo consumen `M5.v1_borde_libre`, `M11._tabla_diseno` y **las dos plantillas de `src/plantillas/`**». Medido: **0 apariciones** en las dos plantillas, y `M5.v1_borde_libre` **no consume la propiedad** — recalcula `resultado.y_normal / D` por su cuenta | `src/plantillas/memoria_perfil.html`, `src/plantillas/memoria_alcantarillas.html`, `M5_verificaciones.v1_borde_libre:447` | El nombre **se conservó igual**, que era la instrucción; lo inexacto es la razón, no la orden. Los consumidores reales de `Geometria.y_sobre_D` son **los tests del motor**; al reporte el número viaja por `ResultadoPunto.y_sobre_D`, que es otra expresión |
+| **A-3** | El mismo `h_o` geométrico está escrito **dos veces**: `control_salida` lo calcula en `h_o_geometrico` y `_pasos_hidraulicos` lo vuelve a calcular para su `Magnitud("(y_c + D)/2", ...)`. `ControlSalida` no lo expone, y por eso el emisor lo repite | `M4_control.control_salida` (`h_o_geometrico`) y `M4_control._pasos_hidraulicos` (`Magnitud("(y_c + D)/2", ...)`) | **Es anterior a C1** —ya estaba escrito dos veces con `D` suelto— y arreglarlo movería la traza. Es la regla «M11 no hace aritmética sobre magnitudes» incumplida **del lado del emisor**: dos expresiones que hay que editar juntas para siempre, y solo una bajo los tests numéricos |
+| **A-4** | `DatoInvalidoError.campo` **se imprime** —M11 lo pinta en la memoria y la CLI lo publica en el JSON—, de modo que renombrarlo a `"altura"` habría sido mover salida. C1b lo había renombrado en M3; **C1c lo devolvió a `"D"`** | `M3_hidraulica._validar_parametros`, `M4_control._validar_Q_D` | Renombrarlo es una **corrección de vocabulario**, y C1 no corrige. Cómo se nombra ese dato cuando la sección deje de ser circular lo decide **C4**, que verá las dos formas a la vez |
+
+#### El arma cargada que C1 deja, medida y documentada en el código
+
+`Seccion` expone **dos parametrizaciones** y no son intercambiables. La mitad por tirante
+—`area(y)`, `perimetro(y)`, `ancho_superficial(y)`— llega al resultado pasando por
+`theta_desde_tirante(y)`, inversa **algebraica** de `_tirante_en_theta` pero **no** su
+inversa en punto flotante. Medido sobre **15 992 puntos** (8 diámetros de 0.30 a 3.00 m ×
+1999 ángulos sobre `bracket_llenado()`): divergencia relativa máxima **A 5.4e-12,
+P 4.7e-12, T 9.3e-11**, toda en el diámetro más chico y cerca de los extremos; **en el
+centro del rango las dos vías coinciden bit a bit**, de modo que una comprobación puntual
+las aprueba.
+
+Hoy esa mitad **no tiene ningún consumidor** —existe porque es el lenguaje de la Sec. 4.1 y
+porque la rectangular la usará directamente—, y ahí está el riesgo: tiene los nombres
+obvios. Quien sustituya `g.A` por `seccion.area(g.y)` mete 5e-12 en `A^3/T - Q^2/g` del
+residuo crítico y tumba los `rel=1e-12` de la suite con un fallo que **se lee como un error
+de hidráulica**. El aviso, con la medición, está escrito en el docstring de
+`modelos.Seccion`, que es donde lo va a leer quien esté a punto de hacerlo.
+
+#### Sobre la cláusula normativa de §9-bis
+
+C1 **no tocó ni creó ningún valor `[N]` ni `[N→]`**, no aplicó ningún procedimiento al
+marco, no añadió ninguna función de cálculo y no declaró ningún criterio nuevo: es un
+refactor de tipos cuyo criterio de éxito es que la salida no se mueva, y no se movió. Por
+eso no hubo cita que pasar por `verificador-normativo`, y por eso **no hay defecto nuevo
+contra la v8 que sumar a §15.8**: los ocho (`D-1`…`D-8`) siguen siendo los de CN, sin
+alta ni baja.

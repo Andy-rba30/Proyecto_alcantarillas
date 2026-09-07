@@ -752,6 +752,26 @@ class Seccion(Protocol):
     no es un refactor, es un cambio de metodo numerico. La seccion expone su
     propio parametro para que el solver no tenga que elegir uno, y asi M3 y M4
     quedan ciegos a la forma SIN mover un digito.
+
+    LAS DOS MITADES NO SON INTERCAMBIABLES, Y ESTE ES EL AVISO. En la
+    circular, `area(y)` / `perimetro(y)` / `ancho_superficial(y)` llegan al
+    resultado pasando por `theta_desde_tirante(y)`, que es la inversa
+    ALGEBRAICA de `_tirante_en_theta` pero no su inversa en punto flotante:
+    el viaje de ida y vuelta pierde bits. MEDIDO en C1 sobre 15992 puntos --
+    ocho diametros de 0.30 a 3.00 m por 1999 angulos repartidos sobre
+    `bracket_llenado()` --, la divergencia relativa maxima entre las dos vias
+    es A: 5.4e-12, P: 4.7e-12 y T: 9.3e-11, y las tres se dan en el diametro
+    mas chico y cerca de los extremos del intervalo; en el centro del rango
+    las dos vias coinciden bit a bit, de modo que una comprobacion puntual las
+    aprueba.
+
+    Consecuencia practica: el valor que ya viene en un `Geometria` -- `g.A`,
+    `g.P`, `g.T` -- NO se recalcula con estos metodos. Sustituir `g.A` por
+    `seccion.area(g.y)` mete 5e-12 en `A^3/T - Q^2/g` del residuo critico,
+    corre la raiz de Brent y tumba los `rel=1e-12` de la suite con un fallo
+    que se lee como un error de hidraulica y no como lo que es. Hoy la mitad
+    por tirante NO TIENE NINGUN CONSUMIDOR: existe porque es el lenguaje de
+    la Sec. 4.1 y porque la rectangular la usara directamente.
     """
 
     @property
