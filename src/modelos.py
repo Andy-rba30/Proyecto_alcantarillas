@@ -2073,15 +2073,20 @@ class FactoresFlotacion:
     el proyecto uso durante un tiempo no era ninguna de ellas: mezclaba el
     maximo de una con el minimo de otra (MAT-D8, NOR-PUE-03).
 
-    HASTA DONDE LLEGA HOY ESE CAMPO, dicho con exactitud: llega a este objeto
-    y ahi se queda. `M5_verificaciones.v7_flotacion` arma la `Verificacion` de
-    V7 con el codigo, el numeral y la clave del criterio, y no con la fila:
-    la memoria NO imprime hoy de que fila salio el gamma de V7. Lo que si
-    imprime es el criterio 'factores_carga_aashto' entero en el bloque de
-    criterios usados, y ese criterio nombra la fila de cada estructura, de
-    modo que el dato esta en la memoria por esa via y no por esta. Llevarlo
-    tambien a la fila de V7 pide un campo mas en `Verificacion` y su
-    renderizado en M11, y es trabajo de la fase de reporte, no de esta.
+    HASTA DONDE LLEGA HOY ESE CAMPO: hasta la memoria, y desde C7. Lo que
+    esta clausula decia hasta entonces --- «llega a este objeto y ahi se
+    queda... la memoria NO imprime hoy de que fila salio el gamma de V7» ---
+    era cierto y ya no lo es. `M5.v7_flotacion` lo publica en el `valor` de su
+    `EleccionDeProyecto`, junto al gamma que sale de esa fila y con las SIETE
+    filas de EV de la tabla en `entre`.
+
+    Y LA SALIDA QUE ESA CLAUSULA DABA POR NECESARIA NO LO ERA, que es lo que
+    conviene no repetir: decia que llevar la fila a la memoria «pide un campo
+    mas en `Verificacion` y su renderizado en M11». No pidio ninguno de los
+    dos. La procedencia de un valor elegido ya tenia sitio --- la R1, que
+    `EleccionDeProyecto` implementa y `M11._elecciones_del_paso` imprime ---
+    y lo que faltaba era usarlo. Un campo nuevo en `Verificacion` habria sido
+    un segundo canal para lo que ya tenia el suyo.
     """
     gamma_DC: float
     gamma_EV: float
@@ -2333,6 +2338,19 @@ class EleccionDeProyecto:
     de catalogo no tiene numeral, y ponerle uno seria la cita falsa que
     NOR-PRO-01 y NOR-PRO-02 retiraron. Por eso el vacio esta permitido aqui y
     prohibido en `Umbral`.
+
+    `fundamento_id` ES OPCIONAL Y NO DEBERIA SERLO, y conviene decir por que
+    esta a medias en vez de dejarlo como si fuera una eleccion de diseno. La
+    §4.5 de la constitucion prohibe escribir el `por_que` en el modulo que
+    calcula -- sale de un `Fundamento`, cuyo verbo el registro contrasta
+    contra el `caracter` de sus citas --, y `PasoDeMemoria` lo cumple porque
+    `paso()` es su unica puerta. `EleccionDeProyecto` NO lo cumple: sus
+    `por_que` se escriben a mano en los modulos, uno por uno, y ninguno pasa
+    por T11. C7 abre la puerta que faltaba -- `eleccion()`, aqui al lado -- y
+    la usa en el unico sitio donde el `por_que` estaba diciendo algo que la
+    fuente no sostiene (la fila de gamma_p de V7, F5.V7_FILA). Migrar los
+    demas es trabajo aparte y no de esta sesion; mientras tanto el campo vacio
+    es la marca legible de cuales faltan.
     """
 
     que_se_adopto: str
@@ -2342,6 +2360,7 @@ class EleccionDeProyecto:
     por_que: str
     cita_id: str = ""
     clave_criterio: str = ""
+    fundamento_id: str = ""
 
     def __post_init__(self) -> None:
         if not str(self.por_que).strip():
@@ -2464,6 +2483,31 @@ def paso(fundamento_id: str, **kw: Any) -> PasoDeMemoria:
     kw.setdefault("fase", f.fase)
     return PasoDeMemoria(por_que=f.por_que, fundamento_id=f.id,
                          citas_textuales=citas, **kw)
+
+
+def eleccion(fundamento_id: str, **kw: Any) -> EleccionDeProyecto:
+    """
+    Construye una `EleccionDeProyecto` trayendo el `por_que` del registro, que
+    es lo mismo que `paso()` hace con un `PasoDeMemoria` y por la misma razon.
+
+    POR QUE HACIA FALTA, con el caso que lo abrio delante: el `por_que` de la
+    eleccion de fila de gamma_p de V7 estaba escrito a mano en
+    `M5.v7_flotacion` y decia, en mayusculas, que la tabla es normativa y que
+    que fila describe a la obra no lo es. Eso es cierto y es exactamente lo
+    que hay que decir -- pero escrito suelto no lo comprueba nadie: nada ataba
+    esa frase a un verbo, ni el verbo a las citas que lo sostienen. Puesto en
+    un `Fundamento`, T11 contrasta el verbo contra el `caracter` de las citas
+    y el censo de `test_memoria_sustentada` comprueba que no quede huerfano.
+
+    NO ES UN ATAJO PARA REPETIR EL `por_que` DEL PASO. Un `Fundamento` propio
+    para la eleccion es lo contrario de eso: separa la afirmacion fuerte del
+    paso -- «hay que verificar la flotacion», EXIGENCIA de tres numerales --
+    de la debil de la eleccion -- «esta obra es un portico rigido», que no lo
+    dice ninguna fuente --, que es lo que NOR-HID-04 pide y lo que una sola
+    cadena de texto no puede hacer.
+    """
+    f = _registro_normativo().fundamento(fundamento_id)
+    return EleccionDeProyecto(por_que=f.por_que, fundamento_id=f.id, **kw)
 
 
 # ===========================================================================

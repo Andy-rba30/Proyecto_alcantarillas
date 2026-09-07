@@ -391,6 +391,20 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
     import constantes_normativas as cn
 
     emitidos = {p.fundamento_id for p in _pasos_de(informe)}
+    # Y los de las ELECCIONES que viajan dentro de un paso, que desde C7 son
+    # una segunda clase de consumidor y no un paso mas. Un `Fundamento` de
+    # eleccion no puede emitir paso propio -- lo que se elige no se verifica
+    # contra un umbral --, pero su `por_que` llega al revisor igual, por
+    # `M11._elecciones_del_paso`, y bajo `class="interpretacion"`, que es
+    # justamente lo que NOR-HID-04 pide para una lectura del proyectista.
+    #
+    # HOY NO PASA NADIE POR ESTA PUERTA, y decirlo es parte de abrirla: la
+    # unica eleccion con fundamento es la de la fila de gamma_p de V7, y esta
+    # corrida no llega a V7 (ver F5.V7_FILA en `sin_alcanzar`). Se abre igual
+    # porque sin ella el censo daria un FALSO huerfano en cuanto una corrida
+    # dimensione: contaria como no usado un fundamento que la memoria imprime.
+    emitidos |= {e.fundamento_id for p in _pasos_de(informe)
+                 for e in p.elecciones if e.fundamento_id}
     # Los que llegan por la OTRA puerta: el bloque fijo de umbrales, que M11
     # imprime siempre. `F3.D_MIN` solo tiene esa: el minimo de 0.90 m no se
     # verifica sobre un resultado, es el piso de la serie de diametros
@@ -403,15 +417,27 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F8.RECUBRIMIENTO",  # 9.4 se detiene en 'categoria_refuerzo_aashto'
         "F10.CUNETA",       # falta el dato 'L_hidraulico_m'
         "F6.LAUSHEY",       # Fase 6 cuelga de un punto dimensionado
-        # F5.V7_FILA, y su razon es la MAS ESTRECHA de esta lista: el paso que
-        # lo emitiria SI se ejecuta -- V7 corre a perfil sobre todo punto que
-        # dimensione --, pero lo que hoy publica la eleccion de fila es la
-        # `EleccionDeProyecto` de `M5.v7_flotacion`, que no cuelga de ningun
-        # fundamento propio. C7 abre el fundamento en su punto 0 (la tabla
-        # numeral-por-paso de V7) y lo CABLEA en su punto 3, cuando toque M8
-        # para abrir la rama de «Porticos rigidos». Entre los dos puntos
-        # existe declarado y sin consumidor, que es exactamente lo que esta
-        # lista sirve para decir en voz alta.
+        # F5.V7_FILA SIGUE AQUI DESPUES DE C7, Y SU RAZON NO ES LA QUE EL
+        # PUNTO 0 ESCRIBIO. Aquel comentario decia que el fundamento existia
+        # «declarado y sin consumidor» hasta que el punto 3 lo cableara. El
+        # punto 3 lo cableo --- `M5.v7_flotacion` construye su eleccion con
+        # `modelos.eleccion("F5.V7_FILA")`, de ahi la segunda puerta de
+        # `emitidos` --- y aun asi sigue en esta lista, porque el motivo real
+        # es otro y MEDIDO: ESTA CORRIDA NO DIMENSIONA NINGUN PUNTO. Los tres
+        # de familias A y B se detienen en el criterio 'remanso_derecho_via',
+        # sin valor, y C-01 en el dato 'Q_m3s'; de modo que V7 no se ejecuta
+        # sobre ningun punto y no hay eleccion que emitir.
+        #
+        # DE PASO, EL LIMITE QUE ESO DESTAPA EN ESTE MISMO TEST: `F5.V7` no
+        # esta en esta lista y el test pasa igual, pero NO porque algun paso
+        # lo emita --- no lo emite nadie --- sino porque entra por
+        # `del_bloque_fijo`, la puerta de los umbrales. O sea que este censo
+        # no distingue «V7 corrio» de «V7 tiene umbral en el bloque fijo». No
+        # se arregla aqui: se deja dicho, y lo que si se mide es la otra mitad.
+        #
+        # QUE EL CABLEADO EXISTE SE COMPRUEBA, no se afirma, igual que con los
+        # cinco del cajon: `test_M5_verificaciones::test_la_eleccion_de_fila_
+        # de_V7_sale_de_su_fundamento_y_lista_las_siete` ejecuta V7 y lo mide.
         "F5.V7_FILA",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco

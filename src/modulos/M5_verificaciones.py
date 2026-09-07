@@ -214,7 +214,7 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
                      Seccion,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
-                     Verificacion, paso)
+                     Verificacion, eleccion, paso)
 from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
@@ -223,6 +223,7 @@ from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
+                                    filas_ev_de_la_tabla,
                                     peso_relleno_kn_m)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
@@ -1587,21 +1588,13 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
                 cumple, estabilizante - desestabilizante, "kN/m",
                 "el conducto vacio no flota" if cumple else
                 "la subpresion supera lo que lo sujeta: el conducto flota"),
-            elecciones=(EleccionDeProyecto(
+            elecciones=(eleccion(
+                "F5.V7_FILA",
                 que_se_adopto="fila de gamma_p que describe a esta estructura",
-                valor=f"gamma_EV min = {g.gamma_EV}",
-                entre=("Estructura rigida enterrada",
-                       "Alcantarillas termoplasticas",
-                       "Estructuras flexibles, entre otros",
-                       "Muros y estribos de retencion"),
+                valor=f"«{g.fila_gamma_EV}» -> gamma_EV min = {g.gamma_EV}",
+                entre=filas_ev_de_la_tabla(),
                 de_donde="la Tabla 2.4.5.3.1-2 del Manual de Puentes "
                          "(= 3.4.1-2 de AASHTO LRFD), pag. impresa 143",
-                por_que=f"el conducto es de «{material.nombre}». LA TABLA ES "
-                        "NORMATIVA; QUE FILA DESCRIBE A ESTA OBRA NO LO ES: "
-                        "es la eleccion que el criterio "
-                        "'factores_carga_aashto' declara. La fila de muros y "
-                        "estribos -- que es la del cabezal de la Fase 9 -- "
-                        "tiene otro minimo y no vale aqui",
                 cita_id="MP.T2.4.5.3.1-2",
                 clave_criterio=CRITERIO_FACTORES_CARGA),),
         ),

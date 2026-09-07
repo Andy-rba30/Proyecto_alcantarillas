@@ -420,18 +420,23 @@ V7_FILA_GAMMA = _fundamento(
               "estructura"),
     por_que=(
         "La tabla desglosa el empuje vertical de tierra por TIPO DE "
-        "ESTRUCTURA, y ahi se acaba lo que la norma decide. Ni el Manual de "
-        "Puentes ni AASHTO definen en ningun numeral que es una «estructura "
-        "rigida enterrada» ni un «portico rigido»: barridas las 673 paginas "
-        "del Manual, fuera de la propia tabla las unicas apariciones son un "
-        "parrafo de estructuras de contencion y un detalle de armadura, y "
-        "ninguno clasifica una alcantarilla. La frontera entre las dos filas "
-        "es lectura del proyectista. Lo que si esta verificado es que NO hay "
-        "una fila mejor: el unico «cajon» de la tabla es «Alcantarillas cajon "
-        "METALICAS», que cuelga de las estructuras FLEXIBLES enterradas, la "
-        "categoria opuesta a un marco de concreto. De modo que la eleccion es "
-        "defendible y sigue siendo una eleccion, y la memoria tiene que "
-        "imprimirla como tal y no como si la tabla la impusiera."),
+        "ESTRUCTURA, y ahi se acaba lo que la norma decide. De sus SIETE "
+        "filas de EV, cinco las descarta la propia tabla y no el proyectista: "
+        "las tres subfilas de «Estructuras flexible enterradas» -- un marco "
+        "de concreto no es flexible, y ahi cuelga el unico «cajon» que la "
+        "tabla nombra, «Alcantarillas cajon METALICAS», que es la categoria "
+        "OPUESTA --, «Estabilidad global», que declara N/A en el minimo y por "
+        "lo tanto no tiene factor que aplicar aqui, y «Muros y estribos de "
+        "retencion», que es la del cabezal de la Fase 9 y lleva minimo 1.00 "
+        "en vez de 0.90. Quedan dos, y ESAS SI las separa el proyectista: ni "
+        "el Manual de Puentes ni AASHTO definen en ningun numeral que es una "
+        "«estructura rigida enterrada» ni un «portico rigido». Barridas las "
+        "673 paginas del Manual, fuera de la propia tabla las unicas "
+        "apariciones son un parrafo de estructuras de contencion y un detalle "
+        "de armadura, y ninguno clasifica una alcantarilla. La frontera entre "
+        "esas dos filas es lectura del proyectista: la eleccion es defendible "
+        "y sigue siendo una eleccion, y la memoria tiene que imprimirla como "
+        "tal y no como si la tabla la impusiera."),
     verbo=Verbo.DEFINE,
     citas=("MP.2.4.5.2#EV",         # DEFINICION -> sostiene DEFINE
            "MP.T2.4.5.3.1-2"),      # EXIGENCIA: la tabla con las filas

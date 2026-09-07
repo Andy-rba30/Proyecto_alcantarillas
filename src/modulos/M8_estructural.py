@@ -172,7 +172,7 @@ from constantes_normativas import (CAMA_RELLENO_LATERAL,
                                    TABLA_GAMMA_P_FILAS,
                                    fila_gamma_p_legible)
 from modelos import (CamaApoyoRelleno, DatoInvalidoError, FactoresFlotacion,
-                     Material, ReferenciaNormativa, Seccion)
+                     FormaSeccion, Material, ReferenciaNormativa, Seccion)
 
 NUMERAL_8_1_2 = "Fase 8, items 1-2"
 # La cita anterior, "Sec. 8.1 (EG-2013 Seccion 500)", era doblemente falsa:
@@ -215,6 +215,14 @@ EXTREMO_DESESTABILIZANTE = "max"
 # combinacion que Sec. 9.2 no usa. Por eso la fila esta aqui y no en el
 # criterio: no hay eleccion que declarar.
 FILA_GAMMA_P_DC = "DC_componentes_y_auxiliares"
+# La clave del marco en `factores_carga_aashto`. No es un `TipoMaterial`
+# porque un marco y un tubo de concreto comparten el suyo; es la misma
+# razon por la que 'cabezal' tampoco lo es.
+ELEMENTO_CAJON = "cajon"
+# Las filas de EV se reconocen por su prefijo de clave. Es la unica marca
+# que `TABLA_GAMMA_P_FILAS` da para agruparlas sin volver a escribir sus
+# nombres, que es lo que se quiere evitar.
+PREFIJO_FILA_EV = "EV_"
 
 
 # ---------------------------------------------------------------------------
@@ -346,7 +354,7 @@ def factores_carga_flotacion(*, material: Material) -> FactoresFlotacion:
     nombra una fila que no es de la tabla.
     """
     eleccion = ca.valor(CRITERIO_FACTORES_CARGA)
-    fila_EV = _fila_elegida(eleccion, material.tipo.value, CARGA_RELLENO)
+    fila_EV = _fila_elegida(eleccion, _elemento_de(material), CARGA_RELLENO)
     return FactoresFlotacion(
         gamma_DC=_gamma_p(FILA_GAMMA_P_DC, EXTREMO_ESTABILIZANTE),
         gamma_EV=_gamma_p(fila_EV, EXTREMO_ESTABILIZANTE),
@@ -354,6 +362,48 @@ def factores_carga_flotacion(*, material: Material) -> FactoresFlotacion:
         criterio=CRITERIO_FACTORES_CARGA,
         fila_gamma_EV=fila_gamma_p_legible(fila_EV),
     )
+
+
+def filas_ev_de_la_tabla() -> Tuple[str, ...]:
+    """
+    Las filas de EV de la Tabla 2.4.5.3.1-2, legibles, LEIDAS DE LA
+    TRANSCRIPCION.
+
+    Existe para que la memoria pueda decir «entre estas» sin copiar la lista a
+    mano. La copia a mano era el defecto D-8: la `EleccionDeProyecto` de V7
+    enumeraba CUATRO filas escritas a pulso y la tabla tiene SIETE -- faltaba
+    «Porticos rigidos», que es justamente la del cajon, de modo que la memoria
+    presentaba una eleccion sin listar la opcion que se estaba eligiendo --.
+    Derivandola, no puede volver a divergir.
+    """
+    return tuple(fila_gamma_p_legible(clave)
+                 for clave in TABLA_GAMMA_P_FILAS
+                 if clave.startswith(PREFIJO_FILA_EV))
+
+
+def _elemento_de(material: Material) -> str:
+    """
+    Con que clave de 'factores_carga_aashto' se busca la fila de este
+    conducto.
+
+    NO ES `material.tipo.value`, Y ESE ERA EL DEFECTO. Un marco de concreto y
+    un tubo de concreto son el MISMO `TipoMaterial`, de modo que indexar por
+    material no puede distinguirlos: el marco recibia la fila del tubo --
+    «Estructura rigida enterrada» -- en vez de la suya. Quien los separa es la
+    FORMA, que es lo que la Tabla 2.4.5.3.1-2 desglosa (por tipo de
+    ESTRUCTURA, no de material). La clave 'cajon' la dejo puesta C5 esperando
+    a este consumidor.
+
+    EL NUMERO NO CAMBIA Y LA CITA SI, que es lo que lo hacia peligroso: el
+    MINIMO de las dos filas vale 0.90 y V7 lee el minimo, de modo que nada
+    fallaba de forma ruidosa mientras la fila impresa era la equivocada. Es el
+    precedente NOR-HID-01 -- valor que acierta por casualidad, cita falsa --.
+    Lo que si cambia es el maximo, 1.35 frente a 1.30, y ese gobierna la Fase
+    8, que `--alcance perfil` difiere.
+    """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        return ELEMENTO_CAJON
+    return material.tipo.value
 
 
 def _fila_elegida(eleccion, elemento: str, tipo_de_carga: str) -> str:
