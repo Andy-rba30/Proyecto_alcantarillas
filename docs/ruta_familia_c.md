@@ -392,9 +392,38 @@ celda con `Q/N` y se declara N.
 barril.** No hay «diámetro equivalente». HDS-5: *«D — Interior height of culvert barrel»*,
 *«A — Full cross sectional area of culvert barrel»*.
 
-**#5 — No se cruzan coeficientes entre formas.** HDS-5 num. A.3: *«coefficients for
-rectangular (box) shapes should not be used for nonrectangular (circular, arch, pipe-arch,
-etc.) shapes and vice-versa»*.
+**#5 — No se cruzan coeficientes entre GEOMETRÍAS. Y eso NO es lo mismo que «entre
+formas de ecuación»: son dos ejes distintos y esta regla los confundía.**
+
+Lo que el num. A.3 prohíbe, literal: *«coefficients for rectangular (box) shapes should not
+be used for nonrectangular (circular, arch, pipe-arch, etc.) shapes and vice-versa»*. Habla
+de **formas geométricas** —cajón frente a no-cajón—, y en esa lectura la regla es
+vinculante y directa para la Familia C: **el cajón usa una carta de cajón**, no la circular
+de concreto con otras constantes.
+
+**Lo que el num. A.3 NO dice, y esta regla llegó a decir: no prohíbe nada sobre las dos
+FORMAS DE ECUACIÓN** (la (A.1) y la (A.2) del num. A.2.1). Cuál de las dos aplica lo decide
+la **columna «Equation Form» de la Tabla A.1, fila por fila**, y nada más.
+
+**La prueba de que son ejes ortogonales está en la propia Tabla A.1**, medida sobre sus 36
+filas en C3:
+
+| `Shape and Material` | Formas en que aparece |
+|---|---|
+| **`Rect. Box Concrete`** | **1 y 2** — Carta 8 es Forma 1; Cartas 9 a 11 son Forma 2 |
+| **`Circular`** | **1 y 2** — Carta 3 es Forma 1; Carta 55 es Forma 2 |
+| `Circular Concrete`, `Circular CM` | 1 |
+| `Rect. Box 3/4" chamf. Conc.`, `Rect. Box Top Bev. Conc.`, `Rectangular Concrete`, `Ellipital Face` | 2 |
+
+La misma geometría vive en las dos formas, y la misma forma cubre geometrías distintas. Una
+prohibición sobre geometrías **no puede** ser la regla que separa las formas.
+
+> **Por qué se corrige aquí y no en una nota al pie.** La enunciación vieja la escribió esta
+> hoja, la repitió el comentario de la cita `HDS5_3ED.A.3#FORMAS` en `normativa/citas.py`, y
+> C3 la copió a tres sitios de código creyendo que verificaba —incluido un docstring que
+> declaró «releído entero»—. Es una cita que **dice algo que la fuente no dice**, propagada
+> por cuatro archivos: exactamente lo que `NOR-PUE-01` dejó por escrito sobre el numeral que
+> vivía en seis sitios como seis cadenas independientes. C4 y C5 citan esta regla.
 
 **#6 — La Tabla Nº 09 NO tiene fila de cajón, y el vacío es DE FILA, NO DE GRUPO.** El
 grupo «A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO» ya cubre al marco por su
