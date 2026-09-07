@@ -856,15 +856,31 @@ CENSO_DE_MARCAS = {
     # el 2. La segunda es `CIFRAS_FINA = 4`, los cuatro decimales de la
     # pendiente y de n: con tres, una S de 0.0006 se imprime 0.001 y la caida
     # S*L deja de poder recomputarse desde la memoria (MAT-D9).
-    "src/modelos.py": 2,
+    # 2 -> 5 en C1, con la abstraccion `Seccion`: los tres literales que
+    # bajaron de M3 y M4 al mudarse ahi la geometria del barril -- el 8 de
+    # A = (D^2/8)(theta - sen theta), el 4 del area llena pi*D^2/4 y el 4 del
+    # radio hidraulico lleno D/4 --. NO son literales nuevos: son los mismos
+    # que M3.area, M4.area_llena y M4.radio_hidraulico_lleno traian marcados,
+    # y por eso el censo de esos dos archivos baja en la misma medida.
+    "src/modelos.py": 5,
     # 3 -> 5 en S20, con la Sec. 1.3 ("TW se calcula, no se mide"): el 2 de
     # `perimetro_trapecial` (los DOS taludes de un trapecio), la semilla y la
     # duplicacion del corchete de Brent sobre el tirante del receptor, y el
     # tope de duplicaciones. Ninguno es un valor de proyecto: dos son
     # geometria de la seccion y los otros el alcance de una busqueda -- no
     # dicen cuan hondo puede ser un dren, dicen cuando dejar de buscar.
-    "src/modulos/M3_hidraulica.py": 5,
-    "src/modulos/M4_control.py": 5,
+    # 5 -> 4 en C1: el 8 de A = (D^2/8)(theta - sen theta) se fue a
+    # `modelos.SeccionCircular` con el resto de la geometria del barril. Los
+    # cuatro que quedan son los exponentes de Manning (dos veces), el tope de
+    # duplicaciones del corchete y el 2/3 de la rama de velocidades.
+    "src/modulos/M3_hidraulica.py": 4,
+    # 5 -> 3 en C1, por la misma mudanza: el 4 del area llena pi*D^2/4 y el
+    # 4 del radio hidraulico lleno D/4 se fueron a
+    # `modelos.SeccionCircular`. `area_llena` y `radio_hidraulico_lleno`
+    # siguen aqui, pero ya no escriben la formula: la piden a la seccion.
+    # Los tres que quedan son los exponentes de A^3/T (dos) y el 4/3 de la
+    # friccion de Sec. 4.3.
+    "src/modulos/M4_control.py": 3,
     "src/modulos/M8_estructural.py": 1,
     "src/modulos/M9_cabezal.py": 6,
     "src/normativa/extraccion/__main__.py": 5,

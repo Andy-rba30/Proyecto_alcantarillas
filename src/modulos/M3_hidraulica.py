@@ -132,6 +132,7 @@ from scipy.optimize import brentq
 
 import criterios_adoptados as ca
 from modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
+                     Seccion, SeccionCircular,
                      Geometria, LimiteNumericoError, Magnitud, Material,
                      PuntoCritico, SeccionReceptor, TiranteNormal,
                      TWDeterminado, ViaDelTW, paso)
@@ -139,17 +140,36 @@ from tolerancias import TOL_BRENT, TOL_THETA_BORDE
 
 NUMERAL_MANNING = "4.1"
 
-_THETA_MIN = TOL_THETA_BORDE
-_THETA_MAX = 2 * math.pi - TOL_THETA_BORDE
+# EL BRACKET DE THETA SE FUE A `SeccionCircular.bracket_llenado()` en C1:
+# es la seccion la que sabe sobre que parametro se la recorre. M3 lo pide
+# y no lo construye.
 
 
 # ---------------------------------------------------------------------------
 # Validacion de entrada
 # ---------------------------------------------------------------------------
 
-def _validar_parametros(D: float, Q: float, S: float, n: float) -> None:
-    if D <= 0:
-        raise DatoInvalidoError("D", valor=D, motivo="el diametro debe ser positivo")
+def _validar_parametros(seccion: Seccion, Q: float, S: float, n: float) -> None:
+    if seccion.altura <= 0:
+        # EL CAMPO Y EL MOTIVO SIGUEN SIENDO LOS DE ANTES, Y ES DELIBERADO.
+        # C1 es un refactor: no mueve ni un digito de la salida impresa, y de
+        # esta excepcion se imprimen LAS DOS CADENAS -- `campo` y `motivo`
+        # viajan juntos dentro de `str(exc)`, que `cli._bloqueo` guarda como
+        # `mensaje`, `cli._bloqueo_json` publica y `M11._tabla_bloqueos`
+        # pinta --. C1 llego a renombrar el motivo a "la altura interior de la
+        # seccion debe ser positiva" y ESO SI MOVIO SALIDA: es alcanzable con
+        # un solo `--declarar diametros_normalizados={"inicio": -0.90, ...}`,
+        # que da 12 apariciones en el JSON y una en el HTML, y ademas dejaba
+        # el peor de los dos mundos -- "campo D" pegado a una frase que habla
+        # de altura, dos vocabularios para el mismo dato en la misma linea --.
+        # Renombrar es una correccion de vocabulario y las correcciones no van
+        # en esta sesion. Con quien nombra el dato cuando la seccion deja de
+        # ser circular tiene que quedarse C4, que es la sesion que trae la
+        # rectangular y la unica que puede decidirlo viendo las dos formas a
+        # la vez.
+        raise DatoInvalidoError(
+            "D", valor=seccion.altura,
+            motivo="el diametro debe ser positivo")
     if Q <= 0:
         raise DatoInvalidoError("Q", valor=Q, motivo="el caudal debe ser positivo")
     if S <= 0:
@@ -163,47 +183,68 @@ def _validar_parametros(D: float, Q: float, S: float, n: float) -> None:
 # Geometria de la seccion circular parcialmente llena (Sec. 4.1)
 # ---------------------------------------------------------------------------
 
-def area(D: float, theta: float) -> float:
-    """A = (D^2/8)(theta - sen theta), Sec. 4.1."""
-    return (D ** 2 / 8) * (theta - math.sin(theta))  # literal-ok: Sec. 4.1
+# LA FORMA YA NO VIVE AQUI. Las formulas de area, perimetro y tirante se
+# mudaron a `modelos.SeccionCircular` en C1a: M3 pide la geometria y no sabe
+# de que forma es. Las tres siguen existiendo porque nombran, en el lenguaje
+# de la Sec. 4.1, lo que la seccion devuelve junto.
+#
+# QUIEN LAS LLAMA, MEDIDO Y NO SUPUESTO. La primera redaccion de este
+# comentario decia "son la API publica que la suite contrasta contra
+# `geometria()`", y eso es cierto de DOS de las tres:
+# `test_M3_hidraulica.test_area_y_perimetro_funciones_sueltas_coinciden_con_geometria`
+# contrasta `area` y `perimetro`. `tirante` NO LO LLAMA NADIE, ni produccion
+# ni la suite: lo llamaba `M3.geometria` antes de C1, y desde que `geometria`
+# delega se quedo sin consumidor. Predecirle uno que no existe es el
+# antipatron que este repositorio ya tiene fichado; su ficha esta en
+# `docs/decisiones_diferidas.md`.
+#
+# Y OJO CON EL CASO DEGENERADO, QUE C1 MOVIO. Las tres pasan ahora por
+# `geometria_en()`, que construye la `Geometria` entera y con ella el
+# `R = A/P`. En `llenado = 0` el perimetro vale 0 y sale ZeroDivisionError,
+# donde antes `area(D, 0.0)` devolvia 0.0. No es alcanzable desde produccion
+# -- el bracket arranca en TOL_THETA_BORDE, nunca en 0, y `geometria()` ya
+# dividia igual antes de C1 --, pero es un modo de fallo nuevo de estas tres,
+# y ZeroDivisionError no desciende de ErrorProyecto. Queda ANOTADO en §16.4 y
+# no corregido: evitarlo pide tres miembros nuevos en el protocolo `Seccion`,
+# y reestructurar el protocolo al cierre de la sesion de mayor riesgo del
+# plan arriesga mas de lo que arregla.
+#
+# `llenado` es el PARAMETRO PROPIO de la seccion, opaco para M3: en la
+# circular es el angulo mojado theta y en una rectangular seria el tirante.
+# Que sea opaco es justamente lo que permite que Brent lo recorra sin que este
+# modulo sepa sobre que esta resolviendo.
+
+def area(seccion: Seccion, llenado: float) -> float:
+    """A de la seccion al llenado dado, Sec. 4.1."""
+    return seccion.geometria_en(llenado).A
 
 
-def perimetro(D: float, theta: float) -> float:
-    """P = D*theta/2, Sec. 4.1."""
-    return D * theta / 2
+def perimetro(seccion: Seccion, llenado: float) -> float:
+    """P mojado de la seccion al llenado dado, Sec. 4.1."""
+    return seccion.geometria_en(llenado).P
 
 
-def tirante(D: float, theta: float) -> float:
-    """
-    y = (D/2)(1 - cos(theta/2)): identidad geometrica de la seccion circular,
-    no un valor normativo -- se deriva de la propia definicion de theta como
-    angulo mojado. La necesita `geometria()` para poblar `Geometria.y` y M4
-    para el tirante critico (Sec. 4.2.1). Ya documentada en
-    `modelos.Geometria.T`, que se apoya en la misma identidad.
-    """
-    return (D / 2) * (1 - math.cos(theta / 2))
+def tirante(seccion: Seccion, llenado: float) -> float:
+    """Tirante de la seccion al llenado dado, Sec. 4.1."""
+    return seccion.geometria_en(llenado).y
 
 
-def geometria(D: float, theta: float) -> Geometria:
-    """Arma el `Geometria` completo (A, P, R, y) para un D y un theta dados."""
-    A = area(D, theta)
-    P = perimetro(D, theta)
-    return Geometria(D=D, theta=theta, A=A, P=P, R=A / P, y=tirante(D, theta))
+def geometria(seccion: Seccion, llenado: float) -> Geometria:
+    """Arma el `Geometria` completo (A, P, R, y) para un llenado dado."""
+    return seccion.geometria_en(llenado)
 
 
-def _caudal_manning(D: float, theta: float, n: float, S: float) -> float:
+def _caudal_manning(seccion: Seccion, llenado: float, n: float, S: float) -> float:
     """Q = (1/n)*A*R^(2/3)*S^(1/2), Sec. 4.1."""
-    A = area(D, theta)
-    P = perimetro(D, theta)
-    R = A / P
-    return (1 / n) * A * R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
+    g = seccion.geometria_en(llenado)
+    return (1 / n) * g.A * g.R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
 
 
 # ---------------------------------------------------------------------------
 # Tirante normal (una rama, un n)
 # ---------------------------------------------------------------------------
 
-def tirante_normal(D: float, Q: float, S: float, n: float) -> Optional[Geometria]:
+def tirante_normal(seccion: Seccion, Q: float, S: float, n: float) -> Optional[Geometria]:
     """
     Resuelve el tirante normal de Manning (Sec. 4.1) para un D/Q/S/n dados,
     con Brent sobre theta en (0, 2*pi).
@@ -221,7 +262,8 @@ def tirante_normal(D: float, Q: float, S: float, n: float) -> Optional[Geometria
     caudal a seccion llena, que es menor. Para D = 0.90 m, S = 0.005 y
     n = 0.013 el pico vale 1.377 m3/s y el lleno 1.280 m3/s: en la banda
     (1.280, 1.377] SI existe un theta que transporta Q -- dos, de hecho --,
-    y esta funcion devuelve None igual, porque `f(_THETA_MAX) < 0` y Brent no
+    y esta funcion devuelve None igual, porque `f` en el extremo superior del
+    bracket de la seccion es < 0 y Brent no
     tiene un cambio de signo que morder en el intervalo completo.
 
     Se deja asi a proposito, y la direccion importa: devolver None de mas es
@@ -238,24 +280,25 @@ def tirante_normal(D: float, Q: float, S: float, n: float) -> Optional[Geometria
     theta" concluira que el conducto no da, cuando lo que pasa es que da por
     encima del llenado admisible.
     """
-    _validar_parametros(D, Q, S, n)
+    _validar_parametros(seccion, Q, S, n)
+    llenado_min, llenado_max = seccion.bracket_llenado()
 
-    def f(theta: float) -> float:
-        return _caudal_manning(D, theta, n, S) - Q
+    def f(llenado: float) -> float:
+        return _caudal_manning(seccion, llenado, n, S) - Q
 
-    f_min, f_max = f(_THETA_MIN), f(_THETA_MAX)
+    f_min, f_max = f(llenado_min), f(llenado_max)
     if f_min > 0 or f_max < 0:
         return None
 
-    theta_solucion = brentq(f, _THETA_MIN, _THETA_MAX, xtol=TOL_BRENT)
-    return geometria(D, theta_solucion)
+    llenado_solucion = brentq(f, llenado_min, llenado_max, xtol=TOL_BRENT)
+    return geometria(seccion, llenado_solucion)
 
 
 # ---------------------------------------------------------------------------
 # Resolucion completa con la regla de doble n
 # ---------------------------------------------------------------------------
 
-def resolver_manning(D: float, Q: float, S: float, material: Material) -> Optional[TiranteNormal]:
+def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material) -> Optional[TiranteNormal]:
     """
     Resuelve el tirante normal (Sec. 4.1) aplicando la regla de doble n:
 
@@ -278,7 +321,7 @@ def resolver_manning(D: float, Q: float, S: float, material: Material) -> Option
     material no alcanza a transportar Q en flujo libre a esta D y S, y no
     hay geometria sobre la que evaluar las velocidades.
     """
-    geom = tirante_normal(D, Q, S, material.n_para_capacidad)
+    geom = tirante_normal(seccion, Q, S, material.n_para_capacidad)
     if geom is None:
         return None
 

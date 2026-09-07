@@ -267,6 +267,7 @@ from constantes_normativas import (H_O_HW_SOBRE_D_CAUTELA,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+                     Seccion,
                      ConstantesHDS5,
                      ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
@@ -274,7 +275,7 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      ResultadoHidraulico, TiranteCritico, TipoDeVeredicto,
                      TiranteNormal, Umbral, Veredicto, paso)
 from modulos.M3_hidraulica import geometria, resolver_manning
-from tolerancias import TOL_BRENT, TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
+from tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
 
 NUMERAL_CRITICO = "4.2.1"
 NUMERAL_ENTRADA = "4.2"
@@ -284,8 +285,9 @@ CRITERIO_KE = "ke_entrada"
 CRITERIO_GEOMETRIA_SALIDA = "geometria_control_salida"
 CRITERIO_TRANSICION = "metodo_transicion_hds5"
 
-_THETA_MIN = TOL_THETA_BORDE
-_THETA_MAX = 2 * math.pi - TOL_THETA_BORDE
+# EL BRACKET DE THETA SE FUE A `SeccionCircular.bracket_llenado()` en C1,
+# igual que en M3: es la seccion la que sabe sobre que parametro se la
+# recorre. M4 lo pide y no lo construye.
 
 
 # ---------------------------------------------------------------------------
@@ -297,27 +299,37 @@ def _validar_positivo(nombre: str, dato: float, motivo: str) -> None:
         raise DatoInvalidoError(nombre, valor=dato, motivo=motivo)
 
 
-def _validar_Q_D(Q: float, D: float) -> None:
+def _validar_Q_D(Q: float, seccion: Seccion) -> None:
     _validar_positivo("Q", Q, "el caudal debe ser positivo")
-    _validar_positivo("D", D, "el diametro debe ser positivo")
+    # "D" y el motivo de antes: ver la nota de `M3._validar_parametros`. Se
+    # imprimen los dos, dentro del mismo `str(exc)`, y C1 no mueve salida.
+    _validar_positivo("D", seccion.altura, "el diametro debe ser positivo")
 
 
 # ---------------------------------------------------------------------------
 # Pieza 1 - Tirante critico (Sec. 4.2.1)
 # ---------------------------------------------------------------------------
 
-def area_llena(D: float) -> float:
-    """A = pi*D^2/4, seccion circular llena. La usan q* (Sec. 4.2) y el
-    control de salida (Sec. 4.3)."""
-    return math.pi * D ** 2 / 4  # literal-ok: area del circulo, pi*D^2/4
+def area_llena(seccion: Seccion) -> float:
+    """
+    Area de la seccion LLENA. La usan q* (Sec. 4.2) y el control de salida
+    (Sec. 4.3).
+
+    La formula ya no vive aqui: la aporta la seccion, que es quien sabe su
+    forma. En la circular sigue siendo pi*D^2/4, identica al ultimo bit.
+    """
+    return seccion.area_llena
 
 
-def radio_hidraulico_lleno(D: float) -> float:
-    """R = A/P = (pi*D^2/4)/(pi*D) = D/4, seccion circular llena (Sec. 4.3)."""
-    return D / 4  # literal-ok: R = A/P de la seccion llena, D/4
+def radio_hidraulico_lleno(seccion: Seccion) -> float:
+    """
+    Radio hidraulico de la seccion LLENA (Sec. 4.3). Igual que arriba: lo
+    aporta la seccion. En la circular sigue siendo D/4.
+    """
+    return seccion.radio_hidraulico_lleno
 
 
-def _residuo_critico(D: float, theta: float, Q: float) -> float:
+def _residuo_critico(seccion: Seccion, theta: float, Q: float) -> float:
     """
     Residuo de la ecuacion del tirante critico (Sec. 4.2.1), escrito como
 
@@ -335,7 +347,7 @@ def _residuo_critico(D: float, theta: float, Q: float) -> float:
     (T no se anula en ese extremo) y el residuo queda monotono CRECIENTE, de
     -Q^2/g en la seccion vacia a +infinito en la llena. La raiz es la misma.
     """
-    geom = geometria(D, theta)
+    geom = geometria(seccion, theta)
     # Q^2 DESBORDA ANTES QUE NADA MAS DE ESTA LINEA (MAT-O18, mitad alcanzable).
     # `Q_m3s` no tiene techo en dominios.py -- y no se le puede inventar uno,
     # igual que a las cotas de 7.B --, de modo que un Q >= ~1.34e154 llega
@@ -368,7 +380,7 @@ def _residuo_critico(D: float, theta: float, Q: float) -> float:
     return geom.A ** 3 / geom.T - q_al_cuadrado / G  # literal-ok: A^3/T = Q^2/g, Sec. 4.2.1
 
 
-def tirante_critico(Q: float, D: float) -> TiranteCritico:
+def tirante_critico(Q: float, seccion: Seccion) -> TiranteCritico:
     """
     Tirante critico de la seccion circular (Sec. 4.2.1), raiz de
 
@@ -386,12 +398,13 @@ def tirante_critico(Q: float, D: float) -> TiranteCritico:
     `M3.tirante_normal`: un Q desmedido no deja al solver sin raiz, solo
     acerca y_c a D, y eso lo juzga V1 (y/D <= 0.75), no este solver.
     """
-    _validar_Q_D(Q, D)
+    _validar_Q_D(Q, seccion)
 
     def f(theta: float) -> float:
-        return _residuo_critico(D, theta, Q)
+        return _residuo_critico(seccion, theta, Q)
 
-    f_min, f_max = f(_THETA_MIN), f(_THETA_MAX)
+    llenado_min, llenado_max = seccion.bracket_llenado()
+    f_min, f_max = f(llenado_min), f(llenado_max)
     if not (f_min < 0 < f_max):
         # Inalcanzable con aritmetica finita para un Q y un D de proyecto: se
         # deja como guarda explicita en vez de dejar que brentq lance
@@ -399,11 +412,12 @@ def tirante_critico(Q: float, D: float) -> TiranteCritico:
         raise DatoInvalidoError(
             "Q", valor=Q,
             motivo=f"el residuo de {NUMERAL_CRITICO} no cambia de signo en "
-                   f"(0, 2*pi) para D={D}: no hay tirante critico que resolver",
+                   f"(0, 2*pi) para D={seccion.altura}: no hay tirante critico que "
+                   f"resolver",
         )
 
-    theta_critico = brentq(f, _THETA_MIN, _THETA_MAX, xtol=TOL_BRENT)
-    geom = geometria(D, theta_critico)
+    theta_critico = brentq(f, llenado_min, llenado_max, xtol=TOL_BRENT)
+    geom = geometria(seccion, theta_critico)
     # SIS-G-02. LA GUARDA DE ARRIBA PROTEGE EL BRACKET DE BRENT, NO ESTA
     # DIVISION. Son dos cosas distintas y hasta aqui solo estaba la primera:
     # el residuo cruza el cero limpiamente, brentq converge, y el theta al que
@@ -427,7 +441,8 @@ def tirante_critico(Q: float, D: float) -> TiranteCritico:
     if not geom.A > 0:
         raise LimiteNumericoError(
             "Q", valor=Q, motivo=(
-                f"el par (Q = {Q!r} m3/s, D = {D!r} m) degenera: el tirante "
+                f"el par (Q = {Q!r} m3/s, D = {seccion.altura!r} m) degenera: "
+                f"el tirante "
                 f"critico existe -- Brent converge a theta = "
                 f"{theta_critico!r} rad -- pero a ese theta el area de la "
                 f"seccion se anula en doble precision, porque "
@@ -451,7 +466,7 @@ def tirante_critico(Q: float, D: float) -> TiranteCritico:
 # Pieza 2 - Control de entrada, HDS-5 (Sec. 4.2)
 # ---------------------------------------------------------------------------
 
-def caudal_adimensional(Q: float, D: float) -> float:
+def caudal_adimensional(Q: float, seccion: Seccion) -> float:
     """
     q* = Ku*Q / (A_llena * D^0.5), con Ku = 1.811 (SI), Sec. 4.2.
 
@@ -459,14 +474,14 @@ def caudal_adimensional(Q: float, D: float) -> float:
     adimensional de la abertura, no del flujo (asi lo fija el caso patron
     CP-5, que da A_llena = pi*D^2/4 = 0.63617 m2 para D = 0.90 m).
     """
-    _validar_Q_D(Q, D)
-    return KU_SI * Q / (area_llena(D) * math.sqrt(D))
+    _validar_Q_D(Q, seccion)
+    return KU_SI * Q / (seccion.area_llena * math.sqrt(seccion.altura))
 
 
-def _hw_sobre_D_no_sumergido(q_estrella: float, H_c: float, D: float,
+def _hw_sobre_D_no_sumergido(q_estrella: float, H_c: float, seccion: Seccion,
                              S: float, hds5: ConstantesHDS5) -> float:
     """HWi/D = H_c/D + K*(q*)^M + Ks*S, Forma 1 de Sec. 4.2 (q* <= 3.5)."""
-    return H_c / D + hds5.K * q_estrella ** hds5.M + hds5.Ks * S
+    return H_c / seccion.altura + hds5.K * q_estrella ** hds5.M + hds5.Ks * S
 
 
 def _hw_sobre_D_sumergido(q_estrella: float, S: float,
@@ -484,7 +499,7 @@ def _regimen(q_estrella: float) -> RegimenEntrada:
     return RegimenEntrada.TRANSICION
 
 
-def _exigir_hw_no_negativo(HW_sobre_D: float, S: float, D: float,
+def _exigir_hw_no_negativo(HW_sobre_D: float, S: float, seccion: Seccion,
                            q_estrella: float, hds5: ConstantesHDS5) -> None:
     """
     Rechaza el HWi/D que la correccion por pendiente K_s*S deja bajo cero
@@ -521,7 +536,8 @@ def _exigir_hw_no_negativo(HW_sobre_D: float, S: float, D: float,
     if HW_sobre_D > 0:
         return
     raise DisenoNoFactibleError(
-        motivo=f"control de entrada ({NUMERAL_ENTRADA}): con D={D} m, "
+        motivo=f"control de entrada ({NUMERAL_ENTRADA}): con "
+               f"D={seccion.altura} m, "
                f"S={S} m/m y q*={q_estrella:.5f}, la correccion por pendiente "
                f"Ks*S (Ks={hds5.Ks}) devuelve HWi/D={HW_sobre_D:.5f} -- una "
                f"carga a la entrada nula o negativa, que es fisicamente "
@@ -535,7 +551,7 @@ def _exigir_hw_no_negativo(HW_sobre_D: float, S: float, D: float,
     )
 
 
-def control_entrada(Q: float, D: float, S: float, hds5: ConstantesHDS5,
+def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
                     critico: Optional[TiranteCritico] = None) -> ControlEntrada:
     """
     Carga a la entrada bajo control de entrada (Sec. 4.2), HDS-5, Tabla A.1.
@@ -565,17 +581,17 @@ def control_entrada(Q: float, D: float, S: float, hds5: ConstantesHDS5,
     admite inyectarlo para no repetir Brent cuando el orquestador ya lo tiene
     (y para poder probar esta pieza sin depender de la anterior).
     """
-    _validar_Q_D(Q, D)
+    _validar_Q_D(Q, seccion)
     _validar_positivo("S", S, "la pendiente del conducto debe ser positiva")
 
     if critico is None:
-        critico = tirante_critico(Q, D)
+        critico = tirante_critico(Q, seccion)
 
-    q_estrella = caudal_adimensional(Q, D)
+    q_estrella = caudal_adimensional(Q, seccion)
     regimen = _regimen(q_estrella)
 
     if regimen is RegimenEntrada.NO_SUMERGIDO:
-        HW_sobre_D = _hw_sobre_D_no_sumergido(q_estrella, critico.H_c, D, S, hds5)
+        HW_sobre_D = _hw_sobre_D_no_sumergido(q_estrella, critico.H_c, seccion, S, hds5)
     elif regimen is RegimenEntrada.SUMERGIDO:
         HW_sobre_D = _hw_sobre_D_sumergido(q_estrella, S, hds5)
     else:
@@ -597,7 +613,7 @@ def control_entrada(Q: float, D: float, S: float, hds5: ConstantesHDS5,
                        "programar otro procedimiento, no cambiar este valor",
             )
         extremo_inferior = _hw_sobre_D_no_sumergido(
-            Q_LIM_NO_SUMERGIDO, critico.H_c, D, S, hds5)
+            Q_LIM_NO_SUMERGIDO, critico.H_c, seccion, S, hds5)
         extremo_superior = _hw_sobre_D_sumergido(Q_LIM_SUMERGIDO, S, hds5)
         peso = ((q_estrella - Q_LIM_NO_SUMERGIDO)
                 / (Q_LIM_SUMERGIDO - Q_LIM_NO_SUMERGIDO))
@@ -606,10 +622,10 @@ def control_entrada(Q: float, D: float, S: float, hds5: ConstantesHDS5,
     # Una sola vez, despues de las tres ramas: el termino Ks*S entra en las
     # tres -- tambien en la transicion, por sus dos extremos -- y el rechazo
     # es el mismo. Ver `_exigir_hw_no_negativo` y el docstring del modulo.
-    _exigir_hw_no_negativo(HW_sobre_D, S, D, q_estrella, hds5)
+    _exigir_hw_no_negativo(HW_sobre_D, S, seccion, q_estrella, hds5)
 
     return ControlEntrada(
-        HW=HW_sobre_D * D,
+        HW=HW_sobre_D * seccion.altura,
         HW_sobre_D=HW_sobre_D,
         q_estrella=q_estrella,
         regimen=regimen,
@@ -653,7 +669,7 @@ def perdida_carga(V: float, R: float, n: float, L: float,
     return (1 + ke + friccion) * V ** 2 / (2 * G)
 
 
-def _geometria_de_referencia(Q: float, D: float) -> Tuple[float, float]:
+def _geometria_de_referencia(Q: float, seccion: Seccion) -> Tuple[float, float]:
     """
     (V, R) de la seccion con la que se evalua Sec. 4.3, segun el criterio
     'geometria_control_salida' [C]. Hoy: seccion llena -- V = Q/(pi*D^2/4),
@@ -667,11 +683,11 @@ def _geometria_de_referencia(Q: float, D: float) -> Tuple[float, float]:
                    "seccion de referencia distinta exige programar el "
                    "procedimiento de barril parcialmente lleno de HDS-5",
         )
-    A = area_llena(D)
-    return Q / A, radio_hidraulico_lleno(D)
+    A = seccion.area_llena
+    return Q / A, seccion.radio_hidraulico_lleno
 
 
-def control_salida(Q: float, D: float, S: float, L: float, TW: float,
+def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
                    n: float, ke: Optional[float] = None,
                    critico: Optional[TiranteCritico] = None) -> ControlSalida:
     """
@@ -698,7 +714,7 @@ def control_salida(Q: float, D: float, S: float, L: float, TW: float,
     no impone carga alguna a la entrada, y por eso siempre pierde frente al
     control de entrada en `hw_gobernante()`.
     """
-    _validar_Q_D(Q, D)
+    _validar_Q_D(Q, seccion)
     _validar_positivo("S", S, "la pendiente del conducto debe ser positiva")
     _validar_positivo("L", L, "la longitud del conducto debe ser positiva")
     if TW < 0:
@@ -706,12 +722,12 @@ def control_salida(Q: float, D: float, S: float, L: float, TW: float,
                                 motivo="el tirante en el receptor no puede ser negativo")
 
     if critico is None:
-        critico = tirante_critico(Q, D)
+        critico = tirante_critico(Q, seccion)
 
-    V, R = _geometria_de_referencia(Q, D)
+    V, R = _geometria_de_referencia(Q, seccion)
     H = perdida_carga(V=V, R=R, n=n, L=L, ke=ke)
 
-    h_o_geometrico = (critico.y_c + D) / 2
+    h_o_geometrico = (critico.y_c + seccion.altura) / 2
     h_o = max(TW, h_o_geometrico)
     caida = S * L
     HW = H + h_o - caida
@@ -720,7 +736,7 @@ def control_salida(Q: float, D: float, S: float, L: float, TW: float,
     # evaluar (num. 3.3.3, pag. impresa 3.24; NOR-HDS-05). No lanzan: la
     # fuente no prohibe calcular, dice que el numero no es de fiar. Ver
     # `constantes_normativas.H_O_CONDICION_APLICACION`.
-    HW_sobre_D = HW / D
+    HW_sobre_D = HW / seccion.altura
 
     return ControlSalida(
         HW=HW,
@@ -779,7 +795,7 @@ def hw_gobernante(entrada: ControlEntrada,
 # viene retirando. El unico que si juzga es el de h_o, y su umbral son las
 # CONDICIONES DE USO que la propia fuente le pone (NOR-HDS-05).
 
-def _pasos_hidraulicos(*, D, Q, S, L, TW, material, normal, critico, entrada,
+def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entrada,
                        salida, control, gobierna_salida):
     """La traza de M3 + M4 para una combinacion, en orden de calculo."""
     de_manning = paso(
@@ -800,7 +816,7 @@ def _pasos_hidraulicos(*, D, Q, S, L, TW, material, normal, critico, entrada,
                      "pendiente con que corrio el diseño: la del cauce salvo "
                      "que el punto declare 'S_conducto'. Es la MISMA que usa "
                      "la Fase 7 (MAT-D9)", cifras=CIFRAS_FINA),
-            Magnitud("D", D, "m", "diametro probado por el bucle de diseño",
+            Magnitud("D", seccion.altura, "m", "diametro probado por el bucle de diseño",
                      cifras=CIFRAS_FACTOR),
             Magnitud("n_max", material.n_para_capacidad, "",
                      f"extremo superior del rango de la Tabla Nº 09 para "
@@ -832,7 +848,7 @@ def _pasos_hidraulicos(*, D, Q, S, L, TW, material, normal, critico, entrada,
         sustitucion=(
             Magnitud("Q", Q, "m3/s", "el mismo caudal de diseño",
                      cifras=CIFRAS_MAGNITUD),
-            Magnitud("D", D, "m", "diametro probado", cifras=CIFRAS_FACTOR)),
+            Magnitud("D", seccion.altura, "m", "diametro probado", cifras=CIFRAS_FACTOR)),
         resultado=Magnitud("y_c", critico.y_c, "m",
                            "tirante critico; no depende de n",
                            cifras=CIFRAS_MAGNITUD),
@@ -886,7 +902,7 @@ def _pasos_hidraulicos(*, D, Q, S, L, TW, material, normal, critico, entrada,
                      "tirante en el receptor durante la avenida, sobre el "
                      "fondo de la SALIDA. No es una cota",
                      cifras=CIFRAS_MAGNITUD),
-            Magnitud("(y_c + D)/2", (critico.y_c + D) / 2, "m",
+            Magnitud("(y_c + D)/2", (critico.y_c + seccion.altura) / 2, "m",
                      "aproximacion de la linea de energia del HDS-5",
                      cifras=CIFRAS_MAGNITUD),
             Magnitud("h_o", salida.h_o, "m",
@@ -972,7 +988,7 @@ def _pasos_hidraulicos(*, D, Q, S, L, TW, material, normal, critico, entrada,
     return (de_manning, de_critico, de_entrada, de_salida, de_gobernante)
 
 
-def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
+def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
                      material: Material,
                      normal: Optional[TiranteNormal] = None
                      ) -> Optional[ResultadoHidraulico]:
@@ -1000,13 +1016,14 @@ def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
     lo necesitan (Forma 1 del control de entrada y h_o del control de salida).
     """
     if normal is None:
-        normal = resolver_manning(D=D, Q=Q, S=S, material=material)
+        normal = resolver_manning(seccion=seccion, Q=Q, S=S,
+                                  material=material)
     if normal is None:
         return None
 
-    critico = tirante_critico(Q, D)
-    entrada = control_entrada(Q=Q, D=D, S=S, hds5=material.hds5, critico=critico)
-    salida = control_salida(Q=Q, D=D, S=S, L=L, TW=TW,
+    critico = tirante_critico(Q, seccion)
+    entrada = control_entrada(Q=Q, seccion=seccion, S=S, hds5=material.hds5, critico=critico)
+    salida = control_salida(Q=Q, seccion=seccion, S=S, L=L, TW=TW,
                             n=material.n_para_capacidad, critico=critico)
     _, control = hw_gobernante(entrada, salida)
 
@@ -1034,7 +1051,7 @@ def resolver_control(D: float, Q: float, S: float, L: float, TW: float,
         h_o_fuera_de_rango=gobierna_salida and salida.h_o_fuera_de_rango,
         h_o_requiere_cautela=gobierna_salida and salida.h_o_requiere_cautela,
         pasos=_pasos_hidraulicos(
-            D=D, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
+            seccion=seccion, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
             critico=critico, entrada=entrada, salida=salida, control=control,
             gobierna_salida=gobierna_salida),
     )

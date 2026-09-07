@@ -35,9 +35,10 @@ import math
 from dataclasses import dataclass, fields
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Protocol, Tuple, Union
 
 from dominios import CENTIMETROS_POR_METRO
+from tolerancias import TOL_THETA_BORDE
 
 
 # ===========================================================================
@@ -727,18 +728,243 @@ class Material:
         return self.v_max_tabla10 is not None or self.v_max_adoptado is not None
 
 
+class Seccion(Protocol):
+    """
+    La forma del barril, detras de una interfaz (Sec. 4.1 del plan de la
+    Familia C). M3 y M4 dejan de saber si el conducto es un circulo.
+
+    MODELA UNA CELDA. El numero de celdas vive fuera y se reparte el caudal:
+    los coeficientes de HDS-5, el radio hidraulico y el control de entrada son
+    POR BARRIL.
+
+    DOS PARAMETRIZACIONES, Y NO ES REDUNDANCIA. La interfaz de arriba --
+    `area(y)`, `perimetro(y)`, `ancho_superficial(y)` -- esta escrita sobre el
+    TIRANTE, que es el lenguaje de la Sec. 4.1 y el que una seccion
+    rectangular usa directamente. La de abajo -- `bracket_llenado()`,
+    `geometria_en()`, `ancho_superficial_en_llenado()` -- esta escrita sobre
+    el PARAMETRO PROPIO de la seccion, que en la circular es el angulo mojado
+    theta y en una rectangular seria el propio tirante.
+
+    Por que existen las dos: el solver de Manning y el del tirante critico
+    recorren la seccion con Brent, y en la circular lo hacen SOBRE THETA. Si
+    el solver pasara a recorrer el tirante, la raiz a la que converge cambia
+    en los ultimos bits y con ella todos los numeros que cuelgan de ella. Eso
+    no es un refactor, es un cambio de metodo numerico. La seccion expone su
+    propio parametro para que el solver no tenga que elegir uno, y asi M3 y M4
+    quedan ciegos a la forma SIN mover un digito.
+
+    LAS DOS MITADES NO SON INTERCAMBIABLES, Y ESTE ES EL AVISO. La CANONICA
+    es la del parametro propio -- es la que consumen M3 y M4 y sobre la que
+    resuelve Brent --. La del tirante es de LECTURA y hoy no tiene ningun
+    consumidor en produccion. Esta escrito como regla vinculante #12 de
+    docs/ruta_familia_c.md; aqui va lo imprescindible.
+
+    En la circular, `area(y)` / `perimetro(y)` / `ancho_superficial(y)` pasan
+    por `theta_desde_tirante(y)`, que es la inversa ALGEBRAICA de
+    `_tirante_en_theta` pero no su inversa en punto flotante. El error del
+    viaje de ida y vuelta NO ESTA ACOTADO POR UNA CONSTANTE: es un problema de
+    CONDICIONAMIENTO concentrado en los dos extremos del llenado. Medido en C1
+    sobre ocho diametros de 0.30 a 3.00 m:
+
+        y/D en [0.10, 0.75] (la ventana que admite V1)
+            A 9.7e-16   P 3.9e-16   T 4.0e-16      -- ultimos bits
+        y/D en [0.01, 0.99]
+            A 5.2e-15   P 1.5e-15   T 8.8e-15
+        theta = 1e-6 rad
+            P y T: 4.4e-5
+        en los DOS EXTREMOS de `bracket_llenado()`
+            100 %: la via por tirante devuelve 0.0 EXACTO para P y para T
+
+    Y esa ultima fila es peor que una deriva. `T` es el denominador de `A^3/T`
+    en `M4_control._residuo_critico`: quien reescriba el residuo sobre
+    `ancho_superficial(y)` no mete un 1e-12, DIVIDE POR CERO en el extremo
+    inferior del bracket -- de los primeros puntos donde Brent evalua --, y
+    reintroduce la clase de fallo que SIS-G-02 cerro.
+
+    En el centro del rango las dos vias coinciden BIT A BIT (theta = pi:
+    divergencia 0.0 exacta en las tres magnitudes), de modo que una
+    comprobacion puntual las aprueba. Por eso el aviso esta aqui y no en un
+    test: no se detecta mirando.
+
+    En una seccion rectangular el parametro propio ES el tirante y las dos
+    vias coinciden exactamente. Eso no autoriza a pasar M3 y M4 a la via por
+    tirante: en la circular movería todos los numeros.
+
+    Regla operativa: el valor que ya viene en un `Geometria` -- `g.A`, `g.P`,
+    `g.T`, `g.R` -- NO se recalcula. La via por tirante solo se usa donde el
+    llamador tenga un tirante y ningun `Geometria`, nunca dentro de un solver.
+    """
+
+    @property
+    def altura(self) -> float:
+        """m - altura interior del barril. Es el "D" de HDS-5."""
+        ...
+
+    @property
+    def area_llena(self) -> float:
+        """m2 - area de la seccion llena. La consumen q* y el control de salida."""
+        ...
+
+    @property
+    def radio_hidraulico_lleno(self) -> float:
+        """m - radio hidraulico de la seccion llena (Sec. 4.3)."""
+        ...
+
+    def etiqueta(self) -> str:
+        """Como se nombra la seccion en la memoria."""
+        ...
+
+    def area(self, y: float) -> float:
+        """m2 - area hidraulica al tirante y."""
+        ...
+
+    def perimetro(self, y: float) -> float:
+        """m - perimetro mojado al tirante y."""
+        ...
+
+    def ancho_superficial(self, y: float) -> float:
+        """m - ancho de la lamina al tirante y. Es el T del tirante critico."""
+        ...
+
+    def bracket_llenado(self) -> Tuple[float, float]:
+        """Extremos del intervalo que Brent recorre sobre el parametro propio."""
+        ...
+
+    def geometria_en(self, llenado: float) -> "Geometria":
+        """`Geometria` completa para un valor del parametro propio."""
+        ...
+
+    def ancho_superficial_en_llenado(self, llenado: float) -> float:
+        """m - el T, desde el parametro propio y no desde el tirante."""
+        ...
+
+
 @dataclass(frozen=True)
-class Geometria:
+class SeccionCircular:
     """
     Seccion circular parcialmente llena (Sec. 4.1):
 
         A = (D^2/8)(theta - sen theta)      P = D*theta/2      R = A/P
 
     theta en radianes, sobre (0, 2*pi). Todas las longitudes en metros.
+
+    Su parametro propio de llenado es THETA, el angulo mojado, y por eso el
+    bracket de Brent sale de aqui: es la seccion la que sabe sobre que
+    variable se la recorre.
     """
 
     D: float          # m - diametro interior
-    theta: float      # rad - angulo mojado
+
+    @property
+    def altura(self) -> float:
+        """En un circulo la altura interior ES el diametro."""
+        return self.D
+
+    @property
+    def area_llena(self) -> float:
+        """A = pi*D^2/4. La usan q* (Sec. 4.2) y el control de salida (Sec. 4.3)."""
+        return math.pi * self.D ** 2 / 4  # literal-ok: area del circulo, pi*D^2/4
+
+    @property
+    def radio_hidraulico_lleno(self) -> float:
+        """R = A/P = (pi*D^2/4)/(pi*D) = D/4, seccion llena (Sec. 4.3)."""
+        return self.D / 4  # literal-ok: R = A/P de la seccion llena, D/4
+
+    def etiqueta(self) -> str:
+        """
+        Como la memoria nombra la seccion. Su consumidor llega con el reporte
+        de la Familia C; hoy no lo invoca ningun modulo y se declara igual,
+        porque es parte del contrato de `Seccion` y una implementacion que no
+        lo cumpliera no seria sustituible por otra. Su ficha esta en
+        `docs/decisiones_diferidas.md` (C1-02).
+
+        El rotulo es el que fija la §4.1 del plan de la Familia C -- "Ø 0.90 m"
+        frente al "marco 2.00 x 1.50 m" de la rectangular --. C1 lo escribio
+        primero como "D 0.90 m", que no era el de la especificacion desde la
+        que se escribio la clase; corregido al cierre. Los dos decimales son
+        PRESENTACION, de la misma naturaleza que los `FMT_*` de M11: no dicen
+        cuanto vale nada.
+        """
+        return f"Ø {self.D:.2f} m"
+
+    # --- interfaz por TIRANTE (Sec. 4.1) -----------------------------------
+    # Es la que una seccion rectangular usa directamente. En la circular pasa
+    # por la inversion theta(y) = 2*arccos(1 - 2y/D), que es cerrada y exacta.
+    # NINGUN SOLVER DE HOY ENTRA POR AQUI: los dos recorren theta.
+
+    def theta_desde_tirante(self, y: float) -> float:
+        """theta = 2*arccos(1 - 2y/D), inversa de y = (D/2)(1 - cos(theta/2))."""
+        return 2 * math.acos(1 - 2 * y / self.D)
+
+    def area(self, y: float) -> float:
+        return self._area_en_theta(self.theta_desde_tirante(y))
+
+    def perimetro(self, y: float) -> float:
+        return self._perimetro_en_theta(self.theta_desde_tirante(y))
+
+    def ancho_superficial(self, y: float) -> float:
+        return self.ancho_superficial_en_llenado(self.theta_desde_tirante(y))
+
+    # --- parametrizacion propia: theta -------------------------------------
+
+    def bracket_llenado(self) -> Tuple[float, float]:
+        """
+        (theta_min, theta_max) sobre (0, 2*pi), separados del borde por
+        `tolerancias.TOL_THETA_BORDE`: en theta = 0 y theta = 2*pi exactos el
+        area y el perimetro se anulan y Brent no tiene residuo que morder.
+        """
+        return TOL_THETA_BORDE, 2 * math.pi - TOL_THETA_BORDE
+
+    def _area_en_theta(self, theta: float) -> float:
+        """A = (D^2/8)(theta - sen theta), Sec. 4.1."""
+        return (self.D ** 2 / 8) * (theta - math.sin(theta))  # literal-ok: Sec. 4.1
+
+    def _perimetro_en_theta(self, theta: float) -> float:
+        """P = D*theta/2, Sec. 4.1."""
+        return self.D * theta / 2
+
+    def _tirante_en_theta(self, theta: float) -> float:
+        """
+        y = (D/2)(1 - cos(theta/2)): identidad geometrica de la seccion
+        circular, no un valor normativo -- se deriva de la propia definicion
+        de theta como angulo mojado.
+        """
+        return (self.D / 2) * (1 - math.cos(theta / 2))
+
+    def ancho_superficial_en_llenado(self, theta: float) -> float:
+        """
+        Ancho superficial, T = D*sen(theta/2).
+
+        Identidad geometrica de la seccion circular, no un valor normativo:
+        se deriva de y = (D/2)(1 - cos(theta/2)). La necesita M4 para el
+        tirante critico, Q^2*T/(g*A^3) = 1 (Sec. 4.2).
+        """
+        return self.D * math.sin(theta / 2)
+
+    def geometria_en(self, theta: float) -> "Geometria":
+        """Arma la `Geometria` completa (A, P, R, y) para un theta dado."""
+        A = self._area_en_theta(theta)
+        P = self._perimetro_en_theta(theta)
+        return Geometria(seccion=self, llenado=theta, A=A, P=P, R=A / P,
+                         y=self._tirante_en_theta(theta))
+
+
+@dataclass(frozen=True)
+class Geometria:
+    """
+    La seccion resuelta a un llenado concreto: A, P, R y el tirante.
+
+    LLEVA LA `Seccion`, NO EL DIAMETRO. Hasta C1 llevaba `D` y `theta`
+    sueltos, y con ellos la forma circular cableada en el tipo que atraviesa
+    todo el motor hidraulico. `llenado` es el parametro propio de la seccion
+    -- theta en la circular -- y las magnitudes derivadas se le piden a ella.
+
+    `y_sobre_D` CONSERVA EL NOMBRE aunque ya no haya un diametro: lo consumen
+    los tests del motor y es el nombre con que el numero viaja al reporte.
+    """
+
+    seccion: Seccion  # la forma del barril
+    llenado: float    # parametro propio de la seccion (theta en la circular)
     A: float          # m2 - area hidraulica
     P: float          # m  - perimetro mojado
     R: float          # m  - radio hidraulico
@@ -747,18 +973,12 @@ class Geometria:
     @property
     def y_sobre_D(self) -> float:
         """Relacion de llenado. V1 exige y/D <= Y_SOBRE_D_MAX."""
-        return self.y / self.D
+        return self.y / self.seccion.altura
 
     @property
     def T(self) -> float:
-        """
-        Ancho superficial, T = D*sen(theta/2).
-
-        Identidad geometrica de la seccion circular, no un valor normativo:
-        se deriva de y = (D/2)(1 - cos(theta/2)). La necesita M4 para el
-        tirante critico, Q^2*T/(g*A^3) = 1 (Sec. 4.2).
-        """
-        return self.D * math.sin(self.theta / 2)
+        """Ancho superficial. Lo calcula la seccion desde su propio parametro."""
+        return self.seccion.ancho_superficial_en_llenado(self.llenado)
 
 
 @dataclass(frozen=True)

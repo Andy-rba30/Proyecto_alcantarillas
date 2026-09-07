@@ -25,6 +25,7 @@ from modelos import (CasoDemandaSismica, CondicionAnalisis, ConstantesHDS5,
                      EmpujesTrasdos, ErrorProyecto, Familia,
                      LimiteNumericoError,
                      FuerzaInerciaMuro, Geometria, Material, PasoDiseno,
+                     SeccionCircular,
                      PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
                      ResultadoPunto, TipoMaterial, Verificacion)
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING, CP8_CONTROL_SALIDA
@@ -72,8 +73,8 @@ def _punto(**cambios) -> PuntoCritico:
 def _geometria_CP2() -> Geometria:
     c = CP2_GEOMETRIA_MANNING
     return Geometria(
-        D=c["D"],
-        theta=c["theta_esperado"],
+        seccion=SeccionCircular(c["D"]),
+        llenado=c["theta_esperado"],
         A=c["A_esperado"],
         P=c["P_esperado"],
         R=c["R_esperado"],
@@ -159,7 +160,7 @@ def test_el_ancho_superficial_es_consistente_con_el_tirante():
     tirante, 2*sqrt(r^2 - (y-r)^2). M4 lo usa en Q^2*T/(g*A^3) = 1.
     """
     g = _geometria_CP2()
-    radio = g.D / 2
+    radio = g.seccion.altura / 2
     cuerda = 2 * math.sqrt(radio**2 - (g.y - radio) ** 2)
     assert g.T == pytest.approx(cuerda, rel=CP2_GEOMETRIA_MANNING["tolerancia_geometria"])
 

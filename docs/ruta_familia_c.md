@@ -273,8 +273,32 @@ SeccionRectangular(B, H)
 ```
 
 `Geometria` pasa a llevar la `Seccion` en vez de `D` + `theta`. La propiedad `y_sobre_D`
-conserva el nombre y cambia de definición a `y / seccion.altura`: **no se renombra**,
-porque la consumen V1, `M11._tabla_diseno` y las dos plantillas HTML.
+conserva el nombre y cambia de definición a `y / seccion.altura`: **no se renombra**.
+
+> **Corregido en C1 contra lo medido, porque el argumento estaba inflado y C4 y C8 lo van
+> a citar.** Esta línea decía que `y_sobre_D` «lo consumen V1, `M11._tabla_diseno` y las
+> dos plantillas HTML». De las tres, **la única exacta es la del medio**, y ni siquiera
+> sobre esta propiedad:
+>
+> - **Las dos plantillas: 0 apariciones.** Medido sobre `src/plantillas/memoria_perfil.html`
+>   y `src/plantillas/memoria_alcantarillas.html` — la cadena `y_sobre_D` no está en
+>   ninguna de las dos.
+> - **V1 no consume la propiedad: la recalcula.** `M5_verificaciones.v1_borde_libre`
+>   escribe `y_sobre_D = resultado.y_normal / D` por su cuenta.
+> - **`M11._tabla_diseno` y el CSV de resumen sí leen el número, pero de
+>   `ResultadoPunto.y_sobre_D`**, que es una tercera expresión (`y_normal / self.D`), no
+>   la de `Geometria`.
+>
+> Los consumidores reales de `Geometria.y_sobre_D` son **los tests del motor**
+> (`test_modelos`, `test_M3_hidraulica`, `test_M5_verificaciones`).
+>
+> **La conclusión no cambia: no se renombra.** Se sostiene sobre dos hechos, y son
+> suficientes — es el nombre bajo el que el número viaja al entregable
+> (`M11_reporte.COLUMNAS_RESUMEN_CSV` lo lleva como columna `y_sobre_D`) y es el nombre
+> que la suite pinea. Lo que se retira es el argumento de las plantillas, que era falso.
+> Y queda anotado que **el mismo número está escrito tres veces** —`Geometria.y_sobre_D`,
+> `ResultadoPunto.y_sobre_D` y el cálculo interno de V1—; unificarlas no es de C1 ni de
+> C4, pero quien las toque tiene que saber que son tres.
 
 ### 4.2 El tirante crítico rectangular es cerrado
 
@@ -343,8 +367,11 @@ Dos reglas que se rompen sin querer:
 
 ## 6. Reglas vinculantes — donde la corrección «obvia» es la equivocada
 
-Estas diez sustituyen al criterio de quien ejecute la sesión. Si tu solución contradice
-una, párate y explica por qué antes de seguir.
+Estas doce sustituyen al criterio de quien ejecute la sesión. Si tu solución contradice
+una, párate y explica por qué antes de seguir. (Eran diez cuando se escribió esta línea:
+CP añadió la **#11** y C1 la **#12**, y el número de arriba se corrige con cada alta —
+un encabezado que dice «diez» sobre doce reglas es la misma clase de símbolo colgado que
+`CLAUDE.md` denuncia en su cláusula de taxonomía.)
 
 **#1 — El cajón NO hereda el piso de 0.90 m.** El num. 4.1.1.3.4 a) lo escribe así: *«…se
 adoptará una sección mínima circular de 0.90 m (36") de diámetro o su equivalente de otra
@@ -436,6 +463,69 @@ lo hacen la carta de HDS-5 y el detalle del cabezal.
 > —0.4–0.7 es el rango de las variantes *square-edged at crown* solamente—. Y escribía los
 > 0.09 m sin la velocidad: `0.2·V²/2g` no es un número hasta que se dice **V = 3 m/s**.
 > Un umbral sin su condición es lo que esta misma regla denuncia.
+
+**#12 — `Seccion` tiene DOS parametrizaciones y NO son intercambiables. La canónica es la
+del parámetro propio.** La añadió C1 y la va a pisar C4.
+
+`Seccion` expone la geometría por dos vías:
+
+| Vía | Miembros | Estado |
+|---|---|---|
+| **Por parámetro propio — CANÓNICA** | `bracket_llenado()`, `geometria_en(llenado)`, `ancho_superficial_en_llenado(llenado)` | La que consumen M3 y M4. Es la que resuelve Brent |
+| **Por tirante — de lectura** | `area(y)`, `perimetro(y)`, `ancho_superficial(y)` | **Cero consumidores en producción.** Es el vocabulario de la Sec. 4.1 |
+
+**Por qué la canónica es la del parámetro propio, y no la del tirante** —que es la que
+«se lee mejor» y por eso es la trampa—:
+
+1. **Es la que conserva los números.** En la circular el parámetro propio es θ y Brent
+   resuelve sobre θ. Pasar el solver al tirante mueve la raíz en los últimos bits y con
+   ella todo lo que cuelga de ella: es un cambio de método numérico, no un refactor.
+2. **`geometria_en()` devuelve A, P, R e y calculados de una vez y mutuamente
+   consistentes.** La vía por tirante entrega piezas sueltas, y cada pieza vuelve a
+   derivar θ desde y por su cuenta: tres viajes de ida y vuelta por una inversa mal
+   condicionada donde antes había uno solo, directo.
+3. **No es una vía «circular».** En la rectangular el parámetro propio **es** el tirante,
+   de modo que `geometria_en(y)` es directa y las dos vías coinciden exactamente. Elegir
+   la canónica no le cuesta nada al marco.
+
+**La medición que lo sostiene, hecha en C1 y con su grilla declarada.** En la circular,
+`area(y)` / `perimetro(y)` / `ancho_superficial(y)` pasan por `theta_desde_tirante(y)`,
+que es la inversa **algebraica** de `_tirante_en_theta` pero **no** su inversa en punto
+flotante. El error del viaje de ida y vuelta **no está acotado por una constante**: es un
+problema de **condicionamiento** que se concentra en los dos extremos del llenado.
+
+| Dónde | Divergencia relativa máxima entre las dos vías |
+|---|---|
+| `y/D` ∈ [0.10, 0.75] — la ventana de diseño, la que V1 admite | **A 9.7e-16 · P 3.9e-16 · T 4.0e-16** (últimos bits) |
+| `y/D` ∈ [0.05, 0.95] | A 1.2e-15 · P 4.6e-16 · T 1.9e-15 |
+| `y/D` ∈ [0.01, 0.99] | A 5.2e-15 · P 1.5e-15 · T 8.8e-15 |
+| θ = 1e-5 rad (`y/D` ≈ 6e-12) | **P y T: 4.1e-8** |
+| θ = 1e-6 rad | **P y T: 4.4e-5** |
+| **En los dos extremos de `bracket_llenado()`** (θ = 1e-9 y θ = 2π − 1e-9) | **100 %: la vía por tirante devuelve `0.0` exacto para P y para T** |
+
+Grilla: 8 diámetros de 0.30 a 3.00 m; las filas de rango, sobre 20 000 ángulos repartidos
+en `bracket_llenado()` (73 896 a 139 592 puntos según la ventana); las tres últimas, sobre
+el punto exacto. **La cota depende de la grilla y por eso se da por tramos y no como un
+número suelto**: una malla más fina encuentra siempre un punto peor cerca de los extremos.
+
+**Lo que esto significa en la práctica, y es peor que una deriva.** El último renglón no
+es un error pequeño: es la vía por tirante devolviendo **cero** donde la vía por θ devuelve
+un positivo. Y `T` es exactamente el denominador de `A^3/T` en
+`M4_control._residuo_critico`. Quien reescriba el residuo sobre `seccion.ancho_superficial(y)`
+no introduce un 1e-12: **divide por cero en el extremo inferior del bracket**, que es de los
+primeros puntos donde Brent evalúa — reintroduciendo la clase de fallo que `SIS-G-02`
+cerró y que el propio módulo documenta haber esquivado.
+
+**La regla, en dos líneas:**
+
+- El valor que ya viene en un `Geometria` —`g.A`, `g.P`, `g.T`, `g.R`— **no se recalcula**.
+  Sustituir `g.A` por `seccion.area(g.y)` es el error que esta regla existe para impedir.
+- La vía por tirante solo puede usarse donde el llamador tenga **un tirante y ningún
+  `Geometria`**, y nunca dentro de un solver ni cerca de los extremos del llenado.
+
+En el centro del rango las dos vías **coinciden bit a bit** (θ = π: divergencia 0.0
+exacta en A, P y T), de modo que **una comprobación puntual las aprueba**. Ése es el
+motivo de que esto sea una regla vinculante y no un comentario: no se detecta mirando.
 
 ---
 
@@ -717,9 +807,13 @@ El comportamiento del cálculo tiene que quedar IDÉNTICO, valor por valor.
        resolver_manning
    M4: area_llena, radio_hidraulico_lleno, caudal_adimensional,
        _residuo_critico, tirante_critico, _geometria_de_referencia,
-       control_entrada, control_salida, perdida_carga
+       control_entrada, control_salida
    NO toques M3.area_trapecial / perimetro_trapecial / caudal_manning_trapecial /
    tirante_normal_trapecial ni SeccionReceptor: son del receptor, no del barril.
+   Y NO toques M4.perdida_carga: figuraba en esta lista y NO recibe ningún
+   diámetro — le llega la R ya calculada, como el censo de §2-bis ya había
+   medido. No hay nada que migrar ahí. (Corregido en C1: la lista estaba
+   desactualizada respecto del propio censo que C0 dejó.)
 
 4. Los PasoDeMemoria que estas funciones emiten tienen que seguir imprimiendo lo
    MISMO: misma fórmula, misma cita, misma sustitución con la misma procedencia,
@@ -896,7 +990,34 @@ memoria de un punto que use Forma 2 imprime la forma, su cita y su por_qué.
 
 ```
 Lee CLAUDE.md y docs/ruta_familia_c.md (§4.1, §4.2, §4.5, §15 y las reglas
-vinculantes #3 y #4 de §6).
+vinculantes #3, #4 y #12 de §6). La #12 es de C1 y es la que más caro sale
+en esta sesión: leela antes de escribir la primera línea.
+
+0. LA VÍA CANÓNICA ES LA DEL PARÁMETRO PROPIO, NO LA DEL TIRANTE (regla #12).
+   `Seccion` expone la geometría por dos caminos y NO son intercambiables:
+     - CANÓNICA, la que consumen M3 y M4 y sobre la que resuelve Brent:
+       `bracket_llenado()`, `geometria_en(llenado)`,
+       `ancho_superficial_en_llenado(llenado)`
+     - DE LECTURA, hoy con CERO consumidores en producción:
+       `area(y)`, `perimetro(y)`, `ancho_superficial(y)`
+   `SeccionRectangular` implementa LAS DOS. Su parámetro propio ES el tirante,
+   así que para el marco las dos coinciden exactamente y no hay nada que elegir.
+   PRECISAMENTE POR ESO ES LA TRAMPA: vas a ver que en la rectangular
+   `geometria_en(y)` y `area(y)` dan lo mismo, y la conclusión natural —
+   "entonces M3 y M4 pueden llamar a la vía por tirante y queda más legible" —
+   ES FALSA PARA LA CIRCULAR y mueve todos sus números. En la circular esa vía
+   pasa por `theta_desde_tirante`, que está MAL CONDICIONADA en los extremos: en
+   los dos extremos de `bracket_llenado()` devuelve 0.0 exacto para P y para T, y
+   T es el denominador de A^3/T en `M4_control._residuo_critico`. No es una
+   deriva de 1e-12: es una división por cero donde Brent evalúa primero.
+   Lo que NO podés hacer en esta sesión, aunque parezca una simplificación:
+     - reescribir M3 o M4 sobre `area(y)` / `perimetro(y)` / `ancho_superficial(y)`
+     - recalcular con esos métodos un valor que un `Geometria` YA trae
+       (`g.A`, `g.P`, `g.T`, `g.R`)
+     - pasar el solver de la circular de theta al tirante
+   Si creés que alguna de las tres hace falta, PARÁ y explicá por qué antes de
+   tocarla: el criterio de salida de esta sesión incluye "todo lo circular
+   intacto", y `sh tests/linea_base_familia_c/regenerar.sh` lo comprueba.
 
 1. Implementá `SeccionRectangular(B, H)` según §4.1. MODELA UNA CELDA: los
    coeficientes de HDS-5, el radio hidráulico y el control de entrada son POR
@@ -929,9 +1050,11 @@ vinculantes #3 y #4 de §6).
 6. Casos patrón nuevos para la rectangular: tirante normal, tirante crítico,
    control de entrada por las dos formas, control de salida. Calculados a mano.
 
-Criterio de salida: todo lo circular intacto; la rectangular con al menos un caso
-patrón por función pública nueva; y `tests/test_memoria_sustentada.py` en verde
-sobre los pasos nuevos.
+Criterio de salida: todo lo circular intacto —y eso se mide, no se declara:
+`sh tests/linea_base_familia_c/regenerar.sh` tiene que dejar el diff VACÍO,
+igual que en C1—; la rectangular con al menos un caso patrón por función
+pública nueva; y `tests/test_memoria_sustentada.py` en verde sobre los pasos
+nuevos.
 
 [pegar aquí la CLÁUSULA NORMATIVA COMÚN de §9-bis]
 ```
@@ -2573,6 +2696,9 @@ de qué se corrió, con qué y con qué resultado medido.
 | **CN** | `e2da067` · PR #2, fusionado en `d469409` | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §15: tabla numeral-por-paso, ocho `Fundamento`, la declaración del hueco de aceptación, 8 defectos contra la v8 y 10 huecos del repo (`R-5` retirado por la auditoría: 9 vivos) | nada de CN: lo que dejó propuesto lo aplicó CP |
 | **CP** | `53e431a` (consolidación) · `bb8cdfa` (docstrings) · `a6d6543` (prompts) · PR #3 y #4 | 1536 p / 2 s, «PyMuPDF sí / Tk no» | Consolidación en §4.5, §6, §8, §9, §10, §11 y §12; los cuatro puntos de prompt de §16.2; y las tres correcciones de código de `R-9` | los 8 defectos contra la v8 (`D-1`…`D-8`): son de una **v9** |
 | **C0** | medida sobre `origin/main` **`4f6cf69`** | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §2-bis (censo de 59 símbolos), §14 (las dos decisiones de alcance), la línea base de `tests/linea_base_familia_c/`, el punto 5 de C1 y §16.3 | el anclaje por línea del manifiesto: **se mide, no se arregla** (§16.3) |
+| **C1** | `56677a4` · `b535176` · `a25ce7a` · `f99764a` · `d46256f` · `C1f` · `C1g` · PR #6 | **refactor: 1536 p / 2 s** (collected 1538, el par de C0). **Cierre: 1540 p / 2 s** (collected **1542**), «PyMuPDF sí / Tk no» | La abstracción `Seccion` y su única implementación `SeccionCircular`; `Geometria` lleva la sección y el `llenado` en vez de `D` y `theta`; M3 y M4 dejan de saber la forma del barril; manifiesto regenerado dos veces (11 + 1 ocurrencias); **regla vinculante #12**; punto 0 nuevo en el prompt de C4; **Parte V** de `decisiones_diferidas.md` | ensanchar `regenerar.sh` (tira el JSON, no corre expediente, dimensiona 1 punto de 4) → **C4**. `M8_estructural` fuera del censo de §2-bis → **F4**. `_validar_parametros` sin la forma `not A > 0` de MAT-D13 |
+
+> **Los dos pares de C1, y por qué son dos.** El refactor cierra con **el par de C0 sin mover**: `1536 passed / 2 skipped`, `collected 1538`, medido sobre los cuatro commits del refactor. Las correcciones de la auditoría añaden **cuatro tests y ni uno más**: las cuatro fichas nuevas de `docs/decisiones_diferidas.md` (`C1-01`…`C1-04`), de las que `tests/test_decisiones_diferidas.py` deriva una comprobación de existencia de símbolo por ficha — 34 fichas antes, 38 ahora. De ahí `collected 1542`. **Ningún test nuevo pinea comportamiento de cálculo**, que es lo que el criterio de salida protegía; los dos asserts de `motivo` que se añadieron caen dentro de casos parametrizados que ya existían y no cambian el conteo.
 
 **No hay archivo de parche.** El parche v2 se aplicó y se retiró del repositorio, con el
 precedente que `docs/hoja_de_ruta_correcciones_v12.md` fija en su primera línea para los
@@ -2665,3 +2791,152 @@ rojo de `test_manifiesto_citas.py` no se puede atribuir — puede ser el anclaje
 puede ser un número que se movió, y el criterio de salida de C1 depende entero de poder
 separar esas dos cosas. **CP lo topó con tres ediciones de docstring**: rompió cuatro tests
 y hubo que regenerar 12 localizadores.
+### 16.4 C1 — lo que se midió, lo que se decidió y lo que quedó anotado
+
+**El criterio de salida se cumplió, y no de vista.** Diff contra la línea base normalizada
+de C0, por su propio `regenerar.sh`: **vacío**, en la salida de la CLI y en el HTML de la
+memoria. `tests/fixtures/casos_patron.py` verde **sin tocar un solo valor esperado**. Par
+de la suite `1536 passed / 2 skipped`, `collected 1538`, configuración «PyMuPDF sí /
+ventana Tk no» — el par de C0, sin mover.
+
+**La traza de memoria se comparó campo por campo, no de vista** (punto 6 del prompt).
+Sonda propia: los cinco `PasoDeMemoria` que emite `M4_control._pasos_hidraulicos` sobre
+una malla de 5 diámetros × 4 caudales × 3 pendientes × 3 TW = **180 combinaciones**,
+volcando de cada paso `codigo`, `fase`, `que`, `por_que`, `formula`, `formula_cita_id`,
+`fundamento_id`, `nota_del_proyecto`, el `Umbral` entero con su `cita_id` y su `caracter`,
+y **cada `Magnitud` con su valor en hexadecimal exacto** (`float.hex`), contra un
+*worktree* de `8d5e54b`. Resultado: **12 564 líneas idénticas, `cmp` limpio**.
+
+De las 180, **144 producen los cinco pasos (720 en total) y 36 no llegan a producirlos**:
+son las ramas `None` de `resolver_manning` y las excepciones de diseño. El volcado las
+registra con su causa y **también entraron en la comparación**, así que la cobertura no
+las pierde — pero la primera redacción de esta sección escribió «144 combinaciones» donde
+la malla tiene 180, sin decir que 36 caían ni por qué. Corregido. De los 720 pasos, 144
+llevan `Umbral` real —el de `h_o`, `HDS5_3ED.3.3.3#HO_1_2D`— y también coincide. El
+hexadecimal importa: `pytest.approx` habría aprobado una deriva de 1e-12, que es
+exactamente la que este refactor podía introducir.
+
+**Por qué no se movió nada — con la salvedad que la auditoría encontró.** La regla general
+es que cada sustitución es un renombre con el mismo árbol de expresión:
+`SeccionCircular.altura` es `return self.D`, y `_area_en_theta`, `_perimetro_en_theta`,
+`_tirante_en_theta`, `area_llena`, `radio_hidraulico_lleno`, `ancho_superficial_en_llenado`
+y `bracket_llenado` conservan operandos, paréntesis y orden. Brent recibe la misma `f` y el
+mismo bracket, luego la misma sucesión de iterados y la misma raíz.
+
+**Pero «renombre con el mismo árbol» es falso para tres funciones, y conviene decirlo
+porque se escribió aquí como si fuera universal.** `M3.area`, `M3.perimetro` y `M3.tirante`
+ya no evalúan su fórmula: devuelven un campo de `seccion.geometria_en(llenado)`, que
+construye la `Geometria` entera y con ella el `R = A/P`. Donde antes había una
+multiplicación ahora hay una **división**, y en `llenado = 0` eso es `ZeroDivisionError`
+donde antes salía `0.0`. **No es alcanzable desde producción** —el bracket arranca en
+`TOL_THETA_BORDE` y `M3.geometria` ya dividía igual antes de C1—, y ningún número se
+movió; pero `ZeroDivisionError` no desciende de `ErrorProyecto`, de modo que es un modo de
+fallo nuevo de esas tres funciones. **Queda anotado y no corregido**: evitarlo pide tres
+miembros nuevos en el protocolo `Seccion`, y reestructurar el protocolo al cierre de la
+sesión de mayor riesgo del plan arriesga más de lo que arregla. La nota completa está en
+el comentario de las tres funciones en `M3_hidraulica`.
+
+#### Las cuatro anotaciones (punto 9: se anota y se sigue)
+
+| # | Qué | Dónde se ve | Por qué no se corrige aquí |
+|---|---|---|---|
+| **A-1** | `M4_control.perdida_carga` está en la lista de migración del punto 3 del prompt y **no recibe ningún diámetro**: le llega la `R` ya calculada. No se migró | `M4_control.perdida_carga(V, R, n, L, ke)` | No hay nada que migrar. La lista del prompt quedó **desactualizada respecto del propio §2-bis de C0**, que ya lo había medido |
+| **A-2** | §4.1 y el punto 2 del prompt dicen que `y_sobre_D` «lo consumen `M5.v1_borde_libre`, `M11._tabla_diseno` y **las dos plantillas de `src/plantillas/`**». Medido: **0 apariciones** en las dos plantillas, y `M5.v1_borde_libre` **no consume la propiedad** — recalcula `resultado.y_normal / D` por su cuenta | `src/plantillas/memoria_perfil.html`, `src/plantillas/memoria_alcantarillas.html`, `M5_verificaciones.v1_borde_libre:447` | El nombre **se conservó igual**, que era la instrucción; lo inexacto es la razón, no la orden. Los consumidores reales de `Geometria.y_sobre_D` son **los tests del motor**; al reporte el número viaja por `ResultadoPunto.y_sobre_D`, que es otra expresión |
+| **A-3** | El mismo `h_o` geométrico está escrito **dos veces**: `control_salida` lo calcula en `h_o_geometrico` y `_pasos_hidraulicos` lo vuelve a calcular para su `Magnitud("(y_c + D)/2", ...)`. `ControlSalida` no lo expone, y por eso el emisor lo repite | `M4_control.control_salida` (`h_o_geometrico`) y `M4_control._pasos_hidraulicos` (`Magnitud("(y_c + D)/2", ...)`) | **Es anterior a C1** —ya estaba escrito dos veces con `D` suelto— y arreglarlo movería la traza. Es la regla «M11 no hace aritmética sobre magnitudes» incumplida **del lado del emisor**: dos expresiones que hay que editar juntas para siempre, y solo una bajo los tests numéricos |
+| **A-4** | `DatoInvalidoError.campo` **se imprime** —M11 lo pinta en la memoria y la CLI lo publica en el JSON—, de modo que renombrarlo a `"altura"` habría sido mover salida. C1b lo había renombrado en M3; **C1c lo devolvió a `"D"`** | Los dos sitios que lo levantan: `M3_hidraulica._validar_parametros` y `M4_control._validar_Q_D` (que llama a `_validar_positivo`). Los dos tests que lo pinean: `test_M3_hidraulica.test_parametros_invalidos_lanzan_dato_invalido` y `test_M4_control.test_tirante_critico_valida_sus_parametros`. Los dos impresores: `M11_reporte` (memoria) y `cli.py` (JSON) | Renombrarlo es una **corrección de vocabulario**, y C1 no corrige. **Queda para C4**, que es la primera sesión en que `"D"` es falso —una `SeccionRectangular` no tiene diámetro— y la única que puede elegir el nombre viendo las dos formas a la vez. Si C4 lo renombra, mueve salida: tiene que decirlo y no puede escudarse en el diff vacío de la línea base, que **no cubre las ramas de error** |
+
+#### El arma cargada que C1 deja: **regla vinculante #12** de §6
+
+`Seccion` expone **dos parametrizaciones** y no son intercambiables. Está desarrollado en
+la **regla #12**, que es donde lo va a leer C4; aquí queda solo lo que C1 midió y la
+corrección de una cifra propia.
+
+**Primero la corrección, porque la cifra que esta sección publicó era falsa.** El primer
+cierre de C1 escribió «divergencia relativa máxima A 5.4e-12, P 4.7e-12, T 9.3e-11 sobre
+15 992 puntos» y **eso no es una cota**: es un artefacto de la grilla. Al afinarla, el
+máximo **crece** —2.0e-8 en A y 5.3e-8 en P sobre 800 016 puntos—, porque no se trata de
+una deriva de últimos bits sino de un **problema de condicionamiento** que se concentra en
+los dos extremos del llenado. La pista estaba a la vista y no se leyó: un mapa previo del
+refactor había medido A 2.1e-11 sobre otra grilla, y **dos grillas que dan máximos
+distintos son la definición de que no hay cota**. Publicar un número suelto como si la
+hubiera es exactamente el defecto que la regla #11 denuncia — una cifra sin su condición.
+
+**Lo que sí se sostiene, por tramos** (8 diámetros de 0.30 a 3.00 m; las filas de rango
+sobre 20 000 ángulos repartidos en `bracket_llenado()`):
+
+| Dónde | Divergencia relativa máxima |
+|---|---|
+| `y/D` ∈ [0.10, 0.75] — la ventana que V1 admite | A 9.7e-16 · P 3.9e-16 · T 4.0e-16 |
+| `y/D` ∈ [0.01, 0.99] | A 5.2e-15 · P 1.5e-15 · T 8.8e-15 |
+| θ = 1e-6 rad | P y T: 4.4e-5 |
+| **Extremos de `bracket_llenado()`** | **100 %: la vía por tirante devuelve `0.0` exacto para P y T** |
+
+**Y la consecuencia es peor que una deriva.** `T` es el denominador de `A^3/T` en
+`M4_control._residuo_critico`. Quien reescriba el residuo sobre
+`seccion.ancho_superficial(y)` no mete un 1e-12: **divide por cero en el extremo inferior
+del bracket**, que es de los primeros puntos donde Brent evalúa, reintroduciendo la clase
+de fallo que `SIS-G-02` cerró.
+
+En el centro del rango las dos vías **coinciden bit a bit** (θ = π: divergencia 0.0 exacta
+en las tres magnitudes). Por eso es regla vinculante y no comentario: **no se detecta
+mirando, y una comprobación puntual la aprueba**. El aviso, con la medición, está también
+en el docstring de `modelos.Seccion`, que es donde lo lee quien esté a punto de hacerlo.
+
+#### La auditoría adversarial del cierre, y lo que le encontró a C1
+
+Se invocó `auditor-adversarial` sobre los cinco commits, con el encargo de refutar ocho
+afirmaciones concretas de esta misma sección. **De las ocho, una salió limpia (el censo de
+literales), dos quedaron refutadas y cinco ajustadas.** Todo lo de arriba ya está
+corregido con lo que encontró. Lo que importa registrar:
+
+**La refutación que valía la sesión entera: C1 movió salida impresa y no se dio cuenta.**
+El revert de A-4 devolvió a `"D"` el **campo** de `DatoInvalidoError` y **dejó renombrado
+el motivo** —de «el diametro debe ser positivo» a «la altura interior de la seccion debe
+ser positiva»—. Los dos viajan juntos dentro de `str(exc)`, que `cli._bloqueo` guarda como
+`mensaje`, `cli._bloqueo_json` publica y `M11._tabla_bloqueos` pinta: exactamente los tres
+sitios que el propio argumento de A-4 invocaba para el campo. Es alcanzable con **un solo
+argumento de CLI** —`--declarar 'diametros_normalizados={"inicio": -0.90, "paso": 0.15}'`—
+y da **12 apariciones en el JSON y una en el HTML**. Y el resultado era peor que cualquiera
+de las dos opciones puras: `campo: D` pegado a una frase que habla de «la altura interior
+de la sección», dos vocabularios para el mismo dato en la misma línea. **Corregido**: la
+rama de error ahora es idéntica a `8d5e54b`, verificada con `diff` de las dos corridas.
+
+**Por qué la suite no lo vio, que es la lección reutilizable.** El test que cubre esa rama
+comprobaba `exc.value.campo` **y no `exc.value.motivo`**. Un test que pinea la mitad de una
+cadena impresa no defiende la cadena. Los dos tests
+(`test_M3_hidraulica.test_parametros_invalidos_lanzan_dato_invalido` y
+`test_M4_control.test_tirante_critico_valida_sus_parametros`) ahora comprueban las dos
+mitades, con la razón escrita encima.
+
+**Y por qué la línea base tampoco lo vio.** `regenerar.sh` genera el `--json` en un
+temporal y **lo tira**; no genera el `--csv-resumen`; no corre `--alcance expediente`; y de
+los 4 puntos de `tests/ejemplo_puntos.csv` **solo 1 llega a dimensionarse**. El diff vacío
+es real, pero la ventana por la que mira es más estrecha de lo que esta sección daba a
+entender, y **la rama de error no entra en ella en absoluto**: hace falta un `--declarar`
+para llegar. La auditoría cerró esos huecos por su cuenta —los 3 CSV de `tests/`, × los dos
+alcances, × `cli.txt` + `informe.json` + `memoria.html` + `resumen.csv`, contra un worktree
+de la base— y **no encontró más movimiento**; y barrió además el régimen de transición
+(`3.5 < q* < 4.0`), el sumergido, `h_o_fuera_de_rango`, `DisenoNoFactibleError` y
+`LimiteNumericoError`, todos idénticos. **Ensanchar la línea base es trabajo de C4**, que
+la va a usar con el mismo criterio de salida y con una forma más que verificar.
+
+**Las demás, corregidas en el sitio que les toca:**
+
+| Qué | Dónde quedó |
+|---|---|
+| Tres símbolos nuevos sin consumidor y sin ficha —la mitad por tirante de `Seccion`, `SeccionCircular.etiqueta` y `Geometria.y_sobre_D`—, más `M3.tirante`, que se quedó huérfana | **Parte V nueva de `docs/decisiones_diferidas.md`** (`C1-01` a `C1-04`). Lo exige `CLAUDE.md` para todo objeto conservado sin consumidor, y `tests/test_decisiones_diferidas.py` ya las vigila |
+| El comentario de `M3.area/perimetro/tirante` decía que las tres son «la API pública que la suite contrasta contra `geometria()`». La suite contrasta **dos**; `tirante` no la llama nadie | Corregido y medido en el propio comentario. Es el antipatrón de «predecir un consumidor que no existe», que el repositorio ya tiene fichado |
+| Dos referencias cruzadas que C1 dejó rancias: `M7_geometria` y `M2_material` mandaban a `modelos.Geometria` por cosas que se mudaron a `SeccionCircular` | Reapuntadas. Es el patrón `FACTOR_MURO_TABLA`: prosa que ningún barrido vigila |
+| `SeccionCircular.etiqueta()` devolvía `"D 0.90 m"`; la §4.1 especifica `"Ø 0.90 m"` | Corregido. Era código nuevo que no cumplía la especificación desde la que se escribió |
+| El mensaje del commit `f99764a` dice «10 localizadores en 3 archivos». El recuento real —conjunto de localizadores antes y después, no líneas del diff— es **11 ocurrencias en 4 archivos**: `M4_control` 7, `M3_hidraulica` 2, `MD` 1 y **`modelos.py` 1, que el mensaje omitía** | Corregido aquí. El commit está empujado y no se reescribe: el número bueno es éste |
+| `M8_estructural` codifica geometría circular en producción (`(math.pi/4)·D_ext²` de la flotación, y el prisma de relleno de ancho `D_ext`) y **no figura en el censo de 59 símbolos de §2-bis**, que se presenta como el barrido completo de `src/`, `cli.py` y `gui/` | **Anotado, no corregido.** Es defecto del censo de C0, y §5 ya asigna esos símbolos al frente **F4**. Quien ejecute F4 no puede fiarse de que §2-bis sea exhaustivo |
+| `_validar_parametros` conserva `if seccion.altura <= 0` en vez de la forma `not A > 0` que `CLAUDE.md` fija desde MAT-D13 (un `nan` la atraviesa) | **Anotado, no corregido**: es anterior a C1 y cambiarlo mueve el comportamiento de una rama de error |
+
+#### Sobre la cláusula normativa de §9-bis
+
+C1 **no tocó ni creó ningún valor `[N]` ni `[N→]`**, no aplicó ningún procedimiento al
+marco, no añadió ninguna función de cálculo y no declaró ningún criterio nuevo: es un
+refactor de tipos cuyo criterio de éxito es que la salida no se mueva, y no se movió. Por
+eso no hubo cita que pasar por `verificador-normativo`, y por eso **no hay defecto nuevo
+contra la v8 que sumar a §15.8**: los ocho (`D-1`…`D-8`) siguen siendo los de CN, sin
+alta ni baja.

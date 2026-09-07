@@ -449,7 +449,7 @@ def diametro_exterior(*, material: Material, D: float) -> float:
     D_ext = D + 2*t, m: el diametro EXTERIOR del conducto.
 
     `D` es el diametro interior -- el hidraulico, el que entra en Manning y en
-    `modelos.Geometria` -- y `D_ext` es el que gobierna todo lo que toca al
+    `modelos.SeccionCircular` -- y `D_ext` es el que gobierna todo lo que toca al
     terreno: el Bc del Art. 12.6.6.3 de AASHTO LRFD (cobertura minima), el
     volumen desplazado de la subpresion de V7 (num. 2.4.3.8.2 del Manual de
     Puentes) y la posicion de la clave fisica. Confundirlos es MAT-D3 y

@@ -74,7 +74,7 @@ se mueven juntas.
 
 El 1/cos(esviaje) no es un coeficiente adoptado: es la identidad geometrica
 del cruce oblicuo -- el eje del conducto es la hipotenusa del ancho que
-atraviesa -- del mismo orden que el T = D*sen(theta/2) de `modelos.Geometria`.
+atraviesa -- del mismo orden que el T = D*sen(theta/2) de `modelos.SeccionCircular.ancho_superficial_en_llenado`.
 A 0 grados vale 1 y el conducto es perpendicular a la via.
 
 La proyeccion de taludes SI es un vacio: Sec. 7.B pide sumarla pero no da la

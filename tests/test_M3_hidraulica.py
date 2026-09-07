@@ -20,7 +20,8 @@ import math
 
 import pytest
 
-from modelos import DatoInvalidoError, Geometria, TiranteNormal, TipoMaterial
+from modelos import (DatoInvalidoError, Geometria, SeccionCircular, TiranteNormal,
+                     TipoMaterial)
 from modulos.M2_material import catalogo
 from modulos.M3_hidraulica import area, geometria, perimetro, resolver_manning, tirante_normal
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING, CP3_VELOCIDAD_MINIMA
@@ -43,7 +44,7 @@ def hdpe():
 def test_geometria_reproduce_cp2():
     c = CP2_GEOMETRIA_MANNING
     theta = c["theta_esperado"]
-    g = geometria(c["D"], theta)
+    g = geometria(SeccionCircular(c["D"]), theta)
 
     assert isinstance(g, Geometria)
     assert g.A == pytest.approx(c["A_esperado"], abs=c["tolerancia_geometria"])
@@ -55,8 +56,8 @@ def test_geometria_reproduce_cp2():
 def test_area_y_perimetro_funciones_sueltas_coinciden_con_geometria():
     c = CP2_GEOMETRIA_MANNING
     theta = c["theta_esperado"]
-    assert area(c["D"], theta) == pytest.approx(c["A_esperado"], abs=c["tolerancia_geometria"])
-    assert perimetro(c["D"], theta) == pytest.approx(c["P_esperado"], abs=c["tolerancia_geometria"])
+    assert area(SeccionCircular(c["D"]), theta) == pytest.approx(c["A_esperado"], abs=c["tolerancia_geometria"])
+    assert perimetro(SeccionCircular(c["D"]), theta) == pytest.approx(c["P_esperado"], abs=c["tolerancia_geometria"])
 
 
 def test_tirante_normal_resuelve_el_theta_de_cp2_desde_Q():
@@ -66,16 +67,16 @@ def test_tirante_normal_resuelve_el_theta_de_cp2_desde_Q():
     el mismo theta, con Brent y no con la formula cerrada de y/D.
     """
     c = CP2_GEOMETRIA_MANNING
-    g = tirante_normal(D=c["D"], Q=c["Q_con_n_max_esperado"], S=c["S"], n=c["n_max"])
+    g = tirante_normal(seccion=SeccionCircular(c["D"]), Q=c["Q_con_n_max_esperado"], S=c["S"], n=c["n_max"])
 
     assert g is not None
-    assert g.theta == pytest.approx(c["theta_esperado"], rel=1e-4)
+    assert g.llenado == pytest.approx(c["theta_esperado"], rel=1e-4)
     assert g.A == pytest.approx(c["A_esperado"], abs=c["tolerancia_geometria"])
 
 
 def test_velocidad_con_n_max_reproduce_cp2():
     c = CP2_GEOMETRIA_MANNING
-    g = tirante_normal(D=c["D"], Q=c["Q_con_n_max_esperado"], S=c["S"], n=c["n_max"])
+    g = tirante_normal(seccion=SeccionCircular(c["D"]), Q=c["Q_con_n_max_esperado"], S=c["S"], n=c["n_max"])
     V = c["Q_con_n_max_esperado"] / g.A
     assert V == pytest.approx(c["V_con_n_max_esperado"], abs=c["tolerancia_hidraulica"])
 
@@ -88,10 +89,10 @@ def test_resolver_manning_aplica_doble_n(concreto):
     c = CP2_GEOMETRIA_MANNING
     Q = c["Q_con_n_max_esperado"]
 
-    resolucion = resolver_manning(D=c["D"], Q=Q, S=c["S"], material=concreto)
+    resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=concreto)
 
     assert isinstance(resolucion, TiranteNormal)
-    assert resolucion.geometria.theta == pytest.approx(c["theta_esperado"], rel=1e-4)
+    assert resolucion.geometria.llenado == pytest.approx(c["theta_esperado"], rel=1e-4)
     assert resolucion.V_erosion == pytest.approx(
         c["V_con_n_min_esperado"], abs=c["tolerancia_hidraulica"])
     assert resolucion.V_sedimentacion == pytest.approx(
@@ -106,7 +107,7 @@ def test_v_con_n_min_no_es_Q_sobre_area(concreto):
     """
     c = CP2_GEOMETRIA_MANNING
     Q = c["Q_con_n_max_esperado"]
-    resolucion = resolver_manning(D=c["D"], Q=Q, S=c["S"], material=concreto)
+    resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=concreto)
 
     V_incorrecta = Q / resolucion.geometria.A
     assert resolucion.V_erosion != pytest.approx(V_incorrecta, rel=1e-3)
@@ -125,7 +126,7 @@ def test_las_dos_ramas_comparten_la_misma_geometria(concreto):
     c = CP2_GEOMETRIA_MANNING
     Q = c["Q_con_n_max_esperado"]
 
-    resolucion = resolver_manning(D=c["D"], Q=Q, S=c["S"], material=concreto)
+    resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=concreto)
     factor = resolucion.geometria.R ** (2 / 3) * c["S"] ** (1 / 2)
 
     assert resolucion.V_erosion == pytest.approx(
@@ -142,7 +143,7 @@ def test_hdpe_tambien_aplica_doble_n_por_el_rango_de_criterios_adoptados(hdpe):
     Q = c["Q_con_n_max_esperado"]
 
     assert hdpe.n_min != hdpe.n_max
-    resolucion = resolver_manning(D=c["D"], Q=Q, S=c["S"], material=hdpe)
+    resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=hdpe)
 
     assert resolucion is not None
     V_con_n_max = Q / resolucion.geometria.A
@@ -182,7 +183,7 @@ def test_pendiente_que_produce_v_objetivo_de_cp3():
     # objetivo de V2. Sale del dorado de area de CP-2, no de una cuenta nueva.
     Q = c3["V_objetivo"] * c2["A_esperado"]
 
-    resolucion = resolver_manning(D=c3["D"], Q=Q,
+    resolucion = resolver_manning(seccion=SeccionCircular(c3["D"]), Q=Q,
                                   S=c3["S_que_produce_V_objetivo"],
                                   material=material)
 
@@ -203,19 +204,19 @@ def test_pendiente_que_produce_v_objetivo_de_cp3():
 def test_un_caudal_que_ningun_theta_transporta_devuelve_none():
     """D=0.90 lleno a presion (Sec. 4.1) no llega a transportar un Q absurdo:
     tirante_normal() debe devolver None, no lanzar una excepcion generica."""
-    g = tirante_normal(D=0.90, Q=100.0, S=0.005, n=0.013)
+    g = tirante_normal(seccion=SeccionCircular(0.90), Q=100.0, S=0.005, n=0.013)
     assert g is None
 
 
 def test_resolver_manning_devuelve_none_si_la_rama_de_n_max_no_converge(concreto):
-    resolucion = resolver_manning(D=0.90, Q=100.0, S=0.005, material=concreto)
+    resolucion = resolver_manning(seccion=SeccionCircular(0.90), Q=100.0, S=0.005, material=concreto)
     assert resolucion is None
 
 
 def test_none_no_es_una_excepcion():
     """El caso sin solucion es un resultado de diseño, no un fallo del programa."""
     try:
-        resultado = tirante_normal(D=0.90, Q=100.0, S=0.005, n=0.013)
+        resultado = tirante_normal(seccion=SeccionCircular(0.90), Q=100.0, S=0.005, n=0.013)
     except Exception as exc:   # pragma: no cover - documenta la intencion del test
         pytest.fail(f"tirante_normal() no debe lanzar excepcion en el caso "
                     f"sin solucion, lanzo {type(exc).__name__}: {exc}")
@@ -226,16 +227,35 @@ def test_none_no_es_una_excepcion():
 # Validacion de parametros
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("kwargs, campo", [
-    ({"D": 0.0, "Q": 1.0, "S": 0.005, "n": 0.013}, "D"),
-    ({"D": 0.90, "Q": -1.0, "S": 0.005, "n": 0.013}, "Q"),
-    ({"D": 0.90, "Q": 1.0, "S": 0.0, "n": 0.013}, "S"),
-    ({"D": 0.90, "Q": 1.0, "S": 0.005, "n": 0.0}, "n"),
+# EL MOTIVO SE COMPRUEBA, Y NO ES CELO: ES LA REGRESION QUE C1 SE COMIO.
+# Este test solo miraba `campo`, y por eso paso en verde mientras C1 renombraba
+# el MOTIVO de "el diametro debe ser positivo" a "la altura interior de la
+# seccion debe ser positiva". Los dos viajan juntos dentro de `str(exc)` --
+# `cli._bloqueo` lo guarda como `mensaje`, `cli._bloqueo_json` lo publica y
+# `M11._tabla_bloqueos` lo pinta --, de modo que renombrar el motivo MUEVE
+# SALIDA igual que renombrar el campo: medido, 12 apariciones en el JSON y una
+# en el HTML con un solo `--declarar`. Un test que pinea la mitad de una cadena
+# impresa no defiende la cadena.
+@pytest.mark.parametrize("kwargs, campo, motivo", [
+    # El campo sigue siendo "D" despues de C1 aunque M3 ya no reciba un
+    # diametro, y el motivo sigue hablando de diametro: los dos se imprimen, y
+    # C1 no mueve salida. La nota del porque esta en `M3._validar_parametros`.
+    ({"D": 0.0, "Q": 1.0, "S": 0.005, "n": 0.013}, "D",
+     "el diametro debe ser positivo"),
+    ({"D": 0.90, "Q": -1.0, "S": 0.005, "n": 0.013}, "Q",
+     "el caudal debe ser positivo"),
+    ({"D": 0.90, "Q": 1.0, "S": 0.0, "n": 0.013}, "S",
+     "la pendiente debe ser positiva para que Manning tenga solucion real"),
+    ({"D": 0.90, "Q": 1.0, "S": 0.005, "n": 0.0}, "n",
+     "el coeficiente de Manning debe ser positivo"),
 ])
-def test_parametros_invalidos_lanzan_dato_invalido(kwargs, campo):
+def test_parametros_invalidos_lanzan_dato_invalido(kwargs, campo, motivo):
+    kwargs = dict(kwargs)
+    kwargs["seccion"] = SeccionCircular(kwargs.pop("D"))
     with pytest.raises(DatoInvalidoError) as exc:
         tirante_normal(**kwargs)
     assert exc.value.campo == campo
+    assert exc.value.motivo == motivo
 
 
 # ---------------------------------------------------------------------------
@@ -273,10 +293,10 @@ def test_el_None_de_tirante_normal_es_conservador_y_no_literal():
         "test sobraria")
 
     en_la_banda = (Q_lleno + Q_pico) / 2
-    assert tirante_normal(D, en_la_banda, S, n) is None, (
+    assert tirante_normal(SeccionCircular(D), en_la_banda, S, n) is None, (
         "la funcion devuelve None en la banda, y eso es lo que el docstring "
         "tiene que decir")
 
     # Y por debajo del lleno si resuelve, que es el otro lado del contrato.
-    resuelto = tirante_normal(D, Q_lleno * 0.9, S, n)
+    resuelto = tirante_normal(SeccionCircular(D), Q_lleno * 0.9, S, n)
     assert resuelto is not None and resuelto.y_sobre_D < 1.0
