@@ -2980,6 +2980,7 @@ alta ni baja.
 | **C3** | `df2edac` · `396a9b7` · `17d36ba` · `a9e9028` · `C3d` · `C3e` · PR #8 | **1554 p / 2 s**, «PyMuPDF sí / Tk no» | La **Forma 2** de HDS-5 implementada: `M4._hw_sobre_D_no_sumergido` bifurca por `hds5.forma`; el paso de memoria que dice **qué forma se usó y por qué**, con `F4.FORMA_HDS5`; casos patrón `CP5D_*` calculados a mano; y la **línea base ensanchada a 12 archivos** (JSON, CSV, expediente, rama de error, 3 de 4 puntos dimensionados) | La transición bajo Forma 2 **decrece con el caudal** para S > 0.2365 — declarada, no corregida: corregirla es sustituir el criterio `metodo_transicion_hds5`. **D-10** nuevo y **D-9** corregido contra la v8. `R-11` (pág. A.8 inferida) y `R-12` (elisión sin marcar) anotados |
 
 
+| **C3.5** | `C3.5` (un commit) | **1558 p / 2 s**, «PyMuPDF sí / Tk no» | Dos correcciones de raíz pedidas al cerrar C3: la **regla vinculante #5** reenunciada con la medición de la Tabla A.1, y su origen corregido en `citas.py`; y **`tests/test_linea_base.py`**, que hace que la ventana deje de depender de que alguien corra el script | El límite de la ventana, **declarado y medido**: no ve cablear `forma = 1` porque ningún punto del fixture usa Forma 2 todavía. Lo cazan los tests unitarios; se vuelve visible aquí cuando C4 meta un cajón |
 ### 16.5 C2 — lo que se transcribió, lo que se corrigió y lo que se anotó
 
 **El gate de entorno se comprobó antes de transcribir nada, y no es formalismo.** PyMuPDF
@@ -3187,3 +3188,38 @@ Los valores `[N]` que C3 toca son las dos ecuaciones y los dos límites de rama.
 **Pasaron por `verificador-normativo` antes de aceptarse**, punto por punto, y su informe
 confirmó los ocho: numeral, título, páginas impresa y PDF, y el texto de cada ecuación. De
 paso corrigió el defecto **D-9** que C2 había registrado contra la v8.
+
+### 16.7 C3.5 — las dos correcciones de raíz
+
+**La regla vinculante #5 estaba mal enunciada, y es la que C4 y C5 citan.** Decía «no se
+cruzan coeficientes entre formas» apoyándose en el num. A.3, y ese numeral prohíbe cruzarlos
+entre **formas geométricas**, no entre formas de ecuación. La prueba está en la Tabla A.1,
+medida sobre sus 36 filas: **`Rect. Box Concrete` aparece con Forma 1 y con Forma 2, y
+`Circular` también**. La misma geometría vive en las dos formas y la misma forma cubre
+geometrías distintas; una prohibición sobre geometrías no puede ser la regla que separa las
+formas.
+
+La regla reescrita conserva **lo que sí es vinculante y directo para la Familia C** —el
+cajón usa una carta *de cajón*, no la circular con otras constantes— y separa los dos ejes
+con la tabla de la medición. Corregido también el sitio donde nació: el **comentario** de la
+cita `HDS5_3ED.A.3#FORMAS` (no su campo `nota`, que está vacío — al cerrar C3 lo dije mal).
+De ahí lo copió C3 a otros tres archivos creyendo que lo verificaba. **Es `NOR-PUE-01` otra
+vez**: una cita que dice algo que la fuente no dice, propagada por cuatro archivos.
+
+**La línea base ya no depende de que alguien se acuerde.** `tests/test_linea_base.py` corre
+el script contra un destino temporal y compara byte a byte. Para eso `regenerar.sh` admite
+ahora un **argumento de destino**: sin él, el test tendría que repetir los cuatro comandos y
+habría **dos** definiciones de la línea base que podrían divergir — el defecto que este
+repositorio persigue en todas partes—. Con él hay una, y el test la ejecuta.
+
+Cuatro comprobaciones: que la salida comprometida es la que produce el código; que no hay
+salidas sin comprometer **ni** comprometidas que ya no se generen; que la corrida es
+determinista —sin eso el primero sería intermitente y acabaría desactivado—; y que la
+ventana **cubre los ejes que el README dice que cubre**, para que estrecharla rompa un test
+en vez de pasar inadvertido, que es como llegó a estar estrecha.
+
+**Y su límite, declarado en vez de tapado.** Medido con tres mutaciones: ve invertir la
+etiqueta de ecuación y ve renombrar el `motivo` de un `DatoInvalidoError` —la regresión de
+C1—, y **no** ve cablear `forma = 1`, porque hoy ningún punto del fixture usa Forma 2. A ésa
+la caza un test unitario. Las dos capas son complementarias y ninguna sustituye a la otra;
+**cuando C4 meta un cajón en el fixture, esa mutación se vuelve visible aquí también**.
