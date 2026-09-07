@@ -1,0 +1,5 @@
+id,progresiva,familia,TR_anios,tipo_hidraulico,material,norma_producto,D_m,V_erosion_ms,V_sedimentacion_ms,y_sobre_D,HW_m,control_gobernante,proteccion_d50_m,proteccion_espesor_m,proteccion_longitud_m,tipo_cabezal
+A-01,0+380,A,71,concreto_reforzado,Concreto reforzado,AASHTO M 170M-04 / ASTM C 76M-02 (metrica),0.90,3.21,2.47,0.70,1.04,entrada,0.338,0.59,5.000,Cerrada: tubo a ras del muro (square edge)
+A-02,1+920,A,71,concreto_reforzado,Concreto reforzado,AASHTO M 170M-04 / ASTM C 76M-02 (metrica),0.90,2.88,2.22,0.37,0.57,entrada,0.274,0.48,5.000,Cerrada: tubo a ras del muro (square edge)
+B-01,2+450,B,35,concreto_reforzado,Concreto reforzado,AASHTO M 170M-04 / ASTM C 76M-02 (metrica),0.90,1.96,1.50,0.16,0.36,salida,0.126,0.22,5.000,Cerrada: tubo a ras del muro (square edge)
+C-01,3+100,C,,,,,,,,,,,,,,Cerrada: tubo a ras del muro (square edge)

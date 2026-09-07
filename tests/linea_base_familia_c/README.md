@@ -66,3 +66,30 @@ El detalle está en §16.1-bis y §1.1 de `docs/ruta_familia_c.md`.
   el contrato de memoria (§4.5) exige que nada de lo que se añade quede invisible en el
   reporte. El HW, los tirantes y las velocidades no se mueven: `git diff` sobre esta
   línea base da exactamente esas dos líneas.
+
+## C3 ensanchó la ventana, y son diez archivos
+
+La ventana de C0 miraba **una** corrida: perfil, sin TW, tirando el JSON, sin CSV de
+resumen, y con **1 de los 4 puntos** llegando a dimensionarse. Costó dos veces: C1 metió una
+regresión de salida impresa que esta línea base **no vio** (la rama de error necesita un
+`--declarar` para alcanzarse), y en C2 el defecto de la Forma 2 lo encontró un auditor
+leyendo el código, no el diff.
+
+C3 la ensancha en cuatro ejes:
+
+| | Antes | Ahora |
+|---|---|---|
+| Salidas capturadas | CLI + HTML | CLI + HTML + **JSON** + **CSV de resumen** |
+| Alcances | perfil | perfil **y expediente** (plantillas distintas, Fases 8 y 9 ejecutadas) |
+| Puntos dimensionados | **1** de 4 | **3** de 4 |
+| C-01 (Familia C) | se detenía por falta de TW | llega a su **bloqueo real**: «el catálogo de Sec. 3.2 no ofrece marco» — justo lo que C4 y C5 cambian |
+
+**La corrida estrecha de C0 se conserva intacta**, con la misma línea de comando y los
+mismos dos archivos, para que el diff histórico siga siendo comparable.
+
+**`entradas_ampliadas.json` es un FIXTURE, no datos de proyecto.** El TW y el caudal de
+C-01 están ahí para **ejercitar caminos de código**; no son una medición de campo ni
+pretenden serlo, y ninguna constante `[N]` puede apoyarse en ellos.
+
+Los diez archivos se comprobaron **deterministas**: dos corridas consecutivas del script
+producen bytes idénticos.
