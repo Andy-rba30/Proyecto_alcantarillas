@@ -197,17 +197,18 @@ reporte) y su semántica pasa a ser *dimensión máxima de catálogo*.
 
 **Esta sección es tan vinculante como §6.** El entregable de la tesis no es que el número
 salga: es que el revisor pueda reconstruir de dónde salió, igual que ya ocurre con la
-Familia A. Todo lo que este plan añada tiene que aparecer por **los mismos seis vehículos
+Familia A. Todo lo que este plan añada tiene que aparecer por **los mismos siete vehículos
 que el proyecto ya usa**, sin inventar uno nuevo:
 
 | Qué se declara | Vehículo | Qué exige del código nuevo |
 |---|---|---|
 | **El procedimiento**, paso a paso | `PasoDeMemoria` emitido por la función de cálculo, impreso por `M11.bloque_paso` | qué, **por qué** (de un `Fundamento` de `normativa/fundamentos.py`, con `verbo` sostenido por el `caracter` de alguna de sus citas), fórmula con `cita_id`, sustitución con **procedencia de cada valor**, umbral con su **carácter en la fuente**, veredicto con margen |
 | **Cada valor elegido** | `M11.bloque_criterios` (marcador `bloque_criterios`) | cada criterio nuevo con etiqueta, concepto, fuente, sensibilidad y `resolucion`; el valor **efectivo**, con marca si se declaró en caliente |
-| **Lo adoptado donde la norma calla** | `M11.bloque_acotaciones` (marcador `bloque_acotaciones`) | el criterio nuevo debe llevar `vacio_verificado`, o **no aparece en este bloque**: `acotaciones_declaradas()` lo lee del catálogo, no de la plantilla |
+| **Lo adoptado donde la norma calla** | `M11.bloque_acotaciones` (marcador `bloque_acotaciones`) | el criterio nuevo debe llevar `vacio_verificado`, o **no aparece en este bloque**: `acotaciones_declaradas()` lo lee del catálogo, no de la plantilla. Y además **tener valor**: el filtro exige `valor is not None`, así que un criterio vacío no aparece aquí por mucho `vacio_verificado` que lleve |
 | **El carácter de cada umbral** | `M11.bloque_umbrales` (marcador `bloque_umbrales`) | si el numeral *recomienda* y el proyecto lo aplica como umbral duro, tiene que decirlo — es lo que ya hacen V1 y V2 |
 | **Lo que falta y a quién** | `M11.bloque_pendientes` + `criterios_bloqueantes` | cada vacío nuevo con concepto, fuente, qué lo resuelve, qué bloquea y en qué puntos |
 | **Lo que la fuente dice / lee / hace** | tres clases CSS separadas: `fuente`, `interpretacion`, y lo que el proyecto hace | pegar las tres es `NOR-HID-04` |
+| **Lo que el proyecto hace más estrecho que la norma** (la norma habla, y el proyecto cubre solo parte) | `M11.bloque_alcance` (marcador `bloque_alcance`, imprime con el expediente abierto) + `PasoDeMemoria.nota_del_proyecto` en el punto | el campo `nota_del_proyecto` se imprime bajo «Lo que pone el proyecto» con clase CSS `interpretacion`. **No es acotación**: acotaciones es «lo adoptado donde la norma calla», y aquí la norma habla. Y **no es `Cita.interpretacion`**, que existe como campo pero **no tiene impresor** en la memoria: su único consumidor en `M11_reporte` es `_interpretacion_tabla_10()`, cableado a `MC_HHD.T10` |
 
 Dos reglas que se rompen sin querer:
 
@@ -260,9 +261,15 @@ barril.** No hay «diámetro equivalente». HDS-5: *«D — Interior height of c
 rectangular (box) shapes should not be used for nonrectangular (circular, arch, pipe-arch,
 etc.) shapes and vice-versa»*.
 
-**#6 — La Tabla Nº 09 NO tiene fila de cajón.** El subgrupo «a. Concreto» del grupo A trae
-solo filas de **tubo**. El n de Manning de un marco es un **vacío del Manual** y se cubre
-con un criterio `[N→]` con la analogía declarada, con la forma de `n_manning_hdpe`.
+**#6 — La Tabla Nº 09 NO tiene fila de cajón, y el vacío es DE FILA, NO DE GRUPO.** El
+grupo «A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO» ya cubre al marco por su
+propio título: un cajón es un conducto cerrado. Lo que falta es la fila. De las siete
+subfilas de «a. Concreto», seis dicen «tubo» y la séptima —`afinado`— no dice nada de
+forma. **Esto hace la analogía más estrecha que la del HDPE**, que sí estaba fuera de la
+tabla entera: aquí el conducto está dentro del grupo y solo falta su acabado. El n de
+Manning del marco se cubre con un criterio `[N→]` cuya justificación tiene que declarar
+las dos cosas — que el grupo aplica y que la fila no existe — y no puede copiar el
+argumento de `n_manning_hdpe` tal cual.
 
 **#7 — La Tabla Nº 10 SÍ sirve tal cual, y no se le crea criterio.** Clasifica por **tipo
 de revestimiento** («Concreto 3.0 – 6.0 m/s»), no por forma. V3 no se toca y **no** se
@@ -280,6 +287,45 @@ hoy el `whichever is greater` de la Tabla 12.6.6.3-1 porque en un conducto circu
 `M5.v6_material_solido_arrastre` deja de ser trivial en cuanto exista multibarril: su
 docstring ya lo avisa. Mientras N esté fijado en 1 por criterio declarado, V6 sigue
 valiendo y **hay que decirlo en el criterio**, no darlo por hecho.
+
+**#11 — `ke_entrada` = 0.5 es de TUBO, y para el cajón el número puede coincidir pero la
+cita no.** Su campo `fuente` lo ata explícitamente al bloque «Pipe, Concrete» de la Tabla
+C.2, fila «Square-edge» **sangrada bajo el rótulo de agrupación «Headwall or headwall and
+wingwalls»** — el propio criterio documenta que la fila suelta, sin su encabezado, pierde
+la condición. El bloque «Box, Reinforced Concrete» tiene once filas propias, con cuatro
+rótulos de aletas y siete valores.
+
+**Y aquí está la trampa, que es peor que un valor equivocado.** Para la embocadura que el
+proyecto adopta —cabezal a ras, sin aletas (§9.1: «tubo a ras del muro (*square edge*)»)—
+la fila del cajón es «Headwall parallel to embankment (no wingwalls) → Square-edged on 3
+edges» y vale **0.5 también**. El número coincide; **lo que no coincide es la procedencia**,
+porque `resolucion` apunta a `fila_id='concreto_headwall_square_edge'`, del bloque de tubo.
+Es exactamente el precedente `NOR-HID-01`: *el número es defendible y la cita no lo era*.
+Un valor que no falla ruidosamente es el que nadie comprueba.
+
+**Lo que lo hace peligroso es que no se detiene.** El criterio tiene `valor=0.5`,
+`etiqueta="C"`, `nivel=NIVEL_PERFIL` y **`sensibilidad=None`**: con un cajón corre el
+control de salida sin bloqueo, sin ventana y sin nada que lo señale en la memoria. Y en
+cuanto `embocadura_cajon` declare **aletas** —que es lo que la Lámina Nº 03 dibuja— el
+valor deja de coincidir: 0.4 con aletas a 30°–75°, 0.5 a 10°–25° y **0.7 con aletas
+paralelas**. Con 0.5 → 0.7 y **V = 3 m/s**, `H` sube `0.2·V²/2g` = **0.092 m** de carga
+que el cálculo no vería, contra V4 y contra el tamizado de 7.A.
+
+**Y arrastra una premisa muerta.** `T_HDS5_C2.alcance` está `Acotada` con la razón «el
+catálogo de conductos de la Sec. 3.2 **no ofrece sección cajón**» — exactamente la premisa
+que C5 destruye. Un `Acotada` que describe un alcance que ya no es el suyo es el
+antipatrón de §12.
+
+C5 tiene que abrir `ke_entrada` por forma, emparejado con la fila que `embocadura_cajon`
+declare. Las dos decisiones se mueven juntas con la embocadura de Sec. 9.1, igual que ya
+lo hacen la carta de HDS-5 y el detalle del cabezal.
+
+> **Dos cifras de esta regla las corrigió CP contra la fuente, y conviene saber cuáles.**
+> El parche v2 escribía «once filas propias, **de 0.4 a 0.7** según aletas y borde»: leído
+> sobre la pág. impresa C.6 (PDF 216), los siete valores del bloque van de **0.2 a 0.7**
+> —0.4–0.7 es el rango de las variantes *square-edged at crown* solamente—. Y escribía los
+> 0.09 m sin la velocidad: `0.2·V²/2g` no es un número hasta que se dice **V = 3 m/s**.
+> Un umbral sin su condición es lo que esta misma regla denuncia.
 
 ---
 
@@ -306,15 +352,19 @@ valiendo y **hay que decirlo en el criterio**, no darlo por hecho.
 
 ## 8. Preparación, antes de la primera sesión
 
-1. `pip install pymupdf --break-system-packages` en el entorno de la suite. Sin él, los 32
-   tests de `test_normativa_pdf.py` se saltan y las transcripciones de C2 pasarían sin
-   verificar.
+1. **El contenedor de sesión arranca sin dependencias.** CN tuvo que instalarlas para
+   poder correr la suite. Deja resuelto, o instruye en el prompt, `numpy`, `scipy`,
+   `pytest` y **`pymupdf`**. Sin PyMuPDF los 32 tests de `test_normativa_pdf.py` se
+   saltan y las transcripciones de C2 pasarían sin verificar.
 2. Guardar la salida de `python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance
    perfil` y el par `passed / skipped` leído de `origin/main`. Es la línea base contra la
    que C1 se mide con un diff.
 3. **CN va primero.** Es la sesión que contesta qué numeral sostiene cada paso del
    procedimiento cuando la sección es un marco. Sin ella, C5 escribe criterios cuya
    justificación habría que rehacer.
+4. **La configuración de referencia de este plan es «PyMuPDF sí / ventana Tk no»**, que
+   da `1536 passed / 2 skipped` (collected 1538). Es la que midió CN. Cualquier sesión
+   que reporte otro par tiene que decir con qué configuración corrió, no solo el número.
 
 **Convención de commit:** `familiaC(Cn): resumen — símbolos tocados`. Una tarea no está
 terminada hasta que su trabajo está en `origin/main`; el conteo de tests se lee de ahí.
@@ -323,18 +373,24 @@ terminada hasta que su trabajo está en `origin/main`; el conteo de tests se lee
 
 ## 9. Tabla maestra de sesiones
 
-| Sesión | Trabajo | Frente | Modelo | Esfuerzo | Plan mode |
-|---|---|---|---|---|---|
-| **CN** | Procedimiento normativo del marco | F0 | **Fable 5.1** | high | sí |
-| **C0** | Censo de acoplamiento y línea base | — | Sonnet 5 | high | no |
-| **C1** | Refactor de sección, sin cambiar ningún número | F1 | Opus 5 | **ultracode** | sí |
-| **C2** | Registro normativo del cajón (Tabla A.1 y C.2) | F2 | Opus 5 | **xhigh** | sí |
-| **C3** | HDS-5 Forma 2 en M4 | F1+F2 | Opus 5 | high | sí |
-| **C4** | `SeccionRectangular`: hidráulica del marco | F1 | Opus 5 | xhigh | sí |
-| **C5** | Catálogo, criterios y verificaciones del cajón | F3 | Opus 5 | xhigh | sí |
-| **C6** | Entradas: CSV, CLI, variables, dominios | F5 | Sonnet 5 | high | no |
-| **C7** | Camino a perfil: M7, M8 y V7 | F4 | Opus 5 | high | sí |
-| **C8** | Reporte, GUI, corrida completa y cierre | F5 | Opus 5 | ultracode | no |
+| Sesión | Trabajo | Frente | Modelo | Esfuerzo | Plan mode | Estado |
+|---|---|---|---|---|---|---|
+| **CN** | Procedimiento normativo del marco | F0 | Opus 5 *(corrida real; el plan proponía Fable 5.1)* | max | sí | **Cerrada** — `e2da067`, PR #2 |
+| **C0** | Censo de acoplamiento y línea base | — | Sonnet 5 | high | no | |
+| **C1** | Refactor de sección, sin cambiar ningún número | F1 | Opus 5 | **ultracode** | sí | |
+| **C2** | Registro normativo del cajón (Tabla A.1 y C.2) | F2 | Opus 5 | **xhigh** | sí | |
+| **C3** | HDS-5 Forma 2 en M4 | F1+F2 | Opus 5 | high | sí | |
+| **C4** | `SeccionRectangular`: hidráulica del marco | F1 | Opus 5 | xhigh | sí | |
+| **C5** | Catálogo, criterios y verificaciones del cajón | F3 | Opus 5 | xhigh | sí | |
+| **C6** | Entradas: CSV, CLI, variables, dominios | F5 | Sonnet 5 | high | no | |
+| **C7** | Camino a perfil: M7, M8 y V7 | F4 | Opus 5 | high | sí | |
+| **C8** | Reporte, GUI, corrida completa y cierre | F5 | Opus 5 | ultracode | no | |
+
+> **Nota de calibración, medida y no supuesta.** CN corrió con Opus 5 a `max` en lugar de
+> Fable 5.1 a `high`, y salió bien: cuatro `verificador-normativo` en paralelo, cuatro
+> autocorrecciones antes de cerrar y una refutación propia retirada (R-5). Para las
+> sesiones de volumen (C2, C8) **no repitas `max`**: cuesta sin dar más que `xhigh`, que
+> es lo que `ultracode` ya envía.
 
 **Por qué este reparto.** El modelo es aproximadamente *cuán capaz* y el esfuerzo
 aproximadamente *cuán exhaustivo*: el esfuerzo no controla solo el tiempo de pensamiento,
@@ -605,6 +661,10 @@ No toques ningún módulo de cálculo en esta sesión.
    precisión que la propia transcripción ya documenta: el valor 0.5 aparece siete
    veces en esa tabla, en siete filas distintas. Cada fila queda identificada por
    su BORDE, no por su valor.
+   Dejá anotado en el reporte de la sesión que el consumidor de esta tabla es el
+   criterio `ke_entrada`, que hoy tiene valor 0.5 tomado del bloque «Pipe,
+   Concrete», y que C5 tendrá que abrirlo por forma (regla vinculante #11). NO lo
+   toques en esta sesión: aquí solo se transcribe.
 
 3. En modelos.ConstantesHDS5 añadí el campo `forma: int` (1 o 2) y actualizá
    `desde_dict`. Poné Forma 1 en las tres filas circulares existentes: es lo que
@@ -773,12 +833,37 @@ El tesista los declara después, y la memoria imprime de dónde vino cada uno.
      valiendo trivialmente, PERO su docstring tiene que decir que ahora depende de
      un criterio declarado y no de que MD no sepa hacer multibarril.
 
-5. Implementá la declaración que CN redactó en §15 punto 4: que la memoria diga,
-   donde corresponda, que a nivel de perfil el marco se dimensiona por V1/V4/V4b y
-   no por el criterio de Sec. 2.3 (no alterar la rasante hidráulica ni el borde
-   libre del canal), que queda diferido. Esto NO puede quedar en un docstring.
+5. Implementá la declaración que CN redactó en §15 punto 4, por el vehículo que CN
+   determinó: `bloque_alcance` más `PasoDeMemoria.nota_del_proyecto` en el punto.
+   Lo que se declara: Sec. 2.3 NO le da a la Familia C un conjunto de
+   verificaciones de aceptación —`PERFILES[Familia.C].verificaciones_aceptacion`
+   es None, y el comentario del propio código lo dice—, de modo que a nivel de
+   perfil el marco se acepta con V1/V4/V4b, que es el conjunto de una alcantarilla
+   de paso. Eso LLENA UN HUECO, no sustituye a un criterio declarado, y el
+   requisito de Sec. 2.3 que sí existe (no alterar la rasante hidráulica ni el
+   borde libre del canal) queda diferido como VC1 (§13).
+   Esto NO puede quedar en un docstring.
 
-6. Actualizá los tests que pinnean el contrato viejo, y decí en el reporte cuál
+6. `ke_entrada` (regla vinculante #11). Hoy vale 0.5 con etiqueta [C],
+   NIVEL_PERFIL y sensibilidad None, y su `fuente` lo ata al bloque «Pipe,
+   Concrete» de la Tabla C.2, fila «Square-edge» bajo el rótulo de agrupación
+   «Headwall or headwall and wingwalls». OJO: para el cabezal a ras sin aletas
+   que adopta §9.1, la fila del cajón vale 0.5 TAMBIÉN — el número coincide y la
+   PROCEDENCIA no, que es el precedente NOR-HID-01. Y en cuanto la embocadura
+   declare aletas deja de coincidir (0.4 / 0.5 / 0.7 según el ángulo). Con un
+   cajón NADA lo detiene: no hay bloqueo, no hay ventana, no hay marca en la
+   memoria.
+   Abrilo por forma: el ke del marco sale del bloque «Box, Reinforced Concrete»
+   que C2 transcribió, emparejado con la fila que `embocadura_cajon` declare. Las
+   dos decisiones se mueven juntas.
+   Comprobá que el ke elegido sale en la memoria con SU FILA Y SU RÓTULO DE
+   AGRUPACIÓN: el propio criterio ya documenta que la fila suelta pierde la
+   condición.
+   Y comprobá que `T_HDS5_C2.alcance` dejó de decir «el catálogo de Sec. 3.2 no
+   ofrece sección cajón»: esa premisa la destruye esta misma sesión, y un
+   `Acotada` que describe un alcance que ya no es el suyo es el antipatrón de §12.
+
+7. Actualizá los tests que pinnean el contrato viejo, y decí en el reporte cuál
    cambiaste y por qué: test_M2_material.py:283, test_MD.py:719/743/747,
    test_M1_clasificacion.py:394.
 
@@ -960,8 +1045,10 @@ Sobre `origin/main`:
 5. **Cada valor de cálculo sale en la memoria con su procedencia**: los cuatro criterios
    nuevos en `bloque_criterios`, los que cubren vacío en `bloque_acotaciones`, y los
    umbrales con su carácter en `bloque_umbrales`.
-6. La sustitución del criterio de dimensionamiento de la Familia C (V1/V4/V4b en lugar de
-   Sec. 2.3) está **declarada y visible**, no implícita.
+6. El **hueco de aceptación de la Familia C** está declarado y visible: que Sec. 2.3 no
+   le da conjunto propio, que a perfil se acepta con V1/V4/V4b, y que el requisito de
+   Sec. 2.3 queda diferido como VC1. Por `bloque_alcance` + `nota_del_proyecto`, no
+   implícito y no en un docstring.
 7. Ningún criterio nuevo tiene valor escrito en `criterios_adoptados.py`.
 8. `test_normativa_pdf.py` corre completo, no saltado, y en verde.
 9. El par `passed / skipped` se reporta leído de `origin/main`, con el entorno declarado,
@@ -982,6 +1069,10 @@ Sobre `origin/main`:
 - **No poner techos en `dominios.py` para evitar desbordes.**
 - **No escribir valores en `criterios_adoptados.py`.** Los declara el tesista.
 - **No dejar un `Acotada` describiendo un alcance que ya no es el suyo.**
+- **No dejar `ke_entrada` en 0.5 cuando la sección es un cajón.** Tiene valor y no tiene
+  sensibilidad: no se detiene solo. Regla #11.
+- **No llamar «sustitución» al conjunto de aceptación de la Familia C.** Sec. 2.3 nunca
+  declaró uno; V1/V4/V4b llena un hueco.
 
 ## 13. Deuda declarada, fuera de este alcance
 
@@ -2184,3 +2275,29 @@ hallazgo propio retirado por falso, y ninguna afirmación pendiente de resolver.
 de salida de §10-CN —que ningún paso quede como «se aplica igual» sin numeral o sin analogía
 declarada— se cumple sobre los 42 pasos**, y la lección que la auditoría añade es que ese
 criterio, solo, no basta: hay que preguntar además de qué tabla sale cada valor.
+
+---
+
+## 16. Bitácora de sesiones
+
+Una fila por sesión cerrada. El estado de detalle vive en §15 (normativa) y en
+`docs/decisiones_diferidas.md` (lo conservado sin consumidor); esta tabla es solo el índice
+de qué se corrió, con qué y con qué resultado medido.
+
+| Sesión | SHA | Suite (config) | Qué dejó | Qué quedó propuesto y no aplicado |
+|---|---|---|---|---|
+| **CN** | `e2da067` (PR #2, fusionado en `d469409`) | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §15: tabla numeral-por-paso, ocho `Fundamento`, la declaración del hueco de aceptación, 8 defectos contra la v8, 8 huecos del repo | regla vinculante #11 (`k_e`), la corrección de la #6, el contrato de §4.5 y el punto 6 de C5 — **todos aplicados por CP**. Los 8 defectos contra la v8 siguen abiertos: son de la v9 |
+| **CP** | *(este commit)* | 1536 p / 2 s, «PyMuPDF sí / Tk no» | Consolidación del parche v2 en §4.5, §6, §8, §9, §10, §11 y §12: regla #6 reescrita, regla #11 nueva, séptimo vehículo de memoria, C5 punto 6, C2 punto 2 ampliado, §16 abierta | Lo que §15 dejó y CP **no** convirtió en regla: ver §16.1 |
+
+### 16.1 Lo que sigue propuesto y no aplicado
+
+De los ocho defectos contra la v8 (`D-1`…`D-8`) y los ocho huecos del repositorio
+(`R-1`…`R-10`, con `R-5` retirado) que §15.8 enumera, **CP no convierte ninguno en regla
+vinculante ni en punto de prompt por su cuenta**: la propuesta está en la respuesta de la
+sesión CP y espera decisión. Lo que sí quedó cerrado en este documento es lo que el parche
+v2 traía y las dos cifras que CP corrigió contra la fuente dentro de la regla #11.
+
+**Los ocho defectos contra la v8 no se corrigen desde aquí.** La v8 es la fuente normativa
+única y `M11.ruta_hoja_de_ruta()` la localiza por patrón de nombre; su corrección es una
+**v9**, y hasta que exista, cada defecto vive en §15.8 con el símbolo del código donde se
+ve.
