@@ -2496,6 +2496,8 @@ ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
 | **D-7** | **Sec. 2.3**, Familia C | Enuncia el requisito *«No puede alterar la rasante hidráulica ni el borde libre del canal»* **sin etiqueta, sin numeral y sin verificación asignada**, mientras que a la Familia A sí le da conjunto de aceptación (V1+V2+V4+V5) | El requisito no sale de ningún numeral del Manual: se apoyaría en la Ley 29338 y la DG-2018, **fuentes ausentes** del registro | `M1_clasificacion.PERFILES[Familia.C].verificaciones_aceptacion = None`, con el comentario *«Sec. 2.3 no declara conjunto propio»*. Es el hueco que §13 llama **VC1** y lo que obliga a la declaración de §15.6 |
 | **D-8** | **Fila V7 de la Fase 5** | Enumera cuatro filas de la Tabla 2.4.5.3.1-2 —«Estructura rígida enterrada» 1.30/0.90, «Alcantarillas termoplásticas» 1.30/0.90, flexibles «Entre otros» 1.95/0.90 y «Muros y estribos de retención» 1.35/1.00— y **omite «Pórticos rígidos» (1.35/0.90)** | Es la fila que la regla vinculante **#8** asigna al cajón: la v8 desglosa la tabla por tipo de estructura y deja fuera precisamente el tipo de la Familia C | `constantes_normativas.TABLA_GAMMA_P_FILAS` **sí la tiene** (`EV_porticos_rigidos`, 1.35/0.90). El que no la contempla es el desglose de la v8 |
 
+| **D-9** *(C2)* | **Fase 4, §4.2**, control de entrada | Escribe **una** ecuación de control de entrada no sumergido —la que lleva el término `Ks·S`— y presenta las constantes `K, M, c, Y` de la Tabla A.1 como si una sola ecuación las consumiera. **No menciona que HDS-5 tiene DOS formas** | La Tabla A.1 tiene una columna **«Equation Form»** con valores 1 y 2, y el num. A.3 (pág. impresa **A.2** / PDF 191) prohíbe cruzarlas: *«coefficients for rectangular (box) shapes should not be used for nonrectangular … shapes and vice-versa»*. Para el cajón la cosa es inmediata: **la Carta 8 es Forma 1 y las Cartas 9, 10, 11 y 12 son Forma 2**, y la Forma 2 **no lleva `Ks·S`** | `modelos.ConstantesHDS5.forma` y la columna `equation_form` de `T_HDS5_A1`, ambos añadidos por C2. Con la v8 en la mano, quien implemente el cajón copiará la Forma 1 y le cambiará las constantes: con `Ks = -0.5` el término **resta** carga y el HW sale **menor que el real**, del lado no conservador, sin que ninguna guardia de signo lo detecte |
+
 **Recordatorio, no defecto nuevo:** `DIS-HR-G-LAUSHEY` sigue en estado
 `ABIERTA_CONTRA_HOJA_DE_RUTA` y esta sesión la **reconfirmó por segunda vía independiente**
 (§15.3.4): el num. 4.1.1.3.7 c) define `g` sin número. **La v8 sigue mal ahí.**
@@ -2504,15 +2506,15 @@ ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
 
 | Id | Símbolo | Qué falta | Quién lo cierra |
 |---|---|---|---|
-| **R-1** | `citas.MC_HHD_4_1_1_3_4a` | Transcribe **sólo** el párrafo del 0.90 m, con `caracter=EXIGENCIA`. Los párrafos de **PERMISO** y **RECOMENDACIÓN** que sostienen el tipo de la Familia C no están | **C2** — `#TIPOS`, `#MARCO`, `#MULTIPLES` (§15.7) |
-| **R-2** | `citas` / `tablas` | **No existe cita del num. 4.1.1.3.7 d)**, que es la única exigencia sin número que acota la sección del cajón tras levantarse el piso de 0.90 m | **C2** — `MC_HHD.4.1.1.3.7d` |
-| **R-3** | `constantes_normativas.TABLA_09_FILAS` | Transcribe cuatro filas del grupo A. **`afinado` no está**, y es la única fila del ítem sin forma en el rótulo: la candidata a la analogía del cajón | **C2**, y **C5** elige y declara cuál toma (§15.3.2) |
-| **R-4** | `constantes_normativas.TABLA_09_FILAS` | Sus valores de A.2 son la lectura **corregida** del corrimiento y el bloque **no remite a `DIS-MCHHD-T09-A2-DESPLAZADA`**, que está declarada en `normativa/tablas.py`. Quien lea sólo `constantes_normativas` y vaya a la página encuentra otros tres números | **C2** — una línea de remisión; la discrepancia ya existe y **no hay que volver a demostrarla** |
+| ~~**R-1**~~ **cerrado en C2** | `citas.MC_HHD_4_1_1_3_4a` | Transcribe **sólo** el párrafo del 0.90 m, con `caracter=EXIGENCIA`. Los párrafos de **PERMISO** y **RECOMENDACIÓN** que sostienen el tipo de la Familia C no están | **C2** — `#TIPOS`, `#MARCO`, `#MULTIPLES` (§15.7) |
+| ~~**R-2**~~ **cerrado en C2** | `citas` / `tablas` | **No existe cita del num. 4.1.1.3.7 d)**, que es la única exigencia sin número que acota la sección del cajón tras levantarse el piso de 0.90 m | **C2** — `MC_HHD.4.1.1.3.7d` |
+| ~~**R-3**~~ **cerrado en C2** | `constantes_normativas.TABLA_09_FILAS` | Transcribe cuatro filas del grupo A. **`afinado` no está**, y es la única fila del ítem sin forma en el rótulo: la candidata a la analogía del cajón | **C2**, y **C5** elige y declara cuál toma (§15.3.2) |
+| ~~**R-4**~~ **cerrado en C2** | `constantes_normativas.TABLA_09_FILAS` | Sus valores de A.2 son la lectura **corregida** del corrimiento y el bloque **no remite a `DIS-MCHHD-T09-A2-DESPLAZADA`**, que está declarada en `normativa/tablas.py`. Quien lea sólo `constantes_normativas` y vaya a la página encuentra otros tres números | **C2** — una línea de remisión; la discrepancia ya existe y **no hay que volver a demostrarla** |
 | ~~**R-5**~~ | ~~`SIN_FUNDAMENTO` de `F5.V6`~~ | **RETIRADO por la auditoría adversarial (§15.10, punto 7).** CN afirmó que la ficha remitía al numeral equivocado, y es falso por partida doble: el num. **4.1.1.3.7 a) se titula literalmente «Material sólido de arrastre»** —el mismo nombre que V6— y contiene *«alcantarillas de mayor sección hidráulica»*; y la cláusula prospectiva de la ficha apunta al Ø48" **para lo que esa cláusula dice**, que es un diámetro mínimo por zona. **La ficha está bien y no se toca.** *(De paso: `SIN_FUNDAMENTO` es una `Tuple[Tuple[str,str,str], ...]`, no un dict — la notación con corchetes que CN usó sería un `TypeError`.)* | — |
 | **R-9** | `M6_proteccion.proteccion_salida` (docstring) | Afirma que `longitud_proteccion_salida` está *«hoy sin valor — la llamada se detiene con `CriterioPendienteError`»*. **Medido: vale `5.0` con `sensibilidad=(3.0, 8.0)`.** Docstring que describe un estado que dejó de ser cierto | fuera del alcance de este plan; se registra aquí porque salió al comprobar que la Fase 6 no se toca |
-| **R-10** | `normativa/tablas.py::T_HDS5_C2.alcance` | Es `Acotada` con la razón *«…el catálogo de conductos de la Sec. 3.2 **no ofrece sección cajón**: ninguna de esas filas puede aplicarse a un punto de este corredor»*. **C5 destruye esa premisa** en cuanto M2 devuelva un candidato de marco. Es el antipatrón que §12 enumera: *«No dejar un `Acotada` describiendo un alcance que ya no es el suyo»* | **C2** transcribe las once filas de «Box, Reinforced Concrete»; **C5** amplía la `Acotada` y acopla `ke_entrada` a `embocadura_cajon` |
+| ~~**R-10**~~ **cerrado en C2** en su mitad de transcripción; el acoplamiento de `ke_entrada` sigue en C5 | `normativa/tablas.py::T_HDS5_C2.alcance` | Es `Acotada` con la razón *«…el catálogo de conductos de la Sec. 3.2 **no ofrece sección cajón**: ninguna de esas filas puede aplicarse a un punto de este corredor»*. **C5 destruye esa premisa** en cuanto M2 devuelva un candidato de marco. Es el antipatrón que §12 enumera: *«No dejar un `Acotada` describiendo un alcance que ya no es el suyo»* | **C2** transcribe las once filas de «Box, Reinforced Concrete»; **C5** amplía la `Acotada` y acopla `ke_entrada` a `embocadura_cajon` |
 | **R-6** | `variables_entrada._Columna.criterio_destino` | Es `Optional[str]`, un solo destino. Un segundo consumidor de `sucs_fundacion` obliga a decidir tupla o cambio de destino: **es cambio de esquema** | **C6**, no C5 (§15.5) |
-| **R-7** | `normativa/discrepancias.py` | El cuerpo del Manual describe **mal su propia Lámina Nº 03**: dice *«se aprecia secciones típicas de alcantarillas tipo marco de concreto»* (impresa 73) y la **primera de sus tres figuras es tubería metálica corrugada** (impresa 209). Contradicción **interna de la fuente primaria**, no contra la v8 | **C2** — una `Discrepancia` de estado `ABIERTA`, para que un revisor que cuente las figuras no crea que la cita está mal puesta |
+| ~~**R-7**~~ **cerrado en C2** (`DIS-MCHHD-LAMINA-03-TMC`) | `normativa/discrepancias.py` | El cuerpo del Manual describe **mal su propia Lámina Nº 03**: dice *«se aprecia secciones típicas de alcantarillas tipo marco de concreto»* (impresa 73) y la **primera de sus tres figuras es tubería metálica corrugada** (impresa 209). Contradicción **interna de la fuente primaria**, no contra la v8 | **C2** — una `Discrepancia` de estado `ABIERTA`, para que un revisor que cuente las figuras no crea que la cita está mal puesta |
 | **R-8** | `criterios_adoptados['factores_carga_aashto']` | Su comentario justifica la fila del tubo diciendo *«No es "Pórticos rígidos" … la Familia C, de marco o multicelda, sale sin candidatos»*: **describe un estado que C5 deja de ser cierto**. Falta además la clave del cajón | **C5** — junto con el epígrafe «Familia C queda sin candidatos» de `M2_material`, que tiene el mismo problema y ya está en el prompt de C5 |
 
 ### 15.9 Correcciones a ESTE documento
@@ -2697,6 +2699,8 @@ de qué se corrió, con qué y con qué resultado medido.
 | **CP** | `53e431a` (consolidación) · `bb8cdfa` (docstrings) · `a6d6543` (prompts) · PR #3 y #4 | 1536 p / 2 s, «PyMuPDF sí / Tk no» | Consolidación en §4.5, §6, §8, §9, §10, §11 y §12; los cuatro puntos de prompt de §16.2; y las tres correcciones de código de `R-9` | los 8 defectos contra la v8 (`D-1`…`D-8`): son de una **v9** |
 | **C0** | medida sobre `origin/main` **`4f6cf69`** | 1536 p / 2 s, «PyMuPDF sí / Tk no» | §2-bis (censo de 59 símbolos), §14 (las dos decisiones de alcance), la línea base de `tests/linea_base_familia_c/`, el punto 5 de C1 y §16.3 | el anclaje por línea del manifiesto: **se mide, no se arregla** (§16.3) |
 | **C1** | `56677a4` · `b535176` · `a25ce7a` · `f99764a` · `d46256f` · `C1f` · `C1g` · PR #6 | **refactor: 1536 p / 2 s** (collected 1538, el par de C0). **Cierre: 1540 p / 2 s** (collected **1542**), «PyMuPDF sí / Tk no» | La abstracción `Seccion` y su única implementación `SeccionCircular`; `Geometria` lleva la sección y el `llenado` en vez de `D` y `theta`; M3 y M4 dejan de saber la forma del barril; manifiesto regenerado dos veces (11 + 1 ocurrencias); **regla vinculante #12**; punto 0 nuevo en el prompt de C4; **Parte V** de `decisiones_diferidas.md` | ensanchar `regenerar.sh` (tira el JSON, no corre expediente, dimensiona 1 punto de 4) → **C4**. `M8_estructural` fuera del censo de §2-bis → **F4**. `_validar_parametros` sin la forma `not A > 0` de MAT-D13 |
+| **C2** | `c8404ad` · `f7526be` · `1874d80` · `ebc114d` | **1540 p / 2 s** (collected 1542), «PyMuPDF sí / Tk no» — **y `test_normativa_pdf.py` corrió COMPLETO, 32 passed, ninguno saltado** | Tabla A.1: las 15 filas del cajón (Cartas 8–12) con su columna de **forma de ecuación**. Tabla C.2: el bloque Box, **7 filas con valor bajo 4 rótulos**. Las **7 citas** de §15.7, la fila `afinado` de la Tabla Nº 09, **4 `Fundamento`** (F3.TIPO_MARCO, F3.MANTENIMIENTO, F3.CELDAS, F4.FORMA_HDS5), `ConstantesHDS5.forma`, `HDS5_INLET` **derivado** de la transcripción, `DIS-MCHHD-LAMINA-03-TMC` y `SIN_COTAS_LAMINA_03`. Cierra R-1, R-2, R-3, R-4, R-7 y la mitad de R-10 | **D-9** nuevo contra la v8 (las dos formas de ecuación de HDS-5). `ke_entrada` sigue en 0.5 de tubo → **C5** (regla #11). La «pág. impresa A.8» de la Tabla A.1 es **inferida, no leída** — esa página no lleva folio |
+
 
 > **Los dos pares de C1, y por qué son dos.** El refactor cierra con **el par de C0 sin mover**: `1536 passed / 2 skipped`, `collected 1538`, medido sobre los cuatro commits del refactor. Las correcciones de la auditoría añaden **cuatro tests y ni uno más**: las cuatro fichas nuevas de `docs/decisiones_diferidas.md` (`C1-01`…`C1-04`), de las que `tests/test_decisiones_diferidas.py` deriva una comprobación de existencia de símbolo por ficha — 34 fichas antes, 38 ahora. De ahí `collected 1542`. **Ningún test nuevo pinea comportamiento de cálculo**, que es lo que el criterio de salida protegía; los dos asserts de `motivo` que se añadieron caen dentro de casos parametrizados que ya existían y no cambian el conteo.
 
@@ -2940,3 +2944,93 @@ refactor de tipos cuyo criterio de éxito es que la salida no se mueva, y no se 
 eso no hubo cita que pasar por `verificador-normativo`, y por eso **no hay defecto nuevo
 contra la v8 que sumar a §15.8**: los ocho (`D-1`…`D-8`) siguen siendo los de CN, sin
 alta ni baja.
+
+### 16.5 C2 — lo que se transcribió, lo que se corrigió y lo que se anotó
+
+**El gate de entorno se comprobó antes de transcribir nada, y no es formalismo.** PyMuPDF
+1.28.2 presente y `tests/test_normativa_pdf.py` corriendo **completo: 32 passed, ninguno
+saltado**. Sin él, T2, T3, T5 y T6 se saltan en bloque y las 22 filas y 7 citas de esta
+sesión habrían entrado **sin que nada las contrastara contra el PDF** — que es exactamente
+la clase de defecto que el registro normativo existe para impedir.
+
+#### Lo que la fuente primaria corrigió del repositorio y del propio plan
+
+Cinco cosas, todas verificadas contra el PDF por `verificador-normativo` antes de
+escribirlas:
+
+| Qué decía | Qué dice la fuente | Dónde estaba |
+|---|---|---|
+| La Tabla A.1 «cubre todas las cartas del Apéndice C — cajón, **elíptica, arco, pipe-arch, long span**» y esas quedan fuera | Censadas sus **36 filas de datos**, la Tabla A.1 **no tiene ni una fila** de pipe-arch, arco ni long span —viven en las Tablas A.2 y A.4—, y **sí tiene 23 de cajón rectangular de concreto**. Las dos mitades de la frase estaban al revés | `T_HDS5_A1.alcance` |
+| El bloque «Box, Reinforced Concrete» tiene **once filas** | **Siete** con coeficiente, bajo **cuatro rótulos de agrupación**. Once es el número de *líneas* | `T_HDS5_C2.alcance` |
+| §15.7 sitúa `HDS5_3ED.A.3#FORMAS` en la página **«A.3»** | **A.3 es el numeral**; la página impresa es **A.2** (PDF 191), porque el numeral abre al pie de la anterior. Es la confusión numeral/folio que `NOR-HDS-01` ya cerró una vez | §15.7, tabla de citas |
+| §15.7 propone citar `#MULTIPLES` como *«…recomendándose utilizar obras con mayor sección transversal libre, sin subdivisiones.»* | Es una **elisión sin marcar** bajo el rótulo «texto literal» — el defecto que `CLAUDE.md` nombra a propósito de la tercera condición de `h_o` — y además el recorte se lee como preferencia **general** por la celda única, cuando la recomendación está **condicionada** al supuesto de multicelda en cauce con arrastre. Se cita la oración entera | §15.7, y ahora `citas.CAJON_MULTIPLES` |
+| La Tabla A.1 está en la **pág. impresa A.8** | **Esa página no lleva folio impreso**: las cuatro páginas apaisadas de tablas del apéndice (PDF 197–200) van sin numerar. «A.8» es una **inferencia por secuencia**, correcta y predicha por la regla de paginación, pero no una lectura. **Anotado, no corregido**: `pagina_impresa` es un campo que T6 usa | `citas.HDS5_TA1.nota` |
+
+**Y una errata de la fuente que explica la primera fila de esa tabla**: el num. A.3.1 del
+propio HDS-5 dice *«From Table A.1, Chart 34, Scale 3»*, y la carta 34 —*Pipe Arch CM*—
+está en la **Tabla A.2** en esta 3.ª edición. Es una remisión no actualizada al reorganizar
+el apéndice, hermana de `DIS-HDS5-APENDICE-G`. Queda **anotada en la nota de la cita y sin
+ID propio**: abrir una `Discrepancia` nueva no era trabajo de C2.
+
+#### Dos tests corregidos porque afirmaban algo falso, no para que pasaran
+
+- **T21** (`test_T21_los_verbatim_del_registro_conservan_sus_diacriticos`) se declaraba a sí
+  mismo *«la única forma barata que no da falsos positivos»*. Da uno: la frase del
+  num. 4.1.1.3.7 d) tiene **133 caracteres y ni una sola tilde en la fuente**. Queda exenta
+  **con su verificación escrita en el propio código**, no con una etiqueta. La guardia no se
+  afloja: T2 sigue comprobando que el texto aparezca en su página, y lo que T21 añade —que
+  la comparación de T2 normaliza sin diacríticos y por tanto aceptaría un verbatim
+  de-acentuado— sigue en pie para todas las demás.
+- El **rótulo de completitud** de la Tabla Nº 09 pasa de «2 de 4 filas» a «2 de 5». El
+  rótulo lo **deriva la tabla de sus campos**; el número del test era la copia vieja.
+
+#### Los ocho `Fundamento` de §15.7: construibles, y medido
+
+Comprobado sobre el registro construido, cita por cita y verbo por verbo (no de vista):
+**los ocho tienen todas sus citas en el registro y todos los verbos quedan sostenidos** por
+el `caracter` de al menos una, que es lo que T11 exige.
+
+| Escritos por C2 | Pendientes, y de quién |
+|---|---|
+| `F3.TIPO_MARCO`, `F3.MANTENIMIENTO`, `F3.CELDAS`, `F4.FORMA_HDS5` | `F4.SECCION`, `F4.YC_RECT` (**C4**) · `F3.SECCION_CANAL`, `F4.N_CAJON` (**C5**) |
+
+**Por qué C2 escribió cuatro y no cero, que era lo que el alcance sugería:** `T4` del
+registro rechaza una cita que nadie referencia. Transcribir `MC_HHD.4.1.1.3.7d`,
+`MC_HHD.LAMINA_03` y `HDS5_3ED.A.3#FORMAS` **sin su consumidor deja el registro en rojo**.
+Los otros cuatro no se escriben porque sus citas ya existían y no crean ninguna huérfana:
+su sitio es la sesión que escribe el paso que los emite.
+
+**Y quedan declarados como inalcanzables**, en `tests/test_memoria_sustentada.py`, con una
+razón distinta de la de los que ya estaban ahí: aquéllos no se alcanzan porque al expediente
+le falta un dato; **éstos porque el paso que los emitiría todavía no existe**. Salen de esa
+lista en cuanto C4 y C5 escriban los pasos; **si en esas sesiones siguen ahí, es que el paso
+se escribió sin su fundamento**.
+
+#### Qué se movió en la salida, y por qué está bien
+
+La línea base de la Familia C cambia en **dos líneas, y ninguna es un número de cálculo**:
+el SHA-1 de `criterios_adoptados.py` —que cambió— y el criterio `hds5_embocadura_hdpe`, que
+pasa a imprimir **`forma = 1`** junto a sus K, M, c, Y y Ks. Lo segundo **es el efecto
+buscado**: el contrato de memoria de §4.5 exige que nada de lo que se añade quede invisible
+en el reporte, y la forma de ecuación es justamente lo que un revisor necesita para poder
+rehacer el número. HW, tirantes y velocidades no se mueven.
+
+#### Anotado y no corregido (punto 8 del prompt)
+
+- **`ke_entrada` sigue valiendo 0.5, tomado del bloque «Pipe, Concrete»**, fila
+  «Square-edge» bajo el rótulo «Headwall or headwall and wingwalls». Con un cajón ese valor
+  no corresponde, y lo que lo hace peligroso es que el bloque Box **tiene una fila que
+  coincide en valor** —«Square-edged on 3 edges», también 0.5—: el número saldría igual y la
+  cita sería falsa. **Abrirlo por forma es de C5** (regla vinculante #11). C2 solo transcribe,
+  y lo deja escrito en el propio objeto.
+- **La «pág. impresa A.8»** de la Tabla A.1 es inferida y no leída (arriba).
+- **La remisión rancia del num. A.3.1** del propio HDS-5 (arriba).
+
+#### Sobre la cláusula normativa de §9-bis
+
+Los valores `[N]` que C2 crea son las 22 filas nuevas de las Tablas A.1 y C.2 más la fila
+`afinado`. **Los tres lotes pasaron por `verificador-normativo` antes de aceptarse**, columna
+por columna, y su informe corrigió cinco cosas —las de la tabla de arriba—. Ningún
+procedimiento se aplicó al marco en esta sesión: C2 transcribe, y quien aplique tiene que
+citar el numeral que §15 le asigna. Toda cita nueva entra por `Registro.textos_literales()`;
+ninguna se copió a mano a un docstring.
