@@ -517,14 +517,14 @@ def test_el_TW_mayor_es_el_peor_caso_y_por_eso_basta_correr_uno():
     """
     from modulos.M2_material import catalogo
     from modulos.M4_control import resolver_control
-    from modelos import TipoMaterial
+    from modelos import SeccionCircular, TipoMaterial
 
     material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
     anterior = -math.inf
     for paso in range(0, 21):
         TW = paso / 10
-        r = resolver_control(D=0.90, Q=1.167, S=0.006, L=18.635, TW=TW,
-                             material=material)
+        r = resolver_control(seccion=SeccionCircular(0.90), Q=1.167, S=0.006,
+                             L=18.635, TW=TW, material=material)
         gobernante = max(r.HW_entrada, r.HW_salida)
         assert gobernante >= anterior - 1e-12, (
             f"el HW gobernante bajo al subir el TW a {TW} m")

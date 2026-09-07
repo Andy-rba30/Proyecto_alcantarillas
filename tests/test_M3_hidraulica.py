@@ -228,9 +228,10 @@ def test_none_no_es_una_excepcion():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("kwargs, campo", [
-    # "D" paso a ser "altura" en C1: lo que M3 valida ya no es un diametro
-    # sino la altura interior de la seccion, porque M3 dejo de saber la forma.
-    ({"D": 0.0, "Q": 1.0, "S": 0.005, "n": 0.013}, "altura"),
+    # El campo sigue siendo "D" despues de C1 aunque M3 ya no reciba un
+    # diametro: `campo` se imprime, y C1 no mueve salida. La nota del porque
+    # esta en `M3._validar_parametros`.
+    ({"D": 0.0, "Q": 1.0, "S": 0.005, "n": 0.013}, "D"),
     ({"D": 0.90, "Q": -1.0, "S": 0.005, "n": 0.013}, "Q"),
     ({"D": 0.90, "Q": 1.0, "S": 0.0, "n": 0.013}, "S"),
     ({"D": 0.90, "Q": 1.0, "S": 0.005, "n": 0.0}, "n"),

@@ -874,7 +874,13 @@ CENSO_DE_MARCAS = {
     # cuatro que quedan son los exponentes de Manning (dos veces), el tope de
     # duplicaciones del corchete y el 2/3 de la rama de velocidades.
     "src/modulos/M3_hidraulica.py": 4,
-    "src/modulos/M4_control.py": 5,
+    # 5 -> 3 en C1, por la misma mudanza: el 4 del area llena pi*D^2/4 y el
+    # 4 del radio hidraulico lleno D/4 se fueron a
+    # `modelos.SeccionCircular`. `area_llena` y `radio_hidraulico_lleno`
+    # siguen aqui, pero ya no escriben la formula: la piden a la seccion.
+    # Los tres que quedan son los exponentes de A^3/T (dos) y el 4/3 de la
+    # friccion de Sec. 4.3.
+    "src/modulos/M4_control.py": 3,
     "src/modulos/M8_estructural.py": 1,
     "src/modulos/M9_cabezal.py": 6,
     "src/normativa/extraccion/__main__.py": 5,

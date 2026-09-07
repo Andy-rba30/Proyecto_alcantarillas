@@ -151,8 +151,16 @@ NUMERAL_MANNING = "4.1"
 
 def _validar_parametros(seccion: Seccion, Q: float, S: float, n: float) -> None:
     if seccion.altura <= 0:
+        # EL CAMPO SIGUE SIENDO "D", Y ES DELIBERADO. C1 es un refactor: no
+        # mueve ni un digito de la salida impresa, y `DatoInvalidoError.campo`
+        # SE IMPRIME -- M11 lo pinta en la memoria y la CLI lo publica en el
+        # JSON --. Renombrarlo a "altura" seria una correccion de vocabulario,
+        # y las correcciones no van en esta sesion. Con quien nombra el dato
+        # cuando la seccion deja de ser circular tiene que quedarse C4, que es
+        # la sesion que trae la rectangular y la unica que puede decidirlo
+        # viendo las dos formas a la vez.
         raise DatoInvalidoError(
-            "altura", valor=seccion.altura,
+            "D", valor=seccion.altura,
             motivo="la altura interior de la seccion debe ser positiva")
     if Q <= 0:
         raise DatoInvalidoError("Q", valor=Q, motivo="el caudal debe ser positivo")

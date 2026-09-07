@@ -332,7 +332,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
         # NOR-MEM-01: el codigo lo calcula y el producto no lo muestra).
         resultado = None
         try:
-            normal = resolver_manning(seccion=SeccionCircular(D), Q=Q, S=S,
+            seccion = SeccionCircular(D)
+            normal = resolver_manning(seccion=seccion, Q=Q, S=S,
                                       material=material)
 
             if normal is None:
@@ -342,7 +343,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
             else:
                 # No puede salir None: se le pasa el tirante normal ya
                 # resuelto, y ese es el unico caso en que M4 devuelve None.
-                resultado = resolver_control(D=D, Q=Q, S=S, L=L, TW=TW,
+                resultado = resolver_control(seccion=seccion, Q=Q, S=S,
+                                             L=L, TW=TW,
                                              material=material, normal=normal)
                 verificaciones = tuple(verificar(punto=punto,
                                                  material=material,
