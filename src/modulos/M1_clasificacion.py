@@ -36,8 +36,12 @@ El vacio que M1 no rellena
 La Tabla N 02 trae dos filas y Sec. 2.3 dice que la Familia A lleva "TR 71 o 35
 anios", sin regla para decidir cual. M1 no elige por su cuenta: o el que llama
 declara la categoria del cauce, o se lee el criterio
-`umbral_area_quebrada_importante_ha`, hoy sin valor, que detiene el calculo con
-CriterioPendienteError. La Familia B si tiene fila fija (descarga de cunetas ->
+`umbral_area_quebrada_importante_ha`, hoy DECLARADO en 100.0 ha con ventana
+(50.0, 200.0). ESTE PARRAFO DECIA «hoy sin valor, que detiene el calculo con
+CriterioPendienteError», y es falso desde que el criterio se declaro: no
+detiene nada. Lo que sigue siendo cierto es que la eleccion de fila es una
+ADOPCION del proyectista y no una regla de Sec. 2.3 -- por eso el criterio es
+[A] y lleva ventana --; lo que dejo de serlo es el bloqueo. La Familia B si tiene fila fija (descarga de cunetas ->
 quebrada menor, TR 35) y la Familia C no tiene TR: su caudal es el del canal.
 
 Excepciones

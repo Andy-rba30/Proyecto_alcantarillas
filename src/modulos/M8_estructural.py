@@ -97,9 +97,14 @@ veces el mismo margen.
 Por que el peso propio del conducto no entra en V7
 ----------------------------------------------------
 DC = 0. El peso propio depende del espesor de pared Y de la densidad del
-material del tubo. Lo primero ya esta declarado ('espesor_pared_conducto',
-hoy sin valor); lo segundo no lo declara nadie, de modo que sumar DC seguiria
-exigiendo inventar un dato. Omitirlo es la alternativa conservadora, NO una
+material del tubo. Lo primero esta declarado y CON VALOR ('espesor_pared_conducto'
+trae hoy la serie de concreto reforzado, 0.100 a 0.250 m de 900 a 2700 mm; para
+los demas materiales no trae fila y `M2.espesor_pared` levanta DatoFaltanteError).
+Lo segundo NO lo declara nadie, de modo que sumar DC seguiria exigiendo inventar
+un dato -- la densidad --, y la conclusion no cambia.
+ESTE PARRAFO DECIA que el espesor estaba «hoy sin valor», que ademas se
+contradecia con el «ya esta declarado» de la misma linea. El que falta es el
+otro. Omitirlo es la alternativa conservadora, NO una
 aproximacion optimista: reduce el lado estabilizante y hace el chequeo MAS
 dificil de cumplir, nunca lo relaja. Es lo contrario de lo que pasaba con U,
 donde usar el diametro interior tambien "aproximaba" y lo hacia del lado
