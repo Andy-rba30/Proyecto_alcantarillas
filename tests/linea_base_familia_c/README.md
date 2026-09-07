@@ -55,3 +55,14 @@ bloqueo, y ninguno se escribe en el CSV.
 **El par mínimo que llega al bloqueo real es `Q_m3s` + `S_conducto`.** `TW_m` es
 redundante: declarar la pendiente cubre a la vez la vía de Sec. 1.3 y la que MD necesita.
 El detalle está en §16.1-bis y §1.1 de `docs/ruta_familia_c.md`.
+
+## Regeneraciones posteriores
+
+- **C2** (`familiaC(C2)`): la memoria HTML cambia en **dos líneas, y ninguna es un
+  número de cálculo**. (1) el SHA-1 de `criterios_adoptados.py`, porque ese archivo
+  cambió; (2) el criterio `hds5_embocadura_hdpe`, que pasa a imprimir `forma = 1` junto
+  a sus K, M, c, Y y Ks. Lo segundo es el efecto buscado: `ConstantesHDS5` gana el campo
+  `forma` —la columna «Equation Form» de la Tabla A.1, que hasta C2 no se transcribía— y
+  el contrato de memoria (§4.5) exige que nada de lo que se añade quede invisible en el
+  reporte. El HW, los tirantes y las velocidades no se mueven: `git diff` sobre esta
+  línea base da exactamente esas dos líneas.

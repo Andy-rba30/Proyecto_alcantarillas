@@ -435,7 +435,8 @@ class TestIteraciones:
             n_min=0.010, n_max=0.013, D_max=1.20,
             D_max_de_catalogo="tope de catalogo de prueba",
             norma_producto="ASTM C76",
-            hds5=ConstantesHDS5(K=0.0098, M=2.0, c=0.0398, Y=0.67, Ks=-0.5),
+            hds5=ConstantesHDS5(K=0.0098, M=2.0, c=0.0398, Y=0.67, Ks=-0.5,
+                                forma=1),
             fila_manning="A.2 NO METALICOS - a. Concreto - tubo recto y "
                          "libre de basuras",
             v_max_tabla10=(3.0, 6.0), v_max_adoptado=None,

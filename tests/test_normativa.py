@@ -280,6 +280,19 @@ def test_T14_las_vistas_derivadas_coinciden_con_su_transcripcion(reg):
     c41 = reg.tabla("MS.C41")
     assert CN.CALICATAS_POR_SENTIDO == {c41.clave_corta(f): f.valores["por_sentido"]
                                         for f in c41.filas}
+    # La Tabla A.1 de HDS-5, que C2 paso al patron: hasta entonces
+    # `HDS5_INLET` estaba escrito a mano con los mismos numeros que la
+    # transcripcion ya traia. `Ks` NO entra en esta comprobacion porque no es
+    # columna de la tabla -- lo fija el num. A.2.1 sobre la configuracion de
+    # borde --, y por eso se comprueba aparte en
+    # `test_ks_esta_en_todas_las_cartas_de_la_tabla_a1`.
+    ta1 = reg.tabla("HDS5_3ED.TA1")
+    assert {k: {c: v for c, v in fila.items() if c != "Ks"}
+            for k, fila in CN.HDS5_INLET.items()} == {
+        ta1.clave_corta(f): {"K": f.valores["K"], "M": f.valores["M"],
+                             "c": f.valores["c"], "Y": f.valores["Y"],
+                             "forma": f.valores["equation_form"]}
+        for f in ta1.filas}
     # La Tabla 5.10.1-1 de AASHTO: la vista NO vive en constantes_normativas
     # sino en una clave de criterios, porque el valor es [C]. Era el ultimo
     # dict de 63 numeros copiado a mano que quedaba en el expediente.
@@ -509,10 +522,31 @@ def test_T21_los_verbatim_del_registro_conservan_sus_diacriticos(reg):
     verificable por nadie salvo por quien ya sabe donde esta. La normalizacion
     sin diacriticos existe para BUSCAR, nunca para GUARDAR.
 
-    Se comprueba de la unica forma barata que no da falsos positivos: los
-    textos del corpus peruano son largos y en español, y un texto largo en
-    español sin una sola tilde ha sido de-acentuado.
+    Se comprueba con una heuristica barata: los textos del corpus peruano son
+    largos y en español, y un texto largo en español sin una sola tilde
+    normalmente ha sido de-acentuado.
+
+    LA HEURISTICA TIENE FALSOS POSITIVOS, y esta docstring afirmaba que no --
+    «la unica forma barata que no da falsos positivos» --. C2 encontro el
+    primero y lo verifico contra el PDF: hay frases largas del Manual que
+    genuinamente no llevan ninguna tilde. Por eso hay una lista de EXENTAS, y
+    por eso la exencion NO es una etiqueta suelta: cada una lleva escrito
+    contra que pagina se comprobo que la fuente la imprime asi.
+
+    La exencion es segura porque no afloja la guardia general: T2 comprueba
+    aparte que el texto aparece en su pagina, y lo que T21 añade es que la
+    comparacion de T2 normaliza sin diacriticos y por tanto aceptaria un
+    verbatim de-acentuado. Una cita exenta aqui sigue teniendo que pasar T2.
     """
+    # Citas cuyo texto NO lleva tildes EN LA FUENTE, verificado en el PDF.
+    sin_tildes_en_el_original = {
+        # MC_HHD, num. 4.1.1.3.7 d), pag. impresa 80 / PDF 83: «Las
+        # dimensiones de las alcantarillas deben permitir efectuar trabajos de
+        # mantenimiento y limpieza en su interior de manera factible.» Son 133
+        # caracteres y ni una sola vocal acentuada. Comprobado sobre la pagina
+        # por `verificador-normativo` en C2.
+        "MC_HHD.4.1.1.3.7d",
+    }
     minimo_para_sospechar = 120   # literal-ok: longitud a partir de la cual un
                                   # texto en español sin tildes es sospechoso
     tildes = set("áéíóúÁÉÍÓÚñÑüÜ")
@@ -520,6 +554,8 @@ def test_T21_los_verbatim_del_registro_conservan_sus_diacriticos(reg):
     for c in reg.citas:
         if reg.fuente(c.fuente_id).id.startswith(("AASHTO", "ASTM", "HDS")):
             continue        # el corpus en ingles no lleva tildes, y es correcto
+        if c.id in sin_tildes_en_el_original:
+            continue
         t = c.texto_literal
         if not isinstance(t, Verbatim):
             continue
@@ -644,7 +680,12 @@ def test_el_rotulo_de_completitud_lo_deriva_la_tabla_de_sus_campos(reg):
     # cuenta, porque M2 la lee de verdad para elegir la fila. Lo que importa
     # del invariante es que el numero salga de los campos y no de una frase.
     assert "3 de 4 columnas" in rotulo
-    assert "2 de 4 filas" in rotulo
+    # 2 de 5 desde C2, que transcribio la fila «afinado» -- la que sostiene
+    # que el vacio del cajon es DE FILA y no de grupo --. No la consume
+    # ningun material: su criterio lo abre C5. El rotulo lo DERIVA la tabla;
+    # este numero es el que hay que mover cuando la transcripcion crece, y
+    # por eso el test lo pinea.
+    assert "2 de 5 filas" in rotulo
     t10 = reg.tabla("MC_HHD.T10")
     assert t10.rotulo_de_completitud().startswith("Tabla completa")
 
