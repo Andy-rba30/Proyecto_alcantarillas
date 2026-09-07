@@ -71,13 +71,24 @@ Control de entrada (Sec. 4.2)
 ------------------------------
     q* = Ku*Q / (A_llena * D^0.5)        Ku = 1.811 (SI)
 
-    q* <= 3.5   HWi/D = H_c/D + K*(q*)^M + Ks*S      (no sumergido, Forma 1)
-    q* >= 4.0   HWi/D = c*(q*)^2 + Y + Ks*S          (sumergido)
+    q* <= 3.5   HWi/D = H_c/D + K*(q*)^M + Ks*S      (Forma 1, ec. A.1)
+                HWi/D = K*(q*)^M                     (Forma 2, ec. A.2)
+    q* >= 4.0   HWi/D = c*(q*)^2 + Y + Ks*S          (sumergido, ec. A.3)
     entre ambos: interpolacion lineal
 
-La interpolacion se hace entre el valor que da la forma NO SUMERGIDA evaluada
+LA RAMA NO SUMERGIDA TIENE DOS FORMAS y las decide la carta, no el
+proyectista: es la columna «Equation Form» de la Tabla A.1. La Forma 2 NO
+lleva Ks*S ni H_c/D. La sumergida es UNA sola y comun a las dos.
+
+CUIDADO CON LA PALABRA «FORMA» EN ESTE MODULO, porque nombra dos cosas y este
+docstring las confundia: la FORMA DE ECUACION (1 o 2, del num. A.2.1) y las
+RAMAS del regimen (no sumergida / sumergida). Se leia «las dos formas» donde
+queria decir «las dos ramas», y esa colision -- que §15.8 denuncia contra la
+hoja de ruta v8 como defecto D-9 -- estaba tambien aqui.
+
+La interpolacion se hace entre el valor que da la RAMA NO SUMERGIDA evaluada
 en q* = 3.5 y el que da la SUMERGIDA evaluada en q* = 4.0 -- no entre las dos
-formas evaluadas en el q* real. Las dos ecuaciones son ajustes validos solo
+ramas evaluadas en el q* real. Las dos ecuaciones son ajustes validos solo
 dentro de su rango; extrapolarlas al interior de la zona de transicion, que
 es justamente donde ninguna de las dos vale, seria usarlas fuera de su
 dominio. Asi la curva HWi/D(q*) queda continua en los dos extremos.
@@ -97,10 +108,36 @@ dominio. Asi la curva HWi/D(q*) queda continua en los dos extremos.
     esa rama, de modo que M11 lo imprime unicamente cuando algun punto del
     corredor cae realmente en la transicion.
 
+La transicion bajo FORMA 2 puede decrecer con el caudal
+-------------------------------------------------------
+No es un fallo de implementacion: sale de combinar (A.2) + (A.3) + la recta
+[C]. Con Forma 1 los DOS extremos de la recta llevan Ks*S y el termino SE
+CANCELA en la diferencia, de modo que su pendiente no depende de S. Con Forma
+2 el extremo inferior lo pierde, y la diferencia pasa a depender de S. Sobre
+la Carta 9 escala 1 (K=0.510, M=0.667, c=0.0309, Y=0.80, Ks=-0.5) el umbral
+exacto es
+
+    S* = (c*4^2 + Y - K*3.5^M) / |Ks| = 0.236495 m/m
+
+y por encima de esa pendiente la recta BAJA al subir q*: con D = 0.90 m y
+S = 0.30, un q* de 3.50 da HW = 1.0585 m y uno de 4.00 da 1.0300 m -- 28.6 mm
+MENOS de carga con 14 % MAS de caudal, y del lado no conservador --. No lo
+atrapa nadie: `_exigir_hw_no_negativo` solo mira el signo, y aqui el numero es
+positivo.
+
+Lo encontro la auditoria de C3 y queda DECLARADO, no corregido: corregirlo
+seria sustituir el metodo de transicion adoptado, que es el criterio [C]
+`metodo_transicion_hds5`, y eso no es de esta sesion. Una S de ese orden en
+una alcantarilla es rarisima -- las del corredor van de 0.006 a 0.008 --, pero
+rarisima no es imposible y `dominios.S_CAUCE_MAX` admite hasta 1.0. El caso
+patron CP5D_FORMA2_TRANSICION_NO_MONOTONA lo fija.
+
+
 El termino K_s*S tiene un limite, y el limite es fisico
 -------------------------------------------------------
 La correccion por pendiente K_s*S es una recta sin tope: con K_s = -0.5, basta
-una S grande y un Q chico para que las dos formas devuelvan HWi/D NEGATIVO --
+una S grande y un Q chico para que las dos RAMAS que lo llevan -- la no
+sumergida de Forma 1 y la sumergida -- devuelvan HWi/D NEGATIVO --
 una carga de agua bajo el fondo del conducto, que no existe (MAT-D10). El
 umbral del signo, para la Forma 1, es S > 2*(H_c/D + K*(q*)^M): con
 D = 0.90 m, Q = 0.05 m3/s y la carta de concreto vale S > 0.3770624, y hasta
@@ -262,7 +299,8 @@ from scipy.optimize import brentq
 
 import criterios_adoptados as ca
 from constantes_fisicas import G
-from constantes_normativas import (H_O_HW_SOBRE_D_CAUTELA,
+from constantes_normativas import (FORMA_1, FORMA_2,
+                                   H_O_HW_SOBRE_D_CAUTELA,
                                    H_O_HW_SOBRE_D_MIN, KU_SI,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
@@ -480,13 +518,73 @@ def caudal_adimensional(Q: float, seccion: Seccion) -> float:
 
 def _hw_sobre_D_no_sumergido(q_estrella: float, H_c: float, seccion: Seccion,
                              S: float, hds5: ConstantesHDS5) -> float:
-    """HWi/D = H_c/D + K*(q*)^M + Ks*S, Forma 1 de Sec. 4.2 (q* <= 3.5)."""
-    return H_c / seccion.altura + hds5.K * q_estrella ** hds5.M + hds5.Ks * S
+    """
+    HWi/D no sumergido, num. A.2.1 de HDS-5 (q* <= 3.5). DOS FORMAS:
+
+        Forma 1   HWi/D = H_c/D + K*(q*)^M + Ks*S          ec. (A.1)
+        Forma 2   HWi/D = K*(q*)^M                         ec. (A.2)
+
+    LA FORMA 2 NO LLEVA EL TERMINO Ks*S. Verificado en esta sesion contra
+    `normas/hif12026.pdf`, pag. impresa A.2 (PDF 191): la ec. (A.2) se imprime
+    como HWi/D = K[Ku*Q/(A*D^0.5)]^M y ahi termina. El contraste esta en la
+    MISMA pagina y es lo que cierra la lectura: la ec. (A.3), sumergida, si
+    escribe «+ Y + Ks*S», y la (A.1) de la pagina anterior tambien lleva su
+    «+ Ks*S». No es que la (A.2) lo omita por brevedad: es que no lo tiene.
+
+    Cual de las dos se usa NO LO ELIGE EL PROYECTISTA: lo fija la carta de la
+    Tabla A.1 a la que pertenece la seccion, en su columna «Equation Form».
+    El propio num. A.2.1 explica por que hay dos -- «Form (1) is based on the
+    specific head at critical depth... Form (2) is an exponential equation
+    similar to a weir equation... Form (2) is easier to apply and is the only
+    documented form of equation for some of the inlet control equations» --.
+
+    LO QUE EL NUM. A.3 **NO** DICE, y esta redaccion llego a decir que si:
+    NO prohibe cruzar coeficientes entre FORMAS DE ECUACION. Lo que prohibe es
+    cruzarlos entre FORMAS GEOMETRICAS -- «rectangular (box) shapes» frente a
+    «nonrectangular» --, que es otra cosa. La Tabla A.1 lo demuestra sola:
+    forma y geometria son ORTOGONALES en ella; «Rect. Box Concrete» aparece
+    con Forma 1 y con Forma 2, y «Circular» tambien. Quien dice que constante
+    va con que ecuacion es la COLUMNA «Equation Form», fila por fila, y nada
+    mas.
+
+    POR QUE IMPORTA, CON EL NUMERO. Copiar la Forma 1 y cambiarle las
+    constantes deja el Ks*S en una ecuacion que no lo tiene, y con Ks = -0.5
+    ese termino RESTA: el HW sale MENOR que el real, del lado NO conservador,
+    y ninguna guardia de signo lo detecta porque el resultado sigue siendo
+    positivo. Medido sobre la Carta 9 escala 1 (K = 0.510, M = 0.667) con un
+    cajon de 2.00 x 2.00 m, Q = 8 m3/s y S = 0.03: 1.910 m contra 1.880 m,
+    30 mm, y la diferencia crece lineal con la pendiente. El caso patron
+    CP5D_FORMA2_KS_ESPUREO lo fija para que un regreso rompa un test.
+    """
+    directo = hds5.K * q_estrella ** hds5.M
+    if hds5.forma == FORMA_2:
+        return directo
+    if hds5.forma != FORMA_1:
+        raise DatoInvalidoError(
+            "forma", valor=hds5.forma,
+            motivo=("la columna «Equation Form» de la Tabla A.1 solo toma los "
+                    "valores 1 y 2, y HDS-5 no define ninguna tercera forma "
+                    "de la ecuacion no sumergida. Una carta con otra forma no "
+                    "es una carta de esta tabla"))
+    return H_c / seccion.altura + directo + hds5.Ks * S
 
 
 def _hw_sobre_D_sumergido(q_estrella: float, S: float,
                           hds5: ConstantesHDS5) -> float:
-    """HWi/D = c*(q*)^2 + Y + Ks*S, regimen sumergido de Sec. 4.2 (q* >= 4.0)."""
+    """
+    HWi/D = c*(q*)^2 + Y + Ks*S, regimen sumergido (q* >= 4.0), ec. (A.3).
+
+    NO SE BIFURCA POR FORMA, y esa es una lectura de la fuente y no un olvido:
+    la division en dos formas la hace el num. A.2.1, que es el de las
+    ecuaciones NO SUMERGIDAS. La sumergida es el num. A.2.2 y tiene UNA sola
+    ecuacion, la (A.3), cuyo encabezado remite a las variables de A.2.1 sin
+    distinguir forma; y la Tabla A.1 da c e Y para TODAS sus cartas, sean de
+    Forma 1 o de Forma 2. Verificado en la pag. impresa A.2 (PDF 191).
+
+    Y esta si lleva Ks*S -- comprobado en la misma pagina, no deducido de que
+    lo lleve la (A.1) --: es la confusion numeral/pagina que NOR-HDS-01 ya
+    cerro una vez y que C2 volvio a encontrar al citar el num. A.3.
+    """
     return hds5.c * q_estrella ** 2 + hds5.Y + hds5.Ks * S
 
 
@@ -556,10 +654,13 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
     """
     Carga a la entrada bajo control de entrada (Sec. 4.2), HDS-5, Tabla A.1.
 
-    Tres ramas segun el caudal adimensional q* = Ku*Q/(A_llena*D^0.5):
+    Tres ramas segun el caudal adimensional q* = Ku*Q/(A_llena*D^0.5), y la
+    primera tiene DOS FORMAS segun la carta (columna «Equation Form»):
 
-        q* <= 3.5   HWi/D = H_c/D + K*(q*)^M + Ks*S    (Forma 1, no sumergido)
-        q* >= 4.0   HWi/D = c*(q*)^2 + Y + Ks*S        (sumergido)
+        q* <= 3.5   HWi/D = H_c/D + K*(q*)^M + Ks*S    (Forma 1, ec. A.1)
+                    HWi/D = K*(q*)^M                   (Forma 2, ec. A.2)
+        q* >= 4.0   HWi/D = c*(q*)^2 + Y + Ks*S        (sumergido, ec. A.3;
+                                                        comun a las dos formas)
         3.5 < q* < 4.0   interpolacion lineal entre el valor de la primera en
                     q* = 3.5 y el de la segunda en q* = 4.0
 
@@ -572,10 +673,13 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
     en la pag. A.8, salen unicamente las constantes K, M, c e Y de cada
     carta.
 
-    El termino Ks*S no se omite: Ks no figura en la Tabla A.1 y viene de la
-    formulacion (-0.5 sin inglete, +0.7 en inglete). Llega en
-    `ConstantesHDS5.Ks`, que es un campo obligatorio justamente para que no se
-    pueda armar una carta sin el.
+    El termino Ks*S no se omite DONDE LA ECUACION LO TIENE, que desde C3 no
+    es en todas partes: la (A.1) y la (A.3) lo llevan, y la (A.2) NO. Este
+    parrafo decia «no se omite» a secas, y era cierto hasta que existio la
+    Forma 2 -- en cuya rama no sumergida se omite, y DEBE omitirse --. Ks
+    sigue siendo campo obligatorio de `ConstantesHDS5`, porque una carta sin
+    el no se puede armar y porque la rama sumergida lo usa siempre, sea cual
+    sea la forma.
 
     `critico` es opcional: si no se pasa, se resuelve aqui con la pieza 1. Se
     admite inyectarlo para no repetir Brent cuando el orquestador ya lo tiene
@@ -619,9 +723,16 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
                 / (Q_LIM_SUMERGIDO - Q_LIM_NO_SUMERGIDO))
         HW_sobre_D = extremo_inferior + peso * (extremo_superior - extremo_inferior)
 
-    # Una sola vez, despues de las tres ramas: el termino Ks*S entra en las
-    # tres -- tambien en la transicion, por sus dos extremos -- y el rechazo
-    # es el mismo. Ver `_exigir_hw_no_negativo` y el docstring del modulo.
+    # Una sola vez, despues de las tres ramas, porque el rechazo es el mismo.
+    #
+    # ESTE COMENTARIO DECIA «el termino Ks*S entra en las tres -- tambien en
+    # la transicion, por sus dos extremos --», y desde C3 es falso por partida
+    # doble: con Forma 2, Ks*S entra en DOS de las tres ramas, y en la
+    # transicion por UN solo extremo, el sumergido. Bajo Forma 2 no sumergida
+    # la guardia no puede dispararse -- K*(q*)^M > 0 siempre para q* > 0 --,
+    # de modo que sigue sin haber rama que se le escape; lo que cambia es de
+    # donde puede venir el numero negativo cuando lo hay.
+    # Ver `_exigir_hw_no_negativo` y el docstring del modulo.
     _exigir_hw_no_negativo(HW_sobre_D, S, seccion, q_estrella, hds5)
 
     return ControlEntrada(
@@ -854,26 +965,101 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                            cifras=CIFRAS_MAGNITUD),
         veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
                             explicacion="paso de calculo"),
-        nota_del_proyecto="Entra en las dos piezas siguientes: en la Forma 1 "
-                          "del control de entrada (por H_c) y en h_o del "
-                          "control de salida. Se resuelve UNA vez.",
+        # SE CONDICIONA POR FORMA, y antes no: la nota afirmaba sin matiz que
+        # el critico entra «en la Forma 1 del control de entrada», y bajo
+        # Forma 2 la ec. (A.2) NO usa H_c. Se imprimia igual en las dos.
+        nota_del_proyecto=(
+            "Entra en las dos piezas siguientes: en la Forma 1 del control "
+            "de entrada (por H_c) y en h_o del control de salida. Se "
+            "resuelve UNA vez."
+            if material.hds5.forma == FORMA_1 else
+            "Esta carta es de FORMA 2 y su ecuacion de control de entrada "
+            "-- la (A.2) -- NO usa H_c. El tirante critico se resuelve igual "
+            "porque lo necesita h_o del control de salida, y solo para eso. "
+            "Se resuelve UNA vez."),
     )
+
+    # EL PASO QUE DICE QUE ECUACION SE USO, y va ANTES del control de entrada
+    # porque es lo primero que un revisor necesita saber para poder rehacer el
+    # numero: ver K y M sin saber en que ecuacion entraron no permite
+    # reconstruir nada. Su `por_que` es `F4.FORMA_HDS5` TAL CUAL lo dejo C2 en
+    # el registro, con sus tres citas ya verificadas -- no se redacta otra vez
+    # aqui, que seria la segunda copia que NOR-MEM-01 persigue --.
+    forma = material.hds5.forma
+    de_forma = paso(
+        "F4.FORMA_HDS5",
+        codigo="4.2",
+        que="Forma de la ecuacion de control de entrada del HDS-5",
+        formula=("Forma 1: HW/D = H_c/D + K*(q*)^M + Ks*S, ec. (A.1)  |  "
+                 "Forma 2: HW/D = K*(q*)^M, ec. (A.2), SIN el termino Ks*S"),
+        formula_cita_id="HDS5_3ED.A.2",
+        sustitucion=(
+            Magnitud("Equation Form", forma, "",
+                     "columna de la Tabla A.1 para la carta de esta "
+                     "embocadura; no la elige el proyectista",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("K", material.hds5.K, "",
+                     f"constante de la carta, ajustada a la Forma {forma}",
+                     cifras=CIFRAS_FINA),
+            Magnitud("M", material.hds5.M, "",
+                     f"exponente de la carta, ajustado a la Forma {forma}",
+                     cifras=CIFRAS_FINA)),
+        resultado=Magnitud("forma aplicada", forma, "",
+                           f"se resuelve con la ecuacion "
+                           f"({'A.1' if forma == FORMA_1 else 'A.2'}) del "
+                           f"num. A.2.1", cifras=CIFRAS_FACTOR),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="paso de calculo"),
+        citas_textuales=("HDS5_3ED.A.3#FORMAS",),
+        nota_del_proyecto=(
+            f"Esta corrida usa la FORMA {forma}. "
+            + ("La Forma 1 lleva el termino de correccion por pendiente "
+               "Ks*S; la Forma 2 no lo lleva, y por eso no aparece en la "
+               "sustitucion del paso siguiente cuando gobierna la Forma 2."
+               if forma == FORMA_1 else
+               "La Forma 2 NO lleva el termino Ks*S: no se omite aqui, es "
+               "que la ec. (A.2) no lo tiene. Ks sigue entrando en la rama "
+               "SUMERGIDA, que es la ec. (A.3) y es comun a las dos formas.")),
+    )
+
+    # LA FORMULA Y LA SUSTITUCION DEPENDEN DE LA FORMA, y hasta que un auditor
+    # lo vio NO era asi: bajo Forma 2 este paso imprimia la ec. (A.1) entera
+    # -- con su H_c/D y su Ks*S -- y metia `Ks` en la sustitucion, para
+    # explicar un numero que sale de la (A.2), que no tiene ninguno de los
+    # dos. Es el MISMO defecto que esta sesion existe para impedir, mudado del
+    # docstring al reporte; y el paso `de_forma`, unas lineas mas arriba,
+    # PROMETIA POR ESCRITO que no pasaba.
+    #
+    # `Ks` entra en la sustitucion solo si el numero impreso lo contiene: en
+    # Forma 1 siempre, y en Forma 2 solo cuando la rama es sumergida o de
+    # transicion -- la (A.3) si lo lleva, y la recta lo hereda por su extremo
+    # superior --.
+    ks_participa = (material.hds5.forma == FORMA_1
+                    or entrada.regimen is not RegimenEntrada.NO_SUMERGIDO)
+    if material.hds5.forma == FORMA_1:
+        _no_sumergida = "HW/D = H_c/D + K*(q*)^M + Ks*S, ec. (A.1)"
+    else:
+        _no_sumergida = "HW/D = K*(q*)^M, ec. (A.2) -- sin H_c/D y sin Ks*S"
+    magnitudes = [
+        Magnitud("q*", entrada.q_estrella, "",
+                 "caudal adimensional Ku*Q/(A_llena*D^0.5); decide la "
+                 "rama", cifras=CIFRAS_MAGNITUD)]
+    if ks_participa:
+        magnitudes.append(
+            Magnitud("Ks", material.hds5.Ks, "",
+                     "correccion por pendiente de la formulacion del HDS-5; "
+                     "NO figura en la Tabla A.1", cifras=CIFRAS_FACTOR))
 
     de_entrada = paso(
         "F4.CONTROL",
         codigo="4.2",
         que="Carga a la entrada bajo CONTROL DE ENTRADA",
-        formula=("HW/D = H_c/D + K*(q*)^M + Ks*S (no sumergido, q* <= 3.5) o "
-                 "HW/D = c*(q*)^2 + Y + Ks*S (sumergido, q* >= 4.0); entre "
-                 "3.5 y 4.0, recta entre los extremos de validez"),
+        formula=(f"no sumergido (q* <= {Q_LIM_NO_SUMERGIDO}): {_no_sumergida}"
+                 f"  |  sumergido (q* >= {Q_LIM_SUMERGIDO}): "
+                 f"HW/D = c*(q*)^2 + Y + Ks*S, ec. (A.3)  |  entre ambos, "
+                 f"recta entre los extremos de validez"),
         formula_cita_id="HDS5_3ED.A.2",
-        sustitucion=(
-            Magnitud("q*", entrada.q_estrella, "",
-                     "caudal adimensional Ku*Q/(A_llena*D^0.5); decide la "
-                     "rama", cifras=CIFRAS_MAGNITUD),
-            Magnitud("Ks", material.hds5.Ks, "",
-                     "correccion por pendiente de la formulacion del HDS-5; "
-                     "NO figura en la Tabla A.1", cifras=CIFRAS_FACTOR)),
+        sustitucion=tuple(magnitudes),
         resultado=Magnitud("HW_entrada", entrada.HW, "m",
                            f"carga sobre el fondo de la entrada, regimen "
                            f"«{entrada.regimen.value}»",
@@ -883,7 +1069,12 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         nota_del_proyecto=(
             "Las constantes K, M, c e Y salen de la Tabla A.1, carta y "
             "escala de la embocadura adoptada; las ECUACIONES salen del num. "
-            "A.2, no de esa tabla (NOR-HDS-03)."),
+            "A.2, no de esa tabla (NOR-HDS-03). "
+            + ("Ks aparece en la sustitucion porque el numero de arriba lo "
+               "contiene." if ks_participa else
+               "Esta carta es de Forma 2 y la rama aplicada es la NO "
+               "sumergida: el numero de arriba no lleva Ks*S, y por eso Ks "
+               "no aparece en la sustitucion.")),
     )
 
     de_salida = paso(
@@ -985,7 +1176,8 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             "mover el HW."),
     )
 
-    return (de_manning, de_critico, de_entrada, de_salida, de_gobernante)
+    return (de_manning, de_critico, de_forma, de_entrada, de_salida,
+            de_gobernante)
 
 
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,

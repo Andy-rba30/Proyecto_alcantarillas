@@ -186,6 +186,135 @@ CP5C_SUMERGIDO = {"D": 0.90, "Q": 1.3997, "q_estrella_aprox": 4.20, "zona": "sum
 
 
 # ---------------------------------------------------------------------------
+# CP-5D · HDS-5 FORMA 2 (ec. A.2) -- las cuatro ramas y el defecto que las mira
+# ---------------------------------------------------------------------------
+# Calculados A MANO desde las ecuaciones del num. A.2 de HDS-5, NUNCA desde la
+# salida del codigo:
+#
+#     Forma 1   HW/D = H_c/D + K*(q*)^M + Ks*S      ec. (A.1)
+#     Forma 2   HW/D = K*(q*)^M                     ec. (A.2)  <-- SIN Ks*S
+#     sumergida HW/D = c*(q*)^2 + Y + Ks*S          ec. (A.3)  <-- comun a las dos
+#
+# LA CARTA ES LA 9 ESCALA 1 de la Tabla A.1 -- «45° wingwall flare d = .043D»,
+# K = 0.510, M = 0.667, c = 0.0309, Y = 0.80, Equation Form 2 --, transcrita en
+# C2 y verificada contra el PDF.
+#
+# ADVERTENCIA QUE HAY QUE LEER ANTES DE USAR ESTOS CASOS: la carta 9 es de
+# CAJON RECTANGULAR y estos casos la evaluan sobre una seccion circular. Eso
+# NO es un diseño y seria justamente lo que el num. A.3 prohibe -- «coefficients
+# for rectangular (box) shapes should not be used for nonrectangular ... shapes
+# and vice-versa» --. Es una SONDA DE LA ECUACION: aisla la bifurcacion por
+# forma de la forma de la seccion, que es lo unico que se puede probar en C3
+# porque `SeccionRectangular` la implementa C4. Cuando C4 llegue, estos casos
+# se repiten sobre la seccion que les corresponde; el numero de la ecuacion no
+# cambia, porque la ecuacion no mira la forma: mira q*, K y M.
+
+CP5D_FORMA2 = {
+    "carta": "Tabla A.1, Carta 9 escala 1 -- 45° wingwall flare d = .043D",
+    "K": 0.510, "M": 0.667, "c": 0.0309, "Y": 0.80, "Ks": -0.5,
+    "forma": 2,
+    # Las tres tolerancias que los tests de esta familia necesitan, DECLARADAS
+    # AQUI y no escritas a mano al lado del assert: es lo que manda
+    # `tests/apoyo/aproximacion.py` y lo que la guardia de cupo de
+    # `test_guardias_de_la_suite` persigue. Cada una dice de que igualdad
+    # habla, que es lo que un `abs=1e-15` suelto no dice:
+    "tolerancia_identidad": 1e-15,    # dos vias que deben dar el MISMO numero
+    "tolerancia_distincion": 1e-9,    # dos numeros que deben DIFERIR
+    "tolerancia_continuidad": 1e-12,  # relativa, en el empalme de la recta
+    # -- rama NO SUMERGIDA, ec. (A.2). q*^M = 1.9396332961359162
+    "no_sumergido": {
+        "q_estrella": 2.70, "S": 0.030,
+        "hw_sobre_D_esperado": 0.9892129810293173,
+        "tolerancia": 1e-12,
+        # El mismo caso resuelto con la Forma 1 SIN el H_c/D -- es decir,
+        # dejandose el Ks*S por copiar la (A.1) -- daria esto. La diferencia
+        # es exactamente -Ks*S = +0.015 y NO depende de q*.
+        "hw_sobre_D_si_se_cuela_Ks_S": 0.9742129810293173,
+    },
+    # -- rama SUMERGIDA, ec. (A.3): comun a las dos formas y SI lleva Ks*S
+    "sumergido": {
+        "q_estrella": 4.20, "S": 0.030,
+        "hw_sobre_D_esperado": 1.3300760000000003,
+        "tolerancia": 1e-12,
+    },
+    # -- rama de TRANSICION con la Forma 2 en el extremo inferior.
+    # La recta va del valor de la ec. (A.2) en q* = 3.5 al de la (A.3) en 4.0:
+    #     Forma2(3.5)    = 1.176152298622456
+    #     Sumergida(4.0) = 1.2794
+    #     peso           = (3.70 - 3.5)/(4.0 - 3.5) = 0.4
+    "transicion": {
+        "q_estrella": 3.70, "S": 0.030,
+        "extremo_inferior_esperado": 1.176152298622456,
+        "extremo_superior_esperado": 1.2794,
+        "hw_sobre_D_esperado": 1.2174513791734736,
+        "tolerancia": 1e-12,
+    },
+}
+
+# LA TRANSICION BAJO FORMA 2 PUEDE DECRECER CON EL CAUDAL, y hay que fijarlo
+# porque no lo atrapa ninguna guardia: `_exigir_hw_no_negativo` solo mira el
+# signo y aqui el numero es positivo. Lo encontro la auditoria de C3.
+#
+# Con Forma 1 los DOS extremos de la recta llevan Ks*S y el termino se cancela
+# en la diferencia: la pendiente de la recta no depende de S. Con Forma 2 el
+# extremo inferior lo pierde, y por encima de un umbral de pendiente la recta
+# BAJA al subir el caudal. Umbral exacto, para esta carta:
+#
+#     S* = (c*4^2 + Y - K*3.5^M) / |Ks| = 0.236495 m/m
+#
+# NO ES UN DEFECTO A CORREGIR: sale de combinar la (A.2), la (A.3) y la recta
+# del criterio [C] `metodo_transicion_hds5`. Se DECLARA. Este caso existe para
+# que si alguien cambia el metodo de transicion, el cambio de esta propiedad
+# se vea en un test en vez de descubrirse en obra.
+CP5D_FORMA2_TRANSICION_NO_MONOTONA = {
+    "K": 0.510, "M": 0.667, "c": 0.0309, "Y": 0.80, "Ks": -0.5, "forma": 2,
+    "altura_m": 0.90,
+    "S_umbral": 0.23649540275508807,     # (c*16 + Y - K*3.5^M)/|Ks|
+    "S_ensayada": 0.30,                  # por encima del umbral
+    "HW_en_q_3_5_m": 1.0585370687602105,
+    "HW_en_q_4_0_m": 1.0299600000000002,
+    "delta_mm": -28.577068760210288,     # NEGATIVO: baja al subir el caudal
+    "tolerancia": 1e-12,
+    "nota": "Con S por DEBAJO del umbral la recta crece, que es lo esperable. "
+            "El caso fija las dos mitades: que crece abajo y que decrece "
+            "arriba, y donde esta la frontera.",
+}
+
+
+# EL CASO QUE FIJA EL DEFECTO DE C2, con la magnitud que el auditor midio.
+# C2 escribio en el docstring de `ConstantesHDS5` que la Forma 2 era
+# «HW/D = K*(q*)^M + Ks*S», y esa frase estaba a once lineas de otra que decia
+# lo contrario. Nadie la habria visto sin auditar a mano: el resultado sigue
+# siendo positivo y ninguna guardia de signo se dispara.
+#
+# Este caso existe para que un regreso ROMPA UN TEST en vez de esperar a otro
+# auditor. La altura de 2.00 m y la S de 0.030 no son de proyecto: estan para
+# que la diferencia salga en milimetros redondos y sea legible en el mensaje.
+CP5D_FORMA2_KS_ESPUREO = {
+    "K": 0.510, "M": 0.667, "Ks": -0.5, "forma": 2,
+    # q* del caso que describen los docstrings -- cajon 2.00 x 2.00 m,
+    # Q = 8 m3/s, Ku = 1.811 -> q* = 1.811*8/(4.0*sqrt(2)) --, escrito con
+    # TODOS sus digitos. La primera version puso 2.5613 redondeado, y el
+    # quinto digito no se reproducia desde los datos que el docstring da: son
+    # 0.08 mm de diferencia, invisibles a tres decimales y suficientes para
+    # que un revisor que rehaga la cuenta no llegue al mismo numero.
+    "q_estrella": 2.5611407614576747,
+    "S": 0.030,
+    "altura_m": 2.00,
+    "hw_sobre_D_correcto": 0.9549822202443748,     # K*q^M
+    "hw_sobre_D_con_Ks_espureo": 0.9399822202443748,  # K*q^M + Ks*S
+    "HW_correcto_m": 1.9099644404887497,
+    "HW_con_Ks_espureo_m": 1.8799644404887497,
+    "delta_mm_esperado": 30.0,          # y con S = 0.08 son 80 mm: crece lineal
+    "tolerancia": 1e-12,
+    "tolerancia_mm": 1e-6,              # la del delta, que va en milimetros
+    "nota": "La diferencia va SIEMPRE en la direccion NO conservadora: con "
+            "Ks = -0.5 el termino resta, de modo que el HW espureo es MENOR "
+            "que el real y V4, V4b y el tamizado de 7.A pasan mas facil.",
+}
+
+
+# ---------------------------------------------------------------------------
 # CP-6 · Tirante critico -- autoconsistencia (no hay valor cerrado)
 # ---------------------------------------------------------------------------
 # Q^2 * T / (g * A^3) = 1   en y = y_critico

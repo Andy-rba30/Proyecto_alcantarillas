@@ -597,6 +597,34 @@ NUMERAL_TABLA_KE = _reg.cita("HDS5_3ED.TC.2").como_texto()
 #            SOBRE EL ROTULO LITERAL de la fila, que es donde la fuente
 #            escribe «mitered». Ninguna de las quince filas del cajon lo es.
 _TA1 = _reg.tabla("HDS5_3ED.TA1")
+# LOS DOS VALORES QUE TOMA LA COLUMNA «Equation Form» DE LA TABLA A.1, con
+# nombre porque el 1 y el 2 sueltos en una comparacion no dicen nada. No son
+# una eleccion del proyecto: el num. A.2.1 escribe DOS ecuaciones no
+# sumergidas y la tabla dice, carta por carta, cual le toca a cada una.
+#
+#   FORMA_1   HWi/D = H_c/D + K*(q*)^M + Ks*S      ec. (A.1)
+#   FORMA_2   HWi/D = K*(q*)^M                     ec. (A.2), SIN Ks*S
+#
+# QUE SEPARA LAS DOS FORMAS: LA COLUMNA, Y NADA MAS. Esta linea decia que «la
+# regla que las separa la escribe el num. A.3», y es FALSO -- lo escribi yo en
+# C3 y lo refuto la auditoria --. El num. A.3 prohibe cruzar coeficientes
+# entre FORMAS GEOMETRICAS: «coefficients for rectangular (box) shapes should
+# not be used for nonrectangular (circular, arch, pipe-arch, etc.) shapes and
+# vice-versa». Eso no habla de formas de ECUACION.
+#
+# Y la propia Tabla A.1 lo demuestra: FORMA Y GEOMETRIA SON ORTOGONALES.
+# Medido sobre sus 36 filas -- «Rect. Box Concrete» aparece con Forma 1 (Carta
+# 8) Y con Forma 2 (Cartas 9 a 11); «Circular» aparece con Forma 1 (Carta 3) Y
+# con Forma 2 (Carta 55) --. Una prohibicion sobre geometrias no puede ser la
+# regla que separa las formas, porque la misma geometria vive en las dos.
+#
+# Lo que HDS-5 dice de las formas esta en el num. A.2.1 y es descriptivo, no
+# prohibitivo: que hay dos, que la (1) parte del tirante critico y la (2) es
+# exponencial tipo vertedero, y que la (2) «is the only documented form of
+# equation for some of the inlet control equations». Que constante va con que
+# ecuacion lo dice la COLUMNA «Equation Form», fila por fila.
+FORMA_1 = 1
+FORMA_2 = 2
 KS_INGLETE = 0.7                    # num. A.2.1, pag. impresa A.2 (PDF 191)
 KS_SIN_INGLETE = -0.5
 

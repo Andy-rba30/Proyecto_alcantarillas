@@ -1,0 +1,188 @@
+==============================================================================
+EXPEDIENTE DE ALCANTARILLAS - M0 -> M1 -> MD -> M6 -> M7 -> M8 -> M9 -> M10
+==============================================================================
+CSV: tests/ejemplo_puntos.csv    generado (UTC): <UTC>
+
+------------------------------------------------------------------------------
+A-01  |  progresiva 0+380  |  Familia A
+------------------------------------------------------------------------------
+  Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 71 anios
+  Fase 4  sin dimensionar
+  Verificaciones:
+    [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  Bloqueos:
+    [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
+        fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
+
+------------------------------------------------------------------------------
+A-02  |  progresiva 1+920  |  Familia A
+------------------------------------------------------------------------------
+  Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 71 anios
+  Fase 4  sin dimensionar
+  Verificaciones:
+    [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  Bloqueos:
+    [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
+        fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
+
+------------------------------------------------------------------------------
+B-01  |  progresiva 2+450  |  Familia B
+------------------------------------------------------------------------------
+  Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 35 anios
+  Fase 4  sin dimensionar
+  Verificaciones:
+    [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  Bloqueos:
+    [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
+        fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
+    [DatoFaltanteError] Fase 10 - Espaciamiento de alivio (M10) -> espaciamiento maximo entre alivios
+        Falta el dato 'L_hidraulico_m'. Sec. 10 describe el procedimiento de la cuneta pero no fija su seccion, su n de Manning ni la formula de intensidad: la longitud por capacidad hidraulica se declara, no se deduce
+
+------------------------------------------------------------------------------
+C-01  |  progresiva 3+100  |  Familia C
+------------------------------------------------------------------------------
+  Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR no procede (ver fundamento en el JSON)
+  Fase 4  sin dimensionar
+  Verificaciones:
+    [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  Bloqueos:
+    [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
+        Diseno no factible en el punto C-01: M2 (Sec. 3.4) no ofrece material candidato para la Familia C: Sec. 2.3 le asigna seccion de marco o multicelda, y el catalogo de Sec. 3.2 es de conductos circulares. El punto no es no-factible, es de otra forma de estructura
+
+------------------------------------------------------------------------------
+Fase 9 - Cabezal y aletas (M9) - del proyecto, no del punto
+------------------------------------------------------------------------------
+  Cadena sismica (num. Sec. 9.2): PGA 0.50 g -> A_s 0.50 g -> k_h 0.50 | k_v 0.00
+    PGA [S]: Lectura del mapa sobre las coordenadas de esta obra; su reproducibilidad llega hoy hasta el distrito
+    F_pga [A]: Envolvente de las filas C, D, E de la tabla; PGA = 0.50 g cae justo sobre un rotulo extremo, que es desigualdad estricta, y ese borde se lee con 'limite_inclusive'
+    k_h0 [N]: Rama de suelo: k_h0 = A_s. La rama de roca (1.2*F_pga*PGA, Clase de Sitio A o B) queda descartada porque ninguna fila declarada en 'F_pga' es de roca
+    factor_muro [A]: Declaracion 'sin_reduccion'. El numeral no tabula filas: autoriza reducir k_h0 a la mitad si el muro admite 1.0 a 2.0 in o mas de desplazamiento Y el propietario acepta ese movimiento
+    k_v [N]: El numeral lo fija en cero salvo muro significativamente afectado por efectos de alguna falla cercana, o aceleraciones verticales relativamente altas simultaneas con la horizontal. Ninguno de los dos casos se declara para este cabezal, de modo que rige el cero prescrito
+  Cuantia minima horizontal: 0.002
+  Cuantia minima vertical: 0.0015
+    nota: Cabezales y aletas: concreto estructural EG-2013 Seccion 503 (+504 para el acero). NO tienen partida con numeral propio: se pagan bajo el volumen de concreto y el acero. Que aparezcan nominados en 503.01 confirma que son elemento estandar de terminacion, pero el argumento es mas debil que 'existe una partida especifica' (EG-2013, Capitulo V, Seccion 503 (concreto estructural), num. 503.01, pag. 905 [hoja de ruta: Sec. 9.1])
+    nota: Embocadura: tubo a ras del muro (square edge), coherente con las constantes HDS-5 adoptadas en Sec. 4.2. Ambas decisiones se mueven juntas: cambiar el detalle obliga a cambiar las constantes (Sec. 9.1 y Tablero 2.3)
+    nota: Empuje hidrostatico y subpresion: con NF a 1.4 m NO son opcionales (Manual de Puentes num. 2.4.3.8.2)
+    nota: Zapata proxima al talud: doble verificacion, E.050 Art. 30.1-30.2 y 2.8.1.3.1.2c, pags. impresas 272-274 (PDF 273-275): texto en la 272, Figura -1 (cohesivos) en la 273, Figura -2 (no cohesivos) en la 274. El cabezal se apoya en el borde del terraplen, no en terreno horizontal
+    nota: Diseno por flexion y corte: Sec. 9.4 (AASHTO LRFD Seccion 5, via Seccion 2.9). E.060 no gobierna el diseno estructural (Sec. 0.2, Via 1); si gobierna la durabilidad y los recubrimientos, con la regla del mayor
+    nota: Mononobe-Okabe, signo del denominador: ERRATA DE IMPRENTA DEL MANUAL. El Apendice A11 imprime el denominador de K_AE con '[1 - raiz(...)]', signo MENOS, verificado renderizando la pag. impresa 586 (PDF 587) a 6x: el trazo es horizontal unico, sin trazo vertical. AASHTO, del que el propio Manual declara transcribirlo, imprime '[1 + raiz(...)]' (pag. impresa 11-145). GANA AASHTO, y no por preferencia de fuente: con el signo menos K_AE DIVERGE cuando el radicando tiende a 1, y el caso limite k_h = k_v = 0 deja de devolver el Ka de Coulomb -- la formula se rompe donde el propio Manual la manda coincidir. EL CODIGO SIGUE A AASHTO. Quien 'corrija' M9 contra la letra impresa del Manual rompe la formula (Manual de Puentes (MTC), Apendice A11 'Diseno Sismico de Estructuras de Contencion', num. A.11.3.1 'Metodo de Mononobe -Okabe', ec. A.11.3.1-2, pag. impresa 586 (PDF 587); num. A11.3.1, ec. A11.3.1-1 · 'Mononobe–Okabe Method' · pag. impresa 11-145 · PDF 1614)
+    nota: k_h0 en cimentacion sobre roca: ERRATA DE IMPRENTA DEL MANUAL, verificada como imagen en la pag. impresa 254 (PDF 255): el parentesis imprime '1.2 kh0=FpgaPGA', con el 1.2 del lado izquierdo. Leido al pie de la letra daria k_h0 = F_pga*PGA/1.2, una REDUCCION del 17 %, justo lo contrario de lo que la prosa de la misma frase acaba de decir. AASHTO LRFD 9a ed., Art. 11.6.5.2.1 'Characterization of Acceleration at Wall Base', pag. impresa 11-27 (PDF 1496), lo escribe sin ambiguedad: 'k_h0 shall be based on 1.2 times the site-adjusted peak ground acceleration coefficient (i.e., k_h0 = 1.2 F_pga PGA)'. GANA LA PROSA DEL MANUAL, coincidente con AASHTO. Es la segunda de las TRES erratas de imprenta de esta misma cadena sismica; las otras son K_AE_ERRATA_MANUAL y EXCENTRICIDAD_ERRATA_MANUAL (2.8.1.1.14.2.1 'Caracterizacion de la Aceleracion en la Base del Muro de Contencion' (11.6.5.2.1 AASHTO), pag. impresa 254 (PDF 255))
+    nota: Sobrecarga viva en el trasdos: h_eq = max(piso del Manual, tabla de AASHTO por altura y orientacion). num. 2.4.2.2 · 'Cargas de Suelo: EH, ES, y DD' · pag. impresa 102 · PDF 103 fija el piso -- «no menor que» -- y no tabula nada; el valor sale de num. 3.11.6.4 · 'Live Load Surcharge (LS)' · pag. impresa 3-151 · PDF 205. La altura de entrada es la del muro CON zapata: num. 3.11.6.4 · 'Live Load Surcharge (LS)' · pag. impresa 3-151 · PDF 205
+    nota: Cual de las dos tablas de AASHTO aplica: NO EXISTE en el articulado de AASHTO ninguna frase que reparta las dos tablas de h_eq: el cuerpo normativo las cita juntas y sin condicionante («may be taken from Tables 3.11.6.4-1 and 3.11.6.4-2»). Quien las reparte son los TITULOS de las tablas -- «on Abutments Perpendicular to Traffic» y «on Retaining Walls Parallel to Traffic» -- y el comentario C3.11.6.4, que no es articulado. Atribuir el reparto al articulo seria una cita falsa; se cita a los titulos y al comentario, que es de donde sale
+    nota: Cuando la sobrecarga se aplica: num. 3.11.6.4 · 'Live Load Surcharge (LS)' · pag. impresa 3-151 · PDF 205
+    nota: Empuje bajo el nivel freatico: El empuje activo de este proyecto se calcula con el peso especifico TOTAL del relleno en toda la altura y se le suma la hidrostatica completa bajo el NF. AASHTO 3.11.3 exige peso especifico SUMERGIDO bajo el nivel freatico, de modo que el agua de poros se cuenta dos veces en la zona sumergida. CUANTO ES, exactamente: el exceso de presion horizontal es Ka*(gamma - gamma')*h = Ka*gamma_agua*h, o sea CONSTANTE en toda la zona sumergida y proporcional solo a la profundidad bajo el NF. Con gamma_sat = 20 kN/m3 (gamma' = 10.19), Ka = 1/3 y h = 0.60 m son 1.96 kPa de mas, siempre. En porcentaje NO hay un solo numero, porque depende de la altura del muro: sobre un muro de 0.60 m -- todo el sumergido, que es el caso con que la ficha MAT-O3 lo calculo -- la presion en la base es 9.9 kPa contra 7.9 kPa, +25 %; sobre uno de 2.00 m con el freatico a 1.40 m es 19.2 contra 17.3 kPa, +11 %; y sigue bajando con la altura, porque el exceso no crece y el empuje si. La desviacion es CONSERVADORA en todos los casos (gamma > gamma' siempre). Se mantiene, y se declara, porque corregirla exige un peso especifico sumergido del relleno que este expediente todavia no tiene: aplicar AASHTO con el unico gamma declarado seria ALIVIAR el empuje sin dato que lo sostenga. La hoja de ruta no dice nada del NF en el empuje: solo que 'empuje hidrostatico y subpresion, con NF a 1.4 m, no son opcionales' (num. 3.11.3 · 'Presence of Water' · pag. impresa 3-118 · PDF 172)
+    nota: Demanda sismica del cabezal: no basta el empuje. El num. 2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254) exige combinar P_AE con la inercia de la masa del muro P_IR = k_h*(W_w + W_s), en dos casos que se investigan por separado porque sus efectos NO son simultaneos -- 100 % P_AE + 50 % P_IR, y 50 % P_AE (no menor que el empuje activo estatico) + 100 % P_IR --, rigiendo el mas desfavorable. La Sec. 9.2 de la hoja de ruta desagrega la cadena sismica y NO menciona P_IR: el defecto se reporta contra ella
+    nota: Ubicacion de la resultante en la base bajo sismo: el num. 2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254) la acota a los dos tercios centrales (e <= B/3) con gamma_EQ = 0.0 y a las ocho decimas centrales (e <= 0.4*B) con gamma_EQ = 1.0, interpolando en medio. Es una verificacion que la tabla de FS de Sec. 9.3 no trae, porque E.050 no la escribe, y depende de 'gamma_EQ', que sigue vacio
+    nota: Excentricidad sismica, 'tercio central': TERCERA ERRATA DE IMPRENTA DEL MANUAL en esta misma cadena sismica, y la unica que mueve un numero. El num. 2.8.1.1.14.1 traduce el 'middle two-thirds' de AASHTO como 'tercio central', que no es lo mismo: dos tercios centrales es e <= B/3 y el tercio central es e <= B/6, la mitad. Que es descuido de traduccion y no decision del MTC lo prueba el propio Manual, tres paginas antes: en su numeral ESTATICO traduce el MISMO giro correctamente -- 'dentro los dos tercios centrales del ancho de la base' -- y en el mismo parrafo sismico traduce bien 'eight-tenths' como 'ocho decimas centrales'. Solo degrada 'two-thirds', y solo ahi. Y LA LECTURA LITERAL ES NORMATIVAMENTE IMPOSIBLE: dejaria el limite bajo SISMO (e <= B/6) al doble de estricto que el mismo Manual exige bajo carga estatica permanente (e <= B/3, fundacion en suelo), lo que invierte la filosofia de estados limite -- Evento Extremo I es raro y mas tolerante que Resistencia I, no al reves. Con el texto de AASHTO el articulo es coherente: ANCLA en gamma_EQ = 0.0 sobre el mismo B/3 del limite estatico y desde ahi RELAJA a 0.4*B cuando gamma_EQ = 1.0. GANA AASHTO. Seguir la letra del Manual seria conservador -- por eso esto no cambia ningun resultado ya emitido -- pero rechazaria disenos que la norma acepta, y sobre todo dejaria la cita sin sostener (2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254); num. 11.6.5.1 · 'General' · pag. impresa 11-25 · PDF 1494; el limite estatico que sirve de ancla, en Manual de Puentes (MTC) num. 2.3.1.1.12.3 'Limites de Excentricidad' (11.6.3.3 AASHTO) -- el numeral se imprime asi, con 2.3 en vez de 2.8, errata del Manual que su propio indice repite --, pag. impresa 250 (PDF 251))
+    nota: Presion de contacto en la base: el num. Manual de Puentes (MTC) num. 2.8.1.1.12.2 'Capacidad de Carga' (11.6.3.2 AASHTO), pag. impresa 248 (PDF 249) la reparte por terreno de fundacion -- uniforme sobre el ancho efectivo B - 2e en SUELO, lineal sobre B en ROCA -- y no la escribe el numeral sismico. La rama que aplica a este cabezal es la de suelo, coherente con las filas de sitio declaradas en 'F_pga'
+    nota: E.030 no gobierna el diseno sismico de este cabezal, y el argumento es de AMBITO antes que de periodo de retorno: El Art. 4 acota el ambito de E.030 a las edificaciones nuevas y al reforzamiento o reparacion de edificaciones existentes, y un cabezal de alcantarilla de una carretera no es una edificacion. PERO ESO SOLO NO BASTA, y creer que basta es el error que este campo cometia: E.030 NO guarda silencio sobre las obras que no son edificaciones. Su Art. 7.3 las nombra -- puentes y estructuras hidraulicas entre ellas -- y se las ATRAE, con una condicion suspensiva: 'mientras no se cuente con normas nacionales especificas'. De modo que 'no es una edificacion' no es lo que saca al cabezal de E.030: es el disparador del articulo que lo mete. LO QUE LO SACA es que la condicion NO SE CUMPLE: el MTC si tiene norma nacional especifica -- el Manual de Puentes --, y por eso el mandato de usar Z y S de E.030 no llega a activarse. Es un fundamento POSITIVO, y mas fuerte que el silencio que este campo invocaba: la propia E.030 cede el paso ante la norma sectorial. Ver E030_ART_7_3_TEXTO (E.030 (RM 183-2026-VIVIENDA), Art. 4 'Ambito de aplicacion', pag. impresa 7 (PDF 7); E.030 (RM 183-2026-VIVIENDA), Art. 7.3, dentro del Art. 7 'Consideraciones para el diseno y comportamiento estructural', pag. impresa 8 (PDF 8))
+    nota: Texto literal del Art. 7.3 de E.030, que es el que cede el paso: "Mientras no se cuente con normas nacionales especificas para estructuras tales como reservorios, tanques, silos, puentes, torres de transmision, muelles, estructuras hidraulicas, tuneles y todas aquellas cuyo comportamiento sismico difiera del de las edificaciones se deben utilizar los valores Z y S del Capitulo II de la presente Norma Tecnica amplificados de acuerdo a la importancia de la estructura, debiendo ser sustentado por el proyectista tomando en cuenta estandares internacionales." (E.030 (RM 183-2026-VIVIENDA), Art. 7.3, dentro del Art. 7 'Consideraciones para el diseno y comportamiento estructural', pag. impresa 8 (PDF 8))
+    nota: Clase de sitio sismica: INDETERMINADA. Este expediente NO se atribuye la Clase de Sitio F, y no puede: el articulado que la define prohibe suponerla. Este expediente no tiene determinacion de la Entidad ni datos geotecnicos: el SPT esta pendiente. La misma clausula fija el deber positivo que queda abierto -- investigar hasta poder determinar la clase --, y por eso la clase de sitio es un dato de sitio [S] SIN VALOR y no una adopcion del proyectista (num. 3.10.3.1 · 'Site Class Definitions' · pag. impresa 3-101 · PDF 155)
+    nota: Texto literal de la prohibicion, en el articulado y no en un comentario: "Site classes E or F should not be assumed unless the authority having jurisdiction determines that site classes E or F could be present at the site or in the event that site classes E or F are established by geotechnical data." (num. 3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1 · 'Site Class Definitions' · pag. impresa 3-102 · PDF 156). El Manual de Puentes lo endurece a un futuro imperativo: "Las clases de Sitio E o F no serán supuestas a no ser que la Entidaddetermine la clase de sitio E o F o estas sean establecidas por datos geotécnicos." (num. 2.4.3.11.2.1.1, bloque «Excepciones» · 'Definiciones de Clases de Sitio' · pag. impresa 122 · PDF 123)
+    nota: El deber positivo que abre la misma clausula, y que es lo que convierte a la clase de sitio en un dato pendiente de ensayo y no en un valor que el proyectista adopte: "Where the soil properties are not known in sufficient detail to determine the Site Class, a site investigation shall be undertaken sufficient to determine the Site Class." (num. 3.10.3.1, nota «Exceptions» al pie de la Tabla 3.10.3.1-1 · 'Site Class Definitions' · pag. impresa 3-102 · PDF 156)
+    nota: Por que el expediente decia Clase F, y por que deja de decirlo: el salto de 'suelo potencialmente licuable' a 'Clase de Sitio F' NO lo escribe ninguno de los dos documentos que la cadena sismica invoca. La fila F de la Tabla 3.10.3.1-1 enumera turbas o arcillas altamente organicas, arcillas de muy alta plasticidad y estratos potentes de arcilla blanda, y ninguna es licuefaccion; en las 1905 paginas de AASHTO no hay una sola donde coincidan 'liquefaction' y 'Site Class F'. La licuefaccion la trata el Art. 10.5.4.2 'Liquefaction Design Requirements', por via de cimentaciones y disparada por zona sismica, napa freatica y caracteristicas de suelo, nunca por la clase de sitio. Quien SI clasifica los suelos licuables en su categoria excepcional es E.030, en el perfil S5, que es de donde el expediente sacaba la letra: son dos esquemas distintos y discrepan justo en el rasgo que motivaba la clasificacion de este sitio (num. 2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F · 'Definiciones de Clases de Sitio' · pag. impresa 122 · PDF 123; num. 10.5.4.2 · 'Liquefaction Design Requirements' · pag. impresa 10-34 · PDF 1323; E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla N 2, fila S5, pag. impresa 11 (PDF 11))
+    nota: Y no es solo que la norma calle: el Art. 10.5.4.2 manda analizar el sitio licuable en configuracion no licuada y licuada con el mismo espectro de diseno, y acota el espectro especifico de sitio a no menos de dos tercios del general 'modified by the site factors in Article 3.10.3.2'. AASHTO ESPERA que a un sitio licuable le aplique un factor de sitio tabulado, cosa imposible si la licuefaccion lo hiciera Clase F, porque la fila F no tiene factor. El reparto coherente es el que este expediente ya hace: clasificar por rigidez medida y evaluar la licuefaccion aparte, con el SPT de 15 m del Art. 38 de E.050 (num. 10.5.4.2, configuracion licuada · 'Liquefaction Design Requirements' · pag. impresa 10-34 · PDF 1323)
+    nota: Lo que cierra este vacio, y son DOS ensayos de profundidades distintas que conviene pedir juntos: (1) la caracterizacion de los 100 ft (30.48 m) superiores -- Vs30 o N_barra --, que es la profundidad que el Art. 3.10.3.1 escribe y con la que se lee la clase; y (2) si esa caracterizacion diera Clase F, el analisis de respuesta dinamica de sitio, que el Art. 3.10.2 exige con 'shall' y el num. 2.4.3.11.2 del Manual con 'sera usado'. NO lo cierra el SPT de licuefaccion de 15 m de E.050 Art. 38: ese ensayo responde a otra pregunta y se detiene a mitad de la columna que esta clase necesita (num. 3.10.2 · 'Seismic Hazard' · pag. impresa 3-71 · PDF 125; num. 2.4.3.11.2 · 'Peligro Sísmico' · pag. impresa 121 · PDF 122)
+    nota: «Clase F» en este expediente: CLASE DE SITIO SISMICA: AASHTO LRFD Tabla 3.10.3.1-1 / Manual de Puentes Tabla 2.4.3.11.2.1.1-1, «suelos que requieren evaluaciones especificas de sitio». Es la del eje de la Sec. 0.5, y este expediente NO se la atribuye: ver 'clase_sitio'. CONCRETO CLASE F: resistencia, EG-2013 Tabla 503-07, pag. impresa 912 -- concreto simple, f'c = 14 MPa. Es la del relleno lateral y la cama de apoyo. ACERO ASTM A668 CLASE F: el propio Manual de Puentes lo tabula en su pag. impresa 289. No llega a esta memoria; se anota para que nadie lo cruce con los otros dos. Las dos primeras llegan a esta memoria, y por eso toda aparicion de «Clase F» lleva su calificador -- «Clase de Sitio F» o «Concreto Clase F» --, siempre, sin excepcion de contexto (NOR-VOC-04).
+    nota: Perfil de suelo S5 de E.030: aunque la norma no gobierne el diseno del cabezal, su clasificacion del sitio trae una consecuencia que el expediente tiene que atender. Texto literal: "Estos casos no estan cubiertos en la clasificacion establecida en la Tabla N 2 de la presente Norma Tecnica. Se prohibe las construcciones apoyadas sobre estos perfiles, salvo que, se efectue un estudio especifico para el sitio, en el cual se debe considerar los mejoramientos en el estrato del perfil." (E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla N 2, fila S5, pag. impresa 11 (PDF 11)). Es una prohibicion CONDICIONADA, no absoluta: la misma oracion la levanta con estudio especifico de sitio y mejoramiento del estrato. Leerla como bloqueo duro va mas alla de la fuente; leerla como referencia muerta se queda muy por debajo. La fila S5 se llama 'Suelos excepcionales' y su primera vineta es 'Suelos potencialmente licuables', que es la razon por la que este expediente se atribuye esa letra. La Tabla N 3 del num. 14.7 -- la que el num. 14.8 obliga a usar para clasificar -- NO tiene fila S5, solo S0 a S4, coherente con que 'estos casos no estan cubiertos'
+    nota: Sin llamador de produccion -- empujes_trasdos: Ensambla el plano de empuje del trasdos y ninguna corrida lo alcanza: la CLI no lo llama porque elegir el plano de empuje (`altura_empuje`) y los factores de combinacion seria decidir por el proyectista, y el criterio 'predimensionamiento_cabezal' esta vacio. Se conserva porque es la formula, no el ensamble, lo que el expediente necesita: quien tantee un cabezal la llama con su geometria
+    nota: Sin llamador de produccion -- peso_suelo_sobre_talon: Produce el W_s de P_IR. Necesita el ancho del talon, que es parte de 'predimensionamiento_cabezal', y la altura de suelo sobre el talon, que depende de donde se corte el plano de calculo y por eso entra por argumento
+    nota: Sin llamador de produccion -- fuerza_inercia_muro: Mismo caso que `empujes_trasdos`, y por el mismo vacio: W_s necesita el ancho del talon, que es parte de 'predimensionamiento_cabezal'. La formula si esta implementada, que es lo que faltaba (MAT-D6)
+    nota: Sin llamador de produccion -- gamma_eq: Lee el criterio 'gamma_EQ', que es vacio: hoy detendria a quien la llamara, y quien la llamaria -- el chequeo de excentricidad -- ya esta detenido antes por la geometria
+    nota: Sin llamador de produccion -- verificar_estabilidad: Agrega E1-E3 (y E4-E5 si se piden) a partir de demandas ya calculadas. La CLI no la llama porque ensamblar esas demandas exige elegir el plano de empuje y los factores de combinacion, que es decidir por el proyectista -- la misma razon de `empujes_trasdos`, y la que la nota de cli.py declara
+    nota: Sin llamador de produccion -- peso_propio_cabezal: Formula de geometria exacta, utilizable hoy con una geometria de tanteo; sin 'predimensionamiento_cabezal' no hay geometria de proyecto que pasarle
+    nota: Sin llamador de produccion -- parametros_resistencia_art20: Aplica la regla de E.050 Art. 20 (en cohesivos phi = 0, en friccionantes c = 0) sobre los parametros del terreno de fundacion. Quien la usaria es el calculo de la fuerza resistente al deslizamiento, que la CLI no ensambla por la misma razon que el resto de la estabilidad
+    nota: Sin llamador de produccion -- aplica_sobrecarga_trasdos: Comprueba la regla de la distancia H/2 para el trafico. No la llama nadie a proposito: Sec. 9.2 cierra el punto diciendo que en un cabezal bajo terraplen vial la sobrecarga SIEMPRE aplica, de modo que el pipeline usa `sobrecarga_trasdos_siempre_aplica` y esta queda para quien tenga la distancia medida y quiera comprobarlo
+    nota: Sin llamador de produccion -- sobrecarga_trasdos_siempre_aplica: Declaracion para la memoria. Hoy no la imprime nadie porque la seccion de la memoria que la llevaria es la de empujes, que esta detenida
+    nota: Sin llamador de produccion -- demanda_sismica_cabezal: Combina P_AE con P_IR segun el num. 2.8.1.1.14.1. Sin geometria no hay ninguno de los dos, de modo que hereda el mismo vacio
+    nota: Sin llamador de produccion -- presion_contacto_base: Produce el q_actuante que `verificar_capacidad_portante` exige ya resuelto, con la rama del numeral que corresponde al terreno de fundacion. Hereda el vacio de la geometria (MAT-O16)
+    nota: Sin llamador de produccion -- verificar_excentricidad_sismica: Ademas de la geometria necesita 'gamma_EQ', que es vacio propio: el limite va de B/6 a 0.4*B segun su valor
+    nota: Sin llamador de produccion -- armado del num. 9.4 (ocho funciones): `cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_caras`, `requiere_refuerzo_dos_capas`, `nota_temperatura_dos_caras`, `espaciamiento_maximo`, `verificar_espaciamiento` y `verificar_ciclopeo` no tienen llamador porque su insumo es el diseno por flexion y corte, que se detiene en `diseno_flexion_corte` con NotImplementedError, y el espesor del elemento, que sale de 'predimensionamiento_cabezal'. La CLI registra ese bloqueo en cada corrida (SIS-B-20)
+    nota: Sin llamador de produccion -- clase_exposicion_sulfatos / factor_recubrimiento_por_ac: No tienen llamador de PRODUCCION directo y no son deuda: las llama `requisitos_durabilidad_concreto` y `_recubrimiento_aashto_detallado`, que si estan en el camino de la CLI. Se declaran aparte porque son las dos piezas que un revisor va a querer ejecutar sueltas para reproducir la clasificacion de la Tabla 4.4 y el factor por a/c sin montar el recubrimiento entero
+    nota: Sin llamador de produccion -- n_q_zapata_en_talud / n_s_zapata_en_talud: No tienen llamador interno porque la funcion que las usaria, `capacidad_portante_zapata_en_talud`, se detiene antes en 'N_cq_N_gammaq_meyerhof': N_cq y N_gamma_q salen de FIGURAS y no de una formula transcribible. N_s se calcula aparte al leer los abacos, que es justo para lo que existe la funcion (SIS-B-21)
+    nota: Las verificaciones de estabilidad de Fase 9 no las ensambla esta CLI: M9.verificar_estabilidad devuelve E1-E3 (y E4-E5 si se le piden) a partir de las demandas YA calculadas, y E6 -- la ubicacion de la resultante en la base bajo sismo, que el Manual de Puentes exige y E.050 no escribe -- es funcion suelta, M9.verificar_excentricidad_sismica, porque no es un factor de seguridad y no cabe en la tabla de Sec. 9.3. Elegir el plano de empuje o los factores de combinacion aqui seria decidir por el proyectista. La CLI corre las piezas de Fase 9 que se sostienen solas: cadena sismica (9.2), K_AE, recubrimientos (9.4) y cuantias minimas de referencia. Que funciones de M9 quedan sin llamador de produccion, y por que cada una, se declara en UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y esta CLI lo lee de alli en vez de repetirlo.
+    nota: Cuantia minima de refuerzo del muro: se aplica integra la de num. 14.3.1 · 'REFUERZO MÍNIMO' · pag. impresa 133 · PDF 133. El E.060 Art. 14.8.2, pag. 134 permite exceptuarla en muros de contencion -- "El refuerzo mínimo será el indicado en 14.3. Este requisito podrá exceptuarse cuando el Ingeniero Proyectista disponga juntas de contracción y señale procedimientos constructivos que controlen los efectos de contracción y temperatura" --, y este expediente NO ejerce esa excepcion: no declara juntas de contraccion ni procedimientos constructivos de control de contraccion y temperatura, que son las dos condiciones que el articulo exige a la vez. Ejercerla es una decision del proyectista y obliga a declarar las dos en el expediente
+  Bloqueos:
+    [CriterioPendienteError] Fase 9 - Cabezal y aletas (M9) -> K_AE de Mononobe-Okabe (9.2)
+        falta declarar: phi_relleno_trasdos [A] - Angulo de friccion interna del material de cantera del trasdos
+        fuente: PENDIENTE
+    [CriterioPendienteError] Fase 9 - Cabezal y aletas (M9) -> predimensionamiento del cabezal (9.3, E1-E5)
+        falta declarar: predimensionamiento_cabezal [A] - Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata, ancho del TALON e inclinacion beta del trasdos), en m
+        fuente: PENDIENTE - predimensionamiento del proyectista, o plano tipo de cabezal del expediente vial
+    [CriterioPendienteError] Fase 9 - Cabezal y aletas (M9) -> recubrimiento de diseno 'contra_suelo' (9.4)
+        falta declarar: categoria_refuerzo_aashto [A] - Categoria de material de refuerzo de la Tabla 5.10.1-1 de AASHTO LRFD ('A' acero sin recubrir, 'B' epoxico o galvanizado, 'C' acero AASHTO M 334M), que decide que columna de la tabla de recubrimientos aplica a este cabezal
+        fuente: PENDIENTE - AASHTO LRFD 9a ed., Tabla 5.10.1-1 y su nota al pie, pag. impresa 5-169 (PDF 528); Manual de Puentes num. 2.9.1.5.5.3 y 2.9.1.5.5.4, pags. impresas 377-378. La tabla y sus categorias estan verificadas; lo que falta es CUAL de las tres se especifica en esta obra
+    [CriterioPendienteError] Fase 9 - Cabezal y aletas (M9) -> recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4)
+        falta declarar: categoria_refuerzo_aashto [A] - Categoria de material de refuerzo de la Tabla 5.10.1-1 de AASHTO LRFD ('A' acero sin recubrir, 'B' epoxico o galvanizado, 'C' acero AASHTO M 334M), que decide que columna de la tabla de recubrimientos aplica a este cabezal
+        fuente: PENDIENTE - AASHTO LRFD 9a ed., Tabla 5.10.1-1 y su nota al pie, pag. impresa 5-169 (PDF 528); Manual de Puentes num. 2.9.1.5.5.3 y 2.9.1.5.5.4, pags. impresas 377-378. La tabla y sus categorias estan verificadas; lo que falta es CUAL de las tres se especifica en esta obra
+    [CriterioPendienteError] Fase 9 - Cabezal y aletas (M9) -> recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4)
+        falta declarar: categoria_refuerzo_aashto [A] - Categoria de material de refuerzo de la Tabla 5.10.1-1 de AASHTO LRFD ('A' acero sin recubrir, 'B' epoxico o galvanizado, 'C' acero AASHTO M 334M), que decide que columna de la tabla de recubrimientos aplica a este cabezal
+        fuente: PENDIENTE - AASHTO LRFD 9a ed., Tabla 5.10.1-1 y su nota al pie, pag. impresa 5-169 (PDF 528); Manual de Puentes num. 2.9.1.5.5.3 y 2.9.1.5.5.4, pags. impresas 377-378. La tabla y sus categorias estan verificadas; lo que falta es CUAL de las tres se especifica en esta obra
+    [CriterioPendienteError] Fase 9 - Cabezal y aletas (M9) -> aviso de ambiente corrosivo (9.4)
+        falta declarar: exposicion_quimica_ems [S] - Agresividad quimica del suelo y del agua freatica en el corredor, y condiciones de exposicion del concreto, en las magnitudes con que E.060 clasifica: sulfato soluble en el suelo (% en peso) y en el agua (ppm) para la Tabla 4.4, y cual de las TRES filas de la Tabla 4.2 aplica
+        fuente: PENDIENTE - Analisis quimico del EMS (contenido de sulfatos y cloruros en suelo y en agua freatica). Las tablas contra las que se clasifica ya estan transcritas: E.060 Tabla 4.2 (pag. impresa 37), Tabla 4.4 (pag. impresa 38) y la nota al pie comun a las dos
+
+==============================================================================
+ALCANCE DE LA CORRIDA
+==============================================================================
+Alcance declarado: expediente (bandera --alcance; por defecto expediente)
+Ninguna etapa diferida por alcance: la corrida ejecuto el pipeline completo.
+
+==============================================================================
+CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA
+==============================================================================
+[A] categoria_refuerzo_aashto
+  Concepto : Categoria de material de refuerzo de la Tabla 5.10.1-1 de AASHTO LRFD ('A' acero sin recubrir, 'B' epoxico o galvanizado, 'C' acero AASHTO M 334M), que decide que columna de la tabla de recubrimientos aplica a este cabezal
+  Fuente   : PENDIENTE - AASHTO LRFD 9a ed., Tabla 5.10.1-1 y su nota al pie, pag. impresa 5-169 (PDF 528); Manual de Puentes num. 2.9.1.5.5.3 y 2.9.1.5.5.4, pags. impresas 377-378. La tabla y sus categorias estan verificadas; lo que falta es CUAL de las tres se especifica en esta obra
+  Lo resuelve: Especificacion del acero de refuerzo del expediente (norma de producto del acero que se compra), o la decision expresa del proyectista de proteger o no el refuerzo en ambiente salino
+  Bloqueo  : recubrimiento de diseno 'contra_suelo' (9.4); recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4); recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4)
+  Puntos   : proyecto (Fase 9)
+
+[S] exposicion_quimica_ems
+  Concepto : Agresividad quimica del suelo y del agua freatica en el corredor, y condiciones de exposicion del concreto, en las magnitudes con que E.060 clasifica: sulfato soluble en el suelo (% en peso) y en el agua (ppm) para la Tabla 4.4, y cual de las TRES filas de la Tabla 4.2 aplica
+  Fuente   : PENDIENTE - Analisis quimico del EMS (contenido de sulfatos y cloruros en suelo y en agua freatica). Las tablas contra las que se clasifica ya estan transcritas: E.060 Tabla 4.2 (pag. impresa 37), Tabla 4.4 (pag. impresa 38) y la nota al pie comun a las dos
+  Lo resuelve: El analisis quimico del EMS. Mientras no exista, ningun recubrimiento de 9.4 se puede calcular
+  Bloqueo  : aviso de ambiente corrosivo (9.4)
+  Puntos   : proyecto (Fase 9)
+
+[A] phi_relleno_trasdos
+  Concepto : Angulo de friccion interna del material de cantera del trasdos
+  Fuente   : PENDIENTE
+  Lo resuelve: Ensayo de corte directo sobre el material de cantera
+  Bloqueo  : K_AE de Mononobe-Okabe (9.2)
+  Puntos   : proyecto (Fase 9)
+
+[A] predimensionamiento_cabezal
+  Concepto : Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata, ancho del TALON e inclinacion beta del trasdos), en m
+  Fuente   : PENDIENTE - predimensionamiento del proyectista, o plano tipo de cabezal del expediente vial
+  Lo resuelve: Plano de encofrado del cabezal, acotado
+  Bloqueo  : predimensionamiento del cabezal (9.3, E1-E5)
+  Puntos   : proyecto (Fase 9)
+
+[A] remanso_derecho_via
+  Concepto : Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
+  Fuente   : PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
+  Lo resuelve: Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto
+  Bloqueo  : material y diametro (bucle de MD)
+  Puntos   : A-01, A-02, B-01
+
+==============================================================================
+RESUMEN
+==============================================================================
+CSV                     : tests/ejemplo_puntos.csv
+Alcance de la corrida   : expediente
+Puntos del expediente   : 4
+Puntos dimensionados    : 0
+Verificaciones incumplidas: 0
+Etapas bloqueadas       : 11
+Expediente cerrado      : no
+
+El expediente NO cierra. Mientras un criterio siga sin valor, la etapa que lo invoca se detiene: no se sustituye por un defecto (Sec. 0.7).
+
+JSON del expediente: <SALIDA>/informe_exp.json
+Memoria de calculo (HTML): <SALIDA>/memoria_exp.html
+Plantilla usada          : memoria_alcantarillas.html
+Cuadro resumen (CSV): <SALIDA>/resumen_exp.csv
