@@ -3253,6 +3253,98 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # EL SEXTO DEL CAJON, y el que abre C7. Los cinco de C5 gobiernan la
+    # HIDRAULICA del marco; este gobierna su GEOMETRIA EXTERIOR, que es lo que
+    # V7 y la cota de clave necesitan y no tenian por donde entrar.
+    "espesor_pared_cajon": Criterio(
+        valor=None,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        concepto="Espesor de pared del marco de concreto vaciado in situ, m",
+        justificacion="EL VACIO ES DEL CATALOGO DE PRODUCTOS, NO DEL MANUAL, "
+                      "y la diferencia decide la etiqueta. El Manual de "
+                      "Hidrologia no tabula espesores de pared de nada: no "
+                      "hay numeral que callar. Quien los tabula son las "
+                      "normas de PRODUCTO, y la que este proyecto usa -- "
+                      "AASHTO M 170M-04, columna 'Wall Thickness' -- es de "
+                      "TUBERIA: sus filas se enumeran por diametro designado "
+                      "y un marco no es una de ellas. Es el cuarto caso de la "
+                      "regla 3 de §15.1 de docs/ruta_familia_c.md, ya "
+                      "clasificado ahi: las normas de producto quedan FUERA "
+                      "DE SU ALCANCE declarado para el marco, no en analogia. "
+                      "Y NO ES UN VACIO QUE ALGUIEN VAYA A LLENAR CON UNA "
+                      "TABLA: la §14.1 decidio VACIADO IN SITU precisamente "
+                      "porque en normas/ no hay ninguna norma de producto de "
+                      "cajon prefabricado. El espesor de un marco vaciado in "
+                      "situ sale de su propio calculo estructural -- AASHTO "
+                      "LRFD Sec. 5 y 12.11, que `--alcance perfil` difiere "
+                      "entero --, de modo que a nivel de perfil es una "
+                      "ADOPCION del proyectista y por eso [A]. "
+                      "POR QUE BLOQUEA EN VEZ DE TOMAR UN VALOR PLAUSIBLE: la "
+                      "auditoria adversarial de C5 midio lo que pasaba sin "
+                      "esta deteccion. Las alturas de marco plausibles caen "
+                      "sobre la misma serie de 900 + 150k mm que los "
+                      "diametros de tubo, de modo que un marco de 2.00 x 1.50 "
+                      "m NO se detenia: recibia la pared del tubo de 1500 mm "
+                      "y V7 lo evaluaba como un CILINDRO, sobreestimando la "
+                      "seguridad alrededor de un 27 %. Un valor que acierta "
+                      "de forma silenciosa es peor que un bloqueo, porque el "
+                      "bloqueo se ve.",
+        fuente="NINGUNA, y esa es la afirmacion. Barrido declarado: el num. "
+               "4.1.1.3.4 a) del Manual de Hidrologia nombra el marco y "
+               "remite su seccion a «cada diseno particular» sin dar "
+               "espesores; AASHTO M 170M-04 tabula 'Wall Thickness' por "
+               "diametro designado de TUBERIA (Tablas 1 a 5) y su Nota 1 la "
+               "declara especificacion de fabricacion y compra; y en normas/ "
+               "no hay norma de producto de cajon prefabricado -- que es la "
+               "razon por la que §14.1 adopto el vaciado in situ --. Lo que "
+               "SI existe y este alcance difiere es el procedimiento de "
+               "calculo: AASHTO LRFD Sec. 5 y Art. 12.11 «Reinforced Concrete "
+               "Cast-in-Place and Precast Box Culverts», pag. impresa 12-68",
+        reemplazado_por="El calculo estructural del portico (AASHTO LRFD "
+                        "Sec. 5 y 12.11), que es lo que fija el espesor de un "
+                        "marco vaciado in situ. A nivel de EXPEDIENTE deja de "
+                        "ser una adopcion y pasa a ser un resultado; a nivel "
+                        "de perfil se adopta y se declara",
+        sensibilidad=(
+            "EL SIGNO ES CONTRAINTUITIVO Y VA PRIMERO, porque quien declare "
+            "este criterio va a suponer lo contrario: ENGROSAR LA PARED "
+            "EMPEORA LA FLOTACION. Una pared mas gruesa parece mas estructura "
+            "y por tanto mas seguridad, y con `DC = 0` -- V7 omite el peso "
+            "propio a proposito, del lado conservador -- ese peso que "
+            "justificaria la intuicion NO ENTRA EN EL CALCULO. Lo que si "
+            "entra es la geometria exterior, por los DOS lados de la "
+            "desigualdad: la subpresion crece con (B+2t)(H+2t), en dos "
+            "dimensiones, y la columna de suelo que estabiliza solo con "
+            "(B+2t), en una. Medido sobre un marco de 2.00 x 1.50 m con 0.95 "
+            "m de relleno y gamma_r = 18 kN/m3: t = 0.15 da margen -5.21 "
+            "kN/m, t = 0.20 da -7.79 y t = 0.25 da -10.58. La derivada del "
+            "empuje es 2*gamma_w*(Bc + B'c) ~ 80 kN/m por metro de t, contra "
+            "~31 del termino estabilizante",
+            "HACIA ABAJO el limite no es la flotacion sino el propio calculo "
+            "estructural, que este alcance difiere: una pared que flota mejor "
+            "puede no resistir el empuje de tierras ni la carga viva. Por eso "
+            "la ventana no se puede cerrar a nivel de perfil y el criterio "
+            "se ADOPTA en vez de optimizarse: el optimo de V7 y el minimo "
+            "estructural empujan en sentidos opuestos y solo la Fase 8 tiene "
+            "los dos numeros",
+        ),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por predimensionamiento, hasta que "
+                        "el calculo estructural del portico lo determine "
+                        "(AASHTO LRFD Sec. 5 y 12.11, diferidos por "
+                        "`--alcance perfil`)",
+            dominio="metros, > 0",
+            tabla_pendiente="ninguna, y es deliberado: no hay norma de "
+                            "producto de cajon prefabricado en normas/, y "
+                            "§14.1 adopto el vaciado in situ por esa razon. "
+                            "La tabla que existe -- AASHTO M 170M-04 -- es de "
+                            "tuberia y NO se le puede leer la fila de la "
+                            "misma altura, aunque exista: es la coincidencia "
+                            "de series que midio la auditoria de C5",
+        ),
+    ),
+
     "D_max_catalogo": Criterio(
         valor={"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50},
         nivel=NIVEL_PERFIL,

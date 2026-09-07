@@ -516,21 +516,29 @@ def test_el_marco_no_toma_prestada_la_pared_del_tubo_de_su_misma_altura():
     alrededor de un 27 % (la subpresion real de un prisma es un 63 % mayor y
     el peso de relleno solo un 28 %).
 
-    Es `DatoFaltanteError` y no `DatoInvalidoError` porque el revisor tiene
-    que AÑADIR algo -- el espesor de pared de un marco sale de su calculo
-    estructural, no de una tabla de producto --, que es la regla de CLAUDE.md.
-    Levantarla es de C7.
+    LA EXCEPCION CAMBIO EN C7 Y EL COMPORTAMIENTO NO. C5 la detuvo con
+    `DatoFaltanteError` -- el revisor tenia que AÑADIR el dato, porque el
+    proyecto no tenia donde ponerlo --. C7 abre `espesor_pared_cajon`, [A] de
+    nivel perfil, y entonces el revisor ya no tiene que conseguir nada: tiene
+    que DECIDIR. Esa es la frontera exacta que CLAUDE.md fija entre las dos
+    excepciones, y por eso ahora es `CriterioPendienteError` -- la que la GUI
+    muestra como pendiente declarable, con su ventana y su procedencia --.
+
+    LO QUE NO CAMBIA es que se detiene, ni por que se detiene.
     """
     with declarados(DECLARACIONES_CAJON):
         marco = _marco()
-        with pytest.raises(DatoFaltanteError) as exc:
+        with pytest.raises(CriterioPendienteError) as exc:
             espesor_pared(marco, 1.50)
-    assert exc.value.campo == "espesor_pared_conducto[marco]"
-    assert "CILINDRO" in exc.value.detalle
-    # Y el tubo de la misma altura SI tiene fila: es lo que hace peligrosa la
-    # coincidencia, y por eso se fija aqui al lado.
-    assert espesor_pared(catalogo(TipoMaterial.CONCRETO_REFORZADO),
-                         1.50) == pytest.approx(0.150, rel=REL_TRANSPORTE)
+        assert exc.value.clave == "espesor_pared_cajon"
+        # Y el tubo de la misma altura SI tiene fila: es lo que hace peligrosa
+        # la coincidencia de series, y por eso se fija aqui al lado.
+        assert espesor_pared(catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                             1.50) == pytest.approx(0.150, rel=REL_TRANSPORTE)
+        # Y declarado, el marco NO lo lee de esa serie: lee lo adoptado.
+        with declarados({"espesor_pared_cajon": 0.22}):
+            assert espesor_pared(marco, 1.50) == pytest.approx(
+                0.22, rel=REL_TRANSPORTE)
 
 
 def test_la_progresion_del_marco_se_reconoce_con_tolerancia_y_no_con_igualdad():

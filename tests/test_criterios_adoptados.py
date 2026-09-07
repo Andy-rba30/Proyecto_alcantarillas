@@ -1568,9 +1568,19 @@ def test_regla_7_la_tabla_10_sirve_tal_cual_y_no_hay_criterio_de_v_max_cajon():
         "10 clasifica por revestimiento y no por forma: su fila de concreto "
         "ya cubre al marco (regla vinculante #7 de docs/ruta_familia_c.md §6)")
     # Y la contraparte: los que SÍ existen sí son un vacío real.
+    #
+    # ESTE ASSERT SALTÓ EN C7 Y ESO ES LO QUE TIENE QUE HACER. El sexto,
+    # `espesor_pared_cajon`, es un vacío real y no un `v_max_cajon`: la
+    # diferencia es si la tabla de la que saldría el valor enumera sus filas
+    # por algo que el marco ES o por algo que NO es. La Tabla Nº 10 clasifica
+    # por REVESTIMIENTO —el marco es de concreto y le sirve tal cual—; la
+    # columna «Wall Thickness» de AASHTO M 170M-04 enumera por DIÁMETRO
+    # DESIGNADO DE TUBERÍA, y ahí el marco no tiene fila. Añadir la clave sin
+    # que este test se quejara sería el fallo; que se queje y haya que
+    # contestarle por escrito es el mecanismo.
     assert set(del_cajon) == {
         "secciones_cajon_normalizadas", "n_manning_cajon", "embocadura_cajon",
-        "n_celdas_cajon", "ke_entrada_cajon"}
+        "n_celdas_cajon", "ke_entrada_cajon", "espesor_pared_cajon"}
 
 
 def test_regla_8_la_fila_de_gamma_EV_del_cajon_es_porticos_rigidos():

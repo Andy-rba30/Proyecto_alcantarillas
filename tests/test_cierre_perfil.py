@@ -437,12 +437,21 @@ VACIOS_DE_PERFIL_DEL_CAJON = [
     "embocadura_cajon",               # la carta de la Tabla A.1
     "n_celdas_cajon",                 # una celda o multicelda
     "ke_entrada_cajon",               # la fila de la Tabla C.2
+    # EL SEXTO ES DE C7 y su vacio es de OTRA CLASE que los cinco de C5. Los
+    # cinco salen del num. 4.1.1.3.4 a), que remite la seccion del cruce de
+    # canal a "cada diseño particular": el vacio es del MANUAL. Este sale de
+    # que la norma de PRODUCTO que tabula espesores -- AASHTO M 170M-04,
+    # columna «Wall Thickness» -- enumera sus filas por diametro designado de
+    # TUBERIA, y un marco no es una de ellas: el vacio es del CATALOGO. Los
+    # dos se declaran igual y por eso van juntos aqui; la razon no es la
+    # misma y por eso se dice.
+    "espesor_pared_cajon",            # el espesor adoptado del marco
 ]
 
 
 def test_los_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
     """
-    Son SIETE, y ninguno es una omision: los siete declaran por que no se
+    Son OCHO, y ninguno es una omision: los ocho declaran por que no se
     pudieron cerrar.
 
     LOS DOS DE S20, que esta corrida no invoca:
@@ -455,12 +464,20 @@ def test_los_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
                            de sus dos ramas seria afirmar algo sobre un
                            archivo que nadie abrio.
 
-    LOS CINCO DEL CAJON (C5), que esta corrida SI invoca, y por una razon que
+    LOS SEIS DEL CAJON -- cinco de C5 y uno de C7 --, que esta corrida SI
+    invoca. Los cinco de C5, por una razon que
     no es un olvido del proyecto sino una instruccion del numeral: el num.
     4.1.1.3.4 a) exceptua a los cruces de canal de riego del piso de 0.90 m y
     los remite a "cada diseño particular". Lo que ese numeral hace no es
     liberar la seccion: la traslada del catalogo al DISEÑO. Escribirles un
     valor aqui seria inventar lo que la norma manda decidir caso por caso.
+
+    El sexto, `espesor_pared_cajon` (C7), por una razon distinta y que
+    conviene no confundir con aquella: no lo calla el Manual -- que no tabula
+    espesores de nada -- sino la norma de PRODUCTO, que enumera por diametro
+    designado de tuberia. Y no es un vacio que alguien vaya a llenar con una
+    tabla: la §14.1 adopto el vaciado in situ justamente porque no hay norma
+    de producto de cajon prefabricado en normas/.
     """
     # La funcion devuelve ORDENADO ALFABETICAMENTE, no por declaracion: se
     # compara contra la union ordenada para que la asercion diga lo que mide.

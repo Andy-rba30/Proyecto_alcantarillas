@@ -233,6 +233,11 @@ NUMERAL_MATERIAL = "Sec. 3.4"
 CRITERIO_DIAMETROS = "diametros_normalizados"
 CRITERIO_D_MAX_CATALOGO = "D_max_catalogo"
 CRITERIO_ESPESOR_PARED = "espesor_pared_conducto"
+# El del MARCO es otro criterio y no una entrada mas del de arriba: aquel
+# es una TABLA por diametro designado de tuberia y este un ESCALAR
+# adoptado. Meterlos en el mismo dict obligaria a que el marco tuviera un
+# "diametro designado", que es justo lo que no tiene.
+CRITERIO_ESPESOR_PARED_CAJON = "espesor_pared_cajon"
 CRITERIO_N_MANNING_HDPE = "n_manning_hdpe"
 CRITERIO_HDS5_HDPE = "hds5_embocadura_hdpe"
 # Los cinco del cajon (C5). Los cuatro primeros los lee ESTE modulo; el quinto
@@ -448,32 +453,43 @@ def espesor_pared(material: Material, D: float) -> float:
     El docstring de `M5.v7_flotacion` que C5 escribio decia que «un marco
     vaciado in situ no tiene fila ahi». La frase era verdadera sobre la NORMA
     y falsa sobre el DICT, que es lo que el codigo lee, y una declaracion en
-    un docstring no detiene ningun calculo. Por eso la deteccion esta aqui:
-    `DatoFaltanteError`, porque lo que falta es un dato que hay que CONSEGUIR
-    -- el espesor de pared de un marco sale de su calculo estructural, no de
-    una tabla de producto --, y porque asi la Fase 5 de un marco se detiene en
-    V7 en vez de publicar un margen que no es. Levantarla es de C7, que
-    generaliza M8 a la seccion.
+    un docstring no detiene ningun calculo. Por eso la deteccion esta aqui.
+
+    Y EL QUINTO VACIO CAMBIA DE EXCEPCION EN C7, que no es un detalle de
+    forma. C5 lo detuvo con `DatoFaltanteError` -- «hay que CONSEGUIR el
+    dato» -- y era la lectura correcta mientras el proyecto no tuviera donde
+    ponerlo. Ahora lo tiene: `espesor_pared_cajon`, [A] de nivel perfil. Con
+    eso el revisor ya no tiene que CONSEGUIR nada, tiene que DECIDIR, y esa es
+    exactamente la frontera que CLAUDE.md fija entre las dos excepciones. La
+    detencion pasa a `CriterioPendienteError`, que es la que la GUI muestra
+    como pendiente declarable con su ventana y su procedencia -- y este
+    criterio tiene una ventana que hay que leer, porque su sensibilidad va en
+    el sentido contrario al que todo el mundo supone.
+
+    LO QUE NO CAMBIA es que se detiene, ni por que: leerle al marco la fila
+    del tubo de la misma altura da un cilindro, y V7 sobreestima la seguridad
+    alrededor de un 27 % sobre un marco de 2.00 x 1.50 m. La coincidencia de
+    series -- 900 + 150k mm -- sigue siendo la trampa.
     """
     if material.forma is FormaSeccion.RECTANGULAR:
-        raise DatoFaltanteError(
-            f"{CRITERIO_ESPESOR_PARED}[marco]",
-            detalle=(
-                f"el criterio '{CRITERIO_ESPESOR_PARED}' tabula la pared por "
-                "DIAMETRO DESIGNADO de una norma de tuberia (columna 'Wall "
-                "Thickness' de AASHTO M 170M-04), y un marco vaciado in situ "
-                "no tiene fila ahi: su espesor sale de su propio calculo "
-                "estructural. NO SE PUEDE LEER LA FILA DEL TUBO DE LA MISMA "
-                "ALTURA, aunque exista: la altura de un marco cae sobre la "
-                "misma serie de 900 + 150k mm por coincidencia, y con esa "
-                "pared el volumen desplazado se calcula como un CILINDRO -- "
-                "V7 sobreestima la seguridad alrededor de un 27 % sobre un "
-                "marco de 2.00 x 1.50 m, que es la direccion insegura. "
-                "Mientras esto no se declare, la Fase 5 de un marco se "
-                "detiene en V7 y no publica un margen que no es. Lo cierra la "
-                "generalizacion de M8 a la seccion"
-            ),
-        )
+        # `ca.valor` levanta CriterioPendienteError mientras siga sin valor, y
+        # ese es el camino normal hoy. Si se declara, devuelve el espesor
+        # adoptado: un escalar en metros, no una tabla por diametro -- un
+        # marco vaciado in situ no tiene serie de producto que indexar.
+        t = ca.valor(CRITERIO_ESPESOR_PARED_CAJON)
+        if not isinstance(t, (int, float)) or isinstance(t, bool):
+            raise DatoInvalidoError(
+                campo=CRITERIO_ESPESOR_PARED_CAJON, valor=t,
+                motivo="el espesor de pared de un marco es UN escalar en "
+                       "metros, no una tabla por diametro: un marco vaciado "
+                       "in situ no tiene serie de producto que indexar")
+        if not t > 0:
+            raise DatoInvalidoError(
+                campo=CRITERIO_ESPESOR_PARED_CAJON, valor=t,
+                motivo="el espesor de pared tiene que ser positivo. La "
+                       "condicion se escribe negada (`not t > 0`) para que un "
+                       "NaN caiga del lado seguro, como en MAT-D13")
+        return float(t)
     if material.espesor_pared is None:
         ca.valor(CRITERIO_ESPESOR_PARED)      # CriterioPendienteError si esta vacio
         raise DatoFaltanteError(

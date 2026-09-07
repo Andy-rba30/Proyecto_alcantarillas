@@ -644,6 +644,17 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "constantes_normativas.HDS5_INLET. Se mueve JUNTO con 'ke_entrada_cajon' y con el detalle de "
              "embocadura del cabezal (Sec. 9.1): las tres son la misma "
              "decision leida en tres sitios."),
+    "espesor_pared_cajon": _Meta(
+        unidad="m",
+        nota="UN ESCALAR, no una tabla por diametro: un marco vaciado in situ "
+             "no tiene serie de producto que indexar, y por eso este criterio "
+             "no es una entrada mas de 'espesor_pared_conducto'. "
+             "Y EL SIGNO DE SU SENSIBILIDAD ES CONTRAINTUITIVO: engrosar la "
+             "pared EMPEORA la flotacion. Con DC = 0 -- V7 omite el peso "
+             "propio, del lado conservador -- el espesor entra solo por la "
+             "geometria exterior, y ahi la subpresion crece en dos "
+             "dimensiones mientras el relleno que estabiliza crece en una. "
+             "Quien lo declare va a suponer lo contrario: leer la ventana."),
     "n_celdas_cajon": _Meta(
         unidad="celdas",
         nota="Entero >= 1. El caudal de diseño se reparte entre las celdas "

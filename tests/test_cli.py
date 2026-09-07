@@ -1369,8 +1369,17 @@ def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
     # Y sale por el canal de interpretacion, no pegada a una cita (NOR-HID-04).
     assert 'class="interpretacion"' in html
     # La otra mitad, y la que fija que el marco NO se calcula con la pared del
-    # tubo: la Fase 5 se detiene en V7 y lo dice con el dato que falta.
-    assert "espesor_pared_conducto[marco]" in html
+    # tubo: la Fase 5 se detiene y lo dice con el criterio que falta.
+    #
+    # ESTE ASSERT CAMBIO DE FORMA EN C7 Y NO DE SENTIDO. C5 lo detuvo con
+    # `DatoFaltanteError('espesor_pared_conducto[marco]')` porque el proyecto
+    # no tenia donde poner ese dato. C7 abre `espesor_pared_cajon`, [A] de
+    # perfil, de modo que el revisor ya no tiene que CONSEGUIR el espesor sino
+    # DECIDIRLO, y la detencion pasa a `CriterioPendienteError`. Lo que se
+    # sigue fijando aqui es lo unico que importaba: que el marco NO toma
+    # prestada la pared del tubo de su misma altura.
+    assert "espesor_pared_cajon" in html
+    assert "espesor_pared_conducto[marco]" not in html
 
 
 def test_el_bloque_de_alcance_declara_que_no_difirio_nada_sin_familia_c(
