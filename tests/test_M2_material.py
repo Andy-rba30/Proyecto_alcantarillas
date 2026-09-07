@@ -415,6 +415,36 @@ def test_siguiente_seccion_del_marco_recorre_la_progresion_declarada():
         assert siguiente_seccion(marco, s2) is None
 
 
+def test_el_marco_no_hereda_el_piso_de_090_m():
+    """
+    REGLA VINCULANTE #1, medida en vez de citada. El num. 4.1.1.3.4 a) fija el
+    piso de 0.90 m y lo EXCEPTUA en la misma oracion para los cruces de canal
+    de riego, que es lo que la Familia C es. El catalogo del marco tiene que
+    admitir una serie entera por debajo de ese piso sin rechazar nada.
+
+    Se mide con una progresion de 0.60 a 0.80 m: si alguien le colara al marco
+    el filtro del circular -- o el `DIAMETRO_MIN` por cualquier via --, las
+    tres desaparecen y este test cae. C6 lo añade porque la regla se citaba en
+    cinco sesiones y ningun test la nombraba: lo unico que la rozaba era otro
+    test cuya progresion empieza en 1.20 m, o sea POR ENCIMA del piso, que no
+    distingue heredarlo de no heredarlo.
+    """
+    serie = ((0.80, 0.60), (1.00, 0.70), (1.10, 0.80))
+    with declarados({**DECLARACIONES_CAJON,
+                     "secciones_cajon_normalizadas": serie}):
+        marco = _marco()
+        recorridas = []
+        seccion = siguiente_seccion(marco)
+        while seccion is not None:
+            recorridas.append((seccion.B, seccion.altura))
+            seccion = siguiente_seccion(marco, seccion)
+        tope = marco.D_max
+    assert len(recorridas) == len(serie)
+    for obtenida, esperada in zip(recorridas, serie):
+        assert obtenida == pytest.approx(esperada, rel=REL_TRANSPORTE)
+    assert tope == pytest.approx(0.80, rel=REL_TRANSPORTE)
+
+
 def test_una_seccion_fuera_de_la_progresion_declarada_es_dato_invalido():
     """
     El catalogo no reconoce secciones "de proveedor", igual que no reconoce

@@ -23,10 +23,33 @@ Que reporta por punto
 
 Datos que NO estan en el CSV
 ----------------------------
-Cinco magnitudes que el pipeline necesita no son columnas de Sec. 1.2 y
-ningun numeral las deduce. Entran declaradas por quien corre el calculo -- por
-bandera o por el JSON de `--datos-externos` -- y el informe registra de donde
-salio cada una, igual que MD recibe L y TW en vez de derivarlos:
+DOS CLASES DE CLAVE, Y NINGUN CONTEO ESCRITO A MANO. Este bloque las enumera
+y no las cuenta, a proposito: un numero escrito aqui envejece con la clave
+siguiente, y ya envejecio dos veces -- la historia esta en §16.11-bis de
+`docs/ruta_familia_c.md`, no aqui, porque contarla en el propio parrafo vuelve
+a dejar el numero escrito --. La cuenta que no envejece es
+`len(CLAVES_EXTERNAS)`, y `test_cli` contrasta esta lista contra ella.
+
+NO TODAS SON AJENAS AL CSV, aunque el titulo del bloque lo sugiera: `Q_m3s` y
+`S_cauce` SI son columnas de Sec. 1.2. Las dos clases son estas, y la
+diferencia importa porque se corrigen en sitios distintos:
+
+  (a) MAGNITUDES QUE NO SON COLUMNA. `luz_m`, `TW_m`, `longitud_m`,
+      `S_conducto`, `L_hidraulico_m` y `categoria_tr`. Sec. 1.2 no las trae y
+      ningun numeral las deduce.
+  (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
+      La columna existe y para la Familia C va vacia a proposito
+      (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el
+      CSV sino el Tablero 3.1 (ANA / Junta de Usuarios del Bajo Piura), que la
+      Sec. 2.3 de la hoja de ruta nombra como el que bloquea la familia
+      entera. La clave es el vehiculo por el que ese dato entra el dia que el
+      tablero lo entrega. `S_conducto` esta en la clase (a) y no en esta, y
+      conviene decirlo porque se confunde: no es ninguna columna, es la
+      pendiente del CONDUCTO cuando difiere de la del cauce.
+
+Entran declaradas por quien corre el calculo -- por bandera o por el JSON de
+`--datos-externos` -- y el informe registra de donde salio cada una, igual que
+MD recibe L y TW en vez de derivarlos:
 
     luz_m           m     luz del cruce, de la topografia o del QGIS. Sin ella
                           no se puede aplicar el umbral binario de Sec. 2.1 y
@@ -40,6 +63,19 @@ salio cada una, igual que MD recibe L y TW en vez de derivarlos:
     Q_m3s, S_conducto     caudal y pendiente cuando no son los de la columna:
                           Sec. 2.3 dice que el caudal de la Familia B es el
                           del drenaje longitudinal y el de la C el del canal.
+    S_cauce         m/m   pendiente del CAUCE NATURAL, para el punto cuya
+                          columna va vacia. En un cruce de canal el "cauce" es
+                          el canal y su pendiente la da el Tablero 3.1, no
+                          quien escribe el CSV. NO ES `S_conducto` y no se
+                          sustituye por ella: `S_conducto` es la pendiente con
+                          que se tiende el barril y esta es la del cauce que
+                          lo alimenta; V2b compara UNA CONTRA OTRA (indicador
+                          de sedimentacion del HDS-5, num. 5.3.3), de modo que
+                          igualarlas convertiria la verificacion en una
+                          tautologia. Sin ella, V2b se detiene con
+                          `DatoFaltanteError('S_cauce')` y el material entero
+                          queda no evaluable; la Fase 4 no se detiene, porque
+                          la pendiente del diseno la aporta `S_conducto`.
     L_hidraulico_m  m     longitud a la que la cuneta agota su capacidad, para
                           la Fase 10 (Familia B). Sec. 10 describe el
                           procedimiento pero no fija la seccion de la cuneta.
@@ -49,7 +85,7 @@ salio cada una, igual que MD recibe L y TW en vez de derivarlos:
                           ella la Familia A se detiene en
                           'umbral_area_quebrada_importante_ha'.
 
-Ninguna de las cinco tiene valor por defecto. Sin declararla, la etapa que la
+Ninguna tiene valor por defecto. Sin declararla, la etapa que la
 necesita queda bloqueada y el informe lo dice; no se sustituye por un numero
 plausible.
 
@@ -121,6 +157,7 @@ for _ruta in (RAIZ, SRC):
 import criterios_adoptados as ca                                    # noqa: E402
 import datos_sitio as ds                                            # noqa: E402
 from constantes_normativas import CUANTIA_MIN_MURO, RECUBRIMIENTO   # noqa: E402
+from dominios import S_CAUCE_MAX                                    # noqa: E402
 from modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE       # noqa: E402
 from modelos import ALCANCE_PERFIL as _ALCANCE_PERFIL               # noqa: E402
 from modelos import (Clasificacion, CompatibilidadGeometrica,       # noqa: E402
@@ -195,12 +232,17 @@ CRITERIO_TW = "TW_receptor"
 # La seccion del receptor, que el paso 2 de Sec. 1.3 necesita.
 CRITERIO_SECCION_RECEPTOR = "seccion_receptor"
 
-# Claves admitidas en --datos-externos. Cada una es un dato de entrada que
-# Sec. 1.2 no trae como columna (ver el docstring del modulo). Las de texto van
-# aparte porque no se validan como numero.
+# Claves admitidas en --datos-externos: los datos de entrada que una corrida
+# puede declarar sin tocar el CSV. NO son «las que Sec. 1.2 no trae como
+# columna» -- esa frase estuvo aqui hasta que la auditoria de C6 la encontro
+# sobreviviendo al docstring que la retiro --: `Q_m3s` y `S_cauce` SI son
+# columnas, y entran por aqui porque una familia las deja vacias por tablero.
+# Las dos clases estan en el docstring del modulo. Las de texto van aparte
+# porque no se validan como numero.
 CLAVES_TEXTO: Tuple[str, ...] = ("categoria_tr",)
 CLAVES_EXTERNAS: Tuple[str, ...] = ("luz_m", "TW_m", "longitud_m", "Q_m3s",
-                                    "S_conducto", "L_hidraulico_m") + CLAVES_TEXTO
+                                    "S_conducto", "S_cauce",
+                                    "L_hidraulico_m") + CLAVES_TEXTO
 
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
@@ -295,6 +337,58 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     return _numero_externo(clave, bruto, origen)
 
 
+# EL DOMINIO FISICO DE UNA CLAVE QUE TAMBIEN ES COLUMNA. Cuando el mismo dato
+# puede entrar por dos puertas -- la columna del CSV y la clave de
+# `--datos-externos` --, las dos tienen que acotarlo igual: si no, el mismo
+# numero es invalido escrito en el CSV y admisible escrito en el JSON, y la
+# puerta laxa es justamente la que usan los puntos de Familia C, que traen la
+# columna vacia. Lo destapo C6 al abrir `S_cauce`, y estaba MEDIDO:
+# `_numero_externo("S_cauce", 6.0)` devolvia el dato tan campante, mientras
+# `M0` rechaza ese mismo 6.0 en la columna contra `S_CAUCE_MAX` -- que existe
+# precisamente para atrapar «una celda cargada en porcentaje», el error de
+# transcripcion mas frecuente de esa columna.
+#
+# EL MAPA NO SE CUBRE ENTERO, Y AQUI NO SE ESCRIBE CUANTAS ENTRADAS TIENE.
+# Este parrafo decia «tiene UNA entrada» y «las otras seis claves no son
+# columnas de Sec. 1.2», y las dos mitades caducaron: la primera en el commit
+# que anadio `S_conducto` veinte lineas mas abajo, y la segunda contra el
+# docstring del modulo, que dice que `Q_m3s` SI es columna. Un conteo escrito
+# a mano al lado de la coleccion que cuenta es la forma de comentario que este
+# modulo ya vio envejecer tres veces.
+#
+# Lo que sigue siendo cierto sin numero: hay claves FUERA del mapa, y estan
+# fuera porque `dominios.py` no les declara techo. El de `Q_m3s` esta ausente
+# A PROPOSITO (ver `modelos.py`: «'Q_m3s' solo exige ser positivo, y ponerle un
+# techo...»). La forma de mapa es lo que hace que la proxima clave con dominio
+# lo herede en vez de que haya que acordarse.
+_DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
+    "S_cauce": (S_CAUCE_MAX,
+                "una pendiente de cauce en m/m: un valor >= 1 (100 %) delata "
+                "una celda cargada en PORCENTAJE, que es el error de "
+                "transcripcion mas frecuente de esta columna"),
+    # `S_conducto` ENTRO AQUI POR LA AUDITORIA ADVERSARIAL DE C6, y su
+    # argumento es mas fuerte que el de la clave de arriba: es LA MISMA
+    # MAGNITUD FISICA -- una pendiente en m/m, con el mismo error de
+    # transcripcion -- y ademas es la que va DIRECTA a Manning
+    # (`MD.disenar_punto` -> `M3.resolver_manning`), cuya unica guardia es
+    # `S <= 0`. `S_cauce`, en cambio, solo alimenta una comparacion en V2b.
+    # C6 la habia dejado fuera con un argumento cierto -- «no es columna y no
+    # tiene dominio declarado» -- que no cubre el principio que ella misma
+    # enuncia: la misma magnitud por dos puertas tiene que acotarse igual.
+    #
+    # SE REUSA `S_CAUCE_MAX` Y NO SE INVENTA UN TECHO NUEVO. El nombre dice
+    # «cauce» y el limite es de PENDIENTES: el 1.0 no acota un cauce en
+    # particular, acota la ESCRITURA de cualquier pendiente en m/m. Ningun
+    # numeral fija un maximo de pendiente -- `verificador-normativo` barrio el
+    # Manual entero en C6 --, de modo que separarlos exigiria inventar el
+    # segundo techo. El dia que haga falta uno distinto, se separan.
+    "S_conducto": (S_CAUCE_MAX,
+                   "una pendiente de conducto en m/m: es la MISMA magnitud "
+                   "que `S_cauce` y el mismo error de transcripcion, y ademas "
+                   "esta es la que entra en Manning"),
+}
+
+
 def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     """Un dato externo numerico tiene que ser finito y positivo, en SI."""
     try:
@@ -324,6 +418,13 @@ def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         raise DatoInvalidoError(
             clave, valor=bruto,
             motivo=f"tiene que ser positivo (TW admite 0 = salida libre); "
+                   f"origen: {origen}",
+        )
+    techo = _DOMINIO_DE_CLAVE.get(clave)
+    if techo is not None and valor >= techo[0]:
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo=f"fuera del rango fisico posible ({techo[0]}): {techo[1]}; "
                    f"origen: {origen}",
         )
     return DatoDeclarado(nombre=clave, valor=valor, origen=origen)
@@ -447,6 +548,17 @@ class InformePunto:
     # numeros del paso 3. `tw` sigue siendo el float que MD consume; esto es
     # lo que la memoria imprime, y son dos cosas distintas a proposito.
     tw_sec13: Optional[TWDeterminado] = None
+    # La pendiente del CAUCE cuando la columna va vacia y la aporta el
+    # Tablero 3.1. Se guarda como `DatoDeclarado` -- no se mete de tapadillo
+    # en `punto` -- porque la memoria tiene que decir de donde salio: la fila
+    # del CSV sigue mostrando la columna vacia, y esta fila muestra el valor
+    # con su origen. Es el mismo par que ya forman `longitud` y `tw`.
+    s_cauce: Optional[DatoDeclarado] = None
+    # El punto CON los datos de tablero completados. `punto` sigue siendo la
+    # fila del CSV tal como M0 la cargo, y esa distincion es la que permite
+    # que la memoria imprima «columna vacia -- dato de un tablero externo» en
+    # la fila de la columna Y el valor con su origen en la suya.
+    punto_completado: Optional[PuntoCritico] = None
     proteccion: Optional[ProteccionSalida] = None
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
@@ -456,6 +568,18 @@ class InformePunto:
     # diametro anterior al adoptado. Se llena tambien cuando el punto no cierra.
     traza: List[PasoDiseno] = field(default_factory=list)
     bloqueos: List[Bloqueo] = field(default_factory=list)
+
+    @property
+    def punto_de_calculo(self) -> PuntoCritico:
+        """
+        El punto que va al pipeline: la fila del CSV completada con los datos
+        que un tablero externo aporto.
+
+        Existe para que `punto` NO cambie. Todo lo que imprime procedencia
+        --`M11._tabla_datos`-- lee `punto` y sigue diciendo la verdad sobre el
+        CSV; todo lo que CALCULA lee este.
+        """
+        return self.punto_completado or self.punto
 
     @property
     def dimensionado(self) -> bool:
@@ -599,7 +723,7 @@ def _resolver_longitud(informe: InformePunto,
     salida, y es la MISMA que se le pasa despues a 7.B: dos longitudes
     distintas en el mismo punto darian dos cotas de salida distintas.
     """
-    punto = informe.punto
+    punto = informe.punto_de_calculo
     declarada = externos.dato(punto.id, "longitud_m")
     if declarada is not None:
         return declarada
@@ -637,7 +761,7 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
     manda sobre el es un dato del expediente: una `cota_TW` en el CSV es una
     medicion o un calculo con procedencia, y no se pisa con una adopcion.
     """
-    punto = informe.punto
+    punto = informe.punto_de_calculo
     declarado = externos.dato(punto.id, "TW_m")
     S = externos.valor(punto.id, "S_conducto")
 
@@ -841,7 +965,7 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
     alcance de perfil se inyecta `_verificador_perfil`, que difiere V5 y V8
     al expediente y deja las otras siete como obligatorias.
     """
-    punto = informe.punto
+    punto = informe.punto_de_calculo
     informe.longitud = _resolver_longitud(informe, externos)
     # El TW se resuelve DESPUES de la longitud y con ella: la cota de fondo de
     # la salida que Sec. 1.3 necesita para convertir una cota de agua en un
@@ -893,7 +1017,8 @@ def _fase_7(informe: InformePunto) -> None:
     informe.geometria = _etapa(
         informe.bloqueos, FASE_GEOMETRIA, "compatibilidad geometrica (7.B)",
         lambda: compatibilidad_geometrica(
-            punto=informe.punto, material=resultado.material, D=resultado.D,
+            punto=informe.punto_de_calculo, material=resultado.material,
+            D=resultado.D,
             resultado=resultado.resultado_hidraulico,
             longitud=informe.longitud.valor))
 
@@ -913,7 +1038,7 @@ def _fase_8(informe: InformePunto) -> None:
     """
     resultado = informe.resultado
     material, D = resultado.material, resultado.D
-    punto = informe.punto
+    punto = informe.punto_de_calculo
 
     # Altura real de relleno sobre la clave FISICA (con espesor de pared), la
     # misma definicion que usa V7: subrasante menos clave, no el minimo de 7.A.
@@ -1078,6 +1203,95 @@ def _declarar_alcance_familia_c(informe: InformePunto) -> None:
         diferido_por_alcance=True))
 
 
+def _valor_descartado(valor: float) -> str:
+    """
+    Un valor RECHAZADO, escrito para que quien lo declaro lo reconozca.
+
+    NO ES EL FORMATO DE UNA MAGNITUD DEL PROYECTO y por eso no es exactamente
+    `_fmt`: las magnitudes del expediente se redondean para leerse, pero un
+    dato que se devuelve al remitente tiene que ser identificable. Con tres
+    decimales a secas, un `1e-05` declarado se imprimiria «0.000» -- que no es
+    lo que nadie escribio y no se puede buscar en el JSON --.
+
+    De modo que se usa la precision del documento mientras alcanza, y por
+    debajo de ella el numero entero. La auditoria adversarial de C6 lo encontro
+    al ver un `1e-05` crudo -- del `repr` de Python -- conviviendo con un
+    `0.006` de tres decimales en la misma celda, y hay que decir exactamente
+    que cambio y que no: lo que se corrige son los valores QUE EL DOCUMENTO SI
+    PUEDE ESCRIBIR, que antes salian con todos sus decimales (`1.23456` en vez
+    de `1.235`). Un `1e-05` sigue imprimiendose asi, y a proposito: no hay
+    forma de escribirlo con tres decimales sin borrarlo.
+    """
+    escrito = _fmt(valor)
+    # El umbral NO se escribe: se le PREGUNTA a `_fmt`. Un `10.0 ** -3` aqui
+    # seria una segunda copia de la precision del volcado, que ya vive en su
+    # firma, y las segundas copias divergen. La condicion va en positivo y
+    # negada, como la de MAT-D13, para que un NaN caiga del lado seguro.
+    if not abs(float(escrito)) > 0 and abs(valor) > 0:
+        return f"{valor:g}"
+    return escrito
+
+
+def _completar_s_cauce(informe: InformePunto,
+                       externos: DatosExternos) -> None:
+    """
+    Completa la pendiente del CAUCE cuando la columna va vacia y el tablero
+    la declara (Sec. 1.2 + Tablero 3.1).
+
+    POR QUE HACE FALTA UN VEHICULO Y NO BASTA `S_conducto`. Son dos
+    magnitudes distintas y V2b compara una contra otra: `resultado.S` es la
+    pendiente CON QUE CORRIO EL DISENO -- que `S_conducto` puede fijar -- y
+    `punto.S_cauce` la del cauce natural que alimenta el conducto. Igualarlas
+    convertiria el indicador de sedimentacion del num. 5.3.3 del HDS-5 en una
+    tautologia. Hasta C6 la Familia C no tenia por donde entregar la segunda:
+    su columna va vacia por Tablero 3.1 y no habia clave. Medido en C5: un
+    punto de Familia C con Q y S_conducto declarados llegaba hasta V2b y se
+    detenia ahi con `DatoFaltanteError('S_cauce')`.
+
+    SE SUSTITUYE EL PUNTO Y NO SE ANOTA APARTE, y hay que decir por que: el
+    consumidor es `M5.v2b_sedimentacion`, que lee `punto.exigir("S_cauce")`.
+    Pasarselo por parametro obligaria a cambiar la firma de una funcion de
+    CALCULO para transportar un dato de ENTRADA, que es lo que este frente no
+    hace. El punto efectivo va al pipeline; `informe.punto` NO se toca, de
+    modo que la tabla de datos de partida sigue mostrando la columna vacia y
+    la procedencia se imprime en su propia fila (`M11.DATOS_DECLARADOS`).
+
+    Si la columna trae valor, el externo NO la pisa: una fila del CSV es un
+    dato del expediente y un JSON de corrida no lo corrige en silencio --
+    pero la memoria NOMBRA la declaracion descartada, porque «no la use» sin
+    decirlo deja a quien la escribio mirando una V2b resuelta contra otro
+    numero. Y si no hay externo, no pasa nada aqui: quien se detiene es el
+    consumidor, con el nombre del dato que falta.
+    """
+    punto = informe.punto
+    declarado = externos.dato(punto.id, "S_cauce")
+    if punto.S_cauce is not None:
+        # LA COLUMNA GANA, y aun asi se registra. El externo NO la pisa: una
+        # fila del CSV es un dato del expediente y un JSON de corrida no lo
+        # corrige en silencio. Se anota igual porque la fila de la memoria
+        # dice cual es la pendiente EFECTIVA, la que V2b comparo, y «no
+        # declarada» sobre un punto que la trae en su columna seria falso.
+        #
+        # Y SI ADEMAS SE DECLARO UNA, LA MEMORIA LO DICE. Descartar en
+        # silencio la declaracion es lo que convierte una precedencia
+        # correcta en un resultado inexplicable: quien escribio el JSON ve
+        # V2b resuelta contra un numero que no es el suyo y no tiene donde
+        # leer por que. No es un error del expediente -- no se detiene nada --
+        # pero tampoco es callable.
+        origen = "CSV Sec. 1.2, columna S_cauce"
+        if declarado is not None:
+            origen += (
+                f"; se descarto la declaracion externa "
+                f"({_valor_descartado(declarado.valor)} m/m, "
+                f"{declarado.origen}) porque la columna tiene valor")
+        informe.s_cauce = DatoDeclarado("S_cauce", punto.S_cauce, origen)
+        return
+    if declarado is None:
+        return
+    informe.s_cauce = declarado
+    informe.punto_completado = replace(punto, S_cauce=declarado.valor)
+
+
 def correr_punto(punto: PuntoCritico, externos: DatosExternos,
                  alcance: str = ALCANCE_EXPEDIENTE) -> InformePunto:
     """
@@ -1093,6 +1307,8 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
 
     if punto.familia is Familia.C:
         _declarar_alcance_familia_c(informe)
+
+    _completar_s_cauce(informe, externos)
 
     if _fase_2(informe, externos):
         _fase_diseno(informe, externos, alcance)
@@ -1363,10 +1579,17 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "familia": punto.familia.value,
         "pendientes_externos": list(punto.pendientes_externos),
         "dimensionado": informe.dimensionado,
+        # `S_cauce` ENTRO AQUI POR LA AUDITORIA ADVERSARIAL DE C6. C6 añadio
+        # la fila a la memoria HTML y no a este JSON, de modo que el
+        # artefacto legible por MAQUINA -- que es ademas el de la linea base
+        # -- declaraba `S_cauce` en `datos_pendientes` sobre una corrida que
+        # la habia usado, y no publicaba nada que lo contradijera. Publicar
+        # la trazabilidad en un solo formato es publicarla a medias.
         "datos_declarados": {"luz_m": _dato_json(informe.luz),
                              "categoria_tr": _dato_json(informe.categoria_tr),
                              "longitud_m": _dato_json(informe.longitud),
-                             "TW_m": _dato_json(informe.tw)},
+                             "TW_m": _dato_json(informe.tw),
+                             "S_cauce": _dato_json(informe.s_cauce)},
         "clasificacion": (None if informe.clasificacion is None
                           else _clasificacion_json(informe.clasificacion)),
         "diseno": (None if not informe.dimensionado
@@ -1600,6 +1823,18 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"{_fmt(informe.tw.valor)} m ({informe.tw.origen})")
     else:
         out.append(f"{SANGRIA}Fase 4  sin dimensionar")
+
+    # LA PENDIENTE DEL CAUCE, JUSTO ENCIMA DE LA VERIFICACION QUE LA CONSUME.
+    # Va aqui y no dentro de la rama de `dimensionado` porque el punto que se
+    # detiene antes tambien la declaro, y porque V2b es lo siguiente que se
+    # imprime. La segunda auditoria de C6 midio que este volcado -- que es
+    # linea base como los otros dos -- publicaba `longitud` y `tw` CON su
+    # procedencia y `s_cauce` no: dos formatos de tres, sobre el argumento de
+    # que publicarla en uno solo es publicarla a medias.
+    if informe.s_cauce is not None:
+        out.append(f"{SANGRIA}        S_cauce  : "
+                   f"{_fmt(informe.s_cauce.valor, DECIMALES_PENDIENTE)} m/m "
+                   f"({informe.s_cauce.origen})")
 
     out.extend(_lineas_verificaciones(informe))
 

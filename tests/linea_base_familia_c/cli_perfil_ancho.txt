@@ -12,6 +12,7 @@ A-01  |  progresiva 0+380  |  Familia A
           Control  : entrada (HW = 1.042 m; entrada 1.042 / salida 0.993)
           Hidraulica: y_n = 0.627 m, y_c = 0.640 m, V_erosion = 3.206 m/s (n min), V_sedimentacion = 2.466 m/s (n max), Q = 1.167 m3/s, S = 0.0060 m/m
           Longitud : L = 18.635 m (M7.longitud_conducto (Sec. 7.B)) | TW = 0.300 m (datos externos (globales))
+          S_cauce  : 0.0060 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
     [OK] V1   MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) "Borde libre", pag. impresa 79. El numeral RECOMIENDA este borde libre ("Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2 obtenido 0.697 | admisible 0.750
@@ -56,6 +57,7 @@ A-02  |  progresiva 1+920  |  Familia A
           Control  : entrada (HW = 0.572 m; entrada 0.572 / salida 0.562)
           Hidraulica: y_n = 0.336 m, y_c = 0.403 m, V_erosion = 2.883 m/s (n min), V_sedimentacion = 2.218 m/s (n max), Q = 0.480 m3/s, S = 0.0080 m/m
           Longitud : L = 18.270 m (M7.longitud_conducto (Sec. 7.B)) | TW = 0.300 m (datos externos (globales))
+          S_cauce  : 0.0080 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
     [OK] V1   MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) "Borde libre", pag. impresa 79. El numeral RECOMIENDA este borde libre ("Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2 obtenido 0.373 | admisible 0.750
@@ -100,6 +102,7 @@ B-01  |  progresiva 2+450  |  Familia B
           Control  : salida (HW = 0.356 m; entrada 0.232 / salida 0.356)
           Hidraulica: y_n = 0.140 m, y_c = 0.175 m, V_erosion = 1.956 m/s (n min), V_sedimentacion = 1.504 m/s (n max), Q = 0.095 m3/s, S = 0.0100 m/m
           Longitud : L = 18.400 m (M7.longitud_conducto (Sec. 7.B)) | TW = 0.300 m (datos externos (globales))
+          S_cauce  : 0.0100 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
     [OK] V1   MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) "Borde libre", pag. impresa 79. El numeral RECOMIENDA este borde libre ("Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2 obtenido 0.156 | admisible 0.750
@@ -142,6 +145,7 @@ C-01  |  progresiva 3+100  |  Familia C
 ------------------------------------------------------------------------------
   Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR no procede (ver fundamento en el JSON)
   Fase 4  sin dimensionar
+          S_cauce  : 0.0060 m/m (datos externos (punto C-01))
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
   Bloqueos:

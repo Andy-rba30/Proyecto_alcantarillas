@@ -1,6 +1,12 @@
 {
-  "globales": {"TW_m": 0.30},
-  "puntos": {
-    "C-01": {"Q_m3s": 0.85, "S_conducto": 0.004}
+ "globales": {
+  "TW_m": 0.3
+ },
+ "puntos": {
+  "C-01": {
+   "Q_m3s": 0.85,
+   "S_conducto": 0.004,
+   "S_cauce": 0.006
   }
+ }
 }

@@ -680,14 +680,26 @@ PERFILES: Dict[Familia, PerfilFamilia] = {
         origen_del_caudal="Q de diseno del canal (ANA / Junta de Usuarios del "
                           "Bajo Piura)",
         categoria_tr=None,          # no hay TR: el caudal no es hidrologico propio
-        campos_requeridos=("Q_m3s",),
+        # DOS CAMPOS Y NO UNO DESDE C6. Mientras la Familia C no se
+        # dimensionaba, el unico que hacia falta reclamar era el caudal: el
+        # punto se detenia mucho antes. Ahora se dimensiona, y V2b
+        # --indicador de sedimentacion del num. 5.3.3 del HDS-5-- compara la
+        # pendiente del barril contra la del CAUCE. Sin `S_cauce` el material
+        # entero queda no evaluable, de modo que es un campo que la familia
+        # NECESITA y que su fila trae vacio: exactamente lo que
+        # `datos_pendientes` existe para reclamar. Los dos los aporta el mismo
+        # Tablero 3.1 (Sec. 2.3: «Bloqueada por falta del dato de ANA»).
+        campos_requeridos=("Q_m3s", "S_cauce"),
         verificaciones_aceptacion=None,            # Sec. 2.3 no declara conjunto propio
         notas=(
             "No puede alterar la rasante hidraulica ni el borde libre del canal.",
             "Requiere autorizacion de obras en fuente natural / faja marginal.",
             "Seccion: marco o multicelda.",
-            "Bloqueada por falta del dato de la ANA (Tablero 3.1): el Q propio "
-            "del canal es el que fija el diseno.",
+            "Bloqueada por falta de los datos de la ANA (Tablero 3.1): el Q "
+            "propio del canal es el que fija el diseno, y la pendiente del "
+            "canal es la que V2b compara contra la del barril. Son DOS y del "
+            "mismo tablero; esta nota decia «el dato» en singular hasta C6, "
+            "que midio el segundo.",
         ),
         numeral=NUMERAL_FAMILIA,
     ),

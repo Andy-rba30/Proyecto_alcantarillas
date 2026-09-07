@@ -233,6 +233,15 @@ DATOS_DECLARADOS: Tuple[Tuple[str, str, str], ...] = (
     ("categoria_tr", "Fila de la Tabla N 02", ""),
     ("longitud", "Longitud del conducto", "m"),
     ("tw", "TW en el receptor", "m"),
+    # C6: la pendiente del cauce EFECTIVA, o sea la que V2b comparo contra la
+    # del barril. Entra por este mecanismo y no por la tabla de columnas
+    # porque para un punto de Familia C las dos cosas son ciertas a la vez y
+    # el revisor necesita las dos: la columna del CSV esta VACIA -- y su fila
+    # lo sigue diciendo -- y el valor con que se calculo vino del Tablero 3.1.
+    # Para los demas puntos esta fila repite el de la columna, con esa
+    # procedencia: es el precio de que la fila no pueda mentir en ninguno de
+    # los dos casos.
+    ("s_cauce", "Pendiente del cauce (efectiva)", "m/m"),
 )
 
 

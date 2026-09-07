@@ -2582,7 +2582,8 @@ celdas**, no la verificación. Confundirlos metería un `Fundamento` en un paso 
 discrepancia se ve, para que quien la corrija sepa contra qué contrastarla. Ninguno de los
 ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
 `normativa/discrepancias.py` se revisaron una a una. *(C3 añadió D-10, C4 añadió D-11 y D-12,
-y C5 añade D-13 y D-14; los catorce siguen sin duplicar ninguna `DIS-HR-*`. **D-13 roza
+C5 añadió D-13 y D-14 y C6 añade D-15 y D-16; los dieciséis siguen sin duplicar ninguna
+`DIS-HR-*`. **D-13 roza
 `DIS-HR-D-MAX` y no la duplica**, y conviene decir por qué: aquella discrepancia es contra las
 tres normas de producto —A760 y M170M no topan el diámetro donde el Anexo B decía—, y D-13 es
 contra la **forma de la pregunta**, que presupone que lo que se verifica es un diámetro.)*
@@ -2608,6 +2609,10 @@ contra la **forma de la pregunta**, que presupone que lo que se verifica es un d
 | **D-13** *(C5)* | **Fase 5, fila V9** | *«**V9** · **Disponibilidad de diámetro** · D requerido ≤ **tope de la norma de producto del material** · **[C]** — nuevo en v7»* (línea 523 de la v8) | Tres cosas y las tres son falsas para el marco. **(a)** La atribución a la norma de producto ya estaba desmentida para el tubo (`DIS-HR-D-MAX`, `NOR-PRO-01`/`-02`) y la v8 la conserva. **(b)** Lo que un marco vaciado in situ tiene no es un tope de producto sino una **serie declarada por el proyectista**: la dimensión que se arma es la que se encofra. **(c)** La etiqueta **[C]** —vacío cubierto con fuente técnica— no se sostiene: no hay fuente técnica ninguna detrás, es **[A]** | `M5.v9_disponibilidad_diametro` bifurca desde C5: para el tubo cita `'D_max_catalogo'`, para el marco `'secciones_cajon_normalizadas'`, y `M2.catalogo` resuelve el `D_max` del marco como la mayor altura de esa serie. La v8 sigue mandando a leer una norma de producto que ni topa el tubo ni existe para el marco |
 | **D-14** *(C5)* | **Fase 4, §4.3** (la nota de `k_e`, línea 503) y **el Anexo de etiquetas** (línea 872) | *«Ningún numeral del Manual MTC ni del Manual de Puentes fija el coeficiente de pérdida de entrada k_e. Para la embocadura *square edge with headwall* (adoptada en §9.1), se toma **k_e = 0.5** de **las tablas** de coeficiente de pérdida de entrada del HDS-5»* | **Ni número de tabla, ni página, ni fila, ni rótulo de agrupación** — «las tablas», en plural, para un valor que sale de **una** fila de **una** tabla (C.2, pág. impresa C.6 / PDF 216) —. Y sobre todo: **no dice que esa tabla tenga un bloque propio para el cajón**. Medido: el bloque «Box, Reinforced Concrete» tiene **siete filas con coeficiente** bajo **cuatro rótulos de agrupación**, con valores **0.2, 0.4, 0.5 y 0.7**; una de ellas vale 0.5, igual que la del tubo | Es la regla vinculante **#11** escrita como defecto de la v8. `M4.criterio_ke_de` elige hoy el criterio por forma y `M4.ke_declarado` resuelve el del marco desde una **clave de fila** de `constantes_normativas.KE_HDS5_C2`. Con la v8 en la mano, quien implemente el cajón escribe `ke = 0.5` y **acierta el número con la cita equivocada** — el precedente `NOR-HID-01` —, y deja de acertar en cuanto la embocadura declare aletas |
 
+| **D-15** *(C6, reformulado tras la auditoría)* | **Sec. 2.3 (Familia C)** | La Sec. 2.3 dice de la Familia C que su *«Q = caudal de diseño del canal (ANA / Junta)»* y que está *«Bloqueada por falta del dato de ANA — ver Tablero 3»*: **nombra un dato, en singular** | **Son dos, y el segundo no aparece en ninguna lista.** Medido sobre el pipeline: un punto de Familia C con el caudal declarado **no** se dimensiona — se detiene en **V2b**, que necesita la **pendiente del cauce**, y en un cruce de canal el «cauce» es el canal —. **El defecto es de la Sec. 2.3 y NO del Tablero 3.1**, y la primera redacción de esta fila lo acusaba a él: citaba sólo su columna de alcance («TW de todas las alcantarillas + la Familia C completa») y concluía que «la v8 sólo enumera uno», cuando el **título** de esa fila es *«Caudal de diseño **y geometría** de los drenes y canales receptores»* y la pendiente longitudinal de un canal es geometría suya. Citar una columna de una tabla e ignorar la vecina que cambia la conclusión es el patrón que este repositorio persigue por su nombre; lo encontró la auditoría adversarial de C6 | `cli.CLAVES_EXTERNAS` (la clave `S_cauce`, nueva) y `M1_clasificacion.PERFILES[Familia.C].campos_requeridos`, que pasó de `("Q_m3s",)` a `("Q_m3s", "S_cauce")`. **El tablero sí cubre el dato; lo que no lo enumeraba era el proyecto**: `datos_pendientes` reclamaba sólo el caudal, y la nota de `PERFILES[Familia.C]` decía «el dato» en singular. Quien preparase el pedido a la Junta leyendo la Sec. 2.3 pedía el caudal y no la pendiente |
+
+| **D-16** *(C6)* | **Fase 5, fila V2b** y **Sec. 7.B** | V2b se apoya **sólo en el HDS-5** (num. 5.3.3 «Sedimentation»), y la Sec. 7.B enuncia que la alcantarilla sigue la pendiente del cauce **sin numeral** | **La norma peruana dice explícitamente lo que el proyecto hace, en tres sitios, y la v8 no nombra ninguno.** Verificado con `verificador-normativo` contra el PDF: **(a)** el num. **4.1.1.3.3**, cuyo título impreso es literalmente **«Pendiente longitudinal»** (impresa 71 / PDF 74), liga pendiente con **sedimentación** con verbo `debe` — *«La pendiente longitudinal de la alcantarilla debe ser tal que no altere desmesuradamente los procesos geomorfológicos, como la erosión y sedimentación…»* —, o sea es el numeral nacional del objeto exacto de V2b; **(b)** el num. **4.1.1.3.1** (impresa 70 / PDF 73) trae *«La ubicación óptima de las alcantarillas depende de su alineamiento y pendiente, la cual se logra proyectando dicha estructura siguiendo la alineación y pendiente del cauce natural»*, que es la fuente peruana directa de la regla de Sec. 7.B; **(c)** el num. **4.1.1.3.7 a)** (impresa 78 / PDF 81) recomienda *«no modificar la pendiente natural del curso de agua a lo largo de la alcantarilla»* | Medido: **`grep "4.1.1.3.3"` da CERO coincidencias en `src/` y en la v8** — o sea que **no existe en el código ni en la fuente normativa del proyecto**, que es lo que importa. La primera redacción de esta fila decía «no existe en **ninguna parte** del proyecto», y eso sobrepasaba la medición: el numeral y su frase ya estaban en la §15.2 de **este mismo documento**, anteriores a C6. Lo encontró la auditoría adversarial; se corrige aquí porque una fila de defectos que exagera su propia evidencia se deja de creer entera. De 4.1.1.3.1 el repositorio **sí** tiene la cita, pero transcribe **sólo** la oración de la luz de 6.0 m; la de la pendiente está en el mismo numeral y la misma página y no está registrada. La degradación de V2b de `[N]` a `[C]` **está bien hecha** —4.1.1.3.7 a) recomienda y no da umbral—, pero retirarlo como exigencia no era razón para dejarlo fuera del expediente de citas como recomendación concurrente |
+
 **Recordatorio, no defecto nuevo:** `DIS-HR-G-LAUSHEY` sigue en estado
 `ABIERTA_CONTRA_HOJA_DE_RUTA` y esta sesión la **reconfirmó por segunda vía independiente**
 (§15.3.4): el num. 4.1.1.3.7 c) define `g` sin número. **La v8 sigue mal ahí.**
@@ -2626,9 +2631,12 @@ contra la **forma de la pregunta**, que presupone que lo que se verifica es un d
 | **R-11** | `normativa/citas.py::HDS5_TA1`, campo `pagina_impresa` | Dice `"A.8"`, y **esa página no imprime folio**. C2 lo anotó en la `nota` de la cita; C3 lo reconfirmó por una vía distinta (rango vertical del texto de la página) y **sigue sin corregirse**: el campo afirma un número que el documento no imprime. Lo que sí es sólido e inequívoco es **PDF 197** más el título literal de la tabla | fuera del alcance de C3 (punto 9): tocar `pagina_impresa` mueve un campo que **T6** usa para predecir la página desde la regla de paginación, y esa interacción hay que resolverla, no esquivarla |
 | **R-12** | `normativa/citas.py::HDS5_3ED.3.1.3#TRANSICION` | Su `Verbatim` termina en *«…connecting them with a line tangent to both curves»* y **la fuente continúa** *«, as shown in Figure 3.4.»*. Es una **elisión final sin marcar** bajo el rótulo «texto literal»: el mismo patrón que `CLAUDE.md` denuncia en la tercera condición de `h_o` y que C2 ya corrigió en `#MULTIPLES`. Las palabras citadas son exactas; lo que falta es la marca de corte. Verificado contra PDF 86 | **anotado y no corregido en C3** (punto 9). Es una línea, y va con quien cierre la familia de elisiones: arreglarla mezclada con la bifurcación de forma la volvería invisible, que es lo que C1 y C2 dejaron por escrito |
 | **R-13** *(C4)* | `M3_hidraulica`, línea de import | Importa `SeccionCircular` y **no la usa**: las tres apariciones restantes del nombre en el archivo son comentarios, y un comentario no sostiene un import. Es **anterior a C4** —medido sobre `05d8a5e`, el `origin/main` con que arrancó la sesión— y es de C1, que mudó la geometría a `modelos` y dejó el import detrás | anotado y no corregido (punto 11 del prompt de C4: un defecto ajeno se anota y se sigue). Es una línea, y va con quien toque los imports de M3 — probablemente **C6**, que reescribe las entradas |
-| **R-6** | `variables_entrada._Columna.criterio_destino` | Es `Optional[str]`, un solo destino. Un segundo consumidor de `sucs_fundacion` obliga a decidir tupla o cambio de destino: **es cambio de esquema** | **C6**, no C5 (§15.5) |
+| **R-6** *(revisado en C6, propuesto y parado)* | `variables_entrada._Columna.criterio_destino` | Es `Optional[str]`, un solo destino. Un segundo consumidor de `sucs_fundacion` obliga a decidir tupla o cambio de destino: **es cambio de esquema** | **C6 lo midió y NO lo cambió**, que es lo que su brief pide: como `sucs_fundacion` **no se cablea** (C6-01), nada fuerza todavía el segundo destino, y mover el contrato que la memoria y la GUI leen sin un caso que lo pida sería cambiar el esquema por adelantado. Ficha **C6-02** en `docs/decisiones_diferidas.md` |
 | ~~**R-7**~~ **cerrado en C2** (`DIS-MCHHD-LAMINA-03-TMC`) | `normativa/discrepancias.py` | El cuerpo del Manual describe **mal su propia Lámina Nº 03**: dice *«se aprecia secciones típicas de alcantarillas tipo marco de concreto»* (impresa 73) y la **primera de sus tres figuras es tubería metálica corrugada** (impresa 209). Contradicción **interna de la fuente primaria**, no contra la v8 | **C2** — una `Discrepancia` de estado `ABIERTA`, para que un revisor que cuente las figuras no crea que la cita está mal puesta |
 | ~~**R-8**~~ **cerrado en C5** | `criterios_adoptados['factores_carga_aashto']` | Su comentario justificaba la fila del tubo diciendo *«No es "Pórticos rígidos" … la Familia C, de marco o multicelda, sale sin candidatos»*: describía un estado que C5 deja de ser cierto. Faltaba además la clave del cajón | **C5** reescribió el comentario —lo que separa las dos filas no era nunca el catálogo, era el **tipo de estructura**— y añadió `"cajon": {"EV": "EV_porticos_rigidos"}` por la regla vinculante **#8**. **La clave queda sin consumidor hasta C7**, y eso está escrito en los dos extremos: en el propio comentario y en el docstring de `M5.v7_flotacion`, que es quien consume `M8.factores_carga_flotacion` |
+| **R-16** *(C6, encontrado por la auditoría)* | `normativa/manifiesto.py::_linea_por_mencion` | **El manifiesto puede reanclar una fila a un símbolo DISTINTO al regenerarse, y lo hizo.** Resuelve con `min(menciones, key=lambda n: abs(n - linea_actual))`: la mención más CERCANA, no la del símbolo correcto. Medido: la fila `↻ NF_profundidad_m` apuntaba a `M0:87`, que era `_VACIAS_ESTUDIO_GEOTECNICO` —el símbolo que sostiene lo que la fila afirma—; con las +30 líneas de C6 ese símbolo se fue a la 120, y la mención más cercana a 87 pasó a ser la **74** (Δ13), una entrada dentro de la tupla `_NUMERICAS`, en vez de la 120 (Δ30). El commit del manifiesto lo consolidó sin decirlo. **Los dos sitios mencionan el identificador**, de modo que `test_toda_fila_que_cita_un_identificador_lo_nombra_en_su_destino` **no puede distinguirlos**: por eso pasó | **CERRADA PARA ESTA FILA, Y NO POR EL NÚMERO.** La primera corrección le puso el número bueno (120) y declaró «comprobado que el generador la acepta: 0 referencias resincronizadas». La segunda auditoría demostró que esa prueba es **vacua** —cualquier mención es un punto fijo del regenerador, también la equivocada— y midió la caducidad: **22 líneas**. Lo que la cierra es anclar la fila al símbolo que la DEFINE, `_VACIAS_ESTUDIO_GEOTECNICO`, porque una definición tiene bloque y un bloque no se desliza; comprobado insertando esas mismas 22 líneas, el ancla siguió al símbolo. Con dos tests: uno concreto para esta fila y un **trinquete** (`MAX_REFERENCIAS_QUE_PUEDEN_DESLIZARSE`). **La heurística sigue igual** —es `manifiesto.py`, no entradas— pero ya no hace falta tocarla para cerrar una fila: basta citar la definición. Ver **R-17** |
+| **R-17** *(C6, segunda auditoría)* | `docs/manifiesto_citas.md` — **17 referencias**, medidas | **El mismo deslizamiento de R-16, en otras diecisiete filas.** Son las que se resuelven POR MENCIÓN y cuyo archivo de destino menciona el símbolo en más de un renglón: hoy apuntan a donde dicen, y pueden dejar de hacerlo con la próxima inserción sin que nada falle. Las peores por número de candidatas: `M4:188` (41 menciones), `M9:617` (9), `M8:324` (8). Y una es asimétrica **dentro de su propia fila**: en `md:351`, `[M9:334]` ancla a la constante `CRITERIO_FACTORES_CARGA` y `[M8:324]` a un renglón de **docstring**, teniendo `M8` la constante homónima en la 198 | **no es de C6**, que es entradas. Se deja **medido y con trinquete**: `tests/test_manifiesto_citas.py::test_el_ancla_por_mencion_ambigua_solo_decrece` fija el techo en 17 y el mensaje dice cómo bajarlo — anclar la fila a un símbolo que el archivo DEFINA —. No hay que tocar `manifiesto.py` para cerrarlas |
+| **R-15** *(C6)* | `normativa/citas.py` — `MC_HHD.4.1.1.3.1` y el num. 4.1.1.3.3, ausente | Faltan **tres transcripciones** que la norma peruana sí imprime sobre la pendiente de la alcantarilla, y que hoy V2b y la Sec. 7.B sustituyen con el HDS-5 o con nada. Están **verificadas** —numeral, título literal, página impresa y página PDF— en D-16, de modo que quien las traiga no tiene que volver a medirlas: sólo transcribirlas como `Verbatim` con su test en `test_normativa_pdf.py` | **no es de C6**, que es entradas y no registro: traer un `Verbatim` nuevo es el oficio de una sesión de transcripción (el precedente es `C4-6`). Se anota con la evidencia entera para que sea barato |
 | **R-14** *(C5)* | `M8.factores_carga_flotacion`, `M8.empuje_flotacion_kn_m`, `M8.peso_relleno_kn_m`, `M2.diametro_exterior` | **V7 corre sobre un marco y todavía no es correcta**, y el defecto lo **abre C5**: antes ningún punto de Familia C llegaba a la Fase 5. Son tres cosas: los dos cálculos de M8 suponen un **cilindro**; `diametro_exterior = D + 2t` y `espesor_pared` indexan por diámetro designado en mm, que es la columna «Wall Thickness» de una norma de **tubería**; y `factores_carga_flotacion` indexa por `material.tipo.value`, de modo que el marco recibe la fila del **tubo**. El mínimo de las dos filas es 0.90 y por eso **el número de V7 no cambia**: lo que sale mal es la **fila que la memoria imprime** (`NOR-HID-01` otra vez) | **C7**, puntos 1, 2 y 6 de su brief. C5 lo deja **declarado en el consumidor** —docstring de `M5.v7_flotacion`— y no lo silencia |
 
 ### 15.9 Correcciones a ESTE documento
@@ -4075,3 +4083,263 @@ la excepción no llevaba nada, `_tabla_verificaciones` descartaba ese escalón p
 uno **anterior**, publicando sus nueve bajo el rótulo «último escalón evaluado». Los dos bloques
 de la misma memoria describían escalones distintos. Ahora describen el mismo, que es la regla de
 §4.5.
+
+
+---
+
+### 16.11 C6 — entradas del marco, y el inventario de reglas que nadie medía
+
+**Sesión mecánica y de amplitud: ni un criterio nuevo, ni una línea de cálculo.** Lo que se
+midió, sin embargo, movió tres cosas que no estaban previstas.
+
+#### Qué necesita el marco: UNA clave, y las cinco que se descartaron
+
+El brief pedía listar antes de añadir. Contrastado contra lo que C5 dejó abierto:
+
+| Candidata | Veredicto |
+|---|---|
+| **`S_cauce`** | **SE AÑADE.** Medido: un punto de Familia C con `Q_m3s` y `S_conducto` declarados llega hasta **V2b** y se detiene con `DatoFaltanteError('S_cauce')`. Su columna va vacía por Tablero 3.1 y **no había vehículo** |
+| `S_conducto` | **NO la cubre, y ése es el punto entero.** V2b compara la pendiente del barril **contra** la del cauce (num. 5.3.3 del HDS-5): igualarlas convierte la verificación en una tautología |
+| `Q_m3s`, `TW_m`, `luz_m`, `longitud_m`, `L_hidraulico_m` | ya cubiertas; no se duplican |
+| `ancho_derecho_via_m` (V5), `Q_evento_extremo_m3s` (V8) | **no.** No son del marco y, sobre todo, `v5_remanso` y `v8_evento_extremo` **no leen `externos`**: la clave no tendría consumidor |
+| nivel de agua y borde libre del canal (VC1) | **no.** VC1 no existe (§15.6). Sería la clave que nadie lee — la lección de **C5-01** |
+
+**De paso, dos afirmaciones falsas del propio docstring, anteriores a C6:** decía «cinco
+magnitudes» sobre **siete** claves, y decía que ninguna es columna de Sec. 1.2 cuando `Q_m3s`
+**sí** lo es. Reescrito distinguiendo las dos clases —magnitudes que no son columna, y
+**columnas que una familia deja vacías por tablero**—, que es la distinción que la clave nueva
+vuelve load-bearing.
+
+#### `_VACIAS_FAMILIA_C`, columna por columna
+
+**La lista no cambia**, y la decisión quedó escrita en el propio símbolo. El criterio no es si
+el bloqueo incomoda: es si el dato es **exigible a quien escribe el CSV**, y quien lo escribe
+es el proyectista vial, no la Junta.
+
+| Columna | Decisión | Qué se detiene sin ella |
+|---|---|---|
+| `Q_m3s` | **sigue vacía.** El caudal de un cruce de canal no es el hidrológico de la cuenca (Sec. 2.3): poner el de la cuenca sería dimensionar con el caudal equivocado | `MD.disenar_punto`, que lo exige antes de pedir candidatos. Vehículo: clave `Q_m3s` |
+| `area_ha` | **sigue vacía, y sin vehículo a propósito.** Su único lector es `M1._categoria_por_area`, que sirve a la Familia A para elegir fila de la Tabla Nº 02; la Familia C no tiene TR (`categoria_tr` es `None`) y **nunca llega** a ese lector | **nada.** Darle vehículo sería pedir un dato para no usarlo |
+| `S_cauce` | **sigue vacía** — la pendiente del canal la da el mismo tablero — **pero lo que había que corregir no era la lista: era la ausencia de vehículo** | `M5.v2b_sedimentacion`, y con ella el material entero queda no evaluable |
+
+Y como el dato hace falta, **hay que pedirlo**: `PERFILES[Familia.C].campos_requeridos` pasó de
+`("Q_m3s",)` a `("Q_m3s", "S_cauce")`, que es lo que `datos_pendientes` existe para reclamar.
+Un dato que hace falta y que nadie pide es un dato que nadie va a conseguir. Es también el
+**defecto D-15** contra la v8, que **en su Sec. 2.3** nombra un solo dato de la Familia C. La
+acusación va a la Sec. 2.3 y **no al Tablero 3.1**, cuyo título dice «Caudal de diseño **y
+geometría**» y por tanto sí cubre la pendiente: la primera redacción de esta línea culpaba al
+tablero y la retiró la auditoría adversarial de C6 — la ficha de §15.8 se reformuló ahí mismo
+y **esta línea se quedó con la redacción vieja hasta que la segunda auditoría la encontró**,
+que es exactamente cómo una retractación aplicada en un sitio deja viva la afirmación en el
+otro.
+
+#### El agujero que la clave nueva destapó
+
+**La misma magnitud entraba por dos puertas y se acotaba distinto.** `M0` rechaza un `S_cauce`
+de `6.0` en la columna contra `S_CAUCE_MAX` —que existe precisamente para atrapar «una celda
+cargada en porcentaje», el error de transcripción más frecuente de esa columna— y
+`cli._numero_externo` lo admitía sin más: sólo comprobaba finito y positivo. Medido antes de
+cerrarlo. **Y la puerta laxa era justamente la que usan los puntos de Familia C**, que traen la
+columna vacía. Cerrado con `_DOMINIO_DE_CLAVE`, escrito como mapa aunque hoy tenga una entrada
+sola: las otras seis claves no son columnas y ninguna tiene dominio declarado —el de `Q_m3s`
+está ausente **a propósito**—, y la forma de mapa es lo que hace que la próxima clave con
+dominio lo herede en vez de que haya que acordarse.
+
+#### Cómo llega el dato sin mentir en la memoria
+
+`v2b_sedimentacion` lee `punto.exigir("S_cauce")`. Pasárselo por parámetro obligaría a cambiar
+la firma de una función de **cálculo** para transportar un dato de **entrada**, que es lo que
+este frente no hace. En su lugar: `InformePunto.punto_de_calculo` —la fila del CSV completada
+con lo que el tablero aportó— va al pipeline, e `informe.punto` **no se toca**, de modo que la
+tabla de datos de partida sigue diciendo «columna vacía — dato de un tablero externo». El valor
+sale en su propia fila, por el mecanismo genérico que ya existía (`M11.DATOS_DECLARADOS`), con
+su procedencia.
+
+**La fila se llena SIEMPRE, y eso hubo que corregirlo sobre la marcha.** La primera versión sólo
+la llenaba cuando el dato venía de fuera, y entonces A-01, A-02 y B-01 —que traen la columna
+llena— imprimían *«sin resolver en esta corrida: el dato no se declaró o la etapa que lo fija
+quedó bloqueada»*, que sobre un punto que la trae en su columna es **falso**. Hoy la fila dice
+la pendiente **efectiva**, la que V2b comparó, con la procedencia que corresponda; el precio es
+que para los puntos con columna llena repite el valor, y es un precio barato al lado de una fila
+que miente.
+
+#### El inventario de las doce reglas de §6
+
+C5 descubrió que la **#3** no tenía un solo test. C6 recorrió las doce **por mutación**, no por
+lectura:
+
+| Regla | ¿La mide algún test? |
+|---|---|
+| **#1** cajón sin el piso de 0.90 m | **igual que la #7: es una regla sobre una AUSENCIA**, y esta fila lo decía mal. `M2._siguiente_seccion_cajon` y `M2.progresion_de_cajon` **no contienen ningún filtro de mínimo** —la segunda sólo valida positividad—, de modo que la mutación *real* (quitar la bifurcación por forma en `siguiente_seccion`, para que el marco caiga en la progresión circular) la mata un test **preexistente**, `test_siguiente_seccion_del_marco_recorre_la_progresion_declarada`. El test que **C6 añade**, `test_el_marco_no_hereda_el_piso_de_090_m`, es legítimo y **también la mata**: la segunda auditoría midió esa mutación y caen **cuatro** tests, el añadido entre ellos. Esta fila decía que era «otra cosa: una guardia contra un añadido futuro» —lo es *además*, con su serie de 0.60 a 0.80 m—, y decirlo restando en vez de sumando **subestimaba la guardia propia**, que es el error simétrico del que esta tabla persigue |
+| **#2** Forma 2 sin `Ks·S` | sí — `test_la_forma_2_no_lleva_el_termino_Ks_por_S` |
+| **#3** Q/N por barril | sí, **desde C5** |
+| **#4** `D` = altura y `A` = área llena en `q*` | sí, **pero no por el test que esta fila citaba.** Decía «los casos patrón de `caudal_adimensional`», y esos casos construyen **sólo `SeccionCircular`**, donde `altura == B == D`: son estructuralmente incapaces de distinguir la altura del ancho, que es la mitad de la regla («no hay diámetro equivalente»). Quien la mata es `test_seccion_rectangular.py::test_caudal_adimensional_del_marco_no_usa_diametro_equivalente`, y quien no, los casos patrón: bajo la mutación que introduce un **diámetro equivalente** (`sqrt(4·A/π)` en vez de la altura) quedan **verdes**. Esta fila decía «la mutación que sustituye la altura por `B`», y la segunda auditoría la midió: no queda verde, **revienta** con `AttributeError: 'SeccionCircular' object has no attribute 'B'`. La sustancia se sostiene con la mutación que corresponde al nombre del test; el enunciado de la mutación era falso, y una medición que no se puede reproducir no es una medición |
+| **#5** no cruzar geometrías | sí, **desde C5** |
+| **#6** el vacío de la Tabla Nº 09 es de FILA | sí, **desde C5** |
+| **#7** la Tabla Nº 10 sirve tal cual | **NINGUNO. Ni una mención en toda la suite.** Es una regla sobre una **ausencia** —no hay código que mutar, sólo la clave que alguien podría añadir— y por eso hacía falta un test que la nombrara. **C6 la cierra** |
+| **#8** γ_EV del cajón = «Pórticos rígidos» | **ninguno dedicado.** Su mutación muere, pero **sólo por la línea base y el manifiesto**: los dos textos se imprimen, de modo que cambiarlos mueve bytes. Una línea base dice «algo cambió», no «la regla se rompió», **y se regenera en cada sesión**: el día que alguien regenere con la regla ya rota, la guardia desaparece sin que nada avise. **C6 la cierra** |
+| **#9** vuelve `B'c/8` | **no implementada todavía** (C7, punto 3). No hay nada que medir |
+| **#10** `_motivo_sin_candidatos` se estrecha | sí — dos tests fijan el contenido del diagnóstico y su contraparte |
+| **#11** `ke` por forma | sí, **desde C5** |
+| **#12** dos parametrizaciones no intercambiables | sí, **desde C4** |
+
+#### `sucs_fundacion`: revisada y NO cableada
+
+C2 ya lo tenía bien donde importa —`COND-MARCO-SUELO-MALA-CALIDAD`, con el literal verificado y
+resuelto como `NoEvaluable`—. Lo que faltaba eran dos cosas: `variables_entrada` no mencionaba
+el **segundo** consumidor plausible, y la razón de C2 apuntaba a **C6** como quien abriría el
+criterio de mapeo. C6 lo revisó y **no lo abrió**, con la razón escrita en los dos sitios: **el
+vacío es del Manual, no del proyecto**, y abrirlo como `Criterio(valor=None)` lo dejaría en
+`criterios_sin_valor()` como vacío bloqueante que nadie tiene obligación de contestar.
+`_Columna.criterio_destino` sigue admitiendo un solo destino: **propuesto y parado** (fichas
+C6-01 y C6-02 en `docs/decisiones_diferidas.md`).
+
+
+### 16.11-bis C6 — lo que la auditoría adversarial refutó
+
+Cuatro refutaciones y siete ajustes, todos corregidos. Las dos que importan:
+
+**R1 · La sustitución que la sesión existe para prohibir no la detectaba ningún test.** C6
+declara en cuatro sitios que `S_conducto` **no** puede sustituir a `S_cauce`, porque V2b
+compara una contra otra. El auditor aplicó exactamente esa sustitución en
+`cli._completar_s_cauce` y la suite entera quedó en **1657 passed** — idéntica a la línea
+base. Dos cegueras a la vez:
+
+- **El test que decía fijarlo no asertaba ningún número.** Su docstring afirma *«este test lo
+  fija declarando las dos con valores DISTINTOS»*, y declaraba `S_conducto = 0.004` y
+  `S_cauce = 0.006`… y después asertaba cuatro **cadenas**, todas las cuales se cumplen bajo
+  la tautología, porque el `origen` de las dos claves es la misma. Declarar los valores
+  distintos y no compararlos es tener el caso y tirarlo.
+- **El fixture de la línea base los ponía iguales**, y por una decisión que C6 había escrito
+  a propósito en `regenerar.sh`: la Sec. 7.B fija que la alcantarilla sigue la pendiente del
+  cauce, así que `S_conducto = S_cauce` es el caso normal. Cierto, y aun así equivocado como
+  fixture: con los dos números iguales, la sustitución **no mueve un solo byte** del
+  artefacto. Un valor de fixture que hace indistinguible el defecto que su sesión existe para
+  cerrar no es un caso normal, es un punto ciego.
+
+El número medido: con `S_cauce = 0.006` contra `S_conducto = 0.004`, V2b da **NO cumple** con
+margen −0.002; bajo la tautología daría «cumple» con margen 0.000. **Es la inversión del
+veredicto de una verificación.** Cerrado por los dos lados: el test asierta ahora el número y
+el veredicto, y el fixture usa pendientes distintas —el caso que el HDS-5 describe como
+*«built with an upstream depression»*, o sea la rama en que V2b tiene algo que decir—.
+Comprobado: la mutación **muere**, y la mata el test que dice fijarla.
+
+**R2 · El párrafo escrito para retirar un conteo colgado lo dejó colgado otra vez.** El
+encabezado decía «cinco magnitudes» sobre siete claves; C6 lo corrigió a «siete» **y añadió
+la octava en la misma sesión**. Además dejó `S_conducto` **fuera de las dos clases** que el
+propio párrafo define, diciendo a cuál no pertenece y no a cuál sí. Hoy el bloque no escribe
+número: la cuenta que no envejece es `len(CLAVES_EXTERNAS)`.
+
+**Y dos más que eran de entrega:** el JSON del expediente no publicaba `s_cauce` mientras
+declaraba `S_cauce` pendiente —la trazabilidad vivía sólo en el HTML, o sea a medias—, y el
+manifiesto **reancló una fila a un símbolo distinto** al regenerarse (**R-16**).
+
+**Seis ajustes**, todos aplicados: `S_conducto` entró en `_DOMINIO_DE_CLAVE` —es la misma
+magnitud física que `S_cauce`, con el mismo error de transcripción, y además **es la que va
+directa a Manning**—; **D-15 se reformuló** porque citaba una columna del Tablero 3.1 e
+ignoraba la vecina que cambia la conclusión (el título de esa fila dice «Caudal de diseño **y
+geometría**», y la pendiente de un canal es geometría suya: el defecto es de la Sec. 2.3, no
+del tablero); **D-16 se estrechó** a lo que de verdad midió; **dos filas del inventario de §6
+estaban mal clasificadas** —la #4 citaba unos casos patrón que construyen sólo secciones
+circulares y por tanto no pueden distinguir la altura del ancho, y la #1 es una regla sobre
+una ausencia igual que la #7, no una que «sólo se rozaba»—; y tres comentarios describían el
+estado anterior, incluida la tabla «dónde se detiene C-01 hoy» del README de la línea base,
+que prometía un bloqueo que **C5 había retirado**. Re-medida entera.
+
+**El séptimo ajuste (A6) · la declaración externa descartada se descartaba en silencio.**
+Cuando la columna `S_cauce` del CSV trae valor, gana ella y el externo no la pisa: eso es
+correcto y sigue igual —una fila del expediente no la corrige un JSON de corrida—. Lo que no
+era defendible es que la memoria no lo dijera. Quien escribe el JSON veía V2b resuelta contra
+un número que no es el suyo y no tenía dónde leer por qué. No detiene nada —no es un error
+del expediente— pero tampoco es callable: la fila de procedencia nombra ahora el valor
+descartado y su origen. Con dos tests, y el segundo es el contrapeso: sin declaración
+externa la fila **no** arrastra la nota, para que un punto de columna llena no cargue en
+cada corrida un texto sobre algo que nadie escribió.
+
+**Lo que la re-medición del README encontró de la propia corrección.** La tabla re-medida
+colapsó la fila `TW_m` + `Q_m3s` a «igual que la anterior», y no lo es: con `TW_m` declarado,
+`_resolver_tw` ya no necesita `S_cauce` y el punto llega hasta *material y diámetro*, donde
+lo que falta es **`S_cauce`**, no `Q_m3s`. La versión anterior del README lo tenía bien y la
+re-escritura lo perdió. Corregido volviendo a correr las siete combinaciones, no leyendo la
+tabla. Y se añadió lo que ninguna de las dos versiones decía: en las siete filas el bloqueo
+sustantivo va **precedido** del `DiferidoPorAlcance` que C5 emite para todo punto de Familia
+C, que no es un bloqueo del expediente y no distingue una fila de otra.
+
+**Lo que NO se tocó, y por qué.** `punto.pendientes_externos` y
+`clasificacion.datos_pendientes` siguen nombrando `S_cauce` en el JSON de C-01 aunque esa
+corrida la haya declarado. No es contradicción: las dos son propiedades de **la fila del
+CSV**, que efectivamente va vacía, y `informe.punto` es la fila del CSV a propósito (por eso
+la tabla de datos de partida sigue mostrando la columna vacía). Lo que faltaba era el otro
+lado —qué usó la corrida—, y eso es lo que publica ahora `datos_declarados.S_cauce`.
+
+---
+
+### 16.11-ter C6 — la SEGUNDA auditoría, que auditó la corrección de la primera
+
+Se invocó al `auditor-adversarial` sobre los commits de corrección (`C6c` y `C6d`), no sobre
+la sesión. Trajo **cinco refutaciones y siete ajustes**, y lo que dejó claro de entrada es
+por qué se audita la corrección y no sólo el trabajo: **tres de las cinco son el defecto que
+la propia corrección denunciaba, cometido en el commit que lo denunciaba.**
+
+**Lo que resistió, primero, porque también importa.** Las cuatro mutaciones de `S_cauce`
+mueren (la tautología con **4 tests**, entre ellos el assert de igualdad
+`_celda_de(...) == "0.006"`, que es numérico y no de cadena); la aritmética de V2b
+recomputada a mano da los mismos −0.002 y 0.000; la tabla re-medida del README reproduce
+**fila por fila**, incluida la corrección de `TW_m` + `Q_m3s`; y el delta de la línea base no
+tiene **una sola línea** que el mensaje del commit no explique.
+
+**R2 SE REPITIÓ DENTRO DEL COMMIT QUE LO CERRABA.** El comentario de `_DOMINIO_DE_CLAVE`
+decía «el mapa tiene UNA entrada» y «las otras seis claves no son columnas de Sec. 1.2»…
+veinte líneas por encima del sitio donde el mismo diff añadía la **segunda** entrada, y
+contradiciendo al docstring que el mismo commit corrigió. Y el comentario de
+`CLAVES_EXTERNAS` seguía diciendo «cada una es un dato que Sec. 1.2 no trae como columna»,
+que es **la frase retirada**, pegada al símbolo, con un puntero al docstring que la
+desmiente. Los dos reescritos: ninguno escribe número, y el segundo dice qué son las claves
+en vez de qué no son.
+
+**Y EL TEST QUE VIGILABA ESO ERA UNA LISTA NEGRA DEL PASADO.** Prohibía cinco **cadenas
+literales** (`"cinco magnitudes"`, `"las siete"`, `"OCHO CLAVES"`…) mientras su docstring
+declaraba fijar «que el bloque enumere las claves y no las cuente». Medido: insertar «Son
+OCHO MAGNITUDES en total» pasaba **en verde**. Es el patrón que este proyecto persigue —una
+declaración que ninguna guardia sostiene— cometido en la guardia. Ahora la prohibición es de
+**forma**: tres expresiones regulares que rechazan un cardinal pegado al sustantivo, en
+elipsis («las ocho») y como predicado («las claves son ocho»); las tres comprobadas contra
+su mutante. Y `len(CLAVES_EXTERNAS)` —que la prosa llamaba «la cuenta que no envejece» y que
+**nadie calculaba**: `grep` daba una sola aparición en el repositorio, la propia frase— se
+calcula ahora en el test.
+
+**LA CORRECCIÓN DEL MANIFIESTO ARREGLÓ EL VALOR Y NO EL MECANISMO,** y su evidencia era
+vacua: «0 referencias resincronizadas» lo dice también un ancla al símbolo equivocado,
+porque cualquier mención es un punto fijo del regenerador. La caducidad está **medida**: 22
+líneas insertadas por encima devuelven el ancla a `_NUMERICAS`. Cerrado anclando la fila al
+símbolo que la **define** —`_VACIAS_ESTUDIO_GEOTECNICO`, que tiene bloque—, comprobado con
+esas mismas 22 líneas, y con dos tests. El barrido del auditor encontró **17 filas más** con
+la misma exposición: es **R-17**, con trinquete.
+
+**Los siete ajustes.** (1) El número de la declaración descartada salía del `repr` de Python
+—`1e-05` conviviendo con `0.006` en la misma celda—: ahora usa el formato del documento y
+sólo baja al número entero cuando el redondeo lo borraría, y **el umbral no se escribe, se
+le pregunta a `_fmt`**. (2) Los dos asserts nuevos de A6 comparaban **substrings** donde el
+propio commit exige números (`"0.999" in origen` lo cumple también `0.9995`): se extrae el
+número y se compara como número. (3) La trazabilidad seguía publicada **a medias en el
+tercer artefacto**: el volcado de texto imprimía `longitud` y `tw` con su procedencia y
+`s_cauce` no. Corregido, con un test que mide **los tres formatos juntos**, porque el defecto
+no fue olvidar uno sino no tener dónde ver que faltaba. (4) El test de las dos puertas
+declaraba un invariante universal y recorría una tupla a mano, con un **nombre falso** para
+la mitad de su contenido (`S_conducto` no es columna): renombrado a lo que mide, con el
+motivo escrito —no existe un mapa clave → símbolo de `dominios.py` del que derivar el
+universo— y con el borde añadido. (5) La retractación de **D-15** se aplicó en la ficha y
+**no en la bitácora**, que veinte líneas más allá seguía acusando al Tablero 3.1. (6) La
+fila **#4** del inventario de §6 afirmaba una mutación que **no se puede reproducir**:
+`SeccionCircular` no tiene `B` y los casos patrón no quedan verdes, revientan; la sustancia
+se sostiene con la mutación del diámetro equivalente, que es la que el nombre del test
+nombra. (7) La fila **#1** decía que el test añadido por C6 «es otra cosa», y **también mata
+la mutación real**: caen cuatro tests de `test_M2_material.py` y el añadido es uno de ellos.
+Subestimar la guardia propia es el error simétrico del que esa tabla persigue.
+
+**Una anotación que no es de C6 y se deja dicha:** `CLAUDE.md` fija `collected = 1538` y hoy
+son **1665 passed / 2 skipped**. La cifra de la constitución envejeció con las sesiones de la
+familia C; corregirla exige medir las **cuatro** configuraciones de su tabla, y aquí sólo se
+midió **una** —«PyMuPDF sí, ventana Tk no»—, que es la única que este contenedor puede dar.
+Se deja dicho y no se corrige a medias: media tabla medida y media supuesta sería peor que
+la cifra vieja, porque no se distinguiría cuál es cuál.

@@ -2745,9 +2745,25 @@ CAJON_MARCO = _cita(
                          "el mapeo que la fuente calla"),
                 que_lo_cerraria=("un criterio declarado que fije que grupos "
                                  "SUCS cuentan como mala calidad, con su "
-                                 "fuente tecnica y su ventana. §15.5 lo "
-                                 "difiere a C6, junto con el cambio de "
-                                 "esquema de `_Columna.criterio_destino`")),
+                                 "fuente tecnica y su ventana. C6 LO REVISO Y "
+                                 "NO LO ABRIO, que es lo contrario de lo que "
+                                 "esta linea anunciaba: abrirlo como "
+                                 "`Criterio(valor=None)` lo dejaria entrando "
+                                 "en `criterios_sin_valor()` como vacio "
+                                 "BLOQUEANTE que nadie tiene obligacion de "
+                                 "contestar -- el defecto que la bandera "
+                                 "`opcional` se creo para retirar --, y "
+                                 "`opcional=True` tampoco vale porque el "
+                                 "catalogo la define para el criterio que "
+                                 "refina un valor que la norma YA fija, y "
+                                 "aqui no hay valor normativo por defecto. "
+                                 "Queda para la sesion que implemente de "
+                                 "verdad la eleccion de tipo a partir del "
+                                 "suelo, con la fuente que respalde el mapeo "
+                                 "(la candidata peruana es la E.050) y con el "
+                                 "cambio de esquema de "
+                                 "`_Columna.criterio_destino`, que hoy admite "
+                                 "UN destino")),
             efecto_si_indeterminada=Efecto.ADVIERTE,
             justificacion_de_no_bloquear=(
                 "la frase RECOMIENDA el marco cuando el suelo es malo; no lo "
