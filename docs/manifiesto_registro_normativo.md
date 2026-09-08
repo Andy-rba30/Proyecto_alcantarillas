@@ -232,12 +232,21 @@ línea que se pueda romper.
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
 | `EG2013.205.12c1` | 205.12 c) 1. | «205.12 Criterio» | pág. impresa **193** · PDF 201 | exigencia | 2026-08-28 · texto |
+| `EG2013.503.01#ALCANCE` | 503.01 | «Descripción» | pág. impresa **905** · PDF 913 | definicion | 2026-08-28 · texto |
 | `EG2013.503.04#T503_07` | 503.04, Tabla 503-07 | «Clases de concreto» | pág. impresa **912** · PDF 920 | exigencia | 2026-08-28 · ambos |
+| `EG2013.503.10h#CAJON` | 503.10 h) | «Operaciones para el vaciado de la mezcla» | pág. impresa **926** · PDF 934 | recomendacion | 2026-08-28 · texto |
+| `EG2013.506.01#ALCANCE` | 506.01 | «Descripción» | pág. impresa **959** · PDF 967 | definicion | 2026-08-28 · texto |
 | `EG2013.508.07#RELLENO_MIN` | 508.07 | «Colocación del relleno alrededor de la estructura» | pág. impresa **984** · PDF 992 | exigencia | 2026-08-28 · texto |
 
 > **`EG2013.205.12c1`** — ES LA REMISION DE SEGUNDO NIVEL de tres de las cuatro fichas de cama y relleno: el «95 % MDS» que el expediente les atribuia no es literal de las Secciones 505, 506 ni 507 -- llega desde aqui, por remision. El valor es correcto; lo que faltaba era decir por que via llega, que es la diferencia entre una cita y una deduccion.
 
+> **`EG2013.503.01#ALCANCE`** — «ESTRUCTURAS DE DRENAJE» ES EL TERMINO DE ENCABEZAMIENTO y la lista que sigue es ENUNCIATIVA, no cerrada: un marco de concreto vaciado in situ es una estructura de drenaje y no esta nombrado ahi. Que si lo esta bajo esta Seccion lo prueba el 503.10 h), que le fija plazo de desencofrado a la «placa superior en alcantarillas de cajon». Por si sola esta cita NO dice que el marco se pague aqui: eso es ensamblaje del proyecto sobre las tres citas mas la ausencia de partida propia.
+
 > **`EG2013.503.04#T503_07`** — La tabla tiene DOS columnas, no tres: «Clase» y «Resistencia minima a la compresion a 28 dias». El uso no es columna, es encabezado de grupo dentro de la primera. Y no lleva ninguna nota al pie.
+
+> **`EG2013.503.10h#CAJON`** — ES LA UNICA MENCION DEL CAJON DE CONCRETO EN TODO EL EG-2013 -- barrido de las 1282 paginas, ver SIN_PARTIDA_DE_CAJON_EG2013 -- y hay que leerla por lo que prueba y no por lo que dice. LO QUE PRUEBA: que el EG-2013 CONTEMPLA la alcantarilla de cajon de concreto y la regula bajo la Seccion 503, «Concreto estructural». Una norma que fija plazo de desencofrado de la placa superior de un cajon esta regulando su vaciado in situ. LO QUE NO DICE: nada sobre pago, ni sobre cobertura, ni sobre dimensiones. Y su CARACTER no es exigencia: el parrafo que la introduce dice «Excepcionalmente si las operaciones de campo no estan controladas por pruebas de laboratorio la siguiente lista PUEDE ser empleada como GUIA para el tiempo minimo requerido antes de la remocion de encofrados y soportes». O sea que el plazo es guia condicionada; lo que NO es condicionado es la existencia de la fila, que es lo unico que este proyecto le pide.
+
+> **`EG2013.506.01#ALCANCE`** — LO QUE ESTA CITA HACE ES DELIMITAR, y por eso es DEFINICION y no EXIGENCIA: no prohibe nada, dice de que trata la Seccion. Su objeto es «la instalacion de TUBOS», y las otras tres piezas de la misma Seccion lo confirman -- 506.02 remite a AASHTO M-170M y pide el «diametro interno», y la partida 506.A del Anexo 2 se mide en METRO LINEAL --. Un marco vaciado in situ no tiene diametro interior ni se mide por metro lineal de tubo suministrado: la 506 no lo alcanza. Los cuatro titulos de las Secciones 505 a 508 empiezan por «Tuberia».
 
 > **`EG2013.508.07#RELLENO_MIN`** — NOR-EG-01 / NOR-EG-02. La pagina impresa es la 984 (PDF 992). La 982 (PDF 990) trae 508.02 b), c) y d) -- calidad del tubo, muestreo y material para cama de asiento --, nada de altura de relleno. El desfase de este documento es +8, el mayor del corpus, y confundir impresa con PDF produce exactamente ese error. NO CONFUNDIR CON SU VECINA: el 508.08 (pag. impresa 985) tambien dice 0,30 m, pero es la exigencia de EJECUCION -- que el equipo pesado no circule antes de alcanzarla --, no la altura minima de diseño. Dos frases con el mismo numero en paginas contiguas.
 
@@ -1061,5 +1070,5 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 110.
+Citas sin firma de verificación: **0** de 113.
 
