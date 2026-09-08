@@ -75,6 +75,30 @@ RAIZ = Path(__file__).resolve().parents[1]
 DIR = RAIZ / "tests" / "linea_base_familia_c"
 SCRIPT = DIR / "regenerar.sh"
 
+# EL INTERPRETE DEL SCRIPT, BUSCADO Y NO SUPUESTO. `regenerar.sh` es un script
+# POSIX y esta ventana solo se puede medir donde haya con que correrlo. En
+# Windows sin Git Bash ni WSL no lo hay, y hasta esta correccion los cuatro
+# tests de aqui reventaban con `FileNotFoundError` al invocar `sh`: cuatro
+# ERRORES, que en un resumen de pytest se leen igual que un fallo de calculo.
+#
+# QUE SE SALTE ES LO CORRECTO Y NO UNA CONCESION: lo que estos tests fijan es
+# que la salida comprometida sea la que produce el codigo, y eso no se puede
+# comprobar sin ejecutar el generador. Un `skip` CON MOTIVO dice «aqui no se
+# midio»; un error dice «aqui algo se rompio», y solo una de las dos es cierta.
+# La linea base se sigue midiendo en el entorno de referencia, que es donde el
+# proyecto declara su par.
+#
+# No se reescribe `regenerar.sh` en Python: es la herramienta con la que se
+# regenera a mano (`sh tests/linea_base_familia_c/regenerar.sh`), su encabezado
+# documenta los cuatro ejes de la ventana, y portarla seria cambiar el objeto
+# medido para poder medirlo en mas sitios.
+SH = shutil.which("sh") or shutil.which("bash")
+SIN_SH = SH is None
+MOTIVO_SIN_SH = (
+    "no hay `sh` ni `bash` en PATH: `regenerar.sh` es un script POSIX y sin "
+    "interprete la linea base no se puede regenerar para compararla (tipico "
+    "en Windows sin Git Bash ni WSL)")
+
 # Los generados. `regenerar.sh`, `README.md` y `entradas_ampliadas.json` son
 # ENTRADAS del proceso, no salidas, y por eso no se comparan.
 NO_GENERADOS = {"regenerar.sh", "README.md", "entradas_ampliadas.json",
@@ -88,9 +112,18 @@ def _generados_comprometidos():
 
 @pytest.fixture(scope="module")
 def recien_generada(tmp_path_factory):
-    """Corre el script contra un destino temporal. No toca el arbol."""
+    """
+    Corre el script contra un destino temporal. No toca el arbol.
+
+    El `skip` va AQUI y no en cada test: los cuatro de este archivo consumen
+    esta fixture, de modo que un solo punto de decision los salta a los cuatro
+    con el mismo motivo, y ninguno queda saltandose por su cuenta con una
+    razon que pueda divergir de las otras tres.
+    """
+    if SIN_SH:
+        pytest.skip(MOTIVO_SIN_SH)
     destino = tmp_path_factory.mktemp("linea_base")
-    r = subprocess.run(["sh", str(SCRIPT), str(destino)], cwd=RAIZ,
+    r = subprocess.run([SH, str(SCRIPT), str(destino)], cwd=RAIZ,
                        capture_output=True, text=True)
     assert r.returncode == 0, (
         f"`regenerar.sh` fallo con codigo {r.returncode}.\n"
@@ -149,7 +182,7 @@ def test_la_corrida_es_determinista(recien_generada, tmp_path):
     la normalizacion sigue cubriendolos.
     """
     segunda = tmp_path / "segunda"
-    r = subprocess.run(["sh", str(SCRIPT), str(segunda)], cwd=RAIZ,
+    r = subprocess.run([SH, str(SCRIPT), str(segunda)], cwd=RAIZ,
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     distintos = [f.name for f in sorted(recien_generada.iterdir())

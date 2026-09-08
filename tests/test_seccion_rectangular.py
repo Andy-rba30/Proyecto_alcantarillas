@@ -888,7 +888,15 @@ def _censo_de_la_via_por_tirante():
                 if (isinstance(hijo, ast.Call)
                         and isinstance(hijo.func, ast.Attribute)
                         and hijo.func.attr in VIA_POR_TIRANTE):
-                    encontradas.add((str(ruta.relative_to(raiz)),
+                    # `as_posix()` Y NO `str()`: el censo se compara contra
+                    # `CENSO_VIA_POR_TIRANTE`, que esta escrito a mano con `/`,
+                    # y `str()` de un `Path` usa el separador del sistema. En
+                    # Windows daba `src\modulos\M4_control.py` y NINGUNA de las
+                    # entradas del censo casaba, de modo que el test acusaba
+                    # simultaneamente de nuevas y desaparecidas TODAS las
+                    # llamadas -- un fallo de portabilidad con la cara de una
+                    # violacion de la regla #12.
+                    encontradas.add((ruta.relative_to(raiz).as_posix(),
                                      prefijo or "<modulo>", hijo.func.attr))
                 recorrer(hijo, prefijo)
         recorrer(arbol, "")
