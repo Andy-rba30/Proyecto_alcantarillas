@@ -28,9 +28,10 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
     1. Datos de entrada    CSV de Sec. 1.2 (M0) + datos declarados que no son
                             columna (banderas de `cli.py`) + ALCANCE de la
                             corrida + boton de ejecucion.
-    2. Criterios           Los criterios adoptados y su estado; la ventana
-                            normativa de cada variable (Sec. 4.2/4.3 del
-                            plan); y el unico sitio de la interfaz que
+    2. Criterios           Los criterios adoptados y su estado, con FILTRO
+                            (por estado y por texto) y RECUENTO de pendientes;
+                            la ventana normativa de cada variable (Sec. 4.2/4.3
+                            del plan); y el unico sitio de la interfaz que
                             REESCRIBE `criterios_adoptados.py` --- accion
                             permanente, aparte y con confirmacion propia, que
                             es justo la pestana que esta lista omitia.
@@ -51,6 +52,27 @@ comandos. El selector de la pestana 1 lo expone, y la exportacion elige la
 plantilla con `cli.plantilla_por_alcance`, que es la MISMA funcion que usa
 `cli.main`: dos reglas para elegir plantilla serian dos memorias distintas
 para la misma corrida.
+
+Lo que se pone entre el proyectista y los 69 criterios
+------------------------------------------------------
+La pestana 2 lista los 69 criterios del archivo, 33 de ellos PENDIENTES. Tres
+cosas la hacian dificil de usar, y las tres tienen la misma forma: informacion
+que el programa TIENE y que no llegaba a la pantalla.
+
+- **La fuente no cabia y no habia donde leerla.** Es el campo que dice de donde
+  sale un valor --- la pregunta que la taxonomia de CLAUDE.md pone en el centro
+  ---, tiene 280 caracteres de mediana y 4900 en el peor caso, y vivia en una
+  columna de 300 px. Ninguna anchura arregla eso. El panel de detalle si podia,
+  y tampoco: era un `Text` de `height=6` SIN barra de scroll, de modo que del
+  criterio mas largo se veian 6 de sus 83 lineas y las otras 77 no eran
+  alcanzables. Ahora la fuente encabeza el detalle, el detalle tiene scroll, y
+  el reparto entre tabla y detalle es un `PanedWindow` que mueve el usuario.
+- **No habia con que buscar.** 69 filas y ningun filtro: encontrar los
+  pendientes era recorrerlas a ojo. Hay filtro por estado --- por el MISMO tag
+  que devuelve `_estado_criterio`, no por un nombre paralelo --- y busqueda por
+  clave o concepto, y arriba el recuento, que se calcula en el mismo recorrido
+  que pinta las filas.
+- **Un boton apagado no decia por que.** Ver `gui/componentes.BotonAccion`.
 
 Los criterios en la sesion (SIS-A-18)
 -------------------------------------
@@ -87,10 +109,14 @@ import criterios_adoptados as ca  # noqa: E402
 import declaracion as dec  # noqa: E402
 import variables_entrada as ve  # noqa: E402
 from modelos import ErrorProyecto  # noqa: E402
+# Solo para PREGUNTARLE si weasyprint cargo (`_ayuda_del_pdf`). No se le pide
+# ningun calculo: la exportacion sigue pasando por `cli.exportar_pdf`, que es
+# la misma puerta que usa la linea de comandos.
+from modulos import M11_reporte as M11  # noqa: E402
 
 from gui import ventana_normativa as ventana_norma  # noqa: E402
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR,  # noqa: E402
-                             COLOR_OK, MarcoScroll, Tooltip)
+                             COLOR_OK, BotonAccion, MarcoScroll, Tooltip)
 
 try:
     import ttkbootstrap as tb
@@ -103,6 +129,37 @@ APP_VERSION = "1.0"
 # leyendo: lo que no trae se queda en su valor por defecto y la ventana lo
 # dice, que es el patron de migracion de `legacy/Tc.py`.
 FORMATO_SESION = 2
+
+# Los motivos por los que un boton esta apagado. Son DATO y no cadenas sueltas
+# en el sitio donde se apaga cada uno: un motivo escrito junto a su condicion
+# se copia mal la segunda vez que hace falta, y el usuario acaba leyendo dos
+# explicaciones distintas del mismo bloqueo. `BotonAccion` los exige --- el
+# motivo no es opcional --- por la misma razon por la que un criterio [A] sin
+# valor lanza excepcion en vez de tomar un defecto: un bloqueo se declara.
+MOTIVO_SIN_CRITERIO = "no hay ningun criterio seleccionado en la tabla"
+# El motivo dice lo que el codigo HACE, no lo que seria comodo. Un criterio ya
+# resuelto en el archivo no se puede pisar solo para una corrida desde esta
+# tabla --- la condicion es `c.valor is None or en_caliente`, y viene de antes
+# de este cambio ---, de modo que la unica via es la permanente. Decir «quitalo
+# antes» seria mandar al usuario a un boton que tampoco esta encendido: no hay
+# ninguna declaracion que quitar.
+MOTIVO_YA_RESUELTO = (
+    "el criterio ya tiene valor en criterios_adoptados.py, y desde esta tabla "
+    "un valor de archivo no se pisa solo para una corrida. La via es "
+    "'Guardar en archivo fuente', que lo cambia de forma permanente")
+MOTIVO_NO_DECLARADO = "el criterio no esta declarado para esta corrida"
+MOTIVO_SIN_CORRIDA = "todavia no se ejecuto el pipeline: no hay informe que exportar"
+
+# Los filtros de estado de la tabla de criterios (pestana 2). Cada entrada es
+# (rotulo, tag), y el `tag` es el MISMO que devuelve `_estado_criterio`: filtrar
+# por un nombre propio seria una segunda regla de estado, y dos reglas de estado
+# son dos tablas que pueden decir cosas distintas de la misma fila.
+FILTROS_DE_ESTADO = (
+    ("Todos", None),
+    ("Solo PENDIENTES", "pendiente"),
+    ("Declarados en esta corrida", "declarado_corrida"),
+    ("Resueltos en el archivo", "resuelto"),
+)
 
 # Banderas globales que acepta `cli.py` fuera del CSV (ver docstring de
 # `cli.py`, seccion "Datos que NO estan en el CSV"). Cada tupla es
@@ -194,10 +251,12 @@ class ExpedienteApp:
         self.lbl_estado = ttk.Label(barra, text="Sin ejecutar.", style="Ayuda.TLabel")
         self.lbl_estado.pack(side="left", padx=(12, 0))
 
-        self.btn_ejecutar = tk.Button(
-            barra, text="EJECUTAR PIPELINE (M0 -> M10)", font=("Segoe UI", 10, "bold"),
-            bg="#2e86c1", fg="white", activebackground="#21618c", activeforeground="white",
-            relief="flat", cursor="hand2", command=self.ejecutar_pipeline,
+        self.btn_ejecutar = BotonAccion(
+            barra, "EJECUTAR PIPELINE (M0 -> M10)", letra=BotonAccion.GRANDE,
+            fondo="#2e86c1", activebackground="#21618c", activeforeground="white",
+            command=self.ejecutar_pipeline,
+            ayuda="Corre M0 -> M10 con el CSV, los datos externos y el\n"
+                  "alcance elegidos arriba.",
         )
         self.btn_ejecutar.pack(side="right", padx=4, ipadx=14, ipady=6)
 
@@ -307,7 +366,10 @@ class ExpedienteApp:
     # -------------------------- Pestana 2 -----------------------------
     def _construir_tab_criterios(self, p):
         p.columnconfigure(0, weight=1)
-        p.rowconfigure(1, weight=1)
+        # La fila 2 es el `PanedWindow` (tabla + detalle): es la unica que
+        # crece. La 0 es el encabezado, la 1 el filtro, la 3 el bloque de
+        # declaracion y la 4 la linea de estado.
+        p.rowconfigure(2, weight=1)
 
         f_cab = ttk.Frame(p, padding=(10, 10, 10, 0))
         f_cab.grid(row=0, column=0, sticky="ew")
@@ -337,14 +399,61 @@ class ExpedienteApp:
             style="Ayuda.TLabel", wraplength=980, justify="left",
         ).pack(anchor="w", pady=(2, 8))
 
-        f_tabla = ttk.Frame(p, padding=(10, 0))
-        f_tabla.grid(row=1, column=0, sticky="nsew")
+        # --- El filtro y el recuento -------------------------------------
+        # Con 69 criterios --- 33 de ellos pendientes --- encontrar los que
+        # hay que declarar era scroll a ojo. Y el RECUENTO va aqui, arriba de
+        # la tabla, porque «cuantos me faltan» es la pregunta con que se abre
+        # esta pestana y contar filas a mano es la peor forma de contestarla.
+        # Los dos numeros se calculan en `_llenar_tabla_criterios`, sobre las
+        # mismas filas que se pintan: un contador que se calculara aparte
+        # podria decir un numero y la tabla mostrar otro.
+        f_filtro = ttk.Frame(p, padding=(10, 0, 10, 6))
+        f_filtro.grid(row=1, column=0, sticky="ew")
+        f_filtro.columnconfigure(4, weight=1)
+
+        ttk.Label(f_filtro, text="Estado:").grid(row=0, column=0, sticky="w")
+        self.filtro_estado_var = tk.StringVar(value=FILTROS_DE_ESTADO[0][0])
+        cmb_estado = ttk.Combobox(
+            f_filtro, textvariable=self.filtro_estado_var, state="readonly",
+            width=26, values=[rotulo for rotulo, _tag in FILTROS_DE_ESTADO])
+        cmb_estado.grid(row=0, column=1, sticky="w", padx=(6, 16))
+        Tooltip(cmb_estado,
+                "PENDIENTE  = valor=None: bloquea el calculo que lo invoque.\n"
+                "Declarado en esta corrida = valor puesto desde la ventana o\n"
+                "  desde aqui; criterios_adoptados.py NO se modifico.\n"
+                "Resuelto en el archivo = el valor viene de "
+                "criterios_adoptados.py.")
+
+        ttk.Label(f_filtro, text="Buscar:").grid(row=0, column=2, sticky="w")
+        self.filtro_texto_var = tk.StringVar()
+        ent_buscar = ttk.Entry(f_filtro, textvariable=self.filtro_texto_var, width=28)
+        ent_buscar.grid(row=0, column=3, sticky="w", padx=(6, 16))
+        Tooltip(ent_buscar,
+                "Busca en la CLAVE y en el CONCEPTO, sin distinguir mayusculas.\n"
+                "Se aplica junto con el filtro de estado, no en su lugar.")
+
+        self.lbl_recuento_criterios = ttk.Label(f_filtro, text="",
+                                                 style="Header.TLabel")
+        self.lbl_recuento_criterios.grid(row=0, column=4, sticky="e")
+
+        # --- La tabla y el detalle, con el reparto en manos del usuario ----
+        # `PanedWindow` y no dos filas fijas: el panel de detalle tenia
+        # `height=6` y el criterio de fuente mas larga de este archivo ocupa
+        # 83 lineas, de modo que 77 no se podian alcanzar de ninguna manera.
+        # Con el divisor movible y su barra de scroll, el reparto lo decide
+        # quien esta mirando, que es lo unico que sabe si en ese momento le
+        # importa mas la lista o el texto de una fila.
+        panel = ttk.PanedWindow(p, orient="vertical")
+        panel.grid(row=2, column=0, sticky="nsew", padx=10)
+
+        f_tabla = ttk.Frame(panel)
+        panel.add(f_tabla, weight=2)
         f_tabla.columnconfigure(0, weight=1)
         f_tabla.rowconfigure(0, weight=1)
 
         cols = ("clave", "etiqueta", "concepto", "valor", "estado", "fuente")
         self.tree_criterios_todos = ttk.Treeview(
-            f_tabla, columns=cols, show="headings", height=14)
+            f_tabla, columns=cols, show="headings", height=12)
         encabezados = [
             ("clave", "Clave", 190, "w"),  # literal-ok: ancho de columna, px
             ("etiqueta", "Etq.", 45, "center"),  # literal-ok: ancho de columna, px
@@ -374,13 +483,35 @@ class ExpedienteApp:
         self.tree_criterios_todos.configure(yscroll=scroll_ct.set)
         scroll_ct.grid(row=0, column=1, sticky="ns")
 
-        f_detalle = ttk.LabelFrame(p, text="Detalle del criterio seleccionado", padding=10)
-        f_detalle.grid(row=2, column=0, sticky="ew", padx=10, pady=(10, 0))
-        f_detalle.columnconfigure(0, weight=1)
+        # Barra HORIZONTAL, que no habia. Las seis columnas suman mas ancho
+        # que la ventana, de modo que «Fuente» --- la ultima, y la que dice de
+        # donde sale el valor --- se cortaba a media palabra sin ninguna forma
+        # de llegar al resto. El texto COMPLETO vive abajo, en el detalle; esta
+        # barra es para leer la tabla, no para sustituirlo.
+        scroll_ch = ttk.Scrollbar(f_tabla, orient="horizontal",
+                                   command=self.tree_criterios_todos.xview)
+        self.tree_criterios_todos.configure(xscroll=scroll_ch.set)
+        scroll_ch.grid(row=1, column=0, sticky="ew")
 
-        self.txt_detalle_criterio = tk.Text(f_detalle, height=6, wrap="word",
+        f_detalle = ttk.LabelFrame(panel, text="Detalle del criterio seleccionado",
+                                    padding=10)
+        panel.add(f_detalle, weight=1)
+        f_detalle.columnconfigure(0, weight=1)
+        f_detalle.rowconfigure(0, weight=1)
+
+        # `height=12` y no 6: un `PanedWindow` reparte por peso solo el espacio
+        # SOBRANTE, de modo que el tamano de arranque de cada panel es el que
+        # su contenido pide. Con 6 el detalle nacia en 95 px --- lo mismo que
+        # tenia antes de todo esto --- y el divisor no arreglaba nada hasta
+        # que alguien lo arrastrara. Doce lineas visibles de arranque, el resto
+        # por la barra, y el reparto en manos del usuario a partir de ahi.
+        self.txt_detalle_criterio = tk.Text(f_detalle, height=12, wrap="word",
                                              font=("Consolas", 9))
-        self.txt_detalle_criterio.grid(row=0, column=0, sticky="ew")
+        self.txt_detalle_criterio.grid(row=0, column=0, sticky="nsew")
+        scroll_det = ttk.Scrollbar(f_detalle, orient="vertical",
+                                    command=self.txt_detalle_criterio.yview)
+        self.txt_detalle_criterio.configure(yscrollcommand=scroll_det.set)
+        scroll_det.grid(row=0, column=1, sticky="ns")
         self.txt_detalle_criterio.configure(state="disabled")
 
         f_declarar = ttk.LabelFrame(p, text="Declarar valor para el criterio pendiente",
@@ -402,61 +533,80 @@ class ExpedienteApp:
                          "criterio. Se intenta interpretar como numero; si no es\n"
                          "posible, se guarda como texto tal cual se escribe.")
 
+        # DOS FILAS DE BOTONES, y la segunda no es estetica: las cuatro en
+        # una sola sumaban mas ancho que la ventana en su tamano por defecto
+        # (1100 px) y la que se salia por el borde derecho era justamente
+        # «Guardar en archivo fuente», la unica que modifica el archivo del
+        # proyecto. Ahora las tres reversibles van juntas y la permanente va
+        # sola, separada por una linea: la accion que no se deshace no
+        # comparte fila con las que si.
         f_botones = ttk.Frame(f_declarar)
         f_botones.grid(row=2, column=0, columnspan=2, sticky="w", pady=(4, 0))
 
-        self.btn_aplicar_corrida = tk.Button(
-            f_botones, text="Aplicar solo a esta corrida", font=("Segoe UI", 9, "bold"),
-            bg="#2e86c1", fg="white", relief="flat", cursor="hand2",
-            state="disabled", command=self._aplicar_valor_corrida)
+        self.btn_aplicar_corrida = BotonAccion(
+            f_botones, "Aplicar solo a esta corrida", fondo="#2e86c1", command=self._aplicar_valor_corrida,
+            motivo=MOTIVO_SIN_CRITERIO,
+            ayuda="El valor se usa en el proximo EJECUTAR PIPELINE, pero\n"
+                  "criterios_adoptados.py NO se modifica.")
         self.btn_aplicar_corrida.pack(side="left", padx=(0, 8), ipadx=6, ipady=3)
-        Tooltip(self.btn_aplicar_corrida,
-                "El valor se usa en el proximo EJECUTAR PIPELINE, pero\n"
-                "criterios_adoptados.py NO se modifica.")
 
-        self.btn_quitar_declarado = tk.Button(
-            f_botones, text="Quitar declaracion de la corrida", font=("Segoe UI", 9),
-            relief="flat", cursor="hand2", state="disabled",
-            command=self._quitar_valor_corrida)
+        self.btn_quitar_declarado = BotonAccion(
+            f_botones, "Quitar declaracion de la corrida",
+            letra=BotonAccion.DISCRETA, command=self._quitar_valor_corrida, motivo=MOTIVO_SIN_CRITERIO,
+            ayuda="Retira el valor declarado para esta corrida Y su\n"
+                  "procedencia. El criterio vuelve a bloquear el calculo.")
         self.btn_quitar_declarado.pack(side="left", padx=8, ipadx=6, ipady=3)
 
-        self.btn_ventana_norma = tk.Button(
-            f_botones, text="Ver la norma y declarar desde la tabla...",
-            font=("Segoe UI", 9, "bold"), bg="#5d6d7e", fg="white",
-            relief="flat", cursor="hand2", state="disabled",
-            command=self._abrir_ventana_normativa)
+        self.btn_ventana_norma = BotonAccion(
+            f_botones, "Ver la norma y declarar desde la tabla...",
+            fondo="#5d6d7e",
+            command=self._abrir_ventana_normativa, motivo=MOTIVO_SIN_CRITERIO,
+            ayuda="Abre la ventana emergente de la variable: la tabla COMPLETA\n"
+                  "con su numeral, su pagina impresa, sus notas al pie y sus\n"
+                  "modificadores; o el rango con su semantica; o el catalogo con\n"
+                  "la advertencia de que ninguna norma lo sostiene.\n"
+                  "Al declarar desde alli queda registrada la procedencia: fila,\n"
+                  "valor, alternativas descartadas, cita y fecha.")
         self.btn_ventana_norma.pack(side="left", padx=8, ipadx=6, ipady=3)
-        Tooltip(self.btn_ventana_norma,
-                "Abre la ventana emergente de la variable: la tabla COMPLETA\n"
-                "con su numeral, su pagina impresa, sus notas al pie y sus\n"
-                "modificadores; o el rango con su semantica; o el catalogo con\n"
-                "la advertencia de que ninguna norma lo sostiene.\n"
-                "Al declarar desde alli queda registrada la procedencia: fila,\n"
-                "valor, alternativas descartadas, cita y fecha.")
 
-        self.btn_guardar_archivo = tk.Button(
-            f_botones, text="Guardar en archivo fuente (permanente)", font=("Segoe UI", 9, "bold"),
-            bg="#c0392b", fg="white", relief="flat", cursor="hand2",
-            state="disabled", command=self._guardar_valor_en_archivo)
-        self.btn_guardar_archivo.pack(side="left", padx=8, ipadx=6, ipady=3)
-        Tooltip(self.btn_guardar_archivo,
-                # SIS-A-14: decia 'Reescribe \'valor=None\'', y reescribe
-                # CUALQUIER valor -- tambien el de un criterio ya declarado --.
-                # El texto que lee el usuario tiene que decir lo mismo que el
-                # docstring de `escribir_valor_en_archivo`, o la correccion
-                # solo llega a quien lee el codigo.
-                "Reescribe el 'valor=' del criterio -- este declarado o no --\n"
-                "DIRECTAMENTE en criterios_adoptados.py. Pide confirmacion.\n"
-                "Etiqueta, justificacion y fuente no se tocan: revisalas a\n"
-                "mano si la razon del valor cambio.\n"
-                "No alcanza a los valores que son tabla, dict o tupla: esos\n"
-                "se rechazan y se editan a mano.")
+        ttk.Separator(f_declarar, orient="horizontal").grid(
+            row=3, column=0, columnspan=2, sticky="ew", pady=8)
+
+        f_permanente = ttk.Frame(f_declarar)
+        f_permanente.grid(row=4, column=0, columnspan=2, sticky="w")
+
+        self.btn_guardar_archivo = BotonAccion(
+            f_permanente, "Guardar en archivo fuente (permanente)",
+            fondo="#c0392b",
+            command=self._guardar_valor_en_archivo, motivo=MOTIVO_SIN_CRITERIO,
+            ayuda=
+                  # SIS-A-14: decia 'Reescribe \'valor=None\'', y reescribe
+                  # CUALQUIER valor -- tambien el de un criterio ya declarado --.
+                  # El texto que lee el usuario tiene que decir lo mismo que el
+                  # docstring de `escribir_valor_en_archivo`, o la correccion
+                  # solo llega a quien lee el codigo.
+                  "Reescribe el 'valor=' del criterio -- este declarado o no --\n"
+                  "DIRECTAMENTE en criterios_adoptados.py. Pide confirmacion.\n"
+                  "Etiqueta, justificacion y fuente no se tocan: revisalas a\n"
+                  "mano si la razon del valor cambio.\n"
+                  "No alcanza a los valores que son tabla, dict o tupla: esos\n"
+                  "se rechazan y se editan a mano.")
+        self.btn_guardar_archivo.pack(side="left", ipadx=6, ipady=3)
 
         self.lbl_estado_criterio = ttk.Label(p, text="", style="Ayuda.TLabel",
                                               wraplength=980, justify="left")
         self.lbl_estado_criterio.grid(row=4, column=0, sticky="w", padx=10, pady=(0, 10))
 
         self._clave_criterio_seleccionado = None
+        self._seleccion_fuera_del_filtro = False
+        # Refiltrar al escribir, no al pulsar: es la misma regla que la
+        # Sec. 4.3 le pide al campo validable, y la que hace util un buscador.
+        # La traza se engancha AQUI, al final: `_llenar_tabla_criterios` usa la
+        # tabla, la etiqueta de recuento y la clave seleccionada, y engancharla
+        # antes de que existan las tres deja la ventana a merced del orden en
+        # que se escriban las variables.
+        for var in (self.filtro_estado_var, self.filtro_texto_var):
+            var.trace_add("write", lambda *_a: self._llenar_tabla_criterios())
         self._llenar_tabla_criterios()
 
     def _estado_criterio(self, clave):
@@ -467,9 +617,46 @@ class ExpedienteApp:
             return "PENDIENTE", "pendiente"
         return "resuelto", "resuelto"
 
+    def _tag_del_filtro(self):
+        """El tag de `_estado_criterio` que pide el filtro, o None si «Todos»."""
+        rotulo = self.filtro_estado_var.get()
+        for texto, tag in FILTROS_DE_ESTADO:
+            if texto == rotulo:
+                return tag
+        return None
+
+    def _pasa_el_filtro(self, clave, tag):
+        """
+        Si esta fila se pinta con el filtro puesto.
+
+        EL CRITERIO SELECCIONADO PASA SIEMPRE, y no es una excepcion comoda:
+        declarar un valor CAMBIA el estado de su fila --- de «PENDIENTE» a
+        «declarado (corrida)» ---, de modo que con «Solo PENDIENTES» puesto la
+        fila desapareceria en el mismo instante en que se declara. El usuario
+        perderia de vista lo que acaba de hacer justo cuando quiere
+        comprobarlo, y `selection_set` quedaria apuntando a una fila que ya no
+        existe.
+        """
+        if clave == self._clave_criterio_seleccionado:
+            self._seleccion_fuera_del_filtro = not self._encaja_en_el_filtro(clave, tag)
+            return True
+        return self._encaja_en_el_filtro(clave, tag)
+
+    def _encaja_en_el_filtro(self, clave, tag):
+        """Si la fila cumple el filtro, sin la excepcion de la seleccionada."""
+        pedido = self._tag_del_filtro()
+        if pedido is not None and tag != pedido:
+            return False
+        texto = self.filtro_texto_var.get().strip().lower()
+        if not texto:
+            return True
+        return texto in clave.lower() or texto in ca.criterio(clave).concepto.lower()
+
     def _llenar_tabla_criterios(self):
         for item in self.tree_criterios_todos.get_children():
             self.tree_criterios_todos.delete(item)
+        pendientes = mostrados = 0
+        self._seleccion_fuera_del_filtro = False
         # El valor efectivo NO se recalcula aqui: lo da `criterio_efectivo`,
         # la misma funcion que leen M11 y el JSON. Tres copias de la regla
         # "override si lo hay, archivo si no" son tres sitios donde puede
@@ -478,23 +665,66 @@ class ExpedienteApp:
             c = ca.criterio(clave)
             valor_efectivo = ca.criterio_efectivo(clave).valor
             estado_txt, tag = self._estado_criterio(clave)
+            if tag == "pendiente":
+                pendientes += 1
+            if not self._pasa_el_filtro(clave, tag):
+                continue
+            mostrados += 1
             self.tree_criterios_todos.insert("", "end", iid=clave, values=(
                 clave, c.etiqueta, c.concepto,
                 "(sin declarar)" if valor_efectivo is None else repr(valor_efectivo),
                 estado_txt, c.fuente,
             ), tags=(tag,))
+        self._pintar_recuento(pendientes, mostrados)
+
+    def _pintar_recuento(self, pendientes, mostrados):
+        """
+        «33 de 69 pendientes», y cuantas filas deja ver el filtro.
+
+        Los dos numeros salen del MISMO recorrido que pinta la tabla, no de un
+        conteo aparte: un recuento calculado por su cuenta puede decir un
+        numero mientras la tabla muestra otro, y entonces el que sobra es el
+        recuento.
+        """
+        total = len(ca.CRITERIOS)
+        texto = f"{pendientes} de {total} pendientes"
+        if mostrados != total:
+            texto += f"  |  el filtro muestra {mostrados}"
+        # Y SE DICE CUANDO UNA DE ESAS FILAS NO ENCAJA. La seleccionada se
+        # muestra siempre --- si no, se esfumaria justo al declararla ---, y
+        # sin decirlo el recuento parecia equivocado: "33 pendientes, el filtro
+        # muestra 34" no se entiende hasta que alguien explica cual es la de
+        # mas. La frase no dice «la seleccionada» a proposito: la fila forzada
+        # se queda a la vista hasta el proximo refiltrado, de modo que despues
+        # de pinchar en otra sigue siendo cierto que hay una que no encaja, y
+        # deja de ser cierto que sea la seleccionada.
+        if self._seleccion_fuera_del_filtro:
+            texto += " (incluida 1 que no encaja, para no perderla de vista)"
+        self.lbl_recuento_criterios.config(
+            text=texto, foreground=COLOR_ERROR if pendientes else COLOR_OK)
 
     def _al_seleccionar_criterio(self, _evt=None):
         seleccion = self.tree_criterios_todos.selection()
         self.txt_detalle_criterio.configure(state="normal")
         self.txt_detalle_criterio.delete("1.0", "end")
+        # La linea de estado se limpia AL CAMBIAR DE FILA, y solo entonces.
+        # Sin limpiarla, el "Error: ..." de un criterio se quedaba escrito
+        # debajo del siguiente, que es atribuirle a una fila el problema de
+        # otra. Limpiandola SIEMPRE se rompia lo contrario: declarar reselecciona
+        # la misma fila --- `_aplicar_valor_corrida` hace `selection_set` para
+        # que no se pierda de vista ---, ese `selection_set` vuelve a entrar
+        # aqui, y el mensaje de confirmacion que se acababa de escribir se
+        # borraba antes de que nadie lo leyera. La condicion es el cambio de
+        # clave, no el evento.
+        nueva = seleccion[0] if seleccion else None
+        if nueva != self._clave_criterio_seleccionado:
+            self.lbl_estado_criterio.config(text="")
         if not seleccion:
             self._clave_criterio_seleccionado = None
             self.lbl_criterio_seleccionado.config(text="(ninguno seleccionado)")
-            self.btn_aplicar_corrida.config(state="disabled")
-            self.btn_quitar_declarado.config(state="disabled")
-            self.btn_guardar_archivo.config(state="disabled")
-            self.btn_ventana_norma.config(state="disabled")
+            for boton in (self.btn_aplicar_corrida, self.btn_quitar_declarado,
+                          self.btn_guardar_archivo, self.btn_ventana_norma):
+                boton.deshabilitar(MOTIVO_SIN_CRITERIO)
             self.txt_detalle_criterio.configure(state="disabled")
             return
 
@@ -503,9 +733,15 @@ class ExpedienteApp:
         self._clave_criterio_seleccionado = clave
         self.lbl_criterio_seleccionado.config(text=clave)
 
+        # LA FUENTE VA PRIMERA. Es la que dice DE DONDE sale el valor --- lo
+        # que la taxonomia de CLAUDE.md convierte en la pregunta central de
+        # cada fila --- y en la tabla no cabe: la mediana de este campo son 280
+        # caracteres y el mas largo tiene 4900, contra los ~45 que entran en la
+        # columna. Ninguna anchura de columna arregla eso; el sitio donde el
+        # texto entero cabe es este panel, y por eso encabeza.
         lineas = [
-            f"Justificacion : {c.justificacion}",
             f"Fuente        : {c.fuente}",
+            f"Justificacion : {c.justificacion}",
             f"Se resuelve   : {ve.variable(clave).modo.value} "
             "(doble clic abre su ventana normativa)",
         ]
@@ -527,11 +763,14 @@ class ExpedienteApp:
         self.valor_declarado_var.set("" if valor_actual is None else str(valor_actual))
 
         en_caliente = ca.declarado_en_caliente(clave)
+        # `puede_declarar` decia `c.valor is None or en_caliente` y la linea de
+        # abajo volvia a preguntar `or c.valor is None`: la misma condicion
+        # dos veces. Se deja una.
         puede_declarar = c.valor is None or en_caliente
-        self.btn_aplicar_corrida.config(state="normal" if puede_declarar or c.valor is None else "disabled")
-        self.btn_quitar_declarado.config(state="normal" if en_caliente else "disabled")
-        self.btn_guardar_archivo.config(state="normal")
-        self.btn_ventana_norma.config(state="normal")
+        self.btn_aplicar_corrida.estado(puede_declarar, MOTIVO_YA_RESUELTO)
+        self.btn_quitar_declarado.estado(en_caliente, MOTIVO_NO_DECLARADO)
+        self.btn_guardar_archivo.habilitar()
+        self.btn_ventana_norma.habilitar()
 
     def _abrir_ventana_normativa(self, _evt=None):
         """
@@ -810,30 +1049,61 @@ class ExpedienteApp:
         f_exp = ttk.Frame(p)
         f_exp.pack(fill="x")
 
-        self.btn_json = tk.Button(f_exp, text="Exportar JSON", font=("Segoe UI", 9, "bold"),
-                                  bg="#16a085", fg="white", relief="flat", cursor="hand2",
-                                  state="disabled", command=self.exportar_json)
+        # LOS CUATRO NACEN APAGADOS Y DICIENDO POR QUE. El motivo es siempre
+        # el mismo --- no hay informe hasta que se ejecuta el pipeline --- y
+        # hasta aqui no estaba escrito en ningun sitio: los botones salian
+        # grises y el usuario tenia que deducirlo. Es el bloqueo mas frecuente
+        # de esta ventana y era el unico mudo.
+        self.btn_json = BotonAccion(
+            f_exp, "Exportar JSON", fondo="#16a085",
+            command=self.exportar_json, motivo=MOTIVO_SIN_CORRIDA,
+            ayuda="El informe completo de la corrida en JSON.")
         self.btn_json.pack(side="left", padx=(0, 8), ipadx=8, ipady=4)
 
-        self.btn_html = tk.Button(f_exp, text="Exportar memoria (HTML)", font=("Segoe UI", 9, "bold"),
-                                  bg="#2e86c1", fg="white", relief="flat", cursor="hand2",
-                                  state="disabled", command=self.exportar_html)
+        self.btn_html = BotonAccion(
+            f_exp, "Exportar memoria (HTML)", fondo="#2e86c1", command=self.exportar_html, motivo=MOTIVO_SIN_CORRIDA,
+            ayuda="La memoria de calculo (M11) con la plantilla que\n"
+                  "corresponde al alcance de la corrida.")
         self.btn_html.pack(side="left", padx=8, ipadx=8, ipady=4)
 
-        self.btn_pdf = tk.Button(f_exp, text="Exportar memoria (PDF)", font=("Segoe UI", 9, "bold"),
-                                 bg="#8e44ad", fg="white", relief="flat", cursor="hand2",
-                                 state="disabled", command=self.exportar_pdf)
+        self.btn_pdf = BotonAccion(
+            f_exp, "Exportar memoria (PDF)", fondo="#8e44ad", command=self.exportar_pdf, motivo=MOTIVO_SIN_CORRIDA,
+            ayuda=self._ayuda_del_pdf())
         self.btn_pdf.pack(side="left", padx=8, ipadx=8, ipady=4)
-        Tooltip(self.btn_pdf, "Usa weasyprint si esta instalado.\n"
-                              "Si no lo esta, abre la memoria en el navegador\n"
-                              "para imprimirla como PDF (Ctrl+P).")
 
-        self.btn_csv = tk.Button(f_exp, text="Exportar cuadro resumen (CSV)", font=("Segoe UI", 9, "bold"),
-                                 bg="#16a085", fg="white", relief="flat", cursor="hand2",
-                                 state="disabled", command=self.exportar_csv)
+        self.btn_csv = BotonAccion(
+            f_exp, "Exportar cuadro resumen (CSV)", fondo="#16a085", command=self.exportar_csv, motivo=MOTIVO_SIN_CORRIDA,
+            ayuda="El cuadro resumen (entregable 3 de M11), una fila\n"
+                  "por punto, en una hoja de calculo.")
         self.btn_csv.pack(side="left", padx=8, ipadx=8, ipady=4)
-        Tooltip(self.btn_csv, "El cuadro resumen (entregable 3 de M11), una fila\n"
-                              "por punto, en una hoja de calculo.")
+
+    def _ayuda_del_pdf(self):
+        """
+        Por que via saldra el PDF, DICHO ANTES DE PULSAR y no despues.
+
+        `M11_reporte` intenta `from weasyprint import HTML` dentro de un
+        `except Exception` --- que atrapa tanto el `ImportError` de «no esta
+        instalado» como el `OSError` de «esta instalado y sus librerias
+        nativas no cargan», que es el caso de Windows sin GTK ---. Si no
+        cargo, la exportacion NO falla: escribe el HTML y lo abre en el
+        navegador para imprimirlo con Ctrl+P. Eso funciona, y aun asi conviene
+        decirlo de antemano: quien pulsa «Exportar memoria (PDF)» y ve
+        aparecer un navegador cree que algo se rompio.
+
+        Se lee `WeasyHTML` --- el MISMO simbolo que decide la via --- y no una
+        comprobacion propia: dos formas de preguntar «¿hay weasyprint?» son
+        dos respuestas que pueden discrepar, y la que veria el usuario seria
+        la equivocada.
+        """
+        if M11.WeasyHTML is not None:
+            return ("Escribe el PDF directamente con weasyprint.\n"
+                    "La hoja ya esta configurada en A4.")
+        return ("weasyprint no esta operativo en esta maquina: o no esta\n"
+                "instalado, o esta instalado y sus librerias nativas (GTK,\n"
+                "cairo, pango) no cargan --- lo corriente en Windows ---.\n"
+                "NO es un bloqueo: al pulsar se escribe la memoria en HTML\n"
+                "junto al destino que elijas y se abre en el navegador para\n"
+                "guardarla como PDF con Ctrl+P (la hoja ya esta en A4).")
 
     # ------------------------------------------------------------------
     # Lectura de banderas
@@ -875,7 +1145,8 @@ class ExpedienteApp:
         if texto_externos:
             ruta_externos = Path(texto_externos)
 
-        self.btn_ejecutar.config(state="disabled", text="Ejecutando...")
+        self.btn_ejecutar.deshabilitar("la corrida esta en marcha")
+        self.btn_ejecutar.config(text="Ejecutando...")
         self.root.update_idletasks()
         try:
             externos = cli.cargar_datos_externos(ruta_externos, self._leer_banderas())
@@ -905,12 +1176,18 @@ class ExpedienteApp:
             messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
             return
         finally:
-            self.btn_ejecutar.config(state="normal", text="EJECUTAR PIPELINE (M0 -> M10)")
+            self.btn_ejecutar.habilitar()
+            self.btn_ejecutar.config(text="EJECUTAR PIPELINE (M0 -> M10)")
 
         self._llenar_tabla_puntos()
         self._llenar_resumen()
         for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv):
-            btn.config(state="normal")
+            btn.habilitar()
+        # La via del PDF se relee AQUI y no solo al construir la ventana: es
+        # barato y evita que la ayuda hable de una maquina distinta de la que
+        # acaba de correr.
+        self.btn_pdf.ayuda = self._ayuda_del_pdf()
+        self.btn_pdf.tooltip.texto = self.btn_pdf.ayuda
         self.lbl_estado.config(
             text=f"Ejecutado ({self.informe.generado}). "
                  f"{self.informe.dimensionados}/{len(self.informe.puntos)} puntos dimensionados. "
@@ -920,7 +1197,8 @@ class ExpedienteApp:
     def _mostrar_error_entrada(self, mensaje):
         self.lbl_error_datos.config(text=mensaje)
         self.nb.select(self.tab_datos)
-        self.btn_ejecutar.config(state="normal", text="EJECUTAR PIPELINE (M0 -> M10)")
+        self.btn_ejecutar.habilitar()
+        self.btn_ejecutar.config(text="EJECUTAR PIPELINE (M0 -> M10)")
 
     # ------------------------------------------------------------------
     # Volcado a las tablas

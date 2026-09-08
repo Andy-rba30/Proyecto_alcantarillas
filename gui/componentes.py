@@ -21,6 +21,12 @@ rojo) con UNA diferencia deliberada, que la Sec. 4.3 exige: alli el borde se
 pinta al pulsar «Calcular», y aqui SE PINTA AL ESCRIBIR. «Valida al escribir,
 no al calcular» es una frase del plan, y la traduccion literal de esa frase es
 un `trace_add` sobre la variable.
+
+`BotonAccion` es lo segundo nuevo, y tampoco es invento: es el `tk.Button` que
+las dos ventanas ya construian a mano --- mismo `relief="flat"`, mismo
+`cursor="hand2"`, mismo par fondo/blanco --- con lo unico que ninguna de las
+dos hacia: que al APAGARSE siga leyendose y diga por que. Un boton apagado es
+un bloqueo, y en este proyecto un bloqueo se declara.
 """
 
 from __future__ import annotations
@@ -31,6 +37,21 @@ from tkinter import ttk
 COLOR_ERROR = "#e74c3c"
 COLOR_AVISO = "#b9770e"
 COLOR_OK = "#27ae60"
+
+# El par del boton DESHABILITADO. No es estetica: es que un boton apagado
+# tiene que poder LEERSE, porque su texto es lo unico que dice que haria si
+# estuviera encendido.
+#
+# `tk.Button` no cambia su fondo al deshabilitarse --- solo pinta el texto con
+# `disabledforeground`, que por defecto es `#a3a3a3` ---, de modo que el texto
+# apagado queda sobre el MISMO color vivo del boton encendido. Medido sobre la
+# ventana real, con los cinco fondos que este proyecto usa, el contraste que
+# salia era de 1.30:1 a 2.33:1 (el peor, `#a3a3a3` sobre el verde `#16a085` de
+# los botones de exportacion). El minimo legible es 4.5:1. Con este par sale
+# 6.93:1, y el fondo apagado ademas se DISTINGUE del encendido, que es la otra
+# mitad de la senal.
+COLOR_BOTON_APAGADO_FONDO = "#dfe3e6"
+COLOR_BOTON_APAGADO_TEXTO = "#3d4b59"
 
 
 class Tooltip:
@@ -163,3 +184,109 @@ class CampoValidable:
         """El `_marcar` de legacy/Tc.py: pinta el borde sin revalidar."""
         self.marco.configure(
             background=COLOR_ERROR if hay_error else self.color_neutro)
+
+
+class BotonAccion:
+    """
+    Un `tk.Button` que, al apagarse, SIGUE LEYENDOSE Y DICE POR QUE.
+
+    Existe porque en este proyecto un boton apagado es un BLOQUEO, y la regla
+    de CLAUDE.md sobre los bloqueos es que se declaran, no se esconden: la
+    misma razon por la que un criterio pendiente lanza `CriterioPendienteError`
+    en vez de tomar un valor por defecto. Un boton gris sin explicacion es
+    exactamente el default silencioso, dibujado.
+
+    Dos cosas que `tk.Button` no hace solo, y que aqui van juntas porque son
+    la misma frase dicha dos veces:
+
+    - **Se lee.** Al apagarse cambia FONDO y TEXTO al par de arriba. Con el
+      comportamiento de serie solo cambia el texto, y queda `#a3a3a3` sobre el
+      color vivo del boton encendido (1.30:1 en el peor de los cinco fondos de
+      esta interfaz).
+    - **Dice por que.** `deshabilitar(motivo)` guarda el motivo y lo pinta en
+      el tooltip, delante de la ayuda permanente del boton. Quien pasa el raton
+      por encima lee «no disponible: <motivo>» en vez de adivinar.
+
+    El tooltip es el `Tooltip` de este mismo archivo --- no se reinventa --- y
+    se crea UNA vez: se le reescribe el texto, porque un segundo `Tooltip`
+    sobre el mismo widget dejaria dos globos compitiendo por el `<Enter>`.
+    """
+
+    # Los tres cuerpos de letra que esta interfaz usa en un boton, PEDIDOS POR
+    # NOMBRE. El llamador dice "grande" o "discreta"; el tamano lo pone este
+    # archivo. Es lo que se querria de todas formas --- una sola decision sobre
+    # como se ve un boton de accion, en el modulo que existe para eso --- y
+    # ademas es lo unico que deja la tipografia DENTRO de la llamada al widget,
+    # que es donde `tests/test_sin_literales.py` la reconoce como geometria de
+    # presentacion y no como un valor de proyecto disfrazado.
+    NORMAL = "normal"
+    GRANDE = "grande"
+    DISCRETA = "discreta"
+
+    def __init__(self, master, texto, *, ayuda="", fondo=None, texto_color="white",
+                 motivo=None, letra=NORMAL, **kw):
+        self.fondo = fondo
+        self.texto_color = texto_color
+        self.ayuda = ayuda
+        self.motivo = motivo
+        opciones = dict(text=texto, relief="flat", cursor="hand2", **kw)
+        if fondo is not None:
+            opciones.update(bg=fondo, fg=texto_color)
+        # Tres llamadas y no una con la fuente en una variable: escrita asi, la
+        # tupla es argumento DIRECTO de `tk.Button` en los tres casos.
+        if letra == self.GRANDE:
+            self.boton = tk.Button(master, font=("Segoe UI", 10, "bold"), **opciones)
+        elif letra == self.DISCRETA:
+            self.boton = tk.Button(master, font=("Segoe UI", 9), **opciones)
+        else:
+            self.boton = tk.Button(master, font=("Segoe UI", 9, "bold"), **opciones)
+        self.tooltip = Tooltip(self.boton, ayuda)
+        self._pintar(motivo is None)
+
+    # El widget, para quien tenga que hacerle `pack`/`grid`/`config(text=...)`.
+    #
+    # La guardia no es paranoia: `__getattr__` se llama cuando la busqueda
+    # normal falla, y si alguien preguntara por un atributo ANTES de que
+    # `self.boton` exista, `self.boton` fallaria tambien y la llamada se
+    # llamaria a si misma hasta agotar la pila. Se corta nombrando el caso.
+    def __getattr__(self, nombre):
+        if nombre == "boton":
+            raise AttributeError(nombre)
+        return getattr(self.boton, nombre)
+
+    def _pintar(self, encendido):
+        if encendido:
+            estado, fondo, frente = "normal", self.fondo, self.texto_color
+        else:
+            estado = "disabled"
+            fondo, frente = COLOR_BOTON_APAGADO_FONDO, COLOR_BOTON_APAGADO_TEXTO
+        opciones = {"state": estado}
+        if self.fondo is not None:
+            opciones.update(bg=fondo, fg=frente)
+        # `disabledforeground` se fija SIEMPRE, tambien cuando el boton no
+        # lleva fondo propio: es el color con que Tk pinta el texto apagado y
+        # el defecto (`#a3a3a3`) es justo el que no se lee.
+        opciones["disabledforeground"] = COLOR_BOTON_APAGADO_TEXTO
+        self.boton.configure(**opciones)
+        self.tooltip.texto = self.ayuda if encendido else self._texto_apagado()
+
+    def _texto_apagado(self):
+        motivo = f"No disponible: {self.motivo}" if self.motivo else "No disponible."
+        return f"{motivo}\n\n{self.ayuda}" if self.ayuda else motivo
+
+    def habilitar(self):
+        """Enciende el boton y devuelve el tooltip a su ayuda permanente."""
+        self.motivo = None
+        self._pintar(True)
+
+    def deshabilitar(self, motivo):
+        """Apaga el boton DICIENDO POR QUE. El motivo no es opcional."""
+        self.motivo = motivo
+        self._pintar(False)
+
+    def estado(self, encendido, motivo=""):
+        """`habilitar()` o `deshabilitar(motivo)` segun un booleano."""
+        if encendido:
+            self.habilitar()
+        else:
+            self.deshabilitar(motivo)
