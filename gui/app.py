@@ -137,16 +137,6 @@ FORMATO_SESION = 2
 # motivo no es opcional --- por la misma razon por la que un criterio [A] sin
 # valor lanza excepcion en vez de tomar un defecto: un bloqueo se declara.
 MOTIVO_SIN_CRITERIO = "no hay ningun criterio seleccionado en la tabla"
-# El motivo dice lo que el codigo HACE, no lo que seria comodo. Un criterio ya
-# resuelto en el archivo no se puede pisar solo para una corrida desde esta
-# tabla --- la condicion es `c.valor is None or en_caliente`, y viene de antes
-# de este cambio ---, de modo que la unica via es la permanente. Decir «quitalo
-# antes» seria mandar al usuario a un boton que tampoco esta encendido: no hay
-# ninguna declaracion que quitar.
-MOTIVO_YA_RESUELTO = (
-    "el criterio ya tiene valor en criterios_adoptados.py, y desde esta tabla "
-    "un valor de archivo no se pisa solo para una corrida. La via es "
-    "'Guardar en archivo fuente', que lo cambia de forma permanente")
 MOTIVO_NO_DECLARADO = "el criterio no esta declarado para esta corrida"
 MOTIVO_SIN_CORRIDA = "todavia no se ejecuto el pipeline: no hay informe que exportar"
 MOTIVO_EJECUTANDO = "la corrida esta en marcha"
@@ -159,6 +149,7 @@ FILTROS_DE_ESTADO = (
     ("Todos", None),
     ("Solo PENDIENTES", "pendiente"),
     ("Declarados en esta corrida", "declarado_corrida"),
+    ("PISADOS en esta corrida", "pisado_corrida"),
     ("Resueltos en el archivo", "resuelto"),
 )
 
@@ -396,7 +387,13 @@ class ExpedienteApp:
                  "Ninguna fila de esta tabla es normativa: lo normativo vive "
                  "en constantes_normativas.py y no se declara desde aqui. "
                  "Las filas en rojo son criterios PENDIENTES (valor=None): bloquean "
-                 "cualquier calculo que los invoque hasta que se declare un valor.",
+                 "cualquier calculo que los invoque hasta que se declare un valor. "
+                 "Las filas en ambar son declaradas SOLO para esta corrida, y son de "
+                 "dos clases que no se confunden: «declarado (corrida)» rellena un "
+                 "vacio, y «pisado (corrida)» sustituye un valor que el archivo SI "
+                 "tiene y que sigue diciendo otra cosa. La memoria imprime los "
+                 "pisados en su propio bloque, con el valor del archivo al lado: "
+                 "sirven para TANTEAR, no para entregar.",
             style="Ayuda.TLabel", wraplength=980, justify="left",
         ).pack(anchor="w", pady=(2, 8))
 
@@ -471,6 +468,13 @@ class ExpedienteApp:
                                                  foreground=COLOR_ERROR)
         self.tree_criterios_todos.tag_configure("declarado_corrida",
                                                  background="#fef9e7",
+                                                 foreground=COLOR_AVISO)
+        # El pisado se pinta como AVISO y con fondo propio: no es un vacio
+        # (rojo) ni un valor del archivo (verde) ni un hueco rellenado
+        # (ambar claro). Es el unico estado en que la tabla y el archivo
+        # discrepan, y tiene que verse de un vistazo.
+        self.tree_criterios_todos.tag_configure("pisado_corrida",
+                                                 background="#fdebd0",
                                                  foreground=COLOR_AVISO)
         self.tree_criterios_todos.tag_configure("resuelto", foreground=COLOR_OK)
         self.tree_criterios_todos.bind("<<TreeviewSelect>>", self._al_seleccionar_criterio)
@@ -555,7 +559,9 @@ class ExpedienteApp:
             f_botones, "Quitar declaracion de la corrida",
             letra=BotonAccion.DISCRETA, command=self._quitar_valor_corrida, motivo=MOTIVO_SIN_CRITERIO,
             ayuda="Retira el valor declarado para esta corrida Y su\n"
-                  "procedencia. El criterio vuelve a bloquear el calculo.")
+                  "procedencia. Lo que queda debajo depende de lo que habia:\n"
+                  "si el criterio estaba vacio vuelve a bloquear el calculo;\n"
+                  "si estaba PISADO vuelve a gobernar el valor del archivo.")
         self.btn_quitar_declarado.pack(side="left", padx=8, ipadx=6, ipady=3)
 
         self.btn_ventana_norma = BotonAccion(
@@ -611,9 +617,22 @@ class ExpedienteApp:
         self._llenar_tabla_criterios()
 
     def _estado_criterio(self, clave):
-        """(texto, tag) del estado de un criterio para la tabla y el detalle."""
+        """
+        (texto, tag) del estado de un criterio para la tabla y el detalle.
+
+        CUATRO ESTADOS Y NO TRES desde que se puede PISAR un valor de archivo.
+        «declarado (corrida)» y «pisado (corrida)» son los dos declarados en
+        caliente y NO comparten rotulo a proposito: el primero rellena un vacio
+        y deja el expediente donde estaba; el segundo sustituye una decision ya
+        transcrita, que sigue en el archivo diciendo otra cosa. Reutilizar el
+        mismo tag para los dos habria hecho invisible en la tabla la unica
+        diferencia que importa --- la que separa tantear de falsear ---, que es
+        la forma exacta que tuvo SIS-A-01.
+        """
         if ca.declarado_en_caliente(clave):
-            return "declarado (corrida)", "declarado_corrida"
+            if ca.criterio(clave).valor is None:
+                return "declarado (corrida)", "declarado_corrida"
+            return "pisado (corrida)", "pisado_corrida"
         if ca.criterio(clave).valor is None:
             return "PENDIENTE", "pendiente"
         return "resuelto", "resuelto"
@@ -797,11 +816,16 @@ class ExpedienteApp:
         self.valor_declarado_var.set("" if valor_actual is None else str(valor_actual))
 
         en_caliente = ca.declarado_en_caliente(clave)
-        # `puede_declarar` decia `c.valor is None or en_caliente` y la linea de
-        # abajo volvia a preguntar `or c.valor is None`: la misma condicion
-        # dos veces. Se deja una.
-        puede_declarar = c.valor is None or en_caliente
-        self.btn_aplicar_corrida.estado(puede_declarar, MOTIVO_YA_RESUELTO)
+        # DECLARAR EN CALIENTE YA NO DEPENDE DE QUE EL CRITERIO ESTE VACIO.
+        # La condicion era `c.valor is None or en_caliente`, y con ella un
+        # criterio resuelto no se podia pisar para una corrida... mientras que
+        # el boton rojo de al lado SI lo reescribia permanentemente. La puerta
+        # ancha abierta y la estrecha cerrada: quien queria TANTEAR un espesor
+        # tenia que modificar el expediente para hacer el ensayo.
+        # Lo que sostiene que ahora se pueda no es este boton: es que un pisado
+        # se rotula distinto (`_estado_criterio`), se filtra aparte y sale en
+        # la memoria en su propio bloque con el valor del archivo al lado.
+        self.btn_aplicar_corrida.habilitar()
         self.btn_quitar_declarado.estado(en_caliente, MOTIVO_NO_DECLARADO)
         self.btn_guardar_archivo.habilitar()
         self.btn_ventana_norma.habilitar()
@@ -927,10 +951,25 @@ class ExpedienteApp:
         # `dec.olvidar` retira el valor Y su procedencia. Retirar solo el
         # valor dejaria una procedencia hablando de un numero que ya no
         # gobierna nada, que es peor que no tener procedencia.
+        # QUE PASA AL QUITAR DEPENDE DE QUE HABIA DEBAJO, y hasta aqui el
+        # mensaje afirmaba una sola de las dos cosas. `quitar_valor_dinamico`
+        # solo saca el override, de modo que `criterio_efectivo` cae al valor
+        # del ARCHIVO: si el criterio estaba vacio, vuelve a bloquear; si
+        # estaba pisado, vuelve al valor transcrito y no bloquea nada. Decir
+        # «vuelve a bloquear el calculo» de un pisado es exactamente el defecto
+        # que este cambio tenia que no cometer: un mensaje que describe un
+        # estado distinto del que el programa acaba de dejar.
+        valor_archivo = ca.criterio(clave).valor
         dec.olvidar(clave)
-        self.lbl_estado_criterio.config(
-            text=f"Se quito la declaracion de '{clave}': vuelve a bloquear el calculo.",
-            foreground=COLOR_AVISO)
+        if valor_archivo is None:
+            texto = (f"Se quito la declaracion de '{clave}': el criterio "
+                     "vuelve a estar PENDIENTE y bloquea el calculo que lo "
+                     "invoque.")
+        else:
+            texto = (f"Se quito el valor pisado de '{clave}': vuelve a "
+                     f"gobernar el del archivo, {valor_archivo!r}. No bloquea "
+                     "nada.")
+        self.lbl_estado_criterio.config(text=texto, foreground=COLOR_AVISO)
         self._llenar_tabla_criterios()
 
     def _guardar_valor_en_archivo(self):

@@ -5573,28 +5573,26 @@ que no se equivocó. No la convierte en medición retroactivamente.
   no necesita servidor X, de modo que allí los dos ejes sí se separan. La única máquina
   del proyecto que puede tomar esa medición es aquélla.
 
-#### El árbol de esta sesión: `collected` sube a 1733
+#### El árbol de esta sesión: `collected` sube a 1744
 
-Esta sesión añadió **un** test —`test_la_seleccion_de_la_tabla_sobrevive_al_filtro`, que
-ejercita la selección real del `Treeview` sobre una ventana de verdad— y con él
-`collected` pasa de 1732 a **1733**. Los pares de arriba **no se reescriben**: son
-medidas de `f56a555` y siguen siendo ciertas de `f56a555`. Sobre el árbol nuevo:
+Los pares de arriba **no se reescriben**: son medidas de `f56a555` y siguen siendo
+ciertas de `f56a555`. Esta sesión añadió **doce** tests y `collected` pasa de 1732 a
+**1744** — uno de selección real del `Treeview`, cinco del motor de declaración al pisar
+un valor de archivo, cuatro del bloque de pisados en la memoria y dos del cuarto estado
+de la GUI:
 
 | PyMuPDF | Ventana Tk | `sh` en PATH | `passed` | `skipped` | procedencia |
 |---|---|---|---|---|---|
-| sí | sí | sí | **1732** | **1** | medida |
-| sí | no | no | **1726** | **7** | medida, PATH vacío |
-| sí | sí | no | 1728 | 5 | derivada (no medible aquí: ver `xvfb-run` arriba) |
-| sí | no | sí | 1730 | 3 | derivada |
+| sí | sí | sí | **1743** | **1** | medida |
+| sí | no | no | **1737** | **7** | derivada del delta conocido |
+| sí | sí | no | 1739 | 5 | derivada (no medible aquí: ver `xvfb-run` arriba) |
+| sí | no | sí | 1741 | 3 | derivada |
 
-El test nuevo se salta con la ventana, igual que el de la corrida de perfil, de modo que
-la columna «Ventana Tk = no» resta ahora **2** y no 1. Y la derivación de
-`sí / sí / no` = 1728 / 5 se cruza con la medición de Windows del árbol anterior
-(1727 / 5, más el test nuevo que allí también pasaría) y da lo mismo: es el mismo
-cruce por dos caminos que ya se usó en esta sección, con el mismo valor de prueba —
-ninguno.
+Solo **uno** de los doce depende de la ventana; los otros once corren en cualquier
+configuración. De ahí que la columna «Ventana Tk = no» siga restando **2** —el de la
+corrida de perfil y el de la selección— y no doce.
 
-`collected` se mantiene en 1733 en las cuatro, que es la comprobación que no depende de
+`collected` se mantiene en 1744 en las cuatro, que es la comprobación que no depende de
 ninguna: si `passed + skipped` deja de dar `collected`, hay un fallo o un error de
 recolección y no una dependencia ausente.
 

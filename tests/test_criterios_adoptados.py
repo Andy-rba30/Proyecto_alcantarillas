@@ -1619,3 +1619,108 @@ def test_regla_8_la_fila_de_gamma_EV_del_cajon_es_porticos_rigidos():
     porticos = TABLA_GAMMA_P_FILAS["EV_porticos_rigidos"]
     tubo = TABLA_GAMMA_P_FILAS["EV_estructura_rigida_enterrada"]
     assert porticos != tubo
+
+
+# ===========================================================================
+# Pisar un valor del archivo: el tanteo que la GUI no dejaba hacer
+# ===========================================================================
+# La restriccion NUNCA estuvo aqui --- `establecer_valor_dinamico` jamas
+# comprobo `valor is None` ---: vivia sola en `gui/app.py`, en un
+# `puede_declarar`. Estos tests fijan las dos mitades del cambio: que se puede
+# pisar, y que pisar SE DISTINGUE de rellenar en todos los sitios donde un
+# lector podria confundirlos.
+
+
+class TestPisarUnValorDelArchivo:
+
+    def test_se_puede_declarar_en_caliente_sobre_un_criterio_resuelto(
+            self, _limpia_overrides):
+        """
+        Lo que el encargo pedia: tantear sin tocar criterios_adoptados.py.
+
+        Antes habia que reescribir el archivo fuente para probar un valor, o
+        sea modificar el expediente para hacer un ensayo. La puerta ancha
+        (permanente) estaba abierta y la estrecha (una corrida) cerrada.
+        """
+        clave = next(c for c, v in ca.CRITERIOS.items()
+                     if isinstance(v.valor, float) and v.sensibilidad is None)
+        del_archivo = ca.CRITERIOS[clave].valor
+
+        ca.establecer_valor_dinamico(clave, del_archivo * 2)
+        assert ca.criterio_efectivo(clave).valor == del_archivo * 2
+        assert ca.criterio(clave).valor == del_archivo, (
+            "pisar en caliente no puede tocar lo que el ARCHIVO declara")
+
+    def test_pisar_y_rellenar_no_son_la_misma_lista(self, _limpia_overrides):
+        """
+        `criterios_pisados_en_caliente` es un SUBCONJUNTO estricto, y esa es
+        toda su razon de ser: sin el, la memoria imprime «el archivo no los
+        tiene» sobre una fila cuyo archivo si lo tiene.
+        """
+        vacio = next(c for c, v in ca.CRITERIOS.items() if v.valor is None
+                     and v.sensibilidad is None)
+        lleno = next(c for c, v in ca.CRITERIOS.items()
+                     if isinstance(v.valor, float) and v.sensibilidad is None)
+
+        ca.establecer_valor_dinamico(vacio, 1.0)
+        ca.establecer_valor_dinamico(lleno, ca.CRITERIOS[lleno].valor * 2)
+
+        declarados = ca.criterios_declarados_en_caliente()
+        pisados = ca.criterios_pisados_en_caliente()
+        assert vacio in declarados and lleno in declarados
+        assert lleno in pisados, "un valor de archivo pisado tiene que estarlo"
+        assert vacio not in pisados, "rellenar un vacio NO es pisar"
+        assert set(pisados) <= set(declarados)
+
+    def test_quitar_un_pisado_devuelve_el_valor_del_ARCHIVO_y_no_None(
+            self, _limpia_overrides):
+        """
+        El punto que hacia mentir al mensaje de la GUI.
+
+        `quitar_valor_dinamico` solo saca el override, de modo que
+        `criterio_efectivo` cae al valor del archivo. En un criterio vacio eso
+        es «vuelve a bloquear»; en uno pisado es «vuelve a gobernar el del
+        archivo», y NO bloquea nada. Son dos resultados distintos de la misma
+        accion y el programa tiene que decir cual de los dos ocurrio.
+        """
+        lleno = next(c for c, v in ca.CRITERIOS.items()
+                     if isinstance(v.valor, float) and v.sensibilidad is None)
+        del_archivo = ca.CRITERIOS[lleno].valor
+
+        ca.establecer_valor_dinamico(lleno, del_archivo * 2)
+        ca.quitar_valor_dinamico(lleno)
+
+        assert ca.criterio_efectivo(lleno).valor == del_archivo
+        assert not ca.declarado_en_caliente(lleno)
+        assert ca.valor(lleno) == del_archivo, (
+            "quitar un pisado dejo el criterio bloqueando, cuando el archivo "
+            "tiene valor: `valor()` tendria que devolverlo sin excepcion")
+
+    def test_quitar_un_rellenado_SI_vuelve_a_bloquear(self, _limpia_overrides):
+        """La otra mitad: el caso en que el mensaje viejo si era cierto."""
+        vacio = next(c for c, v in ca.CRITERIOS.items() if v.valor is None
+                     and v.sensibilidad is None)
+        ca.establecer_valor_dinamico(vacio, 1.0)
+        ca.quitar_valor_dinamico(vacio)
+        with pytest.raises(CriterioPendienteError):
+            ca.valor(vacio)
+
+    def test_pisar_sigue_pasando_por_la_guardia_de_sensibilidad(
+            self, _limpia_overrides):
+        """
+        Permitir el tanteo NO afloja la guardia: un valor fuera del rango que
+        el propio criterio declara se rechaza igual que antes, y da lo mismo
+        que debajo hubiera un vacio o un valor.
+        """
+        con_rango = next(
+            (c for c, v in ca.CRITERIOS.items()
+             if v.valor is not None and isinstance(v.sensibilidad, tuple)
+             and len(v.sensibilidad) == 2
+             and all(isinstance(x, (int, float)) for x in v.sensibilidad)),
+            None)
+        if con_rango is None:
+            pytest.skip("ningun criterio con valor tiene rango numerico de dos "
+                        "extremos: la guardia se ejercita en los vacios")
+        bajo, alto = ca.CRITERIOS[con_rango].sensibilidad
+        with pytest.raises(ValueError):
+            ca.establecer_valor_dinamico(con_rango, alto + (alto - bajo) + 1)

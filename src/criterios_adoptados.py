@@ -269,7 +269,22 @@ _OVERRIDES: Dict[str, Any] = {}
 
 def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
     """
-    Declara, solo para esta corrida, el valor de un criterio pendiente.
+    Declara, solo para esta corrida, el valor de un criterio.
+
+    DE CUALQUIER CRITERIO, TAMBIEN DE UNO QUE YA TIENE VALOR EN EL ARCHIVO.
+    Esta funcion nunca lo impidio --- no hay ni hubo comprobacion de
+    `valor is None` aqui ---; quien lo impedia era la GUI, con un
+    `puede_declarar` en `_al_seleccionar_criterio`. Esa asimetria dejaba al
+    proyectista sin forma de TANTEAR: para probar un espesor distinto en seis
+    cruces habia que reescribir `criterios_adoptados.py`, o sea cambiar el
+    expediente para hacer un ensayo. Reescribirlo permanentemente si estaba
+    permitido, lo que dejaba la puerta ancha abierta y la estrecha cerrada.
+
+    Pisar un valor de archivo NO es lo mismo que rellenar un vacio, y el
+    proyecto lo distingue en los tres sitios donde se ve: `criterios_pisados_en_caliente`
+    los separa, la memoria les da su propio bloque con lo que el archivo dice
+    al lado, y la GUI los rotula «pisado (corrida)» y no «declarado (corrida)».
+    Sin esas tres, permitir el tanteo seria permitir falsearlo en silencio.
 
     Pasa por la MISMA guardia que el archivo: se arma el Criterio que
     resultaria de esta declaracion y se somete a `_verificar_criterio`. Un
@@ -610,6 +625,20 @@ def criterios_declarados_en_caliente() -> List[str]:
     pendientes y el bloque de pendientes no las mostraba.
     """
     return sorted(_OVERRIDES)
+
+
+def criterios_pisados_en_caliente() -> List[str]:
+    """
+    Los declarados en caliente que PISAN un valor del archivo, no un vacio.
+
+    Subconjunto de `criterios_declarados_en_caliente`, y la distincion no es
+    de matiz: rellenar un vacio deja el expediente donde estaba --- faltaba un
+    numero y se puso --- mientras que pisar sustituye una decision ya tomada y
+    transcrita, que sigue en el archivo diciendo otra cosa. Un lector de la
+    memoria tiene que poder ver esa segunda, con los DOS valores delante; si
+    no, tantear y falsear se imprimen igual.
+    """
+    return sorted(c for c in _OVERRIDES if CRITERIOS[c].valor is not None)
 
 
 def criterio_efectivo(clave: str) -> Criterio:

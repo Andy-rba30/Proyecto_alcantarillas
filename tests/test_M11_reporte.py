@@ -1117,3 +1117,110 @@ class TestBloqueAcotaciones:
             texto = (raiz / nombre).read_text(encoding="utf-8")
             assert "%%bloque_acotaciones" in texto, nombre
             assert 'id="acotaciones"' in texto, nombre
+
+
+# ===========================================================================
+# El bloque de PISADOS: lo que separa tantear de falsear en la memoria
+# ===========================================================================
+
+class TestBloqueDeValoresPisados:
+    """
+    `bloque_pendientes` imprimia UN bloque para los declarados en caliente, y
+    su parrafo afirmaba «no estan en criterios_adoptados.py» y «el archivo no
+    los tiene». De un criterio PISADO las dos frases son falsas: el archivo si
+    lo tiene y dice otra cosa. Desde que la GUI permite pisar, un bloque unico
+    imprimiria esa mentira sobre la mitad de sus filas.
+    """
+
+    MARCA = "<h4>Valores del archivo PISADOS"
+
+    def _clave_con_valor(self):
+        return next(c for c, v in ca.CRITERIOS.items()
+                    if isinstance(v.valor, float) and v.sensibilidad is None)
+
+    def _seccion_pisados(self):
+        """
+        SOLO la seccion de pisados, ACOTADA hasta el final de su tabla.
+
+        Partir por la marca y quedarse con todo lo que sigue arrastraba los
+        bloques posteriores --- «Refinamiento opcional», «sin consumidor» --- y
+        el test daba por pisado cualquier criterio nombrado mas abajo. El
+        defecto era del test y no del codigo, que es la unica razon por la que
+        se anota: un test que se equivoca en la direccion PERMISIVA no falla
+        cuando debe.
+        """
+        bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+        if self.MARCA not in bloque:
+            return ""
+        resto = bloque.split(self.MARCA, 1)[1]
+        return resto.split("</table>", 1)[0]
+
+    def _sin_declaraciones(self):
+        """Retira los overrides que otras fixturas dejaron, y los repone."""
+        previos = {c: ca.criterio_efectivo(c).valor
+                   for c in ca.criterios_declarados_en_caliente()}
+        for clave in previos:
+            ca.quitar_valor_dinamico(clave)
+        return previos
+
+    def test_un_valor_pisado_sale_en_su_propio_bloque_con_los_dos_valores(self):
+        clave = self._clave_con_valor()
+        del_archivo = ca.CRITERIOS[clave].valor
+        ca.establecer_valor_dinamico(clave, del_archivo * 2)
+        try:
+            pisados = self._seccion_pisados()
+            assert pisados, (
+                "un valor de archivo sustituido no tiene bloque propio")
+            assert clave in pisados
+            assert M11._valor_legible(del_archivo * 2) in pisados, (
+                "falta el valor que la corrida USO")
+            assert M11._valor_legible(del_archivo) in pisados, (
+                "falta el valor que el ARCHIVO declara: sin los dos delante, "
+                "el lector no puede ver que se pisó")
+        finally:
+            ca.quitar_valor_dinamico(clave)
+
+    def test_el_bloque_de_pisados_dice_que_NO_es_para_entregar(self):
+        """
+        El encargo lo dijo asi: la diferencia entre tantear y falsear. La
+        memoria tiene que nombrarla, no solo mostrar dos numeros.
+        """
+        clave = self._clave_con_valor()
+        ca.establecer_valor_dinamico(clave, ca.CRITERIOS[clave].valor * 2)
+        try:
+            pisados = self._seccion_pisados()
+            assert "TANTEO" in pisados
+            assert "se reproducen" in pisados
+        finally:
+            ca.quitar_valor_dinamico(clave)
+
+    def test_un_vacio_rellenado_NO_cae_en_el_bloque_de_pisados(self):
+        """La frase «el archivo no los tiene» sigue siendo cierta de los suyos."""
+        vacio = next(c for c, v in ca.CRITERIOS.items() if v.valor is None
+                     and v.sensibilidad is None)
+        ca.establecer_valor_dinamico(vacio, 1.0)
+        try:
+            bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+            assert "Criterios declarados solo para esta corrida" in bloque
+            assert vacio in bloque, "el vacio rellenado desaparecio de la memoria"
+            assert vacio not in self._seccion_pisados(), (
+                "rellenar un vacio se imprimio como pisar un valor")
+        finally:
+            ca.quitar_valor_dinamico(vacio)
+
+    def test_sin_declaraciones_el_bloque_sigue_diciendo_que_no_hay_ninguna(self):
+        """
+        La rama vacia no se rompio al partir el bloque en dos.
+
+        Se retiran los overrides que la fixtura autouse de `conftest.py` deja
+        puestos --- y se reponen ---, porque con ellos esta rama NO se ejecuta
+        y el test estaria comprobando otra cosa.
+        """
+        previos = self._sin_declaraciones()
+        try:
+            bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+            assert "Ninguno: todo valor que entro en el calculo esta" in bloque
+            assert self.MARCA not in bloque
+        finally:
+            for clave, valor in previos.items():
+                ca.establecer_valor_dinamico(clave, valor)
