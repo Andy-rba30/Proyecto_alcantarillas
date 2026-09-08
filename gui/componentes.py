@@ -199,10 +199,13 @@ class BotonAccion:
     Dos cosas que `tk.Button` no hace solo, y que aqui van juntas porque son
     la misma frase dicha dos veces:
 
-    - **Se lee.** Al apagarse cambia FONDO y TEXTO al par de arriba. Con el
-      comportamiento de serie solo cambia el texto, y queda `#a3a3a3` sobre el
-      color vivo del boton encendido (1.30:1 en el peor de los cinco fondos de
-      esta interfaz).
+    - **Se lee.** El texto apagado se pinta SIEMPRE con
+      `COLOR_BOTON_APAGADO_TEXTO`, y el fondo cambia tambien al par de arriba
+      en los botones que llevan `fondo` propio --- que son todos menos uno ---.
+      Al que no lo lleva no se le toca el fondo, porque el gris de serie de Tk
+      ya contrasta con ese texto (6.33:1 medido). Con el comportamiento de
+      serie solo cambia el texto, y queda `#a3a3a3` sobre el color vivo del
+      boton encendido: 1.30:1 en el peor de los cinco fondos de esta interfaz.
     - **Dice por que.** `deshabilitar(motivo)` guarda el motivo y lo pinta en
       el tooltip, delante de la ayuda permanente del boton. Quien pasa el raton
       por encima lee «no disponible: <motivo>» en vez de adivinar.
@@ -284,8 +287,16 @@ class BotonAccion:
         self.motivo = motivo
         self._pintar(False)
 
-    def estado(self, encendido, motivo=""):
-        """`habilitar()` o `deshabilitar(motivo)` segun un booleano."""
+    def estado(self, encendido, motivo):
+        """
+        `habilitar()` o `deshabilitar(motivo)` segun un booleano.
+
+        `motivo` NO lleva defecto, y es el mismo argumento que en
+        `deshabilitar`: con `motivo=""` esta firma dejaba apagar un boton sin
+        decir por que --- «No disponible.» a secas ---, o sea justo el bloqueo
+        mudo que esta clase existe para impedir. Que el defecto no exista es lo
+        que hace cumplible la frase «el motivo no es opcional».
+        """
         if encendido:
             self.habilitar()
         else:
