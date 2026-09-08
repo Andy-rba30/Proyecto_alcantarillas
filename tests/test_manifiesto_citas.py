@@ -138,10 +138,27 @@ MAX_REFERENCIAS_SIN_IDENTIFICADOR = 4
 # bloque no se desliza: comprobado insertando las mismas 22 lineas, el ancla
 # siguio al simbolo.
 #
-# Esa es la salida para las 17 que quedan, y por eso esto es un TECHO y no una
+# Esa es la salida para las que quedan, y por eso esto es un TECHO y no una
 # medicion: cada fila que se ancle a su definicion lo baja. Subirlo es admitir
 # una fila nueva expuesta al mismo deslizamiento.
-MAX_REFERENCIAS_QUE_PUEDEN_DESLIZARSE = 17
+#
+# BAJA DE 17 A 14 EN C7 (punto 8 de su brief), y son TRES y no las dos que el
+# brief pedia. El brief nombraba las dos de `M8_estructural`; la tercera,
+# `M9_cabezal:334`, cayo en la misma fila del manifiesto y sin tocarla: esa
+# fila cita `factores_carga_aashto` -- la CLAVE del criterio, una cadena que
+# ningun modulo define como simbolo -- y sus tres referencias se resolvian por
+# mencion. Nombrar en la fila el simbolo que SI existe en el codigo
+# (`CRITERIO_FACTORES_CARGA`, definido tanto en M8 como en M9) las volvio
+# firmes a las dos de golpe. NO es un cierre regalado ni un falso positivo: el
+# ancla de M9 ya apuntaba a la linea de la definicion, y lo unico que le
+# faltaba era que la fila la nombrara.
+#
+# VERIFICADO CON LA MISMA MEDICION QUE C6 DEJO ESTABLECIDA -- insertar 22
+# lineas por encima de las definiciones y regenerar --: las tres anclas se
+# movieron 22 renglones (M8 197 -> 219 y 198 -> 220, M9 334 -> 356) y las tres
+# siguieron aterrizando en su linea de definicion. El ancla siguio al SIMBOLO.
+# El arbol se restauro despues; la medicion esta en el mensaje del commit.
+MAX_REFERENCIAS_QUE_PUEDEN_DESLIZARSE = 14
 
 
 def _codigo(rel: str) -> list:
