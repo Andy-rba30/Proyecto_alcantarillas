@@ -2251,12 +2251,26 @@ def bloque_pendientes(tableros: Sequence[Tablero],
                     "cerraria</span>")]))
         partes.append('<table class="ancha">' + "".join(filas) + "</table>")
 
+    # DOS BLOQUES Y NO UNO, desde que la GUI permite PISAR un valor de archivo.
+    # El parrafo de aqui abajo decia «no estan en criterios_adoptados.py» y «el
+    # archivo no los tiene», y de un criterio pisado las dos frases son FALSAS:
+    # el archivo SI lo tiene, y dice otra cosa. Un bloque que mezclara los dos
+    # casos imprimiria esa mentira sobre la mitad de sus filas, que es
+    # exactamente la clase de defecto que la memoria existe para no cometer.
+    #
+    # La diferencia tampoco es de matiz para quien lee: rellenar un vacio deja
+    # el expediente donde estaba --- faltaba un numero y se puso ---, mientras
+    # que pisar SUSTITUYE una decision transcrita que sigue en el archivo
+    # diciendo otra cosa. Separarlos es lo que distingue tantear de falsear.
+    rellenados = [c for c in ca.criterios_declarados_en_caliente()
+                  if c not in ca.criterios_pisados_en_caliente()]
+    pisados = ca.criterios_pisados_en_caliente()
+
     partes.append("<h3>Criterios declarados solo para esta corrida</h3>")
-    en_caliente = ca.criterios_declarados_en_caliente()
-    if not en_caliente:
+    if not rellenados and not pisados:
         partes.append("<p>Ninguno: todo valor que entro en el calculo esta "
                       "transcrito en <code>criterios_adoptados.py</code>.</p>")
-    else:
+    if rellenados:
         # Ni vacios ni valores del archivo: la tercera categoria que faltaba.
         # `criterios_sin_valor()` los excluye -- correctamente, porque el
         # calculo tuvo valor con que correr -- y por eso, antes de esta
@@ -2271,7 +2285,7 @@ def bloque_pendientes(tableros: Sequence[Tablero],
         filas = [_fila(["<th>Criterio</th>", "<th>Etiqueta</th>",
                         "<th>Concepto</th>", "<th>Valor declarado</th>",
                         "<th>Que dice el archivo</th>"])]
-        for clave in en_caliente:
+        for clave in rellenados:
             c = ca.criterio(clave)
             filas.append(_fila([
                 _td(f"<code>{_esc(clave)}</code>"),
@@ -2279,6 +2293,32 @@ def bloque_pendientes(tableros: Sequence[Tablero],
                 _td(_esc(c.concepto)),
                 _td(_valor_legible(ca.criterio_efectivo(clave).valor)),
                 _td(_valor_legible(c.valor))]))
+        partes.append('<table class="ancha">' + "".join(filas) + "</table>")
+
+    if pisados:
+        partes.append("<h4>Valores del archivo PISADOS en esta corrida</h4>")
+        partes.append(
+            '<p class="pendiente">Estos criterios <b>si tienen valor</b> en '
+            "<code>criterios_adoptados.py</code>, y esta corrida uso OTRO. El "
+            "archivo que el encabezado identifica por SHA-1 sigue diciendo lo "
+            "de la ultima columna: los numeros de esta memoria <b>no</b> se "
+            "reproducen volviendo a correr el expediente tal como esta "
+            "guardado. Es un TANTEO, valido para explorar y <b>no</b> para "
+            "entregar: para que el expediente diga lo que esta memoria dice, "
+            "el valor tiene que escribirse en el archivo, con su justificacion "
+            "y su fuente revisadas.</p>")
+        filas = [_fila(["<th>Criterio</th>", "<th>Etiqueta</th>",
+                        "<th>Concepto</th>", "<th>Valor usado en esta corrida</th>",
+                        "<th>Valor que el archivo declara</th>"])]
+        for clave in pisados:
+            c = ca.criterio(clave)
+            filas.append(_fila([
+                _td(f"<code>{_esc(clave)}</code>"),
+                _td(_etiqueta_html(c.etiqueta)),
+                _td(_esc(c.concepto)),
+                _td(_valor_legible(ca.criterio_efectivo(clave).valor)),
+                _td('<span class="pendiente">'
+                    + _valor_legible(c.valor) + "</span>")]))
         partes.append('<table class="ancha">' + "".join(filas) + "</table>")
 
     opcionales = ca.criterios_opcionales_sin_declarar()

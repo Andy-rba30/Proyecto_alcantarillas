@@ -922,6 +922,73 @@ def test_el_estado_de_un_criterio_distingue_los_tres_casos(ventana):
         ca.limpiar_valores_dinamicos()
 
 
+def test_el_estado_de_un_criterio_distingue_PISAR_de_RELLENAR(ventana):
+    """
+    El cuarto estado, y por que no puede ser el mismo que el tercero.
+
+    Declarar en caliente sobre un criterio VACIO rellena un hueco y deja el
+    expediente donde estaba. Declarar sobre uno que YA TIENE valor sustituye
+    una decision transcrita, que sigue en el archivo diciendo otra cosa. Es la
+    diferencia entre tantear y falsear, y si las dos filas se rotularan igual
+    la tabla no la mostraria: exactamente la forma que tuvo SIS-A-01, un valor
+    que gobierna el calculo y que la pantalla describe como otra cosa.
+    """
+    import criterios_adoptados as ca
+    import declaracion as dec
+
+    pendiente = next(c for c, v in ca.CRITERIOS.items() if v.valor is None)
+    resuelto = next(c for c, v in ca.CRITERIOS.items()
+                    if isinstance(v.valor, float) and v.sensibilidad is None)
+
+    assert ventana._estado_criterio(resuelto) == ("resuelto", "resuelto")
+
+    ca.establecer_valor_dinamico(pendiente, 1.0)
+    ca.establecer_valor_dinamico(resuelto, ca.CRITERIOS[resuelto].valor * 2)
+    try:
+        assert ventana._estado_criterio(pendiente) == (
+            "declarado (corrida)", "declarado_corrida")
+        assert ventana._estado_criterio(resuelto) == (
+            "pisado (corrida)", "pisado_corrida"), (
+            "pisar un valor del archivo se rotulo igual que rellenar un vacio")
+    finally:
+        dec.olvidar(pendiente)
+        dec.olvidar(resuelto)
+        ca.limpiar_valores_dinamicos()
+
+    # Y al quitarlo, cada uno vuelve a LO SUYO: el vacio a PENDIENTE y el
+    # pisado al valor del archivo. Es el punto que hacia mentir al mensaje de
+    # `_quitar_valor_corrida`.
+    assert ventana._estado_criterio(pendiente) == ("PENDIENTE", "pendiente")
+    assert ventana._estado_criterio(resuelto) == ("resuelto", "resuelto")
+
+
+def test_el_filtro_y_los_colores_cubren_los_cuatro_estados():
+    """
+    Un estado que `_estado_criterio` puede devolver y que la tabla no sabe
+    pintar sale con el color de nadie; uno que el filtro no ofrece es
+    inencontrable entre 69 filas. Los tres conjuntos se derivan del ARBOL y se
+    contrastan, en vez de copiarse a mano en tres sitios.
+    """
+    funcion = _funcion(ARBOL_GUI, "_estado_criterio")
+    devueltos = {n.value.elts[1].value for n in ast.walk(funcion)
+                 if isinstance(n, ast.Return) and isinstance(n.value, ast.Tuple)}
+    assert devueltos == {"pendiente", "declarado_corrida", "pisado_corrida",
+                         "resuelto"}, devueltos
+
+    pintados = {n.args[0].value for n in ast.walk(ARBOL_GUI)
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "tag_configure" and n.args
+                and isinstance(n.args[0], ast.Constant)}
+    assert devueltos <= pintados, (
+        f"estados sin color en la tabla: {sorted(devueltos - pintados)}")
+
+    import gui.app as gapp
+    ofrecidos = {tag for _rotulo, tag in gapp.FILTROS_DE_ESTADO if tag}
+    assert devueltos == ofrecidos, (
+        f"el filtro no ofrece {sorted(devueltos - ofrecidos)} y ofrece de mas "
+        f"{sorted(ofrecidos - devueltos)}")
+
+
 def _leyenda_de_etiquetas() -> str:
     """El texto de la leyenda de la pestana de Criterios, leido del arbol."""
     for nodo in ast.walk(ARBOL_GUI):
