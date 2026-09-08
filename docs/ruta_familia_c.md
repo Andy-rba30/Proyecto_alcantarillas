@@ -2835,6 +2835,8 @@ contra la **forma de la pregunta**, que presupone que lo que se verifica es un d
 | **R-21** *(C8)* | `tests/test_gui_contrato.py::test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta` | **Un aserto obsoleto dentro de un test que se salta.** Afirmaba que el tablero de criterios pendientes de la ventana muestra exactamente dos claves (`TR_evento_extremo`, `remanso_derecho_via`) y son **TRES** desde que la Familia C entró en el CSV de perfil: falta `embocadura_cajon`, que es lo primero que le falta a C-01. No lo vio nadie porque el test se salta en cuanto no hay entorno gráfico, que es el caso del contenedor de desarrollo. **Un test saltado no defiende su aserto**, y la configuración «ventana Tk: no» de `CLAUDE.md` dice cuántos hay así: uno | **CERRADA en el aserto** (`tablero_antes`, tres claves) **y no verificada por ejecución**: en este contenedor no hay `tkinter` en ningún intérprete, de modo que el test sigue saltándose. Se dice así en vez de darlo por corrido |
 | **R-22** *(C8)* | `normativa/registro.py::discrepancias_abiertas` | **Un docstring afirmaba un consumidor que no existía**: «M11 las imprime». M11 no importaba el módulo por ninguna parte, y de las 23 discrepancias declaradas llegaban DOS a la memoria, las dos por accidente —con el id escrito a mano dentro de la justificación de un criterio o de la nota de una cita—. Es la primera de las dos lecciones de §4.5 en su forma pura: **una declaración en un docstring no imprime nada** | **CERRADA.** El docstring dice ahora lo que la función es —el censo completo, material de manifiesto— y la memoria consume `discrepancias_que_tocan`, que filtra. Ficha **C8-02** |
 | **R-23** *(C8, encontrado auditando el contrato de §4.5)* | `criterios_adoptados._verificar_criterio` frente a `M11.acotaciones_declaradas` | **Las dos mitades de `vacio_verificado` miran valores distintos, y eso lo hace INALCANZABLE para todo criterio que sea vacío POR DISEÑO.** `acotaciones_declaradas()` filtra por `criterio_efectivo(k).valor is not None` —o sea que una adopción declarada EN CALIENTE cuenta, y con razón: cubre el vacío igual que si estuviera en el archivo—; pero `_verificar_criterio` rechaza `vacio_verificado` cuando el valor **del archivo** es `None`. Los criterios del cajón no tienen valor en archivo **a propósito** —es el criterio de salida del nivel de perfil—, de modo que su valor de archivo es permanentemente `None` y el campo **nunca** se les puede poner. Tres de ellos llevan un comentario que dice «quien declare el valor tiene que añadirlo, con este texto», y **quien declara el valor lo declara con `--declarar`, que no toca el archivo**: la instrucción es infollowable justo para los criterios a los que se dirige. Medido sobre la corrida del entregable: `bloque_acotaciones` lista **uno** (`cobertura_minima_aashto`), y los siete del cajón no salen por ahí | **se reporta, no se cambia.** El vacío que `cobertura_minima_cajon` cubre **sí llega a la memoria** —por su ficha de `bloque_criterios`, con «De dónde sale (R1)» y el razonamiento entero en `fuente`—, de modo que no hay información perdida: hay un bloque que sub-reporta. Arreglarlo es cambiar qué SIGNIFICA `vacio_verificado` —de «este valor cubre un vacío» a «el valor de este criterio cubrirá un vacío»— y eso toca la semántica de `criterios_adoptados` para todo el proyecto, no solo para la Familia C. **El brief de C8 anticipaba el hallazgo con el remedio «si falta uno, se arregla EN EL CRITERIO», y el remedio no está disponible**: la guardia lo rechaza. Ésa es la mitad que hay que decidir, y no es de esta familia |
+| **R-24** *(C8, y lo encontró la auditoría adversarial refutando el filtro)* | `M11_reporte.citas_en_que_descansa` --- antes, la lectura de `paso.citas_textuales` en `_discrepancias_que_toca` y en `bloque_discrepancias` | **UN PASO CARGA NUMERALES POR CUATRO PUERTAS Y EL CANAL LEÍA UNA.** `citas_textuales` es la puerta obvia; las otras tres son `formula_cita_id` —que se imprime al lado de la fórmula—, `umbral.cita_id` y, sobre todo, `Fundamento.citas`, que son los numerales que sostienen el `por_qué` **y el `por_qué` se imprime**. Medido: 13 citas llegan a la corrida de C-01 por las puertas indirectas. **Y no era teórico.** La memoria de C-01 nombra la **Tabla A.1 del HDS-5 cinco veces** —es de donde salen K, M, c, Y y Ks del control de entrada, que producen el único HW que C-01 publica, el gobernante— y `DIS-HDS5-APENDICE-G`, que dice que el título de esa tabla remite a un «Appendix G» que la 3.ª edición **no tiene**, no llegaba. El revisor que quisiera confirmar la fila seguía el título, buscaba el Apéndice G, no lo encontraba, y la memoria callaba | **CERRADA.** El arreglo no cablea ningún id: hace que el canal lea lo que ya existe, que es lo que el docstring de `discrepancias_que_tocan` prometía. El criterio queda dicho de una vez: **llega la discrepancia sobre un numeral en el que la memoria APOYA algo, no solo sobre el que ENTRECOMILLA.** Medido: cerrar el hueco añade EXACTAMENTE esa una y ninguna de las etapas que `--alcance perfil` difiere. De 7 a 8 en la memoria de C-01 |
+| **R-25** *(C8, misma auditoría)* | `criterios_adoptados`, campo `resolucion` de `'clase_sitio'` y de `'F_pga'` | **El defecto que C8 dijo cerrar, sobreviviendo por un campo de texto.** La memoria imprimía el id `DIS-HR-30M-VS-100FT` dentro de la prosa de `resolucion`, que el bloque de criterios sin valor publica tal cual, y el filtro excluía la discrepancia **con razón** —esta corrida no invoca `clase_sitio`—. Resultado: una sigla que el lector no puede resolver en el documento, que es exactamente «un id suelto dentro de un párrafo» | **CERRADA.** Los ids salen de la prosa; el argumento se queda. El id se declara en `Criterio.discrepancias`, que es el canal, y un test nuevo fija la regla sobre el PRODUCTO: **si un id aparece en la memoria, tiene que tener su bloque** |
 | **R-15** *(C6)* | `normativa/citas.py` — `MC_HHD.4.1.1.3.1` y el num. 4.1.1.3.3, ausente | Faltan **tres transcripciones** que la norma peruana sí imprime sobre la pendiente de la alcantarilla, y que hoy V2b y la Sec. 7.B sustituyen con el HDS-5 o con nada. Están **verificadas** —numeral, título literal, página impresa y página PDF— en D-16, de modo que quien las traiga no tiene que volver a medirlas: sólo transcribirlas como `Verbatim` con su test en `test_normativa_pdf.py` | **no es de C6**, que es entradas y no registro: traer un `Verbatim` nuevo es el oficio de una sesión de transcripción (el precedente es `C4-6`). Se anota con la evidencia entera para que sea barato |
 | **R-14** *(C5)* | `M8.factores_carga_flotacion`, `M8.empuje_flotacion_kn_m`, `M8.peso_relleno_kn_m`, `M2.diametro_exterior` | **V7 corre sobre un marco y todavía no es correcta**, y el defecto lo **abre C5**: antes ningún punto de Familia C llegaba a la Fase 5. Son tres cosas: los dos cálculos de M8 suponen un **cilindro**; `diametro_exterior = D + 2t` y `espesor_pared` indexan por diámetro designado en mm, que es la columna «Wall Thickness» de una norma de **tubería**; y `factores_carga_flotacion` indexa por `material.tipo.value`, de modo que el marco recibe la fila del **tubo**. El mínimo de las dos filas es 0.90 y por eso **el número de V7 no cambia**: lo que sale mal es la **fila que la memoria imprime** (`NOR-HID-01` otra vez) | **C7**, puntos 1, 2 y 6 de su brief. C5 lo deja **declarado en el consumidor** —docstring de `M5.v7_flotacion`— y no lo silencia |
 
@@ -5013,7 +5015,7 @@ como llegaban las dos que llegaban.
 
 #### 4 · Qué llega hoy a la memoria de C-01, contado
 
-**Siete**, y las cuatro que el brief nombraba están entre ellas:
+**Ocho**, y las cuatro que el brief nombraba están entre ellas:
 
 | id | estado | por qué vía |
 |---|---|---|
@@ -5024,6 +5026,15 @@ como llegaban las dos que llegaban.
 | `DIS-MP-ERRATAS-GAMMA-P` | errata | cita (`MP.T2.4.5.3.1-2`) |
 | `DIS-MCHHD-T09-A2-DESPLAZADA` | errata | cita (`MC_HHD.4.1.1.3.6#T09`) |
 | `DIS-MCHHD-LAMINA-03-TMC` | errata | cita (`MC_HHD.4.1.1.3.4a`, `MC_HHD.LAMINA_03`) |
+| `DIS-HDS5-APENDICE-G` | errata | cita del **fundamento** `F4.FORMA_HDS5` (`HDS5_3ED.TA.1`) |
+
+> **La octava la añadió la auditoría adversarial, y la séptima versión de esta
+> tabla no la tenía.** El canal leía solo `citas_textuales` y la Tabla A.1 del
+> HDS-5 entra al paso por su `Fundamento`. Es **R-24**, y no era un caso de
+> borde: esa tabla da los coeficientes del control de entrada que producen el
+> único HW que C-01 publica. Lo que la refutación deja escrito, y vale más que
+> la discrepancia recuperada: **llega la discrepancia sobre un numeral en el
+> que la memoria APOYA algo, no solo sobre el que ENTRECOMILLA.**
 
 **¿Hay más entre las diez abiertas que toquen un valor que la corrida usa?
 No.** Las otras seis —`DIS-HR-CICLOPEO`, `DIS-HR-A807`, `DIS-HR-H-EQ`,
@@ -5031,6 +5042,31 @@ No.** Las otras seis —`DIS-HR-CICLOPEO`, `DIS-HR-A807`, `DIS-HR-H-EQ`,
 `DIS-HR-VIA-DE-LA-LICUEFACCION`— son del cabezal o de la Fase 8, que
 `--alcance perfil` difiere enteras. En una corrida de expediente sí llegan, y
 por la misma vía: `clase_sitio` y `F_pga` las declaran.
+
+#### 4-bis · `DIS-HDS5-EDICIONES` sigue RESUELTA, y por qué
+
+La misma auditoría propuso que está mal clasificada: las dos ediciones del
+HDS-5 **conviven hoy en `normas/`** —declaradas con `Fuente.convive_con`— y la
+que se llama «si» imprime 29 donde el proyecto usa 19.63, de modo que se
+parecería a `DIS-MP-KAE-SIGNO`, que es `ERRATA_DE_IMPRENTA` y sí llega.
+
+**No se reclasifica, y el argumento es el criterio de `viva` leído literal:**
+quien abra el PDF **por donde la memoria lo manda** encuentra lo que la memoria
+dice. La memoria cita `HDS5_3ED.3.1.4#K`, la 3.ª edición, que imprime
+«KU = 29 in English Units (19.63 in SI)» — el 19.63 que el código usa. Ahí no
+hay nada que defender. En `DIS-MP-KAE-SIGNO` es al revés: la página que la
+memoria cita imprime un signo menos y el código usa el más, de modo que el
+revisor que la abra encuentra una contradicción. Las dos formas se parecen y
+no son la misma: una es un conflicto **entre documentos que el proyecto ya
+eligió**, la otra es un conflicto **con la página que la memoria señala**.
+
+Lo que la auditoría sí midió y conviene guardar: si algún día se declarara
+viva, **seguiría sin llegar** por el mismo agujero de R-24 —su ancla
+`HDS5_3ED.3.1.4#K` entra por el `Fundamento` `F4.CONTROL`, no por comillas—, y
+eso ya está cerrado. Y midió el efecto por si alguien lo necesita: con 29
+imperial, `HW_salida` de C-01 pasaría de 0.568 a 0.577 m y el margen entre los
+dos controles se estrecharía de 0.021 a 0.012 m, **sin cambiar el veredicto**
+—sigue gobernando la entrada con 0.589 m—.
 
 #### 5 · Lo que abrir el canal destapó: nueve anclas rotas (**R-18**)
 
