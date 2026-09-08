@@ -1413,6 +1413,99 @@ EG_503_04 = _cita(
           "al pie."),
 )
 
+# ---------------------------------------------------------------------------
+# LAS TRES CITAS QUE DICEN BAJO QUE SECCION SE CONSTRUYE UN MARCO (C7, punto 6)
+# ---------------------------------------------------------------------------
+# El proyecto mapeaba material -> Seccion del EG-2013 con un dict, y un marco
+# de concreto reforzado heredaba la 506. La 506 se titula «Tuberia de concreto
+# reforzado»: es atribucion sin fuente, y ademas la MISMA forma del defecto
+# NOR-PUE-01 -- numeral que existe, titulo que suena a lo buscado, contenido
+# que es otra cosa --. Estas tres citas son las que lo cierran, y hacen falta
+# las tres porque cada una responde una pregunta distinta: donde NO cae el
+# marco (506.01), bajo que Seccion SI se construye (503.10 h) y que alcance
+# tiene esa Seccion (503.01).
+EG_506_01 = _cita(
+    id="EG2013.506.01#ALCANCE",
+    fuente_id="EG2013",
+    numeral="506.01",
+    titulo_numeral="Descripción",
+    pagina_impresa="959",
+    pagina_pdf=967,
+    pagina_pdf_titulo=967,
+    texto_literal=Verbatim(
+        texto=("Este trabajo consiste en la instalación de tubos de concreto "
+               "reforzado, aprobados para el paso de agua superficial y "
+               "desagües pluviales transversales, de acuerdo con estas "
+               "especificaciones y de conformidad con el Proyecto."),
+        pagina_pdf=967),
+    caracter=Caracter.DEFINICION,
+    nota=("LO QUE ESTA CITA HACE ES DELIMITAR, y por eso es DEFINICION y no "
+          "EXIGENCIA: no prohibe nada, dice de que trata la Seccion. Su "
+          "objeto es «la instalacion de TUBOS», y las otras tres piezas de la "
+          "misma Seccion lo confirman -- 506.02 remite a AASHTO M-170M y pide "
+          "el «diametro interno», y la partida 506.A del Anexo 2 se mide en "
+          "METRO LINEAL --. Un marco vaciado in situ no tiene diametro "
+          "interior ni se mide por metro lineal de tubo suministrado: la 506 "
+          "no lo alcanza. Los cuatro titulos de las Secciones 505 a 508 "
+          "empiezan por «Tuberia»."),
+)
+
+EG_503_01 = _cita(
+    id="EG2013.503.01#ALCANCE",
+    fuente_id="EG2013",
+    numeral="503.01",
+    titulo_numeral="Descripción",
+    pagina_impresa="905",
+    pagina_pdf=913,
+    pagina_pdf_titulo=913,
+    texto_literal=Verbatim(
+        texto=("Este trabajo consiste en el suministro de concreto de cemento "
+               "Portland de diversas resistencias a la compresión, para la "
+               "construcción de estructuras de drenaje, muros de contención, "
+               "cabezales de alcantarillas, cajas de captación, aletas, "
+               "sumideros y estructuras de puentes en general, de acuerdo con "
+               "estas especificaciones y de conformidad con el Proyecto."),
+        pagina_pdf=913),
+    caracter=Caracter.DEFINICION,
+    nota=("«ESTRUCTURAS DE DRENAJE» ES EL TERMINO DE ENCABEZAMIENTO y la "
+          "lista que sigue es ENUNCIATIVA, no cerrada: un marco de concreto "
+          "vaciado in situ es una estructura de drenaje y no esta nombrado "
+          "ahi. Que si lo esta bajo esta Seccion lo prueba el 503.10 h), que "
+          "le fija plazo de desencofrado a la «placa superior en "
+          "alcantarillas de cajon». Por si sola esta cita NO dice que el "
+          "marco se pague aqui: eso es ensamblaje del proyecto sobre las tres "
+          "citas mas la ausencia de partida propia."),
+)
+
+EG_503_10H = _cita(
+    id="EG2013.503.10h#CAJON",
+    fuente_id="EG2013",
+    numeral="503.10 h)",
+    titulo_numeral="Operaciones para el vaciado de la mezcla",
+    pagina_impresa="926",
+    pagina_pdf=934,
+    pagina_pdf_titulo=929,
+    texto_literal=Verbatim(
+        texto="Placa superior en alcantarillas de cajón: 14 días",
+        pagina_pdf=934),
+    caracter=Caracter.RECOMENDACION,
+    nota=("ES LA UNICA MENCION DEL CAJON DE CONCRETO EN TODO EL EG-2013 -- "
+          "barrido de las 1282 paginas, ver SIN_PARTIDA_DE_CAJON_EG2013 -- y "
+          "hay que leerla por lo que prueba y no por lo que dice. "
+          "LO QUE PRUEBA: que el EG-2013 CONTEMPLA la alcantarilla de cajon "
+          "de concreto y la regula bajo la Seccion 503, «Concreto "
+          "estructural». Una norma que fija plazo de desencofrado de la placa "
+          "superior de un cajon esta regulando su vaciado in situ. "
+          "LO QUE NO DICE: nada sobre pago, ni sobre cobertura, ni sobre "
+          "dimensiones. Y su CARACTER no es exigencia: el parrafo que la "
+          "introduce dice «Excepcionalmente si las operaciones de campo no "
+          "estan controladas por pruebas de laboratorio la siguiente lista "
+          "PUEDE ser empleada como GUIA para el tiempo minimo requerido antes "
+          "de la remocion de encofrados y soportes». O sea que el plazo es "
+          "guia condicionada; lo que NO es condicionado es la existencia de "
+          "la fila, que es lo unico que este proyecto le pide."),
+)
+
 EG_508_07 = _cita(
     id="EG2013.508.07#RELLENO_MIN",
     fuente_id="EG2013",
@@ -3217,6 +3310,42 @@ SIN_CAJON_DE_CONCRETO_T12663 = AfirmacionNegativa(
         "12-67, 12-68, 12-69 y 12-74"),
     cita_id="AASHTO_LRFD_9.T12.6.6.3-1")
 
+# EL EG-2013 NO LE DA PARTIDA PROPIA AL CAJON, y esta afirmacion es la que
+# autoriza a este proyecto a decir «se paga por 503 + 504» en vez de buscar un
+# numeral que no existe. Es exactamente el mismo argumento que
+# `M9.condicion_normativa_cabezal` ya hacia para los cabezales -- «NO tienen
+# partida con numeral propio: se pagan bajo el volumen de concreto y el
+# acero» --, y ahora con el barrido escrito en vez de supuesto.
+SIN_PARTIDA_DE_CAJON_EG2013 = AfirmacionNegativa(
+    que_no_dice=("el EG-2013 no tiene ninguna Seccion ni ninguna partida de "
+                 "alcantarilla de CAJON de concreto: ni vaciada in situ ni "
+                 "prefabricada"),
+    ambito_barrido=(
+        "las 1282 paginas del PDF, con el desfase medido sobre el encabezado "
+        "impreso en 1268 de ellas -- pagina impresa = PDF (1-based) - 8, sin "
+        "excepciones --. Dos barridos. "
+        "EL PRIMERO, las Secciones del Capitulo V: existen de la 501 a la 514 "
+        "y ninguna mas, y las cuatro de alcantarilla se titulan «Tuberia de "
+        "concreto simple» (505, impresa 949), «Tuberia de concreto reforzado» "
+        "(506, impresa 959), «Tuberia metalica corrugada» (507, impresa 969) "
+        "y «Tuberia de polietileno de alta densidad» (508, impresa 981). Las "
+        "cuatro empiezan por «Tuberia». "
+        "EL SEGUNDO, por cadena sobre el documento entero, sin tildes y en "
+        "minusculas: «box» 0 veces, «box culvert» 0, «ponton» 0, «alcantarilla "
+        "de cajon» 0, «marco de concreto» 0, «seccion rectangular» 0, "
+        "«vaciado in situ» 0; «cajon» CUATRO, y tres son falsos amigos -- el "
+        "«cajon mezclador» de la Sec. 420 (impresa 536), los «cajones» de "
+        "cimentacion de la Tabla 503-08 (impresa 915) y las «alcantarillas de "
+        "cajon de PIEDRA» de la Sec. 601 Mamposteria (impresa 1045) --. La "
+        "cuarta es la unica real y es EG2013.503.10h#CAJON. "
+        "Y EL INDICE OFICIAL DE PARTIDAS, Tabla Anexo 2-1 (impresa 1273): el "
+        "Capitulo 5 lista 501.A-D, 502.A, 503.A «Concreto estructural» (m3), "
+        "504.A «Acero de refuerzo» (kg), 505.A a 508.A -- las cuatro "
+        "«Tuberia... de diametro interior» en metro lineal -- y 509.A en "
+        "adelante. Ninguna partida de cajon, marco ni box."),
+    cita_id="EG2013.503.10h#CAJON")
+
 AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
                           SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03,
-                          SIN_CAJON_DE_CONCRETO_T12663)
+                          SIN_CAJON_DE_CONCRETO_T12663,
+                          SIN_PARTIDA_DE_CAJON_EG2013)

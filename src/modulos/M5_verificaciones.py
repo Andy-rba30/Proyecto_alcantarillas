@@ -1449,27 +1449,42 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
     2.4.5.3.1-1). Para un conducto enterrado es la forma
     0.90*(DC + EV) >= 1.00*U.
 
-    CON UN MARCO ESTA VERIFICACION CORRE Y NO ES CORRECTA TODAVIA. Se declara
-    aqui, en su consumidor, porque desde C5 la Familia C llega hasta este
-    punto y antes no llegaba, de modo que el defecto lo ABRE esta sesion
-    aunque su arreglo sea de la siguiente. Son tres cosas y las tres son de
-    C7 (puntos 1, 2 y 6 de su brief):
+    CON UN MARCO ESTA VERIFICACION YA CORRE SIN SUPONER LA FORMA, y hasta C7
+    no. Este parrafo declaraba TRES defectos abiertos --C5 los abrio al hacer
+    que la Familia C llegase hasta aqui-- y los tres se cerraron en C7. Se
+    deja el censo, con lo que cerro cada uno, porque un defecto declarado que
+    desaparece del docstring sin decir como se cerro es indistinguible de uno
+    que se borro:
 
-      1. `M8.empuje_flotacion_kn_m` y `M8.peso_relleno_kn_m` suponen un
-         CILINDRO: reciben `D_exterior` y calculan sobre pi*D^2/4. Con un
-         marco el volumen desplazado y el peso de relleno salen de un prisma,
-         y los numeros de U y de EV son otros.
-      2. `M2.diametro_exterior` = D + 2t y `M2.espesor_pared` indexan por
-         DIAMETRO DESIGNADO en milimetros, que es la columna «Wall Thickness»
-         de una norma de TUBERIA. Un marco vaciado in situ no tiene fila ahi.
-      3. `M8.factores_carga_flotacion` indexa `factores_carga_aashto` por
-         `material.tipo.value`, de modo que un marco recibe hoy la fila del
-         TUBO -- «Estructura rigida enterrada» -- y no la suya, «Porticos
-         rigidos», que la regla vinculante #8 le asigna y que C5 ya dejo
-         declarada bajo la clave 'cajon'. El minimo de las dos filas es 0.90
-         y por eso el NUMERO no cambia: lo que sale mal es la FILA que la
-         memoria imprime, o sea una cita falsa sobre un valor correcto
-         (precedente NOR-HID-01).
+      1. CERRADO (C7, punto 2). `M8.empuje_flotacion_kn_m` y
+         `M8.peso_relleno_kn_m` recibian `D_exterior` y calculaban sobre
+         pi*D^2/4, o sea un CILINDRO. Hoy reciben la `Seccion` y piden
+         `area_exterior` y `ancho_exterior`, que el protocolo implementa en
+         las dos formas. Medido en el caso patron CP10: sobre un marco de
+         2.00 x 1.50 con t = 0.15 la U del prisma es 40.61 kN/m y la del
+         cilindro circunscrito 24.96, o sea que V7 sobreestimaba la seguridad
+         un 27 %, en la direccion insegura.
+      2. CERRADO (C7, punto 1). `M2.espesor_pared` indexaba por DIAMETRO
+         DESIGNADO en milimetros, que es la columna «Wall Thickness» de una
+         norma de TUBERIA donde un marco vaciado in situ no tiene fila. Hoy
+         el marco lee 'espesor_pared_cajon', criterio [A] de perfil sin valor,
+         y se detiene con `CriterioPendienteError` hasta que se declare.
+      3. CERRADO (C7, punto 3). `M8.factores_carga_flotacion` indexaba
+         `factores_carga_aashto` por `material.tipo.value`, de modo que un
+         marco recibia la fila del TUBO -- «Estructura rigida enterrada» -- y
+         no la suya, «Porticos rigidos». Hoy discrimina por FORMA
+         (`M8._elemento_de`). El minimo de las dos filas es 0.90 y por eso el
+         NUMERO no cambiaba: lo que salia mal era la FILA que la memoria
+         imprime, o sea una cita falsa sobre un valor correcto (precedente
+         NOR-HID-01).
+
+    LO QUE SIGUE SIN CERRARSE, para que no se lea como que todo lo del marco
+    esta hecho: `cota_clave` y `altura_relleno_sobre_clave` siguen recibiendo
+    un escalar `D`, y esta funcion se lo da como `seccion.altura`. Es correcto
+    -- la clave es la generatriz superior y se apila sobre la altura INTERIOR,
+    que en un marco es H -- y aun asi es el ultimo sitio de la cadena de V7
+    donde viaja un numero en vez de una seccion. Va con `ResultadoPunto.D`,
+    que el brief de C7 reserva a C8.
 
     EL gamma DE EV DEPENDE DEL MATERIAL, y por eso esta funcion le pasa el
     suyo a `factores_carga_flotacion`. La Tabla 2.4.5.3.1-2 desglosa el

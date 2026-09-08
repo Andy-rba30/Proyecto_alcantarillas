@@ -217,7 +217,9 @@ from typing import Any, Optional, Tuple, Union
 import criterios_adoptados as ca
 from constantes_normativas import (CARTAS_CAJON_TA1,
                                    FILAS_MANNING_CONCRETO,HDS5_INLET, H_RELLENO_MIN, MANNING,
-                                   SECCION_EG2013, TABLA_09_FILAS, V_MAX)
+                                   SECCION_EG2013,
+                                   SECCION_EG2013_CAJON,
+                                   TABLA_09_FILAS, V_MAX)
 from dominios import MILIMETROS_POR_METRO
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, ConstantesHDS5,
                      DatoFaltanteError, DatoInvalidoError,
@@ -922,7 +924,16 @@ def catalogo(material: MaterialLike,
         # materiales no tienen minimo en el EG-2013, y su None significa eso.
         h_relleno_min_eg2013=H_RELLENO_MIN[_EG2013_CLAVE[tipo]],
         espesor_pared=None if espesores is None else espesores.get(tipo.value),
-        seccion_eg2013=SECCION_EG2013[tipo.value],
+        # LA SECCION DEL EG-2013 NO SALE DEL MATERIAL SOLO, y hasta C7 si:
+        # las cuatro entradas de `SECCION_EG2013` son de TUBERIA -- los cuatro
+        # titulos impresos empiezan por esa palabra --, de modo que un marco
+        # de concreto reforzado heredaba la 506, cuyo 506.01 alcanza «la
+        # instalacion de tubos». Un marco vaciado in situ se construye bajo la
+        # Seccion 503 (num. 503.10 h): «Placa superior en alcantarillas de
+        # cajon: 14 dias»), con el acero por la 504.
+        seccion_eg2013=(SECCION_EG2013_CAJON
+                        if forma is FormaSeccion.RECTANGULAR
+                        else SECCION_EG2013[tipo.value]),
         forma=forma,
         pasos=(_pasos_del_marco() if forma is FormaSeccion.RECTANGULAR
                else ()),

@@ -1383,6 +1383,74 @@ def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
     assert "espesor_pared_conducto[marco]" not in html
 
 
+def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
+    """
+    PUNTO 7 DEL BRIEF DE C7, comprobado en vez de leido. El plan decia que
+    `cli._verificador_perfil` «YA adjunta los pasos de V7 -- se comprueba, no
+    se rehace», y esto es la comprobacion: hasta ahora lo unico que lo medía
+    era un test de HTML de extremo a extremo, que pasa por veinte sitios y no
+    dice CUAL de ellos lo conserva.
+
+    Lo que fija, sobre un marco al que solo le falta 'espesor_pared_cajon':
+
+      1. QUE LLEGA A V7. Es lo primero y no es obvio: `espesor_pared` lo
+         invocan tambien `cota_clave` y la cobertura de M7, de modo que un
+         marco podria detenerse mucho antes y este test estaria midiendo otra
+         cosa. Se asserta la clave Y el juego de codigos que quedan detras.
+      2. QUE V7 ESTA DENTRO DEL BLOQUE QUE ADJUNTA. V7 va en el SEGUNDO `for`
+         de obligatorias, cuyo `except` hace
+         `exc.verificaciones_completadas = tuple(filas)` antes de relanzar.
+         Si alguien lo sacara de ahi -- o lo pusiera en el bloque de las
+         diferidas --, V1..V6 no llegarian a la memoria y el revisor de un
+         punto que no cierra veria solo «no dimensionado».
+      3. QUE LA ADVERTENCIA DE ALCANCE VIAJA CON ELLOS. Son los pasos de la
+         Familia C los que la llevan (§15.6.3), y se pierden con las filas.
+    """
+    from cli import InformePunto
+    from modelos import (ErrorProyecto, Familia, FormaSeccion, PuntoCritico,
+                         SeccionRectangular)
+    from tests.apoyo.criterios import declarados
+
+    declaraciones = dict(d.split("=", 1) for d in DECLARACIONES_CAJON)
+    declaraciones["secciones_cajon_normalizadas"] = ((1.50, 1.20), (2.00, 1.50))
+    declaraciones["n_celdas_cajon"] = 1
+
+    # Los mismos numeros que `FILA_C_QUE_DIMENSIONA`, construidos aqui para no
+    # pasar por el CSV: lo que se mide es el verificador, no la carga.
+    punto = PuntoCritico(
+        id="C-02", progresiva_km=3.2, progresiva_display="3+200",
+        familia=Familia.C, Q_m3s=0.85, area_ha=None, S_cauce=0.004,
+        cota_terreno=36.90, cota_rasante=39.10, cota_subrasante=38.95,
+        cbr_subrasante=6.5, esviaje_grados=30.0, ancho_plataforma=9.60,
+        cota_fondo_receptor=36.20, Q_receptor_m3s=None, cota_TW=None,
+        sucs_fundacion="ML", NF_profundidad_m=None)
+    resultado = ResultadoHidraulico(
+        y_normal=0.60, y_critico=0.40, V_erosion=1.50, V_sedimentacion=1.20,
+        Q=0.85, S=0.004, HW_entrada=0.50, HW_salida=0.20,
+        control_gobernante=ControlGobernante.ENTRADA)
+    verificar = cli._verificador_perfil(InformePunto(punto=punto))
+
+    with declarados(declaraciones):
+        marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                         forma=FormaSeccion.RECTANGULAR)
+        with pytest.raises(ErrorProyecto) as exc:
+            verificar(punto=punto, material=marco,
+                      seccion=SeccionRectangular(B=2.00, H=1.50),
+                      resultado=resultado)
+
+    assert isinstance(exc.value, CriterioPendienteError)
+    assert exc.value.clave == "espesor_pared_cajon"
+
+    filas = exc.value.verificaciones_completadas
+    assert [v.codigo for v in filas] == ["V1", "V2", "V2b", "V3", "V4",
+                                         "V4b", "V6"]
+    con_nota = [v.codigo for v in filas
+                if v.paso is not None and v.paso.nota_del_proyecto]
+    assert con_nota, ("ninguna de las verificaciones que sobrevivieron lleva "
+                      "la advertencia de alcance de la Familia C: los pasos "
+                      "llegan pero vacios de lo que §15.6.3 les encarga")
+
+
 def test_el_bloque_de_alcance_declara_que_no_difirio_nada_sin_familia_c(
         tmp_path):
     """

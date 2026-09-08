@@ -352,6 +352,46 @@ def _marco():
                     forma=FormaSeccion.RECTANGULAR)
 
 
+def test_el_marco_no_hereda_la_seccion_de_tuberia_del_eg2013():
+    """
+    PUNTO 6 DEL BRIEF DE C7, y es la forma exacta de NOR-PUE-01: numeral que
+    existe, titulo que suena a lo buscado, contenido que es otro.
+
+    `SECCION_EG2013` indexa por MATERIAL y sus cuatro entradas son de TUBERIA
+    -- los cuatro titulos impresos empiezan por esa palabra --, de modo que un
+    marco de concreto reforzado heredaba la 506. La 506 se titula «Tuberia de
+    concreto reforzado», su num. 506.01 alcanza «la instalacion de tubos», su
+    506.02 pide el «diametro interno» y su partida 506.A se mide en METRO
+    LINEAL: ninguna de las tres cosas le corresponde a un marco vaciado in
+    situ.
+
+    Donde SI cae es en la Seccion 503, y es hallazgo positivo y no un vacio:
+    el num. 503.10 h) (impresa 926) le fija plazo de desencofrado a la «Placa
+    superior en alcantarillas de cajon», o sea que el EG-2013 regula el
+    vaciado in situ del cajon bajo la Seccion de concreto estructural. El
+    «+ 504» del acero es ensamblaje del proyecto, autorizado por la ausencia
+    verificada de partida propia (`SIN_PARTIDA_DE_CAJON_EG2013`), y esta dicho
+    como tal en `NUMERAL_SECCION_CAJON_EG2013`.
+
+    EL TUBO NO SE MUEVE, que es la otra mitad: la 506 sigue siendo suya.
+    """
+    from constantes_normativas import (SECCION_ACERO_REFUERZO,
+                                       SECCION_CONCRETO_ESTRUCTURAL,
+                                       SECCION_EG2013_CAJON)
+
+    with declarados(DECLARACIONES_CAJON):
+        marco = _marco()
+    tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+
+    assert marco.seccion_eg2013 == SECCION_EG2013_CAJON
+    assert marco.seccion_eg2013 != tubo.seccion_eg2013
+    assert tubo.seccion_eg2013 == "506"
+    # Y las dos Secciones que la componen, nombradas: la del concreto y la del
+    # acero, no una tercera inventada.
+    assert SECCION_CONCRETO_ESTRUCTURAL in marco.seccion_eg2013
+    assert SECCION_ACERO_REFUERZO in marco.seccion_eg2013
+
+
 def test_los_cinco_pasos_de_fase_3_del_marco_salen_con_su_fundamento():
     """
     Los cinco pasos que `M2._pasos_del_marco` emite, con su fundamento.
