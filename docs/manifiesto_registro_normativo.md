@@ -317,6 +317,8 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.3.7c` | 4.1.1.3.7 c), ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | aproximacion | 2026-08-28 · imagen renderizada |
 | `MC_HHD.4.1.1.3.7c#G` | 4.1.1.3.7 c), lista de variables de la ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.7d` | 4.1.1.3.7 d) | 4.1.1.3.7  Consideraciones para el diseño › «d)  Mantenimiento y limpieza» | pág. impresa **80** · PDF 83 | exigencia | 2026-09-07 · texto |
+| `MC_HHD.4.1.1.4.1e` | 4.1.1.4.1 e) | 4.1.1.4   BADENES › 4.1.1.4.1  Consideraciones para el diseño › «e)   Borde libre» | pág. impresa **85** · PDF 88 | exigencia | 2026-09-08 · texto |
+| `MC_HHD.4.1.1.4.1e#RANGO` | 4.1.1.4.1 e), segunda oracion | 4.1.1.4   BADENES › 4.1.1.4.1  Consideraciones para el diseño › «e)   Borde libre» | pág. impresa **85** · PDF 88 | recomendacion | 2026-09-08 · texto |
 | `MC_HHD.4.1.1.5.1` | 4.1.1.5.1 | 4.1.1.5  PUENTES › «Aspectos generales» | pág. impresa **87** · PDF 90 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.5.4b24#G` | 4.1.1.5.4 b.2.4), ec. (63) | b.2.) Socavación General › «Método de Laursen» | pág. impresa **111** · PDF 114 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.2.1d` | 4.1.2.1 d) | 4.1.2.1 Cunetas › «d) Desagüe de las cunetas» | pág. impresa **179** · PDF 182 | exigencia | 2026-08-28 · ambos |
@@ -343,6 +345,10 @@ línea que se pueda romper.
 > **`MC_HHD.4.1.1.3.7c`** — La ec. (49) es d50 = V² / (3.1 g). La extraccion de texto la devuelve desordenada («) 1.3 ( 2 50 g V d =») por el orden de trazado, de modo que la lectura fiable es la de la pagina renderizada: el metodo de esta cita es IMAGEN y decirlo es parte de la verificacion.
 
 > **`MC_HHD.4.1.1.3.7c#G`** — NOR-HID-01 / MAT-O7. ESTE NUMERAL NO ESCRIBE NINGUN VALOR DE g: define el simbolo y su unidad. El 9.8 que el proyecto usa SI esta en el Manual, en otros dos numerales (ver MC_HHD.3.12.5 y MC_HHD.4.1.1.5.4b24), y el 9.81 no aparece ni una vez en las 225 paginas. Se corrige la ATRIBUCION, no el numero.
+
+> **`MC_HHD.4.1.1.4.1e`** — «debe contemplar mantener» es EXIGENCIA, y lo que exige es que HAYA borde libre: no fija cuanto. El cuanto esta en la oracion siguiente y es RECOMENDACION --- por eso son dos citas y no una, igual que el par VMIN_INICIO / VMIN de V2 ---. Fundir las dos en un solo objeto haria pasar por exigido el 0.30-0.50, que la fuente solo recomienda.
+
+> **`MC_HHD.4.1.1.4.1e#RANGO`** — LA ORACION LLEVA DOS COSAS Y SOLO UNA ES EL RANGO. La primera mitad DESCRIBE una practica --- que el borde libre se asuma igual a la altura de velocidad --- y el «sin embargo» la desplaza en favor del par de valores. El rango va en TEXTO CORRIDO, sin tabla, y no es funcion de ninguna variable: ni del caudal, ni de la luz, ni de la velocidad. El Manual tampoco da regla para elegir dentro de el, y por eso la eleccion es del proyectista y no de la fuente. «0.50m» va sin espacio entre numero y unidad, tal como imprime.
 
 > **`MC_HHD.4.1.1.5.1`** — NOR-HID-05, cerrado: el numeral ARRANCA en la pag. impresa 86 (PDF 89) y la frase que sostiene el valor esta en la 87 (PDF 90). La cita anterior decia «pag. 88», donde el Manual imprime «a.1) Topografía – Batimetría del cauce y zonas adyacentes», del num. 4.1.1.5.2.
 
@@ -951,6 +957,7 @@ recomienda.
 | `F5.V4` | Fase 5 - Verificaciones | V4 - Carga a la entrada bajo la subrasante, con el resguardo que fija el CBR | **obliga** | `MS.4.5.4`, `MS.9.1.3` |
 | `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | **define** | `MP.2.4.5.2#EV`, `MP.T2.4.5.3.1-2` |
+| `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | **recomienda** | `MC_HHD.4.1.1.4.1e`, `MC_HHD.4.1.1.4.1e#RANGO` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | **obliga** | `AASHTO_LRFD_9.12.6.6.3#COBERTURA`, `EG2013.508.07#RELLENO_MIN` |
 | `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | **obliga** | `E060.7.7.1`, `AASHTO_LRFD_9.T5.10.1-1` |
@@ -1080,5 +1087,5 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 114.
+Citas sin firma de verificación: **0** de 116.
 
