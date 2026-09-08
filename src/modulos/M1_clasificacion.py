@@ -690,7 +690,26 @@ PERFILES: Dict[Familia, PerfilFamilia] = {
         # `datos_pendientes` existe para reclamar. Los dos los aporta el mismo
         # Tablero 3.1 (Sec. 2.3: «Bloqueada por falta del dato de ANA»).
         campos_requeridos=("Q_m3s", "S_cauce"),
-        verificaciones_aceptacion=None,            # Sec. 2.3 no declara conjunto propio
+        # DEJA DE SER None AL IMPLEMENTARSE VC1. `None` significaba «la hoja de
+        # ruta no declara nada para esta familia», y eso era cierto de la
+        # Familia A --- cuyo conjunto la Sec. 2.3 escribe como «V1 + V2 + V4 +
+        # V5» --- pero NO de la C: la Sec. 2.3 le dedica una frase entera, «No
+        # puede alterar la rasante hidraulica ni el borde libre del canal», y
+        # esa frase es un requisito de aceptacion tan explicito como el de A.
+        # Lo que faltaba no era la declaracion de la fuente: era la
+        # verificacion que la implementara, y hasta esta sesion no existia.
+        #
+        # LA TUPLA NO ES UN CONJUNTO EXHAUSTIVO, exactamente igual que la de la
+        # Familia A y por el mismo motivo escrito en `PerfilFamilia`: es la
+        # HUELLA de lo que la Sec. 2.3 nombra para esta familia, y la tabla de
+        # la Fase 5 sigue aplicando punto por punto. Un cruce de canal se
+        # verifica con las once, no con una. Nadie despacha sobre este campo.
+        verificaciones_aceptacion=("VC1",),
+        # V5 NO ESTA, Y NO POR OLVIDO. En esta familia no se evalua: su umbral
+        # es un ancho de derecho de via y presupone agua extendiendose sobre la
+        # plataforma, mientras que aqui sube confinada entre las coronaciones
+        # del canal. VC1 ocupa su posicion en la tabla y mide contra la cota
+        # que si gobierna. Ver `M5._remanso_o_cruce_de_canal`.
         notas=(
             "No puede alterar la rasante hidraulica ni el borde libre del canal.",
             "Requiere autorizacion de obras en fuente natural / faja marginal.",

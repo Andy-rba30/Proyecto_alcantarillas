@@ -151,6 +151,36 @@ DIAMETRO_MIN_TMC_SELVA_ALTA_CONDICIONES = (
     "arbustiva en taludes. NO APLICA EN COSTA, que es donde esta este "
     "corredor (La Union, Piura).")
 
+# ---------------------------------------------------------------------------
+# EL OTRO BORDE LIBRE DEL MISMO MANUAL -- el par de valores del BADEN
+# ---------------------------------------------------------------------------
+# ESTA AQUI PORQUE ES [N] Y NO PORQUE LO USE UN CANAL. Es lo que el num.
+# 4.1.1.4.1 e) imprime, y lo que imprime vale igual en cualquier obra del pais:
+# el mismo reparto que CLAUDE.md fija para F_PGA_TABLA frente a 'F_pga'. La
+# TABLA es normativa; cual valor aplica a esta obra es del proyectista.
+#
+# Y AQUI LA DISTANCIA ENTRE LAS DOS COSAS ES MAYOR QUE DE COSTUMBRE, porque
+# entre la fuente y el uso hay DOS saltos y no uno:
+#
+#   1. El objeto.   El apartado cuelga de «4.1.1.4  BADENES» y mide contra la
+#                   SUPERFICIE DE RODADURA. VC1 mide contra la CORONACION DE UN
+#                   CANAL. Llevar el par de un datum al otro es analogia.
+#   2. La eleccion. Aun concedida la analogia, la fuente da una banda y NINGUNA
+#                   regla para elegir dentro de ella. El 0.50 lo pone quien
+#                   firma.
+#
+# Los dos saltos viven en 'borde_libre_canal_m' [A], con esta banda por
+# `sensibilidad`. Aqui solo esta la banda, que es el hecho sobre la norma.
+#
+# EL MANUAL NO FIJA BORDE LIBRE PARA UN CANAL, y esta verificado por ausencia
+# sobre las 225 paginas: ver `citas.SIN_BORDE_LIBRE_DE_CANAL`. Sin ese barrido
+# esta constante seria una fuente ajena tapando un vacio que quiza no existia,
+# que es la forma exacta de NOR-VAC-01.
+BORDE_LIBRE_BADEN_RANGO_M = (0.30, 0.50)   # m, texto corrido, sin tabla
+NUMERAL_BORDE_LIBRE_BADEN = _reg.cita("MC_HHD.4.1.1.4.1e").como_texto()
+NUMERAL_BORDE_LIBRE_BADEN_RANGO = _reg.cita(
+    "MC_HHD.4.1.1.4.1e#RANGO").como_texto()
+
 Y_SOBRE_D_MAX = 0.75                # borde libre >= 25%
 NUMERAL_BORDE_LIBRE = _reg.cita("MC_HHD.4.1.1.3.7b").como_texto()
 # Texto que fija Y_SOBRE_D_MAX, literal (MC-HHD, RD 20-2011-MTC/14,
@@ -1031,6 +1061,36 @@ UMBRALES_DE_VERIFICACION = (
                    "de entrada NO la elige el codigo: sale del criterio "
                    "'origen_cota_fondo_entrada', que aparece en el bloque de "
                    "criterios de esta memoria."},
+    {"codigo": "VC1",
+     "fundamento": "F5.VC1",
+     "que": "Cruce de canal -- borde libre del canal: cota_entrada + HW <= "
+            "cota_coronacion_canal - borde_libre_canal",
+     "citas": ("MC_HHD.4.1.1.4.1e", "MC_HHD.4.1.1.4.1e#RANGO"),
+     "literales_de_tabla": (),
+     "matiz": "LOS DOS SALTOS QUE HAY QUE VER ANTES DE LEER EL NUMERO. "
+              "(1) El requisito -- «no puede alterar la rasante hidraulica ni "
+              "el borde libre del canal» -- lo fija la Sec. 2.3 de la hoja de "
+              "ruta, NO un numeral del MTC: el Manual no fija borde libre "
+              "para un canal, y eso esta verificado por ausencia sobre sus "
+              "225 paginas (`citas.SIN_BORDE_LIBRE_DE_CANAL`). (2) El par "
+              "0.30-0.50 m sale del num. 4.1.1.4.1 e), cuyo objeto es un "
+              "BADEN y cuyo datum superior es la superficie de rodadura; "
+              "traerlo a la coronacion de un canal es una ANALOGIA del "
+              "proyectista, y elegir el 0.50 dentro de la banda es una "
+              "SEGUNDA decision suya, porque la fuente no da regla para "
+              "elegir. Por eso 'borde_libre_canal_m' es [A] y no [N->]: un "
+              "[N->] seria un valor que la fuente determina una vez concedida "
+              "la analogia, y aqui no lo determina.",
+     "aplicacion": "Se aplica como umbral DURO. El borde libre se RESTA de la "
+                   "coronacion, de modo que adoptar el extremo SUPERIOR de la "
+                   "banda (0.50 m) baja la cota admisible y endurece la "
+                   "verificacion: es el lado conservador, al reves que en la "
+                   "adopcion del riesgo de la Tabla Nº 02. VC1 cierra la "
+                   "mitad de la Sec. 2.3 que habla del BORDE LIBRE; la mitad "
+                   "que habla de la RASANTE HIDRAULICA no la cierra -- acota "
+                   "el nivel alcanzado, no mide en cuanto la obra levanta el "
+                   "pelo de agua del canal --, y esa distincion la imprime la "
+                   "memoria en el bloque de alcance."},
     {"codigo": "V7",
      "fundamento": "F5.V7",
      "que": "Flotacion del conducto vacio: gamma_DC_min*DC + gamma_EV_min*EV "

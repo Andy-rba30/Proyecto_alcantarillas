@@ -56,6 +56,7 @@ from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        v2b_sedimentacion,
                                        v4_carga_entrada, v4b_relacion_hw_d,
                                        v5_remanso,
+                                       vc1_borde_libre_canal,
                                        v6_material_solido_arrastre,
                                        v7_flotacion, v8_evento_extremo,
                                        v9_disponibilidad_diametro, verificar)
@@ -223,7 +224,17 @@ def test_v1_de_un_punto_de_familia_c_lleva_la_advertencia_de_alcance(concreto):
                           ).paso.nota_del_proyecto
     assert "ALCANCE (Familia C" in nota
     assert "la altura interior del propio barril" in nota
-    assert "ALCANTARILLA DE PASO" in nota
+    # LA AFIRMACION CAMBIO AL IMPLEMENTARSE VC1, y el cambio es el hallazgo del
+    # test. Antes la nota decia que cumplir V1 acredita la obra «COMO
+    # ALCANTARILLA DE PASO» y no dice nada del canal, porque NADA miraba el
+    # canal. Hoy VC1 lo mira, de modo que esa frase seria falsa: lo que la
+    # nota tiene que decir es que ESTE umbral no mide contra el canal y que
+    # hay que leer tambien la fila VC1, que si.
+    assert "COMO CRUCE DE CANAL" in nota
+    assert "VC1, que SI se evalua" in nota
+    # Y lo que VC1 tampoco cierra sigue nombrado junto al numero, que es la
+    # unica forma de que el revisor lo vea sin bajar al bloque de alcance.
+    assert "rasante" in nota and "hidraulica" in nota
     # Y sigue llevando lo que ya llevaba: la nota se suma, no sustituye.
     assert "umbral duro" in nota
 
@@ -663,6 +674,184 @@ def test_v5_con_el_criterio_declarado_no_revienta_con_assertionerror():
     assert excinfo.value.id_punto == "A-01"
 
 
+# ===========================================================================
+# VC1 - Cruce de canal: borde libre del canal (Sec. 2.3)
+# ===========================================================================
+# EL PUNTO DE PRUEBA, con sus cotas y por que estas. Es el C-01 del fixture --
+# fondo del canal 36.28, subrasante 38.95 -- mas la coronacion que el
+# levantamiento de los cruces aporta. El calado del canal (coronacion - fondo)
+# se elige de modo que las dos ramas del veredicto sean alcanzables moviendo
+# SOLO el HW, que es lo que la verificacion compara: con un canal de 1.20 m de
+# calado y 0.50 m de borde libre, la cota admisible queda 0.70 m sobre el
+# fondo.
+_C01_FONDO = 36.28
+_C01_CORONACION = 37.48          # 1.20 m de calado
+
+
+def _punto_de_canal(**cambios):
+    base = dict(id="C-01", familia=Familia.C,
+                cota_fondo_entrada=_C01_FONDO,
+                cota_coronacion_canal=_C01_CORONACION)
+    base.update(cambios)
+    return _punto(**base)
+
+
+def test_vc1_cumple_cuando_el_agua_queda_bajo_el_borde_libre():
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.60,
+                                                   HW_salida=0.20))
+    assert v.cumple
+    assert v.codigo == "VC1"
+    # cota_entrada + HW = 36.28 + 0.60 = 36.88
+    assert v.valor_obtenido == pytest.approx(36.88, rel=REL_TRANSPORTE)
+    # coronacion - borde libre = 37.48 - 0.50 = 36.98
+    assert v.valor_admisible == pytest.approx(36.98, rel=REL_TRANSPORTE)
+    assert v.paso.veredicto.margen == pytest.approx(0.10,
+                                                    rel=REL_TRANSPORTE)
+    assert v.criterio_aplicado == "borde_libre_canal_m"
+
+
+def test_vc1_no_cumple_cuando_el_agua_invade_el_borde_libre():
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.90,
+                                                   HW_salida=0.20))
+    assert not v.cumple
+    assert v.valor_obtenido == pytest.approx(37.18, rel=REL_TRANSPORTE)
+    assert v.paso.veredicto.margen == pytest.approx(-0.20,
+                                                    rel=REL_TRANSPORTE)
+    assert "desborda" in v.paso.veredicto.explicacion
+
+
+def test_vc1_y_v1_no_se_sustituyen_una_pasa_y_la_otra_no(concreto):
+    """
+    LA COMPROBACION QUE JUSTIFICA QUE VC1 EXISTA, y no una frase sobre ella.
+
+    El mismo punto, el mismo conducto y el mismo caudal: V1 CUMPLE --- el
+    barril trabaja al 67 % de su altura, holgado frente al 0.75 --- y VC1 NO
+    CUMPLE --- el agua embalsada a la entrada rebasa la coronacion del canal
+    menos su borde libre ---. Miden magnitudes distintas contra cotas
+    distintas, de modo que ninguna acota a la otra: es exactamente lo que la
+    declaracion de alcance venia afirmando sin poder demostrarlo, porque la
+    verificacion que lo demuestra no existia.
+    """
+    punto = _punto_de_canal()
+    resultado = _resultado(y_normal=0.60, HW_entrada=0.90, HW_salida=0.20)
+
+    v1 = v1_borde_libre(D=0.90, material=concreto, punto=punto,
+                        resultado=resultado)
+    vc1 = vc1_borde_libre_canal(punto=punto, resultado=resultado)
+
+    assert v1.cumple, "V1 tiene que pasar para que el contraste diga algo"
+    assert not vc1.cumple
+    # Y no es que VC1 sea «V1 con otro numero»: las magnitudes ni siquiera
+    # tienen la misma unidad. V1 compara una razon adimensional; VC1, cotas.
+    assert v1.paso.resultado.unidad == ""
+    assert vc1.paso.resultado.unidad == "msnm"
+
+
+def test_vc1_se_detiene_si_falta_la_coronacion_y_nombra_la_columna():
+    """
+    Sin la columna no hay veredicto, y la excepcion es Faltante y no
+    Pendiente: el revisor tiene que CONSEGUIR la cota (levantamiento), no
+    decidirla. No hay regla declarada que la sustituya.
+    """
+    with pytest.raises(DatoFaltanteError) as excinfo:
+        vc1_borde_libre_canal(punto=_punto_de_canal(cota_coronacion_canal=None),
+                              resultado=_resultado())
+    assert excinfo.value.campo == "cota_coronacion_canal"
+    assert excinfo.value.id_punto == "C-01"
+    assert isinstance(excinfo.value, ErrorProyecto)
+
+
+def test_vc1_se_detiene_si_el_borde_libre_no_esta_declarado():
+    """
+    Y el orden importa: el criterio se pide ANTES de mirar la columna, de modo
+    que un expediente sin borde libre declarado se detiene por el criterio
+    aunque ademas le falte la coronacion. Las dos son detenciones distintas y
+    se corrigen distinto.
+    """
+    with sin_valor("borde_libre_canal_m"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            vc1_borde_libre_canal(
+                punto=_punto_de_canal(cota_coronacion_canal=None),
+                resultado=_resultado())
+    assert excinfo.value.clave == "borde_libre_canal_m"
+
+
+def test_vc1_usa_el_invert_MEDIDO_y_no_invoca_la_regla_del_terreno():
+    """
+    VC1 comparte con V4 la puerta `cota_de_entrada`, y por tanto su
+    precedencia: con la columna llena manda el dato medido y el criterio
+    'origen_cota_fondo_entrada' no se aplica. Importa aqui mas que en V4,
+    porque en un paso de canal el fondo medido ES el fondo del canal y la
+    regla del terreno lo pondria por encima, en toda la profundidad de la
+    seccion.
+    """
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.60))
+    procedencia = [m for m in v.paso.sustitucion
+                   if m.simbolo == "cota_entrada"][0].procedencia
+    assert "cota_fondo_entrada" in procedencia
+    assert "MEDIDO" in procedencia
+    # Y con la columna vacia se aplica la regla, que aqui es `cota_terreno`.
+    v2 = vc1_borde_libre_canal(
+        punto=_punto_de_canal(cota_fondo_entrada=None,
+                              cota_coronacion_canal=45.00),
+        resultado=_resultado(HW_entrada=0.60))
+    assert v2.valor_obtenido == pytest.approx(42.10 + 0.60,
+                                              rel=REL_TRANSPORTE)
+
+
+def test_vc1_declara_el_borde_libre_como_eleccion_con_su_banda():
+    """
+    La ventana viaja con el numero: la memoria tiene que poder decir entre que
+    se eligio, y que la banda es la de un BADEN. Sin eso, el 0.50 se lee como
+    un valor normativo del canal, que es lo que no es.
+    """
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.60))
+    eleccion = v.paso.elecciones[0]
+    assert eleccion.valor == "0.5 m"
+    assert eleccion.entre == ("0.3 m", "0.5 m")
+    assert "BADEN" in eleccion.de_donde
+    assert eleccion.cita_id == "MC_HHD.4.1.1.4.1e#RANGO"
+    assert eleccion.clave_criterio == "borde_libre_canal_m"
+
+
+def test_vc1_no_presenta_su_umbral_como_exigencia_sobre_un_canal():
+    """
+    T11 EN EL SITIO DONDE PODIA FALLAR EN SILENCIO. El apartado 4.1.1.4.1 e)
+    lleva DOS oraciones: la primera es EXIGENCIA («debe contemplar mantener un
+    borde libre minimo») y la segunda RECOMENDACION («se recomienda adoptar
+    valores entre 0.30 y 0.50m»). Colgar el umbral o el verbo de la primera
+    habria pasado T11 sin queja --- T11 mira el `caracter` de la cita, no de
+    que trata --- y habria impreso el 0.50 con fuerza de exigencia sobre un
+    canal, cuando la fuente lo recomienda sobre un baden.
+
+    Es el mismo agujero estructural que C7 midio en `F5.V7`, aqui cerrado a
+    proposito y fijado por un test.
+    """
+    from normativa.esquema import Caracter, Verbo
+    from normativa.fundamentos import FUNDAMENTOS
+
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.60))
+    # La cita del UMBRAL --- la que lleva el numero --- es la del rango, y su
+    # caracter en el registro es RECOMENDACION.
+    assert v.paso.umbral.cita_id == "MC_HHD.4.1.1.4.1e#RANGO"
+    from normativa.registro import construir
+    assert construir().cita(
+        v.paso.umbral.cita_id).caracter is Caracter.RECOMENDACION
+    # El `caracter` que la memoria imprime nombra LAS DOS, como en V2 y por la
+    # misma razon: el apartado obliga a que HAYA borde libre y recomienda
+    # cuanto. Lo que no puede pasar es que se imprima solo la primera.
+    assert v.paso.umbral.caracter == "EXIGENCIA + RECOMENDACION"
+    assert FUNDAMENTOS["F5.VC1"].verbo is Verbo.RECOMIENDA
+    # Y el numeral impreso dice de que obra habla la fuente.
+    assert "baden" in v.numeral and "analogia declarada" in v.numeral
+    assert "NO fija borde libre para un canal" in v.numeral
+
+
 def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
     """
     Con 'peso_especifico_relleno_kn_m3' vacio, V7 se detiene ahi -- antes de
@@ -988,6 +1177,47 @@ def test_verificar_con_tmc_ya_pasa_v3_y_se_detiene_en_v5(tmc):
         verificar(punto=punto, material=tmc,
                   seccion=SeccionCircular(D=0.90),
                  resultado=_resultado(y_normal=0.60, V=1.5))
+    assert excinfo.value.clave == "remanso_derecho_via"
+
+
+def test_verificar_en_familia_C_corre_VC1_en_vez_de_V5(concreto):
+    """
+    LA UNICA BIFURCACION POR FAMILIA DE LA FASE 5, comprobada por su efecto.
+
+    Un punto de Familia C con la coronacion medida y el criterio declarado ya
+    NO se detiene en 'remanso_derecho_via': V5 no se le corre. Lo que ocupa su
+    posicion es VC1, que tiene con que resolverse y emite veredicto.
+    """
+    punto = _punto(familia=Familia.C, id="C-99",
+                   cota_fondo_entrada=36.28, cota_coronacion_canal=38.30)
+    # Se detiene mas ADELANTE que antes, y eso es parte del hallazgo: con V5
+    # fuera, la primera pendiente que queda en el orden de la tabla es la de
+    # V8 ('TR_evento_extremo'). Lo verificado hasta ahi viaja en la excepcion.
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        verificar(punto=punto, material=concreto,
+                  seccion=SeccionCircular(D=0.90),
+                  resultado=_resultado(y_normal=0.60, V=1.5))
+    assert excinfo.value.clave == "TR_evento_extremo"
+    hechas = excinfo.value.verificaciones_completadas
+    codigos = [v.codigo for v in hechas]
+    assert "VC1" in codigos
+    assert "V5" not in codigos
+    # Y la posicion importa: VC1 ocupa el hueco de V5, entre V4b y V6.
+    assert codigos.index("VC1") == codigos.index("V4b") + 1
+    assert codigos.index("VC1") == codigos.index("V6") - 1
+
+
+def test_verificar_en_familia_A_sigue_deteniendose_en_V5_y_no_corre_VC1(concreto):
+    """
+    La contracara: la sustitucion es de la Familia C y de nadie mas. Un punto
+    de Familia A con la coronacion llena --- que no deberia tenerla, pero el
+    tipo lo admite --- sigue corriendo V5 y deteniendose en su criterio.
+    """
+    punto = _punto(cota_coronacion_canal=45.00)
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        verificar(punto=punto, material=concreto,
+                  seccion=SeccionCircular(D=0.90),
+                  resultado=_resultado(y_normal=0.60, V=1.5))
     assert excinfo.value.clave == "remanso_derecho_via"
 
 

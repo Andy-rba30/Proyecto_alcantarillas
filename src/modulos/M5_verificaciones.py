@@ -224,7 +224,8 @@ from __future__ import annotations
 from typing import Tuple
 
 import criterios_adoptados as ca
-from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE,
+from constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
+                                   RESGUARDO_NAPA_SUBRASANTE,
                                    UMBRALES_POR_CODIGO, V_MIN,
                                    Y_SOBRE_D_MAX, caracter_del_umbral)
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
@@ -324,6 +325,25 @@ NUMERAL_V2B = ('HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 "Sedimentation", '
                'fila V2b de la hoja de ruta -- el acceso de mantenimiento en '
                'planos -- entra por el criterio '
                "'acceso_mantenimiento_v2b' [A]")
+# VC1 NO ES UN NUMERAL DEL MTC Y EL ROTULO TIENE QUE DECIRLO. El requisito lo
+# fija la Sec. 2.3 de la hoja de ruta, en prosa; el Manual no fija borde libre
+# para un canal (verificado por ausencia sobre sus 225 paginas). Lo unico que
+# viene de un numeral es el par de valores, y viene de uno cuyo objeto es un
+# BADEN. Escribir aqui «num. 4.1.1.4.1 e)» a secas haria pasar por exigencia
+# sobre un canal lo que la fuente recomienda sobre otra obra -- que es el
+# mismo defecto que NUMERAL_V4B evita con el HDS-5.
+NUMERAL_VC1 = ("Sec. 2.3 (requisito de la Familia C: «No puede alterar la "
+               "rasante hidraulica ni el borde libre del canal»). El Manual "
+               "de Hidrologia NO fija borde libre para un canal: sus dos "
+               "apartados de «Borde libre» son de alcantarillas "
+               "(num. 4.1.1.3.7 b) y de badenes (num. 4.1.1.4.1 e). El "
+               "resguardo de 0.30-0.50 m que este umbral usa sale del "
+               "SEGUNDO, pag. impresa 85, donde el Manual lo RECOMIENDA para "
+               "un baden y lo mide contra la superficie de rodadura; "
+               "aplicarlo a la coronacion de un canal es analogia declarada "
+               "del proyectista, y elegir el 0.50 dentro de la banda es una "
+               "segunda decision suya. Las dos van en el criterio "
+               "'borde_libre_canal_m' [A]")
 NUMERAL_V5 = "Fase 5, V5 (DG-2018 + Ley 29338)"
 NUMERAL_V6 = "3.1"
 NUMERAL_V7 = ("Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; "
@@ -341,6 +361,9 @@ CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
 CRITERIO_ACCESO_MANTENIMIENTO = "acceso_mantenimiento_v2b"
 # La regla con la que se obtiene la cota de fondo de entrada (V4, V7 y 7.A).
 CRITERIO_ORIGEN_COTA_ENTRADA = "origen_cota_fondo_entrada"
+# El resguardo bajo la coronacion del canal que VC1 no deja invadir. Es de
+# CORREDOR y no columna: no se mide, se adopta (ver su ficha).
+CRITERIO_BORDE_LIBRE_CANAL = "borde_libre_canal_m"
 # Reglas IMPLEMENTADAS: clave = valor que el proyectista declara en el
 # criterio, valor = campo de `PuntoCritico` del que sale la cota. No hay
 # aritmetica ninguna aqui -- cada regla es la lectura de una columna que el
@@ -436,6 +459,12 @@ CITA_DEL_UMBRAL = {
     "V2b": "HDS5_3ED.5.3.3#INDICADORES",
     "V3": "MC_HHD.4.1.1.3.6#T10",
     "V4": "MS.4.5.4",
+    # VC1: la cita que lleva el NUMERO es la del rango, no la que obliga a
+    # dejar borde libre -- mismo reparto que en V2. Y aqui importa el doble,
+    # porque la que obliga es EXIGENCIA: anclarle el umbral a ella haria que
+    # la memoria imprimiera el 0.50 con caracter de exigencia sobre un canal,
+    # cuando la fuente lo recomienda sobre un baden.
+    "VC1": "MC_HHD.4.1.1.4.1e#RANGO",
     "V7": "MP.T2.4.5.3.1-2",
 }
 
@@ -477,17 +506,59 @@ def _veredicto(cumple: bool, margen: float, unidad: str,
 # se evaluan MIDEN CONTRA OTRA COTA. Nombrar en cada verificacion contra que
 # mide ESA es lo que convierte el argumento general en una lectura del numero
 # que el revisor tiene delante.
+# REESCRITA AL IMPLEMENTARSE VC1, Y ESE ES EL PUNTO. La redaccion anterior
+# decia, palabra por palabra, que el requisito de la Sec. 2.3 «NO se evalua en
+# esta corrida» y que la verificacion que lo evaluaria «necesita el nivel de
+# agua de diseño del canal y su borde libre, que no son columna de la Sec. 1.2
+# ni los aporta ningun tablero». Las dos mitades dejaron de ser ciertas: VC1
+# existe y se evalua, y la columna `cota_coronacion_canal` es de la Sec. 1.2.
+#
+# DEJARLA MINTIENDO HABRIA SIDO PEOR QUE NO HABERLA ESCRITO, y es SIS-A-03: un
+# texto de alcance que describe un estado del programa que ya no existe se lee
+# con la autoridad de una declaracion y desinforma con ella. Tampoco se BORRA,
+# que es el otro extremo: la mitad del requisito que sigue sin evaluarse
+# necesita seguir dicha, y ahora se puede decir con precision cual es.
 NOTA_ALCANCE_FAMILIA_C = (
-    "ALCANCE (Familia C -- cruce de canal o dren): el unico requisito que la "
-    "Sec. 2.3 le da a esta familia -- no alterar la rasante hidraulica ni el "
-    "borde libre del canal -- NO se evalua en esta corrida. La verificacion "
-    "que lo evaluaria (VC1) necesita el nivel de agua de diseño del canal y "
-    "su borde libre, que no son columna de la Sec. 1.2 ni los aporta ningun "
-    "tablero. ESTE umbral mide contra {contra}, no contra el canal: "
-    "cumplirlo acredita la obra como ALCANTARILLA DE PASO y no dice nada "
-    "sobre su admisibilidad COMO CRUCE DE CANAL. La declaracion entera, con "
-    "el argumento de por que la sustitucion no es conservadora, esta en el "
-    "bloque «Alcance declarado de la corrida», etapa «VC1»."
+    "ALCANCE (Familia C -- cruce de canal o dren): ESTE umbral mide contra "
+    "{contra}, no contra el canal. Contra el canal mide VC1, que SI se evalua "
+    "en esta corrida: es la verificacion del requisito de la Sec. 2.3 y "
+    "compara el nivel que el agua alcanza a la entrada con la coronacion del "
+    "canal menos su borde libre. Cumplir ESTE umbral sigue sin decir nada "
+    "sobre la admisibilidad de la obra COMO CRUCE DE CANAL: eso lo dice VC1, "
+    "y hay que leer las dos filas. LO QUE VC1 TAMPOCO CIERRA, y queda "
+    "declarado: la Sec. 2.3 pide dos cosas -- no alterar la rasante "
+    "hidraulica NI el borde libre -- y VC1 cierra la segunda. La primera "
+    "exige el tirante normal del canal en la seccion del cruce (su geometria "
+    "trapecial y su n de Manning, que no son columna de la Sec. 1.2) y la "
+    "extension aguas arriba del remanso. Ver el bloque «Alcance declarado de "
+    "la corrida», etapa «VC1»."
+)
+
+# LA MISMA ADVERTENCIA, DICHA DESDE DENTRO DE VC1. No es la de arriba con otro
+# texto: aquella avisa al lector de un umbral que NO mira el canal de que
+# existe otro que si; esta avisa al lector del que SI mira el canal de hasta
+# donde llega. Un paso que acredita media Sec. 2.3 y se imprime como si
+# acreditara la Sec. 2.3 entera es la forma de NOR-MEM-01 --- cierto sobre el
+# codigo, falso sobre el producto --- aplicada al veredicto mas importante de
+# esta familia.
+NOTA_VC1_LO_QUE_NO_MIDE = (
+    "QUE ACREDITA ESTE VEREDICTO Y QUE NO. La Sec. 2.3 pide dos cosas al "
+    "cruce de canal: que no altere la RASANTE HIDRAULICA del canal y que no "
+    "altere su BORDE LIBRE. VC1 verifica la segunda: el agua embalsada no "
+    "invade el resguardo bajo la coronacion. NO verifica la primera: acota el "
+    "nivel que el agua alcanza, no mide en cuanto la obra levanta el pelo de "
+    "agua respecto del que el canal tendria sin ella, de modo que un punto "
+    "puede cumplir VC1 con holgura y aun asi haber subido la rasante "
+    "hidraulica del canal en una fraccion apreciable de su calado. Cerrar esa "
+    "mitad exige dos cosas que esta corrida no tiene: el tirante normal del "
+    "canal en la seccion del cruce -- que necesita su geometria trapecial "
+    "(ancho de solera y talud) y su n de Manning, ninguno de los dos columna "
+    "de la Sec. 1.2 -- y la extension aguas arriba del remanso, que VC1 "
+    "tampoco acota: mide en LA SECCION DEL CRUCE. "
+    "EL BORDE LIBRE ADOPTADO NO ES EL DEL CANAL: es el que el proyecto adopta "
+    "por analogia con el de un baden. El del propio canal lo fija quien lo "
+    "opera (ANA / Junta de Usuarios), y si ese fuera mayor que el adoptado, "
+    "esta verificacion seria menos exigente que el proyecto del canal."
 )
 
 
@@ -1434,6 +1505,15 @@ def v5_remanso(*, punto: PuntoCritico,
     de remanso ni el ancho de derecho de via por punto (no es columna del
     CSV, Sec. 1.2): sin los dos, V5 no tiene con que comparar el HW de M4.
 
+    YA NO SE INVOCA EN LA FAMILIA C, y no por falta de datos: por no aplicar.
+    Su umbral es un ANCHO --- presupone agua extendiendose lateralmente sobre
+    la plataforma al remansarse ---, y en un paso de canal el agua sube
+    confinada entre las dos coronaciones del canal. Ahi el ancho no acota
+    nada y lo que acota es la cota del labio, que es lo que compara
+    `vc1_borde_libre_canal`. La justificacion completa, con lo que la
+    sustitucion NO cubre, esta en `_remanso_o_cruce_de_canal`. Esta funcion
+    sigue sirviendo a las Familias A y B, donde su premisa si se sostiene.
+
     Se detiene en el criterio 'remanso_derecho_via' -- vacio a proposito, ver
     su justificacion en criterios_adoptados.py -- en vez de aproximar con el
     ancho de plataforma (`punto.ancho_plataforma`), que es la seccion vial
@@ -1464,6 +1544,162 @@ def v5_remanso(*, punto: PuntoCritico,
             "(no es columna de Sec. 1.2) y el perfil de remanso aguas arriba "
             "con que comparar el HW de M4. La hoja de ruta fija el requisito "
             "y no el metodo: mientras no exista, V5 no se declara cumplida"
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# VC1 - Cruce de canal: borde libre del canal (Sec. 2.3)
+# ---------------------------------------------------------------------------
+
+def vc1_borde_libre_canal(*, punto: PuntoCritico,
+                          resultado: ResultadoHidraulico) -> Verificacion:
+    """
+    cota de entrada + HW <= cota de coronacion del canal - borde libre, Sec. 2.3.
+
+    LA VERIFICACION QUE DE VERDAD GOBIERNA A LA FAMILIA C, y hasta esta sesion
+    no existia. La Sec. 2.3 le da a esta familia un solo requisito --- «No
+    puede alterar la rasante hidraulica ni el borde libre del canal» --- y
+    ninguna verificacion lo evaluaba: §13 de `docs/ruta_familia_c.md` lo
+    llevaba declarado como deuda porque faltaba el dato. El dato llego
+    (levantamiento propio de los seis cruces) y con el la columna
+    `cota_coronacion_canal`.
+
+    POR QUE NO LA SUSTITUYE NINGUNA DE LAS QUE YA HABIA. Las tres que miden
+    algo parecido miden contra OTRA cota:
+
+        V1   el llenado DENTRO del barril      (y <= 0.75 H)
+        V4   la subrasante de la VIA           (con su resguardo por CBR)
+        V4b  la carga relativa a la seccion    (HW/D)
+
+    Las tres pueden cumplirse con el canal desbordado, porque ninguna mira el
+    canal. En un paso de canal el agua que la alcantarilla embalsa no se
+    extiende sobre el terreno: sube dentro de un cauce confinado, y si llega a
+    la coronacion desborda sobre parcela de tercero ANTES de entrar al
+    conducto. VC1 es mas exigente que V1 y no la sustituye: son dos umbrales
+    sobre magnitudes distintas.
+
+    QUE MITAD DE LA SEC. 2.3 CIERRA, Y QUE MITAD NO. Cierra la del BORDE
+    LIBRE: el agua no invade el resguardo bajo la coronacion. NO cierra la de
+    la RASANTE HIDRAULICA: acota el nivel que el agua alcanza, no mide en
+    cuanto la obra LEVANTA el pelo de agua del canal respecto del que tendria
+    sin ella. Un HW justo bajo el umbral puede ser una alteracion grande de la
+    rasante hidraulica y VC1 lo da por bueno. Medir la otra mitad exige el
+    tirante normal del canal en la seccion del cruce --- o sea su geometria
+    trapecial (b, z) y su n de Manning, que no son columna de Sec. 1.2 --- y
+    ademas la extension aguas arriba del remanso. Queda declarado, no cerrado
+    en silencio: es lo que imprime la nota de alcance de esta familia.
+
+    LOS DOS TERMINOS SON NIVELES, igual que en V4 y por la misma razon: HW es
+    una carga en metros sobre el fondo de la entrada, no una cota. La cota de
+    entrada la resuelve `cota_de_entrada`, que en un paso de canal es la
+    nivelacion del fondo DEL CANAL en el cruce.
+
+    EL BORDE LIBRE NO ES [N]. Sale del criterio 'borde_libre_canal_m' [A]: el
+    Manual no fija borde libre para un canal --- verificado por ausencia sobre
+    sus 225 paginas, `citas.SIN_BORDE_LIBRE_DE_CANAL` --- y el par 0.30-0.50 m
+    que el proyecto adopta es el del num. 4.1.1.4.1 e), cuyo objeto es un
+    BADEN y cuyo datum superior es la superficie de rodadura. La analogia y la
+    eleccion dentro de la banda son del proyectista y viajan en el criterio.
+
+    Se detiene sin veredicto en dos sitios, y ninguno es un fallo de programa:
+
+    - Criterio SIN declarar -> `CriterioPendienteError` (la lanza `ca.valor`).
+    - Columna vacia         -> `DatoFaltanteError`. El revisor tiene que
+      CONSEGUIR la cota, no decidirla: no hay regla que la sustituya.
+    """
+    borde_libre = ca.valor(CRITERIO_BORDE_LIBRE_CANAL)
+    coronacion = punto.cota_coronacion_canal
+    if coronacion is None:
+        raise DatoFaltanteError(
+            "cota_coronacion_canal", id_punto=punto.id,
+            detalle=(
+                "VC1 mide contra la coronacion del canal y esta fila la deja "
+                "vacia. Sale del levantamiento topografico del cruce --- "
+                "seccion transversal del canal con su fondo y sus dos "
+                "coronaciones --- y NO hay regla declarada que la sustituya: "
+                "ni el terreno natural ni la rasante son el labio del canal. "
+                "Sin ella el requisito de la Sec. 2.3 no se puede evaluar, y "
+                "el programa no lo da por cumplido"
+            ),
+        )
+
+    entrada = cota_de_entrada(punto)
+    HW_cota = entrada.valor + resultado.HW
+    admisible = coronacion - borde_libre
+
+    cumple = HW_cota <= admisible + TOL_UMBRAL_NORMATIVO
+    return Verificacion(
+        cumple=cumple,
+        numeral=NUMERAL_VC1,
+        valor_obtenido=HW_cota,
+        valor_admisible=admisible,
+        criterio_aplicado=CRITERIO_BORDE_LIBRE_CANAL,
+        codigo="VC1",
+        paso=paso(
+            "F5.VC1",
+            codigo="VC1",
+            que="Cruce de canal: el agua embalsada frente a la coronacion "
+                "del canal",
+            formula="cota_entrada + HW <= cota_coronacion_canal - "
+                    "borde_libre_canal",
+            # LA CITA DE LA FORMULA ES LA DEL BORDE LIBRE, que es lo unico de
+            # la desigualdad que sale de una fuente. La desigualdad entera no
+            # la escribe ningun numeral: la escribe la Sec. 2.3 de la hoja de
+            # ruta como REQUISITO, en prosa y sin formula. Es el mismo reparto
+            # que V7 --- fuente para las partes, proyecto para el ensamblaje
+            # --- y por eso la separacion va tambien en la nota.
+            formula_cita_id="MC_HHD.4.1.1.4.1e",
+            sustitucion=(
+                Magnitud("cota_entrada", entrada.valor, "msnm",
+                         entrada.procedencia, cifras=CIFRAS_MAGNITUD),
+                Magnitud("HW", resultado.HW, "m",
+                         "M4, carga a la entrada del control que GOBIERNA "
+                         "(entrada o salida, el mayor de los dos)",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("cota_coronacion_canal", coronacion, "msnm",
+                         "columna cota_coronacion_canal del CSV: "
+                         "levantamiento topografico del cruce. Dato de sitio "
+                         "[S], medido punto a punto",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("borde_libre_canal", borde_libre, "m",
+                         f"criterio '{CRITERIO_BORDE_LIBRE_CANAL}' [A]: "
+                         "adopcion del proyectista dentro de la banda "
+                         "0.30-0.50 m que el num. 4.1.1.4.1 e) recomienda "
+                         "PARA UN BADEN. No es un valor normativo del canal",
+                         cifras=CIFRAS_FACTOR)),
+            resultado=Magnitud("cota alcanzada por el agua", HW_cota, "msnm",
+                               "cota_entrada + HW", cifras=CIFRAS_MAGNITUD),
+            umbral=_umbral_de(
+                "VC1", valor=admisible, unidad="msnm",
+                descripcion="cota maxima que el agua puede alcanzar en el "
+                            "canal (coronacion menos borde libre)",
+                criterio=CRITERIO_BORDE_LIBRE_CANAL),
+            veredicto=_veredicto(
+                cumple, admisible - HW_cota, "m",
+                "el agua queda bajo la coronacion del canal con su borde "
+                "libre"
+                if cumple else
+                "el agua embalsada invade el borde libre del canal: desborda "
+                "sobre las parcelas colindantes antes de entrar al conducto"),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="borde libre del canal",
+                valor=f"{borde_libre} m",
+                entre=tuple(f"{v} m" for v in BORDE_LIBRE_BADEN_RANGO_M),
+                de_donde="la banda que el num. 4.1.1.4.1 e) del Manual "
+                         "recomienda, en texto corrido y sin tabla, PARA UN "
+                         "BADEN",
+                por_que="es el extremo SUPERIOR de la banda, y aqui el "
+                        "extremo superior es el conservador: el borde libre "
+                        "se resta de la coronacion, de modo que subirlo baja "
+                        "la cota admisible y endurece la verificacion. El "
+                        "Manual no da regla para elegir dentro de la banda ni "
+                        "fija borde libre alguno para un canal, y por eso "
+                        "esto es una eleccion del proyectista y no una "
+                        "lectura de la fuente",
+                cita_id="MC_HHD.4.1.1.4.1e#RANGO",
+                clave_criterio=CRITERIO_BORDE_LIBRE_CANAL),),
+            nota_del_proyecto=NOTA_VC1_LO_QUE_NO_MIDE,
         ),
     )
 
@@ -1828,28 +2064,91 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 # Agregado: la firma que llama MD.py
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# LA UNICA FILA DE LA FASE 5 QUE DEPENDE DE LA FAMILIA, y por que
+# ---------------------------------------------------------------------------
+# V5 SE DECLARA NO APLICABLE EN LA FAMILIA C, Y VC1 OCUPA SU SITIO. La decision
+# es del proyecto y va sostenida aqui, en el sitio donde surte efecto.
+#
+# POR QUE NO APLICA, y no es que «no se pueda evaluar». V5 verifica que el
+# embalse quede DENTRO DEL DERECHO DE VIA, sin invadir predio de tercero ni la
+# faja marginal. Esa formulacion presupone agua que se EXTIENDE lateralmente
+# sobre el terreno al remansarse contra el terraplen, y por eso el umbral es un
+# ancho. En un paso de canal esa premisa es falsa: el agua sube DENTRO de un
+# cauce confinado entre dos coronaciones, y su avance no es lateral sobre la
+# plataforma sino vertical contra el labio del canal. Un ancho de derecho de
+# via no acota nada ahi; lo que acota es la coronacion. Dejarla «pendiente para
+# siempre» sostenia que faltaba un dato --- `ancho_derecho_via_m` --- para una
+# comparacion que en esta familia no dice lo que hay que decir aunque el dato
+# llegue.
+#
+# LA PREOCUPACION NO DESAPARECE: CAMBIA DE DIRECCION. Lo que V5 protege son
+# los terceros, y en un cruce de canal los terceros siguen ahi --- las parcelas
+# que el canal riega ---. Solo que se les llega por el canal y no por la
+# plataforma, y esa es exactamente la comparacion que hace VC1. Por eso V5 no
+# se declara «no aplicable» a secas sino SUSTITUIDA, con su sustituta corriendo
+# en la misma posicion de la tabla y con veredicto real.
+#
+# LO QUE LA SUSTITUCION NO CUBRE, dicho aqui y en la memoria y no solo aqui:
+# VC1 mide EN LA SECCION DEL CRUCE y no acota cuanto se extiende el remanso
+# aguas arriba. Un tercero situado varios centenares de metros arriba, donde el
+# canal tenga la coronacion mas baja, puede quedar afectado por un remanso que
+# en el cruce cumple. V5 tampoco lo cubria --- su umbral era un ancho, no una
+# longitud ---, de modo que la sustitucion no PIERDE alcance; pero decir que
+# VC1 cierra el hueco entero seria falso, y se dice.
+# DEVUELVE EL CODIGO ADEMAS DE LA PIEZA, y no es adorno. Hay DOS llamadores
+# --- `verificar` aqui y `cli._verificador_perfil` --- y no tratan igual lo que
+# sale: para el de perfil, V5 es una verificacion DIFERIDA (su fallo se anota y
+# el punto sigue dimensionandose) mientras que VC1 es OBLIGATORIA (su fallo
+# bloquea el material). Si el llamador tuviera que deducir cual le toca
+# mirando la familia por su cuenta, la regla viviria en dos sitios y podrian
+# divergir: es exactamente lo que ya paso con la lista literal de
+# `_verificador_perfil`, que se quedo sin VC1 mientras `verificar` ya lo
+# corria, de modo que a `--alcance perfil` --- el alcance del entregable --- un
+# cruce de canal seguia saliendo con V5 diferida y sin VC1 por ninguna parte.
+def pieza_del_hueco_de_V5(*, punto: PuntoCritico,
+                          resultado: ResultadoHidraulico):
+    """(codigo, pieza) que ocupa la posicion de V5: VC1 en Familia C, V5 si no."""
+    if punto.familia is Familia.C:
+        return "VC1", lambda: vc1_borde_libre_canal(punto=punto,
+                                                    resultado=resultado)
+    return "V5", lambda: v5_remanso(punto=punto, resultado=resultado)
+
+
 def verificar(*, punto: PuntoCritico, material: Material,
              seccion: Seccion,
              resultado: ResultadoHidraulico) -> Tuple[Verificacion, ...]:
     """
-    Las diez verificaciones de la Fase 5, en el orden de la tabla. Coincide
+    Las once verificaciones de la Fase 5, en el orden de la tabla. Coincide
     con la firma de `modulos.MD.Verificador`: MD la importa como
     `modulos.M5_verificaciones.verificar` cuando no se le inyecta otra.
 
-    Se detiene -- sin devolver nada -- en la primera de V3 (TMC/HDPE), V5, V7
-    o V8 que este pendiente: son excepciones, no verificaciones incumplidas,
-    y el bucle de MD no debe tratarlas como un diametro rechazado sino como
-    lo que son, un calculo que no puede completarse todavia.
+    UNA SOLA POSICION DEPENDE DE LA FAMILIA, y es la septima: en la Familia C
+    la ocupa VC1 (cruce de canal) y en las demas V5 (remanso en el derecho de
+    via). El resto se evalua igual en las tres. La justificacion de esa
+    sustitucion --- que V5 presupone agua extendiendose sobre la plataforma y
+    en un paso de canal el agua sube confinada entre coronaciones --- esta en
+    `_remanso_o_cruce_de_canal`, que es donde surte efecto. Es la UNICA
+    bifurcacion por familia de este modulo, y deliberadamente no se despacha
+    sobre `PerfilFamilia.verificaciones_aceptacion`: aquel campo es la huella
+    de una frase de la Sec. 2.3, y convertirlo en filtro dejaria a la Familia
+    A sin V3, V6, V7, V8 y V9, que es la lectura no conservadora que su propio
+    docstring existe para no habilitar.
+
+    Se detiene -- sin devolver nada -- en la primera de V3 (TMC/HDPE), V5,
+    VC1, V7 o V8 que este pendiente: son excepciones, no verificaciones
+    incumplidas, y el bucle de MD no debe tratarlas como un diametro rechazado
+    sino como lo que son, un calculo que no puede completarse todavia.
 
     PERO LO QUE YA SE VERIFICO NO SE TIRA. Al detenerse, la excepcion se lleva
     en `verificaciones_completadas` las que si se evaluaron, con su veredicto y
-    con su `PasoDeMemoria`. En ESTE expediente eso no es un detalle: ninguna
-    combinacion pasa de V5 --- `v5_remanso` se detiene siempre en
-    `ancho_derecho_via_m` ---, de modo que sin esto el desarrollo de V1 a V4b,
-    que si se calculo entero, no llegaba nunca a la memoria y el revisor solo
-    veia «no dimensionado». Es la misma trampa de NOR-MEM-01: cierto sobre el
-    codigo y falso sobre el producto. Escribirlo como una lista y no como una
-    tupla literal es lo que permite conservarlas.
+    con su `PasoDeMemoria`. En ESTE expediente eso no es un detalle: en las
+    Familias A y B ninguna combinacion pasa de V5 --- `v5_remanso` se detiene
+    siempre en `ancho_derecho_via_m` ---, de modo que sin esto el desarrollo de
+    V1 a V4b, que si se calculo entero, no llegaba nunca a la memoria y el
+    revisor solo veia «no dimensionado». Es la misma trampa de NOR-MEM-01:
+    cierto sobre el codigo y falso sobre el producto. Escribirlo como una lista
+    y no como una tupla literal es lo que permite conservarlas.
     """
     # LAS OTRAS TRES SIGUEN PIDIENDO LA ALTURA, y eso no es suponer una
     # forma: `Seccion.altura` es la altura interior de cualquiera de ellas --
@@ -1866,7 +2165,7 @@ def verificar(*, punto: PuntoCritico, material: Material,
         lambda: v3_velocidad_maxima(material=material, resultado=resultado),
         lambda: v4_carga_entrada(punto=punto, resultado=resultado),
         lambda: v4b_relacion_hw_d(D=D, resultado=resultado),
-        lambda: v5_remanso(punto=punto, resultado=resultado),
+        pieza_del_hueco_de_V5(punto=punto, resultado=resultado)[1],
         lambda: v6_material_solido_arrastre(material=material),
         lambda: v7_flotacion(punto=punto, material=material,
                              seccion=seccion, resultado=resultado),
