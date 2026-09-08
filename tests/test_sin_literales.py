@@ -1134,7 +1134,22 @@ def _numeros_de_cuerpo(html: str):
     cuerpo = re.sub(r"(?s)<h[1-6][^>]*>.*?</h[1-6]>", "", cuerpo)   # titulos
     cuerpo = re.sub(_PALABRAS_DE_SECCION + r"\s+\d+(?:\.\d+)?(?:\s*,\s*\d+)*"
                     r"(?:\s+y\s+\d+)?", "", cuerpo)
-    cuerpo = re.sub(r"%%[^%]*%%", "", cuerpo)                        # marcadores
+    # EL MARCADOR ES `%%nombre` Y NO LLEVA CIERRE. El patron era
+    # `%%[^%]*%%`, que exige DOS `%%` y por tanto emparejaba cada marcador con
+    # el SIGUIENTE, borrando el cuerpo entero que hay entre los dos. La
+    # plantilla de perfil tiene 14 marcadores, de modo que la mitad de su
+    # cuerpo no se miraba nunca --- y ahi dentro estaba, por ejemplo, el
+    # «13 647 caracteres» de la nota de SIS-B-06. Este barrido llevaba desde
+    # SIS-C-11 en verde SOBRE UN HUECO, que es la misma forma del
+    # `FACTOR_MURO_TABLA` de la constitucion: un test satisfecho por lo que no
+    # llega a mirar. Lo destapo C8 al añadir un marcador, que cambio los
+    # emparejamientos.
+    cuerpo = re.sub(r"%%\w+", "", cuerpo)                            # marcadores
+    # La UNICA cifra de prosa que el barrido ve, censada por su nombre y no
+    # por un patron ancho: no es un valor de calculo --- es cuantos caracteres
+    # descartaba en silencio la plantilla que omitia un marcador --- y quitarla
+    # empeoraria la nota que la explica.
+    cuerpo = cuerpo.replace("13&nbsp;647 caracteres", "esa cantidad de caracteres")
     # El signo menos entra en el patron -- un -0.75 escondido en una celda
     # es tan valor como el positivo -- pero el guion que separa palabras
     # (utf-8, 0-bis) no: por eso el lookbehind sigue excluyendo el guion

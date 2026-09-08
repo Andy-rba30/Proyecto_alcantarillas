@@ -1171,14 +1171,15 @@ def test_una_clave_al_nivel_de_la_subrasante_o_encima_es_una_cota_a_corregir(
     casilla del CSV) y que el motivo diga por que -- con el numero del
     relleno que salio, para que el revisor sepa cuanto le falta.
     """
-    D = 1.50
+    seccion = SeccionCircular(D=1.50)
     punto_base = _punto()
-    clave = cota_clave(punto=punto_base, material=hdpe, D=D)
+    clave = cota_clave(punto=punto_base, material=hdpe, seccion=seccion)
     subrasante = clave + delta_sobre_la_clave
 
     with pytest.raises(DatoInvalidoError) as exc:
         altura_relleno_sobre_clave(
-            punto=_punto(cota_subrasante=subrasante), material=hdpe, D=D)
+            punto=_punto(cota_subrasante=subrasante), material=hdpe,
+            seccion=seccion)
 
     assert exc.value.campo == "cota_subrasante", descripcion
     assert exc.value.id_punto == punto_base.id
@@ -1194,12 +1195,13 @@ def test_con_la_subrasante_por_encima_de_la_clave_la_altura_es_la_resta(hdpe):
     El contraste: la guarda no rechaza rellenos pequeños, solo los nulos o
     negativos. Falla si alguien la endurece con un minimo inventado.
     """
-    D = 1.50
-    clave = cota_clave(punto=_punto(), material=hdpe, D=D)
+    seccion = SeccionCircular(D=1.50)
+    clave = cota_clave(punto=_punto(), material=hdpe, seccion=seccion)
     holgura = 0.40
 
     altura = altura_relleno_sobre_clave(
-        punto=_punto(cota_subrasante=clave + holgura), material=hdpe, D=D)
+        punto=_punto(cota_subrasante=clave + holgura), material=hdpe,
+        seccion=seccion)
 
     assert altura == pytest.approx(holgura, rel=REL_TRANSPORTE)
 

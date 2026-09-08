@@ -1061,6 +1061,33 @@ class EstadoDiscrepancia(str, Enum):
     RESUELTA = "resuelta"
     ERRATA_DE_IMPRENTA = "errata_de_imprenta"
 
+    @property
+    def viva(self) -> bool:
+        """
+        Si la discrepancia SIGUE EN PIE hoy, que es lo que decide si llega a
+        la memoria (C8, punto 1).
+
+        EL CRITERIO ES DE DESTINATARIO Y NO DE GRAVEDAD: el manifiesto es
+        para quien AUDITA EL CODIGO, la memoria para quien SUSTENTA. Una
+        `RESUELTA` es historia del repositorio -- el repositorio cito mal una
+        pagina y se corrigio (`DIS-CN-EG-508-07`), o nego lo que la fuente
+        dice y se retracto (`DIS-CN-CALICATAS`) --, y quien abra hoy el PDF
+        por donde la memoria lo manda encuentra exactamente lo que la memoria
+        dice: no hay nada que defender en una sustentacion. Eso es del
+        manifiesto.
+
+        Las otras tres SI: la ABIERTA porque nadie la ha cerrado, la ABIERTA
+        CONTRA LA HOJA DE RUTA porque la hoja sigue mal mientras no se
+        corrija -- que es la tercera obligacion de `CLAUDE.md` --, y la
+        ERRATA DE IMPRENTA porque el PDF sigue imprimiendo lo que imprime: el
+        revisor que abra la pag. 75 del Manual de Hidrologia y lea la Tabla
+        N 09 al pie de la letra encontrara un n de Manning DISTINTO del que
+        la memoria uso (`DIS-MCHHD-T09-A2-DESPLAZADA`, +10 % en el n que
+        gobierna V3). Esa es exactamente la discrepancia que no se puede
+        descubrir leyendo el PDF sin que la memoria la haya declarado antes.
+        """
+        return self is not EstadoDiscrepancia.RESUELTA
+
 
 @dataclass(frozen=True)
 class Parte:
@@ -1097,3 +1124,20 @@ class Discrepancia:
             raise ErrorDeRegistro(
                 f"Discrepancia {self.id}: `gana` ({self.gana}) no es ninguna "
                 f"de las partes declaradas")
+
+    @property
+    def viva(self) -> bool:
+        """Si sigue en pie hoy. Ver `EstadoDiscrepancia.viva`."""
+        return self.estado.viva
+
+    @property
+    def citas(self) -> Tuple[str, ...]:
+        """
+        Las citas de sus partes, que son EL ANCLA DEL CANAL A LA MEMORIA.
+
+        No es un campo nuevo que haya que mantener: una discrepancia ya dice
+        de que citas habla, y de ahi el registro construye el indice inverso
+        `cita_id -> discrepancias`. Donde la memoria imprima una de estas
+        citas, la discrepancia viaja con ella sin que nadie la cablee.
+        """
+        return tuple(p.cita_id for p in self.partes if p.cita_id)

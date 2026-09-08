@@ -170,7 +170,7 @@ def test_cota_clave_llega_a_la_superficie_exterior_del_tubo(hdpe):
     del fondo, que esta por DEBAJO del invert.
     """
     punto = _punto(cota_terreno=42.10)
-    assert (cota_clave(punto=punto, material=hdpe, D=1.50)
+    assert (cota_clave(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50))
             == pytest.approx(COTA_CLAVE_HDPE))
 
 
@@ -705,7 +705,8 @@ def test_el_numero_que_el_marco_recibia_era_el_piso_de_la_fila_del_tubo(
 
     Y HAY UN SEGUNDO DEFECTO DENTRO DEL PRIMERO, medido aqui: ese numero NO
     DEPENDIA DEL ANCHO DEL MARCO. `D` en un marco vale la ALTURA, de modo que
-    `diametro_exterior` devolvia H + 2t = B'c y lo metia en la ranura de Bc.
+    el `diametro_exterior` de entonces devolvia H + 2t = B'c y lo metia en la
+    ranura de Bc (funcion que C8 retiro por esto mismo).
     O sea que ni siquiera era «la fila del tubo bien aplicada»: era la fila
     del tubo con la dimension cambiada. Por eso el arreglo no es traer un
     termino mas sino detenerse, y por eso M7 necesita ademas la `Seccion`
@@ -805,7 +806,7 @@ def test_el_tamizado_de_un_marco_mide_el_ancho_y_no_el_canto(
 
     `Bc` es la dimension HORIZONTAL -- «outside diameter or WIDTH of the
     structure», Art. 12.6.6.3 --. Con un escalar, la unica dimension que
-    llegaba a 7.A era la vertical, y `diametro_exterior` la convertia en
+    llegaba a 7.A era la vertical, y el `D + 2t` de entonces la convertia en
     H + 2t: en un circulo eso ES Bc, y por eso el defecto no se veia; en un
     marco es B'c, el canto, que es otro numero.
 

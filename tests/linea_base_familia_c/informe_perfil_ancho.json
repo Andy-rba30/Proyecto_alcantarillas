@@ -215,8 +215,8 @@
         "seccion_eg2013": "506",
         "n_min": 0.01,
         "n_max": 0.013,
-        "D_m": 0.9,
-        "D_max_material_m": 2.7,
+        "seccion": "Ø 0.90 m",
+        "dimension_max_catalogo_m": 2.7,
         "control_gobernante": "entrada",
         "Q_m3s": 1.167,
         "S_m_m": 0.006,
@@ -275,7 +275,7 @@
       "iteraciones": [
         {
           "material": "Concreto reforzado",
-          "D_m": 0.9,
+          "seccion": "Ø 0.90 m",
           "aceptado": true,
           "motivo": "",
           "incumplidas": []
@@ -483,8 +483,8 @@
         "seccion_eg2013": "506",
         "n_min": 0.01,
         "n_max": 0.013,
-        "D_m": 0.9,
-        "D_max_material_m": 2.7,
+        "seccion": "Ø 0.90 m",
+        "dimension_max_catalogo_m": 2.7,
         "control_gobernante": "entrada",
         "Q_m3s": 0.48,
         "S_m_m": 0.008,
@@ -543,7 +543,7 @@
       "iteraciones": [
         {
           "material": "Concreto reforzado",
-          "D_m": 0.9,
+          "seccion": "Ø 0.90 m",
           "aceptado": true,
           "motivo": "",
           "incumplidas": []
@@ -751,8 +751,8 @@
         "seccion_eg2013": "506",
         "n_min": 0.01,
         "n_max": 0.013,
-        "D_m": 0.9,
-        "D_max_material_m": 2.7,
+        "seccion": "Ø 0.90 m",
+        "dimension_max_catalogo_m": 2.7,
         "control_gobernante": "salida",
         "Q_m3s": 0.095,
         "S_m_m": 0.01,
@@ -811,7 +811,7 @@
       "iteraciones": [
         {
           "material": "Concreto reforzado",
-          "D_m": 0.9,
+          "seccion": "Ø 0.90 m",
           "aceptado": true,
           "motivo": "",
           "incumplidas": []

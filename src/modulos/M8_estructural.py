@@ -139,7 +139,7 @@ Excepciones
 -----------
     CriterioPendienteError   'clases_producto_por_relleno' (items 1-2);
                              'espesor_pared_conducto' (el D exterior de U y
-                             de EV, via modulos.M2_material.diametro_exterior);
+                             de EV, via Seccion.ancho_exterior);
                              'peso_especifico_relleno_kn_m3' (V7, via
                              modulos.M5_verificaciones.v7_flotacion).
                              'factores_carga_aashto' ya no esta vacio ([A]:

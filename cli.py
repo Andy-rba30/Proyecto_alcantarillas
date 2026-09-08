@@ -1041,7 +1041,7 @@ def _fase_8(informe: InformePunto) -> None:
     incompleto -- y sale con su traza para que se vea que falta implementarla.
     """
     resultado = informe.resultado
-    material, D = resultado.material, resultado.D
+    material, seccion = resultado.material, resultado.seccion
     punto = informe.punto_de_calculo
 
     # Altura real de relleno sobre la clave FISICA (con espesor de pared), la
@@ -1053,7 +1053,7 @@ def _fase_8(informe: InformePunto) -> None:
     altura = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                     "altura de relleno sobre la clave",
                     lambda: altura_relleno_sobre_clave(
-                        punto=punto, material=material, D=D))
+                        punto=punto, material=material, seccion=seccion))
     if altura is not None:
         _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                "clase o calibre por norma de producto (items 1-2)",
@@ -1469,7 +1469,8 @@ def _verificacion_json(fase: str, v: Verificacion) -> Dict[str, Any]:
 
 
 def _paso_json(paso: PasoDiseno) -> Dict[str, Any]:
-    return {"material": paso.material, "D_m": _num(paso.D),
+    return {"material": paso.material,
+            "seccion": paso.seccion.etiqueta(),
             "aceptado": paso.aceptado, "motivo": paso.motivo,
             "incumplidas": [v.codigo or v.numeral for v in paso.incumplidas]}
 
@@ -1509,7 +1510,8 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "norma_producto": material.norma_producto,
             "seccion_eg2013": material.seccion_eg2013,
             "n_min": _num(material.n_min), "n_max": _num(material.n_max),
-            "D_m": _num(resultado.D), "D_max_material_m": _num(material.D_max),
+            "seccion": resultado.seccion.etiqueta(),
+            "dimension_max_catalogo_m": _num(material.D_max),
             "control_gobernante": hidraulica.control_gobernante.value,
             # Q y S son los del DISEÑO, no los de la columna del CSV: la
             # Familia B y la C traen su propio caudal (Sec. 2.3) y el punto que
@@ -1821,7 +1823,8 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         h = r.resultado_hidraulico
         out.append(f"{SANGRIA}Fase 4  Material : {r.material.nombre} "
                    f"({r.material.norma_producto})")
-        out.append(f"{SANGRIA}        Diametro : D = {_fmt(r.D)} m")
+        out.append(f"{SANGRIA}        Seccion  : "
+                   f"{r.seccion.etiqueta()} (interior)")
         out.append(f"{SANGRIA}        Control  : {h.control_gobernante.value} "
                    f"(HW = {_fmt(h.HW)} m; entrada {_fmt(h.HW_entrada)} / "
                    f"salida {_fmt(h.HW_salida)})")

@@ -595,15 +595,24 @@ que es literalmente el defecto que este registro existe para impedir.
 - **Dónde vive:** `src/modelos.py::Seccion` (el docstring lleva la medición) y
   `src/modelos.py::SeccionCircular.theta_desde_tirante`
 
-## C1-02 · `SeccionCircular.etiqueta()` no la invoca ningún módulo
+## C1-02 · `SeccionCircular.etiqueta()` no la invoca ningún módulo — **CERRADA en C8**
 
 - **Qué se difirió:** conservar el método sin llamador.
 - **Por qué:** es el miembro del protocolo con el que la memoria nombrará la
   sección cuando haya dos formas que distinguir. Con una sola forma, M11
   imprime `D` y no necesita preguntarle a la sección cómo se llama.
-- **Qué haría falta:** que M11 lo consuma. Es de **C8** (la memoria del
-  marco), no de C4: hasta que la memoria tenga que decir «marco 2.00 × 1.50 m»
-  en vez de un diámetro, no hay a quién preguntárselo.
+- **Qué haría falta:** nada ya. Hacía falta que M11 lo consumiera; era de **C8** (la memoria del
+  marco), no de C4: hasta que la memoria tuviera que decir «marco 1.20 × 0.90 m»
+  en vez de un diámetro, no había a quién preguntárselo.
+- **Cómo se cerró (C8):** M11 lo invoca en **cinco** sitios —el titular de la
+  combinación adoptada, la tabla de iteraciones, los dos textos de «último
+  escalón evaluado» y la fila del cuadro resumen—, la CLI en **tres** (el
+  volcado de texto y las dos claves del JSON), MD en **cinco** (los tres
+  motivos de descarte y el mensaje del escalón sin verificaciones) y la GUI en
+  **uno** (la columna del tablero de puntos). La ficha se conserva, marcada
+  como cerrada, porque la razón que la abrió es lo que explica por qué el
+  método existió tres sesiones sin llamador; borrarla dejaría el método sin
+  historia.
 - **Dónde vive:** `src/modelos.py::etiqueta`
 
 ## C1-03 · `Geometria.y_sobre_D` se quedó sin consumidor de producción
@@ -727,3 +736,86 @@ M8 y de M11 que su propio alcance excluye.
   que decidir entre tupla (una columna alimenta varios criterios) o cambio de
   destino (la columna cambia de dueño), y arrastrar `test_variables_entrada.py`.
 - **Dónde vive:** `src/variables_entrada.py::criterio_destino`
+
+# Parte VIII — Lo que C8 dejó puesto, cerró o retiró
+
+C8 abrió el canal de las discrepancias a la memoria y retiró `ResultadoPunto.D`.
+Las tres fichas de abajo son lo que ese trabajo dejó **sin consumidor de
+producción o sin cerrar del todo**, más la única retirada. La cuarta cosa que
+C8 tocó de este registro está arriba: **C1-02 quedó CERRADA** — el
+`Seccion.etiqueta()` que llevaba tres sesiones sin llamador tiene ahora
+catorce, y su ficha lo dice sin borrarse.
+
+## C8-01 · Nueve `Parte.cita_id` anuncian una cita que nadie transcribió
+
+- **Qué se difirió:** transcribir las nueve citas, y con ellas hacer que el
+  registro EXIJA que toda `Parte.cita_id` exista.
+- **Por qué:** transcribir una cita es leer el PDF y verificar numeral, página
+  impresa y texto literal (regla 8 de `CLAUDE.md`), y son nueve repartidas en
+  cinco documentos. Inventarlas para poner el barrido en verde sería
+  exactamente el defecto que este proyecto persigue. **Lo que sí se hizo es
+  darles el primer consumidor y hacerlas visibles**: la memoria imprime «cita
+  anunciada y NO transcrita al registro» en vez de un ancla rota, y el censo
+  queda con trinquete decreciente.
+- **Por qué no lo vio nadie antes:** la validación del registro mete estos ids
+  en el conjunto de `referenciadas` —para que una cita no cuente como
+  huérfana— y **nunca comprobó que existieran**. Un id que solo sirve para
+  excusar a otro de estar huérfano no se comprueba jamás. Se destapó al
+  darles el primer consumidor de verdad.
+- **Qué haría falta:** las nueve transcripciones, con su test de página. Al
+  llegar a cero, la rama del aviso en `M11._ancla_de_parte` sobra y el
+  registro puede pasar a rechazar la parte sin cita.
+- **Dónde vive:** `src/normativa/registro.py::partes_sin_cita_transcrita`
+
+## C8-02 · `Registro.discrepancias_abiertas` sigue sin consumidor de producción
+
+- **Qué se difirió:** cablearla, o retirarla.
+- **Por qué:** es el **censo completo** de lo abierto, y la memoria no consume
+  censos: consume lo que ESTA corrida toca (`discrepancias_que_tocan`). Son dos
+  destinatarios distintos —el manifiesto es para quien audita el código, la
+  memoria para quien sustenta— y fundirlos volcaría las diez abiertas en la
+  memoria de un perfil que difiere seis de ellas. Su consumidor legítimo es el
+  test T20 y un futuro informe de estado del expediente, no la memoria.
+- **Cuidado con leer su docstring viejo:** decía «M11 las imprime» y era falso
+  —M11 no importaba el módulo—. C8 lo corrigió en el sitio. Es el caso de
+  manual de la primera lección de §4.5: **una declaración en un docstring no
+  imprime nada**.
+- **Qué haría falta:** un informe de estado del expediente, distinto de la
+  memoria de cálculo, que enumere lo abierto con independencia de la corrida.
+- **Dónde vive:** `src/normativa/registro.py::discrepancias_abiertas`
+
+## C8-03 · `Registro.discrepancias_de_cita` solo lo usa el propio registro
+
+- **Qué se difirió:** nada; se declara para que no se lea como código muerto.
+- **Por qué:** es el índice inverso `cita_id → discrepancias`, y hoy su único
+  llamador es `discrepancias_que_tocan`, en el mismo archivo. Se conserva
+  **separado y público** porque es la operación que un revisor querrá hacer a
+  mano —«¿qué discrepancias hay sobre este numeral?»— y porque tenerla aparte
+  es lo que deja el filtro (`viva` + `tocada`) legible en una sola expresión.
+  Es la ventana normativa, y no la memoria, su segundo consumidor plausible.
+- **Qué haría falta:** que `gui/ventana_normativa.py` la consulte al pintar una
+  cita, que es lo que hoy hace solo con las erratas atadas a una tabla
+  (`_texto_de_errata` publica cinco de las veintitrés).
+- **Dónde vive:** `src/normativa/registro.py::discrepancias_de_cita`
+
+## C8-04 · `M2.diametro_exterior` — se RETIRÓ, y por qué no se difirió
+
+- **Qué se difirió:** nada. Se anota la **no** deferencia, porque la pregunta
+  «¿por qué esto no está en este registro?» tiene respuesta y conviene que
+  esté escrita donde se buscaría.
+- **Por qué:** `diametro_exterior(*, material, D)` devolvía `D + 2t` y **no
+  tenía ninguna llamada** —medido sobre el AST de M7, M5, M8, MD, la CLI y su
+  propio módulo, y tampoco en tests—, pese a seguir importado en dos módulos y
+  citado en cinco docstrings, que es como un símbolo muerto sobrevive a la
+  revisión: se lee como si alguien lo usara. Aquí viven los objetos que se
+  CONSERVAN sin consumidor **por una razón**, y éste no tiene ninguna: en un
+  marco no hay «un diámetro exterior» —hay `Bc = B + 2t` y `B'c = H + 2t`, que
+  son números distintos— y una función que recibe un escalar solo puede
+  devolver uno de los dos. C5 la usó para el `Bc` de la cobertura mínima y le
+  entregó el **canto** donde iba el **ancho**, que es la regla vinculante #9
+  arrastrada dos veces. Lo que la sustituye son los tres miembros del
+  protocolo `Seccion` que C7 añadió.
+- **Qué haría falta:** nada. Retirada en C8, con la razón completa en el
+  bloque de comentario que quedó en su lugar.
+- **Dónde vive:** `src/modulos/M2_material.py::siguiente_diametro` (el
+  comentario que la sustituye está justo encima de ese símbolo)

@@ -65,6 +65,7 @@ un archivo que alguien pudo editar a mano.
 
 from __future__ import annotations
 
+import ast
 import sys
 import traceback
 from pathlib import Path
@@ -573,16 +574,43 @@ class ExpedienteApp:
         CLAUDE.md pide la taxonomia.
 
         DIVERGE de `cli.declarar_criterios`, y esta escrito para que se vea:
-        la CLI resuelve el texto con `ast.literal_eval` -- admite listas y
-        dicts, y leeria '1,5' como la TUPLA (1, 5) -- y aqui se admite la coma
-        decimal, que para quien teclea en la ventana es lo natural. Unificar
-        las dos por el lado de la CLI convertiria '1,5' en una tupla valida en
+        la CLI resuelve el texto ENTERO con `ast.literal_eval` -- y asi leeria
+        '1,5' como la TUPLA (1, 5) -- mientras aqui se admite la coma decimal,
+        que para quien teclea en la ventana es lo natural. Unificar las dos
+        por el lado de la CLI convertiria '1,5' en una tupla valida en
         silencio, que es una regresion peor que la duplicacion. La divergencia
         esta fijada por un test de contrato en tests/test_gui_contrato.py.
+
+        POR QUE ADMITE ADEMAS UN LITERAL ESTRUCTURADO (C8, punto 6). Con solo
+        las dos ramas de arriba, la GUI NO PODIA DECLARAR
+        'secciones_cajon_normalizadas' --- la serie de pares (B, H) del
+        catalogo del cajon ---: lo tecleado volvia como CADENA, la guardia de
+        `criterios_adoptados` la aceptaba, y el bucle de MD se detenia despues
+        con un `DatoInvalidoError` correcto pero sin salida, porque no habia
+        forma de teclear una lista. O sea que uno de los siete criterios de la
+        Familia C quedaba fuera de la declaracion en caliente sin que nada lo
+        dijera: la ventana ofrecia el campo y el campo no servia.
+
+        Y NO REABRE EL AGUJERO DEL '1,5'. La rama estructurada solo se toma
+        cuando el texto ABRE con un delimitador de coleccion --- '[', '(' o
+        '{' ---, que es algo que ningun decimal escrito con coma puede hacer.
+        La ambiguedad de la CLI vive en el caso SIN delimitadores, y ese caso
+        sigue yendo por la rama del float. Un literal mal cerrado sale como el
+        `ValueError` de esta funcion, o sea como el rotulo rojo del panel, y
+        no como traza de Tk.
         """
         texto = texto.strip()
         if texto == "":
             raise ValueError("El valor no puede quedar vacio.")
+        if texto[0] in "[({":
+            try:
+                return ast.literal_eval(texto)
+            except (ValueError, SyntaxError) as exc:
+                raise ValueError(
+                    f"«{texto}» empieza como una lista, tupla o dict y no se "
+                    f"puede leer como tal ({exc}). Los pares del catalogo del "
+                    "cajon se escriben asi: [[1.20, 0.90], [1.50, 1.20]]"
+                ) from None
         try:
             return float(texto.replace(",", "."))
         except ValueError:
@@ -666,8 +694,8 @@ class ExpedienteApp:
         f_tabla.columnconfigure(0, weight=1)
         f_tabla.rowconfigure(0, weight=1)
 
-        cols = ("id", "progresiva", "familia", "dimensionado", "material", "D",
-                "control", "HW", "V_erosion", "V_sedimentacion",
+        cols = ("id", "progresiva", "familia", "dimensionado", "material",
+                "seccion", "control", "HW", "V_erosion", "V_sedimentacion",
                 "incumplidas", "bloqueos")
         self.tree_puntos = ttk.Treeview(f_tabla, columns=cols, show="headings", height=14)
         encabezados = [
@@ -676,7 +704,12 @@ class ExpedienteApp:
             ("familia", "Familia", 60, "center"),  # literal-ok: ancho de columna, px
             ("dimensionado", "Dimensionado", 90, "center"),  # literal-ok: ancho de columna, px
             ("material", "Material", 140, "w"),  # literal-ok: ancho de columna, px
-            ("D", "D (m)", 65, "center"),  # literal-ok: ancho de columna, px
+            # LA COLUMNA DICE LA SECCION Y NO UN DIAMETRO (C8). Con «D (m)»,
+            # un marco de 1.20 x 0.90 y otro de 2.00 x 0.90 salian los dos
+            # «0.90» en el tablero, que es la mitad que no gobierna la
+            # capacidad. Va mas ancha porque «marco 1.20 x 0.90 m» no cabe en
+            # el ancho de un diametro.
+            ("seccion", "Seccion", 130, "center"),  # literal-ok: ancho de columna, px
             ("control", "Control", 75, "center"),  # literal-ok: ancho de columna, px
             ("HW", "HW (m)", 70, "center"),  # literal-ok: ancho de columna, px
             # Dos columnas, no una: la velocidad contra los techos (V3, d50)
@@ -902,12 +935,13 @@ class ExpedienteApp:
             if informe_punto.dimensionado:
                 r = informe_punto.resultado
                 h = r.resultado_hidraulico
-                material, D = r.material.nombre, f"{r.D:.2f}"
+                material = r.material.nombre
+                seccion = r.seccion.etiqueta()
                 control, HW = h.control_gobernante.value, f"{h.HW:.3f}"
                 V_ero = f"{h.V_erosion:.2f}"
                 V_sed = f"{h.V_sedimentacion:.2f}"
             else:
-                material = D = control = HW = V_ero = V_sed = "-"
+                material = seccion = control = HW = V_ero = V_sed = "-"
 
             tags = []
             if not informe_punto.dimensionado:
@@ -918,7 +952,7 @@ class ExpedienteApp:
             self.tree_puntos.insert("", "end", iid=punto.id, values=(
                 punto.id, punto.progresiva_display, punto.familia.value,
                 "si" if informe_punto.dimensionado else "no",
-                material, D, control, HW, V_ero, V_sed, incumplidas,
+                material, seccion, control, HW, V_ero, V_sed, incumplidas,
                 n_bloqueos,
             ), tags=tuple(tags))
 

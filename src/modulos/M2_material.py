@@ -69,7 +69,7 @@ ESTADO HOY: los tres primeros tienen valor y el cuarto no.
 'v_max_tmc' = 'v_max_hdpe' = 4.572 m/s [C] (WSDOT, Tabla 8-4: 15 ft/s);
 'n_manning_hdpe' = la fila del concreto de la Tabla N 09 [N->];
 'espesor_pared_conducto' = SIN VALOR [A], y bloquea en su punto de uso
-(`diametro_exterior` de este mismo modulo, que llaman
+(`Seccion.ancho_exterior` / `Seccion.canto_exterior`, que llaman
 `M5_verificaciones.cota_clave` y `M8_estructural`/V7).
 
 El cuarto criterio de esta lista era antes 'h_relleno_min_concreto_tmc', con
@@ -91,7 +91,7 @@ catalogo, es un candado. Por eso `catalogo()` lee esos cuatro con
 `_valor_si_declarado()` -- que delega en `ca.valor_si_declarado`, no en
 `ca.criterio(...)` como decia este texto -- y traslada el None al `Material`
 tal cual. No es rellenar el vacio: es reportarlo con fidelidad, y el bloqueo
-salta despues, en el punto de uso (`diametro_exterior` de este modulo para el
+salta despues, en el punto de uso (`Seccion.ancho_exterior` para el
 espesor de pared, M5:`v3_velocidad_maxima` para las velocidades), donde el
 revisor puede saber que verificacion se detuvo.
 
@@ -445,7 +445,7 @@ def espesor_pared(material: Material, D: float) -> float:
     norma de TUBERIA, indexada por diametro designado en milimetros, y las
     alturas de marco plausibles caen sobre esa misma serie de 900 + 150k mm.
     De modo que un marco de 2.00 x 1.50 m NO se detenia: recibia t = 0.150 m,
-    la pared del tubo de 1500 mm, y con ella `diametro_exterior` le daba a V7
+    la pared del tubo de 1500 mm, y con ella la geometria exterior daba a V7
     un cilindro de 1.80 m. Medido sobre esa seccion: la subpresion real de un
     prisma es 40.6 kN/m y la del cilindro 25.0 kN/m -- un 63 % menos --,
     mientras el peso de relleno cae solo un 28 %, de modo que V7 SOBREESTIMA
@@ -543,21 +543,29 @@ def espesor_pared(material: Material, D: float) -> float:
     return t
 
 
-def diametro_exterior(*, material: Material, D: float) -> float:
-    """
-    D_ext = D + 2*t, m: el diametro EXTERIOR del conducto.
-
-    `D` es el diametro interior -- el hidraulico, el que entra en Manning y en
-    `modelos.SeccionCircular` -- y `D_ext` es el que gobierna todo lo que toca al
-    terreno: el Bc del Art. 12.6.6.3 de AASHTO LRFD (cobertura minima), el
-    volumen desplazado de la subpresion de V7 (num. 2.4.3.8.2 del Manual de
-    Puentes) y la posicion de la clave fisica. Confundirlos es MAT-D3 y
-    MAT-D4: los dos quedaban del lado inseguro por el mismo motivo.
-
-    Se detiene con `CriterioPendienteError` mientras 'espesor_pared_conducto'
-    siga vacio (ver `espesor_pared`).
-    """
-    return D + 2 * espesor_pared(material, D)
+# `diametro_exterior(*, material, D) -> D + 2*t` VIVIA AQUI Y C8 LO RETIRA.
+#
+# Hacia lo que su nombre dice y era correcto mientras el unico conducto fuera
+# un tubo. Lo que lo mato fue la Familia C: en un marco NO HAY UN "diametro
+# exterior" --- hay un ancho exterior `Bc = B + 2t` y un canto exterior
+# `B'c = H + 2t`, que son numeros distintos ---, y una funcion que recibe un
+# escalar solo puede devolver uno de los dos. C5 la uso para el `Bc` de la
+# cobertura minima y le entrego el CANTO donde iba el ANCHO, que es el defecto
+# que la regla vinculante #9 arrastro dos veces (ver el docstring de
+# `M7.cobertura_minima_aashto`).
+#
+# C7 puso en su lugar los tres miembros del protocolo `Seccion` ---
+# `ancho_exterior(espesor)`, `canto_exterior(espesor)` y
+# `area_exterior(espesor)` ---, que dan cada dimension por su nombre y en las
+# dos formas. Desde entonces esta funcion no tenia NINGUNA llamada: medido
+# sobre el AST de M7, M5, M8, MD, la CLI y este mismo modulo, y tampoco en
+# tests. Seguia importada en dos modulos y citada en cinco docstrings, que es
+# como un simbolo muerto sobrevive a la revision --- se lee como si alguien lo
+# usara.
+#
+# No va a `decisiones_diferidas.md`: ahi viven los objetos que se CONSERVAN
+# sin consumidor por una razon, y esta no tiene ninguna --- su contrato es
+# insuficiente para la mitad de las secciones del proyecto.
 
 
 def siguiente_diametro(material: MaterialLike,

@@ -1971,6 +1971,15 @@ class ResultadoHidraulico:
     # por si el control de salida gobierna (NOR-HDS-05). Ver `ControlSalida`.
     h_o_fuera_de_rango: bool = False
     h_o_requiere_cautela: bool = False
+    # EL HW/D DEL CONTROL DE SALIDA, que es el que las dos banderas de arriba
+    # acotan. Viaja como dato y no lo recompone el reporte: M11 imprimia
+    # `hidraulica.HW / resultado.D` en el aviso de h_o, que es la segunda
+    # mitad de SIS-A-07 --- la misma aritmetica sobre magnitudes, en el mismo
+    # modulo, sobrevivida al test que la persigue porque su guardia excluia
+    # `ast.Attribute` a la izquierda, y `hidraulica.HW` es un Attribute.
+    # Aqui llega ya calculado por M4 (`ControlSalida.HW_sobre_D`), que es
+    # quien tiene delante la seccion con que se dividio.
+    HW_sobre_D_salida: float = 0.0
     # LA TRAZA HIDRAULICA (§4.4). Los pasos que M3 y M4 emitieron al resolver
     # esta combinacion, en el orden en que se calcularon: Manning, tirante
     # critico, control de entrada, control de salida y adopcion del
@@ -2402,6 +2411,23 @@ class PasoDeMemoria:
     fase: str = ""
     codigo: str = ""
     nota_del_proyecto: str = ""
+    # LAS DISCREPANCIAS QUE ESTE PASO TOCA POR SU VALOR Y NO POR SU CITA.
+    #
+    # La mayoria de las discrepancias llegan solas a la memoria: el registro
+    # cruza las citas que el paso imprime contra las `Parte.cita_id` que la
+    # discrepancia ya declara (`Registro.discrepancias_que_tocan`). Este
+    # campo es para las que hablan de un NUMERO que el paso sustituye y no de
+    # un texto que el paso cita -- `DIS-HR-G-LAUSHEY` es sobre el valor
+    # `G_LAUSHEY = 9.8`, `DIS-HR-D-MAX` sobre los topes de catalogo --, donde
+    # el cruce por cita no las alcanza.
+    #
+    # No es una lista de ids sueltos: el registro comprueba que cada uno
+    # exista, y M11 imprime la discrepancia entera desde el registro, de modo
+    # que aqui viaja el ID Y NUNCA EL TEXTO. Escribir aqui la discrepancia en
+    # prosa seria la segunda transcripcion que la §4.5 prohibe -- y es
+    # exactamente como llegaban a la memoria las dos que llegaban antes de
+    # C8: con el id escrito a mano dentro de la justificacion de un criterio.
+    discrepancias: Tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not str(self.que).strip():
@@ -2520,6 +2546,16 @@ def paso(fundamento_id: str, **kw: Any) -> PasoDeMemoria:
             reg.cita(eleccion.cita_id)
     if kw.get("formula_cita_id"):
         reg.cita(kw["formula_cita_id"])
+    for discrepancia_id in kw.get("discrepancias", ()):
+        d = reg.discrepancia(discrepancia_id)   # KeyError si no existe
+        if not d.viva:
+            raise ValueError(
+                f"PasoDeMemoria: la discrepancia «{discrepancia_id}» esta "
+                f"{d.estado.value} y no llega a la memoria. Lo resuelto es "
+                "material del manifiesto -- para quien audita el codigo --, "
+                "no de la memoria, que es para quien sustenta: quien abra hoy "
+                "el PDF encuentra lo que la memoria dice y no hay nada que "
+                "defender. Ver `EstadoDiscrepancia.viva`")
     kw.setdefault("fase", f.fase)
     return PasoDeMemoria(por_que=f.por_que, fundamento_id=f.id,
                          citas_textuales=citas, **kw)
@@ -2752,8 +2788,12 @@ class CompatibilidadGeometrica:
     """
 
     punto: PuntoCritico
-    D: float                              # m - diametro adoptado en la Fase 4
-    tamizado: TamizadoRasante             # el de 7.A, recalculado con ese D
+    # LA SECCION ADOPTADA EN LA FASE 4, y no el escalar `D` que este campo
+    # llevaba hasta C8. Misma razon que en `ResultadoPunto`: un `0.90` no dice
+    # si el marco era de 1.20 o de 2.00 m de luz, y la Fase 7 es la que
+    # publica la geometria amarrada al perfil.
+    seccion: Seccion
+    tamizado: TamizadoRasante             # el de 7.A, recalculado con ella
     longitud: float                       # m
     proyeccion_taludes: float             # m - suma de los dos taludes
     factor_esviaje: float                 # adimensional - 1/cos(esviaje)
@@ -3582,55 +3622,39 @@ class ResultadoPunto:
     punto: PuntoCritico
     aceptado: bool
     material: Optional[Material] = None
-    D: Optional[float] = None                      # m - diametro adoptado
-    # LA SECCION ADOPTADA, Y CONVIVE CON `D` A PROPOSITO. `D` es un escalar
-    # que en un marco vale la ALTURA, y retirarlo es trabajo de C8 porque lo
-    # leen el reporte y la tabla de diseño. Lo que C7 necesita es OTRA cosa:
-    # que la Fase 7 pueda ser CIEGA A LA FORMA. `M7.compatibilidad_geometrica`
-    # y `M7.tamizado_rasante` reciben la seccion desde C7, y sin este campo la
-    # CLI tendria que reconstruirla -- `SeccionCircular(D=resultado.D)` --, o
-    # sea volver a suponer la forma en el sitio exacto del que se acaba de
-    # sacar. Añadirlo NO toca `D`: lo deja donde estaba, para que C8 lo retire
-    # cuando le toque y con sus consumidores delante.
+    # LA SECCION ADOPTADA, Y YA NO CONVIVE CON UN ESCALAR `D`.
+    #
+    # Hasta C7 este tipo llevaba ademas `D: Optional[float]`, "el diametro
+    # adoptado", que en un marco valia la ALTURA. C7 añadio la seccion sin
+    # tocarlo --- para que la Fase 7 pudiera ser ciega a la forma --- y dejo
+    # escrito que retirarlo era de C8, "con sus consumidores delante". C8 lo
+    # retira: eran once, y el peor era el titular de la memoria, que imprimia
+    # «Diametro adoptado D = 0.900 m» sobre un marco de 1.20 x 0.90 m.
+    #
+    # POR QUE NO BASTABA CON LA INVARIANTE. C7 cerro la divergencia entre los
+    # dos campos con un `__post_init__` de doble sentido, y era correcto
+    # mientras convivieran. Pero un `D` coherente con la seccion sigue siendo
+    # una PERDIDA DE INFORMACION: de «0.90» no se recupera si la luz eran
+    # 1.20 o 2.00 m, y todo consumidor que imprima ese escalar esta publicando
+    # media geometria bajo un nombre que en un cajon no significa nada.
     seccion: Optional[Seccion] = None
     resultado_hidraulico: Optional[ResultadoHidraulico] = None
     verificaciones: Tuple[Verificacion, ...] = ()
     motivo_rechazo: Optional[str] = None
 
-    def __post_init__(self) -> None:
-        """
-        UN PUNTO DIMENSIONADO TRAE LAS DOS COSAS O NINGUNA. Mientras `D` y
-        `seccion` convivan, un resultado con `D` y sin `seccion` es la puerta
-        por la que vuelve la suposicion de forma: quien lo consuma tendra que
-        reconstruir la seccion, y la unica que puede reconstruir de un escalar
-        es la circular. La invariante esta en el tipo y no en un test porque
-        el primero que la violo fue un DOBLE DE PRUEBA, que es justo lo que un
-        test no vigila.
-        """
-        if self.D is not None and self.seccion is None:
-            raise ValueError(
-                "ResultadoPunto con `D` y sin `seccion`: un punto dimensionado "
-                "tiene que traer la seccion adoptada, o quien lo lea tendra "
-                "que suponer que es circular")
-        # Y LA PUERTA DE VUELTA, que la auditoria adversarial de C7 encontro
-        # abierta: la invariante era UNIDIRECCIONAL y aceptaba sin quejarse un
-        # `D` que no fuera la altura de la seccion. Mientras los dos campos
-        # convivan --`D` lo leen M11, la CLI y la GUI; `seccion` la lee
-        # `cli._fase_7`-- una divergencia entre ellos no la nota nadie.
-        if (self.D is not None and self.seccion is not None
-                and abs(self.D - self.seccion.altura) > TOL_UMBRAL_NORMATIVO):
-            raise ValueError(
-                f"ResultadoPunto incoherente: D = {self.D} y "
-                f"seccion.altura = {self.seccion.altura}. `D` es la altura "
-                "interior de la seccion adoptada -- el diametro en una "
-                "circular, la H de una celda en un marco --, y con los dos "
-                "campos vivos una divergencia no la nota ningun consumidor")
-
     @property
     def y_sobre_D(self) -> Optional[float]:
         """
-        Relacion de llenado del punto dimensionado, y_normal / D, o None si el
-        punto no llego a dimensionarse.
+        Relacion de llenado del punto dimensionado, `y_normal / altura`, o
+        None si el punto no llego a dimensionarse.
+
+        CONSERVA EL NOMBRE AUNQUE YA NO HAYA UN `D`, y se declara aqui por lo
+        mismo que `Geometria.y_sobre_D` lo declara: "y/D" es como la Sec. 4.1
+        y el HDS-5 nombran la relacion de llenado, y renombrarlo a
+        `y_sobre_altura` obligaria a explicar en cada sitio que se trata del
+        mismo numero de la fuente. La `D` del nombre es la de la FUENTE; el
+        denominador es `seccion.altura`, que en una circular ES el diametro y
+        en un marco es la H de la celda.
 
         Vive aqui, en el tipo que fluye entre modulos, y no en la capa de
         reporte: M11 la calculaba inline en dos sitios (la tabla del punto y
@@ -3640,9 +3664,9 @@ class ResultadoPunto:
         el mismo que `Geometria.y_sobre_D` define para la seccion; escrito
         una vez, no puede divergir entre la memoria y la verificacion.
         """
-        if self.resultado_hidraulico is None or self.D is None:
+        if self.resultado_hidraulico is None or self.seccion is None:
             return None
-        return self.resultado_hidraulico.y_normal / self.D
+        return self.resultado_hidraulico.y_normal / self.seccion.altura
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
@@ -3683,7 +3707,12 @@ class PasoDiseno:
     """
 
     material: str                         # Material.nombre
-    D: float                              # m - diametro probado
+    # LA SECCION PROBADA, y no el escalar `D` que este campo tenia hasta C8.
+    # Un escalon del catalogo del cajon es un par (B, H): con solo la altura,
+    # la tabla de iteraciones imprimia «0.90» para tres marcos de luz
+    # distinta y el revisor no podia saber cual se descarto. Ademas obligaba a
+    # M11 a llamar «D» a lo que en un marco no es un diametro.
+    seccion: "Seccion"
     aceptado: bool
     motivo: str                           # por que se descarto; "" si aceptado
     verificaciones: Tuple[Verificacion, ...] = ()

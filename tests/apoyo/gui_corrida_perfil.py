@@ -39,6 +39,7 @@ for _ruta in (str(RAIZ), str(RAIZ / "src")):
         sys.path.insert(0, _ruta)
 
 import cli                                             # noqa: E402
+import criterios_adoptados as ca                       # noqa: E402
 
 CSV_PERFIL = RAIZ / "tests" / "ejemplo_puntos_perfil.csv"
 
@@ -48,6 +49,24 @@ CSV_PERFIL = RAIZ / "tests" / "ejemplo_puntos_perfil.csv"
 EXTERNOS = {
     "globales": {"luz_m": 3.0, "L_hidraulico_m": 120.0},
     "puntos": {"C-01": {"Q_m3s": 0.65, "S_conducto": 0.004}},
+}
+
+# Los SIETE criterios de la Familia C, TAL COMO SE TECLEAN EN LA VENTANA.
+#
+# Son cadenas a proposito: lo que se ejercita es el camino completo del raton
+# --- `_interpretar_valor_declarado` -> `_aplicar_valor_corrida` ---, no
+# `ca.establecer_valor_dinamico` con los valores ya construidos. La diferencia
+# no es cosmetica: hasta C8, `secciones_cajon_normalizadas` no cabia por ese
+# camino --- volvia como CADENA y el bucle de MD la rechazaba --- y la unica
+# forma de descubrirlo era teclearla.
+CAJON_TECLEADO = {
+    "embocadura_cajon": "cajon_concreto_aletas_30_75",
+    "n_manning_cajon": "concreto_afinado",
+    "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+    "espesor_pared_cajon": "0,20",          # con coma, como se teclea
+    "cobertura_minima_cajon": "0.3048",
+    "n_celdas_cajon": "1",
+    "secciones_cajon_normalizadas": "[[1.20, 0.90], [1.50, 1.20], [2.00, 1.50]]",
 }
 
 
@@ -77,15 +96,40 @@ def main(salida: Path) -> int:
             print("ERROR: la GUI no produjo informe")
             return 1
 
+        # EL TABLERO ANTES DE DECLARAR NADA: la Familia C tiene que estar en
+        # el, o el proyectista no sabria que le falta (C8, punto 6).
+        tablero_antes = sorted(c.clave for c in cli.criterios_bloqueantes(informe))
+
+        # Y AHORA SE DECLARAN POR DONDE LOS DECLARA EL PROYECTISTA: el campo
+        # de la ventana, su interprete y el boton "aplicar a esta corrida".
+        declarados = {}
+        for clave, tecleado in CAJON_TECLEADO.items():
+            ventana._clave_criterio_seleccionado = clave
+            ventana.valor_declarado_var.set(tecleado)
+            ventana._aplicar_valor_corrida()
+            raiz.update()
+            estado = ventana.lbl_estado_criterio.cget("text")
+            if estado.startswith("Error:"):
+                print(f"ERROR: la ventana rechazo '{clave}' = {tecleado!r}: "
+                      f"{estado}")
+                return 1
+            declarados[clave] = repr(ca.valor(clave))
+
+        ventana.ejecutar_pipeline()
+        raiz.update()
+        informe = ventana.informe
+        tablero_despues = sorted(c.clave for c in cli.criterios_bloqueantes(informe))
+
         resumen = {
             "alcance": informe.alcance,
+            "tablero_antes": tablero_antes,
+            "tablero_despues": tablero_despues,
+            "cajon_declarado": declarados,
             "puntos": len(informe.puntos),
             "dimensionados": sorted(p.punto.id for p in informe.puntos
                                     if p.dimensionado),
             "diferidos": len(informe.diferidos()),
             "plantilla": ventana._plantilla().name,
-            "criterios_bloqueantes": sorted(
-                c.clave for c in cli.criterios_bloqueantes(informe)),
         }
 
         destinos = iter([salida / "memoria.html", salida / "resumen.csv",

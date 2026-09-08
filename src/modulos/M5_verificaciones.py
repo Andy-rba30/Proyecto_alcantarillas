@@ -225,7 +225,7 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
 from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
-                                 diametro_exterior, espesor_pared,
+                                 espesor_pared,
                                  numero_de_celdas)
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
@@ -1048,11 +1048,18 @@ def cota_entrada_supuesta(punto: PuntoCritico) -> float:
     return getattr(punto, ORIGENES_COTA_ENTRADA[origen])
 
 
-def cota_clave(*, punto: PuntoCritico, material: Material, D: float) -> float:
+def cota_clave(*, punto: PuntoCritico, material: Material,
+               seccion: Seccion) -> float:
     """
     Cota de la clave FISICA del conducto, msnm (Sec. 7.A):
 
-        cota clave = cota de fondo de la entrada + D interior + espesor de pared
+        cota clave = cota de fondo de la entrada
+                     + altura interior + espesor de pared
+
+    RECIBE LA SECCION Y NO UN ESCALAR DESDE C8. La altura interior de un tubo
+    es su diametro y la de un marco es la H de su celda, y con un `D: float`
+    la funcion tenia que confiar en que el llamador hubiera puesto la altura
+    correcta -- que es la suposicion de forma que la Familia C persigue.
 
     El espesor de pared entra UNA vez y no dos: la cota de entrada es el
     invert INTERIOR -- la superficie por donde corre el agua -- de modo que la
@@ -1076,11 +1083,13 @@ def cota_clave(*, punto: PuntoCritico, material: Material, D: float) -> float:
     Se detiene con `CriterioPendienteError` en 'origen_cota_fondo_entrada'
     (la cota de entrada) o en 'espesor_pared_conducto' (el espesor).
     """
-    return cota_entrada_supuesta(punto) + D + espesor_pared(material, D)
+    altura = seccion.altura
+    return cota_entrada_supuesta(punto) + altura + espesor_pared(material,
+                                                                 altura)
 
 
 def altura_relleno_sobre_clave(*, punto: PuntoCritico, material: Material,
-                               D: float) -> float:
+                               seccion: Seccion) -> float:
     """
     Altura REAL de relleno sobre la clave fisica del conducto, m:
 
@@ -1112,7 +1121,7 @@ def altura_relleno_sobre_clave(*, punto: PuntoCritico, material: Material,
     Se detiene con `CriterioPendienteError` en lo mismo que `cota_clave`:
     'origen_cota_fondo_entrada' y 'espesor_pared_conducto'.
     """
-    clave = cota_clave(punto=punto, material=material, D=D)
+    clave = cota_clave(punto=punto, material=material, seccion=seccion)
     altura = punto.cota_subrasante - clave
     if altura <= TOL_UMBRAL_NORMATIVO:
         raise DatoInvalidoError(
@@ -1546,7 +1555,7 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
     exigir_seccion_coherente(material, seccion)
     D = seccion.altura
     altura_relleno = altura_relleno_sobre_clave(punto=punto, material=material,
-                                                D=D)
+                                                seccion=seccion)
 
     t = espesor_pared(material, D)
     U = empuje_flotacion_kn_m(seccion=seccion, espesor=t)

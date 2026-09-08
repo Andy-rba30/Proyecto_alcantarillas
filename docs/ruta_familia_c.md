@@ -1556,6 +1556,31 @@ Sobre `origin/main`:
    y `collected = passed + skipped` se mantiene.
 10. `casos_patron.py` cubre la sección rectangular en cada función pública nueva.
 
+### 11-bis. Cómo quedaron las diez, medido al cierre de C8
+
+| # | Estado | Con qué se comprueba |
+|---|---|---|
+| 1 | **CERRADA** | C-01 sale con **marco 1.20 × 0.90 m**, control de entrada, HW 0.589 m, L 21.246 m, cotas 36.900 / 36.773 y d50 0.218 m. C7 la cerró; C8 arregló lo que faltaba: el titular decía «Diámetro adoptado D = 0.900 m» sobre ese marco |
+| 2 | **CERRADA** | las once dan veredicto real para C-01. VC1 **no** está entre ellas y nunca lo estuvo: es §13 |
+| 3 | **CERRADA** | `bloque_alcance`, 14 etapas diferidas en la corrida del entregable |
+| 4 | **CERRADA** | §15.2.1–15.2.7, tabla numeral-por-paso. Las que **no** tienen numeral se declaran así: «NO APLICA / sin numeral», con el barrido que lo sostiene |
+| 5 | **CERRADA, y C8 le añadió lo que le faltaba.** Los criterios y los umbrales llegaban desde C5; lo que no llegaba era **por qué el proyecto lee la fuente como la lee cuando dos fuentes discrepan** | siete discrepancias vivas en la memoria de C-01, por su canal (§16.15) |
+| 6 | **CERRADA** | `bloque_alcance` + `nota_del_proyecto` del paso de V7 |
+| 7 | **CERRADA** | los siete criterios del cajón sin valor en archivo; se declaran por `--declarar` o por la ventana |
+| 8 | **CERRADA** en la configuración «PyMuPDF sí»; **se salta** sin PyMuPDF, que es dependencia de TEST |
+| 9 | **CERRADA** | el par se lee de `origin/main` en clon limpio, con la configuración declarada |
+| 10 | **CERRADA** | `casos_patron.py` cubre la rectangular; el caso patrón del prisma de V7 lo añadió C7 |
+
+**Y una comprobación que estos diez criterios NO tenían, y que C8 tuvo que
+añadir al descubrirla:** que **el titular diga la sección y no un diámetro**.
+Los diez criterios hablan de que la sección se adopte, se verifique y se
+imprima con su procedencia, y los diez se cumplían mientras la memoria
+titulaba «Diámetro adoptado D = 0.900 m» encima de un marco de 1.20 × 0.90 m.
+La línea era **numéricamente cierta y geométricamente falsa** —`D` valía la
+altura— y además perdía la luz, que es la mitad que gobierna la capacidad. Un
+criterio de salida que se cumple mientras el producto miente en su primera
+línea es un criterio incompleto, no un producto correcto.
+
 ## 12. Lo que conviene NO hacer
 
 - **No escribir un `M3_hidraulica_cajon.py` paralelo.** Es `SIS-A-07`.
@@ -1609,6 +1634,31 @@ que la fuente **no da**, y cablearlo obliga además a cambiar el esquema de
 este alcance**: en la Familia C el tipo ya lo fija la Sec. 2.3, de modo que el criterio no
 cambiaría ningún resultado y sí frenaría el pipeline. El análisis completo, con las tres cosas
 que faltan, está en **§15.5**.
+
+**`DIS-AASHTO-GAMMA-EV-12.6.1` — el extremo de γ_EV en una estructura
+enterrada.** La abrió la auditoría adversarial de C7 y **sigue ABIERTA al
+cerrar el plan**, a propósito. AASHTO LRFD 9.ª, Art. 12.6.1, dice con `shall`
+que para el empuje vertical de tierra aplica el factor **máximo** de la Tabla
+3.4.1-2; el Art. 3.4.1 —Manual de Puentes 2.4.5.3.1— dice con `shall` que
+cuando la carga permanente aumenta la estabilidad hay que investigar el
+**mínimo**. V7 aplica el mínimo, y **eso es una lectura del proyecto**: la
+12.6.1 no trae esa salvedad. El argumento no es de jerarquía —las dos son
+`shall`, y la 12.6.1 es además la especial para estructuras enterradas— sino
+de qué magnitud se verifica: en V7, EV es lo que **sujeta** al conducto contra
+la subpresión, o sea resistencia y no solicitación, y ahí el extremo
+desfavorable es el mínimo. **Medido sobre C-01 (marco 1.20 × 0.90):** seguir
+la 12.6.1 al pie de la letra llevaría el lado estabilizante de 23.256 a
+34.884 kN/m contra los mismos 20.405 de subpresión, o sea que **ablanda** la
+verificación, que es la dirección insegura.
+
+No se cierra en este alcance porque cerrarla es una de dos cosas, y ninguna es
+de C8: o el proyecto encuentra el numeral que sostiene la salvedad —no lo
+hay en las 110 páginas de la Sec. 12— o la consulta al MTC la resuelve.
+Mientras tanto **tiene que poder defenderse en una sustentación sin que nadie
+la descubra leyendo el PDF**, y por eso C8 la lleva a la memoria por su canal:
+con sus dos partes, quién gana, por qué, y el efecto medido de seguir a la
+otra. Antes de C8 llegaba por un id escrito a mano dentro de una lista de
+citas, sin ninguna de esas cuatro cosas.
 
 ## 14. Decisiones de alcance
 
@@ -2779,6 +2829,11 @@ contra la **forma de la pregunta**, que presupone que lo que se verifica es un d
 | ~~**R-8**~~ **cerrado en C5** | `criterios_adoptados['factores_carga_aashto']` | Su comentario justificaba la fila del tubo diciendo *«No es "Pórticos rígidos" … la Familia C, de marco o multicelda, sale sin candidatos»*: describía un estado que C5 deja de ser cierto. Faltaba además la clave del cajón | **C5** reescribió el comentario —lo que separa las dos filas no era nunca el catálogo, era el **tipo de estructura**— y añadió `"cajon": {"EV": "EV_porticos_rigidos"}` por la regla vinculante **#8**. **La clave queda sin consumidor hasta C7**, y eso está escrito en los dos extremos: en el propio comentario y en el docstring de `M5.v7_flotacion`, que es quien consume `M8.factores_carga_flotacion` |
 | **R-16** *(C6, encontrado por la auditoría)* | `normativa/manifiesto.py::_linea_por_mencion` | **El manifiesto puede reanclar una fila a un símbolo DISTINTO al regenerarse, y lo hizo.** Resuelve con `min(menciones, key=lambda n: abs(n - linea_actual))`: la mención más CERCANA, no la del símbolo correcto. Medido: la fila `↻ NF_profundidad_m` apuntaba a `M0:87`, que era `_VACIAS_ESTUDIO_GEOTECNICO` —el símbolo que sostiene lo que la fila afirma—; con las +30 líneas de C6 ese símbolo se fue a la 120, y la mención más cercana a 87 pasó a ser la **74** (Δ13), una entrada dentro de la tupla `_NUMERICAS`, en vez de la 120 (Δ30). El commit del manifiesto lo consolidó sin decirlo. **Los dos sitios mencionan el identificador**, de modo que `test_toda_fila_que_cita_un_identificador_lo_nombra_en_su_destino` **no puede distinguirlos**: por eso pasó | **CERRADA PARA ESTA FILA, Y NO POR EL NÚMERO.** La primera corrección le puso el número bueno (120) y declaró «comprobado que el generador la acepta: 0 referencias resincronizadas». La segunda auditoría demostró que esa prueba es **vacua** —cualquier mención es un punto fijo del regenerador, también la equivocada— y midió la caducidad: **22 líneas**. Lo que la cierra es anclar la fila al símbolo que la DEFINE, `_VACIAS_ESTUDIO_GEOTECNICO`, porque una definición tiene bloque y un bloque no se desliza; comprobado insertando esas mismas 22 líneas, el ancla siguió al símbolo. Con dos tests: uno concreto para esta fila y un **trinquete** (`MAX_REFERENCIAS_QUE_PUEDEN_DESLIZARSE`). **La heurística sigue igual** —es `manifiesto.py`, no entradas— pero ya no hace falta tocarla para cerrar una fila: basta citar la definición. Ver **R-17** |
 | **R-17** *(C6, segunda auditoría)* | `docs/manifiesto_citas.md` — **17 referencias**, medidas | **El mismo deslizamiento de R-16, en otras diecisiete filas.** Son las que se resuelven POR MENCIÓN y cuyo archivo de destino menciona el símbolo en más de un renglón: hoy apuntan a donde dicen, y pueden dejar de hacerlo con la próxima inserción sin que nada falle. Las peores por número de candidatas: `M4:188` (41 menciones), `M9:617` (9), `M8:324` (8). Y una es asimétrica **dentro de su propia fila**: en `md:351`, `[M9:334]` ancla a la constante `CRITERIO_FACTORES_CARGA` y `[M8:324]` a un renglón de **docstring**, teniendo `M8` la constante homónima en la 198 | **no es de C6**, que es entradas. **La caducidad está medida y es la de R-16: 22 líneas.** Ese es el umbral exacto —`|120 − (77 + k)| < k` ⇒ `k > 21.5`— con que una inserción por encima devuelve un ancla al símbolo equivocado, y se comprobó insertando esas 22 líneas: bajo la fila vieja el ancla cayó dentro de `_NUMERICAS`; bajo la fila anclada a su definición siguió al símbolo. Las 17 restantes tienen la misma forma y cada una su propio umbral, que es la distancia a su mención vecina. Se deja **con trinquete**: `tests/test_manifiesto_citas.py::test_el_ancla_por_mencion_ambigua_solo_decrece` fija el techo en 17 y el mensaje dice cómo bajarlo — anclar la fila a un símbolo que el archivo DEFINA —. **A QUIÉN LE TOCA: a ninguna sesión de la familia C en particular, y por eso se dice así en vez de endosárselo a la siguiente.** No es una tarea de registro que haya que planificar entera: cada una de las 17 se cierra **por separado**, citando en su fila un símbolo que el archivo defina, sin tocar `manifiesto.py` y sin coordinar con las otras. Lo que sí es concreto es **quién las va a mover primero**: `C7` toca `M8_estructural` y ahí viven dos de las 17 (`M8:197` y `M8:324`), de modo que es la primera sesión que corre el riesgo; el trinquete la avisa si aparece una decimoctava y las dos que mueva son las suyas para cerrar |
+| **R-18** *(C8)* | `normativa/registro.py` — **9 de 33 `Parte.cita_id`**, medidas | **Nueve partes de discrepancia anuncian una cita que nadie transcribió**, y el campo se documenta como «ancla al registro». Nadie lo notó porque la validación mete estos ids en el conjunto de `referenciadas` —para que una cita no cuente como huérfana— y **nunca comprobó que existieran**: un id que solo sirve para excusar a otro de estar huérfano no se comprueba jamás. Las nueve: `HDS5_SI_1985.EC4B#K`, `MP.A.11.3.1#KAE`, `MP.2.8.1.1.14.2.1#ROCA`, `MP.2.8.1.1.14.1#EXC`, `MP.2.3.1.1.12.3#EXC_ESTATICA`, `AASHTO_LRFD_9.11.6.3.3#EXC`, `ASTM_A760.T1#DIAMETROS`, `AASHTO_M170M.T1_T5#DIAMETROS`, `AASHTO_LRFD_9.3.11.6.4#LS` | **no se cierra inventando nueve citas** (regla 8 de `CLAUDE.md`). Se le dio el primer consumidor y se hizo VISIBLE: la memoria imprime «cita anunciada y NO transcrita al registro» en vez de un ancla rota, y `test_canal_discrepancias.py::test_el_censo_de_partes_sin_cita_transcrita_solo_decrece` pone trinquete en 9. Ficha **C8-01** |
+| **R-19** *(C8)* | `tests/test_memoria_sustentada.py::test_M11_no_calcula_y_sobre_D` | **La guardia que persigue la aritmética de M11 excluía `ast.Attribute` a la izquierda de la división, que es la forma exacta del defecto que persigue.** `hidraulica.HW / resultado.D` —que estuvo en `_tabla_diseno` desde antes de SIS-A-07 y sobrevivió a su corrección— no la disparaba nunca. La exclusión se puso para dejar pasar rutas de `pathlib`, y un `Path` a la izquierda de `/` es casi siempre un `Name`; un **atributo** a la izquierda de `/`, en un módulo de reporte, es una magnitud | **CERRADA.** La exclusión se cambia por la lista cerrada de atributos que de verdad son rutas (`.parent`, `.parents`), y se añade un test que le da la expresión exacta y exige que la marque —la mutación que la guardia vieja no mataba—. El caso vivo se cerró además **por dato**: `ResultadoHidraulico.HW_sobre_D_salida`, que lo calcula M4 |
+| **R-20** *(C8)* | `tests/test_sin_literales.py::_numeros_de_cuerpo` | **El barrido de literales de las plantillas llevaba desde SIS-C-11 en verde sobre un hueco.** El marcador de plantilla es `%%nombre` y NO lleva cierre; el patrón era `%%[^%]*%%`, que exige dos `%%` y por tanto **emparejaba cada marcador con el siguiente, borrando el cuerpo entero que hay entre los dos**. La plantilla de perfil tiene 14 marcadores: la mitad de su cuerpo no se miraba nunca. Es la misma forma del `FACTOR_MURO_TABLA` que `CLAUDE.md` cuenta —un test satisfecho por lo que no llega a mirar— | **CERRADA.** Patrón `%%\w+`. Lo destapó C8 al añadir un marcador, que cambió los emparejamientos y dejó a la vista un «13 647 caracteres» de prosa que llevaba ahí desde S18. Ese número queda censado por su nombre en la función, no exento por un patrón ancho |
+| **R-21** *(C8)* | `tests/test_gui_contrato.py::test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta` | **Un aserto obsoleto dentro de un test que se salta.** Afirmaba que el tablero de criterios pendientes de la ventana muestra exactamente dos claves (`TR_evento_extremo`, `remanso_derecho_via`) y son **TRES** desde que la Familia C entró en el CSV de perfil: falta `embocadura_cajon`, que es lo primero que le falta a C-01. No lo vio nadie porque el test se salta en cuanto no hay entorno gráfico, que es el caso del contenedor de desarrollo. **Un test saltado no defiende su aserto**, y la configuración «ventana Tk: no» de `CLAUDE.md` dice cuántos hay así: uno | **CERRADA en el aserto** (`tablero_antes`, tres claves) **y no verificada por ejecución**: en este contenedor no hay `tkinter` en ningún intérprete, de modo que el test sigue saltándose. Se dice así en vez de darlo por corrido |
+| **R-22** *(C8)* | `normativa/registro.py::discrepancias_abiertas` | **Un docstring afirmaba un consumidor que no existía**: «M11 las imprime». M11 no importaba el módulo por ninguna parte, y de las 23 discrepancias declaradas llegaban DOS a la memoria, las dos por accidente —con el id escrito a mano dentro de la justificación de un criterio o de la nota de una cita—. Es la primera de las dos lecciones de §4.5 en su forma pura: **una declaración en un docstring no imprime nada** | **CERRADA.** El docstring dice ahora lo que la función es —el censo completo, material de manifiesto— y la memoria consume `discrepancias_que_tocan`, que filtra. Ficha **C8-02** |
 | **R-15** *(C6)* | `normativa/citas.py` — `MC_HHD.4.1.1.3.1` y el num. 4.1.1.3.3, ausente | Faltan **tres transcripciones** que la norma peruana sí imprime sobre la pendiente de la alcantarilla, y que hoy V2b y la Sec. 7.B sustituyen con el HDS-5 o con nada. Están **verificadas** —numeral, título literal, página impresa y página PDF— en D-16, de modo que quien las traiga no tiene que volver a medirlas: sólo transcribirlas como `Verbatim` con su test en `test_normativa_pdf.py` | **no es de C6**, que es entradas y no registro: traer un `Verbatim` nuevo es el oficio de una sesión de transcripción (el precedente es `C4-6`). Se anota con la evidencia entera para que sea barato |
 | **R-14** *(C5)* | `M8.factores_carga_flotacion`, `M8.empuje_flotacion_kn_m`, `M8.peso_relleno_kn_m`, `M2.diametro_exterior` | **V7 corre sobre un marco y todavía no es correcta**, y el defecto lo **abre C5**: antes ningún punto de Familia C llegaba a la Fase 5. Son tres cosas: los dos cálculos de M8 suponen un **cilindro**; `diametro_exterior = D + 2t` y `espesor_pared` indexan por diámetro designado en mm, que es la columna «Wall Thickness» de una norma de **tubería**; y `factores_carga_flotacion` indexa por `material.tipo.value`, de modo que el marco recibe la fila del **tubo**. El mínimo de las dos filas es 0.90 y por eso **el número de V7 no cambia**: lo que sale mal es la **fila que la memoria imprime** (`NOR-HID-01` otra vez) | **C7**, puntos 1, 2 y 6 de su brief. C5 lo deja **declarado en el consumidor** —docstring de `M5.v7_flotacion`— y no lo silencia |
 
@@ -3301,6 +3356,7 @@ alta ni baja.
 
 | **C6** | `9868211` · `5d0335f` · `74879e0` · `3383d52` · `f003faa` · merge **`c342482`** · PR #11 | **1665 p / 2 s** (collected **1667**), «PyMuPDF sí / Tk no» — **leída de `origin/main` en clon limpio** (`c342482`), y los dos `skipped` son los dos documentados: el permanente de `test_MD.py` y el de ventana real de `test_gui_contrato.py:1027` | **Una clave nueva y cinco descartadas**: `S_cauce`, el único dato que el marco necesitaba y no tenía por dónde entrar. `_VACIAS_FAMILIA_C` revisada columna por columna —**la lista no cambia**— y `campos_requeridos` de la Familia C ampliado a `("Q_m3s", "S_cauce")`. `InformePunto.punto_de_calculo`, que lleva la fila completada al pipeline sin tocar la que la memoria imprime. `_DOMINIO_DE_CLAVE`, que cierra la puerta laxa por la que una pendiente en porcentaje entraba sin acotar. El **inventario de las doce reglas de §6 por mutación**, con las #1, #7 y #8 cerradas. **D-15**, **D-16**, **R-15**, **R-16**, **R-17** y las fichas **C6-01** y **C6-02** | **R-17**: 17 anclas del manifiesto expuestas al mismo deslizamiento que R-16, con trinquete puesto y sin tocar `manifiesto.py`. **R-15**: las tres transcripciones del num. 4.1.1.3.3, verificadas y sin transcribir. `sucs_fundacion` sigue **sin consumidor a propósito** — el vacío es del Manual —. Y el `collected = 1538` de `CLAUDE.md`, **desactualizado desde C1** — ver la nota de abajo — |
 | **C7** | `11970ca` · `27455f3` · `27156a5` · `cd8d4f2` · `b2e86ad` · `7661e2f` · `985bcd4` · `edce33b` · `7a44c1e` · `0371717` · `bda37a8` · `eee01f8` · `c2a0057` · `0a46903` · `308419e` · `3d6918a` · merge **`e349e53`** · PR #13 | **1684 p / 2 s** (collected **1686**), «PyMuPDF sí / ventana Tk no» — **leída de `origin/main` en clon limpio** (`e349e53`), con las dos condiciones medidas en ese árbol (`import fitz` sí, `import tkinter` no) y los dos `skipped` nombrados: el permanente de `test_MD.py:371` y el de ventana real de `test_gui_contrato.py:1027` | **UN MARCO DIMENSIONA**: C-01 sale con sección **1.20 × 0.90 m**, control de entrada, HW 0.589 m, L 21.246 m, cotas 36.900 / 36.773 y d50 0.218 m. La geometría exterior entra en el `Protocol` `Seccion` (`ancho_exterior`, `canto_exterior`, `area_exterior`) y M7 y M8 quedan **ciegos a la forma**; `espesor_pared_cajon` y `cobertura_minima_cajon`, los dos `[A]` de perfil sin valor y con el signo contraintuitivo escrito; la fila de γ_p del cajón («Pórticos rígidos») y **D-8**; §15.2.7 con el numeral por paso de V7 y **once citas nuevas**; el EG-2013 `503 + 504`; **R-17 de 17 a 14**; y `DIS-AASHTO-GAMMA-EV-12.6.1` | El titular sigue diciendo «**Diámetro adoptado** D = 0.900 m» en un marco → **C8** (§16.13). `cota_clave` y `altura_relleno_sobre_clave` siguen con escalar, con `ResultadoPunto.D`. La discrepancia de γ_EV queda **ABIERTA**: es una lectura del proyecto, no un numeral |
+| **C8** | *(pendiente de fusión al escribir esta fila; los SHA se completan al cerrar el PR)* | **1701 p / 2 s** (collected **1703**), «PyMuPDF sí / ventana Tk no» — medida en el contenedor de desarrollo; la del cierre se lee de `origin/main` en clon limpio | **LA MEMORIA IMPRIME LA SECCIÓN.** El titular de C-01 dice «marco 1.20 × 0.90 m» y no «Diámetro adoptado D = 0.900 m». `ResultadoPunto.D` **retirado** con sus once consumidores movidos, y con él `CompatibilidadGeometrica.D`, `PasoDiseno.D`, los tres `MD._motivo_*`, `M5.cota_clave` y `M5.altura_relleno_sobre_clave`. **El canal de discrepancias**: tres vías (cita, paso, criterio), filtro `viva` + `tocada`, `bloque_discrepancias` en las dos plantillas — **siete** llegan a la memoria de C-01 donde antes llegaban dos por accidente. `M2.diametro_exterior` retirado (0 llamadas medidas). La GUI: columna «Sección» y el literal estructurado en la declaración en caliente. **R-18…R-22** y las fichas **C8-01…C8-04**; **C1-02 cerrada** | **VC1**, el pórtico y el cabezal siguen en §13, como estaban. `DIS-AASHTO-GAMMA-EV-12.6.1` queda **ABIERTA y visible**. **R-18** (9 anclas de discrepancia sin transcribir) y **R-17** (14 anclas del manifiesto) con trinquete. **R-21 corregida y no ejecutada**: sin `tkinter` en este contenedor, el test de ventana sigue saltándose |
 
 > **La auditoría adversarial de C7 no la confirmó: nueve defectos, dos graves**, y los nueve
 > están en §16.14 con su medición. Los dos graves: la memoria de un marco **seguía citando la
@@ -4866,3 +4922,267 @@ nadie miró lo de debajo. **La sesión que escribe «un defecto declarado que de
 docstring sin decir cómo se cerró es indistinguible de uno que se borró» borró una
 justificación entera sin decirlo.** Restaurada literal desde `cd8d4f2~1`, con la pérdida
 contada encima.
+
+---
+
+### 16.15 · C8 — la memoria imprime la sección, y el canal que no existía
+
+**Lo que C8 vino a arreglar era una línea, y detrás había un hueco estructural.**
+El brief traía dos cosas: que el titular dijera la sección en vez de un
+diámetro, y que las discrepancias llegaran a la memoria. La primera era una
+línea; la segunda parecía un caso suelto —una discrepancia que no llegaba— y
+la medición previa dijo que no lo era.
+
+#### 1 · El canal de discrepancias, medido antes de tocar nada
+
+De las **23** discrepancias declaradas en el registro, llegaban **dos** a la
+memoria, y **las dos por accidente**: alguien había escrito el id a mano dentro
+de la `justificacion` de un criterio o de la `nota` de una cita, y M11 imprime
+esos campos tal cual. O sea que llegaban como un **código dentro de un
+párrafo**: sin partes, sin quién gana, sin por qué y sin el efecto de seguir a
+la otra. Las cuatro cosas que hacen sustentable una discrepancia no llegaban
+ninguna.
+
+`Registro.discrepancias_abiertas` decía en su docstring «M11 las imprime», y
+**M11 no importaba el módulo por ninguna parte**. Es la primera de las dos
+lecciones de §4.5 en su forma pura —una declaración en un docstring no imprime
+nada— y quedó como **R-22**.
+
+| estado | cuántas | llegaban |
+|---|---|---|
+| `abierta` | 1 | 1 (por un id escrito a mano en `citas_textuales`) |
+| `abierta_contra_hoja_de_ruta` | 9 | 1 (por un id en prosa) |
+| `errata_de_imprenta` | 8 | 0 |
+| `resuelta` | 5 | 0 |
+
+**El único canal que existía publica cinco de las veintitrés**, y no en la
+memoria: `ventana_normativa._texto_de_errata` imprime las que una
+`TablaNormativa` declara en su campo `erratas`. **Dieciocho de veintitrés no
+tenían ningún canal.**
+
+#### 2 · Qué se imprime y qué no, y por qué
+
+El criterio no es de gravedad: **el manifiesto es para quien audita el código,
+la memoria para quien sustenta**. De ahí salen dos filtros, y ninguno de los
+dos es «imprímelas todas».
+
+- **Vivas.** Lo `RESUELTA` no llega. Son cinco, y son historia del
+  repositorio: el repositorio citó mal una página y se corrigió
+  (`DIS-CN-EG-508-07`), o negó lo que la fuente dice y se retractó
+  (`DIS-CN-CALICATAS`). Quien abra hoy el PDF por donde la memoria lo manda
+  **encuentra lo que la memoria dice**: no hay nada que defender.
+  El filtro hace trabajo de verdad: la cita de `DIS-CN-EG-508-07`
+  —`EG2013.508.07#RELLENO_MIN`, el relleno mínimo del HDPE— **sí** se imprime
+  en la memoria de todos los puntos, de modo que por el índice de citas
+  llegaría sola.
+- **Y las `ERRATA_DE_IMPRENTA` SÍ llegan**, que es la mitad menos obvia. Una
+  errata no está resuelta: el PDF sigue imprimiendo lo que imprime. El caso
+  que lo prueba con un número es `DIS-MCHHD-T09-A2-DESPLAZADA`: el revisor que
+  abra la pág. impresa 75 y lea la Tabla Nº 09 al pie de la letra obtiene
+  `n = (0.011, 0.014)` donde la memoria usó `(0.010, 0.013)` —un **+10 %** en
+  el n que gobierna V3 y la socavación—. Si la memoria no lo declara antes, el
+  revisor lo descubre solo, leyendo el PDF, y concluye que el cálculo está mal.
+- **Tocadas por la corrida.** Que una corrida `--alcance perfil` no traiga las
+  seis del cabezal no es un olvido: es que el cabezal está diferido y su
+  memoria no afirma nada sobre ellas.
+
+#### 3 · Tres vías, y cada una tiene su caso
+
+Ninguna de las tres se mantiene a mano por duplicado.
+
+1. **La cita.** El registro construye el índice inverso `cita_id →
+   discrepancias` a partir de las `Parte.cita_id` que la discrepancia **ya
+   declara**. Donde la memoria imprime una de esas citas, la discrepancia viaja
+   con ella. Es el precedente de `test_cierre_perfil`: una clasificación
+   derivada del código no se puede desincronizar; una escrita a mano sí.
+2. **El paso** (`PasoDeMemoria.discrepancias`), para las que hablan de un
+   **número** y no de un texto. El caso exacto que la obliga a existir:
+   `DIS-HR-G-LAUSHEY` habla de `MC_HHD.4.1.1.3.7c#G` —el ancla del símbolo *g*
+   dentro del numeral— y el paso de Laushey cita `MC_HHD.4.1.1.3.7c`, el
+   numeral. **El mismo sitio del documento con dos ids**: por la vía de la cita
+   pasa de largo por un sufijo.
+3. **El criterio** (`Criterio.discrepancias`). `DIS-HR-D-MAX` dice que los
+   topes de 2.70 / 2.10 / 1.50 m no son normativos sino de catálogo; quien los
+   lleva es `criterios_adoptados` y quien los consume es **V9, que devuelve una
+   `Verificacion` sin paso**. Sin esta vía no hay por dónde.
+
+**Viaja el id y nunca el texto.** Escribir la discrepancia en prosa dentro de
+un campo sería la segunda transcripción que §4.5 prohíbe —y es exactamente
+como llegaban las dos que llegaban.
+
+#### 4 · Qué llega hoy a la memoria de C-01, contado
+
+**Siete**, y las cuatro que el brief nombraba están entre ellas:
+
+| id | estado | por qué vía |
+|---|---|---|
+| `DIS-AASHTO-GAMMA-EV-12.6.1` | abierta | cita (`MP.2.4.5.3.1#MINIMO`, `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`) |
+| `DIS-HR-H-RELLENO-MIN` | abierta c/ hoja | cita (`AASHTO_LRFD_9.12.6.6.3#COBERTURA`) |
+| `DIS-HR-D-MAX` | abierta c/ hoja | criterio (`D_max_catalogo`) |
+| `DIS-HR-G-LAUSHEY` | abierta c/ hoja | paso (`F6.LAUSHEY`) |
+| `DIS-MP-ERRATAS-GAMMA-P` | errata | cita (`MP.T2.4.5.3.1-2`) |
+| `DIS-MCHHD-T09-A2-DESPLAZADA` | errata | cita (`MC_HHD.4.1.1.3.6#T09`) |
+| `DIS-MCHHD-LAMINA-03-TMC` | errata | cita (`MC_HHD.4.1.1.3.4a`, `MC_HHD.LAMINA_03`) |
+
+**¿Hay más entre las diez abiertas que toquen un valor que la corrida usa?
+No.** Las otras seis —`DIS-HR-CICLOPEO`, `DIS-HR-A807`, `DIS-HR-H-EQ`,
+`DIS-HR-CLASE-DE-SITIO-F`, `DIS-HR-30M-VS-100FT`,
+`DIS-HR-VIA-DE-LA-LICUEFACCION`— son del cabezal o de la Fase 8, que
+`--alcance perfil` difiere enteras. En una corrida de expediente sí llegan, y
+por la misma vía: `clase_sitio` y `F_pga` las declaran.
+
+#### 5 · Lo que abrir el canal destapó: nueve anclas rotas (**R-18**)
+
+**Nueve de las 33 `Parte.cita_id` del registro nombran una cita que nadie
+transcribió.** El campo se documenta como «ancla al registro» y en nueve casos
+no ancla en nada. **Por qué no lo vio nadie:** la validación del registro mete
+estos ids en el conjunto de `referenciadas` —para que una cita no cuente como
+huérfana— y **nunca comprobó que existieran**. Un id que solo sirve para
+excusar a otro de estar huérfano no se comprueba jamás. Se destapó al darles
+el primer consumidor de verdad, y la primera generación de la memoria reventó
+con `KeyError: no hay cita «ASTM_A760.T1#DIAMETROS»`.
+
+No se cierra inventando nueve citas: transcribir una es leer el PDF y
+verificar numeral, página impresa y texto literal. Lo que se hace es lo que
+este proyecto hace con toda migración a medias —dejarla **visible y con
+trinquete**—: la memoria imprime «cita anunciada y NO transcrita al registro»
+en vez de un ancla rota.
+
+#### 6 · `ResultadoPunto.D` fuera, y los once consumidores
+
+C7 añadió `seccion` sin tocar `D` y cerró con una invariante de doble sentido
+las dos puertas por las que podían divergir. Era correcto **mientras
+convivieran**, y no resolvía el fondo: **un `D` coherente sigue siendo media
+geometría**. De «0.90» no se recupera si el marco era de 1.20 o de 2.00 m de
+luz, y la luz es la mitad que gobierna la capacidad.
+
+Movidos: siete sitios de M11 (titular, HW/D, tabla de iteraciones, los dos
+textos de «último escalón evaluado», tabla de diseño, CSV resumen), cuatro de
+la CLI (`_fase_8`, las dos claves del JSON, el volcado de texto),
+`CompatibilidadGeometrica.D`, `PasoDiseno.D`, los tres `MD._motivo_*`, y —de
+propina, porque `_fase_8` los alimentaba con `resultado.D`— `M5.cota_clave` y
+`M5.altura_relleno_sobre_clave`, que eran los otros dos escalares del
+inventario. `Material.D_max` **conserva el nombre** (V9 y el reporte lo
+consumen); su rótulo pasa a «dimensión máxima de catálogo».
+
+`ResultadoPunto.y_sobre_D` **conserva el nombre y ahora lo declara**, como ya
+hacía `Geometria.y_sobre_D`: «y/D» es como la Sec. 4.1 y el HDS-5 nombran la
+relación de llenado, y la `D` del nombre es la de la **fuente**; el
+denominador es `seccion.altura`.
+
+#### 7 · Dos guardias que estaban en verde sobre un hueco
+
+Las dos son de la misma familia que el `FACTOR_MURO_TABLA` de `CLAUDE.md`: un
+test satisfecho por lo que no llega a mirar.
+
+- **R-19.** `test_M11_no_calcula_y_sobre_D` excluía `ast.Attribute` a la
+  izquierda de la división — y `hidraulica.HW / resultado.D`, que estuvo en
+  `_tabla_diseno` **sobreviviendo a la corrección de SIS-A-07**, tiene
+  exactamente esa forma. La exclusión existía para dejar pasar rutas de
+  `pathlib`; se cambia por la lista cerrada de atributos que de verdad son
+  rutas, y se añade el test que le da la expresión exacta y exige que la
+  marque.
+- **R-20.** El barrido de literales de las plantillas emparejaba cada marcador
+  `%%nombre` con el **siguiente** —el patrón exigía dos `%%` y el marcador no
+  lleva cierre—, de modo que **la mitad del cuerpo de la plantilla de perfil
+  no se miraba nunca**. Lo destapó añadir un marcador, que cambió los
+  emparejamientos.
+
+#### 8 · La GUI
+
+El tablero de puntos decía «D (m)» y leía `resultado.D`: dos marcos de
+1.20 × 0.90 y 2.00 × 0.90 salían los dos «0.90». Ahora dice «Sección».
+
+Y **uno de los siete criterios de la Familia C no cabía por la ventana**:
+`secciones_cajon_normalizadas` es la serie de pares (B, H), y
+`_interpretar_valor_declarado` solo tenía dos ramas —número o texto—, de modo
+que lo tecleado volvía como **cadena**, la guardia de `criterios_adoptados` la
+aceptaba (no valida la forma) y el bucle de MD se detenía después con un
+`DatoInvalidoError` correcto **y sin salida**. La ventana ofrecía el campo y
+por el campo no cabía el valor. Se añade la rama de literal estructurado, que
+**solo se toma cuando el texto abre con `[`, `(` o `{`** —cosa que ningún
+decimal escrito con coma hace—, de modo que la divergencia declarada con la
+CLI (el `'1,5'` que `ast.literal_eval` leería como tupla) **sigue intacta** y
+tiene su propio test.
+
+**Y un aserto obsoleto dentro de un test que se salta (R-21).** El de ventana
+real afirmaba que el tablero muestra exactamente dos criterios pendientes, y
+son **tres** desde que la Familia C entró en el CSV de perfil. **Un test
+saltado no defiende su aserto.** Corregido; y **no verificado por ejecución**,
+porque en este contenedor no hay `tkinter` en ningún intérprete.
+
+#### 9 · Línea base: qué se movió y qué no
+
+**Cuatro de los trece archivos vienen byte a byte idénticos**
+(`cli_expediente.txt`, `cli_rama_error.txt`, y ningún número de los otros
+nueve se movió). Contado sobre los tres JSON hoja a hoja: **cero números
+movidos**. Lo que cambia son seis cosas, todas nombrables:
+
+1. el SHA1 de `criterios_adoptados.py` en la trazabilidad (el archivo cambió);
+2. el bloque de discrepancias, nuevo;
+3. la tabla de iteraciones: `D (m)` → `Sección`, y cada celda `0.90` → `Ø 0.90 m`;
+4. el titular: `Diametro adoptado D = 0.90 m interior (tope de CATALOGO
+   adoptado: …)` → `Seccion adoptada Ø 0.90 m (interior) — dimension maxima de
+   CATALOGO adoptada: …`;
+5. la cabecera y las celdas del cuadro resumen, en HTML y en CSV
+   (`D_m` → `seccion`, `D_max_material_m` → `dimension_max_catalogo_m`);
+6. las líneas de discrepancia en los pasos y en las fichas de criterio.
+
+**Y un cambio de PRESENTACIÓN que conviene decir en vez de dejar que se lea
+como un número movido:** en el volcado de texto de la CLI, `D = 0.900 m` pasa
+a `Ø 0.90 m` — **tres decimales a dos**. `cli._fmt` imprimía con tres por
+defecto y `Seccion.etiqueta()` fija dos, declarados en su docstring como
+presentación. Dos decimales es lo que corresponde a un catálogo que avanza en
+escalones de 0.15 m; el valor almacenado no cambia.
+
+#### 10 · Balance del plan entero
+
+**Lo que el plan entrega.** Un punto de Familia C sale de `--alcance perfil`
+con sección de marco adoptada, las once verificaciones de perfil con veredicto
+real, la geometría amarrada al perfil, la protección de salida, y una memoria
+que dice de dónde sale cada número, contra qué se comparó, con qué carácter lo
+escribe su fuente, qué eligió el proyectista y entre qué — y, desde C8, dónde
+el proyecto **leyó** sus fuentes cuando dicen cosas distintas.
+
+**Lo que no entrega, y está declarado en §13.** VC1 —que es la verificación
+que de verdad gobierna a la Familia C—, el diseño estructural del pórtico, el
+predimensionamiento del cabezal, y la elección de tipo a partir del suelo de
+fundación. Ninguna de las cuatro se abrió, y ninguna se cerró en silencio.
+
+**Deuda medida que queda.**
+
+- **R-17: 14 anclas del manifiesto** por mención ambigua (C7 bajó de 17 a 14).
+  Cada una se cierra por separado; el trinquete avisa si aparece una decimoquinta.
+- **R-18: 9 `Parte.cita_id`** sin transcribir, con trinquete y visibles en la
+  memoria.
+- **El `collected = 1538` de `CLAUDE.md` está desactualizado desde C1**, y hoy
+  es **1703**. La constitución sigue diciendo 1538 y su tabla de cuatro
+  configuraciones sigue dando los pares de entonces. **No se corrige aquí**
+  porque `CLAUDE.md` es la constitución del proyecto y no un archivo de esta
+  familia; se reporta, que es lo que C6 y C7 ya hicieron y lo que hace que
+  esta sea la **tercera** sesión que lo dice sin que nadie lo mueva. La regla
+  que **sí** se mantiene en pie es la que no depende del entorno:
+  `collected = passed + skipped`.
+- **La tensión T8 entre «no commitear en rojo» y «manifiesto aparte» ha
+  ocurrido ya CUATRO veces**, y conviene decirlo con ese número. Las dos
+  reglas son incompatibles por construcción: el manifiesto ancla
+  `archivo:línea`, de modo que **cualquier** cambio de código lo desincroniza,
+  y si su regeneración va en un commit aparte y posterior, el commit de
+  contenido queda **necesariamente en rojo** en los cuatro tests de
+  `test_manifiesto_citas.py`. No hay orden que salve las dos: regenerar antes
+  del cambio no tiene sentido, porque el manifiesto describe el código que
+  todavía no existe. Lo que se hace —y lo que se ha hecho las cuatro veces— es
+  dejar el rojo acotado a **un solo commit** y decirlo. Cerrarla de verdad es
+  una de dos: que el manifiesto deje de anclar por línea, o que la regla del
+  commit aparte admita esta excepción por escrito. **Ninguna de las dos es de
+  la Familia C**, y por eso se reporta en vez de decidirse aquí.
+- **El hueco de T11 mira el `caracter` de la cita y no de qué trata.** Medido
+  en C7 sobre los 25 `Fundamento` del registro: ocho tienen el verbo sostenido
+  **solo por rótulos**; de esos, seis tienen verbo `DEFINE` —donde un título de
+  tabla **es** la cita correcta— y dos tienen verbo fuerte. De los dos, uno es
+  legítimo (`F5.V3`: el rótulo es «TABLA Nº 10: Velocidades máximas
+  admisibles» y el paso verifica una velocidad contra un máximo) y el otro era
+  el defecto que C7 cerró (`F5.V7`). **Hoy muerde cero veces**, y el hueco
+  sigue ahí: un `Fundamento` con verbo fuerte sostenido por una cita que no
+  habla del asunto pasa igual, siempre que el `caracter` encaje. Cerrarlo es
+  tocar `registro.py`, que no es de esta familia.

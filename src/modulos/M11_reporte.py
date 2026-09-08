@@ -265,7 +265,7 @@ MARCADORES: Tuple[str, ...] = (
     "memorias_punto", "filas_resumen",
     "bloque_datos_sitio", "bloque_criterios", "bloque_pendientes",
     "bloque_alcance", "bloque_acotaciones", "bloque_umbrales",
-    "bloque_homonimias",
+    "bloque_homonimias", "bloque_discrepancias",
 )
 
 
@@ -818,7 +818,10 @@ def _tabla_iteraciones(informe: Any) -> str:
                 "este punto: el bucle de diseño no llego a correr (ver los "
                 "bloqueos) o la corrida no la solicito.</p></div>")
 
-    filas = [_fila(["<th>#</th>", "<th>Material</th>", "<th>D (m)</th>",
+    # LA COLUMNA DICE LA SECCION, NO UN DIAMETRO (C8, punto 2). Con «D (m)»
+    # los tres escalones de un catalogo de marcos salian «0.90 / 1.20 / 1.50»
+    # y el revisor no podia saber que luz se descarto en cada uno.
+    filas = [_fila(["<th>#</th>", "<th>Material</th>", "<th>Seccion</th>",
                     "<th>Resultado</th>", "<th>Motivo del descarte</th>"])]
     for indice, paso in enumerate(traza, start=1):
         if paso.aceptado:
@@ -829,7 +832,7 @@ def _tabla_iteraciones(informe: Any) -> str:
             motivo = _esc(paso.motivo)
         clase = "fila-aceptada" if paso.aceptado else ""
         filas.append(_fila([_td(str(indice), "num"), _td(_esc(paso.material)),
-                            _td(_num(paso.D, FMT_2), "num"), _td(resultado),
+                            _td(_esc(paso.seccion.etiqueta())), _td(resultado),
                             _td(motivo)], clase))
     return "<h4>Iteraciones del diseño (Fases 3-5)</h4>" \
            '<table class="compacta">' + "".join(filas) + "</table>"
@@ -852,11 +855,18 @@ def _tabla_diseno(informe: Any) -> str:
                    f"n para velocidad maxima y socavacion = "
                    f"{_num(material.n_min)}. Fila de la Tabla N 09: "
                    f"{_esc(material.fila_manning)}")]),
-        _fila([_td("<b>Diametro adoptado</b>"),
-               _td(f"D = {_num(resultado.D, FMT_2)} m interior "
-                   f"(tope de CATALOGO adoptado: "
+        # EL TITULAR DICE LA SECCION, NO UN DIAMETRO. Decia «Diametro
+        # adoptado D = 0.900 m» sobre un marco de 1.20 x 0.90, que es la
+        # forma mas visible del defecto que C8 cierra: el escalar `D` vale la
+        # ALTURA en un cajon, de modo que la linea era numericamente cierta y
+        # geometricamente falsa --- y ademas perdia la luz, que es la mitad
+        # que gobierna la capacidad. La etiqueta la construye la seccion
+        # (`Seccion.etiqueta`), no esta capa: M11 no compone magnitudes.
+        _fila([_td("<b>Seccion adoptada</b>"),
+               _td(f"{_esc(resultado.seccion.etiqueta())} (interior) "
+                   f"&mdash; dimension maxima de CATALOGO adoptada: "
                    f"{_num(material.D_max, FMT_2)} m &mdash; "
-                   f"{_esc(material.D_max_de_catalogo)})")]),
+                   f"{_esc(material.D_max_de_catalogo)}")]),
         # Q y S son los del DISEÑO, no los de la columna del CSV: la Familia B
         # y la C traen su propio caudal (Sec. 2.3) y el punto que no sigue el
         # cauce declara su pendiente. La S iba SIN imprimir y la memoria
@@ -896,7 +906,7 @@ def _tabla_diseno(informe: Any) -> str:
         filas.append(_fila([
             _td("<b>h<sub>o</sub> fuera de rango</b>"),
             _td(f"El control de SALIDA gobierna este punto y su "
-                f"HW/D = {_num(hidraulica.HW / resultado.D, FMT_2)} "
+                f"HW/D = {_num(hidraulica.HW_sobre_D_salida, FMT_2)} "
                 f"queda por debajo de {_num(limite, FMT_2)}: para ese "
                 f"HW/D, {_esc(H_O_NUMERAL)} dice que la aproximacion "
                 f"h<sub>o</sub> = (d<sub>c</sub> + D)/2 <b>{veredicto}</b>. "
@@ -964,6 +974,47 @@ def _citas_del_paso(paso: Any) -> str:
             f'<span class="procedencia-cita">{_esc(c.como_texto())}'
             f"</span></p>")
     return ("<dt>Lo que dice la fuente</dt><dd>" + "".join(partes) + "</dd>")
+
+
+def _discrepancias_que_toca(paso: Any) -> Tuple[Any, ...]:
+    """
+    Las discrepancias VIVAS que este paso toca, por sus citas o por su valor.
+
+    El cruce lo hace el registro (`discrepancias_que_tocan`); aqui solo se le
+    pasa lo que el paso trae. Ni una condicion ni un id cableado en esta capa:
+    M11 formatea.
+    """
+    return _reg_M11.discrepancias_que_tocan(
+        paso.citas_textuales, getattr(paso, "discrepancias", ()))
+
+
+def _discrepancias_del_paso(paso: Any) -> str:
+    """
+    EL AVISO, en el punto de uso: que esta linea de la memoria descansa sobre
+    una lectura del proyecto y no sobre la letra de la fuente.
+
+    Una linea por discrepancia, con su id, su objeto y quien gana. EL TEXTO
+    ENTERO NO VA AQUI: va una sola vez en `bloque_discrepancias`, porque
+    repetir los cuatro campos en cada paso que toca la misma discrepancia es
+    la segunda transcripcion que la §4.5 prohibe --- y ademas ilegible: la
+    Tabla N 09 la tocan cinco pasos.
+
+    `class="interpretacion"`: una discrepancia es lo que el proyecto LEE en
+    sus fuentes cuando dicen cosas distintas. Pegarla a `class="fuente"`
+    seria NOR-HID-04 en su forma mas cruda --- presentar como norma lo que es
+    una eleccion entre dos normas.
+    """
+    tocadas = _discrepancias_que_toca(paso)
+    if not tocadas:
+        return ""
+    filas = "".join(
+        f"<li><code>{_esc(d.id)}</code> &mdash; {_esc(d.objeto)}. "
+        f"<b>Gana {_esc(d.gana)}.</b></li>" for d in tocadas)
+    return ('<dt class="interpretacion">Discrepancia declarada que toca este '
+            f'paso</dt><dd class="interpretacion"><ul>{filas}</ul>'
+            "El detalle --- las partes, por que gana esa y que pasaria "
+            "siguiendo a la otra --- esta en el bloque de discrepancias de "
+            "esta memoria.</dd>")
 
 
 def _sustitucion_del_paso(paso: Any) -> str:
@@ -1080,6 +1131,7 @@ def bloque_paso(paso: Any) -> str:
         _umbral_del_paso(paso),
         _veredicto_del_paso(paso),
         _citas_del_paso(paso),
+        _discrepancias_del_paso(paso),
         _elecciones_del_paso(paso),
     ]
     if paso.nota_del_proyecto:
@@ -1149,7 +1201,7 @@ def _tabla_verificaciones(informe: Any) -> str:
             ultimo = escalones[-1]
             verificaciones = verificaciones + tuple(
                 (f"Fase 5 - ultimo escalon evaluado ({ultimo.material}, "
-                 f"D = {ultimo.D:.2f} m)", v)
+                 f"{ultimo.seccion.etiqueta()})", v)
                 for v in ultimo.verificaciones)
     if not verificaciones:
         return ('<div class="nota"><p>Sin verificaciones registradas: el '
@@ -1408,8 +1460,9 @@ def _pasos_hidraulicos_del_punto(informe: Any) -> str:
     ultimo = escalones[-1]
     aviso = (
         '<div class="aviso"><p><b>Este desarrollo es el del ultimo escalon '
-        f"evaluado &mdash; {_esc(ultimo.material)}, D = "
-        f"{_num(ultimo.D, FMT_2)} m &mdash;, no el de un diseño adoptado: "
+        f"evaluado &mdash; {_esc(ultimo.material)}, "
+        f"{_esc(ultimo.seccion.etiqueta())} &mdash;, no el de un diseño "
+        "adoptado: "
         "el punto <b>no se dimensiono</b>. Se publica porque es calculo que "
         "el pipeline hizo de verdad y que el revisor necesita para juzgar por "
         "que se descarto ese escalon; el motivo esta en la tabla de "
@@ -1476,7 +1529,7 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
         celdas.extend([
             _td(_esc(material.tipo.value)),
             _td(f"{_esc(material.nombre)}<br>{_esc(material.norma_producto)}"),
-            _td(_num(resultado.D, FMT_2), "num"),
+            _td(_esc(resultado.seccion.etiqueta())),
             _td(_num(h.V_erosion, FMT_2), "num"),
             _td(_num(h.V_sedimentacion, FMT_2), "num"),
             _td(_num(resultado.y_sobre_D, FMT_2), "num"),
@@ -1502,7 +1555,7 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
 
 COLUMNAS_RESUMEN_CSV = (
     "id", "progresiva", "familia", "TR_anios", "tipo_hidraulico",
-    "material", "norma_producto", "D_m",
+    "material", "norma_producto", "seccion",
     # Dos columnas y no una: la velocidad de la rama n_min (techos: V3, d50) y
     # la de la rama n_max (piso: V2) son numeros distintos y una sola columna
     # "V_ms" obligaba al lector a adivinar cual (MAT-D1).
@@ -1532,7 +1585,7 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
         h = resultado.resultado_hidraulico
         fila.extend([
             material.tipo.value, material.nombre, material.norma_producto,
-            _num(resultado.D, FMT_2), _num(h.V_erosion, FMT_2),
+            resultado.seccion.etiqueta(), _num(h.V_erosion, FMT_2),
             _num(h.V_sedimentacion, FMT_2),
             _num(resultado.y_sobre_D, FMT_2), _num(h.HW, FMT_2),
             h.control_gobernante.value,
@@ -1815,6 +1868,146 @@ def _sensibilidad_declarada(clave: str, criterio: Any) -> str:
             f'<span class="interpretacion">{_esc(nota)}</span></dd>')
 
 
+def pasos_del_informe(informe: Any) -> Tuple[Any, ...]:
+    """
+    Todos los `PasoDeMemoria` que ESTA corrida emitio, de donde sea.
+
+    Existe porque `bloque_discrepancias` tiene que saber que citas imprimio la
+    memoria para saber que discrepancias toca, y eso no se puede preguntar
+    bloque a bloque: un paso hidraulico vive en `ResultadoHidraulico.pasos`,
+    uno de verificacion cuelga de su `Verificacion`, y los de la traza cuelgan
+    de escalones que ni siquiera se adoptaron.
+
+    `tests/test_memoria_sustentada._pasos_de` hace el mismo recorrido y NO se
+    borra a cambio de este: un test que consuma la funcion que audita deja de
+    auditarla. Lo que hay es un test que compara los dos recorridos, de modo
+    que si uno se olvida de una rama nueva del informe, el otro lo dice.
+    """
+    vistos: List[Any] = []
+
+    def _anota(paso: Any) -> None:
+        if paso is not None:
+            vistos.append(paso)
+
+    for punto in informe.puntos:
+        if punto.clasificacion is not None:
+            _anota(getattr(punto.clasificacion.verificacion_luz, "paso", None))
+            _anota(getattr(punto.clasificacion.periodo_retorno, "paso", None))
+        for _fase, v in punto.verificaciones():
+            _anota(getattr(v, "paso", None))
+        for escalon in punto.traza:
+            for v in escalon.verificaciones:
+                _anota(getattr(v, "paso", None))
+            hidraulico = getattr(escalon, "resultado_hidraulico", None)
+            if hidraulico is not None:
+                vistos.extend(hidraulico.pasos)
+        if punto.resultado is not None and \
+                punto.resultado.resultado_hidraulico is not None:
+            vistos.extend(punto.resultado.resultado_hidraulico.pasos)
+        if getattr(punto, "tw_sec13", None) is not None:
+            _anota(getattr(punto.tw_sec13, "paso", None))
+        if punto.proteccion is not None:
+            _anota(getattr(punto.proteccion, "paso", None))
+        if punto.espaciamiento is not None:
+            _anota(getattr(punto.espaciamiento, "paso", None))
+    for recubrimiento in informe.cabezal.recubrimientos:
+        _anota(getattr(recubrimiento, "paso", None))
+    return tuple(vistos)
+
+
+def _ancla_de_parte(parte: Any) -> str:
+    """
+    La cita de una parte de la discrepancia, o EL AVISO de que se anuncia y no
+    esta transcrita.
+
+    Nueve de las 33 `Parte.cita_id` del registro nombran citas que nadie
+    transcribio (`Registro.partes_sin_cita_transcrita`). Imprimir el id pelado
+    mandaria al revisor a buscar en el registro algo que no esta; callarlo
+    dejaria la afirmacion de la parte sin ancla y sin decir que le falta. Se
+    dice lo que hay: el id anunciado y que la transcripcion falta.
+    """
+    if not parte.cita_id:
+        return ""
+    try:
+        texto = _cita_como_texto(parte.cita_id)
+    except KeyError:
+        return ('<span class="pendiente"> [cita anunciada y NO transcrita al '
+                f"registro: <code>{_esc(parte.cita_id)}</code>; la afirmacion "
+                "de esta parte no se puede contrastar contra su pagina hasta "
+                "que se transcriba]</span>")
+    return f'<span class="procedencia-cita">{_esc(texto)}</span>'
+
+
+def bloque_discrepancias(informe: Any) -> str:
+    """
+    LAS DISCREPANCIAS DECLARADAS QUE ESTA CORRIDA TOCA, con sus cuatro campos.
+
+    POR QUE ESTE BLOQUE EXISTE. El registro de discrepancias llevaba desde
+    S-anteriores enumerando lo que `CLAUDE.md` obliga a declarar, y
+    `Registro.discrepancias_abiertas` decia en su docstring «M11 las
+    imprime». No las imprimia: M11 no importaba el modulo. De las 23
+    declaradas llegaban DOS a la memoria, y las dos por accidente --- con el
+    id escrito a mano dentro de la justificacion de un criterio o de la nota
+    de una cita, que es la segunda transcripcion que la §4.5 prohibe. Una
+    discrepancia registrada donde nadie la lee esta tan registrada como no
+    registrada, que es la segunda de las dos lecciones que le costaron
+    auditorias a este proyecto.
+
+    QUE LLEGA Y QUE NO, que es la decision y no el mecanismo. El manifiesto es
+    para quien AUDITA EL CODIGO y la memoria para quien SUSTENTA, y de ahi
+    salen los dos filtros:
+
+    - **Vivas.** Lo `RESUELTA` no llega (`EstadoDiscrepancia.viva`): quien
+      abra hoy el PDF por donde la memoria lo manda encuentra lo que la
+      memoria dice. Son cinco de las 23 y son historia del repositorio.
+      Las `ERRATA_DE_IMPRENTA` SI llegan, y es la mitad menos obvia de la
+      regla: el PDF sigue imprimiendo lo que imprime, de modo que el revisor
+      que lea la Tabla N 09 al pie de la letra encontrara un n de Manning
+      distinto del que la memoria uso.
+    - **Tocadas por la corrida.** No se vuelcan las 18 vivas: llegan las que
+      esta corrida toca, por las citas que sus pasos imprimieron o por el
+      valor que sus pasos sustituyeron (`Registro.discrepancias_que_tocan`).
+      Que una corrida `--alcance perfil` no traiga las seis del cabezal no es
+      un olvido --- es que el cabezal esta diferido y la memoria no afirma
+      nada sobre ellas.
+
+    `class="interpretacion"` en todo el bloque: NOR-HID-04. Una discrepancia
+    es lo que el proyecto LEE cuando dos fuentes dicen cosas distintas, y
+    presentarla con la autoridad de una cita es exactamente el defecto que esa
+    ficha nombra.
+    """
+    citas: set = set()
+    declaradas: set = set()
+    for paso in pasos_del_informe(informe):
+        citas.update(paso.citas_textuales)
+        declaradas.update(getattr(paso, "discrepancias", ()))
+    # La tercera via: los criterios que la corrida INVOCO. `criterios_usados`
+    # y no `CRITERIOS`, por lo mismo que `bloque_criterios`: la memoria
+    # publica lo que este calculo uso, no el catalogo entero.
+    for clave in ca.criterios_usados():
+        declaradas.update(ca.criterio(clave).discrepancias)
+    tocadas = _reg_M11.discrepancias_que_tocan(citas, declaradas)
+    if not tocadas:
+        return ('<div class="aviso"><p>Esta corrida no toca ninguna '
+                "discrepancia declarada viva.</p></div>")
+
+    partes: List[str] = []
+    for d in tocadas:
+        filas_partes = "".join(
+            f"<li><b>{_esc(p.quien)}</b>: {_esc(p.que_dice)}"
+            + _ancla_de_parte(p) + "</li>" for p in d.partes)
+        partes.append(
+            f'<div class="acotacion interpretacion">'
+            f"<h4><code>{_esc(d.id)}</code> &mdash; {_esc(d.objeto)}</h4>"
+            f"<dl><dt>Estado</dt><dd>{_esc(d.estado.value)}</dd>"
+            f"<dt>Que dice cada parte</dt><dd><ul>{filas_partes}</ul></dd>"
+            f"<dt>Cual gana, y por que</dt><dd><b>{_esc(d.gana)}</b>. "
+            f"{_esc(d.por_que)}</dd>"
+            "<dt>Que pasaria siguiendo a la otra</dt>"
+            f"<dd>{_esc(d.efecto_si_se_sigue_la_otra)}</dd></dl></div>")
+    return "".join(partes)
+
+
 def bloque_criterios(solo_usados: bool = True) -> str:
     """
     El contenido de `criterios_adoptados.reporte_criterios` como HTML: cada
@@ -1867,6 +2060,15 @@ def bloque_criterios(solo_usados: bool = True) -> str:
             campos.append('<dt class="pendiente">Verificar</dt>'
                           f'<dd class="pendiente">'
                           f"{_esc(c.verificacion_pendiente)}</dd>")
+        if c.discrepancias:
+            # El aviso EN LA FICHA, que es el punto de uso del criterio. El
+            # texto entero va una sola vez, en `bloque_discrepancias`.
+            enlaces = "; ".join(
+                f"<code>{_esc(d.id)}</code> &mdash; {_esc(d.objeto)} "
+                f"(gana {_esc(d.gana)})"
+                for d in _reg_M11.discrepancias_que_tocan((), c.discrepancias))
+            campos.append('<dt class="interpretacion">Discrepancia declarada'
+                          f'</dt><dd class="interpretacion">{enlaces}</dd>')
         partes.append(
             '<div class="criterio">'
             f'<p class="clave">{_etiqueta_html(c.etiqueta)} '
@@ -2518,6 +2720,7 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "bloque_acotaciones": bloque_acotaciones(alcance=informe.alcance),
         "bloque_umbrales": bloque_umbrales(),
         "bloque_homonimias": bloque_homonimias(),
+        "bloque_discrepancias": bloque_discrepancias(informe),
     }
     if set(valores) != set(MARCADORES):
         diferencia = set(valores).symmetric_difference(MARCADORES)
