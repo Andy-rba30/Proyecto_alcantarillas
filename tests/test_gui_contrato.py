@@ -1135,6 +1135,80 @@ _INTERPRETE, _ENVOLTORIO = _interprete_con_ventana()
                     reason="ningun interprete disponible puede levantar una "
                            "ventana (falta tkinter, ttkbootstrap o el "
                            "entorno grafico)")
+def test_la_seleccion_de_la_tabla_sobrevive_al_filtro(tmp_path):
+    """
+    Teclear en el filtro NO pierde la seleccion, y declarar con el filtro
+    puesto no revienta.
+
+    ESTE TEST EXISTE POR LO QUE LA SUITE NO CAZO. La pestana 2 se entrego con
+    tres defectos y la suite estaba verde, porque el unico apoyo que levantaba
+    una ventana --- `gui_corrida_perfil.py` --- asigna
+    `_clave_criterio_seleccionado` A MANO y no toca ni el filtro ni la
+    seleccion real del `Treeview`. Se probaba lo que la ventana DECIDE, no lo
+    que el usuario HACE, y los tres vivian en medio:
+
+      - `<<TreeviewSelect>>` es un evento ENCOLADO. `_llenar_tabla_criterios`
+        borraba las filas sin reponer la seleccion, y en el siguiente giro del
+        bucle `_al_seleccionar_criterio` entraba con seleccion vacia y ponia la
+        clave a None. Sin `Tk` de verdad y sin `update()`, eso no ocurre.
+      - Con la clave perdida, teclear DESELECCIONABA el criterio y la fila que
+        el filtro protegia desaparecia al segundo tecleo.
+      - Y `_tras_declarar_en_ventana` hacia `selection_set` sobre esa fila
+        ausente: `_tkinter.TclError`, que no desciende de `ErrorProyecto` y por
+        tanto la GUI no distingue de un fallo del programa.
+
+    Las cuatro afirmaciones de abajo son esos defectos escritos como
+    invariantes. Comprobado por MUTACION contra `3850127`, el commit que los
+    tenia: alli este test falla en las cuatro.
+    """
+    import json
+    import subprocess
+
+    destino = tmp_path / "observado.json"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_seleccion_real",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads(destino.read_text(encoding="utf-8"))
+    clave = obs["clave"]
+
+    # 1. La seleccion sobrevive al filtro, con todo lo que cuelga de ella.
+    assert obs["seleccionada_tras_teclear"] == clave, (
+        "teclear en el filtro perdio la seleccion: `_llenar_tabla_criterios` "
+        "borro las filas y no las repuso")
+    assert obs["seleccion_del_arbol"] == [clave], (
+        "la clave sobrevivio pero el arbol se quedo sin seleccion: son dos "
+        "estados del mismo hecho y no pueden discrepar")
+    assert obs["detalle_tras_teclear"], "el detalle se vacio al teclear"
+    assert obs["boton_norma_tras_teclear"] == "normal", (
+        "los botones se apagaron al teclear, como si no hubiera criterio")
+
+    # 2. La confirmacion de lo declarado no se borra por filtrar.
+    assert obs["confirmacion_tras_teclear"] == obs["confirmacion_tras_declarar"], (
+        "el mensaje de la declaracion se borro al tocar el filtro")
+
+    # 3. La fila protegida sigue ahi al SEGUNDO tecleo, no solo al primero.
+    assert obs["fila_tras_segundo_tecleo"], (
+        "la fila protegida aguanto un refiltrado y no el siguiente")
+    assert obs["seleccionada_tras_segundo_tecleo"] == clave
+
+    # 4. Declarar desde la emergente con el filtro puesto no revienta, ni
+    #    siquiera cuando la clave declarada NO es la que quedo seleccionada.
+    assert obs["declarar_con_filtro"] == "ok", (
+        f"declarar con el filtro puesto reviento: {obs['declarar_con_filtro']}")
+    assert obs["fila_tras_declarar_desde_emergente"], (
+        "se declaro y la fila declarada no quedo a la vista")
+    assert obs["declarar_otra_clave"] == "ok", (
+        "la emergente declaro una clave distinta de la seleccionada y reviento: "
+        f"{obs['declarar_otra_clave']}")
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
 def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
     """
     La ventana de verdad: se construye, se rellena, se ejecuta y se exporta.
