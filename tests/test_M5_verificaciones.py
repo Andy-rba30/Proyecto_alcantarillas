@@ -46,9 +46,10 @@ from modulos.M2_material import catalogo
 from modulos.M8_estructural import factores_carga_flotacion
 from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        CRITERIO_V_MAX_CONCRETO,
+                                       ORIGENES_COTA_ENTRADA,
                                        NUMERAL_V2, NUMERAL_V3, NUMERAL_V7,
                                        altura_relleno_sobre_clave,
-                                       cota_clave, cota_entrada_supuesta,
+                                       cota_clave, cota_de_entrada,
                                        resguardo_por_cbr, v1_borde_libre,
                                        v2_velocidad_minima,
                                        v3_velocidad_maxima,
@@ -1024,7 +1025,7 @@ def test_sin_declarar_el_origen_la_cota_de_entrada_detiene_el_calculo():
     """
     with sin_valor(CRITERIO_ORIGEN_COTA_ENTRADA):
         with pytest.raises(CriterioPendienteError) as excinfo:
-            cota_entrada_supuesta(_punto())
+            cota_de_entrada(_punto())
         assert excinfo.value.clave == CRITERIO_ORIGEN_COTA_ENTRADA
         assert ca.criterio(CRITERIO_ORIGEN_COTA_ENTRADA).valor is None
 
@@ -1032,10 +1033,135 @@ def test_sin_declarar_el_origen_la_cota_de_entrada_detiene_el_calculo():
 def test_la_regla_declarada_es_la_que_se_aplica():
     punto = _punto()
     ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
-    assert cota_entrada_supuesta(punto) == pytest.approx(punto.cota_terreno)
+    assert cota_de_entrada(punto).valor == pytest.approx(punto.cota_terreno)
     assert CRITERIO_ORIGEN_COTA_ENTRADA in ca.criterios_usados(), (
         "la eleccion tiene que registrarse como usada o la memoria no la "
         "declara")
+
+
+def test_el_fondo_de_entrada_MEDIDO_manda_sobre_la_regla_adoptada():
+    """
+    LA PRECEDENCIA, que es el corazon de esta via: un dato medido no se
+    sustituye por una regla adoptada. Lo dice el `reemplazado_por` del propio
+    criterio desde que existe, y desde que el CSV trae la columna es codigo.
+
+    En un PASO DE CANAL la diferencia no es cosmetica: con 'cota_terreno' el
+    invert queda a la cota del terreno natural, o sea POR ENCIMA del fondo del
+    canal en toda la profundidad de la seccion. Aqui se separan 0.62 m a
+    proposito --- dentro de la banda medida en este corredor, 0.30 a 0.95 m ---
+    para que confundir las dos no pueda pasar por redondeo.
+    """
+    medida = 41.48
+    punto = _punto(cota_fondo_entrada=medida)
+    assert punto.cota_terreno == pytest.approx(42.10, rel=REL_TRANSPORTE), (
+        "el fixture cambio: este test necesita que terreno y fondo medido NO "
+        "coincidan, o no distingue nada")
+
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+    # El registro de usos es de PROCESO y llega contaminado por los tests
+    # anteriores del modulo; sin partir de cero, el aserto de abajo mediria la
+    # suma de la sesion y no esta llamada.
+    ca._USADOS.clear()
+    cota = cota_de_entrada(punto)
+
+    assert cota.valor == pytest.approx(medida, rel=REL_TRANSPORTE)
+    assert cota.medida is True
+    assert cota.rotulo == "MEDIDA"
+    assert "cota_fondo_entrada" in cota.procedencia
+    # Y EL CRITERIO NI SIQUIERA SE INVOCA: esta corrida no lo uso, de modo que
+    # la memoria no tiene por que declararlo. Registrarlo seria afirmar que
+    # una eleccion gobierno un numero que no gobierna.
+    assert CRITERIO_ORIGEN_COTA_ENTRADA not in ca.criterios_usados()
+
+
+def test_sin_dato_medido_rige_la_regla_y_lo_dice():
+    """
+    La otra via. El valor es el mismo de siempre; lo que se comprueba ademas
+    es que la procedencia lo DIGA, porque es lo que separa un dato de una
+    eleccion en la memoria.
+    """
+    punto = _punto()
+    assert punto.cota_fondo_entrada is None
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+    ca._USADOS.clear()
+
+    cota = cota_de_entrada(punto)
+
+    assert cota.valor == pytest.approx(punto.cota_terreno, rel=REL_TRANSPORTE)
+    assert cota.medida is False
+    assert cota.rotulo == "ADOPTADA"
+    assert "cota_terreno" in cota.procedencia
+    assert CRITERIO_ORIGEN_COTA_ENTRADA in ca.criterios_usados()
+
+
+def test_pedir_la_cota_medida_y_no_tenerla_es_DatoFaltante_y_no_una_caida_silenciosa():
+    """
+    LA EXCEPCION AL ORDEN, y la razon de que 'cota_fondo_entrada' sea tambien
+    una regla declarable y no solo una columna: quien la declara esta PIDIENDO
+    el dato medido. Si la fila lo deja vacio, la respuesta correcta es
+    detenerse --- el revisor tiene que AÑADIR algo, o sea `DatoFaltanteError`
+    --- y no caer en silencio a la regla del terreno, que es la que
+    sobrestima el invert.
+    """
+    punto = _punto()
+    assert punto.cota_fondo_entrada is None
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA,
+                                 "cota_fondo_entrada")
+    try:
+        with pytest.raises(DatoFaltanteError) as excinfo:
+            cota_de_entrada(punto)
+        assert excinfo.value.campo == "cota_fondo_entrada"
+        assert excinfo.value.id_punto == punto.id
+    finally:
+        ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA,
+                                     "cota_terreno")
+
+
+def test_la_memoria_de_V4_dice_si_el_invert_vino_MEDIDO_o_de_la_regla():
+    """
+    EL PUNTO QUE EL REVISOR PREGUNTA, comprobado sobre el paso que la memoria
+    imprime y no sobre el objeto: la `Magnitud` de la cota de entrada lleva la
+    procedencia, y la procedencia dice cual de las dos vias fue.
+
+    Antes de la columna, esa procedencia estaba ESCRITA A MANO en el modulo y
+    afirmaba siempre «regla declarada en el criterio ... el codigo NO la
+    elige». Con el dato medido esa frase seria falsa justo donde el numero es
+    mejor.
+    """
+    resultado = _resultado(HW_entrada=0.50)
+
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+    adoptada = v4_carga_entrada(punto=_punto(), resultado=resultado)
+    medida = v4_carga_entrada(
+        punto=_punto(cota_fondo_entrada=41.48), resultado=resultado)
+
+    def _procedencia(v):
+        return next(m.procedencia for m in v.paso.sustitucion
+                    if m.simbolo == "cota_entrada")
+
+    assert "cota_fondo_entrada" in _procedencia(medida)
+    assert "MEDIDO" in _procedencia(medida)
+    assert "regla" in _procedencia(adoptada)
+    assert _procedencia(medida) != _procedencia(adoptada), (
+        "las dos vias tienen que imprimirse distinto o la memoria no las "
+        "distingue, que es justo lo que el revisor pregunta")
+
+    # Y el NUMERO se mueve con ellas: no es una etiqueta decorativa sobre el
+    # mismo resultado.
+    assert medida.valor_obtenido < adoptada.valor_obtenido
+
+
+def test_la_regla_de_la_cota_medida_esta_implementada_y_la_ventana_lo_dice():
+    """
+    Las dos mitades de la declaracion tienen que coincidir: lo que M5 sabe
+    aplicar (`ORIGENES_COTA_ENTRADA`) y lo que la ficha del criterio ofrece
+    como ventana (`sensibilidad`). Cuando eran una sola, un comentario decia
+    que la ventana de un elemento no era una formalidad; ahora son dos y ese
+    comentario habria quedado caduco sin que nada avisara.
+    """
+    assert set(ORIGENES_COTA_ENTRADA) == {"cota_terreno", "cota_fondo_entrada"}
+    assert set(ca.criterio(CRITERIO_ORIGEN_COTA_ENTRADA).sensibilidad) == \
+        set(ORIGENES_COTA_ENTRADA)
 
 
 def test_una_regla_no_implementada_es_dato_invalido_no_un_fallo_de_programa():
@@ -1047,7 +1173,7 @@ def test_una_regla_no_implementada_es_dato_invalido_no_un_fallo_de_programa():
     ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_de_invert_medida")
     try:
         with pytest.raises(DatoInvalidoError):
-            cota_entrada_supuesta(_punto())
+            cota_de_entrada(_punto())
     finally:
         ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
 

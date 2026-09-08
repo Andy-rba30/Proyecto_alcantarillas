@@ -1074,7 +1074,7 @@ def test_7B_sin_longitud_dada_la_calcula_y_de_ahi_salen_caida_y_cota_de_salida(
     assert geo.longitud == pytest.approx(
         CP9["longitud_oblicua_esperada"], abs=TOL_L)
     assert geo.longitud == pytest.approx(longitud_conducto(punto), abs=TOL_L)
-    assert geo.cota_entrada == pytest.approx(
+    assert geo.cota_entrada.valor == pytest.approx(
         CP9["cota_entrada_esperada"], abs=TOL_COTA)
     assert geo.caida == pytest.approx(
         CP9["caida_oblicua_esperada"], abs=TOL_COTA)

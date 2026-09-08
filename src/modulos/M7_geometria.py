@@ -164,7 +164,7 @@ escrita al reves: V4 pregunta si el HW cabe bajo la subrasante que hay, y 7.A
 pregunta que rasante hace falta para que quepa. Por eso este modulo no
 reimplementa ninguna de las dos piezas que comparten:
 
-    modulos.M5_verificaciones.cota_entrada_supuesta   la cota a la que se
+    modulos.M5_verificaciones.cota_de_entrada         la cota a la que se
                                                       refiere el HW (la fija
                                                       el criterio declarado
                                                       'origen_cota_fondo_entrada')
@@ -257,7 +257,7 @@ from modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
 from modulos.M2_material import espesor_pared
 from modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
-                                       cota_entrada_supuesta,
+                                       cota_de_entrada,
                                        resguardo_por_cbr)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
@@ -361,7 +361,7 @@ def espesor_paquete(punto: PuntoCritico) -> float:
 
 
 # `cota_clave` NO se define aqui: se importa de M5_verificaciones, junto a
-# `cota_entrada_supuesta` y `resguardo_por_cbr`, por la razon que el docstring
+# `cota_de_entrada` y `resguardo_por_cbr`, por la razon que el docstring
 # del modulo ya da para esas dos -- V7 y 7.A tienen que medir la clave desde
 # la misma referencia o el acoplamiento sigue abierto por la puerta de atras.
 # Estaba definida en los dos sitios, y las dos copias arrastraban el mismo
@@ -667,7 +667,7 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
     e_paq = espesor_paquete(punto)
     h_rec, minimo_que_gobierna = altura_recubrimiento(material=material,
                                                       seccion=seccion)
-    entrada = cota_entrada_supuesta(punto)
+    entrada = cota_de_entrada(punto).valor
     altura = seccion.altura
     clave = cota_clave(punto=punto, material=material, seccion=seccion)
     t_pared = espesor_pared(material, altura)
@@ -982,7 +982,7 @@ def cota_salida(*, punto: PuntoCritico, longitud: float, S: float) -> float:
     cual es (MAT-D9).
     """
     return _exigir_finito("cota_salida",
-                          cota_entrada_supuesta(punto) - S * longitud, punto)
+                          cota_de_entrada(punto).valor - S * longitud, punto)
 
 
 def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion:
@@ -1061,7 +1061,7 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
     tamizado = tamizado_rasante(punto=punto, material=material,
                                 seccion=seccion, HW=resultado.HW)
 
-    entrada = cota_entrada_supuesta(punto)
+    entrada = cota_de_entrada(punto)
     caida = S * longitud
     salida = cota_salida(punto=punto, longitud=longitud, S=S)
 

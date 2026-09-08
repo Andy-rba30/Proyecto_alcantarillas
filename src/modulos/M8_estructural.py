@@ -122,7 +122,7 @@ Por que U asume sumersion completa
 La fila V7 de la Fase 5 fija la hipotesis de calculo: "tuberia vacia, NF en
 su cota mas alta". Con el NF somero de la llanura del Bajo Piura y sin una
 columna de invert real en el CSV (Sec. 1.2 -- misma limitacion que
-`M5_verificaciones.cota_entrada_supuesta`), la lectura conservadora de "NF en
+`M5_verificaciones.cota_de_entrada`), la lectura conservadora de "NF en
 su cota mas alta" es sumersion completa del conducto, no una geometria de
 sumersion parcial contra una cota de invert supuesta. Nunca subestima el
 empuje.

@@ -141,21 +141,36 @@ funciones individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI
 son utilizables una por una hoy mismo; es el AGREGADO el que hereda el
 bloqueo de las pendientes.
 
-V4 -- la cota de entrada es un CRITERIO DECLARADO, no un supuesto del codigo
+V4 -- la cota de entrada es un DATO MEDIDO O UN CRITERIO DECLARADO
 ----------------------------------------------------------------------------
 `modelos.ResultadoHidraulico` documenta que HW es una carga en metros SOBRE
 EL FONDO DE LA ENTRADA, y que la conversion a cota (msnm) exige la cota de esa
-entrada. `PuntoCritico` no trae una columna de cota de fondo de entrada (a
-diferencia de `cota_fondo_receptor`, que si la trae para la salida).
+entrada.
 
-V4 no puede existir sin esa cota. Este modulo NO la elige: la elige el
-proyectista, en el criterio 'origen_cota_fondo_entrada'
-(`criterios_adoptados.py`), y mientras nadie lo declare V4, V7 y el tamizado
-7.A se detienen con `CriterioPendienteError` como cualquier otro vacio. La
-regla admisible implementada hoy es 'cota_terreno' -- adoptar el terreno
-natural del cruce, el unico campo de Sec. 1.1 que describe la elevacion del
-cauce antes de la obra --, y su alcance, su direccion de conservadurismo y lo
-que la sustituye estan escritos en la justificacion del criterio.
+ESA COTA LLEGA HOY POR DOS VIAS, y el orden entre ellas no es negociable:
+
+  1. MEDIDA, por la columna `cota_fondo_entrada` del CSV (Sec. 1.2):
+     nivelacion del fondo del cauce en el cruce. Cuando viene, MANDA, y el
+     criterio ni siquiera se invoca. En un PASO DE CANAL es la unica lectura
+     correcta -- el canal atraviesa la via y continua, y el invert se hereda
+     del fondo del canal, no se adopta.
+  2. ADOPTADA, por la regla que el proyectista declara en
+     'origen_cota_fondo_entrada' (`criterios_adoptados.py`), cuando la
+     columna va vacia. Mientras nadie declare ninguna, V4, V7 y el tamizado
+     7.A se detienen con `CriterioPendienteError` como cualquier otro vacio.
+
+Las reglas implementadas son dos (`ORIGENES_COTA_ENTRADA`): 'cota_terreno'
+-- adoptar el terreno natural del cruce -- y 'cota_fondo_entrada', que EXIGE
+el dato medido y se detiene con `DatoFaltanteError` si no esta, en vez de caer
+en silencio al terreno. El alcance de la primera, su direccion de
+conservadurismo y lo que la sustituye estan escritos en la justificacion del
+criterio.
+
+POR QUE IMPORTA EL ORDEN, medido en este corredor: con 'cota_terreno' el
+invert queda a la cota del TERRENO NATURAL, o sea por encima del fondo del
+canal en toda la profundidad de la seccion (entre 0.30 y 0.95 m en los cinco
+cruces). HW se mide sobre el invert, de modo que ese desfase se propaga
+entero a V4, a V7 y al tamizado de 7.A.
 
 QUE CAMBIO Y POR QUE: hasta la correccion de SIS-A-01/SIS-A-04 este modulo
 adoptaba `punto.cota_terreno` por su cuenta, con la eleccion explicada solo
@@ -166,7 +181,7 @@ declaracion: no lo lee el revisor de la memoria, no entra en
 gobierna V4, V7 y la rasante de 7.A/M7-M8, o sea el resultado de la obra, y
 por eso vive donde vive el resto de lo que el proyectista decide.
 
-La lectura vive en `cota_entrada_supuesta()`, publica, porque M7 (tamizado de
+La lectura vive en `cota_de_entrada()`, publica, porque M7 (tamizado de
 7.A) convierte el MISMO HW a cota para fijar la rasante minima: las dos
 tienen que leer la misma referencia o el acoplamiento circular que 7.A dice
 cortar sigue abierto. Lo mismo vale para `resguardo_por_cbr()`, que es la
@@ -175,7 +190,7 @@ segunda condicion del tamizado.
 Excepciones
 -----------
     CriterioPendienteError   V4, V7 y todo consumidor de
-                             `cota_entrada_supuesta`
+                             `cota_de_entrada`
                              ('origen_cota_fondo_entrada'); V5
                              ('remanso_derecho_via'); V7
                              ('peso_especifico_relleno_kn_m3' o
@@ -213,7 +228,7 @@ from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE,
                                    UMBRALES_POR_CODIGO, V_MIN,
                                    Y_SOBRE_D_MAX, caracter_del_umbral)
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
-                     CIFRAS_PORCENTAJE,
+                     CIFRAS_PORCENTAJE, CotaDeEntrada,
                      DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
                      ErrorProyecto, Familia, FormaSeccion,
                      Magnitud, Material,
@@ -331,7 +346,24 @@ CRITERIO_ORIGEN_COTA_ENTRADA = "origen_cota_fondo_entrada"
 # aritmetica ninguna aqui -- cada regla es la lectura de una columna que el
 # CSV ya trae -- y por eso la tabla no contiene ningun valor de proyecto:
 # contiene el nombre de la columna que la declaracion elige.
-ORIGENES_COTA_ENTRADA = {"cota_terreno": "cota_terreno"}
+# LAS REGLAS IMPLEMENTADAS para obtener el invert cuando NO viene medido.
+# Clave: lo que el proyectista declara en 'origen_cota_fondo_entrada'. Valor:
+# el campo de `PuntoCritico` del que se lee.
+#
+# SON DOS DESDE QUE EL CSV TRAE `cota_fondo_entrada`, y la segunda no es una
+# regla mas: es la puerta por la que el DATO MEDIDO entra al mismo mecanismo.
+# Declararla explicitamente --- en vez de dejar que la precedencia de
+# `cota_de_entrada` sea el unico sitio donde el dato existe --- es lo que
+# permite al proyectista PEDIRLA a proposito y que la corrida se detenga con
+# `DatoFaltanteError` si la columna va vacia, en vez de caer en silencio a la
+# regla del terreno. Las dos lecturas son legitimas y no son la misma:
+#
+#   'cota_fondo_entrada'  «usa el fondo medido, y si no esta, parate»
+#   (sin declarar nada)   «usa el medido si esta; si no, la regla de abajo»
+ORIGENES_COTA_ENTRADA = {
+    "cota_terreno": "cota_terreno",
+    "cota_fondo_entrada": "cota_fondo_entrada",
+}
 # Techo OPCIONAL del concreto. Se lee con `valor_si_declarado`, no con
 # `valor`: sin declarar no bloquea nada y V3 usa el maximo [N] de la tabla.
 CRITERIO_V_MAX_CONCRETO = "v_max_concreto_eleccion"
@@ -1019,15 +1051,34 @@ def v3_velocidad_maxima(*, material: Material,
 # V4 - Carga a la entrada HW (Sec. 5.1, resguardo por analogia [N->])
 # ---------------------------------------------------------------------------
 
-def cota_entrada_supuesta(punto: PuntoCritico) -> float:
+def cota_de_entrada(punto: PuntoCritico) -> CotaDeEntrada:
     """
-    Cota del fondo de la entrada, msnm, segun la regla que el proyectista
-    declaro en el criterio 'origen_cota_fondo_entrada' (Sec. 7.B; ver "V4 --
-    la cota de entrada es un CRITERIO DECLARADO" en el docstring del modulo).
+    Cota del fondo de la entrada, msnm, CON SU PROCEDENCIA (Sec. 7.B).
 
-    Sin criterio declarado se detiene con `CriterioPendienteError`: la cota de
-    fondo de entrada no es columna del CSV ni la fija ninguna norma, de modo
-    que elegirla aqui seria rellenar un vacio en silencio.
+    EL DATO MEDIDO MANDA SOBRE LA REGLA, y ese es todo el orden de esta
+    funcion. Si la fila trae `cota_fondo_entrada`, se devuelve esa y el
+    criterio 'origen_cota_fondo_entrada' NI SIQUIERA SE INVOCA --- no aparece
+    en `criterios_usados()`, porque esta corrida no lo uso ---. Solo cuando la
+    columna va vacia se aplica la regla que el proyectista declaro, y si no
+    declaro ninguna, la etapa se detiene con `CriterioPendienteError` como se
+    detenia antes. NO hay valor por defecto en ninguno de los dos escalones.
+
+    La precedencia no es una comodidad: la escribe el `reemplazado_por` del
+    propio criterio --- «un dato medido no se sustituye por una regla
+    adoptada» ---, y antes de que la columna existiera ya estaba anunciada en
+    el mensaje de error de esta misma funcion.
+
+    LA EXCEPCION AL ORDEN, y es deliberada: si el proyectista declara
+    EXPRESAMENTE la regla `'cota_fondo_entrada'`, esta pidiendo el dato medido
+    a proposito, y entonces una columna vacia es un `DatoFaltanteError` en vez
+    de una caida silenciosa a la regla del terreno. Pedir el dato y recibir
+    otra cosa sin enterarse es justo lo que este proyecto persigue.
+
+    POR QUE SE LLAMA ASI Y NO `cota_entrada_supuesta`, que es como se llamaba.
+    Porque desde que la columna existe el nombre MIENTE la mitad de las veces:
+    una cota medida no es una cota supuesta, y la diferencia es exactamente la
+    que el revisor pregunta. Es la leccion de `ResultadoPunto.D` aplicada a un
+    nombre en vez de a un campo.
 
     Es publica y con nombre propio porque V4 no es su unico consumidor: el
     tamizado de 7.A (M7) convierte el mismo HW a cota para fijar la rasante
@@ -1036,16 +1087,43 @@ def cota_entrada_supuesta(punto: PuntoCritico) -> float:
     que 7.A dice cortar seguiria abierto: la rasante se fijaria contra una
     referencia y se verificaria contra otra.
     """
+    medida = punto.cota_fondo_entrada
+    if medida is not None:
+        return CotaDeEntrada(
+            valor=medida, medida=True,
+            procedencia="columna cota_fondo_entrada del CSV (Sec. 1.2): "
+                        "nivelacion del fondo del cauce en el cruce. Es un "
+                        "dato MEDIDO y no una regla, de modo que el criterio "
+                        f"'{CRITERIO_ORIGEN_COTA_ENTRADA}' no se aplica en "
+                        "este punto")
+
     origen = ca.valor(CRITERIO_ORIGEN_COTA_ENTRADA)
     if origen not in ORIGENES_COTA_ENTRADA:
         raise DatoInvalidoError(
             CRITERIO_ORIGEN_COTA_ENTRADA, valor=origen,
             motivo="la regla declarada tiene que ser una de las "
-                   f"implementadas: {sorted(ORIGENES_COTA_ENTRADA)}. Una cota "
-                   "de fondo de entrada MEDIDA no se declara aqui: entra como "
-                   "columna del CSV y sustituye al criterio entero",
+                   f"implementadas: {sorted(ORIGENES_COTA_ENTRADA)}",
         )
-    return getattr(punto, ORIGENES_COTA_ENTRADA[origen])
+    campo = ORIGENES_COTA_ENTRADA[origen]
+    valor = getattr(punto, campo)
+    if valor is None:
+        # Solo puede pasar con `origen == 'cota_fondo_entrada'`: el
+        # proyectista pidio el dato medido y la fila no lo trae. Es
+        # `DatoFaltanteError` --- el revisor tiene que AÑADIR algo --- y no
+        # una caida a la regla del terreno.
+        raise DatoFaltanteError(
+            campo, id_punto=punto.id,
+            detalle=f"el criterio '{CRITERIO_ORIGEN_COTA_ENTRADA}' declara "
+                    f"'{origen}', o sea que pide la cota de fondo de entrada "
+                    "MEDIDA, y esta fila la deja vacia. O se mide y se llena "
+                    "la columna, o se declara otra regla: el programa no "
+                    "elige por el proyectista",
+        )
+    return CotaDeEntrada(
+        valor=valor, medida=False,
+        procedencia=f"regla '{origen}' declarada en el criterio "
+                    f"'{CRITERIO_ORIGEN_COTA_ENTRADA}' [A]; el codigo NO la "
+                    "elige. La fila no trae cota de fondo de entrada medida")
 
 
 def cota_clave(*, punto: PuntoCritico, material: Material,
@@ -1073,7 +1151,7 @@ def cota_clave(*, punto: PuntoCritico, material: Material,
     t: una rasante fijada en ese minimo deja ~0.20 m reales de recubrimiento
     donde EG-2013 exige 0.30 (deficit del 33 % para D = 0.90 m de concreto).
 
-    Es publica y vive AQUI, junto a `cota_entrada_supuesta`, por la misma
+    Es publica y vive AQUI, junto a `cota_de_entrada`, por la misma
     razon que ella: la usan V7 (para pesar el relleno real sobre la clave) y
     el tamizado de 7.A (para fijar la rasante), y si cada modulo la
     recalculase por su cuenta las dos condiciones se separarian. Estaba
@@ -1084,7 +1162,7 @@ def cota_clave(*, punto: PuntoCritico, material: Material,
     (la cota de entrada) o en 'espesor_pared_conducto' (el espesor).
     """
     altura = seccion.altura
-    return cota_entrada_supuesta(punto) + altura + espesor_pared(material,
+    return cota_de_entrada(punto).valor + altura + espesor_pared(material,
                                                                  altura)
 
 
@@ -1147,7 +1225,7 @@ def resguardo_por_cbr(cbr: float) -> float:
     ilimitados. Recorre las cuatro filas de la tabla, exhaustivas por
     construccion (cubren todo el dominio fisico del CBR).
 
-    Publica por el mismo motivo que `cota_entrada_supuesta`: la segunda
+    Publica por el mismo motivo que `cota_de_entrada`: la segunda
     condicion del tamizado de 7.A (M7) es la misma tabla aplicada al mismo
     CBR, y duplicarla alli seria abrir la puerta a que las dos se separen.
     """
@@ -1193,10 +1271,12 @@ def v4_carga_entrada(*, punto: PuntoCritico,
 
     `HW` es una carga en metros sobre el fondo de la entrada (Sec. 4.2/4.3);
     convertirla a cota exige la cota de esa entrada. Este modulo NO la elige:
-    la pide a `cota_entrada_supuesta`, que aplica la regla que el proyectista
-    declaro en 'origen_cota_fondo_entrada' [A] -- ver "V4 -- la cota de
-    entrada es un CRITERIO DECLARADO, no un supuesto del codigo" en el
-    docstring del modulo. Este parrafo decia "este modulo adopta
+    la pide a `cota_de_entrada`, que devuelve el fondo MEDIDO cuando la fila
+    lo trae y, si no, aplica la regla que el proyectista declaro en
+    'origen_cota_fondo_entrada' [A] -- ver "V4 -- la cota de entrada es un
+    DATO MEDIDO O UN CRITERIO DECLARADO" en el docstring del modulo. La
+    `Magnitud` de la sustitucion dice cual de las dos fue, que es lo primero
+    que el revisor pregunta. Este parrafo decia "este modulo adopta
     `punto.cota_terreno`", que es lo que hacia ANTES de SIS-A-01/SIS-A-04 y
     dejo de ser cierto entonces: 'cota_terreno' es hoy una de las reglas
     admisibles del criterio, no una eleccion del codigo.
@@ -1204,8 +1284,8 @@ def v4_carga_entrada(*, punto: PuntoCritico,
     ca.valor(CRITERIO_RESGUARDO)      # registra el uso; "segun_CBR" no es numerico
     resguardo_m = resguardo_por_cbr(punto.cbr_subrasante)
 
-    cota_entrada = cota_entrada_supuesta(punto)   # ver supuesto declarado arriba
-    HW_cota = cota_entrada + resultado.HW
+    entrada = cota_de_entrada(punto)   # MEDIDA o regla; ver su docstring
+    HW_cota = entrada.valor + resultado.HW
     admisible = punto.cota_subrasante - resguardo_m
 
     cumple = HW_cota <= admisible + TOL_UMBRAL_NORMATIVO
@@ -1223,10 +1303,12 @@ def v4_carga_entrada(*, punto: PuntoCritico,
             formula="cota_entrada + HW <= cota_subrasante - resguardo(CBR)",
             formula_cita_id="MS.4.5.4",
             sustitucion=(
-                Magnitud("cota_entrada", cota_entrada, "msnm",
-                         "regla declarada en el criterio "
-                         "'origen_cota_fondo_entrada' [A]; el codigo NO la "
-                         "elige", cifras=CIFRAS_MAGNITUD),
+                # LA PROCEDENCIA LA TRAE EL PROPIO VALOR, y por eso ya no
+                # esta escrita a mano aqui: dice MEDIDA o dice que regla se
+                # aplico. Es la diferencia entre un dato y una eleccion, y es
+                # lo primero que el revisor pregunta de esta cota.
+                Magnitud("cota_entrada", entrada.valor, "msnm",
+                         entrada.procedencia, cifras=CIFRAS_MAGNITUD),
                 Magnitud("HW", resultado.HW, "m",
                          "M4, carga a la entrada del control que GOBIERNA "
                          "(entrada o salida, el mayor de los dos)", cifras=CIFRAS_MAGNITUD),
@@ -1530,7 +1612,7 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
     aqui: la pide a `altura_relleno_sobre_clave`, que es la misma que consume
     la Fase 8 y trae la guarda de cotas incoherentes con ella (SIS-A-21). Esa
     funcion usa la misma `cota_clave` que el tamizado de 7.A, que a su vez usa
-    la misma cota de entrada que V4 (`cota_entrada_supuesta`, la regla
+    la misma cota de entrada que V4 (`cota_de_entrada`, el dato medido o la regla
     declarada en 'origen_cota_fondo_entrada'), para no evaluar la flotacion
     contra una referencia distinta de la que fija la rasante. Esa clave es la
     FISICA: lleva el espesor de pared, y por eso V7 se detiene tambien en

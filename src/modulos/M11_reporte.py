@@ -1361,7 +1361,7 @@ def _bloques_fases_finales(informe: Any) -> str:
         partes.append(
             "<h4>Fase 7 &mdash; Compatibilidad geometrica</h4>"
             f"<p>L = {_num(g.longitud, FMT_2)} m, esviaje afectando con factor "
-            f"{_num(g.factor_esviaje)}; cota de entrada {_num(g.cota_entrada)} "
+            f"{_num(g.factor_esviaje)}; cota de entrada {_num(g.cota_entrada.valor)} ({_esc(g.cota_entrada.rotulo)}) "
             "msnm (<b>adoptada</b>, criterio "
             f"<code>{_esc(CRITERIO_ORIGEN_COTA_ENTRADA)}</code>: no es cota "
             "medida) y de salida "

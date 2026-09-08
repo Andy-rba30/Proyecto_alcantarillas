@@ -2496,19 +2496,34 @@ CRITERIOS: Dict[str, Criterio] = {
     # escritos.
 
     "origen_cota_fondo_entrada": Criterio(
-        # UNICA REGLA IMPLEMENTADA (`M5.ORIGENES_COTA_ENTRADA`), y la
-        # ventana lo dice: no hay una segunda opcion entre la que elegir
-        # mientras el expediente no entregue la cota medida. Declararla con
-        # una ventana de un solo elemento no es una formalidad -- es la
-        # diferencia entre "se eligio esta" y "esta es la unica que el
-        # programa sabe calcular".
+        # DOS REGLAS IMPLEMENTADAS (`M5.ORIGENES_COTA_ENTRADA`), y la ventana
+        # dejo de ser de un solo elemento. Hasta que el CSV trajo la columna
+        # `cota_fondo_entrada` habia una sola, y este comentario decia --- con
+        # razon entonces --- que declararla con una ventana de un elemento no
+        # era una formalidad sino la diferencia entre "se eligio esta" y "esta
+        # es la unica que el programa sabe calcular". Hoy SI hay entre que
+        # elegir, y las dos opciones no son del mismo genero:
+        #
+        #   'cota_terreno'        adopta el terreno natural del cruce. Es la
+        #                         lectura de PERFIL con las columnas que el
+        #                         CSV siempre trae.
+        #   'cota_fondo_entrada'  EXIGE la cota medida de la columna
+        #                         homonima, y se detiene con
+        #                         `DatoFaltanteError` si la fila la deja
+        #                         vacia. No es "otra regla": es pedir el dato.
+        #
+        # Y HAY UNA TERCERA VIA QUE NO SE DECLARA AQUI, que es la que gobierna
+        # de verdad: si la columna trae valor, MANDA, y este criterio ni
+        # siquiera se invoca. Eso no es una opcion de la ventana --- es la
+        # precedencia que el `reemplazado_por` de abajo lleva escrita desde
+        # que este criterio existe.
         valor="cota_terreno",
         nivel=NIVEL_PERFIL,
-        sensibilidad=("cota_terreno",),
+        sensibilidad=("cota_terreno", "cota_fondo_entrada"),
         etiqueta="A",
         concepto="Regla con la que se obtiene la cota del FONDO DE LA ENTRADA "
-                 "(invert) de cada punto, msnm, mientras el expediente no la "
-                 "entregue medida",
+                 "(invert) de cada punto, msnm, CUANDO LA COLUMNA "
+                 "'cota_fondo_entrada' del CSV no la trae medida",
         justificacion="HW es una carga en metros SOBRE EL FONDO DE LA ENTRADA "
                       "(Sec. 4.2/4.3, `modelos.ResultadoHidraulico`), y "
                       "convertirla a cota -- que es lo que hacen V4, V7 y las "
@@ -2521,6 +2536,28 @@ CRITERIOS: Dict[str, Criterio] = {
                       "7.B pide las cotas de entrada y salida 'amarradas al "
                       "perfil del cauce y a la cota de fondo del receptor', "
                       "sin decir cual de las dos lecturas gobierna. "
+                      "LO QUE CAMBIO AL AÑADIRSE LA COLUMNA "
+                      "'cota_fondo_entrada': el parrafo de arriba decia que "
+                      "el CSV NO trae columna de cota de fondo de entrada, y "
+                      "hoy SI la trae. Cuando esa columna tiene valor, este "
+                      "criterio NO SE APLICA -- un dato medido no se "
+                      "sustituye por una regla adoptada, que es lo que el "
+                      "`reemplazado_por` de este mismo criterio lleva escrito "
+                      "desde el principio -- y ni siquiera entra en "
+                      "`criterios_usados()`. Este criterio gobierna la fila "
+                      "que deja la columna VACIA, y solo esa. "
+                      "POR QUE LA COLUMNA HACIA FALTA, con la medicion "
+                      "delante: los puntos de Familia C de este expediente "
+                      "son PASOS DE CANAL -- el canal atraviesa la via y "
+                      "continua, no hay cuerpo receptor distinto -- y ahi el "
+                      "invert NO se adopta: se hereda del fondo del canal "
+                      "medido en el cruce. Con 'cota_terreno' el invert queda "
+                      "a la cota del terreno natural, o sea POR ENCIMA del "
+                      "fondo del canal en toda la profundidad de la seccion "
+                      "(entre 0.30 y 0.95 m en los cinco cruces de este "
+                      "corredor). HW se mide sobre el invert, de modo que ese "
+                      "desfase se propaga entero a V4, a V7 y al tamizado de "
+                      "7.A. "
                       "QUE ESTABA MAL: M5 adoptaba `punto.cota_terreno` "
                       "dentro del codigo, sin criterio, sin Anexo A y sin que "
                       "la memoria marcara el numero como supuesto (SIS-A-04). "
@@ -2528,7 +2565,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "un dato, y es exactamente lo que este archivo existe "
                       "para impedir. "
                       "QUE SE HACE AHORA: la eleccion se declara aqui y no la "
-                      "toma el programa. Valor admisible implementado hoy: "
+                      "toma el programa. Valores admisibles implementados "
+                      "hoy, DOS: 'cota_fondo_entrada', que EXIGE la cota "
+                      "medida de la columna homonima y se detiene con "
+                      "DatoFaltanteError si la fila la deja vacia -- es la "
+                      "que declara quien quiere el dato y no una regla --; y "
                       "'cota_terreno' -- adoptar el terreno natural del cruce "
                       "como fondo de la entrada, que es la lectura mas "
                       "defendible a nivel de PERFIL con las columnas que el "

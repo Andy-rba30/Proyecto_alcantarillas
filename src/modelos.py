@@ -578,6 +578,26 @@ class PuntoCritico:
     cota_TW: Optional[float]           # msnm - calculada en 1.3 (Tablero 3.1)
     sucs_fundacion: str                # clasificacion SUCS de la calicata
     NF_profundidad_m: Optional[float]  # m - profundidad del nivel freatico
+    # LA COTA DE FONDO DE LA ENTRADA, MEDIDA. Dato de sitio [S] que varia punto
+    # a punto: nivelacion del fondo del cauce -- del CANAL, en un paso de canal
+    # -- en el cruce. Admite vacio: cuando falta, la cota la pone la regla que
+    # el proyectista declaro en 'origen_cota_fondo_entrada' [A].
+    #
+    # POR QUE HACIA FALTA, y no es una comodidad. En un PASO DE CANAL el canal
+    # atraviesa la via y continua: no hay cuerpo receptor distinto, y el invert
+    # del conducto NO se adopta -- se hereda del fondo del canal medido en el
+    # cruce. Con la unica regla que habia implementada ('cota_terreno') el
+    # invert quedaba a la cota del TERRENO NATURAL, o sea POR ENCIMA del fondo
+    # del canal en toda la profundidad de la seccion. HW es una carga sobre el
+    # invert, de modo que el error se propaga entero a V4, a V7 y al tamizado
+    # de 7.A.
+    #
+    # El `reemplazado_por` del criterio ya lo anticipaba con estas palabras:
+    # «Cota de fondo de entrada MEDIDA por punto, como columna propia del CSV.
+    # El dia que el expediente la entregue, este criterio deja de aplicarse: un
+    # dato medido no se sustituye por una regla adoptada». Este campo es ese
+    # dia.
+    cota_fondo_entrada: Optional[float] = None   # msnm - nivelacion en el cruce
 
     # Derivado por M0, no es columna del CSV: columnas que la fila dejo vacias
     # porque el dato depende de terceros (Tablero 3). NO significa fila
@@ -603,6 +623,38 @@ class PuntoCritico:
         if dato is None:
             raise DatoFaltanteError(campo, id_punto=self.id)
         return dato
+
+
+@dataclass(frozen=True)
+class CotaDeEntrada:
+    """
+    La cota del fondo de la entrada CON SU PROCEDENCIA, msnm.
+
+    POR QUE NO ES UN `float`. Porque la misma magnitud llega hoy por dos vias
+    que NO son intercambiables para quien sustenta: MEDIDA --- nivelacion del
+    fondo del canal en el cruce, columna `cota_fondo_entrada` --- o
+    ADOPTADA --- la regla que el proyectista declaro en
+    'origen_cota_fondo_entrada' [A] ---. Un dato y una eleccion se corrigen en
+    sitios distintos y se defienden con argumentos distintos, y el revisor va
+    a preguntar cual de las dos es. Devolver un escalar obligaria a cada
+    consumidor a volver a preguntarselo al punto, que es como dos consumidores
+    acaban respondiendose cosas distintas.
+
+    Es la misma forma que `Verificacion` --- que no devuelve un `bool` desnudo
+    --- y por la misma razon: el numero sin su procedencia no es defendible.
+
+    `procedencia` se escribe para ENTRAR EN UNA `Magnitud`, que es donde la
+    memoria la imprime. No lleva formato ni etiquetas: eso lo pone M11.
+    """
+
+    valor: float                 # msnm
+    medida: bool                 # True si vino de la columna del CSV
+    procedencia: str             # para `Magnitud.procedencia`
+
+    @property
+    def rotulo(self) -> str:
+        """«MEDIDA» o «ADOPTADA», para los rotulos cortos del volcado."""
+        return "MEDIDA" if self.medida else "ADOPTADA"
 
 
 # ===========================================================================
@@ -2801,7 +2853,16 @@ class CompatibilidadGeometrica:
     S_conducto: float                     # m/m - la del diseno hidraulico
                                           # (`ResultadoHidraulico.S`), que es
                                           # la del cauce salvo declaracion
-    cota_entrada: float                   # msnm
+    # LA COTA DE ENTRADA CON SU PROCEDENCIA, y no un `float` con un booleano
+    # al lado. Dos campos paralelos --- el numero y "si fue medido" --- son
+    # dos cosas que pueden divergir sin que nadie lo note, que es la leccion
+    # que `ResultadoPunto.D` frente a `seccion` dejo en C7 y C8. Aqui viajan
+    # pegados porque son el mismo hecho: el valor y de donde salio.
+    #
+    # Lo consume el volcado de texto, que marca la cota como MEDIDA o
+    # ADOPTADA: un numero en msnm sin marca se lee como cota levantada en
+    # campo, que es SIS-A-04.
+    cota_entrada: CotaDeEntrada           # msnm, con su procedencia
     cota_salida: float                    # msnm - cota entrada - S*L
     caida: float                          # m  - S*L
     verificaciones: Tuple[Verificacion, ...]

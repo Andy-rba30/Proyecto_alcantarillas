@@ -1274,7 +1274,7 @@ def test_una_declaracion_mal_escrita_devuelve_dos_y_no_corre_el_pipeline(
 # pueda borrar una sin ver que falta la otra.
 
 FILA_C_QUE_DIMENSIONA = (
-    "C-02,3+200,C,0.85,,0.004,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,")
+    "C-02,3+200,C,0.85,,0.004,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,")
 
 DECLARACIONES_CAJON = [
     "embocadura_cajon=cajon_concreto_aleta_45_d043",
@@ -1613,7 +1613,7 @@ def test_una_pendiente_externa_en_porcentaje_es_dato_invalido():
 
 
 FILA_C_SIN_S_CAUCE = (
-    "C-02,3+200,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,")
+    "C-02,3+200,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,")
 
 
 # Cardinales en palabra y en cifra. Es la lista cerrada del castellano hasta

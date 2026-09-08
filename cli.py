@@ -1554,7 +1554,11 @@ def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
             "factor_esviaje": _num(g.factor_esviaje),
             "altura_terraplen_m": _num(g.altura_terraplen),
             "S_conducto": _num(g.S_conducto),
-            "cota_entrada_msnm": _num(g.cota_entrada),
+            "cota_entrada_msnm": _num(g.cota_entrada.valor),
+            # MEDIDA o ADOPTADA. Es la diferencia entre un dato y una
+            # eleccion, y el JSON la lleva porque la GUI y cualquier
+            # consumidor externo la necesitan igual que la memoria.
+            "cota_entrada_origen": g.cota_entrada.rotulo,
             # El consumidor del JSON tiene que poder distinguir una cota
             # levantada de una adoptada sin leer la memoria: el mismo archivo
             # ya declara el origen de los datos externos ("origen": "criterio
@@ -1868,10 +1872,16 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         # las TRES salidas (texto, JSON y HTML) y no solo en la memoria: la
         # GUI pinta el detalle del punto con estas mismas lineas, y un numero
         # en msnm sin marca se lee como cota levantada en campo (SIS-A-04).
+        # LA MARCA DICE CUAL DE LAS DOS FUE, y ya no afirma «ADOPTADA»
+        # siempre: desde que el CSV trae `cota_fondo_entrada`, la cota puede
+        # venir MEDIDA, y decir que se adopto seria falso justo en el punto
+        # donde el dato es mejor.
         out.append(f"{SANGRIA}Fase 7  L = {_fmt(g.longitud)} m, cota entrada "
-                   f"{_fmt(g.cota_entrada)} (ADOPTADA, criterio "
-                   f"'{M5.CRITERIO_ORIGEN_COTA_ENTRADA}': no es cota medida) "
+                   f"{_fmt(g.cota_entrada.valor)} "
+                   f"({g.cota_entrada.rotulo}) "
                    f"/ salida {_fmt(g.cota_salida)} msnm")
+        out.append(f"{SANGRIA_DETALLE}cota de entrada: "
+                   f"{g.cota_entrada.procedencia}")
         out.append(f"{SANGRIA_DETALLE}{g.tamizado.mensaje}")
     if informe.cama_apoyo is not None:
         out.append(f"{SANGRIA}Fase 8  cama: {informe.cama_apoyo.cama_apoyo} "

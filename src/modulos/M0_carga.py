@@ -67,14 +67,17 @@ COLUMNAS: Tuple[str, ...] = tuple(
     f.name for f in fields(PuntoCritico) if f.name not in CAMPOS_DERIVADOS
 )
 
-# Columnas numericas, en el orden de Sec. 1.2. `NF_profundidad_m` cierra la
-# lista porque no viene de ese encabezado: se agrego al reclasificar el nivel
-# freatico como dato de sitio [S] medido en cada cruce (ver PuntoCritico).
+# Columnas numericas, en el orden de Sec. 1.2. Las DOS ultimas no vienen de ese
+# encabezado y cierran la lista por eso: `NF_profundidad_m` se agrego al
+# reclasificar el nivel freatico como dato de sitio [S] medido en cada cruce, y
+# `cota_fondo_entrada` al abrir la via del invert MEDIDO (ver `PuntoCritico`).
+# El orden importa y esta fijado por test: tiene que ser el de los campos del
+# tipo, y un campo con valor por defecto solo puede ir al final.
 _NUMERICAS: Tuple[str, ...] = (
     "Q_m3s", "area_ha", "S_cauce", "cota_terreno", "cota_rasante",
     "cota_subrasante", "cbr_subrasante", "esviaje_grados", "ancho_plataforma",
     "cota_fondo_receptor", "Q_receptor_m3s", "cota_TW",
-    "NF_profundidad_m",
+    "NF_profundidad_m", "cota_fondo_entrada",
 )
 
 # Vacios admitidos por tablero, no por comodidad.
@@ -118,6 +121,24 @@ _VACIAS_FAMILIA_C = ("Q_m3s", "area_ha", "S_cauce")          # Tablero 3.1
 # 1.4 m de la caracterizacion general de la llanura seria inventar una
 # medicion por punto que nadie hizo.
 _VACIAS_ESTUDIO_GEOTECNICO = ("NF_profundidad_m",)
+
+# Vacio admitido EN TODA FAMILIA, y por una razon distinta de las de arriba: no
+# es que el dato dependa de un tablero que todavia no respondio, es que el
+# proyecto TIENE una regla declarada para cuando no esta.
+#
+#   cota_fondo_entrada   nivelacion del fondo del cauce -- del CANAL, en un
+#                        paso de canal -- en el cruce. Cuando viene, MANDA: un
+#                        dato medido no se sustituye por una regla adoptada, y
+#                        eso lo dice el `reemplazado_por` del propio criterio
+#                        'origen_cota_fondo_entrada'. Cuando falta, rige ese
+#                        criterio, y si el criterio tampoco esta declarado la
+#                        etapa se detiene como se detenia antes: NO hay valor
+#                        por defecto en ninguno de los dos escalones.
+#
+# La columna SI tiene que estar en el encabezado aunque la celda vaya vacia,
+# igual que 'cota_TW' o 'NF_profundidad_m': un encabezado sin ella es una fila
+# truncada, y `_celda` la rechaza como tal.
+_VACIAS_CON_REGLA_DECLARADA = ("cota_fondo_entrada",)
 
 _SOBRANTES = "__sobrantes__"       # restkey de csv.DictReader
 
@@ -212,7 +233,8 @@ def _punto_desde_fila(fila: Dict[str, Any], numero: int) -> PuntoCritico:
     progresiva_km, progresiva_display = _progresiva(fila, id_punto, numero)
     familia = _familia(fila, id_punto, numero)
 
-    admiten_vacio = set(_VACIAS_TODA_FAMILIA) | set(_VACIAS_ESTUDIO_GEOTECNICO)
+    admiten_vacio = (set(_VACIAS_TODA_FAMILIA) | set(_VACIAS_ESTUDIO_GEOTECNICO)
+                     | set(_VACIAS_CON_REGLA_DECLARADA))
     if familia is Familia.C:
         admiten_vacio.update(_VACIAS_FAMILIA_C)
 
@@ -223,7 +245,14 @@ def _punto_desde_fila(fila: Dict[str, Any], numero: int) -> PuntoCritico:
         if bruto == "":
             if columna in admiten_vacio:
                 valores[columna] = None
-                pendientes.append(columna)
+                # `pendientes_externos` significa «la fila espera un dato de
+                # TERCEROS», y eso es lo que la GUI y el JSON leen de ella.
+                # Una `cota_fondo_entrada` vacia NO espera a nadie: el
+                # proyecto tiene una regla declarada para ese caso, y meterla
+                # aqui pintaria un pendiente que no existe --- justo el tipo
+                # de afirmacion falsa que este repositorio persigue.
+                if columna not in _VACIAS_CON_REGLA_DECLARADA:
+                    pendientes.append(columna)
                 continue
             raise DatoFaltanteError(
                 columna, id_punto=id_punto,
@@ -468,6 +497,25 @@ def _valida_cruzadas(v: Dict[str, Optional[float]], id_punto: str) -> None:
            f"el fondo del receptor ({v['cota_fondo_receptor']}) no puede estar "
            f"sobre el terreno del cruce ({v['cota_terreno']}): la entrega es "
            "por gravedad")
+
+    # El invert MEDIDO, cuando viene, tiene que dejar sitio al conducto: si
+    # queda a la subrasante o por encima, no cabe ninguno. Es la MISMA
+    # comprobacion de imposibilidad fisica que la del "diametro implicito" de
+    # arriba, aplicada a la cota que de verdad manda cuando esta.
+    #
+    # Y SOLO ESA. NO se exige que el invert quede bajo el terreno natural,
+    # aunque en un paso de canal sea lo normal --- el fondo del canal esta
+    # excavado respecto del terreno del cruce ---: una entrada ELEVADA sobre
+    # relleno es fisicamente posible y la justificacion del propio criterio
+    # 'origen_cota_fondo_entrada' la nombra. Rechazarla aqui seria convertir
+    # una observacion de este corredor en una regla del programa.
+    if v["cota_fondo_entrada"] is not None:
+        libre = v["cota_subrasante"] - v["cota_fondo_entrada"]
+        _exige(libre > TOL_UMBRAL_NORMATIVO, "cota_fondo_entrada",
+               v["cota_fondo_entrada"], id_punto,
+               f"el fondo de entrada medido ({v['cota_fondo_entrada']}) queda "
+               f"a la subrasante ({v['cota_subrasante']}) o por encima: entre "
+               f"los dos hay {libre:+.2f} m y no cabe ningun conducto")
 
     # Sec. 1.5: la cota TW es el nivel del agua EN EL RECEPTOR durante la
     # avenida, no un nivel dentro de la alcantarilla. No puede estar bajo el
