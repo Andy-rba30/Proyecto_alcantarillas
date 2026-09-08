@@ -502,6 +502,35 @@ suelo para un cajón de concreto vaciado in situ**: lo único que fija es qué h
 cobertura (*«If soil cover is not provided, the top of precast or cast-in-place reinforced
 concrete box structures shall be designed for direct application of vehicular loads»*, 12-22).
 
+#### La #9 estuvo mal enunciada por DOS motivos distintos, y ésta es la segunda corrección
+
+**Conviene decirlo con ese filo, porque es la segunda vez que se corrige la misma regla y la
+tercera persona que la lea no tiene por qué volver a empezar.** No fue un error con dos
+síntomas: fueron dos errores, cometidos por dos personas, en dos momentos, y sobre la misma
+frase.
+
+- **Motivo 1 — el de quien escribió la regla (§6, antes de C5).** Se escribió creyendo que **al
+  criterio le faltaba un término**: que `cobertura_minima_aashto` había dejado fuera el
+  `B'c/8` y que para un cajón había que devolverlo. Es la corrección que C7 refutó en el punto
+  0: no falta ningún término, porque **la fila entera es de `Pipe`** y no hay de dónde
+  devolverlo.
+- **Motivo 2 — el de C5, y es OTRO.** C5 midió *«un marco de 3.00 × 1.50 m: el código exigiría
+  0.3048 m y la tabla exige 0.4125 m»* y llamó a ese 0.4125 **«el segundo término `B'c/8`»**.
+  No lo es. Con `t = 0.15` ese marco tiene `Bc = 3.30` y `B'c = 1.80`, de modo que
+  **`3.30/8 = 0.4125` es el PRIMER término, `Bc/8`**, y `B'c/8 = 0.225` es **el menor de los
+  tres números en juego**. C5 midió el número correcto y lo llamó por el nombre del otro.
+
+**Y los dos motivos llevan a arreglos distintos, que es por lo que separarlos no es pedantería.**
+Del motivo 1 sale el vacío declarado. Del motivo 2 sale algo que el motivo 1 no habría
+encontrado nunca: **lo que le faltaba al código no era el término omitido, sino que al único
+término que conserva le entraba la dimensión equivocada**. `M7` recibía un escalar `D` que en un
+marco vale la ALTURA, y `diametro_exterior` lo convertía en `H + 2t = B'c`, metido en la ranura
+de `Bc`. Medido: para ese marco la cobertura salía **0.3048 m y sin que el ancho entrara
+siquiera en el cálculo** —`B` no era argumento de la función—. Por eso el arreglo de C7 son
+**dos piezas y no una**: el vacío declarado (punto 4) y `M7` llevando la `Seccion` en vez del
+escalar (punto 5). Con sólo la primera, un marco habría seguido midiendo su cobertura sobre el
+canto.
+
 **Lo que la sustituye:** por la regla 3 de §15.1 —el vacío se abre donde el valor sale de una
 tabla cuyas filas enumeran un objeto que el marco no es— C7 abre `cobertura_minima_cajon` como
 `[A]` sin valor, con su `AfirmacionNegativa` que fija el barrido. **La afirmación falsa estaba
@@ -1850,7 +1879,8 @@ alcance) o `FUERA DEL MANUAL` (lo sostiene otra fuente). Las páginas son **impr
 | **Pendiente longitudinal** (`ResultadoHidraulico.S`) | **4.1.1.3.3**, 71 / 74: *«La pendiente longitudinal de la alcantarilla **debe ser tal que** no altere desmesuradamente los procesos geomorfológicos…»* | «alcantarilla». Cero forma, cero tubería. **Y cero valores numéricos** | **DIRECTO** | **[N]** el enunciado; **ningún número** sale de aquí |
 | **Ubicación en planta y esviaje** (`M7.factor_esviaje`) | **4.1.1.3.2**, 71 / 74 (numeral íntegro, un párrafo) | Dirección de la corriente. Cero forma | **DIRECTO** | **[N]** |
 | **Longitud del conducto** (`M7.longitud_conducto`) | *sin numeral*: ancho de plataforma + taludes | — | **DIRECTO** (geometría) | — |
-| **Cobertura mínima sobre la clave** (`M7.cobertura_minima_aashto`, `F7.RELLENO`) | **AASHTO LRFD** Tabla 12.6.6.3-1 | Conductos enterrados, por tipo | **DIRECTO PARA EL CIRCULAR Y NO APLICA AL CAJON.** Sus filas de concreto dicen `Reinforced Concrete **Pipe**` y `B'c` se define *«out-to-out vertical rise of **pipe**»*: no hay fila de cajón de concreto en la tabla. La regla **#9** decía lo contrario y **se retiró en C7** contra la fuente primaria; el cajón va por `cobertura_minima_cajon`, vacío declarado | **[C]** el circular; **[A]** el cajón |
+| **Cobertura mínima sobre la clave** (`M7.cobertura_minima_aashto`, `F7.RELLENO`) | **AASHTO LRFD** Tabla 12.6.6.3-1 | Conductos enterrados, por tipo | **DIRECTO PARA EL CIRCULAR Y NO APLICA AL CAJON.** Sus filas de concreto dicen `Reinforced Concrete **Pipe**` y `B'c` se define *«out-to-out vertical rise of **pipe**»*: no hay fila de cajón de concreto en la tabla. La regla **#9** decía lo contrario y **se retiró en C7** contra la fuente primaria, por DOS motivos distintos —ver §6—: no falta ningún término, y el 0.4125 que C5 midió es `Bc/8`, no `B'c/8`. El cajón va por `cobertura_minima_cajon`, vacío declarado | **[C]** el circular; **[A]** el cajón |
+| **Qué dimensión entra en `Bc`** (`M7.cobertura_minima_aashto`) | **12.6.6.3**, 12-21 / PDF 1659: *«Bc = outside diameter or **width** of the structure (ft)»* | La dimensión **HORIZONTAL** | **DIRECTO, y era el segundo defecto de la #9.** Hasta C7, `M7` recibía un escalar `D` que en un marco vale la ALTURA y `diametro_exterior` lo convertía en `H + 2t = B'c`, metido en la ranura de `Bc`. En un círculo ancho y canto coinciden y no se veía. Desde C7 sale de `seccion.ancho_exterior(t)` | **[N]** la definición |
 | **Tamizado de rasante 7.A** (`M7.tamizado_rasante`) | composición de V4 + cobertura | Neutro | **DIRECTO** | mezcla, ya declarada |
 | **Cotas de entrada y salida** (`M5.cota_entrada_supuesta`, `M7.cota_salida`) | **4.1.1.3.3** + criterio `origen_cota_fondo_entrada` | Neutro | **DIRECTO** | **[A]** el origen de la cota |
 | **G1 / G2** (`M7.g1_rasante_congelada`, `g2_cota_salida`) | reglas de la v8, sin numeral | — | **DIRECTO** | — |
@@ -4478,6 +4508,27 @@ sostiene su lectura de `B'c` como *out-to-out vertical rise* —verificada, y fu
 el `sqrt(Bc)/8` que NOR-VAC-01 había inventado—. **No** se sostiene que «la tabla exige
 0.4125 m» a un marco: la tabla no le exige nada, su fila de concreto dice `Pipe`.
 
+**Y HAY UNA TERCERA MITAD, que C7 midió y ninguna de las dos anteriores contenía: ese 0.4125
+tampoco es `B'c/8`.** Es `Bc/8`. Con `t = 0.15`, el marco de 3.00 × 1.50 tiene `Bc = 3.30` y
+`B'c = 1.80`: `3.30/8 = 0.4125` es el **primer** término y `B'c/8 = 0.225` es **el menor de los
+tres**. O sea que **la #9 estuvo mal enunciada por DOS motivos distintos, no por uno**, y es la
+segunda corrección a la misma regla:
+
+| | quién | qué creyó | qué era |
+|---|---|---|---|
+| **Motivo 1** | quien escribió la #9 en §6 | que al criterio **le faltaba un término** y había que devolver `B'c/8` | no falta ninguno: **la fila entera es de `Pipe`** |
+| **Motivo 2** | C5, midiendo | que su 0.4125 era **`B'c/8`** | es **`Bc/8`**; midió el número correcto y lo llamó por el nombre del otro |
+
+**Separarlos no es pedantería: llevan a arreglos distintos.** Del motivo 1 sale el vacío
+declarado. Del motivo 2 sale lo que el motivo 1 no habría encontrado nunca — que **lo que le
+faltaba al código no era el término omitido sino que al único que conserva le entraba la
+dimensión equivocada**: `M7` recibía un escalar `D` que en un marco vale la altura, y
+`diametro_exterior` lo convertía en `H + 2t = B'c`, metido en la ranura de `Bc`. Medido, para
+ese mismo marco: la cobertura salía **0.3048 m y sin que el ancho entrara siquiera en el
+cálculo**, porque `B` no era argumento de la función. Por eso el arreglo de C7 son **dos piezas
+y no una** —el vacío (punto 4) y `M7` a la `Seccion` (punto 5)—: con sólo la primera, un marco
+habría seguido midiendo su cobertura sobre el canto. La versión larga está en §6.
+
 **En qué se contradecían los dos textos del mismo criterio**, que es un dato sobre cómo se
 escribió y no sólo un error a pisar: el comentario del `valor` decía que la premisa circular
 **cayó**; el `verificacion_pendiente`, diez líneas más abajo y sin tocar desde antes de C5,
@@ -4588,3 +4639,98 @@ familia C; corregirla exige medir las **cuatro** configuraciones de su tabla, y 
 midió **una** —«PyMuPDF sí, ventana Tk no»—, que es la única que este contenedor puede dar.
 Se deja dicho y no se corrige a medias: media tabla medida y media supuesta sería peor que
 la cifra vieja, porque no se distinguiría cuál es cuál.
+
+---
+
+### 16.13 · C7 — el marco dimensiona
+
+**El entregable de C7 no es un refactor: es la primera corrida del plan en que un punto de
+Familia C sale con sección adoptada.** Trece commits sobre `507994f`, seis de ellos de
+manifiesto y en commit aparte (regla del punto 9 del brief).
+
+| commit | punto del brief |
+|---|---|
+| `11970ca` C7a | **0** — §15.2.7, numeral por paso de V7; siete citas nuevas; la #9 retirada |
+| `27156a5` C7c | **1** — `espesor_pared_cajon`, con el signo contraintuitivo escrito |
+| `cd8d4f2` C7d | **2** — la geometría exterior entra en el protocolo, no en un `if` de M8 |
+| `b2e86ad` C7e | **3** — la fila de γ_p del cajón; **D-8** cerrado |
+| `985bcd4` C7g | **4** — `cobertura_minima_cajon` + `AfirmacionNegativa` |
+| `7a44c1e` C7i | **5** — M7 a la `Seccion`; G1 dice cuál mínimo gobernó |
+| `bda37a8` C7k | **6 y 7** — EG-2013 `503 + 504`; V7 ciega a la forma |
+| `c2a0057` C7m | **8** — R-17 de **17 a 14** |
+| `27455f3` `7661e2f` `edce33b` `0371717` `eee01f8` | **9** — manifiesto, con el delta atribuido |
+
+**El par:** **1679 passed / 2 skipped**, `collected 1681`, configuración «PyMuPDF sí / ventana
+Tk no». Los dos `skipped` son los dos documentados de siempre.
+
+#### La comprobación del criterio de salida que NO pasa, y su destino
+
+**Va aquí para que C8 la encuentre como TAREA y no como sorpresa.** El criterio de salida de C7
+pedía que C-01 saliera con **sección adoptada (B × H)**. Sale con la sección — pero **partida en
+dos sitios de distinto rango**:
+
+- **Lo que sí publica:** `B = 1.20 m` y `H = 0.90 m`, con su procedencia («ancho interior de UNA
+  celda; con N celdas se diseña una celda con Q/N»), **tres veces** dentro de los pasos de
+  Fase 4, y la progresión entera (`1.20 × 0.90 ; 1.50 × 1.20 ; 2.00 × 1.50 m`) en el paso de
+  Fase 3 que la adopta.
+- **Lo que NO:** el TITULAR del punto dice «**Diámetro adoptado** D = 0.90 m interior». Para un
+  marco ese 0.90 es la ALTURA, rotulada como diámetro, y el `B` no aparece en esa línea.
+
+**Por qué no se corrigió aquí:** el titular sale de `ResultadoPunto.D` —un escalar— y de su
+renderizado en `M11`, y el punto 11 del brief de C7 excluye los dos por su nombre («no se tocan
+el reporte, la tabla de diseño, `ResultadoPunto.D` (C8)»). Tocarlo habría sido ensanchar la
+sesión por la puerta que el propio brief cerró.
+
+**Lo que C7 sí dejó hecho para que C8 pueda cerrarlo sin arqueología:** `ResultadoPunto` ya
+lleva el campo `seccion` —añadido en C7i, **sin tocar `D`**—, con la invariante en el tipo de
+que un resultado con `D` y sin `seccion` no se construye. O sea que el dato que el titular
+necesita **ya está en el objeto**: lo que falta es que `M11` lo lea en vez de leer el escalar.
+El único otro sitio de la cadena de V7 donde todavía viaja un número en vez de una sección
+—`cota_clave` y `altura_relleno_sobre_clave`— está declarado en el docstring de
+`M5.v7_flotacion` y va con esto mismo.
+
+#### Los tres hallazgos que el plan no tenía
+
+1. **La #9 estuvo mal enunciada por DOS motivos, no uno** (§6 y §15.2.6). El segundo es de C5 y
+   nadie lo había separado: su `0.4125` es `Bc/8`, no `B'c/8`. De ahí salió que el arreglo son
+   **dos piezas** —el vacío y `M7` a la `Seccion`— y no una.
+2. **El punto 8 cerró TRES anclas, no dos.** `M9_cabezal:334` cae en la misma fila del
+   manifiesto que la de M8 y su ancla ya apuntaba a su definición: sólo faltaba que la fila
+   nombrara el símbolo (`CRITERIO_FACTORES_CARGA`). Verificado con la inserción de 22 líneas que
+   C6 dejó establecida: las tres anclas se movieron 22 renglones y las tres siguieron en su
+   línea de definición.
+3. **El EG-2013 SÍ contempla el cajón**, de modo que el punto 6 salió por la rama positiva y no
+   por el vacío que el plan también contemplaba. La prueba es el num. **503.10 h)** (impresa
+   926): *«Placa superior en alcantarillas de cajón: 14 días»* — única mención del cajón de
+   concreto en las 1282 páginas, con tres falsos amigos censados. El `+ 504` del acero sí es
+   ensamblaje, y se imprime como tal.
+
+#### El `ke`, medido con la trampa puesta
+
+La comprobación que el usuario señaló como la que más podía fallar en silencio. Las dos filas
+que **coinciden en valor** imprimen procedencia distinta, de modo que la memoria las distingue
+aunque el número no lo haga:
+
+| clave | `ke` | fila | agrupación | bloque |
+|---|---|---|---|---|
+| `cajon_sin_aletas_escuadra_3` | **0.5** | «Square-edged on 3 edges» | «Headwall parallel to embankment (no wingwalls)» | **«Box, Reinforced Concrete»** |
+| `concreto_headwall_square_edge` | **0.5** | «Square-edge» | «Headwall or headwall and wingwalls» | **«Pipe, Concrete»** |
+
+En la corrida del entregable, con aletas 30–75, la memoria imprime los tres rótulos: *«fila
+"Square-edged at crown" bajo el rótulo de agrupación "Wingwalls at 30⁰ to 75⁰ to barrel" del
+bloque "Box, Reinforced Concrete"»*. El número (0.40) tampoco coincide ahí con el del tubo, pero
+**eso no es lo que lo salva**: lo que lo salva es que la cita nombra el bloque.
+
+#### Por qué la corrida del entregable no usa el fixture de la línea base
+
+**C-01 NO dimensiona con `entradas_ampliadas.json`, y es correcto.** Ese fixture declara
+`S_conducto = 0.004` contra `S_cauce = 0.006` —C6 lo puso así a propósito, para que sustituir
+una por otra no fuera invisible— y con el conducto más tendido que el cauce **V2b muerde**: los
+tres escalones de la progresión se descartan por sedimentación antes de llegar a nada más.
+Medido, escalón por escalón, en las iteraciones del JSON.
+
+La corrida del entregable usa la pendiente del cauce para el conducto, que es lo que la Sec. 7.B
+llama el caso normal. **Las siete declaraciones de esa corrida son declaraciones DE LA CORRIDA,
+no valores del proyecto:** los siete criterios siguen vacíos en `criterios_adoptados.py` y así
+tienen que seguir. Están elegidas para que el punto cierre, no medidas en campo, exactamente
+como el TW y el caudal del fixture.
