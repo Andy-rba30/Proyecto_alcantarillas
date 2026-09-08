@@ -95,7 +95,7 @@ import ast
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import criterios_adoptados as _ca
 import datos_sitio as _ds
@@ -134,10 +134,132 @@ _FASE_DE_MODULO: Dict[str, str] = {
 _MODULOS = Path(__file__).resolve().parent / "modulos"
 
 
-@lru_cache(maxsize=1)
-def _literales_por_modulo() -> Dict[str, frozenset]:
+# El ambito al que se atribuye una cadena dentro de un modulo: el nombre de la
+# funcion o de la clase de primer nivel que la contiene, y "" para el cuerpo
+# del modulo, que es donde viven las constantes CRITERIO_*. No es un detalle
+# de implementacion: sin ambitos no hay grafo de llamadas, y sin grafo de
+# llamadas el censo atribuye el consumo a quien ESCRIBE la cadena en vez de a
+# quien la EJECUTA -- que es el falso negativo que esta pieza vino a cerrar.
+_AMBITO_MODULO = ""
+
+
+@dataclass(frozen=True)
+class _Analisis:
+    """Lo que hace falta saber de un modulo para seguir una clave a traves de el."""
+
+    literales: Dict[str, Set[str]]                 # ambito -> cadenas escritas ahi
+    llamadas: Dict[str, Set[Tuple[str, str]]]      # ambito -> (modulo, ambito) llamados
+    constantes: Dict[str, str]                     # NOMBRE de nivel de modulo -> cadena
+    importado: Dict[str, Tuple[str, str]]          # nombre local -> (modulo, nombre)
+
+
+def _docstrings(arbol: ast.Module) -> Set[str]:
+    docs: Set[str] = set()
+    for n in ast.walk(arbol):
+        if isinstance(n, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef,
+                          ast.ClassDef)):
+            d = ast.get_docstring(n, clean=False)
+            if d is not None:
+                docs.add(d)
+    return docs
+
+
+def _analizar(ruta: Path) -> _Analisis:
     """
-    Las cadenas que cada modulo de calculo escribe EN CODIGO, sin docstrings.
+    Un modulo partido en ambitos, con sus cadenas y sus llamadas resueltas.
+
+    Resuelve TRES formas de llamada y ninguna mas, porque son las tres que
+    este repositorio usa: `f(...)` a una funcion del propio modulo, `f(...)` a
+    una traida con `from modulos.MX import f`, y `M8.f(...)` sobre el alias de
+    un modulo importado. Lo que no encaja en esas tres se ignora a proposito:
+    un grafo incompleto deja consumidores sin ver --- defecto conocido y
+    acotado, que se paga en falsos negativos --- mientras que uno que adivine
+    los atribuiria mal, que es el defecto que esta funcion existe para evitar.
+
+    Los metodos de una clase se agrupan bajo el nombre de la clase: una
+    llamada a un metodo llega por una instancia y no se puede resolver por
+    nombre, de modo que separarlos daria una precision que el grafo no puede
+    sostener.
+    """
+    arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+    docs = _docstrings(arbol)
+
+    alias_modulo: Dict[str, str] = {}
+    importado: Dict[str, Tuple[str, str]] = {}
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.ImportFrom) and nodo.module:
+            partes = nodo.module.split(".")
+            if partes[-1] == "modulos":
+                for a in nodo.names:                    # from modulos import M8 as X
+                    if a.name.startswith("M"):
+                        alias_modulo[a.asname or a.name] = a.name
+            elif "modulos" in partes and partes[-1].startswith("M"):
+                for a in nodo.names:                    # from modulos.M8 import f
+                    importado[a.asname or a.name] = (partes[-1], a.name)
+        elif isinstance(nodo, ast.Import):
+            for a in nodo.names:                        # import modulos.M8 as M8
+                partes = a.name.split(".")
+                if "modulos" in partes and partes[-1].startswith("M"):
+                    alias_modulo[a.asname or partes[-1]] = partes[-1]
+
+    cuerpos: Dict[str, List[ast.AST]] = {_AMBITO_MODULO: []}
+    for nodo in arbol.body:
+        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            cuerpos.setdefault(nodo.name, []).append(nodo)
+        else:
+            cuerpos[_AMBITO_MODULO].append(nodo)
+    propias = {n for n in cuerpos if n != _AMBITO_MODULO}
+
+    # Las constantes del cuerpo del modulo se resuelven ANTES de recorrer los
+    # ambitos: `ca.valor(CRITERIO_PESO_RELLENO)` no escribe ninguna cadena
+    # dentro de la funcion, escribe un nombre, y sin este paso la clave se
+    # queda en el ambito del modulo mientras el consumo esta en la funcion --
+    # que es donde el grafo de llamadas la tiene que encontrar.
+    constantes: Dict[str, str] = {
+        destino.id: nodo.value.value
+        for nodo in cuerpos[_AMBITO_MODULO]
+        if isinstance(nodo, ast.Assign) and isinstance(nodo.value, ast.Constant)
+        and isinstance(nodo.value.value, str)
+        for destino in nodo.targets if isinstance(destino, ast.Name)
+    }
+
+    literales: Dict[str, Set[str]] = {}
+    llamadas: Dict[str, Set[Tuple[str, str]]] = {}
+    for ambito, cuerpo in cuerpos.items():
+        cadenas: Set[str] = set()
+        llamados: Set[Tuple[str, str]] = set()
+        for raiz in cuerpo:
+            for n in ast.walk(raiz):
+                if isinstance(n, ast.Constant) and isinstance(n.value, str) \
+                        and n.value not in docs:
+                    cadenas.add(n.value)
+                elif isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) \
+                        and n.value.id in alias_modulo:
+                    llamados.add((alias_modulo[n.value.id], n.attr))
+                elif isinstance(n, ast.Name):
+                    if n.id in constantes:
+                        cadenas.add(constantes[n.id])
+                    if n.id in propias:
+                        llamados.add((ruta.stem, n.id))
+                    elif n.id in importado:
+                        llamados.add(importado[n.id])
+        literales[ambito] = cadenas
+        llamadas[ambito] = llamados
+
+    return _Analisis(literales=literales, llamadas=llamadas,
+                     constantes=constantes, importado=importado)
+
+
+@lru_cache(maxsize=1)
+def _analisis() -> Dict[str, _Analisis]:
+    return {ruta.stem: _analizar(ruta)
+            for ruta in sorted(_MODULOS.glob("M*.py"))}
+
+
+@lru_cache(maxsize=1)
+def _consumo_por_modulo() -> Dict[str, frozenset]:
+    """
+    Las cadenas que cada modulo de calculo EJECUTA, no solo las que escribe.
 
     Es como se averigua quien consume una variable, y se AVERIGUA en vez de
     declararse a mano por una razon medida: nueve criterios se nombran en
@@ -146,28 +268,83 @@ def _literales_por_modulo() -> Dict[str, frozenset]:
     de un grep -- atribuye consumidores que no existen. Los docstrings se
     descartan explicitamente; los comentarios no son nodos del arbol y ya
     quedan fuera.
+
+    EL SEGUNDO PASO LLEGO EN S21, Y LLEGO POR UN FALSO NEGATIVO MEDIDO. Hasta
+    entonces esto era un solo paso --- las cadenas literales de cada modulo ---
+    y esa atribucion se equivoca justo cuando el modulo que ESCRIBE la cadena
+    no es el que la EJECUTA. Contrastado contra dos corridas reales del
+    pipeline:
+
+        'factores_carga_aashto'          decia   Fase 8 - Fase 9
+        'peso_especifico_relleno_kn_m3'  decia   Fase 8 - Fase 9
+
+    y a las dos las invoca V7 (flotacion), que es FASE 5 y corre en el alcance
+    de perfil: `M5_verificaciones` importa de `M8_estructural` la constante
+    `CRITERIO_FACTORES_CARGA` y la funcion `peso_relleno_kn_m`, y las dos
+    cadenas viven en M8. Un filtro de alcance montado sobre la derivacion
+    vieja habria ocultado dos criterios que la corrida de perfil SI invoca ---
+    el error en la direccion peligrosa, que es la de esconder.
+
+    Las dos vias por las que una clave cruza de modulo, y las dos se cierran
+    aqui:
+
+        CONSTANTE REEXPORTADA   `from modulos.M8_estructural import
+                                CRITERIO_FACTORES_CARGA` --- la cadena esta
+                                alli, el uso esta aqui.
+        FUNCION REEXPORTADA     `from modulos.M8_estructural import
+                                peso_relleno_kn_m`, que dentro llama a
+                                `ca.valor(CRITERIO_PESO_RELLENO)`.
+
+    La segunda se resuelve con un punto fijo sobre el grafo de llamadas: el
+    consumo de un ambito incluye el de todo lo que llama, transitivamente.
+
+    LO QUE ESTA DERIVACION NO ES: una prueba. Sigue siendo una ESTIMACION
+    estatica, y por eso NO es ella la que gobierna el filtro de alcance de la
+    GUI. Eso lo hace `Criterio.nivel`, que dos corridas reales comprueban en
+    `tests/test_nivel_medido.py`. El papel de esta derivacion es decir a que
+    FASE pertenece cada variable, y clasificar lo unico que ninguna corrida
+    puede medir: lo que ninguna de las dos llega a invocar.
     """
-    salida: Dict[str, frozenset] = {}
-    for ruta in sorted(_MODULOS.glob("M*.py")):
-        arbol = ast.parse(ruta.read_text(encoding="utf-8"))
-        docs = set()
-        for n in ast.walk(arbol):
-            if isinstance(n, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef,
-                              ast.ClassDef)):
-                d = ast.get_docstring(n, clean=False)
-                if d is not None:
-                    docs.add(d)
-        salida[ruta.stem] = frozenset(
-            n.value for n in ast.walk(arbol)
-            if isinstance(n, ast.Constant) and isinstance(n.value, str)
-            and n.value not in docs
-        )
-    return salida
+    analisis = _analisis()
+
+    consumo: Dict[Tuple[str, str], Set[str]] = {}
+    for modulo, a in analisis.items():
+        for ambito, cadenas in a.literales.items():
+            consumo[(modulo, ambito)] = set(cadenas)
+
+    # Una CONSTANTE reexportada no tiene cuerpo que recorrer: el nodo
+    # (modulo, nombre) al que apunta la arista no existe, y sin esta linea la
+    # clave se perderia. Se le da uno, con la cadena que su modulo de origen
+    # le asigno, y el punto fijo la propaga a quien la referencie.
+    for modulo, a in analisis.items():
+        for origen, real in a.importado.values():
+            if origen in analisis and real in analisis[origen].constantes:
+                consumo.setdefault((origen, real), set()).add(
+                    analisis[origen].constantes[real])
+
+    aristas = {(modulo, ambito): llamados
+               for modulo, a in analisis.items()
+               for ambito, llamados in a.llamadas.items()}
+
+    cambio = True
+    while cambio:
+        cambio = False
+        for nodo, llamados in aristas.items():
+            antes = len(consumo[nodo])
+            for destino in llamados:
+                consumo[nodo] |= consumo.get(destino, set())
+            if len(consumo[nodo]) != antes:
+                cambio = True
+
+    salida: Dict[str, Set[str]] = {m: set() for m in analisis}
+    for (modulo, _ambito), claves in consumo.items():
+        salida[modulo] |= claves
+    return {m: frozenset(claves) for m, claves in salida.items()}
 
 
 def _consumidores(clave: str) -> Tuple[str, ...]:
-    return tuple(sorted(m for m, lits in _literales_por_modulo().items()
-                        if clave in lits))
+    return tuple(sorted(m for m, claves in _consumo_por_modulo().items()
+                        if clave in claves))
 
 
 # ---------------------------------------------------------------------------

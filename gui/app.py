@@ -26,15 +26,17 @@ expediente.
 Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
 -----------------------------------------------------------
     1. Datos de entrada    CSV de Sec. 1.2 (M0) + datos declarados que no son
-                            columna (banderas de `cli.py`) + ALCANCE de la
-                            corrida + boton de ejecucion.
+                            columna (banderas de `cli.py`, ANOTADOS con las
+                            familias que los usan) + ALCANCE de la corrida +
+                            boton de ejecucion.
     2. Criterios           Los criterios adoptados y su estado, con FILTRO
-                            (por estado y por texto) y RECUENTO de pendientes;
-                            la ventana normativa de cada variable (Sec. 4.2/4.3
-                            del plan); y el unico sitio de la interfaz que
-                            REESCRIBE `criterios_adoptados.py` --- accion
-                            permanente, aparte y con confirmacion propia, que
-                            es justo la pestana que esta lista omitia.
+                            (por estado, por AMBITO y por texto) y RECUENTO de
+                            pendientes; la ventana normativa de cada variable
+                            (Sec. 4.2/4.3 del plan); y el unico sitio de la
+                            interfaz que REESCRIBE `criterios_adoptados.py`
+                            --- accion permanente, aparte y con confirmacion
+                            propia, que es justo la pestana que esta lista
+                            omitia.
     3. Resultados por punto  Un Treeview con el resumen de cada punto y, al
                             seleccionar una fila, el detalle de verificaciones
                             y bloqueos de ese punto.
@@ -72,7 +74,37 @@ que el programa TIENE y que no llegaba a la pantalla.
   que devuelve `_estado_criterio`, no por un nombre paralelo --- y busqueda por
   clave o concepto, y arriba el recuento, que se calcula en el mismo recorrido
   que pinta las filas.
+- **El programa pedia declarar lo que ya sabia que esta corrida no iba a
+  invocar.** De los 33 pendientes, 22 son de Fase 8 y Fase 9 --- cabezal,
+  licuefaccion, capacidad portante, aletas ---, que `--alcance perfil` ni
+  ejecuta. El filtro de AMBITO los aparta, y sus dos ejes son DERIVADOS:
+  «este alcance» es el que la pestana 1 ya declaro (`Criterio.nivel`, via
+  `ca.criterios_del_alcance`), y «esta corrida» es el bloque «Criterios
+  pendientes que bloquearon una etapa» del informe
+  (`M11.criterios_bloqueantes`). Ninguno se elige a mano aqui, y ninguno
+  calcula su propia respuesta. A perfil, la tabla pasa de 69 filas a 36 y los
+  pendientes visibles de 33 a 11.
+  FILTRAR NO ES OCULTAR: el recuento sigue contando los pendientes sobre los
+  69 del archivo y dice ademas cuantas filas esconde el filtro. Un criterio
+  que no se ve es un criterio que el proyectista no sabe que existe.
 - **Un boton apagado no decia por que.** Ver `gui/componentes.BotonAccion`.
+
+Los campos que este expediente no va a usar (pestana 1)
+-------------------------------------------------------
+La ventana pedia los cinco datos declarados a la vez, sin decir que dos de
+ellos solo sirven para una familia --- eso estaba escrito, pero como PROSA en
+un tooltip, que es la forma en que el programa no lo puede leer ---. Al cargar
+el CSV, `cli.familias_del_csv` dice que familias trae el expediente y
+`cli.familias_que_usan` que familias necesitan cada dato; los que no aplican
+quedan ANOTADOS al lado.
+
+Anotados, no deshabilitados, y no es un matiz de widget: el proyectista puede
+estar preparando el dato de un punto que todavia no metio en el CSV, y un
+campo apagado se lo impide mientras le dice que se equivoco. «No aplica»
+tampoco quiere decir «es inerte»: en la Familia B, declarar `categoria_tr`
+cambia el fundamento que la memoria imprime aunque el TR no se mueva, y por
+eso esa familia SI figura entre las que lo usan --- lo dijo la medida, no la
+lectura del codigo (`tests/test_familias_del_csv.py`).
 
 Los criterios en la sesion (SIS-A-18)
 -------------------------------------
@@ -153,6 +185,36 @@ FILTROS_DE_ESTADO = (
     ("Resueltos en el archivo", "resuelto"),
 )
 
+# Los filtros de AMBITO de la tabla de criterios (pestana 2). Responden a una
+# pregunta distinta de la del estado --- aquel dice como esta un criterio,
+# este dice si ESTA CORRIDA lo puede necesitar --- y por eso son dos combos y
+# no uno solo con las siete opciones mezcladas.
+#
+# NINGUNO DE LOS TRES SE ELIGE A MANO EN ESTA PESTANA, y ese es todo el
+# diseño: el segundo lee el alcance que la pestana 1 ya declaro, y el tercero
+# lee el informe de la ultima corrida. Un desplegable donde el proyectista
+# eligiera "perfil" aqui mientras la pestana 1 dice "expediente" seria una
+# segunda declaracion de alcance, y dos declaraciones de alcance son dos
+# corridas distintas descritas como una.
+#
+# LOS DOS PRIMEROS ESTIMAN Y EL TERCERO MIDE, y la diferencia importa al
+# leerlos: "este alcance puede invocarlo" sale de `Criterio.nivel`, que dos
+# corridas comprueban en `tests/test_nivel_medido.py` pero que sigue siendo
+# una clasificacion previa; "bloqueo esta corrida" sale de
+# `M11.criterios_bloqueantes`, que es el registro de lo que de verdad paso.
+AMBITO_TODOS = "todos"
+AMBITO_ALCANCE = "alcance"
+AMBITO_BLOQUEANTES = "bloqueantes"
+
+FILTROS_DE_AMBITO = (
+    ("Todos", AMBITO_TODOS),
+    ("Solo los que este alcance puede invocar", AMBITO_ALCANCE),
+    ("Solo los que bloquearon esta corrida", AMBITO_BLOQUEANTES),
+)
+
+MOTIVO_SIN_CORRIDA_FILTRO = (
+    "todavia no se ejecuto el pipeline: no hay corrida cuyos bloqueos filtrar")
+
 # Banderas globales que acepta `cli.py` fuera del CSV (ver docstring de
 # `cli.py`, seccion "Datos que NO estan en el CSV"). Cada tupla es
 # (clave, etiqueta, ayuda, unidad).
@@ -193,8 +255,23 @@ class ExpedienteApp:
         self.alcance_var = tk.StringVar(value=cli.ALCANCE_EXPEDIENTE)
 
         self.informe: Optional[cli.Informe] = None
+        # Las familias que el CSV cargado trae. `None` --- y no una tupla
+        # vacia --- mientras no se haya podido leer: "no se sabe" y "no hay
+        # ninguna" son dos cosas distintas, y anotar "no aplica" sobre la
+        # segunda cuando en realidad es la primera seria decirle al
+        # proyectista que un campo le sobra sin haber leido su archivo.
+        self.familias_csv: Optional[tuple] = None
 
         self._crear_interfaz()
+
+        # El filtro de alcance de la pestana 2 no es una copia del selector de
+        # la pestana 1: es el MISMO dato. Sin este `trace` la tabla se quedaba
+        # filtrando por el alcance anterior hasta el proximo repintado, que es
+        # justo la clase de desfase que hace desconfiar de un filtro.
+        self.alcance_var.trace_add("write", lambda *_a: self._refiltrar())
+        # Y la anotacion de la pestana 1 se rehace al cambiar el CSV, que es
+        # cuando cambian las familias del expediente.
+        self.csv_var.trace_add("write", lambda *_a: self._releer_familias())
 
     # ------------------------------------------------------------------
     # Construccion de la interfaz
@@ -289,12 +366,23 @@ class ExpedienteApp:
 
         f_ext = ttk.Frame(p)
         f_ext.pack(fill="x", pady=6)
+        # La anotacion «no aplica» de cada campo. Es una etiqueta al lado y NO
+        # un `state="disabled"`, y la diferencia es del oficio y no del
+        # widget: el proyectista puede estar preparando el dato de un punto
+        # que todavia no ha metido en el CSV, y un campo apagado le impide
+        # hacerlo mientras le dice que se equivoco. Anotar informa; deshabilitar
+        # decide por el.
+        self.lbl_no_aplica = {}
         for fila, (clave, etiqueta, ayuda, unidad) in enumerate(CAMPOS_EXTERNOS):
             ttk.Label(f_ext, text=etiqueta).grid(row=fila, column=0, sticky="w", padx=5, pady=6)
             ent = ttk.Entry(f_ext, textvariable=self.externos_vars[clave], width=20, justify="right")
             ent.grid(row=fila, column=1, sticky="w", padx=5, pady=6)
             ttk.Label(f_ext, text=unidad, style="Ayuda.TLabel").grid(row=fila, column=2, sticky="w")
             Tooltip(ent, ayuda)
+            self.lbl_no_aplica[clave] = ttk.Label(f_ext, text="",
+                                                   style="Ayuda.TLabel")
+            self.lbl_no_aplica[clave].grid(row=fila, column=3, sticky="w",
+                                            padx=(12, 0))
 
         ttk.Separator(p, orient="horizontal").pack(fill="x", pady=6)
 
@@ -338,6 +426,64 @@ class ExpedienteApp:
                  "(no se sustituye por un numero plausible).",
             style="Ayuda.TLabel", wraplength=820, justify="left",
         ).pack(anchor="w", padx=5, pady=(6, 0))
+
+    # LA CLAVE DE `cli` QUE LLEVA CADA CAMPO DE LA VENTANA. Los rotulos de
+    # `CAMPOS_EXTERNOS` son los de la GUI (`l_hidraulico`) y las claves con las
+    # que `cli` razona son las del expediente (`L_hidraulico_m`): la traduccion
+    # ya existia dentro de `_leer_banderas`, enterrada en el armado del dict, y
+    # aqui hace falta la MISMA para preguntar por las familias. Se escribe una
+    # vez y las dos la leen.
+    CLAVE_EXTERNA_DE_CAMPO = {
+        "luz_m": "luz_m",
+        "TW_m": "TW_m",
+        "longitud_m": "longitud_m",
+        "l_hidraulico": "L_hidraulico_m",
+        "categoria_tr": "categoria_tr",
+    }
+
+    def _releer_familias(self):
+        """
+        Relee del CSV que familias trae el expediente, y reanota la pestana 1.
+
+        NO INTERRUMPE NI AVISA SI EL CSV NO SE PUEDE LEER, y es deliberado: se
+        dispara al teclear la ruta, de modo que la mitad de las veces el
+        archivo aun no existe. Un error de carga aqui es ruido; el que importa
+        lo da EJECUTAR, con el mensaje entero. Lo unico que cambia es que la
+        anotacion se calla: `None` es "no se sabe", no "no hay ninguna".
+        """
+        if not hasattr(self, "lbl_no_aplica"):
+            return
+        ruta = self.csv_var.get().strip()
+        if not ruta:
+            self.familias_csv = None
+        else:
+            try:
+                self.familias_csv = cli.familias_del_csv(Path(ruta))
+            except (OSError, UnicodeDecodeError, ErrorProyecto):
+                self.familias_csv = None
+        self._pintar_no_aplica()
+
+    def _pintar_no_aplica(self):
+        """
+        La anotacion de cada campo declarado, con la familia que falta.
+
+        El conjunto de familias que usa cada dato sale de
+        `cli.familias_que_usan`, que es el MISMO que consulta `cli._fase_10`
+        para decidir si esa fase corre. Una regla propia de la ventana seria
+        una segunda respuesta a "¿este dato sirve para algo en este
+        expediente?", y podria contradecir a la del pipeline.
+        """
+        for campo, lbl in self.lbl_no_aplica.items():
+            if self.familias_csv is None:
+                lbl.config(text="")
+                continue
+            usan = cli.familias_que_usan(self.CLAVE_EXTERNA_DE_CAMPO[campo])
+            if any(familia in usan for familia in self.familias_csv):
+                lbl.config(text="")
+                continue
+            faltan = ", ".join(f"Familia {f.value}" for f in usan)
+            lbl.config(text=f"no aplica: este CSV no trae puntos de {faltan}",
+                       foreground=COLOR_AVISO)
 
     def _elegir_csv(self):
         ruta = filedialog.askopenfilename(
@@ -421,6 +567,28 @@ class ExpedienteApp:
                 "  desde aqui; criterios_adoptados.py NO se modifico.\n"
                 "Resuelto en el archivo = el valor viene de "
                 "criterios_adoptados.py.")
+
+        ttk.Label(f_filtro, text="Ambito:").grid(row=1, column=0, sticky="w",
+                                                 pady=(6, 0))
+        self.filtro_ambito_var = tk.StringVar(value=FILTROS_DE_AMBITO[0][0])
+        cmb_ambito = ttk.Combobox(
+            f_filtro, textvariable=self.filtro_ambito_var, state="readonly",
+            width=38, values=[rotulo for rotulo, _t in FILTROS_DE_AMBITO])
+        cmb_ambito.grid(row=1, column=1, columnspan=2, sticky="w",
+                        padx=(6, 16), pady=(6, 0))
+        Tooltip(cmb_ambito,
+                "Ninguna de las dos opciones se elige a mano aqui:\n"
+                "  - «este alcance» es el que declaraste en la pestana 1;\n"
+                "  - «esta corrida» sale del informe de la ultima ejecucion.\n"
+                "Las dos primeras ESTIMAN --- leen la clasificacion previa de\n"
+                "cada criterio ---; la tercera MIDE: es el bloque «Criterios\n"
+                "pendientes que bloquearon una etapa» del informe.\n"
+                "Filtrar no es ocultar: el recuento sigue diciendo cuantos hay\n"
+                "en total y cuantos esconde el filtro.")
+
+        self.lbl_ambito = ttk.Label(f_filtro, text="", style="Ayuda.TLabel")
+        self.lbl_ambito.grid(row=1, column=3, columnspan=2, sticky="w",
+                             pady=(6, 0))
 
         ttk.Label(f_filtro, text="Buscar:").grid(row=0, column=2, sticky="w")
         self.filtro_texto_var = tk.StringVar()
@@ -606,13 +774,15 @@ class ExpedienteApp:
 
         self._clave_criterio_seleccionado = None
         self._seleccion_fuera_del_filtro = False
+        self._claves_ambito = None
         # Refiltrar al escribir, no al pulsar: es la misma regla que la
         # Sec. 4.3 le pide al campo validable, y la que hace util un buscador.
         # La traza se engancha AQUI, al final: `_llenar_tabla_criterios` usa la
         # tabla, la etiqueta de recuento y la clave seleccionada, y engancharla
         # antes de que existan las tres deja la ventana a merced del orden en
         # que se escriban las variables.
-        for var in (self.filtro_estado_var, self.filtro_texto_var):
+        for var in (self.filtro_estado_var, self.filtro_texto_var,
+                    self.filtro_ambito_var):
             var.trace_add("write", lambda *_a: self._llenar_tabla_criterios())
         self._llenar_tabla_criterios()
 
@@ -636,6 +806,66 @@ class ExpedienteApp:
         if ca.criterio(clave).valor is None:
             return "PENDIENTE", "pendiente"
         return "resuelto", "resuelto"
+
+    def _refiltrar(self):
+        """
+        Repinta la tabla de criterios si ya existe.
+
+        La guardia no es defensiva de mas: `alcance_var` se traza en
+        `__init__`, y `set()` sobre el defecto o una sesion cargada puede
+        dispararla antes de que la pestana 2 este construida.
+        """
+        if hasattr(self, "tree_criterios_todos"):
+            self._llenar_tabla_criterios()
+
+    def _ambito_del_filtro(self):
+        """El tag de `FILTROS_DE_AMBITO` que pide el filtro."""
+        rotulo = self.filtro_ambito_var.get()
+        for texto, tag in FILTROS_DE_AMBITO:
+            if texto == rotulo:
+                return tag
+        return AMBITO_TODOS
+
+    def _claves_del_ambito(self):
+        """
+        Las claves que el filtro de ambito deja pasar, o None si no filtra.
+
+        NO CALCULA NINGUNA DE LAS DOS RESPUESTAS, y eso es a proposito: la de
+        alcance la da `ca.criterios_del_alcance`, que lee `Criterio.nivel`; la
+        de la corrida la da `M11.criterios_bloqueantes`, que es el mismo
+        bloque que la memoria imprime. Una tercera regla escrita aqui seria
+        una tercera respuesta a la misma pregunta, y la pestana acabaria
+        diciendo algo distinto de lo que dice el informe.
+
+        `None` cuando el filtro de bloqueantes se pide sin corrida: sin
+        informe no hay conjunto medido, y devolver el vacio dejaria la tabla a
+        cero, que se lee como "no queda nada por declarar" --- la lectura mas
+        peligrosa que esta pestana puede dar. Se avisa en la linea de al lado.
+        """
+        ambito = self._ambito_del_filtro()
+        if ambito == AMBITO_ALCANCE:
+            return set(ca.criterios_del_alcance(self.alcance_var.get()))
+        if ambito == AMBITO_BLOQUEANTES:
+            if self.informe is None:
+                return None
+            return {c.clave for c in M11.criterios_bloqueantes(self.informe)}
+        return None
+
+    def _pintar_aviso_de_ambito(self, escondidos):
+        """La linea que dice DE DONDE sale el conjunto que el filtro aplica."""
+        ambito = self._ambito_del_filtro()
+        if ambito == AMBITO_ALCANCE:
+            texto = (f"segun el alcance «{self.alcance_var.get()}» de la "
+                     f"pestana 1 ({escondidos} fuera de alcance)")
+        elif ambito == AMBITO_BLOQUEANTES:
+            texto = (MOTIVO_SIN_CORRIDA_FILTRO if self.informe is None
+                     else f"medido sobre la corrida de {self.informe.generado}")
+        else:
+            texto = ""
+        self.lbl_ambito.config(
+            text=texto,
+            foreground=(COLOR_AVISO if ambito == AMBITO_BLOQUEANTES
+                        and self.informe is None else "#666666"))
 
     def _tag_del_filtro(self):
         """El tag de `_estado_criterio` que pide el filtro, o None si «Todos»."""
@@ -663,7 +893,17 @@ class ExpedienteApp:
         return self._encaja_en_el_filtro(clave, tag)
 
     def _encaja_en_el_filtro(self, clave, tag):
-        """Si la fila cumple el filtro, sin la excepcion de la seleccionada."""
+        """
+        Si la fila cumple los TRES filtros, sin la excepcion de la seleccionada.
+
+        Los tres se aplican JUNTOS y no en lugar unos de otros: «solo
+        PENDIENTES» dentro del alcance de perfil es la pregunta con la que se
+        abre esta pestana, y contestarla con dos pasadas obligaria a recordar
+        cual estaba puesto.
+        """
+        if (self._claves_ambito is not None
+                and clave not in self._claves_ambito):
+            return False
         pedido = self._tag_del_filtro()
         if pedido is not None and tag != pedido:
             return False
@@ -677,6 +917,11 @@ class ExpedienteApp:
             self.tree_criterios_todos.delete(item)
         pendientes = mostrados = 0
         self._seleccion_fuera_del_filtro = False
+        # UNA sola vez por repintado y no una por fila: `criterios_del_alcance`
+        # recorre y ordena los 69, y `criterios_bloqueantes` recorre el informe
+        # entero. Se guarda en el objeto porque `_encaja_en_el_filtro` lo lee
+        # fila a fila.
+        self._claves_ambito = self._claves_del_ambito()
         # El valor efectivo NO se recalcula aqui: lo da `criterio_efectivo`,
         # la misma funcion que leen M11 y el JSON. Tres copias de la regla
         # "override si lo hay, archivo si no" son tres sitios donde puede
@@ -697,6 +942,8 @@ class ExpedienteApp:
             ), tags=(tag,))
         self._reponer_seleccion()
         self._pintar_recuento(pendientes, mostrados)
+        self._pintar_aviso_de_ambito(len(ca.CRITERIOS) - len(self._claves_ambito)
+                                     if self._claves_ambito is not None else 0)
 
     def _reponer_seleccion(self):
         """
@@ -732,17 +979,29 @@ class ExpedienteApp:
 
     def _pintar_recuento(self, pendientes, mostrados):
         """
-        «33 de 69 pendientes», y cuantas filas deja ver el filtro.
+        «33 de 69 pendientes», y cuantas filas enseña y esconde el filtro.
 
-        Los dos numeros salen del MISMO recorrido que pinta la tabla, no de un
+        Los numeros salen del MISMO recorrido que pinta la tabla, no de un
         conteo aparte: un recuento calculado por su cuenta puede decir un
         numero mientras la tabla muestra otro, y entonces el que sobra es el
         recuento.
+
+        LOS PENDIENTES SE CUENTAN SOBRE LOS 69, NO SOBRE LO FILTRADO, y es la
+        mitad de lo que hace util este filtro. Un filtro que ademas moviera el
+        recuento contestaria "te quedan 11" cuando lo cierto es "te quedan 33,
+        de los que 11 los puede invocar esta corrida": la primera frase es la
+        que hace que un criterio del expediente se olvide.
         """
         total = len(ca.CRITERIOS)
         texto = f"{pendientes} de {total} pendientes"
         if mostrados != total:
-            texto += f"  |  el filtro muestra {mostrados}"
+            # DOS NUMEROS Y NO UNO. "el filtro muestra 36" deja al lector
+            # restando para saber cuantas filas dejo de ver, y esa resta es
+            # justo la que hace falta para confiar en un filtro: lo que
+            # esconde tiene que ser tan visible como lo que enseña. Los dos
+            # salen del mismo recorrido que pinta la tabla.
+            texto += (f"  |  el filtro muestra {mostrados} y esconde "
+                      f"{total - mostrados}")
         # Y SE DICE CUANDO UNA DE ESAS FILAS NO ENCAJA. La seleccionada se
         # muestra siempre --- si no, se esfumaria justo al declararla ---, y
         # sin decirlo el recuento parecia equivocado: "33 pendientes, el filtro
@@ -1197,10 +1456,11 @@ class ExpedienteApp:
         banderas = {}
         for clave, *_resto in CAMPOS_EXTERNOS:
             texto = self.externos_vars[clave].get().strip()
-            if clave == "l_hidraulico":
-                clave_bandera = "L_hidraulico_m"
-            else:
-                clave_bandera = clave
+            # La traduccion rotulo-de-ventana -> clave-de-expediente sale de
+            # `CLAVE_EXTERNA_DE_CAMPO` y ya no de un `if` escrito aqui: la
+            # anotacion de familias necesita la MISMA correspondencia, y dos
+            # copias de ella se separan el dia que aparezca un sexto campo.
+            clave_bandera = self.CLAVE_EXTERNA_DE_CAMPO[clave]
             banderas[clave_bandera] = None
             if texto:
                 if clave == "categoria_tr":
@@ -1262,6 +1522,12 @@ class ExpedienteApp:
 
         self._llenar_tabla_puntos()
         self._llenar_resumen()
+        # La pestana 2 se repinta porque acaba de aparecer el tercer filtro:
+        # sin corrida, «solo los que bloquearon esta corrida» no tiene conjunto
+        # que aplicar; con ella, ya lo tiene. Repintar aqui es lo que hace que
+        # el filtro exacto este disponible en el momento en que se vuelve
+        # exacto.
+        self._llenar_tabla_criterios()
         for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv):
             btn.habilitar()
         # La via del PDF se relee AQUI y no solo al construir la ventana: es

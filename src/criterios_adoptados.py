@@ -72,7 +72,8 @@ from constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    MANNING)
 from normativa import esquema as _esquema
 from normativa import registro as _registro_normativo
-from modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
+from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
+                     CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
                      DeTabla, EnRango, Libre, ModoDeResolucion, Resolucion,
                      modo_de)
 
@@ -587,6 +588,54 @@ def declaracion_de(clave: str):
     )
 
 
+# QUE NIVELES NECESITA DECLARADOS CADA ALCANCE DE CORRIDA.
+#
+# La correspondencia es 1:1 con el nombre y aun asi se escribe, porque son dos
+# cosas distintas y el proyecto ya lo tiene dicho: el NIVEL es propiedad del
+# CRITERIO y el ALCANCE lo es de la CORRIDA. Escribir el diccionario deja el
+# puente a la vista en vez de esconderlo en una comparacion de cadenas que
+# parece una coincidencia de nombres.
+#
+# EL "" ESTA EN LAS DOS FILAS A PROPOSITO. Hoy no hay ningun criterio sin
+# nivel --- los trece que quedaban se midieron en S21 ---, pero uno nuevo
+# puede nacer sin clasificar, y entonces el filtro tiene que MOSTRARLO. Un
+# filtro que oculta lo que no sabe clasificar es la unica forma de fallo que
+# no se puede permitir: esconde un criterio sin que nadie se entere, que es
+# exactamente lo contrario de lo que hace el resto del programa.
+NIVELES_DEL_ALCANCE: Dict[str, Tuple[str, ...]] = {
+    ALCANCE_PERFIL: (NIVEL_PERFIL, ""),
+    ALCANCE_EXPEDIENTE: (NIVEL_PERFIL, NIVEL_EXPEDIENTE, ""),
+}
+
+
+def criterios_del_alcance(alcance: str) -> Tuple[str, ...]:
+    """
+    Los criterios que una corrida de ese alcance PUEDE necesitar declarados.
+
+    Es el filtro de alcance de la pestana de criterios, y no calcula nada: lee
+    `Criterio.nivel`, que es el campo que ya responde a esta pregunta y que
+    `tests/test_nivel_medido.py` contrasta contra corridas reales en las dos
+    direcciones. Deducirlo aqui de los consumidores --- la otra via
+    disponible --- seria una segunda clasificacion que puede contradecir a la
+    primera, y ademas la peor de las dos: la derivacion estatica de
+    `variables_entrada` es una ESTIMACION y tuvo dos falsos negativos medidos
+    (ver `_consumo_por_modulo`).
+
+    NO ES UN PERMISO NI UNA PODA. Lo que queda fuera sigue existiendo, sigue
+    contando en el recuento de la pestana y se puede declarar igual: el
+    alcance de perfil no prohibe declarar un criterio del expediente, solo
+    dice que esta corrida no lo va a invocar.
+    """
+    if alcance not in NIVELES_DEL_ALCANCE:
+        raise ValueError(
+            f"alcance desconocido: '{alcance}'. Los declarados son "
+            + ", ".join(sorted(NIVELES_DEL_ALCANCE))
+        )
+    niveles = NIVELES_DEL_ALCANCE[alcance]
+    return tuple(clave for clave in sorted(CRITERIOS)
+                 if CRITERIOS[clave].nivel in niveles)
+
+
 def criterios_usados() -> List[str]:
     """
     Claves que el calculo invoco, en orden alfabetico. Es la misma informacion
@@ -736,6 +785,13 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "PERFIL_SUELO_PRESUNTO": Criterio(
         valor="S5",
+        # NIVEL DECLARADO Y NO MEDIDO: no lo consume NINGUN modulo (ver
+        # `sin_consumidor`, aqui abajo), asi que no hay corrida que lo pueda
+        # invocar ni medicion que citar. Se clasifica con los otros criterios
+        # de la Fase 0-bis de licuefaccion --- 'clase_sitio' y
+        # 'Mw_licuefaccion', que ya la declaran de expediente ---: el
+        # procedimiento entero pertenece al expediente tecnico.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="S",
         concepto="Perfil de suelo de E.030 presunto para el sitio (S0-S5)",
         justificacion="El Art. 14.6 de E.030 define el ESQUEMA de perfiles "
@@ -1038,6 +1094,13 @@ CRITERIOS: Dict[str, Criterio] = {
     # si dice (NOR-PUE-09, NOR-PUE-11, NOR-MEM-03, MAT-O4, NOR-PUE-12).
     "F_pga": Criterio(
         valor=("C", "D", "E"),
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         # Misma razon que en 'clase_sitio': la profundidad sobre la que se lee
         # la clase decide que fila de esta tabla aplica, y la hoja de ruta se
@@ -1145,6 +1208,13 @@ CRITERIOS: Dict[str, Criterio] = {
     # por eso es criterio y no constante.
     "F_pga_lectura_columna_extrema": Criterio(
         valor="limite_inclusive",
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Como se leen los dos rotulos extremos de la Tabla "
                  "2.4.3.11.2.1.2-1 cuando el PGA cae justo sobre uno de ellos",
@@ -1191,6 +1261,13 @@ CRITERIOS: Dict[str, Criterio] = {
     # se aplica o no esa reduccion (NOR-PUE-07).
     "factor_muro_eleccion": Criterio(
         valor="sin_reduccion",
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Si se aplica al cabezal la reduccion de k_h0 que el numeral "
                  "autoriza para muros con desplazamiento lateral admitido",
@@ -1249,6 +1326,13 @@ CRITERIOS: Dict[str, Criterio] = {
     # MAT-O11, MAT-X4).
     "k_v": Criterio(
         valor="prescrito_sin_caso_reservado",
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Cual de los dos regimenes de k_v del num. 2.8.1.1.14.2.1 "
                  "rige en este cabezal. Con el declarado, k_v = 0.0 y ese "
@@ -1563,6 +1647,14 @@ CRITERIOS: Dict[str, Criterio] = {
     "riesgo_admisible_propietario": Criterio(
         valor=None,                 # OPCIONAL: sin valor rigen los maximos
                                     # recomendados de la Tabla N 02
+        # NIVEL MEDIDO, y lo mide la TERCERA corrida de
+        # `tests/test_nivel_medido.py`, que existe por este caso: `opcional=True`
+        # se lee con `valor_si_declarado()`, que NO registra el uso mientras el
+        # criterio siga vacio, de modo que las dos corridas normales no lo pueden
+        # ver. Declarado en caliente con el valor que ya rige por defecto, la
+        # corrida `--alcance perfil` SI lo invoca. Medirlo asi no mueve ningun
+        # resultado: la declaracion repite lo que el consumidor ya aplicaba.
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         concepto="Riesgo admisible de falla R y vida util n que el Propietario "
                  "de la obra adopta, si son distintos de los maximos "
@@ -1989,6 +2081,14 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "v_max_concreto_eleccion": Criterio(
         valor=None,                 # OPCIONAL: sin valor, V3 usa el techo [N]
+        # NIVEL MEDIDO, y lo mide la TERCERA corrida de
+        # `tests/test_nivel_medido.py`, que existe por este caso: `opcional=True`
+        # se lee con `valor_si_declarado()`, que NO registra el uso mientras el
+        # criterio siga vacio, de modo que las dos corridas normales no lo pueden
+        # ver. Declarado en caliente con el valor que ya rige por defecto, la
+        # corrida `--alcance perfil` SI lo invoca. Medirlo asi no mueve ningun
+        # resultado: la declaracion repite lo que el consumidor ya aplicaba.
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         concepto="Techo de velocidad adoptado para el concreto, mas "
                  "conservador que el maximo normativo de 6.0 m/s",
@@ -2957,6 +3057,13 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "demanda_sismica_licuefaccion": Criterio(
         valor=1000,                 # anios
+        # NIVEL DECLARADO Y NO MEDIDO: no lo consume NINGUN modulo (ver
+        # `sin_consumidor`, aqui abajo), asi que no hay corrida que lo pueda
+        # invocar ni medicion que citar. Se clasifica con los otros criterios
+        # de la Fase 0-bis de licuefaccion --- 'clase_sitio' y
+        # 'Mw_licuefaccion', que ya la declaran de expediente ---: el
+        # procedimiento entero pertenece al expediente tecnico.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Periodo de retorno para la evaluacion de licuefaccion",
         justificacion="Se descarta el sismo de 475 anios de E.030. Al tratarse de "
@@ -4987,6 +5094,14 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "peso_especifico_concreto_kn_m3": Criterio(
         valor=23.56,                # kN/m3, concreto armado (0.150 kcf)
+        # NIVEL DECLARADO Y NO MEDIDO, y conviene decir por que: NINGUNA de
+        # las dos corridas de `tests/test_nivel_medido.py` llega a invocarlo
+        # --- la cadena de la Fase 9 se detiene antes, en un criterio
+        # pendiente ---, de modo que no hay medicion que citar. Lo sostiene el
+        # censo: `variables_entrada` no le encuentra mas consumidor que
+        # `M9_cabezal`, y `--alcance perfil` no ejecuta ese modulo. El test lo
+        # comprueba por esa via, que es la unica que queda.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
         concepto="Peso especifico del concreto armado del cabezal, kN/m3",
         justificacion="Es el peso propio (carga DC) que resiste el volteo y "
@@ -5250,6 +5365,14 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "factor_recubrimiento_banda_intermedia_ac": Criterio(
         valor=1.0,
+        # NIVEL DECLARADO Y NO MEDIDO, y conviene decir por que: NINGUNA de
+        # las dos corridas de `tests/test_nivel_medido.py` llega a invocarlo
+        # --- la cadena de la Fase 9 se detiene antes, en un criterio
+        # pendiente ---, de modo que no hay medicion que citar. Lo sostiene el
+        # censo: `variables_entrada` no le encuentra mas consumidor que
+        # `M9_cabezal`, y `--alcance perfil` no ejecuta ese modulo. El test lo
+        # comprueba por esa via, que es la unica que queda.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
         concepto="Factor de modificacion del recubrimiento para la banda "
                  "intermedia de relacion agua-cemento, 0.40 < a/c < 0.50, que "
@@ -5382,6 +5505,13 @@ CRITERIOS: Dict[str, Criterio] = {
         valor={"contra_suelo": "vaciado_contra_suelo",
                "suelo_intemperie_ge_3_4": "costera",
                "suelo_intemperie_le_5_8": "costera"},
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         concepto="Fila de la tabla de recubrimientos de AASHTO / Manual de "
                  "Puentes que se contrasta con cada condicion de E.060 "
@@ -5430,6 +5560,13 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "tabla_recubrimiento_aashto_mm": Criterio(
         valor=_TABLA_RECUBRIMIENTO_AASHTO_MM,
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
         concepto="Tabla 5.10.1-1 de AASHTO LRFD, 'Minimum Cover for Main "
                  "Reinforcing Steel', completa: las 21 situaciones por las "
@@ -5609,6 +5746,14 @@ CRITERIOS: Dict[str, Criterio] = {
             "espaciamiento_s_in": "Av*fy*dv*cot(theta) / Vs",
             "dv_in": "max(de - a/2, 0.9*de, 0.72*h)",
         },
+        # NIVEL DECLARADO Y NO MEDIDO, y conviene decir por que: NINGUNA de
+        # las dos corridas de `tests/test_nivel_medido.py` llega a invocarlo
+        # --- la cadena de la Fase 9 se detiene antes, en un criterio
+        # pendiente ---, de modo que no hay medicion que citar. Lo sostiene el
+        # censo: `variables_entrada` no le encuentra mas consumidor que
+        # `M9_cabezal`, y `--alcance perfil` no ejecuta ese modulo. El test lo
+        # comprueba por esa via, que es la unica que queda.
+        nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
         concepto="Procedimiento de diseno por flexion y corte de AASHTO LRFD "
                  "Seccion 5: factores de resistencia phi, limites de refuerzo "

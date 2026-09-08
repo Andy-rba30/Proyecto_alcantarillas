@@ -218,6 +218,108 @@ from modulos.MD import disenar_punto                                # noqa: E402
 ALCANCE_PERFIL = _ALCANCE_PERFIL
 ALCANCE_EXPEDIENTE = _ALCANCE_EXPEDIENTE
 
+# LOS MODULOS QUE CADA ALCANCE NO EJECUTA, como dato y no como prosa.
+#
+# Existe porque hay tres sitios que necesitan la MISMA respuesta y la
+# necesitan por separado: `correr_punto` (que salta la Fase 8), `correr` (que
+# salta la Fase 9) y `tests/test_nivel_medido.py`, que clasifica por esta via
+# lo unico que ninguna corrida puede medir --- un criterio que ninguna de las
+# dos llega a invocar porque su cadena se detiene antes en un pendiente ---.
+# Tres `if` escritos aparte son tres sitios donde la respuesta puede divergir;
+# este diccionario es uno solo, y es el que los dos `if` consultan, de modo
+# que no puede quedarse describiendo un salto que el codigo ya no hace.
+#
+# LO QUE DIFIERE ES EL MODULO ENTERO, y por eso la clave es el nombre del
+# modulo y no el de la fase: `variables_entrada` responde en modulos --- su
+# `consumido_por` --- y traducir de fase a modulo en el punto de uso seria una
+# segunda tabla. V5 y V8 NO estan aqui: no son modulos que se salten, son dos
+# verificaciones que se INTENTAN igual y cuyo fallo se difiere
+# (`_verificador_perfil`), de modo que sus criterios siguen siendo alcanzables
+# a perfil.
+MODULOS_DIFERIDOS_POR_ALCANCE: Dict[str, Tuple[str, ...]] = {
+    ALCANCE_EXPEDIENTE: (),
+    ALCANCE_PERFIL: ("M8_estructural", "M9_cabezal"),
+}
+
+
+def _difiere(alcance: str, modulo: str) -> bool:
+    """Si esta corrida NO ejecuta ese modulo de calculo."""
+    return modulo in MODULOS_DIFERIDOS_POR_ALCANCE[alcance]
+
+
+# LAS FAMILIAS PARA LAS QUE CADA DATO DECLARADO CAMBIA ALGO.
+#
+# Los datos de `CLAVES_EXTERNAS` no son columna del CSV y la ventana los pide
+# todos a la vez, sin decir que dos de ellos solo sirven para una familia. Esa
+# distincion EXISTIA y estaba escrita como PROSA en el tooltip de la GUI
+# ("Solo aplica a Familia B (Fase 10)"), que es la peor forma de tenerla: el
+# programa no la puede leer, de modo que quien llena un expediente sin puntos
+# de Familia B ve un campo que no le va a servir para nada y no tiene como
+# saberlo. Aqui es dato, y con eso la pestana 1 lo puede ANOTAR.
+#
+# LO QUE NO ESTA AQUI SE USA EN LAS TRES. Solo se declara la excepcion, no la
+# regla: `luz_m`, `TW_m` y `longitud_m` gobiernan el dimensionamiento de
+# cualquier cruce.
+#
+# Y NO ES UNA TABLA PARALELA, que es lo que la haria inaceptable: la fila de
+# `L_hidraulico_m` es la que `_fase_10` CONSULTA para decidir si esa fase
+# corre, de modo que no puede quedarse describiendo una condicion que el
+# codigo ya no aplica. La de `categoria_tr` no tiene esa suerte --- vive en
+# `M1.periodo_retorno_de`, que esta CLI no gobierna ---, y por eso su unica
+# defensa es la medida: `tests/test_familias_del_csv.py` corre el pipeline
+# familia por familia y comprueba que declarar el dato no mueve nada en las
+# que aqui no figuran.
+#
+# ANOTAR NO ES DESHABILITAR, y es deliberado: el proyectista puede estar
+# preparando el dato de un punto que todavia no ha metido en el CSV.
+FAMILIAS_QUE_USAN: Dict[str, Tuple[Familia, ...]] = {
+    # La Fase 10 (espaciamiento de alivio, Sec. 10) es de la Familia B y de
+    # ninguna otra: `_fase_10` lee esta fila.
+    "L_hidraulico_m": (Familia.B,),
+    # La fila de la Tabla N 02. AQUI HABIA UNA `(Familia.A,)` Y LA MEDIDA LA
+    # CORRIGIO, que es justamente para lo que esta la medida:
+    #
+    #   Familia A   la elige, y sin declaracion cae en el criterio
+    #               'umbral_area_quebrada_importante_ha'.
+    #   Familia B   la tiene FIJA por Sec. 2.3 (descarga de cunetas ->
+    #               quebrada menor), y aun asi NO es inerte: declararla
+    #               cambia el FUNDAMENTO que la memoria imprime --- pasa de
+    #               atribuir la fila a la Sec. 2.3 a atribuirsela al
+    #               proyectista --- y declarar una fila distinta de la fija es
+    #               `DatoInvalidoError`. El TR no se mueve; lo que la memoria
+    #               dice, si. Eso es aplicar.
+    #   Familia C   no tiene TR --- su caudal es el de diseño del canal ---, y
+    #               la declaracion no se llega a mirar. Es la unica en la que
+    #               este campo no aplica.
+    #
+    # La diferencia de la B no se dedujo leyendo M1: la encontro
+    # `tests/test_familias_del_csv.py` comparando los dos volcados.
+    "categoria_tr": (Familia.A, Familia.B),
+}
+
+
+def familias_que_usan(clave: str) -> Tuple[Familia, ...]:
+    """
+    Las familias para las que declarar ese dato cambia algo. Sin fila
+    declarada, las tres: la excepcion se declara, la regla no.
+    """
+    return FAMILIAS_QUE_USAN.get(clave, tuple(Familia))
+
+
+def familias_del_csv(ruta_csv: Path) -> Tuple[Familia, ...]:
+    """
+    Las familias que el CSV trae, en el orden de Sec. 2.3.
+
+    Es lo que la pestana 1 necesita para anotar los campos que no aplican y lo
+    que la pestana 2 necesitaria para un filtro por familia. Sale de
+    `cargar_puntos` --- la MISMA carga que corre el pipeline --- y no de una
+    lectura propia del archivo: dos lectores del mismo CSV son dos
+    validaciones que pueden discrepar, y la ventana acabaria anotando sobre
+    una familia que M0 rechaza.
+    """
+    familias = {punto.familia for punto in cargar_puntos(ruta_csv)}
+    return tuple(f for f in Familia if f in familias)
+
 # Etiquetas de fase. Son rotulos del informe, no valores de proyecto: cada uno
 # nombra el modulo y la seccion de la hoja de ruta que ejecuta esa etapa.
 FASE_CARGA = "Fase 1 - Carga y validacion (M0)"
@@ -1087,8 +1189,14 @@ def _fase_8(informe: InformePunto) -> None:
 
 
 def _fase_10(informe: InformePunto, externos: DatosExternos) -> None:
-    """Espaciamiento de alivio: solo Familia B (Sec. 10)."""
-    if informe.punto.familia is not Familia.B:
+    """
+    Espaciamiento de alivio: solo Familia B (Sec. 10).
+
+    La condicion se lee de `FAMILIAS_QUE_USAN`, que es lo que hace de esa
+    declaracion un dato del programa y no un comentario: la pestana 1 anota
+    con la MISMA fila que decide aqui si la fase corre.
+    """
+    if informe.punto.familia not in familias_que_usan("L_hidraulico_m"):
         return
     L_hidraulico = externos.valor(informe.punto.id, "L_hidraulico_m")
     if L_hidraulico is None:
@@ -1377,7 +1485,7 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
         if informe.dimensionado:
             _fase_6(informe)
             _fase_7(informe)
-            if alcance == ALCANCE_PERFIL:
+            if _difiere(alcance, "M8_estructural"):
                 _diferir_fase_8(informe)
             else:
                 _fase_8(informe)
@@ -1473,7 +1581,7 @@ def correr(ruta_csv: Path, externos: DatosExternos,
                       alcance=alcance)
     informe.puntos = [correr_punto(punto, externos, alcance)
                       for punto in puntos]
-    informe.cabezal = (_cabezal_diferido() if alcance == ALCANCE_PERFIL
+    informe.cabezal = (_cabezal_diferido() if _difiere(alcance, "M9_cabezal")
                        else correr_cabezal())
 
     _avisar_ids_desconocidos(informe, externos)

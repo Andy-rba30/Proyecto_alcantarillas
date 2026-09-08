@@ -1339,3 +1339,173 @@ def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
     informe = json.loads((tmp_path / "informe.json").read_text(
         encoding="utf-8"))
     assert informe["alcance"]["nivel"] == cli.ALCANCE_PERFIL
+
+
+# ===========================================================================
+# Los dos filtros derivados de la pestana 2, y la anotacion de la pestana 1
+# ===========================================================================
+# Se comprueban sobre el ARBOL y no sobre una ventana viva por la misma razon
+# que el resto de este archivo: no hay `tkinter` garantizado en el entorno de
+# la suite. Lo que se persigue aqui no es que los widgets se pinten --- eso lo
+# mira el test de ventana real, que se salta cuando no hay Tk --- sino que
+# NINGUNO DE LOS DOS FILTROS CALCULE SU PROPIA RESPUESTA: si la pestana 2
+# decidiera por su cuenta que criterios puede invocar un alcance, seria una
+# segunda clasificacion capaz de contradecir a la del informe.
+
+
+def _llamadas_de(funcion):
+    """Los nombres llamados dentro de una funcion, como 'ca.criterios_usados'."""
+    nombres = set()
+    for nodo in ast.walk(funcion):
+        if not isinstance(nodo, ast.Call):
+            continue
+        f = nodo.func
+        if isinstance(f, ast.Name):
+            nombres.add(f.id)
+        elif isinstance(f, ast.Attribute):
+            base = f.value
+            if isinstance(base, ast.Name):
+                nombres.add(f"{base.id}.{f.attr}")
+            elif isinstance(base, ast.Attribute):
+                nombres.add(f"{base.attr}.{f.attr}")
+            else:
+                nombres.add(f.attr)
+    return nombres
+
+
+def test_el_filtro_de_ambito_no_calcula_ninguna_de_sus_dos_respuestas():
+    """
+    `_claves_del_ambito` tiene que PREGUNTAR, no deducir.
+
+    La respuesta de alcance la da `criterios_adoptados.criterios_del_alcance`,
+    que lee `Criterio.nivel` --- el campo que `tests/test_nivel_medido.py`
+    contrasta contra corridas reales en las dos direcciones ---. La de la
+    corrida la da `M11.criterios_bloqueantes`, que es el MISMO bloque que la
+    memoria imprime bajo «Criterios pendientes que bloquearon una etapa». Una
+    tercera regla escrita en la ventana seria una tercera respuesta a la misma
+    pregunta.
+    """
+    llamadas = _llamadas_de(_funcion(ARBOL_GUI, "_claves_del_ambito"))
+    assert "ca.criterios_del_alcance" in llamadas, (
+        "el filtro de alcance dejo de leer `criterios_adoptados`: si lo "
+        "deduce de los consumidores, es una segunda clasificacion")
+    assert "M11.criterios_bloqueantes" in llamadas, (
+        "el filtro de bloqueantes dejo de leer el bloque del informe")
+
+
+def test_el_filtro_de_alcance_lee_el_alcance_que_declara_la_pestana_1():
+    """
+    El eje no se elige dos veces. Si la pestana 2 tuviera su propio selector
+    de alcance, el proyectista podria estar mirando el filtro de «perfil»
+    mientras la corrida que va a lanzar es de «expediente», y las dos
+    pantallas describirian corridas distintas.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_claves_del_ambito"))
+    assert "self.alcance_var.get()" in fuente, (
+        "el filtro de alcance tiene que leer `alcance_var`, que es el mismo "
+        "dato que usa EJECUTAR")
+    for literal in ("'perfil'", '"perfil"', "'expediente'", '"expediente"'):
+        assert literal not in fuente, (
+            f"el filtro de ambito nombra el alcance {literal} a mano: "
+            "es una segunda declaracion de alcance")
+
+
+def test_el_alcance_de_la_pestana_1_repinta_la_tabla_de_criterios():
+    """
+    Sin la traza, la tabla se queda filtrando por el alcance anterior hasta el
+    proximo repintado --- y un filtro que muestra el resultado de otra
+    pregunta es peor que no tener filtro.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "__init__"))
+    assert "self.alcance_var.trace_add" in fuente
+    assert "_refiltrar" in fuente
+
+
+def test_el_filtro_de_bloqueantes_sin_corrida_no_deja_la_tabla_a_cero():
+    """
+    Sin informe no hay conjunto medido. Devolver el vacio dejaria la tabla sin
+    filas, y una tabla de criterios vacia se lee como «no queda nada por
+    declarar», que es la lectura mas peligrosa que esta pestana puede dar.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_claves_del_ambito"))
+    assert "if self.informe is None:\n        return None" in fuente or \
+           "self.informe is None" in fuente, (
+        "el filtro de bloqueantes no comprueba que haya corrida")
+    aviso = ast.unparse(_funcion(ARBOL_GUI, "_pintar_aviso_de_ambito"))
+    assert "MOTIVO_SIN_CORRIDA_FILTRO" in aviso, (
+        "sin corrida, el filtro tiene que decir por que no filtra")
+
+
+def test_el_recuento_dice_el_total_y_lo_que_el_filtro_esconde():
+    """
+    Las dos mitades del contrato que el proyectista pidio: el total no se
+    mueve con el filtro, y lo escondido se dice tan alto como lo mostrado.
+
+    El recuento de PENDIENTES se cuenta antes de filtrar --- se comprueba
+    sobre el orden de las sentencias, no sobre el texto --- porque un filtro
+    que ademas moviera ese numero contestaria «te quedan 11» cuando lo cierto
+    es «te quedan 33, de los que 11 los puede invocar esta corrida».
+    """
+    pintar = ast.unparse(_funcion(ARBOL_GUI, "_pintar_recuento"))
+    assert "len(ca.CRITERIOS)" in pintar, (
+        "el total tiene que ser el del archivo, no el de las filas visibles")
+    assert "esconde" in pintar, (
+        "el recuento dejo de decir cuantas filas esconde el filtro")
+
+    llenar = _funcion(ARBOL_GUI, "_llenar_tabla_criterios")
+    cuerpo = ast.unparse(llenar)
+    orden_conteo = cuerpo.index("pendientes += 1")
+    orden_filtro = cuerpo.index("_pasa_el_filtro")
+    assert orden_conteo < orden_filtro, (
+        "los pendientes se estan contando DESPUES de filtrar: el recuento "
+        "dejaria de ser el del expediente y pasaria a ser el de la vista")
+
+
+def test_la_anotacion_de_familias_no_deshabilita_ningun_campo():
+    """
+    Anotar, no bloquear. El proyectista puede estar preparando el dato de un
+    punto que todavia no metio en el CSV, y un campo apagado se lo impide
+    mientras le dice que se equivoco.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_pintar_no_aplica"))
+    for prohibido in ("disabled", "state="):
+        assert prohibido not in fuente, (
+            f"la anotacion de familias usa `{prohibido}`: deshabilitar decide "
+            "por el proyectista en vez de informarle")
+    assert "cli.familias_que_usan" in fuente, (
+        "la ventana tiene que preguntarle a `cli` que familias usan cada dato, "
+        "no llevar su propia regla")
+
+
+def test_la_anotacion_distingue_no_se_sabe_de_no_hay_ninguna():
+    """
+    `familias_csv = None` es «no se pudo leer el CSV» y una tupla vacia seria
+    «no trae familias». Anotar «no aplica» sobre la primera seria decirle al
+    proyectista que un campo le sobra sin haber leido su archivo.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_pintar_no_aplica"))
+    assert "self.familias_csv is None" in fuente
+    releer = ast.unparse(_funcion(ARBOL_GUI, "_releer_familias"))
+    assert "self.familias_csv = None" in releer, (
+        "si el CSV no se puede leer, la anotacion tiene que callarse")
+
+
+def test_la_traduccion_de_campo_a_clave_externa_es_una_sola():
+    """
+    `_leer_banderas` y la anotacion necesitan la MISMA correspondencia entre
+    el rotulo de la ventana (`l_hidraulico`) y la clave del expediente
+    (`L_hidraulico_m`). Dos copias se separan el dia que aparezca un sexto
+    campo, y entonces la ventana anota sobre un campo y declara sobre otro.
+    """
+    banderas = ast.unparse(_funcion(ARBOL_GUI, "_leer_banderas"))
+    assert "CLAVE_EXTERNA_DE_CAMPO" in banderas, (
+        "`_leer_banderas` volvio a traducir por su cuenta")
+    assert "L_hidraulico_m" not in banderas, (
+        "la clave del expediente esta escrita a mano dentro de `_leer_banderas`")
+
+    import gui.app as app
+    assert set(app.ExpedienteApp.CLAVE_EXTERNA_DE_CAMPO) == {
+        clave for clave, *_r in app.CAMPOS_EXTERNOS}, (
+        "la traduccion no cubre exactamente los campos de la ventana")
+    for clave in app.ExpedienteApp.CLAVE_EXTERNA_DE_CAMPO.values():
+        assert clave in cli.CLAVES_EXTERNAS, clave
