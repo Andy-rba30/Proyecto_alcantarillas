@@ -352,6 +352,71 @@ def _marco():
                     forma=FormaSeccion.RECTANGULAR)
 
 
+def test_un_espesor_de_pared_de_cajon_nulo_o_negativo_se_detiene():
+    """
+    LA GUARDIA QUE NADIE MEDIA: cambiar `not t > 0` por `not t >= 0` en la
+    rama del cajon de `M2.espesor_pared` sobrevivia a la suite entera, y lo
+    midio la auditoria adversarial de C7. El umbral es MEDIDO y no generico
+    -- forma MAT-D13 --: un espesor de cero no es «un dato raro», es una pared
+    que no existe, y con el la subpresion se evaluaria sobre la seccion
+    INTERIOR, que es la direccion insegura de MAT-D3.
+
+    LA MITAD DEL NaN NO SE MIDE AQUI, Y SE DICE POR QUE: la capa de
+    declaracion lo rechaza ANTES -- `criterios_adoptados` no admite declarar
+    un criterio con NaN ni con infinito --, de modo que por la via del
+    expediente ese valor no llega nunca a `espesor_pared`. La forma `not t > 0`
+    se conserva igual, como guarda defensiva y por coherencia con MAT-D13; lo
+    que este test mide son los dos casos ALCANZABLES.
+    """
+    for valor in (0.0, -0.05):
+        declaraciones = dict(DECLARACIONES_CAJON,
+                             **{"espesor_pared_cajon": valor})
+        with declarados(declaraciones):
+            with pytest.raises(DatoInvalidoError) as exc:
+                espesor_pared(_marco(), 1.50)
+        assert exc.value.campo == "espesor_pared_cajon", valor
+
+
+def test_el_marco_no_hereda_la_seccion_de_tuberia_del_eg2013():
+    """
+    PUNTO 6 DEL BRIEF DE C7, y es la forma exacta de NOR-PUE-01: numeral que
+    existe, titulo que suena a lo buscado, contenido que es otro.
+
+    `SECCION_EG2013` indexa por MATERIAL y sus cuatro entradas son de TUBERIA
+    -- los cuatro titulos impresos empiezan por esa palabra --, de modo que un
+    marco de concreto reforzado heredaba la 506. La 506 se titula «Tuberia de
+    concreto reforzado», su num. 506.01 alcanza «la instalacion de tubos», su
+    506.02 pide el «diametro interno» y su partida 506.A se mide en METRO
+    LINEAL: ninguna de las tres cosas le corresponde a un marco vaciado in
+    situ.
+
+    Donde SI cae es en la Seccion 503, y es hallazgo positivo y no un vacio:
+    el num. 503.10 h) (impresa 926) le fija plazo de desencofrado a la «Placa
+    superior en alcantarillas de cajon», o sea que el EG-2013 regula el
+    vaciado in situ del cajon bajo la Seccion de concreto estructural. El
+    «+ 504» del acero es ensamblaje del proyecto, autorizado por la ausencia
+    verificada de partida propia (`SIN_PARTIDA_DE_CAJON_EG2013`), y esta dicho
+    como tal en `NUMERAL_SECCION_CAJON_EG2013`.
+
+    EL TUBO NO SE MUEVE, que es la otra mitad: la 506 sigue siendo suya.
+    """
+    from constantes_normativas import (SECCION_ACERO_REFUERZO,
+                                       SECCION_CONCRETO_ESTRUCTURAL,
+                                       SECCION_EG2013_CAJON)
+
+    with declarados(DECLARACIONES_CAJON):
+        marco = _marco()
+    tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+
+    assert marco.seccion_eg2013 == SECCION_EG2013_CAJON
+    assert marco.seccion_eg2013 != tubo.seccion_eg2013
+    assert tubo.seccion_eg2013 == "506"
+    # Y las dos Secciones que la componen, nombradas: la del concreto y la del
+    # acero, no una tercera inventada.
+    assert SECCION_CONCRETO_ESTRUCTURAL in marco.seccion_eg2013
+    assert SECCION_ACERO_REFUERZO in marco.seccion_eg2013
+
+
 def test_los_cinco_pasos_de_fase_3_del_marco_salen_con_su_fundamento():
     """
     Los cinco pasos que `M2._pasos_del_marco` emite, con su fundamento.
@@ -516,21 +581,29 @@ def test_el_marco_no_toma_prestada_la_pared_del_tubo_de_su_misma_altura():
     alrededor de un 27 % (la subpresion real de un prisma es un 63 % mayor y
     el peso de relleno solo un 28 %).
 
-    Es `DatoFaltanteError` y no `DatoInvalidoError` porque el revisor tiene
-    que AÑADIR algo -- el espesor de pared de un marco sale de su calculo
-    estructural, no de una tabla de producto --, que es la regla de CLAUDE.md.
-    Levantarla es de C7.
+    LA EXCEPCION CAMBIO EN C7 Y EL COMPORTAMIENTO NO. C5 la detuvo con
+    `DatoFaltanteError` -- el revisor tenia que AÑADIR el dato, porque el
+    proyecto no tenia donde ponerlo --. C7 abre `espesor_pared_cajon`, [A] de
+    nivel perfil, y entonces el revisor ya no tiene que conseguir nada: tiene
+    que DECIDIR. Esa es la frontera exacta que CLAUDE.md fija entre las dos
+    excepciones, y por eso ahora es `CriterioPendienteError` -- la que la GUI
+    muestra como pendiente declarable, con su ventana y su procedencia --.
+
+    LO QUE NO CAMBIA es que se detiene, ni por que se detiene.
     """
     with declarados(DECLARACIONES_CAJON):
         marco = _marco()
-        with pytest.raises(DatoFaltanteError) as exc:
+        with pytest.raises(CriterioPendienteError) as exc:
             espesor_pared(marco, 1.50)
-    assert exc.value.campo == "espesor_pared_conducto[marco]"
-    assert "CILINDRO" in exc.value.detalle
-    # Y el tubo de la misma altura SI tiene fila: es lo que hace peligrosa la
-    # coincidencia, y por eso se fija aqui al lado.
-    assert espesor_pared(catalogo(TipoMaterial.CONCRETO_REFORZADO),
-                         1.50) == pytest.approx(0.150, rel=REL_TRANSPORTE)
+        assert exc.value.clave == "espesor_pared_cajon"
+        # Y el tubo de la misma altura SI tiene fila: es lo que hace peligrosa
+        # la coincidencia de series, y por eso se fija aqui al lado.
+        assert espesor_pared(catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                             1.50) == pytest.approx(0.150, rel=REL_TRANSPORTE)
+        # Y declarado, el marco NO lo lee de esa serie: lee lo adoptado.
+        with declarados({"espesor_pared_cajon": 0.22}):
+            assert espesor_pared(marco, 1.50) == pytest.approx(
+                0.22, rel=REL_TRANSPORTE)
 
 
 def test_la_progresion_del_marco_se_reconoce_con_tolerancia_y_no_con_igualdad():

@@ -41,7 +41,7 @@ from dominios import CBR_MAX_FISICO
 from modelos import (ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
                      Familia, FormaSeccion, PuntoCritico, ResultadoHidraulico,
-                     TipoMaterial)
+                     SeccionCircular, SeccionRectangular, TipoMaterial)
 from modulos.M2_material import catalogo
 from modulos.M8_estructural import factores_carga_flotacion
 from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
@@ -671,7 +671,8 @@ def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
     punto = _punto()
     with sin_valor("peso_especifico_relleno_kn_m3"):
         with pytest.raises(CriterioPendienteError) as excinfo:
-            v7_flotacion(punto=punto, material=concreto, D=0.90,
+            v7_flotacion(punto=punto, material=concreto,
+                         seccion=SeccionCircular(D=0.90),
                          resultado=_resultado())
         assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
@@ -699,7 +700,8 @@ def test_v7_calcula_completo_en_cuanto_declara_el_peso_del_relleno(
         original.__class__(**{**original.__dict__, "valor": 18.0}),
     )
     punto = _punto()
-    v = v7_flotacion(punto=punto, material=concreto, D=0.90,
+    v = v7_flotacion(punto=punto, material=concreto,
+                         seccion=SeccionCircular(D=0.90),
                      resultado=_resultado())
     assert v.codigo == "V7"
     assert v.criterio_aplicado == "factores_carga_aashto"
@@ -736,7 +738,8 @@ def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
             original.__class__(**{**original.__dict__, "valor": val}),
         )
     punto = _punto()
-    v = v7_flotacion(punto=punto, material=concreto, D=0.90,
+    v = v7_flotacion(punto=punto, material=concreto,
+                         seccion=SeccionCircular(D=0.90),
                      resultado=_resultado())
     assert v.codigo == "V7"
     assert v.criterio_aplicado == "factores_carga_aashto"
@@ -768,7 +771,8 @@ def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
     # anclados, no derivados
     assert (g.gamma_EV, g.gamma_WA) == pytest.approx((0.90, 1.00),
                                                      rel=REL_TRANSPORTE)
-    v = v7_flotacion(punto=_punto(), material=concreto, D=0.90,
+    v = v7_flotacion(punto=_punto(), material=concreto,
+                     seccion=SeccionCircular(D=0.90),
                      resultado=_resultado())
     assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
     assert v.valor_admisible == pytest.approx(
@@ -776,6 +780,99 @@ def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
     # Y el punto del test: los dos lados llevan gamma DISTINTOS, de modo que
     # ningun factor de seguridad global reproduce el resultado.
     assert g.gamma_EV != g.gamma_WA
+
+
+def test_la_eleccion_de_fila_de_V7_sale_de_su_fundamento_y_lista_las_siete(
+        concreto, monkeypatch):
+    """
+    D-8, y las dos mitades de su arreglo.
+
+    LA PRIMERA: la `EleccionDeProyecto` de V7 enumeraba CUATRO filas escritas
+    a mano y la Tabla 2.4.5.3.1-2 tiene SIETE de EV. La que faltaba era
+    «Porticos rigidos», que es justo la del marco: la memoria publicaba una
+    eleccion sin listar la opcion que se estaba eligiendo. Ahora `entre` se
+    DERIVA de la transcripcion (`M8.filas_ev_de_la_tabla`), de modo que no
+    puede volver a divergir de ella.
+
+    LA SEGUNDA: la eleccion no decia QUE fila salio elegida --- su `valor` era
+    "gamma_EV min = 0.9", un numero que las tres filas candidatas comparten
+    --- de modo que el dato que hacia falta para discutirla no estaba. Ahora
+    el `valor` nombra la fila.
+
+    Y EL `por_que` YA NO SE ESCRIBE EN M5: sale de `F5.V7_FILA`, que es lo
+    que ata su verbo al `caracter` de sus citas por T11. Se comprueba por
+    identidad con el registro, no por parecido de texto.
+    """
+    from normativa.registro import construir
+
+    original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
+    monkeypatch.setitem(
+        ca.CRITERIOS, "peso_especifico_relleno_kn_m3",
+        original.__class__(**{**original.__dict__, "valor": 18.0}),
+    )
+    v = v7_flotacion(punto=_punto(), material=concreto,
+                     seccion=SeccionCircular(D=0.90), resultado=_resultado())
+    (e,) = v.paso.elecciones
+
+    assert e.fundamento_id == "F5.V7_FILA"
+    assert e.por_que == construir().fundamento("F5.V7_FILA").por_que
+
+    assert len(e.entre) == 7, e.entre
+    assert all(fila.startswith("EV:") for fila in e.entre)
+    # LA QUE FALTABA, nombrada: sin ella no hay rama de marco que publicar.
+    assert any("Pórticos rígidos" in fila for fila in e.entre)
+    # Y la fila elegida esta ENTRE las alternativas, que es lo que una
+    # eleccion publicada significa y lo que D-8 rompia.
+    assert any(fila in str(e.valor) for fila in e.entre)
+    assert "Estructura rígida enterrada" in str(e.valor)
+
+
+def test_la_fila_de_gamma_p_de_un_marco_es_la_de_porticos_rigidos(monkeypatch):
+    """
+    La rama que abre el punto 3 de C7, y la trampa que la hacia invisible.
+
+    Un marco de concreto y un tubo de concreto son el MISMO `TipoMaterial`,
+    de modo que `factores_carga_aashto` indexado por material no podia
+    distinguirlos: el marco heredaba la fila del tubo. Quien los separa es la
+    FORMA, porque la Tabla 2.4.5.3.1-2 desglosa por tipo de ESTRUCTURA.
+
+    EL NUMERO NO CAMBIA Y LA CITA SI, y ese es el punto del test: el MINIMO
+    de las dos filas vale 0.90 y V7 lee el minimo. Nada fallaba de forma
+    ruidosa mientras la fila impresa era la equivocada --- es el precedente
+    NOR-HID-01, un valor que acierta por casualidad con una cita que no lo
+    sostiene ---, y por eso lo que se asserta es el NOMBRE de la fila y no
+    solo el gamma. Lo que si cambia es el maximo (1.35 frente a 1.30), y ese
+    gobierna la Fase 8, que `--alcance perfil` difiere.
+    """
+    declaraciones = dict(DECLARACIONES_CAJON)
+    declaraciones["espesor_pared_cajon"] = 0.15
+    declaraciones["peso_especifico_relleno_kn_m3"] = 18.0
+    with declarados(declaraciones):
+        marco = _marco()
+        g_marco = factores_carga_flotacion(material=marco)
+        v = v7_flotacion(punto=_punto(), material=marco,
+                         seccion=SeccionRectangular(B=2.00, H=1.50),
+                         resultado=_resultado())
+        g_tubo = factores_carga_flotacion(material=catalogo(
+            TipoMaterial.CONCRETO_REFORZADO))
+
+    assert "Pórticos rígidos" in g_marco.fila_gamma_EV
+    assert "Estructura rígida enterrada" in g_tubo.fila_gamma_EV
+    # BC Y B'c NO SON INTERCAMBIABLES, y hasta que la auditoria adversarial de
+    # C7 lo midio nada lo comprobaba: las dos `Magnitud` que C7e anadio se
+    # justificaban con «en un marco NO coinciden, y esa coincidencia es la que
+    # oculto el defecto hasta C7» -- y la unica ejecucion de V7 en la suite y
+    # en la linea base era CIRCULAR, donde coinciden. Intercambiarlas
+    # sobrevivia a la suite entera. Sobre 2.00 x 1.50 con t = 0.15:
+    # Bc = 2.30 (HORIZONTAL, el del prisma de relleno) y B'c = 1.80.
+    por_simbolo = {m.simbolo: m.valor for m in v.paso.sustitucion}
+    assert por_simbolo["Bc"] == pytest.approx(2.30, rel=REL_TRANSPORTE)
+    assert por_simbolo["B'c"] == pytest.approx(1.80, rel=REL_TRANSPORTE)
+    # El numero coincide -- por eso hacia falta mirar la fila.
+    assert g_marco.gamma_EV == pytest.approx(g_tubo.gamma_EV, rel=REL_TRANSPORTE)
+    # Y la memoria del marco imprime SU fila, no la del tubo.
+    (e,) = v.paso.elecciones
+    assert "Pórticos rígidos" in str(e.valor)
 
 
 def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
@@ -873,7 +970,8 @@ def test_verificar_se_detiene_en_V5_la_primera_pendiente_en_orden(concreto):
     """
     punto = _punto()
     with pytest.raises(CriterioPendienteError) as excinfo:
-        verificar(punto=punto, material=concreto, D=0.90,
+        verificar(punto=punto, material=concreto,
+                  seccion=SeccionCircular(D=0.90),
                  resultado=_resultado(y_normal=0.60, V=1.5))
     assert excinfo.value.clave == "remanso_derecho_via"
 
@@ -886,15 +984,24 @@ def test_verificar_con_tmc_ya_pasa_v3_y_se_detiene_en_v5(tmc):
     """
     punto = _punto()
     with pytest.raises(CriterioPendienteError) as excinfo:
-        verificar(punto=punto, material=tmc, D=0.90,
+        verificar(punto=punto, material=tmc,
+                  seccion=SeccionCircular(D=0.90),
                  resultado=_resultado(y_normal=0.60, V=1.5))
     assert excinfo.value.clave == "remanso_derecho_via"
 
 
 def test_verificar_tiene_la_firma_del_protocol_de_MD(concreto):
-    """MD.Verificador exige (punto=, material=, D=, resultado=), por keyword."""
+    """
+    MD.Verificador exige (punto=, material=, seccion=, resultado=), por
+    keyword. Decia `D=` -- la firma anterior a C7i -- mientras el cuerpo ya
+    llamaba con `seccion=`: el test pasaba porque un `Protocol` no se
+    comprueba en runtime, de modo que su docstring era lo unico que afirmaba
+    la firma y afirmaba la equivocada. Lo encontro la auditoria adversarial
+    de C7.
+    """
     with pytest.raises(CriterioPendienteError):
-        verificar(punto=_punto(), material=concreto, D=0.90,
+        verificar(punto=_punto(), material=concreto,
+                  seccion=SeccionCircular(D=0.90),
                  resultado=_resultado())
 
 

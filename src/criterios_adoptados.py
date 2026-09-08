@@ -3253,6 +3253,98 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # EL SEXTO DEL CAJON, y el que abre C7. Los cinco de C5 gobiernan la
+    # HIDRAULICA del marco; este gobierna su GEOMETRIA EXTERIOR, que es lo que
+    # V7 y la cota de clave necesitan y no tenian por donde entrar.
+    "espesor_pared_cajon": Criterio(
+        valor=None,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        concepto="Espesor de pared del marco de concreto vaciado in situ, m",
+        justificacion="EL VACIO ES DEL CATALOGO DE PRODUCTOS, NO DEL MANUAL, "
+                      "y la diferencia decide la etiqueta. El Manual de "
+                      "Hidrologia no tabula espesores de pared de nada: no "
+                      "hay numeral que callar. Quien los tabula son las "
+                      "normas de PRODUCTO, y la que este proyecto usa -- "
+                      "AASHTO M 170M-04, columna 'Wall Thickness' -- es de "
+                      "TUBERIA: sus filas se enumeran por diametro designado "
+                      "y un marco no es una de ellas. Es el cuarto caso de la "
+                      "regla 3 de §15.1 de docs/ruta_familia_c.md, ya "
+                      "clasificado ahi: las normas de producto quedan FUERA "
+                      "DE SU ALCANCE declarado para el marco, no en analogia. "
+                      "Y NO ES UN VACIO QUE ALGUIEN VAYA A LLENAR CON UNA "
+                      "TABLA: la §14.1 decidio VACIADO IN SITU precisamente "
+                      "porque en normas/ no hay ninguna norma de producto de "
+                      "cajon prefabricado. El espesor de un marco vaciado in "
+                      "situ sale de su propio calculo estructural -- AASHTO "
+                      "LRFD Sec. 5 y 12.11, que `--alcance perfil` difiere "
+                      "entero --, de modo que a nivel de perfil es una "
+                      "ADOPCION del proyectista y por eso [A]. "
+                      "POR QUE BLOQUEA EN VEZ DE TOMAR UN VALOR PLAUSIBLE: la "
+                      "auditoria adversarial de C5 midio lo que pasaba sin "
+                      "esta deteccion. Las alturas de marco plausibles caen "
+                      "sobre la misma serie de 900 + 150k mm que los "
+                      "diametros de tubo, de modo que un marco de 2.00 x 1.50 "
+                      "m NO se detenia: recibia la pared del tubo de 1500 mm "
+                      "y V7 lo evaluaba como un CILINDRO, sobreestimando la "
+                      "seguridad alrededor de un 27 %. Un valor que acierta "
+                      "de forma silenciosa es peor que un bloqueo, porque el "
+                      "bloqueo se ve.",
+        fuente="NINGUNA, y esa es la afirmacion. Barrido declarado: el num. "
+               "4.1.1.3.4 a) del Manual de Hidrologia nombra el marco y "
+               "remite su seccion a «cada diseno particular» sin dar "
+               "espesores; AASHTO M 170M-04 tabula 'Wall Thickness' por "
+               "diametro designado de TUBERIA (Tablas 1 a 5) y su Nota 1 la "
+               "declara especificacion de fabricacion y compra; y en normas/ "
+               "no hay norma de producto de cajon prefabricado -- que es la "
+               "razon por la que §14.1 adopto el vaciado in situ --. Lo que "
+               "SI existe y este alcance difiere es el procedimiento de "
+               "calculo: AASHTO LRFD Sec. 5 y Art. 12.11 «Reinforced Concrete "
+               "Cast-in-Place and Precast Box Culverts», pag. impresa 12-68",
+        reemplazado_por="El calculo estructural del portico (AASHTO LRFD "
+                        "Sec. 5 y 12.11), que es lo que fija el espesor de un "
+                        "marco vaciado in situ. A nivel de EXPEDIENTE deja de "
+                        "ser una adopcion y pasa a ser un resultado; a nivel "
+                        "de perfil se adopta y se declara",
+        sensibilidad=(
+            "EL SIGNO ES CONTRAINTUITIVO Y VA PRIMERO, porque quien declare "
+            "este criterio va a suponer lo contrario: ENGROSAR LA PARED "
+            "EMPEORA LA FLOTACION. Una pared mas gruesa parece mas estructura "
+            "y por tanto mas seguridad, y con `DC = 0` -- V7 omite el peso "
+            "propio a proposito, del lado conservador -- ese peso que "
+            "justificaria la intuicion NO ENTRA EN EL CALCULO. Lo que si "
+            "entra es la geometria exterior, por los DOS lados de la "
+            "desigualdad: la subpresion crece con (B+2t)(H+2t), en dos "
+            "dimensiones, y la columna de suelo que estabiliza solo con "
+            "(B+2t), en una. Medido sobre un marco de 2.00 x 1.50 m con 0.95 "
+            "m de relleno y gamma_r = 18 kN/m3: t = 0.15 da margen -5.21 "
+            "kN/m, t = 0.20 da -7.79 y t = 0.25 da -10.58. La derivada del "
+            "empuje es 2*gamma_w*(Bc + B'c) ~ 80 kN/m por metro de t, contra "
+            "~31 del termino estabilizante",
+            "HACIA ABAJO el limite no es la flotacion sino el propio calculo "
+            "estructural, que este alcance difiere: una pared que flota mejor "
+            "puede no resistir el empuje de tierras ni la carga viva. Por eso "
+            "la ventana no se puede cerrar a nivel de perfil y el criterio "
+            "se ADOPTA en vez de optimizarse: el optimo de V7 y el minimo "
+            "estructural empujan en sentidos opuestos y solo la Fase 8 tiene "
+            "los dos numeros",
+        ),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por predimensionamiento, hasta que "
+                        "el calculo estructural del portico lo determine "
+                        "(AASHTO LRFD Sec. 5 y 12.11, diferidos por "
+                        "`--alcance perfil`)",
+            dominio="metros, > 0",
+            tabla_pendiente="ninguna, y es deliberado: no hay norma de "
+                            "producto de cajon prefabricado en normas/, y "
+                            "§14.1 adopto el vaciado in situ por esa razon. "
+                            "La tabla que existe -- AASHTO M 170M-04 -- es de "
+                            "tuberia y NO se le puede leer la fila de la "
+                            "misma altura, aunque exista: es la coincidencia "
+                            "de series que midio la auditoria de C5",
+        ),
+    ),
+
     "D_max_catalogo": Criterio(
         valor={"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50},
         nivel=NIVEL_PERFIL,
@@ -3403,28 +3495,34 @@ CRITERIOS: Dict[str, Criterio] = {
                 # exterior, de modo que B'c = Bc por geometria y el maximo de
                 # los dos terminos se reduce a Bc/8.
                 #
-                # ESA PREMISA DEJO DE SER CIERTA EN C5 Y HAY QUE DECIRLO AQUI,
-                # porque es la que sostiene una OMISION DE CALCULO. Este
-                # comentario decia que «el catalogo de Sec. 3.2 es
-                # exclusivamente circular (...; la Familia C, de marco o
-                # multicelda, sale sin candidatos), asi que la reduccion vale
-                # para todo lo que este proyecto calcula». C5 abrio el marco:
-                # `materiales_candidatos` devuelve hoy un candidato de cajon.
-                # En un marco B'c (canto exterior) y Bc (ancho exterior) son
-                # DISTINTOS, de modo que el maximo de los dos terminos ya no
-                # se reduce a uno y esta reduccion pide DE MENOS. Medido sobre
-                # un marco de 3.00 x 1.50 m con t = 0.150: el codigo exigiria
-                # 0.3048 m y la tabla exige max(3.30/8, 1.80/8, 12 in) =
-                # 0.4125 m, un 26 % mas de recubrimiento minimo.
+                # ESTA REDUCCION ES CORRECTA PARA EL CIRCULAR Y LA PREGUNTA
+                # DEL CAJON NO SE CONTESTA AQUI. Dos versiones anteriores de
+                # este comentario se equivocaron, cada una por su lado, y
+                # conviene separar que parte de cada una se sostiene.
                 #
-                # HOY NO SE ALCANZA, y por eso la reduccion no publica ningun
-                # numero equivocado: la Fase 5 de un marco se detiene en V7 --
-                # `M2.espesor_pared` no tiene fila para un marco -- y sin
-                # dimensionado no hay Fase 7. Lo que queda es la deuda: traer
-                # el segundo termino, y llevarle a `M7.cobertura_minima_aashto`
-                # el ANCHO, que hoy no recibe. Es el punto 3 del brief de C7 y
-                # la regla vinculante #9; queda anotado tambien en
-                # `verificacion_pendiente`.
+                # LO QUE SE SOSTIENE, y es de C5: la lectura de B'c como
+                # «out-to-out vertical rise», verificada contra la pag.
+                # impresa 12-21. Es ademas la que corrigio el «sqrt(Bc)/8» que
+                # la ficha NOR-VAC-01 habia inventado leyendo la prima como un
+                # radical.
+                #
+                # LO QUE NO SE SOSTIENE, tambien de C5: que «en un marco B'c y
+                # Bc son DISTINTOS, de modo que esta reduccion pide DE MENOS»,
+                # con la medicion «un marco de 3.00 x 1.50 m: el codigo
+                # exigiria 0.3048 m y la tabla exige 0.4125 m, un 26 % mas».
+                # Esa medicion APLICA AL CAJON UNA FILA ROTULADA «Reinforced
+                # Concrete PIPE», y la tabla no le exige nada a un marco:
+                # verificado en C7 contra AASHTO LRFD 9a ed., leida
+                # renderizada. No hay fila de cajon de concreto; `B'c` se
+                # define «of pipe» y no esta definido para seccion rectangular
+                # en las 110 paginas de la Sec. 12; y el «whichever is
+                # greater» aparece UNA vez en toda la seccion, dentro de esa
+                # celda, sin articulado que lo extienda.
+                #
+                # DONDE VA EL CAJON: a `cobertura_minima_cajon`, vacio
+                # declarado [A], con su AfirmacionNegativa. La regla
+                # vinculante #9 pedia lo contrario y SE RETIRO en C7 -- no
+                # estaba pendiente, estaba mal enunciada --. Ver §6 y §16.12.
                 "no_pavimentado": {"divisor": 8.0, "sobre": "exterior",
                                    "piso_m": 0.3048},
                 "flexible": {"divisor": 8.0, "sobre": "exterior",
@@ -3620,11 +3718,31 @@ CRITERIOS: Dict[str, Criterio] = {
                         "trae como columna",
         vacio_verificado="manifiesto_citas.md Sec. 14.a",
         verificacion_pendiente="EL SEGUNDO TERMINO DE LA FILA DEL CONCRETO "
-                               "(B'c/8) no esta en el dato: se reduce a Bc/8 "
-                               "porque el catalogo es circular y ahi B'c = Bc. "
-                               "Si algun dia entra un tubo-arco o una seccion "
-                               "no circular, la reduccion deja de valer y hay "
-                               "que traer el termino. "
+                               "(B'c/8) no esta en el dato, y se reduce a "
+                               "Bc/8 porque en un CIRCULO B'c = Bc. "
+                               "ESTE CAMPO SE CONTRADECIA CON EL COMENTARIO "
+                               "DE ARRIBA Y HAY QUE DECIR EN QUE, porque es "
+                               "un dato sobre como se escribio el criterio y "
+                               "no solo un error a pisar: decia que la "
+                               "reduccion vale «porque el catalogo es "
+                               "circular» y que el termino haria falta «si "
+                               "algun dia entra una seccion no circular», "
+                               "mientras el comentario del `valor`, reescrito "
+                               "en C5, ya afirmaba que ese dia habia llegado. "
+                               "C5 reescribio el comentario que leyo y no el "
+                               "campo que no leyo, de modo que el criterio "
+                               "afirmaba a la vez que el caso ya llego y que "
+                               "todavia no. Las DOS versiones eran "
+                               "incorrectas, por motivos distintos: la vieja "
+                               "por obsoleta, la nueva por extender una fila "
+                               "fuera de su rotulo. "
+                               "LO QUE QUEDA PENDIENTE DE VERDAD es otra "
+                               "cosa: si algun dia entra un TUBO-ARCO -- que "
+                               "sigue siendo `pipe` y por tanto sigue dentro "
+                               "de esta fila --, ahi B'c y Bc si difieren y "
+                               "el termino hace falta. Un CAJON no es ese "
+                               "caso: no tiene fila aqui (C7, regla #9 "
+                               "retirada). "
                                "Las filas que el catalogo de este proyecto NO "
                                "usa quedaron fuera de la transcripcion "
                                "(Spiral Rib, Structural Plate, Fiberglass, "
@@ -3642,6 +3760,140 @@ CRITERIOS: Dict[str, Criterio] = {
                       "La fila la elige `condicion_pavimento`",
             elegido_por="condicion_pavimento",
         ),
+    ),
+
+    # -----------------------------------------------------------------------
+    # LA COBERTURA DEL MARCO, que no sale de la tabla de al lado
+    # -----------------------------------------------------------------------
+    # LA REGLA VINCULANTE #9 PEDIA LO CONTRARIO Y ERA FALSA, no pendiente.
+    # Decia que «para un cajon vuelve el segundo termino B'c/8», y la
+    # verificacion contra la fuente primaria (AASHTO LRFD 9a ed., Sec. 12
+    # leida RENDERIZADA, folio 12-N = PDF - 1638 medido) refuta su premisa: la
+    # Tabla 12.6.6.3-1 no tiene fila de cajon de concreto, de modo que no hay
+    # segundo termino que devolver porque no hay fila de la que devolverlo.
+    # Traerlo seria aplicar una fila rotulada «Reinforced Concrete PIPE» a algo
+    # que no lo es, que es el defecto que este proyecto declara no cometer.
+    # Se retiro en C7 -- §6 y §16 de docs/ruta_familia_c.md --.
+    #
+    # Y HAY UN TERCER ERROR EN AQUELLA MEDICION, medido aqui, que no es el de
+    # la regla ni el de C5 y que conviene dejar escrito porque cambia cual es
+    # el arreglo. La medicion de C5 -- «un marco de 3.00 x 1.50 m: el codigo
+    # exigiria 0.3048 m y la tabla exige 0.4125 m» -- llama a su 0.4125 «el
+    # segundo termino B'c/8», y no lo es: con t = 0.15 ese marco tiene
+    # Bc = 3.30 y B'c = 1.80, de modo que 3.30/8 = 0.4125 es el PRIMER termino,
+    # Bc/8, mientras B'c/8 = 0.225 es el MENOR de los tres numeros en juego.
+    # Lo que le falta al codigo no es el termino que se dejo fuera: es que al
+    # UNICO termino que conserva le entra la dimension equivocada. `M7` recibe
+    # un escalar `D` que en un marco vale la ALTURA, y `diametro_exterior` lo
+    # convierte en H + 2t = B'c, que se mete en la ranura de Bc. Medido: para
+    # ese marco la cobertura de hoy sale 0.3048 m Y NO DEPENDE DE B EN
+    # ABSOLUTO -- el ancho no es argumento de la funcion --. Por eso el arreglo
+    # es de DOS piezas y no de una: este vacio declarado, y M7 llevando la
+    # `Seccion` en vez del escalar (punto 5 de C7).
+    "cobertura_minima_cajon": Criterio(
+        valor=None,                 # VACIO: bloquea 7.A para todo marco
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        concepto="Cobertura minima de SUELO sobre la clave de un marco de "
+                 "concreto vaciado in situ, m (Sec. 7.A). No es el "
+                 "recubrimiento de concreto sobre la armadura",
+        justificacion="NINGUNA DE LAS CUATRO FUENTES DEL PROYECTO LA FIJA "
+                      "PARA UN CAJON, y la cuarta -- AASHTO LRFD Sec. 12 -- "
+                      "es la que hace falta decir con cuidado, porque SI "
+                      "gobierna al cajon para otras cosas. La misma Seccion "
+                      "12 OBLIGA a verificar la flotacion de un cajon de "
+                      "concreto (Art. 12.6.1 con el 12.1 SCOPE, que nombra "
+                      "«reinforced concrete cast-in-place and precast arch, "
+                      "BOX and elliptical structures») y NO TABULA su "
+                      "cobertura minima: las dos filas de concreto de la "
+                      "Tabla 12.6.6.3-1 dicen «Reinforced Concrete PIPE», la "
+                      "unica fila con la palabra «box» es «Structural Plate "
+                      "Box Structures» -- METALICA, y cuya celda de cobertura "
+                      "dice «1.4 ft. as specified in Article 12.9.1», o sea "
+                      "que SI da cobertura y ademas remite; esta frase decia "
+                      "«ni siquiera da cobertura» y era falsa sobre la propia "
+                      "pagina (auditoria adversarial de C7) --, y `B'c` se "
+                      "define "
+                      "«out-to-out vertical rise of PIPE». Las dos cosas se "
+                      "sostienen a la vez y no se anulan: que una seccion "
+                      "obligue en un punto no la vuelve aplicable en otro. "
+                      "LO UNICO QUE AASHTO SI FIJA para un cajon es la "
+                      "conducta cuando NO hay cobertura: «If soil cover is "
+                      "not provided, the top of precast or cast-in-place "
+                      "reinforced concrete box structures shall be designed "
+                      "for direct application of vehicular loads» (pag. "
+                      "impresa 12-22). Es una salida real y no un rodeo, y "
+                      "por eso figura en la sensibilidad: saca el problema de "
+                      "la cobertura y lo mete en el diseno estructural de la "
+                      "losa superior, que es Fase 8 y nivel de expediente. "
+                      "EL CORPUS PERUANO TAMPOCO: el EG-2013 fija altura "
+                      "minima de relleno SOLO para HDPE (Subseccion 508.07) y "
+                      "el Manual de Puentes no incorporo un capitulo "
+                      "equivalente a la Sec. 12 -- las dos busquedas estan "
+                      "agotadas y registradas en la justificacion de "
+                      "'cobertura_minima_aashto', y ninguna de las dos cambia "
+                      "por que la seccion sea rectangular. "
+                      "POR QUE NO SE CUBRE CON UNA ANALOGIA CALLADA: porque "
+                      "la analogia disponible es la fila del tubo, y el "
+                      "numero que da -- 0.3048 m, el piso de 12.0 in -- es "
+                      "exactamente el que el codigo venia entregando sin "
+                      "declararlo. Adoptarlo esta permitido; adoptarlo SIN "
+                      "DECIRLO es la §15.1 regla 3 del plan de la Familia C, "
+                      "y es lo que este criterio convierte en una decision "
+                      "visible. "
+                      "QUE MUEVE ESTE NUMERO, para que la ventana se lea con "
+                      "su consecuencia delante: h_rec entra en el tamizado de "
+                      "Sec. 7.A como «cota rasante >= cota clave + h_rec + "
+                      "e_paquete», de modo que se traslada METRO A METRO a la "
+                      "rasante minima que el punto admite. En un cruce de "
+                      "canal, donde la rasante viene dada, es lo que decide "
+                      "si el marco cabe: cada centimetro de cobertura es un "
+                      "centimetro menos de canto disponible",
+        fuente="NINGUNA. Es un vacio verificado, no una omision: ver la "
+               "`AfirmacionNegativa` SIN_CAJON_DE_CONCRETO_T12663 en el "
+               "registro, que fija el ambito barrido de la Sec. 12 completa. "
+               "Las fuentes que SI dicen algo se citan arriba por lo que "
+               "dicen, no por lo que se les quiera hacer decir",
+        reemplazado_por="Una fila de cajon de concreto en la Tabla 12.6.6.3-1 "
+                        "de una edicion futura de AASHTO LRFD, o una "
+                        "disposicion peruana -- EG-2013 o Manual de Puentes -- "
+                        "que fije altura minima de relleno para marco. "
+                        "Tambien lo cerraria, por otra via, declarar el "
+                        "diseno de la losa superior para carga vehicular "
+                        "directa: entonces el numero deja de hacer falta "
+                        "porque la fuente cubre ese caso expresamente",
+        sensibilidad=(
+            "0.3048 m (12.0 in): el PISO que la Tabla 12.6.6.3-1 pone a la "
+            "fila del TUBO de concreto, adoptado por analogia. Es el valor "
+            "que el codigo entregaba de hecho antes de C7, de modo que "
+            "declararlo no mueve ninguna rasante: lo que cambia es que pasa a "
+            "estar dicho. Quien lo adopte tiene que declarar la analogia -- "
+            "la fila es de `pipe` -- y no presentarla como exigencia",
+            "max(Bc/8, 0.3048): la misma fila del tubo aplicada ENTERA, con "
+            "el ancho exterior del marco en la ranura de Bc. Solo se despega "
+            "del piso cuando Bc > 2.4384 m: para el marco de 2.00 x 1.50 con "
+            "t = 0.15 da Bc/8 = 0.2875 m y gobierna el piso; para uno de "
+            "3.00 x 1.50 da 0.4125 m, un 35 % sobre el piso. Es la lectura "
+            "mas exigente de las tres y sigue siendo analogia",
+            "0 (sin cobertura): la unica rama que la fuente cubre "
+            "EXPRESAMENTE para un cajon, y a cambio obliga a disenar la losa "
+            "superior para carga vehicular directa (pag. impresa 12-22). No "
+            "es la opcion barata: traslada la exigencia de la rasante al "
+            "refuerzo, y esa parte es de expediente",
+        ),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando de cual de las tres "
+                        "lecturas parte y por que. Las dos primeras son "
+                        "ANALOGIA con la fila del tubo y hay que rotularlas "
+                        "asi; la tercera es la unica que la fuente cubre para "
+                        "un cajon, y arrastra una exigencia estructural",
+            dominio="real >= 0, en metros",
+        ),
+        # `vacio_verificado` NO SE DECLARA AQUI, y no es un olvido: ese campo
+        # es para el VALOR que cubre un vacio registrado, y este criterio
+        # todavia no tiene valor -- lo dice `_verificar_criterio`, que lo
+        # rechaza --. El ancla al vacio vive en `fuente`, que es donde
+        # corresponde mientras no haya nada que cubra nada.
     ),
 
     # -----------------------------------------------------------------------

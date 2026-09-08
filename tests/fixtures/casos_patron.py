@@ -1280,3 +1280,59 @@ if __name__ == "__main__":
           f"E_w={_esperados['E_hidrostatico_esperado']:.6f} "
           f"U={_esperados['U_subpresion_esperado']:.6f}")
 
+
+
+# ===========================================================================
+# CP10 - Flotacion de un MARCO frente a un cilindro (V7, C7)
+# ===========================================================================
+#
+# EL CASO QUE MATA LA REGRESION QUE C5 DEJO ABIERTA. Hasta C7,
+# `M8.empuje_flotacion_kn_m` recibia un `D_exterior` escalar y calculaba
+# `pi/4 * D^2`: un CILINDRO cableado. Un marco al que se le pasara su altura
+# exterior se evaluaba como el cilindro circunscrito a esa altura, y la
+# subpresion salia MUY por debajo de la real -- que es la direccion insegura,
+# porque U es la carga DESestabilizante de V7 --.
+#
+# Los dos numeros los midio la auditoria adversarial de C5 y este caso los
+# fija: prisma 40.6 kN/m contra cilindro 25.0 kN/m sobre la misma altura.
+#
+# COMO SE LEE LA DIFERENCIA, que se puede enunciar de dos formas y conviene
+# no confundirlas: el prisma es un 63 % MAYOR que el cilindro (40.61/24.96 =
+# 1.627), o el cilindro un 39 % MENOR que el prisma (1 - 24.96/40.61). Las
+# dos son la misma medicion sobre bases distintas; el docstring de
+# `M2.espesor_pared` usa la primera.
+#
+# Y EL PESO DE RELLENO NO CAE IGUAL, que es lo que hace que el error no se
+# cancele: EV usa el ANCHO exterior, que en el marco es 2.30 m y en el
+# cilindro 1.80 m -- un 28 % menos, no un 39 % --. La subpresion cae mas que
+# lo que la sujeta, y por eso V7 SOBREESTIMA la seguridad del marco alrededor
+# de un 27 % cuando se lo evalua como cilindro.
+_CP10_B = 2.00          # m - ancho interior de la celda
+_CP10_H = 1.50          # m - altura interior
+_CP10_T = 0.15          # m - espesor de pared adoptado
+_CP10_H_RELLENO = 0.95  # m - relleno sobre la clave
+_CP10_GAMMA_R = 18.0    # kN/m3 - peso especifico del relleno
+
+CP10_FLOTACION_MARCO = {
+    "descripcion": ("V7 sobre un marco de 2.00 x 1.50 m con t = 0.15 m: la "
+                    "subpresion es la de un PRISMA, no la del cilindro "
+                    "circunscrito a su altura"),
+    "B": _CP10_B,
+    "H": _CP10_H,
+    "espesor": _CP10_T,
+    "altura_relleno": _CP10_H_RELLENO,
+    "gamma_relleno": _CP10_GAMMA_R,
+    # Geometria exterior, con la nomenclatura del Art. 12.6.6.3 de AASHTO.
+    "Bc_esperado": _CP10_B + 2 * _CP10_T,           # 2.30 m - ancho exterior
+    "Bc_prima_esperado": _CP10_H + 2 * _CP10_T,     # 1.80 m - canto exterior
+    "area_exterior_esperada": (_CP10_B + 2 * _CP10_T) * (_CP10_H + 2 * _CP10_T),
+    # U = gamma_agua * area_exterior, con gamma_agua = 9.81 kN/m3.
+    "U_prisma_esperado": 9.81 * (_CP10_B + 2 * _CP10_T) * (_CP10_H + 2 * _CP10_T),
+    # Y el que saldria si se lo evaluara como cilindro de su misma altura
+    # exterior: es el numero EQUIVOCADO, y esta aqui para que el test pueda
+    # comprobar que NO es el que sale.
+    "U_cilindro_equivocado": 9.81 * 3.141592653589793
+    * (_CP10_H + 2 * _CP10_T) ** 2 / 4,
+    # EV = gamma_relleno * ancho_exterior * altura_relleno.
+    "EV_esperado": _CP10_GAMMA_R * (_CP10_B + 2 * _CP10_T) * _CP10_H_RELLENO,
+}

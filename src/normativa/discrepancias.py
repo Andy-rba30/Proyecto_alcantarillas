@@ -793,4 +793,63 @@ DIS_VIA_DE_LA_LICUEFACCION = _d(
 )
 
 
+# ---------------------------------------------------------------------------
+# El extremo de gamma_EV en una estructura enterrada: dos `shall` opuestos
+# ---------------------------------------------------------------------------
+# LA ABRIO LA AUDITORIA ADVERSARIAL DE C7, y su hallazgo no fue el conflicto
+# sino la ELISION: C7 cito el num. 12.6.1 por su frase de flotacion y no
+# registro la que esta dos frases mas abajo EN EL MISMO PARRAFO, que discute
+# el extremo del gamma que V7 usa. Recortar un parrafo justo antes de la
+# frase que discute la propia lectura es la forma NOR-HID-01 aplicada a un
+# recorte, y este objeto existe para que eso no se pueda repetir en silencio.
+DIS_GAMMA_EV_ENTERRADA = _d(
+    id="DIS-AASHTO-GAMMA-EV-12.6.1",
+    objeto=("que extremo del factor de carga de EV -- empuje vertical de "
+            "tierra -- aplica a una ESTRUCTURA ENTERRADA"),
+    partes=(
+        Parte(quien="AASHTO_LRFD_9 (Art. 3.4.1, = Manual de Puentes "
+                    "2.4.5.3.1)",
+              que_dice=("manda investigar el MINIMO cuando la carga "
+                        "permanente aumenta la estabilidad: «Si la carga "
+                        "permanente aumenta la estabilidad ... tambien se "
+                        "debera investigar el valor minimo del factor de "
+                        "carga para dicha carga permanente»"),
+              cita_id="MP.2.4.5.3.1#MINIMO"),
+        Parte(quien="AASHTO_LRFD_9 (Art. 12.6.1, estructuras enterradas)",
+              que_dice=("manda aplicar el MAXIMO, sin salvedad: «For vertical "
+                        "earth pressure, the maximum load factor from Table "
+                        "3.4.1-2 shall apply»"),
+              cita_id="AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX"),
+    ),
+    gana="AASHTO_LRFD_9 (Art. 3.4.1, = Manual de Puentes 2.4.5.3.1)",
+    por_que=("PARA LA VERIFICACION DE FLOTACION, y solo para ella. El "
+             "argumento no es de jerarquia -- las dos son `shall` y la 12.6.1 "
+             "es ademas la especial para estructuras enterradas -- sino de "
+             "QUE MAGNITUD SE ESTA VERIFICANDO. La 12.6.1 fija el extremo con "
+             "que se diseña la estructura POR el empuje de tierra, donde EV "
+             "es la SOLICITACION y el maximo es el extremo desfavorable. En "
+             "V7, EV es lo que SUJETA al conducto contra la subpresion: es "
+             "resistencia, no solicitacion, y ahi el extremo desfavorable es "
+             "el minimo. Aplicar el maximo haria la comprobacion MAS FACIL, "
+             "que es la direccion insegura, y por eso leerla literalmente "
+             "aqui contradice el proposito del propio Art. 3.4.1. "
+             "Y ES UNA LECTURA, no una cita: el texto de 12.6.1 NO trae esa "
+             "salvedad. Se declara asi, en vez de resolverse en silencio, "
+             "porque el proyecto no tiene numeral que la sostenga."),
+    efecto_si_se_sigue_la_otra=("V7 pasaria a mayorar el lado estabilizante. "
+                                "Medido sobre la corrida del entregable de C7 "
+                                "-- C-01, marco 1.20 x 0.90 --: el "
+                                "estabilizante pasaria de 23.256 a 34.884 "
+                                "kN/m contra los mismos 20.405 kN/m de "
+                                "subpresion, y el margen se multiplicaria por "
+                                "cinco. O sea que seguir la otra parte NO "
+                                "endurece la verificacion: la ablanda, y un "
+                                "conducto que hoy no pasa pasaria. Es la "
+                                "direccion insegura, y es la razon de que "
+                                "esta discrepancia importe aunque su efecto "
+                                "hoy sea que ningun punto cambie de veredicto."),
+    estado=EstadoDiscrepancia.ABIERTA,
+)
+
+
 DISCREPANCIAS: Dict[str, Discrepancia] = {d.id: d for d in _TODAS}

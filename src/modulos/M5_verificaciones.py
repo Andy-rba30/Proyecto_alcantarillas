@@ -194,8 +194,14 @@ Uso
 ---
     from modulos.M5_verificaciones import verificar
 
-    verificaciones = verificar(punto=punto, material=material, D=D,
+    verificaciones = verificar(punto=punto, material=material,
+                               seccion=seccion,
                                resultado=resultado_hidraulico)
+
+LA SECCION ENTERA Y NO UN `D`, desde C7: V7 pesa el volumen desplazado, y ahi
+un prisma y un cilindro dejan de parecerse. Este bloque seguia escribiendo
+`D=D` -- la firma anterior -- despues de que C7i la cambiara, y lo encontro la
+auditoria adversarial de esa sesion.
 """
 
 from __future__ import annotations
@@ -212,8 +218,10 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      ErrorProyecto, Familia, FormaSeccion,
                      Magnitud, Material,
                      PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
+                     Seccion,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
-                     Verificacion, paso)
+                     Verificacion, eleccion,
+                     exigir_seccion_coherente, paso)
 from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
@@ -222,6 +230,7 @@ from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
 from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
+                                    filas_ev_de_la_tabla,
                                     peso_relleno_kn_m)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
@@ -1432,7 +1441,8 @@ def v6_material_solido_arrastre(*, material: Material) -> Verificacion:
 # V7 - Flotacion del conducto (Manual de Puentes num. 2.4.3.8.2 + Fase 8.3)
 # ---------------------------------------------------------------------------
 
-def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
+def v7_flotacion(*, punto: PuntoCritico, material: Material,
+                 seccion: Seccion,
                  resultado: ResultadoHidraulico) -> Verificacion:
     """
     Flotacion del conducto por EQUILIBRIO DE FACTORES DE CARGA LRFD, tuberia
@@ -1446,27 +1456,42 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     2.4.5.3.1-1). Para un conducto enterrado es la forma
     0.90*(DC + EV) >= 1.00*U.
 
-    CON UN MARCO ESTA VERIFICACION CORRE Y NO ES CORRECTA TODAVIA. Se declara
-    aqui, en su consumidor, porque desde C5 la Familia C llega hasta este
-    punto y antes no llegaba, de modo que el defecto lo ABRE esta sesion
-    aunque su arreglo sea de la siguiente. Son tres cosas y las tres son de
-    C7 (puntos 1, 2 y 6 de su brief):
+    CON UN MARCO ESTA VERIFICACION YA CORRE SIN SUPONER LA FORMA, y hasta C7
+    no. Este parrafo declaraba TRES defectos abiertos --C5 los abrio al hacer
+    que la Familia C llegase hasta aqui-- y los tres se cerraron en C7. Se
+    deja el censo, con lo que cerro cada uno, porque un defecto declarado que
+    desaparece del docstring sin decir como se cerro es indistinguible de uno
+    que se borro:
 
-      1. `M8.empuje_flotacion_kn_m` y `M8.peso_relleno_kn_m` suponen un
-         CILINDRO: reciben `D_exterior` y calculan sobre pi*D^2/4. Con un
-         marco el volumen desplazado y el peso de relleno salen de un prisma,
-         y los numeros de U y de EV son otros.
-      2. `M2.diametro_exterior` = D + 2t y `M2.espesor_pared` indexan por
-         DIAMETRO DESIGNADO en milimetros, que es la columna «Wall Thickness»
-         de una norma de TUBERIA. Un marco vaciado in situ no tiene fila ahi.
-      3. `M8.factores_carga_flotacion` indexa `factores_carga_aashto` por
-         `material.tipo.value`, de modo que un marco recibe hoy la fila del
-         TUBO -- «Estructura rigida enterrada» -- y no la suya, «Porticos
-         rigidos», que la regla vinculante #8 le asigna y que C5 ya dejo
-         declarada bajo la clave 'cajon'. El minimo de las dos filas es 0.90
-         y por eso el NUMERO no cambia: lo que sale mal es la FILA que la
-         memoria imprime, o sea una cita falsa sobre un valor correcto
-         (precedente NOR-HID-01).
+      1. CERRADO (C7, punto 2). `M8.empuje_flotacion_kn_m` y
+         `M8.peso_relleno_kn_m` recibian `D_exterior` y calculaban sobre
+         pi*D^2/4, o sea un CILINDRO. Hoy reciben la `Seccion` y piden
+         `area_exterior` y `ancho_exterior`, que el protocolo implementa en
+         las dos formas. Medido en el caso patron CP10: sobre un marco de
+         2.00 x 1.50 con t = 0.15 la U del prisma es 40.61 kN/m y la del
+         cilindro circunscrito 24.96, o sea que V7 sobreestimaba la seguridad
+         un 27 %, en la direccion insegura.
+      2. CERRADO (C7, punto 1). `M2.espesor_pared` indexaba por DIAMETRO
+         DESIGNADO en milimetros, que es la columna «Wall Thickness» de una
+         norma de TUBERIA donde un marco vaciado in situ no tiene fila. Hoy
+         el marco lee 'espesor_pared_cajon', criterio [A] de perfil sin valor,
+         y se detiene con `CriterioPendienteError` hasta que se declare.
+      3. CERRADO (C7, punto 3). `M8.factores_carga_flotacion` indexaba
+         `factores_carga_aashto` por `material.tipo.value`, de modo que un
+         marco recibia la fila del TUBO -- «Estructura rigida enterrada» -- y
+         no la suya, «Porticos rigidos». Hoy discrimina por FORMA
+         (`M8._elemento_de`). El minimo de las dos filas es 0.90 y por eso el
+         NUMERO no cambiaba: lo que salia mal era la FILA que la memoria
+         imprime, o sea una cita falsa sobre un valor correcto (precedente
+         NOR-HID-01).
+
+    LO QUE SIGUE SIN CERRARSE, para que no se lea como que todo lo del marco
+    esta hecho: `cota_clave` y `altura_relleno_sobre_clave` siguen recibiendo
+    un escalar `D`, y esta funcion se lo da como `seccion.altura`. Es correcto
+    -- la clave es la generatriz superior y se apila sobre la altura INTERIOR,
+    que en un marco es H -- y aun asi es el ultimo sitio de la cadena de V7
+    donde viaja un numero en vez de una seccion. Va con `ResultadoPunto.D`,
+    que el brief de C7 reserva a C8.
 
     EL gamma DE EV DEPENDE DEL MATERIAL, y por eso esta funcion le pasa el
     suyo a `factores_carga_flotacion`. La Tabla 2.4.5.3.1-2 desglosa el
@@ -1518,12 +1543,15 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
     que le faltan al procedimiento -- no en un vacio de METODO: ver el
     docstring del modulo.
     """
+    exigir_seccion_coherente(material, seccion)
+    D = seccion.altura
     altura_relleno = altura_relleno_sobre_clave(punto=punto, material=material,
                                                 D=D)
 
-    D_ext = diametro_exterior(material=material, D=D)
-    U = empuje_flotacion_kn_m(D_exterior=D_ext)
-    EV = peso_relleno_kn_m(D_exterior=D_ext, altura_relleno=altura_relleno)
+    t = espesor_pared(material, D)
+    U = empuje_flotacion_kn_m(seccion=seccion, espesor=t)
+    EV = peso_relleno_kn_m(seccion=seccion, espesor=t,
+                           altura_relleno=altura_relleno)
     DC = 0.0                 # peso propio omitido, del lado conservador
     g = factores_carga_flotacion(material=material)   # CriterioPendienteError si EV no se detuvo antes
 
@@ -1545,10 +1573,15 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
             formula="gamma_DC_min*DC + gamma_EV_min*EV >= gamma_WA*U",
             formula_cita_id="MP.T2.4.5.3.1-2",
             sustitucion=(
-                Magnitud("D_ext", D_ext, "m",
-                         "M2, diametro EXTERIOR = D + 2*espesor de pared. La "
-                         "subpresion actua sobre el volumen desplazado, que "
-                         "es el exterior, no el interior (MAT-D3)", cifras=CIFRAS_MAGNITUD),
+                Magnitud("Bc", seccion.ancho_exterior(t), "m",
+                         "ancho EXTERIOR en planta (Art. 12.6.6.3 de AASHTO: "
+                         "«outside diameter or width of the structure»). Es "
+                         "el ancho del prisma de relleno", cifras=CIFRAS_MAGNITUD),
+                Magnitud("B'c", seccion.canto_exterior(t), "m",
+                         "canto EXTERIOR («out-to-out vertical rise»). En un "
+                         "marco NO coincide con Bc; en una circular si, y esa "
+                         "coincidencia es la que oculto el defecto hasta C7",
+                         cifras=CIFRAS_MAGNITUD),
                 Magnitud("altura_relleno", altura_relleno, "m",
                          "cota de subrasante menos cota de clave FISICA del "
                          "punto: el relleno que de verdad hay encima, no el "
@@ -1578,21 +1611,13 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material, D: float,
                 cumple, estabilizante - desestabilizante, "kN/m",
                 "el conducto vacio no flota" if cumple else
                 "la subpresion supera lo que lo sujeta: el conducto flota"),
-            elecciones=(EleccionDeProyecto(
+            elecciones=(eleccion(
+                "F5.V7_FILA",
                 que_se_adopto="fila de gamma_p que describe a esta estructura",
-                valor=f"gamma_EV min = {g.gamma_EV}",
-                entre=("Estructura rigida enterrada",
-                       "Alcantarillas termoplasticas",
-                       "Estructuras flexibles, entre otros",
-                       "Muros y estribos de retencion"),
+                valor=f"«{g.fila_gamma_EV}» -> gamma_EV min = {g.gamma_EV}",
+                entre=filas_ev_de_la_tabla(),
                 de_donde="la Tabla 2.4.5.3.1-2 del Manual de Puentes "
                          "(= 3.4.1-2 de AASHTO LRFD), pag. impresa 143",
-                por_que=f"el conducto es de «{material.nombre}». LA TABLA ES "
-                        "NORMATIVA; QUE FILA DESCRIBE A ESTA OBRA NO LO ES: "
-                        "es la eleccion que el criterio "
-                        "'factores_carga_aashto' declara. La fila de muros y "
-                        "estribos -- que es la del cabezal de la Fase 9 -- "
-                        "tiene otro minimo y no vale aqui",
                 cita_id="MP.T2.4.5.3.1-2",
                 clave_criterio=CRITERIO_FACTORES_CARGA),),
         ),
@@ -1701,7 +1726,8 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 # Agregado: la firma que llama MD.py
 # ---------------------------------------------------------------------------
 
-def verificar(*, punto: PuntoCritico, material: Material, D: float,
+def verificar(*, punto: PuntoCritico, material: Material,
+             seccion: Seccion,
              resultado: ResultadoHidraulico) -> Tuple[Verificacion, ...]:
     """
     Las diez verificaciones de la Fase 5, en el orden de la tabla. Coincide
@@ -1723,6 +1749,12 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
     codigo y falso sobre el producto. Escribirlo como una lista y no como una
     tupla literal es lo que permite conservarlas.
     """
+    # LAS OTRAS TRES SIGUEN PIDIENDO LA ALTURA, y eso no es suponer una
+    # forma: `Seccion.altura` es la altura interior de cualquiera de ellas --
+    # el "D" de HDS-5, regla vinculante #4 --. Quien necesita mas que la
+    # altura es V7, porque la subpresion actua sobre la superficie EXTERIOR y
+    # ahi un prisma y un cilindro dejan de parecerse.
+    D = seccion.altura
     hechas: list = []
     piezas = (
         lambda: v1_borde_libre(D=D, material=material, punto=punto,
@@ -1734,8 +1766,8 @@ def verificar(*, punto: PuntoCritico, material: Material, D: float,
         lambda: v4b_relacion_hw_d(D=D, resultado=resultado),
         lambda: v5_remanso(punto=punto, resultado=resultado),
         lambda: v6_material_solido_arrastre(material=material),
-        lambda: v7_flotacion(punto=punto, material=material, D=D,
-                             resultado=resultado),
+        lambda: v7_flotacion(punto=punto, material=material,
+                             seccion=seccion, resultado=resultado),
         lambda: v8_evento_extremo(punto=punto, resultado=resultado),
         lambda: v9_disponibilidad_diametro(D=D, material=material),
     )

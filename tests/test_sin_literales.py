@@ -869,7 +869,13 @@ CENSO_DE_MARCAS = {
     # es el de la formula -- pero no cuenta aqui, porque la regla ya exime el
     # 0, el 1 y el 2. Los otros dos numeros de la clase --- el 2 de
     # P = B + 2y y el 2 de R = B*H/(2(B+H)) --- son el mismo caso.
-    "src/modelos.py": 6,
+    # 6 -> 7 en C7: el `pi/4` de `SeccionCircular.area_exterior`, que NO es
+    # un literal nuevo -- es el MISMO que estaba en
+    # `M8.empuje_flotacion_kn_m`, y viajo aqui con la geometria --. El
+    # censo lo demuestra sumando igual: M8 baja de 1 a 0 en el mismo
+    # commit. Es el patron que las cuatro marcas de `gui/componentes.py`
+    # ya dejaron escrito mas arriba.
+    "src/modelos.py": 7,
     # 3 -> 5 en S20, con la Sec. 1.3 ("TW se calcula, no se mide"): el 2 de
     # `perimetro_trapecial` (los DOS taludes de un trapecio), la semilla y la
     # duplicacion del corchete de Brent sobre el tirante del receptor, y el
@@ -888,7 +894,9 @@ CENSO_DE_MARCAS = {
     # Los tres que quedan son los exponentes de A^3/T (dos) y el 4/3 de la
     # friccion de Sec. 4.3.
     "src/modulos/M4_control.py": 3,
-    "src/modulos/M8_estructural.py": 1,
+    # 1 -> 0 en C7, y por eso desaparece del censo: el `pi/4` de la
+    # subpresion se fue a `SeccionCircular.area_exterior`. M8 dejo de
+    # saber que forma tiene el conducto, que es justo lo que se buscaba.
     "src/modulos/M9_cabezal.py": 6,
     "src/normativa/extraccion/__main__.py": 5,
     "src/normativa/extraccion/pdf.py": 6,

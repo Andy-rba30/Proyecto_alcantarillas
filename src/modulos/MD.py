@@ -88,7 +88,7 @@ necesitar M5 (`NUMERAL_BUCLE`, `MENSAJE_DIAMETRO_SUPERADO` y el Protocol
 Lo que MD fija es la unica pieza que un orquestador esta obligado a fijar: la
 FIRMA con la que llama a M5.
 
-    verificar(punto=..., material=..., D=..., resultado=...) -> Sequence[Verificacion]
+    verificar(punto=..., material=..., seccion=..., resultado=...) -> Sequence[Verificacion]
 
 Se pasa siempre por palabra clave, para que M5 pueda ampliar la firma sin
 romper este archivo. La funcion se toma del argumento `verificar`; si no se
@@ -147,7 +147,7 @@ from modelos import (CriterioPendienteError, DatoInvalidoError,
                      DisenoNoFactibleError,
                      ErrorProyecto, Familia, FormaSeccion, Material,
                      PasoDiseno, PuntoCritico, ResultadoHidraulico,
-                     ResultadoPunto, Verificacion)
+                     ResultadoPunto, Seccion, Verificacion)
 from modulos.M2_material import (CRITERIO_SECCIONES_CAJON,
                                  materiales_candidatos, numero_de_celdas,
                                  siguiente_seccion)
@@ -169,9 +169,19 @@ class Verificador(Protocol):
     valor de proyecto.
     """
 
-    def __call__(self, *, punto: PuntoCritico, material: Material, D: float,
+    def __call__(self, *, punto: PuntoCritico, material: Material,
+                 seccion: Seccion,
                  resultado: ResultadoHidraulico) -> Sequence[Verificacion]:
         ...
+
+    # LA FIRMA DECIA `D: float` HASTA QUE LA AUDITORIA ADVERSARIAL DE C7 LO
+    # MIDIO. C7i cambio a `seccion=` los dos lados reales --
+    # `disenar_material` que llama y `M5.verificar` que implementa -- y el
+    # docstring de modulo de aqui arriba, y dejo el `Protocol` con la firma
+    # vieja: o sea que el simbolo al que ese docstring remite decia lo
+    # contrario que el docstring. No falla en ejecucion porque un `Protocol`
+    # no se comprueba en runtime, y esa es exactamente la razon de que una
+    # firma desactualizada aqui pueda vivir indefinidamente.
 
 
 # Observador opcional del bucle: recibe un PasoDiseno por escalon probado.
@@ -384,7 +394,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                                              material=material, normal=normal)
                 verificaciones = tuple(verificar(punto=punto,
                                                  material=material,
-                                                 D=D, resultado=resultado))
+                                                 seccion=seccion,
+                                                 resultado=resultado))
                 if not verificaciones:
                     raise ValueError(
                         f"la Fase 5 devolvio cero verificaciones para "
@@ -401,6 +412,7 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                         punto=punto,
                         material=material,
                         D=D,
+                        seccion=seccion,
                         resultado_hidraulico=resultado,
                         verificaciones=verificaciones,
                         aceptado=True,

@@ -424,7 +424,7 @@ def test_todo_criterio_que_la_corrida_de_perfil_invoca_esta_clasificado(
                 "de perfil lo invoca sin que su etapa quede diferida")
 
 
-# LOS VACIOS DE PERFIL SON SIETE Y NO DOS, y los cinco nuevos son de C5. Se
+# LOS VACIOS DE PERFIL SON NUEVE Y NO DOS: cinco los abrio C5 y dos C7. Se
 # separan en dos grupos porque no son la misma clase de hueco:
 #
 #   NO INVOCADOS -- los dos de S20. Existen y esta corrida no llega a ellos.
@@ -437,12 +437,30 @@ VACIOS_DE_PERFIL_DEL_CAJON = [
     "embocadura_cajon",               # la carta de la Tabla A.1
     "n_celdas_cajon",                 # una celda o multicelda
     "ke_entrada_cajon",               # la fila de la Tabla C.2
+    # EL SEXTO ES DE C7 y su vacio es de OTRA CLASE que los cinco de C5. Los
+    # cinco salen del num. 4.1.1.3.4 a), que remite la seccion del cruce de
+    # canal a "cada diseño particular": el vacio es del MANUAL. Este sale de
+    # que la norma de PRODUCTO que tabula espesores -- AASHTO M 170M-04,
+    # columna «Wall Thickness» -- enumera sus filas por diametro designado de
+    # TUBERIA, y un marco no es una de ellas: el vacio es del CATALOGO. Los
+    # dos se declaran igual y por eso van juntos aqui; la razon no es la
+    # misma y por eso se dice.
+    "espesor_pared_cajon",            # el espesor adoptado del marco
+    # EL SEPTIMO TAMBIEN ES DE C7 y es de la clase del sexto, no de la de los
+    # cinco: el vacio es de la TABLA, no del Manual. La Tabla 12.6.6.3-1 de
+    # AASHTO LRFD enumera por tipo de conducto y sus dos filas de concreto
+    # dicen «Reinforced Concrete PIPE»; su unica fila con «box» es metalica.
+    # LO QUE LO DISTINGUE DEL SEXTO es que aqui la tabla CASI encaja, y por
+    # eso este vacio estuvo tapado: el codigo venia entregando 0.3048 m -- el
+    # piso de la fila del tubo -- a todo marco, sin declararlo y sin que el
+    # ancho entrara siquiera en el calculo.
+    "cobertura_minima_cajon",         # la cobertura de suelo del marco
 ]
 
 
 def test_los_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
     """
-    Son SIETE, y ninguno es una omision: los siete declaran por que no se
+    Son NUEVE, y ninguno es una omision: los nueve declaran por que no se
     pudieron cerrar.
 
     LOS DOS DE S20, que esta corrida no invoca:
@@ -455,12 +473,33 @@ def test_los_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
                            de sus dos ramas seria afirmar algo sobre un
                            archivo que nadie abrio.
 
-    LOS CINCO DEL CAJON (C5), que esta corrida SI invoca, y por una razon que
+    LOS SIETE DEL CAJON -- cinco de C5 y dos de C7 --, que esta corrida SI
+    invoca. Los cinco de C5, por una razon que
     no es un olvido del proyecto sino una instruccion del numeral: el num.
     4.1.1.3.4 a) exceptua a los cruces de canal de riego del piso de 0.90 m y
     los remite a "cada diseño particular". Lo que ese numeral hace no es
     liberar la seccion: la traslada del catalogo al DISEÑO. Escribirles un
     valor aqui seria inventar lo que la norma manda decidir caso por caso.
+
+    Los DOS de C7 son de otra clase y conviene no confundirla con aquella: a
+    los cinco los calla el MANUAL, y a estos dos los calla la TABLA de la que
+    saldria el numero, porque enumera sus filas por un objeto que el marco no
+    es.
+
+    `espesor_pared_cajon`: la norma de PRODUCTO -- AASHTO M 170M-04, columna
+    «Wall Thickness» -- enumera por diametro designado de TUBERIA. Y no es un
+    vacio que alguien vaya a llenar con una tabla: la §14.1 adopto el vaciado
+    in situ justamente porque no hay norma de producto de cajon prefabricado
+    en normas/.
+
+    `cobertura_minima_cajon`: la Tabla 12.6.6.3-1 de AASHTO LRFD enumera por
+    TIPO DE CONDUCTO y sus dos filas de concreto dicen «Reinforced Concrete
+    PIPE». Este es el que mas se parece a un valor y no lo es, porque la tabla
+    CASI encaja -- tiene concreto, y tiene una fila con la palabra «box», que
+    es metalica --. La regla vinculante #9 mandaba traer de ahi el termino
+    `B'c/8` para el marco: se retiro en C7 contra la fuente primaria, y el
+    barrido que sostiene el vacio esta en la `AfirmacionNegativa`
+    SIN_CAJON_DE_CONCRETO_T12663.
     """
     # La funcion devuelve ORDENADO ALFABETICAMENTE, no por declaracion: se
     # compara contra la union ordenada para que la asercion diga lo que mide.

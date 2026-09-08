@@ -857,7 +857,11 @@ def _verificador_perfil(informe: InformePunto):
     """
     ya_registrados: set = set()
 
-    def verificar(*, punto: PuntoCritico, material, D: float, resultado):
+    def verificar(*, punto: PuntoCritico, material, seccion, resultado):
+        # La altura para las tres que solo necesitan la altura. V7 pide la
+        # SECCION entera, porque la subpresion actua sobre la superficie
+        # exterior y ahi un prisma y un cilindro dejan de parecerse.
+        D = seccion.altura
         # LO QUE YA SE VERIFICO NO SE TIRA, y hasta C5 aqui SI se tiraba.
         # `M5.verificar` lo resolvio en su dia --su docstring lo cuenta-- y
         # este verificador, que es el del alcance de perfil, se quedo con la
@@ -904,8 +908,8 @@ def _verificador_perfil(informe: InformePunto):
             _diferir_verificacion(informe, "V5", exc, ya_registrados)
         for pieza in (
             lambda: M5.v6_material_solido_arrastre(material=material),
-            lambda: M5.v7_flotacion(punto=punto, material=material, D=D,
-                                    resultado=resultado),
+            lambda: M5.v7_flotacion(punto=punto, material=material,
+                                    seccion=seccion, resultado=resultado),
         ):
             try:
                 filas.append(pieza())
@@ -1018,7 +1022,7 @@ def _fase_7(informe: InformePunto) -> None:
         informe.bloqueos, FASE_GEOMETRIA, "compatibilidad geometrica (7.B)",
         lambda: compatibilidad_geometrica(
             punto=informe.punto_de_calculo, material=resultado.material,
-            D=resultado.D,
+            seccion=resultado.seccion,
             resultado=resultado.resultado_hidraulico,
             longitud=informe.longitud.valor))
 
@@ -1152,13 +1156,21 @@ DECLARACION_ALCANCE_FAMILIA_C = (
     "adoptado por el proyectista. Los tres son el criterio de aceptacion de "
     "una ALCANTARILLA DE PASO. "
     "LAS DEMAS DE LA BATERIA NO SON TODAS NEUTRAS, y decir que lo eran seria "
-    "afirmar de esta corrida algo que no es. V7 (flotacion) y G1 "
-    "(recubrimiento minimo) se calculan hoy sobre geometria CIRCULAR: V7 se "
-    "detiene por eso -- el espesor de pared de un marco no sale de la tabla "
-    "de una norma de tuberia, y sin el no hay volumen desplazado --, y por "
-    "tanto un marco NO CIERRA la Fase 5 en esta version. Cuando cierre, hay "
-    "que volver a leer esta declaracion: la generalizacion de la geometria a "
-    "la seccion es lo que la completa. "
+    "afirmar de esta corrida algo que no es. V7 (flotacion) y G1 (cobertura "
+    "minima) NO son neutras: cada una necesita saber la FORMA de la seccion. "
+    "V7 pesa el volumen desplazado, que en un prisma y en un cilindro no es "
+    "el mismo; y G1 mide la cobertura sobre el ancho exterior, que en un "
+    "marco no coincide con el canto. Las dos se resuelven hoy sobre la "
+    "seccion real -- no sobre un cilindro supuesto -- y las dos lo hacen con "
+    "valores que el proyectista DECLARA, porque ninguna tabla del corpus los "
+    "tabula para un marco: el espesor de pared por 'espesor_pared_cajon' y la "
+    "cobertura por 'cobertura_minima_cajon'. "
+    "ESTE PARRAFO DECIA LO CONTRARIO HASTA C7, y se deja anotado porque la "
+    "diferencia importa para leer una memoria vieja: decia que las dos se "
+    "calculaban sobre geometria CIRCULAR y que por eso un marco NO CERRABA la "
+    "Fase 5, y se pedia a si mismo que se volviera a leer el dia que cerrara. "
+    "Ese dia llego. Lo que NO cambia es el resto de esta declaracion: que las "
+    "dos protejan bien al conducto sigue sin decir nada sobre el canal. "
     "LA SUSTITUCION NO ES CONSERVADORA, y por eso se declara en vez de "
     "suponerse. Los tres protegen la carretera y el conducto; NINGUNO protege "
     "el canal. Y no lo hacen porque MIDEN CONTRA OTRA COTA: V1 compara el "

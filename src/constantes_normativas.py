@@ -1528,7 +1528,48 @@ NUMERAL_COMPACTACION_EG2013_507 = (
 
 SECCION_EG2013 = {"concreto_simple": "505", "concreto_reforzado": "506",
                   "tmc": "507", "hdpe": "508"}
-SECCION_CABEZALES = "503"           # concreto estructural (+504 acero)
+SECCION_CONCRETO_ESTRUCTURAL = "503"
+SECCION_ACERO_REFUERZO = "504"
+SECCION_CABEZALES = SECCION_CONCRETO_ESTRUCTURAL
+
+# ---- La Seccion de un MARCO, que no es ninguna de las cuatro de arriba ----
+# LAS CUATRO ENTRADAS DE `SECCION_EG2013` SON DE TUBERIA, verificado leyendo
+# los cuatro titulos impresos: «Tuberia de concreto simple» (505, impresa
+# 949), «Tuberia de concreto reforzado» (506, impresa 959), «Tuberia metalica
+# corrugada» (507, impresa 969) y «Tuberia de polietileno de alta densidad»
+# (508, impresa 981). El dict indexa por MATERIAL, de modo que hasta C7 un
+# marco de concreto reforzado heredaba la 506 -- una Seccion cuyo 506.01
+# alcanza «la instalacion de TUBOS», cuyo 506.02 pide el «diametro interno» y
+# cuya partida 506.A se mide en METRO LINEAL --. Ninguna de las tres cosas le
+# corresponde a un marco vaciado in situ. Era la forma exacta de NOR-PUE-01:
+# numeral que existe, titulo que suena a lo buscado, contenido que es otro.
+#
+# DONDE SI CAE, y es hallazgo positivo y no un vacio: bajo la Seccion 503
+# «Concreto estructural». Lo prueba el num. 503.10 h) (impresa 926), que le
+# fija plazo de desencofrado a la «Placa superior en alcantarillas de cajon»;
+# una norma que regula el desencofrado de la placa superior de un cajon esta
+# regulando su vaciado in situ. Y el 503.01 declara su alcance sobre
+# «estructuras de drenaje», con lista enunciativa.
+#
+# EL «+ 504» ES ENSAMBLAJE DEL PROYECTO Y SE DICE. La 503 se mide en m3 de
+# concreto y la 504 en kg de acero; que un marco se pague por las dos no lo
+# escribe ningun numeral. Lo autoriza la AUSENCIA verificada de partida propia
+# (`SIN_PARTIDA_DE_CAJON_EG2013`: la Tabla Anexo 2-1 no lista ninguna partida
+# de cajon, marco ni box) mas el mismo argumento que
+# `M9.condicion_normativa_cabezal` ya hacia para los cabezales. Por eso el
+# texto de abajo dice que el cajon «se construye bajo» la 503 -- que es lo que
+# la fuente sostiene -- y separa el pago como lectura del proyecto.
+SECCION_EG2013_CAJON = (SECCION_CONCRETO_ESTRUCTURAL + " + "
+                        + SECCION_ACERO_REFUERZO)
+NUMERAL_SECCION_CAJON_EG2013 = (
+    "EG-2013 Seccion 503 'Concreto estructural' (num. 503.01, pag. impresa "
+    "905) y Seccion 504 'Acero de refuerzo' (pag. impresa 939). Que el cajon "
+    "de concreto se construye bajo la 503 lo dice el num. 503.10 h), pag. "
+    "impresa 926: 'Placa superior en alcantarillas de cajon: 14 dias'. Que se "
+    "PAGUE por 503 + 504 es lectura del proyecto y no literal de la norma: "
+    "ningun numeral lo escribe, y lo que la sostiene es que no hay partida "
+    "propia de cajon en la Tabla Anexo 2-1. La Seccion 506 NO aplica: su num. "
+    "506.01 alcanza 'la instalacion de tubos de concreto reforzado'")
 
 # ---- Tabla 503-07, "Clases de concreto estructural" -----------------------
 # La Seccion 503 es la que este proyecto cita para los cabezales, y trae su
@@ -2330,8 +2371,13 @@ TABLA_GAMMA_P_FILAS = {
         "fila": "EL: Esfuerzos residuales acumulados resultantes del proceso "
                 "constructivo, (Locked-in construction Stresses.)",
         "max": 1.00, "min": 1.00},
-    # Las seis subfilas de "EV: Presion vertical de la tierra" (sic, sin
-    # tilde en "Presion"). Las tres ultimas cuelgan ademas del subtitulo
+    # Las SIETE subfilas de "EV: Presion vertical de la tierra" (sic, sin
+    # tilde en "Presion"). Decia "seis" y son siete -- contadas aqui abajo:
+    # estabilidad global, muros y estribos, estructura rigida enterrada,
+    # porticos rigidos y las tres flexibles --; lo encontro la auditoria
+    # adversarial de C7, que ademas midio la contradiccion: este rotulo decia
+    # SEIS mientras `M8.filas_ev_de_la_tabla` --que las DERIVA de este mismo
+    # dict-- dice SIETE. Las tres ultimas cuelgan ademas del subtitulo
     # "Estructuras flexible enterradas" (sic, sin la "s" de flexibles), que la
     # tabla imprime en su propia linea con sus tres opciones marcadas "o ...".
     "EV_estabilidad_global": {

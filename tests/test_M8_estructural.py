@@ -34,7 +34,8 @@ from pathlib import Path
 import pytest
 
 import criterios_adoptados as ca
-from tests.apoyo.criterios import sin_valor
+from modelos import SeccionCircular, SeccionRectangular
+from tests.apoyo.criterios import declarados, sin_valor
 from constantes_fisicas import GAMMA_AGUA_KN_M3
 import modulos.M8_estructural as M8
 from modelos import (CamaApoyoRelleno, CriterioPendienteError,
@@ -48,6 +49,7 @@ from modulos.M8_estructural import (cama_apoyo_relleno_lateral,
                                     verificacion_diferida_estructural)
 from tests.apoyo import estructura
 from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.fixtures.casos_patron import CP10_FLOTACION_MARCO
 
 
 @pytest.fixture
@@ -84,20 +86,21 @@ def test_empuje_flotacion_no_depende_del_NF_medido_del_punto():
     espesor de pared, porque se calcula sobre el volumen DESPLAZADO -- el
     diametro exterior, num. 2.4.3.8.2 (MAT-D3).
     """
-    U = empuje_flotacion_kn_m(D_exterior=1.10)
+    U = empuje_flotacion_kn_m(seccion=SeccionCircular(D=0.90), espesor=0.10)
     assert U == pytest.approx(GAMMA_AGUA_KN_M3 * (math.pi / 4) * 1.10 ** 2)
 
 
 def test_empuje_flotacion_crece_con_el_diametro():
-    assert (empuje_flotacion_kn_m(D_exterior=1.20)
-            > empuje_flotacion_kn_m(D_exterior=0.90))
+    assert (empuje_flotacion_kn_m(seccion=SeccionCircular(D=1.00), espesor=0.10)
+            > empuje_flotacion_kn_m(seccion=SeccionCircular(D=0.70), espesor=0.10))
 
 
 def test_peso_relleno_lanza_pendiente():
     """Sin el peso del relleno declarado, V7 se detiene y no supone ninguno."""
     with sin_valor("peso_especifico_relleno_kn_m3"):
         with pytest.raises(CriterioPendienteError) as excinfo:
-            peso_relleno_kn_m(D_exterior=0.90, altura_relleno=1.0)
+            peso_relleno_kn_m(seccion=SeccionCircular(D=0.70), espesor=0.10,
+                              altura_relleno=1.0)
         assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
 
 
@@ -107,7 +110,8 @@ def test_peso_relleno_calcula_con_el_criterio_declarado(monkeypatch):
         ca.CRITERIOS, "peso_especifico_relleno_kn_m3",
         original.__class__(**{**original.__dict__, "valor": 18.0}),
     )
-    W = peso_relleno_kn_m(D_exterior=1.10, altura_relleno=1.05)
+    W = peso_relleno_kn_m(seccion=SeccionCircular(D=0.90), espesor=0.10,
+                      altura_relleno=1.05)
     assert W == pytest.approx(18.0 * 1.10 * 1.05)
 
 
@@ -123,6 +127,41 @@ def _declarar(monkeypatch, clave, valor):
 # fila elegida y no de un par fijo. No es la eleccion del proyecto: la del
 # proyecto pone al conducto de concreto en "Estructura rigida enterrada".
 ELECCION_DEMO = {"concreto_reforzado": {"EV": "EV_muros_y_estribos_de_retencion"}}
+
+
+def test_el_traslado_de_la_geometria_a_la_seccion_movio_un_ULP_y_esta_declarado():
+    """
+    EL UNICO NUMERO DE CALCULO QUE C7 MOVIO, fijado aqui para que no vuelva a
+    moverse en silencio.
+
+    C7 declaro «ningun numero se movio» y era falso por 1 ULP: la auditoria
+    adversarial lo encontro comparando la linea base byte a byte. Al pasar
+    `GAMMA * (pi/4) * D_ext**2` -- que Python asocia `(GAMMA*(pi/4)) *
+    D_ext**2` -- a `GAMMA * seccion.area_exterior(t)` = `GAMMA * (pi*d**2/4)`,
+    la asociacion cambia y el ultimo bit con ella.
+
+    DE LOS CUATRO D_ext QUE LA LINEA BASE IMPRIME, SOLO UNO CAMBIA, y esa
+    dispersion es la firma de una reasociacion y no de un error de formula:
+    una formula equivocada movería los cuatro. 3.6e-15 kN/m es fisicamente
+    nulo; lo que no es nulo es haberlo dicho.
+
+    NO SE «ARREGLA» reordenando: escribir `area_exterior` como `(pi/4)*d**2`
+    da el mismo float que la forma actual, porque la diferencia nace de la
+    asociacion a traves del `GAMMA *`. Recuperarla exigiria darle a `Seccion`
+    el peso especifico del agua.
+    """
+    import math
+    from constantes_fisicas import GAMMA_AGUA_KN_M3
+
+    for D_ext, se_mueve in ((1.100, False), (1.976, True),
+                            (2.276, False), (2.876, False)):
+        antes = GAMMA_AGUA_KN_M3 * (math.pi / 4) * D_ext ** 2
+        ahora = GAMMA_AGUA_KN_M3 * (math.pi * D_ext ** 2 / 4)
+        assert (antes != ahora) is se_mueve, (
+            f"D_ext = {D_ext}: el censo de cuales se mueven cambio. Si se "
+            "mueve otro, algo mas que la asociacion cambio de sitio")
+        # Y en cualquier caso la diferencia es del orden del ultimo bit.
+        assert abs(antes - ahora) <= abs(antes) * 1e-15
 
 
 def test_factores_carga_flotacion_calcula_con_el_criterio_real(concreto):
@@ -271,3 +310,90 @@ def test_verificacion_diferida_no_lanza_y_devuelve_los_tres_avisos():
     conceptos = " ".join(avisos).lower()
     for palabra in ("rigidez de anillo", "pandeo", "costura"):
         assert palabra in conceptos
+
+
+# ===========================================================================
+# CP10 - la regresion que C5 dejo abierta y C7 cierra
+# ===========================================================================
+
+def test_CP10_la_subpresion_de_un_marco_es_la_de_un_PRISMA_y_no_la_de_un_cilindro():
+    """
+    EL CASO PATRON DE V7 SOBRE UN MARCO, y el unico que hay: hasta C7 no
+    existia ninguno en `casos_patron.py` -- el de la circular vivia en el
+    docstring de un test --.
+
+    Lo que mata: `empuje_flotacion_kn_m` calculaba `pi/4 * D_ext^2` con un
+    escalar. Un marco al que se le pasara su altura exterior salia con la
+    subpresion del CILINDRO CIRCUNSCRITO, un 39 % por debajo de la real. Y el
+    error no se cancela contra EV, porque EV usa solo el ANCHO exterior y cae
+    un 28 %: la carga que desestabiliza baja mas que la que sujeta, de modo
+    que V7 SOBREESTIMA la seguridad del marco ~27 %. Direccion insegura.
+    """
+    cp = CP10_FLOTACION_MARCO
+    marco = SeccionRectangular(B=cp["B"], H=cp["H"])
+
+    # La geometria exterior, con los dos nombres del Art. 12.6.6.3 separados.
+    assert marco.ancho_exterior(cp["espesor"]) == pytest.approx(
+        cp["Bc_esperado"], rel=REL_TRANSPORTE)
+    assert marco.canto_exterior(cp["espesor"]) == pytest.approx(
+        cp["Bc_prima_esperado"], rel=REL_TRANSPORTE)
+    # Y NO son el mismo numero, que es toda la diferencia con la circular.
+    assert marco.ancho_exterior(cp["espesor"]) != pytest.approx(
+        marco.canto_exterior(cp["espesor"]), rel=REL_TRANSPORTE)
+
+    U = empuje_flotacion_kn_m(seccion=marco, espesor=cp["espesor"])
+    assert U == pytest.approx(cp["U_prisma_esperado"], rel=REL_TRANSPORTE)
+    # LA MITAD QUE MATA LA REGRESION: el numero del cilindro NO es el que
+    # sale. Sin este assert, una vuelta a `pi/4 * D^2` pasaria desapercibida
+    # mientras el numero siguiera siendo "un numero razonable".
+    assert U != pytest.approx(cp["U_cilindro_equivocado"], rel=REL_TRANSPORTE)
+    assert U > cp["U_cilindro_equivocado"]
+
+    with declarados({"peso_especifico_relleno_kn_m3": cp["gamma_relleno"]}):
+        EV = peso_relleno_kn_m(seccion=marco, espesor=cp["espesor"],
+                               altura_relleno=cp["altura_relleno"])
+    assert EV == pytest.approx(cp["EV_esperado"], rel=REL_TRANSPORTE)
+
+
+def test_CP10_una_circular_del_mismo_canto_da_el_numero_del_cilindro():
+    """
+    El contrapeso, y es lo que fija que la generalizacion no rompio la
+    circular: una `SeccionCircular` cuyo diametro exterior sea el CANTO
+    exterior del marco da exactamente el numero que el codigo viejo le daba
+    al marco. O sea que el 24.96 kN/m no es un numero inventado para este
+    test: es el que producia la version anterior, y aqui se ve de quien era.
+    """
+    cp = CP10_FLOTACION_MARCO
+    D_interior = cp["H"]        # mismo canto interior que el marco
+    circular = SeccionCircular(D=D_interior)
+    U = empuje_flotacion_kn_m(seccion=circular, espesor=cp["espesor"])
+    assert U == pytest.approx(cp["U_cilindro_equivocado"], rel=REL_TRANSPORTE)
+
+
+def test_CP10_engrosar_la_pared_EMPEORA_la_flotacion():
+    """
+    EL SIGNO CONTRAINTUITIVO DE `espesor_pared_cajon`, fijado como test y no
+    solo escrito en la sensibilidad del criterio. Con `DC = 0` el espesor
+    entra solo por la geometria exterior, y por los dos lados: U crece con
+    (B+2t)(H+2t) -- dos dimensiones -- y EV solo con (B+2t) -- una --. El
+    margen empeora monotonamente.
+
+    Quien declare el criterio va a suponer lo contrario, y por eso esto se
+    mide en vez de confiarse a un comentario.
+    """
+    cp = CP10_FLOTACION_MARCO
+    marco = SeccionRectangular(B=cp["B"], H=cp["H"])
+    margenes = []
+    with declarados({"peso_especifico_relleno_kn_m3": cp["gamma_relleno"]}):
+        for t in (0.15, 0.20, 0.25):
+            U = empuje_flotacion_kn_m(seccion=marco, espesor=t)
+            EV = peso_relleno_kn_m(seccion=marco, espesor=t,
+                                   altura_relleno=cp["altura_relleno"])
+            # 0.90 es el gamma_EV minimo de las dos filas que un conducto
+            # enterrado puede tomar; se escribe aqui y no se lee del criterio
+            # porque lo que este test mide es el SIGNO, no el valor.
+            margenes.append(0.90 * EV - U)
+    assert margenes[0] > margenes[1] > margenes[2], (
+        f"engrosar la pared tendria que EMPEORAR el margen de V7 y dio "
+        f"{margenes}")
+    assert all(m < 0 for m in margenes)

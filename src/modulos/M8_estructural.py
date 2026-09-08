@@ -160,7 +160,6 @@ Uso
 
 from __future__ import annotations
 
-import math
 from typing import Tuple
 
 import criterios_adoptados as ca
@@ -172,7 +171,7 @@ from constantes_normativas import (CAMA_RELLENO_LATERAL,
                                    TABLA_GAMMA_P_FILAS,
                                    fila_gamma_p_legible)
 from modelos import (CamaApoyoRelleno, DatoInvalidoError, FactoresFlotacion,
-                     Material, ReferenciaNormativa)
+                     FormaSeccion, Material, ReferenciaNormativa, Seccion)
 
 NUMERAL_8_1_2 = "Fase 8, items 1-2"
 # La cita anterior, "Sec. 8.1 (EG-2013 Seccion 500)", era doblemente falsa:
@@ -215,6 +214,14 @@ EXTREMO_DESESTABILIZANTE = "max"
 # combinacion que Sec. 9.2 no usa. Por eso la fila esta aqui y no en el
 # criterio: no hay eleccion que declarar.
 FILA_GAMMA_P_DC = "DC_componentes_y_auxiliares"
+# La clave del marco en `factores_carga_aashto`. No es un `TipoMaterial`
+# porque un marco y un tubo de concreto comparten el suyo; es la misma
+# razon por la que 'cabezal' tampoco lo es.
+ELEMENTO_CAJON = "cajon"
+# Las filas de EV se reconocen por su prefijo de clave. Es la unica marca
+# que `TABLA_GAMMA_P_FILAS` da para agruparlas sin volver a escribir sus
+# nombres, que es lo que se quiere evitar.
+PREFIJO_FILA_EV = "EV_"
 
 
 # ---------------------------------------------------------------------------
@@ -246,55 +253,97 @@ def seleccionar_clase_calibre(*, material: Material, altura_relleno: float):
 # Item 3 - V7: Flotacion del conducto
 # ---------------------------------------------------------------------------
 
-def empuje_flotacion_kn_m(*, D_exterior: float) -> float:
+def empuje_flotacion_kn_m(*, seccion: Seccion, espesor: float) -> float:
     """
-    U, empuje de flotacion por metro lineal de conducto, kN/m (num.
-    2.4.3.8.2): conducto totalmente sumergido, la hipotesis conservadora de
-    "NF en su cota mas alta" que fija la fila V7 de la Fase 5 (ver "Por que
-    U asume sumersion completa" en el docstring del modulo).
+    U, empuje de flotacion por metro lineal de conducto, kN/m: conducto
+    totalmente sumergido, la hipotesis conservadora de "NF en su cota mas
+    alta" que fija la fila V7 de la Fase 5.
 
-        U = gamma_agua * (pi/4) * D_ext^2
+        U = gamma_agua * area_exterior
 
-    EL DIAMETRO ES EL EXTERIOR, y ese es el punto (MAT-D3). Esta funcion
-    recibia el interior y su docstring lo declaraba "del lado conservador,
-    un exterior real algo mayor daria un U un poco mayor". Las dos frases
-    eran falsas a la vez:
+    DE DONDE SALE LA OBLIGACION, que hasta C7 no estaba citada: el num.
+    2.4.3.8.2 del Manual de Puentes manda considerar la subpresion como una
+    fuerza de levantamiento sobre "todos los componentes de la estructura que
+    se encuentran debajo del nivel de agua de diseno" -- ambito NEUTRO
+    respecto de la forma, y por eso el marco entra directo --. AASHTO lo
+    refuerza con dos exigencias propias (12.6.1 y 12.6.2.3) sobre "buried
+    structures", cuyo alcance nombra el cajon (12.1 SCOPE).
 
-      - el num. 2.4.3.8.2 define la subpresion sobre el VOLUMEN DESPLAZADO,
-        que es el que encierra la superficie exterior, no el interior;
-      - subestimar el volumen desplazado subestima U, y U es la carga
-        DESestabilizante del equilibrio de V7. Menos U es un chequeo mas
-        FACIL de pasar. El conservadurismo declarado apuntaba al reves del
-        real: con t = 0.100 m en un tubo de concreto de D = 0.90 m,
-        D_ext = 1.10 m y U pasa de 6.24 a 9.32 kN/m -- el valor anterior
-        estaba un 33 % por debajo.
+    EL AREA ES LA EXTERIOR, y ese es el punto (MAT-D3): la subpresion actua
+    sobre el VOLUMEN DESPLAZADO, que es el que encierra la superficie
+    exterior. Con el interior, un tubo de D = 0.90 m y t = 0.100 salia un
+    33 % por debajo.
 
-    El D exterior lo entrega `M2_material.diametro_exterior`, que se detiene
-    en 'espesor_pared_conducto' mientras ese criterio siga vacio.
+    Y LA PIDE A LA SECCION EN VEZ DE CALCULARLA, que es lo que C7 cambia. La
+    firma recibia `D_exterior: float` y calculaba `pi/4 * D^2`: un CILINDRO
+    cableado. Un marco al que se le pasara su altura exterior se evaluaba
+    como el cilindro circunscrito a esa altura, y ahi la subpresion sale un
+    39 % MENOR que la real -- 24.96 kN/m contra 40.61 sobre un marco de
+    2.00 x 1.50 m con t = 0.15 --, que es la direccion insegura. Ahora la
+    forma la resuelve `Seccion.area_exterior` y este modulo no la conoce.
+
+    Y ESE CAMBIO MOVIO UN NUMERO, en 1 ULP, que hay que declarar en vez de
+    dejar que se lo trague la regeneracion de la linea base -- lo encontro la
+    auditoria adversarial de C7 --. Antes: `GAMMA * (pi/4) * D_ext**2`, que
+    Python asocia `(GAMMA*(pi/4)) * D_ext**2`. Ahora: `GAMMA *
+    seccion.area_exterior(t)`, o sea `GAMMA * (pi*d**2/4)`. Medido sobre los
+    cuatro D_ext que la linea base imprime, SOLO UNO cambia:
+
+        D_ext = 1.976 m ->  30.083805296800858  antes
+                            30.08380529680086   ahora   (3.6e-15 kN/m)
+
+    NO ES RECUPERABLE reordenando dentro de `area_exterior`: escribirla como
+    `(pi/4)*d**2` da el mismo resultado que la forma actual, porque la
+    diferencia nace de la asociacion A TRAVES del `GAMMA *`, y plegarla dentro
+    de la seccion exigiria darle a la seccion el peso especifico del agua --
+    o sea devolverle a `Seccion` una responsabilidad que no es suya --.
+    Se acepta y se declara. El precedente contrario es `M4_control`, que en un
+    traslado equivalente si conservo la identidad al ultimo bit y lo dijo; ahi
+    se pudo y aqui no, y esa es la diferencia que este parrafo existe para no
+    dejar implicita.
+
+    EL 39 % ES «MENOR QUE LA REAL» Y NO ES EL 63 % DE LA FRASE HERMANA, que
+    es lo que este parrafo decia hasta que lo refuto la auditoria adversarial
+    de C7. Son las DOS FORMAS de enunciar la misma diferencia, y el propio
+    caso patron CP10 advierte contra confundirlas: 24.96/40.61 = 0.615, o sea
+    el cilindro pide un 39 % MENOS; y 40.61/24.96 = 1.63, o sea el prisma pide
+    un 63 % MAS. La cifra que iba aqui era la de la segunda forma con el
+    rotulo de la primera.
     """
-    return GAMMA_AGUA_KN_M3 * (math.pi / 4) * D_exterior ** 2   # literal-ok: area de circulo, num. 2.4.3.8.2
+    return GAMMA_AGUA_KN_M3 * seccion.area_exterior(espesor)
 
 
-def peso_relleno_kn_m(*, D_exterior: float, altura_relleno: float) -> float:
+def peso_relleno_kn_m(*, seccion: Seccion, espesor: float,
+                      altura_relleno: float) -> float:
     """
-    Peso del relleno sobre la clave, kN/m: prisma de ancho D_ext -- el ancho
-    que el conducto ocupa de verdad en planta, el mismo diametro con que se
-    calcula U -- y altura `altura_relleno`, con el peso especifico del
-    criterio 'peso_especifico_relleno_kn_m3'.
+    Peso del relleno sobre la clave, kN/m: prisma del ANCHO EXTERIOR de la
+    seccion -- el que el conducto ocupa de verdad en planta -- por la altura
+    `altura_relleno`, con el peso especifico de 'peso_especifico_relleno_kn_m3'.
 
-    QUE LOS DOS TERMINOS USEN EL MISMO ANCHO NO ES UN DETALLE. El equilibrio
-    de V7 compara gamma_EV*EV contra gamma_WA*U, y los dos crecen con el
-    ancho: con el interior en los dos lados el cociente apenas cambiaba, y de
-    ahi que MAT-D3 midiera el efecto sobre la altura de relleno limite
-    h* = gamma_w*pi*D_ext/(4*0.90*gamma_r) y no sobre U suelto. Con el
-    exterior en los dos lados el margen se evalua sobre la geometria real.
+    EV es "presion vertical del peso propio del suelo de relleno" (num. 2.4.5.2
+    del Manual de Puentes). Que sea el relleno SOBRE la estructura y que el
+    prisma tenga el ancho exterior NO lo dice la fuente: es la convencion
+    declarada del proyecto, y por eso viaja como `Interpretacion` en la
+    memoria y no como cita (§15.2.7 de docs/ruta_familia_c.md).
+
+    EL ANCHO, NO EL CANTO. Es `Bc` -- "outside diameter or width", la
+    dimension HORIZONTAL -- y en un marco NO coincide con `B'c`. Cambiarlos
+    de sitio da un prisma con el ancho equivocado: sobre 2.00 x 1.50 m con
+    t = 0.15, Bc = 2.30 y B'c = 1.80, un 28 % de diferencia en EV.
+
+    QUE U Y EV USEN LA MISMA SECCION NO ES UN DETALLE: V7 compara
+    gamma_EV*EV contra gamma_WA*U y los dos crecen con el tamano. Lo que NO
+    crecen es igual, y ahi esta la trampa del espesor: U crece con las DOS
+    dimensiones exteriores y EV solo con el ancho, de modo que engrosar la
+    pared EMPEORA la flotacion. Esta escrito en la sensibilidad de
+    'espesor_pared_cajon', porque quien lo declare va a suponer lo contrario.
 
     NO suma el peso propio del conducto -- ver "Por que el peso propio del
     conducto no entra en V7" en el docstring del modulo: omitirlo es
     conservador, no una aproximacion optimista.
     """
     gamma_relleno = ca.valor(CRITERIO_PESO_RELLENO)   # CriterioPendienteError mientras falte
-    return gamma_relleno * D_exterior * altura_relleno
+    return gamma_relleno * seccion.ancho_exterior(espesor) * altura_relleno
 
 
 COMBINACION_V7 = "Resistencia I"
@@ -306,6 +355,15 @@ COMBINACION_V7 = "Resistencia I"
 # fija aqui, no en constantes_normativas: la tabla trae las tres combinaciones
 # (Sec. 9.2 de M9 las necesita todas), y cual de las tres usa V7 es una
 # decision de este modulo, no del dato.
+#
+# ESTE COMENTARIO SE PERDIO EN C7d Y LO ENCONTRO LA AUDITORIA ADVERSARIAL DE
+# C7, que lo dice mejor que yo: la sesion que escribe «un defecto declarado
+# que desaparece del docstring sin decir como se cerro es indistinguible de
+# uno que se borro» borro una justificacion entera sin decirlo. No fue una
+# decision: fue un reemplazo de bloque que se llevo por delante el comentario
+# y dejo la constante. El `NameError` que produjo hizo restaurar la constante
+# y nadie miro que faltaba lo de debajo. Se restaura literal, del arbol de
+# `cd8d4f2~1`, con esta nota encima para que la perdida quede contada.
 
 
 def factores_carga_flotacion(*, material: Material) -> FactoresFlotacion:
@@ -340,7 +398,7 @@ def factores_carga_flotacion(*, material: Material) -> FactoresFlotacion:
     nombra una fila que no es de la tabla.
     """
     eleccion = ca.valor(CRITERIO_FACTORES_CARGA)
-    fila_EV = _fila_elegida(eleccion, material.tipo.value, CARGA_RELLENO)
+    fila_EV = _fila_elegida(eleccion, _elemento_de(material), CARGA_RELLENO)
     return FactoresFlotacion(
         gamma_DC=_gamma_p(FILA_GAMMA_P_DC, EXTREMO_ESTABILIZANTE),
         gamma_EV=_gamma_p(fila_EV, EXTREMO_ESTABILIZANTE),
@@ -348,6 +406,48 @@ def factores_carga_flotacion(*, material: Material) -> FactoresFlotacion:
         criterio=CRITERIO_FACTORES_CARGA,
         fila_gamma_EV=fila_gamma_p_legible(fila_EV),
     )
+
+
+def filas_ev_de_la_tabla() -> Tuple[str, ...]:
+    """
+    Las filas de EV de la Tabla 2.4.5.3.1-2, legibles, LEIDAS DE LA
+    TRANSCRIPCION.
+
+    Existe para que la memoria pueda decir «entre estas» sin copiar la lista a
+    mano. La copia a mano era el defecto D-8: la `EleccionDeProyecto` de V7
+    enumeraba CUATRO filas escritas a pulso y la tabla tiene SIETE -- faltaba
+    «Porticos rigidos», que es justamente la del cajon, de modo que la memoria
+    presentaba una eleccion sin listar la opcion que se estaba eligiendo --.
+    Derivandola, no puede volver a divergir.
+    """
+    return tuple(fila_gamma_p_legible(clave)
+                 for clave in TABLA_GAMMA_P_FILAS
+                 if clave.startswith(PREFIJO_FILA_EV))
+
+
+def _elemento_de(material: Material) -> str:
+    """
+    Con que clave de 'factores_carga_aashto' se busca la fila de este
+    conducto.
+
+    NO ES `material.tipo.value`, Y ESE ERA EL DEFECTO. Un marco de concreto y
+    un tubo de concreto son el MISMO `TipoMaterial`, de modo que indexar por
+    material no puede distinguirlos: el marco recibia la fila del tubo --
+    «Estructura rigida enterrada» -- en vez de la suya. Quien los separa es la
+    FORMA, que es lo que la Tabla 2.4.5.3.1-2 desglosa (por tipo de
+    ESTRUCTURA, no de material). La clave 'cajon' la dejo puesta C5 esperando
+    a este consumidor.
+
+    EL NUMERO NO CAMBIA Y LA CITA SI, que es lo que lo hacia peligroso: el
+    MINIMO de las dos filas vale 0.90 y V7 lee el minimo, de modo que nada
+    fallaba de forma ruidosa mientras la fila impresa era la equivocada. Es el
+    precedente NOR-HID-01 -- valor que acierta por casualidad, cita falsa --.
+    Lo que si cambia es el maximo, 1.35 frente a 1.30, y ese gobierna la Fase
+    8, que `--alcance perfil` difiere.
+    """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        return ELEMENTO_CAJON
+    return material.tipo.value
 
 
 def _fila_elegida(eleccion, elemento: str, tipo_de_carga: str) -> str:

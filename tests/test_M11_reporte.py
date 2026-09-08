@@ -445,9 +445,10 @@ class TestIteraciones:
             forma=FormaSeccion.CIRCULAR)
 
         # Verificador que rechaza todo: interesa la traza, no el diseño.
-        def rechazar(*, punto, material, D, resultado):
+        def rechazar(*, punto, material, seccion, resultado):
             return (Verificacion(cumple=False, numeral="Sec. 5", codigo="V1",
-                                 valor_obtenido=D, valor_admisible=0.0,
+                                 valor_obtenido=seccion.altura,
+                                 valor_admisible=0.0,
                                  criterio_aplicado=None),)
 
         resultado, motivo = disenar_material(

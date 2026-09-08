@@ -38,7 +38,7 @@ from functools import lru_cache
 from typing import Any, Dict, Optional, Protocol, Tuple, Union
 
 from dominios import CENTIMETROS_POR_METRO
-from tolerancias import TOL_THETA_BORDE
+from tolerancias import TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
 
 
 # ===========================================================================
@@ -934,6 +934,49 @@ class Seccion(Protocol):
         """m - radio hidraulico de la seccion llena (Sec. 4.3)."""
         ...
 
+    def ancho_exterior(self, espesor: float) -> float:
+        """
+        m - `Bc`: ancho exterior de la seccion en planta, con la pared.
+
+        La nomenclatura es la del Art. 12.6.6.3 de AASHTO LRFD, que define
+        `Bc` como *"outside diameter or width of the structure"*: es la
+        dimension HORIZONTAL. Lo consume el peso del relleno de V7 -- el
+        prisma de suelo tiene el ancho que el conducto ocupa de verdad en
+        planta -- y es tambien el termino `Bc/8` de la cobertura minima.
+        """
+        ...
+
+    def canto_exterior(self, espesor: float) -> float:
+        """
+        m - `B'c`: canto exterior de la seccion, con la pared.
+
+        El mismo articulo lo define como *"out-to-out vertical rise of pipe"*:
+        es la dimension VERTICAL, y por eso NO es intercambiable con
+        `ancho_exterior`. En una circular las dos coinciden -- por eso el
+        proyecto pudo vivir hasta C7 con un solo `D_exterior` --; en un marco
+        no, y confundirlas es el error que la regla vinculante #9 estuvo a
+        punto de introducir.
+        """
+        ...
+
+    def area_exterior(self, espesor: float) -> float:
+        """
+        m2 - area que encierra la superficie EXTERIOR de la seccion.
+
+        Es el volumen desplazado por metro lineal, o sea la subpresion de V7
+        dividida por el peso especifico del agua (num. 2.4.3.8.2 del Manual de
+        Puentes: la fuerza actua sobre "todos los componentes de la estructura
+        que se encuentran debajo del nivel de agua de diseno").
+
+        NO SE DERIVA DE LOS DOS ANTERIORES, y por eso es un miembro propio: en
+        un rectangulo el area exterior SI es `Bc * B'c`, pero en una circular
+        es `pi/4 * D_ext^2`, que no es el producto de sus dos dimensiones
+        exteriores. Calcularla como producto le daria a la circular un 27 % de
+        area de mas -- la del cuadrado circunscrito --, que es la direccion
+        insegura al reves: mas subpresion de la real.
+        """
+        ...
+
     def etiqueta(self) -> str:
         """Como se nombra la seccion en la memoria."""
         ...
@@ -1057,6 +1100,35 @@ class SeccionCircular:
     def radio_hidraulico_lleno(self) -> float:
         """R = A/P = (pi*D^2/4)/(pi*D) = D/4, seccion llena (Sec. 4.3)."""
         return self.D / 4  # literal-ok: R = A/P de la seccion llena, D/4
+
+    # -- Geometria EXTERIOR: la que ve el agua y el relleno, no el caudal.
+    #
+    # EN UNA CIRCULAR LAS DOS DIMENSIONES EXTERIORES COINCIDEN, y esa
+    # coincidencia es la que dejo pasar el error que la regla #9 estuvo a
+    # punto de introducir: mientras el catalogo fue circular, `Bc` y `B'c`
+    # eran el mismo numero y nadie tenia que distinguirlos. Se implementan
+    # como dos miembros aunque aqui devuelvan lo mismo, porque el protocolo
+    # los separa y un marco los separa de verdad.
+
+    def ancho_exterior(self, espesor: float) -> float:
+        """Bc = D + 2t: el diametro exterior."""
+        return self.D + 2 * espesor
+
+    def canto_exterior(self, espesor: float) -> float:
+        """B'c = D + 2t. En un circulo el canto exterior ES el ancho."""
+        return self.D + 2 * espesor
+
+    def area_exterior(self, espesor: float) -> float:
+        """
+        pi/4 * (D + 2t)^2 -- el volumen desplazado por metro lineal.
+
+        NO es `ancho_exterior * canto_exterior`: eso seria el cuadrado
+        circunscrito, un 4/pi = 27 % mas de area, y en V7 mas area es mas
+        subpresion, o sea el lado inseguro al reves. Es la razon por la que
+        `area_exterior` es un miembro del protocolo y no una derivacion de
+        los otros dos.
+        """
+        return math.pi * self.ancho_exterior(espesor) ** 2 / 4  # literal-ok: area del circulo
 
     def etiqueta(self) -> str:
         """
@@ -1241,6 +1313,34 @@ class SeccionRectangular:
     def altura(self) -> float:
         """La altura interior es H. Es el "D" de HDS-5 (regla #4)."""
         return self.H
+
+    # -- Geometria EXTERIOR: aqui las dos dimensiones SI se separan, y es la
+    # razon por la que el protocolo tiene dos miembros y no uno.
+
+    def ancho_exterior(self, espesor: float) -> float:
+        """Bc = B + 2t: el ancho exterior en planta."""
+        return self.B + 2 * espesor
+
+    def canto_exterior(self, espesor: float) -> float:
+        """
+        B'c = H + 2t: el canto exterior.
+
+        DISTINTO DE `ancho_exterior`, y esa es toda la diferencia con la
+        circular. Un marco de 2.00 x 1.50 m con t = 0.15 tiene Bc = 2.30 m y
+        B'c = 1.80 m: intercambiarlos cambia la subpresion y el peso de
+        relleno en sentidos opuestos.
+        """
+        return self.H + 2 * espesor
+
+    def area_exterior(self, espesor: float) -> float:
+        """
+        (B + 2t)*(H + 2t) -- el volumen desplazado por metro lineal.
+
+        En un prisma el area exterior SI es el producto de sus dos
+        dimensiones exteriores. Es mas simple que en la circular, no mas
+        dificil: el rectangulo exterior no tiene nada que descontar.
+        """
+        return self.ancho_exterior(espesor) * self.canto_exterior(espesor)
 
     @property
     def area_llena(self) -> float:
@@ -1973,15 +2073,20 @@ class FactoresFlotacion:
     el proyecto uso durante un tiempo no era ninguna de ellas: mezclaba el
     maximo de una con el minimo de otra (MAT-D8, NOR-PUE-03).
 
-    HASTA DONDE LLEGA HOY ESE CAMPO, dicho con exactitud: llega a este objeto
-    y ahi se queda. `M5_verificaciones.v7_flotacion` arma la `Verificacion` de
-    V7 con el codigo, el numeral y la clave del criterio, y no con la fila:
-    la memoria NO imprime hoy de que fila salio el gamma de V7. Lo que si
-    imprime es el criterio 'factores_carga_aashto' entero en el bloque de
-    criterios usados, y ese criterio nombra la fila de cada estructura, de
-    modo que el dato esta en la memoria por esa via y no por esta. Llevarlo
-    tambien a la fila de V7 pide un campo mas en `Verificacion` y su
-    renderizado en M11, y es trabajo de la fase de reporte, no de esta.
+    HASTA DONDE LLEGA HOY ESE CAMPO: hasta la memoria, y desde C7. Lo que
+    esta clausula decia hasta entonces --- «llega a este objeto y ahi se
+    queda... la memoria NO imprime hoy de que fila salio el gamma de V7» ---
+    era cierto y ya no lo es. `M5.v7_flotacion` lo publica en el `valor` de su
+    `EleccionDeProyecto`, junto al gamma que sale de esa fila y con las SIETE
+    filas de EV de la tabla en `entre`.
+
+    Y LA SALIDA QUE ESA CLAUSULA DABA POR NECESARIA NO LO ERA, que es lo que
+    conviene no repetir: decia que llevar la fila a la memoria «pide un campo
+    mas en `Verificacion` y su renderizado en M11». No pidio ninguno de los
+    dos. La procedencia de un valor elegido ya tenia sitio --- la R1, que
+    `EleccionDeProyecto` implementa y `M11._elecciones_del_paso` imprime ---
+    y lo que faltaba era usarlo. Un campo nuevo en `Verificacion` habria sido
+    un segundo canal para lo que ya tenia el suyo.
     """
     gamma_DC: float
     gamma_EV: float
@@ -2233,6 +2338,19 @@ class EleccionDeProyecto:
     de catalogo no tiene numeral, y ponerle uno seria la cita falsa que
     NOR-PRO-01 y NOR-PRO-02 retiraron. Por eso el vacio esta permitido aqui y
     prohibido en `Umbral`.
+
+    `fundamento_id` ES OPCIONAL Y NO DEBERIA SERLO, y conviene decir por que
+    esta a medias en vez de dejarlo como si fuera una eleccion de diseno. La
+    §4.5 de la constitucion prohibe escribir el `por_que` en el modulo que
+    calcula -- sale de un `Fundamento`, cuyo verbo el registro contrasta
+    contra el `caracter` de sus citas --, y `PasoDeMemoria` lo cumple porque
+    `paso()` es su unica puerta. `EleccionDeProyecto` NO lo cumple: sus
+    `por_que` se escriben a mano en los modulos, uno por uno, y ninguno pasa
+    por T11. C7 abre la puerta que faltaba -- `eleccion()`, aqui al lado -- y
+    la usa en el unico sitio donde el `por_que` estaba diciendo algo que la
+    fuente no sostiene (la fila de gamma_p de V7, F5.V7_FILA). Migrar los
+    demas es trabajo aparte y no de esta sesion; mientras tanto el campo vacio
+    es la marca legible de cuales faltan.
     """
 
     que_se_adopto: str
@@ -2242,6 +2360,7 @@ class EleccionDeProyecto:
     por_que: str
     cita_id: str = ""
     clave_criterio: str = ""
+    fundamento_id: str = ""
 
     def __post_init__(self) -> None:
         if not str(self.por_que).strip():
@@ -2328,6 +2447,46 @@ def _registro_normativo():
     return _rn.construir()
 
 
+def exigir_seccion_coherente(material: "Material", seccion: "Seccion") -> None:
+    """
+    Que la `Seccion` que llega sea de la FORMA que el material declara.
+
+    LA ABRIO LA AUDITORIA ADVERSARIAL DE C7, y su medicion es la razon de que
+    esto exista:
+
+        cobertura_minima_aashto(material=catalogo(CONCRETO_REFORZADO),
+                                seccion=SeccionRectangular(B=3.00, H=1.50))
+        -> 0.4125     # Bc/8 de la fila «Reinforced Concrete PIPE», sobre un
+                      # RECTANGULO
+
+    O sea el defecto que C7 declara no cometer -- aplicar una fila rotulada
+    «Pipe» a algo que no lo es --, alcanzable en tres lineas. Ocurre porque
+    `M7.cobertura_minima_aashto` y `M8._elemento_de` bifurcan por
+    `material.forma` mientras la geometria la pone la `Seccion`, y nada ataba
+    las dos cosas. En produccion el par siempre es coherente --la seccion sale
+    del catalogo del material-- de modo que ningun numero publicado estaba
+    mal; lo que estaba mal era la palabra «POR CONSTRUCCION» con que los
+    docstrings de C7 describian esa correccion. Con esta guardia lo es.
+
+    Va aqui y no en el `Protocol`: la forma no es una propiedad que la seccion
+    necesite conocer de si misma -- todo el diseño de `Seccion` consiste en
+    que el calculo NO pregunte de que forma es --, y anadirsela para poder
+    compararla desharia justamente eso. Lo que hace falta es cruzar los dos
+    objetos en la puerta por la que entran juntos, que es esto.
+    """
+    rectangular = isinstance(seccion, SeccionRectangular)
+    if (material.forma is FormaSeccion.RECTANGULAR) is not rectangular:
+        raise DatoInvalidoError(
+            campo="seccion",
+            valor=type(seccion).__name__,
+            motivo=(f"el material declara forma {material.forma.value} y la "
+                    f"seccion recibida es {type(seccion).__name__}: el par no "
+                    "es coherente. La forma decide que fila de tabla aplica, "
+                    "de modo que con el par cruzado se le aplicaria a esta "
+                    "seccion la fila de la otra"),
+        )
+
+
 def paso(fundamento_id: str, **kw: Any) -> PasoDeMemoria:
     """
     Construye un `PasoDeMemoria` trayendo el `por_que` del registro.
@@ -2364,6 +2523,31 @@ def paso(fundamento_id: str, **kw: Any) -> PasoDeMemoria:
     kw.setdefault("fase", f.fase)
     return PasoDeMemoria(por_que=f.por_que, fundamento_id=f.id,
                          citas_textuales=citas, **kw)
+
+
+def eleccion(fundamento_id: str, **kw: Any) -> EleccionDeProyecto:
+    """
+    Construye una `EleccionDeProyecto` trayendo el `por_que` del registro, que
+    es lo mismo que `paso()` hace con un `PasoDeMemoria` y por la misma razon.
+
+    POR QUE HACIA FALTA, con el caso que lo abrio delante: el `por_que` de la
+    eleccion de fila de gamma_p de V7 estaba escrito a mano en
+    `M5.v7_flotacion` y decia, en mayusculas, que la tabla es normativa y que
+    que fila describe a la obra no lo es. Eso es cierto y es exactamente lo
+    que hay que decir -- pero escrito suelto no lo comprueba nadie: nada ataba
+    esa frase a un verbo, ni el verbo a las citas que lo sostienen. Puesto en
+    un `Fundamento`, T11 contrasta el verbo contra el `caracter` de las citas
+    y el censo de `test_memoria_sustentada` comprueba que no quede huerfano.
+
+    NO ES UN ATAJO PARA REPETIR EL `por_que` DEL PASO. Un `Fundamento` propio
+    para la eleccion es lo contrario de eso: separa la afirmacion fuerte del
+    paso -- «hay que verificar la flotacion», EXIGENCIA de tres numerales --
+    de la debil de la eleccion -- «esta obra es un portico rigido», que no lo
+    dice ninguna fuente --, que es lo que NOR-HID-04 pide y lo que una sola
+    cadena de texto no puede hacer.
+    """
+    f = _registro_normativo().fundamento(fundamento_id)
+    return EleccionDeProyecto(por_que=f.por_que, fundamento_id=f.id, **kw)
 
 
 # ===========================================================================
@@ -2403,12 +2587,24 @@ class TamizadoRasante:
     analogia declarada (Sec. 5.1).
 
     LA CLAVE ES LA FISICA, no la hidraulica: `cota_clave` = cota de entrada +
-    D interior + espesor de pared. EG-2013 508.07 mide el relleno minimo
+    altura interior + espesor de pared. EG-2013 508.07 mide el relleno minimo
     "desde la clave de la tuberia", que es la superficie exterior (MAT-D4).
-    `D_supuesto` sigue siendo el diametro INTERIOR -- el que entra en Manning
-    y en la geometria hidraulica -- y `D_exterior` es el que entra en la
-    cobertura minima de AASHTO (el Bc del Art. 12.6.6.3) y en el empuje de
-    flotacion de V7.
+
+    LOS DOS CAMPOS DE GEOMETRIA SE LLAMABAN `D_supuesto` Y `D_exterior`, y en
+    C7 dejaron de poder llamarse asi. No es cosmetica: eran dos nombres de
+    DIAMETRO para dos cosas que en un marco no son un diametro y ademas NO SON
+    LA MISMA DIMENSION.
+
+      `altura_supuesta`  es la INTERIOR y VERTICAL: el D de un tubo, la H de
+          una celda de marco. Es la que se apila sobre la cota de entrada para
+          dar la clave, y la que entra en Manning.
+      `ancho_exterior`   es el Bc del Art. 12.6.6.3 de AASHTO, "outside
+          diameter or WIDTH of the structure": HORIZONTAL. En un circulo
+          coincide con altura + 2t y por eso un solo campo bastaba; en un
+          marco son B + 2t y H + 2t, dos numeros distintos, y el nombre viejo
+          obligaba a elegir uno de los dos sin decir cual. Esa es exactamente
+          la confusion que dejaba a un marco recibiendo la cobertura de la
+          fila del tubo calculada sobre B'c.
     """
 
     cota_rasante_min: float               # msnm - el maximo de las dos
@@ -2419,9 +2615,9 @@ class TamizadoRasante:
     condicion_gobernante: CondicionRasante
     cota_entrada: float                   # msnm - fondo de la entrada
     cota_clave: float                     # msnm - cota entrada + D + espesor de pared
-    D_supuesto: float                     # m  - diametro INTERIOR del tamizado (Sec. 7.A)
+    altura_supuesta: float                # m  - altura INTERIOR del tamizado (Sec. 7.A)
     espesor_pared: float                  # m  - t; separa el interior del exterior
-    D_exterior: float                     # m  - D_supuesto + 2*t; el Bc de AASHTO
+    ancho_exterior: float                 # m  - el Bc de AASHTO Art. 12.6.6.3
     HW: float                             # m  - carga sobre el fondo de la entrada
     h_recubrimiento: float                # m  - relleno minimo sobre la clave
     espesor_paquete: float                # m  - cota rasante - cota subrasante
@@ -2429,6 +2625,16 @@ class TamizadoRasante:
     factible: bool                        # la rasante actual ya alcanza
     delta_rasante_m: float                # m  - 0.0 si es factible
     criterio_recubrimiento: Optional[str]
+    # EL NUMERAL QUE LA FILA G1 IMPRIME, resuelto donde se conoce la forma.
+    # Viaja aqui por la misma razon que `criterio_recubrimiento`: G1 recibe
+    # solo el tamizado, y con una constante unica atribuia a todo material la
+    # Tabla 12.6.6.3-1 de AASHTO -- que no tiene fila de cajon de concreto --.
+    numeral_g1: str
+    # CUAL de los dos minimos gano la regla del mayor. No es derivable de los
+    # campos de aqui -- h_rec es el maximo y no dice de donde salio --, y sin
+    # el la memoria enuncia la regla sin publicar el resultado de aplicarla.
+    # Sus dos valores son `M7.MINIMO_EG2013` y `M7.MINIMO_AASHTO`.
+    minimo_que_gobierna: str
     criterio_resguardo: str
     id_punto: Optional[str] = None
     numeral: str = "Sec. 7.A"
@@ -3377,9 +3583,48 @@ class ResultadoPunto:
     aceptado: bool
     material: Optional[Material] = None
     D: Optional[float] = None                      # m - diametro adoptado
+    # LA SECCION ADOPTADA, Y CONVIVE CON `D` A PROPOSITO. `D` es un escalar
+    # que en un marco vale la ALTURA, y retirarlo es trabajo de C8 porque lo
+    # leen el reporte y la tabla de diseño. Lo que C7 necesita es OTRA cosa:
+    # que la Fase 7 pueda ser CIEGA A LA FORMA. `M7.compatibilidad_geometrica`
+    # y `M7.tamizado_rasante` reciben la seccion desde C7, y sin este campo la
+    # CLI tendria que reconstruirla -- `SeccionCircular(D=resultado.D)` --, o
+    # sea volver a suponer la forma en el sitio exacto del que se acaba de
+    # sacar. Añadirlo NO toca `D`: lo deja donde estaba, para que C8 lo retire
+    # cuando le toque y con sus consumidores delante.
+    seccion: Optional[Seccion] = None
     resultado_hidraulico: Optional[ResultadoHidraulico] = None
     verificaciones: Tuple[Verificacion, ...] = ()
     motivo_rechazo: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        """
+        UN PUNTO DIMENSIONADO TRAE LAS DOS COSAS O NINGUNA. Mientras `D` y
+        `seccion` convivan, un resultado con `D` y sin `seccion` es la puerta
+        por la que vuelve la suposicion de forma: quien lo consuma tendra que
+        reconstruir la seccion, y la unica que puede reconstruir de un escalar
+        es la circular. La invariante esta en el tipo y no en un test porque
+        el primero que la violo fue un DOBLE DE PRUEBA, que es justo lo que un
+        test no vigila.
+        """
+        if self.D is not None and self.seccion is None:
+            raise ValueError(
+                "ResultadoPunto con `D` y sin `seccion`: un punto dimensionado "
+                "tiene que traer la seccion adoptada, o quien lo lea tendra "
+                "que suponer que es circular")
+        # Y LA PUERTA DE VUELTA, que la auditoria adversarial de C7 encontro
+        # abierta: la invariante era UNIDIRECCIONAL y aceptaba sin quejarse un
+        # `D` que no fuera la altura de la seccion. Mientras los dos campos
+        # convivan --`D` lo leen M11, la CLI y la GUI; `seccion` la lee
+        # `cli._fase_7`-- una divergencia entre ellos no la nota nadie.
+        if (self.D is not None and self.seccion is not None
+                and abs(self.D - self.seccion.altura) > TOL_UMBRAL_NORMATIVO):
+            raise ValueError(
+                f"ResultadoPunto incoherente: D = {self.D} y "
+                f"seccion.altura = {self.seccion.altura}. `D` es la altura "
+                "interior de la seccion adoptada -- el diametro en una "
+                "circular, la H de una celda en un marco --, y con los dos "
+                "campos vivos una divergencia no la nota ningun consumidor")
 
     @property
     def y_sobre_D(self) -> Optional[float]:

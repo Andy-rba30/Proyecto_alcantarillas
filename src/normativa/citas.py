@@ -1413,6 +1413,99 @@ EG_503_04 = _cita(
           "al pie."),
 )
 
+# ---------------------------------------------------------------------------
+# LAS TRES CITAS QUE DICEN BAJO QUE SECCION SE CONSTRUYE UN MARCO (C7, punto 6)
+# ---------------------------------------------------------------------------
+# El proyecto mapeaba material -> Seccion del EG-2013 con un dict, y un marco
+# de concreto reforzado heredaba la 506. La 506 se titula «Tuberia de concreto
+# reforzado»: es atribucion sin fuente, y ademas la MISMA forma del defecto
+# NOR-PUE-01 -- numeral que existe, titulo que suena a lo buscado, contenido
+# que es otra cosa --. Estas tres citas son las que lo cierran, y hacen falta
+# las tres porque cada una responde una pregunta distinta: donde NO cae el
+# marco (506.01), bajo que Seccion SI se construye (503.10 h) y que alcance
+# tiene esa Seccion (503.01).
+EG_506_01 = _cita(
+    id="EG2013.506.01#ALCANCE",
+    fuente_id="EG2013",
+    numeral="506.01",
+    titulo_numeral="Descripción",
+    pagina_impresa="959",
+    pagina_pdf=967,
+    pagina_pdf_titulo=967,
+    texto_literal=Verbatim(
+        texto=("Este trabajo consiste en la instalación de tubos de concreto "
+               "reforzado, aprobados para el paso de agua superficial y "
+               "desagües pluviales transversales, de acuerdo con estas "
+               "especificaciones y de conformidad con el Proyecto."),
+        pagina_pdf=967),
+    caracter=Caracter.DEFINICION,
+    nota=("LO QUE ESTA CITA HACE ES DELIMITAR, y por eso es DEFINICION y no "
+          "EXIGENCIA: no prohibe nada, dice de que trata la Seccion. Su "
+          "objeto es «la instalacion de TUBOS», y las otras tres piezas de la "
+          "misma Seccion lo confirman -- 506.02 remite a AASHTO M-170M y pide "
+          "el «diametro interno», y la partida 506.A del Anexo 2 se mide en "
+          "METRO LINEAL --. Un marco vaciado in situ no tiene diametro "
+          "interior ni se mide por metro lineal de tubo suministrado: la 506 "
+          "no lo alcanza. Los cuatro titulos de las Secciones 505 a 508 "
+          "empiezan por «Tuberia»."),
+)
+
+EG_503_01 = _cita(
+    id="EG2013.503.01#ALCANCE",
+    fuente_id="EG2013",
+    numeral="503.01",
+    titulo_numeral="Descripción",
+    pagina_impresa="905",
+    pagina_pdf=913,
+    pagina_pdf_titulo=913,
+    texto_literal=Verbatim(
+        texto=("Este trabajo consiste en el suministro de concreto de cemento "
+               "Portland de diversas resistencias a la compresión, para la "
+               "construcción de estructuras de drenaje, muros de contención, "
+               "cabezales de alcantarillas, cajas de captación, aletas, "
+               "sumideros y estructuras de puentes en general, de acuerdo con "
+               "estas especificaciones y de conformidad con el Proyecto."),
+        pagina_pdf=913),
+    caracter=Caracter.DEFINICION,
+    nota=("«ESTRUCTURAS DE DRENAJE» ES EL TERMINO DE ENCABEZAMIENTO y la "
+          "lista que sigue es ENUNCIATIVA, no cerrada: un marco de concreto "
+          "vaciado in situ es una estructura de drenaje y no esta nombrado "
+          "ahi. Que si lo esta bajo esta Seccion lo prueba el 503.10 h), que "
+          "le fija plazo de desencofrado a la «placa superior en "
+          "alcantarillas de cajon». Por si sola esta cita NO dice que el "
+          "marco se pague aqui: eso es ensamblaje del proyecto sobre las tres "
+          "citas mas la ausencia de partida propia."),
+)
+
+EG_503_10H = _cita(
+    id="EG2013.503.10h#CAJON",
+    fuente_id="EG2013",
+    numeral="503.10 h)",
+    titulo_numeral="Operaciones para el vaciado de la mezcla",
+    pagina_impresa="926",
+    pagina_pdf=934,
+    pagina_pdf_titulo=929,
+    texto_literal=Verbatim(
+        texto="Placa superior en alcantarillas de cajón: 14 días",
+        pagina_pdf=934),
+    caracter=Caracter.RECOMENDACION,
+    nota=("ES LA UNICA MENCION DEL CAJON DE CONCRETO EN TODO EL EG-2013 -- "
+          "barrido de las 1282 paginas, ver SIN_PARTIDA_DE_CAJON_EG2013 -- y "
+          "hay que leerla por lo que prueba y no por lo que dice. "
+          "LO QUE PRUEBA: que el EG-2013 CONTEMPLA la alcantarilla de cajon "
+          "de concreto y la regula bajo la Seccion 503, «Concreto "
+          "estructural». Una norma que fija plazo de desencofrado de la placa "
+          "superior de un cajon esta regulando su vaciado in situ. "
+          "LO QUE NO DICE: nada sobre pago, ni sobre cobertura, ni sobre "
+          "dimensiones. Y su CARACTER no es exigencia: el parrafo que la "
+          "introduce dice «Excepcionalmente si las operaciones de campo no "
+          "estan controladas por pruebas de laboratorio la siguiente lista "
+          "PUEDE ser empleada como GUIA para el tiempo minimo requerido antes "
+          "de la remocion de encofrados y soportes». O sea que el plazo es "
+          "guia condicionada; lo que NO es condicionado es la existencia de "
+          "la fila, que es lo unico que este proyecto le pide."),
+)
+
 EG_508_07 = _cita(
     id="EG2013.508.07#RELLENO_MIN",
     fuente_id="EG2013",
@@ -1958,6 +2051,152 @@ AASHTO_T5_10_1_1 = _cita(
           "que la regla del mayor la pasaria a ganar E.060."),
 )
 
+# EL GEMELO DE 2.4.3.8.2, y se transcribe para que la correspondencia sea
+# comprobable y no una afirmacion: el Manual de Puentes traduce este articulo
+# casi palabra por palabra. La Sec. 0.2 adopta AASHTO LRFD de extremo a
+# extremo, de modo que tener las dos permite ver que el corpus peruano y el
+# adoptado dicen lo mismo aqui -- que es justo lo que el proyecto necesita
+# poder ensenar cuando aplica una a un caso que la otra no cubre.
+AASHTO_3_7_2 = _cita(
+    id="AASHTO_LRFD_9.3.7.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.7.2",
+    titulo_numeral="Buoyancy",
+    pagina_impresa="3-45",
+    pagina_pdf=99,
+    texto_literal=Verbatim(
+        texto=("Buoyancy shall be considered to be an uplift force, taken as "
+               "the sum of the vertical components of static pressures, as "
+               "specified in Article 3.7.1, acting on all components below "
+               "design water level."),
+        pagina_pdf=99),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP.2.4.3.8.2",),
+    nota=("«all components below design water level»: el mismo ambito neutro "
+          "que el numeral peruano. Es DEFINITORIA de la fuerza; quien pone la "
+          "condicion de disparo para una estructura enterrada es el 12.6.1, "
+          "que remite aqui expresamente."),
+)
+
+
+# LAS DOS EXIGENCIAS DE FLOTACION DE LA SEC. 12, que V7 no citaba. Hasta C7
+# el unico respaldo de V7 en el registro eran las dos TABLAS de factores del
+# Manual de Puentes, que dan gamma y no obligan a verificar nada. Estas dos si
+# obligan, con `shall`, y su ambito -- «buried structures» -- alcanza al cajon
+# de concreto por el 12.1 SCOPE, que lo nombra: «reinforced concrete
+# cast-in-place and precast arch, box and elliptical structures».
+AASHTO_12_6_1 = _cita(
+    id="AASHTO_LRFD_9.12.6.1#FLOTACION",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.1",
+    titulo_numeral="Loading",
+    pagina_impresa="12-14",
+    pagina_pdf=1652,
+    texto_literal=Verbatim(
+        texto=("Water buoyancy loads shall be evaluated for buried "
+               "structures with inverts below the water table to control "
+               "flotation, as indicated in Article 3.7.2."),
+        pagina_pdf=1652),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP.2.4.3.8.2",),
+    nota=("ES LA UNICA APARICION DE «flotation» EN LAS 1905 PAGINAS del PDF, "
+          "medida. Y trae su propia CONDICION DE DISPARO -- «with inverts "
+          "below the water table» --, que es la que hace de esta verificacion "
+          "algo que no siempre aplica: sin freatico sobre el invert no hay "
+          "nada que evaluar. "
+          "NO SE LEE SOLA: dos frases mas abajo, EN EL MISMO PARRAFO de este "
+          "mismo numeral, esta `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, que manda "
+          "aplicar el factor MAXIMO de EV -- lo contrario de lo que V7 hace --. "
+          "C7 cito esta frase y elidio aquella, y lo encontro su auditoria "
+          "adversarial: recortar un parrafo justo antes de la frase que "
+          "discute tu propia lectura es la forma NOR-HID-01 aplicada a un "
+          "recorte. La discusion esta registrada en DIS-AASHTO-GAMMA-EV-12.6.1."),
+)
+
+# LA FRASE QUE C7 ELIDIO, Y VA COMO CITA PROPIA PARA QUE NADIE PUEDA VOLVER A
+# CITAR EL PARRAFO SIN ELLA. Es del mismo numeral y del mismo parrafo que la
+# de arriba, dos frases despues, y apunta en direccion CONTRARIA a la lectura
+# que V7 aplica: V7 minora EV (gamma = 0.90, amparado en MP.2.4.5.3.1#MINIMO)
+# y esto manda mayorarla. Las dos son `shall`. Que la discusion exista es un
+# hecho de la fuente; como se resuelve es del proyecto, y por eso lo resuelve
+# una `Discrepancia` declarada y no un silencio.
+AASHTO_12_6_1_GAMMA_EV = _cita(
+    id="AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.1",
+    titulo_numeral="Loading",
+    pagina_impresa="12-14",
+    pagina_pdf=1652,
+    texto_literal=Verbatim(
+        texto=("For vertical earth pressure, the maximum load factor from "
+               "Table 3.4.1-2 shall apply."),
+        pagina_pdf=1652),
+    caracter=Caracter.EXIGENCIA,
+    nota=("PARRAFO PROPIO dentro del num. 12.6.1, inmediatamente despues de "
+          "la frase de flotacion y antes de la de reparto de carga de rueda. "
+          "ES `lex specialis` PARA ESTRUCTURAS ENTERRADAS y dice MAXIMO, "
+          "mientras el Art. 3.4.1 -- que el Manual de Puentes traduce en "
+          "2.4.5.3.1 -- manda investigar el MINIMO cuando la carga permanente "
+          "aumenta la estabilidad. Los dos son `shall`. "
+          "QUE NO SE DEDUZCA DE AQUI: que V7 este mal. Aplicar el maximo a EV "
+          "en una verificacion de FLOTACION haria la comprobacion MAS FACIL, "
+          "no mas exigente, porque ahi EV estabiliza -- medido sobre la "
+          "corrida del entregable de C7: el lado estabilizante pasaria de "
+          "23.256 a 34.884 kN/m contra los mismos 20.405 de subpresion, y el "
+          "margen se multiplicaria por cinco --. Esa es justamente la razon "
+          "de que el proyecto lea esta frase como referida al diseno POR "
+          "empuje de tierra y no al equilibrio de flotacion. Pero es una "
+          "LECTURA: el texto no trae esa salvedad, y por eso vive en "
+          "DIS-AASHTO-GAMMA-EV-12.6.1 y no en un comentario."),
+)
+
+AASHTO_12_6_2_3 = _cita(
+    id="AASHTO_LRFD_9.12.6.2.3#UPLIFT",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.2.3",
+    titulo_numeral="Uplift",
+    pagina_impresa="12-19",
+    pagina_pdf=1657,
+    texto_literal=Verbatim(
+        texto=("Uplift shall be considered where structures are installed "
+               "below the highest anticipated groundwater level."),
+        pagina_pdf=1657),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP.2.4.3.8.2",),
+    nota=("SEGUNDA exigencia, acumulativa con la del 12.6.1 y no redundante: "
+          "aquella manda EVALUAR la carga de flotacion y esta manda "
+          "CONSIDERAR el levantamiento. Su condicion de disparo es el nivel "
+          "freatico MAS ALTO previsto, que es la hipotesis que V7 adopta."),
+)
+
+# EL COMENTARIO QUE DA LA FORMA DE LA COMPARACION, y hay que leerlo con su
+# caracter puesto: es un COMENTARIO y dice `should`. Es lo mas cercano que
+# existe -- en cualquiera de las dos fuentes -- a la desigualdad que V7
+# evalua, y aun asi NO la escribe: no menciona factores concretos ni
+# extremos. Por eso la inecuacion del proyecto es ENSAMBLAJE y se imprime
+# como `Interpretacion`, no como cita (NOR-HID-04).
+AASHTO_C12_6_2_3 = _cita(
+    id="AASHTO_LRFD_9.C12.6.2.3",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C12.6.2.3",
+    titulo_numeral="Uplift",
+    pagina_impresa="12-19",
+    pagina_pdf=1657,
+    texto_literal=Verbatim(
+        texto=("To satisfy this provision, the dead load on the crown of the "
+               "structure should exceed the buoyancy of the culvert, using "
+               "load factors as appropriate."),
+        pagina_pdf=1657),
+    caracter=Caracter.RECOMENDACION,
+    nota=("DICE «the culvert», NO «pipe», y eso importa: es de las pocas "
+          "frases de la Sec. 12 sobre flotacion que no se restringe a "
+          "tuberia. Pero es comentario y dice `should`: sostiene la FORMA de "
+          "la comparacion -- peso de la clave contra empuje -- y no el "
+          "criterio de aceptacion. Un factor de seguridad numerico NO sale de "
+          "aqui, y atribuirselo seria inventarle una exigencia."),
+)
+
+
 AASHTO_12_6_6_3 = _cita(
     id="AASHTO_LRFD_9.12.6.6.3#COBERTURA",
     fuente_id="AASHTO_LRFD_9",
@@ -2130,6 +2369,86 @@ AASHTO_C3_4_1 = _cita(
 # ===========================================================================
 # Manual de Puentes -- el resto de la cadena
 # ===========================================================================
+
+# EL NUMERAL QUE OBLIGA, que el codigo llevaba doce veces como CADENA y cero
+# como cita. `M8.NUMERAL_V7`, `M5.NUMERAL_V7`, el docstring de
+# `empuje_flotacion_kn_m`, `M9.NUMERAL_SUBPRESION` y `criterios_adoptados` lo
+# nombran; ningun test lo habia contrastado nunca contra su pagina. Se
+# transcribe en C7 y dice lo que se le atribuia -- que es el resultado bueno,
+# porque el malo habria sido descubrir que no.
+MP_SUBPRESIONES = _cita(
+    id="MP.2.4.3.8.2",
+    fuente_id="MP",
+    numeral="2.4.3.8.2",
+    titulo_numeral="Subpresiones",
+    pagina_impresa="113",
+    pagina_pdf=114,
+    texto_literal=Verbatim(
+        texto=("La subpresión (flotabilidad) se deberá considerar como una "
+               "fuerza de levantamiento, tomada como la sumatoria de las "
+               "componentes verticales de las presiones hidrostáticas, según "
+               "lo especificado en el Artículo 2.4.3.8.1 (3.7.1 AASHTO) que "
+               "actúa sobre todos los componentes de la estructura que se "
+               "encuentran debajo del nivel de agua de diseño."),
+        pagina_pdf=114),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("AASHTO_LRFD_9.3.7.2",),
+    nota=("SU AMBITO ES NEUTRO RESPECTO DE LA FORMA y por eso el marco entra "
+          "DIRECTO, sin analogia que declarar: dice «todos los componentes de "
+          "la estructura», no «la tuberia». DEFINE LA FUERZA U y nada mas: no "
+          "fija estado limite, ni combinacion, ni criterio de aceptacion. La "
+          "desigualdad que V7 evalua NO sale de aqui -- ver el `por_que` de "
+          "F5.V7 --. El «2.4.3.8.1» al que remite es el empuje hidrostatico "
+          "general, del que esta es la componente vertical."),
+)
+
+MP_FACTOR_MINIMO = _cita(
+    id="MP.2.4.5.3.1#MINIMO",
+    fuente_id="MP",
+    numeral="2.4.5.3.1",
+    titulo_numeral="Factores de Carga y Combinaciones de Carga",
+    pagina_impresa="142",
+    pagina_pdf=143,
+    pagina_pdf_titulo=141,
+    texto_literal=Verbatim(
+        texto=("Si la carga permanente aumenta la estabilidad o la capacidad "
+               "de carga de un componente o puente, también se deberá "
+               "investigar el valor mínimo del factor de carga para dicha "
+               "carga permanente."),
+        pagina_pdf=143),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("AASHTO_LRFD_9.T3.4.1-2",),
+    nota=("ES EL ESLABON QUE FALTABA, y faltaba entero: es lo que AUTORIZA a "
+          "V7 a minorar EV y DC. Sin esta frase, tomar el extremo minimo de "
+          "la fila de gamma_p seria una eleccion del proyectista sin "
+          "respaldo; con ella es lo que la fuente manda hacer cuando la carga "
+          "permanente ESTABILIZA, que es exactamente el caso de la flotacion. "
+          "El titulo del numeral se imprime en la pag. impresa 140 (PDF 141) "
+          "y el texto en la 142 (PDF 143): por eso `pagina_pdf_titulo`."),
+)
+
+MP_EV = _cita(
+    id="MP.2.4.5.2#EV",
+    fuente_id="MP",
+    numeral="2.4.5.2",
+    titulo_numeral="Cargas y Denominación de las Cargas",
+    pagina_impresa="140",
+    pagina_pdf=141,
+    pagina_pdf_titulo=140,
+    texto_literal=Verbatim(
+        texto="presión vertical del peso propio del suelo de relleno",
+        pagina_pdf=141),
+    caracter=Caracter.DEFINICION,
+    nota=("LO QUE LA DEFINICION NO DICE, y hay que decirlo porque el proyecto "
+          "lo da por supuesto: no aparecen las palabras «sobre», «encima» ni "
+          "«cobertura». Que EV sea el relleno que descansa SOBRE la "
+          "estructura es una lectura -- razonable y estandar, y sostenida por "
+          "la fila «enterrada» que se elige, no por esta frase --. Se "
+          "transcribe el predicado y no la linea entera («EV = presion...») "
+          "porque la tabla de simbolos separa el simbolo del texto y el "
+          "volcado los reordena."),
+)
+
 
 MP_T_COMBINACIONES = _cita(
     id="MP.T2.4.5.3.1-1",
@@ -2984,5 +3303,106 @@ SIN_COTAS_LAMINA_03 = AfirmacionNegativa(
                     "0.80 min., 1.00m --"),
     cita_id="MC_HHD.LAMINA_03")
 
+# LA SECCION 12 NO TABULA LA COBERTURA DE UN CAJON DE CONCRETO, y hace falta
+# decirlo EN EL REGISTRO porque la tentacion aqui no es una lamina sino una
+# tabla que casi encaja: tiene fila de concreto, tiene cajon, y ninguna de las
+# dos es la que hace falta -- la de concreto es de TUBO y la de cajon es
+# METALICA --. La regla vinculante #9 de la Familia C mandaba traer «B'c/8»
+# para el marco desde esa misma tabla, y se retiro en C7 por esto.
+#
+# TRES FALSOS AMIGOS, y el orden es de menos a mas peligroso. El primero es de
+# titulo: `12.11.5.4—Minimum Cover for Precast Box Structures` esta en el
+# articulo de los cajones, se titula «Minimum Cover» y su cuerpo entero es
+# «The provisions of Article 5.10.1 shall apply» -- y el 5.10.1 es «Concrete
+# Cover», recubrimiento de armadura --. El segundo es de NUMERO, y es peor
+# porque el numero SI es una altura de relleno: las cuatro apariciones de
+# «2.0 ft» en 12.11 son umbrales que CONMUTAN EL METODO de reparto de la carga
+# de rueda, y las cuatro presuponen que existe la alcantarilla con menos de
+# 2.0 ft encima. Leer cualquiera como «cobertura minima = 0.61 m» invierte el
+# sentido de la frase. El tercero solo se ve renderizado: las Figuras
+# 12.11.2.2.1-1 y -2 rotulan «LEVELING COURSE (FINE GRANULAR FILL MATERIAL
+# 2" MIN.)», que es la cama BAJO el cajon y no cobertura encima.
+SIN_CAJON_DE_CONCRETO_T12663 = AfirmacionNegativa(
+    que_no_dice=("la Tabla 12.6.6.3-1 no tiene fila de alcantarilla CAJON DE "
+                 "CONCRETO -- ni vaciada in situ ni prefabricada --, y el "
+                 "Art. 12.11, que es el de los cajones de concreto, no fija "
+                 "altura minima de cobertura de suelo ni se remite al "
+                 "Art. 12.6.6.3"),
+    ambito_barrido=(
+        "las CATORCE filas de la tabla, leidas sobre la pagina RENDERIZADA "
+        "(impresa 12-22, PDF 1660): sus dos filas de concreto dicen "
+        "«Reinforced Concrete PIPE» y la unica que trae la palabra «box» es "
+        "«Structural Plate Box Structures», que es METALICA y cuya celda de "
+        "cobertura dice «1.4 ft. as specified in Article 12.9.1»: SI da "
+        "cobertura, y ademas remite. ESTA FRASE DECIA «ni siquiera da "
+        "cobertura» Y ERA FALSA SOBRE LA PROPIA PAGINA que este objeto existe "
+        "para acreditar; lo encontro la auditoria adversarial de C7. El hecho "
+        "negativo no cambia -- esa fila es metalica y no cubre a un marco de "
+        "concreto --; lo que cambia es que se sostiene por lo que la fila ES y "
+        "no por un vacio que no tiene. Mas el Art. 12.11 completo, "
+        "«REINFORCED CONCRETE CAST-IN-PLACE AND PRECAST BOX CULVERTS AND "
+        "REINFORCED CAST-IN-PLACE ARCHES», SIETE paginas impresas de la 12-68 "
+        "a la 12-74, delimitadas por encabezado impreso (12.10.5 cierra "
+        "antes; 12.12 «THERMOPLASTIC PIPES» abre en la 12-74) y leidas las "
+        "siete renderizadas ademas del volcado. Censo dentro de ese ambito, "
+        "insensible a mayusculas: «12.6.6» 0 veces, «12.6.6.3» 0, «table "
+        "12.6.6.3-1» 0, «fill height» 0, «depth of fill» 0, «soil cover» 0, "
+        "«earth cover» 0; «minimum cover» 1, y es el titulo del falso amigo "
+        "12.11.5.4. «cover» 3: ese titulo mas DOS de los cuatro umbrales de "
+        "metodo de «2.0 ft». «fill» 7: los otros DOS de esos umbrales, TRES "
+        "«backfill» del num. 12.11.2.2.1 --donde H es «depth of backfill», la "
+        "VARIABLE de la carga de tierra, sin cota inferior-- y el «compacted "
+        "fill» / «uncompacted fill» del C12.11.2.2.1. EL REPARTO ANTERIOR "
+        "DECIA «los cuatro umbrales y cinco backfill», que suma NUEVE y no "
+        "los SIETE que el propio censo declara: lo encontro la auditoria "
+        "adversarial de C7 remidiendo, y es el defecto propio de este objeto "
+        "-- un barrido cuyo desglose no cuadra no acredita el hecho negativo, "
+        "aunque los totales sean correctos, que lo eran --. Lo unico que "
+        "remite hacia fuera "
+        "es el paraguas generico del 12.11.1 -- «Designs shall conform to "
+        "applicable Articles of these Specifications, except as provided "
+        "otherwise herein» --, que no es la remision especifica a 12.6.6.3. "
+        "Paginacion medida sobre encabezados impresos: pagina PDF 1-based = "
+        "folio + 1638 (en indice 0-based, + 1637); comprobada en los folios "
+        "12-67, 12-68, 12-69 y 12-74"),
+    cita_id="AASHTO_LRFD_9.T12.6.6.3-1")
+
+# EL EG-2013 NO LE DA PARTIDA PROPIA AL CAJON, y esta afirmacion es la que
+# autoriza a este proyecto a decir «se paga por 503 + 504» en vez de buscar un
+# numeral que no existe. Es exactamente el mismo argumento que
+# `M9.condicion_normativa_cabezal` ya hacia para los cabezales -- «NO tienen
+# partida con numeral propio: se pagan bajo el volumen de concreto y el
+# acero» --, y ahora con el barrido escrito en vez de supuesto.
+SIN_PARTIDA_DE_CAJON_EG2013 = AfirmacionNegativa(
+    que_no_dice=("el EG-2013 no tiene ninguna Seccion ni ninguna partida de "
+                 "alcantarilla de CAJON de concreto: ni vaciada in situ ni "
+                 "prefabricada"),
+    ambito_barrido=(
+        "las 1282 paginas del PDF, con el desfase medido sobre el encabezado "
+        "impreso en 1268 de ellas -- pagina impresa = PDF (1-based) - 8, sin "
+        "excepciones --. Dos barridos. "
+        "EL PRIMERO, las Secciones del Capitulo V: existen de la 501 a la 514 "
+        "y ninguna mas, y las cuatro de alcantarilla se titulan «Tuberia de "
+        "concreto simple» (505, impresa 949), «Tuberia de concreto reforzado» "
+        "(506, impresa 959), «Tuberia metalica corrugada» (507, impresa 969) "
+        "y «Tuberia de polietileno de alta densidad» (508, impresa 981). Las "
+        "cuatro empiezan por «Tuberia». "
+        "EL SEGUNDO, por cadena sobre el documento entero, sin tildes y en "
+        "minusculas: «box» 0 veces, «box culvert» 0, «ponton» 0, «alcantarilla "
+        "de cajon» 0, «marco de concreto» 0, «seccion rectangular» 0, "
+        "«vaciado in situ» 0; «cajon» CUATRO, y tres son falsos amigos -- el "
+        "«cajon mezclador» de la Sec. 420 (impresa 536), los «cajones» de "
+        "cimentacion de la Tabla 503-08 (impresa 915) y las «alcantarillas de "
+        "cajon de PIEDRA» de la Sec. 601 Mamposteria (impresa 1045) --. La "
+        "cuarta es la unica real y es EG2013.503.10h#CAJON. "
+        "Y EL INDICE OFICIAL DE PARTIDAS, Tabla Anexo 2-1 (impresa 1273): el "
+        "Capitulo 5 lista 501.A-D, 502.A, 503.A «Concreto estructural» (m3), "
+        "504.A «Acero de refuerzo» (kg), 505.A a 508.A -- las cuatro "
+        "«Tuberia... de diametro interior» en metro lineal -- y 509.A en "
+        "adelante. Ninguna partida de cajon, marco ni box."),
+    cita_id="EG2013.503.10h#CAJON")
+
 AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
-                          SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03)
+                          SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03,
+                          SIN_CAJON_DE_CONCRETO_T12663,
+                          SIN_PARTIDA_DE_CAJON_EG2013)

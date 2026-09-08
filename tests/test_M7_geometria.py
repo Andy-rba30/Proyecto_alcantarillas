@@ -29,13 +29,16 @@ from constantes_normativas import H_RELLENO_MIN
 from dominios import ESVIAJE_MAX
 from modelos import (CondicionRasante, ControlGobernante, CriterioPendienteError,
                      DatoInvalidoError, DisenoNoFactibleError, ErrorProyecto,
-                     Familia, LimiteNumericoError, PuntoCritico,
-                     ResultadoHidraulico, TipoMaterial)
+                     Familia, FormaSeccion, LimiteNumericoError, PuntoCritico,
+                     ResultadoHidraulico, SeccionCircular,
+                     SeccionRectangular, TipoMaterial)
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import catalogo
 from tolerancias import TOL_UMBRAL_NORMATIVO
 from modulos.M5_verificaciones import v4_carga_entrada
 from modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
+                                  CRITERIO_COBERTURA_CAJON,
+                                  MINIMO_AASHTO, numeral_g1,
                                   CRITERIO_CONDICION_PAVIMENTO,
                                   CRITERIO_TALUD, altura_recubrimiento,
                                   criterio_recubrimiento,
@@ -46,8 +49,8 @@ from modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
                                   g2_cota_salida, longitud_conducto,
                                   proyeccion_taludes, tamizado_rasante)
 from tests.fixtures.casos_patron import CP9_GEOMETRIA_7B
-from tests.apoyo.criterios import sin_valor
-from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.criterios import declarados, sin_valor
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 
 # El HDPE es el unico material con minimo de relleno en EG-2013 (0.30 m,
 # Subseccion 508.07, pag. 984). Ya NO es el h_rec del tamizado: desde C01,
@@ -177,8 +180,15 @@ def test_h_recubrimiento_del_hdpe_lo_gobierna_la_tabla_de_aashto(hdpe):
     la Tabla 12.6.6.3-1 pide ID/2 >= 24 in para el termoplastico, y con
     D = 1.50 m eso son 0.75 m: 2.5 veces el valor que el proyecto usaba.
     """
-    assert altura_recubrimiento(material=hdpe, D=1.50) == pytest.approx(0.75)
-    assert altura_recubrimiento(material=hdpe, D=1.50) > H_REC_EG2013_HDPE
+    h_rec, gobierna = altura_recubrimiento(material=hdpe,
+                                           seccion=SeccionCircular(D=1.50))
+    assert h_rec == pytest.approx(0.75)
+    assert h_rec > H_REC_EG2013_HDPE
+    # Y el paso tiene que poder decir CUAL de los dos minimos gano, con los
+    # dos numeros: la regla del mayor sin el resultado de aplicarla no dice
+    # que hay que mover si el punto no cabe.
+    assert gobierna.startswith("AASHTO LRFD Tabla 12.6.6.3-1")
+    assert "0.750" in gobierna and "0.300" in gobierna
 
 
 def test_h_recubrimiento_de_concreto_sale_de_la_tabla_y_no_de_una_analogia(concreto):
@@ -191,9 +201,14 @@ def test_h_recubrimiento_de_concreto_sale_de_la_tabla_y_no_de_una_analogia(concr
     Con D = 1.50 m y t = 0.10 m: Bc = 1.70 m, Bc/8 = 0.2125 m y sqrt(Bc)/8 en
     pies son 0.0900 m, de modo que gobierna el piso de 0.3048 m.
     """
-    h_rec = altura_recubrimiento(material=concreto, D=1.50)
+    h_rec, gobierna = altura_recubrimiento(material=concreto,
+                                           seccion=SeccionCircular(D=1.50))
     assert h_rec == pytest.approx(0.3048)
     assert h_rec > 0.30
+    # Y EL CASO QUE HACE VER POR QUE EL PAR IMPORTA: en concreto no hay
+    # segundo minimo con que comparar -- EG-2013 solo tabula HDPE --, de modo
+    # que "el MAYOR entre los dos" no describe lo que paso. El paso lo dice.
+    assert "no fija minimo de relleno para este material" in gobierna
 
 
 def test_el_recubrimiento_declara_su_procedencia_en_la_verificacion(concreto, hdpe):
@@ -221,7 +236,7 @@ def test_tamizado_toma_el_maximo_y_reporta_las_dos_condiciones(hdpe):
     por resguardo    : 42.10 + 0.50 + 0.80 + 0.15 = 43.55
     """
     punto = _punto()
-    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
+    t = tamizado_rasante(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50), HW=0.50)
 
     assert t.cota_por_recubrimiento == pytest.approx(44.55)
     assert t.cota_por_resguardo == pytest.approx(43.55)
@@ -242,7 +257,7 @@ def test_un_HW_alto_hace_gobernar_el_resguardo(hdpe):
     0.50 m mas alta y 1.20 ya no la supera.
     """
     punto = _punto()
-    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=1.70)
+    t = tamizado_rasante(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50), HW=1.70)
 
     assert t.condicion_gobernante is CondicionRasante.RESGUARDO
     assert t.cota_rasante_min == pytest.approx(44.75)
@@ -256,7 +271,7 @@ def test_en_empate_gobierna_el_recubrimiento(hdpe):
     recubrimiento, que es el que no depende del calculo hidraulico.
     """
     punto = _punto()
-    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=1.50)
+    t = tamizado_rasante(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50), HW=1.50)
 
     assert t.cota_por_recubrimiento == pytest.approx(t.cota_por_resguardo)
     assert t.condicion_gobernante is CondicionRasante.RECUBRIMIENTO
@@ -268,14 +283,14 @@ def test_el_tamizado_declara_de_donde_sale_cada_umbral(hdpe):
     12.6.6.3-1, que es [C]. El tamizado tiene que citarla, tambien cuando la
     condicion que manda es esa.
     """
-    t = tamizado_rasante(punto=_punto(), material=hdpe, D_supuesto=1.50, HW=0.50)
+    t = tamizado_rasante(punto=_punto(), material=hdpe, seccion=SeccionCircular(D=1.50), HW=0.50)
     assert t.criterio_recubrimiento == "cobertura_minima_aashto"
     assert t.criterio_gobernante == "cobertura_minima_aashto"
     assert t.criterio_resguardo == "resguardo_HW_subrasante"
     # La geometria fisica viaja con el resultado, para que la memoria pueda
     # mostrar sobre que diametro se calculo la cobertura.
     assert t.espesor_pared == pytest.approx(0.05)
-    assert t.D_exterior == pytest.approx(1.60)
+    assert t.ancho_exterior == pytest.approx(1.60)
 
 
 # ---------------------------------------------------------------------------
@@ -284,7 +299,7 @@ def test_el_tamizado_declara_de_donde_sale_cada_umbral(hdpe):
 
 def test_rasante_suficiente_da_delta_cero_y_factible(hdpe):
     punto = _punto(cota_rasante=45.00, cota_subrasante=44.85)
-    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
+    t = tamizado_rasante(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50), HW=0.50)
 
     assert t.factible
     assert t.delta_rasante_m == pytest.approx(0.0)
@@ -301,7 +316,7 @@ def test_rasante_insuficiente_devuelve_el_delta_en_cm_sin_lanzar(hdpe):
     Con la rasante en 44.35 y minima 44.55 -> faltan 0.20 m = 20 cm.
     """
     punto = _punto(cota_rasante=44.35, cota_subrasante=44.20)
-    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
+    t = tamizado_rasante(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50), HW=0.50)
 
     assert not t.factible
     assert t.delta_rasante_m == pytest.approx(0.20)
@@ -313,7 +328,7 @@ def test_rasante_insuficiente_devuelve_el_delta_en_cm_sin_lanzar(hdpe):
 def test_la_excepcion_del_no_factible_es_de_la_taxonomia_y_lleva_el_delta(hdpe):
     """Nunca una excepcion generica: DisenoNoFactibleError con delta_rasante_m."""
     punto = _punto(cota_rasante=44.35, cota_subrasante=44.20)
-    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
+    t = tamizado_rasante(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50), HW=0.50)
 
     with pytest.raises(DisenoNoFactibleError) as exc:
         t.exigir_factible()
@@ -325,7 +340,7 @@ def test_la_excepcion_del_no_factible_es_de_la_taxonomia_y_lleva_el_delta(hdpe):
 
 def test_g1_reproduce_el_veredicto_del_tamizado(hdpe):
     punto = _punto(cota_rasante=44.35, cota_subrasante=44.20)
-    t = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
+    t = tamizado_rasante(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50), HW=0.50)
     v = g1_rasante_congelada(t)
 
     assert v.codigo == "G1"
@@ -352,7 +367,7 @@ def test_la_rasante_minima_de_7A_hace_cumplir_V4_al_limite(hdpe):
     HW = 1.70                                   # gobierna el resguardo
     e_paq = 0.15
     base = _punto()
-    t = tamizado_rasante(punto=base, material=hdpe, D_supuesto=1.50, HW=HW)
+    t = tamizado_rasante(punto=base, material=hdpe, seccion=SeccionCircular(D=1.50), HW=HW)
     assert t.condicion_gobernante is CondicionRasante.RESGUARDO
 
     congelado = _punto(cota_rasante=t.cota_rasante_min,
@@ -368,7 +383,7 @@ def test_un_centimetro_menos_de_rasante_rompe_V4(hdpe):
     """La otra mitad del mismo hecho: bajo la minima de 7.A, V4 no cumple."""
     HW = 1.70
     e_paq = 0.15
-    t = tamizado_rasante(punto=_punto(), material=hdpe, D_supuesto=1.50, HW=HW)
+    t = tamizado_rasante(punto=_punto(), material=hdpe, seccion=SeccionCircular(D=1.50), HW=HW)
 
     rasante = t.cota_rasante_min - 0.01
     punto = _punto(cota_rasante=rasante, cota_subrasante=rasante - e_paq)
@@ -386,8 +401,8 @@ def test_el_paquete_no_cambia_la_condicion_de_resguardo_solo_la_traslada(hdpe):
     delgado = _punto(cota_rasante=44.20, cota_subrasante=44.05)     # e_paq 0.15
     grueso = _punto(cota_rasante=44.50, cota_subrasante=44.20)      # e_paq 0.30
 
-    t1 = tamizado_rasante(punto=delgado, material=hdpe, D_supuesto=1.50, HW=1.20)
-    t2 = tamizado_rasante(punto=grueso, material=hdpe, D_supuesto=1.50, HW=1.20)
+    t1 = tamizado_rasante(punto=delgado, material=hdpe, seccion=SeccionCircular(D=1.50), HW=1.20)
+    t2 = tamizado_rasante(punto=grueso, material=hdpe, seccion=SeccionCircular(D=1.50), HW=1.20)
 
     assert t2.cota_por_resguardo - t1.cota_por_resguardo == pytest.approx(0.15)
 
@@ -401,8 +416,8 @@ def test_un_diametro_menor_sube_el_resguardo_relativo_al_recubrimiento(hdpe):
     corre otra vez con el diametro adoptado.
     """
     punto = _punto()
-    grande = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=1.50, HW=0.50)
-    chico = tamizado_rasante(punto=punto, material=hdpe, D_supuesto=0.90, HW=0.50)
+    grande = tamizado_rasante(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50), HW=0.50)
+    chico = tamizado_rasante(punto=punto, material=hdpe, seccion=SeccionCircular(D=0.90), HW=0.50)
 
     assert chico.cota_por_recubrimiento < grande.cota_por_recubrimiento
     assert chico.cota_por_resguardo == pytest.approx(grande.cota_por_resguardo)
@@ -496,14 +511,14 @@ def test_g2_incumple_cuando_la_salida_queda_bajo_el_receptor():
 def test_7B_se_detiene_en_el_talud_si_no_se_le_pasa_la_longitud(hdpe):
     with sin_valor(CRITERIO_TALUD):
         with pytest.raises(CriterioPendienteError) as exc:
-            compatibilidad_geometrica(punto=_punto(), material=hdpe, D=1.50,
+            compatibilidad_geometrica(punto=_punto(), material=hdpe, seccion=SeccionCircular(D=1.50),
                                       resultado=_resultado())
         assert exc.value.clave == CRITERIO_TALUD
 
 
 def test_7B_con_longitud_dada_arma_la_geometria_y_las_dos_verificaciones(hdpe):
     punto = _punto(cota_rasante=45.00, cota_subrasante=44.85)
-    geo = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
+    geo = compatibilidad_geometrica(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50),
                                     resultado=_resultado(), longitud=20.0)
 
     assert [v.codigo for v in geo.verificaciones] == ["G1", "G2"]
@@ -524,7 +539,7 @@ def test_7B_no_factible_por_rasante_devuelve_el_delta_y_lo_lleva_a_la_excepcion(
     pide, es DisenoNoFactibleError con ese delta -- nunca generica.
     """
     punto = _punto(cota_rasante=44.35, cota_subrasante=44.20)
-    geo = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
+    geo = compatibilidad_geometrica(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50),
                                     resultado=_resultado(), longitud=20.0)
 
     assert not geo.factible
@@ -543,7 +558,7 @@ def test_7B_no_factible_por_cota_de_salida_no_lleva_delta_de_rasante(hdpe):
     """
     punto = _punto(cota_rasante=45.00, cota_subrasante=44.85,
                    cota_fondo_receptor=42.05)
-    geo = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
+    geo = compatibilidad_geometrica(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50),
                                     resultado=_resultado(), longitud=20.0)
 
     assert geo.tamizado.factible
@@ -561,7 +576,7 @@ def test_7B_deduce_la_proyeccion_de_la_longitud_que_se_le_pasa(hdpe):
     calculo independiente. Con esviaje 0 y plataforma 9.60, una longitud de
     20.0 m implica 10.40 m de taludes.
     """
-    geo = compatibilidad_geometrica(punto=_punto(), material=hdpe, D=1.50,
+    geo = compatibilidad_geometrica(punto=_punto(), material=hdpe, seccion=SeccionCircular(D=1.50),
                                     resultado=_resultado(), longitud=20.0)
     assert geo.proyeccion_taludes == pytest.approx(10.40)
     assert geo.factor_esviaje == pytest.approx(1.0)
@@ -607,7 +622,7 @@ def test_una_condicion_de_pavimento_fuera_de_la_tabla_se_detiene(
 
     declarar_condicion_pavimento(condicion)
     with pytest.raises(DatoInvalidoError) as exc:
-        cobertura_minima_aashto(material=hdpe, D=1.50)
+        cobertura_minima_aashto(material=hdpe, seccion=SeccionCircular(D=1.50))
 
     assert exc.value.campo == CRITERIO_CONDICION_PAVIMENTO
     assert exc.value.valor == condicion
@@ -629,7 +644,233 @@ def test_las_tres_filas_transcritas_si_dan_cobertura(
 
     for condicion in sorted(filas):
         declarar_condicion_pavimento(condicion)
-        assert cobertura_minima_aashto(material=material, D=1.50) > 0, condicion
+        assert cobertura_minima_aashto(material=material, seccion=SeccionCircular(D=1.50)) > 0, condicion
+
+
+# ---------------------------------------------------------------------------
+# El marco NO entra por esa tabla (C7, punto 4)
+# ---------------------------------------------------------------------------
+# EL TEST DE ARRIBA ITERA `list(TipoMaterial)` Y ESO SIGUE SIENDO CORRECTO,
+# aunque el marco exista: 'cobertura_minima_aashto' es la transcripcion de una
+# tabla indexada por MATERIAL, y el cajon no es una clave suya ni debe serlo.
+# La bifurcacion ocurre antes, por FORMA. Si algun dia alguien le anadiera una
+# clave "cajon" a esa tabla, ese test quedaria ciego -- pero el de aqui abajo
+# no, porque exige que el marco se DETENGA.
+
+DECLARACIONES_CAJON = {
+    "embocadura_cajon": "cajon_concreto_aletas_30_75",
+    "n_manning_cajon": "concreto_afinado",
+    "n_celdas_cajon": 1,
+    "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+    "secciones_cajon_normalizadas": ((1.50, 1.20), (2.00, 1.50)),
+    "espesor_pared_cajon": 0.15,
+}
+
+
+def _marco():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                    forma=FormaSeccion.RECTANGULAR)
+
+
+def test_un_marco_no_toma_la_fila_del_tubo_y_se_detiene(
+        declarar_condicion_pavimento):
+    """
+    LA REGLA VINCULANTE #9 PEDIA LO CONTRARIO Y ERA FALSA. Mandaba traer el
+    segundo termino «B'c/8» de la Tabla 12.6.6.3-1 para el marco; C7 verifico
+    contra la fuente primaria que esa tabla NO TIENE FILA de cajon de
+    concreto -- sus dos filas de concreto dicen «Reinforced Concrete PIPE» --,
+    de modo que no hay termino que devolver porque no hay fila de donde.
+
+    LO QUE ESTE TEST MATA, y es lo que hacia falta medir: antes de C7 un marco
+    ENTRABA por esa tabla en silencio. `cobertura_minima_aashto` indexaba por
+    `material.tipo.value`, y un marco de concreto y un tubo de concreto son el
+    MISMO `TipoMaterial`. Ahora se detiene con `CriterioPendienteError`, que
+    es la excepcion correcta: el revisor tiene que DECIDIR, no conseguir.
+    """
+    declarar_condicion_pavimento("flexible")
+    with declarados(DECLARACIONES_CAJON), sin_valor(CRITERIO_COBERTURA_CAJON):
+        with pytest.raises(CriterioPendienteError) as exc:
+            cobertura_minima_aashto(material=_marco(),
+                                seccion=SeccionRectangular(B=2.00, H=1.50))
+    assert exc.value.clave == CRITERIO_COBERTURA_CAJON
+
+
+def test_el_numero_que_el_marco_recibia_era_el_piso_de_la_fila_del_tubo(
+        declarar_condicion_pavimento):
+    """
+    LA MEDICION QUE EXPLICA POR QUE ESTUVO TAPADO TANTO TIEMPO, y es la razon
+    de que este test exista al lado del anterior: el numero que salia no era
+    absurdo. Era 0.3048 m -- el piso de 12.0 in de la fila del TUBO --, que es
+    un valor perfectamente presentable.
+
+    Y HAY UN SEGUNDO DEFECTO DENTRO DEL PRIMERO, medido aqui: ese numero NO
+    DEPENDIA DEL ANCHO DEL MARCO. `D` en un marco vale la ALTURA, de modo que
+    `diametro_exterior` devolvia H + 2t = B'c y lo metia en la ranura de Bc.
+    O sea que ni siquiera era «la fila del tubo bien aplicada»: era la fila
+    del tubo con la dimension cambiada. Por eso el arreglo no es traer un
+    termino mas sino detenerse, y por eso M7 necesita ademas la `Seccion`
+    entera (punto 5 de C7) y no un escalar.
+
+    La medicion de C5 -- «la tabla exige 0.4125 m» para un marco de 3.00 x
+    1.50 -- llamaba a ese numero «el segundo termino B'c/8», y no lo es:
+    3.30/8 = 0.4125 es Bc/8, el PRIMERO. B'c/8 vale 0.225, el MENOR de los
+    tres. Se comprueba aritmeticamente aqui para que no haya que rehacerlo.
+    """
+    B, H, t = 3.00, 1.50, 0.15
+    Bc, Bc_prima = B + 2 * t, H + 2 * t
+    assert Bc / 8 == pytest.approx(0.4125, rel=REL_TRANSPORTE)   # el de C5
+    assert Bc_prima / 8 == pytest.approx(0.2250, rel=REL_TRANSPORTE)  # el menor
+    piso_del_tubo = ca.valor(CRITERIO_COBERTURA_AASHTO)[
+        TipoMaterial.CONCRETO_REFORZADO.value]["flexible"]["piso_m"]
+    assert piso_del_tubo == pytest.approx(0.3048, rel=REL_TRANSPORTE)
+    # Y el numero que el marco recibia era ese piso, porque con B'c en la
+    # ranura de Bc el termino proporcional (1.80/8 = 0.225) nunca lo alcanza.
+    assert Bc_prima / 8 < piso_del_tubo
+
+    # Declarado el criterio, el que gobierna es el declarado y NO el piso.
+    declarar_condicion_pavimento("flexible")
+    declaraciones = dict(DECLARACIONES_CAJON)
+    declaraciones[CRITERIO_COBERTURA_CAJON] = 0.45
+    with declarados(declaraciones):
+        assert cobertura_minima_aashto(
+            material=_marco(),
+            seccion=SeccionRectangular(B=B, H=H)) == \
+            pytest.approx(0.45, rel=REL_TRANSPORTE)
+
+
+def test_la_cobertura_del_marco_admite_cero_y_rechaza_el_negativo(
+        declarar_condicion_pavimento):
+    """
+    EL CERO ES DECLARABLE Y NO ES UN DESCUIDO: es la unica rama que AASHTO
+    cubre EXPRESAMENTE para un cajon de concreto -- «If soil cover is not
+    provided, the top of precast or cast-in-place reinforced concrete box
+    structures shall be designed for direct application of vehicular loads»,
+    pag. impresa 12-22 --. La ficha del criterio dice con que exigencia
+    estructural viene.
+
+    El negativo no: seria una clave por encima de la subrasante. Guarda en la
+    forma de MAT-D13 -- umbral MEDIDO (el cero, no un piso inventado) y
+    condicion en positivo y negada, para que un NaN tampoco pase --.
+    """
+    declarar_condicion_pavimento("flexible")
+    cero = dict(DECLARACIONES_CAJON, **{CRITERIO_COBERTURA_CAJON: 0.0})
+    with declarados(cero):
+        assert cobertura_minima_aashto(material=_marco(),
+                                seccion=SeccionRectangular(B=2.00, H=1.50)) == \
+            pytest.approx(0.0, abs=ABS_CERO)
+
+    negativo = dict(DECLARACIONES_CAJON, **{CRITERIO_COBERTURA_CAJON: -0.10})
+    with declarados(negativo):
+        with pytest.raises(DatoInvalidoError) as exc:
+            cobertura_minima_aashto(material=_marco(),
+                                seccion=SeccionRectangular(B=2.00, H=1.50))
+    assert exc.value.campo == CRITERIO_COBERTURA_CAJON
+
+
+def test_el_empate_entre_los_dos_minimos_se_adjudica_a_aashto(monkeypatch):
+    """
+    LA DECISION QUE `altura_recubrimiento` ARGUMENTA Y NADIE MEDIA: cambiar su
+    `>` por `>=` sobrevivia a la suite entera, y lo midio la auditoria
+    adversarial de C7. Una decision declarada en tres lineas de docstring y
+    sin test es indistinguible de un descuido del operador.
+
+    Se fuerza el empate poniendo el minimo de EG-2013 EXACTAMENTE en el valor
+    que devuelve la tabla de AASHTO para este HDPE (0.75 m). Con `>` gana
+    AASHTO -- la variable que SI se puede mover, porque depende de la
+    geometria --; con `>=` ganaria EG-2013, que es una constante.
+
+    OJO CON LA OTRA MITAD, que este test NO fija y el docstring ahora dice:
+    `tamizado_rasante` desempata al REVES, prefiriendo la condicion estable.
+    Los dos criterios son opuestos y los dos son defendibles; lo que no vale
+    es presentarlos como el mismo.
+    """
+    hdpe = catalogo(TipoMaterial.HDPE)
+    seccion = SeccionCircular(D=1.50)
+    aashto = cobertura_minima_aashto(material=hdpe, seccion=seccion)
+    empatado = replace(hdpe, h_relleno_min_eg2013=aashto)
+
+    h_rec, gobierna = altura_recubrimiento(material=empatado, seccion=seccion)
+    assert h_rec == pytest.approx(aashto, rel=REL_TRANSPORTE)
+    assert gobierna.startswith(MINIMO_AASHTO), (
+        "en el empate tiene que ganar AASHTO, que es el que depende de la "
+        "geometria: con EG-2013 ganando, la memoria senala como gobernante "
+        "una constante que el proyectista no puede mover")
+
+
+def test_el_tamizado_de_un_marco_mide_el_ancho_y_no_el_canto(
+        declarar_condicion_pavimento):
+    """
+    LO QUE EL ESCALAR `D` NO DEJABA VER, y por lo que 7.A necesita la
+    `Seccion` entera y no un numero.
+
+    `Bc` es la dimension HORIZONTAL -- «outside diameter or WIDTH of the
+    structure», Art. 12.6.6.3 --. Con un escalar, la unica dimension que
+    llegaba a 7.A era la vertical, y `diametro_exterior` la convertia en
+    H + 2t: en un circulo eso ES Bc, y por eso el defecto no se veia; en un
+    marco es B'c, el canto, que es otro numero.
+
+    Sobre un marco de 2.00 x 1.50 con t = 0.15: Bc = 2.30 y B'c = 1.80. El
+    campo tiene que traer 2.30. Falla si alguien devuelve el tamizado al
+    escalar, y falla en silencio en ningun otro sitio -- que es exactamente lo
+    que paso hasta C7 --.
+    """
+    declarar_condicion_pavimento("flexible")
+    declaraciones = dict(DECLARACIONES_CAJON,
+                         **{CRITERIO_COBERTURA_CAJON: 0.30})
+    with declarados(declaraciones):
+        t = tamizado_rasante(punto=_punto(), material=_marco(),
+                             seccion=SeccionRectangular(B=2.00, H=1.50),
+                             HW=0.50)
+    assert t.espesor_pared == pytest.approx(0.15, rel=REL_TRANSPORTE)
+    assert t.ancho_exterior == pytest.approx(2.30, rel=REL_TRANSPORTE)   # Bc
+    assert t.ancho_exterior != pytest.approx(1.80, rel=REL_TRANSPORTE)   # B'c
+    # Y la altura que se apila sobre la cota de entrada es la INTERIOR.
+    assert t.altura_supuesta == pytest.approx(1.50, rel=REL_TRANSPORTE)
+
+
+def test_la_memoria_de_un_marco_no_dice_que_su_h_rec_sale_de_aashto(
+        declarar_condicion_pavimento):
+    """
+    LOS TRES CANALES POR LOS QUE LA MEMORIA DE G1 NOMBRA SU FUENTE, y hay que
+    medirlos los tres.
+
+    LA AUDITORIA ADVERSARIAL DE C7 ENCONTRO QUE ESTE TEST -- con este mismo
+    nombre -- ASERTABA SOLO EL PRIMERO, de modo que pasaba sin medir su propio
+    titulo, mientras los otros dos seguian atribuyendo la cobertura de un
+    marco a la Tabla 12.6.6.3-1 de AASHTO. Y el tercero lo habia INTRODUCIDO
+    el propio C7i, con un «AQUI GOBIERNA» explicito. Un vacio declarado con
+    una cita falsa al lado es peor que el vacio solo.
+
+      1. `criterio_aplicado`  <- `criterio_recubrimiento`
+      2. `numeral`            <- `numeral_g1`, que es lo UNICO que M11 imprime
+                                 en la columna «numeral» de la fila G1
+      3. la procedencia de `h_rec` <- el segundo elemento del par que
+                                 devuelve `altura_recubrimiento`
+    """
+    declarar_condicion_pavimento("flexible")
+    declaraciones = dict(DECLARACIONES_CAJON,
+                         **{CRITERIO_COBERTURA_CAJON: 0.30})
+    with declarados(declaraciones):
+        marco = _marco()
+        h_rec, gobierna = altura_recubrimiento(
+            material=marco, seccion=SeccionRectangular(B=2.00, H=1.50))
+        canal_1 = criterio_recubrimiento(marco)
+        canal_2 = numeral_g1(marco)
+    tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+
+    # 1 - el criterio aplicado
+    assert canal_1 == CRITERIO_COBERTURA_CAJON
+    assert criterio_recubrimiento(tubo) == CRITERIO_COBERTURA_AASHTO
+    # 2 - el numeral, unico texto de la columna «numeral» de la fila G1. Si
+    #     nombra la tabla, tiene que ser para decir que NO tiene fila.
+    assert CRITERIO_COBERTURA_CAJON in canal_2
+    assert "no tiene fila de cajon de concreto" in canal_2
+    assert "12.6.6.3-1" in numeral_g1(tubo)          # al tubo SI le toca
+    assert CRITERIO_COBERTURA_CAJON not in numeral_g1(tubo)
+    # 3 - la procedencia de h_rec, el canal que C7i habia dejado mal
+    assert h_rec == pytest.approx(0.30, rel=REL_TRANSPORTE)
+    assert CRITERIO_COBERTURA_CAJON in gobierna
+    assert not gobierna.startswith(MINIMO_AASHTO)
 
 
 # --- guarda defensiva: se demuestra inalcanzable, no se alcanza ------------
@@ -822,7 +1063,7 @@ def test_7B_sin_longitud_dada_la_calcula_y_de_ahi_salen_caida_y_cota_de_salida(
         cota salida = 42.10 - 0.1669697            = 41.9330303 msnm
     """
     punto = _punto_7b(esviaje_grados=CP9["esviaje_oblicuo_grados"])
-    geo = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
+    geo = compatibilidad_geometrica(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50),
                                     resultado=_resultado(S=CP9["S"]))
 
     assert geo.altura_terraplen == pytest.approx(
@@ -849,9 +1090,9 @@ def test_las_dos_ramas_de_7B_componen_y_despejan_la_misma_proyeccion(
     rama viva compone. Ata las dos ramas, que hoy no se contrastan entre si.
     """
     punto = _punto_7b(esviaje_grados=CP9["esviaje_oblicuo_grados"])
-    viva = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
+    viva = compatibilidad_geometrica(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50),
                                      resultado=_resultado(S=CP9["S"]))
-    dada = compatibilidad_geometrica(punto=punto, material=hdpe, D=1.50,
+    dada = compatibilidad_geometrica(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50),
                                      resultado=_resultado(S=CP9["S"]),
                                      longitud=viva.longitud)
     assert dada.proyeccion_taludes == pytest.approx(
