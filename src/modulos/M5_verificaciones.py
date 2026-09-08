@@ -1572,6 +1572,17 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
             que="Flotacion: equilibrio del conducto vacio bajo el freatico",
             formula="gamma_DC_min*DC + gamma_EV_min*EV >= gamma_WA*U",
             formula_cita_id="MP.T2.4.5.3.1-2",
+            # LAS DOS FRASES QUE DISCUTEN EL EXTREMO DE gamma_EV, LITERALES Y
+            # JUNTAS, bajo «Lo que dice la fuente». Una autoriza minorar y la
+            # otra manda mayorar, y las dos son `shall`: quien defienda esta
+            # memoria en una sustentacion tiene que poder verlas ahi y no
+            # descubrirlas leyendo el PDF. Cual sigue el proyecto y por que lo
+            # dice el `por_que` de F5.V7, que M11 imprime en otro bloque --
+            # NOR-HID-04: lo que la fuente DICE y lo que el proyecto LEE no se
+            # pegan --. La discrepancia entera esta en
+            # DIS-AASHTO-GAMMA-EV-12.6.1, estado ABIERTA.
+            citas_textuales=("MP.2.4.5.3.1#MINIMO",
+                             "AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX"),
             sustitucion=(
                 Magnitud("Bc", seccion.ancho_exterior(t), "m",
                          "ancho EXTERIOR en planta (Art. 12.6.6.3 de AASHTO: "

@@ -949,7 +949,7 @@ recomienda.
 | `F5.V2b` | Fase 5 - Verificaciones | V2b - Sedimentacion / colmatacion: el indicador de pendiente del HDS-5 mas el acceso de mantenimiento declarado | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO` |
 | `F5.V3` | Fase 5 - Verificaciones | V3 - Velocidad maxima admisible del revestimiento (Tabla N 10) | **obliga** | `MC_HHD.4.1.1.3.6#T10` |
 | `F5.V4` | Fase 5 - Verificaciones | V4 - Carga a la entrada bajo la subrasante, con el resguardo que fija el CBR | **obliga** | `MS.4.5.4`, `MS.9.1.3` |
-| `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
+| `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | **define** | `MP.2.4.5.2#EV`, `MP.T2.4.5.3.1-2` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | **obliga** | `AASHTO_LRFD_9.12.6.6.3#COBERTURA`, `EG2013.508.07#RELLENO_MIN` |

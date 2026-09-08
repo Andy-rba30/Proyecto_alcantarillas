@@ -389,13 +389,35 @@ V7 = _fundamento(
         "de modo que la inecuacion es un ensamblaje: se arma con los gamma "
         "tabulados, la regla del minimo y la definicion de la fuerza. Se "
         "plantea en LRFD y no como factor de seguridad global porque el marco "
-        "que el expediente adopta es LRFD de extremo a extremo."),
+        "que el expediente adopta es LRFD de extremo a extremo. "
+        "Y HAY UNA FRASE DE LA FUENTE QUE APUNTA AL REVES, que este parrafo "
+        "declara en vez de dejar que la encuentre quien abra el PDF: el mismo "
+        "Art. 12.6.1 de AASHTO que obliga a evaluar la flotacion dice, dos "
+        "frases mas abajo y en el mismo parrafo, que «para el empuje vertical "
+        "de tierra se debera aplicar el factor de carga MAXIMO de la Tabla "
+        "3.4.1-2» -- y esta verificacion aplica el MINIMO --. Son dos `shall`, "
+        "y el segundo es ademas el especial para estructuras enterradas. El "
+        "proyecto lee esa frase como referida al diseno POR empuje de tierra, "
+        "donde EV es la SOLICITACION y su maximo es el extremo desfavorable, "
+        "y no al equilibrio de flotacion, donde EV es lo que SUJETA al "
+        "conducto y el extremo desfavorable es el minimo. El argumento que lo "
+        "sostiene es medible y no de autoridad: aplicar el maximo aqui haria "
+        "la comprobacion MAS FACIL de cumplir, o sea que leerla literalmente "
+        "en este sitio contradice el proposito del propio Art. 3.4.1. ES UNA "
+        "LECTURA DEL PROYECTO -- el texto no trae esa salvedad -- y por eso "
+        "vive declarada en la discrepancia DIS-AASHTO-GAMMA-EV-12.6.1, con "
+        "estado ABIERTA."),
     verbo=Verbo.OBLIGA,
     citas=("MP.2.4.3.8.2",                      # EXIGENCIA -> sostiene OBLIGA
            "AASHTO_LRFD_9.12.6.1#FLOTACION",    # EXIGENCIA -> lo sostiene
            "AASHTO_LRFD_9.12.6.2.3#UPLIFT",     # EXIGENCIA -> lo sostiene
            "AASHTO_LRFD_9.3.7.2",               # EXIGENCIA (gemelo del peruano)
            "MP.2.4.5.3.1#MINIMO",               # EXIGENCIA: autoriza minorar
+           # LA QUE APUNTA AL REVES, y va en la lista de citas de este mismo
+           # fundamento a proposito: una discrepancia que solo vive en el
+           # registro no la ve quien lee la memoria, y este proyecto la
+           # declara EN EL PUNTO DE USO.
+           "AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX",  # EXIGENCIA: el MAXIMO
            "MP.2.4.5.2#EV",                     # DEFINICION: que es EV
            "AASHTO_LRFD_9.C12.6.2.3",           # RECOMENDACION: la FORMA
            "MP.T2.4.5.3.1-1",                   # EXIGENCIA: los valores
