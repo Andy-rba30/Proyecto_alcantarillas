@@ -140,10 +140,28 @@ from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, TipoDeVeredicto)
 
 _reg_M11 = _registro_M11.construir()
 
+# EL FALLO DEL IMPORT SE GUARDA, NO SE TIRA. Hasta aqui este `except` se
+# comia la excepcion y el mensaje de mas abajo afirmaba «weasyprint no esta
+# instalado» en los DOS casos. En Windows eso es falso y ademas insultante: el
+# paquete SI esta --- viene en `requirements.txt` --- y lo que no carga son sus
+# librerias nativas (GTK: GObject, Pango, Cairo, GDK-PixBuf), que `pip` no
+# instala. El mensaje mandaba a hacer `pip install weasyprint` a quien ya lo
+# tenia hecho, que es exactamente el defecto que este proyecto persigue --- un
+# bloqueo mal nombrado --- escrito en una cadena.
+#
+# Los dos casos se distinguen por la CLASE de la excepcion: `ImportError` es
+# «no esta»; cualquier otra (tipicamente `OSError` desde `ctypes`/`cffi` al
+# resolver una DLL) es «esta y no carga». Y el texto de la excepcion NOMBRA la
+# biblioteca que falta, que es el unico dato con el que se puede arreglar:
+# adivinarlo desde aqui seria suponer, y la regla del proyecto es declarar.
 try:
     from weasyprint import HTML as WeasyHTML
-except Exception:  # ImportError o fallo de librerias nativas (GTK/cairo)
+    FALLO_WEASYPRINT = None
+    WEASYPRINT_AUSENTE = False
+except Exception as _exc_weasy:  # ImportError o fallo de librerias nativas (GTK/cairo)
     WeasyHTML = None
+    FALLO_WEASYPRINT = f"{type(_exc_weasy).__name__}: {_exc_weasy}"
+    WEASYPRINT_AUSENTE = isinstance(_exc_weasy, ImportError)
 
 
 # ---------------------------------------------------------------------------
@@ -2860,7 +2878,36 @@ def exportar_pdf(informe: Any, destino: Path, *, abrir_navegador: bool = True,
         webbrowser.open(temporal.as_uri())
     return ResultadoExportacion(
         ruta=respaldo, via=VIA_NAVEGADOR,
-        mensaje=("weasyprint no esta instalado. Se escribio el HTML en "
-                 f"{respaldo} y se abrio en el navegador: guardalo como PDF "
-                 "con Ctrl+P (la hoja ya esta en A4). Para exportar directo: "
-                 "pip install weasyprint"))
+        mensaje=_mensaje_via_navegador(respaldo))
+
+
+def _por_que_no_hay_weasyprint() -> str:
+    """
+    Que le pasa a weasyprint en ESTA maquina, con la excepcion que lo dijo.
+
+    Tres casos y no uno, porque las tres se arreglan distinto:
+    no esta instalado (se instala), esta y sus librerias nativas no cargan (se
+    instala GTK, no el paquete), o esta y funciona (y entonces no se llama a
+    esta funcion).
+    """
+    if WEASYPRINT_AUSENTE:
+        return ("weasyprint no esta instalado. Para exportar el PDF directo: "
+                "pip install weasyprint")
+    if FALLO_WEASYPRINT is None:                     # pragma: no cover
+        return "weasyprint no se pudo usar en esta corrida"
+    return (
+        "weasyprint SI esta instalado y no pudo cargarse: le faltan sus "
+        "librerias nativas (GTK -- GObject, Pango, Cairo, GDK-PixBuf), que "
+        "`pip install weasyprint` NO trae y que en Windows hay que instalar "
+        f"aparte. Lo que dijo el sistema al cargarlo: {FALLO_WEASYPRINT}")
+
+
+def _mensaje_via_navegador(respaldo: Path) -> str:
+    """El mensaje de la via de respaldo: que paso, que se hizo y que hacer."""
+    return (
+        f"{_por_que_no_hay_weasyprint()}\n\n"
+        f"NO se perdio la memoria: se escribio en {respaldo} y se abrio en el "
+        "navegador. Guardala como PDF con Ctrl+P -- la hoja ya esta en A4 y la "
+        "plantilla trae su CSS de impresion, de modo que el PDF que sale por "
+        "esta via es equivalente al que escribiria weasyprint. Es una VIA "
+        "ALTERNATIVA, no un fallo de la exportacion.")

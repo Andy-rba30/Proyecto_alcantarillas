@@ -5545,32 +5545,58 @@ Con el tercer eje la tabla pasa de 2×2 a **2×2×2 = ocho** configuraciones. La
 nuevas —las de `sh` ausente— restan los mismos **4** tests a `passed` y se los suman a
 `skipped`, sin mover `collected`. Sobre este árbol:
 
-| PyMuPDF | Ventana Tk | `sh` en PATH | `passed` | `skipped` | |
+**Las cuatro casillas que faltaban por medir se midieron, y el par se dice SIEMPRE con
+su árbol.** Un par no significa nada fuera del árbol donde se tomó: basta añadir un
+test para moverlo, y en esta misma familia se añadió uno. Sobre `f56a555`, que es el
+árbol en que se cerró la ventana de criterios y donde `collected` valía **1732**:
+
+| PyMuPDF | Ventana Tk | `sh` en PATH | `passed` | `skipped` | procedencia |
 |---|---|---|---|---|---|
-| sí | no | sí | **1730** | **2** | **medida** — entorno de referencia |
-| sí | no | no | **1726** | **6** | **medida** — el mismo árbol con el PATH recortado |
-| sí | sí | no | 1727 | 5 | derivada — lo que este Windows debería dar tras la corrección |
-| sí | sí | sí | 1731 | 1 | derivada |
+| sí | no | sí | 1730 | 2 | medida — contenedor de desarrollo, árbol `4f31057` |
+| sí | no | no | 1726 | 6 | medida — el mismo árbol, PATH recortado a un directorio vacío |
+| sí | sí | sí | **1731** | **1** | medida — mismo contenedor tras instalar `python3-tk` y `ttkbootstrap` |
+| sí | sí | no | **1727** | **5** | medida — **en el Windows del proyectista**, reportada por él |
 
-**Las dos primeras filas están MEDIDAS sobre este árbol; las dos últimas son aritmética
-sobre el delta conocido, no medición** — este contenedor no tiene tkinter y no hay aquí
-ninguna máquina Windows, de modo que la columna «Ventana Tk = sí» no se puede medir
-desde acá y no se escribe como si se hubiera medido.
+Las dos en negrita nacieron derivadas y ésta es su medición. Coinciden con lo que la
+aritmética predecía, y eso es lo único que una derivación puede aspirar a demostrar:
+que no se equivocó. No la convierte en medición retroactivamente.
 
-La segunda fila se midió CORRIENDO LA SUITE ENTERA con el PATH recortado a un
-directorio vacío, y no solo `test_linea_base.py`: `1726 passed, 6 skipped`, que es
-exactamente lo que predecía el delta. Es una fila que nació derivada y que esta sesión
-sube a medida — la comprobación anterior había sido del archivo suelto (cuatro `errors`
-→ cuatro `skipped` con su motivo impreso), que demuestra el arreglo pero no fija el par
-de la configuración. Con eso el eje nuevo tiene sus dos valores medidos, y lo único
-que sigue sin medir es el eje viejo de la ventana.
+- **`sí / sí / sí` = 1731 / 1.** El test de ventana real dejó de saltarse en cuanto el
+  contenedor tuvo con qué levantar un `Tk`. Era la fila de la que esta misma sección
+  decía «hay que correrla ahí para escribirla como tal»; se corrió.
+- **`sí / sí / no` = 1727 / 5.** La midió el proyectista en su Windows. No es un
+  detalle de quién tenía la máquina: **en este contenedor esa fila NO SE PUEDE MEDIR**,
+  y la razón es que los dos ejes no son independientes aquí. El sondeo de ventana de
+  `_interprete_con_ventana` envuelve al intérprete en `xvfb-run`, y `xvfb-run` **es un
+  script de shell**: al quitar `sh` del PATH para apagar el eje de la línea base se
+  apaga también el de la ventana, y lo que se mide es `no / no`. En Windows la ventana
+  no necesita servidor X, de modo que allí los dos ejes sí se separan. La única máquina
+  del proyecto que puede tomar esa medición es aquélla.
 
-La fila del Windows corregido **se deriva por dos caminos que no se apoyan uno en el
-otro**, y coinciden: bajando desde el par de referencia (1730 − 4 de línea base + 1 de
-ventana = 1727) y subiendo desde la corrida reportada (1725 `passed` + los 2 `failed`
-que pasan a verde = 1727; 1 `skipped` + los 4 `errors` que pasan a saltarse = 5). Que
-las dos den lo mismo es lo más cerca de una medición que se puede estar sin la máquina
-delante — pero **no es una medición**, y hay que correrla ahí para escribirla como tal.
+#### El árbol de esta sesión: `collected` sube a 1733
+
+Esta sesión añadió **un** test —`test_la_seleccion_de_la_tabla_sobrevive_al_filtro`, que
+ejercita la selección real del `Treeview` sobre una ventana de verdad— y con él
+`collected` pasa de 1732 a **1733**. Los pares de arriba **no se reescriben**: son
+medidas de `f56a555` y siguen siendo ciertas de `f56a555`. Sobre el árbol nuevo:
+
+| PyMuPDF | Ventana Tk | `sh` en PATH | `passed` | `skipped` | procedencia |
+|---|---|---|---|---|---|
+| sí | sí | sí | **1732** | **1** | medida |
+| sí | no | no | **1726** | **7** | medida, PATH vacío |
+| sí | sí | no | 1728 | 5 | derivada (no medible aquí: ver `xvfb-run` arriba) |
+| sí | no | sí | 1730 | 3 | derivada |
+
+El test nuevo se salta con la ventana, igual que el de la corrida de perfil, de modo que
+la columna «Ventana Tk = no» resta ahora **2** y no 1. Y la derivación de
+`sí / sí / no` = 1728 / 5 se cruza con la medición de Windows del árbol anterior
+(1727 / 5, más el test nuevo que allí también pasaría) y da lo mismo: es el mismo
+cruce por dos caminos que ya se usó en esta sección, con el mismo valor de prueba —
+ninguno.
+
+`collected` se mantiene en 1733 en las cuatro, que es la comprobación que no depende de
+ninguna: si `passed + skipped` deja de dar `collected`, hay un fallo o un error de
+recolección y no una dependencia ausente.
 
 **CLAUDE.md no se corrige aquí**, por lo mismo que las tres sesiones anteriores no
 corrigieron su `collected = 1538` (hoy 1732): es la constitución del proyecto y no un
