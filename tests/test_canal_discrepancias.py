@@ -340,6 +340,68 @@ def test_la_memoria_avisa_cuando_una_parte_no_tiene_cita_transcrita(memoria):
     assert "ASTM_A760.T1#DIAMETROS" in memoria
 
 
+def test_la_discrepancia_llega_por_la_cita_del_FUNDAMENTO(informe, memoria, reg):
+    """
+    LO QUE LA AUDITORIA ADVERSARIAL REFUTO, fijado para que no vuelva.
+
+    Un `PasoDeMemoria` carga numerales por CUATRO puertas y el canal leia una
+    --- `citas_textuales` ---. La memoria de C-01 nombra la **Tabla A.1 del
+    HDS-5 cinco veces**: es de donde salen K, M, c, Y y Ks del control de
+    entrada, que producen el UNICO HW que C-01 publica (0.589 m, el
+    gobernante). Y la discrepancia sobre el TITULO de esa tabla ---
+    `DIS-HDS5-APENDICE-G`, que remite a un «Appendix G» que la 3.a edicion no
+    tiene --- no llegaba: la cita entra al paso por el `Fundamento`
+    `F4.FORMA_HDS5`, no por sus comillas.
+
+    El criterio, dicho de una vez: llega la discrepancia sobre un numeral en
+    el que la memoria APOYA algo, no solo sobre el que ENTRECOMILLA.
+    """
+    d = reg.discrepancia("DIS-HDS5-APENDICE-G")
+    assert d.viva
+    assert "HDS5_3ED.TA.1" in d.citas
+
+    pasos = M11.pasos_del_informe(informe)
+    por_comillas = {c for p in pasos for c in p.citas_textuales}
+    por_las_cuatro = set().union(*(M11.citas_en_que_descansa(p) for p in pasos))
+    assert "HDS5_3ED.TA.1" not in por_comillas, (
+        "si la Tabla A.1 pasara a entrecomillarse, este test deja de probar "
+        "lo que dice: revisar el supuesto antes de tocarlo")
+    assert "HDS5_3ED.TA.1" in por_las_cuatro
+    assert "DIS-HDS5-APENDICE-G" in memoria
+
+    # Y el hueco no se cierra de mas: leer las cuatro puertas anade ESA y
+    # ninguna de las etapas que `--alcance perfil` difiere.
+    solo_comillas = {x.id for x in reg.discrepancias_que_tocan(por_comillas)}
+    las_cuatro = {x.id for x in reg.discrepancias_que_tocan(por_las_cuatro)}
+    assert las_cuatro - solo_comillas == {"DIS-HDS5-APENDICE-G"}
+
+
+def test_ningun_id_de_discrepancia_queda_suelto_en_la_memoria(memoria):
+    """
+    EL DEFECTO QUE C8 DIJO CERRAR, SOBREVIVIENDO POR UN CAMPO DE TEXTO.
+
+    La memoria imprimia el id `DIS-HR-30M-VS-100FT` dentro de la prosa del
+    campo `resolucion` de 'clase_sitio' --- que el bloque de criterios sin
+    valor publica tal cual ---, y el filtro excluia la discrepancia CON RAZON,
+    porque esta corrida no invoca ese criterio. Resultado: una sigla que el
+    lector no puede resolver en el documento, que es exactamente «un id suelto
+    dentro de un parrafo».
+
+    La regla que fija este test: si un id aparece en la memoria, tiene que
+    tener su bloque. Un id se escribe en el campo `discrepancias`, nunca en
+    prosa.
+    """
+    import re
+
+    todos = set(re.findall(r"DIS-[A-Z0-9.\-]+", memoria))
+    con_bloque = set(re.findall(r"<code>(DIS-[A-Z0-9.\-]+)</code>", memoria))
+    sueltos = todos - con_bloque
+    assert not sueltos, (
+        f"ids de discrepancia sin bloque que los resuelva: {sorted(sueltos)}. "
+        "Un id en prosa no es un canal: se declara en `Criterio.discrepancias` "
+        "o en `PasoDeMemoria.discrepancias`")
+
+
 def test_lo_que_el_bloque_entrecomilla_sale_del_registro(memoria, reg):
     """
     LA REGLA DE LAS SEGUNDAS TRANSCRIPCIONES, aplicada al canal nuevo.

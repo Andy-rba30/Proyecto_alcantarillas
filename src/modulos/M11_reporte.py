@@ -976,6 +976,49 @@ def _citas_del_paso(paso: Any) -> str:
     return ("<dt>Lo que dice la fuente</dt><dd>" + "".join(partes) + "</dd>")
 
 
+def citas_en_que_descansa(paso: Any) -> frozenset:
+    """
+    TODAS las citas sobre las que un paso descansa, no solo las que entrecomilla.
+
+    UN PASO CARGA NUMERALES POR CUATRO PUERTAS Y EL CANAL LEIA UNA. Es el
+    hueco que la auditoria adversarial de C8 encontro, y no es teorico: la
+    memoria de C-01 nombra la **Tabla A.1 del HDS-5 cinco veces** --- es de
+    donde salen los coeficientes K, M, c, Y y Ks del control de entrada, que
+    producen el unico HW que C-01 publica --- y la discrepancia sobre el
+    TITULO de esa tabla (`DIS-HDS5-APENDICE-G`: remite a un «Appendix G» que
+    la 3.a edicion no tiene) no llegaba. La cita entra al paso por el
+    `Fundamento`, y `discrepancias_que_tocan` recibia solo `citas_textuales`.
+
+    Las cuatro puertas, y por que las cuatro cuentan:
+
+        `citas_textuales`   se imprimen entrecomilladas, bajo «Lo que dice la
+                            fuente». Es la puerta obvia.
+        `formula_cita_id`   se imprime como procedencia de la formula, al lado
+                            de la formula misma.
+        `umbral.cita_id`    el `__post_init__` de `PasoDeMemoria` ya obliga a
+                            que este en `citas_textuales`; se incluye por
+                            completitud, no porque anada nada hoy.
+        `Fundamento.citas`  son los numerales que sostienen el `por_que`, y el
+                            `por_que` SE IMPRIME. Un paso cuyo «por que se
+                            hace» descansa en un numeral esta mandando al
+                            revisor a ese numeral igual que si lo citara.
+
+    El criterio, dicho de una vez: llega la discrepancia sobre un numeral en
+    el que la memoria APOYA algo, no solo sobre el que ENTRECOMILLA. Medido
+    sobre la corrida del entregable: 13 citas llegan por las puertas
+    indirectas, y cruzarlas contra las 23 discrepancias anade EXACTAMENTE una
+    viva --- la de la Tabla A.1 --- y ninguna de las etapas diferidas.
+    """
+    citas = set(paso.citas_textuales)
+    if paso.formula_cita_id:
+        citas.add(paso.formula_cita_id)
+    if paso.umbral is not None and paso.umbral.cita_id:
+        citas.add(paso.umbral.cita_id)
+    if paso.fundamento_id:
+        citas.update(_reg_M11.fundamento(paso.fundamento_id).citas)
+    return frozenset(citas)
+
+
 def _discrepancias_que_toca(paso: Any) -> Tuple[Any, ...]:
     """
     Las discrepancias VIVAS que este paso toca, por sus citas o por su valor.
@@ -985,7 +1028,7 @@ def _discrepancias_que_toca(paso: Any) -> Tuple[Any, ...]:
     M11 formatea.
     """
     return _reg_M11.discrepancias_que_tocan(
-        paso.citas_textuales, getattr(paso, "discrepancias", ()))
+        citas_en_que_descansa(paso), getattr(paso, "discrepancias", ()))
 
 
 def _discrepancias_del_paso(paso: Any) -> str:
@@ -1979,7 +2022,11 @@ def bloque_discrepancias(informe: Any) -> str:
     citas: set = set()
     declaradas: set = set()
     for paso in pasos_del_informe(informe):
-        citas.update(paso.citas_textuales)
+        # LAS CUATRO PUERTAS, no solo `citas_textuales`: ver
+        # `citas_en_que_descansa`. Leyendo solo la primera, la memoria de C-01
+        # perdia la discrepancia sobre el titulo de la Tabla A.1 --- la tabla
+        # que le da los coeficientes del control de entrada que gobierna.
+        citas.update(citas_en_que_descansa(paso))
         declaradas.update(getattr(paso, "discrepancias", ()))
     # La tercera via: los criterios que la corrida INVOCO. `criterios_usados`
     # y no `CRITERIOS`, por lo mismo que `bloque_criterios`: la memoria
