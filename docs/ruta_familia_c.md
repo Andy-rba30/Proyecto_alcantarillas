@@ -1603,29 +1603,57 @@ línea es un criterio incompleto, no un producto correcto.
 ## 13. Deuda declarada, fuera de este alcance
 
 **VC1 — no alteración de la rasante hidráulica ni del borde libre del canal.
-CERRADA POR MITADES en la sesión VC1; la ficha se conserva porque una de las
-dos sigue abierta.** Sec. 2.3 fija el requisito y hasta esa sesión ninguna
-verificación lo implementaba; **no es V5**, que es el remanso dentro del derecho de
-vía. Lo que hoy está implementado es `M5.vc1_borde_libre_canal`:
-`cota_entrada + HW ≤ cota_coronacion_canal − borde_libre_canal`, con veredicto y
-margen en metros, obligatoria también a `--alcance perfil`.
+IMPLEMENTADA en la sesión VC1. SALE de esta lista como deuda de implementación y
+SIGUE en ella como deuda de alcance**, que no es lo mismo y conviene no fundirlo:
+la verificación existe, corre y emite veredicto; lo que no cubre son dos cosas
+concretas que hay que poder nombrar.
 
-**Lo que este apartado decía y era inexacto**, dicho porque la inexactitud dirigió
-mal la planificación: «VC1 necesita **el nivel de agua de diseño** y el borde libre
-del canal». El nivel de agua de diseño del canal **no hace falta** para la mitad
-del borde libre —basta la **coronación**, que es lo que el levantamiento de los
-seis cruces midió— y sí haría falta, junto con la geometría trapecial y el n de
-Manning, para la mitad de la **rasante hidráulica**, que es la que sigue abierta.
-El borde libre tampoco «se necesita» como dato: el Manual **no fija ninguno para un
-canal** —verificado por ausencia sobre sus 225 páginas, `citas.SIN_BORDE_LIBRE_DE_CANAL`—
-y el proyecto lo ADOPTA por analogía con el badén del num. 4.1.1.4.1 e).
+**Qué quedó cubierto.** `M5.vc1_borde_libre_canal`:
 
-**La mitad que sigue abierta** es la alteración de la rasante hidráulica, y la ficha
-entera —qué está cerrado, qué no, y qué haría falta— está en
-`docs/decisiones_diferidas.md`, VC1-01. **V5 dejó de estar diferida en esta familia**:
-no aplica, y VC1 ocupa su hueco (ficha VC1-02). Lo que sí sigue en pie de la redacción
-anterior es que `remanso_derecho_via` habla solo de DG-2018 y no de la faja marginal ni
-de la Ley 29338 — pero eso es deuda de V5 **en las Familias A y B**, no de la C.
+    cota_entrada + HW  ≤  cota_coronacion_canal − borde_libre_canal
+
+con `Verificacion` completa y margen en metros. Ocupa la posición de V5 en la tabla
+de Fase 5 —V5 **no aplica** en esta familia, ficha VC1-02— y es **obligatoria también
+a `--alcance perfil`**: sin la columna `cota_coronacion_canal` [S] o sin el criterio
+`borde_libre_canal_m` [A] se detiene con la excepción que corresponda, no devuelve
+«no evaluable». Medido sobre C-01 con datos reales: cumple por **5 mm** con la
+coronación en 37.48, y con 37.30 el punto entero sale `DisenoNoFactibleError`.
+
+**Qué NO cubre — son DOS huecos y son de naturaleza distinta.**
+
+1. **La magnitud de la alteración (vertical).** VC1 acota el **nivel** que el agua
+   alcanza; no mide **en cuánto** la obra levanta el pelo de agua del canal respecto
+   del que tendría sin ella. Un punto puede cumplir VC1 con holgura y haber subido la
+   rasante hidráulica en una fracción apreciable del calado. Medirlo exige el tirante
+   normal del canal en la sección del cruce, y para eso su **geometría trapecial**
+   (ancho de solera y talud) y su **n de Manning** — ninguno de los dos es columna de
+   la Sec. 1.2, aunque el levantamiento ya midió la sección.
+
+2. **La extensión del remanso (longitudinal), y ésta no la cubría NADIE.**
+   **VC1 mide EN LA SECCIÓN DEL CRUCE.** No acota cuánto se extiende el remanso aguas
+   arriba, de modo que un tercero situado varios centenares de metros arriba —donde el
+   canal tenga la coronación más baja, o donde la sección se estreche— puede quedar
+   afectado por un remanso que en el cruce cumple con margen. Y es importante decir que
+   **V5 tampoco lo cubría**: su umbral era un **ancho** de derecho de vía, no una
+   **longitud** aguas arriba. Así que la sustitución de V5 por VC1 no pierde alcance
+   aquí — pero tampoco lo gana, y este hueco lleva abierto desde el inicio del proyecto
+   sin que ninguna de las dos verificaciones lo mirara. Cerrarlo exige un **perfil de
+   remanso** (paso a paso o HEC-RAS) y la coronación del canal **a lo largo** del
+   tramo, no solo en el cruce.
+
+**Lo que este apartado decía y era inexacto**, dicho porque la inexactitud dirigió mal
+la planificación: «VC1 necesita **el nivel de agua de diseño** y el borde libre del
+canal». El nivel de agua de diseño **no hace falta** para la mitad del borde libre
+—basta la **coronación**— y sí haría falta, con la geometría y el n, para la mitad de
+la rasante hidráulica. El borde libre tampoco «se necesita» como dato: el Manual **no
+fija ninguno para un canal**, verificado por ausencia sobre sus 225 páginas
+(`citas.SIN_BORDE_LIBRE_DE_CANAL`), y el proyecto lo **adopta** por analogía con el
+badén del num. 4.1.1.4.1 e).
+
+La ficha entera —qué está cerrado, qué no y qué haría falta— está en
+`docs/decisiones_diferidas.md`, VC1-01 y VC1-02. De la redacción anterior sigue en pie
+que `remanso_derecho_via` habla solo de DG-2018 y no de la faja marginal ni de la
+Ley 29338 — pero eso es deuda de V5 **en las Familias A y B**, no de la C.
 
 **Diseño estructural del pórtico.** AASHTO LRFD Sec. 5 y 12.11: factor de interacción
 suelo-estructura, distribución de carga viva a través del relleno (3.6.1.2.6), momentos y
@@ -3377,6 +3405,7 @@ alta ni baja.
 | **C6** | `9868211` · `5d0335f` · `74879e0` · `3383d52` · `f003faa` · merge **`c342482`** · PR #11 | **1665 p / 2 s** (collected **1667**), «PyMuPDF sí / Tk no» — **leída de `origin/main` en clon limpio** (`c342482`), y los dos `skipped` son los dos documentados: el permanente de `test_MD.py` y el de ventana real de `test_gui_contrato.py:1027` | **Una clave nueva y cinco descartadas**: `S_cauce`, el único dato que el marco necesitaba y no tenía por dónde entrar. `_VACIAS_FAMILIA_C` revisada columna por columna —**la lista no cambia**— y `campos_requeridos` de la Familia C ampliado a `("Q_m3s", "S_cauce")`. `InformePunto.punto_de_calculo`, que lleva la fila completada al pipeline sin tocar la que la memoria imprime. `_DOMINIO_DE_CLAVE`, que cierra la puerta laxa por la que una pendiente en porcentaje entraba sin acotar. El **inventario de las doce reglas de §6 por mutación**, con las #1, #7 y #8 cerradas. **D-15**, **D-16**, **R-15**, **R-16**, **R-17** y las fichas **C6-01** y **C6-02** | **R-17**: 17 anclas del manifiesto expuestas al mismo deslizamiento que R-16, con trinquete puesto y sin tocar `manifiesto.py`. **R-15**: las tres transcripciones del num. 4.1.1.3.3, verificadas y sin transcribir. `sucs_fundacion` sigue **sin consumidor a propósito** — el vacío es del Manual —. Y el `collected = 1538` de `CLAUDE.md`, **desactualizado desde C1** — ver la nota de abajo — |
 | **C7** | `11970ca` · `27455f3` · `27156a5` · `cd8d4f2` · `b2e86ad` · `7661e2f` · `985bcd4` · `edce33b` · `7a44c1e` · `0371717` · `bda37a8` · `eee01f8` · `c2a0057` · `0a46903` · `308419e` · `3d6918a` · merge **`e349e53`** · PR #13 | **1684 p / 2 s** (collected **1686**), «PyMuPDF sí / ventana Tk no» — **leída de `origin/main` en clon limpio** (`e349e53`), con las dos condiciones medidas en ese árbol (`import fitz` sí, `import tkinter` no) y los dos `skipped` nombrados: el permanente de `test_MD.py:371` y el de ventana real de `test_gui_contrato.py:1027` | **UN MARCO DIMENSIONA**: C-01 sale con sección **1.20 × 0.90 m**, control de entrada, HW 0.589 m, L 21.246 m, cotas 36.900 / 36.773 y d50 0.218 m. La geometría exterior entra en el `Protocol` `Seccion` (`ancho_exterior`, `canto_exterior`, `area_exterior`) y M7 y M8 quedan **ciegos a la forma**; `espesor_pared_cajon` y `cobertura_minima_cajon`, los dos `[A]` de perfil sin valor y con el signo contraintuitivo escrito; la fila de γ_p del cajón («Pórticos rígidos») y **D-8**; §15.2.7 con el numeral por paso de V7 y **once citas nuevas**; el EG-2013 `503 + 504`; **R-17 de 17 a 14**; y `DIS-AASHTO-GAMMA-EV-12.6.1` | El titular sigue diciendo «**Diámetro adoptado** D = 0.900 m» en un marco → **C8** (§16.13). `cota_clave` y `altura_relleno_sobre_clave` siguen con escalar, con `ResultadoPunto.D`. La discrepancia de γ_EV queda **ABIERTA**: es una lectura del proyecto, no un numeral |
 | **C8** | `b59ae0e` · `9ad9de0` · `5228c2e` · `3ad6f38` · `6aef1dd` · merge **`4379f97`** · PR #15 — y la refutación: `2c91018` · `d07cd94` · merge **`de509c3`** · PR #16 | **1711 p / 2 s** (collected **1713**), «PyMuPDF sí / ventana Tk no» — **leída de `origin/main` en clon limpio** (`de509c3`), con las dos condiciones medidas en ese árbol (`import fitz` sí, `import tkinter` no) y los dos `skipped` nombrados: el permanente de `test_MD.py:372` y el de ventana real de `test_gui_contrato.py:1134` | **LA MEMORIA IMPRIME LA SECCIÓN.** El titular de C-01 dice «marco 1.20 × 0.90 m» y no «Diámetro adoptado D = 0.900 m». `ResultadoPunto.D` **retirado** con sus once consumidores movidos, y con él `CompatibilidadGeometrica.D`, `PasoDiseno.D`, los tres `MD._motivo_*`, `M5.cota_clave` y `M5.altura_relleno_sobre_clave`. **El canal de discrepancias**: tres vías de llegada (cita, paso, criterio) sobre las **cuatro puertas** por las que un paso carga numerales, filtro `viva` + `tocada`, `bloque_discrepancias` en las dos plantillas — **ocho** llegan a la memoria de C-01 donde antes llegaban dos por accidente. `M2.diametro_exterior` retirado (0 llamadas medidas). La GUI: columna «Sección» y el literal estructurado en la declaración en caliente. **R-18…R-25** y las fichas **C8-01…C8-04**; **C1-02 cerrada** | **VC1**, el pórtico y el cabezal siguen en §13, como estaban. `DIS-AASHTO-GAMMA-EV-12.6.1` queda **ABIERTA y visible**. **R-18** (9 anclas de discrepancia sin transcribir) y **R-17** (14 anclas del manifiesto) con trinquete; **R-23** sin decidir. **R-21 corregida y no ejecutada**: sin `tkinter` en este contenedor, el test de ventana sigue saltándose |
+| **VC1** | `10ec74f` · `f434342` · merge **`abafe34`** · PR #18 | **1730 p / 2 s** (collected **1732**), «PyMuPDF sí / ventana Tk no» — y los dos `skipped` nombrados: el permanente de `test_MD.py:372` y el de ventana real de `test_gui_contrato.py:1134` — **leída de `origin/main` en clon limpio** (`abafe34`), con las dos condiciones medidas en ese árbol (`import fitz` sí, `import tkinter` no) | **LA FAMILIA C VERIFICA EL CANAL.** `M5.vc1_borde_libre_canal` compara `cota_entrada + HW` contra `cota_coronacion_canal − borde_libre_canal` y emite veredicto con margen. Columna `cota_coronacion_canal` [S] por punto (marcada en `pendientes_externos`, al revés que `cota_fondo_entrada`, y evaluado por qué); criterio `borde_libre_canal_m` [A] de corredor, 0.50 m, ventana (0.30, 0.50) **con el signo escrito**. **La verificación normativa cambió el diseño**: el num. 4.1.1.4.1 e) sí imprime el rango y su objeto es un **BADÉN** —mide contra la superficie de rodadura—, y el Manual **no fija borde libre para un canal** (barrido de 225 págs., `SIN_BORDE_LIBRE_DE_CANAL`); de ahí `[A]` y no `[N→]`. Dos citas del mismo apartado —EXIGENCIA la que obliga, RECOMENDACIÓN la que da el número— y `F5.VC1` colgado de la segunda: colgarlo de la primera **habría pasado T11 sin una queja**. **V5 NO APLICA** en esta familia y VC1 ocupa su hueco (`pieza_del_hueco_de_V5`). Las dos notas de alcance **reescritas enteras** (SIS-A-03). Fichas **VC1-01** y **VC1-02** | **VC1 sigue en §13 con DOS huecos nombrados**: la *magnitud* de la alteración de la rasante hidráulica (falta geometría trapecial y n del canal) y la *extensión* del remanso aguas arriba —que **V5 tampoco cubría**, porque su umbral era un ancho y no una longitud, y lleva abierto desde el inicio del proyecto—. Sin abrir: el chequeo de empalme de la cota de SALIDA contra `cota_fondo_receptor`, evaluado y medido en §16.17 y no implementado |
 
 > **La auditoría adversarial de C7 no la confirmó: nueve defectos, dos graves**, y los nueve
 > están en §16.14 con su medición. Los dos graves: la memoria de un marco **seguía citando la
@@ -5395,3 +5424,50 @@ Y el contraste que justifica que VC1 exista: en el primer caso **V4 da el MISMO
 mide contra la subrasante de la vía. VC1 lo aprueba por 5 mm. Las dos miden el mismo
 nivel de agua contra dos cotas distintas, y sin VC1 el punto salía con la holgura de
 V4 como único margen publicado.
+
+### 16.17 · La cota de SALIDA de un paso de canal — evaluado, medido, no implementado
+
+Pregunta del encargo, planteada como lectura y no como tarea: la cota de salida se
+calcula `cota_entrada − S·L`; en un paso de canal el conducto empalma con el canal en
+**los dos** extremos y el proyecto tiene ambas cotas medidas, así que si la entrada
+entra medida y la `S` viene de otro lado, la salida calculada no coincide con el fondo
+del canal aguas abajo «y nada lo reporta».
+
+**«Nada lo reporta» es medio falso, y la mitad falsa es la que importa.**
+`M7.g2_cota_salida` ya compara `cota_salida` contra `cota_fondo_receptor` — pero con
+`>=`. Medido sobre C-01 (fondo medido 36.28, `S_cauce` = 0.004, `L` = 21.246 m):
+
+| S del conducto | cota_salida | fondo del canal (con `S_cauce`) | desajuste | G2 |
+|---|---|---|---|---|
+| 0.0040 (= la del canal) | 36.195 | 36.195 | +0.000 | **NO CUMPLE** |
+| 0.0035 | 36.206 | 36.195 | +0.011 | CUMPLE |
+| 0.0030 | 36.216 | 36.195 | +0.021 | CUMPLE |
+| 0.0020 | 36.238 | 36.195 | +0.042 | CUMPLE |
+| 0.0005 | 36.269 | 36.195 | **+0.074** | CUMPLE |
+| 0.0060 | 36.153 | 36.195 | −0.042 | NO CUMPLE |
+
+Los dos fallos caen en el lado ciego de G2. **Rechaza la geometría correcta**: con el
+conducto tendido a la pendiente del propio canal la salida cae exactamente en el lecho
+(36.195) y G2 falla, porque el `cota_fondo_receptor` del expediente está puesto a mano
+en 36.20 y esos 5 mm no los concilia nadie. Y **acepta en silencio un escalón de 7 cm
+hacia arriba** en el fondo de un canal, que no es un empalme.
+
+**Lectura: el chequeo sí, la derivación de `S` no.** Derivar la pendiente de las dos
+cotas y la longitud da `(36.28 − 36.20)/21.246 = 0.003766`, un **tercer** valor que no
+es ni `S_cauce` (0.004) ni el `S_conducto` que se declare: dos medidas del mismo canal
+discrepando un 6 %. Derivar la elegiría en silencio; el chequeo la reporta. Además `S`
+es la variable con que se resolvió Manning —mueve `y_normal`, `V` y `HW`—, de modo que
+derivarla no es un control sino otro método de diseño; y `L` depende de
+`talud_terraplen`, que es `[A]`, así que la pendiente heredaría una adopción del
+proyectista.
+
+**Lo que se propondría, y no se hace aquí:** una **VC2** solo de Familia C, junto a G2
+y sin sustituirla —G2 sigue sirviendo a A y B como control de entrega por gravedad—,
+con la forma `|cota_salida − cota_fondo_receptor| ≤ desajuste_empalme_canal_m`, banda
+de dos lados. Con dos avisos que no se pueden omitir al abrirla: (a) la tolerancia **no
+la da ninguna norma de `normas/`** —es tolerancia constructiva de un fondo de concreto—,
+así que entraría como `[A]` **sin valor** y **bloquearía todo punto de Familia C** hasta
+declararse, que es la regla del proyecto y tiene coste; y (b) hay una **homonimia**
+debajo: en un paso de canal `cota_fondo_receptor` no es «el fondo de un cuerpo
+receptor» sino **el mismo canal aguas abajo**, y el proyecto ya tiene forma para eso
+(`constantes_normativas.HOMONIMIA_TW`, que existe por el mismo género de confusión).
