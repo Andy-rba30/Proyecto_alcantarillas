@@ -746,7 +746,7 @@ C8 tocó de este registro está arriba: **C1-02 quedó CERRADA** — el
 `Seccion.etiqueta()` que llevaba tres sesiones sin llamador tiene ahora
 catorce, y su ficha lo dice sin borrarse.
 
-## C8-01 · Nueve `Parte.cita_id` anuncian una cita que nadie transcribió
+## C8-01 · Nueve de 38 `Parte.cita_id` anuncian una cita que nadie transcribió
 
 - **Qué se difirió:** transcribir las nueve citas, y con ellas hacer que el
   registro EXIJA que toda `Parte.cita_id` exista.

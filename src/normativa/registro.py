@@ -218,7 +218,9 @@ class Registro:
         """
         Las `Parte.cita_id` que ANUNCIAN una cita que el registro no tiene.
 
-        HALLAZGO DE C8, y lo destapo abrir el canal: son NUEVE de 33. El campo
+        HALLAZGO DE C8, y lo destapo abrir el canal: son NUEVE de 38 --- las
+        23 discrepancias declaradas tienen 52 partes, y 38 de ellas nombran
+        una cita. El campo
         se documenta como «ancla al registro» y en nueve casos no ancla en
         nada --- `MP.A.11.3.1#KAE`, `ASTM_A760.T1#DIAMETROS`,
         `AASHTO_LRFD_9.3.11.6.4#LS` y seis mas ---. Nadie lo noto porque nadie

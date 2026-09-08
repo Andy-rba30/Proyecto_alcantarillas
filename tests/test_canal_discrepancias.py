@@ -304,7 +304,7 @@ def test_un_criterio_no_puede_declarar_una_discrepancia_inexistente():
 
 def test_el_censo_de_partes_sin_cita_transcrita_solo_decrece(reg):
     """
-    NUEVE de las 33 `Parte.cita_id` del registro anuncian una cita que nadie
+    NUEVE de las 38 `Parte.cita_id` del registro anuncian una cita que nadie
     transcribio. El campo se documenta como «ancla al registro» y en nueve
     casos no ancla en nada.
 

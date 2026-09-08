@@ -1920,7 +1920,7 @@ def _ancla_de_parte(parte: Any) -> str:
     La cita de una parte de la discrepancia, o EL AVISO de que se anuncia y no
     esta transcrita.
 
-    Nueve de las 33 `Parte.cita_id` del registro nombran citas que nadie
+    Nueve de las 38 `Parte.cita_id` del registro nombran citas que nadie
     transcribio (`Registro.partes_sin_cita_transcrita`). Imprimir el id pelado
     mandaria al revisor a buscar en el registro algo que no esta; callarlo
     dejaria la afirmacion de la parte sin ancla y sin decir que le falta. Se
