@@ -374,7 +374,7 @@ def _resultado_hdpe(punto, S=None, **_):
                      valor_admisible=0.60, criterio_aplicado=None, codigo="V2"),
     )
     return ResultadoPunto(punto=punto, aceptado=True, material=material,
-                          D=0.60, seccion=SeccionCircular(D=0.60),
+                          seccion=SeccionCircular(D=0.60),
                           resultado_hidraulico=hidraulica,
                           verificaciones=verificaciones)
 
@@ -408,7 +408,7 @@ def test_el_cuadro_resumen_csv_lleva_el_contenido_del_punto_dimensionado(
     a01 = por_id["A-01"]
     assert a01["familia"] == "A"
     assert a01["material"], "el material del punto dimensionado quedo vacio"
-    assert a01["D_m"] == "0.60"
+    assert a01["seccion"] == "Ø 0.60 m"
     assert a01["control_gobernante"] == "entrada"
     assert a01["V_erosion_ms"] and a01["V_sedimentacion_ms"]
     assert a01["V_erosion_ms"] != a01["V_sedimentacion_ms"], (
@@ -420,14 +420,15 @@ def test_el_cuadro_resumen_csv_lleva_el_contenido_del_punto_dimensionado(
     c01 = por_id["C-01"]
     assert c01["familia"] == "C"
     assert c01["material"] == ""
-    assert c01["D_m"] == ""
+    assert c01["seccion"] == ""
 
 
 def test_reporta_material_diametro_y_control_gobernante(informe_dimensionado):
     a01 = _punto(informe_dimensionado, "A-01")
     assert a01.dimensionado
     assert a01.resultado.material.tipo is TipoMaterial.HDPE
-    assert a01.resultado.D == pytest.approx(0.60, rel=REL_TRANSPORTE)
+    assert a01.resultado.seccion.altura == pytest.approx(0.60,
+                                                        rel=REL_TRANSPORTE)
     assert (a01.resultado.resultado_hidraulico.control_gobernante
             is ControlGobernante.ENTRADA)
 
@@ -481,7 +482,7 @@ def test_el_json_es_serializable_y_lleva_las_tres_listas_de_criterios(
     assert all("declarado_en_caliente" in c for c in datos["criterios"]["usados"])
     a01 = next(p for p in datos["puntos"] if p["id"] == "A-01")
     assert a01["diseno"]["control_gobernante"] == "entrada"
-    assert a01["diseno"]["D_m"] == pytest.approx(0.60, rel=REL_TRANSPORTE)
+    assert a01["diseno"]["seccion"] == "Ø 0.60 m"
     assert all(v["numeral"] for v in a01["verificaciones"])
 
 

@@ -133,7 +133,7 @@ Uso
     from modulos.MD import disenar_punto
 
     resultado = disenar_punto(punto, L=24.0, TW=0.30)
-    resultado.material.nombre, resultado.D, resultado.verificaciones
+    resultado.material.nombre, resultado.seccion.etiqueta(), resultado.verificaciones
 """
 
 from __future__ import annotations
@@ -192,14 +192,15 @@ Registrador = Callable[[PasoDiseno], None]
 
 
 def _registrar(registrador: Optional[Registrador], material: Material,
-               D: float, *, aceptado: bool, motivo: str,
+               seccion: Seccion, *, aceptado: bool, motivo: str,
                verificaciones: Tuple[Verificacion, ...] = (),
                resultado: Optional[ResultadoHidraulico] = None) -> None:
     """Anota un escalon del bucle si hay observador; si no, no hace nada."""
     if registrador is None:
         return
-    registrador(PasoDiseno(material=material.nombre, D=D, aceptado=aceptado,
-                           motivo=motivo, verificaciones=verificaciones,
+    registrador(PasoDiseno(material=material.nombre, seccion=seccion,
+                           aceptado=aceptado, motivo=motivo,
+                           verificaciones=verificaciones,
                            resultado_hidraulico=resultado))
 
 
@@ -222,7 +223,7 @@ def _verificador_de_M5() -> Verificador:
             "cerrar el bucle de diseño sin la Fase 5. Mientras M5 no exista, "
             "pasa la funcion de verificacion en el argumento 'verificar' de "
             f"disenar_punto() con la firma {FUNCION_VERIFICACIONES}"
-            "(punto=, material=, D=, resultado=) -> Sequence[Verificacion]"
+            "(punto=, material=, seccion=, resultado=) -> Sequence[Verificacion]"
         ) from exc
 
     verificar = getattr(modulo, FUNCION_VERIFICACIONES, None)
@@ -230,7 +231,7 @@ def _verificador_de_M5() -> Verificador:
         raise ImportError(
             f"'{MODULO_VERIFICACIONES}' no expone '{FUNCION_VERIFICACIONES}': "
             "MD llama a la Fase 5 por ese nombre y con la firma "
-            "(punto=, material=, D=, resultado=) -> Sequence[Verificacion]"
+            "(punto=, material=, seccion=, resultado=) -> Sequence[Verificacion]"
         )
     return verificar
 
@@ -239,18 +240,19 @@ def _verificador_de_M5() -> Verificador:
 # Redaccion de los motivos de fallo
 # ---------------------------------------------------------------------------
 
-def _motivo_sin_flujo_libre(D: float, Q: float, S: float,
+def _motivo_sin_flujo_libre(seccion: Seccion, Q: float, S: float,
                             material: Material) -> str:
     """
-    M3 devolvio None: no hay tirante normal en (0, 2*pi) para esa D. No es un
-    fallo -- es el resultado de diseño "este diametro no alcanza" (Sec. 4.1).
+    M3 devolvio None: no hay tirante normal en (0, 2*pi) para esa seccion.
+    No es un fallo -- es el resultado de diseño "esta seccion no alcanza"
+    (Sec. 4.1).
     """
-    return (f"D = {D:.2f} m: el conducto no transporta Q = {Q:.4f} m3/s en "
+    return (f"{seccion.etiqueta()}: el conducto no transporta Q = {Q:.4f} m3/s en "
             f"flujo libre con S = {S:.5f} y n = {material.n_para_capacidad} "
             "(Sec. 4.1)")
 
 
-def _motivo_incumplimiento(D: float,
+def _motivo_incumplimiento(seccion: Seccion,
                            verificaciones: Sequence[Verificacion]) -> str:
     """Las verificaciones que no cumplen, con su codigo y su numeral."""
     partes = [
@@ -258,25 +260,26 @@ def _motivo_incumplimiento(D: float,
         f"frente a {v.valor_admisible!r}"
         for v in verificaciones if not v.cumple
     ]
-    return f"D = {D:.2f} m: incumple " + "; ".join(partes)
+    return f"{seccion.etiqueta()}: incumple " + "; ".join(partes)
 
 
-def _motivo_escalon_fallido(D: float, exc: ErrorProyecto) -> str:
+def _motivo_escalon_fallido(seccion: Seccion, exc: ErrorProyecto) -> str:
     """
     Un escalon que termino en ErrorProyecto en vez de en una verificacion.
 
     El sujeto de la frase es EL ESCALON, no el expediente: es MD quien eligio
-    esta D del catalogo, de modo que "con D = 2.10 m no se pudo evaluar" es un
+    esta seccion del catalogo, de modo que "con Ø 2.10 m no se pudo evaluar"
+    es un
     hecho del bucle, y el mensaje de la excepcion queda detras como la causa
     que lo explica. Sin el prefijo, un DatoInvalidoError sobre 'cota_subrasante'
     lanzado por V7 se lee como "el dato del expediente esta mal" cuando lo que
-    ocurrio es que la clave del conducto, A ESTE DIAMETRO, ya no cabe bajo la
-    subrasante -- el dato no cambio, cambio la D que el bucle estaba probando.
+    ocurrio es que la clave del conducto, EN ESTA SECCION, ya no cabe bajo la
+    subrasante -- el dato no cambio, cambio la seccion que el bucle probaba.
 
     MD no reinterpreta la excepcion ni la reclasifica: la cita entera, con su
     tipo. Corregir el tipo o el campo de la excepcion es de M5, no de aqui.
     """
-    return (f"D = {D:.2f} m: el escalon no se pudo evaluar -- "
+    return (f"{seccion.etiqueta()}: el escalon no se pudo evaluar -- "
             f"{type(exc).__name__}: {exc}")
 
 
@@ -370,7 +373,6 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     ultimo_motivo = "el catalogo no ofrecio ninguna seccion"
 
     while seccion is not None:
-        D = seccion.altura
         # Fuera del `try` a proposito: si la Fase 5 revienta, el escalon que
         # revento tiene que quedar en la traza CON la hidraulica que M3 y M4
         # si alcanzaron a resolver. Es lo unico que llega a la memoria cuando
@@ -383,8 +385,9 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                                       material=material)
 
             if normal is None:
-                ultimo_motivo = _motivo_sin_flujo_libre(D, Q_barril, S, material)
-                _registrar(registrar, material, D, aceptado=False,
+                ultimo_motivo = _motivo_sin_flujo_libre(seccion, Q_barril, S,
+                                                        material)
+                _registrar(registrar, material, seccion, aceptado=False,
                            motivo=ultimo_motivo)
             else:
                 # No puede salir None: se le pasa el tirante normal ya
@@ -399,27 +402,27 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                 if not verificaciones:
                     raise ValueError(
                         f"la Fase 5 devolvio cero verificaciones para "
-                        f"{punto.id} con {material.nombre} D = {D:.2f} m: un "
+                        f"{punto.id} con {material.nombre} "
+                        f"{seccion.etiqueta()}: un "
                         "punto aceptado sin verificaciones no es defendible "
                         "en la memoria"
                     )
 
                 if all(v.cumple for v in verificaciones):
-                    _registrar(registrar, material, D, aceptado=True,
+                    _registrar(registrar, material, seccion, aceptado=True,
                                motivo="", verificaciones=verificaciones,
                                resultado=resultado)
                     return ResultadoPunto(
                         punto=punto,
                         material=material,
-                        D=D,
                         seccion=seccion,
                         resultado_hidraulico=resultado,
                         verificaciones=verificaciones,
                         aceptado=True,
                     ), ""
 
-                ultimo_motivo = _motivo_incumplimiento(D, verificaciones)
-                _registrar(registrar, material, D, aceptado=False,
+                ultimo_motivo = _motivo_incumplimiento(seccion, verificaciones)
+                _registrar(registrar, material, seccion, aceptado=False,
                            motivo=ultimo_motivo,
                            verificaciones=verificaciones,
                            resultado=resultado)
@@ -434,8 +437,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
             # --- que en este expediente son todos --- llegaba a la memoria
             # como un motivo de una linea, tirando el desarrollo de V1 a V4b
             # que si se calculo. Ver el docstring de `M5.verificar`.
-            _registrar(registrar, material, D, aceptado=False,
-                       motivo=_motivo_escalon_fallido(D, exc),
+            _registrar(registrar, material, seccion, aceptado=False,
+                       motivo=_motivo_escalon_fallido(seccion, exc),
                        verificaciones=getattr(
                            exc, "verificaciones_completadas", ()),
                        resultado=resultado)
@@ -481,7 +484,8 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     """
     Diseño hidraulico completo de un punto critico: recorre los materiales
     candidatos de M2 (Sec. 3.4) y, dentro de cada uno, el catalogo ascendente
-    de Sec. 3.2, hasta que un par (material, D) pase TODAS las verificaciones
+    de Sec. 3.2, hasta que un par (material, seccion) pase TODAS las
+    verificaciones
     de la Fase 5. Devuelve ese `ResultadoPunto`.
 
     Argumentos

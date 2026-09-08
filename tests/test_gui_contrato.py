@@ -617,6 +617,113 @@ def test_la_gui_y_la_cli_divergen_al_interpretar_la_coma_y_esta_declarado(ventan
         "la divergencia tiene que estar escrita donde vive el codigo")
 
 
+def test_el_tablero_de_puntos_muestra_la_SECCION_y_no_un_diametro(app):
+    """
+    C8, punto 2, en la ventana. La columna decia «D (m)» y leia
+    `resultado.D`, un escalar que en un marco vale la ALTURA: dos marcos de
+    1.20 x 0.90 y 2.00 x 0.90 salian los dos «0.90» en el tablero, o sea la
+    mitad que NO gobierna la capacidad.
+
+    Se mira el codigo fuente y no los widgets porque los widgets aqui son
+    dobles: lo que se vigila es el contrato de columnas, que es lo que la
+    ventana de verdad construye.
+    """
+    import ast
+    import inspect
+    import textwrap
+
+    fuente = inspect.getsource(app.ExpedienteApp._construir_tab_puntos)
+    arbol = ast.parse(textwrap.dedent(fuente))
+    cols = [n for n in ast.walk(arbol)
+            if isinstance(n, ast.Assign)
+            and any(getattr(x, "id", "") == "cols" for x in n.targets)]
+    assert cols, "la tabla de puntos dejo de declarar sus columnas en `cols`"
+    nombres = [e.value for e in cols[0].value.elts]
+    assert "seccion" in nombres
+    assert "D" not in nombres, (
+        "volvio la columna «D» al tablero: en un marco no hay diametro, y "
+        "publicar solo la altura es publicar media geometria")
+
+
+def test_la_ventana_puede_declarar_los_SIETE_criterios_del_cajon(ventana):
+    """
+    C8, punto 6: los criterios de la Familia C se declaran en caliente por la
+    ventana COMO CUALQUIER [A] DE PERFIL, y eso incluye el unico que no es un
+    escalar ni una cadena.
+
+    EL DEFECTO QUE CIERRA. `secciones_cajon_normalizadas` es la serie de pares
+    (B, H) del catalogo del cajon. Con las dos ramas que la funcion tenia
+    --- numero o texto ---, lo tecleado volvia como CADENA, la guardia de
+    `criterios_adoptados` la aceptaba (no valida la forma), y el bucle de MD
+    se detenia despues con un `DatoInvalidoError` correcto y sin salida:
+    la ventana ofrecia el campo y por el campo no cabia el valor. Uno de los
+    siete criterios de la Familia C quedaba fuera de la declaracion en
+    caliente sin que nada lo dijera.
+    """
+    import criterios_adoptados as ca_
+
+    tecleado = {
+        "embocadura_cajon": "cajon_concreto_aletas_30_75",
+        "n_manning_cajon": "concreto_afinado",
+        "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+        "espesor_pared_cajon": "0,20",          # con coma, como se teclea
+        "cobertura_minima_cajon": "0.3048",
+        "n_celdas_cajon": "1",
+        "secciones_cajon_normalizadas":
+            "[[1.20, 0.90], [1.50, 1.20], [2.00, 1.50]]",
+    }
+    for clave, texto in tecleado.items():
+        valor = ventana._interpretar_valor_declarado(texto)
+        ca_.establecer_valor_dinamico(clave, valor)
+        try:
+            assert ca_.valor(clave) is not None
+        finally:
+            ca_.quitar_valor_dinamico(clave)
+
+    serie = ventana._interpretar_valor_declarado(
+        "[[1.20, 0.90], [1.50, 1.20], [2.00, 1.50]]")
+    # Solo se TRANSPORTA lo tecleado: la tolerancia es la del transporte.
+    from tests.apoyo.aproximacion import REL_TRANSPORTE
+
+    assert [type(par) for par in serie] == [list, list, list], (
+        "la serie de pares tiene que llegar como pares, no como la cadena que "
+        "el bucle de MD rechaza")
+    assert [x for par in serie for x in par] == pytest.approx(
+        [1.20, 0.90, 1.50, 1.20, 2.00, 1.50], rel=REL_TRANSPORTE)
+
+
+def test_un_literal_estructurado_mal_cerrado_sale_como_rotulo_y_no_como_traza(
+        ventana):
+    """
+    La otra mitad: la rama nueva no puede reventar la ventana. Un corchete sin
+    cerrar es `ValueError`, que es lo que los dos llamadores atrapan tres
+    lineas mas abajo para pintar el rotulo rojo (SIS-E-04).
+    """
+    with pytest.raises(ValueError, match="empieza como una lista"):
+        ventana._interpretar_valor_declarado("[[1.20, 0.90], [1.50")
+
+
+def test_la_rama_estructurada_no_reabre_la_ambiguedad_del_1_coma_5(ventana):
+    """
+    LA GUARDIA DE LA DIVERGENCIA, que es lo que hace admisible la rama nueva.
+
+    La ambiguedad que la divergencia con la CLI protege vive en el texto SIN
+    delimitadores: '1,5' es un decimal para quien teclea y la tupla (1, 5)
+    para `ast.literal_eval`. La rama estructurada solo se toma cuando el texto
+    ABRE con '[', '(' o '{', cosa que ningun decimal escrito con coma hace, de
+    modo que ese caso sigue yendo por la rama del float. Sin este test, la
+    ampliacion de C8 pasaria por una reunificacion con la CLI, que es
+    exactamente lo que el otro test de este archivo prohibe.
+    """
+    from tests.apoyo.aproximacion import REL_TRANSPORTE
+
+    assert ventana._interpretar_valor_declarado("1,5") == pytest.approx(
+        1.5, rel=REL_TRANSPORTE)
+    assert ventana._interpretar_valor_declarado("1,5") != (1, 5)
+    # Y con delimitador SI es una tupla, porque entonces no hay ambiguedad.
+    assert ventana._interpretar_valor_declarado("(1,5)") == (1, 5)
+
+
 def test_la_gui_traduce_las_mismas_banderas_que_la_cli(app, ventana):
     """
     SIS-F-01: "la GUI reimplementa la traduccion de banderas". Sigue
@@ -1055,10 +1162,32 @@ def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
     assert resumen["diferidos"] > 0, "nada diferido: no es alcance de perfil"
     # La plantilla la elige el ALCANCE de la corrida, que es SIS-A-17.
     assert resumen["plantilla"] == cli.NOMBRE_PLANTILLA_PERFIL
-    # Y el tablero de criterios pendientes de la ventana muestra EXACTAMENTE
-    # los dos que el alcance de perfil difiere: los de V5 y V8.
-    assert resumen["criterios_bloqueantes"] == ["TR_evento_extremo",
-                                                "remanso_derecho_via"]
+    # EL TABLERO, ANTES DE DECLARAR NADA: los dos que el alcance de perfil
+    # difiere (V5 y V8) Y EL DE LA FAMILIA C. La lista decia solo los dos y
+    # eran TRES --- `embocadura_cajon` es lo primero que le falta a C-01 ---,
+    # o sea que esta comprobacion estaba mal desde que la Familia C entro en
+    # el CSV de perfil. No lo vio nadie porque este test se SALTA en cuanto
+    # no hay entorno grafico, que es el caso del contenedor de desarrollo: un
+    # test saltado no defiende su aserto (C8, punto 6).
+    assert resumen["tablero_antes"] == ["TR_evento_extremo",
+                                        "embocadura_cajon",
+                                        "remanso_derecho_via"], (
+        "la Familia C tiene que aparecer en el tablero de la ventana: si su "
+        "criterio pendiente no se lista, el proyectista no sabe que declarar")
+
+    # Y DESPUES DE DECLARAR LOS SIETE POR EL CAMINO DEL RATON, el de la
+    # Familia C ya no bloquea. Es el punto 6 entero: no basta con que el
+    # criterio se vea, tiene que poder declararse desde ahi como cualquier
+    # [A] de perfil.
+    assert "embocadura_cajon" not in resumen["tablero_despues"]
+    assert set(resumen["cajon_declarado"]) == {
+        "embocadura_cajon", "n_manning_cajon", "ke_entrada_cajon",
+        "espesor_pared_cajon", "cobertura_minima_cajon", "n_celdas_cajon",
+        "secciones_cajon_normalizadas"}
+    # El unico que no es escalar ni cadena, y el que no cabia por la ventana
+    # hasta C8: tiene que haber llegado como PARES.
+    assert resumen["cajon_declarado"]["secciones_cajon_normalizadas"] == (
+        "[[1.2, 0.9], [1.5, 1.2], [2.0, 1.5]]")
 
     memoria = (tmp_path / "memoria.html").read_text(encoding="utf-8")
     assert "4. Alcance y diferimientos" in memoria

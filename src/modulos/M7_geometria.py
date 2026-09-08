@@ -233,10 +233,10 @@ Uso
     tamizado.delta_rasante_cm          # cm  - cuanto falta subir; 0.0 si cabe
     print(tamizado.mensaje)            # "no factible -> subir rasante 18.0 cm"
 
-    # 7.B, por punto, con el diametro que la Fase 4 adopto. La pendiente NO
+    # 7.B, por punto, con la seccion que la Fase 4 adopto. La pendiente NO
     # es argumento: sale de `resultado.S`, la que uso el diseño (MAT-D9)
     geometria = compatibilidad_geometrica(punto=punto, material=material,
-                                          D=resultado_punto.D,
+                                          seccion=resultado_punto.seccion,
                                           resultado=resultado_punto.resultado_hidraulico)
 """
 
@@ -255,7 +255,7 @@ from modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
                      exigir_seccion_coherente,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
-from modulos.M2_material import diametro_exterior, espesor_pared
+from modulos.M2_material import espesor_pared
 from modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
                                        cota_entrada_supuesta,
                                        resguardo_por_cbr)
@@ -428,7 +428,8 @@ def cobertura_minima_aashto(*, material: Material, seccion: Seccion) -> float:
     `TipoMaterial`, de modo que indexar la tabla por material no los separa.
     Hasta C7 no se separaban, y el marco recibia la fila del tubo -- y encima
     con la dimension equivocada dentro, porque `D` en un marco vale la ALTURA
-    y `diametro_exterior` la convierte en H + 2t, que es B'c y no Bc. Medido:
+    y el "diametro exterior" la convertia en H + 2t, que es B'c y no Bc
+    (esa funcion la retiro C8 por esto mismo). Medido:
     para un marco de 3.00 x 1.50 m con t = 0.15 salia 0.3048 m, el piso de la
     fila del tubo, SIN QUE EL ANCHO ENTRARA EN EL CALCULO -- B no es argumento
     de esta funcion --. Ese es el motivo de que la respuesta no sea traer un
@@ -471,9 +472,9 @@ def cobertura_minima_aashto(*, material: Material, seccion: Seccion) -> float:
     # inventarles una dependencia que la tabla no tiene. Quien SI la tiene
     # siempre es la cota de clave, que es otra cosa y esta en M5.
     #
-    # QUE `Bc` SALGA DE LA SECCION Y NO DE `diametro_exterior` es lo que hace
+    # QUE `Bc` SALGA DE LA SECCION, y no de un "diametro exterior", es lo que hace
     # correcta la ranura de Bc en vez de dejarla a la coincidencia: Bc es la
-    # dimension HORIZONTAL, y `diametro_exterior(D)` solo la da porque en un
+    # dimension HORIZONTAL, y un `D + 2t` solo la da porque en un
     # circulo ancho y canto coinciden.
     #
     # SOLO LA RAMA DE Bc SE DESACOPLA, y decirlo entero importa porque el
@@ -668,7 +669,7 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
                                                       seccion=seccion)
     entrada = cota_entrada_supuesta(punto)
     altura = seccion.altura
-    clave = cota_clave(punto=punto, material=material, D=altura)
+    clave = cota_clave(punto=punto, material=material, seccion=seccion)
     t_pared = espesor_pared(material, altura)
     Bc = seccion.ancho_exterior(t_pared)
 
@@ -1071,12 +1072,11 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
 
     return CompatibilidadGeometrica(
         punto=punto,
-        # EL CAMPO SIGUE SIENDO ESCALAR Y SIGUE LLAMANDOSE `D`, y no es un
-        # descuido de C7: es de la misma familia que `ResultadoPunto.D`, que
-        # el brief reserva a C8. Se alimenta de `seccion.altura` -- el D de un
-        # tubo, la H de una celda de marco -- para que al menos no lleve otra
-        # cosa mientras se llama asi.
-        D=seccion.altura,
+        # LA SECCION, y ya no el escalar `D` que C7 dejo declarado como deuda
+        # de C8 por ser "de la misma familia que `ResultadoPunto.D`". Va la
+        # seccion entera por la misma razon que alli: de `0.90` no se recupera
+        # si la luz era 1.20 o 2.00 m.
+        seccion=seccion,
         tamizado=tamizado,
         longitud=longitud,
         proyeccion_taludes=proyeccion,

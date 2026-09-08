@@ -163,20 +163,29 @@ def proteccion_salida(*, V: float) -> ProteccionSalida:
             formula="d50 = V^2 / (3.1 * g)",
             formula_cita_id="MC_HHD.4.1.1.3.7c",
             citas_textuales=("MC_HHD.4.1.1.3.7c",),
+            # POR QUE SE DECLARA AQUI Y NO LLEGA SOLA. La discrepancia habla
+            # de `MC_HHD.4.1.1.3.7c#G` -- el ancla del SIMBOLO g dentro del
+            # numeral -- y este paso cita `MC_HHD.4.1.1.3.7c`, el numeral. Es
+            # el mismo sitio del documento con dos ids, de modo que el cruce
+            # por cita pasa de largo por un sufijo. Esta es la via para las
+            # discrepancias que hablan de un NUMERO y no de un texto.
+            discrepancias=("DIS-HR-G-LAUSHEY",),
             sustitucion=(
                 Magnitud("V", V, "m/s",
                          "M3, velocidad de la rama de n MINIMO -- la "
                          "estimacion ALTA --, que es el lado conservador para "
                          "una proteccion contra socavacion: d50 crece con el "
                          "CUADRADO de V", cifras=CIFRAS_MAGNITUD),
+                # LA PROCEDENCIA DICE DE DONDE SALE EL NUMERO; POR QUE NO SALE
+                # DE DONDE LA HOJA DE RUTA DICE lo dice la discrepancia, abajo.
+                # Estaba escrito aqui entero, y era la tercera copia del mismo
+                # argumento -- las otras dos en el comentario de `G_LAUSHEY` y
+                # en la propia `DIS-HR-G-LAUSHEY` --. Una de las tres tiene que
+                # ser la fuente, y es la del registro: es la unica enumerable.
                 Magnitud("g", G_LAUSHEY, "m/s2",
-                         "gravedad tal como la escribe el Manual de "
-                         "Hidrologia. EL NUMERAL DE LAUSHEY NO IMPRIME "
-                         "NINGUN VALOR DE g: define el simbolo y su unidad. "
-                         "El 9.8 se toma de los num. 3.12.5 (pag. impresa 63) "
-                         "y 4.1.1.5.4 b.2.4) (pag. impresa 111), que son los "
-                         "dos unicos sitios donde ese Manual lo escribe "
-                         "(NOR-HID-01, MAT-O7)")),
+                         "`constantes_normativas.G_LAUSHEY`, que el Manual de "
+                         "Hidrologia escribe en sus num. 3.12.5 (pag. impresa "
+                         "63) y 4.1.1.5.4 b.2.4) (pag. impresa 111)")),
             resultado=Magnitud("d50", d50, "m",
                                "diametro medio de la piedra",
                                cifras=CIFRAS_MAGNITUD),

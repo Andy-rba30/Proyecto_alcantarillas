@@ -133,7 +133,23 @@ class Criterio:
     sin_consumidor: str = ""                   # por que NINGUN modulo lo invoca
     de_catalogo: str = ""                      # rotulo: el valor es de CATALOGO, no de norma
     resolucion: Optional[Resolucion] = None    # COMO se resuelve (Sec. 4.3): tabla, rango, ensayo...
-    nivel: str = ""                            # NIVEL_PERFIL / NIVEL_EXPEDIENTE / "" sin clasificar
+    nivel: str = ""
+    # LAS DISCREPANCIAS DECLARADAS QUE ESTE CRITERIO TOCA, por su id.
+    #
+    # Tercera via del canal de C8, y la que faltaba: hay discrepancias que no
+    # hablan de un TEXTO (esas llegan solas, cruzando las citas que los pasos
+    # imprimen) ni de un valor que un PASO sustituye (esas las declara el
+    # paso), sino del valor de un CRITERIO. `DIS-HR-D-MAX` es el caso vivo:
+    # dice que los topes de 2.70 / 2.10 / 1.50 m no son normativos sino de
+    # catalogo, y quien los lleva es este archivo. V9 los consulta y ni
+    # siquiera emite paso.
+    #
+    # VIAJA EL ID Y NUNCA EL TEXTO. Antes de C8 estos ids se escribian a mano
+    # DENTRO de la `justificacion` --- prosa, invisible al registro, imposible
+    # de enumerar y libre de divergir de la discrepancia que nombra. Aqui el
+    # registro comprueba que el id exista y que siga viva, y M11 imprime la
+    # discrepancia entera desde el registro.
+    discrepancias: Tuple[str, ...] = ()                            # NIVEL_PERFIL / NIVEL_EXPEDIENTE / "" sin clasificar
 
     # `nivel` responde a UNA pregunta y no a dos: si este criterio hay que
     # tenerlo declarado para cerrar el nivel de PERFIL, o si su etapa la
@@ -783,6 +799,13 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="S",
+        # LAS DOS DISCREPANCIAS QUE ESTE CRITERIO TOCA, por su id. La
+        # `justificacion` las nombraba en prosa, y esa era su UNICA via a la
+        # memoria: M11 imprime la justificacion tal cual, de modo que el
+        # revisor leia un codigo `DIS-...` sin partes, sin quien gana y sin
+        # efecto. Un id suelto dentro de un parrafo no es un canal; declarado
+        # aqui, la memoria trae la discrepancia entera desde el registro.
+        discrepancias=("DIS-HR-CLASE-DE-SITIO-F", "DIS-HR-30M-VS-100FT"),
         concepto="Clase de sitio sismica (AASHTO LRFD Art. 3.10.3.1 / Manual "
                  "de Puentes num. 2.4.3.11.2.1.1). Es la rigidez MEDIDA de "
                  "los 100 ft (30.48 m) superiores leida en la tabla de "
@@ -974,6 +997,10 @@ CRITERIOS: Dict[str, Criterio] = {
     "F_pga": Criterio(
         valor=("C", "D", "E"),
         etiqueta="A",
+        # Misma razon que en 'clase_sitio': la profundidad sobre la que se lee
+        # la clase decide que fila de esta tabla aplica, y la hoja de ruta se
+        # la atribuye al articulado con una cifra que el articulado no imprime.
+        discrepancias=("DIS-HR-30M-VS-100FT",),
         concepto="Filas de la Tabla 2.4.3.11.2.1.2-1 sobre las que se lee el "
                  "factor de sitio de la cadena sismica. El factor adoptado es "
                  "la ENVOLVENTE (el mayor) de esas filas al PGA del proyecto; "
@@ -3349,6 +3376,13 @@ CRITERIOS: Dict[str, Criterio] = {
         valor={"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50},
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        # LA DISCREPANCIA, POR SU ID Y NO EN PROSA. `fuente` cuenta abajo, con
+        # tabla y pagina, POR QUE ninguna norma sostiene estos topes; lo que
+        # este campo hace es que ese hallazgo LLEGUE A LA MEMORIA por el canal
+        # y no dependa de que el revisor lea el campo `fuente` de una ficha.
+        # V9 consulta el tope y ni siquiera emite paso, de modo que por la via
+        # del paso no llegaria nunca.
+        discrepancias=("DIS-HR-D-MAX",),
         concepto="Diametro maximo que el proyecto admite por material, como "
                  "tope de DISPONIBILIDAD (catalogo), no como tope normativo",
         de_catalogo="TOPE DE CATALOGO, NO DE NORMA. Imprimir siempre asi: "
@@ -3784,7 +3818,7 @@ CRITERIOS: Dict[str, Criterio] = {
     # Bc/8, mientras B'c/8 = 0.225 es el MENOR de los tres numeros en juego.
     # Lo que le falta al codigo no es el termino que se dejo fuera: es que al
     # UNICO termino que conserva le entra la dimension equivocada. `M7` recibe
-    # un escalar `D` que en un marco vale la ALTURA, y `diametro_exterior` lo
+    # un escalar `D` que en un marco vale la ALTURA, y el `D + 2t` de entonces lo
     # convierte en H + 2t = B'c, que se mete en la ranura de Bc. Medido: para
     # ese marco la cobertura de hoy sale 0.3048 m Y NO DEPENDE DE B EN
     # ABSOLUTO -- el ancho no es argumento de la funcion --. Por eso el arreglo
@@ -4832,9 +4866,10 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="PENDIENTE - predimensionamiento del proyectista, o plano tipo "
                "de cabezal del expediente vial",
         reemplazado_por="Plano de encofrado del cabezal, acotado",
-        verificacion_pendiente="La geometria tiene que ser COMPATIBLE con el "
-                               "diametro adoptado en la Fase 4 y con la "
-                               "altura de terraplen de la Fase 7: un cabezal "
+        verificacion_pendiente="La geometria tiene que ser COMPATIBLE con la "
+                               "SECCION adoptada en la Fase 4 -- un diametro "
+                               "en un tubo, el par B x H en un marco -- y con "
+                               "la altura de terraplen de la Fase 7: un cabezal "
                                "declarado aparte del conducto que remata es "
                                "una incoherencia de expediente",
         resolucion=Libre(
@@ -5899,6 +5934,34 @@ def _verificar_finitud(clave: str, c: Criterio) -> None:
             )
 
 
+def _verificar_discrepancias(clave: str, c: Criterio) -> None:
+    """
+    Que los ids de `Criterio.discrepancias` existan en el registro y sigan
+    VIVOS.
+
+    El import es diferido por la misma razon que en `tabla_del_criterio`: este
+    archivo no depende de `normativa` en su cabecera.
+    """
+    if not c.discrepancias:
+        return
+    from normativa import registro as _reg
+    registro = _reg.construir()
+    for id_ in c.discrepancias:
+        try:
+            d = registro.discrepancia(id_)
+        except KeyError:
+            raise ValueError(
+                f"'{clave}' declara la discrepancia '{id_}', que no esta en "
+                "el registro. El id viaja al registro, no a la prosa: si no "
+                "existe, la memoria imprimiria un ancla rota") from None
+        if not d.viva:
+            raise ValueError(
+                f"'{clave}' declara la discrepancia '{id_}', que esta "
+                f"{d.estado.value}. Lo resuelto es material del manifiesto "
+                "--- para quien audita el codigo ---, no de la memoria, que "
+                "es para quien sustenta")
+
+
 def _verificar_criterio(clave: str, c: Criterio) -> None:
     """
     Valida UNA entrada. No lee CRITERIOS: recibe el objeto ya armado.
@@ -5922,6 +5985,7 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
     un rango de valores alternativos, que es justo lo que un hecho no tiene.
     """
     _verificar_finitud(clave, c)
+    _verificar_discrepancias(clave, c)
     if c.etiqueta not in ETIQUETAS_VALIDAS:
         raise ValueError(
             f"'{clave}' lleva la etiqueta {c.etiqueta!r}, que no es de la "

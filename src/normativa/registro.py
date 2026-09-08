@@ -199,11 +199,99 @@ class Registro:
     def discrepancias_abiertas(self) -> Tuple[Discrepancia, ...]:
         """
         Las que `CLAUDE.md` obliga a seguir declarando mientras nadie corrija
-        la hoja de ruta. M11 las imprime; el test T20 comprueba que estan.
+        la hoja de ruta. El test T20 comprueba que estan.
+
+        NO ES LA VISTA QUE CONSUME LA MEMORIA, y hasta C8 el docstring decia
+        que si -- «M11 las imprime» --, que era falso: M11 no importaba este
+        modulo por ninguna parte. Una declaracion en un docstring no imprime
+        nada, que es la primera de las dos lecciones que le costaron
+        auditorias a este proyecto. La memoria consume
+        `discrepancias_que_tocan`, que ademas FILTRA: esta vista es el censo
+        completo de lo abierto -- material de manifiesto, para quien audita el
+        codigo -- y aquella es lo que ESTA CORRIDA toca.
         """
         return tuple(d for d in self._discrepancias.values()
                      if d.estado in (EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
                                      EstadoDiscrepancia.ABIERTA))
+
+    def partes_sin_cita_transcrita(self) -> Tuple[Tuple[str, str, str], ...]:
+        """
+        Las `Parte.cita_id` que ANUNCIAN una cita que el registro no tiene.
+
+        HALLAZGO DE C8, y lo destapo abrir el canal: son NUEVE de 38 --- las
+        23 discrepancias declaradas tienen 52 partes, y 38 de ellas nombran
+        una cita. El campo
+        se documenta como «ancla al registro» y en nueve casos no ancla en
+        nada --- `MP.A.11.3.1#KAE`, `ASTM_A760.T1#DIAMETROS`,
+        `AASHTO_LRFD_9.3.11.6.4#LS` y seis mas ---. Nadie lo noto porque nadie
+        las consumia: la validacion del registro mete estos ids en el conjunto
+        de «referenciadas» --- para que una cita no cuente como huerfana ---
+        y NUNCA comprobo que existieran. Un id que solo sirve para excusar a
+        otro de estar huerfano no se comprueba jamas.
+
+        NO SE CIERRA INVENTANDO NUEVE CITAS: transcribir una cita es leer el
+        PDF, verificar numeral, pagina impresa y texto literal, y eso es
+        trabajo con fuente delante, no de esta funcion (regla 8 de
+        `CLAUDE.md`). Lo que se hace es lo que el proyecto hace con toda
+        migracion a medias: dejarla VISIBLE y con trinquete --- la memoria
+        imprime «anunciada y no transcrita» en vez de un ancla rota, y un test
+        fija que el numero solo pueda decrecer, igual que
+        `cuenta_por_transcribir` (T22).
+
+        Devuelve (discrepancia_id, quien, cita_id), en orden de declaracion.
+        """
+        faltan = []
+        for d in self._discrepancias.values():
+            for p in d.partes:
+                if p.cita_id and p.cita_id not in self._citas:
+                    faltan.append((d.id, p.quien, p.cita_id))
+        return tuple(faltan)
+
+    def discrepancias_de_cita(self, cita_id: str) -> Tuple[Discrepancia, ...]:
+        """
+        El indice inverso: que discrepancias hablan de esta cita.
+
+        Se deriva de las `Parte.cita_id` que las discrepancias YA declaran, de
+        modo que no hay un segundo sitio que mantener a mano ni que se pueda
+        desincronizar. Es el precedente de `test_cierre_perfil`: una
+        clasificacion escrita a mano se desincroniza; una derivada del codigo
+        no puede.
+        """
+        return tuple(d for d in self._discrepancias.values()
+                     if cita_id in d.citas)
+
+    def discrepancias_que_tocan(
+            self,
+            cita_ids: Iterable[str],
+            ids_declaradas: Iterable[str] = ()) -> Tuple[Discrepancia, ...]:
+        """
+        LAS QUE LLEGAN A LA MEMORIA: las VIVAS que esta corrida toca.
+
+        Dos vias de llegada, y las dos hacen falta porque una discrepancia
+        puede ser sobre una CITA o sobre un VALOR:
+
+        1. `cita_ids` -- las citas que los pasos de la corrida imprimieron.
+           Una discrepancia sobre lo que un numeral dice llega sola, por el
+           indice inverso de arriba: nadie la cablea.
+        2. `ids_declaradas` -- las que un `PasoDeMemoria` nombra en su campo
+           `discrepancias`. Es la via de las que hablan de un NUMERO y no de
+           un texto: `DIS-HR-G-LAUSHEY` es sobre el valor `G_LAUSHEY`, y su
+           parte cita `MC_HHD.4.1.1.3.7c#G` mientras el paso de Laushey cita
+           `MC_HHD.4.1.1.3.7c` -- el mismo numeral con otro ancla --, de modo
+           que por la via 1 pasaria de largo por un sufijo.
+
+        Lo que NO llega: lo `RESUELTA` (ver `EstadoDiscrepancia.viva`) y lo
+        que la corrida no toca. Que una corrida `--alcance perfil` no imprima
+        las seis discrepancias del cabezal no es un olvido: es que el cabezal
+        esta diferido, y su memoria no afirma nada sobre ellas.
+
+        Orden estable: el de declaracion en `discrepancias.py`.
+        """
+        pedidas = set(ids_declaradas)
+        citadas = set(cita_ids)
+        return tuple(
+            d for d in self._discrepancias.values()
+            if d.viva and (d.id in pedidas or (citadas & set(d.citas))))
 
     def condiciones(self) -> Iterator[Tuple[str, CondicionAplicacion]]:
         for c in self._citas.values():

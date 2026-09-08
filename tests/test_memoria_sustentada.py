@@ -540,19 +540,75 @@ def test_M11_no_calcula_y_sobre_D(informe):
     SIS-A-07: M11 declaraba «sin calcular nada nuevo» y dividia `y_normal/D`
     en dos sitios. El numero vive ahora en `ResultadoPunto.y_sobre_D`, escrito
     una vez, y este test vigila que la capa de reporte no vuelva a hacerlo.
+
+    LA GUARDIA EXCLUIA `ast.Attribute` A LA IZQUIERDA, Y ERA CIEGA A LA FORMA
+    QUE PERSIGUE. `hidraulica.HW / resultado.D` --- que es exactamente
+    "aritmetica sobre magnitudes", y que estuvo en `_tabla_diseno` hasta C8 ---
+    tiene un `Attribute` a la izquierda y por tanto no la disparaba nunca. La
+    exclusion se puso para dejar pasar `Path`, pero un `Path` a la izquierda
+    de `/` es casi siempre un `Name` (`RAIZ / "src"`) o el resultado de otra
+    division; un ATRIBUTO a la izquierda de `/` es, en un modulo de reporte,
+    una magnitud. Asi que la exclusion se cambia por la lista de atributos que
+    de verdad son rutas, que es cerrada y se lee.
+
+    El caso vivo esta ademas cubierto por dato: `ResultadoHidraulico` trae
+    `HW_sobre_D_salida`, que calcula M4 --- quien tiene delante la seccion con
+    que dividio.
     """
     import ast
 
+    RUTAS = {"RAIZ", "SRC", "DIR_PLANTILLAS", "DIR_DOCS"}
     fuente = (RAIZ / "src" / "modulos" / "M11_reporte.py").read_text(
         encoding="utf-8")
+
+    def _es_ruta(nodo) -> bool:
+        """Una division de rutas de `pathlib`, no de magnitudes."""
+        if isinstance(nodo, ast.Name):
+            return nodo.id in RUTAS
+        if isinstance(nodo, ast.Attribute):
+            # `algo.parent / "x"` es idioma de `pathlib`: un atributo llamado
+            # `parent` no es una magnitud en ningun modulo de este proyecto.
+            return nodo.attr in {"parent", "parents"}
+        if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, ast.Div):
+            return _es_ruta(nodo.left)
+        return False
+
     divisiones = [n for n in ast.walk(ast.parse(fuente))
                   if isinstance(n, ast.BinOp) and isinstance(n.op, ast.Div)]
-    sospechosas = [n for n in divisiones
-                   if not (isinstance(n.left, ast.Name)
-                           and n.left.id in {"RAIZ", "SRC", "DIR_PLANTILLAS",
-                                             "DIR_DOCS"})
-                   and not isinstance(n.left, ast.Call)
-                   and not isinstance(n.left, ast.Attribute)]
+    sospechosas = [ast.unparse(n) for n in divisiones
+                   if not _es_ruta(n.left) and not isinstance(n.left, ast.Call)]
     assert not sospechosas, (
         "M11 volvio a hacer aritmetica sobre magnitudes: la capa de reporte "
-        "formatea la traza que el calculo emitio, no la recalcula")
+        f"formatea la traza que el calculo emitio, no la recalcula. {sospechosas}")
+
+
+def test_la_guardia_de_aritmetica_ve_una_division_entre_dos_atributos():
+    """
+    LA MUTACION QUE LA GUARDIA ANTERIOR NO MATABA. Es lo que la deja probada
+    en vez de solo verde: se le da la expresion exacta que estuvo en M11 hasta
+    C8 y se exige que la marque.
+    """
+    import ast
+
+    RUTAS = {"RAIZ", "SRC", "DIR_PLANTILLAS", "DIR_DOCS"}
+
+    def _es_ruta(nodo) -> bool:
+        if isinstance(nodo, ast.Name):
+            return nodo.id in RUTAS
+        if isinstance(nodo, ast.Attribute):
+            return nodo.attr in {"parent", "parents"}
+        if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, ast.Div):
+            return _es_ruta(nodo.left)
+        return False
+
+    def _sospechosas(codigo: str):
+        return [ast.unparse(n) for n in ast.walk(ast.parse(codigo))
+                if isinstance(n, ast.BinOp) and isinstance(n.op, ast.Div)
+                and not _es_ruta(n.left) and not isinstance(n.left, ast.Call)]
+
+    assert _sospechosas("x = hidraulica.HW / resultado.D"), (
+        "la guardia no ve la division entre dos atributos, que es la forma "
+        "que de verdad tomo el defecto")
+    # Y no llora por las rutas, que es lo que la exclusion queria proteger.
+    assert not _sospechosas('p = RAIZ / "src" / "modulos"')
+    assert not _sospechosas('p = ARCHIVO.parent / "plantillas"')

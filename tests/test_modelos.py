@@ -301,7 +301,6 @@ def _resultado_punto(cumple: bool) -> ResultadoPunto:
         punto=_punto(),
         aceptado=cumple,
         material=_material_concreto(),
-        D=CN.DIAMETRO_MIN,
         seccion=SeccionCircular(D=CN.DIAMETRO_MIN),
         resultado_hidraulico=_resultado_hidraulico(ControlGobernante.ENTRADA),
         verificaciones=(v,),
@@ -394,7 +393,6 @@ def test_resultado_punto_fallido_tiene_campos_en_none_y_motivo_explicito():
     )
     assert not fallido.aceptado
     assert fallido.material is None
-    assert fallido.D is None
     assert fallido.seccion is None
     assert fallido.resultado_hidraulico is None
     assert fallido.verificaciones == ()
@@ -631,54 +629,51 @@ def test_un_material_y_una_seccion_de_formas_distintas_no_pasan_juntos():
     assert "no es coherente" in exc.value.motivo
 
 
-def test_un_resultado_de_punto_con_D_y_seccion_incoherentes_no_se_construye():
+def test_el_resultado_del_punto_ya_no_lleva_un_escalar_D():
     """
-    LAS DOS MITADES DE LA INVARIANTE, y la segunda la abrio la auditoria
-    adversarial de C7: borrar `ResultadoPunto.__post_init__` entero sobrevivia
-    a la suite, y la version de C7i solo rechazaba una de las dos formas de
-    romperla.
+    C8 RETIRO `ResultadoPunto.D`, y este test sustituye a la invariante que
+    C7 tuvo que poner mientras los dos campos convivian.
 
-      1. `D` sin `seccion` -- la puerta por la que vuelve la suposicion de
-         forma: quien consuma el resultado tendria que reconstruir la seccion,
-         y de un escalar solo se reconstruye la circular.
-      2. `D` DISTINTO de `seccion.altura` -- la puerta de vuelta. Mientras los
-         dos campos convivan (M11, la CLI y la GUI leen `D`; `cli._fase_7` lee
-         `seccion`), una divergencia entre ellos no la nota ningun consumidor.
+    La historia, porque explica por que el test cambia de forma en vez de
+    borrarse. C7 añadio `seccion` sin tocar `D` y cerro las dos puertas por
+    las que podian divergir --- `D` sin `seccion`, y `D` distinto de
+    `seccion.altura` ---. Eso resolvia la DIVERGENCIA y no el problema de
+    fondo: un `D` coherente sigue siendo media geometria, porque de «0.90» no
+    se recupera si el marco era de 1.20 o de 2.00 m de luz, y todo consumidor
+    que lo imprimiera publicaba esa mitad bajo un nombre que en un cajon no
+    significa nada --- el titular «Diametro adoptado D = 0.900 m» sobre un
+    marco de 1.20 x 0.90 m.
 
-    Retirar `D` es de C8; hasta entonces, que no puedan discrepar es lo unico
-    que sostiene que sean el mismo dato.
+    Lo que se vigila ahora es que el campo NO VUELVA: reponerlo "por
+    comodidad" en un consumidor reabre las dos puertas de golpe.
     """
-    base = _resultado_punto(True)
-    with pytest.raises(ValueError) as sin_seccion:
-        dataclasses.replace(base, seccion=None)
-    assert "sin `seccion`" in str(sin_seccion.value)
+    campos = {f.name for f in dataclasses.fields(ResultadoPunto)}
+    assert "D" not in campos, (
+        "`ResultadoPunto.D` volvio. Es un escalar que en un marco vale la "
+        "ALTURA: quien lo imprima publica media geometria, y quien lo consuma "
+        "para reconstruir la seccion solo puede reconstruir la circular")
+    assert "seccion" in campos
 
-    with pytest.raises(ValueError) as discrepan:
-        dataclasses.replace(base, seccion=SeccionCircular(D=base.D + 0.15))
-    assert "incoherente" in str(discrepan.value)
-
-    # Y el par coherente se construye sin queja, que es la otra mitad.
-    assert dataclasses.replace(
-        base, D=1.20, seccion=SeccionCircular(D=1.20)).aceptado
+    with pytest.raises(TypeError):
+        ResultadoPunto(punto=_punto(), aceptado=False, D=0.90)
 
 
 def test_la_relacion_de_llenado_del_punto_usa_el_diametro_adoptado():
     """
-    `ResultadoPunto.y_sobre_D` = y_normal / D. Es el numero que M11 imprime en
+    `ResultadoPunto.y_sobre_D` = y_normal / seccion.altura. Es el numero que
+    M11 imprime en
     la tabla del punto y en el cuadro resumen, y el mismo que V1 verifica.
     Sin assert de valor, `y_normal * D` pasaba la suite: 0.81 en vez de
     0.5625, o sea un llenado del 81 % donde el conducto va al 56 %.
 
-    El diametro se cambia a 1.20 m a proposito, para que el resultado no pueda
+    La seccion se cambia a 1.20 m a proposito, para que el resultado no pueda
     coincidir con el y/D de la geometria del fixture (0.75): asi el test
     tambien caza a quien devuelva la relacion de la seccion en vez de la del
-    punto. LA SECCION SE CAMBIA CON EL, y no es cosmetica: desde que C7 cerro
-    la puerta de vuelta de la invariante, un `ResultadoPunto` con `D` distinto
-    de `seccion.altura` no se construye. Antes si, y por ahi entraba la
-    divergencia que ningun consumidor nota (M11 y la CLI leen `D`,
-    `cli._fase_7` lee `seccion`).
+    punto. Desde C8 el denominador ES `seccion.altura` --- ya no hay un
+    escalar `D` con el que pudiera discrepar ---, que es lo que la propiedad
+    documenta al conservar el nombre de la fuente.
     """
-    aceptado = dataclasses.replace(_resultado_punto(True), D=1.20,
+    aceptado = dataclasses.replace(_resultado_punto(True),
                                    seccion=SeccionCircular(D=1.20))
     assert aceptado.resultado_hidraulico.y_normal == pytest.approx(
         0.675, rel=TOL_ARITMETICA)
@@ -688,7 +683,7 @@ def test_la_relacion_de_llenado_del_punto_usa_el_diametro_adoptado():
 def test_la_relacion_de_llenado_es_None_si_falta_cualquiera_de_los_dos():
     """Basta con que falte UNO de los dos: no se inventa el que quede."""
     aceptado = _resultado_punto(True)
-    assert dataclasses.replace(aceptado, D=None).y_sobre_D is None
+    assert dataclasses.replace(aceptado, seccion=None).y_sobre_D is None
     assert dataclasses.replace(
         aceptado, resultado_hidraulico=None).y_sobre_D is None
 
@@ -738,7 +733,7 @@ def test_el_paso_del_bucle_separa_las_verificaciones_que_lo_descartaron():
     """
     paso = PasoDiseno(
         material="Concreto reforzado",
-        D=CN.DIAMETRO_MIN,
+        seccion=SeccionCircular(D=CN.DIAMETRO_MIN),
         aceptado=False,
         motivo="V1: y/D por encima del maximo",
         verificaciones=(_verificacion("V1", False),

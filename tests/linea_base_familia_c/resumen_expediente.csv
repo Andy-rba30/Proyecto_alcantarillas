@@ -1,4 +1,4 @@
-id,progresiva,familia,TR_anios,tipo_hidraulico,material,norma_producto,D_m,V_erosion_ms,V_sedimentacion_ms,y_sobre_D,HW_m,control_gobernante,proteccion_d50_m,proteccion_espesor_m,proteccion_longitud_m,tipo_cabezal
+id,progresiva,familia,TR_anios,tipo_hidraulico,material,norma_producto,seccion,V_erosion_ms,V_sedimentacion_ms,y_sobre_D,HW_m,control_gobernante,proteccion_d50_m,proteccion_espesor_m,proteccion_longitud_m,tipo_cabezal
 A-01,0+380,A,71,,,,,,,,,,,,,Cerrada: tubo a ras del muro (square edge)
 A-02,1+920,A,71,,,,,,,,,,,,,Cerrada: tubo a ras del muro (square edge)
 B-01,2+450,B,35,,,,,,,,,,,,,Cerrada: tubo a ras del muro (square edge)

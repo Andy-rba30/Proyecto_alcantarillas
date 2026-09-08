@@ -1561,6 +1561,11 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         control_gobernante=control,
         h_o_fuera_de_rango=gobierna_salida and salida.h_o_fuera_de_rango,
         h_o_requiere_cautela=gobierna_salida and salida.h_o_requiere_cautela,
+        # El HW/D que esas dos banderas acotan, para que la memoria lo
+        # imprima sin volver a dividir (C8, punto 2). Es el de SALIDA porque
+        # es el que el num. 3.3.3 acota, y viaja siempre --- no solo cuando
+        # gobierna la salida ---: las banderas ya llevan esa condicion.
+        HW_sobre_D_salida=salida.HW_sobre_D,
         pasos=_pasos_hidraulicos(
             seccion=seccion, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
             critico=critico, entrada=entrada, salida=salida, control=control,

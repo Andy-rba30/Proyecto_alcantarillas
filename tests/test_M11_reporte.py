@@ -25,7 +25,7 @@ import criterios_adoptados as ca
 import datos_sitio as ds
 from cli import (Bloqueo, DatoDeclarado, Informe, InformePunto,
                  cargar_datos_externos, correr)
-from modelos import FormaSeccion, PasoDiseno, Verificacion
+from modelos import FormaSeccion, PasoDiseno, SeccionCircular, Verificacion
 from modulos import M11_reporte as M11
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -395,11 +395,14 @@ class TestIteraciones:
         informe = _informe_de_ejemplo()
         punto = informe.puntos[0]
         punto.traza = [
-            PasoDiseno(material="concreto reforzado", D=0.90, aceptado=False,
-                       motivo="D = 0.90 m: incumple V1 (y/D = 0.82 > 0.75)"),
-            PasoDiseno(material="concreto reforzado", D=1.05, aceptado=False,
-                       motivo="D = 1.05 m: incumple V1 (y/D = 0.78 > 0.75)"),
-            PasoDiseno(material="concreto reforzado", D=1.20, aceptado=True,
+            PasoDiseno(material="concreto reforzado",
+                       seccion=SeccionCircular(D=0.90), aceptado=False,
+                       motivo="Ø 0.90 m: incumple V1 (y/D = 0.82 > 0.75)"),
+            PasoDiseno(material="concreto reforzado",
+                       seccion=SeccionCircular(D=1.05), aceptado=False,
+                       motivo="Ø 1.05 m: incumple V1 (y/D = 0.78 > 0.75)"),
+            PasoDiseno(material="concreto reforzado",
+                       seccion=SeccionCircular(D=1.20), aceptado=True,
                        motivo=""),
         ]
         return punto
@@ -460,7 +463,7 @@ class TestIteraciones:
         assert all(isinstance(p, PasoDiseno) for p in recogidos)
         assert all(not p.aceptado for p in recogidos)
         # Los escalones van en orden ascendente de diametro (catalogo Sec. 3.2)
-        diametros = [p.D for p in recogidos]
+        diametros = [p.seccion.altura for p in recogidos]
         assert all(anterior <= siguiente for anterior, siguiente
                    in zip(diametros, diametros[1:])), (
             "los escalones van en orden ascendente de diametro")

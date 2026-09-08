@@ -166,7 +166,7 @@ def test_devuelve_el_primer_material_y_el_diametro_minimo_si_todo_cumple():
     assert resultado.aceptado
     assert resultado.coherente
     assert resultado.material.tipo is TipoMaterial.CONCRETO_REFORZADO
-    assert resultado.D == pytest.approx(0.90)
+    assert resultado.seccion.altura == pytest.approx(0.90)
     assert resultado.punto.id == "A-01"
     assert resultado.motivo_rechazo is None
 
@@ -182,8 +182,8 @@ def test_sube_por_el_catalogo_hasta_que_la_verificacion_cumple():
     resultado = disenar_punto(punto, L=L_CONDUCTO, TW=TW_LIBRE,
                               verificar=_solo_borde_libre)
 
-    assert resultado.D == pytest.approx(1.05)
-    assert resultado.resultado_hidraulico.y_normal / resultado.D <= Y_SOBRE_D_MAX
+    assert resultado.seccion.altura == pytest.approx(1.05)
+    assert resultado.y_sobre_D <= Y_SOBRE_D_MAX
     assert all(v.cumple for v in resultado.verificaciones)
 
 
@@ -196,7 +196,7 @@ def test_el_catalogo_se_recorre_ascendente_desde_el_minimo_normativo():
     assert [D for _, D in registro.llamadas] == pytest.approx(
         [0.90, 1.05, 1.20, 1.35], rel=REL_TRANSPORTE)
     assert {tipo for tipo, _ in registro.llamadas} == {TipoMaterial.CONCRETO_REFORZADO}
-    assert resultado.D == pytest.approx(1.35)
+    assert resultado.seccion.altura == pytest.approx(1.35)
 
 
 def test_no_sigue_probando_despues_de_aceptar():
@@ -214,10 +214,11 @@ def test_la_hidraulica_del_resultado_es_la_del_par_aceptado():
     hidraulica = resultado.resultado_hidraulico
 
     assert hidraulica.Q == pytest.approx(punto.Q_m3s)
-    assert hidraulica.y_normal / resultado.D == pytest.approx(Y_SOBRE_D_MAX, rel=1e-3)
+    assert resultado.y_sobre_D == pytest.approx(Y_SOBRE_D_MAX, rel=1e-3)
     # Regla de doble n (Sec. 4.1): la velocidad de erosion sale de n_min, no
     # de Q/A -- esa ultima es justamente `V_sedimentacion`, la del piso de V2.
-    assert hidraulica.V_erosion > hidraulica.Q / (hidraulica.y_normal * resultado.D)
+    assert hidraulica.V_erosion > hidraulica.Q / (hidraulica.y_normal
+                                                  * resultado.seccion.altura)
     assert hidraulica.V_sedimentacion < hidraulica.V_erosion
     assert hidraulica.HW in (hidraulica.HW_entrada, hidraulica.HW_salida)
 
@@ -353,7 +354,7 @@ def test_el_caudal_y_la_pendiente_por_defecto_salen_del_punto():
                               Q=punto.Q_m3s, S=punto.S_cauce,
                               verificar=_solo_borde_libre)
 
-    assert por_defecto.D == explicito.D
+    assert por_defecto.seccion == explicito.seccion
     assert (por_defecto.resultado_hidraulico.y_normal
             == pytest.approx(explicito.resultado_hidraulico.y_normal))
 
@@ -427,7 +428,6 @@ def test_el_punto_fallido_tiene_motivo_explicito_y_campos_en_none():
     assert fallido.motivo_rechazo is not None
     assert "DisenoNoFactibleError" in fallido.motivo_rechazo
     assert fallido.material is None
-    assert fallido.D is None
     assert fallido.resultado_hidraulico is None
     assert fallido.verificaciones == ()
     assert fallido.coherente
@@ -489,7 +489,7 @@ def test_el_escalon_que_revienta_queda_en_la_traza():
     assert concreto, "el escalon que revento tiene que estar en la traza"
     assert not concreto[-1].aceptado
     # El sujeto del motivo es el escalon, no el expediente.
-    assert "D = 0.90 m" in concreto[-1].motivo
+    assert "Ø 0.90 m" in concreto[-1].motivo
     assert "no se pudo evaluar" in concreto[-1].motivo
     assert "DatoInvalidoError" in concreto[-1].motivo
 
@@ -635,7 +635,8 @@ def test_un_M5_sin_la_funcion_verificar_sale_como_ImportError(monkeypatch):
     assert FUNCION_VERIFICACIONES in mensaje
     # El mensaje tiene que decir la FIRMA que MD espera: es lo unico que le
     # dice a quien programe la Fase 5 como se enchufa.
-    assert "punto=" in mensaje and "material=" in mensaje and "D=" in mensaje
+    assert ("punto=" in mensaje and "material=" in mensaje
+            and "seccion=" in mensaje)
 
 
 def test_un_M5_ausente_sale_como_ImportError_con_la_via_de_escape(monkeypatch):
