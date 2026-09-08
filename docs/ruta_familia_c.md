@@ -5545,18 +5545,25 @@ Con el tercer eje la tabla pasa de 2×2 a **2×2×2 = ocho** configuraciones. La
 nuevas —las de `sh` ausente— restan los mismos **4** tests a `passed` y se los suman a
 `skipped`, sin mover `collected`. Sobre este árbol:
 
-| PyMuPDF | Ventana Tk | `sh` en PATH | `passed` | `skipped` |
-|---|---|---|---|---|
-| sí | no | **sí** | **1730** | **2** | ← medido, entorno de referencia |
-| sí | no | **no** | 1726 | 6 | |
-| sí | sí | **no** | 1727 | 5 | ← lo que este Windows debería dar tras la corrección |
-| sí | sí | sí | 1731 | 1 | |
+| PyMuPDF | Ventana Tk | `sh` en PATH | `passed` | `skipped` | |
+|---|---|---|---|---|---|
+| sí | no | sí | **1730** | **2** | **medida** — entorno de referencia |
+| sí | no | no | **1726** | **6** | **medida** — el mismo árbol con el PATH recortado |
+| sí | sí | no | 1727 | 5 | derivada — lo que este Windows debería dar tras la corrección |
+| sí | sí | sí | 1731 | 1 | derivada |
 
-**Las dos filas en negrita están medidas sobre este árbol; las otras dos son
-aritmética sobre el delta conocido, no medición** — este contenedor no tiene tkinter y
-no hay aquí ninguna máquina Windows. La de `sh` ausente se comprobó de verdad,
-recortando el PATH: los cuatro tests de línea base pasan de cuatro `errors` a cuatro
-`skipped` con su motivo impreso.
+**Las dos primeras filas están MEDIDAS sobre este árbol; las dos últimas son aritmética
+sobre el delta conocido, no medición** — este contenedor no tiene tkinter y no hay aquí
+ninguna máquina Windows, de modo que la columna «Ventana Tk = sí» no se puede medir
+desde acá y no se escribe como si se hubiera medido.
+
+La segunda fila se midió CORRIENDO LA SUITE ENTERA con el PATH recortado a un
+directorio vacío, y no solo `test_linea_base.py`: `1726 passed, 6 skipped`, que es
+exactamente lo que predecía el delta. Es una fila que nació derivada y que esta sesión
+sube a medida — la comprobación anterior había sido del archivo suelto (cuatro `errors`
+→ cuatro `skipped` con su motivo impreso), que demuestra el arreglo pero no fija el par
+de la configuración. Con eso el eje nuevo tiene sus dos valores medidos, y lo único
+que sigue sin medir es el eje viejo de la ventana.
 
 La fila del Windows corregido **se deriva por dos caminos que no se apoyan uno en el
 otro**, y coinciden: bajando desde el par de referencia (1730 − 4 de línea base + 1 de
