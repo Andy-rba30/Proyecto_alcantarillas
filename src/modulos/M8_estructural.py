@@ -160,7 +160,6 @@ Uso
 
 from __future__ import annotations
 
-import math
 from typing import Tuple
 
 import criterios_adoptados as ca
@@ -279,9 +278,37 @@ def empuje_flotacion_kn_m(*, seccion: Seccion, espesor: float) -> float:
     firma recibia `D_exterior: float` y calculaba `pi/4 * D^2`: un CILINDRO
     cableado. Un marco al que se le pasara su altura exterior se evaluaba
     como el cilindro circunscrito a esa altura, y ahi la subpresion sale un
-    63 % MENOR que la real -- 25.0 kN/m contra 40.6 sobre un marco de
+    39 % MENOR que la real -- 24.96 kN/m contra 40.61 sobre un marco de
     2.00 x 1.50 m con t = 0.15 --, que es la direccion insegura. Ahora la
     forma la resuelve `Seccion.area_exterior` y este modulo no la conoce.
+
+    Y ESE CAMBIO MOVIO UN NUMERO, en 1 ULP, que hay que declarar en vez de
+    dejar que se lo trague la regeneracion de la linea base -- lo encontro la
+    auditoria adversarial de C7 --. Antes: `GAMMA * (pi/4) * D_ext**2`, que
+    Python asocia `(GAMMA*(pi/4)) * D_ext**2`. Ahora: `GAMMA *
+    seccion.area_exterior(t)`, o sea `GAMMA * (pi*d**2/4)`. Medido sobre los
+    cuatro D_ext que la linea base imprime, SOLO UNO cambia:
+
+        D_ext = 1.976 m ->  30.083805296800858  antes
+                            30.08380529680086   ahora   (3.6e-15 kN/m)
+
+    NO ES RECUPERABLE reordenando dentro de `area_exterior`: escribirla como
+    `(pi/4)*d**2` da el mismo resultado que la forma actual, porque la
+    diferencia nace de la asociacion A TRAVES del `GAMMA *`, y plegarla dentro
+    de la seccion exigiria darle a la seccion el peso especifico del agua --
+    o sea devolverle a `Seccion` una responsabilidad que no es suya --.
+    Se acepta y se declara. El precedente contrario es `M4_control`, que en un
+    traslado equivalente si conservo la identidad al ultimo bit y lo dijo; ahi
+    se pudo y aqui no, y esa es la diferencia que este parrafo existe para no
+    dejar implicita.
+
+    EL 39 % ES «MENOR QUE LA REAL» Y NO ES EL 63 % DE LA FRASE HERMANA, que
+    es lo que este parrafo decia hasta que lo refuto la auditoria adversarial
+    de C7. Son las DOS FORMAS de enunciar la misma diferencia, y el propio
+    caso patron CP10 advierte contra confundirlas: 24.96/40.61 = 0.615, o sea
+    el cilindro pide un 39 % MENOS; y 40.61/24.96 = 1.63, o sea el prisma pide
+    un 63 % MAS. La cifra que iba aqui era la de la segunda forma con el
+    rotulo de la primera.
     """
     return GAMMA_AGUA_KN_M3 * seccion.area_exterior(espesor)
 
@@ -320,6 +347,23 @@ def peso_relleno_kn_m(*, seccion: Seccion, espesor: float,
 
 
 COMBINACION_V7 = "Resistencia I"
+# V7 es un equilibrio de factores de carga LRFD -- MINORA lo que estabiliza
+# (DC, EV) y MAYORA lo que desestabiliza (WA) -- y esos son exactamente los
+# extremos que trae Resistencia I (Strength I) en las Tablas 2.4.5.3.1-1/-2;
+# las otras dos combinaciones (Servicio I, Evento Extremo I) colapsan las
+# cargas permanentes y WA a 1.00 y no aportarian el margen que V7 exige. Se
+# fija aqui, no en constantes_normativas: la tabla trae las tres combinaciones
+# (Sec. 9.2 de M9 las necesita todas), y cual de las tres usa V7 es una
+# decision de este modulo, no del dato.
+#
+# ESTE COMENTARIO SE PERDIO EN C7d Y LO ENCONTRO LA AUDITORIA ADVERSARIAL DE
+# C7, que lo dice mejor que yo: la sesion que escribe «un defecto declarado
+# que desaparece del docstring sin decir como se cerro es indistinguible de
+# uno que se borro» borro una justificacion entera sin decirlo. No fue una
+# decision: fue un reemplazo de bloque que se llevo por delante el comentario
+# y dejo la constante. El `NameError` que produjo hizo restaurar la constante
+# y nadie miro que faltaba lo de debajo. Se restaura literal, del arbol de
+# `cd8d4f2~1`, con esta nota encima para que la perdida quede contada.
 
 
 def factores_carga_flotacion(*, material: Material) -> FactoresFlotacion:

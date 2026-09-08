@@ -129,6 +129,41 @@ def _declarar(monkeypatch, clave, valor):
 ELECCION_DEMO = {"concreto_reforzado": {"EV": "EV_muros_y_estribos_de_retencion"}}
 
 
+def test_el_traslado_de_la_geometria_a_la_seccion_movio_un_ULP_y_esta_declarado():
+    """
+    EL UNICO NUMERO DE CALCULO QUE C7 MOVIO, fijado aqui para que no vuelva a
+    moverse en silencio.
+
+    C7 declaro «ningun numero se movio» y era falso por 1 ULP: la auditoria
+    adversarial lo encontro comparando la linea base byte a byte. Al pasar
+    `GAMMA * (pi/4) * D_ext**2` -- que Python asocia `(GAMMA*(pi/4)) *
+    D_ext**2` -- a `GAMMA * seccion.area_exterior(t)` = `GAMMA * (pi*d**2/4)`,
+    la asociacion cambia y el ultimo bit con ella.
+
+    DE LOS CUATRO D_ext QUE LA LINEA BASE IMPRIME, SOLO UNO CAMBIA, y esa
+    dispersion es la firma de una reasociacion y no de un error de formula:
+    una formula equivocada movería los cuatro. 3.6e-15 kN/m es fisicamente
+    nulo; lo que no es nulo es haberlo dicho.
+
+    NO SE «ARREGLA» reordenando: escribir `area_exterior` como `(pi/4)*d**2`
+    da el mismo float que la forma actual, porque la diferencia nace de la
+    asociacion a traves del `GAMMA *`. Recuperarla exigiria darle a `Seccion`
+    el peso especifico del agua.
+    """
+    import math
+    from constantes_fisicas import GAMMA_AGUA_KN_M3
+
+    for D_ext, se_mueve in ((1.100, False), (1.976, True),
+                            (2.276, False), (2.876, False)):
+        antes = GAMMA_AGUA_KN_M3 * (math.pi / 4) * D_ext ** 2
+        ahora = GAMMA_AGUA_KN_M3 * (math.pi * D_ext ** 2 / 4)
+        assert (antes != ahora) is se_mueve, (
+            f"D_ext = {D_ext}: el censo de cuales se mueven cambio. Si se "
+            "mueve otro, algo mas que la asociacion cambio de sitio")
+        # Y en cualquier caso la diferencia es del orden del ultimo bit.
+        assert abs(antes - ahora) <= abs(antes) * 1e-15
+
+
 def test_factores_carga_flotacion_calcula_con_el_criterio_real(concreto):
     """
     Las dos tablas del num. 2.4.5.3.1 son [N] y la eleccion de fila esta

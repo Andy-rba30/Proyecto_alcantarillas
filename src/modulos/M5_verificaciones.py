@@ -194,8 +194,14 @@ Uso
 ---
     from modulos.M5_verificaciones import verificar
 
-    verificaciones = verificar(punto=punto, material=material, D=D,
+    verificaciones = verificar(punto=punto, material=material,
+                               seccion=seccion,
                                resultado=resultado_hidraulico)
+
+LA SECCION ENTERA Y NO UN `D`, desde C7: V7 pesa el volumen desplazado, y ahi
+un prisma y un cilindro dejan de parecerse. Este bloque seguia escribiendo
+`D=D` -- la firma anterior -- despues de que C7i la cambiara, y lo encontro la
+auditoria adversarial de esa sesion.
 """
 
 from __future__ import annotations
@@ -214,7 +220,8 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
                      Seccion,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
-                     Verificacion, eleccion, paso)
+                     Verificacion, eleccion,
+                     exigir_seccion_coherente, paso)
 from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
@@ -1536,6 +1543,7 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
     que le faltan al procedimiento -- no en un vacio de METODO: ver el
     docstring del modulo.
     """
+    exigir_seccion_coherente(material, seccion)
     D = seccion.altura
     altura_relleno = altura_relleno_sobre_clave(punto=punto, material=material,
                                                 D=D)

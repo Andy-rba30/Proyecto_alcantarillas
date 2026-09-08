@@ -483,7 +483,11 @@ entera no aplica a un marco**. Verificado contra AASHTO LRFD 9ª ed. por `verifi
 
 - **No hay fila de cajón de concreto.** Las dos filas de concreto de la Tabla 12.6.6.3-1 dicen
   `Reinforced Concrete **Pipe**` (12-22 / PDF 1660). La fila `Structural Plate **Box**
-  Structures` es **metálica**, y ni siquiera da cobertura: remite al Art. 12.9.1.
+  Structures` es **metálica**, y su celda de cobertura dice *«1.4 ft. as specified in Article
+  12.9.1»* — o sea que **sí** da cobertura, y además remite. Esta frase decía «ni siquiera da
+  cobertura» hasta que la auditoría adversarial de C7 la refutó sobre la propia página: el
+  hecho negativo no cambia —esa fila es metálica y no cubre a un marco de concreto—, pero se
+  sostiene por lo que la fila **es**, no por un vacío que no tiene.
 - **`B'c` se define «of pipe», no «of the structure».** *«B′c = out-to-out vertical rise of
   **pipe** (ft)»* frente a *«Bc = outside diameter or width of **the structure** (ft)»*
   (12-21 / PDF 1659). La asimetría es del documento. Y `B'c` **no está definido para sección
@@ -4734,3 +4738,110 @@ llama el caso normal. **Las siete declaraciones de esa corrida son declaraciones
 no valores del proyecto:** los siete criterios siguen vacíos en `criterios_adoptados.py` y así
 tienen que seguir. Están elegidas para que el punto cierre, no medidas en campo, exactamente
 como el TW y el caudal del fixture.
+
+---
+
+### 16.14 · La auditoría adversarial de C7 — nueve defectos, dos graves
+
+Se invocó `auditor-adversarial` sobre los quince commits de `507994f..308419e` con el encargo
+de **refutar**. Verificó las siete citas nuevas contra los PDF (las siete correctas, con página
+impresa y `caracter` correctos), mató doce mutaciones, midió R-17 = 14 y confirmó el par
+`1679 / 2`. **Y no confirmó la sesión: encontró nueve defectos.** Los nueve se corrigen aquí.
+
+#### Los dos graves
+
+**1 · La memoria de un marco SEGUÍA diciendo que su cobertura sale de la Tabla 12.6.6.3-1.**
+El defecto que `cobertura_minima_cajon` existe para no cometer, impreso al lado del vacío que
+lo declara. La memoria de G1 nombra su fuente por **tres canales** y C7 arregló uno:
+
+| canal | estado tras C7 |
+|---|---|
+| `criterio_aplicado` ← `criterio_recubrimiento` | arreglado en C7g |
+| `numeral` ← `NUMERAL_G1`, **lo único que M11 imprime en esa columna** | seguía citando AASHTO |
+| procedencia de `h_rec` ← `altura_recubrimiento` | **lo introdujo C7i**, con un «AQUI GOBIERNA AASHTO LRFD Tabla 12.6.6.3-1» explícito |
+
+Y el test homónimo —`test_la_memoria_de_un_marco_no_dice_que_su_h_rec_sale_de_aashto`—
+asertaba **sólo el primero**: pasaba sin medir su propio título. Corregido: `numeral_g1` bifurca
+por forma y viaja en el tamizado, `altura_recubrimiento` devuelve `MINIMO_CAJON_DECLARADO`
+cuando no hay dos mínimos que comparar, y el test mide los tres canales.
+
+**2 · Sí se movió un número, en 1 ULP, y el protocolo que lo habría visto no se aplicó.**
+`GAMMA * (pi/4) * D²` —que Python asocia `(GAMMA*(pi/4)) * D²`— pasó a
+`GAMMA * seccion.area_exterior(t)` = `GAMMA * (pi*d²/4)`. De los cuatro `D_ext` que la línea
+base imprime **sólo uno cambia**, `1.976` → el admisible de V7 pasa de `30.083805296800858` a
+`30.08380529680086`. Esa dispersión es la firma de una reasociación y no de una fórmula
+equivocada. **No es recuperable** reordenando dentro de `area_exterior` —medido: `(pi/4)*d²` da
+el mismo float que la forma actual—, porque la diferencia nace de la asociación *a través* del
+`GAMMA *`; plegarla exigiría darle a `Seccion` el peso específico del agua. Se acepta y se
+declara, y el censo de cuáles se mueven queda fijado en un test. El precedente contrario es
+`M4_control`, que en un traslado equivalente **sí** conservó la identidad al último bit y lo
+dijo: ahí se pudo y aquí no, y esa es la diferencia que no se puede dejar implícita.
+
+#### Los otros siete
+
+**3 · Una `AfirmacionNegativa` con dos afirmaciones falsas sobre su propia página.** La fila
+`Structural Plate Box Structures` **sí da cobertura** —`1.4 ft. as specified in Article
+12.9.1`—, y la frase «ni siquiera da cobertura» estaba en **cuatro sitios**. Y el desglose del
+censo no cuadraba: decía «los cuatro umbrales de 2.0 ft y cinco backfill», que suma **nueve**
+sobre un total declarado de **siete**. Remedido: `backfill` son **3**, sólo **2** de los cuatro
+«2.0 ft» contienen `fill`, y faltaban los `compacted`/`uncompacted fill` del C12.11.2.2.1. El
+hecho negativo central se sostiene —verificado de nuevo—; lo que fallaba era el barrido con que
+se sostiene, que es justamente lo que el objeto existe para dar.
+
+**4 · C7 citó el Art. 12.6.1 y elidió la frase que discute su propia lectura.** Dos frases más
+abajo, **en el mismo párrafo**, está: *«For vertical earth pressure, the maximum load factor
+from Table 3.4.1-2 shall apply»* (12-14 / PDF 1652, verificado). V7 usa el **mínimo**. Son dos
+`shall`, y la 12.6.1 es además la especial para estructuras enterradas. Se abre
+**`DIS-AASHTO-GAMMA-EV-12.6.1`**, estado `ABIERTA`, con la frase transcrita como cita propia
+para que el párrafo no se pueda volver a citar sin ella. **El efecto, medido:** seguir la otra
+parte llevaría el estabilizante de C-01 de 23.256 a 34.884 kN/m contra los mismos 20.405 de
+subpresión — o sea que **ablanda** la verificación, no la endurece. Ésa es la razón de que el
+proyecto lea esa frase como referida al diseño *por* empuje de tierra y no al equilibrio de
+flotación; y es una **lectura**, porque el texto no trae la salvedad.
+
+**5 · El `por_qué` centralizado de `F5.V7_FILA` era falso para la mitad del catálogo.** Decía
+que «cinco filas las descarta la propia tabla», incluidas las tres flexibles — y
+`factores_carga_aashto` pone justamente ahí al HDPE y al TMC. El `por_qué` anterior, escrito a
+mano, era paramétrico y verdadero para los cuatro: **centralizar introdujo una regresión de
+contenido**. Reescrito para que sea cierto de los cuatro elementos.
+
+**6 · Seis mutaciones sobrevivían.** Las seis mueren ahora, con test propio: `Bc`↔`B'c`
+intercambiables en V7 (la suite sólo ejecutaba V7 sobre secciones **circulares**, donde
+coinciden — la forma exacta del defecto que la sesión dice cerrar); el desempate `>`→`>=` de
+`altura_recubrimiento`; `not t > 0`→`>=` en la rama del cajón; y el `__post_init__` de
+`ResultadoPunto` entero. **Y la razón escrita del desempate era falsa:** decía «es la misma
+regla con que el tamizado adjudica su condición gobernante, y por la misma razón», y
+`tamizado_rasante` desempata **al revés** y lo dice — prefiere la condición *estable*, no la
+*movible*. Los dos criterios son defendibles y son opuestos; presentarlos como el mismo era
+inventar una coherencia que no existe.
+
+**7 · La bifurcación es por `material.forma`, no por la `Seccion`.** Medido:
+`cobertura_minima_aashto(material=<circular>, seccion=SeccionRectangular(3.00, 1.50))` devuelve
+`0.4125` — `Bc/8` de la fila `Reinforced Concrete PIPE`, **sobre un rectángulo**. En producción
+el par siempre es coherente, así que ningún número publicado estuvo mal; lo que estaba mal era
+la palabra «**POR CONSTRUCCIÓN**» con que los docstrings de C7 describían la corrección. Se
+cierra con `modelos.exigir_seccion_coherente`, invocada en las dos puertas por las que el par
+entra junto.
+
+**8 · La invariante de `ResultadoPunto` era unidireccional.** Aceptaba `D` distinto de
+`seccion.altura`. Mientras los dos campos convivan —M11, la CLI y la GUI leen `D`;
+`cli._fase_7` lee `seccion`— una divergencia no la nota nadie. Cerrada la puerta de vuelta.
+
+**9 · Cinco afirmaciones caducas y dos pérdidas silenciosas.** El «63 % MENOR» de
+`empuje_flotacion_kn_m`, que es **39 %** —las dos formas de enunciar la misma diferencia, y el
+propio CP10 advierte contra confundirlas—; el `Protocol` `MD.Verificador`, que seguía
+declarando `D: float` mientras el docstring de módulo al que remite ya decía `seccion=`; el
+bloque «Uso» de `M5_verificaciones`; el docstring del test que afirma esa firma; y el «en los
+tres materiales» de `g1_rasante_congelada`. Más un `import math` muerto y el rótulo «**seis**
+subfilas» de `TABLA_GAMMA_P_FILAS` contra las **siete** que `M8.filas_ev_de_la_tabla` deriva
+del mismo dict.
+
+**Y la pérdida que más pesa, porque la sesión se contradice a sí misma:** C7d borró, sin
+sustituto y sin decirlo, el comentario de ocho líneas que justificaba
+`M8.COMBINACION_V7 = "Resistencia I"` — por qué Strength I y no Servicio I ni Evento Extremo I,
+y por qué la elección vive en M8 y no en `constantes_normativas`. Fue un reemplazo de bloque
+que se llevó el comentario y dejó la constante; el `NameError` hizo restaurar la constante y
+nadie miró lo de debajo. **La sesión que escribe «un defecto declarado que desaparece del
+docstring sin decir cómo se cerró es indistinguible de uno que se borró» borró una
+justificación entera sin decirlo.** Restaurada literal desde `cd8d4f2~1`, con la pérdida
+contada encima.

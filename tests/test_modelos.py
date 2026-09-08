@@ -26,7 +26,7 @@ from modelos import (CasoDemandaSismica, CondicionAnalisis, ConstantesHDS5,
                      EmpujesTrasdos, ErrorProyecto, Familia,
                      LimiteNumericoError,
                      FuerzaInerciaMuro, Geometria, Material, PasoDiseno,
-                     SeccionCircular,
+                     SeccionCircular, SeccionRectangular,
                      PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
                      ResultadoPunto, TipoMaterial, Verificacion)
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING, CP8_CONTROL_SALIDA
@@ -597,6 +597,71 @@ def test_la_subpresion_no_entra_ni_en_el_empuje_horizontal_ni_en_el_momento():
 # La relacion de llenado del punto dimensionado (M11 la imprime dos veces)
 # ---------------------------------------------------------------------------
 
+def test_un_material_y_una_seccion_de_formas_distintas_no_pasan_juntos():
+    """
+    LA PUERTA QUE LA AUDITORIA ADVERSARIAL DE C7 ENCONTRO ABIERTA, con su
+    medicion:
+
+        cobertura_minima_aashto(material=catalogo(CONCRETO_REFORZADO),
+                                seccion=SeccionRectangular(B=3.00, H=1.50))
+        -> 0.4125   # Bc/8 de la fila «Reinforced Concrete PIPE», sobre un
+                    # RECTANGULO
+
+    o sea el defecto que C7 declara no cometer, alcanzable en tres lineas.
+    Pasaba porque `M7.cobertura_minima_aashto` y `M8._elemento_de` bifurcan por
+    `material.forma` mientras la geometria la pone la `Seccion`, y nada ataba
+    las dos cosas: los docstrings decian «correcto POR CONSTRUCCION» y era
+    correcto por la disciplina del llamador, que no es lo mismo.
+
+    En produccion el par siempre es coherente --la seccion sale del catalogo
+    del material--, de modo que ningun numero publicado estuvo mal. Lo que se
+    cierra es la puerta, igual que `ResultadoPunto.__post_init__` cierra la
+    suya.
+    """
+    from modelos import exigir_seccion_coherente
+    from modulos.M2_material import catalogo
+
+    tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    # El par coherente pasa sin ruido.
+    exigir_seccion_coherente(tubo, SeccionCircular(D=1.50))
+    # El cruzado no.
+    with pytest.raises(DatoInvalidoError) as exc:
+        exigir_seccion_coherente(tubo, SeccionRectangular(B=3.00, H=1.50))
+    assert exc.value.campo == "seccion"
+    assert "no es coherente" in exc.value.motivo
+
+
+def test_un_resultado_de_punto_con_D_y_seccion_incoherentes_no_se_construye():
+    """
+    LAS DOS MITADES DE LA INVARIANTE, y la segunda la abrio la auditoria
+    adversarial de C7: borrar `ResultadoPunto.__post_init__` entero sobrevivia
+    a la suite, y la version de C7i solo rechazaba una de las dos formas de
+    romperla.
+
+      1. `D` sin `seccion` -- la puerta por la que vuelve la suposicion de
+         forma: quien consuma el resultado tendria que reconstruir la seccion,
+         y de un escalar solo se reconstruye la circular.
+      2. `D` DISTINTO de `seccion.altura` -- la puerta de vuelta. Mientras los
+         dos campos convivan (M11, la CLI y la GUI leen `D`; `cli._fase_7` lee
+         `seccion`), una divergencia entre ellos no la nota ningun consumidor.
+
+    Retirar `D` es de C8; hasta entonces, que no puedan discrepar es lo unico
+    que sostiene que sean el mismo dato.
+    """
+    base = _resultado_punto(True)
+    with pytest.raises(ValueError) as sin_seccion:
+        dataclasses.replace(base, seccion=None)
+    assert "sin `seccion`" in str(sin_seccion.value)
+
+    with pytest.raises(ValueError) as discrepan:
+        dataclasses.replace(base, seccion=SeccionCircular(D=base.D + 0.15))
+    assert "incoherente" in str(discrepan.value)
+
+    # Y el par coherente se construye sin queja, que es la otra mitad.
+    assert dataclasses.replace(
+        base, D=1.20, seccion=SeccionCircular(D=1.20)).aceptado
+
+
 def test_la_relacion_de_llenado_del_punto_usa_el_diametro_adoptado():
     """
     `ResultadoPunto.y_sobre_D` = y_normal / D. Es el numero que M11 imprime en
@@ -607,9 +672,14 @@ def test_la_relacion_de_llenado_del_punto_usa_el_diametro_adoptado():
     El diametro se cambia a 1.20 m a proposito, para que el resultado no pueda
     coincidir con el y/D de la geometria del fixture (0.75): asi el test
     tambien caza a quien devuelva la relacion de la seccion en vez de la del
-    punto.
+    punto. LA SECCION SE CAMBIA CON EL, y no es cosmetica: desde que C7 cerro
+    la puerta de vuelta de la invariante, un `ResultadoPunto` con `D` distinto
+    de `seccion.altura` no se construye. Antes si, y por ahi entraba la
+    divergencia que ningun consumidor nota (M11 y la CLI leen `D`,
+    `cli._fase_7` lee `seccion`).
     """
-    aceptado = dataclasses.replace(_resultado_punto(True), D=1.20)
+    aceptado = dataclasses.replace(_resultado_punto(True), D=1.20,
+                                   seccion=SeccionCircular(D=1.20))
     assert aceptado.resultado_hidraulico.y_normal == pytest.approx(
         0.675, rel=TOL_ARITMETICA)
     assert aceptado.y_sobre_D == pytest.approx(0.5625, rel=TOL_ARITMETICA)

@@ -2371,8 +2371,13 @@ TABLA_GAMMA_P_FILAS = {
         "fila": "EL: Esfuerzos residuales acumulados resultantes del proceso "
                 "constructivo, (Locked-in construction Stresses.)",
         "max": 1.00, "min": 1.00},
-    # Las seis subfilas de "EV: Presion vertical de la tierra" (sic, sin
-    # tilde en "Presion"). Las tres ultimas cuelgan ademas del subtitulo
+    # Las SIETE subfilas de "EV: Presion vertical de la tierra" (sic, sin
+    # tilde en "Presion"). Decia "seis" y son siete -- contadas aqui abajo:
+    # estabilidad global, muros y estribos, estructura rigida enterrada,
+    # porticos rigidos y las tres flexibles --; lo encontro la auditoria
+    # adversarial de C7, que ademas midio la contradiccion: este rotulo decia
+    # SEIS mientras `M8.filas_ev_de_la_tabla` --que las DERIVA de este mismo
+    # dict-- dice SIETE. Las tres ultimas cuelgan ademas del subtitulo
     # "Estructuras flexible enterradas" (sic, sin la "s" de flexibles), que la
     # tabla imprime en su propia linea con sus tres opciones marcadas "o ...".
     "EV_estabilidad_global": {

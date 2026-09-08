@@ -2103,7 +2103,51 @@ AASHTO_12_6_1 = _cita(
           "medida. Y trae su propia CONDICION DE DISPARO -- «with inverts "
           "below the water table» --, que es la que hace de esta verificacion "
           "algo que no siempre aplica: sin freatico sobre el invert no hay "
-          "nada que evaluar."),
+          "nada que evaluar. "
+          "NO SE LEE SOLA: dos frases mas abajo, EN EL MISMO PARRAFO de este "
+          "mismo numeral, esta `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, que manda "
+          "aplicar el factor MAXIMO de EV -- lo contrario de lo que V7 hace --. "
+          "C7 cito esta frase y elidio aquella, y lo encontro su auditoria "
+          "adversarial: recortar un parrafo justo antes de la frase que "
+          "discute tu propia lectura es la forma NOR-HID-01 aplicada a un "
+          "recorte. La discusion esta registrada en DIS-AASHTO-GAMMA-EV-12.6.1."),
+)
+
+# LA FRASE QUE C7 ELIDIO, Y VA COMO CITA PROPIA PARA QUE NADIE PUEDA VOLVER A
+# CITAR EL PARRAFO SIN ELLA. Es del mismo numeral y del mismo parrafo que la
+# de arriba, dos frases despues, y apunta en direccion CONTRARIA a la lectura
+# que V7 aplica: V7 minora EV (gamma = 0.90, amparado en MP.2.4.5.3.1#MINIMO)
+# y esto manda mayorarla. Las dos son `shall`. Que la discusion exista es un
+# hecho de la fuente; como se resuelve es del proyecto, y por eso lo resuelve
+# una `Discrepancia` declarada y no un silencio.
+AASHTO_12_6_1_GAMMA_EV = _cita(
+    id="AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.1",
+    titulo_numeral="Loading",
+    pagina_impresa="12-14",
+    pagina_pdf=1652,
+    texto_literal=Verbatim(
+        texto=("For vertical earth pressure, the maximum load factor from "
+               "Table 3.4.1-2 shall apply."),
+        pagina_pdf=1652),
+    caracter=Caracter.EXIGENCIA,
+    nota=("PARRAFO PROPIO dentro del num. 12.6.1, inmediatamente despues de "
+          "la frase de flotacion y antes de la de reparto de carga de rueda. "
+          "ES `lex specialis` PARA ESTRUCTURAS ENTERRADAS y dice MAXIMO, "
+          "mientras el Art. 3.4.1 -- que el Manual de Puentes traduce en "
+          "2.4.5.3.1 -- manda investigar el MINIMO cuando la carga permanente "
+          "aumenta la estabilidad. Los dos son `shall`. "
+          "QUE NO SE DEDUZCA DE AQUI: que V7 este mal. Aplicar el maximo a EV "
+          "en una verificacion de FLOTACION haria la comprobacion MAS FACIL, "
+          "no mas exigente, porque ahi EV estabiliza -- medido sobre la "
+          "corrida del entregable de C7: el lado estabilizante pasaria de "
+          "23.256 a 34.884 kN/m contra los mismos 20.405 de subpresion, y el "
+          "margen se multiplicaria por cinco --. Esa es justamente la razon "
+          "de que el proyecto lea esta frase como referida al diseno POR "
+          "empuje de tierra y no al equilibrio de flotacion. Pero es una "
+          "LECTURA: el texto no trae esa salvedad, y por eso vive en "
+          "DIS-AASHTO-GAMMA-EV-12.6.1 y no en un comentario."),
 )
 
 AASHTO_12_6_2_3 = _cita(
@@ -3288,8 +3332,14 @@ SIN_CAJON_DE_CONCRETO_T12663 = AfirmacionNegativa(
         "las CATORCE filas de la tabla, leidas sobre la pagina RENDERIZADA "
         "(impresa 12-22, PDF 1660): sus dos filas de concreto dicen "
         "«Reinforced Concrete PIPE» y la unica que trae la palabra «box» es "
-        "«Structural Plate Box Structures», que es metalica y ni siquiera da "
-        "cobertura -- remite al Art. 12.9.1 --. Mas el Art. 12.11 completo, "
+        "«Structural Plate Box Structures», que es METALICA y cuya celda de "
+        "cobertura dice «1.4 ft. as specified in Article 12.9.1»: SI da "
+        "cobertura, y ademas remite. ESTA FRASE DECIA «ni siquiera da "
+        "cobertura» Y ERA FALSA SOBRE LA PROPIA PAGINA que este objeto existe "
+        "para acreditar; lo encontro la auditoria adversarial de C7. El hecho "
+        "negativo no cambia -- esa fila es metalica y no cubre a un marco de "
+        "concreto --; lo que cambia es que se sostiene por lo que la fila ES y "
+        "no por un vacio que no tiene. Mas el Art. 12.11 completo, "
         "«REINFORCED CONCRETE CAST-IN-PLACE AND PRECAST BOX CULVERTS AND "
         "REINFORCED CAST-IN-PLACE ARCHES», SIETE paginas impresas de la 12-68 "
         "a la 12-74, delimitadas por encabezado impreso (12.10.5 cierra "
@@ -3298,10 +3348,17 @@ SIN_CAJON_DE_CONCRETO_T12663 = AfirmacionNegativa(
         "insensible a mayusculas: «12.6.6» 0 veces, «12.6.6.3» 0, «table "
         "12.6.6.3-1» 0, «fill height» 0, «depth of fill» 0, «soil cover» 0, "
         "«earth cover» 0; «minimum cover» 1, y es el titulo del falso amigo "
-        "12.11.5.4; «cover» 3 y «fill» 7, que se reparten entre ese titulo, "
-        "los cuatro umbrales de metodo de «2.0 ft» y cinco «backfill» del "
-        "num. 12.11.2.2.1, donde H es «depth of backfill», la VARIABLE de la "
-        "carga de tierra, sin cota inferior. Lo unico que remite hacia fuera "
+        "12.11.5.4. «cover» 3: ese titulo mas DOS de los cuatro umbrales de "
+        "metodo de «2.0 ft». «fill» 7: los otros DOS de esos umbrales, TRES "
+        "«backfill» del num. 12.11.2.2.1 --donde H es «depth of backfill», la "
+        "VARIABLE de la carga de tierra, sin cota inferior-- y el «compacted "
+        "fill» / «uncompacted fill» del C12.11.2.2.1. EL REPARTO ANTERIOR "
+        "DECIA «los cuatro umbrales y cinco backfill», que suma NUEVE y no "
+        "los SIETE que el propio censo declara: lo encontro la auditoria "
+        "adversarial de C7 remidiendo, y es el defecto propio de este objeto "
+        "-- un barrido cuyo desglose no cuadra no acredita el hecho negativo, "
+        "aunque los totales sean correctos, que lo eran --. Lo unico que "
+        "remite hacia fuera "
         "es el paraguas generico del 12.11.1 -- «Designs shall conform to "
         "applicable Articles of these Specifications, except as provided "
         "otherwise herein» --, que no es la remision especifica a 12.6.6.3. "

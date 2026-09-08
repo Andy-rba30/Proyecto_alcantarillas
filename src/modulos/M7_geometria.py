@@ -252,6 +252,7 @@ from modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
                      DatoInvalidoError, EleccionDeProyecto, FormaSeccion,
                      LimiteNumericoError,
                      Magnitud, Material, Seccion,
+                     exigir_seccion_coherente,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
 from modulos.M2_material import diametro_exterior, espesor_pared
@@ -268,9 +269,34 @@ NUMERAL_7B = "Sec. 7.B"
 # "numeral" de la fila G1, o sea lo unico que el revisor ve de esa
 # verificacion, y con la version anterior una fila de CONCRETO decia
 # "recubrimiento EG-2013" al lado de criterio_aplicado = cobertura_minima_aashto.
-NUMERAL_G1 = ("Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo "
-              "HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / "
-              "resguardo Sec. 5.1)")
+# EL NUMERAL DE G1 NO PUEDE SER UNA CONSTANTE, y serlo fue el hallazgo 1 de la
+# auditoria adversarial de C7. Es lo UNICO que M11 imprime en la columna
+# «numeral» de la fila G1 -- o sea lo unico que el revisor ve de esa
+# verificacion --, y la constante nombraba la Tabla 12.6.6.3-1 de AASHTO para
+# TODOS los materiales. Para un marco esa tabla no tiene fila: C7 abrio
+# 'cobertura_minima_cajon' justamente por eso, arreglo el `criterio_aplicado`
+# y DEJO ESTE CANAL DICIENDO LO CONTRARIO. Un vacio declarado con una cita
+# falsa al lado es peor que el vacio solo.
+NUMERAL_G1_CIRCULAR = ("Sec. 7.A (recubrimiento: el mayor entre EG-2013 "
+                       "508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, "
+                       "Tabla 12.6.6.3-1 / resguardo Sec. 5.1)")
+NUMERAL_G1_CAJON = ("Sec. 7.A (cobertura: SIN numeral -- la Tabla 12.6.6.3-1 "
+                    "de AASHTO no tiene fila de cajon de concreto y el "
+                    "EG-2013 solo fija altura de relleno para HDPE --, "
+                    "declarada en el criterio 'cobertura_minima_cajon' [A] / "
+                    "resguardo Sec. 5.1)")
+
+
+def numeral_g1(material: Material) -> str:
+    """
+    El numeral que la fila G1 imprime, que NO es el mismo en un marco.
+
+    Ver el comentario de arriba: la constante unica atribuia a todo material
+    la Tabla 12.6.6.3-1, y un marco no tiene fila en ella.
+    """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        return NUMERAL_G1_CAJON
+    return NUMERAL_G1_CIRCULAR
 NUMERAL_G2 = "Sec. 7.B (cotas amarradas al fondo del receptor)"
 
 # LOS DOS MINIMOS QUE COMPITEN EN h_rec, con nombre, porque G1 tiene que
@@ -280,6 +306,13 @@ NUMERAL_G2 = "Sec. 7.B (cotas amarradas al fondo del receptor)"
 # el dato que necesita para saber que mover si el punto no cabe.
 MINIMO_EG2013 = "EG-2013 508.07"
 MINIMO_AASHTO = "AASHTO LRFD Tabla 12.6.6.3-1"
+# Y LA TERCERA, que la auditoria adversarial de C7 encontro ausente: en un
+# marco no gobierna ninguna de las dos anteriores porque ninguna lo alcanza.
+# Sin esta etiqueta, `altura_recubrimiento` devolvia para el marco la frase
+# «AQUI GOBIERNA AASHTO LRFD Tabla 12.6.6.3-1», que es la cita falsa que
+# 'cobertura_minima_cajon' existe para no tener que hacer -- y la introdujo el
+# propio C7i al anadir el par.
+MINIMO_CAJON_DECLARADO = "el criterio 'cobertura_minima_cajon' [A]"
 
 CRITERIO_TALUD = "talud_terraplen"
 CRITERIO_COBERTURA_AASHTO = "cobertura_minima_aashto"
@@ -417,6 +450,7 @@ def cobertura_minima_aashto(*, material: Material, seccion: Seccion) -> float:
     Se detiene tambien en 'espesor_pared_conducto' cuando la fila usa Bc, y en
     'cobertura_minima_cajon' cuando la seccion es rectangular.
     """
+    exigir_seccion_coherente(material, seccion)
     if material.forma is FormaSeccion.RECTANGULAR:
         return _cobertura_declarada_del_cajon()
     tabla = ca.valor(CRITERIO_COBERTURA_AASHTO)
@@ -438,11 +472,19 @@ def cobertura_minima_aashto(*, material: Material, seccion: Seccion) -> float:
     # siempre es la cota de clave, que es otra cosa y esta en M5.
     #
     # QUE `Bc` SALGA DE LA SECCION Y NO DE `diametro_exterior` es lo que hace
-    # correcta la ranura POR CONSTRUCCION en vez de por coincidencia: Bc es la
+    # correcta la ranura de Bc en vez de dejarla a la coincidencia: Bc es la
     # dimension HORIZONTAL, y `diametro_exterior(D)` solo la da porque en un
-    # circulo ancho y canto coinciden. Las tres filas que llegan aqui son de
-    # conducto circular -- el marco salio arriba --, de modo que el numero no
-    # cambia; lo que cambia es que ya no depende de esa coincidencia.
+    # circulo ancho y canto coinciden.
+    #
+    # SOLO LA RAMA DE Bc SE DESACOPLA, y decirlo entero importa porque el
+    # parrafo anterior decia «ya no depende de esa coincidencia» a secas y eso
+    # es falso para las otras dos filas: `S` es «diameter of pipe» e `ID` el
+    # diametro interior, y las dos siguen leyendo la dimension VERTICAL
+    # (`seccion.altura`). No es un defecto: esas dos filas son de conducto
+    # CIRCULAR -- metal corrugado y termoplastico --, donde vertical y
+    # horizontal son el mismo numero por geometria, y el marco sale antes de
+    # llegar aqui. Pero la frase que lo cubria todo era mas ancha que el
+    # arreglo, y lo midio la auditoria adversarial de C7.
     if _DIAMETRO_DE_LA_FILA[fila["sobre"]] == "D_ext":
         D_fila = seccion.ancho_exterior(espesor_pared(material,
                                                       seccion.altura))
@@ -480,9 +522,18 @@ def altura_recubrimiento(*, material: Material,
 
     EL EMPATE SE ADJUDICA A AASHTO, y es una decision, no un descuido del
     `>`: es el unico de los dos que depende de la geometria del conducto, de
-    modo que en un empate senala la variable que SI se puede mover. Es la
-    misma regla con que el tamizado adjudica su condicion gobernante, y por la
-    misma razon.
+    modo que en un empate senala la variable que SI se puede mover.
+
+    Y NO ES LA MISMA REGLA CON QUE EL TAMIZADO DESEMPATA, que es lo que este
+    parrafo decia -- «es la misma regla ... y por la misma razon» -- y es
+    FALSO: `tamizado_rasante` desempata al reves y lo dice, «se declara
+    gobernante el RECUBRIMIENTO, por ser LA QUE NO DEPENDE DEL CALCULO
+    HIDRAULICO ... ante la duda se senala LA MAS ESTABLE». Alli se prefiere la
+    condicion ESTABLE; aqui, la MOVIBLE. Los dos criterios son defendibles y
+    son OPUESTOS, y presentarlos como el mismo era inventar una coherencia que
+    no existe. Lo encontro la auditoria adversarial de C7. Se dejan los dos
+    como estan -- cambiarlos moveria numeros por una razon de estilo -- y se
+    dice que difieren.
 
     QUE CAMBIO Y POR QUE (NOR-VAC-01, MAT-D4, conflicto #5 del plan de
     correcciones). Esta funcion devolvia `material.h_relleno_min`: 0.30 m para
@@ -520,6 +571,15 @@ def altura_recubrimiento(*, material: Material,
     de la tabla) y en 'espesor_pared_conducto' (el Bc del concreto).
     """
     aashto = cobertura_minima_aashto(material=material, seccion=seccion)
+    if material.forma is FormaSeccion.RECTANGULAR:
+        # NO ES «el mayor entre dos»: no hay dos. Ni la tabla de AASHTO ni el
+        # EG-2013 alcanzan a un marco, de modo que el numero sale entero del
+        # criterio declarado y la memoria tiene que decir ESO y no otra cosa.
+        return aashto, (f"{MINIMO_CAJON_DECLARADO} ({aashto:.3f} m): ni la "
+                        f"Tabla 12.6.6.3-1 de AASHTO --sin fila de cajon de "
+                        f"concreto-- ni el EG-2013 --que solo fija altura de "
+                        f"relleno para HDPE-- alcanzan a un marco, de modo "
+                        f"que aqui no hay dos minimos que comparar")
     eg2013 = material.h_relleno_min_eg2013
     if eg2013 is None:
         return aashto, (f"{MINIMO_AASHTO} ({aashto:.3f} m); {MINIMO_EG2013} "
@@ -645,6 +705,7 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
         factible=factible,
         delta_rasante_m=0.0 if factible else faltante,
         criterio_recubrimiento=criterio_recubrimiento(material),
+        numeral_g1=numeral_g1(material),
         minimo_que_gobierna=minimo_que_gobierna,
         criterio_resguardo=CRITERIO_RESGUARDO,
         id_punto=punto.id,
@@ -660,9 +721,17 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
     del conducto, y por lo tanto la unica evaluable sin 'talud_terraplen'.
     El criterio
     aplicado es el de la condicion que gobierna: 'resguardo_HW_subrasante'
-    [N->] si manda la carga a la entrada, y 'cobertura_minima_aashto' [C] si
-    manda el recubrimiento -- en los tres materiales, porque la Tabla
-    12.6.6.3-1 entra en los tres (ver `criterio_recubrimiento`).
+    [N->] si manda la carga a la entrada, y si manda el recubrimiento, el que
+    `criterio_recubrimiento` devuelva -- 'cobertura_minima_aashto' [C] en los
+    tres materiales del catalogo CIRCULAR, porque la Tabla 12.6.6.3-1 entra en
+    los tres, y 'cobertura_minima_cajon' [A] en un marco, que no tiene fila en
+    esa tabla.
+
+    ESTE PARRAFO DECIA «en los tres materiales» A SECAS y era falso desde que
+    C7 abrio el vacio del cajon: lo encontro la auditoria adversarial de esa
+    sesion, junto con los otros dos canales por los que la memoria de un marco
+    seguia nombrando la tabla del tubo (el `numeral`, hoy `numeral_g1`, y la
+    procedencia de la magnitud `h_rec`).
 
     Sigue sin necesitar 'talud_terraplen' -- solo lee campos de
     `TamizadoRasante`, y el tamizado nunca llama a `proyeccion_taludes` --,
@@ -675,7 +744,7 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
                            is CondicionRasante.RECUBRIMIENTO)
     return Verificacion(
         cumple=tamizado.factible,
-        numeral=NUMERAL_G1,
+        numeral=tamizado.numeral_g1,
         valor_obtenido=tamizado.cota_rasante_actual,
         valor_admisible=tamizado.cota_rasante_min,
         criterio_aplicado=tamizado.criterio_gobernante,

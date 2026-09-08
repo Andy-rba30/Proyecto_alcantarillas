@@ -38,7 +38,7 @@ from functools import lru_cache
 from typing import Any, Dict, Optional, Protocol, Tuple, Union
 
 from dominios import CENTIMETROS_POR_METRO
-from tolerancias import TOL_THETA_BORDE
+from tolerancias import TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
 
 
 # ===========================================================================
@@ -2447,6 +2447,46 @@ def _registro_normativo():
     return _rn.construir()
 
 
+def exigir_seccion_coherente(material: "Material", seccion: "Seccion") -> None:
+    """
+    Que la `Seccion` que llega sea de la FORMA que el material declara.
+
+    LA ABRIO LA AUDITORIA ADVERSARIAL DE C7, y su medicion es la razon de que
+    esto exista:
+
+        cobertura_minima_aashto(material=catalogo(CONCRETO_REFORZADO),
+                                seccion=SeccionRectangular(B=3.00, H=1.50))
+        -> 0.4125     # Bc/8 de la fila «Reinforced Concrete PIPE», sobre un
+                      # RECTANGULO
+
+    O sea el defecto que C7 declara no cometer -- aplicar una fila rotulada
+    «Pipe» a algo que no lo es --, alcanzable en tres lineas. Ocurre porque
+    `M7.cobertura_minima_aashto` y `M8._elemento_de` bifurcan por
+    `material.forma` mientras la geometria la pone la `Seccion`, y nada ataba
+    las dos cosas. En produccion el par siempre es coherente --la seccion sale
+    del catalogo del material-- de modo que ningun numero publicado estaba
+    mal; lo que estaba mal era la palabra «POR CONSTRUCCION» con que los
+    docstrings de C7 describian esa correccion. Con esta guardia lo es.
+
+    Va aqui y no en el `Protocol`: la forma no es una propiedad que la seccion
+    necesite conocer de si misma -- todo el diseño de `Seccion` consiste en
+    que el calculo NO pregunte de que forma es --, y anadirsela para poder
+    compararla desharia justamente eso. Lo que hace falta es cruzar los dos
+    objetos en la puerta por la que entran juntos, que es esto.
+    """
+    rectangular = isinstance(seccion, SeccionRectangular)
+    if (material.forma is FormaSeccion.RECTANGULAR) is not rectangular:
+        raise DatoInvalidoError(
+            campo="seccion",
+            valor=type(seccion).__name__,
+            motivo=(f"el material declara forma {material.forma.value} y la "
+                    f"seccion recibida es {type(seccion).__name__}: el par no "
+                    "es coherente. La forma decide que fila de tabla aplica, "
+                    "de modo que con el par cruzado se le aplicaria a esta "
+                    "seccion la fila de la otra"),
+        )
+
+
 def paso(fundamento_id: str, **kw: Any) -> PasoDeMemoria:
     """
     Construye un `PasoDeMemoria` trayendo el `por_que` del registro.
@@ -2585,6 +2625,11 @@ class TamizadoRasante:
     factible: bool                        # la rasante actual ya alcanza
     delta_rasante_m: float                # m  - 0.0 si es factible
     criterio_recubrimiento: Optional[str]
+    # EL NUMERAL QUE LA FILA G1 IMPRIME, resuelto donde se conoce la forma.
+    # Viaja aqui por la misma razon que `criterio_recubrimiento`: G1 recibe
+    # solo el tamizado, y con una constante unica atribuia a todo material la
+    # Tabla 12.6.6.3-1 de AASHTO -- que no tiene fila de cajon de concreto --.
+    numeral_g1: str
     # CUAL de los dos minimos gano la regla del mayor. No es derivable de los
     # campos de aqui -- h_rec es el maximo y no dice de donde salio --, y sin
     # el la memoria enuncia la regla sin publicar el resultado de aplicarla.
@@ -3567,6 +3612,19 @@ class ResultadoPunto:
                 "ResultadoPunto con `D` y sin `seccion`: un punto dimensionado "
                 "tiene que traer la seccion adoptada, o quien lo lea tendra "
                 "que suponer que es circular")
+        # Y LA PUERTA DE VUELTA, que la auditoria adversarial de C7 encontro
+        # abierta: la invariante era UNIDIRECCIONAL y aceptaba sin quejarse un
+        # `D` que no fuera la altura de la seccion. Mientras los dos campos
+        # convivan --`D` lo leen M11, la CLI y la GUI; `seccion` la lee
+        # `cli._fase_7`-- una divergencia entre ellos no la nota nadie.
+        if (self.D is not None and self.seccion is not None
+                and abs(self.D - self.seccion.altura) > TOL_UMBRAL_NORMATIVO):
+            raise ValueError(
+                f"ResultadoPunto incoherente: D = {self.D} y "
+                f"seccion.altura = {self.seccion.altura}. `D` es la altura "
+                "interior de la seccion adoptada -- el diametro en una "
+                "circular, la H de una celda en un marco --, y con los dos "
+                "campos vivos una divergencia no la nota ningun consumidor")
 
     @property
     def y_sobre_D(self) -> Optional[float]:

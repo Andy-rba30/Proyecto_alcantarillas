@@ -38,6 +38,7 @@ from tolerancias import TOL_UMBRAL_NORMATIVO
 from modulos.M5_verificaciones import v4_carga_entrada
 from modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
                                   CRITERIO_COBERTURA_CAJON,
+                                  MINIMO_AASHTO, numeral_g1,
                                   CRITERIO_CONDICION_PAVIMENTO,
                                   CRITERIO_TALUD, altura_recubrimiento,
                                   criterio_recubrimiento,
@@ -689,7 +690,8 @@ def test_un_marco_no_toma_la_fila_del_tubo_y_se_detiene(
     declarar_condicion_pavimento("flexible")
     with declarados(DECLARACIONES_CAJON), sin_valor(CRITERIO_COBERTURA_CAJON):
         with pytest.raises(CriterioPendienteError) as exc:
-            cobertura_minima_aashto(material=_marco(), seccion=SeccionCircular(D=1.50))
+            cobertura_minima_aashto(material=_marco(),
+                                seccion=SeccionRectangular(B=2.00, H=1.50))
     assert exc.value.clave == CRITERIO_COBERTURA_CAJON
 
 
@@ -730,7 +732,9 @@ def test_el_numero_que_el_marco_recibia_era_el_piso_de_la_fila_del_tubo(
     declaraciones = dict(DECLARACIONES_CAJON)
     declaraciones[CRITERIO_COBERTURA_CAJON] = 0.45
     with declarados(declaraciones):
-        assert cobertura_minima_aashto(material=_marco(), seccion=SeccionCircular(D=H)) == \
+        assert cobertura_minima_aashto(
+            material=_marco(),
+            seccion=SeccionRectangular(B=B, H=H)) == \
             pytest.approx(0.45, rel=REL_TRANSPORTE)
 
 
@@ -751,14 +755,46 @@ def test_la_cobertura_del_marco_admite_cero_y_rechaza_el_negativo(
     declarar_condicion_pavimento("flexible")
     cero = dict(DECLARACIONES_CAJON, **{CRITERIO_COBERTURA_CAJON: 0.0})
     with declarados(cero):
-        assert cobertura_minima_aashto(material=_marco(), seccion=SeccionCircular(D=1.50)) == \
+        assert cobertura_minima_aashto(material=_marco(),
+                                seccion=SeccionRectangular(B=2.00, H=1.50)) == \
             pytest.approx(0.0, abs=ABS_CERO)
 
     negativo = dict(DECLARACIONES_CAJON, **{CRITERIO_COBERTURA_CAJON: -0.10})
     with declarados(negativo):
         with pytest.raises(DatoInvalidoError) as exc:
-            cobertura_minima_aashto(material=_marco(), seccion=SeccionCircular(D=1.50))
+            cobertura_minima_aashto(material=_marco(),
+                                seccion=SeccionRectangular(B=2.00, H=1.50))
     assert exc.value.campo == CRITERIO_COBERTURA_CAJON
+
+
+def test_el_empate_entre_los_dos_minimos_se_adjudica_a_aashto(monkeypatch):
+    """
+    LA DECISION QUE `altura_recubrimiento` ARGUMENTA Y NADIE MEDIA: cambiar su
+    `>` por `>=` sobrevivia a la suite entera, y lo midio la auditoria
+    adversarial de C7. Una decision declarada en tres lineas de docstring y
+    sin test es indistinguible de un descuido del operador.
+
+    Se fuerza el empate poniendo el minimo de EG-2013 EXACTAMENTE en el valor
+    que devuelve la tabla de AASHTO para este HDPE (0.75 m). Con `>` gana
+    AASHTO -- la variable que SI se puede mover, porque depende de la
+    geometria --; con `>=` ganaria EG-2013, que es una constante.
+
+    OJO CON LA OTRA MITAD, que este test NO fija y el docstring ahora dice:
+    `tamizado_rasante` desempata al REVES, prefiriendo la condicion estable.
+    Los dos criterios son opuestos y los dos son defendibles; lo que no vale
+    es presentarlos como el mismo.
+    """
+    hdpe = catalogo(TipoMaterial.HDPE)
+    seccion = SeccionCircular(D=1.50)
+    aashto = cobertura_minima_aashto(material=hdpe, seccion=seccion)
+    empatado = replace(hdpe, h_relleno_min_eg2013=aashto)
+
+    h_rec, gobierna = altura_recubrimiento(material=empatado, seccion=seccion)
+    assert h_rec == pytest.approx(aashto, rel=REL_TRANSPORTE)
+    assert gobierna.startswith(MINIMO_AASHTO), (
+        "en el empate tiene que ganar AASHTO, que es el que depende de la "
+        "geometria: con EG-2013 ganando, la memoria senala como gobernante "
+        "una constante que el proyectista no puede mover")
 
 
 def test_el_tamizado_de_un_marco_mide_el_ancho_y_no_el_canto(
@@ -792,18 +828,49 @@ def test_el_tamizado_de_un_marco_mide_el_ancho_y_no_el_canto(
     assert t.altura_supuesta == pytest.approx(1.50, rel=REL_TRANSPORTE)
 
 
-def test_la_memoria_de_un_marco_no_dice_que_su_h_rec_sale_de_aashto():
+def test_la_memoria_de_un_marco_no_dice_que_su_h_rec_sale_de_aashto(
+        declarar_condicion_pavimento):
     """
-    `criterio_recubrimiento` es lo que viaja a `Verificacion.criterio_aplicado`
-    de G1 y lo que M11 imprime. Con una sola clave, la memoria de un marco
-    habria dicho que su cobertura sale de la Tabla 12.6.6.3-1 -- que no tiene
-    fila de cajon de concreto --, que es exactamente la cita falsa que el
-    precedente NOR-HID-01 describe.
+    LOS TRES CANALES POR LOS QUE LA MEMORIA DE G1 NOMBRA SU FUENTE, y hay que
+    medirlos los tres.
+
+    LA AUDITORIA ADVERSARIAL DE C7 ENCONTRO QUE ESTE TEST -- con este mismo
+    nombre -- ASERTABA SOLO EL PRIMERO, de modo que pasaba sin medir su propio
+    titulo, mientras los otros dos seguian atribuyendo la cobertura de un
+    marco a la Tabla 12.6.6.3-1 de AASHTO. Y el tercero lo habia INTRODUCIDO
+    el propio C7i, con un «AQUI GOBIERNA» explicito. Un vacio declarado con
+    una cita falsa al lado es peor que el vacio solo.
+
+      1. `criterio_aplicado`  <- `criterio_recubrimiento`
+      2. `numeral`            <- `numeral_g1`, que es lo UNICO que M11 imprime
+                                 en la columna «numeral» de la fila G1
+      3. la procedencia de `h_rec` <- el segundo elemento del par que
+                                 devuelve `altura_recubrimiento`
     """
-    with declarados(DECLARACIONES_CAJON):
-        assert criterio_recubrimiento(_marco()) == CRITERIO_COBERTURA_CAJON
-    assert criterio_recubrimiento(
-        catalogo(TipoMaterial.CONCRETO_REFORZADO)) == CRITERIO_COBERTURA_AASHTO
+    declarar_condicion_pavimento("flexible")
+    declaraciones = dict(DECLARACIONES_CAJON,
+                         **{CRITERIO_COBERTURA_CAJON: 0.30})
+    with declarados(declaraciones):
+        marco = _marco()
+        h_rec, gobierna = altura_recubrimiento(
+            material=marco, seccion=SeccionRectangular(B=2.00, H=1.50))
+        canal_1 = criterio_recubrimiento(marco)
+        canal_2 = numeral_g1(marco)
+    tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+
+    # 1 - el criterio aplicado
+    assert canal_1 == CRITERIO_COBERTURA_CAJON
+    assert criterio_recubrimiento(tubo) == CRITERIO_COBERTURA_AASHTO
+    # 2 - el numeral, unico texto de la columna «numeral» de la fila G1. Si
+    #     nombra la tabla, tiene que ser para decir que NO tiene fila.
+    assert CRITERIO_COBERTURA_CAJON in canal_2
+    assert "no tiene fila de cajon de concreto" in canal_2
+    assert "12.6.6.3-1" in numeral_g1(tubo)          # al tubo SI le toca
+    assert CRITERIO_COBERTURA_CAJON not in numeral_g1(tubo)
+    # 3 - la procedencia de h_rec, el canal que C7i habia dejado mal
+    assert h_rec == pytest.approx(0.30, rel=REL_TRANSPORTE)
+    assert CRITERIO_COBERTURA_CAJON in gobierna
+    assert not gobierna.startswith(MINIMO_AASHTO)
 
 
 # --- guarda defensiva: se demuestra inalcanzable, no se alcanza ------------

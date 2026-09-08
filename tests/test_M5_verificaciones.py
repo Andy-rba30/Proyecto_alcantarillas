@@ -858,6 +858,16 @@ def test_la_fila_de_gamma_p_de_un_marco_es_la_de_porticos_rigidos(monkeypatch):
 
     assert "Pórticos rígidos" in g_marco.fila_gamma_EV
     assert "Estructura rígida enterrada" in g_tubo.fila_gamma_EV
+    # BC Y B'c NO SON INTERCAMBIABLES, y hasta que la auditoria adversarial de
+    # C7 lo midio nada lo comprobaba: las dos `Magnitud` que C7e anadio se
+    # justificaban con «en un marco NO coinciden, y esa coincidencia es la que
+    # oculto el defecto hasta C7» -- y la unica ejecucion de V7 en la suite y
+    # en la linea base era CIRCULAR, donde coinciden. Intercambiarlas
+    # sobrevivia a la suite entera. Sobre 2.00 x 1.50 con t = 0.15:
+    # Bc = 2.30 (HORIZONTAL, el del prisma de relleno) y B'c = 1.80.
+    por_simbolo = {m.simbolo: m.valor for m in v.paso.sustitucion}
+    assert por_simbolo["Bc"] == pytest.approx(2.30, rel=REL_TRANSPORTE)
+    assert por_simbolo["B'c"] == pytest.approx(1.80, rel=REL_TRANSPORTE)
     # El numero coincide -- por eso hacia falta mirar la fila.
     assert g_marco.gamma_EV == pytest.approx(g_tubo.gamma_EV, rel=REL_TRANSPORTE)
     # Y la memoria del marco imprime SU fila, no la del tubo.
@@ -981,7 +991,14 @@ def test_verificar_con_tmc_ya_pasa_v3_y_se_detiene_en_v5(tmc):
 
 
 def test_verificar_tiene_la_firma_del_protocol_de_MD(concreto):
-    """MD.Verificador exige (punto=, material=, D=, resultado=), por keyword."""
+    """
+    MD.Verificador exige (punto=, material=, seccion=, resultado=), por
+    keyword. Decia `D=` -- la firma anterior a C7i -- mientras el cuerpo ya
+    llamaba con `seccion=`: el test pasaba porque un `Protocol` no se
+    comprueba en runtime, de modo que su docstring era lo unico que afirmaba
+    la firma y afirmaba la equivocada. Lo encontro la auditoria adversarial
+    de C7.
+    """
     with pytest.raises(CriterioPendienteError):
         verificar(punto=_punto(), material=concreto,
                   seccion=SeccionCircular(D=0.90),

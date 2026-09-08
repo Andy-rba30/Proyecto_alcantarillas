@@ -352,6 +352,31 @@ def _marco():
                     forma=FormaSeccion.RECTANGULAR)
 
 
+def test_un_espesor_de_pared_de_cajon_nulo_o_negativo_se_detiene():
+    """
+    LA GUARDIA QUE NADIE MEDIA: cambiar `not t > 0` por `not t >= 0` en la
+    rama del cajon de `M2.espesor_pared` sobrevivia a la suite entera, y lo
+    midio la auditoria adversarial de C7. El umbral es MEDIDO y no generico
+    -- forma MAT-D13 --: un espesor de cero no es «un dato raro», es una pared
+    que no existe, y con el la subpresion se evaluaria sobre la seccion
+    INTERIOR, que es la direccion insegura de MAT-D3.
+
+    LA MITAD DEL NaN NO SE MIDE AQUI, Y SE DICE POR QUE: la capa de
+    declaracion lo rechaza ANTES -- `criterios_adoptados` no admite declarar
+    un criterio con NaN ni con infinito --, de modo que por la via del
+    expediente ese valor no llega nunca a `espesor_pared`. La forma `not t > 0`
+    se conserva igual, como guarda defensiva y por coherencia con MAT-D13; lo
+    que este test mide son los dos casos ALCANZABLES.
+    """
+    for valor in (0.0, -0.05):
+        declaraciones = dict(DECLARACIONES_CAJON,
+                             **{"espesor_pared_cajon": valor})
+        with declarados(declaraciones):
+            with pytest.raises(DatoInvalidoError) as exc:
+                espesor_pared(_marco(), 1.50)
+        assert exc.value.campo == "espesor_pared_cajon", valor
+
+
 def test_el_marco_no_hereda_la_seccion_de_tuberia_del_eg2013():
     """
     PUNTO 6 DEL BRIEF DE C7, y es la forma exacta de NOR-PUE-01: numeral que
