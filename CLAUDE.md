@@ -91,6 +91,19 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   A = (D²/8)(θ − sen θ), el exponente 2/3 de Manning— se deja en el módulo
   marcado con `# literal-ok: <razón>`. La marca lo declara y lo hace visible en
   revisión; sin marca, tests/test_sin_literales.py lo rechaza.
+- **Quién consume una variable se AVERIGUA del código, y desde S21 se averigua
+  siguiendo también las reexportaciones.** `variables_entrada._consumo_por_modulo`
+  parsea el AST de cada módulo de cálculo. Hasta S21 sólo miraba las cadenas
+  literales, y esa atribución se equivoca cuando el módulo que **escribe** la
+  clave no es el que la **ejecuta**: `factores_carga_aashto` y
+  `peso_especifico_relleno_kn_m3` figuraban como de «Fase 8 · Fase 9» y a las
+  dos las invoca **V7, que es Fase 5** y corre en el alcance de perfil —M5
+  importa de M8 la constante `CRITERIO_FACTORES_CARGA` y la función
+  `peso_relleno_kn_m`—. Hoy se cierran las dos vías (constante reexportada y
+  función reexportada, ésta con un punto fijo sobre el grafo de llamadas).
+  Sigue siendo una **estimación** con falsos negativos posibles, y por eso no
+  gobierna ningún filtro: dice a qué fase pertenece una variable y clasifica
+  lo que ninguna corrida llega a invocar.
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None
@@ -155,6 +168,43 @@ Las tres reglas están en `criterios_adoptados._verificar_nivel`, no en un
 documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
+
+**Y desde S21 el nivel lo llevan los 69, no sólo los que no tienen valor.** La
+guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
+—once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
+clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
+consecuencias que conviene leer antes de tocar el campo:
+
+- **La medida son corridas, y son tres.** `tests/test_nivel_medido.py` corre
+  el pipeline a `--alcance perfil`, a `--alcance expediente`, y una tercera
+  vez con los criterios `opcional=True` declarados en caliente —sin ella son
+  invisibles, porque `valor_si_declarado()` no registra el uso mientras el
+  criterio siga vacío—.
+- **Se comprueba en LAS DOS DIRECCIONES**, y la segunda es la que faltaba: un
+  criterio marcado `expediente` que la corrida de perfil invoque sin diferir
+  es un fallo. Con una sola dirección, marcar `expediente` no lo comprobaba
+  nadie, y el campo volvía a ser una lista mantenida a mano —escrita criterio
+  a criterio en vez de en un archivo aparte, que es peor porque no se ve como
+  lista—.
+- **Cada uno de los trece dice QUÉ CORRIDA lo midió**, en el comentario que
+  acompaña al campo. Ocho se midieron; cinco no se pueden medir —su cadena se
+  detiene antes en un pendiente, o no los consume ningún módulo— y lo dicen
+  con esas palabras, apoyados en `variables_entrada.consumido_por`.
+- **El límite se conoce por MUTACIÓN, no por lectura.** Cambiando el nivel de
+  cinco de los trece murieron cuatro tests y sobrevivió uno:
+  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **ocho** sin
+  consumidor el nivel es un argumento y no una medida, y están censados en
+  `SIN_CONSUMIDOR_Y_SIN_MEDIDA` para que el grupo no crezca en silencio —el
+  mismo recurso que fija el censo de los dos `inf` deliberados—.
+
+**Para qué se completó, además de por completitud:** `nivel` gobierna el
+filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
+que a `--alcance perfil` pasa la tabla de 69 filas a 36 y los pendientes
+visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
+sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
+la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
+dos falsos negativos medidos, ver abajo—, sino en el campo que las corridas
+comprueban.
 
 Qué NO es el nivel, porque las tres cosas se confunden: no es la **fase** del
 cálculo (eso es `variables_entrada`), no es la **etiqueta** (eso es la
@@ -301,16 +351,21 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1538**; lo
-que se mueve es el reparto, porque **dos** tests se saltan según el entorno y
-**ninguno de los dos saltos es una regresión**:
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1773**; lo
+que se mueve es el reparto, y **ningún salto de los de abajo es una
+regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
-- `tests/test_MD.py:362` — el `skipped` **permanente**, y el único que lo es:
-  su `skipif` guarda una condición (que `M5_verificaciones` no exista) que ya
-  no puede darse.
-- `tests/test_gui_contrato.py:1027` — el test de **ventana real** que añadió
-  S20. Se salta cuando ningún intérprete disponible puede levantar un `Tk`:
-  falta `tkinter`, falta `ttkbootstrap` o falta entorno gráfico.
+- `tests/test_MD.py` — el `skipped` **permanente** por condición imposible:
+  su `skipif` guarda que `M5_verificaciones` no exista, y ya no puede darse.
+- `tests/test_gui_contrato.py` — los tests de **ventana real**, que hoy son
+  **dos** (S20 abrió uno). Se saltan cuando ningún intérprete disponible puede
+  levantar un `Tk`: falta `tkinter`, falta `ttkbootstrap` o falta entorno
+  gráfico.
+- `tests/test_familias_del_csv.py` — **tres** saltos de DISEÑO, no de entorno,
+  y por eso valen lo mismo en las cuatro configuraciones. El test está
+  parametrizado por (dato declarado × familia) y mide sólo las familias que
+  NO usan el dato; las tres combinaciones que sí lo usan se saltan diciéndolo.
+  Es el primer salto del repositorio que no depende de qué haya instalado.
 - Y aparte, en bloque, los **32** de `tests/test_normativa_pdf.py`, que se
   saltan sin PyMuPDF —dependencia de TEST, no de producción—. Ése es el eje
   que S12 documentó.
@@ -318,20 +373,32 @@ que se mueve es el reparto, porque **dos** tests se saltan según el entorno y
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
 `sys.executable` y después los intérpretes del sistema, de modo que un
-`1537 passed` **no** demuestra que la suite corra sobre un Python con tkinter
+`1767 passed` **no** demuestra que la suite corra sobre un Python con tkinter
 —solo que alguno lo tenía—. Es exactamente lo que pasa hoy en el contenedor de
 desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. Las cuatro medidas sobre el mismo árbol, no supuestas:
+independientes. La tabla sólo lleva lo MEDIDO sobre el árbol, y en S21 se
+pudieron medir dos de las cuatro: el contenedor de desarrollo no tiene
+`tkinter` en NINGUNO de sus intérpretes (3.10 a 3.13), de modo que la columna
+«Ventana Tk = sí» no se puede levantar ahí. Las dos celdas que faltan se
+dejan **vacías a propósito** en vez de rellenarse restando dos: la regla de
+esta tabla —«las cuatro medidas sobre el mismo árbol, no supuestas»— vale más
+que tenerla completa, y una celda deducida se lee igual que una medida.
 
-| PyMuPDF | Ventana Tk | `passed` | `skipped` |
-|---|---|---|---|
-| sí | sí | 1537 | 1 |
-| sí | no | 1536 | 2 |
-| no | sí | 1505 | 33 |
-| no | no | 1504 | 34 |
+| PyMuPDF | Ventana Tk | `passed` | `skipped` | medida |
+|---|---|---|---|---|
+| sí | sí | — | — | no medible en el contenedor (sin tkinter) |
+| sí | no | 1767 | 6 | S21 |
+| no | sí | — | — | no medible en el contenedor (sin tkinter) |
+| no | no | 1735 | 38 | S21 |
+
+**El número saltó de 1538 a 1773 y no fue S21 quien lo movió entero.** La
+tabla anterior se quedó en el árbol de S20 mientras la suite crecía: al abrir
+S21 el conteo ya era `1651 passed, 35 skipped` (1686), y S21 le sumó los 87
+que faltan. Conviene decirlo porque la deriva de esta tabla es el defecto que
+la propia sección persigue.
 
 Decir cuál de los dos números se está citando **y con qué entorno**; la mayor
 parte de la confusión histórica de números sale de mezclarlos. La regla que no

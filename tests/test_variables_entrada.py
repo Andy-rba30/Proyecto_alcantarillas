@@ -362,7 +362,24 @@ def test_el_consumidor_sale_del_codigo_y_no_de_los_comentarios():
     for clave in ("angulo_aletas", "capacidad_portante_adm", "clase_sitio"):
         assert ve.variable(clave).consumido_por == (), clave
         assert clave in ve.variables_sin_consumidor()
-    assert ve.variable("ke_entrada").consumido_por == ("M4_control",)
+    # `ke_entrada` LLEVA DOS DESDE S21 Y NO ES UNA REGRESION: es el segundo
+    # paso de `_consumo_por_modulo`, que sigue el grafo de llamadas. MD llama a
+    # `M4.control_de_entrada` en cada escalon del bucle, de modo que MD PUEDE
+    # provocar la invocacion aunque no escriba la cadena. La diferencia entre
+    # "escribe la clave" y "puede provocar su invocacion" es la que separaba a
+    # `peso_especifico_relleno_kn_m3` --- que V7 invoca a traves de
+    # `M8.peso_relleno_kn_m`, en Fase 5 --- de la fase que el censo le
+    # atribuia, y por eso el censo responde ahora a la segunda pregunta.
+    assert ve.variable("ke_entrada").consumido_por == ("M4_control", "MD")
+
+    # LOS DOS FALSOS NEGATIVOS QUE CERRO S21, fijados aqui para que no vuelvan.
+    # Los dos los invoca V7 (flotacion), que es FASE 5 y corre en el alcance de
+    # perfil, y los dos figuraban como de Fase 8 - Fase 9 porque la cadena la
+    # escribe M8. Uno cruza por una CONSTANTE reexportada y el otro por una
+    # FUNCION reexportada: son las dos vias, y hacen falta las dos.
+    for clave in ("factores_carga_aashto", "peso_especifico_relleno_kn_m3"):
+        assert "M5_verificaciones" in ve.variable(clave).consumido_por, clave
+        assert "Fase 5" in ve.variable(clave).fase, clave
 
 
 def test_una_variable_sin_consumidor_declara_a_que_fase_pertenece_el_hueco():
