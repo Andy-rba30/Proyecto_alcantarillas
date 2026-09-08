@@ -302,6 +302,7 @@ def _resultado_punto(cumple: bool) -> ResultadoPunto:
         aceptado=cumple,
         material=_material_concreto(),
         D=CN.DIAMETRO_MIN,
+        seccion=SeccionCircular(D=CN.DIAMETRO_MIN),
         resultado_hidraulico=_resultado_hidraulico(ControlGobernante.ENTRADA),
         verificaciones=(v,),
         motivo_rechazo=None if cumple else "V1: y/D por encima del maximo",
@@ -394,6 +395,7 @@ def test_resultado_punto_fallido_tiene_campos_en_none_y_motivo_explicito():
     assert not fallido.aceptado
     assert fallido.material is None
     assert fallido.D is None
+    assert fallido.seccion is None
     assert fallido.resultado_hidraulico is None
     assert fallido.verificaciones == ()
     assert fallido.coherente                   # motivo_rechazo no es None

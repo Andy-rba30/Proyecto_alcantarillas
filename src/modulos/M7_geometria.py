@@ -36,7 +36,7 @@ separa a proposito, y que este modulo mantiene separadas:
                   HW POR ANALOGIA ('resguardo_HW_subrasante', [N->])
 
 Sec. 7.A manda correr el tamizado "con el diametro maximo supuesto **antes**
-de definir el perfil longitudinal", y por eso `D_supuesto` es un argumento
+de definir el perfil longitudinal", y por eso la `seccion` es un argumento
 explicito y no un valor que este modulo elija.
 
     ADVERTENCIA que hay que declarar en la memoria: el diametro maximo NO es
@@ -227,7 +227,8 @@ Uso
 
     # 7.A, antes del perfil longitudinal, con el diametro maximo supuesto
     tamizado = tamizado_rasante(punto=punto, material=hdpe,
-                                D_supuesto=hdpe.D_max, HW=0.95)   # D_max: tope de CATALOGO
+                                seccion=SeccionCircular(D=hdpe.D_max),
+                                HW=0.95)   # D_max: tope de CATALOGO
     tamizado.cota_rasante_min          # msnm - la rasante que hay que fijar
     tamizado.delta_rasante_cm          # cm  - cuanto falta subir; 0.0 si cabe
     print(tamizado.mensaje)            # "no factible -> subir rasante 18.0 cm"
@@ -250,7 +251,7 @@ from modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
                      CondicionRasante,
                      DatoInvalidoError, EleccionDeProyecto, FormaSeccion,
                      LimiteNumericoError,
-                     Magnitud, Material,
+                     Magnitud, Material, Seccion,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
 from modulos.M2_material import diametro_exterior, espesor_pared
@@ -271,6 +272,14 @@ NUMERAL_G1 = ("Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo "
               "HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / "
               "resguardo Sec. 5.1)")
 NUMERAL_G2 = "Sec. 7.B (cotas amarradas al fondo del receptor)"
+
+# LOS DOS MINIMOS QUE COMPITEN EN h_rec, con nombre, porque G1 tiene que
+# decir CUAL gano y no solo enunciar la regla. Hasta C7 el paso escribia «el
+# MAYOR entre el minimo de la EG-2013 y la cobertura minima de AASHTO» y se
+# quedaba ahi: el revisor leia la regla y no el resultado de aplicarla, que es
+# el dato que necesita para saber que mover si el punto no cabe.
+MINIMO_EG2013 = "EG-2013 508.07"
+MINIMO_AASHTO = "AASHTO LRFD Tabla 12.6.6.3-1"
 
 CRITERIO_TALUD = "talud_terraplen"
 CRITERIO_COBERTURA_AASHTO = "cobertura_minima_aashto"
@@ -357,7 +366,7 @@ def _cobertura_declarada_del_cajon() -> float:
     return float(h)
 
 
-def cobertura_minima_aashto(*, material: Material, D: float) -> float:
+def cobertura_minima_aashto(*, material: Material, seccion: Seccion) -> float:
     """
     Cobertura minima sobre la clave, m, segun la Tabla 12.6.6.3-1 de AASHTO
     LRFD 9a ed. (Art. 12.6.6.3 "Minimum Cover", pag. 12-22), para el material
@@ -422,15 +431,23 @@ def cobertura_minima_aashto(*, material: Material, D: float) -> float:
         )
     fila = filas[condicion]
 
-    # El D exterior se pide SOLO si la fila lo usa. La fila del concreto
+    # El ancho exterior se pide SOLO si la fila lo usa. La fila del concreto
     # (Bc) lo necesita y por lo tanto se detiene en 'espesor_pared_conducto';
     # las del metal (S) y el termoplastico (ID) no, y exigirselo seria
     # inventarles una dependencia que la tabla no tiene. Quien SI la tiene
     # siempre es la cota de clave, que es otra cosa y esta en M5.
+    #
+    # QUE `Bc` SALGA DE LA SECCION Y NO DE `diametro_exterior` es lo que hace
+    # correcta la ranura POR CONSTRUCCION en vez de por coincidencia: Bc es la
+    # dimension HORIZONTAL, y `diametro_exterior(D)` solo la da porque en un
+    # circulo ancho y canto coinciden. Las tres filas que llegan aqui son de
+    # conducto circular -- el marco salio arriba --, de modo que el numero no
+    # cambia; lo que cambia es que ya no depende de esa coincidencia.
     if _DIAMETRO_DE_LA_FILA[fila["sobre"]] == "D_ext":
-        D_fila = diametro_exterior(material=material, D=D)
+        D_fila = seccion.ancho_exterior(espesor_pared(material,
+                                                      seccion.altura))
     else:
-        D_fila = D
+        D_fila = seccion.altura
 
     candidatos = [fila["piso_m"]]
     if fila["divisor"] is not None:
@@ -438,9 +455,11 @@ def cobertura_minima_aashto(*, material: Material, D: float) -> float:
     return max(candidatos)
 
 
-def altura_recubrimiento(*, material: Material, D: float) -> float:
+def altura_recubrimiento(*, material: Material,
+                         seccion: Seccion) -> Tuple[float, str]:
     """
-    h_rec: relleno minimo sobre la clave hasta la subrasante, m (Sec. 7.A).
+    h_rec: relleno minimo sobre la clave hasta la subrasante, m (Sec. 7.A), y
+    CUAL DE LOS DOS MINIMOS GANO.
 
         h_rec = max( minimo de EG-2013 , cobertura minima de AASHTO )
 
@@ -449,6 +468,21 @@ def altura_recubrimiento(*, material: Material, D: float) -> float:
     corpus distintos y ninguno deroga al otro: EG-2013 es norma peruana
     vigente [N] y AASHTO LRFD es el cuerpo que Sec. 0.2 adopta de extremo a
     extremo, cubriendo con [C] el vacio que el corpus peruano deja.
+
+    DEVUELVE EL PAR, Y ESA ES LA MITAD QUE FALTABA. Un `max()` sin decir cual
+    gano publica la REGLA y esconde el RESULTADO DE APLICARLA, que es el dato
+    que el revisor necesita: si el punto no cabe por 5 cm, mover el espesor de
+    pared solo sirve si quien manda es AASHTO, y no sirve de nada si manda el
+    0.30 m de EG-2013, que es una constante. Hasta C7 el paso de G1 escribia
+    «el MAYOR entre...» y ahi se quedaba. El nombre del ganador sale de las
+    constantes MINIMO_EG2013 / MINIMO_AASHTO y no se escribe suelto en cada
+    sitio, para que la memoria no pueda llamarlos de dos maneras.
+
+    EL EMPATE SE ADJUDICA A AASHTO, y es una decision, no un descuido del
+    `>`: es el unico de los dos que depende de la geometria del conducto, de
+    modo que en un empate senala la variable que SI se puede mover. Es la
+    misma regla con que el tamizado adjudica su condicion gobernante, y por la
+    misma razon.
 
     QUE CAMBIO Y POR QUE (NOR-VAC-01, MAT-D4, conflicto #5 del plan de
     correcciones). Esta funcion devolvia `material.h_relleno_min`: 0.30 m para
@@ -485,10 +519,16 @@ def altura_recubrimiento(*, material: Material, D: float) -> float:
     Se detiene con `CriterioPendienteError` en 'condicion_pavimento' (que fila
     de la tabla) y en 'espesor_pared_conducto' (el Bc del concreto).
     """
-    aashto = cobertura_minima_aashto(material=material, D=D)
-    if material.h_relleno_min_eg2013 is None:
-        return aashto
-    return max(material.h_relleno_min_eg2013, aashto)
+    aashto = cobertura_minima_aashto(material=material, seccion=seccion)
+    eg2013 = material.h_relleno_min_eg2013
+    if eg2013 is None:
+        return aashto, (f"{MINIMO_AASHTO} ({aashto:.3f} m); {MINIMO_EG2013} "
+                        "no fija minimo de relleno para este material")
+    if eg2013 > aashto:
+        return eg2013, (f"{MINIMO_EG2013} ({eg2013:.3f} m), sobre "
+                        f"{MINIMO_AASHTO} ({aashto:.3f} m)")
+    return aashto, (f"{MINIMO_AASHTO} ({aashto:.3f} m), sobre "
+                    f"{MINIMO_EG2013} ({eg2013:.3f} m)")
 
 
 def criterio_recubrimiento(material: Material) -> Optional[str]:
@@ -525,7 +565,7 @@ def criterio_recubrimiento(material: Material) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 def tamizado_rasante(*, punto: PuntoCritico, material: Material,
-                     D_supuesto: float, HW: float) -> TamizadoRasante:
+                     seccion: Seccion, HW: float) -> TamizadoRasante:
     """
     Tamizado de Sec. 7.A: cota de rasante minima como MAXIMO de las dos
     condiciones, y el delta que le falta a la rasante del CSV para alcanzarla.
@@ -535,12 +575,18 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
 
     Argumentos
     ----------
-    D_supuesto  m   diametro del tamizado. Sec. 7.A manda correrlo con el
-                    diametro MAXIMO supuesto antes de definir el perfil; en
-                    7.B se vuelve a correr con el diametro adoptado. Es
-                    explicito porque la eleccion se declara en la memoria: ver
-                    la ADVERTENCIA del docstring del modulo, el D maximo no es
-                    conservador para las dos condiciones a la vez.
+    seccion         la seccion del tamizado. Sec. 7.A manda correrlo con la
+                    MAXIMA supuesta antes de definir el perfil; en 7.B se
+                    vuelve a correr con la adoptada. Es explicita porque la
+                    eleccion se declara en la memoria: ver la ADVERTENCIA del
+                    docstring del modulo, la seccion maxima no es conservadora
+                    para las dos condiciones a la vez.
+                    ES LA SECCION Y NO UN `D` DESDE C7: con un escalar, la
+                    unica dimension que llegaba a 7.A era la vertical, y en un
+                    marco la cobertura minima se lee sobre la HORIZONTAL. El
+                    escalar no lo dejaba ver -- en un circulo las dos
+                    coinciden --, que es como un marco acabo recibiendo la
+                    cobertura de la fila del tubo calculada sobre su canto.
     HW          m   carga a la entrada SOBRE EL FONDO DE LA ENTRADA (Sec. 4.2
                     / 4.3), no una cota. La convierte a cota este modulo, con
                     la misma referencia que usa V4.
@@ -558,11 +604,13 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
     ante la duda se señala la mas estable.
     """
     e_paq = espesor_paquete(punto)
-    h_rec = altura_recubrimiento(material=material, D=D_supuesto)
+    h_rec, minimo_que_gobierna = altura_recubrimiento(material=material,
+                                                      seccion=seccion)
     entrada = cota_entrada_supuesta(punto)
-    clave = cota_clave(punto=punto, material=material, D=D_supuesto)
-    t_pared = espesor_pared(material, D_supuesto)
-    D_ext = diametro_exterior(material=material, D=D_supuesto)
+    altura = seccion.altura
+    clave = cota_clave(punto=punto, material=material, D=altura)
+    t_pared = espesor_pared(material, altura)
+    Bc = seccion.ancho_exterior(t_pared)
 
     ca.valor(CRITERIO_RESGUARDO)      # registra el uso; "segun_CBR" no es numerico
     resguardo = resguardo_por_cbr(punto.cbr_subrasante)
@@ -587,9 +635,9 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
         condicion_gobernante=condicion,
         cota_entrada=entrada,
         cota_clave=clave,
-        D_supuesto=D_supuesto,
+        altura_supuesta=altura,
         espesor_pared=t_pared,
-        D_exterior=D_ext,
+        ancho_exterior=Bc,
         HW=HW,
         h_recubrimiento=h_rec,
         espesor_paquete=e_paq,
@@ -597,6 +645,7 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
         factible=factible,
         delta_rasante_m=0.0 if factible else faltante,
         criterio_recubrimiento=criterio_recubrimiento(material),
+        minimo_que_gobierna=minimo_que_gobierna,
         criterio_resguardo=CRITERIO_RESGUARDO,
         id_punto=punto.id,
         numeral=NUMERAL_7A,
@@ -649,7 +698,8 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
                 Magnitud("h_rec", tamizado.h_recubrimiento, "m",
                          "relleno minimo sobre la clave: el MAYOR entre el "
                          "minimo de la EG-2013 y la cobertura minima de la "
-                         "Tabla 12.6.6.3-1 de AASHTO",
+                         "Tabla 12.6.6.3-1 de AASHTO. AQUI GOBIERNA "
+                         f"{tamizado.minimo_que_gobierna}",
                          cifras=CIFRAS_MAGNITUD),
                 Magnitud("e_paquete", tamizado.espesor_paquete, "m",
                          "cota de rasante menos cota de subrasante del CSV",
@@ -893,7 +943,8 @@ def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion
 # ---------------------------------------------------------------------------
 
 def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
-                              D: float, resultado: ResultadoHidraulico,
+                              seccion: Seccion,
+                              resultado: ResultadoHidraulico,
                               longitud: Optional[float] = None
                               ) -> CompatibilidadGeometrica:
     """
@@ -904,7 +955,9 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
 
     Argumentos
     ----------
-    D           m     diametro adoptado (no el supuesto de 7.A).
+    seccion           la seccion adoptada (no la supuesta de 7.A). Era un
+                      escalar `D` hasta C7: ver el argumento homonimo de
+                      `tamizado_rasante`, que es a donde viaja.
     resultado         salida de la Fase 4. De aqui salen las DOS magnitudes
                       del diseño que 7.B necesita y no puede volver a elegir:
                       el HW del control que gobierna
@@ -936,7 +989,7 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
         proyeccion = longitud / factor - punto.ancho_plataforma
 
     tamizado = tamizado_rasante(punto=punto, material=material,
-                                D_supuesto=D, HW=resultado.HW)
+                                seccion=seccion, HW=resultado.HW)
 
     entrada = cota_entrada_supuesta(punto)
     caida = S * longitud
@@ -949,7 +1002,12 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
 
     return CompatibilidadGeometrica(
         punto=punto,
-        D=D,
+        # EL CAMPO SIGUE SIENDO ESCALAR Y SIGUE LLAMANDOSE `D`, y no es un
+        # descuido de C7: es de la misma familia que `ResultadoPunto.D`, que
+        # el brief reserva a C8. Se alimenta de `seccion.altura` -- el D de un
+        # tubo, la H de una celda de marco -- para que al menos no lleve otra
+        # cosa mientras se llama asi.
+        D=seccion.altura,
         tamizado=tamizado,
         longitud=longitud,
         proyeccion_taludes=proyeccion,

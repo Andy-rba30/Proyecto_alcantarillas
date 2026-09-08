@@ -1022,7 +1022,7 @@ def _fase_7(informe: InformePunto) -> None:
         informe.bloqueos, FASE_GEOMETRIA, "compatibilidad geometrica (7.B)",
         lambda: compatibilidad_geometrica(
             punto=informe.punto_de_calculo, material=resultado.material,
-            D=resultado.D,
+            seccion=resultado.seccion,
             resultado=resultado.resultado_hidraulico,
             longitud=informe.longitud.valor))
 

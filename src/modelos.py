@@ -2547,12 +2547,24 @@ class TamizadoRasante:
     analogia declarada (Sec. 5.1).
 
     LA CLAVE ES LA FISICA, no la hidraulica: `cota_clave` = cota de entrada +
-    D interior + espesor de pared. EG-2013 508.07 mide el relleno minimo
+    altura interior + espesor de pared. EG-2013 508.07 mide el relleno minimo
     "desde la clave de la tuberia", que es la superficie exterior (MAT-D4).
-    `D_supuesto` sigue siendo el diametro INTERIOR -- el que entra en Manning
-    y en la geometria hidraulica -- y `D_exterior` es el que entra en la
-    cobertura minima de AASHTO (el Bc del Art. 12.6.6.3) y en el empuje de
-    flotacion de V7.
+
+    LOS DOS CAMPOS DE GEOMETRIA SE LLAMABAN `D_supuesto` Y `D_exterior`, y en
+    C7 dejaron de poder llamarse asi. No es cosmetica: eran dos nombres de
+    DIAMETRO para dos cosas que en un marco no son un diametro y ademas NO SON
+    LA MISMA DIMENSION.
+
+      `altura_supuesta`  es la INTERIOR y VERTICAL: el D de un tubo, la H de
+          una celda de marco. Es la que se apila sobre la cota de entrada para
+          dar la clave, y la que entra en Manning.
+      `ancho_exterior`   es el Bc del Art. 12.6.6.3 de AASHTO, "outside
+          diameter or WIDTH of the structure": HORIZONTAL. En un circulo
+          coincide con altura + 2t y por eso un solo campo bastaba; en un
+          marco son B + 2t y H + 2t, dos numeros distintos, y el nombre viejo
+          obligaba a elegir uno de los dos sin decir cual. Esa es exactamente
+          la confusion que dejaba a un marco recibiendo la cobertura de la
+          fila del tubo calculada sobre B'c.
     """
 
     cota_rasante_min: float               # msnm - el maximo de las dos
@@ -2563,9 +2575,9 @@ class TamizadoRasante:
     condicion_gobernante: CondicionRasante
     cota_entrada: float                   # msnm - fondo de la entrada
     cota_clave: float                     # msnm - cota entrada + D + espesor de pared
-    D_supuesto: float                     # m  - diametro INTERIOR del tamizado (Sec. 7.A)
+    altura_supuesta: float                # m  - altura INTERIOR del tamizado (Sec. 7.A)
     espesor_pared: float                  # m  - t; separa el interior del exterior
-    D_exterior: float                     # m  - D_supuesto + 2*t; el Bc de AASHTO
+    ancho_exterior: float                 # m  - el Bc de AASHTO Art. 12.6.6.3
     HW: float                             # m  - carga sobre el fondo de la entrada
     h_recubrimiento: float                # m  - relleno minimo sobre la clave
     espesor_paquete: float                # m  - cota rasante - cota subrasante
@@ -2573,6 +2585,11 @@ class TamizadoRasante:
     factible: bool                        # la rasante actual ya alcanza
     delta_rasante_m: float                # m  - 0.0 si es factible
     criterio_recubrimiento: Optional[str]
+    # CUAL de los dos minimos gano la regla del mayor. No es derivable de los
+    # campos de aqui -- h_rec es el maximo y no dice de donde salio --, y sin
+    # el la memoria enuncia la regla sin publicar el resultado de aplicarla.
+    # Sus dos valores son `M7.MINIMO_EG2013` y `M7.MINIMO_AASHTO`.
+    minimo_que_gobierna: str
     criterio_resguardo: str
     id_punto: Optional[str] = None
     numeral: str = "Sec. 7.A"
@@ -3521,9 +3538,35 @@ class ResultadoPunto:
     aceptado: bool
     material: Optional[Material] = None
     D: Optional[float] = None                      # m - diametro adoptado
+    # LA SECCION ADOPTADA, Y CONVIVE CON `D` A PROPOSITO. `D` es un escalar
+    # que en un marco vale la ALTURA, y retirarlo es trabajo de C8 porque lo
+    # leen el reporte y la tabla de diseño. Lo que C7 necesita es OTRA cosa:
+    # que la Fase 7 pueda ser CIEGA A LA FORMA. `M7.compatibilidad_geometrica`
+    # y `M7.tamizado_rasante` reciben la seccion desde C7, y sin este campo la
+    # CLI tendria que reconstruirla -- `SeccionCircular(D=resultado.D)` --, o
+    # sea volver a suponer la forma en el sitio exacto del que se acaba de
+    # sacar. Añadirlo NO toca `D`: lo deja donde estaba, para que C8 lo retire
+    # cuando le toque y con sus consumidores delante.
+    seccion: Optional[Seccion] = None
     resultado_hidraulico: Optional[ResultadoHidraulico] = None
     verificaciones: Tuple[Verificacion, ...] = ()
     motivo_rechazo: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        """
+        UN PUNTO DIMENSIONADO TRAE LAS DOS COSAS O NINGUNA. Mientras `D` y
+        `seccion` convivan, un resultado con `D` y sin `seccion` es la puerta
+        por la que vuelve la suposicion de forma: quien lo consuma tendra que
+        reconstruir la seccion, y la unica que puede reconstruir de un escalar
+        es la circular. La invariante esta en el tipo y no en un test porque
+        el primero que la violo fue un DOBLE DE PRUEBA, que es justo lo que un
+        test no vigila.
+        """
+        if self.D is not None and self.seccion is None:
+            raise ValueError(
+                "ResultadoPunto con `D` y sin `seccion`: un punto dimensionado "
+                "tiene que traer la seccion adoptada, o quien lo lea tendra "
+                "que suponer que es circular")
 
     @property
     def y_sobre_D(self) -> Optional[float]:

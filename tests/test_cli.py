@@ -31,8 +31,8 @@ from tests.apoyo.criterios import sin_valor
 from modulos.M11_reporte import PlantillaHTML
 from modelos import (CriterioPendienteError,
                      ControlGobernante, DatoInvalidoError,
-                     ResultadoHidraulico, ResultadoPunto, TipoMaterial,
-                     Verificacion)
+                     ResultadoHidraulico, ResultadoPunto, SeccionCircular,
+                     TipoMaterial, Verificacion)
 from modulos.M0_carga import cargar_puntos
 from modulos.M2_material import catalogo
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
@@ -374,7 +374,8 @@ def _resultado_hdpe(punto, S=None, **_):
                      valor_admisible=0.60, criterio_aplicado=None, codigo="V2"),
     )
     return ResultadoPunto(punto=punto, aceptado=True, material=material,
-                          D=0.60, resultado_hidraulico=hidraulica,
+                          D=0.60, seccion=SeccionCircular(D=0.60),
+                          resultado_hidraulico=hidraulica,
                           verificaciones=verificaciones)
 
 
