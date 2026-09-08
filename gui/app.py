@@ -149,6 +149,7 @@ MOTIVO_YA_RESUELTO = (
     "'Guardar en archivo fuente', que lo cambia de forma permanente")
 MOTIVO_NO_DECLARADO = "el criterio no esta declarado para esta corrida"
 MOTIVO_SIN_CORRIDA = "todavia no se ejecuto el pipeline: no hay informe que exportar"
+MOTIVO_EJECUTANDO = "la corrida esta en marcha"
 
 # Los filtros de estado de la tabla de criterios (pestana 2). Cada entrada es
 # (rotulo, tag), y el `tag` es el MISMO que devuelve `_estado_criterio`: filtrar
@@ -675,7 +676,40 @@ class ExpedienteApp:
                 "(sin declarar)" if valor_efectivo is None else repr(valor_efectivo),
                 estado_txt, c.fuente,
             ), tags=(tag,))
+        self._reponer_seleccion()
         self._pintar_recuento(pendientes, mostrados)
+
+    def _reponer_seleccion(self):
+        """
+        Vuelve a seleccionar la fila que estaba seleccionada antes del repintado.
+
+        ES LA RAIZ DE TRES DEFECTOS Y NO UNA COMODIDAD. `<<TreeviewSelect>>` no
+        es sincrono: Tk lo ENCOLA. El `delete` de todas las filas deja la tabla
+        sin seleccion, y si nadie la repone, en el siguiente giro del bucle de
+        eventos `_al_seleccionar_criterio` entra con seleccion vacia y pone
+        `_clave_criterio_seleccionado = None`. A partir de ahi, medido:
+
+        - teclear en «Buscar» DESELECCIONABA el criterio --- detalle en blanco,
+          botones apagados, y el mensaje de confirmacion borrado ---;
+        - la promesa de `_pasa_el_filtro` («la seleccionada pasa siempre»)
+          valia para UN refiltrado: al segundo, `_clave` ya era None y la fila
+          desaparecia;
+        - y `_tras_declarar_en_ventana` --- que declara desde la emergente, que
+          NO es modal y deja tocar el filtro por debajo --- hacia
+          `selection_set` sobre una fila inexistente y reventaba con
+          `_tkinter.TclError`, que no desciende de `ErrorProyecto`: sale como
+          traza de Tk y la GUI no la distingue de un fallo del programa, con el
+          valor ya declarado y la fila fuera de la tabla.
+
+        Reponerla aqui, en el UNICO sitio que borra e inserta filas, cierra los
+        tres: la clave sobrevive al repintado, de modo que `_pasa_el_filtro`
+        sigue protegiendo su fila y ningun `selection_set` posterior apunta al
+        vacio. La condicion `in get_children()` no es defensiva de mas: la
+        seleccion puede ser None al construir la ventana.
+        """
+        clave = self._clave_criterio_seleccionado
+        if clave and clave in self.tree_criterios_todos.get_children():
+            self.tree_criterios_todos.selection_set(clave)
 
     def _pintar_recuento(self, pendientes, mostrados):
         """
@@ -788,6 +822,15 @@ class ExpedienteApp:
                             al_declarar=self._tras_declarar_en_ventana)
 
     def _tras_declarar_en_ventana(self, clave):
+        # LA CLAVE SE ADOPTA ANTES DE REPINTAR. Es el unico de los cuatro
+        # llamadores que recibe la clave por argumento en vez de leer la
+        # seleccionada, y la emergente no es modal (`transient` sin
+        # `grab_set`): entre abrirla y declarar, el usuario pudo tocar el
+        # filtro por debajo y dejar `_clave_criterio_seleccionado` en otra cosa
+        # --- o en None ---. Adoptarla aqui es lo que hace que
+        # `_pasa_el_filtro` proteja ESTA fila y que reponer la seleccion
+        # encuentre algo.
+        self._clave_criterio_seleccionado = clave
         self.lbl_estado_criterio.config(
             text=f"'{clave}' declarado desde su ventana normativa, SOLO para "
                  "la proxima corrida, con su procedencia registrada. "
@@ -873,8 +916,9 @@ class ExpedienteApp:
             text=f"'{clave}' declarado a {valor_nuevo!r} SOLO para la proxima corrida. "
                  "criterios_adoptados.py no se modifico.",
             foreground=COLOR_AVISO)
+        # Sin `selection_set` detras: lo hace `_llenar_tabla_criterios`, que es
+        # quien borra las filas y por tanto quien tiene que reponerla.
         self._llenar_tabla_criterios()
-        self.tree_criterios_todos.selection_set(clave)
 
     def _quitar_valor_corrida(self):
         clave = self._clave_criterio_seleccionado
@@ -888,7 +932,6 @@ class ExpedienteApp:
             text=f"Se quito la declaracion de '{clave}': vuelve a bloquear el calculo.",
             foreground=COLOR_AVISO)
         self._llenar_tabla_criterios()
-        self.tree_criterios_todos.selection_set(clave)
 
     def _guardar_valor_en_archivo(self):
         clave = self._clave_criterio_seleccionado
@@ -921,7 +964,6 @@ class ExpedienteApp:
             text=f"'{clave}' = {valor_nuevo!r} escrito en criterios_adoptados.py.",
             foreground=COLOR_OK)
         self._llenar_tabla_criterios()
-        self.tree_criterios_todos.selection_set(clave)
 
     # -------------------------- Pestana 3 -----------------------------
     def _construir_tab_puntos(self, p):
@@ -1145,7 +1187,7 @@ class ExpedienteApp:
         if texto_externos:
             ruta_externos = Path(texto_externos)
 
-        self.btn_ejecutar.deshabilitar("la corrida esta en marcha")
+        self.btn_ejecutar.deshabilitar(MOTIVO_EJECUTANDO)
         self.btn_ejecutar.config(text="Ejecutando...")
         self.root.update_idletasks()
         try:
