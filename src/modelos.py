@@ -3696,8 +3696,8 @@ class PasoDiseno:
 
     Existe porque la Fase 11 exige publicar las ITERACIONES del diseño
     (entregable 1) y `ResultadoPunto` solo conserva la combinacion ganadora:
-    con ella sola la memoria muestra el diametro adoptado pero no puede
-    defender por que se descarto el anterior, que es justamente lo que un
+    con ella sola la memoria muestra la seccion adoptada pero no puede
+    defender por que se descarto la anterior, que es justamente lo que un
     revisor pregunta. No la produce ningun calculo nuevo -- es lo que MD ya
     evaluaba y descartaba en silencio.
 

@@ -13,7 +13,8 @@ Uso
 
 Que reporta por punto
 ---------------------
-    material y diametro adoptados (Fase 4)
+    material y SECCION adoptada (Fase 4) -- un diametro en un tubo, el par
+    B x H en un marco: lo nombra la propia seccion (`Seccion.etiqueta`)
     control gobernante (entrada / salida) y la hidraulica que lo sostiene
     verificaciones con su numeral: la luz de Sec. 2.1, V1-V9 de la Fase 5 y
         G1/G2 de Sec. 7.B, cada una con valor obtenido, admisible y el
@@ -1016,7 +1017,7 @@ def _fase_6(informe: InformePunto) -> None:
 
 
 def _fase_7(informe: InformePunto) -> None:
-    """7.B con el diametro adoptado y la MISMA longitud que uso la Fase 4."""
+    """7.B con la SECCION adoptada y la MISMA longitud que uso la Fase 4."""
     resultado = informe.resultado
     informe.geometria = _etapa(
         informe.bloqueos, FASE_GEOMETRIA, "compatibilidad geometrica (7.B)",

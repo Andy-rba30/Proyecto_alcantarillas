@@ -4866,9 +4866,10 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="PENDIENTE - predimensionamiento del proyectista, o plano tipo "
                "de cabezal del expediente vial",
         reemplazado_por="Plano de encofrado del cabezal, acotado",
-        verificacion_pendiente="La geometria tiene que ser COMPATIBLE con el "
-                               "diametro adoptado en la Fase 4 y con la "
-                               "altura de terraplen de la Fase 7: un cabezal "
+        verificacion_pendiente="La geometria tiene que ser COMPATIBLE con la "
+                               "SECCION adoptada en la Fase 4 -- un diametro "
+                               "en un tubo, el par B x H en un marco -- y con "
+                               "la altura de terraplen de la Fase 7: un cabezal "
                                "declarado aparte del conducto que remata es "
                                "una incoherencia de expediente",
         resolucion=Libre(
