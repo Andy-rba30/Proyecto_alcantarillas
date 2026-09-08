@@ -827,6 +827,8 @@ def _verificador_perfil(informe: InformePunto):
       V4b, V6, V7 y V9. Corren exactamente como en M5.verificar y sus
       excepciones suben igual: un criterio vacio en una obligatoria sigue
       bloqueando el material (y, por la regla de MD, el punto).
+    - Y VC1 en la Familia C, que tambien es OBLIGATORIA: ocupa el hueco de V5
+      y no se difiere. Ver el comentario del hueco, abajo.
     - Diferidas: V5 (remanso / derecho de via) y V8 (evento extremo). Se
       INTENTAN igual en cada escalon -- si algun dia su logica existe y
       devuelven una Verificacion, entra a la tabla en su posicion y vuelve a
@@ -903,10 +905,29 @@ def _verificador_perfil(informe: InformePunto):
             except ErrorProyecto as exc:
                 exc.verificaciones_completadas = tuple(filas)
                 raise
+        # EL HUECO DE V5, QUE EN FAMILIA C LO OCUPA VC1, y las dos no se
+        # tratan igual. Quien decide cual toca es `M5.pieza_del_hueco_de_V5`,
+        # que es donde vive la regla de familia; lo que se decide AQUI --- y
+        # es de la corrida, no de M5 --- es que hacer si la pieza falla:
+        #
+        #   V5   se DIFIERE. Lo que le falta (perfil de remanso, ancho de
+        #        derecho de via) son datos de EXPEDIENTE, que es justo lo que
+        #        el alcance de perfil aparta.
+        #   VC1  es OBLIGATORIA. Lo que necesita ya esta al alcance de una
+        #        corrida de perfil: una columna del CSV y un criterio
+        #        declarado. Diferirla dejaria pasar el punto acreditado como
+        #        alcantarilla de paso sin que nadie hubiera mirado el canal,
+        #        que es exactamente el estado que esta sesion cierra.
+        codigo_hueco, pieza_hueco = M5.pieza_del_hueco_de_V5(
+            punto=punto, resultado=resultado)
         try:
-            filas.append(M5.v5_remanso(punto=punto, resultado=resultado))
+            filas.append(pieza_hueco())
         except ErrorProyecto as exc:
-            _diferir_verificacion(informe, "V5", exc, ya_registrados)
+            if codigo_hueco == "V5":
+                _diferir_verificacion(informe, "V5", exc, ya_registrados)
+            else:
+                exc.verificaciones_completadas = tuple(filas)
+                raise
         for pieza in (
             lambda: M5.v6_material_solido_arrastre(material=material),
             lambda: M5.v7_flotacion(punto=punto, material=material,
@@ -1138,57 +1159,79 @@ def _diferir_fase_8(informe: InformePunto) -> None:
 # valor. Y es POR PUNTO, de modo que nombra los puntos afectados: es la
 # leccion de NOR-HDS-05, un aviso que no señala el punto afectado es el «nadie
 # se entera».
+# REESCRITA ENTERA AL IMPLEMENTARSE VC1, y no retocada. Su version anterior
+# --- la que declaraba la SUSTITUCION del criterio de dimensionamiento ---
+# afirmaba cinco cosas que dejaron de ser ciertas de golpe: que «esta corrida
+# NO EVALUA ese requisito»; que VC1 «necesita el nivel de agua de diseño del
+# canal y su borde libre»; que esos datos «no son columna de la Sec. 1.2 ni
+# los aporta ningun tablero»; que VC1 «queda DIFERIDA AL EXPEDIENTE»; y que
+# «mientras VC1 no exista» un cumple solo acredita alcantarilla de paso.
+#
+# NO SE CONSERVA NADA DE AQUEL TEXTO POR PRUDENCIA. Un parrafo de alcance que
+# describe un estado del programa que ya no existe se lee con la autoridad de
+# una declaracion, y ese es SIS-A-03: es peor que no haberlo escrito, porque
+# quien lo lea creera que el canal sigue sin verificarse y no ira a buscar la
+# fila VC1 que ahora si trae veredicto. La huella de lo que decia queda en el
+# historial y en §16 de `docs/ruta_familia_c.md`, que es donde se lee la
+# evolucion; aqui va lo que la corrida hace HOY.
+#
+# LO QUE SI SOBREVIVE ES LA FORMA DEL ARGUMENTO: nombrar contra que cota mide
+# cada umbral, y no dar por conservador lo que no se ha demostrado que lo sea.
+# Aplicada ahora a la mitad del requisito que sigue abierta.
 DECLARACION_ALCANCE_FAMILIA_C = (
-    "SUSTITUCION DEL CRITERIO DE DIMENSIONAMIENTO -- FAMILIA C (cruces de "
-    "canal y dren). "
+    "ALCANCE DEL REQUISITO DE LA SEC. 2.3 -- FAMILIA C (cruces de canal y "
+    "dren). "
     "La Sec. 2.3 de la hoja de ruta enuncia, para la Familia C, un requisito "
     "que ninguna otra familia tiene: la obra NO PUEDE ALTERAR LA RASANTE "
-    "HIDRAULICA NI EL BORDE LIBRE DEL CANAL. Esta corrida NO EVALUA ese "
-    "requisito. La verificacion que lo evaluaria -- VC1 -- necesita el nivel "
-    "de agua de diseño del canal y su borde libre, que no son columna de la "
-    "Sec. 1.2 ni los aporta ningun tablero, y queda DIFERIDA AL EXPEDIENTE. "
-    "Lo que esta corrida evalua en su lugar es la bateria general de la Fase "
-    "5. TRES de sus verificaciones tienen numerales neutros respecto de la "
-    "forma de la seccion, y son las que sostienen la aceptacion: V1 acota el "
-    "tirante dentro del barril al 75 % de su altura interior (num. "
-    "4.1.1.3.7 b); V4 acota la carga a la entrada bajo la subrasante de la "
-    "VIA (Manual de Suelos num. 4.5.4, por la analogia ya declarada); y V4b "
-    "acota la relacion entre esa carga y la altura del barril contra un tope "
-    "adoptado por el proyectista. Los tres son el criterio de aceptacion de "
-    "una ALCANTARILLA DE PASO. "
-    "LAS DEMAS DE LA BATERIA NO SON TODAS NEUTRAS, y decir que lo eran seria "
-    "afirmar de esta corrida algo que no es. V7 (flotacion) y G1 (cobertura "
-    "minima) NO son neutras: cada una necesita saber la FORMA de la seccion. "
-    "V7 pesa el volumen desplazado, que en un prisma y en un cilindro no es "
-    "el mismo; y G1 mide la cobertura sobre el ancho exterior, que en un "
-    "marco no coincide con el canto. Las dos se resuelven hoy sobre la "
-    "seccion real -- no sobre un cilindro supuesto -- y las dos lo hacen con "
-    "valores que el proyectista DECLARA, porque ninguna tabla del corpus los "
-    "tabula para un marco: el espesor de pared por 'espesor_pared_cajon' y la "
-    "cobertura por 'cobertura_minima_cajon'. "
-    "ESTE PARRAFO DECIA LO CONTRARIO HASTA C7, y se deja anotado porque la "
-    "diferencia importa para leer una memoria vieja: decia que las dos se "
-    "calculaban sobre geometria CIRCULAR y que por eso un marco NO CERRABA la "
-    "Fase 5, y se pedia a si mismo que se volviera a leer el dia que cerrara. "
-    "Ese dia llego. Lo que NO cambia es el resto de esta declaracion: que las "
-    "dos protejan bien al conducto sigue sin decir nada sobre el canal. "
-    "LA SUSTITUCION NO ES CONSERVADORA, y por eso se declara en vez de "
-    "suponerse. Los tres protegen la carretera y el conducto; NINGUNO protege "
-    "el canal. Y no lo hacen porque MIDEN CONTRA OTRA COTA: V1 compara el "
-    "tirante contra la altura del propio barril, y V4 compara la carga a la "
-    "entrada contra la subrasante de la VIA. El nivel que el requisito de la "
-    "Sec. 2.3 protege -- la rasante hidraulica del canal mas su borde libre "
-    "-- es un dato que este calculo no tiene, y ningun umbral puede acotar un "
-    "nivel que no conoce. Por tanto no hay relacion de orden garantizada "
-    "entre los tres umbrales evaluados y el que no se evalua: un punto puede "
-    "cumplir V1, V4 y V4b Y AUN ASI elevar el nivel de agua aguas arriba por "
-    "encima del borde del canal, sin que nada en esta memoria lo señale. "
-    "POR TANTO, Y MIENTRAS VC1 NO EXISTA: un veredicto «cumple» en un punto "
-    "de Familia C significa que la obra es admisible COMO ALCANTARILLA DE "
-    "PASO. NO significa que sea admisible COMO CRUCE DE CANAL. "
-    "QUE CIERRA ESTA DECLARACION: el nivel de agua de diseño y el borde libre "
-    "del canal (ANA o Junta de Usuarios del Bajo Piura), y la implementacion "
-    "de VC1."
+    "HIDRAULICA NI EL BORDE LIBRE DEL CANAL. Son DOS exigencias en una frase, "
+    "y esta corrida evalua UNA. "
+    "LO QUE SI SE EVALUA -- el borde libre. La verificacion VC1 compara el "
+    "nivel que el agua alcanza a la entrada (cota del fondo del canal en el "
+    "cruce mas la carga HW que gobierna) contra la coronacion del canal menos "
+    "su borde libre, y emite veredicto con margen en metros. La coronacion es "
+    "columna del CSV -- `cota_coronacion_canal`, dato de sitio [S] del "
+    "levantamiento de los cruces -- y el borde libre sale del criterio "
+    "'borde_libre_canal_m' [A]. Sin cualquiera de los dos VC1 SE DETIENE: no "
+    "devuelve «no evaluable» ni da el requisito por cumplido. "
+    "DE DONDE SALE EL BORDE LIBRE, QUE NO ES UN VALOR NORMATIVO DEL CANAL. El "
+    "Manual de Hidrologia NO fija borde libre para un canal: barridas sus 225 "
+    "paginas, «borde libre» aparece en dos apartados y ninguno tiene por "
+    "objeto un canal -- el num. 4.1.1.3.7 b) es de ALCANTARILLAS y es "
+    "relativo (>= 25 % de la altura del barril), y el num. 4.1.1.4.1 e) es de "
+    "BADENES y mide contra la superficie de rodadura --. El proyecto adopta "
+    "el par 0.30-0.50 m del segundo, en su extremo SUPERIOR, que aqui es el "
+    "conservador porque el borde libre se resta de la coronacion. Son dos "
+    "decisiones del proyectista y no una lectura de la fuente: la ANALOGIA "
+    "(de la calzada de un baden a la coronacion de un canal) y la ELECCION "
+    "dentro de una banda para la que el Manual no da regla. "
+    "LO QUE NO SE EVALUA -- la rasante hidraulica. VC1 acota el NIVEL que el "
+    "agua alcanza; no mide EN CUANTO la obra levanta el pelo de agua del "
+    "canal respecto del que tendria sin ella. Un punto puede cumplir VC1 con "
+    "holgura y haber elevado la rasante hidraulica del canal en una fraccion "
+    "apreciable de su calado. Medirlo exige el tirante normal del canal en la "
+    "seccion del cruce -- su geometria trapecial (ancho de solera y talud) y "
+    "su n de Manning, ninguno de los dos columna de la Sec. 1.2 -- y la "
+    "extension aguas arriba del remanso, que VC1 tampoco acota: mide EN LA "
+    "SECCION DEL CRUCE, de modo que un tercero situado mas arriba, donde el "
+    "canal tenga la coronacion mas baja, puede quedar afectado por un remanso "
+    "que en el cruce cumple. "
+    "V5 NO SE EVALUA EN ESTA FAMILIA, y no por falta de datos: por no "
+    "aplicar. Su umbral es el ancho del derecho de via y presupone agua "
+    "extendiendose lateralmente sobre la plataforma al remansarse contra el "
+    "terraplen; en un paso de canal el agua sube confinada entre las dos "
+    "coronaciones. VC1 ocupa su posicion en la tabla de la Fase 5 y mide "
+    "contra la cota que si gobierna. La sustitucion no pierde alcance -- el "
+    "umbral de V5 era un ancho, no una longitud aguas arriba -- pero tampoco "
+    "cierra el hueco entero, y por eso el parrafo anterior existe. "
+    "QUE SIGNIFICA UN «CUMPLE» EN UN PUNTO DE ESTA FAMILIA: que la obra es "
+    "admisible como alcantarilla de paso Y que no invade el borde libre "
+    "adoptado del canal en la seccion del cruce. NO significa que la "
+    "alteracion de la rasante hidraulica del canal se haya medido. "
+    "QUE CIERRA ESTA DECLARACION: la geometria de la seccion del canal (ancho "
+    "de solera y talud) y su n de Manning en cada cruce, para calcular su "
+    "tirante normal y con el la alteracion; y el borde libre que el propio "
+    "canal adopto en SU proyecto (ANA o Junta de Usuarios del Bajo Piura), "
+    "que sustituiria a la analogia con el baden."
 )
 
 
@@ -1198,19 +1241,25 @@ def _declarar_alcance_familia_c(informe: InformePunto) -> None:
 
     NO ES UN BLOQUEO DEL EXPEDIENTE y por eso lleva
     `diferido_por_alcance=True`: lo que dice no es que falte un dato para
-    seguir, es que hay una exigencia de la Sec. 2.3 que esta corrida no
+    seguir, es que hay MEDIA exigencia de la Sec. 2.3 que esta corrida no
     evalua. Sin esa marca contaria ademas como defecto en `Informe.cerrado`,
     que seria contar dos veces la misma deuda.
 
-    SE EMITE AUNQUE EL PUNTO NO DIMENSIONE, y es deliberado: hoy ningun punto
-    de Familia C dimensiona -- sus criterios estan sin declarar -- y es
-    justamente cuando el revisor necesita saber con que criterio se va a
-    aceptar el punto el dia que los declare.
+    SIGUE EMITIENDOSE DESPUES DE VC1, Y ES EL PUNTO. La tentacion al cerrar
+    una deuda declarada es retirar su declaracion, y aqui seria un error:
+    VC1 cierra la mitad del requisito que habla del BORDE LIBRE y no la que
+    habla de la RASANTE HIDRAULICA. Retirar el bloque dejaria una memoria en
+    la que un «cumple» de VC1 se lee como el requisito entero satisfecho. Lo
+    que cambio no es que el bloque exista: es lo que dice.
+
+    SE EMITE AUNQUE EL PUNTO NO DIMENSIONE, y es deliberado: es justamente
+    cuando el revisor necesita saber con que criterio se va a aceptar el punto
+    el dia que declare lo que falte.
     """
     informe.bloqueos.append(Bloqueo(
         fase="Fase 5 - Verificaciones",
-        etapa="VC1 - no alteracion de la rasante hidraulica ni del borde "
-              "libre del canal",
+        etapa="VC1 - alcance del requisito de la Sec. 2.3 (borde libre "
+              "verificado; rasante hidraulica, no)",
         tipo="DiferidoPorAlcance",
         mensaje=DECLARACION_ALCANCE_FAMILIA_C,
         diferido_por_alcance=True))

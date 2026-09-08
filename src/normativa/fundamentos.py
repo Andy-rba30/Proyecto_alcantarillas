@@ -272,6 +272,54 @@ V1 = _fundamento(
         "describe el flujo."),
 )
 
+# EL VERBO ES `RECOMIENDA` Y NO `OBLIGA`, Y ESO NO ES TIMIDEZ: es la unica
+# lectura que las citas sostienen. La primera de las dos --- «debe contemplar
+# mantener un borde libre minimo» --- SI es EXIGENCIA, de modo que poner
+# `OBLIGA` pasaria T11 sin que ningun test se quejara. Seria exactamente el
+# agujero estructural que C7 midio en `F5.V7`: T11 mira el `caracter` de la
+# cita, no de que trata. Y aqui el «de que trata» es decisivo por partida
+# doble: esa exigencia obliga a que HAYA borde libre --- no dice cuanto --- y
+# obliga sobre un BADEN, no sobre un canal. Lo unico que este paso lleva de la
+# fuente es el par de numeros, y ese par la fuente lo RECOMIENDA.
+VC1 = _fundamento(
+    id="F5.VC1",
+    fase=F5,
+    que_paso=("VC1 - Cruce de canal: el agua embalsada a la entrada no llega "
+              "a la coronacion del canal, con su borde libre"),
+    por_que=(
+        "En un paso de canal no hay remanso libre aguas arriba. El agua que la "
+        "alcantarilla embalsa no se extiende sobre el terreno: sube DENTRO del "
+        "canal, que es un cauce confinado entre dos coronaciones, y si llega a "
+        "la coronacion desborda sobre parcelas de terceros ANTES de entrar al "
+        "conducto. Por eso esta verificacion mide contra una cota que ninguna "
+        "otra de la Fase 5 mira: V1 mide el llenado DENTRO del barril y V4 "
+        "mide contra la subrasante de la VIA. Las tres pueden cumplirse a la "
+        "vez con el canal desbordado, y ese fue el estado del programa hasta "
+        "aqui. "
+        "QUE PARTE DE ESTO ES DE LA FUENTE Y CUAL ES DEL PROYECTO. Del "
+        "proyecto: el REQUISITO --- lo fija la Sec. 2.3 de la hoja de ruta, "
+        "«no puede alterar la rasante hidraulica ni el borde libre del "
+        "canal», y no un numeral del MTC --- y la DESIGUALDAD con que se "
+        "comprueba. De la fuente, y solo esto: que un borde libre haya que "
+        "mantenerlo, y el par de valores 0.30-0.50 m con que se cuantifica. "
+        "Ese par el Manual lo escribe para un BADEN y contra la superficie de "
+        "rodadura; llevarlo a la coronacion de un canal es analogia declarada "
+        "del proyectista, y elegir el 0.50 dentro de la banda es una segunda "
+        "decision suya. Las dos viven en 'borde_libre_canal_m' [A], con la "
+        "banda por ventana. EL MANUAL NO FIJA BORDE LIBRE PARA UN CANAL: "
+        "verificado por ausencia sobre sus 225 paginas."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.4.1e", "MC_HHD.4.1.1.4.1e#RANGO"),
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta esta sesion, y estaba declarado: §13 de "
+        "`docs/ruta_familia_c.md` llamaba a VC1 «la verificacion que de "
+        "verdad gobierna a la Familia C» y ninguna linea de codigo la "
+        "implementaba. Un cruce de canal salia acreditado por V1, V4 y V4b "
+        "--- que miden contra el barril y contra la via --- sin que nada "
+        "hubiera mirado el canal. La declaracion de alcance lo decia; el "
+        "veredicto de la memoria, no."),
+)
+
 V2 = _fundamento(
     id="F5.V2",
     fase=F5,

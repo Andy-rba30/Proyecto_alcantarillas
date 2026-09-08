@@ -127,9 +127,16 @@ def test_la_fila_de_familia_C_se_carga_marcada_y_no_se_rechaza():
     assert c01.area_ha is None
     assert c01.S_cauce is None
     assert c01.pendiente_dato_externo
+    # `cota_coronacion_canal` SI entra en la lista y `cota_fondo_entrada` NO,
+    # y la asimetria es el punto del test. Las dos admiten vacio; solo la
+    # segunda tiene una regla declarada que la cubre cuando falta
+    # ('origen_cota_fondo_entrada'), de modo que su celda vacia no espera a
+    # nadie. La coronacion vacia espera al levantamiento, igual que
+    # `NF_profundidad_m` espera al estudio geotecnico.
     assert set(c01.pendientes_externos) == {
         "Q_m3s", "area_ha", "S_cauce", "Q_receptor_m3s", "cota_TW",
-        "NF_profundidad_m"}
+        "NF_profundidad_m", "cota_coronacion_canal"}
+    assert "cota_fondo_entrada" not in c01.pendientes_externos
     # Lo que si trajo la fila esta cargado y validado.
     assert c01.cbr_subrasante == pytest.approx(6.5)
     assert c01.cota_subrasante == pytest.approx(38.95)

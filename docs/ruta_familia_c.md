@@ -1602,13 +1602,30 @@ línea es un criterio incompleto, no un producto correcto.
 
 ## 13. Deuda declarada, fuera de este alcance
 
-**VC1 — no alteración de la rasante hidráulica ni del borde libre del canal.** Sec. 2.3
-fija el requisito y ninguna verificación lo implementa; **no es V5**, que es el remanso
-dentro del derecho de vía. VC1 necesita el nivel de agua de diseño y el borde libre del
-canal, y su cierre exige además reescribir `remanso_derecho_via`, que hoy solo habla de
-DG-2018 y no de la faja marginal ni de la Ley 29338. **Es la verificación que de verdad
-gobierna a la Familia C**, y es lo primero que hay que abrir después de este alcance.
-Mientras tanto, su sustitución por V1/V4/V4b se declara (CN punto 4, C5 punto 5).
+**VC1 — no alteración de la rasante hidráulica ni del borde libre del canal.
+CERRADA POR MITADES en la sesión VC1; la ficha se conserva porque una de las
+dos sigue abierta.** Sec. 2.3 fija el requisito y hasta esa sesión ninguna
+verificación lo implementaba; **no es V5**, que es el remanso dentro del derecho de
+vía. Lo que hoy está implementado es `M5.vc1_borde_libre_canal`:
+`cota_entrada + HW ≤ cota_coronacion_canal − borde_libre_canal`, con veredicto y
+margen en metros, obligatoria también a `--alcance perfil`.
+
+**Lo que este apartado decía y era inexacto**, dicho porque la inexactitud dirigió
+mal la planificación: «VC1 necesita **el nivel de agua de diseño** y el borde libre
+del canal». El nivel de agua de diseño del canal **no hace falta** para la mitad
+del borde libre —basta la **coronación**, que es lo que el levantamiento de los
+seis cruces midió— y sí haría falta, junto con la geometría trapecial y el n de
+Manning, para la mitad de la **rasante hidráulica**, que es la que sigue abierta.
+El borde libre tampoco «se necesita» como dato: el Manual **no fija ninguno para un
+canal** —verificado por ausencia sobre sus 225 páginas, `citas.SIN_BORDE_LIBRE_DE_CANAL`—
+y el proyecto lo ADOPTA por analogía con el badén del num. 4.1.1.4.1 e).
+
+**La mitad que sigue abierta** es la alteración de la rasante hidráulica, y la ficha
+entera —qué está cerrado, qué no, y qué haría falta— está en
+`docs/decisiones_diferidas.md`, VC1-01. **V5 dejó de estar diferida en esta familia**:
+no aplica, y VC1 ocupa su hueco (ficha VC1-02). Lo que sí sigue en pie de la redacción
+anterior es que `remanso_derecho_via` habla solo de DG-2018 y no de la faja marginal ni
+de la Ley 29338 — pero eso es deuda de V5 **en las Familias A y B**, no de la C.
 
 **Diseño estructural del pórtico.** AASHTO LRFD Sec. 5 y 12.11: factor de interacción
 suelo-estructura, distribución de carga viva a través del relleno (3.6.1.2.6), momentos y
@@ -5236,3 +5253,145 @@ fundación. Ninguna de las cuatro se abrió, y ninguna se cerró en silencio.
   el usuario preguntara. La señal válida sigue siendo `ListAgents` sin el
   agente más ausencia de notificación; nunca el tamaño ni la fecha del archivo
   de salida.
+
+### 16.16 · VC1 — la verificación que gobierna a la Familia C, y la mitad que no cierra
+
+Fuera del alcance del plan C0–C8: §13 la declaraba como deuda porque faltaba el
+dato. El dato llegó —levantamiento propio de los seis cruces del corredor, con
+cota de fondo, sección trapecial medida y coronación por punto— y con él la razón
+del diferimiento dejó de sostenerse.
+
+#### 1 · La verificación normativa dijo que NO, y eso cambió el diseño
+
+El encargo daba por bueno el numeral: «se adopta 0.50 m, extremo superior del rango
+0.30–0.50 del MC-HHD 4.1.1.4.1-e, mismo criterio ya usado para el resguardo sobre el
+nivel de anegamiento». Verificado contra el PDF, **dos de las tres premisas eran
+falsas y la tercera es la que decide la etiqueta**:
+
+| Premisa del encargo | Medido |
+|---|---|
+| el rango 0.30–0.50 está en el num. 4.1.1.4.1 e) | **CIERTO**, literal y en texto corrido |
+| «mismo criterio ya usado para el resguardo sobre el nivel de anegamiento» | **FALSO**: `4.1.1.4.1` no aparece en ningún archivo del repositorio, y `anegamiento` tampoco. No había tal uso previo |
+| el numeral gobierna el borde libre de un canal | **FALSO**: el apartado cuelga de **«4.1.1.4  BADENES»** y su datum superior es la **superficie de rodadura** |
+
+Y el barrido que lo cierra: **«borde libre» aparece en CUATRO páginas de las 225
+del Manual, y dos son el índice.** Las otras dos son el num. 4.1.1.3.7 b)
+(alcantarillas, relativo: ≥ 25 % de la altura del barril) y el 4.1.1.4.1 e)
+(badenes, absoluto: 0.30–0.50 m contra la calzada). **El Manual no fija borde libre
+para un canal.** Tampoco aparecen «faja marginal» ni «terceros» en ninguna página.
+Queda como `AfirmacionNegativa` (`citas.SIN_BORDE_LIBRE_DE_CANAL`), que es lo que
+autoriza a adoptar en vez de citar.
+
+La palabra «canal» sí aparece junto al borde libre, **una vez**, y es la trampa:
+`4.1.1.4.2 Diseño hidráulico` dice «se idealizará el badén **como un canal
+trapezoidal**». Ese canal es una idealización de cálculo del badén, no el sujeto del
+apartado anterior. Tomarla por el sujeto es exactamente el error que la nota de
+`citas.py` existe para impedir.
+
+#### 2 · Por qué `[A]` y no `[N→]`, que es el vecino con el que se confunde
+
+El precedente de `[N→]` en el archivo es `resguardo_HW_subrasante`: un numeral que
+regula el freático, aplicado por analogía a un nivel de avenida. Allí, **concedida
+la analogía, la fuente determina el número** —la tabla del 4.5.4 entra con el CBR y
+da 0.60 / 0.80 / 1.00 / 1.20—. Aquí no: concedida la analogía, la fuente sigue dando
+una **banda** y ninguna regla para elegir dentro de ella. Son **dos saltos y no uno**,
+y el de afuera es una elección. `[N→]` la escondería; `[A]` la publica con su ventana.
+
+El reparto queda como CLAUDE.md lo escribe para `F_PGA_TABLA` / `'F_pga'`: la banda
+es `[N]` (`constantes_normativas.BORDE_LIBRE_BADEN_RANGO_M`) y cuál valor aplica a
+esta obra es `[A]` (`criterios_adoptados['borde_libre_canal_m']`).
+
+**El signo va escrito en la ventana**, por la misma razón que en `espesor_pared_cajon`:
+el borde libre se **resta** de la coronación, de modo que moverlo hacia 0.50 **acerca**
+el punto al incumplimiento. Es la dirección contraria a la de la adopción de riesgo de
+la Tabla Nº 02, donde adoptar el máximo recomendado afloja.
+
+#### 3 · El `Fundamento` dice RECOMIENDA, y podía haber dicho OBLIGA sin que nada fallara
+
+El apartado lleva **dos oraciones de carácter distinto**: «debe contemplar mantener un
+borde libre mínimo» es EXIGENCIA, y «se recomienda adoptar valores entre 0.30 y 0.50m»
+es RECOMENDACIÓN. Colgar `F5.VC1` de la primera habría pasado **T11 sin una queja**
+—T11 mira el `caracter` de la cita, no de qué trata— y habría impreso el 0.50 con
+fuerza de exigencia sobre un canal. Es el mismo agujero estructural que C7 midió en
+`F5.V7`, aquí cerrado a propósito: dos citas, el verbo colgado de la que lleva el
+número, y un test que lo fija
+(`test_vc1_no_presenta_su_umbral_como_exigencia_sobre_un_canal`).
+
+#### 4 · V5 no aplica en la Familia C, y la sustitución se declara con su resto
+
+V5 verifica que el embalse quede dentro del **derecho de vía**, y esa formulación
+presupone agua que se **extiende lateralmente** al remansarse contra el terraplén. En
+un paso de canal el agua sube **confinada** entre las dos coronaciones: el ancho no
+acota nada y lo que acota es la cota del labio. La preocupación —los terceros— no
+desaparece, cambia de dirección, y es la que mide VC1.
+
+**Lo que la sustitución NO cubre, dicho y no omitido:** VC1 mide **en la sección del
+cruce** y no acota cuánto se extiende el remanso aguas arriba, donde el canal puede
+tener la coronación más baja. V5 tampoco lo cubría —su umbral era un ancho, no una
+longitud—, de modo que no se pierde alcance; pero decir que VC1 cierra el hueco entero
+sería falso.
+
+#### 5 · El agujero que solo se veía a `--alcance perfil`
+
+Puesta la bifurcación en `M5.verificar`, la suite entera pasaba **y el entregable
+seguía sin VC1**. `cli._verificador_perfil` mantiene su propia lista de piezas —vive
+aparte a propósito, porque la decisión de DIFERIR es de la corrida— y esa lista
+llevaba `M5.v5_remanso` escrito literalmente. Un cruce de canal corrido a
+`--alcance perfil`, que es el alcance del entregable, seguía saliendo con «V5
+diferida» y sin VC1 por ninguna parte: **la verificación existía y el producto no la
+tenía.** Es la trampa de NOR-MEM-01 —cierto sobre el código, falso sobre el producto—
+y lo encontró una corrida real, no un test.
+
+La regla de familia vive hoy en un solo sitio, `M5.pieza_del_hueco_de_V5`, y devuelve
+**el código además de la pieza** porque los dos llamadores no la tratan igual: para el
+de perfil, V5 es DIFERIDA y VC1 es OBLIGATORIA. Diferir VC1 habría dejado pasar el
+punto acreditado como alcantarilla de paso sin que nadie mirase el canal, que es el
+estado que esta sesión cierra.
+
+#### 6 · Las dos notas de alcance se reescribieron enteras, y por qué no se retiran
+
+`M5.NOTA_ALCANCE_FAMILIA_C` y `cli.DECLARACION_ALCANCE_FAMILIA_C` afirmaban cinco
+cosas que dejaron de ser ciertas de golpe: que «esta corrida NO EVALUA ese requisito»;
+que VC1 «necesita el nivel de agua de diseño del canal y su borde libre»; que esos
+datos «no son columna de la Sec. 1.2 ni los aporta ningún tablero»; que VC1 «queda
+DIFERIDA AL EXPEDIENTE»; y que «mientras VC1 no exista» un cumple solo acredita
+alcantarilla de paso.
+
+**No se conserva nada de aquel texto y tampoco se borra el bloque.** Dejarlo mintiendo
+es SIS-A-03 —un párrafo de alcance que describe un estado que ya no existe se lee con
+la autoridad de una declaración—; borrarlo dejaría una memoria en la que un «cumple»
+de VC1 se lee como el requisito entero satisfecho. Lo que cambió no es que el bloque
+exista: es lo que dice.
+
+#### 7 · Línea base: qué se movió y qué no
+
+**Cero magnitudes.** Con la columna vacía en la fixture, ningún número calculado se
+mueve — comprobado extrayendo los números de cada línea cambiada, artefacto a
+artefacto. Lo que cambia son cinco cosas y las cinco son declarativas:
+
+| Qué | Dónde |
+|---|---|
+| el texto de la declaración de alcance y el rótulo de su etapa | los cuatro `cli_*.txt`, los tres `informe_*.json`, las tres `memoria_*.html` |
+| `cota_coronacion_canal` en `pendientes_externos` de los cuatro puntos | los tres `informe_*.json` |
+| `borde_libre_canal_m` en la lista de criterios | los tres `informe_*.json` |
+| una fila **VC1** nueva en «Umbrales normativos y su carácter» | las tres `memoria_*.html` |
+| «68 criterios declarados» → «**69**», y los SHA-1 de los archivos | las tres `memoria_*.html` |
+
+Idénticos byte a byte: `memoria_punto_cajon.html`, `resumen_expediente.csv` y
+`resumen_perfil_ancho.csv`.
+
+**Y el punto de prueba CON coronación, que es donde se ve el veredicto.** Medido sobre
+C-01 con `Q = 0.85`, `S_cauce = 0.004`, fondo medido 36.28 y las declaraciones del
+cajón, marco 1.50 × 1.20, control de salida, `HW = 0.695`:
+
+| Coronación | Admisible (coronación − 0.50) | Alcanzado (36.28 + 0.695) | VC1 | El punto |
+|---|---|---|---|---|
+| **37.48** | 36.980 | 36.975 | **CUMPLE** por **5 mm** | dimensiona |
+| **37.30** | 36.800 | 36.975 | **NO CUMPLE** por 0.175 m | `DisenoNoFactibleError`: ningún material candidato cumple la Fase 5 |
+
+Los 18 cm de diferencia entre las dos coronaciones deciden si el cruce es admisible.
+Y el contraste que justifica que VC1 exista: en el primer caso **V4 da el MISMO
+`obtenido` —36.975— contra un admisible de 38.150**, o sea 1.17 m de holgura, porque
+mide contra la subrasante de la vía. VC1 lo aprueba por 5 mm. Las dos miden el mismo
+nivel de agua contra dos cotas distintas, y sin VC1 el punto salía con la holgura de
+V4 como único margen publicado.

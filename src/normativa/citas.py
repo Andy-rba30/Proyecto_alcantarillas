@@ -53,11 +53,14 @@ POR_S20 = "fase1/S20 · verificador-normativo"
 # comprobo, y dos lecturas distintas del mismo PDF son dos hechos distintos.
 FECHA_C2 = "2026-09-07"
 POR_C2 = "familiaC/C2 · verificador-normativo"
+FECHA_VC1 = "2026-09-08"
+POR_VC1 = "familiaC/VC1 · verificador-normativo"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
 S20 = (FECHA_S20, POR_S20)
 C2 = (FECHA_C2, POR_C2)
+VC1 = (FECHA_VC1, POR_VC1)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -425,6 +428,87 @@ MC_HHD_4_1_1_3_7b = _cita(
           "llena») pero prohibe la seccion llena, no fija el 25 %."),
 )
 
+# ---------------------------------------------------------------------------
+# EL SEGUNDO «Borde libre» DEL MISMO MANUAL, Y NO ES INTERCAMBIABLE CON EL DE
+# ARRIBA. Va pegado a el a proposito: son dos apartados homonimos, los dos
+# RECOMENDACION en su numero, y separarlos en el archivo es invitar a que
+# alguien cite uno creyendo citar el otro.
+#
+#   4.1.1.3.7 b)   ALCANTARILLAS.  >= 25 % de la altura, diametro o flecha.
+#                  Relativo, medido DENTRO del barril.        -> V1
+#   4.1.1.4.1 e)   BADENES.        0.30 - 0.50 m.
+#                  Absoluto, medido contra la SUPERFICIE DE RODADURA.  -> VC1
+#
+# EL OBJETO DEL SEGUNDO ES UN BADEN, NO UN CANAL, y esta dicho aqui porque es
+# lo que decide la etiqueta del criterio que lo consume. El apartado cuelga de
+# «4.1.1.4   BADENES»; su datum superior es la calzada, o sea el sitio donde
+# desbordar es un riesgo para la propia plataforma. Que el proyecto lleve ese
+# par de numeros a la coronacion de un canal --- donde desbordar inunda parcela
+# de terceros --- es una ANALOGIA del proyectista, y por eso el valor vive en
+# `criterios_adoptados['borde_libre_canal_m']` como [A] con su ventana, no como
+# [N] ni como umbral cableado. El numeral 4.1.1.4.2, tres renglones mas abajo,
+# dice «se idealizará el badén como un canal trapezoidal»: esa palabra «canal»
+# es una idealizacion de CALCULO del baden y no el sujeto de este apartado.
+# Tomarla por el sujeto es el error que esta nota existe para impedir.
+MC_HHD_BADEN_BORDE_LIBRE = _cita(
+    id="MC_HHD.4.1.1.4.1e",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.4.1 e)",
+    titulo_numeral="e)   Borde libre",
+    jerarquia_numeral=("4.1.1.4   BADENES",
+                       "4.1.1.4.1  Consideraciones para el diseño"),
+    # EL ENCABEZADO DEL NUMERAL ESTA EN OTRA PAGINA QUE EL APARTADO: el
+    # «4.1.1.4.1» abre en la impresa 84 (PDF 87) y el apartado e) esta en la
+    # 85 (PDF 88). Citar el apartado como impresa 84 --- que es lo que da el
+    # indice del Manual --- manda al revisor a la pagina equivocada.
+    pagina_impresa="85",
+    pagina_pdf=88,
+    pagina_pdf_titulo=88,
+    texto_literal=Verbatim(
+        texto=("El diseño hidráulico del badén también debe contemplar "
+               "mantener un borde libre mínimo entre el nivel del flujo "
+               "máximo esperado y el nivel de la superficie de rodadura, a "
+               "fin de evitar probables desbordes que afecten los lados "
+               "adyacentes de la plataforma vial."),
+        pagina_pdf=88),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VC1,
+    nota=("«debe contemplar mantener» es EXIGENCIA, y lo que exige es que "
+          "HAYA borde libre: no fija cuanto. El cuanto esta en la oracion "
+          "siguiente y es RECOMENDACION --- por eso son dos citas y no una, "
+          "igual que el par VMIN_INICIO / VMIN de V2 ---. Fundir las dos en "
+          "un solo objeto haria pasar por exigido el 0.30-0.50, que la fuente "
+          "solo recomienda."),
+)
+
+MC_HHD_BADEN_BORDE_LIBRE_RANGO = _cita(
+    id="MC_HHD.4.1.1.4.1e#RANGO",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.4.1 e), segunda oracion",
+    titulo_numeral="e)   Borde libre",
+    jerarquia_numeral=("4.1.1.4   BADENES",
+                       "4.1.1.4.1  Consideraciones para el diseño"),
+    pagina_impresa="85",
+    pagina_pdf=88,
+    pagina_pdf_titulo=88,
+    texto_literal=Verbatim(
+        texto=("Generalmente, el borde libre se asume igual a la altura de "
+               "agua entre el nivel de flujo máximo esperado y el nivel de la "
+               "línea de energía, sin embargo, se recomienda adoptar valores "
+               "entre 0.30 y 0.50m."),
+        pagina_pdf=88),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VC1,
+    nota=("LA ORACION LLEVA DOS COSAS Y SOLO UNA ES EL RANGO. La primera "
+          "mitad DESCRIBE una practica --- que el borde libre se asuma igual "
+          "a la altura de velocidad --- y el «sin embargo» la desplaza en "
+          "favor del par de valores. El rango va en TEXTO CORRIDO, sin tabla, "
+          "y no es funcion de ninguna variable: ni del caudal, ni de la luz, "
+          "ni de la velocidad. El Manual tampoco da regla para elegir dentro "
+          "de el, y por eso la eleccion es del proyectista y no de la fuente. "
+          "«0.50m» va sin espacio entre numero y unidad, tal como imprime."),
+)
+
 MC_HHD_LAUSHEY = _cita(
     id="MC_HHD.4.1.1.3.7c",
     fuente_id="MC_HHD",
@@ -557,6 +641,27 @@ SIN_TMC_NI_HDPE_T10 = AfirmacionNegativa(
                     "laminas), nunca en esta tabla; HDPE no aparece en el "
                     "Manual"),
     cita_id="MC_HHD.4.1.1.3.6#T10")
+
+# EL VACIO QUE AUTORIZA A VC1 A ADOPTAR UN BORDE LIBRE EN VEZ DE CITARLO.
+# Barrido completo, no impresion: «borde libre» aparece en CUATRO paginas del
+# PDF y dos son el indice (PDF 6 y 7). Las otras dos son los dos apartados
+# homonimos, y ninguno tiene por objeto un canal. La palabra «canal» aparece
+# junto al borde libre una sola vez --- «se idealizará el badén como un canal
+# trapezoidal», num. 4.1.1.4.2 --- y ahi el canal es la idealizacion de
+# calculo del baden, no el objeto normado.
+SIN_BORDE_LIBRE_DE_CANAL = AfirmacionNegativa(
+    que_no_dice=("el Manual no fija borde libre para un CANAL: sus dos "
+                 "apartados de «Borde libre» tienen por objeto la "
+                 "alcantarilla (4.1.1.3.7 b), relativo a la altura del "
+                 "barril) y el baden (4.1.1.4.1 e), absoluto contra la "
+                 "superficie de rodadura)"),
+    ambito_barrido=("las 225 paginas del PDF, buscando «borde libre» sin "
+                    "distinguir mayusculas: aparece en las PDF 6 y 7 "
+                    "(indice), 82 (num. 4.1.1.3.7 b), alcantarillas) y 88 "
+                    "(num. 4.1.1.4.1 e), badenes). Ninguna otra. Tampoco "
+                    "aparecen «faja marginal» --- que si nombra la Sec. 2.3 "
+                    "de la hoja de ruta --- ni «terceros» en ninguna pagina"),
+    cita_id="MC_HHD.4.1.1.4.1e#RANGO")
 
 INTERPRETACION_T10 = Interpretacion(
     texto=("Que los dos números de una fila recorran la calidad del "
@@ -3403,6 +3508,7 @@ SIN_PARTIDA_DE_CAJON_EG2013 = AfirmacionNegativa(
     cita_id="EG2013.503.10h#CAJON")
 
 AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
+                          SIN_BORDE_LIBRE_DE_CANAL,
                           SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03,
                           SIN_CAJON_DE_CONCRETO_T12663,
                           SIN_PARTIDA_DE_CAJON_EG2013)

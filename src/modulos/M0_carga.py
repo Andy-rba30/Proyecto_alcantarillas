@@ -67,17 +67,18 @@ COLUMNAS: Tuple[str, ...] = tuple(
     f.name for f in fields(PuntoCritico) if f.name not in CAMPOS_DERIVADOS
 )
 
-# Columnas numericas, en el orden de Sec. 1.2. Las DOS ultimas no vienen de ese
-# encabezado y cierran la lista por eso: `NF_profundidad_m` se agrego al
-# reclasificar el nivel freatico como dato de sitio [S] medido en cada cruce, y
-# `cota_fondo_entrada` al abrir la via del invert MEDIDO (ver `PuntoCritico`).
+# Columnas numericas, en el orden de Sec. 1.2. Las TRES ultimas no vienen de
+# ese encabezado y cierran la lista por eso: `NF_profundidad_m` se agrego al
+# reclasificar el nivel freatico como dato de sitio [S] medido en cada cruce,
+# `cota_fondo_entrada` al abrir la via del invert MEDIDO, y
+# `cota_coronacion_canal` al implementar VC1 (ver `PuntoCritico`).
 # El orden importa y esta fijado por test: tiene que ser el de los campos del
 # tipo, y un campo con valor por defecto solo puede ir al final.
 _NUMERICAS: Tuple[str, ...] = (
     "Q_m3s", "area_ha", "S_cauce", "cota_terreno", "cota_rasante",
     "cota_subrasante", "cbr_subrasante", "esviaje_grados", "ancho_plataforma",
     "cota_fondo_receptor", "Q_receptor_m3s", "cota_TW",
-    "NF_profundidad_m", "cota_fondo_entrada",
+    "NF_profundidad_m", "cota_fondo_entrada", "cota_coronacion_canal",
 )
 
 # Vacios admitidos por tablero, no por comodidad.
@@ -121,6 +122,28 @@ _VACIAS_FAMILIA_C = ("Q_m3s", "area_ha", "S_cauce")          # Tablero 3.1
 # 1.4 m de la caracterizacion general de la llanura seria inventar una
 # medicion por punto que nadie hizo.
 _VACIAS_ESTUDIO_GEOTECNICO = ("NF_profundidad_m",)
+
+# Vacio admitido por el LEVANTAMIENTO DE LOS CRUCES, que es un tercer tablero:
+# el topografico. Mismo mecanismo que el geotecnico y por la misma razon --- la
+# fila se carga marcada y quien se detiene es la verificacion que necesite el
+# dato, no la carga --- y por eso la columna no lleva grupo propio de
+# comportamiento sino de PROCEDENCIA: quien la debe es otro.
+#
+#   cota_coronacion_canal   cota del labio del canal en el cruce, del
+#                           levantamiento propio de los seis cruces del
+#                           corredor. Sin ella VC1 se detiene, y no hay regla
+#                           que la sustituya: ninguna columna existente la
+#                           implica --- ni el terreno natural ni la rasante son
+#                           el labio del canal --- de modo que rellenarla seria
+#                           inventar una medicion.
+#
+# ESTA EVALUADO, NO ASUMIDO, QUE AQUI NO VALE LA EXCLUSION DE
+# `_VACIAS_CON_REGLA_DECLARADA`. La razon por la que `cota_fondo_entrada` no se
+# marca como pendiente es que el proyecto TIENE una regla declarada para su
+# ausencia, de modo que la celda vacia no espera a nadie. `cota_coronacion_canal`
+# no tiene ninguna: vacia, espera al levantamiento. Marcarla es exacto y no
+# marcarla pintaria una fila completa que no lo esta.
+_VACIAS_LEVANTAMIENTO_DEL_CRUCE = ("cota_coronacion_canal",)
 
 # Vacio admitido EN TODA FAMILIA, y por una razon distinta de las de arriba: no
 # es que el dato dependa de un tablero que todavia no respondio, es que el
@@ -234,7 +257,8 @@ def _punto_desde_fila(fila: Dict[str, Any], numero: int) -> PuntoCritico:
     familia = _familia(fila, id_punto, numero)
 
     admiten_vacio = (set(_VACIAS_TODA_FAMILIA) | set(_VACIAS_ESTUDIO_GEOTECNICO)
-                     | set(_VACIAS_CON_REGLA_DECLARADA))
+                     | set(_VACIAS_CON_REGLA_DECLARADA)
+                     | set(_VACIAS_LEVANTAMIENTO_DEL_CRUCE))
     if familia is Familia.C:
         admiten_vacio.update(_VACIAS_FAMILIA_C)
 
@@ -516,6 +540,27 @@ def _valida_cruzadas(v: Dict[str, Optional[float]], id_punto: str) -> None:
                f"el fondo de entrada medido ({v['cota_fondo_entrada']}) queda "
                f"a la subrasante ({v['cota_subrasante']}) o por encima: entre "
                f"los dos hay {libre:+.2f} m y no cabe ningun conducto")
+
+    # La coronacion del canal esta SOBRE su propio fondo. Es la unica cruzada
+    # que este dato admite, y solo cuando las dos cotas vienen medidas: si el
+    # fondo lo pone la regla de 'origen_cota_fondo_entrada' en vez de la
+    # nivelacion, lo que se compararia no son dos lecturas del mismo cruce.
+    #
+    # NO SE CRUZA CONTRA `cota_terreno` NI CONTRA `cota_rasante`, y es
+    # deliberado por la misma razon que el invert no se exige bajo el terreno:
+    # un canal excavado tiene la coronacion BAJO el terreno natural y uno con
+    # bordos la tiene POR ENCIMA. Las dos formas existen, ninguna es un error
+    # del expediente, y convertir la de este corredor en regla del programa
+    # rechazaria filas correctas de otro.
+    if (v["cota_coronacion_canal"] is not None
+            and v["cota_fondo_entrada"] is not None):
+        calado = v["cota_coronacion_canal"] - v["cota_fondo_entrada"]
+        _exige(calado > TOL_UMBRAL_NORMATIVO, "cota_coronacion_canal",
+               v["cota_coronacion_canal"], id_punto,
+               f"la coronacion del canal ({v['cota_coronacion_canal']}) no "
+               f"queda sobre su propio fondo ({v['cota_fondo_entrada']}): "
+               f"entre los dos hay {calado:+.2f} m y el canal no tendria "
+               "seccion")
 
     # Sec. 1.5: la cota TW es el nivel del agua EN EL RECEPTOR durante la
     # avenida, no un nivel dentro de la alcantarilla. No puede estar bajo el

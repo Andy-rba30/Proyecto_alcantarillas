@@ -586,22 +586,26 @@ def test_el_alcance_por_defecto_es_expediente():
     """
     Quien no pasa la bandera corre exactamente lo de siempre.
 
-    LA ASERCION DE LOS DIFERIDOS CAMBIO EN C5, y el cambio es el contenido de
-    la sesion: `diferidos() == ()` decia "a nivel de expediente no se difiere
-    nada", y desde C5 hay UNA cosa que se difiere en los dos alcances -- la
-    verificacion VC1 de la Familia C, que no existe todavia (§15.6) --. No es
-    un diferimiento de la BANDERA sino de la ausencia de la verificacion, y
-    viaja por el mismo canal a proposito: `bloque_alcance` es el unico que
-    imprime tambien con el expediente abierto. Lo que este test sigue
-    fijando, ahora dicho con precision, es que la bandera de expediente no
-    difiere NINGUNA etapa por si misma.
+    LA ASERCION DE LOS DIFERIDOS CAMBIO EN C5, y VUELVE A CAMBIAR AQUI. En C5
+    paso de `diferidos() == ()` a UNA cosa diferida en los dos alcances: la
+    verificacion VC1 de la Familia C, que entonces NO EXISTIA. Hoy existe y se
+    evalua, de modo que lo diferido ya no es la verificacion sino la MITAD del
+    requisito de la Sec. 2.3 que VC1 no cierra --- la alteracion de la rasante
+    hidraulica del canal ---. El canal por el que viaja es el mismo a
+    proposito: `bloque_alcance` es el unico que imprime tambien con el
+    expediente abierto. Lo que este test sigue fijando, sin cambios, es que la
+    bandera de expediente no difiere NINGUNA etapa por si misma.
     """
     assert cli._parser().parse_args(["x.csv"]).alcance == cli.ALCANCE_EXPEDIENTE
     informe = _informe(luz_m=2.0)
     assert informe.alcance == cli.ALCANCE_EXPEDIENTE
     etapas = {b.etapa for _, b in informe.diferidos()}
-    assert etapas == {"VC1 - no alteracion de la rasante hidraulica ni del "
-                      "borde libre del canal"}
+    # LA ETAPA CAMBIO DE NOMBRE AL IMPLEMENTARSE VC1, y el nombre es la
+    # afirmacion: lo diferido ya no es la verificacion entera --- se evalua ---
+    # sino la MITAD del requisito de la Sec. 2.3 que VC1 no cierra, la de la
+    # rasante hidraulica. El bloque sigue emitiendose por eso.
+    assert etapas == {"VC1 - alcance del requisito de la Sec. 2.3 (borde "
+                      "libre verificado; rasante hidraulica, no)"}
     assert {id_punto for id_punto, _ in informe.diferidos()} == {"C-01"}
 
 
@@ -754,8 +758,8 @@ def test_expediente_tambien_declara_su_alcance():
     # Lo unico diferido a nivel de expediente es VC1 (§15.6): ver
     # `test_el_alcance_por_defecto_es_expediente`.
     assert [d["etapa"] for d in alcance["diferidos"]] == [
-        "VC1 - no alteracion de la rasante hidraulica ni del borde libre del "
-        "canal"]
+        "VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; "
+        "rasante hidraulica, no)"]
     assert "Alcance declarado: expediente" in cli.volcar(informe)
 
 
@@ -1274,7 +1278,7 @@ def test_una_declaracion_mal_escrita_devuelve_dos_y_no_corre_el_pipeline(
 # pueda borrar una sin ver que falta la otra.
 
 FILA_C_QUE_DIMENSIONA = (
-    "C-02,3+200,C,0.85,,0.004,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,")
+    "C-02,3+200,C,0.85,,0.004,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,,")
 
 DECLARACIONES_CAJON = [
     "embocadura_cajon=cajon_concreto_aleta_45_d043",
@@ -1308,8 +1312,14 @@ def test_la_declaracion_de_alcance_sale_antes_de_declarar_ningun_criterio(
               "--json", str(tmp_path / "i.json"), "--html", str(destino)])
     html = destino.read_text(encoding="utf-8")
 
-    assert "NO EVALUA ese requisito" in html
-    assert "COMO CRUCE DE CANAL" in html
+    # LA AFIRMACION QUE ESTE BLOQUE HACE CAMBIO AL IMPLEMENTARSE VC1. Decia
+    # «NO EVALUA ese requisito»; hoy evalua la mitad que habla del borde libre
+    # y declara la que habla de la rasante hidraulica. Las dos frases tienen
+    # que estar, porque son las dos mitades.
+    assert "LO QUE SI SE EVALUA -- el borde libre" in html
+    assert "LO QUE NO SE EVALUA -- la rasante hidraulica" in html
+    assert "NO significa que la alteracion de la rasante hidraulica del "\
+           "canal se haya medido" in html
     # Y el punto afectado va nombrado (NOR-HDS-05): un aviso sin punto es el
     # "nadie se entera".
     assert "C-01" in html
@@ -1424,7 +1434,15 @@ def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
         cota_terreno=36.90, cota_rasante=39.10, cota_subrasante=38.95,
         cbr_subrasante=6.5, esviaje_grados=30.0, ancho_plataforma=9.60,
         cota_fondo_receptor=36.20, Q_receptor_m3s=None, cota_TW=None,
-        sucs_fundacion="ML", NF_profundidad_m=None)
+        sucs_fundacion="ML", NF_profundidad_m=None,
+        # LA CORONACION HACE FALTA DESDE QUE VC1 EXISTE, y por eso se añade en
+        # vez de rebajar la asercion: en Familia C, VC1 ocupa el hueco de V5 y
+        # es OBLIGATORIA, de modo que sin coronacion el punto se detiene ahi
+        # --- antes de V6 y de V7 --- y este test dejaria de medir lo suyo. El
+        # valor deja VC1 CUMPLIENDO (36.90 + 0.50 = 37.40 frente a 38.00 -
+        # 0.50 = 37.50) para que el freno siga siendo V7, que es de lo que el
+        # test habla.
+        cota_coronacion_canal=38.00)
     resultado = ResultadoHidraulico(
         y_normal=0.60, y_critico=0.40, V_erosion=1.50, V_sedimentacion=1.20,
         Q=0.85, S=0.004, HW_entrada=0.50, HW_salida=0.20,
@@ -1444,12 +1462,75 @@ def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
 
     filas = exc.value.verificaciones_completadas
     assert [v.codigo for v in filas] == ["V1", "V2", "V2b", "V3", "V4",
-                                         "V4b", "V6"]
+                                         "V4b", "VC1", "V6"]
     con_nota = [v.codigo for v in filas
                 if v.paso is not None and v.paso.nota_del_proyecto]
     assert con_nota, ("ninguna de las verificaciones que sobrevivieron lleva "
                       "la advertencia de alcance de la Familia C: los pasos "
                       "llegan pero vacios de lo que §15.6.3 les encarga")
+
+
+def test_a_alcance_perfil_la_familia_C_corre_VC1_y_no_difiere_V5():
+    """
+    EL AGUJERO QUE ESTE TEST CIERRA, y que solo se ve a alcance de PERFIL.
+
+    `cli._verificador_perfil` mantiene su propia lista de piezas --- vive
+    aparte de `M5.verificar` a proposito, porque la decision de DIFERIR es de
+    la corrida ---, y esa lista llevaba `M5.v5_remanso` escrito literalmente.
+    Con la bifurcacion de familia puesta solo en M5, un cruce de canal corrido
+    a `--alcance perfil` --- que es el alcance del entregable --- seguia
+    saliendo con «V5 diferida» y sin VC1 por ninguna parte: la verificacion
+    existia y el producto no la tenia. Es la trampa de NOR-MEM-01 otra vez.
+
+    La regla de familia vive hoy en `M5.pieza_del_hueco_de_V5` y los dos
+    llamadores la consultan. Lo que este test fija es el efecto en el que
+    difieren: VC1 es OBLIGATORIA y V5 diferida.
+    """
+    from cli import InformePunto
+    from modelos import (Familia, FormaSeccion, PuntoCritico,
+                         SeccionRectangular)
+    from tests.apoyo.criterios import declarados
+
+    declaraciones = dict(d.split("=", 1) for d in DECLARACIONES_CAJON)
+    declaraciones["secciones_cajon_normalizadas"] = ((1.50, 1.20), (2.00, 1.50))
+    declaraciones["n_celdas_cajon"] = 1
+    declaraciones["espesor_pared_cajon"] = 0.20
+    declaraciones["peso_especifico_relleno_kn_m3"] = 18.0
+    declaraciones["cobertura_minima_cajon"] = 0.30
+
+    punto = PuntoCritico(
+        id="C-02", progresiva_km=3.2, progresiva_display="3+200",
+        familia=Familia.C, Q_m3s=0.85, area_ha=None, S_cauce=0.004,
+        cota_terreno=36.90, cota_rasante=39.10, cota_subrasante=38.95,
+        cbr_subrasante=6.5, esviaje_grados=30.0, ancho_plataforma=9.60,
+        cota_fondo_receptor=36.20, Q_receptor_m3s=None, cota_TW=None,
+        sucs_fundacion="ML", NF_profundidad_m=2.50,
+        cota_fondo_entrada=36.28, cota_coronacion_canal=37.48)
+    resultado = ResultadoHidraulico(
+        y_normal=0.60, y_critico=0.40, V_erosion=1.50, V_sedimentacion=1.20,
+        Q=0.85, S=0.004, HW_entrada=0.50, HW_salida=0.20,
+        control_gobernante=ControlGobernante.ENTRADA)
+    informe = InformePunto(punto=punto)
+    verificar = cli._verificador_perfil(informe)
+
+    with declarados(declaraciones):
+        marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                         forma=FormaSeccion.RECTANGULAR)
+        filas = verificar(punto=punto, material=marco,
+                          seccion=SeccionRectangular(B=2.00, H=1.50),
+                          resultado=resultado)
+
+    codigos = [v.codigo for v in filas]
+    assert "VC1" in codigos, codigos
+    assert "V5" not in codigos
+    # Y no queda anotada como diferida: la que se difiere en esta familia no
+    # es VC1 --- se evalua --- sino la MITAD del requisito que VC1 no cierra,
+    # y esa va por `_declarar_alcance_familia_c`, no por aqui.
+    assert not [b for b in informe.bloqueos if "V5" in b.etapa]
+    vc1 = [v for v in filas if v.codigo == "VC1"][0]
+    assert vc1.cumple
+    assert vc1.valor_obtenido == pytest.approx(36.78, rel=REL_TRANSPORTE)
+    assert vc1.valor_admisible == pytest.approx(36.98, rel=REL_TRANSPORTE)
 
 
 def test_el_bloque_de_alcance_declara_que_no_difirio_nada_sin_familia_c(
@@ -1613,7 +1694,7 @@ def test_una_pendiente_externa_en_porcentaje_es_dato_invalido():
 
 
 FILA_C_SIN_S_CAUCE = (
-    "C-02,3+200,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,")
+    "C-02,3+200,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,,")
 
 
 # Cardinales en palabra y en cifra. Es la lista cerrada del castellano hasta

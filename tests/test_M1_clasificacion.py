@@ -344,26 +344,43 @@ def test_la_familia_A_lleva_la_aceptacion_V1_V2_V4_V5():
     assert perfil_de(Familia.A).verificaciones_aceptacion == ("V1", "V2", "V4", "V5")
 
 
-def test_las_familias_sin_conjunto_declarado_no_lo_inventan():
+def test_la_familia_B_sigue_sin_conjunto_declarado_y_no_lo_inventa():
     """
-    Sec. 2.3 solo declara el conjunto de aceptacion de la Familia A. None
+    Sec. 2.3 no declara conjunto de aceptacion para la Familia B. None
     significa 'no declarado', y no debe confundirse con una tupla vacia, que
     se leeria como 'ninguna verificacion'.
 
-    ESTE TEST SOSTIENE LA DECLARACION DE ALCANCE DE LA FAMILIA C, y por eso se
-    deja dicho aqui: `cli.DECLARACION_ALCANCE_FAMILIA_C` afirma que la Sec.
-    2.3 NUNCA le dio a la Familia C un conjunto de aceptacion --le dio un
-    REQUISITO, «no alterar la rasante hidraulica ni el borde libre del
-    canal», y ninguna verificacion lo implementa--, y ese `None` es el hecho
-    medido en que se apoya. Si algun dia alguien le pone una tupla aqui, la
-    declaracion pasa a decir algo falso y este test es el que avisa.
+    ERA UN TEST DE DOS FAMILIAS Y HOY ES DE UNA. La C salio al implementarse
+    VC1, y el test lo AVISO --- que es para lo que estaba escrito ---: su
+    version anterior decia que si alguien le ponia una tupla a la Familia C,
+    la declaracion de alcance de `cli` pasaba a decir algo falso. Le pusimos
+    la tupla y la declaracion se reescribio en el mismo cambio; el enunciado
+    que la vigilaba se traslado a
+    `test_la_familia_C_declara_VC1_y_la_declaracion_de_alcance_lo_dice`.
 
-    C5 LO REVISO Y NO LO CAMBIO. El brief lo listaba entre los que pinnean el
-    contrato viejo, y su premisa sobrevive entera: lo que C5 abre es el
-    CATALOGO de la Familia C, no su conjunto de verificaciones.
+    La premisa nunca fue «la Sec. 2.3 no dice nada de la Familia C»: es que
+    lo que dice --- «no puede alterar la rasante hidraulica ni el borde libre
+    del canal» --- era un REQUISITO sin verificacion que lo implementara. Hoy
+    la tiene. La B sigue sin nada: para ella la Sec. 2.3 fija espaciamiento y
+    bordillos, no verificaciones.
     """
-    for familia in (Familia.B, Familia.C):
-        assert perfil_de(familia).verificaciones_aceptacion is None
+    assert perfil_de(Familia.B).verificaciones_aceptacion is None
+
+
+def test_la_familia_C_declara_VC1_y_no_un_conjunto_exhaustivo():
+    """
+    La huella de la frase que la Sec. 2.3 le dedica a la Familia C.
+
+    La tupla lleva VC1 y SOLO VC1, y eso no dice que un cruce de canal se
+    acepte con una sola verificacion: dice que VC1 es la que implementa el
+    requisito que la fuente nombra para esta familia, igual que la tupla de la
+    Familia A es la huella de su frase. Nadie despacha sobre el campo --- la
+    Fase 5 corre entera sobre todo punto ---, y el test lo comprueba abajo,
+    en `test_la_familia_C_corre_las_once_verificaciones`.
+    """
+    assert perfil_de(Familia.C).verificaciones_aceptacion == ("VC1",)
+    # Y no se cuela V5, que en esta familia no se evalua.
+    assert "V5" not in perfil_de(Familia.C).verificaciones_aceptacion
 
 
 def test_la_familia_B_tiene_fila_fija_y_no_pregunta_nada(punto_b):

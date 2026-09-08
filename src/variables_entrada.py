@@ -379,6 +379,33 @@ _COLUMNAS: Dict[str, _Columna] = {
         criterio_destino="origen_cota_fondo_entrada",
     ),
 
+    # SIN `criterio_destino`, y no es un olvido: ese campo dice a que criterio
+    # va a parar la columna cuando el proyectista tiene que ELEGIR como
+    # obtenerla, y aqui no hay eleccion que hacer. La coronacion de un canal
+    # se mide o no se tiene: no hay regla declarada que la sustituya --- al
+    # reves que `cota_fondo_entrada`, que si la tiene ---. Vacia, lo que se
+    # detiene es VC1 con `DatoFaltanteError`, que es lo que corresponde cuando
+    # el revisor tiene que CONSEGUIR algo y no que decidirlo.
+    "cota_coronacion_canal": _Columna(
+        concepto="Cota de la coronacion (labio) del canal en el cruce, "
+                 "contra la que VC1 verifica el borde libre. Admite vacio: "
+                 "sin ella VC1 se detiene, y no hay regla que la sustituya",
+        unidad="msnm",
+        resolucion=DeEnsayo(
+            ensayo="levantamiento topografico del cruce: seccion transversal "
+                   "del canal con su fondo y sus dos coronaciones",
+            trazabilidad_exigida="la libreta o la seccion transversal "
+                                 "levantada, con la progresiva del cruce y el "
+                                 "BM de referencia, y cual de las dos "
+                                 "margenes se transcribio si no estan a la "
+                                 "misma cota --- que es la pregunta que un "
+                                 "solo numero por punto deja abierta: la "
+                                 "columna admite UNA cota y lo conservador es "
+                                 "la MENOR de las dos, porque es por ahi por "
+                                 "donde desborda primero",
+        ),
+    ),
+
     "cota_rasante": _Columna(
         concepto="Cota de la superficie de rodadura sobre el cruce",
         unidad="msnm",
@@ -582,6 +609,16 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "necesita declaracion: se calcula comparando la pendiente del "
              "diseño con la del cauce, y las dos son datos que la corrida ya "
              "tiene."),
+    "borde_libre_canal_m": _Meta(
+        unidad="m",
+        fase_declarada="Fase 5 - Verificaciones (VC1, cruce de canal)",
+        nota="ES EL BORDE LIBRE DEL CANAL, NO EL DE V1. El de V1 es relativo "
+             "y se mide DENTRO del barril (>= 25 % de su altura, num. "
+             "4.1.1.3.7 b); este es absoluto y se mide bajo la CORONACION del "
+             "canal. Los dos apartados del Manual se titulan «Borde libre» y "
+             "no son intercambiables. Al moverse dentro de la ventana "
+             "0.30-0.50 m hay que saber el signo: el valor se RESTA de la "
+             "coronacion, de modo que subirlo endurece VC1."),
     "TW_receptor": _Meta(
         unidad="m sobre el fondo de la salida",
         fase_declarada="Fase 1 - Datos de entrada (Sec. 1.3, ultima puerta "

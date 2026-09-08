@@ -67,7 +67,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional, Tuple, Dict, List, Set
 
-from constantes_normativas import (H_O_CONDICION_TEXTO, H_O_NUMERAL,
+from constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
+                                   H_O_CONDICION_TEXTO, H_O_NUMERAL,
                                    MANNING)
 from normativa import esquema as _esquema
 from normativa import registro as _registro_normativo
@@ -75,9 +76,16 @@ from modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
                      DeTabla, EnRango, Libre, ModoDeResolucion, Resolucion,
                      modo_de)
 
-# Las TRES importaciones de constantes normativas que hace este archivo
+# Las CUATRO importaciones de constantes normativas que hace este archivo
 # entran por la misma razon, y ninguna transcribe nada: referencian lo que ya
 # esta transcrito en su archivo.
+#
+# `BORDE_LIBRE_BADEN_RANGO_M`: la `sensibilidad` de 'borde_libre_canal_m' ES
+# la banda que el num. 4.1.1.4.1 e) imprime. Escribir `(0.30, 0.50)` a mano
+# aqui pondria los numeros de la norma en dos sitios y dejaria que la ventana
+# del criterio y la constante divergieran sin que nada avisara -- el mismo
+# argumento que el de `MANNING`, y el mismo que sostiene toda la regla de las
+# segundas transcripciones.
 #
 # `MANNING`: 'n_manning_hdpe' es un [N->] -- una fila de esa tabla aplicada
 # por analogia a un material que la tabla no lista -- y su valor tiene que SER
@@ -2292,6 +2300,96 @@ CRITERIOS: Dict[str, Criterio] = {
             tabla_pendiente="Manual de Suelos MTC num. 4.5.4 (pags. 41-42) "
                             "y 9.1(3) (pags. 89-90), tabla de resguardo por "
                             "CBR",
+        ),
+    ),
+
+    # -----------------------------------------------------------------------
+    # VC1 -- el borde libre del CANAL, que no es el borde libre de V1
+    # -----------------------------------------------------------------------
+    # POR QUE ES CRITERIO DE CORREDOR Y NO COLUMNA [S] POR PUNTO. La pregunta
+    # se decide con la regla de CLAUDE.md que separa [S] de [A]: «un [A] se
+    # defiende con un rango de sensibilidad porque hubo eleccion; un [S] no
+    # tiene rango que elegir y se defiende con la trazabilidad de la lectura».
+    # Aqui hay banda y no hay lectura: el levantamiento de los seis cruces
+    # midio cota de fondo, seccion trapecial y CORONACION --- y la coronacion
+    # SI es [S] y SI es columna, `cota_coronacion_canal` ---, pero no midio
+    # ningun borde libre, porque un borde libre no se mide: se adopta. Es el
+    # resguardo que el proyecto decide dejar sin usar bajo la coronacion, y esa
+    # decision es la misma en los seis cruces porque sale de una sola
+    # adopcion, no de seis mediciones. Ponerlo por punto invitaria ademas a
+    # aflojarlo justo donde aprieta, que es la direccion insegura.
+    #
+    # POR QUE [A] Y NO [N->], que es el vecino con el que se confunde. El
+    # precedente de [N->] en este archivo es 'resguardo_HW_subrasante': un
+    # numeral que regula el freatico, aplicado por analogia a un nivel de
+    # avenida. Alli, CONCEDIDA la analogia, la fuente determina el numero ---
+    # la tabla del 4.5.4 entra con el CBR y da 0.60 / 0.80 / 1.00 / 1.20 ---.
+    # Aqui no: concedida la analogia, la fuente sigue dando una BANDA y
+    # ninguna regla para elegir dentro de ella. Quedan dos saltos y no uno, y
+    # el de afuera es una eleccion. [N->] la esconderia; [A] la publica con su
+    # ventana, que es para lo que existe la ventana.
+    #
+    # EL SIGNO DE LA VENTANA, escrito porque la intuicion apunta al reves. El
+    # borde libre se RESTA de la coronacion: moverlo hacia 0.50 BAJA la cota
+    # admisible y ACERCA el punto al incumplimiento. Quien lo declare esta
+    # eligiendo cuanta exigencia se pone a si mismo, no cuanta holgura se
+    # concede. Por eso el valor adoptado es el extremo superior.
+    "borde_libre_canal_m": Criterio(
+        valor=0.50,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        concepto="Borde libre del canal: resguardo bajo su coronacion que el "
+                 "agua embalsada por la alcantarilla no puede invadir (VC1)",
+        justificacion=(
+            "EL MANUAL NO FIJA BORDE LIBRE PARA UN CANAL, y esta verificado "
+            "por ausencia sobre sus 225 paginas: «borde libre» aparece en dos "
+            "apartados y ninguno tiene por objeto un canal --- el 4.1.1.3.7 b) "
+            "es de ALCANTARILLAS y es relativo (>= 25 % de la altura del "
+            "barril), el 4.1.1.4.1 e) es de BADENES y mide contra la "
+            "superficie de rodadura --- (`citas.SIN_BORDE_LIBRE_DE_CANAL`). "
+            "Tampoco aparecen «faja marginal» ni «terceros». Se adopta el par "
+            "0.30-0.50 m del num. 4.1.1.4.1 e) por ser el unico resguardo "
+            "absoluto que el corpus nacional escribe para el mismo concepto, "
+            "y la analogia se declara: alli el datum superior es la calzada "
+            "--- desbordar afecta la propia plataforma --- y aqui es la "
+            "coronacion --- desbordar inunda parcela de terceros ---. "
+            "SE ADOPTA EL 0.50, extremo SUPERIOR de la banda, porque el borde "
+            "libre se resta de la coronacion y por tanto el extremo superior "
+            "es el conservador: baja la cota admisible y endurece VC1. Es la "
+            "direccion contraria a la de la adopcion de riesgo de la Tabla "
+            "Nº 02, donde adoptar el maximo recomendado afloja. "
+            "LA FUENTE NO DA REGLA PARA ELEGIR DENTRO DE LA BANDA --- va en "
+            "texto corrido, sin tabla, y no es funcion del caudal, de la luz "
+            "ni de la velocidad ---, y por eso esta eleccion es del "
+            "proyectista y el criterio es [A]. La banda misma es [N] y vive "
+            "en `constantes_normativas.BORDE_LIBRE_BADEN_RANGO_M`"),
+        fuente="MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.4.1 e) «Borde libre», "
+               "pag. impresa 85 (PDF 88), bajo «4.1.1.4  BADENES». El "
+               "REQUISITO que obliga a verificarlo es de la Sec. 2.3 de la "
+               "hoja de ruta («No puede alterar la rasante hidraulica ni el "
+               "borde libre del canal»), no de un numeral del MTC",
+        sensibilidad=BORDE_LIBRE_BADEN_RANGO_M,
+        verificacion_pendiente=(
+            "El borde libre que el propio canal adopto en SU proyecto. Lo "
+            "fija la entidad que lo opera (ANA / Junta de Usuarios del Bajo "
+            "Piura) y seria el valor exacto en vez de uno analogo: si el "
+            "canal se diseño con 0.30 m, exigirle 0.50 a la alcantarilla es "
+            "mas duro que su propio proyecto; si se diseño con mas de 0.50, "
+            "esta adopcion se queda corta y la analogia deja de ser "
+            "conservadora. Es la unica de las dos direcciones que importa, y "
+            "no se puede resolver leyendo otra vez el mismo numeral"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, dentro de la banda 0.30-0.50 m que "
+                        "el num. 4.1.1.4.1 e) recomienda PARA UN BADEN. NO es "
+                        "`EnRango`: aquel tipo referencia (tabla, fila, "
+                        "columna) del registro, y este par no es una tabla "
+                        "--- va en texto corrido --- de modo que no hay tabla "
+                        "que la ventana pueda pintar. Lo que la ventana "
+                        "muestra es la banda por `sensibilidad`, y lo que el "
+                        "proyectista tiene que saber al moverse dentro de "
+                        "ella es el SIGNO: hacia 0.50 la verificacion se "
+                        "endurece",
+            dominio="0.30 <= borde libre <= 0.50 m",
         ),
     ),
 

@@ -598,6 +598,24 @@ class PuntoCritico:
     # dato medido no se sustituye por una regla adoptada». Este campo es ese
     # dia.
     cota_fondo_entrada: Optional[float] = None   # msnm - nivelacion en el cruce
+    # LA CORONACION DEL CANAL, MEDIDA. Segundo dato de sitio [S] del
+    # levantamiento de los seis cruces, y el que le da a VC1 la cota contra la
+    # que medir. Admite vacio, y sin el VC1 se detiene.
+    #
+    # POR QUE NO PODIA SALIR DE NINGUNA COLUMNA QUE YA HUBIERA. `cota_terreno`
+    # es el terreno natural del cruce y `cota_rasante` es la calzada: ninguna
+    # de las dos es el labio del canal. En un canal excavado la coronacion
+    # puede quedar bajo el terreno natural; en uno con bordos, por encima. No
+    # hay regla que las relacione, y por eso esto es una MEDICION y no una
+    # derivacion -- al reves que `cota_fondo_entrada`, que si tiene regla
+    # declarada para cuando falta.
+    #
+    # Y POR ESO SE MARCA EN `pendientes_externos` y aquella no. Una
+    # `cota_fondo_entrada` vacia no espera a nadie: hay criterio que la cubre.
+    # Una `cota_coronacion_canal` vacia espera al levantamiento, exactamente
+    # como `NF_profundidad_m` espera al estudio geotecnico. Es la misma forma y
+    # se marca igual.
+    cota_coronacion_canal: Optional[float] = None  # msnm - labio del canal
 
     # Derivado por M0, no es columna del CSV: columnas que la fila dejo vacias
     # porque el dato depende de terceros (Tablero 3). NO significa fila

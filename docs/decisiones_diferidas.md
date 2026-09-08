@@ -819,3 +819,58 @@ catorce, y su ficha lo dice sin borrarse.
   bloque de comentario que quedó en su lugar.
 - **Dónde vive:** `src/modulos/M2_material.py::siguiente_diametro` (el
   comentario que la sustituye está justo encima de ese símbolo)
+
+# Parte IX — Lo que VC1 cerró, y la mitad que dejó abierta
+
+## VC1-01 · La deuda de §13 se cierra por MITADES, y la otra mitad sigue diferida
+
+- **Cerrado:** la mitad del requisito de la Sec. 2.3 que habla del **borde
+  libre del canal**. `M5.vc1_borde_libre_canal` compara `cota_entrada + HW`
+  contra `cota_coronacion_canal − borde_libre_canal` y emite `Verificacion`
+  con veredicto y margen en metros. Corre en la posición de V5 —que en esta
+  familia no aplica— y es OBLIGATORIA también a `--alcance perfil`: sin la
+  columna o sin el criterio se detiene, no devuelve «no evaluable».
+- **Abierto:** la mitad que habla de la **rasante hidráulica**. VC1 acota el
+  NIVEL que el agua alcanza; no mide en cuánto la obra levanta el pelo de agua
+  del canal respecto del que tendría sin ella. Un punto puede cumplir VC1 con
+  holgura y haber elevado la rasante hidráulica en una fracción apreciable del
+  calado. Y VC1 mide **en la sección del cruce**: no acota cuánto se extiende
+  el remanso aguas arriba, donde el canal puede tener la coronación más baja.
+- **Qué haría falta:** dos datos que hoy no son columna de la Sec. 1.2. (1) La
+  **geometría trapecial del canal** en cada cruce —ancho de solera y talud— y
+  su **n de Manning**, con los que se calcula su tirante normal y, restándolo,
+  la alteración. El levantamiento ya midió la sección trapecial, de modo que
+  lo que falta de verdad es transcribirla a columnas y conseguir el n. (2) Un
+  **perfil de remanso** aguas arriba, que es el mismo dato que V5 pide en las
+  otras familias y que ninguna de las dos tiene. Y, aparte de las dos, el
+  **borde libre que el propio canal adoptó en SU proyecto** (ANA / Junta de
+  Usuarios del Bajo Piura), que sustituiría a la analogía con el badén: si
+  fuera mayor que 0.50 m, esta verificación es menos exigente que el proyecto
+  del canal.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::NOTA_VC1_LO_QUE_NO_MIDE`
+  (la advertencia pegada al veredicto) y `cli.py::DECLARACION_ALCANCE_FAMILIA_C`
+  (la declaración entera, una vez por punto)
+
+## VC1-02 · V5 no se difiere en la Familia C: NO APLICA, y VC1 ocupa su hueco
+
+- **Qué se difirió:** nada, y ése es el cambio. Hasta aquí V5 quedaba
+  «pendiente para siempre» en la Familia C: se intentaba, fallaba por falta de
+  `ancho_derecho_via_m`, y el fallo se anotaba como diferido al expediente. La
+  deuda no era diferible porque el dato que la cerraría no habría cerrado
+  nada: el umbral de V5 es un ANCHO.
+- **Por qué:** V5 verifica que el embalse quede dentro del derecho de vía, y
+  esa formulación presupone agua que se **extiende lateralmente** sobre la
+  plataforma al remansarse contra el terraplén. En un paso de canal el agua
+  sube **confinada** entre las dos coronaciones: su avance no es lateral sino
+  vertical contra el labio del canal, y un ancho de derecho de vía no acota
+  nada ahí. La preocupación —los terceros— no desaparece: cambia de dirección,
+  y es exactamente la que mide VC1. Por eso V5 no se declara «no aplicable» a
+  secas sino **sustituida**, con su sustituta corriendo en la misma posición
+  de la tabla y con veredicto real.
+- **Qué haría falta:** nada para cerrar esto; sí para lo que la sustitución no
+  cubre, que es la extensión aguas arriba del remanso (ficha VC1-01). V5
+  tampoco la cubría —su umbral era un ancho, no una longitud—, de modo que la
+  sustitución no pierde alcance, pero decir que cierra el hueco entero sería
+  falso.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::pieza_del_hueco_de_V5`
+  (la regla de familia, en un solo sitio y consultada por los dos llamadores)
