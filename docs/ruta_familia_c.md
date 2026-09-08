@@ -5471,3 +5471,102 @@ declararse, que es la regla del proyecto y tiene coste; y (b) hay una **homonimi
 debajo: en un paso de canal `cota_fondo_receptor` no es «el fondo de un cuerpo
 receptor» sino **el mismo canal aguas abajo**, y el proyecto ya tiene forma para eso
 (`constantes_normativas.HOMONIMIA_TW`, que existe por el mismo género de confusión).
+
+### 16.18 · Windows: la suite no era portable, y el eje que faltaba no es el que parece
+
+Primera corrida del proyecto **fuera de Linux**. Reportada sobre este árbol
+(`origin/main` = `4f31057`), con Python de Windows, PyMuPDF presente y **tkinter
+presente**:
+
+    1725 passed, 2 failed, 4 errors, 1 skipped     (collected 1732)
+
+`1725 + 2 + 4 + 1 = 1732`, de modo que el invariante `collected = passed + skipped`
+—el que CLAUDE.md declara como la regla que no depende del entorno— **no se cumplía**,
+y ésa es la señal correcta: había fallos y errores, no dependencias ausentes.
+
+**Ninguno era de cálculo.** Los seis salían de dos causas de entorno:
+
+| Sitio | Qué pasaba |
+|---|---|
+| `test_linea_base.py` (4 **errors**) | la fixture `recien_generada` invoca `subprocess.run(["sh", …])` y en Windows sin Git Bash ni WSL no hay `sh`: `FileNotFoundError` al construir la fixture, que pytest reporta como **error** en los cuatro tests que la consumen |
+| `test_seccion_rectangular.py::test_la_via_por_tirante_no_gana_consumidores_sin_declararlos` | el censo construía la clave con `str(ruta.relative_to(raiz))`, que usa el separador del sistema: `src\modulos\M4_control.py` |
+| `test_sin_literales.py::test_sis_c_05_el_exento_se_reconoce_por_ruta_y_no_por_nombre` | `barrido()` devolvía la clave con `str(relativa)`, y el test la compara contra `"modulos/dominios.py"` |
+
+Las dos de ruta tenían **la misma cara que un defecto de contenido**: la del censo
+acusaba a la vez de «nuevas» y «desaparecidas» a TODAS las llamadas, o sea que se leía
+como una violación de la regla vinculante #12; y la de `barrido` se leía como una
+exención mal aplicada, que es literalmente lo que SIS-C-05 denuncia. Un fallo de
+portabilidad disfrazado del defecto que el test existe para cazar.
+
+#### Lo que se corrigió, y dónde estaba repartido
+
+`as_posix()` en vez de `str()` en las dos claves; `shutil.which("sh") or
+shutil.which("bash")` con `pytest.skip` **en la fixture** —un solo punto de decisión
+para los cuatro tests, con el mismo motivo— en vez de reventar. Ninguna línea de
+cálculo tocada, y el par del entorno de referencia **no se mueve**: 1730 / 2.
+
+Dos cosas que el arreglo destapó y que van dichas porque son del mismo género:
+
+- **La normalización ya existía, repartida en los extremos de la cadena.** `barrido()`
+  normalizaba para comprobar la lista de exentos (`str(relativa).replace("\\", "/")`)
+  y **un** test normalizaba por su cuenta las claves devueltas
+  (`{k.replace("\\", "/") for k in faltas}`). Dos parches locales que, juntos, hacían
+  parecer que el asunto estaba resuelto mientras la clave del diccionario —lo que el
+  resto de los tests compara— seguía sin normalizar. Se normaliza **una vez**, donde
+  se construye la clave, y el parche del test se retira.
+- **`test_MD.py::_alcanza_MD` tiene el mismo defecto y NO falla**, que es peor. Es el
+  cierre transitivo de imports; su semilla entra escrita con `/` y la recursión añadía
+  a `vistos` la grafía del sistema. En Windows un mismo archivo alcanzado por dos vías
+  entra al conjunto con dos nombres y **el corta-ciclos deja de cortar**: no da rojo,
+  da una recursión que visita de más. Corregido en el mismo cambio.
+
+**Lo que NO se tocó, habiéndolo mirado:** `src/normativa/manifiesto.py:169` construye
+un `rel` con `str()`, y **no es un defecto** — ese `rel` solo se usa para leer
+(`RAIZ / rel`, que en Windows acepta las dos grafías) y nunca se compara contra un
+literal ni se escribe al manifiesto. Igual `test_manifiesto_citas.py:291` y
+`test_guardias_de_la_suite.py:293`, donde la clave solo va a un mensaje.
+
+#### El eje nuevo NO es «Windows», y esto es lo que hay que corregir en CLAUDE.md
+
+La tabla de CLAUDE.md tiene **dos ejes y cuatro filas**: PyMuPDF (sí/no) × ventana Tk
+(sí/no). La tentación es leer esta corrida como una **quinta fila**, y no lo es: un
+Windows con tkinter y con PyMuPDF **ya tiene fila** en esa tabla (la primera). Lo que
+esta corrida añade es un **TERCER EJE**, ortogonal a los otros dos:
+
+> **¿hay intérprete POSIX (`sh` o `bash`) en el PATH?**
+
+Y el eje es **el intérprete, no el sistema operativo**: un Windows con Git Bash o con
+WSL lo tiene y corre la línea base igual que Linux; un contenedor mínimo de Linux
+podría no tenerlo y saltársela igual que Windows. Escribirlo como «Windows» ataría la
+tabla a una plataforma cuando lo que la mueve es una dependencia, que es justo el
+criterio con que están escritos los otros dos ejes.
+
+Con el tercer eje la tabla pasa de 2×2 a **2×2×2 = ocho** configuraciones. Las cuatro
+nuevas —las de `sh` ausente— restan los mismos **4** tests a `passed` y se los suman a
+`skipped`, sin mover `collected`. Sobre este árbol:
+
+| PyMuPDF | Ventana Tk | `sh` en PATH | `passed` | `skipped` |
+|---|---|---|---|---|
+| sí | no | **sí** | **1730** | **2** | ← medido, entorno de referencia |
+| sí | no | **no** | 1726 | 6 | |
+| sí | sí | **no** | 1727 | 5 | ← lo que este Windows debería dar tras la corrección |
+| sí | sí | sí | 1731 | 1 | |
+
+**Las dos filas en negrita están medidas sobre este árbol; las otras dos son
+aritmética sobre el delta conocido, no medición** — este contenedor no tiene tkinter y
+no hay aquí ninguna máquina Windows. La de `sh` ausente se comprobó de verdad,
+recortando el PATH: los cuatro tests de línea base pasan de cuatro `errors` a cuatro
+`skipped` con su motivo impreso.
+
+La fila del Windows corregido **se deriva por dos caminos que no se apoyan uno en el
+otro**, y coinciden: bajando desde el par de referencia (1730 − 4 de línea base + 1 de
+ventana = 1727) y subiendo desde la corrida reportada (1725 `passed` + los 2 `failed`
+que pasan a verde = 1727; 1 `skipped` + los 4 `errors` que pasan a saltarse = 5). Que
+las dos den lo mismo es lo más cerca de una medición que se puede estar sin la máquina
+delante — pero **no es una medición**, y hay que correrla ahí para escribirla como tal.
+
+**CLAUDE.md no se corrige aquí**, por lo mismo que las tres sesiones anteriores no
+corrigieron su `collected = 1538` (hoy 1732): es la constitución del proyecto y no un
+archivo de esta familia. Se reporta, y con esto van **cuatro** sesiones diciéndolo. Lo
+que esta añade a la deuda es que ya no es solo que los números estén viejos: la **forma**
+de la tabla se quedó corta, porque le falta un eje.

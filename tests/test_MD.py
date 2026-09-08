@@ -843,8 +843,15 @@ def test_la_premisa_de_que_M5_no_existe_no_vuelve_como_afirmacion():
             if modulo in ("modulos.MD", "MD") or modulo.endswith(".MD"):
                 return True
             candidata = raiz / "src" / (modulo.replace(".", "/") + ".py")
+            # `as_posix()` Y NO `str()`, aunque este test NO falle en Windows:
+            # `vistos` es el corta-ciclos, y la semilla entra escrita con `/`
+            # (`"src/modulos/M5_verificaciones.py"`). Con el separador del
+            # sistema, un mismo archivo alcanzado por las dos vias entra al
+            # conjunto con DOS grafias y el corte deja de cortar. No se ve como
+            # un fallo: se ve como una recursion que visita de mas, y en un
+            # grafo de imports con ciclos eso es un cuelgue, no un rojo.
             if candidata.exists() and _alcanza_MD(
-                    str(candidata.relative_to(raiz)), vistos):
+                    candidata.relative_to(raiz).as_posix(), vistos):
                 return True
         return False
 

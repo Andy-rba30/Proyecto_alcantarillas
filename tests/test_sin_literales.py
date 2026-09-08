@@ -765,11 +765,24 @@ def literales_de_presentacion_prohibidos(codigo: str, nombre: str = "<memoria>")
 
 
 def barrido(raiz: Path) -> dict:
-    """Recorre un arbol .py y devuelve {ruta relativa: [(linea, valor), ...]}."""
+    """
+    Recorre un arbol .py y devuelve {ruta relativa POSIX: [(linea, valor), ...]}.
+
+    LA CLAVE ES POSIX Y NO `str(Path)`, y es una condicion del contrato y no un
+    detalle: `EXENTOS` esta escrito con `/`, y los tests comparan las claves
+    contra literales escritos con `/`. Con el separador del sistema, en Windows
+    el barrido devolvia `modulos\\dominios.py` y esas comparaciones fallaban
+    -- SIS-C-05 acusando un defecto de exencion donde solo habia un separador
+    distinto --.
+    La normalizacion vivia repartida: la comprobacion de exentos ya la hacia
+    aqui, y un test se la hacia por su cuenta sobre las claves devueltas. Dos
+    parches en los extremos de la misma cadena; se normaliza UNA vez, en el
+    unico sitio que construye la clave.
+    """
     faltas = {}
     for ruta in sorted(raiz.rglob("*.py")):
         relativa = ruta.relative_to(raiz)
-        if str(relativa).replace("\\", "/") in EXENTOS:
+        if relativa.as_posix() in EXENTOS:
             continue                       # por RUTA, no por nombre (SIS-C-05)
         if relativa.parts[:1] == (PAQUETE_REGISTRO,):
             # Exento del barrido general y sujeto al suyo, mas estrecho.
@@ -789,7 +802,7 @@ def barrido(raiz: Path) -> dict:
         # que ejecuta el programa, o falla por sintaxis en vez de reportar.
         hallazgos = literales_prohibidos(ruta.read_text(encoding="utf-8-sig"), ruta.name)
         if hallazgos:
-            faltas[str(relativa)] = hallazgos
+            faltas[relativa.as_posix()] = hallazgos
     return faltas
 
 
@@ -1639,8 +1652,10 @@ def test_sis_c_05_el_paquete_registro_tampoco_se_exime_por_nombre_anidado(tmp_pa
     anidado.mkdir(parents=True)
     (anidado / "valores.py").write_text("ANCHO = 4.572\n", encoding="utf-8")
     faltas = barrido(tmp_path)
-    assert "modulos/normativa/valores.py" in {
-        k.replace("\\", "/") for k in faltas}, (
+    # Sin `replace("\\", "/")`: `barrido` devuelve las claves ya en POSIX, y
+    # normalizarlas otra vez aqui escondia que el resto del archivo NO lo
+    # hacia. La normalizacion es del contrato de `barrido`, no de cada test.
+    assert "modulos/normativa/valores.py" in faltas, (
         "un 'normativa' anidado no es el registro y tiene que caer")
 
 
