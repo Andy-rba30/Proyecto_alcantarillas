@@ -36,7 +36,8 @@ A-01  |  progresiva 0+380  |  Familia A
         aviso: d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))
         aviso: Falta el filtro. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta)
         aviso: Alcance: d50 sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, dimensiona el apron de enrocado por HEC-14 Sec. 10.2, en funcion de Q, D y TW, y remite a HEC-14 entero la proteccion frente a avenidas grandes. Se aplica el Manual MTC por ser norma peruana vigente y porque HEC-14 no esta en el expediente; la geometria de la proteccion se cierra en el expediente tecnico
-  Fase 7  L = 18.635 m, cota entrada 42.100 (ADOPTADA, criterio 'origen_cota_fondo_entrada': no es cota medida) / salida 41.988 msnm
+  Fase 7  L = 18.635 m, cota entrada 42.100 (ADOPTADA) / salida 41.988 msnm
+        cota de entrada: regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida
         factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo)
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
@@ -81,7 +82,8 @@ A-02  |  progresiva 1+920  |  Familia A
         aviso: d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))
         aviso: Falta el filtro. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta)
         aviso: Alcance: d50 sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, dimensiona el apron de enrocado por HEC-14 Sec. 10.2, en funcion de Q, D y TW, y remite a HEC-14 entero la proteccion frente a avenidas grandes. Se aplica el Manual MTC por ser norma peruana vigente y porque HEC-14 no esta en el expediente; la geometria de la proteccion se cierra en el expediente tecnico
-  Fase 7  L = 18.270 m, cota entrada 39.850 (ADOPTADA, criterio 'origen_cota_fondo_entrada': no es cota medida) / salida 39.704 msnm
+  Fase 7  L = 18.270 m, cota entrada 39.850 (ADOPTADA) / salida 39.704 msnm
+        cota de entrada: regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida
         factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo)
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
@@ -126,7 +128,8 @@ B-01  |  progresiva 2+450  |  Familia B
         aviso: d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))
         aviso: Falta el filtro. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta)
         aviso: Alcance: d50 sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, dimensiona el apron de enrocado por HEC-14 Sec. 10.2, en funcion de Q, D y TW, y remite a HEC-14 entero la proteccion frente a avenidas grandes. Se aplica el Manual MTC por ser norma peruana vigente y porque HEC-14 no esta en el expediente; la geometria de la proteccion se cierra en el expediente tecnico
-  Fase 7  L = 18.400 m, cota entrada 38.400 (ADOPTADA, criterio 'origen_cota_fondo_entrada': no es cota medida) / salida 38.216 msnm
+  Fase 7  L = 18.400 m, cota entrada 38.400 (ADOPTADA) / salida 38.216 msnm
+        cota de entrada: regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida
         factible: la rasante 40.600 msnm alcanza la minima de 7.A (39.855 msnm, gobierna recubrimiento)
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)

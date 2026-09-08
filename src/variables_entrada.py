@@ -362,6 +362,23 @@ _COLUMNAS: Dict[str, _Columna] = {
         ),
     ),
 
+    "cota_fondo_entrada": _Columna(
+        concepto="Cota del fondo de la ENTRADA (invert) medida en el cruce. "
+                 "Admite vacio: cuando falta, la pone la regla declarada en "
+                 "el criterio 'origen_cota_fondo_entrada'",
+        unidad="msnm",
+        resolucion=DeEnsayo(
+            ensayo="nivelacion del fondo del cauce -- del CANAL, en un paso "
+                   "de canal -- en la seccion del cruce",
+            trazabilidad_exigida="la libreta de nivelacion o el perfil "
+                                 "longitudinal del cauce, con la progresiva "
+                                 "de la seccion levantada y el BM de "
+                                 "referencia. Se MIDE en cada cruce: por eso "
+                                 "es columna y no dato de corredor",
+        ),
+        criterio_destino="origen_cota_fondo_entrada",
+    ),
+
     "cota_rasante": _Columna(
         concepto="Cota de la superficie de rodadura sobre el cruce",
         unidad="msnm",
