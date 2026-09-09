@@ -464,6 +464,54 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
 # A PROPOSITO (ver `modelos.py`: «'Q_m3s' solo exige ser positivo, y ponerle un
 # techo...»). La forma de mapa es lo que hace que la proxima clave con dominio
 # lo herede en vez de que haya que acordarse.
+#
+# EL DIAGNOSTICO DE LAS CLAVES QUE QUEDAN FUERA: ANOTADO, NO ABIERTO.
+# Se deja escrito para que quien lo retome no tenga que rehacer la derivacion.
+# El conjunto SE CALCULA --- `set(CLAVES_EXTERNAS) - set(_DOMINIO_DE_CLAVE)`,
+# como en `test_cli` --- y no se escribe aqui: un conteo a mano al lado de la
+# coleccion que cuenta es lo que este bloque ya vio envejecer tres veces.
+#
+#   - `categoria_tr` esta fuera POR CONSTRUCCION: es de `CLAVES_TEXTO` y no
+#     pasa por `_numero_externo`. Su juego de valores lo valida M1 contra la
+#     Tabla N 02, y repetirlo aqui seria una segunda fuente de verdad (ver el
+#     docstring de `_dato_externo`). No es deuda.
+#   - `Q_m3s` esta fuera A PROPOSITO y su decision ya esta tomada y escrita:
+#     techo ausente --- ponerselo «seria inventar un valor de proyecto»,
+#     `modelos.py` --- y guardia en la SALIDA de la aritmetica, con
+#     `LimiteNumericoError`. Es el PRECEDENTE con el que se comparan las
+#     demas, no un hueco.
+#   - `luz_m` SI tiene un umbral normativo --- `LUZ_MAX_ALCANTARILLA`, num.
+#     4.1.1.3.1 --- y aun asi NO se copia a este mapa. Conviene decir por que,
+#     porque copiarlo parece lo obvio: ese 6.0 CLASIFICA (`>= 6 m` es puente,
+#     `M1.denominacion_por_luz`), no invalida. Metido aqui lo atraparia el
+#     `valor >= techo` de abajo --- con el MISMO borde --- y un cruce de
+#     puente saldria como `DatoInvalidoError` en lugar de salir con su
+#     veredicto de fuera de alcance (Sec. 3.1), que es justo el diagnostico
+#     que el proyectista necesita. El umbral se queda donde clasifica.
+#   - `TW_m` y `L_hidraulico_m`: sin techo en `dominios.py` y sin ninguno que
+#     derivar. Inventar uno esta prohibido, de modo que hoy no hay nada que
+#     decidir sobre ellas.
+#
+# Y `longitud_m` ES UN PUNTO DE DECISION, NO UNA DEUDA. Es la unica de las que
+# quedan fuera cuya cota EXISTE y NO es una constante: `M7.longitud_conducto`
+# la calcula por Sec. 7.B desde la geometria del propio punto, y es la puerta
+# que se usa cuando la clave no se declara (`_resolver_longitud`). La regla de
+# este bloque --- la misma magnitud por dos puertas se acota igual --- aqui
+# APLICA ENTERA, y su remedio habitual no sirve: no hay simbolo de
+# `dominios.py` que heredar y el unico limite verdadero es una FORMULA.
+#
+# MEDIDO, para que no haya que volver a medirlo: sobre A-01 de
+# `tests/ejemplo_puntos.csv` (`ancho_plataforma` = 9.60 m), declarar
+# `longitud_m` = 0.5 pasa entero --- Sec. 7.B imprime `longitud_m: 0.5` y
+# `factible: true` --- sobre un conducto mas corto que la via que cruza.
+# NINGUNA GUARDIA FALTA POR DESCUIDO, y por eso esto no es un defecto suelto:
+# `_numero_externo` ya comprueba finitud y signo, y `M7._exigir_finito` hace
+# lo propio en la otra puerta. Lo que no hay es la validacion CRUZADA de
+# Sec. 1.5 --- un dato contra otro de su misma fila ---, y ponerla significa
+# correr M7 para validar el dato que se declaro PRECISAMENTE PARA NO CORRER
+# M7. Esa es la eleccion que hay que hacer, y es lo que la convierte en punto
+# de decision y no en algo que se arregle de paso. Ficha, con lo que haria
+# falta para cerrarla, en `docs/decisiones_diferidas.md`.
 _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
     "S_cauce": (S_CAUCE_MAX,
                 "una pendiente de cauce en m/m: un valor >= 1 (100 %) delata "
