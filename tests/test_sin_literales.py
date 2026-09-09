@@ -255,8 +255,9 @@ CONSTRUCTORES_DE_TRANSCRIPCION = {
 # Lo que la ventana AFIRMA sobre una norma no vive en ninguno de los dos: sale
 # de `src/normativa/` via `src/ventana_normativa.py`, de modo que ni un
 # numeral ni un valor de tabla pueden esconderse en su geometria de widget.
-CAPA_DE_PRESENTACION = ("cli.py", "gui/app.py", "gui/componentes.py",
-                        "gui/ventana_normativa.py", "verificar_sesion.py")
+CAPA_DE_PRESENTACION = ("cli.py", "gui/app.py", "gui/ayuda_entrada.py",
+                        "gui/componentes.py", "gui/ventana_normativa.py",
+                        "verificar_sesion.py")
 
 # `conftest.py` queda fuera Y SE DECLARA POR QUE, que es la mitad que faltaba
 # en los hallazgos de esta familia. Sus numeros -- los espesores de pared de
@@ -847,6 +848,13 @@ CENSO_DE_MARCAS = {
     # tooltip, una del notch de la rueda). Ningun literal nacio ni murio: el
     # censo lo demuestra sumando igual.
     "gui/app.py": 24,
+    # La ayuda de entrada de S22. DIEZ literales bajo cinco marcas, y ninguno
+    # es una magnitud del expediente: la mascara del bit de Control de Tk
+    # (0x4), los dos altos en lineas de las dos cajas copiables --- la cabecera
+    # del CSV y el esqueleto del JSON --- y los dos pesos del `PanedWindow` que
+    # reparte tabla y detalle. Los anchos de las columnas del Treeview NO estan
+    # aqui: van dentro de la llamada al widget y el barrido ya los exime.
+    "gui/ayuda_entrada.py": 10,
     "gui/componentes.py": 4,
     # Los tres cuerpos de letra de la ventana. Estan nombrados --- y no
     # escritos dentro de cada llamada --- porque un tamano dentro de un

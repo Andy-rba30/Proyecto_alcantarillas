@@ -50,6 +50,11 @@ COLOR_OK = "#27ae60"
 # los botones de exportacion). El minimo legible es 4.5:1. Con este par sale
 # 6.93:1, y el fondo apagado ademas se DISTINGUE del encendido, que es la otra
 # mitad de la senal.
+# El azul del icono de ayuda «i». Es el mismo tono del boton de EJECUTAR de la
+# ventana principal: un icono de ayuda no compite con la accion, la acompaña.
+COLOR_AYUDA_FONDO = "#2e86c1"
+COLOR_AYUDA_ACTIVO = "#21618c"
+
 COLOR_BOTON_APAGADO_FONDO = "#dfe3e6"
 COLOR_BOTON_APAGADO_TEXTO = "#3d4b59"
 
@@ -301,3 +306,33 @@ class BotonAccion:
             self.habilitar()
         else:
             self.deshabilitar(motivo)
+
+
+class BotonAyuda:
+    """
+    El icono «i» que abre una ayuda. Pequeño, al lado del campo que explica.
+
+    Es su propio componente y no un `ttk.Button` suelto por una razon de las
+    de este archivo: en cuanto haya dos, tienen que verse iguales y comportarse
+    igual, y la unica forma de que eso siga siendo verdad dentro de un año es
+    que haya UN sitio donde esta escrito como se ve un icono de ayuda.
+
+    NO ES UN `BotonAccion`, y la diferencia no es de tamaño: aquel existe para
+    APAGARSE diciendo por que --- un boton apagado es un bloqueo declarado ---
+    y este no se apaga nunca. La ayuda de un campo no depende del estado del
+    expediente: se puede leer con el campo vacio, que es justamente cuando mas
+    falta hace.
+    """
+
+    def __init__(self, master, comando, ayuda):
+        self.boton = tk.Button(
+            master, text="i", command=comando, relief="flat", cursor="hand2",
+            width=2, font=("Segoe UI", 9, "bold"),
+            bg=COLOR_AYUDA_FONDO, fg="white", activebackground=COLOR_AYUDA_ACTIVO,
+            activeforeground="white")
+        self.tooltip = Tooltip(self.boton, ayuda)
+
+    def __getattr__(self, nombre):
+        if nombre == "boton":
+            raise AttributeError(nombre)
+        return getattr(self.boton, nombre)

@@ -351,16 +351,16 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1773**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1794**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
 - `tests/test_MD.py` — el `skipped` **permanente** por condición imposible:
   su `skipif` guarda que `M5_verificaciones` no exista, y ya no puede darse.
 - `tests/test_gui_contrato.py` — los tests de **ventana real**, que hoy son
-  **dos** (S20 abrió uno). Se saltan cuando ningún intérprete disponible puede
-  levantar un `Tk`: falta `tkinter`, falta `ttkbootstrap` o falta entorno
-  gráfico.
+  **tres** (S20 abrió el primero, S22 el de la ayuda de entrada). Se saltan
+  cuando ningún intérprete disponible puede levantar un `Tk`: falta `tkinter`,
+  falta `ttkbootstrap` o falta entorno gráfico.
 - `tests/test_familias_del_csv.py` — **tres** saltos de DISEÑO, no de entorno,
   y por eso valen lo mismo en las cuatro configuraciones. El test está
   parametrizado por (dato declarado × familia) y mide sólo las familias que
@@ -373,32 +373,37 @@ regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
 `sys.executable` y después los intérpretes del sistema, de modo que un
-`1767 passed` **no** demuestra que la suite corra sobre un Python con tkinter
+`1790 passed` **no** demuestra que la suite corra sobre un Python con tkinter
 —solo que alguno lo tenía—. Es exactamente lo que pasa hoy en el contenedor de
 desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. La tabla sólo lleva lo MEDIDO sobre el árbol, y en S21 se
-pudieron medir dos de las cuatro: el contenedor de desarrollo no tiene
-`tkinter` en NINGUNO de sus intérpretes (3.10 a 3.13), de modo que la columna
-«Ventana Tk = sí» no se puede levantar ahí. Las dos celdas que faltan se
-dejan **vacías a propósito** en vez de rellenarse restando dos: la regla de
-esta tabla —«las cuatro medidas sobre el mismo árbol, no supuestas»— vale más
-que tenerla completa, y una celda deducida se lee igual que una medida.
+independientes. **Las cuatro medidas sobre el mismo árbol en S22**, y por
+primera vez desde que la tabla existe:
 
-| PyMuPDF | Ventana Tk | `passed` | `skipped` | medida |
-|---|---|---|---|---|
-| sí | sí | — | — | no medible en el contenedor (sin tkinter) |
-| sí | no | 1767 | 6 | S21 |
-| no | sí | — | — | no medible en el contenedor (sin tkinter) |
-| no | no | 1735 | 38 | S21 |
+| PyMuPDF | Ventana Tk | `passed` | `skipped` |
+|---|---|---|---|
+| sí | sí | 1790 | 4 |
+| sí | no | 1787 | 7 |
+| no | sí | 1758 | 36 |
+| no | no | 1755 | 39 |
 
-**El número saltó de 1538 a 1773 y no fue S21 quien lo movió entero.** La
-tabla anterior se quedó en el árbol de S20 mientras la suite crecía: al abrir
-S21 el conteo ya era `1651 passed, 35 skipped` (1686), y S21 le sumó los 87
-que faltan. Conviene decirlo porque la deriva de esta tabla es el defecto que
-la propia sección persigue.
+**Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
+S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
+y dejó dos celdas vacías. Era cierto y no era el final: `apt-get install
+python3-tk` se lo da a `python3.12`, y con `xvfb-run` —que ya estaba— los tres
+tests de ventana corren. La sonda de `test_gui_contrato._interprete_con_ventana`
+los encuentra sola, sin tocar nada. Queda escrito porque una celda vacía se lee
+como «no se puede» cuando lo cierto era «no estaba instalado»:
+
+    apt-get install -y python3-tk
+    python3.12 -m pip install numpy scipy ttkbootstrap --break-system-packages
+
+**Y el número saltó de 1538 a 1794 en dos sesiones, no en una.** La tabla se
+quedó en el árbol de S20 mientras la suite crecía: al abrir S21 el conteo ya
+era `1651 passed, 35 skipped` (1686). Conviene decirlo porque la deriva de esta
+tabla es el defecto que la propia sección persigue.
 
 Decir cuál de los dos números se está citando **y con qué entorno**; la mayor
 parte de la confusión histórica de números sale de mezclarlos. La regla que no
