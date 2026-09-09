@@ -351,7 +351,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1794**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1800**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -373,7 +373,7 @@ regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
 `sys.executable` y después los intérpretes del sistema, de modo que un
-`1790 passed` **no** demuestra que la suite corra sobre un Python con tkinter
+`1796 passed` **no** demuestra que la suite corra sobre un Python con tkinter
 —solo que alguno lo tenía—. Es exactamente lo que pasa hoy en el contenedor de
 desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
@@ -384,10 +384,10 @@ primera vez desde que la tabla existe:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 1790 | 4 |
-| sí | no | 1787 | 7 |
-| no | sí | 1758 | 36 |
-| no | no | 1755 | 39 |
+| sí | sí | 1796 | 4 |
+| sí | no | 1793 | 7 |
+| no | sí | 1764 | 36 |
+| no | no | 1761 | 39 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

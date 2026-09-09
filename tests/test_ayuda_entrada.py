@@ -356,3 +356,156 @@ def test_la_ventana_no_escribe_ninguna_columna_por_su_cuenta():
                 if c not in ("Q_m3s", "S_cauce") and f'"{c}"' in cuerpo]
     assert not escritas, (
         "la ventana escribe columnas a mano: " + ", ".join(escritas))
+
+
+# ===========================================================================
+# 6 - Los dos defectos de `variables_entrada` que la ayuda destapo (S23)
+# ===========================================================================
+# Los encontro la ayuda derivada de S22 al pintar la ficha de cada columna: no
+# eran defectos de la ayuda sino de la FICHA, y por eso se cerraron en
+# `variables_entrada` y no en la ventana. Cada uno tiene aqui el test que
+# impide que vuelva, y los dos comprueban la ficha CONTRA EL CODIGO QUE CARGA,
+# no contra un texto esperado.
+
+
+def test_la_progresiva_declara_las_dos_notaciones_que_M0_acepta():
+    """
+    EL PRIMER DEFECTO. El dominio decia solo «km >= 0, dentro del corredor» y
+    `M0._progresiva` acepta ADEMAS la notacion vial con '+', que es la que usan
+    los dos CSV del repositorio y la que la memoria imprime. Quien leyera la
+    ayuda escribiria '0.380' creyendo que es la unica forma.
+
+    No se comprueba el texto por el texto: se CARGAN las dos formas y se exige
+    que la ficha nombre las dos. Si manana `_progresiva` dejara de aceptar una,
+    el test de abajo lo dice; si la ficha dejara de nombrarla, este.
+    """
+    f = ay.ficha_de_columna("progresiva_km")
+    assert "0+380" in f.dominio_declarado or "'+'" in f.dominio_declarado, (
+        "el dominio de la progresiva no nombra la notacion vial")
+    assert "0.380" in f.dominio_declarado, (
+        "el dominio no nombra los kilometros decimales")
+    # El tope de los metros se NOMBRA, no se escribe: asi la ayuda no puede
+    # decir un limite distinto del que `_progresiva` aplica.
+    assert "METROS_POR_KM" in f.dominio_declarado
+
+
+def test_M0_acepta_de_verdad_las_dos_notaciones_que_la_ficha_declara(tmp_path):
+    """
+    La otra mitad del par: que lo declarado sea lo que la carga hace.
+
+    Se escriben dos CSV identicos salvo la progresiva --- uno en notacion vial
+    y otro en kilometros decimales --- y las dos filas tienen que dar el MISMO
+    punto. Con eso la ficha no puede prometer una forma que M0 rechace.
+    """
+    cabecera = ay.cabecera_csv()
+    base = (RAIZ / "tests" / "ejemplo_puntos_perfil.csv").read_text(
+        encoding="utf-8").splitlines()
+    fila = base[1].split(",")
+    columna = list(m0.COLUMNAS).index("progresiva_km")
+
+    puntos = {}
+    for etiqueta, escrito in (("vial", "0+380"), ("decimal", "0.380")):
+        celdas = list(fila)
+        celdas[columna] = escrito
+        ruta = tmp_path / f"progresiva_{etiqueta}.csv"
+        ruta.write_text("\n".join([cabecera, ",".join(celdas)]) + "\n",
+                        encoding="utf-8")
+        puntos[etiqueta] = m0.cargar_puntos(ruta)[0]
+
+    assert puntos["vial"].progresiva_km == puntos["decimal"].progresiva_km
+    # Y la memoria imprime siempre la vial, sea como se haya escrito la celda.
+    assert puntos["vial"].progresiva_display == "0+380"
+    assert puntos["decimal"].progresiva_display.startswith("0+380")
+
+
+def test_la_ficha_del_sucs_dice_que_escribir_en_la_celda():
+    """
+    EL SEGUNDO DEFECTO. La celda es texto libre y la ficha no decia ni que
+    forma tiene un grupo SUCS, de modo que quien llena el CSV no tenia de donde
+    saberlo.
+
+    Lo que se comprueba es que la nota traiga las tres cosas que la hacen
+    utilizable Y honesta: los simbolos basicos, su fuente con pagina, y el
+    hueco --- que la forma doble que el expediente usa no la enumera ninguna
+    fuente de `normas/` ---.
+    """
+    f = ay.ficha_de_columna("sucs_fundacion")
+    assert f.nota, "la columna del SUCS volvio a quedarse sin nota"
+    for simbolo in ("GW", "GP", "GM", "GC", "SW", "SP", "SM", "SC",
+                    "ML", "CL", "OL", "MH", "CH", "OH", "Pt"):
+        assert simbolo in f.nota, simbolo
+    assert "E.050" in f.nota and "31" in f.nota, (
+        "la nota tiene que citar la fuente de los simbolos con su pagina")
+    assert "D-2487" in f.nota, (
+        "la nota tiene que decir quien define las duplas y que no esta en "
+        "normas/: sin eso, el hueco parece un descuido")
+    assert "NO valida" in f.nota, (
+        "la nota tiene que decir que M0 no valida la celda, porque es lo que "
+        "separa esta declaracion de una restriccion")
+
+
+def test_declarar_el_vocabulario_del_sucs_NO_restringe_la_carga(tmp_path):
+    """
+    LA CONDICION CON QUE SE ACEPTO DECLARARLO: que informe sin cerrar puertas.
+
+    Se cargan tres celdas --- un simbolo basico, una DUPLA que no esta entre
+    los quince, y una cadena que no es SUCS en absoluto --- y las tres tienen
+    que entrar. Si algun dia alguien convierte la nota en una lista aplicada,
+    este test se pone rojo y obliga a decidirlo en vez de que ocurra de
+    tapadillo.
+
+    La dupla no es un caso inventado: `tests/ejemplo_puntos.csv` trae 'SP-SM',
+    de modo que aplicar los quince simbolos de E.050 rechazaria el propio
+    expediente del repositorio.
+    """
+    cabecera = ay.cabecera_csv()
+    base = (RAIZ / "tests" / "ejemplo_puntos_perfil.csv").read_text(
+        encoding="utf-8").splitlines()
+    fila = base[1].split(",")
+    columna = list(m0.COLUMNAS).index("sucs_fundacion")
+
+    for escrito in ("SM", "SP-SM", "no-es-un-grupo-sucs"):
+        celdas = list(fila)
+        celdas[columna] = escrito
+        ruta = tmp_path / "sucs.csv"
+        ruta.write_text("\n".join([cabecera, ",".join(celdas)]) + "\n",
+                        encoding="utf-8")
+        punto = m0.cargar_puntos(ruta)[0]
+        assert punto.sucs_fundacion == escrito, (
+            f"'{escrito}' dejo de cargarse: la nota del SUCS se convirtio en "
+            "una restriccion")
+
+
+def test_ninguna_lista_declarada_valida_una_celda_de_texto():
+    """
+    La razon por la que el vocabulario del SUCS es una NOTA y no un `opciones`,
+    escrita como guardia.
+
+    `Libre.opciones` solo se IMPRIME --- M11, la ventana normativa y esta
+    ayuda ---; ningun validador lo lee. Si eso cambiara, la nota del SUCS
+    tendria que revisarse antes, porque su lista NO esta cerrada por ninguna
+    fuente de `normas/`.
+    """
+    import ast
+
+    fuente = (SRC / "modulos" / "M0_carga.py").read_text(encoding="utf-8")
+    arbol = ast.parse(fuente)
+    atributos = {n.attr for n in ast.walk(arbol) if isinstance(n, ast.Attribute)}
+    assert "opciones" not in atributos, (
+        "M0 empezo a leer `opciones`: si ahora valida celdas contra la lista "
+        "declarada, la nota del SUCS pasa a restringir la carga y hay que "
+        "revisarla --- sus quince simbolos dejarian fuera el 'SP-SM' del "
+        "propio expediente")
+
+
+def test_la_nota_de_una_columna_llega_a_la_ficha():
+    """
+    `VariableDeEntrada.nota` existia, `reporte_variables` la imprimia, y la
+    ayuda de S22 la descartaba. Dos columnas la llevan hoy; las dos tienen que
+    llegar.
+    """
+    con_nota = {f.clave for f in ay.fichas_de_columnas() if f.nota}
+    assert con_nota == {c for c in m0.COLUMNAS if ve.variable(c).nota}
+    assert con_nota == {"sucs_fundacion", "NF_profundidad_m"}, (
+        "cambio el censo de columnas con nota: revisa que la ayuda las siga "
+        "pintando todas")
