@@ -28,7 +28,9 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
     1. Datos de entrada    CSV de Sec. 1.2 (M0) + datos declarados que no son
                             columna (banderas de `cli.py`, ANOTADOS con las
                             familias que los usan) + ALCANCE de la corrida +
-                            boton de ejecucion.
+                            boton de ejecucion. Los dos campos de archivo
+                            llevan su icono «i», que abre la AYUDA DERIVADA
+                            (ver mas abajo).
     2. Criterios           Los criterios adoptados y su estado, con FILTRO
                             (por estado, por AMBITO y por texto) y RECUENTO de
                             pendientes; la ventana normativa de cada variable
@@ -89,6 +91,28 @@ que el programa TIENE y que no llegaba a la pantalla.
   que no se ve es un criterio que el proyectista no sabe que existe.
 - **Un boton apagado no decia por que.** Ver `gui/componentes.BotonAccion`.
 
+Que tiene que traer cada archivo: la ayuda DERIVADA (pestana 1)
+---------------------------------------------------------------
+El icono «i» de cada campo de archivo abre `gui/ayuda_entrada.py`: las 19
+columnas del CSV con su concepto, su unidad, si pueden ir vacias y de donde
+sale el dato; y las 8 claves que el JSON admite.
+
+NINGUNA LINEA DE ESA AYUDA ESTA ESCRITA. Sale de `src/ayuda_entrada.py`, que
+la deriva de `M0_carga.COLUMNAS` (que sale de los campos de `PuntoCritico`),
+de `variables_entrada.VARIABLES`, de `M0_carga.VACIOS_ADMITIDOS` y de
+`cli.CLAVES_EXTERNAS`. Una tabla de columnas escrita a mano no falla el dia
+que se escribe: falla seis meses despues, cuando alguien anade una columna y
+el proyectista llena su archivo siguiendo una ayuda que el propio programa ya
+no cumple. `tests/test_ayuda_entrada.py` lo comprueba ANADIENDO una columna al
+censo y viendo que la ayuda la recoge sola.
+
+La ayuda del JSON esta a medias Y LO DICE: seis de las ocho claves no son
+columna, ni dato de sitio, ni criterio --- no estan en ninguna de las tres
+poblaciones del censo --- y su descripcion vive en prosa, en el docstring de
+`cli.py`. Esa prosa no se parsea: un docstring no es una interfaz y se
+reformatea sin que nada avise. De las seis se da lo que si es dato (el nombre
+exacto y las familias que las usan) y se declara el hueco.
+
 Los campos que este expediente no va a usar (pestana 1)
 -------------------------------------------------------
 La ventana pedia los cinco datos declarados a la vez, sin decir que dos de
@@ -146,9 +170,17 @@ from modelos import ErrorProyecto  # noqa: E402
 # la misma puerta que usa la linea de comandos.
 from modulos import M11_reporte as M11  # noqa: E402
 
+# `ayuda_ent` y no `ayuda`: `ayuda` es el nombre de la variable de bucle de
+# CAMPOS_EXTERNOS, en `_construir_tab_datos`, que es la MISMA funcion donde
+# se crean los dos iconos. Con el alias corto, Python trata `ayuda` como
+# local de esa funcion y la lambda del icono acabaria pidiendole
+# `.PESTANA_CSV` a la ultima cadena de tooltip del bucle --- un
+# AttributeError al pulsar, no al arrancar. Lo encontro `pyflakes`.
+from gui import ayuda_entrada as ayuda_ent  # noqa: E402
 from gui import ventana_normativa as ventana_norma  # noqa: E402
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR,  # noqa: E402
-                             COLOR_OK, BotonAccion, MarcoScroll, Tooltip)
+                             COLOR_OK, BotonAccion, BotonAyuda, MarcoScroll,
+                             Tooltip)
 
 try:
     import ttkbootstrap as tb
@@ -344,12 +376,36 @@ class ExpedienteApp:
         ttk.Label(f_proj, text="CSV de puntos criticos (Sec. 1.2):").grid(row=1, column=0, sticky="w", padx=5, pady=4)
         ent_csv = ttk.Entry(f_proj, textvariable=self.csv_var)
         ent_csv.grid(row=1, column=1, sticky="we", padx=5, pady=4)
-        ttk.Button(f_proj, text="Examinar...", command=self._elegir_csv).grid(row=1, column=2, sticky="w", padx=5)
+        f_csv = ttk.Frame(f_proj)
+        f_csv.grid(row=1, column=2, sticky="w", padx=5)
+        ttk.Button(f_csv, text="Examinar...", command=self._elegir_csv).pack(side="left")
+        # EL ICONO VA AL LADO DEL CAMPO QUE EXPLICA, no en un menu de ayuda:
+        # la pregunta «que columnas lleva esto» se hace mirando el campo, y una
+        # ayuda que hay que ir a buscar es una ayuda que no se lee.
+        BotonAyuda(
+            f_csv, lambda: self._abrir_ayuda(ayuda_ent.PESTANA_CSV),
+            "Que columnas tiene que traer el CSV, con su concepto, su unidad,\n"
+            "si puede ir vacia y de donde sale el dato. La lista NO esta escrita:\n"
+            "se deriva de M0_carga.COLUMNAS y de variables_entrada.py, de modo\n"
+            "que no puede quedarse vieja. Incluye la cabecera exacta, copiable."
+        ).pack(side="left", padx=(6, 0))
 
         ttk.Label(f_proj, text="JSON de datos externos (opcional):").grid(row=2, column=0, sticky="w", padx=5, pady=4)
         ent_ext = ttk.Entry(f_proj, textvariable=self.datos_externos_var)
         ent_ext.grid(row=2, column=1, sticky="we", padx=5, pady=4)
-        ttk.Button(f_proj, text="Examinar...", command=self._elegir_datos_externos).grid(row=2, column=2, sticky="w", padx=5)
+        f_ext_botones = ttk.Frame(f_proj)
+        f_ext_botones.grid(row=2, column=2, sticky="w", padx=5)
+        ttk.Button(f_ext_botones, text="Examinar...",
+                   command=self._elegir_datos_externos).pack(side="left")
+        BotonAyuda(
+            f_ext_botones, lambda: self._abrir_ayuda(ayuda_ent.PESTANA_JSON),
+            "Las claves que el JSON admite y la forma del archivo.\n"
+            "AYUDA A MEDIAS Y LO DICE: seis de las ocho claves no estan en el\n"
+            "censo de variables_entrada.py --- no son columna, ni dato de sitio,\n"
+            "ni criterio --- y de ellas solo se puede derivar el nombre y las\n"
+            "familias que las usan. Su descripcion sigue en el docstring de\n"
+            "cli.py, y esta ventana no lo copia a proposito."
+        ).pack(side="left", padx=(6, 0))
         Tooltip(ent_ext, "JSON con secciones 'globales' y/o 'puntos', igual que\n"
                          "el '--datos-externos' de cli.py. Una bandera de abajo\n"
                          "pisa al valor global de este archivo.")
@@ -484,6 +540,26 @@ class ExpedienteApp:
             faltan = ", ".join(f"Familia {f.value}" for f in usan)
             lbl.config(text=f"no aplica: este CSV no trae puntos de {faltan}",
                        foreground=COLOR_AVISO)
+
+    def _abrir_ayuda(self, pestana):
+        """
+        Abre la ayuda de entrada en la pestana pedida.
+
+        UNA SOLA VENTANA VIVA, y se reutiliza. Sin esto, cada clic en un icono
+        abriria una copia mas: el usuario acabaria con cuatro ayudas apiladas y
+        cerraria la de arriba creyendo que las cerro todas. Si ya esta abierta
+        se le cambia la pestana y se le da el foco, que es lo que se espera al
+        pulsar el icono del otro campo.
+        """
+        viva = getattr(self, "_ventana_ayuda", None)
+        if viva is not None and viva.winfo_exists():
+            viva.nb.select(viva.tab_json if pestana == ayuda_ent.PESTANA_JSON
+                           else viva.tab_csv)
+            viva.lift()
+            viva.focus_set()
+            return viva
+        self._ventana_ayuda = ayuda_ent.abrir(self.root, pestana)
+        return self._ventana_ayuda
 
     def _elegir_csv(self):
         ruta = filedialog.askopenfilename(

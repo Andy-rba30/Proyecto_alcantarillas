@@ -47,11 +47,11 @@ import csv
 import math
 from dataclasses import fields
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from dominios import (CBR_MAX_FISICO, ESVIAJE_MAX, METROS_POR_KM, S_CAUCE_MAX)
 from modelos import (DatoFaltanteError, DatoInvalidoError, Familia,
-                     PuntoCritico)
+                     PuntoCritico, VacioAdmitido)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
 
@@ -163,6 +163,76 @@ _VACIAS_LEVANTAMIENTO_DEL_CRUCE = ("cota_coronacion_canal",)
 # truncada, y `_celda` la rechaza como tal.
 _VACIAS_CON_REGLA_DECLARADA = ("cota_fondo_entrada",)
 
+# LOS CINCO GRUPOS DE ARRIBA, REUNIDOS COMO DATO PUBLICO.
+#
+# Las cinco tuplas siguen siendo la declaracion --- con su razon escrita al
+# lado, que es donde tiene que estar --- y esto no las duplica: las REFERENCIA.
+# Lo que anade es lo unico que faltaba para poder leerlas desde fuera: QUIEN
+# DEBE el dato y EN QUE FAMILIA se admite el vacio.
+#
+# Por que hacia falta: una celda vacia tiene dos lecturas opuestas --- falta un
+# dato, o espera a un tablero --- y desde fuera de este modulo no se
+# distinguian. El proyectista abria su CSV, veia `Q_m3s` vacia en un cruce de
+# canal y creia que le faltaba un dato que en realidad debe la Junta de
+# Usuarios. La ayuda de la pestana 1 lo dice ahora, y lo dice leyendo esto.
+#
+# Y NO ES UNA TABLA PARALELA: `columnas_que_admiten_vacio` es la funcion que
+# `_punto_desde_fila` consulta para decidir si acepta la celda, de modo que
+# esta declaracion no puede quedarse describiendo un permiso que la carga ya
+# no da.
+VACIOS_ADMITIDOS: Tuple[VacioAdmitido, ...] = (
+    VacioAdmitido(
+        columnas=_VACIAS_TODA_FAMILIA,
+        quien_lo_debe="Tablero 3.1 -- ANA / Junta de Usuarios del Bajo Piura",
+    ),
+    VacioAdmitido(
+        columnas=_VACIAS_FAMILIA_C,
+        quien_lo_debe="Tablero 3.1 -- ANA / Junta de Usuarios del Bajo Piura: "
+                      "en un cruce de canal el caudal y la pendiente son los "
+                      "del CANAL, y no los levanta el proyectista vial",
+        familias=(Familia.C,),
+    ),
+    VacioAdmitido(
+        columnas=_VACIAS_ESTUDIO_GEOTECNICO,
+        quien_lo_debe="el estudio geotecnico: el NF de cada cruce lo da ese "
+                      "estudio, y se mide por punto",
+    ),
+    VacioAdmitido(
+        columnas=_VACIAS_LEVANTAMIENTO_DEL_CRUCE,
+        quien_lo_debe="el levantamiento topografico del cruce: la seccion "
+                      "transversal del canal con sus dos coronaciones",
+    ),
+    VacioAdmitido(
+        columnas=_VACIAS_CON_REGLA_DECLARADA,
+        quien_lo_debe="nadie: el proyecto TIENE regla declarada para su "
+                      "ausencia, en el criterio 'origen_cota_fondo_entrada'. "
+                      "Cuando la celda viene, el dato medido manda sobre la "
+                      "regla",
+        marca_pendiente=False,
+    ),
+)
+
+
+def columnas_que_admiten_vacio(familia: Optional[Familia] = None) -> Set[str]:
+    """
+    Las columnas cuya celda puede ir vacia para esa familia.
+
+    `familia=None` devuelve la union de todos los grupos: es lo que necesita
+    una ayuda que se abre ANTES de que haya CSV cargado, y lo que ninguna fila
+    concreta usa --- `_punto_desde_fila` siempre pasa la familia de su fila.
+    """
+    return {columna
+            for vacio in VACIOS_ADMITIDOS if vacio.alcanza_a(familia)
+            for columna in vacio.columnas}
+
+
+def _no_marca_pendiente() -> Set[str]:
+    """Los vacios que NO esperan a nadie: no entran en `pendientes_externos`."""
+    return {columna
+            for vacio in VACIOS_ADMITIDOS if not vacio.marca_pendiente
+            for columna in vacio.columnas}
+
+
 _SOBRANTES = "__sobrantes__"       # restkey de csv.DictReader
 
 
@@ -256,11 +326,10 @@ def _punto_desde_fila(fila: Dict[str, Any], numero: int) -> PuntoCritico:
     progresiva_km, progresiva_display = _progresiva(fila, id_punto, numero)
     familia = _familia(fila, id_punto, numero)
 
-    admiten_vacio = (set(_VACIAS_TODA_FAMILIA) | set(_VACIAS_ESTUDIO_GEOTECNICO)
-                     | set(_VACIAS_CON_REGLA_DECLARADA)
-                     | set(_VACIAS_LEVANTAMIENTO_DEL_CRUCE))
-    if familia is Familia.C:
-        admiten_vacio.update(_VACIAS_FAMILIA_C)
+    # La union se pide a `VACIOS_ADMITIDOS`, que es el dato publico, y ya no se
+    # arma aqui a mano: la ayuda de la ventana lee esa misma declaracion, y dos
+    # uniones escritas aparte se separan el dia que aparezca un sexto grupo.
+    admiten_vacio = columnas_que_admiten_vacio(familia)
 
     valores: Dict[str, Optional[float]] = {}
     pendientes: List[str] = []
@@ -275,7 +344,7 @@ def _punto_desde_fila(fila: Dict[str, Any], numero: int) -> PuntoCritico:
                 # proyecto tiene una regla declarada para ese caso, y meterla
                 # aqui pintaria un pendiente que no existe --- justo el tipo
                 # de afirmacion falsa que este repositorio persigue.
-                if columna not in _VACIAS_CON_REGLA_DECLARADA:
+                if columna not in _no_marca_pendiente():
                     pendientes.append(columna)
                 continue
             raise DatoFaltanteError(

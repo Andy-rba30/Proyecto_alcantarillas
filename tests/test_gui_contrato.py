@@ -1509,3 +1509,138 @@ def test_la_traduccion_de_campo_a_clave_externa_es_una_sola():
         "la traduccion no cubre exactamente los campos de la ventana")
     for clave in app.ExpedienteApp.CLAVE_EXTERNA_DE_CAMPO.values():
         assert clave in cli.CLAVES_EXTERNAS, clave
+
+
+# ===========================================================================
+# Los dos iconos de ayuda de la pestana 1
+# ===========================================================================
+
+def test_los_dos_campos_de_archivo_llevan_su_icono_de_ayuda():
+    """
+    Uno por campo, y cada uno abre SU pestana.
+
+    El icono va al lado del campo que explica y no en un menu de ayuda: la
+    pregunta «que columnas lleva esto» se hace mirando el campo, y una ayuda
+    que hay que ir a buscar es una ayuda que no se lee.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_datos"))
+    assert fuente.count("BotonAyuda(") == 2, (
+        "la pestana 1 tiene dos campos de archivo y tiene que tener dos iconos")
+    # `ayuda_ent` y no `ayuda`: el alias corto lo pisa la variable de bucle de
+    # CAMPOS_EXTERNOS, en esta misma funcion, y la lambda del icono acabaria
+    # pidiendole `.PESTANA_CSV` a una cadena de tooltip. Se renombro en S22 y
+    # el nombre queda fijado aqui para que no vuelva.
+    assert "ayuda_ent.PESTANA_CSV" in fuente
+    assert "ayuda_ent.PESTANA_JSON" in fuente
+    variables_de_bucle = {objetivo.id
+                          for nodo in ast.walk(_funcion(ARBOL_GUI,
+                                                        "_construir_tab_datos"))
+                          if isinstance(nodo, ast.For)
+                          for objetivo in ast.walk(nodo.target)
+                          if isinstance(objetivo, ast.Name)}
+    assert "ayuda_ent" not in variables_de_bucle, (
+        "el alias del modulo de ayuda vuelve a estar pisado por una variable "
+        "de bucle: la lambda del icono reventaria al pulsarlo")
+
+
+def test_la_ayuda_no_abre_una_ventana_nueva_en_cada_clic():
+    """
+    Sin reutilizar la ventana viva, cada clic apila una copia: el usuario
+    acabaria con cuatro ayudas y cerraria la de arriba creyendo que las cerro
+    todas. Al pulsar el icono del otro campo con la ayuda ya abierta, lo que se
+    espera es que CAMBIE DE PESTANA, no que nazca otra.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_abrir_ayuda"))
+    assert "winfo_exists" in fuente, (
+        "no se comprueba si la ventana sigue viva antes de reutilizarla")
+    assert "nb.select" in fuente, (
+        "con la ayuda ya abierta, el icono del otro campo tiene que cambiarle "
+        "la pestana")
+    assert "lift" in fuente
+
+
+def test_la_ventana_de_ayuda_no_sabe_nada_por_su_cuenta():
+    """
+    `gui/ayuda_entrada.py` PINTA. Todo lo que afirma se lo da
+    `src/ayuda_entrada.py`, que lo deriva de `M0_carga` y de
+    `variables_entrada`. Es el mismo reparto que sostiene
+    `gui/ventana_normativa.py`, y aqui se comprueba igual: por los nombres que
+    la ventana llama.
+    """
+    arbol = ast.parse((RAIZ / "gui" / "ayuda_entrada.py").read_text(
+        encoding="utf-8"))
+    llamadas = set()
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Attribute) \
+                and isinstance(nodo.func.value, ast.Name):
+            llamadas.add(f"{nodo.func.value.id}.{nodo.func.attr}")
+    for nombre in ("ay.fichas_de_columnas", "ay.cabecera_csv",
+                   "ay.vacios_por_quien_lo_debe", "ay.fichas_de_datos_externos",
+                   "ay.esqueleto_json"):
+        assert nombre in llamadas, (
+            f"la ventana dejo de pedir '{nombre}': o lo calcula ella, o dejo "
+            "de mostrarlo")
+
+    importados = {n.module.split(".")[0] for n in ast.walk(arbol)
+                  if isinstance(n, ast.ImportFrom) and n.module}
+    assert "modulos" not in importados, (
+        "la ventana importa un modulo de calculo: el contenido tiene que "
+        "llegarle armado por `src/ayuda_entrada.py`")
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
+    """
+    Que la ventana SE CONSTRUYA, que es el hueco que ni el contenido ni el AST
+    cubren.
+
+    `test_ayuda_entrada.py` comprueba que las 19 columnas salen del censo, y
+    los tests de contrato de arriba comprueban el cableado leyendo el arbol.
+    Entre las dos queda lo que solo un `Tk` real ve: un `grid` mal puesto, un
+    `iid` repetido en el `Treeview`, un atributo mal escrito. Nada de eso
+    aparece en el AST y todo revienta al abrirla.
+    """
+    # Los dos imports van DENTRO, como en los otros dos tests de ventana de
+    # este archivo: arriba se instalan dobles de tkinter y el modulo se lee
+    # entero antes de que ninguno de los tres corra.
+    import json
+    import subprocess
+
+    destino = tmp_path / "ayuda.json"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ayuda_real",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"la ayuda de entrada no se pudo abrir:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads(destino.read_text(encoding="utf-8"))
+    assert obs["ok"], obs.get("error")
+
+    import ayuda_entrada as ay
+    from modulos import M0_carga as m0
+
+    # 1. Las dos tablas se llenan con lo que el censo dice, y con nada mas.
+    assert obs["filas_csv_csv"] == list(m0.COLUMNAS)
+    assert len(obs["filas_json_csv"]) == len(cli.CLAVES_EXTERNAS)
+
+    # 2. Cada icono abre la ventana en SU pestana.
+    assert "CSV" in obs["pestana_activa_csv"]
+    assert "JSON" in obs["pestana_activa_json"]
+
+    # 3. El detalle responde a la seleccion. Se compara contra la ficha, no
+    #    contra un texto escrito aqui: lo que se comprueba es que la ventana
+    #    pinte LO QUE LE DAN.
+    ficha = ay.ficha_de_columna("sucs_fundacion")
+    assert ficha.de_donde_sale in obs["detalle_csv"], (
+        "el panel de detalle no muestra la procedencia de la columna")
+    assert ficha.concepto in obs["detalle_csv"]
+
+    # 4. Una sola ventana viva, con la pestana cambiada.
+    assert obs["misma_ventana"], (
+        "el segundo icono abrio una ventana nueva en vez de reutilizar la viva")
+    assert "JSON" in obs["pestana_tras_el_segundo_icono"]
+    assert obs["cerrada_abre_otra"], (
+        "cerrada a mano, el icono tiene que poder abrirla otra vez")

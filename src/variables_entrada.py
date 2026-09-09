@@ -1269,7 +1269,7 @@ def reporte_variables(poblacion: Optional[Poblacion] = None) -> str:
             out.append(f"[{v.modo.value}] {v.clave}  ({v.unidad})")
             out.append(f"     Concepto : {v.concepto}")
             out.append(f"     Fase     : {v.fase}")
-            out.append(f"     Se lee   : {_como_se_lee(v)}")
+            out.append(f"     Se lee   : {como_se_lee(v)}")
             if v.dominio:
                 out.append(f"     Dominio  : dominios.{v.dominio} "
                            f"- no es normativo: fuera de el la celda esta mal "
@@ -1302,8 +1302,16 @@ def reporte_variables(poblacion: Optional[Poblacion] = None) -> str:
     return "\n".join(out)
 
 
-def _como_se_lee(v: VariableDeEntrada) -> str:
-    """Una linea que dice de donde sale el valor, segun el modo."""
+def como_se_lee(v: VariableDeEntrada) -> str:
+    """
+    Una linea que dice de donde sale el valor, segun el modo.
+
+    ERA PRIVADA y la usaba solo `reporte_variables`. Se hizo publica en S22
+    para que la ayuda del CSV de la pestana 1 la reutilice en vez de volver a
+    recorrer los seis modos: dos lecturas del mismo `Resolucion` acabarian
+    diciendo cosas distintas del mismo dato, y una de las dos seria la que el
+    proyectista lee antes de llenar su archivo.
+    """
     r = v.resolucion
     if isinstance(r, Libre):
         texto = r.que_lo_fija

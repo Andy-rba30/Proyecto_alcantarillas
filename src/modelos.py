@@ -4052,3 +4052,43 @@ class VariableDeEntrada:
     def modo(self) -> ModoDeResolucion:
         """El modo de la Sec. 4.3, leido del tipo de `resolucion`."""
         return modo_de(self.resolucion)
+
+
+@dataclass(frozen=True)
+class VacioAdmitido:
+    """
+    Un grupo de columnas del CSV que pueden ir VACIAS, con quien debe el dato.
+
+    Existe porque «celda vacia» tiene dos lecturas opuestas que desde fuera no
+    se distinguen: falta un dato que el proyectista tenia que poner, o espera
+    a un tablero que todavia no respondio. M0 lo sabia --- lo declaraba en
+    cinco tuplas privadas, cada una con su razon escrita al lado --- y nadie
+    mas lo podia leer, de modo que el proyectista veia una columna vacia en su
+    CSV y creia que le faltaba un dato.
+
+    `familias` vacia significa TODA FAMILIA. Cuando lleva familias, el vacio
+    solo se admite en esas: `Q_m3s` va vacia en un cruce de canal y es
+    obligatoria en una alcantarilla de paso, y esa es la distincion que la
+    ayuda de la ventana tiene que poder decir.
+
+    `marca_pendiente` separa el vacio que ESPERA A ALGUIEN del que no: una
+    `cota_fondo_entrada` vacia no espera a nadie porque el proyecto tiene una
+    regla declarada para ese caso, y meterla entre los pendientes pintaria un
+    pendiente que no existe. Es el mismo matiz que `pendientes_externos`.
+    """
+
+    columnas: Tuple[str, ...]
+    quien_lo_debe: str
+    familias: Tuple[Familia, ...] = ()
+    marca_pendiente: bool = True
+
+    def alcanza_a(self, familia: Optional[Familia]) -> bool:
+        """
+        Si este vacio se admite para esa familia.
+
+        `familia=None` pregunta por el grupo entero, sin fijar una: es lo que
+        necesita una ayuda que se abre ANTES de que haya CSV cargado.
+        """
+        if not self.familias:
+            return True
+        return familia is None or familia in self.familias
