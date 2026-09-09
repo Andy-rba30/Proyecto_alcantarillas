@@ -104,6 +104,13 @@ class FichaDeColumna:
     # ventana emergente: un dominio pintado de dos formas distintas en dos
     # pantallas del mismo programa es un dominio en el que no se puede confiar.
     limite_fisico: Optional[vn.RangoMostrado] = None
+    # `VariableDeEntrada.nota`, QUE LA AYUDA DE S22 SE DEJABA. Existia,
+    # `reporte_variables` la imprimia y dos columnas la llevan --- la de
+    # `NF_profundidad_m` explica por que no viene del encabezado de Sec. 1.2, y
+    # la de `sucs_fundacion` dice que se escribe en la celda ---, y aun asi no
+    # llegaba a la pantalla. Una ayuda derivada que descarta un campo de su
+    # fuente es una ayuda derivada a medias.
+    nota: str = ""
 
     @property
     def obligatoria(self) -> bool:
@@ -162,6 +169,7 @@ def ficha_de_columna(clave: str) -> FichaDeColumna:
         vacios=_vacios_de(clave),
         dominio_declarado=_dominio_declarado(v),
         limite_fisico=vn.dominio_mostrado(v.dominio),
+        nota=v.nota,
     )
 
 

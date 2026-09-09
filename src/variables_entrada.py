@@ -467,11 +467,28 @@ _COLUMNAS: Dict[str, _Columna] = {
 
     "progresiva_km": _Columna(
         concepto="Progresiva del cruce sobre el eje de la via. Localizador: "
-                 "no entra en ningun calculo",
+                 "no entra en ningun calculo. Se escribe en NOTACION VIAL "
+                 "('0+380') o en kilometros decimales ('0.380'): M0 acepta "
+                 "las dos y la memoria imprime siempre la notacion vial",
         unidad="km",
         resolucion=Libre(
             que_lo_fija="el trazo del expediente vial",
-            dominio="km >= 0, dentro del corredor del proyecto",
+            # LAS DOS FORMAS, Y ESTABAN SIN DECLARAR (S23). El dominio decia
+            # solo «km >= 0», y `M0._progresiva` acepta ademas la notacion
+            # vial con '+' --- que es la que usan los DOS CSV del repositorio
+            # y la que la memoria y los planos imprimen ---. Quien leyera la
+            # ayuda derivada de este campo escribiria '0.380' creyendo que es
+            # la unica forma admitida: funciona, y aun asi la ayuda le estaba
+            # escondiendo la mitad del contrato.
+            #
+            # El tope de los metros no se escribe como numero: se NOMBRA
+            # (`METROS_POR_KM`), igual que `S_cauce` nombra `S_CAUCE_MAX`, de
+            # modo que la ayuda no pueda decir un limite distinto del que
+            # `_progresiva` aplica.
+            dominio="km >= 0, dentro del corredor del proyecto. DOS "
+                    "NOTACIONES ADMITIDAS: la vial '0+380' (kilometro, '+', "
+                    "metros de 0 a METROS_POR_KM sin alcanzarlo) y los "
+                    "kilometros decimales '0.380'. Un solo '+' por celda",
         ),
     ),
 
@@ -708,6 +725,47 @@ _COLUMNAS: Dict[str, _Columna] = {
                                  "`docs/decisiones_diferidas.md`",
         ),
         criterio_destino="c_phi_fundacion",
+        # QUE SE ESCRIBE EN LA CELDA. Faltaba, y era el segundo defecto que
+        # destapo la ayuda derivada de S22: la celda es texto libre, `M0._texto`
+        # acepta cualquier cadena no vacia, y la ficha no decia ni que forma
+        # tiene un grupo SUCS. Quien llena el CSV no tenia de donde saberlo.
+        #
+        # EL VOCABULARIO NO ESTA CERRADO POR NINGUNA FUENTE DE `normas/`, y esa
+        # es la razon de que esto sea una NOTA y no un `opciones`. Lo medido,
+        # leyendo los PDF y no de memoria:
+        #
+        #   - E.050, FIGURA 3, pagina impresa 31: enumera QUINCE simbolos
+        #     basicos (los de abajo) y la propia norma rotula la figura como
+        #     referencial. Ninguna dupla aparece ahi.
+        #   - Manual de Suelos (MTC), Cuadro 4.9, pagina impresa 35: correlaciona
+        #     AASHTO con SUCS y atribuye la clasificacion SUCS a ASTM D-2487.
+        #     Usa trece simbolos y ninguna dupla.
+        #   - Manual de Suelos (MTC), Cuadro 9.1, pagina impresa 92: USA nueve
+        #     duplas como claves de fila (SP-SM, SM-SC, GW-GC...), pero es una
+        #     guia de estabilizadores, no una enumeracion --- y trae ademas un
+        #     desliz de transcripcion en la fuente ('SP - PC').
+        #   - ASTM D-2487, que es quien define el sistema y sus duplas, NO esta
+        #     en `normas/`.
+        #
+        # De ahi la consecuencia que decide la forma de esta declaracion:
+        # `tests/ejemplo_puntos.csv` trae 'SP-SM', que NO esta entre los quince.
+        # Declarar los quince como conjunto cerrado dejaria fuera un valor del
+        # propio expediente, e inventar la regla de composicion de duplas seria
+        # inventar norma. Se declara lo que hay y se declara el hueco.
+        #
+        # NO RESTRINGE LA CARGA, y esta comprobado: nada valida una celda de
+        # texto contra una lista declarada --- `Libre.opciones` solo se IMPRIME
+        # (M11, la ventana normativa y la ayuda) --- y `test_ayuda_entrada.py`
+        # fija que M0 sigue aceptando 'SP-SM' y cualquier otra cadena. Esta nota
+        # informa; no cierra ninguna puerta.
+        nota="Grupo SUCS del suelo de fundacion. Los QUINCE simbolos basicos "
+             "son GW, GP, GM, GC, SW, SP, SM, SC, ML, CL, OL, MH, CH, OH y Pt "
+             "(E.050, FIGURA 3, pag. impresa 31; la norma rotula esa figura "
+             "como referencial). La celda admite ADEMAS la forma doble de un "
+             "suelo de frontera --- 'SP-SM', 'SM-SC' ---, que el expediente usa "
+             "y que NINGUNA fuente de normas/ enumera: quien las define es ASTM "
+             "D-2487, que no esta en el repositorio. M0 NO valida esta celda "
+             "contra ninguna lista: solo exige que no este vacia.",
     ),
 
     "NF_profundidad_m": _Columna(

@@ -256,9 +256,16 @@ class VentanaAyudaEntrada(tk.Toplevel):
         self.txt_csv.delete("1.0", "end")
         if seleccion:
             f = self._fichas_csv[seleccion[0]]
+            # EL ORDEN LO DECIDIO LA VENTANA REAL, no el gusto. Con «SE LEE DE»
+            # en segundo lugar, la ficha de `sucs_fundacion` --- 1236 caracteres
+            # de trazabilidad --- empujaba la NOTA fuera del panel, y la nota es
+            # justo lo que el proyectista necesita: QUE ESCRIBIR en la celda.
+            # Se ordena por accionabilidad y la prosa larga queda al final, que
+            # es donde el scroll molesta menos.
             lineas = [f"{f.clave}   [{f.unidad}]", "",
-                      f"CONCEPTO   {f.concepto}", "",
-                      f"SE LEE DE  {f.de_donde_sale}"]
+                      f"CONCEPTO   {f.concepto}"]
+            if f.nota:
+                lineas += ["", f"NOTA       {f.nota}"]
             if f.dominio_declarado:
                 lineas += ["", f"RANGO      {f.dominio_declarado}"]
             if f.limite_fisico is not None:
@@ -268,6 +275,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
                            f"           {f.limite_fisico.que_pasa_fuera}"]
             for vacio in f.vacios:
                 lineas += ["", f"VACIA      {vacio.quien_lo_debe}"]
+            lineas += ["", f"SE LEE DE  {f.de_donde_sale}"]
             self.txt_csv.insert("1.0", "\n".join(lineas))
         self.txt_csv.configure(state="disabled")
 
