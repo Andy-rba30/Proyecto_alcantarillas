@@ -874,3 +874,39 @@ catorce, y su ficha lo dice sin borrarse.
   falso.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::pieza_del_hueco_de_V5`
   (la regla de familia, en un solo sitio y consultada por los dos llamadores)
+
+---
+
+# Parte X — Lo que S24 anotó sin abrir
+
+## S24-01 · Las claves externas sin techo, y el punto de decisión de `longitud_m`
+
+- **Qué se difirió:** decidir si las claves de `--datos-externos` que quedan
+  fuera de `cli.py::_DOMINIO_DE_CLAVE` necesitan cota, y con ella el **punto de
+  decisión de `longitud_m`**. El diagnóstico **está hecho y escrito**; lo que
+  se difiere es actuar sobre él. El conjunto no se transcribe aquí ni allí: se
+  **calcula** (`set(CLAVES_EXTERNAS) - set(_DOMINIO_DE_CLAVE)`), porque un
+  conteo a mano al lado de la colección que cuenta ya envejeció tres veces en
+  este mismo bloque.
+- **Por qué:** porque de las que quedan fuera **ninguna es una deuda abierta**,
+  y eso hubo que establecerlo antes de poder no hacer nada con tranquilidad.
+  `categoria_tr` está fuera por construcción (es de `CLAVES_TEXTO`); `Q_m3s`
+  está fuera por decisión ya tomada y escrita —techo ausente, guardia en la
+  salida de la aritmética—; `luz_m` tiene umbral normativo que **no debe**
+  copiarse aquí, porque `LUZ_MAX_ALCANTARILLA` clasifica y no invalida, y
+  copiarlo cambiaría el veredicto «es puente, fuera de alcance» por un
+  `DatoInvalidoError`; `TW_m` y `L_hidraulico_m` no tienen cota que heredar ni
+  que derivar, e inventarla está prohibido.
+  `longitud_m` es la excepción y es una **elección**, no un olvido: su cota
+  existe, no es constante —es la fórmula de Sec. 7.B— y la puerta que la
+  aplica es la que la declaración existe **para no usar**.
+- **Qué haría falta:** decidir si `longitud_m` declarada se contrasta contra la
+  geometría de su propia fila (validación cruzada de Sec. 1.5, con
+  `DatoInvalidoError`) o si se deja como está, por el precedente de `Q_m3s`.
+  Lo que **no** haría falta es una guardia de finitud o de signo: las dos
+  puertas ya las tienen, y está medido que no es ahí donde pasa. Está medido
+  también qué pasa hoy: sobre A-01 de `tests/ejemplo_puntos.csv`, con
+  `ancho_plataforma` de 9.60 m, un `longitud_m` declarado de 0.5 m llega a la
+  Sec. 7.B y sale `factible`.
+- **Dónde vive:** `cli.py::_DOMINIO_DE_CLAVE` (el diagnóstico completo, clave
+  por clave, en su comentario) y `cli.py::_resolver_longitud` (las dos puertas)
