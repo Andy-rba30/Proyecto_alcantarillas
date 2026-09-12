@@ -269,15 +269,25 @@ AASHTO_M36 = Fuente(
     titulo=("AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers "
             "and Drains»"),
     emisor="AASHTO",
-    edicion="M 36",
-    anio=2006,
+    # LO QUE LA PORTADA ROTULA (verificado por imagen en I1): «AASHTO
+    # Designation: M 36-03 (2007)» y, debajo, «ASTM Designation:
+    # A 760/A 760M-01a»; el pie de cada pagina dice «(c) 2008», que es el
+    # año de impresion del tomo, no el de la edicion. Hasta I1 aqui decia
+    # edicion="M 36" y anio=2006, un año que no aparece en ninguna pagina
+    # de la fuente.
+    edicion="M 36-03 (2007)",
+    anio=2007,
     archivo_pdf=("normas/AASHTO M 36 Corrugated Steel Pipe, Metallic-Coated, "
                  "for Sewers and Drains.pdf"),
     sha1="f85b5658385ae6779dde4e5fd340ac3122b62636",
     paginas_pdf=24,
-    # Medido renderizando el pie de cada pagina: la impresa «M 36-n» es la
-    # PDF n+1, porque la PDF 1 es una caratula sin numerar.
-    paginacion=Corrida(desfase=1),
+    # Medido renderizando el pie de cada pagina: la impresa se rotula
+    # «M 36-n» (asi, con prefijo, igual que M 170M) y es la PDF n+1, porque
+    # la PDF 1 es una caratula sin numerar. Hasta I1 esto estaba escrito
+    # Corrida(desfase=1), que predice lo mismo pero no sabe LEER el rotulo
+    # impreso: la primera cita real de esta fuente (AASHTO_M36.T6, pagina
+    # impresa «M 36-11») lo hizo fallar en T6.
+    paginacion=PorCapitulo(base={"M 36": 1}, separadores=("-",)),
     texto_extraible=False,
     convive_con=("ASTM_A760",),
     nota=("RASTER PURO, SIN CAPA DE TEXTO: la extraccion devuelve cadena "

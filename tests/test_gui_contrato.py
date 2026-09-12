@@ -1732,6 +1732,58 @@ def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
         "cerrada a mano, el icono tiene que poder abrirla otra vez")
 
 
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_la_ventana_normativa_se_construye_y_se_cierra_de_verdad(tmp_path):
+    """
+    El hueco que la ficha SIS-F-01 dejo NOMBRADO y que los otros tres tests
+    de ventana no cubrian: `gui/ventana_normativa.py` -- el archivo entero --
+    no se construia NUNCA bajo un `Tk` real. `gui_seleccion_real` llama a
+    `_tras_declarar_en_ventana` a proposito SIN abrir la emergente (y dice
+    por que), y `test_ventana_normativa.py` compara el CONTENIDO sin
+    pantalla; entre los dos, un `grid` mal puesto o un atributo mal escrito
+    en cualquiera de los siete `_bloque_*` reventaba al abrirla y la suite
+    seguia verde.
+
+    El smoke -- ver `tests/apoyo/gui_smoke_normativa.py` -- hace lo que el
+    proyectista hace: construye la aplicacion, puebla las CUATRO pestanas
+    con `tests/ejemplo_puntos.csv` (el CSV de expediente; la corrida de
+    perfil ya tiene el suyo), y abre y cierra la ventana normativa de un
+    criterio `de_tabla` por el camino del raton.
+    """
+    import json
+    import subprocess
+
+    destino = tmp_path / "smoke.json"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_smoke_normativa",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"el smoke de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads(destino.read_text(encoding="utf-8"))
+
+    # La aplicacion entera, poblada con el CSV de expediente.
+    assert obs["pestanas"] == 4
+    assert obs["informe"], "la corrida no produjo informe"
+    assert obs["puntos_en_tabla"] == 4, (
+        "ejemplo_puntos.csv trae 4 puntos y la tabla de la pestana 3 tiene "
+        f"{obs['puntos_en_tabla']}")
+    assert obs["pestanas_recorridas"]
+
+    # La emergente del criterio `de_tabla`: se abrio de verdad, con la cara
+    # TABLA construida, y se cerro sin dejar rastro.
+    assert obs["seleccionado"] == "ke_entrada"
+    assert obs["emergentes_abiertas"] == 1, (
+        "la ventana normativa no llego a abrirse")
+    assert "Tabla normativa" in obs["titulo_emergente"]
+    assert obs["widgets_de_la_emergente"] > 20, (
+        "la emergente se abrio casi vacia: la cara TABLA no se construyo")
+    assert obs["emergentes_tras_cerrar"] == 0
+
+
 # ===========================================================================
 # G1: la pestana 1 agrupada por familia (derivado) y sin jerga de CLI
 # ===========================================================================

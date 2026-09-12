@@ -878,6 +878,40 @@ H_O_HW_SOBRE_D_CAUTELA = 1.2        # HW/D por debajo del cual la fuente pide
 # normas/, dentro de su procedimiento paso a paso (PDF 67):
 H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
 # Lo que el proyecto hace con la condicion, y que NO puede hacer:
+# EL PAQUETE DE IMPLEMENTACION DEL PROCEDIMIENTO DE BARRIL PARCIALMENTE
+# LLENO, evaluado y escrito en I1 (2026-09-12) para la sesion que lo
+# implemente (NOR-HDS-05; la ficha de docs/decisiones_diferidas.md cita este
+# bloque). Se abrio el Cap. III de la 3.a edicion (fuente HDS5_3ED,
+# normas/hif12026.pdf) y el procedimiento SI es transcribible; el ensamble es
+# sesion propia con plan mode porque toca M4.control_salida, que es motor
+# validado. Las piezas, con numeral y pagina leidos del PDF:
+#   1. EL PROCEDIMIENTO EN PROSA esta en «Hydraulics of Outlet Control
+#      (Unsubmerged Outlet)», pag. impresa 3.12 (PDF 94): el calculo de
+#      remanso empieza en la lamina de agua del extremo aguas abajo y avanza
+#      hacia la entrada; la frontera aguas abajo es «critical depth at the
+#      culvert outlet or ... the tailwater depth, whichever is higher»; y si
+#      el perfil corta la clave del barril se empalma una linea de energia de
+#      seccion llena con la pendiente de friccion de la Ec. 3.7 (misma pag.).
+#   2. LOS DOS UMBRALES SUSTITUTOS YA IMPLEMENTADOS (H_O_HW_SOBRE_D_CAUTELA y
+#      H_O_HW_SOBRE_D_MIN) salen de la pag. impresa 3.24 (PDF 106), que
+#      ademas remite el calculo fino a la Seccion 3.5.
+#   3. LA SECCION 3.5 (pag. impresa 3.34, PDF 116; el computo de perfil en
+#      3.5.1, PDF 118-120) es en la 3.a edicion el capitulo de software:
+#      HY-8 adopto el perfil de lamina para refinar «flow depth, flow
+#      velocity, and length of barrel flowing full». La fraccion de longitud
+#      a seccion llena -- exactamente lo que la primera condicion de este
+#      bloque necesita -- es un RESULTADO del perfil, no una lectura.
+#   4. QUE HABRIA QUE IMPLEMENTAR, Y DONDE: en M4, un perfil de lamina por
+#      paso directo (flujo gradualmente variado con el n de Manning y la
+#      geometria de theta que M3/M4 ya tienen), desde la frontera
+#      max(y_c, TW) <= D en la salida hacia la entrada; con el, (a) la
+#      primera condicion pasa de declarada a MEDIDA y (b) bajo
+#      HW/D < H_O_HW_SOBRE_D_MIN el HW se calcula por remanso en vez de por
+#      la aproximacion que la fuente prohibe ahi. M5 no cambia: consume el
+#      mismo Verificacion/PasoDeMemoria que M4 emita.
+#   5. LOS DORADOS NO SE FABRICAN: un caso patron de perfil necesita una
+#      corrida de referencia externa citable (HY-8 u otra), que es la misma
+#      regla del conflicto #7.
 H_O_CONDICION_APLICACION = (
     "h_o se calcula SIEMPRE, y de las tres condiciones que la fuente le pone "
     "el proyecto EVALUA dos y declara la tercera. "
