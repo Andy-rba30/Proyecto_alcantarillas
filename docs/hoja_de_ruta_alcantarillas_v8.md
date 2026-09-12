@@ -50,7 +50,7 @@
 | Hidrología, TR, tipo de obra, Manning, velocidades, borde libre, protección de salida, cunetas | **Manual de Hidrología, Hidráulica y Drenaje** (RD 20-2011-MTC/14) | [N] Norma base |
 | Resguardo napa–subrasante, compactación, densidad de calicatas, terraplén sobre NF somero | **Manual de Suelos, Geología, Geotecnia y Pavimentos** (RD 10-2014-MTC/14) | [N] |
 | Cargas, combinaciones, HL-93, sobrecarga en trasdós, PGA, zapatas en talud, diseño del concreto | **Manual de Puentes** (RD 041-2016-MTC/14) | [N] |
-| Clase de sitio F (exige estudio de respuesta de sitio, §0.5); Sección 12 (estructuras enterradas) | **AASHTO LRFD Bridge Design Specifications** | Norma matriz. `[C]` donde el Manual no tipifica; la clase de sitio **no** es uno de esos casos: es `[A]` — ver §0.5 |
+| Clase de sitio sísmica (indeterminada; prohibido suponerla E o F, §0.5); Sección 12 (estructuras enterradas) | **AASHTO LRFD Bridge Design Specifications** | Norma matriz. `[C]` donde el Manual no tipifica; la clase de sitio **no** es uno de esos casos: es un dato de sitio `[S]` pendiente de ensayo, y la elección de filas de `F_pga` es `[A]` — ver §0.5 |
 | Capacidad portante, FS de muros, licuefacción, c y φ, cimentación en talud | **RNE E.050** (RM 406-2018-VIVIENDA) | [N] |
 | Perfil de suelo licuable (señal técnica) | **RNE E.030** (RM 183-2026-VIVIENDA) | [N] con reserva de ámbito (0.4) |
 | Durabilidad del concreto y recubrimientos | **RNE E.060**, Cap. 4 y Art. 7.7 | [N] por excepción declarada (0.2) |
@@ -76,7 +76,7 @@ El Manual de Puentes establece que las combinaciones se rigen por **AASHTO LRFD 
 | Velocidad máxima en TMC y HDPE | Tabla Nº 10 no los cubre. Fuentes identificadas (PPI, FHWA); **valores numéricos aún por extraer** |
 | n de Manning para HDPE | Tabla Nº 09 no lo lista. **Rango 0.010–0.013 aplicado por analogía al concreto** `[N→]` (corregido desde `[A]`: lo exige la **regla de coherencia** de §0.1 — un valor justificado invocando una fila de una tabla normativa no puede ser `[A]` —, y es el mismo caso que `resguardo_HW_subrasante` y `h_relleno_min_concreto_tmc`. Ref. SIS-D-11) |
 | Flotación de conductos | El Manual de Puentes define subpresión (2.4.3.8.2, pág. 113) pero no incorpora AASHTO LRFD Sec. 12. Definición `[N]`; la verificación se plantea como **equilibrio de factores de carga LRFD** (§Fase 5, V7), con los γ de las **Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2 del propio Manual** (pág. impresa 143; son las 3.4.1-1/-2 de AASHTO, transcritas) `[N]`, y `factores_carga_aashto` `[A]` limitado a **qué fila** de γp describe a cada estructura. **Corrección de esta tabla** (`NOR-PUE-04`): decía «los γ … vía `factores_carga_aashto` `[A]`», y llamaba adoptado a lo que la norma peruana escribe. El Manual sí transcribe las dos tablas, en la misma página que este documento ya citaba. **Ya no un FS global:** un FS es lenguaje de tensión admisible y §0.2 adopta LRFD de extremo a extremo |
-| Clase de sitio F | **Cerrado en contra de lo que decía la v7.** AASHTO no concede dispensa alguna: exige estudio de respuesta de sitio específico. Usar factores tabulados es adopción `[A]` del proyectista — §0.5 |
+| Clase de sitio | **Cerrado en contra de lo que decía la v7, dos veces.** AASHTO no concede dispensa alguna para la Clase de Sitio F: exige estudio de respuesta de sitio específico. Y el expediente ya no se atribuye esa clase — suponerla E o F está vedado sin dato geotécnico —: la clase es `[S]` sin valor y leer los factores tabulados como envolvente C/D/E es adopción `[A]` del proyectista (`F_pga`) — §0.5 |
 
 ### 0.4 Marco sísmico — CERRADO
 
@@ -104,21 +104,27 @@ El periodo de retorno de referencia de Z **no lo escribe el Art. 11.1**: escribe
 
 Los valores de tabla son **[N]**. La **elección** de F_pga = 1.0 sin conocer la clase de sitio definitiva es **[A]**: conservadora o exacta frente a las tres clases plausibles, con incertidumbre acotada al 10 %.
 
-**Alcance de "conservador":** lo es dentro del marco tabulado. El análisis de respuesta específica de sitio —el que la Clase F **exige**, sin dispensa posible (§0.5)— podría arrojar valores mayores. Declararlo.
+**Alcance de "conservador":** lo es dentro del marco tabulado. El análisis de respuesta específica de sitio —el que la **Clase de Sitio F** exigiría, sin dispensa posible (§0.5)— podría arrojar valores mayores. Declararlo.
 
-### 0.5 Clase de sitio F — ADOPCIÓN DECLARADA, NO DISPENSA NORMATIVA
+### 0.5 Clase de sitio sísmica — INDETERMINADA; las fuentes prohíben suponerla E o F
 
-El sitio clasifica como **Clase de Sitio F** por susceptibilidad a licuefacción: arenas saturadas con NF a 1.4 m en la llanura del Bajo Piura. Clasificarlo como D o E mientras la Fase 0-bis advierte riesgo de licuefacción sería una contradicción interna del expediente. Eso no ha cambiado.
+**Este expediente no se atribuye ninguna clase de sitio, y en particular deja de atribuirse la Clase de Sitio F.** No porque una fuente diga que el sitio no lo sea, sino por algo más fuerte: **las dos fuentes prohíben expresamente *suponer* la clase E o F sin dato geotécnico o determinación de la autoridad**, y este expediente no tiene ninguna de las dos — el SPT está pendiente (Tablero 3.6). AASHTO LRFD, articulado, al pie de la Tabla 3.10.3.1-1 (pág. impresa 3-102): «Site classes E or F should not be assumed unless the authority having jurisdiction determines that site classes E or F could be present at the site or in the event that site classes E or F are established by geotechnical data». El Manual de Puentes lo endurece (num. 2.4.3.11.2.1.1, pág. impresa 122): «Las clases de Sitio E o F no serán supuestas a no ser que la Entidaddetermine la clase de sitio E o F o estas sean establecidas por datos geotécnicos» *(«Entidaddetermine», sin espacio, es errata del impreso y se transcribe tal cual)*. La misma cláusula trae el deber positivo, que es el trabajo pendiente: «a site investigation shall be undertaken sufficient to determine the site class».
 
-**Lo que sí cambia — corrección de la versión anterior de este apartado.** Las versiones previas afirmaban que AASHTO LRFD, Art. 3.10.3.1, autoriza una dispensa por periodo fundamental corto (T ≤ 0.5 s) que permitiría clasificar el sitio como si los suelos no licuaran y usar los factores de sitio tabulados. **Esa regla no existe.** Se verificó contra **AASHTO LRFD Bridge Design Specifications, 9.ª edición (2020)**: no está en el Art. 3.10.3.1, no está en su comentario C3.10.3.1, y no está en ninguna tabla ni nota a tabla de clases de sitio. **AASHTO exige, de forma incondicional, un estudio de respuesta de sitio específico para la Clase F.**
+Los tres hechos que el expediente sí declara, cada uno con su cita y **sin traslado entre ellos**:
 
-Esto no fue un vacío rellenado en silencio: fue una **autorización normativa atribuida a una norma que no la concede**, y es el error más grave que ha tenido este expediente. Un vacío se ve; una cita falsa se cree. Queda anotado aquí, y no borrado, para que nadie vuelva a cerrarlo por el mismo camino.
+1. **E.030 clasifica el sitio como perfil S5** «Suelos excepcionales», por su primera viñeta («Suelos potencialmente licuables»): arenas saturadas con NF a 1.4 m en la llanura del Bajo Piura. Esa clasificación trae una prohibición condicionada de construir (Fase 0-bis) — y es un esquema **distinto** del de AASHTO: S0–S5 por descripción, no A–F por rigidez medida sobre los 100 ft superiores. Ninguna de las dos fuentes imprime una equivalencia «S5 = Clase F», y ambas coinciden en la consecuencia: ninguna tabula factor para su categoría excepcional (la Tabla Nº 4 de E.030 no tiene columna S5; la fila F son cinco asteriscos).
+2. **La clase de sitio de AASHTO / Manual de Puentes está indeterminada**, y suponerla E o F está vedado (citas de arriba). La cierra la caracterización de los **100 ft (30.48 m) superiores** (Vs30 o N̄) — la profundidad que el Art. 3.10.3.1 escribe: «Sites shall be classified by their stiffness as determined by the shear wave velocity in the upper 100 ft». **No la cierra el SPT de 15 m** de E.050 Art. 38, que responde a otra pregunta (licuefacción) y se detiene a mitad de la columna que esta clase necesita.
+3. **Mientras esté indeterminada, el factor de sitio se lee como envolvente de las filas C, D y E** (§0.4): la tabla es `[N]` y la elección de filas es `[A]` — el criterio `F_pga`, con su sensibilidad declarada. La fila F no está entre las leídas por dos razones que valen hoy: **no da factor** (cinco asteriscos y remisión a estudio) y **suponerla está vedado**. Si la campaña devolviera Clase F, no queda fila con factor: queda el estudio, y esta memoria no podría cerrarse sin él.
 
-**Consecuencia sobre la etiqueta: de `[C]` a `[A]`.** Un `[C]` es un vacío normativo **cubierto** con fuente técnica reconocida. Aquí no hay fuente que lo cubra: la que se citaba no dice lo que se le hacía decir. Por tanto, mientras no exista el estudio de respuesta de sitio, **seguir el cálculo con los factores de sitio tabulados es una adopción declarada del proyectista, no un permiso de la norma.** Etiqueta **[A]**, declarada en `criterios_adoptados.py` como `clase_sitio = "F_con_factores_tabulados_por_adopcion"`. La memoria de cálculo debe decirlo con esas palabras y **no citar AASHTO como respaldo de la adopción**.
+**La licuefacción entra por otra vía, no por la clase de sitio.** AASHTO la evalúa en su Sección 10 (Cimentaciones), Art. 10.5.4.2 «Liquefaction Design Requirements» (pág. impresa 10-34), disparada por *zona sísmica 3 o 4* más *napa freática en los 50 ft superiores* más *características del suelo*: ninguna de las tres condiciones es la clase de sitio, y «Site Class F» no aparece en ninguna página de la Sección 10. Y el propio 10.5.4.2 **espera** que a un sitio licuable le aplique un factor de sitio tabulado — manda analizar en configuración no licuada y licuada con «The design spectrum should be the same as that used in the nonliquefied configuration», acotado por «the site factors in Article 3.10.3.2» —, lo que es incompatible con que la licuefacción hiciera Clase F por sí sola: la fila F no tiene factor con que empezar. El reparto coherente es el que este expediente hace: clasificar por rigidez medida (pendiente) y evaluar la licuefacción aparte, con el SPT de la Fase 0-bis.
 
-**Alcance de la adopción, ahora sin coartada.** Los factores tabulados permiten **dimensionar** el elemento estructural. **No constituyen una evaluación del riesgo de licuefacción**, que permanece como el condicionante técnico no resuelto del proyecto (Fase 0-bis), y los efectos de la licuefacción —asentamiento, desplazamiento lateral, pérdida de capacidad portante— quedan fuera del alcance del script y remitidos al estudio geotécnico del expediente. Un análisis de respuesta específica de sitio **puede arrojar valores mayores** que los tabulados: la adopción **no es conservadora por construcción**, y esa es exactamente la razón de que sea `[A]` y no `[N→]`.
+**Lo que sí cambió antes y se conserva anotado — la dispensa que no existe.** Las versiones previas de este apartado afirmaban que AASHTO LRFD, Art. 3.10.3.1, autoriza una dispensa por periodo fundamental corto (T ≤ 0.5 s) que permitiría clasificar el sitio como si los suelos no licuaran. **Esa regla no existe.** Se verificó contra la 9.ª edición (2020): no está en el Art. 3.10.3.1, ni en su comentario, ni en ninguna tabla o nota de clases de sitio. Para un sitio que clasifique F, el estudio de respuesta se exige con `shall` — y el anclaje correcto es el **Art. 3.10.2 «Seismic Hazard»** (pág. impresa 3-71), no la Nota 2 de las tablas de factores, que dice `should`. Esto no fue un vacío rellenado en silencio: fue una **autorización normativa atribuida a una norma que no la concede**, y es el error más grave que ha tenido este expediente. Un vacío se ve; una cita falsa se cree. Queda anotado aquí, y no borrado, para que nadie vuelva a cerrarlo por el mismo camino.
 
-**Lo que cierra este apartado.** El estudio de respuesta de sitio específico que AASHTO exige para la Clase F, programado en la campaña geotécnica junto con la caracterización de los 30 m superiores (Vs30 o N̄) que define la clase.
+**Alcance de la adopción de `F_pga`, sin coartada.** Los factores tabulados permiten **dimensionar** el elemento estructural. **No constituyen una evaluación del riesgo de licuefacción**, que permanece como el condicionante técnico no resuelto del proyecto (Fase 0-bis), y los efectos de la licuefacción —asentamiento, desplazamiento lateral, pérdida de capacidad portante— quedan fuera del alcance del script y remitidos al estudio geotécnico del expediente. Un análisis de respuesta específica de sitio **puede arrojar valores mayores** que los tabulados: la adopción **no es conservadora por construcción**, y esa es exactamente la razón de que la elección de filas sea `[A]` y no `[N→]`.
+
+**Lo que cierra este apartado — dos ensayos de profundidades distintas, pedirlos juntos:** (1) la caracterización de los 100 ft (30.48 m) superiores (Vs30 o N̄), con la que se lee la clase; y (2) solo si esa caracterización diera Clase F, el análisis de respuesta dinámica de sitio que el Art. 3.10.2 exige con `shall`.
+
+> **Corregido (`DIS-HR-CLASE-DE-SITIO-F`, `DIS-HR-VIA-DE-LA-LICUEFACCION`, `DIS-HR-30M-VS-100FT`, I2; resolución vinculante del conflicto #8 en `docs/resolucion_clase_sitio.md`).** Este apartado se titulaba «Clase de sitio F — ADOPCIÓN DECLARADA, NO DISPENSA NORMATIVA» y abría con «El sitio clasifica como **Clase de Sitio F** por susceptibilidad a licuefacción […] Eso no ha cambiado». Tres defectos, cada uno con su cita en contra: (1) el salto «suelo licuable → Clase F» no lo escribe ninguno de los dos documentos que la cadena sísmica invoca — en las 1905 páginas de AASHTO, los conjuntos de páginas con `liquef` y con «Site Class F» son disjuntos — y las dos fuentes **prohíben suponer** la clase E o F sin dato geotécnico (`AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES`, `MP.2.4.3.11.2.1.1#EXCEPCIONES`, verificadas); (2) la licuefacción se evalúa por el Art. 10.5.4.2, nunca por la clase de sitio (`AASHTO_LRFD_9.10.5.4.2`, `AASHTO_LRFD_9.10.5.4.2#ESPECTRO`); (3) el Art. 3.10.3.1 escribe «the upper 100 ft», no «30 m» (`AASHTO_LRFD_9.3.10.3.1`). El valor `clase_sitio = "F_con_factores_tabulados_por_adopcion"` que este apartado citaba ya no existe en el código: desde S14 `clase_sitio` es un dato de sitio **`[S]` sin valor**, pendiente de ensayo, y el `[A]` que sí existe es la elección de filas de `F_pga`. Nota de vocabulario (`NOR-VOC-04`): «Clase F» designa tres cosas sin relación en las normas de este expediente — la clase de sitio sísmica, la clase de resistencia del concreto (EG-2013 Tabla 503-07, la matriz del ciclópeo de §9.4) y una clase del acero ASTM A668 que el Manual tabula — y toda mención va calificada.
 
 ### 0.6 Demanda sísmica para la evaluación de licuefacción — CERRADO
 
@@ -145,9 +151,11 @@ La inconsistencia Clase D/F que motivó la v5 no fue un error de cálculo: fue e
 
 ## Fase 0-bis — Licuefacción: el condicionante mayor del proyecto
 
-**E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla Nº 2 — Perfil S5 "Suelos excepcionales":**
+**E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla Nº 2 — Perfil S5 "Suelos excepcionales".** La celda es una lista de diez viñetas; la primera nombra este suelo y el cierre trae la prohibición. Se transcriben esas dos partes, **con la elisión marcada**:
 
-> Suelos potencialmente licuables. Estos casos no están cubiertos en la clasificación de la Tabla Nº 2. **Se prohíbe las construcciones apoyadas sobre estos perfiles, salvo que se efectúe un estudio específico para el sitio, en el cual se debe considerar los mejoramientos en el estrato del perfil.**
+> Suelos potencialmente licuables. […] Estos casos no están cubiertos en la clasificación establecida en la Tabla Nº2 de la presente Norma Técnica. **Se prohíbe las construcciones apoyadas sobre estos perfiles, salvo que, se efectúe un estudio específico para el sitio, en el cual se debe considerar los mejoramientos en el estrato del perfil.**
+
+> **Corregido (defectos de literalidad de `DIS-HR-CLASE-DE-SITIO-F`, I2; §3 de `docs/resolucion_clase_sitio.md`).** Este pasaje empalmaba la viñeta 1 y el cierre como texto contiguo, con ocho viñetas elididas y sin marca; escribía «en la clasificación de la Tabla Nº 2» donde la fuente imprime «en la clasificación establecida en la Tabla Nº2 de la presente Norma Técnica»; y «salvo que se efectúe» donde la fuente imprime «salvo que, se efectúe», con coma. El literal verificado es la cita `E030.T2#S5`; `constantes_normativas.E030_S5_TEXTO` ya lo transcribía exacto — el defecto era de esta hoja.
 
 **E.050, Art. 38 — condiciones concurrentes:** suelo arenoso/limo arenoso no plástico o grava en esa matriz; sumergido bajo napa freática; historia sísmica que haga sospechar la posibilidad.
 
@@ -158,7 +166,7 @@ La inconsistencia Clase D/F que motivó la v5 no fue un error de cálculo: fue e
 ### Lo que significa
 
 1. **El elemento en riesgo no es el cabezal: es el terraplén de 5 km.** El modo de falla es asentamiento y desplazamiento lateral del cuerpo del terraplén, con las alcantarillas como puntos de concentración de daño.
-2. Sin SPT no se clasifica el perfil ni se descarta la condición S5 / Clase F.
+2. Sin ensayos no se cierra ninguna de las dos preguntas, **y son dos, de dos taxonomías que ninguna fuente empareja**: el SPT de 15 m evalúa la licuefacción (la que hace del sitio un perfil S5 de E.030); la clase de sitio de AASHTO se lee sobre los 100 ft (30.48 m) superiores, y suponerla E o F está vedado (§0.5). *(Esta línea decía «la condición S5 / Clase F»: la barra asimilaba las dos taxonomías — el defecto de fondo dicho en un signo de puntuación.)*
 3. La conducta correcta a nivel de perfil es declararlo como condicionante principal, especificar el ensayo con su alcance normativo y remitir la solución al expediente.
 4. Si se confirma, la solución es mejoramiento del terreno de fundación bajo el terraplén, con impacto en presupuesto y plazo. Va en las conclusiones.
 
@@ -340,17 +348,17 @@ $$D \in \{0.90,\ 1.05,\ 1.20,\ 1.35,\ 1.50,\ 1.65,\ 1.80,\ ...\}$$
 
 **Nota de conservadurismo:** usar 0.90 m redondo en lugar del equivalente exacto de 36" (0.9144 m) subestima el área en ~3 %. El error va del lado de la seguridad y debe declararse.
 
-**Topes superiores por norma de producto — obligatorios en el script:**
+**Topes superiores de diámetro — de CATÁLOGO `[A]`, obligatorios en el script:**
 
-| Material | Norma de producto | Diámetro máximo aproximado |
+| Material | Qué tabula la norma de producto (leída del PDF) | Tope de catálogo adoptado |
 |---|---|---|
-| Concreto reforzado | ASTM C76 / AASHTO M170 | ~2.70 m |
-| TMC | AASHTO M36 / ASTM A760 | ~2.10 m |
-| **HDPE** | AASHTO M294 | **~1.50 m** |
+| Concreto reforzado | AASHTO M 170M, Tablas 1 a 5: el conjunto cubre de 300 a 3600 mm, y su Sec. 7.2 «Modified and Special Designs» prevé diseños por encima de lo tabulado | ~2.70 m |
+| TMC | ASTM A760, Tabla 1: diámetros nominales de 100 mm (4 in) a 3600 mm (144 in); los 2100 mm son una fila más de la serie, no un máximo | ~2.10 m |
+| **HDPE** | AASHTO M294 **no está en `normas/`**: el tope no se pudo contrastar | **~1.50 m** |
 
-> **Requisito de programación.** Sin tope superior, la iteración puede converger a un "diámetro" que no existe como producto. El caso especialmente restrictivo es el **HDPE**, que en la práctica no supera 1.50 m: si un punto crítico exige más, el HDPE queda descartado por catálogo antes que por hidráulica. El módulo debe devolver *"material descartado por diámetro requerido"*, no un número imposible.
+> **Corregido (`DIS-HR-D-MAX`, I2).** Esta tabla se titulaba «Topes superiores por norma de producto» y atribuía los tres topes a ASTM C76 / AASHTO M170, AASHTO M36 / ASTM A760 y AASHTO M294, con la nota «deben confirmarse contra el texto de cada norma de producto antes de citarlos». Se confirmaron **en contra** (verificación por imagen renderizada de los PDF de `normas/`, citas `ASTM_A760.T1` y `AASHTO_M170M.T1_T5#DIAMETROS` del registro): las dos atribuciones contrastables tabulan hasta 3 600 mm, de modo que 2.70 y 2.10 m **no son topes de esas normas** sino topes de **catálogo** — y rotulados como norma descartaban material con una cita que ninguna norma sostiene. Viven como adopción `[A]` en `criterios_adoptados.py` (`'D_max_catalogo'`), con advertencia obligatoria en la memoria; el del HDPE queda además sin contrastar porque M294 está ausente (deuda de gabinete — §15 del plan de correcciones).
 >
-> Los topes de la tabla deben confirmarse contra el texto de cada norma de producto antes de citarlos. Ver Tablero 1.
+> **Requisito de programación (vigente).** Sin tope superior, la iteración puede converger a un "diámetro" que no existe como producto. El caso especialmente restrictivo es el **HDPE**: si un punto crítico exige más de ~1.50 m, queda descartado por catálogo antes que por hidráulica. El módulo debe devolver *"material descartado por diámetro requerido"*, no un número imposible — y el descarte se rotula como catálogo, nunca como norma.
 
 ### 3.3 Durabilidad — E.060 Cap. 4 (excepción de 0.2)
 
@@ -382,7 +390,7 @@ Con NF a 1.4 m y suelos salinos, el Art. 7.7.5.1 es directamente invocable.
 
 ### 3.4 Matriz de decisión de material
 
-| Material | Vacíos normativos | Tope de diámetro | Durabilidad |
+| Material | Vacíos normativos | Tope de diámetro (catálogo `[A]`, §3.2) | Durabilidad |
 |---|---|---|---|
 | **Concreto reforzado** | **Ninguno.** n y velocidad máxima en Tablas Nº 09 y Nº 10; carta propia en HDS-5 | ~2.70 m | Tabla 4.4 fija cemento, a/c y f'c según ensayo |
 | **TMC galvanizada** | **Uno:** velocidad máxima (fuente PPI/FHWA, valor por extraer) | ~2.10 m | Requiere pH y resistividad; en suelos salinos la galvanización cae fuertemente |
@@ -630,14 +638,16 @@ Correr el tamizado con el diámetro máximo supuesto **antes** de definir el per
 >
 > La **primera** condición no necesitaba corrección: `cota clave`, `h_rec` y `e_paq` son una cota y dos espesores, y el resultado es una cota.
 
-**Altura mínima de relleno sobre la clave — EG-2013:**
+**Altura mínima de relleno sobre la clave:**
 
 | Material | h_rec mínimo | Fuente |
 |---|---|---|
-| **HDPE/PAD** | **0.30 m** desde la clave hasta la subrasante | [N] 508.07/508.08, pág. 982 |
-| Concreto y TMC | **No fijado.** Remite al Proyecto, AASHTO M-170M (clases I–V) o ASTM A-807 | [C] norma de producto |
+| **HDPE/PAD** | **0.30 m** desde la clave hasta la subrasante | [N] EG-2013 508.07, pág. impresa 984 |
+| Concreto y TMC | **Lo fija AASHTO LRFD**: Art. 12.6.6.3 «Minimum Cover» y su Tabla 12.6.6.3-1, que tabula la cobertura mínima por tipo de conducto («shall not be less than that specified in Table 12.6.6.3-1»). Transcrita íntegra en el registro; gobierna el criterio `'cobertura_minima_aashto'` | [C] AASHTO LRFD 12.6.6.3, pág. impresa 12-21 — AASHTO no es norma peruana: cubre el vacío que EG-2013 y el Manual dejan, y el criterio que gobierna es `[C]` |
 
-Nota constructiva [N]: el equipo pesado no circula sobre el conducto antes de que el relleno alcance 0.30 m.
+Nota constructiva [N] (EG-2013 508.08, pág. impresa 985): el equipo pesado no circula sobre el conducto antes de que el relleno alcance 0.30 m — exigencia de ejecución, distinta de la cobertura de diseño.
+
+> **Corregido (`DIS-HR-H-RELLENO-MIN`, I2).** La fila de concreto y TMC decía «**No fijado.** Remite al Proyecto, AASHTO M-170M (clases I–V) o ASTM A-807 | [C] norma de producto». Las dos remisiones eran falsas — M 170M es especificación de fabricación y compra (su Nota 1 lo dice) y no da alturas de relleno; A-807 no es la norma que se le atribuía — y «no fijado» no era cierto: lo fija el Art. 12.6.6.3 de AASHTO LRFD (cita `AASHTO_LRFD_9.12.6.6.3#COBERTURA`, verificada), que es el cuerpo normativo que §0.2 adopta de extremo a extremo. Declarar un vacío sobre la fuente que sí trae el dato es el defecto que §0.5 llama el más grave. La página del 0.30 m del HDPE también se corrige aquí: es la impresa 984, no la 982 (`DIS-CN-EG-508-07`, resuelta).
 
 ### 7.B Verificación final por punto
 
@@ -662,6 +672,8 @@ Nota constructiva [N]: el equipo pesado no circula sobre el conducto antes de qu
 | Concreto reforzado | **AASHTO M-170M** — clases I a V |
 | TMC | **ASTM A-807 / AASHTO M36** — calibre según altura |
 | HDPE | **AASHTO M294** + AASHTO LRFD Sec. 12 |
+
+> **Remisión cuestionada, aún sin fuente contra la que corregirla (`DIS-HR-A807`, abierta contra esta hoja).** La designación «A-807» no aparece ni una vez en M 170M, M 36 ni A760 (verificado sobre los PDF de `normas/`), y las Subsecciones 507.05/507.06/507.08 del EG-2013 sí remiten a A-807, pero para materiales y fabricación, no para una tabla de calibre por altura. El calibre por altura de cobertura parece ser de **ASTM A796/A796M**, que no está en `normas/` (deuda de gabinete — §15 del plan de correcciones). La fila del TMC se corregirá cuando A796 (o A-807) esté en `normas/` y la atribución pueda verificarse con numeral, página y texto literal; sin verificación no se toca.
 
 1. Seleccionar clase o calibre según la altura real de relleno del punto.
 2. Verificar que esa altura cae en el rango admisible de la clase.
@@ -778,7 +790,9 @@ La penalización es severa por pérdida de confinamiento. **El cabezal se apoya 
 - Flexión y corte por **AASHTO LRFD Sección 5**
 - **Durabilidad y recubrimientos por E.060** (excepción de 0.2). Rige el recubrimiento mayor entre AASHTO y E.060
 - **Referencia de cuantías mínimas** (E.060 Art. 14.3.1, pág. 133): horizontal ≥ 0.002, vertical ≥ 0.0015; acero por temperatura en ambas caras si espesor ≥ 250 mm (Art. 14.8.3); espaciamiento ≤ 3h y ≤ 400 mm (Art. 14.3.3)
-- **Alternativa en concreto ciclópeo** (E.060 Art. 22.10, págs. 194-195): f'c de matriz ≥ 10 MPa, piedra desplazadora ≤ 30 % del volumen. Admitido para muros de gravedad. **Opción realista para cabezales pequeños**
+- **Alternativa en concreto ciclópeo** — dos mínimos sobre el mismo material, y **gobierna el mayor** (regla del mayor de §0.2): E.060 Art. 22.10 (págs. 194-195) pide f'c de matriz ≥ 10 MPa y piedra desplazadora ≤ 30 % del volumen; la **Tabla 503-07 del EG-2013** (503.04, pág. impresa 912) clasifica el concreto ciclópeo como **Clase G** — «Se compone de concreto simple Clase F y agregado ciclópeo, en proporción de 30% del volumen total, como máximo» — con matriz de **14 MPa**. Para esta obra vial rigen los dos: **f'c de matriz ≥ 14 MPa**. Admitido para muros de gravedad. **Opción realista para cabezales pequeños**
+
+  > **Corregido (`DIS-HR-CICLOPEO`, I2).** Esta línea pedía «f'c de matriz ≥ 10 MPa» citando solo el Art. 22.10 de E.060: miraba una de las dos normas que rigen sobre el mismo material. Quien la leyera sin leer el código habría dimensionado una matriz de 10 MPa que `M9.verificar_ciclopeo` (que contrasta contra `CICLOPEO_FC_MATRIZ_MIN_APLICABLE` = 14 MPa) rechaza. Cita ancla: `EG2013.503.04#T503_07`, verificada. Sigue vigente la deuda anotada en el código: el Art. 22.10.2.3 añade un techo de cálculo (φ = 0.5 y f'c de diseño ≤ 10 MPa) — se especifica con el mayor de los mínimos y se diseña con el techo.
 
 ---
 
@@ -825,7 +839,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | # | Qué verificar | Documento | Bloquea |
 |---|---|---|---|
 | 1.1 | **VERIFICADO — la dispensa por periodo corto de la Clase F no existe.** No figura en el articulado 3.10.3.1, ni en el comentario C3.10.3.1, ni en ninguna tabla o nota a tabla. AASHTO exige estudio de respuesta de sitio específico para la Clase F, de forma incondicional. La cita se retira de la memoria y el uso de factores tabulados pasa a adopción `[A]` (§0.5) | AASHTO LRFD 9.ª ed. (2020), Art. 3.10.3.1 y C3.10.3.1 | **Cerrado.** Reabre §0.5 como decisión de proyecto, no como cita normativa |
-| 1.2 | Topes superiores de diámetro por material | ASTM C76 / AASHTO M36 / M294 | V9 y el tope del script |
+| 1.2 | **VERIFICADO EN CONTRA — los topes no son de las normas de producto** (discrepancia del registro, resuelta en I2; manifiesto §7). A760 Tabla 1 tabula 100–3600 mm y M 170M Tablas 1–5 cubre 300–3600 mm (su Sec. 7.2 prevé diseños mayores): 2.70 y 2.10 m son topes de CATÁLOGO `[A]` (`'D_max_catalogo'`, con advertencia obligatoria). El del HDPE (~1.50 m) sigue sin contrastar: M294 ausente de `normas/` — §15 del plan de correcciones | ASTM A760 Tabla 1 · AASHTO M 170M Tablas 1–5 (leídas de los PDF) | **Cerrado en contra.** V9 descarta por catálogo, nunca «por norma» |
 | 1.3 | Velocidades máximas admisibles para TMC y HDPE — **valores numéricos** | PPI / FHWA | V3 para materiales flexibles |
 | 1.4 | Registrar coordenadas o curva de isoaceleración de la lectura del PGA | Manual de Puentes, Apéndice A3 | Trazabilidad de §0.4 |
 
@@ -850,7 +864,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | 3.3 | IMDA de diseño → clase de vía | Estudio de demanda | Número de calicatas exigido (§1.4) | Media |
 | 3.4 | Ensayos de sulfatos, cloruros y sales solubles | Laboratorio | Clase de exposición E.060 → cemento, a/c, f'c, recubrimiento | Media |
 | 3.5 | pH y resistividad (solo si TMC sigue en carrera) | Laboratorio | Defensibilidad del TMC | Baja |
-| 3.6 | SPT ≥ 15 m, cada 1 m | Estudio geotécnico | Clase de sitio definitiva y evaluación de licuefacción | Diferida al expediente |
+| 3.6 | Dos ensayos de profundidades distintas, pedirlos juntos: SPT ≥ 15 m cada 1 m (licuefacción, E.050 Art. 38) y caracterización de los 100 ft = 30.48 m superiores, Vs30 o N̄ (clase de sitio, AASHTO 3.10.3.1) | Estudio geotécnico | Evaluación de licuefacción y clase de sitio definitiva | Diferida al expediente |
 
 **Lectura del tablero:** los ítems 3.1 y 3.2 son los verdaderamente críticos. El 3.1 bloquea una familia entera de estructuras y el TW de todas las demás; el 3.2 condiciona el caudal de diseño de todo el estudio. Ambos estaban fuera de la lista original de siete y son los de mayor plazo, porque dependen de terceros.
 
@@ -863,7 +877,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | Criterio | Etiqueta | Estado |
 |---|---|---|
 | PGA en roca (0.50 g) | [N] | **Cerrado.** Falta registrar coordenadas de lectura |
-| Clase de sitio (F, factores tabulados por adopción) | [A] | **Reabierto y redeclarado.** La dispensa por periodo corto que lo cerraba no existe en AASHTO (verificado contra la 9.ª ed., 2020). Usar factores tabulados es adopción del proyectista, no permiso de la norma. Lo cierra el estudio de respuesta de sitio específico — §0.5 |
+| Clase de sitio | [S] | **Sin valor — dato de sitio pendiente de ensayo** (desde S14; `DIS-HR-CLASE-DE-SITIO-F`). Las fuentes prohíben suponerla E o F sin dato geotécnico. Lo cierra la caracterización de los 100 ft (30.48 m) superiores (Vs30 o N̄) y, solo si diera Clase F, el estudio de respuesta de sitio — §0.5. La elección de filas C/D/E es el criterio aparte `F_pga` [A] |
 | F_pga = 1.0 | [A] | Tabla [N]; elección [A]. Sensibilidad (0.9, 1.0) |
 | Factor de muro = 1.0 | [N] | Firme |
 | k_v = 0 | [A] | Sensibilidad (0, 0.5·k_h) |
@@ -872,7 +886,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | k_e (coeficiente de pérdida de entrada, §4.3) | [C] | HDS-5, embocadura square edge with headwall. **Cerrado en implementación** — sin numeral peruano |
 | n de Manning para HDPE | [N→] | **Rango (0.010, 0.013)** por analogía. No valor puntual. El código lo **lee de** `constantes_normativas.MANNING["concreto_recto"]`, no lo copia: una analogía que duplica el literal de su origen deja de serlo en cuanto uno de los dos cambie |
 | Velocidad máxima en HDPE y TMC | [C] | **Sin valor.** Fuente identificada (PPI/FHWA), valores por extraer |
-| Progresión de diámetros | [C] | 0.90 m + 0.15 m, topes por norma de producto |
+| Progresión de diámetros | [C] | 0.90 m + 0.15 m; los topes superiores son de catálogo `[A]` (`'D_max_catalogo'`) — §3.2, `DIS-HR-D-MAX` |
 | HW/D máximo (1.5) | [A] | Sensibilidad (1.2, 1.5), **subrango** de la banda 1.0–1.5 que el HDS-5 describe (no prescribe). Corregido desde [C]. Ref. `NOR-HDS-02` |
 | Resguardo HW–subrasante | [N→] | Analogía declarada desde el criterio de napa freática |
 | TW en el receptor | [A] | **Sin valor.** Tablero 3.1 |
@@ -953,13 +967,16 @@ K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(
 # ================= Diametros normalizados (ASTM / AASHTO) ==================
 D_PASO = 0.15                       # m; reproduce las series de 6" y 150 mm
 D_INICIO = 0.90                     # m; minimo normativo MTC
-D_MAX = {                           # topes por norma de producto - VERIFICAR
-    "concreto_reforzado": 2.70,     # ASTM C76 / AASHTO M170
-    "tmc":                2.10,     # AASHTO M36 / ASTM A760
-    "hdpe":               1.50,     # AASHTO M294  <- el mas restrictivo
-}
+# D_MAX ya NO es una constante [N] de este anexo: los topes 2.70 / 2.10 /
+# 1.50 son de CATALOGO, no de norma de producto. La marca "VERIFICAR" que
+# llevaban se resolvio EN CONTRA de la atribucion (DIS-HR-D-MAX, corregida
+# en I2): A760 Tabla 1 tabula 100-3600 mm, M 170M Tablas 1-5 cubre
+# 300-3600 mm (y su Sec. 7.2 preve diseños mayores); M294 esta ausente de
+# normas/ y el tope del HDPE queda sin contrastar. Viven como adopcion [A]
+# en criterios_adoptados 'D_max_catalogo', con advertencia obligatoria.
 # Sin tope, el solver puede converger a un diametro inexistente.
-# Superado el tope: devolver "material descartado por diametro requerido".
+# Superado el tope: devolver "material descartado por diametro requerido"
+# -- descarte ADOPTADO, no normativo.
 
 # ================= Manual de Suelos (RD 10-2014-MTC/14) ====================
 RESGUARDO_NAPA_SUBRASANTE = [       # (CBR_min, CBR_max, resguardo_m)  num. 4.5.4
@@ -977,16 +994,28 @@ ESPACIAMIENTO_PERFIL_KM = 4.0       # nivel perfil
 
 # ================= EG-2013, Seccion 500 ====================================
 H_RELLENO_MIN = {
-    "hdpe":     0.30,               # m, clave a subrasante (508.07/508.08)
-    "concreto": None,               # AASHTO M-170M (clases I a V)
-    "tmc":      None,               # ASTM A-807 / AASHTO M36
+    "hdpe":     0.30,               # m, clave a subrasante (508.07/508.08,
+                                    # pag. impresa 984)
+    "concreto": None,               # EG-2013 no lo fija para este material;
+    "tmc":      None,               # la cobertura minima es de AASHTO LRFD
+                                    # 12.6.6.3 / Tabla 12.6.6.3-1, via el
+                                    # criterio 'cobertura_minima_aashto'
+                                    # (DIS-HR-H-RELLENO-MIN, corregida en I2)
 }
 SUBSECCION = {"concreto_simple": "505", "concreto_reforzado": "506",
               "tmc": "507", "hdpe": "508"}
 SECCION_CABEZALES = "503"           # concreto estructural (+504 acero)
 
 # ================= Manual de Puentes (RD 041-2016-MTC/14) ==================
-SOBRECARGA_TRASDOS_H_EQ = 0.60      # m de relleno equivalente (2.1.4.3.9)
+SOBRECARGA_TRASDOS_H_EQ = 0.60      # m; PISO del num. 2.4.2.2, pag. impresa
+                                    # 102 ("no menor que la equivalente a
+                                    # 0.60 m"), condicional a trafico a
+                                    # distancia <= H/2. El h_eq de diseño es
+                                    # max(piso, Tabla AASHTO 3.11.6.4-1/-2
+                                    # por altura y orientacion) -- ver la
+                                    # correccion de 9.2 (DIS-HR-H-EQ, I2;
+                                    # esta linea citaba el numeral falso
+                                    # 2.1.4.3.9)
 CARGA_VIVA = "HL-93"                # (2.4.3.2.2.1)
 NQ_ZAPATA_EN_TALUD = 0.0            # (2.8.1.3.1.2c)
 F_PGA_TABLA = {                     # Tabla 2.4.3.11.2.1.2-1, PGA >= 0.50
@@ -1053,7 +1082,7 @@ M0_carga.py ... M11_reporte.py
 
 - **Ningún módulo declara valores no normativos.** Todos se leen con `criterios_adoptados.valor(clave)`. Un literal fuera de esos dos archivos es un defecto de arquitectura.
 - **Un criterio con valor `None` detiene el script con excepción.** Nunca se sustituye por defecto.
-- **Tope superior de diámetro obligatorio por material.** Superado el tope, el material se descarta con mensaje explícito. El HDPE (~1.50 m) es el crítico.
+- **Tope superior de diámetro obligatorio por material** — de catálogo `[A]` (`'D_max_catalogo'`, §3.2), no de norma. Superado el tope, el material se descarta con mensaje explícito y rótulo de catálogo. El HDPE (~1.50 m) es el crítico.
 - **Q(y/D) no es monótona** cerca de sección llena (máximo en y/D ≈ 0.938). Al topar en 0.75 se evita la zona, pero el solver debe manejar el caso "sin solución" → siguiente diámetro.
 - **M4 necesita tirante crítico:** Q²T/(gA³) = 1, segundo Brent sobre θ.
 - **Unidades del control de salida:** 19.63 en SI, no 29 (corregido desde 19.62; ver la nota de unidades de §4.3). Test unitario obligatorio.

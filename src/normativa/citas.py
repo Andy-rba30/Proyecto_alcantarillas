@@ -3221,8 +3221,10 @@ E030_PERFIL_S5 = _cita(
           "tabla que la define, laguna en las tres que dan numeros. "
           "La prohibicion es CONDICIONADA: la misma oracion la levanta con "
           "estudio especifico y mejoramiento del estrato. La hoja de ruta la "
-          "cita mal por tres sitios -- ver DIS-HR-CLASE-DE-SITIO-F --, "
-          "mientras que constantes_normativas.E030_S5_TEXTO la transcribe "
+          "citaba mal por tres sitios -- corregidos en I2; ver "
+          "DIS-HR-CLASE-DE-SITIO-F, resuelta --, y su pasaje de Fase 0-bis "
+          "quedo literal con la elision marcada, como "
+          "constantes_normativas.E030_S5_TEXTO, que siempre la transcribio "
           "exacta."),
 )
 

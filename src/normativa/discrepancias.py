@@ -163,16 +163,25 @@ DIS_NUMERAL_EXC_ESTATICA = _d(
 )
 
 # ---------------------------------------------------------------------------
-# Las discrepancias ABIERTAS contra la hoja de ruta v8
+# Las discrepancias contra la hoja de ruta v8. I2 corrigio la v8 en ocho de
+# ellas y las paso a RESUELTA (la historia queda en cada `que_dice`, en las
+# notas «Corregido (...)» de la propia v8 y en el manifiesto §7); sigue
+# ABIERTA_CONTRA_HOJA_DE_RUTA la que no tiene fuente contra la que
+# verificarse (DIS-HR-A807: A796/A807 ausentes de normas/).
 # ---------------------------------------------------------------------------
 DIS_D_MAX = _d(
     id="DIS-HR-D-MAX",
     objeto="los topes de diametro por material (2.70 / 2.10 / 1.50 m)",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("su Anexo B los declara bajo el rotulo «topes por "
+              que_dice=("su Anexo B los declaraba bajo el rotulo «topes por "
                         "norma de producto - VERIFICAR», atribuidos a ASTM C76 "
-                        "/ AASHTO M170, AASHTO M36 / ASTM A760 y AASHTO M294")),
+                        "/ AASHTO M170, AASHTO M36 / ASTM A760 y AASHTO M294. "
+                        "CORREGIDA EN I2: §3.2, §3.4, Tablero 1.2, Anexo A, "
+                        "Anexo B y Anexo C reescritos con la verdad "
+                        "verificada -- topes de CATALOGO [A], "
+                        "'D_max_catalogo' --; el del HDPE queda declarado "
+                        "como no contrastado (M294 ausente)")),
         # T2: el ancla anunciaba «ASTM_A760.T1#DIAMETROS», un id que nadie
         # transcribio, mientras la cita que sostiene la afirmacion existia
         # desde I1 con el id llano. Se re-ancla en vez de duplicar: la tabla
@@ -204,7 +213,7 @@ DIS_D_MAX = _d(
     efecto_si_se_sigue_la_otra=("un punto que necesite mas de 2.10 m de TMC se "
                                 "declara no factible por una razon que la "
                                 "norma citada no sostiene"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 DIS_CICLOPEO = _d(
@@ -212,8 +221,10 @@ DIS_CICLOPEO = _d(
     objeto="el f'c minimo de la matriz del concreto ciclopeo",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("su Sec. 9.4 pide f'c de matriz >= 10 MPa citando solo "
-                        "el Art. 22.10 de E.060")),
+              que_dice=("su Sec. 9.4 pedia f'c de matriz >= 10 MPa citando "
+                        "solo el Art. 22.10 de E.060. CORREGIDA EN I2: la "
+                        "linea escribe los dos minimos y el mayor (14 MPa, "
+                        "Clase G de la Tabla 503-07), con su nota")),
         Parte(quien="EG2013",
               que_dice=("la Clase G de la Tabla 503-07 -- concreto ciclopeo -- "
                         "pide 14 MPa, y la Seccion 503 es la que este proyecto "
@@ -229,7 +240,7 @@ DIS_CICLOPEO = _d(
                                 "dimensionara un cabezal de ciclopeo con una "
                                 "matriz de 10 MPa que este calculo va a "
                                 "rechazar"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 DIS_A807 = _d(
@@ -237,8 +248,12 @@ DIS_A807 = _d(
     objeto="la norma que fija el calibre de la plancha de TMC por altura de relleno",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("lo remite a «ASTM A-807» en su Sec. 7.A, en su Fase 8 "
-                        "y en su Anexo B")),
+              que_dice=("lo remite a «ASTM A-807» en su Fase 8 («calibre "
+                        "según altura»), hoy con la disputa anotada al pie. "
+                        "Las remisiones que ademas traian su Sec. 7.A y su "
+                        "Anexo B -- sobre la ALTURA minima de relleno, no el "
+                        "calibre -- se retiraron en I2 con "
+                        "DIS-HR-H-RELLENO-MIN")),
         Parte(quien="ASTM_A796",
               que_dice=("el calibre por altura de cobertura es de ASTM "
                         "A796/A796M, no de A-807")),
@@ -257,8 +272,11 @@ DIS_H_RELLENO_MIN = _d(
     objeto="la altura minima de relleno sobre la clave para concreto y TMC",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("su Sec. 7.A dice «No fijado. Remite al Proyecto, "
-                        "AASHTO M-170M (clases I-V) o ASTM A-807»")),
+              que_dice=("su Sec. 7.A decia «No fijado. Remite al Proyecto, "
+                        "AASHTO M-170M (clases I-V) o ASTM A-807». CORREGIDA "
+                        "EN I2: la fila remite a AASHTO LRFD 12.6.6.3 / "
+                        "Tabla 12.6.6.3-1, y el comentario del Anexo B "
+                        "tambien")),
         Parte(quien="AASHTO_LRFD_9",
               que_dice=("el Art. 12.6.6.3 y la Tabla 12.6.6.3-1 tabulan la "
                         "cobertura minima para los tres tipos de conducto del "
@@ -274,7 +292,7 @@ DIS_H_RELLENO_MIN = _d(
              "grave"),
     efecto_si_se_sigue_la_otra=("se declara vacio lo que la norma adoptada "
                                 "tabula, y la cobertura minima queda sin piso"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 DIS_G_LAUSHEY = _d(
@@ -282,9 +300,13 @@ DIS_G_LAUSHEY = _d(
     objeto="la atribucion del valor g = 9.8 m/s2 al num. 4.1.1.3.7 c)",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("escribe «d50 en m, V en m/s, g = 9.8 m/s2» bajo el "
+              que_dice=("escribia «d50 en m, V en m/s, g = 9.8 m/s2» bajo el "
                         "encabezado «Laushey — num. 4.1.1.3.7 c), pag. 80», "
-                        "presentando el 9.8 como si el numeral lo imprimiera")),
+                        "presentando el 9.8 como si el numeral lo imprimiera. "
+                        "CORREGIDA ANTES DE I2 (su Fase 6 lleva la nota "
+                        "«Corregido (NOR-HID-01, MAT-O7)» con la atribucion "
+                        "buena) y este registro quedo atras: el estado se "
+                        "pone al dia en I2")),
         Parte(quien="MC_HHD",
               que_dice=("el num. 4.1.1.3.7 c), pag. impresa 80, define g SIN "
                         "numero: «g : Aceleracion de la gravedad (m/s2)». El "
@@ -302,7 +324,7 @@ DIS_G_LAUSHEY = _d(
     efecto_si_se_sigue_la_otra=("un revisor que abra la pag. 80 buscando el 9.8 "
                                 "no lo encuentra, y una cita que no se puede "
                                 "comprobar es indistinguible de una inventada"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 DIS_H_EQ = _d(
@@ -310,12 +332,18 @@ DIS_H_EQ = _d(
     objeto="la altura de suelo equivalente de la sobrecarga de trafico (h_eq)",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("«Sobrecarga en el trasdos (num. 2.1.4.3.9, pag. 91): "
-                        "... se añade sobrecarga vertical >= 0.60 m de relleno "
-                        "equivalente ... En un cabezal bajo terraplen vial "
-                        "SIEMPRE APLICA». Dos defectos en una frase: el "
-                        "numeral es «Aparatos de Apoyo» y el «siempre aplica» "
-                        "borra la condicion de distancia que la fuente pone")),
+              que_dice=("escribia «Sobrecarga en el trasdos (num. 2.1.4.3.9, "
+                        "pag. 91): ... se añade sobrecarga vertical >= 0.60 m "
+                        "de relleno equivalente ... En un cabezal bajo "
+                        "terraplen vial SIEMPRE APLICA». Dos defectos en una "
+                        "frase: el numeral es «Aparatos de Apoyo» y el "
+                        "«siempre aplica» borra la condicion de distancia que "
+                        "la fuente pone. LA FRASE PRINCIPAL SE CORRIGIO ANTES "
+                        "DE I2 (num. 9.2 de la v8, con su nota del conflicto "
+                        "#4: piso condicional + tabla de AASHTO por altura y "
+                        "orientacion); EL RESIDUO -- el numeral falso en el "
+                        "comentario `SOBRECARGA_TRASDOS_H_EQ` del Anexo B -- "
+                        "se corrigio en I2")),
         Parte(quien="MP",
               que_dice=("el num. 2.1.4.3.9 se titula «Aparatos de Apoyo» y no "
                         "contiene ni la palabra sobrecarga ni el 0.60. El "
@@ -349,7 +377,7 @@ DIS_H_EQ = _d(
                                 "con trafico perpendicular subestima la "
                                 "sobrecarga viva en un factor 1.87, y con "
                                 "gamma_LS = 1.75 eso llega al empuje de diseño"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 DIS_CALICATAS = _d(
@@ -609,15 +637,20 @@ DIS_CLASE_DE_SITIO_F = _d(
            "por susceptibilidad a licuefaccion»",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("Sec. 0.5: «El sitio clasifica como Clase de Sitio F "
-                        "por susceptibilidad a licuefaccion: arenas saturadas "
-                        "con NF a 1.4 m en la llanura del Bajo Piura. "
-                        "Clasificarlo como D o E mientras la Fase 0-bis "
-                        "advierte riesgo de licuefaccion seria una "
+              que_dice=("Sec. 0.5 decia: «El sitio clasifica como Clase de "
+                        "Sitio F por susceptibilidad a licuefaccion: arenas "
+                        "saturadas con NF a 1.4 m en la llanura del Bajo "
+                        "Piura. Clasificarlo como D o E mientras la Fase "
+                        "0-bis advierte riesgo de licuefaccion seria una "
                         "contradiccion interna del expediente. Eso no ha "
-                        "cambiado.» Y en Fase 0-bis, punto 2, escribe «la "
+                        "cambiado.» Y en Fase 0-bis, punto 2, escribia «la "
                         "condicion S5 / Clase F», con una barra que asimila "
-                        "las dos taxonomias")),
+                        "las dos taxonomias. CORREGIDA EN I2: la Sec. 0.5 "
+                        "declara la clase INDETERMINADA con la prohibicion "
+                        "de suponerla E o F, separa las dos taxonomias, y el "
+                        "pasaje entrecomillado de la Fase 0-bis quedo "
+                        "literal con su elision marcada (los cuatro defectos "
+                        "de §3 de docs/resolucion_clase_sitio.md)")),
         Parte(quien="AASHTO_LRFD_9",
               que_dice=("PROHIBE SUPONERLA: «Site classes E or F should not "
                         "be assumed unless the authority having jurisdiction "
@@ -678,7 +711,7 @@ DIS_CLASE_DE_SITIO_F = _d(
                                 "forma exacta del defecto que la propia "
                                 "Sec. 0.5 llama el mas grave que ha tenido "
                                 "este expediente"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 DIS_F_LISTA_ABIERTA = _d(
@@ -722,11 +755,15 @@ DIS_30M_VS_100FT = _d(
     objeto="la profundidad sobre la que se define la clase de sitio",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("Sec. 0.5 pide «la caracterizacion de los 30 m "
+              que_dice=("Sec. 0.5 pedia «la caracterizacion de los 30 m "
                         "superiores (Vs30 o N) que define la clase», y el "
-                        "criterio 'clase_sitio' se lo atribuye al articulado: "
+                        "criterio 'clase_sitio' se lo atribuia al articulado: "
                         "«Los 30 m son parte de la DEFINICION de la clase "
-                        "(AASHTO LRFD Art. 3.10.3.1)»")),
+                        "(AASHTO LRFD Art. 3.10.3.1)». EL CRITERIO SE "
+                        "CORRIGIO EN S14 (pide «100 ft (30.48 m)» y declara "
+                        "esta discrepancia); LA HOJA, EN I2 (Sec. 0.5 y "
+                        "Tablero 3.6 escriben la profundidad que el "
+                        "articulado imprime)")),
         Parte(quien="AASHTO_LRFD_9",
               que_dice=("el Art. 3.10.3.1 dice «the upper 100 ft», y la Tabla "
                         "3.10.3.1-1 define v_s, N y s_u «for the upper 100 ft "
@@ -750,7 +787,7 @@ DIS_30M_VS_100FT = _d(
                                 "indistinguible de una inventada -- en el "
                                 "campo que precisamente define que ensayo "
                                 "hay que contratar"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 DIS_VIA_DE_LA_LICUEFACCION = _d(
@@ -758,11 +795,14 @@ DIS_VIA_DE_LA_LICUEFACCION = _d(
     objeto="por que via entra la licuefaccion en el diseño sismico",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("Sec. 0.5 hace de la licuefaccion la CAUSA de la "
+              que_dice=("Sec. 0.5 hacia de la licuefaccion la CAUSA de la "
                         "clase de sitio -- «Clase de Sitio F POR "
                         "susceptibilidad a licuefaccion» --, de modo que el "
-                        "riesgo geotecnico entra al calculo por el factor de "
-                        "sitio")),
+                        "riesgo geotecnico entraba al calculo por el factor "
+                        "de sitio. CORREGIDA EN I2: la Sec. 0.5 lleva el "
+                        "reparto de la fuente -- la clase por rigidez medida "
+                        "(pendiente), la licuefaccion por el num. 10.5.4.2 y "
+                        "el SPT de la Fase 0-bis --")),
         Parte(quien="AASHTO_LRFD_9",
               que_dice=("la evalua en la Seccion 10, Cimentaciones, num. "
                         "10.5.4.2 «Liquefaction Design Requirements», y la "
@@ -799,7 +839,7 @@ DIS_VIA_DE_LA_LICUEFACCION = _d(
                                 "verificaciones que este sitio necesita "
                                 "(perdida de resistencia, asentamiento, "
                                 "desplazamiento lateral)"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 

@@ -259,10 +259,12 @@ LAUSHEY_K = 3.1                     # d50 = V^2/(3.1*g), ec. (49) del
 # dice que sale. Se citan los dos sitios y no uno, porque los dos lo escriben
 # y ninguno es el numeral de Laushey.
 #
-# LA HOJA DE RUTA SIGUE MAL mientras no se corrija: su Fase 6 escribe
-# "g = 9.8 m/s2" bajo el encabezado "Laushey — num. 4.1.1.3.7 c), pag. 80",
-# presentando el numero como si el numeral lo imprimiera. Ver la Discrepancia
-# DIS-HR-G-LAUSHEY del registro, en estado ABIERTA_CONTRA_HOJA_DE_RUTA.
+# LA HOJA DE RUTA YA ESTA CORREGIDA: su Fase 6 escribia "g = 9.8 m/s2" bajo
+# el encabezado "Laushey — num. 4.1.1.3.7 c), pag. 80", presentando el numero
+# como si el numeral lo imprimiera, y hoy lleva la atribucion buena con su
+# nota «Corregido (NOR-HID-01, MAT-O7)». La Discrepancia DIS-HR-G-LAUSHEY
+# quedo RESUELTA en I2 (el registro estaba atras de la v8) y vive en el
+# manifiesto.
 #
 # Uso exclusivo de M6 (Laushey). La gravedad generica del resto del script
 # (M4: tirante critico, control de salida) es constantes_fisicas.G = 9.81.
@@ -1343,11 +1345,12 @@ D_INICIO = 0.90                     # m; el piso del num. 4.1.1.3.4 a), que
 # transporta a la obra. Superado el tope: "material descartado por diametro
 # requerido" -- y ese descarte es ADOPTADO, no normativo.
 #
-# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: su Anexo B declara estos mismos
-# topes bajo el rotulo "topes por norma de producto - VERIFICAR" -- es el
-# comentario de la asignacion `D_MAX = {` -- y con las mismas atribuciones.
-# Gana la fuente primaria -- las tablas de A760 y M 170M, leidas de los PDF --
-# y la hoja de ruta SIGUE MAL mientras no se corrija.
+# LA DISCREPANCIA CON LA HOJA DE RUTA QUEDO RESUELTA EN I2: su Anexo B
+# declaraba estos mismos topes bajo el rotulo "topes por norma de producto -
+# VERIFICAR" -- era el comentario de la asignacion `D_MAX = {` -- y con las
+# mismas atribuciones. Gano la fuente primaria -- las tablas de A760 y
+# M 170M, leidas de los PDF -- y la v8 escribe hoy la verdad verificada en
+# §3.2, §3.4, Tablero 1.2 y Anexos A/B/C (DIS-HR-D-MAX, en el manifiesto).
 #
 # LA REFERENCIA SE DA POR SIMBOLO Y TEXTO, NO POR LINEA (NOR-COH-03). Este
 # comentario decia "linea 806 de docs/hoja_de_ruta_alcantarillas_v8.md" y esa
@@ -1580,31 +1583,35 @@ H_RELLENO_MIN = {
 #       aramida y post-recubrimiento asfaltico. Sigue siendo cierto que
 #       M 170M clasifica por D-load y no por altura.
 #
-# DISCREPANCIA ABIERTA CON LA HOJA DE RUTA. La v8 sigue escribiendo lo que
-# aqui se corrige, y quien la lea sin leer el codigo diseñara con el valor
-# equivocado:
+# LAS DISCREPANCIAS CON LA HOJA DE RUTA, en dos estados distintos desde I2
+# porque solo una tenia fuente contra la que verificarse:
 #
-#   TABLA DE SEC. 7.A, fila "Concreto y TMC": "No fijado. Remite al
+#   TABLA DE SEC. 7.A, fila "Concreto y TMC" -- decia "No fijado. Remite al
 #     Proyecto, AASHTO M-170M (clases I-V) o ASTM A-807 | [C] norma de
-#     producto". Las dos remisiones son falsas: M 170M no da alturas de
+#     producto". Las dos remisiones eran falsas: M 170M no da alturas de
 #     relleno y A-807 no es la norma que se le atribuye (ver NOR-PRO-04). Y
-#     "no fijado" ya no es cierto: lo fija AASHTO LRFD Art. 12.6.6.3, que el
-#     propio Sec. 0.2 adopta.
-#   TABLA DE FASE 8, fila "TMC": "ASTM A-807 / AASHTO M36 -- calibre segun
-#     altura". El calibre por altura de cobertura es de ASTM A796/A796M.
-#   ANEXO B, comentario de `H_RELLENO_MIN["tmc"]`: repite la remision a
-#     A-807.
+#     "no fijado" no era cierto: lo fija AASHTO LRFD Art. 12.6.6.3, que el
+#     propio Sec. 0.2 adopta. CORREGIDA EN I2, junto con el comentario de
+#     `H_RELLENO_MIN["tmc"]` del Anexo B que repetia la remision:
+#     DIS-HR-H-RELLENO-MIN quedo RESUELTA y vive en el manifiesto.
+#   TABLA DE FASE 8, fila "TMC" -- "ASTM A-807 / AASHTO M36 -- calibre segun
+#     altura". El calibre por altura de cobertura parece ser de ASTM
+#     A796/A796M, pero A796 y A807 NO estan en normas/ y sin fuente no hay
+#     verificacion ni correccion: DIS-HR-A807 SIGUE ABIERTA contra la hoja
+#     de ruta -- la fila lleva su disputa anotada al pie desde I2, y viaja a
+#     la memoria por el criterio 'clases_producto_por_relleno' --. La v8
+#     sigue mal en esa fila mientras no se consiga la fuente (§15 del plan:
+#     deuda de gabinete).
 #
-# LAS TRES SE CITAN POR TABLA Y FILA, NO POR LINEA (NOR-COH-03). Este bloque
-# decia "linea 523", "linea 546" y "linea 832", y las tres estaban corridas:
-# hoy son la 565, la 590 y la 909, y las dos primeras de aquel juego caian en
-# separadores "---". Una cita interna que no se puede comprobar es
+# SE CITAN POR TABLA Y FILA, NO POR LINEA (NOR-COH-03). Este bloque decia
+# "linea 523", "linea 546" y "linea 832", y las tres estaban corridas y
+# caian en separadores "---". Una cita interna que no se puede comprobar es
 # indistinguible de una inventada, igual que una externa; la regla 4 de
 # CLAUDE.md -- anclar por simbolo, nunca por linea -- vale tambien aqui.
 #
-# Aqui gana la fuente primaria por verificacion externa contra los PDF de
-# normas/, como en K_FRICCION_SI. La hoja de ruta SIGUE MAL mientras no se
-# corrija: el defecto esta reportado contra ella, no contra este archivo.
+# Aqui gano la fuente primaria por verificacion externa contra los PDF de
+# normas/, como en K_FRICCION_SI. El defecto quedo reportado contra la hoja
+# de ruta, no contra este archivo, y la parte verificable ya esta corregida.
 # 505, 506, 507 y 508 son SECCIONES completas del EG-2013, dentro del
 # Capitulo V. No son subsecciones de ninguna "Seccion 500": esa denominacion
 # no existe en el EG-2013 y la constante se llamaba SUBSECCION por arrastre de
@@ -3230,21 +3237,21 @@ NUMERAL_CICLOPEO = "E.060 Art. 22.10, pags. 194-195"
 CICLOPEO_FC_MATRIZ_MIN_APLICABLE = max(CICLOPEO_FC_MATRIZ_MIN,
                                        CICLOPEO_FC_MATRIZ_MIN_EG2013)
 NUMERAL_CICLOPEO_APLICABLE = f"{NUMERAL_CICLOPEO} / {NUMERAL_CICLOPEO_EG2013}"
-# DISCREPANCIA CON LA HOJA DE RUTA, declarada en el punto de uso porque la
-# regla de CLAUDE.md pide las tres cosas y no una: (1) la Sec. 9.4 de la hoja
-# de ruta escribe "f'c de matriz >= 10 MPa" y este modulo verifica contra
-# 14 MPa; (2) el defecto es de la hoja de ruta, que mira solo a E.060 y no ve
-# que sobre el mismo material rige tambien la Tabla 503-07 del EG-2013, que
-# es norma vial del MTC y pide mas; (3) MIENTRAS NO SE CORRIJA, la hoja de
-# ruta sigue mal: quien la lea sin leer el codigo dimensionara un cabezal de
-# ciclopeo con una matriz de 10 MPa que este calculo va a rechazar. La fuente
-# primaria decide (EG-2013 Tabla 503-07, pag. impresa 912) y por eso gana.
-CICLOPEO_DISCREPANCIA_HOJA_RUTA = (
-    "La Sec. 9.4 de la hoja de ruta pide f'c de matriz >= 10 MPa citando solo "
-    "el Art. 22.10 de E.060. Sobre el mismo material rige ademas la Clase G "
-    "de la Tabla 503-07 del EG-2013 (14 MPa), que es la norma vial del MTC "
-    "que este proyecto aplica, y por la regla del mayor gobierna esta. LA "
-    "HOJA DE RUTA SIGUE INCOMPLETA mientras no recoja el segundo minimo")
+# LA DISCREPANCIA CON LA HOJA DE RUTA QUEDO RESUELTA EN I2. Estuvo declarada
+# en este punto de uso porque la regla de CLAUDE.md pide las tres cosas y no
+# una: (1) la Sec. 9.4 de la hoja de ruta escribia "f'c de matriz >= 10 MPa"
+# y este modulo verifica contra 14 MPa; (2) el defecto era de la hoja de
+# ruta, que miraba solo a E.060 y no veia que sobre el mismo material rige
+# tambien la Tabla 503-07 del EG-2013, que es norma vial del MTC y pide mas;
+# (3) la v8 escribe hoy los dos minimos y el mayor, con su nota «Corregido
+# (DIS-HR-CICLOPEO, I2)». La fuente primaria decidio (EG-2013 Tabla 503-07,
+# pag. impresa 912) y por eso gano. La historia entera esta en la
+# Discrepancia DIS-HR-CICLOPEO del registro (manifiesto §7).
+CICLOPEO_DOS_MINIMOS = (
+    "Sobre la matriz del concreto ciclopeo rigen dos minimos: el Art. 22.10 "
+    "de E.060 pide f'c >= 10 MPa y la Clase G de la Tabla 503-07 del EG-2013 "
+    "-- norma vial del MTC que este proyecto aplica -- pide 14 MPa; por la "
+    "regla del mayor gobierna esta ultima")
 # DEUDA DECLARADA, fuera del alcance de este cluster y anotada para que no se
 # pierda: el Art. 22.10.2.3 añade al mismo material un TECHO de calculo --
 # "en el cálculo de las resistencias segun 22.5 se utilizará un factor
@@ -3391,7 +3398,8 @@ E030_S5_LECTURA = (
 # sino por algo mas fuerte: las dos PROHIBEN suponer la clase E o F sin dato
 # geotecnico ni determinacion de la autoridad. El expediente dejo de
 # atribuirse la Clase F y 'clase_sitio' es hoy un [S] SIN VALOR. Fundamento
-# en docs/resolucion_clase_sitio.md; discrepancia DIS-HR-CLASE-DE-SITIO-F.
+# en docs/resolucion_clase_sitio.md; discrepancia DIS-HR-CLASE-DE-SITIO-F
+# (resuelta en I2: la Sec. 0.5 de la v8 quedo corregida).
 # Esta constante sigue siendo util y no cambia: describe la discrepancia
 # entre los DOS ESQUEMAS, que es un hecho de las normas y no una premisa del
 # expediente.

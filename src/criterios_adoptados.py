@@ -900,13 +900,13 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="S",
-        # LAS DOS DISCREPANCIAS QUE ESTE CRITERIO TOCA, por su id. La
-        # `justificacion` las nombraba en prosa, y esa era su UNICA via a la
-        # memoria: M11 imprime la justificacion tal cual, de modo que el
-        # revisor leia un codigo `DIS-...` sin partes, sin quien gana y sin
-        # efecto. Un id suelto dentro de un parrafo no es un canal; declarado
-        # aqui, la memoria trae la discrepancia entera desde el registro.
-        discrepancias=("DIS-HR-CLASE-DE-SITIO-F", "DIS-HR-30M-VS-100FT"),
+        # LAS DOS DISCREPANCIAS QUE ESTE CRITERIO TOCABA -- DIS-HR-CLASE-DE-
+        # SITIO-F y DIS-HR-30M-VS-100FT -- viajaron por este campo mientras
+        # estuvieron vivas. I2 corrigio la Sec. 0.5 y la Fase 0-bis de la v8
+        # y las paso a RESUELTA, y una resuelta no se declara (la guardia
+        # `_verificar_discrepancias` lo impide: lo resuelto es material del
+        # manifiesto, no de la memoria). El canal queda documentado aqui por
+        # si una discrepancia nueva de este criterio lo necesita.
         concepto="Clase de sitio sismica (AASHTO LRFD Art. 3.10.3.1 / Manual "
                  "de Puentes num. 2.4.3.11.2.1.1). Es la rigidez MEDIDA de "
                  "los 100 ft (30.48 m) superiores leida en la tabla de "
@@ -940,9 +940,10 @@ CRITERIOS: Dict[str, Criterio] = {
                       "suelos licuables en su categoria excepcional es E.030, "
                       "en el perfil S5 de su Tabla N 2, y son dos esquemas "
                       "distintos que discrepan justo en el rasgo que motivaba "
-                      "la clasificacion de este sitio -- la discrepancia "
-                      "viaja por el campo `discrepancias` de este criterio, y "
-                      "la lectura esta en "
+                      "la clasificacion de este sitio -- la discrepancia que "
+                      "esto abrio contra la hoja de ruta quedo resuelta en I2 "
+                      "al corregirse la Sec. 0.5 de la v8 y vive en el "
+                      "manifiesto, y la lectura esta en "
                       "constantes_normativas.E030_S5_VS_CLASE_F. Ademas el "
                       "Art. 10.5.4.2 espera factor de sitio tabulado para un "
                       "sitio licuable -- acota el espectro especifico a no "
@@ -1030,11 +1031,12 @@ CRITERIOS: Dict[str, Criterio] = {
                         "SUPERIORES -- Vs30 o N_barra --, que es la "
                         "profundidad que el Art. 3.10.3.1 escribe («the upper "
                         "100 ft») y con la que se lee la clase. La hoja de "
-                        "ruta pide «30 m» y se lo atribuye al articulado: el "
-                        "numeral no imprime esa cifra, y la discrepancia "
-                        "esta declarada y viaja por el campo `discrepancias` "
-                        "de este criterio, que es lo que la lleva a la "
-                        "memoria con sus partes cuando la corrida lo usa. "
+                        "ruta pedia «30 m» y se lo atribuia al articulado -- "
+                        "el numeral no imprime esa cifra --; la discrepancia "
+                        "que eso abrio viajo por el campo `discrepancias` de "
+                        "este criterio mientras estuvo viva, y quedo resuelta "
+                        "en I2 al escribir la v8 la profundidad del "
+                        "articulado (Sec. 0.5 y Tablero 3.6). "
                         "Los 30.48 m son "
                         "parte de la DEFINICION de la clase: una clase leida "
                         "sobre menos profundidad no es la misma variable. "
@@ -1096,10 +1098,12 @@ CRITERIOS: Dict[str, Criterio] = {
         # invocara sin diferirlo, la suite se pone roja aqui.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
-        # Misma razon que en 'clase_sitio': la profundidad sobre la que se lee
-        # la clase decide que fila de esta tabla aplica, y la hoja de ruta se
-        # la atribuye al articulado con una cifra que el articulado no imprime.
-        discrepancias=("DIS-HR-30M-VS-100FT",),
+        # DIS-HR-30M-VS-100FT viajo por este campo mientras estuvo viva --
+        # la profundidad sobre la que se lee la clase decide que fila de esta
+        # tabla aplica, y la hoja de ruta se la atribuia al articulado con una
+        # cifra que el articulado no imprime --. I2 corrigio la v8 y la paso a
+        # RESUELTA: lo resuelto es material del manifiesto, no de la memoria,
+        # y la guardia rechaza declararlo aqui.
         concepto="Filas de la Tabla 2.4.3.11.2.1.2-1 sobre las que se lee el "
                  "factor de sitio de la cadena sismica. El factor adoptado es "
                  "la ENVOLVENTE (el mayor) de esas filas al PGA del proyecto; "
@@ -1172,9 +1176,11 @@ CRITERIOS: Dict[str, Criterio] = {
                         "(30.48 m) superiores -- Vs30 o N_barra --, que "
                         "cierra 'clase_sitio' y deja una sola fila. La "
                         "profundidad es la que imprime el Art. 3.10.3.1 «the "
-                        "upper 100 ft»; la hoja de ruta dice «30 m» y se lo "
-                        "atribuye al articulado, y esa discrepancia viaja por "
-                        "el campo `discrepancias` de 'clase_sitio'. Si esa "
+                        "upper 100 ft»; la hoja de ruta decia «30 m» "
+                        "atribuyendoselo al articulado, y esa discrepancia "
+                        "quedo resuelta en I2 al corregirse la v8 (Sec. 0.5 "
+                        "y Tablero 3.6) -- la historia, en el manifiesto. Si "
+                        "esa "
                         "caracterizacion diera Clase F, no queda fila con "
                         "factor: queda el ANALISIS DE RESPUESTA DINAMICA DE "
                         "SITIO que exige el Art. 3.10.2 con «shall» y el num. "
@@ -3738,13 +3744,13 @@ CRITERIOS: Dict[str, Criterio] = {
         valor={"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50},
         nivel=NIVEL_PERFIL,
         etiqueta="A",
-        # LA DISCREPANCIA, POR SU ID Y NO EN PROSA. `fuente` cuenta abajo, con
-        # tabla y pagina, POR QUE ninguna norma sostiene estos topes; lo que
-        # este campo hace es que ese hallazgo LLEGUE A LA MEMORIA por el canal
-        # y no dependa de que el revisor lea el campo `fuente` de una ficha.
-        # V9 consulta el tope y ni siquiera emite paso, de modo que por la via
-        # del paso no llegaria nunca.
-        discrepancias=("DIS-HR-D-MAX",),
+        # DIS-HR-D-MAX viajo por este campo mientras estuvo viva -- V9
+        # consulta el tope y ni siquiera emite paso, de modo que la via del
+        # criterio era la unica --. I2 corrigio la v8 (§3.2, §3.4, Tablero
+        # 1.2, Anexos A/B/C) y la paso a RESUELTA: lo resuelto es material
+        # del manifiesto, no de la memoria. Lo que la memoria SI sigue
+        # diciendo vive en `de_catalogo` y en la advertencia de `resolucion`:
+        # que el tope es de catalogo y el descarte, adoptado.
         concepto="Diametro maximo que el proyecto admite por material, como "
                  "tope de DISPONIBILIDAD (catalogo), no como tope normativo",
         de_catalogo="TOPE DE CATALOGO, NO DE NORMA. Imprimir siempre asi: "
@@ -3763,8 +3769,9 @@ CRITERIOS: Dict[str, Criterio] = {
                       "Fase 4 converge a un diametro que nadie fabrica ni "
                       "transporta a la obra. Lo que las fuentes dicen esta "
                       "verificado en contra y anotado en `fuente` y en la "
-                      "discrepancia que este criterio lleva declarada en su "
-                      "campo `discrepancias`: las normas de producto tabulan "
+                      "discrepancia del registro que este criterio llevo "
+                      "declarada mientras estuvo viva, resuelta en I2 al "
+                      "corregirse la v8: las normas de producto tabulan "
                       "hasta 3600 mm y ninguna topa donde el proyecto topa, "
                       "de modo que imprimir estos topes rotulados como norma "
                       "seria una cita falsa que ademas descarta materiales en "
@@ -4633,6 +4640,18 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea la seleccion de Fase 8, items 1-2
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
+        # LA DISCREPANCIA VIVA QUE ESTE CRITERIO TOCA, por su id y no en
+        # prosa (I2). DIS-HR-A807 es la unica que sigue abierta contra la
+        # hoja de ruta -- su Fase 8 remite el calibre del TMC a «ASTM
+        # A-807», y la designacion no aparece en M 170M, M 36 ni A760 --,
+        # y no tiene NINGUNA otra via a la memoria: sus partes no llevan
+        # cita (A796/A807 son fuentes ausentes: no hay contra que
+        # verificar) y ningun paso la declara. La `justificacion` de abajo
+        # ya contaba el caso en prosa; este campo es lo que lleva la
+        # discrepancia entera -- partes, quien gana, efecto -- a la memoria
+        # de la corrida que use este criterio. Se cerrara cuando A796 (o
+        # A-807) este en normas/ y la atribucion se verifique.
+        discrepancias=("DIS-HR-A807",),
         concepto="Tabla de clase (concreto, AASHTO M 170M-04, Clases I a V) o "
                  "calibre (TMC, ASTM A796/A796M) admisible segun la altura de "
                  "relleno sobre la clave, para Fase 8 items 1-2: seleccionar "

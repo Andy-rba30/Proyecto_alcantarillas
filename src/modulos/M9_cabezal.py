@@ -170,7 +170,7 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    CLASE_SITIO_EF_NO_SUPUESTA_MP_TEXTO,
                                    CLASE_SITIO_EF_NO_SUPUESTA_TEXTO,
                                    CLASE_SITIO_INVESTIGACION_TEXTO,
-                                   CICLOPEO_DISCREPANCIA_HOJA_RUTA,
+                                   CICLOPEO_DOS_MINIMOS,
                                    CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
                                    COMBINACIONES_AASHTO,
@@ -3254,12 +3254,18 @@ def verificar_ciclopeo(*, fc_matriz: float,
 
     `fc_matriz` en MPa, `fraccion_piedra` en tanto por uno (0.30, no 30).
     """
+    # El numeral llevo pegado, entre corchetes, el rotulo "[DISCREPA DE LA
+    # HOJA DE RUTA: ...]" mientras DIS-HR-CICLOPEO estuvo abierta: era la
+    # declaracion en el punto de uso que CLAUDE.md exige. I2 corrigio la
+    # Sec. 9.4 de la v8 (escribe los dos minimos y el mayor) y la
+    # discrepancia quedo RESUELTA, de modo que el rotulo pasaba a afirmar
+    # algo falso. La regla de los dos minimos -- que sigue siendo la que
+    # esta verificacion aplica -- queda dicha en CICLOPEO_DOS_MINIMOS.
     return (
         Verificacion(
             cumple=fc_matriz >= CICLOPEO_FC_MATRIZ_MIN_APLICABLE - TOL_UMBRAL_NORMATIVO,
             numeral=f"{NUMERAL_CICLOPEO_APLICABLE} "
-                    f"[DISCREPA DE LA HOJA DE RUTA: "
-                    f"{CICLOPEO_DISCREPANCIA_HOJA_RUTA}]",
+                    f"[{CICLOPEO_DOS_MINIMOS}]",
             valor_obtenido=fc_matriz,
             valor_admisible=CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
             criterio_aplicado=None,
