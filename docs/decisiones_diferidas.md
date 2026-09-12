@@ -988,3 +988,71 @@ necesita y que no queda escrita en ningún otro registro.
 - **Qué haría falta:** nada para esta ficha; el día que la Fase 8 especifique
   el producto, la cifra se recalcula con su espesor real.
 - **Dónde vive:** `src/criterios_adoptados.py::espesor_pared_conducto`
+
+---
+
+# Parte XI — La historia que R2b retiró de las justificaciones del lote de expediente
+
+R2b (plan R, `docs/planes_mejora/02_PLAN_REDACCION_CRITERIOS.md` §R2) cerró
+la reescritura de estilo con el lote de nivel expediente. Como en la Parte X:
+la narración de bitácora salió de `justificacion` porque la historia vive en
+git y aquí, y estas fichas conservan la parte que un revisor futuro necesita
+y que no queda escrita en ningún otro registro.
+
+## R2b-01 · `clase_sitio`: la dispensa inventada y el [A] que confesaba no ser una elección
+
+- **Qué se difirió:** nada; se conserva la historia que la justificación ya
+  no narra. Dos piezas. (1) La redacción histórica del criterio y la §0.5 de
+  la hoja de ruta v7 atribuían a AASHTO una dispensa por periodo fundamental
+  corto (T ≤ 0.5 s) que permitía clasificar el sitio como si el suelo no
+  licuara. El barrido de verificación dio cero coincidencias en las 1905
+  páginas de AASHTO LRFD 9.ª ed. (2020): no fue un vacío relleno en
+  silencio, fue una autorización normativa inventada — que es peor, porque
+  un vacío se ve y una cita falsa se cree. La v8 ya retiró la regla en su
+  §0.5. (2) Mientras el criterio tuvo valor fue el único [A] con valor que
+  no declaraba sensibilidad (SIS-D-08), con la razón escrita de que declarar
+  un rango de clases alternativas sería fijar la respuesta antes de resolver
+  la pregunta; esa confesión es la que llevó a reetiquetarlo [S] sin valor.
+- **Por qué se escribe aquí:** la justificación conserva íntegro el
+  argumento presente (las prohibiciones de suponer E o F, el salto
+  S5→Clase F que ninguna de las dos fuentes escribe, y la verificación de
+  que la dispensa no existe), pero ya no cuenta de dónde venía cada error;
+  sin esta ficha, la lección «una cita falsa se cree» quedaba solo en git.
+- **Qué haría falta:** nada — cerrado; el pendiente vivo del criterio es la
+  medición (Vs30/N/su), declarada en su `resolucion`.
+- **Dónde vive:** `src/criterios_adoptados.py::clase_sitio`
+
+## R2b-02 · `cortante_alto_muro_e060_art_11_10_10_2`: el umbral 0.5·φ·Vc era una atribución inventada
+
+- **Qué se difirió:** nada; se conserva la corrección que la justificación
+  ya no narra (NOR-E060-03). El criterio decía que el Art. 11.10.10.2 de
+  E.060 define un umbral de entrada «del orden de Vu > 0.5·φ·Vc». Verificado
+  contra el PDF, el artículo entero es una sola frase y no define umbral
+  alguno; el 0.5·φ·Vc existe en E.060 pero en el Art. 11.5.6.1 (pág. 91) y
+  para elementos sometidos a flexión, no para muros. Era una atribución
+  inventada del mismo tipo que la de NOR-PUE-01.
+- **Por qué se escribe aquí:** la justificación conserva los umbrales que sí
+  escalonan el régimen de un muro (11.10.10.1 y 11.10.7/11.10.8) en
+  presente; la procedencia del error y su ficha correctora son historia y
+  viven aquí y en el tracker.
+- **Qué haría falta:** nada — cerrado; el pendiente vivo del criterio es la
+  demanda Vu, que espera a `procedimiento_flexion_corte_aashto_sec5`.
+- **Dónde vive:** `src/criterios_adoptados.py::cortante_alto_muro_e060_art_11_10_10_2`
+
+## R2b-03 · `k_v`: la sensibilidad numérica (0.0, 0.5) retirada, y las tres formas del rango
+
+- **Qué se difirió:** nada; se conserva por qué la `sensibilidad` de `k_v`
+  declara dos regímenes y no un rango numérico. El criterio llevó una
+  sensibilidad (0.0, 0.5) que se retiró por tres razones encadenadas:
+  sugería una libertad que el num. 2.8.1.1.14.2.1 no concede (el cero es
+  prescrito, no elegido); su propio comentario no coincidía con su extremo —
+  hablaba de 0.5·k_h como escenario alterno, que con la cadena de este
+  proyecto vale 0.25 y no 0.5 —; y la hoja de ruta escribe (0, 0.5·k_h),
+  que es una tercera forma distinta de las otras dos.
+- **Por qué se escribe aquí:** quien vea la tupla declarativa actual podría
+  «completarla» con un rango numérico plausible; esta ficha deja dicho que
+  ese rango ya existió y por qué se retiró.
+- **Qué haría falta:** nada — cerrado; si algún caso reservado del numeral
+  se diera en esta obra, el número sería del proyectista y entraría como
+  valor del criterio, no como sensibilidad.
+- **Dónde vive:** `src/criterios_adoptados.py::k_v`

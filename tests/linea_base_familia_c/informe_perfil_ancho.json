@@ -30,12 +30,12 @@
         "tipo": "CriterioPendienteError",
         "criterio": "TR_evento_extremo",
         "etiqueta": "A",
-        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'",
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
         "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
       },
       {
         "punto": "A-01",
@@ -72,12 +72,12 @@
         "tipo": "CriterioPendienteError",
         "criterio": "TR_evento_extremo",
         "etiqueta": "A",
-        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'",
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
         "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
       },
       {
         "punto": "A-02",
@@ -114,12 +114,12 @@
         "tipo": "CriterioPendienteError",
         "criterio": "TR_evento_extremo",
         "etiqueta": "A",
-        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'",
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
         "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
       },
       {
         "punto": "B-01",
@@ -413,12 +413,12 @@
           "tipo": "CriterioPendienteError",
           "criterio": "TR_evento_extremo",
           "etiqueta": "A",
-          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'",
+          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
           "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
         },
         {
           "fase": "Fase 8 - Estructural del conducto (M8)",
@@ -682,12 +682,12 @@
           "tipo": "CriterioPendienteError",
           "criterio": "TR_evento_extremo",
           "etiqueta": "A",
-          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'",
+          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
           "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
         },
         {
           "fase": "Fase 8 - Estructural del conducto (M8)",
@@ -951,12 +951,12 @@
           "tipo": "CriterioPendienteError",
           "criterio": "TR_evento_extremo",
           "etiqueta": "A",
-          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'",
+          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
           "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
         },
         {
           "fase": "Fase 8 - Estructural del conducto (M8)",
@@ -1147,7 +1147,7 @@
         "etiqueta": "A",
         "valor": null,
         "declarado_en_caliente": false,
-        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'"
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde"
       },
       {
         "clave": "acceso_mantenimiento_v2b",
@@ -1472,7 +1472,7 @@
       {
         "clave": "TR_evento_extremo",
         "etiqueta": "A",
-        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'",
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
         "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
         "reemplazado_por": "TR del evento extremo (p.ej. el de la serie FEN de la Fase 1-bis) y definicion tecnica de colapso de la via, ambos declarados en la memoria",
         "fases": [

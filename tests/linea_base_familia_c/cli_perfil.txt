@@ -16,7 +16,7 @@ A-01  |  progresiva 0+380  |  Familia A
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
         fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
-        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
     [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
         Diseno no factible en el punto A-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto A-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.025 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 44.05) | TMC galvanizada: material no evaluable: DatoFaltanteError: Falta el dato 'espesor_pared_conducto[tmc]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «tmc». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE sale de AASHTO M294, que NO esta en normas/. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7) | HDPE: material no evaluable: DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «hdpe». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE sale de AASHTO M294, que NO esta en normas/. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7)
@@ -62,7 +62,7 @@ A-02  |  progresiva 1+920  |  Familia A
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
         fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
-        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
     [DiferidoPorAlcance] Fase 8 - Estructural del conducto (M8) -> Fase 8 completa diferida al expediente (alcance perfil)
         clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente
@@ -80,7 +80,7 @@ B-01  |  progresiva 2+450  |  Familia B
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
         fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
-        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
     [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
         Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | TMC galvanizada: material no evaluable: DatoFaltanteError: Falta el dato 'espesor_pared_conducto[tmc]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «tmc». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE sale de AASHTO M294, que NO esta en normas/. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7) | HDPE: material no evaluable: DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «hdpe». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE sale de AASHTO M294, que NO esta en normas/. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7)
@@ -118,7 +118,7 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
   [A-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V8 diferida al expediente (alcance perfil)
-    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
     fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   [A-02] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V5 diferida al expediente (alcance perfil)
@@ -126,7 +126,7 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
   [A-02] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V8 diferida al expediente (alcance perfil)
-    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
     fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   [A-02] Fase 8 - Estructural del conducto (M8)
     Fase 8 completa diferida al expediente (alcance perfil)
@@ -137,7 +137,7 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
   [B-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V8 diferida al expediente (alcance perfil)
-    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
     fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   [C-01] Fase 5 - Verificaciones
     VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no)
@@ -150,7 +150,7 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
 CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA
 ==============================================================================
 [A] TR_evento_extremo
-  Concepto : Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+  Concepto : Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
   Fuente   : PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   Lo resuelve: TR del evento extremo (p.ej. el de la serie FEN de la Fase 1-bis) y definicion tecnica de colapso de la via, ambos declarados en la memoria
   Bloqueo  : verificacion V8 diferida al expediente (alcance perfil)

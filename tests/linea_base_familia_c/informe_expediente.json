@@ -1001,7 +1001,7 @@
           }
         },
         "declarado_en_caliente": false,
-        "concepto": "Tabla 5.10.1-1 de AASHTO LRFD, 'Minimum Cover for Main Reinforcing Steel', completa: las 21 situaciones por las tres categorias de material de refuerzo, convertidas a mm"
+        "concepto": "Tabla 5.10.1-1 de AASHTO LRFD (recubrimiento minimo del acero principal de refuerzo), completa: las 21 situaciones por las tres categorias de material de refuerzo, convertidas a mm"
       },
       {
         "clave": "talud_terraplen",

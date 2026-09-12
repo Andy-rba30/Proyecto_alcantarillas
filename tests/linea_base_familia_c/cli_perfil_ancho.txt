@@ -44,7 +44,7 @@ A-01  |  progresiva 0+380  |  Familia A
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
         fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
-        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
     [DiferidoPorAlcance] Fase 8 - Estructural del conducto (M8) -> Fase 8 completa diferida al expediente (alcance perfil)
         clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente
@@ -90,7 +90,7 @@ A-02  |  progresiva 1+920  |  Familia A
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
         fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
-        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
     [DiferidoPorAlcance] Fase 8 - Estructural del conducto (M8) -> Fase 8 completa diferida al expediente (alcance perfil)
         clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente
@@ -136,7 +136,7 @@ B-01  |  progresiva 2+450  |  Familia B
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
         fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
-        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+        falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
     [DiferidoPorAlcance] Fase 8 - Estructural del conducto (M8) -> Fase 8 completa diferida al expediente (alcance perfil)
         clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente
@@ -176,7 +176,7 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
   [A-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V8 diferida al expediente (alcance perfil)
-    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
     fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   [A-01] Fase 8 - Estructural del conducto (M8)
     Fase 8 completa diferida al expediente (alcance perfil)
@@ -187,7 +187,7 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
   [A-02] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V8 diferida al expediente (alcance perfil)
-    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
     fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   [A-02] Fase 8 - Estructural del conducto (M8)
     Fase 8 completa diferida al expediente (alcance perfil)
@@ -198,7 +198,7 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     fuente: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial
   [B-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V8 diferida al expediente (alcance perfil)
-    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+    falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
     fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   [B-01] Fase 8 - Estructural del conducto (M8)
     Fase 8 completa diferida al expediente (alcance perfil)
@@ -214,7 +214,7 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
 CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA
 ==============================================================================
 [A] TR_evento_extremo
-  Concepto : Periodo de retorno del evento extremo de V8 y el umbral que define 'la via no colapsa aunque desborde'
+  Concepto : Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
   Fuente   : PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   Lo resuelve: TR del evento extremo (p.ej. el de la serie FEN de la Fase 1-bis) y definicion tecnica de colapso de la via, ambos declarados en la memoria
   Bloqueo  : verificacion V8 diferida al expediente (alcance perfil)
