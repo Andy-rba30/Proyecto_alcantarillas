@@ -22,7 +22,7 @@ verificó cada cita y la regla de paginación MEDIDA, no supuesta.
 |---|---|---|---|---|---|---|
 | `AASHTO_LRFD_9` | AASHTO LRFD Bridge Design Specifications | Ninth Edition, 2020 | por capítulo: 1=15, 10=1289, 11=1469, 12=1638, 13=1750, 14=1782, 15=1872, 2=24, 3=54, 4=251, 5=359, 6=706, 7=1134, 8=1197, 9=1239 | 1905 | `71f4ced4c80f58db75a0bcdf4ac6b5d86dc0f858` | sí |
 | `AASHTO_M170M` | AASHTO M 170M-04 «Standard Specification for Reinforced Concrete Culvert, Storm Drain, and Sewer Pipe [Metric]» | M 170M-04 | por capítulo: M 170M=0 | 23 | `dcc40c0e5e9c99ad9f18490fa8c5b2d9394faa51` | **no** |
-| `AASHTO_M36` | AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers and Drains» | M 36 | corrida, +1 | 24 | `f85b5658385ae6779dde4e5fd340ac3122b62636` | **no** |
+| `AASHTO_M36` | AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers and Drains» | M 36-03 (2007) | por capítulo: M 36=1 | 24 | `f85b5658385ae6779dde4e5fd340ac3122b62636` | **no** |
 | `ASTM_A760` | ASTM A760/A760M-10 «Especificacion Estandar para Tuberia de Acero Corrugado, con Recubrimiento Metalico, para Alcantarillas y Drenajes» | A760/A760M-10 | corrida, +0 | 15 | `47d0d447143ca158615dff7dec79f2f7a8975732` | **no** |
 | `E030` | Norma Tecnica E.030 «Diseño Sismorresistente» | Edicion 2026, publicada en el diario oficial El Peruano | corrida, +0 | 68 | `fe0a58e4be4b8709324e65ed6ad0c25b8e0b6899` | sí |
 | `E050` | Norma Tecnica E.050 «Suelos y Cimentaciones» | Edicion 2018 | corrida, +0 | 82 | `5fac1ecd997a6d6e80bcbf0967f89f9ddcc8106c` | sí |
@@ -168,6 +168,22 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.T3.4.1-2`** — Confirma dos hallazgos abiertos: EV «Retaining Walls and Abutments» = 1.35 / 1.00 (no 0.90; sostiene NOR-PUE-03) y EH At-Rest = 1.35 / 0.90, CON minimo declarado -- lo que refuta la afirmacion negativa de NOR-AAS-04, que sostenia que la fuente no declara minimo para EH en reposo. El N/A pertenece a la fila siguiente, «AEP for anchored walls».
 
 > **`AASHTO_LRFD_9.T5.10.1-1`** — TRES categorias de acero -- A, B y C --, bajo el encabezado de grupo «Reinforcing Material Category», y la tabla peruana tiene UNA sola columna porque cubre una sola categoria: la no protegida. Es la clave de NOR-AAS-01: los 3.0 in de «Coastal» son de la Categoria A, y con B o C la tabla baja a 2.0 in = 50.8 mm, con lo que la regla del mayor la pasaria a ganar E.060.
+
+### AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers and Drains»  (`AASHTO_M36`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `AASHTO_M36.T6` | Table 6 | «Table 6—Pipe Sizes» | pág. impresa **M 36-11** · PDF 12 | definicion | 2026-09-12 · imagen renderizada |
+
+> **`AASHTO_M36.T6`** — RASTER PURO: leida entera sobre la pagina PDF 12 renderizada (escalas 4.0 y 8.0; las filas 2550-3600 exigieron la segunda para separar las columnas de costilla). La pagina impresa lleva el rotulo «M 36-11» al pie, que confirma el desfase +1 de la Fuente.
+
+### ASTM A760/A760M-10 «Especificacion Estandar para Tuberia de Acero Corrugado, con Recubrimiento Metalico, para Alcantarillas y Drenajes»  (`ASTM_A760`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `ASTM_A760.T1` | Tabla 1 | «TABLA 1 Tamaños de tubería» | pág. impresa **3** · PDF 3 | definicion | 2026-09-12 · imagen renderizada |
+
+> **`ASTM_A760.T1`** — Leida sobre la pagina PDF 3 renderizada (S14 dejo comprobado que es legible a escala 2.0; esta transcripcion se hizo a 4.0). El PDF es la TRADUCCION AL ESPAÑOL de la norma (propiedad declarada en la Fuente): el titulo impreso es «TABLA 1 Tamaños de tubería» y los encabezados mezclan «en.» (in.) con «pulg.». La MISMA tabla existe como Table 6 de AASHTO M 36 (doble designacion, ediciones distintas): las diferencias medidas entre las dos estan declaradas en la correspondencia CORR-TAMANOS-TMC.
 
 ### Norma Tecnica E.030 «Diseño Sismorresistente»  (`E030`)
 
@@ -529,6 +545,120 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 >  Category B—Epoxy coated or galvanized meeting ASTM A775/A775M
 
 >  Category C—Materials meeting AASHTO M 334M/M 334
+
+### `AASHTO_M36.T6` — Table 6—Pipe Sizes
+
+- Cita: `AASHTO_M36.T6`
+- Tabla completa · el calculo usa 0 de 9 columnas y 0 de 31 filas
+- Columna «Nominal Inside Diameter, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «38 by 6.5 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «68 by 13 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «75 by 25 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «125 by 25 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «19 by 19 by 190 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «19 by 25 by 292 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «19 by 25 by 216 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «Minimum Outside Circumference, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+
+| Fila | Nominal Inside Diameter, mm | 38 by 6.5 mm | 68 by 13 mm | 75 by 25 mm | 125 by 25 mm | 19 by 19 by 190 mm | 19 by 25 by 292 mm | 19 by 25 by 216 mm | Minimum Outside Circumference, mm | Uso |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 100 | 100 | X |  |  |  |  |  |  | 264 | no usada |
+| 150 | 150 | X |  |  |  |  |  |  | 441 | no usada |
+| 200 | 200 | X |  |  |  |  |  |  | 598 | no usada |
+| 250 | 250 | X |  |  |  |  |  |  | 755 | no usada |
+| 300 | 300 | X | X |  |  |  |  |  | 912 | no usada |
+| 375 | 375 | X | X |  |  |  |  |  | 1148 | no usada |
+| 450 | 450 | X | X |  |  | X | X | X | 1383 | no usada |
+| 500 | 500 |  | X |  |  | X | X | X | 1620 | no usada |
+| 600 | 600 |  | X |  |  | X | X | X | 1854 | no usada |
+| 675 | 675 |  | X |  |  | X | X | X | 2091 | no usada |
+| 750 | 750 |  | X |  |  | X | X | X | 2483 | no usada |
+| 825 | 825 |  | X |  | X | X | X | X | 2561 | no usada |
+| 900 | 900 |  | X | X | X | X | X | X | 2797 | no usada |
+| 1050 | 1050 |  | X | X | X | X | X | X | 3269 | no usada |
+| 1200 | 1200 |  | X | X | X | X | X | X | 3739 | no usada |
+| 1350 | 1350 |  | X | X | X | X | X | X | 4209 | no usada |
+| 1500 | 1500 |  | X | X | X | X | X | X | 4675 | no usada |
+| 1650 | 1650 |  | X | X | X | X | X | X | 5142 | no usada |
+| 1800 | 1800 |  | X | X | X | X | X | X | 5609 | no usada |
+| 1950 | 1950 |  | X | X | X | X | X | X | 6075 | no usada |
+| 2100 | 2100 |  | X | X | X | X | X | X | 6542 | no usada |
+| 2250 | 2250 |  |  | X | X | X | X | X | 7008 | no usada |
+| 2400 | 2400 |  |  | X | X | X | X | X | 7475 | no usada |
+| 2550 | 2550 |  |  | X | X | X | X | X | 7941 | no usada |
+| 2700 | 2700 |  |  | X | X | X | X | X | 8408 | no usada |
+| 2850 | 2850 |  |  | X | X | X |  | X | 8874 | no usada |
+| 3000 | 3000 |  |  | X | X | X |  | X | 9341 | no usada |
+| 3150 | 3150 |  |  | X | X |  |  | X | 9807 | no usada |
+| 3300 | 3300 |  |  | X | X |  |  | X | 10274 | no usada |
+| 3450 | 3450 |  |  | X | X |  |  | X | 10740 | no usada |
+| 3600 | 3600 |  |  | X | X |  |  | X | 11207 | no usada |
+
+> a An “X” indicates standard corrugation sizes for each nominal diameter of pipe.
+
+> b Rib sizes 19 by 19 by 190 mm and 19 by 25 by 292 mm.
+
+> c Measured in valley of annular corrugations. Not applicable to helically corrugated pipe.
+
+### `ASTM_A760.T1` — TABLA 1 Tamaños de tubería
+
+- Cita: `ASTM_A760.T1`
+- Tabla completa · el calculo usa 0 de 11 columnas y 0 de 31 filas
+- Columna «en.» transcrita y **no usada**: el calculo opera en SI; la pulgada es la unidad IMPRESA y sin ella la conversion no se puede comprobar
+- Columna «mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «1 1/2 por 1/4 en. [38 por 6,5 mm]» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «2 2/3 por 1/2 en. [68 por 13 mm]» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «3 por 1 pulg. [75 por 25 mm]» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «5 por 1 pulg. [125 por 25 mm]» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «3/4 por 3/4 por 7 1/2 en. [19 por 19 por 190 mm]» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «3/4 por 1 por 11 1/2 en. [19 por 25 por 292 mm]» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «3/4 por 1 por 8 1/2 en. [19 por 25 por 216 mm]» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- Columna «en.» transcrita y **no usada**: el calculo opera en SI; la pulgada es la unidad IMPRESA y sin ella la conversion no se puede comprobar
+- Columna «mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, que no esta en normas/ (FUENTES_AUSENTES)
+- **Interpretación del proyectista, no de la fuente**: Este PDF es la TRADUCCION AL ESPAÑOL de A760/A760M-10 (la Fuente lo declara). La traduccion degrada rotulos, no valores: «en.» es in., los marcadores de nota A y B llegan como «UNA» y «segundo», y dos circunferencias en pulgadas (187.0 y 243.0) se imprimen con punto decimal donde el resto usa coma. Los numeros se leyeron uno a uno sobre la imagen y coinciden celda a celda, en mm, con la Table 6 de AASHTO M 36, que es la misma norma en edicion anterior.
+  - En contra: el original en ingles de A760/A760M-10 no esta en normas/, de modo que el cotejo contra el ingles solo pudo hacerse via AASHTO M 36, que es otra EDICION: las dos celdas en que difieren (375 y 825) no se pueden atribuir con certeza a la edicion o a la traduccion
+  - En contra: TRES CELDAS SON ARITMETICAMENTE ANOMALAS DENTRO DE LA PROPIA TABLA, Y LA ANOMALIA ESTA IMPRESA EN LAS DOS EDICIONES (hallada por auditoria aritmetica en I1b y desempatada releyendo los digitos a 26-60x en ambos PDF): la circunferencia 264 de la fila 100 da 23.16 mm por pulgada donde las demas filas dan 24.9-25.0 (la razon interna pediria 284); el diametro 500 de la fila de 21 in rompe el paso de 75 mm de la serie 450-600 (el paso pediria 525, fila que NO existe en ninguno de los dos ejemplares); y la circunferencia 2483 de la fila 750 da 26.67 mm por pulgada y rompe la progresion +237/+392/+78 donde la regular es ~236 (pediria 2326). NO SE CORRIGEN: los tres valores estan impresos identicos en las dos ediciones y reescribirlos seria inventar un valor normativo contra la fuente primaria. Si son erratas de imprenta arrastradas o la serie real, no es decidible con lo adjunto: exige el original ingles de A760/A760M-10 u otro ejemplar independiente, que no estan en normas/
+  - A favor: los 31 diametros y las 31 circunferencias en mm coinciden celda a celda entre las dos ediciones, que es la comprobacion cruzada mas fuerte disponible sin el original -- y en I1b las seis celdas en disputa se releyeron digito a digito, con controles de forma sobre glifos vecinos, en los dos PDF
+
+| Fila | en. | mm | 1 1/2 por 1/4 en. [38 por 6,5 mm] | 2 2/3 por 1/2 en. [68 por 13 mm] | 3 por 1 pulg. [75 por 25 mm] | 5 por 1 pulg. [125 por 25 mm] | 3/4 por 3/4 por 7 1/2 en. [19 por 19 por 190 mm] | 3/4 por 1 por 11 1/2 en. [19 por 25 por 292 mm] | 3/4 por 1 por 8 1/2 en. [19 por 25 por 216 mm] | en. | mm | Uso |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 100 | 4 | 100 | X |  |  |  |  |  |  | 11.4 | 264 | no usada |
+| 150 | 6 | 150 | X |  |  |  |  |  |  | 17.7 | 441 | no usada |
+| 200 | 8 | 200 | X |  |  |  |  |  |  | 24.0 | 598 | no usada |
+| 250 | 10 | 250 | X |  |  |  |  |  |  | 30.2 | 755 | no usada |
+| 300 | 12 | 300 | X | X |  |  |  |  |  | 36.5 | 912 | no usada |
+| 375 | 15 | 375 | X | X |  |  | X |  |  | 46.0 | 1148 | no usada |
+| 450 | 18 | 450 | X | X |  |  | X | X | X | 55.4 | 1383 | no usada |
+| 500 | 21 | 500 |  | X |  |  | X | X | X | 64.8 | 1620 | no usada |
+| 600 | 24 | 600 |  | X |  |  | X | X | X | 74.2 | 1854 | no usada |
+| 675 | 27 | 675 |  | X |  |  | X | X | X | 83.6 | 2091 | no usada |
+| 750 | 30 | 750 |  | X |  |  | X | X | X | 93.1 | 2483 | no usada |
+| 825 | 33 | 825 |  | X |  |  | X | X | X | 102.5 | 2561 | no usada |
+| 900 | 36 | 900 |  | X | X | X | X | X | X | 111.9 | 2797 | no usada |
+| 1050 | 42 | 1050 |  | X | X | X | X | X | X | 130.8 | 3269 | no usada |
+| 1200 | 48 | 1200 |  | X | X | X | X | X | X | 149.6 | 3739 | no usada |
+| 1350 | 54 | 1350 |  | X | X | X | X | X | X | 168.4 | 4209 | no usada |
+| 1500 | 60 | 1500 |  | X | X | X | X | X | X | 187.0 | 4675 | no usada |
+| 1650 | 66 | 1650 |  | X | X | X | X | X | X | 205.7 | 5142 | no usada |
+| 1800 | 72 | 1800 |  | X | X | X | X | X | X | 224.3 | 5609 | no usada |
+| 1950 | 78 | 1950 |  | X | X | X | X | X | X | 243.0 | 6075 | no usada |
+| 2100 | 84 | 2100 |  | X | X | X | X | X | X | 261.7 | 6542 | no usada |
+| 2250 | 90 | 2250 |  |  | X | X | X | X | X | 280.3 | 7008 | no usada |
+| 2400 | 96 | 2400 |  |  | X | X | X | X | X | 299.0 | 7475 | no usada |
+| 2550 | 102 | 2550 |  |  | X | X | X | X | X | 317.6 | 7941 | no usada |
+| 2700 | 108 | 2700 |  |  | X | X | X | X | X | 336.3 | 8408 | no usada |
+| 2850 | 114 | 2850 |  |  | X | X | X |  | X | 355.0 | 8874 | no usada |
+| 3000 | 120 | 3000 |  |  | X | X | X |  | X | 373.6 | 9341 | no usada |
+| 3150 | 126 | 3150 |  |  | X | X |  |  | X | 392.3 | 9807 | no usada |
+| 3300 | 132 | 3300 |  |  | X | X |  |  | X | 410.9 | 10274 | no usada |
+| 3450 | 138 | 3450 |  |  | X | X |  |  | X | 429.6 | 10740 | no usada |
+| 3600 | 144 | 3600 |  |  | X | X |  |  | X | 448.3 | 11207 | no usada |
+
+> UNA Una “X” indica tamaños de corrugación estándar para cada diámetro nominal de tubería.
+
+> segundo Medido en valle de corrugaciones anulares. No aplicable a tubería ondulada helicoidalmente.
+
+> c Tamaño adicional para tubería Tipo IS.
 
 ### `E060.T4.2` — TABLA 4.2 REQUISITOS PARA CONDICIONES ESPECIALES DE EXPOSICIÓN
 
@@ -1087,5 +1217,5 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 116.
+Citas sin firma de verificación: **0** de 118.
 

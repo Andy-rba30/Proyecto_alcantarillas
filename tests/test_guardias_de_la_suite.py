@@ -708,9 +708,14 @@ def test_el_cupo_esta_escrito_con_su_razon_y_no_es_una_meta():
 SIN_CASO_PATRON = {
     "M2_material":
         "falta la serie de diametros nominales tabulada de las normas de "
-        "producto (AASHTO M 170M-04 / ASTM C 76M-02, ASTM A760 + AASHTO M 36, "
-        "AASHTO M294). Cerraria de paso si la progresion 0.90 + 0.15 es una "
-        "serie comercial real o una interpolacion del proyecto (§15 del plan)",
+        "producto del CONCRETO (AASHTO M 170M-04 / ASTM C 76M-02, en normas/ "
+        "pero con Tablas 1-5 sin transcribir) y del HDPE (AASHTO M294, "
+        "ausente). La del TMC dejo de faltar en I1: ASTM_A760.T1 y "
+        "AASHTO_M36.T6 estan transcritas en src/normativa/tablas.py, y su "
+        "serie (…-900-1050-…-3600) responde ya media pregunta de la §15: en "
+        "el acero la progresion sobre 900 es de paso 150 mm real, no una "
+        "interpolacion del proyecto. El dorado de M2 sigue exigiendo las "
+        "otras dos series (§15 del plan)",
     # M8_estructural SALIO DE LA LISTA EN C7, y el motivo por el que estaba
     # sigue siendo cierto -- lo que cambio es que ya no cubre al modulo
     # ENTERO --. La exencion decia: «faltan AASHTO M 170M-04 Tablas 1 a 5

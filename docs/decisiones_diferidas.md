@@ -470,6 +470,15 @@ condición escrita.
   `H_O_CONDICION_APLICACION`, y M4 lo dice en el punto de uso.
 - **Qué haría falta:** el procedimiento de barril parcialmente lleno del
   Cap. III del HDS-5. Es implementar un método hidráulico, no redactar.
+- **Evaluado en I1 (2026-09-12): el procedimiento SÍ es transcribible.** Se
+  abrió el Cap. III de la 3.ª edición (fuente `HDS5_3ED`,
+  `normas/hif12026.pdf`) y el paquete completo para la sesión que lo
+  implemente —numeral y página de cada pieza (3.12/PDF 94 con la Ec. 3.7;
+  3.24/PDF 106; Secc. 3.5), qué implementar en M4 y por qué M5 no cambia,
+  y por qué los dorados no se fabrican— quedó ESCRITO en el bloque de
+  comentario que precede a `H_O_CONDICION_APLICACION`, que es donde se va a
+  pisar. La implementación es sesión propia con plan mode: toca
+  `M4.control_salida`, que es motor validado.
 - **Dónde vive:** `src/constantes_normativas.py::H_O_CONDICION_APLICACION`
 
 ## NOR-PRO-04 · La norma a la que se difiere la verificación del TMC
@@ -477,16 +486,24 @@ condición escrita.
 - **Cerrado:** la **atribución**. `clases_producto_por_relleno` y el docstring
   de M8 difieren a ASTM A796/A796M (con A798/A798M para instalación) y ya no a
   ASTM A-807, que no aparece en M 170M, M 36 ni A760.
-- **Abierto:** transcribir la relación luz/corrugación de la Tabla 1 de A760 y
-  la Tabla 6 de M 36. El criterio sigue vacío (verificado hoy: `valor=None`).
-- **Qué haría falta, y son dos cosas de dificultad distinta:** la mitad del
-  **concreto y la corrugación** se puede hacer —A760 y M 36 **están** en
-  `normas/`, y S14 dejó comprobado que la Tabla 1 de A760 es legible
-  renderizando su pág. PDF 3 a escala 2.0—, pero es **transcripción de tabla**,
-  que es trabajo de la fase de citas y no de ésta. La mitad del **calibre del
-  TMC por altura de cobertura** no se puede hacer en absoluto: **ASTM
+- **Cerrado también en I1 la mitad transcribible:** la relación
+  diámetro/corrugación está transcrita ENTERA y por método IMAGEN —la Tabla 1
+  de A760 y la Table 6 de M 36 como `TablaNormativa` (`ASTM_A760.T1`,
+  `AASHTO_M36.T6`), con sus notas al pie y con la correspondencia
+  `CORR-TAMANOS-TMC` que declara las dos celdas en que las dos ediciones
+  difieren (diámetro 375 y diámetro 825) en vez de elegir una en silencio—.
+  El criterio sigue vacío a propósito: quién especifica el producto es el
+  proyectista, y ahora tiene la tabla completa para hacerlo.
+- **Abierto:** la mitad del **calibre del TMC por altura de cobertura**. Y un
+  hueco del generador, hallado en I1b y anterior a I1: `src/normativa/
+  manifiesto.py` no emite las `CorrespondenciaDeTablas`, de modo que las dos
+  diferencias declaradas de `CORR-TAMANOS-TMC` (y las de `CORR-RECUBRIMIENTO`)
+  viven solo en el código y no llegan a ningún documento que lea un revisor.
+  Cerrarlo es una sección nueva del manifiesto, no de esta ficha.
+- **Qué haría falta, y no se puede conseguir desde aquí:** **ASTM
   A796/A796M no está en `normas/`** (comprobado: las trece fuentes del
-  directorio no la incluyen) y figura en la §15 del plan como una de las dos
+  directorio no la incluyen, y está censada en `FUENTES_AUSENTES`) y figura
+  en la §15 del plan como una de las dos
   ausencias «fáciles» que desbloquean cosas concretas.
 - **Dónde vive:** `src/criterios_adoptados.py::clases_producto_por_relleno`
 
@@ -494,9 +511,19 @@ condición escrita.
 
 - **Cerrado:** la comparación que la ficha reclama está **declarada**. La fila
   alternativa (`Circular CM / Headwall`) vive en `sensibilidad`, y
-  `verificacion_pendiente` dice con todas las letras que la fila adoptada da
-  un HW **menor** y que ésa es la dirección insegura para V1, V4 y el
-  resguardo.
+  `verificacion_pendiente` declara la comparación completa entre las dos filas.
+- **Corregido en I1b, y contra la propia ficha:** hasta I1b la declaración
+  copiaba de NOR-ANA-03 que la fila adoptada da un HW **menor** (dirección
+  insegura). La verificación adversarial la **midió** con las constantes del
+  propio criterio y los dominios de M4, y la dirección es la contraria en los
+  tres regímenes vigentes: no sumergida manda K (0.0098 > 0.0078), sumergida
+  la diferencia 0.0019·q*²−0.02 es positiva en todo su dominio (q* ≥ 4.0; el
+  cruce en q* = 3.245 queda fuera, que es donde la ficha evaluó), y la
+  transición es una recta entre dos extremos donde el concreto ya es mayor.
+  La ficha además enumera «c y Y ambos menores» cuando 0.0398 > 0.0379. El
+  defecto se reportó **contra la ficha NOR-ANA-03** en el tracker; la
+  adopción resulta conservadora en dirección, pero se sigue sosteniendo en el
+  argumento físico, no en ese margen.
 - **Abierto:** no se cambia de fila, y es una decisión, no una omisión. La
   adopción se sostiene en el perfil de pared en la boca —argumento físico que
   la ficha no refuta—, no en un margen de seguridad; elegir la fila del metal
@@ -512,15 +539,31 @@ condición escrita.
   rotula cada criterio, la leyenda de etiquetas y de dónde saca la tabla el
   valor que muestra— tienen test, más las dos guardias de encabezado
   (pestañas y exportaciones contra el árbol; el campo validable).
-- **Abierto, y la frontera no se ha movido:** el código que **construye
-  widgets** sigue sin ejecutarse en la suite, tanto el viejo de `gui/app.py`
-  como el nuevo de `gui/ventana_normativa.py`. No es descuido: probarlo con el
-  doble de tkinter sería un espejismo —lo que se vería correr no es lo que
-  corre en pantalla—, y la verificación real se hizo a mano bajo Xvfb sin que
-  quedara en la suite.
-- **Qué haría falta:** una suite con Tk real bajo servidor X virtual en la
-  integración continua. Es infraestructura, no un test más.
-- **Dónde vive:** `tests/test_gui_contrato.py::test_la_leyenda_nombra_exactamente_las_etiquetas_que_el_archivo_puede_tener`
+- **Cerrado después, por etapas que conviene fechar:** S20 abrió el primer
+  test de **ventana real** (la corrida de perfil de punta a punta, que
+  construye `gui/app.py` entero), S21 dejó escrito cómo conseguir Tk en el
+  contenedor, S22 sumó la ayuda de entrada y G1 la selección real de la
+  pestaña 2. **I1 cerró el último archivo que faltaba:**
+  `gui/ventana_normativa.py` no se construía nunca bajo Tk —los apoyos
+  anteriores lo evitaban a propósito y lo decían—, y el smoke de
+  `tests/apoyo/gui_smoke_normativa.py` construye la app, puebla las cuatro
+  pestañas con el CSV de expediente y abre y cierra la emergente de un
+  criterio `de_tabla` por el camino del ratón.
+- **Abierto, en dos frentes que conviene no confundir.** (1) De **alcance**,
+  medido en I1b: el smoke abre la emergente de UN criterio `de_tabla`, de
+  modo que de las cuatro caras que `VentanaNormativa._construir` despacha
+  solo la cara TABLA se construye bajo Tk; `_pintar_rango`,
+  `_pintar_catalogo`, `_pintar_campo` y el camino de `_declarar` siguen sin
+  construirse nunca en la suite — el mismo riesgo que el docstring del test
+  describe, en las otras tres caras. (2) De **entorno**: los cuatro tests de
+  ventana se **saltan** donde no hay Tk ni servidor X —la clase de saltos que
+  CLAUDE.md censa—, de modo que una integración continua sin entorno gráfico
+  sigue sin ejecutarlos.
+- **Qué haría falta:** infraestructura de CI con entorno gráfico
+  (instalar `python3-tk` + `xvfb`), no un test más.
+- **Dónde vive:** `tests/test_gui_contrato.py::test_la_ventana_normativa_se_construye_y_se_cierra_de_verdad`
+  (el smoke que lanza es `tests/apoyo/gui_smoke_normativa.py`; los cuatro
+  tests de ventana comparten el `skipif` de `_interprete_con_ventana`).
 
 ## SIS-F-13 · Los módulos de cálculo sin caso patrón
 
@@ -530,14 +573,26 @@ condición escrita.
   «todo módulo de cálculo se contrasta contra `casos_patron`» **dejó de vivir
   solo en la constitución**: la ejecuta una guardia con la lista de exentos
   declarada, que además falla si un exento deja de serlo.
-- **Abierto:** M2, M8 y M10 siguen sin caso patrón. **No es pereza de la fase
+- **Cerrado también en C7 el de M8**, y conviene decirlo aquí porque esta
+  ficha decía tres: la FLOTACIÓN no necesitaba ninguna de las fuentes
+  ausentes y `CP10_FLOTACION_MARCO` le dio a M8 su caso patrón, así que M8
+  **salió de la lista de exentos** (el comentario de la guardia conserva el
+  motivo viejo y por qué dejó de cubrir al módulo entero;
+  `seleccionar_clase_calibre` sigue sin dorado por A796/M 170M Tablas 1-5).
+- **Abierto:** M2 y M10 siguen sin caso patrón. **No es pereza de la fase
   de tests:** fabricarles un dorado sería inventar el valor de referencia, que
   es exactamente lo que prohíbe el conflicto #7 del plan. M11 no cuenta: es el
   módulo de reporte y no le corresponde dorado numérico.
 - **Qué haría falta:** para M2, la serie de diámetros nominales tabulada de
-  las normas de producto; para M8, AASHTO M 170M-04 Tablas 1 a 5 y ASTM
-  A796/A796M; para M10, no una norma sino el expediente vial. Están en la §15
-  del plan, y ahora también en la guardia, con su fuente concreta.
+  las normas de producto (AASHTO M 170M-04 / ASTM C 76M-02 para el concreto,
+  ASTM A760 + AASHTO M 36 para el TMC, AASHTO M294 para el HDPE); para M10,
+  no una norma sino el expediente vial. Están en la §15
+  del plan, y ahora también en la guardia, con su fuente concreta. Desde I1
+  la mitad del TMC dejó de ser «fuente por transcribir»: la Tabla 1 de A760
+  y la Table 6 de M 36 están transcritas en `src/normativa/tablas.py`
+  (`ASTM_A760.T1`, `AASHTO_M36.T6`); lo que sigue faltando para el dorado de
+  M2 son las series del concreto (M 170M está en `normas/` pero sus Tablas
+  1 a 5 no están transcritas) y del HDPE (M294 ausente).
 - **Dónde vive:** `tests/test_guardias_de_la_suite.py::SIN_CASO_PATRON`
 
 ---

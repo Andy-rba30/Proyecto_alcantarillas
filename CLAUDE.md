@@ -351,14 +351,18 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1817**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1830**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
 - `tests/test_MD.py` — el `skipped` **permanente** por condición imposible:
   su `skipif` guarda que `M5_verificaciones` no exista, y ya no puede darse.
 - `tests/test_gui_contrato.py` — los tests de **ventana real**, que hoy son
-  **tres** (S20 abrió el primero, S22 el de la ayuda de entrada). Se saltan
+  **cuatro** (S20 abrió el primero, la corrida de perfil; S22 el de la ayuda
+  de entrada; G1 el de la selección real de la pestaña 2, que sobrevive al
+  filtro; I1 el smoke que construye la app con las cuatro pestañas pobladas
+  y abre y cierra `gui/ventana_normativa.py`, que hasta entonces no se
+  construía nunca bajo Tk). Se saltan
   cuando ningún intérprete disponible puede levantar un `Tk`: falta `tkinter`,
   falta `ttkbootstrap` o falta entorno gráfico.
 - `tests/test_familias_del_csv.py` — **tres** saltos de DISEÑO, no de entorno,
@@ -373,27 +377,31 @@ regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
 `sys.executable` y después los intérpretes del sistema, de modo que un
-`1813 passed` **no** demuestra que la suite corra sobre un Python con tkinter
+`1826 passed` **no** demuestra que la suite corra sobre un Python con tkinter
 —solo que alguno lo tenía—. Es exactamente lo que pasa hoy en el contenedor de
 desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **Las cuatro medidas sobre el mismo árbol en G4** (la sesión
-de la traza de procedencia por punto, que sumó 17 tests: 1800 → 1817):
+independientes. **Las cuatro medidas sobre el mismo árbol en I1b** (el cierre
+de I1 sumó el cuarto test de ventana y 13 tests: 1817 → 1830; con cuatro
+tests de ventana la columna «Ventana Tk = no» pasa de +3 a +4 saltos). La
+«Ventana Tk = no» de estas medidas se consiguió simulando la ausencia de
+entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una de
+las tres condiciones legítimas del salto:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 1813 | 4 |
-| sí | no | 1810 | 7 |
-| no | sí | 1781 | 36 |
-| no | no | 1778 | 39 |
+| sí | sí | 1826 | 4 |
+| sí | no | 1822 | 8 |
+| no | sí | 1794 | 36 |
+| no | no | 1790 | 40 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
 y dejó dos celdas vacías. Era cierto y no era el final: `apt-get install
-python3-tk` se lo da a `python3.12`, y con `xvfb-run` —que ya estaba— los tres
-tests de ventana corren. La sonda de `test_gui_contrato._interprete_con_ventana`
+python3-tk` se lo da a `python3.12`, y con `xvfb-run` —que ya estaba— los
+cuatro tests de ventana corren. La sonda de `test_gui_contrato._interprete_con_ventana`
 los encuentra sola, sin tocar nada. Queda escrito porque una celda vacía se lee
 como «no se puede» cuando lo cierto era «no estaba instalado»:
 

@@ -38,6 +38,7 @@ from .esquema import (
     Efecto,
     FilaDeTabla,
     Integra,
+    Interpretacion,
     Laguna,
     Modificador,
     NoUsada,
@@ -2734,6 +2735,353 @@ T_AASHTO_RECUBRIMIENTO = _tabla(
 # ===========================================================================
 # La correspondencia entre el piso peruano y la tabla de AASHTO
 # ===========================================================================
+# ===========================================================================
+# ASTM A760/A760M-10 Tabla 1 y AASHTO M 36 Table 6 -- tamaños de tuberia TMC
+# (I1, NOR-PRO-04). Las dos son la MISMA tabla de la MISMA norma de doble
+# designacion en dos ediciones distintas (las Fuentes lo declaran con
+# `convive_con`), y por eso se transcriben LAS DOS y se cruzan con una
+# CorrespondenciaDeTablas: donde difieren, la diferencia queda declarada en
+# vez de elegida en silencio.
+#
+# COMO SE LEYERON. Ninguna de las dos fuentes entrega texto utilizable (la
+# propiedad esta declarada en cada Fuente), asi que TODO lo de abajo se leyo
+# sobre la pagina renderizada: A760 pag. PDF 3 a escala 4.0; M 36 pag. PDF 12
+# a escalas 4.0 y 8.0 -- las filas 2550-3600 exigieron la segunda para
+# separar sin ambiguedad las tres columnas de costilla --.
+#
+# QUE SIGNIFICA UNA CELDA "X": la nota (a) de cada tabla lo dice -- marca los
+# tamaños de corrugacion ESTANDAR para cada diametro nominal --. La celda
+# vacia se transcribe NO_IMPRESO, que es exactamente lo que la pagina hace.
+#
+# TRES CELDAS IMPRESAS SON ANOMALAS (100->264, 21 in->500, 750->2483) y la
+# anomalia es de LA FUENTE, no de esta transcripcion: el detalle, con la
+# aritmetica que la delata y el desempate por relectura de digitos en ambos
+# PDF, esta declarado en T_A760_T1.interpretacion.en_contra. Vale igual para
+# T_M36_T6, que imprime los mismos tres valores.
+# ===========================================================================
+
+_NO_USADA_TMC = NoUsada(por_que_no=(
+    "ningun modulo de calculo consume hoy la relacion diametro/corrugacion: "
+    "es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del "
+    "TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la "
+    "consulta el proyectista al especificar el producto. La otra mitad -- el "
+    "calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, "
+    "que no esta en normas/ (FUENTES_AUSENTES)"))
+
+# Las marcas de cada fila, en el orden (38x6.5, 68x13, 75x25, 125x25,
+# 19x19x190, 19x25x292, 19x25x216). Un solo dato por edicion y un
+# constructor: escribir 31 filas x 7 celdas dos veces a mano es como se
+# cuelan las erratas que estas tablas existen para atrapar. Los datos crudos
+# viven DENTRO de cada llamada a `_tabla(...)`, que es donde la guardia de
+# `test_sin_literales` reconoce una transcripcion.
+_CORRUGACIONES_TMC = ("c38x6_5", "c68x13", "c75x25", "c125x25",
+                      "r19x19x190", "r19x25x292", "r19x25x216")
+
+
+def _celdas_de_marcas(marcas: str) -> dict:
+    return {col: ("X" if marca == "X" else CeldaSinValor.NO_IMPRESO)
+            for col, marca in zip(_CORRUGACIONES_TMC, marcas)}
+
+
+T_A760_T1 = _tabla(
+    id="ASTM_A760.T1",
+    cita_id="ASTM_A760.T1",
+    titulo_literal="TABLA 1 Tamaños de tubería",
+    # Los cuatro grupos que la pagina imprime SOBRE las columnas. El primero
+    # y el ultimo llegan rotos por la traduccion («Nominal / Dentro /
+    # Diámetro» por Nominal Inside Diameter) y se transcriben como estan.
+    encabezados_superiores=("Nominal Dentro Diámetro",
+                            "Tamaños de corrugación UNA",
+                            "Tubo acanalado",
+                            "Mínimo Fuera de Circunferencia segundo"),
+    columnas=(
+        ColumnaDeTabla(id="dn_in", etiqueta_literal="en.", unidad="in",
+                       uso=NoUsada(por_que_no=(
+                           "el calculo opera en SI; la pulgada es la unidad "
+                           "IMPRESA y sin ella la conversion no se puede "
+                           "comprobar"))),
+        ColumnaDeTabla(id="dn_mm", etiqueta_literal="mm", unidad="mm",
+                       uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="c38x6_5",
+                       etiqueta_literal="1 1/2 por 1/4 en. [38 por 6,5 mm]",
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="c68x13",
+                       etiqueta_literal="2 2/3 por 1/2 en. [68 por 13 mm]",
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="c75x25",
+                       etiqueta_literal="3 por 1 pulg. [75 por 25 mm]",
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="c125x25",
+                       etiqueta_literal="5 por 1 pulg. [125 por 25 mm]",
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="r19x19x190",
+                       etiqueta_literal=("3/4 por 3/4 por 7 1/2 en. "
+                                         "[19 por 19 por 190 mm]"),
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="r19x25x292",
+                       etiqueta_literal=("3/4 por 1 por 11 1/2 en. "
+                                         "[19 por 25 por 292 mm]"),
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="r19x25x216",
+                       etiqueta_literal=("3/4 por 1 por 8 1/2 en. "
+                                         "[19 por 25 por 216 mm]"),
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="circ_min_in", etiqueta_literal="en.", unidad="in",
+                       uso=NoUsada(por_que_no=(
+                           "el calculo opera en SI; la pulgada es la unidad "
+                           "IMPRESA y sin ella la conversion no se puede "
+                           "comprobar"))),
+        ColumnaDeTabla(id="circ_min_mm", etiqueta_literal="mm", unidad="mm",
+                       uso=_NO_USADA_TMC),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"ASTM_A760.T1#d{dn_mm}",
+            etiqueta_literal=str(dn_mm),
+            valores={"dn_in": dn_in, "dn_mm": dn_mm,
+                     **_celdas_de_marcas(marcas),
+                     "circ_min_in": circ_in, "circ_min_mm": circ_mm},
+            # La UNICA X con llamada de nota de toda la tabla: la costilla
+            # 19x19x190 del diametro 375 se imprime «X c» -- tamaño adicional
+            # para tuberia Tipo IS, que es de esta edicion --.
+            llamadas_a_nota=(("c",) if dn_mm == 375 else ()),
+            uso=_NO_USADA_TMC)
+        # (dn_in, dn_mm, marcas, circ_in, circ_mm) leidos de la pag. PDF 3.
+        for dn_in, dn_mm, marcas, circ_in, circ_mm in (
+            (4, 100, "X......", 11.4, 264),
+            (6, 150, "X......", 17.7, 441),
+            (8, 200, "X......", 24.0, 598),
+            (10, 250, "X......", 30.2, 755),
+            (12, 300, "XX.....", 36.5, 912),
+            (15, 375, "XX..X..", 46.0, 1148),   # la X de costilla, nota c
+            (18, 450, "XX..XXX", 55.4, 1383),
+            (21, 500, ".X..XXX", 64.8, 1620),
+            (24, 600, ".X..XXX", 74.2, 1854),
+            (27, 675, ".X..XXX", 83.6, 2091),
+            (30, 750, ".X..XXX", 93.1, 2483),
+            (33, 825, ".X..XXX", 102.5, 2561),
+            (36, 900, ".XXXXXX", 111.9, 2797),
+            (42, 1050, ".XXXXXX", 130.8, 3269),
+            (48, 1200, ".XXXXXX", 149.6, 3739),
+            (54, 1350, ".XXXXXX", 168.4, 4209),
+            (60, 1500, ".XXXXXX", 187.0, 4675),
+            (66, 1650, ".XXXXXX", 205.7, 5142),
+            (72, 1800, ".XXXXXX", 224.3, 5609),
+            (78, 1950, ".XXXXXX", 243.0, 6075),
+            (84, 2100, ".XXXXXX", 261.7, 6542),
+            (90, 2250, "..XXXXX", 280.3, 7008),
+            (96, 2400, "..XXXXX", 299.0, 7475),
+            (102, 2550, "..XXXXX", 317.6, 7941),
+            (108, 2700, "..XXXXX", 336.3, 8408),
+            (114, 2850, "..XXX.X", 355.0, 8874),
+            (120, 3000, "..XXX.X", 373.6, 9341),
+            (126, 3150, "..XX..X", 392.3, 9807),
+            (132, 3300, "..XX..X", 410.9, 10274),
+            (138, 3450, "..XX..X", 429.6, 10740),
+            (144, 3600, "..XX..X", 448.3, 11207),
+        )),
+    alcance=Integra(),
+    notas_al_pie=(
+        # Los rotulos «UNA» y «segundo» son los marcadores A y B del original
+        # pasados por la traduccion (A -> «una», B -> «segundo»); se
+        # transcriben como la pagina los imprime, y la interpretacion de
+        # abajo lo deja dicho.
+        NotaAlPie(marca="UNA", texto=Verbatim(
+            texto=("Una “X” indica tamaños de corrugación estándar "
+                   "para cada diámetro nominal de tubería."),
+            pagina_pdf=3)),
+        NotaAlPie(marca="segundo", texto=Verbatim(
+            texto=("Medido en valle de corrugaciones anulares. No aplicable "
+                   "a tubería ondulada helicoidalmente."),
+            pagina_pdf=3)),
+        NotaAlPie(marca="c", texto=Verbatim(
+            texto="Tamaño adicional para tubería Tipo IS.",
+            pagina_pdf=3)),
+    ),
+    interpretacion=Interpretacion(
+        texto=("Este PDF es la TRADUCCION AL ESPAÑOL de A760/A760M-10 (la "
+               "Fuente lo declara). La traduccion degrada rotulos, no "
+               "valores: «en.» es in., los marcadores de nota A y B llegan "
+               "como «UNA» y «segundo», y dos circunferencias en pulgadas "
+               "(187.0 y 243.0) se imprimen con punto decimal donde el resto "
+               "usa coma. Los numeros se leyeron uno a uno sobre la imagen y "
+               "coinciden celda a celda, en mm, con la Table 6 de AASHTO "
+               "M 36, que es la misma norma en edicion anterior."),
+        en_contra=(
+            "el original en ingles de A760/A760M-10 no esta en normas/, de "
+            "modo que el cotejo contra el ingles solo pudo hacerse via "
+            "AASHTO M 36, que es otra EDICION: las dos celdas en que "
+            "difieren (375 y 825) no se pueden atribuir con certeza a la "
+            "edicion o a la traduccion",
+            "TRES CELDAS SON ARITMETICAMENTE ANOMALAS DENTRO DE LA PROPIA "
+            "TABLA, Y LA ANOMALIA ESTA IMPRESA EN LAS DOS EDICIONES "
+            "(hallada por auditoria aritmetica en I1b y desempatada "
+            "releyendo los digitos a 26-60x en ambos PDF): la circunferencia "
+            "264 de la fila 100 da 23.16 mm por pulgada donde las demas "
+            "filas dan 24.9-25.0 (la razon interna pediria 284); el "
+            "diametro 500 de la fila de 21 in rompe el paso de 75 mm de la "
+            "serie 450-600 (el paso pediria 525, fila que NO existe en "
+            "ninguno de los dos ejemplares); y la circunferencia 2483 de la "
+            "fila 750 da 26.67 mm por pulgada y rompe la progresion "
+            "+237/+392/+78 donde la regular es ~236 (pediria 2326). NO SE "
+            "CORRIGEN: los tres valores estan impresos identicos en las dos "
+            "ediciones y reescribirlos seria inventar un valor normativo "
+            "contra la fuente primaria. Si son erratas de imprenta "
+            "arrastradas o la serie real, no es decidible con lo adjunto: "
+            "exige el original ingles de A760/A760M-10 u otro ejemplar "
+            "independiente, que no estan en normas/",),
+        a_favor=(
+            "los 31 diametros y las 31 circunferencias en mm coinciden "
+            "celda a celda entre las dos ediciones, que es la comprobacion "
+            "cruzada mas fuerte disponible sin el original -- y en I1b las "
+            "seis celdas en disputa se releyeron digito a digito, con "
+            "controles de forma sobre glifos vecinos, en los dos PDF",)),
+)
+
+T_M36_T6 = _tabla(
+    id="AASHTO_M36.T6",
+    cita_id="AASHTO_M36.T6",
+    titulo_literal="Table 6—Pipe Sizes",
+    # «Corrugation Sizes» lleva impresa, volada, la llamada a la nota a -- es
+    # el UNICO sitio de la pagina donde esa nota se llama --; las llamadas b
+    # (encabezado 19x19x190) y c (encabezado de circunferencia) tambien son
+    # voladas. En el original son superindices, no texto, y por eso no viajan
+    # dentro de las etiquetas -- a diferencia de la gemela de A760, donde la
+    # traduccion los degrado a palabras («UNA», «segundo») que SI son texto
+    # impreso.
+    encabezados_superiores=("Corrugation Sizes", "Ribbed Pipe"),
+    texto_previo=Verbatim(
+        # El numeral 8.1.1 (pag. impresa M 36-10, PDF 11), que es el que hace
+        # vinculante a la tabla: el diametro se ELIGE de ella.
+        texto=("Pipe Dimensions—The nominal diameter of the pipe shall be "
+               "as stated in the order, selected from the size listed in "
+               "Table 6. The size of corrugations that are standard for "
+               "each size of pipe are also shown in Table 6."),
+        pagina_pdf=11),
+    columnas=(
+        ColumnaDeTabla(id="dn_mm",
+                       etiqueta_literal="Nominal Inside Diameter, mm",
+                       unidad="mm", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="c38x6_5", etiqueta_literal="38 by 6.5 mm",
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="c68x13", etiqueta_literal="68 by 13 mm",
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="c75x25", etiqueta_literal="75 by 25 mm",
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="c125x25", etiqueta_literal="125 by 25 mm",
+                       unidad="", uso=_NO_USADA_TMC),
+        # El encabezado de esta columna lleva la llamada a la nota b.
+        ColumnaDeTabla(id="r19x19x190", etiqueta_literal="19 by 19 by 190 mm",
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="r19x25x292", etiqueta_literal="19 by 25 by 292 mm",
+                       unidad="", uso=_NO_USADA_TMC),
+        ColumnaDeTabla(id="r19x25x216", etiqueta_literal="19 by 25 by 216 mm",
+                       unidad="", uso=_NO_USADA_TMC),
+        # El encabezado lleva la llamada a la nota c.
+        ColumnaDeTabla(id="circ_min_mm",
+                       etiqueta_literal="Minimum Outside Circumference, mm",
+                       unidad="mm", uso=_NO_USADA_TMC),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"AASHTO_M36.T6#d{dn_mm}",
+            etiqueta_literal=str(dn_mm),
+            valores={"dn_mm": dn_mm, **_celdas_de_marcas(marcas),
+                     "circ_min_mm": circ_mm},
+            uso=_NO_USADA_TMC)
+        # (dn_mm, marcas, circ_mm) leidos de la pag. PDF 12. Los diametros y
+        # las circunferencias COINCIDEN celda a celda con los de A760; las
+        # marcas difieren en DOS filas (375 y 825), y eso esta declarado en
+        # la correspondencia de abajo, no escondido aqui.
+        for dn_mm, marcas, circ_mm in (
+            (100, "X......", 264),
+            (150, "X......", 441),
+            (200, "X......", 598),
+            (250, "X......", 755),
+            (300, "XX.....", 912),
+            (375, "XX.....", 1148),
+            (450, "XX..XXX", 1383),
+            (500, ".X..XXX", 1620),
+            (600, ".X..XXX", 1854),
+            (675, ".X..XXX", 2091),
+            (750, ".X..XXX", 2483),
+            (825, ".X.XXXX", 2561),
+            (900, ".XXXXXX", 2797),
+            (1050, ".XXXXXX", 3269),
+            (1200, ".XXXXXX", 3739),
+            (1350, ".XXXXXX", 4209),
+            (1500, ".XXXXXX", 4675),
+            (1650, ".XXXXXX", 5142),
+            (1800, ".XXXXXX", 5609),
+            (1950, ".XXXXXX", 6075),
+            (2100, ".XXXXXX", 6542),
+            (2250, "..XXXXX", 7008),
+            (2400, "..XXXXX", 7475),
+            (2550, "..XXXXX", 7941),
+            (2700, "..XXXXX", 8408),
+            (2850, "..XXX.X", 8874),
+            (3000, "..XXX.X", 9341),
+            (3150, "..XX..X", 9807),
+            (3300, "..XX..X", 10274),
+            (3450, "..XX..X", 10740),
+            (3600, "..XX..X", 11207),
+        )),
+    alcance=Integra(),
+    notas_al_pie=(
+        NotaAlPie(marca="a", texto=Verbatim(
+            texto=("An “X” indicates standard corrugation sizes "
+                   "for each nominal diameter of pipe."),
+            pagina_pdf=12)),
+        NotaAlPie(marca="b", texto=Verbatim(
+            texto="Rib sizes 19 by 19 by 190 mm and 19 by 25 by 292 mm.",
+            pagina_pdf=12)),
+        NotaAlPie(marca="c", texto=Verbatim(
+            texto=("Measured in valley of annular corrugations. Not "
+                   "applicable to helically corrugated pipe."),
+            pagina_pdf=12)),
+    ),
+)
+
+CORR_TAMANOS_TMC = CorrespondenciaDeTablas(
+    id="CORR-TAMANOS-TMC",
+    tabla_a="ASTM_A760.T1",
+    tabla_b="AASHTO_M36.T6",
+    pares={f"d{fila.id.split('#d')[-1]}": (f"d{fila.id.split('#d')[-1]}",)
+           for fila in T_A760_T1.filas},
+    regla_al_cruzar=(
+        "Son la MISMA norma de doble designacion en dos EDICIONES (las "
+        "Fuentes lo declaran con `convive_con`): A760/A760M-10 es la de "
+        "2010 y el PDF de M 36 es M 36-03 (2007) -- su portada rotula la "
+        "equivalencia «ASTM Designation: A 760/A 760M-01a», de modo que el "
+        "par real de la comparacion es A760M-10 frente a A760M-01a --. Los "
+        "31 diametros nominales y las "
+        "31 circunferencias minimas en mm coinciden celda a celda. Al "
+        "consultar que corrugacion es estandar para un diametro rige la "
+        "lectura MAS RESTRICTIVA: una corrugacion se toma como estandar "
+        "solo si la marcan LAS DOS ediciones, y las dos celdas en que "
+        "difieren estan declaradas abajo -- quien quiera apoyarse en una de "
+        "esas dos tiene que citar la edicion que la trae y decir que la "
+        "otra no la trae."),
+    diferencias_declaradas=(
+        "Diametro 375: A760-10 marca «X c» en la costilla 19x19x190 --"
+        "tamaño adicional para tuberia Tipo IS, un tipo de esta edicion--; "
+        "la Table 6 de M 36 no trae esa marca.",
+        "Diametro 825: M 36 marca la corrugacion 125 by 25 mm; la Tabla 1 "
+        "de A760-10 no la marca. Es la unica celda en que el ejemplar nuevo "
+        "QUITA una marca -- atribuible a la edicion o a la traduccion, sin "
+        "certeza (la Interpretacion de T1 lo declara) --, y por eso el "
+        "cruce exige citar la edicion.",
+        "La nota al pie b de M 36 (los dos rib sizes) no tiene equivalente "
+        "impreso en la Tabla 1 de A760: A760 imprime solo las notas "
+        "A/B/c (aqui «UNA»/«segundo»/«c»).",
+        "A760 (traduccion) imprime ademas las columnas en pulgadas "
+        "(diametro nominal y circunferencia minima); M 36 imprime solo mm.",
+        "El PDF de A760 es una traduccion al español con rotulos degradados "
+        "(«UNA»/«segundo» por los marcadores A/B); el de M 36 es el original "
+        "en ingles, raster puro.",
+    ),
+)
+
 CORR_RECUBRIMIENTO = CorrespondenciaDeTablas(
     id="CORR-RECUBRIMIENTO",
     tabla_a="AASHTO_LRFD_9.T5.10.1-1",
@@ -2789,7 +3137,7 @@ CORR_RECUBRIMIENTO = CorrespondenciaDeTablas(
 )
 
 CORRESPONDENCIAS: Dict[str, CorrespondenciaDeTablas] = {
-    c.id: c for c in (CORR_RECUBRIMIENTO,)
+    c.id: c for c in (CORR_RECUBRIMIENTO, CORR_TAMANOS_TMC)
 }
 
 TABLAS: Dict[str, TablaNormativa] = {t.id: t for t in _TODAS}

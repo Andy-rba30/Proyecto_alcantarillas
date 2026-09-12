@@ -55,12 +55,15 @@ FECHA_C2 = "2026-09-07"
 POR_C2 = "familiaC/C2 · verificador-normativo"
 FECHA_VC1 = "2026-09-08"
 POR_VC1 = "familiaC/VC1 · verificador-normativo"
+FECHA_I1 = "2026-09-12"
+POR_I1 = "cierre/I1 · verificador-normativo"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
 S20 = (FECHA_S20, POR_S20)
 C2 = (FECHA_C2, POR_C2)
 VC1 = (FECHA_VC1, POR_VC1)
+I1 = (FECHA_I1, POR_I1)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -3373,6 +3376,68 @@ HDS5_A3_FORMAS = _cita(
     # estan corregidos.
     caracter=Caracter.EXIGENCIA,
     sesion=C2,
+)
+
+
+# ===========================================================================
+# ASTM A760/A760M-10 y AASHTO M 36 -- las dos ediciones de la norma de
+# producto del TMC (I1, NOR-PRO-04). TODO por IMAGEN: ninguna de las dos
+# fuentes entrega texto utilizable (raster puro en M 36; ToUnicode roto en
+# A760), y las dos citas se leyeron sobre la pagina renderizada.
+# ===========================================================================
+
+ASTM_A760_T1 = _cita(
+    id="ASTM_A760.T1",
+    fuente_id="ASTM_A760",
+    numeral="Tabla 1",
+    titulo_numeral="TABLA 1 Tamaños de tubería",
+    pagina_impresa="3",
+    pagina_pdf=3,
+    texto_literal=Verbatim(
+        texto="TABLA 1 Tamaños de tubería",
+        pagina_pdf=3),
+    # DEFINICION: la tabla TIPIFICA que tamaños de corrugacion son estandar
+    # para cada diametro nominal (su nota A lo dice con esas palabras); no
+    # manda nada por si misma. La exigencia de elegir el diametro DE esta
+    # tabla vive en el articulado de la norma, no en el rotulo de la tabla.
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=I1,
+    nota=("Leida sobre la pagina PDF 3 renderizada (S14 dejo comprobado que "
+          "es legible a escala 2.0; esta transcripcion se hizo a 4.0). El "
+          "PDF es la TRADUCCION AL ESPAÑOL de la norma (propiedad declarada "
+          "en la Fuente): el titulo impreso es «TABLA 1 Tamaños de tubería» "
+          "y los encabezados mezclan «en.» (in.) con «pulg.». La MISMA tabla "
+          "existe como Table 6 de AASHTO M 36 (doble designacion, ediciones "
+          "distintas): las diferencias medidas entre las dos estan "
+          "declaradas en la correspondencia CORR-TAMANOS-TMC."),
+)
+
+AASHTO_M36_T6 = _cita(
+    id="AASHTO_M36.T6",
+    fuente_id="AASHTO_M36",
+    numeral="Table 6",
+    titulo_numeral="Table 6—Pipe Sizes",
+    pagina_impresa="M 36-11",
+    pagina_pdf=12,
+    texto_literal=Verbatim(
+        texto="Table 6—Pipe Sizes",
+        pagina_pdf=12),
+    # DEFINICION, igual que su gemela de A760: la tabla tipifica. El numeral
+    # que la hace vinculante es el 8.1.1 (pag. impresa M 36-10, PDF 11):
+    # «Pipe Dimensions—The nominal diameter of the pipe shall be as stated
+    # in the order, selected from the size listed in Table 6. The size of
+    # corrugations that are standard for each size of pipe are also shown
+    # in Table 6.» Ese «shall» viaja como texto_previo de la TablaNormativa,
+    # con su propia pagina.
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=I1,
+    nota=("RASTER PURO: leida entera sobre la pagina PDF 12 renderizada "
+          "(escalas 4.0 y 8.0; las filas 2550-3600 exigieron la segunda "
+          "para separar las columnas de costilla). La pagina impresa lleva "
+          "el rotulo «M 36-11» al pie, que confirma el desfase +1 de la "
+          "Fuente."),
 )
 
 
