@@ -2752,6 +2752,12 @@ T_AASHTO_RECUBRIMIENTO = _tabla(
 # QUE SIGNIFICA UNA CELDA "X": la nota (a) de cada tabla lo dice -- marca los
 # tamaños de corrugacion ESTANDAR para cada diametro nominal --. La celda
 # vacia se transcribe NO_IMPRESO, que es exactamente lo que la pagina hace.
+#
+# TRES CELDAS IMPRESAS SON ANOMALAS (100->264, 21 in->500, 750->2483) y la
+# anomalia es de LA FUENTE, no de esta transcripcion: el detalle, con la
+# aritmetica que la delata y el desempate por relectura de digitos en ambos
+# PDF, esta declarado en T_A760_T1.interpretacion.en_contra. Vale igual para
+# T_M36_T6, que imprime los mismos tres valores.
 # ===========================================================================
 
 _NO_USADA_TMC = NoUsada(por_que_no=(
@@ -2906,11 +2912,30 @@ T_A760_T1 = _tabla(
             "modo que el cotejo contra el ingles solo pudo hacerse via "
             "AASHTO M 36, que es otra EDICION: las dos celdas en que "
             "difieren (375 y 825) no se pueden atribuir con certeza a la "
-            "edicion o a la traduccion",),
+            "edicion o a la traduccion",
+            "TRES CELDAS SON ARITMETICAMENTE ANOMALAS DENTRO DE LA PROPIA "
+            "TABLA, Y LA ANOMALIA ESTA IMPRESA EN LAS DOS EDICIONES "
+            "(hallada por auditoria aritmetica en I1b y desempatada "
+            "releyendo los digitos a 26-60x en ambos PDF): la circunferencia "
+            "264 de la fila 100 da 23.16 mm por pulgada donde las demas "
+            "filas dan 24.9-25.0 (la razon interna pediria 284); el "
+            "diametro 500 de la fila de 21 in rompe el paso de 75 mm de la "
+            "serie 450-600 (el paso pediria 525, fila que NO existe en "
+            "ninguno de los dos ejemplares); y la circunferencia 2483 de la "
+            "fila 750 da 26.67 mm por pulgada y rompe la progresion "
+            "+237/+392/+78 donde la regular es ~236 (pediria 2326). NO SE "
+            "CORRIGEN: los tres valores estan impresos identicos en las dos "
+            "ediciones y reescribirlos seria inventar un valor normativo "
+            "contra la fuente primaria. Si son erratas de imprenta "
+            "arrastradas o la serie real, no es decidible con lo adjunto: "
+            "exige el original ingles de A760/A760M-10 u otro ejemplar "
+            "independiente, que no estan en normas/",),
         a_favor=(
             "los 31 diametros y las 31 circunferencias en mm coinciden "
             "celda a celda entre las dos ediciones, que es la comprobacion "
-            "cruzada mas fuerte disponible sin el original",)),
+            "cruzada mas fuerte disponible sin el original -- y en I1b las "
+            "seis celdas en disputa se releyeron digito a digito, con "
+            "controles de forma sobre glifos vecinos, en los dos PDF",)),
 )
 
 T_M36_T6 = _tabla(
