@@ -45,10 +45,17 @@ from normativa.registro import construir                           # noqa: E402
 
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
 
-# El censo de C8, medido: nueve `Parte.cita_id` anuncian una cita que nadie
+# El censo de C8, medido: nueve `Parte.cita_id` anunciaban una cita que nadie
 # transcribio. Es TRINQUETE --- solo puede decrecer ---, igual que
 # `cuenta_por_transcribir` (T22) y que las anclas por mencion de R-17.
-PARTES_SIN_CITA_TRANSCRITA = 9
+# T2 lo dejo en CERO: siete de las nueve se transcribieron (cuatro del Manual
+# de Puentes, AASHTO 11.6.3.3, AASHTO M 170M Tablas 1-5, y la ec. 4b de la
+# copia HDS-5 de 1985 --- esta ultima SIN firma, por el invariante T6; su
+# comentario en citas.py dice por que ---) y dos se RE-ANCLARON a la cita que
+# ya sostenia la afirmacion bajo otro id (`ASTM_A760.T1` y
+# `AASHTO_LRFD_9.3.11.6.4`): duplicarlas habria violado la regla de la
+# transcripcion unica.
+PARTES_SIN_CITA_TRANSCRITA = 0
 
 
 @pytest.fixture(scope="module")
@@ -330,14 +337,18 @@ def test_el_censo_de_partes_sin_cita_transcrita_solo_decrece(reg):
             "deja de apretar")
 
 
-def test_la_memoria_avisa_cuando_una_parte_no_tiene_cita_transcrita(memoria):
+def test_la_memoria_ya_no_avisa_de_partes_sin_cita_transcrita(memoria):
     """
-    Y mientras el censo no llegue a cero, la memoria lo DICE en el sitio: el
-    id anunciado y que la transcripcion falta. Imprimir el id pelado mandaria
-    al revisor a buscar en el registro algo que no esta.
+    El censo llego a cero en T2 y el aviso desaparece CON el: mientras hubo
+    partes sin transcribir, la memoria decia en el sitio el id anunciado y
+    que la transcripcion faltaba (imprimir el id pelado mandaria al revisor a
+    buscar en el registro algo que no esta). El mecanismo de M11 sigue vivo
+    para la proxima parte que se declare sin cita; lo que este test fija es
+    que hoy no queda ninguna que lo dispare, y que el ancla re-anclada de
+    DIS-HR-D-MAX imprime la cita real en su lugar.
     """
-    assert "cita anunciada y NO transcrita al registro" in memoria
-    assert "ASTM_A760.T1#DIAMETROS" in memoria
+    assert "cita anunciada y NO transcrita al registro" not in memoria
+    assert "ASTM_A760.T1#DIAMETROS" not in memoria
 
 
 def test_la_discrepancia_llega_por_la_cita_del_FUNDAMENTO(informe, memoria, reg):

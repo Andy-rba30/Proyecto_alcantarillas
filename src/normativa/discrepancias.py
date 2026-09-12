@@ -173,11 +173,16 @@ DIS_D_MAX = _d(
               que_dice=("su Anexo B los declara bajo el rotulo «topes por "
                         "norma de producto - VERIFICAR», atribuidos a ASTM C76 "
                         "/ AASHTO M170, AASHTO M36 / ASTM A760 y AASHTO M294")),
+        # T2: el ancla anunciaba «ASTM_A760.T1#DIAMETROS», un id que nadie
+        # transcribio, mientras la cita que sostiene la afirmacion existia
+        # desde I1 con el id llano. Se re-ancla en vez de duplicar: la tabla
+        # transcrita ASTM_A760.T1 tabula de 100 a 3600 mm con el 2100 como
+        # fila intermedia, que es exactamente lo que la parte afirma.
         Parte(quien="ASTM_A760",
               que_dice=("su Tabla 1 tabula diametros nominales de 100 mm (4 in) "
                         "a 3600 mm (144 in): los 2100 mm son una fila mas de la "
                         "serie, no un maximo"),
-              cita_id="ASTM_A760.T1#DIAMETROS"),
+              cita_id="ASTM_A760.T1"),
         Parte(quien="AASHTO_M170M",
               que_dice=("el conjunto de sus Tablas 1 a 5 cubre de 300 mm "
                         "(Tablas 2 a 5) a 3600 mm (Tablas 3 y 5), y la Sec. "
@@ -321,13 +326,18 @@ DIS_H_EQ = _d(
                         "menor o igual a la mitad de su altura...», con "
                         "exencion expresa si hay losa de aproximacion"),
               cita_id="MP.2.4.2.2#SOBRECARGA"),
+        # T2: el ancla anunciaba «AASHTO_LRFD_9.3.11.6.4#LS», un id que nadie
+        # transcribio, mientras el articulo entero -- con la frase de la
+        # interpolacion obligatoria («Linear interpolation shall be used»)
+        # y sus dos tablas (T3.11.6.4-1 y -2, transcritas en tablas.py) --
+        # existia bajo el id llano. Se re-ancla en vez de duplicar.
         Parte(quien="AASHTO_LRFD_9",
               que_dice=("el Art. 3.11.6.4 tabula h_eq por altura del muro, y "
                         "para 2.0 m con trafico perpendicular da 1.12 m por "
                         "interpolacion obligatoria. El Manual de Puentes NO "
                         "transcribe esas tablas: su traduccion de la Sec. 3.11 "
                         "se corta en el empuje pasivo k_p"),
-              cita_id="AASHTO_LRFD_9.3.11.6.4#LS"),
+              cita_id="AASHTO_LRFD_9.3.11.6.4"),
     ),
     gana="AASHTO_LRFD_9",
     por_que=("por la Via 1 de Sec. 0.2 (AASHTO LRFD de extremo a extremo) y "

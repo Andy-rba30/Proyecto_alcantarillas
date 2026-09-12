@@ -819,6 +819,21 @@ _META_SITIO: Dict[str, _Meta] = {
         unidad="carriles",
         fase_declarada="Fase 1 - Datos de entrada (Cuadro 4.1 del Manual de "
                        "Suelos: numero minimo de calicatas)"),
+    "clase_de_via": _Meta(
+        unidad="-",
+        fase_declarada="Fase 1 - Datos de entrada (Cuadro 4.1 del Manual de "
+                       "Suelos, y piso de seccion del num. 4.1.1.3.4 a) del "
+                       "Manual de Hidrologia)",
+        nota="Declarada en el triage de T2: `COND-CLASE-DE-VIA` y "
+             "`COND-DMIN-ALTO-VOLUMEN` resolvian a esta clave y la clave no "
+             "existia en ningun archivo."),
+    "existe_informacion_secundaria_tramo": _Meta(
+        unidad="-",
+        fase_declarada="Fase 1 - Datos de entrada (num. 4.2 del Manual de "
+                       "Suelos: espaciamiento de calicatas a nivel de "
+                       "perfil)",
+        nota="Declarada en el triage de T2: `COND-PERFIL-SIN-INFO-SECUNDARIA` "
+             "resolvia a esta clave y la clave no existia en ningun archivo."),
 }
 
 

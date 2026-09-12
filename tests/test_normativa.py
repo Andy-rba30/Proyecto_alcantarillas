@@ -819,6 +819,33 @@ def test_T23_las_dos_lagunas_de_h_eq_detienen_el_calculo():
             M9.h_eq_sobrecarga_trasdos(altura_muro_total=1.20)
 
 
+def test_T23_toda_condicion_resuelve_a_una_clave_que_existe(reg):
+    """
+    T23 aplicado a las `CondicionAplicacion`, y lo trajo el triage de T2: una
+    condicion que dice `PorDatoDeSitio(clave='clase_de_via')` mientras esa
+    clave no esta declarada en ningun archivo no la resuelve nadie -- es la
+    misma laguna decorativa que T23 cierra para las `Laguna`, en el otro tipo
+    que tambien apunta por clave. Dos condiciones del registro (y una tercera
+    sobre `existe_informacion_secundaria_tramo`) apuntaban a la nada y el
+    triage de sus 37 elecciones pendientes no tenia donde aterrizar.
+    """
+    from normativa.esquema import PorCriterio as _PC, PorDatoDeSitio as _PD
+    import criterios_adoptados as ca
+    import datos_sitio as ds
+    for donde, cond in reg.condiciones():
+        r = cond.resuelve
+        if isinstance(r, _PC):
+            assert r.clave in ca.CRITERIOS, (
+                f"{donde}: la condicion {cond.id} dice resolverse con el "
+                f"criterio «{r.clave}», que no existe en "
+                "criterios_adoptados.CRITERIOS")
+        elif isinstance(r, _PD):
+            assert r.clave in ds.DATOS_SITIO, (
+                f"{donde}: la condicion {cond.id} dice resolverse con el "
+                f"dato de sitio «{r.clave}», que no existe en "
+                "datos_sitio.DATOS_SITIO")
+
+
 def _todas_las_lagunas(tabla):
     yield from tabla.lagunas
     for m in tabla.modificadores:

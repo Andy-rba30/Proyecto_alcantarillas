@@ -468,7 +468,9 @@
     "usados": [],
     "sin_valor_declarados": [
       "carriles_por_sentido",
+      "clase_de_via",
       "distancia_borde_calzada_al_trasdos_m",
+      "existe_informacion_secundaria_tramo",
       "orientacion_muro_respecto_al_trafico"
     ],
     "trazabilidad_incompleta": [
@@ -476,7 +478,9 @@
       "ZONA_SISMICA_LA_UNION",
       "Z_E030",
       "carriles_por_sentido",
+      "clase_de_via",
       "distancia_borde_calzada_al_trasdos_m",
+      "existe_informacion_secundaria_tramo",
       "orientacion_muro_respecto_al_trafico"
     ]
   },

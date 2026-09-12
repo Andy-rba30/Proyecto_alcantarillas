@@ -113,26 +113,34 @@ def test_el_uso_queda_registrado_para_M11():
     assert set(datos_usados()) <= set(DATOS_SITIO)
 
 
-def test_los_tres_datos_de_geometria_vial_estan_sin_leer_y_bloquean():
+def test_los_datos_sin_leer_estan_censados_y_bloquean():
     """
     Este test decia «hoy ninguno esta sin leer» y afirmaba `datos_sin_valor()
     == []`. Ya no es cierto, Y ESO ES LA CORRECCION, no una regresion.
 
-    Los tres datos que faltan son los que el cluster C02 y el C12 destaparon:
-    sin la orientacion del muro respecto del trafico, AASHTO no dice cual de
-    sus dos tablas de h_eq aplica; sin los carriles por sentido, el Cuadro 4.1
-    del Manual de Suelos no dice si son 4 calicatas o 6. Antes el codigo
-    rellenaba los dos huecos en silencio -- h_eq = 0.60 m plano y 4 calicatas
-    para toda autopista --, que es exactamente lo que la etiqueta [S] con
-    valor None existe para impedir.
+    Los tres primeros son los que el cluster C02 y el C12 destaparon: sin la
+    orientacion del muro respecto del trafico, AASHTO no dice cual de sus dos
+    tablas de h_eq aplica; sin los carriles por sentido, el Cuadro 4.1 del
+    Manual de Suelos no dice si son 4 calicatas o 6. Antes el codigo rellenaba
+    los dos huecos en silencio -- h_eq = 0.60 m plano y 4 calicatas para toda
+    autopista --, que es exactamente lo que la etiqueta [S] con valor None
+    existe para impedir.
+
+    T2 sumo dos, y por la forma inversa del mismo defecto: `clase_de_via` y
+    `existe_informacion_secundaria_tramo` eran claves a las que tres
+    `CondicionAplicacion` del registro decian resolverse (`PorDatoDeSitio`)
+    y NO ESTABAN DECLARADAS en ningun archivo -- una condicion que apunta a
+    la nada no la resuelve nadie, que es T23 aplicado a las condiciones.
 
     El test se invierte: lo que hay que vigilar no es que la lista este vacia
     sino que sea EXACTAMENTE la que el expediente declara pendiente. Si
-    aparece un cuarto sin que nadie lo declare, este test lo dice.
+    aparece uno mas sin que nadie lo declare, este test lo dice.
     """
     assert sorted(datos_sin_valor()) == [
         "carriles_por_sentido",
+        "clase_de_via",
         "distancia_borde_calzada_al_trasdos_m",
+        "existe_informacion_secundaria_tramo",
         "orientacion_muro_respecto_al_trafico",
     ]
     # Y los tres tienen que decir QUE los cerraria: un vacio sin salida

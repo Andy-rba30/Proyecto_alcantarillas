@@ -649,6 +649,85 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                                  "no este cerrada, este dato tampoco",
         ),
     ),
+
+    "clase_de_via": DatoSitio(
+        valor=None,
+        concepto="Clase de la via segun su diseño geometrico e IMDA "
+                 "(autopista, dual o multicarril, primera clase...), que es "
+                 "lo que elige la fila del Cuadro 4.1 del Manual de Suelos y "
+                 "lo que decide si el piso de seccion de 0.90 m rige por "
+                 "«carreteras de alto volumen de transito»",
+        procedimiento="Lectura de la clase de via del estudio de demanda "
+                      "(IMDA) y del diseño geometrico del expediente vial, "
+                      "contra la clasificacion del DG-2018",
+        fuente="Manual de Suelos, num. 4.2, Cuadro 4.1 (pag. impresa 28, PDF "
+               "29): sus filas se rotulan por clase de via con su rango de "
+               "IMDA. La clasificacion vigente es la del Manual de Diseño "
+               "Geometrico DG-2018, AUSENTE de normas/ "
+               "(FUENTES_AUSENTES['DG2018'])",
+        trazabilidad=(
+            "POR QUE SE DECLARA VACIO Y NO SE ELIGE: dos condiciones del "
+            "registro resuelven a esta clave -- `COND-CLASE-DE-VIA`, que "
+            "BLOQUEA las dos filas multicarril del Cuadro 4.1, y "
+            "`COND-DMIN-ALTO-VOLUMEN`, que ADVIERTE sobre el piso de 0.90 m "
+            "--, y hasta el triage de T2 la clave no estaba declarada en "
+            "ningun archivo: el registro apuntaba a la nada, que es la misma "
+            "forma del hallazgo T23 (una condicion que dice que la resuelve "
+            "un dato inexistente no la resuelve nadie). "
+            "El dato lo fija el estudio de demanda con el diseño geometrico "
+            "-- cambia al mover la obra, no al cambiar de proyectista --, y "
+            "este expediente todavia no lo tiene cerrado"),
+        ambito=AMBITO_CORREDOR,
+        verificacion_pendiente=(
+            "Declararlo cuando el estudio de demanda cierre el IMDA del "
+            "corredor. Mientras tanto las dos filas multicarril del Cuadro "
+            "4.1 bloquean y el piso de 0.90 m se aplica como adopcion "
+            "conservadora declarada (ver la justificacion de "
+            "COND-DMIN-ALTO-VOLUMEN)"),
+        resolucion=DeEnsayo(
+            ensayo="lectura de la clase de via del estudio de demanda (IMDA) "
+                   "contra la clasificacion del DG-2018",
+            trazabilidad_exigida="el IMDA del estudio de demanda, la clase "
+                                 "DG-2018 que le corresponde y la lamina de "
+                                 "la seccion tipo que la materializa",
+        ),
+    ),
+
+    "existe_informacion_secundaria_tramo": DatoSitio(
+        valor=None,
+        concepto="Si existe informacion secundaria (estudios geotecnicos "
+                 "previos) en el tramo del proyecto, que es lo que el num. "
+                 "4.2 del Manual de Suelos pone POR DELANTE de abrir "
+                 "calicatas nuevas en estudios a nivel de perfil",
+        procedimiento="Inventario de gabinete: estudios geotecnicos previos "
+                      "del tramo (expedientes viales anteriores, estudios "
+                      "municipales o regionales, EMS vecinos)",
+        fuente="Manual de Suelos, num. 4.2, parrafo posterior al Cuadro 4.1 "
+               "(pag. impresa 29, PDF 30), cita MS.4.2#PERFIL: «se utilizará "
+               "información secundaria existente en el tramo del proyecto, "
+               "de no existir información secundaria...»",
+        trazabilidad=(
+            "POR QUE SE DECLARA VACIO: `COND-PERFIL-SIN-INFO-SECUNDARIA` "
+            "resuelve a esta clave y hasta el triage de T2 la clave no "
+            "estaba declarada en ningun archivo. Es un HECHO del tramo -- "
+            "hay o no hay estudios previos --, no una eleccion: se cierra "
+            "con el inventario, no con un criterio. El orden de prelacion "
+            "es de la fuente: primero la informacion secundaria y, solo de "
+            "no existir, calicatas del Cuadro 4.1 cada 4.0 km a nivel de "
+            "perfil"),
+        ambito=AMBITO_CORREDOR,
+        verificacion_pendiente=(
+            "Cerrar el inventario de gabinete y declarar si/no con el "
+            "listado de lo consultado y, si existe, que estudio se usa como "
+            "informacion secundaria"),
+        resolucion=DeEnsayo(
+            ensayo="inventario de gabinete de estudios geotecnicos previos "
+                   "del tramo",
+            trazabilidad_exigida="el listado de fuentes consultadas y, si "
+                                 "existe informacion secundaria, cual y "
+                                 "donde esta archivada",
+        ),
+    ),
 }
 
 

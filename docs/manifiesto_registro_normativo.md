@@ -75,6 +75,7 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `AASHTO_LRFD_9.10.5.4.2` | 10.5.4.2 | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.10.5.4.2#ESPECTRO` | 10.5.4.2, configuracion licuada | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | recomendacion | 2026-08-29 · texto |
+| `AASHTO_LRFD_9.11.6.3.3#EXC` | 11.6.3.3 | «Eccentricity Limits» | pág. impresa **11-24** · PDF 1493 | exigencia | 2026-09-12 · texto |
 | `AASHTO_LRFD_9.11.6.5.1#EXC` | 11.6.5.1 | «General» | pág. impresa **11-25** · PDF 1494 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.11.6.5.2.1#ROCA` | 11.6.5.2.1 | «Characterization of Acceleration at Wall Base» | pág. impresa **11-27** · PDF 1496 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.12.6.1#FLOTACION` | 12.6.1 | «Loading» | pág. impresa **12-14** · PDF 1652 | exigencia | 2026-08-28 · texto |
@@ -110,6 +111,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.10.5.4.2`** — POR DONDE ENTRA LA LICUEFACCION EN AASHTO, que no es por la clase de sitio: es la Seccion 10, Cimentaciones, bajo 10.5.4 «Extreme Events Limit States». Y el disparador lo dice todo -- zona sismica 3 o 4, MAS napa freatica en los 50 ft superiores, MAS caracteristicas de suelo por (N1)60, q_ciN, V_s1 o unidad geologica con antecedente de licuefaccion --: ninguna de las tres condiciones menciona la clase de sitio. «Site Class F» no aparece en NINGUNA pagina de la Seccion 10.
 
 > **`AASHTO_LRFD_9.10.5.4.2#ESPECTRO`** — EL ARGUMENTO POSITIVO, y es el que convierte NOR-AAS-02 de argumento por silencio en argumento por coherencia interna de la fuente. Si un suelo licuable fuera Clase F por serlo, su fila no tendria factor -- son cinco asteriscos -- y no habria espectro «no licuado» con que empezar. AASHTO manda justo lo contrario: analizar primero SIN licuefaccion y despues CON ella, con el mismo espectro; y en la pag. impresa 10-35 acota el espectro especifico de sitio a no menos de dos tercios del que da el procedimiento general «modified by the site factors in Article 3.10.3.2». Es decir: AASHTO ESPERA que a un sitio licuable le aplique un factor de sitio TABULADO de 3.10.3.2. Eso es incompatible con que la licuefaccion lo hiciera Clase F por si sola.
+
+> **`AASHTO_LRFD_9.11.6.3.3#EXC`** — Es el numeral al que la remision impresa del Manual -- «(11.6.3.3 AASHTO)», bajo su encabezado errado 2.3.1.1.12.3 -- llega: existe, se titula «Eccentricity Limits» y su cuerpo articulado (columna izquierda; el C11.6.3.3 va aparte) impone el mismo limite estatico. La remision es correcta aunque el numeral peruano este mal impreso, que es lo que DIS-MP-NUMERAL-2.3.1.1.12.3 declara. Para roca, la frase hermana dice «middle nine-tenths». En el flujo del PDF «two-thirds» va partido con guion a fin de renglon; la busqueda normalizada lo reconstruye.
 
 > **`AASHTO_LRFD_9.11.6.5.1#EXC`** — «middle two-thirds», no «tercio central»: es la parte de AASHTO que gana a la errata de traduccion del Manual. Y su comentario C11.6.5.1 ARRANCA en esta misma pagina (columna derecha), no en la 11-26; lo que si esta en la 11-26 es el texto que el repositorio le atribuye.
 
@@ -168,6 +171,14 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.T3.4.1-2`** — Confirma dos hallazgos abiertos: EV «Retaining Walls and Abutments» = 1.35 / 1.00 (no 0.90; sostiene NOR-PUE-03) y EH At-Rest = 1.35 / 0.90, CON minimo declarado -- lo que refuta la afirmacion negativa de NOR-AAS-04, que sostenia que la fuente no declara minimo para EH en reposo. El N/A pertenece a la fila siguiente, «AEP for anchored walls».
 
 > **`AASHTO_LRFD_9.T5.10.1-1`** — TRES categorias de acero -- A, B y C --, bajo el encabezado de grupo «Reinforcing Material Category», y la tabla peruana tiene UNA sola columna porque cubre una sola categoria: la no protegida. Es la clave de NOR-AAS-01: los 3.0 in de «Coastal» son de la Categoria A, y con B o C la tabla baja a 2.0 in = 50.8 mm, con lo que la regla del mayor la pasaria a ganar E.060.
+
+### AASHTO M 170M-04 «Standard Specification for Reinforced Concrete Culvert, Storm Drain, and Sewer Pipe [Metric]»  (`AASHTO_M170M`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `AASHTO_M170M.T1_T5#DIAMETROS` | Tables 1 to 5 | «Table 1—Design Requirements for Class I Reinforced Concrete Pipe» | pág. impresa **M 170M-3** · PDF 3 | definicion | 2026-09-12 · imagen renderizada |
+
+> **`AASHTO_M170M.T1_T5#DIAMETROS`** — ES EL ANCLA DE DIS-HR-D-MAX: la envolvente de diametros de las cinco tablas, leida TABLA POR TABLA sobre las paginas renderizadas (escaneo con OCR inutilizable; ver la Fuente). Columna «Internal Designated Diameter, mm»: Tabla 1 (Clase I, PDF 3): 1500 a 3450; Tabla 2 (Clase II, PDF 4-5): 300 a 3450; Tabla 3 (Clase III, PDF 6-7): 300 a 3600; Tabla 4 (Clase IV, PDF 8-9): arranca en 300 y SU MAXIMO NO ES VERIFICABLE en este ejemplar -- la tinta de la mitad baja de la PDF 8 no esta en el escaneo --; Tabla 5 (Clase V, PDF 10-11): 300 a 3600. La envolvente NO es uniforme y por eso «Tablas 1 a 5: de 300 a 3600» solo es cierta leida como CONJUNTO. Encima de lo tabulado, el num. 7.2 «Modified and Special Designs» (PDF 13) preve, con permiso del propietario, «special designs for sizes and loads beyond those shown in Tables 1 to 5» (7.2.1); y el num. 4.1 «CLASSIFICATION» (PDF 2) remite: «The corresponding strength requirements are prescribed in Tables 1 to 5.» DOS RESERVAS DE LEGIBILIDAD, ninguna contraria: el rotulo al pie de la PDF 3 esta degradado (la correspondencia «M 170M-3» la fijan los rotulos legibles de las paginas vecinas M 170M-2 y M 170M-4 y la regla de paginacion), y los digitos del numero de tabla en las paginas de continuacion (PDF 7 y 9) no se leen: la asignacion de cada continuacion a su tabla es por secuencia de rotulos y coherencia de filas.
 
 ### AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers and Drains»  (`AASHTO_M36`)
 
@@ -310,6 +321,14 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.TC.2`** — NOR-HDS-01, confirmado contra el PDF. La cita original decia «pagina C.2», que es EL NUMERO DE LA TABLA LEIDO COMO PAGINA: la pag. impresa C.2 (PDF 212) es la continuacion del indice de cartas del apendice. La tabla esta en la C.6 (PDF 216).
 
+### HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-IP-85-15), copia rotulada «SI» por sus cartas metricas  (`HDS5_SI_1985`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `HDS5_SI_1985.EC4B#K` | ecs. (4b) y (5) | «Hydraulics of Outlet Control» | pág. impresa **s/n** · PDF 54 | definicion | **NO verificada** |
+
+> **`HDS5_SI_1985.EC4B#K`** — SIN FIRMA A PROPOSITO, no sin verificar: la paginacion de la fuente es `SinDeterminar` (la copia no imprime folios; `pagina_impresa` dice «s/n» por eso) y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. El contenido esta verificado de hecho (trazabilidad/T2 · verificador-normativo, 2026-09-12, metodo AMBOS): POR IMAGEN, la ec. rotulada (4b) imprime Hf = [29 n² L / R^1.33]·V²/2g y la (5) H = [1 + ke + 29 n² L / R^1.33]·V²/2g -- constante 29, no 19.63; las ecuaciones son imagenes incrustadas y no salen en la capa de texto --. POR TEXTO, las definiciones llevan rotulo dual «ft (m)» (el Verbatim es una de ellas) y «19.63» da cero paginas en las 410 del documento. Es el ancla de DIS-HDS5-EDICIONES: leer el 29 «en SI» sobrestima el termino de friccion un +9.6 %, que es lo que K_FRICCION_SI existe para atrapar.
+
 ### Manual de Hidrologia, Hidraulica y Drenaje  (`MC_HHD`)
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
@@ -377,6 +396,7 @@ línea que se pueda romper.
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
 | `MP.2.1.4.3.9` | 2.1.4.3.9 | «Aparatos de Apoyo» | pág. impresa **91** · PDF 92 | exigencia | 2026-08-28 · ambos |
+| `MP.2.3.1.1.12.3#EXC_ESTATICA` | 2.3.1.1.12.3 | «Límites de Excentricidad» | pág. impresa **250** · PDF 251 | exigencia | 2026-09-12 · texto |
 | `MP.2.4.2.2#SOBRECARGA` | 2.4.2.2 | «Cargas de Suelo: EH, ES, y DD» | pág. impresa **102** · PDF 103 | exigencia | 2026-08-28 · ambos |
 | `MP.2.4.3.11.2#CLASE_F` | 2.4.3.11.2 | «Peligro Sísmico» | pág. impresa **121** · PDF 122 | exigencia | 2026-08-29 · texto |
 | `MP.2.4.3.11.2.1.1` | 2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F | «Definiciones de Clases de Sitio» | pág. impresa **122** · PDF 123 | definicion | 2026-08-29 · ambos |
@@ -384,12 +404,17 @@ línea que se pueda romper.
 | `MP.2.4.3.8.2` | 2.4.3.8.2 | «Subpresiones» | pág. impresa **113** · PDF 114 | exigencia | 2026-08-28 · texto |
 | `MP.2.4.5.2#EV` | 2.4.5.2 | «Cargas y Denominación de las Cargas» | pág. impresa **140** · PDF 141 | definicion | 2026-08-28 · texto |
 | `MP.2.4.5.3.1#MINIMO` | 2.4.5.3.1 | «Factores de Carga y Combinaciones de Carga» | pág. impresa **142** · PDF 143 | exigencia | 2026-08-28 · texto |
+| `MP.2.8.1.1.14.1#EXC` | 2.8.1.1.14.1 | «Generalidades» | pág. impresa **253** · PDF 254 | exigencia | 2026-09-12 · texto |
+| `MP.2.8.1.1.14.2.1#ROCA` | 2.8.1.1.14.2.1 | «Caracterización de la Aceleración en la Base del Muro de Contención» | pág. impresa **254** · PDF 255 | exigencia | 2026-09-12 · ambos |
+| `MP.A.11.3.1#KAE` | A.11.3.1, ec. A.11.3.1-2 | «Método de Mononobe -Okabe» | pág. impresa **586** · PDF 587 | aproximacion | 2026-09-12 · ambos |
 | `MP.T2.4.3.11.2.1.2-1` | Tabla 2.4.3.11.2.1.2-1 | «Efectos de Sitio» | pág. impresa **123** · PDF 124 | exigencia | 2026-08-28 · imagen renderizada |
 | `MP.T2.4.5.3.1-1` | 2.4.5.3.1, Tabla 2.4.5.3.1-1 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
 | `MP.T2.4.5.3.1-2` | 2.4.5.3.1, Tabla 2.4.5.3.1-2 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
 | `MP.T2.9.1.5.5.3-1` | 2.9.1.5.5.3, Tabla 2.9.1.5.5.3-1 | «Recubrimiento de Concreto» | pág. impresa **377** · PDF 378 | exigencia | 2026-08-28 · texto |
 
 > **`MP.2.1.4.3.9`** — NOR-PUE-01 / MAT-D5. ESTE NUMERAL NO SOSTIENE LA SOBRECARGA DE TRASDOS y esta aqui para que se vea que no la sostiene. No contiene la palabra «sobrecarga», ni «trasdós», ni «relleno equivalente», ni el valor 0.60: va de aparatos de apoyo (bearings), y su contexto lo confirma (2.1.4.3.7 Drenaje, 2.1.4.3.8 Pavimentación, 2.1.4.3.9 Aparatos de Apoyo, 2.1.5 Señalización). El texto que si sostiene la sobrecarga esta en el num. 2.4.2.2 — ver MP.2.4.2.2#SOBRECARGA. El numeral falso estaba propagado a seis puntos del repositorio.
+
+> **`MP.2.3.1.1.12.3#EXC_ESTATICA`** — EL NUMERAL SE CITA COMO LO IMPRIME, CON SU ERRATA: un 3 donde la serie pide un 8. En la misma pagina impresa 250 conviven «2.3.1.1.12.3 Límites de Excentricidad» y «2.3.1.1.12.4 Erosión Subsuperficial» (la errata alcanza a los dos sufijos) con «2.8.1.1.12.5 Resistencia Pasiva» y «2.8.1.1.12.6 Deslizamiento», ya en la serie correcta; el indice (PDF 21) repite las dos erratas. Ver DIS-MP-NUMERAL-2.3.1.1.12.3. La frase transcrita es ademas la traduccion CORRECTA de «middle two-thirds» en el numeral ESTATICO -- el hecho que sostiene el por_que de DIS-MP-EXCENTRICIDAD: el Manual sabe traducir el giro y solo lo degrada en el numeral sismico --. El «dentro los» sin «de» es de la fuente. Dos parrafos mas abajo la misma pagina dice «dentro del medio central del ancho de la base» para el mismo caso de suelo: tension interna de la fuente, que se deja anotada y no se resuelve aqui.
 
 > **`MP.2.4.2.2#SOBRECARGA`** — EL 0.60 ES UN PISO, NO UN VALOR DE DISEÑO: la fuente dice «no menor que». Y esta expresado como ALTURA DE RELLENO EQUIVALENTE, no como presion: el paso a p = γ·0.60·Ka es derivacion del proyectista, correcta pero no escrita en este numeral. El titulo del numeral nombra EH, ES y DD y NO incluye LS.
 
@@ -404,6 +429,12 @@ línea que se pueda romper.
 > **`MP.2.4.5.2#EV`** — LO QUE LA DEFINICION NO DICE, y hay que decirlo porque el proyecto lo da por supuesto: no aparecen las palabras «sobre», «encima» ni «cobertura». Que EV sea el relleno que descansa SOBRE la estructura es una lectura -- razonable y estandar, y sostenida por la fila «enterrada» que se elige, no por esta frase --. Se transcribe el predicado y no la linea entera («EV = presion...») porque la tabla de simbolos separa el simbolo del texto y el volcado los reordena.
 
 > **`MP.2.4.5.3.1#MINIMO`** — ES EL ESLABON QUE FALTABA, y faltaba entero: es lo que AUTORIZA a V7 a minorar EV y DC. Sin esta frase, tomar el extremo minimo de la fila de gamma_p seria una eleccion del proyectista sin respaldo; con ella es lo que la fuente manda hacer cuando la carga permanente ESTABILIZA, que es exactamente el caso de la flotacion. El titulo del numeral se imprime en la pag. impresa 140 (PDF 141) y el texto en la 142 (PDF 143): por eso `pagina_pdf_titulo`.
+
+> **`MP.2.8.1.1.14.1#EXC`** — «tercio central» donde AASHTO 11.6.5.1 escribe «middle two-thirds»: es la frase que DIS-MP-EXCENTRICIDAD declara errata de traduccion -- el mismo parrafo traduce bien «ocho décimas» (eight-tenths), y el numeral estatico de tres paginas antes traduce bien los dos tercios --. El encabezado «2.8.1.1.14.1  Generalidades (11.6.5.1 AASHTO)» se imprime al pie de la pag. impresa 252 (PDF 253) y la frase esta en la 253 (PDF 254).
+
+> **`MP.2.8.1.1.14.2.1#ROCA`** — LA FRASE CONTIENE LAS DOS MITADES DE DIS-MP-KH0-ROCA: la prosa correcta («estará basado en 1.2 veces el coeficiente...») y el parentesis mal compuesto, con el 1.2 del lado IZQUIERDO de la igualdad -- confirmado sobre la imagen renderizada, por eso el metodo es AMBOS; en el impreso el «=» va compuesto a nivel de subindice y hay salto de linea entre «1.2» y «kh0»; la transcripcion lineal es fiel --. El rotulo de remision debajo del titulo imprime «(11.6.5.2.1AASHTO)» sin espacio. Que el lado correcto sea k_h0 = 1.2·F_pga·PGA lo dice AASHTO 11.6.5.2.1, no este parentesis: por eso gana la prosa (ver la discrepancia).
+
+> **`MP.A.11.3.1#KAE`** — EL CORCHETE DEL DENOMINADOR IMPRIME «[1 −√ ...]^-2», SIGNO MENOS: trazo horizontal unico, sin trazo vertical, decidido sobre la imagen renderizada a 6x -- es la errata de imprenta que DIS-MP-KAE-SIGNO declara; AASHTO imprime «[1 + raiz(...)]» y gana --. La etiqueta impresa de la ecuacion es «Donde (A.11.3.1-2. AASHTO)», con punto tras el 2. El espaciado del titulo, «Mononobe -Okabe» (espacio antes del guion, ninguno despues), es de la fuente y se conserva. Unidades imperiales (kcf, ft), como en el apendice AASHTO del que se transcribe.
 
 > **`MP.T2.4.3.11.2.1.2-1`** — TRES DE SUS RASGOS SOLO SE VEN RENDERIZANDO, y los tres deciden una lectura: el signo `>` de la ultima columna, el asterisco de la fila F y el «1» del encabezado superior, que es la llamada a la Nota 1 y no un exponente.
 
@@ -1217,5 +1248,6 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **0** de 118.
+Citas sin firma de verificación: **1** de 125.
+- `HDS5_SI_1985.EC4B#K`
 

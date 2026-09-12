@@ -57,6 +57,8 @@ FECHA_VC1 = "2026-09-08"
 POR_VC1 = "familiaC/VC1 · verificador-normativo"
 FECHA_I1 = "2026-09-12"
 POR_I1 = "cierre/I1 · verificador-normativo"
+FECHA_T2 = "2026-09-12"
+POR_T2 = "trazabilidad/T2 · verificador-normativo"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
@@ -64,6 +66,7 @@ S20 = (FECHA_S20, POR_S20)
 C2 = (FECHA_C2, POR_C2)
 VC1 = (FECHA_VC1, POR_VC1)
 I1 = (FECHA_I1, POR_I1)
+T2 = (FECHA_T2, POR_T2)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -2025,6 +2028,47 @@ HDS5_5_3_3_ALINEADO = _cita(
 # `constantes_normativas.H_O_FORMA_MAXIMO_TEXTO` y M11 lo imprime bajo el
 # rotulo TRANSCRIPCION, nunca bajo "texto literal de la fuente" -- la memoria
 # dice de que edicion sale y que la 3a ed. no lo escribe asi.
+#
+# LA CITA DE ABAJO NO CONTRADICE ESA DECISION, y conviene decir por que antes
+# de leerla como precedente: h_o necesitaba entrar a la MEMORIA como literal
+# entrecomillado, y eso exige una cita FIRMADA -- imposible aqui --. Esta otra
+# es el ANCLA de una parte de DIS-HDS5-EDICIONES («la copia de 1985 imprime
+# 29») y no llega a ninguna memoria: la discrepancia es RESUELTA y vive en el
+# manifiesto. T6 permite exactamente esta forma -- pagina PDF declarada y
+# `verificado=None` -- y la letra del test lo dice con un `or`. Lo que la
+# vigila no es la firma sino la suite: T0 acota la pagina y T2 exige que el
+# Verbatim aparezca en la PDF 54 en cada corrida con PyMuPDF. El 29 de las
+# ecuaciones es imagen incrustada y va en la nota, verificado por render en
+# T2 (sesion), no por firma.
+
+HDS5_SI_1985_EC4B = _cita(
+    id="HDS5_SI_1985.EC4B#K",
+    fuente_id="HDS5_SI_1985",
+    numeral="ecs. (4b) y (5)",
+    titulo_numeral="Hydraulics of Outlet Control",
+    pagina_impresa="s/n",
+    pagina_pdf=54,
+    pagina_pdf_titulo=52,
+    texto_literal=Verbatim(
+        texto="L is the length of the culvert barrel, ft (m)",
+        pagina_pdf=54),
+    caracter=Caracter.DEFINICION,
+    verificada=False,
+    nota=("SIN FIRMA A PROPOSITO, no sin verificar: la paginacion de la "
+          "fuente es `SinDeterminar` (la copia no imprime folios; "
+          "`pagina_impresa` dice «s/n» por eso) y el invariante T6 impide "
+          "firmar una pagina PDF de una fuente sin paginacion medida. El "
+          "contenido esta verificado de hecho (trazabilidad/T2 · "
+          "verificador-normativo, 2026-09-12, metodo AMBOS): POR IMAGEN, la "
+          "ec. rotulada (4b) imprime Hf = [29 n² L / R^1.33]·V²/2g y la (5) "
+          "H = [1 + ke + 29 n² L / R^1.33]·V²/2g -- constante 29, no 19.63; "
+          "las ecuaciones son imagenes incrustadas y no salen en la capa de "
+          "texto --. POR TEXTO, las definiciones llevan rotulo dual «ft "
+          "(m)» (el Verbatim es una de ellas) y «19.63» da cero paginas en "
+          "las 410 del documento. Es el ancla de DIS-HDS5-EDICIONES: leer "
+          "el 29 «en SI» sobrestima el termino de friccion un +9.6 %, que "
+          "es lo que K_FRICCION_SI existe para atrapar."),
+)
 
 
 # ===========================================================================
@@ -2447,6 +2491,158 @@ AASHTO_A11_3_1 = _cita(
           "sobre la imagen renderizada, y por eso el metodo es IMAGEN. Las "
           "unidades de la fuente son imperiales (kcf, ft)."),
 )
+
+# ===========================================================================
+# T2 -- las contrapartes que las discrepancias anunciaban y nadie transcribio
+# ===========================================================================
+# Las 23 discrepancias tienen 52 partes y 38 anuncian una cita; NUEVE de esos
+# ids no existian en el registro (`partes_sin_cita_transcrita`, hallazgo de
+# C8). Este bloque transcribe las que el Manual de Puentes y AASHTO
+# sostienen, verificadas por el subagente en la sesion T2. Cada una es la
+# EVIDENCIA de una parte: donde la parte dice «el Manual imprime X», la cita
+# lleva el X impreso, con su errata si la tiene.
+
+AASHTO_11_6_3_3 = _cita(
+    id="AASHTO_LRFD_9.11.6.3.3#EXC",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.3.3",
+    titulo_numeral="Eccentricity Limits",
+    pagina_impresa="11-24",
+    pagina_pdf=1493,
+    texto_literal=Verbatim(
+        texto=("For foundations on soil, the location of the resultant of "
+               "the reaction forces shall be within the middle two-thirds of "
+               "the base width."),
+        pagina_pdf=1493),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T2,
+    corresponde_en=("MP.2.3.1.1.12.3#EXC_ESTATICA",),
+    nota=("Es el numeral al que la remision impresa del Manual -- "
+          "«(11.6.3.3 AASHTO)», bajo su encabezado errado 2.3.1.1.12.3 -- "
+          "llega: existe, se titula «Eccentricity Limits» y su cuerpo "
+          "articulado (columna izquierda; el C11.6.3.3 va aparte) impone el "
+          "mismo limite estatico. La remision es correcta aunque el numeral "
+          "peruano este mal impreso, que es lo que DIS-MP-NUMERAL-"
+          "2.3.1.1.12.3 declara. Para roca, la frase hermana dice «middle "
+          "nine-tenths». En el flujo del PDF «two-thirds» va partido con "
+          "guion a fin de renglon; la busqueda normalizada lo reconstruye."),
+)
+
+MP_2_3_1_1_12_3_EXC_ESTATICA = _cita(
+    id="MP.2.3.1.1.12.3#EXC_ESTATICA",
+    fuente_id="MP",
+    numeral="2.3.1.1.12.3",
+    titulo_numeral="Límites de Excentricidad",
+    pagina_impresa="250",
+    pagina_pdf=251,
+    texto_literal=Verbatim(
+        texto=("En las fundaciones en suelo la ubicación de la resultante de "
+               "las fuerzas de reacción deberá estar dentro los dos tercios "
+               "centrales del ancho de la base."),
+        pagina_pdf=251),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T2,
+    corresponde_en=("AASHTO_LRFD_9.11.6.3.3#EXC",),
+    nota=("EL NUMERAL SE CITA COMO LO IMPRIME, CON SU ERRATA: un 3 donde la "
+          "serie pide un 8. En la misma pagina impresa 250 conviven "
+          "«2.3.1.1.12.3 Límites de Excentricidad» y «2.3.1.1.12.4 Erosión "
+          "Subsuperficial» (la errata alcanza a los dos sufijos) con "
+          "«2.8.1.1.12.5 Resistencia Pasiva» y «2.8.1.1.12.6 Deslizamiento», "
+          "ya en la serie correcta; el indice (PDF 21) repite las dos "
+          "erratas. Ver DIS-MP-NUMERAL-2.3.1.1.12.3. La frase transcrita es "
+          "ademas la traduccion CORRECTA de «middle two-thirds» en el "
+          "numeral ESTATICO -- el hecho que sostiene el por_que de "
+          "DIS-MP-EXCENTRICIDAD: el Manual sabe traducir el giro y solo lo "
+          "degrada en el numeral sismico --. El «dentro los» sin «de» es de "
+          "la fuente. Dos parrafos mas abajo la misma pagina dice «dentro "
+          "del medio central del ancho de la base» para el mismo caso de "
+          "suelo: tension interna de la fuente, que se deja anotada y no se "
+          "resuelve aqui."),
+)
+
+MP_2_8_1_1_14_1_EXC = _cita(
+    id="MP.2.8.1.1.14.1#EXC",
+    fuente_id="MP",
+    numeral="2.8.1.1.14.1",
+    titulo_numeral="Generalidades",
+    pagina_impresa="253",
+    pagina_pdf=254,
+    pagina_pdf_titulo=253,
+    texto_literal=Verbatim(
+        texto=("Para la evaluación de la excentricidad sísmica de los muros "
+               "que cimentan en suelo y roca, la ubicación de la resultante "
+               "de las fuerzas de reacción estará dentro del tercio central "
+               "de la base para ɤEQ = 0.0 y dentro de ocho décimas centrales "
+               "para ɤEQ = 1.0."),
+        pagina_pdf=254),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T2,
+    corresponde_en=("AASHTO_LRFD_9.11.6.5.1#EXC",),
+    nota=("«tercio central» donde AASHTO 11.6.5.1 escribe «middle "
+          "two-thirds»: es la frase que DIS-MP-EXCENTRICIDAD declara errata "
+          "de traduccion -- el mismo parrafo traduce bien «ocho décimas» "
+          "(eight-tenths), y el numeral estatico de tres paginas antes "
+          "traduce bien los dos tercios --. El encabezado «2.8.1.1.14.1  "
+          "Generalidades (11.6.5.1 AASHTO)» se imprime al pie de la pag. "
+          "impresa 252 (PDF 253) y la frase esta en la 253 (PDF 254)."),
+)
+
+MP_2_8_1_1_14_2_1_ROCA = _cita(
+    id="MP.2.8.1.1.14.2.1#ROCA",
+    fuente_id="MP",
+    numeral="2.8.1.1.14.2.1",
+    titulo_numeral=("Caracterización de la Aceleración en la Base del Muro "
+                    "de Contención"),
+    pagina_impresa="254",
+    pagina_pdf=255,
+    texto_literal=Verbatim(
+        texto=("Para muros cimentados sobre Sitio con suelos Clase A o B "
+               "(roca dura o blanda), kh0 estará basado en 1.2 veces el "
+               "coeficiente de aceleración pico del suelo (es decir, 1.2 "
+               "kh0=FpgaPGA)."),
+        pagina_pdf=255),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=T2,
+    corresponde_en=("AASHTO_LRFD_9.11.6.5.2.1#ROCA",),
+    nota=("LA FRASE CONTIENE LAS DOS MITADES DE DIS-MP-KH0-ROCA: la prosa "
+          "correcta («estará basado en 1.2 veces el coeficiente...») y el "
+          "parentesis mal compuesto, con el 1.2 del lado IZQUIERDO de la "
+          "igualdad -- confirmado sobre la imagen renderizada, por eso el "
+          "metodo es AMBOS; en el impreso el «=» va compuesto a nivel de "
+          "subindice y hay salto de linea entre «1.2» y «kh0»; la "
+          "transcripcion lineal es fiel --. El rotulo de remision debajo "
+          "del titulo imprime «(11.6.5.2.1AASHTO)» sin espacio. Que el lado "
+          "correcto sea k_h0 = 1.2·F_pga·PGA lo dice AASHTO 11.6.5.2.1, no "
+          "este parentesis: por eso gana la prosa (ver la discrepancia)."),
+)
+
+MP_A_11_3_1_KAE = _cita(
+    id="MP.A.11.3.1#KAE",
+    fuente_id="MP",
+    numeral="A.11.3.1, ec. A.11.3.1-2",
+    titulo_numeral="Método de Mononobe -Okabe",
+    pagina_impresa="586",
+    pagina_pdf=587,
+    texto_literal=Verbatim(
+        texto=("Donde el coeficiente sísmico KAE de presión de tierra "
+               "activa, adimensional, es:"),
+        pagina_pdf=587),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=T2,
+    corresponde_en=("AASHTO_LRFD_9.A11.3.1#KAE",),
+    nota=("EL CORCHETE DEL DENOMINADOR IMPRIME «[1 −√ ...]^-2», SIGNO "
+          "MENOS: trazo horizontal unico, sin trazo vertical, decidido "
+          "sobre la imagen renderizada a 6x -- es la errata de imprenta que "
+          "DIS-MP-KAE-SIGNO declara; AASHTO imprime «[1 + raiz(...)]» y "
+          "gana --. La etiqueta impresa de la ecuacion es «Donde "
+          "(A.11.3.1-2. AASHTO)», con punto tras el 2. El espaciado del "
+          "titulo, «Mononobe -Okabe» (espacio antes del guion, ninguno "
+          "despues), es de la fuente y se conserva. Unidades imperiales "
+          "(kcf, ft), como en el apendice AASHTO del que se transcribe."),
+)
+
 
 AASHTO_C3_4_1 = _cita(
     id="AASHTO_LRFD_9.C3.4.1#GAMMA_EQ",
@@ -3438,6 +3634,50 @@ AASHTO_M36_T6 = _cita(
           "para separar las columnas de costilla). La pagina impresa lleva "
           "el rotulo «M 36-11» al pie, que confirma el desfase +1 de la "
           "Fuente."),
+)
+
+AASHTO_M170M_T1_T5 = _cita(
+    id="AASHTO_M170M.T1_T5#DIAMETROS",
+    fuente_id="AASHTO_M170M",
+    numeral="Tables 1 to 5",
+    titulo_numeral=("Table 1—Design Requirements for Class I Reinforced "
+                    "Concrete Pipe"),
+    pagina_impresa="M 170M-3",
+    pagina_pdf=3,
+    texto_literal=Verbatim(
+        texto=("Table 1—Design Requirements for Class I Reinforced "
+               "Concrete Pipe"),
+        pagina_pdf=3),
+    # DEFINICION, como sus gemelas de producto: las cinco tablas tipifican
+    # que diametros existen por clase; lo que las hace vinculantes es el
+    # num. 7.1 («shall be as prescribed for Class I to V in Tables 1 to 5,
+    # except as provided in Section 7.2»).
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=T2,
+    nota=("ES EL ANCLA DE DIS-HR-D-MAX: la envolvente de diametros de las "
+          "cinco tablas, leida TABLA POR TABLA sobre las paginas "
+          "renderizadas (escaneo con OCR inutilizable; ver la Fuente). "
+          "Columna «Internal Designated Diameter, mm»: Tabla 1 (Clase I, "
+          "PDF 3): 1500 a 3450; Tabla 2 (Clase II, PDF 4-5): 300 a 3450; "
+          "Tabla 3 (Clase III, PDF 6-7): 300 a 3600; Tabla 4 (Clase IV, "
+          "PDF 8-9): arranca en 300 y SU MAXIMO NO ES VERIFICABLE en este "
+          "ejemplar -- la tinta de la mitad baja de la PDF 8 no esta en el "
+          "escaneo --; Tabla 5 (Clase V, PDF 10-11): 300 a 3600. La "
+          "envolvente NO es uniforme y por eso «Tablas 1 a 5: de 300 a "
+          "3600» solo es cierta leida como CONJUNTO. Encima de lo tabulado, "
+          "el num. 7.2 «Modified and Special Designs» (PDF 13) preve, "
+          "con permiso del propietario, «special designs for sizes and "
+          "loads beyond those shown in Tables 1 to 5» (7.2.1); y el num. "
+          "4.1 «CLASSIFICATION» (PDF 2) remite: «The corresponding "
+          "strength requirements are prescribed in Tables 1 to 5.» "
+          "DOS RESERVAS DE LEGIBILIDAD, ninguna contraria: el rotulo al "
+          "pie de la PDF 3 esta degradado (la correspondencia «M 170M-3» "
+          "la fijan los rotulos legibles de las paginas vecinas M 170M-2 y "
+          "M 170M-4 y la regla de paginacion), y los digitos del numero de "
+          "tabla en las paginas de continuacion (PDF 7 y 9) no se leen: la "
+          "asignacion de cada continuacion a su tabla es por secuencia de "
+          "rotulos y coherencia de filas."),
 )
 
 
