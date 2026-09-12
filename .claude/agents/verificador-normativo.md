@@ -2,7 +2,7 @@
 name: verificador-normativo
 description: Verifica una cita normativa (numeral, título, página, texto literal) contra el PDF en normas/. Solo lectura. Úsalo PROACTIVAMENTE antes de aceptar cualquier valor [N] o [N->].
 tools: Read, Grep, Glob, Bash
-model: opus
+model: fable
 effort: high
 ---
 Verificas citas contra la fuente primaria. Nunca corriges código.
