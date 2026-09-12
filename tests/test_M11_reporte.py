@@ -1054,7 +1054,11 @@ class TestBloqueAcotaciones:
         html = M11.bloque_acotaciones(alcance="perfil")
         assert "cobertura_minima_aashto" in html
         assert "Que dice la norma, que NO dice" in html
-        assert "CONSERVADORA" in html
+        # La pieza "por que la adopcion es conservadora" viaja dentro de la
+        # justificacion. Hasta R2a se buscaba el rotulo en mayusculas de la
+        # redaccion vieja ("SIMPLIFICACION CONSERVADORA DECLARADA"); la
+        # reescritura de estilo lo dejo en minusculas sin quitar la pieza.
+        assert "Simplificacion conservadora declarada" in html
         assert "Registro completo de esa busqueda" in html
         assert "manifiesto_citas.md Sec. 14.a" in html
         assert "pendiente para el expediente" in html

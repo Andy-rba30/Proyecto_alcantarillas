@@ -377,135 +377,76 @@ def _viola_e7():
 # Solo pueden decrecer: al limpiar una clave, su entrada se borra o baja.
 # ---------------------------------------------------------------------------
 
-# E1 — 63 violaciones en 25 claves. Lo mas cargado: factores_carga_aashto
-# (13, narra el cluster C03 entero con sus cinco hallazgos), HW_D_max y
-# D_max_catalogo (5 cada una).
+# E1 — nacio con 63 violaciones en 25 claves; R2a limpio el lote de perfil
+# entero (18 claves, factores_carga_aashto incluida, que era la peor con 13)
+# y quedan 11 violaciones en 7 claves, todas de nivel expediente (R2b).
 VIOLACIONES_E1 = {
-    "D_max_catalogo": 5,
-    "HW_D_max": 5,
     "PERFIL_SUELO_PRESUNTO": 1,
-    "acceso_mantenimiento_v2b": 3,
     "categoria_refuerzo_aashto": 1,
     "clase_sitio": 2,
     "clases_producto_por_relleno": 2,
-    "cobertura_minima_aashto": 1,
-    "cobertura_minima_cajon": 3,
-    "condicion_pavimento": 1,
     "cortante_alto_muro_e060_art_11_10_10_2": 3,
-    "diametros_normalizados": 3,
-    "embocadura_cajon": 2,
-    "espesor_pared_cajon": 1,
-    "espesor_pared_conducto": 3,
     "exposicion_quimica_ems": 1,
-    "factores_carga_aashto": 13,
-    "geometria_control_salida": 2,
     "k_v": 1,
-    "ke_entrada_cajon": 1,
-    "origen_cota_fondo_entrada": 2,
-    "resguardo_HW_subrasante": 2,
-    "riesgo_admisible_propietario": 1,
-    "secciones_cajon_normalizadas": 1,
-    "v_max_concreto_eleccion": 3,
 }
 
 # E2 — nace limpio: ni una primera persona en los 69. La regla queda para
 # que siga asi.
 VIOLACIONES_E2 = {}
 
-# E3 — la regla mas violada: 204 rachas de enfasis en 46 claves. Los textos
-# usan mayusculas como titulos de seccion internos ('POR QUE NO SE
-# SOSTIENE'), que es exactamente el registro de alegato que R2 va a
-# reescribir.
+# E3 — la regla que nacio mas violada: 204 rachas de enfasis en 46 claves,
+# con los textos usando mayusculas como titulos de seccion internos. R2a
+# limpio las 27 claves del lote de perfil y quedan 66 rachas en 19 claves,
+# todas de nivel expediente (R2b).
 VIOLACIONES_E3 = {
-    "D_max_catalogo": 4,
     "F_pga": 11,
     "F_pga_lectura_columna_extrema": 1,
-    "HW_D_max": 6,
     "N_cq_N_gammaq_meyerhof": 1,
     "TR_evento_extremo": 1,
-    "acceso_mantenimiento_v2b": 6,
-    "borde_libre_canal_m": 3,
     "categoria_refuerzo_aashto": 6,
     "clase_sitio": 10,
     "clases_producto_por_relleno": 3,
-    "cobertura_minima_aashto": 7,
-    "cobertura_minima_cajon": 7,
-    "condicion_pavimento": 7,
     "cortante_alto_muro_e060_art_11_10_10_2": 6,
-    "diametros_normalizados": 1,
-    "embocadura_cajon": 7,
-    "espesor_pared_cajon": 7,
-    "espesor_pared_conducto": 7,
     "exposicion_quimica_ems": 2,
     "factor_muro_eleccion": 2,
     "factor_recubrimiento_banda_intermedia_ac": 3,
-    "factores_carga_aashto": 12,
     "gamma_EQ": 2,
-    "geometria_control_salida": 4,
     "h_eq_bajo_altura_tabulada": 3,
     "h_eq_banda_intermedia_borde": 3,
-    "hds5_embocadura_hdpe": 1,
     "k_v": 2,
-    "ke_entrada_cajon": 6,
-    "metodo_transicion_hds5": 3,
-    "n_celdas_cajon": 6,
-    "n_manning_cajon": 6,
-    "n_manning_hdpe": 1,
-    "origen_cota_fondo_entrada": 11,
     "predimensionamiento_cabezal": 2,
     "procedimiento_flexion_corte_aashto_sec5": 1,
-    "resguardo_HW_subrasante": 5,
-    "riesgo_admisible_propietario": 3,
-    "seccion_receptor": 6,
-    "secciones_cajon_normalizadas": 5,
     "situacion_recubrimiento_aashto": 5,
     "tabla_recubrimiento_aashto_mm": 2,
-    "talud_terraplen": 1,
-    "umbral_area_quebrada_importante_ha": 4,
-    "v_max_concreto_eleccion": 2,
 }
 
 # E4 — nace limpio: nadie justifica hoy un valor con lo que el codigo
 # espera. La regla queda de guardia.
 VIOLACIONES_E4 = {}
 
-# E5 — 46 transcripciones largas en 26 claves. Las peores: clase_sitio y
-# cobertura_minima_cajon (4 cada una, citas en ingles de AASHTO que el
-# registro deberia llevar como Verbatim).
+# E5 — nacio con 46 transcripciones largas en 26 claves; R2a limpio las del
+# lote de perfil (los textos ahora refieren la cita por su fuente o su
+# simbolo del registro en vez de transcribirla) y quedan 20 en 11 claves,
+# todas de nivel expediente (R2b). La peor sigue siendo clase_sitio (4,
+# citas en ingles de AASHTO que el registro deberia llevar como Verbatim).
 VIOLACIONES_E5 = {
     "F_pga": 1,
-    "HW_D_max": 2,
     "TR_evento_extremo": 1,
-    "acceso_mantenimiento_v2b": 1,
     "categoria_refuerzo_aashto": 2,
     "clase_sitio": 4,
     "clases_producto_por_relleno": 1,
-    "cobertura_minima_aashto": 2,
-    "cobertura_minima_cajon": 4,
-    "condicion_pavimento": 1,
     "cortante_alto_muro_e060_art_11_10_10_2": 3,
-    "embocadura_cajon": 1,
-    "espesor_pared_conducto": 1,
     "exposicion_quimica_ems": 1,
     "factor_muro_eleccion": 3,
     "factor_recubrimiento_banda_intermedia_ac": 1,
-    "factores_carga_aashto": 3,
-    "geometria_control_salida": 1,
-    "n_manning_cajon": 1,
-    "origen_cota_fondo_entrada": 1,
-    "riesgo_admisible_propietario": 2,
-    "seccion_receptor": 2,
     "situacion_recubrimiento_aashto": 2,
     "tabla_recubrimiento_aashto_mm": 1,
-    "talud_terraplen": 1,
-    "v_max_concreto_eleccion": 3,
 }
 
-# E6 — una sola magnitud sin unidad al alcance del detector: el 0.30 (m) que
-# EG-2013 exige como recubrimiento, en espesor_pared_conducto.
-VIOLACIONES_E6 = {
-    "espesor_pared_conducto": 1,
-}
+# E6 — nacio con una sola magnitud sin unidad al alcance del detector (el
+# 0.30 m que EG-2013 exige como recubrimiento, en espesor_pared_conducto);
+# R2a le puso la unidad y el censo queda vacio. La regla sigue de guardia.
+VIOLACIONES_E6 = {}
 
 # E7 — nace limpio: los años que sobreviven en las justificaciones son
 # designadores de norma (EG-2013), ediciones («9a ed. (2020)») o la serie

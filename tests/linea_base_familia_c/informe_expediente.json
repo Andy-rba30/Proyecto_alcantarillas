@@ -849,7 +849,7 @@
         "etiqueta": "A",
         "valor": "cota_terreno",
         "declarado_en_caliente": false,
-        "concepto": "Regla con la que se obtiene la cota del FONDO DE LA ENTRADA (invert) de cada punto, msnm, CUANDO LA COLUMNA 'cota_fondo_entrada' del CSV no la trae medida"
+        "concepto": "Regla con la que se obtiene la cota del fondo de la entrada (invert) de cada punto, msnm, cuando la columna 'cota_fondo_entrada' del CSV no la trae medida"
       },
       {
         "clave": "phi_relleno_trasdos",

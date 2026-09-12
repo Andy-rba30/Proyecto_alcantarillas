@@ -929,3 +929,62 @@ catorce, y su ficha lo dice sin borrarse.
   falso.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::pieza_del_hueco_de_V5`
   (la regla de familia, en un solo sitio y consultada por los dos llamadores)
+
+---
+
+# Parte X — La historia que R2a retiró de las justificaciones del lote de perfil
+
+R2a (plan R, `docs/planes_mejora/02_PLAN_REDACCION_CRITERIOS.md` §R2)
+reescribió la redacción de los criterios de nivel de perfil: la narración de
+bitácora salió de `justificacion` porque la historia vive en git y aquí.
+Estas fichas conservan la parte de esa narración que un revisor futuro
+necesita y que no queda escrita en ningún otro registro.
+
+## R2a-01 · `factores_carga_aashto`: el par único descartado, y la dirección que la ficha NOR-PUE-03 invierte
+
+- **Qué se difirió:** nada nuevo; se conserva la razón del cambio de forma
+  que la justificación ya no narra. El criterio transcribía un único par EV
+  {max 1.35, min 0.90} con etiqueta [C]; ese par no es ninguna fila de la
+  Tabla 2.4.5.3.1-2 —mezclaba el máximo del muro con el mínimo de la
+  estructura enterrada— y ningún par único podía servir a la vez a V7 y al
+  cabezal. La corrección fue el desglose por estructura (cluster C03: MAT-D8,
+  MAT-D15, NOR-PUE-03, NOR-PUE-04, NOR-AAS-04).
+- **Por qué se escribe aquí:** dos afirmaciones de aquellas fichas no hay que
+  repetirlas. NOR-PUE-03 sostiene que usar 0.90 en E2/E3/V7 es la dirección
+  insegura, y es al revés: rebajar lo que estabiliza es la dirección
+  conservadora (AASHTO LRFD C3.4.1) y el desglose corrige conformidad, no
+  seguridad. Y la afirmación «EH en reposo 1.35, sin mínimo declarado» era un
+  corrimiento de fila: el N/A es de las paredes ancladas; el reposo lleva
+  1.35 / 0.90.
+- **Qué haría falta:** nada — cerrado; la lectura vinculante quedó en la
+  justificación del criterio, en presente y sin narración.
+- **Dónde vive:** `src/criterios_adoptados.py::factores_carga_aashto`
+
+## R2a-02 · `HW_D_max`: V4b estuvo declarado y sin cablear a propósito
+
+- **Qué se difirió:** ya nada; se conserva el porqué de un hueco que en el
+  historial se leería como olvido. El chequeo V4b (HW/D máximo) estuvo
+  declarado y sin consumidor hasta S14: el conflicto #1 de la matriz de
+  auditorías (NOR-HDS-02 frente a MAT-D2 / SIS-A-02 / SIS-B-02) prohibía
+  implementarlo mientras la etiqueta del criterio siguiera abierta, porque un
+  umbral que rechaza diámetros apoyado en una cita mal leída es peor que un
+  umbral que no se evalúa.
+- **Por qué se cerró:** primero se cerró la procedencia —el num. 2.2.5 d) del
+  HDS-5 describe práctica de agencias y no prescribe HW/D; etiqueta [A]— y el
+  cableado a `M5.v4b_relacion_hw_d` vino después, en S14.
+- **Qué haría falta:** nada — cerrado.
+- **Dónde vive:** `src/criterios_adoptados.py::HW_D_max`
+
+## R2a-03 · `espesor_pared_conducto`: la cifra del código (−33.1 %) no es la de la ficha MAT-D3 (−31.6 %)
+
+- **Qué se difirió:** nada; se fija una divergencia numérica que invita a
+  «corregirla» mal. La subestimación del empuje de flotación al usar el D
+  interior es −33.1 % bajo la convención del código (D_ext = D + 2·t, con
+  t = 0.100 m y D = 0.90 m); la ficha MAT-D3 publica −31.6 % porque supone
+  OD = 1.088 m.
+- **Por qué:** las dos cifras son coherentes cada una con su convención; la
+  que vale en el código es la de su propia convención, y la justificación del
+  criterio ya solo lleva esa.
+- **Qué haría falta:** nada para esta ficha; el día que la Fase 8 especifique
+  el producto, la cifra se recalcula con su espesor real.
+- **Dónde vive:** `src/criterios_adoptados.py::espesor_pared_conducto`
