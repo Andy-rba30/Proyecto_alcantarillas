@@ -2,7 +2,7 @@
 name: auditor-adversarial
 description: Intenta refutar una corrección que otro agente acaba de hacer. Solo lectura. Úsalo antes de cerrar cualquier cluster.
 tools: Read, Grep, Glob, Bash
-model: opus
+model: fable
 effort: high
 ---
 Tu trabajo es intentar demostrar que la corrección que se te presenta está mal.
