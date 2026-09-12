@@ -320,6 +320,22 @@ def familias_del_csv(ruta_csv: Path) -> Tuple[Familia, ...]:
     familias = {punto.familia for punto in cargar_puntos(ruta_csv)}
     return tuple(f for f in Familia if f in familias)
 
+
+def puntos_por_familia(ruta_csv: Path) -> Dict[Familia, int]:
+    """
+    Cuantos puntos de cada familia trae el CSV, las tres familias siempre
+    (con 0 para la que el archivo no trae).
+
+    Es lo que la pestana 1 necesita para encabezar cada seccion de familia
+    con su conteo. No es una poblacion nueva: es el tamano de la que
+    `familias_del_csv` ya recorre, y sale de la MISMA carga
+    (`cargar_puntos`) por la misma razon escrita alli --- dos lectores del
+    mismo CSV son dos validaciones que pueden discrepar.
+    """
+    puntos = cargar_puntos(ruta_csv)
+    return {familia: sum(1 for punto in puntos if punto.familia is familia)
+            for familia in Familia}
+
 # Etiquetas de fase. Son rotulos del informe, no valores de proyecto: cada uno
 # nombra el modulo y la seccion de la hoja de ruta que ejecuta esa etapa.
 FASE_CARGA = "Fase 1 - Carga y validacion (M0)"

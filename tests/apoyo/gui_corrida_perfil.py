@@ -83,7 +83,19 @@ def main(salida: Path) -> int:
     raiz = tb.Window(themename="litera")
     try:
         ventana = gapp.ExpedienteApp(raiz)
+        # LAS SECCIONES DE LA PESTANA 1, ANTES Y DESPUES DE CARGAR EL CSV
+        # (G1). Antes del CSV el encabezado de cada seccion de familia dice
+        # «— puntos» y la seccion es visible; con el CSV puesto, el `trace`
+        # de `csv_var` repinta el conteo. Se vuelca el texto REAL del widget:
+        # es lo que ningun test de AST puede ver.
+        secciones_sin_csv = {
+            "|".join(f.value for f in fams): lbl.cget("text")
+            for fams, lbl in ventana.lbl_seccion_familia.items()}
         ventana.csv_var.set(str(CSV_PERFIL))
+        raiz.update()
+        secciones_con_csv = {
+            "|".join(f.value for f in fams): lbl.cget("text")
+            for fams, lbl in ventana.lbl_seccion_familia.items()}
         ventana.datos_externos_var.set(str(externos))
         ventana.proyecto_var.set("cierre del nivel de perfil")
         ventana.alcance_var.set(cli.ALCANCE_PERFIL)
@@ -122,6 +134,8 @@ def main(salida: Path) -> int:
 
         resumen = {
             "alcance": informe.alcance,
+            "secciones_sin_csv": secciones_sin_csv,
+            "secciones_con_csv": secciones_con_csv,
             "tablero_antes": tablero_antes,
             "tablero_despues": tablero_despues,
             "cajon_declarado": declarados,

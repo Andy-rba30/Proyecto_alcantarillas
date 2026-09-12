@@ -1375,6 +1375,16 @@ def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
     resumen = json.loads((tmp_path / "resumen_de_la_corrida.json")
                          .read_text(encoding="utf-8"))
     assert resumen["alcance"] == cli.ALCANCE_PERFIL
+    # G1: las secciones de familia de la pestana 1 EXISTEN en la ventana de
+    # verdad --- que es lo que el AST no puede ver --- y su encabezado hace lo
+    # que el plan pide: «— puntos» con la seccion visible antes de cargar el
+    # CSV, y el conteo real de puntos por familia despues (el CSV de perfil
+    # trae 2 de A, 1 de B y 1 de C).
+    assert resumen["secciones_sin_csv"] == {"B": "— puntos",
+                                            "A|B": "— puntos"}
+    assert resumen["secciones_con_csv"] == {
+        "B": "Familia B: 1 punto en el CSV",
+        "A|B": "Familia A: 2 puntos · Familia B: 1 punto en el CSV"}
     assert resumen["dimensionados"] == ["A-01", "A-02", "B-01"]
     assert resumen["diferidos"] > 0, "nada diferido: no es alcance de perfil"
     # La plantilla la elige el ALCANCE de la corrida, que es SIS-A-17.
@@ -1720,3 +1730,168 @@ def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
     assert "JSON" in obs["pestana_tras_el_segundo_icono"]
     assert obs["cerrada_abre_otra"], (
         "cerrada a mano, el icono tiene que poder abrirla otra vez")
+
+
+# ===========================================================================
+# G1: la pestana 1 agrupada por familia (derivado) y sin jerga de CLI
+# ===========================================================================
+# Dos contratos, cada uno con la tecnica que le corresponde:
+#
+# - La AGRUPACION se prueba EJECUTANDO `_secciones_de_campos` (logica pura,
+#   con el doble de tkinter) y ademas POR MUTACION: mover una fila en
+#   `cli.FAMILIAS_QUE_USAN` tiene que mover el campo de seccion sin tocar
+#   gui/. Es el criterio de aceptacion de G1 escrito como test, y el mismo
+#   molde que `test_ayuda_entrada` usa para la ayuda derivada.
+#
+# - El LENGUAJE se prueba sobre el ARBOL: ninguna cadena visible de la
+#   pestana 1 nombra una bandera de la CLI (`--luz`, `--alcance`...) ni un
+#   codigo de modulo (`M0`, `M11`). La LISTA BLANCA son los textos de ayuda
+#   --- tooltips, `BotonAyuda` y el elemento `ayuda` de `CAMPOS_EXTERNOS` ---
+#   porque ese es el destino DECLARADO de esa informacion: «equivale a la
+#   bandera --luz de la linea de comandos» se lee al preguntar por el campo,
+#   no en su rotulo. Los codigos de modulo tienen su propio destino, la barra
+#   de estado, que por eso tampoco se barre.
+
+BANDERA_DE_CLI = re.compile(r"(?<![\w-])--[a-z]")
+CODIGO_DE_MODULO = re.compile(r"\bM\d+\b")
+
+
+def test_las_secciones_de_la_pestana_1_se_derivan_del_censo_de_familias(
+        app, ventana, monkeypatch):
+    """
+    La pertenencia campo->seccion NO esta escrita en gui/: sale de
+    `cli.familias_que_usan`. Un dato sin fila declarada lo usan las tres
+    familias (la semantica de `tests/test_familias_del_csv.py`) y cae en
+    «Comunes a todas las familias»; uno con fila cae en la seccion de SUS
+    familias --- las de la medida, no las del rotulo viejo, que decia
+    «Familia A» sobre un dato que la medida atribuye a A y B ---.
+    """
+    from modelos import Familia
+
+    todas = tuple(Familia)
+    traduccion = app.ExpedienteApp.CLAVE_EXTERNA_DE_CAMPO
+    secciones = ventana._secciones_de_campos()
+    assert secciones[0][0] == todas, (
+        "«Comunes a todas las familias» tiene que pintarse primero")
+    por_familias = dict(secciones)
+
+    comunes = {clave for clave, *_ in por_familias[todas]}
+    assert comunes == {campo for campo, ext in traduccion.items()
+                       if ext not in cli.FAMILIAS_QUE_USAN}, (
+        "un dato sin fila en cli.FAMILIAS_QUE_USAN lo usan las tres familias "
+        "y va en la seccion de comunes")
+
+    for campo, ext in traduccion.items():
+        if ext in cli.FAMILIAS_QUE_USAN:
+            usan = cli.familias_que_usan(ext)
+            assert campo in {c for c, *_ in por_familias[usan]}, (
+                f"'{campo}' no esta en la seccion de sus familias {usan}")
+
+    assert ventana._titulo_seccion(todas) == "Comunes a todas las familias"
+
+    # LA MEDIDA (criterio de aceptacion de G1): mover la fila mueve el campo
+    # de seccion sin tocar gui/. Mismo recurso que test_ayuda_entrada.
+    monkeypatch.setitem(cli.FAMILIAS_QUE_USAN, "L_hidraulico_m", (Familia.A,))
+    movidas = dict(ventana._secciones_de_campos())
+    assert "l_hidraulico" in {c for c, *_ in movidas[(Familia.A,)]}, (
+        "la fila se movio en cli.FAMILIAS_QUE_USAN y el campo no cambio de "
+        "seccion: la GUI lleva su propia tabla")
+    assert (Familia.B,) not in movidas, (
+        "la seccion vieja sobrevivio sin campos: la agrupacion no se derivo")
+
+
+def test_la_asignacion_campo_seccion_no_vive_en_un_dict_local_de_la_gui():
+    """
+    La otra mitad, sobre el arbol: `_secciones_de_campos` PREGUNTA a cli ---
+    por el accesor `familias_que_usan`, no leyendo `FAMILIAS_QUE_USAN` a pelo,
+    que se saltaria la regla «sin fila = las tres» --- y traduce por
+    `CLAVE_EXTERNA_DE_CAMPO`, la MISMA correspondencia que la anotacion. Y ni
+    ahi ni en `_construir_tab_datos` hay un dict literal ni una familia
+    nombrada a mano (`Familia.B`) que pudiera ser la segunda tabla.
+    """
+    funcion = _funcion(ARBOL_GUI, "_secciones_de_campos")
+    fuente = ast.unparse(funcion)
+    assert "cli.familias_que_usan" in fuente, (
+        "la agrupacion dejo de preguntarle a cli que familias usan cada dato")
+    assert "CLAVE_EXTERNA_DE_CAMPO" in fuente, (
+        "la agrupacion traduce el campo por su cuenta: dos traducciones se "
+        "separan (es la leccion de SIS-F-01)")
+    # `{}` como acumulador vale; un dict CON claves escritas es la tabla
+    # paralela que este test prohibe.
+    assert not any(isinstance(n, ast.Dict) and n.keys
+                   for n in ast.walk(funcion)), (
+        "hay un dict literal con claves dentro de `_secciones_de_campos`: la "
+        "asignacion campo->seccion tiene que derivarse, no escribirse")
+    assert not any(isinstance(n, ast.Attribute) and n.attr == "FAMILIAS_QUE_USAN"
+                   for n in ast.walk(ARBOL_GUI)), (
+        "gui/app.py lee cli.FAMILIAS_QUE_USAN a pelo: el accesor "
+        "`familias_que_usan` es el que aporta la regla del defecto")
+    for nombre in ("_secciones_de_campos", "_construir_tab_datos"):
+        a_mano = {n.attr for n in ast.walk(_funcion(ARBOL_GUI, nombre))
+                  if isinstance(n, ast.Attribute)
+                  and isinstance(n.value, ast.Name) and n.value.id == "Familia"}
+        assert not a_mano, (
+            f"'{nombre}' nombra familias a mano ({sorted(a_mano)}): esa es "
+            "exactamente la clase de lista que la derivacion vino a retirar")
+
+
+def _cadenas_visibles_de_la_pestana_1():
+    """
+    Las cadenas que la pestana 1 PINTA, leidas del arbol: los `text=` de sus
+    widgets, el rotulo de cada radio de alcance, la etiqueta y la unidad de
+    cada tupla de `CAMPOS_EXTERNOS`, los textos de los encabezados de seccion
+    y el titulo de la ventana. Los textos de ayuda quedan fuera a proposito:
+    son la lista blanca (ver el encabezado del bloque).
+    """
+    visibles = []
+
+    construir = _funcion(ARBOL_GUI, "_construir_tab_datos")
+    for nodo in ast.walk(construir):
+        if isinstance(nodo, ast.Call):
+            for kw in nodo.keywords:
+                if kw.arg == "text" and isinstance(kw.value, ast.Constant) \
+                        and isinstance(kw.value.value, str):
+                    visibles.append(kw.value.value)
+        # El rotulo de cada radio de alcance: el segundo elemento de las
+        # tuplas cuyo primer elemento es cli.ALCANCE_*.
+        if isinstance(nodo, ast.Tuple) and len(nodo.elts) == 3 \
+                and isinstance(nodo.elts[0], ast.Attribute) \
+                and nodo.elts[0].attr.startswith("ALCANCE") \
+                and isinstance(nodo.elts[1], ast.Constant):
+            visibles.append(nodo.elts[1].value)
+
+    for nombre in ("_titulo_seccion", "_pintar_encabezados_familia"):
+        visibles.extend(n.value for n in ast.walk(_funcion(ARBOL_GUI, nombre))
+                        if isinstance(n, ast.Constant)
+                        and isinstance(n.value, str))
+
+    for nodo in ast.walk(ARBOL_GUI):
+        if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
+                and isinstance(nodo.targets[0], ast.Name)
+                and nodo.targets[0].id == "CAMPOS_EXTERNOS"):
+            for tupla in nodo.value.elts:
+                for indice in (1, 3):        # etiqueta y unidad; ayuda NO
+                    if isinstance(tupla.elts[indice], ast.Constant):
+                        visibles.append(tupla.elts[indice].value)
+        if (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Attribute)
+                and nodo.func.attr == "title" and nodo.args
+                and isinstance(nodo.args[0], ast.Constant)):
+            visibles.append(nodo.args[0].value)
+
+    assert visibles, "el rastreo de cadenas visibles se quedo vacio"
+    return visibles
+
+
+def test_ninguna_cadena_visible_de_la_pestana_1_nombra_banderas_ni_modulos():
+    """
+    G1, tarea 2: el proyectista que mira la ventana no teclea `--luz` ni sabe
+    que es «M0». La informacion no se pierde: la equivalencia con la bandera
+    vive en el tooltip de cada campo y los codigos de modulo en la barra de
+    estado, que son las dos zonas que este barrido no toca.
+    """
+    culpables = [texto for texto in _cadenas_visibles_de_la_pestana_1()
+                 if BANDERA_DE_CLI.search(texto)
+                 or CODIGO_DE_MODULO.search(texto)]
+    assert not culpables, (
+        f"cadenas visibles de la pestana 1 con jerga de CLI o de modulos: "
+        f"{culpables!r}")

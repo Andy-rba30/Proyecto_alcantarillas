@@ -26,11 +26,12 @@ expediente.
 Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
 -----------------------------------------------------------
     1. Datos de entrada    CSV de Sec. 1.2 (M0) + datos declarados que no son
-                            columna (banderas de `cli.py`, ANOTADOS con las
-                            familias que los usan) + ALCANCE de la corrida +
-                            boton de ejecucion. Los dos campos de archivo
-                            llevan su icono «i», que abre la AYUDA DERIVADA
-                            (ver mas abajo).
+                            columna (los equivalentes de las banderas de
+                            `cli.py`, AGRUPADOS por las familias que los usan
+                            y anotados) + ALCANCE de la corrida + boton de
+                            ejecucion. Los dos campos de archivo llevan su
+                            icono «i», que abre la AYUDA DERIVADA (ver mas
+                            abajo).
     2. Criterios           Los criterios adoptados y su estado, con FILTRO
                             (por estado, por AMBITO y por texto) y RECUENTO de
                             pendientes; la ventana normativa de cada variable
@@ -130,6 +131,17 @@ cambia el fundamento que la memoria imprime aunque el TR no se mueva, y por
 eso esa familia SI figura entre las que lo usan --- lo dijo la medida, no la
 lectura del codigo (`tests/test_familias_del_csv.py`).
 
+Y desde G1 los campos ademas se AGRUPAN por esas mismas familias: «Comunes a
+todas las familias» y una seccion por cada grupo de familias con campos
+propios, con el conteo de puntos de cada familia en el encabezado. NINGUNA
+asignacion campo->seccion esta escrita aqui: `_secciones_de_campos` la deriva
+de `cli.familias_que_usan` --- la MISMA fuente que la anotacion ---, de modo
+que mover una fila en `cli.FAMILIAS_QUE_USAN` mueve el campo de seccion sin
+tocar esta ventana. Los rotulos visibles hablan en lenguaje de proyectista:
+ninguna bandera de la CLI ni codigo de modulo (M0, M11) en una etiqueta ---
+esa equivalencia vive en el tooltip de cada campo, y los codigos de modulo en
+la barra de estado.
+
 Los criterios en la sesion (SIS-A-18)
 -------------------------------------
 La sesion JSON guardaba el proyecto, el CSV y las cinco banderas, y NO las
@@ -164,7 +176,7 @@ import cli  # noqa: E402
 import criterios_adoptados as ca  # noqa: E402
 import declaracion as dec  # noqa: E402
 import variables_entrada as ve  # noqa: E402
-from modelos import ErrorProyecto  # noqa: E402
+from modelos import ErrorProyecto, Familia  # noqa: E402
 # Solo para PREGUNTARLE si weasyprint cargo (`_ayuda_del_pdf`). No se le pide
 # ningun calculo: la exportacion sigue pasando por `cli.exportar_pdf`, que es
 # la misma puerta que usa la linea de comandos.
@@ -256,30 +268,51 @@ MOTIVO_SIN_CORRIDA_FILTRO = (
 # Banderas globales que acepta `cli.py` fuera del CSV (ver docstring de
 # `cli.py`, seccion "Datos que NO estan en el CSV"). Cada tupla es
 # (clave, etiqueta, ayuda, unidad).
+#
+# LA ETIQUETA NO NOMBRA BANDERAS NI FAMILIAS, y las dos ausencias son
+# deliberadas (G1): la equivalencia con la bandera de la CLI es informacion
+# de tooltip --- quien mira la ventana no teclea `--luz` ---, y la familia
+# que usa cada dato ya no se ESCRIBE en ninguna cadena: la dice la SECCION
+# donde el campo aparece, que `_secciones_de_campos` deriva de
+# `cli.familias_que_usan`. La version anterior la escribia a mano y mentia:
+# «Categoria TR (Familia A)» sobre un dato que la medida atribuye a las
+# familias A y B (`tests/test_familias_del_csv.py`).
 CAMPOS_EXTERNOS = (
     ("luz_m", "Luz del cruce:",
      "Luz del cruce, en METROS (Sec. 2.1).\n"
      "Sin ella no se puede separar alcantarilla de puente\n"
-     "y el punto no se dimensiona.", "[m]"),
+     "y el punto no se dimensiona.\n"
+     "Equivale a la bandera --luz de la linea de comandos.", "[m]"),
     ("TW_m", "Tirante en el receptor (TW):",
      "Tirante en el receptor sobre el fondo de la salida, en METROS.\n"
-     "Si no se declara se pide al criterio 'TW_receptor'.", "[m]"),
+     "Si no se declara se pide al criterio 'TW_receptor'.\n"
+     "Equivale a la bandera --tw de la linea de comandos.", "[m]"),
     ("longitud_m", "Longitud del conducto:",
      "Longitud del conducto, en METROS.\n"
-     "Si no se declara la calcula M7 (Sec. 7.B).", "[m]"),
-    ("l_hidraulico", "L hidraulico (cuneta, Familia B):",
-     "Longitud a la que la cuneta agota su capacidad, en METROS.\n"
-     "Solo aplica a Familia B (Fase 10).", "[m]"),
-    ("categoria_tr", "Categoria TR (Familia A):",
+     "Si no se declara la calcula M7 (Sec. 7.B).\n"
+     "Equivale a la bandera --longitud de la linea de comandos.", "[m]"),
+    ("l_hidraulico", "L hidráulico de la cuneta:",
+     "Longitud a la que la cuneta agota su capacidad, en METROS\n"
+     "(Fase 10, Sec. 10).\n"
+     "Equivale a la bandera --l-hidraulico de la linea de comandos.", "[m]"),
+    ("categoria_tr", "Categoría del TR (Tabla N.º 02):",
      "Fila de la Tabla N 02: 'quebrada_importante' o 'quebrada_menor'\n"
-     "(Sec. 2.2). Sin ella la Familia A se detiene en el umbral de area.", ""),
+     "(Sec. 2.2). Sin ella la Familia A se detiene en el umbral de area.\n"
+     "Equivale a la bandera --categoria-tr de la linea de comandos.", ""),
 )
+
+# El texto del boton de ejecucion, UNA vez: se restaura en dos sitios despues
+# de correr y una tercera copia divergiria. Sin codigos de modulo (G1): que
+# la corrida ejecuta M0 a M10 lo dicen su tooltip y la barra de estado.
+TEXTO_BOTON_EJECUTAR = "EJECUTAR EL CÁLCULO"
 
 
 class ExpedienteApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Expediente de Alcantarillas - M0 a M10")
+        # Sin «M0 a M10» en el titulo (G1): es lenguaje de modulos internos,
+        # no de proyectista. El dato no se pierde: vive en la barra de estado.
+        self.root.title("Expediente de Alcantarillas")
         self.root.geometry("1100x800")
         self.root.minsize(900, 620)
 
@@ -299,6 +332,9 @@ class ExpedienteApp:
         # segunda cuando en realidad es la primera seria decirle al
         # proyectista que un campo le sobra sin haber leido su archivo.
         self.familias_csv: Optional[tuple] = None
+        # Y el conteo por familia del mismo CSV, con la misma semantica del
+        # `None`: "no se sabe" no es "cero puntos".
+        self.puntos_familia: Optional[dict] = None
 
         self._crear_interfaz()
 
@@ -355,15 +391,18 @@ class ExpedienteApp:
         barra.pack(fill="x")
         ttk.Button(barra, text="Guardar sesion", command=self.guardar_sesion).pack(side="left", padx=4)
         ttk.Button(barra, text="Cargar sesion", command=self.cargar_sesion).pack(side="left", padx=4)
-        self.lbl_estado = ttk.Label(barra, text="Sin ejecutar.", style="Ayuda.TLabel")
+        # La barra de estado es el sitio de los codigos de modulo (G1): aqui
+        # pueden leerse sin colarse en las etiquetas de los campos.
+        self.lbl_estado = ttk.Label(barra, text="Sin ejecutar (módulos M0 a M10).",
+                                    style="Ayuda.TLabel")
         self.lbl_estado.pack(side="left", padx=(12, 0))
 
         self.btn_ejecutar = BotonAccion(
-            barra, "EJECUTAR PIPELINE (M0 -> M10)", letra=BotonAccion.GRANDE,
+            barra, TEXTO_BOTON_EJECUTAR, letra=BotonAccion.GRANDE,
             fondo="#2e86c1", activebackground="#21618c", activeforeground="white",
             command=self.ejecutar_pipeline,
-            ayuda="Corre M0 -> M10 con el CSV, los datos externos y el\n"
-                  "alcance elegidos arriba.",
+            ayuda="Corre el pipeline completo (M0 -> M10) con el CSV, los\n"
+                  "datos externos y el alcance elegidos arriba.",
         )
         self.btn_ejecutar.pack(side="right", padx=4, ipadx=14, ipady=6)
 
@@ -379,7 +418,7 @@ class ExpedienteApp:
         ent_proy.grid(row=0, column=1, sticky="we", padx=5, pady=4, columnspan=2)
         Tooltip(ent_proy, "Encabeza la memoria de calculo (M11).")
 
-        ttk.Label(f_proj, text="CSV de puntos criticos (Sec. 1.2):").grid(row=1, column=0, sticky="w", padx=5, pady=4)
+        ttk.Label(f_proj, text="CSV de puntos críticos (Sec. 1.2):").grid(row=1, column=0, sticky="w", padx=5, pady=4)
         ent_csv = ttk.Entry(f_proj, textvariable=self.csv_var)
         ent_csv.grid(row=1, column=1, sticky="we", padx=5, pady=4)
         f_csv = ttk.Frame(f_proj)
@@ -420,14 +459,17 @@ class ExpedienteApp:
 
         ttk.Label(p, text="2. Datos declarados (no son columna del CSV)",
                   style="Header.TLabel").pack(anchor="w", pady=(8, 0))
-        ttk.Label(p, text="Se aplican como banderas globales, igual que --luz, --tw, "
-                          "--longitud, --l-hidraulico y --categoria-tr de cli.py. "
-                          "Un valor por punto solo puede declararse en el JSON de "
-                          "datos externos.",
+        # El texto visible no nombra banderas de la CLI (G1): la equivalencia
+        # exacta de cada campo vive en su tooltip, que es donde se lee al
+        # preguntarse por ESE campo.
+        ttk.Label(p, text="Se aplican a todos los puntos de la corrida; la ayuda de "
+                          "cada campo dice a qué opción de la línea de comandos "
+                          "equivale. Un valor por punto solo puede declararse en el "
+                          "JSON de datos externos. Cada campo aparece bajo las "
+                          "familias que lo usan; el de una familia que el CSV no "
+                          "trae queda anotado, nunca bloqueado.",
                   style="Ayuda.TLabel", wraplength=820, justify="left").pack(anchor="w", pady=(0, 8))
 
-        f_ext = ttk.Frame(p)
-        f_ext.pack(fill="x", pady=6)
         # La anotacion «no aplica» de cada campo. Es una etiqueta al lado y NO
         # un `state="disabled"`, y la diferencia es del oficio y no del
         # widget: el proyectista puede estar preparando el dato de un punto
@@ -435,30 +477,49 @@ class ExpedienteApp:
         # hacerlo mientras le dice que se equivoco. Anotar informa; deshabilitar
         # decide por el.
         self.lbl_no_aplica = {}
-        for fila, (clave, etiqueta, ayuda, unidad) in enumerate(CAMPOS_EXTERNOS):
-            ttk.Label(f_ext, text=etiqueta).grid(row=fila, column=0, sticky="w", padx=5, pady=6)
-            ent = ttk.Entry(f_ext, textvariable=self.externos_vars[clave], width=20, justify="right")
-            ent.grid(row=fila, column=1, sticky="w", padx=5, pady=6)
-            ttk.Label(f_ext, text=unidad, style="Ayuda.TLabel").grid(row=fila, column=2, sticky="w")
-            Tooltip(ent, ayuda)
-            self.lbl_no_aplica[clave] = ttk.Label(f_ext, text="",
-                                                   style="Ayuda.TLabel")
-            self.lbl_no_aplica[clave].grid(row=fila, column=3, sticky="w",
-                                            padx=(12, 0))
+        # Los encabezados de seccion de familia, para repintarles el conteo de
+        # puntos al cambiar el CSV. Clave: la tupla de familias de la seccion.
+        self.lbl_seccion_familia = {}
+        for familias, campos in self._secciones_de_campos():
+            f_titulo = ttk.Frame(p)
+            f_titulo.pack(fill="x", pady=(6, 0))
+            ttk.Label(f_titulo, text=self._titulo_seccion(familias),
+                      style="Header.TLabel").pack(side="left")
+            if familias != tuple(Familia):
+                lbl = ttk.Label(f_titulo, text="— puntos", style="Ayuda.TLabel")
+                lbl.pack(side="left", padx=(10, 0))
+                self.lbl_seccion_familia[familias] = lbl
+            f_ext = ttk.Frame(p)
+            f_ext.pack(fill="x", pady=(0, 6))
+            # Mismo ancho de columna de rotulos en todas las secciones: sin
+            # el, cada grid alinearia sus campos a su etiqueta mas larga.
+            f_ext.columnconfigure(0, minsize=240)
+            for fila, (clave, etiqueta, ayuda, unidad) in enumerate(campos):
+                ttk.Label(f_ext, text=etiqueta).grid(row=fila, column=0, sticky="w", padx=5, pady=6)
+                ent = ttk.Entry(f_ext, textvariable=self.externos_vars[clave], width=20, justify="right")
+                ent.grid(row=fila, column=1, sticky="w", padx=5, pady=6)
+                ttk.Label(f_ext, text=unidad, style="Ayuda.TLabel").grid(row=fila, column=2, sticky="w")
+                Tooltip(ent, ayuda)
+                self.lbl_no_aplica[clave] = ttk.Label(f_ext, text="",
+                                                       style="Ayuda.TLabel")
+                self.lbl_no_aplica[clave].grid(row=fila, column=3, sticky="w",
+                                                padx=(12, 0))
 
         ttk.Separator(p, orient="horizontal").pack(fill="x", pady=6)
 
-        ttk.Label(p, text="3. Alcance de la corrida (--alcance)",
+        # Sin «(--alcance)» en el rotulo (G1): la bandera equivalente la dicen
+        # los tooltips de los dos botones de opcion.
+        ttk.Label(p, text="3. Alcance de la corrida",
                   style="Header.TLabel").pack(anchor="w", pady=(8, 0))
         ttk.Label(
             p,
-            text="Es una bifurcacion DECLARADA, no una poda. Con 'expediente' "
+            text="Es una bifurcación DECLARADA, no una poda. Con 'expediente' "
                  "todo corre como siempre. Con 'perfil', V5 y V8 se intentan "
                  "pero su fallo se difiere al expediente en vez de frenar el "
                  "dimensionamiento, y las Fases 8 y 9 no se ejecutan: nada de "
                  "lo diferido se pierde -- queda registrado con su fundamento "
                  "en el bloque de alcance del informe y de la memoria. El "
-                 "alcance elige ademas la plantilla por defecto de la memoria.",
+                 "alcance elige además la plantilla por defecto de la memoria.",
             style="Ayuda.TLabel", wraplength=820, justify="left",
         ).pack(anchor="w", pady=(0, 6))
 
@@ -467,12 +528,14 @@ class ExpedienteApp:
         for columna, (valor, etiqueta, ayuda) in enumerate((
                 (cli.ALCANCE_EXPEDIENTE, "Expediente (defecto)",
                  "El pipeline completo: M0 a M10 mas la Fase 9.\n"
-                 "Plantilla por defecto de la memoria: memoria_alcantarillas.html."),
+                 "Plantilla por defecto de la memoria: memoria_alcantarillas.html.\n"
+                 "Equivale a --alcance expediente en la linea de comandos."),
                 (cli.ALCANCE_PERFIL, "Perfil",
                  "V5 y V8 diferidas al expediente y Fases 8 y 9 no ejecutadas,\n"
                  "cada una con su constancia. Plantilla por defecto:\n"
                  "memoria_perfil.html, que sin este selector era INALCANZABLE\n"
-                 "desde la ventana (SIS-A-17)."))):
+                 "desde la ventana (SIS-A-17).\n"
+                 "Equivale a --alcance perfil en la linea de comandos."))):
             rb = ttk.Radiobutton(f_alc, text=etiqueta, value=valor,
                                  variable=self.alcance_var)
             rb.grid(row=0, column=columna, sticky="w", padx=12, pady=4)
@@ -483,9 +546,9 @@ class ExpedienteApp:
 
         ttk.Label(
             p,
-            text="Ningun dato de esta seccion tiene valor por defecto: sin declararlo, "
+            text="Ningún dato de esta sección tiene valor por defecto: sin declararlo, "
                  "la etapa que lo necesita queda registrada como bloqueo en el informe "
-                 "(no se sustituye por un numero plausible).",
+                 "(no se sustituye por un número plausible).",
             style="Ayuda.TLabel", wraplength=820, justify="left",
         ).pack(anchor="w", padx=5, pady=(6, 0))
 
@@ -503,9 +566,66 @@ class ExpedienteApp:
         "categoria_tr": "categoria_tr",
     }
 
+    def _secciones_de_campos(self):
+        """
+        Las secciones de la pestana 1, DERIVADAS: [(familias, campos), ...].
+
+        Ninguna asignacion campo->seccion se escribe aqui: la tupla de
+        familias de cada campo sale de `cli.familias_que_usan` --- la MISMA
+        fuente que consulta `_pintar_no_aplica`, y la que `cli._fase_10` lee
+        para decidir si esa fase corre ---, de modo que mover una fila en
+        `cli.FAMILIAS_QUE_USAN` mueve el campo de seccion sin tocar la GUI.
+        Un dato sin fila declarada lo usan las tres familias (la semantica
+        que fija `tests/test_familias_del_csv.py`: la excepcion se declara,
+        la regla no) y va en «Comunes a todas las familias», que se pinta
+        primero; despues, las secciones de familia en el orden de Sec. 2.3.
+        """
+        secciones = {}
+        for campo in CAMPOS_EXTERNOS:
+            usan = cli.familias_que_usan(self.CLAVE_EXTERNA_DE_CAMPO[campo[0]])
+            secciones.setdefault(usan, []).append(campo)
+        todas = tuple(Familia)
+        orden = {familia: indice for indice, familia in enumerate(todas)}
+        return sorted(secciones.items(),
+                      key=lambda par: (par[0] != todas,
+                                       [orden[f] for f in par[0]]))
+
+    def _titulo_seccion(self, familias):
+        """El rotulo de una seccion, derivado de las familias que sirve."""
+        if familias == tuple(Familia):
+            return "Comunes a todas las familias"
+        return "Solo " + " y ".join(f"Familia {f.value}" for f in familias)
+
+    def _pintar_encabezados_familia(self):
+        """
+        El conteo de puntos del CSV en el encabezado de cada seccion de
+        familia. `puntos_familia = None` es "no se sabe" (sin CSV legible) y
+        se muestra como «— puntos», con la seccion visible. Una seccion cuyas
+        familias suman 0 puntos se ATENUA --- el color de aviso, el mismo de
+        la anotacion «no aplica» --- en vez de colapsarse o deshabilitarse:
+        el motivo queda visible en el propio conteo y en la anotacion de cada
+        campo, y los campos siguen aceptando texto por la misma razon que en
+        `_pintar_no_aplica`.
+        """
+        for familias, lbl in self.lbl_seccion_familia.items():
+            if self.puntos_familia is None:
+                lbl.config(text="— puntos", foreground="#666666")
+                continue
+            partes = []
+            for familia in familias:
+                n = self.puntos_familia.get(familia, 0)
+                partes.append(f"Familia {familia.value}: {n} punto"
+                              + ("" if n == 1 else "s"))
+            texto = " · ".join(partes) + " en el CSV"
+            if any(self.puntos_familia.get(f, 0) for f in familias):
+                lbl.config(text=texto, foreground="#666666")
+            else:
+                lbl.config(text=texto, foreground=COLOR_AVISO)
+
     def _releer_familias(self):
         """
-        Relee del CSV que familias trae el expediente, y reanota la pestana 1.
+        Relee del CSV que familias trae el expediente, y reanota la pestana 1
+        --- la anotacion de cada campo y el conteo de cada encabezado ---.
 
         NO INTERRUMPE NI AVISA SI EL CSV NO SE PUEDE LEER, y es deliberado: se
         dispara al teclear la ruta, de modo que la mitad de las veces el
@@ -518,12 +638,16 @@ class ExpedienteApp:
         ruta = self.csv_var.get().strip()
         if not ruta:
             self.familias_csv = None
+            self.puntos_familia = None
         else:
             try:
                 self.familias_csv = cli.familias_del_csv(Path(ruta))
+                self.puntos_familia = cli.puntos_por_familia(Path(ruta))
             except (OSError, UnicodeDecodeError, ErrorProyecto):
                 self.familias_csv = None
+                self.puntos_familia = None
         self._pintar_no_aplica()
+        self._pintar_encabezados_familia()
 
     def _pintar_no_aplica(self):
         """
@@ -801,7 +925,7 @@ class ExpedienteApp:
         self.btn_aplicar_corrida = BotonAccion(
             f_botones, "Aplicar solo a esta corrida", fondo="#2e86c1", command=self._aplicar_valor_corrida,
             motivo=MOTIVO_SIN_CRITERIO,
-            ayuda="El valor se usa en el proximo EJECUTAR PIPELINE, pero\n"
+            ayuda="El valor se usa en la proxima ejecucion del calculo, pero\n"
                   "criterios_adoptados.py NO se modifica.")
         self.btn_aplicar_corrida.pack(side="left", padx=(0, 8), ipadx=6, ipady=3)
 
@@ -1661,7 +1785,7 @@ class ExpedienteApp:
         self.lbl_error_datos.config(text="")
         ruta_csv_texto = self.csv_var.get().strip()
         if not ruta_csv_texto:
-            self.lbl_error_datos.config(text="Debe seleccionar el CSV de puntos criticos.")
+            self.lbl_error_datos.config(text="Debe seleccionar el CSV de puntos críticos.")
             self.nb.select(self.tab_datos)
             return
         ruta_csv = Path(ruta_csv_texto)
@@ -1703,7 +1827,7 @@ class ExpedienteApp:
             return
         finally:
             self.btn_ejecutar.habilitar()
-            self.btn_ejecutar.config(text="EJECUTAR PIPELINE (M0 -> M10)")
+            self.btn_ejecutar.config(text=TEXTO_BOTON_EJECUTAR)
 
         self._llenar_tabla_puntos()
         self._llenar_resumen()
@@ -1730,7 +1854,7 @@ class ExpedienteApp:
         self.lbl_error_datos.config(text=mensaje)
         self.nb.select(self.tab_datos)
         self.btn_ejecutar.habilitar()
-        self.btn_ejecutar.config(text="EJECUTAR PIPELINE (M0 -> M10)")
+        self.btn_ejecutar.config(text=TEXTO_BOTON_EJECUTAR)
 
     # ------------------------------------------------------------------
     # Volcado a las tablas
