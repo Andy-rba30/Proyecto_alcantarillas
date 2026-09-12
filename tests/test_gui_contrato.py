@@ -489,6 +489,82 @@ def test_la_ventana_declara_por_el_modulo_de_declaracion_y_no_por_su_cuenta():
         "de procedencia, y la memoria no podria decir de donde salio el valor")
 
 
+# ---------------------------------------------------------------------------
+# La traza de procedencia de la pestana 3 (G4): src/ produce, gui/ pinta
+# ---------------------------------------------------------------------------
+
+def test_la_pestana_3_ofrece_la_traza_de_procedencia():
+    """
+    El boton «¿De donde sale este numero?» existe en la pestana 3 y su
+    `command` es el manejador de la traza. Sobre el ARBOL, no sobre el texto:
+    la cadena aparece tambien en docstrings.
+    """
+    funcion = _funcion(ARBOL_GUI, "_construir_tab_puntos")
+    botones = [n for n in ast.walk(funcion)
+               if isinstance(n, ast.Call)
+               and _nombre_de_tipo(n.func) == "BotonAccion"]
+    con_texto = [b for b in botones if any(
+        isinstance(a, ast.Constant) and isinstance(a.value, str)
+        and "De donde sale este numero" in a.value for a in b.args)]
+    assert con_texto, "la pestana 3 ya no ofrece la traza de procedencia"
+    comandos = {kw.value.attr for b in con_texto for kw in b.keywords
+                if kw.arg == "command" and isinstance(kw.value, ast.Attribute)}
+    assert comandos == {"_abrir_traza_punto"}
+
+
+def test_la_traza_la_produce_traza_punto_y_la_gui_solo_pinta():
+    """
+    El mismo reparto que la ventana normativa, comprobado por las dos caras:
+    el manejador CONSUME `traza_punto.traza_del_punto`, y de ese modulo la
+    GUI solo usa lo pintable --- la funcion, los tres registros y el titulo
+    del hueco ---. Si la GUI necesitara mas (una cita, un fundamento, una
+    discrepancia), el sitio donde añadirlo es `src/traza_punto.py`.
+    """
+    abrir = _funcion(ARBOL_GUI, "_abrir_traza_punto")
+    llamadas = [n for n in ast.walk(abrir)
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "traza_del_punto"
+                and isinstance(n.func.value, ast.Name)
+                and n.func.value.id == "tp"]
+    assert llamadas, ("el manejador ya no consume la capa de contenido: la "
+                      "GUI estaria componiendo la traza por su cuenta")
+
+    usos = {n.attr for n in ast.walk(ARBOL_GUI)
+            if isinstance(n, ast.Attribute)
+            and isinstance(n.value, ast.Name) and n.value.id == "tp"}
+    permitidos = {"traza_del_punto", "REGISTRO_FUENTE",
+                  "REGISTRO_INTERPRETACION", "REGISTRO_PROYECTO",
+                  "TITULO_HUECO"}
+    assert usos <= permitidos, (
+        f"gui/app.py usa de traza_punto mas que lo pintable: "
+        f"{sorted(usos - permitidos)}")
+
+
+def test_la_gui_pinta_los_tres_registros_separados_y_no_lee_normativa():
+    """
+    NOR-HID-04 en la pantalla: los tres registros tipograficos de la §4.4 se
+    pintan con estilos DISTINTOS --- el pintor configura un tag por cada uno
+    --- y la GUI no importa `normativa` por su cuenta: todo lo que afirma
+    sobre una norma le llega ya elegido por la capa de contenido.
+    """
+    pintor = _funcion(ARBOL_GUI, "_pintar_traza")
+    registros = {n.attr for n in ast.walk(pintor)
+                 if isinstance(n, ast.Attribute)
+                 and isinstance(n.value, ast.Name) and n.value.id == "tp"
+                 and n.attr.startswith("REGISTRO_")}
+    assert registros == {"REGISTRO_FUENTE", "REGISTRO_INTERPRETACION",
+                         "REGISTRO_PROYECTO"}, (
+        "el pintor dejo de dar estilo propio a cada registro: pegados, los "
+        "tres se leen como norma (NOR-HID-04)")
+
+    for nodo in ast.walk(ARBOL_GUI):
+        if isinstance(nodo, ast.Import):
+            assert not any(a.name.split(".")[0] == "normativa"
+                           for a in nodo.names)
+        if isinstance(nodo, ast.ImportFrom):
+            assert (nodo.module or "").split(".")[0] != "normativa"
+
+
 def test_los_componentes_de_la_gui_estan_en_un_solo_sitio():
     """
     `CLAUDE.md`: «No reinventar los componentes». `Tooltip` y `MarcoScroll`

@@ -169,6 +169,11 @@ from modelos import ErrorProyecto  # noqa: E402
 # ningun calculo: la exportacion sigue pasando por `cli.exportar_pdf`, que es
 # la misma puerta que usa la linea de comandos.
 from modulos import M11_reporte as M11  # noqa: E402
+# La traza de procedencia por punto (G4). El CONTENIDO lo produce
+# `src/traza_punto.py` --- que pasos, en que orden, con que rotulos y en cual
+# de los tres registros tipograficos va cada linea ---; aqui solo se pinta.
+# Mismo reparto que `ventana_normativa`, y por las mismas razones.
+import traza_punto as tp  # noqa: E402
 
 # `ayuda_ent` y no `ayuda`: `ayuda` es el nombre de la variable de bucle de
 # CAMPOS_EXTERNOS, en `_construir_tab_datos`, que es la MISMA funcion donde
@@ -204,6 +209,7 @@ MOTIVO_SIN_CRITERIO = "no hay ningun criterio seleccionado en la tabla"
 MOTIVO_NO_DECLARADO = "el criterio no esta declarado para esta corrida"
 MOTIVO_SIN_CORRIDA = "todavia no se ejecuto el pipeline: no hay informe que exportar"
 MOTIVO_EJECUTANDO = "la corrida esta en marcha"
+MOTIVO_SIN_PUNTO = "seleccione un punto en la tabla de arriba"
 
 # Los filtros de estado de la tabla de criterios (pestana 2). Cada entrada es
 # (rotulo, tag), y el `tag` es el MISMO que devuelve `_estado_criterio`: filtrar
@@ -1387,8 +1393,23 @@ class ExpedienteApp:
         self.tree_puntos.configure(yscroll=scroll.set)
         scroll.grid(row=0, column=1, sticky="ns")
 
-        ttk.Label(p, text="Detalle del punto seleccionado", style="Header.TLabel",
-                  padding=(10, 0)).grid(row=1, column=0, sticky="w")
+        f_encabezado = ttk.Frame(p, padding=(10, 0))
+        f_encabezado.grid(row=1, column=0, sticky="ew")
+        ttk.Label(f_encabezado, text="Detalle del punto seleccionado",
+                  style="Header.TLabel").pack(side="left")
+        # La traza de procedencia (G4). El contenido lo produce
+        # `src/traza_punto.py`; el boton solo abre la ventana que lo pinta.
+        self.btn_traza = BotonAccion(
+            f_encabezado, "¿De donde sale este numero?", fondo="#2e86c1",
+            command=self._abrir_traza_punto, motivo=MOTIVO_SIN_CORRIDA,
+            letra=BotonAccion.DISCRETA,
+            ayuda="Los PasoDeMemoria del punto seleccionado, en el orden en\n"
+                  "que la memoria los imprime: que se calculo y por que, la\n"
+                  "formula con su cita, la sustitucion con la procedencia de\n"
+                  "cada valor, el umbral con su caracter y el veredicto con\n"
+                  "su margen. Las verificaciones sin paso salen con su hueco\n"
+                  "declarado, nunca en blanco.")
+        self.btn_traza.pack(side="left", padx=(12, 0), ipadx=6)
 
         f_detalle = ttk.Frame(p, padding=10)
         f_detalle.grid(row=2, column=0, sticky="nsew")
@@ -1404,15 +1425,103 @@ class ExpedienteApp:
         scroll_det.grid(row=0, column=1, sticky="ns")
 
     def _al_seleccionar_punto(self, _evt=None):
-        seleccion = self.tree_puntos.selection()
+        informe_punto = self._punto_seleccionado()
         self.txt_detalle.configure(state="normal")
         self.txt_detalle.delete("1.0", "end")
-        if seleccion and self.informe is not None:
-            id_punto = seleccion[0]
-            informe_punto = next((i for i in self.informe.puntos if i.punto.id == id_punto), None)
-            if informe_punto is not None:
-                self.txt_detalle.insert("1.0", "\n".join(cli._lineas_punto(informe_punto)))
+        if informe_punto is not None:
+            self.txt_detalle.insert("1.0", "\n".join(cli._lineas_punto(informe_punto)))
         self.txt_detalle.configure(state="disabled")
+        self.btn_traza.estado(informe_punto is not None, MOTIVO_SIN_PUNTO)
+
+    def _punto_seleccionado(self):
+        """El InformePunto de la fila seleccionada, o None."""
+        seleccion = self.tree_puntos.selection()
+        if not seleccion or self.informe is None:
+            return None
+        id_punto = seleccion[0]
+        return next((i for i in self.informe.puntos if i.punto.id == id_punto), None)
+
+    def _abrir_traza_punto(self):
+        """
+        «¿De donde sale este numero?»: la traza de procedencia del punto.
+
+        El CONTENIDO --- que pasos, en que orden, con que rotulos y en cual de
+        los tres registros va cada linea --- lo produce
+        `traza_punto.traza_del_punto`, que consume la misma seleccion que
+        M11. Aqui no se decide nada de eso: se pinta.
+        """
+        informe_punto = self._punto_seleccionado()
+        if informe_punto is None:
+            return
+        self._pintar_traza(tp.traza_del_punto(informe_punto))
+
+    def _pintar_traza(self, traza):
+        """
+        Pinta una `TrazaDelPunto` en un Toplevel de solo lectura.
+
+        LOS TRES REGISTROS SE PINTAN DISTINTOS, y no es estilo (NOR-HID-04):
+        lo que la fuente dice va en cursiva sobre fondo neutro (la clase
+        `.fuente` de la memoria HTML), lo que el proyecto lee sobre fondo
+        ambar (`.interpretacion`), y lo que el proyecto hace en texto normal.
+        Los tags reciben el NOMBRE del registro que declara cada
+        `LineaDeTraza`: si la capa de contenido añade un registro nuevo sin
+        estilo, la linea sale en texto normal en vez de perderse.
+        """
+        ventana = tk.Toplevel(self.root)
+        ventana.title(f"Traza de procedencia - {traza.id_punto}")
+        ventana.geometry("980x680")  # literal-ok: tamano inicial de la ventana, px
+        ventana.columnconfigure(0, weight=1)
+        ventana.rowconfigure(0, weight=1)
+
+        texto = tk.Text(ventana, wrap="word", font=("Segoe UI", 9),
+                        padx=12, pady=10)  # literal-ok: margenes del texto, px
+        texto.grid(row=0, column=0, sticky="nsew")
+        scroll = ttk.Scrollbar(ventana, orient="vertical", command=texto.yview)
+        texto.configure(yscroll=scroll.set)
+        scroll.grid(row=0, column=1, sticky="ns")
+
+        texto.tag_configure("titulo_punto", font=("Segoe UI", 12, "bold"),
+                            spacing3=8)  # literal-ok: espaciado, px
+        texto.tag_configure("seccion", font=("Segoe UI", 10, "bold"),
+                            spacing1=12, spacing3=4,  # literal-ok: espaciado, px
+                            underline=True)
+        texto.tag_configure("aviso", foreground=COLOR_AVISO,
+                            lmargin1=12, lmargin2=12)  # literal-ok: sangria, px
+        texto.tag_configure("entrada", font=("Segoe UI", 9, "bold"),
+                            spacing1=8)  # literal-ok: espaciado, px
+        texto.tag_configure("hueco", foreground=COLOR_AVISO,
+                            font=("Segoe UI", 9, "bold"),
+                            spacing1=8)  # literal-ok: espaciado, px
+        texto.tag_configure("rotulo", font=("Segoe UI", 9, "bold"),
+                            lmargin1=16, lmargin2=16)  # literal-ok: sangria, px
+        # Los tres registros de la §4.4, con los mismos papeles que las
+        # clases CSS .fuente / .interpretacion / texto normal de la memoria.
+        texto.tag_configure(tp.REGISTRO_FUENTE, font=("Segoe UI", 9, "italic"),
+                            background="#f7f7f4",
+                            lmargin1=28, lmargin2=28)  # literal-ok: sangria, px
+        texto.tag_configure(tp.REGISTRO_INTERPRETACION, background="#fdf8ee",
+                            lmargin1=28, lmargin2=28)  # literal-ok: sangria, px
+        texto.tag_configure(tp.REGISTRO_PROYECTO,
+                            lmargin1=28, lmargin2=28)  # literal-ok: sangria, px
+
+        texto.insert("end", traza.titulo + "\n", "titulo_punto")
+        texto.insert("end",
+                     "Cursiva sobre fondo gris: lo que la fuente DICE. "
+                     "Fondo ambar: lo que el proyecto LEE. "
+                     "Texto normal: lo que el proyecto HACE.\n", "aviso")
+        for seccion in traza.secciones:
+            texto.insert("end", seccion.titulo + "\n", "seccion")
+            if seccion.aviso:
+                texto.insert("end", seccion.aviso + "\n", "aviso")
+            for entrada in seccion.entradas:
+                tag = ("hueco" if entrada.titulo == tp.TITULO_HUECO
+                       else "entrada")
+                codigo = f"{entrada.codigo} - " if entrada.codigo else ""
+                texto.insert("end", f"{codigo}{entrada.titulo}\n", tag)
+                for linea in entrada.lineas:
+                    texto.insert("end", f"{linea.rotulo}:\n", "rotulo")
+                    texto.insert("end", linea.texto + "\n", linea.registro)
+        texto.configure(state="disabled")
 
     # -------------------------- Pestana 4 -----------------------------
     def _construir_tab_resumen(self, p):

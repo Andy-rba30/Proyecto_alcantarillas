@@ -958,7 +958,7 @@ def _tabla_diseno(informe: Any) -> str:
 # calidad del revestimiento» no esta en el Manual --- nada dice por que hay
 # dos numeros --- y se imprimia dentro del mismo parrafo que la cita.
 
-def _sin_fundamento_por_codigo() -> Dict[str, Tuple[str, str]]:
+def sin_fundamento_por_codigo() -> Dict[str, Tuple[str, str]]:
     """
     El censo de `normativa.fundamentos.SIN_FUNDAMENTO`, indexado por codigo de
     verificacion.
@@ -968,11 +968,99 @@ def _sin_fundamento_por_codigo() -> Dict[str, Tuple[str, str]]:
     se lee como un olvido; con la razon delante se lee como lo que es --- una
     verificacion que hoy no puede tener fundamento normativo --- y ademas dice
     que haria falta para traerlo.
+
+    Publico desde G4: `traza_punto` declara el mismo hueco en la GUI, y dos
+    indexaciones del mismo censo son dos que pueden divergir.
     """
     salida = {}
     for id_paso, por_que, que_haria_falta in _fundamentos.SIN_FUNDAMENTO:
         salida[id_paso.split(".")[-1]] = (por_que, que_haria_falta)
     return salida
+
+
+# ---------------------------------------------------------------------------
+# LA SELECCION de pasos que la memoria publica por punto, separada del HTML.
+#
+# Existe desde G4 porque hay DOS consumidores de la misma decision: este
+# modulo (que la escribe en HTML) y `src/traza_punto.py` (que la sirve a la
+# GUI como dato). La decision --- que pasos de un punto se publican, en que
+# orden y cual escalon se toma cuando el punto no cierra --- es UNA, y
+# escribirla dos veces es como la GUI y la memoria empiezan a contar historias
+# distintas. Estas funciones SELECCIONAN; no formatean ni calculan.
+# ---------------------------------------------------------------------------
+
+TITULO_TRAZA_CLASIFICACION = "Desarrollo de la clasificacion (Fase 2)"
+TITULO_TRAZA_TW = "Obtencion del TW en el cuerpo receptor (Sec. 1.3)"
+TITULO_TRAZA_HIDRAULICA = "Desarrollo del calculo hidraulico (Fases 3 y 4)"
+TITULO_TRAZA_HIDRAULICA_ULTIMO = ("Desarrollo del calculo hidraulico del "
+                                  "ultimo escalon evaluado (Fases 3 y 4)")
+TITULO_TRAZA_VERIFICACIONES = "Desarrollo de cada verificacion"
+
+
+def traza_clasificacion(informe: Any) -> Tuple[Any, ...]:
+    """Los pasos de la Fase 2 que la memoria publica: luz y periodo de retorno."""
+    clasificacion = getattr(informe, "clasificacion", None)
+    if clasificacion is None:
+        return ()
+    pasos = []
+    luz = getattr(clasificacion.verificacion_luz, "paso", None)
+    if luz is not None:
+        pasos.append(luz)
+    tr = getattr(clasificacion.periodo_retorno, "paso", None)
+    if tr is not None:
+        pasos.append(tr)
+    return tuple(pasos)
+
+
+def traza_tw(informe: Any) -> Optional[Any]:
+    """El paso de la Sec. 1.3, o None si el TW no llego a determinarse."""
+    tw = getattr(informe, "tw_sec13", None)
+    return None if tw is None else getattr(tw, "paso", None)
+
+
+def traza_hidraulica(informe: Any) -> Tuple[Tuple[Any, ...], Optional[Any]]:
+    """
+    (pasos, escalon): los pasos hidraulicos que la memoria publica, y el
+    escalon del que salen cuando NO son los de un diseño adoptado.
+
+    `escalon` es None si el punto cerro y los pasos son los de su resultado.
+    Si no cerro, se toma el ULTIMO escalon del bucle que llego a resolver la
+    hidraulica, y se devuelve para que el consumidor lo DIGA: publicar ese
+    desarrollo sin avisar que no es el de un diseño adoptado seria la trampa
+    de NOR-MEM-01 al reves.
+    """
+    resultado = getattr(informe, "resultado", None)
+    if resultado is not None and resultado.resultado_hidraulico is not None:
+        return tuple(resultado.resultado_hidraulico.pasos), None
+    escalones = [p for p in getattr(informe, "traza", ())
+                 if getattr(p, "resultado_hidraulico", None) is not None]
+    if not escalones:
+        return (), None
+    ultimo = escalones[-1]
+    return tuple(ultimo.resultado_hidraulico.pasos), ultimo
+
+
+def verificaciones_publicadas(informe: Any) -> Tuple[Tuple[str, Any], ...]:
+    """
+    Las verificaciones que la memoria publica para un punto, con su fase.
+
+    `informe.verificaciones()` solo trae las del RESULTADO ADOPTADO, y un
+    punto sin dimensionar no tiene ninguno. Las de la Fase 5 que si se
+    evaluaron viven en el ultimo escalon de la traza, y son justamente las que
+    explican por que se descarto --- ver el comentario de `_tabla_
+    verificaciones`, que es de donde esta seleccion se extrajo en G4.
+    """
+    verificaciones = tuple(informe.verificaciones())
+    if not getattr(informe, "dimensionado", True):
+        escalones = [p for p in getattr(informe, "traza", ())
+                     if getattr(p, "verificaciones", ())]
+        if escalones:
+            ultimo = escalones[-1]
+            verificaciones = verificaciones + tuple(
+                (f"Fase 5 - ultimo escalon evaluado ({ultimo.material}, "
+                 f"{ultimo.seccion.etiqueta()})", v)
+                for v in ultimo.verificaciones)
+    return verificaciones
 
 
 def _cita_como_texto(cita_id: str) -> str:
@@ -1221,7 +1309,7 @@ def _paso_ausente(codigo: str) -> str:
     razon distinta que esta escrita. Imprimir el hueco con su razon es lo
     contrario de esconderlo.
     """
-    censo = _sin_fundamento_por_codigo().get(codigo)
+    censo = sin_fundamento_por_codigo().get(codigo)
     if censo is None:
         return ""
     por_que, que_haria_falta = censo
@@ -1240,30 +1328,15 @@ def _tabla_verificaciones(informe: Any) -> str:
     etiqueta: un revisor tiene que poder distinguir de un vistazo lo que se
     contrasto contra la norma de lo que se contrasto contra una adopcion.
     """
-    verificaciones = informe.verificaciones()
-    # `getattr` y no acceso directo: esta funcion se prueba tambien con un
-    # informe minimo que solo expone `verificaciones()`, y un reporte no se
-    # cae por un atributo que no le hace falta para la fila que esta pintando.
-    if not getattr(informe, "dimensionado", True):
-        # EL PUNTO NO CERRO Y AUN ASI HAY FASE 5 QUE PUBLICAR. `Informe.
-        # verificaciones()` solo trae las del RESULTADO ADOPTADO, y un punto
-        # sin dimensionar no tiene ninguno: lo unico que queda ahi es el
-        # umbral de luz de la Fase 2. Las de la Fase 5 que si se evaluaron
-        # viven en el ultimo escalon de la traza, y son justamente las que
-        # explican por que se descarto.
-        #
-        # No es un caso de borde: en este expediente NINGUN punto se
-        # dimensiona --- V5 se detiene siempre en `ancho_derecho_via_m` ---,
-        # de modo que sin esto la memoria no lleva una sola verificacion
-        # hidraulica de ningun punto. Es la misma trampa de NOR-MEM-01.
-        escalones = [p for p in getattr(informe, "traza", ())
-                     if getattr(p, "verificaciones", ())]
-        if escalones:
-            ultimo = escalones[-1]
-            verificaciones = verificaciones + tuple(
-                (f"Fase 5 - ultimo escalon evaluado ({ultimo.material}, "
-                 f"{ultimo.seccion.etiqueta()})", v)
-                for v in ultimo.verificaciones)
+    # EL PUNTO NO CERRO Y AUN ASI HAY FASE 5 QUE PUBLICAR: la seleccion ---
+    # con `getattr` y no acceso directo, porque esta funcion se prueba tambien
+    # con un informe minimo que solo expone `verificaciones()` --- vive en
+    # `verificaciones_publicadas`, compartida con `traza_punto` desde G4.
+    # No es un caso de borde: en este expediente NINGUN punto se dimensiona
+    # --- V5 se detiene siempre en `ancho_derecho_via_m` ---, de modo que sin
+    # el ultimo escalon la memoria no llevaria una sola verificacion
+    # hidraulica de ningun punto. Es la misma trampa de NOR-MEM-01.
+    verificaciones = verificaciones_publicadas(informe)
     if not verificaciones:
         return ('<div class="nota"><p>Sin verificaciones registradas: el '
                 "punto no alcanzo la Fase 5.</p></div>")
@@ -1332,7 +1405,7 @@ def _tabla_verificaciones(informe: Any) -> str:
             desarrollo.append(bloque_paso(v.paso))
         elif v.codigo:
             desarrollo.append(_paso_ausente(v.codigo))
-    detalle = ("<h4>Desarrollo de cada verificacion</h4>"
+    detalle = (f"<h4>{_esc(TITULO_TRAZA_VERIFICACIONES)}</h4>"
                + "".join(desarrollo)) if any(desarrollo) else ""
     return "<h4>Verificaciones</h4>" \
            '<table class="compacta">' + "".join(filas) + "</table>" \
@@ -1440,17 +1513,8 @@ def _tabla_bloqueos(bloqueos: Sequence[Any]) -> str:
 
 def _pasos_de_clasificacion(informe: Any) -> str:
     """La traza de la Fase 2: denominacion por luz y periodo de retorno."""
-    clasificacion = getattr(informe, "clasificacion", None)
-    if clasificacion is None:
-        return ""
-    pasos = []
-    luz = getattr(clasificacion.verificacion_luz, "paso", None)
-    if luz is not None:
-        pasos.append(luz)
-    tr = getattr(clasificacion.periodo_retorno, "paso", None)
-    if tr is not None:
-        pasos.append(tr)
-    return bloque_pasos(pasos, "Desarrollo de la clasificacion (Fase 2)")
+    return bloque_pasos(traza_clasificacion(informe),
+                        TITULO_TRAZA_CLASIFICACION)
 
 
 def _paso_del_tw(informe: Any) -> str:
@@ -1467,7 +1531,7 @@ def _paso_del_tw(informe: Any) -> str:
     numero en la tabla de diseño, sin procedencia (SIS-B-04).
     """
     tw = getattr(informe, "tw_sec13", None)
-    paso = None if tw is None else getattr(tw, "paso", None)
+    paso = traza_tw(informe)
     if paso is None:
         return ""
     escenarios = ""
@@ -1489,9 +1553,7 @@ def _paso_del_tw(informe: Any) -> str:
               'las unicas verificaciones que dependen del TW, tienen su peor '
               'caso en el TW mayor. Los dos numeros se imprimen para que se '
               'pueda comprobar en vez de creerlo.</p></div>')
-    return bloque_pasos((paso,),
-                        "Obtencion del TW en el cuerpo receptor "
-                        "(Sec. 1.3)") + escenarios
+    return bloque_pasos((paso,), TITULO_TRAZA_TW) + escenarios
 
 
 def _pasos_hidraulicos_del_punto(informe: Any) -> str:
@@ -1503,22 +1565,20 @@ def _pasos_hidraulicos_del_punto(informe: Any) -> str:
     combinacion adoptada. M11 no vuelve a calcular nada: hasta S18 este modulo
     obtenia `y/D` dividiendo aqui mismo, que es SIS-A-07.
     """
-    resultado = getattr(informe, "resultado", None)
-    if resultado is not None and resultado.resultado_hidraulico is not None:
-        return bloque_pasos(resultado.resultado_hidraulico.pasos,
-                            "Desarrollo del calculo hidraulico (Fases 3 y 4)")
-    # EL PUNTO NO CERRO, Y AUN ASI HAY CALCULO QUE PUBLICAR. Se toma el ULTIMO
-    # escalon del bucle que llego a resolver la hidraulica. No es un premio de
-    # consolacion: en este expediente NINGUN punto se dimensiona --- V5 se
-    # detiene siempre en `ancho_derecho_via_m` ---, de modo que sin esto el
-    # desarrollo hidraulico que M3 y M4 si calcularon no llegaria jamas al
-    # revisor. Es la misma trampa de NOR-MEM-01: cierto sobre el codigo y
-    # falso sobre el producto.
-    escalones = [p for p in getattr(informe, "traza", ())
-                 if getattr(p, "resultado_hidraulico", None) is not None]
-    if not escalones:
+    # EL PUNTO PUEDE NO CERRAR, Y AUN ASI HAY CALCULO QUE PUBLICAR: la
+    # seleccion --- el diseño adoptado, o el ULTIMO escalon del bucle que
+    # llego a resolver la hidraulica --- vive en `traza_hidraulica`,
+    # compartida con `traza_punto` desde G4. No es un premio de consolacion:
+    # en este expediente NINGUN punto se dimensiona --- V5 se detiene siempre
+    # en `ancho_derecho_via_m` ---, de modo que sin el ultimo escalon el
+    # desarrollo que M3 y M4 si calcularon no llegaria jamas al revisor. Es
+    # la misma trampa de NOR-MEM-01: cierto sobre el codigo y falso sobre el
+    # producto.
+    pasos, ultimo = traza_hidraulica(informe)
+    if not pasos:
         return ""
-    ultimo = escalones[-1]
+    if ultimo is None:
+        return bloque_pasos(pasos, TITULO_TRAZA_HIDRAULICA)
     aviso = (
         '<div class="aviso"><p><b>Este desarrollo es el del ultimo escalon '
         f"evaluado &mdash; {_esc(ultimo.material)}, "
@@ -1528,10 +1588,7 @@ def _pasos_hidraulicos_del_punto(informe: Any) -> str:
         "el pipeline hizo de verdad y que el revisor necesita para juzgar por "
         "que se descarto ese escalon; el motivo esta en la tabla de "
         "iteraciones.</p></div>")
-    return (aviso
-            + bloque_pasos(ultimo.resultado_hidraulico.pasos,
-                           "Desarrollo del calculo hidraulico del ultimo "
-                           "escalon evaluado (Fases 3 y 4)"))
+    return aviso + bloque_pasos(pasos, TITULO_TRAZA_HIDRAULICA_ULTIMO)
 
 
 def memoria_de_punto(informe: Any) -> str:

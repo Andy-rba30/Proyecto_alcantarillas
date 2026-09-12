@@ -847,7 +847,13 @@ CENSO_DE_MARCAS = {
     # de copiarlos, y sus cuatro marcas viajaron con ellos (tres de offset de
     # tooltip, una del notch de la rueda). Ningun literal nacio ni murio: el
     # censo lo demuestra sumando igual.
-    "gui/app.py": 24,
+    # 24 -> 41 en G4: la ventana de traza de procedencia (`_pintar_traza`)
+    # trae 17 marcas nuevas, todas geometria de presentacion --- el tamano
+    # inicial del Toplevel, margenes y espaciados del Text, y las sangrias de
+    # los tags que separan los tres registros tipograficos ---. Ninguna es
+    # una magnitud del expediente: el contenido lo produce
+    # `src/traza_punto.py`, que no lleva ni un literal.
+    "gui/app.py": 41,
     # La ayuda de entrada de S22. DIEZ literales bajo cinco marcas, y ninguno
     # es una magnitud del expediente: la mascara del bit de Control de Tk
     # (0x4), los dos altos en lineas de las dos cajas copiables --- la cabecera
