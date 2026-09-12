@@ -494,7 +494,12 @@ condición escrita.
   difieren (diámetro 375 y diámetro 825) en vez de elegir una en silencio—.
   El criterio sigue vacío a propósito: quién especifica el producto es el
   proyectista, y ahora tiene la tabla completa para hacerlo.
-- **Abierto:** la mitad del **calibre del TMC por altura de cobertura**.
+- **Abierto:** la mitad del **calibre del TMC por altura de cobertura**. Y un
+  hueco del generador, hallado en I1b y anterior a I1: `src/normativa/
+  manifiesto.py` no emite las `CorrespondenciaDeTablas`, de modo que las dos
+  diferencias declaradas de `CORR-TAMANOS-TMC` (y las de `CORR-RECUBRIMIENTO`)
+  viven solo en el código y no llegan a ningún documento que lea un revisor.
+  Cerrarlo es una sección nueva del manifiesto, no de esta ficha.
 - **Qué haría falta, y no se puede conseguir desde aquí:** **ASTM
   A796/A796M no está en `normas/`** (comprobado: las trece fuentes del
   directorio no la incluyen, y está censada en `FUENTES_AUSENTES`) y figura
@@ -506,9 +511,19 @@ condición escrita.
 
 - **Cerrado:** la comparación que la ficha reclama está **declarada**. La fila
   alternativa (`Circular CM / Headwall`) vive en `sensibilidad`, y
-  `verificacion_pendiente` dice con todas las letras que la fila adoptada da
-  un HW **menor** y que ésa es la dirección insegura para V1, V4 y el
-  resguardo.
+  `verificacion_pendiente` declara la comparación completa entre las dos filas.
+- **Corregido en I1b, y contra la propia ficha:** hasta I1b la declaración
+  copiaba de NOR-ANA-03 que la fila adoptada da un HW **menor** (dirección
+  insegura). La verificación adversarial la **midió** con las constantes del
+  propio criterio y los dominios de M4, y la dirección es la contraria en los
+  tres regímenes vigentes: no sumergida manda K (0.0098 > 0.0078), sumergida
+  la diferencia 0.0019·q*²−0.02 es positiva en todo su dominio (q* ≥ 4.0; el
+  cruce en q* = 3.245 queda fuera, que es donde la ficha evaluó), y la
+  transición es una recta entre dos extremos donde el concreto ya es mayor.
+  La ficha además enumera «c y Y ambos menores» cuando 0.0398 > 0.0379. El
+  defecto se reportó **contra la ficha NOR-ANA-03** en el tracker; la
+  adopción resulta conservadora en dirección, pero se sigue sosteniendo en el
+  argumento físico, no en ese margen.
 - **Abierto:** no se cambia de fila, y es una decisión, no una omisión. La
   adopción se sostiene en el perfil de pared en la boca —argumento físico que
   la ficha no refuta—, no en un margen de seguridad; elegir la fila del metal
@@ -534,8 +549,14 @@ condición escrita.
   `tests/apoyo/gui_smoke_normativa.py` construye la app, puebla las cuatro
   pestañas con el CSV de expediente y abre y cierra la emergente de un
   criterio `de_tabla` por el camino del ratón.
-- **Abierto, y es de entorno y no de tests:** los cuatro tests de ventana
-  se **saltan** donde no hay Tk ni servidor X —la clase de saltos que
+- **Abierto, en dos frentes que conviene no confundir.** (1) De **alcance**,
+  medido en I1b: el smoke abre la emergente de UN criterio `de_tabla`, de
+  modo que de las cuatro caras que `VentanaNormativa._construir` despacha
+  solo la cara TABLA se construye bajo Tk; `_pintar_rango`,
+  `_pintar_catalogo`, `_pintar_campo` y el camino de `_declarar` siguen sin
+  construirse nunca en la suite — el mismo riesgo que el docstring del test
+  describe, en las otras tres caras. (2) De **entorno**: los cuatro tests de
+  ventana se **saltan** donde no hay Tk ni servidor X —la clase de saltos que
   CLAUDE.md censa—, de modo que una integración continua sin entorno gráfico
   sigue sin ejecutarlos.
 - **Qué haría falta:** infraestructura de CI con entorno gráfico

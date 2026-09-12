@@ -2781,9 +2781,9 @@ T_A760_T1 = _tabla(
     id="ASTM_A760.T1",
     cita_id="ASTM_A760.T1",
     titulo_literal="TABLA 1 Tamaños de tubería",
-    # Los tres grupos que la pagina imprime SOBRE las columnas. El primero y
-    # el ultimo llegan rotos por la traduccion («Nominal / Dentro / Diámetro»
-    # por Nominal Inside Diameter) y se transcriben como estan.
+    # Los cuatro grupos que la pagina imprime SOBRE las columnas. El primero
+    # y el ultimo llegan rotos por la traduccion («Nominal / Dentro /
+    # Diámetro» por Nominal Inside Diameter) y se transcriben como estan.
     encabezados_superiores=("Nominal Dentro Diámetro",
                             "Tamaños de corrugación UNA",
                             "Tubo acanalado",
@@ -2917,6 +2917,13 @@ T_M36_T6 = _tabla(
     id="AASHTO_M36.T6",
     cita_id="AASHTO_M36.T6",
     titulo_literal="Table 6—Pipe Sizes",
+    # «Corrugation Sizes» lleva impresa, volada, la llamada a la nota a -- es
+    # el UNICO sitio de la pagina donde esa nota se llama --; las llamadas b
+    # (encabezado 19x19x190) y c (encabezado de circunferencia) tambien son
+    # voladas. En el original son superindices, no texto, y por eso no viajan
+    # dentro de las etiquetas -- a diferencia de la gemela de A760, donde la
+    # traduccion los degrado a palabras («UNA», «segundo») que SI son texto
+    # impreso.
     encabezados_superiores=("Corrugation Sizes", "Ribbed Pipe"),
     texto_previo=Verbatim(
         # El numeral 8.1.1 (pag. impresa M 36-10, PDF 11), que es el que hace
@@ -3035,8 +3042,13 @@ CORR_TAMANOS_TMC = CorrespondenciaDeTablas(
         "tamaño adicional para tuberia Tipo IS, un tipo de esta edicion--; "
         "la Table 6 de M 36 no trae esa marca.",
         "Diametro 825: M 36 marca la corrugacion 125 by 25 mm; la Tabla 1 "
-        "de A760-10 no la marca. Es la unica celda en que la edicion nueva "
-        "QUITA una marca, y por eso el cruce exige citar la edicion.",
+        "de A760-10 no la marca. Es la unica celda en que el ejemplar nuevo "
+        "QUITA una marca -- atribuible a la edicion o a la traduccion, sin "
+        "certeza (la Interpretacion de T1 lo declara) --, y por eso el "
+        "cruce exige citar la edicion.",
+        "La nota al pie b de M 36 (los dos rib sizes) no tiene equivalente "
+        "impreso en la Tabla 1 de A760: A760 imprime solo las notas "
+        "A/B/c (aqui «UNA»/«segundo»/«c»).",
         "A760 (traduccion) imprime ademas las columnas en pulgadas "
         "(diametro nominal y circunferencia minima); M 36 imprime solo mm.",
         "El PDF de A760 es una traduccion al español con rotulos degradados "

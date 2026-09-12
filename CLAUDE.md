@@ -358,10 +358,11 @@ regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 - `tests/test_MD.py` — el `skipped` **permanente** por condición imposible:
   su `skipif` guarda que `M5_verificaciones` no exista, y ya no puede darse.
 - `tests/test_gui_contrato.py` — los tests de **ventana real**, que hoy son
-  **cuatro** (S20 abrió el primero, S22 el de la ayuda de entrada, I1 el
-  smoke que construye la app con las cuatro pestañas pobladas y abre y
-  cierra `gui/ventana_normativa.py`, que hasta entonces no se construía
-  nunca bajo Tk). Se saltan
+  **cuatro** (S20 abrió el primero, la corrida de perfil; S22 el de la ayuda
+  de entrada; G1 el de la selección real de la pestaña 2, que sobrevive al
+  filtro; I1 el smoke que construye la app con las cuatro pestañas pobladas
+  y abre y cierra `gui/ventana_normativa.py`, que hasta entonces no se
+  construía nunca bajo Tk). Se saltan
   cuando ningún intérprete disponible puede levantar un `Tk`: falta `tkinter`,
   falta `ttkbootstrap` o falta entorno gráfico.
 - `tests/test_familias_del_csv.py` — **tres** saltos de DISEÑO, no de entorno,

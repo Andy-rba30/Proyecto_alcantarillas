@@ -269,12 +269,16 @@ AASHTO_M36 = Fuente(
     titulo=("AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers "
             "and Drains»"),
     emisor="AASHTO",
-    # LO QUE LA PORTADA ROTULA (verificado por imagen en I1): «AASHTO
-    # Designation: M 36-03 (2007)» y, debajo, «ASTM Designation:
-    # A 760/A 760M-01a»; el pie de cada pagina dice «(c) 2008», que es el
-    # año de impresion del tomo, no el de la edicion. Hasta I1 aqui decia
-    # edicion="M 36" y anio=2006, un año que no aparece en ninguna pagina
-    # de la fuente.
+    # LO QUE LA PORTADA ROTULA (verificado por imagen en I1, re-verificado en
+    # I1b): «AASHTO Designation: M 36-03 (2007)» y, debajo, «ASTM
+    # Designation: A 760/A 760M-01a»; el pie de las paginas con contenido
+    # dice «(c) 2008» (la caratula y la PDF 6 no llevan pie), que es el año
+    # de impresion del tomo, no el de la edicion. `anio=2007` es LECTURA del
+    # «(2007)» de la portada -- el año de reaprobacion; «-03» es el de
+    # aprobacion --, no un rotulo que diga «edicion 2007». Hasta I1 aqui
+    # decia edicion="M 36" y anio=2006, un año que no aparece en la portada
+    # ni en ninguna de las paginas verificadas (raster: no se puede barrer
+    # con grep, solo renderizar).
     edicion="M 36-03 (2007)",
     anio=2007,
     archivo_pdf=("normas/AASHTO M 36 Corrugated Steel Pipe, Metallic-Coated, "
@@ -294,7 +298,13 @@ AASHTO_M36 = Fuente(
           "vacia en las 24 paginas. Todo dato suyo se verifica renderizando. "
           "Y es la MISMA norma de doble designacion que ASTM A760/A760M, en "
           "edicion anterior: el PDF de A760 rotula «AASHTO No. M 36 / M 36M» "
-          "en su propia portada."),
+          "en su propia portada. AL EJEMPLAR LE FALTA UNA PAGINA IMPRESA "
+          "(hallado en I1b): la PDF 6 esta completamente en blanco y ocupa "
+          "el lugar de la impresa «M 36-5» (aprox. numerales 6.3 a 7.2) -- "
+          "la PDF 5 termina en el 6.2 y la PDF 7 arranca a media frase del "
+          "7.2 --. No rompe la paginacion (la hoja en blanco conserva el "
+          "desfase +1), pero un numeral en ese hueco NO es verificable "
+          "contra este ejemplar."),
 )
 
 ASTM_A760 = Fuente(

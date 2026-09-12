@@ -877,7 +877,6 @@ H_O_HW_SOBRE_D_CAUTELA = 1.2        # HW/D por debajo del cual la fuente pide
 # 3.32). Impresa como igualdad esta en la edicion de 1985 que tambien vive en
 # normas/, dentro de su procedimiento paso a paso (PDF 67):
 H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
-# Lo que el proyecto hace con la condicion, y que NO puede hacer:
 # EL PAQUETE DE IMPLEMENTACION DEL PROCEDIMIENTO DE BARRIL PARCIALMENTE
 # LLENO, evaluado y escrito en I1 (2026-09-12) para la sesion que lo
 # implemente (NOR-HDS-05; la ficha de docs/decisiones_diferidas.md cita este
@@ -912,6 +911,7 @@ H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
 #   5. LOS DORADOS NO SE FABRICAN: un caso patron de perfil necesita una
 #      corrida de referencia externa citable (HY-8 u otra), que es la misma
 #      regla del conflicto #7.
+# Lo que el proyecto hace con la condicion, y que NO puede hacer:
 H_O_CONDICION_APLICACION = (
     "h_o se calcula SIEMPRE, y de las tres condiciones que la fuente le pone "
     "el proyecto EVALUA dos y declara la tercera. "
