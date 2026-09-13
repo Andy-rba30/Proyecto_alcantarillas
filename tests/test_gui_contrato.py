@@ -1428,15 +1428,16 @@ def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
 
 
 # ===========================================================================
-# Los dos filtros derivados de la pestana 2, y la anotacion de la pestana 1
+# Los filtros derivados de la pestana 2, y la anotacion de la pestana 1
 # ===========================================================================
 # Se comprueban sobre el ARBOL y no sobre una ventana viva por la misma razon
 # que el resto de este archivo: no hay `tkinter` garantizado en el entorno de
 # la suite. Lo que se persigue aqui no es que los widgets se pinten --- eso lo
 # mira el test de ventana real, que se salta cuando no hay Tk --- sino que
-# NINGUNO DE LOS DOS FILTROS CALCULE SU PROPIA RESPUESTA: si la pestana 2
-# decidiera por su cuenta que criterios puede invocar un alcance, seria una
-# segunda clasificacion capaz de contradecir a la del informe.
+# NINGUNO DE LOS FILTROS DERIVADOS CALCULE SU PROPIA RESPUESTA: si la pestana
+# 2 decidiera por su cuenta que criterios puede invocar un alcance --- o que
+# fase consume cada variable ---, seria una segunda clasificacion capaz de
+# contradecir a la del informe o a la del censo.
 
 
 def _llamadas_de(funcion):
@@ -1545,6 +1546,154 @@ def test_el_recuento_dice_el_total_y_lo_que_el_filtro_esconde():
     assert orden_conteo < orden_filtro, (
         "los pendientes se estan contando DESPUES de filtrar: el recuento "
         "dejaria de ser el del expediente y pasaria a ser el de la vista")
+
+
+# ---------------------------------------------------------------------------
+# G2 - el filtro de FASE: derivado del censo, compuesto, sin mover el recuento
+# ---------------------------------------------------------------------------
+
+
+def test_las_opciones_del_filtro_de_fase_son_las_fases_del_censo(app):
+    """
+    Contrato central del filtro de FASE (G2), comprobado por MUTACION
+    funcional: las opciones son EXACTAMENTE
+    `{variables_entrada.variable(clave).fase for clave in ca.CRITERIOS}`,
+    calculado AQUI por su cuenta y comparado conjunto a conjunto. Una lista
+    escrita en `gui/` puede coincidir hoy; deja de coincidir el dia que el
+    censo mueva una variable de fase --- que es exactamente lo que S21 midio
+    con `factores_carga_aashto` ---, y este test la caza entonces sin que
+    nadie tenga que acordarse del combo.
+    """
+    import criterios_adoptados as ca
+    import variables_entrada as ve
+
+    esperadas = sorted({ve.variable(clave).fase for clave in ca.CRITERIOS})
+    assert app._fases_del_censo() == esperadas, (
+        "las opciones del filtro de fase divergen del censo: o hay una lista "
+        "escrita en gui/, o la derivacion dejo de leer `variables_entrada`")
+    # Y son varias: un combo con una sola fase (o ninguna) diria que la
+    # derivacion se rompio aunque la igualdad de arriba quedara vacua.
+    assert len(esperadas) > 1
+
+
+def test_la_derivacion_de_fases_no_contiene_ninguna_cadena_escrita():
+    """
+    La mitad AST del contrato: `_fases_del_censo` no contiene NI UNA cadena
+    ademas de su docstring. No hay una fase escrita «por si acaso», ni un
+    separador con el que partir las compuestas --- partirlas seria una
+    segunda regla sobre el « · » que `variables_entrada._fase` compone, y la
+    variable que consumen dos fases aparece con las dos, que es lo cierto.
+    """
+    funcion = _funcion(ARBOL_GUI, "_fases_del_censo")
+    # El docstring se excluye por POSICION (primera sentencia), no por texto:
+    # `ast.get_docstring` lo devuelve dedentado y no igualaria a la constante.
+    cuerpo = funcion.body
+    if (cuerpo and isinstance(cuerpo[0], ast.Expr)
+            and isinstance(cuerpo[0].value, ast.Constant)):
+        cuerpo = cuerpo[1:]
+    cadenas = [n.value for sentencia in cuerpo for n in ast.walk(sentencia)
+               if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+    assert cadenas == [], (
+        "`_fases_del_censo` contiene cadenas escritas: la lista de fases "
+        "tiene que salir del censo, no de gui/")
+    llamadas = _llamadas_de(funcion)
+    assert "ve.variable" in llamadas, (
+        "la derivacion dejo de leer `variables_entrada.variable`")
+    assert "ca.CRITERIOS" in ast.unparse(funcion), (
+        "la derivacion dejo de recorrer las claves de `ca.CRITERIOS`")
+
+
+def test_el_combo_de_fase_se_llena_con_la_derivacion():
+    """
+    El combo no tiene otra fuente: sus `values` son el rotulo de «sin filtro»
+    mas `_fases_del_censo()`. Si alguien le pasara una lista propia, la
+    derivacion existiria y el combo la ignoraria --- el test de arriba
+    seguiria verde y la ventana mentiria igual.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_criterios"))
+    assert "[FILTRO_FASE_TODAS] + _fases_del_censo()" in fuente, (
+        "el combo de fase dejo de llenarse con `_fases_del_censo`")
+    assert "self.filtro_fase_var" in fuente
+
+
+def test_el_filtro_de_fase_compone_en_Y_con_los_otros_tres(ventana):
+    """
+    Y logico, comprobado EJECUTANDO `_encaja_en_el_filtro` (logica pura, sin
+    widgets): con fase y texto puestos a la vez pasa exactamente la
+    interseccion, y la fase de cada fila se compara contra la MISMA
+    atribucion del censo de la que salen las opciones.
+    """
+    import criterios_adoptados as ca
+    import variables_entrada as ve
+
+    class _Var:
+        def __init__(self, valor):
+            self._valor = valor
+
+        def get(self):
+            return self._valor
+
+    import gui.app as gapp
+
+    fases = gapp._fases_del_censo()
+    # La fase mas poblada, para que la interseccion con el texto no sea
+    # trivialmente vacia.
+    fase = max(fases, key=lambda f: sum(
+        1 for c in ca.CRITERIOS if ve.variable(c).fase == f))
+
+    ventana._claves_ambito = None
+    ventana._clave_criterio_seleccionado = None
+    ventana.filtro_estado_var = _Var(gapp.FILTROS_DE_ESTADO[0][0])
+    ventana.filtro_texto_var = _Var("")
+    ventana.filtro_fase_var = _Var(fase)
+
+    solo_fase = {c for c in ca.CRITERIOS
+                 if ventana._encaja_en_el_filtro(c, "pendiente")}
+    assert solo_fase == {c for c in ca.CRITERIOS
+                         if ve.variable(c).fase == fase}, (
+        "el filtro de fase no aplica la atribucion del censo")
+
+    texto = sorted(solo_fase)[0][:4].lower()
+    ventana.filtro_texto_var = _Var(texto)
+    con_texto = {c for c in ca.CRITERIOS
+                 if ventana._encaja_en_el_filtro(c, "pendiente")}
+    esperado = {c for c in solo_fase
+                if texto in c.lower() or texto in ca.criterio(c).concepto.lower()}
+    assert con_texto == esperado, (
+        "fase y texto no se componen en Y: uno esta sustituyendo al otro")
+    assert con_texto <= solo_fase
+
+    # Y con «Todas» el filtro de fase no aparta nada: es el neutro del Y.
+    ventana.filtro_texto_var = _Var("")
+    ventana.filtro_fase_var = _Var(gapp.FILTRO_FASE_TODAS)
+    assert {c for c in ca.CRITERIOS
+            if ventana._encaja_en_el_filtro(c, "pendiente")} == set(ca.CRITERIOS)
+
+
+def test_el_filtro_de_fase_no_cambia_la_base_del_recuento():
+    """
+    La fase filtra por el MISMO camino que los otros tres ---
+    `_encaja_en_el_filtro`, que `_llenar_tabla_criterios` consulta DESPUES de
+    contar pendientes ---, de modo que el contrato del recuento («pendientes
+    sobre el archivo entero, escondidos del filtro combinado») lo cubre sin
+    una segunda regla. Este test fija que el camino siga siendo ese: una rama
+    de fase metida en `_llenar_tabla_criterios` antes del conteo moveria la
+    base sin tocar `_pintar_recuento`.
+    """
+    encaja = ast.unparse(_funcion(ARBOL_GUI, "_encaja_en_el_filtro"))
+    assert "_fase_del_filtro" in encaja, (
+        "la condicion de fase salio de `_encaja_en_el_filtro`: ya no compone "
+        "con la excepcion de la fila seleccionada ni con el recuento")
+    assert "ve.variable" in encaja, (
+        "la fila dejo de compararse contra la atribucion del censo")
+    llenar = ast.unparse(_funcion(ARBOL_GUI, "_llenar_tabla_criterios"))
+    assert "_fase_del_filtro" not in llenar and "filtro_fase_var" not in llenar, (
+        "hay una rama de fase propia en `_llenar_tabla_criterios`: filtraria "
+        "por fuera de `_pasa_el_filtro` y la base del recuento se moveria")
+    # Y el combo repinta al elegir: la traza incluye a `filtro_fase_var`.
+    construir = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_criterios"))
+    assert "self.filtro_fase_var)" in construir.replace("\n", ""), (
+        "`filtro_fase_var` no esta en la traza que repinta la tabla")
 
 
 def test_la_anotacion_de_familias_no_deshabilita_ningun_campo():

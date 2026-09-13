@@ -34,7 +34,7 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
                             llevan su icono «i», que abre la AYUDA DERIVADA
                             (ver mas abajo).
     2. Criterios           Los criterios adoptados y su estado, con FILTRO
-                            (por estado, por AMBITO y por texto) y RECUENTO de
+                            (por estado, por AMBITO, por FASE y por texto) y RECUENTO de
                             pendientes; la ventana normativa de cada variable
                             (Sec. 4.2/4.3 del plan); y el unico sitio de la
                             interfaz que REESCRIBE `criterios_adoptados.py`
@@ -91,6 +91,22 @@ que el programa TIENE y que no llegaba a la pantalla.
   FILTRAR NO ES OCULTAR: el recuento sigue contando los pendientes sobre los
   69 del archivo y dice ademas cuantas filas esconde el filtro. Un criterio
   que no se ve es un criterio que el proyectista no sabe que existe.
+- **No se podia mirar la tabla en el orden en que se disena.** La fase es el
+  orden mental del proyectista --- primero el periodo de retorno, despues la
+  hidraulica, al final el cabezal --- y la tabla solo se dejaba recorrer por
+  clave alfabetica. El filtro de FASE (G2) la corta por ese eje, y sus
+  opciones son DERIVADAS: salen de `variables_entrada.variable(clave).fase`
+  para las claves de `ca.CRITERIOS` (`_fases_del_censo`), nunca de una lista
+  escrita aqui. Se compone con los otros tres filtros (Y logico) y el
+  recuento sigue con la misma base: pendientes sobre el archivo entero,
+  escondidos del filtro COMBINADO.
+  Por fase y NO POR FAMILIA, y el orden de las dos decisiones importa: no
+  existe hoy ninguna fuente derivable de que criterios aplica cada familia
+  (los criterios no declaran familia), y una lista a mano criterio->familia
+  seria la clase de clasificacion escrita que `Criterio.nivel` vino a
+  erradicar. Si algun dia se quiere, se hace como se hizo `nivel`: midiendo
+  corridas por familia (el molde es `tests/test_nivel_medido.py`). La razon
+  completa esta en `docs/planes_mejora/01_PLAN_GUI.md`, seccion G2.
 - **Un boton apagado no decia por que.** Ver `gui/componentes.BotonAccion`.
 
 Que tiene que traer cada archivo: la ayuda DERIVADA (pestana 1)
@@ -287,6 +303,32 @@ FILTROS_DE_AMBITO = (
 
 MOTIVO_SIN_CORRIDA_FILTRO = (
     "todavia no se ejecuto el pipeline: no hay corrida cuyos bloqueos filtrar")
+
+# El filtro de FASE de la tabla de criterios (pestana 2, G2). Cuarta pregunta,
+# distinta de las otras tres: el estado dice como esta un criterio, el ambito
+# si esta corrida lo puede necesitar, el texto donde esta --- y la fase dice
+# EN QUE MOMENTO DEL DISEÑO se usa, que es el orden en que el proyectista
+# piensa el expediente. La unica opcion escrita aqui es el rotulo de "sin
+# filtro"; las fases mismas las da el censo (`_fases_del_censo`).
+FILTRO_FASE_TODAS = "Todas"
+
+
+def _fases_del_censo():
+    """
+    Las opciones del filtro de fase, DERIVADAS del censo: la fase de cada una
+    de las claves de `criterios_adoptados.CRITERIOS` segun
+    `variables_entrada.variable(clave).fase`, sin repetir y ordenadas.
+
+    NINGUNA FASE SE ESCRIBE EN ESTE ARCHIVO, y es la misma regla que gobierna
+    los dos ejes del filtro de ambito: una lista de fases escrita en la GUI
+    estaria bien el dia que se escribe y mentiria el dia que el censo mueva
+    una variable de fase --- que es exactamente lo que S21 midio en
+    `variables_entrada._consumo_por_modulo` ---. El texto de cada opcion es la
+    fase TAL COMO EL CENSO LA DICE, compuesta incluida ("Fase 3 ... · Fase 5
+    ..."): partirla aqui seria una segunda regla sobre el separador, y la
+    variable que dos fases consumen aparece con las dos, que es lo cierto.
+    """
+    return sorted({ve.variable(clave).fase for clave in ca.CRITERIOS})
 
 # Banderas globales que acepta `cli.py` fuera del CSV (ver docstring de
 # `cli.py`, seccion "Datos que NO estan en el CSV"). Cada tupla es
@@ -964,6 +1006,24 @@ class ExpedienteApp:
         self.lbl_ambito.grid(row=1, column=3, columnspan=2, sticky="w",
                              pady=(6, 0))
 
+        ttk.Label(f_filtro, text="Fase:").grid(row=2, column=0, sticky="w",
+                                               pady=(6, 0))
+        self.filtro_fase_var = tk.StringVar(value=FILTRO_FASE_TODAS)
+        cmb_fase = ttk.Combobox(
+            f_filtro, textvariable=self.filtro_fase_var, state="readonly",
+            width=64, values=[FILTRO_FASE_TODAS] + _fases_del_censo())
+        cmb_fase.grid(row=2, column=1, columnspan=3, sticky="w",
+                      padx=(6, 16), pady=(6, 0))
+        Tooltip(cmb_fase,
+                "La fase del calculo en que se usa cada criterio, DERIVADA\n"
+                "del censo de variables (variables_entrada): ninguna fase\n"
+                "esta escrita en la ventana. Una opcion compuesta\n"
+                "(«Fase 3 ... · Fase 5 ...») es una variable que consumen\n"
+                "varias fases, tal como el censo la atribuye.\n"
+                "Se aplica JUNTO con los otros tres filtros, no en su lugar,\n"
+                "y el recuento sigue contando los pendientes sobre el archivo\n"
+                "entero y diciendo cuantas filas esconde el filtro combinado.")
+
         ttk.Label(f_filtro, text="Buscar:").grid(row=0, column=2, sticky="w")
         self.filtro_texto_var = tk.StringVar()
         ent_buscar = ttk.Entry(f_filtro, textvariable=self.filtro_texto_var, width=28)
@@ -1156,7 +1216,7 @@ class ExpedienteApp:
         # antes de que existan las tres deja la ventana a merced del orden en
         # que se escriban las variables.
         for var in (self.filtro_estado_var, self.filtro_texto_var,
-                    self.filtro_ambito_var):
+                    self.filtro_ambito_var, self.filtro_fase_var):
             var.trace_add("write", lambda *_a: self._llenar_tabla_criterios())
         self._llenar_tabla_criterios()
 
@@ -1249,6 +1309,18 @@ class ExpedienteApp:
                 return tag
         return None
 
+    def _fase_del_filtro(self):
+        """
+        La fase que pide el filtro, o None si «Todas».
+
+        El rotulo ES el valor: las opciones del combo son las fases del censo
+        tal cual (`_fases_del_censo`), sin tabla de traduccion en medio ---
+        una tabla rotulo->fase seria una segunda copia de la lista que este
+        filtro se prohibe escribir.
+        """
+        rotulo = self.filtro_fase_var.get()
+        return None if rotulo == FILTRO_FASE_TODAS else rotulo
+
     def _pasa_el_filtro(self, clave, tag):
         """
         Si esta fila se pinta con el filtro puesto.
@@ -1268,18 +1340,26 @@ class ExpedienteApp:
 
     def _encaja_en_el_filtro(self, clave, tag):
         """
-        Si la fila cumple los TRES filtros, sin la excepcion de la seleccionada.
+        Si la fila cumple los CUATRO filtros, sin la excepcion de la seleccionada.
 
-        Los tres se aplican JUNTOS y no en lugar unos de otros: «solo
-        PENDIENTES» dentro del alcance de perfil es la pregunta con la que se
-        abre esta pestana, y contestarla con dos pasadas obligaria a recordar
-        cual estaba puesto.
+        Los cuatro se aplican JUNTOS y no en lugar unos de otros: «solo
+        PENDIENTES» de la Fase 9 dentro del alcance de expediente es la clase
+        de pregunta con la que se abre esta pestana, y contestarla con dos
+        pasadas obligaria a recordar cual estaba puesto.
+
+        La fase de la fila NO se deduce aqui: la dice el censo
+        (`ve.variable(clave).fase`), que es el mismo dato del que salen las
+        opciones del combo. Comparar contra otra atribucion seria un filtro
+        que ofrece unas fases y aplica otras.
         """
         if (self._claves_ambito is not None
                 and clave not in self._claves_ambito):
             return False
         pedido = self._tag_del_filtro()
         if pedido is not None and tag != pedido:
+            return False
+        fase = self._fase_del_filtro()
+        if fase is not None and ve.variable(clave).fase != fase:
             return False
         texto = self.filtro_texto_var.get().strip().lower()
         if not texto:
