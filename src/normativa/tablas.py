@@ -1634,13 +1634,16 @@ T_MP_F_PGA = _tabla(
     ),
     filas=_FILAS_F_PGA,
     notas_al_pie=(
+        # R3b: tildes verificadas contra la pagina renderizada (PDF 124).
+        # «geotecnicas» y «especificas» van sin tilde porque ASI las imprime
+        # la fuente: son erratas del PDF y T21 manda conservarlas.
         NotaAlPie(marca="1", texto=Verbatim(
-            texto=("Usar linea recta de interpolacion para valores "
+            texto=("Usar línea recta de interpolación para valores "
                    "intermedios de PGA."),
             pagina_pdf=124)),
         NotaAlPie(marca="2", texto=Verbatim(
             texto=("Llevar a cabo investigaciones geotecnicas especificas del "
-                   "sitio y analisis de respuesta dinamica de sitio, para "
+                   "sitio y análisis de respuesta dinámica de sitio, para "
                    "todos los sitios en sitio clase F"),
             pagina_pdf=124)),
     ),

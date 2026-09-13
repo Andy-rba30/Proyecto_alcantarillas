@@ -965,9 +965,9 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | E |  | 2.5 | 1.7 | 1.2 | 0.9 | 0.9 | pendiente |
 | F |  | * | * | * | * | * | pendiente |
 
-> 1 Usar linea recta de interpolacion para valores intermedios de PGA.
+> 1 Usar línea recta de interpolación para valores intermedios de PGA.
 
-> 2 Llevar a cabo investigaciones geotecnicas especificas del sitio y analisis de respuesta dinamica de sitio, para todos los sitios en sitio clase F
+> 2 Llevar a cabo investigaciones geotecnicas especificas del sitio y análisis de respuesta dinámica de sitio, para todos los sitios en sitio clase F
 
 ### `MP.TGAMMA_P` — Tabla 2.4.5.3.1-2 Factores de carga para cargas permanentes, γp
 
