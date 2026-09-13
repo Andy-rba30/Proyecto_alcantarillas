@@ -53,13 +53,22 @@ def main(destino: Path) -> int:
     raiz.withdraw()
     obs = {}
     try:
-        for pestana in (ayuda_gui.PESTANA_CSV, ayuda_gui.PESTANA_JSON):
+        for pestana in (ayuda_gui.PESTANA_CSV, ayuda_gui.PESTANA_JSON,
+                        ayuda_gui.PESTANA_CONCEPTOS):
             v = ayuda_gui.VentanaAyudaEntrada(raiz, pestana)
             v.update()
             obs[f"pestana_activa_{pestana}"] = v.nb.tab(
                 v.nb.select(), "text").strip()
             obs[f"filas_csv_{pestana}"] = list(v.tree_csv.get_children())
             obs[f"filas_json_{pestana}"] = list(v.tree_json.get_children())
+            obs[f"filas_glosario_{pestana}"] = list(
+                v.tree_glosario.get_children())
+            # El texto de conceptos se captura una vez: es el mismo en las
+            # tres construcciones, y lo que el test compara es que la ventana
+            # pinte LO QUE LE DAN, no tres copias de lo mismo.
+            if pestana == ayuda_gui.PESTANA_CONCEPTOS:
+                obs["texto_conceptos"] = v.txt_conceptos.get(
+                    "1.0", "end").strip()
 
             # El detalle responde a la SELECCION REAL, con `update()` para que
             # el bucle procese el evento encolado.

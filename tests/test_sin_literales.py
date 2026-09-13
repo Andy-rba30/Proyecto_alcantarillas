@@ -854,13 +854,14 @@ CENSO_DE_MARCAS = {
     # una magnitud del expediente: el contenido lo produce
     # `src/traza_punto.py`, que no lleva ni un literal.
     "gui/app.py": 41,
-    # La ayuda de entrada de S22. DIEZ literales bajo cinco marcas, y ninguno
+    # La ayuda de entrada de S22, mas la pestana de conceptos de G5. Ninguno
     # es una magnitud del expediente: la mascara del bit de Control de Tk
     # (0x4), los dos altos en lineas de las dos cajas copiables --- la cabecera
-    # del CSV y el esqueleto del JSON --- y los dos pesos del `PanedWindow` que
-    # reparte tabla y detalle. Los anchos de las columnas del Treeview NO estan
-    # aqui: van dentro de la llamada al widget y el barrido ya los exime.
-    "gui/ayuda_entrada.py": 10,
+    # del CSV y el esqueleto del JSON ---, los pesos de los DOS `PanedWindow`
+    # (tabla/detalle del CSV, y prosa/glosario de conceptos) y los anchos de
+    # las columnas del Treeview del glosario, que son tupla de modulo y no
+    # argumento directo del widget.
+    "gui/ayuda_entrada.py": 16,
     "gui/componentes.py": 4,
     # Los tres cuerpos de letra de la ventana. Estan nombrados --- y no
     # escritos dentro de cada llamada --- porque un tamano dentro de un

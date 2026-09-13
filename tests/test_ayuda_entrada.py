@@ -509,3 +509,228 @@ def test_la_nota_de_una_columna_llega_a_la_ficha():
     assert con_nota == {"sucs_fundacion", "NF_profundidad_m"}, (
         "cambio el censo de columnas con nota: revisa que la ayuda las siga "
         "pintando todas")
+
+
+# ===========================================================================
+# 7 - La ayuda de conceptos (G5): listas derivadas, parrafos con guardia
+# ===========================================================================
+# El mismo patron de la seccion 1, aplicado a las cuatro listas nuevas: se
+# MUEVE la fuente y se mira si la ayuda se mueve con ella. Donde la lista es
+# derivada y el parrafo es texto a mano (etiquetas, estados), lo que se
+# comprueba es la GUARDIA: una entrada nueva sin parrafo DETIENE la ayuda en
+# vez de omitirse, y con el parrafo puesto aparece sola.
+
+
+def test_toda_familia_del_enum_llega_con_su_perfil(monkeypatch):
+    """
+    Las familias salen de `M1_clasificacion.PERFILES` recorriendo el ENUM.
+    Se mueve el perfil y la ficha se mueve: si la ayuda llevara sus propios
+    rotulos, el nombre cambiado no llegaria.
+    """
+    from dataclasses import replace
+
+    from modulos import M1_clasificacion as m1
+
+    fichas = ay.fichas_de_familias()
+    assert [f.familia for f in fichas] == list(Familia)
+    for ficha in fichas:
+        perfil = m1.PERFILES[ficha.familia]
+        assert ficha.nombre == perfil.nombre
+        assert ficha.origen_del_caudal == perfil.origen_del_caudal, (
+            "el «de donde sale el Q» de la ficha no es el del perfil")
+        assert perfil.nombre in ficha.rotulo
+
+    monkeypatch.setitem(m1.PERFILES, Familia.B,
+                        replace(m1.PERFILES[Familia.B],
+                                nombre="Nombre movido por el test"))
+    movidas = {f.familia: f for f in ay.fichas_de_familias()}
+    assert movidas[Familia.B].nombre == "Nombre movido por el test", (
+        "la ayuda de familias lleva su propia lista de nombres")
+
+
+def test_una_familia_sin_perfil_detiene_la_ayuda(monkeypatch):
+    """
+    La guardia de la lista: una familia nueva en el enum sin perfil en
+    `PERFILES` no se puede describir sin inventarla, asi que la ayuda se
+    detiene con KeyError en vez de omitir la fila --- que es como una tabla
+    escrita a mano se quedaria callada.
+    """
+    from modulos import M1_clasificacion as m1
+
+    monkeypatch.delitem(m1.PERFILES, Familia.C)
+    with pytest.raises(KeyError, match="no tiene perfil"):
+        ay.fichas_de_familias()
+
+
+def test_las_etiquetas_son_las_de_la_taxonomia_y_en_su_orden():
+    """
+    La LISTA sale de `criterios_adoptados.ETIQUETAS_VALIDAS` --- la misma
+    declaracion que la guardia de los criterios aplica --- y en su orden, que
+    es el de mas determinado a mas elegido. Cada fila trae parrafo y archivo,
+    y el archivo EXISTE en src/: un «vive en» que apunte a un modulo retirado
+    mandaria al lector a buscar donde no hay nada.
+    """
+    import criterios_adoptados as ca
+
+    fichas = ay.fichas_de_etiquetas()
+    assert [f.etiqueta for f in fichas] == list(ca.ETIQUETAS_VALIDAS)
+    for f in fichas:
+        assert f.nombre.strip() and f.explicacion.strip(), f.etiqueta
+        assert (SRC / f.archivo).exists(), (
+            f"la etiqueta [{f.etiqueta}] dice vivir en '{f.archivo}', que no "
+            "existe en src/")
+
+
+def test_una_etiqueta_sin_parrafo_o_un_parrafo_sin_etiqueta_fallan(monkeypatch):
+    """
+    LA GUARDIA QUE EL PROMPT DE G5 EXIGE, en las dos direcciones. Una
+    etiqueta nueva sin fila de ayuda no se omite: detiene. Y una fila cuya
+    etiqueta ya no esta en la taxonomia tambien: seria la tabla paralela que
+    este archivo se prohibe, envejeciendo en silencio.
+    """
+    import criterios_adoptados as ca
+
+    monkeypatch.setattr(ca, "ETIQUETAS_VALIDAS",
+                        ca.ETIQUETAS_VALIDAS + ("X",))
+    with pytest.raises(KeyError, match="'X'"):
+        ay.fichas_de_etiquetas()
+
+    monkeypatch.setattr(ca, "ETIQUETAS_VALIDAS", ("N", "A"))
+    with pytest.raises(KeyError, match="ya no tiene"):
+        ay.fichas_de_etiquetas()
+
+
+def test_los_estados_son_los_de_la_tabla_de_criterios():
+    """
+    Los cuatro primeros estados se DERIVAN del arbol de `gui/app.py`
+    (`FILTROS_DE_ESTADO` para la lista y el orden, los `return` de
+    `_estado_criterio` para el rotulo), y aqui se contrastan con una lectura
+    INDEPENDIENTE del mismo arbol. Despues vienen los dos conceptos del
+    pipeline, cada uno anclado al simbolo del que sale --- y las anclas se
+    comprueban contra el simbolo real, no contra un texto.
+    """
+    import ast as ast_mod
+    from dataclasses import fields
+
+    import criterios_adoptados as ca
+    from modelos import TipoDeVeredicto
+
+    arbol = ast_mod.parse((RAIZ / "gui" / "app.py").read_text(
+        encoding="utf-8"))
+    filtros = next(ast_mod.literal_eval(n.value) for n in ast_mod.walk(arbol)
+                   if isinstance(n, ast_mod.Assign)
+                   and any(isinstance(t, ast_mod.Name)
+                           and t.id == "FILTROS_DE_ESTADO"
+                           for t in n.targets))
+    retornos = {}
+    for n in ast_mod.walk(arbol):
+        if isinstance(n, ast_mod.FunctionDef) and n.name == "_estado_criterio":
+            for r in ast_mod.walk(n):
+                if isinstance(r, ast_mod.Return):
+                    rotulo, tag = ast_mod.literal_eval(r.value)
+                    retornos[tag] = rotulo
+    tags_gui = [tag for _rotulo, tag in filtros if tag is not None]
+
+    fichas = ay.fichas_de_estados()
+    de_la_tabla = [f for f in fichas
+                   if f.origen == "gui/app.py::_estado_criterio"]
+    assert [f.tag for f in de_la_tabla] == tags_gui, (
+        "los estados de la ayuda no son los de la tabla de criterios")
+    for f in de_la_tabla:
+        assert f.rotulo == retornos[f.tag], (
+            f"el rotulo de '{f.tag}' no es el que _estado_criterio devuelve")
+
+    conceptos = {f.tag: f for f in fichas if f not in de_la_tabla}
+    assert set(conceptos) == {"vacio_verificado",
+                              TipoDeVeredicto.DIFERIDO.value}
+    assert "vacio_verificado" in {c.name for c in fields(ca.Criterio)}, (
+        "el ancla del vacio verificado desaparecio del Criterio y la ayuda "
+        "sigue mostrandolo")
+    assert conceptos["diferido"].rotulo == TipoDeVeredicto.DIFERIDO.value
+    for f in fichas:
+        assert f.explicacion.strip(), f.tag
+
+
+def test_un_estado_nuevo_exige_su_parrafo_y_con_el_aparece_solo(
+        tmp_path, monkeypatch):
+    """
+    EL TEST QUE PIDE EL PROMPT DE G5 («añade un estado y la ayuda lo recoge
+    sin tocar gui/ayuda_entrada.py»). Se escribe una copia de `gui/app.py`
+    con un estado mas --- en el filtro Y en `_estado_criterio`, que es donde
+    un estado real naceria --- y se mira lo que hace la ayuda: sin parrafo,
+    DETIENE con el nombre del estado; con el parrafo puesto en
+    `src/ayuda_entrada.py`, la fila aparece con el rotulo de la GUI, sin
+    tocar la ventana.
+    """
+    fuente = (RAIZ / "gui" / "app.py").read_text(encoding="utf-8")
+    ancla_filtro = '    ("Resueltos en el archivo", "resuelto"),'
+    ancla_retorno = '        return "resuelto", "resuelto"'
+    assert ancla_filtro in fuente and ancla_retorno in fuente, (
+        "cambiaron las anclas de gui/app.py: actualiza este test")
+    copia = tmp_path / "app_con_estado_nuevo.py"
+    copia.write_text(
+        fuente
+        .replace(ancla_filtro,
+                 ancla_filtro + '\n    ("De prueba", "estado_de_prueba"),')
+        .replace(ancla_retorno,
+                 ancla_retorno + '\n        return "de prueba", '
+                                 '"estado_de_prueba"'),
+        encoding="utf-8")
+
+    with pytest.raises(KeyError, match="estado_de_prueba"):
+        ay.fichas_de_estados(ruta_gui=copia)
+
+    monkeypatch.setitem(ay._EXPLICACIONES_DE_ESTADOS, "estado_de_prueba",
+                        "Parrafo puesto por el test.")
+    fichas = {f.tag: f for f in ay.fichas_de_estados(ruta_gui=copia)}
+    assert fichas["estado_de_prueba"].rotulo == "de prueba", (
+        "el rotulo del estado nuevo no llego desde _estado_criterio")
+
+
+def test_si_el_filtro_y_los_retornos_divergen_la_ayuda_no_elige(tmp_path):
+    """
+    `FILTROS_DE_ESTADO` promete llevar los MISMOS tags que devuelve
+    `_estado_criterio` (su comentario lo dice con palabras). La ayuda exige
+    esa promesa en vez de fiarse de una de las dos listas: si divergen, no
+    hay verdad que mostrar y se detiene diciendolo.
+    """
+    fuente = (RAIZ / "gui" / "app.py").read_text(encoding="utf-8")
+    copia = tmp_path / "app_divergente.py"
+    copia.write_text(fuente.replace(
+        '    ("Resueltos en el archivo", "resuelto"),',
+        '    ("Resueltos en el archivo", "resuelto"),\n'
+        '    ("Huerfano", "tag_sin_retorno"),'), encoding="utf-8")
+    with pytest.raises(KeyError, match="mismos estados"):
+        ay.fichas_de_estados(ruta_gui=copia)
+
+
+def test_el_glosario_es_el_censo_entero_y_en_alfabetico():
+    """
+    El glosario no elige: son las variables del censo, TODAS, con concepto y
+    unidad, en alfabetico --- porque un glosario se consulta buscando un
+    nombre, no llenando un archivo de izquierda a derecha.
+    """
+    fichas = ay.fichas_de_glosario()
+    assert [f.clave for f in fichas] == sorted(ve.VARIABLES, key=str.lower)
+    for f in fichas:
+        assert f.concepto.strip() and f.unidad.strip(), f.clave
+        assert f.fase.strip(), f.clave
+        assert "_" not in f.poblacion, (
+            "el rotulo de poblacion salio crudo del enum en vez de llano")
+
+
+def test_una_variable_nueva_aparece_sola_en_el_glosario(monkeypatch):
+    """El gemelo del test de la seccion 1, sobre la cuarta lista derivada."""
+    nueva = VariableDeEntrada(
+        clave=COLUMNA_INVENTADA,
+        concepto="Variable inventada por el test para mover el censo",
+        unidad="m",
+        poblacion=Poblacion.COLUMNA_CSV,
+        resolucion=Libre(que_lo_fija="el test", dominio="m > 0"),
+        fase="Fase 1 - Datos de entrada",
+    )
+    monkeypatch.setitem(ve.VARIABLES, COLUMNA_INVENTADA, nueva)
+    fichas = {f.clave: f for f in ay.fichas_de_glosario()}
+    assert COLUMNA_INVENTADA in fichas, (
+        "la variable nueva no llego al glosario: la lista esta escrita aparte")
+    assert fichas[COLUMNA_INVENTADA].poblacion == "columna del CSV"

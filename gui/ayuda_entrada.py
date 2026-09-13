@@ -19,14 +19,21 @@ entonces la ayuda cambia sola. Escribir la correccion en este archivo crearia
 la segunda version del dato, que es exactamente lo que la ayuda derivada
 existe para no tener.
 
-Las dos pestanas
-----------------
-Son dos porque son dos archivos distintos del expediente, y estan en la MISMA
-ventana porque se leen juntas: `Q_m3s` y `S_cauce` son columna del CSV y ademas
-clave del JSON --- van vacias en la fila de un cruce de canal y entran por el
-JSON cuando el Tablero 3.1 las entrega ---, y esa vuelta es imposible de contar
-en dos ventanas que no se ven a la vez. El icono de cada campo abre la ventana
-en SU pestana; una vez abierta, el usuario cruza.
+Las tres pestanas
+-----------------
+Las dos primeras son dos archivos distintos del expediente, y estan en la
+MISMA ventana porque se leen juntas: `Q_m3s` y `S_cauce` son columna del CSV y
+ademas clave del JSON --- van vacias en la fila de un cruce de canal y entran
+por el JSON cuando el Tablero 3.1 las entrega ---, y esa vuelta es imposible
+de contar en dos ventanas que no se ven a la vez. El icono de cada campo abre
+la ventana en SU pestana; una vez abierta, el usuario cruza.
+
+La tercera (G5) no es un archivo: son los CONCEPTOS con que las otras
+pantallas hablan --- familias, etiquetas, estados de un criterio y el glosario
+del censo ---, para el lector que llega sin conocer el proyecto. Sus listas
+son derivadas como las otras dos; sus parrafos son texto estable de
+`src/ayuda_entrada.py`, declarado alli como escrito a mano y guardado contra
+las listas.
 
 Reutiliza `gui/componentes.py`: el `Tooltip`, y el `BotonAyuda` con que la
 ventana principal la llama. NO usa `MarcoScroll`: sus dos pestanas reparten el
@@ -52,11 +59,12 @@ from modelos import Familia  # noqa: E402
 
 from gui.componentes import COLOR_AVISO, COLOR_OK, Tooltip  # noqa: E402
 
-# Los nombres de las dos pestanas, que ademas son los dos modos con que se
+# Los nombres de las tres pestanas, que ademas son los modos con que se
 # puede abrir la ventana. Son rotulos de pantalla: lo que la ventana AFIRMA
 # sale siempre de `src/ayuda_entrada.py`.
 PESTANA_CSV = "csv"
 PESTANA_JSON = "json"
+PESTANA_CONCEPTOS = "conceptos"
 
 TITULO = "Que tiene que traer el expediente"
 
@@ -74,6 +82,13 @@ _ANCHOS_JSON = (
     ("clave", "Clave", 170, "w"),                         # literal-ok: ancho en px
     ("familias", "Familias que la usan", 190, "w"),       # literal-ok: ancho en px
     ("concepto", "Concepto", 520, "w"),                   # literal-ok: ancho en px
+)
+_ANCHOS_GLOSARIO = (
+    ("clave", "Simbolo (clave del censo)", 210, "w"),     # literal-ok: ancho en px
+    ("unidad", "Unidad", 90, "center"),                   # literal-ok: ancho en px
+    ("poblacion", "Que es", 130, "w"),                    # literal-ok: ancho en px
+    ("fase", "Fase que lo consume", 220, "w"),            # literal-ok: ancho en px
+    ("concepto", "Concepto", 330, "w"),                   # literal-ok: ancho en px
 )
 
 
@@ -115,13 +130,18 @@ class VentanaAyudaEntrada(tk.Toplevel):
 
         self.tab_csv = ttk.Frame(self.nb)
         self.tab_json = ttk.Frame(self.nb)
+        self.tab_conceptos = ttk.Frame(self.nb)
         self.nb.add(self.tab_csv, text="  CSV de puntos criticos (Sec. 1.2)  ")
         self.nb.add(self.tab_json, text="  JSON de datos externos  ")
+        self.nb.add(self.tab_conceptos, text="  Conceptos  ")
 
         self._construir_csv(self.tab_csv)
         self._construir_json(self.tab_json)
+        self._construir_conceptos(self.tab_conceptos)
 
-        self.nb.select(self.tab_json if pestana == PESTANA_JSON else self.tab_csv)
+        destinos = {PESTANA_JSON: self.tab_json,
+                    PESTANA_CONCEPTOS: self.tab_conceptos}
+        self.nb.select(destinos.get(pestana, self.tab_csv))
 
         ttk.Button(self, text="Cerrar", command=self.destroy).pack(
             side="right", padx=10, pady=(0, 10))
@@ -360,6 +380,125 @@ class VentanaAyudaEntrada(tk.Toplevel):
             font=("Segoe UI", 8, "italic"), foreground=COLOR_AVISO,
             wraplength=980, justify="left").grid(
             row=3, column=0, sticky="w", padx=8, pady=8)
+
+
+    # ------------------------------------------------------------------
+    # Pestana 3: los conceptos
+    # ------------------------------------------------------------------
+    def _construir_conceptos(self, p):
+        """
+        Familias, etiquetas y estados en un texto con scroll; el glosario en
+        su tabla. El reparto del alto es un `PanedWindow`, como en la pestana
+        del CSV, porque las dos mitades se consultan con frecuencias
+        distintas: la prosa se lee una vez, el glosario se vuelve a abrir
+        cada vez que un simbolo aparece en otra pantalla.
+        """
+        p.columnconfigure(0, weight=1)
+        p.rowconfigure(1, weight=1)
+
+        cab = ttk.Frame(p, padding=(8, 8, 8, 0))
+        cab.grid(row=0, column=0, sticky="ew")
+        ttk.Label(cab, text="Las palabras con que este programa describe el "
+                            "expediente.",
+                  font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        ttk.Label(
+            cab,
+            text="Donde se usan: la pestana 1 agrupa los datos por FAMILIA y "
+                 "anticipa los bloqueos antes de correr; la pestana 2 lista "
+                 "los criterios con su ETIQUETA y su ESTADO, con filtros por "
+                 "estado, ambito y fase; la pestana 3 traza cada numero hasta "
+                 "su procedencia («¿de donde sale este numero?»). Las listas "
+                 "de abajo son derivadas; los parrafos son texto estable de "
+                 "src/ayuda_entrada.py.",
+            font=("Segoe UI", 8, "italic"), foreground="#666666",
+            wraplength=980, justify="left").pack(anchor="w", pady=(2, 6))
+
+        panel = ttk.PanedWindow(p, orient="vertical")
+        panel.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 8))
+
+        f_prosa = ttk.LabelFrame(panel, text="Familias, etiquetas y estados",
+                                 padding=8)
+        panel.add(f_prosa, weight=3)  # literal-ok: reparto del PanedWindow
+        f_prosa.columnconfigure(0, weight=1)
+        f_prosa.rowconfigure(0, weight=1)
+        self.txt_conceptos = tk.Text(f_prosa, height=16, wrap="word",
+                                     font=("Consolas", 9))
+        self.txt_conceptos.grid(row=0, column=0, sticky="nsew")
+        scroll_prosa = ttk.Scrollbar(f_prosa, orient="vertical",
+                                     command=self.txt_conceptos.yview)
+        self.txt_conceptos.configure(yscrollcommand=scroll_prosa.set)
+        scroll_prosa.grid(row=0, column=1, sticky="ns")
+        self.txt_conceptos.insert("1.0", self._texto_de_conceptos())
+        self.txt_conceptos.configure(state="disabled")
+
+        f_glosario = ttk.LabelFrame(
+            panel, text="Glosario de simbolos y unidades (el censo de "
+                        "variables_entrada.py, entero)",
+            padding=8)
+        panel.add(f_glosario, weight=2)  # literal-ok: reparto del PanedWindow
+        f_glosario.columnconfigure(0, weight=1)
+        f_glosario.rowconfigure(0, weight=1)
+
+        self.tree_glosario = ttk.Treeview(
+            f_glosario, columns=[c for c, *_r in _ANCHOS_GLOSARIO],
+            show="headings", height=8)
+        for col, titulo, ancho, anchor in _ANCHOS_GLOSARIO:
+            self.tree_glosario.heading(col, text=titulo)
+            self.tree_glosario.column(col, width=ancho, anchor=anchor)
+        self.tree_glosario.grid(row=0, column=0, sticky="nsew")
+        scroll_glo = ttk.Scrollbar(f_glosario, orient="vertical",
+                                   command=self.tree_glosario.yview)
+        self.tree_glosario.configure(yscroll=scroll_glo.set)
+        scroll_glo.grid(row=0, column=1, sticky="ns")
+
+        for f in ay.fichas_de_glosario():
+            self.tree_glosario.insert(
+                "", "end", iid=f.clave,
+                values=(f.clave, f.unidad, f.poblacion, f.fase, f.concepto))
+
+    def _texto_de_conceptos(self):
+        """
+        El texto de la mitad de prosa, ARMADO de las fichas y de nada mas:
+        este metodo elige sangrias y subrayados, no contenido. Si una frase
+        de aqui arriba esta mal, se corrige en `src/ayuda_entrada.py` (los
+        parrafos) o en la declaracion de la que su ficha deriva (las listas).
+        """
+        lineas = []
+
+        def seccion(titulo):
+            if lineas:
+                lineas.append("")
+            # `extend` y no `+=`: el aumentado REBINDEA y volveria `lineas`
+            # local de esta funcion anidada (UnboundLocalError, medido).
+            lineas.extend([titulo, "=" * len(titulo), ""])
+
+        familias = ay.fichas_de_familias()
+        seccion(f"LAS {len(familias)} FAMILIAS ({familias[0].numeral})")
+        for f in familias:
+            lineas.append(f.rotulo)
+            lineas.append(f"    De donde sale su Q: {f.origen_del_caudal}")
+            for nota in f.notas:
+                lineas.append(f"    Nota: {nota}")
+            lineas.append("")
+
+        etiquetas = ay.fichas_de_etiquetas()
+        seccion(f"LAS {len(etiquetas)} ETIQUETAS DE UN VALOR")
+        lineas += ["Todo valor del proyecto lleva una, de mas determinado a "
+                   "mas elegido:", ""]
+        for f in etiquetas:
+            lineas.append(f"{f.rotulo}  {f.nombre}")
+            lineas.append(f"    {f.explicacion}")
+            lineas.append(f"    Vive en: {f.archivo}")
+            lineas.append("")
+
+        estados = ay.fichas_de_estados()
+        seccion("ESTADOS DE UN CRITERIO")
+        for f in estados:
+            lineas.append(f"{f.rotulo}")
+            lineas.append(f"    {f.explicacion}")
+            lineas.append(f"    (sale de: {f.origen})")
+            lineas.append("")
+        return "\n".join(lineas).rstrip() + "\n"
 
 
 def abrir(master, pestana=PESTANA_CSV):

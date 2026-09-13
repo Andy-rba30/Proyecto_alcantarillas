@@ -1811,7 +1811,11 @@ def test_la_ventana_de_ayuda_no_sabe_nada_por_su_cuenta():
             llamadas.add(f"{nodo.func.value.id}.{nodo.func.attr}")
     for nombre in ("ay.fichas_de_columnas", "ay.cabecera_csv",
                    "ay.vacios_por_quien_lo_debe", "ay.fichas_de_datos_externos",
-                   "ay.esqueleto_json"):
+                   "ay.esqueleto_json",
+                   # La pestana de conceptos (G5) consume la misma capa: las
+                   # cuatro listas le llegan armadas de src/ayuda_entrada.py.
+                   "ay.fichas_de_familias", "ay.fichas_de_etiquetas",
+                   "ay.fichas_de_estados", "ay.fichas_de_glosario"):
         assert nombre in llamadas, (
             f"la ventana dejo de pedir '{nombre}': o lo calcula ella, o dejo "
             "de mostrarlo")
@@ -1861,9 +1865,25 @@ def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
     assert obs["filas_csv_csv"] == list(m0.COLUMNAS)
     assert len(obs["filas_json_csv"]) == len(cli.CLAVES_EXTERNAS)
 
-    # 2. Cada icono abre la ventana en SU pestana.
+    # 2. Cada icono abre la ventana en SU pestana, la de conceptos incluida.
     assert "CSV" in obs["pestana_activa_csv"]
     assert "JSON" in obs["pestana_activa_json"]
+    assert "Conceptos" in obs["pestana_activa_conceptos"]
+
+    # 2b. La pestana de conceptos (G5) pinta lo que la capa de contenido le
+    #     da: el glosario trae el censo ENTERO y en su orden, y la prosa trae
+    #     un parrafo de las etiquetas y un estado --- comparados contra la
+    #     ficha, no contra un texto escrito aqui.
+    import variables_entrada as ve
+    assert obs["filas_glosario_csv"] == sorted(ve.VARIABLES, key=str.lower)
+    etiqueta = ay.fichas_de_etiquetas()[0]
+    assert etiqueta.explicacion in obs["texto_conceptos"]
+    assert etiqueta.archivo in obs["texto_conceptos"]
+    estado = ay.fichas_de_estados()[0]
+    assert estado.rotulo in obs["texto_conceptos"]
+    familia = ay.fichas_de_familias()[0]
+    assert familia.origen_del_caudal in obs["texto_conceptos"], (
+        "el «de donde sale el Q» de la familia no llego a la pantalla")
 
     # 3. El detalle responde a la seleccion. Se compara contra la ficha, no
     #    contra un texto escrito aqui: lo que se comprueba es que la ventana
