@@ -75,3 +75,43 @@ agentes, no para revisores). Si la quieres, pídela como micro-sesión: un
 `CLAUDE.md`), manifiesto generado, decisiones diferidas, tracker — sin
 duplicar una línea de contenido, con un test de que los enlaces apuntan a
 archivos existentes. Cualquier cosa más grande duplicaría y divergiría.
+
+## Añadido en la sesión de orden previa a N1 (pre-N1): las dos sesiones de norma y el orden de lo que queda
+
+Cuando se escribió este backlog las dos fuentes ausentes más valiosas seguían
+ausentes. El dueño consiguió las dos, y sus prompts viven junto a estos planes:
+`prompt_N1_A796.md` (ASTM A796/A796M-13) y `prompt_N2_M294.md` (AASHTO M 294-11,
+traducción no oficial). Los dos PDF están ya en `normas/` con el nombre exacto
+que cada prompt cita, **sin registrar todavía**: registrarlos ES la tarea de N1
+y de N2. Mientras tanto `FUENTES_AUSENTES` los sigue censando como ausentes,
+con una `paginacion=SinDeterminar` cuya razón («la fuente no está en normas/»)
+ya no es literal. Ningún test enumera el directorio, así que la suite no lo
+nota; N1 y N2 lo vuelven a dejar cierto. Es el estado transitorio que los dos
+prompts dan por prerrequisito.
+
+Las doce sesiones del núcleo (1 a 12) están entregadas en `origin/main`, más
+un R3b que R3 dejó como cola. El orden de lo que queda, decidido en pre-N1:
+
+| # | Sesión | Depende de | Modelo | Esfuerzo | Plan mode | Por qué este orden |
+|---|---|---|---|---|---|---|
+| 13 | **N1** · ASTM A796/A796M-13 al registro | PDF en `normas/` (hecho en pre-N1) | Fable 5 | high | sí | Cierra trabajo real del tracker: la mitad (2) de NOR-PRO-04, `DIS-HR-A807` (abierta contra la v8) y la mitad TMC de `clases_producto_por_relleno`. Los tres opcionales no cierran nada del tracker |
+| 14 | **N2** · AASHTO M 294-11 (traducción no oficial) | N1, en sesión aparte | Fable 5 | high | sí | Respalda `D_max_catalogo['hdpe']` y mueve SIS-F-13; su propio prompt exige correr después de N1 |
+| 15 | **T1** · Vigencia de ediciones | N1 y N2 | Sonnet 5 | medium | no | Verifica vigencia por fuente PRESENTE: tras N1 y N2 son 15 y no 13, y las dos nuevas son ediciones superadas (2013 y 2011), exactamente el caso que T1 modela. Correrla antes dejaría fuera las dos fuentes más delicadas |
+| 16 | **I4** · Índice de fórmulas + dimensional piloto | núcleo cerrado | Opus 5 | high | no | Independiente de las fuentes; el plan lo condiciona a que el núcleo esté cerrado, y el núcleo incluye los dos parciales que N1 y N2 mueven |
+| 17 | **T3** · Export CSV del registro | todo lo anterior | Sonnet 5 | medium | no | Se genera del registro: va al final para que salga completo y no haya que regenerarlo dos veces |
+
+Dos avisos para las sesiones N, medidos en pre-N1:
+
+- El censo de ausentes registra `ASTM_A796` con año 2019 y el ejemplar es la
+  edición 2013; el prompt ya manda registrar la que ES. Las cifras del ejemplar
+  que el prompt da (21 páginas, primera en blanco, SHA-1, capa de texto
+  duplicada) se comprobaron sobre el archivo que quedó en `normas/`. Las de
+  M 294 (17 páginas, texto extraíble, SHA-1) también.
+- El caso patrón de M2 que N2 evalúa necesita además las Tablas 1 a 5 de
+  M 170M, que según la ficha de SIS-F-13 en el tracker siguen sin transcribir.
+  Lo probable es que M2 quede censado con esa razón y no ya con la ausencia de
+  M 294; el prompt dice «evalúa», y eso es lo que hay que evaluar.
+
+La regla no cambia: una sesión = un prompt, y la tabla de entornos de
+`CLAUDE.md` se vuelve a medir en las cuatro configuraciones cada vez que el
+conteo se mueve. Pre-N1 la encontró seis sesiones atrasada y la re-midió.
