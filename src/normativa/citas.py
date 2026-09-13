@@ -2845,6 +2845,39 @@ MP_T_F_PGA = _cita(
           "Nota 1 y no un exponente."),
 )
 
+# EL SILENCIO QUE SOSTIENE LA LECTURA DEL BORDE DE LA TABLA DE F_pga. No
+# autoriza un [C] -- ninguna fuente externa entra --: fija el barrido que
+# permite a 'F_pga_lectura_columna_extrema' seguir siendo eleccion [A] sobre
+# un silencio real de la fuente y no sobre una impresion. R3 verifico la
+# Nota 1 sobre la pagina renderizada preguntandole exactamente esto -- si los
+# valores rotulados son los puntos entre los que se interpola y el borde
+# exacto queda definido por la columna extrema -- y la respuesta es que la
+# nota calla: la laguna que T_MP_F_PGA declara (NOR-PUE-11) es de la fuente,
+# confirmada, no un fallo de lectura del registro.
+SIN_REGLA_DE_BORDE_EN_TFPGA = AfirmacionNegativa(
+    que_no_dice=(
+        "el Manual no dice como se lee un PGA exactamente igual a un rotulo "
+        "extremo de la Tabla 2.4.3.11.2.1.2-1 (0.10 o 0.50 exactos): su "
+        "Nota 1 manda interpolar en linea recta para valores intermedios de "
+        "PGA sin nombrar los puntos entre los que se interpola, sus dos "
+        "rotulos extremos son desigualdades estrictas que no cubren su "
+        "propio limite, y el articulado del num. 2.4.3.11.2.1.2 presenta "
+        "las tablas sin regla de lectura de bordes. Tratar los cinco "
+        "numeros de los rotulos como nodos de la interpolacion -- y en "
+        "particular suponer que la columna extrema aplica en su propio "
+        "limite -- es inferencia del lector, no texto de la fuente"),
+    ambito_barrido=(
+        "las paginas PDF 121 a 126 (impresas 120 a 125), las seis sobre "
+        "pagina renderizada y la de la tabla ademas en recorte ampliado y "
+        "en texto plano: numerales 2.4.3.10.3 a 2.4.3.11.5 completos, "
+        "incluido el 2.4.3.11.2.1.2 «Factores de Sitio» con sus dos "
+        "parrafos y sus tres tablas con sus notas. Nada en ese ambito trae "
+        "regla de borde. El contraste que muestra que la desigualdad "
+        "estricta es deliberada y no tipografia: la Tabla 2.4.3.11.5-1 "
+        "(impresa 125, PDF 126) si imprime el signo de menor o igual "
+        "cuando quiere decirlo. Fuera de esas paginas no se barrio"),
+    cita_id="MP.T2.4.3.11.2.1.2-1")
+
 MP_T_RECUBRIMIENTO = _cita(
     id="MP.T2.9.1.5.5.3-1",
     fuente_id="MP",

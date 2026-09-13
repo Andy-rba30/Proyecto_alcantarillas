@@ -1214,6 +1214,13 @@ CRITERIOS: Dict[str, Criterio] = {
     # proyecto es exactamente 0.50 y no cae en ninguna columna tabulada
     # (NOR-PUE-11). La tabla no resuelve ese borde; lo resuelve quien la lee, y
     # por eso es criterio y no constante.
+    #
+    # R3 verifico la Nota 1 contra la pagina renderizada preguntandole si
+    # resuelve el borde -- lo que habria bajado la etiqueta a [N] o [N->] --
+    # y no lo resuelve: manda interpolar para valores intermedios sin nombrar
+    # los nodos, y sobre el PGA exactamente igual al rotulo extremo calla.
+    # El barrido esta fijado en citas.SIN_REGLA_DE_BORDE_EN_TFPGA, anclado a
+    # la tabla MP.TFPGA, y la etiqueta queda [A].
     "F_pga_lectura_columna_extrema": Criterio(
         valor="limite_inclusive",
         # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
@@ -1228,26 +1235,41 @@ CRITERIOS: Dict[str, Criterio] = {
                  "2.4.3.11.2.1.2-1 cuando el PGA cae justo sobre uno de ellos",
         justificacion="Decide como se leen los dos rotulos extremos de "
                       "columna de la tabla cuando el PGA cae exactamente "
-                      "sobre uno de ellos. La fuente (tabla MP.TFPGA; su Nota "
-                      "1 manda interpolar en linea recta para valores "
-                      "intermedios de PGA) hace de los cinco numeros de los "
-                      "rotulos los puntos entre los que se interpola. Lo que "
-                      "no resuelve: los dos rotulos de los extremos son "
-                      "estrictos, de modo que un PGA de exactamente 0.50 no "
-                      "esta cubierto por ninguna columna ni queda entre dos. "
-                      "Se adopta 'limite_inclusive': la columna 'PGA > 0.50' "
-                      "aplica tambien en 0.50, por ser el valor a partir del "
-                      "cual la fuente deja de variar el factor -- las filas "
-                      "C, D y E repiten ahi el ultimo numero o lo bajan, "
-                      "ninguna lo sube. La lectura no es neutra y por eso se "
-                      "declara: con 'limite_estricto' el calculo se detiene "
-                      "en vez de elegir columna, y si en su lugar se leyera "
-                      "la columna anterior (PGA = 0.40) la fila D daria 1.1 "
-                      "en vez de 1.0 y la envolvente subiria un 10 %, "
-                      "arrastrando toda la cadena sismica",
+                      "sobre uno de ellos. Lo que la fuente dice (tabla "
+                      "MP.TFPGA del registro, verificada sobre la pagina "
+                      "renderizada): su Nota 1 manda interpolar en linea "
+                      "recta para valores intermedios de PGA, y sus dos "
+                      "rotulos extremos son desigualdades estrictas. Lo que "
+                      "no resuelve, con el barrido fijado en la "
+                      "AfirmacionNegativa SIN_REGLA_DE_BORDE_EN_TFPGA del "
+                      "registro: la nota no nombra los puntos entre los que "
+                      "se interpola -- leer los cinco numeros de los rotulos "
+                      "como esos nodos es ya lectura del proyecto, no texto "
+                      "de la fuente --, y ni ella, ni los rotulos, ni el "
+                      "articulado del numeral dicen como se lee un PGA "
+                      "exactamente igual al rotulo extremo, de modo que 0.50 "
+                      "no esta cubierto por ninguna columna ni queda entre "
+                      "dos. Ese silencio es el que mantiene la etiqueta en "
+                      "[A]: la eleccion no se apoya en una disposicion que "
+                      "tome la decision, sino en el criterio del proyectista "
+                      "sobre un vacio barrido. Se adopta 'limite_inclusive': "
+                      "la columna 'PGA > 0.50' aplica tambien en 0.50, por "
+                      "ser el valor a partir del cual la fuente deja de "
+                      "variar el factor -- las filas C, D y E repiten ahi el "
+                      "ultimo numero o lo bajan, ninguna lo sube -- y por "
+                      "continuidad con la interpolacion que la nota si "
+                      "manda, cuyo ultimo tramo solo puede rematar en el "
+                      "valor de esa columna. La lectura no es neutra y por "
+                      "eso se declara: con 'limite_estricto' el calculo se "
+                      "detiene en vez de elegir columna, y si en su lugar se "
+                      "leyera la columna anterior (PGA = 0.40) la fila D "
+                      "daria 1.1 en vez de 1.0 y la envolvente subiria un "
+                      "10 %, arrastrando toda la cadena sismica",
         fuente="Manual de Puentes (MTC), Tabla 2.4.3.11.2.1.2-1, rotulos de "
                "columna y Nota 1, pag. impresa 123 (PDF 124). La tabla NO "
-               "resuelve el borde: la lectura es del proyectista",
+               "resuelve el borde -- el barrido que lo sostiene esta en la "
+               "AfirmacionNegativa SIN_REGLA_DE_BORDE_EN_TFPGA del registro, "
+               "anclada a la propia tabla --: la lectura es del proyectista",
         reemplazado_por="Un PGA de proyecto que caiga dentro de una columna, "
                         "o el estudio de respuesta de sitio, que sustituye la "
                         "tabla entera",

@@ -1659,6 +1659,12 @@ T_MP_F_PGA = _tabla(
                              "'F_pga_lectura_columna_extrema']"),
             si_nadie_lo_cierra=Efecto.BLOQUEA),
     ),
+    # El barrido que sostiene la laguna, verificado sobre la pagina
+    # renderizada: nada en el numeral 2.4.3.11.2.1.2 ni en sus tablas trae
+    # regla de borde, y la estrictez de los rotulos es deliberada -- la
+    # tabla de zonas sismicas del mismo capitulo si imprime <= cuando quiere
+    # decirlo --. El detalle, en la afirmacion.
+    afirmaciones_negativas=(_c.SIN_REGLA_DE_BORDE_EN_TFPGA,),
     alcance=Integra(),
     vistas_de_calculo=("F_PGA_TABLA",),
 )
