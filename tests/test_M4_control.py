@@ -1348,6 +1348,31 @@ def test_ke_del_tubo_es_un_numero_y_no_trae_fila():
     assert fila == "" and agrupacion == "" and bloque == ""
 
 
+def test_sin_ke_declarado_el_marco_se_detiene_y_no_hereda_el_del_tubo():
+    """
+    LA MITAD «MIENTRAS ESTE VACIO» DE LA FICHA (I3, punto 3 del plan): con
+    todo el cajon declarado MENOS 'ke_entrada_cajon', el consumidor lanza
+    `CriterioPendienteError` con la clave --- que es lo que `cli._etapa`
+    convierte en `Bloqueo` declarable --- y NO cae al 0.5 de 'ke_entrada',
+    que es la herencia silenciosa contra la que avisa la regla vinculante
+    #11: el numero del tubo COINCIDE para el cabezal a ras, de modo que un
+    default jamas fallaria de forma ruidosa.
+
+    Medido ademas sobre la corrida entera en I3 (pipeline de
+    tests/linea_base_familia_c con las mismas declaraciones menos el ke): el
+    punto de cajon termina con `resultado=None` y un `Bloqueo` de tipo
+    CriterioPendienteError, criterio 'ke_entrada_cajon', etapa «material y
+    diametro (bucle de MD)». Este test fija la pieza que ese comportamiento
+    tiene por debajo, sin pagar la corrida completa.
+    """
+    from modelos import CriterioPendienteError
+    sin_ke = {k: v for k, v in _CAJON.items() if k != "ke_entrada_cajon"}
+    with declarados(sin_ke):
+        with pytest.raises(CriterioPendienteError) as exc:
+            ke_declarado(CRITERIO_KE_CAJON)
+    assert exc.value.clave == "ke_entrada_cajon"
+
+
 def test_declarar_un_coeficiente_donde_va_una_fila_es_dato_invalido():
     """
     Es DatoInvalidoError y no CriterioPendienteError: el criterio ESTA

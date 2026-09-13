@@ -1982,14 +1982,20 @@ T_HDS5_A1 = _tabla(
             "de cara eliptica, Cartas 55 y 56"),
         donde_leerlo=(
             "HDS-5 3a ed., Tabla A.1, PDF 197. La pagina NO LLEVA FOLIO "
-            "IMPRESO -- verificado sobre la pagina renderizada: las cuatro "
-            "paginas apaisadas de tablas del apendice, PDF 197 a 200, van "
-            "sin numerar --, de modo que la «pag. impresa A.8» que el "
-            "repositorio declara es una INFERENCIA por secuencia (PDF 196 "
-            "lleva A.7) y no una lectura. La inferencia es correcta y la "
-            "regla de paginacion la predice; lo que no es, es una pagina "
-            "leida. Anotado en C2, no corregido: tocar `pagina_impresa` de "
-            "la cita `HDS5_3ED.TA.1` movería un campo que T6 usa"),),
+            "IMPRESO, de modo que la «pag. impresa A.8» que el repositorio "
+            "declara es una INFERENCIA por secuencia (PDF 196 lleva A.7) y "
+            "no una lectura. En I3 el verificador-normativo la confirmo "
+            "CORRECTO-INFERIDO por texto con coordenadas Y por render de la "
+            "pagina entera, los cuatro bordes: ningun folio en 197; vecinos "
+            "leidos A.5@194 a A.7@196 y B.1@203; entre A.7 y B.1 van seis "
+            "paginas sin folio (las tres apaisadas de tablas 197-199, la "
+            "vertical de las Tablas A.4-A.6 en 200, la en blanco 201 y la "
+            "portadilla del Apendice B en 202 -- esta frase decia «cuatro "
+            "apaisadas» hasta I3), y ninguna asignacion "
+            "alternativa de folios es consistente con los impresos. "
+            "`pagina_impresa` se queda en «A.8»: es el valor que la regla "
+            "de paginacion de T6 predice, y la nota de `HDS5_3ED.TA.1` es "
+            "la que declara que no es una lectura"),),
     erratas=("DIS-HDS5-APENDICE-G",),
     vistas_de_calculo=("HDS5_INLET",),
 )

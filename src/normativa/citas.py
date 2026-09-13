@@ -1783,11 +1783,27 @@ HDS5_TA1 = _cita(
           "por que el repositorio llego a afirmar que la Tabla A.1 trae "
           "pipe-arch, que no lo trae. "
           "Y LA PAGINA IMPRESA «A.8» ES INFERIDA, NO LEIDA: PDF 197 no lleva "
-          "folio -- las cuatro paginas apaisadas de tablas del apendice van "
-          "sin numerar --. La inferencia por secuencia es correcta (PDF 196 "
-          "lleva A.7) y la regla de paginacion la predice; queda dicho aqui "
+          "folio. La inferencia por secuencia es correcta (PDF 196 lleva "
+          "A.7) y la regla de paginacion la predice; queda dicho aqui "
           "porque «pagina impresa» nombra algo que en esta pagina no esta "
-          "impreso."),
+          "impreso. "
+          "VERIFICADO EN I3 (verificador-normativo, metodo texto extraido "
+          "con coordenadas + render de la pagina entera, los cuatro bordes): "
+          "PDF 197 no imprime folio en ningun borde -- la pagina esta "
+          "almacenada apaisada de forma nativa (792x612, rotation=0), asi "
+          "que el barrido de texto no pierde nada --; los folios vecinos "
+          "leidos son A.5@194, A.6@195, A.7@196 y B.1@203; entre A.7 y B.1 "
+          "van SEIS paginas sin folio y no «cuatro apaisadas», como decia "
+          "esta nota hasta I3: las cinco del Apendice A -- tres apaisadas "
+          "de tablas (197-199), la VERTICAL de las Tablas A.4-A.6 (200) y "
+          "la en blanco (201) -- mas la portadilla del Apendice B (202), "
+          "que por regla del documento nunca folia. La cadena «A.8» no "
+          "aparece en ninguna pagina del PDF, y ningun esquema consistente "
+          "con los folios impresos puede asignar a PDF 197 otro numero: la "
+          "unica lectura alternativa no es otro folio, es «sin folio». "
+          "Veredicto: CORRECTO-INFERIDO; `pagina_impresa` se queda en "
+          "«A.8» -- es el valor que la regla de paginacion de T6 predice -- "
+          "y esta nota es la que dice que no es una lectura."),
 )
 
 HDS5_TC2 = _cita(
@@ -2495,7 +2511,8 @@ AASHTO_A11_3_1 = _cita(
 # ===========================================================================
 # T2 -- las contrapartes que las discrepancias anunciaban y nadie transcribio
 # ===========================================================================
-# Las 23 discrepancias tienen 52 partes y 38 anuncian una cita; NUEVE de esos
+# Censo de T2 (entonces 23 discrepancias): 52 partes y 38 anunciando una
+# cita; NUEVE de esos
 # ids no existian en el registro (`partes_sin_cita_transcrita`, hallazgo de
 # C8). Este bloque transcribe las que el Manual de Puentes y AASHTO
 # sostienen, verificadas por el subagente en la sesion T2. Cada una es la

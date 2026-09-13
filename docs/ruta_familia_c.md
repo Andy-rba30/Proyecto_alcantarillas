@@ -2821,7 +2821,10 @@ discrepancia se ve, para que quien la corrija sepa contra qué contrastarla. Nin
 ocho duplica una `Discrepancia` ya registrada: las nueve `DIS-HR-*` de
 `normativa/discrepancias.py` se revisaron una a una. *(C3 añadió D-10, C4 añadió D-11 y D-12,
 C5 añadió D-13 y D-14 y C6 añade D-15 y D-16; los dieciséis siguen sin duplicar ninguna
-`DIS-HR-*`. **D-13 roza
+`DIS-HR-*` — **con una excepción que ya no es duplicado sino ascenso: D-9 está REGISTRADA
+desde I3 como `DIS-HR-FORMAS-HDS5`**, declarada en el paso `de_forma` de M4 (la vía 2 del
+canal), de modo que su fila de abajo es historia de origen y el objeto vivo es el del
+registro. **D-13 roza
 `DIS-HR-D-MAX` y no la duplica**, y conviene decir por qué: aquella discrepancia es contra las
 tres normas de producto —A760 y M170M no topan el diámetro donde el Anexo B decía—, y D-13 es
 contra la **forma de la pregunta**, que presupone que lo que se verifica es un diámetro.)*
@@ -2837,9 +2840,9 @@ contra la **forma de la pregunta**, que presupone que lo que se verifica es un d
 | **D-7** | **Sec. 2.3**, Familia C | Enuncia el requisito *«No puede alterar la rasante hidráulica ni el borde libre del canal»* **sin etiqueta, sin numeral y sin verificación asignada**, mientras que a la Familia A sí le da conjunto de aceptación (V1+V2+V4+V5) | El requisito no sale de ningún numeral del Manual: se apoyaría en la Ley 29338 y la DG-2018, **fuentes ausentes** del registro | `M1_clasificacion.PERFILES[Familia.C].verificaciones_aceptacion = None`, con el comentario *«Sec. 2.3 no declara conjunto propio»*. Es el hueco que §13 llama **VC1** y lo que obliga a la declaración de §15.6 |
 | **D-8** | **Fila V7 de la Fase 5** | Enumera cuatro filas de la Tabla 2.4.5.3.1-2 —«Estructura rígida enterrada» 1.30/0.90, «Alcantarillas termoplásticas» 1.30/0.90, flexibles «Entre otros» 1.95/0.90 y «Muros y estribos de retención» 1.35/1.00— y **omite «Pórticos rígidos» (1.35/0.90)** | Es la fila que la regla vinculante **#8** asigna al cajón: la v8 desglosa la tabla por tipo de estructura y deja fuera precisamente el tipo de la Familia C | `constantes_normativas.TABLA_GAMMA_P_FILAS` **sí la tiene** (`EV_porticos_rigidos`, 1.35/0.90). El que no la contempla es el desglose de la v8 |
 
-| **D-9** *(C2, redacción corregida por C3)* | **Fase 4, §4.2**, control de entrada | Escribe **una** ecuación de control de entrada no sumergido —la que lleva `Ks·S`— y presenta las constantes `K, M, c, Y` de la Tabla A.1 como si una sola ecuación las consumiera. **C2 escribió que «no menciona que HDS-5 tiene DOS formas», y eso es inexacto: la v8 rotula su ecuación «Forma 1».** Medido sobre el documento entero: la palabra «Forma» aparece **tres veces** y las tres son «Forma 1»; **«Forma 2» no aparece nunca**. La omisión no es más leve por eso, es **más aguda**: rotula una forma y jamás dice que exista otra, de modo que el lector no tiene por dónde enterarse. Y en la línea del `MAT-D10` usa «las dos formas» para nombrar las dos **ramas** (no sumergida y sumergida), que **colisiona con el término del propio HDS-5** | La Tabla A.1 tiene una columna **«Equation Form»** con valores 1 y 2, y el num. A.3 (pág. impresa **A.2** / PDF 191) prohíbe cruzarlas: *«coefficients for rectangular (box) shapes should not be used for nonrectangular … shapes and vice-versa»*. Para el cajón la cosa es inmediata: **la Carta 8 es Forma 1 y las Cartas 9, 10, 11 y 12 son Forma 2**, y la Forma 2 **no lleva `Ks·S`** | `modelos.ConstantesHDS5.forma` y la columna `equation_form` de `T_HDS5_A1`, ambos añadidos por C2. Con la v8 en la mano, quien implemente el cajón copiará la Forma 1 y le cambiará las constantes: con `Ks = -0.5` el término **resta** carga y el HW sale **menor que el real**, del lado no conservador, sin que ninguna guardia de signo lo detecte |
+| **D-9** *(C2, redacción corregida por C3; **REGISTRADA en I3 como `DIS-HR-FORMAS-HDS5`**, `ABIERTA_CONTRA_HOJA_DE_RUTA`, declarada en el paso `de_forma` de M4 — el paquete de corrección de la v8 está en la entrada I3 de §16)* | **Fase 4, §4.2**, control de entrada | Escribe **una** ecuación de control de entrada no sumergido —la que lleva `Ks·S`— y presenta las constantes `K, M, c, Y` de la Tabla A.1 como si una sola ecuación las consumiera. **C2 escribió que «no menciona que HDS-5 tiene DOS formas», y eso es inexacto: la v8 rotula su ecuación «Forma 1».** Medido sobre el documento entero: la palabra «Forma» aparece **tres veces** y las tres son «Forma 1»; **«Forma 2» no aparece nunca**. La omisión no es más leve por eso, es **más aguda**: rotula una forma y jamás dice que exista otra, de modo que el lector no tiene por dónde enterarse. Y en la línea del `MAT-D10` usa «las dos formas» para nombrar las dos **ramas** (no sumergida y sumergida), que **colisiona con el término del propio HDS-5** | La Tabla A.1 tiene una columna **«Equation Form»** con valores 1 y 2, y el num. A.3 (pág. impresa **A.2** / PDF 191) prohíbe cruzarlas: *«coefficients for rectangular (box) shapes should not be used for nonrectangular … shapes and vice-versa»*. Para el cajón la cosa es inmediata: **la Carta 8 es Forma 1 y las Cartas 9, 10, 11 y 12 son Forma 2**, y la Forma 2 **no lleva `Ks·S`** | `modelos.ConstantesHDS5.forma` y la columna `equation_form` de `T_HDS5_A1`, ambos añadidos por C2. Con la v8 en la mano, quien implemente el cajón copiará la ec. (A.1) y le cambiará las constantes. **La dirección del daño que esta celda escribía quedó REFUTADA por la auditoría de I3**: decía que con `Ks = -0.5` el HW salía «menor que el real, del lado no conservador», mirando el término chico sin mirar el `H_c/D` que la copia arrastra — medido sobre el marco de la línea base (2.00×1.50, Q = 6, S = 0.004, Carta 10 esc. 1), la copia da **3.047 m frente a 1.592 m reales, +91 %, lado CONSERVADOR**: sobrediseño y falsos no-factibles. La dirección corregida vive en `DIS-HR-FORMAS-HDS5.efecto_si_se_sigue_la_otra` y en `F4.FORMA_HDS5` |
 
-| **D-10** *(C3)* | **Fase 4, §4.2**, encabezado «Fuente a citar», y el bloque de código de la §12 | Cita la Tabla A.1 como *«Apéndice A, Tabla A.1, **pág. A.8**»*, en **dos** sitios | **Esa página no lleva folio impreso.** La numeración del Apéndice A termina en **A.7**; las cuatro hojas apaisadas de tablas (PDF 197–200) van **sin numerar** y el Apéndice B reinicia en B.1. Verificado dos veces y de dos formas independientes: en C2 por render del pie, y en C3 midiendo el rango vertical de todo el texto de la página —no hay una sola palabra en la banda del pie— | El repositorio ya lo declara en la `nota` de `citas.HDS5_TA1` y en el `donde_leerlo` de `T_HDS5_A1`: «A.8» es una **inferencia por secuencia**, correcta y predicha por la regla de paginación, pero **no una lectura**. La v8 la escribe como si lo fuera, y es la única referencia que le da al lector para encontrar la tabla |
+| **D-10** *(C3)* | **Fase 4, §4.2**, encabezado «Fuente a citar», y el bloque de código de la §12 | Cita la Tabla A.1 como *«Apéndice A, Tabla A.1, **pág. A.8**»*, en **dos** sitios | **Esa página no lleva folio impreso.** La numeración del Apéndice A termina en **A.7**; las cuatro hojas de tablas (PDF 197–200 — tres apaisadas y la cuarta vertical, que hasta I3 esta celda llamaba «cuatro apaisadas») y la página en blanco que las sigue (201) van **sin numerar** y el Apéndice B reinicia en B.1. Verificado tres veces y de tres formas independientes: en C2 por render del pie, en C3 midiendo el rango vertical de todo el texto de la página —no hay una sola palabra en la banda del pie— y en I3 por texto con coordenadas más render de la página entera, los cuatro bordes (§16.19) | El repositorio ya lo declara en la `nota` de `citas.HDS5_TA1` y en el `donde_leerlo` de `T_HDS5_A1`: «A.8» es una **inferencia por secuencia**, correcta y predicha por la regla de paginación, pero **no una lectura**. La v8 la escribe como si lo fuera, y es la única referencia que le da al lector para encontrar la tabla |
 
 | **D-11** *(C4)* | **«Notas críticas de programación»** (la lista que un programador lee como checklist) | Enuncia **sin condición** dos propiedades que sólo valen para la sección circular: *«**Q(y/D) no es monótona** cerca de sección llena (máximo en y/D ≈ 0.938)»* y *«**M4 necesita tirante crítico:** Q²T/(gA³) = 1, **segundo Brent sobre θ**»* | Las dos son **falsas para el marco**, medido: barrido de 400 tirantes entre 0 y H sobre 2.00 × 1.50 → **Q(y) es estrictamente creciente, sin pico**; y el crítico **se despeja**, `y_c = (q²/g)^(1/3)`, sin segundo solver y sin θ. **La v8 se contradice a sí misma**: su §4.2.1 lo condiciona bien —*«El tirante crítico **en sección circular** no tiene solución cerrada»*—, pero la versión sin condición es la que está en el checklist | `SeccionRectangular.llenado_critico_cerrado` y `M4.tirante_critico`, que bifurca por lo que la sección responde. **La consecuencia no es cosmética:** quien implemente desde el checklist pone un Brent donde hay fórmula cerrada, y con él **reintroduce la clase de fallo de `SIS-G-02`** que la forma cerrada retira |
 | **D-12** *(C4)* | **Fase 4, §4.3**, ecuación de pérdida de carga | Escribe `H = (1 + k_e + 19.63·n²·L/R^(4/3))·V²/(2g)` **sin decir qué `R`**, y la única R que la v8 define es la de §4.1, `R = A/P` de la sección circular parcialmente llena | Para un marco hay **dos R distintas y las dos son correctas**, cada una en su régimen: la de **lámina libre** (`P = B + 2y`, sin la losa superior) y la de **sección llena a presión** (`P = 2(B+H)`, con ella). Medido sobre 2.00 × 1.50 m: en `y = H` valen **0.600 m** y **0.4286 m** — un **40 %** —. En la circular **convergen** (en θ = 2π el ancho de la lámina se anula y el perímetro de lámina libre ya es πD), y por eso la ambigüedad de la v8 no se nota | `SeccionRectangular.radio_hidraulico_lleno` frente a `geometria_en(y).R`, con la distinción escrita en el docstring de la clase y fijada en `CP2R_GEOMETRIA_MANNING_RECTANGULAR`. El proyecto **sí** la resuelve, por el criterio `geometria_control_salida = "seccion_llena"`; lo que no la resuelve es la v8, y quien generalice su `R = A/P` al marco se equivoca en un 40 % en el término de fricción |
@@ -3485,7 +3488,7 @@ escribirlas:
 | El bloque «Box, Reinforced Concrete» tiene **once filas** | **Siete** con coeficiente, bajo **cuatro rótulos de agrupación**. Once es el número de *líneas* | `T_HDS5_C2.alcance` |
 | §15.7 sitúa `HDS5_3ED.A.3#FORMAS` en la página **«A.3»** | **A.3 es el numeral**; la página impresa es **A.2** (PDF 191), porque el numeral abre al pie de la anterior. Es la confusión numeral/folio que `NOR-HDS-01` ya cerró una vez | §15.7, tabla de citas |
 | §15.7 propone citar `#MULTIPLES` como *«…recomendándose utilizar obras con mayor sección transversal libre, sin subdivisiones.»* | Es una **elisión sin marcar** bajo el rótulo «texto literal» — el defecto que `CLAUDE.md` nombra a propósito de la tercera condición de `h_o` — y además el recorte se lee como preferencia **general** por la celda única, cuando la recomendación está **condicionada** al supuesto de multicelda en cauce con arrastre. Se cita la oración entera | §15.7, y ahora `citas.CAJON_MULTIPLES` |
-| La Tabla A.1 está en la **pág. impresa A.8** | **Esa página no lleva folio impreso**: las cuatro páginas apaisadas de tablas del apéndice (PDF 197–200) van sin numerar. «A.8» es una **inferencia por secuencia**, correcta y predicha por la regla de paginación, pero no una lectura. **Anotado, no corregido**: `pagina_impresa` es un campo que T6 usa | `citas.HDS5_TA1.nota` |
+| La Tabla A.1 está en la **pág. impresa A.8** | **Esa página no lleva folio impreso**: las cuatro páginas apaisadas de tablas del apéndice (PDF 197–200) van sin numerar *(medida de C2 tal como se escribió; I3 la afinó: la 200 es vertical, y sin folio van también la en blanco 201 y la portadilla 202 — §16.19)*. «A.8» es una **inferencia por secuencia**, correcta y predicha por la regla de paginación, pero no una lectura. **Anotado, no corregido**: `pagina_impresa` es un campo que T6 usa *(en I3: verificada CORRECTO-INFERIDO y el método registrado en la nota)* | `citas.HDS5_TA1.nota` |
 
 **Y una errata de la fuente que explica la primera fila de esa tabla**: el num. A.3.1 del
 propio HDS-5 dice *«From Table A.1, Chart 34, Scale 3»*, y la carta 34 —*Pipe Arch CM*—
@@ -5601,3 +5604,187 @@ corrigieron su `collected = 1538` (hoy 1732): es la constitución del proyecto y
 archivo de esta familia. Se reporta, y con esto van **cuatro** sesiones diciéndolo. Lo
 que esta añade a la deuda es que ya no es solo que los números estén viejos: la **forma**
 de la tabla se quedó corta, porque le falta un eje.
+
+### 16.19 · I3 — los tres residuos: A.8 verificada, D-9 al canal, fichas del cajón medidas
+
+Sesión I3 (2026-09-13), commit «cierre(I3)». Cierra los tres abiertos que esta bitácora
+arrastraba desde C2 (§16, entrada de C2: D-9, `ke_entrada` del cajón, y la «pág. impresa
+A.8» inferida) más el cabo que I2 dejó anotado (la vía 2 del canal sin usuario de
+producción).
+
+#### 1 · La página A.8: verificada como inferencia, y la nota decía «cuatro apaisadas» donde el tramo sin folio son seis páginas
+
+`verificador-normativo`, sobre `normas/hif12026.pdf`, método declarado por afirmación
+(texto extraído con coordenadas + render de la página entera, los cuatro bordes):
+
+- **PDF 197 no imprime folio en ningún borde.** La página está almacenada apaisada de
+  forma nativa (rect 792×612, `rotation=0`), de modo que la extracción de texto no pierde
+  nada por rotación. C2 (render del pie) y C3 (rango vertical del texto) quedan
+  **confirmadas por una tercera vía**.
+- Folios vecinos leídos: **A.5@194, A.6@195, A.7@196**; PDF 198–201 sin folio; **B.1@203**
+  tras la portadilla del Apéndice B. La cadena «A.8» no aparece en ninguna página del PDF.
+- **Veredicto: CORRECTO-INFERIDO.** Ningún esquema consistente con los folios impresos
+  puede asignar a PDF 197 otro número; la única lectura alternativa no es otro folio, es
+  «sin folio». `pagina_impresa` se queda en «A.8» — es el valor que la regla de paginación
+  de T6 predice — y la nota de `HDS5_3ED.TA.1` pasa de «inferida, no leída» a «inferida,
+  no leída, y VERIFICADA como la única asignación consistente», con el método escrito.
+- **La imprecisión que la verificación destapó:** la nota decía «las cuatro páginas
+  apaisadas de tablas del apéndice van sin numerar». Entre A.7@196 y B.1@203 van **seis**
+  páginas sin folio, y no todas apaisadas: las tres apaisadas de tablas (197–199), la
+  **vertical** de las Tablas A.4–A.6 (200), la en blanco (201) y la portadilla del
+  Apéndice B (202), que por regla del documento nunca folia. Corregido en
+  `citas.HDS5_TA1.nota` y en el `donde_leerlo` de `T_HDS5_A1`; la sustancia (197 sin
+  folio) no cambia. *(La primera redacción de esta entrada decía «cinco», contando sólo
+  el Apéndice A sin decirlo — la auditoría adversarial la remidió y aquí queda el
+  recuento con su tramo declarado.)*
+- Con esto **R-11 se cierra**: el campo ya no afirma una lectura — la nota que viaja con
+  él declara la inferencia y su verificación. D-10 (la v8 escribe «pág. A.8» como si fuera
+  una lectura, en dos sitios) sigue abierto contra la v8: es de la v8, no del registro.
+
+#### 2 · D-9 registrada: `DIS-HR-FORMAS-HDS5`, y la vía 2 del canal gana su primer usuario de producción
+
+- **Registrada** en `src/normativa/discrepancias.py` como `DIS-HR-FORMAS-HDS5`,
+  `ABIERTA_CONTRA_HOJA_DE_RUTA`, con sus dos partes: la de `hoja_de_ruta` (remedida en I3
+  sobre la v8 vigente: «Forma» aparece TRES veces y las tres son «Forma 1»; «Forma 2» no
+  aparece nunca; «las dos formas» nombra dos veces a las RAMAS) y la de `HDS5_3ED`
+  anclada en `HDS5_3ED.TA.1`.
+- **Declarada en el paso `de_forma` de `M4._pasos_hidraulicos`**
+  (`discrepancias=("DIS-HR-FORMAS-HDS5",)`): habla del NÚMERO que ese paso sustituye — la
+  forma de la ecuación, la Magnitud «Equation Form» — que es el caso exacto para el que
+  `PasoDeMemoria.discrepancias` existe. El cabo de I2 queda cerrado y FIJADO:
+  `test_la_via_del_paso_tiene_usuario_de_produccion` falla si el paso deja de declararla
+  sin reemplazo censado.
+- **Llega además por la vía 1**, y se dice para que nadie lo lea como redundancia
+  accidental: su parte ancla en TA.1, que toda corrida que dimensiona imprime por el
+  `Fundamento` `F4.FORMA_HDS5` (el cierre de R-24). La declaración en el paso no depende
+  de esa casualidad — si el fundamento cambiara sus citas, la discrepancia sigue viajando
+  con el valor del que habla. `test_la_discrepancia_llega_por_la_cita_del_FUNDAMENTO`
+  fija las dos llegadas.
+- **Por qué NO se corrigió la v8 en esta sesión, teniendo la verificación a mano:**
+  corregirla pasa D-9 a `RESUELTA`, y la guardia de `paso()` expulsa lo resuelto del canal
+  — el mismo movimiento por el que `DIS-HR-G-LAUSHEY` dejó de declararse en I2, que es
+  exactamente lo que dejó la vía 2 sin usuario. El mandato de I3 era el contrario
+  («D-9 registrada», el cabo cerrado), así que la corrección queda DIFERIDA CON PAQUETE,
+  no olvidada. La memoria, mientras tanto, declara la discrepancia en toda corrida que
+  dimensiona: la tercera obligación de CLAUDE.md («dejar dicho que la hoja de ruta sigue
+  mal») está cumplida por el canal.
+
+**El paquete de corrección de la v8** (la sesión que lo aplique: editar con nota
+«Corregido (…)», pasar `DIS-HR-FORMAS-HDS5` a `RESUELTA` con su parte en pretérito, y
+retirar `discrepancias=(...)` del paso `de_forma` EN EL MISMO COMMIT — decidiendo ahí el
+reemplazo de la vía 2 o censándola sin usuario):
+
+1. **§4.2, bloque «Régimen no sumergido (q\* ≤ 3.5), Forma 1:»** — añadir tras la ec.
+   (A.1) el bloque de la Forma 2: `HW_i/D = K·(q*)^M` (ec. (A.2), SIN `H_c/D` y SIN
+   `K_s·S`), y la regla de selección: la Tabla A.1 trae una columna **«Equation Form»**
+   con valores 1 y 2, fila por fila; cuál aplica lo fija la carta, no el proyectista.
+   Decir que las tres configuraciones circulares que la §4.2 tabula (filas de las
+   Cartas 1 y 2 — la auditoría corrigió el «tres cartas» de la primera redacción) son
+   todas Forma 1 — por eso la omisión no se notaba en las Familias A y B — y que del
+   cajón sólo la Carta 8 es Forma 1 (Cartas 9–12: Forma 2). Citas verificadas que lo sostienen: `HDS5_3ED.A.2`
+   (num. A.2/A.2.1, pág. impresa A.2 / PDF 191), `T_HDS5_A1` (Tabla A.1, PDF 197, columna
+   `equation_form` transcrita a método AMBOS), `HDS5_3ED.A.3#FORMAS`.
+2. **Nota de la transición** («no entre las dos formas evaluadas en el q\* real») —
+   sustituir «formas» por «RAMAS»: colisiona con el término «Equation Form» del HDS-5.
+3. **Nota de MAT-D10** («llevan las dos formas a devolver HW_i/D negativo») — el mismo
+   cambio «formas» → «ramas», y condicionar el umbral del signo que ya dice «para la
+   Forma 1» dejando claro que bajo Forma 2 el término `K_s·S` no existe en la rama no
+   sumergida (K_s entra sólo por la rama sumergida, ec. (A.3), común a las dos formas).
+4. **§4.2.1, «Requisito de programación: la Forma 1 necesita H_c»** — añadir la mitad
+   que falta: la Forma 2 NO usa `H_c` en control de entrada (el crítico se resuelve igual
+   porque lo necesita `h_o` del control de salida, y sólo para eso).
+5. Las constantes `K, M, c, Y` de la tabla de configuraciones de §4.2 — decir que `K` y
+   `M` están ajustadas CADA UNA a su forma (dos regresiones distintas): con la v8 actual,
+   quien implemente el cajón copiará la (A.1) y le cambiará las constantes, y el HW le
+   saldrá **MAYOR que el real** — el `H_c/D` espurio domina por dos órdenes al `K_s·S`
+   que resta (+91 % medido sobre el marco de la línea base, Carta 10 esc. 1) —:
+   sobrediseño y falsos no-factibles con sus deltas de rasante inventados. **OJO: este
+   punto decía la dirección contraria** («el HW sale menor, lado no conservador»,
+   heredado de la fila D-9 de C2/C3) **hasta que la auditoría adversarial de I3 lo
+   refutó con ese número**; la dirección corregida vive en
+   `DIS-HR-FORMAS-HDS5.efecto_si_se_sigue_la_otra` y en `F4.FORMA_HDS5`.
+
+#### 3 · `ke_entrada_cajon`: la ficha estaba completa; lo que faltaba era FIJAR la detención
+
+- **Ficha confirmada declarable** (C7 la dejó completa): concepto, fuente (Tabla C.2,
+  bloque «Box, Reinforced Concrete», pág. impresa C.6 / PDF 216, transcrita en
+  `T_HDS5_C2`), sensibilidad simbólica (los dos extremos del bloque, 0.2 y 0.7, con el
+  0.229 m de carga entre ellos a V = 3 m/s), `resolucion=DeTabla` emparejada con
+  `embocadura_cajon`, `nivel=NIVEL_PERFIL`. El valor NO se eligió: es elección del
+  proyectista y sigue en `None`.
+- **Comportamiento con el criterio vacío, medido sobre el pipeline** (las declaraciones
+  de la línea base menos el ke): el punto de cajón termina con `resultado=None` y
+  `Bloqueo(tipo='CriterioPendienteError', criterio='ke_entrada_cajon', etapa='material y
+  diametro (bucle de MD)')` — detención declarada, ningún default, y en particular NO
+  hereda el 0.5 de `ke_entrada` de tubo (la trampa de la regla vinculante #11: el número
+  coincide para el cabezal a ras y un default jamás fallaría ruidosamente). Fijado en
+  `test_sin_ke_declarado_el_marco_se_detiene_y_no_hereda_el_del_tubo`.
+- La declarabilidad desde la ventana real ya estaba fijada bajo Tk: el smoke de
+  `test_gui_contrato` declara los siete del cajón «por el camino del ratón»,
+  `ke_entrada_cajon` incluido.
+
+#### 4 · Los nueve criterios de perfil sin valor, medidos y censados
+
+`ca.criterios_de_perfil_sin_valor()` devuelve HOY nueve (el plan decía «hoy 9 — mide»:
+medido, son nueve). Los nueve tienen ficha completa — concepto, justificación, fuente,
+sensibilidad, resolución, nivel — y el censo queda FIJADO con igualdad exacta en
+`test_todo_criterio_de_perfil_sin_valor_tiene_ficha_declarable`, que además extiende la
+exigencia de ficha a los dos que NO son [A] y quedaban fuera de la guardia de
+`_verificar_nivel` (`ke_entrada_cajon` [C], `n_manning_cajon` [N→]).
+
+| criterio | clasificación I3 |
+|---|---|
+| `embocadura_cajon`, `ke_entrada_cajon`, `n_manning_cajon`, `n_celdas_cajon`, `secciones_cajon_normalizadas`, `espesor_pared_cajon`, `cobertura_minima_cajon` | **Declarables desde la ventana normativa** — elección del proyectista, ficha completa, camino del ratón probado bajo Tk |
+| `TW_receptor` | Espera un DATO que este software no produce: el nivel del cuerpo receptor (ANA / Junta de Usuarios, o medición). **Pero la declaración del criterio no es ese dato**, y la primera redacción de esta celda lo confundía (lo señaló la auditoría): lo que se declara es el **ESCENARIO** (resolución `Libre`, ventana de escenarios en su ficha — mecánicamente declarable HOY), y cuando el dato exista **no se declara este criterio**: entra por `cota_TW` o por Manning con `seccion_receptor`, y el criterio queda por su `reemplazado_por` |
+| `homogeneidad_serie_fen` | Espera el análisis de homogeneidad de la serie hidrológica — este software no hace hidrología. Declarable en cuanto el estudio exista |
+
+#### 5 · Línea base y manifiestos: el diff, declarado
+
+Regenerados con `regenerar.sh` y `python3 -m src.normativa.manifiesto --escribir`. El
+diff completo: las cuatro memorias de la línea base ganan `DIS-HR-FORMAS-HDS5` en su
+bloque «Discrepancias declaradas que toca esta corrida» (la de perfil, la ancha, la de
+expediente y la traza del punto de cajón), y el manifiesto del registro recoge la
+discrepancia nueva y las dos notas reescritas (A.8). **Ningún número de cálculo se movió
+en los dorados.**
+
+#### 6 · Auditoría adversarial: dos CIERRA, dos CIERRA EN PARTE — y una dirección refutada
+
+Lanzada sobre el conjunto antes de fusionar, como manda el plan. Veredicto por pieza, y
+lo que cada residuo obligó a corregir (todo corregido en este mismo commit):
+
+- **A.8 — CIERRA EN PARTE, residuos corregidos.** (1) La celda histórica de la bitácora
+  de C2 (§16.5) conservaba la frase «cuatro páginas apaisadas» ya divergente — se dejó
+  con su anotación de época, igual que se había hecho con la fila D-10, porque la defensa
+  «la historia no se toca» se estaba aplicando de forma inconsistente. (2) El recuento
+  «cinco páginas sin folio» estaba acotado al Apéndice A sin decirlo: el tramo entre
+  A.7@196 y B.1@203 son SEIS (la portadilla del Apéndice B, 202, tampoco folia). Nota de
+  la cita, `donde_leerlo` y esta entrada, remedidos.
+- **D-9 — CIERRA EN PARTE, con un campo REFUTADO y corregido.** El registro, el canal,
+  el censo y la fidelidad de las partes quedaron verificados al dígito (la auditoría
+  remidió la v8 y las 18 filas de `T_HDS5_A1` contra el PDF). Pero
+  `efecto_si_se_sigue_la_otra` heredó de la fila D-9 de C2/C3 una dirección FALSA: decía
+  «HW menor que el real, lado no conservador» y la copia naive de la (A.1) con constantes
+  de Forma 2 da HW **mayor** (+91 % sobre el marco de la línea base: 3.047 m frente a
+  1.592 m — el `H_c/D` espurio domina por dos órdenes al `K_s·S` que resta; para
+  invertir la dirección haría falta `S > 2·H_c/D`, fuera incluso de
+  `dominios.S_CAUCE_MAX`). Corregidos: el campo del registro, el
+  `que_pasa_si_no_se_hace` de `F4.FORMA_HDS5` (que repetía la misma frase y la memoria
+  imprime), la fila D-9 de §15.8(d), el punto 5 del paquete de corrección de arriba, y
+  los dorados regenerados. También el «tres cartas circulares» → tres configuraciones
+  de las Cartas 1 y 2.
+- **ke_entrada_cajon — CIERRA.** La auditoría buscó el camino de herencia del 0.5 de
+  tubo y no existe: la cadena `criterio_ke_de` → `resolver_control` → `control_salida`
+  está fijada por tests y la fila declarada del fixture (0.4 ≠ 0.5) hace la herencia
+  detectable por valor. Residuo declarado sin acción: la medición de la corrida entera
+  vive en el docstring del test nuevo, no como test propio.
+- **Censo de fichas — CIERRA**, con la celda de `TW_receptor` reescrita: atribuía al
+  dato externo el papel que la ficha reserva al reemplazo (arriba, ya corregida).
+
+#### El árbol de esta sesión
+
+Tres tests nuevos (`collected` +3): el usuario de producción de la vía 2, la detención
+sin ke, y el censo de fichas de perfil. Suite local sobre este árbol: **1863 passed,
+4 skipped (= 1867 collected)**, con PyMuPDF y ventana Tk (python3-tk instalado según el
+procedimiento de CLAUDE.md; los 4 saltos son los tres de diseño de
+`test_familias_del_csv` más el permanente de `test_MD`). El par desde `origin/main` se
+reporta en el cierre del commit.

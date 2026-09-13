@@ -1111,9 +1111,13 @@ def citas_en_que_descansa(paso: Any) -> frozenset:
 
     El criterio, dicho de una vez: llega la discrepancia sobre un numeral en
     el que la memoria APOYA algo, no solo sobre el que ENTRECOMILLA. Medido
-    sobre la corrida del entregable: 13 citas llegan por las puertas
-    indirectas, y cruzarlas contra las 23 discrepancias anade EXACTAMENTE una
-    viva --- la de la Tabla A.1 --- y ninguna de las etapas diferidas.
+    sobre la corrida del entregable en C8: 13 citas llegaban por las puertas
+    indirectas, y cruzarlas contra las 23 discrepancias de entonces anadia
+    EXACTAMENTE una viva --- la del titulo de la Tabla A.1 --- y ninguna de
+    las etapas diferidas. Desde I3 son 24 declaradas y las puertas indirectas
+    anaden DOS: la misma del titulo y `DIS-HR-FORMAS-HDS5`, que ancla su
+    parte en TA.1 y ademas llega DECLARADA por el paso `de_forma` (via 2).
+    `test_la_discrepancia_llega_por_la_cita_del_FUNDAMENTO` fija las dos.
     """
     citas = set(paso.citas_textuales)
     if paso.formula_cita_id:

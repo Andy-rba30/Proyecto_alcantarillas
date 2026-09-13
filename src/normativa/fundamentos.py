@@ -818,12 +818,18 @@ FORMA_HDS5 = _fundamento(
            "HDS5_3ED.A.3#FORMAS"),  # exigencia
     que_pasa_si_no_se_hace=(
         "Es el error que la sesion C3 existe para evitar: copiar la Forma 1 y "
-        "cambiarle las constantes. El termino Ks*S sobreviviria en una "
-        "ecuacion que no lo tiene, y con Ks = -0.5 RESTA carga: el HW saldria "
-        "menor que el real y V4, V4b y el tamizado de 7.A se evaluarian del "
-        "lado no conservador, sin que nada avise -- exactamente la forma de "
-        "MAT-D10, pero por una via que ninguna guardia de signo detecta, "
-        "porque el resultado sigue siendo positivo."),
+        "cambiarle las constantes. La ecuacion (A.1) arrastra dos terminos "
+        "que la (A.2) no tiene -- H_c/D y Ks*S -- y el que DOMINA es el "
+        "primero: el HW sale MAYOR que el real (+91 % medido en I3 sobre el "
+        "marco de la linea base, 2.00 x 1.50 con la Carta 10 escala 1), o "
+        "sea sobrediseño y falsos no-factibles con sus deltas de rasante "
+        "inventados. ESTA FRASE DECIA LO CONTRARIO hasta la auditoria de I3 "
+        "-- que con Ks = -0.5 el HW saldria menor, del lado no conservador "
+        "--, mirando el termino chico sin mirar el grande: para que esa "
+        "direccion ocurriera haria falta S > 2*H_c/D, fuera incluso de "
+        "dominios.S_CAUCE_MAX. El error sigue sin fallar ruidosamente por "
+        "la misma razon de siempre: el resultado es positivo y plausible, y "
+        "ninguna guardia de signo lo ve."),
 )
 
 

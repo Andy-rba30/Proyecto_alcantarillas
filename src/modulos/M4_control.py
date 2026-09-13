@@ -1313,6 +1313,16 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
                             explicacion="paso de calculo"),
         citas_textuales=("HDS5_3ED.A.3#FORMAS",),
+        # LA VIA 2 DEL CANAL DE DISCREPANCIAS, y este es su primer usuario de
+        # produccion (I3; el cabo lo dejo anotado I2 al resolver G-LAUSHEY).
+        # D-9 habla del NUMERO que este paso sustituye -- la forma de la
+        # ecuacion, que la v8 rotula «Forma 1» sin decir que exista la 2 --,
+        # no de un texto que el paso entrecomille: es el caso exacto para el
+        # que `PasoDeMemoria.discrepancias` existe. Cuando una sesion corrija
+        # la v8 (el paquete esta en la bitacora §16 de ruta_familia_c.md),
+        # esta tupla se retira EN EL MISMO COMMIT: la guardia de `paso()` no
+        # admite resueltas.
+        discrepancias=("DIS-HR-FORMAS-HDS5",),
         nota_del_proyecto=(
             f"Esta corrida usa la FORMA {forma}. "
             + ("La Forma 1 lleva el termino de correccion por pendiente "

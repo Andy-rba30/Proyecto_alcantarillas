@@ -150,6 +150,44 @@ def test_hay_criterios_pendientes_declarados():
     )
 
 
+def test_todo_criterio_de_perfil_sin_valor_tiene_ficha_declarable():
+    """
+    I3, puntos 3 y 4 del plan: un vacio de PERFIL no basta con que exista ---
+    tiene que poder DECLARARSE desde la ventana normativa, y eso exige la
+    ficha entera: concepto, fuente, sensibilidad y resolucion, ademas del
+    nivel que ya lo trajo a esta lista.
+
+    La guardia de `_verificar_nivel` ya exige sensibilidad y resolucion a los
+    [A] de perfil sin valor; este test extiende la medicion a TODOS los de
+    `criterios_de_perfil_sin_valor()` porque dos de los nueve NO son [A] ---
+    'ke_entrada_cajon' es [C] y 'n_manning_cajon' es [N->] --- y quedaban
+    fuera de la guardia: una etiqueta menos elegida no hace declarable una
+    ficha incompleta. El censo va con igualdad exacta para que un vacio nuevo
+    llegue con su ficha o se le note al llegar; los nueve de hoy son los
+    siete del cajon mas los dos cuyo VALOR este software no produce
+    (TW_receptor: nivel del cuerpo receptor, dato de la ANA / Junta de
+    Usuarios; homogeneidad_serie_fen: propiedad de la serie hidrologica ---
+    este software no hace hidrologia).
+    """
+    claves = ca.criterios_de_perfil_sin_valor()
+    assert sorted(claves) == [
+        "TW_receptor", "cobertura_minima_cajon", "embocadura_cajon",
+        "espesor_pared_cajon", "homogeneidad_serie_fen", "ke_entrada_cajon",
+        "n_celdas_cajon", "n_manning_cajon", "secciones_cajon_normalizadas"]
+    for clave in claves:
+        c = CRITERIOS[clave]
+        for campo in ("concepto", "justificacion", "fuente"):
+            assert str(getattr(c, campo)).strip(), (
+                f"{clave}: `{campo}` vacio --- la ventana no puede presentar "
+                "un vacio sin decir que es ni de donde saldria")
+        assert c.sensibilidad, (
+            f"{clave}: sin `sensibilidad` --- la ventana es parte de la "
+            "FICHA y se conoce antes de elegir")
+        assert c.resolucion is not None, (
+            f"{clave}: sin `resolucion` --- sin procedencia declarada no hay "
+            "por donde declararlo en caliente")
+
+
 @pytest.mark.parametrize("clave", CLAVES_PENDIENTES)
 def test_criterio_pendiente_lanza_error_y_no_devuelve_default(clave):
     """

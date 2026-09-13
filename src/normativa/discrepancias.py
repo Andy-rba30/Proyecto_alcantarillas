@@ -626,6 +626,89 @@ DIS_HDS5_APENDICE_G = _d(
     estado=EstadoDiscrepancia.ERRATA_DE_IMPRENTA,
 )
 
+# ---------------------------------------------------------------------------
+# D-9 de docs/ruta_familia_c.md §15.8(d), registrada en I3. Es el PRIMER
+# usuario de produccion de la via 2 del canal (`PasoDeMemoria.discrepancias`,
+# declarada en el paso `de_forma` de M4): habla del NUMERO que ese paso
+# sustituye -- la forma de la ecuacion, columna «Equation Form» --, que es
+# exactamente el caso para el que el campo existe. Sus partes anclan ademas
+# en TA.1, que toda corrida que dimensiona imprime por el `Fundamento`
+# `F4.FORMA_HDS5`; la declaracion en el paso no depende de esa casualidad.
+#
+# POR QUE SIGUE ABIERTA_CONTRA_HOJA_DE_RUTA Y NO SE CORRIGIO LA v8 EN I3,
+# aunque la verificacion existe (T_HDS5_A1 con su columna `equation_form`,
+# metodo AMBOS; HDS5_3ED.A.2 y A.3#FORMAS verificadas): corregir la v8
+# resuelve la discrepancia, y la guardia de `paso()` expulsa lo resuelto del
+# canal -- el mismo movimiento por el que DIS-HR-G-LAUSHEY dejo de declararse
+# en I2, que fue lo que dejo la via 2 sin usuario. El paquete de correccion
+# exacto de la v8 quedo escrito en la bitacora §16 de docs/ruta_familia_c.md
+# (entrada I3); la sesion que lo aplique pasa esta discrepancia a RESUELTA y
+# retira la declaracion del paso EN EL MISMO COMMIT.
+# ---------------------------------------------------------------------------
+DIS_FORMAS_HDS5 = _d(
+    id="DIS-HR-FORMAS-HDS5",
+    objeto=("las DOS formas de la ecuacion de control de entrada no "
+            "sumergido del HDS-5 (columna «Equation Form» de la Tabla A.1)"),
+    partes=(
+        Parte(quien="hoja_de_ruta",
+              que_dice=("su Fase 4, §4.2, escribe UNA ecuacion de control de "
+                        "entrada no sumergido -- la que lleva el termino "
+                        "Ks*S --, la rotula «Forma 1» y jamas dice que exista "
+                        "otra: medido sobre el documento entero (remedido en "
+                        "I3), «Forma» aparece TRES veces y las tres son "
+                        "«Forma 1»; «Forma 2» no aparece nunca. Presenta "
+                        "ademas las constantes K, M, c, Y de la Tabla A.1 "
+                        "como si una sola ecuacion las consumiera, y usa "
+                        "«las dos formas» (dos veces, en la nota de la "
+                        "transicion y en la de MAT-D10) para nombrar las dos "
+                        "RAMAS -- no sumergida y sumergida --, que colisiona "
+                        "con el termino «Equation Form» del propio HDS-5")),
+        Parte(quien="HDS5_3ED",
+              que_dice=("su Tabla A.1 tiene una columna «Equation Form» con "
+                        "valores 1 y 2, fila por fila: la Forma 1 es la ec. "
+                        "(A.1), HW_i/D = H_c/D + K*(q*)^M + Ks*S, y la Forma "
+                        "2 es la ec. (A.2), HW_i/D = K*(q*)^M, SIN el "
+                        "termino Ks*S. De las cartas de cajon transcritas, "
+                        "solo la Carta 8 es Forma 1; las Cartas 9 a 12 son "
+                        "Forma 2. Las tres configuraciones circulares que la "
+                        "§4.2 tabula (filas de las Cartas 1 y 2) son todas "
+                        "Forma 1, que es por lo que la omision no se nota en "
+                        "las Familias A y B"),
+              cita_id="HDS5_3ED.TA.1"),
+    ),
+    gana="HDS5_3ED",
+    por_que=("la fuente primaria esta transcrita y verificada: las 18 filas "
+             "de `T_HDS5_A1` llevan su `equation_form` leido de la columna "
+             "de la tabla (metodo AMBOS), y las ecs. (A.1)/(A.2) del num. "
+             "A.2.1 estan citadas y verificadas (HDS5_3ED.A.2). El codigo ya "
+             "bifurca por forma (`modelos.ConstantesHDS5.forma`, "
+             "`M4._hw_sobre_D_no_sumergido`, C3) y la memoria imprime que "
+             "forma uso y por que (`F4.FORMA_HDS5`); la que hay que corregir "
+             "es la v8"),
+    efecto_si_se_sigue_la_otra=("quien implemente el cajon desde la v8 "
+                                "copiara la ec. (A.1) y le cambiara las "
+                                "constantes, y el resultado es un HW MAYOR "
+                                "que el real: el H_c/D espurio domina por "
+                                "dos ordenes al Ks*S que resta. Medido en la "
+                                "auditoria de I3 sobre el marco de la linea "
+                                "base (2.00 x 1.50 m, Q = 6 m3/s, S = 0.004, "
+                                "Carta 10 escala 1): 3.047 m frente a los "
+                                "1.592 m reales, +91 % -- sobrediseño y "
+                                "falsos no-factibles, con sus deltas de "
+                                "rasante inventados. Para que la direccion "
+                                "se invirtiera haria falta S > 2*H_c/D, "
+                                "fuera incluso de dominios.S_CAUCE_MAX. "
+                                "ESTA FICHA DECIA LO CONTRARIO hasta esa "
+                                "auditoria -- «el HW sale MENOR que el "
+                                "real», heredado de la fila D-9 de C2/C3, "
+                                "que miraba el termino Ks*S sin mirar el "
+                                "H_c/D que la copia arrastra --: un efecto "
+                                "con la direccion equivocada hace elegir "
+                                "mal que defecto corregir primero, y por "
+                                "eso se corrige aqui y no en una nota"),
+    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+)
+
 
 # ---------------------------------------------------------------------------
 # Clase de sitio (S13, conflicto #8). Las cuatro que salen de leer los tres
