@@ -32,7 +32,7 @@ import pytest
 
 from modelos import (DatoFaltanteError, DatoInvalidoError, Familia,
                      PuntoCritico)
-from modulos.M0_carga import COLUMNAS, cargar_puntos
+from modulos.M0_carga import COLUMNAS, cargar_puntos, leer_cabecera
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING
 
 DIRECTORIO_TESTS = Path(__file__).resolve().parent
@@ -466,3 +466,81 @@ def test_un_TW_por_encima_del_fondo_se_carga_y_deja_de_estar_pendiente(tmp_path)
     assert punto.cota_TW == pytest.approx(41.80)
     assert "cota_TW" not in punto.pendientes_externos
     assert punto.exigir("cota_TW") == pytest.approx(41.80)
+
+
+# ---------------------------------------------------------------------------
+# leer_cabecera: la lectura de solo-cabecera del anticipo (G3)
+# ---------------------------------------------------------------------------
+# La regla que estos tests fijan es la que la separa de `cargar_puntos`: esa
+# valida y LANZA; esta DESCRIBE, porque una cabecera incompleta o una celda
+# vacia son aqui el contenido del anticipo, no un error. Lo que el anticipo
+# HACE con esta lectura se prueba en tests/test_anticipo.py.
+
+
+def test_leer_cabecera_del_ejemplo_da_las_columnas_y_los_vacios(tmp_path):
+    cabecera = leer_cabecera(CSV_VALIDO)
+    assert cabecera.columnas == COLUMNAS
+    assert cabecera.filas == 4
+    # Los vacios medidos del fixture: las tres del cruce de canal (solo en
+    # C-01) y las cinco columnas de tablero/ensayo (en las cuatro filas).
+    assert cabecera.vacias_por_columna["Q_m3s"] == 1
+    assert cabecera.vacias_por_columna["area_ha"] == 1
+    assert cabecera.vacias_por_columna["S_cauce"] == 1
+    for columna in ("Q_receptor_m3s", "cota_TW", "NF_profundidad_m",
+                    "cota_fondo_entrada", "cota_coronacion_canal"):
+        assert cabecera.vacias_por_columna[columna] == 4
+    # Y ninguna otra columna tiene celdas vacias.
+    con_vacios = {c for c, n in cabecera.vacias_por_columna.items() if n}
+    assert con_vacios == {"Q_m3s", "area_ha", "S_cauce", "Q_receptor_m3s",
+                          "cota_TW", "NF_profundidad_m", "cota_fondo_entrada",
+                          "cota_coronacion_canal"}
+
+
+def test_leer_cabecera_describe_sin_lanzar_lo_que_cargar_puntos_rechaza():
+    """El fixture invalido LANZA en la carga completa y se DESCRIBE aqui."""
+    with pytest.raises(DatoFaltanteError):
+        cargar_puntos(CSV_INVALIDO)
+    cabecera = leer_cabecera(CSV_INVALIDO)
+    assert "cota_subrasante" not in cabecera.columnas
+    assert cabecera.filas == 1
+
+
+def test_leer_cabecera_cuenta_como_vacias_las_celdas_de_una_fila_corta(tmp_path):
+    """
+    Una fila mas corta que la cabecera es lo que `_celda` rechaza como fila
+    truncada; para el anticipo, sus celdas ausentes cuentan como vacias.
+    """
+    ruta = tmp_path / "corta.csv"
+    ruta.write_text("id,progresiva_km,familia\nA-01,0+380\n", encoding="utf-8")
+    cabecera = leer_cabecera(ruta)
+    assert cabecera.columnas == ("id", "progresiva_km", "familia")
+    assert cabecera.filas == 1
+    assert cabecera.vacias_por_columna == {"id": 0, "progresiva_km": 0,
+                                           "familia": 1}
+
+
+def test_leer_cabecera_de_un_archivo_vacio_no_lanza(tmp_path):
+    """
+    El anticipo se refresca al teclear la ruta: un archivo a medio guardar no
+    puede tumbar la ventana. Sin cabecera no hay columnas, y punto.
+    """
+    ruta = tmp_path / "vacio.csv"
+    ruta.write_text("", encoding="utf-8")
+    cabecera = leer_cabecera(ruta)
+    assert cabecera.columnas == ()
+    assert cabecera.vacias_por_columna == {}
+    assert cabecera.filas == 0
+
+
+def test_leer_cabecera_ignora_las_lineas_en_blanco(tmp_path):
+    ruta = tmp_path / "con_blancas.csv"
+    ruta.write_text("id,familia\n\nA-01,A\n   ,  \n", encoding="utf-8")
+    cabecera = leer_cabecera(ruta)
+    assert cabecera.filas == 1
+    assert cabecera.vacias_por_columna == {"id": 0, "familia": 0}
+
+
+def test_leer_cabecera_sin_archivo_es_un_fallo_de_es_no_del_expediente(tmp_path):
+    """FileNotFoundError, fuera de ErrorProyecto: igual que en cargar_puntos."""
+    with pytest.raises(FileNotFoundError):
+        leer_cabecera(tmp_path / "no_existe.csv")

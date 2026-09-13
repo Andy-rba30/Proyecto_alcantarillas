@@ -4092,3 +4092,28 @@ class VacioAdmitido:
         if not self.familias:
             return True
         return familia is None or familia in self.familias
+
+
+@dataclass(frozen=True)
+class CabeceraCSV:
+    """
+    Lo que se puede saber de un CSV leyendo SOLO su cabecera y contando las
+    celdas vacias: lo que el anticipo de la pestana 1 necesita ANTES de
+    correr (G3). La produce `M0_carga.leer_cabecera` y la consume
+    `anticipo.contraste_de_cabecera`; vive aqui porque fluye entre modulos.
+
+    NO VALIDA NADA -- ni tipos, ni rangos, ni cruzadas: eso es
+    `M0_carga.cargar_puntos`, y esta lectura existe justamente para no
+    ejecutarla --. Una cabecera incompleta o una celda imposible no son aqui
+    un error sino el CONTENIDO que el anticipo tiene que mostrar.
+
+    `columnas` conserva el orden del archivo (las de nombre vacio se
+    descartan); `vacias_por_columna` cuenta las celdas vacias de cada columna
+    --- una fila mas corta que la cabecera cuenta como vacias las celdas que
+    no alcanza a traer ---; `filas` son las filas de datos con algun
+    contenido.
+    """
+
+    columnas: Tuple[str, ...]
+    vacias_por_columna: Dict[str, int]
+    filas: int

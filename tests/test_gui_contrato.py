@@ -1947,3 +1947,147 @@ def test_ninguna_cadena_visible_de_la_pestana_1_nombra_banderas_ni_modulos():
     assert not culpables, (
         f"cadenas visibles de la pestana 1 con jerga de CLI o de modulos: "
         f"{culpables!r}")
+
+
+# ===========================================================================
+# G3: el anticipo de bloqueos antes de correr — derivado e informativo
+# ===========================================================================
+# Cuatro contratos, todos sobre el arbol (no hay tkinter garantizado):
+#
+# - el panel EXISTE en la pestana 1 y muestra el aviso fijo DEL CONTENIDO
+#   (`anticipo.AVISO_DEL_ANTICIPO`, que dice «estimación»), no una copia;
+# - sus tres bloques los PRODUCE `src/anticipo.py` y la GUI solo pinta ---
+#   y `src/anticipo.py`, a su vez, se deriva de los simbolos censados:
+#   `ca.criterios_del_alcance` x `ca.criterios_sin_valor`, `M0_carga` y los
+#   dos diccionarios de diferimiento de `cli` ---;
+# - el boton de EJECUTAR no depende del anticipo (regla dura de G3): el
+#   unico sitio del archivo que lo deshabilita es `ejecutar_pipeline`,
+#   mientras corre;
+# - el clic de una fila REUTILIZA la seleccion existente de la pestana 2,
+#   por el mismo camino que `_tras_declarar_en_ventana`.
+#
+# El CONTENIDO de los tres bloques se prueba ejecutandolo, sin pantalla, en
+# tests/test_anticipo.py; la lectura de solo-cabecera, en test_M0_carga.py.
+
+
+def test_la_pestana_1_construye_el_panel_de_anticipo_con_su_aviso():
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_datos"))
+    assert "Anticipo antes de correr" in fuente, (
+        "la pestana 1 dejo de construir el panel de anticipo")
+    assert "antc.AVISO_DEL_ANTICIPO" in fuente, (
+        "el aviso del panel tiene que ser EL MISMO objeto que declara "
+        "src/anticipo.py: una copia escrita aqui puede divergir y dejar de "
+        "decir «estimación»")
+
+    import anticipo as antc
+    assert "Estimación" in antc.AVISO_DEL_ANTICIPO
+    assert "pestaña 4" in antc.AVISO_DEL_ANTICIPO
+
+
+def test_los_tres_bloques_del_anticipo_los_produce_src_y_la_gui_pinta():
+    """
+    `_pintar_anticipo` PREGUNTA, no deduce: los tres bloques y sus lineas
+    salen de `src/anticipo.py`. Y no lee el CSV por su cuenta --- toda
+    lectura vive en src/ (regla dura de G3) ---: ni `open`, ni el modulo
+    `csv`, ni `cargar_puntos` aparecen en la funcion.
+    """
+    pintar = _funcion(ARBOL_GUI, "_pintar_anticipo")
+    llamadas = _llamadas_de(pintar)
+    for nombre in ("antc.criterios_vacios_alcanzables",
+                   "antc.contraste_de_cabecera",
+                   "antc.lineas_del_contraste",
+                   "antc.diferimientos_del_alcance",
+                   "antc.lineas_de_diferimientos"):
+        assert nombre in llamadas, (
+            f"la GUI dejo de pedir '{nombre}': o lo calcula ella, o dejo de "
+            "mostrar ese bloque")
+    # La lectura no se hace aqui NI SIQUIERA por la puerta buena: la llamada
+    # a `leer_cabecera` es de `antc.contraste_de_cabecera`, no de la GUI. Se
+    # mira por las LLAMADAS y no por el texto, porque el docstring de la
+    # funcion nombra la lectura al explicar donde vive.
+    for prohibida in llamadas:
+        assert not prohibida.endswith((".open", ".reader", ".DictReader",
+                                       ".cargar_puntos", ".leer_cabecera")), (
+            f"`_pintar_anticipo` llama a `{prohibida}`: gui/ no parsea el "
+            "CSV con logica propia -- la lectura vive en src/ y llega "
+            "armada por `antc.contraste_de_cabecera`")
+    assert "open" not in llamadas and "cargar_puntos" not in llamadas
+
+
+def test_el_contenido_del_anticipo_se_deriva_de_los_simbolos_censados():
+    """
+    La otra mitad del contrato, sobre `src/anticipo.py`: el bloque 1 es la
+    interseccion de `criterios_del_alcance` con `criterios_sin_valor`, el 2
+    contrasta contra `COLUMNAS` y `VACIOS_ADMITIDOS` leyendo SOLO la cabecera
+    (`leer_cabecera`), y el 3 lee los dos diccionarios de diferimiento de
+    `cli`. Ninguna de esas listas puede estar escrita a mano.
+    """
+    arbol = ast.parse((RAIZ / "src" / "anticipo.py").read_text(
+        encoding="utf-8"), filename="anticipo.py")
+    fuente = ast.unparse(arbol)
+    for simbolo in ("ca.criterios_del_alcance", "ca.criterios_sin_valor",
+                    "m0.COLUMNAS", "m0.VACIOS_ADMITIDOS", "m0.leer_cabecera",
+                    "cli.VERIFICACIONES_DIFERIDAS_POR_ALCANCE",
+                    "cli.MODULOS_DIFERIDOS_POR_ALCANCE"):
+        assert simbolo in fuente, (
+            f"src/anticipo.py dejo de leer '{simbolo}': ese bloque paso a "
+            "ser una lista propia, que es justo lo que G3 prohibe")
+    # Sin literales de la pareja diferida: la lista se LEE de cli.
+    for literal in ("'V5'", '"V5"', "'V8'", '"V8"'):
+        assert literal not in fuente, (
+            f"src/anticipo.py escribe {literal} a mano: el bloque 3 tiene "
+            "que leerse de cli, no transcribirse")
+
+
+def test_el_boton_de_ejecutar_no_depende_del_anticipo():
+    """
+    Regla dura de G3: el anticipo es una ESTIMACION y ninguna estimacion
+    gobierna un boton. Correr siempre se puede --- el pipeline convierte
+    cada falta en un Bloqueo declarado --- de modo que el UNICO sitio del
+    archivo que deshabilita EJECUTAR es `ejecutar_pipeline`, mientras corre.
+    """
+    pintar = ast.unparse(_funcion(ARBOL_GUI, "_pintar_anticipo"))
+    assert "btn_ejecutar" not in pintar, (
+        "`_pintar_anticipo` toca el boton de ejecutar: el anticipo es "
+        "informativo y no gobierna nada")
+
+    culpables = [
+        nodo.name for nodo in ast.walk(ARBOL_GUI)
+        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and nodo.name != "ejecutar_pipeline"
+        and "btn_ejecutar.deshabilitar" in ast.unparse(nodo)]
+    assert not culpables, (
+        f"{culpables} deshabilitan el boton de EJECUTAR: el unico motivo "
+        "declarado para apagarlo es que la corrida este en marcha")
+
+
+def test_el_clic_del_anticipo_reutiliza_la_seleccion_de_la_pestana_2():
+    """
+    La navegacion es la MISMA que la de `_tras_declarar_en_ventana`, y en el
+    mismo orden: adoptar la clave ANTES de repintar (para que
+    `_pasa_el_filtro` proteja esa fila), reponer la seleccion sobre el arbol
+    de criterios y cambiar de pestana. Una seleccion propia seria la segunda
+    forma de seleccionar la misma tabla.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_ir_al_criterio_del_anticipo"))
+    orden_adopta = fuente.index("self._clave_criterio_seleccionado = ")
+    orden_repinta = fuente.index("self._llenar_tabla_criterios()")
+    assert orden_adopta < orden_repinta, (
+        "la clave se adopta DESPUES de repintar: `_pasa_el_filtro` no "
+        "protegeria la fila y `selection_set` podria apuntar al vacio")
+    assert "self.tree_criterios_todos.selection_set" in fuente
+    assert "self.nb.select(self.tab_criterios)" in fuente
+
+
+def test_el_anticipo_se_refresca_al_cargar_csv_y_al_cambiar_alcance():
+    """
+    Los dos gestos que el plan declara, mas el tercero que los cubre a
+    todos: `_llenar_tabla_criterios` repinta el anticipo porque declarar o
+    quitar un valor en caliente cambia que criterios siguen vacios, y esas
+    acciones terminan todas alli.
+    """
+    for nombre in ("_releer_familias", "__init__", "_llenar_tabla_criterios"):
+        fuente = ast.unparse(_funcion(ARBOL_GUI, nombre))
+        assert "_pintar_anticipo" in fuente, (
+            f"'{nombre}' dejo de repintar el anticipo: el panel se quedaria "
+            "describiendo el estado anterior")

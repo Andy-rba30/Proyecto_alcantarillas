@@ -50,8 +50,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from dominios import (CBR_MAX_FISICO, ESVIAJE_MAX, METROS_POR_KM, S_CAUCE_MAX)
-from modelos import (DatoFaltanteError, DatoInvalidoError, Familia,
-                     PuntoCritico, VacioAdmitido)
+from modelos import (CabeceraCSV, DatoFaltanteError, DatoInvalidoError,
+                     Familia, PuntoCritico, VacioAdmitido)
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
 
@@ -273,6 +273,52 @@ def cargar_puntos(ruta: Any) -> List[PuntoCritico]:
         )
     _valida_ids_unicos(puntos)
     return puntos
+
+
+def leer_cabecera(ruta: Any) -> CabeceraCSV:
+    """
+    SOLO la cabecera y el conteo de celdas vacias por columna, SIN validar.
+
+    Es la lectura del panel «Anticipo antes de correr» (G3): contrastar el
+    encabezado contra COLUMNAS y decir que celdas van vacias no necesita ---
+    y no debe --- ejecutar la carga completa. El anticipo se refresca al
+    teclear una ruta, y `cargar_puntos` valida y LANZA; esta funcion, en
+    cambio, DEVUELVE lo que ve, porque una cabecera incompleta no es aqui un
+    error sino el contenido que el anticipo tiene que mostrar. Vive en este
+    modulo y no en gui/ por la regla de G3: toda lectura del CSV vive en
+    src/, y la GUI la consume.
+
+    NO LANZA ErrorProyecto a proposito, por lo de arriba. Los fallos de E/S
+    (archivo inexistente) si salen, como FileNotFoundError, igual que en
+    `cargar_puntos`: no son del expediente.
+
+    Una fila mas corta que la cabecera cuenta como vacias las celdas que no
+    alcanza a traer (es lo que `_celda` rechazaria como fila truncada); una
+    fila sin ningun contenido no cuenta como fila de datos. Dos columnas con
+    el mismo nombre suman sus vacias juntas: para el contraste da igual cual
+    de las dos es la repetida.
+    """
+    ruta = Path(ruta)
+    with ruta.open(encoding="utf-8-sig", newline="") as archivo:
+        lector = csv.reader(archivo)
+        encabezado = next(lector, None)
+        if encabezado is None:
+            return CabeceraCSV(columnas=(), vacias_por_columna={}, filas=0)
+        nombres = [c.strip() for c in encabezado]
+        vacias = {nombre: 0 for nombre in nombres if nombre}
+        filas = 0
+        for fila in lector:
+            if not any(celda.strip() for celda in fila):
+                continue
+            filas += 1
+            for indice, nombre in enumerate(nombres):
+                if not nombre:
+                    continue
+                celda = fila[indice] if indice < len(fila) else ""
+                if not celda.strip():
+                    vacias[nombre] += 1
+    return CabeceraCSV(columnas=tuple(n for n in nombres if n),
+                       vacias_por_columna=vacias, filas=filas)
 
 
 # ---------------------------------------------------------------------------

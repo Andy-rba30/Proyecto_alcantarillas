@@ -28,10 +28,11 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
     1. Datos de entrada    CSV de Sec. 1.2 (M0) + datos declarados que no son
                             columna (los equivalentes de las banderas de
                             `cli.py`, AGRUPADOS por las familias que los usan
-                            y anotados) + ALCANCE de la corrida + boton de
-                            ejecucion. Los dos campos de archivo llevan su
-                            icono «i», que abre la AYUDA DERIVADA (ver mas
-                            abajo).
+                            y anotados) + ALCANCE de la corrida + el panel
+                            «Anticipo antes de correr» (G3, ver mas abajo) +
+                            boton de ejecucion. Los dos campos de archivo
+                            llevan su icono «i», que abre la AYUDA DERIVADA
+                            (ver mas abajo).
     2. Criterios           Los criterios adoptados y su estado, con FILTRO
                             (por estado, por AMBITO y por texto) y RECUENTO de
                             pendientes; la ventana normativa de cada variable
@@ -142,6 +143,27 @@ ninguna bandera de la CLI ni codigo de modulo (M0, M11) en una etiqueta ---
 esa equivalencia vive en el tooltip de cada campo, y los codigos de modulo en
 la barra de estado.
 
+El anticipo antes de correr (pestana 1, G3)
+-------------------------------------------
+Hasta G3, los bloqueos solo se conocian DESPUES de ejecutar: el tablero de la
+pestana 4 (`M11.criterios_bloqueantes`) se puebla post-corrida, y el filtro de
+bloqueantes de la pestana 2 espera a que haya corrida. Ese diseño SE CONSERVA
+--- es la verdad medida ---; lo que el panel «Anticipo antes de correr» ahorra
+es el ciclo «correr para descubrir», con tres bloques que se refrescan al
+cargar CSV y al cambiar el alcance, todos DERIVADOS por `src/anticipo.py`
+(aqui solo se pintan): los criterios vacios que el alcance elegido puede
+invocar (clic lleva a su fila en la pestana 2), el contraste de la cabecera
+del CSV contra Sec. 1.2 --- solo cabecera y conteo de celdas vacias, por
+`M0_carga.leer_cabecera`: la GUI no parsea el CSV por su cuenta ---, y lo que
+el alcance difiere, leido de los dos diccionarios de `cli` que la propia
+corrida consulta.
+
+ES UNA ESTIMACION Y EL PANEL LO DICE, con su linea fija
+(`anticipo.AVISO_DEL_ANTICIPO`): la invocacion real de un criterio depende de
+la ruta que tome cada punto. Por eso el boton de EJECUTAR NUNCA se
+deshabilita por el anticipo --- correr siempre se puede; el pipeline
+convierte cada falta en un Bloqueo declarado ---.
+
 Los criterios en la sesion (SIS-A-18)
 -------------------------------------
 La sesion JSON guardaba el proyecto, el CSV y las cinco banderas, y NO las
@@ -172,6 +194,7 @@ for _ruta in (RAIZ, SRC):
 
 import json  # noqa: E402
 
+import anticipo as antc  # noqa: E402
 import cli  # noqa: E402
 import criterios_adoptados as ca  # noqa: E402
 import declaracion as dec  # noqa: E402
@@ -342,9 +365,14 @@ class ExpedienteApp:
         # la pestana 1: es el MISMO dato. Sin este `trace` la tabla se quedaba
         # filtrando por el alcance anterior hasta el proximo repintado, que es
         # justo la clase de desfase que hace desconfiar de un filtro.
-        self.alcance_var.trace_add("write", lambda *_a: self._refiltrar())
+        # Y el ANTICIPO se repinta con el mismo gesto (G3): sus bloques 1 y 3
+        # dependen del alcance, y un anticipo que describe el alcance anterior
+        # es la clase de desfase que este panel existe para evitar.
+        self.alcance_var.trace_add(
+            "write", lambda *_a: (self._refiltrar(), self._pintar_anticipo()))
         # Y la anotacion de la pestana 1 se rehace al cambiar el CSV, que es
-        # cuando cambian las familias del expediente.
+        # cuando cambian las familias del expediente (el anticipo tambien:
+        # `_releer_familias` termina repintandolo).
         self.csv_var.trace_add("write", lambda *_a: self._releer_familias())
 
     # ------------------------------------------------------------------
@@ -541,6 +569,62 @@ class ExpedienteApp:
             rb.grid(row=0, column=columna, sticky="w", padx=12, pady=4)
             Tooltip(rb, ayuda)
 
+        # --- El anticipo de bloqueos ANTES de correr (G3) ------------------
+        # Panel INFORMATIVO junto al boton de ejecutar: tres bloques, todos
+        # derivados por `src/anticipo.py` (aqui solo se pinta), que se
+        # refrescan al cargar CSV y al cambiar el alcance. ES UNA ESTIMACION
+        # y el aviso fijo lo dice; la verdad medida sigue siendo el tablero
+        # de la pestana 4, que se puebla despues de ejecutar. El boton de
+        # EJECUTAR no se entera de que este panel existe: correr siempre se
+        # puede, y el pipeline convierte cada falta en un Bloqueo declarado.
+        ttk.Separator(p, orient="horizontal").pack(fill="x", pady=6)
+        f_ant = ttk.LabelFrame(p, text="Anticipo antes de correr", padding=10)
+        f_ant.pack(fill="x", pady=(8, 0))
+        ttk.Label(f_ant, text=antc.AVISO_DEL_ANTICIPO, style="Ayuda.TLabel",
+                  wraplength=900, justify="left").pack(anchor="w", pady=(0, 6))
+
+        self.lbl_anticipo_criterios = ttk.Label(f_ant, text="",
+                                                style="Header.TLabel")
+        self.lbl_anticipo_criterios.pack(anchor="w")
+        f_arbol_ant = ttk.Frame(f_ant)
+        f_arbol_ant.pack(fill="x", pady=(2, 6))
+        f_arbol_ant.columnconfigure(0, weight=1)
+        self.tree_anticipo = ttk.Treeview(
+            f_arbol_ant, columns=("clave", "concepto"), show="headings",
+            height=6)
+        self.tree_anticipo.heading("clave", text="Criterio pendiente")
+        self.tree_anticipo.heading("concepto", text="Concepto")
+        self.tree_anticipo.column("clave", width=280, anchor="w")
+        self.tree_anticipo.column("concepto", width=560, anchor="w")
+        self.tree_anticipo.grid(row=0, column=0, sticky="ew")
+        scroll_ant = ttk.Scrollbar(f_arbol_ant, orient="vertical",
+                                   command=self.tree_anticipo.yview)
+        self.tree_anticipo.configure(yscroll=scroll_ant.set)
+        scroll_ant.grid(row=0, column=1, sticky="ns")
+        self.tree_anticipo.bind("<<TreeviewSelect>>",
+                                self._ir_al_criterio_del_anticipo)
+        Tooltip(self.tree_anticipo,
+                "Clic en una fila lleva a ese criterio en la pestana de\n"
+                "criterios, donde se declara. La lista es la interseccion de\n"
+                "lo que el alcance elegido puede invocar con los criterios\n"
+                "sin valor no opcionales; los opcionales no bloquean nada y\n"
+                "por eso no estan.")
+
+        ttk.Label(f_ant, text="Columnas del CSV cargado",
+                  style="Header.TLabel").pack(anchor="w")
+        self.lbl_anticipo_csv = ttk.Label(f_ant, text="", style="Ayuda.TLabel",
+                                          wraplength=900, justify="left")
+        self.lbl_anticipo_csv.pack(anchor="w", pady=(0, 6))
+
+        ttk.Label(f_ant, text="Lo que este alcance difiere",
+                  style="Header.TLabel").pack(anchor="w")
+        self.lbl_anticipo_diferido = ttk.Label(f_ant, text="",
+                                               style="Ayuda.TLabel",
+                                               wraplength=900, justify="left")
+        self.lbl_anticipo_diferido.pack(anchor="w")
+
+        self._pintar_anticipo()
+
         self.lbl_error_datos = ttk.Label(p, text="", style="Error.TLabel", wraplength=820, justify="left")
         self.lbl_error_datos.pack(anchor="w", padx=5, pady=(10, 0))
 
@@ -648,6 +732,9 @@ class ExpedienteApp:
                 self.puntos_familia = None
         self._pintar_no_aplica()
         self._pintar_encabezados_familia()
+        # El bloque de columnas del anticipo (G3) mira el mismo archivo:
+        # cambiar el CSV es una de las dos cosas que lo refrescan.
+        self._pintar_anticipo()
 
     def _pintar_no_aplica(self):
         """
@@ -670,6 +757,87 @@ class ExpedienteApp:
             faltan = ", ".join(f"Familia {f.value}" for f in usan)
             lbl.config(text=f"no aplica: este CSV no trae puntos de {faltan}",
                        foreground=COLOR_AVISO)
+
+    def _pintar_anticipo(self):
+        """
+        Repinta los tres bloques del anticipo (G3): al cargar CSV, al cambiar
+        el alcance, y tras cada repintado de la tabla de criterios --- porque
+        declarar o quitar un valor en caliente cambia que criterios siguen
+        vacios, y todas esas acciones pasan por `_llenar_tabla_criterios` ---.
+
+        TODO EL CONTENIDO LO PRODUCE `src/anticipo.py`; aqui se pinta, que es
+        el mismo reparto que la ayuda de entrada y la traza de procedencia.
+        La GUI no lee el CSV por su cuenta: `contraste_de_cabecera` pasa por
+        `M0_carga.leer_cabecera`, que vive en src/.
+
+        Y NO TOCA EL BOTON DE EJECUTAR, a proposito (regla dura de G3): el
+        anticipo es una ESTIMACION --- la invocacion real de un criterio
+        depende de la ruta que tome cada punto --- y ninguna estimacion de
+        este proyecto gobierna un filtro ni un boton. Correr siempre se
+        puede: el pipeline convierte cada falta en un Bloqueo declarado, y la
+        verdad medida es el tablero de la pestana 4.
+
+        El silencio ante un CSV ilegible es el MISMO de `_releer_familias`,
+        y por la misma razon escrita alli: esto se dispara al teclear la
+        ruta, y la mitad de las veces el archivo aun no existe.
+        """
+        if not hasattr(self, "tree_anticipo"):
+            return
+        alcance = self.alcance_var.get()
+
+        vacios = antc.criterios_vacios_alcanzables(alcance)
+        for item in self.tree_anticipo.get_children():
+            self.tree_anticipo.delete(item)
+        for criterio in vacios:
+            self.tree_anticipo.insert("", "end", iid=criterio.clave,
+                                      values=(criterio.clave,
+                                              criterio.concepto))
+        self.lbl_anticipo_criterios.config(
+            text=(f"Criterios vacíos que el alcance «{alcance}» puede "
+                  f"invocar: {len(vacios)}"),
+            foreground=COLOR_AVISO if vacios else COLOR_OK)
+
+        ruta = self.csv_var.get().strip()
+        contraste = None
+        if ruta:
+            try:
+                contraste = antc.contraste_de_cabecera(Path(ruta))
+            except (OSError, UnicodeDecodeError):
+                contraste = None
+        if contraste is None:
+            self.lbl_anticipo_csv.config(text=antc.SIN_CSV,
+                                         foreground="#666666")
+        else:
+            self.lbl_anticipo_csv.config(
+                text="\n".join(antc.lineas_del_contraste(contraste)),
+                foreground=("#666666" if contraste.cabecera_completa
+                            else COLOR_AVISO))
+
+        diferido = antc.diferimientos_del_alcance(alcance)
+        self.lbl_anticipo_diferido.config(
+            text="\n".join(antc.lineas_de_diferimientos(diferido)),
+            foreground=COLOR_AVISO if diferido.difiere_algo else "#666666")
+
+    def _ir_al_criterio_del_anticipo(self, _evt=None):
+        """
+        Clic en una fila del anticipo: la MISMA fila en la pestana de
+        criterios, donde se declara.
+
+        Reutiliza la seleccion existente del arbol, por el mismo camino que
+        `_tras_declarar_en_ventana` y por las mismas razones: la clave se
+        adopta ANTES de repintar, para que `_pasa_el_filtro` proteja esa fila
+        aunque el filtro puesto no la deje pasar, y para que `selection_set`
+        encuentre algo que seleccionar.
+        """
+        seleccion = self.tree_anticipo.selection()
+        if not seleccion:
+            return
+        clave = seleccion[0]
+        self._clave_criterio_seleccionado = clave
+        self._llenar_tabla_criterios()
+        self.tree_criterios_todos.selection_set(clave)
+        self.tree_criterios_todos.see(clave)
+        self.nb.select(self.tab_criterios)
 
     def _abrir_ayuda(self, pestana):
         """
@@ -1150,6 +1318,11 @@ class ExpedienteApp:
         self._pintar_recuento(pendientes, mostrados)
         self._pintar_aviso_de_ambito(len(ca.CRITERIOS) - len(self._claves_ambito)
                                      if self._claves_ambito is not None else 0)
+        # El bloque 1 del anticipo (G3) lista los criterios que siguen
+        # VACIOS, y eso cambia por este mismo repintado: declarar, pisar y
+        # quitar en caliente --- desde el panel o desde la emergente ---
+        # terminan todos aqui. Refrescarlo aqui es UN sitio en vez de cuatro.
+        self._pintar_anticipo()
 
     def _reponer_seleccion(self):
         """

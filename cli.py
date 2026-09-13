@@ -235,10 +235,29 @@ ALCANCE_EXPEDIENTE = _ALCANCE_EXPEDIENTE
 # segunda tabla. V5 y V8 NO estan aqui: no son modulos que se salten, son dos
 # verificaciones que se INTENTAN igual y cuyo fallo se difiere
 # (`_verificador_perfil`), de modo que sus criterios siguen siendo alcanzables
-# a perfil.
+# a perfil. Esa pareja tiene su propio dato, justo debajo.
 MODULOS_DIFERIDOS_POR_ALCANCE: Dict[str, Tuple[str, ...]] = {
     ALCANCE_EXPEDIENTE: (),
     ALCANCE_PERFIL: ("M8_estructural", "M9_cabezal"),
+}
+
+# LAS VERIFICACIONES QUE CADA ALCANCE DIFIERE, como dato y no como prosa.
+#
+# Es la otra mitad del diccionario de arriba, y la distincion ya estaba
+# escrita alli: V5 y V8 no son modulos que se salten, son verificaciones que
+# se INTENTAN igual y cuyo fallo se difiere al expediente. Hasta G3 la pareja
+# solo existia como literales dentro de `_verificador_perfil`, y el anticipo
+# de la pestana 1 --- que tiene que decir QUE difiere el alcance elegido sin
+# escribir la lista a mano --- no tenia de donde leerla.
+#
+# Y NO ES UNA TABLA PARALELA, por la misma defensa que la de los modulos:
+# `_verificador_perfil` CONSULTA esta tupla en sus dos puntos de
+# diferimiento, de modo que no puede quedarse describiendo un diferimiento
+# que el codigo ya no hace --- quitar "V8" de aqui haria que su fallo volviera
+# a subir como en el alcance de expediente.
+VERIFICACIONES_DIFERIDAS_POR_ALCANCE: Dict[str, Tuple[str, ...]] = {
+    ALCANCE_EXPEDIENTE: (),
+    ALCANCE_PERFIL: ("V5", "V8"),
 }
 
 
@@ -1036,13 +1055,18 @@ def _verificador_perfil(informe: InformePunto):
         #        declarado. Diferirla dejaria pasar el punto acreditado como
         #        alcantarilla de paso sin que nadie hubiera mirado el canal,
         #        que es exactamente el estado que esta sesion cierra.
+        # La condicion consulta VERIFICACIONES_DIFERIDAS_POR_ALCANCE --- y no
+        # el literal "V5" que habia --- para que ese dato no pueda quedarse
+        # describiendo un diferimiento que este codigo ya no hace: VC1 no
+        # esta en la tupla y por eso sube.
         codigo_hueco, pieza_hueco = M5.pieza_del_hueco_de_V5(
             punto=punto, resultado=resultado)
         try:
             filas.append(pieza_hueco())
         except ErrorProyecto as exc:
-            if codigo_hueco == "V5":
-                _diferir_verificacion(informe, "V5", exc, ya_registrados)
+            if codigo_hueco in VERIFICACIONES_DIFERIDAS_POR_ALCANCE[ALCANCE_PERFIL]:
+                _diferir_verificacion(informe, codigo_hueco, exc,
+                                      ya_registrados)
             else:
                 exc.verificaciones_completadas = tuple(filas)
                 raise
@@ -1059,7 +1083,14 @@ def _verificador_perfil(informe: InformePunto):
         try:
             filas.append(M5.v8_evento_extremo(punto=punto, resultado=resultado))
         except ErrorProyecto as exc:
-            _diferir_verificacion(informe, "V8", exc, ya_registrados)
+            # Misma consulta que el hueco de V5: si "V8" saliera de la tupla,
+            # su fallo volveria a subir como una obligatoria, y el dato que el
+            # anticipo lee no podria divergir de lo que esta corrida hace.
+            if "V8" in VERIFICACIONES_DIFERIDAS_POR_ALCANCE[ALCANCE_PERFIL]:
+                _diferir_verificacion(informe, "V8", exc, ya_registrados)
+            else:
+                exc.verificaciones_completadas = tuple(filas)
+                raise
         try:
             filas.append(M5.v9_disponibilidad_diametro(D=D, material=material))
         except ErrorProyecto as exc:
