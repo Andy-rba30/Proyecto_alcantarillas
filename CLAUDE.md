@@ -351,7 +351,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1830**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1882**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -377,25 +377,30 @@ regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
 `sys.executable` y después los intérpretes del sistema, de modo que un
-`1826 passed` **no** demuestra que la suite corra sobre un Python con tkinter
+`1878 passed` **no** demuestra que la suite corra sobre un Python con tkinter
 —solo que alguno lo tenía—. Es exactamente lo que pasa hoy en el contenedor de
 desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **Las cuatro medidas sobre el mismo árbol en I1b** (el cierre
-de I1 sumó el cuarto test de ventana y 13 tests: 1817 → 1830; con cuatro
-tests de ventana la columna «Ventana Tk = no» pasa de +3 a +4 saltos). La
-«Ventana Tk = no» de estas medidas se consiguió simulando la ausencia de
-entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una de
-las tres condiciones legítimas del salto:
+independientes. **Las cuatro medidas sobre el mismo árbol en pre-N1**, la
+sesión de orden previa a N1. Conviene decir cómo llegó la tabla hasta ahí,
+porque es el defecto que este párrafo persigue: I1b la dejó en 1830 y después
+**seis sesiones** (G3, I3, R3, R3b, G2, G5) sumaron 51 tests sin volver a
+medirla; pre-N1 la encontró en 1881 y fusionó además la rama de S24, que
+llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
+propio caso parametrizado en `test_decisiones_diferidas`: 1882. La «Ventana
+Tk = no» de estas medidas se consiguió simulando la ausencia de entorno
+gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una de las tres
+condiciones legítimas del salto; la «PyMuPDF = no», desinstalándolo para la
+medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 1826 | 4 |
-| sí | no | 1822 | 8 |
-| no | sí | 1794 | 36 |
-| no | no | 1790 | 40 |
+| sí | sí | 1878 | 4 |
+| sí | no | 1874 | 8 |
+| no | sí | 1846 | 36 |
+| no | no | 1842 | 40 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
