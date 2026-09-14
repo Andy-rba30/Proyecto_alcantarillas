@@ -5996,6 +5996,7 @@ diseño de `test_familias_del_csv` más el permanente de `test_MD`). El par desd
 literal «Claude doesn't have GitHub access to Andy-rba30/Proyecto_alcantarillas for your
 organization»: la lectura funciona y la escritura no, y la solución —instalar la Claude
 GitHub App o reconectar GitHub en claude.ai— es del dueño del repositorio, no del código.
-Si al leer esto `origin/main` no contiene el commit «cierre(D9)», la tarea NO está entregada
-por la regla de cierre de CLAUDE.md: está fusionada en el `main` local del entorno de D9 y
-en la rama `claude/wizardly-newton-hwz23f`, y falta el push.
+El acceso se restauró en la misma sesión y el push entró después por fast-forward:
+`origin/main` pasó de `5a76dac` a `80f2bc9` (los dos commits de D9: el del trabajo,
+`749311c`, y el de sellos), y la suite remedida sobre ese árbol dio el mismo par,
+1971 passed, 4 skipped. La rama de trabajo ya no existe en el remoto.

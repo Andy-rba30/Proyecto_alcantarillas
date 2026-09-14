@@ -399,10 +399,12 @@ igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
 independientes. **Las cuatro medidas sobre el mismo árbol en D9**
-(`749311c`, el `main` fusionado por fast-forward; D9 no pudo empujarlo a
-`origin` —GitHub devolvió 403 por falta de acceso de la app de Claude al
-repositorio— y la medida es sobre ese `main` local, que es el que debe
-llegar a `origin/main` sin cambios), que sumó UN test neto: la ficha D9-01
+(`749311c`, el `main` fusionado por fast-forward; el push se rechazó
+primero con 403 —la app de Claude no tenía acceso de escritura al
+repositorio— y entró horas después, una vez restaurado el acceso, sin
+cambios: `origin/main` quedó en `80f2bc9`, que sólo añade los sellos y esta
+tabla, y la configuración «sí · sí» se remidió sobre él: 1971 passed, 4
+skipped), que sumó UN test neto: la ficha D9-01
 en el parametrizado de `test_decisiones_diferidas` (la vía 2 del canal
 censada sin usuario al resolver `DIS-HR-FORMAS-HDS5`; el test de la vía 2
 se reescribió uno por uno). T3 las había medido sobre el árbol anterior
