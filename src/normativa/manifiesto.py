@@ -69,6 +69,9 @@ RAIZ = Path(__file__).resolve().parents[2]
 MANIFIESTO = RAIZ / "docs" / "manifiesto_citas.md"
 INDICE_REGISTRO = RAIZ / "docs" / "manifiesto_registro_normativo.md"
 TRAZABILIDAD_CSV = RAIZ / "docs" / "trazabilidad.csv"
+# El cuarto generado, de src/indice_formulas.py; aqui solo para eximirlo del
+# chequeo de arbol sucio (ver _commit_de_origen).
+INDICE_FORMULAS_GENERADO = RAIZ / "docs" / "indice_formulas.md"
 
 # El formato de referencia del manifiesto: [ETIQUETA:linea](ruta:linea).
 REFERENCIA = re.compile(
@@ -788,11 +791,16 @@ def _commit_de_origen() -> str:
 
     sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=RAIZ,
                          capture_output=True, text=True, check=True).stdout.strip()
-    # Los tres documentos generados no cuentan como cambio: regenerarlos los
+    # Los CUATRO documentos generados no cuentan como cambio: regenerarlos los
     # modifica siempre, y la marca es para lo DEMAS que el arbol tenga sin
-    # commit.
+    # commit. El cuarto es docs/indice_formulas.md, que genera
+    # src/indice_formulas.py con su propio comando: si cada generador eximiera
+    # solo lo suyo, regenerar los cuatro en fila dejaria al segundo firmando
+    # «+cambios-sin-commit» por lo que acababa de escribir el primero -- que
+    # es exactamente lo que le paso a PD, y por eso ambos eximen los cuatro.
     exentos = [f":!{ruta.relative_to(RAIZ)}"
-               for ruta in (MANIFIESTO, INDICE_REGISTRO, TRAZABILIDAD_CSV)]
+               for ruta in (MANIFIESTO, INDICE_REGISTRO, TRAZABILIDAD_CSV,
+                            INDICE_FORMULAS_GENERADO)]
     sucio = subprocess.run(
         ["git", "status", "--porcelain", "--", ".", *exentos],
         cwd=RAIZ, capture_output=True, text=True, check=True).stdout

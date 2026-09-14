@@ -579,8 +579,14 @@ def _commit_de_origen() -> str:
     # El propio indice no cuenta como cambio: regenerarlo lo modifica
     # siempre, y la marca es para lo DEMAS que el arbol tenga sin commit.
     sucio = subprocess.run(
-        ["git", "status", "--porcelain", "--",
-         ".", f":!{INDICE_FORMULAS.relative_to(RAIZ)}"],
+        ["git", "status", "--porcelain", "--", ".",
+         # Los cuatro documentos generados quedan fuera del chequeo, no solo
+         # este: regenerarlos en fila no puede ensuciar el sello del siguiente
+         # (misma regla, y misma razon, que en normativa.manifiesto).
+         f":!{INDICE_FORMULAS.relative_to(RAIZ)}",
+         ":!docs/manifiesto_citas.md",
+         ":!docs/manifiesto_registro_normativo.md",
+         ":!docs/trazabilidad.csv"],
         cwd=RAIZ, capture_output=True, text=True, check=True).stdout
     return sha + ("+cambios-sin-commit" if sucio.strip() else "")
 
