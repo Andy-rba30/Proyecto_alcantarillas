@@ -399,13 +399,14 @@ igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
 independientes. **Las cuatro medidas sobre el mismo árbol en PD**
-(`aefbdcd`, la rama de trabajo lista para entrar en `main` por
-fast-forward; el push se rechazó con 403 —la app de Claude volvió a no
-tener acceso de escritura al repositorio, como en D9— y las cuatro se
-midieron sobre ese árbol, que es byte a byte el que entrará en `main`;
-cuando entre hay que remedir «sí · sí» sobre `origin/main` y firmar con su
-SHA los sellos de `indice_formulas.md` y `trazabilidad.csv`, que hoy
-nombran `aefbdcd`), que sumó SIETE tests, todos en
+(`aefbdcd`, la rama de trabajo; el push se rechazó con 403 —la app de
+Claude volvió a no tener acceso de escritura al repositorio, como en D9— y
+las cuatro se midieron sobre ese árbol; el acceso se restauró en la misma
+sesión, la rama entró en `main` por fast-forward y `origin/main` quedó en
+`0c71854`, que sólo añade los sellos y esta tabla; la configuración
+«sí · sí» se remidió sobre él: 1978 passed, 4 skipped, y los sellos de
+`indice_formulas.md` y `trazabilidad.csv` llevan ese SHA), que sumó SIETE
+tests, todos en
 `tests/test_dimensional_piloto.py`: `K_MANNING_SI` en los tres
 parametrizados del censo de constantes `_SI`, la afirmación positiva de
 Manning con `k_n`, los dos censos en cero, el umbral del paso 4.3 juzgado
