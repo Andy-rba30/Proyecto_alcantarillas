@@ -365,7 +365,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1975**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1982**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -398,9 +398,22 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **Las cuatro medidas sobre el mismo árbol en D9**
-(`749311c`, el `main` fusionado por fast-forward; el push se rechazó
-primero con 403 —la app de Claude no tenía acceso de escritura al
+independientes. **Las cuatro medidas sobre el mismo árbol en PD**
+(`aefbdcd`, la rama de trabajo lista para entrar en `main` por
+fast-forward; el push se rechazó con 403 —la app de Claude volvió a no
+tener acceso de escritura al repositorio, como en D9— y las cuatro se
+midieron sobre ese árbol, que es byte a byte el que entrará en `main`;
+cuando entre hay que remedir «sí · sí» sobre `origin/main` y firmar con su
+SHA los sellos de `indice_formulas.md` y `trazabilidad.csv`, que hoy
+nombran `aefbdcd`), que sumó SIETE tests, todos en
+`tests/test_dimensional_piloto.py`: `K_MANNING_SI` en los tres
+parametrizados del censo de constantes `_SI`, la afirmación positiva de
+Manning con `k_n`, los dos censos en cero, el umbral del paso 4.3 juzgado
+sobre una magnitud de su sustitución (`UMBRAL_JUZGA`), y la guardia sobre
+el AST de M3 que pidió el auditor adversarial (sin ella, revertir
+`_caudal_manning` a `(1/n)` dejaba la suite verde). D9 las había medido
+sobre el árbol anterior (`749311c`, el `main` fusionado por fast-forward;
+el push se rechazó primero con 403 —la app de Claude no tenía acceso de escritura al
 repositorio— y entró horas después, una vez restaurado el acceso, sin
 cambios: `origin/main` quedó en `80f2bc9`, que sólo añade los sellos y esta
 tabla, y la configuración «sí · sí» se remidió sobre él: 1971 passed, 4
@@ -444,22 +457,22 @@ porque es el defecto que este párrafo persigue: I1b la dejó en 1830 y después
 medirla; pre-N1 la encontró en 1881 y fusionó además la rama de S24, que
 llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
-post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975. La
+post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
 de instalar `python3-tk` (el contenedor arranca sin él) y otra vez después;
-post-N1, N2, T1, I4, T3 y D9 repitieron el procedimiento de pre-N1 (N2, T1,
-I4, T3 y D9 instalaron antes `python3-tk` y las dependencias de
+post-N1, N2, T1, I4, T3, D9 y PD repitieron el procedimiento de pre-N1 (N2,
+T1, I4, T3, D9 y PD instalaron antes `python3-tk` y las dependencias de
 `python3.12`, como manda el bloque de abajo). La «PyMuPDF = no», en todas
 esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 1971 | 4 |
-| sí | no | 1967 | 8 |
-| no | sí | 1938 | 37 |
-| no | no | 1934 | 41 |
+| sí | sí | 1978 | 4 |
+| sí | no | 1974 | 8 |
+| no | sí | 1945 | 37 |
+| no | no | 1941 | 41 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
