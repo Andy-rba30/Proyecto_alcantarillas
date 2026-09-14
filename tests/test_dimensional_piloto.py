@@ -21,18 +21,23 @@ relacion escrita se lee. El censo se comprueba en las dos direcciones: todo
 paso de M3-M5 de la corrida tiene relacion declarada, y toda relacion
 declarada corresponde a un paso de la corrida.
 
-Lo que el piloto ENCONTRO, y que este archivo REPORTA sin corregir
-------------------------------------------------------------------
-La regla del prompt es explicita: «reporta, no corrijas: cualquier
-inconsistencia es un candidato a Discrepancia o a hallazgo, y su correccion
-es sesion aparte (tocaria el motor validado --- regla: test que falle
-antes)». Por eso los hallazgos viven en dos censos ---
-`INHOMOGENEIDADES_CENSADAS` y `UMBRALES_INCONMENSURABLES_CENSADOS` --- y el
-test exige que el conjunto medido sea EXACTAMENTE el censado: una
-inconsistencia nueva falla, y una que alguien corrija sin retirarla del
-censo tambien falla, para que el censo no se quede diciendo lo que ya no es.
-La decision de no corregir aqui y de no extender el barrido esta en
-`docs/decisiones_diferidas.md` (ficha I4-01).
+Lo que el piloto ENCONTRO en I4, y lo que PD CERRO
+--------------------------------------------------
+I4 midio cuatro inconsistencias, todas de PRESENTACION y ninguna de valor,
+y las dejo censadas sin corregir (regla de aquella sesion: «reporta, no
+corrijas; su correccion es sesion aparte porque toca el motor validado»).
+PD las cerro sin mover un solo numero: (1) el coeficiente de unidades de
+Manning se declaro como `K_MANNING_SI = 1.0 m^(1/3)/s` y el paso 4.1 lo
+trae en su sustitucion --multiplicar por 1.0 es la identidad--; (2) el paso
+4.2 trae el D con que HW/D pasa a HW_entrada; (3) el paso 4.3 imprime el D y
+el HW/D sobre el que juzga su umbral; (4) el comentario de `K_FRICCION_SI`
+dice la derivacion que cierra (2·32.2/1.486² = 29.164) y no la que no
+cierra (el 29 redondeado). Los dos censos --- `INHOMOGENEIDADES_CENSADAS` y
+`UMBRALES_INCONMENSURABLES_CENSADOS` --- quedan VACIOS y se conservan como
+guardia: el test sigue exigiendo que lo medido sea EXACTAMENTE lo censado,
+de modo que una inconsistencia nueva falla con nombre, y una entrada que
+alguien censara sin que se mida tambien. La decision de I4 y su cierre en
+PD estan en `docs/decisiones_diferidas.md` (ficha I4-01).
 
 Las constantes con sufijo `_SI`
 -------------------------------
@@ -44,11 +49,14 @@ formula en que entra CIERRA esa formula; (2) que el valor SI se obtiene del
 imperial del comentario convirtiendo con esa dimension --- o, si no, que el
 censo lo diga y explique desde que cifra si cierra ---; (3) si alguna
 sustitucion de la corrida la nombra, porque una constante que ningun paso
-imprime no puede verificarse «en la sustitucion» de nada.
+imprime no puede verificarse «en la sustitucion» de nada. Desde PD son
+TRES --- `KU_SI`, `K_MANNING_SI` y `K_FRICCION_SI` --- y las tres cierran
+desde la cifra imperial que su comentario declara.
 """
 
 from __future__ import annotations
 
+import ast
 import re
 import sys
 from dataclasses import dataclass
@@ -65,6 +73,7 @@ for ruta in (str(RAIZ), str(SRC)):
         sys.path.insert(0, ruta)
 
 import constantes_normativas as cn                                 # noqa: E402
+from tests.apoyo.aproximacion import REL_TRANSPORTE                # noqa: E402
 import indice_formulas as ind                                      # noqa: E402
 
 MODULOS_DEL_PILOTO = ("M3_hidraulica", "M4_control", "M5_verificaciones")
@@ -127,6 +136,7 @@ UNIDADES: Dict[str, Dim] = {
     "m3/s": L ** 3 / T,
     "m/s": L / T,
     "m/s2": L / T ** 2,
+    "m^(1/3)/s": L ** F(1, 3) / T,      # k_n, el coeficiente de Manning
     "m/m": ADIM,
     "msnm": L,
     "%": ADIM,
@@ -184,12 +194,14 @@ RELACIONES: Dict[str, Tuple[Relacion, ...]] = {
         ("P~D", "v['P']", "v['D']"),
         ("y~D", "v['y']", "v['D']"),
     ),
-    # M4 --- Q = (1/n) * A * R^(2/3) * S^(1/2), con A ~ D^2 y R ~ D del paso
-    # anterior. La segunda relacion es la que NO cierra: ver el censo.
+    # M4 --- Q = (k_n/n) * A * R^(2/3) * S^(1/2), con A ~ D^2 y R ~ D del paso
+    # anterior. Cierra desde PD porque el paso trae k_n, el coeficiente de
+    # unidades (L^(1/3)/T): sin el, la relacion no cerraba y estaba censada.
     "F4.MANNING@4.1": (
         ("y_normal~D", "r", "v['D']"),
-        ("Q=(1/n)·A·R^(2/3)·S^(1/2)", "v['Q']",
-         "v['D'] ** 2 * v['D'] ** F(2, 3) * v['S'] ** F(1, 2) / v['n_max']"),
+        ("Q=(k_n/n)·A·R^(2/3)·S^(1/2)", "v['Q']",
+         "v['k_n'] * v['D'] ** 2 * v['D'] ** F(2, 3) * v['S'] ** F(1, 2) "
+         "/ v['n_max']"),
     ),
     # M4 --- Q^2/g = A^3/T, con A ~ D^2 y T ~ D.
     "F4.YC_RECT@4.2.1": (
@@ -201,16 +213,22 @@ RELACIONES: Dict[str, Tuple[Relacion, ...]] = {
         ("forma~K", "r", "v['K']"),
         ("M adimensional", "v['M']", "ADIM"),
     ),
-    # M4 --- HW/D = H_c/D + K*(q*)^M + Ks*S. El resultado es HW_entrada [m] y
-    # la sustitucion trae q* y Ks, adimensionales: NO cierra sin D. Censado.
+    # M4 --- HW/D = H_c/D + K*(q*)^M + Ks*S: el resultado es HW_entrada [m],
+    # y desde PD la sustitucion trae el D que lo convierte; q* y Ks son
+    # adimensionales.
     "F4.CONTROL@4.2": (
-        ("HW_entrada~q*·Ks", "r", "v['q*'] * v['Ks']"),
+        ("HW_entrada=D·(HW/D)", "r", "v['D']"),
+        ("q* adimensional", "v['q*']", "ADIM"),
+        ("Ks adimensional", "v['Ks']", "ADIM"),
     ),
     # M4 --- HW = H + h_o - S*L, con h_o = max(TW, (y_c + D)/2).
+    # Desde PD la sustitucion trae ademas D y HW/D, que es la magnitud sobre
+    # la que el umbral del paso juzga (ver `UMBRAL_JUZGA`).
     "F4.HO@4.3": (
         ("HW=H+h_o-S·L", "r", "v['H'] + v['h_o'] - v['S*L']"),
         ("h_o~TW", "v['h_o']", "v['TW']"),
         ("h_o~(y_c+D)/2", "v['h_o']", "v['(y_c + D)/2']"),
+        ("HW/D=HW_salida/D", "v['HW/D']", "r / v['D']"),
     ),
     # M4 --- HW = max(HW_entrada, HW_salida).
     "F4.CONTROL@4.4": (
@@ -241,36 +259,27 @@ RELACIONES: Dict[str, Tuple[Relacion, ...]] = {
 }
 
 # Las relaciones que NO cierran, con la razon. El test exige igualdad exacta
-# entre lo medido y esto.
-INHOMOGENEIDADES_CENSADAS: Dict[str, str] = {
-    "F4.MANNING@4.1:Q=(1/n)·A·R^(2/3)·S^(1/2)": (
-        "Manning es una formula empirica NO homogenea: con n adimensional, "
-        "A·R^(2/3)·S^(1/2) tiene dimension L^(8/3) y Q tiene L^3/T. La "
-        "diferencia, L^(1/3)/T, la absorbe el coeficiente de unidades k_n "
-        "(1.0 m^(1/3)/s en SI; 1.486 ft^(1/3)/s en el sistema ingles), que la "
-        "formula de la Sec. 4.1 escribe como «1/n» y `M3._caudal_manning` "
-        "aplica como (1/n) sin declarar. Es una constante empirica "
-        "dependiente de unidades sin nombre `_SI` ni comentario imperial: "
-        "candidato a hallazgo contra la regla de unidades de CLAUDE.md, no "
-        "un error de calculo (el 1.0 esta implicito y es el correcto en SI)."),
-    "F4.CONTROL@4.2:HW_entrada~q*·Ks": (
-        "El paso 4.2 imprime HW/D = ... y devuelve HW_entrada en metros con "
-        "una sustitucion que solo trae q* y Ks, adimensionales: el D que "
-        "convierte HW/D en HW --- y H_c/D, K, M y S en la Forma 1 --- estan "
-        "en los pasos 4.1 y 4.2 anteriores, no en este. La sustitucion no "
-        "cierra dimensionalmente por si sola. Candidato a hallazgo de "
-        "presentacion de la memoria (la aritmetica de M4 es correcta)."),
-}
+# entre lo medido y esto. VACIO DESDE PD, y se conserva a proposito: I4 dejo
+# aqui dos entradas --Manning sin su coeficiente de unidades, y el paso 4.2
+# sin el D que convierte HW/D en HW_entrada-- y PD las cerro en el codigo
+# (ver el docstring del modulo). Una entrada nueva aqui tiene que venir con
+# su razon y con la palabra «candidato a hallazgo», como manda
+# `test_cada_hallazgo_censado_lleva_su_razon_escrita`.
+INHOMOGENEIDADES_CENSADAS: Dict[str, str] = {}
 
 # Umbrales cuya unidad no es la del resultado contra el que el paso dice
-# compararlo, con la razon.
-UMBRALES_INCONMENSURABLES_CENSADOS: Dict[str, str] = {
-    "F4.HO@4.3": (
-        "El resultado del paso es HW_salida [m] y su umbral es el HW/D "
-        "minimo de validez de h_o, adimensional (0.75): el veredicto y su "
-        "margen se calculan sobre HW/D (`salida.HW_sobre_D`), que no es el "
-        "resultado impreso. Candidato a hallazgo de presentacion: el umbral "
-        "juzga una magnitud derivada que el paso no imprime como resultado."),
+# compararlo, con la razon. VACIO DESDE PD: el paso 4.3 juzgaba HW/D e
+# imprimia HW_salida [m]; hoy trae HW/D en su sustitucion y lo declara en
+# `UMBRAL_JUZGA`.
+UMBRALES_INCONMENSURABLES_CENSADOS: Dict[str, str] = {}
+
+# Sobre QUE magnitud juzga el umbral de un paso cuando no es el resultado.
+# Por omision el umbral se compara con `paso.resultado`; los pasos de aqui
+# lo comparan con una magnitud de su SUSTITUCION, que tiene que existir y
+# tener la unidad del umbral. Es una declaracion escrita, no un parser de
+# la prosa del umbral (misma regla que `RELACIONES`).
+UMBRAL_JUZGA: Dict[str, str] = {
+    "F4.HO@4.3": "HW/D",
 }
 
 
@@ -281,10 +290,14 @@ UMBRALES_INCONMENSURABLES_CENSADOS: Dict[str, str] = {
 # 1 ft = 0.3048 m, exacto por definicion (acuerdo internacional de 1959).
 M_POR_FT = 0.3048
 # HDS-5 trabaja con g = 32.2 ft/s^2 y phi = 1.486 (coeficiente de Manning en
-# el sistema ingles); K = 2g/phi^2 es la relacion que el propio comentario de
-# `K_FRICCION_SI` establece y verifica contra la 3a ed.
+# el sistema ingles, el mismo que `K_MANNING_SI` nombra como imperial);
+# K = 2g/phi^2 es la relacion que el propio comentario de `K_FRICCION_SI`
+# establece y verifica contra la 3a ed.
 G_FT_S2 = 32.2
 PHI_MANNING_INGLES = 1.486
+# El «29» con que HDS-5 imprime K en el sistema ingles, redondeado: desde el
+# NO se cierra al 19.63, y el comentario de la constante lo dice desde PD.
+IMPERIAL_REDONDEADO_K_FRICCION = r"OJO:\s*([0-9.]+) es el valor ingles"
 # Tolerancia relativa con que se declara que un valor SI «cierra» desde su
 # imperial: 1e-3 admite el redondeo a cuatro cifras con que HDS-5 imprime
 # 1.811 y 19.63, y rechaza el 0.6 % que separa 19.63 de la conversion del
@@ -325,22 +338,39 @@ CONSTANTES_SI: Dict[str, ConstanteSI] = {
         la_nombra_algun_paso=True,
         nota="q* = Ku·Q/(A·D^0.5) es adimensional solo si Ku lleva s/m^0.5: "
              "1.0 s/ft^0.5 = 1.8112 s/m^0.5, que es el 1.811 de HDS-5."),
+    "K_MANNING_SI": ConstanteSI(
+        dimension=L ** F(1, 3) / T,
+        formula="c * v['A'] * v['R'] ** F(2, 3) * v['S'] ** F(1, 2) / v['n']",
+        simbolos={"A": L ** 2, "R": L, "S": ADIM, "n": ADIM},
+        cierra_a=L ** 3 / T,
+        imperial_en_comentario=r"Imperial:\s*([0-9.]+)",
+        huella_en_los_pasos=r"K_MANNING_SI|\bk_n\b",
+        cierra_desde_el_comentario=True,
+        la_nombra_algun_paso=True,
+        nota="Q = (k_n/n)·A·R^(2/3)·S^(1/2) tiene dimension L^3/T solo si k_n "
+             "lleva L^(1/3)/T: 1.486 ft^(1/3)/s = 1.00005 m^(1/3)/s, que es el "
+             "1.0 del SI (el 1.486 es 1/0.3048^(1/3) = 1.4859 redondeado). "
+             "Lo declaro PD; el paso 4.1 lo trae como k_n."),
     "K_FRICCION_SI": ConstanteSI(
         dimension=L ** F(1, 3),
         formula="c * v['n'] ** 2 * v['L'] / v['R'] ** F(4, 3)",
         simbolos={"n": ADIM, "L": L, "R": L},
         cierra_a=ADIM,
-        imperial_en_comentario=r"OJO:\s*([0-9.]+) es el valor ingles",
+        # El EXACTO que el comentario declara desde PD, no el 29 redondeado
+        # (ese se mide aparte, con `IMPERIAL_REDONDEADO_K_FRICCION`).
+        imperial_en_comentario=r"Exacto:\s*2\*32\.2/1\.486\^2 = ([0-9.]+)",
         huella_en_los_pasos=r"K_FRICCION_SI|K_friccion|19\.63",
-        cierra_desde_el_comentario=False,
+        cierra_desde_el_comentario=True,
         la_nombra_algun_paso=False,
-        nota="K = 2g/phi^2 lleva m^(1/3) si n es adimensional. Desde el «29» "
-             "del comentario --- que es 29.164 redondeado --- la conversion "
-             "da 19.51, un 0.6 % por debajo del 19.63 transcrito; desde "
-             "2·32.2/1.486^2 = 29.164 da 19.62, que cierra. Y ningun paso de "
-             "la corrida transcribe la formula de H en que entra: el paso 4.3 "
-             "recibe H como numero con la procedencia «perdida de carga en el "
-             "barril». Candidato a hallazgo de presentacion, no de valor."),
+        nota="K = 2g/phi^2 lleva m^(1/3) si n es adimensional. Desde el "
+             "exacto 2·32.2/1.486^2 = 29.164 la conversion da 19.627, que "
+             "es el 19.63 transcrito; desde el «29» impreso "
+             "--29.164 redondeado-- da 19.51, un 0.6 % por debajo, y el "
+             "comentario dice desde PD cual de las dos derivaciones es la que "
+             "cierra. Sigue sin nombrarla ningun paso de la corrida: el paso "
+             "4.3 recibe H como numero con la procedencia «perdida de carga en "
+             "el barril», y transcribir la formula de H es un paso nuevo que "
+             "PD no abrio (ficha I4-01)."),
 }
 
 
@@ -494,16 +524,75 @@ def test_las_relaciones_cierran_salvo_las_censadas(pasos_del_piloto):
         "retira la entrada del censo en el mismo commit")
 
 
-def test_manning_no_cierra_por_L_un_tercio_sobre_T():
+def test_manning_cierra_con_k_n_y_sin_k_n_le_falta_L_un_tercio_sobre_T():
     """
-    La diferencia dimensional de Manning es exactamente L^(1/3)/T, que es
-    la dimension del coeficiente k_n. Se comprueba el NUMERO, no solo que
-    no cierre: es lo que permite decir que el hallazgo es el coeficiente de
+    La afirmacion positiva que I4 dejo en negativo: con k_n de dimension
+    L^(1/3)/T en la sustitucion, Manning CIERRA. Y se conserva el numero
+    que I4 midio --sin k_n le falta exactamente L^(1/3)/T--, porque es lo
+    que permite decir que lo que cerro la formula fue el coeficiente de
     unidades y no otra cosa.
     """
-    v = {"Q": UNIDADES["m3/s"], "S": ADIM, "D": L, "n_max": ADIM}
     _, izq, der = RELACIONES["F4.MANNING@4.1"][1]
-    assert _evaluar(izq, v, L) / _evaluar(der, v, L) == L ** F(1, 3) / T
+    con = {"Q": UNIDADES["m3/s"], "S": ADIM, "D": L, "n_max": ADIM,
+           "k_n": UNIDADES["m^(1/3)/s"]}
+    assert _evaluar(izq, con, L) == _evaluar(der, con, L)
+    sin = dict(con, k_n=ADIM)
+    assert _evaluar(izq, sin, L) / _evaluar(der, sin, L) == L ** F(1, 3) / T
+
+
+def test_las_tres_funciones_de_manning_de_M3_multiplican_por_K_MANNING_SI():
+    """
+    LA GUARDIA DEL MOTOR, no solo de la memoria. El auditor de PD midio que
+    revertir `M3._caudal_manning` a `(1 / n)` dejaba la suite verde: el paso
+    4.1 lee `K_MANNING_SI` por su cuenta y las relaciones cerraban igual.
+    Aqui se lee el AST de M3 y se exige que las tres funciones que aplican
+    Manning nombren la constante --el mismo recurso que la suite usa contra
+    M11--, para que «declarado» sea una propiedad del calculo y no del
+    reporte.
+    """
+    arbol = ast.parse((SRC / "modulos" / "M3_hidraulica.py").read_text(
+        encoding="utf-8"))
+    funciones = {n.name: n for n in ast.walk(arbol)
+                 if isinstance(n, ast.FunctionDef)}
+    for nombre in ("_caudal_manning", "resolver_manning",
+                   "caudal_manning_trapecial"):
+        nombres = {n.id for n in ast.walk(funciones[nombre])
+                   if isinstance(n, ast.Name)}
+        assert "K_MANNING_SI" in nombres, (
+            f"M3.{nombre} aplica Manning sin nombrar K_MANNING_SI: el "
+            "coeficiente de unidades volvio a quedar implicito en (1/n)")
+
+
+def test_el_paso_de_manning_trae_el_coeficiente_de_unidades_con_su_unidad(
+        pasos_del_piloto):
+    """El k_n de cada paso 4.1 es K_MANNING_SI, en m^(1/3)/s, y vale 1.0."""
+    pasos = [p for p in pasos_del_piloto if _clave(p) == "F4.MANNING@4.1"]
+    assert pasos
+    for paso in pasos:
+        k = {m.simbolo: m for m in paso.sustitucion}["k_n"]
+        assert k.unidad == "m^(1/3)/s"
+        # Se TRANSPORTA (es la constante, no un calculo), y vale 1.0 exacto:
+        # la tolerancia nombrada es la de transporte.
+        assert k.valor == pytest.approx(cn.K_MANNING_SI, rel=REL_TRANSPORTE)
+        assert cn.K_MANNING_SI == pytest.approx(1.0, rel=REL_TRANSPORTE)
+        assert "K_MANNING_SI" in k.procedencia
+        assert "K_MANNING_SI" in paso.formula
+
+
+def _magnitud_juzgada(paso):
+    """
+    La magnitud contra la que se compara el umbral: el resultado, salvo que
+    `UMBRAL_JUZGA` nombre una de la sustitucion --que entonces tiene que
+    estar--.
+    """
+    simbolo = UMBRAL_JUZGA.get(_clave(paso))
+    if simbolo is None:
+        return paso.resultado
+    por_simbolo = {m.simbolo: m for m in paso.sustitucion}
+    assert simbolo in por_simbolo, (
+        f"{_clave(paso)}: UMBRAL_JUZGA nombra «{simbolo}» y el paso no lo "
+        "sustituye")
+    return por_simbolo[simbolo]
 
 
 def test_los_umbrales_son_conmensurables_con_su_resultado_salvo_los_censados(
@@ -512,9 +601,9 @@ def test_los_umbrales_son_conmensurables_con_su_resultado_salvo_los_censados(
     for paso in pasos_del_piloto:
         if paso.umbral is None:
             continue
-        r, u = _dim(paso.resultado.unidad), _dim(paso.umbral.unidad)
+        r, u = _dim(_magnitud_juzgada(paso).unidad), _dim(paso.umbral.unidad)
         if r != u:
-            medidos[_clave(paso)] = f"resultado {r} vs umbral {u}"
+            medidos[_clave(paso)] = f"juzgada {r} vs umbral {u}"
     nuevos = sorted(set(medidos) - set(UMBRALES_INCONMENSURABLES_CENSADOS))
     assert not nuevos, {k: medidos[k] for k in nuevos}
     resueltos = sorted(set(UMBRALES_INCONMENSURABLES_CENSADOS) - set(medidos))
@@ -525,6 +614,32 @@ def test_cada_hallazgo_censado_lleva_su_razon_escrita():
     for censo in (INHOMOGENEIDADES_CENSADAS, UMBRALES_INCONMENSURABLES_CENSADOS):
         for id_, razon in censo.items():
             assert razon.strip() and "andidato a hallazgo" in razon, id_
+
+
+def test_los_dos_censos_estan_en_cero_desde_PD():
+    """
+    El objetivo de PD escrito como aserto: ningun hallazgo censado. Si
+    alguien vuelve a censar uno, este test lo dice antes de que el censo
+    crezca en silencio, y la ficha I4-01 tiene que decir que volvio a haber.
+    """
+    assert INHOMOGENEIDADES_CENSADAS == {}
+    assert UMBRALES_INCONMENSURABLES_CENSADOS == {}
+
+
+def test_todo_umbral_juzgado_sobre_una_sustitucion_lo_imprime_con_su_unidad(
+        pasos_del_piloto):
+    """
+    `UMBRAL_JUZGA` en las dos direcciones: cada clave es un paso con umbral
+    de la corrida, y su magnitud esta en la sustitucion con la unidad del
+    umbral (es lo que PD añadio al paso 4.3: el HW/D que antes se juzgaba
+    sin imprimirse).
+    """
+    con_umbral = {_clave(p): p for p in pasos_del_piloto if p.umbral is not None}
+    for clave, simbolo in UMBRAL_JUZGA.items():
+        assert clave in con_umbral, clave
+        m = _magnitud_juzgada(con_umbral[clave])
+        assert m.simbolo == simbolo
+        assert m.unidad == con_umbral[clave].umbral.unidad
 
 
 # ===========================================================================
@@ -574,16 +689,17 @@ def test_cada_constante_SI_cierra_o_dice_por_que_no_con_su_comentario_imperial(
 
 def test_K_FRICCION_SI_cierra_desde_2g_sobre_phi_cuadrado_y_no_desde_el_29():
     """
-    El numero: 2·32.2/1.486^2 = 29.164 ft^(1/3) -> 19.62 m^(1/3), a menos
-    de un 0.1 % del 19.63 transcrito; el «29» impreso -> 19.51, un 0.6 %
+    El numero: 2·32.2/1.486^2 = 29.164 ft^(1/3) -> 19.627 m^(1/3), que es
+    el 19.63 transcrito; el «29» impreso -> 19.51, un 0.6 %
     por debajo. Es lo que el comentario de la constante ya explica, medido.
     """
     exacto = 2 * G_FT_S2 / PHI_MANNING_INGLES ** 2
     desde_exacto = exacto * M_POR_FT ** (1 / 3)
     assert abs(desde_exacto - cn.K_FRICCION_SI) / cn.K_FRICCION_SI \
         < REL_CIERRE_DIMENSIONAL
-    imperial = float(re.search(CONSTANTES_SI["K_FRICCION_SI"].imperial_en_comentario,
+    imperial = float(re.search(IMPERIAL_REDONDEADO_K_FRICCION,
                                _comentario_de("K_FRICCION_SI")).group(1))
+    assert imperial == 29
     desde_redondeado = imperial * M_POR_FT ** (1 / 3)
     assert abs(desde_redondeado - cn.K_FRICCION_SI) / cn.K_FRICCION_SI \
         > REL_CIERRE_DIMENSIONAL
@@ -594,7 +710,8 @@ def test_si_algun_paso_de_la_corrida_nombra_la_constante_SI(nombre,
                                                               pasos_del_piloto):
     """
     Una constante que ningun paso imprime no se puede verificar «en la
-    sustitucion» de nada: KU_SI aparece en la procedencia de q*;
+    sustitucion» de nada: KU_SI aparece en la procedencia de q*, y
+    K_MANNING_SI, desde PD, como k_n en la sustitucion del paso 4.1;
     K_FRICCION_SI no aparece en ninguna, porque el paso 4.3 recibe H ya
     calculado. El censo lo dice y este test lo mide.
     """

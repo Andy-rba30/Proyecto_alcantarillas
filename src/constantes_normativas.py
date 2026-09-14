@@ -447,6 +447,66 @@ TABLA_09_FILAS = {
 MANNING = {clave: (fila["min"], fila["max"])
            for clave, fila in TABLA_09_FILAS.items()}
 
+# EL COEFICIENTE DE UNIDADES DE MANNING, que hasta PD estaba implicito. La
+# formula de Manning NO es dimensionalmente homogenea: con n adimensional,
+# A*R^(2/3)*S^(1/2) tiene dimension L^(8/3) y Q tiene L^3/T, y la diferencia,
+# L^(1/3)/T, la absorbe un coeficiente que depende del sistema de unidades:
+#
+#     Q = (K_MANNING_SI / n) * A * R^(2/3) * S^(1/2)
+#
+#     SI:      k_n = 1.0   m^(1/3)/s     -- el que este codigo usa
+#     ingles:  k_n = 1.486 ft^(1/3)/s    -- se nombra y NO se usa
+#
+# LO QUE SOSTIENE EL 1.0 ES LA FORMA EN QUE EL MANUAL ESCRIBE LA FORMULA,
+# verificado contra el PDF en PD (num. 4.1.1.3.6 "Diseño hidraulico", pag.
+# impresa 74, PDF 77): la ec. (47) se imprime
+#
+#     V = R^(2/3) * S^(1/2) / n      R = A/P      Q = V*A
+#
+# sin 1.486, sin 1.49 y sin ningun k_n, y su lista de variables declara
+# unidades integramente SI -- "Q : Caudal (m3/s)", "V : Velocidad media de
+# flujo (m/s)", "A : Area de la seccion hidraulica (m2)", "R : Radio
+# hidraulico (m)", "S : Pendiente de fondo (m/m)" -- y ninguna para n. El 1.0
+# es el coeficiente que esa ecuacion, con esas unidades, exige, y es lo mismo
+# que la Sec. 4.1 de la hoja de ruta transcribe como «1/n». `M3._caudal_manning`
+# lo aplicaba como (1/n) sin declararlo, y eso es exactamente lo que la regla
+# de Unidades de CLAUDE.md prohibe: una constante empirica dependiente de
+# unidades sin nombre `_SI` ni comentario imperial. Lo midio el piloto
+# dimensional de I4 (tests/test_dimensional_piloto.py) y PD lo declaro aqui
+# SIN mover un solo numero: multiplicar por 1.0 es la identidad.
+#
+# DE DONDE SALE EL 1.486, y no es de la practica: lo imprime HDS-5 3a ed.
+# (hif12026.pdf), Apendice B, pag. impresa B.1 (PDF 203), ec. (B.3), en
+# unidades inglesas y sin dar su equivalente SI:
+#     "The usual form of the Manning equation is as follows:
+#      V = (1.486/n) R^(2/3) S^(1/2)   (B.3)"
+# con "V is the mean velocity of flow, ft/s (m/s)" y "R is the hydraulic
+# radius, ft (m)". Verificado contra el PDF en PD. La copia de 1985
+# (fhwa_culvert_hydraulics_hds5si.pdf) imprime la misma ecuacion como su
+# ec. (35), Appendix B, PDF 363, en una imagen y sin pagina impresa. Ninguna
+# fuente peruana de normas/ lo imprime: el Manual solo escribe la forma SI.
+# Numericamente, 1.486 es 1/0.3048^(1/3) = 1.4859 redondeado --la conversion
+# de m^(1/3)/s a ft^(1/3)/s--, y es el mismo phi de la relacion K = 2g/phi^2
+# con que K_FRICCION_SI explica el 29 y el 19.63.
+#
+# POR QUE EL 1.486 SE NOMBRA Y NO SE USA: todo el codigo opera en SI (regla
+# de Unidades), y usar el 1.486 con R en metros seria el error silencioso
+# SIMETRICO al del 29 de K_FRICCION_SI y al del Ku = 1.0 de KU_SI: no falla
+# ruidosamente, devuelve un caudal un 48.6 % mayor para el mismo tirante y un
+# tirante normal mas chico del real. Por eso el imperial esta escrito al lado
+# del valor y no entra en ninguna formula.
+#
+# ETIQUETA: [N], por la misma regla que KU_SI (que tambien es un coeficiente
+# de unidades y tambien vive aqui como [N]): el valor lo fija la ecuacion de
+# una norma peruana vigente con numeral verificado, es el mismo numero en
+# cualquier obra del pais y ningun proyectista lo elige. No es [C] porque no
+# cubre un vacio --el Manual escribe la formula--, y no va a
+# constantes_fisicas.py porque no es una constante universal: es una
+# convencion de sistema de unidades, como KU_SI, y cambia de valor al cambiar
+# de sistema.
+K_MANNING_SI = 1.0                  # Q = (K_MANNING_SI/n)*A*R^(2/3)*S^(1/2). Imperial: 1.486
+NUMERAL_K_MANNING_SI = _reg.cita("MC_HHD.4.1.1.3.6").como_texto()
+
 # LAS FILAS ENTRE LAS QUE 'n_manning_cajon' PUEDE ELEGIR SU ANALOGIA. Un marco
 # de concreto no puede tomar prestada la n de un metal corrugado ni la de unas
 # duelas de madera: la analogia que el criterio declara es DENTRO del subgrupo
@@ -589,7 +649,9 @@ LONG_MAX_CUNETA_LAGUNA = (
 # SIMETRICO al del 29 de K_FRICCION_SI: no falla ruidosamente, devuelve un q*
 # 1.811 veces mas chico, que cae en la rama no sumergida cuando le tocaba la
 # sumergida y sale un HW plausible y equivocado. Por eso el imperial se
-# nombra aqui y NO se usa en ninguna parte.
+# nombra aqui y NO se usa en ninguna parte. Las otras dos constantes con la
+# misma forma son K_FRICCION_SI (mas abajo) y K_MANNING_SI (bloque de la
+# Tabla Nº 09), que PD declaro con este mismo molde.
 KU_SI = 1.811                       # q* = KU*Q/(A*D**0.5). Imperial: 1.0
 NUMERAL_KU_SI = _reg.cita("HDS5_3ED.A.2").como_texto()
 NUMERAL_KS_PENDIENTE = _reg.cita("HDS5_3ED.A.2.1#KS").como_texto()
@@ -779,15 +841,32 @@ CARTAS_CAJON_TA1 = frozenset(
 
 # ================= Control de salida (SI) ==================================
 K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(2g)
-                                    # OJO: 29 es el valor ingles.
+                                    # OJO: 29 es el valor ingles, impreso
+                                    # redondeado. Exacto: 2*32.2/1.486^2 = 29.164
                                     # TEST UNITARIO OBLIGATORIO.
-# De donde sale el 19.63: es el valor que el propio HDS-5 escribe como
-# conversion SI de su constante K = 29 del sistema ingles. Es una cifra de la
-# FUENTE PRIMARIA, transcrita, no una derivacion propia. Verificado en la 3a
+# De donde sale el 19.63: es el valor que el propio HDS-5 imprime, junto al 29
+# del sistema ingles, como su constante K en SI. Los dos son cifras de la
+# FUENTE PRIMARIA, transcritas, no una derivacion propia. Verificado en la 3a
 # ed. (hif12026.pdf) en dos sitios: num. 3.1.4 "Outlet Control", ec. (3.4b),
 # pag. impresa 3.10 (PDF 92) -- "KU = 29 in English Units (19.63 in SI)" --, y
 # la ec. (DG 3.1), pag. impresa DG3.3 (PDF 296) -- "KU is 29 (19.63 in SI
 # Units)".
+#
+# CUAL ES LA DERIVACION QUE CIERRA, porque hasta PD este comentario decia que
+# el 19.63 era la «conversion SI de su constante K = 29», y ESA derivacion no
+# cierra: 29 ft^(1/3) * 0.3048^(1/3) = 19.51 m^(1/3), un 0.6 % por debajo del
+# 19.63 transcrito (lo midio el piloto dimensional de I4). El 29 es 29.164
+# redondeado a dos cifras, y lo que HDS-5 convirtio fue el valor exacto de la
+# relacion de abajo, K = 2g/phi^2:
+#
+#     ingles:  2 * 32.2 / 1.486^2 = 29.164 ft^(1/3)     -> el 29 impreso
+#     al SI:   29.164 * 0.3048^(1/3) = 19.627 m^(1/3)   -> el 19.63 impreso
+#     directo: 2 * 9.81456 / 1^2 = 19.629 m^(1/3)       -> el 19.63 impreso
+#
+# La dimension de K es L^(1/3) --es lo que hace adimensional a K*n^2*L/R^(4/3)
+# con n adimensional--, y por eso la conversion de longitud entra con exponente
+# 1/3. Lo mide tests/test_dimensional_piloto.py
+# (`test_K_FRICCION_SI_cierra_desde_2g_sobre_phi_cuadrado_y_no_desde_el_29`).
 #
 # LA COPIA DE 1985 QUE ESTA EN normas/ NO SIRVE PARA ESTO, y hay que decirlo
 # porque lleva "si" en el nombre del archivo (MAT-O12, MAT-X5): sus ecs. (4b)

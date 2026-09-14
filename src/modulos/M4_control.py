@@ -299,7 +299,7 @@ from scipy.optimize import brentq
 
 import criterios_adoptados as ca
 from constantes_fisicas import G
-from constantes_normativas import (FORMA_1, FORMA_2,
+from constantes_normativas import (FORMA_1, FORMA_2, K_MANNING_SI,
                                    H_O_HW_SOBRE_D_CAUTELA,
                                    H_O_HW_SOBRE_D_MIN, KE_CAJON_C2,
                                    KE_HDS5_C2, KU_SI,
@@ -1142,6 +1142,12 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
     # `seccion.perimetro(y)`, que es exactamente lo que la regla vinculante
     # #12 existe para impedir.
     geometria_normal = normal.geometria
+    # LA FILA DEL PASO 4.1 QUE ES LA ALTURA DEL BARRIL, para que los pasos 4.2
+    # y 4.3 puedan apuntar a ella por su nombre: `magnitudes_de_forma()` la
+    # pone la ULTIMA a proposito («D» en la circular, «H» en el marco), y el
+    # auditor de PD midio que decir «el mismo D del paso 4.1» era falso para
+    # el marco, cuyo paso 4.1 no imprime ninguna fila «D».
+    fila_altura = seccion.magnitudes_de_forma()[-1].simbolo
     de_seccion = paso(
         "F4.SECCION",
         codigo="4.1",
@@ -1182,11 +1188,25 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         "F4.MANNING",
         codigo="4.1",
         que="Tirante normal y velocidades en el conducto",
-        formula="Q = (1/n) * A * R^(2/3) * S^(1/2), resuelta con Brent "
+        formula="Q = (k_n/n) * A * R^(2/3) * S^(1/2), con k_n = K_MANNING_SI "
+                "el coeficiente de unidades del SI, resuelta con Brent "
                 "sobre el parametro de llenado de la seccion; A, P y R son "
                 "los del paso anterior",
         formula_cita_id="MC_HHD.4.1.1.3.6",
         sustitucion=(
+            # EL COEFICIENTE DE UNIDADES VA EN LA SUSTITUCION, y hasta PD no
+            # iba: la formula no es homogenea, y el 1.0 que la cierra en SI
+            # estaba implicito en el (1/n). Es una constante empirica
+            # dependiente de unidades como KU_SI, y la memoria la imprime
+            # con su unidad y su procedencia por la misma razon que imprime
+            # Ku en q*. Vale 1.0: no mueve ningun numero.
+            Magnitud("k_n", K_MANNING_SI, "m^(1/3)/s",
+                     "coeficiente de unidades de Manning en SI, "
+                     "constantes_normativas.K_MANNING_SI: es el que hace "
+                     "homogenea la formula (1.486 ft^(1/3)/s en el sistema "
+                     "ingles, que NO se usa: todo el calculo opera en SI). El "
+                     "Manual escribe la ec. (47) en forma SI, sin coeficiente",
+                     cifras=CIFRAS_FACTOR),
             Magnitud("Q", Q, "m3/s",
                      "caudal de diseño CON QUE CORRIO el punto: la columna "
                      "Q_m3s del CSV en la Familia A, y el caudal declarado "
@@ -1379,6 +1399,18 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             Magnitud("Ks", material.hds5.Ks, "",
                      "correccion por pendiente de la formulacion del HDS-5; "
                      "NO figura en la Tabla A.1", cifras=CIFRAS_FACTOR))
+    # EL D QUE CIERRA LA DIMENSION, y hasta PD no estaba: las ecuaciones de
+    # arriba dan HW/D, adimensional, y el resultado del paso es HW_entrada en
+    # metros. Sin el D en la sustitucion el paso no cerraba por si solo (lo
+    # midio el piloto dimensional de I4). Es `seccion.altura`, el mismo
+    # numero con que `control_entrada` multiplica HW/D: no se recalcula.
+    magnitudes.append(
+        Magnitud("D", seccion.altura, "m",
+                 f"altura interior del barril, el «D» de HDS-5, con que HW/D "
+                 f"pasa a HW_entrada: es la fila «{fila_altura}» del paso 4.1"
+                 + ("" if fila_altura == "D" else
+                    " (la altura del marco; el diametro en la circular)"),
+                 cifras=CIFRAS_FACTOR))
 
     de_entrada = paso(
         "F4.CONTROL",
@@ -1443,13 +1475,36 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      cifras=CIFRAS_MAGNITUD),
             Magnitud("S*L", salida.caida, "m",
                      "caida del conducto entre entrada y salida",
+                     cifras=CIFRAS_MAGNITUD),
+            # LA MAGNITUD QUE EL UMBRAL JUZGA SE IMPRIME, y hasta PD no se
+            # imprimia: el resultado del paso es HW_salida en metros y el
+            # umbral de la fuente es sobre HW/D, adimensional, de modo que el
+            # veredicto y su margen se calculaban sobre un numero que la
+            # memoria no mostraba (lo midio el piloto dimensional de I4). Se
+            # traen el D y el cociente ya calculado (`salida.HW_sobre_D`, el
+            # mismo objeto que decide `h_o_fuera_de_rango`): no se recalcula
+            # nada y no cambia que se compara ni el veredicto.
+            Magnitud("D", seccion.altura, "m",
+                     f"altura interior del barril, el «D» de HDS-5, con que "
+                     f"HW_salida se lleva a HW/D para el umbral de abajo: es "
+                     f"la fila «{fila_altura}» del paso 4.1"
+                     + ("" if fila_altura == "D" else
+                        f" (la altura del marco, que NO es la «{fila_altura}» "
+                        "de perdida de carga de esta misma sustitucion)"),
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("HW/D", salida.HW_sobre_D, "",
+                     "HW_salida/D: la magnitud sobre la que se juzga el "
+                     "umbral de abajo y sobre la que se calcula el margen del "
+                     "veredicto; es el mismo cociente que decide si h_o esta "
+                     "fuera de rango",
                      cifras=CIFRAS_MAGNITUD)),
         resultado=Magnitud("HW_salida", salida.HW, "m",
                            "carga sobre el fondo de la entrada",
                            cifras=CIFRAS_MAGNITUD),
         umbral=Umbral(
-            descripcion="HW/D minimo por debajo del cual la fuente dice que "
-                        "la aproximacion de h_o NO debe usarse",
+            descripcion="HW/D minimo (sobre el HW/D de la sustitucion) por "
+                        "debajo del cual la fuente dice que la aproximacion "
+                        "de h_o NO debe usarse",
             valor=H_O_HW_SOBRE_D_MIN, unidad="",
             cita_id="HDS5_3ED.3.3.3#HO_1_2D",
             caracter="EXIGENCIA sobre el USO de la aproximacion, no sobre el "

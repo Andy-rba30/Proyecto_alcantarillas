@@ -131,6 +131,7 @@ from typing import Optional
 from scipy.optimize import brentq
 
 import criterios_adoptados as ca
+from constantes_normativas import K_MANNING_SI
 from modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
                      Seccion, SeccionCircular,
                      Geometria, LimiteNumericoError, Magnitud, Material,
@@ -238,9 +239,17 @@ def geometria(seccion: Seccion, llenado: float) -> Geometria:
 
 
 def _caudal_manning(seccion: Seccion, llenado: float, n: float, S: float) -> float:
-    """Q = (1/n)*A*R^(2/3)*S^(1/2), Sec. 4.1."""
+    """
+    Q = (K_MANNING_SI/n)*A*R^(2/3)*S^(1/2), Sec. 4.1 (num. 4.1.1.3.6).
+
+    `K_MANNING_SI` es el coeficiente de unidades de Manning, 1.0 m^(1/3)/s en
+    SI (1.486 ft^(1/3)/s en el sistema ingles, que NO se usa): la formula no
+    es homogenea y es el quien cierra la dimension L^(1/3)/T que separa a Q
+    de A*R^(2/3)*S^(1/2). Hasta PD estaba implicito en el (1/n); declararlo
+    no mueve ningun numero, porque multiplicar por 1.0 es la identidad.
+    """
     g = seccion.geometria_en(llenado)
-    return (1 / n) * g.A * g.R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
+    return (K_MANNING_SI / n) * g.A * g.R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
 
 
 # ---------------------------------------------------------------------------
@@ -315,8 +324,9 @@ def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material) -
          - con `material.n_para_velocidad_minima` (n_max), la estimacion BAJA,
            conservadora contra el PISO (V2, autolimpieza).
 
-    Las dos salen de la misma expresion de Manning -- V = (1/n)*R^(2/3)*S^0.5,
-    ec. (47) del num. 4.1.1.3.6 -- con la misma R y distinto n. Ninguna se
+    Las dos salen de la misma expresion de Manning -- V =
+    (K_MANNING_SI/n)*R^(2/3)*S^0.5, ec. (47) del num. 4.1.1.3.6 -- con la
+    misma R y distinto n. Ninguna se
     obtiene dividiendo Q entre A: hacerlo devolveria siempre la segunda, y con
     ella un techo verificado del lado inseguro.
 
@@ -328,7 +338,7 @@ def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material) -
     if geom is None:
         return None
 
-    factor_geometrico = geom.R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, ec. (47) del num. 4.1.1.3.6 / Sec. 4.1
+    factor_geometrico = K_MANNING_SI * geom.R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, ec. (47) del num. 4.1.1.3.6 / Sec. 4.1
     return TiranteNormal(
         geometria=geom,
         V_erosion=factor_geometrico / material.n_para_velocidad_maxima,
@@ -391,8 +401,9 @@ def perimetro_trapecial(*, b: float, z: float, y: float) -> float:
 def caudal_manning_trapecial(*, b: float, z: float, y: float,
                              n: float, S: float) -> float:
     """
-    Q = (1/n)*A*R^(2/3)*S^(1/2) sobre la seccion trapecial (misma formula de
-    Manning que la seccion circular; lo unico que cambia es la geometria).
+    Q = (K_MANNING_SI/n)*A*R^(2/3)*S^(1/2) sobre la seccion trapecial (misma
+    formula de Manning que la seccion circular, con el mismo coeficiente de
+    unidades; lo unico que cambia es la geometria).
     """
     A = area_trapecial(b=b, z=z, y=y)
     P = perimetro_trapecial(b=b, z=z, y=y)
@@ -402,7 +413,7 @@ def caudal_manning_trapecial(*, b: float, z: float, y: float,
             motivo="perimetro mojado nulo: una seccion con solera b = 0 y "
                    "talud z = 0 no es una seccion, es una linea")
     R = A / P
-    return (1 / n) * A * R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
+    return (K_MANNING_SI / n) * A * R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
 
 
 def tirante_normal_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:

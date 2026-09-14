@@ -1197,38 +1197,39 @@ y que no queda escrita en ningún otro registro.
 
 # Parte XIV — Lo que I4 midió y dejó sin corregir
 
-## I4-01 · El chequeo dimensional piloto (M3–M5) midió cuatro inconsistencias de presentación y ninguna de valor; la corrección y la extensión del barrido quedan diferidas
+## I4-01 · El chequeo dimensional piloto (M3–M5) midió cuatro inconsistencias de presentación y ninguna de valor; PD las cerró sin mover un número, y la extensión del barrido a M6–M10 sigue diferida
 
-- **Qué se difirió:** corregir lo que el piloto midió, y extender el barrido
-  a M6–M10. Se midió sobre los trece pasos distintos que M3, M4 y M5 emiten
-  en la corrida de referencia (`indice_formulas.corrida_de_referencia`), con
-  una relación dimensional escrita por paso: (1) Manning no es homogénea y
-  el coeficiente de unidades k_n (1.0 m^(1/3)/s; 1.486 ft^(1/3)/s) está
-  implícito en el `(1/n)` de `M3._caudal_manning`, sin nombre `_SI` ni
-  comentario imperial; (2) el paso 4.2 devuelve HW_entrada [m] con una
-  sustitución adimensional (q*, Ks): el D que cierra está en otro paso;
-  (3) el umbral del paso 4.3 juzga HW/D y el resultado impreso es HW_salida
-  [m]; (4) `K_FRICCION_SI` no aparece en ninguna sustitución —H llega al
-  paso 4.3 como número— y desde el «29» del comentario no cierra al 0.1 %
-  (sí desde 2·32.2/1.486² = 29.164). `KU_SI` cierra (1.0 s/ft^0.5 → 1.811).
-  Ningún número de la memoria está mal.
-- **Por qué:** la regla de la sesión —reportar, no corregir—. Las cuatro
-  tocan el motor validado o la memoria que la suite fija sobre el producto
-  (NOR-MEM-01), y cada una exige antes un test que falle y una decisión: si
-  k_n merece constante `_SI` por la regla de unidades de CLAUDE.md, y qué
-  paso debe transcribir la fórmula de H. El barrido no se extiende todavía
-  porque el resultado cambia la pregunta: en la cadena más densa no salió
-  ninguna inconsistencia de VALOR y sí cuatro de PRESENTACIÓN, y antes de
-  barrer M6–M10 hay que decidir si el chequeo vigila valores o la completitud
-  de la sustitución de cada paso.
-- **Qué haría falta:** una sesión que (a) declare k_n como constante `_SI` o
-  escriba por qué no; (b) lleve D —y H_c/D, K, M, S— a la sustitución del
-  paso 4.2, o cambie su resultado a HW/D; (c) separe el umbral de h_o en un
-  paso propio con resultado HW/D; (d) haga que el paso 4.3 transcriba
-  H = (1 + ke + K·n²·L/R^(4/3))·V²/(2g) con `K_FRICCION_SI` en la
-  sustitución. Cada corrección retira su entrada de los censos en el mismo
-  commit, o el test lo dice. Después, extender `RELACIONES` a M6–M10
-  conforme la corrida de referencia los alcance.
+- **Cerrado (PD):** las cuatro que I4 midió, sin cambiar un solo número de
+  cálculo —la línea base de la Familia C se regeneró y su diff es sólo texto
+  de la memoria—: (1) el coeficiente de unidades de Manning es
+  `constantes_normativas.K_MANNING_SI = 1.0 m^(1/3)/s`, con el molde de
+  `KU_SI` (imperial 1.486 al lado, nombrado y no usado; etiqueta [N]
+  declarada), sostenido por la ec. (47) del num. 4.1.1.3.6, que el Manual
+  imprime en forma SI sin coeficiente —verificado contra el PDF—; M3
+  multiplica por él en vez de esconderlo en `(1/n)` y `F4.MANNING` lo trae
+  como `k_n`; (2) el paso 4.2 trae el `D` con que HW/D pasa a HW_entrada;
+  (3) el paso 4.3 imprime `D` y `HW/D` (`salida.HW_sobre_D`, el cociente que
+  ya juzgaba) sin cambiar qué se compara ni el veredicto, declarado en
+  `UMBRAL_JUZGA`; (4) el comentario de `K_FRICCION_SI` dice la derivación que
+  cierra (2·32.2/1.486² = 29.164 → 19.63) y no la del «29» redondeado. Los
+  dos censos quedaron en cero y se conservan como guardia.
+- **Abierto:** (a) `K_FRICCION_SI` sigue sin nombrarla ningún paso: H llega
+  al 4.3 como número, y transcribir su fórmula es un paso nuevo con relación
+  propia, que PD no abrió (`la_nombra_algun_paso=False` lo mide). (b) El
+  barrido NO se extiende a M6–M10 (M6–M9 en el encargo; M10 también emite
+  un paso), y el argumento es medido, no el del plan: la corrida de
+  referencia emite 119 pasos, todos de M1, M3, M4 y M5, y ninguno de M6–M10
+  —los cuatro puntos se detienen en Fases 3-5 (A-01, A-02 y B-01 por
+  `CriterioPendienteError`, C-01 por `DatoFaltanteError`), B-01 además en
+  Fase 10 por `DatoFaltanteError`, C-01 difiere VC1 por alcance y la Fase 9
+  se bloquea en seis pendientes—, de modo que `RELACIONES` para esos módulos
+  no tendría nada que medir; y M8 no emite ningún `paso()`. Extenderlo hoy
+  sería censar en el vacío.
+- **Qué haría falta:** para (a), un paso propio para H en M4 con
+  `K_FRICCION_SI` en su sustitución y `la_nombra_algun_paso=True` en el mismo
+  commit; para (b), que la corrida de referencia alcance M6–M10 —declarar los
+  pendientes de perfil— y entonces escribir sus `RELACIONES` con las dos
+  direcciones que ya rigen M3–M5.
 - **Dónde vive:** `tests/test_dimensional_piloto.py::INHOMOGENEIDADES_CENSADAS`
 
 ---
