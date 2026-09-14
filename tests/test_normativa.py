@@ -604,6 +604,39 @@ def test_T22_el_total_de_por_transcribir_solo_decrece(reg):
         "trinquete en el MISMO commit y di por que")
 
 
+# LAS CITAS SIN FIRMA, CENSADAS. `verificado is None` tiene dos lecturas y
+# solo una es un defecto: una cita que nadie leyo, o una cita LEIDA cuya
+# fuente no tiene paginacion medida (`SinDeterminar`), de modo que el
+# invariante T6 impide firmarla contra una pagina PDF. La segunda es legitima
+# y se declara en la `nota` de la cita; pero sin censo las dos se ven igual, y
+# `citas_sin_verificar()` llevaba una desde T2 sin que nadie lo vigilara
+# (la encontro la revision del cierre de N1). El censo solo puede crecer con
+# la razon escrita al lado, y solo con esa razon: si la fuente gana
+# paginacion medida, la cita se firma y sale de aqui.
+CITAS_SIN_FIRMA_A_PROPOSITO = (
+    "HDS5_SI_1985.EC4B#K",   # T2: la copia SI del HDS-5 no imprime folios
+)
+
+
+def test_las_citas_sin_firma_son_exactamente_las_censadas(reg):
+    from normativa.esquema import SinDeterminar
+    sin_firma = {c.id for c in reg.citas_sin_verificar()}
+    assert sin_firma == set(CITAS_SIN_FIRMA_A_PROPOSITO), (
+        f"citas sin firma de verificacion: {sorted(sin_firma)}; censadas: "
+        f"{sorted(CITAS_SIN_FIRMA_A_PROPOSITO)}. Una cita nueva sin firma es "
+        "una cita sin leer, salvo que su fuente no tenga paginacion medida: "
+        "en ese caso se censa AQUI con la razon, y su nota lo declara")
+    for id_ in CITAS_SIN_FIRMA_A_PROPOSITO:
+        cita = reg.cita(id_)
+        fuente = reg.fuente(cita.fuente_id)
+        assert isinstance(fuente.paginacion, SinDeterminar), (
+            f"{id_}: su fuente {fuente.id} ya tiene paginacion medida, de modo "
+            "que la cita se puede firmar: firmala y sacala del censo")
+        assert "SIN FIRMA A PROPOSITO" in (cita.nota or ""), (
+            f"{id_}: esta censada como sin firma deliberada y su nota no lo "
+            "declara")
+
+
 def test_T22_el_centinela_es_unico_y_falsy():
     """
     UN solo valor admisible para lo aun no leido, y falsy para que
