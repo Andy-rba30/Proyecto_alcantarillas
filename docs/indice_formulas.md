@@ -1,0 +1,120 @@
+# Índice de fórmulas de la corrida de referencia
+
+> **Este documento se GENERA.** No se edita a mano: lo produce
+> `src/indice_formulas.py` desde los `PasoDeMemoria` que emite una
+> corrida de referencia, y el test
+> `test_el_indice_de_formulas_esta_sincronizado` lo regenera y compara.
+> Si difieren, lo que hay que corregir es el cálculo o el registro, no
+> este archivo.
+>
+> **Sello.** Fecha de generación: 2026-09-14 · Commit del árbol de origen: `f125381+cambios-sin-commit` · Suite: 1948 passed, 4 skipped (PyMuPDF sí · ventana Tk sí)
+>
+> **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
+> fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
+> tabla), código del paso en la memoria, fundamento, fórmula con su
+> cita (numeral + página, vía `Cita.como_texto`), variables con la
+> procedencia que la memoria imprime para cada una, resultado y umbral.
+> Los VALORES no se imprimen: son de la memoria, no del índice. La
+> columna «Emisiones» dice cuántas veces la corrida emitió esa fórmula
+> (una por punto y por escalón de MD que la evaluó). Cuando la misma
+> variable llegó con más de una procedencia, se listan todas,
+> separadas por «‖».
+
+## 1. La corrida de referencia
+
+- CSV: `tests/ejemplo_puntos.csv` · datos externos: `tests/ejemplo_puntos.referencia.json` · alcance: `expediente`.
+- Puntos: 4 · dimensionados: 0.
+- Etapas que la corrida no completó (la razón está en el informe; aquí sólo se nombra la etapa):
+  - A-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`CriterioPendienteError`).
+  - A-02: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`CriterioPendienteError`).
+  - B-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`CriterioPendienteError`).
+  - B-01: Fase 10 - Espaciamiento de alivio (M10) → espaciamiento maximo entre alivios (`DatoFaltanteError`).
+  - C-01: Fase 5 - Verificaciones → VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no) (`DiferidoPorAlcance`).
+  - C-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`DatoFaltanteError`).
+  - proyecto: Fase 9 - Cabezal y aletas (M9) → K_AE de Mononobe-Okabe (9.2) (`CriterioPendienteError`).
+  - proyecto: Fase 9 - Cabezal y aletas (M9) → predimensionamiento del cabezal (9.3, E1-E5) (`CriterioPendienteError`).
+  - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'contra_suelo' (9.4) (`CriterioPendienteError`).
+  - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4) (`CriterioPendienteError`).
+  - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`CriterioPendienteError`).
+  - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`CriterioPendienteError`).
+
+Pasos emitidos: **119** · fórmulas distintas: **17** · fundamentos ejercitados: **14** de 27.
+
+## 2. Índice
+
+| Fase | Módulo emisor | Código | Paso | Fundamento | Fórmula | Cita de la fórmula | Variables (símbolo [unidad] ← procedencia) | Resultado | Umbral | Emisiones |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Fase 1 - Datos de entrada | `M3_hidraulica` | `1.3` | TW en el cuerpo receptor durante la avenida | `F1.TW` (define) | `TW = cota_TW - cota_fondo_salida` | num. 4.1.1.3.6 · 'Diseño hidráulico' · pag. impresa 74 · PDF 77 | **TW** [m] ← «declarado por el proyectista (--tw o TW_m de --datos-externos): manda sobre el calculo» | **TW** [m] | — | 4 |
+| Fase 2 - Clasificacion y periodo de retorno | `M1_clasificacion` | `2.1` | Denominacion de la obra: alcantarilla o puente | `F2.LUZ` (define) | `luz < 6.0 m -> alcantarilla; luz >= 6.0 m -> puente` | num. 4.1.1.3.1 · 'Aspectos generales' · pag. impresa 70 · PDF 73 | **luz** [m] ← «luz del cruce, declarada con --luz o por --datos-externos: NO es columna del CSV» | **denominacion** [adimensional] | luz maxima de una alcantarilla [m] · num. 4.1.1.3.1 · 'Aspectos generales' · pag. impresa 70 · PDF 73 | 4 |
+| Fase 2 - Clasificacion y periodo de retorno | `M1_clasificacion` | `2.2` | Periodo de retorno del caudal de diseño | `F2.TR` (recomienda) | `R = 1 - (1 - 1/T)^n, despejada en T: T = 1 / (1 - (1 - R)^(1/n))` | num. 3.6 · 'Selección del Período de Retorno' · pag. impresa 25 · PDF 28 | **R** [adimensional] ← «riesgo admisible de falla de la fila «Alcantarillas de paso de quebradas importantes y badenes»» ‖ «riesgo admisible de falla de la fila «Alcantarillas de paso quebradas menores y descarga de agua de cunetas»»<br>**n** [anios] ← «vida util de la misma fila, que la tabla escribe en su nota al pie (**)» | **TR** [anios] | riesgo admisible maximo recomendado para esta fila [adimensional] · num. 3.6 · 'Selección del Período de Retorno' · pag. impresa 25 · PDF 28 | 3 |
+| Fase 4 - Dimensionamiento hidraulico | `M4_control` | `4.1` | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | `F4.SECCION` (define) | `A = (D^2/8)(theta - sen theta), P = D*theta/2, R = A/P, con theta el angulo mojado` | num. 4.1.1.3.6 · 'Diseño hidráulico' · pag. impresa 74 · PDF 77 | **D** [m] ← «diametro interior del barril, que en un circulo es tambien su altura interior: el «D» de HDS-5»<br>**y** [m] ← «tirante normal, que es el que resuelve el paso siguiente: Brent recorre ESTA misma seccion hasta que Manning iguala el caudal de diseño»<br>**A** [m2] ← «area hidraulica a ese tirante; sale de la formula de arriba y no se vuelve a calcular en ningun otro sitio»<br>**P** [m] ← «perimetro mojado a ese tirante, por la misma via» | **R** [m] | — | 9 |
+| Fase 4 - Dimensionamiento hidraulico | `M4_control` | `4.1` | Tirante normal y velocidades en el conducto | `F4.MANNING` (define) | `Q = (1/n) * A * R^(2/3) * S^(1/2), resuelta con Brent sobre el parametro de llenado de la seccion; A, P y R son los del paso anterior` | num. 4.1.1.3.6 · 'Diseño hidráulico' · pag. impresa 74 · PDF 77 | **Q** [m3/s] ← «caudal de diseño CON QUE CORRIO el punto: la columna Q_m3s del CSV en la Familia A, y el caudal declarado del drenaje longitudinal o del canal en las B y C»<br>**S** [m/m] ← «pendiente con que corrio el diseño: la del cauce salvo que el punto declare 'S_conducto'. Es la MISMA que usa la Fase 7 (MAT-D9)»<br>**D** [m] ← «diametro interior del barril, que en un circulo es tambien su altura interior: el «D» de HDS-5»<br>**n_max** [adimensional] ← «extremo superior del rango de la Tabla Nº 09 para «Concreto reforzado»: rama de CAPACIDAD» ‖ «extremo superior del rango de la Tabla Nº 09 para «TMC galvanizada»: rama de CAPACIDAD» ‖ «extremo superior del rango de la Tabla Nº 09 para «HDPE»: rama de CAPACIDAD»<br>**n_min** [adimensional] ← «extremo inferior del mismo rango: rama de EROSION» | **y_normal** [m] | — | 9 |
+| Fase 4 - Dimensionamiento hidraulico | `M4_control` | `4.2.1` | Tirante critico de la seccion | `F4.YC_RECT` (define) | `Q^2 / g = A^3 / T, resuelta con Brent sobre el parametro de llenado de la seccion` | *(sin `formula_cita_id`; el fundamento cita: `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.A.2`)* | **Q** [m3/s] ← «el mismo caudal de diseño»<br>**D** [m] ← «diametro interior del barril, que en un circulo es tambien su altura interior: el «D» de HDS-5» | **y_c** [m] | — | 9 |
+| Fase 4 - Dimensionamiento hidraulico | `M4_control` | `4.2` | Forma de la ecuacion de control de entrada del HDS-5 | `F4.FORMA_HDS5` (define) | `Forma 1: HW/D = H_c/D + K*(q*)^M + Ks*S, ec. (A.1)  \|  Forma 2: HW/D = K*(q*)^M, ec. (A.2), SIN el termino Ks*S` | num. A.2, A.2.1 · 'INLET CONTROL EQUATIONS' · pag. impresa A.2 · PDF 191 | **Equation Form** [adimensional] ← «columna de la Tabla A.1 para la carta de esta embocadura; no la elige el proyectista»<br>**K** [adimensional] ← «constante de la carta, ajustada a la Forma 1»<br>**M** [adimensional] ← «exponente de la carta, ajustado a la Forma 1» | **forma aplicada** [adimensional] | — | 9 |
+| Fase 4 - Dimensionamiento hidraulico | `M4_control` | `4.2` | Carga a la entrada bajo CONTROL DE ENTRADA | `F4.CONTROL` (define) | `no sumergido (q* <= 3.5): HW/D = H_c/D + K*(q*)^M + Ks*S, ec. (A.1)  \|  sumergido (q* >= 4.0): HW/D = c*(q*)^2 + Y + Ks*S, ec. (A.3)  \|  entre ambos, recta entre los extremos de validez` | num. A.2, A.2.1 · 'INLET CONTROL EQUATIONS' · pag. impresa A.2 · PDF 191 | **q*** [adimensional] ← «caudal adimensional Ku*Q/(A_llena*D^0.5); decide la rama»<br>**Ks** [adimensional] ← «correccion por pendiente de la formulacion del HDS-5; NO figura en la Tabla A.1» | **HW_entrada** [m] | — | 9 |
+| Fase 4 - Dimensionamiento hidraulico | `M4_control` | `4.3` | Carga a la entrada bajo CONTROL DE SALIDA, y las condiciones de uso que la fuente pone a h_o | `F4.HO` (define) | `HW = H + h_o - S*L, con h_o = max(TW, (y_c + D)/2)` | num. 3.3.3 · 'Outlet Control' · pag. impresa 3.24 · PDF 106 | **H** [m] ← «perdida de carga en el barril, con n_max y la longitud del conducto»<br>**ke** [adimensional] ← «criterio 'ke_entrada', declarado como NUMERO: la fila de la Tabla C.2 de la que sale se lee en el campo `fuente` del criterio, no en el valor»<br>**TW** [m] ← «tirante en el receptor durante la avenida, sobre el fondo de la SALIDA. No es una cota»<br>**(y_c + D)/2** [m] ← «aproximacion de la linea de energia del HDS-5»<br>**h_o** [m] ← «el mayor de los dos anteriores (manda la aproximacion geometrica)»<br>**S*L** [m] ← «caida del conducto entre entrada y salida» | **HW_salida** [m] | HW/D minimo por debajo del cual la fuente dice que la aproximacion de h_o NO debe usarse [adimensional] · num. 3.3.3 · 'Outlet Control' · pag. impresa 3.24 · PDF 106 | 9 |
+| Fase 4 - Dimensionamiento hidraulico | `M4_control` | `4.4` | Cual de los dos controles gobierna | `F4.CONTROL` (define) | `HW = max(HW_entrada, HW_salida)` | num. A.2, A.2.1 · 'INLET CONTROL EQUATIONS' · pag. impresa A.2 · PDF 191 | **HW_entrada** [m] ← «pieza 4.2»<br>**HW_salida** [m] ← «pieza 4.3» | **HW** [m] | — | 9 |
+| Fase 5 - Verificaciones | `M5_verificaciones` | `V1` | Borde libre: relacion de llenado del conducto | `F5.V1` (recomienda) | `y/D <= 0.75, donde 0.75 = 1 - 0.25 (el 25 % que el numeral escribe como borde libre minimo) y D es el diametro interior, una de las tres magnitudes que el numeral enumera` | num. 4.1.1.3.7 b) · 4.1.1.3.7  Consideraciones para el diseño · 'b)  Borde libre' · pag. impresa 79 · PDF 82 | **y_normal** [m] ← «M3, tirante normal por Manning con la rama de n MAXIMO (mas rugosidad da mas tirante para el mismo Q: el extremo conservador para un borde libre)»<br>**D** [m] ← «diametro adoptado por el bucle de diseño (MD), de la serie normalizada» | **y/D** [adimensional] | y/D maximo admisible (borde libre >= 25 % de el diametro interior) [adimensional] · num. 4.1.1.3.7 b) · 4.1.1.3.7  Consideraciones para el diseño · 'b)  Borde libre' · pag. impresa 79 · PDF 82 | 9 |
+| Fase 5 - Verificaciones | `M5_verificaciones` | `V2` | Velocidad minima: comprobacion de autolimpieza | `F5.V2` (recomienda) | `V >= 0.25 m/s` | num. 4.1.1.3.6, párrafo posterior a la Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 77 · PDF 80 | **V_sedimentacion** [m/s] ← «M3, velocidad de la rama de n MAXIMO -- la estimacion BAJA de velocidad, que es el extremo conservador contra un PISO. No es la de V3, que verifica un techo y usa la rama opuesta (MAT-D1)» | **V_sedimentacion** [m/s] | velocidad minima de autolimpieza [m/s] · num. 4.1.1.3.6, párrafo posterior a la Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 77 · PDF 80 | 9 |
+| Fase 5 - Verificaciones | `M5_verificaciones` | `V2b` | Sedimentacion / colmatacion: indicador de pendiente y acceso de mantenimiento | `F5.V2b` (define) | `S_conducto >= S_cauce` | num. 5.3.3 · 'Sedimentation' · pag. impresa 5.11 · PDF 147 | **S_conducto** [m/m] ← «pendiente CON QUE CORRIO EL DISEÑO (la del cauce, salvo que el punto declare `S_conducto`)»<br>**S_cauce** [m/m] ← «pendiente del CAUCE NATURAL, columna del CSV (Sec. 1.5: no es la de la alcantarilla)» | **S_conducto - S_cauce** [m/m] | pendiente del cauce natural: el conducto no se tiende mas plano que ella [m/m] · num. 5.3.3 · 'Sedimentation' · pag. impresa 5.11 · PDF 147 · criterio [A] `acceso_mantenimiento_v2b` | 9 |
+| Fase 5 - Verificaciones | `M5_verificaciones` | `V3` | Velocidad maxima: comprobacion contra el techo del revestimiento | `F5.V3` (obliga) | `V <= v_max del revestimiento` | num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 | **V_erosion** [m/s] ← «M3, velocidad de la rama de n MINIMO -- la estimacion ALTA de velocidad, que es el extremo conservador contra un TECHO. No es la de V2, que verifica un piso y usa la rama opuesta» | **V_erosion** [m/s] | velocidad maxima admisible de «Concreto reforzado» [m/s] · num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 | 3 |
+| Fase 5 - Verificaciones | `M5_verificaciones` | `V4` | Carga a la entrada: el agua embalsada frente a la subrasante | `F5.V4` (obliga) | `cota_entrada + HW <= cota_subrasante - resguardo(CBR)` | num. 4.5.4 · 'Sub rasante' · pag. impresa 42 · PDF 43 | **cota_entrada** [msnm] ← «regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida»<br>**HW** [m] ← «M4, carga a la entrada del control que GOBIERNA (entrada o salida, el mayor de los dos)»<br>**cota_subrasante** [msnm] ← «columna cota_subrasante del CSV (Sec. 1.2)»<br>**CBR** [%] ← «columna cbr_subrasante del CSV (Sec. 1.2)»<br>**resguardo** [m] ← «tabla del num. 4.5.4 del Manual de Suelos, entrando con el CBR de la fila» | **cota alcanzada por el agua** [msnm] | cota maxima que el agua puede alcanzar (subrasante menos resguardo) [msnm] · num. 4.5.4 · 'Sub rasante' · pag. impresa 42 · PDF 43 · criterio [N->] `resguardo_HW_subrasante` | 9 |
+| Fase 5 - Verificaciones | `M5_verificaciones` | `V3` | Velocidad maxima: comprobacion contra el techo del revestimiento | `F5.V3` (obliga) | `V <= v_max del revestimiento` | num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 | **V_erosion** [m/s] ← «M3, velocidad de la rama de n MINIMO -- la estimacion ALTA de velocidad, que es el extremo conservador contra un TECHO. No es la de V2, que verifica un piso y usa la rama opuesta» | **V_erosion** [m/s] | velocidad maxima admisible de «TMC galvanizada» [m/s] · num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 · criterio [C] `v_max_tmc` | 3 |
+| Fase 5 - Verificaciones | `M5_verificaciones` | `V3` | Velocidad maxima: comprobacion contra el techo del revestimiento | `F5.V3` (obliga) | `V <= v_max del revestimiento` | num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 | **V_erosion** [m/s] ← «M3, velocidad de la rama de n MINIMO -- la estimacion ALTA de velocidad, que es el extremo conservador contra un TECHO. No es la de V2, que verifica un piso y usa la rama opuesta» | **V_erosion** [m/s] | velocidad maxima admisible de «HDPE» [m/s] · num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 · criterio [C] `v_max_hdpe` | 3 |
+
+## 3. Verificaciones sin paso: los huecos declarados
+
+Una verificación sin `PasoDeMemoria` no se omite ni se inventa: llega
+como el `HuecoDeVerificacion` que `traza_punto` construye desde el
+censo `normativa.fundamentos.SIN_FUNDAMENTO`, con la razón de por qué
+no puede tener fundamento normativo hoy y qué haría falta para traerlo.
+
+### 3.1 Huecos que la corrida emitió
+
+- **`V4b`** — sin fundamento normativo declarado.
+  - Por que no lo tiene: El rango HW/D 1.0-1.5 no lo prescribe el HDS-5: DESCRIBE lo que imponen las agencias viales de EE. UU., y el MTC no fija ninguno (NOR-HDS-02, y el conflicto vinculante n.1 de la §6 del plan v12). Un `Fundamento` con cita convertiria en exigencia lo que es adopcion del proyectista.
+  - Que haria falta para traerlo: Nada que transcribir: la decision pendiente es de que naturaleza es el umbral, y hasta que se resuelva V4b se imprime como adopcion [A].
+
+### 3.2 Huecos censados que la corrida no alcanzó a evaluar
+
+La corrida se detiene antes de llegar a ellos (ver §1). Se listan con
+la misma ficha para que el censo entero sea visible desde aquí.
+
+- **`CABEZAL`** — sin fundamento normativo declarado.
+  - Por que no lo tiene: La cadena sismica y la estabilidad del cabezal tienen sus citas en el registro (AASHTO 11.6.5.1, A11.3.1, 3.10.3.1), pero la Fase 9 esta DIFERIDA al expediente y no emite paso en la corrida de perfil: un fundamento sin paso que lo imprima no se puede comprobar contra la memoria generada, que es la unica prueba que este proyecto acepta (NOR-MEM-01 se cerro justo por no tenerla).
+  - Que haria falta para traerlo: Emitir `PasoDeMemoria` desde M9 en la corrida de expediente; las citas ya estan.
+- **`V5`** — sin fundamento normativo declarado.
+  - Por que no lo tiene: El remanso dentro del derecho de via se apoya en la DG-2018 y en la Ley 29338, y ninguna de las dos esta en `normas/`: son fuentes AUSENTES del registro. Sin PDF no hay `Verbatim` que verificar y sin cita no hay `Fundamento`.
+  - Que haria falta para traerlo: Incorporar la DG-2018 y la Ley 29338 a `normas/` y transcribir el numeral que acota la afectacion del derecho de via.
+- **`V6`** — sin fundamento normativo declarado.
+  - Por que no lo tiene: El material solido de arrastre lo trata el num. 4.1.1.3.7 a), que esta en el registro, pero lo que el proyecto ejecuta no es un calculo: es una constatacion declarativa sin magnitud ni umbral. No hay paso que fundar.
+  - Que haria falta para traerlo: Cuando V6 pase a evaluar un diametro minimo por zona, su fundamento cuelga de `MC_HHD.4.1.1.3.7a`, que ya esta transcrita y verificada.
+- **`V8`** — sin fundamento normativo declarado.
+  - Por que no lo tiene: El evento extremo se verifica contra un TR adoptado por el proyecto ('TR_evento_extremo'), no contra un numeral: la Tabla N 02 no tabula evento extremo para alcantarillas.
+  - Que haria falta para traerlo: Nada que transcribir mientras el TR de evento extremo siga siendo una adopcion [A]; el fundamento seria del criterio, no de la norma.
+- **`V9`** — sin fundamento normativo declarado.
+  - Por que no lo tiene: La disponibilidad de diametro sale de un CATALOGO de fabricacion, no de una norma. `NOR-PRO-01` y `NOR-PRO-02` retiraron precisamente la atribucion de los topes a AASHTO M170 y ASTM A760, que tabulan mas. El del HDPE si coincide con el techo de la serie de AASHTO M 294-11 (N2, cita AASHTO_M294_TRAD.7.2.1), pero sobre una traduccion no oficial sin firma, y el paso sigue descartando por catalogo para los tres materiales.
+  - Que haria falta para traerlo: Nada: un catalogo no tiene numeral y no puede sostener un fundamento. Es lo que `DeCatalogo` existe para rotular. Un fundamento del HDPE sobre M 294-11 exigiria el original firmado y un paso que descartara por norma, que hoy no existe.
+
+## 4. Fundamentos que la corrida de referencia no ejercita
+
+Declarados en `normativa/fundamentos.py` y sin paso en esta corrida,
+porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
+§2 y este cuadro es lo que impide leer el índice como cobertura.
+
+| Fundamento | Fase | Paso | Módulo emisor |
+|---|---|---|---|
+| `F10.CUNETA` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud maxima de recorrido de la cuneta, que fija el espaciamiento de las alcantarillas de alivio | `M10_espaciamiento` |
+| `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | `M2_material` |
+| `F3.D_MIN` | Fase 3 - Tipo, material y durabilidad | Seccion minima circular de 0.90 m (36") | sin `paso()`; entra por otra puerta desde `constantes_normativas` |
+| `F3.MANTENIMIENTO` | Fase 3 - Tipo, material y durabilidad | Cota inferior de la progresion de secciones: dimension interior que permite mantener y limpiar el conducto | `M2_material` |
+| `F3.SECCION_CANAL` | Fase 3 - Tipo, material y durabilidad | Adopcion de la seccion del cajon en un cruce de canal de riego, fuera del piso de 0.90 m | `M2_material` |
+| `F3.TIPO_MARCO` | Fase 3 - Tipo, material y durabilidad | Tipo de estructura del cruce: alcantarilla tipo marco de concreto de seccion rectangular | `M2_material` |
+| `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | `M2_material` |
+| `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | `M5_verificaciones` |
+| `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | sin `paso()`; entra por otra puerta desde `M5_verificaciones` |
+| `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | `M5_verificaciones` |
+| `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | `M6_proteccion` |
+| `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | `M7_geometria` |
+| `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | `M9_cabezal` |
+

@@ -290,6 +290,20 @@ def _hueco(codigo: str, censo: Tuple[str, str]) -> HuecoDeVerificacion:
         que_haria_falta=que_haria_falta)
 
 
+def hueco_censado(codigo: str) -> HuecoDeVerificacion:
+    """
+    El `HuecoDeVerificacion` de una verificacion censada en `SIN_FUNDAMENTO`,
+    construido con la MISMA ficha que `traza_del_punto` usa cuando la corrida
+    llega a esa verificacion. Publico desde I4: el indice de formulas lista
+    los huecos que la corrida de referencia no alcanza a evaluar, y dos
+    construcciones del mismo hueco son dos que pueden divergir.
+
+    `KeyError` si el codigo no esta censado: un hueco sin razon escrita no se
+    construye, que es lo que separa un hueco declarado de una fila en blanco.
+    """
+    return _hueco(codigo, _M11.sin_fundamento_por_codigo()[codigo])
+
+
 # ---------------------------------------------------------------------------
 # La traza completa de un punto
 # ---------------------------------------------------------------------------

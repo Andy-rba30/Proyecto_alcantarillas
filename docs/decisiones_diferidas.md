@@ -1192,3 +1192,41 @@ y que no queda escrita en ningún otro registro.
   imprime como «Revisada y Corregida a Junio 2013»), la RM 217-2026-VIVIENDA
   (la transitoria de la E.030) y el listado de manuales del portal del MTC.
 - **Dónde vive:** `src/normativa/fuentes.py::estado_de_vigencia`
+
+---
+
+# Parte XIV — Lo que I4 midió y dejó sin corregir
+
+## I4-01 · El chequeo dimensional piloto (M3–M5) midió cuatro inconsistencias de presentación y ninguna de valor; la corrección y la extensión del barrido quedan diferidas
+
+- **Qué se difirió:** corregir lo que el piloto midió, y extender el barrido
+  a M6–M10. Se midió sobre los trece pasos distintos que M3, M4 y M5 emiten
+  en la corrida de referencia (`indice_formulas.corrida_de_referencia`), con
+  una relación dimensional escrita por paso: (1) Manning no es homogénea y
+  el coeficiente de unidades k_n (1.0 m^(1/3)/s; 1.486 ft^(1/3)/s) está
+  implícito en el `(1/n)` de `M3._caudal_manning`, sin nombre `_SI` ni
+  comentario imperial; (2) el paso 4.2 devuelve HW_entrada [m] con una
+  sustitución adimensional (q*, Ks): el D que cierra está en otro paso;
+  (3) el umbral del paso 4.3 juzga HW/D y el resultado impreso es HW_salida
+  [m]; (4) `K_FRICCION_SI` no aparece en ninguna sustitución —H llega al
+  paso 4.3 como número— y desde el «29» del comentario no cierra al 0.1 %
+  (sí desde 2·32.2/1.486² = 29.164). `KU_SI` cierra (1.0 s/ft^0.5 → 1.811).
+  Ningún número de la memoria está mal.
+- **Por qué:** la regla de la sesión —reportar, no corregir—. Las cuatro
+  tocan el motor validado o la memoria que la suite fija sobre el producto
+  (NOR-MEM-01), y cada una exige antes un test que falle y una decisión: si
+  k_n merece constante `_SI` por la regla de unidades de CLAUDE.md, y qué
+  paso debe transcribir la fórmula de H. El barrido no se extiende todavía
+  porque el resultado cambia la pregunta: en la cadena más densa no salió
+  ninguna inconsistencia de VALOR y sí cuatro de PRESENTACIÓN, y antes de
+  barrer M6–M10 hay que decidir si el chequeo vigila valores o la completitud
+  de la sustitución de cada paso.
+- **Qué haría falta:** una sesión que (a) declare k_n como constante `_SI` o
+  escriba por qué no; (b) lleve D —y H_c/D, K, M, S— a la sustitución del
+  paso 4.2, o cambie su resultado a HW/D; (c) separe el umbral de h_o en un
+  paso propio con resultado HW/D; (d) haga que el paso 4.3 transcriba
+  H = (1 + ke + K·n²·L/R^(4/3))·V²/(2g) con `K_FRICCION_SI` en la
+  sustitución. Cada corrección retira su entrada de los censos en el mismo
+  commit, o el test lo dice. Después, extender `RELACIONES` a M6–M10
+  conforme la corrida de referencia los alcance.
+- **Dónde vive:** `tests/test_dimensional_piloto.py::INHOMOGENEIDADES_CENSADAS`
