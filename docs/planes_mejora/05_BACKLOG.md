@@ -166,6 +166,20 @@ contra el PDF y un test de `test_normativa_pdf.py` lo fija. El campo
 la RD 22-2013-MTC/14 (EG-2013 revisada), la RM 217-2026-VIVIENDA
 (transitoria de la E.030) y el listado del portal del MTC.
 
+Resultado de T3 (2026-09-14): `docs/trazabilidad.csv`, una fila por `Cita`
+—149 citas de 15 fuentes en el árbol de T3— con las catorce columnas del
+prompt y orden (fuente_id, numeral, cita_id). Se genera desde el `Registro`
+en `normativa/manifiesto.py` y se regenera con el mismo `--escribir` que los
+otros dos documentos; el sello de la primera línea lleva fecha, commit,
+alcance y par de la suite, y el test de sincronía compara el cuerpo con el
+sello leído del archivo. Lo que hizo falta añadir al registro fue un solo
+índice inverso, `Registro.consumidores_de_cita` (fundamentos que citan la
+cita + `Usada.por` de las tablas ancladas en ella), hermano de
+`discrepancias_de_cita`: **54 de las 149 citas tienen consumidor declarado**
+por esa vía, y las otras 95 llegan al cálculo por condición, modificador o
+celda, o son de contexto. Lo pendiente se escribe con palabras («por
+transcribir», «sin verificar»), no como celda vacía. Cero elecciones tomadas.
+
 La regla no cambia: una sesión = un prompt, y la tabla de entornos de
 `CLAUDE.md` se vuelve a medir en las cuatro configuraciones cada vez que el
 conteo se mueve. Pre-N1 la encontró seis sesiones atrasada y la re-midió.

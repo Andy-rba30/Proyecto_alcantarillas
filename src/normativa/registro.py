@@ -260,6 +260,55 @@ class Registro:
         return tuple(d for d in self._discrepancias.values()
                      if cita_id in d.citas)
 
+    def consumidores_de_cita(self, cita_id: str) -> Tuple[str, ...]:
+        """
+        El indice inverso de `consumidores_declarados`: quien CONSUME esta
+        cita, segun lo que el registro ya declara (T3).
+
+        Se deriva, como `discrepancias_de_cita`, de lo que los objetos ya
+        dicen -- no hay un segundo sitio que mantener a mano --, y son dos
+        las vias por las que una cita llega al calculo:
+
+        1. Un `Fundamento` que la cita en `citas`: es el `por_que` de un
+           `PasoDeMemoria`, y la fase que lo consume es la del fundamento.
+           Se imprime como ``fundamento <id> (<fase>)``.
+        2. Una `TablaNormativa` anclada en ella (`cita_id`), o una celda o
+           afirmacion negativa suya que la cite: los consumidores son los
+           `Usada.por` de sus columnas y filas -- los mismos nombres que
+           `consumidores_declarados` recoge para el registro entero --.
+           Se imprime como ``tabla <id> -> <consumidor>``.
+
+        Lo que NO cuenta como consumidor: una discrepancia (habla DE la
+        cita, no la usa; tiene su indice en `discrepancias_de_cita`), una
+        condicion y un modificador (gobiernan cuando aplica una fila, y el
+        consumidor sigue siendo el de la fila). Una cita sin consumidor aqui
+        no es necesariamente huerfana -- T4 la acepta si un modificador o
+        una condicion la referencia --, pero es una cita que ningun paso de
+        la memoria va a imprimir por su fundamento ni por su tabla.
+
+        Orden estable: alfabetico, para que la vista CSV sea diffable.
+        """
+        vistos = set()
+        for f in self._fundamentos.values():
+            if cita_id in f.citas:
+                vistos.add(f"fundamento {f.id} ({f.fase})")
+        for t in self._tablas.values():
+            anclada = t.cita_id == cita_id
+            if not anclada:
+                anclada = any(a.cita_id == cita_id
+                              for a in t.afirmaciones_negativas)
+            if not anclada:
+                anclada = any(
+                    getattr(celda, "cita_id", None) == cita_id
+                    for fila in t.filas for celda in fila.valores.values())
+            if not anclada:
+                continue
+            for elemento in (*t.columnas, *t.filas):
+                if isinstance(elemento.uso, Usada):
+                    for por in elemento.uso.por:
+                        vistos.add(f"tabla {t.id} -> {por}")
+        return tuple(sorted(vistos))
+
     def discrepancias_que_tocan(
             self,
             cita_ids: Iterable[str],

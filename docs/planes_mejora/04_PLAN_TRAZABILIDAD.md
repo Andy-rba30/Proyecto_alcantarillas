@@ -163,6 +163,20 @@ registro»; entrega en origin/main; conteo como par desde origin/main, con el
 entorno.
 ```
 
+**Hecha el 2026-09-14.** `docs/trazabilidad.csv` lo genera
+`manifiesto.trazabilidad_csv` desde el `Registro`, y sale del MISMO flujo que
+los otros dos documentos generados (`python3 -m src.normativa.manifiesto
+--escribir --suite "..."`, que ahora exige el par porque es parte del sello).
+El sello va en la primera línea como comentario `#` y lleva fecha, commit del
+árbol de origen, alcance (derivado: cuántas citas de cuántas fuentes) y el
+par de la suite con su entorno; `tests/test_trazabilidad_csv.py` lee el sello
+del archivo, regenera el cuerpo y compara. Las dos columnas que no salen de
+la `Cita` sola son índices inversos derivados: `discrepancias_que_la_tocan`
+usa el que ya existía (`Registro.discrepancias_de_cita`) y
+`consumidores_declarados` el nuevo `Registro.consumidores_de_cita`, que
+recoge los fundamentos que citan la cita y los `Usada.por` de las tablas
+ancladas en ella. Resultado en `05_BACKLOG.md` («Resultado de T3»).
+
 ---
 
 ## Fuera de alcance del plan T

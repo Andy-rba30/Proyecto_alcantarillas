@@ -396,14 +396,14 @@ def test_T8_el_manifiesto_esta_sincronizado_con_el_codigo():
     Este test regenera el manifiesto a memoria y compara. Si difiere, no se
     edita el test ni se renumera a mano:
 
-        python3 -m src.normativa.manifiesto --escribir
+        python3 -m src.normativa.manifiesto --escribir --suite "..."
     """
     from normativa.manifiesto import resincronizar
     texto = MANIFIESTO.read_text(encoding="utf-8")
     regenerado, cambios, _ = resincronizar(texto)
     assert regenerado == texto, (
         f"el manifiesto esta desincronizado en {len(cambios)} referencias.\n"
-        "Regeneralo con:  python3 -m src.normativa.manifiesto --escribir\n  "
+        "Regeneralo con:  python3 -m src.normativa.manifiesto --escribir --suite \"...\"\n  "
         + "\n  ".join(cambios[:15]))
 
 
@@ -416,11 +416,11 @@ def test_T8_el_indice_del_registro_esta_sincronizado():
     from normativa.registro import construir
     assert INDICE_REGISTRO.exists(), (
         "falta docs/manifiesto_registro_normativo.md: generalo con "
-        "python3 -m src.normativa.manifiesto --escribir")
+        "python3 -m src.normativa.manifiesto --escribir --suite \"...\"")
     assert INDICE_REGISTRO.read_text(encoding="utf-8") == \
         indice_del_registro(construir()), (
             "el indice del registro esta desincronizado. NO se edita a mano: "
-            "python3 -m src.normativa.manifiesto --escribir")
+            "python3 -m src.normativa.manifiesto --escribir --suite \"...\"")
 
 
 def test_toda_referencia_cae_dentro_del_bloque_del_simbolo_que_cita():
@@ -661,7 +661,7 @@ def test_ninguna_etiqueta_declara_un_rango_imposible():
     assert not imposibles, (
         f"{len(imposibles)} etiquetas anuncian un tramo imposible (el final "
         f"por delante del principio): {imposibles[:8]}. Regeneralo con "
-        "python3 -m src.normativa.manifiesto --escribir")
+        "python3 -m src.normativa.manifiesto --escribir --suite \"...\"")
 
 
 def test_ninguna_mencion_se_verifica_contra_el_archivo_entero():

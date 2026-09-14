@@ -46,7 +46,10 @@ solo puede decrecer.
 
 from __future__ import annotations
 
+import csv
+import io
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -65,6 +68,7 @@ from .esquema import (
 RAIZ = Path(__file__).resolve().parents[2]
 MANIFIESTO = RAIZ / "docs" / "manifiesto_citas.md"
 INDICE_REGISTRO = RAIZ / "docs" / "manifiesto_registro_normativo.md"
+TRAZABILIDAD_CSV = RAIZ / "docs" / "trazabilidad.csv"
 
 # El formato de referencia del manifiesto: [ETIQUETA:linea](ruta:linea).
 REFERENCIA = re.compile(
@@ -622,15 +626,199 @@ def indice_del_registro(registro) -> str:
     return "\n".join(L) + "\n"
 
 
+# ===========================================================================
+# La vista CSV del registro: una fila por Cita, filtrable (T3)
+# ===========================================================================
+#
+# Lo unico de la matriz de trazabilidad que el manifiesto Markdown no da: una
+# vista que un revisor --persona o IA-- pueda FILTRAR y ORDENAR («dame todas
+# las exigencias verificadas por imagen») sin leer Markdown. Se genera del
+# `Registro`, con orden determinista y sello, como todo documento generado de
+# la casa; el test `tests/test_trazabilidad_csv.py` la regenera y compara.
+#
+# EL SELLO va en la primera linea, como comentario `#`, y lleva las cuatro
+# cosas que la regla de sellos pide: fecha, commit del arbol de ORIGEN,
+# alcance y el par de la suite con su entorno. Fecha, commit y suite los pone
+# quien regenera (`main` los toma de `git` y de `--suite`); el ALCANCE lo
+# deriva el generador del propio registro, porque es un hecho del contenido
+# --cuantas citas, de cuantas fuentes-- y no algo que se declare. El test de
+# sincronia lee fecha, commit y suite del archivo en disco y se los pasa al
+# generador, de modo que compara el CUERPO y no la fecha: es el mismo reparto
+# que `indice_formulas.Sello`, y no se importa de alli porque ese modulo
+# arrastra la corrida de referencia entera (M11, criterios) y este solo
+# conoce el registro.
+
+COLUMNAS_TRAZABILIDAD = (
+    "cita_id", "fuente_id", "norma", "edicion", "numeral", "titulo_numeral",
+    "pagina_impresa", "pagina_pdf", "caracter", "metodo_verificacion",
+    "fecha_verificacion", "tiene_interpretacion", "discrepancias_que_la_tocan",
+    "consumidores_declarados",
+)
+
+# Separador de los campos que llevan LISTA (discrepancias y consumidores),
+# elegido porque no aparece en ningun id del registro ni en los nombres
+# `Modulo.funcion` de `Usada.por`; el test lo comprueba.
+SEPARADOR_DE_LISTA = "; "
+
+SIN_VERIFICAR = "sin verificar"
+POR_TRANSCRIBIR_CSV = "por transcribir"
+
+_ROTULO_SELLO_CSV = "# Sello · fecha: "
+_SELLO_CSV = re.compile(
+    r"^# Sello · fecha: (?P<fecha>\S+) · commit: (?P<commit>\S+) · "
+    r"alcance: (?P<alcance>.+?) · suite: (?P<suite>.+?)\s*$")
+
+
+@dataclass(frozen=True)
+class SelloCSV:
+    """Fecha, commit de origen y par de la suite con su entorno."""
+
+    fecha: str
+    commit: str
+    suite: str
+
+    def __post_init__(self) -> None:
+        for campo in ("fecha", "commit", "suite"):
+            if not str(getattr(self, campo)).strip():
+                raise ValueError(f"Sello sin `{campo}`: la regla de sellos "
+                                 "pide fecha, commit, alcance y par de la "
+                                 "suite")
+        # El par de la suite es el ULTIMO campo del sello y por eso puede
+        # llevar ` · ` dentro («PyMuPDF sí · ventana Tk sí», que es como la
+        # tabla de CLAUDE.md nombra el entorno); lo que no puede llevar es un
+        # salto de linea, porque el sello es UNA linea de comentario.
+        if "\n" in self.suite:
+            raise ValueError("el par de la suite no puede llevar saltos de "
+                             "linea: el sello es una sola linea de comentario")
+
+    def linea(self, alcance: str) -> str:
+        return (f"{_ROTULO_SELLO_CSV}{self.fecha} · commit: {self.commit} · "
+                f"alcance: {alcance} · suite: {self.suite}")
+
+
+def leer_sello_csv(texto: str) -> Optional[SelloCSV]:
+    """El sello que un CSV ya escrito lleva en su primera linea, o None."""
+    primera = texto.split("\n", 1)[0]
+    m = _SELLO_CSV.match(primera)
+    if not m:
+        return None
+    return SelloCSV(m.group("fecha"), m.group("commit"), m.group("suite"))
+
+
+def alcance_de_trazabilidad(registro) -> str:
+    """Lo que la vista cubre, derivado del registro y no declarado."""
+    fuentes = {c.fuente_id for c in registro.citas}
+    return (f"registro completo, una fila por Cita: {len(registro.citas)} "
+            f"citas de {len(fuentes)} fuentes")
+
+
+def _si_o_no(valor: bool) -> str:
+    return "sí" if valor else "no"
+
+
+def fila_de_trazabilidad(registro, c: Cita) -> Dict[str, str]:
+    """
+    Los catorce campos de una cita, todos derivados de objetos del registro.
+
+    Cada campo sale de UN sitio: `Cita`, la `Fuente` de la cita, su
+    `Verificado`, el indice inverso de discrepancias y el de consumidores.
+    Lo pendiente se escribe con palabras (`por transcribir`, `sin verificar`)
+    y no como celda vacia, para que una celda vacia no pueda significar dos
+    cosas.
+    """
+    f = registro.fuente(c.fuente_id)
+    if c.verificado is None:
+        metodo, fecha = SIN_VERIFICAR, SIN_VERIFICAR
+    else:
+        metodo, fecha = c.verificado.metodo.value, c.verificado.fecha
+    discrepancias = SEPARADOR_DE_LISTA.join(
+        f"{d.id} [{d.estado.value}]"
+        for d in sorted(registro.discrepancias_de_cita(c.id),
+                        key=lambda d: d.id))
+    return {
+        "cita_id": c.id,
+        "fuente_id": c.fuente_id,
+        "norma": f.titulo,
+        "edicion": f.edicion,
+        "numeral": c.numeral,
+        "titulo_numeral": (POR_TRANSCRIBIR_CSV
+                           if esta_por_transcribir(c.titulo_numeral)
+                           else c.titulo_numeral),
+        "pagina_impresa": c.pagina_impresa,
+        "pagina_pdf": (POR_TRANSCRIBIR_CSV
+                       if esta_por_transcribir(c.pagina_pdf)
+                       else str(c.pagina_pdf)),
+        "caracter": c.caracter.value,
+        "metodo_verificacion": metodo,
+        "fecha_verificacion": fecha,
+        "tiene_interpretacion": _si_o_no(c.interpretacion is not None),
+        "discrepancias_que_la_tocan": discrepancias,
+        "consumidores_declarados": SEPARADOR_DE_LISTA.join(
+            registro.consumidores_de_cita(c.id)),
+    }
+
+
+def orden_de_trazabilidad(c: Cita) -> Tuple[str, str, str]:
+    """(fuente_id, numeral, cita_id): determinista, para diffs legibles."""
+    return (c.fuente_id, c.numeral, c.id)
+
+
+def trazabilidad_csv(registro, sello: SelloCSV) -> str:
+    """
+    La vista CSV entera: sello, cabecera y una fila por `Cita`.
+
+    Terminador de linea `\n` fijo y comillas solo donde el campo las pide,
+    para que dos regeneraciones del mismo registro den bytes identicos en
+    cualquier plataforma: es lo que hace que el test pueda comparar texto.
+    """
+    salida = io.StringIO()
+    salida.write(sello.linea(alcance_de_trazabilidad(registro)) + "\n")
+    escritor = csv.DictWriter(salida, fieldnames=COLUMNAS_TRAZABILIDAD,
+                              lineterminator="\n",
+                              quoting=csv.QUOTE_MINIMAL)
+    escritor.writeheader()
+    for c in sorted(registro.citas, key=orden_de_trazabilidad):
+        escritor.writerow(fila_de_trazabilidad(registro, c))
+    return salida.getvalue()
+
+
+def _commit_de_origen() -> str:
+    """El SHA corto de HEAD, con marca si el arbol tiene cambios sin commit."""
+    import subprocess
+
+    sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=RAIZ,
+                         capture_output=True, text=True, check=True).stdout.strip()
+    # Los tres documentos generados no cuentan como cambio: regenerarlos los
+    # modifica siempre, y la marca es para lo DEMAS que el arbol tenga sin
+    # commit.
+    exentos = [f":!{ruta.relative_to(RAIZ)}"
+               for ruta in (MANIFIESTO, INDICE_REGISTRO, TRAZABILIDAD_CSV)]
+    sucio = subprocess.run(
+        ["git", "status", "--porcelain", "--", ".", *exentos],
+        cwd=RAIZ, capture_output=True, text=True, check=True).stdout
+    return sha + ("+cambios-sin-commit" if sucio.strip() else "")
+
+
 def main(argv: List[str]) -> int:
     """
-    `python3 -m src.normativa.manifiesto [--escribir]`
+    `python3 -m src.normativa.manifiesto [--escribir --suite "N passed, M skipped (entorno)"]`
 
-    Sin `--escribir` solo informa; con `--escribir` deja los dos documentos
-    en disco.
+    Sin `--escribir` solo informa: resincroniza a memoria, regenera el
+    indice y comprueba el CSV contra el sello que ya lleva. Con `--escribir`
+    deja los TRES documentos en disco, y exige `--suite`: el par de la suite
+    es parte del sello del CSV y no se puede inventar.
     """
+    import datetime as _dt
+
     from .registro import construir
     escribir = "--escribir" in argv
+    suite = None
+    if "--suite" in argv:
+        suite = argv[argv.index("--suite") + 1]
+    if escribir and not suite:
+        print("--escribir exige --suite \"N passed, M skipped (entorno)\": "
+              "el par de la suite es parte del sello de trazabilidad.csv")
+        return 2
 
     texto = MANIFIESTO.read_text(encoding="utf-8")
     nuevo, cambios, prosa = resincronizar(texto)
@@ -642,12 +830,31 @@ def main(argv: List[str]) -> int:
     if len(cambios) > muestra:
         print(f"    ... y {len(cambios) - muestra} más")
 
-    indice = indice_del_registro(construir())
+    registro = construir()
+    indice = indice_del_registro(registro)
     print(f"manifiesto_registro_normativo.md: {len(indice.splitlines())} líneas")
+
+    if escribir:
+        sello = SelloCSV(fecha=_dt.date.today().isoformat(),
+                         commit=_commit_de_origen(), suite=suite)
+    else:
+        sello = (leer_sello_csv(TRAZABILIDAD_CSV.read_text(encoding="utf-8"))
+                 if TRAZABILIDAD_CSV.exists() else None)
+    if sello is None:
+        print("trazabilidad.csv: no existe o no lleva sello legible")
+    else:
+        csv_texto = trazabilidad_csv(registro, sello)
+        estado = "" if escribir else (
+            " · sincronizado"
+            if csv_texto == TRAZABILIDAD_CSV.read_text(encoding="utf-8")
+            else " · DESINCRONIZADO")
+        print(f"trazabilidad.csv: {len(csv_texto.splitlines())} líneas "
+              f"(sello {sello.fecha} · {sello.commit}){estado}")
 
     if escribir:
         MANIFIESTO.write_text(nuevo, encoding="utf-8")
         INDICE_REGISTRO.write_text(indice, encoding="utf-8")
+        TRAZABILIDAD_CSV.write_text(csv_texto, encoding="utf-8")
         print("escritos.")
     return 0
 

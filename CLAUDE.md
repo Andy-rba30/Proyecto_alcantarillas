@@ -332,6 +332,18 @@ ErrorProyecto.
 - pytest en tests/. Mínimo un test por módulo.
 - Todo módulo de cálculo se contrasta contra tests/fixtures/casos_patron.py.
 - Al cerrar cada módulo: commit con el nombre del módulo en el mensaje.
+- **Tres documentos de `docs/` se GENERAN y no se editan a mano**, cada uno
+  con su test de sincronía que regenera a memoria y compara:
+  `manifiesto_citas.md` (resincronizado por símbolo) y
+  `manifiesto_registro_normativo.md` (índice del registro, anclado por id)
+  salen de `python3 -m src.normativa.manifiesto --escribir --suite "..."`,
+  y desde T3 también `trazabilidad.csv` —la vista filtrable del registro,
+  una fila por `Cita`— sale del mismo comando, que por eso exige el par de
+  la suite: es parte del sello de la primera línea. El cuarto generado,
+  `indice_formulas.md`, tiene su propio comando (`src/indice_formulas.py`)
+  porque necesita la corrida de referencia entera. El sello (fecha, commit
+  de origen, alcance, par de la suite con su entorno) lo pone quien regenera
+  y el test lo LEE del documento para comparar el cuerpo y no la fecha.
 
 ## Cierre de tarea: la entrega es `origin/main`
 
