@@ -41,7 +41,7 @@ Qué queda en cada uno, según el propio tracker:
 |---|---|---|
 | `SIS-F-01` (GRAVE) | El código que construye widgets no se ejecuta en la suite | **Sí** — `CLAUDE.md` documenta que `python3-tk` + `xvfb-run` funcionan en el contenedor; ya hay 3 tests de ventana real |
 | `NOR-PRO-04` (ALTA) | (1) transcribir Tabla 1 de ASTM A760 / Tabla 6 de AASHTO M 36; (2) calibre TMC por cobertura | (1) **Sí**, por método IMAGEN (los PDF no dan texto); (2) **No** — ASTM A796 no está en `normas/` (gabinete) |
-| `SIS-F-13` (MENOR) | Casos patrón de M2, M8, M10 | **No** sin fuente externa — el conflicto #7 prohíbe inventar dorados. Gabinete: series de diámetros de M170M/M36/M294 |
+| `SIS-F-13` (MENOR) | Casos patrón de M2, M8, M10 | **No** sin fuente externa — el conflicto #7 prohíbe inventar dorados. Gabinete: series de diámetros de M170M/M36/M294 *(N2: M2 salió con CP11 —series del TMC y del HDPE, esta de la traducción no oficial de M 294-11—; queda el tercio del concreto y M10)* |
 | `NOR-E060-02` (ALTA) | `predimensionamiento_cabezal` sin declarar; `diseno_flexion_corte` lanza `NotImplementedError` | Parcial — es contrato de expediente; verificar que la detención sea ruidosa y declarada, no implementarlo |
 | `NOR-HDS-05` (ALTA) | Procedimiento de barril parcialmente lleno (3.ª condición de `h_o`) | Parcial — evaluar si el Cap. III del HDS-5 (que SÍ está en `normas/`) da el procedimiento transcribible |
 | `NOR-ANA-03` (MEDIA) | Detalle constructivo de embocadura HDPE | **No** — contenido de planos, no de software |
@@ -90,7 +90,9 @@ bloqueado por fuente ausente (gabinete) / contrato de expediente. Luego:
 5. SIS-F-13 — no fabricar dorados (conflicto #7). Confirma que la exención
    de M2/M8/M10 sigue censada en la guardia de casos patrón y en
    decisiones_diferidas.md, y que la lista de qué fuente externa
-   desbloquearía cada uno esté completa (M170M/M36/M294 para M2).
+   desbloquearía cada uno esté completa (M170M/M36/M294 para M2). *(N2: M2
+   ya consume CP11; lo que falta para su tercio del concreto es M 170M
+   Tablas 1-5 transcritas por imagen.)*
 6. Actualiza Estado/Responsable/Commit en el .xlsx para lo que cambie de
    estado (pip install openpyxl --break-system-packages está preautorizado).
 
@@ -279,5 +281,6 @@ desde origin/main, con el entorno.
 - Implementar el diseño estructural del pórtico / flexión-corte del cabezal
   (contrato de expediente, detención ruidosa ya declarada).
 - Conseguir las fuentes ausentes (gabinete del dueño; A796 y M294 son las dos
-  que más desbloquean — quedó dicho en la deuda §15).
+  que más desbloquean — quedó dicho en la deuda §15). *(N1 trajo A796; N2
+  trajo una traducción no oficial de M 294-11, y el original sigue ausente.)*
 - Optimizar rendimiento; familias o materiales nuevos.

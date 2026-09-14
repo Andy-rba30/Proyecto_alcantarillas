@@ -147,7 +147,7 @@ from modelos import (CriterioPendienteError, DatoInvalidoError,
                      DisenoNoFactibleError,
                      ErrorProyecto, Familia, FormaSeccion, Material,
                      PasoDiseno, PuntoCritico, ResultadoHidraulico,
-                     ResultadoPunto, Seccion, Verificacion)
+                     ResultadoPunto, Seccion, TipoMaterial, Verificacion)
 from modulos.M2_material import (CRITERIO_SECCIONES_CAJON,
                                  materiales_candidatos, numero_de_celdas,
                                  siguiente_seccion)
@@ -313,14 +313,31 @@ def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
     la progresion declarada en 'secciones_cajon_normalizadas'. Dejar la clave
     cableada habria repuesto la cita falsa que este mismo mensaje habia
     retirado, solo que un nivel mas abajo.
+
+    Y LA NEGACION VA POR MATERIAL desde N2, porque para uno de los tres dejo
+    de ser cierta: la serie de tamaños nominales de AASHTO M 294-11 -- leida
+    de la traduccion no oficial que hay en normas/, cita
+    AASHTO_M294_TRAD.7.2.1, sin firma -- TERMINA en 1500 mm, de modo que el
+    tope del HDPE coincide con el techo de su norma de producto. Escribir
+    «NO es un tope de AASHTO M 294-11» en el motivo de descarte del HDPE
+    habria sido negar en la memoria lo que el registro acredita (lo
+    encontro el auditor adversarial de N2). El descarte sigue siendo de
+    catalogo tambien en HDPE: la eleccion es la misma para los tres
+    materiales y este mensaje lo dice; lo que cambia es la atribucion.
     """
     clave = (CRITERIO_SECCIONES_CAJON
              if material.forma is FormaSeccion.RECTANGULAR
              else "D_max_catalogo")
+    if material.forma is not FormaSeccion.RECTANGULAR and \
+            material.tipo is TipoMaterial.HDPE:
+        atribucion = (f"coincide con el techo de la serie de "
+                      f"{material.norma_producto}, num. 7.2.1, y aun asi el "
+                      "descarte es de catalogo, no de norma")
+    else:
+        atribucion = f"NO es un tope de {material.norma_producto}"
     return (f"{MENSAJE_DIAMETRO_SUPERADO} (tope de catalogo adoptado "
-            f"{material.D_max:.2f} m, criterio '{clave}'; NO es un "
-            f"tope de {material.norma_producto}). Ultimo intento: "
-            f"{ultimo_motivo}")
+            f"{material.D_max:.2f} m, criterio '{clave}'; {atribucion}). "
+            f"Ultimo intento: {ultimo_motivo}")
 
 
 # ---------------------------------------------------------------------------

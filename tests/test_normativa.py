@@ -616,10 +616,14 @@ def test_T22_el_total_de_por_transcribir_solo_decrece(reg):
 CITAS_SIN_FIRMA_A_PROPOSITO = (
     "HDS5_SI_1985.EC4B#K",   # T2: la copia SI del HDS-5 no imprime folios
     # N2: la TRADUCCION NO OFICIAL de AASHTO M 294-11 tampoco imprime folio
-    # (ninguna de sus 17 hojas), y ademas es fuente derivada: aunque un dia
-    # tuviera paginacion medida, firmarla como del original seguiria siendo
-    # una cita imprecisa. Las cuatro se leyeron (texto e imagen) y T2/T3 las
-    # comprueban en cada corrida: la fuente SI es extraible.
+    # (ninguna de sus 17 hojas), y esa es LA razon, la unica: una firma
+    # acredita el archivo exacto (sha1), no a AASHTO, y la traduccion de
+    # ASTM A760 tiene su cita firmada por eso mismo. Si un dia esta fuente
+    # ganara paginacion medida, las cuatro se firmarian contra su sha1 y
+    # saldrian de aqui, sin dejar de ser citas a una traduccion: la reserva
+    # viaja en la nota, no en la firma. Las cuatro se leyeron (texto e
+    # imagen) y T2/T3 las comprueban en cada corrida: la fuente SI es
+    # extraible.
     "AASHTO_M294_TRAD.1.1.1",
     "AASHTO_M294_TRAD.1.4",
     "AASHTO_M294_TRAD.7.2.1",
@@ -675,11 +679,12 @@ def test_toda_cita_de_la_traduccion_de_M294_lo_dice(reg):
                 f"{c.id}: su nota no dice que la fuente es una {marca}. Lo "
                 "que acredita es lo que la traduccion imprime, y la cita "
                 "tiene que decirlo donde se lea")
-            assert c.verificado is None, (
-                f"{c.id}: lleva firma. Una cita a una traduccion no oficial "
-                "no se firma como verificada contra la norma: se reverifica "
-                "y se firma el dia que llegue el original (ver la Ausencia "
-                "de AASHTO_M294)")
+            # La firma NO esta prohibida por ser traduccion (precedente:
+            # ASTM_A760 firma la suya): lo que la impide hoy es T6, sin
+            # folio. Si algun dia la lleva, acredita ESTE archivo y no otro.
+            if c.verificado is not None:
+                assert c.verificado.sha1_pdf == fuente.sha1, (
+                    f"{c.id}: la firma no es contra el sha1 de la traduccion")
 
 
 def test_T22_el_centinela_es_unico_y_falsy():

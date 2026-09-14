@@ -214,14 +214,14 @@ DIS_D_MAX = _d(
         # eleccion es la misma para los tres y V9 descarta por catalogo),
         # pero la memoria ya no puede decir que el del HDPE no se contrasto.
         Parte(quien="AASHTO_M294_TRAD",
-              que_dice=("su num. 7.2.1 (traducción no oficial) escribe la "
-                        "serie cerrada de doce diametros nominales, de 300 a "
-                        "1500 mm, y su num. 1.1.1 el ambito «de 300 a 1500 "
-                        "mm»: el 1500 es la ultima fila y no hay «y "
-                        "superiores». El tope de 1.50 m del HDPE coincide "
-                        "con el techo de la norma de producto -- segun la "
-                        "traduccion, sin firma --"),
-              cita_id="AASHTO_M294_TRAD.7.2.1"),
+              que_dice=("su num. 1.1.1 (traducción no oficial) fija el "
+                        "ambito en los tamaños nominales «de 300 a 1500 mm», "
+                        "y su num. 7.2.1 desarrolla la serie cerrada de doce "
+                        "diametros, de 300 a 1500 mm: el 1500 es la ultima "
+                        "fila y no hay «y superiores». El tope de 1.50 m del "
+                        "HDPE coincide con el techo de la norma de producto "
+                        "-- segun la traduccion, sin firma --"),
+              cita_id="AASHTO_M294_TRAD.1.1.1"),
     ),
     gana="ASTM_A760",
     por_que=("la fuente primaria, leida de los PDF de normas/, desmiente las "
@@ -237,6 +237,48 @@ DIS_D_MAX = _d(
     efecto_si_se_sigue_la_otra=("un punto que necesite mas de 2.10 m de TMC se "
                                 "declara no factible por una razon que la "
                                 "norma citada no sostiene"),
+    estado=EstadoDiscrepancia.RESUELTA,
+)
+
+# N2: la encontro el auditor adversarial de la propia sesion, sobre el numeral
+# que N2 acababa de transcribir. La v8 resumia la serie del HDPE de memoria y
+# se equivocaba en donde empieza el paso de 150 mm; es inocuo para el calculo
+# (el proyecto no recorre tamaños bajo 0.90 m) y aun asi se registra, porque
+# la regla de CLAUDE.md no distingue discrepancias graves de leves: lo que la
+# hoja de ruta dice y la fuente desmiente se reporta contra la hoja de ruta.
+DIS_M294_PASO = _d(
+    id="DIS-HR-M294-PASO",
+    objeto=("donde empieza el paso de 150 mm en la serie de diametros "
+            "nominales del HDPE (AASHTO M 294)"),
+    partes=(
+        Parte(quien="hoja_de_ruta",
+              que_dice=("su §3.2, «Por qué funciona», escribia que «AASHTO "
+                        "M294 lo hace en pasos de 150 mm por encima de 600 "
+                        "mm», con lo que tras el 600 vendria el 750 y no "
+                        "existirian ni el 675 ni el paso de 75 mm. CORREGIDA "
+                        "EN N2 con la nota «Corregido (DIS-HR-M294-PASO, "
+                        "N2)»: el paso de 150 mm empieza en 750 mm")),
+        Parte(quien="AASHTO_M294_TRAD",
+              que_dice=("su num. 7.2.1 (traducción no oficial) lista 300, "
+                        "375, 450, 525, 600, 675, 750, 900, 1050, 1200, 1350 "
+                        "y 1500 mm: de 300 a 750 el paso es de 75 mm y el de "
+                        "150 mm va de 750 a 900 y de ahi hasta 1500"),
+              cita_id="AASHTO_M294_TRAD.7.2.1"),
+    ),
+    gana="AASHTO_M294_TRAD",
+    por_que=("la fuente imprime la serie diametro a diametro y la hoja de "
+             "ruta la resumia de memoria. Es una traduccion no oficial, sin "
+             "firma, y es lo unico que hay en normas/; el original en ingles "
+             "(ausente) tendria que confirmarlo. No cambia ningun valor del "
+             "proyecto: la progresion arranca en 0.90 m y desde ahi la serie "
+             "SI es de 150 mm, que es lo que 'diametros_normalizados' afirma "
+             "y CP11 comprueba; lo que estaba mal era la frase que lo "
+             "justificaba"),
+    efecto_si_se_sigue_la_otra=("quien leyera la v8 creeria que M 294 no "
+                                "tabula el 675 mm; para el calculo es "
+                                "inocuo, porque ningun tamaño bajo 0.90 m se "
+                                "recorre, y por eso se corrige la frase y no "
+                                "el criterio"),
     estado=EstadoDiscrepancia.RESUELTA,
 )
 

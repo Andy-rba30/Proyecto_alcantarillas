@@ -344,7 +344,9 @@ $$R = 1-\left(1-\frac{1}{T}\right)^{n} \quad\Longrightarrow\quad T = \frac{1}{1-
 
 $$D \in \{0.90,\ 1.05,\ 1.20,\ 1.35,\ 1.50,\ 1.65,\ 1.80,\ ...\}$$
 
-**Por qué funciona.** Las normas de producto avanzan en pasos de 6 pulgadas (0.1524 m) por encima de los 24–36", y AASHTO M294 lo hace en pasos de 150 mm por encima de 600 mm. La progresión de 0.15 m reproduce esas series con error despreciable.
+**Por qué funciona.** Las normas de producto avanzan en pasos de 6 pulgadas (0.1524 m) por encima de los 24–36", y AASHTO M 294 lo hace en pasos de 150 mm por encima de 750 mm (300, 375, 450, 525, 600, 675, 750 y, desde ahí, 900, 1050, 1200, 1350 y 1500 — num. 7.2.1, leído de la traducción no oficial de `normas/`). La progresión de 0.15 m reproduce esas series con error despreciable.
+
+> **Corregido (`DIS-HR-M294-PASO`, N2).** Esta frase decía «en pasos de 150 mm por encima de 600 mm», con lo que tras el 600 vendría el 750 y no existiría el 675. El num. 7.2.1 de M 294-11 (traducción no oficial, cita `AASHTO_M294_TRAD.7.2.1`, sin firma) lista el 675: de 300 a 750 el paso es de 75 mm y el de 150 mm empieza en 750. Inocuo para el cálculo —ningún tamaño bajo 0.90 m se recorre— y se corrige igual, porque lo que la hoja de ruta dice y la fuente desmiente se reporta contra la hoja de ruta.
 
 **Nota de conservadurismo:** usar 0.90 m redondo en lugar del equivalente exacto de 36" (0.9144 m) subestima el área en ~3 %. El error va del lado de la seguridad y debe declararse.
 

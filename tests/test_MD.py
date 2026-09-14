@@ -923,3 +923,26 @@ def test_un_numero_de_celdas_que_no_es_un_entero_mayor_que_cero_es_invalido(
         with pytest.raises(DatoInvalidoError) as exc:
             numero_de_celdas(_marco_md())
     assert "ENTERO" in exc.value.motivo
+
+
+# ---------------------------------------------------------------------------
+# N2: el motivo de descarte por diametro atribuye el tope POR MATERIAL
+# ---------------------------------------------------------------------------
+# Lo encontro el auditor adversarial de N2: `_motivo_descarte` escribia «NO
+# es un tope de <norma de producto>» para los tres materiales, y desde N2 esa
+# negacion es FALSA para el HDPE -- la serie de AASHTO M 294-11 (traduccion
+# no oficial, cita AASHTO_M294_TRAD.7.2.1) termina en 1500 mm, que es el tope
+# --. La memoria no puede negar lo que el registro acredita, y el descarte
+# sigue siendo de catalogo en los tres.
+def test_el_motivo_de_descarte_no_niega_para_el_hdpe_lo_que_el_registro_acredita():
+    from modulos.M2_material import catalogo
+    from modulos.MD import _motivo_descarte
+    hdpe = _motivo_descarte(catalogo(TipoMaterial.HDPE), "x")
+    assert "NO es un tope de" not in hdpe
+    assert "coincide con el techo de la serie" in hdpe
+    assert "traduccion no oficial" in hdpe        # el rotulo de la norma lo lleva
+    assert "descarte es de catalogo" in hdpe
+    for tipo in (TipoMaterial.CONCRETO_REFORZADO, TipoMaterial.TMC):
+        otro = _motivo_descarte(catalogo(tipo), "x")
+        assert "NO es un tope de" in otro
+        assert "coincide con el techo" not in otro

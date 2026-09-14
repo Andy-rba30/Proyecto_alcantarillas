@@ -139,8 +139,11 @@ sigue `[A]` con ese extremo declarado; la afirmación negativa de
 `clases_producto_por_relleno` sobre el HDPE quedó VERIFICADA (1.4 remite a
 LRFD Sec. 12); y **SIS-F-13 movió a M2**: `CP11_SERIES_NOMINALES` (HDPE y
 TMC, de las tablas transcritas) sacó a M2 de la lista de exentos, con el
-concreto censado en el fixture. Lo que quedó esperando al original: la firma
-de las cuatro citas y de la tabla. Lo que M 294 NO trajo: ni diámetro exterior
+concreto censado en el fixture. Lo que quedó esperando al original: citar a
+AASHTO y no a un traductor anónimo (reverificar las cuatro citas y la tabla
+contra el original y, si imprime folio, firmarlas; hoy la firma la impide T6,
+no la traducción). Salió además una discrepancia contra la v8
+(`DIS-HR-M294-PASO`, corregida). Lo que M 294 NO trajo: ni diámetro exterior
 ni altura de perfil (`espesor_pared_conducto['hdpe']` sigue sin fuente, y ahora
 con afirmación negativa que lo dice).
 

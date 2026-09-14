@@ -1132,35 +1132,27 @@ y que no queda escrita en ningún otro registro.
 
 - **Qué se difirió:** firmar (`Verificado`) las citas de AASHTO M 294-11 y
   retirar al original del censo de ausentes. Lo que llegó a `normas/` es una
-  **traducción al español no oficial** (autor no identificado, sin folio en
-  ninguna de sus 17 hojas), y se modeló leyendo el esquema y no por
-  conveniencia: Fuente PRESENTE con la naturaleza declarada en su nota y en su
-  título (`AASHTO_M294_TRAD`, como ya se hizo con la traducción de ASTM A760),
-  `convive_con` cruzado con el original, que **sigue en `FUENTES_AUSENTES`**
-  (`AASHTO_M294`) con su `que_desbloquearia` redefinido —ya no el tope del
-  HDPE, sino la FIRMA de lo que la traducción sostiene—, y las cuatro citas
-  SIN FIRMA, censadas en `CITAS_SIN_FIRMA_A_PROPOSITO` con el precedente de
-  `HDS5_SI_1985.EC4B#K`.
-- **Por qué:** dos razones que se suman. Sin folio, la paginación es
-  `SinDeterminar` y el invariante T6 prohíbe firmar una página PDF de una
-  fuente sin paginación medida; se consideró y se descartó un tipo nuevo de
-  `Paginacion` («sin número impreso») porque no habría nada que predecir —la
-  única numeración es la del PDF, que es lo que la cita declara— y porque
-  el precedente de HDS5_SI_1985 ya resolvió el mismo caso con `SinDeterminar`
-  y una nota. Y aunque hubiera folio, firmar una traducción anónima «como
-  verificada contra AASHTO M 294-11» sería una cita imprecisa: acredita lo
-  que la traducción imprime, no lo que AASHTO escribe. Lo que sí vigila la
-  suite, en cada corrida con PyMuPDF: T0 (sha1 y páginas), T2 (cada
-  Verbatim en su página) y T3 (cada título), porque el texto SÍ es
-  extraíble; y `test_toda_cita_de_la_traduccion_de_M294_lo_dice` exige que
-  toda cita suya lleve las palabras «traducción no oficial» y ninguna firma.
-  Consecuencia para el tope del HDPE: la serie 300–1500 mm SÍ termina donde
-  el proyecto topa, y aun así `D_max_catalogo` sigue `[A]` de catálogo para
-  los tres materiales —la elección es la misma para los tres y V9 descarta
-  por catálogo—, con el techo de la serie declarado como extremo de la
-  sensibilidad del HDPE.
-- **Qué haría falta:** el original en inglés de M 294-11. Con él, reverificar
-  1.1.1, 1.4, 7.2.1 y la tabla de 7.2.2 contra el original, firmarlas, sacar
-  las cuatro del censo y cerrar la Ausencia. Ni siquiera entonces el tope
-  pasaría a `[N]`: es norma de producto extranjera.
+  **traducción al español no oficial**, sin folio en sus 17 hojas: Fuente
+  PRESENTE con la naturaleza en título y nota (`AASHTO_M294_TRAD`, como la
+  traducción de ASTM A760), `convive_con` cruzado con el original, que
+  **sigue en `FUENTES_AUSENTES`** con `que_desbloquearia` redefinido —citar a
+  AASHTO y no a un traductor—, y las cuatro citas SIN FIRMA, censadas en
+  `CITAS_SIN_FIRMA_A_PROPOSITO` con el precedente de `HDS5_SI_1985.EC4B#K`.
+- **Por qué:** UNA razón, no dos —la primera redacción sumaba «y además es
+  traducción», y el auditor adversarial de N2 mostró que choca con el
+  precedente—. Sin folio, la paginación es `SinDeterminar` y T6 prohíbe
+  firmar una página PDF de una fuente sin paginación medida; un tipo nuevo
+  de `Paginacion` («sin número impreso») se descartó porque no habría nada
+  que predecir. Ser traducción NO impide firmar: la firma acredita el
+  ARCHIVO (`Verificado.sha1_pdf`), no a AASHTO, y la de ASTM A760 va firmada
+  por eso; la reserva viaja en la nota, y la exige
+  `test_toda_cita_de_la_traduccion_de_M294_lo_dice`. Lo que vigila el
+  contenido, en cada corrida con PyMuPDF: T0, T2 y T3, porque el texto SÍ es
+  extraíble.
+- **Qué haría falta:** el original en inglés. Reverificar 1.1.1, 1.4, 7.2.1
+  y la tabla de 7.2.2 contra él, citarlo (con firma si imprime folio), sacar
+  las cuatro del censo y cerrar la Ausencia. Ni entonces el tope pasaría a
+  `[N]`: es norma de producto extranjera. De leer el numeral salió además
+  `DIS-HR-M294-PASO` (la v8 decía «150 mm por encima de 600 mm»; la serie
+  tiene el 675), corregida en la v8 y resuelta.
 - **Dónde vive:** `src/normativa/fuentes.py::AASHTO_M294_TRAD`

@@ -3781,8 +3781,9 @@ AASHTO_M294_TRAD_1_1_1 = _cita(
         pagina_pdf=1),
     # DEFINICION: es la frase de AMBITO de la especificacion. No exige ni
     # prohibe un diametro; dice que tamaños cubre, y el 7.2.1 los desarrolla.
+    # Es el ancla de la parte AASHTO_M294_TRAD de DIS-HR-D-MAX (el techo);
+    # el 7.2.1 es el ancla de DIS-HR-M294-PASO (la serie, fila a fila).
     caracter=Caracter.DEFINICION,
-    corresponde_en=("AASHTO_M294_TRAD.7.2.1",),
     verificada=False,
     nota=("SIN FIRMA A PROPOSITO, no sin verificar: la fuente es una "
           "TRADUCCIÓN NO OFICIAL al español de AASHTO M 294-11 y no imprime "
@@ -3792,8 +3793,8 @@ AASHTO_M294_TRAD_1_1_1 = _cita(
           "(verificador-normativo, 2026-09-14, por texto y por imagen de la "
           "hoja 1): la frase esta integra en la PDF 1 bajo «1. Ámbito», "
           "inciso 1.1.1. Es la frase que fija el TECHO DE LA SERIE del HDPE "
-          "en 1500 mm; el num. 7.2.1 la desarrolla diametro a diametro y por "
-          "eso `corresponde_en` lo apunta. Lo que acredita es lo que la "
+          "en 1500 mm, y el ancla de DIS-HR-D-MAX para el HDPE; el num. "
+          "7.2.1 la desarrolla diametro a diametro. Lo que acredita es lo que la "
           "traduccion dice; el original en ingles sigue ausente "
           "(`AASHTO_M294`)."),
 )
