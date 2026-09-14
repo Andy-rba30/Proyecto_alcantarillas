@@ -1521,8 +1521,17 @@ ESPACIAMIENTO_FACTIBILIDAD_KM = 2.0  # mismo parrafo, sin condicion adicional
 H_RELLENO_MIN = {
     "hdpe":     0.30,               # m, clave a subrasante (508.07, pag. 984)
     "concreto": None,               # EG-2013 no lo fija -- ver comentario
-    "tmc":      None,               # EG-2013 no lo fija -- idem
+    "tmc":      None,               # EG-2013 no lo fija -- idem; ver abajo
 }
+# CABO PARA LA SESION QUE RELLENE LA FILA DEL TMC (anotado en N1): ASTM
+# A796/A796M-13, en el registro desde N1, fija en su num. 11.1 dos pisos que
+# dependen del ESPESOR y no de la altura -- Hmin nunca menor de 300 mm, y no
+# menor de 600 mm si el espesor especificado es menor de 1.32 mm (cita
+# ASTM_A796.11.1#PISOS) --, y las Tablas 3 y 5 transcritas incluyen la fila
+# de 1.02 mm. El escalon de 600 mm NO esta en la Tabla 12.6.6.3-1 de AASHTO
+# LRFD, que es la que hoy gobierna la cobertura minima (12.6.6.3). Quien
+# rellene esta fila tiene que decidir como conviven los dos pisos, y no
+# rellenarla en silencio con uno solo.
 # Texto que fija la fila del HDPE, literal (EG-2013, Capitulo V, Subseccion
 # 508.07 "Colocacion del relleno alrededor de la estructura", pagina impresa
 # 984, ultimo parrafo):
@@ -1583,8 +1592,8 @@ H_RELLENO_MIN = {
 #       aramida y post-recubrimiento asfaltico. Sigue siendo cierto que
 #       M 170M clasifica por D-load y no por altura.
 #
-# LAS DISCREPANCIAS CON LA HOJA DE RUTA, en dos estados distintos desde I2
-# porque solo una tenia fuente contra la que verificarse:
+# LAS DISCREPANCIAS CON LA HOJA DE RUTA: dos, y desde N1 las dos RESUELTAS
+# (hasta N1 solo una tenia fuente contra la que verificarse):
 #
 #   TABLA DE SEC. 7.A, fila "Concreto y TMC" -- decia "No fijado. Remite al
 #     Proyecto, AASHTO M-170M (clases I-V) o ASTM A-807 | [C] norma de
@@ -1594,14 +1603,16 @@ H_RELLENO_MIN = {
 #     propio Sec. 0.2 adopta. CORREGIDA EN I2, junto con el comentario de
 #     `H_RELLENO_MIN["tmc"]` del Anexo B que repetia la remision:
 #     DIS-HR-H-RELLENO-MIN quedo RESUELTA y vive en el manifiesto.
-#   TABLA DE FASE 8, fila "TMC" -- "ASTM A-807 / AASHTO M36 -- calibre segun
-#     altura". El calibre por altura de cobertura parece ser de ASTM
-#     A796/A796M, pero A796 y A807 NO estan en normas/ y sin fuente no hay
-#     verificacion ni correccion: DIS-HR-A807 SIGUE ABIERTA contra la hoja
-#     de ruta -- la fila lleva su disputa anotada al pie desde I2, y viaja a
-#     la memoria por el criterio 'clases_producto_por_relleno' --. La v8
-#     sigue mal en esa fila mientras no se consiga la fuente (§15 del plan:
-#     deuda de gabinete).
+#   TABLA DE FASE 8, fila "TMC" -- decia "ASTM A-807 / AASHTO M36 -- calibre
+#     segun altura". CORREGIDA EN N1, con ASTM A796/A796M-13 en normas/ y
+#     leida por imagen: A807/A807M es practica de INSTALACION (A796 num.
+#     22.1), el calibre lo determina A796 por PROCEDIMIENTO (num. 7 a 10,
+#     con sus Tablas 2 a 35) y no por una tabla de calibre por altura, que
+#     la norma no tiene, y la mitad "AASHTO M36" de la fila era correcta
+#     como norma de producto (A796 num. 17.1 remite a A760/A760M = M 36).
+#     DIS-HR-A807 quedo RESUELTA y vive en el manifiesto; el criterio
+#     'clases_producto_por_relleno' ya no la declara (una resuelta no viaja a
+#     la memoria) y su justificacion cuenta lo que la fuente SI trae.
 #
 # SE CITAN POR TABLA Y FILA, NO POR LINEA (NOR-COH-03). Este bloque decia
 # "linea 523", "linea 546" y "linea 832", y las tres estaban corridas y

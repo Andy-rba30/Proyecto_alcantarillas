@@ -112,6 +112,18 @@ Dos avisos para las sesiones N, medidos en pre-N1:
   Lo probable es que M2 quede censado con esa razón y no ya con la ausencia de
   M 294; el prompt dice «evalúa», y eso es lo que hay que evaluar.
 
+Resultado de N1 (2026-09-14), para que N2 y T1 partan de lo medido y no de la
+promesa de la tabla de arriba: A796/A796M-13 está en el registro (14 fuentes
+presentes, 12 ausentes), `DIS-HR-A807` quedó RESUELTA y la fila de la Fase 8
+de la v8 corregida; pero **la mitad (2) de NOR-PRO-04 no cerró como tabla**,
+porque A796 no tabula el calibre por altura de cobertura —lo determina por
+procedimiento (§7-§11)— y lo que se transcribió entero son sus tablas de
+propiedades seccionales (T3-T17), la carga viva por cobertura, los límites de
+FF y las cargas por eje. Cerrar la mitad TMC de `clases_producto_por_relleno`
+pasa a ser una sesión de CÁLCULO (implementar el procedimiento en M8, con caso
+patrón y en commit propio), no de registro. NOR-PRO-04 sigue «Cerrado
+parcial» con esa razón nueva.
+
 La regla no cambia: una sesión = un prompt, y la tabla de entornos de
 `CLAUDE.md` se vuelve a medir en las cuatro configuraciones cada vez que el
 conteo se mueve. Pre-N1 la encontró seis sesiones atrasada y la re-midió.

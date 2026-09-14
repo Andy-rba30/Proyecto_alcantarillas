@@ -721,12 +721,15 @@ def test_la_paginacion_predice_la_pagina_pdf_desde_la_impresa(reg):
 
 def test_las_fuentes_sin_texto_extraible_estan_declaradas(reg):
     """
-    Es una propiedad DE LA FUENTE, no un percance de quien la lee: tres de las
-    trece no entregan texto utilizable y sus citas se verifican por imagen o
-    no se verifican.
+    Es una propiedad DE LA FUENTE, no un percance de quien la lee: cuatro de
+    las catorce no entregan texto utilizable y sus citas se verifican por
+    imagen o no se verifican. La cuarta es ASTM A796/A796M-13 (N1): su capa
+    de texto existe pero llega duplicada e intercalada a mitad de palabra,
+    y una frase entera no se encuentra por texto.
     """
     sin_texto = {f.id for f in reg.fuentes if not f.texto_extraible}
-    assert sin_texto == {"AASHTO_M36", "AASHTO_M170M", "ASTM_A760"}
+    assert sin_texto == {"AASHTO_M36", "AASHTO_M170M", "ASTM_A760",
+                         "ASTM_A796"}
 
 
 def test_la_cita_falsa_de_NOR_PUE_01_sigue_declarada(reg):

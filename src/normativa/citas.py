@@ -59,6 +59,8 @@ FECHA_I1 = "2026-09-12"
 POR_I1 = "cierre/I1 · verificador-normativo"
 FECHA_T2 = "2026-09-12"
 POR_T2 = "trazabilidad/T2 · verificador-normativo"
+FECHA_N1 = "2026-09-14"
+POR_N1 = "normativa/N1 · verificador-normativo"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
@@ -67,6 +69,7 @@ C2 = (FECHA_C2, POR_C2)
 VC1 = (FECHA_VC1, POR_VC1)
 I1 = (FECHA_I1, POR_I1)
 T2 = (FECHA_T2, POR_T2)
+N1 = (FECHA_N1, POR_N1)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -82,6 +85,7 @@ _SHA = {
     "AASHTO_M170M": "dcc40c0e5e9c99ad9f18490fa8c5b2d9394faa51",
     "AASHTO_M36": "f85b5658385ae6779dde4e5fd340ac3122b62636",
     "ASTM_A760": "47d0d447143ca158615dff7dec79f2f7a8975732",
+    "ASTM_A796": "df7858f04caf61bc1c3a4ea3d664e38cacddee25",
 }
 
 _TODAS = []
@@ -3742,7 +3746,8 @@ AASHTO_M170M_T1_T5 = _cita(
 # escrito. `registro.construir()` los toma de alli.
 
 
-CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
+# `CITAS` se materializa al FINAL del archivo (junto a AFIRMACIONES_NEGATIVAS):
+# el bloque de ASTM A796 (N1) se define despues de este punto.
 
 # LA LAMINA Nº 03 NO ACOTA NADA, y hay que decirlo en el registro porque esta
 # cita es TENTADORA: es un plano, y un plano invita a leerle dimensiones. Sin
@@ -3864,8 +3869,585 @@ SIN_PARTIDA_DE_CAJON_EG2013 = AfirmacionNegativa(
         "adelante. Ninguna partida de cajon, marco ni box."),
     cita_id="EG2013.503.10h#CAJON")
 
+
+
+# ===========================================================================
+# ASTM A796/A796M-13 -- la practica de diseño estructural del TMC (N1).
+# TODO por IMAGEN: la Fuente declara `texto_extraible=False` (capa de texto
+# duplicada e intercalada a mitad de palabra), y cada cita se leyo sobre la
+# pagina renderizada a escala 2.5 y sobre recortes a escala 5.0.
+#
+# LO QUE ESTAS CITAS ACREDITAN, Y LO QUE NO. NOR-PRO-04(2) y DIS-HR-A807
+# esperaban de esta fuente «la tabla de calibre por altura de cobertura».
+# LEIDA ENTERA (21 paginas PDF; la impresa 1 falta): esa tabla NO EXISTE en
+# A796. La norma es una PRACTICA: el espesor es la SALIDA de un procedimiento
+# (num. 7 a 9, con las Tablas 2 a 35 como catalogo de espesores y
+# propiedades seccionales) y la cobertura minima sale de las ecs. (13) a
+# (16) del num. 11.1 con dos pisos absolutos. Las citas de abajo son las que
+# sostienen exactamente eso -- y la del num. 22.1, que es la que cierra la
+# discrepancia: A807/A807M es practica de INSTALACION.
+# ===========================================================================
+
+ASTM_A796_5_1 = _cita(
+    id="ASTM_A796.5.1",
+    fuente_id="ASTM_A796",
+    numeral="5.1",
+    titulo_numeral="Basis of Design",
+    pagina_impresa="2",
+    pagina_pdf=2,
+    texto_literal=Verbatim(
+        texto=("The safety factors and other specific quantitative recom-"
+               "mendations herein represent generally accepted design prac-"
+               "tice. The design engineer should, however, determine that "
+               "these recommendations meet particular project needs."),
+        pagina_pdf=2),
+    # DEFINICION del caracter del documento entero: se declara «practica de
+    # diseño generalmente aceptada», y remite al ingeniero la decision de si
+    # sirve al proyecto. Es la razon de que todo lo que salga de esta fuente
+    # sea [C] y no [N]: no es norma peruana ni la adopta ninguna.
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Los dos guiones de fin de renglon («recom-mendations», "
+          "«prac-tice») se transcriben como los imprime la columna. El "
+          "encabezado «5. Basis of Design» esta al pie de la columna derecha "
+          "de la PDF 2 y el numeral 5.2 sigue en la PDF 3."),
+)
+
+ASTM_A796_7_1 = _cita(
+    id="ASTM_A796.7.1",
+    fuente_id="ASTM_A796",
+    numeral="7.1",
+    titulo_numeral="Design Method",
+    pagina_impresa="3",
+    pagina_pdf=3,
+    texto_literal=Verbatim(
+        texto=("Strength requirements for wall strength, buckling strength, "
+               "and seam strength may be determined by either the allowable "
+               "stress design (ASD) method presented in Section 8, or the "
+               "load and resistance factor design (LRFD) method presented in "
+               "Section 9. Additionally, the design considerations in other "
+               "paragraphs shall be followed for either design method."),
+        pagina_pdf=3),
+    # PERMISO («may be determined by either»): la practica admite dos
+    # metodos y el proyecto tendra que ELEGIR uno el dia que implemente
+    # Fase 8. Esa eleccion es un [A] que hoy no existe y no se inventa aqui.
+    caracter=Caracter.PERMISO,
+    metodo=IMAGEN,
+    sesion=N1,
+)
+
+ASTM_A796_8_1_1_2_SELECCION = _cita(
+    id="ASTM_A796.8.1.1.2#SELECCION",
+    fuente_id="ASTM_A796",
+    numeral="8.1.1.2",
+    titulo_numeral="Design by ASD Method",
+    pagina_impresa="3",
+    pagina_pdf=3,
+    jerarquia_numeral=("8.", "8.1.1", "Required Wall Area:"),
+    texto_literal=Verbatim(
+        texto=("Select from Table 2, Table 4, Table 6, Table 8, Table 10, "
+               "Table 12, Table 14, Table 16, Table 18, Table 20, Table 22, "
+               "Table 24, Table 26, Table 28, Table 30, Table 32, or Table 34 "
+               "[Table 3, Table 5, Table 7, Table 9, Table 11, Table 13, "
+               "Table 15, Table 17, Table 19, Table 21, Table 23, Table 25, "
+               "Table 27, Table 29, Table 31, Table 33, or Table 35] a wall "
+               "thickness equal to or greater than the required wall area "
+               "(A)."),
+        pagina_pdf=3),
+    # EXIGENCIA, y es LA frase de esta fuente para NOR-PRO-04(2): el
+    # calibre (espesor) se SELECCIONA de las tablas de propiedades
+    # seccionales por el area de pared REQUERIDA que sale del calculo -- no
+    # se lee de una tabla por altura de cobertura, que no existe --.
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("El 8.1.1.2 no lleva titulo propio: cuelga de «8.1.1 Required "
+          "Wall Area:» bajo «8. Design by ASD Method», y abre con «Determine "
+          "the required wall cross-sectional area. The safety factor (SF) on "
+          "wall area is 2.» y la ec. (4), A = T(SF)/f_y -- el SF = 2 no lleva "
+          "cita propia porque ningun objeto del registro lo consumiria hoy "
+          "(T4); lo consumira la sesion que implemente el procedimiento --. "
+          "La lista entre corchetes es la de las tablas en unidades SI, "
+          "que son las que este registro transcribe para las siete "
+          "corrugaciones de ASTM_A760.T1 (Tablas 3, 5, 7, 9, 11, 15 y 17). "
+          "Los dos ultimos renglones de la frase se imprimen SOLAPADOS en el "
+          "render («15, Table 17, ... Table 27,» sobre «Table 29, Table 31, "
+          "Table 33, or Table 35]»): es la capa de texto duplicada del "
+          "ejemplar, y se leyo a escala 5.0."),
+)
+
+ASTM_A796_6_2_2_1 = _cita(
+    id="ASTM_A796.6.2.2.1",
+    fuente_id="ASTM_A796",
+    numeral="6.2.2.1",
+    titulo_numeral="Live Loads Under Highway",
+    pagina_impresa="3",
+    pagina_pdf=3,
+    jerarquia_numeral=("6.", "Loads", "6.2.2", "Live Loads"),
+    texto_literal=Verbatim(
+        texto=("Live load pressures for H20 highway loadings, including "
+               "impact effects, are:"),
+        pagina_pdf=3),
+    # DEFINICION: la frase introduce la tabulacion de presion de carga viva
+    # por altura de cobertura (ASTM_A796.6.2.2.1 en tablas.py). El caracter
+    # vinculante lo pone el num. 6.2 («loads are defined as follows»), no
+    # este renglon.
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Es una tabulacion SIN TITULO ni numero de tabla, impresa en el "
+          "cuerpo del numeral: la TablaNormativa toma como titulo literal el "
+          "encabezado del numeral, con el precedente de E060.7.7.1. El "
+          "num. 6.2.2.3 (misma pagina, sin titulo propio) añade «Values for "
+          "intermediate covers shall be interpolated.»: es el renglon que "
+          "hace de la tabulacion una BANDA y no escalones, y la "
+          "Interpretacion de la tabla lo recoge. No lleva cita propia "
+          "porque ningun objeto del registro la consumiria hoy (T4)."),
+)
+
+ASTM_A796_10_2 = _cita(
+    id="ASTM_A796.10.2",
+    fuente_id="ASTM_A796",
+    numeral="10.2",
+    titulo_numeral="Handling and Installation",
+    pagina_impresa="4",
+    pagina_pdf=4,
+    jerarquia_numeral=("10.",),
+    texto_literal=Verbatim(
+        texto=("For curve and tangent corrugated pipe installed in a trench "
+               "cut in undisturbed soil, the flexibility factor shall not "
+               "exceed the following:"),
+        pagina_pdf=4),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("El 10.2 no lleva titulo propio: cuelga de «10. Handling and "
+          "Installation». FF = s²/EI es la ec. (12) del 10.1. Los limites "
+          "de FF (10.2 a 10.8) son el sitio de la practica donde la RIGIDEZ "
+          "MINIMA por perfil esta tabulada -- 10.2/10.3 para plancha "
+          "corrugada, 10.4 a 10.6 para costilla espiral (con o sin "
+          "insertos), 10.7 compuesta, 10.8 costilla cerrada --: es lo que, "
+          "en la practica norteamericana, gobierna el calibre minimo por "
+          "diametro en coberturas bajas."),
+)
+
+ASTM_A796_10_3 = _cita(
+    id="ASTM_A796.10.3",
+    fuente_id="ASTM_A796",
+    numeral="10.3",
+    titulo_numeral="Handling and Installation",
+    pagina_impresa="4",
+    pagina_pdf=4,
+    jerarquia_numeral=("10.",),
+    texto_literal=Verbatim(
+        texto=("For curve and tangent corrugated pipe installed in an "
+               "embankment or fill section and for all multiple lines of "
+               "pipe, the flexibility factor shall not exceed the following:"),
+        pagina_pdf=4),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota="Sin titulo propio: cuelga de «10. Handling and Installation».",
+)
+
+ASTM_A796_10_4 = _cita(
+    id="ASTM_A796.10.4",
+    fuente_id="ASTM_A796",
+    numeral="10.4",
+    titulo_numeral="Handling and Installation",
+    pagina_impresa="4",
+    pagina_pdf=4,
+    jerarquia_numeral=("10.",),
+    texto_literal=Verbatim(
+        texto=("For ribbed pipes and ribbed pipes with metallic-coated "
+               "inserts, installed in a trench cut in undisturbed soil and "
+               "provided with a soil envelope meeting the requirements of "
+               "18.2.3 to minimize compactive effort, the flexibility factor "
+               "shall not exceed the following:"),
+        pagina_pdf=4),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Sin titulo propio: cuelga de «10. Handling and Installation». "
+          "Aplica a los TRES perfiles de costilla espiral de ASTM_A760.T1 "
+          "(Tablas 11, 15 y 17): lo señalo la auditoria adversarial de N1, "
+          "que refuto la primera version de este bloque, donde 10.4 a 10.6 "
+          "se habian dejado fuera como si fueran de otro producto."),
+)
+
+ASTM_A796_10_5 = _cita(
+    id="ASTM_A796.10.5",
+    fuente_id="ASTM_A796",
+    numeral="10.5",
+    titulo_numeral="Handling and Installation",
+    pagina_impresa="4",
+    pagina_pdf=4,
+    jerarquia_numeral=("10.",),
+    texto_literal=Verbatim(
+        texto=("For ribbed pipes and ribbed pipes with metallic-coated "
+               "inserts, installed in a trench cut in undisturbed soil and "
+               "where the soil envelope does not meet the requirements of "
+               "18.2.3, the flexibility factor shall not exceed the "
+               "following:"),
+        pagina_pdf=4),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota="Sin titulo propio: cuelga de «10. Handling and Installation».",
+)
+
+ASTM_A796_10_6 = _cita(
+    id="ASTM_A796.10.6",
+    fuente_id="ASTM_A796",
+    numeral="10.6",
+    titulo_numeral="Handling and Installation",
+    pagina_impresa="4",
+    pagina_pdf=4,
+    jerarquia_numeral=("10.",),
+    texto_literal=Verbatim(
+        texto=("For ribbed pipes and ribbed pipes with metallic-coated "
+               "inserts, installed in an embankment or fill section, the "
+               "flexibility factor shall not exceed the following:"),
+        pagina_pdf=4),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Sin titulo propio: cuelga de «10. Handling and Installation». "
+          "El 10.7 (misma pagina) añade que para tuberia COMPUESTA de "
+          "costilla los limites de 10.4 a 10.6 «shall be multiplied by "
+          "1.05», y el 10.8 tabula la costilla cerrada; ninguno de los dos "
+          "productos esta en ASTM_A760.T1 y no se transcriben."),
+)
+
+ASTM_A796_11_1_DEF = _cita(
+    id="ASTM_A796.11.1#DEF",
+    fuente_id="ASTM_A796",
+    numeral="11.1",
+    titulo_numeral="Minimum Cover Design",
+    pagina_impresa="5",
+    pagina_pdf=5,
+    jerarquia_numeral=("11.", "Minimum Cover Requirements"),
+    texto_literal=Verbatim(
+        texto=("Where pipe is to be placed under roads, streets, or "
+               "freeways, the minimum cover require-ments shall be "
+               "determined. Minimum cover (Hmin) is defined as the distance "
+               "from the top of the pipe to the top of rigid pavement or to "
+               "the top of subgrade for flexible pavement."),
+        pagina_pdf=5),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("«require-ments» lleva el guion de fin de renglon como lo imprime "
+          "la columna, con el mismo criterio que «recom-mendations» en la "
+          "cita 5.1. «Hmin» se imprime con el «min» en subindice; se "
+          "transcribe en linea. La MISMA definicion (a la subrasante en pavimento "
+          "flexible, a la cara superior del pavimento rigido) es la de la "
+          "variable h del num. 4.1. Sigue la tabulacion de cargas por eje "
+          "(ASTM_A796.11.1 en tablas.py) y las ecs. (13) a (16), que dan "
+          "Hmin en funcion de raiz((AL)d/EI) y del diametro S: 0.55·S·raiz(…) "
+          "entre 0.23 y 0.45, S/8 por debajo de 0.23 y S/4 por encima de "
+          "0.45. Las ecuaciones no se transcriben como Verbatim porque son "
+          "formulas compuestas; quien las implemente las lee de la pagina."),
+)
+
+ASTM_A796_11_1_PISOS = _cita(
+    id="ASTM_A796.11.1#PISOS",
+    fuente_id="ASTM_A796",
+    numeral="11.1",
+    titulo_numeral="Minimum Cover Design",
+    pagina_impresa="5",
+    pagina_pdf=5,
+    jerarquia_numeral=("11.", "Minimum Cover Requirements"),
+    texto_literal=Verbatim(
+        texto=("In all cases, Hmin is never less than 1 ft [300 mm]. "
+               "Additionally, for pipe with a specified thickness less than "
+               "0.052 in. [1.32 mm], Hmin shall not be less than 2 ft "
+               "[600 mm]."),
+        pagina_pdf=5),
+    # EXIGENCIA, y es la UNICA cobertura minima NUMERICA que la fuente
+    # escribe para tuberia bajo carretera: dos pisos absolutos que dependen
+    # del ESPESOR, no de la altura de relleno. Es el unico sitio de la norma
+    # donde calibre y cobertura minima se cruzan, y lo hacen al reves de lo
+    # que NOR-PRO-04(2) esperaba: no «calibre por cobertura» sino «cobertura
+    # por calibre», y solo en el escalon de 1.32 mm.
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("«Hmin» con el «min» en subindice, transcrito en linea. Los 300 mm "
+          "coinciden con los 12 in de la Tabla 12.6.6.3-1 de AASHTO LRFD para "
+          "el metal corrugado (AASHTO_LRFD_9.T12.6.6.3-1), y la ec. (15) "
+          "(Hmin = S/8 para tuberia rigida) coincide con el S/8 de esa misma "
+          "fila: las dos fuentes son consistentes y NO se abre discrepancia. "
+          "El escalon de 600 mm para espesor < 1.32 mm NO esta en AASHTO. "
+          "El num. 11.4 «Construction Loads» (misma pagina) añade una "
+          "cobertura minima DE OBRA, bajo equipo pesado: «The minimum cover "
+          "shall be 4 ft [1.2 m] unless field conditions and experience "
+          "justify modification.»; es exigencia de construccion, no de "
+          "servicio, y no lleva cita propia porque ningun objeto del "
+          "registro la consumiria hoy (T4)."),
+)
+
+ASTM_A796_17_1 = _cita(
+    id="ASTM_A796.17.1",
+    fuente_id="ASTM_A796",
+    numeral="17.1",
+    titulo_numeral="Materials",
+    pagina_impresa="5",
+    pagina_pdf=5,
+    jerarquia_numeral=("17.",),
+    texto_literal=Verbatim(
+        texto=("Acceptable pipe materials, methods of manufacture, and "
+               "quality of finished pipe are given in Specifications "
+               "A760/A760M, A761/A761M, A762/A762M, A978/A978M, "
+               "A1019/A1019M, and A1042/A1042M."),
+        pagina_pdf=5),
+    # DEFINICION: cierra el circuito con la norma de producto que SI esta en
+    # normas/ (ASTM_A760, de doble designacion con AASHTO_M36). La practica
+    # diseña; A760 fabrica.
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+)
+
+ASTM_A796_22_1 = _cita(
+    id="ASTM_A796.22.1",
+    fuente_id="ASTM_A796",
+    numeral="22.1",
+    titulo_numeral="Construction and Installation",
+    pagina_impresa="6",
+    pagina_pdf=6,
+    jerarquia_numeral=("22.",),
+    texto_literal=Verbatim(
+        texto=("The construction and installation of corrugated steel pipe "
+               "and pipe-arches and steel structural plate pipe, pipe-"
+               "arches, arches, and underpasses shall conform to Practice "
+               "A798/A798M or A807/A807M."),
+        pagina_pdf=6),
+    # EXIGENCIA, y es LA cita de DIS-HR-A807: la UNICA mencion de A807 en
+    # las 20 paginas CON CONTENIDO del ejemplar (barrido por texto: «A807»
+    # aparece en una sola pagina, la PDF 6, y es esta; la impresa 1, que
+    # falta, es la que lleva la lista alfabetica del num. 2.1 donde A807
+    # figuraria como norma referenciada), y la nombra «Practice» de
+    # INSTALACION junto a A798/A798M. A807/A807M es, por tanto, una norma
+    # real -- la que EG-2013 507.05/.06/.08 invocan para terreno base,
+    # solado y relleno -- y NO la norma del calibre, que aqui se determina
+    # por el num. 8/9 y no se remite a ninguna parte.
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("El guion de «pipe-arches» partido a fin de renglon («pipe- / "
+          "arches») es el propio guion de la palabra, no uno de corte, y se "
+          "transcribe como «pipe-arches»."),
+)
+
+# Las siete tablas SI de propiedades seccionales que este registro
+# transcribe: una por cada corrugacion de ASTM_A760.T1. Cada cita lleva el
+# titulo impreso de la tabla como titulo y como literal (precedente:
+# ASTM_A760.T1, AASHTO_M36.T6). La «NOTE 1» de las paginas 7, 8 y 9 esta
+# impresa bajo las gemelas IMPERIALES (Tables 2, 4 y 6), no bajo las SI, y
+# por eso no viaja con estas; solo la Table 9 la imprime bajo su propio
+# titulo y la lleva como texto_previo.
+
+ASTM_A796_T3 = _cita(
+    id="ASTM_A796.T3",
+    fuente_id="ASTM_A796",
+    numeral="Table 3",
+    titulo_numeral=("TABLE 3 Sectional Properties of Corrugated Steel Sheets "
+                    "for Corrugation: 38 by 6.5 mm (Helical) [SI Units]"),
+    pagina_impresa="7",
+    pagina_pdf=7,
+    texto_literal=Verbatim(
+        texto=("TABLE 3 Sectional Properties of Corrugated Steel Sheets for "
+               "Corrugation: 38 by 6.5 mm (Helical) [SI Units]"),
+        pagina_pdf=7),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Gemela SI de la Table 2 (1 1/2 by 1/4 in.), impresa debajo de "
+          "ella en la misma pagina. La figura acotada (Pitch = 38.1 mm, "
+          "Depth = 6.35 mm, radio 7.14 mm) no se transcribe: es dibujo."),
+)
+
+ASTM_A796_T5 = _cita(
+    id="ASTM_A796.T5",
+    fuente_id="ASTM_A796",
+    numeral="Table 5",
+    titulo_numeral=("TABLE 5 Sectional Properties of Corrugated Steel Sheets "
+                    "for Corrugation: 68 by 13 mm (Annular or Helical) "
+                    "[SI Units]"),
+    pagina_impresa="8",
+    pagina_pdf=8,
+    texto_literal=Verbatim(
+        texto=("TABLE 5 Sectional Properties of Corrugated Steel Sheets for "
+               "Corrugation: 68 by 13 mm (Annular or Helical) [SI Units]"),
+        pagina_pdf=8),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Gemela SI de la Table 4 (2 2/3 by 1/2 in.). Es la corrugacion "
+          "estandar de la mayor parte de los diametros de ASTM_A760.T1. Los "
+          "subencabezados de remaches («8-mm Rivets», «10-mm Rivets») se "
+          "imprimen SOLAPADOS con «Single/Double» en el render por la capa "
+          "duplicada del ejemplar; se leyeron a escala 8.0."),
+)
+
+ASTM_A796_T7 = _cita(
+    id="ASTM_A796.T7",
+    fuente_id="ASTM_A796",
+    numeral="Table 7",
+    titulo_numeral=("TABLE 7 Sectional Properties of Corrugated Steel Sheets "
+                    "for Corrugation: 75 by 25 mm (Annular or Helical) "
+                    "[SI Units]"),
+    pagina_impresa="9",
+    pagina_pdf=9,
+    texto_literal=Verbatim(
+        texto=("TABLE 7 Sectional Properties of Corrugated Steel Sheets for "
+               "Corrugation: 75 by 25 mm (Annular or Helical) [SI Units]"),
+        pagina_pdf=9),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Gemela SI de la Table 6 (3 by 1 in.). ERRATA DE LA FUENTE, "
+          "transcrita tal cual: el encabezado del momento de inercia imprime "
+          "«I, mm4/m» donde las otras seis tablas imprimen «mm4/mm»; los "
+          "valores (112.94 a 411.04) son del orden de mm4/mm, como en la "
+          "Table 9 de la corrugacion vecina."),
+)
+
+ASTM_A796_T9 = _cita(
+    id="ASTM_A796.T9",
+    fuente_id="ASTM_A796",
+    numeral="Table 9",
+    titulo_numeral=("TABLE 9 Sectional Properties of Corrugated Steel Sheets "
+                    "for Corrugation: 125 by 25 mm (Helical) [SI Units]"),
+    pagina_impresa="10",
+    pagina_pdf=10,
+    texto_literal=Verbatim(
+        texto=("TABLE 9 Sectional Properties of Corrugated Steel Sheets for "
+               "Corrugation: 125 by 25 mm (Helical) [SI Units]"),
+        pagina_pdf=10),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Gemela SI de la Table 8 (5 by 1 in.), que esta al pie de la PDF "
+          "9; la Table 9 abre la PDF 10 con su propia «NOTE 1»."),
+)
+
+ASTM_A796_T11 = _cita(
+    id="ASTM_A796.T11",
+    fuente_id="ASTM_A796",
+    numeral="Table 11",
+    titulo_numeral=("TABLE 11 Sectional Properties of Spiral Rib Pipe for "
+                    "19 mm Wide by 19 mm Deep Rib with a Spacing of 190 mm "
+                    "Center to Center (Helical) [SI Units]"),
+    pagina_impresa="11",
+    pagina_pdf=11,
+    texto_literal=Verbatim(
+        texto=("TABLE 11 Sectional Properties of Spiral Rib Pipe for 19 mm "
+               "Wide by 19 mm Deep Rib with a Spacing of 190 mm Center to "
+               "Center (Helical) [SI Units]"),
+        pagina_pdf=11),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Gemela SI de la Table 10 (3/4 by 3/4 by 7 1/2 in.), que esta al "
+          "pie de la PDF 10 y cuya nota A se imprime al ABRIR la PDF 11. La "
+          "Table 12/13 que sigue («Ribbed Pipe with Inserts») es otro "
+          "producto y no se transcribe."),
+)
+
+ASTM_A796_T15 = _cita(
+    id="ASTM_A796.T15",
+    fuente_id="ASTM_A796",
+    numeral="Table 15",
+    titulo_numeral=("TABLE 15 Sectional Properties of Spiral Rib Pipe for "
+                    "19 mm Wide by 25 mm Deep Rib with a Spacing of 292 mm "
+                    "Center to Center (Helical) [SI Units]"),
+    pagina_impresa="12",
+    pagina_pdf=12,
+    texto_literal=Verbatim(
+        texto=("TABLE 15 Sectional Properties of Spiral Rib Pipe for 19 mm "
+               "Wide by 25 mm Deep Rib with a Spacing of 292 mm Center to "
+               "Center (Helical) [SI Units]"),
+        pagina_pdf=12),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota=("Gemela SI de la Table 14 (3/4 by 1 by 11 1/2 in.). SU NOTA A NO "
+          "ESTA EN SU PAGINA: la PDF 12 termina en la ultima fila (2.77) y "
+          "el renglon «A Net effective properties at full yield stress.» "
+          "se imprime al ABRIR la PDF 13, antes de la Table 16. La "
+          "TablaNormativa lo transcribe con pagina_pdf=13 por esa razon."),
+)
+
+ASTM_A796_T17 = _cita(
+    id="ASTM_A796.T17",
+    fuente_id="ASTM_A796",
+    numeral="Table 17",
+    titulo_numeral=("TABLE 17 Sectional Properties of Spiral Rib Pipe for "
+                    "19 mm Wide by 25 mm Deep Rib with a Spacing of 216 mm "
+                    "Center to Center (Helical) [SI Units]"),
+    pagina_impresa="13",
+    pagina_pdf=13,
+    texto_literal=Verbatim(
+        texto=("TABLE 17 Sectional Properties of Spiral Rib Pipe for 19 mm "
+               "Wide by 25 mm Deep Rib with a Spacing of 216 mm Center to "
+               "Center (Helical) [SI Units]"),
+        pagina_pdf=13),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=N1,
+    nota="Gemela SI de la Table 16 (3/4 by 1 by 8 1/2 in.).",
+)
+
+# LO QUE A796 NO TIENE, dicho como afirmacion negativa con su ambito, porque
+# es lo que NOR-PRO-04(2) y DIS-HR-A807 daban por hecho y lo que autoriza a
+# decir que la mitad TMC de 'clases_producto_por_relleno' no se cierra
+# transcribiendo.
+SIN_TABLA_CALIBRE_POR_COBERTURA_A796 = AfirmacionNegativa(
+    que_no_dice=("ASTM A796/A796M-13 no contiene ninguna tabla de calibre "
+                 "(espesor) de TMC por altura de cobertura, ni de altura "
+                 "maxima de relleno por calibre: el espesor es la SALIDA del "
+                 "procedimiento de los num. 7 a 10 (area de pared requerida "
+                 "con SF = 2, pandeo, costura, factor de flexibilidad) "
+                 "elegida de las Tablas 2 a 35, y la cobertura minima sale "
+                 "de las ecs. (13) a (16) del num. 11.1 mas dos pisos "
+                 "absolutos"),
+    ambito_barrido=(
+        "las 21 paginas PDF del ejemplar (la impresa 1 falta: es la PDF 1 "
+        "en blanco), leidas RENDERIZADAS de la 2 a la 7 -- todo el "
+        "articulado, num. 2.1 a 24.1 -- y de la 7 a la 21 por los titulos "
+        "de las 35 tablas: la TABLE 1 «Resistance Factors for LRFD Design» "
+        "(PDF 3, factores phi) y las 34 restantes, TABLE 2 a TABLE 35, que "
+        "son todas «Sectional Properties of ...» (planchas corrugadas, "
+        "costilla espiral, costilla con insertos, compuestas, costilla "
+        "cerrada y planchas estructurales); ninguna cruza espesor con "
+        "altura de cobertura -- la PDF 15, "
+        "girada, con las Tablas 20 y 21, se leyo entera por imagen porque "
+        "su capa de texto no devuelve los titulos --. Censo por texto sobre "
+        "la capa duplicada, que localiza palabras sueltas pero NO todas sus "
+        "apariciones (la copia partida a mitad de palabra las esconde), "
+        "contrastado por imagen: «height of cover» 1 pagina por texto (la "
+        "PDF 6, num. 18.2.4) y TRES por imagen (PDF 2, la variable h del "
+        "4.1; PDF 3, las cabeceras de las tabulaciones del 6.2.2; PDF 6, "
+        "num. 18.2.4 y 18.3); «minimum cover» 3 paginas por texto y por "
+        "imagen (PDF 5, num. 11; PDF 6, num. 18.3; PDF 7, keywords); "
+        "«maximum cover» 0, «gage» 0, «gauge» 0, «A807» 1 (la PDF 6, num. "
+        "22.1). El num. 18.3 dice que la altura maxima de cobertura de un "
+        "ARCO-TUBO la fija a menudo la capacidad portante del suelo en la "
+        "esquina, no una tabla. El unico cruce "
+        "espesor/cobertura es el escalon del 11.1: espesor < 1.32 mm => "
+        "Hmin >= 600 mm"),
+    cita_id="ASTM_A796.8.1.1.2#SELECCION")
+
+# El censo de afirmaciones negativas va al FINAL del archivo a proposito: la
+# ultima (A796, N1) se define tras el bloque de esa fuente.
 AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
                           SIN_BORDE_LIBRE_DE_CANAL,
                           SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03,
                           SIN_CAJON_DE_CONCRETO_T12663,
-                          SIN_PARTIDA_DE_CAJON_EG2013)
+                          SIN_PARTIDA_DE_CAJON_EG2013,
+                          SIN_TABLA_CALIBRE_POR_COBERTURA_A796)
+
+CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

@@ -2780,8 +2780,11 @@ _NO_USADA_TMC = NoUsada(por_que_no=(
     "es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del "
     "TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la "
     "consulta el proyectista al especificar el producto. La otra mitad -- el "
-    "calibre por altura de cobertura -- sigue bloqueada por ASTM A796/A796M, "
-    "que no esta en normas/ (FUENTES_AUSENTES)"))
+    "calibre por altura de cobertura -- dejo de estar bloqueada por una "
+    "fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no "
+    "ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), "
+    "con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como "
+    "insumo. Se cierra implementando ese procedimiento, no transcribiendo"))
 
 # Las marcas de cada fila, en el orden (38x6.5, 68x13, 75x25, 125x25,
 # 19x19x190, 19x25x292, 19x25x216). Un solo dato por edicion y un
@@ -3056,6 +3059,693 @@ T_M36_T6 = _tabla(
             pagina_pdf=12)),
     ),
 )
+
+# ===========================================================================
+# ASTM A796/A796M-13 -- lo que la practica de diseño estructural del TMC SI
+# tabula (N1). TODO por IMAGEN: la Fuente declara `texto_extraible=False`.
+#
+# QUE SE TRANSCRIBE Y POR QUE ESTO Y NO OTRA COSA. NOR-PRO-04(2) y
+# DIS-HR-A807 esperaban de esta fuente «la tabla de calibre por altura de
+# cobertura». Leida entera, esa tabla NO EXISTE (afirmacion negativa
+# SIN_TABLA_CALIBRE_POR_COBERTURA_A796 en citas.py): el espesor es la SALIDA
+# del procedimiento de los num. 7 a 10 y la cobertura minima sale de las ecs.
+# (13) a (16) del num. 11.1. Lo que la norma SI tabula, y aqui se transcribe
+# ENTERO, es el insumo de ese procedimiento:
+#
+#   6.2.2.1  presion de carga viva H20 por altura de cobertura  (9 filas)
+#   10.2     limite del factor de flexibilidad, zanja            (6 filas)
+#   10.3     limite del factor de flexibilidad, terraplen        (8 filas)
+#   10.4-6   limite de FF de costilla espiral (con o sin insertos): zanja
+#            con envolvente de 18.2.3, zanja sin ella, terraplen (3 x 3 filas)
+#   11.1     carga maxima por eje segun clase de carga           (4 filas)
+#   Tablas 3, 5, 7, 9, 11, 15 y 17: propiedades seccionales por espesor
+#            especificado, UNA POR CADA CORRUGACION de ASTM_A760.T1 (las
+#            siete columnas de esa tabla), en unidades SI.
+#
+# LO QUE NO SE TRANSCRIBE, dicho para que no parezca podado: las gemelas
+# imperiales (Tablas 2, 4, 6, 8, 10, 14 y 16) -- el registro opera en SI y
+# cada tabla SI es una tabla impresa aparte, integra en si misma --; las
+# tabulaciones de ferrocarril y aeropuerto (6.2.2.2, 6.2.2.4, 11.2, 11.3);
+# el factor 1.05 de la costilla compuesta (10.7) y los limites de FF de la
+# costilla cerrada (10.8) -- la primera version de este bloque dejaba fuera
+# tambien 10.4 a 10.6 «por ser de otro producto», y la auditoria adversarial
+# de N1 lo refuto: esos tres numerales tabulan EXACTAMENTE los tres perfiles
+# de costilla espiral de las Tablas 11, 15 y 17 --; y las Tablas 12-13,
+# 18-35 (costilla con insertos, compuestas,
+# costilla cerrada, planchas estructurales), que son productos que
+# ASTM_A760.T1 no lista para este catalogo.
+#
+# COMO SE LEYERON: pagina renderizada a escala 2.5 entera y recortes a
+# escala 5.0 (8.0 para el subencabezado de remaches de la Table 5, que la
+# capa de texto duplicada del ejemplar imprime solapado).
+#
+# LAS TABULACIONES SIN TITULO (6.2.2.1, 10.2, 10.3, 11.1) toman como
+# `titulo_literal` el encabezado del numeral que las contiene, con el
+# precedente de E060.7.7.1, y llevan como `texto_previo` la frase que las
+# introduce. Sus columnas imprimen el par «ft [m]» / «lbf [N]» / «in. [mm]»
+# EN UNA SOLA CELDA; aqui se parten en dos columnas con la MISMA etiqueta
+# literal, una por unidad, porque un consumidor futuro necesita el numero y
+# la pagina imprime los dos. La particion es del proyecto; los numeros, de
+# la pagina.
+#
+# CELDAS «. . .»: las tablas de propiedades seccionales imprimen tres puntos
+# en las combinaciones espesor/remache que no se fabrican. Se transcriben
+# como CeldaSinValor.NO_APLICA -- no es un cero ni un dato faltante: la
+# fuente dice que esa combinacion no existe --.
+# ===========================================================================
+
+_NO_USADA_A796 = NoUsada(por_que_no=(
+    "ningun modulo de calculo consume hoy esta tabla: es INSUMO del "
+    "procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items "
+    "1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue "
+    "vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese "
+    "procedimiento, no transcribiendo una tabla que la norma no tiene --. "
+    "Hasta entonces la tabla documenta que ESPESORES existen para cada "
+    "corrugacion y con que rigidez, para quien especifique el producto"))
+
+T_A796_6_2_2_1 = _tabla(
+    id="ASTM_A796.6.2.2.1",
+    cita_id="ASTM_A796.6.2.2.1",
+    titulo_literal="6.2.2.1 Live Loads Under Highway",
+    texto_previo=Verbatim(
+        texto=("Live load pressures for H20 highway loadings, including "
+               "impact effects, are:"),
+        pagina_pdf=3),
+    columnas=(
+        ColumnaDeTabla(id="h_ft", etiqueta_literal="Height of Cover, ft [m]",
+                       unidad="ft", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="h_m", etiqueta_literal="Height of Cover, ft [m]",
+                       unidad="m", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ll_psf", etiqueta_literal="Live Load, lbf/ft² [kPa]",
+                       unidad="lbf/ft²", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ll_kpa", etiqueta_literal="Live Load, lbf/ft² [kPa]",
+                       unidad="kPa", uso=_NO_USADA_A796),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"ASTM_A796.6.2.2.1#h{h_ft}",
+            etiqueta_literal=f"{h_ft} [{h_m:.2f}]",   # la pagina imprime «1 [0.30]»
+            valores={"h_ft": h_ft, "h_m": h_m, "ll_psf": psf, "ll_kpa": kpa},
+            uso=_NO_USADA_A796)
+        # (ft, m, lbf/ft2, kPa) leidos de la pag. PDF 3, columna izquierda.
+        for h_ft, h_m, psf, kpa in (
+            (1, 0.30, 1800, 86.2),
+            (2, 0.61, 800, 38.3),
+            (3, 0.91, 600, 28.7),
+            (4, 1.22, 400, 19.2),
+            (5, 1.52, 250, 12.0),
+            (6, 1.83, 200, 9.6),
+            (7, 2.13, 175, 8.4),
+            (8, 2.44, 100, 4.8),
+        )
+    ) + (
+        # La ultima fila es texto: «over 8 [over 2.44]» -> «neglect [–]».
+        # «neglect» es la instruccion de la fuente (la carga viva no
+        # participa por encima de 2.44 m) y el «[–]» de la columna SI se
+        # transcribe como NO_PARTICIPA, que es lo que la marca significa.
+        FilaDeTabla(
+            id="ASTM_A796.6.2.2.1#over8",
+            etiqueta_literal="over 8 [over 2.44]",
+            valores={"h_ft": "over 8", "h_m": "over 2.44",
+                     "ll_psf": "neglect",
+                     "ll_kpa": CeldaSinValor.NO_PARTICIPA},
+            uso=_NO_USADA_A796),
+    ),
+    alcance=Integra(),
+    # El num. 6.2.2.3 («Values for intermediate covers shall be
+    # interpolated», cita ASTM_A796.6.2.2.3) convierte estas nueve filas en
+    # una banda: no hay laguna entre escalones.
+    interpretacion=Interpretacion(
+        texto=("Los escalones no son tramos: el num. 6.2.2.3 manda "
+               "interpolar entre coberturas intermedias, de modo que la "
+               "tabla se lee como una banda de interpolacion de 0.30 a "
+               "2.44 m y como cero por encima"),
+        en_contra=(
+            "La instruccion de interpolar esta en OTRO numeral (6.2.2.3) y "
+            "no en la tabulacion: quien lea solo la tabla ve escalones.",
+            "Por debajo de 0.30 m la tabla no dice nada, y ese caso lo "
+            "cubre el piso del num. 11.1 (Hmin nunca menor de 300 mm), no "
+            "una fila.",
+        )),
+)
+
+T_A796_10_2 = _tabla(
+    id="ASTM_A796.10.2",
+    cita_id="ASTM_A796.10.2",
+    titulo_literal="10.2",
+    texto_previo=Verbatim(
+        texto=("For curve and tangent corrugated pipe installed in a trench "
+               "cut in undisturbed soil, the flexibility factor shall not "
+               "exceed the following:"),
+        pagina_pdf=4),
+    columnas=(
+        ColumnaDeTabla(id="d_in", etiqueta_literal="Depth of Corrugation, in. [mm]",
+                       unidad="in", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="d_mm", etiqueta_literal="Depth of Corrugation, in. [mm]",
+                       unidad="mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_in_lbf", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="in/lbf", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_mm_n", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="mm/N", uso=_NO_USADA_A796),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"ASTM_A796.10.2#d{d_mm}",
+            etiqueta_literal=f"{d_in} [{d_mm}]",
+            # La profundidad en pulgadas se imprime como FRACCION (¼, ⅜,
+            # ½, 5½) y se transcribe como cadena, tal cual.
+            valores={"d_in": d_in, "d_mm": d_mm,
+                     "ff_in_lbf": ff_in, "ff_mm_n": ff_mm},
+            uso=_NO_USADA_A796)
+        # leidos de la pag. PDF 4, columna derecha.
+        for d_in, d_mm, ff_in, ff_mm in (
+            ("¼", 6.5, 0.060, 0.342),
+            ("⅜", 10, 0.060, 0.342),
+            ("½", 13, 0.060, 0.342),
+            ("1", 25, 0.060, 0.342),
+            ("2", 51, 0.020, 0.114),
+            ("5½", 140, 0.020, 0.114),
+        )
+    ),
+    alcance=Integra(),
+)
+
+T_A796_10_3 = _tabla(
+    id="ASTM_A796.10.3",
+    cita_id="ASTM_A796.10.3",
+    titulo_literal="10.3",
+    texto_previo=Verbatim(
+        texto=("For curve and tangent corrugated pipe installed in an "
+               "embankment or fill section and for all multiple lines of "
+               "pipe, the flexibility factor shall not exceed the following:"),
+        pagina_pdf=4),
+    columnas=(
+        ColumnaDeTabla(id="d_in", etiqueta_literal="Depth of Corrugation, in. [mm]",
+                       unidad="in", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="d_mm", etiqueta_literal="Depth of Corrugation, in. [mm]",
+                       unidad="mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_in_lbf", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="in/lbf", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_mm_n", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="mm/N", uso=_NO_USADA_A796),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"ASTM_A796.10.3#{clave}",
+            etiqueta_literal=etiqueta,
+            valores={"d_in": d_in, "d_mm": d_mm,
+                     "ff_in_lbf": ff_in, "ff_mm_n": ff_mm},
+            uso=_NO_USADA_A796)
+        # (clave, etiqueta impresa, in, mm, FF in/lbf, FF mm/N), pag. PDF 4.
+        # Las corrugaciones de 2 in y 5½ in se parten en DOS filas segun la
+        # forma (tubo redondo / arco-tubo, arco, paso inferior), y esa
+        # particion es de la fuente.
+        for clave, etiqueta, d_in, d_mm, ff_in, ff_mm in (
+            ("d6.5", "¼ [6.5]", "¼", 6.5, 0.043, 0.245),
+            ("d10", "⅜ [10]", "⅜", 10, 0.043, 0.245),
+            ("d13", "½ [13]", "½", 13, 0.043, 0.245),
+            ("d25", "1 [25]", "1", 25, 0.033, 0.188),
+            ("d51_redondo", "2 (round pipe) [51]",
+             "2 (round pipe)", 51, 0.020, 0.114),
+            ("d51_arco", "2 (pipe-arch, arch, underpass) [51]",
+             "2 (pipe-arch, arch, underpass)", 51, 0.030, 0.171),
+            ("d140_redondo", "5½ (round pipe) [140]",
+             "5½ (round pipe)", 140, 0.020, 0.114),
+            ("d140_arco", "5½ (pipe-arch, arch, underpass) [140]",
+             "5½ (pipe-arch, arch, underpass)", 140, 0.030, 0.171),
+        )
+    ),
+    alcance=Integra(),
+)
+
+T_A796_10_4 = _tabla(
+    id="ASTM_A796.10.4",
+    cita_id="ASTM_A796.10.4",
+    titulo_literal="10.4",
+    texto_previo=Verbatim(
+        texto=("For ribbed pipes and ribbed pipes with metallic-coated "
+               "inserts, installed in a trench cut in undisturbed soil and "
+               "provided with a soil envelope meeting the requirements of "
+               "18.2.3 to minimize compactive effort, the flexibility factor "
+               "shall not exceed the following:"),
+        pagina_pdf=4),
+    columnas=(
+        ColumnaDeTabla(id="perfil_in", etiqueta_literal="Profile, in. [mm]",
+                       unidad="in", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="perfil_mm", etiqueta_literal="Profile, in. [mm]",
+                       unidad="mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_in_lbf", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="in/lbf", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_mm_n", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="mm/N", uso=_NO_USADA_A796),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"ASTM_A796.10.4#{clave}",
+            etiqueta_literal=f"{p_in} [{p_mm}]",
+            # La celda imperial se imprime como EXPRESION en I («0.367 I» con
+            # el exponente 1/3 en superindice) y se transcribe como cadena;
+            # la celda SI imprime solo el coeficiente entre corchetes.
+            valores={"perfil_in": p_in, "perfil_mm": p_mm,
+                     "ff_in_lbf": ff_in, "ff_mm_n": ff_mm},
+            uso=_NO_USADA_A796)
+        # leidos de la pag. PDF 4, columna derecha. Los tres perfiles son
+        # los de las Tablas 11 (190), 17 (216) y 15 (292), en ese orden.
+        for clave, p_in, p_mm, ff_in, ff_mm in (
+            ("r19x19x190", "¾ by ¾ by 7½", "19 by 19 by 190", "0.367 I¹ᐟ³", 0.0825),
+            ("r19x25x216", "¾ by 1 by 8½", "19 by 25 by 216", "0.262 I¹ᐟ³", 0.0589),
+            ("r19x25x292", "¾ by 1 by 11½", "19 by 25 by 292", "0.220 I¹ᐟ³", 0.0495),
+        )
+    ),
+    alcance=Integra(),
+)
+
+T_A796_10_5 = _tabla(
+    id="ASTM_A796.10.5",
+    cita_id="ASTM_A796.10.5",
+    titulo_literal="10.5",
+    texto_previo=Verbatim(
+        texto=("For ribbed pipes and ribbed pipes with metallic-coated "
+               "inserts, installed in a trench cut in undisturbed soil and "
+               "where the soil envelope does not meet the requirements of "
+               "18.2.3, the flexibility factor shall not exceed the "
+               "following:"),
+        pagina_pdf=4),
+    columnas=(
+        ColumnaDeTabla(id="perfil_in", etiqueta_literal="Profile, in. [mm]",
+                       unidad="in", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="perfil_mm", etiqueta_literal="Profile, in. [mm]",
+                       unidad="mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_in_lbf", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="in/lbf", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_mm_n", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="mm/N", uso=_NO_USADA_A796),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"ASTM_A796.10.5#{clave}",
+            etiqueta_literal=f"{p_in} [{p_mm}]",
+            # La celda imperial se imprime como EXPRESION en I («0.367 I» con
+            # el exponente 1/3 en superindice) y se transcribe como cadena;
+            # la celda SI imprime solo el coeficiente entre corchetes.
+            valores={"perfil_in": p_in, "perfil_mm": p_mm,
+                     "ff_in_lbf": ff_in, "ff_mm_n": ff_mm},
+            uso=_NO_USADA_A796)
+        # leidos de la pag. PDF 4, columna derecha. Los tres perfiles son
+        # los de las Tablas 11 (190), 17 (216) y 15 (292), en ese orden.
+        for clave, p_in, p_mm, ff_in, ff_mm in (
+            ("r19x19x190", "¾ by ¾ by 7½", "19 by 19 by 190", "0.263 I¹ᐟ³", 0.0591),
+            ("r19x25x216", "¾ by 1 by 8½", "19 by 25 by 216", "0.163 I¹ᐟ³", 0.0366),
+            ("r19x25x292", "¾ by 1 by 11½", "19 by 25 by 292", "0.163 I¹ᐟ³", 0.0366),
+        )
+    ),
+    alcance=Integra(),
+)
+
+T_A796_10_6 = _tabla(
+    id="ASTM_A796.10.6",
+    cita_id="ASTM_A796.10.6",
+    titulo_literal="10.6",
+    texto_previo=Verbatim(
+        texto=("For ribbed pipes and ribbed pipes with metallic-coated "
+               "inserts, installed in an embankment or fill section, the "
+               "flexibility factor shall not exceed the following:"),
+        pagina_pdf=4),
+    columnas=(
+        ColumnaDeTabla(id="perfil_in", etiqueta_literal="Profile, in. [mm]",
+                       unidad="in", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="perfil_mm", etiqueta_literal="Profile, in. [mm]",
+                       unidad="mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_in_lbf", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="in/lbf", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="ff_mm_n", etiqueta_literal="FF, in./lbf [mm/N]",
+                       unidad="mm/N", uso=_NO_USADA_A796),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"ASTM_A796.10.6#{clave}",
+            etiqueta_literal=f"{p_in} [{p_mm}]",
+            # La celda imperial se imprime como EXPRESION en I («0.367 I» con
+            # el exponente 1/3 en superindice) y se transcribe como cadena;
+            # la celda SI imprime solo el coeficiente entre corchetes.
+            valores={"perfil_in": p_in, "perfil_mm": p_mm,
+                     "ff_in_lbf": ff_in, "ff_mm_n": ff_mm},
+            uso=_NO_USADA_A796)
+        # leidos de la pag. PDF 4, columna derecha. Los tres perfiles son
+        # los de las Tablas 11 (190), 17 (216) y 15 (292), en ese orden.
+        for clave, p_in, p_mm, ff_in, ff_mm in (
+            ("r19x19x190", "¾ by ¾ by 7½", "19 by 19 by 190", "0.217 I¹ᐟ³", 0.0488),
+            ("r19x25x216", "¾ by 1 by 8½", "19 by 25 by 216", "0.140 I¹ᐟ³", 0.0315),
+            ("r19x25x292", "¾ by 1 by 11½", "19 by 25 by 292", "0.140 I¹ᐟ³", 0.0315),
+        )
+    ),
+    alcance=Integra(),
+)
+
+T_A796_11_1 = _tabla(
+    id="ASTM_A796.11.1",
+    cita_id="ASTM_A796.11.1#DEF",
+    titulo_literal="11.1 Minimum Cover Design",
+    texto_previo=Verbatim(
+        texto=("Maximum axle loads in accordance with AASHTO “Standard "
+               "Specification for Highway Bridges” are as follows:"),
+        pagina_pdf=5),
+    columnas=(
+        ColumnaDeTabla(id="clase", etiqueta_literal="Class of Loading",
+                       unidad="", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="al_lbf", etiqueta_literal="Maximum Axle Load, lbf [N]",
+                       unidad="lbf", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="al_n", etiqueta_literal="Maximum Axle Load, lbf [N]",
+                       unidad="N", uso=_NO_USADA_A796),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"ASTM_A796.11.1#{clave}",
+            etiqueta_literal=clase,
+            valores={"clase": clase, "al_lbf": lbf, "al_n": n},
+            uso=_NO_USADA_A796)
+        # leidos de la pag. PDF 5, columna izquierda. La pagina imprime
+        # «32 000 [142 300]» con espacio de millar.
+        for clave, clase, lbf, n in (
+            ("H20", "H20", 32000, 142300),
+            ("HS20", "HS 20", 32000, 142300),
+            ("H15", "H15", 24000, 106700),
+            ("HS15", "HS 15", 24000, 106700),
+        )
+    ),
+    alcance=Integra(),
+    interpretacion=Interpretacion(
+        texto=("Cuatro clases de carga en cuatro filas: H20 y HS 20 con "
+               "32 000 lbf [142 300 N], H15 y HS 15 con 24 000 lbf "
+               "[106 700 N]. Es el (AL) de las ecs. (13) a (16)"),
+        en_contra=(
+            "Los renglones H20 y HS 20 se imprimen SOLAPADOS en el ejemplar, "
+            "y no por la capa de texto duplicada: es un defecto de "
+            "composicion de la propia pagina -- la fila HS 20 esta compuesta "
+            "5.8 pt por debajo de H20 cuando el paso entre las demas filas es "
+            "de 11 pt (medido sobre las lineas base de los spans en N1) --, "
+            "de modo que a simple vista parecen una fila repetida. Que son "
+            "dos filas distintas con el mismo valor se apoya en las cuatro "
+            "lineas base distintas de la capa de texto, que lista las "
+            "cuatro etiquetas en orden (H20, HS 20, H15, HS 15) cada una "
+            "con su carga, y en el patron de H15 / HS 15, que si se "
+            "imprimen separados.",
+            "La clase de carga que rige en la obra no la elige esta tabla: "
+            "AASHTO LRFD (que Sec. 0.2 adopta) usa HL-93 y no H20/HS 20; "
+            "cual fila aplica seria un [A] el dia que se implemente el "
+            "num. 11.1.",
+        )),
+    # LO QUE ESTA FUENTE NO TIENE, colgado de la tabla de la cobertura
+    # minima porque es donde un lector lo buscaria.
+    afirmaciones_negativas=(_c.SIN_TABLA_CALIBRE_POR_COBERTURA_A796,),
+)
+
+
+# ---------------------------------------------------------------------------
+# Las siete tablas SI de propiedades seccionales. Un constructor para las
+# cuatro de plancha corrugada (Tablas 3, 5, 7 y 9: seis columnas, mas las
+# de costura donde la fuente las imprime) y otro para las tres de costilla
+# espiral (Tablas 11, 15 y 17: cuatro columnas bajo «Effective Properties»).
+# Los datos crudos van DENTRO de cada llamada a `_tabla(...)`, que es donde
+# la guardia de `test_sin_literales` reconoce una transcripcion.
+# ---------------------------------------------------------------------------
+
+_NOTA_A_ESPESOR_1_02 = (
+    "This thickness should only be used for the inner liner of double-wall "
+    "type IA pipe, or for temporary pipe. When used for other than temporary "
+    "pipe, it should be polymer coated.")
+
+_NOTA_A_EFECTIVAS = "Net effective properties at full yield stress."
+
+
+def _columnas_plancha(unidad_inercia: str,
+                      rotulo_angulo: str = "Tangent Angle, Δ,°") -> tuple:
+    # `rotulo_angulo`: las Tablas 3 y 9 imprimen «Δ,°» y las 5 y 7 «Δ, °»,
+    # con espacio. Lo midio el verificador de N1 y se transcribe cada una
+    # como se imprime.
+    return (
+        ColumnaDeTabla(id="t_mm", etiqueta_literal="Specified Thickness, mm",
+                       unidad="mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="A", etiqueta_literal="Area of Section, A, mm²/mm",
+                       unidad="mm²/mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="TL", etiqueta_literal="Tangent Length, TL, mm",
+                       unidad="mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="delta", etiqueta_literal=rotulo_angulo,
+                       unidad="°", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="I",
+                       etiqueta_literal=f"Moment of Inertia, I, {unidad_inercia}",
+                       unidad=unidad_inercia, uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="r", etiqueta_literal="Radius of Gyration, r, mm",
+                       unidad="mm", uso=_NO_USADA_A796),
+    )
+
+
+def _fila_plancha(tabla: str, t_mm: float, A: float, TL: float, delta: float,
+                  I: float, r: float, nota_a: bool = False,
+                  **costura) -> FilaDeTabla:
+    return FilaDeTabla(
+        id=f"{tabla}#t{t_mm:.2f}",
+        etiqueta_literal=f"{t_mm:.2f}",
+        valores={"t_mm": t_mm, "A": A, "TL": TL, "delta": delta, "I": I,
+                 "r": r, **costura},
+        llamadas_a_nota=(("A",) if nota_a else ()),
+        uso=_NO_USADA_A796)
+
+
+_NA = CeldaSinValor.NO_APLICA     # la pagina imprime «. . .»
+
+T_A796_T3 = _tabla(
+    id="ASTM_A796.T3",
+    cita_id="ASTM_A796.T3",
+    titulo_literal=("TABLE 3 Sectional Properties of Corrugated Steel Sheets "
+                    "for Corrugation: 38 by 6.5 mm (Helical) [SI Units]"),
+    columnas=_columnas_plancha("mm⁴/mm"),
+    filas=(
+        # leidas de la pag. PDF 7 (mitad inferior).
+        _fila_plancha("ASTM_A796.T3", 1.02, 0.965, 14.5, 21.44, 4.15, 2.07,
+                      nota_a=True),
+        _fila_plancha("ASTM_A796.T3", 1.32, 1.287, 14.4, 21.52, 5.62, 2.08),
+        _fila_plancha("ASTM_A796.T3", 1.63, 1.611, 14.2, 21.61, 7.19, 2.11),
+        _fila_plancha("ASTM_A796.T3", 2.01, 2.011, 14.1, 21.71, 9.28, 2.15),
+    ),
+    alcance=Integra(),
+    notas_al_pie=(
+        NotaAlPie(marca="A", texto=Verbatim(texto=_NOTA_A_ESPESOR_1_02,
+                                            pagina_pdf=7)),
+    ),
+)
+
+T_A796_T5 = _tabla(
+    id="ASTM_A796.T5",
+    cita_id="ASTM_A796.T5",
+    titulo_literal=("TABLE 5 Sectional Properties of Corrugated Steel Sheets "
+                    "for Corrugation: 68 by 13 mm (Annular or Helical) "
+                    "[SI Units]"),
+    encabezados_superiores=(
+        "Ultimate Longitudinal Seam Strength of Riveted or Spot Welded "
+        "Corrugated Steel Pipe in kN per m of Seam",
+        "8-mm Rivets", "10-mm Rivets"),
+    columnas=_columnas_plancha("mm⁴/mm", "Tangent Angle, Δ, °") + (
+        ColumnaDeTabla(id="s8_single", etiqueta_literal="Single",
+                       unidad="kN/m", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="s8_double", etiqueta_literal="Double",
+                       unidad="kN/m", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="s10_single", etiqueta_literal="Single",
+                       unidad="kN/m", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="s10_double", etiqueta_literal="Double",
+                       unidad="kN/m", uso=_NO_USADA_A796),
+    ),
+    filas=(
+        # leidas de la pag. PDF 8 (mitad inferior). Las cuatro columnas de
+        # costura son (8 mm simple, 8 mm doble, 10 mm simple, 10 mm doble).
+        _fila_plancha("ASTM_A796.T5", 1.02, 0.984, 19.9, 26.56, 18.39, 4.232,
+                      nota_a=True, s8_single=_NA, s8_double=_NA,
+                      s10_single=_NA, s10_double=_NA),
+        _fila_plancha("ASTM_A796.T5", 1.32, 1.310, 19.8, 26.65, 24.58, 4.336,
+                      s8_single=_NA, s8_double=_NA,
+                      s10_single=_NA, s10_double=_NA),
+        _fila_plancha("ASTM_A796.T5", 1.63, 1.640, 19.6, 26.74, 31.00, 4.348,
+                      s8_single=244, s8_double=315,
+                      s10_single=_NA, s10_double=_NA),
+        _fila_plancha("ASTM_A796.T5", 2.01, 2.049, 19.3, 26.86, 39.20, 4.371,
+                      s8_single=266, s8_double=435,
+                      s10_single=_NA, s10_double=_NA),
+        _fila_plancha("ASTM_A796.T5", 2.77, 2.870, 18.8, 27.11, 56.13, 4.422,
+                      s8_single=_NA, s8_double=_NA,
+                      s10_single=341, s10_double=683),
+        _fila_plancha("ASTM_A796.T5", 3.51, 3.691, 18.3, 27.37, 74.28, 4.486,
+                      s8_single=_NA, s8_double=_NA,
+                      s10_single=357, s10_double=715),
+        _fila_plancha("ASTM_A796.T5", 4.27, 4.515, 17.8, 27.65, 93.82, 4.559,
+                      s8_single=_NA, s8_double=_NA,
+                      s10_single=374, s10_double=748),
+    ),
+    alcance=Integra(),
+    notas_al_pie=(
+        NotaAlPie(marca="A", texto=Verbatim(texto=_NOTA_A_ESPESOR_1_02,
+                                            pagina_pdf=8)),
+    ),
+)
+
+T_A796_T7 = _tabla(
+    id="ASTM_A796.T7",
+    cita_id="ASTM_A796.T7",
+    titulo_literal=("TABLE 7 Sectional Properties of Corrugated Steel Sheets "
+                    "for Corrugation: 75 by 25 mm (Annular or Helical) "
+                    "[SI Units]"),
+    encabezados_superiores=(
+        "Ultimate Longitudinal Seam Strength of Riveted or Spot Welded "
+        "Corrugated Steel Pipe in kN per m of Seam",
+        "10-mm Rivets", "11-mm Rivets"),
+    # «I, mm⁴/m»: ERRATA DE LA FUENTE, transcrita como se imprime (ver la
+    # Interpretacion y la nota de la cita ASTM_A796.T7).
+    columnas=_columnas_plancha("mm⁴/m", "Tangent Angle, Δ, °") + (
+        ColumnaDeTabla(id="s10_double", etiqueta_literal="Double",
+                       unidad="kN/m", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="s11_double", etiqueta_literal="Double",
+                       unidad="kN/m", uso=_NO_USADA_A796),
+    ),
+    filas=(
+        # leidas de la pag. PDF 9 (mitad central). Sin fila de 1.02 mm y sin
+        # nota A: esta corrugacion no se fabrica en ese espesor.
+        _fila_plancha("ASTM_A796.T7", 1.32, 1.505, 24.2, 44.39, 112.94, 8.661,
+                      s10_double=_NA, s11_double=_NA),
+        _fila_plancha("ASTM_A796.T7", 1.63, 1.884, 23.8, 44.60, 141.88, 8.679,
+                      s10_double=419, s11_double=_NA),
+        _fila_plancha("ASTM_A796.T7", 2.01, 2.356, 23.4, 44.87, 178.34, 8.705,
+                      s10_double=521, s11_double=_NA),
+        _fila_plancha("ASTM_A796.T7", 2.77, 3.302, 22.6, 45.42, 253.31, 8.758,
+                      s10_double=_NA, s11_double=773),
+        _fila_plancha("ASTM_A796.T7", 3.51, 4.250, 21.7, 46.02, 330.61, 8.819,
+                      s10_double=_NA, s11_double=929),
+        _fila_plancha("ASTM_A796.T7", 4.27, 5.203, 20.8, 46.65, 411.04, 8.887,
+                      s10_double=_NA, s11_double=1032),
+    ),
+    alcance=Integra(),
+    interpretacion=Interpretacion(
+        texto=("El momento de inercia de esta tabla se lee en mm⁴/mm, como en "
+               "las otras seis, aunque el encabezado imprima «mm⁴/m»"),
+        en_contra=(
+            "La pagina imprime «I, mm⁴/m», y esta transcripcion respeta el "
+            "rotulo en la etiqueta de la columna: la lectura en mm⁴/mm es "
+            "del proyecto, apoyada en que los valores (112.94 a 411.04) son "
+            "del mismo orden que los de la Table 9 (145.03 a 411.18), de "
+            "profundidad de corrugacion vecina y rotulada «mm⁴/mm».",
+        )),
+)
+
+T_A796_T9 = _tabla(
+    id="ASTM_A796.T9",
+    cita_id="ASTM_A796.T9",
+    titulo_literal=("TABLE 9 Sectional Properties of Corrugated Steel Sheets "
+                    "for Corrugation: 125 by 25 mm (Helical) [SI Units]"),
+    texto_previo=Verbatim(
+        texto=("NOTE 1—Dimensions shown in the figure are exact values used "
+               "in calculating the section properties. Nominal values, for "
+               "some of these dimensions, are used in other places in this "
+               "practice."),
+        pagina_pdf=10),
+    columnas=_columnas_plancha("mm⁴/mm"),
+    filas=(
+        # leidas de la pag. PDF 10 (mitad superior).
+        _fila_plancha("ASTM_A796.T9", 1.63, 1.681, 18.5, 35.58, 145.03, 9.289),
+        _fila_plancha("ASTM_A796.T9", 2.01, 2.100, 18.0, 35.80, 181.77, 9.304),
+        _fila_plancha("ASTM_A796.T9", 2.77, 2.942, 16.9, 36.30, 256.46, 9.340),
+        _fila_plancha("ASTM_A796.T9", 3.51, 3.785, 15.6, 36.81, 332.94, 9.380),
+        _fila_plancha("ASTM_A796.T9", 4.27, 4.627, 14.3, 37.39, 411.18, 9.426),
+    ),
+    alcance=Integra(),
+)
+
+
+def _columnas_costilla() -> tuple:
+    return (
+        ColumnaDeTabla(id="t_mm", etiqueta_literal="Specified Thickness, mm",
+                       unidad="mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="A", etiqueta_literal="Area of Section, A, mm²/mm",
+                       unidad="mm²/mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="I", etiqueta_literal="Moment of Inertia, I, mm⁴/mm",
+                       unidad="mm⁴/mm", uso=_NO_USADA_A796),
+        ColumnaDeTabla(id="r", etiqueta_literal="Radius of Gyration, r, mm",
+                       unidad="mm", uso=_NO_USADA_A796),
+    )
+
+
+def _fila_costilla(tabla: str, t_mm: float, A: float, I: float,
+                   r: float) -> FilaDeTabla:
+    return FilaDeTabla(
+        id=f"{tabla}#t{t_mm:.2f}",
+        etiqueta_literal=f"{t_mm:.2f}",
+        valores={"t_mm": t_mm, "A": A, "I": I, "r": r},
+        uso=_NO_USADA_A796)
+
+
+T_A796_T11 = _tabla(
+    id="ASTM_A796.T11",
+    cita_id="ASTM_A796.T11",
+    titulo_literal=("TABLE 11 Sectional Properties of Spiral Rib Pipe for "
+                    "19 mm Wide by 19 mm Deep Rib with a Spacing of 190 mm "
+                    "Center to Center (Helical) [SI Units]"),
+    encabezados_superiores=("Effective PropertiesA",),
+    columnas=_columnas_costilla(),
+    filas=(
+        # leidas de la pag. PDF 11 (mitad superior).
+        _fila_costilla("ASTM_A796.T11", 1.63, 1.077, 46.23, 6.55),
+        _fila_costilla("ASTM_A796.T11", 2.01, 1.507, 60.65, 6.34),
+        _fila_costilla("ASTM_A796.T11", 2.77, 2.506, 90.74, 6.02),
+        _fila_costilla("ASTM_A796.T11", 3.51, 3.634, 121.81, 5.79),
+    ),
+    alcance=Integra(),
+    notas_al_pie=(
+        NotaAlPie(marca="A", texto=Verbatim(texto=_NOTA_A_EFECTIVAS,
+                                            pagina_pdf=11)),
+    ),
+)
+
+T_A796_T15 = _tabla(
+    id="ASTM_A796.T15",
+    cita_id="ASTM_A796.T15",
+    titulo_literal=("TABLE 15 Sectional Properties of Spiral Rib Pipe for "
+                    "19 mm Wide by 25 mm Deep Rib with a Spacing of 292 mm "
+                    "Center to Center (Helical) [SI Units]"),
+    encabezados_superiores=("Effective PropertiesA",),
+    columnas=_columnas_costilla(),
+    filas=(
+        # leidas de la pag. PDF 12 (mitad inferior).
+        _fila_costilla("ASTM_A796.T15", 1.63, 0.792, 75.05, 9.73),
+        _fila_costilla("ASTM_A796.T15", 2.01, 1.109, 99.63, 9.47),
+        _fila_costilla("ASTM_A796.T15", 2.77, 1.869, 151.74, 9.02),
+    ),
+    alcance=Integra(),
+    notas_al_pie=(
+        # La nota A de esta tabla se imprime al ABRIR la PDF 13, no en la
+        # PDF 12 donde esta la tabla (ver la nota de la cita ASTM_A796.T15).
+        NotaAlPie(marca="A", texto=Verbatim(texto=_NOTA_A_EFECTIVAS,
+                                            pagina_pdf=13)),
+    ),
+)
+
+T_A796_T17 = _tabla(
+    id="ASTM_A796.T17",
+    cita_id="ASTM_A796.T17",
+    titulo_literal=("TABLE 17 Sectional Properties of Spiral Rib Pipe for "
+                    "19 mm Wide by 25 mm Deep Rib with a Spacing of 216 mm "
+                    "Center to Center (Helical) [SI Units]"),
+    encabezados_superiores=("Effective PropertiesA",),
+    columnas=_columnas_costilla(),
+    filas=(
+        # leidas de la pag. PDF 13 (mitad central).
+        _fila_costilla("ASTM_A796.T17", 1.63, 1.057, 97.98, 9.63),
+        _fila_costilla("ASTM_A796.T17", 2.01, 1.469, 129.67, 9.40),
+        _fila_costilla("ASTM_A796.T17", 2.77, 2.433, 196.37, 8.99),
+    ),
+    alcance=Integra(),
+    notas_al_pie=(
+        NotaAlPie(marca="A", texto=Verbatim(texto=_NOTA_A_EFECTIVAS,
+                                            pagina_pdf=13)),
+    ),
+)
+
 
 CORR_TAMANOS_TMC = CorrespondenciaDeTablas(
     id="CORR-TAMANOS-TMC",

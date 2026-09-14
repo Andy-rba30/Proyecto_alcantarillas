@@ -165,9 +165,10 @@ DIS_NUMERAL_EXC_ESTATICA = _d(
 # ---------------------------------------------------------------------------
 # Las discrepancias contra la hoja de ruta v8. I2 corrigio la v8 en ocho de
 # ellas y las paso a RESUELTA (la historia queda en cada `que_dice`, en las
-# notas «Corregido (...)» de la propia v8 y en el manifiesto §7); sigue
-# ABIERTA_CONTRA_HOJA_DE_RUTA la que no tiene fuente contra la que
-# verificarse (DIS-HR-A807: A796/A807 ausentes de normas/).
+# notas «Corregido (...)» de la propia v8 y en el manifiesto §7); N1 resolvio
+# la novena (DIS-HR-A807) cuando ASTM A796/A796M-13 entro en normas/ y la
+# atribucion pudo verificarse por imagen. Sigue ABIERTA_CONTRA_HOJA_DE_RUTA
+# la de I3, DIS-HR-FORMAS-HDS5.
 # ---------------------------------------------------------------------------
 DIS_D_MAX = _d(
     id="DIS-HR-D-MAX",
@@ -248,23 +249,68 @@ DIS_A807 = _d(
     objeto="la norma que fija el calibre de la plancha de TMC por altura de relleno",
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("lo remite a «ASTM A-807» en su Fase 8 («calibre "
-                        "según altura»), hoy con la disputa anotada al pie. "
+              que_dice=("lo remitia a «ASTM A-807 / AASHTO M36 -- calibre "
+                        "según altura» en la tabla de su Fase 8, y con la "
+                        "disputa anotada al pie desde I2. CORREGIDA EN N1, "
+                        "con la fuente en la mano: la fila remite a ASTM "
+                        "A796/A796M como PRACTICA DE DISEÑO (el espesor sale "
+                        "del procedimiento de sus num. 7 a 10 y se elige de "
+                        "las Tablas 2 a 35; la cobertura minima, del num. "
+                        "11) y a A760/A760M = M 36 como norma de producto. "
                         "Las remisiones que ademas traian su Sec. 7.A y su "
                         "Anexo B -- sobre la ALTURA minima de relleno, no el "
                         "calibre -- se retiraron en I2 con "
                         "DIS-HR-H-RELLENO-MIN")),
         Parte(quien="ASTM_A796",
-              que_dice=("el calibre por altura de cobertura es de ASTM "
-                        "A796/A796M, no de A-807")),
+              que_dice=("A807/A807M es una practica de INSTALACION, no la "
+                        "norma del calibre: su num. 22.1 manda que la "
+                        "construccion e instalacion «shall conform to "
+                        "Practice A798/A798M or A807/A807M», y es la unica "
+                        "mencion de A807 en las 20 paginas con contenido "
+                        "del ejemplar (la impresa 1, la lista de normas "
+                        "referenciadas del num. 2.1, falta)"),
+              cita_id="ASTM_A796.22.1"),
+        Parte(quien="ASTM_A796",
+              que_dice=("el calibre no se LEE de una tabla por altura de "
+                        "cobertura -- no la hay: afirmacion negativa "
+                        "SIN_TABLA_CALIBRE_POR_COBERTURA_A796, con las 21 "
+                        "paginas y los 35 titulos de tabla como ambito --: "
+                        "el espesor se SELECCIONA "
+                        "de las tablas de propiedades seccionales por el "
+                        "area de pared requerida que sale del calculo "
+                        "(num. 8.1.1.2, SF = 2)"),
+              cita_id="ASTM_A796.8.1.1.2#SELECCION"),
+        Parte(quien="ASTM_A796",
+              que_dice=("el unico cruce entre espesor y cobertura de la "
+                        "norma va al reves de lo que la hoja suponia: no "
+                        "«calibre por cobertura» sino «cobertura por "
+                        "calibre», y solo en un escalon (Hmin >= 600 mm si "
+                        "el espesor es menor de 1.32 mm; 300 mm en todo "
+                        "caso)"),
+              cita_id="ASTM_A796.11.1#PISOS"),
+        Parte(quien="ASTM_A796",
+              que_dice=("la norma de PRODUCTO a la que remite es A760/A760M "
+                        "(num. 17.1), que es la misma de doble designacion "
+                        "que AASHTO M 36: la mitad «AASHTO M36» de la fila "
+                        "era correcta como norma de producto y falsa como "
+                        "fuente del calibre"),
+              cita_id="ASTM_A796.17.1"),
     ),
     gana="ASTM_A796",
-    por_que=("la remision de la hoja de ruta es falsa. A-807 no es la norma "
-             "que se le atribuye"),
+    por_que=("la remision de la hoja de ruta era falsa, y desde N1 lo es por "
+             "VERIFICACION y no por ausencia: A807 es practica de "
+             "instalacion (22.1) y el calibre lo determina A796 por "
+             "procedimiento. El «gana» que esta discrepancia traia anotado "
+             "desde I2 era provisional y la fuente lo confirma CON UN MATIZ "
+             "que el anticipo no tenia: A796 tampoco trae «tabla de calibre "
+             "por altura»; lo que trae es el procedimiento que las tablas de "
+             "fabricante derivan"),
     efecto_si_se_sigue_la_otra=("se busca el calibre en un documento que no lo "
-                                "tiene, y la busqueda termina en un vacio "
-                                "aparente que no es tal"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+                                "tiene (A807), y despues se busca una TABLA "
+                                "en el que si lo determina (A796), que "
+                                "tampoco la tiene: la busqueda termina dos "
+                                "veces en un vacio aparente que no es tal"),
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 DIS_H_RELLENO_MIN = _d(

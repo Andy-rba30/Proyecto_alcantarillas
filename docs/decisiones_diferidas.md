@@ -483,28 +483,34 @@ condición escrita.
 
 ## NOR-PRO-04 · La norma a la que se difiere la verificación del TMC
 
-- **Cerrado:** la **atribución**. `clases_producto_por_relleno` y el docstring
-  de M8 difieren a ASTM A796/A796M (con A798/A798M para instalación) y ya no a
-  ASTM A-807, que no aparece en M 170M, M 36 ni A760.
+- **Cerrado:** la **atribución**, y desde N1 **verificada**: ASTM A796/A796M-13
+  está en `normas/` y en el registro (`fuentes.ASTM_A796`), y su num. 22.1
+  nombra a A807/A807M como práctica de **instalación** (`ASTM_A796.22.1`).
+  `DIS-HR-A807` quedó RESUELTA y la fila de la Fase 8 de la v8 corregida.
 - **Cerrado también en I1 la mitad transcribible:** la relación
-  diámetro/corrugación está transcrita ENTERA y por método IMAGEN —la Tabla 1
-  de A760 y la Table 6 de M 36 como `TablaNormativa` (`ASTM_A760.T1`,
-  `AASHTO_M36.T6`), con sus notas al pie y con la correspondencia
-  `CORR-TAMANOS-TMC` que declara las dos celdas en que las dos ediciones
-  difieren (diámetro 375 y diámetro 825) en vez de elegir una en silencio—.
+  diámetro/corrugación (`ASTM_A760.T1`, `AASHTO_M36.T6`, `CORR-TAMANOS-TMC`).
   El criterio sigue vacío a propósito: quién especifica el producto es el
-  proyectista, y ahora tiene la tabla completa para hacerlo.
-- **Abierto:** la mitad del **calibre del TMC por altura de cobertura**. Y un
-  hueco del generador, hallado en I1b y anterior a I1: `src/normativa/
-  manifiesto.py` no emite las `CorrespondenciaDeTablas`, de modo que las dos
-  diferencias declaradas de `CORR-TAMANOS-TMC` (y las de `CORR-RECUBRIMIENTO`)
-  viven solo en el código y no llegan a ningún documento que lea un revisor.
-  Cerrarlo es una sección nueva del manifiesto, no de esta ficha.
-- **Qué haría falta, y no se puede conseguir desde aquí:** **ASTM
-  A796/A796M no está en `normas/`** (comprobado: las trece fuentes del
-  directorio no la incluyen, y está censada en `FUENTES_AUSENTES`) y figura
-  en la §15 del plan como una de las dos
-  ausencias «fáciles» que desbloquean cosas concretas.
+  proyectista.
+- **Cerrado en N1 lo que la fuente SÍ trae, y cambió de naturaleza lo que
+  no:** la mitad (2) esperaba de A796 «la tabla de calibre por altura de
+  cobertura», y **esa tabla no existe** (`SIN_TABLA_CALIBRE_POR_COBERTURA_A796`,
+  con su ámbito): el espesor es la *salida* del procedimiento de los num. 7 a
+  10 (`ASTM_A796.8.1.1.2#SELECCION`) y la cobertura mínima sale del num. 11.1
+  (`ASTM_A796.11.1#PISOS`). Transcrito entero y verificado por imagen: las
+  siete tablas SI de propiedades seccionales del catálogo (`ASTM_A796.T3` a
+  `T17`), la carga viva por cobertura (`ASTM_A796.6.2.2.1`), los límites del
+  factor de flexibilidad (`ASTM_A796.10.2`, `.10.3`) y las cargas por eje
+  (`ASTM_A796.11.1`).
+- **Abierto:** la mitad TMC sigue **sin valor**, ya no por fuente ausente sino
+  porque cerrarla es **implementar el procedimiento** en M8
+  (`seleccionar_clase_calibre`), con caso patrón y con los `[A]` que el
+  procedimiento pide. La mitad concreto sigue esperando las Tablas 1 a 5 de
+  M 170M. Y el hueco del generador hallado en I1b: `manifiesto.py` no emite
+  las `CorrespondenciaDeTablas`.
+- **Qué haría falta:** para el TMC, una sesión de cálculo que implemente los
+  num. 6 a 11 de A796 sobre las tablas ya transcritas (dicho en el plan
+  ANTES, con caso patrón y en commit propio); para el concreto, transcribir
+  las Tablas 1 a 5 de M 170M por imagen.
 - **Dónde vive:** `src/criterios_adoptados.py::clases_producto_por_relleno`
 
 ## NOR-ANA-03 · La analogía de embocadura del HDPE
@@ -578,7 +584,9 @@ condición escrita.
   ausentes y `CP10_FLOTACION_MARCO` le dio a M8 su caso patrón, así que M8
   **salió de la lista de exentos** (el comentario de la guardia conserva el
   motivo viejo y por qué dejó de cubrir al módulo entero;
-  `seleccionar_clase_calibre` sigue sin dorado por A796/M 170M Tablas 1-5).
+  `seleccionar_clase_calibre` sigue sin dorado: por M 170M Tablas 1-5 sin
+  transcribir y, desde N1, por el procedimiento de A796 sin implementar —la
+  fuente ya está, la tabla que se esperaba de ella no existe—).
 - **Abierto:** M2 y M10 siguen sin caso patrón. **No es pereza de la fase
   de tests:** fabricarles un dorado sería inventar el valor de referencia, que
   es exactamente lo que prohíbe el conflicto #7 del plan. M11 no cuenta: es el
@@ -1089,3 +1097,27 @@ y que no queda escrita en ningún otro registro.
   Sec. 7.B y sale `factible`.
 - **Dónde vive:** `cli.py::_DOMINIO_DE_CLAVE` (el diagnóstico completo, clave
   por clave, en su comentario) y `cli.py::_resolver_longitud` (las dos puertas)
+
+---
+
+# Parte XIII — Lo que N1 dejó sin usuario al resolver la última discrepancia contra la v8
+
+## N1-01 · La vía 3 del canal de discrepancias (`Criterio.discrepancias`) se quedó sin usuario de producción
+
+- **Qué se difirió:** darle a la vía 3 un caso real de producción. `DIS-HR-A807`
+  era el único criterio-portador desde I2 (`clases_producto_por_relleno`), y
+  N1 la resolvió: con ASTM A796/A796M-13 en `normas/` sus partes llevan cita,
+  la fila de la v8 está corregida y una resuelta no se declara (la guardia
+  `_verificar_discrepancias` lo impide). Ningún criterio declara hoy una
+  discrepancia.
+- **Por qué:** porque inventarle una discrepancia a un criterio para que la
+  vía tenga usuario es fabricar el defecto que este registro persigue. Es la
+  misma decisión que I2 tomó con la vía 2 cuando resolvió `DIS-HR-G-LAUSHEY`,
+  y que I3 cerró cuando apareció el caso real (`DIS-HR-FORMAS-HDS5` en el
+  paso `de_forma`). La mecánica sigue probada en las dos direcciones con el
+  registro, y el censo «ningún criterio declara ninguna» es una aserción
+  medida que falla el día que uno la declare.
+- **Qué haría falta:** una discrepancia viva cuyo canal natural sea un
+  criterio y no un paso ni una cita — y entonces reescribir el test con ese
+  caso, no al revés.
+- **Dónde vive:** `tests/test_canal_discrepancias.py::test_la_via_del_criterio_existe_porque_V9_no_emite_paso`

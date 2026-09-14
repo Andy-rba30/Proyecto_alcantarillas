@@ -150,8 +150,8 @@ def test_T2_el_texto_literal_de_cada_cita_esta_en_su_pagina(reg):
 
 def test_T2_una_cita_a_una_fuente_sin_texto_se_verifico_por_imagen(reg):
     """
-    Tres de las trece fuentes no entregan texto utilizable, y eso es una
-    propiedad DE LA FUENTE. Una cita suya verificada «por texto» seria una
+    Cuatro de las catorce fuentes no entregan texto utilizable (desde N1;
+    eran tres de trece), y eso es una propiedad DE LA FUENTE. Una cita suya verificada «por texto» seria una
     verificacion imposible: el campo `metodo` obliga a decir cual de las dos.
     """
     from normativa.esquema import MetodoDeVerificacion

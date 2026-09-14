@@ -9,21 +9,30 @@ neutralidad comercial de Sec. 3.2.
 
 LA NORMA DEL TMC NO ES ASTM A-807 (NOR-PRO-04). Este modulo la citaba tres
 veces y esa designacion no aparece ni una vez en M 170M, M 36 ni A760. La que
-lleva el diseno estructural -- calibre por altura de cobertura -- es ASTM
-A796/A796M, citada siete veces por A760 y en la lista de normas de M 36;
-A798/A798M es la de instalacion. A-807 si es la norma a la que remiten las
-Subsecciones 507.05/.06/.08 del EG-2013, pero para materiales y fabricacion,
-no para esa tabla.
+lleva el diseno estructural es ASTM A796/A796M, citada siete veces por A760 y
+en la lista de normas de M 36; A798/A798M es la de instalacion, Y TAMBIEN
+A807/A807M: desde N1 A796-13 esta en normas/ y su num. 22.1 manda que la
+instalacion se ajuste a «Practice A798/A798M or A807/A807M» (cita
+ASTM_A796.22.1) -- que es para lo que las Subsecciones 507.05/.06/.08 del
+EG-2013 la invocan --. Y LEIDA ENTERA, A796 NO TABULA EL CALIBRE POR ALTURA
+DE COBERTURA: el espesor es la SALIDA de su procedimiento (num. 7 a 10) y se
+elige de sus Tablas 2 a 35 (num. 8.1.1.2); la cobertura minima sale de su
+num. 11.1 (ecs. 13 a 16, con pisos de 300 y 600 mm). Las tablas de «calibre
+por altura» de la practica norteamericana son derivadas de ese procedimiento
+por fabricantes y no estan en la norma (afirmacion negativa
+SIN_TABLA_CALIBRE_POR_COBERTURA_A796 en el registro).
 
 Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
 
     1-2  Seleccionar clase/calibre segun la altura real de relleno y
          verificar que esa altura cae en su rango admisible.
          `seleccionar_clase_calibre()` -- se detiene con
-         CriterioPendienteError: ninguna de las dos tablas (AASHTO M 170M-04
-         Tablas 1 a 5, ASTM A796/A796M) esta transcrita en la hoja de ruta.
-         Ver el criterio 'clases_producto_por_relleno' en
-         criterios_adoptados.py.
+         CriterioPendienteError: la tabla del concreto (AASHTO M 170M-04
+         Tablas 1 a 5) no esta transcrita, y para el TMC no hay tabla sino
+         el procedimiento de ASTM A796/A796M (num. 7 a 11), que no esta
+         implementado -- sus Tablas 3 a 17 de propiedades seccionales SI
+         estan transcritas en el registro (N1) como insumo --. Ver el
+         criterio 'clases_producto_por_relleno' en criterios_adoptados.py.
 
     3    Flotacion (V7), obligatoria con NF a 1.4 m.
          `empuje_flotacion_kn_m()`, `peso_relleno_kn_m()` y
@@ -234,11 +243,16 @@ def seleccionar_clase_calibre(*, material: Material, altura_relleno: float):
     A796/A796M) segun la altura real de relleno del punto, y verificacion de
     que esa altura cae en el rango admisible de la clase elegida.
 
-    Ninguna de las dos tablas esta transcrita en la hoja de ruta -- el mismo
-    vacio de norma de producto que 'espesor_pared_conducto' declara para la
-    geometria fisica, y los dos se cierran juntos: el espesor de pared es una
-    consecuencia de la clase o el calibre que aqui se seleccione. Se detiene
-    en 'clases_producto_por_relleno' (ver su justificacion en
+    La tabla del concreto no esta transcrita, y para el TMC no hay tabla:
+    ASTM A796/A796M-13 (en el registro desde N1) fija el calibre por
+    PROCEDIMIENTO -- area de pared requerida con SF = 2, pandeo, costura,
+    factor de flexibilidad, cobertura minima del num. 11.1 -- y ese
+    procedimiento no esta implementado; implementarlo es una sesion de
+    calculo propia, con caso patron. Es el mismo vacio de norma de producto
+    que 'espesor_pared_conducto' declara para la geometria fisica, y los dos
+    se cierran juntos: el espesor de pared es una consecuencia de la clase o
+    el calibre que aqui se seleccione. Se detiene en
+    'clases_producto_por_relleno' (ver su justificacion en
     criterios_adoptados.py). HDPE no tiene tabla de clase por altura: su
     verificacion detallada queda diferida al expediente por el item 5 (ver
     `verificacion_diferida_estructural`), no por este vacio.

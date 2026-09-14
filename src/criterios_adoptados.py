@@ -4662,18 +4662,15 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea la seleccion de Fase 8, items 1-2
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
-        # LA DISCREPANCIA VIVA QUE ESTE CRITERIO TOCA, por su id y no en
-        # prosa (I2). DIS-HR-A807 es la unica que sigue abierta contra la
-        # hoja de ruta -- su Fase 8 remite el calibre del TMC a «ASTM
-        # A-807», y la designacion no aparece en M 170M, M 36 ni A760 --,
-        # y no tiene NINGUNA otra via a la memoria: sus partes no llevan
-        # cita (A796/A807 son fuentes ausentes: no hay contra que
-        # verificar) y ningun paso la declara. La `justificacion` de abajo
-        # ya contaba el caso en prosa; este campo es lo que lleva la
-        # discrepancia entera -- partes, quien gana, efecto -- a la memoria
-        # de la corrida que use este criterio. Se cerrara cuando A796 (o
-        # A-807) este en normas/ y la atribucion se verifique.
-        discrepancias=("DIS-HR-A807",),
+        # HASTA N1 ESTE CRITERIO DECLARABA `discrepancias=("DIS-HR-A807",)`:
+        # era la unica via por la que la discrepancia viva contra la Fase 8
+        # de la v8 llegaba a la memoria (via 3, `Criterio.discrepancias`),
+        # porque sus partes no tenian cita -- A796 y A807 eran fuentes
+        # ausentes --. N1 incorporo A796 a normas/, le dio citas a las
+        # partes, corrigio la fila de la v8 y la paso a RESUELTA; y una
+        # resuelta no se declara (guardia `_verificar_discrepancias`): es
+        # material del manifiesto, no de la memoria. La via 3 queda sin
+        # usuario de produccion, censado en test_canal_discrepancias.
         concepto="Tabla de clase (concreto, AASHTO M 170M-04, Clases I a V) o "
                  "calibre (TMC, ASTM A796/A796M) admisible segun la altura de "
                  "relleno sobre la clave, para Fase 8 items 1-2: seleccionar "
@@ -4681,58 +4678,85 @@ CRITERIOS: Dict[str, Criterio] = {
                  "altura cae en el rango admisible de la clase elegida",
         justificacion="Decide de que tabla saldra la clase (concreto) o el "
                       "calibre (TMC) admisible por altura de relleno, y hoy "
-                      "es un vacio declarado: falta extraer la tabla "
-                      "completa. Las fuentes son AASHTO M 170M-04, Tablas 1 a "
-                      "5 (clases I a V por diametro, concreto), y ASTM "
-                      "A796/A796M -- la practica de diseno estructural de "
-                      "tuberia de acero corrugado, que lleva el calibre por "
-                      "altura de cobertura --; la primera esta en normas/ "
-                      "pero su PDF no entrega texto, y la segunda no esta en "
-                      "el repositorio. La atribucion importa y se deja "
-                      "precisa: la designacion A-807 no aparece ni una vez en "
-                      "M 170M, en M 36 ni en A760 -- A760 remite el "
-                      "procedimiento de instalacion a ASTM A798/A798M, y "
-                      "tanto A760 como la lista de normas de M 36 citan "
-                      "A796/A796M --, y las Subsecciones 507.05, 507.06 y "
-                      "507.08 de EG-2013 si remiten a A-807, pero para "
-                      "materiales y fabricacion, no para la tabla de calibre "
-                      "por altura. Lo que las fuentes disponibles no "
-                      "resuelven: ninguna de las dos tablas esta transcrita "
-                      "en la hoja de ruta, y HDPE (AASHTO M294) no tiene "
-                      "tabla de clase por altura -- su seleccion depende de "
-                      "un calculo de rigidez de anillo que Fase 8, item 5, "
-                      "difiere expresamente al expediente tecnico. Parte del "
-                      "pendiente ya esta cerrada: la relacion luz/corrugacion "
-                      "no hay que buscarla fuera -- esta en la Tabla 1 de "
-                      "A760 (una 'X' por cada tamaño de corrugacion estandar "
-                      "para cada diametro nominal) y en la Tabla 6 de M 36, "
+                      "es un vacio declarado, por dos razones distintas que "
+                      "conviene no mezclar. CONCRETO: la fuente es AASHTO "
+                      "M 170M-04, Tablas 1 a 5 (clases I a V por diametro); "
+                      "esta en normas/ pero su PDF no entrega texto, y falta "
+                      "TRANSCRIBIRLA. TMC: la fuente es ASTM A796/A796M-13, "
+                      "la practica de diseno estructural de tuberia de acero "
+                      "corrugado, en normas/ desde pre-N1 y en el registro "
+                      "desde N1 -- y leida entera no tabula el calibre por "
+                      "altura de cobertura: el espesor es la SALIDA de su "
+                      "procedimiento (num. 7 a 10: presion de diseno, "
+                      "empuje, area de pared requerida con SF = 2, pandeo, "
+                      "costura, factor de flexibilidad) elegida de sus "
+                      "Tablas 2 a 35 (num. 8.1.1.2), y la cobertura minima "
+                      "sale de las ecs. (13) a (16) de su num. 11.1 con dos "
+                      "pisos (300 mm siempre; 600 mm si el espesor es menor "
+                      "de 1.32 mm). Afirmacion negativa con su ambito: "
+                      "SIN_TABLA_CALIBRE_POR_COBERTURA_A796. De modo que la "
+                      "mitad TMC no se cierra transcribiendo sino "
+                      "IMPLEMENTANDO ese procedimiento en M8 -- sesion de "
+                      "calculo propia, con caso patron y con los [A] que el "
+                      "procedimiento pide (metodo ASD o LRFD del num. 7.1, "
+                      "clase de carga del num. 11.1, peso del relleno, "
+                      "rigidez del suelo) --. Lo que SI esta transcrito: las "
+                      "siete tablas SI de propiedades seccionales de las "
+                      "corrugaciones del catalogo (ASTM_A796.T3, T5, T7, T9, "
+                      "T11, T15 y T17: que espesores existen y con que A, I "
+                      "y r), la carga viva por cobertura (ASTM_A796.6.2.2.1), "
+                      "los limites del factor de flexibilidad (10.2, 10.3) y "
+                      "las cargas por eje (11.1). La atribucion queda "
+                      "VERIFICADA y no solo argumentada: A807/A807M es "
+                      "practica de INSTALACION (A796 num. 22.1, cita "
+                      "ASTM_A796.22.1), que es para lo que EG-2013 "
+                      "507.05/.06/.08 la invocan, y DIS-HR-A807 quedo "
+                      "RESUELTA al corregirse la fila de la v8. HDPE (AASHTO "
+                      "M294) no tiene tabla de clase por altura -- su "
+                      "seleccion depende de un calculo de rigidez de anillo "
+                      "que Fase 8, item 5, difiere expresamente al expediente "
+                      "tecnico. La relacion luz/corrugacion esta cerrada "
+                      "desde I1: Tabla 1 de A760 y Tabla 6 de M 36 "
                       "transcritas como ASTM_A760.T1 y AASHTO_M36.T6 y "
-                      "cruzadas por CORR-TAMANOS-TMC. Lo que sigue fuera del "
-                      "repositorio es A796",
+                      "cruzadas por CORR-TAMANOS-TMC",
         fuente="PENDIENTE - AASHTO M 170M-04, Tablas 1 a 5 (clases I a V por "
-              "diametro, concreto); ASTM A796/A796M (calibre por altura de "
-              "cobertura, TMC), que NO esta en normas/. Falta EXTRAER la "
-              "tabla completa (clase o calibre x diametro x rango de altura "
-              "de relleno). La relacion luz/corrugacion, en cambio, YA ESTA "
-              "TRANSCRITA (I1): ASTM_A760.T1 y AASHTO_M36.T6 en "
+              "diametro, concreto): en normas/, PDF sin texto, falta EXTRAER "
+              "la tabla completa (clase x diametro x rango de altura de "
+              "relleno). ASTM A796/A796M-13 (TMC): en normas/ y en el "
+              "registro (N1), y NO trae tabla de calibre por altura -- trae "
+              "el procedimiento (num. 7 a 11) y las tablas de propiedades "
+              "seccionales, transcritas (ASTM_A796.T3 a T17) --; falta "
+              "IMPLEMENTAR el procedimiento. La relacion luz/corrugacion YA "
+              "ESTA TRANSCRITA (I1): ASTM_A760.T1 y AASHTO_M36.T6 en "
               "src/normativa/tablas.py, cruzadas por CORR-TAMANOS-TMC",
-        reemplazado_por="Tabla de clase/calibre por altura de relleno de la "
-                        "norma de producto, extraida y transcrita con su "
-                        "numeral. Cierra ademas 'espesor_pared_conducto': el "
-                        "espesor de pared es una consecuencia de la clase, el "
-                        "calibre o el perfil que aqui se seleccione",
+        reemplazado_por="Para el concreto: la tabla de clase por altura de "
+                        "relleno de M 170M, extraida y transcrita con su "
+                        "numeral. Para el TMC: el procedimiento de A796 "
+                        "implementado en M8 (sesion propia con caso patron), "
+                        "que devuelve el espesor requerido para la altura "
+                        "real del punto y verifica la cobertura minima del "
+                        "num. 11.1. Cierra ademas 'espesor_pared_conducto': "
+                        "el espesor de pared es una consecuencia de la clase, "
+                        "el calibre o el perfil que aqui se seleccione",
         verificacion_pendiente="POR QUE ES [C] Y NO [A], que es la unica "
                                "combinacion de este archivo (un [C] sin "
                                "valor): la etiqueta la fija DE DONDE saldra "
                                "el valor, no si ya lo tiene. Aqui la fuente "
                                "tecnica existe, esta identificada y es "
                                "reconocida (AASHTO M 170M-04, ASTM A796/A796M): "
-                               "lo que falta es TRANSCRIBIRLA, no elegir. Un "
-                               "[A] seria lo contrario: no hay fuente y decide "
-                               "el proyectista -- que es justo el caso de "
+                               "lo que falta es TRANSCRIBIRLA (concreto) o "
+                               "APLICARLA (TMC), no elegir. Un [A] seria lo "
+                               "contrario: no hay fuente y decide el "
+                               "proyectista -- que es justo el caso de "
                                "'espesor_pared_conducto', su gemelo por la "
                                "otra punta: alli M 170M ofrece TRES paredes "
-                               "por diametro y hay que elegir una. El "
+                               "por diametro y hay que elegir una. Matiz "
+                               "desde N1: el procedimiento de A796 pide "
+                               "elecciones propias (ASD o LRFD, clase de "
+                               "carga, peso del relleno), que seran [A] "
+                               "APARTE el dia que se implemente; este "
+                               "criterio sigue siendo la fuente de la que "
+                               "sale el valor, y esa fuente es [C]. El "
                                "precedente interno es 'v_max_tmc' / "
                                "'v_max_hdpe', que fueron [C] sin valor por la "
                                "misma razon y hoy valen 4.572 sin haber cambiado "
@@ -4740,10 +4764,13 @@ CRITERIOS: Dict[str, Criterio] = {
         resolucion=Libre(
             que_lo_fija="la clase o el calibre del producto que el proyecto "
                         "especifique para cada altura de relleno",
-            tabla_pendiente="AASHTO M 170M-04 Tablas 1 a 5 (concreto) y "
-                            "ASTM A796/A796M (calibre TMC). La primera esta "
-                            "en normas/ pero su PDF no entrega texto; la "
-                            "segunda no esta",
+            tabla_pendiente="AASHTO M 170M-04 Tablas 1 a 5 (concreto): en "
+                            "normas/, PDF sin texto, sin transcribir. ASTM "
+                            "A796/A796M-13 (calibre TMC): en normas/ y en el "
+                            "registro desde N1; no hay tabla que transcribir "
+                            "sino procedimiento que implementar (num. 7 a "
+                            "11), con sus Tablas 3 a 17 ya transcritas como "
+                            "insumo",
         ),
     ),
 

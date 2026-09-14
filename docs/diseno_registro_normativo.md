@@ -890,7 +890,8 @@ es lo contrario de lo que la fuente hace: callar—.
 **Pregunta 6 del encargo.** La §15 del plan las lista: WSDOT Hydraulics Manual, AASHTO
 M294, ASTM A796/A798/C76/A-807, DG-2018, HEC-14, Ley 29338 y su reglamento, series
 SENAMHI/ANA, Meyerhof (1957), el Apéndice A3 de mapas del Manual de Puentes, y el estudio
-geotécnico del expediente.
+geotécnico del expediente. *(A796/A796M-13 dejó de estar ausente en N1; el censo vivo es
+`fuentes.FUENTES_AUSENTES`, no esta lista.)*
 
 ```python
 @dataclass(frozen=True)
@@ -916,7 +917,11 @@ Cuatro consecuencias, todas invariantes:
 4. **`que_desbloquearia` convierte la deuda en trabajo con precio.** El plan ya identifica
    las dos baratas: **A796** cierra la mitad TMC de `clases_producto_por_relleno` y
    **M294** cierra `D_max["hdpe"]`. Un test lista las ausentes ordenadas por esfuerzo, de
-   modo que la deuda se vea sin leer la §15.
+   modo que la deuda se vea sin leer la §15. *(Medido en N1, cuando A796 llegó: la
+   promesa era mayor que lo que la fuente trae. A796 no tabula el calibre por cobertura;
+   `que_desbloquearia` convirtió la deuda en trabajo con precio, y el precio resultó ser
+   una sesión de cálculo y no una transcripción. El campo cumplió su función igual: sin
+   él nadie habría sabido qué esperar de la fuente ni podido medir la diferencia.)*
 
 **Caso aparte, y conviene no mezclarlo:** el Apéndice A3 de mapas del Manual de Puentes y
 los ábacos de Meyerhof **sí están** en `normas/` — lo que no se puede es *leerlos por

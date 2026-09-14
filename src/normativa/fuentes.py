@@ -1,6 +1,9 @@
 """
-Las fuentes normativas del proyecto: las trece que estan en `normas/` y las
-once que se citan y NO estan (§8 del diseño, §15 del plan).
+Las fuentes normativas del proyecto: las catorce que estan en `normas/` y las
+doce que se citan y NO estan (§8 del diseño, §15 del plan). Hasta N1 eran
+trece y trece -- este encabezado decia «once» y llevaba tiempo sin contar:
+el censo de ausentes tenia trece entradas --; ASTM A796/A796M-13 entro en
+`normas/` en pre-N1 y N1 la paso del censo de ausentes a este.
 
 TODOS LOS SHA-1 Y TODAS LAS PAGINACIONES DE ESTE ARCHIVO ESTAN MEDIDOS, no
 supuestos. El procedimiento, para que se pueda repetir:
@@ -18,6 +21,8 @@ paginas confirman cada desfase, no dos o tres a ojo:
     E.030 / E.050 / E.060 ...  0   confirmado en 67/68, 78/82 y 204/205
     HDS-5 3a ed ............. por capitulo; catorce bases medidas
     AASHTO LRFD 9a ed ....... por capitulo; quince bases medidas
+    ASTM A796/A796M-13 .....  0   confirmado en 20 de 21 (N1, por imagen:
+                                  la PDF 1 esta en blanco)
 
 Las paginas que no confirman son las que no imprimen numero -- portadas,
 separadores y las laminas fotograficas del Manual de Puentes --, no
@@ -31,8 +36,8 @@ LO QUE MEDIR ESTO HIZO APARECER, y en prosa no se veia:
      inferir de lo escrito y hay que medirlo abriendo el PDF». Se midio: es
      `Corrida(+3)`, y con eso sus citas pasan a ser verificables por la via
      barata.
-  2. TRES de las trece fuentes NO ENTREGAN TEXTO UTILIZABLE, y eso es una
-     propiedad de la fuente que el registro tiene que declarar, no un
+  2. CUATRO de las catorce fuentes NO ENTREGAN TEXTO UTILIZABLE, y eso es
+     una propiedad de la fuente que el registro tiene que declarar, no un
      percance de quien la lee:
        - AASHTO M 36 es un raster sin capa de texto: `get_text()` devuelve
          cadena vacia en las 24 paginas.
@@ -42,8 +47,14 @@ LO QUE MEDIR ESTO HIZO APARECER, y en prosa no se veia:
          que no se puede deshacer.
        - AASHTO M 170M-04 es un escaneo con OCR de mala calidad
          («Speciñcation», «Rcinforcc»), util para orientarse y no para citar.
-     Una cita a esas tres se verifica RENDERIZANDO la pagina o no se verifica:
-     `Verificado.metodo` obliga a decir cual de las dos.
+       - ASTM A796/A796M-13 (N1) trae la capa de texto DUPLICADA E
+         INTERCALADA: cada renglon aparece dos veces y la segunda copia llega
+         partida a mitad de palabra («Plac / Place e by / by Nuc / Nuclear»),
+         de modo que una frase entera no se encuentra por texto aunque una
+         palabra suelta si. Es artefacto del PDF (Ghostscript 9.26 sobre un
+         ejemplar con dos capas), no de la norma.
+     Una cita a esas cuatro se verifica RENDERIZANDO la pagina o no se
+     verifica: `Verificado.metodo` obliga a decir cual de las dos.
 """
 
 from __future__ import annotations
@@ -62,7 +73,7 @@ from .esquema import (
 )
 
 # ===========================================================================
-# Las trece fuentes que SI estan en normas/
+# Las catorce fuentes que SI estan en normas/
 # ===========================================================================
 
 MC_HHD = Fuente(
@@ -341,12 +352,81 @@ ASTM_A760 = Fuente(
         "dato sea correcto, y por eso se declara."),
 )
 
+ASTM_A796 = Fuente(
+    id="ASTM_A796",
+    titulo=("ASTM A796/A796M-13 «Structural Design of Corrugated Steel Pipe, "
+            "Pipe-Arches, and Arches» (practica de diseño estructural de "
+            "tuberia de acero corrugado, arcos-tubo y arcos)"),
+    emisor="ASTM International",
+    # LO QUE EL EJEMPLAR ROTULA, y solo eso: el encabezado de las veinte
+    # paginas con contenido imprime «A796/A796M – 13» (verificado por
+    # imagen, N1), y el texto se llama a si mismo «this practice» (num. 5.1,
+    # 5.2, 5.3) y «Practice» (num. 22.1). La PORTADA CON EL TITULO COMPLETO
+    # NO ESTA en este ejemplar -- su pagina impresa 1 falta, ver la nota --,
+    # de modo que el titulo de arriba es el que el dueño le puso al archivo
+    # y coincide con el nombre corto con que las normas de producto la
+    # citan; el titulo largo oficial («Standard Practice for ... for Storm
+    # and Sanitary Sewers and Other Buried Applications») NO se transcribe
+    # porque no hay pagina contra la que verificarlo. El censo de ausentes
+    # decia año 2019 porque suponia la edicion vigente; se registra la que
+    # ES.
+    edicion="A796/A796M-13",
+    anio=2013,
+    archivo_pdf=("normas/ASTM A796-A796M-13 Structural Design of Corrugated "
+                 "Steel Pipe, Pipe-Arches, and Arches.pdf"),
+    sha1="df7858f04caf61bc1c3a4ea3d664e38cacddee25",
+    paginas_pdf=21,
+    # Medido renderizando el pie de las 21 paginas (N1): la impresa n es la
+    # PDF n, del 2 al 21, y la PDF 1 esta EN BLANCO donde tendria que estar
+    # la impresa 1. El pie imprime el numero con el primer digito recortado
+    # («]0», «]1»...), de modo que la medida se hizo sobre la secuencia
+    # completa y no sobre un digito suelto.
+    paginacion=Corrida(desfase=0),
+    texto_extraible=False,
+    nota=(
+        "TRES PROPIEDADES DEL EJEMPLAR, las tres medidas en N1. "
+        "PRIMERA: la capa de texto EXISTE y esta DUPLICADA E INTERCALADA -- "
+        "cada renglon aparece dos veces, y la segunda copia llega partida a "
+        "mitad de palabra («Plac / Place e by / by Nuc / Nuclear») --. Una "
+        "palabra suelta se encuentra por texto (sirve para ORIENTARSE: "
+        "«minimum cover» localiza la pag. 5); una frase entera, no. Por eso "
+        "se declara NO extraible, con el precedente de M 36 y A760: toda "
+        "cita suya se verifica por IMAGEN, y asi lo firman. "
+        "SEGUNDA: AL EJEMPLAR LE FALTA LA PAGINA IMPRESA 1 -- portada, "
+        "num. 1 «Scope» y arranque del num. 2 --: la PDF 1 esta completamente "
+        "en blanco y la PDF 2 abre a mitad del num. 2.1 («Place by the Rubber "
+        "Balloon Method», D2487...). Es el mismo defecto que el ejemplar de "
+        "M 36 tiene en su PDF 6, y con la misma consecuencia: un numeral de "
+        "esa pagina NO es verificable contra este ejemplar. "
+        "TERCERA, Y ES LA QUE IMPORTA AL PROYECTO: es una PRACTICA DE "
+        "DISEÑO, no una norma de producto ni una tabla. NO CONTIENE ninguna "
+        "tabla de calibre (espesor) por altura de cobertura: el espesor sale "
+        "del PROCEDIMIENTO (num. 7 a 9: presion de diseño, empuje, area de "
+        "pared requerida con SF = 2, pandeo, costura; num. 10: factor de "
+        "flexibilidad) y se ELIGE de las Tablas 2 a 35 de propiedades "
+        "seccionales (num. 8.1.1.2). La cobertura minima sale de las ecs. "
+        "(13) a (16) del num. 11.1 en funcion de la rigidez, con dos pisos "
+        "absolutos (300 mm siempre; 600 mm si el espesor es menor de "
+        "1.32 mm) y 1.2 m bajo cargas de construccion (num. 11.4). Las "
+        "tablas de «calibre por altura de cobertura» de la practica "
+        "norteamericana son DERIVADAS de este procedimiento por fabricantes "
+        "y asociaciones, y no estan en la norma. Lo que si trae, ademas: la "
+        "presion de carga viva por altura de cobertura (num. 6.2.2.1), los "
+        "limites de FF por corrugacion (num. 10.2 a 10.8) y, en el num. "
+        "22.1, la remision de la INSTALACION a «Practice A798/A798M or "
+        "A807/A807M» -- la unica mencion de A807 en las 20 paginas con "
+        "contenido del ejemplar (la impresa 1, con la lista de normas "
+        "referenciadas del num. 2.1, falta), que confirma "
+        "que A807 es practica de instalacion y no la norma del calibre "
+        "(DIS-HR-A807)."),
+)
+
 
 FUENTES: Dict[str, Fuente] = {
     f.id: f for f in (
         MC_HHD, MP, MS, EG2013, E030, E050, E060,
         HDS5_3ED, HDS5_SI_1985, AASHTO_LRFD_9,
-        AASHTO_M170M, AASHTO_M36, ASTM_A760,
+        AASHTO_M170M, AASHTO_M36, ASTM_A760, ASTM_A796,
     )
 }
 
@@ -376,18 +456,15 @@ def _ausente(id_, titulo, emisor, edicion, anio, ausencia, **kw) -> Fuente:
     return f
 
 
-ASTM_A796 = _ausente(
-    "ASTM_A796",
-    "ASTM A796/A796M «Structural Design of Corrugated Steel Pipe...»",
-    "ASTM International", "A796/A796M", 2019,
-    Ausencia(
-        por_que_se_cita=("es la norma que da el calibre de la plancha por "
-                         "altura de cobertura, que es la mitad TMC del "
-                         "criterio 'clases_producto_por_relleno'"),
-        que_desbloquearia=("la mitad TMC de 'clases_producto_por_relleno'. "
-                           "Es una de las DOS ausencias baratas del plan"),
-        esfuerzo=Esfuerzo.COMPRA,
-        sustituto_vigente="el criterio queda [A] y declara el vacio"))
+# ASTM_A796 SALIO DE ESTE CENSO EN N1: esta arriba, entre las presentes. Su
+# ficha de ausente decia que desbloquearia «la mitad TMC de
+# 'clases_producto_por_relleno'» y que era «una de las DOS ausencias baratas
+# del plan». Conseguida y leida, desbloqueo menos de lo que la ficha
+# prometia, y conviene dejarlo escrito donde estaba la promesa: la norma NO
+# TABULA el calibre por altura de cobertura -- lo fija por procedimiento
+# (ver la nota de la Fuente) --, de modo que la mitad TMC del criterio no se
+# cierra transcribiendo sino IMPLEMENTANDO el num. 6 a 11, que es una sesion
+# de calculo con caso patron y no de registro.
 
 AASHTO_M294 = _ausente(
     "AASHTO_M294",
@@ -416,7 +493,9 @@ ASTM_A798 = _ausente(
     "Pipe for Sewers and Other Applications»", "ASTM International",
     "A798/A798M", 2019,
     Ausencia(
-        por_que_se_cita="practica de instalacion de TMC",
+        por_que_se_cita=("practica de instalacion de TMC: A796 num. 22.1 "
+                         "(presente desde N1) manda que la instalacion se "
+                         "ajuste a «Practice A798/A798M or A807/A807M»"),
         que_desbloquearia="nada que el EG-2013 no cubra ya para obra vial peruana",
         esfuerzo=Esfuerzo.COMPRA,
         sustituto_vigente="EG-2013 Seccion 507"))
@@ -427,10 +506,16 @@ ASTM_A807 = _ausente(
     Ausencia(
         por_que_se_cita=("la hoja de ruta v8 la cita dos veces (Sec. 7.A y "
                          "Fase 8) para el calibre de TMC segun altura"),
-        que_desbloquearia=("nada: la remision es FALSA. El calibre por altura "
-                           "de cobertura es de ASTM A796/A796M. Queda "
-                           "declarada como discrepancia abierta contra la "
-                           "hoja de ruta"),
+        que_desbloquearia=("nada: la remision es FALSA, y desde N1 esta "
+                           "VERIFICADA en positivo y no solo por ausencia: "
+                           "A796 num. 22.1 la cita como practica de "
+                           "INSTALACION («shall conform to Practice "
+                           "A798/A798M or A807/A807M»), que es exactamente "
+                           "para lo que EG-2013 507.05/.06/.08 la invocan. "
+                           "El calibre lo fija A796 por procedimiento "
+                           "(num. 7 a 10) -- no hay tabla en ninguna de las "
+                           "dos --. DIS-HR-A807 quedo RESUELTA en N1 al "
+                           "corregirse la fila de la v8"),
         esfuerzo=Esfuerzo.COMPRA,
         sustituto_vigente="ninguno; la remision se retira, no se sustituye"))
 

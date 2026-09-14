@@ -1487,6 +1487,12 @@ Para que esto no se lea como una promesa de completitud:
   estudio geotécnico del expediente. El registro las declara como ausentes; conseguirlas es
   trabajo de gabinete. **Dos son fáciles y desbloquean cosas concretas: A796** cierra la
   mitad TMC de `clases_producto_por_relleno`, y **M294** cierra `D_MAX["hdpe"]`.
+  > **Actualizado en N1 (2026-09-14).** A796/A796M-13 ya está en `normas/` y en el
+  > registro (`fuentes.ASTM_A796`), y **no cerró esa mitad**: la norma no tabula el
+  > calibre por altura de cobertura —lo determina por procedimiento (§7-§11)—, de modo
+  > que la mitad TMC pasa a ser una sesión de cálculo (implementar el procedimiento en
+  > M8, con caso patrón), no de gabinete. Ver la ficha NOR-PRO-04 en
+  > `docs/decisiones_diferidas.md`. Las ausentes son hoy doce; M294 sigue entre ellas.
 - **La lectura de los ábacos raster** (Meyerhof `N_cq`/`N_γq`, la isolínea de PGA sobre
   Piura). Existen y están correctamente numerados; los valores no son legibles por texto.
 - **Los casos patrón que M2, M8 y M10 no pueden tener todavía (SIS-F-13).** No es
@@ -1502,7 +1508,9 @@ Para que esto no se lea como una promesa de completitud:
   - **M8** — AASHTO M 170M-04 Tablas 1 a 5 (clases D-load del concreto) y
     **ASTM A796/A796M** (calibre por altura de cobertura del TMC). Son el insumo
     del vacío `clases_producto_por_relleno`, y A796 ya figura arriba como una de
-    las dos fuentes "fáciles" que desbloquean cosas concretas.
+    las dos fuentes "fáciles" que desbloquean cosas concretas. *(N1: A796 ya está,
+    y lo que aporta al dorado de M8 no es una tabla sino el procedimiento y sus
+    Tablas 3-17 transcritas; el dorado exige implementarlo.)*
   - **M10** — no sale de ninguna norma sino del **expediente vial**: sección
     transversal de la cuneta, su n de Manning, la fórmula de intensidad para
     TR = 35 años y el método de área tributaria. Sec. 10 describe el
@@ -1526,7 +1534,9 @@ Para que esto no se lea como una promesa de completitud:
   `tests/test_guardias_de_la_suite.py::test_todo_modulo_de_calculo_consume_su_caso_patron`,
   con la lista de exentos declarada y su razón, que además **falla si un
   exento deja de serlo** —el día que llegue A796 o M294, el test señala solo
-  qué exención retirar—.
+  qué exención retirar— *(A796 llegó en N1 y no retiró ninguna: M8 ya había
+  salido de la lista en C7, y `seleccionar_clase_calibre` sigue sin dorado
+  porque el procedimiento no está implementado)*.
 - **La validación contra HY-8**, recomendada pero externa.
 - **El cálculo de expediente propiamente dicho.** Este plan lo *prepara*; no lo escribe.
 - **La portabilidad a otra carretera.** El §8 de la auditoría normativa (el corredor de

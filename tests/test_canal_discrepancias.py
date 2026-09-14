@@ -161,33 +161,28 @@ def test_una_errata_de_imprenta_SI_llega(reg):
 
 def test_lo_que_la_corrida_no_toca_no_se_vuelca(reg, informe, memoria):
     """
-    NO SE VUELCA EL REGISTRO, y el censo es el de I3: quedan TRES abiertas.
+    NO SE VUELCA EL REGISTRO, y el censo es el de N1: quedan DOS abiertas.
     I2 corrigio la hoja de ruta v8 en ocho discrepancias y las paso a
-    RESUELTA; siguen abiertas la que no tiene fuente contra la que
-    verificarse (`DIS-HR-A807`: A796/A807 ausentes de normas/) y el conflicto
-    interno de AASHTO sobre gamma_EV, e I3 registro la tercera:
-    `DIS-HR-FORMAS-HDS5` (el D-9 de ruta_familia_c §15.8(d), las dos formas
-    de la ecuacion de control de entrada que la v8 no distingue). De las
-    tres, la de A807 es de la Fase 8 --- su canal es el criterio
-    'clases_producto_por_relleno', de expediente --- y una corrida de perfil
-    difiere esa fase entera: su memoria no afirma nada sobre el calibre del
-    TMC, y publicarla seria pedirle al lector que sostenga lo que este
-    documento no dice.
+    RESUELTA; I3 registro `DIS-HR-FORMAS-HDS5` (el D-9 de ruta_familia_c
+    §15.8(d), las dos formas de la ecuacion de control de entrada que la v8
+    no distingue); y N1 resolvio la novena contra la v8, `DIS-HR-A807`,
+    cuando ASTM A796/A796M-13 entro en normas/ y la atribucion pudo
+    verificarse por imagen (A807 es practica de instalacion, num. 22.1). De
+    las dos que quedan, la de gamma_EV es el conflicto interno de AASHTO y
+    la de las formas es de la Fase 4 y viaja por el paso `de_forma`.
     """
     abiertas = {d.id for d in reg.discrepancias_abiertas()}
-    assert abiertas == {"DIS-HR-A807", "DIS-AASHTO-GAMMA-EV-12.6.1",
-                        "DIS-HR-FORMAS-HDS5"}, (
+    assert abiertas == {"DIS-AASHTO-GAMMA-EV-12.6.1", "DIS-HR-FORMAS-HDS5"}, (
         "cambio el censo de abiertas: revisa el test")
 
     assert informe.alcance == "perfil"
     bloque = M11.bloque_discrepancias(informe)
-    assert "DIS-HR-A807" not in bloque, (
-        "DIS-HR-A807 es de la Fase 8 y la Fase 8 esta diferida en esta "
-        "corrida")
-    # Y las ocho que I2 resolvio tampoco: lo resuelto es del manifiesto.
+    # Y las nueve resueltas contra la v8 (ocho de I2 y la de N1) tampoco: lo
+    # resuelto es del manifiesto.
     for id_ in ("DIS-HR-D-MAX", "DIS-HR-CICLOPEO", "DIS-HR-H-RELLENO-MIN",
                 "DIS-HR-G-LAUSHEY", "DIS-HR-H-EQ", "DIS-HR-CLASE-DE-SITIO-F",
-                "DIS-HR-30M-VS-100FT", "DIS-HR-VIA-DE-LA-LICUEFACCION"):
+                "DIS-HR-30M-VS-100FT", "DIS-HR-VIA-DE-LA-LICUEFACCION",
+                "DIS-HR-A807"):
         assert not reg.discrepancia(id_).viva
         assert id_ not in bloque, (
             f"{id_} esta RESUELTA y llego igual a la memoria: el filtro de "
@@ -282,27 +277,50 @@ def test_la_via_del_paso_tiene_usuario_de_produccion(informe, memoria, reg):
 
 def test_la_via_del_criterio_existe_porque_V9_no_emite_paso(reg):
     """
-    VIA 3, tambien con su caso --- que desde I2 es `DIS-HR-A807`, la unica
-    que sigue abierta contra la hoja de ruta.
+    VIA 3 (`Criterio.discrepancias`), y desde N1 SIN USUARIO DE PRODUCCION,
+    que se censa aqui en vez de dejar la via muda -- la misma regla que I3
+    aplico a la via 2 --.
 
     El caso historico era `DIS-HR-D-MAX` en 'D_max_catalogo' (V9 consulta el
     tope y ni siquiera emite paso); I2 la resolvio y el criterio dejo de
-    declararla. `DIS-HR-A807` la releva y es el caso extremo de la via: sus
-    dos `Parte` no llevan `cita_id` --- A796/A807 son fuentes AUSENTES y no
-    hay contra que verificar ---, de modo que `Discrepancia.citas` es la
-    tupla vacia y la via 1 es imposible por construccion. Sin el campo
-    `discrepancias` de 'clases_producto_por_relleno', el unico hallazgo
-    vivo contra la v8 no tendria por donde llegar a la memoria.
-    """
-    d = reg.discrepancia("DIS-HR-A807")
-    assert d.citas == (), "si le transcriben una cita, revisa esta narrativa"
-    assert ca.CRITERIOS["clases_producto_por_relleno"].discrepancias == \
-        ("DIS-HR-A807",)
-    assert d in reg.discrepancias_que_tocan((), {"DIS-HR-A807"})
+    declararla. `DIS-HR-A807` la relevo desde I2 hasta N1 como caso extremo
+    de la via: sus dos `Parte` no llevaban `cita_id` --- A796/A807 eran
+    fuentes AUSENTES --- y sin el campo `discrepancias` de
+    'clases_producto_por_relleno' no tenia por donde llegar a la memoria.
+    N1 incorporo A796 a normas/, le dio CUATRO citas a las partes (22.1,
+    8.1.1.2#SELECCION, 11.1#PISOS, 17.1), corrigio la fila de la v8 y la
+    paso a RESUELTA; y una resuelta no se declara (la guardia
+    `_verificar_discrepancias` lo impide: es material del manifiesto).
 
-    # Y el criterio historico quedo limpio: declarar una resuelta es error
-    # de construccion (la guardia de mas abajo lo prueba con la de EG-508).
+    Lo que este test prueba hoy es la MECANICA con el registro, en las dos
+    direcciones: una viva pedida por id llega; una resuelta pedida por id no
+    llega; y ningun criterio de produccion declara ninguna. Si alguna vez un
+    criterio vuelve a tener una discrepancia viva que declarar, este test es
+    el que hay que reescribir con el caso real, no al reves.
+    """
+    resuelta = reg.discrepancia("DIS-HR-A807")
+    assert not resuelta.viva
+    assert set(resuelta.citas) == {
+        "ASTM_A796.22.1", "ASTM_A796.8.1.1.2#SELECCION",
+        "ASTM_A796.11.1#PISOS", "ASTM_A796.17.1"}, (
+        "las partes de DIS-HR-A807 llevan cita desde N1: revisa la narrativa")
+    assert resuelta not in reg.discrepancias_que_tocan((), {"DIS-HR-A807"}), (
+        "esta RESUELTA: pedirla por id no puede resucitarla en la memoria")
+    viva = reg.discrepancia("DIS-AASHTO-GAMMA-EV-12.6.1")
+    assert viva in reg.discrepancias_que_tocan((), {"DIS-AASHTO-GAMMA-EV-12.6.1"})
+
+    # Censo: ningun criterio de produccion declara hoy una discrepancia. Es
+    # un hecho medido, no una regla: el dia que uno la declare, esta linea
+    # falla y obliga a convertirla en el caso real de la via.
+    declaran = {clave for clave, c in ca.CRITERIOS.items() if c.discrepancias}
+    assert declaran == set(), (
+        f"la via 3 volvio a tener usuario de produccion: {sorted(declaran)}; "
+        "reescribe este test con ese caso")
+    # Y los dos criterios historicos quedaron limpios: declarar una resuelta
+    # es error de construccion (la guardia de mas abajo lo prueba con la de
+    # EG-508).
     assert ca.CRITERIOS["D_max_catalogo"].discrepancias == ()
+    assert ca.CRITERIOS["clases_producto_por_relleno"].discrepancias == ()
 
 
 def test_las_que_siguen_vivas_llegan_al_HTML(memoria):
@@ -321,8 +339,10 @@ def test_las_que_siguen_vivas_llegan_al_HTML(memoria):
                 "DIS-MP-ERRATAS-GAMMA-P", "DIS-HDS5-APENDICE-G",
                 "DIS-HR-FORMAS-HDS5"):
         assert id_ in memoria, f"{id_} no llega a la memoria generada"
-    # Y las resueltas de I2 no: quien abra hoy la v8 encuentra lo corregido.
-    for id_ in ("DIS-HR-D-MAX", "DIS-HR-H-RELLENO-MIN", "DIS-HR-G-LAUSHEY"):
+    # Y las resueltas de I2 y de N1 no: quien abra hoy la v8 encuentra lo
+    # corregido.
+    for id_ in ("DIS-HR-D-MAX", "DIS-HR-H-RELLENO-MIN", "DIS-HR-G-LAUSHEY",
+                "DIS-HR-A807"):
         assert id_ not in memoria, f"{id_} esta resuelta y sigue llegando"
 
 
