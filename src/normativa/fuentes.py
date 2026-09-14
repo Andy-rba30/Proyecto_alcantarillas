@@ -64,22 +64,73 @@ LO QUE MEDIR ESTO HIZO APARECER, y en prosa no se veia:
          ejemplar con dos capas), no de la norma.
      Una cita a esas cuatro se verifica RENDERIZANDO la pagina o no se
      verifica: `Verificado.metodo` obliga a decir cual de las dos.
+
+LA VIGENCIA DE CADA EDICION SE VERIFICO EN T1 (2026-09-14) y vive en la
+`nota` de cada Fuente presente, detras de una de las tres marcas de
+`MARCAS_DE_VIGENCIA` (ver el bloque «T1» de abajo y `estado_de_vigencia`).
+Es un metadato de la FUENTE, no de la cita: una cita verificada contra la
+edicion que esta en normas/ sigue siendo valida contra ese PDF, porque el
+sha1 la ancla. Lo que T1 midio, en resumen: siete ediciones confirmadas
+vigentes, ocho con edicion posterior publicada por su emisor (una de ellas,
+HDS-5 de 1985, ya modelada con `convive_con` y DIS-HDS5-EDICIONES), ninguna
+indeterminable en linea. Que edicion rige el expediente en las siete con
+eleccion pendiente NO lo decide el registro: es del proyectista, y esta
+declarado vacio en `criterios_adoptados['edicion_que_rige_el_expediente']`.
+Y una correccion que la verificacion hizo aparecer: la ficha del Manual de
+Puentes citaba como resolucion la RD 19-2018-MTC/14, que es la de la edicion
+POSTERIOR; el ejemplar imprime «R.D. N° 041-2016-MTC/14» en sus PDF 2 y 3.
 """
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from .esquema import (
     Ausencia,
     Catalogo,
     Corrida,
+    ErrorDeRegistro,
     Esfuerzo,
     Fuente,
     Irregular,
     PorCapitulo,
     SinDeterminar,
 )
+
+# ===========================================================================
+# T1 - Vigencia de las ediciones citadas (verificada el 2026-09-14)
+# ===========================================================================
+# POR QUE ES UNA MARCA EN LA NOTA Y NO UN CAMPO. El esquema no tiene donde
+# poner «el emisor publica hoy una edicion posterior a la citada»: `reemplaza_a`
+# mira hacia ATRAS (lo que ESTA fuente sustituye), `convive_con` exige que la
+# otra Fuente exista en el registro, y `Discrepancia` obliga a declarar
+# `gana`, que aqui seria decidir por el proyectista. T1 no fuerza ninguno de
+# los tres: registra el hallazgo en `nota` detras de una marca fija, que
+# `estado_de_vigencia` lee y un test comprueba en las quince presentes, y
+# propone el campo `Fuente.vigencia` para una sesion de esquema (ficha
+# T1-01 de docs/decisiones_diferidas.md). Mientras el campo no exista, la
+# marca es lo que impide que esto sea prosa que nadie enumera.
+#
+# COMO SE VERIFICO, y es el limite que cada nota hereda: por busqueda web
+# (WebSearch) sobre los resultados de las paginas del emisor y de los
+# repositorios oficiales. Ninguna pagina fue LEGIBLE directamente desde el
+# entorno de T1 --- el proxy de egress bloqueo gob.pe, el portal del MTC,
+# busquedas.elperuano.pe, el sitio de SENCICO, los de la FHWA, AASHTO y
+# ASTM, y los distribuidores de normas ---, de modo que cada confirmacion
+# se apoya en lo que los resultados de busqueda transcriben de esas paginas,
+# no en su lectura. Lo que eso deja para gabinete esta dicho en cada nota.
+VIGENCIA_VERIFICADA_EL = "2026-09-14"
+VIGENCIA_CONFIRMADA = "VIGENCIA CONFIRMADA " + VIGENCIA_VERIFICADA_EL
+VIGENCIA_POSTERIOR = "EDICION POSTERIOR DETECTADA " + VIGENCIA_VERIFICADA_EL
+VIGENCIA_GABINETE = ("VIGENCIA NO DETERMINABLE EN LINEA "
+                     + VIGENCIA_VERIFICADA_EL)
+MARCAS_DE_VIGENCIA: Tuple[str, ...] = (
+    VIGENCIA_CONFIRMADA, VIGENCIA_POSTERIOR, VIGENCIA_GABINETE)
+VIGENCIA_COMO = (
+    "busqueda web (WebSearch) sobre resultados de las paginas del emisor y "
+    "de repositorios oficiales; ninguna pagina fue legible directamente desde "
+    "el entorno de T1 (egress bloqueado), de modo que la confirmacion es por "
+    "lo que los resultados transcriben de esas paginas y no por su lectura")
 
 # ===========================================================================
 # Las quince fuentes que SI estan en normas/
@@ -98,7 +149,14 @@ MC_HHD = Fuente(
     paginacion=Corrida(desfase=3),
     nota=("El diseño la dejo en SinDeterminar porque ninguna cita del "
           "repositorio declaraba su pagina PDF. Medido en S12: +3, "
-          "confirmado en 221 de sus 225 paginas."),
+          "confirmado en 221 de sus 225 paginas. "
+          + VIGENCIA_CONFIRMADA + " (T1, " + VIGENCIA_COMO + "): la RD "
+          "20-2011-MTC/14 sigue publicada en gob.pe (MTC, normas legales "
+          "4443017) como la que aprueba el Manual, y ninguna RD posterior del "
+          "MTC sobre este Manual aparece en los resultados; las reediciones "
+          "comerciales de 2026 (ICG, PT-55 «2.a ed.») declaran seguir la RD "
+          "20-2011-MTC/14. Para gabinete: leer el listado de manuales del "
+          "portal del MTC, que no fue legible."),
 )
 
 MP = Fuente(
@@ -107,13 +165,32 @@ MP = Fuente(
     emisor="MTC — Direccion General de Caminos y Ferrocarriles",
     edicion="Version Libro",
     anio=2016,
-    resolucion="RD 19-2018-MTC/14",
+    # LO QUE EL EJEMPLAR IMPRIME, verificado por texto en T1: la PDF 2 dice
+    # «"MANUAL DE PUENTES" R.D. N° 041-2016-MTC/14» y la PDF 3 «R.D. N°
+    # 041-2016-MTC/14 ... 1ra Edicion, Lima 2016». Hasta T1 este campo decia
+    # «RD 19-2018-MTC/14», que es la RD del Manual de Puentes ACTUALIZADO de
+    # 2018 (630 paginas; este ejemplar tiene 673 PDF), o sea la de la edicion
+    # POSTERIOR y no la de este archivo. Se corrige contra el PDF, que es la
+    # fuente primaria; la edicion citada («Version Libro», 2016) no cambia.
+    resolucion="RD 041-2016-MTC/14",
     archivo_pdf="normas/Puentes (Versión Libro).pdf",
     sha1="67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44",
     paginas_pdf=673,
     paginacion=Corrida(desfase=1),
     nota=("23 de sus 673 paginas no imprimen numero: son portadas de capitulo "
-          "y laminas fotograficas de puentes. El desfase no cambia."),
+          "y laminas fotograficas de puentes. El desfase no cambia. "
+          + VIGENCIA_POSTERIOR + " (T1, " + VIGENCIA_COMO + "): el MTC "
+          "aprobo por RD 19-2018-MTC/14 (El Peruano, dispositivo 1730970-1; "
+          "gob.pe, MTC, normas legales 4441255) un Manual de Puentes "
+          "ACTUALIZADO de 630 paginas, vigente desde el 15-01-2019, que deja "
+          "sin efecto la RD 041-2016-MTC/14 de este ejemplar y añade "
+          "secciones (cimentaciones, barreras de sonido, analisis "
+          "estructural). Este ejemplar es la edicion 2016: lo imprime en sus "
+          "PDF 2 y 3, y por eso `resolucion` se corrigio en T1 (decia la RD "
+          "de 2018). La edicion citada NO cambia y las citas siguen validas "
+          "contra este archivo (sha1); cual rige el expediente es de "
+          "'edicion_que_rige_el_expediente'. Para gabinete: conseguir la "
+          "edicion 2018 y medir que numerales de los citados cambiaron."),
 )
 
 MS = Fuente(
@@ -129,6 +206,15 @@ MS = Fuente(
     sha1="21d19a71090c1e586cd31596db8a4d007dc7b96f",
     paginas_pdf=281,
     paginacion=Corrida(desfase=1),
+    nota=(VIGENCIA_CONFIRMADA + " (T1, " + VIGENCIA_COMO + "): la RD "
+          "10-2014-MTC/14 (El Peruano, 16-04-2014; gob.pe, MTC, normas legales "
+          "4441297) sigue siendo la que aprueba la Seccion; el portal del MTC "
+          "la mantiene en su carpeta de manuales de carreteras y el catalogo "
+          "de SENCICO la registra como documento normativo de cumplimiento "
+          "obligatorio (articulo 18 del Reglamento Nacional de Gestion de "
+          "Infraestructura Vial). Ninguna RD posterior del MTC sobre esta "
+          "Seccion en los resultados. Para gabinete: leer el listado de "
+          "manuales del portal del MTC, que no fue legible."),
 )
 
 EG2013 = Fuente(
@@ -146,7 +232,20 @@ EG2013 = Fuente(
     paginacion=Corrida(desfase=8),
     nota=("El desfase de 8 es grande y por eso es la fuente donde mas facil "
           "es citar una pagina corrida: la impresa 976 es la PDF 984, y "
-          "confundir las dos es exactamente el hallazgo NOR-EG-01."),
+          "confundir las dos es exactamente el hallazgo NOR-EG-01. "
+          + VIGENCIA_CONFIRMADA + " (T1, " + VIGENCIA_COMO + "): no aparece "
+          "en el MTC ninguna EG posterior a la EG-2013; el portal del MTC "
+          "publica este mismo archivo («Version Revisada - JULIO 2013») en su "
+          "carpeta de manuales de carreteras. PRECISION SOBRE LA RD, que "
+          "queda para gabinete: el MTC aprobo la EG-2013 por RD 03-2013-MTC/14 "
+          "(El Peruano, 16-02-2013) y su ACTUALIZACION por RD 22-2013-MTC/14 "
+          "(El Peruano, 07-08-2013; gob.pe, MTC, normas legales 4438760), y el "
+          "portal la publica junto a este archivo rotulada «Act EG-2013». Lo "
+          "probable es que la version «Revisada y Corregida a Junio 2013» de "
+          "este ejemplar sea la que la RD 22-2013 aprueba, y entonces "
+          "`resolucion` deberia nombrarla; no se cambia en T1 porque el texto "
+          "de esa RD no se pudo leer y el ejemplar no imprime ninguna RD en "
+          "sus primeras paginas."),
 )
 
 E030 = Fuente(
@@ -161,6 +260,20 @@ E030 = Fuente(
     paginas_pdf=68,
     paginacion=Corrida(desfase=0),
     reemplaza_a="E.030 (2018)",
+    nota=(VIGENCIA_CONFIRMADA + " (T1, " + VIGENCIA_COMO + "): la RM "
+          "183-2026-VIVIENDA (El Peruano, separata especial del 03-05-2026, "
+          "que es lo que la PDF 1 de este ejemplar imprime; gob.pe/vivienda "
+          "normas legales 8081915) es la modificacion vigente de la E.030 y "
+          "no hay edicion posterior del texto tecnico. HAY UNA RM POSTERIOR "
+          "QUE NO ES UNA EDICION: la RM 217-2026-VIVIENDA (02-06-2026, El "
+          "Peruano 03-06-2026, dispositivo 2521423-1; gob.pe/vivienda "
+          "8219609) modifica la Unica Disposicion Complementaria Transitoria "
+          "de la RM 183-2026 --- el ambito de los proyectos en curso que "
+          "pueden seguir rigiendose por la version anterior de la norma ---. "
+          "Su texto no se pudo leer desde el entorno de T1 y queda para "
+          "gabinete: es la disposicion que dice si un expediente en curso "
+          "puede quedarse en la E.030 de 2018, y este registro solo tiene la "
+          "de 2026."),
 )
 
 E050 = Fuente(
@@ -174,6 +287,12 @@ E050 = Fuente(
     sha1="5fac1ecd997a6d6e80bcbf0967f89f9ddcc8106c",
     paginas_pdf=82,
     paginacion=Corrida(desfase=0),
+    nota=(VIGENCIA_CONFIRMADA + " (T1, " + VIGENCIA_COMO + "): la RM "
+          "406-2018-VIVIENDA (30-11-2018; El Peruano, 03-12-2018) sigue siendo "
+          "la ultima modificacion publicada de la E.050; ninguna RM posterior "
+          "sobre la E.050 en los resultados de gob.pe/vivienda ni de El "
+          "Peruano. Para gabinete: leer el indice del RNE en gob.pe (SENCICO), "
+          "que no fue legible."),
 )
 
 E060 = Fuente(
@@ -187,6 +306,17 @@ E060 = Fuente(
     sha1="cffe0efffc767f5d06a33e1f4eed3a16a01bdd81",
     paginas_pdf=205,
     paginacion=Corrida(desfase=0),
+    nota=(VIGENCIA_CONFIRMADA + " (T1, " + VIGENCIA_COMO + "): la E.060 de "
+          "2009 (DS 010-2009-VIVIENDA) sigue vigente sin modificacion "
+          "publicada; este ejemplar es la «Primera edicion digital: Diciembre "
+          "de 2020» de SENCICO (lo imprime la PDF 2), reedicion del mismo "
+          "texto. ACTUALIZACION EN CURSO, NO PUBLICADA: la RM 066-2025-"
+          "VIVIENDA (marzo de 2025; El Peruano, dispositivo 2377319-1; "
+          "gob.pe/vivienda 6539836) creo el grupo de trabajo que elabora la "
+          "propuesta de actualizacion de la E.060; a la fecha de T1 no aparece "
+          "RM que apruebe una E.060 nueva. El dia que se publique, esta fuente "
+          "pasa a «edicion posterior detectada» y entra en "
+          "'edicion_que_rige_el_expediente'."),
 )
 
 HDS5_3ED = Fuente(
@@ -208,7 +338,13 @@ HDS5_3ED = Fuente(
     }),
     convive_con=("HDS5_SI_1985",),
     nota=("Es la edicion que gobierna: es la unica de las dos que imprime las "
-          "conversiones SI (19.63 y 1.811)."),
+          "conversiones SI (19.63 y 1.811). "
+          + VIGENCIA_CONFIRMADA + " (T1, " + VIGENCIA_COMO + "): la "
+          "biblioteca de hidraulica de la FHWA (library_arc.cfm, pub_number=7, "
+          "id=13) lista HDS 5 Third Edition, FHWA-HIF-12-026 (2012), como la "
+          "publicacion vigente, con descarga gratuita desde el sitio de la FHWA "
+          "(engineering/hydraulics/pubs/12026/hif12026.pdf); no "
+          "existe cuarta edicion."),
 )
 
 HDS5_SI_1985 = Fuente(
@@ -243,7 +379,18 @@ HDS5_SI_1985 = Fuente(
           "sus ecs. (4b) y (5) imprimen 29 y no 19.63, y su gravedad es "
           "«32.2 ft/s/s (9.8 m/s/s)». Leerla literal «en SI» reproduce el "
           "error de +9.6 % que K_FRICCION_SI existe para atrapar. Ver la "
-          "Discrepancia DIS-HDS5-EDICIONES."),
+          "Discrepancia DIS-HDS5-EDICIONES. "
+          + VIGENCIA_POSTERIOR + " (T1, " + VIGENCIA_COMO + "), Y YA "
+          "MODELADA: es la edicion de 1985 que la tercera (2012, HDS5_3ED, "
+          "presente en normas/) sustituye --- la FHWA la presenta como «the "
+          "first major rewrite of HDS 5 since 1985» ---. El registro ya dice "
+          "cual gobierna, con `convive_con` cruzado y DIS-HDS5-EDICIONES "
+          "(resuelta: gana HDS5_3ED), y por eso NO entra en "
+          "'edicion_que_rige_el_expediente': no hay nada que el proyectista "
+          "tenga que elegir cuando la edicion vigente esta en normas/ y es la "
+          "que gobierna. `fuentes_con_eleccion_de_edicion_pendiente` la "
+          "excluye leyendo esa discrepancia, no por excepcion escrita a mano "
+          "ni por comparar años."),
 )
 
 AASHTO_LRFD_9 = Fuente(
@@ -262,6 +409,23 @@ AASHTO_LRFD_9 = Fuente(
         "8": 1197, "9": 1239, "10": 1289, "11": 1469, "12": 1638, "13": 1750,
         "14": 1782, "15": 1872,
     }),
+    nota=(VIGENCIA_POSTERIOR + " (T1, " + VIGENCIA_COMO + "): AASHTO "
+          "publico la 10a ed. (LRFDBDS-10, diciembre de 2024, con erratas de "
+          "2025; store.transportation.org, Item 5380), que sustituye a la 9a "
+          "ed. (2020) citada; la propia AASHTO lo anuncia en AASHTO Journal "
+          "(«AASHTO Issues 10th LRFD Bridge Design Spec Edition») con "
+          "revisiones extensas en las Secciones 3, 5 y 6. Este proyecto cita "
+          "de la 9a ed. las Secciones 3 (cargas: 3.4.1, 3.7.2, 3.10, 3.11 y su "
+          "Apendice A11), 5 (recubrimiento: 5.10.1 y Table 5.10.1-1), 10 "
+          "(licuefaccion: 10.5.4.2), 11 (muros: 11.6) y 12 (estructuras "
+          "enterradas: 12.6), y DOS de ellas, la 3 y la 5, estan entre las "
+          "que la 10a ed. revisa extensamente: el gabinete tiene que comparar "
+          "esas dos articulo por articulo, no solo constatar la edicion. "
+          "La edicion citada NO "
+          "cambia y las citas siguen validas contra este archivo (sha1); cual "
+          "rige el expediente es de 'edicion_que_rige_el_expediente'. Para "
+          "gabinete: conseguir la 10a ed. y medir que articulos de los "
+          "citados cambiaron."),
 )
 
 AASHTO_M170M = Fuente(
@@ -281,7 +445,15 @@ AASHTO_M170M = Fuente(
     texto_extraible=False,
     nota=("Escaneo con OCR de mala calidad: el volcado devuelve «Speciñcation» "
           "y «Rcinforcc». Sirve para orientarse; para CITAR hay que renderizar "
-          "la pagina y leerla."),
+          "la pagina y leerla. "
+          + VIGENCIA_POSTERIOR + " (T1, " + VIGENCIA_COMO + "): AASHTO "
+          "publica M 170M-23 (agosto de 2023; equivalente ASTM C76M-22; "
+          "distribuidores accuristech y globalspec), posterior a la M 170M-04 "
+          "citada; entre ambas hubo al menos la M 170M-15 y la M 170M-20. La "
+          "edicion citada NO cambia y las citas siguen validas contra este "
+          "archivo (sha1); cual rige el expediente es de "
+          "'edicion_que_rige_el_expediente'. Para gabinete: conseguir la "
+          "M 170M-23 y comparar sus Tablas 1 a 5 con las de este ejemplar."),
 )
 
 AASHTO_M36 = Fuente(
@@ -324,7 +496,17 @@ AASHTO_M36 = Fuente(
           "la PDF 5 termina en el 6.2 y la PDF 7 arranca a media frase del "
           "7.2 --. No rompe la paginacion (la hoja en blanco conserva el "
           "desfase +1), pero un numeral en ese hueco NO es verificable "
-          "contra este ejemplar."),
+          "contra este ejemplar. "
+          + VIGENCIA_POSTERIOR + " (T1, " + VIGENCIA_COMO + "): AASHTO "
+          "publica M 36M/M 36-24 (edicion 2024 de sus Materials Standards, "
+          "publicada en enero de 2024; lista HM-44 de nuevas y revisadas en "
+          "downloads.transportation.org), posterior a la M 36-03 (2007) "
+          "citada; entre ambas, al menos la M 36-16 (2020). La edicion citada "
+          "NO cambia y las citas siguen validas contra este archivo (sha1); "
+          "cual rige el expediente es de 'edicion_que_rige_el_expediente'. "
+          "Para gabinete: conseguir la M 36M/M 36-24 --- que ademas es la "
+          "unica via de cerrar la pagina impresa «M 36-5» que a este "
+          "ejemplar le falta ---."),
 )
 
 ASTM_A760 = Fuente(
@@ -358,7 +540,15 @@ ASTM_A760 = Fuente(
         "decir que este PDF y el de AASHTO M 36 son la MISMA norma en dos "
         "ediciones distintas, no dos normas independientes. Citar una "
         "traduccion como si fuera el original es una cita imprecisa aunque el "
-        "dato sea correcto, y por eso se declara."),
+        "dato sea correcto, y por eso se declara. "
+        + VIGENCIA_POSTERIOR + " (T1, " + VIGENCIA_COMO + "): ASTM publica "
+        "A760/A760M-25 (tienda en linea de ASTM, a0760_a0760m-25), posterior a la "
+        "A760/A760M-10 citada --- que ademas es traduccion ---; entre ambas, "
+        "la -13, la -15 y la -15(2020). La edicion citada NO cambia y las "
+        "citas siguen validas contra este archivo (sha1); cual rige el "
+        "expediente es de 'edicion_que_rige_el_expediente'. Para gabinete: "
+        "conseguir la -25 en ingles, que cerraria a la vez la vigencia y la "
+        "reserva de traduccion."),
 )
 
 ASTM_A796 = Fuente(
@@ -427,7 +617,16 @@ ASTM_A796 = Fuente(
         "contenido del ejemplar (la impresa 1, con la lista de normas "
         "referenciadas del num. 2.1, falta), que confirma "
         "que A807 es practica de instalacion y no la norma del calibre "
-        "(DIS-HR-A807)."),
+        "(DIS-HR-A807). "
+        + VIGENCIA_POSTERIOR + " (T1, " + VIGENCIA_COMO + "): ASTM publica "
+        "A796/A796M-21 (tienda en linea de ASTM, a0796_a0796m-21; ANSI webstore), "
+        "posterior a la A796/A796M-13 citada; entre ambas, la -17 y la -17a; "
+        "ninguna -23, -24 ni -25 en los resultados. La edicion citada NO "
+        "cambia y las citas siguen validas contra este archivo (sha1); cual "
+        "rige el expediente es de 'edicion_que_rige_el_expediente'. Para "
+        "gabinete: conseguir la -21 y comprobar si el procedimiento de los "
+        "num. 7 a 11 cambio, porque es el que cerraria la mitad TMC de "
+        "'clases_producto_por_relleno'."),
 )
 
 AASHTO_M294_TRAD = Fuente(
@@ -521,7 +720,21 @@ AASHTO_M294_TRAD = Fuente(
         "eso `espesor_pared_conducto['hdpe']` sigue sin fuente --. Trae "
         "ademas la Tabla 1 (perforaciones Clase 1), las tolerancias de "
         "diametro interior (7.2.3), el marcado (11) y un anexo y un "
-        "apendice de control de calidad."),
+        "apendice de control de calidad. "
+        + VIGENCIA_POSTERIOR + " (T1, " + VIGENCIA_COMO + "): AASHTO publica "
+        "M 294-25 (publicada el 19-09-2025; distribuidor Intertek Inform), "
+        "posterior a la M 294-11 que esta traduccion declara seguir; entre "
+        "ambas, al menos la M 294-15 y la M 294-21 --- el censo de ausentes "
+        "llego a decir «2020» por suponer la vigente, y N2 lo dejo en -11 ---. "
+        "El titulo de la edicion vigente conserva la serie «300- to 1500-mm "
+        "(12- to 60-in.) Diameter», de modo que el techo de la serie que "
+        "sostiene 'D_max_catalogo' no se movio en el rotulo; el contenido no "
+        "se contrasto. La edicion citada NO cambia y las citas siguen validas "
+        "contra este archivo (sha1); cual rige el expediente es de "
+        "'edicion_que_rige_el_expediente'. Para el original ausente "
+        "(AASHTO_M294) la consecuencia es que hay DOS compras distintas: la "
+        "-11, que reverificaria la traduccion, y la -25, que citaria la "
+        "vigente; ver su nota."),
 )
 
 
@@ -615,7 +828,16 @@ AASHTO_M294 = _ausente(
         esfuerzo=Esfuerzo.COMPRA,
         sustituto_vigente=("AASHTO_M294_TRAD, traduccion no oficial presente "
                            "en normas/, rotulada como tal en cada cita")),
-    convive_con=("AASHTO_M294_TRAD",))
+    convive_con=("AASHTO_M294_TRAD",),
+    nota=(VIGENCIA_POSTERIOR + " (T1, " + VIGENCIA_COMO + "): la edicion "
+          "vigente del emisor es M 294-25 (19-09-2025), no la -11 que este "
+          "censo registra. No se cambia la edicion: es contra la -11 contra la "
+          "que hay que reverificar lo que la traduccion transcribe. Pero la "
+          "compra tiene ahora dos destinos posibles y son decisiones "
+          "distintas: la -11 cierra la reserva de traduccion; la -25 cierra la "
+          "vigencia y obliga a reverificar 1.1.1, 1.4, 7.2.1 y 7.2.2 contra un "
+          "texto que puede haber cambiado. Cual de las dos es de "
+          "'edicion_que_rige_el_expediente'."))
 
 ASTM_C76 = _ausente(
     "ASTM_C76", "ASTM C76 «Reinforced Concrete Culvert, Storm Drain, and "
@@ -781,6 +1003,93 @@ CAT_TUBERIA_LOCAL = Catalogo(
 )
 
 CATALOGOS: Dict[str, Catalogo] = {CAT_TUBERIA_LOCAL.id: CAT_TUBERIA_LOCAL}
+
+
+def estado_de_vigencia(f: Fuente) -> Optional[str]:
+    """
+    La marca de vigencia de T1 que lleva la nota de una Fuente, o None.
+
+    Devuelve una de `MARCAS_DE_VIGENCIA` --- confirmada, edicion posterior
+    detectada, o no determinable en linea --- y levanta ErrorDeRegistro si la
+    nota lleva mas de una: una fuente no puede estar vigente y superada a la
+    vez. Es lo que un test comprueba en las quince presentes, para que la
+    vigencia no vuelva a ser prosa que nadie enumera. El dia que el esquema
+    tenga `Fuente.vigencia` (ficha T1-01), esta funcion lee ese campo y la
+    marca desaparece de las notas.
+    """
+    presentes = [m for m in MARCAS_DE_VIGENCIA if m in f.nota]
+    if len(presentes) > 1:
+        raise ErrorDeRegistro(
+            f"Fuente {f.id}: la nota lleva {len(presentes)} marcas de vigencia "
+            f"({presentes}); una fuente no esta vigente y superada a la vez")
+    return presentes[0] if presentes else None
+
+
+def fuentes_con_edicion_posterior(
+        fuentes: Optional[Dict[str, Fuente]] = None) -> Tuple[str, ...]:
+    """Las presentes cuyo emisor publica una edicion posterior a la citada."""
+    fuentes = FUENTES if fuentes is None else fuentes
+    return tuple(f.id for f in fuentes.values()
+                 if estado_de_vigencia(f) == VIGENCIA_POSTERIOR)
+
+
+def quien_gobierna_por_discrepancia(
+        id_fuente: str,
+        fuentes: Optional[Dict[str, Fuente]] = None) -> Optional[str]:
+    """
+    La Fuente PRESENTE con la que esta CONVIVE (`convive_con`) y a la que una
+    Discrepancia RESUELTA le da `gana` frente a esta, o None si ninguna
+    discrepancia resolvio la pareja.
+
+    Es lo unico que en el registro DICE quien gobierna entre dos ediciones
+    del mismo documento: DIS-HDS5-EDICIONES (HDS5_3ED gana a HDS5_SI_1985).
+    Se lee de ahi y no se infiere de `anio`, que solo dice cual es mas
+    nueva. LAS DOS CONDICIONES HACEN FALTA, y la primera version de esta
+    funcion solo miraba la discrepancia: el Manual de Puentes pierde varias
+    discrepancias resueltas frente a AASHTO_LRFD_9 (erratas de imprenta de
+    su cadena sismica) y eso no hace de AASHTO su edicion vigente --- son
+    documentos distintos, y MP no convive con AASHTO ---. La discrepancia
+    que resuelve una EDICION es la que enfrenta a dos fuentes que conviven.
+    Import diferido por la misma razon que en `registro.construir`:
+    `discrepancias` importa `esquema`, y este modulo no quiere un ciclo el
+    dia que aquel consulte fuentes.
+    """
+    from . import discrepancias as _discrepancias
+    from .esquema import EstadoDiscrepancia
+    fuentes = FUENTES if fuentes is None else fuentes
+    f = fuentes[id_fuente]
+    for d in _discrepancias.DISCREPANCIAS.values():
+        if d.estado is not EstadoDiscrepancia.RESUELTA:
+            continue
+        if id_fuente in {p.quien for p in d.partes} \
+                and d.gana != id_fuente and d.gana in f.convive_con \
+                and d.gana in fuentes:
+            return d.gana
+    return None
+
+
+def fuentes_con_eleccion_de_edicion_pendiente(
+        fuentes: Optional[Dict[str, Fuente]] = None) -> Tuple[str, ...]:
+    """
+    Las de `fuentes_con_edicion_posterior` en las que el proyectista tiene
+    algo que elegir: las que ninguna Discrepancia RESUELTA subordina a otra
+    Fuente presente.
+
+    La regla, y no una lista: una fuente superada queda fuera solo si el
+    registro ya DIJO quien gobierna en su lugar --- una `Discrepancia`
+    resuelta con `gana` a favor de otra presente, que es DIS-HDS5-EDICIONES
+    para HDS5_SI_1985 ---. No se infiere de `anio` ni de la vigencia de la
+    sucesora, y la diferencia se ve por mutacion: si HDS5_3ED quedara
+    superada por una cuarta edicion, la de 1985 seguiria fuera, porque la
+    discrepancia que la descarto frente a la tercera no se reabre; y
+    AASHTO_M36, que convive con ASTM_A760 (presente y mas nueva, pero sin
+    discrepancia que la haga ganar), sigue dentro. Las que quedan son las
+    que 'edicion_que_rige_el_expediente' nombra, y un test comprueba que las
+    nombre todas y solo a ellas.
+    """
+    fuentes = FUENTES if fuentes is None else fuentes
+    return tuple(id_ for id_ in fuentes_con_edicion_posterior(fuentes)
+                 if quien_gobierna_por_discrepancia(id_, fuentes) is None)
 
 
 def fuente(id_fuente: str) -> Fuente:

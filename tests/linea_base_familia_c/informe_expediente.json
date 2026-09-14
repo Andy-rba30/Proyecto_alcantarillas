@@ -1049,6 +1049,7 @@
       "clases_producto_por_relleno",
       "cobertura_minima_cajon",
       "cortante_alto_muro_e060_art_11_10_10_2",
+      "edicion_que_rige_el_expediente",
       "embocadura_cajon",
       "espesor_pared_cajon",
       "exposicion_quimica_ems",
@@ -1100,7 +1101,8 @@
       "c_phi_fundacion",
       "capacidad_portante_adm",
       "clase_sitio",
-      "demanda_sismica_licuefaccion"
+      "demanda_sismica_licuefaccion",
+      "edicion_que_rige_el_expediente"
     ],
     "bloquearon": [
       {

@@ -147,6 +147,25 @@ no la traducción). Salió además una discrepancia contra la v8
 ni altura de perfil (`espesor_pared_conducto['hdpe']` sigue sin fuente, y ahora
 con afirmación negativa que lo dice).
 
+Resultado de T1 (2026-09-14): las quince presentes verificadas por búsqueda
+web —ninguna página del emisor fue legible desde el entorno, y cada nota lo
+dice—. **Siete confirmadas** (MC_HHD, MS, EG-2013, E.030, E.050, E.060,
+HDS-5 3.ª ed.), **ocho con edición posterior** (Manual de Puentes → RD
+19-2018-MTC/14; AASHTO LRFD 9.ª → 10.ª ed. 2024; M 170M-04 → -23; M 36-03 →
+M 36M/M 36-24; A760-10 → -25; A796-13 → -21; M 294-11 → -25; y HDS-5 1985,
+ya modelada con `convive_con` y `DIS-HDS5-EDICIONES`), **ninguna a
+gabinete**. Todo en el registro, no en documento aparte: marca de vigencia
+en la `nota` de cada Fuente (`fuentes.estado_de_vigencia`), columna
+«Vigencia (T1)» en el manifiesto, y la elección de qué edición rige —del
+proyectista— declarada vacía en `edicion_que_rige_el_expediente` (nivel
+expediente, sin consumidor, censada en `SIN_CONSUMIDOR_Y_SIN_MEDIDA`). Lo que
+apareció de paso: la ficha del Manual de Puentes citaba la RD de la edición
+posterior (19-2018) y el ejemplar imprime la RD 041-2016-MTC/14; se corrigió
+contra el PDF y un test de `test_normativa_pdf.py` lo fija. El campo
+`Fuente.vigencia` queda propuesto y diferido (ficha T1-01). Para gabinete:
+la RD 22-2013-MTC/14 (EG-2013 revisada), la RM 217-2026-VIVIENDA
+(transitoria de la E.030) y el listado del portal del MTC.
+
 La regla no cambia: una sesión = un prompt, y la tabla de entornos de
 `CLAUDE.md` se vuelve a medir en las cuatro configuraciones cada vez que el
 conteo se mueve. Pre-N1 la encontró seis sesiones atrasada y la re-midió.

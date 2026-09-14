@@ -1479,7 +1479,7 @@ Se listan para que no se lean como resueltas. Ninguna bloquea el arranque de S12
 | **3** | Dónde vive el **`caracter`** cuando una misma frase sostiene una exigencia para un material y una recomendación para otro. No hay caso hoy; lo habrá con las tablas de AASHTO | S12, si aparece |
 | **4** | Si `Fundamento` se puebla en S12 o se difiere a S18. El esquema está; la carga es trabajo aparte y **no bloquea la ventana** | S12 / S18 |
 | **5** | El formato exacto del **manifiesto generado** (§9.3, T8): mismo Markdown por bloques, o tabla por fuente. Afecta a la revisión humana, no al esquema | S12 |
-| **6** | Cómo se **versiona** el registro cuando salga una edición nueva de una norma (E.030 ya cambió a RM 183-2026). `Fuente.reemplaza_a` está previsto; la política de migración de citas, no | Después de S21 |
+| **6** | Cómo se **versiona** el registro cuando salga una edición nueva de una norma (E.030 ya cambió a RM 183-2026). `Fuente.reemplaza_a` está previsto; la política de migración de citas, no. T1 (2026-09-14) registró la vigencia de las quince presentes como marca en `nota` (`fuentes.estado_de_vigencia`) y dejó la elección al proyectista (`edicion_que_rige_el_expediente`); el campo `Fuente.vigencia` y la migración siguen abiertos (ficha T1-01) | Después de S21 |
 
 Y una que **no** es de este diseño y conviene no confundir: la §15 del plan deja fuera de
 alcance conseguir las fuentes ausentes. El registro las **declara**; traerlas es trabajo

@@ -1156,3 +1156,39 @@ y que no queda escrita en ningún otro registro.
   `DIS-HR-M294-PASO` (la v8 decía «150 mm por encima de 600 mm»; la serie
   tiene el 675), corregida en la v8 y resuelta.
 - **Dónde vive:** `src/normativa/fuentes.py::AASHTO_M294_TRAD`
+
+## T1-01 · La vigencia de las ediciones es una marca en la nota, no un campo del esquema
+
+- **Qué se difirió:** el campo `Fuente.vigencia`. Lo que T1 (2026-09-14)
+  verificó contra cada emisor —siete ediciones confirmadas, ocho con edición
+  posterior publicada, ninguna indeterminable— vive en la `nota` de cada
+  Fuente presente detrás de una de las tres marcas de `MARCAS_DE_VIGENCIA`,
+  que `estado_de_vigencia` lee, `fuentes_con_eleccion_de_edicion_pendiente`
+  deriva y `tests/test_vigencia_fuentes.py` exige en las quince. La elección
+  de qué edición rige el expediente es del proyectista y está declarada
+  vacía en `criterios_adoptados['edicion_que_rige_el_expediente']`.
+- **Por qué:** el esquema no modela «el emisor publica hoy una edición
+  posterior a la citada»: `reemplaza_a` mira hacia atrás (lo que ESTA fuente
+  sustituye) y `convive_con` exige que la otra Fuente exista en el registro.
+  `Discrepancia` sí tiene precedente de cuestión abierta con `gana`
+  provisional (`EstadoDiscrepancia.ABIERTA`), y se descartó igual, por dos
+  razones: una discrepancia dice qué AFIRMAN dos fuentes sobre un objeto, y
+  la vigencia no es una afirmación de la fuente; y un `gana` provisional a
+  favor de la citada sería exactamente el default que el prompt prohíbe
+  decidir por el proyectista. Es la fila 6 de la tabla de decisiones
+  abiertas de `docs/diseno_registro_normativo.md` («cómo se versiona el
+  registro cuando salga una edición nueva»): T1 cierra la mitad de registrar
+  la vigencia y deja abierta la política de migración de citas. El prompt de
+  T1 pedía proponer el campo en el cierre en vez de forzar el esquema, y eso
+  es lo que se hizo: la marca es el mínimo que convierte la prosa en algo
+  enumerable mientras el campo no exista.
+- **Qué haría falta:** una sesión de esquema que añada a `Fuente` un
+  `Vigencia(estado, fecha, como, edicion_posterior, resolucion_posterior,
+  pendiente_gabinete)`, mueva las marcas a ese campo, haga que
+  `estado_de_vigencia` y el manifiesto lean de él y retire la marca de las
+  notas. Y, aparte, lo que T1 dejó para gabinete porque ninguna página del
+  emisor fue legible desde su entorno: leer la RD 22-2013-MTC/14 (la
+  actualización del EG-2013, que probablemente es la que este ejemplar
+  imprime como «Revisada y Corregida a Junio 2013»), la RM 217-2026-VIVIENDA
+  (la transitoria de la E.030) y el listado de manuales del portal del MTC.
+- **Dónde vive:** `src/normativa/fuentes.py::estado_de_vigencia`

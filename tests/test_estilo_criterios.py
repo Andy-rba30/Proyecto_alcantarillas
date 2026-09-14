@@ -1,7 +1,7 @@
 """
 tests/test_estilo_criterios.py — linter de estilo de los criterios (plan R1)
 ============================================================================
-Vigila la REDACCION de los campos `justificacion` y `concepto` de los 69
+Vigila la REDACCION de los campos `justificacion` y `concepto` de los 70
 criterios de src/criterios_adoptados.py, con las siete reglas E1–E7 de
 docs/planes_mejora/02_PLAN_REDACCION_CRITERIOS.md (§R1):
 
@@ -383,7 +383,7 @@ def _viola_e7():
 # regla de guardia: la historia vive en git y en decisiones_diferidas.md.
 VIOLACIONES_E1 = {}
 
-# E2 — nace limpio: ni una primera persona en los 69. La regla queda para
+# E2 — nace limpio: ni una primera persona en los 69 (70 desde T1). La regla queda para
 # que siga asi.
 VIOLACIONES_E2 = {}
 

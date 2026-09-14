@@ -44,12 +44,14 @@ expediente no puede tener ningun consumidor que la corrida de perfil ejecute.
 Es mas debil que una medicion, y por eso esta separado en su propio test y
 dicho aqui.
 
-Y queda un grupo al que NI SIQUIERA eso alcanza: los OCHO sin ningun
-consumidor. De esos, el nivel es un argumento escrito junto al campo y no una
+Y queda un grupo al que NI SIQUIERA eso alcanza: los NUEVE sin ningun
+consumidor (ocho hasta T1; T1 sumo 'edicion_que_rige_el_expediente', la
+decision de marco normativo del expediente, que ningun modulo consume). De esos, el nivel es un argumento escrito junto al campo y no una
 medida, y estan censados en `SIN_CONSUMIDOR_Y_SIN_MEDIDA` para que el grupo no
 crezca en silencio. Ese limite no se dedujo leyendo el test: se midio POR
 MUTACION --- cambiando el nivel de cinco de los trece de S21 y mirando cual
-sobrevivia ---, y el superviviente fue justamente uno de esos ocho.
+sobrevivia ---, y el superviviente fue justamente uno de esos ocho (los
+que habia entonces).
 """
 
 import sys
@@ -259,7 +261,7 @@ def test_lo_que_ninguna_corrida_invoca_se_clasifica_por_su_consumidor(
 #
 # El censo se fija aqui por lo mismo que CLAUDE.md fija el de los dos `inf`
 # deliberados: lo que no se puede comprobar se declara, para que no crezca en
-# silencio. Si aparece un noveno, este test falla y obliga a decidir --- o se
+# silencio. Si aparece un decimo, este test falla y obliga a decidir --- o se
 # cablea su consumidor, o se admite que su nivel es una declaracion.
 SIN_CONSUMIDOR_Y_SIN_MEDIDA = (
     "Mw_licuefaccion",
@@ -269,6 +271,10 @@ SIN_CONSUMIDOR_Y_SIN_MEDIDA = (
     "capacidad_portante_adm",
     "clase_sitio",
     "demanda_sismica_licuefaccion",
+    # T1: la eleccion de edicion para las fuentes con edicion posterior
+    # detectada. No es una magnitud y ningun modulo la consume; su nivel
+    # (expediente) es el argumento escrito junto al campo.
+    "edicion_que_rige_el_expediente",
     "homogeneidad_serie_fen",
 )
 
@@ -277,11 +283,11 @@ def test_el_censo_de_lo_que_no_se_puede_medir_no_crece_en_silencio():
     """
     El limite de este archivo, escrito como dato.
 
-    Los ocho no tienen consumidor: ninguna corrida los invoca y el censo de
+    Los nueve no tienen consumidor: ninguna corrida los invoca y el censo de
     `variables_entrada` no puede contradecir su nivel. Su clasificacion se
     defiende con el argumento que cada uno escribe junto a `nivel`, y esa es
     la unica defensa que tienen. Lo que se comprueba aqui es que sean estos
-    ocho y no nueve.
+    nueve y no diez.
     """
     sin_consumidor = tuple(sorted(c for c in ca.CRITERIOS
                                   if not ve.variable(c).consumido_por))

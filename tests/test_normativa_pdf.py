@@ -357,3 +357,34 @@ def test_T6_la_pagina_del_titulo_tambien_cae_dentro_del_PDF(reg):
         if esta_por_transcribir(p):
             continue
         assert 1 <= p <= f.paginas_pdf, f"{c.id}: titulo en la pagina {p}"
+
+
+# ---------------------------------------------------------------------------
+# T1: la resolucion declarada es la que el EJEMPLAR imprime
+# ---------------------------------------------------------------------------
+
+def test_T1_la_resolucion_del_Manual_de_Puentes_es_la_que_el_ejemplar_imprime(reg):
+    """
+    Hasta T1 la ficha del Manual de Puentes citaba «RD 19-2018-MTC/14», que
+    es la resolucion del Manual ACTUALIZADO de 2018 y no la de este archivo:
+    el ejemplar imprime «R.D. N° 041-2016-MTC/14» en sus PDF 2 y 3. Se
+    corrigio contra el PDF, y este test es lo que impide que vuelva: la
+    resolucion que el registro declara tiene que estar impresa en el
+    ejemplar, y la de la edicion posterior no puede estarlo.
+    """
+    f = reg.fuente("MP")
+    texto = normalizar(" ".join(
+        texto_de_pagina(RAIZ / f.archivo_pdf, n) for n in (2, 3)))
+    assert normalizar("041-2016-MTC/14") in texto, (
+        "el ejemplar ya no imprime la RD 041-2016-MTC/14 en sus PDF 2-3: "
+        "o cambio el archivo (y T0 lo dira) o la lectura de T1 estaba mal")
+    assert normalizar("19-2018") not in texto, (
+        "el ejemplar imprime la RD de 2018: entonces es la edicion "
+        "actualizada y la ficha entera (edicion, anio, resolucion) esta mal")
+    # El ejemplar escribe «R.D. N° 041-2016-MTC/14» y la ficha «RD
+    # 041-2016-MTC/14»: lo que tiene que coincidir es el designador, no la
+    # abreviatura del tipo de resolucion.
+    designador = f.resolucion.split(" ", 1)[1]
+    assert normalizar(designador) in texto, (
+        f"la resolucion declarada ({f.resolucion}) no esta impresa en el "
+        "ejemplar; la ficha no puede citar una RD que el PDF no lleva")

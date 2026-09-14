@@ -903,6 +903,14 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "demanda_sismica_licuefaccion": _Meta(
         unidad="años", fase_declarada="Fase 0-bis - licuefaccion"),
     "diametros_normalizados": _Meta(unidad="m"),
+    "edicion_que_rige_el_expediente": _Meta(
+        unidad="-",
+        fase_declarada="Fase 0 - Marco normativo del expediente (vigencia de "
+                       "las ediciones citadas)",
+        nota="No es una magnitud: es la eleccion entre la edicion citada en "
+             "el registro y la vigente del emisor, para las fuentes con "
+             "edicion posterior detectada "
+             "(`fuentes.fuentes_con_eleccion_de_edicion_pendiente`)."),
     "espesor_pared_conducto": _Meta(unidad="m"),
     "espesor_proteccion_salida": _Meta(unidad="- (multiplo de d50)"),
     "exposicion_quimica_ems": _Meta(unidad="ppm"),

@@ -6033,6 +6033,102 @@ CRITERIOS: Dict[str, Criterio] = {
             dominio="declaracion del procedimiento y de sus factores phi",
         ),
     ),
+
+    "edicion_que_rige_el_expediente": Criterio(
+        valor=None,                 # VACIO: lo declara el proyectista
+        # NIVEL NO MEDIBLE POR CORRIDA, y se dice con esas palabras: ningun
+        # modulo lo invoca (`variables_entrada.consumido_por` vacio), de modo
+        # que ninguna de las tres corridas de tests/test_nivel_medido.py lo
+        # puede contradecir, y esta censado en SIN_CONSUMIDOR_Y_SIN_MEDIDA.
+        # El argumento: es la decision de marco normativo del expediente, no
+        # un numero del perfil. El perfil se calcula contra los PDF que estan
+        # en normas/, con cada cita anclada por sha1 a la edicion citada;
+        # cambiar de edicion es conseguir el documento, incorporarlo al
+        # registro y reverificar cada cita, que es trabajo de expediente.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        # LA VENTANA ES SIMBOLICA Y CERRADA, como la de
+        # 'homogeneidad_serie_fen': dos opciones y no hay tercera, y vale
+        # para las siete fuentes a la vez. Una eleccion por fuente NO cabe
+        # aqui a proposito: `establecer_valor_dinamico` solo puede validar
+        # contra esta ventana, y un valor con excepciones seria una tercera
+        # forma que ninguna guardia comprueba; si hiciera falta, es un
+        # criterio por fuente, no una excepcion en prosa. Se escribe aunque
+        # el criterio siga vacio, porque la ventana es parte de la ficha y
+        # se conoce antes de elegir.
+        sensibilidad=(
+            "la edicion citada en el registro: la que esta en normas/ y "
+            "contra la que estan verificadas las citas (sha1)",
+            "la edicion vigente del emisor a la fecha del expediente: exige "
+            "conseguirla, incorporarla al registro como Fuente y reverificar "
+            "contra ella cada cita que hoy se apoya en la citada"),
+        concepto="Edicion que rige el expediente en las fuentes cuyo emisor "
+                 "publica una edicion posterior a la citada en el registro",
+        justificacion=(
+            "La verificacion de vigencia del registro encontro que ocho de "
+            "las quince fuentes presentes tienen edicion posterior publicada "
+            "por su emisor; en una de ellas el registro ya dice cual gobierna "
+            "(las dos ediciones de HDS-5 conviven en normas/ y una "
+            "discrepancia resuelta lo fija), y en las otras siete hay una "
+            "eleccion pendiente: Manual de Puentes (el ejemplar es la edicion 2016, "
+            "RD 041-2016-MTC/14; el MTC aprobo la edicion 2018 por RD "
+            "19-2018-MTC/14), AASHTO LRFD (citada la 9a ed. (2020); publicada "
+            "la 10a ed. (2024)), AASHTO M 170M (citada M 170M-04; vigente "
+            "M 170M-23), AASHTO M 36 (citada M 36-03; vigente M 36M/M 36-24), "
+            "ASTM A760/A760M (citada -10; vigente -25), ASTM A796/A796M "
+            "(citada -13; vigente -21) y AASHTO M 294 (traduccion de la -11; "
+            "vigente -25). Ninguna norma peruana fija que edicion de una "
+            "fuente rige un expediente en curso --- la unica que lo trata, la "
+            "E.030, lo hace por disposicion transitoria de su propia RM y "
+            "solo para si ---, y las cinco de EE.UU. son fuentes tecnicas de "
+            "cobertura cuya edicion no la manda nadie. Es por tanto una "
+            "eleccion del proyectista y se declara vacia: elegir la citada "
+            "mantiene valido el registro tal como esta; elegir la vigente "
+            "obliga a conseguir el documento, incorporarlo como Fuente y "
+            "reverificar contra el cada cita, y hasta entonces el expediente "
+            "citaria una edicion que no tiene. La ventana es simbolica y "
+            "cerrada: la eleccion vale para las siete fuentes a la vez, y una "
+            "eleccion distinta por fuente no cabe en ella --- exigiria un "
+            "criterio por fuente, y se abriria entonces, no aqui ---. "
+            "Lo que no cambia con la eleccion: ninguna cita y ningun valor de "
+            "calculo; la vigencia es un metadato de la fuente, y el sha1 "
+            "sigue anclando cada cita a la edicion contra la que se verifico"),
+        fuente=("Registro normativo: la nota de cada Fuente presente lleva la "
+                "marca de vigencia de la sesion T1 (`fuentes.estado_de_vigencia`) "
+                "y `fuentes.fuentes_con_eleccion_de_edicion_pendiente` deriva "
+                "de esas marcas las siete fuentes de arriba; un test exige que "
+                "esta ficha las nombre todas y solo a ellas. Emisores "
+                "consultados por busqueda web: MTC (gob.pe, El Peruano), "
+                "AASHTO (AASHTO Journal, tienda y lista HM-44), ASTM "
+                "(store.astm.org), FHWA (biblioteca de hidraulica)"),
+        # LO QUE CIERRA EL VACIO, que es la columna «Que lo resuelve» de la
+        # memoria: no un ensayo ni un dato, sino una declaracion del
+        # proyectista con lo que ella arrastra si elige la vigente.
+        reemplazado_por=("Declaracion del proyectista sobre el marco normativo "
+                         "del expediente (edicion citada o vigente, para las "
+                         "siete fuentes a la vez); si elige la vigente, ademas "
+                         "la incorporacion de cada documento al registro y la "
+                         "reverificacion de sus citas"),
+        verificacion_pendiente=(
+            "Declarar la opcion; si es la vigente, conseguir cada documento y "
+            "abrir una sesion de registro por fuente, como N1 y N2. Para "
+            "gabinete, ademas: leer la RD 22-2013-MTC/14 (EG-2013 revisada), "
+            "la RM 217-2026-VIVIENDA (transitoria de la E.030) y el listado "
+            "de manuales del portal del MTC, que no fueron legibles en linea"),
+        sin_consumidor=(
+            "Ningun modulo lo invoca: no es una magnitud que entre en una "
+            "formula sino la decision de marco normativo del expediente. Su "
+            "consumidor natural seria la memoria, imprimiendo junto a cada "
+            "fuente su vigencia y la eleccion; cablearlo es trabajo de M11, no "
+            "de esta declaracion, y hasta entonces la vigencia se lee en el "
+            "registro (`fuentes.estado_de_vigencia`) y en el manifiesto"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al fijar el marco normativo del "
+                        "expediente",
+            dominio="una de las dos opciones de la ventana, para las siete "
+                    "fuentes a la vez",
+        ),
+    ),
 }
 
 

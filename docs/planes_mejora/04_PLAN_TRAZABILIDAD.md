@@ -74,6 +74,14 @@ passed+skipped=collected desde origin/main, con el entorno.
 
 ---
 
+**Hecha el 2026-09-14.** Resultado, tabla fuente → estado y lo que quedó
+para gabinete: en `05_BACKLOG.md` («Resultado de T1») y en la ficha T1-01 de
+`docs/decisiones_diferidas.md`. El campo `Fuente.vigencia` que este prompt
+anticipaba se propuso y no se forzó: la vigencia vive hoy como marca en la
+`nota` de cada Fuente, leída por `fuentes.estado_de_vigencia`.
+
+---
+
 ## T2 · Bajar los dos trinquetes del registro
 
 - `Registro.partes_sin_cita_transcrita()` → **9** partes de discrepancias que

@@ -18,23 +18,23 @@
 Las que están en `normas/`, con el SHA-1 exacto contra el que se
 verificó cada cita y la regla de paginación MEDIDA, no supuesta.
 
-| id | Documento | Edición | Paginación (pdf ← impresa) | Páginas | SHA-1 | Texto extraíble |
-|---|---|---|---|---|---|---|
-| `AASHTO_LRFD_9` | AASHTO LRFD Bridge Design Specifications | Ninth Edition, 2020 | por capítulo: 1=15, 10=1289, 11=1469, 12=1638, 13=1750, 14=1782, 15=1872, 2=24, 3=54, 4=251, 5=359, 6=706, 7=1134, 8=1197, 9=1239 | 1905 | `71f4ced4c80f58db75a0bcdf4ac6b5d86dc0f858` | sí |
-| `AASHTO_M170M` | AASHTO M 170M-04 «Standard Specification for Reinforced Concrete Culvert, Storm Drain, and Sewer Pipe [Metric]» | M 170M-04 | por capítulo: M 170M=0 | 23 | `dcc40c0e5e9c99ad9f18490fa8c5b2d9394faa51` | **no** |
-| `AASHTO_M294_TRAD` | AASHTO M 294-11 «Tubería corrugada de polietileno, 300 a 1500 mm (12 a 60 in.) de diámetro» — TRADUCCION NO OFICIAL al español | M 294-11 (traduccion no oficial al español) | **sin determinar** | 17 | `7cecb19f73e4d101866832a3fc57db752fa53379` | sí |
-| `AASHTO_M36` | AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers and Drains» | M 36-03 (2007) | por capítulo: M 36=1 | 24 | `f85b5658385ae6779dde4e5fd340ac3122b62636` | **no** |
-| `ASTM_A760` | ASTM A760/A760M-10 «Especificacion Estandar para Tuberia de Acero Corrugado, con Recubrimiento Metalico, para Alcantarillas y Drenajes» | A760/A760M-10 | corrida, +0 | 15 | `47d0d447143ca158615dff7dec79f2f7a8975732` | **no** |
-| `ASTM_A796` | ASTM A796/A796M-13 «Structural Design of Corrugated Steel Pipe, Pipe-Arches, and Arches» (practica de diseño estructural de tuberia de acero corrugado, arcos-tubo y arcos) | A796/A796M-13 | corrida, +0 | 21 | `df7858f04caf61bc1c3a4ea3d664e38cacddee25` | **no** |
-| `E030` | Norma Tecnica E.030 «Diseño Sismorresistente» | Edicion 2026, publicada en el diario oficial El Peruano | corrida, +0 | 68 | `fe0a58e4be4b8709324e65ed6ad0c25b8e0b6899` | sí |
-| `E050` | Norma Tecnica E.050 «Suelos y Cimentaciones» | Edicion 2018 | corrida, +0 | 82 | `5fac1ecd997a6d6e80bcbf0967f89f9ddcc8106c` | sí |
-| `E060` | Norma Tecnica E.060 «Concreto Armado» | Edicion 2009 | corrida, +0 | 205 | `cffe0efffc767f5d06a33e1f4eed3a16a01bdd81` | sí |
-| `EG2013` | Manual de Carreteras "Especificaciones Tecnicas Generales para Construccion" (EG-2013) | Version revisada y corregida a junio 2013 | corrida, +8 | 1282 | `e35681d06b13226744324bc6b242b608ca9fa3ba` | sí |
-| `HDS5_3ED` | HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-HIF-12-026) | Third Edition, April 2012 | por capítulo: 1=38, 2=62, 3=82, 4=126, 5=136, 6=162, 7=181, A=189, B=202, C=210, DG1=271, DG2=285, DG3=293, DG4=312 | 323 | `7b985e047c615b765e7c41b6ff12df0505c02ce4` | sí |
-| `HDS5_SI_1985` | HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-IP-85-15), copia rotulada «SI» por sus cartas metricas | September 1985 | **sin determinar** | 410 | `59c6623c78793f7f947b7095027096b86f88ddf0` | sí |
-| `MC_HHD` | Manual de Hidrologia, Hidraulica y Drenaje | Version Libro | corrida, +3 | 225 | `a31e853b8171b931863d7afa4379bbbc57cacb0d` | sí |
-| `MP` | Manual de Puentes | Version Libro | corrida, +1 | 673 | `67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44` | sí |
-| `MS` | Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos | Version abril 2014 | corrida, +1 | 281 | `21d19a71090c1e586cd31596db8a4d007dc7b96f` | sí |
+| id | Documento | Edición | Paginación (pdf ← impresa) | Páginas | SHA-1 | Texto extraíble | Vigencia (T1) |
+|---|---|---|---|---|---|---|---|
+| `AASHTO_LRFD_9` | AASHTO LRFD Bridge Design Specifications | Ninth Edition, 2020 | por capítulo: 1=15, 10=1289, 11=1469, 12=1638, 13=1750, 14=1782, 15=1872, 2=24, 3=54, 4=251, 5=359, 6=706, 7=1134, 8=1197, 9=1239 | 1905 | `71f4ced4c80f58db75a0bcdf4ac6b5d86dc0f858` | sí | **posterior detectada** 2026-09-14 |
+| `AASHTO_M170M` | AASHTO M 170M-04 «Standard Specification for Reinforced Concrete Culvert, Storm Drain, and Sewer Pipe [Metric]» | M 170M-04 | por capítulo: M 170M=0 | 23 | `dcc40c0e5e9c99ad9f18490fa8c5b2d9394faa51` | **no** | **posterior detectada** 2026-09-14 |
+| `AASHTO_M294_TRAD` | AASHTO M 294-11 «Tubería corrugada de polietileno, 300 a 1500 mm (12 a 60 in.) de diámetro» — TRADUCCION NO OFICIAL al español | M 294-11 (traduccion no oficial al español) | **sin determinar** | 17 | `7cecb19f73e4d101866832a3fc57db752fa53379` | sí | **posterior detectada** 2026-09-14 |
+| `AASHTO_M36` | AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers and Drains» | M 36-03 (2007) | por capítulo: M 36=1 | 24 | `f85b5658385ae6779dde4e5fd340ac3122b62636` | **no** | **posterior detectada** 2026-09-14 |
+| `ASTM_A760` | ASTM A760/A760M-10 «Especificacion Estandar para Tuberia de Acero Corrugado, con Recubrimiento Metalico, para Alcantarillas y Drenajes» | A760/A760M-10 | corrida, +0 | 15 | `47d0d447143ca158615dff7dec79f2f7a8975732` | **no** | **posterior detectada** 2026-09-14 |
+| `ASTM_A796` | ASTM A796/A796M-13 «Structural Design of Corrugated Steel Pipe, Pipe-Arches, and Arches» (practica de diseño estructural de tuberia de acero corrugado, arcos-tubo y arcos) | A796/A796M-13 | corrida, +0 | 21 | `df7858f04caf61bc1c3a4ea3d664e38cacddee25` | **no** | **posterior detectada** 2026-09-14 |
+| `E030` | Norma Tecnica E.030 «Diseño Sismorresistente» | Edicion 2026, publicada en el diario oficial El Peruano | corrida, +0 | 68 | `fe0a58e4be4b8709324e65ed6ad0c25b8e0b6899` | sí | confirmada 2026-09-14 |
+| `E050` | Norma Tecnica E.050 «Suelos y Cimentaciones» | Edicion 2018 | corrida, +0 | 82 | `5fac1ecd997a6d6e80bcbf0967f89f9ddcc8106c` | sí | confirmada 2026-09-14 |
+| `E060` | Norma Tecnica E.060 «Concreto Armado» | Edicion 2009 | corrida, +0 | 205 | `cffe0efffc767f5d06a33e1f4eed3a16a01bdd81` | sí | confirmada 2026-09-14 |
+| `EG2013` | Manual de Carreteras "Especificaciones Tecnicas Generales para Construccion" (EG-2013) | Version revisada y corregida a junio 2013 | corrida, +8 | 1282 | `e35681d06b13226744324bc6b242b608ca9fa3ba` | sí | confirmada 2026-09-14 |
+| `HDS5_3ED` | HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-HIF-12-026) | Third Edition, April 2012 | por capítulo: 1=38, 2=62, 3=82, 4=126, 5=136, 6=162, 7=181, A=189, B=202, C=210, DG1=271, DG2=285, DG3=293, DG4=312 | 323 | `7b985e047c615b765e7c41b6ff12df0505c02ce4` | sí | confirmada 2026-09-14 |
+| `HDS5_SI_1985` | HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-IP-85-15), copia rotulada «SI» por sus cartas metricas | September 1985 | **sin determinar** | 410 | `59c6623c78793f7f947b7095027096b86f88ddf0` | sí | **posterior detectada** 2026-09-14 |
+| `MC_HHD` | Manual de Hidrologia, Hidraulica y Drenaje | Version Libro | corrida, +3 | 225 | `a31e853b8171b931863d7afa4379bbbc57cacb0d` | sí | confirmada 2026-09-14 |
+| `MP` | Manual de Puentes | Version Libro | corrida, +1 | 673 | `67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44` | sí | **posterior detectada** 2026-09-14 |
+| `MS` | Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos | Version abril 2014 | corrida, +1 | 281 | `21d19a71090c1e586cd31596db8a4d007dc7b96f` | sí | confirmada 2026-09-14 |
 
 ## 2. Fuentes que se citan y NO están en `normas/`
 

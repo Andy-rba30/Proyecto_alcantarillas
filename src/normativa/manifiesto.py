@@ -50,6 +50,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from . import fuentes as _fuentes
 from .esquema import (
     Acotada,
     Cita,
@@ -384,13 +385,26 @@ def indice_del_registro(registro) -> str:
     A("")
 
     # -- Fuentes -----------------------------------------------------------
+    # La vigencia de cada edicion (T1) sale de la marca que lleva la nota de
+    # la Fuente, leida por `fuentes.estado_de_vigencia`; el dia que exista
+    # `Fuente.vigencia` (ficha T1-01) se lee de ahi y esto no cambia.
+    def _vigencia(f) -> str:
+        estado = _fuentes.estado_de_vigencia(f)
+        if estado is None:
+            return "**sin verificar**"
+        if estado == _fuentes.VIGENCIA_CONFIRMADA:
+            return f"confirmada {_fuentes.VIGENCIA_VERIFICADA_EL}"
+        if estado == _fuentes.VIGENCIA_POSTERIOR:
+            return f"**posterior detectada** {_fuentes.VIGENCIA_VERIFICADA_EL}"
+        return f"**a gabinete** {_fuentes.VIGENCIA_VERIFICADA_EL}"
+
     A("## 1. Fuentes")
     A("")
     A("Las que están en `normas/`, con el SHA-1 exacto contra el que se")
     A("verificó cada cita y la regla de paginación MEDIDA, no supuesta.")
     A("")
-    A("| id | Documento | Edición | Paginación (pdf ← impresa) | Páginas | SHA-1 | Texto extraíble |")
-    A("|---|---|---|---|---|---|---|")
+    A("| id | Documento | Edición | Paginación (pdf ← impresa) | Páginas | SHA-1 | Texto extraíble | Vigencia (T1) |")
+    A("|---|---|---|---|---|---|---|---|")
     for f in sorted(registro.fuentes, key=lambda x: x.id):
         p = f.paginacion
         if hasattr(p, "desfase"):
@@ -403,7 +417,8 @@ def indice_del_registro(registro) -> str:
         else:
             regla = "irregular"
         A(f"| `{f.id}` | {f.titulo} | {f.edicion} | {regla} | {f.paginas_pdf} "
-          f"| `{f.sha1}` | {'sí' if f.texto_extraible else '**no**'} |")
+          f"| `{f.sha1}` | {'sí' if f.texto_extraible else '**no**'} "
+          f"| {_vigencia(f)} |")
     A("")
 
     # -- Fuentes ausentes --------------------------------------------------

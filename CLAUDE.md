@@ -169,7 +169,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69, no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -192,14 +192,16 @@ consecuencias que conviene leer antes de tocar el campo:
   con esas palabras, apoyados en `variables_entrada.consumido_por`.
 - **El límite se conoce por MUTACIÓN, no por lectura.** Cambiando el nivel de
   cinco de los trece murieron cuatro tests y sobrevivió uno:
-  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **ocho** sin
-  consumidor el nivel es un argumento y no una medida, y están censados en
+  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **nueve** sin
+  consumidor (ocho hasta T1; T1 sumó `edicion_que_rige_el_expediente`, la
+  decisión de marco normativo del expediente, que ningún módulo consume) el
+  nivel es un argumento y no una medida, y están censados en
   `SIN_CONSUMIDOR_Y_SIN_MEDIDA` para que el grupo no crezca en silencio —el
   mismo recurso que fija el censo de los dos `inf` deliberados—.
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -370,7 +372,8 @@ regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
   parametrizado por (dato declarado × familia) y mide sólo las familias que
   NO usan el dato; las tres combinaciones que sí lo usan se saltan diciéndolo.
   Es el primer salto del repositorio que no depende de qué haya instalado.
-- Y aparte, en bloque, los **32** de `tests/test_normativa_pdf.py`, que se
+- Y aparte, en bloque, los **33** de `tests/test_normativa_pdf.py` (32 hasta
+  T1, que sumó el de la resolución impresa del Manual de Puentes), que se
   saltan sin PyMuPDF —dependencia de TEST, no de producción—. Ése es el eje
   que S12 documentó.
 
