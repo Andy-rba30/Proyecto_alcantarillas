@@ -183,3 +183,23 @@ transcribir», «sin verificar»), no como celda vacía. Cero elecciones tomadas
 La regla no cambia: una sesión = un prompt, y la tabla de entornos de
 `CLAUDE.md` se vuelve a medir en las cuatro configuraciones cada vez que el
 conteo se mueve. Pre-N1 la encontró seis sesiones atrasada y la re-midió.
+
+## Añadido tras T3: dos sesiones que nacieron de las revisiones de cierre
+
+Con T3 el backlog original quedó agotado. Las revisiones de cierre de las
+sesiones dejaron dos cabos maduros para corregirse, cada uno con su test que
+falla antes, y sus prompts viven junto a estos planes:
+
+| # | Sesión | Prompt | Depende de | Modelo | Esfuerzo | Plan mode | Por qué |
+|---|---|---|---|---|---|---|---|
+| 18 | **PD** · Cierre del piloto dimensional | `prompt_PD_piloto_dimensional.md` | — | Opus 5 | high | sí | I4 midió cuatro inconsistencias de presentación y las censó; la principal, el coeficiente de Manning implícito, roza la regla de Unidades. Cero cambios de valor |
+| 19 | **D9** · La v8 gana la Forma 2 de HDS-5 | `prompt_D9_forma2_hds5.md` | — | Fable 5 | high | sí | La única discrepancia abierta contra la v8; I3 dejó el paquete escrito y lo difirió para no dejar sin usuario la vía 2 del canal. La sesión decide esa salida |
+
+Las dos son independientes entre sí. Después de ellas quedan solo cosas que
+no son de sesión tal como están los planes: decisiones del proyectista (los
+11 criterios de perfil sin valor y `edicion_que_rige_el_expediente`),
+contratos de expediente (NOR-E060-02, NOR-HDS-05, la mitad TMC de
+NOR-PRO-04), la discrepancia de gamma EV que se queda abierta por diseño, y
+el gabinete (las tres lecturas de T1; las Tablas 1 a 5 de M 170M, que son
+transcripción por imagen y podrían ser una N3; el original en inglés de
+M 294).
