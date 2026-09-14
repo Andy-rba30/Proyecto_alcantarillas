@@ -161,28 +161,34 @@ def test_una_errata_de_imprenta_SI_llega(reg):
 
 def test_lo_que_la_corrida_no_toca_no_se_vuelca(reg, informe, memoria):
     """
-    NO SE VUELCA EL REGISTRO, y el censo es el de N1: quedan DOS abiertas.
+    NO SE VUELCA EL REGISTRO, y el censo es el de D9: queda UNA abierta.
     I2 corrigio la hoja de ruta v8 en ocho discrepancias y las paso a
     RESUELTA; I3 registro `DIS-HR-FORMAS-HDS5` (el D-9 de ruta_familia_c
     §15.8(d), las dos formas de la ecuacion de control de entrada que la v8
-    no distingue); y N1 resolvio la novena contra la v8, `DIS-HR-A807`,
+    no distinguia); N1 resolvio la novena contra la v8, `DIS-HR-A807`,
     cuando ASTM A796/A796M-13 entro en normas/ y la atribucion pudo
-    verificarse por imagen (A807 es practica de instalacion, num. 22.1). De
-    las dos que quedan, la de gamma_EV es el conflicto interno de AASHTO y
-    la de las formas es de la Fase 4 y viaja por el paso `de_forma`.
+    verificarse por imagen (A807 es practica de instalacion, num. 22.1); y
+    D9 resolvio la decima, la de las formas, al escribir la Forma 2 en la
+    v8. La que queda, la de gamma_EV, es el conflicto interno de AASHTO y no
+    es contra la hoja de ruta: hoy no hay ninguna ABIERTA_CONTRA_HOJA_DE_RUTA.
     """
     abiertas = {d.id for d in reg.discrepancias_abiertas()}
-    assert abiertas == {"DIS-AASHTO-GAMMA-EV-12.6.1", "DIS-HR-FORMAS-HDS5"}, (
+    assert abiertas == {"DIS-AASHTO-GAMMA-EV-12.6.1"}, (
         "cambio el censo de abiertas: revisa el test")
+    assert not any(d.estado is EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA
+                   for d in reg.discrepancias), (
+        "volvio a haber una discrepancia abierta CONTRA la hoja de ruta: la "
+        "tercera obligacion de CLAUDE.md vuelve a estar en pie y hay que "
+        "decirlo en la v8")
 
     assert informe.alcance == "perfil"
     bloque = M11.bloque_discrepancias(informe)
-    # Y las nueve resueltas contra la v8 (ocho de I2 y la de N1) tampoco: lo
-    # resuelto es del manifiesto.
+    # Y las diez resueltas contra la v8 (ocho de I2, la de N1 y la de D9)
+    # tampoco: lo resuelto es del manifiesto.
     for id_ in ("DIS-HR-D-MAX", "DIS-HR-CICLOPEO", "DIS-HR-H-RELLENO-MIN",
                 "DIS-HR-G-LAUSHEY", "DIS-HR-H-EQ", "DIS-HR-CLASE-DE-SITIO-F",
                 "DIS-HR-30M-VS-100FT", "DIS-HR-VIA-DE-LA-LICUEFACCION",
-                "DIS-HR-A807"):
+                "DIS-HR-A807", "DIS-HR-FORMAS-HDS5"):
         assert not reg.discrepancia(id_).viva
         assert id_ not in bloque, (
             f"{id_} esta RESUELTA y llego igual a la memoria: el filtro de "
@@ -251,35 +257,79 @@ def test_la_via_del_paso_existe_porque_la_cita_falla_por_un_sufijo(reg):
         (), {"DIS-AASHTO-GAMMA-EV-12.6.1"})
 
 
-def test_la_via_del_paso_tiene_usuario_de_produccion(informe, memoria, reg):
+def test_la_via_del_paso_quedo_sin_usuario_al_resolver_FORMAS(informe, memoria, reg):
     """
-    EL CABO QUE I2 DEJO ANOTADO, cerrado en I3: al resolver G-LAUSHEY, la
-    via 2 (`PasoDeMemoria.discrepancias`) se quedo sin usuario de PRODUCCION
-    --- la mecanica quedaba probada solo con pasos construidos en tests ---.
-    El usuario es el paso `de_forma` de M4, que declara
-    `DIS-HR-FORMAS-HDS5`: habla del NUMERO que ese paso sustituye (la forma
-    de la ecuacion de control de entrada), que es el caso para el que el
-    campo existe.
+    VIA 2 (`PasoDeMemoria.discrepancias`), y desde D9 SIN USUARIO DE
+    PRODUCCION, que se censa aqui en vez de dejar la via muda -- la misma
+    forma que N1 dio a la via 3 en el test de abajo --.
 
-    Se comprueba sobre la CORRIDA, no sobre el modulo: si M4 dejara de
-    declararla (por ejemplo, al resolverla cuando se corrija la v8), este
-    test falla y obliga a decidir el reemplazo o a censar la via como sin
-    usuario --- no a que vuelva a quedarse muda como tras I2.
+    La historia, para que nadie la reconstruya al reves: I2 resolvio
+    `DIS-HR-G-LAUSHEY` y la via se quedo sin usuario (la mecanica quedaba
+    probada solo con pasos construidos en tests); I3 le dio el primer caso
+    real, `DIS-HR-FORMAS-HDS5` en el paso `de_forma` de M4, que hablaba del
+    NUMERO que ese paso sustituye --- la forma de la ecuacion de control de
+    entrada, que la v8 rotulaba «Forma 1» sin decir que existiera la 2 ---;
+    y D9 corrigio la v8 con el paquete de §16.19 de ruta_familia_c.md, la
+    paso a RESUELTA y retiro la tupla del paso en el mismo commit, porque la
+    guardia de `paso()` no admite resueltas.
+
+    El unico candidato a reemplazo se evaluo y se descarto, y el motivo va
+    escrito porque es lo que este test censa: la otra viva,
+    `DIS-AASHTO-GAMMA-EV-12.6.1`, habla de gamma_EV en la flotacion, y el
+    paso V7 --- que SI se emite en esta corrida --- ya la recibe por la via
+    1, porque sus `citas_textuales` llevan a proposito las citas de las DOS
+    partes (`MP.2.4.5.3.1#MINIMO` y `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`).
+    Declararla ademas por la via 2 imprimiria el mismo objeto del registro
+    por segunda puerta: un duplicado, no un usuario.
+
+    Lo que este test prueba hoy es la MECANICA con la corrida real, en las
+    dos direcciones: la resuelta no llega ni pedida por id; la viva llega a
+    V7 por la via 1 sin que ningun paso la declare; y ningun paso de
+    produccion declara ninguna. Si alguna vez un paso vuelve a tener una
+    discrepancia viva que declarar sobre el numero que sustituye, este test
+    es el que hay que reescribir con el caso real, no al reves. Ficha D9-01
+    de docs/decisiones_diferidas.md.
     """
-    declaradas = {d for p in M11.pasos_del_informe(informe)
-                  for d in p.discrepancias}
-    assert "DIS-HR-FORMAS-HDS5" in declaradas, (
-        "ningun paso de la corrida declara DIS-HR-FORMAS-HDS5: la via 2 "
-        "volvio a quedarse sin usuario de produccion")
-    assert reg.discrepancia("DIS-HR-FORMAS-HDS5").viva
-    assert "DIS-HR-FORMAS-HDS5" in memoria
+    resuelta = reg.discrepancia("DIS-HR-FORMAS-HDS5")
+    assert not resuelta.viva
+    assert "HDS5_3ED.TA.1" in resuelta.citas, (
+        "la parte de HDS-5 de DIS-HR-FORMAS-HDS5 ancla en TA.1 desde I3: "
+        "revisa la narrativa")
+    assert resuelta not in reg.discrepancias_que_tocan((), {"DIS-HR-FORMAS-HDS5"}), (
+        "esta RESUELTA: pedirla por id no puede resucitarla en la memoria")
+    assert "DIS-HR-FORMAS-HDS5" not in memoria, (
+        "la v8 ya escribe la Forma 2: quien la abra hoy encuentra lo "
+        "corregido, y la memoria no tiene nada que defender")
+
+    pasos = M11.pasos_del_informe(informe)
+    # El candidato descartado, medido y no supuesto: V7 emite paso, y la
+    # viva de gamma_EV le llega por la via 1.
+    v7 = [p for p in pasos if p.codigo == "V7"]
+    assert v7, "la corrida del canal ya no emite V7: revisa el fixture"
+    viva = reg.discrepancia("DIS-AASHTO-GAMMA-EV-12.6.1")
+    assert viva.viva
+    citas_v7 = set().union(*(M11.citas_en_que_descansa(p) for p in v7))
+    assert set(viva.citas) <= citas_v7, (
+        "V7 dejo de citar alguna de las dos partes de gamma_EV: si eso se "
+        "quiere, la via 2 vuelve a tener un candidato honesto y este test "
+        "se reescribe con el")
+    assert viva in reg.discrepancias_que_tocan(citas_v7)
+
+    # Censo: ningun paso de produccion declara hoy una discrepancia. Es un
+    # hecho medido, no una regla: el dia que uno la declare, esta linea
+    # falla y obliga a convertirla en el caso real de la via.
+    declaran = {(p.codigo, d) for p in pasos for d in p.discrepancias}
+    assert declaran == set(), (
+        f"la via 2 volvio a tener usuario de produccion: {sorted(declaran)}; "
+        "reescribe este test con ese caso")
 
 
 def test_la_via_del_criterio_existe_porque_V9_no_emite_paso(reg):
     """
     VIA 3 (`Criterio.discrepancias`), y desde N1 SIN USUARIO DE PRODUCCION,
     que se censa aqui en vez de dejar la via muda -- la misma regla que I3
-    aplico a la via 2 --.
+    aplico a la via 2, y que D9 volvio a aplicarle al resolver FORMAS (el
+    test de arriba) --.
 
     El caso historico era `DIS-HR-D-MAX` en 'D_max_catalogo' (V9 consulta el
     tope y ni siquiera emite paso); I2 la resolvio y el criterio dejo de
@@ -331,18 +381,19 @@ def test_las_que_siguen_vivas_llegan_al_HTML(memoria):
     esta corrida toca hoy es la ABIERTA de gamma_EV (por las citas del paso
     V7), tres erratas de imprenta que siguen vivas porque el PDF sigue
     imprimiendo lo que imprime -- la Tabla N 09 desplazada, las erratas de la
-    tabla de gamma_p y el Apendice G del titulo de la Tabla A.1 -- y, desde
-    I3, la ABIERTA_CONTRA_HOJA_DE_RUTA de las dos formas de la ecuacion de
-    control de entrada, que el paso `de_forma` declara (via 2).
+    tabla de gamma_p y el Apendice G del titulo de la Tabla A.1 --. De I3 a
+    D9 llegaba ademas la ABIERTA_CONTRA_HOJA_DE_RUTA de las dos formas de la
+    ecuacion de control de entrada, que el paso `de_forma` declaraba (via
+    2); D9 corrigio la v8 y la resolvio, y hoy es la primera de la lista de
+    abajo.
     """
     for id_ in ("DIS-AASHTO-GAMMA-EV-12.6.1", "DIS-MCHHD-T09-A2-DESPLAZADA",
-                "DIS-MP-ERRATAS-GAMMA-P", "DIS-HDS5-APENDICE-G",
-                "DIS-HR-FORMAS-HDS5"):
+                "DIS-MP-ERRATAS-GAMMA-P", "DIS-HDS5-APENDICE-G"):
         assert id_ in memoria, f"{id_} no llega a la memoria generada"
-    # Y las resueltas de I2 y de N1 no: quien abra hoy la v8 encuentra lo
+    # Y las resueltas de I2, N1 y D9 no: quien abra hoy la v8 encuentra lo
     # corregido.
-    for id_ in ("DIS-HR-D-MAX", "DIS-HR-H-RELLENO-MIN", "DIS-HR-G-LAUSHEY",
-                "DIS-HR-A807"):
+    for id_ in ("DIS-HR-FORMAS-HDS5", "DIS-HR-D-MAX", "DIS-HR-H-RELLENO-MIN",
+                "DIS-HR-G-LAUSHEY", "DIS-HR-A807"):
         assert id_ not in memoria, f"{id_} esta resuelta y sigue llegando"
 
 
@@ -485,17 +536,17 @@ def test_la_discrepancia_llega_por_la_cita_del_FUNDAMENTO(informe, memoria, reg)
     assert "HDS5_3ED.TA.1" in por_las_cuatro
     assert "DIS-HDS5-APENDICE-G" in memoria
 
-    # Y el hueco no se cierra de mas: leer las cuatro puertas anade ESAS DOS
-    # y ninguna de las etapas que `--alcance perfil` difiere. La segunda es
-    # de I3: `DIS-HR-FORMAS-HDS5` ancla su parte de HDS-5 en TA.1, asi que
-    # entra por esta misma puerta -- ADEMAS de por la via 2, que es la suya
-    # propia: el paso `de_forma` la declara porque habla del NUMERO que ese
-    # paso sustituye (la forma de la ecuacion), y esa declaracion no depende
-    # de que el `Fundamento` siga citando TA.1.
+    # Y el hueco no se cierra de mas: leer las cuatro puertas anade ESA UNA
+    # y ninguna de las etapas que `--alcance perfil` difiere. De I3 a D9
+    # anadia DOS: `DIS-HR-FORMAS-HDS5` ancla su parte de HDS-5 en TA.1, asi
+    # que entraba por esta misma puerta -- ADEMAS de por la via 2, que era la
+    # suya propia --; D9 la resolvio al corregir la v8, y una RESUELTA no
+    # llega por ninguna de las puertas. Si esta igualdad vuelve a tener dos
+    # ids, alguien abrio una discrepancia nueva sobre TA.1, A.2 o A.3#FORMAS:
+    # decidir entonces si el paso `de_forma` la declara ademas por la via 2.
     solo_comillas = {x.id for x in reg.discrepancias_que_tocan(por_comillas)}
     las_cuatro = {x.id for x in reg.discrepancias_que_tocan(por_las_cuatro)}
-    assert las_cuatro - solo_comillas == {"DIS-HDS5-APENDICE-G",
-                                          "DIS-HR-FORMAS-HDS5"}
+    assert las_cuatro - solo_comillas == {"DIS-HDS5-APENDICE-G"}
 
 
 def test_ningun_id_de_discrepancia_queda_suelto_en_la_memoria(memoria):

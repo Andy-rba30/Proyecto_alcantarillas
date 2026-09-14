@@ -1114,10 +1114,12 @@ def citas_en_que_descansa(paso: Any) -> frozenset:
     sobre la corrida del entregable en C8: 13 citas llegaban por las puertas
     indirectas, y cruzarlas contra las 23 discrepancias de entonces anadia
     EXACTAMENTE una viva --- la del titulo de la Tabla A.1 --- y ninguna de
-    las etapas diferidas. Desde I3 son 24 declaradas y las puertas indirectas
-    anaden DOS: la misma del titulo y `DIS-HR-FORMAS-HDS5`, que ancla su
-    parte en TA.1 y ademas llega DECLARADA por el paso `de_forma` (via 2).
-    `test_la_discrepancia_llega_por_la_cita_del_FUNDAMENTO` fija las dos.
+    las etapas diferidas. De I3 a D9 fueron 24 declaradas y las puertas
+    indirectas anadian DOS: la misma del titulo y `DIS-HR-FORMAS-HDS5`, que
+    ancla su parte en TA.1 y ademas llegaba DECLARADA por el paso `de_forma`
+    (via 2). D9 la resolvio al corregir la v8, y desde entonces las puertas
+    indirectas vuelven a anadir EXACTAMENTE una, la del titulo;
+    `test_la_discrepancia_llega_por_la_cita_del_FUNDAMENTO` lo fija.
     """
     citas = set(paso.citas_textuales)
     if paso.formula_cita_id:

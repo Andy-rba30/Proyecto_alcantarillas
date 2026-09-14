@@ -624,14 +624,26 @@ def _hw_sobre_D_no_sumergido(q_estrella: float, H_c: float, seccion: Seccion,
     va con que ecuacion es la COLUMNA «Equation Form», fila por fila, y nada
     mas.
 
-    POR QUE IMPORTA, CON EL NUMERO. Copiar la Forma 1 y cambiarle las
-    constantes deja el Ks*S en una ecuacion que no lo tiene, y con Ks = -0.5
-    ese termino RESTA: el HW sale MENOR que el real, del lado NO conservador,
-    y ninguna guardia de signo lo detecta porque el resultado sigue siendo
-    positivo. Medido sobre la Carta 9 escala 1 (K = 0.510, M = 0.667) con un
-    cajon de 2.00 x 2.00 m, Q = 8 m3/s y S = 0.03: 1.910 m contra 1.880 m,
-    30 mm, y la diferencia crece lineal con la pendiente. El caso patron
-    CP5D_FORMA2_KS_ESPUREO lo fija para que un regreso rompa un test.
+    POR QUE IMPORTA, CON EL NUMERO -- y son DOS errores distintos, con
+    direccion distinta, que este docstring confundia hasta D9:
+
+    (1) Copiar la ec. (A.1) ENTERA y cambiarle las constantes por las de una
+    carta de Forma 2 arrastra H_c/D y Ks*S, y el que domina es H_c/D: el HW
+    sale MAYOR que el real (+91 % medido en I3 sobre el marco de la linea
+    base, 2.00 x 1.50 m, Q = 6 m3/s, S = 0.004, Carta 10 escala 1: 3.047 m
+    frente a 1.592 m), o sea sobrediseño y falsos no-factibles. Es el error
+    que `DIS-HR-FORMAS-HDS5` registro contra la v8 y que F4.FORMA_HDS5
+    describe.
+
+    (2) Sumar SOLO el Ks*S a la ec. (A.2) -- la mutacion que la primera
+    redaccion de `modelos.ConstantesHDS5` habia escrito --: con Ks = -0.5 ese
+    termino RESTA y el HW sale MENOR que el real, del lado NO conservador.
+    Medido sobre la Carta 9 escala 1 (K = 0.510, M = 0.667) con un cajon de
+    2.00 x 2.00 m, Q = 8 m3/s y S = 0.03: 1.910 m contra 1.880 m, 30 mm, y la
+    diferencia crece lineal con la pendiente. El caso patron
+    CP5D_FORMA2_KS_ESPUREO fija este segundo para que un regreso rompa un
+    test. Ninguna guardia de signo detecta a ninguno de los dos: el resultado
+    sigue siendo positivo y plausible.
     """
     directo = hds5.K * q_estrella ** hds5.M
     if hds5.forma == FORMA_2:
@@ -1313,16 +1325,22 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
                             explicacion="paso de calculo"),
         citas_textuales=("HDS5_3ED.A.3#FORMAS",),
-        # LA VIA 2 DEL CANAL DE DISCREPANCIAS, y este es su primer usuario de
-        # produccion (I3; el cabo lo dejo anotado I2 al resolver G-LAUSHEY).
-        # D-9 habla del NUMERO que este paso sustituye -- la forma de la
-        # ecuacion, que la v8 rotula «Forma 1» sin decir que exista la 2 --,
-        # no de un texto que el paso entrecomille: es el caso exacto para el
-        # que `PasoDeMemoria.discrepancias` existe. Cuando una sesion corrija
-        # la v8 (el paquete esta en la bitacora §16 de ruta_familia_c.md),
-        # esta tupla se retira EN EL MISMO COMMIT: la guardia de `paso()` no
-        # admite resueltas.
-        discrepancias=("DIS-HR-FORMAS-HDS5",),
+        # AQUI VIVIO LA VIA 2 DEL CANAL DE DISCREPANCIAS, de I3 a D9: este
+        # paso declaraba `discrepancias=("DIS-HR-FORMAS-HDS5",)` porque D-9
+        # hablaba del NUMERO que este paso sustituye -- la forma de la
+        # ecuacion, que la v8 rotulaba «Forma 1» sin decir que existiera la
+        # 2 --, no de un texto que el paso entrecomille: el caso exacto para
+        # el que `PasoDeMemoria.discrepancias` existe. D9 corrigio la v8 (los
+        # cinco puntos de la bitacora §16.19 de ruta_familia_c.md), paso la
+        # discrepancia a RESUELTA y retiro la tupla EN EL MISMO COMMIT, porque
+        # la guardia de `paso()` no admite resueltas: quien abra hoy la v8
+        # encuentra la Forma 2 escrita y no hay nada que defender. La via
+        # queda censada sin usuario de produccion (ficha D9-01 de
+        # docs/decisiones_diferidas.md y
+        # `test_la_via_del_paso_quedo_sin_usuario_al_resolver_FORMAS`); el
+        # `Fundamento` de este paso sigue citando TA.1, A.2 y A.3#FORMAS, y
+        # por esa puerta (via 1) le seguiria llegando cualquier discrepancia
+        # viva sobre esos numerales.
         nota_del_proyecto=(
             f"Esta corrida usa la FORMA {forma}. "
             + ("La Forma 1 lleva el termino de correccion por pendiente "

@@ -442,21 +442,31 @@ Si la analogía al concreto es el fundamento, hay que tomar **el rango completo 
 
 $$q^* = \frac{K_u\,Q}{A\,D^{0.5}}, \qquad K_u = 1.811 \ \text{(SI)}$$
 
-**Régimen no sumergido (q\* ≤ 3.5), Forma 1:**
+**Régimen no sumergido (q\* ≤ 3.5), Forma 1 — ec. (A.1):**
 
 $$\frac{HW_i}{D} = \frac{H_c}{D} + K\,(q^*)^{M} + K_s\,S$$
 
-**Régimen sumergido (q\* ≥ 4.0):**
+**Régimen no sumergido (q\* ≤ 3.5), Forma 2 — ec. (A.2):**
+
+$$\frac{HW_i}{D} = K\,(q^*)^{M}$$
+
+> **Corregido (`DIS-HR-FORMAS-HDS5`, D9).** Hasta esta corrección, esta sección escribía **una** sola ecuación de control de entrada no sumergido —la (A.1), rotulada «Forma 1»— y nunca decía que existiera otra: medido sobre el documento entero, «Forma» aparecía tres veces y las tres eran «Forma 1». El HDS-5 tiene **dos**, y lo dice en el num. A.2.1 (pág. impresa A.1 / PDF 190, verificado en D9 contra el PDF): «The unsubmerged equation has two forms. Form (1) is based on the specific head at critical depth, adjusted with correction factors. Form (2) is an exponential equation similar to a weir equation. Form (1) is preferable from a theoretical standpoint, but Form (2) is easier to apply and is the only documented form of equation for some of the inlet control equations.» La Forma 2 es la ec. (A.2), pág. impresa A.2 / PDF 191 (cita `HDS5_3ED.A.2`, verificada): `HW_i/D = K·(q*)^M` **y nada más** — **sin `H_c/D` y sin `K_s·S`**; el contraste está en la misma página, porque la ec. (A.3) sumergida sí lleva `+ Y + K_s·S`. **Cuál de las dos aplica no lo elige el proyectista: lo fija la carta.** La Tabla A.1 trae una columna **«Equation Form»** con valores 1 y 2, **fila por fila** (transcrita en el registro como la columna `equation_form` de `T_HDS5_A1`; sus 18 filas —las tres circulares desde C0, las quince del cajón desde C2— se leyeron contra la tabla del PDF 197 y se releyeron en I3 y en D9). Las tres configuraciones circulares que esta sección tabula abajo —filas de las Cartas 1 y 2— son **todas Forma 1**, y por eso la omisión no se notaba en las Familias A y B. Del cajón rectangular de concreto **sólo la Carta 8 es Forma 1**; las Cartas **9, 10, 11 y 12 son Forma 2**. Lo que el num. A.3 sí prohíbe (`HDS5_3ED.A.3#FORMAS`, pág. impresa A.2 / PDF 191: «coefficients for rectangular (box) shapes should not be used for nonrectangular (circular, arch, pipe-arch, etc.) shapes and vice-versa») es cruzar coeficientes entre **geometrías**, no entre formas: la misma geometría vive en las dos formas —«Rect. Box Concrete» es Forma 1 en la Carta 8 y Forma 2 en las Cartas 9 a 11— y la regla que separa las formas es la columna, no ese numeral. `K_s` sigue entrando bajo las dos formas por la rama **sumergida**, ec. (A.3), que es común a ambas. El código bifurca por forma desde C3 (`modelos.ConstantesHDS5.forma`, `M4._hw_sobre_D_no_sumergido`) y la memoria imprime qué forma usó y por qué (`F4.FORMA_HDS5`); lo que estaba mal era esta hoja, y la discrepancia que lo decía queda resuelta con esta nota.
+
+**Régimen sumergido (q\* ≥ 4.0) — ec. (A.3), común a las dos formas:**
 
 $$\frac{HW_i}{D} = c\,(q^*)^{2} + Y + K_s\,S$$
 
-**Transición (3.5 < q\* < 4.0):** interpolar linealmente **entre el valor de la forma no sumergida en q\* = 3.5 y el de la sumergida en q\* = 4.0** (no entre las dos formas evaluadas en el q\* real: dentro de la ventana ninguna de las dos vale).
+**Transición (3.5 < q\* < 4.0):** interpolar linealmente **entre el valor de la rama no sumergida en q\* = 3.5 y el de la sumergida en q\* = 4.0** (no entre las dos ramas evaluadas en el q\* real: dentro de la ventana ninguna de las dos vale).
+
+> *Corregido (`DIS-HR-FORMAS-HDS5`, D9): esta línea decía «la forma no sumergida» y «las dos formas» para nombrar las dos **ramas** —no sumergida y sumergida—, que colisiona con el término «Equation Form» de la Tabla A.1 del HDS-5. En esta hoja «Forma» queda reservado a la Forma 1 / Forma 2 de la ecuación no sumergida, y las ramas se llaman ramas. Bajo Forma 2 el extremo inferior de la recta sale de la ec. (A.2), sin `K_s·S`, y el superior de la (A.3), con él.*
 
 > **La recta NO es el método del HDS-5, y esta línea la presentaba como si lo fuera** (`MAT-O10`). El HDS-5 empalma las dos ramas con una **curva tangente** ajustada sobre sus datos de laboratorio, **de la que no publica ecuación cerrada**. Quien prescribe la recta es esta hoja de ruta, no la fuente. Es una **simplificación adoptada** `[C]`, declarada en `criterios_adoptados` como `metodo_transicion_hds5` e invocada solo al entrar en la rama, de modo que la memoria la declara únicamente si algún punto del corredor cae de verdad en la transición. El error está acotado —la recta coincide con cada rama en su borde de validez— y acotado no es lo mismo que normativo.
 
 **K_s** = −0.5 para embocaduras no en inglete; **+0.7** para inglete. *(No figura en la Tabla A.1: proviene de la formulación de las ecuaciones. No omitirlo.)*
 
-> **El término K_s·S no tiene tope, y una carga negativa no existe** (`MAT-D10`). Con K_s = −0.5, una pendiente grande y un caudal chico llevan las dos formas a devolver **HW_i/D negativo** —una lámina de agua por debajo del fondo del conducto—. El umbral del signo, para la Forma 1, es `S > 2·(H_c/D + K·(q*)^M)`: con D = 0.90 m, Q = 0.05 m³/s y la carta de concreto vale `S > 0.3770624`, y hasta la corrección el diseño se **aceptaba entero** con HW = −0.010 m, o sea con V4 y el tamizado de 7.A evaluados 0.18 m del lado no conservador.
+> **El término K_s·S no tiene tope, y una carga negativa no existe** (`MAT-D10`). Con K_s = −0.5, una pendiente grande y un caudal chico llevan las dos ramas a devolver **HW_i/D negativo** —una lámina de agua por debajo del fondo del conducto—. El umbral del signo, **para la Forma 1**, es `S > 2·(H_c/D + K·(q*)^M)`: con D = 0.90 m, Q = 0.05 m³/s y la carta de concreto vale `S > 0.3770624`, y hasta la corrección el diseño se **aceptaba entero** con HW = −0.010 m, o sea con V4 y el tamizado de 7.A evaluados 0.18 m del lado no conservador.
+>
+> *Corregido (`DIS-HR-FORMAS-HDS5`, D9): esta nota decía «las dos formas» por las dos **ramas**, y el umbral que escribe vale sólo bajo la **Forma 1**, que es la única que lleva `K_s·S` en la rama no sumergida. Bajo Forma 2 ese término **no existe** en la ec. (A.2), de modo que la rama no sumergida no puede hacerse negativa por pendiente; `K_s` entra entonces sólo por la rama sumergida, ec. (A.3), común a las dos formas, y por el extremo superior de la recta de transición (cita `HDS5_3ED.A.2`).*
 >
 > `M4.control_entrada()` **rechaza** ese resultado con `DisenoNoFactibleError`. Es un rechazo, no un piso: adoptar una carga en su lugar —la lectura física sería HW ≈ H_c— exige un valor que **ni esta hoja ni el HDS-5 fijan**, y ponerlo aquí sería rellenar un vacío en silencio. Y no es `DatoInvalidoError`: una S de 0.40 m/m es del tipo correcto, cae dentro de `dominios.S_CAUCE_MAX` y no contradice a nadie —no hay dato que el revisor tenga que corregir—; lo que no cierra es el **método** sobre esa combinación de Q, D y S.
 >
@@ -467,6 +477,8 @@ $$\frac{HW_i}{D} = c\,(q^*)^{2} + Y + K_s\,S$$
 | Circular Concrete — Square edge w/headwall | 0.0098 | 2.00 | 0.0398 | 0.67 | −0.5 |
 | Circular CMP — con cabezal | 0.0078 | 2.00 | 0.0379 | 0.69 | −0.5 |
 | Circular CMP — mitered to slope | 0.0210 | 1.33 | 0.0463 | 0.75 | +0.7 |
+
+> **Corregido (`DIS-HR-FORMAS-HDS5`, D9).** Esta tabla presentaba `K, M, c, Y` como si **una sola** ecuación las consumiera. **`K` y `M` están ajustadas cada una a SU forma**: son dos regresiones distintas sobre dos conjuntos de ensayos, y la Tabla A.1 lo hace visible en la columna «Equation Form» de cada fila (de las 18 filas transcritas en `T_HDS5_A1`, las doce de Forma 2 del cajón llevan M = 0.667 y las seis de Forma 1 traen M = 2.00, 1.33, 1.0 o 0.75; la Tabla A.1 entera, con sus 36 filas, trae más valores en cada forma). Las tres filas de arriba son Forma 1 y con ellas la (A.1) es la ecuación correcta. Quien implemente el cajón leyendo sólo esta hoja copiará la (A.1) y le cambiará las constantes por las de una carta de Forma 2, y el HW le saldrá **MAYOR que el real**: la (A.1) arrastra dos términos que la (A.2) no tiene, `H_c/D` y `K_s·S`, y el que domina es el primero, por dos órdenes de magnitud. Medido en la auditoría de I3 sobre el marco de la línea base de la Familia C (2.00 × 1.50 m, Q = 6 m³/s, S = 0.004, Carta 10 escala 1): **3.047 m frente a 1.592 m reales, +91 %** — sobrediseño y falsos no-factibles, con sus deltas de rasante inventados. Para que la dirección se invirtiera haría falta `S > 2·H_c/D`, fuera incluso de `dominios.S_CAUCE_MAX`. **Ojo con la dirección**: la fila D-9 de `docs/ruta_familia_c.md` decía desde C2 «el HW sale menor, lado no conservador», mirando el término `K_s·S` sin mirar el `H_c/D` que la copia arrastra; la auditoría adversarial de I3 lo refutó con ese número, y la dirección corregida vive en `DIS-HR-FORMAS-HDS5.efecto_si_se_sigue_la_otra` y en `F4.FORMA_HDS5`. El error no falla ruidosamente: el resultado es positivo y plausible, y ninguna guardia de signo lo ve.
 
 **Configuración adoptada por diseño:** tubo a ras del muro (*square edge w/headwall*), coherente con el detalle de cabezal de la Fase 9.
 
@@ -485,6 +497,8 @@ La Tabla A.1 se organiza en **cartas por forma y material** (*Circular Concrete*
 $$\frac{Q^{2}\,T}{g\,A^{3}} = 1$$
 
 con un segundo Brent sobre θ. **M4 requiere dos solvers, no uno.**
+
+> **Corregido (`DIS-HR-FORMAS-HDS5`, D9).** Este requisito traía sólo la mitad de la Forma 1. La otra mitad: **la Forma 2 NO usa `H_c` en control de entrada** — la ec. (A.2) no lo lleva (cita `HDS5_3ED.A.2`, pág. impresa A.2 / PDF 191). El tirante crítico se resuelve igual bajo las dos formas, pero cuando gobierna la Forma 2 lo necesita **únicamente `h_o` del control de salida** (§4.3, `h_o = max(TW, (y_c + D)/2)`), y sólo para eso. Un M4 que exigiera `H_c` para el control de entrada de una carta de Forma 2 estaría calculando un término que la ecuación no tiene; el que lo pusiera en la (A.2) reproduciría el error de dirección de la nota de §4.2.
 
 ### 4.3 Control de salida [C]
 

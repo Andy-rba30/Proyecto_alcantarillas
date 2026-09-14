@@ -167,8 +167,10 @@ DIS_NUMERAL_EXC_ESTATICA = _d(
 # ellas y las paso a RESUELTA (la historia queda en cada `que_dice`, en las
 # notas «Corregido (...)» de la propia v8 y en el manifiesto §7); N1 resolvio
 # la novena (DIS-HR-A807) cuando ASTM A796/A796M-13 entro en normas/ y la
-# atribucion pudo verificarse por imagen. Sigue ABIERTA_CONTRA_HOJA_DE_RUTA
-# la de I3, DIS-HR-FORMAS-HDS5.
+# atribucion pudo verificarse por imagen; y D9 resolvio la decima, la de I3
+# (DIS-HR-FORMAS-HDS5), al escribir en la v8 la Forma 2 del HDS-5. Hoy no
+# queda ninguna ABIERTA_CONTRA_HOJA_DE_RUTA: la unica viva es la ABIERTA de
+# gamma_EV, que no es contra la hoja de ruta sino entre dos `shall` de AASHTO.
 # ---------------------------------------------------------------------------
 DIS_D_MAX = _d(
     id="DIS-HR-D-MAX",
@@ -738,23 +740,26 @@ DIS_HDS5_APENDICE_G = _d(
 )
 
 # ---------------------------------------------------------------------------
-# D-9 de docs/ruta_familia_c.md §15.8(d), registrada en I3. Es el PRIMER
-# usuario de produccion de la via 2 del canal (`PasoDeMemoria.discrepancias`,
-# declarada en el paso `de_forma` de M4): habla del NUMERO que ese paso
-# sustituye -- la forma de la ecuacion, columna «Equation Form» --, que es
-# exactamente el caso para el que el campo existe. Sus partes anclan ademas
-# en TA.1, que toda corrida que dimensiona imprime por el `Fundamento`
-# `F4.FORMA_HDS5`; la declaracion en el paso no depende de esa casualidad.
+# D-9 de docs/ruta_familia_c.md §15.8(d), registrada en I3 y RESUELTA EN D9.
+# Fue, de I3 a D9, el unico usuario de produccion de la via 2 del canal
+# (`PasoDeMemoria.discrepancias`, declarada en el paso `de_forma` de M4):
+# hablaba del NUMERO que ese paso sustituye -- la forma de la ecuacion,
+# columna «Equation Form» --, que es exactamente el caso para el que el campo
+# existe. Sus partes anclan ademas en TA.1, que toda corrida que dimensiona
+# imprime por el `Fundamento` `F4.FORMA_HDS5`.
 #
-# POR QUE SIGUE ABIERTA_CONTRA_HOJA_DE_RUTA Y NO SE CORRIGIO LA v8 EN I3,
-# aunque la verificacion existe (T_HDS5_A1 con su columna `equation_form`,
-# metodo AMBOS; HDS5_3ED.A.2 y A.3#FORMAS verificadas): corregir la v8
-# resuelve la discrepancia, y la guardia de `paso()` expulsa lo resuelto del
-# canal -- el mismo movimiento por el que DIS-HR-G-LAUSHEY dejo de declararse
-# en I2, que fue lo que dejo la via 2 sin usuario. El paquete de correccion
-# exacto de la v8 quedo escrito en la bitacora §16 de docs/ruta_familia_c.md
-# (entrada I3); la sesion que lo aplique pasa esta discrepancia a RESUELTA y
-# retira la declaracion del paso EN EL MISMO COMMIT.
+# POR QUE NO SE CORRIGIO LA v8 EN I3, aunque la verificacion existia
+# (T_HDS5_A1 con su columna `equation_form`, metodo AMBOS; HDS5_3ED.A.2 y
+# A.3#FORMAS verificadas): corregir la v8 resuelve la discrepancia, y la
+# guardia de `paso()` expulsa lo resuelto del canal -- el mismo movimiento por
+# el que DIS-HR-G-LAUSHEY dejo de declararse en I2, que fue lo que dejo la via
+# 2 sin usuario. D9 aplico el paquete de cinco puntos de la bitacora §16.19 de
+# docs/ruta_familia_c.md a la v8 (releidas antes las dos citas y la columna
+# contra el PDF), paso esta discrepancia a RESUELTA y retiro la declaracion
+# del paso EN EL MISMO COMMIT; la via 2 quedo censada sin usuario de
+# produccion (ficha D9-01 de docs/decisiones_diferidas.md), porque el unico
+# candidato -- el paso V7, con DIS-AASHTO-GAMMA-EV-12.6.1 -- ya la recibe por
+# la via 1 a proposito y declararla dos veces no aporta nada.
 # ---------------------------------------------------------------------------
 DIS_FORMAS_HDS5 = _d(
     id="DIS-HR-FORMAS-HDS5",
@@ -762,18 +767,38 @@ DIS_FORMAS_HDS5 = _d(
             "sumergido del HDS-5 (columna «Equation Form» de la Tabla A.1)"),
     partes=(
         Parte(quien="hoja_de_ruta",
-              que_dice=("su Fase 4, §4.2, escribe UNA ecuacion de control de "
-                        "entrada no sumergido -- la que lleva el termino "
-                        "Ks*S --, la rotula «Forma 1» y jamas dice que exista "
-                        "otra: medido sobre el documento entero (remedido en "
-                        "I3), «Forma» aparece TRES veces y las tres son "
-                        "«Forma 1»; «Forma 2» no aparece nunca. Presenta "
-                        "ademas las constantes K, M, c, Y de la Tabla A.1 "
-                        "como si una sola ecuacion las consumiera, y usa "
-                        "«las dos formas» (dos veces, en la nota de la "
-                        "transicion y en la de MAT-D10) para nombrar las dos "
-                        "RAMAS -- no sumergida y sumergida --, que colisiona "
-                        "con el termino «Equation Form» del propio HDS-5")),
+              que_dice=("su Fase 4, §4.2, escribia UNA ecuacion de control "
+                        "de entrada no sumergido -- la que lleva el termino "
+                        "Ks*S --, la rotulaba «Forma 1» y jamas decia que "
+                        "existiera otra: medido sobre el documento entero "
+                        "(remedido en I3), «Forma» aparecia TRES veces y las "
+                        "tres eran «Forma 1»; «Forma 2» no aparecia nunca. "
+                        "Presentaba ademas las constantes K, M, c, Y de la "
+                        "Tabla A.1 como si una sola ecuacion las consumiera, "
+                        "y usaba «las dos formas» (dos veces, en la nota de "
+                        "la transicion y en la de MAT-D10) para nombrar las "
+                        "dos RAMAS -- no sumergida y sumergida --, que "
+                        "colisiona con el termino «Equation Form» del propio "
+                        "HDS-5. CORREGIDA EN D9 (commit «cierre(D9)»), con "
+                        "los cinco puntos del paquete de §16.19 de "
+                        "docs/ruta_familia_c.md y nota «Corregido "
+                        "(DIS-HR-FORMAS-HDS5, D9)» en cada uno: la §4.2 "
+                        "escribe ahora la Forma 2, ec. (A.2), tras la (A.1), "
+                        "con la regla de seleccion por la columna «Equation "
+                        "Form» de la Tabla A.1 (las tres circulares que "
+                        "tabula son Forma 1; del cajon solo la Carta 8 lo "
+                        "es); las notas de la transicion y de MAT-D10 dicen "
+                        "«ramas» y condicionan el umbral del signo a la "
+                        "Forma 1; el requisito de programacion de §4.2.1 "
+                        "dice que la Forma 2 no usa H_c en control de "
+                        "entrada; y la tabla de constantes dice que K y M "
+                        "estan ajustadas cada una a su forma, con la "
+                        "direccion del error corregida: el HW sale MAYOR. "
+                        "Fuera del paquete y sin corregir, declarado: el "
+                        "bloque de codigo de su §12 transcribe un "
+                        "HDS5_INLET sin la clave `forma`, que el codigo "
+                        "lleva desde C2; es una copia envejecida de codigo, "
+                        "no una afirmacion sobre el HDS-5")),
         Parte(quien="HDS5_3ED",
               que_dice=("su Tabla A.1 tiene una columna «Equation Form» con "
                         "valores 1 y 2, fila por fila: la Forma 1 es la ec. "
@@ -790,13 +815,17 @@ DIS_FORMAS_HDS5 = _d(
     gana="HDS5_3ED",
     por_que=("la fuente primaria esta transcrita y verificada: las 18 filas "
              "de `T_HDS5_A1` llevan su `equation_form` leido de la columna "
-             "de la tabla (metodo AMBOS), y las ecs. (A.1)/(A.2) del num. "
-             "A.2.1 estan citadas y verificadas (HDS5_3ED.A.2). El codigo ya "
-             "bifurca por forma (`modelos.ConstantesHDS5.forma`, "
-             "`M4._hw_sobre_D_no_sumergido`, C3) y la memoria imprime que "
-             "forma uso y por que (`F4.FORMA_HDS5`); la que hay que corregir "
-             "es la v8"),
-    efecto_si_se_sigue_la_otra=("quien implemente el cajon desde la v8 "
+             "de la tabla (metodo AMBOS; releidas en D9 fila por fila, 18 "
+             "de 18), y las ecs. (A.1)/(A.2) del num. A.2.1 estan citadas y "
+             "verificadas (HDS5_3ED.A.2; el parrafo que las rotula «Form "
+             "(1)» y «Form (2)» esta en la pag. impresa A.1 / PDF 190, y la "
+             "(A.2) abre la A.2 / PDF 191). El codigo ya bifurcaba por forma "
+             "(`modelos.ConstantesHDS5.forma`, `M4._hw_sobre_D_no_sumergido`, "
+             "C3) y la memoria imprime que forma uso y por que "
+             "(`F4.FORMA_HDS5`); la que habia que corregir era la v8, y D9 "
+             "la corrigio"),
+    efecto_si_se_sigue_la_otra=("quien implemente el cajon desde la v8 tal "
+                                "como estuvo hasta D9 -- sin la Forma 2 -- "
                                 "copiara la ec. (A.1) y le cambiara las "
                                 "constantes, y el resultado es un HW MAYOR "
                                 "que el real: el H_c/D espurio domina por "
@@ -817,7 +846,7 @@ DIS_FORMAS_HDS5 = _d(
                                 "con la direccion equivocada hace elegir "
                                 "mal que defecto corregir primero, y por "
                                 "eso se corrige aqui y no en una nota"),
-    estado=EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA,
+    estado=EstadoDiscrepancia.RESUELTA,
 )
 
 

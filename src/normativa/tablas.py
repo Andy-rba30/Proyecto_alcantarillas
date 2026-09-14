@@ -1707,13 +1707,17 @@ T_HDS5_A1 = _tabla(
         ColumnaDeTabla(id="inlet_configuration",
                        etiqueta_literal="Inlet Configuration", unidad="",
                        uso=Usada(por=("criterios_adoptados['ke_entrada']",))),
+        # USADA DESDE C3, y hasta D9 esta columna seguia rotulada `NoUsada`
+        # con la razon de C0 («las tres filas del catalogo son Form 1 y M4
+        # implementa esa forma»): `constantes_normativas.HDS5_INLET` la lee
+        # a `ConstantesHDS5.forma` y `M4.control_entrada` bifurca por ella
+        # (`_hw_sobre_D_no_sumergido`). Un rotulo de «no usada» sobre la
+        # columna que decide la ecuacion era la ultima huella del defecto
+        # que DIS-HR-FORMAS-HDS5 registro contra la v8, esta vez en el
+        # propio registro; se corrige en la misma sesion que lo resuelve.
         ColumnaDeTabla(id="equation_form",
                        etiqueta_literal="Equation Form", unidad="",
-                       uso=NoUsada(por_que_no=(
-                           "las tres filas del catalogo son Form 1 y M4 "
-                           "implementa esa forma; se transcribe porque una "
-                           "carta de Form 2 usaria otra ecuacion y sin esta "
-                           "columna eso no se veria"))),
+                       uso=Usada(por=("M4.control_entrada",))),
         ColumnaDeTabla(id="K", etiqueta_literal="Unsubmerged K", unidad="",
                        uso=Usada(por=("M4.control_entrada",))),
         ColumnaDeTabla(id="M", etiqueta_literal="Unsubmerged M", unidad="",
@@ -1773,8 +1777,17 @@ T_HDS5_A1 = _tabla(
         # que es lo que las hace utiles: la Carta 8 es Forma 1 y las Cartas
         # 9, 10, 11 y 12 son Forma 2. Sin esa columna, las constantes K y M
         # de una carta de Forma 2 entrarian en la ecuacion de Forma 1 -- que
-        # lleva el termino Ks*S y la Forma 2 NO --, y el HW saldria menor que
-        # el real sin que ninguna guardia de signo lo detecte.
+        # lleva H_c/D y el termino Ks*S, y la Forma 2 NO lleva ninguno de los
+        # dos --, y el HW saldria MAYOR que el real (+91 % medido en I3 sobre
+        # el marco de la linea base: el H_c/D espurio domina por dos ordenes
+        # al Ks*S que resta) sin que ninguna guardia de signo lo detecte.
+        # Este comentario decia «menor que el real» hasta D9, la direccion
+        # que la auditoria de I3 refuto en `DIS-HR-FORMAS-HDS5` y en
+        # `F4.FORMA_HDS5`; la auditoria de D9 encontro otras dos copias, en
+        # los docstrings de `M4._hw_sobre_D_no_sumergido` y de
+        # `modelos.ConstantesHDS5`, corregidas en la misma sesion. La
+        # direccion MENOR es cierta solo para OTRA mutacion: sumar Ks*S a la
+        # (A.2), que es la de 30 mm de `CP5D_FORMA2_KS_ESPUREO`.
         #
         # EL 0.667 SE REPITE EN LAS DOCE FILAS DE FORMA 2 y no es un error de
         # transcripcion: la Forma 2 ajusta M a 2/3 en todas ellas. El 1.0 y

@@ -700,7 +700,7 @@ class ConstantesHDS5:
     que la Forma 2 no lo lleva. Verificado contra la fuente: `normas/
     hif12026.pdf`, pag. impresa A.2 (PDF 191), imprime la ec. (A.2) como
     HWi/D = K[Ku*Q/(A*D^0.5)]^M y nada mas. El contraste que lo cierra esta en
-    la MISMA pagina: la ec. (A.3), sumergida, si extrae «+ Y + Ks*S».
+    la MISMA pagina: la ec. (A.3), sumergida, si lleva «+ Y + Ks*S».
 
     El error no era inocuo y por eso queda dicho: con Ks = -0.5 el termino
     RESTA, de modo que copiarlo a la Forma 2 daria un HW MENOR que el real
@@ -737,9 +737,13 @@ class ConstantesHDS5:
     de en una ecuacion.
 
     Que el campo exista sigue siendo la guardia: sin el, las constantes de una
-    carta de Forma 2 entrarian en la ecuacion de Forma 1 -- que lleva Ks*S y
-    la Forma 2 no --, con Ks = -0.5 restando carga, y el HW saldria MENOR que
-    el real sin que ninguna guardia de signo lo detecte. Lo que C3 añade es
+    carta de Forma 2 entrarian en la ecuacion de Forma 1 -- que lleva H_c/D y
+    Ks*S, y la Forma 2 ninguno de los dos --, y el HW saldria MAYOR que el
+    real (+91 % medido en I3 sobre el marco de la linea base: el H_c/D
+    espurio domina por dos ordenes al Ks*S que resta) sin que ninguna guardia
+    de signo lo detecte. Este parrafo decia «MENOR» hasta D9, mezclando ese
+    error con la mutacion de 30 mm del parrafo anterior, que es otra: alli se
+    suma solo Ks*S a la (A.2); aqui se copia la (A.1) entera. Lo que C3 añade es
     que ahora tambien hay TESTS que lo detectan: `CP5D_FORMA2_KS_ESPUREO` fija
     la diferencia de 30 mm, y tres tests de `test_M4_control` se ponen rojos
     si alguien vuelve a sumar Ks*S en la Forma 2 -- comprobado mutando el

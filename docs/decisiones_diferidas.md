@@ -1230,3 +1230,32 @@ y que no queda escrita en ningún otro registro.
   commit, o el test lo dice. Después, extender `RELACIONES` a M6–M10
   conforme la corrida de referencia los alcance.
 - **Dónde vive:** `tests/test_dimensional_piloto.py::INHOMOGENEIDADES_CENSADAS`
+
+---
+
+# Parte XV — Lo que D9 dejó sin usuario al resolver la última discrepancia contra la v8
+
+## D9-01 · La vía 2 del canal de discrepancias (`PasoDeMemoria.discrepancias`) volvió a quedarse sin usuario de producción
+
+- **Qué se difirió:** darle a la vía 2 un caso real de producción. `DIS-HR-FORMAS-HDS5`
+  fue el único paso-portador de I3 a D9 (el paso `de_forma` de M4, que habla del
+  NÚMERO que sustituye: la forma de la ecuación de control de entrada), y D9 la
+  resolvió: la v8 escribe ya la Forma 2, ec. (A.2), con la regla de selección por
+  la columna «Equation Form» de la Tabla A.1 (los cinco puntos de §16.19 de
+  `docs/ruta_familia_c.md`), y una resuelta no se declara (la guardia de `paso()`
+  lo impide). Ningún paso de producción declara hoy una discrepancia.
+- **Por qué:** porque el único candidato honesto se midió y no aporta. La otra
+  viva, `DIS-AASHTO-GAMMA-EV-12.6.1`, habla de γ_EV en la flotación, y el paso V7
+  —que sí se emite en la corrida de referencia— ya la recibe por la vía 1: sus
+  `citas_textuales` llevan a propósito las citas de las DOS partes. Declararla
+  además por la vía 2 imprimiría el mismo objeto del registro por segunda puerta;
+  inventarle a otro paso una discrepancia para conservar el test sería fabricar
+  el defecto que este registro persigue. Es la misma decisión que I2 tomó al
+  resolver `DIS-HR-G-LAUSHEY` y que N1 tomó con la vía 3 (N1-01). La mecánica
+  sigue probada sobre la corrida real en las dos direcciones, y el censo «ningún
+  paso declara ninguna» es una aserción medida que falla el día que uno la declare.
+- **Qué haría falta:** una discrepancia viva que hable del NÚMERO que un paso
+  sustituye y a la que el cruce por cita no alcance —por ejemplo, una que las
+  citas del `Fundamento` de ese paso no toquen—, y entonces reescribir el test
+  con ese caso, no al revés.
+- **Dónde vive:** `tests/test_canal_discrepancias.py::test_la_via_del_paso_quedo_sin_usuario_al_resolver_FORMAS`
