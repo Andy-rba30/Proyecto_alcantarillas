@@ -1493,6 +1493,16 @@ Para que esto no se lea como una promesa de completitud:
   > que la mitad TMC pasa a ser una sesión de cálculo (implementar el procedimiento en
   > M8, con caso patrón), no de gabinete. Ver la ficha NOR-PRO-04 en
   > `docs/decisiones_diferidas.md`. Las ausentes son hoy doce; M294 sigue entre ellas.
+  >
+  > **Actualizado en N2 (2026-09-14).** Lo que entró en `normas/` de M 294 es una
+  > **traducción al español no oficial** de M 294-11 (`fuentes.AASHTO_M294_TRAD`), sin
+  > folio y sin firma posible; el original en inglés **sigue ausente** y su ficha dice
+  > ahora que lo que desbloquearía es la FIRMA. Con la traducción se contrastó el tope del
+  > HDPE: la serie de tamaños nominales (1.1.1, 7.2.1) **termina en 1500 mm**, de modo
+  > que es el único de los tres topes que coincide con el techo de su norma de producto;
+  > `D_max_catalogo` sigue `[A]` de catálogo con ese extremo declarado. Las ausentes
+  > siguen siendo doce (la traducción no sustituye al original). Ver la ficha N2-01 en
+  > `docs/decisiones_diferidas.md`.
 - **La lectura de los ábacos raster** (Meyerhof `N_cq`/`N_γq`, la isolínea de PGA sobre
   Piura). Existen y están correctamente numerados; los valores no son legibles por texto.
 - **Los casos patrón que M2, M8 y M10 no pueden tener todavía (SIS-F-13).** No es
@@ -1504,7 +1514,12 @@ Para que esto no se lea como una promesa de completitud:
     (AASHTO M 170M-04 / ASTM C 76M-02, ASTM A760/A760M + AASHTO M 36, AASHTO
     M294). Cerraría de paso una pregunta abierta: si la progresión adoptada de
     0.90 m + 0.15 m corresponde a alguna serie comercial real o es una
-    interpolación del proyecto.
+    interpolación del proyecto. *(N2: cerrado en dos tercios. `CP11_SERIES_NOMINALES`
+    lleva las series del TMC (A760 Tabla 1 / M 36 Table 6) y del HDPE (M 294-11,
+    traducción no oficial, 7.2.1 y tabla de 7.2.2), y `test_M2` contrasta
+    `siguiente_diametro` contra ellas: sobre 900 mm las dos son paso 150 mm real, y la
+    del HDPE termina en 1500. M2 salió de la lista de exentos; la serie del concreto
+    sigue sin transcribir y el fixture lo declara.)*
   - **M8** — AASHTO M 170M-04 Tablas 1 a 5 (clases D-load del concreto) y
     **ASTM A796/A796M** (calibre por altura de cobertura del TMC). Son el insumo
     del vacío `clases_producto_por_relleno`, y A796 ya figura arriba como una de
@@ -1536,7 +1551,8 @@ Para que esto no se lea como una promesa de completitud:
   exento deja de serlo** —el día que llegue A796 o M294, el test señala solo
   qué exención retirar— *(A796 llegó en N1 y no retiró ninguna: M8 ya había
   salido de la lista en C7, y `seleccionar_clase_calibre` sigue sin dorado
-  porque el procedimiento no está implementado)*.
+  porque el procedimiento no está implementado; la traducción de M294 llegó en
+  N2 y retiró la de M2, con CP11)*.
 - **La validación contra HY-8**, recomendada pero externa.
 - **El cálculo de expediente propiamente dicho.** Este plan lo *prepara*; no lo escribe.
 - **La portabilidad a otra carretera.** El §8 de la auditoría normativa (el corredor de

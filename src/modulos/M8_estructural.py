@@ -4,8 +4,10 @@ M8_estructural.py
 Fase 8 de la hoja de ruta: verificacion estructural del conducto, sin
 catalogo de proveedor -- la seleccion se hace contra las NORMAS DE PRODUCTO
 (AASHTO M 170M-04 clases I-V para concreto, ASTM A796/A796M para el calibre
-por altura de cobertura del TMC, AASHTO M294 para HDPE), coherente con la
-neutralidad comercial de Sec. 3.2.
+por altura de cobertura del TMC, AASHTO M 294-11 para HDPE -- que no
+clasifica por altura: su num. 1.4 remite el diseño estructural a AASHTO LRFD
+Sec. 12, verificado en N2 sobre su traduccion no oficial --), coherente con
+la neutralidad comercial de Sec. 3.2.
 
 LA NORMA DEL TMC NO ES ASTM A-807 (NOR-PRO-04). Este modulo la citaba tres
 veces y esa designacion no aparece ni una vez en M 170M, M 36 ni A760. La que

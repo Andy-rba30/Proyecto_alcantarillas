@@ -891,7 +891,12 @@ es lo contrario de lo que la fuente hace: callar—.
 M294, ASTM A796/A798/C76/A-807, DG-2018, HEC-14, Ley 29338 y su reglamento, series
 SENAMHI/ANA, Meyerhof (1957), el Apéndice A3 de mapas del Manual de Puentes, y el estudio
 geotécnico del expediente. *(A796/A796M-13 dejó de estar ausente en N1; el censo vivo es
-`fuentes.FUENTES_AUSENTES`, no esta lista.)*
+`fuentes.FUENTES_AUSENTES`, no esta lista. M294 sigue en él tras N2, y es el caso que
+esta sección no anticipó: lo que entró en `normas/` es una **traducción no oficial**,
+modelada como Fuente presente —`AASHTO_M294_TRAD`, con la naturaleza en su nota y
+`convive_con` cruzado— sin sacar al original del censo, porque una fuente derivada no
+sustituye a la primaria: la Ausencia se redefine —lo que desbloquearía es la FIRMA— en
+vez de cerrarse. Ficha N2-01 en `docs/decisiones_diferidas.md`.)*
 
 ```python
 @dataclass(frozen=True)
@@ -921,7 +926,11 @@ Cuatro consecuencias, todas invariantes:
    promesa era mayor que lo que la fuente trae. A796 no tabula el calibre por cobertura;
    `que_desbloquearia` convirtió la deuda en trabajo con precio, y el precio resultó ser
    una sesión de cálculo y no una transcripción. El campo cumplió su función igual: sin
-   él nadie habría sabido qué esperar de la fuente ni podido medir la diferencia.)*
+   él nadie habría sabido qué esperar de la fuente ni podido medir la diferencia. Y
+   medido en N2 con la traducción de M294: aquí la promesa se cumplió —la serie termina
+   en 1500 mm y el tope del HDPE es el único que coincide con su norma— pero sobre una
+   fuente derivada sin firma, de modo que el tope sigue `[A]` y el campo del original
+   pasó a prometer la firma.)*
 
 **Caso aparte, y conviene no mezclarlo:** el Apéndice A3 de mapas del Manual de Puentes y
 los ábacos de Meyerhof **sí están** en `normas/` — lo que no se puede es *leerlos por

@@ -124,6 +124,26 @@ pasa a ser una sesión de CÁLCULO (implementar el procedimiento en M8, con caso
 patrón y en commit propio), no de registro. NOR-PRO-04 sigue «Cerrado
 parcial» con esa razón nueva.
 
+Resultado de N2 (2026-09-14), para que T1 parta de lo medido: la traducción no
+oficial de M 294-11 está en el registro como fuente PRESENTE
+(`AASHTO_M294_TRAD`: 17 páginas, texto extraíble, sin folio) y el original en
+inglés SIGUE AUSENTE (`AASHTO_M294`, con `que_desbloquearia` redefinido: la
+firma), de modo que la cuenta es **15 presentes, 12 ausentes** —no 13 y 11
+como anticipaba la fila de T1, que hablaba de dos fuentes «superadas» (2013 y
+2011); la de 2011 es además una traducción, y T1 tiene que tratarla como tal—.
+Sus cuatro citas van SIN FIRMA (censo `CITAS_SIN_FIRMA_A_PROPOSITO`) y con la
+marca «traducción no oficial» exigida por test. Lo que cerró: la serie
+300–1500 mm (1.1.1, 7.2.1, tabla de 7.2.2) contrasta el tope del HDPE —el
+único de los tres que coincide con el techo de su norma— y `D_max_catalogo`
+sigue `[A]` con ese extremo declarado; la afirmación negativa de
+`clases_producto_por_relleno` sobre el HDPE quedó VERIFICADA (1.4 remite a
+LRFD Sec. 12); y **SIS-F-13 movió a M2**: `CP11_SERIES_NOMINALES` (HDPE y
+TMC, de las tablas transcritas) sacó a M2 de la lista de exentos, con el
+concreto censado en el fixture. Lo que quedó esperando al original: la firma
+de las cuatro citas y de la tabla. Lo que M 294 NO trajo: ni diámetro exterior
+ni altura de perfil (`espesor_pared_conducto['hdpe']` sigue sin fuente, y ahora
+con afirmación negativa que lo dice).
+
 La regla no cambia: una sesión = un prompt, y la tabla de entornos de
 `CLAUDE.md` se vuelve a medir en las cuatro configuraciones cada vez que el
 conteo se mueve. Pre-N1 la encontró seis sesiones atrasada y la re-midió.

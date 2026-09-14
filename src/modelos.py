@@ -804,7 +804,8 @@ class Material:
                                             # de producto: "AASHTO M 170M-04 /
                                             # ASTM C 76M-02 (metrica)",
                                             # "AASHTO M 36 / ASTM A760/A760M-10",
-                                            # "AASHTO M294". Las imperiales
+                                            # "AASHTO M 294-11 (en normas/:
+                                            # traduccion no oficial)". Las imperiales
                                             # (C76, M170) nombran documentos
                                             # que este expediente no tiene y
                                             # cuyas tablas van en pulgadas

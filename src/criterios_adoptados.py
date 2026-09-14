@@ -3178,7 +3178,10 @@ CRITERIOS: Dict[str, Criterio] = {
                       "comercial exigible en obra publica impide resolverla "
                       "por catalogo de proveedor. Se adopta el paso de 0.15 m "
                       "porque reproduce las series de 6 in (ASTM/AASHTO: 6 in "
-                      "= 0.1524 m) y de 150 mm (M294) con error despreciable, "
+                      "= 0.1524 m) y de 150 mm (AASHTO M 294-11, verificado en "
+                      "N2 sobre su traduccion no oficial: de 900 a 1500 mm la "
+                      "serie es exactamente 900, 1050, 1200, 1350 y 1500) con "
+                      "error despreciable, "
                       "y el inicio en 0.90 m en vez de 0.9144 m (36 in) "
                       "porque subestima el area en torno al 3 %, del lado de "
                       "la seguridad. Este criterio no declara topes: los "
@@ -3189,7 +3192,11 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="Series de diametro nominal de las normas de producto: ASTM "
                "A760/A760M-10, Tabla 1 'Tamaños de tuberia' (100 a 3600 mm, en "
                "escalones de 150 mm a partir de 900 mm); AASHTO M 170M-04, "
-               "Tablas 1 a 5 (300 a 3600 mm); AASHTO M294 (serie de 150 mm). El "
+               "Tablas 1 a 5 (300 a 3600 mm); AASHTO M 294-11, num. 7.2.1 y "
+               "tabla de 7.2.2 (300 a 1500 mm, escalones de 150 mm a partir "
+               "de 900 mm; en normas/ desde N2 como TRADUCCION NO OFICIAL, "
+               "citas AASHTO_M294_TRAD.7.2.1 y tabla AASHTO_M294_TRAD.T7.2.2, "
+               "sin firma por fuente derivada y sin folio). El "
                "piso de 0.90 m no sale de ellas sino del minimo normativo "
                "peruano: Manual de Hidrologia num. 4.1.1.3.4 a), pag. impresa "
                "72 (constantes_normativas.DIAMETRO_MIN). "
@@ -3779,8 +3786,12 @@ CRITERIOS: Dict[str, Criterio] = {
                     "'diametro maximo adoptado por disponibilidad de mercado'. "
                     "Las normas de producto que el proyecto cita para cada "
                     "material NO topan el diametro donde este criterio lo topa "
-                    "-- A760/A760M-10 tabula hasta 3600 mm y M 170M-04 tambien "
-                    "--, de modo que atribuirles el tope seria una cita falsa. "
+                    "-- A760/A760M-10 tabula hasta 3600 mm y M 170M-04 tambien; "
+                    "la excepcion es el HDPE, cuya serie en AASHTO M 294-11 SI "
+                    "termina en 1500 mm, verificado en N2 sobre una TRADUCCION "
+                    "NO OFICIAL sin firma --, de modo que atribuirles el tope "
+                    "seria una cita falsa en concreto y TMC, y en HDPE seria "
+                    "atribuir a AASHTO lo que solo dice un traductor anonimo. "
                     "Es tambien el aviso de que superar el tope NO significa "
                     "'material inexistente': significa 'fuera del catalogo "
                     "adoptado', y se levanta declarando otro tope",
@@ -3801,11 +3812,14 @@ CRITERIOS: Dict[str, Criterio] = {
                       "esta obra le conviene -- eso es disponibilidad del "
                       "mercado local, no norma, y por eso la eleccion es [A]. "
                       "Se adoptan 2.70 m (concreto reforzado), 2.10 m (TMC) y "
-                      "1.50 m (HDPE), y no se suben a 3.60 m: subirlos seria "
+                      "1.50 m (HDPE), y los dos primeros no se suben a 3.60 m: "
+                      "subirlos seria "
                       "cambiar una adopcion no declarada por otra, porque lo "
                       "que la verificacion sostiene es que la norma no topa "
                       "donde el proyecto topa, no cual tope conviene a esta "
-                      "obra. Elegir el tope real es del expediente (ver "
+                      "obra; en HDPE no hay a que subir, porque la serie de "
+                      "M 294-11 termina en 1500 mm (N2, sobre su traduccion no "
+                      "oficial). Elegir el tope real es del expediente (ver "
                       "`reemplazado_por`); mientras tanto, los tres valores "
                       "adoptados son los conservadores en su unico efecto -- "
                       "descartan material antes, nunca despues, y el tope no "
@@ -3824,15 +3838,22 @@ CRITERIOS: Dict[str, Criterio] = {
                "-- 2100 mm es una fila mas de la serie, no un maximo. AASHTO M "
                "170M-04, Tablas 1 a 5 (Clases I a V), tabula de 300 a 3600 mm y "
                "su Seccion 7.2 preve ademas 'special designs for sizes and loads "
-               "beyond those shown in Tables 1 to 5'. AASHTO M294 no esta en "
-               "normas/ y su tope de 1.50 m no se pudo contrastar con ninguna "
-               "fuente del repositorio",
+               "beyond those shown in Tables 1 to 5'. AASHTO M 294-11 esta en "
+               "normas/ desde N2 como TRADUCCION NO OFICIAL (fuente "
+               "AASHTO_M294_TRAD; el original en ingles sigue ausente): su "
+               "num. 1.1.1 y su num. 7.2.1 (cita AASHTO_M294_TRAD.7.2.1, sin "
+               "firma por fuente derivada y sin folio) cierran la serie de "
+               "tamaños nominales en 1500 mm, de modo que el tope de 1.50 m "
+               "del HDPE es el unico de los tres que coincide con el techo de "
+               "su norma de producto -- segun la traduccion --",
         sensibilidad=("topes adoptados: concreto 2.70 / TMC 2.10 / HDPE "
                       "1.50 m (los que el proyecto aplica hoy)",
                       "topes de la serie tabulada: 3.60 m en concreto y en "
-                      "TMC (M 170M-04 Tablas 1-5 y A760 Tabla 1); en HDPE no "
-                      "hay extremo que declarar porque M294 no esta en "
-                      "normas/. Entre los dos extremos, lo unico que cambia "
+                      "TMC (M 170M-04 Tablas 1-5 y A760 Tabla 1); en HDPE, "
+                      "1.50 m (AASHTO M 294-11 num. 7.2.1, traduccion no "
+                      "oficial, N2): el tope adoptado ES el techo de la serie "
+                      "y la ventana del HDPE se cierra en un punto. Entre los "
+                      "dos extremos, lo unico que cambia "
                       "es CUANTOS puntos salen 'no factible por diametro': el "
                       "tope no entra en ninguna formula de dimensionamiento"),
         reemplazado_por="Disponibilidad real de mercado para el corredor, "
@@ -3841,21 +3862,29 @@ CRITERIOS: Dict[str, Criterio] = {
                         "norma de producto si el proyecto decide no acotar). "
                         "Mientras no se declare, el descarte por diametro se "
                         "imprime como adoptado",
-        verificacion_pendiente="Los tres topes siguen sin respaldo documental. "
-                               "El de HDPE (1.50 m) es el mas restrictivo y es "
-                               "el unico cuya norma de producto (AASHTO M294) ni "
-                               "siquiera esta en normas/ para poder contrastarlo",
+        verificacion_pendiente="Los topes de concreto y TMC siguen sin respaldo "
+                               "documental: ninguna norma los escribe. El de "
+                               "HDPE (1.50 m), el mas restrictivo, quedo "
+                               "contrastado en N2 contra la serie de AASHTO "
+                               "M 294-11 -- coincide con su techo -- pero sobre "
+                               "una TRADUCCION NO OFICIAL sin firma: lo que "
+                               "falta es reverificarlo contra el original en "
+                               "ingles (FUENTES_AUSENTES['AASHTO_M294'])",
         resolucion=DeCatalogo(
             catalogo_id="CAT_TUBERIA_LOCAL",
             que_elige="el tope de diametro por material que el proyecto "
                       "admite por DISPONIBILIDAD en el mercado local",
-            advertencia="NINGUNA norma sostiene estos topes. ASTM "
-                        "A760/A760M-10 tabula de 100 a 3600 mm y AASHTO M "
-                        "170M-04 de 300 a 3600 mm con diseños especiales por "
-                        "encima (NOR-PRO-01, NOR-PRO-02). Imprimirlos "
-                        "rotulados como norma seria una cita falsa, y "
-                        "ademas descartan material: la memoria tiene que "
-                        "decir que el descarte es de catalogo",
+            advertencia="NINGUNA norma sostiene los topes de concreto y TMC: "
+                        "ASTM A760/A760M-10 tabula de 100 a 3600 mm y AASHTO "
+                        "M 170M-04 de 300 a 3600 mm con diseños especiales "
+                        "por encima (NOR-PRO-01, NOR-PRO-02). El del HDPE "
+                        "coincide con el techo de la serie de AASHTO M 294-11 "
+                        "(300 a 1500 mm), verificado en N2 sobre una "
+                        "traduccion no oficial y sin firma. Imprimirlos "
+                        "rotulados como norma seria una cita falsa en dos de "
+                        "tres y una cita imprecisa en el tercero, y ademas "
+                        "descartan material: la memoria tiene que decir que "
+                        "el descarte es de catalogo",
         ),
     ),
 
@@ -4537,8 +4566,11 @@ CRITERIOS: Dict[str, Criterio] = {
         # TMC Y HDPE NO SE DECLARAN, y no es un olvido: el espesor util del
         # TMC es altura de corrugacion mas calibre de plancha, y el calibre
         # es 'clases_producto_por_relleno', que es de Fase 8 -- expediente --;
-        # el del HDPE sale de AASHTO M294, que NO esta en normas/ y por lo
-        # tanto no se puede citar. Los dos materiales se detienen con
+        # el del HDPE no lo trae AASHTO M 294-11 -- en normas/ desde N2 como
+        # TRADUCCION NO OFICIAL --: su 7.2.2 tabula el espesor MINIMO de la
+        # pared interior, no la altura del perfil corrugado, y no fija el
+        # diametro exterior (SIN_DIAMETRO_EXTERIOR_M294_TRAD). Los dos
+        # materiales se detienen con
         # `DatoFaltanteError` nombrando su fuente ausente, MD los descarta
         # como candidatos con esa causa escrita, y el punto sigue
         # dimensionandose en concreto. Es la diferencia entre un material sin
@@ -4598,10 +4630,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "calibre de la plancha -- la corrugacion admisible por "
                       "diametro esta en la Tabla 1 de A760 y el calibre sigue "
                       "abierto en 'clases_producto_por_relleno' --; en HDPE "
-                      "es la altura del perfil corrugado y AASHTO M294 no "
-                      "esta en normas/. Con una fuente que exige elegir, otra "
-                      "que depende de un vacio ya declarado y una tercera "
-                      "ausente, no hay transcripcion que hacer: hay una "
+                      "es la altura del perfil corrugado, que AASHTO M 294-11 "
+                      "no fija (verificado en N2 sobre su traduccion no "
+                      "oficial: el 7.2.2 tabula solo el espesor minimo de la "
+                      "pared interior, y ninguna hoja da el diametro "
+                      "exterior). Con una fuente que exige elegir, otra que "
+                      "depende de un vacio ya declarado y una tercera que no "
+                      "trae el dato, no hay transcripcion que hacer: hay una "
                       "adopcion que declarar, y por eso [A] y no [C]. Se "
                       "adopta bloquear y no aproximar t a cero del lado "
                       "seguro, porque no hay un lado seguro unico y aqui las "
@@ -4615,8 +4650,12 @@ CRITERIOS: Dict[str, Criterio] = {
                "designado (concreto reforzado, con la eleccion de pared por "
                "declarar); ASTM A760/A760M-10 Tabla 1 (tamaños de corrugacion "
                "admisibles por diametro nominal) junto con el calibre de la "
-               "plancha que fije la Fase 8 (TMC); AASHTO M294 (HDPE), que NO "
-               "esta en normas/",
+               "plancha que fije la Fase 8 (TMC); AASHTO M 294-11 (HDPE), en "
+               "normas/ desde N2 como traduccion no oficial, que NO fija la "
+               "altura del perfil ni el diametro exterior (afirmacion "
+               "negativa SIN_DIAMETRO_EXTERIOR_M294_TRAD, tabla "
+               "AASHTO_M294_TRAD.T7.2.2): el dato tiene que venir del "
+               "fabricante del perfil especificado",
         reemplazado_por="El espesor de pared de la clase, calibre o perfil "
                         "efectivamente especificado en el expediente. Se cierra "
                         "junto con 'clases_producto_por_relleno': son el mismo "
@@ -4712,7 +4751,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "ASTM_A796.22.1), que es para lo que EG-2013 "
                       "507.05/.06/.08 la invocan, y DIS-HR-A807 quedo "
                       "RESUELTA al corregirse la fila de la v8. HDPE (AASHTO "
-                      "M294) no tiene tabla de clase por altura -- su "
+                      "M 294-11) no tiene tabla de clase por altura, y desde "
+                      "N2 esta VERIFICADO y no solo afirmado -- sobre la "
+                      "traduccion no oficial del ejemplar: su num. 1.4 "
+                      "excluye camas, relleno y carga de cubierta y remite el "
+                      "diseño estructural a AASHTO LRFD Seccion 12 "
+                      "(afirmacion negativa SIN_CLASE_POR_ALTURA_M294_TRAD, "
+                      "con las 17 hojas como ambito) --; su "
                       "seleccion depende de un calculo de rigidez de anillo "
                       "que Fase 8, item 5, difiere expresamente al expediente "
                       "tecnico. La relacion luz/corrugacion esta cerrada "

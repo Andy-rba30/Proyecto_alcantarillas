@@ -1323,7 +1323,12 @@ D_INICIO = 0.90                     # m; el piso del num. 4.1.1.3.4 a), que
 #   tabulado, con permiso del propietario. El fondo -- que 2.70 m no es un
 #   tope de M 170M -- se sostiene igual; lo que se corrige es la forma de la
 #   cita, que atribuia a cada tabla un rango que dos de ellas no tienen.
-#   AASHTO M294 no esta en normas/: el tope del HDPE no se pudo contrastar.
+#   AASHTO M 294-11 esta en normas/ desde N2 como TRADUCCION NO OFICIAL: su
+#   serie de tamaños nominales (num. 1.1.1 y 7.2.1) TERMINA en 1500 mm, de
+#   modo que el tope del HDPE es el unico de los tres que coincide con el
+#   techo de su norma de producto -- segun la traduccion, sin firma; el
+#   original en ingles sigue ausente --. No devuelve el tope a este archivo:
+#   la eleccion sigue siendo de catalogo para los tres materiales.
 #
 #   Y UNA COSA MAS QUE LA VERIFICACION POR IMAGEN DESTAPO: el PDF de ASTM
 #   A760 que hay en normas/ NO es el original en ingles, es una TRADUCCION AL

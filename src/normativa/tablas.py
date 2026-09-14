@@ -2748,6 +2748,125 @@ T_AASHTO_RECUBRIMIENTO = _tabla(
 
 
 # ===========================================================================
+# AASHTO M 294-11, TRADUCCION NO OFICIAL, num. 7.2.2 -- espesor minimo de
+# pared por diametro nominal (N2). Es la «tabla de dimensiones» de la norma
+# de producto del HDPE, y lo que sostiene para el proyecto no es la columna
+# de espesores sino la de DIAMETROS: los doce tamaños nominales, de 300 a
+# 1500 mm, que son la serie que el num. 7.2.1 escribe en prosa y el 1.1.1
+# como ambito. Las tres cosas dicen lo mismo y las tres se transcriben; el
+# caso patron CP11 cruza esta columna con la cita del 7.2.1.
+#
+# COMO SE LEYO. La Fuente ES extraible: las doce filas salen de la capa de
+# texto de la PDF 5 y se contrastaron sobre la hoja renderizada (a escala
+# 1.5 al transcribir y a 2.0 por el verificador-normativo de N2, celda a
+# celda). La pagina imprime DOS columnas con unidad doble en la cabecera
+# («Diámetro, mm (in.)» y «Espesor de pared, mm (in.)») y cada celda como
+# «300 (12)» y «0,9 (0,035)»; se transcriben como cuatro columnas -- mm e
+# in. de cada una --, con la etiqueta literal repetida, igual que la tabla
+# 6.2.2.1 de A796 con «ft [m]». La coma decimal es la de la fuente.
+#
+# LO QUE ESTA TABLA NO ES, porque el nombre de la columna invita al error:
+# el «espesor de pared» de 7.2.2 es el MINIMO de la pared interior lisa
+# (Tipo S) o de las dos paredes (Tipo D). No es la altura del perfil
+# corrugado ni fija el diametro exterior -- la afirmacion negativa
+# SIN_DIAMETRO_EXTERIOR_M294_TRAD lo dice con su ambito --, de modo que NO
+# cierra 'espesor_pared_conducto' para el HDPE. Y la fuente entera es una
+# TRADUCCION NO OFICIAL: lo que la tabla acredita es lo que la traduccion
+# imprime; el original sigue ausente.
+# ===========================================================================
+
+_NO_USADA_M294_ESPESOR = NoUsada(por_que_no=(
+    "ningun modulo consume el espesor minimo de la pared interior del HDPE: "
+    "no es el t que separa D interior de D exterior que 'espesor_pared_"
+    "conducto' necesita (la altura del perfil corrugado no esta en la "
+    "fuente) y el proyecto no verifica hoy el producto contra su norma de "
+    "fabricacion. Se transcribe integra porque una tabla podada no deja ver "
+    "que se eligio una columna"))
+
+_NO_USADA_M294_DIAMETRO = NoUsada(por_que_no=(
+    "M2 recorre la progresion [C] 'diametros_normalizados' (0.90 m + "
+    "0.15 m), no esta tabla: la serie de la norma de producto es el DORADO "
+    "contra el que el caso patron CP11 (tests/fixtures/casos_patron.py) "
+    "contrasta esa progresion para el HDPE, y el extremo que la "
+    "sensibilidad de 'D_max_catalogo' declara para el HDPE. Consumida por "
+    "un test y por una ficha, no por un modulo de calculo"))
+
+T_M294_TRAD_7_2_2 = _tabla(
+    id="AASHTO_M294_TRAD.T7.2.2",
+    cita_id="AASHTO_M294_TRAD.7.2.2",
+    # La tabulacion no lleva titulo ni numero de tabla impreso: cuelga del
+    # parrafo del 7.2.2, que es su `texto_previo`.
+    titulo_literal="Espesor de pared",
+    texto_previo=Verbatim(
+        texto=("La pared interior de la tubería Tipo S y las paredes "
+               "interior y exterior de la tubería Tipo D, deberán tener lo "
+               "siguientes espesores mínimos cuando se midan de acuerdo con "
+               "la Sección 9.6.4."),
+        pagina_pdf=5),
+    columnas=(
+        ColumnaDeTabla(id="dn_mm", etiqueta_literal="Diámetro, mm (in.)",
+                       unidad="mm", uso=_NO_USADA_M294_DIAMETRO),
+        ColumnaDeTabla(id="dn_in", etiqueta_literal="Diámetro, mm (in.)",
+                       unidad="in",
+                       uso=NoUsada(por_que_no=(
+                           "el calculo opera en SI; la pulgada es la unidad "
+                           "IMPRESA entre parentesis, que el num. 1.3 de la "
+                           "propia fuente declara no necesariamente exacta, "
+                           "y sin ella la conversion no se puede comprobar"))),
+        ColumnaDeTabla(id="t_mm", etiqueta_literal="Espesor de pared, mm (in.)",
+                       unidad="mm", uso=_NO_USADA_M294_ESPESOR),
+        ColumnaDeTabla(id="t_in", etiqueta_literal="Espesor de pared, mm (in.)",
+                       unidad="in", uso=_NO_USADA_M294_ESPESOR),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"AASHTO_M294_TRAD.T7.2.2#d{dn_mm}",
+            etiqueta_literal=f"{dn_mm} ({dn_in})",   # la pagina imprime «300 (12)»
+            valores={"dn_mm": dn_mm, "dn_in": dn_in, "t_mm": t_mm, "t_in": t_in},
+            uso=_NO_USADA_M294_DIAMETRO)
+        # (mm, in, espesor mm, espesor in) leidos de la pag. PDF 5. La coma
+        # decimal impresa («0,9», «0,035») es el punto del codigo.
+        for dn_mm, dn_in, t_mm, t_in in (
+            (300, 12, 0.9, 0.035),
+            (375, 15, 1.0, 0.04),
+            (450, 18, 1.3, 0.05),
+            (525, 21, 1.5, 0.06),
+            (600, 24, 1.5, 0.06),
+            (675, 27, 1.5, 0.06),
+            (750, 30, 1.5, 0.06),
+            (900, 36, 1.7, 0.07),
+            (1050, 42, 1.8, 0.07),
+            (1200, 48, 1.8, 0.07),
+            (1350, 54, 2.0, 0.08),
+            (1500, 60, 2.0, 0.08),
+        )
+    ),
+    # INTEGRA: doce filas, ni una mas. La tabulacion cierra con un filete
+    # tras «1500 (60)» y el 7.2.3 sigue debajo; no hay fila «y superiores».
+    alcance=Integra(),
+    afirmaciones_negativas=(_c.SIN_CLASE_POR_ALTURA_M294_TRAD,
+                            _c.SIN_DIAMETRO_EXTERIOR_M294_TRAD),
+    interpretacion=Interpretacion(
+        texto=("La columna de diametros es la serie cerrada de tamaños "
+               "nominales de la norma de producto del HDPE, y su ultima fila "
+               "(1500 mm) es el techo del ambito: por encima no hay producto "
+               "M 294. Coincide con el tope de catalogo del HDPE (1.50 m) y "
+               "con la progresion 0.90 + 0.15 m del proyecto de 900 a 1500"),
+        en_contra=(
+            "Es una TRADUCCION NO OFICIAL: acredita lo que la traduccion "
+            "imprime, y el original en ingles no se ha leido. Sin firma "
+            "posible (sin folio, T6).",
+            "Que la serie termine en 1500 mm dice que M 294-11 no cubre "
+            "tamaños mayores, no que no existan tuberias de PE mayores bajo "
+            "otra especificacion: el tope sigue siendo de catalogo.",
+            "Por debajo de 900 mm la serie tiene cinco tamaños (300 a 750) "
+            "que el proyecto no recorre por el piso peruano del num. "
+            "4.1.1.3.4 a) del Manual, no por esta tabla.",
+        )),
+)
+
+
+# ===========================================================================
 # La correspondencia entre el piso peruano y la tabla de AASHTO
 # ===========================================================================
 # ===========================================================================

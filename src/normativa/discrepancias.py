@@ -181,8 +181,10 @@ DIS_D_MAX = _d(
                         "CORREGIDA EN I2: §3.2, §3.4, Tablero 1.2, Anexo A, "
                         "Anexo B y Anexo C reescritos con la verdad "
                         "verificada -- topes de CATALOGO [A], "
-                        "'D_max_catalogo' --; el del HDPE queda declarado "
-                        "como no contrastado (M294 ausente)")),
+                        "'D_max_catalogo' --; el del HDPE quedo declarado "
+                        "como no contrastado (M294 ausente) hasta N2, que lo "
+                        "contrasto sobre la TRADUCCION NO OFICIAL de "
+                        "M 294-11 y actualizo la fila")),
         # T2: el ancla anunciaba «ASTM_A760.T1#DIAMETROS», un id que nadie
         # transcribio, mientras la cita que sostiene la afirmacion existia
         # desde I1 con el id llano. Se re-ancla en vez de duplicar: la tabla
@@ -204,13 +206,34 @@ DIS_D_MAX = _d(
                         "«Tablas 1 a 5: de 300 a 3600 mm», era falsa leida "
                         "distributivamente"),
               cita_id="AASHTO_M170M.T1_T5#DIAMETROS"),
+        # N2: la tercera atribucion, contrastada sobre la TRADUCCION NO
+        # OFICIAL de M 294-11 -- lo unico que hay en normas/; el original
+        # sigue ausente --. Y el resultado es el CONTRARIO de las otras dos:
+        # la serie del HDPE SI termina donde el proyecto topa. No cambia la
+        # resolucion (los topes siguen siendo de catalogo, porque la
+        # eleccion es la misma para los tres y V9 descarta por catalogo),
+        # pero la memoria ya no puede decir que el del HDPE no se contrasto.
+        Parte(quien="AASHTO_M294_TRAD",
+              que_dice=("su num. 7.2.1 (traducción no oficial) escribe la "
+                        "serie cerrada de doce diametros nominales, de 300 a "
+                        "1500 mm, y su num. 1.1.1 el ambito «de 300 a 1500 "
+                        "mm»: el 1500 es la ultima fila y no hay «y "
+                        "superiores». El tope de 1.50 m del HDPE coincide "
+                        "con el techo de la norma de producto -- segun la "
+                        "traduccion, sin firma --"),
+              cita_id="AASHTO_M294_TRAD.7.2.1"),
     ),
     gana="ASTM_A760",
     por_que=("la fuente primaria, leida de los PDF de normas/, desmiente las "
-             "dos atribuciones contrastables. No son topes normativos: son "
-             "topes de CATALOGO, y como tales descartaban material en silencio "
-             "con una cita que ninguna norma sostiene. AASHTO M294 no esta en "
-             "normas/ y el tope del HDPE no se pudo contrastar"),
+             "dos atribuciones contrastables sobre el original. No son topes "
+             "normativos: son topes de CATALOGO, y como tales descartaban "
+             "material en silencio con una cita que ninguna norma sostiene. "
+             "La tercera, la del HDPE, se contrasto en N2 sobre la traduccion "
+             "no oficial de AASHTO M 294-11 y resulto CIERTA (la serie "
+             "termina en 1500 mm), pero no devuelve el tope a la norma: la "
+             "clase del dato la fija la eleccion, que es de catalogo para los "
+             "tres, y una traduccion sin firma no sostiene un rotulo «por "
+             "norma de producto»"),
     efecto_si_se_sigue_la_otra=("un punto que necesite mas de 2.10 m de TMC se "
                                 "declara no factible por una razon que la "
                                 "norma citada no sostiene"),

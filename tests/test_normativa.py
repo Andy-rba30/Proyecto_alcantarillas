@@ -615,6 +615,15 @@ def test_T22_el_total_de_por_transcribir_solo_decrece(reg):
 # paginacion medida, la cita se firma y sale de aqui.
 CITAS_SIN_FIRMA_A_PROPOSITO = (
     "HDS5_SI_1985.EC4B#K",   # T2: la copia SI del HDS-5 no imprime folios
+    # N2: la TRADUCCION NO OFICIAL de AASHTO M 294-11 tampoco imprime folio
+    # (ninguna de sus 17 hojas), y ademas es fuente derivada: aunque un dia
+    # tuviera paginacion medida, firmarla como del original seguiria siendo
+    # una cita imprecisa. Las cuatro se leyeron (texto e imagen) y T2/T3 las
+    # comprueban en cada corrida: la fuente SI es extraible.
+    "AASHTO_M294_TRAD.1.1.1",
+    "AASHTO_M294_TRAD.1.4",
+    "AASHTO_M294_TRAD.7.2.1",
+    "AASHTO_M294_TRAD.7.2.2",
 )
 
 
@@ -635,6 +644,42 @@ def test_las_citas_sin_firma_son_exactamente_las_censadas(reg):
         assert "SIN FIRMA A PROPOSITO" in (cita.nota or ""), (
             f"{id_}: esta censada como sin firma deliberada y su nota no lo "
             "declara")
+
+
+# LA REGLA DURA DE N2: «traducción no oficial» acompaña a TODA cita de la
+# fuente derivada. Vive en un test y no solo en el prompt de la sesion porque
+# la fuente va a seguir en normas/ cuando el prompt ya no lo lea nadie, y una
+# cita nueva escrita por alguien que no sepa que el ejemplar es una
+# traduccion acreditaria a AASHTO lo que solo dice un traductor anonimo.
+FUENTES_DERIVADAS_CON_MARCA = {
+    "AASHTO_M294_TRAD": "traduccion no oficial",
+}
+
+
+def test_toda_cita_de_la_traduccion_de_M294_lo_dice(reg):
+    from normativa.extraccion import normalizar
+    for fuente_id, marca in FUENTES_DERIVADAS_CON_MARCA.items():
+        fuente = reg.fuente(fuente_id)
+        assert marca in normalizar(fuente.titulo), (
+            f"{fuente_id}: el titulo de la Fuente no dice que es {marca}")
+        assert marca in normalizar(fuente.nota), (
+            f"{fuente_id}: la nota de la Fuente no declara que es {marca}")
+        assert fuente.convive_con, (
+            f"{fuente_id}: una fuente derivada declara con que original "
+            "convive, aunque el original este ausente")
+        citas = reg.citas_de(fuente_id)
+        assert citas, f"{fuente_id}: sin citas; la guardia no tiene que vigilar"
+        for c in citas:
+            assert c.id.startswith(fuente_id + "."), c.id
+            assert marca in normalizar(c.nota or ""), (
+                f"{c.id}: su nota no dice que la fuente es una {marca}. Lo "
+                "que acredita es lo que la traduccion imprime, y la cita "
+                "tiene que decirlo donde se lea")
+            assert c.verificado is None, (
+                f"{c.id}: lleva firma. Una cita a una traduccion no oficial "
+                "no se firma como verificada contra la norma: se reverifica "
+                "y se firma el dia que llegue el original (ver la Ausencia "
+                "de AASHTO_M294)")
 
 
 def test_T22_el_centinela_es_unico_y_falsy():
@@ -755,7 +800,7 @@ def test_la_paginacion_predice_la_pagina_pdf_desde_la_impresa(reg):
 def test_las_fuentes_sin_texto_extraible_estan_declaradas(reg):
     """
     Es una propiedad DE LA FUENTE, no un percance de quien la lee: cuatro de
-    las catorce no entregan texto utilizable y sus citas se verifican por
+    las quince no entregan texto utilizable y sus citas se verifican por
     imagen o no se verifican. La cuarta es ASTM A796/A796M-13 (N1): su capa
     de texto existe pero llega duplicada e intercalada a mitad de palabra,
     y una frase entera no se encuentra por texto.

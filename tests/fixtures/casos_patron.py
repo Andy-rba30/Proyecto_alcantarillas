@@ -1336,3 +1336,81 @@ CP10_FLOTACION_MARCO = {
     # EV = gamma_relleno * ancho_exterior * altura_relleno.
     "EV_esperado": _CP10_GAMMA_R * (_CP10_B + 2 * _CP10_T) * _CP10_H_RELLENO,
 }
+
+
+# ===========================================================================
+# CP11 - Series de diametros nominales de las normas de producto (M2, N2)
+# ===========================================================================
+#
+# EL DORADO SALE DE LA TABLA, NO DE LA FORMULA (conflicto #7 del plan). M2
+# recorre una progresion [C] -- 0.90 m + 0.15 m, 'diametros_normalizados' --
+# que la hoja de ruta defiende diciendo que «reproduce las series» de las
+# normas de producto. Hasta N2 nadie lo contrastaba: SIS-F-13 tenia a M2
+# exento de caso patron porque las series no estaban transcritas, y
+# fabricarle un dorado con la misma formula habria sido inventar el valor de
+# referencia. Las series de abajo son las TRANSCRITAS en
+# src/normativa/tablas.py y verificadas contra los PDF de normas/, copiadas
+# aqui como literales a proposito -- un dorado es una copia INDEPENDIENTE --,
+# y test_M2 cruza las tres cosas: la columna de la tabla del registro, este
+# dorado y lo que M2 recorre.
+#
+# HDPE: AASHTO M 294-11, num. 7.2.1 (cita AASHTO_M294_TRAD.7.2.1, cuyo texto
+#   T2 comprueba contra el PDF) y tabla de 7.2.2 (AASHTO_M294_TRAD.T7.2.2).
+#   ES UNA TRADUCCION NO OFICIAL, sin firma -- el ejemplar no imprime folio y
+#   el original en ingles sigue ausente --: este dorado acredita lo que la
+#   traduccion imprime. La serie TERMINA en 1500 mm, sin «y superiores»: por
+#   eso el tope de catalogo del HDPE coincide con su ultima fila.
+# TMC: ASTM A760/A760M-10 Tabla 1 (ASTM_A760.T1, tambien una traduccion,
+#   leida por imagen en I1) y AASHTO M 36 Table 6 (AASHTO_M36.T6), cruzadas
+#   por CORR-TAMANOS-TMC. La serie sigue hasta 3600 mm y el tope de catalogo
+#   (2.10 m) la corta: el 2100 es una fila mas.
+# CONCRETO: SIN DORADO, y se dice aqui para que el caso no se lea como
+#   completo. AASHTO M 170M-04 Tablas 1 a 5 no estan transcritas -- escaneo
+#   con OCR inutilizable: se transcriben por imagen, tabla a tabla, en una
+#   sesion propia --. La entrada es None a proposito y test_M2 lo comprueba.
+#
+# LO QUE EL CASO NO DECIDE: ni el piso (0.90 m, [N] del Manual, num.
+# 4.1.1.3.4 a) ni los topes ([A] 'D_max_catalogo'). Los lee el test de sus
+# simbolos; el caso solo fija que filas tiene cada serie.
+CP11_SERIES_NOMINALES = {
+    "descripcion": ("M2.siguiente_diametro recorre, para cada material, "
+                    "EXACTAMENTE las filas de la serie de tamaños nominales "
+                    "de su norma de producto que caen entre el piso peruano "
+                    "y el tope de catalogo -- ni una fila de mas, ni una de "
+                    "menos, ni un diametro que la serie no tabule"),
+    "hdpe": {
+        "tabla": "AASHTO_M294_TRAD.T7.2.2",
+        "columna": "dn_mm",
+        "cita_serie": "AASHTO_M294_TRAD.7.2.1",
+        "fuente_derivada": ("AASHTO M 294-11, TRADUCCION NO OFICIAL al "
+                            "español, sin firma (sin folio; el original en "
+                            "ingles sigue en FUENTES_AUSENTES)"),
+        # Leidos del num. 7.2.1 (PDF 5): doce diametros, paso 75 mm hasta
+        # 750 y 150 mm de 900 a 1500.
+        "serie_mm": (300, 375, 450, 525, 600, 675, 750,
+                     900, 1050, 1200, 1350, 1500),
+        "techo_de_la_serie_mm": 1500,        # ultima fila: no hay «y superiores»
+    },
+    "tmc": {
+        "tabla": "ASTM_A760.T1",
+        "columna": "dn_mm",
+        "tabla_gemela": "AASHTO_M36.T6",
+        "fuente_derivada": ("ASTM A760/A760M-10, traduccion al español "
+                            "(declarada en la Fuente), leida por imagen"),
+        # Leidos de la Tabla 1 (PDF 3): 31 diametros, paso 150 mm desde 900.
+        "serie_mm": (100, 150, 200, 250, 300, 375, 450, 500, 600, 675, 750,
+                     825, 900, 1050, 1200, 1350, 1500, 1650, 1800, 1950,
+                     2100, 2250, 2400, 2550, 2700, 2850, 3000, 3150, 3300,
+                     3450, 3600),
+        "techo_de_la_serie_mm": 3600,
+    },
+    "concreto_reforzado": None,
+    "sin_dorado": {
+        "concreto_reforzado": ("AASHTO M 170M-04 / ASTM C 76M-02, Tablas 1 a "
+                               "5 (columna «Internal Designated Diameter, "
+                               "mm»), en normas/ pero SIN TRANSCRIBIR: el "
+                               "PDF es un escaneo con OCR inutilizable y las "
+                               "cinco tablas se leen por imagen, en una "
+                               "sesion propia"),
+    },
+}

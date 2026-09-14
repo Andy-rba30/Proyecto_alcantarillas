@@ -587,20 +587,26 @@ condición escrita.
   `seleccionar_clase_calibre` sigue sin dorado: por M 170M Tablas 1-5 sin
   transcribir y, desde N1, por el procedimiento de A796 sin implementar —la
   fuente ya está, la tabla que se esperaba de ella no existe—).
-- **Abierto:** M2 y M10 siguen sin caso patrón. **No es pereza de la fase
-  de tests:** fabricarles un dorado sería inventar el valor de referencia, que
-  es exactamente lo que prohíbe el conflicto #7 del plan. M11 no cuenta: es el
-  módulo de reporte y no le corresponde dorado numérico.
-- **Qué haría falta:** para M2, la serie de diámetros nominales tabulada de
-  las normas de producto (AASHTO M 170M-04 / ASTM C 76M-02 para el concreto,
-  ASTM A760 + AASHTO M 36 para el TMC, AASHTO M294 para el HDPE); para M10,
-  no una norma sino el expediente vial. Están en la §15
-  del plan, y ahora también en la guardia, con su fuente concreta. Desde I1
-  la mitad del TMC dejó de ser «fuente por transcribir»: la Tabla 1 de A760
-  y la Table 6 de M 36 están transcritas en `src/normativa/tablas.py`
-  (`ASTM_A760.T1`, `AASHTO_M36.T6`); lo que sigue faltando para el dorado de
-  M2 son las series del concreto (M 170M está en `normas/` pero sus Tablas
-  1 a 5 no están transcritas) y del HDPE (M294 ausente).
+- **Cerrado también en N2 el de M2, en dos tercios y sin fabricar nada:**
+  `CP11_SERIES_NOMINALES` es la serie de diámetros nominales TRANSCRITA de
+  las normas de producto —la del TMC desde I1 (`ASTM_A760.T1`,
+  `AASHTO_M36.T6`) y la del HDPE desde N2 (`AASHTO_M294_TRAD.T7.2.2`, leída
+  de la **traducción no oficial** de M 294-11 que entró en `normas/`, sin
+  firma)—, y `test_M2_material.py` contrasta `siguiente_diametro` contra
+  esas tablas y no contra la fórmula (conflicto #7). M2 **salió de la lista
+  de exentos**; el tercio que sigue sin dorado —la serie del concreto, porque
+  AASHTO M 170M-04 Tablas 1 a 5 no están transcritas (OCR inutilizable; se
+  leen por imagen en una sesión propia)— está censado en el propio fixture
+  (`CP11_SERIES_NOMINALES['concreto_reforzado'] is None`, con test).
+- **Abierto:** M10 sigue sin caso patrón, y M2 en su tercio del concreto.
+  **No es pereza de la fase de tests:** fabricarles un dorado sería inventar
+  el valor de referencia, que es exactamente lo que prohíbe el conflicto #7
+  del plan. M11 no cuenta: es el módulo de reporte y no le corresponde dorado
+  numérico.
+- **Qué haría falta:** para el tercio de M2, transcribir por imagen la
+  columna «Internal Designated Diameter, mm» de las Tablas 1 a 5 de M 170M-04
+  y añadirla a CP11; para M10, no una norma sino el expediente vial. Están en
+  la §15 del plan, y ahora también en la guardia, con su fuente concreta.
 - **Dónde vive:** `tests/test_guardias_de_la_suite.py::SIN_CASO_PATRON`
 
 ---
@@ -1121,3 +1127,40 @@ y que no queda escrita en ningún otro registro.
   criterio y no un paso ni una cita — y entonces reescribir el test con ese
   caso, no al revés.
 - **Dónde vive:** `tests/test_canal_discrepancias.py::test_la_via_del_criterio_existe_porque_V9_no_emite_paso`
+
+## N2-01 · La traducción no oficial de M 294-11 entra como Fuente propia, sin firma en sus citas, y el original sigue ausente
+
+- **Qué se difirió:** firmar (`Verificado`) las citas de AASHTO M 294-11 y
+  retirar al original del censo de ausentes. Lo que llegó a `normas/` es una
+  **traducción al español no oficial** (autor no identificado, sin folio en
+  ninguna de sus 17 hojas), y se modeló leyendo el esquema y no por
+  conveniencia: Fuente PRESENTE con la naturaleza declarada en su nota y en su
+  título (`AASHTO_M294_TRAD`, como ya se hizo con la traducción de ASTM A760),
+  `convive_con` cruzado con el original, que **sigue en `FUENTES_AUSENTES`**
+  (`AASHTO_M294`) con su `que_desbloquearia` redefinido —ya no el tope del
+  HDPE, sino la FIRMA de lo que la traducción sostiene—, y las cuatro citas
+  SIN FIRMA, censadas en `CITAS_SIN_FIRMA_A_PROPOSITO` con el precedente de
+  `HDS5_SI_1985.EC4B#K`.
+- **Por qué:** dos razones que se suman. Sin folio, la paginación es
+  `SinDeterminar` y el invariante T6 prohíbe firmar una página PDF de una
+  fuente sin paginación medida; se consideró y se descartó un tipo nuevo de
+  `Paginacion` («sin número impreso») porque no habría nada que predecir —la
+  única numeración es la del PDF, que es lo que la cita declara— y porque
+  el precedente de HDS5_SI_1985 ya resolvió el mismo caso con `SinDeterminar`
+  y una nota. Y aunque hubiera folio, firmar una traducción anónima «como
+  verificada contra AASHTO M 294-11» sería una cita imprecisa: acredita lo
+  que la traducción imprime, no lo que AASHTO escribe. Lo que sí vigila la
+  suite, en cada corrida con PyMuPDF: T0 (sha1 y páginas), T2 (cada
+  Verbatim en su página) y T3 (cada título), porque el texto SÍ es
+  extraíble; y `test_toda_cita_de_la_traduccion_de_M294_lo_dice` exige que
+  toda cita suya lleve las palabras «traducción no oficial» y ninguna firma.
+  Consecuencia para el tope del HDPE: la serie 300–1500 mm SÍ termina donde
+  el proyecto topa, y aun así `D_max_catalogo` sigue `[A]` de catálogo para
+  los tres materiales —la elección es la misma para los tres y V9 descarta
+  por catálogo—, con el techo de la serie declarado como extremo de la
+  sensibilidad del HDPE.
+- **Qué haría falta:** el original en inglés de M 294-11. Con él, reverificar
+  1.1.1, 1.4, 7.2.1 y la tabla de 7.2.2 contra el original, firmarlas, sacar
+  las cuatro del censo y cerrar la Ausencia. Ni siquiera entonces el tope
+  pasaría a `[N]`: es norma de producto extranjera.
+- **Dónde vive:** `src/normativa/fuentes.py::AASHTO_M294_TRAD`

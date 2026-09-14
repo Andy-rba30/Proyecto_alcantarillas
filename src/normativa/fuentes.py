@@ -1,9 +1,15 @@
 """
-Las fuentes normativas del proyecto: las catorce que estan en `normas/` y las
+Las fuentes normativas del proyecto: las quince que estan en `normas/` y las
 doce que se citan y NO estan (§8 del diseño, §15 del plan). Hasta N1 eran
 trece y trece -- este encabezado decia «once» y llevaba tiempo sin contar:
 el censo de ausentes tenia trece entradas --; ASTM A796/A796M-13 entro en
-`normas/` en pre-N1 y N1 la paso del censo de ausentes a este.
+`normas/` en pre-N1 y N1 la paso del censo de ausentes a este. N2 sumo la
+quinceava SIN restar del censo de ausentes, y no es un error de cuenta: lo
+que entro en `normas/` es una TRADUCCION NO OFICIAL de AASHTO M 294-11
+(`AASHTO_M294_TRAD`), y el original en ingles (`AASHTO_M294`) sigue ausente.
+Una fuente derivada no sustituye a la primaria: convive con ella
+(`convive_con` cruzado, el mismo recurso de las dos HDS-5) y la ausencia del
+original queda redefinida como «que desbloquearia verificar contra el».
 
 TODOS LOS SHA-1 Y TODAS LAS PAGINACIONES DE ESTE ARCHIVO ESTAN MEDIDOS, no
 supuestos. El procedimiento, para que se pueda repetir:
@@ -23,6 +29,9 @@ paginas confirman cada desfase, no dos o tres a ojo:
     AASHTO LRFD 9a ed ....... por capitulo; quince bases medidas
     ASTM A796/A796M-13 .....  0   confirmado en 20 de 21 (N1, por imagen:
                                   la PDF 1 esta en blanco)
+    AASHTO M 294-11 (trad.) . SIN FOLIO: ninguna de sus 17 hojas imprime
+                                  numero de pagina (N2, por texto en las 17
+                                  y por imagen en la 1, la 5 y la 8)
 
 Las paginas que no confirman son las que no imprimen numero -- portadas,
 separadores y las laminas fotograficas del Manual de Puentes --, no
@@ -36,7 +45,7 @@ LO QUE MEDIR ESTO HIZO APARECER, y en prosa no se veia:
      inferir de lo escrito y hay que medirlo abriendo el PDF». Se midio: es
      `Corrida(+3)`, y con eso sus citas pasan a ser verificables por la via
      barata.
-  2. CUATRO de las catorce fuentes NO ENTREGAN TEXTO UTILIZABLE, y eso es
+  2. CUATRO de las quince fuentes NO ENTREGAN TEXTO UTILIZABLE, y eso es
      una propiedad de la fuente que el registro tiene que declarar, no un
      percance de quien la lee:
        - AASHTO M 36 es un raster sin capa de texto: `get_text()` devuelve
@@ -73,7 +82,7 @@ from .esquema import (
 )
 
 # ===========================================================================
-# Las catorce fuentes que SI estan en normas/
+# Las quince fuentes que SI estan en normas/
 # ===========================================================================
 
 MC_HHD = Fuente(
@@ -421,12 +430,102 @@ ASTM_A796 = Fuente(
         "(DIS-HR-A807)."),
 )
 
+AASHTO_M294_TRAD = Fuente(
+    id="AASHTO_M294_TRAD",
+    titulo=("AASHTO M 294-11 «Tubería corrugada de polietileno, 300 a 1500 mm "
+            "(12 a 60 in.) de diámetro» — TRADUCCION NO OFICIAL al español"),
+    emisor=("AASHTO (el original); la traduccion es de autor no identificado, "
+            "obtenida de un sitio de documentos compartidos"),
+    # LO QUE EL EJEMPLAR ROTULA, y solo eso: la portada interior imprime
+    # «Designación AASHTO: M 294-11» (PDF 1, verificado por texto y por
+    # imagen). No lleva sello, copyright, pie editorial ni fecha de AASHTO:
+    # el «-11» es la edicion del ORIGINAL que la traduccion declara seguir,
+    # y `anio=2011` es la lectura de ese rotulo, no una fecha de la
+    # traduccion, que no la imprime.
+    edicion="M 294-11 (traduccion no oficial al español)",
+    anio=2011,
+    archivo_pdf=("normas/AASHTO M 294-11 Tuberia corrugada de polietileno 300 "
+                 "a 1500 mm (traduccion no oficial).pdf"),
+    sha1="7cecb19f73e4d101866832a3fc57db752fa53379",
+    paginas_pdf=17,
+    # NO HAY FOLIO QUE MEDIR, y es una propiedad del ejemplar, no una medida
+    # que falte: el texto extraido de las 17 hojas no contiene ningun numero
+    # de pagina, y las hojas 1, 5 y 8 renderizadas no imprimen cabecera ni
+    # pie numerado. Por eso NO es `Corrida(desfase=0)`: eso afirmaria una
+    # numeracion impresa que coincide con la del PDF, y aqui no hay ninguna.
+    # Es el caso de HDS5_SI_1985, resuelto igual que alli: `SinDeterminar`
+    # con la razon, citas localizadas por pagina PDF con «s/n» como pagina
+    # impresa, y SIN FIRMA -- el invariante T6 impide firmar una pagina PDF
+    # de una fuente sin paginacion medida, y no se toca por conveniencia --.
+    # Las citas quedan censadas en `CITAS_SIN_FIRMA_A_PROPOSITO`
+    # (tests/test_normativa.py) y su contenido lo comprueban T0, T2 y T3 en
+    # cada corrida con PyMuPDF, porque el texto SI es extraible.
+    paginacion=SinDeterminar(
+        por_que=("el ejemplar no imprime numero de pagina en ninguna de sus "
+                 "17 hojas: ni cabecera ni pie numerado (medido en N2 sobre "
+                 "el texto de las 17 y sobre las hojas 1, 5 y 8 "
+                 "renderizadas). No hay «pagina impresa» que medir; sus "
+                 "citas se localizan por pagina PDF, llevan «s/n» como "
+                 "pagina impresa y no se firman (T6), con el precedente de "
+                 "HDS5_SI_1985")),
+    texto_extraible=True,
+    convive_con=("AASHTO_M294",),
+    nota=(
+        "CUATRO PROPIEDADES DEL EJEMPLAR, las cuatro medidas en N2. "
+        "PRIMERA, Y ES LA QUE GOBIERNA TODO LO QUE SALE DE AQUI: NO ES EL "
+        "ORIGINAL EN INGLES DE AASHTO. Es una TRADUCCION AL ESPAÑOL NO "
+        "OFICIAL, de autor no identificado, obtenida de un sitio de "
+        "documentos compartidos; no lleva sello ni pie editorial de AASHTO y "
+        "trae erratas propias de traduccion («expresadoe», «instalaión», "
+        "«seción», «Tip D», «qur», «menoreas», «vrgenes»), que se "
+        "transcriben como se imprimen (T21). COMO SE MODELA, decidido "
+        "leyendo el esquema: igual que ASTM_A760, que tambien es traduccion "
+        "-- Fuente PRESENTE con la naturaleza declarada en esta nota -- y, "
+        "a diferencia de A760, con el ORIGINAL todavia en FUENTES_AUSENTES "
+        "(`AASHTO_M294`) y `convive_con` cruzado entre los dos: verificar "
+        "contra una traduccion no oficial acredita que la TRADUCCION dice X, "
+        "no que AASHTO lo diga, de modo que la ausencia del original no se "
+        "cierra sino que se REDEFINE (su `que_desbloquearia` dice ahora que "
+        "firmar). Toda cita suya lleva el sufijo TRAD en el id y las palabras "
+        "«traducción no oficial» en su nota, y una guardia de la suite lo "
+        "exige; todo valor que sostenga lo sostiene con esa reserva, y el "
+        "dia que llegue el original se reverifica contra el y se firma. "
+        "SEGUNDA: NO IMPRIME FOLIO (ver `paginacion`). "
+        "TERCERA: el texto ES extraible y limpio -- la unica de las cinco "
+        "normas de producto y practica ASTM/AASHTO de normas/ que lo es --, "
+        "de modo que T2 y T3 comprueban cada cita en cada corrida. "
+        "CUARTA, Y ES LA QUE IMPORTA AL PROYECTO: EL AMBITO TERMINA EN "
+        "1500 mm. El num. 1.1.1 (tamaños nominales de 300 a 1500 mm) y el "
+        "num. 7.2.1 (los doce diametros nominales, de 300 a 1500 mm, con "
+        "paso de 75 mm hasta 750 y de 150 mm de 900 a 1500) fijan la serie, "
+        "y el num. 1.3 declara los valores SI como los estandar y las "
+        "pulgadas como aproximadas. Es la unica de las tres normas de "
+        "producto del catalogo cuya serie TERMINA donde el proyecto topa: a "
+        "diferencia de A760 y M 170M (hasta 3600 mm), aqui 1.50 m ES el "
+        "techo del ambito -- segun la traduccion, que es lo unico que hay --. "
+        "LO QUE NO TRAE, leido entero (17 hojas): (a) ninguna tabla de "
+        "clase, calibre o rigidez por ALTURA DE RELLENO -- el num. 1.4 "
+        "excluye expresamente camas, relleno y carga de cubierta de tierra y "
+        "remite el diseño estructural a AASHTO LRFD Seccion 12 --; lo que si "
+        "tabula es la RIGIDEZ MINIMA de tuberia al 5 % de deflexion por "
+        "diametro (num. 7.4, de 345 kPa en 300 mm a 105 kPa en 1500 mm), "
+        "insumo de ese diseño, no transcrita en N2 porque no sostiene nada "
+        "que el proyecto calcule hoy; (b) ningun DIAMETRO EXTERIOR ni altura "
+        "del perfil corrugado: el num. 7.2.2 tabula el espesor MINIMO de la "
+        "pared interior lisa (Tipo S) o de las dos paredes (Tipo D), de 0,9 "
+        "a 2,0 mm, que NO es el t que separa D interior de D exterior -- por "
+        "eso `espesor_pared_conducto['hdpe']` sigue sin fuente --. Trae "
+        "ademas la Tabla 1 (perforaciones Clase 1), las tolerancias de "
+        "diametro interior (7.2.3), el marcado (11) y un anexo y un "
+        "apendice de control de calidad."),
+)
+
 
 FUENTES: Dict[str, Fuente] = {
     f.id: f for f in (
         MC_HHD, MP, MS, EG2013, E030, E050, E060,
         HDS5_3ED, HDS5_SI_1985, AASHTO_LRFD_9,
-        AASHTO_M170M, AASHTO_M36, ASTM_A760, ASTM_A796,
+        AASHTO_M170M, AASHTO_M36, ASTM_A760, ASTM_A796, AASHTO_M294_TRAD,
     )
 }
 
@@ -466,17 +565,51 @@ def _ausente(id_, titulo, emisor, edicion, anio, ausencia, **kw) -> Fuente:
 # cierra transcribiendo sino IMPLEMENTANDO el num. 6 a 11, que es una sesion
 # de calculo con caso patron y no de registro.
 
+# AASHTO_M294 NO SALIO DE ESTE CENSO EN N2, aunque en normas/ haya un PDF con
+# su designacion, y conviene leer por que antes de «corregirlo»: lo que
+# llego es una TRADUCCION NO OFICIAL (`AASHTO_M294_TRAD`, arriba, entre las
+# presentes), y una traduccion no oficial no es el documento normativo. La
+# ficha de ausente decia que la fuente desbloquearia «D_max['hdpe']» y era
+# «la otra ausencia barata»; conseguida y leida la traduccion, lo que se
+# midio es esto: la serie de tamaños nominales SI termina en 1500 mm (1.1.1,
+# 7.2.1), de modo que el tope del HDPE es el unico de los tres que la norma
+# de producto sostiene -- y lo sostiene una traduccion sin firma --. El
+# criterio sigue siendo [A] de catalogo (la eleccion es la misma para los
+# tres materiales) con ese extremo declarado; lo que el ORIGINAL desbloquea
+# ya no es el tope sino la FIRMA.
 AASHTO_M294 = _ausente(
     "AASHTO_M294",
-    "AASHTO M 294 «Corrugated Polyethylene Pipe, 300- to 1500-mm Diameter»",
-    "AASHTO", "M 294", 2020,
+    ("AASHTO M 294-11 «Corrugated Polyethylene Pipe, 300- to 1500-mm "
+     "Diameter» -- el ORIGINAL EN INGLES, del que deriva la traduccion no "
+     "oficial presente en normas/"),
+    # El censo decia «M 294», 2020, porque suponia la edicion vigente. Se
+    # registra la que la traduccion declara seguir (-11): es contra ESA
+    # edicion contra la que habria que reverificar lo transcrito; si la
+    # vigente es otra, es una pregunta distinta y es de la sesion T1.
+    "AASHTO", "M 294-11 (original en ingles)", 2011,
     Ausencia(
-        por_que_se_cita="el tope de diametro del HDPE se le atribuia",
-        que_desbloquearia=("D_max['hdpe']: hoy es tope de CATALOGO ([A], "
-                           "criterio 'D_max_catalogo') porque la norma que lo "
-                           "sostendria no esta. La otra ausencia barata"),
+        por_que_se_cita=("es el ORIGINAL del que deriva `AASHTO_M294_TRAD`, "
+                         "la traduccion no oficial que N2 incorporo; el tope "
+                         "de diametro del HDPE se le atribuia, y desde N2 la "
+                         "serie 300-1500 mm que lo sostiene esta transcrita "
+                         "DE LA TRADUCCION"),
+        que_desbloquearia=("la FIRMA, no el tope: (1) reverificar contra el "
+                           "original y firmar (`Verificado`) lo que hoy "
+                           "sostiene la traduccion sin firma -- la serie de "
+                           "tamaños nominales 300-1500 mm (1.1.1, 7.2.1), la "
+                           "tabla de espesores minimos de pared (7.2.2) y la "
+                           "exclusion del diseño estructural (1.4) --; (2) "
+                           "comprobar que el original no imprime nada que la "
+                           "traduccion omita o altere en esos numerales; (3) "
+                           "leer el diametro exterior o la altura de perfil "
+                           "si el original los fijara, que la traduccion no "
+                           "trae. NO desbloquearia un [N]: es norma de "
+                           "producto extranjera, y 'D_max_catalogo' seguiria "
+                           "[A] con el techo de la serie como extremo declarado"),
         esfuerzo=Esfuerzo.COMPRA,
-        sustituto_vigente="Catalogo CAT_TUBERIA_LOCAL, rotulado como tal"))
+        sustituto_vigente=("AASHTO_M294_TRAD, traduccion no oficial presente "
+                           "en normas/, rotulada como tal en cada cita")),
+    convive_con=("AASHTO_M294_TRAD",))
 
 ASTM_C76 = _ausente(
     "ASTM_C76", "ASTM C76 «Reinforced Concrete Culvert, Storm Drain, and "
@@ -622,14 +755,23 @@ CAT_TUBERIA_LOCAL = Catalogo(
     proveedor_o_ambito=("oferta comercial y capacidad de transporte a la obra "
                         "(La Union, Piura)"),
     que_norma_NO_lo_sostiene=(
-        "NINGUNA. Los topes 2.70 / 2.10 / 1.50 m se atribuian a «ASTM C76 / "
-        "AASHTO M170», «AASHTO M36 / ASTM A760» y «AASHTO M294», y las dos "
-        "primeras atribuciones estan verificadas EN CONTRA sobre los PDF de "
-        "normas/: ASTM A760/A760M-10 tabula de 100 a 3600 mm y AASHTO "
-        "M 170M-04 de 300 a 3600 mm con diseños especiales por encima. La "
-        "tercera no se pudo contrastar porque M294 no esta. Un tope de "
-        "catalogo no tiene numeral, y descartaba material en silencio con una "
-        "cita que ninguna norma sostiene (NOR-PRO-01, NOR-PRO-02, MAT-O8)"),
+        "NINGUNA de las dos contrastables sobre el original, y la tercera "
+        "solo sobre una traduccion. Los topes 2.70 / 2.10 / 1.50 m se "
+        "atribuian a «ASTM C76 / AASHTO M170», «AASHTO M36 / ASTM A760» y "
+        "«AASHTO M294», y las dos primeras atribuciones estan verificadas EN "
+        "CONTRA sobre los PDF de normas/: ASTM A760/A760M-10 tabula de 100 a "
+        "3600 mm y AASHTO M 170M-04 de 300 a 3600 mm con diseños especiales "
+        "por encima. La tercera se contrasto en N2 sobre la TRADUCCION NO "
+        "OFICIAL de AASHTO M 294-11 (`AASHTO_M294_TRAD`, citas 1.1.1 y "
+        "7.2.1): su ambito y su serie de tamaños nominales terminan en "
+        "1500 mm, de modo que el tope del HDPE es el unico que coincide con "
+        "el techo de una norma de producto -- segun una traduccion sin firma; "
+        "el original sigue ausente --. No cambia la clase del dato: el tope "
+        "sigue siendo de catalogo para los tres materiales, porque la "
+        "eleccion (que diametro admite el proyecto por disponibilidad) es la "
+        "misma, y en HDPE ademas no hay serie por encima. Un tope de catalogo "
+        "no tiene numeral, y descartaba material en silencio con una cita "
+        "que ninguna norma sostiene (NOR-PRO-01, NOR-PRO-02, MAT-O8)"),
 )
 
 CATALOGOS: Dict[str, Catalogo] = {CAT_TUBERIA_LOCAL.id: CAT_TUBERIA_LOCAL}

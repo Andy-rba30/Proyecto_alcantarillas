@@ -699,23 +699,28 @@ def test_el_cupo_esta_escrito_con_su_razon_y_no_es_una_meta():
 # se puede retirar la exencion.
 #
 # Cada exencion lleva su razon Y LO QUE HARIA FALTA para retirarla. No son
-# equivalentes: M2, M8 y M10 esperan una FUENTE que el repositorio no tiene
+# equivalentes: M2, M8 y M10 esperaban una FUENTE que el repositorio no tenia
 # (fabricarles un dorado seria inventar el valor de referencia, que es lo que
-# prohibe el conflicto n.7 del plan); M11 no espera nada, porque es el modulo
+# prohibe el conflicto n.7 del plan) -- y M8 y M2 ya salieron, cada uno con
+# su caso, cuando la fuente llego --; M11 no espera nada, porque es el modulo
 # de reporte y un dorado numerico no tendria contra que contrastarse --- lo
 # que a el se le exige es lo contrario, no calcular, y eso ya lo vigila
 # `tests/test_memoria_sustentada.py::test_M11_no_calcula_y_sobre_D`.
 SIN_CASO_PATRON = {
-    "M2_material":
-        "falta la serie de diametros nominales tabulada de las normas de "
-        "producto del CONCRETO (AASHTO M 170M-04 / ASTM C 76M-02, en normas/ "
-        "pero con Tablas 1-5 sin transcribir) y del HDPE (AASHTO M294, "
-        "ausente). La del TMC dejo de faltar en I1: ASTM_A760.T1 y "
-        "AASHTO_M36.T6 estan transcritas en src/normativa/tablas.py, y su "
-        "serie (…-900-1050-…-3600) responde ya media pregunta de la §15: en "
-        "el acero la progresion sobre 900 es de paso 150 mm real, no una "
-        "interpolacion del proyecto. El dorado de M2 sigue exigiendo las "
-        "otras dos series (§15 del plan)",
+    # M2_material SALIO DE LA LISTA EN N2, y por la misma razon por la que M8
+    # salio en C7: la exencion cubria de mas. Decia que faltaban las tres
+    # series de diametros nominales de las normas de producto; la del TMC
+    # dejo de faltar en I1 (ASTM_A760.T1 y AASHTO_M36.T6, paso 150 mm real
+    # sobre 900) y la del HDPE en N2 (AASHTO_M294_TRAD.T7.2.2, transcrita de
+    # la TRADUCCION NO OFICIAL de M 294-11 que entro en normas/, sin firma:
+    # el original sigue ausente). Con dos de tres, `CP11_SERIES_NOMINALES`
+    # contrasta `siguiente_diametro` contra las TABLAS y no contra la formula
+    # (conflicto #7), y la exencion habria sobrevivido a la mitad de su
+    # motivo. Lo que SIGUE sin dorado esta censado en el propio fixture
+    # (`CP11_SERIES_NOMINALES['concreto_reforzado'] is None`, con test): la
+    # serie del concreto, porque AASHTO M 170M-04 Tablas 1 a 5 no estan
+    # transcritas -- OCR inutilizable; se leen por imagen en una sesion
+    # propia --.
     # M8_estructural SALIO DE LA LISTA EN C7, y el motivo por el que estaba
     # sigue siendo cierto -- lo que cambio es que ya no cubre al modulo
     # ENTERO --. La exencion decia: «faltan AASHTO M 170M-04 Tablas 1 a 5

@@ -288,10 +288,17 @@ _NOMBRE = {
 # -- A760/A760M cubre los dos sistemas --, que es lo que el registro tiene
 # catalogado (`normativa.fuentes.ASTM_A760`, edicion "A760/A760M-10"). No se
 # le inventa una metrica que la norma no separa.
+#
+# La de HDPE lleva la edicion que el ejemplar de normas/ declara (M 294-11)
+# Y SU NATURALEZA: lo que hay en el repositorio es una TRADUCCION NO OFICIAL
+# (N2; `normativa.fuentes.AASHTO_M294_TRAD`, con el original en ingles todavia
+# en el censo de ausentes). La regla de esa fuente es que las palabras
+# «traduccion no oficial» acompañen a toda cita suya, y este rotulo llega a
+# la memoria como norma de producto del material: es una cita.
 _NORMA_PRODUCTO = {
     TipoMaterial.CONCRETO_REFORZADO: "AASHTO M 170M-04 / ASTM C 76M-02 (metrica)",
     TipoMaterial.TMC: "AASHTO M 36 / ASTM A760/A760M-10",
-    TipoMaterial.HDPE: "AASHTO M294",
+    TipoMaterial.HDPE: "AASHTO M 294-11 (en normas/: traduccion no oficial)",
 }
 
 # Claves de MANNING (Tabla N 09) y de HDS5_INLET (Tabla A.1) que si tienen
@@ -423,8 +430,10 @@ def espesor_pared(material: Material, D: float) -> float:
     - Criterio CON valor pero SIN ESTE MATERIAL -> `DatoFaltanteError`. El
       criterio es un dict por material y puede estar declarado para unos y no
       para otros; es el caso vivo del expediente, donde el espesor del
-      concreto sale de una tabla que esta en `normas/` y el del HDPE de la
-      AASHTO M294, que no esta. El revisor tiene que AÑADIR la entrada de ese
+      concreto sale de una tabla que esta en `normas/` y el del HDPE no lo
+      trae su norma de producto -- AASHTO M 294-11, en normas/ desde N2 como
+      traduccion no oficial, tabula el espesor minimo de la pared interior y
+      no la altura del perfil --. El revisor tiene que AÑADIR la entrada de ese
       material, y por eso es Faltante y no Invalido (CLAUDE.md). MD descarta
       el material con su causa citada entera y sigue con el siguiente
       candidato: un material sin fuente no mata el punto.
@@ -503,7 +512,10 @@ def espesor_pared(material: Material, D: float) -> float:
                 "del concreto es la columna 'Wall Thickness' de las Tablas 1 "
                 "a 5 de AASHTO M 170M-04, la del TMC depende del calibre que "
                 "fije la Fase 8 ('clases_producto_por_relleno') y la del "
-                "HDPE sale de AASHTO M294, que NO esta en normas/. Sin "
+                "HDPE no la trae AASHTO M 294-11 -- en normas/ como "
+                "traduccion no oficial: su 7.2.2 da el espesor minimo de la "
+                "pared interior, no la altura del perfil corrugado, y "
+                "ninguna hoja fija el diametro exterior --. Sin "
                 "espesor no hay diametro exterior, y sin diametro exterior no "
                 "hay clave fisica (7.A) ni volumen desplazado (V7)"
             ),

@@ -15,11 +15,15 @@ Los tests que mas importan son cuatro:
     - la Familia C no tiene candidatos: su seccion es marco o multicelda.
 """
 
+import re
 from pathlib import Path
 
 import pytest
 
 import criterios_adoptados as ca
+from constantes_normativas import DIAMETRO_MIN
+from dominios import MILIMETROS_POR_METRO
+from normativa import registro as _registro
 from modelos import (CriterioPendienteError, DatoFaltanteError,
                      DatoInvalidoError, Familia, FormaSeccion, Material,
                      TipoMaterial)
@@ -29,6 +33,7 @@ from modulos.M2_material import (CRITERIO_ESPESOR_PARED, catalogo,
                                  siguiente_diametro, siguiente_seccion)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
+from tests.fixtures.casos_patron import CP11_SERIES_NOMINALES
 
 CSV_VALIDO = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
 
@@ -85,7 +90,8 @@ def test_cada_material_se_detiene_en_su_tope(material, esperado):
 
 def test_el_hdpe_es_el_mas_restrictivo():
     """Sec. 3.2: sin tope, el solver podria converger a un HDPE de 2.70 m,
-    que no existe como producto AASHTO M294."""
+    que no existe como producto de AASHTO M 294-11 -- su serie termina en
+    1500 mm (CP11, leida de la traduccion no oficial del ejemplar)."""
     D = 1.50
     assert siguiente_diametro(TipoMaterial.HDPE, D) is None
 
@@ -745,3 +751,120 @@ def test_un_diametro_sin_fila_en_la_tabla_de_espesores_se_reclama_por_su_nombre(
 
     assert "1200" in exc.value.campo
     assert "no se interpola" in exc.value.detalle
+
+
+# ---------------------------------------------------------------------------
+# SIS-F-13: M2 contra su caso patron CP11 -- las series de las normas de
+# producto (N2)
+# ---------------------------------------------------------------------------
+# HASTA N2 M2 ESTABA EXENTO de caso patron, y la razon era buena: fabricarle
+# un dorado con la misma progresion que implementa habria sido inventar el
+# valor de referencia (conflicto #7). Lo que cambio es que las series de
+# diametros nominales de DOS de las tres normas de producto estan transcritas
+# en el registro -- la del TMC desde I1 y la del HDPE desde N2, esta ultima
+# de una TRADUCCION NO OFICIAL --, y una serie transcrita y verificada contra
+# el PDF es un dorado que no sale de la formula. El concreto sigue sin serie
+# (M 170M Tablas 1-5 sin transcribir) y el propio fixture lo dice.
+
+_MATERIALES_CP11 = [("hdpe", TipoMaterial.HDPE), ("tmc", TipoMaterial.TMC)]
+
+
+def _serie_del_registro(tabla_id: str, columna: str) -> tuple:
+    reg = _registro.construir()
+    return tuple(sorted(int(v) for v in
+                        reg.tabla(tabla_id).columna_como_dict(columna).values()))
+
+
+def _serie_recorrida_por_M2(tipo: TipoMaterial) -> tuple:
+    recorrida, D = [], siguiente_diametro(tipo)
+    while D is not None:
+        recorrida.append(round(D * MILIMETROS_POR_METRO))
+        D = siguiente_diametro(tipo, D)
+    return tuple(recorrida)
+
+
+@pytest.mark.parametrize("material,_", _MATERIALES_CP11)
+def test_CP11_el_dorado_es_la_tabla_transcrita_del_registro(material, _):
+    """
+    El literal del fixture y la columna de la tabla del registro dicen la
+    MISMA serie. Son dos copias a proposito (un dorado es independiente) y
+    esto es lo que impide que diverjan en silencio.
+    """
+    caso = CP11_SERIES_NOMINALES[material]
+    assert _serie_del_registro(caso["tabla"], caso["columna"]) == caso["serie_mm"]
+    assert caso["serie_mm"][-1] == caso["techo_de_la_serie_mm"]
+    if "tabla_gemela" in caso:
+        assert _serie_del_registro(caso["tabla_gemela"], caso["columna"]) == \
+            caso["serie_mm"]
+
+
+def test_CP11_la_serie_del_hdpe_es_la_que_escribe_el_numeral_7_2_1():
+    """
+    La tabla de 7.2.2 y el numeral 7.2.1 dicen la misma serie, y el numeral
+    es el que T2 comprueba caracter a caracter contra el PDF en cada corrida:
+    es lo que ata las celdas de la tabla a una frase verificable. Solo se
+    leen los numeros en milimetros (antes del parentesis de pulgadas).
+    """
+    caso = CP11_SERIES_NOMINALES["hdpe"]
+    cita = _registro.construir().cita(caso["cita_serie"])
+    en_mm = cita.texto_literal.texto.split("(")[0]
+    numeros = tuple(int(n) for n in re.findall(r"\d{3,4}", en_mm))
+    assert numeros == caso["serie_mm"]
+    assert "traduccion no oficial" in cita.nota.lower().replace("ó", "o")
+
+
+@pytest.mark.parametrize("material,tipo", _MATERIALES_CP11)
+def test_CP11_M2_recorre_exactamente_las_filas_de_la_serie(material, tipo):
+    """
+    Entre el piso peruano ([N], 0.90 m) y el tope de catalogo ([A]), M2 emite
+    EXACTAMENTE las filas de la serie de la norma de producto: ni un
+    diametro que la serie no tabule, ni una fila de la serie que se salte.
+    Ni el piso ni el tope los fija el caso: se leen de sus simbolos.
+    """
+    caso = CP11_SERIES_NOMINALES[material]
+    piso_mm = round(DIAMETRO_MIN * MILIMETROS_POR_METRO)
+    tope_mm = round(ca.valor("D_max_catalogo")[material] * MILIMETROS_POR_METRO)
+    esperada = tuple(d for d in caso["serie_mm"] if piso_mm <= d <= tope_mm)
+    assert esperada, "el caso no tiene filas entre piso y tope: revisa el fixture"
+    assert _serie_recorrida_por_M2(tipo) == esperada
+
+
+def test_CP11_las_filas_bajo_el_piso_las_excluye_el_Manual_y_no_la_tabla():
+    """
+    Las series tabulan tamaños por debajo de 0.90 m (siete en M 294-11, doce
+    en A760) que M2 no recorre. La razon es el piso [N] del num. 4.1.1.3.4 a)
+    del Manual, no la norma de producto: la primera fila que M2 emite es el
+    piso, y el piso ES una fila de las dos series.
+    """
+    piso_mm = round(DIAMETRO_MIN * MILIMETROS_POR_METRO)
+    for material, tipo in _MATERIALES_CP11:
+        serie = CP11_SERIES_NOMINALES[material]["serie_mm"]
+        assert piso_mm in serie, f"{material}: el piso no es una fila de su serie"
+        assert any(d < piso_mm for d in serie)
+        assert _serie_recorrida_por_M2(tipo)[0] == piso_mm
+
+
+def test_CP11_el_tope_del_hdpe_es_la_ultima_fila_de_su_serie():
+    """
+    El unico de los tres topes de catalogo que coincide con el techo de una
+    norma de producto -- segun la traduccion no oficial de M 294-11 --. Es
+    lo que N2 midio y lo que 'D_max_catalogo' declara como extremo del HDPE;
+    en TMC el tope corta la serie por dentro y esto NO se cumple.
+    """
+    hdpe = CP11_SERIES_NOMINALES["hdpe"]
+    tope_mm = round(ca.valor("D_max_catalogo")["hdpe"] * MILIMETROS_POR_METRO)
+    assert tope_mm == hdpe["techo_de_la_serie_mm"] == hdpe["serie_mm"][-1]
+    tmc = CP11_SERIES_NOMINALES["tmc"]
+    tope_tmc_mm = round(ca.valor("D_max_catalogo")["tmc"] * MILIMETROS_POR_METRO)
+    assert tope_tmc_mm in tmc["serie_mm"] and tope_tmc_mm < tmc["techo_de_la_serie_mm"]
+
+
+def test_CP11_el_concreto_sigue_sin_dorado_y_el_fixture_lo_dice():
+    """
+    Una exencion que se retira a medias tiene que dejar dicho que mitad
+    sigue abierta: la serie del concreto no esta transcrita, y el caso lo
+    declara con la fuente concreta en vez de inventarla.
+    """
+    assert CP11_SERIES_NOMINALES["concreto_reforzado"] is None
+    razon = CP11_SERIES_NOMINALES["sin_dorado"]["concreto_reforzado"]
+    assert "M 170M" in razon and "SIN TRANSCRIBIR" in razon

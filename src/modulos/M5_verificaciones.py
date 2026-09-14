@@ -2041,8 +2041,13 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 
     NO ES UN UMBRAL NORMATIVO EN NINGUNA DE LAS DOS FORMAS (NOR-PRO-01,
     NOR-PRO-02, MAT-O8). El tope circular se atribuia a ASTM C76/AASHTO M170,
-    AASHTO M36/ASTM A760 y AASHTO M294, y ninguna de las tres lo sostiene:
-    A760 tabula diametros nominales hasta 3600 mm y M 170M igual. Es una
+    AASHTO M36/ASTM A760 y AASHTO M294, y ninguna de las dos primeras lo
+    sostiene: A760 tabula diametros nominales hasta 3600 mm y M 170M igual.
+    La tercera si termina donde el proyecto topa -- la serie de AASHTO
+    M 294-11 acaba en 1500 mm, verificado en N2 sobre una traduccion no
+    oficial sin firma --, y aun asi el tope del HDPE sigue siendo de
+    catalogo: la eleccion es la misma para los tres materiales y este paso
+    descarta por catalogo, no por norma. Es una
     adopcion del proyecto sobre la disponibilidad de mercado, y el tope del
     marco lo es todavia mas claramente: es la serie que el proyectista
     escribio. Por eso `criterio_aplicado` apunta al criterio y no a una norma:

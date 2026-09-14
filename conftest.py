@@ -89,7 +89,9 @@ CONDICION_PAVIMENTO_DE_PRUEBA = "flexible"
 # cuya norma de producto esta en `normas/` (AASHTO M 170M-04, columna «Wall
 # Thickness» de la pared B). El TMC depende del calibre de plancha que fija la
 # Fase 8 -- 'clases_producto_por_relleno', que es de expediente y sigue
-# abierto -- y el HDPE sale de AASHTO M294, que no esta en el repositorio. En
+# abierto -- y el del HDPE no lo trae AASHTO M 294-11 (en normas/ desde N2
+# como traduccion no oficial: tabula el espesor minimo de la pared interior,
+# no la altura del perfil corrugado). En
 # una corrida real los dos se descartan como candidatos con su causa escrita,
 # y el punto se dimensiona en concreto.
 #

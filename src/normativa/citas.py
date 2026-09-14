@@ -3737,6 +3737,176 @@ AASHTO_M170M_T1_T5 = _cita(
 )
 
 
+
+# ===========================================================================
+# AASHTO M 294-11, TRADUCCION NO OFICIAL (N2) -- la norma de producto del
+# HDPE, leida sobre un ejemplar que NO es el original de AASHTO.
+#
+# TRES COSAS ANTES DE LEER UNA SOLA CITA. (1) La Fuente es una traduccion al
+# español no oficial (ver `fuentes.AASHTO_M294_TRAD`): cada cita lleva el
+# sufijo TRAD en el id y las palabras «traducción no oficial» en su nota, y
+# `test_toda_cita_de_la_traduccion_de_M294_lo_dice` lo exige. Lo que
+# acreditan es lo que la TRADUCCION dice; el original sigue ausente
+# (`AASHTO_M294`) y su ficha dice que lo que desbloquearia es FIRMARLAS.
+# (2) NINGUNA LLEVA FIRMA, y no es por no haberse leido: el ejemplar no
+# imprime folio, la paginacion es `SinDeterminar` y el invariante T6 impide
+# firmar una pagina PDF de una fuente sin paginacion medida. El precedente
+# es HDS5_SI_1985.EC4B#K, y la prohibicion no se toca por conveniencia: es
+# la que impide que una pagina supuesta pase por medida. Estan censadas en
+# CITAS_SIN_FIRMA_A_PROPOSITO (tests/test_normativa.py). Lo que las vigila
+# es la suite: T0 acota la pagina y T2/T3 exigen que el Verbatim y el titulo
+# aparezcan en su PDF en cada corrida con PyMuPDF, porque el texto SI es
+# extraible -- a diferencia de las otras cuatro normas de producto y
+# practica ASTM/AASHTO de normas/ --. Leidas por el verificador-normativo
+# en N2 (2026-09-14) por texto y por imagen (hojas 1 y 5 renderizadas).
+# (3) LO QUE SOSTIENEN: el techo de la serie del HDPE en 1500 mm (1.1.1 y
+# 7.2.1), la tabla de espesores minimos de pared (7.2.2, transcrita en
+# tablas.py como AASHTO_M294_TRAD.T7.2.2) y la EXCLUSION del diseño
+# estructural (1.4), que es lo que autoriza la afirmacion negativa de
+# 'clases_producto_por_relleno' para el HDPE.
+# ===========================================================================
+
+AASHTO_M294_TRAD_1_1_1 = _cita(
+    id="AASHTO_M294_TRAD.1.1.1",
+    fuente_id="AASHTO_M294_TRAD",
+    numeral="1.1.1",
+    # El numeral no lleva titulo propio: cuelga de «1. Ámbito», y eso es lo
+    # que se transcribe. La jerarquia es el 1.1 del que es inciso.
+    titulo_numeral="Ámbito",
+    pagina_impresa="s/n",
+    pagina_pdf=1,
+    jerarquia_numeral=("1.1.",),
+    texto_literal=Verbatim(
+        texto="Se incluyen los tamaños nominales de 300 a 1500 mm (12 a 60 in.).",
+        pagina_pdf=1),
+    # DEFINICION: es la frase de AMBITO de la especificacion. No exige ni
+    # prohibe un diametro; dice que tamaños cubre, y el 7.2.1 los desarrolla.
+    caracter=Caracter.DEFINICION,
+    corresponde_en=("AASHTO_M294_TRAD.7.2.1",),
+    verificada=False,
+    nota=("SIN FIRMA A PROPOSITO, no sin verificar: la fuente es una "
+          "TRADUCCIÓN NO OFICIAL al español de AASHTO M 294-11 y no imprime "
+          "folio (`pagina_impresa` dice «s/n» por eso), y el invariante T6 "
+          "impide firmar una pagina PDF de una fuente sin paginacion medida "
+          "-- ver la cabecera del bloque --. Contenido comprobado en N2 "
+          "(verificador-normativo, 2026-09-14, por texto y por imagen de la "
+          "hoja 1): la frase esta integra en la PDF 1 bajo «1. Ámbito», "
+          "inciso 1.1.1. Es la frase que fija el TECHO DE LA SERIE del HDPE "
+          "en 1500 mm; el num. 7.2.1 la desarrolla diametro a diametro y por "
+          "eso `corresponde_en` lo apunta. Lo que acredita es lo que la "
+          "traduccion dice; el original en ingles sigue ausente "
+          "(`AASHTO_M294`)."),
+)
+
+AASHTO_M294_TRAD_1_4 = _cita(
+    id="AASHTO_M294_TRAD.1.4",
+    fuente_id="AASHTO_M294_TRAD",
+    numeral="1.4",
+    # Tampoco lleva titulo propio: es un parrafo del «1. Ámbito».
+    titulo_numeral="Ámbito",
+    pagina_impresa="s/n",
+    pagina_pdf=1,
+    texto_literal=Verbatim(
+        texto=("Esta especificación no incluye requerimientos para camas, "
+               "relleno o carga de cubierta de tierra. El desempeño exitoso "
+               "de este producto depende del tipo apropiado de cama y "
+               "relleno, y del cuidado en la instalaión. El diseño "
+               "estructural de la tubería corrugada de PE y los "
+               "procedimientos apropiados de instalación, se proporcionan en "
+               "AASHTO LRFD Especificaciones de Diseño de Puentes, Sección "
+               "12, y en LFRD Especificación de Construcción de Puentes, "
+               "Sección 30, respectivamente."),
+        pagina_pdf=1),
+    # DEFINICION de lo que la especificacion NO cubre: es la frase que
+    # autoriza la afirmacion negativa SIN_CLASE_POR_ALTURA_M294_TRAD.
+    caracter=Caracter.DEFINICION,
+    verificada=False,
+    nota=("SIN FIRMA A PROPOSITO, no sin verificar: TRADUCCIÓN NO OFICIAL "
+          "sin folio, invariante T6 (ver la cabecera del bloque). Contenido "
+          "comprobado en N2 (verificador-normativo, 2026-09-14, por texto y "
+          "por imagen de la hoja 1): el Verbatim son las TRES PRIMERAS "
+          "ORACIONES de un parrafo de cuatro, integras en la PDF 1; la "
+          "cuarta -- la que remite al fabricante «el detalle de la seción "
+          "del perfil de la pared» -- queda fuera del Verbatim a proposito "
+          "y la usa la afirmacion negativa SIN_DIAMETRO_EXTERIOR_M294_TRAD. "
+          "«instalaión» y «LFRD» son erratas de la traduccion y se "
+          "transcriben como se imprimen (T21). Es el ancla de la afirmacion "
+          "negativa SIN_CLASE_POR_ALTURA_M294_TRAD: la norma de producto del "
+          "HDPE excluye camas, relleno y carga de cubierta, y remite el "
+          "diseño estructural a AASHTO LRFD Seccion 12 -- que es lo que "
+          "'clases_producto_por_relleno' venia afirmando del HDPE sin poder "
+          "contrastarlo --."),
+)
+
+AASHTO_M294_TRAD_7_2_1 = _cita(
+    id="AASHTO_M294_TRAD.7.2.1",
+    fuente_id="AASHTO_M294_TRAD",
+    # La pagina imprime «7.2.1» sin punto final, a diferencia de sus vecinos
+    # «7.2.2.» y «7.2.3.»: se transcribe como esta.
+    numeral="7.2.1",
+    titulo_numeral="Tamaño nominal",
+    pagina_impresa="s/n",
+    pagina_pdf=5,
+    jerarquia_numeral=("REQUERIMIENTOS", "Dimensiones de la tubería:"),
+    texto_literal=Verbatim(
+        texto=("Los diámetros nominales deberán ser 300, 375, 450, 525, 600, "
+               "675, 750, 900, 1050, 1200, 1350 y 1500 mm (12, 15, 18, 21, "
+               "24, 27, 30, 36, 42, 48, 54 y 60 in.)."),
+        pagina_pdf=5),
+    # EXIGENCIA («deberán ser»): la serie es cerrada. Doce diametros, de 300
+    # a 1500 mm, con paso de 75 mm hasta 750 y de 150 mm de 900 a 1500; el
+    # 1500 es la ultima fila y no hay «y superiores». Es el ancla nueva de
+    # DIS-HR-D-MAX para el HDPE: el unico de los tres topes del catalogo que
+    # coincide con el techo de una norma de producto.
+    caracter=Caracter.EXIGENCIA,
+    verificada=False,
+    nota=("SIN FIRMA A PROPOSITO, no sin verificar: TRADUCCIÓN NO OFICIAL "
+          "sin folio, invariante T6 (ver la cabecera del bloque). Contenido "
+          "comprobado en N2 (verificador-normativo, 2026-09-14, por texto y "
+          "por imagen de la hoja 5): la frase esta integra en la PDF 5 bajo "
+          "«7. REQUERIMIENTOS» > «7.2. Dimensiones de la tubería:». La "
+          "primera oracion del numeral, que el Verbatim no incluye, define "
+          "el tamaño nominal como el diametro nominal INTERIOR. El num. 1.3 "
+          "(PDF 1) declara los valores SI como los estandar y las pulgadas "
+          "entre parentesis como no necesariamente equivalencias exactas, de "
+          "modo que 1500 mm es el valor y 60 in. la aproximacion. Lo que "
+          "acredita es lo que la traduccion dice; para el HDPE la serie "
+          "TERMINA donde el proyecto topa (1.50 m), a diferencia de A760 y "
+          "M 170M, que tabulan hasta 3600 mm."),
+)
+
+AASHTO_M294_TRAD_7_2_2 = _cita(
+    id="AASHTO_M294_TRAD.7.2.2",
+    fuente_id="AASHTO_M294_TRAD",
+    numeral="7.2.2",
+    titulo_numeral="Espesor de pared",
+    pagina_impresa="s/n",
+    pagina_pdf=5,
+    jerarquia_numeral=("REQUERIMIENTOS", "Dimensiones de la tubería:"),
+    texto_literal=Verbatim(
+        texto=("La pared interior de la tubería Tipo S y las paredes "
+               "interior y exterior de la tubería Tipo D, deberán tener lo "
+               "siguientes espesores mínimos cuando se midan de acuerdo con "
+               "la Sección 9.6.4."),
+        pagina_pdf=5),
+    # EXIGENCIA («deberán tener»): la tabulacion que sigue es de MINIMOS.
+    caracter=Caracter.EXIGENCIA,
+    verificada=False,
+    nota=("SIN FIRMA A PROPOSITO, no sin verificar: TRADUCCIÓN NO OFICIAL "
+          "sin folio, invariante T6 (ver la cabecera del bloque). Contenido "
+          "comprobado en N2 (verificador-normativo, 2026-09-14, por texto y "
+          "por imagen de la hoja 5). «lo siguientes» es errata de la "
+          "traduccion, transcrita como se imprime (T21). Sostiene la tabla "
+          "AASHTO_M294_TRAD.T7.2.2. LO QUE ESTE ESPESOR ES Y NO ES, porque "
+          "el nombre invita al error: es el minimo de la pared interior lisa "
+          "(Tipo S) o de las dos paredes (Tipo D), medido segun 9.6.4; NO es "
+          "la altura del perfil corrugado y NO fija el diametro exterior, "
+          "que la traduccion no trae en ninguna hoja "
+          "(SIN_DIAMETRO_EXTERIOR_M294_TRAD). Por eso esta tabla NO cierra "
+          "'espesor_pared_conducto' para el HDPE."),
+)
+
+
 # Los Fundamentos (§3.10) NO viven aqui: la decision abierta #4 del diseño del
 # registro los difirio a S18 y S18 les dio archivo propio,
 # `normativa/fundamentos.py`. El motivo es de lectura, no de tamaño: una cita
@@ -4441,13 +4611,72 @@ SIN_TABLA_CALIBRE_POR_COBERTURA_A796 = AfirmacionNegativa(
         "Hmin >= 600 mm"),
     cita_id="ASTM_A796.8.1.1.2#SELECCION")
 
+# LAS DOS DE LA TRADUCCION NO OFICIAL DE M 294-11 (N2). Las dos se afirman
+# sobre la TRADUCCION, y el ambito lo dice: lo que el original diga en
+# ingles no se ha leido. Son las dos cosas que el proyecto venia afirmando o
+# necesitando del HDPE sin fuente: que la norma de producto no clasifica por
+# altura de relleno (lo afirmaba 'clases_producto_por_relleno') y que no
+# fija el diametro exterior (lo necesitaba 'espesor_pared_conducto').
+SIN_CLASE_POR_ALTURA_M294_TRAD = AfirmacionNegativa(
+    que_no_dice=("AASHTO M 294-11 (traducción no oficial) no contiene "
+                 "ninguna tabla de clase, calibre ni rigidez por altura de "
+                 "relleno o de cobertura: el num. 1.4 excluye expresamente "
+                 "camas, relleno y carga de cubierta de tierra y remite el "
+                 "diseño estructural a AASHTO LRFD Seccion 12. Lo unico que "
+                 "tabula por diametro es la rigidez MINIMA de tuberia al 5 % "
+                 "de deflexion (7.4), que es un requisito de producto, no una "
+                 "seleccion por altura"),
+    ambito_barrido=(
+        "las 17 hojas del ejemplar, leidas ENTERAS por texto (extraible y "
+        "limpio) y las hojas 1, 5 y 8 tambien renderizadas: doce numerales "
+        "de nivel 1 (Ámbito, Documentos mencionados, Terminología, "
+        "Clasificación, Información para órdenes de compra, Materiales, "
+        "Requerimientos, Acondicionamiento, Método de ensayo, Inspección y "
+        "re-ensayo, Marcado, Aseguramiento de calidad), la Tabla 1 "
+        "(perforaciones Clase 1), las tabulaciones de 7.2.2 (espesor de "
+        "pared) y 7.4 (rigidez), el Anexo A1 y el Apéndice X1. Barrido por "
+        "palabra: «cobertura» 0 apariciones; «relleno» 5, todas en 1.4 (la "
+        "exclusion) o en 7.9.1 y 7.9.2 (el material de relleno frente a las "
+        "uniones, no una altura); «cubierta» 2 (1.4 y «la tubería ... "
+        "cubierta en esta especificación», 4.1); «altura» 3 (la H de las "
+        "perforaciones en la Tabla 1 y 7.3.1, y la altura de caida del "
+        "martillo en 9.3); «clase» solo para perforaciones y para la "
+        "clasificacion de celda de la resina"),
+    cita_id="AASHTO_M294_TRAD.1.4")
+
+SIN_DIAMETRO_EXTERIOR_M294_TRAD = AfirmacionNegativa(
+    que_no_dice=("AASHTO M 294-11 (traducción no oficial) no fija el diametro "
+                 "exterior ni la altura del perfil corrugado de ningun tamaño "
+                 "nominal: el tamaño nominal es el diametro INTERIOR (7.2.1), "
+                 "la tolerancia es del diametro interior (7.2.3), y el 7.2.2 "
+                 "tabula el espesor minimo de la pared interior lisa (Tipo S) "
+                 "o de las dos paredes (Tipo D), no la altura del perfil. El "
+                 "t que separa D interior de D exterior no sale de esta fuente"),
+    ambito_barrido=(
+        "las 17 hojas del ejemplar, por texto: «diámetro exterior» y "
+        "«diámetro externo» dan cero apariciones; «exterior» aparece 7 veces "
+        "(3.9 dos veces, 4.1.1, 4.1.3, 7.2.2, 9.4.2 y 9.7) y «externa/"
+        "externo» 10, nombrando una pared, un valle, una carga, una grieta "
+        "(3.8), unas fuerzas (9.6.3) o un laboratorio (A1.1), nunca una "
+        "dimension; «espesor» aparece 5 veces (6 con «espesores»), en 7.2.2, "
+        "en la Nota 4 de 9.4 (espesor de la probeta) y en 9.6.4; «perfil» "
+        "7 (1.4, el titulo de T 341 en 2.1, 6.1.1, dos en 7.7 y dos en "
+        "9.4.2), ninguna con una altura -- el 1.4 remite al fabricante «el "
+        "detalle de la seción del perfil de la pared», que es exactamente "
+        "el dato que la norma no fija --. Recuentos del verificador-normativo "
+        "de N2 por palabra entera, sin distinguir mayusculas"),
+    cita_id="AASHTO_M294_TRAD.7.2.2")
+
 # El censo de afirmaciones negativas va al FINAL del archivo a proposito: la
-# ultima (A796, N1) se define tras el bloque de esa fuente.
+# ultima (A796, N1) se define tras el bloque de esa fuente, y las dos de N2
+# tras el de la suya.
 AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
                           SIN_BORDE_LIBRE_DE_CANAL,
                           SIN_TABLAS_HEQ_EN_MP, SIN_COTAS_LAMINA_03,
                           SIN_CAJON_DE_CONCRETO_T12663,
                           SIN_PARTIDA_DE_CAJON_EG2013,
-                          SIN_TABLA_CALIBRE_POR_COBERTURA_A796)
+                          SIN_TABLA_CALIBRE_POR_COBERTURA_A796,
+                          SIN_CLASE_POR_ALTURA_M294_TRAD,
+                          SIN_DIAMETRO_EXTERIOR_M294_TRAD)
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

@@ -677,9 +677,15 @@ SIN_FUNDAMENTO: Tuple[Tuple[str, str, str], ...] = (
     ("F5.V9",
      "La disponibilidad de diametro sale de un CATALOGO de fabricacion, no de "
      "una norma. `NOR-PRO-01` y `NOR-PRO-02` retiraron precisamente la "
-     "atribucion de los topes a AASHTO M170 y ASTM A760, que tabulan mas.",
+     "atribucion de los topes a AASHTO M170 y ASTM A760, que tabulan mas. El "
+     "del HDPE si coincide con el techo de la serie de AASHTO M 294-11 "
+     "(N2, cita AASHTO_M294_TRAD.7.2.1), pero sobre una traduccion no "
+     "oficial sin firma, y el paso sigue descartando por catalogo para los "
+     "tres materiales.",
      "Nada: un catalogo no tiene numeral y no puede sostener un fundamento. "
-     "Es lo que `DeCatalogo` existe para rotular."),
+     "Es lo que `DeCatalogo` existe para rotular. Un fundamento del HDPE "
+     "sobre M 294-11 exigiria el original firmado y un paso que descartara "
+     "por norma, que hoy no existe."),
     ("F9.CABEZAL",
      "La cadena sismica y la estabilidad del cabezal tienen sus citas en el "
      "registro (AASHTO 11.6.5.1, A11.3.1, 3.10.3.1), pero la Fase 9 esta "
