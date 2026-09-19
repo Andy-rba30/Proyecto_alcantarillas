@@ -45,7 +45,7 @@ sus correcciones necesitan ajuste en más de la mitad de los casos.
 | ID | Veredicto | Severidad (auditoría → reevaluada) | Lo que acierta | Lo que yerra u omite |
 |---|---|---|---|---|
 | A-01 | Confirmado | alta → **alta** | `Informe` no captura criterios efectivos, procedencias, usos ni huellas; los 4 exportadores leen estado global al exportar (medido: 39 llamadas; `exportar_csv` está limpio); `_USADOS` nunca se vacía (27 heredados, no 28). | Omite la agravante: la memoria imprime «esta corrida usó OTRO» con la fila `1.7675 \| 1.75` mientras la memoria del punto usa 1.75 (`espesor 0.592 m`) — **la memoria afirma algo falso**. La premisa «proceso == corrida» está escrita como decisión (SIS-B-22) y es verdadera para la CLI: el defecto es de la GUI y de todo consumidor que reutilice el proceso. Su `ContextoCorrida` es correcto, pero P01 lo acopla a `Proyecto` y versionado de esquema (big-bang innecesario). |
-| A-02 | Confirmado | alta → **alta** | `restaurar_sesion` es aditiva; los `externos` de la GUI solo se pisan si vienen. | Dos agravantes medibles: la mezcla **se persiste** (`estado_de_sesion()` de B guarda las claves de A) y una clave restaurada sin procedencia **hereda la procedencia de A**. SIS-A-18 (cerrado) solo probó ida y vuelta de una sesión. La corrección obvia reabre SIS-B-22 («`limpiar_valores_dinamicos` no tiene llamador a propósito»): abrir sesión ES el caso de uso que faltaba. |
+| A-02 | Confirmado | alta → **alta** | `restaurar_sesion` es aditiva; los `externos` de la GUI solo se pisan si vienen. | Dos agravantes medibles: la mezcla **se persiste** (`estado_de_sesion()` de B guarda las claves de A) y una clave restaurada sin procedencia **hereda la procedencia de A**: es «contaminar otra obra» y «memoria que afirma algo falso». SIS-A-18 (cerrado) solo probó ida y vuelta de una sesión. SIS-B-22 («`limpiar_valores_dinamicos` no tiene llamador a propósito») no es vinculante (no está en los 8 conflictos): documenta una premisa de S16.5 («la GUI retira UNA clave») que S17 dejó atrás; abrir sesión ES el caso de uso que faltaba. |
 | A-03 | Confirmado | alta → **alta** | Mecanismo y corrección (duplicados con `TOL_UMBRAL_NORMATIVO`, que es la que ya usa `_misma_seccion`). | «Cinco visitas» porque abortó: el bucle es sin término (50 escalones en 0.00 s). Vale también no adyacente (ciclo de longitud 2) y casi-duplicado (5e-10). «Recorrer por índice» choca con la API por valor fijada por tres tests. `MD.disenar_material` no tiene guardia de progreso: cualquier regresión futura cuelga la GUI sin `ErrorProyecto`. |
 | N-01 | Parcial | alta → **media** | La ventana «citada o vigente, para las siete a la vez» trata igual una norma aprobada por RD del MTC (derogada) que cinco normas técnicas de EE.UU. | Parafrasea mal la ficha: dice «expediente EN CURSO» (régimen transitorio), no «no hay norma». El proyecto **ya registra** la derogación (`fuentes.MP.nota`, T1, RD 19-2018-MTC/14). La contradicción interna fuerte que no vio: el propio MP-2016 ancla AASHTO LRFD 2014 (PDF 44) mientras el registro cita la 9.ª de 2020 y la ficha dice «cuya edición no la manda nadie». |
 | N-02 | Confirmado | media → **media** | sha1 y páginas exactos; `DG2018 = _ausente(...)`; Seguridad Vial y Dispositivos sin registrar. | Causa temporal: los PDF entraron cuatro días después del último commit de código; el proyecto tiene el procedimiento hecho dos veces (N1, N2). Defecto estructural nuevo: **no existe guardia «PDF presente sin `Fuente`»** (T17 solo vigila el sentido inverso). DG-2018 §304.07.01 remite al RNGIV (DS 034-2008-MTC), que HEAD borró. Tres textos hoy mienten (`SIN_FUNDAMENTO` F5.V5, ficha de `talud_terraplen`). |
@@ -77,11 +77,13 @@ sus correcciones necesitan ajuste en más de la mitad de los casos.
    verificación existe en los cinco casos (HDS-5 3.18/3.24, MC-HHD 76-79, E.060
    11.10.10.3, MP 2.4.4.1.5.3): las correcciones son legítimas, pero empiezan por un
    commit documental, no por M4.
-2. **No ejecutó nada**, y por eso no vio los tres lugares donde **la propia suite
-   defiende el defecto**: `test_la_interpolacion_reproduce_la_recta…` (M-04, rel=1e-12),
-   la línea base de Familia C (B-01 congelado en la condición de M-02, regenerable
-   desde el código con un comando) y el test de ventana real que teclea `'1'` para
-   `n_celdas_cajon` y afirma que C-01 no dimensiona. Tampoco vio que M-03 es latente
+2. **No ejecutó nada**, y por eso no vio los dos lugares donde **la propia suite
+   defiende el defecto** ni el tercero donde es ciega a él:
+   `test_la_interpolacion_reproduce_la_recta…` (M-04, rel=1e-12), la línea base de
+   Familia C (B-01 congelado en la condición de M-02 y A-02 en la de M-01,
+   regenerable desde el código con un comando) y el test de ventana real que teclea
+   `'1'` para `n_celdas_cajon` sin poder distinguir por qué C-01 no dimensiona.
+   Tampoco vio que M-03 es latente
    (V6 lo contiene), que N-03 no llega a ninguna salida y que M-05/06/07 no tienen
    consumidor productivo.
 3. **No cruzó con el tracker ni con `decisiones_diferidas.md`.** M-02 (NOR-HDS-05),
@@ -115,15 +117,26 @@ severidad que les asigno.
   orden: el «no validamos el orden» de `progresion_de_cajon` es un argumento de dos
   dimensiones que no se traslada a un par escalar que la v8 (línea 427) presupone
   ordenado.
-- **PC-02 (media)** `ke_entrada` es [C] sin ventana ni dominio: `--declarar
-  ke_entrada=-0.5` pasa la CLI entera, baja el HW de salida, **cambia el control
-  gobernante** y puede pasar V4b de «no cumple» a «cumple» (HW/D 1.336 → 1.140).
-  `perdida_carga` no valida signo (H negativo). Mismo hueco en `v_max_tmc` y
-  `v_max_hdpe`. Es el reverso de V-02 por la vía `--declarar`, sin procedencia.
+- **PC-02 (media, extensión de V-02)** `ke_entrada` es [C] sin ventana ni dominio:
+  `--declarar ke_entrada=-0.5` pasa la CLI entera, baja el HW de salida y **cambia
+  el control gobernante**; `perdida_carga` no valida signo (H negativo). Mismo hueco
+  en `v_max_tmc` y `v_max_hdpe` (aceptan −1.0, 0.0 y 100.0). Refutación: confirmado
+  con dos precisiones. No es «sin aviso»: la CLI imprime «declarado SOLO para esta
+  corrida» y el JSON lo lista como pisado; lo que falta es el aviso de **rango
+  físico** (Tabla C.2: 0.2–0.9). Y el vuelco de V4b es condicional: con el
+  `HW_D_max = 1.5` del archivo V4b cumple con cualquier ke; solo vuelca si además se
+  declara `HW_D_max` en el extremo bajo de su ventana. Se reporta como extensión de
+  V-02 por la vía `--declarar`, no como hallazgo aparte.
 - **PC-03 (media)** MAT-D10 descarta el material entero por HWi/D ≤ 0 en Q chico ×
   S grande (con D = 0.90: S ≥ 0.38 para Q = 0.05 m³/s, S ≥ 0.54 para 0.10): un cruce
   trivialmente factible sale como `DisenoNoFactibleError` definitivo en vez de un
-  vacío declarable.
+  vacío declarable. Refutación: confirmado, con la severidad acotada: el umbral
+  analítico S* = 2·(H_c/D + K·q*^M) y la monotonía en D **sí** están escritos (v8
+  §4.2 y docstrings de M4), y nunca se dispara en el corredor del expediente
+  (S_cauce 0.006–0.008). Lo genuinamente nuevo es que la clase de excepción nunca se
+  argumentó frente a `CriterioPendienteError` y que el `Bloqueo` viaja con
+  `criterio=None`, por lo que `M11.criterios_bloqueantes` lo salta y ni la pestaña 4
+  ni el bloque «criterios pendientes» de la CLI lo muestran.
 - **PC-04 (alta, parte de M-01)** En pendiente suave con salida libre M6 recibe
   `V_erosion` (régimen uniforme) cuando la velocidad de salida a y_c es mayor: la
   auditoría solo vio la dirección conservadora.
@@ -140,25 +153,39 @@ severidad que les asigno.
 
 **Estado global y arquitectura**
 
-- **PC-07 (alta)** `cli._geometria_json` tiene la clave `"cota_entrada_origen"`
+- **PC-07 (media)** `cli._geometria_json` tiene la clave `"cota_entrada_origen"`
   **duplicada en el mismo literal `dict`**: la segunda gana y publica la regla que
   gobierna *ahora* en el registro global (`ca.valor_si_declarado`), no la que produjo
   la cota impresa al lado. Es A-01 en un campo por punto. Ningún test ni lector lo
-  cubre (desde `25acb9e`).
+  cubre (la línea del rótulo nació pisada en `25acb9e`). Refutación: confirmado;
+  baja a media porque ningún cálculo ni consumidor lee esa clave y la memoria HTML
+  imprime el rótulo correcto. Agravante estática que no exige serializar dos veces:
+  cualquier punto con `cota_fondo_entrada` **medida** sale en el JSON de toda corrida
+  como `adoptada: True, regla: 'cota_terreno'`, es decir, con el rótulo MEDIDA de la
+  memoria invertido.
 - **PC-08 (media)** **Identidad doble de módulos**: `src/` no es paquete y cinco
   archivos insertan `src/` en `sys.path`; `import src.criterios_adoptados` crea un
   segundo módulo con su propio `_OVERRIDES`/`_USADOS`. Demostrado en vivo durante
   esta revisión: `catalogo(CONCRETO, RECTANGULAR)` importado por `src.modulos` devuelve
   en silencio `seccion_eg2013='506'` y la norma del tubo (el enum `FormaSeccion` es
   otro objeto), mientras por import plano exige los criterios del cajón y da
-  `'503 + 504'`. Los prompts P01–P19 escriben `src/modulos/...`.
+  `'503 + 504'`. Los prompts P01–P19 escriben `src/modulos/...`. Refutación:
+  confirmado y latente (0 usos de `import src.` en producción). Dos precisiones: la
+  pérdida de una declaración es silenciosa solo para criterios **con valor de
+  archivo** (tanteo); un vacío sí detiene. Y las excepciones también se duplican:
+  un `except CriterioPendienteError` importado por la otra vía no la atrapa y la GUI
+  la vería como fallo de programa.
 - **PC-09 (media)** El registro de usos nunca se vacía y el `Informe` no lo captura,
   pero la fuga está **acotada**: dos corridas en el mismo proceso difieren en 98
   campos, todos bajo `/criterios/usados` y `/datos_sitio/usados`; fuera de ahí los
   JSON son idénticos byte a byte. Los 79 escritores de `_USADOS` pasan por tres
   funciones (`ca.valor`, `ca.valor_si_declarado`, `ds.valor`): la instantánea no
   exige enhebrar ningún parámetro por M2–M10. La suite ya hace la foto **a mano**
-  (27 accesos a `_USADOS` en 9 archivos, 70 líneas de limpieza).
+  (27 accesos a `_USADOS` en 9 archivos, 70 líneas de limpieza). Refutación:
+  confirmado; el daño es de integridad documental (nunca sub-declara: es una
+  unión), y medido, una memoria de **perfil** renderizada tras una corrida de
+  expediente imprime seis criterios de Fase 9 (`k_v`, `F_pga`, `factor_muro_eleccion`…)
+  como usados mientras declara la Fase 9 diferida.
 - **PC-10 (baja)** `import cli` cuesta 0.8–1.0 s: weasyprint se importa siempre
   (357–414 ms) aunque no haya `--pdf`, scipy.optimize 230–313 ms,
   `variables_entrada` parsea el AST de 13 módulos al importar (123 ms). El registro
@@ -166,27 +193,49 @@ severidad que les asigno.
 
 **Rendimiento** (la auditoría lo declaró «no medido»)
 
-- **PC-11 (alta)** El único cuello real es el **PDF**: 11 s y 287 MB para 4 puntos,
-  69 s y 1.29 GB para 40 (31 páginas por punto), y corre **en el hilo de Tk**. El
-  cálculo es despreciable: 2.1–2.4 ms por punto, `cli.correr` de 1000 puntos en
-  2.1 s. La congelación que un usuario sufre está en exportar, no en calcular; el
-  plan P (§A P1) y E06/E07 apuntan al sitio equivocado.
+- **PC-11 (media)** El único cuello real es el **PDF**: 11 s y 287 MB para 4 puntos,
+  69 s y 1.29 GB para 40, y **medido** en la refutación: 200 puntos = 360 s, 5.7 GB
+  de RSS y 4134 páginas (coste marginal ≈ 20 páginas, 1.7 s y 28 MB por punto,
+  lineal). Corre **en el hilo de Tk**. El cálculo es despreciable: 2.1–2.4 ms por
+  punto, `cli.correr` de 1000 puntos en 2.1 s. La congelación que un usuario sufre
+  está en exportar, no en calcular; el plan P (§A P1) y E06/E07 apuntan al sitio
+  equivocado. Es media y no alta porque no altera ningún resultado y la vía HTML
+  sigue costando ~1 s; en un portátil de 8 GB lo que aborta es solo la exportación
+  PDF.
 - **PC-12 (media)** La memoria HTML pesa 67 KB por punto y el 44 % de los bytes son
   nodos de texto repetidos ≥ 10 veces (el párrafo del umbral de 6.0 m ×80, las dos
   citas de la definición ×80, discrepancias ×90). Es lineal con constante alta; el
-  pico de RAM al construirla es 4× su tamaño.
+  pico de RAM al construirla es 4× su tamaño. Refutación: confirmado, con la palanca
+  afinada: el ×80 en 40 puntos es **×2 por punto**, porque el paso 2.1 (F2.LUZ) se
+  renderiza dos veces dentro de cada punto (traza de clasificación y desarrollo de
+  verificaciones); retirar ese doble renderizado es formato puro. El anexo con
+  anclas, en cambio, tensiona el criterio de salida §4.4 de la hoja de correcciones
+  («la memoria de un punto se lee de arriba abajo… sin abrir el código») y hay que
+  decidirlo explícitamente para la salida impresa. `json.dumps` sin `indent` vale
+  solo un 14 %.
 
 **GUI** (verificado con ventana real: `apt-get install python3-tk` para 3.12 + `xvfb-run`;
 los 4 tests de ventana corren)
 
 - **PC-13 (alta)** La GUI **no puede declarar un entero**: `'1'` → `1.0` en los dos
   parsers, y `M2` exige `isinstance(int)` para `n_celdas_cajon`; desde la ventana el
-  marco nunca pasa de ahí, por la CLI (`ast.literal_eval`) sí. El único test de
-  ventana real teclea `'1'` y **afirma que C-01 no dimensiona**: fija el defecto.
-- **PC-14 (media)** 32 criterios numéricos sin rango numérico aceptan **cadenas**
-  (`'0,30 m'`, `'cero'`) y el panel confirma; `'1,200'` vale 1.2 en las tres puertas;
-  el validador al escribir de la emergente acepta `nan` con ámbar y el botón lo
-  rechaza después (dos veredictos para la misma tecla).
+  marco nunca pasa de ahí, por la CLI (`ast.literal_eval`) sí. Refutación:
+  confirmado como alta porque el criterio de salida de S20 es «el perfil corre de
+  punta a punta **desde la GUI**», y desde la ventana ningún punto de Familia C pasa
+  de M2 con un entero tecleado. Corrección al texto: el test de ventana real no
+  «congela» el defecto, es **ciego** a él: C-01 tampoco dimensiona con `int` 1
+  (`S_cauce` vacío en el CSV de perfil), así que la aserción pasaría igual tras la
+  corrección; lo que falta es un test que afirme cuál es el bloqueo real de C-01.
+- **PC-14 (media)** Los criterios sin rango numérico aceptan **cadenas** (`'0,30 m'`,
+  `'cero'`): medido, 53 de las 70 claves aceptan `'cero'` y las 17 con ventana
+  numérica lo rechazan; el panel confirma la declaración. La consecuencia, que no
+  estaba en el hallazgo, es que la aritmética revienta después con `TypeError`:
+  **tumba la corrida** con traza en la CLI y con «Error inesperado» en la GUI, un
+  fallo de programa provocado por una declaración que la puerta aceptó (la clase de
+  defecto que S20 cerró para los `AssertionError`). El validador al escribir de la
+  emergente acepta `nan` con ámbar y el botón lo rechaza después (dos veredictos
+  para la misma tecla). `'1,200'` → 1.2 es la lectura correcta bajo la política de
+  coma decimal declarada; no se cuenta como defecto.
 - **PC-15 (media)** Tras una **corrida fallida** la ventana sigue presentando el
   informe anterior como vigente (pestañas 3 y 4, barra «Ejecutado (…)», cuatro
   exportadores activos), y el nombre del proyecto se lee al exportar, no al correr.
@@ -199,13 +248,21 @@ los 4 tests de ventana corren)
 
 **Suite**
 
-- **PC-18 (alta)** La línea base de Familia C **congela M-02** (B-01: control salida,
-  HW/D 0.40, memoria «NO DEBE USARSE» y V1 [OK]) y **no puede ver M-01 ni M-03**:
-  todos los TW son ≤ 0.3 < D y `punto_cajon.py` fija `n_celdas_cajon = 1` con el
-  comentario «con N = 1 daría el mismo número». El oráculo se regenera desde el
-  código con un comando.
-- **PC-19 (alta)** `test_M4_control.py` fija con rel=1e-12 el extremo móvil de la
-  transición (M-04): test contra el comportamiento actual, sin test de punto medio.
+- **PC-18 (media)** La línea base de Familia C **congela M-02** (B-01, corrida
+  ancha: control salida, HW/D 0.40, memoria «NO DEBE USARSE» y V1 [OK]) y, medido en
+  la refutación, **también M-01** (A-02, corrida estrecha: TW = 1.196 m > D derivado
+  por la Sec. 1.3, HW = 1.106 m > D, V1/V2 [OK] sobre y_n y V uniforme; el censo por
+  literales no ve el TW que la CLI calcula). Es **ciega a M-03** por construcción:
+  ninguna sección rectangular llega a `MD.resolver_control` (C-01 se detiene en
+  `embocadura_cajon`) y `punto_cajon.py` no pasa por MD. La corrección de M-04
+  mueve A-01 en −0.306 mm de HW (dos archivos); la de M-02 mueve 9 de 13. El
+  oráculo se regenera desde el código con un comando (deliberado y escrito en su
+  README como «artefacto de diff»).
+- **PC-19 (media)** `test_M4_control.py` fija con rel=1e-12 el extremo móvil de la
+  transición (M-04) y ningún test de punto medio discrimina las dos lecturas. Es un
+  oráculo con la misma lectura que el código, no demostrablemente «escrito contra
+  el comportamiento actual» (la historia del clon no lo alcanza); media porque la
+  lectura que defiende es conservadora en toda la ventana.
 - **PC-20 (media)** 34 tests de 15 archivos dependen de las declaraciones sintéticas
   de `conftest.py`; 4 de `test_cli` prueban las Fases 6/7/8 sobre un stub HDPE que
   el producto **nunca puede dimensionar**. Los otros 1948 no cambian; la línea base
@@ -460,11 +517,15 @@ lo acumulado» sin criterio de aceptación más allá de la suite.
    en el punto de uso y `VARIABLES` perezoso: −0.5 s por proceso (medir con
    `-X importtime`, no estimar). Es prerrequisito de E01 y de cualquier empaquetado.
 
-6. **Deduplicar la memoria HTML sin tocar el cálculo.** Anexo único de citas,
-   umbrales y discrepancias con ancla por `cita_id`, y cada punto enlaza; los textos
-   siguen saliendo de `Registro.textos_literales()`. Objetivo medible: < 15 KB y
-   < 10 páginas por punto; construir por streaming. Con eso el PDF de 40 puntos deja
-   de costar 69 s y 1.3 GB.
+6. **Deduplicar la memoria HTML sin tocar el cálculo.** Primero lo que no tensiona
+   nada: el paso 2.1 (F2.LUZ) se renderiza dos veces por punto, y los punteros
+   («el detalle está en el bloque de discrepancias» ×90) ya son referencias. Después,
+   y como decisión explícita porque choca con el criterio de salida §4.4 («la memoria
+   de un punto se lee de arriba abajo»), un anexo único de citas, umbrales y
+   discrepancias con ancla por `cita_id` al que cada punto enlaza; los textos siguen
+   saliendo de `Registro.textos_literales()`. Objetivo medible: < 15 KB y < 10
+   páginas por punto; construir por streaming. Con eso el PDF de 40 puntos deja de
+   costar 69 s y 1.3 GB, y el de 200 deja de costar 6 minutos y 5.7 GB.
 
 7. **Tres guardias de proceso**: un test que liste `normas/*.pdf` y exija que cada
    archivo sea `Fuente` presente o figure en un censo `PRESENTES_SIN_REGISTRAR` con
