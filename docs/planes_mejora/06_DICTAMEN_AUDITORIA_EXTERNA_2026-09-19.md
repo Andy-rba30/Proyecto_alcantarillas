@@ -102,8 +102,19 @@ severidad que les asigno.
   se acepta en caliente: `_verificar_sensibilidad` valida cada extremo por separado
   y `Material` no exige el orden. Con `n_manning_hdpe=(0.013, 0.010)` todas las
   velocidades de M3→M5→M6 cambian al lado no conservador (y/D 0.665 → 0.559;
-  `V_erosion` 2.89 → 2.10; `V_sedimentacion` 2.23 → 2.74) sin excepción. `[0.012]`
-  y `0.012` pasan la guardia y revientan en `catalogo` con `ValueError`/`TypeError`.
+  `V_erosion` 2.89 → 2.10; `V_sedimentacion` 2.23 → 2.74) sin excepción. Refutación
+  independiente: **confirmado**, y peor de lo dicho. Con Q = 1.167 m³/s y S = 0.020
+  el par nominal descarta el HDPE en todos los diámetros por V3 (`V_erosion` 5.11 >
+  4.572) y el par invertido **aprueba Ø 0.90** con V1/V2/V3 en verde y un d50 de
+  Laushey que baja de 0.860 a 0.443 m (exige que el espesor HDPE esté declarado,
+  como lo estará cuando entre el material). Y un escalar (`--declarar
+  n_manning_hdpe=0.012`, o `[0.012]`) no revienta solo en el punto HDPE: tumba la
+  corrida **entera** de la CLI con traza, para todos los puntos, porque
+  `M2.materiales_candidatos` construye el catálogo de los tres materiales; la GUI lo
+  mostraría como fallo de programa. Ninguna regla ni ficha justifica no validar el
+  orden: el «no validamos el orden» de `progresion_de_cajon` es un argumento de dos
+  dimensiones que no se traslada a un par escalar que la v8 (línea 427) presupone
+  ordenado.
 - **PC-02 (media)** `ke_entrada` es [C] sin ventana ni dominio: `--declarar
   ke_entrada=-0.5` pasa la CLI entera, baja el HW de salida, **cambia el control
   gobernante** y puede pasar V4b de «no cumple» a «cumple» (HW/D 1.336 → 1.140).
