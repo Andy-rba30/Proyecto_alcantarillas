@@ -278,7 +278,12 @@ Problemas de orden y riesgos ocultos, medidos:
 3. **P00 pide tests de regresión antes de corregir.** La regla 6 de CLAUDE.md lo
    permite solo si son tests de **fallo esperado** (aceptación), nunca tests que
    copien la salida actual; el plan no lo distingue, y la línea base de Familia C
-   (PC-18) es exactamente un oráculo copiado que se regenera desde el código.
+   (PC-18) es exactamente un oráculo copiado que se regenera desde el código. La
+   suite no usa `xfail` en ningún sitio (0 ocurrencias): la forma correcta de P00 es
+   `pytest.mark.xfail(strict=True)` con la expectativa del invariante o de la fuente
+   (punto medio = media de los extremos con H_c(Q_lo); N=3/Q=9 ≡ N=1/Q=3;
+   V_salida = Q/A_llena; espesor ≤ 0 → `DatoInvalidoError`), que pasa a verde en la
+   fase que lo cierra.
 4. **P04 «parser compartido por CLI, panel y emergente»** choca con un test que fija
    la divergencia CLI/GUI a propósito; el parser compartido es GUI–GUI. «Resolvedor
    que obtiene el valor de la tabla» choca con proponer/declarar (test) pero
@@ -306,11 +311,18 @@ Problemas de orden y riesgos ocultos, medidos:
 11. **P16/P17** y el «cálculo en segundo plano» del backlog atacan una congelación
     que no existe (10–30 ms por corrida) e ignoran la real (PDF, 11–69 s). Un hilo
     con el estado global actual es peligroso; el subproceso no.
-12. **Convenciones que ningún prompt menciona**: mensaje `fase1(Sn)`, tracker `.xlsx`
-    por ID, regenerar `manifiesto_citas.md`, `manifiesto_registro_normativo.md`,
-    `trazabilidad.csv` e `indice_formulas.md` con sello, el par
-    `passed + skipped = collected`, y que los imports son planos (`modulos.X`), no
-    `src.modulos.X` (PC-08).
+12. **Convenciones que ningún prompt menciona**: el mensaje de commit (CLAUDE.md
+    escribe `fase1(Sn)`, y los últimos 30 commits usan `<área>(<sesión>): …`, por
+    ejemplo `normativa(N2)`, `cierre(PD)`: conviene fijar una serie nueva, p. ej.
+    `ext(En)`), tracker `.xlsx` por ID, regenerar `manifiesto_citas.md`,
+    `manifiesto_registro_normativo.md`, `trazabilidad.csv` e `indice_formulas.md` con
+    sello (y el sello exige el par de la suite medido sobre `origin/main`, que no se
+    conoce antes de fusionar), el par `passed + skipped = collected`, la fusión a
+    `main` como cierre (el plan dice literalmente «no empujar a un remoto»), y que los
+    imports son planos (`modulos.X`), no `src.modulos.X` (PC-08). Dos añadidos de
+    orden: P12 y P12a no dependen de `Proyecto` y deben ir **antes** de P03, con
+    P12a fundido en P03 y P12b en P10; y `informe_json` tiene que exportar el bloque
+    h_o (hoy 0 ocurrencias en `cli.py`) antes de que P08 lo convierta en estado.
 
 **Fases que faltan:** enmiendas a la v8 como paso previo; registro de la DG-2018 y
 guardia «PDF presente»; PDF fuera del hilo; cruce de temarios con el tracker; alta de
@@ -322,6 +334,14 @@ lo acumulado» sin criterio de aceptación más allá de la suite.
 
 ### 2.2 Cadena de evolución E00–E25 y rutas H/G/S/D/B
 
+- **Se escribió sin leer el árbol.** Los 60 prompts mandan «ejecuta únicamente Exx
+  del `Plan_prompts_mejoras_alcantarillas.md`», un archivo que no existe con ese
+  nombre, y citan un backlog (`Plan_estrategico_alcantarillas_v2.md`) que no está en
+  el repositorio. E00 solo habilita la ruta si «la cadena P00–P19 está acreditada»:
+  ejecutado literalmente, bloquea la ruta E para siempre o invita al ejecutor a
+  acreditarla sin evidencia. Hay que reescribirlo como «medir la base real» (HEAD,
+  par de la suite, tracker por ID, fichas de `decisiones_diferidas.md` que la ruta
+  va a pisar: SIS-A-18, SIS-B-05, NOR-HDS-05).
 - **Duplica lo que existe o está planificado por el proyecto**: el anticipo
   pre-corrida (`src/anticipo.py`) vs E13; la traza «¿de dónde sale este número?»
   (plan G4) vs E18/E21; vigencia (T1) vs E12; export CSV del registro (T3) vs E22;
@@ -342,13 +362,40 @@ lo acumulado» sin criterio de aceptación más allá de la suite.
 - **E15 (escenarios de rugosidad)** debe respetar la regla de doble n de M3 (una
   resolución con n_max, dos velocidades): «cada rugosidad requiere su propia
   solución» contradice MAT-D1 salvo que se defina como escenario de n_max.
+- **E03a/E03b/E03c son tres sesiones para un cambio de diez líneas**: el anticipo
+  usa 2 atributos de `cli`, la ayuda 5 y el índice de fórmulas 2. Se funden en E03,
+  y E03c no puede «regenerar el índice con sello» dentro de la sesión porque el
+  sello exige el par medido sobre `origin/main`.
+- **E04 (persistencia con revisiones)** parte de una sesión `FORMATO_SESION = 2`
+  sin identidad, sin sha1 del CSV, sin corridas y con `open('w')` directo: hace
+  falta un formato 3 con migración explícita v2→v3, `informe_json` embebido por
+  corrida y escritura temporal + `os.replace`, y cerrar A-02 sin romper el
+  contrato de `ResultadoDeRestauracion`.
 - **Ruta H (perfil gradualmente variado)**: el paquete I1 escrito en
   `H_O_CONDICION_APLICACION` (piezas 1–5: Ec. 3.7 pág. 3.12, umbrales pág. 3.24,
   Sección 3.5) ya es la especificación de H00; es lo que cierra M-01 y M-02 de una
-  vez y merece sesión propia con plan mode, como dice NOR-HDS-05.
-- **Escala**: 60 prompts a «uno por mensaje» sin puertas de valor. Ocho fases dan el
-  80 %: E01–E03 (servicio), E04 (persistencia), E10 (editores tipados), E12–E13
-  (evidencias), E21 (memoria como expediente) y H00–H02.
+  vez y merece sesión propia con plan mode, como dice NOR-HDS-05. Dos restricciones
+  que el plan no ve: la **regla vinculante #12** de la Familia C (la vía por tirante
+  de `Seccion` no puede ganar consumidores desde M3/M4 sin declararlos; un censo AST
+  lo vigila), que obliga a integrar en `llenado` vía `geometria_en`; y el conflicto
+  #7 (dorados no se fabrican): sin corrida HY-8 aportada por el dueño, el único caso
+  patrón legítimo es el límite de flujo uniforme y el balance de energía. La primera
+  salida útil no es un HW nuevo sino la **fracción de barril lleno**, que vuelve
+  medida la primera condición de h_o. H03 tal como está («adaptar V1/V2/V3 al
+  perfil») es vacío o peligroso mientras el paquete diga «M5 no cambia»; M-01
+  demuestra que M5 sí cambia, pero eso se decide en la v8 (paso 0), no en H03.
+- **Rutas G y B** implican dependencias nuevas (pyproj, shapely, rasterio,
+  ifcopenshell) que CLAUDE.md exige consultar **antes**; el CSV no trae coordenadas
+  (19 columnas, la única posicional es `progresiva_km`). **S04a** ya está
+  especificado por N1 como sesión de cálculo en M8; S03/S04b esperan fuentes que no
+  están en `normas/`; D00–D03 sin fuente primaria nueva.
+- **Escala**: 60 prompts a «uno por mensaje» sin puertas de valor. Ocho a diez
+  sesiones dan el 80 %: E00' (medición real), contexto de corrida, E01+E02 fundidas
+  (≈1000 líneas de orquestación, modelo y carga a un módulo plano, con
+  reexportaciones para los 21 atributos que usa la GUI y los 6 privados que usan los
+  tests), E03 fundida, PDF por subproceso, E10 (editores tipados), E04 v3, E14
+  (comparador sobre dos `informe_json`, reutilizando la comparación de
+  `test_linea_base`) y H00–H02 como la sesión de NOR-HDS-05.
 
 ---
 
