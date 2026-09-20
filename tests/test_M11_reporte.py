@@ -24,7 +24,7 @@ import pytest
 import criterios_adoptados as ca
 import datos_sitio as ds
 from cli import (Bloqueo, DatoDeclarado, Informe, InformePunto,
-                 cargar_datos_externos, correr)
+                 capturar_contexto, cargar_datos_externos, correr)
 from modelos import (FormaSeccion, PasoDiseno, SeccionCircular, TipoDeBloqueo,
                      Verificacion)
 from modulos import M11_reporte as M11
@@ -56,6 +56,16 @@ def _informe_de_ejemplo() -> Informe:
 @pytest.fixture(scope="module")
 def informe() -> Informe:
     return _informe_de_ejemplo()
+
+
+def _contexto():
+    """
+    La foto del estado del proceso AHORA, para los bloques que se prueban
+    sueltos. Desde EXT-4 M11 no lee el registro vivo: recibe el
+    `ContextoCorrida` del informe, y un test que prepara el estado y llama a
+    un bloque tiene que fotografiarlo el mismo, como hace `cli.correr`.
+    """
+    return capturar_contexto(csv_sha1="")
 
 
 @pytest.fixture(scope="module")
@@ -184,9 +194,9 @@ class TestPlantillaSinPorcentajesLibres:
         """
         tableros = M11.tableros_pendientes()
         del_expediente = M11.bloque_pendientes(
-            tableros, (), alcance=M11.ALCANCE_EXPEDIENTE)
+            tableros, (), _contexto(), alcance=M11.ALCANCE_EXPEDIENTE)
         del_perfil = M11.bloque_pendientes(
-            tableros, (), alcance=M11.ALCANCE_PERFIL)
+            tableros, (), _contexto(), alcance=M11.ALCANCE_PERFIL)
         assert tableros, "sin tableros la comparacion no prueba nada"
         assert len(del_expediente) > len(del_perfil)
         assert "nivel de perfil" in del_perfil
@@ -273,7 +283,7 @@ class TestTrazabilidad:
         assert M11.sha1_archivo(uno) != M11.sha1_archivo(otro)
 
     def test_trazabilidad_completa(self, informe):
-        traza = M11.trazabilidad(Path(informe.csv),
+        traza = M11.trazabilidad(Path(informe.csv), informe.contexto,
                                  generado_utc=informe.generado)
         assert traza.version_hoja_ruta.startswith("v")
         assert len(traza.csv_sha1) == len(traza.criterios_sha1)
@@ -282,7 +292,7 @@ class TestTrazabilidad:
 
     def test_el_encabezado_llega_al_html(self, informe, memoria):
         """Los cuatro datos exigidos, ya renderizados."""
-        traza = M11.trazabilidad(Path(informe.csv),
+        traza = M11.trazabilidad(Path(informe.csv), informe.contexto,
                                  generado_utc=informe.generado)
         assert traza.version_hoja_ruta in memoria      # version de la hoja
         assert traza.csv_sha1 in memoria               # SHA-1 del CSV
@@ -296,8 +306,12 @@ class TestTrazabilidad:
         copia = tmp_path / "otro.csv"
         copia.write_text(
             CSV_EJEMPLO.read_text(encoding="utf-8") + "\n", encoding="utf-8")
-        traza_original = M11.trazabilidad(Path(informe.csv))
-        traza_copia = M11.trazabilidad(copia)
+        externos = cargar_datos_externos(
+            None, {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 14.0,
+                   "L_hidraulico_m": None, "categoria_tr": None})
+        otro = correr(copia, externos)
+        traza_original = M11.trazabilidad(Path(informe.csv), informe.contexto)
+        traza_copia = M11.trazabilidad(copia, otro.contexto)
         assert traza_original.csv_sha1 != traza_copia.csv_sha1
         assert traza_copia.csv_sha1 not in memoria
 
@@ -595,7 +609,7 @@ class TestEtiquetaDeSitio:
     def test_el_bloque_declara_cada_dato_con_su_trazabilidad(self):
         import html as _html
 
-        renderizado = M11.bloque_datos_sitio(solo_usados=False)
+        renderizado = M11.bloque_datos_sitio(_contexto(), solo_usados=False)
         for clave, d in ds.DATOS_SITIO.items():
             assert clave in renderizado
             assert _html.escape(d.procedimiento) in renderizado
@@ -605,19 +619,19 @@ class TestEtiquetaDeSitio:
         assert M11._etiqueta_html("S") in renderizado
 
     def test_el_bloque_avisa_de_la_trazabilidad_incompleta(self):
-        renderizado = M11.bloque_datos_sitio(solo_usados=False)
+        renderizado = M11.bloque_datos_sitio(_contexto(), solo_usados=False)
         assert "Advertencia" in renderizado
         assert "PGA_roca_B" in renderizado
 
-    def test_sin_datos_invocados_el_bloque_lo_dice(self, monkeypatch):
-        monkeypatch.setattr(ds, "_USADOS", set())
+    def test_sin_datos_invocados_el_bloque_lo_dice(self):
+        ds.reiniciar_usos()
         assert "no invoco ningun dato de sitio" in M11.bloque_datos_sitio(
-            solo_usados=True)
+            _contexto(), solo_usados=True)
 
     def test_un_criterio_S_imprime_trazabilidad_donde_un_A_imprime_sensibilidad(self):
         import html as _html
 
-        renderizado = M11.bloque_criterios(solo_usados=False)
+        renderizado = M11.bloque_criterios(_contexto(), solo_usados=False)
         de_sitio = [c for c in ca.CRITERIOS.values() if c.etiqueta == "S"]
         assert de_sitio, "ningun criterio [S] declarado"
         assert "<dt>Trazabilidad</dt>" in renderizado
@@ -636,15 +650,15 @@ class TestBloqueCriterios:
         # que es justamente lo que garantiza que un dato no inyecte marcado.
         import html as _html
 
-        renderizado = M11.bloque_criterios(solo_usados=False)
+        renderizado = M11.bloque_criterios(_contexto(), solo_usados=False)
         for clave, criterio in ca.CRITERIOS.items():
             assert clave in renderizado
             assert _html.escape(criterio.fuente) in renderizado
             assert _html.escape(criterio.justificacion) in renderizado
             assert M11._etiqueta_html(criterio.etiqueta) in renderizado
 
-    def test_solo_usados_no_lista_el_catalogo_completo(self, memoria):
-        usados = set(ca.criterios_usados())
+    def test_solo_usados_no_lista_el_catalogo_completo(self, informe, memoria):
+        usados = set(informe.contexto.criterios_usados)
         no_usados = set(ca.CRITERIOS) - usados
         assert usados, "la corrida deberia haber invocado algun criterio"
         # Al menos uno de los no usados no debe aparecer en el bloque 3
@@ -676,7 +690,7 @@ class TestBloqueCriterios:
         ca.establecer_valor_dinamico(clave, 32.0)
         try:
             ca.valor(clave)                      # el calculo lo usa
-            bloque = M11.bloque_criterios(solo_usados=True)
+            bloque = M11.bloque_criterios(_contexto(), solo_usados=True)
 
             assert "32.0" in bloque
             ficha = bloque.split(clave)[1]
@@ -696,7 +710,7 @@ class TestBloqueCriterios:
         procedencia va en todas las fichas: es parte del contrato de la
         memoria, no una excepcion.
         """
-        bloque = M11.bloque_criterios(solo_usados=False)
+        bloque = M11.bloque_criterios(_contexto(), solo_usados=False)
         assert bloque.count("<dt>Procedencia</dt>") + bloque.count(
             '<dt class="pendiente">Procedencia</dt>') == len(ca.CRITERIOS)
 
@@ -716,7 +730,7 @@ class TestBloquePendientes:
         clave = "phi_relleno_trasdos"
         ca.establecer_valor_dinamico(clave, 32.0)
         try:
-            bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+            bloque = M11.bloque_pendientes(M11.tableros_pendientes(), (), _contexto())
             assert "Criterios declarados solo para esta corrida" in bloque
             seccion = bloque.split("Criterios declarados solo para esta corrida")[1]
             assert clave in seccion
@@ -730,7 +744,7 @@ class TestBloquePendientes:
         criterio vacio la `fuente` es el enunciado del hueco. La memoria decia
         que lo que resuelve el vacio es la descripcion del vacio.
         """
-        bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+        bloque = M11.bloque_pendientes(M11.tableros_pendientes(), (), _contexto())
         for clave in ca.criterios_sin_valor():
             c = ca.criterio(clave)
             if not c.reemplazado_por:
@@ -745,7 +759,7 @@ class TestBloquePendientes:
         """
         import criterios_adoptados as ca
 
-        html = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+        html = M11.bloque_pendientes(M11.tableros_pendientes(), (), _contexto())
         assert "v_max_concreto_eleccion" in ca.criterios_opcionales_sin_declarar()
 
         antes_de_opcionales = html.split("Refinamiento opcional no adoptado")[0]
@@ -758,7 +772,7 @@ class TestBloquePendientes:
         refinamiento estuviera disponible y no se adoptara es una decision
         del proyectista, distinta de no haberlo mirado.
         """
-        html = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+        html = M11.bloque_pendientes(M11.tableros_pendientes(), (), _contexto())
         assert "Refinamiento opcional no adoptado" in html
 
         bloque = html.split("Refinamiento opcional no adoptado")[1]
@@ -911,7 +925,7 @@ class TestBloquePendientes:
     def test_el_bloque_se_imprime_aunque_nada_haya_bloqueado(self):
         """Que una corrida no tropiece no borra los pendientes."""
         tableros = M11.tableros_pendientes()
-        html = M11.bloque_pendientes(tableros, ())
+        html = M11.bloque_pendientes(tableros, (), _contexto())
         assert "Tablero 1" in html
         assert "Ninguno" in html
 
@@ -1033,7 +1047,7 @@ class TestBloqueAcotaciones:
         """
         import criterios_adoptados as ca
 
-        declaradas = M11.acotaciones_declaradas()
+        declaradas = M11.acotaciones_declaradas(_contexto())
         esperadas = sorted(k for k, c in ca.CRITERIOS.items()
                            if c.vacio_verificado
                            and ca.criterio_efectivo(k).valor is not None)
@@ -1053,7 +1067,7 @@ class TestBloqueAcotaciones:
         busqueda / que queda pendiente. Un valor adoptado sobre un vacio se
         defiende con el razonamiento entero o no se defiende.
         """
-        html = M11.bloque_acotaciones(alcance="perfil")
+        html = M11.bloque_acotaciones(_contexto(), alcance="perfil")
         assert "cobertura_minima_aashto" in html
         assert "Que dice la norma, que NO dice" in html
         # La pieza "por que la adopcion es conservadora" viaja dentro de la
@@ -1074,8 +1088,8 @@ class TestBloqueAcotaciones:
         memoria de perfil y es una brecha en una de expediente, que es donde
         esa verificacion debia cerrarse.
         """
-        perfil = M11.bloque_acotaciones(alcance="perfil")
-        expediente = M11.bloque_acotaciones(alcance="expediente")
+        perfil = M11.bloque_acotaciones(_contexto(), alcance="perfil")
+        expediente = M11.bloque_acotaciones(_contexto(), alcance="expediente")
 
         assert "BRECHA DE EXPEDIENTE" in expediente
         assert "BRECHA DE EXPEDIENTE" not in perfil
@@ -1155,7 +1169,7 @@ class TestBloqueDeValoresPisados:
         se anota: un test que se equivoca en la direccion PERMISIVA no falla
         cuando debe.
         """
-        bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+        bloque = M11.bloque_pendientes(M11.tableros_pendientes(), (), _contexto())
         if self.MARCA not in bloque:
             return ""
         resto = bloque.split(self.MARCA, 1)[1]
@@ -1206,7 +1220,7 @@ class TestBloqueDeValoresPisados:
                      and v.sensibilidad is None)
         ca.establecer_valor_dinamico(vacio, 1.0)
         try:
-            bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+            bloque = M11.bloque_pendientes(M11.tableros_pendientes(), (), _contexto())
             assert "Criterios declarados solo para esta corrida" in bloque
             assert vacio in bloque, "el vacio rellenado desaparecio de la memoria"
             assert vacio not in self._seccion_pisados(), (
@@ -1224,7 +1238,7 @@ class TestBloqueDeValoresPisados:
         """
         previos = self._sin_declaraciones()
         try:
-            bloque = M11.bloque_pendientes(M11.tableros_pendientes(), ())
+            bloque = M11.bloque_pendientes(M11.tableros_pendientes(), (), _contexto())
             assert "Ninguno: todo valor que entro en el calculo esta" in bloque
             assert self.MARCA not in bloque
         finally:

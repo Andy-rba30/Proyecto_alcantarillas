@@ -1303,10 +1303,10 @@ def test_el_fondo_de_entrada_MEDIDO_manda_sobre_la_regla_adoptada():
         "coincidan, o no distingue nada")
 
     ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
-    # El registro de usos es de PROCESO y llega contaminado por los tests
-    # anteriores del modulo; sin partir de cero, el aserto de abajo mediria la
-    # suma de la sesion y no esta llamada.
-    ca._USADOS.clear()
+    # El registro de usos llega con lo que invocaron los tests anteriores
+    # del modulo; sin partir de cero, el aserto de abajo mediria la suma de
+    # la sesion y no esta llamada.
+    ca.reiniciar_usos()
     cota = cota_de_entrada(punto)
 
     assert cota.valor == pytest.approx(medida, rel=REL_TRANSPORTE)
@@ -1328,7 +1328,7 @@ def test_sin_dato_medido_rige_la_regla_y_lo_dice():
     punto = _punto()
     assert punto.cota_fondo_entrada is None
     ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
-    ca._USADOS.clear()
+    ca.reiniciar_usos()
 
     cota = cota_de_entrada(punto)
 

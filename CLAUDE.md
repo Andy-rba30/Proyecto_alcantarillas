@@ -112,6 +112,24 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   M11 imprima solo los usados.
 - Cada verificación devuelve un objeto Verificacion(cumple, numeral, valor,
   criterio_aplicado), nunca un bool desnudo.
+- **El estado con que corrió el expediente viaja en el informe, no se lee
+  del proceso al exportar (EXT-4).** Los tres archivos de valores llevan
+  estado de proceso —el registro de usos, las declaraciones en caliente, el
+  libro de procedencias— y hasta EXT-4 los cuatro exportadores lo leían AL
+  EXPORTAR, en 39 sitios: correr dos veces en la GUI, declarar después de
+  correr o editar el CSV antes de exportar movían la memoria de una corrida
+  que ya había pasado (EXT-A-01, PC-07, PC-09). `cli.correr` vacía los usos al
+  entrar (`reiniciar_usos`) y fotografía al salir `Informe.contexto`, un
+  `ContextoCorrida` congelado de `modelos.py` con usos, valores efectivos
+  copiados en profundidad, procedencias, declarados y pisados en caliente y
+  las dos huellas (`csv_sha1` de los MISMOS bytes que M0 leyó,
+  `criterios_sha1`). De los catálogos, la capa de reporte sólo hace lecturas
+  ESTÁTICAS —lo que dice el archivo—, y un test barre el AST de M11 para que
+  siga siendo así. Un `Informe` sin contexto no se exporta: no hay caída al
+  estado vivo (ficha EXT-4-03). Y la sesión de la GUI SUSTITUYE al abrirse
+  (`restaurar_sesion(sustituir=True)`, con el candidato validado en seco) e
+  importa aparte, porque abrir la obra B no puede heredar las decisiones de
+  la obra A (EXT-A-02, SIS-B-22).
 - **La memoria la EMITE el cálculo; M11 la formatea.** Cada función de cálculo
   devuelve, junto a su resultado, el `PasoDeMemoria` que lo explica: qué,
   **por qué**, fórmula con su cita, sustitución con la **procedencia** de cada
@@ -386,18 +404,20 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2127**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2160**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
 - `tests/test_MD.py` — el `skipped` **permanente** por condición imposible:
   su `skipif` guarda que `M5_verificaciones` no exista, y ya no puede darse.
 - `tests/test_gui_contrato.py` — los tests de **ventana real**, que hoy son
-  **cuatro** (S20 abrió el primero, la corrida de perfil; S22 el de la ayuda
+  **cinco** (S20 abrió el primero, la corrida de perfil; S22 el de la ayuda
   de entrada; G1 el de la selección real de la pestaña 2, que sobrevive al
   filtro; I1 el smoke que construye la app con las cuatro pestañas pobladas
   y abre y cierra `gui/ventana_normativa.py`, que hasta entonces no se
-  construía nunca bajo Tk). Se saltan
+  construía nunca bajo Tk; EXT-4 el del contexto de corrida, que lee el texto
+  real de «Etapas bloqueadas» y el estado real de los exportadores tras
+  declarar, quitar, cargar sesión y fallar). Se saltan
   cuando ningún intérprete disponible puede levantar un `Tk`: falta `tkinter`,
   falta `ttkbootstrap` o falta entorno gráfico.
 - `tests/test_familias_del_csv.py` — **tres** saltos de DISEÑO, no de entorno,
@@ -419,7 +439,28 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-3 (2026-09-20) sumó TREINTA tests**: los veintiséis de
+independientes. **EXT-4 (2026-09-20) sumó TREINTA Y TRES tests**: los
+veintinueve de `tests/test_ext4_contexto_corrida.py` —la aceptación del
+cluster «estado» (EXT-A-01, EXT-A-02, EXT-G-02, PC-07, PC-09, PC-15, PC-16,
+SIS-B-22 y los 27 accesos a `_USADOS` de la suite): los seis casos del
+prompt escritos primero en rojo con `xfail(strict=True)` y liberados al
+corregir (dos corridas en el mismo proceso, declarar tras correr, el
+`csv_sha1` de la corrida, la sesión B vacía, la GUI que invalida el informe,
+«Etapas bloqueadas» como una sola cuenta), más las tres guardias que dejan
+la corrección probada: el AST de M11 sin lecturas de estado, el barrido de
+la suite sin privados y el contexto congelado—, el de ventana real de
+`test_gui_contrato` (`tests/apoyo/gui_contexto_real.py`: el texto real de la
+etiqueta y el estado real de los cuatro exportadores tras declarar, quitar,
+cargar sesión y fallar; es el QUINTO test de ventana real, y por eso la
+columna «Ventana Tk = no» salta ahora 9 y no 8) y los tres anclajes
+parametrizados de `test_decisiones_diferidas` para las fichas de la Parte XX
+(EXT-4-01, EXT-4-02, EXT-4-03). Ningún archivo restó tests: los nueve que
+vaciaban `_USADOS` a mano pasaron a las funciones públicas
+(`reiniciar_usos`) o al contexto del informe. Se midió «sí · sí» sobre el
+árbol de EXT-4 antes de fusionar (2156/4) y se remidió sobre `origin/main`;
+las otras tres se derivan sumando 33, porque ninguno de los treinta y tres
+depende de PyMuPDF, y el de ventana real es el único que depende de Tk.
+**EXT-3 (2026-09-20) sumó TREINTA tests**: los veintiséis de
 `tests/test_ext3_regimen_barril.py` —la aceptación del cluster C06 (EXT-M-01,
 EXT-M-02, PC-04, PC-27 mitad compuerta, SIS-B-18 mitad JSON): los cuatro
 casos del prompt escritos primero en rojo con `xfail(strict=True)` y
@@ -534,7 +575,7 @@ medirla; pre-N1 la encontró en 1881 y fusionó además la rama de S24, que
 llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
-EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127. La
+EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -546,10 +587,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 2123 (medido en EXT-3) | 4 |
-| sí | no | 2119 (medido en EXT-3) | 8 |
-| no | sí | 2090 (medido en EXT-3) | 37 |
-| no | no | 2086 (medido en EXT-3) | 41 |
+| sí | sí | 2156 (medido en EXT-4) | 4 |
+| sí | no | 2151 (derivado en EXT-4: −5 de ventana) | 9 |
+| no | sí | 2123 (derivado en EXT-4: −33 de PDF) | 37 |
+| no | no | 2118 (derivado en EXT-4) | 42 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

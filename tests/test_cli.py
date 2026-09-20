@@ -1276,12 +1276,13 @@ def test_declarar_sin_valor_no_declara_la_cadena_vacia():
     las dos cierran la misma puerta, una por el valor imposible y la otra
     por el valor ausente.
     """
-    try:
-        with pytest.raises(ValueError, match="no trae valor"):
-            cli.declarar_criterios(["origen_cota_fondo_entrada="])
-        assert ca.valores_dinamicos()["origen_cota_fondo_entrada"] != ""
-    finally:
-        ca.establecer_valor_dinamico("origen_cota_fondo_entrada", "cota_terreno")
+    with pytest.raises(ValueError, match="no trae valor"):
+        cli.declarar_criterios(["origen_cota_fondo_entrada="])
+    # `.get`: la clave no tiene por que estar declarada en caliente --- hasta
+    # EXT-4 este test leia una declaracion que otro test habia dejado en el
+    # proceso, y la fixture autouse de conftest ya no deja nada ---. Lo que
+    # se fija es que la cadena vacia NO entro.
+    assert ca.valores_dinamicos().get("origen_cota_fondo_entrada") != ""
 
 
 def test_una_declaracion_mal_escrita_devuelve_dos_y_no_corre_el_pipeline(

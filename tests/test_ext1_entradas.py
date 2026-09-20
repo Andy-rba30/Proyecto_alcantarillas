@@ -435,7 +435,8 @@ def test_declarar_desde_tabla_guarda_la_celda_y_exige_nota_si_difiere(_limpia):
                                  columnas=("ke",), nota="tanteo de sensibilidad")
     assert p.valor_de_la_celda == pytest.approx(0.5, rel=REL_TRANSPORTE)
     assert "DIFIERE de la celda (0.5)" in p.como_texto()
-    assert "DIFIERE de la celda" in M11._de_donde_salio("ke_entrada")
+    assert "DIFIERE de la celda" in M11._de_donde_salio(
+        "ke_entrada", cli.capturar_contexto(csv_sha1=""))
 
 
 def test_declarar_el_valor_de_la_celda_sigue_diciendo_proviene(_limpia):
@@ -444,7 +445,8 @@ def test_declarar_el_valor_de_la_celda_sigue_diciendo_proviene(_limpia):
     assert p.valor_de_la_celda == pytest.approx(0.5, rel=REL_TRANSPORTE)
     assert "proviene de la fila" in p.como_texto()
     assert "DIFIERE" not in p.como_texto()
-    assert "PROVIENE de esa fila" in M11._de_donde_salio("ke_entrada")
+    assert "PROVIENE de esa fila" in M11._de_donde_salio(
+        "ke_entrada", cli.capturar_contexto(csv_sha1=""))
 
 
 def test_un_criterio_que_declara_la_clave_de_fila_no_difiere_de_ninguna_celda(

@@ -141,6 +141,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import copy
 import json
 import math
 import sys
@@ -157,20 +158,22 @@ for _ruta in (RAIZ, SRC):
 
 import criterios_adoptados as ca                                    # noqa: E402
 import datos_sitio as ds                                            # noqa: E402
+import declaracion as _declaracion                                  # noqa: E402
 from constantes_normativas import (CUANTIA_MIN_MURO,                # noqa: E402
                                    H_O_HW_SOBRE_D_MIN, RECUBRIMIENTO)
 from dominios import S_CAUCE_MAX                                    # noqa: E402
 from modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE       # noqa: E402
 from modelos import ALCANCE_PERFIL as _ALCANCE_PERFIL               # noqa: E402
 from modelos import (Bloqueo, Clasificacion,                        # noqa: E402
-                     CompatibilidadGeometrica,
+                     CompatibilidadGeometrica, ContextoCorrida,
                      CriterioPendienteError, DatoFaltanteError,
                      DatoInvalidoError, DisenoNoFactibleError,
                      ErrorProyecto, Espaciamiento, Familia,
                      MetodoNoEvaluableError, PasoDiseno,
                      ProteccionSalida, PuntoCritico, ResultadoPunto,
                      TipoDeBloqueo, TWDeterminado, Verificacion)
-from modulos.M0_carga import cargar_puntos                          # noqa: E402
+from modulos.M0_carga import (cargar_puntos, cargar_puntos_de_bytes,  # noqa: E402
+                              leer_bytes)
 from modulos.M1_clasificacion import clasificar, exigir_alcance     # noqa: E402
 from modulos.M6_proteccion import proteccion_salida                 # noqa: E402
 from modulos import M3_hidraulica as M3                             # noqa: E402
@@ -197,12 +200,14 @@ from modulos.M10_espaciamiento import espaciamiento_alivio          # noqa: E402
 # Fase 11: viven en M11 y aqui solo se usan. `CriterioBloqueante` y
 # `criterios_bloqueantes` se reexportan porque el JSON y el volcado de texto de
 # esta CLI los siguen publicando con el mismo nombre.
-from modulos.M11_reporte import (CriterioBloqueante,                # noqa: E402,F401
+from modulos.M11_reporte import (ARCHIVO_CRITERIOS,                 # noqa: E402,F401
+                                 CriterioBloqueante,
                                  DIR_PLANTILLAS, NOMBRE_PLANTILLA,
                                  NOMBRE_PLANTILLA_PERFIL,
                                  cargar_plantilla, criterios_bloqueantes,
                                  exportar_csv, exportar_html, exportar_pdf,
-                                 marcadores_de_la_memoria, memoria_html)
+                                 marcadores_de_la_memoria, memoria_html,
+                                 sha1_archivo, sha1_de_bytes)
 from modulos import M5_verificaciones as M5                        # noqa: E402
 from modulos.MD import disenar_punto                                # noqa: E402
 
@@ -795,6 +800,14 @@ class InformePunto:
     def incumplidas(self) -> Tuple[Verificacion, ...]:
         return tuple(v for _, v in self.verificaciones() if not v.cumple)
 
+    def bloqueos_reales(self) -> Tuple[Bloqueo, ...]:
+        """
+        Los bloqueos que SI cuentan: los que no son una decision de alcance.
+        Es la cuenta que la tabla de puntos de la GUI y el volcado tienen que
+        compartir (EXT-G-02): sumar `len(bloqueos)` mezcla lo diferido.
+        """
+        return tuple(b for b in self.bloqueos if not b.diferido_por_alcance)
+
 
 @dataclass
 class InformeCabezal:
@@ -809,6 +822,27 @@ class InformeCabezal:
     bloqueos: List[Bloqueo] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class ResumenDeCorrida:
+    """
+    Las seis cifras del RESUMEN, calculadas UNA vez en `Informe.resumen` y
+    leidas por las tres capas que las imprimen: el volcado de la CLI, la
+    pestaña 4 de la GUI y el encabezado de la memoria HTML.
+
+    Existe por EXT-G-02: la GUI decia «Etapas bloqueadas: 12» y la CLI, sobre
+    el mismo `Informe`, 1, porque una contaba `len(bloqueos())` --- con lo
+    diferido por alcance dentro --- y la otra lo restaba. Contar en cada capa
+    reproduce la asimetria CLI/GUI (SIS-E-01); la cuenta va en el informe.
+    """
+
+    puntos: int
+    dimensionados: int
+    incumplidas: int
+    bloqueadas: int          # reales: NO cuentan las diferidas por alcance
+    diferidas: int
+    cerrado: bool
+
+
 @dataclass
 class Informe:
     """El expediente completo de una corrida."""
@@ -818,6 +852,11 @@ class Informe:
     alcance: str = ALCANCE_EXPEDIENTE
     puntos: List[InformePunto] = field(default_factory=list)
     cabezal: InformeCabezal = field(default_factory=InformeCabezal)
+    # LA FOTO DEL ESTADO CON QUE CORRIO (EXT-4, EXT-A-01). La pone `correr`
+    # al salir y de ella leen los cuatro exportadores; un `Informe` armado a
+    # mano no la tiene y `ContextoCorrida.de` lo dice en vez de leer el
+    # estado vivo del proceso.
+    contexto: Optional[ContextoCorrida] = None
 
     @property
     def dimensionados(self) -> int:
@@ -836,6 +875,26 @@ class Informe:
         return tuple((id_punto, b) for id_punto, b in self.bloqueos()
                      if b.diferido_por_alcance)
 
+    def bloqueos_reales(self) -> Tuple[Tuple[Optional[str], Bloqueo], ...]:
+        """
+        Los bloqueos que cuentan para el cierre: todos menos los diferidos
+        por alcance. Es la UNICA definicion de «etapa bloqueada» del
+        proyecto (EXT-G-02): `cerrado`, `resumen`, el volcado, la GUI y la
+        memoria la leen de aqui.
+        """
+        return tuple((id_punto, b) for id_punto, b in self.bloqueos()
+                     if not b.diferido_por_alcance)
+
+    def resumen(self) -> ResumenDeCorrida:
+        """Las cifras del resumen, una vez, para las tres capas."""
+        return ResumenDeCorrida(
+            puntos=len(self.puntos),
+            dimensionados=self.dimensionados,
+            incumplidas=sum(len(i.incumplidas()) for i in self.puntos),
+            bloqueadas=len(self.bloqueos_reales()),
+            diferidas=len(self.diferidos()),
+            cerrado=self.cerrado)
+
     @property
     def cerrado(self) -> bool:
         """
@@ -851,7 +910,7 @@ class Informe:
         """
         if not self.puntos:
             return False
-        if any(not b.diferido_por_alcance for _, b in self.bloqueos()):
+        if self.bloqueos_reales():
             return False
         return all(i.dimensionado and not i.incumplidas() for i in self.puntos)
 
@@ -1776,8 +1835,22 @@ def correr(ruta_csv: Path, externos: DatosExternos,
 
     M0 no se protege con `_etapa`: si el CSV no se puede cargar no hay
     expediente que informar, y la excepcion sale al `main`.
+
+    EL REGISTRO DE USOS SE VACIA AL ENTRAR Y SE FOTOGRAFIA AL SALIR (EXT-4,
+    EXT-A-01, PC-09). Es la correccion entera del cluster «estado»: los 79
+    escritores de uso pasan por tres funciones, de modo que basta vaciar
+    aqui y capturar en `Informe.contexto` un `ContextoCorrida` congelado con
+    lo que ESTA corrida uso, los valores con que gobierno, sus procedencias y
+    el SHA-1 de los MISMOS bytes que M0 leyo. Los cuatro exportadores leen
+    de ahi: correr dos veces en el mismo proceso, declarar despues de correr
+    o editar el CSV antes de exportar ya no mueven la memoria de una corrida
+    que ya paso. No hace falta ningun objeto `Proyecto`.
     """
-    puntos = cargar_puntos(ruta_csv)
+    ca.reiniciar_usos()
+    ds.reiniciar_usos()
+    ruta_csv = Path(ruta_csv)
+    datos_csv = leer_bytes(ruta_csv)
+    puntos = cargar_puntos_de_bytes(datos_csv, ruta_csv.name)
     informe = Informe(csv=ruta_csv,
                       generado=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                       alcance=alcance)
@@ -1787,7 +1860,38 @@ def correr(ruta_csv: Path, externos: DatosExternos,
                        else correr_cabezal())
 
     _avisar_ids_desconocidos(informe, externos)
+    informe.contexto = capturar_contexto(csv_sha1=sha1_de_bytes(datos_csv))
     return informe
+
+
+def capturar_contexto(*, csv_sha1: str) -> ContextoCorrida:
+    """
+    La foto del estado del proceso AHORA, como `ContextoCorrida`.
+
+    Lo llama `correr` al salir; es publica para que la suite pueda armar un
+    contexto con el estado que acaba de preparar y pasarselo a los bloques de
+    M11, en vez de dejar que M11 lea el estado vivo (que es lo que la guardia
+    de `tests/test_ext4_contexto_corrida.py` prohibe).
+
+    Los valores efectivos se copian EN PROFUNDIDAD: un dict declarado en
+    caliente --- el espesor de pared por material y diametro --- y mutado
+    despues no puede mover la memoria de una corrida que ya paso.
+    """
+    return ContextoCorrida(
+        criterios_usados=tuple(ca.criterios_usados()),
+        datos_usados=tuple(ds.datos_usados()),
+        valores_efectivos={clave: copy.deepcopy(ca.criterio_efectivo(clave).valor)
+                           for clave in sorted(ca.CRITERIOS)},
+        procedencias=dict(_declaracion.procedencias()),
+        declarados_en_caliente=tuple(ca.criterios_declarados_en_caliente()),
+        pisados_en_caliente=tuple(ca.criterios_pisados_en_caliente()),
+        criterios_sin_valor=tuple(ca.criterios_sin_valor()),
+        criterios_opcionales_sin_declarar=tuple(
+            ca.criterios_opcionales_sin_declarar()),
+        criterios_con_verificacion_pendiente=tuple(
+            ca.criterios_con_verificacion_pendiente()),
+        csv_sha1=csv_sha1,
+        criterios_sha1=sha1_archivo(ARCHIVO_CRITERIOS))
 
 
 def _avisar_ids_desconocidos(informe: Informe, externos: DatosExternos) -> None:
@@ -1943,19 +2047,28 @@ def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
             "cota_entrada_msnm": _num(g.cota_entrada.valor),
             # MEDIDA o ADOPTADA. Es la diferencia entre un dato y una
             # eleccion, y el JSON la lleva porque la GUI y cualquier
-            # consumidor externo la necesitan igual que la memoria.
-            "cota_entrada_origen": g.cota_entrada.rotulo,
-            # El consumidor del JSON tiene que poder distinguir una cota
-            # levantada de una adoptada sin leer la memoria: el mismo archivo
-            # ya declara el origen de los datos externos ("origen": "criterio
-            # 'TW_receptor'") y esta cota no lo hacia (SIS-A-04).
+            # consumidor externo la necesitan igual que la memoria (SIS-A-04).
+            #
+            # UNA SOLA CLAVE, Y TODO SALE DE `g.cota_entrada` (PC-07). Hasta
+            # EXT-4 la clave estaba DUPLICADA en este literal: el rotulo de
+            # arriba nacia pisado por un dict que decia `adoptada: True`
+            # siempre --- tambien para una cota MEDIDA --- y cuya `regla` se
+            # leia del registro global AL EXPORTAR, de modo que declarar
+            # despues de correr cambiaba la regla impresa al lado de una
+            # cota que no cambio. La regla que produjo el numero viaja ahora
+            # con el numero (`CotaDeEntrada.regla`).
             "cota_entrada_origen": {
-                "adoptada": True,
+                "rotulo": g.cota_entrada.rotulo,
+                "adoptada": not g.cota_entrada.medida,
                 "criterio": M5.CRITERIO_ORIGEN_COTA_ENTRADA,
-                "regla": ca.valor_si_declarado(M5.CRITERIO_ORIGEN_COTA_ENTRADA),
-                "nota": "no es cota medida: sale de la regla declarada en ese "
-                        "criterio mientras el expediente no entregue la cota "
-                        "de invert de entrada por punto",
+                "regla": g.cota_entrada.regla,
+                "procedencia": g.cota_entrada.procedencia,
+                "nota": ("cota MEDIDA: columna cota_fondo_entrada del CSV; "
+                         "el criterio no se aplico en este punto"
+                         if g.cota_entrada.medida else
+                         "no es cota medida: sale de la regla declarada en "
+                         "ese criterio mientras el expediente no entregue la "
+                         "cota de invert de entrada por punto"),
             },
             "cota_salida_msnm": _num(g.cota_salida), "caida_m": _num(g.caida),
             "factible": g.factible,
@@ -2084,11 +2197,22 @@ def _cabezal_json(informe: InformeCabezal) -> Dict[str, Any]:
 
 
 def informe_json(informe: Informe) -> Dict[str, Any]:
-    """El expediente completo como dict listo para `json.dump`."""
+    """
+    El expediente completo como dict listo para `json.dump`.
+
+    Todo lo que es ESTADO --- usos, valores efectivos, declarados, huellas ---
+    sale de `informe.contexto` (EXT-4): el JSON describe la corrida que hizo
+    el informe, no el proceso en el momento de exportar.
+    """
     bloqueantes = criterios_bloqueantes(informe)
+    contexto = ContextoCorrida.de(informe)
     return {
         "expediente": {
             "csv": str(informe.csv), "generado_utc": informe.generado,
+            # Las dos huellas de la corrida, las MISMAS que imprime la
+            # memoria: la del CSV es de los bytes que M0 leyo (PC-09).
+            "csv_sha1": contexto.csv_sha1,
+            "criterios_sha1": contexto.criterios_sha1,
             "puntos": len(informe.puntos),
             "dimensionados": informe.dimensionados,
             "cerrado": informe.cerrado},
@@ -2108,7 +2232,7 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
                         "concepto": ds.dato(k).concepto,
                         "trazabilidad": ds.dato(k).trazabilidad,
                         "ambito": ds.dato(k).ambito}
-                       for k in ds.datos_usados()],
+                       for k in contexto.datos_usados],
             "sin_valor_declarados": ds.datos_sin_valor(),
             "trazabilidad_incompleta": ds.datos_con_verificacion_pendiente()},
         "criterios": {
@@ -2116,25 +2240,31 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
             # corrida y tenia el mismo defecto que la memoria HTML -- leia el
             # valor del ARCHIVO, de modo que un criterio declarado en
             # caliente viajaba con "valor": null mientras gobernaba el
-            # calculo (SIS-A-01).
+            # calculo (SIS-A-01). Y desde EXT-4 el valor efectivo es el DE LA
+            # CORRIDA, no el del proceso al exportar (EXT-A-01).
             "usados": [{"clave": k,
                         "etiqueta": ca.criterio(k).etiqueta,
-                        "valor": _num(ca.criterio_efectivo(k).valor),
-                        "declarado_en_caliente": ca.declarado_en_caliente(k),
+                        "valor": _num(contexto.valor_efectivo(k)),
+                        "declarado_en_caliente": contexto.declarado_en_caliente(k),
                         "concepto": ca.criterio(k).concepto}
-                       for k in ca.criterios_usados()],
-            "sin_valor_declarados": ca.criterios_sin_valor(),
-            "declarados_en_caliente": ca.criterios_declarados_en_caliente(),
+                       for k in contexto.criterios_usados],
+            "sin_valor_declarados": list(contexto.criterios_sin_valor),
+            "declarados_en_caliente": list(contexto.declarados_en_caliente),
             # Hermano de `trazabilidad_incompleta` de los datos de sitio: sin
             # el, un consumidor del JSON veia que datos de sitio quedaban sin
             # cerrar documentalmente y no veia que criterios (SIS-D-07).
-            "verificacion_pendiente": ca.criterios_con_verificacion_pendiente(),
+            "verificacion_pendiente": list(
+                contexto.criterios_con_verificacion_pendiente),
             "sin_consumidor": ca.criterios_sin_consumidor(),
             "bloquearon": [{"clave": c.clave, "etiqueta": c.etiqueta,
                             "concepto": c.concepto, "fuente": c.fuente,
                             "reemplazado_por": c.reemplazado_por,
                             "fases": list(c.fases), "etapas": list(c.etapas),
-                            "puntos": list(c.puntos)}
+                            "puntos": list(c.puntos),
+                            # True cuando TODO lo que este criterio detuvo
+                            # estaba diferido por alcance (EXT-G-02): no
+                            # bloquea el cierre de esta corrida.
+                            "diferido": c.diferido}
                            for c in bloqueantes]},
     }
 
@@ -2360,6 +2490,9 @@ def _lineas_criterios_bloqueantes(informe: Informe) -> List[str]:
             out.append(f"{SANGRIA}Lo resuelve: {c.reemplazado_por}")
         out.append(f"{SANGRIA}Bloqueo  : {'; '.join(c.etapas)}")
         out.append(f"{SANGRIA}Puntos   : {puntos}")
+        if c.diferido:
+            out.append(f"{SANGRIA}Diferido : por alcance; no cuenta para el "
+                       "cierre de esta corrida (ver ALCANCE DE LA CORRIDA)")
         out.append("")
     return out
 
@@ -2395,21 +2528,20 @@ def _lineas_alcance(informe: Informe) -> List[str]:
 
 
 def _lineas_resumen(informe: Informe) -> List[str]:
-    total = len(informe.puntos)
-    incumplidas = sum(len(i.incumplidas()) for i in informe.puntos)
-    diferidos = len(informe.diferidos())
-    bloqueos = len(informe.bloqueos()) - diferidos
+    # Las cifras salen de `Informe.resumen`, la misma que leen la GUI y la
+    # memoria (EXT-G-02): aqui no se cuenta nada.
+    r = informe.resumen()
     out = _titulo("RESUMEN")
     out.append(f"CSV                     : {informe.csv}")
     out.append(f"Alcance de la corrida   : {informe.alcance}")
-    out.append(f"Puntos del expediente   : {total}")
-    out.append(f"Puntos dimensionados    : {informe.dimensionados}")
-    out.append(f"Verificaciones incumplidas: {incumplidas}")
-    out.append(f"Etapas bloqueadas       : {bloqueos}")
-    if diferidos:
-        out.append(f"Diferidas por alcance   : {diferidos} (ver ALCANCE DE "
+    out.append(f"Puntos del expediente   : {r.puntos}")
+    out.append(f"Puntos dimensionados    : {r.dimensionados}")
+    out.append(f"Verificaciones incumplidas: {r.incumplidas}")
+    out.append(f"Etapas bloqueadas       : {r.bloqueadas}")
+    if r.diferidas:
+        out.append(f"Diferidas por alcance   : {r.diferidas} (ver ALCANCE DE "
                    "LA CORRIDA; no cuentan para el cierre)")
-    out.append(f"Expediente cerrado      : {'si' if informe.cerrado else 'no'}")
+    out.append(f"Expediente cerrado      : {'si' if r.cerrado else 'no'}")
     if not informe.cerrado:
         out.append("")
         out.append("El expediente NO cierra. Mientras un criterio siga sin "
@@ -2434,10 +2566,13 @@ def volcar(informe: Informe, con_criterios: bool = False) -> str:
     lineas.extend(_lineas_criterios_bloqueantes(informe))
     lineas.extend(_lineas_resumen(informe))
     if con_criterios:
+        # La foto de la corrida, no el registro vivo del proceso (EXT-4).
+        contexto = ContextoCorrida.de(informe)
         lineas.append("")
-        lineas.append(ds.reporte_datos_sitio(solo_usados=True))
+        lineas.append(ds.reporte_datos_sitio(solo_usados=True,
+                                             usados=contexto.datos_usados))
         lineas.append("")
-        lineas.append(ca.reporte_criterios(solo_usados=True))
+        lineas.append(ca.reporte_criterios(solo_usados=True, contexto=contexto))
     return "\n".join(lineas)
 
 

@@ -71,14 +71,11 @@ EXTERNOS_GLOBALES = dict(luz_m=3.0, L_hidraulico_m=120.0, TW_m=None,
 EXTERNOS_POR_PUNTO = {"C-01": {"Q_m3s": 0.65, "S_conducto": 0.004}}
 
 
-# Los criterios que ESTA corrida invoco. `criterios_adoptados` acumula los
-# usos en un registro global -- que es lo correcto: la memoria imprime lo que
-# el calculo consumio a lo largo de la corrida entera --, y en una suite ese
-# registro lleva ademas lo que invocaron los tests anteriores. Los dos tests
-# de clasificacion de mas abajo miden lo que la corrida DE PERFIL invoca, no
-# lo que la suite acumulo, y por eso se toma la foto aqui: se vacia, se corre,
-# se lee, y se devuelve la union para no dejar sin sus usos a lo que venga
-# despues.
+# Los criterios que ESTA corrida invoco. Desde EXT-4 la foto la toma
+# `cli.correr` --- vacia el registro al entrar y lo captura al salir en
+# `Informe.contexto` ---, de modo que los dos tests de clasificacion de mas
+# abajo miden lo que la corrida DE PERFIL invoco y no lo que la suite
+# acumulo, sin vaciar ni reponer nada a mano.
 USADOS_POR_LA_CORRIDA: set = set()
 
 
@@ -89,13 +86,8 @@ def informe_perfil():
         externos.por_punto.setdefault(id_punto, {}).update(
             {clave: cli.DatoDeclarado(clave, valor, "datos del expediente")
              for clave, valor in datos.items()})
-    previos = set(ca._USADOS)
-    ca._USADOS.clear()
-    try:
-        informe = cli.correr(CSV_PERFIL, externos, alcance=cli.ALCANCE_PERFIL)
-        USADOS_POR_LA_CORRIDA.update(ca._USADOS)
-    finally:
-        ca._USADOS.update(previos)
+    informe = cli.correr(CSV_PERFIL, externos, alcance=cli.ALCANCE_PERFIL)
+    USADOS_POR_LA_CORRIDA.update(informe.contexto.criterios_usados)
     return informe
 
 

@@ -2,6 +2,8 @@
   "expediente": {
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
+    "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
+    "criterios_sha1": "ab2e83d43e71e4b7811e74a900fae909de1245cc",
     "puntos": 4,
     "dimensionados": 3,
     "cerrado": false
@@ -293,9 +295,11 @@
         "S_conducto": 0.006,
         "cota_entrada_msnm": 42.1,
         "cota_entrada_origen": {
+          "rotulo": "ADOPTADA",
           "adoptada": true,
           "criterio": "origen_cota_fondo_entrada",
           "regla": "cota_terreno",
+          "procedencia": "regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida",
           "nota": "no es cota medida: sale de la regla declarada en ese criterio mientras el expediente no entregue la cota de invert de entrada por punto"
         },
         "cota_salida_msnm": 41.988190172515715,
@@ -575,9 +579,11 @@
         "S_conducto": 0.008,
         "cota_entrada_msnm": 39.85,
         "cota_entrada_origen": {
+          "rotulo": "ADOPTADA",
           "adoptada": true,
           "criterio": "origen_cota_fondo_entrada",
           "regla": "cota_terreno",
+          "procedencia": "regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida",
           "nota": "no es cota medida: sale de la regla declarada en ese criterio mientras el expediente no entregue la cota de invert de entrada por punto"
         },
         "cota_salida_msnm": 39.70384383165369,
@@ -857,9 +863,11 @@
         "S_conducto": 0.01,
         "cota_entrada_msnm": 38.4,
         "cota_entrada_origen": {
+          "rotulo": "ADOPTADA",
           "adoptada": true,
           "criterio": "origen_cota_fondo_entrada",
           "regla": "cota_terreno",
+          "procedencia": "regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida",
           "nota": "no es cota medida: sale de la regla declarada en ese criterio mientras el expediente no entregue la cota de invert de entrada por punto"
         },
         "cota_salida_msnm": 38.216,
@@ -1576,7 +1584,8 @@
           "A-01",
           "A-02",
           "B-01"
-        ]
+        ],
+        "diferido": true
       },
       {
         "clave": "embocadura_cajon",
@@ -1592,7 +1601,8 @@
         ],
         "puntos": [
           "C-01"
-        ]
+        ],
+        "diferido": false
       },
       {
         "clave": "remanso_derecho_via",
@@ -1610,7 +1620,8 @@
           "A-01",
           "A-02",
           "B-01"
-        ]
+        ],
+        "diferido": true
       }
     ]
   }

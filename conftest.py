@@ -45,10 +45,11 @@ for ruta in (RAIZ, SRC):
 # señal correcta.
 #
 # Va en dos sitios y no en uno: al importar, para las listas que los modulos
-# de test calculan a nivel de modulo, y en una fixture autouse, porque varios
-# tests llaman `limpiar_valores_dinamicos()` -- que borra TODAS las
-# declaraciones de la corrida, incluida esta -- y sin reponerla el resto de
-# la suite caeria por un efecto de orden de ejecucion.
+# de test calculan a nivel de modulo, y en la fixture autouse de abajo
+# (`_estado_de_proceso_aislado`), porque varios tests llaman
+# `limpiar_valores_dinamicos()` -- que borra TODAS las declaraciones de la
+# corrida, incluida esta -- y sin reponerla el resto de la suite caeria por un
+# efecto de orden de ejecucion.
 import pytest  # noqa: E402
 
 
@@ -73,6 +74,8 @@ def pytest_configure(config):
         "pdf: abre un PDF de normas/; exige PyMuPDF (requirements-dev.txt)")
 
 import criterios_adoptados as _ca  # noqa: E402
+import datos_sitio as _ds  # noqa: E402
+import declaracion as _dec  # noqa: E402
 
 CLAVE_ORIGEN_COTA = "origen_cota_fondo_entrada"
 ORIGEN_COTA_DE_PRUEBA = "cota_terreno"
@@ -227,8 +230,43 @@ def _declarar_criterios_de_prueba():
 _declarar_criterios_de_prueba()
 
 
+# ---------------------------------------------------------------------------
+# EL ESTADO DE PROCESO SE FOTOGRAFIA Y SE REPONE EN CADA TEST (EXT-4)
+# ---------------------------------------------------------------------------
+# Cuatro registros de modulo describen «la corrida en curso»: las
+# declaraciones en caliente (`criterios_adoptados._OVERRIDES`), los dos
+# registros de usos (`criterios_adoptados._USADOS`, `datos_sitio._USADOS`) y
+# el libro de procedencias (`declaracion._PROCEDENCIAS`). Hasta EXT-4 nueve
+# archivos de la suite los vaciaban y reponian A MANO --- 27 accesos a
+# `_USADOS`, mas fixtures propias para los otros dos --- porque `cli.correr`
+# no vaciaba el registro de usos y cada test que media una corrida tenia que
+# hacerse su propia foto (PC-09).
+#
+# Desde EXT-4 `cli.correr` vacia al entrar y fotografia al salir en
+# `Informe.contexto`, y ESTA fixture es el UNICO sitio de la suite que toca
+# los cuatro registros: los fotografia antes de cada test y los repone
+# despues, tal cual, de modo que ningun test hereda ni lega estado. Los
+# tests que necesitan partir de un registro vacio llaman a las funciones
+# publicas (`ca.reiniciar_usos`, `ds.reiniciar_usos`, `dec.limpiar`); ninguno
+# nombra un privado, y `tests/test_ext4_contexto_corrida.py` lo comprueba
+# con un barrido sobre el texto de la suite.
+#
+# Se repone el contenido, no el objeto: los modulos guardan referencias a
+# estos dict/set y sustituirlos dejaria a `valor()` escribiendo en otro.
 @pytest.fixture(autouse=True)
-def _criterios_de_corrida_declarados():
-    """Repone las declaraciones de la corrida antes de cada test."""
+def _estado_de_proceso_aislado():
+    """Foto de los cuatro registros antes de cada test, y reposicion despues."""
+    overrides = dict(_ca._OVERRIDES)
+    usados = set(_ca._USADOS)
+    usados_sitio = set(_ds._USADOS)
+    procedencias = dict(_dec._PROCEDENCIAS)
     _declarar_criterios_de_prueba()
     yield
+    _ca._OVERRIDES.clear()
+    _ca._OVERRIDES.update(overrides)
+    _ca._USADOS.clear()
+    _ca._USADOS.update(usados)
+    _ds._USADOS.clear()
+    _ds._USADOS.update(usados_sitio)
+    _dec._PROCEDENCIAS.clear()
+    _dec._PROCEDENCIAS.update(procedencias)

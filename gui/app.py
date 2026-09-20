@@ -189,6 +189,31 @@ un aviso. Ahora se guardan y se restauran los valores Y SU PROCEDENCIA, por
 `declaracion.restaurar_sesion`, que repone por el mismo camino con guardia que
 usan la ventana y la CLI. Lo que la guardia rechace se muestra: una sesion es
 un archivo que alguien pudo editar a mano.
+
+ABRIR UNA SESION SUSTITUYE; IMPORTAR SUMA (EXT-4, EXT-A-02). «Cargar sesion»
+llama a `restaurar_sesion(sustituir=True)`: vacia todo lo declarado en el
+proceso --- la obra anterior --- y vuelca solo lo que la sesion trae y la
+guardia acepta, diciendo que se retiro. Hasta EXT-4 era aditiva, y abrir la
+obra B tras declarar en la obra A dejaba las claves de A vivas y las guardaba
+en la sesion de B. «Importar decisiones» es el otro boton, con
+`sustituir=False`. Y la sesion se VALIDA ENTERA antes de tocar un solo
+`StringVar` (`errores_de_sesion`, PC-16): un archivo con `"externos": null`
+reventaba con `AttributeError` fuera del manejador, con proyecto y CSV ya
+pisados. Un externo que la sesion no trae se repone a la cadena vacia, no se
+queda con el de la sesion anterior.
+
+El informe es de SU corrida (EXT-4, PC-15)
+-------------------------------------------
+`self.informe` describe la corrida que lo produjo, con su `ContextoCorrida`
+dentro; lo que se declare, se quite o se cargue DESPUES no lo cambia --- y por
+eso mismo el informe deja de describir el estado de la ventana ---.
+`_invalidar_informe` lo retira y apaga los cuatro exportadores diciendo por
+que, y lo llaman los cuatro gestos que cambian el estado (declarar, quitar,
+escribir en archivo, cargar sesion) y el propio EJECUTAR antes de correr: una
+corrida fallida no deja el informe anterior como vigente en las pestañas 3 y
+4 ni en la barra. El nombre del proyecto se lee AL CORRER, no al exportar, por
+la misma razon. Y `root.report_callback_exception` convierte en dialogo lo
+que Tk mandaba a stderr con la ventana como si nada.
 """
 
 from __future__ import annotations
@@ -261,6 +286,73 @@ MOTIVO_NO_DECLARADO = "el criterio no esta declarado para esta corrida"
 MOTIVO_SIN_CORRIDA = "todavia no se ejecuto el pipeline: no hay informe que exportar"
 MOTIVO_EJECUTANDO = "la corrida esta en marcha"
 MOTIVO_SIN_PUNTO = "seleccione un punto en la tabla de arriba"
+# Los dos motivos con que un informe deja de estar vigente (EXT-4, PC-15).
+# El primero es el de los cuatro gestos que cambian el estado declarado; el
+# segundo, el de una corrida que no llego a producir informe.
+MOTIVO_INFORME_DESACTUALIZADO = (
+    "el informe de la ultima corrida ya no describe el estado actual: se "
+    "declaro, se quito o se cargo una sesion despues de correr. Vuelva a "
+    "ejecutar el calculo")
+MOTIVO_CORRIDA_FALLIDA = (
+    "la ultima corrida no produjo informe: corrija la entrada y vuelva a "
+    "ejecutar el calculo")
+
+# EL ESQUEMA DE LA SESION, como dato (PC-16): que tipo tiene que traer cada
+# clave. `errores_de_sesion` lo contrasta ENTERO antes de que `cargar_sesion`
+# toque un solo StringVar. `criterios` admite ademas `None` --- una sesion sin
+# bloque de criterios --- y `externos` es un objeto de cadenas.
+ESQUEMA_SESION = {
+    "formato_version": int,
+    "app_version": str,
+    "proyecto": str,
+    "csv": str,
+    "datos_externos": str,
+    "externos": dict,
+    "alcance": str,
+    "criterios": dict,
+}
+
+
+def errores_de_sesion(data):
+    """
+    Los defectos de forma de una sesion, como lista de frases; vacia si la
+    sesion se puede aplicar entera. No aplica nada: es la mitad que faltaba
+    en `cargar_sesion`, que escribia el proyecto y el CSV en la ventana y
+    reventaba despues con `"externos": null`.
+    """
+    errores = []
+    if not isinstance(data, dict):
+        return [f"una sesion es un objeto con claves, y este trae "
+                f"{type(data).__name__}"]
+    for clave, tipo in ESQUEMA_SESION.items():
+        if clave not in data:
+            continue
+        valor = data[clave]
+        if clave == "criterios" and valor is None:
+            continue
+        # `bool` es subclase de `int`: una version `true` no es una version.
+        if not isinstance(valor, tipo) or isinstance(valor, bool):
+            errores.append(f"'{clave}' tiene que ser {tipo.__name__} y trae "
+                           f"{type(valor).__name__}")
+    externos = data.get("externos")
+    if isinstance(externos, dict):
+        for clave, valor in externos.items():
+            if not isinstance(clave, str) or not isinstance(valor, str):
+                errores.append(f"'externos' tiene que ser un objeto de "
+                               f"cadenas: '{clave}' trae "
+                               f"{type(valor).__name__}")
+    # EL INTERIOR DE `criterios` TAMBIEN, o `{"valores": null}` pasaba la
+    # validacion, `cargar_sesion` pisaba proyecto, CSV y externos, y
+    # `restaurar_sesion` rechazaba el bloque DESPUES: la mezcla de EXT-A-02
+    # con un aviso encima (auditoria adversarial de EXT-4).
+    criterios = data.get("criterios")
+    if isinstance(criterios, dict):
+        for clave in ("valores", "procedencias"):
+            if clave in criterios and not isinstance(criterios[clave], dict):
+                errores.append(f"'criterios.{clave}' tiene que ser un objeto "
+                               f"con claves y trae "
+                               f"{type(criterios[clave]).__name__}")
+    return errores
 
 # Los filtros de estado de la tabla de criterios (pestana 2). Cada entrada es
 # (rotulo, tag), y el `tag` es el MISMO que devuelve `_estado_criterio`: filtrar
@@ -391,6 +483,13 @@ class ExpedienteApp:
         self.alcance_var = tk.StringVar(value=cli.ALCANCE_EXPEDIENTE)
 
         self.informe: Optional[cli.Informe] = None
+        # El nombre del proyecto CON QUE SE CORRIO, leido al ejecutar y no al
+        # exportar (PC-15): la memoria describe la corrida, no el campo.
+        self.proyecto_de_la_corrida = ""
+        # Una excepcion dentro de un callback de Tk salia a stderr y la
+        # ventana seguia como si nada (PC-16). Se convierte en dialogo, con
+        # la traza impresa igual para quien reporte el defecto.
+        self.root.report_callback_exception = self._excepcion_en_callback
         # Las familias que el CSV cargado trae. `None` --- y no una tupla
         # vacia --- mientras no se haya podido leer: "no se sabe" y "no hay
         # ninguna" son dos cosas distintas, y anotar "no aplica" sobre la
@@ -416,6 +515,41 @@ class ExpedienteApp:
         # cuando cambian las familias del expediente (el anticipo tambien:
         # `_releer_familias` termina repintandolo).
         self.csv_var.trace_add("write", lambda *_a: self._releer_familias())
+
+    def _excepcion_en_callback(self, tipo, valor, tb):
+        traceback.print_exception(tipo, valor, tb)
+        messagebox.showerror("Error inesperado", f"{tipo.__name__}: {valor}")
+
+    # ------------------------------------------------------------------
+    # El informe vigente y su invalidacion (EXT-4, PC-15)
+    # ------------------------------------------------------------------
+    def _apagar_exportadores(self, motivo):
+        for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv):
+            btn.deshabilitar(motivo)
+
+    def _invalidar_informe(self, motivo):
+        """
+        Retira el informe de la ultima corrida y apaga los exportadores
+        diciendo por que. Sin informe no hay nada que invalidar.
+        """
+        if self.informe is None:
+            return
+        self.informe = None
+        self._apagar_exportadores(motivo)
+        self._vaciar_tablas_del_informe(motivo)
+
+    def _vaciar_tablas_del_informe(self, motivo):
+        """Las pestañas 3 y 4 y la barra dejan de mostrar la corrida anterior."""
+        for arbol in (self.tree_puntos, self.tree_criterios):
+            for item in arbol.get_children():
+                arbol.delete(item)
+        self.txt_detalle.configure(state="normal")
+        self.txt_detalle.delete("1.0", "end")
+        self.txt_detalle.configure(state="disabled")
+        self.btn_traza.deshabilitar(MOTIVO_SIN_PUNTO)
+        for lbl in self.lbl_resumen.values():
+            lbl.config(text="-", foreground="")
+        self.lbl_estado.config(text=f"Sin informe vigente: {motivo}.")
 
     # ------------------------------------------------------------------
     # Construccion de la interfaz
@@ -461,6 +595,8 @@ class ExpedienteApp:
         barra.pack(fill="x")
         ttk.Button(barra, text="Guardar sesion", command=self.guardar_sesion).pack(side="left", padx=4)
         ttk.Button(barra, text="Cargar sesion", command=self.cargar_sesion).pack(side="left", padx=4)
+        ttk.Button(barra, text="Importar decisiones",
+                   command=self.importar_decisiones).pack(side="left", padx=4)
         # La barra de estado es el sitio de los codigos de modulo (G1): aqui
         # pueden leerse sin colarse en las etiquetas de los campos.
         self.lbl_estado = ttk.Label(barra, text="Sin ejecutar (módulos M0 a M10).",
@@ -1573,6 +1709,7 @@ class ExpedienteApp:
         # `_pasa_el_filtro` proteja ESTA fila y que reponer la seleccion
         # encuentre algo.
         self._clave_criterio_seleccionado = clave
+        self._invalidar_informe(MOTIVO_INFORME_DESACTUALIZADO)
         self.lbl_estado_criterio.config(
             text=f"'{clave}' declarado desde su ventana normativa, SOLO para "
                  "la proxima corrida, con su procedencia registrada. "
@@ -1654,6 +1791,12 @@ class ExpedienteApp:
         except (ValueError, KeyError) as exc:
             self.lbl_estado_criterio.config(text=f"Error: {exc}", foreground=COLOR_ERROR)
             return
+        # Un valor tecleado aqui no tiene procedencia: si la clave la tenia
+        # de la ventana normativa, esa procedencia hablaria ahora de otro
+        # numero (EXT-A-02 por otra puerta, auditoria adversarial de EXT-4).
+        dec.olvidar_procedencia(clave)
+        # El informe de la ultima corrida ya no describe este estado (PC-15).
+        self._invalidar_informe(MOTIVO_INFORME_DESACTUALIZADO)
         self.lbl_estado_criterio.config(
             text=f"'{clave}' declarado a {valor_nuevo!r} SOLO para la proxima corrida. "
                  "criterios_adoptados.py no se modifico.",
@@ -1679,6 +1822,7 @@ class ExpedienteApp:
         # estado distinto del que el programa acaba de dejar.
         valor_archivo = ca.criterio(clave).valor
         dec.olvidar(clave)
+        self._invalidar_informe(MOTIVO_INFORME_DESACTUALIZADO)
         if valor_archivo is None:
             texto = (f"Se quito la declaracion de '{clave}': el criterio "
                      "vuelve a estar PENDIENTE y bloquea el calculo que lo "
@@ -1717,6 +1861,7 @@ class ExpedienteApp:
         except (KeyError, ValueError, OSError) as exc:
             messagebox.showerror("No se pudo escribir el archivo", str(exc))
             return
+        self._invalidar_informe(MOTIVO_INFORME_DESACTUALIZADO)
         self.lbl_estado_criterio.config(
             text=f"'{clave}' = {valor_nuevo!r} escrito en criterios_adoptados.py.",
             foreground=COLOR_OK)
@@ -2050,6 +2195,12 @@ class ExpedienteApp:
 
         self.btn_ejecutar.deshabilitar(MOTIVO_EJECUTANDO)
         self.btn_ejecutar.config(text="Ejecutando...")
+        # EL INFORME ANTERIOR DEJA DE ESTAR VIGENTE ANTES DE CORRER (PC-15):
+        # si esta corrida falla, las pestañas 3 y 4, la barra y los cuatro
+        # exportadores no pueden seguir presentando la corrida anterior como
+        # si fuera esta. Y el nombre del proyecto se toma AHORA.
+        self._invalidar_informe(MOTIVO_EJECUTANDO)
+        self.proyecto_de_la_corrida = self.proyecto_var.get()
         self.root.update_idletasks()
         try:
             externos = cli.cargar_datos_externos(ruta_externos, self._leer_banderas())
@@ -2076,6 +2227,9 @@ class ExpedienteApp:
             return
         except Exception as exc:  # fallo de programa: se muestra con traza
             traceback.print_exc()
+            self._apagar_exportadores(MOTIVO_CORRIDA_FALLIDA)
+            self.lbl_estado.config(
+                text=f"Sin informe vigente: {MOTIVO_CORRIDA_FALLIDA}.")
             messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
             return
         finally:
@@ -2097,14 +2251,18 @@ class ExpedienteApp:
         # acaba de correr.
         self.btn_pdf.ayuda = self._ayuda_del_pdf()
         self.btn_pdf.tooltip.texto = self.btn_pdf.ayuda
+        r = self.informe.resumen()
         self.lbl_estado.config(
             text=f"Ejecutado ({self.informe.generado}). "
-                 f"{self.informe.dimensionados}/{len(self.informe.puntos)} puntos dimensionados. "
-                 f"Expediente {'cerrado' if self.informe.cerrado else 'NO cerrado'}.")
+                 f"{r.dimensionados}/{r.puntos} puntos dimensionados. "
+                 f"Expediente {'cerrado' if r.cerrado else 'NO cerrado'}.")
         self.nb.select(self.tab_puntos)
 
     def _mostrar_error_entrada(self, mensaje):
         self.lbl_error_datos.config(text=mensaje)
+        # Los exportadores dicen que esta corrida no dejo informe (PC-15).
+        self._apagar_exportadores(MOTIVO_CORRIDA_FALLIDA)
+        self.lbl_estado.config(text=f"Sin informe vigente: {MOTIVO_CORRIDA_FALLIDA}.")
         self.nb.select(self.tab_datos)
         self.btn_ejecutar.habilitar()
         self.btn_ejecutar.config(text=TEXTO_BOTON_EJECUTAR)
@@ -2118,7 +2276,9 @@ class ExpedienteApp:
         for informe_punto in self.informe.puntos:
             punto = informe_punto.punto
             incumplidas = len(informe_punto.incumplidas())
-            n_bloqueos = len(informe_punto.bloqueos)
+            # Los REALES: lo diferido por alcance no es un bloqueo del punto
+            # y no cuenta para el cierre (EXT-G-02).
+            n_bloqueos = len(informe_punto.bloqueos_reales())
             if informe_punto.dimensionado:
                 r = informe_punto.resultado
                 h = r.resultado_hidraulico
@@ -2149,9 +2309,11 @@ class ExpedienteApp:
 
     def _llenar_resumen(self):
         informe = self.informe
-        incumplidas = sum(len(i.incumplidas()) for i in informe.puntos)
-        n_bloqueos = len(informe.bloqueos())
-        diferidas = len(informe.diferidos())
+        # LAS CIFRAS LAS DA EL INFORME, NO ESTA VENTANA (EXT-G-02): la GUI
+        # decia «Etapas bloqueadas: 12» y la CLI, sobre el mismo `Informe`, 1,
+        # porque aqui se contaba `len(bloqueos())` con lo diferido dentro.
+        # `Informe.resumen` es la unica cuenta y las tres capas la leen.
+        r = informe.resumen()
         self.lbl_resumen["CSV"].config(text=str(informe.csv))
         self.lbl_resumen["Alcance de la corrida"].config(text=informe.alcance)
         # Lo diferido por alcance NO es un bloqueo y no cuenta para `cerrado`:
@@ -2159,25 +2321,28 @@ class ExpedienteApp:
         # imprime aparte, con su fundamento, porque «cerrado a nivel de
         # perfil» no significa que el expediente este completo.
         self.lbl_resumen["Diferidas por alcance"].config(
-            text=str(diferidas),
-            foreground=COLOR_AVISO if diferidas else COLOR_OK)
-        self.lbl_resumen["Puntos del expediente"].config(text=str(len(informe.puntos)))
-        self.lbl_resumen["Puntos dimensionados"].config(text=str(informe.dimensionados))
+            text=str(r.diferidas),
+            foreground=COLOR_AVISO if r.diferidas else COLOR_OK)
+        self.lbl_resumen["Puntos del expediente"].config(text=str(r.puntos))
+        self.lbl_resumen["Puntos dimensionados"].config(text=str(r.dimensionados))
         self.lbl_resumen["Verificaciones incumplidas"].config(
-            text=str(incumplidas), foreground=COLOR_ERROR if incumplidas else COLOR_OK)
+            text=str(r.incumplidas), foreground=COLOR_ERROR if r.incumplidas else COLOR_OK)
         self.lbl_resumen["Etapas bloqueadas"].config(
-            text=str(n_bloqueos), foreground=COLOR_AVISO if n_bloqueos else COLOR_OK)
+            text=str(r.bloqueadas), foreground=COLOR_AVISO if r.bloqueadas else COLOR_OK)
         self.lbl_resumen["Expediente cerrado"].config(
-            text="si" if informe.cerrado else "no",
-            foreground=COLOR_OK if informe.cerrado else COLOR_ERROR)
+            text="si" if r.cerrado else "no",
+            foreground=COLOR_OK if r.cerrado else COLOR_ERROR)
 
         for item in self.tree_criterios.get_children():
             self.tree_criterios.delete(item)
         for c in cli.criterios_bloqueantes(informe):
             puntos = ", ".join(c.puntos) if c.puntos else "proyecto (Fase 9)"
+            # Lo diferido por alcance se dice en la fila (EXT-G-02): el
+            # criterio sigue pendiente y NO bloquea el cierre de esta corrida.
+            fases = ", ".join(c.fases) + (
+                " (diferido por alcance)" if c.diferido else "")
             self.tree_criterios.insert("", "end", values=(
-                c.clave, c.etiqueta, c.concepto, c.fuente,
-                ", ".join(c.fases), puntos))
+                c.clave, c.etiqueta, c.concepto, c.fuente, fases, puntos))
 
     # ------------------------------------------------------------------
     # Exportacion
@@ -2235,7 +2400,7 @@ class ExpedienteApp:
             return
         try:
             cli.exportar_html(self.informe, Path(ruta),
-                              proyecto=self.proyecto_var.get(),
+                              proyecto=self.proyecto_de_la_corrida,
                               ruta_plantilla=self._plantilla())
             messagebox.showinfo("Memoria exportada", f"Archivo: {ruta}")
         except (OSError, ErrorProyecto) as exc:
@@ -2255,7 +2420,7 @@ class ExpedienteApp:
             return
         try:
             resultado = cli.exportar_pdf(self.informe, Path(ruta),
-                                         proyecto=self.proyecto_var.get(),
+                                         proyecto=self.proyecto_de_la_corrida,
                                          ruta_plantilla=self._plantilla())
             messagebox.showinfo("Memoria exportada", resultado.mensaje)
         except (OSError, ErrorProyecto) as exc:
@@ -2331,16 +2496,18 @@ class ExpedienteApp:
             # OSError ni de JSONDecodeError, de modo que este brazo no lo veia.
             messagebox.showerror("Error al cargar", f"No se pudo leer la sesion:\n{exc}")
             return
-        if not isinstance(data, dict):
-            # Un JSON VALIDO que no sea objeto --- `[1, 2]`, `"texto"`, `3` ---
-            # pasa `json.load` sin error y revienta tres lineas mas abajo en
-            # `data.get(...)` con un `AttributeError` que nadie captura. Es un
-            # archivo mal formado, no un fallo del programa, y sale por el
-            # mismo sitio que los demas archivos mal formados.
+        # EL ESQUEMA ENTERO, ANTES DE TOCAR UN SOLO CAMPO (PC-16). Un JSON
+        # valido que no sea objeto --- `[1, 2]`, `"texto"`, `3` --- o una
+        # sesion con `"externos": null` pasaban `json.load` y reventaban
+        # mas abajo con un `AttributeError` fuera del manejador, a stderr y
+        # con proyecto y CSV ya pisados. Es un archivo mal formado, no un
+        # fallo del programa, y sale por el mismo sitio que los demas.
+        errores = errores_de_sesion(data)
+        if errores:
             messagebox.showerror(
                 "Error al cargar",
-                "El archivo es JSON valido pero no es una sesion: una sesion "
-                f"es un objeto con claves, y este trae {type(data).__name__}.")
+                "El archivo es JSON valido pero no es una sesion que se "
+                "pueda aplicar; no se toco nada:\n- " + "\n- ".join(errores))
             return
 
         version = data.get("formato_version", 1)
@@ -2348,9 +2515,11 @@ class ExpedienteApp:
         self.proyecto_var.set(data.get("proyecto", ""))
         self.csv_var.set(data.get("csv", ""))
         self.datos_externos_var.set(data.get("datos_externos", ""))
-        for clave, valor in data.get("externos", {}).items():
-            if clave in self.externos_vars:
-                self.externos_vars[clave].set(valor)
+        # Los externos que la sesion NO trae se reponen a vacio: la ventana
+        # queda como la sesion dice, no como la sesion anterior la dejo.
+        externos = data.get("externos", {})
+        for clave, var in self.externos_vars.items():
+            var.set(externos.get(clave, ""))
         # Un alcance que la sesion no traiga (o que traiga escrito mal) NO se
         # adopta en silencio: se queda el defecto de `cli.py`, que es el mismo
         # que la ventana muestra al abrirse.
@@ -2359,7 +2528,7 @@ class ExpedienteApp:
             alcance = cli.ALCANCE_EXPEDIENTE
         self.alcance_var.set(alcance)
 
-        aviso = self._restaurar_criterios(data.get("criterios"))
+        aviso = self._restaurar_criterios(data.get("criterios"), sustituir=True)
 
         self.lbl_error_datos.config(text="")
         self._llenar_tabla_criterios()
@@ -2373,23 +2542,64 @@ class ExpedienteApp:
         if aviso:
             messagebox.showinfo("Sesion cargada", aviso)
 
-    def _restaurar_criterios(self, bloque):
+    def importar_decisiones(self):
+        """
+        «Importar decisiones»: SUMA los criterios declarados de otra sesion a
+        los de esta, sin vaciar nada (`restaurar_sesion(sustituir=False)`).
+        Es la accion aditiva que «Cargar sesion» era hasta EXT-4, con su
+        propio boton y su propio nombre, porque abrir e importar son dos
+        cosas y una ventana no puede hacer la segunda cuando se le pide la
+        primera. No toca el proyecto, el CSV ni los externos.
+        """
+        ruta = filedialog.askopenfilename(
+            title="Importar decisiones de otra sesion",
+            filetypes=[("Archivos JSON", "*.json")])
+        if not ruta:
+            return
+        try:
+            with open(ruta, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            messagebox.showerror("Error al importar", f"No se pudo leer la sesion:\n{exc}")
+            return
+        errores = errores_de_sesion(data)
+        if errores:
+            messagebox.showerror(
+                "Error al importar",
+                "El archivo no es una sesion que se pueda aplicar; no se "
+                "toco nada:\n- " + "\n- ".join(errores))
+            return
+        aviso = self._restaurar_criterios(data.get("criterios"), sustituir=False)
+        self._llenar_tabla_criterios()
+        messagebox.showinfo("Decisiones importadas",
+                            aviso or "La sesion no traia criterios declarados.")
+
+    def _restaurar_criterios(self, bloque, *, sustituir):
         """
         Repone los criterios declarados que la sesion traiga (SIS-A-18).
 
         Todo pasa por `declaracion.restaurar_sesion`, que declara por
         `establecer_valor_dinamico` -- la misma guardia que el archivo -- y
-        devuelve lo restaurado Y lo rechazado. Un JSON de sesion es un archivo
-        que alguien pudo editar a mano: aceptar sus valores sin guardia
-        convertiria el formato de sesion en la puerta de atras que este
-        proyecto no tiene, y descartarlos en silencio esconderia justo el caso
-        que importa -- el criterio que la sesion traia y que hoy la guardia
-        rechaza.
+        devuelve lo restaurado, lo rechazado Y lo retirado. Un JSON de sesion
+        es un archivo que alguien pudo editar a mano: aceptar sus valores sin
+        guardia convertiria el formato de sesion en la puerta de atras que
+        este proyecto no tiene, y descartarlos en silencio esconderia justo el
+        caso que importa -- el criterio que la sesion traia y que hoy la
+        guardia rechaza.
+
+        `sustituir=True` es abrir una sesion: lo declarado en el proceso se
+        retira ANTES de volcar la nueva (EXT-A-02). `False` es importar. En
+        los dos casos el informe de la ultima corrida deja de estar vigente.
         """
+        # Con `sustituir` se vacia aunque la sesion no traiga bloque: abrir
+        # una sesion sin criterios es abrir una obra sin decisiones.
+        self._invalidar_informe(MOTIVO_INFORME_DESACTUALIZADO)
+        if bloque is None:
+            bloque = {} if sustituir else None
         if bloque is None:
             return ""
         try:
-            resultado = dec.restaurar_sesion(bloque)
+            resultado = dec.restaurar_sesion(bloque, sustituir=sustituir)
         except (ValueError, KeyError) as exc:
             return f"No se pudieron restaurar los criterios de la sesion: {exc}"
         partes = []
@@ -2398,6 +2608,10 @@ class ExpedienteApp:
                 f"Criterios restaurados SOLO para esta corrida: "
                 f"{', '.join(resultado.restaurados)}. "
                 "criterios_adoptados.py no se modifico.")
+        if resultado.retirados:
+            partes.append(
+                "Se RETIRARON las declaraciones de la sesion anterior que "
+                f"esta no trae: {', '.join(resultado.retirados)}.")
         if resultado.hubo_rechazos:
             detalle = "; ".join(f"{clave}: {motivo}"
                                 for clave, motivo in resultado.rechazados)

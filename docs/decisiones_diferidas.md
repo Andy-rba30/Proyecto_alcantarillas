@@ -1328,6 +1328,17 @@ ficha, arriba, para no duplicar el símbolo.
   el candidato en seco, vacíe con `limpiar_valores_dinamicos()` y las
   procedencias, y vuelque sólo lo aceptado; `sustituir=False` como «importar
   decisiones». Sesión EXT-4, junto con el contexto de corrida (`EXT-A-01`).
+- **CERRADA en EXT-4 (2026-09-20):** exactamente eso. `restaurar_sesion` valida
+  el candidato entero con `criterios_adoptados.verificar_declaracion` —la
+  guardia de `establecer_valor_dinamico` en seco, sin escribir—, después
+  vacía con `limpiar_valores_dinamicos()` y el libro de procedencias, vuelca
+  sólo lo aceptado por el único camino y devuelve `retirados`. «Cargar
+  sesión» de la GUI la llama con `sustituir=True`; «Importar decisiones» es un
+  botón aparte con `sustituir=False`. El docstring de
+  `limpiar_valores_dinamicos` dice ahora que SÍ tiene llamador de producción
+  y cuál; `tests/test_ext4_contexto_corrida.py` (casos d, d2, d3, d4) fija que
+  abrir la sesión B vacía deja `valores_dinamicos() == {}` y
+  `procedencias() == {}`, y que una clave de B sin procedencia no hereda la de A.
 - **Dónde vive:** `src/criterios_adoptados.py::limpiar_valores_dinamicos`
 
 ## NOR-HID-02 · La cuneta está en la pág. 179 y la memoria sigue imprimiendo 178
@@ -1600,3 +1611,81 @@ decía que EXT-3 la haría: se dejan aquí con su argumento y su sesión.
   criterio (o una columna «qué hace falta» que admita «otro método» además de
   «declarar»), con la GUI leyendo el mismo agregador que la memoria.
 - **Dónde vive:** `src/modulos/M11_reporte.py::criterios_bloqueantes`
+
+---
+
+# Parte XX — Lo que EXT-4 dejó escrito al cerrar el contexto de corrida y las sesiones
+
+EXT-4 cerró EXT-A-01, EXT-A-02, EXT-G-02, PC-07, PC-09, PC-15, PC-16 y
+SIS-B-22 (reabierta en EXT-0), y retiró los 27 accesos a `_USADOS` de la
+suite: `cli.correr` vacía los registros de uso al entrar y fotografía al
+salir un `ContextoCorrida` congelado en `Informe.contexto`, del que leen los
+cuatro exportadores; `restaurar_sesion(sustituir=True)` valida en seco,
+vacía y vuelca; la GUI invalida el informe en los cuatro gestos que cambian
+el estado y valida la sesión entera antes de tocar un campo. Tres cosas
+quedaron sin hacer a propósito, con su argumento y su sesión.
+
+## EXT-4-01 · La sesión sigue en formato v2: sin identidad, sin huella del CSV y sin corridas
+
+- **Qué se difirió:** un formato de sesión v3 con migración explícita v2→v3,
+  el `csv_sha1` de la corrida, el `informe_json` embebido por corrida y
+  escritura temporal + `os.replace`, que es lo que el dictamen pide para E04
+  («persistencia con revisiones»). EXT-4 dejó `FORMATO_SESION = 2` y cerró
+  PC-16 por la vía estrecha: el esquema v2 se valida ENTERO
+  (`gui.app.errores_de_sesion`, tipo por clave) antes de escribir en ningún
+  `StringVar`, y los externos ausentes se reponen a vacío.
+- **Por qué:** subir la versión del formato en la misma sesión que cambia la
+  semántica de «cargar» (de aditiva a sustitutiva) habría mezclado dos
+  decisiones que se revisan por separado, y E04 exige además decidir qué es
+  una «revisión» de expediente —un objeto que EXT-4 no crea a propósito: el
+  prompt dice «no crees un objeto Proyecto»—. El `ContextoCorrida` ya lleva
+  las dos huellas (`csv_sha1`, `criterios_sha1`) y `informe_json` las
+  publica, de modo que E04 no tiene que inventar dónde guardarlas.
+- **Qué haría falta:** la sesión E04 del plan de evolución: formato 3 con
+  migración, corridas embebidas (cada una con su `contexto`), escritura
+  atómica; y decidir si «Importar decisiones» —que hoy suma sin vaciar y sin
+  preguntar— pide confirmación clave a clave cuando pisa.
+- **Dónde vive:** `gui/app.py::errores_de_sesion`
+
+## EXT-4-02 · El contexto vive en registros de módulo, no en `contextvars`: la GUI sigue corriendo en su hilo
+
+- **Qué se difirió:** pasar los cuatro registros (`_OVERRIDES`, los dos
+  `_USADOS`, `_PROCEDENCIAS`) a `contextvars` para que dos corridas
+  concurrentes —una GUI en hilo, o un servicio— no compartan la foto. Hoy
+  `cli.correr` vacía y fotografía sobre estado de PROCESO, y eso es correcto
+  porque la GUI corre el pipeline en el hilo de Tk, de forma síncrona.
+- **Por qué:** el dictamen lo dice en su propuesta 1: «si un día la GUI corre
+  en hilo, el mismo almacén pasa a `contextvars` sin tocar M2–M10», porque
+  los 79 escritores de uso pasan por tres funciones (`ca.valor`,
+  `ca.valor_si_declarado`, `ds.valor`). Hacerlo antes de que exista un hilo
+  sería resolver una carrera que no se puede medir, y EXT-8 (rendimiento y
+  GUI no bloqueante) es donde se decide si la corrida sale a hilo o a
+  subproceso —la propuesta 2 del dictamen prefiere el subproceso, con el que
+  el aislamiento es gratis y esta ficha se cierra sola—.
+- **Qué haría falta:** que EXT-8 decida hilo o subproceso; si hilo,
+  `contextvars.ContextVar` por registro con `reiniciar_usos`/`capturar_contexto`
+  sobre la variable de contexto, y un test con dos corridas concurrentes
+  cuyos `contexto.criterios_usados` no se mezclen.
+- **Dónde vive:** `cli.py::capturar_contexto`
+
+## EXT-4-03 · Un `Informe` sin contexto no se exporta: no hay caída al estado vivo
+
+- **Qué se difirió:** nada a favor del código viejo, y conviene decirlo
+  porque la alternativa existía y se descartó: `Informe.contexto` es
+  `Optional` y `None` en un informe armado a mano, y `ContextoCorrida.de`
+  levanta `ValueError` en vez de fotografiar el estado del proceso en ese
+  momento. El único `Informe` de la suite armado a mano
+  (`test_M11_reporte.py::test_un_informe_sin_bloqueos_no_inventa_bloqueantes`)
+  no se exporta; los tests que prueban un bloque de M11 suelto arman su foto
+  con `cli.capturar_contexto` y se la pasan.
+- **Por qué:** una caída silenciosa al estado vivo sería EXACTAMENTE el
+  defecto que EXT-A-01 cierra, escondido en el caso raro. Que un informe sin
+  corrida no se pueda exportar es lo que la constitución pide de todo vacío:
+  detener, no rellenar. Y el registro de usos ya no se puede leer desde M11
+  (la guardia AST de `tests/test_ext4_contexto_corrida.py` lo prohíbe), de
+  modo que el fallback no tendría siquiera de dónde leer sin abrir la puerta.
+- **Qué haría falta:** nada; queda escrito para que nadie lo lea como un
+  hueco. Si algún consumidor futuro necesita exportar un `Informe`
+  construido fuera de `cli.correr`, tiene que construirlo CON su
+  `ContextoCorrida`, no pedir que la capa de reporte lo adivine.
+- **Dónde vive:** `src/modelos.py::ContextoCorrida`

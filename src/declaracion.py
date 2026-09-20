@@ -217,6 +217,20 @@ def limpiar() -> None:
     _PROCEDENCIAS.clear()
 
 
+def olvidar_procedencia(clave: str) -> None:
+    """
+    Retira SOLO la procedencia de una clave, dejando el valor.
+
+    Es lo que corresponde cuando un valor entra por un camino SIN
+    procedencia sobre una clave que la tenia --- el campo de texto de la
+    pestaña 2, o «Importar decisiones» con una clave que la sesion trae sin
+    procedencia ---: la procedencia vieja hablaria de un numero que ya no
+    gobierna, con su `valor` impreso al lado del nuevo. Encontrado por la
+    auditoria adversarial de EXT-4 como el defecto EXT-A-02 por otra puerta.
+    """
+    _PROCEDENCIAS.pop(clave, None)
+
+
 def _ahora() -> str:
     """La fecha de la declaracion, en ISO 8601 hasta el segundo."""
     return datetime.now().isoformat(timespec="seconds")
@@ -689,6 +703,15 @@ def _nota_por_defecto(v) -> str:
 # Se guardan las dos mitades -- valor y procedencia -- porque restaurar solo
 # el valor devolveria un numero sin origen, y la memoria de la corrida
 # restaurada diria menos que la de la corrida original.
+#
+# LO QUE SIS-A-18 NO PROBO, y EXT-4 cerro (EXT-A-02, SIS-B-22): la ida y
+# vuelta de UNA sesion no dice que pasa con la anterior. `restaurar_sesion`
+# era aditiva, de modo que abrir la sesion de la obra B tras declarar en la
+# obra A dejaba las claves de A vivas, `estado_de_sesion()` de B las guardaba,
+# y una clave de B sin procedencia heredaba la procedencia de A. Desde EXT-4
+# abrir SUSTITUYE (`sustituir=True`, con el candidato validado en seco antes
+# de vaciar) e importar SUMA (`sustituir=False`); el resultado dice ademas
+# que se retiro.
 
 
 def estado_de_sesion() -> Dict[str, Any]:
@@ -720,13 +743,18 @@ class ResultadoDeRestauracion:
     """
     restaurados: Tuple[str, ...]
     rechazados: Tuple[Tuple[str, str], ...]
+    # Lo que la corrida tenia declarado y la sesion abierta NO trae: con
+    # `sustituir=True` se retira, y se dice, porque una declaracion que
+    # desaparece en silencio es tan grave como una que aparece en silencio.
+    retirados: Tuple[str, ...] = ()
 
     @property
     def hubo_rechazos(self) -> bool:
         return bool(self.rechazados)
 
 
-def restaurar_sesion(estado: Any) -> ResultadoDeRestauracion:
+def restaurar_sesion(estado: Any, *,
+                     sustituir: bool = True) -> ResultadoDeRestauracion:
     """
     Repone las declaraciones de una sesion guardada.
 
@@ -738,6 +766,26 @@ def restaurar_sesion(estado: Any) -> ResultadoDeRestauracion:
 
     Lo que la guardia rechaza no se descarta en silencio: sale en
     `rechazados`, con el motivo, para que la ventana lo muestre.
+
+    ABRIR UNA SESION SUSTITUYE; IMPORTAR SUMA (EXT-A-02, SIS-B-22). Hasta
+    EXT-4 esta funcion era ADITIVA: abrir la sesion de la obra B tras
+    declarar en la obra A dejaba las claves de A vivas, `estado_de_sesion()`
+    de B las persistia, y una clave de B sin procedencia HEREDABA la
+    procedencia de A --- la memoria de B afirmaba de donde salio un valor
+    que salio de otra obra ---. Con `sustituir=True` (el defecto, y lo que
+    «Cargar sesion» hace) se vacia TODO lo declarado y el libro de
+    procedencias, y se vuelca solo lo que la sesion trae y la guardia
+    acepta; `retirados` dice que se fue. Con `sustituir=False` --- «Importar
+    decisiones» --- se suma a lo declarado, que es otra accion y se pide
+    por otro boton.
+
+    EL CANDIDATO SE VALIDA ENTERO, EN SECO, ANTES DE VACIAR NADA
+    (`criterios_adoptados.verificar_declaracion`): lo aceptado, lo rechazado
+    y lo retirado se conocen ANTES de tocar el estado, y el vaciado solo
+    ocurre con esa cuenta hecha. Cada clave aceptada entra igualmente por
+    `establecer_valor_dinamico`, que es el unico camino al valor; como la
+    guardia es determinista y no depende de otras claves, la segunda pasada
+    no puede rechazar lo que la primera acepto.
     """
     if not isinstance(estado, dict):
         raise ValueError(
@@ -752,23 +800,45 @@ def restaurar_sesion(estado: Any) -> ResultadoDeRestauracion:
     if not isinstance(guardadas, dict):
         guardadas = {}
 
-    restaurados: List[str] = []
+    # 1. En seco: que acepta la guardia, y con que procedencia.
+    aceptados: List[Tuple[str, Any, Optional[Procedencia]]] = []
     rechazados: List[Tuple[str, str]] = []
     for clave, valor in valores.items():
         try:
-            _ca.establecer_valor_dinamico(clave, valor)
+            _ca.verificar_declaracion(clave, valor)
         except (ValueError, KeyError) as exc:
             rechazados.append((clave, str(exc)))
             continue
-        restaurados.append(clave)
+        procedencia: Optional[Procedencia] = None
         cruda = guardadas.get(clave)
         if isinstance(cruda, dict):
             try:
-                _PROCEDENCIAS[clave] = _procedencia_desde_json(cruda)
+                procedencia = _procedencia_desde_json(cruda)
             except (TypeError, KeyError) as exc:
                 rechazados.append(
                     (clave, f"el valor se restauro y su procedencia no: {exc}"))
-    return ResultadoDeRestauracion(tuple(restaurados), tuple(rechazados))
+        aceptados.append((clave, valor, procedencia))
+
+    # 2. Vaciar, si se abre una sesion y no se importa.
+    retirados: Tuple[str, ...] = ()
+    if sustituir:
+        previas = set(_ca.valores_dinamicos()) | set(_PROCEDENCIAS)
+        _ca.limpiar_valores_dinamicos()
+        _PROCEDENCIAS.clear()
+        retirados = tuple(sorted(previas - {clave for clave, _, _ in aceptados}))
+
+    # 3. Volcar solo lo aceptado, por el unico camino. Una clave que la
+    # sesion trae SIN procedencia entra sin procedencia: tambien al importar
+    # (`sustituir=False`), donde la clave pudo tenerla de la obra anterior y
+    # heredarla seria EXT-A-02 por otra puerta.
+    for clave, valor, procedencia in aceptados:
+        _ca.establecer_valor_dinamico(clave, valor)
+        if procedencia is not None:
+            _PROCEDENCIAS[clave] = procedencia
+        else:
+            _PROCEDENCIAS.pop(clave, None)
+    return ResultadoDeRestauracion(tuple(clave for clave, _, _ in aceptados),
+                                   tuple(rechazados), retirados)
 
 
 def _procedencia_desde_json(crudo: Dict[str, Any]) -> Procedencia:

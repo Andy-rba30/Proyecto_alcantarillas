@@ -1433,6 +1433,71 @@ def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
     assert informe["alcance"]["nivel"] == cli.ALCANCE_PERFIL
 
 
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_el_informe_de_la_ventana_es_de_su_corrida_y_cuenta_como_la_cli(tmp_path):
+    """
+    EXT-4 sobre la ventana de verdad (PC-15, EXT-G-02): ver
+    `tests/apoyo/gui_contexto_real.py`. Lo que el AST no puede ver: el texto
+    real de «Etapas bloqueadas», el estado real de los cuatro exportadores y
+    su tooltip tras declarar, quitar, cargar sesion y fallar.
+    """
+    import json
+    import subprocess
+
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_contexto_real",
+                       str(tmp_path)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    r = json.loads((tmp_path / "resumen_contexto.json")
+                   .read_text(encoding="utf-8"))
+
+    # (f) la MISMA cuenta que la CLI, y es la de los bloqueos reales.
+    assert r["gui_etapas_bloqueadas"] == r["cli_etapas_bloqueadas"]
+    assert int(r["gui_etapas_bloqueadas"]) == r["informe_bloqueos_reales"]
+    assert r["informe_bloqueos_reales"] < r["informe_bloqueos_totales"], (
+        "sin diferidos en esta corrida el test no distingue las dos cuentas")
+    assert int(r["gui_diferidas"]) == (r["informe_bloqueos_totales"]
+                                       - r["informe_bloqueos_reales"])
+    assert all(e["encendido"] for e in r["exportadores_tras_correr"].values())
+    assert r["barra_tras_correr"].startswith("Ejecutado (")
+    # La columna «Bloqueos» de la pestaña 3 cuenta los reales del punto.
+    assert r["columna_bloqueos"] == r["bloqueos_reales_por_punto"]
+    assert r["columna_bloqueos"] != r["bloqueos_totales_por_punto"]
+    # El nombre del proyecto es el de la corrida, no el del campo al exportar.
+    assert r["proyecto_en_la_memoria"] is True
+    assert r["otro_nombre_en_la_memoria"] is False
+
+    # (e) los cuatro gestos invalidan y apagan con motivo.
+    import gui.app as gapp
+    for gesto in ("declarar", "quitar", "cargar"):
+        assert r[f"informe_tras_{gesto}"] is True, gesto
+        for nombre, estado in r[f"exportadores_tras_{gesto}"].items():
+            assert not estado["encendido"], (gesto, nombre)
+            assert estado["motivo"] == gapp.MOTIVO_INFORME_DESACTUALIZADO
+    assert "Sin informe vigente" in r["barra_tras_declarar"]
+    assert r["filas_puntos_tras_declarar"] == 0
+    # Cargar SUSTITUYE: la clave de la obra anterior se fue, la de la
+    # sesion entro, y el proyecto es el de la sesion.
+    assert "phi_relleno_trasdos" not in r["declarados_tras_cargar"]
+    assert "ke_entrada" in r["declarados_tras_cargar"]
+    assert r["proyecto_tras_cargar"] == "obra B"
+    assert r["externo_ausente_tras_cargar"] == ""
+    # Una corrida fallida tampoco deja el informe anterior como vigente.
+    assert r["informe_tras_fallo"] is True
+    for estado in r["exportadores_tras_fallo"].values():
+        assert not estado["encendido"]
+        assert estado["motivo"] == gapp.MOTIVO_CORRIDA_FALLIDA
+    assert "Sin informe vigente" in r["barra_tras_fallo"]
+    # Y la sesion deformada no toco nada y se dijo con dialogo (PC-16).
+    assert r["proyecto_tras_sesion_rota"] == "antes de la sesion rota"
+    assert r["dialogo_sesion_rota"] == ["error"]
+
+
 # ===========================================================================
 # Los filtros derivados de la pestana 2, y la anotacion de la pestana 1
 # ===========================================================================

@@ -233,6 +233,7 @@ CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA
   Lo resuelve: TR del evento extremo (p.ej. el de la serie FEN de la Fase 1-bis) y definicion tecnica de colapso de la via, ambos declarados en la memoria
   Bloqueo  : verificacion V8 diferida al expediente (alcance perfil)
   Puntos   : A-01, A-02, B-01
+  Diferido : por alcance; no cuenta para el cierre de esta corrida (ver ALCANCE DE LA CORRIDA)
 
 [A] embocadura_cajon
   Concepto : Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)
@@ -247,6 +248,7 @@ CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA
   Lo resuelve: Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto
   Bloqueo  : verificacion V5 diferida al expediente (alcance perfil)
   Puntos   : A-01, A-02, B-01
+  Diferido : por alcance; no cuenta para el cierre de esta corrida (ver ALCANCE DE LA CORRIDA)
 
 ==============================================================================
 RESUMEN

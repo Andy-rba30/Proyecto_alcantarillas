@@ -32,12 +32,12 @@ from tests.apoyo import estructura
 
 @pytest.fixture(autouse=True)
 def _aisla_registro_de_uso():
-    """El registro de invocaciones es estado global del modulo."""
-    previo = set(ds._USADOS)
-    ds._USADOS.clear()
+    """
+    Cada test parte de un registro de usos vacio, por la funcion publica;
+    reponerlo es de la fixture autouse de `conftest.py`.
+    """
+    ds.reiniciar_usos()
     yield
-    ds._USADOS.clear()
-    ds._USADOS.update(previo)
 
 
 # ---------------------------------------------------------------------------

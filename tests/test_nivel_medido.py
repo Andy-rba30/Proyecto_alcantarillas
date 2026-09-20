@@ -96,28 +96,26 @@ def _correr(alcance, opcionales=None):
     """
     Una corrida limpia, con la foto del registro de usos acotada a ella.
 
-    `criterios_adoptados` acumula los usos en un registro global --- que es lo
-    correcto para la memoria, que imprime lo que la corrida entera consumio ---
-    y en una suite ese registro lleva ademas lo que invocaron los tests
-    anteriores. Aqui se mide ESTA corrida, asi que se vacia, se corre, se lee y
-    se devuelve la union para no dejar sin sus usos a lo que venga despues.
+    Desde EXT-4 la foto la toma `cli.correr`: vacia el registro al entrar y
+    lo captura al salir en `Informe.contexto`, de modo que lo que aqui se
+    lee es lo que ESTA corrida invoco y no la suma de la sesion de pruebas.
+    Los opcionales se declaran antes y se retiran despues por el camino
+    publico.
     """
     externos = cli.cargar_datos_externos(None, EXTERNOS_GLOBALES)
     for id_punto, datos in EXTERNOS_POR_PUNTO.items():
         externos.por_punto.setdefault(id_punto, {}).update(
             {clave: cli.DatoDeclarado(clave, valor, "datos del expediente")
              for clave, valor in datos.items()})
-    previos = set(ca._USADOS)
-    ca._USADOS.clear()
     try:
         for clave, valor in (opcionales or {}).items():
             ca.establecer_valor_dinamico(clave, valor)
-        cli.correr(CSV_PERFIL, externos, alcance=alcance)
-        return {c for c in ca._USADOS if c in ca.CRITERIOS}
+        informe = cli.correr(CSV_PERFIL, externos, alcance=alcance)
+        return {c for c in informe.contexto.criterios_usados
+                if c in ca.CRITERIOS}
     finally:
         for clave in (opcionales or {}):
             ca.quitar_valor_dinamico(clave)
-        ca._USADOS.update(previos)
 
 
 @pytest.fixture(scope="module")

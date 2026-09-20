@@ -2,6 +2,8 @@
   "expediente": {
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
+    "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
+    "criterios_sha1": "ab2e83d43e71e4b7811e74a900fae909de1245cc",
     "puntos": 4,
     "dimensionados": 0,
     "cerrado": false
@@ -1128,7 +1130,8 @@
           "recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4)",
           "recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4)"
         ],
-        "puntos": []
+        "puntos": [],
+        "diferido": false
       },
       {
         "clave": "embocadura_cajon",
@@ -1144,7 +1147,8 @@
         ],
         "puntos": [
           "C-01"
-        ]
+        ],
+        "diferido": false
       },
       {
         "clave": "exposicion_quimica_ems",
@@ -1158,7 +1162,8 @@
         "etapas": [
           "aviso de ambiente corrosivo (9.4)"
         ],
-        "puntos": []
+        "puntos": [],
+        "diferido": false
       },
       {
         "clave": "phi_relleno_trasdos",
@@ -1172,7 +1177,8 @@
         "etapas": [
           "K_AE de Mononobe-Okabe (9.2)"
         ],
-        "puntos": []
+        "puntos": [],
+        "diferido": false
       },
       {
         "clave": "predimensionamiento_cabezal",
@@ -1186,7 +1192,8 @@
         "etapas": [
           "predimensionamiento del cabezal (9.3, E1-E5)"
         ],
-        "puntos": []
+        "puntos": [],
+        "diferido": false
       },
       {
         "clave": "remanso_derecho_via",
@@ -1204,7 +1211,8 @@
           "A-01",
           "A-02",
           "B-01"
-        ]
+        ],
+        "diferido": false
       }
     ]
   }

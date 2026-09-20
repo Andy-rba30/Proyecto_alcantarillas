@@ -281,8 +281,9 @@ def test_la_transicion_declara_que_la_recta_es_simplificacion_y_no_HDS5(hds5):
     c = CP5_TRANSICION_HDS5
     assert ca.criterio(CRITERIO_TRANSICION).etiqueta == "C"
 
-    # se limpia SOLO esta clave, para no borrar el registro de las demas
-    ca._USADOS.discard(CRITERIO_TRANSICION)
+    # Se parte de un registro vacio; la fixture autouse de conftest repone
+    # el estado del proceso al salir.
+    ca.reiniciar_usos()
     control_entrada(Q=CP5B_NO_SUMERGIDO["Q"], seccion=SeccionCircular(CP5B_NO_SUMERGIDO["D"]),
                     S=0.005, hds5=hds5)
     assert CRITERIO_TRANSICION not in ca.criterios_usados()

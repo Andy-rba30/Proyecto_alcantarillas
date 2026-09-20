@@ -334,6 +334,24 @@ def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
     lineas y muestran el mensaje; ninguno deja escapar una traza. El contrato
     esta fijado por test en tests/test_criterios_adoptados.py.
     """
+    verificar_declaracion(clave, valor_nuevo)
+    _OVERRIDES[clave] = valor_nuevo
+
+
+def verificar_declaracion(clave: str, valor_nuevo: Any) -> None:
+    """
+    La guardia de `establecer_valor_dinamico`, EN SECO: las mismas tres
+    comprobaciones --- clave declarada, valor no None, criterio no derivado
+    --- y la misma `_verificar_criterio`, sin escribir nada. Lanza
+    `KeyError` o `ValueError` exactamente como la declaracion.
+
+    Existe desde EXT-4 para `declaracion.restaurar_sesion(sustituir=True)`
+    (EXT-A-02): abrir una sesion tiene que validar TODO el candidato antes de
+    vaciar lo declarado, o un archivo con una clave mala dejaria el proceso
+    a medias --- ni la obra anterior ni la nueva ---. No es un segundo camino
+    de escritura: no toca `_OVERRIDES`, y `establecer_valor_dinamico` la
+    llama para que las dos no puedan divergir.
+    """
     if clave not in CRITERIOS:
         raise KeyError(
             f"'{clave}' no esta declarado en criterios_adoptados.py. "
@@ -355,7 +373,6 @@ def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
             f"memoria un valor que ninguna fuente sostiene ({resolucion.regla})"
         )
     _verificar_criterio(clave, replace(CRITERIOS[clave], valor=valor_nuevo))
-    _OVERRIDES[clave] = valor_nuevo
 
 
 def quitar_valor_dinamico(clave: str) -> None:
@@ -367,22 +384,23 @@ def limpiar_valores_dinamicos() -> None:
     """
     Retira todas las declaraciones en caliente de la corrida.
 
-    NO TIENE LLAMADOR DE PRODUCCION, Y ES DELIBERADO (SIS-B-22). La razon se
-    escribe aqui, que es donde la busca quien lee la funcion:
+    TIENE UN LLAMADOR DE PRODUCCION DESDE EXT-4, y es abrir una sesion
+    (SIS-B-22, reabierta en EXT-0 y cerrada aqui). Este docstring decia lo
+    contrario --- «no tiene llamador de produccion, y es deliberado» --- con
+    una premisa de S16.5 que S17 dejo atras al crear la sesion JSON: que la
+    CLI es un proceso de un solo uso y que la GUI solo retira UNA clave. La
+    sesion JSON es justamente el caso en que la GUI necesita retirar TODAS:
+    abrir la sesion de la obra B tras declarar en la obra A dejaba las claves
+    de A vivas, `estado_de_sesion()` de B las persistia y una clave de B sin
+    procedencia heredaba la de A (EXT-A-02). El consumidor es
+    `declaracion.restaurar_sesion(sustituir=True)`, que valida el candidato en
+    seco, llama a esta funcion junto con el vaciado del libro de procedencias
+    y vuelca solo lo aceptado. `sustituir=False` --- «Importar decisiones» ---
+    no la llama, y esa es la diferencia entre abrir e importar.
 
-    una corrida de la CLI es un proceso de un solo uso --- declara, calcula,
-    escribe la memoria y termina ---, de modo que "borrar todas las
-    declaraciones" no es una operacion que ninguna corrida necesite: el
-    proceso se acaba y el estado se va con el. La GUI tampoco la usa, porque
-    su boton retira UNA clave (`quitar_valor_dinamico`) y no todas: borrar de
-    golpe lo que el proyectista acaba de declarar seria un boton peligroso sin
-    caso de uso.
-
-    Quien SI la necesita es la suite: `conftest.py` la nombra al explicar por
-    que la declaracion de 'origen_cota_fondo_entrada' se repone en una fixture
-    autouse --- varios tests la llaman y sin reponer lo borrado el resto de la
-    suite caeria por orden de ejecucion. Es una utilidad de banco de pruebas
-    con un consumidor real, no codigo muerto, y por eso se conserva.
+    Sigue siendo tambien utilidad de banco de pruebas: la fixture autouse de
+    `conftest.py` fotografia y repone el estado de cada test, y es el unico
+    sitio de la suite que toca los registros privados.
     """
     _OVERRIDES.clear()
 
@@ -673,8 +691,27 @@ def criterios_usados() -> List[str]:
     que `reporte_criterios(solo_usados=True)` imprime como texto, expuesta como
     lista para el consumidor que arma su propio bloque (cli.py la vuelca al
     JSON). Existe para que nadie tenga que leer `_USADOS` desde fuera.
+
+    DESDE EXT-4 ES EL REGISTRO DE LA CORRIDA EN CURSO, no del proceso:
+    `cli.correr` lo vacia al entrar (`reiniciar_usos`) y lo fotografia al
+    salir en `Informe.contexto`. Los exportadores leen la foto, no esto.
     """
     return sorted(_USADOS)
+
+
+def reiniciar_usos() -> None:
+    """
+    Vacia el registro de usos. Lo llama `cli.correr` AL ENTRAR, y es lo que
+    cierra PC-09: el registro era de proceso y nunca se vaciaba, de modo que
+    en la GUI --- o en cualquier consumidor que corra dos veces --- la
+    memoria de la segunda corrida imprimia como usados los criterios de la
+    primera (medido: una memoria de perfil tras una corrida de expediente
+    listaba seis criterios de Fase 9 como usados con la Fase 9 diferida).
+
+    Es publica para que la suite tampoco tenga que tocar `_USADOS`: hasta
+    EXT-4 nueve archivos de tests lo vaciaban y reponian a mano, 27 veces.
+    """
+    _USADOS.clear()
 
 
 def declarado_en_caliente(clave: str) -> bool:
@@ -7022,13 +7059,34 @@ _coherencia_de_etiquetas()
 _ORDEN = {"N": 0, "N->": 1, "S": 2, "C": 3, "A": 4}
 
 
-def reporte_criterios(solo_usados: bool = True) -> str:
+def reporte_criterios(solo_usados: bool = True, *,
+                      contexto: Optional[Any] = None) -> str:
     """
     Genera el bloque de declaracion de criterios para el reporte final.
     Con solo_usados=True lista unicamente los criterios que el calculo invoco.
+
+    Con `contexto` --- el `ContextoCorrida` del informe --- lee la FOTO de
+    esa corrida (usos, valores efectivos, declarados, vacios) y no el estado
+    vivo del proceso; es lo que `cli.volcar` le pasa desde EXT-4 (EXT-A-01).
+    Sin el, describe el estado de ahora mismo, que es lo que quiere quien lo
+    invoca desde la consola de este modulo.
     """
+    if contexto is None:
+        usados = set(_USADOS)
+        efectivo = lambda k: criterio_efectivo(k).valor           # noqa: E731
+        en_caliente_de = declarado_en_caliente
+        sin_valor = criterios_sin_valor()
+        en_caliente = criterios_declarados_en_caliente()
+        opcionales = criterios_opcionales_sin_declarar()
+    else:
+        usados = set(contexto.criterios_usados)
+        efectivo = contexto.valor_efectivo
+        en_caliente_de = contexto.declarado_en_caliente
+        sin_valor = list(contexto.criterios_sin_valor)
+        en_caliente = list(contexto.declarados_en_caliente)
+        opcionales = list(contexto.criterios_opcionales_sin_declarar)
     claves = sorted(
-        (_USADOS if solo_usados else set(CRITERIOS)),
+        (usados if solo_usados else set(CRITERIOS)),
         key=lambda k: (_ORDEN.get(CRITERIOS[k].etiqueta, 9), k),
     )
     if not claves:
@@ -7039,10 +7097,10 @@ def reporte_criterios(solo_usados: bool = True) -> str:
            "=" * 78, ""]
 
     for k in claves:
-        c = criterio_efectivo(k)
+        c = replace(CRITERIOS[k], valor=efectivo(k))
         valor_efectivo = c.valor
         marca_override = ("  [declarado para esta corrida, no en archivo]"
-                          if declarado_en_caliente(k) else "")
+                          if en_caliente_de(k) else "")
         marca_prov = "  [PROVISIONAL: valor de prueba, NO verificado]" if c.provisional else ""
         marca_opc = "  [refinamiento opcional]" if c.opcional else ""
         out.append(
@@ -7072,7 +7130,6 @@ def reporte_criterios(solo_usados: bool = True) -> str:
             out.append(f"  - {k}")
         out.append("-" * 78)
 
-    sin_valor = criterios_sin_valor()
     if sin_valor:
         out.append("")
         out.append("-" * 78)
@@ -7082,7 +7139,6 @@ def reporte_criterios(solo_usados: bool = True) -> str:
             out.append(f"  - [{CRITERIOS[k].etiqueta}] {k}: {CRITERIOS[k].concepto}")
         out.append("-" * 78)
 
-    en_caliente = criterios_declarados_en_caliente()
     if en_caliente:
         # Ni vacios (tienen valor) ni valores del archivo (no estan en el):
         # sin este bloque se caian de las dos listas a la vez.
@@ -7095,7 +7151,7 @@ def reporte_criterios(solo_usados: bool = True) -> str:
             c = CRITERIOS[k]
             dice = ("el archivo lo declara sin valor" if c.valor is None
                     else f"el archivo declara {c.valor!r}")
-            out.append(f"  - [{c.etiqueta}] {k} = {_OVERRIDES[k]!r}  ({dice})")
+            out.append(f"  - [{c.etiqueta}] {k} = {efectivo(k)!r}  ({dice})")
         out.append("-" * 78)
 
     sin_consumidor = criterios_sin_consumidor()
@@ -7105,12 +7161,11 @@ def reporte_criterios(solo_usados: bool = True) -> str:
         out.append("DECLARADOS QUE NINGUNA ETAPA INVOCA - con la razon escrita")
         out.append("en el propio criterio, no deducida de su ausencia:")
         for k in sin_consumidor:
-            c = criterio_efectivo(k)
+            c = replace(CRITERIOS[k], valor=efectivo(k))
             out.append(f"  - [{c.etiqueta}] {k} = {c.valor!r}")
             out.append(f"      {c.sin_consumidor}")
         out.append("-" * 78)
 
-    opcionales = criterios_opcionales_sin_declarar()
     if opcionales:
         out.append("")
         out.append("-" * 78)

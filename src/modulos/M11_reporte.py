@@ -54,6 +54,18 @@ leerlos como una lista homogenea, y la memoria respeta esa separacion.
 
 De donde sale cada cosa
 -----------------------
+EL ESTADO DE LA CORRIDA SALE DEL INFORME, NO DEL PROCESO (EXT-4, EXT-A-01).
+Todo lo que es estado --- que criterios y datos de sitio se invocaron, con que
+valor efectivo gobernaron, cuales se declararon o pisaron en caliente y con que
+procedencia, el SHA-1 del CSV --- lo trae `Informe.contexto`, un
+`ContextoCorrida` congelado que `cli.correr` fotografia al salir. Hasta EXT-4
+este modulo lo leia del registro vivo de `criterios_adoptados`, `datos_sitio`
+y `declaracion` en 24 sitios, y una memoria renderizada despues de otra
+corrida, o despues de una declaracion, describia un estado que no era el suyo.
+De los dos catalogos solo se leen ahora LECTURAS ESTATICAS --- lo que dice el
+archivo: concepto, fuente, justificacion, etiqueta --- y
+`tests/test_ext4_contexto_corrida.py` barre el AST para que siga siendo asi.
+
 Los tableros NO se transcriben aqui: se leen de la hoja de ruta en cada
 corrida. Una copia en Python seria una segunda fuente de verdad que envejece
 en silencio en cuanto la hoja pase a v8, que es el error que este proyecto
@@ -101,7 +113,7 @@ import math
 import re
 import tempfile
 import webbrowser
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from string import Template
@@ -109,7 +121,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import criterios_adoptados as ca
 import datos_sitio as ds
-import declaracion as _declaracion
 # Los umbrales normativos con su CARACTER (recomendacion / exigencia) se leen
 # de su transcripcion, no se reescriben aqui: la memoria y el codigo tienen
 # que citar el mismo objeto o divergen, que es literalmente NOR-MEM-01.
@@ -136,7 +147,7 @@ from modulos.M8_estructural import verificacion_diferida_estructural
 # Los rotulos de alcance viven en modelos.py, no en cli.py: M11 los necesita y
 # no puede importar la CLI --- es la CLI quien importa M11 ---. Ver la nota de
 # su declaracion.
-from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
+from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, ContextoCorrida,
                      MOTIVO_METODO_NO_EVALUABLE, TipoDeVeredicto)
 
 _reg_M11 = _registro_M11.construir()
@@ -401,6 +412,16 @@ class Trazabilidad:
     generado_local: str
 
 
+def sha1_de_bytes(datos: bytes) -> str:
+    """
+    SHA-1 de un contenido ya leido, en hexadecimal. Es lo que `cli.correr`
+    aplica a los MISMOS bytes que M0 parsea (PC-09): la huella del CSV que
+    la memoria imprime es la de lo que se calculo, no la del archivo que hay
+    en disco al exportar.
+    """
+    return hashlib.sha1(datos).hexdigest()
+
+
 def sha1_archivo(ruta: Path) -> str:
     """
     SHA-1 del contenido del archivo, en hexadecimal.
@@ -408,7 +429,7 @@ def sha1_archivo(ruta: Path) -> str:
     Es una huella de trazabilidad, no una medida de seguridad: sirve para
     responder "¿es este el mismo CSV con el que se corrio la memoria?".
     """
-    return hashlib.sha1(ruta.read_bytes()).hexdigest()
+    return sha1_de_bytes(Path(ruta).read_bytes())
 
 
 def ruta_hoja_de_ruta(dir_docs: Optional[Path] = None) -> Path:
@@ -458,10 +479,11 @@ def version_hoja_de_ruta(ruta: Path) -> str:
     )
 
 
-def version_criterios() -> str:
+def version_criterios(contexto: Any) -> str:
     """
     Huella legible de `criterios_adoptados.py`: cuantos criterios declara y
-    cuantos siguen sin valor.
+    cuantos siguen sin valor. Los dos conteos de estado --- sin valor y en
+    caliente --- salen del `ContextoCorrida` de la corrida (EXT-4).
 
     No hay un numero de version escrito a mano a proposito. Un `__version__`
     que alguien olvida subir despues de tocar un criterio produce dos memorias
@@ -469,8 +491,8 @@ def version_criterios() -> str:
     existe para impedir. El conteo y el SHA-1 del archivo no se pueden olvidar.
     """
     total = len(ca.CRITERIOS)
-    sin_valor = len(ca.criterios_sin_valor())
-    en_caliente = len(ca.criterios_declarados_en_caliente())
+    sin_valor = len(contexto.criterios_sin_valor)
+    en_caliente = len(contexto.declarados_en_caliente)
     # El conteo describe el estado de ESTA corrida, no solo el del archivo, y
     # por eso los declarados en caliente van dichos aparte: sin ellos el
     # encabezado presentaba como archivo lo que era archivo + declaraciones,
@@ -492,13 +514,19 @@ def fecha_archivo(ruta: Path) -> str:
     return datetime.fromtimestamp(ruta.stat().st_mtime).strftime("%d/%m/%Y %H:%M")
 
 
-def trazabilidad(csv: Path, *, dir_docs: Optional[Path] = None,
+def trazabilidad(csv: Path, contexto: Any, *,
+                 dir_docs: Optional[Path] = None,
                  generado_utc: str = "") -> Trazabilidad:
     """
     Arma el encabezado del entregable (bloque 0 de la Fase 11).
 
     `generado_utc` es la marca que ya trae el informe de la corrida; la fecha
-    local se calcula aqui solo para la lectura humana.
+    local se calcula aqui solo para la lectura humana. Las dos huellas de la
+    corrida --- la del CSV y la del archivo de criterios --- vienen en el
+    `ContextoCorrida` (EXT-4): la del CSV es de los bytes que M0 leyo, y
+    editar el archivo entre correr y exportar ya no la mueve (PC-09). La de
+    la hoja de ruta y la fecha del archivo de criterios se leen aqui, porque
+    describen documentos y no estado.
     """
     hoja = ruta_hoja_de_ruta(dir_docs)
     return Trazabilidad(
@@ -506,10 +534,10 @@ def trazabilidad(csv: Path, *, dir_docs: Optional[Path] = None,
         hoja_ruta=hoja,
         hoja_ruta_sha1=sha1_archivo(hoja),
         csv=csv,
-        csv_sha1=sha1_archivo(csv),
-        criterios_version=version_criterios(),
+        csv_sha1=contexto.csv_sha1,
+        criterios_version=version_criterios(contexto),
         criterios_fecha=fecha_archivo(ARCHIVO_CRITERIOS),
-        criterios_sha1=sha1_archivo(ARCHIVO_CRITERIOS),
+        criterios_sha1=contexto.criterios_sha1,
         generado_utc=generado_utc,
         generado_local=datetime.now().strftime("%d/%m/%Y %H:%M"),
     )
@@ -694,6 +722,13 @@ class CriterioBloqueante:
     fases: Tuple[str, ...]
     etapas: Tuple[str, ...]
     puntos: Tuple[str, ...]
+    # True cuando TODO lo que este criterio detuvo estaba diferido por
+    # alcance (EXT-G-02): el criterio sigue pendiente, pero no bloquea el
+    # cierre de ESTA corrida. Antes el agregador mezclaba los dos casos y el
+    # tablero de la GUI, el bloque de la memoria y el JSON los imprimian
+    # iguales, de modo que «bloqueo esta corrida» era falso de la mitad de
+    # las filas de una corrida de perfil.
+    diferido: bool = False
 
 
 def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
@@ -702,9 +737,12 @@ def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
     revisor necesita para saber que declarar primero (Sec. 0.7).
     """
     acumulado: Dict[str, Dict[str, list]] = {}
+    reales: set = set()
     for id_punto, bloqueo in informe.bloqueos():
         if bloqueo.criterio is None:
             continue
+        if not bloqueo.diferido_por_alcance:
+            reales.add(bloqueo.criterio)
         entrada = acumulado.setdefault(bloqueo.criterio,
                                        {"fases": [], "etapas": [], "puntos": []})
         for campo, dato in (("fases", bloqueo.fase), ("etapas", bloqueo.etapa),
@@ -723,7 +761,8 @@ def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
             reemplazado_por=declarado.reemplazado_por,
             fases=tuple(acumulado[clave]["fases"]),
             etapas=tuple(acumulado[clave]["etapas"]),
-            puntos=tuple(acumulado[clave]["puntos"])))
+            puntos=tuple(acumulado[clave]["puntos"]),
+            diferido=clave not in reales))
     return tuple(salida)
 
 
@@ -1757,10 +1796,12 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
 # 3. Declaracion de criterios adoptados (entregable 2)
 # ===========================================================================
 
-def bloque_datos_sitio(solo_usados: bool = True) -> str:
+def bloque_datos_sitio(contexto: Any, solo_usados: bool = True) -> str:
     """
-    Los datos de sitio [S] que el calculo invoco, cada uno con el
-    procedimiento que lo produjo y la trazabilidad que permite repetirlo.
+    Los datos de sitio [S] que el calculo invoco --- leidos del
+    `ContextoCorrida` del informe, no del registro vivo (EXT-4) ---, cada uno
+    con el procedimiento que lo produjo y la trazabilidad que permite
+    repetirlo.
 
     Va delante de los criterios y no mezclado con ellos: un [S] no se defiende
     con un rango de sensibilidad -- no hay nada que elegir -- sino diciendo
@@ -1768,7 +1809,7 @@ def bloque_datos_sitio(solo_usados: bool = True) -> str:
     eleccion de F_pga son la misma clase de afirmacion, y son lo contrario:
     uno es un hecho del sitio y el otro una decision del proyectista.
     """
-    claves = sorted(ds.datos_usados() if solo_usados else ds.DATOS_SITIO)
+    claves = sorted(contexto.datos_usados if solo_usados else ds.DATOS_SITIO)
     if not claves:
         return ('<div class="aviso"><p>Esta corrida no invoco ningun dato de '
                 "sitio.</p></div>")
@@ -1808,10 +1849,10 @@ def bloque_datos_sitio(solo_usados: bool = True) -> str:
     return "".join(partes)
 
 
-def _procedencia(clave: str) -> str:
+def _procedencia(clave: str, contexto: Any) -> str:
     """
     De donde salio el valor que gobierna el calculo: el archivo, o una
-    declaracion hecha para esta corrida.
+    declaracion hecha para esta corrida. Lo dice el `ContextoCorrida`.
 
     Se imprime en TODOS los criterios y no solo en los declarados en caliente.
     Una marca que aparece solo a veces se lee como una nota al pie; la misma
@@ -1820,7 +1861,7 @@ def _procedencia(clave: str) -> str:
     ARCHIVO, y un valor que no esta en el archivo no queda identificado por el
     SHA-1 de nadie.
     """
-    if not ca.declarado_en_caliente(clave):
+    if not contexto.declarado_en_caliente(clave):
         return ("<dt>Procedencia</dt><dd>transcrita en "
                 "<code>criterios_adoptados.py</code>, la version que el "
                 "encabezado identifica por SHA-1</dd>")
@@ -1834,10 +1875,10 @@ def _procedencia(clave: str) -> str:
             "corrio el calculo (GUI o CLI) y NO esta en "
             "<code>criterios_adoptados.py</code>: no es un valor transcrito "
             "de una norma y reproducir esta memoria exige repetir la "
-            "declaracion.</dd>" + _de_donde_salio(clave))
+            "declaracion.</dd>" + _de_donde_salio(clave, contexto))
 
 
-def _de_donde_salio(clave: str) -> str:
+def _de_donde_salio(clave: str, contexto: Any) -> str:
     """
     La PROCEDENCIA de la ventana: de que fila de que tabla salio el valor, con
     su cita, sus alternativas descartadas y la fecha.
@@ -1853,7 +1894,7 @@ def _de_donde_salio(clave: str) -> str:
     ventana, y fingir una procedencia que nadie registro seria peor que no
     imprimir ninguna.
     """
-    procedencia = _declaracion.procedencia_de(clave)
+    procedencia = contexto.procedencia_de(clave)
     if procedencia is None:
         return ""
     filas = []
@@ -1907,7 +1948,7 @@ def _de_donde_salio(clave: str) -> str:
     return "".join(filas)
 
 
-def _de_donde_sale_el_valor(clave: str) -> str:
+def _de_donde_sale_el_valor(clave: str, contexto: Any) -> str:
     """
     La PROCEDENCIA de un criterio transcrito en el archivo (regla R1): de que
     tabla, de que rango, de que catalogo o de que ensayo sale su valor.
@@ -1935,8 +1976,8 @@ def _de_donde_sale_el_valor(clave: str) -> str:
     # ficha en la procedencia inventada que `_de_donde_salio` existe para no
     # fingir. Se imprime igual, porque el revisor necesita saber que camino
     # deberia haber seguido, y con la advertencia delante.
-    en_caliente = (ca.declarado_en_caliente(clave)
-                   and _declaracion.procedencia_de(clave) is None)
+    en_caliente = (contexto.declarado_en_caliente(clave)
+                   and contexto.procedencia_de(clave) is None)
     aviso = (
         '<br><b class="pendiente">El valor en vigor NO salio por este '
         "camino:</b> se declaro al lanzar la corrida y nadie registro de "
@@ -2152,7 +2193,7 @@ def bloque_discrepancias(informe: Any) -> str:
     # La tercera via: los criterios que la corrida INVOCO. `criterios_usados`
     # y no `CRITERIOS`, por lo mismo que `bloque_criterios`: la memoria
     # publica lo que este calculo uso, no el catalogo entero.
-    for clave in ca.criterios_usados():
+    for clave in ContextoCorrida.de(informe).criterios_usados:
         declaradas.update(ca.criterio(clave).discrepancias)
     tocadas = _reg_M11.discrepancias_que_tocan(citas, declaradas)
     if not tocadas:
@@ -2176,11 +2217,21 @@ def bloque_discrepancias(informe: Any) -> str:
     return "".join(partes)
 
 
-def bloque_criterios(solo_usados: bool = True) -> str:
+def _criterio_efectivo(clave: str, contexto: Any):
+    """
+    El `Criterio` TAL COMO GOBERNO esa corrida: el texto del archivo con el
+    valor efectivo que el contexto fotografio. Es `ca.criterio_efectivo`
+    leido de la foto y no del registro vivo.
+    """
+    return replace(ca.criterio(clave), valor=contexto.valor_efectivo(clave))
+
+
+def bloque_criterios(contexto: Any, solo_usados: bool = True) -> str:
     """
     El contenido de `criterios_adoptados.reporte_criterios` como HTML: cada
     criterio invocado con su valor EFECTIVO, su procedencia, su etiqueta, su
-    justificacion y su fuente.
+    justificacion y su fuente. Usos, valores efectivos y procedencias salen
+    del `ContextoCorrida` de la corrida (EXT-4); del catalogo, solo el texto.
 
     Lee los mismos objetos `Criterio` que la version en texto, en el mismo
     orden de etiqueta, para que las dos digan exactamente lo mismo.
@@ -2194,7 +2245,7 @@ def bloque_criterios(solo_usados: bool = True) -> str:
     criterio desaparecia de la memoria por partida doble. Era el unico
     hallazgo BLOQUEANTE de las tres auditorias (SIS-A-01).
     """
-    claves = sorted(ca.criterios_usados() if solo_usados else ca.CRITERIOS,
+    claves = sorted(contexto.criterios_usados if solo_usados else ca.CRITERIOS,
                     key=lambda k: (_orden_etiqueta(ca.criterio(k).etiqueta), k))
     if not claves:
         return ('<div class="aviso"><p>Esta corrida no invoco ningun criterio '
@@ -2202,17 +2253,17 @@ def bloque_criterios(solo_usados: bool = True) -> str:
 
     partes: List[str] = []
     for clave in claves:
-        c = ca.criterio_efectivo(clave)
+        c = _criterio_efectivo(clave, contexto)
         campos = [
             f"<dt>Concepto</dt><dd>{_esc(c.concepto)}</dd>",
             f"<dt>Valor</dt><dd>{_valor_legible(c.valor)}"
             + ('<b class="pendiente"> [declarado para esta corrida, no en '
-               "archivo]</b>" if ca.declarado_en_caliente(clave) else "")
+               "archivo]</b>" if contexto.declarado_en_caliente(clave) else "")
             + ('<b class="pendiente"> [PROVISIONAL: valor de prueba, '
                "NO verificado]</b>" if c.provisional else "")
             + "</dd>",
-            _procedencia(clave),
-            _de_donde_sale_el_valor(clave),
+            _procedencia(clave, contexto),
+            _de_donde_sale_el_valor(clave, contexto),
             f"<dt>Justificacion</dt><dd>{_esc(c.justificacion)}</dd>",
             f"<dt>Fuente</dt><dd>{_esc(c.fuente)}</dd>",
         ]
@@ -2243,7 +2294,7 @@ def bloque_criterios(solo_usados: bool = True) -> str:
             f"<code>{_esc(clave)}</code></p><dl>" + "".join(campos)
             + "</dl></div>")
 
-    en_caliente = [k for k in claves if ca.declarado_en_caliente(k)]
+    en_caliente = [k for k in claves if contexto.declarado_en_caliente(k)]
     if en_caliente:
         lista = ", ".join(f"<code>{_esc(k)}</code>" for k in en_caliente)
         partes.append(
@@ -2285,10 +2336,12 @@ def _tabla_tablero(tablero: Tablero) -> str:
 
 def bloque_pendientes(tableros: Sequence[Tablero],
                       bloqueantes: Sequence[CriterioBloqueante],
+                      contexto: Any,
                       alcance: str = ALCANCE_EXPEDIENTE) -> str:
     """
     Bloque 5 del entregable: los pendientes de los Tableros 1, 2 y 3, mas los
-    criterios que esta corrida dejo sin valor.
+    criterios que esta corrida dejo sin valor. Vacios, declarados, pisados y
+    opcionales salen del `ContextoCorrida` (EXT-4).
 
     Va separado de la declaracion de criterios a proposito (ver el docstring
     del modulo). Se imprime siempre, incluso vacio de bloqueos: que una corrida
@@ -2326,7 +2379,7 @@ def bloque_pendientes(tableros: Sequence[Tablero],
         partes = ["".join(_tabla_tablero(t) for t in tableros)]
 
     partes.append("<h3>Criterios declarados todavia sin valor</h3>")
-    sin_valor = ca.criterios_sin_valor()
+    sin_valor = contexto.criterios_sin_valor
     if not sin_valor:
         partes.append("<p>Ninguno: todos los criterios de "
                       "<code>criterios_adoptados.py</code> tienen valor.</p>")
@@ -2365,9 +2418,9 @@ def bloque_pendientes(tableros: Sequence[Tablero],
     # el expediente donde estaba --- faltaba un numero y se puso ---, mientras
     # que pisar SUSTITUYE una decision transcrita que sigue en el archivo
     # diciendo otra cosa. Separarlos es lo que distingue tantear de falsear.
-    rellenados = [c for c in ca.criterios_declarados_en_caliente()
-                  if c not in ca.criterios_pisados_en_caliente()]
-    pisados = ca.criterios_pisados_en_caliente()
+    pisados = list(contexto.pisados_en_caliente)
+    rellenados = [c for c in contexto.declarados_en_caliente
+                  if c not in pisados]
 
     partes.append("<h3>Criterios declarados solo para esta corrida</h3>")
     if not rellenados and not pisados:
@@ -2394,7 +2447,7 @@ def bloque_pendientes(tableros: Sequence[Tablero],
                 _td(f"<code>{_esc(clave)}</code>"),
                 _td(_etiqueta_html(c.etiqueta)),
                 _td(_esc(c.concepto)),
-                _td(_valor_legible(ca.criterio_efectivo(clave).valor)),
+                _td(_valor_legible(contexto.valor_efectivo(clave))),
                 _td(_valor_legible(c.valor))]))
         partes.append('<table class="ancha">' + "".join(filas) + "</table>")
 
@@ -2419,12 +2472,12 @@ def bloque_pendientes(tableros: Sequence[Tablero],
                 _td(f"<code>{_esc(clave)}</code>"),
                 _td(_etiqueta_html(c.etiqueta)),
                 _td(_esc(c.concepto)),
-                _td(_valor_legible(ca.criterio_efectivo(clave).valor)),
+                _td(_valor_legible(contexto.valor_efectivo(clave))),
                 _td('<span class="pendiente">'
                     + _valor_legible(c.valor) + "</span>")]))
         partes.append('<table class="ancha">' + "".join(filas) + "</table>")
 
-    opcionales = ca.criterios_opcionales_sin_declarar()
+    opcionales = contexto.criterios_opcionales_sin_declarar
     if opcionales:
         # Salieron de la tabla de arriba porque no son vacios: su valor=None
         # no detiene nada, el calculo aplica el valor normativo por defecto.
@@ -2468,7 +2521,7 @@ def bloque_pendientes(tableros: Sequence[Tablero],
         filas = [_fila(["<th>Criterio</th>", "<th>Etiqueta</th>",
                         "<th>Valor</th>", "<th>Por que nadie lo invoca</th>"])]
         for clave in sin_consumidor:
-            c = ca.criterio_efectivo(clave)
+            c = _criterio_efectivo(clave, contexto)
             filas.append(_fila([
                 _td(f"<code>{_esc(clave)}</code>"),
                 _td(_etiqueta_html(c.etiqueta)),
@@ -2494,6 +2547,12 @@ def bloque_pendientes(tableros: Sequence[Tablero],
                 f"<b>Puntos afectados:</b> {_esc(puntos)}"
                 + (f"<br><b>Lo resuelve:</b> {_esc(c.reemplazado_por)}"
                    if c.reemplazado_por else "")
+                # Lo diferido por alcance se dice en la ficha (EXT-G-02): el
+                # criterio sigue pendiente, y NO cuenta para el cierre de
+                # esta corrida.
+                + ("<br><b>Diferido por alcance:</b> no cuenta para el "
+                   "cierre de esta corrida; ver el bloque de alcance"
+                   if c.diferido else "")
                 + "</p></div>")
     return "".join(partes)
 
@@ -2502,9 +2561,10 @@ def bloque_pendientes(tableros: Sequence[Tablero],
 # Acotaciones: adopciones del proyectista sobre vacios normativos verificados
 # ---------------------------------------------------------------------------
 
-def acotaciones_declaradas() -> list:
+def acotaciones_declaradas(contexto: Any) -> list:
     """
-    Criterios con valor que cubren un vacio normativo REGISTRADO.
+    Criterios con valor que cubren un vacio normativo REGISTRADO. El valor
+    efectivo es el del `ContextoCorrida` (EXT-4).
 
     Se leen del propio catalogo, no de la plantilla: cualquier adopcion futura
     del mismo caracter entra aqui sola con solo declarar `vacio_verificado`.
@@ -2515,11 +2575,12 @@ def acotaciones_declaradas() -> list:
     # `bloque_acotaciones`. Leyendo `c.valor` se caia del bloque.
     return sorted(
         (k for k, c in ca.CRITERIOS.items()
-         if c.vacio_verificado and ca.criterio_efectivo(k).valor is not None),
+         if c.vacio_verificado and contexto.valor_efectivo(k) is not None),
         key=lambda k: (ca.CRITERIOS[k].etiqueta, k))
 
 
-def bloque_acotaciones(alcance: str = ALCANCE_EXPEDIENTE) -> str:
+def bloque_acotaciones(contexto: Any,
+                       alcance: str = ALCANCE_EXPEDIENTE) -> str:
     """
     Bloque 6: lo que el proyectista adopto donde la norma no dice nada.
 
@@ -2545,7 +2606,7 @@ def bloque_acotaciones(alcance: str = ALCANCE_EXPEDIENTE) -> str:
     entregando; en una de EXPEDIENTE es una brecha, porque el expediente es
     justamente donde esas verificaciones debian resolverse y no lo hicieron.
     """
-    claves = acotaciones_declaradas()
+    claves = acotaciones_declaradas(contexto)
     if not claves:
         return ('<div class="nota"><p>Ninguna: esta corrida no aplico ningun '
                 "valor adoptado sobre un vacio normativo. Todo lo que entro "
@@ -2571,9 +2632,9 @@ def bloque_acotaciones(alcance: str = ALCANCE_EXPEDIENTE) -> str:
             "verificacion de expediente que cada una declara.</p></div>")
 
     for clave in claves:
-        c = ca.criterio_efectivo(clave)
+        c = _criterio_efectivo(clave, contexto)
         marca = (' <b class="pendiente">[declarado para esta corrida, no en '
-                 "archivo]</b>" if ca.declarado_en_caliente(clave) else "")
+                 "archivo]</b>" if contexto.declarado_en_caliente(clave) else "")
         partes.append(
             f'<h3><code>{_esc(clave)}</code> = '
             f"{_valor_legible(c.valor)}{marca} &mdash; "
@@ -2860,17 +2921,25 @@ def _exigir_que_la_plantilla_no_pierda_contenido(
 
 
 def _resumen_expediente(informe: Any) -> str:
-    """Las cuatro cifras que resumen la corrida, bajo el encabezado."""
-    incumplidas = sum(len(i.incumplidas()) for i in informe.puntos)
+    """
+    Las cifras que resumen la corrida, bajo el encabezado. Salen de
+    `Informe.resumen`, la MISMA cuenta que imprimen la CLI y la GUI
+    (EXT-G-02): aqui no se cuenta nada. «Etapas bloqueadas» son las reales;
+    las diferidas por alcance van en su propia fila y no cuentan para el
+    cierre.
+    """
+    r = informe.resumen()
     filas = [
         _fila([_td("<b>Puntos del expediente</b>"),
-               _td(str(len(informe.puntos)), "num")]),
+               _td(str(r.puntos), "num")]),
         _fila([_td("<b>Puntos dimensionados</b>"),
-               _td(str(informe.dimensionados), "num")]),
+               _td(str(r.dimensionados), "num")]),
         _fila([_td("<b>Verificaciones incumplidas</b>"),
-               _td(str(incumplidas), "num")]),
+               _td(str(r.incumplidas), "num")]),
         _fila([_td("<b>Etapas bloqueadas</b>"),
-               _td(str(len(informe.bloqueos())), "num")]),
+               _td(str(r.bloqueadas), "num")]),
+        _fila([_td("<b>Diferidas por alcance</b> (no cuentan para el cierre)"),
+               _td(str(r.diferidas), "num")]),
     ]
     return '<table class="compacta">' + "".join(filas) + "</table>"
 
@@ -2886,7 +2955,11 @@ def memoria_html(informe: Any, *, proyecto: str = "",
     """
     tableros = tableros_pendientes(ruta_hoja)
     bloqueantes = criterios_bloqueantes(informe)
-    traza = trazabilidad(Path(informe.csv), generado_utc=informe.generado)
+    # La foto de la corrida: de aqui sale TODO el estado que la memoria
+    # imprime (EXT-4). Un informe sin ella no se puede renderizar.
+    contexto = ContextoCorrida.de(informe)
+    traza = trazabilidad(Path(informe.csv), contexto,
+                         generado_utc=informe.generado)
 
     embocadura = decision_embocadura(tableros)
     tipo_cabezal = (_esc(embocadura) if embocadura else
@@ -2920,12 +2993,13 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "memorias_punto": "".join(memoria_de_punto(p) for p in informe.puntos),
         "filas_resumen": "".join(fila_resumen(p, tipo_cabezal)
                                  for p in informe.puntos),
-        "bloque_datos_sitio": bloque_datos_sitio(solo_usados=True),
-        "bloque_criterios": bloque_criterios(solo_usados=True),
-        "bloque_pendientes": bloque_pendientes(tableros, bloqueantes,
+        "bloque_datos_sitio": bloque_datos_sitio(contexto, solo_usados=True),
+        "bloque_criterios": bloque_criterios(contexto, solo_usados=True),
+        "bloque_pendientes": bloque_pendientes(tableros, bloqueantes, contexto,
                                               alcance=informe.alcance),
         "bloque_alcance": bloque_alcance(informe),
-        "bloque_acotaciones": bloque_acotaciones(alcance=informe.alcance),
+        "bloque_acotaciones": bloque_acotaciones(contexto,
+                                                alcance=informe.alcance),
         "bloque_umbrales": bloque_umbrales(),
         "bloque_homonimias": bloque_homonimias(),
         "bloque_discrepancias": bloque_discrepancias(informe),

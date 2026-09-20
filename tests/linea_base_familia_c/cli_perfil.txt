@@ -154,6 +154,7 @@ CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA
   Lo resuelve: TR del evento extremo (p.ej. el de la serie FEN de la Fase 1-bis) y definicion tecnica de colapso de la via, ambos declarados en la memoria
   Bloqueo  : verificacion V8 diferida al expediente (alcance perfil)
   Puntos   : A-01, A-02, B-01
+  Diferido : por alcance; no cuenta para el cierre de esta corrida (ver ALCANCE DE LA CORRIDA)
 
 [A] remanso_derecho_via
   Concepto : Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
@@ -161,6 +162,7 @@ CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA
   Lo resuelve: Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto
   Bloqueo  : verificacion V5 diferida al expediente (alcance perfil)
   Puntos   : A-01, A-02, B-01
+  Diferido : por alcance; no cuenta para el cierre de esta corrida (ver ALCANCE DE LA CORRIDA)
 
 ==============================================================================
 RESUMEN

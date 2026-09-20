@@ -221,6 +221,39 @@ dato de entrada. El detalle está en §16.1-bis, §1.1 y §16.11 de `docs/ruta_f
   salida con HW/D < 0.75 tras EXT-3 (B-01 sube a Ø 1.05 y pasa a 0.778)—; lo cubren
   `tests/test_ext3_regimen_barril.py` y `tests/test_cierre_perfil.py` (B-01 del corredor
   de perfil, HW/D = 0.395).
+- **EXT-4** (`ext(EXT-4)`, 2026-09-20): cambian **ocho archivos** y **ningún número de
+  cálculo se mueve**: es el contexto de corrida (`EXT-A-01`, `PC-07`, `PC-09`) y la cuenta
+  única de etapas bloqueadas (`EXT-G-02`). Idénticos byte a byte: `cli_expediente.txt`,
+  `cli_rama_error.txt`, `resumen_expediente.csv`, `resumen_perfil_ancho.csv` y
+  `memoria_punto_cajon.html`.
+  1. **Los tres JSON** (`informe_expediente.json`, `informe_perfil_ancho.json`,
+     `informe_rama_error.json`) ganan en `expediente` las dos huellas de la corrida
+     (`csv_sha1`, de los bytes que M0 leyó, y `criterios_sha1`), y cada fila de
+     `criterios.bloquearon` la clave `diferido`. En los dos primeros, la clave
+     `cota_entrada_origen` de la geometría deja de ser el dict que la duplicación del
+     literal publicaba (`adoptada: True, regla` leída del registro global AL EXPORTAR) y
+     pasa a `{rotulo, adoptada, criterio, regla, procedencia, nota}` leído entero de
+     `CotaDeEntrada` —`regla` viaja con la cota desde M5—. Los tres puntos con geometría
+     siguen diciendo `ADOPTADA` / `cota_terreno`: el valor no cambió, cambió de dónde sale.
+  2. **`cli_perfil.txt`, `cli_perfil_ancho.txt`**: el bloque «CRITERIOS PENDIENTES QUE
+     BLOQUEARON UNA ETAPA» imprime la línea «Diferido : por alcance; no cuenta para el
+     cierre» en los criterios cuyo bloqueo estaba entero diferido (`remanso_derecho_via`,
+     `TR_evento_extremo`). «Etapas bloqueadas» del RESUMEN no cambia de número: la CLI ya
+     restaba lo diferido; lo que EXT-4 hace es que la GUI y la memoria lean la MISMA
+     cuenta (`Informe.resumen`).
+  3. **Las tres memorias HTML de la CLI** ganan la fila «Diferidas por alcance (no cuentan
+     para el cierre)» en la tabla del encabezado y la línea «Diferido por alcance» en las
+     fichas de criterios bloqueantes diferidas; llevan además el SHA-1 nuevo de
+     `criterios_adoptados.py` (cambió el archivo —`reiniciar_usos`,
+     `verificar_declaracion`, el docstring de `limpiar_valores_dinamicos`—, no ningún
+     valor).
+
+  **Mutaciones que esta línea base ve desde EXT-4:** dejar de vaciar el registro de usos
+  al entrar en `cli.correr` NO la mueve —cada comando es un proceso nuevo— y por eso el
+  caso (a) de `tests/test_ext4_contexto_corrida.py` corre dos veces en el mismo proceso;
+  publicar `cota_entrada_origen` leyendo el registro la mueve sólo si algo se declara
+  entre correr y exportar, que la CLI no hace: lo cubre el caso (b). Lo que sí ve: perder
+  la clave `diferido`, las huellas del `expediente` o la fila de diferidas del encabezado.
 
 ## C3 ensanchó la ventana, y son diez archivos
 

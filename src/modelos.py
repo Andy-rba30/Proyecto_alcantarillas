@@ -35,7 +35,8 @@ import math
 from dataclasses import dataclass, fields
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Dict, Optional, Protocol, Tuple, Union
+from types import MappingProxyType
+from typing import Any, Dict, Mapping, Optional, Protocol, Tuple, Union
 
 from dominios import CENTIMETROS_POR_METRO
 from tolerancias import TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
@@ -765,6 +766,14 @@ class CotaDeEntrada:
     valor: float                 # msnm
     medida: bool                 # True si vino de la columna del CSV
     procedencia: str             # para `Magnitud.procedencia`
+    # LA REGLA QUE PRODUJO LA COTA, cuando es adoptada: la clave de
+    # `M5.ORIGENES_COTA_ENTRADA` que el criterio 'origen_cota_fondo_entrada'
+    # declaraba EN ESA CORRIDA. `None` cuando la cota es medida, porque
+    # entonces no hubo regla. Es un campo desde EXT-4 (PC-07): el JSON la
+    # publicaba leyendo el registro global AL EXPORTAR, y una declaracion
+    # posterior cambiaba la regla impresa al lado de una cota que no cambio.
+    # La regla que gobierna un numero viaja con el numero.
+    regla: Optional[str] = None
 
     @property
     def rotulo(self) -> str:
@@ -2609,6 +2618,110 @@ class Bloqueo:
             raise TypeError(
                 f"Bloqueo.tipo tiene que ser un TipoDeBloqueo, no "
                 f"{self.tipo!r}: el texto libre es lo que PC-27 retiro")
+
+
+@dataclass(frozen=True)
+class ContextoCorrida:
+    """
+    LA FOTO DEL ESTADO CON QUE CORRIO EL EXPEDIENTE, tomada por `cli.correr`
+    al salir y colgada del `Informe` (EXT-A-01, PC-09; EXT-4).
+
+    Por que existe. Los tres archivos de valores llevan estado de PROCESO:
+    el registro de usos (`criterios_adoptados._USADOS`, `datos_sitio._USADOS`),
+    las declaraciones en caliente (`_OVERRIDES`) y el libro de procedencias
+    (`declaracion._PROCEDENCIAS`). Hasta EXT-4 los cuatro exportadores ---
+    `informe_json`, `volcar`, la memoria HTML y la trazabilidad --- los leian
+    AL EXPORTAR, en 39 sitios medidos. Con un proceso de un solo uso (la CLI)
+    daba igual; con la GUI, o con cualquier consumidor que reutilice el
+    proceso, la memoria de una corrida imprimia lo que otra corrida uso, lo
+    que se declaro DESPUES de correr, y el SHA-1 del CSV que hay en disco al
+    exportar y no del que se leyo. Una memoria que afirma algo falso sobre su
+    propia corrida es el peor defecto que puede tener este proyecto.
+
+    Que lleva, y por que cada cosa:
+
+    - `criterios_usados`, `datos_usados`: lo que ESTA corrida invoco. El
+      registro se vacia al entrar en `cli.correr` y se fotografia al salir.
+    - `valores_efectivos`: el valor con que gobierno cada criterio del
+      catalogo, copiado EN PROFUNDIDAD --- un dict declarado en caliente y
+      mutado despues no puede mover la memoria de una corrida que ya paso ---.
+    - `procedencias`: el libro de `declaracion` tal como estaba, por clave.
+    - `declarados_en_caliente`, `pisados_en_caliente`: las dos listas que la
+      memoria imprime en bloques distintos (tantear no es falsear).
+    - `criterios_sin_valor`, `criterios_opcionales_sin_declarar`,
+      `criterios_con_verificacion_pendiente`: las tres listas derivadas que
+      `criterios_adoptados` calcula sobre el estado vivo, calculadas ENTONCES
+      y no al exportar.
+    - `csv_sha1`: de los MISMOS BYTES que M0 leyo, no del archivo en disco.
+    - `criterios_sha1`: la huella del archivo de criterios al correr.
+
+    Que NO lleva: nada que sea del ARCHIVO y no del estado --- concepto,
+    fuente, justificacion, etiqueta, sensibilidad ---, que la capa de reporte
+    sigue leyendo del catalogo (`ca.criterio`, `ds.dato`): son lecturas
+    estaticas, y `tests/test_ext4_contexto_corrida.py` barre el AST de M11
+    para que sean las unicas.
+
+    Es `frozen` y vive aqui, en modelos.py, porque fluye entre la corrida y
+    las tres capas que la publican. Si un dia la GUI corre en hilo, el mismo
+    almacen pasa a `contextvars` sin tocar M2-M10: los 79 escritores de uso
+    pasan por tres funciones.
+    """
+
+    criterios_usados: Tuple[str, ...]
+    datos_usados: Tuple[str, ...]
+    valores_efectivos: Mapping[str, Any]
+    procedencias: Mapping[str, Any]
+    declarados_en_caliente: Tuple[str, ...]
+    pisados_en_caliente: Tuple[str, ...]
+    criterios_sin_valor: Tuple[str, ...]
+    criterios_opcionales_sin_declarar: Tuple[str, ...]
+    criterios_con_verificacion_pendiente: Tuple[str, ...]
+    csv_sha1: str
+    criterios_sha1: str
+
+    def __post_init__(self) -> None:
+        # `frozen` solo impide REASIGNAR los campos; un dict dentro seguia
+        # siendo mutable y `informe.contexto.valores_efectivos[k] = x` movia
+        # el JSON y el HTML de una corrida ya pasada sin excepcion (auditoria
+        # adversarial de EXT-4). Los dos mapas quedan de solo lectura y las
+        # secuencias, tuplas: la foto no se puede retocar, ni a proposito.
+        for campo in ("valores_efectivos", "procedencias"):
+            valor = getattr(self, campo)
+            if not isinstance(valor, MappingProxyType):
+                object.__setattr__(self, campo, MappingProxyType(dict(valor)))
+        for campo in ("criterios_usados", "datos_usados",
+                      "declarados_en_caliente", "pisados_en_caliente",
+                      "criterios_sin_valor", "criterios_opcionales_sin_declarar",
+                      "criterios_con_verificacion_pendiente"):
+            object.__setattr__(self, campo, tuple(getattr(self, campo)))
+
+    def declarado_en_caliente(self, clave: str) -> bool:
+        """True si el valor que GOBERNO esa corrida entro en caliente."""
+        return clave in self.declarados_en_caliente
+
+    def valor_efectivo(self, clave: str) -> Any:
+        """El valor con que gobierno el criterio en esa corrida."""
+        return self.valores_efectivos[clave]
+
+    def procedencia_de(self, clave: str) -> Optional[Any]:
+        """La procedencia registrada de la clave en esa corrida, o None."""
+        return self.procedencias.get(clave)
+
+    @staticmethod
+    def de(informe: Any) -> "ContextoCorrida":
+        """
+        El contexto de un informe, o un error que dice que el informe no lo
+        lleva. Solo `cli.correr` lo produce: un `Informe` armado a mano no
+        tiene corrida que describir, y exportarlo leyendo el estado vivo
+        seria exactamente el defecto que este objeto cierra.
+        """
+        contexto = getattr(informe, "contexto", None)
+        if not isinstance(contexto, ContextoCorrida):
+            raise ValueError(
+                "el informe no lleva ContextoCorrida: solo cli.correr lo "
+                "produce, y sin el la capa de reporte no puede decir con que "
+                "estado corrio el expediente")
+        return contexto
 
 
 @dataclass(frozen=True)

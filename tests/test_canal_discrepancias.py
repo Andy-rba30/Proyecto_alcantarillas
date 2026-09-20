@@ -89,14 +89,11 @@ def informe():
     la 7 no tendrian por donde aparecer. Comprobar el canal sobre esa corrida
     daria un verde que no dice nada.
     """
-    # EL REGISTRO DE USOS ES DE PROCESO, y en una suite eso significa que
-    # llega contaminado por las corridas de otros modulos de test: `F_pga` lo
-    # marca usado cualquier corrida de expediente, y con el entraria
-    # `DIS-HR-30M-VS-100FT` en un bloque de PERFIL, que es justo lo que el
-    # filtro tiene que impedir. En produccion no pasa --- una corrida por
-    # proceso --- pero aqui hay que partir de cero o el test comprueba la
-    # suma de todas las corridas de la sesion, no la suya.
-    ca._USADOS.clear()
+    # EL REGISTRO DE USOS ES DE LA CORRIDA desde EXT-4: `cli.correr` lo vacia
+    # al entrar y la memoria lee la foto del informe, de modo que `F_pga`
+    # --- que marca usado cualquier corrida de expediente anterior --- ya no
+    # puede colar `DIS-HR-30M-VS-100FT` en un bloque de PERFIL. Hasta
+    # entonces este fixture lo vaciaba a mano.
     for clave, valor in DECLARACIONES_DEL_CAJON.items():
         ca.establecer_valor_dinamico(clave, valor)
     try:

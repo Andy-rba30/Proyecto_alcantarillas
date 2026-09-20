@@ -1302,7 +1302,11 @@ def cota_de_entrada(punto: PuntoCritico) -> CotaDeEntrada:
         valor=valor, medida=False,
         procedencia=f"regla '{origen}' declarada en el criterio "
                     f"'{CRITERIO_ORIGEN_COTA_ENTRADA}' [A]; el codigo NO la "
-                    "elige. La fila no trae cota de fondo de entrada medida")
+                    "elige. La fila no trae cota de fondo de entrada medida",
+        # La regla viaja con la cota (PC-07): el JSON la publicaba leyendo el
+        # registro global al exportar, y una declaracion posterior cambiaba
+        # la regla impresa al lado de una cota que no cambio.
+        regla=origen)
 
 
 def cota_clave(*, punto: PuntoCritico, material: Material,

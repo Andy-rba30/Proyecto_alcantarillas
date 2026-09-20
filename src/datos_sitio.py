@@ -80,7 +80,7 @@ se ha leido tampoco se sustituye por un default.
 import math
 import numbers
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 from modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
                      Libre, ModoDeResolucion, Resolucion, modo_de)
@@ -764,8 +764,22 @@ def dato(clave: str) -> DatoSitio:
 
 
 def datos_usados() -> List[str]:
-    """Las claves que el calculo invoco, ordenadas."""
+    """
+    Las claves que el calculo invoco, ordenadas. Desde EXT-4 es el registro
+    de la corrida EN CURSO: `cli.correr` lo vacia al entrar y lo fotografia
+    al salir en `Informe.contexto`.
+    """
     return sorted(_USADOS)
+
+
+def reiniciar_usos() -> None:
+    """
+    Vacia el registro de usos; hermano de
+    `criterios_adoptados.reiniciar_usos` y por la misma razon (PC-09): el
+    registro era de proceso y una segunda corrida heredaba los usos de la
+    primera. Lo llama `cli.correr` al entrar.
+    """
+    _USADOS.clear()
 
 
 def datos_sin_valor() -> List[str]:
@@ -778,15 +792,20 @@ def datos_con_verificacion_pendiente() -> List[str]:
     return sorted(k for k, d in DATOS_SITIO.items() if d.verificacion_pendiente)
 
 
-def reporte_datos_sitio(solo_usados: bool = True) -> str:
+def reporte_datos_sitio(solo_usados: bool = True, *,
+                        usados: Optional[Iterable[str]] = None) -> str:
     """
     Bloque de declaracion de datos de sitio para el reporte final, hermano de
     `criterios_adoptados.reporte_criterios`.
 
     Con solo_usados=True lista unicamente los datos que el calculo invoco: la
     memoria declara lo que sostiene sus numeros, no el catalogo completo.
+    `usados` es la foto de una corrida (`ContextoCorrida.datos_usados`) y
+    sustituye al registro vivo: es lo que `cli.volcar` pasa desde EXT-4.
     """
-    claves = sorted(_USADOS if solo_usados else set(DATOS_SITIO))
+    if usados is None:
+        usados = _USADOS
+    claves = sorted(set(usados) if solo_usados else set(DATOS_SITIO))
     if not claves:
         return "No se invoco ningun dato de sitio."
 

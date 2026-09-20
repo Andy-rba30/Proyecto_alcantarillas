@@ -73,14 +73,13 @@ CLAVES_DEL_ANEXO_A = {
 @pytest.fixture(autouse=True)
 def _aisla_registro_de_uso():
     """
-    El registro de invocaciones es estado global del modulo. Se aisla por test
-    para que el orden de ejecucion no altere `reporte_criterios(solo_usados)`.
+    Cada test de este archivo parte de un registro de usos VACIO, para que el
+    orden de ejecucion no altere `reporte_criterios(solo_usados)`. Se vacia
+    por la funcion publica; reponerlo al salir es de la fixture autouse de
+    `conftest.py`, el unico sitio de la suite que toca el registro.
     """
-    previo = set(ca._USADOS)
-    ca._USADOS.clear()
+    ca.reiniciar_usos()
     yield
-    ca._USADOS.clear()
-    ca._USADOS.update(previo)
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +238,7 @@ def test_el_criterio_pendiente_queda_registrado_como_invocado():
     """
     with pytest.raises(CriterioPendienteError):
         valor("phi_relleno_trasdos")
-    assert "phi_relleno_trasdos" in ca._USADOS
+    assert "phi_relleno_trasdos" in ca.criterios_usados()
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +248,7 @@ def test_el_criterio_pendiente_queda_registrado_como_invocado():
 def test_criterio_con_valor_lo_devuelve_y_registra_el_uso():
     devuelto = valor("long_max_cuneta")
     assert devuelto == pytest.approx(criterio("long_max_cuneta").valor)
-    assert "long_max_cuneta" in ca._USADOS
+    assert "long_max_cuneta" in ca.criterios_usados()
 
 
 def test_el_reporte_lista_solo_los_criterios_usados():
@@ -850,7 +849,7 @@ def test_leer_un_opcional_con_valor_no_lo_registra_como_usado():
     diferencia entre 'no se adopto' y 'no se miro'.
     """
     assert ca.valor_si_declarado("v_max_concreto_eleccion") is None
-    assert "v_max_concreto_eleccion" not in ca._USADOS
+    assert "v_max_concreto_eleccion" not in ca.criterios_usados()
 
 
 # ---------------------------------------------------------------------------
@@ -1473,7 +1472,7 @@ def test_el_reporte_sin_invocaciones_lo_dice_en_vez_de_salir_vacio():
     eso, no dejar una tabla vacia que se lee como "no hubo criterios que
     declarar". Es el gemelo del que ya existe para `datos_sitio`.
     """
-    assert not ca._USADOS                      # lo garantiza la fixture autouse
+    assert not ca.criterios_usados()           # lo garantiza la fixture autouse
     assert reporte_criterios(solo_usados=True) == (
         "No se invoco ningun criterio adoptado.")
 

@@ -310,11 +310,11 @@ def test_con_umbral_declarado_el_area_de_cuenca_decide(puntos, umbral_declarado)
 
 def test_el_criterio_del_umbral_queda_registrado_como_usado(punto_a):
     """M11 debe poder decir que el calculo intento usarlo."""
-    ca._USADOS.discard(CRITERIO_CATEGORIA_A)
+    ca.reiniciar_usos()
     with sin_valor(CRITERIO_CATEGORIA_A):
         with pytest.raises(CriterioPendienteError):
             periodo_retorno_de(punto_a)
-    assert CRITERIO_CATEGORIA_A in ca._USADOS
+    assert CRITERIO_CATEGORIA_A in ca.criterios_usados()
 
 
 def test_un_puente_no_dispara_el_criterio_pendiente(punto_a):

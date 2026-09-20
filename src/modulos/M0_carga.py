@@ -44,6 +44,7 @@ Uso
 from __future__ import annotations
 
 import csv
+import io
 import math
 from dataclasses import fields
 from pathlib import Path
@@ -251,25 +252,46 @@ def cargar_puntos(ruta: Any) -> List[PuntoCritico]:
 
     Sec. 1.1 (significado y unidad de cada dato), Sec. 1.2 (encabezado) y
     Sec. 1.5 (validaciones cruzadas).
+
+    Es `leer_bytes` + `cargar_puntos_de_bytes`, y las dos mitades son
+    publicas desde EXT-4 para que `cli.correr` pueda calcular el SHA-1 del
+    CSV sobre LOS MISMOS BYTES que se parsean (PC-09, EXT-A-01): hasta
+    entonces la trazabilidad de la memoria volvia a abrir el archivo al
+    exportar, y un CSV editado entre la corrida y la exportacion salia con
+    la huella del archivo nuevo bajo los numeros del viejo.
     """
     ruta = Path(ruta)
-    with ruta.open(encoding="utf-8-sig", newline="") as archivo:
-        lector = csv.DictReader(archivo, restkey=_SOBRANTES, restval=None)
-        if not lector.fieldnames:
-            raise DatoFaltanteError(
-                COLUMNAS[0],
-                detalle=f"'{ruta.name}' esta vacio: no tiene ni encabezado "
-                        f"(se esperan las {len(COLUMNAS)} columnas de Sec. 1.2)",
-            )
-        _valida_encabezado(lector.fieldnames, ruta)
-        # La fila 1 es el encabezado: la primera fila de datos es la 2.
-        puntos = [_punto_desde_fila(fila, numero)
-                  for numero, fila in enumerate(lector, start=2)]
+    return cargar_puntos_de_bytes(leer_bytes(ruta), ruta.name)
+
+
+def leer_bytes(ruta: Any) -> bytes:
+    """Los bytes del CSV tal como estan en disco. Un fallo de E/S sale como tal."""
+    return Path(ruta).read_bytes()
+
+
+def cargar_puntos_de_bytes(datos: bytes, nombre: str) -> List[PuntoCritico]:
+    """
+    `cargar_puntos` sobre un contenido ya leido. `nombre` es el del archivo,
+    solo para los mensajes; la codificacion es la misma que la de la ruta
+    (UTF-8 con BOM opcional, que es lo que deja Excel en Windows).
+    """
+    archivo = io.StringIO(datos.decode("utf-8-sig"), newline="")
+    lector = csv.DictReader(archivo, restkey=_SOBRANTES, restval=None)
+    if not lector.fieldnames:
+        raise DatoFaltanteError(
+            COLUMNAS[0],
+            detalle=f"'{nombre}' esta vacio: no tiene ni encabezado "
+                    f"(se esperan las {len(COLUMNAS)} columnas de Sec. 1.2)",
+        )
+    _valida_encabezado(lector.fieldnames, Path(nombre))
+    # La fila 1 es el encabezado: la primera fila de datos es la 2.
+    puntos = [_punto_desde_fila(fila, numero)
+              for numero, fila in enumerate(lector, start=2)]
 
     if not puntos:
         raise DatoFaltanteError(
             "id",
-            detalle=f"'{ruta.name}' trae el encabezado pero ninguna fila de datos",
+            detalle=f"'{nombre}' trae el encabezado pero ninguna fila de datos",
         )
     _valida_ids_unicos(puntos)
     return puntos
