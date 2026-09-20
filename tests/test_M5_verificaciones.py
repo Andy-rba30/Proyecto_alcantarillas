@@ -61,7 +61,7 @@ from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        v7_flotacion, v8_evento_extremo,
                                        v9_disponibilidad_diametro, verificar)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
-from tests.apoyo.criterios import declarados, sin_valor
+from tests.apoyo.criterios import con_valor, declarados, sin_valor
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP3_VELOCIDAD_MINIMA)
 
@@ -677,12 +677,12 @@ def test_v5_con_el_criterio_declarado_no_revienta_con_assertionerror():
     -- que si es ErrorProyecto -- y la CLI lo anota como bloqueo del punto.
     """
     punto = _punto()
-    ca.establecer_valor_dinamico("remanso_derecho_via", "cumple")
-    try:
+    # `con_valor`: la puerta rechaza 'cumple' por su forma desde EXT-5; lo
+    # que aqui se prueba es que V5, con el criterio ocupado, pide su dato.
+    with con_valor("remanso_derecho_via", "cumple",
+                   motivo="V5 con el criterio ocupado por algo que no es su forma"):
         with pytest.raises(DatoFaltanteError) as excinfo:
             v5_remanso(punto=punto, resultado=_resultado())
-    finally:
-        ca.quitar_valor_dinamico("remanso_derecho_via")
 
     assert isinstance(excinfo.value, ErrorProyecto)
     assert excinfo.value.campo == "ancho_derecho_via_m"
@@ -1415,12 +1415,12 @@ def test_una_regla_no_implementada_es_dato_invalido_no_un_fallo_de_programa():
     expediente -- alguien eligio algo que el software no implementa -- y sale
     como `DatoInvalidoError` de la taxonomia del proyecto, no como KeyError.
     """
-    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_de_invert_medida")
-    try:
+    # `con_valor`: la puerta rechaza una regla fuera del conjunto cerrado
+    # desde EXT-5 (`categoria`); aqui se prueba la guardia del consumidor.
+    with con_valor(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_de_invert_medida",
+                   motivo="regla no implementada, que la puerta ya rechaza"):
         with pytest.raises(DatoInvalidoError):
             cota_de_entrada(_punto())
-    finally:
-        ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
 
 
 def test_las_once_filas_de_la_fase_5_tienen_su_funcion():

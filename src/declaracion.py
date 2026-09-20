@@ -59,6 +59,7 @@ Regla de uso
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -271,9 +272,17 @@ class ResultadoValidacion:
 
 
 def _como_numero(valor: Any) -> Optional[float]:
+    """
+    Un real FINITO como float; None para todo lo demas. `bool` queda fuera
+    (True pasaria por 1.0); un texto tambien, aunque se lea como numero: el
+    parser de la GUI ya entrego lo que habia que entregar, y 'nan' llega
+    aqui como TEXTO a proposito (ver `gui.componentes`). Un NaN o un
+    infinito numerico tampoco es un numero contra el que validar: es la
+    otra mitad del mismo veredicto (PC-14).
+    """
     if isinstance(valor, bool):
         return None
-    if isinstance(valor, (int, float)):
+    if isinstance(valor, (int, float)) and math.isfinite(valor):
         return float(valor)
     return None
 
@@ -288,6 +297,14 @@ def validar_contra_rango(rango: Any, valor: Any) -> ResultadoValidacion:
     (NOR-HID-04). Cada rama de abajo es la lectura de UNA de las cinco formas
     que el registro declara, y la funcion falla en vez de adivinar si aparece
     una sexta.
+
+    TODAS LAS COMPARACIONES VAN EN LA FORMA MAT-D13 (EXT-5): condicion en
+    positivo y NEGADA (`not numero <= techo`), nunca en positivo. Un NaN es
+    falso frente a `<=` igual que frente a `>`, y escrita en positivo la rama
+    de `ConjuntoDeMaximos` lo dejaba caer en la lectura intermedia --- un
+    AVISO ambar para lo que no es un numero ---. `_como_numero` lo atrapa
+    antes; la forma negada es lo que impide que vuelva a pasar si algo lo
+    esquiva.
     """
     frase = _vn.frase_del_rango(rango)
     semantica = type(rango).__name__
@@ -295,8 +312,8 @@ def validar_contra_rango(rango: Any, valor: Any) -> ResultadoValidacion:
     if numero is None:
         return ResultadoValidacion(
             Estado.INVALIDO,
-            f"'{valor}' no es un numero, y este valor se acota con un rango "
-            f"que la fuente escribe: {frase}", frase, semantica)
+            f"'{valor}' no es un numero finito, y este valor se acota con un "
+            f"rango que la fuente escribe: {frase}", frase, semantica)
 
     def veredicto(estado: Estado, mensaje: str) -> ResultadoValidacion:
         return ResultadoValidacion(estado, mensaje, frase, semantica)
@@ -304,26 +321,26 @@ def validar_contra_rango(rango: Any, valor: Any) -> ResultadoValidacion:
     fuera = _vn._QUE_PASA_FUERA[rango.que_pasa_fuera]
 
     if isinstance(rango, IntervaloAdmisible):
-        if rango.minimo <= numero <= rango.maximo:
-            return veredicto(Estado.VALIDO, f"dentro del rango: {frase}")
-        return veredicto(Estado.INVALIDO,
-                         f"fuera del rango. La fuente escribe: {frase}. Si se "
-                         f"sale, {fuera}")
+        if not rango.minimo <= numero <= rango.maximo:
+            return veredicto(Estado.INVALIDO,
+                             f"fuera del rango. La fuente escribe: {frase}. Si se "
+                             f"sale, {fuera}")
+        return veredicto(Estado.VALIDO, f"dentro del rango: {frase}")
     if isinstance(rango, TechoUnico):
-        if numero <= rango.maximo:
-            return veredicto(Estado.VALIDO, f"por debajo del techo: {frase}")
-        return veredicto(Estado.INVALIDO,
-                         f"por encima del techo. La fuente escribe: {frase}. "
-                         f"Si se pasa, {fuera}")
+        if not numero <= rango.maximo:
+            return veredicto(Estado.INVALIDO,
+                             f"por encima del techo. La fuente escribe: {frase}. "
+                             f"Si se pasa, {fuera}")
+        return veredicto(Estado.VALIDO, f"por debajo del techo: {frase}")
     if isinstance(rango, PisoUnico):
-        if numero >= rango.minimo:
-            return veredicto(Estado.VALIDO, f"por encima del piso: {frase}")
-        return veredicto(Estado.INVALIDO,
-                         f"por debajo del piso. La fuente escribe: {frase}. "
-                         f"Si se baja, {fuera}")
+        if not numero >= rango.minimo:
+            return veredicto(Estado.INVALIDO,
+                             f"por debajo del piso. La fuente escribe: {frase}. "
+                             f"Si se baja, {fuera}")
+        return veredicto(Estado.VALIDO, f"por encima del piso: {frase}")
     if isinstance(rango, ConjuntoDeMaximos):
         techo = max(rango.valores)
-        if numero > techo:
+        if not numero <= techo:
             return veredicto(
                 Estado.INVALIDO,
                 f"pasa del mayor de los maximos que la fuente escribe. "
@@ -339,15 +356,15 @@ def validar_contra_rango(rango: Any, valor: Any) -> ResultadoValidacion:
             f"proyectista sobre una tabla que no manda interpolar. {frase}")
     if isinstance(rango, BandaDeInterpolacion):
         ordenadas = tuple(b for _, b in rango.puntos)
-        if min(ordenadas) <= numero <= max(ordenadas):
+        if not min(ordenadas) <= numero <= max(ordenadas):
             return veredicto(
-                Estado.AVISO,
-                f"cae dentro de la banda, pero la fuente no acota este valor: "
-                f"manda OBTENERLO por interpolacion desde su abscisa. {frase}")
+                Estado.INVALIDO,
+                f"fuera de la banda que la fuente define. {frase}. Fuera de ella, "
+                f"{fuera}")
         return veredicto(
-            Estado.INVALIDO,
-            f"fuera de la banda que la fuente define. {frase}. Fuera de ella, "
-            f"{fuera}")
+            Estado.AVISO,
+            f"cae dentro de la banda, pero la fuente no acota este valor: "
+            f"manda OBTENERLO por interpolacion desde su abscisa. {frase}")
     raise TypeError(
         f"{semantica} no es un rango del registro: validar un valor contra un "
         "rango se hace por su tipo, nunca comparando dos numeros sueltos")

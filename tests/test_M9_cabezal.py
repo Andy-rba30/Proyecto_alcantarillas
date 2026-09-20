@@ -32,7 +32,7 @@ import pytest
 from dataclasses import replace
 
 import criterios_adoptados as ca
-from tests.apoyo.criterios import sin_valor
+from tests.apoyo.criterios import con_valor, sin_valor
 import datos_sitio as ds
 from constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
 from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
@@ -2546,16 +2546,12 @@ def test_el_analisis_quimico_del_ems_se_valida_antes_de_usarlo(declarado,
     de las tres filas de la Tabla 4.2 -- tiene su propio test mas arriba,
     anclado al hallazgo que la descubrio.
     """
-    previo = ca.valores_dinamicos().get(M9.CRITERIO_EXPOSICION_QUIMICA)
-    ca.establecer_valor_dinamico(M9.CRITERIO_EXPOSICION_QUIMICA, declarado)
-    try:
+    # `con_valor` esquiva la puerta de declaracion, que desde EXT-5 rechaza
+    # por su forma lo que no es un dict: aqui se prueba la guardia de M9.
+    with con_valor(M9.CRITERIO_EXPOSICION_QUIMICA, declarado,
+                   motivo="prueba de la guardia de M9 con formas que la puerta rechaza"):
         with pytest.raises(DatoInvalidoError) as exc:
             requisitos_durabilidad_concreto()
-    finally:
-        if previo is None:
-            ca.quitar_valor_dinamico(M9.CRITERIO_EXPOSICION_QUIMICA)
-        else:
-            ca.establecer_valor_dinamico(M9.CRITERIO_EXPOSICION_QUIMICA, previo)
     assert exc.value.campo == M9.CRITERIO_EXPOSICION_QUIMICA
     assert motivo_esperado in exc.value.motivo
 

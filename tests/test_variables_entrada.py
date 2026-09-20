@@ -26,14 +26,15 @@ from normativa import registro as rn
 
 
 # ===========================================================================
-# El censo cubre las tres poblaciones, enteras
+# El censo cubre las cuatro poblaciones, enteras
 # ===========================================================================
 
-def test_las_tres_poblaciones_estan_censadas_completas():
+def test_las_cuatro_poblaciones_estan_censadas_completas():
     """
     Lo que el usuario ve como una sola cosa -- "los datos que hay que llenar"
-    -- son tres poblaciones que el repositorio mantiene separadas. El censo no
-    las junta: las mira juntas.
+    -- son cuatro poblaciones que el repositorio mantiene separadas (la
+    cuarta, los datos externos del JSON, desde EXT-5). El censo no las junta:
+    las mira juntas.
     """
     grupos = ve.por_poblacion()
 
@@ -41,10 +42,11 @@ def test_las_tres_poblaciones_estan_censadas_completas():
         return {v.clave for v in grupos[poblacion]}
 
     assert claves(Poblacion.COLUMNA_CSV) == set(COLUMNAS)
+    assert claves(Poblacion.DATO_EXTERNO) == set(ve._EXTERNOS)
     assert claves(Poblacion.DATO_SITIO) == set(ds.DATOS_SITIO)
     assert claves(Poblacion.CRITERIO) == set(ca.CRITERIOS)
-    assert len(ve.VARIABLES) == (len(COLUMNAS) + len(ds.DATOS_SITIO)
-                                 + len(ca.CRITERIOS))
+    assert len(ve.VARIABLES) == (len(COLUMNAS) + len(ve._EXTERNOS)
+                                 + len(ds.DATOS_SITIO) + len(ca.CRITERIOS))
 
 
 def test_ninguna_variable_de_entrada_se_queda_sin_modo():
@@ -264,7 +266,7 @@ def test_la_tabla_de_recubrimiento_se_deriva_del_registro_y_no_se_copia():
 
 def _criterio(resolucion, **campos):
     base = dict(valor=1.0, etiqueta="A", concepto="c", justificacion="j",
-                fuente="f", resolucion=resolucion)
+                fuente="f", resolucion=resolucion, forma=ca.FORMA_FLOAT)
     base.update(campos)
     return ca.Criterio(**base)
 
@@ -479,5 +481,5 @@ def test_el_reporte_marca_el_dominio_fisico_como_no_normativo():
 
 
 def test_una_clave_que_no_es_variable_de_entrada_no_se_inventa():
-    with pytest.raises(KeyError, match="tres poblaciones"):
+    with pytest.raises(KeyError, match="cuatro poblaciones"):
         ve.variable("no_existe")

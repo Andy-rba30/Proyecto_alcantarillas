@@ -127,7 +127,13 @@ def test_progresion_de_cajon_rechaza_un_par_repetido(caso, serie):
     0.00 s). La igualdad es la de `_misma_seccion`, con tolerancia: un par a
     5e-10 del anterior es el mismo escalon del catalogo.
     """
-    with declarados({**DECLARACIONES_CAJON, CRITERIO_SECCIONES_CAJON: serie}):
+    # `con_valor`: desde EXT-5 la puerta rechaza un par repetido EXACTO por
+    # su forma; la igualdad con tolerancia sigue siendo de M2 y se prueba aqui.
+    resto = {k: v for k, v in DECLARACIONES_CAJON.items()
+             if k != CRITERIO_SECCIONES_CAJON}
+    with declarados(resto), con_valor(
+            CRITERIO_SECCIONES_CAJON, serie,
+            motivo="prueba de la guardia de M2 con un escalon repetido"):
         with pytest.raises(DatoInvalidoError) as exc:
             progresion_de_cajon()
     assert exc.value.campo == CRITERIO_SECCIONES_CAJON

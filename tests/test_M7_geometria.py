@@ -21,6 +21,8 @@ minima de 7.A, V4 tiene que cumplir al limite.
 import math
 from pathlib import Path
 
+from contextlib import ExitStack
+
 import pytest
 from dataclasses import replace
 
@@ -49,7 +51,7 @@ from modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
                                   g2_cota_salida, longitud_conducto,
                                   proyeccion_taludes, tamizado_rasante)
 from tests.fixtures.casos_patron import CP9_GEOMETRIA_7B
-from tests.apoyo.criterios import declarados, sin_valor
+from tests.apoyo.criterios import con_valor, declarados, sin_valor
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 
 # El HDPE es el unico material con minimo de relleno en EG-2013 (0.30 m,
@@ -117,18 +119,20 @@ def _resultado(*, HW_entrada=0.50, S=0.006) -> ResultadoHidraulico:
 @pytest.fixture
 def declarar_condicion_pavimento():
     """
-    Declara 'condicion_pavimento' por la via de la GUI y repone al salir la
-    que trae la corrida de pruebas (conftest.py). Se lee y se repone el valor
-    VIGENTE, no uno escrito aqui: si conftest cambia de fila, estos tests la
-    siguen sin editarse.
+    Impone una 'condicion_pavimento' ESQUIVANDO la puerta de declaracion y
+    repone al salir. Hasta EXT-5 entraba por `establecer_valor_dinamico`,
+    la via de la GUI; desde EXT-5 la puerta rechaza por su forma
+    (`categoria`) todo lo que no sea una fila de la tabla, de modo que la
+    guardia de M7 --- que es lo que estos tests prueban, y sigue detras de
+    la puerta --- solo se alcanza con `con_valor`, que exige decir por que.
     """
-    original = ca.valor(CRITERIO_CONDICION_PAVIMENTO)
+    with ExitStack() as pila:
+        def _declarar(condicion):
+            pila.enter_context(con_valor(
+                CRITERIO_CONDICION_PAVIMENTO, condicion,
+                motivo="prueba de la guardia de M7 con una fila que la puerta rechaza"))
 
-    def _declarar(condicion):
-        ca.establecer_valor_dinamico(CRITERIO_CONDICION_PAVIMENTO, condicion)
-
-    yield _declarar
-    ca.establecer_valor_dinamico(CRITERIO_CONDICION_PAVIMENTO, original)
+        yield _declarar
 
 
 @pytest.fixture

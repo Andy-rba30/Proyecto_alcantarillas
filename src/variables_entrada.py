@@ -6,20 +6,23 @@ cosa se resuelve. Sec. 4.3 del plan `docs/hoja_de_ruta_correcciones_v12.md`.
 
 El problema que resuelve
 ------------------------
-El repositorio mantiene TRES POBLACIONES separadas, y las separa bien:
+El repositorio mantiene CUATRO POBLACIONES separadas, y las separa bien
+(los conteos no se escriben aqui: `reporte_variables()` los imprime y
+`tests/test_variables_entrada.py` los contrasta con sus fuentes):
 
-    17  columnas del CSV        `modelos.PuntoCritico` / `M0_carga.COLUMNAS`
-     7  datos de sitio          `datos_sitio.DATOS_SITIO`
-    59  criterios adoptados     `criterios_adoptados.CRITERIOS`
-    --
-    83  variables de entrada
+    columnas del CSV        `modelos.PuntoCritico` / `M0_carga.COLUMNAS`
+    datos externos          `_EXTERNOS` (las claves de `cli.CLAVES_EXTERNAS`
+                            que no son columna; desde EXT-5)
+    datos de sitio          `datos_sitio.DATOS_SITIO`
+    criterios adoptados     `criterios_adoptados.CRITERIOS`
 
 La frontera entre ellas es real y no se toca: una varia punto a punto, otra
 vale para todo el corredor, la tercera es lo que el proyectista decidio donde
-la norma calla. Lo que faltaba era la VISTA UNICA, porque quien llena el
-expediente no ve tres poblaciones: ve "los datos que hay que llenar". Sin
-ella la GUI tiene tres pestañas que no se pueden comparar y la memoria tres
-bloques que no suman.
+la norma calla, y la cuarta --- desde EXT-5 --- son los datos que entran por
+bandera o por el JSON de `--datos-externos` sin ser columna. Lo que faltaba
+era la VISTA UNICA, porque quien llena el expediente no ve cuatro
+poblaciones: ve "los datos que hay que llenar". Sin ella la GUI tiene
+pestañas que no se pueden comparar y la memoria bloques que no suman.
 
 Y faltaba, sobre todo, el MODO DE RESOLUCION: como se llega al numero. Es lo
 que le dice a la GUI QUE VENTANA ABRIR y a M11 QUE IMPRIMIR. Un campo
@@ -34,13 +37,15 @@ El modo NO se declara aqui para las dos poblaciones que ya tienen archivo
 propio: `Criterio.resolucion` y `DatoSitio.resolucion` lo llevan, junto al
 valor que explican, y sus guardias lo exigen al importar. Este modulo declara
 la resolucion SOLO de las 17 columnas del CSV, que no tienen otro sitio donde
-vivir, y aporta lo que ninguna de las tres poblaciones tenia: unidad, fase
-que la consume, dominio fisico y criterio que recibe la eleccion.
+vivir, y de los datos externos del JSON (`_EXTERNOS`, desde EXT-5), y aporta
+lo que ninguna poblacion tenia: unidad, fase que la consume, dominio fisico y
+criterio que recibe la eleccion.
 
     resolucion (criterios)   ->  criterios_adoptados.py
     resolucion (sitio)       ->  datos_sitio.py
     resolucion (CSV)         ->  aqui
-    unidad / fase / dominio  ->  aqui, para las tres
+    resolucion (externos)    ->  aqui
+    unidad / fase / dominio  ->  aqui, para las cuatro
 
 Los seis modos y como se elige uno estan documentados en `modelos.py`, junto
 a los tipos. Aqui solo se aplica la escalera.
@@ -101,6 +106,7 @@ import criterios_adoptados as _ca
 import datos_sitio as _ds
 import dominios as _dominios
 from criterios_adoptados import verificar_resolucion
+from modelos import CategoriaTR
 from modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango, Libre,
                      ModoDeResolucion, Poblacion, Resolucion,
                      VariableDeEntrada)
@@ -792,6 +798,129 @@ _COLUMNAS: Dict[str, _Columna] = {
 # Poblacion 2 - los datos de sitio de corredor
 # ---------------------------------------------------------------------------
 
+
+# ---------------------------------------------------------------------------
+# Poblacion 4 - los datos externos que NO son columna del CSV
+# ---------------------------------------------------------------------------
+# Las claves de `cli.CLAVES_EXTERNAS` que no son columna, ni dato de sitio,
+# ni criterio (EXT-G-03, decidido en EXT-0 y hecho en EXT-5). Hasta EXT-5 no
+# estaban en ningun censo y la ayuda del JSON las mostraba en ambar como «sin
+# ficha», prefiriendo un hueco declarado a una frase inventada. La objecion
+# valia contra la prosa a mano en la FICHA; no vale contra el censo, que es
+# donde este archivo declara tambien las columnas del CSV. Lo que se deriva se
+# deriva: la fase la miden los consumidores (`_consumidores`, como en las
+# otras poblaciones) y donde no hay consumidor el hueco dice a que fase
+# pertenece; el dominio se nombra POR NOMBRE contra `dominios.py`, el MISMO
+# que `cli._DOMINIO_DE_CLAVE` aplica a la clave del JSON; y las opciones de
+# `categoria_tr` salen del enum que M1 valida, no de una lista escrita aqui.
+#
+# NO SE IMPORTA `cli`: `cli` importa los once modulos y este censo lo
+# importan la GUI y los tests de contenido. Que este censo y
+# `cli.CLAVES_EXTERNAS` digan lo mismo lo comprueba
+# `tests/test_ext5_forma_gui.py`, en el mismo sitio donde se comprueba que
+# las fichas de la ayuda salen de aqui.
+
+@dataclass(frozen=True)
+class _Externo:
+    concepto: str
+    unidad: str
+    resolucion: Resolucion
+    dominio: Optional[str] = None
+    criterio_destino: Optional[str] = None
+    fase_declarada: str = ""
+    nota: str = ""
+
+
+_EXTERNOS: Dict[str, _Externo] = {
+
+    "luz_m": _Externo(
+        concepto="Luz del cruce (ancho libre que hay que salvar), de la "
+                 "topografia o del QGIS. Decide el umbral binario de la Sec. "
+                 "2.1: un cruce de 6 m o mas es PUENTE y queda fuera de "
+                 "alcance (Sec. 3.1)",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="la topografia o el QGIS del corredor; se declara "
+                        "por bandera o en --datos-externos, para toda la "
+                        "corrida o punto a punto",
+            dominio="m > 0 y finito",
+        ),
+    ),
+
+    "TW_m": _Externo(
+        concepto="Tirante en el cuerpo receptor sobre el fondo de la SALIDA "
+                 "durante la avenida. Si no se declara, el control de salida "
+                 "lo pide al criterio 'TW_receptor'",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el nivel del cuerpo receptor durante la avenida "
+                        "(ANA / Junta de Usuarios); 0 es salida libre",
+            dominio="m >= 0 y finito (0 = salida libre)",
+        ),
+        criterio_destino="TW_receptor",
+        fase_declarada=_FASE_DE_MODULO["M4_control"],
+        nota="No la consume ningun modulo por su nombre: entra a MD ya "
+             "resuelta como el TW del punto, y por eso la fase se declara",
+    ),
+
+    "longitud_m": _Externo(
+        concepto="Longitud del conducto entre cabezales. Si no se declara la "
+                 "calcula M7 (Sec. 7.B) desde la plataforma y el talud del "
+                 "terraplen",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="la geometria del cruce (topografia); si falta, M7 "
+                        "la deriva y exige 'talud_terraplen'",
+            dominio="m > 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M7_geometria"],
+        nota="No la consume ningun modulo por su nombre: entra a MD ya "
+             "resuelta como la L del punto, y por eso la fase se declara",
+    ),
+
+    "S_conducto": _Externo(
+        concepto="Pendiente del CONDUCTO cuando difiere de la del cauce: es "
+                 "la que entra en Manning y la que V2b compara contra "
+                 "'S_cauce' (indicador de sedimentacion). No sustituye a "
+                 "'S_cauce'",
+        unidad="m/m",
+        resolucion=Libre(
+            que_lo_fija="el perfil longitudinal con que se tiende el barril",
+            dominio="m/m > 0; un valor >= 1 delata una celda en porcentaje",
+        ),
+        dominio="S_CAUCE_MAX",
+    ),
+
+    "L_hidraulico_m": _Externo(
+        concepto="Longitud a la que la cuneta agota su capacidad, para el "
+                 "espaciamiento de las alcantarillas de alivio (Fase 10, "
+                 "Familia B)",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el calculo hidraulico de la cuneta: la Sec. 10 "
+                        "describe el procedimiento y no fija su seccion",
+            dominio="m > 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
+        nota="La Fase 10 la lee `cli._fase_10` por punto, no un modulo de "
+             "calculo por su nombre, y por eso la fase se declara",
+    ),
+
+    "categoria_tr": _Externo(
+        concepto="Fila de la Tabla N 02 del punto, declarada cauce por cauce "
+                 "(Sec. 2.2): el Manual no da un umbral para deducirla. Sin "
+                 "ella la Familia A cae en "
+                 "'umbral_area_quebrada_importante_ha'",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, cauce por cauce, sobre la Tabla N "
+                        "02; M1 la valida contra sus filas",
+            opciones=tuple(c.value for c in CategoriaTR),
+        ),
+    ),
+}
+
+
 _META_SITIO: Dict[str, _Meta] = {
     "PGA_roca_B": _Meta(unidad="g"),
     "ZONA_SISMICA_LA_UNION": _Meta(
@@ -1054,6 +1183,21 @@ def _construir() -> Dict[str, VariableDeEntrada]:
             nota=col.nota,
         )
 
+    for clave, ext in _EXTERNOS.items():
+        cons = _consumidores(clave)
+        salida[clave] = VariableDeEntrada(
+            clave=clave,
+            concepto=ext.concepto,
+            unidad=ext.unidad,
+            poblacion=Poblacion.DATO_EXTERNO,
+            resolucion=ext.resolucion,
+            fase=_fase(clave, ext.fase_declarada, cons),
+            consumido_por=cons,
+            criterio_destino=ext.criterio_destino,
+            dominio=ext.dominio,
+            nota=ext.nota,
+        )
+
     for clave, dato in _ds.DATOS_SITIO.items():
         meta = _META_SITIO[clave]
         cons = _consumidores(clave)
@@ -1104,13 +1248,14 @@ VARIABLES: Dict[str, VariableDeEntrada] = _construir()
 #
 # Los dos ultimos los comprueba `criterios_adoptados.verificar_resolucion`,
 # que es la MISMA funcion que corre al importar las otras dos poblaciones: se
-# reutiliza en vez de escribirse otra vez, para que las tres poblaciones no
+# reutiliza en vez de escribirse otra vez, para que las cuatro poblaciones no
 # puedan quedar sujetas a reglas distintas -- que es exactamente la asimetria
 # que esta sesion vino a cerrar.
 
 def _verificar_censo() -> None:
     esperado = {
         Poblacion.COLUMNA_CSV: set(COLUMNAS),
+        Poblacion.DATO_EXTERNO: set(_EXTERNOS),
         Poblacion.DATO_SITIO: set(_ds.DATOS_SITIO),
         Poblacion.CRITERIO: set(_ca.CRITERIOS),
     }
@@ -1137,7 +1282,7 @@ def _verificar_censo() -> None:
         # caso una tapa a la otra en el diccionario y desaparece del censo sin
         # que ningun conteo por poblacion lo note.
         raise ValueError(
-            f"el censo tiene {len(VARIABLES)} entradas y las tres poblaciones "
+            f"el censo tiene {len(VARIABLES)} entradas y las cuatro poblaciones "
             f"suman {total}: hay una clave repetida entre poblaciones"
         )
 
@@ -1170,10 +1315,12 @@ def _verificar_variable(v: VariableDeEntrada) -> None:
                     "variable de entrada ni una tabla del registro"
                 )
     if (isinstance(v.resolucion, Libre) and v.resolucion.opciones
-            and v.poblacion is not Poblacion.COLUMNA_CSV):
+            and v.poblacion not in (Poblacion.COLUMNA_CSV,
+                                    Poblacion.DATO_EXTERNO)):
         raise ValueError(
-            f"'{v.clave}' declara `Libre.opciones` fuera del CSV; el conjunto "
-            "cerrado de un criterio vive en su `sensibilidad`"
+            f"'{v.clave}' declara `Libre.opciones` fuera del CSV y de los "
+            "datos externos; el conjunto cerrado de un criterio vive en su "
+            "`sensibilidad`"
         )
 
 
@@ -1228,7 +1375,8 @@ def variable(clave: str) -> VariableDeEntrada:
     except KeyError:
         raise KeyError(
             f"'{clave}' no es una variable de entrada de este expediente. Las "
-            f"hay en tres poblaciones: {len(COLUMNAS)} columnas del CSV, "
+            f"hay en cuatro poblaciones: {len(COLUMNAS)} columnas del CSV, "
+            f"{len(_EXTERNOS)} datos externos, "
             f"{len(_ds.DATOS_SITIO)} datos de sitio y "
             f"{len(_ca.CRITERIOS)} criterios adoptados"
         ) from None
@@ -1335,7 +1483,7 @@ def reporte_variables(poblacion: Optional[Poblacion] = None) -> str:
     out = ["=" * _ANCHO,
            "MODO DE RESOLUCION DE LAS VARIABLES DE ENTRADA",
            "=" * _ANCHO,
-           f"{len(VARIABLES)} variables en tres poblaciones.", ""]
+           f"{len(VARIABLES)} variables en cuatro poblaciones.", ""]
 
     conteo = {m: len(vs) for m, vs in por_modo().items() if vs}
     out.append("Por modo: " + ", ".join(

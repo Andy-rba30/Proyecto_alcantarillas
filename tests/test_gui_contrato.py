@@ -1012,7 +1012,11 @@ def test_el_estado_de_un_criterio_distingue_PISAR_de_RELLENAR(ventana):
     import criterios_adoptados as ca
     import declaracion as dec
 
-    pendiente = next(c for c, v in ca.CRITERIOS.items() if v.valor is None)
+    # Un pendiente de forma `float` (EXT-5): la puerta exige la forma que la
+    # ficha declara, y 1.0 no es un texto ni una clase de sitio.
+    pendiente = next(c for c, v in ca.CRITERIOS.items()
+                     if v.valor is None and v.forma == ca.FORMA_FLOAT
+                     and v.sensibilidad is None)
     resuelto = next(c for c, v in ca.CRITERIOS.items()
                     if isinstance(v.valor, float) and v.sensibilidad is None)
 
@@ -1392,7 +1396,12 @@ def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
     # regimen (barril parcialmente lleno bajo control de salida). Los dos de
     # control de entrada no llevan ninguno de los dos.
     assert resumen["hw_no_evaluable"] == ["B-01"]
-    assert resumen["v1_v2_diferidas"] == ["B-01"]
+    # EXT-5 (PC-13): C-01 entra aqui. Con '1' leido como 1.0 el marco no
+    # pasaba de M2 y C-01 nunca llegaba a V1/V2; con el entero que la ventana
+    # entrega ahora, llega y las difiere como B-01. Sigue sin dimensionar por
+    # su bloqueo REAL (`S_cauce`), que afirma `tests/test_ext5_forma_gui.py`.
+    assert resumen["v1_v2_diferidas"] == ["B-01", "C-01"]
+    assert resumen["cajon_declarado"]["n_celdas_cajon"] == "1"
     # La plantilla la elige el ALCANCE de la corrida, que es SIS-A-17.
     assert resumen["plantilla"] == cli.NOMBRE_PLANTILLA_PERFIL
     # EL TABLERO, ANTES DE DECLARAR NADA: los dos que el alcance de perfil

@@ -264,35 +264,26 @@ def test_las_familias_de_cada_clave_salen_de_cli_y_no_de_una_copia(monkeypatch):
         "la ayuda del JSON lleva su propia tabla de familias")
 
 
-def test_la_ayuda_del_json_declara_de_cuales_no_tiene_ficha():
+def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
     """
-    SEIS DE OCHO NO ESTAN EN EL CENSO, y la ayuda lo dice en vez de rellenarlo.
-
-    No son columna, ni dato de sitio, ni criterio: no pertenecen a ninguna de
-    las tres poblaciones de `variables_entrada`, y su descripcion vive en prosa
-    en el docstring de `cli.py`. Parsear un docstring daria una ayuda que se
-    rompe callada la proxima vez que alguien lo reformatee, asi que no se
-    parsea: se declara el hueco.
-
-    Este test es ademas el marcador del arreglo de fondo. El dia que esas seis
-    entren en el censo, falla, y quien lo lea sabra que ya no hay hueco que
-    declarar.
+    LAS OCHO ESTAN EN EL CENSO desde EXT-5 (EXT-G-03), y la ficha se DERIVA
+    de ahi: concepto, unidad y origen son los de `variables_entrada`, letra
+    por letra. Este test sustituye al que marcaba el hueco de las seis
+    («el dia que esas seis entren en el censo, falla»): entraron, como la
+    poblacion `dato_externo`, y la ayuda ya no tiene nada que declarar vacio.
     """
     fichas = ay.fichas_de_datos_externos()
-    con_ficha = {f.clave for f in fichas if f.en_el_censo}
-    sin_ficha = {f.clave for f in fichas if not f.en_el_censo}
-
-    assert con_ficha == {"Q_m3s", "S_cauce"}, (
-        "las unicas dos con ficha son las que ademas son columna del CSV")
-    assert sin_ficha == {"luz_m", "TW_m", "longitud_m", "S_conducto",
-                         "L_hidraulico_m", "categoria_tr"}
+    assert {f.clave for f in fichas} == set(cli.CLAVES_EXTERNAS)
     for f in fichas:
-        if f.en_el_censo:
-            assert f.concepto and f.unidad and f.de_donde_sale, f.clave
-        else:
-            assert not f.concepto and not f.unidad and not f.de_donde_sale, (
-                f"'{f.clave}' no esta en el censo y aun asi trae texto: solo "
-                "puede venir de haberlo inventado o de haber parseado prosa")
+        v = ve.variable(f.clave)
+        assert f.concepto == v.concepto and f.concepto, f.clave
+        assert f.unidad == v.unidad and f.unidad, f.clave
+        assert f.de_donde_sale == ve.como_se_lee(v), f.clave
+    seis = {f.clave for f in fichas if f.clave not in m0.COLUMNAS}
+    assert seis == {"luz_m", "TW_m", "longitud_m", "S_conducto",
+                    "L_hidraulico_m", "categoria_tr"}
+    for clave in seis:
+        assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
 
 
 def test_las_dos_claves_con_ficha_dicen_lo_mismo_que_la_ayuda_del_csv():
@@ -302,7 +293,9 @@ def test_las_dos_claves_con_ficha_dicen_lo_mismo_que_la_ayuda_del_csv():
     el Tablero 3.1 responde ---. Dos conceptos distintos para el mismo dato en
     la misma ventana es peor que no explicarlo.
     """
-    del_json = {f.clave: f for f in ay.fichas_de_datos_externos() if f.en_el_censo}
+    del_json = {f.clave: f for f in ay.fichas_de_datos_externos()
+                if f.clave in m0.COLUMNAS}
+    assert set(del_json) == {"Q_m3s", "S_cauce"}
     for clave, ficha in del_json.items():
         columna = ay.ficha_de_columna(clave)
         assert ficha.concepto == columna.concepto

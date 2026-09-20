@@ -50,25 +50,21 @@ sin explicar.
 comparando textos, sino AÑADIENDO una columna al censo y viendo que la ayuda
 la recoge sola.
 
-Las dos ayudas no son la misma, y la segunda es mas pobre a proposito
----------------------------------------------------------------------
-La del CSV esta completa: las 19 columnas tienen concepto, unidad y
-`resolucion` en el censo, porque las columnas son una de sus tres poblaciones.
+Las dos ayudas salen del mismo censo
+------------------------------------
+La del CSV: las columnas tienen concepto, unidad y `resolucion` en el censo,
+porque son una de sus poblaciones.
 
-La del JSON no puede estarlo, y conviene decir por que en vez de disimularlo:
-de las OCHO claves de `cli.CLAVES_EXTERNAS`, solo DOS --- `Q_m3s` y `S_cauce`
---- estan en el censo, porque son ademas columnas del CSV. Las otras seis
-(`luz_m`, `TW_m`, `longitud_m`, `S_conducto`, `L_hidraulico_m`,
-`categoria_tr`) no son columna, ni dato de sitio, ni criterio: no pertenecen a
-ninguna de las tres poblaciones, y su documentacion vive en PROSA, en el
-docstring de `cli.py`.
-
-Esa prosa NO se parsea. Un docstring no es una interfaz: se reformatea sin que
-nada avise, y una ayuda que lo lea se rompe callada --- que es exactamente el
-defecto que este archivo existe para no cometer. De las seis se da lo que SI
-es dato (el nombre exacto de la clave, y que familias la usan) y se dice donde
-esta lo demas. La ayuda queda a medias y lo declara; el arreglo de fondo no es
-parsear prosa, es que esas seis entren en el censo.
+La del JSON: las OCHO claves de `cli.CLAVES_EXTERNAS` estan en el censo desde
+EXT-5 (EXT-G-03). Dos (`Q_m3s`, `S_cauce`) como columnas del CSV, que ademas
+lo son; las otras seis (`luz_m`, `TW_m`, `longitud_m`, `S_conducto`,
+`L_hidraulico_m`, `categoria_tr`) como la poblacion `dato_externo` de
+`variables_entrada`. Hasta EXT-5 esas seis iban vacias y esta ayuda lo decia,
+prefiriendo un hueco declarado a parsear la prosa del docstring de `cli.py`
+--- y sigue sin parsearla: un docstring no es una interfaz ---. Lo que cambio
+es donde vive la declaracion: en el censo, que es el mismo sitio del que
+salen las fichas de las columnas, con la fase medida por sus consumidores y
+el dominio nombrado contra `dominios.py`.
 """
 
 from __future__ import annotations
@@ -248,20 +244,20 @@ def vacios_por_quien_lo_debe() -> Tuple[Tuple[str, Tuple[str, ...], Tuple[Famili
 @dataclass(frozen=True)
 class FichaDeClaveExterna:
     """
-    Una clave de `cli.CLAVES_EXTERNAS`, con lo que de ella se puede DERIVAR.
-
-    `en_el_censo` es False para las seis que no son columna, ni dato de sitio,
-    ni criterio. Para esas, `concepto`, `unidad` y `de_donde_sale` van vacios y
-    la ventana lo dice: prefiere un hueco declarado a una frase inventada o
-    sacada de un docstring que puede reformatearse manana.
+    Una clave de `cli.CLAVES_EXTERNAS`, con lo que de ella se DERIVA del
+    censo de `variables_entrada`: las ocho estan censadas desde EXT-5
+    (EXT-G-03) --- las dos que ademas son columna del CSV, como columnas; las
+    seis restantes, como la poblacion `DATO_EXTERNO` ---. Hasta entonces las
+    seis iban vacias y la ventana lo decia, prefiriendo un hueco declarado a
+    una frase inventada; la frase ya no se inventa: se lee del censo, que es
+    el mismo sitio del que salen las fichas de las columnas.
     """
 
     clave: str
     familias: Tuple[Familia, ...]
-    en_el_censo: bool
-    concepto: str = ""
-    unidad: str = ""
-    de_donde_sale: str = ""
+    concepto: str
+    unidad: str
+    de_donde_sale: str
 
     @property
     def resumen_de_familias(self) -> str:
@@ -283,16 +279,11 @@ def fichas_de_datos_externos() -> Tuple[FichaDeClaveExterna, ...]:
 
     fichas = []
     for clave in cli.CLAVES_EXTERNAS:
-        familias = cli.familias_que_usan(clave)
-        if clave in ve.VARIABLES:
-            v = ve.variable(clave)
-            fichas.append(FichaDeClaveExterna(
-                clave=clave, familias=familias, en_el_censo=True,
-                concepto=v.concepto, unidad=v.unidad,
-                de_donde_sale=ve.como_se_lee(v)))
-        else:
-            fichas.append(FichaDeClaveExterna(
-                clave=clave, familias=familias, en_el_censo=False))
+        v = ve.variable(clave)          # KeyError si el censo no la tiene
+        fichas.append(FichaDeClaveExterna(
+            clave=clave, familias=cli.familias_que_usan(clave),
+            concepto=v.concepto, unidad=v.unidad,
+            de_donde_sale=ve.como_se_lee(v)))
     return tuple(fichas)
 
 
@@ -637,6 +628,7 @@ class FichaDeGlosario:
 # exige que ningun miembro del enum se quede sin rotulo.
 _ROTULOS_DE_POBLACION: Dict[str, str] = {
     "columna_csv": "columna del CSV",
+    "dato_externo": "dato externo (bandera o JSON de --datos-externos)",
     "dato_sitio": "dato de sitio",
     "criterio": "criterio adoptado",
 }

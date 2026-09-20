@@ -112,6 +112,28 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   M11 imprima solo los usados.
 - Cada verificación devuelve un objeto Verificacion(cumple, numeral, valor,
   criterio_aplicado), nunca un bool desnudo.
+- **Todo criterio declara la FORMA de su valor, y la puerta la exige (EXT-5).**
+  `Criterio.forma` es una de las ocho de `criterios_adoptados.FORMAS` (`int`,
+  `float`, `str`, `par_ordenado`, `serie_de_pares`, `dict_con_campos`,
+  `categoria`, `serie_de_claves`) o la unión de varias como tupla (`k_v`), y
+  `_verificar_criterio` la comprueba en los tres caminos —archivo, declaración
+  en caliente, escritura permanente—, también cuando la sensibilidad no es
+  numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
+  para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
+  consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
+  EXT-5, 53 de las 70 claves aceptaban la cadena `'cero'` y la GUI no podía
+  declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
+  valida contra la tupla de textos de `sensibilidad`, que es donde vive el
+  conjunto cerrado de un criterio; las guardias de los consumidores se
+  quedan como segunda línea (ficha EXT-5-02). Y lo que el proyectista teclea
+  lo lee UN solo parser para las dos ventanas,
+  `gui/componentes.py::interpretar_texto_declarado` —entero, real con coma o
+  punto decimal, literal estructurado, o texto; rechaza el separador de
+  miles—, distinto a propósito del de la CLI (`ast.literal_eval` del texto
+  entero), divergencia fijada por test. Las seis claves de
+  `cli.CLAVES_EXTERNAS` que no son columna del CSV son desde EXT-5 la cuarta
+  población del censo, `Poblacion.DATO_EXTERNO`, y la ayuda del JSON se
+  deriva de ahí (EXT-G-03).
 - **El estado con que corrió el expediente viaja en el informe, no se lee
   del proceso al exportar (EXT-4).** Los tres archivos de valores llevan
   estado de proceso —el registro de usos, las declaraciones en caliente, el
@@ -404,20 +426,24 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2160**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2367**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
 - `tests/test_MD.py` — el `skipped` **permanente** por condición imposible:
   su `skipif` guarda que `M5_verificaciones` no exista, y ya no puede darse.
-- `tests/test_gui_contrato.py` — los tests de **ventana real**, que hoy son
-  **cinco** (S20 abrió el primero, la corrida de perfil; S22 el de la ayuda
-  de entrada; G1 el de la selección real de la pestaña 2, que sobrevive al
-  filtro; I1 el smoke que construye la app con las cuatro pestañas pobladas
-  y abre y cierra `gui/ventana_normativa.py`, que hasta entonces no se
-  construía nunca bajo Tk; EXT-4 el del contexto de corrida, que lee el texto
-  real de «Etapas bloqueadas» y el estado real de los exportadores tras
-  declarar, quitar, cargar sesión y fallar). Se saltan
+- `tests/test_gui_contrato.py` y `tests/test_ext5_forma_gui.py` — los tests
+  de **ventana real**, que hoy son **ocho** en seis corridas (S20 abrió el
+  primero, la corrida de perfil; S22 el de la ayuda de entrada; G1 el de la
+  selección real de la pestaña 2, que sobrevive al filtro; I1 el smoke que
+  construye la app con las cuatro pestañas pobladas y abre y cierra
+  `gui/ventana_normativa.py`, que hasta entonces no se construía nunca bajo
+  Tk; EXT-4 el del contexto de corrida, que lee el texto real de «Etapas
+  bloqueadas» y el estado real de los exportadores tras declarar, quitar,
+  cargar sesión y fallar; EXT-5 los tres de `tests/apoyo/gui_ext5_real.py`
+  sobre UNA corrida —el bloqueo real de C-01 tras declarar los siete del
+  cajón por el ratón, la cara de solo lectura del `Derivada` en la pestaña 2
+  y el veredicto de 'nan' al escribir y al declarar—). Se saltan
   cuando ningún intérprete disponible puede levantar un `Tk`: falta `tkinter`,
   falta `ttkbootstrap` o falta entorno gráfico.
 - `tests/test_familias_del_csv.py` — **tres** saltos de DISEÑO, no de entorno,
@@ -439,7 +465,29 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-4 (2026-09-20) sumó TREINTA Y TRES tests**: los
+independientes. **EXT-5 (2026-09-20) sumó DOSCIENTOS SIETE tests**: los 204
+de `tests/test_ext5_forma_gui.py` —la aceptación del cluster GUI (EXT-G-01,
+PC-13, PC-14, la mitad de FORMA de EXT-V-02/05/06, la de pestaña 2 de
+EXT-V-04 y EXT-G-03): los cuatro casos del prompt escritos primero en rojo
+con `xfail(strict=True)` —130 fallos y 31 errores medidos antes de tocar
+código— y liberados al corregir; la guardia de forma en las 70 claves (70
+parametrizados sobre 'cero', uno por clave); el parser único medido por
+casos y por AST en las dos ventanas; `validar_contra_rango` en forma MAT-D13
+por comportamiento sobre los cinco tipos de rango y por AST; el censo de las
+seis externas; y los tres de ventana real sobre `tests/apoyo/gui_ext5_real.py`,
+más los dos que dejó el auditor adversarial (la forma `float` de
+`cortante_alto_muro_e060_art_11_10_10_2`, que M9 lee con `float()`, y el
+parser sólo con cifras ASCII)— y los tres anclajes parametrizados de
+`test_decisiones_diferidas` para las fichas de la Parte XXI (EXT-5-01,
+EXT-5-02, EXT-5-03). Ningún archivo restó tests: el test de ventana real de
+perfil de `test_gui_contrato` se reescribió (dejó de ser ciego a PC-13) y los
+de guardias de consumidor pasaron a `con_valor`. Las cuatro configuraciones se
+MIDIERON sobre el árbol de EXT-5 antes del commit (las dos sin Tk sin
+`DISPLAY` y con un `xvfb-run` que falla; las dos sin PyMuPDF desinstalándolo
+y reinstalándolo), y los cuatro pares coinciden con la derivación: ninguno
+de los 207 depende de PyMuPDF, y sólo los tres de ventana real dependen de
+Tk (la columna «Ventana Tk = no» salta ahora 12 y no 9). **EXT-4
+(2026-09-20) sumó TREINTA Y TRES tests**: los
 veintinueve de `tests/test_ext4_contexto_corrida.py` —la aceptación del
 cluster «estado» (EXT-A-01, EXT-A-02, EXT-G-02, PC-07, PC-09, PC-15, PC-16,
 SIS-B-22 y los 27 accesos a `_USADOS` de la suite): los seis casos del
@@ -582,7 +630,8 @@ medirla; pre-N1 la encontró en 1881 y fusionó además la rama de S24, que
 llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
-EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160. La
+EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
+2367. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -594,10 +643,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 2156 (medido en EXT-4) | 4 |
-| sí | no | 2151 (medido en EXT-4) | 9 |
-| no | sí | 2123 (medido en EXT-4) | 37 |
-| no | no | 2118 (medido en EXT-4) | 42 |
+| sí | sí | 2363 (medido en EXT-5) | 4 |
+| sí | no | 2355 (medido en EXT-5) | 12 |
+| no | sí | 2330 (medido en EXT-5) | 37 |
+| no | no | 2322 (medido en EXT-5) | 45 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

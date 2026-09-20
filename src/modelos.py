@@ -4272,8 +4272,9 @@ class PasoDiseno:
 # Cada variable de entrada declara COMO SE RESUELVE. Eso es lo que le dice a
 # la GUI que ventana abrir y a M11 que imprimir, y es informacion que hoy no
 # existe en ninguna parte: el usuario ve una sola cosa -- "un dato que hay que
-# llenar" -- donde el repositorio tiene tres poblaciones separadas (las
-# columnas del CSV, los datos de sitio de corredor y los criterios adoptados)
+# llenar" -- donde el repositorio tiene cuatro poblaciones separadas (las
+# columnas del CSV, los datos externos del JSON, los datos de sitio de
+# corredor y los criterios adoptados)
 # y seis maneras distintas de llegar al numero.
 #
 # LA SEMANTICA ES EL TIPO, igual que en `normativa/esquema.py` §7. No hay un
@@ -4457,18 +4458,26 @@ def modo_de(resolucion: Resolucion) -> ModoDeResolucion:
 
 class Poblacion(str, Enum):
     """
-    Las TRES poblaciones que el repositorio mantiene separadas y que el
+    Las CUATRO poblaciones que el repositorio mantiene separadas y que el
     usuario ve como una sola cosa -- "los datos que hay que llenar".
 
     Estan separadas por buenas razones (una es del CSV y varia punto a punto,
     otra es del corredor, la tercera es lo que el proyectista decidio donde la
-    norma calla) y esas razones no se tocan. Lo que faltaba era la vista
-    unica: sin ella, la GUI tiene tres pestañas que no se pueden comparar y la
-    memoria tres bloques que no suman.
+    norma calla, la cuarta entra por bandera o por el JSON de
+    `--datos-externos` sin ser columna) y esas razones no se tocan. Lo que
+    faltaba era la vista unica: sin ella, la GUI tiene pestañas que no se
+    pueden comparar y la memoria bloques que no suman.
+
+    `DATO_EXTERNO` llego en EXT-5 (EXT-G-03): las seis claves de
+    `cli.CLAVES_EXTERNAS` que no son columna, ni dato de sitio, ni criterio
+    no estaban en ningun censo, y la ayuda de la GUI las mostraba como «sin
+    ficha». Se censan como poblacion propia y no como columnas porque no lo
+    son: no viven en el CSV y no varian necesariamente punto a punto.
     """
     COLUMNA_CSV = "columna_csv"
     DATO_SITIO = "dato_sitio"
     CRITERIO = "criterio"
+    DATO_EXTERNO = "dato_externo"
 
 
 @dataclass(frozen=True)

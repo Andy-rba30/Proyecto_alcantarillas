@@ -307,7 +307,6 @@ class VentanaAyudaEntrada(tk.Toplevel):
         p.rowconfigure(2, weight=1)
 
         fichas = ay.fichas_de_datos_externos()
-        sin_censo = [f.clave for f in fichas if not f.en_el_censo]
 
         cab = ttk.Frame(p, padding=(8, 8, 8, 0))
         cab.grid(row=0, column=0, sticky="ew")
@@ -345,7 +344,6 @@ class VentanaAyudaEntrada(tk.Toplevel):
         for col, titulo, ancho, anchor in _ANCHOS_JSON:
             self.tree_json.heading(col, text=titulo)
             self.tree_json.column(col, width=ancho, anchor=anchor)
-        self.tree_json.tag_configure("sin_censo", foreground=COLOR_AVISO)
         self.tree_json.grid(row=0, column=0, sticky="nsew")
         scroll = ttk.Scrollbar(f_tabla, orient="vertical",
                                 command=self.tree_json.yview)
@@ -353,31 +351,24 @@ class VentanaAyudaEntrada(tk.Toplevel):
         scroll.grid(row=0, column=1, sticky="ns")
 
         for f in fichas:
-            concepto = f.concepto if f.en_el_censo else (
-                "(sin ficha: no es columna del CSV, ni dato de sitio, ni "
-                "criterio; su descripcion esta en el docstring de cli.py)")
             self.tree_json.insert(
                 "", "end", iid=f.clave,
-                values=(f.clave, f.resumen_de_familias, concepto),
-                tags=() if f.en_el_censo else ("sin_censo",))
+                values=(f.clave, f.resumen_de_familias,
+                        f"{f.concepto} [{f.unidad}] · se lee de: "
+                        f"{f.de_donde_sale}"))
 
-        # LO QUE ESTA AYUDA NO PUEDE DECIR, DICHO. Seis de las ocho claves no
-        # estan en el censo de `variables_entrada`, de modo que de ellas no hay
-        # concepto ni unidad que derivar. Su documentacion es prosa en un
-        # docstring, y un docstring no es una interfaz: parsearlo daria una
-        # ayuda que se rompe callada la proxima vez que alguien lo reformatee.
-        # Se dice en vez de rellenarse con una frase inventada.
+        # LAS OCHO TIENEN FICHA, y las ocho salen del censo de
+        # `variables_entrada` (EXT-G-03): las dos que son columna del CSV
+        # dicen lo mismo que en la pestaña 1, y las seis restantes son la
+        # poblacion `dato_externo`. Esta ventana no transcribe prosa de
+        # ningun docstring: lo que muestra es lo que el censo declara.
         ttk.Label(
             p,
-            text="Las " + str(len(sin_censo)) + " claves en ambar (" +
-                 ", ".join(sin_censo) + ") no tienen ficha: no son columna del "
-                 "CSV, ni dato de sitio, ni criterio, de modo que no estan en "
-                 "el censo de variables_entrada.py y esta ayuda no tiene de "
-                 "donde derivar su concepto ni su unidad. Estan descritas en "
-                 "el docstring de cli.py, seccion «Datos que NO estan en el "
-                 "CSV». Esta ventana no lo transcribe a proposito: una ayuda "
-                 "que copie prosa se separa de ella sin que nadie avise.",
-            font=("Segoe UI", 8, "italic"), foreground=COLOR_AVISO,
+            text="Concepto, unidad y origen salen del censo de "
+                 "variables_entrada.py, el mismo del que sale la ayuda del "
+                 "CSV: las dos claves que ademas son columna dicen aqui lo "
+                 "mismo que alli.",
+            font=("Segoe UI", 8, "italic"), foreground="#666666",
             wraplength=980, justify="left").grid(
             row=3, column=0, sticky="w", padx=8, pady=8)
 

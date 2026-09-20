@@ -454,7 +454,7 @@ def test_la_sesion_guarda_tambien_lo_declarado_por_la_cli():
     igual, y una sesion que solo guardara lo de la ventana la perderia en
     silencio.
     """
-    ca.establecer_valor_dinamico("TW_receptor", "cota_terreno")
+    ca.establecer_valor_dinamico("TW_receptor", 0.35)   # metros: su forma es `float`
     estado = dec.estado_de_sesion()
     assert "TW_receptor" in estado["valores"]
     assert "TW_receptor" not in estado["procedencias"]

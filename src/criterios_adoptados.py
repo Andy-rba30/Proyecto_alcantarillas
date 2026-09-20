@@ -124,6 +124,38 @@ NIVELES = (NIVEL_PERFIL, NIVEL_EXPEDIENTE)
 # `trazabilidad`, no con rango, que es la regla que separa [S] de [A].
 ETIQUETAS_DE_ELECCION = ("A",)
 
+# LA FORMA DEL VALOR: la familia cerrada de estructuras que un criterio puede
+# declarar (EXT-5; cierra EXT-G-01, PC-13, PC-14 y la mitad de FORMA de
+# EXT-V-02, EXT-V-05 y EXT-V-06). Es lo que el CONSUMIDOR va a exigir, dicho
+# en la ficha para que la puerta de declaracion lo exija ANTES: hasta EXT-5
+# la guardia validaba etiqueta, nivel, finitud y la ventana de sensibilidad,
+# pero no la ESTRUCTURA del valor, de modo que 53 de las 70 claves aceptaban
+# la cadena 'cero' y la aritmetica reventaba despues con un `TypeError` fuera
+# de `ErrorProyecto` (PC-14), y la GUI no podia declarar un ENTERO para
+# `n_celdas_cajon` porque nada le decia que hacia falta uno (PC-13).
+#
+# Ocho formas, no siete: el prompt de EXT-5 enumera siete y `F_pga` no cabe
+# en ninguna --- declara la TUPLA de filas de la tabla sobre las que se lee
+# el factor ('C', 'D', 'E'), que no es un texto ni una serie de pares ---, y
+# meterla a la fuerza en `categoria` escondia la estructura que M9 exige.
+# `serie_de_claves` la nombra. Esta escrito en decisiones_diferidas.md.
+#
+# Un criterio puede llevar la UNION de dos formas, como tupla: `k_v` admite
+# la cadena del regimen prescrito O el numero del caso reservado (asi lo
+# consume `M9.k_v_declarado`), y una forma unica habria estrechado el
+# contrato que el consumidor ya tiene.
+FORMA_INT = "int"                       # entero de Python; `bool` queda fuera
+FORMA_FLOAT = "float"                   # real (un `int` vale); `bool` queda fuera
+FORMA_STR = "str"                       # texto no vacio: la CLAVE de una fila, un metodo
+FORMA_PAR_ORDENADO = "par_ordenado"     # (minimo, maximo) de reales, en orden
+FORMA_SERIE_DE_PARES = "serie_de_pares" # [(B, H), ...] de reales, sin repetidos
+FORMA_DICT_CON_CAMPOS = "dict_con_campos"  # dict no vacio con claves de texto
+FORMA_CATEGORIA = "categoria"           # texto de un conjunto cerrado: `sensibilidad`
+FORMA_SERIE_DE_CLAVES = "serie_de_claves"  # (clave, ...) de textos, sin repetidos
+FORMAS = (FORMA_INT, FORMA_FLOAT, FORMA_STR, FORMA_PAR_ORDENADO,
+          FORMA_SERIE_DE_PARES, FORMA_DICT_CON_CAMPOS, FORMA_CATEGORIA,
+          FORMA_SERIE_DE_CLAVES)
+
 
 @dataclass(frozen=True)
 class Criterio:
@@ -132,6 +164,7 @@ class Criterio:
     concepto: str                              # que es
     justificacion: str                         # por que este valor
     fuente: str                                # de donde sale
+    forma: Any = ""                            # una de FORMAS, o una tupla de ellas; obligatoria
     reemplazado_por: Optional[str] = None      # ensayo/dato que lo sustituye
     sensibilidad: Optional[Tuple] = None       # rango declarado -- [A] y [C]; nunca [S]
     trazabilidad: Optional[str] = None         # como reproducir la lectura -- SOLO [S]
@@ -869,6 +902,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # procedimiento entero pertenece al expediente tecnico.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="S",
+        forma=FORMA_STR,
         concepto="Perfil de suelo de E.030 presunto para el sitio (S0-S5)",
         justificacion="Registra que perfil de suelo de E.030 se presume para "
                       "este sitio mientras el ensayo no lo confirme o lo "
@@ -976,6 +1010,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="S",
+        forma=FORMA_STR,
         # LAS DOS DISCREPANCIAS QUE ESTE CRITERIO TOCABA -- DIS-HR-CLASE-DE-
         # SITIO-F y DIS-HR-30M-VS-100FT -- viajaron por este campo mientras
         # estuvieron vivas. I2 corrigio la Sec. 0.5 y la Fase 0-bis de la v8
@@ -1174,6 +1209,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # invocara sin diferirlo, la suite se pone roja aqui.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_SERIE_DE_CLAVES,
         # DIS-HR-30M-VS-100FT viajo por este campo mientras estuvo viva --
         # la profundidad sobre la que se lee la clase decide que fila de esta
         # tabla aplica, y la hoja de ruta se la atribuia al articulado con una
@@ -1307,6 +1343,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # invocara sin diferirlo, la suite se pone roja aqui.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_CATEGORIA,
         concepto="Como se leen los dos rotulos extremos de la Tabla "
                  "2.4.3.11.2.1.2-1 cuando el PGA cae justo sobre uno de ellos",
         justificacion="Decide como se leen los dos rotulos extremos de "
@@ -1378,6 +1415,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # invocara sin diferirlo, la suite se pone roja aqui.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_CATEGORIA,
         concepto="Si se aplica al cabezal la reduccion de k_h0 que el numeral "
                  "autoriza para muros con desplazamiento lateral admitido",
         justificacion="Decide si se aplica al cabezal la reduccion de k_h0 "
@@ -1453,6 +1491,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # invocara sin diferirlo, la suite se pone roja aqui.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=(FORMA_STR, FORMA_FLOAT),
         concepto="Cual de los dos regimenes de k_v del num. 2.8.1.1.14.2.1 "
                  "rige en este cabezal. Con el declarado, k_v = 0.0 y ese "
                  "cero es [N], no una adopcion",
@@ -1525,6 +1564,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea el limite de excentricidad
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Factor de carga de la carga viva en la combinacion Evento "
                  "Extremo I, adimensional",
         justificacion="Decide el factor de carga de la carga viva en la "
@@ -1587,6 +1627,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Inclinacion de la superficie del relleno del trasdos sobre "
                  "la horizontal (i), en grados, para Mononobe-Okabe",
         justificacion="Sec. 9.2 la exige por su nombre y no la entrega, y "
@@ -1623,6 +1664,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Inclinacion del paramento interior (trasdos) del cabezal "
                  "respecto de la VERTICAL (beta), en grados, positiva cuando "
                  "el muro se aleja del relleno",
@@ -1649,6 +1691,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Angulo de friccion entre el paramento del muro y el relleno "
                  "(delta), en grados, para Mononobe-Okabe",
         justificacion="Sec. 9.2 lo exige por su nombre y no lo entrega. La "
@@ -1680,6 +1723,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea el momento de volteo sismico
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Altura de aplicacion del incremento sismico de empuje "
                  "(P_AE - P_A), como fraccion de la altura H del muro",
         justificacion="Mononobe-Okabe entrega el empuje TOTAL, no su punto de "
@@ -1722,6 +1766,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea el Q de diseno de TODOS los puntos
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_STR,
         # LAS DOS RAMAS QUE LA FASE 1-bis ABRE, que son la ventana entera: la
         # serie contiene los años FEN o no los contiene, y cada rama tiene su
         # tratamiento escrito en la hoja de ruta. No hay un tercer camino, y
@@ -1782,6 +1827,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # resultado: la declaracion repite lo que el consumidor ya aplicaba.
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Riesgo admisible de falla R y vida util n que el Propietario "
                  "de la obra adopta, si son distintos de los maximos "
                  "recomendados de la Tabla N 02",
@@ -1860,6 +1906,7 @@ CRITERIOS: Dict[str, Criterio] = {
         nivel=NIVEL_PERFIL,
         sensibilidad=(50.0, 200.0),  # ha; toda la ventana deja los dos puntos de Familia A en TR 71
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Area de cuenca a partir de la cual el cauce de un punto de "
                  "Familia A se clasifica como 'quebrada importante' (TR 71) en "
                  "vez de 'quebrada menor' (TR 35) en la Tabla N 02",
@@ -1922,6 +1969,7 @@ CRITERIOS: Dict[str, Criterio] = {
                "forma": 1},
         nivel=NIVEL_PERFIL,
         etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Constantes de control de entrada HDS-5 para tuberia HDPE",
         justificacion="Decide la fila de la Tabla A.1 de HDS-5 de la que se "
                       "toman las constantes de control de entrada (K, M, c, Y "
@@ -1995,6 +2043,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor="interpolacion_lineal_entre_extremos",
         nivel=NIVEL_PERFIL,
         etiqueta="C",
+        forma=FORMA_STR,
         concepto="Metodo con que se cubre la zona de transicion del control de "
                  "entrada de HDS-5, 3.5 < q* < 4.0",
         justificacion="Decide el metodo con que M4 cubre la zona de "
@@ -2074,6 +2123,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=MANNING["concreto_tubo_recto"],   # RANGO (n_min, n_max), no puntual
         nivel=NIVEL_PERFIL,
         etiqueta="N->",             # analogia normativa declarada, no adopcion
+        forma=FORMA_PAR_ORDENADO,
         concepto="Coeficiente de rugosidad de Manning para HDPE de interior liso",
         justificacion="Decide el coeficiente de rugosidad de Manning que se "
                       "aplica al HDPE de interior liso. La fuente (Tabla N 09 "
@@ -2137,6 +2187,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=4.572,
         nivel=NIVEL_PERFIL,
         etiqueta="C",               # Anexo A y Sec. 0.1: la fuente (WSDOT)
+        forma=FORMA_FLOAT,
                                     # es tecnica reconocida, no una adopcion libre
         concepto="Velocidad maxima admisible en HDPE",
         justificacion="La Tabla N 10 del Manual MTC no cubre materiales flexibles",
@@ -2209,6 +2260,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=4.572,
         nivel=NIVEL_PERFIL,
         etiqueta="C",               # idem v_max_hdpe: Anexo A lo etiqueta [C]
+        forma=FORMA_FLOAT,
         concepto="Velocidad maxima admisible en TMC",
         justificacion="La Tabla N 10 del Manual MTC no cubre materiales flexibles",
         fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026), Cap. 8, S8-6, "
@@ -2262,6 +2314,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # resultado: la declaracion repite lo que el consumidor ya aplicaba.
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Techo de velocidad adoptado para el concreto, mas "
                  "conservador que el maximo normativo de 6.0 m/s",
         justificacion="Decide el techo de velocidad que el proyecto aplica al "
@@ -2351,6 +2404,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=0.5,
         nivel=NIVEL_PERFIL,
         etiqueta="C",
+        forma=FORMA_FLOAT,
         concepto="Coeficiente de perdida de carga en la embocadura (ke)",
         justificacion="La ecuacion de control de salida de la hoja de ruta, "
                       "H = (1 + ke + 19.63*n^2*L/R^(4/3))*V^2/(2g), contiene ke "
@@ -2413,6 +2467,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor="seccion_llena",
         nivel=NIVEL_PERFIL,
         etiqueta="C",
+        forma=FORMA_STR,
         concepto="Seccion de referencia de la que se toman V y R en la ecuacion "
                  "de control de salida H = (1 + ke + 19.63*n^2*L/R^(4/3))*V^2/(2g)",
         justificacion="Decide de que seccion se toman V y R en la ecuacion de "
@@ -2486,6 +2541,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=1.5,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Relacion maxima de carga a la entrada sobre diametro",
         justificacion="Decide la relacion maxima de carga a la entrada sobre "
                       "diametro, HW/D, y es adopcion del proyectista sobre "
@@ -2555,6 +2611,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor="segun_CBR",          # 0.60 / 0.80 / 1.00 / 1.20 m
         nivel=NIVEL_PERFIL,
         etiqueta="N->",
+        forma=FORMA_STR,
         concepto="Resguardo entre nivel de agua a la entrada y subrasante",
         justificacion="Decide con que resguardo se separa el nivel de agua a "
                       "la entrada (HW) de la subrasante. La fuente (Manual de "
@@ -2638,6 +2695,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=0.50,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Borde libre del canal: resguardo bajo su coronacion que el "
                  "agua embalsada por la alcantarilla no puede invadir (VC1)",
         justificacion=(
@@ -2717,6 +2775,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         # LA VENTANA DE ESTE CRITERIO SON LOS DOS ESCENARIOS DEL PASO 3 de
         # Sec. 1.3, y no es una analogia: son literalmente las dos opciones
         # que la hoja de ruta ofrece cuando no hay caudal documentado del
@@ -2805,6 +2864,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "n": (0.025, 0.035),
                       "altura_total_m": (1.2, 2.5)}, # m
         etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Seccion transversal del cuerpo receptor (dren o canal) en "
                  "el punto de descarga, con su pendiente y su n de Manning: "
                  "b_m (solera), z_HV (talud), S, n y altura_total_m "
@@ -2886,6 +2946,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=200.0,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Longitud maxima de cuneta -> espaciamiento de alcantarillas de alivio",
         justificacion="El Manual fija 250 m para region seca y 200 m para region "
                       "muy lluviosa. El regimen normal de Piura es arido, pero el "
@@ -2945,6 +3006,7 @@ CRITERIOS: Dict[str, Criterio] = {
         nivel=NIVEL_PERFIL,
         sensibilidad=("cota_terreno", "cota_fondo_entrada"),
         etiqueta="A",
+        forma=FORMA_CATEGORIA,
         concepto="Regla con la que se obtiene la cota del fondo de la entrada "
                  "(invert) de cada punto, msnm, cuando la columna "
                  "'cota_fondo_entrada' del CSV no la trae medida",
@@ -3019,9 +3081,16 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "remanso_derecho_via": Criterio(
+        # `float` (metros): lo que este criterio guardaria es la EXTENSION
+        # del remanso aguas arriba; el ancho de derecho de via NO va aqui,
+        # es el dato `ancho_derecho_via_m` que V5 pide con
+        # DatoFaltanteError. Hoy ningun modulo lee el valor -- V5 se detiene
+        # en el vacio --, de modo que la forma es un argumento y no una
+        # medida (auditoria adversarial de EXT-5).
         valor=None,                 # VACIO: bloquea V5 para todo punto
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Extension del remanso aguas arriba de la alcantarilla y "
                  "ancho de derecho de via disponible en el punto, para V5 "
                  "(embalse dentro del derecho de via, sin afectar terceros "
@@ -3066,6 +3135,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor="camara_o_buzon_en_cabecera",
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_CATEGORIA,
         concepto="Como se resuelve el acceso de mantenimiento para limpieza "
                  "del conducto en cada punto, que es la mitad [A] de la fila "
                  "V2b de la Fase 5 y contenido de los PLANOS (Sec. 11, "
@@ -3126,6 +3196,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea V8 para todo punto
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Periodo de retorno del evento extremo de V8 y el umbral de "
                  "no colapso de la via ante desborde",
         justificacion="Decide el periodo de retorno del evento extremo de V8 "
@@ -3158,6 +3229,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # completar
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Angulo de friccion interna del material de cantera del trasdos",
         justificacion="Estimado por correlacion desde granulometria y grado de "
                       "compactacion especificado",
@@ -3176,6 +3248,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # completar
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Parametros de resistencia del suelo de fundacion",
         justificacion="Correlacion desde clasificacion SUCS de calicatas. E.050 "
                       "Art. 20 obliga a usar solo uno: phi=0 en cohesivos, "
@@ -3202,6 +3275,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # completar
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Capacidad portante admisible del terreno de fundacion",
         justificacion="Derivada de c_phi_fundacion, que es a su vez adoptado",
         fuente="PENDIENTE",
@@ -3222,6 +3296,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea la evaluacion de licuefaccion
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Magnitud sismica para el factor de escala de magnitud (MSF)",
         justificacion="El procedimiento simplificado de evaluacion de licuefaccion "
                       "no se alimenta solo de a_max: requiere Mw para el MSF. El "
@@ -3256,6 +3331,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # procedimiento entero pertenece al expediente tecnico.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_INT,
         concepto="Periodo de retorno para la evaluacion de licuefaccion",
         justificacion="Se descarta el sismo de 475 anios de E.030. Al tratarse de "
                       "infraestructura vial regida por el Manual de Puentes, se "
@@ -3288,6 +3364,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor={"inicio": 0.90, "paso": 0.15},
         nivel=NIVEL_PERFIL,
         etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Progresion de diametros normalizados (inicio y paso)",
         justificacion="Decide la progresion de diametros normalizados con que "
                       "el solver recorre el catalogo: inicio en 0.90 m y paso "
@@ -3382,6 +3459,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_SERIE_DE_PARES,
         concepto="Progresion de secciones normalizadas del marco: ancho B y "
                  "altura H interiores de UNA celda",
         justificacion="Decide la progresion de secciones normalizadas del "
@@ -3473,6 +3551,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_PERFIL,
         etiqueta="N->",
+        forma=FORMA_STR,
         concepto="Coeficiente de rugosidad de Manning del marco de concreto: "
                  "fila de la Tabla N 09 que se le aplica por analogia",
         justificacion="Decide que fila de la Tabla N 09 se aplica por "
@@ -3548,6 +3627,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_STR,
         concepto="Detalle de embocadura del marco: carta y escala de la Tabla "
                  "A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, "
                  "esviaje)",
@@ -3637,6 +3717,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_INT,
         concepto="Numero de celdas del marco: una sola o multicelda",
         justificacion="Decide el numero de celdas del marco: una sola o "
                       "multicelda. La fuente (num. 4.1.1.3.4 a) del Manual de "
@@ -3705,6 +3786,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_PERFIL,
         etiqueta="C",
+        forma=FORMA_STR,
         concepto="Coeficiente de perdida de carga en la embocadura (ke) del "
                  "marco de concreto",
         justificacion="Decide de que fila del bloque de cajon de la Tabla C.2 "
@@ -3803,6 +3885,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Espesor de pared del marco de concreto vaciado in situ, m",
         justificacion="Decide el espesor de pared del marco de concreto "
                       "vaciado in situ a nivel de perfil, y bloquea hasta que "
@@ -3898,6 +3981,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor={"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50},
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
         # DIS-HR-D-MAX viajo por este campo mientras estuvo viva -- V9
         # consulta el tope y ni siquiera emite paso, de modo que la via del
         # criterio era la unica --. I2 corrigio la v8 (§3.2, §3.4, Tablero
@@ -4146,6 +4230,7 @@ CRITERIOS: Dict[str, Criterio] = {
         },
         nivel=NIVEL_PERFIL,
         etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Cobertura minima sobre la clave del conducto, por material y "
                  "condicion de pavimento (Tabla 12.6.6.3-1 de AASHTO LRFD)",
         justificacion="Decide con que tabla se cubre la cobertura minima "
@@ -4382,6 +4467,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea 7.A para todo marco
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Cobertura minima de SUELO sobre la clave de un marco de "
                  "concreto vaciado in situ, m (Sec. 7.A). No es el "
                  "recubrimiento de concreto sobre la armadura",
@@ -4500,6 +4586,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea h_eq bajo 5.0 ft
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_STR,
         concepto="Que hacer con un muro de menos de 5.0 ft (1.524 m), altura "
                  "por debajo de la primera fila de las Tablas 3.11.6.4-1 y "
                  "-2 de AASHTO: 'primera_fila' o 'extrapolar_lineal'",
@@ -4551,6 +4638,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea h_eq en 0 < d < 1.0 ft
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_STR,
         concepto="Que columna de la Tabla 3.11.6.4-2 leer cuando la distancia "
                  "del trasdos al borde de calzada cae ESTRICTAMENTE entre "
                  "0.0 ft y 1.0 ft: 'columna_cero' o "
@@ -4608,6 +4696,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor="flexible",
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_CATEGORIA,
         concepto="Condicion de la superficie de rodadura sobre el cruce, para "
                  "elegir la fila de la Tabla 12.6.6.3-1: 'no_pavimentado', "
                  "'flexible' o 'rigido'",
@@ -4724,6 +4813,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "Pared B (AASHTO M 170M-04, Tablas 1 a 5) -- adoptada",
                       "Pared C (AASHTO M 170M-04, Tablas 1 a 5)"),
         etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Espesor de pared del conducto por material, en metros: la "
                  "distancia entre la superficie interior y la exterior que "
                  "separa el diametro hidraulico D del diametro exterior "
@@ -4832,6 +4922,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea la seleccion de Fase 8, items 1-2
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
         # HASTA N1 ESTE CRITERIO DECLARABA `discrepancias=("DIS-HR-A807",)`:
         # era la unica via por la que la discrepancia viva contra la Fase 8
         # de la v8 llegaba a la memoria (via 3, `Criterio.discrepancias`),
@@ -4977,6 +5068,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=17.0,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Peso especifico del material de relleno sobre la clave, "
                  "para el termino ΣW de V7 (peso del prisma de relleno que "
                  "se opone a la flotacion)",
@@ -5043,6 +5135,7 @@ CRITERIOS: Dict[str, Criterio] = {
         nivel=NIVEL_PERFIL,
         sensibilidad=(1.5, 2.0),     # H:V, banda de practica corriente en terraplenes viales
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Inclinacion del talud del terraplen en el punto de cruce, "
                  "como proyeccion horizontal por unidad de altura (H:V), para "
                  "la 'proyeccion de taludes' que Sec. 7.B suma al ancho de "
@@ -5113,6 +5206,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=1.75,                 # multiplicador de d50
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Espesor de la capa de proteccion, como multiplo de d50",
         justificacion="El Manual solo entrega d50 (Laushey). El espesor, la "
                       "longitud y la granulometria completa no estan normados. "
@@ -5141,6 +5235,7 @@ CRITERIOS: Dict[str, Criterio] = {
         nivel=NIVEL_PERFIL,
         sensibilidad=(3.0, 8.0),     # m; banda de practica de aprons de enrocado en conductos de 0.9-1.2 m
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Longitud de la proteccion aguas abajo de la salida",
         justificacion="Laushey (num. 4.1.1.3.7 c) entrega d50 y nada mas. La "
                       "hoja de ruta declara expresamente que el espesor, la "
@@ -5165,6 +5260,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # completar segun esviaje
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_FLOAT,
         concepto="Angulo de las aletas del cabezal",
         justificacion="Ajustado al esviaje del cauce en cada punto",
         fuente="PENDIENTE - Practica corriente de diseno de cabezales; ni el "
@@ -5278,6 +5374,7 @@ CRITERIOS: Dict[str, Criterio] = {
         },
         nivel=NIVEL_PERFIL,
         etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Que fila de la Tabla 2.4.5.3.1-2 (factores gamma_p de "
                  "cargas permanentes) describe a cada estructura de esta "
                  "obra: los tres conductos del catalogo, por material, y el "
@@ -5427,6 +5524,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # comprueba por esa via, que es la unica que queda.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
+        forma=FORMA_FLOAT,
         concepto="Peso especifico del concreto armado del cabezal, kN/m3",
         justificacion="Es el peso propio (carga DC) que resiste el volteo y "
                       "el deslizamiento de Sec. 9.3: sin el no hay momento "
@@ -5454,6 +5552,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea la estabilidad automatica
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Geometria del cabezal (altura H sobre zapata, ancho de "
                  "zapata B, profundidad de desplante D_f, espesor de la "
                  "pantalla en corona y en su arranque, espesor de zapata, "
@@ -5500,6 +5599,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea la capacidad portante en talud
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Factores de capacidad de carga N_cq y N_gamma_q para zapata "
                  "proxima a talud (Meyerhof 1957), leidos de las figuras "
                  "2.8.1.3.1.2c-1 y -2 del Manual de Puentes",
@@ -5556,6 +5656,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea las filas E4 y E5 de Sec. 9.3
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_STR,
         concepto="Metodo de analisis de estabilidad global del muro y del "
                  "talud que lo soporta (equilibrio limite: Bishop "
                  "simplificado, Spencer, Morgenstern-Price...)",
@@ -5619,6 +5720,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea la regla del mayor de 9.4
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_STR,
         concepto="Categoria de material de refuerzo de la Tabla 5.10.1-1 de "
                  "AASHTO LRFD ('A' acero sin recubrir, 'B' epoxico o "
                  "galvanizado, 'C' acero AASHTO M 334M), que decide que "
@@ -5713,6 +5815,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # comprueba por esa via, que es la unica que queda.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
+        forma=FORMA_FLOAT,
         concepto="Factor de modificacion del recubrimiento para la banda "
                  "intermedia de relacion agua-cemento, 0.40 < a/c < 0.50, que "
                  "el Manual de Puentes no imprime",
@@ -5763,6 +5866,7 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea el factor por a/c de 9.4
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="S",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Agresividad quimica del suelo y del agua freatica en el "
                  "corredor, y condiciones de exposicion del concreto, en las "
                  "magnitudes con que E.060 clasifica: sulfato soluble en el "
@@ -5857,6 +5961,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # invocara sin diferirlo, la suite se pone roja aqui.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Fila de la tabla de recubrimientos de AASHTO / Manual de "
                  "Puentes que se contrasta con cada condicion de E.060 "
                  "Art. 7.7.1, para poder evaluar la regla del mayor",
@@ -5918,6 +6023,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # invocara sin diferirlo, la suite se pone roja aqui.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Tabla 5.10.1-1 de AASHTO LRFD (recubrimiento minimo del "
                  "acero principal de refuerzo), completa: las 21 situaciones "
                  "por las tres categorias de material de refuerzo, "
@@ -5971,6 +6077,13 @@ CRITERIOS: Dict[str, Criterio] = {
         valor=None,                 # VACIO: bloquea el escalon de rho a 0.0025
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        # `float` y no un si/no (auditoria adversarial de EXT-5): lo que M9
+        # lee de aqui es la CUANTIA que rige bajo cortante alto -- hace
+        # `float()` sobre el valor --; que el muro ESTE en esa condicion lo
+        # afirma quien llama, como argumento. Con `str` la puerta rechazaba
+        # el 0.0025 y aceptaba 'si', que reventaba en M9 fuera de
+        # ErrorProyecto: justo el defecto PC-14.
+        forma=FORMA_FLOAT,
         concepto="Si el muro del cabezal esta en la condicion de cortante "
                  "alto de E.060 Art. 11.10.10.2, que escalona la cuantia "
                  "horizontal minima de 0.0020 a 0.0025",
@@ -6035,10 +6148,13 @@ CRITERIOS: Dict[str, Criterio] = {
                                "del Art. 14.3.1 o el 0.0025 del "
                                "Art. 11.10.10.2",
         resolucion=Libre(
-            que_lo_fija="el proyectista, declarando si el muro esta en la "
-                        "condicion de cortante alto. El Art. 11.10.10.2 es "
-                        "una sola frase y NO define umbral (NOR-E060-03)",
-            dominio="declaracion si/no",
+            que_lo_fija="el proyectista, declarando la cuantia horizontal "
+                        "minima que rige en un muro en condicion de cortante "
+                        "alto; que el muro este en esa condicion lo afirma "
+                        "quien tiene el diseno estructural delante. El Art. "
+                        "11.10.10.2 es una sola frase y NO define umbral "
+                        "(NOR-E060-03)",
+            dominio="cuantia adimensional > 0",
         ),
     ),
 
@@ -6104,6 +6220,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # comprueba por esa via, que es la unica que queda.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
         concepto="Procedimiento de diseno por flexion y corte de AASHTO LRFD "
                  "Seccion 5: factores de resistencia phi, limites de refuerzo "
                  "y modelo de corte (MCFT / beta-theta) aplicables",
@@ -6169,6 +6286,7 @@ CRITERIOS: Dict[str, Criterio] = {
         # registro y reverificar cada cita, que es trabajo de expediente.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
+        forma=FORMA_STR,
         # LA VENTANA ES SIMBOLICA Y CERRADA, como la de
         # 'homogeneidad_serie_fen': dos opciones y no hay tercera, y vale
         # para las siete fuentes a la vez. Una eleccion por fuente NO cabe
@@ -6808,6 +6926,155 @@ def _verificar_finitud(clave: str, c: Criterio) -> None:
             )
 
 
+def _formas_de(c: Criterio) -> Tuple[str, ...]:
+    """La forma como tupla, sea una o la union de varias."""
+    return c.forma if isinstance(c.forma, tuple) else (c.forma,)
+
+
+def _es_par_de_reales(x: Any) -> bool:
+    return (isinstance(x, (tuple, list)) and len(x) == 2
+            and all(_es_real(e) for e in x))
+
+
+def _cumple_la_forma(forma: str, valor: Any, c: Criterio) -> Optional[str]:
+    """
+    Por que `valor` NO tiene la forma `forma`, o None si la tiene.
+
+    Cada rama es la lectura de UNA forma de `FORMAS`; un texto de vuelta es
+    el motivo que la puerta de declaracion imprime. `bool` queda fuera de
+    `int` y de `float` por lo mismo que en `_es_real`: `True` pasaria por un
+    1 valido. Un `int` SI vale como `float`: los consumidores hacen
+    `float()` sobre el, y quien teclea «30» para un angulo no teclea «30.0».
+    """
+    if forma == FORMA_INT:
+        if isinstance(valor, bool) or not isinstance(valor, int):
+            return "un ENTERO de Python (ni 1.0, ni True, ni '1')"
+        return None
+    if forma == FORMA_FLOAT:
+        if not _es_real(valor):
+            return "un NUMERO real (ni texto, ni bool, ni coleccion)"
+        return None
+    if forma == FORMA_STR:
+        if not isinstance(valor, str) or not valor.strip():
+            return "un TEXTO no vacio"
+        return None
+    if forma == FORMA_CATEGORIA:
+        opciones = c.sensibilidad
+        if not isinstance(valor, str) or valor not in opciones:
+            return ("uno de los textos del conjunto cerrado que declara "
+                    f"`sensibilidad`: {', '.join(map(repr, opciones))}")
+        return None
+    if forma == FORMA_PAR_ORDENADO:
+        if not _es_par_de_reales(valor):
+            return "un PAR (minimo, maximo) de dos numeros reales"
+        if not valor[0] <= valor[1]:
+            return "un PAR (minimo, maximo) en ese orden"
+        return None
+    if forma == FORMA_SERIE_DE_PARES:
+        if isinstance(valor, (str, bytes)) or not isinstance(valor, (tuple, list)):
+            return "una SERIE de pares [(B, H), ...] y no un escalar ni un texto"
+        if not valor:
+            return "una SERIE de pares con al menos un par"
+        if not all(_es_par_de_reales(par) for par in valor):
+            return "una SERIE en la que CADA elemento es un par de dos reales"
+        vistos = [tuple(par) for par in valor]
+        if len(set(vistos)) != len(vistos):
+            return "una SERIE de pares SIN repetidos"
+        return None
+    if forma == FORMA_DICT_CON_CAMPOS:
+        if not isinstance(valor, dict) or not valor:
+            return "un DICCIONARIO no vacio con sus campos"
+        if not all(isinstance(k, str) for k in valor):
+            return "un DICCIONARIO cuyos campos son textos"
+        return None
+    if forma == FORMA_SERIE_DE_CLAVES:
+        if isinstance(valor, (str, bytes)) or not isinstance(valor, (tuple, list)):
+            return "una TUPLA de claves de fila (textos), no un texto suelto"
+        if not valor or not all(isinstance(k, str) and k.strip() for k in valor):
+            return "una TUPLA no vacia de claves de fila (textos no vacios)"
+        if len(set(valor)) != len(valor):
+            return "una TUPLA de claves de fila SIN repetidos"
+        return None
+    raise ValueError(f"forma {forma!r} sin rama de comprobacion")
+
+
+def _verificar_forma(clave: str, c: Criterio) -> None:
+    """
+    La FORMA del valor, exigida a toda entrada, tenga o no ventana numerica
+    (EXT-5). Tres reglas:
+
+    1. `forma` es obligatoria y es una de `FORMAS`, o una tupla de ellas
+       (la union: `k_v`).
+    2. Es COHERENTE con la ventana: una sensibilidad numerica solo defiende
+       un `int`, un `float` o un `par_ordenado`; una ventana por campo, un
+       `dict_con_campos`; y una `categoria` exige que `sensibilidad` sea la
+       tupla de textos del conjunto cerrado --- que es donde CLAUDE.md dice
+       que vive el conjunto cerrado de un criterio ---.
+    3. El valor, si esta, cumple ALGUNA de las formas declaradas. Si no,
+       `ValueError` con el motivo de cada forma (contrato SIS-E-05): es el
+       rechazo en la puerta que hasta aqui llegaba tarde, en M2/M4, como un
+       `TypeError` que tumbaba la corrida.
+
+    Por que va aqui y no en cada consumidor: los consumidores YA validan
+    (`M2.numero_de_celdas`, `M2.progresion_de_cajon`, `M9.k_v_declarado`), y
+    cada uno lo hace a su manera y solo cuando le toca correr. La forma en
+    la ficha es lo que permite rechazar con el mismo rasero por los tres
+    caminos lo que NO TIENE LA ESTRUCTURA que el consumidor exige.
+
+    HASTA DONDE LLEGA, dicho para que no se sobreentienda: la forma es la
+    ESTRUCTURA, no el dominio. Un entero negativo para `n_celdas_cajon`, un
+    par con un lado negativo en `secciones_cajon_normalizadas` o un
+    `TW_receptor` de -1.0 m pasan esta guardia; los dos primeros los atrapa
+    el consumidor (`DatoInvalidoError`), y el tercero hoy no lo atrapa nadie
+    (medido en la auditoria adversarial de EXT-5: `cli.resolver` lo pasa
+    literal a `M3.tw_seccion_1_3`). El dominio se defiende con la ventana de
+    sensibilidad donde la hay, y con la guardia del consumidor donde no.
+    """
+    formas = _formas_de(c)
+    if not c.forma or not formas or not all(f in FORMAS for f in formas):
+        raise ValueError(
+            f"'{clave}' declara forma={c.forma!r}, que no es ninguna de "
+            f"{FORMAS} ni una tupla de ellas. Toda entrada dice que "
+            "ESTRUCTURA tiene su valor: es lo que la puerta de declaracion "
+            "exige antes de que el consumidor lo reviente"
+        )
+    s = c.sensibilidad
+    if isinstance(s, dict) and formas != (FORMA_DICT_CON_CAMPOS,):
+        raise ValueError(
+            f"'{clave}' declara una ventana por campo y forma={c.forma!r}: "
+            f"una ventana por campo solo defiende un `{FORMA_DICT_CON_CAMPOS}`"
+        )
+    if _rango_numerico(s) is not None and not set(formas) <= {
+            FORMA_INT, FORMA_FLOAT, FORMA_PAR_ORDENADO}:
+        raise ValueError(
+            f"'{clave}' declara un rango numerico {s!r} y forma={c.forma!r}: "
+            f"un rango numerico solo defiende `{FORMA_INT}`, `{FORMA_FLOAT}` "
+            f"o `{FORMA_PAR_ORDENADO}`"
+        )
+    if FORMA_CATEGORIA in formas and not (
+            isinstance(s, tuple) and s
+            and all(isinstance(x, str) and x for x in s)):
+        raise ValueError(
+            f"'{clave}' es una `{FORMA_CATEGORIA}` y su `sensibilidad` es "
+            f"{s!r}: el conjunto cerrado de una categoria es una tupla de "
+            "textos en `sensibilidad`, que es donde M11 lo imprime"
+        )
+    if c.valor is None:
+        return
+    motivos = []
+    for forma in formas:
+        motivo = _cumple_la_forma(forma, c.valor, c)
+        if motivo is None:
+            return
+        motivos.append(f"`{forma}`: {motivo}")
+    raise ValueError(
+        f"'{clave}' recibe {c.valor!r}, que no tiene la forma que el "
+        f"criterio declara ({' | '.join(motivos)}). Se rechaza en la puerta "
+        "de declaracion: aceptarlo dejaria que el consumidor lo reventara "
+        "despues con una excepcion fuera de ErrorProyecto"
+    )
+
+
 def _verificar_discrepancias(clave: str, c: Criterio) -> None:
     """
     Que los ids de `Criterio.discrepancias` existan en el registro y sigan
@@ -6967,6 +7234,10 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
 
     _verificar_nivel(clave, c)
     _verificar_sensibilidad(clave, c)
+    # LA FORMA VA ULTIMA a proposito: las guardias de arriba dicen cosas mas
+    # precisas cuando aplican (la ventana, el par, el bool), y la forma es la
+    # ultima palabra sobre lo que ninguna de ellas mira.
+    _verificar_forma(clave, c)
 
 
 def _verificar_nivel(clave: str, c: Criterio) -> None:

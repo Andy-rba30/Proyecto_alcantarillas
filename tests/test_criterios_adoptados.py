@@ -418,6 +418,21 @@ def test_los_parametros_sensibilizables_traen_rango_de_dos_extremos():
 # recibir valor: el archivo al importarse, la declaracion en caliente de la
 # GUI, y la escritura permanente. Los tests de abajo entran por los tres.
 
+def _forma_de_prueba(valor):
+    """La forma que corresponde al valor de prueba (EXT-5: `forma` es obligatoria)."""
+    if isinstance(valor, bool) or valor is None:
+        return ca.FORMA_FLOAT
+    if isinstance(valor, int):
+        return ca.FORMA_INT
+    if isinstance(valor, str):
+        return ca.FORMA_STR
+    if isinstance(valor, dict):
+        return ca.FORMA_DICT_CON_CAMPOS
+    if isinstance(valor, (tuple, list)):
+        return ca.FORMA_PAR_ORDENADO
+    return ca.FORMA_FLOAT
+
+
 def _criterio_de_prueba(**campos):
     # `resolucion` es obligatoria desde S15 (Sec. 4.3) y `nivel` desde S20:
     # el criterio de prueba declara los mas simples, porque lo que estos
@@ -429,6 +444,7 @@ def _criterio_de_prueba(**campos):
                 fuente="f", resolucion=ca.Libre(que_lo_fija="prueba"),
                 nivel=ca.NIVEL_EXPEDIENTE)
     base.update(campos)
+    base.setdefault("forma", _forma_de_prueba(base["valor"]))
     return ca.Criterio(**base)
 
 
@@ -704,10 +720,17 @@ def test_la_escritura_permanente_se_niega_ante_un_valor_multilinea(
         "se nego a escribir y aun asi cambio el valor en memoria")
 
 
-@pytest.mark.parametrize("clave", ["F_pga", "hds5_embocadura_hdpe",
-                                   "diametros_normalizados", "D_max_catalogo"])
+# El valor nuevo tiene la FORMA del criterio (EXT-5: la puerta la exige
+# tambien al escribir); lo que se prueba aqui es el patron de una linea con
+# comas, no la forma.
+@pytest.mark.parametrize("clave, nuevo", [
+    ("F_pga", ("C", "D")),
+    ("hds5_embocadura_hdpe", {"K": 0.0098, "M": 2.0}),
+    ("diametros_normalizados", {"inicio": 0.9, "paso": 0.15}),
+    ("D_max_catalogo", {"tmc": 2.1, "hdpe": 1.5}),
+])
 def test_la_escritura_permanente_se_niega_ante_un_valor_de_UNA_LINEA_con_comas(
-        tmp_path, criterios_restaurados, clave):
+        tmp_path, criterios_restaurados, clave, nuevo):
     """
     EL HUECO QUE DEJABA EL TEST DE ARRIBA, y era el peor de los dos.
 
@@ -733,7 +756,7 @@ def test_la_escritura_permanente_se_niega_ante_un_valor_de_UNA_LINEA_con_comas(
     copia.write_text(original, encoding="utf-8")
 
     with pytest.raises(ValueError, match="sin poder importarse"):
-        ca.escribir_valor_en_archivo(clave, "C", ruta=str(copia))
+        ca.escribir_valor_en_archivo(clave, nuevo, ruta=str(copia))
 
     texto = copia.read_text(encoding="utf-8")
     assert texto == original, "se nego a escribir pero el archivo ya se toco"
@@ -1722,8 +1745,9 @@ class TestPisarUnValorDelArchivo:
         toda su razon de ser: sin el, la memoria imprime «el archivo no los
         tiene» sobre una fila cuyo archivo si lo tiene.
         """
+        # Un vacio de forma `float` (EXT-5): 1.0 no es una clase de sitio.
         vacio = next(c for c, v in ca.CRITERIOS.items() if v.valor is None
-                     and v.sensibilidad is None)
+                     and v.sensibilidad is None and v.forma == ca.FORMA_FLOAT)
         lleno = next(c for c, v in ca.CRITERIOS.items()
                      if isinstance(v.valor, float) and v.sensibilidad is None)
 
@@ -1764,7 +1788,7 @@ class TestPisarUnValorDelArchivo:
     def test_quitar_un_rellenado_SI_vuelve_a_bloquear(self, _limpia_overrides):
         """La otra mitad: el caso en que el mensaje viejo si era cierto."""
         vacio = next(c for c, v in ca.CRITERIOS.items() if v.valor is None
-                     and v.sensibilidad is None)
+                     and v.sensibilidad is None and v.forma == ca.FORMA_FLOAT)
         ca.establecer_valor_dinamico(vacio, 1.0)
         ca.quitar_valor_dinamico(vacio)
         with pytest.raises(CriterioPendienteError):

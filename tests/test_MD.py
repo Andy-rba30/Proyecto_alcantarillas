@@ -870,7 +870,7 @@ def test_la_premisa_de_que_M5_no_existe_no_vuelve_como_afirmacion():
 from modelos import FormaSeccion                                  # noqa: E402
 from modulos.M2_material import numero_de_celdas                  # noqa: E402
 from modulos.MD import _caudal_por_barril                         # noqa: E402
-from tests.apoyo.criterios import declarados, sin_valor           # noqa: E402
+from tests.apoyo.criterios import con_valor, declarados, sin_valor  # noqa: E402
 
 _CAJON_MD = {
     "embocadura_cajon": "cajon_concreto_aletas_30_75",
@@ -919,7 +919,12 @@ def test_un_numero_de_celdas_que_no_es_un_entero_mayor_que_cero_es_invalido(
     quejarse y la memoria habria impreso «2.5 celdas». Un barril y medio no se
     construye.
     """
-    with declarados({**_CAJON_MD, "n_celdas_cajon": celdas}):
+    # `con_valor` ESQUIVA la puerta de declaracion, que desde EXT-5 rechaza
+    # 2.5 y 'dos' por su forma antes de que M2 los vea: lo que se prueba aqui
+    # es la guardia del CONSUMIDOR, que sigue siendo la segunda linea.
+    with declarados(_CAJON_MD), con_valor(
+            "n_celdas_cajon", celdas,
+            motivo="prueba de la guardia de M2 con un valor que la puerta ya rechaza"):
         with pytest.raises(DatoInvalidoError) as exc:
             numero_de_celdas(_marco_md())
     assert "ENTERO" in exc.value.motivo

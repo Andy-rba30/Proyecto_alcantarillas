@@ -32,7 +32,7 @@ from modulos.M2_material import (CRITERIO_ESPESOR_PARED, catalogo,
                                  espesor_pared, materiales_candidatos,
                                  siguiente_diametro, siguiente_seccion)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
-from tests.apoyo.criterios import declarados
+from tests.apoyo.criterios import con_valor, declarados
 from tests.fixtures.casos_patron import CP11_SERIES_NOMINALES
 
 CSV_VALIDO = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
@@ -569,7 +569,12 @@ def test_siguiente_seccion_del_tubo_no_lee_ningun_criterio_del_cajon():
 ])
 def test_una_declaracion_de_otra_familia_o_con_errata_es_dato_invalido(
         clave, valor, en_el_mensaje):
-    with declarados({**DECLARACIONES_CAJON, clave: valor}):
+    # `con_valor` para la clave probada: la puerta de declaracion rechaza
+    # desde EXT-5 lo que no tiene la forma del criterio, y lo que se prueba
+    # aqui es la guardia de M2, que sigue detras.
+    resto = {k: v for k, v in DECLARACIONES_CAJON.items() if k != clave}
+    with declarados(resto), con_valor(
+            clave, valor, motivo="prueba de la guardia de M2 con una errata"):
         with pytest.raises(DatoInvalidoError) as exc:
             _marco()
     assert exc.value.campo == clave
@@ -665,12 +670,12 @@ def test_un_espesor_declarado_sin_separar_por_material_es_dato_invalido(
     un `TypeError` -- un fallo de programa para la GUI -- en vez de salir
     como problema del expediente con el nombre del criterio.
     """
-    ca.establecer_valor_dinamico(CRITERIO_ESPESOR_PARED, declaracion)
-    try:
+    # `con_valor`: la puerta rechaza desde EXT-5 lo que no es un dict; aqui
+    # se prueba que la guardia de M2 sigue detras de ella.
+    with con_valor(CRITERIO_ESPESOR_PARED, declaracion,
+                   motivo="prueba de la guardia de M2 con una forma que la puerta rechaza"):
         with pytest.raises(DatoInvalidoError) as exc:
             catalogo(TipoMaterial.CONCRETO_REFORZADO)
-    finally:
-        ca.quitar_valor_dinamico(CRITERIO_ESPESOR_PARED)
 
     assert exc.value.campo == CRITERIO_ESPESOR_PARED
     assert "una tabla de espesores por material" in exc.value.motivo

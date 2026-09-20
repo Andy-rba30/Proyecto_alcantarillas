@@ -240,7 +240,7 @@ import cli  # noqa: E402
 import criterios_adoptados as ca  # noqa: E402
 import declaracion as dec  # noqa: E402
 import variables_entrada as ve  # noqa: E402
-from modelos import ErrorProyecto, Familia  # noqa: E402
+from modelos import Derivada, ErrorProyecto, Familia  # noqa: E402
 # Solo para PREGUNTARLE si weasyprint cargo (`_ayuda_del_pdf`). No se le pide
 # ningun calculo: la exportacion sigue pasando por `cli.exportar_pdf`, que es
 # la misma puerta que usa la linea de comandos.
@@ -261,7 +261,7 @@ from gui import ayuda_entrada as ayuda_ent  # noqa: E402
 from gui import ventana_normativa as ventana_norma  # noqa: E402
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR,  # noqa: E402
                              COLOR_OK, BotonAccion, BotonAyuda, MarcoScroll,
-                             Tooltip)
+                             Tooltip, interpretar_texto_declarado)
 
 try:
     import ttkbootstrap as tb
@@ -283,6 +283,14 @@ FORMATO_SESION = 2
 # valor lanza excepcion en vez de tomar un defecto: un bloqueo se declara.
 MOTIVO_SIN_CRITERIO = "no hay ningun criterio seleccionado en la tabla"
 MOTIVO_NO_DECLARADO = "el criterio no esta declarado para esta corrida"
+# El criterio que NO SE ELIGE (EXT-V-04, la mitad de la pestaña 2): su valor
+# lo deriva el programa de otras variables ya declaradas, y pisarlo por aqui
+# pondria en la memoria una tabla que la fuente no imprime. La ventana
+# normativa lo rotula «NO EDITABLE» y el nucleo lo rechaza con ValueError;
+# esta pestaña, hasta EXT-5, encendia los dos botones que escriben y pedia
+# confirmar una escritura permanente que no iba a ocurrir. El motivo se arma
+# con `_motivo_derivado` para nombrar de que se deriva.
+MOTIVO_DERIVADO = "se deriva de {de}; edite sus entradas (regla: {regla})"
 MOTIVO_SIN_CORRIDA = "todavia no se ejecuto el pipeline: no hay informe que exportar"
 MOTIVO_EJECUTANDO = "la corrida esta en marcha"
 MOTIVO_SIN_PUNTO = "seleccione un punto en la tabla de arriba"
@@ -1270,11 +1278,18 @@ class ExpedienteApp:
         ttk.Label(f_declarar, text="Valor nuevo:").grid(row=1, column=0, sticky="w",
                                                           padx=(0, 6), pady=6)
         self.valor_declarado_var = tk.StringVar()
-        ent_val = ttk.Entry(f_declarar, textvariable=self.valor_declarado_var)
-        ent_val.grid(row=1, column=1, sticky="we", pady=6)
-        Tooltip(ent_val, "Numero (con punto decimal) o texto, segun lo que pida el\n"
-                         "criterio. Se intenta interpretar como numero; si no es\n"
-                         "posible, se guarda como texto tal cual se escribe.")
+        # Es atributo porque `_al_seleccionar_criterio` lo APAGA cuando el
+        # criterio es `Derivada`: un campo que se puede teclear y cuyo valor
+        # nunca se va a aceptar es el mismo bloqueo mudo que `BotonAccion`
+        # existe para impedir.
+        self.ent_valor_declarado = ttk.Entry(
+            f_declarar, textvariable=self.valor_declarado_var)
+        self.ent_valor_declarado.grid(row=1, column=1, sticky="we", pady=6)
+        Tooltip(self.ent_valor_declarado,
+                "Entero ('1'), numero con punto o coma decimal ('0,20'),\n"
+                "lista de pares ('[[1.20, 0.90], [1.50, 1.20]]') o texto,\n"
+                "segun la FORMA que declara el criterio. Lo que no tenga esa\n"
+                "forma se rechaza aqui, no en el calculo.")
 
         # DOS FILAS DE BOTONES, y la segunda no es estetica: las cuatro en
         # una sola sumaban mas ancho que la ventana en su tamano por defecto
@@ -1679,10 +1694,30 @@ class ExpedienteApp:
         # Lo que sostiene que ahora se pueda no es este boton: es que un pisado
         # se rotula distinto (`_estado_criterio`), se filtra aparte y sale en
         # la memoria en su propio bloque con el valor del archivo al lado.
-        self.btn_aplicar_corrida.habilitar()
+        # CARA DE SOLO LECTURA PARA EL CRITERIO QUE NO SE ELIGE (EXT-V-04,
+        # la mitad de la pestaña 2). El nucleo ya lo rechazaba; lo que faltaba
+        # era que la pestaña lo DIJERA antes de que el proyectista tecleara y
+        # confirmara una escritura permanente que no iba a ocurrir. Los dos
+        # botones que escriben se apagan con el motivo, el campo no se
+        # teclea, y la ventana normativa sigue abriendose: es donde se lee de
+        # que se deriva.
+        derivado = isinstance(c.resolucion, Derivada)
+        if derivado:
+            motivo = self._motivo_derivado(c.resolucion)
+            self.btn_aplicar_corrida.deshabilitar(motivo)
+            self.btn_guardar_archivo.deshabilitar(motivo)
+            self.ent_valor_declarado.configure(state="disabled")
+        else:
+            self.btn_aplicar_corrida.habilitar()
+            self.btn_guardar_archivo.habilitar()
+            self.ent_valor_declarado.configure(state="normal")
         self.btn_quitar_declarado.estado(en_caliente, MOTIVO_NO_DECLARADO)
-        self.btn_guardar_archivo.habilitar()
         self.btn_ventana_norma.habilitar()
+
+    @staticmethod
+    def _motivo_derivado(resolucion):
+        return MOTIVO_DERIVADO.format(de=", ".join(resolucion.de),
+                                      regla=resolucion.regla)
 
     def _abrir_ventana_normativa(self, _evt=None):
         """
@@ -1721,61 +1756,34 @@ class ExpedienteApp:
     def _interpretar_valor_declarado(self, texto):
         """
         Interpreta lo que el proyectista teclea en el campo de declaracion en
-        caliente: un numero si lo parece (admitiendo la coma decimal, que es
-        como se escribe aqui), y el texto tal cual si no.
+        caliente, con EL MISMO parser que la ventana emergente:
+        `gui.componentes.interpretar_texto_declarado` (EXT-G-01, PC-13).
+        Entero, real con coma o punto decimal, literal estructurado o texto;
+        la regla entera y la politica de coma y miles estan escritas alli.
 
-        SIS-E-04. El `ValueError` de abajo NO es de la taxonomia de
-        `ErrorProyecto`, y es deliberado: un widget vacio todavia no es un
-        dato del expediente -- no hay columna que añadir ni celda que
-        corregir --, y la excepcion NUNCA sale de esta clase: los dos
-        llamadores (`_aplicar_valor_corrida` y `_guardar_valor_en_archivo`) la
-        atrapan tres lineas mas abajo y la convierten en el rotulo rojo del
-        panel. Es control de flujo de un widget, no un problema que la GUI
-        tenga que distinguir de un fallo del programa, que es para lo que
-        CLAUDE.md pide la taxonomia.
+        SIS-E-04. El `ValueError` NO es de la taxonomia de `ErrorProyecto`,
+        y es deliberado: un widget vacio todavia no es un dato del expediente
+        -- no hay columna que añadir ni celda que corregir --, y la excepcion
+        NUNCA sale de esta clase: los dos llamadores (`_aplicar_valor_corrida`
+        y `_guardar_valor_en_archivo`) la atrapan tres lineas mas abajo y la
+        convierten en el rotulo rojo del panel.
 
         DIVERGE de `cli.declarar_criterios`, y esta escrito para que se vea:
         la CLI resuelve el texto ENTERO con `ast.literal_eval` -- y asi leeria
-        '1,5' como la TUPLA (1, 5) -- mientras aqui se admite la coma decimal,
-        que para quien teclea en la ventana es lo natural. Unificar las dos
-        por el lado de la CLI convertiria '1,5' en una tupla valida en
-        silencio, que es una regresion peor que la duplicacion. La divergencia
-        esta fijada por un test de contrato en tests/test_gui_contrato.py.
+        '1,5' como la TUPLA (1, 5), que desde EXT-1 rechaza en vez de aceptar
+        en silencio -- mientras aqui se admite la coma decimal, que para
+        quien teclea en la ventana es lo natural. Unificar las dos por el
+        lado de la CLI convertiria '1,5' en una tupla valida en silencio, que
+        es una regresion peor que la duplicacion. La divergencia esta fijada
+        por un test de contrato en tests/test_gui_contrato.py; el parser
+        compartido es GUI-GUI.
 
-        POR QUE ADMITE ADEMAS UN LITERAL ESTRUCTURADO (C8, punto 6). Con solo
-        las dos ramas de arriba, la GUI NO PODIA DECLARAR
-        'secciones_cajon_normalizadas' --- la serie de pares (B, H) del
-        catalogo del cajon ---: lo tecleado volvia como CADENA, la guardia de
-        `criterios_adoptados` la aceptaba, y el bucle de MD se detenia despues
-        con un `DatoInvalidoError` correcto pero sin salida, porque no habia
-        forma de teclear una lista. O sea que uno de los siete criterios de la
-        Familia C quedaba fuera de la declaracion en caliente sin que nada lo
-        dijera: la ventana ofrecia el campo y el campo no servia.
-
-        Y NO REABRE EL AGUJERO DEL '1,5'. La rama estructurada solo se toma
-        cuando el texto ABRE con un delimitador de coleccion --- '[', '(' o
-        '{' ---, que es algo que ningun decimal escrito con coma puede hacer.
-        La ambiguedad de la CLI vive en el caso SIN delimitadores, y ese caso
-        sigue yendo por la rama del float. Un literal mal cerrado sale como el
-        `ValueError` de esta funcion, o sea como el rotulo rojo del panel, y
-        no como traza de Tk.
+        Hasta EXT-5 este metodo tenia su propio cuerpo y la emergente otro, y
+        los dos hacian `float()` sobre todo lo que parecia numero: '1' era
+        1.0 en los dos, y `M2.numero_de_celdas` exige un entero, de modo que
+        desde la ventana ningun marco pasaba de M2 (PC-13).
         """
-        texto = texto.strip()
-        if texto == "":
-            raise ValueError("El valor no puede quedar vacio.")
-        if texto[0] in "[({":
-            try:
-                return ast.literal_eval(texto)
-            except (ValueError, SyntaxError) as exc:
-                raise ValueError(
-                    f"«{texto}» empieza como una lista, tupla o dict y no se "
-                    f"puede leer como tal ({exc}). Los pares del catalogo del "
-                    "cajon se escriben asi: [[1.20, 0.90], [1.50, 1.20]]"
-                ) from None
-        try:
-            return float(texto.replace(",", "."))
-        except ValueError:
-            return texto
+        return interpretar_texto_declarado(texto)
 
     def _aplicar_valor_corrida(self):
         clave = self._clave_criterio_seleccionado

@@ -31,6 +31,8 @@ un bloqueo, y en este proyecto un bloqueo se declara.
 
 from __future__ import annotations
 
+import ast
+import re
 import tkinter as tk
 from tkinter import ttk
 
@@ -57,6 +59,108 @@ COLOR_AYUDA_ACTIVO = "#21618c"
 
 COLOR_BOTON_APAGADO_FONDO = "#dfe3e6"
 COLOR_BOTON_APAGADO_TEXTO = "#3d4b59"
+
+
+# ---------------------------------------------------------------------------
+# El parser GUI-GUI: lo que se teclea en un campo, como valor
+# ---------------------------------------------------------------------------
+# UN SOLO PARSER PARA LAS DOS VENTANAS (EXT-G-01, PC-13). Hasta EXT-5 la
+# pestaña 2 (`ExpedienteApp._interpretar_valor_declarado`) y la emergente
+# (`VentanaNormativa._valor_tecleado`) tenian cada una el suyo, y el docstring
+# de la segunda decia «misma regla que la pestaña» siendo falso desde C8: la
+# pestaña leia un literal estructurado y la emergente no, de modo que
+# '[[1.20, 0.90]]' era una lista en un panel y una cadena en el otro. Y los
+# dos hacian `float()` sobre TODO lo que parecia numero, de modo que '1' era
+# 1.0 en los dos y la GUI no podia declarar el entero que
+# `M2.numero_de_celdas` exige (PC-13): desde la ventana, ningun marco pasaba
+# de M2.
+#
+# LA REGLA, en el orden en que se aplica:
+#
+#   1. vacio                          -> ValueError (SIS-E-04: control de
+#                                        flujo del widget, no ErrorProyecto)
+#   2. abre con '[', '(' o '{'        -> `ast.literal_eval`; mal cerrado ->
+#                                        ValueError (nunca una traza de Tk)
+#   3. `[+-]?\d+`                     -> int
+#   4. con separador decimal ('.' o ',') o exponente -> float
+#   5. parece un numero y no es 3 ni 4 (dos separadores, '1.200,50',
+#      '1,000,000', '--1', '1e')      -> ValueError, diciendo la politica
+#   6. cualquier otro texto           -> el texto, tal cual (la clave de una
+#                                        fila, un metodo, una categoria)
+#
+# POLITICA DE COMA Y MILES. Se admite la coma DECIMAL, que es como se
+# teclea aqui, y por eso '1,5' es 1.5 y '1,200' es 1.2 (el dictamen lo mide y
+# no lo cuenta como defecto). NO se admite separador de miles: '1.200,50' no
+# es 1200.5 ni 1.2, y leerlo como cualquiera de las dos seria adivinar. Se
+# rechaza nombrando la politica.
+#
+# 'nan', 'inf' e 'Infinity' NO se leen como numero: caen en la regla 6 como
+# TEXTO, y la puerta de declaracion los rechaza por su forma (un `float` no
+# admite texto) o por `_verificar_finitud`, que lee la cadena. Es lo que da a
+# 'nan' EL MISMO VEREDICTO al escribir y al declarar (PC-14): antes
+# `float('nan')` tenia exito al teclear y el campo se pintaba de ambar,
+# mientras el boton lo rechazaba despues. Un infinito NUMERICO si puede
+# salir de aqui --- '1e400' es un real con exponente y `float()` lo desborda
+# a inf ---, y lo atrapan las mismas dos guardias: `_verificar_finitud` en la
+# puerta y `_como_numero` al escribir, que solo admite finitos.
+#
+# LA DIVERGENCIA CON LA CLI SE CONSERVA. `cli.declarar_criterios` resuelve
+# el texto ENTERO con `ast.literal_eval`, y '1,5' alli no es 1.5: es un
+# rechazo explicito desde EXT-1 (PC-34). El parser compartido es GUI-GUI y
+# no CLI-GUI, y `tests/test_gui_contrato.py` fija esa divergencia a
+# proposito: unificar por el lado de la CLI convertiria la coma decimal en
+# tupla en silencio, que es peor que dos parsers.
+# `re.ASCII`: sin la bandera, `\d` casa tambien digitos arabes o de ancho
+# completo y `int('١')` los acepta en silencio (auditoria adversarial de
+# EXT-5). Un numero tecleado aqui son cifras ASCII, y nada mas.
+_ENTERO = re.compile(r"^[+-]?\d+$", re.ASCII)
+_REAL = re.compile(r"^[+-]?(\d+[.,]\d*|[.,]\d+|\d+)([eE][+-]?\d+)?$", re.ASCII)
+_PARECE_NUMERO = re.compile(r"^[+-]?[\d.,eE+-]*\d[\d.,eE+-]*$", re.ASCII)
+_ABRE_COLECCION = "[({"
+
+POLITICA_DE_COMA = (
+    "se admite la coma decimal ('1,5' es 1.5) y NO se admite separador de "
+    "miles ni mas de un separador: '1.200,50' no es 1200.5 ni 1.2, y leerlo "
+    "como cualquiera de las dos seria adivinar. Escriba '1200,50' o '1200.50'"
+)
+
+
+def interpretar_texto_declarado(texto):
+    """
+    Lo que el proyectista teclea en un campo de declaracion, como valor.
+
+    `int` para un entero, `float` solo con separador decimal o exponente,
+    la lista/tupla/dict de un literal que abre con delimitador, y el texto
+    tal cual para lo que no parece numero. `ValueError` para lo que no se
+    puede leer: vacio, literal mal cerrado, o un numero con separador de
+    miles o dos separadores (la politica esta en `POLITICA_DE_COMA`).
+
+    El `ValueError` NO es de la taxonomia de `ErrorProyecto`, y es
+    deliberado (SIS-E-04): un widget vacio o un literal a medio teclear
+    todavia no es un dato del expediente, y los llamadores lo convierten en
+    el rotulo rojo del panel a tres lineas de aqui.
+    """
+    texto = texto.strip()
+    if texto == "":
+        raise ValueError("El valor no puede quedar vacio.")
+    if texto[0] in _ABRE_COLECCION:
+        try:
+            return ast.literal_eval(texto)
+        except (ValueError, SyntaxError, TypeError, MemoryError,
+                RecursionError) as exc:
+            raise ValueError(
+                f"«{texto}» empieza como una lista, tupla o dict y no se "
+                f"puede leer como tal ({exc}). Los pares del catalogo del "
+                "cajon se escriben asi: [[1.20, 0.90], [1.50, 1.20]]"
+            ) from None
+    if _ENTERO.match(texto):
+        return int(texto)
+    if _REAL.match(texto):
+        return float(texto.replace(",", "."))
+    if _PARECE_NUMERO.match(texto):
+        raise ValueError(f"«{texto}» parece un numero y no se puede leer: "
+                         f"{POLITICA_DE_COMA}")
+    return texto
 
 
 class Tooltip:

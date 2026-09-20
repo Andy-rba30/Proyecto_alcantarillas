@@ -54,7 +54,8 @@ for _ruta in (RAIZ, SRC):
 import declaracion as dec  # noqa: E402
 import ventana_normativa as vn  # noqa: E402
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR, COLOR_OK,  # noqa: E402
-                             CampoValidable, MarcoScroll, Tooltip)
+                             CampoValidable, MarcoScroll, Tooltip,
+                             interpretar_texto_declarado)
 
 # Los rotulos de la carcasa. Son texto de pantalla, no valores de proyecto:
 # lo que la ventana AFIRMA sobre una norma sale siempre del registro.
@@ -404,12 +405,15 @@ class VentanaNormativa(tk.Toplevel):
         """
         if not texto.strip():
             return (None, "")
+        # EL MISMO PARSER QUE DECIDE AL ACEPTAR (EXT-5, PC-14): lo que aqui
+        # se lee es lo que `_valor_tecleado` va a entregar al boton, de modo
+        # que 'nan' recibe el mismo veredicto al escribir y al declarar. Con
+        # `float()` aqui, 'nan' tenia exito al teclear (ambar) y el boton lo
+        # rechazaba despues: dos veredictos para la misma tecla.
         try:
-            valor = float(texto.replace(",", "."))
-        except ValueError:
-            return (COLOR_ERROR,
-                    "Este valor esta acotado por un rango que una fuente "
-                    "escribe: hace falta un numero.")
+            valor = interpretar_texto_declarado(texto)
+        except ValueError as exc:
+            return (COLOR_ERROR, str(exc))
         resultado = dec.validar_en_rango(self.clave, valor)
         color = {dec.Estado.VALIDO: None, dec.Estado.AVISO: COLOR_AVISO,
                  dec.Estado.INVALIDO: COLOR_ERROR}[resultado.estado]
@@ -536,17 +540,13 @@ class VentanaNormativa(tk.Toplevel):
 
     def _valor_tecleado(self):
         """
-        El texto del campo como valor. Misma regla que la pestana de criterios
-        de `gui/app.py`: numero si lo parece -- admitiendo la coma decimal, que
-        es como se teclea aqui -- y el texto tal cual si no.
+        El texto del campo como valor, con EL MISMO parser que la pestaña de
+        criterios de `gui/app.py`: `gui.componentes.interpretar_texto_declarado`
+        (EXT-G-01). Hasta EXT-5 este docstring decia «misma regla que la
+        pestaña» y era falso desde C8: la pestaña leia un literal
+        estructurado y esta ventana no, y las dos convertian '1' en 1.0.
         """
-        texto = self.valor_var.get().strip()
-        if texto == "":
-            raise ValueError("El valor no puede quedar vacio.")
-        try:
-            return float(texto.replace(",", "."))
-        except ValueError:
-            return texto
+        return interpretar_texto_declarado(self.valor_var.get())
 
     def _declarar(self):
         try:

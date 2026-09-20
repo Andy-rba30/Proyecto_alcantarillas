@@ -1217,7 +1217,7 @@ class TestBloqueDeValoresPisados:
     def test_un_vacio_rellenado_NO_cae_en_el_bloque_de_pisados(self):
         """La frase «el archivo no los tiene» sigue siendo cierta de los suyos."""
         vacio = next(c for c, v in ca.CRITERIOS.items() if v.valor is None
-                     and v.sensibilidad is None)
+                     and v.sensibilidad is None and v.forma == ca.FORMA_FLOAT)
         ca.establecer_valor_dinamico(vacio, 1.0)
         try:
             bloque = M11.bloque_pendientes(M11.tableros_pendientes(), (), _contexto())

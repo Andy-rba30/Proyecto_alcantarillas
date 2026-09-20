@@ -813,12 +813,12 @@ def test_una_seccion_de_referencia_distinta_de_la_llena_se_detiene(seleccion):
     Es DatoInvalidoError sobre el nombre del criterio, no CriterioPendiente:
     el criterio esta declarado, lo que no existe es el procedimiento.
     """
-    ca.establecer_valor_dinamico(CRITERIO_GEOMETRIA_SALIDA, seleccion)
-    try:
+    # `con_valor`: la puerta rechaza '' por su forma desde EXT-5 (un texto
+    # vacio no es un texto); lo que se prueba aqui es la guardia de M4.
+    with con_valor(CRITERIO_GEOMETRIA_SALIDA, seleccion,
+                   motivo="seleccion que M4 no implementa, para probar su guardia"):
         with pytest.raises(DatoInvalidoError) as exc:
             control_salida(Q=1.0, seccion=SeccionCircular(0.90), S=0.005, L=20.0, TW=0.0, n=0.013)
-    finally:
-        ca.quitar_valor_dinamico(CRITERIO_GEOMETRIA_SALIDA)
 
     assert exc.value.campo == CRITERIO_GEOMETRIA_SALIDA
     assert exc.value.valor == seleccion
@@ -1309,7 +1309,7 @@ def test_bajo_forma_2_la_transicion_puede_decrecer_con_el_caudal():
 # crown»: un coeficiente declarado a secas es indecidible.
 
 from modelos import FormaSeccion, SeccionRectangular          # noqa: E402
-from tests.apoyo.criterios import declarados                  # noqa: E402
+from tests.apoyo.criterios import con_valor, declarados       # noqa: E402
 
 _CAJON = {
     "embocadura_cajon": "cajon_concreto_aletas_30_75",

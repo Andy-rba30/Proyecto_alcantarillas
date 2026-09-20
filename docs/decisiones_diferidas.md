@@ -1402,6 +1402,17 @@ ficha, arriba, para no duplicar el símbolo.
 - **Qué haría falta:** las seis variables en `variables_entrada`, la ficha
   derivándose de ahí y un test que compruebe que ninguna ficha lleva texto que no
   esté en su variable. Sesión EXT-5.
+- **CERRADA en EXT-5 (2026-09-20).** Las seis entraron a `variables_entrada`
+  como la cuarta población, `Poblacion.DATO_EXTERNO` (`_EXTERNOS`), con la
+  fase medida por `_consumidores` donde hay consumidor (`luz_m`, `S_conducto`,
+  `categoria_tr`) y declarada donde no lo hay (`TW_m`, `longitud_m`,
+  `L_hidraulico_m`, que entran a MD ya resueltas o las lee `cli._fase_10`),
+  el dominio de `S_conducto` nombrado contra `dominios.S_CAUCE_MAX` —el mismo
+  que `cli._DOMINIO_DE_CLAVE` aplica— y las opciones de `categoria_tr` leídas
+  de `modelos.CategoriaTR`. `fichas_de_datos_externos` ya no tiene rama vacía:
+  las ocho fichas salen del censo, `tests/test_ext5_forma_gui.py` comprueba
+  que dicen letra por letra lo que dice su variable, y la GUI de ayuda retiró
+  la etiqueta «sin ficha». El docstring de `cli.py` sigue sin parsearse.
 - **Dónde vive:** `src/ayuda_entrada.py::FichaDeClaveExterna`
 
 
@@ -1689,3 +1700,105 @@ quedaron sin hacer a propósito, con su argumento y su sesión.
   construido fuera de `cli.correr`, tiene que construirlo CON su
   `ContextoCorrida`, no pedir que la capa de reporte lo adivine.
 - **Dónde vive:** `src/modelos.py::ContextoCorrida`
+
+---
+
+# Parte XXI — Lo que EXT-5 dejó escrito al cerrar la forma por criterio y el parser GUI–GUI
+
+EXT-5 cerró EXT-G-01, PC-13, PC-14, la mitad de FORMA de EXT-V-02, EXT-V-05
+y EXT-V-06 que EXT-1 había dejado abierta, la mitad de pestaña 2 de EXT-V-04
+y EXT-G-03: `Criterio.forma` exigida a las 70 claves por `_verificar_criterio`,
+un solo parser `gui/componentes.py::interpretar_texto_declarado` para la
+pestaña 2 y la emergente, `validar_contra_rango` en forma MAT-D13, la cara de
+solo lectura de un `Derivada` en la pestaña 2 y la cuarta población del censo.
+Tres decisiones se apartaron de la letra del prompt o merecen quedar escritas.
+
+## EXT-5-01 · Ocho formas, no siete: `serie_de_claves` y la unión de formas
+
+- **Qué se difirió:** ceñir `Criterio.forma` a las siete formas que el prompt
+  enumera (`int | float | str | par_ordenado | serie_de_pares |
+  dict_con_campos | categoria`). Se añadió una octava, `serie_de_claves`, y
+  la posibilidad de declarar la UNIÓN de formas como tupla.
+- **Por qué:** `F_pga` declara la tupla de filas de la tabla de factores de
+  sitio sobre las que M9 lee la envolvente (`('C', 'D', 'E')`), y eso no es un
+  texto, ni una serie de pares, ni una categoría: forzarla en `categoria`
+  escondía la estructura que `M9.factor_sitio_desde_tabla` exige (tupla no
+  vacía de filas existentes). Y `k_v` admite, por contrato de
+  `M9.k_v_declarado`, la cadena del régimen prescrito O el número del caso
+  reservado: una forma única habría estrechado un contrato que el consumidor
+  ya tiene, y estrechar en la puerta lo que el consumidor acepta es una
+  regresión, no una guardia. Las dos ampliaciones son las mínimas que las 70
+  claves pidieron; ninguna otra clave las usa.
+- **Qué haría falta:** nada; queda escrito para que la familia no crezca sin
+  argumento. Si una novena forma aparece, entra con su clave, su consumidor y
+  su rama en `_cumple_la_forma`, no como excepción en un test.
+- **Dónde vive:** `src/criterios_adoptados.py::FORMA_SERIE_DE_CLAVES`
+
+## EXT-5-02 · La forma va última, y las guardias de los consumidores se quedan
+
+- **Qué se difirió:** retirar de M2, M4, M5, M7 y M9 las guardias de tipo que
+  la puerta de declaración ahora hace redundantes (`numero_de_celdas`,
+  `progresion_de_cajon`, `_espesor_valido`, `k_v_declarado`,
+  `_exposicion_quimica_validada`, las de `condicion_pavimento` y
+  `geometria_control_salida`), y colocar `_verificar_forma` en cabeza de
+  `_verificar_criterio`.
+- **Por qué:** dos líneas de defensa no son duplicación cuando la segunda
+  tiene un lector distinto: la puerta protege a quien DECLARA (ValueError,
+  contrato SIS-E-05, rótulo rojo en la ventana); la guardia del consumidor
+  protege al CÁLCULO de lo que no entró por la puerta —`con_valor` en los
+  tests, un `CRITERIOS[...]` pisado a mano, una versión vieja de una sesión— y
+  sale como `DatoInvalidoError` con el nombre del criterio. Retirarlas habría
+  dejado los tests de consumidor sin objeto y el cálculo confiando en una
+  puerta que no es la única vía a `CRITERIOS`. Y la forma se comprueba al
+  FINAL porque las guardias anteriores dicen cosas más precisas cuando
+  aplican —la ventana de sensibilidad, el par ordenado, el bool—; la forma es
+  la última palabra sobre lo que ninguna de ellas mira. Consecuencia medida:
+  los tests que probaban una guardia de consumidor con un valor que la puerta
+  ya rechaza pasaron a `tests/apoyo/criterios.py::con_valor`, que exige decir
+  por qué se esquiva la puerta.
+- **Qué haría falta:** nada por diseño. Si algún día `CRITERIOS` deja de ser
+  escribible fuera de la puerta, las guardias de consumidor pasan a ser
+  aserciones de invariante y pueden simplificarse. Y un hueco MEDIDO que la
+  forma no cubre porque es dominio y no estructura: `TW_receptor = -1.0`
+  pasa la puerta y `cli.resolver` lo entrega literal a `M3.tw_seccion_1_3`,
+  sin segunda línea (auditoría adversarial de EXT-5). Es preexistente y no
+  se cierra aquí: pide una ventana numérica en la ficha o una guardia
+  MAT-D13 en el consumidor, y decidir cuál es de la sesión que toque V4.
+- **Dónde vive:** `src/criterios_adoptados.py::_verificar_forma`
+
+## EXT-5-03 · Once criterios de texto cuyo conjunto cerrado vive en el consumidor, no en `sensibilidad`
+
+- **Qué se difirió:** promover a `categoria` los criterios de valor textual
+  cuya ventana de sensibilidad es PROSA y no una tupla de opciones
+  (`homogeneidad_serie_fen`, `h_eq_bajo_altura_tabulada`,
+  `h_eq_banda_intermedia_borde`, `categoria_refuerzo_aashto`,
+  `edicion_que_rige_el_expediente`, `metodo_estabilidad_global`,
+  `metodo_transicion_hds5`, `geometria_control_salida`,
+  `resguardo_HW_subrasante`, `embocadura_cajon`, `n_manning_cajon`,
+  `ke_entrada_cajon`, `PERFIL_SUELO_PRESUNTO`, `clase_sitio`). Llevan
+  `forma=str`. (`cortante_alto_muro_e060_art_11_10_10_2` estuvo en esta
+  lista hasta que el auditor adversarial de EXT-5 midió que M9 hace
+  `float()` sobre su valor: es la CUANTÍA que rige, no un sí/no, y su forma
+  es `float`; la ficha decía `dominio="declaracion si/no"` y se corrigió.)
+- **Por qué:** `categoria` valida contra `sensibilidad`, que es donde
+  CLAUDE.md dice que vive el conjunto cerrado de un criterio, y sólo cinco
+  claves lo tienen escrito como tupla de textos (`condicion_pavimento`,
+  `origen_cota_fondo_entrada`, `acceso_mantenimiento_v2b`,
+  `factor_muro_eleccion`, `F_pga_lectura_columna_extrema`). En las demás el
+  conjunto admisible está en constantes del consumidor (`CARTAS_CAJON_TA1`,
+  `FILAS_MANNING_CONCRETO`, `H_EQ_BAJO_TABLA_*`, las filas de la Tabla
+  5.10.1-1) o no está enumerado en ningún sitio (un método de estabilidad
+  global, una edición). Copiar esas listas a `sensibilidad` crearía dos
+  fuentes de verdad; inventar la lista donde no existe sería rellenar un
+  vacío. Con `str` la puerta rechaza lo que NO es texto ('cero' entra como
+  texto y lo rechaza el consumidor con `DatoInvalidoError`, que es un
+  problema del expediente y no un fallo de programa), y por eso el conjunto
+  de claves que aceptan 'cero' bajó de 53 a las de forma textual, medido en
+  `tests/test_ext5_forma_gui.py`.
+- **Qué haría falta:** que cada consumidor exponga su conjunto cerrado como
+  dato reutilizable y que `sensibilidad` lo referencie sin copiarlo (o que la
+  ventana de esas claves pase a `DeTabla` con la fila como clave, como ya
+  hacen `embocadura_cajon` y `ke_entrada_cajon`); entonces pasan a
+  `categoria` una a una.
+- **Dónde vive:** `src/criterios_adoptados.py::FORMA_CATEGORIA`
+

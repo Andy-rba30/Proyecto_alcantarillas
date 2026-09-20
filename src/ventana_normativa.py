@@ -1050,6 +1050,11 @@ _POR_QUE_NO_DECLARABLE: Dict[Poblacion, str] = {
         "sobre las coordenadas de esta obra. Se escribe en datos_sitio.py con "
         "su procedimiento y su trazabilidad; el archivo no tiene API de "
         "escritura y esta ventana no la inventa",
+    Poblacion.DATO_EXTERNO:
+        "es un dato externo del expediente: entra por bandera o por el JSON "
+        "de --datos-externos (pestaña 1), para toda la corrida o punto a "
+        "punto, y el informe registra de donde salio. No es un criterio y "
+        "esta ventana no lo declara",
 }
 
 
