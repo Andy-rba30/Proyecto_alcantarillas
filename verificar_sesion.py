@@ -36,7 +36,17 @@ AVISOS = []
 # 237 aqui y 234 alli y los "cuadre" bajando este a 234 rompe el chequeo:
 # comprobado con `git show 799cba9:...xlsx` (234 filas) contra main (237), cuya
 # unica diferencia son esos tres IDs.
-HALLAZGOS_EN_LA_MATRIZ = 237   # literal-ok: tamaño del tracker de auditorias
+#
+# 303 = 237 + 66 desde EXT-0 (2026-09-20): los 23 hallazgos de la auditoria
+# externa del 2026-09-19 con prefijo EXT- (EXT-A-01 ... EXT-G-03; el dictamen
+# dice «22» en su encabezado y su tabla lista 23: A 3, N 4, M 7, V 6, G 3), los 35
+# puntos ciegos PC-01 ... PC-35 del dictamen
+# (docs/planes_mejora/06_DICTAMEN_AUDITORIA_EXTERNA_2026-09-19.md), la ficha
+# C5-02 de decisiones_diferidas.md que EXT-0 reabrio como defecto, y siete
+# items ALTA/CRITICA de los temarios de refutacion R95/R48 cuya sustancia no
+# tenia fila de estado (R95-031, R48-001, R48-006, R48-007, R48-019, R48-025,
+# R48-030). El 234 de CLAUDE.md sigue siendo el de «las tres auditorias».
+HALLAZGOS_EN_LA_MATRIZ = 303   # literal-ok: tamaño del tracker de auditorias
 ANCHO_CONSOLA = 66             # literal-ok: ancho de la caja del resumen
 
 # Evidencia historica: no deben reflejar el estado actual.

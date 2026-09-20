@@ -240,6 +240,36 @@ cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion
 > que son las únicas verificaciones que dependen del TW, tienen su peor caso en
 > el TW mayor. Cumplir con el mayor implica cumplir con el otro, y la memoria
 > publica los dos números para que se pueda comprobar en vez de creerlo.
+>
+> **Corregido (`EXT-M-01`, `PC-04`, EXT-0).** «V4 y V4b, que son las únicas
+> verificaciones que dependen del TW» es **falso bajo TW ahogante**. Cuando el
+> TW alcanza la clave del conducto (TW ≥ D), o la carga a la entrada supera D
+> con la salida sumergida, el barril fluye **lleno**, y entonces el tirante y la
+> velocidad con que se comparan **V1 y V2** ya no son los del flujo uniforme de
+> Manning (§4.1): son los del **régimen del barril**, que depende del TW. El
+> Manual MTC lo dice de las dos: «las alcantarillas no deben ser diseñadas para
+> trabajar a sección llena» (num. 4.1.1.3.7 b), pág. impresa 79, PDF 82) y la
+> velocidad dentro del conducto y a la salida hay que verificarla (num.
+> 4.1.1.3.6, págs. impresas 76-77, PDF 79-80). El HDS-5 fija con qué área se
+> mide la velocidad a la salida bajo control de salida: la del tirante crítico,
+> la del TW, o la sección entera del barril cuando el TW supera su clave (num.
+> 3.1.6, pág. impresa 3.18, PDF 100). Hasta esta corrección el código seguía a
+> esta hoja: con TW = 1.2 m sobre un D = 0.90 m la memoria imprimía «manda TW:
+> la salida está ahogada» y, en la misma página, V1 [OK] con y/D = 0.135 y V2
+> evaluada con la velocidad uniforme, cuando a sección llena la velocidad es
+> Q/A_llena = 0.0786 m/s < 0.25 m/s y el borde libre no existe. El caso inverso
+> también existe: en pendiente suave con salida libre (y_n > y_c) la velocidad
+> de salida a y_c supera a la uniforme (1.508 frente a 1.184 m/s en el caso
+> medido), de modo que la protección de salida de la Fase 6 recibía una
+> velocidad **menor** que la real. Lo que cambia: (1) el TW gobierna también
+> V1, V2 y la velocidad que entra a la Fase 6; (2) el «cumplir en ambos» del
+> paso 3 sigue valiendo tal cual para V4 y V4b, y para V1/V2 el escenario de TW
+> mayor es el gobernante sólo si el barril llena en los dos — si llena en uno
+> solo, se evalúan los dos. Lo implementa la sesión EXT-3 de
+> `docs/planes_mejora/07_CADENA_PROMPTS_EXT.md`; mientras no esté, **esta hoja
+> está corregida y el código no**, y quien diseñe con el código bajo TW
+> ahogante obtiene V1/V2 evaluadas sobre un régimen que no existe. Ver la nota
+> de §4.1 y las filas V1/V2 de la Fase 5.
 
 ### 1.4 Densidad de investigación geotécnica
 
@@ -426,6 +456,38 @@ Resolver con **bisección o Brent sobre θ ∈ (0, 2π)**.
 
 **Regla [N]:** **n máximo** para capacidad y tirante (conservador del lado de la inundación); **n mínimo** para velocidad máxima y socavación (conservador del lado de la erosión).
 
+> **Corregido (`EXT-M-01`, `PC-24`, EXT-0).** Esta sección presentaba la
+> ecuación de Manning como **la** que produce el tirante y la velocidad que V1 y
+> V2 comparan, y eso sólo es cierto cuando el barril fluye **parcialmente lleno
+> en régimen uniforme**: bajo control de entrada, o bajo control de salida con
+> salida libre y barril que no llena. Con TW ahogante —o con carga a la entrada
+> superior a D y salida sumergida— el barril va lleno: el tirante es D y la
+> velocidad Q/A_llena. Bajo control de salida con salida libre la velocidad **a
+> la salida** es la del tirante crítico (HDS-5 num. 3.1.6, pág. impresa 3.18,
+> PDF 100). **El tirante y la velocidad que se comparan salen del régimen del
+> barril, no del uniforme**; Manning sigue siendo la herramienta del régimen
+> parcialmente lleno y del control de entrada. Bajo control de salida con el
+> barril parcialmente lleno, el tirante y la velocidad dentro del conducto no
+> se conocen sin el perfil de la lámina de agua (§4.3): ahí V1 y V2 quedan
+> **pendientes**, no aprobadas con el tirante normal, y no se inventa un
+> criterio de llenado para cerrarlas.
+>
+> Y las dos verificaciones no son [N] de una pieza. **El deber de verificar es
+> [N]**: el Manual manda «verificar que la velocidad mínima del flujo dentro
+> del conducto no produzca sedimentación» (num. 4.1.1.3.6, el párrafo arranca
+> en la pág. impresa 76 y la cifra está en la 77; PDF 79-80) y tomar en cuenta
+> el borde libre (num. 4.1.1.3.7 b), pág. impresa 79, PDF 82). Pero **el valor
+> aplicado como umbral duro es [A]**, porque las dos cifras llegan con «se
+> recomienda»: «recomendándose que la velocidad mínima sea igual a 0.25 m/s»
+> (pág. 77) y «Se recomienda que el diseño hidráulico considere como mínimo el
+> 25 % de la altura, diámetro o flecha de la estructura» (pág. 79). Aplicar una
+> recomendación como rechazo es una adopción del proyectista y, como tal,
+> lleva sensibilidad. La tabla de la Fase 5 lo recoge fila por fila.
+> Precedentes: `NOR-HID-10` y `NOR-MEM-01` ya habían medido que las dos frases
+> son del mismo tipo y que el matiz «recomienda, no prohíbe» tenía que
+> imprimirse; aquí el matiz llega a la etiqueta. El código (`M5`) todavía lo
+> lleva como [N] en `constantes_normativas`: lo cambia EXT-3.
+
 #### 4.1.1 Por qué el n de HDPE es un rango y no 0.012 — **corrección**
 
 Adoptar un **valor puntual** de n = 0.012 para HDPE rompe la regla de los dos valores: con un solo número, la verificación de capacidad y la de velocidad usan la misma rugosidad y **una de las dos deja de ser conservadora**. Concretamente, con n = 0.012 la velocidad calculada resulta menor que con n = 0.010, lo que subestima el riesgo de erosión y el d₅₀ de la protección de salida.
@@ -461,6 +523,22 @@ $$\frac{HW_i}{D} = c\,(q^*)^{2} + Y + K_s\,S$$
 > *Corregido (`DIS-HR-FORMAS-HDS5`, D9): esta línea decía «la forma no sumergida» y «las dos formas» para nombrar las dos **ramas** —no sumergida y sumergida—, que colisiona con el término «Equation Form» de la Tabla A.1 del HDS-5. En esta hoja «Forma» queda reservado a la Forma 1 / Forma 2 de la ecuación no sumergida, y las ramas se llaman ramas. Bajo Forma 2 el extremo inferior de la recta sale de la ec. (A.2), sin `K_s·S`, y el superior de la (A.3), con él.*
 
 > **La recta NO es el método del HDS-5, y esta línea la presentaba como si lo fuera** (`MAT-O10`). El HDS-5 empalma las dos ramas con una **curva tangente** ajustada sobre sus datos de laboratorio, **de la que no publica ecuación cerrada**. Quien prescribe la recta es esta hoja de ruta, no la fuente. Es una **simplificación adoptada** `[C]`, declarada en `criterios_adoptados` como `metodo_transicion_hds5` e invocada solo al entrar en la rama, de modo que la memoria la declara únicamente si algún punto del corredor cae de verdad en la transición. El error está acotado —la recta coincide con cada rama en su borde de validez— y acotado no es lo mismo que normativo.
+
+> **Corregido (`EXT-M-04`, `PC-19`, EXT-0).** «El valor de la rama no sumergida
+> en q\* = 3.5» era ambiguo, y el código lo resolvió mal: evaluaba la ec. (A.1)
+> en q\* = 3.5 **con el H_c del caudal real** —el del q\* que cae en la
+> transición—, cuando la rama no sumergida en q\* = 3.5 es la del **caudal que
+> corresponde a q\* = 3.5**, `Q_lo = 3.5·A_llena·√D / K_u`, y por tanto con el
+> **H_c de ese caudal**, `H_c(Q_lo)`. Con el H_c del caudal real el extremo
+> inferior de la recta se mueve con q\*, y lo que la memoria imprime como
+> «recta» es una curva (incrementos de 20.8 a 5.6 mm por paso de q\* en el caso
+> medido). El error es **conservador** (+1.9 % de HW en CP-5: 1.129037883
+> frente a 1.107921425 m, la media exacta de los dos extremos; +38.4 mm en el
+> marco) y sólo afecta a la **Forma 1**, porque la ec. (A.2) de la Forma 2 no
+> lleva H_c. Un test fijaba el extremo móvil con `rel=1e-12`
+> (`test_la_interpolacion_reproduce_la_recta_entre_los_dos_extremos`): un
+> oráculo con la misma lectura que el código, no una aceptación. Se corrige en
+> EXT-2; hasta entonces, **hoja corregida y código no**, del lado conservador.
 
 **K_s** = −0.5 para embocaduras no en inglete; **+0.7** para inglete. *(No figura en la Tabla A.1: proviene de la formulación de las ecuaciones. No omitirlo.)*
 
@@ -510,7 +588,16 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 
 > **h_o tiene numeral, y tiene una condición de uso que esta hoja no recogía** (`NOR-HDS-05`). La fórmula está en **HDS-5 3.ª ed., num. 3.3.3 «Outlet Control», pág. impresa 3.24** (el manifiesto marcaba la fila «⚠ sin numeral»), y allí mismo viene acotada:
 >
-> «Approximate hydraulic gradeline ho = (dc + D)/2 **can only be used if the barrel flows full for most of its length. It should not be used if the inlet is not submerged.**» (viñeta de la lista «The manual method has the assumptions:») · «If outlet control governs and the headwater depth (referenced to the inlet invert) is **less than 1.2D**, it is possible that the barrel flows partly full though its entire length. In this case, **caution should be used** in applying the approximate method of setting the downstream elevation based on the greater of tailwater or (dc + D)/2. If the headwater depth falls below **0.75D**, the approximate method should not be used.» (párrafo de prosa que sigue a esa lista) — son **tres** condiciones, no dos.
+> «Approximate hydraulic gradeline ho = (dc + D)/2 **can only be used if the barrel flows full for most of its length. It should not be used if the inlet is not submerged.**» (viñeta de la lista «The manual method has the assumptions:») · «If outlet control governs and the headwater depth (referenced to the inlet invert) is **less than 1.2D**, it is possible that the barrel flows partly full though its entire length. In this case, **caution should be used** in applying the approximate method of setting the downstream elevation based on the greater of tailwater or (dc + D)/2. If a more accurate headwater is necessary, backwater calculations (Section 3.5) should be used to check the result from the approximate method. If the headwater depth falls below **0.75D**, the approximate method should not be used.» (párrafo de prosa que sigue a esa lista) — son **tres** condiciones, no dos.
+>
+> **Corregido (`EXT-M-02`, `PC-25`, EXT-0).** La segunda cita estaba **elidida
+> sin marcar**: entre «…(dc + D)/2.» y «If the headwater depth falls below
+> 0.75D…» la fuente escribe «If a more accurate headwater is necessary,
+> backwater calculations (Section 3.5) should be used to check the result from
+> the approximate method.» (pág. impresa 3.24, PDF 106, verificada). Es la
+> oración que dice **qué hacer** en la banda de cautela, y la elisión se
+> repetía en `constantes_normativas.H_O_CONDICION_TEXTO` (corregida en la misma
+> sesión; el registro, `HDS5_3ED.3.3.3#HO_1_2D`, ya la traía entera).
 >
 > La forma con el **máximo** —que es la que implementa `M4.control_salida`— la 3.ª ed. no la numera: la escribe en prosa («the greater of tailwater or (dc + D)/2»). Impresa como igualdad está en la edición de 1985 que también vive en `normas/`: «ho = TW or (dc + D)/2 whichever is larger.»
 >
@@ -519,12 +606,43 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 > La tercera —que el barril fluya lleno en la mayor parte de su longitud— **no se evalúa**, y ahí sí: exige un perfil de la lámina de agua a lo largo del conducto que este script no calcula. El criterio `geometria_control_salida = "seccion_llena"` **presupone lo mismo** que habría que verificar, de modo que esa premisa entra dos veces por dos puertas y no se comprueba por ninguna. Queda declarada en su `verificacion_pendiente`. Lo que la cerraría es el **procedimiento de barril parcialmente lleno del Cap. III**.
 >
 > **Circularidad que conviene ver:** el HW con que se evalúan los dos límites lo produce la propia aproximación, de modo que un h_o sobreestimado puede hacer que el control de salida gobierne un punto donde no gobernaría. El aviso se emite igual; deshacerla exige el procedimiento completo.
+>
+> **Decisión sobre HW/D < 0.75 bajo control de salida (`EXT-M-02`, `PC-27`,
+> EXT-0; reabre `NOR-HDS-05`).** Hasta aquí esta hoja decía «el aviso se emite
+> igual», y el código acepta el punto como dimensionado con
+> `h_o_fuera_de_rango=True` mientras el `PasoDeMemoria` del mismo punto imprime
+> NO_CUMPLE: memoria y pipeline dicen cosas distintas, que es lo que `SIS-A-07`
+> prohíbe. **No es un aviso.** Cuando el control de salida gobierna y HW/D cae
+> bajo 0.75 el método aproximado **no está definido** para ese punto —«should
+> not be used»— y el HW que se publica no es un resultado sino un número fuera
+> del dominio del método. **Tampoco es una `Verificacion(cumple=False)`**: subir
+> de diámetro sólo baja HW/D (medido 0.589 → 0.526), y convertirlo en
+> incumplimiento haría recorrer el catálogo hasta `DisenoNoFactibleError` por
+> una condición que ningún diámetro puede cumplir. **Es un «método no
+> evaluable»**, y viaja por la vía `Bloqueo`: **diferible a nivel de perfil** —el
+> punto sale como dimensionado con HW no evaluable y el motivo «método no
+> evaluable (HDS-5 3.24, Sección 3.5)» impreso junto al HW— **y no diferible a
+> nivel de expediente**, donde el punto no cierra hasta que exista el cálculo de
+> remanso (Sección 3.5) que la propia fuente manda usar. En la banda
+> 0.75 ≤ HW/D < 1.2 el método sí se usa, con cautela, y el remanso es la
+> comprobación que la fuente pide «if a more accurate headwater is necessary»;
+> a nivel de expediente lo es. Lo implementa EXT-3; el perfil por paso directo,
+> que deshace la circularidad, es la sesión E-A. Mientras el código no cambie,
+> **esta hoja está corregida y el código no**: el punto B-01 del corredor de
+> referencia (control de salida, HW/D = 0.395) sale hoy como dimensionado sin
+> bloqueo.
 
 > **Nota de unidades.** **19.63** es el valor SI. El **29** de la literatura FHWA es del sistema inglés. Usar 29 en métrico no falla ruidosamente: devuelve números plausibles y equivocados. **Test unitario obligatorio.**
 >
-> **Corregido desde 19.62** (conflicto #6 del plan de correcciones; `MAT-D12`, `MAT-X5`, `MAT-O12`, `NOR-COH-01`, `SIS-A-20`). Esta hoja escribía 19.62 en sus **cuatro** menciones y el código sostenía 19.63 desde antes, declarando la discrepancia. Gana la fuente primaria, verificada contra el PDF: **HDS-5 3.ª ed. (2012), num. 3.1.4, ec. (3.4b), pág. impresa 3.10** — «KU = 29 in English Units (19.63 in SI)» —, repetido en la ec. (DG 3.1), pág. DG3.3. **Ojo con la otra copia de `normas/`:** `fhwa_culvert_hydraulics_hds5si.pdf` es la edición de **1985** y, pese al «si» del nombre, imprime sus ecs. (4b) y (5) con **29** y rótulos duales «ft (m)»; leerla literal «en SI» reproduce el error de +9.6 % que esta nota advierte.
+> **Corregido desde 19.62** (conflicto #6 del plan de correcciones; `MAT-D12`, `MAT-X5`, `MAT-O12`, `NOR-COH-01`, `SIS-A-20`). Esta hoja escribía 19.62 en sus **cuatro** menciones y el código sostenía 19.63 desde antes, declarando la discrepancia. Gana la fuente primaria, verificada contra el PDF: **HDS-5 3.ª ed. (2012), num. 3.1.4, ec. (3.4b), pág. impresa 3.10** — «KU = 29 in English Units (19.63 in SI)» —, repetido en la ec. (DG 3.1), pág. DG3.3. **Ojo con la otra copia de `normas/`:** `fhwa_culvert_hydraulics_hds5si.pdf` es la edición de **1985** y, pese al «si» del nombre, imprime sus ecs. (4b) y (5) con **29** y rótulos duales «ft (m)»; leerla literal «en SI» reproduce el error que esta nota advierte: **×1.477 sobre el término de fricción (+47.7 %)**, que en CP-8 sube H de 0.4977 a 0.5455 m (+9.6 %).
 >
-> Y el parecido con **2·g no es una coincidencia**: `K = 2g/φ²`, con φ = 1.486 en el sistema inglés y φ = 1 en SI. De ahí `2·32.2/1.486² = 29.16` y `2·9.81456 = 19.629`. Lo único que separa 19.63 de 19.62 es **cuál g**: HDS-5 trabaja con 32.2 ft/s² = 9.81456 m/s² y el proyecto usa `constantes_fisicas.G = 9.81`. Se conserva el 19.63 **transcrito de la fuente**, no el 2·G derivado; la diferencia afecta al término de fricción en un +0.05 % — unas 190 veces menos que el 9.6 % del 29 imperial, que es el error que esta nota existe para advertir.
+> Y el parecido con **2·g no es una coincidencia**: `K = 2g/φ²`, con φ = 1.486 en el sistema inglés y φ = 1 en SI. De ahí `2·32.2/1.486² = 29.16` y `2·9.81456 = 19.629`. Lo único que separa 19.63 de 19.62 es **cuál g**: HDS-5 trabaja con 32.2 ft/s² = 9.81456 m/s² y el proyecto usa `constantes_fisicas.G = 9.81`. Se conserva el 19.63 **transcrito de la fuente**, no el 2·G derivado; la diferencia afecta al término de fricción en un +0.05 %, frente al **×1.477 sobre el mismo término (+47.7 %)** del 29 imperial, que en CP-8 sube H de 0.4977 a 0.5455 m (+9.6 %) y es el error que esta nota existe para advertir.
+>
+> *Corregido (`EXT-G-03`, EXT-0): estas dos frases decían «+9.6 %» a secas y
+> comparaban con él el +0.05 % del término, mezclando bases: el 9.6 % es sobre
+> **H** en CP-8 y el 47.7 % sobre el **término de fricción**; `M4_control` y el
+> registro citan el 47.7 %. Ahora las dos bases van juntas y la comparación es
+> término contra término.*
 
 > **k_e — vacío que pasó inadvertido hasta la implementación.** Ningún numeral del Manual MTC ni del Manual de Puentes fija el coeficiente de pérdida de entrada k_e. Para la embocadura *square edge with headwall* (adoptada en §9.1), se toma **k_e = 0.5** de las tablas de coeficiente de pérdida de entrada del HDS-5. Etiqueta **[C]**, declarado en `criterios_adoptados.py` como `ke_entrada`.
 
@@ -536,13 +654,13 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 
 | # | Verificación | Criterio | Ancla |
 |---|---|---|---|
-| **V1** | Borde libre | Mínimo **25 % de altura, diámetro o flecha** → **y/D ≤ 0.75** | [N] 4.1.1.3.7 b), pág. 79 |
-| **V2** | Velocidad mínima | **V ≥ 0.25 m/s** | [N] 4.1.1.3.6, pág. 75 |
+| **V1** | Borde libre | Mínimo **25 % de altura, diámetro o flecha** → **y/D ≤ 0.75**, evaluado sobre el **tirante del régimen del barril**: a sección llena **no cumple**; bajo control de salida con barril parcialmente lleno queda **pendiente** hasta el perfil de lámina (§4.1, §4.3) | **[N] el deber de verificar**, 4.1.1.3.7 b), pág. impresa 79 · **[A] el 0.75 como umbral duro** («Se recomienda…»). *Corregido desde* «[N] 4.1.1.3.7 b), pág. 79» (`EXT-M-01`, `PC-24`, EXT-0; ver la nota de §4.1) |
+| **V2** | Velocidad mínima | **V ≥ 0.25 m/s**, con la **velocidad del régimen del barril**: a sección llena Q/A_llena; bajo control de entrada, la del tirante normal (n_max); bajo control de salida con barril parcialmente lleno, **pendiente** hasta el perfil de lámina | **[N] el deber de verificar**, 4.1.1.3.6, págs. impresas **76-77** · **[A] el 0.25 m/s como umbral duro** («recomendándose…»). *Corregido desde* «[N] 4.1.1.3.6, pág. 75» (`EXT-M-01`, `PC-24`, `NOR-HID-09`, EXT-0): la cifra está en la 77 y el párrafo arranca en la 76; la 75 es la Tabla Nº 09 |
 | **V2b** | Sedimentación / colmatación | **S_conducto ≥ S_cauce** (indicador del HDS-5, num. 5.3.3) + **acceso de mantenimiento en planos** | **[C]** + [A] — *corregido desde* «Material sólido de arrastre + acceso de mantenimiento en planos», que era `[N] + [A]`; ver la nota de abajo (`SIS-A-13`, `MAT-O15`) |
 | **V3** | Velocidad máxima | **Solo techo admisible.** Concreto **V ≤ 6.0 m/s**; ladrillo con concreto **V ≤ 3.5**; mampostería de piedra **V ≤ 2.0**. El par de la Tabla Nº 10 es un rango de valores MÁXIMOS según calidad del revestimiento, **no** un piso y un techo: el extremo inferior es el máximo admisible del acabado más pobre, y V3 no lo exige como mínimo. El piso universal de autolimpieza es **V2** (0.25 m/s). **TMC y HDPE: PPI/FHWA, valor por extraer** | [N] Tabla Nº 10, num. 4.1.1.3.6, pág. 76 / [C] |
 | **V4** | Carga a la entrada HW | **cota de entrada + HW ≤ cota de subrasante − resguardo(CBR)** — *corregido desde* «HW ≤ cota de subrasante − resguardo(CBR)», que comparaba una **carga** con una **cota** (`MAT-O5`); ver la nota de datum en 5.1 | **[N→]** ver 5.1 |
 | **V4b** | Relación HW/D | 1.2 – 1.5 | **[A]** — *corregido desde `[C]`.* El HDS-5 **no fija** HW/D: su num. 2.2.5 d) «Agency Constraints», pág. impresa **2.10** (la v8 citaba la 2.14, que trata de espolones de escombros y seguridad vial) **describe** lo que imponen las agencias viales de EE. UU. — «The allowable HW/D ratio varies throughout the country, but commonly ranges from 1.0 to 1.5» — y en el Perú la agencia es el MTC, que no fija ninguno. Elegir 1.5, que es el extremo **menos restrictivo**, es adopción del proyectista. **Implementada** en `M5.v4b_relacion_hw_d` (S14), una vez cerrada la procedencia del umbral: el HW que se divide entre D es el del control **gobernante**, porque lo que la fuente acota es el embalse que la obra produce. Ref. `NOR-HDS-02`, `MAT-D2`, `SIS-A-02`, `SIS-B-02` |
-| **V5** | Remanso aguas arriba | Embalse dentro del **derecho de vía**, sin afectación a terceros ni a faja marginal | [N] DG-2018 + Ley 29338 |
+| **V5** | Remanso aguas arriba | Embalse dentro del **derecho de vía**, sin afectación a terceros ni a faja marginal | **Tres etiquetas, no una** — *corregido desde* «[N] DG-2018 + Ley 29338» (`EXT-N-04`, EXT-0). (a) **El requisito jurídico es [N]**: el derecho de vía es bien de dominio público (DG-2018 num. 304.07.01) y su ancho mínimo lo fija la **Tabla 304.09** por clase de carretera (16 a 40 m), incrementado en 5.00 m «del borde más alejado de las obras de drenaje» (num. **304.07.02**, págs. impresas 198-199, PDF 199-200; verificado); la faja marginal, Ley 29338. (b) **El método hidráulico** con que se decide si el embalse cabe en esa faja es **[A]** (`remanso_derecho_via`): el 304.07 no enuncia condición hidráulica alguna, y el código ya lo lleva como [A] de expediente (`SIN_FUNDAMENTO` F5.V5) — la contradicción viva era esta hoja. (c) **El ancho del derecho de vía de ESTE corredor es un dato de sitio [S]** (`ancho_derecho_via_m`), que hoy no llega por ninguna vía y detiene V5. En la Familia C V5 no se difiere: se sustituye (`VC1-02`). La DG-2018 está en `normas/` desde el 2026-09-18 y entra al registro en EXT-6 |
 | **V6** | Material sólido de arrastre | Con palizada: sección única mayor | [N] |
 | **V7** | Flotación del conducto | **γ_DC,min · DC + γ_EV,min · EV ≥ γ_WA · U.** Tubería vacía, NF en su cota más alta. Las cargas que estabilizan (peso propio DC y peso del relleno EV) se **minoran**; la subpresión, que desestabiliza (WA), se **mayora**. Con el mínimo de la fila que corresponde a un **conducto enterrado** en la Tabla 2.4.5.3.1-2 es la forma 0.90·(DC + EV) ≥ 1.00·U. **Corrección** (`MAT-D8`, `NOR-PUE-03`): esa tabla no tiene un γ_EV único, lo desglosa por **tipo de estructura** —«Estructura rígida enterrada» 1.30/0.90, «Alcantarillas termoplásticas» 1.30/0.90, flexibles «Entre otros» 1.95/0.90, y **«Muros y estribos de retención» 1.35/1.00**, que es la del cabezal de §Fase 9—. El 0.90 de V7 es el del conducto y no vale para el cabezal. **Corrige la redacción anterior**, ΣW ≥ FS · U, que era un factor de seguridad global de tensión admisible dentro de un marco LRFD (§0.2) | [N] subpresión 2.4.3.8.2 + [N] los γ (Manual de Puentes, Tablas 2.4.5.3.1-1/-2, pág. impresa 143) + [A] la fila de γp por estructura (`factores_carga_aashto`) |
 | **V8** | Evento extremo (FEN) | A TR mayor: la vía **no colapsa** aunque desborde | [N] verificación, no diseño |
@@ -740,7 +858,23 @@ EG-2013 Sección 503 (Concreto Estructural), num. 503.01, pág. 905, describe el
 >
 > **Cómo se resuelve.** Los dos rigen y gobierna el mayor (regla del mayor de §0.2): `h_eq = max(0.60 m, h_eq_AASHTO(altura, orientación, borde))`. **Cuál de las dos tablas de AASHTO aplica depende de la orientación del muro respecto del tráfico**, que es un dato de sitio de este expediente y **está declarado como pendiente**: mientras no se declare, el cálculo se detiene. Tres matices de la fuente que hay que conservar: AASHTO ofrece **dos binomios acoplados** (estribo+perpendicular, muro+paralelo) y no un eje libre de orientación —aplicar la Tabla ‑1 a un cabezal es analogía declarada—; **ninguna frase del articulado reparte las dos tablas**, lo hacen sus títulos y el comentario C3.11.6.4; y el umbral de distancia es **1.0 ft = 0.3048 m exactos**, no 0.30 m.
 
-**Empuje de tierras:** activo, Ka = tan²(45 − φ/2). **Empuje hidrostático y subpresión:** con NF a 1.4 m no es opcional.
+**Empuje de tierras:** activo, con el **Ka de Coulomb** del Manual de Puentes, num. **2.4.4.1.5.3** «Coeficiente de Empuje Lateral Activo, ka» (3.11.5.3 AASHTO), ecs. 2.4.4.1.5.3-1 y -2, págs. impresas **135-136** (PDF 136-137: el numeral y las dos ecuaciones arrancan en la 135; la figura de simbología y la Tabla 2.4.4.1.5.3-1 de δ están en la 136), que con talud del relleno β = 0, fricción muro-relleno δ = 0 y trasdós vertical (θ = 90°) **se reduce a tan²(45 − φ/2)**, la forma que esta hoja escribía. **Empuje hidrostático y subpresión:** con NF a 1.4 m no es opcional.
+
+> **Corregido (`EXT-M-06`, EXT-0).** Esta hoja escribía «Ka = tan²(45 − φ/2)»
+> sin decir de dónde sale, y el código la seguía: el empuje estático y la
+> sobrecarga del trasdós iban con Rankine (`ka_rankine`) mientras el incremento
+> sísmico iba con Mononobe-Okabe, que es Coulomb con aceleración — dos familias
+> de coeficiente sobre el mismo muro, decisión declarada en los docstrings de
+> `empujes_trasdos` y `ka_rankine` pero no autorizada por ninguna fuente. La
+> fuente primaria del marco elegido en §9.1 es el Manual de Puentes y su
+> coeficiente activo es el de Coulomb (verificado). Con ángulos nulos las dos
+> expresiones coinciden (diferencia medida −5.6e-17), de modo que **para un
+> cabezal con β = δ = 0 ningún número se mueve**; dentro de las ventanas
+> declaradas (i hasta 10°) la diferencia va de −6.25 % a +7.23 %, y con el
+> k_h = 0.5 de esta obra Mononobe-Okabe deja de tener solución antes de
+> i = 10° (con φ = 30°, ya desde i ≥ 5°), que es un límite que la sensibilidad
+> del criterio tiene que decir. Lo implementa EXT-7 (`k_a_coulomb` ya existe
+> en M9). Precedentes: `NOR-PUE-07`, `NOR-PUE-08`.
 
 #### Cadena sísmica — desagregada
 
@@ -808,6 +942,27 @@ La penalización es severa por pérdida de confinamiento. **El cabezal se apoya 
 - Flexión y corte por **AASHTO LRFD Sección 5**
 - **Durabilidad y recubrimientos por E.060** (excepción de 0.2). Rige el recubrimiento mayor entre AASHTO y E.060
 - **Referencia de cuantías mínimas** (E.060 Art. 14.3.1, pág. 133): horizontal ≥ 0.002, vertical ≥ 0.0015; acero por temperatura en ambas caras si espesor ≥ 250 mm (Art. 14.8.3); espaciamiento ≤ 3h y ≤ 400 mm (Art. 14.3.3)
+- **Cuantías mínimas por cortante en el plano** (E.060 **Arts. 11.10.10.2 y 11.10.10.3**, pág. 104; verificado): bajo el régimen del 11.10.10 —cortante **en el plano** del muro, que el Art. 14.2.4 aplica a muros— la cuantía horizontal no debe ser menor que **0.0025** (11.10.10.2) **y la vertical tampoco**: ρv = 0.0025 + 0.5·(2.5 − hm/ℓm)·(ρh − 0.0025) ≥ 0.0025, ec. **(11-32)**, «pero no necesita ser mayor que el valor de ρh requerido por 11.10.10.1», con hm la altura total y ℓm la longitud total del muro (11.10.10.3). El 0.0015 vertical del Art. 14.3.1 es el mínimo **general**; con cortante alto en el plano el vertical **también** sube, y esta hoja sólo decía lo del horizontal
+
+  > **Corregido (`EXT-M-05`, `R95-031`, EXT-0).** Esta lista traía el 14.3.1 y
+  > callaba el 11.10.10.3, y el código lo ejecuta: `M9.cuantia_de_diseno` en su
+  > rama vertical afirma en su docstring que «cortante_alto=True no cambia el
+  > mínimo del Art. 14.3.1» y devuelve 0.0015 —1.67 veces menos acero que el
+  > piso del 11.10.10.3—. Sin consumidor de producción, pero el hallazgo estaba
+  > verificado desde `R95-031` (auditoría normativa, ALTA) y nunca entró al
+  > tracker. Y hay una **pregunta previa que decide si los dos artículos rigen**:
+  > el **11.10.2** gobierna las «fuerzas cortantes horizontales **en el plano**
+  > del muro» (11.10.3 a 11.10.10), y el **11.10.1** manda las cortantes
+  > **perpendiculares** al plano a las disposiciones para losas del **11.12**
+  > (pág. 103; verificado). Un cabezal en voladizo bajo empuje de tierras
+  > trabaja **perpendicular** a su plano: si no hay cortante en el plano, ni el
+  > 11.10.10.2 ni el .3 rigen y el mínimo es el del 14.3.1. Esa aplicabilidad es
+  > una decisión del proyectista que **no está declarada**: entra como criterio
+  > [A] de expediente en EXT-7, junto con hm, ℓm y el ρh requerido que la ec.
+  > (11-32) necesita y que `GeometriaCabezal` no tiene. La ec. (11-32) no se
+  > implementa hasta tenerlos; la rama vertical con cortante alto **se detiene**.
+  > Precedente: `NOR-E060-03` (el 11.10.10.2 no define umbral; lo define el
+  > 11.10.10.1).
 - **Alternativa en concreto ciclópeo** — dos mínimos sobre el mismo material, y **gobierna el mayor** (regla del mayor de §0.2): E.060 Art. 22.10 (págs. 194-195) pide f'c de matriz ≥ 10 MPa y piedra desplazadora ≤ 30 % del volumen; la **Tabla 503-07 del EG-2013** (503.04, pág. impresa 912) clasifica el concreto ciclópeo como **Clase G** — «Se compone de concreto simple Clase F y agregado ciclópeo, en proporción de 30% del volumen total, como máximo» — con matriz de **14 MPa**. Para esta obra vial rigen los dos: **f'c de matriz ≥ 14 MPa**. Admitido para muros de gravedad. **Opción realista para cabezales pequeños**
 
   > **Corregido (`DIS-HR-CICLOPEO`, I2).** Esta línea pedía «f'c de matriz ≥ 10 MPa» citando solo el Art. 22.10 de E.060: miraba una de las dos normas que rigen sobre el mismo material. Quien la leyera sin leer el código habría dimensionado una matriz de 10 MPa que `M9.verificar_ciclopeo` (que contrasta contra `CICLOPEO_FC_MATRIZ_MIN_APLICABLE` = 14 MPa) rechaza. Cita ancla: `EG2013.503.04#T503_07`, verificada. Sigue vigente la deuda anotada en el código: el Art. 22.10.2.3 añade un techo de cálculo (φ = 0.5 y f'c de diseño ≤ 10 MPa) — se especifica con el mayor de los mínimos y se diseña con el techo.
@@ -818,7 +973,17 @@ La penalización es severa por pérdida de confinamiento. **El cabezal se apoya 
 
 **Espaciamiento de diseño = mín(límite normativo, longitud por capacidad).**
 
-**1. Límite normativo [N]** — num. 4.1.2.1 d), pág. 178:
+**1. Límite normativo [N]** — num. 4.1.2.1 d), pág. impresa **179** (PDF 182):
+
+> **Corregido (`PC-30`, `NOR-HID-02`, EXT-0).** Esta línea decía «pág. 178». La
+> 178 es la Tabla Nº 34 (dimensiones mínimas de cuneta); el apartado d)
+> «Desagüe de las cunetas», con los 250 m y los 200 m, está en la 179
+> (verificado; es la página que el registro, `MC_HHD_CUNETA`, lleva desde S12).
+> `NOR-HID-02` figuraba «Cerrado» mientras lo que la memoria imprime
+> —`NUMERAL_FASE_10`, `Espaciamiento.numeral`, la ficha de `long_max_cuneta`—
+> y esta hoja seguían en 178: cierre incompleto en cuatro sitios más el
+> manifiesto. La hoja se corrige aquí, los textos del código en EXT-6, y el
+> hallazgo se reabre.
 
 | Región | Longitud máxima de cuneta |
 |---|---|

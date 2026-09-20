@@ -479,6 +479,17 @@ condición escrita.
   comentario que precede a `H_O_CONDICION_APLICACION`, que es donde se va a
   pisar. La implementación es sesión propia con plan mode: toca
   `M4.control_salida`, que es motor validado.
+- **Reabierta en EXT-0 (2026-09-20), con argumento nuevo.** El «Cerrado» de
+  arriba descansaba en que HW/D < 0.75 bajo control de salida era un **aviso**
+  («el aviso se emite igual», v8 §4.3). `EXT-M-02` midió que el aviso convive
+  con un punto **aceptado** (`h_o_fuera_de_rango=True` sin lector fuera de
+  M11) mientras el `PasoDeMemoria` del mismo punto imprime NO_CUMPLE: memoria
+  y pipeline en desacuerdo (`SIS-A-07`). La v8 §4.3 decide ahora que es un
+  **«método no evaluable»** por la vía `Bloqueo` —diferible en perfil, no en
+  expediente—, nunca `cumple=False` (subir D sólo baja HW/D). Y el paquete de
+  arriba decía «M5 no cambia»: `EXT-M-01` lo refuta (V1/V2 salen del régimen
+  del barril bajo TW ahogante). Lo que queda: EXT-3 (bloqueo, régimen, velocidad
+  de salida) y E-A (perfil por paso directo).
 - **Dónde vive:** `src/constantes_normativas.py::H_O_CONDICION_APLICACION`
 
 ## NOR-PRO-04 · La norma a la que se difiere la verificación del TMC
@@ -757,7 +768,15 @@ M8 y de M11 que su propio alcance excluye.
   de la vista derivada.
 - **Qué haría falta:** migrar `ke_entrada` a una clave de `KE_HDS5_C2` y
   retirar la rama de `M4.ke_declarado` que devuelve los dos rótulos vacíos.
-  No tiene sesión asignada; es una limpieza, no un defecto.
+  ~~No tiene sesión asignada; es una limpieza, no un defecto.~~
+- **Reabierta en EXT-0 (2026-09-20): pasa de limpieza a DEFECTO.** `EXT-V-02`
+  midió que `ke_entrada` acepta −50 (y `'texto'`, `True`, `[1,2]`) con la
+  procedencia «proviene de la fila» de la Tabla C.2: `--declarar
+  ke_entrada=-50` produce `HW_salida_m = −7.668` con el punto dimensionado y
+  cero incumplidas, y `PC-02`/`PC-34` añaden que sin ventana ni dominio la CLI
+  declara la tupla `(0, 5)` por una coma. La forma por número es lo que hace
+  posible que la procedencia mienta; la forma por clave de fila —la que ya usa
+  `ke_entrada_cajon`— no puede. Sesión: EXT-1 si cabe, si no EXT-6.
 - **Dónde vive:** `src/constantes_normativas.py::KE_HDS5_C2`
 
 
@@ -1260,3 +1279,97 @@ y que no queda escrita en ningún otro registro.
   citas del `Fundamento` de ese paso no toquen—, y entonces reescribir el test
   con ese caso, no al revés.
 - **Dónde vive:** `tests/test_canal_discrepancias.py::test_la_via_del_paso_quedo_sin_usuario_al_resolver_FORMAS`
+
+
+---
+
+# Parte XVI — Lo que EXT-0 reabrió y decidió tras el dictamen de la auditoría externa
+
+Fuente: `docs/planes_mejora/06_DICTAMEN_AUDITORIA_EXTERNA_2026-09-19.md` y la
+cadena `07_CADENA_PROMPTS_EXT.md`. Los IDs `EXT-*` y `PC-*` están de alta en el
+tracker desde EXT-0. Las dos fichas anteriores que EXT-0 reabrió con argumento
+nuevo —`NOR-HDS-05` y `C5-02`— llevan la reapertura escrita dentro de su propia
+ficha, arriba, para no duplicar el símbolo.
+
+## SIS-B-22 · `limpiar_valores_dinamicos` sí tiene caso de uso: abrir una sesión
+
+- **Qué se difirió:** en S16.5 se cerró SIS-B-22 escribiendo en el docstring de
+  `limpiar_valores_dinamicos` que **no tiene llamador a propósito**: «una corrida
+  de la CLI es un proceso de un solo uso y no necesita borrar todo; la GUI retira
+  UNA clave; el consumidor real es conftest.py». Se difirió, sin decirlo, decidir
+  qué pasa con los valores dinámicos de una obra cuando se abre la sesión de otra.
+- **Por qué se reabre (EXT-0, 2026-09-20):** la premisa era de S16.5 y S17 la
+  dejó atrás al crear la sesión JSON (SIS-A-18). `EXT-A-02` midió que
+  `restaurar_sesion` es **aditiva**: abrir la sesión B tras declarar en A deja
+  las claves de A vivas, `estado_de_sesion()` de B las **persiste**, y una clave
+  de B sin procedencia **hereda la de A** — la memoria afirma algo falso sobre
+  otra obra. Abrir sesión **es** el caso de uso de vaciar todo, y la ficha no es
+  vinculante (no está entre los ocho conflictos).
+- **Qué haría falta:** `restaurar_sesion(estado, *, sustituir=True)` que valide
+  el candidato en seco, vacíe con `limpiar_valores_dinamicos()` y las
+  procedencias, y vuelque sólo lo aceptado; `sustituir=False` como «importar
+  decisiones». Sesión EXT-4, junto con el contexto de corrida (`EXT-A-01`).
+- **Dónde vive:** `src/criterios_adoptados.py::limpiar_valores_dinamicos`
+
+## NOR-HID-02 · La cuneta está en la pág. 179 y la memoria sigue imprimiendo 178
+
+- **Qué se difirió:** nada a propósito: `NOR-HID-02` figura «Cerrado» desde S12
+  porque el registro (`MC_HHD_CUNETA`) lleva la 179 y el carácter por valor. Lo
+  que quedó sin tocar, sin que nadie lo decidiera, fue **lo que la memoria
+  imprime**: `NUMERAL_FASE_10`, `Espaciamiento.numeral`, la ficha de
+  `long_max_cuneta` y la v8 seguían en 178 (`PC-30`, `EXT-G-03`).
+- **Por qué se reabre (EXT-0, 2026-09-20):** un cierre que corrige el registro y
+  deja el texto que llega al entregable es un cierre incompleto, y el tracker lo
+  daba por entero. La v8 se corrigió en EXT-0 (verificado sobre el PDF: la 178
+  es la Tabla Nº 34; el apartado d) con 250 m y 200 m está en la 179).
+- **Qué haría falta:** los tres textos del código a 179 y un test que los
+  compare con `MC_HHD_CUNETA.pagina_impresa` en vez de repetir el número.
+  Sesión EXT-6.
+- **Dónde vive:** `src/modulos/M10_espaciamiento.py::NUMERAL_FASE_10`
+
+## EXT-V-01 · Un expediente por repositorio; multi-obra es requisito de producto
+
+- **Qué se difirió:** el mecanismo multi-obra: que un mismo despliegue calcule
+  dos corredores con sus propios datos de sitio sin editar archivos de código.
+- **Por qué:** el hallazgo V-01 de la auditoría externa leía los [S] de La Unión
+  en `datos_sitio.py` como «hardcoding indebido». No lo es: es el **diseño
+  constitucional** (v8 §0.7 «se declara una sola vez», taxonomía [S] de
+  CLAUDE.md, `auditoria_y_ruta_despliegue_v9.md` A.0): el repositorio **es** el
+  expediente de una obra, y un [S] con trazabilidad en un archivo versionado es
+  más revisable que un campo de formulario. Lo que falta para «herramienta
+  general» es un **requisito de producto**, no la corrección de un defecto, y se
+  hace en ese orden: primero la enmienda constitucional (CLAUDE.md y v8 §0.7:
+  dónde vive un [S] declarado por sesión), después el mecanismo. Radio medido
+  por el dictamen: la corrida de perfil no lee ningún [S]; la de expediente sólo
+  `PGA_roca_B`; ponerlos a `None` sin enmendar la constitución mata 18 tests en
+  5 archivos y no gana nada. **Lo que no hay que hacer:** un objeto `Proyecto`
+  que duplique `DatoSitio`/`Criterio`/`Procedencia`, ni vaciar los archivos.
+- **Qué haría falta:** `DatoSitio.nivel`, `datos_sitio.establecer_dato_dinamico`
+  con trazabilidad obligatoria, `--datos-sitio sitio.json`, sesión formato 3 como
+  único lugar del «proyecto actual», y la advertencia cuando `--proyecto` no
+  coincide con `corredor_del_proyecto`. Sesión EXT-10, sólo después de EXT-4 y
+  EXT-9.
+- **Dónde vive:** `src/datos_sitio.py::corredor_del_proyecto`
+
+## EXT-G-03 · Las seis fichas de ayuda de claves externas: se llenan, pero sólo por derivación
+
+- **Qué se difirió:** el contenido de `concepto`, `unidad` y `de_donde_sale` para
+  las seis claves de `cli.CLAVES_EXTERNAS` que no son columna del CSV, ni dato de
+  sitio, ni criterio, y que por eso no están en `variables_entrada.VARIABLES`.
+  El docstring de `FichaDeClaveExterna` lo decidió: «prefiere un hueco declarado
+  a una frase inventada o sacada de un docstring que puede reformatearse mañana».
+- **Por qué (decisión EXT-0, 2026-09-20):** el hueco declarado es honesto, pero
+  quien lo mira es justamente la persona que tiene que rellenar el JSON y no sabe
+  qué unidad lleva `luz_m` ni de dónde sale `Q_m3s`. La objeción del docstring
+  vale contra la prosa a mano, no contra la **derivación**: la fase y el módulo
+  que consumen cada clave los mide `variables_entrada._consumo_por_modulo`, y la
+  unidad y el origen están en el contrato que `cli` ya exige (`_numero_externo`,
+  los `DatoFaltanteError` que dicen de dónde tendría que venir el dato). **Se
+  llenan por derivación**: las seis entran a `VARIABLES` como variables de origen
+  «dato externo», con concepto y unidad **leídos del código** y la fase medida; lo
+  que no se pueda derivar sigue vacío y la ventana lo sigue diciendo. Nunca una
+  frase escrita para la ficha.
+- **Qué haría falta:** las seis variables en `variables_entrada`, la ficha
+  derivándose de ahí y un test que compruebe que ninguna ficha lleva texto que no
+  esté en su variable. Sesión EXT-5.
+- **Dónde vive:** `src/ayuda_entrada.py::FichaDeClaveExterna`

@@ -365,7 +365,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1982**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1986**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -398,7 +398,16 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **Las cuatro medidas sobre el mismo árbol en PD**
+independientes. **EXT-0 (2026-09-20) sumó CUATRO tests sin tocar un test**:
+son los anclajes parametrizados de
+`test_decisiones_diferidas.py::test_el_simbolo_que_cada_ficha_ancla_sigue_existiendo`
+para las cuatro fichas nuevas de `docs/decisiones_diferidas.md` (SIS-B-22,
+NOR-HID-02, EXT-V-01, EXT-G-03), de modo que el parametrizado crece con el
+registro. Se midieron las dos configuraciones sin Tk sobre el árbol de EXT-0
+(sí · no: 1978/8; no · no: ver la tabla) y las dos con Tk se derivan sumando
+4, porque ese test no depende ni de PyMuPDF ni de Tk: el contenedor de EXT-0
+no tenía `python3-tk` y no se instaló. **Las cuatro medidas anteriores, sobre
+el mismo árbol en PD**
 (`aefbdcd`, la rama de trabajo; el push se rechazó con 403 —la app de
 Claude volvió a no tener acceso de escritura al repositorio, como en D9— y
 las cuatro se midieron sobre ese árbol; el acceso se restauró en la misma
@@ -458,7 +467,8 @@ porque es el defecto que este párrafo persigue: I1b la dejó en 1830 y después
 medirla; pre-N1 la encontró en 1881 y fusionó además la rama de S24, que
 llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
-post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982. La
+post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
+EXT-0: 1986. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -470,10 +480,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 1978 | 4 |
-| sí | no | 1974 | 8 |
-| no | sí | 1945 | 37 |
-| no | no | 1941 | 41 |
+| sí | sí | 1982 (derivado en EXT-0: PD midió 1978) | 4 |
+| sí | no | 1978 | 8 |
+| no | sí | 1949 (derivado en EXT-0: PD midió 1945) | 37 |
+| no | no | 1945 | 41 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
@@ -509,7 +519,16 @@ Este repositorio tiene 234 hallazgos de tres auditorías externas
 `docs/auditorias/matriz_cruzada_auditorias.xlsx` (14 clusters por causa raíz, 8
 conflictos resueltos). Ese archivo es el TRACKER: el estado de cada hallazgo se
 marca ahí, en las columnas Estado / Responsable / Commit. El PLAN es
-`docs/hoja_de_ruta_correcciones_v12.md`.
+`docs/hoja_de_ruta_correcciones_v12.md`. **Desde EXT-0 (2026-09-20) la hoja
+`Hallazgos` tiene 303 filas, no 237**: entraron los 23 hallazgos de la
+auditoría externa del 2026-09-19 con prefijo `EXT-` (nunca los prefijos
+desnudos `A-`/`M-`/`V-`/`G-`, que colisionan con la de Sistema), los 35 puntos
+ciegos `PC-` de su dictamen (`docs/planes_mejora/06_DICTAMEN_AUDITORIA_EXTERNA_2026-09-19.md`),
+siete ítems `R95-`/`R48-` de los temarios de refutación que no tenían fila de
+estado, y `C5-02`. Su plan es la cadena `docs/planes_mejora/07_CADENA_PROMPTS_EXT.md`
+(serie de commits `ext(EXT-n)`), y un hallazgo puede volver de «Cerrado» a
+«Reabierto (EXT-0)» cuando llega un argumento nuevo: le pasó a NOR-HDS-05,
+NOR-HID-02 y SIS-B-22.
 
 **Dónde vive una decisión DIFERIDA**, que no es lo mismo que su estado:
 `docs/decisiones_diferidas.md`. Un objeto que se conserva sin consumidor, un

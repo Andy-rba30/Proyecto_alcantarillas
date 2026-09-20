@@ -918,6 +918,15 @@ H_O_NUMERAL = _reg.cita("HDS5_3ED.3.3.3#HO").como_texto()
 #   assumptions:";
 #   la segunda esta en el parrafo de prosa que sigue a esa lista, el mismo que
 #   trae la condicion de 1.2D.
+#
+# CORREGIDO EN EXT-0 (EXT-M-02, PC-25): la segunda cita estaba ELIDIDA SIN
+# MARCAR. Entre «...(dc + D)/2.» y «If the headwater depth falls below 0.75D»
+# la fuente escribe la oracion sobre las backwater calculations (Section 3.5),
+# que es la que dice QUE HACER en la banda de cautela; el registro
+# (`HDS5_3ED.3.3.3#HO_1_2D`, citas.py) ya la traia entera y verificada contra
+# la PDF 106, y esta transcripcion a mano la habia perdido. Es exactamente la
+# clase de divergencia que la regla «ningun texto literal se transcribe dos
+# veces» de CLAUDE.md persigue; la v8 §4.3 se corrigio en la misma sesion.
 H_O_CONDICION_TEXTO = (
     "Approximate hydraulic gradeline ho = (dc + D)/2 can only be used if the "
     "barrel flows full for most of its length. It should not be used if the "
@@ -926,7 +935,9 @@ H_O_CONDICION_TEXTO = (
     "inlet invert) is less than 1.2D, it is possible that the barrel flows "
     "partly full though its entire length. In this case, caution should be "
     "used in applying the approximate method of setting the downstream "
-    "elevation based on the greater of tailwater or (dc + D)/2. If the "
+    "elevation based on the greater of tailwater or (dc + D)/2. If a more "
+    "accurate headwater is necessary, backwater calculations (Section 3.5) "
+    "should be used to check the result from the approximate method. If the "
     "headwater depth falls below 0.75D, the approximate method should not be "
     "used.",
 )
@@ -989,6 +1000,22 @@ H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
 #      HW/D < H_O_HW_SOBRE_D_MIN el HW se calcula por remanso en vez de por
 #      la aproximacion que la fuente prohibe ahi. M5 no cambia: consume el
 #      mismo Verificacion/PasoDeMemoria que M4 emita.
+#      ANOTADO EN EXT-0: «M5 no cambia» ERA FALSO, y lo refuto EXT-M-01 (el
+#      hallazgo M-01 de la auditoria externa del 2026-09-19, dictamen en
+#      docs/planes_mejora/06_DICTAMEN_AUDITORIA_EXTERNA_2026-09-19.md).
+#      Bajo TW ahogante (TW >= D, o HW >= D con salida sumergida) el barril
+#      fluye lleno y el tirante y la velocidad que V1 y V2 comparan son los
+#      del REGIMEN DEL BARRIL, no los del flujo uniforme que M3 entrega:
+#      medido, con TW = 1.2 m sobre D = 0.90 m la memoria decia «manda TW:
+#      la salida esta ahogada» y en la misma pagina V1 [OK] con y/D = 0.135,
+#      cuando a seccion llena Q/A_llena = 0.0786 m/s < 0.25 m/s. Y en
+#      pendiente suave con salida libre la velocidad de salida a y_c (HDS-5
+#      3.1.6, pag. 3.18) supera a V_erosion (1.508 vs 1.184 m/s), asi que M6
+#      recibia una velocidad MENOR que la real. M5 SI cambia -- V2 compara la
+#      velocidad de la seccion efectiva y V1 a seccion llena no cumple (MC
+#      pag. 79) -- y M6 recibe la velocidad de salida: v8 §1.3, §4.1 y filas
+#      V1/V2 enmendadas en EXT-0, codigo en EXT-3. El paquete de arriba sigue
+#      valiendo para el PERFIL (E-A); lo que cambia es que M5 no espera a el.
 #   5. LOS DORADOS NO SE FABRICAN: un caso patron de perfil necesita una
 #      corrida de referencia externa citable (HY-8 u otra), que es la misma
 #      regla del conflicto #7.
