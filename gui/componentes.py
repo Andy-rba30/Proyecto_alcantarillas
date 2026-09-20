@@ -208,6 +208,37 @@ class Tooltip:
             self._tip = None
 
 
+# 120 es el "notch" estandar de la rueda en Windows: `event.delta` llega en
+# multiplos de 120 y hay que dividirlo para obtener las unidades de scroll.
+# Es aritmetica del evento, no geometria de widget, y por eso la regla de la
+# capa de presentacion no la exime sola: va marcada.
+NOTCH_RUEDA = 120   # literal-ok: notch de la rueda, unidades por delta
+# En X11 la rueda son dos botones, no un delta.
+BOTON_RUEDA_ARRIBA = 4   # literal-ok: numero del boton de X11 para rueda arriba
+BOTON_RUEDA_ABAJO = 5   # literal-ok: numero del boton de X11 para rueda abajo
+
+
+def unidades_de_rueda(*, num, delta):
+    """
+    Las unidades que hay que desplazar para un evento de rueda, en las tres
+    plataformas: negativo hacia arriba (como espera `yview_scroll`).
+
+    Windows: `delta` en multiplos de +-120, sin `num` util. macOS: `delta`
+    pequeno (+-1, +-3...), que con la division de Windows daba cero. X11:
+    `num` 4 o 5 y `delta` 0. Un delta que no llega al notch vale UNA unidad
+    en su sentido: nunca cero, porque un giro de rueda que no mueve nada es
+    una rueda rota para el usuario.
+    """
+    if num == BOTON_RUEDA_ARRIBA:
+        return -1
+    if num == BOTON_RUEDA_ABAJO:
+        return 1
+    if not delta:
+        return 0
+    magnitud = max(1, abs(int(delta)) // NOTCH_RUEDA)
+    return -magnitud if delta > 0 else magnitud
+
+
 class MarcoScroll(ttk.Frame):
     """Contenedor con scroll vertical: el contenido se agrega en `.interior`."""
 
@@ -234,21 +265,27 @@ class MarcoScroll(ttk.Frame):
     def _ajustar_ancho(self, evt):
         self.canvas.itemconfigure(self._id_win, width=evt.width)
 
+    # LA RUEDA EN LAS TRES PLATAFORMAS (EXT-8, PC-17). Hasta EXT-8 solo se
+    # escuchaba `<MouseWheel>` con `delta/120`: en X11 la rueda no llega por
+    # ese evento sino como `<Button-4>` (arriba) y `<Button-5>` (abajo), y en
+    # macOS `delta` es pequeno (1, 3...) y `int(-1/120)` daba CERO unidades:
+    # el marco no se movia. `unidades_de_rueda` normaliza los tres.
+    EVENTOS_RUEDA = ("<MouseWheel>", "<Button-4>", "<Button-5>")
+
     def _activar_rueda(self, _evt=None):
-        self.canvas.bind_all("<MouseWheel>", self._rueda)
+        for evento in self.EVENTOS_RUEDA:
+            self.canvas.bind_all(evento, self._rueda)
 
     def _desactivar_rueda(self, _evt=None):
-        self.canvas.unbind_all("<MouseWheel>")
+        for evento in self.EVENTOS_RUEDA:
+            self.canvas.unbind_all(evento)
 
     def _rueda(self, evt):
         if isinstance(evt.widget, (ttk.Treeview, tk.Listbox, tk.Text)):
             return
-        # 120 es el "notch" estandar de la rueda en Windows: `event.delta`
-        # llega en multiplos de 120 y hay que dividirlo para obtener las
-        # unidades de scroll. Es aritmetica del evento, no geometria de
-        # widget, y por eso la regla de la capa de presentacion no la exime
-        # sola: va marcada.
-        self.canvas.yview_scroll(int(-evt.delta / 120), "units")  # literal-ok: notch de la rueda, unidades por delta
+        self.canvas.yview_scroll(
+            unidades_de_rueda(num=getattr(evt, "num", 0),
+                              delta=getattr(evt, "delta", 0)), "units")
 
 
 class CampoValidable:
@@ -318,6 +355,12 @@ class BotonAccion:
     - **Dice por que.** `deshabilitar(motivo)` guarda el motivo y lo pinta en
       el tooltip, delante de la ayuda permanente del boton. Quien pasa el raton
       por encima lee «no disponible: <motivo>» en vez de adivinar.
+    - **Y lo dice a la vista** (EXT-8, PC-17): el tooltip exige un raton
+      encima y un lector de pantalla no lo lee. `con_rotulo(master)` crea un
+      `ttk.Label` junto al boton que muestra el MISMO motivo mientras el
+      boton esta apagado, y se vacia al encenderlo. La ventana lo coloca
+      donde quiere; el texto lo pone esta clase, para que rotulo y tooltip
+      no puedan decir cosas distintas del mismo bloqueo.
 
     El tooltip es el `Tooltip` de este mismo archivo --- no se reinventa --- y
     se crea UNA vez: se le reescribe el texto, porque un segundo `Tooltip`
@@ -353,7 +396,18 @@ class BotonAccion:
         else:
             self.boton = tk.Button(master, font=("Segoe UI", 9, "bold"), **opciones)
         self.tooltip = Tooltip(self.boton, ayuda)
+        self.rotulo = None
         self._pintar(motivo is None)
+
+    def con_rotulo(self, master, **kw):
+        """
+        Crea (una vez) el rotulo visible del motivo y lo devuelve para que el
+        llamador le haga `pack`/`grid`. Con el boton encendido esta vacio.
+        """
+        if self.rotulo is None:
+            self.rotulo = ttk.Label(master, text="", **kw)
+            self._pintar(self.motivo is None)
+        return self.rotulo
 
     # El widget, para quien tenga que hacerle `pack`/`grid`/`config(text=...)`.
     #
@@ -381,9 +435,15 @@ class BotonAccion:
         opciones["disabledforeground"] = COLOR_BOTON_APAGADO_TEXTO
         self.boton.configure(**opciones)
         self.tooltip.texto = self.ayuda if encendido else self._texto_apagado()
+        if self.rotulo is not None:
+            self.rotulo.configure(
+                text="" if encendido else self._motivo_apagado())
+
+    def _motivo_apagado(self):
+        return f"No disponible: {self.motivo}" if self.motivo else "No disponible."
 
     def _texto_apagado(self):
-        motivo = f"No disponible: {self.motivo}" if self.motivo else "No disponible."
+        motivo = self._motivo_apagado()
         return f"{motivo}\n\n{self.ayuda}" if self.ayuda else motivo
 
     def habilitar(self):

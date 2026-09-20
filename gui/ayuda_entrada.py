@@ -124,6 +124,8 @@ class VentanaAyudaEntrada(tk.Toplevel):
         self.geometry("1040x780")
         self.minsize(760, 520)
         self.transient(master)
+        # Escape cierra la ayuda (EXT-8, PC-17), como el boton «Cerrar».
+        self.bind("<Escape>", lambda _evt: self.destroy())
 
         self.nb = ttk.Notebook(self)
         self.nb.pack(fill="both", expand=True, padx=10, pady=10)

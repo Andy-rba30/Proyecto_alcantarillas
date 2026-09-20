@@ -336,13 +336,16 @@ def test_el_critico_cerrado_no_pasa_por_brent():
     fallo de convergencia que la forma cerrada retira.
     """
     llamadas = []
-    import modulos.M4_control as M4
-    original = M4.brentq
-    M4.brentq = lambda *a, **k: llamadas.append(a) or original(*a, **k)
+    # Desde EXT-8 (PC-10) M4 importa `brentq` EN EL PUNTO DE USO, de modo que
+    # el nombre que hay que interceptar es el de `scipy.optimize`, que es de
+    # donde cada llamada lo toma; `M4.brentq` ya no existe como atributo.
+    import scipy.optimize as so
+    original = so.brentq
+    so.brentq = lambda *a, **k: llamadas.append(a) or original(*a, **k)
     try:
         tirante_critico(6.0, _marco())
     finally:
-        M4.brentq = original
+        so.brentq = original
     assert llamadas == []
 
 

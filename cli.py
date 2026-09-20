@@ -159,6 +159,7 @@ for _ruta in (RAIZ, SRC):
 import criterios_adoptados as ca                                    # noqa: E402
 import datos_sitio as ds                                            # noqa: E402
 import declaracion as _declaracion                                  # noqa: E402
+import sesion as _sesion                                            # noqa: E402
 from constantes_normativas import (CUANTIA_MIN_MURO,                # noqa: E402
                                    H_O_HW_SOBRE_D_MIN, RECUBRIMIENTO)
 from dominios import S_CAUCE_MAX                                    # noqa: E402
@@ -2622,15 +2623,116 @@ def plantilla_por_alcance(alcance: str,
     return DIR_PLANTILLAS / nombre
 
 
+# ---------------------------------------------------------------------------
+# Progreso por stdout y sesion serializada (EXT-8, PC-11)
+# ---------------------------------------------------------------------------
+# La GUI exporta el PDF en un SUBPROCESO que corre esta CLI, y lee su avance
+# de stdout: una linea por punto de la memoria y una por etapa, con este
+# prefijo delante para distinguirlas del volcado. Solo salen con `--progreso`;
+# sin la bandera la salida de la CLI es la de siempre (la linea base de la
+# Familia C la fija).
+PREFIJO_PROGRESO = "progreso:"
+
+
+def _informar_progreso(etapa: str, hecho: int, total: int) -> None:
+    print(f"{PREFIJO_PROGRESO} {hecho}/{total} {etapa}", flush=True)
+
+
+@dataclass(frozen=True)
+class SesionSerializada:
+    """
+    Lo que una sesion de la ventana (`gui/app.py::guardar_sesion`, formato
+    `sesion.FORMATO_SESION`) le dice a la CLI: de que obra es la corrida.
+
+    `banderas` ya viene traducida a las claves de `cargar_datos_externos`
+    (`sesion.banderas_de_externos`), y `criterios` es el bloque tal cual,
+    que `aplicar_sesion_serializada` repone por `declaracion.restaurar_sesion`
+    --- el MISMO camino con guardia que «Cargar sesion» en la ventana ---.
+    """
+    proyecto: str
+    csv: Optional[Path]
+    datos_externos: Optional[Path]
+    banderas: Dict[str, Optional[str]]
+    alcance: Optional[str]
+    criterios: Optional[Dict[str, Any]]
+    formato_version: int
+
+
+def cargar_sesion_serializada(ruta: Path) -> SesionSerializada:
+    """
+    Lee una sesion de la ventana y la valida ENTERA antes de devolverla
+    (`sesion.errores_de_sesion`, PC-16). Una sesion deformada es
+    `ValueError` con la lista de defectos; un archivo ilegible sale como lo
+    que es (OSError, UnicodeDecodeError, JSONDecodeError), fuera de
+    ErrorProyecto, igual que el CSV.
+    """
+    data = json.loads(Path(ruta).read_text(encoding="utf-8"))
+    errores = _sesion.errores_de_sesion(data)
+    if errores:
+        raise ValueError(
+            f"la sesion «{Path(ruta).name}» no se puede aplicar: "
+            + "; ".join(errores))
+    alcance = data.get("alcance") or None
+    if alcance is not None and alcance not in (ALCANCE_PERFIL, ALCANCE_EXPEDIENTE):
+        raise ValueError(
+            f"la sesion «{Path(ruta).name}» trae un alcance desconocido: "
+            f"{alcance!r} (admitidos: {ALCANCE_PERFIL}, {ALCANCE_EXPEDIENTE})")
+    return SesionSerializada(
+        proyecto=str(data.get("proyecto", "") or ""),
+        csv=Path(data["csv"]) if data.get("csv") else None,
+        datos_externos=(Path(data["datos_externos"])
+                        if data.get("datos_externos") else None),
+        banderas=_sesion.banderas_de_externos(data.get("externos", {}) or {}),
+        alcance=alcance,
+        criterios=data.get("criterios"),
+        formato_version=int(data.get("formato_version", 1)))
+
+
+def aplicar_sesion_serializada(sesion: SesionSerializada):
+    """
+    Repone los criterios de la sesion en ESTE proceso, sustituyendo lo que
+    hubiera declarado (`restaurar_sesion(sustituir=True)`: abrir una obra no
+    hereda las decisiones de otra, EXT-A-02). Devuelve el
+    `ResultadoDeRestauracion` con lo restaurado, lo rechazado y lo retirado,
+    para que `main` lo diga.
+    """
+    return _declaracion.restaurar_sesion(sesion.criterios or {}, sustituir=True)
+
+
+def _bandera_explicita(argv: Optional[Sequence[str]], nombre: str) -> bool:
+    """Si `nombre` (p. ej. `--alcance`) vino escrito en la linea de comandos."""
+    tokens = list(sys.argv[1:] if argv is None else argv)
+    return any(t == nombre or t.startswith(nombre + "=") for t in tokens)
+
+
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cli.py",
+        # Sin abreviaturas (EXT-8): `--sesion` promete que una bandera
+        # ESCRITA gana a lo que la sesion trae, y eso se decide mirando la
+        # linea de comandos (`_bandera_explicita`); con `--alc expediente`
+        # admitido, la bandera escrita perderia (auditoria adversarial).
+        allow_abbrev=False,
         description="Corre el pipeline de alcantarillas (M0 a M10) sobre el "
                     "CSV de puntos criticos de Sec. 1.2.",
         epilog="Los datos que no son columna de Sec. 1.2 (luz, TW, longitud, "
                "Q/S de Familias B y C, L_hidraulico) se declaran con las "
                "banderas o con --datos-externos. No tienen valor por defecto.")
-    p.add_argument("csv", type=Path, help="ruta del CSV de puntos criticos")
+    p.add_argument("csv", type=Path, nargs="?", default=None,
+                   help="ruta del CSV de puntos criticos (se puede omitir "
+                        "con --sesion, que lo trae)")
+    p.add_argument("--sesion", type=Path, dest="sesion",
+                   help="sesion guardada por la ventana (JSON): repone el "
+                        "proyecto, el CSV, los datos externos, el alcance y "
+                        "los criterios declarados con su procedencia, por "
+                        "el mismo camino con guardia que «Cargar sesion». "
+                        "Una bandera escrita aqui gana a lo que la sesion "
+                        "trae; --declarar compone encima")
+    p.add_argument("--progreso", action="store_true",
+                   help=f"imprime en stdout una linea «{PREFIJO_PROGRESO} "
+                        "hecho/total etapa» por punto de la memoria y por "
+                        "etapa de la exportacion (es lo que la ventana lee "
+                        "del subproceso que escribe el PDF)")
     p.add_argument("--json", type=Path, dest="json_salida",
                    help="ruta del JSON de salida (por defecto, junto al CSV "
                         "como <csv>.informe.json)")
@@ -2770,7 +2872,39 @@ def _parece_numero_no_finito(texto: str) -> bool:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = _parser().parse_args(argv)
+    parser = _parser()
+    args = parser.parse_args(argv)
+
+    # LA SESION SERIALIZADA VA PRIMERO (EXT-8, PC-11): repone los criterios
+    # con su procedencia y rellena lo que la linea de comandos no trajo. Una
+    # bandera escrita gana; `--declarar` compone encima (por eso va despues).
+    sesion: Optional[SesionSerializada] = None
+    if args.sesion is not None:
+        try:
+            sesion = cargar_sesion_serializada(args.sesion)
+            restauracion = aplicar_sesion_serializada(sesion)
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            print(f"No se pudo leer la sesion: {exc}", file=sys.stderr)
+            return 2
+        except (ValueError, KeyError) as exc:
+            print(f"No se pudo aplicar la sesion: {exc}", file=sys.stderr)
+            return 2
+        if restauracion.restaurados:
+            print("Criterios restaurados de la sesion SOLO para esta corrida: "
+                  + ", ".join(restauracion.restaurados)
+                  + " (criterios_adoptados.py no se modifico)")
+        for clave, motivo in restauracion.rechazados:
+            print(f"NO se restauro {clave}: {motivo}", file=sys.stderr)
+        if not _bandera_explicita(argv, "--proyecto"):
+            args.proyecto = sesion.proyecto
+        if args.csv is None:
+            args.csv = sesion.csv
+        if args.datos_externos is None:
+            args.datos_externos = sesion.datos_externos
+        if sesion.alcance is not None and not _bandera_explicita(argv, "--alcance"):
+            args.alcance = sesion.alcance
+    if args.csv is None:
+        parser.error("hace falta el CSV de puntos criticos, o una --sesion que lo traiga")
 
     try:
         declaradas = declarar_criterios(args.declaraciones)
@@ -2800,6 +2934,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "longitud_m": args.longitud,
                 "L_hidraulico_m": args.l_hidraulico,
                 "categoria_tr": args.categoria_tr}
+    if sesion is not None:
+        # Lo que la linea de comandos no trajo lo pone la sesion, campo a
+        # campo: son las MISMAS claves (`sesion.banderas_de_externos`).
+        for clave, valor in sesion.banderas.items():
+            if banderas.get(clave) is None:
+                banderas[clave] = valor
+    progreso = _informar_progreso if args.progreso else None
     try:
         externos = cargar_datos_externos(args.datos_externos, banderas)
         informe = correr(args.csv, externos, alcance=args.alcance)
@@ -2842,14 +2983,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.html_salida is not None:
         ruta = exportar_html(informe, args.html_salida,
                              proyecto=args.proyecto,
-                             ruta_plantilla=plantilla)
+                             ruta_plantilla=plantilla, progreso=progreso)
         print(f"Memoria de calculo (HTML): {ruta}")
         print(f"Plantilla usada          : {plantilla.name}")
 
     if args.pdf_salida is not None:
         salida = exportar_pdf(informe, args.pdf_salida,
                               proyecto=args.proyecto,
-                              ruta_plantilla=plantilla)
+                              ruta_plantilla=plantilla, progreso=progreso)
         print(salida.mensaje)
 
     if args.csv_resumen_salida is not None:

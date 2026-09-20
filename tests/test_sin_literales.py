@@ -257,8 +257,8 @@ CONSTRUCTORES_DE_TRANSCRIPCION = {
 # de `src/normativa/` via `src/ventana_normativa.py`, de modo que ni un
 # numeral ni un valor de tabla pueden esconderse en su geometria de widget.
 CAPA_DE_PRESENTACION = ("cli.py", "gui/app.py", "gui/ayuda_entrada.py",
-                        "gui/componentes.py", "gui/ventana_normativa.py",
-                        "verificar_sesion.py")
+                        "gui/componentes.py", "gui/exportacion_pdf.py",
+                        "gui/ventana_normativa.py", "verificar_sesion.py")
 
 # `conftest.py` queda fuera Y SE DECLARA POR QUE, que es la mitad que faltaba
 # en los hallazgos de esta familia. Sus numeros -- los espesores de pared de
@@ -854,7 +854,10 @@ CENSO_DE_MARCAS = {
     # los tags que separan los tres registros tipograficos ---. Ninguna es
     # una magnitud del expediente: el contenido lo produce
     # `src/traza_punto.py`, que no lleva ni un literal.
-    "gui/app.py": 41,
+    # 41 -> 43 en EXT-8: la cadencia del sondeo del subproceso del PDF
+    # (`CADENCIA_SONDEO_PDF_MS`, ms) y el ancho de ajuste del rotulo visible
+    # del motivo de los exportadores. Ninguna es magnitud del expediente.
+    "gui/app.py": 43,
     # La ayuda de entrada de S22, mas la pestana de conceptos de G5. Ninguno
     # es una magnitud del expediente: la mascara del bit de Control de Tk
     # (0x4), los dos altos en lineas de las dos cajas copiables --- la cabecera
@@ -863,7 +866,15 @@ CENSO_DE_MARCAS = {
     # las columnas del Treeview del glosario, que son tupla de modulo y no
     # argumento directo del widget.
     "gui/ayuda_entrada.py": 16,
-    "gui/componentes.py": 4,
+    # 4 -> 6 en EXT-8 (PC-17): el notch de la rueda paso de la linea de
+    # `_rueda` a `NOTCH_RUEDA` (misma marca) y entraron los dos numeros de
+    # boton de X11 (`BOTON_RUEDA_ARRIBA`, `BOTON_RUEDA_ABAJO`), que son
+    # aritmetica del evento y no geometria de widget.
+    "gui/componentes.py": 6,
+    # EXT-8 (PC-11): el umbral de puntos a partir del que se ofrece la via
+    # del navegador --- una MEDIDA del dictamen, no un valor de proyecto ---
+    # y las lineas de la cola del diagnostico del hijo.
+    "gui/exportacion_pdf.py": 2,
     # Los tres cuerpos de letra de la ventana. Estan nombrados --- y no
     # escritos dentro de cada llamada --- porque un tamano dentro de un
     # condicional no es argumento DIRECTO de un widget y el barrido no lo

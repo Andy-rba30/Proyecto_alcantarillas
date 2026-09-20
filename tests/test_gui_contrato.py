@@ -80,11 +80,16 @@ ARBOL_VENTANA = ast.parse(VENTANA.read_text(encoding="utf-8-sig"),
                           filename="ventana_normativa.py")
 ARBOL_COMPONENTES = ast.parse(COMPONENTES.read_text(encoding="utf-8-sig"),
                               filename="componentes.py")
+EXPORTACION_PDF = RAIZ / "gui" / "exportacion_pdf.py"
+ARBOL_EXPORTACION = ast.parse(EXPORTACION_PDF.read_text(encoding="utf-8-sig"),
+                              filename="exportacion_pdf.py")
 
 ARBOLES_DE_LA_GUI = {
     "gui/app.py": ARBOL_GUI,
     "gui/ventana_normativa.py": ARBOL_VENTANA,
     "gui/componentes.py": ARBOL_COMPONENTES,
+    # EXT-8: el subproceso del PDF, sin Tk pero capa de presentacion.
+    "gui/exportacion_pdf.py": ARBOL_EXPORTACION,
 }
 
 
@@ -387,8 +392,12 @@ def test_los_dos_exportadores_de_memoria_pasan_la_plantilla():
 # ---------------------------------------------------------------------------
 
 def _dict_de_sesion():
-    """El diccionario que `guardar_sesion` arma, leido del arbol."""
-    funcion = _funcion(ARBOL_GUI, "guardar_sesion")
+    """
+    El diccionario de la sesion, leido del arbol. Desde EXT-8 lo arma
+    `_datos_de_sesion` --- lo comparten «Guardar sesion» y el subproceso del
+    PDF --- y `guardar_sesion` lo llama.
+    """
+    funcion = _funcion(ARBOL_GUI, "_datos_de_sesion")
     for nodo in ast.walk(funcion):
         if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
                 and isinstance(nodo.targets[0], ast.Name)
@@ -396,7 +405,7 @@ def _dict_de_sesion():
                 and isinstance(nodo.value, ast.Dict)):
             return {clave.value for clave in nodo.value.keys
                     if isinstance(clave, ast.Constant)}
-    raise AssertionError("guardar_sesion dejo de armar el dict `data`")
+    raise AssertionError("_datos_de_sesion dejo de armar el dict `data`")
 
 
 def test_la_sesion_guarda_los_criterios_y_el_alcance():
@@ -428,11 +437,15 @@ def test_la_version_del_formato_de_sesion_subio():
     El patron de `legacy/Tc.py`: una sesion vieja se sigue leyendo y se avisa
     de lo que no traia. Sin subir la version, el aviso no se puede dar.
     """
+    # Desde EXT-8 la version vive en `src/sesion.py` (la CLI la lee tambien)
+    # y la GUI la reexporta con el mismo nombre.
     import re
-    texto = GUI.read_text(encoding="utf-8-sig")
+    import sesion
+    texto = (RAIZ / "src" / "sesion.py").read_text(encoding="utf-8-sig")
     version = re.search(r"^FORMATO_SESION = (\d+)", texto, re.MULTILINE)
     assert version is not None
     assert int(version.group(1)) >= 2
+    assert sesion.FORMATO_SESION == int(version.group(1))
 
 
 # ---------------------------------------------------------------------------
@@ -2340,3 +2353,65 @@ def test_el_anticipo_se_refresca_al_cargar_csv_y_al_cambiar_alcance():
         assert "_pintar_anticipo" in fuente, (
             f"'{nombre}' dejo de repintar el anticipo: el panel se quedaria "
             "describiendo el estado anterior")
+
+
+# ---------------------------------------------------------------------------
+# EXT-8: el PDF fuera del hilo de Tk y la accesibilidad minima, en ventana real
+# ---------------------------------------------------------------------------
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_ext8_la_ventana_real_exporta_sin_bloquear_y_responde_al_teclado(tmp_path):
+    """
+    Lo que el AST no ve (EXT-8, PC-11 y PC-17), medido con una ventana de
+    verdad por `tests/apoyo/gui_ext8_real.py`: el rotulo visible del motivo
+    dice lo mismo que el tooltip y se vacia al correr; `<Button-4>` sobre
+    el canvas no revienta; Escape cierra la ventana normativa y la ayuda;
+    Control-Return ejecuta; y el PDF sale --- por el subproceso, con el
+    boton apagado diciendo por que y un estado terminal en el rotulo,
+    cuando weasyprint esta operativo en ese interprete; por el navegador,
+    con su HTML escrito, cuando no ---. Es el NOVENO test de ventana real.
+    """
+    import json
+    import subprocess
+
+    destino = tmp_path / "salida"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ext8_real",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=900)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads((destino / "observado.json").read_text(encoding="utf-8"))
+
+    # PC-17
+    assert obs["rotulo_antes"] == f"No disponible: {obs['motivo_sin_corrida']}"
+    assert obs["rotulo_tras_correr"] == ""
+    assert obs["rueda_x11"] == [-1, 1]
+    assert set(obs["eventos_rueda"]) == {"<MouseWheel>", "<Button-4>", "<Button-5>"}
+    assert obs["normativa_cerrada_con_escape"] is True
+    assert obs["ayuda_cerrada_con_escape"] is True
+    assert obs["control_return_atado"] is True
+    assert obs["informe_tras_control_return"] is True
+    assert obs["ayuda_pdf_nombra_umbral"] is True
+
+    # PC-11
+    if obs["weasyprint_disponible"]:
+        assert obs["boton_pdf_apagado_durante"] is True
+        assert "proceso aparte" in obs["motivo_durante"]
+        assert obs["cancelar_encendido_durante"] is True
+        assert obs["estado_pdf_durante"].startswith("PDF en marcha")
+        assert obs["termino_a_tiempo"] is True
+        assert obs["estado_final"] == "terminado", obs["rotulo_estado_final"]
+        assert obs["pdf_existe"] is True
+        assert obs["boton_pdf_encendido_despues"] is True
+        assert obs["rotulo_estado_final"].startswith("Terminado")
+        assert obs["cancelacion_termino"] is True
+        assert obs["estado_cancelado"] == "cancelado", obs["rotulo_cancelado"]
+        assert obs["pdf_cancelado_no_existe"] is True
+        assert obs["rotulo_cancelado"].startswith("Cancelado")
+    else:
+        assert obs["html_navegador_existe"] is True
+        assert "weasyprint" in obs["rotulo_estado_final"]

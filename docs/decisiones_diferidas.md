@@ -2011,3 +2011,122 @@ escritas porque se apartan de lo que un lector esperaría.
   `E_activo` pasa a ser la componente horizontal y el dorado del bloque C
   gana `C_E_h_esperado` y `C_E_v_esperado`.
 - **Dónde vive:** `src/modelos.py::EmpujesTrasdos`
+
+# Parte XXIV — Lo que EXT-8 dejó escrito al cerrar el rendimiento y la GUI no bloqueante
+
+EXT-8 cerró PC-10, PC-11, PC-12 y PC-17: `import cli` pasó de 870–930 ms a
+125–150 ms (weasyprint, scipy y el censo de `variables_entrada` perezosos);
+el PDF sale de la ventana en un SUBPROCESO (`cli.py --sesion … --pdf
+--progreso`) con progreso, cancelación, botón apagado con motivo visible y
+estado terminal; la memoria dejó de renderizar dos veces el paso 2.1, los
+punteros son enlaces y hay un anexo único de fundamentos, citas y umbrales
+al que cada punto enlaza, construido por streaming; y la ventana tiene
+rueda en X11/macOS, rótulo visible del motivo, Escape y Control-Return.
+Cuatro decisiones quedan escritas porque se apartan de lo que un lector
+esperaría o porque dejan algo abierto.
+
+## EXT-8-01 · El anexo se decide contra el «de arriba abajo» de la §4.4, y el objetivo de tamaño no se alcanzó
+
+- **Qué se difirió:** el objetivo del dictamen —«< 15 KB y < 10 páginas
+  por punto»— y, con él, cualquier recorte adicional de lo que la memoria
+  de un punto imprime.
+- **Por qué:** la §4.4 de `hoja_de_ruta_correcciones_v12.md` pide que «la
+  memoria de un punto se lea de arriba abajo y se entienda sin abrir el
+  código». El anexo lo tensiona a sabiendas y se decide así: lo que es DEL
+  PUNTO (qué se calcula, con qué valores y su procedencia, el resultado,
+  contra qué valor se compara y el veredicto) se queda en el punto; lo que
+  es DEL REGISTRO (el argumento del fundamento, la frase literal de cada
+  cita, el carácter y la aplicación de cada umbral) se imprime una vez y
+  el punto lo enlaza con su numeral en la línea. «Sin abrir el código» se
+  conserva —todo está en el mismo documento—; «de arriba abajo» pasa a
+  «con una remisión al anexo», que es cómo cita una memoria impresa.
+  MEDIDO en el árbol de EXT-8, coste marginal por punto a alcance
+  expediente (cuatro puntos contra uno): 54.0 KB y ~20 páginas antes;
+  44.6 KB y 14.0 páginas después; la repetición de texto cayó del 44 % al
+  7 % de los bytes. Lo que queda no es repetición: la sustitución con la
+  procedencia de cada valor (8 KB), las tablas de datos, iteraciones y
+  verificaciones (15 KB), los resultados y veredictos. Bajar de 15 KB
+  exigiría quitar del punto contenido que la §4.4 pone en el punto, y eso
+  no es una decisión de formato. Los techos de
+  `tests/test_ext8_rendimiento_gui.py` (`KB_POR_PUNTO_MAX`,
+  `PAGINAS_POR_PUNTO_MAX`) se fijaron sobre la MEDIDA, con holgura, no
+  sobre el objetivo.
+- **Qué haría falta:** una decisión de contenido sobre la memoria del
+  punto (por ejemplo, la sustitución sin la procedencia larga, con la
+  procedencia en el anexo también), tomada contra la §4.4 y no por debajo
+  de ella; y medir el PDF de 40 y 200 puntos después.
+- **Dónde vive:** `src/modulos/M11_reporte.py::anexo_referencias`
+
+## EXT-8-02 · El hijo recalcula: la equivalencia se afirma sobre la sesión serializada, no sobre el objeto `Informe`
+
+- **Qué se difirió:** serializar el `Informe` de la ventana y pasárselo al
+  proceso hijo para que sólo formatee.
+- **Por qué:** el cálculo cuesta 2 ms por punto y el `Informe` no tiene
+  forma serializable de ida y vuelta (`informe_json` es un volcado de
+  salida, no un formato de carga). El hijo corre la CLI con la MISMA
+  sesión que «Guardar sesión» escribe —`ExpedienteApp._datos_de_sesion`,
+  una sola definición— y la CLI la repone por `declaracion.restaurar_sesion`,
+  el mismo camino con guardia que la ventana. Lo que se afirma y se mide
+  (`test_pc11_el_pdf_del_subproceso_describe_la_misma_corrida`) es «misma
+  sesión serializada → misma corrida, salvo la marca de tiempo»
+  (`gui.exportacion_pdf.sin_marca_de_tiempo`).
+- **Qué haría falta:** un formato de sesión con la corrida embebida
+  (`informe_json` por corrida, `FORMATO_SESION = 3`): es EXT-10 / E04.
+- **Dónde vive:** `gui/exportacion_pdf.py::ProcesoPdf`
+
+## EXT-8-03 · Las claves enteras de un criterio declarado no sobreviven al JSON de la sesión
+
+- **Qué se difirió:** corregir que un criterio `dict_con_campos` declarado
+  con claves ENTERAS (el espesor de pared por diámetro, que `conftest`
+  declara como `{"concreto_reforzado": {900: 0.1, …}}`) vuelva de una
+  sesión guardada con claves de TEXTO (`"900"`), de modo que el consumidor
+  no encuentra la fila y se detiene con «Falta el dato
+  `espesor_pared_conducto[concreto_reforzado][900]`».
+- **Por qué:** lo encontró EXT-8 al medir la equivalencia del subproceso
+  —la corrida propia y la del hijo diferían en ese bloqueo— y NO es del
+  subproceso: «Guardar sesión» y «Cargar sesión» ya lo hacían antes.
+  Convertir claves de texto a enteros al restaurar sería adivinar (una
+  clave `"900"` puede ser un texto legítimo en otro criterio), y cambiar
+  la forma de guardar es cambiar el formato de sesión, que es EXT-10. El
+  test de equivalencia repone la sesión con su forma serializada por las
+  dos puertas, para que la afirmación sea la que se puede sostener.
+- **Qué haría falta:** en el formato 3 de la sesión, guardar los valores
+  de los criterios en una forma que conserve el tipo de las claves (un
+  literal de Python, o el par tipo/valor), con migración explícita v2→v3.
+- **Dónde vive:** `src/declaracion.py::restaurar_sesion`
+
+## EXT-8-04 · El progreso del hijo se lee de un archivo, no de un pipe, y no hay hilo
+
+- **Qué se difirió:** leer stdout del subproceso por un pipe sin bloquear.
+- **Por qué:** un pipe sin bloqueo no existe igual en Windows y en POSIX,
+  y la alternativa portable —un hilo lector— es lo que E06/E07 proponían
+  y el dictamen descartó: el estado de módulo de los tres archivos de
+  valores no es seguro entre hilos. stdout y stderr del hijo van a un
+  archivo de trabajo y `ProcesoPdf.sondear()` lee lo que haya llegado
+  desde el `after` de Tk; las líneas de progreso llevan
+  `cli.PREFIJO_PROGRESO` para separarlas del volcado. `gui/app.py` no
+  importa `threading`, y un test lo fija.
+- **Qué haría falta:** nada para cerrarla; se registra para que nadie
+  proponga el hilo como equivalente.
+- **Dónde vive:** `gui/exportacion_pdf.py::ProcesoPdf`
+
+## EXT-8-05 · Un paso renderizado suelto lleva enlaces sin destino
+
+- **Qué se difirió:** que `bloque_paso` / `bloque_pasos` / `memoria_de_punto`,
+  usados FUERA de `memoria_html_por_partes`, impriman los enlaces al anexo
+  con destino. `tests/linea_base_familia_c/memoria_punto_cajon.html` (el
+  driver `punto_cajon.py` imprime sólo `bloque_pasos`) tiene hoy 35 `href`
+  y 0 `id`.
+- **Por qué:** ningún consumidor de producción muestra un punto suelto como
+  HTML —la traza de la GUI es texto por `traza_punto`— y el anexo es del
+  DOCUMENTO: se construye con los pasos de todos los puntos y las citas de
+  sus fundamentos. Darle a cada fragmento su propio anexo sería la segunda
+  transcripción que la §4.5 prohíbe, y ponerlo al pie del fragmento
+  cambiaría el oráculo de la línea base por un formato que nadie lee. En
+  las siete memorias completas (las generadas y las de línea base) el cruce
+  `href`↔`id` da cero huérfanos (`test_pc12_todo_enlace_interno_de_la_
+  memoria_tiene_destino`). Lo encontró el auditor adversarial de EXT-8.
+- **Qué haría falta:** si algún día un fragmento se entrega solo, una
+  función `fragmento_con_anexo(pasos)` que lo cierre con su propio anexo.
+- **Dónde vive:** `src/modulos/M11_reporte.py::bloque_paso`
+

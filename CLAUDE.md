@@ -436,7 +436,7 @@ regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 - `tests/test_MD.py` — el `skipped` **permanente** por condición imposible:
   su `skipif` guarda que `M5_verificaciones` no exista, y ya no puede darse.
 - `tests/test_gui_contrato.py` y `tests/test_ext5_forma_gui.py` — los tests
-  de **ventana real**, que hoy son **ocho** en seis corridas (S20 abrió el
+  de **ventana real**, que hoy son **nueve** en siete corridas (S20 abrió el
   primero, la corrida de perfil; S22 el de la ayuda de entrada; G1 el de la
   selección real de la pestaña 2, que sobrevive al filtro; I1 el smoke que
   construye la app con las cuatro pestañas pobladas y abre y cierra
@@ -446,7 +446,12 @@ regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
   cargar sesión y fallar; EXT-5 los tres de `tests/apoyo/gui_ext5_real.py`
   sobre UNA corrida —el bloqueo real de C-01 tras declarar los siete del
   cajón por el ratón, la cara de solo lectura del `Derivada` en la pestaña 2
-  y el veredicto de 'nan' al escribir y al declarar—). Se saltan
+  y el veredicto de 'nan' al escribir y al declarar—; EXT-8 el de
+  `tests/apoyo/gui_ext8_real.py`, que mide el rótulo visible del motivo, la
+  rueda de X11, Escape, Control-Return y la exportación del PDF —por el
+  SUBPROCESO, con el botón apagado, el estado terminal y la cancelación,
+  cuando el intérprete de la ventana tiene weasyprint; por el navegador
+  cuando no—). Se saltan
   cuando ningún intérprete disponible puede levantar un `Tk`: falta `tkinter`,
   falta `ttkbootstrap` o falta entorno gráfico.
 - `tests/test_familias_del_csv.py` — **tres** saltos de DISEÑO, no de entorno,
@@ -716,7 +721,13 @@ los encuentra sola, sin tocar nada. Queda escrito porque una celda vacía se lee
 como «no se puede» cuando lo cierto era «no estaba instalado»:
 
     apt-get install -y python3-tk
-    python3.12 -m pip install numpy scipy ttkbootstrap --break-system-packages
+    python3.12 -m pip install numpy scipy ttkbootstrap weasyprint --break-system-packages
+
+`weasyprint` entró en esa línea en EXT-8: sin él, el noveno test de ventana
+real pasa igual —mide la vía del navegador— pero NO ejercita el subproceso
+del PDF, que es lo que EXT-8 cerró; con él, lo ejercita de punta a punta
+(botón apagado con motivo, progreso, estado terminal, cancelación). Medido
+en EXT-8 sobre este contenedor en las dos condiciones.
 
 **Y el número saltó de 1538 a 1794 en dos sesiones, no en una.** La tabla se
 quedó en el árbol de S20 mientras la suite crecía: al abrir S21 el conteo ya

@@ -28,6 +28,19 @@ python cli.py <csv de puntos> --alcance perfil|expediente [--html salida.html] [
 python -m gui.app          # la ventana
 ```
 
+## Exportar a PDF desde la ventana: en un proceso aparte
+
+Desde EXT-8 el botón «Exportar memoria (PDF)» no escribe el PDF en el hilo de la
+ventana: lanza `python cli.py --sesion <sesión> --pdf <destino> --progreso` en un
+subproceso con la sesión serializada de la ventana (proyecto, CSV, datos externos,
+alcance y criterios declarados con su procedencia). La ventana sigue viva, el
+progreso se lee de las líneas `progreso: hecho/total etapa` que la CLI imprime, y
+«Cancelar PDF» termina el proceso sin dejar un archivo a medias. Medido antes de
+EXT-8: 11 s y 287 MB para 4 puntos, 69 s y 1.3 GB para 40, 360 s y 5.7 GB para 200;
+por encima de 40 puntos la ventana ofrece la vía del navegador (HTML + Ctrl+P). Las
+dos banderas nuevas valen también a mano: `--sesion` repone una sesión guardada y
+`--progreso` imprime el avance.
+
 ## Exportar a PDF: WeasyPrint necesita librerías nativas
 
 **En Linux y macOS normalmente no hay nada que hacer.** En **Windows sí**, y

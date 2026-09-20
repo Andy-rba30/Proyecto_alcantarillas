@@ -356,13 +356,15 @@ def traza_del_punto(informe_punto: Any) -> TrazaDelPunto:
     # Verificaciones: paso donde lo hay, HUECO DECLARADO donde el censo lo
     # explica, y nada donde M11 tampoco imprime nada --- inventar un texto
     # para una verificacion sin paso ni censo seria peor que el hueco.
+    # La MISMA seleccion que M11 (`desarrollo_de_verificaciones`, EXT-8):
+    # sin el paso 2.1 repetido, porque ya salio en la Fase 2 de arriba.
     censo = _M11.sin_fundamento_por_codigo()
     entradas: List[EntradaDeTraza] = []
-    for _fase, v in _M11.verificaciones_publicadas(informe_punto):
-        if v.paso is not None:
-            entradas.append(_detalle(v.paso, reg))
-        elif v.codigo and v.codigo in censo:
-            entradas.append(_hueco(v.codigo, censo[v.codigo]))
+    for codigo, paso in _M11.desarrollo_de_verificaciones(informe_punto):
+        if paso is not None:
+            entradas.append(_detalle(paso, reg))
+        else:
+            entradas.append(_hueco(codigo, censo[codigo]))
     if entradas:
         secciones.append(SeccionDeTraza(
             _M11.TITULO_TRAZA_VERIFICACIONES, tuple(entradas)))

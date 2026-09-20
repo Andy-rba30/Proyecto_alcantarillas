@@ -342,7 +342,12 @@ import math
 import numbers
 from typing import NamedTuple, Optional, Tuple
 
-from scipy.optimize import brentq
+# EL RESOLUTOR SE IMPORTA EN EL PUNTO DE USO (EXT-8, PC-10): `scipy.optimize`
+# costaba 230-310 ms en CADA `import cli`, tambien en una corrida que no
+# llega a resolver nada (--criterios, la ayuda, la GUI al abrirse). Es el
+# mismo `brentq` de siempre --- la referencia del docstring de modulo sigue
+# valiendo --- traido la primera vez que hace falta; el segundo import es una
+# busqueda en `sys.modules`.
 
 import criterios_adoptados as ca
 from constantes_fisicas import G
@@ -550,6 +555,7 @@ def _critico_por_brent(Q: float, seccion: Seccion) -> Geometria:
                    f"resolver",
         )
 
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
     theta_critico = brentq(f, llenado_min, llenado_max, xtol=TOL_BRENT)
     geom = geometria(seccion, theta_critico)
     # SIS-G-02. LA GUARDA DE ARRIBA PROTEGE EL BRACKET DE BRENT, NO ESTA

@@ -220,6 +220,7 @@ from __future__ import annotations
 
 import ast
 import sys
+import tempfile
 import traceback
 from pathlib import Path
 from typing import Optional
@@ -257,7 +258,9 @@ import traza_punto as tp  # noqa: E402
 # local de esa funcion y la lambda del icono acabaria pidiendole
 # `.PESTANA_CSV` a la ultima cadena de tooltip del bucle --- un
 # AttributeError al pulsar, no al arrancar. Lo encontro `pyflakes`.
+import sesion as ses  # noqa: E402
 from gui import ayuda_entrada as ayuda_ent  # noqa: E402
+from gui import exportacion_pdf as expdf  # noqa: E402
 from gui import ventana_normativa as ventana_norma  # noqa: E402
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR,  # noqa: E402
                              COLOR_OK, BotonAccion, BotonAyuda, MarcoScroll,
@@ -269,11 +272,13 @@ except ImportError:
     tb = None
 
 APP_VERSION = "1.0"
-# v2: la sesion guarda tambien el alcance de la corrida y los criterios
-# declarados con su procedencia (SIS-A-17, SIS-A-18). Una sesion v1 se sigue
-# leyendo: lo que no trae se queda en su valor por defecto y la ventana lo
-# dice, que es el patron de migracion de `legacy/Tc.py`.
-FORMATO_SESION = 2
+# EL FORMATO DE LA SESION VIVE EN `src/sesion.py` DESDE EXT-8 (PC-11): la
+# CLI lo lee (`--sesion`) para escribir el PDF en un subproceso, y dos
+# esquemas --- uno por puerta --- divergirian. Aqui se reexportan con los
+# nombres de siempre, que son los que la suite y `tests/apoyo/` usan.
+FORMATO_SESION = ses.FORMATO_SESION
+ESQUEMA_SESION = ses.ESQUEMA_SESION
+errores_de_sesion = ses.errores_de_sesion
 
 # Los motivos por los que un boton esta apagado. Son DATO y no cadenas sueltas
 # en el sitio donde se apaga cada uno: un motivo escrito junto a su condicion
@@ -292,6 +297,13 @@ MOTIVO_NO_DECLARADO = "el criterio no esta declarado para esta corrida"
 # con `_motivo_derivado` para nombrar de que se deriva.
 MOTIVO_DERIVADO = "se deriva de {de}; edite sus entradas (regla: {regla})"
 MOTIVO_SIN_CORRIDA = "todavia no se ejecuto el pipeline: no hay informe que exportar"
+# El PDF sale en un proceso aparte (EXT-8, PC-11): mientras corre, el boton
+# esta apagado y lo dice --- y el progreso se ve en el rotulo de al lado ---.
+MOTIVO_EXPORTANDO_PDF = "el PDF se esta escribiendo en un proceso aparte"
+# Cada cuanto se sondea el proceso hijo, en ms. Es cadencia de interfaz, no
+# un valor del expediente: mas corto no acelera nada, mas largo retrasa lo
+# que el usuario ve.
+CADENCIA_SONDEO_PDF_MS = 250   # literal-ok: cadencia del sondeo del subproceso, ms
 MOTIVO_EJECUTANDO = "la corrida esta en marcha"
 MOTIVO_SIN_PUNTO = "seleccione un punto en la tabla de arriba"
 # Los dos motivos con que un informe deja de estar vigente (EXT-4, PC-15).
@@ -304,63 +316,6 @@ MOTIVO_INFORME_DESACTUALIZADO = (
 MOTIVO_CORRIDA_FALLIDA = (
     "la ultima corrida no produjo informe: corrija la entrada y vuelva a "
     "ejecutar el calculo")
-
-# EL ESQUEMA DE LA SESION, como dato (PC-16): que tipo tiene que traer cada
-# clave. `errores_de_sesion` lo contrasta ENTERO antes de que `cargar_sesion`
-# toque un solo StringVar. `criterios` admite ademas `None` --- una sesion sin
-# bloque de criterios --- y `externos` es un objeto de cadenas.
-ESQUEMA_SESION = {
-    "formato_version": int,
-    "app_version": str,
-    "proyecto": str,
-    "csv": str,
-    "datos_externos": str,
-    "externos": dict,
-    "alcance": str,
-    "criterios": dict,
-}
-
-
-def errores_de_sesion(data):
-    """
-    Los defectos de forma de una sesion, como lista de frases; vacia si la
-    sesion se puede aplicar entera. No aplica nada: es la mitad que faltaba
-    en `cargar_sesion`, que escribia el proyecto y el CSV en la ventana y
-    reventaba despues con `"externos": null`.
-    """
-    errores = []
-    if not isinstance(data, dict):
-        return [f"una sesion es un objeto con claves, y este trae "
-                f"{type(data).__name__}"]
-    for clave, tipo in ESQUEMA_SESION.items():
-        if clave not in data:
-            continue
-        valor = data[clave]
-        if clave == "criterios" and valor is None:
-            continue
-        # `bool` es subclase de `int`: una version `true` no es una version.
-        if not isinstance(valor, tipo) or isinstance(valor, bool):
-            errores.append(f"'{clave}' tiene que ser {tipo.__name__} y trae "
-                           f"{type(valor).__name__}")
-    externos = data.get("externos")
-    if isinstance(externos, dict):
-        for clave, valor in externos.items():
-            if not isinstance(clave, str) or not isinstance(valor, str):
-                errores.append(f"'externos' tiene que ser un objeto de "
-                               f"cadenas: '{clave}' trae "
-                               f"{type(valor).__name__}")
-    # EL INTERIOR DE `criterios` TAMBIEN, o `{"valores": null}` pasaba la
-    # validacion, `cargar_sesion` pisaba proyecto, CSV y externos, y
-    # `restaurar_sesion` rechazaba el bloque DESPUES: la mezcla de EXT-A-02
-    # con un aviso encima (auditoria adversarial de EXT-4).
-    criterios = data.get("criterios")
-    if isinstance(criterios, dict):
-        for clave in ("valores", "procedencias"):
-            if clave in criterios and not isinstance(criterios[clave], dict):
-                errores.append(f"'criterios.{clave}' tiene que ser un objeto "
-                               f"con claves y trae "
-                               f"{type(criterios[clave]).__name__}")
-    return errores
 
 # Los filtros de estado de la tabla de criterios (pestana 2). Cada entrada es
 # (rotulo, tag), y el `tag` es el MISMO que devuelve `_estado_criterio`: filtrar
@@ -491,6 +446,7 @@ class ExpedienteApp:
         self.alcance_var = tk.StringVar(value=cli.ALCANCE_EXPEDIENTE)
 
         self.informe: Optional[cli.Informe] = None
+        self.entradas_de_la_corrida = {}
         # El nombre del proyecto CON QUE SE CORRIO, leido al ejecutar y no al
         # exportar (PC-15): la memoria describe la corrida, no el campo.
         self.proyecto_de_la_corrida = ""
@@ -619,6 +575,10 @@ class ExpedienteApp:
                   "datos externos y el alcance elegidos arriba.",
         )
         self.btn_ejecutar.pack(side="right", padx=4, ipadx=14, ipady=6)
+        # Control-Return ejecuta desde cualquier campo (EXT-8, PC-17): la
+        # accion principal de la ventana tiene atajo, y el mismo `command`
+        # del boton, para que las dos puertas hagan exactamente lo mismo.
+        self.root.bind("<Control-Return>", lambda _evt: self.ejecutar_pipeline())
 
     # -------------------------- Pestana 1 -----------------------------
     def _construir_tab_datos(self, p):
@@ -828,13 +788,9 @@ class ExpedienteApp:
     # ya existia dentro de `_leer_banderas`, enterrada en el armado del dict, y
     # aqui hace falta la MISMA para preguntar por las familias. Se escribe una
     # vez y las dos la leen.
-    CLAVE_EXTERNA_DE_CAMPO = {
-        "luz_m": "luz_m",
-        "TW_m": "TW_m",
-        "longitud_m": "longitud_m",
-        "l_hidraulico": "L_hidraulico_m",
-        "categoria_tr": "categoria_tr",
-    }
+    # La traduccion es la de `src/sesion.py`, que es la que la CLI usa al
+    # leer una sesion (`--sesion`): el MISMO objeto, no una copia.
+    CLAVE_EXTERNA_DE_CAMPO = ses.CLAVE_EXTERNA_DE_CAMPO
 
     def _secciones_de_campos(self):
         """
@@ -1999,6 +1955,7 @@ class ExpedienteApp:
         """
         ventana = tk.Toplevel(self.root)
         ventana.title(f"Traza de procedencia - {traza.id_punto}")
+        ventana.bind("<Escape>", lambda _evt: ventana.destroy())   # PC-17
         ventana.geometry("980x680")  # literal-ok: tamano inicial de la ventana, px
         ventana.columnconfigure(0, weight=1)
         ventana.rowconfigure(0, weight=1)
@@ -2132,6 +2089,28 @@ class ExpedienteApp:
                   "por punto, en una hoja de calculo.")
         self.btn_csv.pack(side="left", padx=8, ipadx=8, ipady=4)
 
+        # EL MOTIVO DEL BLOQUEO, A LA VISTA (EXT-8, PC-17). Los cuatro
+        # exportadores comparten motivo --- se apagan y encienden juntos ---,
+        # y un solo rotulo debajo de la fila lo dice sin pasar el raton. El
+        # texto lo escribe `BotonAccion`, el mismo que va al tooltip.
+        self.btn_json.con_rotulo(p, style="Ayuda.TLabel", wraplength=820,  # literal-ok: ancho de ajuste del rotulo, px
+                                 justify="left").pack(anchor="w", pady=(6, 0))
+
+        # LA FILA DEL PDF EN MARCHA (EXT-8, PC-11): progreso, cancelar y el
+        # estado terminal, visibles mientras y despues de exportar.
+        f_pdf = ttk.Frame(p)
+        f_pdf.pack(fill="x", pady=(6, 0))
+        self.lbl_estado_pdf = ttk.Label(f_pdf, text="", style="Ayuda.TLabel",
+                                        wraplength=700, justify="left")
+        self.lbl_estado_pdf.pack(side="left", fill="x", expand=True)
+        self.btn_cancelar_pdf = BotonAccion(
+            f_pdf, "Cancelar PDF", letra=BotonAccion.DISCRETA,
+            command=self._cancelar_pdf, motivo="no hay ninguna exportacion en marcha",
+            ayuda="Termina el proceso que esta escribiendo el PDF.\n"
+                  "No queda ningun archivo a medias.")
+        self.btn_cancelar_pdf.pack(side="right", padx=(8, 0), ipadx=6)
+        self.proceso_pdf = None
+
     def _ayuda_del_pdf(self):
         """
         Por que via saldra el PDF, DICHO ANTES DE PULSAR y no despues.
@@ -2150,15 +2129,25 @@ class ExpedienteApp:
         dos respuestas que pueden discrepar, y la que veria el usuario seria
         la equivocada.
         """
+        # La sonda carga weasyprint UNA vez por proceso (perezoso desde
+        # EXT-8); despues, `WeasyHTML` sigue siendo el simbolo que decide.
+        M11.weasyprint_disponible()
+        limite = (f"Limite {expdf.LIMITE_MEDIDO_PDF}.\n"
+                  f"Por encima de {expdf.UMBRAL_PUNTOS_PDF} puntos se ofrece la\n"
+                  "via del navegador (HTML + Ctrl+P), que pagina lo mismo\n"
+                  "sin que este programa pague la memoria.")
         if M11.WeasyHTML is not None:
-            return ("Escribe el PDF directamente con weasyprint.\n"
-                    "La hoja ya esta configurada en A4.")
+            return ("Escribe el PDF con weasyprint EN UN PROCESO APARTE:\n"
+                    "la ventana sigue viva, el progreso se ve abajo y se\n"
+                    "puede cancelar. La hoja ya esta configurada en A4.\n"
+                    + limite)
         return ("weasyprint no esta operativo en esta maquina: o no esta\n"
                 "instalado, o esta instalado y sus librerias nativas (GTK,\n"
                 "cairo, pango) no cargan --- lo corriente en Windows ---.\n"
                 "NO es un bloqueo: al pulsar se escribe la memoria en HTML\n"
                 "junto al destino que elijas y se abre en el navegador para\n"
-                "guardarla como PDF con Ctrl+P (la hoja ya esta en A4).")
+                "guardarla como PDF con Ctrl+P (la hoja ya esta en A4).\n"
+                + limite)
 
     # ------------------------------------------------------------------
     # Lectura de banderas
@@ -2168,21 +2157,14 @@ class ExpedienteApp:
         Los valores de texto de CAMPOS_EXTERNOS, tal como los espera
         `cargar_datos_externos`: None si el campo quedo vacio.
         """
-        banderas = {}
-        for clave, *_resto in CAMPOS_EXTERNOS:
-            texto = self.externos_vars[clave].get().strip()
-            # La traduccion rotulo-de-ventana -> clave-de-expediente sale de
-            # `CLAVE_EXTERNA_DE_CAMPO` y ya no de un `if` escrito aqui: la
-            # anotacion de familias necesita la MISMA correspondencia, y dos
-            # copias de ella se separan el dia que aparezca un sexto campo.
-            clave_bandera = self.CLAVE_EXTERNA_DE_CAMPO[clave]
-            banderas[clave_bandera] = None
-            if texto:
-                if clave == "categoria_tr":
-                    banderas[clave_bandera] = texto
-                else:
-                    banderas[clave_bandera] = texto.replace(",", ".")
-        return banderas
+        # La traduccion rotulo-de-ventana -> clave-de-expediente es la de
+        # `CLAVE_EXTERNA_DE_CAMPO` (de `src/sesion.py`), y la regla de la
+        # coma decimal tambien: `sesion.banderas_de_externos` es lo MISMO que
+        # la CLI aplica al leer una sesion guardada, de modo que la corrida
+        # de la ventana y la del subproceso del PDF traducen igual.
+        textos = {clave: self.externos_vars[clave].get()
+                  for clave in self.CLAVE_EXTERNA_DE_CAMPO}
+        return ses.banderas_de_externos(textos)
 
     # ------------------------------------------------------------------
     # Ejecucion del pipeline
@@ -2209,6 +2191,16 @@ class ExpedienteApp:
         # si fuera esta. Y el nombre del proyecto se toma AHORA.
         self._invalidar_informe(MOTIVO_EJECUTANDO)
         self.proyecto_de_la_corrida = self.proyecto_var.get()
+        # Y LAS ENTRADAS DE LA CORRIDA SE FOTOGRAFIAN AHORA (EXT-8): son las
+        # que el subproceso del PDF recibe. Leerlas al exportar --- con el
+        # radio o la luz cambiados despues de correr --- mandaria al hijo a
+        # calcular otra obra (auditoria adversarial de EXT-8).
+        self.entradas_de_la_corrida = {
+            "csv": ruta_csv_texto,
+            "datos_externos": texto_externos,
+            "externos": {clave: var.get() for clave, var in self.externos_vars.items()},
+            "alcance": self.alcance_var.get(),
+        }
         self.root.update_idletasks()
         try:
             externos = cli.cargar_datos_externos(ruta_externos, self._leer_banderas())
@@ -2418,7 +2410,32 @@ class ExpedienteApp:
             messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
 
     def exportar_pdf(self):
+        """
+        El PDF, FUERA DEL HILO DE TK (EXT-8, PC-11).
+
+        Tres caminos, decididos ANTES de tocar nada:
+
+        1. Sin weasyprint operativo, la via del navegador de siempre, en este
+           proceso: escribir el HTML cuesta ~1 s y no congela nada.
+        2. Con weasyprint y mas de `UMBRAL_PUNTOS_PDF` puntos, se PREGUNTA:
+           el PDF directo de 200 puntos costaba seis minutos y 5.7 GB. Quien
+           elige el navegador va por el camino 1 con weasyprint apagado a
+           proposito (`forzar_navegador`).
+        3. Con weasyprint, un SUBPROCESO (`gui/exportacion_pdf.ProcesoPdf`)
+           corre `cli.py --sesion ... --pdf` con la sesion serializada de
+           esta ventana; el boton se apaga diciendo por que, el progreso se
+           lee de sus lineas de stdout desde un `after` periodico, «Cancelar
+           PDF» lo termina y el estado terminal queda escrito en el rotulo.
+           Nunca un hilo: el estado de modulo de los tres archivos de valores
+           no es seguro entre hilos, y la RAM de weasyprint solo vuelve al
+           sistema cuando el proceso muere.
+        """
         if self.informe is None:
+            return
+        if self.proceso_pdf is not None and not self.proceso_pdf.estado.terminal:
+            messagebox.showinfo("PDF en marcha",
+                                "Ya hay una exportacion en marcha; espere a "
+                                "que termine o cancelela.")
             return
         ruta = filedialog.asksaveasfilename(
             title="Exportar memoria de calculo (PDF)", defaultextension=".pdf",
@@ -2427,15 +2444,89 @@ class ExpedienteApp:
         if not ruta:
             return
         try:
-            resultado = cli.exportar_pdf(self.informe, Path(ruta),
-                                         proyecto=self.proyecto_de_la_corrida,
-                                         ruta_plantilla=self._plantilla())
-            messagebox.showinfo("Memoria exportada", resultado.mensaje)
+            if not M11.weasyprint_disponible():
+                self._exportar_pdf_por_navegador(Path(ruta), forzar=False)
+                return
+            n_puntos = len(self.informe.puntos)
+            if n_puntos > expdf.UMBRAL_PUNTOS_PDF and not self._preguntar_via_pdf(n_puntos):
+                self._exportar_pdf_por_navegador(Path(ruta), forzar=True)
+                return
+            self._lanzar_pdf(Path(ruta))
         except (OSError, ErrorProyecto) as exc:
             messagebox.showerror("Error al exportar", f"{exc}")
         except Exception as exc:  # fallo de programa: se muestra con traza
             traceback.print_exc()
             messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
+
+    def _preguntar_via_pdf(self, n_puntos):
+        """True si el usuario quiere el PDF directo pese al tamaño."""
+        return messagebox.askyesno(
+            "Memoria grande",
+            f"La corrida tiene {n_puntos} puntos, por encima de los "
+            f"{expdf.UMBRAL_PUNTOS_PDF} a partir de los que el PDF directo "
+            f"tarda minutos ({expdf.LIMITE_MEDIDO_PDF}).\n\n"
+            "¿Escribir el PDF directo en un proceso aparte de todos modos?\n"
+            "«No» escribe la memoria en HTML y la abre en el navegador para "
+            "guardarla como PDF con Ctrl+P, que pagina lo mismo.")
+
+    def _exportar_pdf_por_navegador(self, ruta, *, forzar):
+        resultado = cli.exportar_pdf(self.informe, ruta,
+                                     proyecto=self.proyecto_de_la_corrida,
+                                     ruta_plantilla=self._plantilla(),
+                                     forzar_navegador=forzar)
+        self.lbl_estado_pdf.config(text=resultado.mensaje.splitlines()[0])
+        messagebox.showinfo("Memoria exportada", resultado.mensaje)
+
+    def _lanzar_pdf(self, ruta):
+        # El proceso hijo repone la sesion de ESTA ventana: la misma que
+        # «Guardar sesion» escribe, en un archivo de trabajo aparte.
+        trabajo = Path(tempfile.mkdtemp(prefix="alcantarillas_pdf_"))
+        sesion = expdf.sesion_de_la_corrida(
+            self.informe, proyecto=self.proyecto_de_la_corrida,
+            formato_version=FORMATO_SESION, app_version=APP_VERSION,
+            **self.entradas_de_la_corrida)
+        proceso = expdf.ProcesoPdf(sesion=sesion, destino=ruta,
+                                   plantilla=self._plantilla(),
+                                   directorio_trabajo=trabajo)
+        proceso.iniciar()
+        if proceso.estado.terminal:
+            # No arranco: se dice y no se deja «en marcha» nada.
+            proceso.limpiar()
+            raise OSError(proceso.detalle)
+        self.proceso_pdf = proceso
+        self.btn_pdf.deshabilitar(MOTIVO_EXPORTANDO_PDF)
+        self.btn_cancelar_pdf.habilitar()
+        self.lbl_estado_pdf.config(text=f"PDF en marcha: {self.proceso_pdf.progreso}")
+        self.root.after(CADENCIA_SONDEO_PDF_MS, self._sondear_pdf)
+
+    def _sondear_pdf(self):
+        """Un latido del `after`: lee el progreso del hijo y se reprograma."""
+        proceso = self.proceso_pdf
+        if proceso is None:
+            return
+        estado = proceso.sondear()
+        if not estado.terminal:
+            self.lbl_estado_pdf.config(text=f"PDF en marcha: {proceso.progreso}")
+            self.root.after(CADENCIA_SONDEO_PDF_MS, self._sondear_pdf)
+            return
+        self._terminar_pdf(proceso)
+
+    def _terminar_pdf(self, proceso):
+        """El estado terminal, claro y visible: escrito, cancelado o fallido."""
+        self.btn_cancelar_pdf.deshabilitar("no hay ninguna exportacion en marcha")
+        if self.informe is not None:
+            self.btn_pdf.habilitar()
+        self.lbl_estado_pdf.config(text=f"{proceso.estado.value.capitalize()}: {proceso.detalle}")
+        proceso.limpiar()
+        if proceso.estado is expdf.EstadoPdf.TERMINADO:
+            messagebox.showinfo("Memoria exportada", proceso.detalle)
+        elif proceso.estado is expdf.EstadoPdf.FALLIDO:
+            messagebox.showerror("Error al exportar", proceso.detalle)
+
+    def _cancelar_pdf(self):
+        if self.proceso_pdf is not None:
+            self.proceso_pdf.cancelar()
+            self.lbl_estado_pdf.config(text="Cancelando la exportacion del PDF...")
 
     def exportar_csv(self):
         if self.informe is None:
@@ -2459,10 +2550,16 @@ class ExpedienteApp:
     # ------------------------------------------------------------------
     # Sesion (JSON) - patron de legacy/Tc.py
     # ------------------------------------------------------------------
-    def guardar_sesion(self):
-        # SIS-A-18. `criterios` y `alcance` son lo que faltaba: sin ellos, una
-        # sesion guardada describia DONDE estaba el expediente y no QUE se
-        # habia decidido sobre el, que es la parte que cuesta rehacer.
+    def _datos_de_sesion(self):
+        """
+        La sesion de ESTA ventana, lista para `json.dump`. La escriben
+        «Guardar sesion» y el subproceso del PDF (EXT-8): es UNA definicion,
+        y por eso el PDF del hijo describe la misma obra que la ventana.
+
+        SIS-A-18. `criterios` y `alcance` son lo que faltaba: sin ellos, una
+        sesion guardada describia DONDE estaba el expediente y no QUE se
+        habia decidido sobre el, que es la parte que cuesta rehacer.
+        """
         data = {
             "formato_version": FORMATO_SESION,
             "app_version": APP_VERSION,
@@ -2473,6 +2570,10 @@ class ExpedienteApp:
             "alcance": self.alcance_var.get(),
             "criterios": dec.estado_de_sesion(),
         }
+        return data
+
+    def guardar_sesion(self):
+        data = self._datos_de_sesion()
         ruta = filedialog.asksaveasfilename(
             title="Guardar sesion", defaultextension=".json",
             filetypes=[("Archivos JSON", "*.json")],

@@ -110,6 +110,7 @@ import csv
 import hashlib
 import html
 import math
+import os
 import re
 import tempfile
 import webbrowser
@@ -117,7 +118,8 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from string import Template
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import (Any, Callable, Dict, Iterator, List, Optional, Sequence,
+                    Tuple)
 
 import criterios_adoptados as ca
 import datos_sitio as ds
@@ -166,14 +168,51 @@ _reg_M11 = _registro_M11.construir()
 # resolver una DLL) es «esta y no carga». Y el texto de la excepcion NOMBRA la
 # biblioteca que falta, que es el unico dato con el que se puede arreglar:
 # adivinarlo desde aqui seria suponer, y la regla del proyecto es declarar.
-try:
-    from weasyprint import HTML as WeasyHTML
-    FALLO_WEASYPRINT = None
-    WEASYPRINT_AUSENTE = False
-except Exception as _exc_weasy:  # ImportError o fallo de librerias nativas (GTK/cairo)
-    WeasyHTML = None
-    FALLO_WEASYPRINT = f"{type(_exc_weasy).__name__}: {_exc_weasy}"
-    WEASYPRINT_AUSENTE = isinstance(_exc_weasy, ImportError)
+#
+# Y SE CARGA PEREZOSAMENTE (EXT-8, PC-10). Hasta EXT-8 el `try` de arriba
+# corria al importar este modulo, o sea en CADA `import cli` --- 383 ms
+# medidos, tambien en una corrida sin `--pdf`, en la ayuda y al abrir la
+# GUI ---. Ahora corre UNA vez por proceso, la primera vez que alguien
+# pregunta (`weasyprint_disponible()`) o exporta (`exportar_pdf`). El
+# contrato no cambia: `WeasyHTML` sigue siendo EL simbolo que decide la via
+# --- la GUI lo sondea y `tests/test_M11_reporte.py` lo parchea --- y
+# `FALLO_WEASYPRINT` / `WEASYPRINT_AUSENTE` conservan el diagnostico de
+# arriba. Un test parchea `WeasyHTML` DESPUES de sondear (o marca
+# `_WEASYPRINT_SONDEADO`), porque la sonda solo escribe la primera vez.
+WeasyHTML: Any = None
+FALLO_WEASYPRINT: Optional[str] = None
+WEASYPRINT_AUSENTE = False
+_WEASYPRINT_SONDEADO = False
+
+
+def _importar_weasyprint() -> Any:
+    """El import de verdad, separado para que la sonda se pueda probar."""
+    from weasyprint import HTML
+    return HTML
+
+
+def weasyprint_disponible() -> bool:
+    """
+    La SONDA: si weasyprint esta operativo en este proceso.
+
+    Carga una sola vez y deja escrito el diagnostico: `WEASYPRINT_AUSENTE`
+    (no esta: ImportError) frente a `FALLO_WEASYPRINT` (esta y no carga:
+    cualquier otra excepcion, tipicamente OSError desde ctypes/cffi por una
+    DLL de GTK). Es lo que `_por_que_no_hay_weasyprint` lee para decirle al
+    usuario que hacer.
+    """
+    global WeasyHTML, FALLO_WEASYPRINT, WEASYPRINT_AUSENTE, _WEASYPRINT_SONDEADO
+    if not _WEASYPRINT_SONDEADO:
+        _WEASYPRINT_SONDEADO = True
+        try:
+            WeasyHTML = _importar_weasyprint()
+            FALLO_WEASYPRINT = None
+            WEASYPRINT_AUSENTE = False
+        except Exception as exc:  # ImportError o fallo de librerias nativas (GTK/cairo)
+            WeasyHTML = None
+            FALLO_WEASYPRINT = f"{type(exc).__name__}: {exc}"
+            WEASYPRINT_AUSENTE = isinstance(exc, ImportError)
+    return WeasyHTML is not None
 
 
 def rotulo_norma_producto(material: Any) -> str:
@@ -312,7 +351,20 @@ MARCADORES: Tuple[str, ...] = (
     "bloque_datos_sitio", "bloque_criterios", "bloque_pendientes",
     "bloque_alcance", "bloque_acotaciones", "bloque_umbrales",
     "bloque_homonimias", "bloque_discrepancias",
+    # EXT-8 (PC-12): el anexo unico de fundamentos, citas y umbrales al que
+    # cada paso enlaza en vez de transcribirlos. Ver `anexo_referencias`.
+    "anexo_referencias",
 )
+MARCADOR_ANEXO = "anexo_referencias"
+
+# Las etapas del progreso que `memoria_html_por_partes` y `exportar_pdf`
+# comunican por `progreso(etapa, hecho, total)` (EXT-8, PC-11). La CLI las
+# vuelca como lineas de stdout con `--progreso`, y la GUI las lee del
+# subproceso. Son texto para el usuario, no codigos.
+ETAPA_PUNTO = "memoria del punto"
+ETAPA_BLOQUES = "bloques generales de la memoria"
+ETAPA_PDF = "escritura del PDF"
+ETAPA_NAVEGADOR = "memoria HTML escrita para imprimir desde el navegador"
 
 
 def marcadores_de_la_memoria() -> Tuple[str, ...]:
@@ -1147,19 +1199,85 @@ def _cita_como_texto(cita_id: str) -> str:
     return _reg_M11.cita(cita_id).como_texto()
 
 
+# ---------------------------------------------------------------------------
+# Las anclas del anexo (EXT-8, PC-12)
+# ---------------------------------------------------------------------------
+# Un `id` de HTML admite casi cualquier caracter, pero un `href="#..."` con
+# `#` o espacios dentro no llega a ninguna parte: el `cita_id` del registro
+# (`HDS5_3ED.5.4.3#REPARTO`) se pasa por `_slug`. La correspondencia tiene
+# que ser INYECTIVA sobre los ids que esta corrida usa, y `anexo_referencias`
+# lo comprueba: dos ids distintos con el mismo slug serian dos anclas
+# pisandose, o sea un enlace que lleva al texto equivocado.
+_SLUG_NO_ADMITIDO = re.compile(r"[^A-Za-z0-9_.-]+")
+
+
+def _slug(texto: str) -> str:
+    return _SLUG_NO_ADMITIDO.sub("-", str(texto)).strip("-")
+
+
+def ancla_de_cita(cita_id: str) -> str:
+    """El `id` del anexo donde esta transcrita la cita `cita_id`."""
+    return "cita-" + _slug(cita_id)
+
+
+def ancla_de_fundamento(fundamento_id: str) -> str:
+    return "fundamento-" + _slug(fundamento_id)
+
+
+def ancla_de_discrepancia(discrepancia_id: str) -> str:
+    return "disc-" + _slug(discrepancia_id)
+
+
+def ancla_de_criterio(clave: str) -> str:
+    return "criterio-" + _slug(clave)
+
+
+def ancla_de_umbral(umbral: Any) -> str:
+    """
+    El `id` de la ficha de un umbral en el anexo.
+
+    Un umbral no tiene id propio en el registro: lo identifica su contenido
+    entero (descripcion, valor, unidad, cita, caracter, aplicacion y criterio
+    aplicado). Dos pasos con el MISMO umbral --- V3 en dos puntos del mismo
+    material --- enlazan a la misma ficha; el V3 de otro material, con otro
+    valor, tiene la suya. La huella es de contenido y por eso `memoria_de_punto`
+    la calcula sola, sin un indice previo: un paso se puede renderizar
+    suelto (la traza de la GUI lo hace) y su enlace sigue apuntando a donde
+    el anexo lo pondra.
+    """
+    huella = hashlib.sha1(repr(_clave_de_umbral(umbral)).encode("utf-8")).hexdigest()
+    return f"umbral-{_slug(umbral.cita_id)}-{huella[:8]}"  # literal-ok: largo de la huella corta del ancla
+
+
+def _clave_de_umbral(u: Any) -> Tuple[Any, ...]:
+    return (u.descripcion, repr(u.valor), u.unidad, u.cita_id, u.caracter,
+            u.aplicacion, u.criterio_aplicado or "")
+
+
+def _enlace(ancla: str, texto: str, clase: str = "remision") -> str:
+    return f'<a href="#{_esc(ancla)}" class="{clase}">{texto}</a>'
+
+
 def _citas_del_paso(paso: Any) -> str:
-    """Las transcripciones literales del paso, cada una con su numeral."""
+    """
+    Las citas del paso: el NUMERAL de cada una en linea y la transcripcion
+    UNA vez, en el anexo, por enlace (EXT-8, PC-12).
+
+    Hasta EXT-8 cada paso transcribia entera cada cita que entrecomillaba:
+    medido, la frase del umbral de 6.0 m salia 80 veces en 40 puntos. El
+    numeral, el titulo y la pagina --- que es lo que la Fase 11 de la hoja de
+    ruta exige junto a cada verificacion --- siguen aqui; la frase literal
+    esta a un enlace, en `anexo_referencias`, y sigue saliendo del registro.
+    """
     if not paso.citas_textuales:
         return ""
-    partes = []
-    for cita_id in paso.citas_textuales:
-        c = _reg_M11.cita(cita_id)
-        texto = getattr(c.texto_literal, "texto", "")
-        partes.append(
-            f'<p class="fuente">&laquo;{_esc(texto)}&raquo;'
-            f'<span class="procedencia-cita">{_esc(c.como_texto())}'
-            f"</span></p>")
-    return ("<dt>Lo que dice la fuente</dt><dd>" + "".join(partes) + "</dd>")
+    partes = [
+        f"<li>{_enlace(ancla_de_cita(cita_id), _esc(_cita_como_texto(cita_id)))}</li>"
+        for cita_id in paso.citas_textuales]
+    return ('<dt>Lo que dice la fuente</dt><dd><ul class="citas">'
+            + "".join(partes) + "</ul>"
+            '<span class="procedencia-cita">texto literal en el anexo de '
+            "referencias</span></dd>")
 
 
 def citas_en_que_descansa(paso: Any) -> frozenset:
@@ -1242,14 +1360,16 @@ def _discrepancias_del_paso(paso: Any) -> str:
     tocadas = _discrepancias_que_toca(paso)
     if not tocadas:
         return ""
+    # EL PUNTERO ES UN ENLACE, NO UNA FRASE (EXT-8, PC-12): «el detalle esta
+    # en el bloque de discrepancias de esta memoria» se repetia 90 veces en
+    # 40 puntos. El id enlaza a la ficha del bloque de discrepancias, que
+    # lleva su ancla (`ancla_de_discrepancia`).
     filas = "".join(
-        f"<li><code>{_esc(d.id)}</code> &mdash; {_esc(d.objeto)}. "
-        f"<b>Gana {_esc(d.gana)}.</b></li>" for d in tocadas)
+        f"<li>{_enlace(ancla_de_discrepancia(d.id), f'<code>{_esc(d.id)}</code>')}"
+        f" &mdash; {_esc(d.objeto)}. <b>Gana {_esc(d.gana)}.</b></li>"
+        for d in tocadas)
     return ('<dt class="interpretacion">Discrepancia declarada que toca este '
-            f'paso</dt><dd class="interpretacion"><ul>{filas}</ul>'
-            "El detalle --- las partes, por que gana esa y que pasaria "
-            "siguiendo a la otra --- esta en el bloque de discrepancias de "
-            "esta memoria.</dd>")
+            f'paso</dt><dd class="interpretacion"><ul>{filas}</ul></dd>')
 
 
 def _sustitucion_del_paso(paso: Any) -> str:
@@ -1274,21 +1394,25 @@ def _umbral_del_paso(paso: Any) -> str:
     u = paso.umbral
     if u is None:
         return ""
+    # EL VALOR SE QUEDA EN LA LINEA; el caracter en la fuente y lo que el
+    # proyecto hace con el --- que son los mismos para cada aparicion del
+    # mismo umbral, y salian 29 veces en 4 puntos --- estan UNA vez en la
+    # ficha del anexo, enlazada (EXT-8, PC-12). El criterio adoptado enlaza
+    # a su ficha del bloque 3 en vez de decir en prosa que esta alli.
     criterio = ""
     if u.criterio_aplicado:
         declarado = ca.CRITERIOS.get(u.criterio_aplicado)
         etiqueta = (_etiqueta_html(declarado.etiqueta) + " "
                     if declarado is not None else "")
-        criterio = (f"<br>El umbral pasa por el criterio adoptado "
-                    f"{etiqueta}<code>{_esc(u.criterio_aplicado)}</code>, "
-                    "cuya ficha esta en el bloque 3 de esta memoria.")
+        criterio = (f"<br>Pasa por el criterio adoptado {etiqueta}"
+                    + _enlace(ancla_de_criterio(u.criterio_aplicado),
+                              f"<code>{_esc(u.criterio_aplicado)}</code>"))
     valor = f"{u.valor} {u.unidad}".strip()
     return (
         "<dt>Contra que se compara</dt><dd>"
-        f"<b>{_esc(u.descripcion)} = {_esc(valor)}</b><br>"
-        f"<b>Caracter en la fuente:</b> {_esc(u.caracter)}<br>"
-        f"<b>Que hace el proyecto con el:</b> {_esc(u.aplicacion)}"
-        f"{criterio}</dd>")
+        f"<b>{_esc(u.descripcion)} = {_esc(valor)}</b> &mdash; "
+        + _enlace(ancla_de_umbral(u), "caracter en la fuente y aplicacion")
+        + f"{criterio}</dd>")
 
 
 def _veredicto_del_paso(paso: Any) -> str:
@@ -1341,6 +1465,27 @@ def _elecciones_del_paso(paso: Any) -> str:
             f"<dd><ul class=\"elecciones\">{''.join(filas)}</ul></dd>")
 
 
+def _por_que_del_paso(paso: Any) -> str:
+    """
+    El fundamento del paso: su titulo en la linea y el argumento entero UNA
+    vez, en el anexo (EXT-8, PC-12).
+
+    El `por_que` de un paso es un parrafo del registro (`Fundamento.por_que`,
+    hasta 2.3 KB) y era el mayor de los textos repetidos de la memoria: el
+    mismo fundamento se transcribia en cada punto que daba ese paso. Aqui
+    queda `Fundamento.que_paso` --- la frase que dice que se hace y por que,
+    en una linea --- y el enlace a la ficha. Un paso SIN `fundamento_id`
+    (los hay en fixtures y en pasos que no pasan por `modelos.paso`) imprime
+    su `por_que` entero como antes: no hay ficha a la que mandar.
+    """
+    if not paso.fundamento_id:
+        return _esc(paso.por_que)
+    f = _reg_M11.fundamento(paso.fundamento_id)
+    return (f"{_esc(f.que_paso)} "
+            + _enlace(ancla_de_fundamento(f.id),
+                      f"fundamento <code>{_esc(f.id)}</code> en el anexo"))
+
+
 def bloque_paso(paso: Any) -> str:
     """
     Un `PasoDeMemoria` completo, en el orden en que se lee de arriba abajo:
@@ -1355,7 +1500,7 @@ def bloque_paso(paso: Any) -> str:
                     f"{_esc(_cita_como_texto(paso.formula_cita_id))}</span>"
                     if paso.formula_cita_id else "")
     campos = [
-        f"<dt>Por que se hace</dt><dd>{_esc(paso.por_que)}</dd>",
+        f"<dt>Por que se hace</dt><dd>{_por_que_del_paso(paso)}</dd>",
         f"<dt>Formula</dt><dd><code>{_esc(paso.formula)}</code>"
         f"{formula_cita}</dd>",
         _sustitucion_del_paso(paso),
@@ -1404,6 +1549,35 @@ def _paso_ausente(codigo: str) -> str:
             f"<p><b>Por que no lo tiene:</b> {_esc(por_que)}</p>"
             f"<p><b>Que haria falta para traerlo:</b> "
             f"{_esc(que_haria_falta)}</p></div>")
+
+
+def desarrollo_de_verificaciones(informe: Any) -> Tuple[Tuple[str, Optional[Any]], ...]:
+    """
+    Las verificaciones cuyo DESARROLLO se imprime bajo la tabla de Fase 5,
+    como `(codigo, paso)`: `paso` es el `PasoDeMemoria` de la verificacion o
+    `None` cuando no lo tiene y el censo (`sin_fundamento_por_codigo`) explica
+    por que --- ese hueco se imprime con `_paso_ausente` ---. Lo que no tiene
+    ni paso ni censo no entra: inventarle texto seria peor que el hueco.
+
+    LA MISMA SELECCION PARA M11 Y PARA LA TRAZA DE LA GUI (`traza_punto`),
+    y con el paso 2.1 UNA sola vez (EXT-8, PC-12). F2.LUZ cuelga de
+    `clasificacion.verificacion_luz` y ya se imprime en la traza de la Fase 2
+    (`traza_clasificacion`); volver a desarrollarlo aqui era el «x2 por
+    punto» que el dictamen midio. Se excluye por IDENTIDAD del objeto, no por
+    codigo: es el mismo `PasoDeMemoria`, no uno parecido.
+    """
+    ya_impresos = {id(p) for p in traza_clasificacion(informe)}
+    censo = sin_fundamento_por_codigo()
+    salida: List[Tuple[str, Optional[Any]]] = []
+    for _fase, v in verificaciones_publicadas(informe):
+        paso = getattr(v, "paso", None)
+        if paso is not None:
+            if id(paso) in ya_impresos:
+                continue
+            salida.append((v.codigo or "", paso))
+        elif v.codigo and v.codigo in censo:
+            salida.append((v.codigo, None))
+    return tuple(salida)
 
 
 def _tabla_verificaciones(informe: Any) -> str:
@@ -1486,11 +1660,9 @@ def _tabla_verificaciones(informe: Any) -> str:
     # Las que no traen paso NO se saltan: se imprimen con la razon censada de
     # por que no pueden tener fundamento normativo hoy (`_paso_ausente`).
     desarrollo = []
-    for _fase, v in verificaciones:
-        if v.paso is not None:
-            desarrollo.append(bloque_paso(v.paso))
-        elif v.codigo:
-            desarrollo.append(_paso_ausente(v.codigo))
+    for codigo, paso in desarrollo_de_verificaciones(informe):
+        desarrollo.append(bloque_paso(paso) if paso is not None
+                          else _paso_ausente(codigo))
     detalle = (f"<h4>{_esc(TITULO_TRAZA_VERIFICACIONES)}</h4>"
                + "".join(desarrollo)) if any(desarrollo) else ""
     return "<h4>Verificaciones</h4>" \
@@ -2222,7 +2394,8 @@ def bloque_discrepancias(informe: Any) -> str:
             f"<li><b>{_esc(p.quien)}</b>: {_esc(p.que_dice)}"
             + _ancla_de_parte(p) + "</li>" for p in d.partes)
         partes.append(
-            f'<div class="acotacion interpretacion">'
+            f'<div class="acotacion interpretacion" '
+            f'id="{_esc(ancla_de_discrepancia(d.id))}">'
             f"<h4><code>{_esc(d.id)}</code> &mdash; {_esc(d.objeto)}</h4>"
             f"<dl><dt>Estado</dt><dd>{_esc(d.estado.value)}</dd>"
             f"<dt>Que dice cada parte</dt><dd><ul>{filas_partes}</ul></dd>"
@@ -2305,7 +2478,7 @@ def bloque_criterios(contexto: Any, solo_usados: bool = True) -> str:
             campos.append('<dt class="interpretacion">Discrepancia declarada'
                           f'</dt><dd class="interpretacion">{enlaces}</dd>')
         partes.append(
-            '<div class="criterio">'
+            f'<div class="criterio" id="{_esc(ancla_de_criterio(clave))}">'
             f'<p class="clave">{_etiqueta_html(c.etiqueta)} '
             f"<code>{_esc(clave)}</code></p><dl>" + "".join(campos)
             + "</dl></div>")
@@ -2798,6 +2971,165 @@ def bloque_umbrales() -> str:
 
 
 # ===========================================================================
+# El anexo de referencias (EXT-8, PC-12)
+# ===========================================================================
+
+def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
+    """
+    Los `PasoDeMemoria` que la memoria IMPRIME como bloque de paso, punto por
+    punto y en su orden: la Fase 2, el TW, la hidraulica (la adoptada o la del
+    ultimo escalon) y el desarrollo de las verificaciones.
+
+    No es `pasos_del_informe`: aquel recorre TODO lo que la corrida emitio
+    --- los escalones descartados, los recubrimientos del cabezal --- porque
+    el bloque de discrepancias necesita saber en que citas se apoyo el
+    calculo. El anexo, en cambio, existe para lo que los puntos ENLAZAN, y
+    una ficha sin ningun enlace que lleve a ella seria una referencia que
+    nadie cita.
+    """
+    vistos: List[Any] = []
+    for punto in informe.puntos:
+        vistos.extend(traza_clasificacion(punto))
+        tw = traza_tw(punto)
+        if tw is not None:
+            vistos.append(tw)
+        pasos, _ultimo = traza_hidraulica(punto)
+        vistos.extend(pasos)
+        vistos.extend(p for _c, p in desarrollo_de_verificaciones(punto)
+                      if p is not None)
+    return tuple(vistos)
+
+
+def _umbrales_del_informe(informe: Any) -> Tuple[Any, ...]:
+    """Los umbrales distintos que los pasos impresos de esta corrida contrastan."""
+    vistos: Dict[Tuple[Any, ...], Any] = {}
+    for paso in pasos_impresos(informe):
+        if paso.umbral is not None:
+            vistos.setdefault(_clave_de_umbral(paso.umbral), paso.umbral)
+    return tuple(vistos[k] for k in sorted(vistos))
+
+
+def _exigir_anclas_inyectivas(ids: Sequence[str], ancla) -> None:
+    por_ancla: Dict[str, str] = {}
+    for id_ in ids:
+        a = ancla(id_)
+        if a in por_ancla and por_ancla[a] != id_:
+            raise ValueError(
+                f"dos ids distintos comparten el ancla «{a}»: {por_ancla[a]!r} "
+                f"y {id_!r}. Un enlace del anexo llevaria al texto equivocado")
+        por_ancla[a] = id_
+
+
+def anexo_referencias(informe: Any) -> str:
+    """
+    EL ANEXO UNICO de fundamentos, citas y umbrales al que cada paso enlaza.
+
+    Es la decision que el dictamen (PC-12) pidio tomar EXPLICITAMENTE, porque
+    tensiona el criterio de salida de la §4.4 del plan v12 --- «la memoria de
+    un punto se lee de arriba abajo y se entiende sin abrir el codigo» ---.
+    Lo que se decide, y por que:
+
+    - Lo que es DEL PUNTO se queda en el punto: que se calcula, con que
+      valores, que sale, contra que valor se compara y el veredicto. Es lo
+      que cambia de un punto a otro y lo que el revisor contrasta.
+    - Lo que es DEL REGISTRO se imprime UNA vez, aqui, y el punto lo enlaza
+      con su numeral en la linea: el argumento del fundamento
+      (`Fundamento.por_que`, hasta 2.3 KB), la transcripcion literal de cada
+      cita, y el caracter en la fuente y la aplicacion de cada umbral. Medido
+      antes de EXT-8, esos tres eran el 44 % de los bytes de la memoria y
+      salian repetidos hasta 80 veces en 40 puntos; con el PDF de 200 puntos
+      en 6 minutos y 5.7 GB, la repeticion no era gratis.
+    - «Sin abrir el codigo» se conserva: todo esta en el MISMO documento, y
+      en la salida impresa el enlace es una remision a un anexo, que es la
+      forma en que una memoria de calculo cita desde siempre. Lo que NO se
+      conserva es «de arriba abajo» en sentido estricto: el revisor que
+      quiera la frase literal pasa la pagina. La ficha EXT-8-01 de
+      `docs/decisiones_diferidas.md` lo deja escrito.
+
+    Los textos siguen saliendo del registro: `Registro.textos_literales()`
+    los verifica contra su pagina, y `test_ninguna_cita_textual_de_la_memoria_
+    esta_fuera_del_registro` barre este anexo como barria los pasos. No se
+    transcribe nada a mano.
+
+    Se construye a partir de `pasos_impresos`: lo que ESTA memoria imprime
+    y enlaza, no el catalogo entero (que para los umbrales ya imprime el
+    bloque 0-ter) ni todo lo que la corrida emitio (`pasos_del_informe`,
+    que es la base del bloque de discrepancias). Las anclas se comprueban
+    inyectivas antes de escribir.
+    """
+    pasos = pasos_impresos(informe)
+    fundamentos = sorted({p.fundamento_id for p in pasos if p.fundamento_id})
+    umbrales = _umbrales_del_informe(informe)
+    # TODA cita que este anexo enlaza tiene ficha en A.2: las entrecomilladas
+    # por los pasos, las que sostienen cada fundamento (A.1 las enlaza) y la
+    # que fija cada umbral (A.3 la enlaza). Un `href` sin `id` es un enlace
+    # roto que weasyprint reporta y el lector no puede seguir.
+    ids_de_citas = {c for p in pasos for c in p.citas_textuales}
+    for fid in fundamentos:
+        ids_de_citas.update(_reg_M11.fundamento(fid).citas)
+    ids_de_citas.update(u.cita_id for u in umbrales)
+    citas = sorted(ids_de_citas)
+    _exigir_anclas_inyectivas(fundamentos, ancla_de_fundamento)
+    _exigir_anclas_inyectivas(citas, ancla_de_cita)
+    if not (fundamentos or citas or umbrales):
+        return ('<div class="nota"><p>Esta corrida no emitio ningun paso con '
+                "fundamento, cita o umbral: no hay referencias que anexar."
+                "</p></div>")
+
+    partes: List[str] = [
+        '<div class="nota"><p>Lo que cada paso de la memoria de un punto '
+        "ENLAZA en vez de repetir: el argumento de su fundamento, la frase "
+        "literal de cada cita y el caracter de cada umbral. Cada ficha esta "
+        "UNA vez; los puntos remiten aqui con su numeral en la linea. Los "
+        "textos entrecomillados son literales del registro normativo, "
+        "verificados contra su pagina.</p></div>"]
+
+    partes.append("<h3>A.1 Fundamentos</h3>")
+    for fid in fundamentos:
+        f = _reg_M11.fundamento(fid)
+        enlaces = "; ".join(
+            _enlace(ancla_de_cita(c), _esc(_cita_como_texto(c))) for c in f.citas)
+        partes.append(
+            f'<div class="acotacion" id="{_esc(ancla_de_fundamento(fid))}">'
+            f"<h4><code>{_esc(fid)}</code> &mdash; {_esc(f.que_paso)}</h4>"
+            f"<dl><dt>Por que se hace</dt><dd>{_esc(f.por_que)}</dd>"
+            f"<dt>Si no se hace</dt><dd>{_esc(f.que_pasa_si_no_se_hace)}</dd>"
+            f"<dt>Verbo y citas</dt><dd><b>{_esc(f.verbo.value)}</b>"
+            f"{' &mdash; ' + enlaces if enlaces else ''}</dd></dl></div>")
+
+    partes.append("<h3>A.2 Citas textuales</h3>")
+    for cita_id in citas:
+        c = _reg_M11.cita(cita_id)
+        texto = getattr(c.texto_literal, "texto", "")
+        partes.append(
+            f'<div class="acotacion" id="{_esc(ancla_de_cita(cita_id))}">'
+            f"<h4><code>{_esc(cita_id)}</code></h4>"
+            f'<p class="fuente">&laquo;{_esc(texto)}&raquo;'
+            f'<span class="procedencia-cita">{_esc(c.como_texto())}</span></p>'
+            "</div>")
+
+    if umbrales:
+        partes.append("<h3>A.3 Umbrales contrastados</h3>")
+    for u in umbrales:
+        valor = f"{u.valor} {u.unidad}".strip()
+        criterio = ""
+        if u.criterio_aplicado:
+            criterio = ("<dt>Pasa por el criterio adoptado</dt><dd>"
+                        + _enlace(ancla_de_criterio(u.criterio_aplicado),
+                                  f"<code>{_esc(u.criterio_aplicado)}</code>")
+                        + "</dd>")
+        partes.append(
+            f'<div class="acotacion" id="{_esc(ancla_de_umbral(u))}">'
+            f"<h4>{_esc(u.descripcion)} = {_esc(valor)}</h4>"
+            f"<dl><dt>Caracter en la fuente</dt><dd><b>{_esc(u.caracter)}</b></dd>"
+            f"<dt>Que hace el proyecto con el</dt><dd>{_esc(u.aplicacion)}</dd>"
+            "<dt>Frase que lo fija</dt><dd>"
+            + _enlace(ancla_de_cita(u.cita_id), _esc(_cita_como_texto(u.cita_id)))
+            + f"</dd>{criterio}</dl></div>")
+    return "".join(partes)
+
+
+# ===========================================================================
 # Ensamblado del documento
 # ===========================================================================
 
@@ -2962,12 +3294,57 @@ def _resumen_expediente(informe: Any) -> str:
 
 def memoria_html(informe: Any, *, proyecto: str = "",
                  subtitulo: str = "", ruta_plantilla: Optional[Path] = None,
-                 ruta_hoja: Optional[Path] = None) -> str:
+                 ruta_hoja: Optional[Path] = None,
+                 progreso: Optional[Callable[[str, int, int], None]] = None) -> str:
     """
-    El HTML completo de la memoria de calculo (Fase 11).
+    El HTML completo de la memoria de calculo (Fase 11), como UNA cadena.
 
     `informe` es el `Informe` que produce la CLI. M11 no recalcula nada: si un
     dato no esta en el informe, la memoria lo declara ausente.
+
+    Es `memoria_html_por_partes` unida: la construccion vive alli, por
+    streaming (EXT-8, PC-12), y esta puerta existe para quien necesita la
+    cadena entera --- weasyprint, los tests ---.
+    """
+    return "".join(memoria_html_por_partes(
+        informe, proyecto=proyecto, subtitulo=subtitulo,
+        ruta_plantilla=ruta_plantilla, ruta_hoja=ruta_hoja, progreso=progreso))
+
+
+def memoria_html_por_partes(
+        informe: Any, *, proyecto: str = "", subtitulo: str = "",
+        ruta_plantilla: Optional[Path] = None, ruta_hoja: Optional[Path] = None,
+        progreso: Optional[Callable[[str, int, int], None]] = None,
+) -> Iterator[str]:
+    """
+    La memoria de calculo por TROZOS, en el orden del documento (EXT-8).
+
+    POR QUE POR STREAMING. `memoria_html` armaba un diccionario con los
+    bloques enteros --- la memoria de los puntos, unida, era uno solo --- y
+    despues `Template.substitute` producia una segunda copia: medido, el pico
+    de RAM al construir era 4x el tamano del documento (PC-12). Aqui la
+    plantilla se recorre marcador a marcador y cada trozo se entrega en
+    cuanto existe; `exportar_html` los escribe al archivo sin unirlos, y la
+    memoria de cada punto se genera cuando le toca, con `progreso` avisando.
+
+    LO QUE SI SE CALCULA ENTERO ANTES DEL PRIMER TROZO: los bloques
+    generales (criterios, pendientes, acotaciones, umbrales, discrepancias y
+    el anexo, que recorre los pasos de todos los puntos). Son de tamano
+    acotado --- no crecen con N como la memoria de los puntos --- y la guardia
+    de la plantilla (SIS-B-06) necesita saber cuales salieron vacios antes
+    de empezar. Por eso `progreso` emite `ETAPA_BLOQUES` ANTES que el primer
+    `ETAPA_PUNTO`: es el orden real de construccion.
+
+    EL CONTRATO DE MARCADORES NO SE RELAJA. Los dos chequeos de siempre
+    siguen: el conjunto de marcadores que este modulo entrega tiene que ser
+    exactamente `MARCADORES` (o el test de la plantilla no vale), y un bloque
+    que esta corrida SI produjo tiene que tener hueco en la plantilla
+    (`_exigir_que_la_plantilla_no_pierda_contenido`, SIS-B-06). Para el
+    segundo, la memoria de los puntos se representa por si HAY puntos, sin
+    construirla: construirla dos veces es lo que se quiere evitar.
+
+    Un marcador que la plantilla pide y este modulo no entrega revienta con
+    `KeyError`, como `substitute`: nunca se imprime el marcador.
     """
     tableros = tableros_pendientes(ruta_hoja)
     bloqueantes = criterios_bloqueantes(informe)
@@ -2991,6 +3368,14 @@ def memoria_html(informe: Any, *, proyecto: str = "",
                   "bloqueadas, puntos sin dimensionar o verificaciones "
                   "incumplidas; el detalle esta en los bloques 1 y 4")
 
+    n_puntos = len(informe.puntos)
+
+    def _memorias_punto() -> Iterator[str]:
+        for i, p in enumerate(informe.puntos, start=1):
+            yield memoria_de_punto(p)
+            if progreso is not None:
+                progreso(ETAPA_PUNTO, i, n_puntos)
+
     valores = {
         "proyecto": _esc(proyecto) or "(proyecto no declarado)",
         "subtitulo": _esc(subtitulo),
@@ -3006,7 +3391,10 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "generado_utc": _esc(traza.generado_utc),
         "estado_expediente": estado,
         "resumen_expediente": _resumen_expediente(informe),
-        "memorias_punto": "".join(memoria_de_punto(p) for p in informe.puntos),
+        # Un TESTIGO, no el bloque: dice si hay contenido (para la guardia de
+        # la plantilla) y el bloque real sale de `_memorias_punto`, por
+        # trozos, cuando la plantilla llega a su marcador.
+        "memorias_punto": "hay puntos" if n_puntos else "",
         "filas_resumen": "".join(fila_resumen(p, tipo_cabezal)
                                  for p in informe.puntos),
         "bloque_datos_sitio": bloque_datos_sitio(contexto, solo_usados=True),
@@ -3019,7 +3407,10 @@ def memoria_html(informe: Any, *, proyecto: str = "",
         "bloque_umbrales": bloque_umbrales(),
         "bloque_homonimias": bloque_homonimias(),
         "bloque_discrepancias": bloque_discrepancias(informe),
+        MARCADOR_ANEXO: anexo_referencias(informe),
     }
+    if progreso is not None:
+        progreso(ETAPA_BLOQUES, 1, 1)
     if set(valores) != set(MARCADORES):
         diferencia = set(valores).symmetric_difference(MARCADORES)
         raise ValueError(
@@ -3030,9 +3421,27 @@ def memoria_html(informe: Any, *, proyecto: str = "",
     plantilla = cargar_plantilla(ruta_plantilla)
     _exigir_que_la_plantilla_no_pierda_contenido(plantilla, valores,
                                                  ruta_plantilla)
-    # `substitute`, no `safe_substitute`: un marcador que la plantilla pide y
-    # este modulo no entrega tiene que reventar aqui, no imprimirse.
-    return plantilla.substitute(valores)
+    texto = plantilla.template
+    pos = 0
+    for m in plantilla.pattern.finditer(texto):
+        nombre = m.group("named") or m.group("braced")
+        if nombre is None:
+            if m.group("escaped") is not None:
+                yield texto[pos:m.start()] + plantilla.delimiter
+                pos = m.end()
+                continue
+            raise ValueError(
+                f"marcador invalido en la plantilla en la posicion {m.start()}")
+        yield texto[pos:m.start()]
+        pos = m.end()
+        if nombre == "memorias_punto":
+            yield from _memorias_punto()
+            continue
+        if nombre not in valores:
+            # Como `substitute`: lo que la plantilla pide y no existe revienta.
+            raise KeyError(nombre)
+        yield valores[nombre]
+    yield texto[pos:]
 
 
 # ===========================================================================
@@ -3056,7 +3465,21 @@ def exportar_html(informe: Any, destino: Path, **kwargs: Any) -> Path:
     """Escribe la memoria como HTML. Los kwargs van a `memoria_html`."""
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
-    destino.write_text(memoria_html(informe, **kwargs), encoding="utf-8")
+    # Por trozos (EXT-8, PC-12): el archivo se escribe segun se construye y
+    # la memoria de los puntos --- el bloque que crece con N --- nunca esta
+    # entera en RAM. Se escribe en un archivo temporal AL LADO y se renombra
+    # al terminar: un fallo a mitad (un `ErrorProyecto` en el punto 7) no
+    # deja un HTML truncado con el nombre del bueno (auditoria adversarial de
+    # EXT-8); antes, con `write_text` de la cadena entera, tampoco lo dejaba.
+    temporal = destino.with_name(destino.name + ".parcial")
+    try:
+        with temporal.open("w", encoding="utf-8") as f:
+            for trozo in memoria_html_por_partes(informe, **kwargs):
+                f.write(trozo)
+        os.replace(temporal, destino)
+    finally:
+        if temporal.exists():
+            temporal.unlink()
     return destino
 
 
@@ -3081,6 +3504,8 @@ def exportar_csv(informe: Any, destino: Path, *, ruta_hoja: Optional[Path] = Non
 
 
 def exportar_pdf(informe: Any, destino: Path, *, abrir_navegador: bool = True,
+                 forzar_navegador: bool = False,
+                 progreso: Optional[Callable[[str, int, int], None]] = None,
                  **kwargs: Any) -> ResultadoExportacion:
     """
     Exporta la memoria a PDF por la misma via que ya usa `legacy/Tc.py`:
@@ -3092,19 +3517,33 @@ def exportar_pdf(informe: Any, destino: Path, *, abrir_navegador: bool = True,
 
     No se agrega ninguna dependencia nueva: weasyprint es opcional en Tc.py y
     aqui tambien. El resultado declara cual de las dos vias se uso.
+
+    `forzar_navegador` toma la via 2 CON weasyprint operativo: es la que la
+    ventana ofrece por encima de `UMBRAL_PUNTOS_PDF` (EXT-8, PC-11), porque
+    el PDF directo de 200 puntos costaba 6 minutos y 5.7 GB y el navegador
+    pagina lo mismo sin que el proceso lo pague. `progreso(etapa, hecho,
+    total)` recibe el avance de la memoria (`ETAPA_PUNTO`, `ETAPA_BLOQUES`)
+    y del PDF (`ETAPA_PDF`), que la CLI vuelca como lineas de stdout.
     """
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
-    contenido = memoria_html(informe, **kwargs)
+    contenido = memoria_html(informe, progreso=progreso, **kwargs)
 
-    if WeasyHTML is not None:
+    weasyprint_disponible()
+    if WeasyHTML is not None and not forzar_navegador:
+        if progreso is not None:
+            progreso(ETAPA_PDF, 0, 1)
         WeasyHTML(string=contenido, base_url=str(DIR_PLANTILLAS)).write_pdf(str(destino))
+        if progreso is not None:
+            progreso(ETAPA_PDF, 1, 1)
         return ResultadoExportacion(
             ruta=destino, via=VIA_WEASYPRINT,
             mensaje=f"Memoria exportada a PDF con weasyprint: {destino}")
 
     respaldo = destino.with_suffix(".html")
     respaldo.write_text(contenido, encoding="utf-8")
+    if progreso is not None:
+        progreso(ETAPA_NAVEGADOR, 1, 1)
     if abrir_navegador:
         temporal = Path(tempfile.gettempdir()) / respaldo.name
         temporal.write_text(contenido, encoding="utf-8")

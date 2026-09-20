@@ -100,7 +100,7 @@ import ast
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import criterios_adoptados as _ca
 import datos_sitio as _ds
@@ -1249,7 +1249,40 @@ def _construir() -> Dict[str, VariableDeEntrada]:
     return salida
 
 
-VARIABLES: Dict[str, VariableDeEntrada] = _construir()
+# EL CENSO ES PEREZOSO (EXT-8, PC-10). Construirlo parsea el AST de los trece
+# modulos de calculo (`_consumo_por_modulo`) y costaba ~140 ms en CADA
+# `import cli`, tambien en una corrida que no lo consulta nunca --- el
+# calculo no lo lee: lo leen la GUI, la ayuda y los tests ---. Se construye
+# la primera vez que alguien pide `VARIABLES` (o `variable(...)`, `por_modo`,
+# etc.) y se somete ENTONCES a la misma guardia que antes corria al importar:
+# `_coherencia_del_censo` no se ha movido de sitio ni ha perdido una regla,
+# solo corre en el primer acceso. `__getattr__` de modulo (PEP 562) es lo que
+# mantiene `variables_entrada.VARIABLES` como nombre publico: quien lo lea
+# recibe el mismo diccionario, y `monkeypatch.setitem(ve.VARIABLES, ...)`
+# sigue tocando el objeto vivo, porque una vez construido queda cacheado en
+# el propio modulo.
+_CENSO: Optional[Dict[str, VariableDeEntrada]] = None
+
+
+def _variables() -> Dict[str, VariableDeEntrada]:
+    """El censo, construido y verificado UNA vez, la primera vez que se pide."""
+    global _CENSO
+    if _CENSO is None:
+        _CENSO = _construir()
+        try:
+            _coherencia_del_censo()
+        except Exception:
+            _CENSO = None
+            raise
+        globals()["VARIABLES"] = _CENSO
+    return _CENSO
+
+
+def __getattr__(nombre: str) -> Any:
+    if nombre == "VARIABLES":
+        return _variables()
+    raise AttributeError(f"module {__name__!r} has no attribute {nombre!r}")
+
 
 
 # ---------------------------------------------------------------------------
@@ -1275,7 +1308,7 @@ def _verificar_censo() -> None:
         Poblacion.CRITERIO: set(_ca.CRITERIOS),
     }
     for poblacion, claves in esperado.items():
-        censadas = {v.clave for v in VARIABLES.values()
+        censadas = {v.clave for v in _variables().values()
                     if v.poblacion is poblacion}
         faltan = claves - censadas
         if faltan:
@@ -1292,12 +1325,12 @@ def _verificar_censo() -> None:
             )
 
     total = sum(len(c) for c in esperado.values())
-    if len(VARIABLES) != total:
+    if len(_variables()) != total:
         # Solo puede pasar si una clave se repite entre poblaciones, en cuyo
         # caso una tapa a la otra en el diccionario y desaparece del censo sin
         # que ningun conteo por poblacion lo note.
         raise ValueError(
-            f"el censo tiene {len(VARIABLES)} entradas y las cuatro poblaciones "
+            f"el censo tiene {len(_variables())} entradas y las cuatro poblaciones "
             f"suman {total}: hay una clave repetida entre poblaciones"
         )
 
@@ -1324,7 +1357,7 @@ def _verificar_variable(v: VariableDeEntrada) -> None:
         )
     if isinstance(v.resolucion, Derivada):
         for origen in v.resolucion.de:
-            if origen not in VARIABLES and origen not in _ids_del_registro():
+            if origen not in _variables() and origen not in _ids_del_registro():
                 raise ValueError(
                     f"'{v.clave}' se deriva de '{origen}', que no es ni otra "
                     "variable de entrada ni una tabla del registro"
@@ -1352,12 +1385,12 @@ def _verificar_desviaciones() -> None:
     entrada de `DESVIACIONES_DEL_PLAN` deja de ser verdad y hay que retirarla.
     """
     for d in DESVIACIONES_DEL_PLAN:
-        if d.variable not in VARIABLES:
+        if d.variable not in _variables():
             raise ValueError(
                 f"`DESVIACIONES_DEL_PLAN` habla de '{d.variable}', que no es "
                 "una variable de entrada"
             )
-        if VARIABLES[d.variable].modo.value == d.modo_del_plan.split()[0]:
+        if _variables()[d.variable].modo.value == d.modo_del_plan.split()[0]:
             raise ValueError(
                 f"'{d.variable}' se declara como desviacion del plan y hoy se "
                 f"resuelve como el plan dice ({d.modo_del_plan}). La "
@@ -1369,14 +1402,15 @@ def _verificar_desviaciones() -> None:
 
 
 def _coherencia_del_censo() -> None:
-    """Somete TODO el censo a la guardia, al importar el modulo."""
+    """
+    Somete TODO el censo a la guardia. Hasta EXT-8 corria al importar el
+    modulo; desde entonces corre en el primer acceso a `VARIABLES` (ver
+    `_variables`), que es el mismo momento en que el censo existe.
+    """
     _verificar_censo()
-    for v in VARIABLES.values():
+    for v in _variables().values():
         _verificar_variable(v)
     _verificar_desviaciones()
-
-
-_coherencia_del_censo()
 
 
 # ---------------------------------------------------------------------------
@@ -1386,7 +1420,7 @@ _coherencia_del_censo()
 def variable(clave: str) -> VariableDeEntrada:
     """La variable de entrada, sea de la poblacion que sea."""
     try:
-        return VARIABLES[clave]
+        return _variables()[clave]
     except KeyError:
         raise KeyError(
             f"'{clave}' no es una variable de entrada de este expediente. Las "
@@ -1404,7 +1438,7 @@ def por_modo() -> Dict[ModoDeResolucion, Tuple[VariableDeEntrada, ...]]:
     """
     salida: Dict[ModoDeResolucion, List[VariableDeEntrada]] = {
         m: [] for m in ModoDeResolucion}
-    for v in sorted(VARIABLES.values(), key=lambda v: v.clave):
+    for v in sorted(_variables().values(), key=lambda v: v.clave):
         salida[v.modo].append(v)
     return {m: tuple(vs) for m, vs in salida.items()}
 
@@ -1413,7 +1447,7 @@ def por_poblacion() -> Dict[Poblacion, Tuple[VariableDeEntrada, ...]]:
     """Las variables agrupadas por la poblacion de la que vienen."""
     salida: Dict[Poblacion, List[VariableDeEntrada]] = {
         p: [] for p in Poblacion}
-    for v in sorted(VARIABLES.values(), key=lambda v: v.clave):
+    for v in sorted(_variables().values(), key=lambda v: v.clave):
         salida[v.poblacion].append(v)
     return {p: tuple(vs) for p, vs in salida.items()}
 
@@ -1458,7 +1492,7 @@ def variables_con_tabla_pendiente() -> Tuple[Tuple[str, str], ...]:
     """
     return tuple(
         (v.clave, v.resolucion.tabla_pendiente)
-        for v in sorted(VARIABLES.values(), key=lambda v: v.clave)
+        for v in sorted(_variables().values(), key=lambda v: v.clave)
         if isinstance(v.resolucion, Libre) and v.resolucion.tabla_pendiente
     )
 
@@ -1470,7 +1504,7 @@ def variables_sin_consumidor() -> Tuple[str, ...]:
     Lo que la lista permite es distinguir las dos cosas mirando la fase que
     cada una declara.
     """
-    return tuple(v.clave for v in sorted(VARIABLES.values(),
+    return tuple(v.clave for v in sorted(_variables().values(),
                                          key=lambda v: v.clave)
                  if not v.consumido_por)
 
@@ -1498,7 +1532,7 @@ def reporte_variables(poblacion: Optional[Poblacion] = None) -> str:
     out = ["=" * _ANCHO,
            "MODO DE RESOLUCION DE LAS VARIABLES DE ENTRADA",
            "=" * _ANCHO,
-           f"{len(VARIABLES)} variables en cuatro poblaciones.", ""]
+           f"{len(_variables())} variables en cuatro poblaciones.", ""]
 
     conteo = {m: len(vs) for m, vs in por_modo().items() if vs}
     out.append("Por modo: " + ", ".join(

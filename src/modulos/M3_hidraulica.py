@@ -128,7 +128,12 @@ from __future__ import annotations
 import math
 from typing import Optional
 
-from scipy.optimize import brentq
+# EL RESOLUTOR SE IMPORTA EN EL PUNTO DE USO (EXT-8, PC-10): `scipy.optimize`
+# costaba 230-310 ms en CADA `import cli`, tambien en una corrida que no
+# llega a resolver nada (--criterios, la ayuda, la GUI al abrirse). Es el
+# mismo `brentq` de siempre --- la referencia del docstring de modulo sigue
+# valiendo --- traido la primera vez que hace falta; el segundo import es una
+# busqueda en `sys.modules`.
 
 import criterios_adoptados as ca
 from constantes_normativas import K_MANNING_SI
@@ -335,6 +340,7 @@ def tirante_normal(seccion: Seccion, Q: float, S: float, n: float) -> Optional[G
     if f_min > 0 or f_max < 0:
         return None
 
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
     llenado_solucion = brentq(f, llenado_min, llenado_max, xtol=TOL_BRENT)
     return geometria(seccion, llenado_solucion)
 
@@ -486,6 +492,7 @@ def tirante_normal_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:
     # f = -Q < 0, siempre) y y_hi duplicando hasta que f cambie de signo.
     y_lo = TOL_THETA_BORDE
     y_hi = max(seccion.altura_total_m, seccion.b_m, 1.0)   # literal-ok: semilla del corchete, no un valor de proyecto
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
     for _ in range(DUPLICACIONES_MAX_CORCHETE):
         if f(y_hi) > 0:
             return brentq(f, y_lo, y_hi, xtol=TOL_BRENT)

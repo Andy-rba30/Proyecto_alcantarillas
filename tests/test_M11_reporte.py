@@ -962,6 +962,9 @@ class TestExportacion:
     def test_sin_weasyprint_declara_la_via_del_navegador(self, informe,
                                                          tmp_path, monkeypatch):
         """No devuelve un PDF que no escribio: dice por que via salio."""
+        # La sonda es perezosa desde EXT-8: se sondea ANTES de parchear el
+        # simbolo, o `exportar_pdf` la haria despues y pisaria el parche.
+        M11.weasyprint_disponible()
         monkeypatch.setattr(M11, "WeasyHTML", None)
         salida = M11.exportar_pdf(informe, tmp_path / "Memoria.pdf",
                                   abrir_navegador=False, proyecto="P")
@@ -982,6 +985,7 @@ class TestExportacion:
                 Path(ruta).write_bytes(b"%PDF-1.7")
                 escrito["ruta"] = ruta
 
+        M11.weasyprint_disponible()
         monkeypatch.setattr(M11, "WeasyHTML", FalsoWeasy)
         salida = M11.exportar_pdf(informe, tmp_path / "Memoria.pdf",
                                   proyecto="P")
