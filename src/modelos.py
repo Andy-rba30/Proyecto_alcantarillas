@@ -3255,10 +3255,13 @@ class Espaciamiento:
     espaciamiento_max: float     # m - el minimo de los dos
     gobierna: GobiernaEspaciamiento
     criterio_normativo: str = "long_max_cuneta"
+    # La pagina impresa es la de la cita del registro (MC_HHD_CUNETA, 179):
+    # se repite aqui como texto porque `modelos` no importa del registro, y
+    # un test la compara con `MC_HHD_CUNETA.pagina_impresa` (PC-30).
     numeral: str = ReferenciaNormativa(
         seccion_hoja_ruta="Fase 10",
         numeral_norma="Manual de Hidrologia, Hidraulica y Drenaje (MTC), "
-                      "num. 4.1.2.1 d), pag. 178",
+                      "num. 4.1.2.1 d), pag. 179",
     )
     paso: Optional["PasoDeMemoria"] = None
 
@@ -3963,8 +3966,10 @@ class PeriodoRetorno:
     (Sec. 2.2). El TR no se transporta como un numero suelto: sin la fila que
     lo origina, la memoria no puede defender por que son 71 anios y no 35.
 
-    `anios` es el valor de la columna "TR de diseno" de la tabla, redondeado
-    al anio; `exacto` conserva el resultado sin redondear.
+    `anios` es el valor de la columna "TR de diseno" de la tabla DERIVADA de
+    la Sec. 2.2 de la hoja de ruta -- la Tabla N 02 del Manual no trae esa
+    columna: trae R y n, y el TR se calcula --, redondeado al anio; `exacto`
+    conserva el resultado sin redondear.
 
     `procede` es False en dos situaciones, y en ambas `anios` es None:
       - Familia C: su caudal es el de diseno del canal (ANA / Junta), no un
@@ -3977,7 +3982,8 @@ class PeriodoRetorno:
     R: Optional[float]                    # riesgo admisible de falla
     n: Optional[int]                      # vida util, anios
     exacto: Optional[float]               # TR sin redondear
-    anios: Optional[int]                  # TR de diseno de la Tabla N 02
+    anios: Optional[int]                  # TR de diseno, calculado de la fila
+                                          # de la Tabla N 02 (tabla de la v8 §2.2)
     numeral: str
     fundamento: str                       # por que esta fila y no la otra
     id_punto: Optional[str] = None

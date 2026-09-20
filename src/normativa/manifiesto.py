@@ -392,18 +392,27 @@ def indice_del_registro(registro) -> str:
     A("")
 
     # -- Fuentes -----------------------------------------------------------
-    # La vigencia de cada edicion (T1) sale de la marca que lleva la nota de
-    # la Fuente, leida por `fuentes.estado_de_vigencia`; el dia que exista
-    # `Fuente.vigencia` (ficha T1-01) se lee de ahi y esto no cambia.
+    # La vigencia de cada edicion sale del campo `Fuente.vigencia` (T1-01,
+    # cerrada en EXT-6), leido por `fuentes.estado_de_vigencia`; hasta EXT-6
+    # era una marca en la nota. Los dos actos (aprobatorio y derogatorio) se
+    # imprimen cuando existen: son lo que separa una fuente legal peruana de
+    # una tecnica extranjera (EXT-N-01).
     def _vigencia(f) -> str:
         estado = _fuentes.estado_de_vigencia(f)
         if estado is None:
             return "**sin verificar**"
+        v = f.vigencia
         if estado == _fuentes.VIGENCIA_CONFIRMADA:
-            return f"confirmada {_fuentes.VIGENCIA_VERIFICADA_EL}"
-        if estado == _fuentes.VIGENCIA_POSTERIOR:
-            return f"**posterior detectada** {_fuentes.VIGENCIA_VERIFICADA_EL}"
-        return f"**a gabinete** {_fuentes.VIGENCIA_VERIFICADA_EL}"
+            texto = f"confirmada {v.fecha}"
+        elif estado == _fuentes.VIGENCIA_POSTERIOR:
+            texto = f"**posterior detectada** {v.fecha}: {v.edicion_posterior}"
+        else:
+            texto = f"**a gabinete** {v.fecha}"
+        if v.acto_aprobatorio:
+            texto += f"; aprobada por {v.acto_aprobatorio}"
+        if v.derogado_por:
+            texto += f"; **derogada por {v.derogado_por}**"
+        return texto
 
     A("## 1. Fuentes")
     A("")

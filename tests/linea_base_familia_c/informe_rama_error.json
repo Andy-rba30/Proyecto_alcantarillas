@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "227337ebec5845135369447e9adcc779cc6cd2c9",
+    "criterios_sha1": "247d2e7fc8b1cc6a6ccaaa3d8f3b3ab7ada62e1d",
     "puntos": 4,
     "dimensionados": 0,
     "cerrado": false
@@ -618,6 +618,7 @@
       "clases_producto_por_relleno",
       "cobertura_minima_cajon",
       "cortante_alto_muro_e060_art_11_10_10_2",
+      "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "embocadura_cajon",
       "espesor_pared_cajon",
@@ -673,6 +674,7 @@
       "capacidad_portante_adm",
       "clase_sitio",
       "demanda_sismica_licuefaccion",
+      "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente"
     ],
     "bloquearon": []

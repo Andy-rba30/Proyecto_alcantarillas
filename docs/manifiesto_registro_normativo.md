@@ -20,21 +20,22 @@ verificó cada cita y la regla de paginación MEDIDA, no supuesta.
 
 | id | Documento | Edición | Paginación (pdf ← impresa) | Páginas | SHA-1 | Texto extraíble | Vigencia (T1) |
 |---|---|---|---|---|---|---|---|
-| `AASHTO_LRFD_9` | AASHTO LRFD Bridge Design Specifications | Ninth Edition, 2020 | por capítulo: 1=15, 10=1289, 11=1469, 12=1638, 13=1750, 14=1782, 15=1872, 2=24, 3=54, 4=251, 5=359, 6=706, 7=1134, 8=1197, 9=1239 | 1905 | `71f4ced4c80f58db75a0bcdf4ac6b5d86dc0f858` | sí | **posterior detectada** 2026-09-14 |
-| `AASHTO_M170M` | AASHTO M 170M-04 «Standard Specification for Reinforced Concrete Culvert, Storm Drain, and Sewer Pipe [Metric]» | M 170M-04 | por capítulo: M 170M=0 | 23 | `dcc40c0e5e9c99ad9f18490fa8c5b2d9394faa51` | **no** | **posterior detectada** 2026-09-14 |
-| `AASHTO_M294_TRAD` | AASHTO M 294-11 «Tubería corrugada de polietileno, 300 a 1500 mm (12 a 60 in.) de diámetro» — TRADUCCION NO OFICIAL al español | M 294-11 (traduccion no oficial al español) | **sin determinar** | 17 | `7cecb19f73e4d101866832a3fc57db752fa53379` | sí | **posterior detectada** 2026-09-14 |
-| `AASHTO_M36` | AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers and Drains» | M 36-03 (2007) | por capítulo: M 36=1 | 24 | `f85b5658385ae6779dde4e5fd340ac3122b62636` | **no** | **posterior detectada** 2026-09-14 |
-| `ASTM_A760` | ASTM A760/A760M-10 «Especificacion Estandar para Tuberia de Acero Corrugado, con Recubrimiento Metalico, para Alcantarillas y Drenajes» | A760/A760M-10 | corrida, +0 | 15 | `47d0d447143ca158615dff7dec79f2f7a8975732` | **no** | **posterior detectada** 2026-09-14 |
-| `ASTM_A796` | ASTM A796/A796M-13 «Structural Design of Corrugated Steel Pipe, Pipe-Arches, and Arches» (practica de diseño estructural de tuberia de acero corrugado, arcos-tubo y arcos) | A796/A796M-13 | corrida, +0 | 21 | `df7858f04caf61bc1c3a4ea3d664e38cacddee25` | **no** | **posterior detectada** 2026-09-14 |
-| `E030` | Norma Tecnica E.030 «Diseño Sismorresistente» | Edicion 2026, publicada en el diario oficial El Peruano | corrida, +0 | 68 | `fe0a58e4be4b8709324e65ed6ad0c25b8e0b6899` | sí | confirmada 2026-09-14 |
-| `E050` | Norma Tecnica E.050 «Suelos y Cimentaciones» | Edicion 2018 | corrida, +0 | 82 | `5fac1ecd997a6d6e80bcbf0967f89f9ddcc8106c` | sí | confirmada 2026-09-14 |
-| `E060` | Norma Tecnica E.060 «Concreto Armado» | Edicion 2009 | corrida, +0 | 205 | `cffe0efffc767f5d06a33e1f4eed3a16a01bdd81` | sí | confirmada 2026-09-14 |
-| `EG2013` | Manual de Carreteras "Especificaciones Tecnicas Generales para Construccion" (EG-2013) | Version revisada y corregida a junio 2013 | corrida, +8 | 1282 | `e35681d06b13226744324bc6b242b608ca9fa3ba` | sí | confirmada 2026-09-14 |
+| `AASHTO_LRFD_9` | AASHTO LRFD Bridge Design Specifications | Ninth Edition, 2020 | por capítulo: 1=15, 10=1289, 11=1469, 12=1638, 13=1750, 14=1782, 15=1872, 2=24, 3=54, 4=251, 5=359, 6=706, 7=1134, 8=1197, 9=1239 | 1905 | `71f4ced4c80f58db75a0bcdf4ac6b5d86dc0f858` | sí | **posterior detectada** 2026-09-14: AASHTO LRFD Bridge Design Specifications, 10th Edition (LRFDBDS-10, 2024) |
+| `AASHTO_M170M` | AASHTO M 170M-04 «Standard Specification for Reinforced Concrete Culvert, Storm Drain, and Sewer Pipe [Metric]» | M 170M-04 | por capítulo: M 170M=0 | 23 | `dcc40c0e5e9c99ad9f18490fa8c5b2d9394faa51` | **no** | **posterior detectada** 2026-09-14: AASHTO M 170M-23 (2023; equivalente ASTM C76M-22) |
+| `AASHTO_M294_TRAD` | AASHTO M 294-11 «Tubería corrugada de polietileno, 300 a 1500 mm (12 a 60 in.) de diámetro» — TRADUCCION NO OFICIAL al español | M 294-11 (traduccion no oficial al español) | **sin determinar** | 17 | `7cecb19f73e4d101866832a3fc57db752fa53379` | sí | **posterior detectada** 2026-09-14: AASHTO M 294-25 (2025) |
+| `AASHTO_M36` | AASHTO M 36 «Corrugated Steel Pipe, Metallic-Coated, for Sewers and Drains» | M 36-03 (2007) | por capítulo: M 36=1 | 24 | `f85b5658385ae6779dde4e5fd340ac3122b62636` | **no** | **posterior detectada** 2026-09-14: AASHTO M 36M/M 36-24 (2024) |
+| `ASTM_A760` | ASTM A760/A760M-10 «Especificacion Estandar para Tuberia de Acero Corrugado, con Recubrimiento Metalico, para Alcantarillas y Drenajes» | A760/A760M-10 | corrida, +0 | 15 | `47d0d447143ca158615dff7dec79f2f7a8975732` | **no** | **posterior detectada** 2026-09-14: ASTM A760/A760M-25 |
+| `ASTM_A796` | ASTM A796/A796M-13 «Structural Design of Corrugated Steel Pipe, Pipe-Arches, and Arches» (practica de diseño estructural de tuberia de acero corrugado, arcos-tubo y arcos) | A796/A796M-13 | corrida, +0 | 21 | `df7858f04caf61bc1c3a4ea3d664e38cacddee25` | **no** | **posterior detectada** 2026-09-14: ASTM A796/A796M-21 |
+| `DG2018` | Manual de Carreteras: Diseño Geométrico DG-2018 (MTC, «Revisada y Corregida a Enero de 2018») | DG-2018 | corrida, +1 | 285 | `96ea04423a7e0e7fc44b5cd5d8824d6166a8e816` | sí | confirmada 2026-09-20; aprobada por RD 03-2018-MTC/14 |
+| `E030` | Norma Tecnica E.030 «Diseño Sismorresistente» | Edicion 2026, publicada en el diario oficial El Peruano | corrida, +0 | 68 | `fe0a58e4be4b8709324e65ed6ad0c25b8e0b6899` | sí | confirmada 2026-09-14; aprobada por RM 183-2026-VIVIENDA |
+| `E050` | Norma Tecnica E.050 «Suelos y Cimentaciones» | Edicion 2018 | corrida, +0 | 82 | `5fac1ecd997a6d6e80bcbf0967f89f9ddcc8106c` | sí | confirmada 2026-09-14; aprobada por RM 406-2018-VIVIENDA |
+| `E060` | Norma Tecnica E.060 «Concreto Armado» | Edicion 2009 | corrida, +0 | 205 | `cffe0efffc767f5d06a33e1f4eed3a16a01bdd81` | sí | confirmada 2026-09-14; aprobada por DS 010-2009-VIVIENDA |
+| `EG2013` | Manual de Carreteras "Especificaciones Tecnicas Generales para Construccion" (EG-2013) | Version revisada y corregida a junio 2013 | corrida, +8 | 1282 | `e35681d06b13226744324bc6b242b608ca9fa3ba` | sí | confirmada 2026-09-14; aprobada por RD 03-2013-MTC/14 |
 | `HDS5_3ED` | HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-HIF-12-026) | Third Edition, April 2012 | por capítulo: 1=38, 2=62, 3=82, 4=126, 5=136, 6=162, 7=181, A=189, B=202, C=210, DG1=271, DG2=285, DG3=293, DG4=312 | 323 | `7b985e047c615b765e7c41b6ff12df0505c02ce4` | sí | confirmada 2026-09-14 |
-| `HDS5_SI_1985` | HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-IP-85-15), copia rotulada «SI» por sus cartas metricas | September 1985 | **sin determinar** | 410 | `59c6623c78793f7f947b7095027096b86f88ddf0` | sí | **posterior detectada** 2026-09-14 |
-| `MC_HHD` | Manual de Hidrologia, Hidraulica y Drenaje | Version Libro | corrida, +3 | 225 | `a31e853b8171b931863d7afa4379bbbc57cacb0d` | sí | confirmada 2026-09-14 |
-| `MP` | Manual de Puentes | Version Libro | corrida, +1 | 673 | `67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44` | sí | **posterior detectada** 2026-09-14 |
-| `MS` | Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos | Version abril 2014 | corrida, +1 | 281 | `21d19a71090c1e586cd31596db8a4d007dc7b96f` | sí | confirmada 2026-09-14 |
+| `HDS5_SI_1985` | HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-IP-85-15), copia rotulada «SI» por sus cartas metricas | September 1985 | **sin determinar** | 410 | `59c6623c78793f7f947b7095027096b86f88ddf0` | sí | **posterior detectada** 2026-09-14: HDS-5 Third Edition, FHWA-HIF-12-026 (2012), presente en normas/ como HDS5_3ED |
+| `MC_HHD` | Manual de Hidrologia, Hidraulica y Drenaje | Version Libro | corrida, +3 | 225 | `a31e853b8171b931863d7afa4379bbbc57cacb0d` | sí | confirmada 2026-09-14; aprobada por RD 20-2011-MTC/14 |
+| `MP` | Manual de Puentes | Version Libro | corrida, +1 | 673 | `67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44` | sí | **posterior detectada** 2026-09-14: Manual de Puentes actualizado 2018 (630 paginas); aprobada por RD 041-2016-MTC/14; **derogada por RD 19-2018-MTC/14** |
+| `MS` | Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos | Version abril 2014 | corrida, +1 | 281 | `21d19a71090c1e586cd31596db8a4d007dc7b96f` | sí | confirmada 2026-09-14; aprobada por RD 10-2014-MTC/14 |
 
 ## 2. Fuentes que se citan y NO están en `normas/`
 
@@ -44,10 +45,12 @@ exige numeral verificado, y aquí no hay contra qué verificar.
 
 | id | Documento | Esfuerzo | Qué desbloquearía | Sustituto vigente |
 |---|---|---|---|---|
-| `DG2018` | Manual de Carreteras: Diseño Geometrico DG-2018 | facil, es descarga publica | 'clase_de_via' y con ella 'carriles_por_sentido': hoy el Cuadro 4.1 no se puede aplicar sin declararlos | datos de sitio declarados por el proyectista |
 | `HEC14` | HEC-14 «Hydraulic Design of Energy Dissipators for Culverts and Channels» | facil, es descarga publica | el dimensionamiento de disipadores, fuera de alcance hoy | Laushey (num. 4.1.1.3.7 c) del Manual) para d50 |
 | `LEY_29338` | Ley 29338, Ley de Recursos Hidricos, y su reglamento | facil, es descarga publica | el tramite, no el calculo | — |
+| `RNGIV` | Reglamento Nacional de Gestion de Infraestructura Vial, aprobado por DS 034-2008-MTC, y sus modificatorias | facil, es descarga publica | la cita textual de la definicion juridica del derecho de via y de quien lo aprueba, que hoy V5 solo tiene por remision del DG-2018; no mueve ningun numero: los anchos estan en la Tabla 304.09 del DG-2018, que si esta | la remision del DG-2018 §304.07.01 (cita DG2018.304.07.01) |
 | `WSDOT_HM` | WSDOT Hydraulics Manual | facil, es descarga publica | 'v_max_tmc' y 'v_max_hdpe', hoy [C] sin PDF | los dos criterios siguen [C] y la ventana los rotula «fuente no disponible en el expediente» |
+| `AASHTO_M259` | AASHTO M 259 «Precast Reinforced Concrete Box Sections for Culverts, Storm Drains, and Sewers» (ASTM C789) | compra o suscripcion | la alternativa PREFABRICADA al marco vaciado in situ de la Familia C: seria una decision nueva de alcance (ruta_familia_c §14.1), no un dato | marco vaciado in situ, diseñado por AASHTO LRFD Seccion 5 y Art. 12.11 y construido por EG-2013 503 y 504 |
+| `AASHTO_M273` | AASHTO M 273 «Precast Reinforced Concrete Box Sections for Culverts, Storm Drains, and Sewers with Less Than 2 ft of Cover Subjected to Highway Loadings» (ASTM C850) | compra o suscripcion | lo mismo que M 259, para el caso de cobertura baja; ninguna de las dos mueve el diseño in situ | marco vaciado in situ, diseñado por AASHTO LRFD Seccion 5 y Art. 12.11 y construido por EG-2013 503 y 504 |
 | `AASHTO_M294` | AASHTO M 294-11 «Corrugated Polyethylene Pipe, 300- to 1500-mm Diameter» -- el ORIGINAL EN INGLES, del que deriva la traduccion no oficial presente en normas/ | compra o suscripcion | citar a AASHTO y no a un traductor anonimo, no el tope: (1) reverificar contra el original lo que hoy sostiene la traduccion -- la serie de tamaños nominales 300-1500 mm (1.1.1, 7.2.1), la tabla de espesores minimos de pared (7.2.2) y la exclusion del diseño estructural (1.4) -- y, si el original imprime folio, firmar (`Verificado`) lo que hoy no puede firmarse por T6; (2) comprobar que el original no imprime nada que la traduccion omita o altere en esos numerales; (3) leer el diametro exterior o la altura de perfil si el original los fijara, que la traduccion no trae. NO desbloquearia un [N]: es norma de producto extranjera, y 'D_max_catalogo' seguiria [A] con el techo de la serie como extremo declarado | AASHTO_M294_TRAD, traduccion no oficial presente en normas/, rotulada como tal en cada cita |
 | `ASTM_A798` | ASTM A798/A798M «Installing Factory-Made Corrugated Steel Pipe for Sewers and Other Applications» | compra o suscripcion | nada que el EG-2013 no cubra ya para obra vial peruana | EG-2013 Seccion 507 |
 | `ASTM_A807` | ASTM A-807 (la designacion que la hoja de ruta atribuye al calibre de TMC por altura de relleno) | compra o suscripcion | nada: la remision es FALSA, y desde N1 esta VERIFICADA en positivo y no solo por ausencia: A796 num. 22.1 la cita como practica de INSTALACION («shall conform to Practice A798/A798M or A807/A807M»), que es exactamente para lo que EG-2013 507.05/.06/.08 la invocan. El calibre lo fija A796 por procedimiento (num. 7 a 10) -- no hay tabla en ninguna de las dos --. DIS-HR-A807 quedo RESUELTA en N1 al corregirse la fila de la v8 | ninguno; la remision se retira, no se sustituye |
@@ -79,6 +82,8 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.11.6.3.3#EXC` | 11.6.3.3 | «Eccentricity Limits» | pág. impresa **11-24** · PDF 1493 | exigencia | 2026-09-12 · texto |
 | `AASHTO_LRFD_9.11.6.5.1#EXC` | 11.6.5.1 | «General» | pág. impresa **11-25** · PDF 1494 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.11.6.5.2.1#ROCA` | 11.6.5.2.1 | «Characterization of Acceleration at Wall Base» | pág. impresa **11-27** · PDF 1496 | exigencia | 2026-08-28 · texto |
+| `AASHTO_LRFD_9.12.11.1` | 12.11.1 | «General» | pág. impresa **12-68** · PDF 1706 | exigencia | 2026-09-20 · texto |
+| `AASHTO_LRFD_9.12.4.2.4` | 12.4.2.4 | «Precast Concrete Structures» | pág. impresa **12-8** · PDF 1646 | exigencia | 2026-09-20 · texto |
 | `AASHTO_LRFD_9.12.6.1#FLOTACION` | 12.6.1 | «Loading» | pág. impresa **12-14** · PDF 1652 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX` | 12.6.1 | «Loading» | pág. impresa **12-14** · PDF 1652 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.12.6.2.3#UPLIFT` | 12.6.2.3 | «Uplift» | pág. impresa **12-19** · PDF 1657 | exigencia | 2026-08-28 · texto |
@@ -118,6 +123,10 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.11.6.5.1#EXC`** — «middle two-thirds», no «tercio central»: es la parte de AASHTO que gana a la errata de traduccion del Manual. Y su comentario C11.6.5.1 ARRANCA en esta misma pagina (columna derecha), no en la 11-26; lo que si esta en la 11-26 es el texto que el repositorio le atribuye.
 
 > **`AASHTO_LRFD_9.11.6.5.2.1#ROCA`** — El 1.2 esta literal, y del lado correcto de la igualdad: es lo que resuelve la errata de imprenta del Manual, cuyo parentesis lo pone a la izquierda.
+
+> **`AASHTO_LRFD_9.12.11.1`** — El Art. 12.11 se titula «REINFORCED CONCRETE CAST-IN-PLACE AND PRECAST BOX CULVERTS AND REINFORCED CAST-IN-PLACE ARCHES» (partido en tres renglones en la misma pagina; por eso no va en `jerarquia_numeral`). Rige el diseño estructural del marco in situ Y del prefabricado; y su cuarto parrafo dice que las dimensiones ESTANDAR del prefabricado estan en «AASHTO M 259 (ASTM C789) and M 273 (ASTM C850)»: para el in situ no hay dimensiones estandar, se proyectan. Es la mitad de diseño del rotulo de M2: «diseño LRFD Sec. 5 y Art. 12.11».
+
+> **`AASHTO_LRFD_9.12.4.2.4`** — LA NORMA DE PRODUCTO DEL CAJON PREFABRICADO ES M 259 / M 273, y las dos estan AUSENTES de normas/ (`fuentes.AASHTO_M259`, `AASHTO_M273`). Es lo que sostiene la decision de docs/ruta_familia_c.md §14.1 --- marco VACIADO IN SITU --- y el rotulo «sin norma de producto» que M2 imprime para la seccion rectangular (EXT-N-03): un marco in situ no es un producto que se compra contra una especificacion, y rotularlo con la norma del tubo (M 170M) era una atribucion falsa.
 
 > **`AASHTO_LRFD_9.12.6.1#FLOTACION`** — ES LA UNICA APARICION DE «flotation» EN LAS 1905 PAGINAS del PDF, medida. Y trae su propia CONDICION DE DISPARO -- «with inverts below the water table» --, que es la que hace de esta verificacion algo que no siempre aplica: sin freatico sobre el invert no hay nada que evaluar. NO SE LEE SOLA: dos frases mas abajo, EN EL MISMO PARRAFO de este mismo numeral, esta `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, que manda aplicar el factor MAXIMO de EV -- lo contrario de lo que V7 hace --. C7 cito esta frase y elidio aquella, y lo encontro su auditoria adversarial: recortar un parrafo justo antes de la frase que discute tu propia lectura es la forma NOR-HID-01 aplicada a un recorte. La discusion esta registrada en DIS-AASHTO-GAMMA-EV-12.6.1.
 
@@ -177,7 +186,13 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `AASHTO_M170M.1.1` | 1.1 | «SCOPE» | pág. impresa **M 170M-1** · PDF 1 | definicion | 2026-09-20 · imagen renderizada |
+| `AASHTO_M170M.1.1#NOTA1` | 1.2, Note 1 | «SCOPE» | pág. impresa **M 170M-1** · PDF 1 | definicion | 2026-09-20 · imagen renderizada |
 | `AASHTO_M170M.T1_T5#DIAMETROS` | Tables 1 to 5 | «Table 1—Design Requirements for Class I Reinforced Concrete Pipe» | pág. impresa **M 170M-3** · PDF 3 | definicion | 2026-09-12 · imagen renderizada |
+
+> **`AASHTO_M170M.1.1`** — Leida sobre la PDF 1 renderizada a escala 3.0 (el OCR imprime «iniendcd io be used» y «culvens»). Cubre TUBERIA («pipe»); un marco rectangular vaciado in situ no es tuberia y esta norma no lo rige. La PDF 1 rotula ademas «AASHTO Designation: M 170M-04» y «ASTM Designation: C 76M-02», que es la doble designacion del rotulo que M2 imprime.
+
+> **`AASHTO_M170M.1.1#NOTA1`** — LO QUE LA NORMA DICE QUE NO ES: ni cama, ni relleno, ni la relacion entre la carga de campo y la clase. La nota sigue: la experiencia muestra que el buen desempeño depende de elegir la clase, la cama y el relleno, y el propietario «is cautioned that he must correlate the field requirements with the class of pipe specified». Es la misma clausula que M 36 lleva en su 1.3 y A760 en su 1.4, y la razon de que 'clases_producto_por_relleno' sea un criterio del proyecto y no una lectura de la norma.
 
 > **`AASHTO_M170M.T1_T5#DIAMETROS`** — ES EL ANCLA DE DIS-HR-D-MAX: la envolvente de diametros de las cinco tablas, leida TABLA POR TABLA sobre las paginas renderizadas (escaneo con OCR inutilizable; ver la Fuente). Columna «Internal Designated Diameter, mm»: Tabla 1 (Clase I, PDF 3): 1500 a 3450; Tabla 2 (Clase II, PDF 4-5): 300 a 3450; Tabla 3 (Clase III, PDF 6-7): 300 a 3600; Tabla 4 (Clase IV, PDF 8-9): arranca en 300 y SU MAXIMO NO ES VERIFICABLE en este ejemplar -- la tinta de la mitad baja de la PDF 8 no esta en el escaneo --; Tabla 5 (Clase V, PDF 10-11): 300 a 3600. La envolvente NO es uniforme y por eso «Tablas 1 a 5: de 300 a 3600» solo es cierta leida como CONJUNTO. Encima de lo tabulado, el num. 7.2 «Modified and Special Designs» (PDF 13) preve, con permiso del propietario, «special designs for sizes and loads beyond those shown in Tables 1 to 5» (7.2.1); y el num. 4.1 «CLASSIFICATION» (PDF 2) remite: «The corresponding strength requirements are prescribed in Tables 1 to 5.» DOS RESERVAS DE LEGIBILIDAD, ninguna contraria: el rotulo al pie de la PDF 3 esta degradado (la correspondencia «M 170M-3» la fijan los rotulos legibles de las paginas vecinas M 170M-2 y M 170M-4 y la regla de paginacion), y los digitos del numero de tabla en las paginas de continuacion (PDF 7 y 9) no se leen: la asignacion de cada continuacion a su tabla es por secuencia de rotulos y coherencia de filas.
 
@@ -202,7 +217,10 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `AASHTO_M36.1.1` | 1.1 | «SCOPE» | pág. impresa **M 36-1** · PDF 2 | definicion | 2026-09-20 · imagen renderizada |
 | `AASHTO_M36.T6` | Table 6 | «Table 6—Pipe Sizes» | pág. impresa **M 36-11** · PDF 12 | definicion | 2026-09-12 · imagen renderizada |
+
+> **`AASHTO_M36.1.1`** — RASTER PURO: leida sobre la PDF 2 renderizada a escala 3.0. La portada rotula «AASHTO Designation: M 36-03 (2007)» y «ASTM Designation: A 760/A 760M-01a». Cubre tuberia de acero corrugado para drenaje pluvial, subdrenes y alcantarillas; el resto del numeral 1.1 enumera los recubrimientos metalicos (zinc, aluminio tipo 2, aleacion 55 % Al-Zn, Zn-5 % Al-mischmetal, aluminio tipo 1) y no se transcribe. La MISMA clausula, en español, es el 1.1 de A760 (`corresponde_en`).
 
 > **`AASHTO_M36.T6`** — RASTER PURO: leida entera sobre la pagina PDF 12 renderizada (escalas 4.0 y 8.0; las filas 2550-3600 exigieron la segunda para separar las columnas de costilla). La pagina impresa lleva el rotulo «M 36-11» al pie, que confirma el desfase +1 de la Fuente.
 
@@ -210,7 +228,10 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `ASTM_A760.1.1` | 1.1 | «Alcance» | pág. impresa **1** · PDF 1 | definicion | 2026-09-20 · imagen renderizada |
 | `ASTM_A760.T1` | Tabla 1 | «TABLA 1 Tamaños de tubería» | pág. impresa **3** · PDF 3 | definicion | 2026-09-12 · imagen renderizada |
+
+> **`ASTM_A760.1.1`** — ToUnicode roto: leida sobre la PDF 1 renderizada a escala 3.0. El ejemplar es la TRADUCCION AL ESPAÑOL (propiedad declarada en la Fuente): el encabezado imprime «1 Alcance» y, arriba a la derecha, «AASHTO No. M 36 / M 36M», la doble designacion. Su 1.4 repite la clausula de M 170M Note 1 y M 36 1.3: la norma no incluye cama, relleno ni la relacion carga-espesor, y remite la instalacion a la Practica A798/A798M (ausente, DIS-HR-A807).
 
 > **`ASTM_A760.T1`** — Leida sobre la pagina PDF 3 renderizada (S14 dejo comprobado que es legible a escala 2.0; esta transcripcion se hizo a 4.0). El PDF es la TRADUCCION AL ESPAÑOL de la norma (propiedad declarada en la Fuente): el titulo impreso es «TABLA 1 Tamaños de tubería» y los encabezados mezclan «en.» (in.) con «pulg.». La MISMA tabla existe como Table 6 de AASHTO M 36 (doble designacion, ediciones distintas): las diferencias medidas entre las dos estan declaradas en la correspondencia CORR-TAMANOS-TMC.
 
@@ -275,6 +296,29 @@ línea que se pueda romper.
 
 > **`ASTM_A796.T9`** — Gemela SI de la Table 8 (5 by 1 in.), que esta al pie de la PDF 9; la Table 9 abre la PDF 10 con su propia «NOTE 1».
 
+### Manual de Carreteras: Diseño Geométrico DG-2018 (MTC, «Revisada y Corregida a Enero de 2018»)  (`DG2018`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `DG2018.304.07.01` | 304.07.01 | 304.07 Derecho de Vía o faja de dominio › «Generalidades» | pág. impresa **198** · PDF 199 | definicion | 2026-09-20 · ambos |
+| `DG2018.304.07.02` | 304.07.02 | 304.07 Derecho de Vía o faja de dominio › «Ancho y aprobación del Derecho de Vía» | pág. impresa **198** · PDF 199 | exigencia | 2026-09-20 · ambos |
+| `DG2018.304.07.02#INCREMENTO` | 304.07.02 | 304.07 Derecho de Vía o faja de dominio › «Ancho y aprobación del Derecho de Vía» | pág. impresa **199** · PDF 200 | exigencia | 2026-09-20 · ambos |
+| `DG2018.304.07.02#INCREMENTO_DRENAJE` | 304.07.02 | 304.07 Derecho de Vía o faja de dominio › «Ancho y aprobación del Derecho de Vía» | pág. impresa **199** · PDF 200 | exigencia | 2026-09-20 · ambos |
+| `DG2018.304.07.02#T304.09` | Tabla 304.09 | 304.07 Derecho de Vía o faja de dominio › «Anchos mínimos de Derecho de Vía» | pág. impresa **199** · PDF 200 | definicion | 2026-09-20 · ambos |
+| `DG2018.304.10#T304.11` | 304.10, Tabla 304.11 | «Taludes» | pág. impresa **208** · PDF 209 | definicion | 2026-09-20 · ambos |
+
+> **`DG2018.304.07.01`** — LA REMISION AL RNGIV (DS 034-2008-MTC) ES LO QUE ESTA CITA ACREDITA, y el Reglamento NO esta en normas/: el archivo que hubo hasta 5196dd2 era la publicacion de El Peruano de 2006, no el decreto de 2008 (ver `fuentes.RNGIV`). La pagina imprime a continuacion seis conceptos (ancho y aprobacion, libre disponibilidad, registro, propiedad, propiedad restringida, condiciones de uso) que remiten al Reglamento y no se transcriben: ninguno trae numero.
+
+> **`DG2018.304.07.02`** — EXIGENCIA SOBRE EL ANCHO, no sobre el agua: «anchos mínimos que debe tener». El mismo numeral dice antes que cada autoridad competente del articulo 4 del RNGIV «establece y aprueba mediante resolución del titular» el derecho de via de sus carreteras, y que para determinarlo «deberá tenerse en consideración la instalación de los dispositivos auxiliares y obras básicas requeridas para el funcionamiento de la vía». Es el requisito juridico [N] de V5 (v8 fila V5, enmendada en EXT-0); la condicion hidraulica no esta aqui ni en ninguna otra parte del 304.07.
+
+> **`DG2018.304.07.02#INCREMENTO`** — EL TERCERO DE LOS CUATRO CASOS ES EL DEL PROYECTO: la pagina imprime, con viñeta, «Del borde más alejado de las obras de drenaje» (los otros tres: el borde superior de los taludes de corte mas alejados, el pie de los terraplenes mas altos y el borde exterior de los caminos de servicio). Lo que la frase ESCRIBE es que el ancho fijado «se incrementará en 5.00 m» en ese caso; COMO se compone ese incremento con el ancho de la Tabla 304.09 --- si el limite de la faja queda a 5.00 m del borde de la obra de drenaje, o si se suman 5.00 m al ancho de la fila --- no lo escribe, y es la lectura registrada en `interpretacion` (auditoria adversarial de EXT-6). El mismo numeral admite anchos menores en zonas urbanas «excepcionalmente», por saneamiento fisico legal: es una excepcion de la autoridad, no del proyectista. Vive en `constantes_normativas.INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M`. La viñeta del drenaje es su propia cita (#INCREMENTO_DRENAJE): la pagina separa los cuatro casos con un glifo de viñeta que la capa de texto conserva, y una sola cadena no los une.
+
+> **`DG2018.304.07.02#INCREMENTO_DRENAJE`** — El tercero de los cuatro casos en que el ancho «se incrementará en 5.00 m» (cita gemela #INCREMENTO). Es el que aplica a una alcantarilla: el borde es el del cabezal o el ala mas alejada del eje. Como se compone el incremento con el ancho de la Tabla 304.09 es la interpretacion registrada en la cita gemela.
+
+> **`DG2018.304.07.02#T304.09`** — CINCO FILAS Y DOS COLUMNAS, transcritas enteras en `tablas.DG2018_T304_09`: Autopistas Primera Clase 40, Autopistas Segunda Clase 30, Carretera Primera Clase 25, Carretera Segunda Clase 20, Carretera Tercera Clase 16 (m). La clase de la via de ESTE corredor es el dato de sitio 'clase_de_via', vacio hasta que el estudio de demanda cierre el IMDA; sin el, ninguna fila se elige y el piso no se aplica.
+
+> **`DG2018.304.10#T304.11`** — El numeral 304.10 abre en la impresa 202 (PDF 203) y la Tabla 304.11 esta en la 208 (PDF 209). Transcrita entera en `tablas.DG2018_T304_11`: tres materiales por tres alturas, en V:H. La fila «Gravas, limo arenoso y arcilla» da 1:1.5, 1:1.75 y 1:2 para menos de 5 m, 5 a 10 m y mas de 10 m, que es exactamente la ventana (1.5, 2.0) H:V que 'talud_terraplen' declaraba como «practica corriente» sin poder citarla. Sigue siendo [A]: la tabla es referencial y la seccion tipica del expediente es la que cierra el valor.
+
 ### Norma Tecnica E.030 «Diseño Sismorresistente»  (`E030`)
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
@@ -310,6 +354,10 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `E060.11.10.1` | 11.10.1 | «DISPOSICIONES ESPECIALES PARA MUROS» | pág. impresa **103** · PDF 103 | exigencia | 2026-09-20 · texto |
+| `E060.11.10.10.2` | 11.10.10.2 | 11.10 DISPOSICIONES ESPECIALES PARA MUROS › «Diseño del refuerzo para cortante en muros» | pág. impresa **104** · PDF 104 | exigencia | 2026-09-20 · texto |
+| `E060.11.10.10.3` | 11.10.10.3 | 11.10 DISPOSICIONES ESPECIALES PARA MUROS › «Diseño del refuerzo para cortante en muros» | pág. impresa **104** · PDF 104 | exigencia | 2026-09-20 · ambos |
+| `E060.11.10.2` | 11.10.2 | «DISPOSICIONES ESPECIALES PARA MUROS» | pág. impresa **103** · PDF 103 | exigencia | 2026-09-20 · texto |
 | `E060.14.3.1` | 14.3.1 | «REFUERZO MÍNIMO» | pág. impresa **133** · PDF 133 | exigencia | 2026-08-28 · texto |
 | `E060.14.3.2` | 14.3.2 | «REFUERZO MÍNIMO» | pág. impresa **133** · PDF 133 | exigencia | 2026-08-28 · texto |
 | `E060.14.3.3` | 14.3.3 | «REFUERZO MÍNIMO» | pág. impresa **133** · PDF 133 | exigencia | 2026-08-28 · texto |
@@ -319,6 +367,14 @@ línea que se pueda romper.
 | `E060.7.7.5.1` | 7.7.5.1 | «Ambientes corrosivos» | pág. impresa **55** · PDF 55 | exigencia | 2026-08-28 · texto |
 | `E060.T4.2` | Tabla 4.2 | «REQUISITOS PARA CONDICIONES ESPECIALES DE EXPOSICIÓN» | pág. impresa **37** · PDF 37 | exigencia | 2026-08-28 · ambos |
 | `E060.T4.4` | Tabla 4.4 | «REQUISITOS PARA CONCRETO EXPUESTO A SOLUCIONES DE SULFATOS» | pág. impresa **38** · PDF 38 | exigencia | 2026-08-28 · ambos |
+
+> **`E060.11.10.1`** — LA PREGUNTA DE APLICABILIDAD, dicha por la norma: el cortante PERPENDICULAR al plano --- que es el que el empuje de tierras produce en la pantalla de un cabezal --- se diseña por 11.12 (losas), no por 11.10. Antes de aplicar el 0.0025 de 11.10.10.2 hay que decir en que plano actua el cortante que lo dispara.
+
+> **`E060.11.10.10.2`** — El titulo de la jerarquia esta en la PDF 103 y el del 11.10.10 en la 104. El 0,0025 rige BAJO 11.10.10, que 11.10.7 y 11.10.8 disparan por Vu contra 0,085·raiz(f'c)·Acw; fuera de ese regimen el piso es el 0,002 del 14.3.1 (cita E060.14.3.1, cuya primera oracion remite aqui). El valor NO se transcribe como constante [N] en esta sesion: lo cablea EXT-7 con su caso patron.
+
+> **`E060.11.10.10.3`** — EL VERBATIM SE CORTA DONDE EMPIEZA EL SIMBOLO: la capa de texto imprime «ρv» como glifos sueltos y la ecuacion como imagen, de modo que la oracion entera no se encuentra por texto. Leida sobre la pagina renderizada (EXT-6), la ec. (11-32) es ρv = 0,0025 + 0,5·(2,5 − hm/ℓm)·(ρh − 0,0025) ≥ 0,0025, «pero no necesita ser mayor que el valor de ρh requerido por 11.10.10.1», con hm la altura total del muro y ℓm su longitud total. Es lo que R95-031 (H-13) señalo: bajo el regimen de 11.10.10 la cuantia VERTICAL tambien tiene piso 0,0025, y `M9.cuantia_de_diseno` devolvia 0,0015 en vertical con cortante alto. Se corrige en EXT-7 (EXT-M-05); aqui queda la cita que le faltaba.
+
+> **`E060.11.10.2`** — La segunda oracion del numeral --- «Para muros estructurales que resistan cargas en su plano originadas por la acción de los sismos, se aplicará adicionalmente lo dispuesto en 21.9» --- no se transcribe: el cabezal no es muro estructural de un edificio.
 
 > **`E060.14.3.1`** — EL ESCALONAMIENTO 0,002 -> 0,0025 LO ANUNCIA ESTE MISMO NUMERAL, no solo el 11.10.10.2: su primera oracion remite a 11.10 «a menos que se requiera una cantidad mayor por cortante». La norma imprime «0,002» y «0,0015».
 
@@ -421,7 +477,7 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `HDS5_SI_1985.EC4B#K` | ecs. (4b) y (5) | «Hydraulics of Outlet Control» | pág. impresa **s/n** · PDF 54 | definicion | **NO verificada** |
 
-> **`HDS5_SI_1985.EC4B#K`** — SIN FIRMA A PROPOSITO, no sin verificar: la paginacion de la fuente es `SinDeterminar` (la copia no imprime folios; `pagina_impresa` dice «s/n» por eso) y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. El contenido esta verificado de hecho (trazabilidad/T2 · verificador-normativo, 2026-09-12, metodo AMBOS): POR IMAGEN, la ec. rotulada (4b) imprime Hf = [29 n² L / R^1.33]·V²/2g y la (5) H = [1 + ke + 29 n² L / R^1.33]·V²/2g -- constante 29, no 19.63; las ecuaciones son imagenes incrustadas y no salen en la capa de texto --. POR TEXTO, las definiciones llevan rotulo dual «ft (m)» (el Verbatim es una de ellas) y «19.63» da cero paginas en las 410 del documento. Es el ancla de DIS-HDS5-EDICIONES: leer el 29 «en SI» sobrestima el termino de friccion un +9.6 %, que es lo que K_FRICCION_SI existe para atrapar.
+> **`HDS5_SI_1985.EC4B#K`** — SIN FIRMA A PROPOSITO, no sin verificar: la paginacion de la fuente es `SinDeterminar` (la copia no imprime folios; `pagina_impresa` dice «s/n» por eso) y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. El contenido esta verificado de hecho (trazabilidad/T2 · verificador-normativo, 2026-09-12, metodo AMBOS): POR IMAGEN, la ec. rotulada (4b) imprime Hf = [29 n² L / R^1.33]·V²/2g y la (5) H = [1 + ke + 29 n² L / R^1.33]·V²/2g -- constante 29, no 19.63; las ecuaciones son imagenes incrustadas y no salen en la capa de texto --. POR TEXTO, las definiciones llevan rotulo dual «ft (m)» (el Verbatim es una de ellas) y «19.63» da cero paginas en las 410 del documento. Es el ancla de DIS-HDS5-EDICIONES: leer el 29 «en SI» multiplica el termino de friccion por 29/19.63 = 1.477 (+47.7 % sobre el TERMINO), que en CP-8 sube H de 0.4977 a 0.5455 m (+9.6 % sobre H); es lo que K_FRICCION_SI existe para atrapar. Las dos bases se dicen juntas porque el repositorio las mezclo (EXT-G-03).
 
 ### Manual de Hidrologia, Hidraulica y Drenaje  (`MC_HHD`)
 
@@ -504,6 +560,7 @@ línea que se pueda romper.
 | `MP.2.8.1.1.14.1#EXC` | 2.8.1.1.14.1 | «Generalidades» | pág. impresa **253** · PDF 254 | exigencia | 2026-09-12 · texto |
 | `MP.2.8.1.1.14.2.1#ROCA` | 2.8.1.1.14.2.1 | «Caracterización de la Aceleración en la Base del Muro de Contención» | pág. impresa **254** · PDF 255 | exigencia | 2026-09-12 · ambos |
 | `MP.A.11.3.1#KAE` | A.11.3.1, ec. A.11.3.1-2 | «Método de Mononobe -Okabe» | pág. impresa **586** · PDF 587 | aproximacion | 2026-09-12 · ambos |
+| `MP.INTRODUCCION#LRFD_2014` | Introducción al Manual de Puentes | «INTRODUCCIÓN AL MANUAL DE PUENTES» | pág. impresa **43** · PDF 44 | permiso | 2026-09-20 · ambos |
 | `MP.T2.4.3.11.2.1.2-1` | Tabla 2.4.3.11.2.1.2-1 | «Efectos de Sitio» | pág. impresa **123** · PDF 124 | exigencia | 2026-08-28 · imagen renderizada |
 | `MP.T2.4.5.3.1-1` | 2.4.5.3.1, Tabla 2.4.5.3.1-1 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
 | `MP.T2.4.5.3.1-2` | 2.4.5.3.1, Tabla 2.4.5.3.1-2 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
@@ -532,6 +589,8 @@ línea que se pueda romper.
 > **`MP.2.8.1.1.14.2.1#ROCA`** — LA FRASE CONTIENE LAS DOS MITADES DE DIS-MP-KH0-ROCA: la prosa correcta («estará basado en 1.2 veces el coeficiente...») y el parentesis mal compuesto, con el 1.2 del lado IZQUIERDO de la igualdad -- confirmado sobre la imagen renderizada, por eso el metodo es AMBOS; en el impreso el «=» va compuesto a nivel de subindice y hay salto de linea entre «1.2» y «kh0»; la transcripcion lineal es fiel --. El rotulo de remision debajo del titulo imprime «(11.6.5.2.1AASHTO)» sin espacio. Que el lado correcto sea k_h0 = 1.2·F_pga·PGA lo dice AASHTO 11.6.5.2.1, no este parentesis: por eso gana la prosa (ver la discrepancia).
 
 > **`MP.A.11.3.1#KAE`** — EL CORCHETE DEL DENOMINADOR IMPRIME «[1 −√ ...]^-2», SIGNO MENOS: trazo horizontal unico, sin trazo vertical, decidido sobre la imagen renderizada a 6x -- es la errata de imprenta que DIS-MP-KAE-SIGNO declara; AASHTO imprime «[1 + raiz(...)]» y gana --. La etiqueta impresa de la ecuacion es «Donde (A.11.3.1-2. AASHTO)», con punto tras el 2. El espaciado del titulo, «Mononobe -Okabe» (espacio antes del guion, ninguno despues), es de la fuente y se conserva. Unidades imperiales (kcf, ft), como en el apendice AASHTO del que se transcribe.
+
+> **`MP.INTRODUCCION#LRFD_2014`** — «AASTHO» y «Septima» sin tilde son de la fuente (sic). La Presentacion (PDF 42, impresa 41) lo repite: la actualizacion «se elaboró incorporando en gran parte las Especificaciones Técnicas de las Normas Americanas AASHTO LRFD, Septima Edición del año 2014». El registro cita la 9a ed. (2020) y la 10a (2024) esta publicada: el MP ancla la 7a y PERMITE las posteriores a «la entidad y/o propietario» --- no al proyectista, que propone ---, de modo que la eleccion entre 9a y 10a es tecnica (DIS-MP-LRFD-EDICION dice por que la 9a es admisible; cual rige es de 'edicion_que_rige_el_expediente').
 
 > **`MP.T2.4.3.11.2.1.2-1`** — TRES DE SUS RASGOS SOLO SE VEN RENDERIZANDO, y los tres deciden una lectura: el signo `>` de la ultima columna, el asterisco de la fila F y el «1» del encabezado superior, que es la llamada a la Nota 1 y no un exponente.
 
@@ -1086,6 +1145,36 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | 3.51 | 3.51 | 3.785 | 15.6 | 36.81 | 332.94 | 9.38 | no usada |
 | 4.27 | 4.27 | 4.627 | 14.3 | 37.39 | 411.18 | 9.426 | no usada |
 
+### `DG2018.T304.09` — Anchos mínimos de Derecho de Vía
+
+- Cita: `DG2018.304.07.02#T304.09`
+- Tabla completa · el calculo usa 0 de 2 columnas y 0 de 5 filas
+- Columna «Clasificación» transcrita y **no usada**: la clase de via del corredor es el dato de sitio 'clase_de_via', vacio hasta que el estudio de demanda cierre el IMDA; sin el no se elige fila
+- Columna «Anchos mínimos (m)» transcrita y **no usada**: V5 se detiene en el dato de sitio 'ancho_derecho_via_m', que hoy no llega por ninguna via; cuando llegue, este piso --- con el incremento del 304.07.02 compuesto como diga su interpretacion --- es contra lo que se comprueba
+- Vistas de cálculo derivadas: `ANCHO_MIN_DERECHO_VIA_M`
+
+| Fila | Clasificación | Anchos mínimos (m) | Uso |
+|---|---|---|---|
+| Autopistas Primera Clase |  | PisoUnico(minimo=40.0, unidad='m', cita_id='DG2018.304.07.02', que_pasa_fuera=<QuePasaFuera.INCUMPLE_LA_NORMA: 'incumple'>, rotulo_obligatorio='La fuente escribe un MINIMO exigible.') | no usada |
+| Autopistas Segunda Clase |  | PisoUnico(minimo=30.0, unidad='m', cita_id='DG2018.304.07.02', que_pasa_fuera=<QuePasaFuera.INCUMPLE_LA_NORMA: 'incumple'>, rotulo_obligatorio='La fuente escribe un MINIMO exigible.') | no usada |
+| Carretera Primera Clase |  | PisoUnico(minimo=25.0, unidad='m', cita_id='DG2018.304.07.02', que_pasa_fuera=<QuePasaFuera.INCUMPLE_LA_NORMA: 'incumple'>, rotulo_obligatorio='La fuente escribe un MINIMO exigible.') | no usada |
+| Carretera Segunda Clase |  | PisoUnico(minimo=20.0, unidad='m', cita_id='DG2018.304.07.02', que_pasa_fuera=<QuePasaFuera.INCUMPLE_LA_NORMA: 'incumple'>, rotulo_obligatorio='La fuente escribe un MINIMO exigible.') | no usada |
+| Carretera Tercera Clase |  | PisoUnico(minimo=16.0, unidad='m', cita_id='DG2018.304.07.02', que_pasa_fuera=<QuePasaFuera.INCUMPLE_LA_NORMA: 'incumple'>, rotulo_obligatorio='La fuente escribe un MINIMO exigible.') | no usada |
+
+### `DG2018.T304.11` — Taludes referenciales en zonas de relleno (terraplenes)
+
+- Cita: `DG2018.304.10#T304.11`
+- Tabla completa · el calculo usa 0 de 3 columnas y 0 de 3 filas
+- Columna «<5» transcrita y **no usada**: la altura de terraplen por punto se conoce, pero el material del cuerpo del terraplen no es dato del expediente y la tabla es referencial: acota la ventana de 'talud_terraplen', no lo fija
+- Columna «5-10» transcrita y **no usada**: la altura de terraplen por punto se conoce, pero el material del cuerpo del terraplen no es dato del expediente y la tabla es referencial: acota la ventana de 'talud_terraplen', no lo fija
+- Columna «>10» transcrita y **no usada**: la altura de terraplen por punto se conoce, pero el material del cuerpo del terraplen no es dato del expediente y la tabla es referencial: acota la ventana de 'talud_terraplen', no lo fija
+
+| Fila | <5 | 5-10 | >10 | Uso |
+|---|---|---|---|---|
+| Gravas, limo arenoso y arcilla | 1.5 | 1.75 | 2.0 | no usada |
+| Arena | 2.0 | 2.25 | 2.5 | no usada |
+| Enrocado | 1.0 | 1.25 | 1.5 | no usada |
+
 ### `E060.T4.2` — TABLA 4.2 REQUISITOS PARA CONDICIONES ESPECIALES DE EXPOSICIÓN
 
 - Cita: `E060.T4.2`
@@ -1502,7 +1591,7 @@ recomienda.
 | `F4.CONTROL` | Fase 4 - Dimensionamiento hidraulico | Carga a la entrada HW por los dos controles del HDS-5, entrada y salida, y adopcion del mayor | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.3.1.4#K` |
 | `F4.FORMA_HDS5` | Fase 4 - Dimensionamiento hidraulico | Forma de la ecuacion de control de entrada del HDS-5 que aplica a esta seccion, y por que | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.TA.1`, `HDS5_3ED.A.3#FORMAS` |
 | `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D` |
-| `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning, resueltos con las DOS rugosidades del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
+| `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning: UNA geometria (el tirante, con n_max) y DOS velocidades, una por cada extremo del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.REGIMEN` | Fase 4 - Dimensionamiento hidraulico | Regimen del barril y velocidad a la salida, con el area que HDS-5 3.1.6 asigna a cada caso | **define** | `HDS5_3ED.3.1.6#V_SALIDA`, `HDS5_3ED.3.1.6#V_SALIDA_TW`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HDS5_3ED.3.1.3#SUMERGENCIA` |
 | `F4.SECCION` | Fase 4 - Dimensionamiento hidraulico | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | **define** | `MC_HHD.4.1.1.3.6` |
@@ -1552,7 +1641,7 @@ corrija**. La tercera obligación vive aquí.
   - *E060*: no lo dice. Verificado sobre la imagen renderizada de la pag. impresa 38: la fila severa se imprime «0,2 ≤ SO4 < 2,0», con cota superior ESTRICTA, y la muy severa «2,0 < SO4», con cota inferior ESTRICTA y sin «≤». El valor exacto no cae en ninguna de las dos: es un hueco del texto impreso
   - *hoja_de_ruta*: su Sec. 3.3 escribe la fila severa como «0.20 - 2.00» y la muy severa como «> 2.00», de modo que el punto exacto queda en SEVERA
 - **`DIS-HDS5-EDICIONES` — la constante K del termino de friccion del control de salida.** Gana **HDS5_3ED**: es la unica de las dos que publica la conversion SI. La copia de 1985 opera en unidades inglesas con rotulos duales, y el «si» de su nombre de archivo se refiere a sus cartas metricas, no al cuerpo del documento
-  - Si se sigue la otra: aplicar 29 en metrico sobrestima el termino de friccion un +9.6 %, y no falla ruidosamente: devuelve numeros plausibles y equivocados
+  - Si se sigue la otra: aplicar 29 en metrico multiplica el termino de friccion por 29/19.63 = 1.477 (+47.7 % sobre el termino), que en CP-8 sube H de 0.4977 a 0.5455 m (+9.6 % sobre H), y no falla ruidosamente: devuelve numeros plausibles y equivocados
   - *HDS5_3ED*: «KU = 29 in English Units (19.63 in SI)»
   - *HDS5_SI_1985*: imprime 29 en sus ecs. (4b) y (5) con rotulos duales «ft (m)» y NO imprime 19.63, pese al «si» del nombre del archivo
 - **`DIS-HR-30M-VS-100FT` — la profundidad sobre la que se define la clase de sitio.** Gana **AASHTO_LRFD_9**: 100 ft son 30.48 m: la profundidad de campaña que hay que pedir es la misma y el numero es defendible, de modo que esto NO es una contradiccion de fondo sino una atribucion -- el mismo genero que DIS-HR-G-LAUSHEY, donde el 9.8 era correcto y la pagina no lo imprimia. Trabajar en SI es la regla del proyecto y es legitimo; atribuirle a AASHTO un texto que no imprime, no. Y la correccion no debilita nada: el argumento de que el SPT de 15 m de E.050 Art. 38 no cierra este criterio se sostiene con MAS margen sobre 30.48 m que sobre 30
@@ -1609,6 +1698,10 @@ corrija**. La tercera obligación vive aquí.
   - *hoja_de_ruta*: Sec. 0.5 hacia de la licuefaccion la CAUSA de la clase de sitio -- «Clase de Sitio F POR susceptibilidad a licuefaccion» --, de modo que el riesgo geotecnico entraba al calculo por el factor de sitio. CORREGIDA EN I2: la Sec. 0.5 lleva el reparto de la fuente -- la clase por rigidez medida (pendiente), la licuefaccion por el num. 10.5.4.2 y el SPT de la Fase 0-bis --
   - *AASHTO_LRFD_9*: la evalua en la Seccion 10, Cimentaciones, num. 10.5.4.2 «Liquefaction Design Requirements», y la dispara por zona sismica 3 o 4 MAS napa freatica en los 50 ft superiores MAS caracteristicas de suelo. Ninguna de las tres condiciones es la clase de sitio, y «Site Class F» no aparece en ninguna pagina de la Seccion 10
   - *AASHTO_LRFD_9 · 10.5.4.2 in fine*: y ademas ESPERA que a un sitio licuable le aplique un factor de sitio tabulado: manda analizar en configuracion no licuada y licuada con el mismo espectro, y acota el espectro especifico a no menos de dos tercios del general «modified by the site factors in Article 3.10.3.2»
+- **`DIS-MP-LRFD-EDICION` — la edicion de AASHTO LRFD que rige el diseño del cabezal (Sec. 9.4).** Gana **AASHTO_LRFD_9**: el MP no exige la 7a: la adapta y PERMITE considerar las actualizaciones, de modo que citar la 9a esta dentro de lo que la fuente legal autoriza. Lo que queda abierto es si rige la 9a o la 10a (2024), que es una eleccion tecnica de la entidad y/o propietario a propuesta del proyectista --- la fuente permite a aquellos, no a este --- y no una discrepancia entre fuentes
+  - Si se sigue la otra: citar articulos de una 7a ed. que no esta en normas/ y contra la que ninguna cita esta verificada; la memoria imprimiria numerales que nadie abrio
+  - *MP*: adapta «AASHTO en su versión LRFD BRIDGE DESIGN SPECIFICATIONS del año 2014, Septima Edición» y añade que la entidad «podrá considerar las actualizaciones»
+  - *AASHTO_LRFD_9*: es la 9a ed. (2020), la que esta en normas/ y contra la que estan verificadas las citas de las Secciones 3, 5, 10, 11 y 12; la 7a de 2014 no esta
 
 ### errata_de_imprenta
 
@@ -1653,7 +1746,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 155.
+Citas sin firma de verificación: **5** de 172.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

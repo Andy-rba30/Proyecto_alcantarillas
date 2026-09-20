@@ -228,6 +228,7 @@ PAQUETE_REGISTRO = "normativa"
 CONSTRUCTORES_DE_TRANSCRIPCION = {
     # el objeto documental
     "Fuente", "Cita", "Verbatim", "Verificado", "Ausencia", "Catalogo",
+    "Vigencia", "PdfPresenteSinRegistrar",   # EXT-6: T1-01 y PC-23
     "NotaAlPie", "CondicionAplicacion", "Discrepancia", "Parte", "Laguna",
     "Interpretacion", "AfirmacionNegativa", "Transcripcion", "Fundamento",
     # la tabla y sus partes

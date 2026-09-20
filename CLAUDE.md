@@ -121,7 +121,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -209,7 +209,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -232,16 +232,19 @@ consecuencias que conviene leer antes de tocar el campo:
   con esas palabras, apoyados en `variables_entrada.consumido_por`.
 - **El límite se conoce por MUTACIÓN, no por lectura.** Cambiando el nivel de
   cinco de los trece murieron cuatro tests y sobrevivió uno:
-  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **nueve** sin
+  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **diez** sin
   consumidor (ocho hasta T1; T1 sumó `edicion_que_rige_el_expediente`, la
-  decisión de marco normativo del expediente, que ningún módulo consume) el
+  decisión de marco normativo del expediente, que ningún módulo consume, y
+  EXT-6 su mitad legal, `edicion_legal_que_rige_el_expediente`, partida de
+  aquélla porque el Manual de Puentes está derogado por RD y las normas
+  técnicas de EE.UU. no —EXT-N-01, PC-26—) el
   nivel es un argumento y no una medida, y están censados en
   `SIN_CONSUMIDOR_Y_SIN_MEDIDA` para que el grupo no crezca en silencio —el
   mismo recurso que fija el censo de los dos `inf` deliberados—.
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -426,7 +429,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2367**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2417**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -465,7 +468,27 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-5 (2026-09-20) sumó DOSCIENTOS SIETE tests**: los 204
+independientes. **EXT-6 (2026-09-20) sumó CINCUENTA tests**: los 35
+de `tests/test_ext6_registro_normativo.py` —la aceptación del cluster
+«registro normativo» (EXT-N-01..04, PC-23, PC-26, PC-30, resto de
+EXT-G-03), escritos primero en rojo con `xfail(strict=True)` y liberados
+al corregir: DG-2018 presente y medida, la guardia «todo PDF de `normas/`
+es Fuente presente o está censado», el RNGIV que no vuelve, las citas
+nuevas verificadas contra sus páginas, `norma_producto` por (material,
+forma), la elección de edición partida en legal y técnica con
+`Fuente.vigencia`, los textos 179 / Manning / TR / fricción, y los dos que
+dejó el auditor adversarial (la puerta del criterio legal, que con forma
+`str` aceptaba la opción «citada» sin fecha ni acto, y el contrato del JSON
+leído del AST en vez de un `AssertionError` en la ruta de exportación)—, los nueve
+netos de `tests/test_vigencia_fuentes.py` reescrito para el campo y los
+dos criterios (25 frente a 16), y los seis que crecen solos con el
+criterio nuevo y las cuatro fichas de la Parte XXII (`test_ext5_forma_gui`,
+`test_criterios_adoptados`, `test_decisiones_diferidas`). Las cuatro
+configuraciones se MIDIERON sobre el árbol de EXT-6 antes del commit (las
+dos sin Tk sin `DISPLAY` y con un `xvfb-run` que falla; las dos sin
+PyMuPDF desinstalándolo y reinstalándolo) y los cuatro pares suben
+exactamente 50: ninguno de los 50 depende de PyMuPDF (`sha1_de` es
+`hashlib`) ni de Tk. **EXT-5 (2026-09-20) sumó DOSCIENTOS SIETE tests**: los 204
 de `tests/test_ext5_forma_gui.py` —la aceptación del cluster GUI (EXT-G-01,
 PC-13, PC-14, la mitad de FORMA de EXT-V-02/05/06, la de pestaña 2 de
 EXT-V-04 y EXT-G-03): los cuatro casos del prompt escritos primero en rojo
@@ -631,7 +654,7 @@ llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
-2367. La
+2367; EXT-6: 2417. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -643,10 +666,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 2363 (medido en EXT-5) | 4 |
-| sí | no | 2355 (medido en EXT-5) | 12 |
-| no | sí | 2330 (medido en EXT-5) | 37 |
-| no | no | 2322 (medido en EXT-5) | 45 |
+| sí | sí | 2413 (medido en EXT-6) | 4 |
+| sí | no | 2405 (medido en EXT-6) | 12 |
+| no | sí | 2380 (medido en EXT-6) | 37 |
+| no | no | 2372 (medido en EXT-6) | 45 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

@@ -1,18 +1,20 @@
 """
 tests/test_vigencia_fuentes.py
 ==============================
-La VIGENCIA de las ediciones citadas, verificada en T1 (2026-09-14) y
-registrada en la `nota` de cada Fuente presente detras de una marca fija.
+La VIGENCIA de las ediciones citadas, verificada en T1 (2026-09-14; la del
+DG-2018 en EXT-6) y registrada en el campo `Fuente.vigencia`.
 
-POR QUE HAY TESTS SOBRE UNA MARCA EN PROSA. El esquema no tiene campo para
-«el emisor publica hoy una edicion posterior a la citada» (ver el bloque T1
-de `fuentes.py` y la ficha T1-01 de docs/decisiones_diferidas.md). Mientras
-no lo tenga, lo que impide que la vigencia sea prosa que nadie enumera son
-estas guardias: toda fuente presente lleva exactamente UNA marca; el censo de
-las superadas esta fijado y solo cambia a sabiendas; la eleccion que queda
-para el proyectista esta declarada vacia en `criterios_adoptados` y su ficha
-nombra a cada fuente superada, a todas y solo a ellas, derivadas del
-registro y no escritas dos veces.
+HASTA EXT-6 ERA UNA MARCA EN LA NOTA, y estos tests vigilaban la marca: el
+esquema no tenia campo para «el emisor publica hoy una edicion posterior a
+la citada» (ficha T1-01 de docs/decisiones_diferidas.md). EXT-6 escribio el
+campo con lo que la ficha pedia y lo que EXT-N-01 añadio --- el acto que
+aprobo la edicion citada y el que la derogo ---, y los tests pasaron a
+vigilar el campo: toda fuente presente lo lleva; el censo de las superadas
+esta fijado y solo cambia a sabiendas; la eleccion que queda para el
+proyectista se PARTE en legal (derogada por acto: el Manual de Puentes) y
+tecnica (las seis de EE.UU.), cada una declarada vacia en
+`criterios_adoptados` con su ficha nombrando a las suyas, a todas y solo a
+ellas, derivadas del registro y no escritas dos veces.
 
 LO QUE NO SE COMPRUEBA AQUI, a proposito: que la edicion vigente sea la que
 la nota dice. Eso se verifico contra el emisor, por busqueda web, y se
@@ -29,6 +31,7 @@ from normativa import fuentes as fu
 from normativa.esquema import ErrorDeRegistro
 
 CLAVE = "edicion_que_rige_el_expediente"
+CLAVE_LEGAL = "edicion_legal_que_rige_el_expediente"
 
 # Medido en T1. Las ocho presentes cuyo emisor publica una edicion posterior
 # a la citada; HDS5_SI_1985 esta aqui y NO en la eleccion pendiente, porque
@@ -42,11 +45,14 @@ CENSO_EDICION_POSTERIOR = (
 # «a gabinete», este censo la recibe a sabiendas.
 CENSO_A_GABINETE = ()
 
-# Como la ficha del criterio nombra a cada fuente con eleccion pendiente. El
-# test exige que las claves sean EXACTAMENTE las que el registro deriva, de
-# modo que la ficha no puede quedarse corta ni sobrar sin que se note.
-DESIGNADOR_EN_LA_FICHA = {
+# Como la ficha de cada criterio nombra a cada fuente con eleccion pendiente.
+# El test exige que las claves sean EXACTAMENTE las que el registro deriva, de
+# modo que la ficha no puede quedarse corta ni sobrar sin que se note. Desde
+# EXT-6 son dos fichas: la LEGAL (derogada por acto) y la TECNICA.
+DESIGNADOR_EN_LA_FICHA_LEGAL = {
     "MP": "Manual de Puentes",
+}
+DESIGNADOR_EN_LA_FICHA = {
     "AASHTO_LRFD_9": "AASHTO LRFD",
     "AASHTO_M170M": "M 170M",
     "AASHTO_M36": "M 36",
@@ -61,29 +67,50 @@ DESIGNADOR_EN_LA_FICHA = {
 # ---------------------------------------------------------------------------
 
 def test_toda_fuente_presente_declara_su_vigencia():
-    sin_marca = [f.id for f in fu.FUENTES.values()
-                 if fu.estado_de_vigencia(f) is None]
-    assert not sin_marca, (
-        f"fuentes presentes sin marca de vigencia: {sin_marca}. Una fuente "
-        "nueva en normas/ entra con su vigencia verificada contra el emisor "
-        "(o marcada «no determinable en linea», que tambien es una marca)")
+    sin_campo = [f.id for f in fu.FUENTES.values() if f.vigencia is None]
+    assert not sin_campo, (
+        f"fuentes presentes sin `vigencia`: {sin_campo}. Una fuente nueva en "
+        "normas/ entra con su vigencia verificada contra el emisor (o marcada "
+        "«no determinable en linea», que tambien es un estado)")
+    for f in fu.FUENTES.values():
+        assert fu.estado_de_vigencia(f) is f.vigencia.estado
+        assert f.vigencia.fecha in (fu.VIGENCIA_VERIFICADA_EL,
+                                    fu.VIGENCIA_VERIFICADA_EL_EXT6), f.id
+        assert f.vigencia.como.strip(), f.id
 
 
-def test_las_tres_marcas_llevan_la_fecha_de_la_verificacion():
-    for marca in fu.MARCAS_DE_VIGENCIA:
-        assert marca.endswith(fu.VIGENCIA_VERIFICADA_EL), marca
+def test_las_marcas_en_prosa_desaparecieron_de_las_notas():
+    """Una sola fuente de verdad: el campo. La marca de T1 ya no se busca."""
+    for f in list(fu.FUENTES.values()) + list(fu.FUENTES_AUSENTES.values()):
+        assert "VIGENCIA CONFIRMADA 2026" not in f.nota, f.id
+        assert "EDICION POSTERIOR DETECTADA 2026" not in f.nota, f.id
+        assert "NO DETERMINABLE EN LINEA 2026" not in f.nota, f.id
 
 
-def test_una_nota_con_dos_marcas_es_un_error_de_registro():
-    """Vigente y superada a la vez no es un estado: es una nota mal escrita."""
-    doble = dataclasses.replace(
-        fu.MC_HHD, nota=fu.VIGENCIA_CONFIRMADA + " ... " + fu.VIGENCIA_POSTERIOR)
+def test_una_fuente_presente_sin_vigencia_no_se_construye():
+    """Vigencia en blanco no es un estado: es una fuente sin verificar."""
     with pytest.raises(ErrorDeRegistro):
-        fu.estado_de_vigencia(doble)
+        dataclasses.replace(fu.MC_HHD, vigencia=None)
 
 
-def test_una_nota_sin_marca_devuelve_None_y_no_inventa_un_estado():
-    assert fu.estado_de_vigencia(dataclasses.replace(fu.MC_HHD, nota="")) is None
+def test_una_vigencia_posterior_sin_edicion_posterior_no_se_construye():
+    with pytest.raises(ErrorDeRegistro):
+        fu.Vigencia(estado=fu.EstadoDeVigencia.POSTERIOR,
+                    fecha=fu.VIGENCIA_VERIFICADA_EL, como="x")
+
+
+def test_una_derogacion_solo_cabe_en_una_edicion_superada():
+    """Una edicion derogada no esta vigente: `derogado_por` exige POSTERIOR."""
+    with pytest.raises(ErrorDeRegistro):
+        fu.Vigencia(estado=fu.EstadoDeVigencia.CONFIRMADA,
+                    fecha=fu.VIGENCIA_VERIFICADA_EL, como="x",
+                    derogado_por="RD x")
+
+
+def test_una_fuente_sin_vigencia_devuelve_None_y_no_inventa_un_estado():
+    assert fu.estado_de_vigencia(dataclasses.replace(
+        fu.MC_HHD, ausente=True, archivo_pdf=None, sha1=None, vigencia=None,
+        ausencia=fu.RNGIV.ausencia)) is None
 
 
 # ---------------------------------------------------------------------------
@@ -116,10 +143,30 @@ def test_toda_superada_dice_a_quien_le_toca_elegir():
     """
     La nota de una fuente superada nombra el criterio del proyectista, o
     dice por que no hace falta (HDS5_SI_1985). Sin eso, «edicion posterior
-    detectada» seria un aviso sin destinatario.
+    detectada» seria un aviso sin destinatario. El Manual de Puentes nombra
+    el LEGAL; las demas, el tecnico (que por su nombre contiene al otro).
     """
     for id_ in CENSO_EDICION_POSTERIOR:
         assert CLAVE in fu.FUENTES[id_].nota, id_
+    assert CLAVE_LEGAL in fu.MP.nota
+
+
+def test_toda_superada_dice_cual_es_la_edicion_posterior():
+    for id_ in CENSO_EDICION_POSTERIOR:
+        assert fu.FUENTES[id_].vigencia.edicion_posterior.strip(), id_
+
+
+def test_solo_el_manual_de_puentes_fue_derogado_por_un_acto():
+    """
+    Lo que separa una fuente legal peruana de una tecnica extranjera no es
+    el emisor: es que un acto la deje sin efecto. Las cinco normas de EE.UU.
+    y la copia de 1985 del HDS-5 tienen edicion posterior y nadie las deroga.
+    """
+    derogadas = tuple(f.id for f in fu.FUENTES.values()
+                      if f.vigencia.derogado_por)
+    assert derogadas == ("MP",)
+    assert fu.MP.vigencia.acto_aprobatorio == fu.MP.resolucion
+    assert fu.MP.vigencia.derogado_por == "RD 19-2018-MTC/14"
 
 
 # ---------------------------------------------------------------------------
@@ -159,53 +206,89 @@ def test_una_cuarta_edicion_de_HDS5_no_reabre_la_eleccion_de_la_de_1985():
     mutadas = dict(fu.FUENTES)
     mutadas["HDS5_3ED"] = dataclasses.replace(
         fu.HDS5_3ED,
-        nota=fu.HDS5_3ED.nota.replace(fu.VIGENCIA_CONFIRMADA, fu.VIGENCIA_POSTERIOR))
+        vigencia=fu.Vigencia(estado=fu.EstadoDeVigencia.POSTERIOR,
+                             fecha=fu.VIGENCIA_VERIFICADA_EL, como="mutacion",
+                             edicion_posterior="una cuarta edicion hipotetica"))
     pendientes = fu.fuentes_con_eleccion_de_edicion_pendiente(mutadas)
     assert "HDS5_3ED" in pendientes
     assert "HDS5_SI_1985" not in pendientes
 
 
+def test_la_eleccion_pendiente_se_parte_en_legal_y_tecnica_sin_perder_ninguna():
+    legal = fu.fuentes_con_eleccion_de_edicion_pendiente_legal()
+    tecnica = fu.fuentes_con_eleccion_de_edicion_pendiente_tecnica()
+    assert legal == ("MP",)
+    assert not (set(legal) & set(tecnica))
+    assert set(legal) | set(tecnica) == set(fu.fuentes_con_eleccion_de_edicion_pendiente())
+
+
 def test_la_ficha_del_criterio_nombra_a_cada_fuente_pendiente_y_solo_a_ellas():
-    pendientes = fu.fuentes_con_eleccion_de_edicion_pendiente()
+    pendientes = fu.fuentes_con_eleccion_de_edicion_pendiente_tecnica()
     assert set(pendientes) == set(DESIGNADOR_EN_LA_FICHA), (
-        "el registro deriva una lista de fuentes con eleccion pendiente y la "
-        "ficha del criterio nombra otra: se actualizan las dos a la vez")
+        "el registro deriva una lista de fuentes tecnicas con eleccion "
+        "pendiente y la ficha del criterio nombra otra: se actualizan las dos "
+        "a la vez")
     c = ca.CRITERIOS[CLAVE]
     for id_, designador in DESIGNADOR_EN_LA_FICHA.items():
         assert designador in c.justificacion, (id_, designador)
-    # La octava superada (HDS5_SI_1985) no es pendiente: la ficha lo dice
-    # asi, como resuelto por el registro, y no la lista entre las siete.
-    assert "discrepancia resuelta" in c.justificacion, (
-        "la ficha tiene que decir que el registro ya resolvio una de las "
-        "ocho superadas (las dos ediciones de HDS-5) y por que no se elige")
-    assert "HDS-5 (citada" not in c.justificacion and "HDS5_SI_1985" not in c.justificacion, (
-        "la ficha no debe presentar como pendiente lo que el registro ya "
-        "resolvio (HDS5_SI_1985)")
+    # La superada que el registro resolvio (HDS5_SI_1985) no es pendiente: la
+    # ficha lo dice asi, y no la lista entre las seis.
+    assert "discrepancia resuelta" in c.justificacion
+    assert "HDS-5 (citada" not in c.justificacion and "HDS5_SI_1985" not in c.justificacion
+    # Y el Manual de Puentes ya no esta en esta ventana: tiene la suya.
+    assert "Manual de Puentes (el ejemplar" not in c.justificacion
+    assert "para las seis" in c.justificacion
 
 
-def test_el_criterio_es_una_eleccion_vacia_de_expediente():
-    c = ca.CRITERIOS[CLAVE]
+def test_la_ficha_legal_nombra_al_manual_de_puentes_y_exige_fecha_y_acto():
+    pendientes = fu.fuentes_con_eleccion_de_edicion_pendiente_legal()
+    assert set(pendientes) == set(DESIGNADOR_EN_LA_FICHA_LEGAL)
+    c = ca.CRITERIOS[CLAVE_LEGAL]
+    for designador in DESIGNADOR_EN_LA_FICHA_LEGAL.values():
+        assert designador in c.justificacion
+    citada, vigente = c.sensibilidad
+    assert fu.MP.vigencia.acto_aprobatorio in citada
+    assert fu.MP.vigencia.derogado_por in citada and fu.MP.vigencia.derogado_por in vigente
+    assert "inicio del expediente" in citada and "acto" in citada
+
+
+@pytest.mark.parametrize("clave", [CLAVE, CLAVE_LEGAL])
+def test_el_criterio_es_una_eleccion_vacia_de_expediente(clave):
+    c = ca.CRITERIOS[clave]
     assert c.valor is None and not c.opcional
     assert c.etiqueta == "A"
     assert c.nivel == ca.NIVEL_EXPEDIENTE
     assert isinstance(c.sensibilidad, tuple) and len(c.sensibilidad) == 2, (
         "la ventana es simbolica y cerrada: la edicion citada o la vigente")
+    assert c.forma == (ca.FORMA_DICT_CON_CAMPOS if clave == CLAVE_LEGAL
+                       else ca.FORMA_STR)
     assert isinstance(c.resolucion, Libre)
     assert c.sin_consumidor.strip(), (
         "un criterio sin consumidor dice por que no lo invoca nadie")
     with pytest.raises(CriterioPendienteError):
-        ca.valor(CLAVE)
+        ca.valor(clave)
 
 
-def test_declarar_la_eleccion_en_caliente_pasa_por_la_misma_guardia():
+def _declaracion_valida(clave):
+    """La forma que cada criterio exige: texto en el tecnico, diccionario con
+    fecha y acto en el legal."""
+    opcion = ca.CRITERIOS[clave].sensibilidad[0]
+    if clave == CLAVE_LEGAL:
+        return {"opcion": opcion, "fecha_inicio_expediente": "2018-06-01",
+                "acto_regimen_transitorio": "RD 19-2018-MTC/14 (por leer)"}
+    return opcion
+
+
+@pytest.mark.parametrize("clave", [CLAVE, CLAVE_LEGAL])
+def test_declarar_la_eleccion_en_caliente_pasa_por_la_misma_guardia(clave):
     """Se puede declarar una de las dos opciones; None se rechaza."""
     try:
-        ca.establecer_valor_dinamico(CLAVE, ca.CRITERIOS[CLAVE].sensibilidad[0])
-        assert ca.valor(CLAVE) == ca.CRITERIOS[CLAVE].sensibilidad[0]
+        ca.establecer_valor_dinamico(clave, _declaracion_valida(clave))
+        assert ca.valor(clave) == _declaracion_valida(clave)
     finally:
-        ca.quitar_valor_dinamico(CLAVE)
+        ca.quitar_valor_dinamico(clave)
     with pytest.raises(ValueError):
-        ca.establecer_valor_dinamico(CLAVE, None)
+        ca.establecer_valor_dinamico(clave, None)
 
 
 # ---------------------------------------------------------------------------
@@ -234,3 +317,10 @@ def test_la_vigencia_no_toca_ninguna_cita():
     reg = _registro.construir()
     assert reg.problemas_de_integridad() == ()
     assert all("VIGENCIA" not in (c.nota or "") for c in reg.citas)
+
+
+def test_el_dg2018_entro_con_su_vigencia_verificada_en_ext6():
+    v = fu.DG2018.vigencia
+    assert v.estado is fu.EstadoDeVigencia.CONFIRMADA
+    assert v.fecha == fu.VIGENCIA_VERIFICADA_EL_EXT6
+    assert v.acto_aprobatorio == fu.DG2018.resolucion == "RD 03-2018-MTC/14"

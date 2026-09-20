@@ -344,8 +344,16 @@ def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
     clave = (CRITERIO_SECCIONES_CAJON
              if material.forma is FormaSeccion.RECTANGULAR
              else "D_max_catalogo")
-    if material.forma is not FormaSeccion.RECTANGULAR and \
-            material.tipo is TipoMaterial.HDPE:
+    # Y LA ATRIBUCION DEL MARCO ES LA TERCERA FORMA desde EXT-6 (EXT-N-03):
+    # no hay norma de producto que negar. «NO es un tope de AASHTO M 170M-04»
+    # para un marco era falso dos veces: el marco no es tuberia y M 170M no
+    # lo rige, y este mensaje sale por stdout, JSON y tabla de bloqueos cada
+    # vez que un marco agota su serie.
+    if material.forma is FormaSeccion.RECTANGULAR:
+        atribucion = ("no hay norma de producto que tope la altura de un "
+                      f"marco vaciado in situ ({material.norma_producto}): el "
+                      "tope es el de la serie declarada")
+    elif material.tipo is TipoMaterial.HDPE:
         atribucion = (f"coincide con el techo de la serie de "
                       f"{material.norma_producto}, num. 7.2.1, y aun asi el "
                       "descarte es de catalogo, no de norma")

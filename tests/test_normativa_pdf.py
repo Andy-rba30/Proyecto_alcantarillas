@@ -150,9 +150,9 @@ def test_T2_el_texto_literal_de_cada_cita_esta_en_su_pagina(reg):
 
 def test_T2_una_cita_a_una_fuente_sin_texto_se_verifico_por_imagen(reg):
     """
-    Cuatro de las quince fuentes no entregan texto utilizable (desde N1;
-    eran tres de trece; la quinceava, la traduccion de M 294-11 de N2, SI lo
-    entrega), y eso es una propiedad DE LA FUENTE. Una cita suya verificada «por texto» seria una
+    Cuatro de las dieciseis fuentes no entregan texto utilizable (desde N1;
+    eran tres de trece; la traduccion de M 294-11 de N2 y el DG-2018 de EXT-6
+    SI lo entregan), y eso es una propiedad DE LA FUENTE. Una cita suya verificada «por texto» seria una
     verificacion imposible: el campo `metodo` obliga a decir cual de las dos.
     """
     from normativa.esquema import MetodoDeVerificacion
@@ -227,6 +227,7 @@ def test_T3_la_jerarquia_de_encabezados_tambien_es_literal(reg):
 # que no los escriben» --, y por eso incluye tambien los dos casos NEGATIVOS:
 # el numeral que NO escribe el 9.8 y el que NO escribe el 0.60.
 VALORES_QUE_LA_CITA_SOSTIENE = [
+    ("DG2018.304.07.02#INCREMENTO", "5.00 m"),
     ("MC_HHD.4.1.1.3.1", "6.0"),
     ("MC_HHD.4.1.1.5.1", "6.0"),
     ("MC_HHD.4.1.1.3.4a", "0.90"),

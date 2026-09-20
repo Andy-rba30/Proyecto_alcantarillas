@@ -1617,6 +1617,19 @@ def v5_remanso(*, punto: PuntoCritico,
     de remanso ni el ancho de derecho de via por punto (no es columna del
     CSV, Sec. 1.2): sin los dos, V5 no tiene con que comparar el HW de M4.
 
+    LO QUE EL DG-2018 SI DA Y LO QUE NO (EXT-6, presente en normas/ y en el
+    registro): el requisito juridico [N] --- el derecho de via es bien de
+    dominio publico (304.07.01) y su ancho minimo es el de la Tabla 304.09
+    por clase de carretera, incrementado en 5.00 m en el caso del borde mas
+    alejado de las obras de drenaje (304.07.02;
+    `constantes_normativas.ANCHO_MIN_DERECHO_VIA_M` e
+    `INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M`; como se compone el incremento
+    con el ancho de la fila es la interpretacion registrada en la cita
+    DG2018.304.07.02#INCREMENTO) ---. NO da condicion
+    hidraulica alguna: el 304.07 acota la faja, no el agua. Por eso el piso
+    no cierra V5 ni cambia esta funcion: sigue faltando el metodo [A] y el
+    dato de sitio del corredor, y la clase de via que elige fila.
+
     YA NO SE INVOCA EN LA FAMILIA C, y no por falta de datos: por no aplicar.
     Su umbral es un ANCHO --- presupone agua extendiendose lateralmente sobre
     la plataforma al remansarse ---, y en un paso de canal el agua sube

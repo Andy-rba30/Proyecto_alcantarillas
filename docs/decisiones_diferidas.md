@@ -1229,6 +1229,8 @@ y que no queda escrita en ningún otro registro.
   actualización del EG-2013, que probablemente es la que este ejemplar
   imprime como «Revisada y Corregida a Junio 2013»), la RM 217-2026-VIVIENDA
   (la transitoria de la E.030) y el listado de manuales del portal del MTC.
+- **CERRADA en EXT-6 (2026-09-20):** `esquema.Vigencia` existe, con
+  `acto_aprobatorio` y `derogado_por` (EXT-N-01); la marca salió de las notas.
 - **Dónde vive:** `src/normativa/fuentes.py::estado_de_vigencia`
 
 ---
@@ -1355,6 +1357,11 @@ ficha, arriba, para no duplicar el símbolo.
 - **Qué haría falta:** los tres textos del código a 179 y un test que los
   compare con `MC_HHD_CUNETA.pagina_impresa` en vez de repetir el número.
   Sesión EXT-6.
+- **CERRADA en EXT-6 (2026-09-20).** `NUMERAL_FASE_10` lee la página de la
+  cita (`MC_HHD_CUNETA.pagina_impresa`); `Espaciamiento.numeral` y la ficha
+  de `long_max_cuneta` dicen 179 y
+  `tests/test_ext6_registro_normativo.py::test_la_pagina_de_la_cuneta_que_imprime_la_memoria_es_la_del_registro`
+  los compara con la cita en vez de repetir el número.
 - **Dónde vive:** `src/modulos/M10_espaciamiento.py::NUMERAL_FASE_10`
 
 ## EXT-V-01 · Un expediente por repositorio; multi-obra es requisito de producto
@@ -1802,3 +1809,101 @@ Tres decisiones se apartaron de la letra del prompt o merecen quedar escritas.
   `categoria` una a una.
 - **Dónde vive:** `src/criterios_adoptados.py::FORMA_CATEGORIA`
 
+---
+
+# Parte XXII — Lo que EXT-6 dejó escrito al cerrar el registro normativo
+
+EXT-6 cerró EXT-N-01, EXT-N-02, EXT-N-03, EXT-N-04, PC-23, PC-26, PC-30 y
+el resto de EXT-G-03: el DG-2018 entró como `Fuente` presente con sha1,
+285 páginas y desfase +1 medidos (284 de 285 páginas) y sus citas del
+304.07 y la Tabla 304.09; la guardia «todo PDF de `normas/` es Fuente
+presente o está censado» existe y censa dos PDF con motivo; las tres normas
+de producto tienen su cláusula de alcance y el marco ya no lleva la norma de
+un tubo; la elección de edición se partió en legal y técnica y la vigencia es
+un campo; y los textos que la memoria imprime dicen 179, «una geometría y dos
+velocidades», la tabla de la v8 §2.2 y las dos bases de la fricción. Tres
+decisiones se apartaron de la letra del prompt o merecen quedar escritas, y
+una queda diferida a sabiendas.
+
+## EXT-6-01 · El RNGIV no vuelve a `normas/`: lo que se borró no era el decreto
+
+- **Qué se difirió:** restaurar el archivo «Reglamento Nacional de Gestion de
+  Infraestructura Vial.pdf» que el dueño borró en `5196dd2` y al que el
+  DG-2018 §304.07.01 remite (DS 034-2008-MTC).
+- **Por qué:** se recuperó del historial para decidir, y **no era ese
+  decreto**: son 12 páginas de El Peruano fechadas el 10 de febrero de 2006,
+  dos años anteriores al DS 034-2008-MTC y con otra numeración de artículos
+  (su artículo 4 son las definiciones; el DG-2018 cita el artículo 4 como el
+  de las autoridades competentes). Restaurarlo habría puesto en `normas/` un
+  texto que no es el que la remisión nombra; registrarlo habría firmado
+  citas contra un documento equivocado. Lo que falta se censa como falta:
+  `RNGIV` entra en `FUENTES_AUSENTES` con lo que desbloquearía (la definición
+  jurídica del derecho de vía y quién lo aprueba; ningún número: los anchos
+  están en la Tabla 304.09, que sí está).
+- **Qué haría falta:** el DS 034-2008-MTC con sus modificatorias, en
+  `normas/`, medido como toda Fuente; entonces `DG2018.304.07.01` gana una
+  `corresponde_en` y la remisión deja de ser el sustituto.
+- **Dónde vive:** `src/normativa/fuentes.py::RNGIV`
+
+## EXT-6-02 · El piso [N] del ancho del derecho de vía está en el registro y no tiene consumidor
+
+- **Qué se difirió:** cablear la Tabla 304.09 y el incremento de 5.00 m del
+  304.07.02 a V5. Están transcritos (`DG2018.T304.09`,
+  `ANCHO_MIN_DERECHO_VIA_M`, `INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M`) y las
+  cinco filas dicen `NoUsada` con su razón; las dos constantes están en
+  `CONSTANTES_DE_REFERENCIA`.
+- **Por qué:** V5 se detiene antes, en dos vacíos que el piso no cierra: el
+  método de perfil de remanso es [A] (`remanso_derecho_via`, vacío) y el ancho
+  de ESTE corredor es un dato de sitio que no llega por ninguna vía
+  (`ancho_derecho_via_m`); y elegir fila exige `clase_de_via`, vacía hasta que
+  el estudio de demanda cierre el IMDA. Cablear el piso sin los tres habría
+  sido una verificación que compara contra nada. Y el 304.07 no enuncia
+  condición hidráulica alguna: F5.V5 sigue en `SIN_FUNDAMENTO` con la razón
+  reescrita, porque un `Fundamento` con las citas del DG-2018 convertiría un
+  piso de ancho en una verificación hidráulica que la fuente no escribe.
+- **Qué haría falta:** el dato `ancho_derecho_via_m` (columna del CSV o
+  tablero externo), `clase_de_via` declarada y el método de remanso; con los
+  tres, V5 compara el ancho declarado contra el de su fila con el incremento
+  de 5.00 m compuesto como diga la `Interpretacion` registrada en
+  `DG2018.304.07.02#INCREMENTO` (la norma escribe el incremento y el caso,
+  no la composición; el auditor adversarial de EXT-6 encontró la lectura
+  «fila + 5» escrita como hecho y se retiró), y su fundamento cuelga de
+  `DG2018.304.07.02`.
+- **Dónde vive:** `src/normativa/tablas.py::DG2018_T304_09`
+
+## EXT-6-03 · PC-24 no se cierra en EXT-6: su resto es EXT-3-01
+
+- **Qué se difirió:** el prompt de EXT-6 pedía cerrar PC-24. Lo que de PC-24
+  quedaba abierto tras EXT-0 —reetiquetar `Y_SOBRE_D_MAX` y `V_MIN` de [N] a
+  «[N] el deber de verificar, [A] el valor como umbral duro»— es exactamente
+  la ficha EXT-3-01: 56 usos en 13 archivos, dos criterios nuevos de perfil
+  con ventana y `resolucion`, la tabla de `test_nivel_medido`, el bloque
+  `UMBRALES_DE_VERIFICACION` de M11 y los manifiestos.
+- **Por qué:** meterlo en el commit del registro normativo habría mezclado
+  dos clusters (el mismo argumento con que EXT-3 lo dejó fuera), y EXT-6 no
+  lo puede cerrar «de paso» sin escribir la sesión entera. Se dice aquí para
+  que el tracker no lo dé por cerrado con un ID que no lo está.
+- **Qué haría falta:** la sesión EXT-3c que EXT-3-01 describe.
+- **Dónde vive:** `src/constantes_normativas.py::Y_SOBRE_D_MAX`
+
+## EXT-6-04 · La cláusula de alcance no crea un `Fundamento`: el rótulo del marco es texto del registro, no un paso
+
+- **Qué se difirió:** un `PasoDeMemoria` de Fase 3 que imprima la norma de
+  producto con su alcance. El rótulo por (material, forma) lo produce
+  `M2.norma_producto_de`, su alcance sale del registro por
+  `constantes_normativas.ALCANCE_NORMA_PRODUCTO` (`como_texto` de las citas
+  1.1 de M 170M, M 36, A760 y M 294, y de LRFD 12.4.2.4 y 12.11.1 para el
+  marco) y viaja al JSON como `alcance_norma_producto`; pero ningún paso lo
+  emite y por eso las citas de alcance no cuelgan de un `Fundamento`.
+- **Por qué:** un `Fundamento` sin paso que lo imprima es exactamente lo que
+  `test_memoria_sustentada` prohíbe (F9.CABEZAL está censado por eso), y M2
+  no emite paso al elegir material: elige catálogo, no verifica nada. Las
+  citas no quedan huérfanas —T4 las reconoce por el numeral en los textos de
+  `constantes_normativas`— y el JSON, el resumen y los tres sitios de M11
+  imprimen el rótulo correcto; lo que falta es que la memoria diga, como paso,
+  «este material se compra contra esta norma, que cubre esto».
+- **Qué haría falta:** un paso de Fase 3 en `M2.catalogo` (o en
+  `_pasos_del_marco`) con un `Fundamento` F3.NORMA_PRODUCTO de verbo
+  `DEFINE` sobre las citas de alcance; entonces salen de la lista de
+  `test_memoria_sustentada` y `consumidores_de_cita` las ve.
+- **Dónde vive:** `src/modulos/M2_material.py::norma_producto_de`

@@ -663,8 +663,11 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         fuente="Manual de Suelos, num. 4.2, Cuadro 4.1 (pag. impresa 28, PDF "
                "29): sus filas se rotulan por clase de via con su rango de "
                "IMDA. La clasificacion vigente es la del Manual de Diseño "
-               "Geometrico DG-2018, AUSENTE de normas/ "
-               "(FUENTES_AUSENTES['DG2018'])",
+               "Geometrico DG-2018 (Capitulo I, Seccion 101 por demanda y "
+               "Seccion 102 por orografia), en normas/ y en el registro "
+               "desde EXT-6 (fuentes.DG2018). El documento da la "
+               "clasificacion; el IMDA que elige la clase es del estudio "
+               "de demanda, y ese es el dato que falta",
         trazabilidad=(
             "POR QUE SE DECLARA VACIO Y NO SE ELIGE: dos condiciones del "
             "registro resuelven a esta clave -- `COND-CLASE-DE-VIA`, que "

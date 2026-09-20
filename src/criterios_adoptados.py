@@ -175,6 +175,7 @@ class Criterio:
     sin_consumidor: str = ""                   # por que NINGUN modulo lo invoca
     de_catalogo: str = ""                      # rotulo: el valor es de CATALOGO, no de norma
     resolucion: Optional[Resolucion] = None    # COMO se resuelve (Sec. 4.3): tabla, rango, ensayo...
+    campos_obligatorios: Tuple[str, ...] = ()  # solo con `dict_con_campos`: los campos que la puerta exige (EXT-6)
     nivel: str = ""
     # LAS DISCREPANCIAS DECLARADAS QUE ESTE CRITERIO TOCA, por su id.
     #
@@ -2952,7 +2953,10 @@ CRITERIOS: Dict[str, Criterio] = {
                       "muy lluviosa. El regimen normal de Piura es arido, pero el "
                       "evento de diseno relevante es el FEN, durante el cual la "
                       "zona se comporta como region muy lluviosa. Se adopta 200 m",
-        fuente="Manual MTC, numeral 4.1.2.1 d), pag. 178",
+        # La pagina es la de la cita del registro (MC_HHD_CUNETA, 179); un
+        # test la compara con `pagina_impresa` para que no vuelva a quedarse
+        # en 178, que era la Tabla Nº 34 del apartado c) (PC-30).
+        fuente="Manual MTC, numeral 4.1.2.1 d), pag. 179",
         sensibilidad=(200.0, 250.0),
         resolucion=Libre(
             que_lo_fija="el proyectista, al declarar el regimen de la zona: "
@@ -3095,16 +3099,32 @@ CRITERIOS: Dict[str, Criterio] = {
                  "ancho de derecho de via disponible en el punto, para V5 "
                  "(embalse dentro del derecho de via, sin afectar terceros "
                  "ni la faja marginal)",
-        justificacion="Sec. 4.2 y el DG-2018 exigen la condicion pero no dan "
-                      "metodo: la hoja de ruta no entrega un procedimiento de "
-                      "perfil de remanso (curva de remanso aguas arriba del "
-                      "embalse) ni el dato de ancho de derecho de via por "
-                      "punto -- este ultimo tampoco es columna del CSV "
-                      "(Sec. 1.2). Sin el metodo Y el dato, V5 no tiene con "
-                      "que comparar el HW calculado por M4",
-        fuente="PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 "
-               "(Fase 5, V5). Requiere perfil de remanso (paso a paso o "
-               "HEC-RAS) y el ancho de derecho de via del expediente vial",
+        justificacion="La fila V5 de la hoja de ruta exige que el embalse "
+                      "quede dentro del derecho de via, y lo que la fuente "
+                      "escribe es el requisito juridico, no el metodo: el "
+                      "DG-2018 num. 304.07 define la faja como bien de "
+                      "dominio publico y le fija un ancho minimo por clase de "
+                      "carretera mas 5.00 m del borde de las obras de "
+                      "drenaje (Tabla 304.09 y 304.07.02), y no enuncia "
+                      "condicion hidraulica alguna: no dice cuanto puede "
+                      "remansar la obra ni como se calcula la extension del "
+                      "embalse. La hoja de ruta tampoco entrega un "
+                      "procedimiento de perfil de remanso (curva de remanso "
+                      "aguas arriba del embalse) ni el dato de ancho de "
+                      "derecho de via por punto -- este ultimo tampoco es "
+                      "columna del CSV (Sec. 1.2). Sin el metodo Y el dato, "
+                      "V5 no tiene con que comparar el HW calculado por M4; "
+                      "el piso de ancho del DG-2018 es contra lo que se "
+                      "comprobara el dato cuando llegue, no un sustituto del "
+                      "metodo, y como se compone el incremento de 5.00 m "
+                      "con el ancho de la tabla es una lectura del proyecto "
+                      "registrada como interpretacion, no texto de la norma",
+        fuente="PENDIENTE - metodo de perfil de remanso (paso a paso o "
+               "HEC-RAS) y ancho de derecho de via del expediente vial "
+               "(Fase 5, V5). El requisito juridico esta citado: DG-2018 "
+               "num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. "
+               "impresas 198-199, registro DG2018.304.07.02) para el ancho, "
+               "y la Ley 29338 (ausente de normas/) para la faja marginal",
         reemplazado_por="Perfil de remanso calculado aguas arriba del punto "
                         "y ancho de derecho de via declarado por punto",
         verificacion_pendiente="Definir si el ancho de derecho de via es un "
@@ -5154,24 +5174,34 @@ CRITERIOS: Dict[str, Criterio] = {
                       "en el CSV: la altura de terraplen del punto "
                       "(cota_rasante - cota_terreno) da el brazo vertical del "
                       "talud, no su inclinacion. Se adopta declararla como "
-                      "criterio, sobre practica corriente de terraplenes "
-                      "viales, mientras el expediente vial no entregue la "
-                      "seccion tipica del cruce -- el DG-2018 no esta en "
-                      "normas/ y no se puede citar --: sin longitud no hay "
+                      "criterio, dentro de la banda de taludes "
+                      "referenciales que el DG-2018 num. 304.10 da para "
+                      "terraplenes de gravas, limo arenoso y arcilla (Tabla "
+                      "304.11: 1.5, 1.75 y 2.0 H:V segun la altura sea menor "
+                      "de 5 m, de 5 a 10 m o mayor de 10 m), mientras el "
+                      "expediente vial no entregue la seccion tipica del "
+                      "cruce -- la tabla es referencial y el material del "
+                      "cuerpo del terraplen no es dato del expediente, de "
+                      "modo que no fija el valor, lo acota --: sin longitud "
+                      "no hay "
                       "caida S*L ni cota de salida que amarrar al fondo del "
                       "receptor, que es la otra mitad de 7.B, y adoptar en "
                       "silencio un talud de practica corriente moveria la "
                       "longitud, la caida y la cota de salida de todos los "
                       "puntos sin que nadie pueda rastrear de donde salio. "
-                      "Sensibilidad (1.5, 2.0): la banda de practica "
-                      "corriente dentro de la que se movera la seccion tipica "
+                      "Sensibilidad (1.5, 2.0): los extremos de la fila de "
+                      "gravas, limo arenoso y arcilla de la Tabla 304.11, "
+                      "dentro de la que se movera la seccion tipica "
                       "pendiente; entre sus extremos cambia la proyeccion "
                       "horizontal por unidad de altura y, con ella, la "
                       "longitud, la caida S*L y la cota de salida de cada "
                       "punto",
-        fuente="PENDIENTE - Manual de Diseño Geometrico DG-2018 y la seccion "
-               "tipica del proyecto, que fijan el talud del terraplen segun su "
-               "altura y el material del cuerpo",
+        fuente="DG-2018 num. 304.10 'Taludes', Tabla 304.11 'Taludes "
+               "referenciales en zonas de relleno (terraplenes)' (pag. "
+               "impresa 208, PDF 209; registro DG2018.304.10#T304.11), que "
+               "da la banda por material y altura y la llama referencial. "
+               "PENDIENTE la seccion tipica del proyecto, que es la que fija "
+               "el talud del cruce",
         reemplazado_por="Talud de la seccion tipica del expediente vial, o la "
                         "longitud medida directamente sobre la seccion "
                         "transversal de cada punto",
@@ -5192,10 +5222,11 @@ CRITERIOS: Dict[str, Criterio] = {
         # tiene rango que elegir. La lectura no se pierde: sigue entera en
         # `reemplazado_por`, que es lo que cierra el criterio de verdad.
         resolucion=Libre(
-            que_lo_fija="el proyectista, sobre practica corriente de "
-                        "terraplenes viales, mientras el expediente vial no "
-                        "entregue la seccion tipica del cruce. El DG-2018 no "
-                        "esta en normas/ y no se puede citar",
+            que_lo_fija="el proyectista, dentro de la banda referencial "
+                        "de la Tabla 304.11 del DG-2018 para terraplenes de "
+                        "gravas, limo arenoso y arcilla, mientras el "
+                        "expediente vial no entregue la seccion tipica del "
+                        "cruce",
             dominio="H:V > 0",
         ),
     ),
@@ -6289,72 +6320,86 @@ CRITERIOS: Dict[str, Criterio] = {
         forma=FORMA_STR,
         # LA VENTANA ES SIMBOLICA Y CERRADA, como la de
         # 'homogeneidad_serie_fen': dos opciones y no hay tercera, y vale
-        # para las siete fuentes a la vez. Una eleccion por fuente NO cabe
-        # aqui a proposito: `establecer_valor_dinamico` solo puede validar
-        # contra esta ventana, y un valor con excepciones seria una tercera
-        # forma que ninguna guardia comprueba; si hiciera falta, es un
-        # criterio por fuente, no una excepcion en prosa. Se escribe aunque
-        # el criterio siga vacio, porque la ventana es parte de la ficha y
-        # se conoce antes de elegir.
+        # para las seis fuentes TECNICAS a la vez. El Manual de Puentes SALIO
+        # de esta ventana en EXT-6 (EXT-N-01, PC-26): es una norma LEGAL,
+        # aprobada y derogada por resolucion del MTC, y elegir su edicion
+        # citada no es una preferencia tecnica sino una cuestion de regimen
+        # transitorio; tiene su propio criterio,
+        # 'edicion_legal_que_rige_el_expediente'. Una eleccion por fuente NO
+        # cabe aqui a proposito: `establecer_valor_dinamico` solo puede
+        # validar contra esta ventana, y un valor con excepciones seria una
+        # tercera forma que ninguna guardia comprueba; si hiciera falta, es
+        # un criterio por fuente, no una excepcion en prosa.
         sensibilidad=(
             "la edicion citada en el registro: la que esta en normas/ y "
             "contra la que estan verificadas las citas (sha1)",
             "la edicion vigente del emisor a la fecha del expediente: exige "
             "conseguirla, incorporarla al registro como Fuente y reverificar "
             "contra ella cada cita que hoy se apoya en la citada"),
-        concepto="Edicion que rige el expediente en las fuentes cuyo emisor "
-                 "publica una edicion posterior a la citada en el registro",
+        concepto="Edicion que rige el expediente en las fuentes tecnicas "
+                 "(AASHTO, ASTM) cuyo emisor publica una edicion posterior a "
+                 "la citada en el registro",
         justificacion=(
             "La verificacion de vigencia del registro encontro que ocho de "
-            "las quince fuentes presentes tienen edicion posterior publicada "
-            "por su emisor; en una de ellas el registro ya dice cual gobierna "
-            "(las dos ediciones de HDS-5 conviven en normas/ y una "
-            "discrepancia resuelta lo fija), y en las otras siete hay una "
-            "eleccion pendiente: Manual de Puentes (el ejemplar es la edicion 2016, "
-            "RD 041-2016-MTC/14; el MTC aprobo la edicion 2018 por RD "
-            "19-2018-MTC/14), AASHTO LRFD (citada la 9a ed. (2020); publicada "
-            "la 10a ed. (2024)), AASHTO M 170M (citada M 170M-04; vigente "
-            "M 170M-23), AASHTO M 36 (citada M 36-03; vigente M 36M/M 36-24), "
-            "ASTM A760/A760M (citada -10; vigente -25), ASTM A796/A796M "
-            "(citada -13; vigente -21) y AASHTO M 294 (traduccion de la -11; "
-            "vigente -25). Ninguna norma peruana fija que edicion de una "
-            "fuente rige un expediente en curso --- la unica que lo trata, la "
-            "E.030, lo hace por disposicion transitoria de su propia RM y "
-            "solo para si ---, y las cinco de EE.UU. son fuentes tecnicas de "
-            "cobertura cuya edicion no la manda nadie. Es por tanto una "
-            "eleccion del proyectista y se declara vacia: elegir la citada "
-            "mantiene valido el registro tal como esta; elegir la vigente "
-            "obliga a conseguir el documento, incorporarlo como Fuente y "
-            "reverificar contra el cada cita, y hasta entonces el expediente "
-            "citaria una edicion que no tiene. La ventana es simbolica y "
-            "cerrada: la eleccion vale para las siete fuentes a la vez, y una "
-            "eleccion distinta por fuente no cabe en ella --- exigiria un "
-            "criterio por fuente, y se abriria entonces, no aqui ---. "
-            "Lo que no cambia con la eleccion: ninguna cita y ningun valor de "
-            "calculo; la vigencia es un metadato de la fuente, y el sha1 "
-            "sigue anclando cada cita a la edicion contra la que se verifico"),
-        fuente=("Registro normativo: la nota de cada Fuente presente lleva la "
-                "marca de vigencia de la sesion T1 (`fuentes.estado_de_vigencia`) "
-                "y `fuentes.fuentes_con_eleccion_de_edicion_pendiente` deriva "
-                "de esas marcas las siete fuentes de arriba; un test exige que "
-                "esta ficha las nombre todas y solo a ellas. Emisores "
-                "consultados por busqueda web: MTC (gob.pe, El Peruano), "
+            "las fuentes presentes tienen edicion posterior publicada por su "
+            "emisor. En una el registro ya dice cual gobierna (las dos "
+            "ediciones de HDS-5 conviven en normas/ y una discrepancia "
+            "resuelta lo fija); otra es una norma legal peruana derogada por "
+            "resolucion y tiene su propio criterio, porque elegir su edicion "
+            "citada depende del regimen transitorio y no de una preferencia "
+            "tecnica; y en las seis restantes, todas normas tecnicas de "
+            "EE.UU., hay una eleccion tecnica pendiente: AASHTO LRFD (citada "
+            "la 9a ed. (2020); publicada la 10a ed. (2024)), AASHTO M 170M "
+            "(citada M 170M-04; vigente M 170M-23), AASHTO M 36 (citada "
+            "M 36-03; vigente M 36M/M 36-24), ASTM A760/A760M (citada -10; "
+            "vigente -25), ASTM A796/A796M (citada -13; vigente -21) y AASHTO "
+            "M 294 (traduccion de la -11; vigente -25). La edicion de estas "
+            "seis no la fija una resolucion peruana, pero tampoco es cierto "
+            "que nadie la mande: el Manual de Puentes adapta la AASHTO LRFD "
+            "en su 7a ed. (2014) y permite considerar sus actualizaciones "
+            "(registro MP.INTRODUCCION#LRFD_2014), de modo que citar una "
+            "edicion posterior a la 7a esta autorizado y elegir entre la "
+            "9a y la 10a corresponde a la entidad y/o propietario, a "
+            "propuesta del proyectista, que es quien lo declara aqui; para "
+            "las cinco normas de "
+            "producto y practica, ninguna fuente peruana nombra edicion. Se "
+            "declara vacia: elegir la citada mantiene valido el registro tal "
+            "como esta; elegir la vigente obliga a conseguir cada documento, "
+            "incorporarlo como Fuente y reverificar contra el cada cita, y "
+            "hasta entonces el expediente citaria una edicion que no tiene. "
+            "La ventana es simbolica y cerrada: la eleccion vale para las "
+            "seis fuentes a la vez, y una eleccion distinta por fuente no "
+            "cabe en ella --- exigiria un criterio por fuente, y se abriria "
+            "entonces, no aqui ---. Lo que no cambia con la eleccion: ninguna "
+            "cita y ningun valor de calculo; la vigencia es un metadato de "
+            "la fuente, y el sha1 sigue anclando cada cita a la edicion "
+            "contra la que se verifico"),
+        fuente=("Registro normativo: el campo `vigencia` de cada Fuente "
+                "presente (`fuentes.estado_de_vigencia`) y "
+                "`fuentes.fuentes_con_eleccion_de_edicion_pendiente_tecnica`, "
+                "que deriva de el las seis fuentes de arriba; un test exige "
+                "que esta ficha las nombre todas y solo a ellas. El ancla del "
+                "Manual de Puentes a la AASHTO LRFD 2014 (7a ed.) y su permiso "
+                "de considerar actualizaciones: MP Introduccion, pag. impresa "
+                "43 (PDF 44), registro MP.INTRODUCCION#LRFD_2014 y "
+                "DIS-MP-LRFD-EDICION. Emisores consultados por busqueda web: "
                 "AASHTO (AASHTO Journal, tienda y lista HM-44), ASTM "
                 "(store.astm.org), FHWA (biblioteca de hidraulica)"),
         # LO QUE CIERRA EL VACIO, que es la columna «Que lo resuelve» de la
         # memoria: no un ensayo ni un dato, sino una declaracion del
         # proyectista con lo que ella arrastra si elige la vigente.
         reemplazado_por=("Declaracion del proyectista sobre el marco normativo "
-                         "del expediente (edicion citada o vigente, para las "
-                         "siete fuentes a la vez); si elige la vigente, ademas "
-                         "la incorporacion de cada documento al registro y la "
-                         "reverificacion de sus citas"),
+                         "tecnico del expediente (edicion citada o vigente, "
+                         "para las seis fuentes tecnicas a la vez); si elige "
+                         "la vigente, ademas la incorporacion de cada "
+                         "documento al registro y la reverificacion de sus "
+                         "citas"),
         verificacion_pendiente=(
             "Declarar la opcion; si es la vigente, conseguir cada documento y "
-            "abrir una sesion de registro por fuente, como N1 y N2. Para "
-            "gabinete, ademas: leer la RD 22-2013-MTC/14 (EG-2013 revisada), "
-            "la RM 217-2026-VIVIENDA (transitoria de la E.030) y el listado "
-            "de manuales del portal del MTC, que no fueron legibles en linea"),
+            "abrir una sesion de registro por fuente, como las que "
+            "incorporaron A796 y la traduccion de M 294. Para AASHTO LRFD, "
+            "comparar ademas la 10a ed. con la 9a en las Secciones 3 y 5, que "
+            "la propia AASHTO anuncia revisadas"),
         sin_consumidor=(
             "Ningun modulo lo invoca: no es una magnitud que entre en una "
             "formula sino la decision de marco normativo del expediente. Su "
@@ -6363,10 +6408,113 @@ CRITERIOS: Dict[str, Criterio] = {
             "de esta declaracion, y hasta entonces la vigencia se lee en el "
             "registro (`fuentes.estado_de_vigencia`) y en el manifiesto"),
         resolucion=Libre(
-            que_lo_fija="el proyectista, al fijar el marco normativo del "
-                        "expediente",
-            dominio="una de las dos opciones de la ventana, para las siete "
-                    "fuentes a la vez",
+            que_lo_fija="el proyectista, al fijar el marco normativo tecnico "
+                        "del expediente; para AASHTO LRFD, a propuesta suya "
+                        "y con la conformidad de la entidad y/o propietario, "
+                        "que es a quien el Manual de Puentes permite "
+                        "considerar las actualizaciones",
+            dominio="una de las dos opciones de la ventana, para las seis "
+                    "fuentes tecnicas a la vez",
+        ),
+    ),
+
+    "edicion_legal_que_rige_el_expediente": Criterio(
+        valor=None,                 # VACIO: lo declara el proyectista
+        # NIVEL NO MEDIBLE POR CORRIDA, por lo mismo que su hermano tecnico:
+        # ningun modulo lo invoca y esta censado en SIN_CONSUMIDOR_Y_SIN_MEDIDA
+        # (tests/test_nivel_medido.py). Es la decision de marco normativo
+        # LEGAL del expediente, y de expediente por definicion: la edicion
+        # de una norma derogada solo puede regir un expediente si un acto lo
+        # ampara, y eso se declara al abrir el expediente, no al calcular el
+        # perfil.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        # UN DICCIONARIO Y NO UN TEXTO, porque la exigencia se hace en la
+        # puerta y no en la frase: la declaracion trae `opcion` (una de las
+        # dos de `sensibilidad`), `fecha_inicio_expediente` y
+        # `acto_regimen_transitorio`, y `_verificar_forma` rechaza la que no
+        # los traiga con texto (campos_obligatorios). Medido en la auditoria
+        # adversarial de EXT-6: con forma `str`, declarar la opcion «citada»
+        # sin fecha ni acto pasaba la guardia, y el prompt pedia que la
+        # exigiera. Para la opcion «vigente» los dos campos tambien tienen
+        # sentido: la fecha del expediente y el acto que hace aplicable la
+        # edicion 2018.
+        forma=FORMA_DICT_CON_CAMPOS,
+        campos_obligatorios=("opcion", "fecha_inicio_expediente",
+                             "acto_regimen_transitorio"),
+        # DOS OPCIONES, Y LA PRIMERA NO ES UNA PREFERENCIA: es una condicion.
+        # Hasta EXT-6 el Manual de Puentes compartia ventana con cinco normas
+        # tecnicas de EE.UU. («citada o vigente, para las siete a la vez»), y
+        # eso trataba igual una RD derogada que una ASTM superada (EXT-N-01,
+        # PC-26). Aqui la opcion «citada» dice lo que exige.
+        sensibilidad=(
+            "la edicion citada: Manual de Puentes 2016 (RD 041-2016-MTC/14, "
+            "la que esta en normas/), admisible solo si el expediente se "
+            "inicio antes de la vigencia de la RD 19-2018-MTC/14 "
+            "(15-01-2019) y un acto verificado del regimen transitorio lo "
+            "ampara; exige declarar la fecha de inicio del expediente y ese "
+            "acto",
+            "la edicion vigente: Manual de Puentes 2018 (RD 19-2018-MTC/14); "
+            "exige conseguirla, incorporarla al registro como Fuente y "
+            "reverificar contra ella cada cita del Manual de Puentes"),
+        concepto="Edicion del Manual de Puentes que rige el expediente: la "
+                 "citada en el registro, derogada por resolucion, o la "
+                 "vigente",
+        justificacion=(
+            "El Manual de Puentes es la unica fuente del registro cuya "
+            "edicion citada fue DEROGADA por un acto: el ejemplar de normas/ "
+            "es la edicion 2016, aprobada por resolucion directoral del MTC, "
+            "y la edicion 2018 del Manual actualizado la dejo sin efecto. Una "
+            "norma tecnica extranjera con edicion posterior sigue siendo "
+            "citable a eleccion del proyectista; una norma legal derogada "
+            "solo rige un expediente si el regimen transitorio del acto que "
+            "la derogo lo ampara para los expedientes iniciados bajo ella, y "
+            "eso depende de dos hechos que este software no tiene: la fecha "
+            "de inicio del expediente y el texto del acto, que hay que leer "
+            "y no suponer. Por eso se separa del criterio tecnico y por eso "
+            "la opcion citada no es una casilla: es una declaracion con dos "
+            "datos. Se declara vacia. Lo que no cambia con la eleccion: "
+            "ninguna cita y ningun valor de calculo; cada cita del Manual "
+            "sigue anclada por sha1 a la edicion contra la que se verifico, "
+            "y si se elige la vigente hay que conseguirla, incorporarla y "
+            "reverificar contra ella cada cita del Manual de Puentes antes "
+            "de que el expediente pueda citarla"),
+        fuente=("Registro normativo: `fuentes.MP.vigencia` (acto aprobatorio "
+                "RD 041-2016-MTC/14, impreso en las PDF 2 y 3 del ejemplar; "
+                "derogado por RD 19-2018-MTC/14, El Peruano dispositivo "
+                "1730970-1, vigente desde el 15-01-2019, verificado por "
+                "busqueda web) y "
+                "`fuentes.fuentes_con_eleccion_de_edicion_pendiente_legal`, "
+                "que deriva de ese campo la unica fuente de esta ficha; un "
+                "test exige que la nombre a ella y solo a ella"),
+        reemplazado_por=("Declaracion del proyectista con la fecha de inicio "
+                         "del expediente y el acto del regimen transitorio "
+                         "que ampara la edicion citada, o la incorporacion "
+                         "del Manual de Puentes 2018 al registro y la "
+                         "reverificacion de sus citas"),
+        verificacion_pendiente=(
+            "Leer la RD 19-2018-MTC/14 y su regimen transitorio para "
+            "expedientes en curso, que no fue legible en linea; declarar la "
+            "fecha de inicio del expediente; y si rige la edicion 2018, "
+            "abrir una sesion de registro para el Manual de Puentes "
+            "actualizado y medir que numerales de los citados cambiaron. La "
+            "declaracion es un diccionario: {'opcion': <una de las dos>, "
+            "'fecha_inicio_expediente': <fecha>, 'acto_regimen_transitorio': "
+            "<acto leido>}"),
+        sin_consumidor=(
+            "Ningun modulo lo invoca: es la decision de marco normativo legal "
+            "del expediente, no una magnitud. Su consumidor natural seria la "
+            "memoria, imprimiendo junto a las citas del Manual de Puentes "
+            "que edicion rige y por que acto; cablearlo es trabajo de M11, y "
+            "hasta entonces la vigencia y los dos actos se leen en el "
+            "registro (`fuentes.MP.vigencia`) y en el manifiesto"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al fijar el marco normativo legal "
+                        "del expediente, con la fecha de inicio y el acto "
+                        "del regimen transitorio si elige la edicion citada",
+            dominio="diccionario con `opcion` (una de las dos de la "
+                    "ventana), `fecha_inicio_expediente` y "
+                    "`acto_regimen_transitorio`",
         ),
     ),
 }
@@ -6986,6 +7134,23 @@ def _cumple_la_forma(forma: str, valor: Any, c: Criterio) -> Optional[str]:
             return "un DICCIONARIO no vacio con sus campos"
         if not all(isinstance(k, str) for k in valor):
             return "un DICCIONARIO cuyos campos son textos"
+        # EXT-6: los campos que la ficha declara OBLIGATORIOS tienen que
+        # venir, y con texto. Es lo que convierte «la opcion citada exige
+        # la fecha de inicio del expediente y el acto» de una frase en una
+        # puerta ('edicion_legal_que_rige_el_expediente'). Y si la ficha
+        # declara un conjunto cerrado en `sensibilidad` (tupla de textos),
+        # el campo `opcion` tiene que ser uno de ellos.
+        faltan = [k for k in c.campos_obligatorios
+                  if not (isinstance(valor.get(k), str) and valor[k].strip())]
+        if faltan:
+            return (f"un DICCIONARIO con los campos obligatorios {faltan} "
+                    "declarados con texto")
+        s = c.sensibilidad
+        if "opcion" in c.campos_obligatorios and isinstance(s, tuple) \
+                and all(isinstance(x, str) for x in s) \
+                and valor.get("opcion") not in s:
+            return ("un DICCIONARIO cuyo campo `opcion` sea una de las "
+                    f"opciones de `sensibilidad`: {', '.join(map(repr, s))}")
         return None
     if forma == FORMA_SERIE_DE_CLAVES:
         if isinstance(valor, (str, bytes)) or not isinstance(valor, (tuple, list)):
@@ -7039,6 +7204,12 @@ def _verificar_forma(clave: str, c: Criterio) -> None:
             "exige antes de que el consumidor lo reviente"
         )
     s = c.sensibilidad
+    if c.campos_obligatorios and FORMA_DICT_CON_CAMPOS not in formas:
+        raise ValueError(
+            f"'{clave}' declara campos_obligatorios={c.campos_obligatorios!r} "
+            f"y forma={c.forma!r}: los campos obligatorios solo tienen "
+            f"sentido en un `{FORMA_DICT_CON_CAMPOS}`"
+        )
     if isinstance(s, dict) and formas != (FORMA_DICT_CON_CAMPOS,):
         raise ValueError(
             f"'{clave}' declara una ventana por campo y forma={c.forma!r}: "

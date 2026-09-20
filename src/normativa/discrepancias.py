@@ -51,10 +51,12 @@ DIS_HDS5_EDICIONES = _d(
              "1985 opera en unidades inglesas con rotulos duales, y el «si» de "
              "su nombre de archivo se refiere a sus cartas metricas, no al "
              "cuerpo del documento"),
-    efecto_si_se_sigue_la_otra=("aplicar 29 en metrico sobrestima el termino "
-                                "de friccion un +9.6 %, y no falla "
-                                "ruidosamente: devuelve numeros plausibles y "
-                                "equivocados"),
+    efecto_si_se_sigue_la_otra=("aplicar 29 en metrico multiplica el termino "
+                                "de friccion por 29/19.63 = 1.477 (+47.7 % "
+                                "sobre el termino), que en CP-8 sube H de "
+                                "0.4977 a 0.5455 m (+9.6 % sobre H), y no "
+                                "falla ruidosamente: devuelve numeros "
+                                "plausibles y equivocados"),
     estado=EstadoDiscrepancia.RESUELTA,
 )
 
@@ -1124,5 +1126,48 @@ DIS_GAMMA_EV_ENTERRADA = _d(
     estado=EstadoDiscrepancia.ABIERTA,
 )
 
+
+
+# ---------------------------------------------------------------------------
+# EXT-6 - La edicion de AASHTO LRFD que el Manual de Puentes ancla (EXT-N-01)
+# ---------------------------------------------------------------------------
+# LA CONTRADICCION QUE EL DICTAMEN VIO Y LA AUDITORIA NO: el propio MP-2016
+# adapta la AASHTO LRFD 2014 (7a ed.) mientras el registro cita la 9a (2020),
+# y la ficha del criterio decia que la edicion de las fuentes tecnicas «no la
+# manda nadie». Si la manda: el MP la ancla. Lo que RESUELVE la discrepancia
+# es si el expediente PUEDE citar una edicion posterior a la 7a, y la propia
+# Introduccion del MP lo permite («podrá considerar las actualizaciones»);
+# por eso gana la edicion presente en normas/ y no hay que decidir por el
+# proyectista. Lo que NO resuelve --- 9a o 10a --- es de
+# 'edicion_que_rige_el_expediente', y `quien_gobierna_por_discrepancia` no
+# la lee como eleccion de edicion porque MP y AASHTO_LRFD_9 no conviven.
+DIS_MP_LRFD_EDICION = _d(
+    id="DIS-MP-LRFD-EDICION",
+    objeto="la edicion de AASHTO LRFD que rige el diseño del cabezal (Sec. 9.4)",
+    partes=(
+        Parte(quien="MP",
+              que_dice=("adapta «AASHTO en su versión LRFD BRIDGE DESIGN "
+                        "SPECIFICATIONS del año 2014, Septima Edición» y "
+                        "añade que la entidad «podrá considerar las "
+                        "actualizaciones»"),
+              cita_id="MP.INTRODUCCION#LRFD_2014"),
+        Parte(quien="AASHTO_LRFD_9",
+              que_dice=("es la 9a ed. (2020), la que esta en normas/ y contra "
+                        "la que estan verificadas las citas de las Secciones "
+                        "3, 5, 10, 11 y 12; la 7a de 2014 no esta")),
+    ),
+    gana="AASHTO_LRFD_9",
+    por_que=("el MP no exige la 7a: la adapta y PERMITE considerar las "
+             "actualizaciones, de modo que citar la 9a esta dentro de lo que "
+             "la fuente legal autoriza. Lo que queda abierto es si rige la 9a "
+             "o la 10a (2024), que es una eleccion tecnica de la entidad y/o "
+             "propietario a propuesta del proyectista --- la fuente permite "
+             "a aquellos, no a este --- y no una discrepancia entre fuentes"),
+    efecto_si_se_sigue_la_otra=("citar articulos de una 7a ed. que no esta en "
+                                "normas/ y contra la que ninguna cita esta "
+                                "verificada; la memoria imprimiria numerales "
+                                "que nadie abrio"),
+    estado=EstadoDiscrepancia.RESUELTA,
+)
 
 DISCREPANCIAS: Dict[str, Discrepancia] = {d.id: d for d in _TODAS}

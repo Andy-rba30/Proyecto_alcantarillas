@@ -216,7 +216,7 @@ import numbers
 from typing import Any, Optional, Tuple, Union
 
 import criterios_adoptados as ca
-from constantes_normativas import (CARTAS_CAJON_TA1,
+from constantes_normativas import (ALCANCE_NORMA_PRODUCTO, CARTAS_CAJON_TA1,
                                    FILAS_MANNING_CONCRETO,HDS5_INLET, H_RELLENO_MIN, MANNING,
                                    SECCION_EG2013,
                                    SECCION_EG2013_CAJON,
@@ -301,6 +301,69 @@ _NORMA_PRODUCTO = {
     TipoMaterial.TMC: "AASHTO M 36 / ASTM A760/A760M-10",
     TipoMaterial.HDPE: "AASHTO M 294-11 (en normas/: traduccion no oficial)",
 }
+
+# Y VA POR (MATERIAL, FORMA) DESDE EXT-6, no solo por material (EXT-N-03).
+# Las tres de arriba cubren TUBERIA: lo dice la clausula de alcance de cada
+# una (M 170M 1.1 «reinforced concrete pipe»; M 36 1.1 y A760 1.1 «corrugated
+# steel pipe»; M 294 1.1.1), transcrita en el registro desde EXT-6. Un marco
+# rectangular vaciado in situ no es tuberia, y hasta EXT-6 salia rotulado
+# con AASHTO M 170M-04 --- en la memoria, en el JSON, en el CSV de resumen y
+# en el motivo de descarte cuando agotaba su serie ---. La norma de producto
+# del cajon PREFABRICADO seria AASHTO M 259 / M 273 (AASHTO LRFD 12.4.2.4,
+# pag. 12-8; 12.11.1, pag. 12-68), ausentes de normas/, y el proyecto decidio
+# el marco vaciado in situ justamente por eso (docs/ruta_familia_c.md §14.1):
+# se DISEÑA por AASHTO LRFD Seccion 5 y Art. 12.11 y se CONSTRUYE por EG-2013
+# Secciones 503 (concreto estructural) y 504 (acero de refuerzo). El rotulo
+# lo dice con esas palabras en vez de dejar la casilla vacia o poner la norma
+# de otro producto.
+_NORMA_PRODUCTO_MARCO = (
+    "sin norma de producto: marco vaciado in situ (ruta_familia_c §14.1); "
+    "diseño AASHTO LRFD Sec. 5 y Art. 12.11; construccion EG-2013 503+504; "
+    "M 259/M 273 ausentes")
+
+# El ALCANCE de cada rotulo, anclado en el registro: las citas que dicen que
+# cubre cada norma, y para el marco las dos de AASHTO LRFD que dicen por que
+# no la hay. `test_ext6_registro_normativo` exige que existan.
+CITA_ALCANCE_NORMA_PRODUCTO = {
+    (TipoMaterial.CONCRETO_REFORZADO, FormaSeccion.CIRCULAR):
+        ("AASHTO_M170M.1.1", "AASHTO_M170M.1.1#NOTA1"),
+    (TipoMaterial.TMC, FormaSeccion.CIRCULAR):
+        ("AASHTO_M36.1.1", "ASTM_A760.1.1"),
+    (TipoMaterial.HDPE, FormaSeccion.CIRCULAR):
+        ("AASHTO_M294_TRAD.1.1.1",),
+    (TipoMaterial.CONCRETO_REFORZADO, FormaSeccion.RECTANGULAR):
+        ("AASHTO_LRFD_9.12.4.2.4", "AASHTO_LRFD_9.12.11.1"),
+}
+
+
+def norma_producto_de(tipo: TipoMaterial, forma: FormaSeccion) -> str:
+    """
+    El rotulo de norma de producto de un (material, forma): la norma del
+    tubo para la seccion circular; para la rectangular, la constancia
+    explicita de que no la hay (EXT-N-03). Un marco de TMC o de HDPE no
+    existe en el catalogo (`materiales_candidatos`), y por eso la unica
+    combinacion rectangular es la del concreto.
+    """
+    if forma is FormaSeccion.RECTANGULAR:
+        if tipo is not TipoMaterial.CONCRETO_REFORZADO:
+            raise DatoInvalidoError(
+                "forma", tipo.value,
+                detalle=("el catalogo de la Sec. 3.2 no ofrece marco "
+                         "rectangular de ese material: el marco es de "
+                         "concreto reforzado (Lamina N 03)"))
+        return _NORMA_PRODUCTO_MARCO
+    return _NORMA_PRODUCTO[tipo]
+
+
+def alcance_norma_producto_de(tipo: TipoMaterial, forma: FormaSeccion) -> str:
+    """
+    El alcance de la norma de producto, como texto del registro
+    (`constantes_normativas.ALCANCE_NORMA_PRODUCTO`): lo que cada norma dice
+    cubrir en su clausula 1.1, o por que el marco no tiene norma. Lo exporta
+    `cli._diseno_json` como `alcance_norma_producto`.
+    """
+    clave = "marco" if forma is FormaSeccion.RECTANGULAR else tipo.value
+    return ALCANCE_NORMA_PRODUCTO[clave]
 
 # Claves de MANNING (Tabla N 09) y de HDS5_INLET (Tabla A.1) que si tienen
 # fila normativa directa: HDPE no esta en ninguna de las dos tablas del
@@ -1037,7 +1100,7 @@ def catalogo(material: MaterialLike,
         n_max=n_max,
         D_max=D_max,
         D_max_de_catalogo=D_max_rotulo,
-        norma_producto=_NORMA_PRODUCTO[tipo],
+        norma_producto=norma_producto_de(tipo, forma),
         hds5=hds5,
         fila_manning=_fila_manning(tipo, forma),
         v_max_tabla10=v_max_tabla10,

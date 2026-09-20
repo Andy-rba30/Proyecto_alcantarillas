@@ -159,6 +159,7 @@ import criterios_adoptados as ca
 import datos_sitio as ds
 from constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
 from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
+                                   NUMERAL_CORTANTE_MUROS_E060,
                                    AMBIENTE_CORROSIVO_TEXTO,
                                    CARGA_VIVA,
                                    CLASE_DE_SITIO_COHERENCIA_INTERNA,
@@ -303,11 +304,13 @@ NUMERAL_F_PGA = NUMERAL_F_PGA_TABLA
 NUMERAL_SUBPRESION = "Manual de Puentes num. 2.4.3.8.2"
 NUMERAL_FLEXION_CORTE = "Sec. 9.4 (AASHTO LRFD Seccion 5, via Seccion 2.9)"
 NUMERAL_REGLA_RECUBRIMIENTO = "Sec. 0.2 (rige el recubrimiento mayor)"
-# El Art. 11.10.10.2 NO esta en la hoja de ruta: se cita como pendiente de
-# recoger en ella, no como numeral verificado. Ver el criterio
+# El Art. 11.10.10.2 esta en la hoja de ruta desde EXT-0 (v8 §9.4) y en el
+# registro desde EXT-6 (`constantes_normativas.NUMERAL_CORTANTE_MUROS_E060`,
+# con 11.10.1, 11.10.2 y 11.10.10.3); lo que sigue pendiente es CABLEAR su
+# valor con caso patron (EXT-7). Ver el criterio
 # 'cortante_alto_muro_e060_art_11_10_10_2'.
-NUMERAL_CORTANTE_ALTO = ("E.060 Art. 11.10.10.2 (cortante alto) "
-                         "- PENDIENTE de recoger en la hoja de ruta")
+NUMERAL_CORTANTE_ALTO = (NUMERAL_CORTANTE_MUROS_E060["cuantia_horizontal_min"]
+                         + " (cortante alto; valor pendiente de cablear)")
 
 CALCULADO = "Calculado"
 ETIQUETA_CALCULADO = "-"

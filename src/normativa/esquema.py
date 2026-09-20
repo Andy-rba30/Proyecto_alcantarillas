@@ -184,6 +184,91 @@ Paginacion = Union[Corrida, PorCapitulo, Irregular, SinDeterminar]
 
 
 # ===========================================================================
+# T1 / EXT-6 - Vigencia de la edicion citada
+# ===========================================================================
+class EstadoDeVigencia(str, Enum):
+    """
+    Lo que la verificacion contra el emisor encontro sobre la EDICION citada.
+    Hasta EXT-6 era una marca de texto en `Fuente.nota` (T1); la ficha T1-01
+    de docs/decisiones_diferidas.md pidio el campo, y aqui esta.
+    """
+    CONFIRMADA = "vigencia confirmada"
+    POSTERIOR = "edicion posterior detectada"
+    GABINETE = "vigencia no determinable en linea"
+
+
+@dataclass(frozen=True)
+class Vigencia:
+    """
+    La vigencia de la edicion citada, como CAMPO y no como prosa (T1-01).
+
+    `estado` dice que encontro la verificacion; `fecha` y `como` dicen cuando
+    y con que metodo, que es el limite que cada confirmacion hereda.
+    `edicion_posterior` es obligatoria cuando el estado es POSTERIOR: un
+    «hay otra» sin decir cual no es un hallazgo. Los dos actos son lo que
+    separa una fuente LEGAL peruana de una tecnica extranjera (EXT-N-01):
+    `acto_aprobatorio` es la resolucion que aprobo la edicion citada, y
+    `derogado_por` la que la dejo sin efecto -- una norma de la ASTM o de la
+    AASHTO no se deroga por acto, y por eso ese campo queda vacio en ellas
+    aunque tengan edicion posterior --. `pendiente_gabinete` es lo que la
+    verificacion no pudo leer en linea y queda para leer en papel.
+    """
+    estado: EstadoDeVigencia
+    fecha: str
+    como: str
+    edicion_posterior: str = ""
+    acto_aprobatorio: str = ""
+    derogado_por: str = ""
+    pendiente_gabinete: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.estado, EstadoDeVigencia):
+            raise ErrorDeRegistro(
+                f"Vigencia: `estado` es un EstadoDeVigencia, no {self.estado!r}")
+        if not self.fecha.strip() or not self.como.strip():
+            raise ErrorDeRegistro(
+                "Vigencia: `fecha` y `como` no pueden estar vacios; una "
+                "verificacion sin fecha ni metodo no es una verificacion")
+        if self.estado is EstadoDeVigencia.POSTERIOR and \
+                not self.edicion_posterior.strip():
+            raise ErrorDeRegistro(
+                "Vigencia POSTERIOR exige `edicion_posterior`: decir que hay "
+                "una edicion mas nueva sin decir cual no es un hallazgo")
+        if self.derogado_por and self.estado is not EstadoDeVigencia.POSTERIOR:
+            raise ErrorDeRegistro(
+                "Vigencia: `derogado_por` solo tiene sentido con estado "
+                "POSTERIOR; una edicion derogada no esta vigente")
+
+
+@dataclass(frozen=True)
+class PdfPresenteSinRegistrar:
+    """
+    Un PDF que ESTA en normas/ y NO es una Fuente del registro, censado con
+    su motivo (PC-23). Existe para que la guardia «todo PDF de normas/ es
+    Fuente presente o esta censado» tenga donde apoyarse sin obligar a
+    registrar documentos que ningun calculo cita. Lleva sha1 y paginas
+    MEDIDOS, como una Fuente, para que el dia que se registre no haya que
+    volver a medirlos y para que el test detecte si el archivo cambia.
+    """
+    id: str
+    titulo: str
+    emisor: str
+    archivo_pdf: str
+    sha1: str
+    paginas_pdf: int
+    por_que_no_se_registra: str
+    que_lo_registraria: str
+    resolucion: str = ""
+
+    def __post_init__(self) -> None:
+        for campo in ("archivo_pdf", "sha1", "por_que_no_se_registra",
+                      "que_lo_registraria"):
+            if not getattr(self, campo).strip():
+                raise ErrorDeRegistro(
+                    f"PdfPresenteSinRegistrar {self.id}: `{campo}` no vacio")
+
+
+# ===========================================================================
 # §8 - Fuentes que se citan y NO estan en normas/
 # ===========================================================================
 class Esfuerzo(str, Enum):
@@ -214,7 +299,8 @@ class Fuente:
 
     `convive_con` no es adorno: en normas/ hay DOS HDS-5 que no dicen lo
     mismo, y leer la de 1985 "en SI" reproduce el error del 29 imperial
-    (+9.6 %). Aqui son dos `Fuente` con `convive_con` cruzado y una
+    (+47.7 % sobre el termino de friccion; +9.6 % sobre H en CP-8). Aqui son
+    dos `Fuente` con `convive_con` cruzado y una
     `Discrepancia` que declara cual gobierna.
     """
     id: str
@@ -233,6 +319,7 @@ class Fuente:
     reemplaza_a: Optional[str] = None
     convive_con: Tuple[str, ...] = ()
     nota: str = ""
+    vigencia: Optional[Vigencia] = None
 
     def __post_init__(self) -> None:
         if self.ausente:
@@ -253,6 +340,11 @@ class Fuente:
                 raise ErrorDeRegistro(
                     f"Fuente {self.id}: una fuente presente declara su sha1. "
                     "Es lo que ata cada `verificado` a UN archivo exacto")
+            if self.vigencia is None:
+                raise ErrorDeRegistro(
+                    f"Fuente {self.id}: una fuente presente declara su "
+                    "`vigencia` (T1-01): confirmada, con edicion posterior "
+                    "detectada, o no determinable en linea; nunca en blanco")
 
     @property
     def verificable_por_pagina(self) -> bool:

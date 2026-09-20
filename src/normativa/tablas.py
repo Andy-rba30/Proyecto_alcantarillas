@@ -45,6 +45,7 @@ from .esquema import (
     NotaAlPie,
     OrdenDeAplicacion,
     PendienteDeCondicion,
+    PisoUnico,
     PorCriterio,
     PorDatoDeSitio,
     QuePasaFuera,
@@ -3976,5 +3977,113 @@ CORR_RECUBRIMIENTO = CorrespondenciaDeTablas(
 CORRESPONDENCIAS: Dict[str, CorrespondenciaDeTablas] = {
     c.id: c for c in (CORR_RECUBRIMIENTO, CORR_TAMANOS_TMC)
 }
+
+
+# ===========================================================================
+# DG-2018 — Tabla 304.09, anchos minimos de derecho de via (EXT-6)
+# ===========================================================================
+# INTEGRA: cinco filas y dos columnas, leidas sobre la PDF 200 (texto e
+# imagen). Es el PISO [N] del ancho del derecho de via que el requisito
+# juridico de V5 tiene desde EXT-0 en la v8 y no tenia en el registro
+# (EXT-N-04). SIN CONSUMIDOR HOY, y la tabla lo dice fila por fila en vez de
+# fingir uno: V5 se detiene antes, en el dato de sitio 'ancho_derecho_via_m'
+# que no llega por ninguna via, y elegir fila exige 'clase_de_via', vacio
+# hasta que el estudio de demanda cierre el IMDA. El dia que las dos cosas
+# lleguen, el consumidor natural es V5: el ancho declarado del corredor no
+# puede ser menor que el de su fila, y el incremento de 5.00 m del 304.07.02
+# se compone con el como diga la interpretacion registrada en la cita
+# DG2018.304.07.02#INCREMENTO (la norma escribe el incremento, no la
+# composicion).
+DG2018_T304_09 = _tabla(
+    id="DG2018.T304.09",
+    cita_id="DG2018.304.07.02#T304.09",
+    titulo_literal="Anchos mínimos de Derecho de Vía",
+    texto_previo=Verbatim(
+        texto=("La Tabla 304.09 indica los anchos mínimos que debe tener el "
+               "Derecho de Vía, en función a la clasificación de la "
+               "carretera por demanda y orografía."),
+        pagina_pdf=199),
+    columnas=(
+        ColumnaDeTabla(id="clasificacion", etiqueta_literal="Clasificación",
+                       unidad="",
+                       uso=NoUsada(por_que_no=(
+                           "la clase de via del corredor es el dato de sitio "
+                           "'clase_de_via', vacio hasta que el estudio de "
+                           "demanda cierre el IMDA; sin el no se elige fila"))),
+        ColumnaDeTabla(id="ancho_min", etiqueta_literal="Anchos mínimos (m)",
+                       unidad="m",
+                       uso=NoUsada(por_que_no=(
+                           "V5 se detiene en el dato de sitio "
+                           "'ancho_derecho_via_m', que hoy no llega por "
+                           "ninguna via; cuando llegue, este piso --- con "
+                           "el incremento del 304.07.02 compuesto como diga "
+                           "su interpretacion --- es contra lo que se "
+                           "comprueba"))),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"DG2018.T304.09#{clave}", etiqueta_literal=etiqueta,
+            valores={"ancho_min": PisoUnico(
+                minimo=ancho, unidad="m",
+                cita_id="DG2018.304.07.02",
+                que_pasa_fuera=QuePasaFuera.INCUMPLE_LA_NORMA)},
+            uso=NoUsada(por_que_no=(
+                "sin 'clase_de_via' declarada ninguna fila aplica; sin "
+                "'ancho_derecho_via_m' no hay ancho que comparar")))
+        for clave, etiqueta, ancho in (
+            ("autopista_primera_clase", "Autopistas Primera Clase", 40.0),
+            ("autopista_segunda_clase", "Autopistas Segunda Clase", 30.0),
+            ("carretera_primera_clase", "Carretera Primera Clase", 25.0),
+            ("carretera_segunda_clase", "Carretera Segunda Clase", 20.0),
+            ("carretera_tercera_clase", "Carretera Tercera Clase", 16.0),
+        )
+    ),
+    alcance=Integra(),
+    vistas_de_calculo=("ANCHO_MIN_DERECHO_VIA_M",),
+)
+
+
+# ===========================================================================
+# DG-2018 — Tabla 304.11, taludes referenciales en terraplenes (EXT-6)
+# ===========================================================================
+# INTEGRA: tres materiales por tres alturas, en V:H como la imprime la
+# fuente («1:1.5» es 1 vertical por 1.5 horizontal). Se transcribe la H por
+# unidad de V, que es la forma H:V de 'talud_terraplen'. REFERENCIAL, con
+# la palabra de la fuente: acota la ventana del criterio y no lo sustituye;
+# el valor lo cierra la seccion tipica del expediente vial. Sin consumidor de
+# calculo: M7 lee 'talud_terraplen', no esta tabla, y la altura de terraplen
+# por punto (cota_rasante - cota_terreno) no elige fila mientras el material
+# del cuerpo del terraplen no sea un dato del expediente.
+DG2018_T304_11 = _tabla(
+    id="DG2018.T304.11",
+    cita_id="DG2018.304.10#T304.11",
+    titulo_literal="Taludes referenciales en zonas de relleno (terraplenes)",
+    encabezados_superiores=("Materiales", "Talud (V:H)", "Altura (m)"),
+    columnas=tuple(
+        ColumnaDeTabla(id=cid, etiqueta_literal=etiqueta, unidad="H por 1 V",
+                       uso=NoUsada(por_que_no=(
+                           "la altura de terraplen por punto se conoce, pero "
+                           "el material del cuerpo del terraplen no es dato "
+                           "del expediente y la tabla es referencial: acota "
+                           "la ventana de 'talud_terraplen', no lo fija")))
+        for cid, etiqueta in (("h_menor_5", "<5"), ("h_5_a_10", "5-10"),
+                              ("h_mayor_10", ">10"))
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"DG2018.T304.11#{clave}", etiqueta_literal=etiqueta,
+            valores={"h_menor_5": a, "h_5_a_10": b, "h_mayor_10": c},
+            uso=NoUsada(por_que_no=(
+                "referencial y sin material de terraplen declarado; ver la "
+                "columna")))
+        for clave, etiqueta, a, b, c in (
+            ("gravas_limo_arenoso_arcilla", "Gravas, limo arenoso y arcilla",
+             1.5, 1.75, 2.0),
+            ("arena", "Arena", 2.0, 2.25, 2.5),
+            ("enrocado", "Enrocado", 1.0, 1.25, 1.5),
+        )
+    ),
+    alcance=Integra(),
+)
 
 TABLAS: Dict[str, TablaNormativa] = {t.id: t for t in _TODAS}

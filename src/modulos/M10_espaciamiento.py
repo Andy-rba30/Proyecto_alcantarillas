@@ -6,7 +6,7 @@ alivio (Familia B).
 
     espaciamiento_max = min(L_normativo, L_hidraulico)
 
-L_normativo es el limite de num. 4.1.2.1 d), pag. 178: longitud maxima de
+L_normativo es el limite de num. 4.1.2.1 d), pag. 179: longitud maxima de
 cuneta segun el regimen pluviometrico. La hoja de ruta lo ADOPTA en 200 m
 -- el regimen normal de Piura es arido (250 m), pero el evento de diseno
 relevante es el FEN, durante el cual la zona se comporta como region muy
@@ -60,11 +60,16 @@ from modelos import (CIFRAS_FACTOR, DatoInvalidoError, EleccionDeProyecto,
                      Espaciamiento, Magnitud, TipoDeVeredicto, Umbral,
                      Veredicto, paso,
                      GobiernaEspaciamiento, ReferenciaNormativa)
+from normativa.citas import MC_HHD_CUNETA as _cita_cuneta
 
+# LA PAGINA SE LEE DEL REGISTRO, no se repite: NOR-HID-02 se cerro en S12
+# corrigiendo la cita (MC_HHD_CUNETA, pag. impresa 179) y este texto -- el
+# que la memoria IMPRIME -- siguio en 178 hasta EXT-6 (PC-30). Un test lo
+# compara con `MC_HHD_CUNETA.pagina_impresa` para que no vuelva a pasar.
 NUMERAL_FASE_10 = ReferenciaNormativa(
     seccion_hoja_ruta="Fase 10",
     numeral_norma="Manual de Hidrologia, Hidraulica y Drenaje (MTC), "
-                  "num. 4.1.2.1 d), pag. 178",
+                  f"num. 4.1.2.1 d), pag. {_cita_cuneta.pagina_impresa}",
 )
 
 CRITERIO_LONG_MAX_CUNETA = "long_max_cuneta"

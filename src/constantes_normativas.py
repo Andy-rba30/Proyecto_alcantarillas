@@ -875,7 +875,9 @@ K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(
 # y (5), en la pag. 54 del PDF, imprimen "29 n^2 L / R^1.33" con rotulos de
 # unidades duales "ft (m)", y su gravedad, en la pag. 53, es
 # "32.2 ft/s/s (9.8 m/s/s)". Leida literal "en SI" reproduce exactamente el
-# error del 29 (+9.6 %). El 19.63 solo lo imprime la 3a ed.
+# error del 29: x1.477 sobre el TERMINO de friccion (+47.7 %), que en CP-8
+# sube H de 0.4977 a 0.5455 m (+9.6 % sobre H). El 19.63 solo lo imprime la
+# 3a ed.
 #
 # POR QUE SE PARECE TANTO A 2*g, que es la pregunta que este comentario
 # contestaba mal. Decia que el parecido era "una coincidencia numerica" y que
@@ -893,8 +895,9 @@ K_FRICCION_SI = 19.63               # H = (1 + ke + 19.63*n^2*L/R^(4/3)) * V^2/(
 # constantes_fisicas.G = 9.81. Se conserva el 19.63 transcrito y no el 2*G
 # derivado -- el valor es de la fuente primaria --, y el efecto de la
 # diferencia se dice en vez de callarse: 19.63/19.62 = 1.0005, un +0.05 % sobre
-# el TERMINO DE FRICCION -- unas 190 veces menos que el 9.6 % que produce el 29
-# imperial, que es el error que esta constante existe para atrapar.
+# el TERMINO DE FRICCION -- unas 950 veces menos que el +47.7 % que el 29
+# imperial produce sobre ese mismo termino (+9.6 % sobre H en CP-8), que es el
+# error que esta constante existe para atrapar.
 #
 # La hoja de ruta escribia 19.62 en sus cuatro menciones y quedo corregida a
 # 19.63 en el mismo commit que este comentario (Sec. 4.3, su nota de unidades,
@@ -1645,7 +1648,64 @@ CALICATAS_REMITE_A_CARRILES = _C41.fila("autopista").valores["calicatas_por_km"]
 ESPACIAMIENTO_PERFIL_KM = 4.0       # num. 4.2, parrafo posterior al Cuadro 4.1
 ESPACIAMIENTO_FACTIBILIDAD_KM = 2.0  # mismo parrafo, sin condicion adicional
 
+# ================= DG-2018, Seccion 304.07: derecho de via (EXT-6) =========
+# EL PISO [N] DEL REQUISITO JURIDICO DE V5, y nada mas que el piso. La v8
+# (fila V5, enmendada en EXT-0) parte V5 en tres: el requisito juridico es
+# [N] --- el derecho de via es bien de dominio publico y su ancho minimo lo
+# fija la Tabla 304.09 por clase de carretera, incrementado en 5.00 m en el
+# caso «del borde mas alejado de las obras de drenaje» (como se compone ese
+# incremento con el ancho de la fila es interpretacion registrada en la cita
+# DG2018.304.07.02#INCREMENTO, no texto de la norma) ---, el metodo hidraulico con que se
+# decide si el embalse cabe en esa faja es [A] ('remanso_derecho_via') y el
+# ancho de ESTE corredor es un dato de sitio [S] ('ancho_derecho_via_m') que
+# hoy no llega por ninguna via. Aqui vive la parte [N], derivada de la tabla
+# transcrita (D2: la vista se deriva, no se copia). SIN CONSUMIDOR HOY, y
+# esta en CONSTANTES_DE_REFERENCIA por eso: V5 se detiene antes, en el dato
+# de sitio, y elegir fila exige 'clase_de_via', que el estudio de demanda
+# no ha cerrado. El 304.07 NO enuncia condicion hidraulica alguna: lo que
+# esta aqui acota el ANCHO, no el agua (EXT-N-04).
+_T304_09 = _reg.tabla("DG2018.T304.09")
+ANCHO_MIN_DERECHO_VIA_M = {
+    _T304_09.clave_corta(f): f.valores["ancho_min"].minimo for f in _T304_09.filas
+}
+INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M = 5.0    # m, 304.07.02, pag. impresa 199 (PDF 200)
+NUMERAL_DERECHO_VIA_DG2018 = {
+    "definicion": _reg.cita("DG2018.304.07.01").como_texto(),
+    "ancho_minimo": _reg.cita("DG2018.304.07.02").como_texto(),
+    "incremento_obras_drenaje": _reg.cita("DG2018.304.07.02#INCREMENTO").como_texto(),
+    "caso_obras_drenaje": _reg.cita("DG2018.304.07.02#INCREMENTO_DRENAJE").como_texto(),
+}
+
 # ================= EG-2013, Capitulo V (Secciones 502-508) =================
+# EL ALCANCE DE CADA NORMA DE PRODUCTO, leido de su propia clausula 1.1 (EXT-6,
+# EXT-N-03). Hasta EXT-6 las tres normas de producto tenian UNA sola cita cada
+# una, y de tablas: el registro no podia decir que cubre cada norma, y por
+# eso `M2._NORMA_PRODUCTO` pudo rotular un marco rectangular con la norma de
+# un tubo sin que nada lo acusara. Los cuatro textos salen del registro
+# (`como_texto`), no se escriben aqui; la clave «marco» no es una norma de
+# producto sino la constancia de que no la hay: AASHTO LRFD 12.4.2.4 nombra
+# M 259 y M 273 para el cajon PREFABRICADO, ausentes, y el proyecto decidio el
+# marco vaciado in situ (docs/ruta_familia_c.md §14.1), que se diseña por
+# 12.11 y la Seccion 5 y se construye por EG-2013 503 y 504. M2 lo imprime y
+# `cli._diseno_json` lo exporta como `alcance_norma_producto`.
+def _alcance(cita_id: str) -> str:
+    """«<edicion de la fuente>: <cita en una linea>», para que el lector sepa
+    de que norma es cada clausula sin abrir el registro."""
+    c = _reg.cita(cita_id)
+    return f"{_reg.fuente(c.fuente_id).edicion}: {c.como_texto()}"
+
+
+ALCANCE_NORMA_PRODUCTO = {           # claves: TipoMaterial.value, y «marco»
+    "concreto_reforzado": (_alcance("AASHTO_M170M.1.1") + " · "
+                           + _alcance("AASHTO_M170M.1.1#NOTA1")),
+    "tmc": _alcance("AASHTO_M36.1.1") + " · " + _alcance("ASTM_A760.1.1"),
+    "hdpe": _alcance("AASHTO_M294_TRAD.1.1.1")
+            + " (traduccion no oficial, sin folio)",
+    "marco": ("sin norma de producto: " + _alcance("AASHTO_LRFD_9.12.4.2.4")
+              + " nombra M 259 y M 273 para el cajon prefabricado, ausentes; "
+              + _alcance("AASHTO_LRFD_9.12.11.1")
+              + " rige el diseño del marco vaciado in situ"),
+}
 H_RELLENO_MIN = {
     "hdpe":     0.30,               # m, clave a subrasante (508.07, pag. 984)
     "concreto": None,               # EG-2013 no lo fija -- ver comentario
@@ -3318,12 +3378,24 @@ AMBIENTE_CORROSIVO_TEXTO = (
 # EXCEPCION_REFUERZO_MIN_MURO_TEXTO, que M9 imprime junto al minimo.
 #
 # El segundo minimo de E.060 -- el 0.0025 del Art. 11.10.10.2 bajo cortante
-# alto -- sigue sin transcribirse como constante [N] porque la hoja de ruta no
-# lo recoge (solo cita el 14.3.1); queda declarado como vacio en el criterio
-# 'cortante_alto_muro_e060_art_11_10_10_2'. Mientras siga asi, el 0.0020 de
-# abajo es el minimo MENOR de los dos que tiene E.060, y M9 obliga a contestar
-# expresamente cual aplica.
+# alto, y el de la ec. (11-32) del 11.10.10.3 para la cuantia VERTICAL --
+# sigue sin transcribirse como constante [N] en este archivo: la hoja de
+# ruta lo recoge desde EXT-0 (v8 §9.4) y el registro tiene las cuatro citas
+# desde EXT-6 (NUMERAL_CORTANTE_MUROS_E060, abajo), pero cablearlo con su
+# caso patron es la sesion EXT-7 (EXT-M-05, R95-031). Mientras siga asi, el
+# 0.0020 de abajo es el minimo MENOR de los dos que tiene E.060, y M9 obliga
+# a contestar expresamente cual aplica ('cortante_alto_muro_e060_art_11_10_10_2').
 CUANTIA_MIN_MURO = {"horizontal": 0.0020, "vertical": 0.0015}   # Art. 14.3.1, pag. 133
+# Las cuatro citas de E.060 11.10 que EXT-7 consume, como texto de numeral y
+# no como valor: la pregunta de aplicabilidad (11.10.1 remite el cortante
+# perpendicular al plano a las losas de 11.12; 11.10.2 rige el cortante EN el
+# plano) y los dos pisos bajo el regimen de 11.10.10. Salen del registro.
+NUMERAL_CORTANTE_MUROS_E060 = {
+    "perpendicular_al_plano": _reg.cita("E060.11.10.1").como_texto(),
+    "en_el_plano": _reg.cita("E060.11.10.2").como_texto(),
+    "cuantia_horizontal_min": _reg.cita("E060.11.10.10.2").como_texto(),
+    "cuantia_vertical_min": _reg.cita("E060.11.10.10.3").como_texto(),
+}
 NUMERAL_CUANTIA_MIN = _reg.cita("E060.14.3.1").como_texto()
 EXCEPCION_REFUERZO_MIN_MURO_TEXTO = (
     "El refuerzo mínimo será el indicado en 14.3. Este requisito podrá "
@@ -3786,6 +3858,10 @@ def homonimia_como_texto(homonimia) -> str:
 # Es documentacion, no configuracion: nadie la importa para calcular. Si
 # alguna se cablea, sale de esta lista en el mismo commit.
 CONSTANTES_DE_REFERENCIA = (
+    "ANCHO_MIN_DERECHO_VIA_M",   # piso [N] del derecho de via (DG-2018 Tabla
+    "INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M",  # 304.09 y 304.07.02): V5 se
+                                 # detiene antes, en 'ancho_derecho_via_m', y
+                                 # elegir fila exige 'clase_de_via' (EXT-6)
     "DIAMETRO_MIN",              # el piso de 0.90 m entra por
                                  # 'diametros_normalizados' (D_INICIO). Ver
                                  # DIAMETRO_MIN_AMBITO: su numeral lo

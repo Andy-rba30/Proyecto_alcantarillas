@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-09-20 · Commit del árbol de origen: `149e9bd` · Suite: 2363 passed, 4 skipped (PyMuPDF sí · ventana Tk sí)
+> **Sello.** Fecha de generación: 2026-09-20 · Commit del árbol de origen: `05f2081+cambios-sin-commit` · Suite: 2413 passed, 4 skipped (PyMuPDF sí · ventana Tk sí; provisional, se remide sobre origin/main)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -85,8 +85,8 @@ la misma ficha para que el censo entero sea visible desde aquí.
   - Por que no lo tiene: La cadena sismica y la estabilidad del cabezal tienen sus citas en el registro (AASHTO 11.6.5.1, A11.3.1, 3.10.3.1), pero la Fase 9 esta DIFERIDA al expediente y no emite paso en la corrida de perfil: un fundamento sin paso que lo imprima no se puede comprobar contra la memoria generada, que es la unica prueba que este proyecto acepta (NOR-MEM-01 se cerro justo por no tenerla).
   - Que haria falta para traerlo: Emitir `PasoDeMemoria` desde M9 en la corrida de expediente; las citas ya estan.
 - **`V5`** — sin fundamento normativo declarado.
-  - Por que no lo tiene: El remanso dentro del derecho de via se apoya en la DG-2018 y en la Ley 29338, y ninguna de las dos esta en `normas/`: son fuentes AUSENTES del registro. Sin PDF no hay `Verbatim` que verificar y sin cita no hay `Fundamento`.
-  - Que haria falta para traerlo: Incorporar la DG-2018 y la Ley 29338 a `normas/` y transcribir el numeral que acota la afectacion del derecho de via.
+  - Por que no lo tiene: El remanso dentro del derecho de via tiene desde EXT-6 su requisito JURIDICO citado --- DG-2018 304.07.01 y 304.07.02 con la Tabla 304.09 y el incremento de 5.00 m del borde de las obras de drenaje, presentes y verificados --- y sigue sin tener paso que fundar, por dos razones que no son la misma: el 304.07 acota el ANCHO de la faja y no enuncia condicion hidraulica alguna (no dice cuanto puede remansar la obra ni como se calcula la extension del embalse: ese metodo es [A] del proyectista, 'remanso_derecho_via'), y la Ley 29338, que gobierna la faja marginal, sigue AUSENTE. Un `Fundamento` con las citas del DG-2018 convertiria un piso de ancho en una verificacion hidraulica que la fuente no escribe.
+  - Que haria falta para traerlo: El metodo de perfil de remanso declarado por el proyectista, el dato de sitio `ancho_derecho_via_m` (hoy no llega por ninguna via) y la clase de via del corredor para elegir fila en la Tabla 304.09; con los tres, el paso existe y su fundamento cuelga de DG2018.304.07.02. La faja marginal exige ademas la Ley 29338 en `normas/`.
 - **`V6`** — sin fundamento normativo declarado.
   - Por que no lo tiene: El material solido de arrastre lo trata el num. 4.1.1.3.7 a), que esta en el registro, pero lo que el proyecto ejecuta no es un calculo: es una constatacion declarativa sin magnitud ni umbral. No hay paso que fundar.
   - Que haria falta para traerlo: Cuando V6 pase a evaluar un diametro minimo por zona, su fundamento cuelga de `MC_HHD.4.1.1.3.7a`, que ya esta transcrita y verificada.

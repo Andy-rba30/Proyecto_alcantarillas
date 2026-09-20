@@ -230,8 +230,9 @@ contrasta contra CP-8 y contra el valor que saldria con 29.
     fuente primaria y las tres auditorias coinciden en que el codigo tiene
     razon. Lo que la diferencia introduce esta acotado y se dice: el cociente
     19.63/19.62 vale 1.0005, de modo que afecta al termino de FRICCION en un
-    +0.05 %: unas 190 veces menos que el 9.6 % que produce usar el 29
-    imperial, que es el error que esta constante existe para atrapar.
+    +0.05 %: unas 950 veces menos que el +47.7 % que produce usar el 29
+    imperial sobre ese mismo termino (el 9.6 % de arriba es sobre H, en
+    CP-8), que es el error que esta constante existe para atrapar.
 
     Sigue en pie, y no dependia de aquella nota, que la gravedad de este
     modulo es `constantes_fisicas.G` = 9.81 y no

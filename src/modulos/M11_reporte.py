@@ -176,6 +176,22 @@ except Exception as _exc_weasy:  # ImportError o fallo de librerias nativas (GTK
     WEASYPRINT_AUSENTE = isinstance(_exc_weasy, ImportError)
 
 
+def rotulo_norma_producto(material: Any) -> str:
+    """
+    Como se nombra la norma de producto de un material en la memoria y en el
+    cuadro resumen. Para la seccion circular es «norma de producto <X>»;
+    para el marco, que NO tiene norma de producto (EXT-N-03), el rotulo de
+    M2 ya empieza por «sin norma de producto: ...» y anteponerle «norma de
+    producto» habria impreso «norma de producto sin norma de producto». Es
+    eleccion de etiqueta, no aritmetica: M11 sigue sin calcular nada.
+    """
+    rotulo = material.norma_producto
+    if rotulo.startswith("sin norma de producto"):
+        return rotulo
+    return f"norma de producto {rotulo}"
+
+
+
 # ---------------------------------------------------------------------------
 # Rutas del reporte. Ninguna es un valor de proyecto: son la ubicacion de los
 # archivos del propio script.
@@ -905,8 +921,8 @@ def _tabla_diseno(informe: Any) -> str:
     material, hidraulica = resultado.material, resultado.resultado_hidraulico
     filas = [
         _fila([_td("<b>Material</b>"),
-               _td(f"{_esc(material.nombre)} &mdash; norma de producto "
-                   f"{_esc(material.norma_producto)}, EG-2013 Seccion "
+               _td(f"{_esc(material.nombre)} &mdash; "
+                   f"{_esc(rotulo_norma_producto(material))}, EG-2013 Seccion "
                    f"{_esc(material.seccion_eg2013)}")]),
         _fila([_td("<b>Rugosidad (regla de doble n)</b>"),
                _td(f"n para capacidad y tirante = {_num(material.n_max)}; "
@@ -1717,7 +1733,7 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
         h = resultado.resultado_hidraulico
         celdas.extend([
             _td(_esc(material.tipo.value)),
-            _td(f"{_esc(material.nombre)}<br>{_esc(material.norma_producto)}"),
+            _td(f"{_esc(material.nombre)}<br>{_esc(rotulo_norma_producto(material))}"),
             _td(_esc(resultado.seccion.etiqueta())),
             _td(_num(h.V_erosion, FMT_2), "num"),
             _td(_num(h.V_sedimentacion, FMT_2), "num"),

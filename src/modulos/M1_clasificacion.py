@@ -547,7 +547,10 @@ def _paso_tr(*, cat, R, n, exacto, del_propietario: bool):
         resultado=Magnitud("TR", round(exacto), "anios",
                            f"redondeo al anio de {exacto:.2f}, que es el "
                            f"valor que la columna «TR de diseño» de la tabla "
-                           f"publica", cifras=None),
+                           f"derivada de la Sec. 2.2 de la hoja de ruta "
+                           f"publica (la Tabla Nº 02 del Manual no trae esa "
+                           f"columna: trae R y n, y el TR se calcula)",
+                           cifras=None),
         umbral=Umbral(
             descripcion="riesgo admisible maximo recomendado para esta fila",
             valor=RIESGO_ADMISIBLE[cat.value]["R"], unidad="",
@@ -569,8 +572,10 @@ def tr_de_categoria(categoria: CategoriaLike,
     """
     TR de una fila de la Tabla N 02, calculado, no copiado (Sec. 2.2).
 
-    El redondeo al anio es el de la propia tabla: la columna "TR de diseno"
-    publica 71 y 35, que son 70.59 y 35.32 redondeados. Se conserva el valor
+    El redondeo al anio es el de la tabla DERIVADA de la Sec. 2.2 de la hoja
+    de ruta, no de la Tabla N 02 del Manual, que no trae columna de TR: la
+    columna "TR de diseno" de la hoja publica 71 y 35, que son 70.59 y 35.32
+    redondeados. Se conserva el valor
     exacto en `exacto` para que el redondeo sea visible y no un dato perdido.
 
     QUE CLASE DE VALORES SON R Y n (NOR-HID-08). Maximos RECOMENDADOS, no

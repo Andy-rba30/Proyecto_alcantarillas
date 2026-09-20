@@ -173,8 +173,9 @@ D_MIN = _fundamento(
 MANNING = _fundamento(
     id="F4.MANNING",
     fase=F4,
-    que_paso=("Tirante normal y velocidad en el conducto, por Manning, "
-              "resueltos con las DOS rugosidades del rango de la Tabla N 09"),
+    que_paso=("Tirante normal y velocidad en el conducto, por Manning: UNA "
+              "geometria (el tirante, con n_max) y DOS velocidades, una por "
+              "cada extremo del rango de la Tabla N 09"),
     por_que=(
         "La rugosidad de un conducto no es un numero: la Tabla N 09 da un "
         "rango por material, y el rango no es incertidumbre de medicion sino "
@@ -182,9 +183,12 @@ MANNING = _fundamento(
         "Resolver con un solo n obliga a elegir cual, y esa eleccion cambia de "
         "signo segun que se verifique: contra un TECHO de velocidad el extremo "
         "conservador es el n minimo --la estimacion alta-- y contra un PISO es "
-        "el n maximo --la baja--. Por eso el calculo resuelve la seccion dos "
-        "veces y cada verificacion consume la rama que la deja del lado "
-        "seguro, en vez de que una sola rama pretenda servir para las dos."),
+        "el n maximo --la baja--. Por eso el calculo fija UNA geometria --el "
+        "tirante normal con n_max, que es el que mas llena el conducto-- y "
+        "sobre ella evalua DOS velocidades, una por cada n, y cada "
+        "verificacion consume la que la deja del lado seguro. No son dos "
+        "escenarios independientes: es una seccion y dos rugosidades sobre "
+        "la misma seccion."),
     verbo=Verbo.DEFINE,
     citas=("MC_HHD.4.1.1.3.6", "MC_HHD.4.1.1.3.6#T09"),
     que_pasa_si_no_se_hace=(
@@ -709,12 +713,22 @@ SIN_FUNDAMENTO: Tuple[Tuple[str, str, str], ...] = (
      "Nada que transcribir: la decision pendiente es de que naturaleza es el "
      "umbral, y hasta que se resuelva V4b se imprime como adopcion [A]."),
     ("F5.V5",
-     "El remanso dentro del derecho de via se apoya en la DG-2018 y en la Ley "
-     "29338, y ninguna de las dos esta en `normas/`: son fuentes AUSENTES del "
-     "registro. Sin PDF no hay `Verbatim` que verificar y sin cita no hay "
-     "`Fundamento`.",
-     "Incorporar la DG-2018 y la Ley 29338 a `normas/` y transcribir el "
-     "numeral que acota la afectacion del derecho de via."),
+     "El remanso dentro del derecho de via tiene desde EXT-6 su requisito "
+     "JURIDICO citado --- DG-2018 304.07.01 y 304.07.02 con la Tabla 304.09 y "
+     "el incremento de 5.00 m del borde de las obras de drenaje, presentes y "
+     "verificados --- y sigue sin tener paso que fundar, por dos razones que "
+     "no son la misma: el 304.07 acota el ANCHO de la faja y no enuncia "
+     "condicion hidraulica alguna (no dice cuanto puede remansar la obra ni "
+     "como se calcula la extension del embalse: ese metodo es [A] del "
+     "proyectista, 'remanso_derecho_via'), y la Ley 29338, que gobierna la "
+     "faja marginal, sigue AUSENTE. Un `Fundamento` con las citas del "
+     "DG-2018 convertiria un piso de ancho en una verificacion hidraulica "
+     "que la fuente no escribe.",
+     "El metodo de perfil de remanso declarado por el proyectista, el dato "
+     "de sitio `ancho_derecho_via_m` (hoy no llega por ninguna via) y la "
+     "clase de via del corredor para elegir fila en la Tabla 304.09; con los "
+     "tres, el paso existe y su fundamento cuelga de DG2018.304.07.02. La "
+     "faja marginal exige ademas la Ley 29338 en `normas/`."),
     ("F5.V6",
      "El material solido de arrastre lo trata el num. 4.1.1.3.7 a), que esta "
      "en el registro, pero lo que el proyecto ejecuta no es un calculo: es "

@@ -273,6 +273,10 @@ SIN_CONSUMIDOR_Y_SIN_MEDIDA = (
     # detectada. No es una magnitud y ningun modulo la consume; su nivel
     # (expediente) es el argumento escrito junto al campo.
     "edicion_que_rige_el_expediente",
+    # EXT-6: la mitad LEGAL de esa eleccion (el Manual de Puentes, derogado
+    # por RD), partida del criterio tecnico por EXT-N-01/PC-26. Tampoco es
+    # una magnitud y ningun modulo la consume.
+    "edicion_legal_que_rige_el_expediente",
     "homogeneidad_serie_fen",
 )
 
@@ -281,11 +285,11 @@ def test_el_censo_de_lo_que_no_se_puede_medir_no_crece_en_silencio():
     """
     El limite de este archivo, escrito como dato.
 
-    Los nueve no tienen consumidor: ninguna corrida los invoca y el censo de
-    `variables_entrada` no puede contradecir su nivel. Su clasificacion se
-    defiende con el argumento que cada uno escribe junto a `nivel`, y esa es
-    la unica defensa que tienen. Lo que se comprueba aqui es que sean estos
-    nueve y no diez.
+    Los diez (nueve hasta EXT-6) no tienen consumidor: ninguna corrida los
+    invoca y el censo de `variables_entrada` no puede contradecir su nivel.
+    Su clasificacion se defiende con el argumento que cada uno escribe junto
+    a `nivel`, y esa es la unica defensa que tienen. Lo que se comprueba
+    aqui es que sean estos diez y no once.
     """
     sin_consumidor = tuple(sorted(c for c in ca.CRITERIOS
                                   if not ve.variable(c).consumido_por))

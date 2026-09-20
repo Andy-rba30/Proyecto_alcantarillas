@@ -805,7 +805,7 @@ def test_la_paginacion_predice_la_pagina_pdf_desde_la_impresa(reg):
 def test_las_fuentes_sin_texto_extraible_estan_declaradas(reg):
     """
     Es una propiedad DE LA FUENTE, no un percance de quien la lee: cuatro de
-    las quince no entregan texto utilizable y sus citas se verifican por
+    las dieciseis no entregan texto utilizable y sus citas se verifican por
     imagen o no se verifican. La cuarta es ASTM A796/A796M-13 (N1): su capa
     de texto existe pero llega duplicada e intercalada a mitad de palabra,
     y una frase entera no se encuentra por texto.

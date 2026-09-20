@@ -176,6 +176,7 @@ from modulos.M0_carga import (cargar_puntos, cargar_puntos_de_bytes,  # noqa: E4
                               leer_bytes)
 from modulos.M1_clasificacion import clasificar, exigir_alcance     # noqa: E402
 from modulos.M6_proteccion import proteccion_salida                 # noqa: E402
+from modulos import M2_material as M2                               # noqa: E402
 from modulos import M3_hidraulica as M3                             # noqa: E402
 from modulos.M7_geometria import (compatibilidad_geometrica,        # noqa: E402
                                   cota_salida, longitud_conducto)
@@ -1969,10 +1970,31 @@ def _clasificacion_json(c: Clasificacion) -> Dict[str, Any]:
             "datos_pendientes": list(c.datos_pendientes)}
 
 
+# Las claves del bloque `diseno` del JSON, escritas una vez para que el
+# contrato con el tablero externo sea legible sin correr nada. Desde EXT-6
+# lleva `alcance_norma_producto` (EXT-N-03): lo que la norma de producto dice
+# cubrir en su clausula 1.1 o, para el marco, por que no la hay. Que la tupla
+# y el diccionario de `_diseno_json` coincidan lo comprueba un test sobre el
+# AST (tests/test_ext6_registro_normativo.py), no una guardia en la ruta de
+# exportacion: un desajuste es un defecto del programa, no del expediente.
+CLAVES_DISENO_JSON = (
+    "material", "tipo", "norma_producto", "alcance_norma_producto",
+    "seccion_eg2013", "n_min", "n_max", "seccion", "dimension_max_catalogo_m",
+    "control_gobernante", "Q_m3s", "S_m_m", "V_erosion_m_s",
+    "V_sedimentacion_m_s", "y_normal_m", "y_critico_m", "HW_entrada_m",
+    "HW_salida_m", "HW_gobernante_m", "Q_celda_m3s", "numero_celdas",
+    "regimen_barril", "V_llena_m_s", "V_salida_m_s", "V_salida_procedencia",
+    "y_salida_m", "h_o_m", "TW_m", "ahogado_por_TW", "HW_sobre_D_salida",
+    "h_o_fuera_de_rango", "h_o_requiere_cautela",
+)
+
+
 def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
     material, hidraulica = resultado.material, resultado.resultado_hidraulico
     return {"material": material.nombre, "tipo": material.tipo.value,
             "norma_producto": material.norma_producto,
+            "alcance_norma_producto": M2.alcance_norma_producto_de(
+                material.tipo, material.forma),
             "seccion_eg2013": material.seccion_eg2013,
             "n_min": _num(material.n_min), "n_max": _num(material.n_max),
             "seccion": resultado.seccion.etiqueta(),

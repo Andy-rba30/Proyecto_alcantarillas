@@ -66,6 +66,8 @@ FECHA_EXT2 = "2026-09-20"
 POR_EXT2 = "ext/EXT-2 · verificador-normativo"
 FECHA_EXT3 = "2026-09-20"
 POR_EXT3 = "ext/EXT-3 · verificador-normativo"
+FECHA_EXT6 = "2026-09-20"
+POR_EXT6 = "ext/EXT-6 · verificador-normativo"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
@@ -77,6 +79,7 @@ T2 = (FECHA_T2, POR_T2)
 N1 = (FECHA_N1, POR_N1)
 EXT2 = (FECHA_EXT2, POR_EXT2)
 EXT3 = (FECHA_EXT3, POR_EXT3)
+EXT6 = (FECHA_EXT6, POR_EXT6)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -93,6 +96,7 @@ _SHA = {
     "AASHTO_M36": "f85b5658385ae6779dde4e5fd340ac3122b62636",
     "ASTM_A760": "47d0d447143ca158615dff7dec79f2f7a8975732",
     "ASTM_A796": "df7858f04caf61bc1c3a4ea3d664e38cacddee25",
+    "DG2018": "96ea04423a7e0e7fc44b5cd5d8824d6166a8e816",
 }
 
 _TODAS = []
@@ -2267,8 +2271,11 @@ HDS5_SI_1985_EC4B = _cita(
           "texto --. POR TEXTO, las definiciones llevan rotulo dual «ft "
           "(m)» (el Verbatim es una de ellas) y «19.63» da cero paginas en "
           "las 410 del documento. Es el ancla de DIS-HDS5-EDICIONES: leer "
-          "el 29 «en SI» sobrestima el termino de friccion un +9.6 %, que "
-          "es lo que K_FRICCION_SI existe para atrapar."),
+          "el 29 «en SI» multiplica el termino de friccion por 29/19.63 = "
+          "1.477 (+47.7 % sobre el TERMINO), que en CP-8 sube H de 0.4977 a "
+          "0.5455 m (+9.6 % sobre H); es lo que K_FRICCION_SI existe para "
+          "atrapar. Las dos bases se dicen juntas porque el repositorio las "
+          "mezclo (EXT-G-03)."),
 )
 
 
@@ -4860,5 +4867,528 @@ AFIRMACIONES_NEGATIVAS = (SIN_HDPE_T09, SIN_TMC_NI_HDPE_T10,
                           SIN_TABLA_CALIBRE_POR_COBERTURA_A796,
                           SIN_CLASE_POR_ALTURA_M294_TRAD,
                           SIN_DIAMETRO_EXTERIOR_M294_TRAD)
+
+
+# ===========================================================================
+# EXT-6 -- DG-2018 (desfase +1, medido en 284 de 285 paginas)
+#
+# LO QUE EL PROYECTO LE PIDE AL DG-2018, y solo eso: el requisito JURIDICO
+# de V5 --- que el remanso quede dentro del derecho de via --- tiene aqui su
+# definicion (304.07.01, por remision al RNGIV) y su PISO de ancho (Tabla
+# 304.09 por clase de carretera, mas 5.00 m «del borde mas alejado de las
+# obras de drenaje», 304.07.02). Lo que NO tiene: ninguna condicion
+# hidraulica. El 304.07 no dice cuanto puede remansar una alcantarilla ni
+# como se calcula la extension del embalse; ese metodo sigue siendo [A] del
+# proyectista ('remanso_derecho_via') y el ancho de ESTE corredor un dato de
+# sitio que hoy no llega ('ancho_derecho_via_m'). Por eso F5.V5 sigue en
+# SIN_FUNDAMENTO con la razon corregida (EXT-N-02, EXT-N-04).
+# ===========================================================================
+
+DG2018_304_07_01 = _cita(
+    id="DG2018.304.07.01",
+    fuente_id="DG2018",
+    numeral="304.07.01",
+    titulo_numeral="Generalidades",
+    jerarquia_numeral=("304.07 Derecho de Vía o faja de dominio",),
+    pagina_impresa="198",
+    pagina_pdf=199,
+    texto_literal=Verbatim(
+        texto=("La faja del terreno que conforma el Derecho de Vía es un bien "
+               "de dominio público inalienable e imprescriptible, cuyas "
+               "definiciones y condiciones de uso se encuentran establecidas "
+               "en el Reglamento Nacional de Gestión de Infraestructura Vial "
+               "aprobado con Decreto Supremo Nº 034-2008-MTC y sus "
+               "modificatorias, bajo los siguientes conceptos:"),
+        pagina_pdf=199),
+    # DEFINICION: dice QUE ES el derecho de via y a QUE reglamento remite; la
+    # exigencia sobre el ancho esta en el 304.07.02.
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=EXT6,
+    nota=("LA REMISION AL RNGIV (DS 034-2008-MTC) ES LO QUE ESTA CITA "
+          "ACREDITA, y el Reglamento NO esta en normas/: el archivo que "
+          "hubo hasta 5196dd2 era la publicacion de El Peruano de 2006, no "
+          "el decreto de 2008 (ver `fuentes.RNGIV`). La pagina imprime a "
+          "continuacion seis conceptos (ancho y aprobacion, libre "
+          "disponibilidad, registro, propiedad, propiedad restringida, "
+          "condiciones de uso) que remiten al Reglamento y no se "
+          "transcriben: ninguno trae numero."),
+)
+
+DG2018_304_07_02 = _cita(
+    id="DG2018.304.07.02",
+    fuente_id="DG2018",
+    numeral="304.07.02",
+    titulo_numeral="Ancho y aprobación del Derecho de Vía",
+    jerarquia_numeral=("304.07 Derecho de Vía o faja de dominio",),
+    pagina_impresa="198",
+    pagina_pdf=199,
+    texto_literal=Verbatim(
+        texto=("La Tabla 304.09 indica los anchos mínimos que debe tener el "
+               "Derecho de Vía, en función a la clasificación de la "
+               "carretera por demanda y orografía."),
+        pagina_pdf=199),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=EXT6,
+    nota=("EXIGENCIA SOBRE EL ANCHO, no sobre el agua: «anchos mínimos que "
+          "debe tener». El mismo numeral dice antes que cada autoridad "
+          "competente del articulo 4 del RNGIV «establece y aprueba mediante "
+          "resolución del titular» el derecho de via de sus carreteras, y "
+          "que para determinarlo «deberá tenerse en consideración la "
+          "instalación de los dispositivos auxiliares y obras básicas "
+          "requeridas para el funcionamiento de la vía». Es el requisito "
+          "juridico [N] de V5 (v8 fila V5, enmendada en EXT-0); la condicion "
+          "hidraulica no esta aqui ni en ninguna otra parte del 304.07."),
+)
+
+INTERPRETACION_INCREMENTO_DERECHO_VIA = Interpretacion(
+    texto=("Que el incremento de 5.00 m se cuente DESDE EL BORDE mas alejado "
+           "de la obra de drenaje --- el limite de la faja queda a 5.00 m del "
+           "cabezal o del ala --- y no como una suma fija sobre el ancho de "
+           "la Tabla 304.09 es la lectura que este proyecto adopta para el "
+           "dia en que V5 compare el ancho declarado del corredor. La norma "
+           "escribe el incremento y el caso; no escribe la composicion."),
+    en_contra=("la frase dice «se incrementarán en 5.00 m» sobre «los anchos "
+               "... fijados por la autoridad competente», que es un ancho de "
+               "faja, y un ancho se incrementa sumando",
+               "ninguna otra pagina del 304.07 define el punto de medida "
+               "del incremento ni dibuja el caso"),
+    a_favor=("los cuatro casos son bordes fisicos --- taludes de corte, pie "
+             "de terraplenes, obras de drenaje, caminos de servicio ---, y un "
+             "incremento «del borde mas alejado» solo tiene sentido medido "
+             "desde ese borde",
+             "la faja de propiedad restringida del 304.07.04 tambien se fija "
+             "«a cada lado del Derecho de Vía» como una distancia, no como "
+             "una suma al ancho"),
+)
+
+DG2018_304_07_02_INCREMENTO = _cita(
+    id="DG2018.304.07.02#INCREMENTO",
+    fuente_id="DG2018",
+    numeral="304.07.02",
+    titulo_numeral="Ancho y aprobación del Derecho de Vía",
+    jerarquia_numeral=("304.07 Derecho de Vía o faja de dominio",),
+    pagina_impresa="199",
+    pagina_pdf=200,
+    pagina_pdf_titulo=199,
+    texto_literal=Verbatim(
+        texto=("En general, los anchos de la faja de dominio o Derecho de "
+               "Vía, fijados por la autoridad competente se incrementarán en "
+               "5.00 m, en los siguientes casos:"),
+        pagina_pdf=200),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=EXT6,
+    interpretacion=INTERPRETACION_INCREMENTO_DERECHO_VIA,
+    nota=("EL TERCERO DE LOS CUATRO CASOS ES EL DEL PROYECTO: la pagina "
+          "imprime, con viñeta, «Del borde más alejado de las obras de "
+          "drenaje» (los otros tres: el borde superior de los taludes de "
+          "corte mas alejados, el pie de los terraplenes mas altos y el "
+          "borde exterior de los caminos de servicio). Lo que la frase "
+          "ESCRIBE es que el ancho fijado «se incrementará en 5.00 m» en ese "
+          "caso; COMO se compone ese incremento con el ancho de la Tabla "
+          "304.09 --- si el limite de la faja queda a 5.00 m del borde de la "
+          "obra de drenaje, o si se suman 5.00 m al ancho de la fila --- no "
+          "lo escribe, y es la lectura registrada en `interpretacion` "
+          "(auditoria adversarial de EXT-6). El mismo numeral admite anchos menores en zonas "
+          "urbanas «excepcionalmente», por saneamiento fisico legal: es una "
+          "excepcion de la autoridad, no del proyectista. Vive en "
+          "`constantes_normativas.INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M`. "
+          "La viñeta del drenaje es su propia cita (#INCREMENTO_DRENAJE): "
+          "la pagina separa los cuatro casos con un glifo de viñeta que la "
+          "capa de texto conserva, y una sola cadena no los une."),
+)
+
+DG2018_304_07_02_INCREMENTO_DRENAJE = _cita(
+    id="DG2018.304.07.02#INCREMENTO_DRENAJE",
+    fuente_id="DG2018",
+    numeral="304.07.02",
+    titulo_numeral="Ancho y aprobación del Derecho de Vía",
+    jerarquia_numeral=("304.07 Derecho de Vía o faja de dominio",),
+    pagina_impresa="199",
+    pagina_pdf=200,
+    pagina_pdf_titulo=199,
+    texto_literal=Verbatim(
+        texto="Del borde más alejado de las obras de drenaje",
+        pagina_pdf=200),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=EXT6,
+    nota=("El tercero de los cuatro casos en que el ancho «se incrementará "
+          "en 5.00 m» (cita gemela #INCREMENTO). Es el que aplica a una "
+          "alcantarilla: el borde es el del cabezal o el ala mas alejada "
+          "del eje. Como se compone el incremento con el ancho de la Tabla "
+          "304.09 es la interpretacion registrada en la cita gemela."),
+)
+
+DG2018_T304_09 = _cita(
+    id="DG2018.304.07.02#T304.09",
+    fuente_id="DG2018",
+    numeral="Tabla 304.09",
+    titulo_numeral="Anchos mínimos de Derecho de Vía",
+    jerarquia_numeral=("304.07 Derecho de Vía o faja de dominio",),
+    pagina_impresa="199",
+    pagina_pdf=200,
+    texto_literal=Verbatim(
+        texto="Anchos mínimos de Derecho de Vía",
+        pagina_pdf=200),
+    # DEFINICION: la tabla tipifica los anchos por clase; lo que la hace
+    # vinculante es el 304.07.02 («debe tener»), que es su cita gemela.
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=EXT6,
+    nota=("CINCO FILAS Y DOS COLUMNAS, transcritas enteras en "
+          "`tablas.DG2018_T304_09`: Autopistas Primera Clase 40, Autopistas "
+          "Segunda Clase 30, Carretera Primera Clase 25, Carretera Segunda "
+          "Clase 20, Carretera Tercera Clase 16 (m). La clase de la via de "
+          "ESTE corredor es el dato de sitio 'clase_de_via', vacio hasta que "
+          "el estudio de demanda cierre el IMDA; sin el, ninguna fila se "
+          "elige y el piso no se aplica."),
+)
+
+DG2018_304_10_T304_11 = _cita(
+    id="DG2018.304.10#T304.11",
+    fuente_id="DG2018",
+    numeral="304.10, Tabla 304.11",
+    titulo_numeral="Taludes",
+    pagina_impresa="208",
+    pagina_pdf=209,
+    pagina_pdf_titulo=203,
+    texto_literal=Verbatim(
+        texto=("Los taludes en zonas de relleno (terraplenes), variarán en "
+               "función de las características del material con el cual "
+               "está formado. En la Tabla 304.11 se muestra taludes "
+               "referenciales."),
+        pagina_pdf=209),
+    # DEFINICION, y la palabra es de la fuente: «referenciales». No manda
+    # un talud; acota la banda dentro de la que 'talud_terraplen' elige.
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=EXT6,
+    nota=("El numeral 304.10 abre en la impresa 202 (PDF 203) y la Tabla "
+          "304.11 esta en la 208 (PDF 209). Transcrita entera en "
+          "`tablas.DG2018_T304_11`: tres materiales por tres alturas, en "
+          "V:H. La fila «Gravas, limo arenoso y arcilla» da 1:1.5, 1:1.75 y "
+          "1:2 para menos de 5 m, 5 a 10 m y mas de 10 m, que es exactamente "
+          "la ventana (1.5, 2.0) H:V que 'talud_terraplen' declaraba como "
+          "«practica corriente» sin poder citarla. Sigue siendo [A]: la tabla "
+          "es referencial y la seccion tipica del expediente es la que "
+          "cierra el valor."),
+)
+
+
+# ===========================================================================
+# EXT-6 -- E.060 11.10, disposiciones especiales para muros (desfase 0)
+#
+# LAS CUATRO QUE EXT-7 CONSUME (EXT-M-05, R95-031): la pregunta de
+# aplicabilidad --- el 11.10 rige el cortante EN EL PLANO del muro (11.10.2)
+# y remite el perpendicular a las losas (11.10.1) --- y los dos pisos de
+# cuantia bajo el regimen de 11.10.10. Se transcriben aqui, por delante del
+# codigo que las lea, porque la v8 §9.4 ya las recoge desde EXT-0 y el
+# criterio 'cortante_alto_muro_e060_art_11_10_10_2' las nombraba sin cita.
+# ===========================================================================
+
+E060_11_10_1 = _cita(
+    id="E060.11.10.1",
+    fuente_id="E060",
+    numeral="11.10.1",
+    titulo_numeral="DISPOSICIONES ESPECIALES PARA MUROS",
+    pagina_impresa="103",
+    pagina_pdf=103,
+    texto_literal=Verbatim(
+        texto=("El diseño para fuerzas cortantes perpendiculares al plano del "
+               "muro debe hacerse según lo estipulado en las disposiciones "
+               "para losas de 11.12."),
+        pagina_pdf=103),
+    caracter=Caracter.EXIGENCIA,
+    sesion=EXT6,
+    nota=("LA PREGUNTA DE APLICABILIDAD, dicha por la norma: el cortante "
+          "PERPENDICULAR al plano --- que es el que el empuje de tierras "
+          "produce en la pantalla de un cabezal --- se diseña por 11.12 "
+          "(losas), no por 11.10. Antes de aplicar el 0.0025 de 11.10.10.2 "
+          "hay que decir en que plano actua el cortante que lo dispara."),
+)
+
+E060_11_10_2 = _cita(
+    id="E060.11.10.2",
+    fuente_id="E060",
+    numeral="11.10.2",
+    titulo_numeral="DISPOSICIONES ESPECIALES PARA MUROS",
+    pagina_impresa="103",
+    pagina_pdf=103,
+    texto_literal=Verbatim(
+        texto=("El diseño para fuerzas cortantes horizontales en el plano del "
+               "muro debe hacerse de acuerdo con las disposiciones de 11.10.3 "
+               "a 11.10.10."),
+        pagina_pdf=103),
+    caracter=Caracter.EXIGENCIA,
+    sesion=EXT6,
+    nota=("La segunda oracion del numeral --- «Para muros estructurales que "
+          "resistan cargas en su plano originadas por la acción de los "
+          "sismos, se aplicará adicionalmente lo dispuesto en 21.9» --- no "
+          "se transcribe: el cabezal no es muro estructural de un edificio."),
+)
+
+E060_11_10_10_2 = _cita(
+    id="E060.11.10.10.2",
+    fuente_id="E060",
+    numeral="11.10.10.2",
+    titulo_numeral="Diseño del refuerzo para cortante en muros",
+    jerarquia_numeral=("11.10 DISPOSICIONES ESPECIALES PARA MUROS",),
+    pagina_impresa="104",
+    pagina_pdf=104,
+    pagina_pdf_titulo=104,
+    texto_literal=Verbatim(
+        texto=("La cuantía de refuerzo horizontal para cortante no debe ser "
+               "menor que 0,0025 y su espaciamiento no debe exceder tres "
+               "veces el espesor del muro ni de 400 mm."),
+        pagina_pdf=104),
+    caracter=Caracter.EXIGENCIA,
+    sesion=EXT6,
+    nota=("El titulo de la jerarquia esta en la PDF 103 y el del 11.10.10 en "
+          "la 104. El 0,0025 rige BAJO 11.10.10, que 11.10.7 y 11.10.8 "
+          "disparan por Vu contra 0,085·raiz(f'c)·Acw; fuera de ese regimen "
+          "el piso es el 0,002 del 14.3.1 (cita E060.14.3.1, cuya primera "
+          "oracion remite aqui). El valor NO se transcribe como constante "
+          "[N] en esta sesion: lo cablea EXT-7 con su caso patron."),
+)
+
+E060_11_10_10_3 = _cita(
+    id="E060.11.10.10.3",
+    fuente_id="E060",
+    numeral="11.10.10.3",
+    titulo_numeral="Diseño del refuerzo para cortante en muros",
+    jerarquia_numeral=("11.10 DISPOSICIONES ESPECIALES PARA MUROS",),
+    pagina_impresa="104",
+    pagina_pdf=104,
+    pagina_pdf_titulo=104,
+    texto_literal=Verbatim(
+        texto="La cuantía de refuerzo vertical para cortante,",
+        pagina_pdf=104),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=EXT6,
+    nota=("EL VERBATIM SE CORTA DONDE EMPIEZA EL SIMBOLO: la capa de texto "
+          "imprime «ρv» como glifos sueltos y la ecuacion como imagen, de "
+          "modo que la oracion entera no se encuentra por texto. Leida "
+          "sobre la pagina renderizada (EXT-6), la ec. (11-32) es "
+          "ρv = 0,0025 + 0,5·(2,5 − hm/ℓm)·(ρh − 0,0025) ≥ 0,0025, «pero no "
+          "necesita ser mayor que el valor de ρh requerido por 11.10.10.1», "
+          "con hm la altura total del muro y ℓm su longitud total. Es lo que "
+          "R95-031 (H-13) señalo: bajo el regimen de 11.10.10 la cuantia "
+          "VERTICAL tambien tiene piso 0,0025, y `M9.cuantia_de_diseno` "
+          "devolvia 0,0015 en vertical con cortante alto. Se corrige en "
+          "EXT-7 (EXT-M-05); aqui queda la cita que le faltaba."),
+)
+
+
+# ===========================================================================
+# EXT-6 -- El ALCANCE de las tres normas de producto (EXT-N-03)
+#
+# Las tres tenian UNA sola cita cada una, y de tablas. Sin la clausula de
+# alcance, el registro no podia decir que cubre cada norma --- y por eso
+# `_NORMA_PRODUCTO` pudo rotular un marco con la norma de un tubo sin que
+# nada lo acusara. M 170M y M 36 por IMAGEN (OCR inutil y raster); A760 por
+# IMAGEN (ToUnicode roto), sobre la traduccion al español del ejemplar.
+# ===========================================================================
+
+AASHTO_M170M_1_1 = _cita(
+    id="AASHTO_M170M.1.1",
+    fuente_id="AASHTO_M170M",
+    numeral="1.1",
+    titulo_numeral="SCOPE",
+    pagina_impresa="M 170M-1",
+    pagina_pdf=1,
+    texto_literal=Verbatim(
+        texto=("This specification covers reinforced concrete pipe intended "
+               "to be used for the conveyance of sewage, industrial wastes, "
+               "and storm water, and for the construction of culverts."),
+        pagina_pdf=1),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=EXT6,
+    nota=("Leida sobre la PDF 1 renderizada a escala 3.0 (el OCR imprime "
+          "«iniendcd io be used» y «culvens»). Cubre TUBERIA («pipe»); un "
+          "marco rectangular vaciado in situ no es tuberia y esta norma no "
+          "lo rige. La PDF 1 rotula ademas «AASHTO Designation: M 170M-04» y "
+          "«ASTM Designation: C 76M-02», que es la doble designacion del "
+          "rotulo que M2 imprime."),
+)
+
+AASHTO_M170M_1_1_NOTA1 = _cita(
+    id="AASHTO_M170M.1.1#NOTA1",
+    fuente_id="AASHTO_M170M",
+    numeral="1.2, Note 1",
+    titulo_numeral="SCOPE",
+    pagina_impresa="M 170M-1",
+    pagina_pdf=1,
+    texto_literal=Verbatim(
+        texto=("Note 1—This specification is a manufacturing and purchase "
+               "specification only, and does not include requirements for "
+               "bedding, backfill, or the relationship between field load "
+               "condition and the strength classification of pipe."),
+        pagina_pdf=1),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=EXT6,
+    nota=("LO QUE LA NORMA DICE QUE NO ES: ni cama, ni relleno, ni la "
+          "relacion entre la carga de campo y la clase. La nota sigue: la "
+          "experiencia muestra que el buen desempeño depende de elegir la "
+          "clase, la cama y el relleno, y el propietario «is cautioned that "
+          "he must correlate the field requirements with the class of pipe "
+          "specified». Es la misma clausula que M 36 lleva en su 1.3 y A760 "
+          "en su 1.4, y la razon de que 'clases_producto_por_relleno' sea un "
+          "criterio del proyecto y no una lectura de la norma."),
+)
+
+AASHTO_M36_1_1 = _cita(
+    id="AASHTO_M36.1.1",
+    fuente_id="AASHTO_M36",
+    numeral="1.1",
+    titulo_numeral="SCOPE",
+    pagina_impresa="M 36-1",
+    pagina_pdf=2,
+    texto_literal=Verbatim(
+        texto=("This specification covers corrugated steel pipe intended for "
+               "use for storm water drainage, underdrains, the construction "
+               "of culverts, and similar uses. Pipe covered by this "
+               "specification is not normally used for the conveyance of "
+               "sanitary or industrial wastes."),
+        pagina_pdf=2),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=EXT6,
+    corresponde_en=("ASTM_A760.1.1",),
+    nota=("RASTER PURO: leida sobre la PDF 2 renderizada a escala 3.0. La "
+          "portada rotula «AASHTO Designation: M 36-03 (2007)» y «ASTM "
+          "Designation: A 760/A 760M-01a». Cubre tuberia de acero corrugado "
+          "para drenaje pluvial, subdrenes y alcantarillas; el resto del "
+          "numeral 1.1 enumera los recubrimientos metalicos (zinc, aluminio "
+          "tipo 2, aleacion 55 % Al-Zn, Zn-5 % Al-mischmetal, aluminio tipo "
+          "1) y no se transcribe. La MISMA clausula, en español, es el 1.1 "
+          "de A760 (`corresponde_en`)."),
+)
+
+ASTM_A760_1_1 = _cita(
+    id="ASTM_A760.1.1",
+    fuente_id="ASTM_A760",
+    numeral="1.1",
+    titulo_numeral="Alcance",
+    pagina_impresa="1",
+    pagina_pdf=1,
+    texto_literal=Verbatim(
+        texto=("Esta especificación cubre la tubería de acero corrugada "
+               "destinada para uso en drenaje de aguas pluviales, desagües "
+               "subterráneos, construcción de alcantarillas y usos "
+               "similares."),
+        pagina_pdf=1),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=EXT6,
+    corresponde_en=("AASHTO_M36.1.1",),
+    nota=("ToUnicode roto: leida sobre la PDF 1 renderizada a escala 3.0. El "
+          "ejemplar es la TRADUCCION AL ESPAÑOL (propiedad declarada en la "
+          "Fuente): el encabezado imprime «1 Alcance» y, arriba a la "
+          "derecha, «AASHTO No. M 36 / M 36M», la doble designacion. Su 1.4 "
+          "repite la clausula de M 170M Note 1 y M 36 1.3: la norma no "
+          "incluye cama, relleno ni la relacion carga-espesor, y remite la "
+          "instalacion a la Practica A798/A798M (ausente, DIS-HR-A807)."),
+)
+
+
+# ===========================================================================
+# EXT-6 -- AASHTO LRFD 9a ed., Seccion 12: lo que ancla el marco IN SITU
+# ===========================================================================
+
+AASHTO_12_4_2_4 = _cita(
+    id="AASHTO_LRFD_9.12.4.2.4",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.4.2.4",
+    titulo_numeral="Precast Concrete Structures",
+    pagina_impresa="12-8",
+    pagina_pdf=1646,
+    texto_literal=Verbatim(
+        texto=("Precast concrete arch, elliptical, and box structures shall "
+               "comply with the requirements of AASHTO M 206M/M 206 (ASTM "
+               "C506M and C506), M 207M/M 207 (ASTM C507M and C507), M 259 "
+               "(ASTM C789), and M 273 (ASTM C850)."),
+        pagina_pdf=1646),
+    caracter=Caracter.EXIGENCIA,
+    sesion=EXT6,
+    nota=("LA NORMA DE PRODUCTO DEL CAJON PREFABRICADO ES M 259 / M 273, y "
+          "las dos estan AUSENTES de normas/ (`fuentes.AASHTO_M259`, "
+          "`AASHTO_M273`). Es lo que sostiene la decision de "
+          "docs/ruta_familia_c.md §14.1 --- marco VACIADO IN SITU --- y el "
+          "rotulo «sin norma de producto» que M2 imprime para la seccion "
+          "rectangular (EXT-N-03): un marco in situ no es un producto que "
+          "se compra contra una especificacion, y rotularlo con la norma del "
+          "tubo (M 170M) era una atribucion falsa."),
+)
+
+AASHTO_12_11_1 = _cita(
+    id="AASHTO_LRFD_9.12.11.1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.1",
+    titulo_numeral="General",
+    pagina_impresa="12-68",
+    pagina_pdf=1706,
+    texto_literal=Verbatim(
+        texto=("The provisions herein shall apply to the structural design "
+               "of cast-in-place and precast reinforced concrete box "
+               "culverts and cast-in-place reinforced concrete arches with "
+               "the arch barrel monolithic with each footing."),
+        pagina_pdf=1706),
+    caracter=Caracter.EXIGENCIA,
+    sesion=EXT6,
+    nota=("El Art. 12.11 se titula «REINFORCED CONCRETE CAST-IN-PLACE AND "
+          "PRECAST BOX CULVERTS AND REINFORCED CAST-IN-PLACE ARCHES» "
+          "(partido en tres renglones en la misma pagina; por eso no va en "
+          "`jerarquia_numeral`). Rige el diseño estructural del marco in "
+          "situ Y del prefabricado; y su cuarto parrafo dice que las "
+          "dimensiones ESTANDAR del prefabricado estan en «AASHTO M 259 "
+          "(ASTM C789) and M 273 (ASTM C850)»: para el in situ no hay "
+          "dimensiones estandar, se proyectan. Es la mitad de diseño del "
+          "rotulo de M2: «diseño LRFD Sec. 5 y Art. 12.11»."),
+)
+
+
+# ===========================================================================
+# EXT-6 -- Manual de Puentes: la edicion de AASHTO LRFD que el MP ancla
+# ===========================================================================
+
+MP_INTRODUCCION_LRFD_2014 = _cita(
+    id="MP.INTRODUCCION#LRFD_2014",
+    fuente_id="MP",
+    numeral="Introducción al Manual de Puentes",
+    titulo_numeral="INTRODUCCIÓN AL MANUAL DE PUENTES",
+    pagina_impresa="43",
+    pagina_pdf=44,
+    texto_literal=Verbatim(
+        texto=("El Titulo II del Manual, presenta los aspectos de diseño que "
+               "son, en gran parte, una adaptación del AASHTO en su versión "
+               "LRFD BRIDGE DESIGN SPECIFICATIONS del año 2014, Septima "
+               "Edición. Asimismo la entidad y/o propietario podrá "
+               "considerar las actualizaciones de la AASTHO LRFD BRIDGE "
+               "DESIGN."),
+        pagina_pdf=44),
+    # PERMISO: «podrá considerar las actualizaciones». Es lo que autoriza al
+    # expediente a citar una LRFD posterior a la 7a de 2014 que el Manual
+    # adapta, y lo que la ficha de 'edicion_que_rige_el_expediente' decia
+    # que no existia («cuya edicion no la manda nadie», EXT-N-01).
+    caracter=Caracter.PERMISO,
+    metodo=AMBOS,
+    sesion=EXT6,
+    nota=("«AASTHO» y «Septima» sin tilde son de la fuente (sic). La "
+          "Presentacion (PDF 42, impresa 41) lo repite: la actualizacion "
+          "«se elaboró incorporando en gran parte las Especificaciones "
+          "Técnicas de las Normas Americanas AASHTO LRFD, Septima Edición "
+          "del año 2014». El registro cita la 9a ed. (2020) y la 10a (2024) "
+          "esta publicada: el MP ancla la 7a y PERMITE las posteriores a "
+          "«la entidad y/o propietario» --- no al proyectista, que propone "
+          "---, de modo que la eleccion entre 9a y 10a es tecnica "
+          "(DIS-MP-LRFD-EDICION dice por que la 9a es admisible; cual rige "
+          "es de 'edicion_que_rige_el_expediente')."),
+)
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
