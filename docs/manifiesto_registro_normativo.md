@@ -555,6 +555,7 @@ línea que se pueda romper.
 | `MP.2.4.3.11.2.1.1` | 2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F | «Definiciones de Clases de Sitio» | pág. impresa **122** · PDF 123 | definicion | 2026-08-29 · ambos |
 | `MP.2.4.3.11.2.1.1#EXCEPCIONES` | 2.4.3.11.2.1.1, bloque «Excepciones» | «Definiciones de Clases de Sitio» | pág. impresa **122** · PDF 123 | exigencia | 2026-08-29 · texto |
 | `MP.2.4.3.8.2` | 2.4.3.8.2 | «Subpresiones» | pág. impresa **113** · PDF 114 | exigencia | 2026-08-28 · texto |
+| `MP.2.4.4.1.5.3` | 2.4.4.1.5.3 | «Coeficiente de Empuje Lateral Activo, ka» | pág. impresa **135** · PDF 136 | permiso | 2026-09-20 · texto |
 | `MP.2.4.5.2#EV` | 2.4.5.2 | «Cargas y Denominación de las Cargas» | pág. impresa **140** · PDF 141 | definicion | 2026-08-28 · texto |
 | `MP.2.4.5.3.1#MINIMO` | 2.4.5.3.1 | «Factores de Carga y Combinaciones de Carga» | pág. impresa **142** · PDF 143 | exigencia | 2026-08-28 · texto |
 | `MP.2.8.1.1.14.1#EXC` | 2.8.1.1.14.1 | «Generalidades» | pág. impresa **253** · PDF 254 | exigencia | 2026-09-12 · texto |
@@ -579,6 +580,8 @@ línea que se pueda romper.
 > **`MP.2.4.3.11.2.1.1#EXCEPCIONES`** — LA MISMA PROHIBICION QUE AASHTO, Y MAS DURA: donde AASHTO dice «should not be assumed», el Manual escribe «NO SERAN SUPUESTAS». La norma nacional endurece la traduccion, de modo que por la Via 1 (AASHTO) o por la Via 2 (Manual) el resultado es el mismo y el expediente no puede elegir la version blanda. «Entidaddetermine», sin espacio, es errata del impreso y se transcribe tal cual (T21). DOS PUERTAS Y UN DEBER: la prohibicion cede si la Entidad determina la clase -- via autonoma, sin dato geotecnico -- o si la establecen datos geotecnicos; y la oracion anterior manda «se emprenderá una investigación de sitio suficiente para definir su clase». Este expediente no tiene ninguna de las dos puertas abiertas y si tiene el deber pendiente.
 
 > **`MP.2.4.3.8.2`** — SU AMBITO ES NEUTRO RESPECTO DE LA FORMA y por eso el marco entra DIRECTO, sin analogia que declarar: dice «todos los componentes de la estructura», no «la tuberia». DEFINE LA FUERZA U y nada mas: no fija estado limite, ni combinacion, ni criterio de aceptacion. La desigualdad que V7 evalua NO sale de aqui -- ver el `por_que` de F5.V7 --. El «2.4.3.8.1» al que remite es el empuje hidrostatico general, del que esta es la componente vertical.
+
+> **`MP.2.4.4.1.5.3`** — ES COULOMB (3.11.5.3 AASHTO): ka = sen²(θ + φ'f) / [r·sen²θ·sen(θ − δ)], con r = [1 + √(sen(φ'f + δ)·sen(φ'f − β) / (sen(θ − δ)·sen(θ + β)))]², ecs. 2.4.4.1.5.3-1 y -2 (PDF 136); la simbologia (Figura 2.4.4.1.5.3-1, «empuje activo de Coulomb») y la Tabla 2.4.4.1.5.3-1 de δ estan en la PDF 137 (pag. impresa 136). θ es el angulo de la cara posterior del muro con la HORIZONTAL y β el del relleno con la horizontal: en la formulacion de M9 (Mononobe-Okabe con k_h = k_v = 0) el trasdos se mide desde la VERTICAL (β_M9 = 90° − θ) y el talud del relleno es i (= β del Manual); la identidad entre las dos escrituras es exacta y la recalcula el bloque __main__ de tests/fixtures/casos_patron.py (CP-9, bloque C). Con θ = 90°, δ = 0 y β = 0 se reduce a tan²(45 − φ/2), la forma que la v8 §9.2 escribia (DIS-HR-KA-COULOMB, resuelta en EXT-0). El «se puede tomar» es PERMISO: la fuente ofrece la expresion, no la impone; el proyecto la adopta como coeficiente estatico por homogeneidad con el sismico (EXT-M-06).
 
 > **`MP.2.4.5.2#EV`** — LO QUE LA DEFINICION NO DICE, y hay que decirlo porque el proyecto lo da por supuesto: no aparecen las palabras «sobre», «encima» ni «cobertura». Que EV sea el relleno que descansa SOBRE la estructura es una lectura -- razonable y estandar, y sostenida por la fila «enterrada» que se elige, no por esta frase --. Se transcribe el predicado y no la linea entera («EV = presion...») porque la tabla de simbolos separa el simbolo del texto y el volcado los reordena.
 
@@ -1689,6 +1692,10 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: se declara vacio lo que la norma adoptada tabula, y la cobertura minima queda sin piso
   - *hoja_de_ruta*: su Sec. 7.A decia «No fijado. Remite al Proyecto, AASHTO M-170M (clases I-V) o ASTM A-807». CORREGIDA EN I2: la fila remite a AASHTO LRFD 12.6.6.3 / Tabla 12.6.6.3-1, y el comentario del Anexo B tambien
   - *AASHTO_LRFD_9*: el Art. 12.6.6.3 y la Tabla 12.6.6.3-1 tabulan la cobertura minima para los tres tipos de conducto del catalogo
+- **`DIS-HR-KA-COULOMB` — el coeficiente de empuje activo ESTATICO del trasdos del cabezal.** Gana **MP**: es la fuente primaria del marco elegido en §9.1 y la unica formulacion homogenea con el incremento sismico: restar un K_AE de Mononobe-Okabe (con i, β y δ) a un Ka de Rankine (que ignora los tres) mezcla dos modelos sobre el mismo muro. La hoja de ruta transcribia el caso particular sin nombrarlo
+  - Si se sigue la otra: con i = β = δ = 0 ningun numero se mueve; en cuanto alguno deja de ser cero el coeficiente cambia (en el bloque C de CP-9, +9.7 % con i = 5°, β = 5° y δ = 17°; barriendo las cuatro ventanas declaradas, de −11.1 % a +44.4 %, y NO el «−6.25 % a +7.23 %» que la enmienda de EXT-0 escribio en la v8 y que EXT-7 corrigio), y quien lea la hoja sin leer el codigo dimensionara con el coeficiente equivocado
+  - *hoja_de_ruta*: su §9.2 escribia «Ka = tan²(45 − φ/2)» sin decir de donde salia, y el codigo la seguia: empuje estatico y sobrecarga con Rankine (`ka_rankine`) mientras el incremento sismico iba con Mononobe-Okabe, que es Coulomb con aceleracion. CORREGIDA EN EXT-0: la linea nombra el Ka de Coulomb del Manual y dice que con β = δ = 0 y trasdos vertical se reduce a la forma que escribia
+  - *MP*: el coeficiente de empuje lateral activo «se puede tomar como» la expresion de Coulomb, ecs. 2.4.4.1.5.3-1 y -2, con θ, δ y β; con angulos nulos coincide con tan²(45 − φ/2) (diferencia medida −5.6e-17)
 - **`DIS-HR-M294-PASO` — donde empieza el paso de 150 mm en la serie de diametros nominales del HDPE (AASHTO M 294).** Gana **AASHTO_M294_TRAD**: la fuente imprime la serie diametro a diametro y la hoja de ruta la resumia de memoria. Es una traduccion no oficial, sin firma, y es lo unico que hay en normas/; el original en ingles (ausente) tendria que confirmarlo. No cambia ningun valor del proyecto: la progresion arranca en 0.90 m y desde ahi la serie SI es de 150 mm, que es lo que 'diametros_normalizados' afirma y CP11 comprueba; lo que estaba mal era la frase que lo justificaba
   - Si se sigue la otra: quien leyera la v8 creeria que M 294 no tabula el 675 mm; para el calculo es inocuo, porque ningun tamaño bajo 0.90 m se recorre, y por eso se corrige la frase y no el criterio
   - *hoja_de_ruta*: su §3.2, «Por qué funciona», escribia que «AASHTO M294 lo hace en pasos de 150 mm por encima de 600 mm», con lo que tras el 600 vendria el 750 y no existirian ni el 675 ni el paso de 75 mm. CORREGIDA EN N2 con la nota «Corregido (DIS-HR-M294-PASO, N2)»: el paso de 150 mm empieza en 750 mm
@@ -1746,7 +1753,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 172.
+Citas sin firma de verificación: **5** de 173.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

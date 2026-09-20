@@ -43,6 +43,7 @@ from pathlib import Path
 import pytest
 
 import cli
+import constantes_normativas as CN
 import criterios_adoptados as ca
 import declaracion as dec
 import variables_entrada as ve
@@ -276,6 +277,10 @@ def test_cortante_alto_declara_la_cuantia_que_M9_lee_y_no_un_si_no():
     with pytest.raises(ValueError, match="forma"):
         ca.establecer_valor_dinamico(clave, "si")
     ca.establecer_valor_dinamico(clave, 0.0025)
+    # EXT-7: con cortante alto M9 pregunta primero en que PLANO actua el
+    # cortante (E.060 11.10.2); se declara aqui para llegar al piso.
+    ca.establecer_valor_dinamico("regimen_cortante_muro_e060_art_11_10_2",
+                                 CN.REGIMEN_CORTANTE_EN_EL_PLANO)
     cuantia = M9.cuantia_de_diseno(cuantia_calculada=0.001,
                                    direccion="horizontal", cortante_alto=True)
     assert cuantia.cuantia_minima == pytest.approx(0.0025, rel=REL_TRANSPORTE)

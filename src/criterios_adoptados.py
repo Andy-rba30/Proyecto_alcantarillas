@@ -69,7 +69,9 @@ from typing import Any, Optional, Tuple, Dict, List, Set
 
 from constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    H_O_CONDICION_TEXTO, H_O_NUMERAL,
-                                   KE_HDS5_C2, MANNING, V_MIN)
+                                   KE_HDS5_C2, MANNING, V_MIN,
+                                   REGIMEN_CORTANTE_EN_EL_PLANO,
+                                   REGIMEN_CORTANTE_PERPENDICULAR)
 from normativa import esquema as _esquema
 from normativa import registro as _registro_normativo
 from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
@@ -1648,11 +1650,26 @@ CRITERIOS: Dict[str, Criterio] = {
                "cabezal (DG-2018) o el detalle de coronacion del terraplen",
         reemplazado_por="Geometria medida sobre la seccion transversal del "
                         "punto de cruce",
+        # LA VENTANA NO ES ALCANZABLE ENTERA EN CONDICION SISMICA: con el
+        # k_h = 0.50 de esta obra (psi = 26.6 grados) Mononobe-Okabe solo
+        # tiene solucion para i < phi - psi, o sea 3.4 grados con phi = 30 y
+        # 8.4 grados con phi = 35; el limite de 10 grados solo se alcanza con
+        # phi >= 36.6. Desde EXT-7 i entra tambien en el Ka de Coulomb del
+        # empuje ESTATICO, que si existe en toda la ventana.
         sensibilidad=(0.0, 10.0),   # grados; horizontal frente a talud suave
         verificacion_pendiente="Declarar si el relleno corona horizontal "
                                "contra el muro (i = 0) o continua con el "
                                "talud del terraplen: son dos detalles "
-                               "constructivos distintos, no un matiz",
+                               "constructivos distintos, no un matiz. Y "
+                               "comprobar el dominio sismico antes de "
+                               "declarar: con k_h = 0.50 (psi = 26.6 "
+                               "grados) Mononobe-Okabe solo tiene solucion "
+                               "para i menor que phi - 26.6 grados, es "
+                               "decir 3.4 grados con phi = 30 grados y 8.4 "
+                               "grados con phi = 35 grados; la ventana de 0 "
+                               "a 10 grados no es alcanzable entera en "
+                               "condicion sismica, y el Ka de Coulomb del "
+                               "empuje estatico si existe en toda ella",
         resolucion=Libre(
             que_lo_fija="el proyectista, sobre la seccion tipica del "
                         "expediente vial o el detalle de coronacion del "
@@ -6186,6 +6203,122 @@ CRITERIOS: Dict[str, Criterio] = {
                         "11.10.10.2 es una sola frase y NO define umbral "
                         "(NOR-E060-03)",
             dominio="cuantia adimensional > 0",
+        ),
+    ),
+
+    # ---- EXT-M-05 / R95-031: el regimen del cortante y el piso VERTICAL ---
+    # Dos preguntas que la ficha anterior no hacia y que deciden si el 0.0025
+    # rige. La PRIMERA es de aplicabilidad: E.060 11.10.2 restringe 11.10.3 a
+    # 11.10.10 al cortante EN EL PLANO del muro, y 11.10.1 manda el cortante
+    # perpendicular al plano a las losas de 11.12. Un cabezal en voladizo
+    # bajo empuje de tierras trabaja perpendicular a su plano; si ese es el
+    # cortante que dispara la pregunta, ni el 11.10.10.2 ni el .3 rigen y el
+    # minimo es el del 14.3.1. La SEGUNDA es el piso vertical: bajo el regimen
+    # de 11.10.10 la cuantia vertical tambien tiene piso 0.0025 (ec. 11-32),
+    # y M9 devolvia 0.0015 afirmando lo contrario. Ninguna de las dos se
+    # contesta aqui: se detienen.
+
+    "regimen_cortante_muro_e060_art_11_10_2": Criterio(
+        valor=None,                 # VACIO: decide si el 11.10.10 rige
+        # NIVEL: lo consume `M9.cuantia_de_diseno`, que ninguna corrida
+        # invoca (armado del num. 9.4, sin consumidor de produccion); M9 es
+        # Fase 9 y la corrida de perfil la difiere entera.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        concepto="En que plano actua la fuerza cortante que pone al muro del "
+                 "cabezal bajo el regimen de E.060 11.10.10: en el plano del "
+                 "muro (11.10.2) o perpendicular a el (11.10.1, losas de "
+                 "11.12)",
+        justificacion="Decide si los dos pisos de cuantia de 11.10.10.2 y "
+                      "11.10.10.3 rigen o no. Lo que la fuente dice: el "
+                      "11.10.2 aplica 11.10.3 a 11.10.10 a las fuerzas "
+                      "cortantes horizontales en el plano del muro, y el "
+                      "11.10.1 manda las perpendiculares al plano a las "
+                      "disposiciones para losas de 11.12. Lo que la fuente "
+                      "no resuelve: en que plano actua el cortante de ESTE "
+                      "muro. Un cabezal en voladizo bajo empuje de tierras "
+                      "trabaja perpendicular a su plano, y con esa lectura "
+                      "ninguno de los dos pisos escalona nada; pero un "
+                      "cabezal con aletas o un muro corto cargado en su "
+                      "plano puede caer en 11.10.2, y decidirlo exige el "
+                      "diseno estructural delante, que esta bloqueado en "
+                      "'procedimiento_flexion_corte_aashto_sec5'. Contestar "
+                      "'perpendicular' por defecto elegiria el minimo mas "
+                      "bajo en silencio; contestar 'en el plano' por defecto "
+                      "impondria 0.0025 a un muro que la norma manda diseñar "
+                      "por 11.12. Se declara vacio y `M9.cuantia_de_diseno` "
+                      "lo pregunta antes que nada cuando quien llama afirma "
+                      "cortante alto",
+        fuente="PENDIENTE - E.060 11.10.1 y 11.10.2, pag. impresa 103, "
+               "verificados contra el PDF (citas E060.11.10.1 y E060.11.10.2 "
+               "del registro): la norma reparte los dos planos, no dice en "
+               "cual esta este muro",
+        reemplazado_por="Diseno estructural del cabezal (AASHTO LRFD Sec. 5 "
+                        "por la Via 1 de Sec. 0.2) que diga en que plano "
+                        "actua la demanda Vu que dispara 11.10.10.1",
+        sensibilidad=(REGIMEN_CORTANTE_EN_EL_PLANO,
+                      REGIMEN_CORTANTE_PERPENDICULAR),
+        verificacion_pendiente="Al cerrarlo, declarar en la memoria en que "
+                               "plano actua el cortante y que articulo de "
+                               "E.060 gobierna por eso el diseno por corte "
+                               "del muro: 11.10.3 a 11.10.10, o 11.12",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el diseno estructural del "
+                        "cabezal delante: si la demanda de cortante actua "
+                        "en el plano del muro (11.10.2) o perpendicular a "
+                        "el (11.10.1, losas de 11.12)",
+            dominio="una de las dos lecturas del plano del cortante",
+        ),
+    ),
+
+    "cuantia_vertical_cortante_alto_e060_art_11_10_10_3": Criterio(
+        valor=None,                 # VACIO: bloquea el piso VERTICAL bajo 11.10.10
+        # NIVEL: mismo consumidor y misma razon que el regimen de arriba.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        # `float`, como su hermano horizontal: lo que M9 lee es la CUANTIA
+        # vertical que rige bajo el regimen de 11.10.10, y hace `float()`
+        # sobre ella. La ec. (11-32) NO la evalua este software.
+        forma=FORMA_FLOAT,
+        concepto="Cuantia vertical minima del muro del cabezal bajo el "
+                 "regimen de cortante en el plano de E.060 11.10.10, "
+                 "ec. (11-32) del 11.10.10.3",
+        justificacion="Es el piso vertical que faltaba: bajo el regimen de "
+                      "11.10.10 la cuantia vertical no es el 0.0015 del "
+                      "14.3.1 sino la de la ec. (11-32), que no baja de "
+                      "0.0025 y no necesita superar la rho_h requerida por "
+                      "11.10.10.1. La ecuacion depende de tres cosas que "
+                      "este software no tiene: la altura total del muro hm, "
+                      "su longitud total lm -- la geometria del cabezal "
+                      "('predimensionamiento_cabezal') no lleva longitud -- "
+                      "y la rho_h requerida por 11.10.10.1, que sale de una "
+                      "demanda Vu que el diseno por flexion y corte no "
+                      "produce ('procedimiento_flexion_corte_aashto_sec5'). "
+                      "Sin las tres la ecuacion no se puede evaluar, y "
+                      "evaluarla con hm/lm supuesto seria inventar una "
+                      "dimension del cabezal. Se declara vacio: quien tenga "
+                      "las tres la evalua fuera y declara aqui el resultado, "
+                      "y `M9.cuantia_de_diseno` lo aplica como minimo en la "
+                      "direccion vertical cuando el cortante es alto y actua "
+                      "en el plano",
+        fuente="PENDIENTE - E.060 11.10.10.3, ec. (11-32), pag. impresa "
+               "104, verificado sobre la pagina renderizada (cita "
+               "E060.11.10.10.3 del registro, con la ecuacion en su nota): "
+               "el piso y la ecuacion estan; hm, lm y rho_h requerida no",
+        reemplazado_por="Evaluacion de la ec. (11-32) con hm y lm del "
+                        "cabezal dimensionado y la rho_h requerida por "
+                        "11.10.10.1 del diseno por corte",
+        verificacion_pendiente="Al cerrarlo, declarar en la memoria hm, lm, "
+                               "la rho_h requerida por 11.10.10.1 y el "
+                               "resultado de la ec. (11-32) con su tope",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, evaluando la ec. (11-32) del "
+                        "11.10.10.3 con hm (altura total del muro), lm "
+                        "(longitud total del muro) y la rho_h requerida por "
+                        "11.10.10.1; el resultado no baja de 0.0025 ni "
+                        "necesita superar esa rho_h",
+            dominio="cuantia adimensional, no menor que 0.0025",
         ),
     ),
 

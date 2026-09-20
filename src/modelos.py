@@ -3585,6 +3585,11 @@ class EmpujesTrasdos:
     h_eq_sobrecarga: Optional[float] = None      # m - altura de suelo equivalente
     orientacion_muro: Optional[str] = None       # respecto al trafico
     numeral_sobrecarga: str = ""                 # las DOS fuentes que la sostienen
+    # DE DONDE SALE `K_A` (EXT-M-06): el Ka de Coulomb del Manual de Puentes
+    # (num. 2.4.4.1.5.3), el mismo que resta el incremento sismico. Hasta
+    # EXT-7 era el de Rankine y el objeto no decia cual: dos coeficientes
+    # sobre el mismo muro y ningun campo que lo delatara.
+    numeral_k_a: str = ""
 
     def __post_init__(self) -> None:
         """
@@ -3924,7 +3929,18 @@ class CuantiaRefuerzo:
     cuantia_adoptada: float               # max de las dos
     gobierna: str                         # "calculo" o "minimo_normativo"
     numeral: str
-    criterio_cortante_alto: str           # clave en criterios_adoptados.py
+    # La clave del PISO que se leyo bajo el regimen de 11.10.10 (horizontal o
+    # vertical); vacia cuando el minimo es el del 14.3.1, sea porque no hubo
+    # cortante alto o porque el regimen declarado es perpendicular al plano.
+    criterio_cortante_alto: str           # clave en criterios_adoptados.py, o ""
+    # EL PLANO DEL CORTANTE, que decide si el regimen de 11.10.10 rige
+    # (EXT-M-05). `None` cuando quien llama no afirmo cortante alto: la ficha
+    # ni se abrio. Con cortante alto lleva la categoria declarada en
+    # `criterio_regimen_cortante` (en el plano / perpendicular), porque el
+    # minimo aplicado no se puede defender sin decir en que plano actua la
+    # demanda que lo dispara.
+    regimen_cortante: Optional[str] = None
+    criterio_regimen_cortante: str = ""
 
 
 @dataclass(frozen=True)
@@ -3937,12 +3953,74 @@ class EstabilidadCabezal:
     El mismo cabezal se verifica dos veces, una por `CondicionAnalisis`: el
     resultado estatico y el sismico son dos objetos, no dos campos de uno,
     porque cambian a la vez las fuerzas y los umbrales.
+
+    LO QUE `estable` SIGNIFICA, y lo que significaba (EXT-M-07). Hasta EXT-7
+    `estable` era `not verificaciones_incumplidas`: True con E1-E3 solas --
+    la particion E1-E3 / E4-E5 es deliberada, porque E4 y E5 salen de un
+    analisis de taludes que este software no hace -- y True tambien con el
+    conjunto VACIO. Un docstring que prometia cinco verificaciones sobre una
+    propiedad que se conformaba con cero. Hoy el objeto lleva `exigidas`, las
+    filas que la tabla de Sec. 9.3 pide (derivadas de
+    `constantes_normativas.FS_CODIGO`, no escritas aqui), y las tres
+    preguntas se contestan por separado:
+
+        estabilidad_interna_cumple   las que SI se resolvieron cumplen todas
+        pendientes                   las exigidas que nadie resolvio
+        estable                      todas las exigidas presentes Y cumplidas
+
+    El invariante va en el tipo y no en el llamador: ni un expediente vacio
+    ni una verificacion con un codigo que la tabla no exige se pueden
+    construir (`ValueError`, por la misma razon que `EmpujesTrasdos`: es un
+    estado imposible del programa, no un dato del expediente).
+
+    `motivos_pendientes` dice POR QUE falta cada pendiente -- la clave del
+    criterio que la bloquea --, para que la memoria imprima «E4: pendiente
+    de 'metodo_estabilidad_global'» y no una fila en blanco. Solo puede
+    hablar de codigos que de verdad falten.
     """
 
     condicion: CondicionAnalisis
     geometria: GeometriaCabezal
     verificaciones: Tuple[Verificacion, ...]
+    exigidas: Tuple[str, ...]
     numeral: str = "Sec. 9.3 (E.050)"
+    motivos_pendientes: Tuple[Tuple[str, str], ...] = ()   # (codigo, clave)
+
+    def __post_init__(self) -> None:
+        if not self.exigidas:
+            raise ValueError(
+                "EstabilidadCabezal: `exigidas` esta vacio. Sin la lista de "
+                "filas que la tabla de Sec. 9.3 pide, `estable` no tiene "
+                "contra que medirse; es un invariante del tipo, no un dato "
+                "del expediente")
+        if len(set(self.exigidas)) != len(self.exigidas):
+            raise ValueError(
+                "EstabilidadCabezal: `exigidas` repite un codigo: "
+                f"{self.exigidas}")
+        if not self.verificaciones:
+            raise ValueError(
+                "EstabilidadCabezal: el conjunto de verificaciones esta "
+                "vacio. Un expediente sin ninguna fila resuelta no es "
+                "«estable»: hasta EXT-7 lo era, porque `estable` solo "
+                "miraba que no hubiera incumplidas")
+        codigos = [v.codigo for v in self.verificaciones]
+        fuera = [c for c in codigos if c not in self.exigidas]
+        if fuera:
+            raise ValueError(
+                "EstabilidadCabezal: verificaciones con un codigo que la "
+                f"tabla de Sec. 9.3 no exige: {fuera}. Las exigidas son "
+                f"{self.exigidas}")
+        if len(set(codigos)) != len(codigos):
+            raise ValueError(
+                f"EstabilidadCabezal: codigo repetido en las verificaciones: "
+                f"{codigos}")
+        presentes = set(codigos)
+        motivos_fuera = [c for c, _ in self.motivos_pendientes
+                         if c in presentes or c not in self.exigidas]
+        if motivos_fuera:
+            raise ValueError(
+                "EstabilidadCabezal: `motivos_pendientes` habla de codigos "
+                f"que no estan pendientes: {motivos_fuera}")
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
@@ -3950,9 +4028,24 @@ class EstabilidadCabezal:
         return tuple(v for v in self.verificaciones if not v.cumple)
 
     @property
-    def estable(self) -> bool:
-        """True si las cinco verificaciones de Sec. 9.3 cumplen."""
+    def pendientes(self) -> Tuple[str, ...]:
+        """Las exigidas que nadie resolvio, en el orden de la tabla."""
+        presentes = {v.codigo for v in self.verificaciones}
+        return tuple(c for c in self.exigidas if c not in presentes)
+
+    @property
+    def estabilidad_interna_cumple(self) -> bool:
+        """
+        True si TODAS las verificaciones resueltas cumplen. No dice nada de
+        las pendientes: es lo que `estable` afirmaba hasta EXT-7, con su
+        nombre verdadero.
+        """
         return not self.verificaciones_incumplidas
+
+    @property
+    def estable(self) -> bool:
+        """True solo con las exigidas TODAS presentes y TODAS cumplidas."""
+        return not self.pendientes and not self.verificaciones_incumplidas
 
 
 # ===========================================================================

@@ -1,4 +1,4 @@
-# Sello · fecha: 2026-09-20 · commit: 363091b · alcance: registro completo, una fila por Cita: 172 citas de 16 fuentes · suite: 2413 passed, 4 skipped (PyMuPDF sí · ventana Tk sí)
+# Sello · fecha: 2026-09-20 · commit: 3c22741+cambios-sin-commit · alcance: registro completo, una fila por Cita: 173 citas de 16 fuentes · suite: 2471 passed, 4 skipped (PyMuPDF sí · ventana Tk sí)
 cita_id,fuente_id,norma,edicion,numeral,titulo_numeral,pagina_impresa,pagina_pdf,caracter,metodo_verificacion,fecha_verificacion,tiene_interpretacion,discrepancias_que_la_tocan,consumidores_declarados
 AASHTO_LRFD_9.10.5.4.2,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",10.5.4.2,Liquefaction Design Requirements,10-34,1323,exigencia,texto,2026-08-29,no,DIS-HR-VIA-DE-LA-LICUEFACCION [resuelta],
 AASHTO_LRFD_9.10.5.4.2#ESPECTRO,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020","10.5.4.2, configuracion licuada",Liquefaction Design Requirements,10-34,1323,recomendacion,texto,2026-08-29,no,DIS-HR-VIA-DE-LA-LICUEFACCION [resuelta],
@@ -152,6 +152,7 @@ MP.2.4.3.11.2#CLASE_F,MP,Manual de Puentes,Version Libro,2.4.3.11.2,Peligro Sís
 MP.2.4.3.11.2.1.1,MP,Manual de Puentes,Version Libro,"2.4.3.11.2.1.1, Tabla 2.4.3.11.2.1.1-1, fila F",Definiciones de Clases de Sitio,122,123,definicion,ambos,2026-08-29,no,,
 MP.2.4.3.11.2.1.1#EXCEPCIONES,MP,Manual de Puentes,Version Libro,"2.4.3.11.2.1.1, bloque «Excepciones»",Definiciones de Clases de Sitio,122,123,exigencia,texto,2026-08-29,no,DIS-HR-CLASE-DE-SITIO-F [resuelta],
 MP.2.4.3.8.2,MP,Manual de Puentes,Version Libro,2.4.3.8.2,Subpresiones,113,114,exigencia,texto,2026-08-28,no,,fundamento F5.V7 (Fase 5 - Verificaciones)
+MP.2.4.4.1.5.3,MP,Manual de Puentes,Version Libro,2.4.4.1.5.3,"Coeficiente de Empuje Lateral Activo, ka",135,136,permiso,texto,2026-09-20,no,DIS-HR-KA-COULOMB [resuelta],
 MP.2.4.5.2#EV,MP,Manual de Puentes,Version Libro,2.4.5.2,Cargas y Denominación de las Cargas,140,141,definicion,texto,2026-08-28,no,,fundamento F5.V7 (Fase 5 - Verificaciones); fundamento F5.V7_FILA (Fase 5 - Verificaciones)
 MP.2.4.5.3.1#MINIMO,MP,Manual de Puentes,Version Libro,2.4.5.3.1,Factores de Carga y Combinaciones de Carga,142,143,exigencia,texto,2026-08-28,no,DIS-AASHTO-GAMMA-EV-12.6.1 [abierta],fundamento F5.V7 (Fase 5 - Verificaciones)
 MP.T2.4.5.3.1-1,MP,Manual de Puentes,Version Libro,"2.4.5.3.1, Tabla 2.4.5.3.1-1",Factores de Carga y Combinaciones,143,144,exigencia,texto,2026-08-28,no,,fundamento F5.V7 (Fase 5 - Verificaciones); tabla MP.TCOMB -> M8.factores_carga_flotacion; tabla MP.TCOMB -> M9.combinaciones; tabla MP.TCOMB -> M9.demanda_sismica_cabezal; tabla MP.TCOMB -> M9.empujes_trasdos

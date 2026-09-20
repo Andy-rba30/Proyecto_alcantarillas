@@ -638,6 +638,39 @@ CP9_EMPUJE_TRASDOS = {
     "B_brazo_fraccion": 0.6,               # 'punto_aplicacion_incremento_sismico'
     "B_z_incremento_esperado": 1.440000000,   # m; el mutante `/ H` daria 0.25
 
+    # --- Bloque C: Coulomb con angulos NO nulos, dentro de las ventanas ---
+    # EXT-M-06. Los bloques A y B tienen i = beta = delta = 0, donde Coulomb y
+    # Rankine coinciden hasta el ultimo bit: un empuje estatico calculado con
+    # cualquiera de los dos pasaba. Este bloque pone los tres angulos distintos
+    # de cero y DENTRO de las ventanas de sensibilidad de sus criterios (i y
+    # beta en 0-10 grados, delta en 0-22.7; el i = 20 de la auditoria no es
+    # declarable), con phi = 34 y delta = phi/2 -- concreto contra granular --.
+    # k_h = 0.25 y k_v = 0.05 dejan phi - psi - i = 14.3 grados, lejos del
+    # borde del dominio; con el k_h = 0.50 de la obra, psi = 26.6 y la ventana
+    # de i no es alcanzable entera (i < phi - psi: 3.4 grados con phi = 30).
+    #
+    # DORADOS por recomputacion INDEPENDIENTE en el bloque __main__: el Ka se
+    # recalcula con la escritura del Manual de Puentes (num. 2.4.4.1.5.3, ecs.
+    # -1 y -2, con theta medido desde la HORIZONTAL: theta = 90 - beta), que
+    # es algebraicamente distinta de la de Mononobe-Okabe con k = 0 que usa
+    # M9; coinciden a 5.6e-17. Double exacto redondeado a 9 decimales.
+    "C_phi_grados": 34.0,
+    "C_i_grados": 5.0,
+    "C_beta_grados": 5.0,
+    "C_delta_grados": 17.0,
+    "C_k_h": 0.25,
+    "C_k_v": 0.05,
+    "C_gamma_relleno": 18.5,               # kN/m3
+    "C_H": 2.4,                            # m
+    "C_K_A_coulomb_esperado": 0.310057323,     # MP 2.4.4.1.5.3, theta = 85
+    "C_K_A_rankine_esperado": 0.282714920,     # tan^2(45 - phi/2): NO es el Ka
+    "C_diferencia_relativa_coulomb_rankine": 0.096713691,   # +9.67 %
+    "C_psi_grados_esperado": 14.743562836,
+    "C_K_AE_esperado": 0.551134269,
+    "C_P_A_esperado": 16.519854173,        # kN/m, con el Ka de COULOMB
+    "C_P_AE_esperado": 27.896212172,       # kN/m
+    "C_incremento_P_esperado": 11.376357999,   # kN/m
+
     # Tolerancia RELATIVA del contraste. Vive aqui y no como literal en
     # tests/test_M9_cabezal.py por la misma razon que los dorados (SIS-F-14).
     "tolerancia_relativa": 1e-7,
@@ -1271,6 +1304,49 @@ if __name__ == "__main__":
     # Con i = beta = delta = 0 el K_A de Coulomb TIENE que ser el de Rankine
     _cerca(_K_A_B, math.tan(math.radians(45 - _cp9["B_phi_grados"] / 2)) ** 2,
            "B_K_A_esperado (contra Rankine)")
+
+    # Bloque C: Coulomb con angulos no nulos, recalculado con la ESCRITURA
+    # DEL MANUAL DE PUENTES (num. 2.4.4.1.5.3, ecs. -1 y -2), no con la de
+    # Mononobe-Okabe: theta es el angulo de la cara posterior del muro con
+    # la horizontal (theta = 90 - beta_M9) y beta_MP el del relleno (= i).
+    def _ka_coulomb_manual(phi_g, i_g, beta_g, delta_g):
+        theta = math.radians(90.0 - beta_g)
+        phi, beta_mp, delta = (math.radians(a) for a in (phi_g, i_g, delta_g))
+        r = (1 + math.sqrt(math.sin(phi + delta) * math.sin(phi - beta_mp)
+                           / (math.sin(theta - delta)
+                              * math.sin(theta + beta_mp)))) ** 2
+        return (math.sin(theta + phi) ** 2
+                / (r * math.sin(theta) ** 2 * math.sin(theta - delta)))
+
+    _K_A_C = _ka_coulomb_manual(_cp9["C_phi_grados"], _cp9["C_i_grados"],
+                                _cp9["C_beta_grados"], _cp9["C_delta_grados"])
+    _cerca(_K_A_C, _cp9["C_K_A_coulomb_esperado"], "C_K_A_coulomb_esperado")
+    # y la misma cifra por la formulacion de M-O con k = 0: las dos escrituras
+    # son la misma formula (identidad exacta, no coincidencia numerica)
+    _K_A_C_mo, _ = _k_ae_independiente(
+        _cp9["C_phi_grados"], _cp9["C_i_grados"], _cp9["C_beta_grados"],
+        _cp9["C_delta_grados"], 0.0, 0.0)
+    assert abs(_K_A_C_mo - _K_A_C) <= 1e-15, "Coulomb (MP) != Mononobe-Okabe(k=0)"
+    _K_A_rank_C = math.tan(math.radians(45 - _cp9["C_phi_grados"] / 2)) ** 2
+    _cerca(_K_A_rank_C, _cp9["C_K_A_rankine_esperado"], "C_K_A_rankine_esperado")
+    _cerca((_K_A_C - _K_A_rank_C) / _K_A_rank_C,
+           _cp9["C_diferencia_relativa_coulomb_rankine"],
+           "C_diferencia_relativa_coulomb_rankine")
+    assert _K_A_C > _K_A_rank_C, "con i, beta, delta > 0 Coulomb tiene que superar a Rankine aqui"
+    _K_AE_C, _psi_C = _k_ae_independiente(
+        _cp9["C_phi_grados"], _cp9["C_i_grados"], _cp9["C_beta_grados"],
+        _cp9["C_delta_grados"], _cp9["C_k_h"], _cp9["C_k_v"])
+    _cerca(_psi_C, _cp9["C_psi_grados_esperado"], "C_psi_grados_esperado")
+    _cerca(_K_AE_C, _cp9["C_K_AE_esperado"], "C_K_AE_esperado")
+    _P_A_C = _cp9["C_gamma_relleno"] * _cp9["C_H"] ** 2 * _K_A_C / 2
+    _P_AE_C = (_cp9["C_gamma_relleno"] * _cp9["C_H"] ** 2
+               * (1 - _cp9["C_k_v"]) * _K_AE_C / 2)
+    _cerca(_P_A_C, _cp9["C_P_A_esperado"], "C_P_A_esperado")
+    _cerca(_P_AE_C, _cp9["C_P_AE_esperado"], "C_P_AE_esperado")
+    _cerca(_P_AE_C - _P_A_C, _cp9["C_incremento_P_esperado"],
+           "C_incremento_P_esperado")
+    print(f"CP-9 bloque C verificado: Ka(Coulomb)={_K_A_C:.9f} "
+          f"Ka(Rankine)={_K_A_rank_C:.9f} K_AE={_K_AE_C:.9f} P_A={_P_A_C:.6f}")
     print(f"CP-9 empujes verificado: P_AE(A)={_P_AE_A:.6f}  K_AE(B)={_K_AE_B:.6f}  "
           f"P_AE(B)={_P_AE_B:.6f}  dP_AE(B)={_P_AE_B - _P_A_B:.6f}")
     # --- CP-2 y CP-8 --------------------------------------------------------

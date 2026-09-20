@@ -3070,6 +3070,31 @@ NUMERAL_RECUBRIMIENTO_MP = (
 # el registro como `MP.2.1.4.3.9`, declarado como lo que es, para que quien
 # venga con la cita vieja en la mano encuentre por que no vale.
 NUMERAL_SOBRECARGA_TRASDOS = _reg.cita("MP.2.4.2.2#SOBRECARGA").como_texto()
+# EL Ka ESTATICO ES EL DE COULOMB DEL MANUAL (EXT-M-06). La v8 §9.2 escribia
+# «Ka = tan²(45 − φ/2)» -- Rankine -- sin decir de donde salia, y M9 la
+# seguia en el empuje estatico y la sobrecarga mientras el incremento sismico
+# iba con Mononobe-Okabe, que es Coulomb con aceleracion. La fuente primaria
+# del marco de §9.1 escribe Coulomb (num. 2.4.4.1.5.3, ecs. -1 y -2, pag.
+# impresa 135), que con trasdos vertical, δ = 0 y relleno horizontal se
+# reduce exactamente a la forma de la hoja. EXT-0 enmendo la hoja
+# (DIS-HR-KA-COULOMB, resuelta); M9 lo declara en el punto de uso y la
+# memoria lo imprime por `condicion_normativa_cabezal`.
+NUMERAL_KA_COULOMB = _reg.cita("MP.2.4.4.1.5.3").como_texto()
+KA_COULOMB_DECLARACION = (
+    "Coeficiente de empuje activo estatico: el de Coulomb del "
+    f"{NUMERAL_KA_COULOMB} (3.11.5.3 AASHTO), calculado con la misma "
+    "formulacion que Mononobe-Okabe haciendo k_h = k_v = 0, de modo que el "
+    "incremento sismico K_AE - K_A resta dos coeficientes homogeneos. Con "
+    "trasdos vertical, friccion muro-relleno nula y relleno horizontal se "
+    "reduce a tan^2(45 - phi/2), la forma que la hoja de ruta escribia en su "
+    "Sec. 9.2 y que EXT-0 corrigio (discrepancia DIS-HR-KA-COULOMB, "
+    "resuelta); con i, beta o delta distintos de cero los dos coeficientes "
+    "difieren y rige el de Coulomb. La resultante de Coulomb actua a delta "
+    "de la normal al trasdos (delta + beta respecto de la horizontal) y este "
+    "calculo la toma ENTERA como carga horizontal, sin descomponerla: es "
+    "conservador para el volteo y el deslizamiento y no lo es para la "
+    "capacidad portante en la parte de la componente vertical que deja de "
+    "cargar sobre la base; la descomposicion queda diferida (EXT-7-04)")
 NUMERAL_SOBRECARGA_TRASDOS_AASHTO = _reg.cita(
     "AASHTO_LRFD_9.3.11.6.4").como_texto()
 NUMERAL_SOBRECARGA_TRASDOS_ALTURA = _reg.cita(
@@ -3115,6 +3140,18 @@ FS = {
     "deslizamiento":      {"estatico": 1.50, "sismico": 1.25},   # 39.13.6 a
     "estabilidad_global": {"estatico": 1.50, "sismico": 1.25},   # 39.13.6 b
     "talud":              {"estatico": 1.50, "sismico": 1.25},   # Art. 30.3
+}
+# EL CODIGO E1..E5 DE CADA FILA, derivado de la misma tabla y no escrito en
+# los llamadores (EXT-M-07): `EstabilidadCabezal.exigidas` sale de aqui, de
+# modo que «estable» significa las CINCO filas presentes y cumplidas, no las
+# tres que el cabezal resuelve con sus propias fuerzas. Es una etiqueta de
+# navegacion, como FS_NUMERAL, no un valor.
+FS_CODIGO = {
+    "capacidad_portante": "E1",
+    "volteo":             "E2",
+    "deslizamiento":      "E3",
+    "estabilidad_global": "E4",
+    "talud":              "E5",
 }
 FS_NUMERAL = {                      # el numeral de cada fila de la tabla de 9.3
     "capacidad_portante": _reg.cita("E050.21").como_texto(),
@@ -3397,6 +3434,16 @@ NUMERAL_CORTANTE_MUROS_E060 = {
     "cuantia_vertical_min": _reg.cita("E060.11.10.10.3").como_texto(),
 }
 NUMERAL_CUANTIA_MIN = _reg.cita("E060.14.3.1").como_texto()
+# Las DOS lecturas del plano del cortante, como NOMBRES de la categoria que
+# el criterio 'regimen_cortante_muro_e060_art_11_10_2' declara (EXT-M-05).
+# Son texto de navegacion, no valores: cual aplica a esta obra lo decide el
+# proyectista con el diseno estructural delante. Con cortante EN EL PLANO
+# rigen 11.10.3 a 11.10.10 (11.10.2); PERPENDICULAR al plano, el diseno es
+# el de losas de 11.12 (11.10.1) y ni el 11.10.10.2 ni el .3 escalonan nada.
+REGIMEN_CORTANTE_EN_EL_PLANO = "en_el_plano"
+REGIMEN_CORTANTE_PERPENDICULAR = "perpendicular_al_plano"
+REGIMENES_CORTANTE_MURO = (REGIMEN_CORTANTE_EN_EL_PLANO,
+                           REGIMEN_CORTANTE_PERPENDICULAR)
 EXCEPCION_REFUERZO_MIN_MURO_TEXTO = (
     "El refuerzo mínimo será el indicado en 14.3. Este requisito podrá "
     "exceptuarse cuando el Ingeniero Proyectista disponga juntas de "

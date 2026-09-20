@@ -1029,6 +1029,11 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "cobertura_minima_cajon": _Meta(unidad="m"),
     "condicion_pavimento": _Meta(unidad="-"),
     "cortante_alto_muro_e060_art_11_10_10_2": _Meta(unidad="-"),
+    # EXT-7 (EXT-M-05): el plano del cortante y el piso vertical del regimen
+    # de 11.10.10. Los consume `M9.cuantia_de_diseno`, sin llamador de
+    # produccion (armado del num. 9.4).
+    "cuantia_vertical_cortante_alto_e060_art_11_10_10_3": _Meta(unidad="-"),
+    "regimen_cortante_muro_e060_art_11_10_2": _Meta(unidad="-"),
     "demanda_sismica_licuefaccion": _Meta(
         unidad="años", fase_declarada="Fase 0-bis - licuefaccion"),
     "diametros_normalizados": _Meta(unidad="m"),

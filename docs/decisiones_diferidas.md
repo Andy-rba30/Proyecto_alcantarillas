@@ -1907,3 +1907,107 @@ una queda diferida a sabiendas.
   `DEFINE` sobre las citas de alcance; entonces salen de la lista de
   `test_memoria_sustentada` y `consumidores_de_cita` las ve.
 - **Dónde vive:** `src/modulos/M2_material.py::norma_producto_de`
+
+# Parte XXIII — Lo que EXT-7 dejó escrito al cerrar el cabezal (cluster C07)
+
+EXT-7 cerró EXT-M-05 (y R95-031, que es el mismo defecto con otra fila),
+EXT-M-06 y EXT-M-07: la rama vertical de `cuantia_de_diseno` con cortante
+alto ya no devuelve 0.0015 —se detiene en dos criterios [A] de expediente,
+el plano del cortante (E.060 11.10.2 / 11.10.1) y el piso de la ec. (11-32)—,
+`verificar_cuantia` pregunta lo mismo con el mismo argumento; el empuje
+estático y la sobrecarga van con el Ka de Coulomb del Manual de Puentes
+(num. 2.4.4.1.5.3, cita nueva, discrepancia `DIS-HR-KA-COULOMB` resuelta) y
+CP-9 tiene un bloque C con ángulos no nulos; y `EstabilidadCabezal` lleva
+`exigidas`, `pendientes` y un `estable` que sólo es cierto con las cinco
+filas presentes y cumplidas. Nada se cableó a la CLI. Tres decisiones quedan
+escritas porque se apartan de lo que un lector esperaría.
+
+## EXT-7-01 · La ec. (11-32) del Art. 11.10.10.3 no se implementa: se declara evaluada fuera
+
+- **Qué se difirió:** evaluar en M9 la cuantía vertical mínima bajo el
+  régimen de cortante en el plano, ρv = 0.0025 + 0.5·(2.5 − hm/ℓm)·(ρh −
+  0.0025) ≥ 0.0025, con tope en la ρh requerida por 11.10.10.1 (E.060
+  11.10.10.3, pág. 104; cita `E060.11.10.10.3`).
+- **Por qué:** de sus tres entradas el software no tiene ninguna: hm y ℓm
+  son geometría que `GeometriaCabezal` no lleva (no tiene longitud), y la
+  ρh requerida sale de una demanda Vu que `diseno_flexion_corte` no produce
+  (`NotImplementedError`, bloqueado en
+  `procedimiento_flexion_corte_aashto_sec5`). Evaluarla con un hm/ℓm
+  supuesto sería inventar una dimensión del cabezal. Lo que sí se cierra es
+  el defecto: la rama vertical con cortante alto **se detiene** en
+  `cuantia_vertical_cortante_alto_e060_art_11_10_10_3` (forma `float`, como
+  su hermano horizontal: lo que M9 lee es la cuantía que rige, evaluada por
+  el proyectista con hm, ℓm y ρh delante) en vez de devolver el 0.0015 del
+  14.3.1, y el docstring ya no afirma lo contrario de la norma.
+- **Qué haría falta:** la longitud del cabezal en `GeometriaCabezal` (o en
+  `predimensionamiento_cabezal`), y el diseño por corte de AASHTO LRFD Sec.
+  5 que produzca Vu y con él la ρh requerida; entonces la ecuación se
+  transcribe como fórmula con su cita y el criterio pasa a `Derivada`.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::cuantia_de_diseno`
+
+## EXT-7-02 · E6 (excentricidad sísmica) no entra en las `exigidas` por defecto
+
+- **Qué se difirió:** exigir la fila E6 —`verificar_excentricidad_sismica`,
+  la ubicación de la resultante bajo sismo del Manual de Puentes— dentro de
+  `EstabilidadCabezal.exigidas`, junto a E1..E5.
+- **Por qué:** `exigidas` se deriva de las claves de
+  `constantes_normativas.FS` (`FS_CODIGO`), que es la tabla de Sec. 9.3 de la
+  hoja de ruta, y E6 no es fila de esa tabla: E.050 no la escribe, la trae el
+  Manual (num. 2.4.3.11 de la excentricidad, con `gamma_EQ` vacío) y su
+  umbral cambia con la condición —sólo existe en la sísmica—. Meterla en la
+  tupla por defecto habría hecho que **ningún** expediente estático pudiera
+  ser `estable`, y habría escrito en la constitución del tipo una fila que
+  la tabla que lo gobierna no tiene. La vía queda abierta y probada:
+  `verificar_estabilidad(..., exigidas=EXIGIDAS_SEC_9_3 + ("E6",))` la
+  registra como pendiente hasta que alguien la resuelva.
+- **Qué haría falta:** decidir, con `gamma_EQ` declarado, si E6 se exige
+  sólo en la condición sísmica (entonces `exigidas` deja de ser una tupla
+  única y pasa a depender de `CondicionAnalisis`) y cablear
+  `presion_contacto_base` → `verificar_excentricidad_sismica` en el
+  ensamble, que hoy no existe (`FUNCIONES_SIN_CONSUMIDOR`).
+- **Dónde vive:** `src/modulos/M9_cabezal.py::EXIGIDAS_SEC_9_3`
+
+## EXT-7-03 · El Ka de Coulomb se adopta entero, no la «guardia mínima»
+
+- **Qué se difirió:** la alternativa mínima que el prompt ofrecía —dejar
+  Rankine en el estático y detener en condición sísmica cuando
+  |K_A_rankine − K_A_coulomb| supere una tolerancia nombrada—.
+- **Por qué:** habría conservado la base mixta que EXT-M-06 denuncia y la
+  habría vuelto **condicional**: con i = β = δ = 0 nada la dispara, y en
+  cuanto un ángulo se declara el cálculo se detiene en vez de calcular con el
+  coeficiente correcto. La fuente primaria del marco (MP 2.4.4.1.5.3, PERMISO
+  verificado) escribe Coulomb y la v8 ya está enmendada (EXT-0), de modo que
+  no había nada que proteger con una guardia: había que usar el coeficiente.
+  Consecuencia declarada en `empujes_trasdos`: los cuatro ángulos de Sec. 9.2
+  son entrada también en condición **estática** y un vacío la detiene, donde
+  antes sólo φ lo era. `ka_rankine` se conserva como patrón del caso límite y
+  como la forma reducida que la hoja escribía.
+- **Qué haría falta:** nada para cerrarla; se registra para que nadie vuelva
+  a proponer la guardia como si fuera equivalente.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::empujes_trasdos`
+
+## EXT-7-04 · La resultante de Coulomb se toma entera como horizontal: la descomposición queda diferida
+
+- **Qué se difirió:** descomponer el empuje activo de Coulomb (y la
+  sobrecarga, que va con el mismo Ka, y el incremento sísmico, que ya estaba
+  inclinado) en su componente horizontal P·cos(δ + β) y vertical
+  P·sen(δ + β), y llevar la vertical al modelo de cargas de la base.
+- **Por qué:** `EmpujesTrasdos` no tiene modelo de cargas verticales del
+  trasdós —el único vertical que lleva es la subpresión— y el ensamble de
+  estabilidad que las consumiría no existe (`verificar_estabilidad` recibe
+  las demandas ya calculadas; `FUNCIONES_SIN_CONSUMIDOR`). Inventarlo en
+  EXT-7 habría sido ensanchar el cluster. Lo que sí se hace es **declararlo**
+  con su dirección, que no es una: tomar la resultante entera como
+  horizontal es conservador para el volteo y el deslizamiento y no lo es para
+  la capacidad portante en la parte de la componente vertical que deja de
+  cargar sobre la base. Medido en el bloque C de CP-9 (δ + β = 22°): la
+  horizontal se sobreestima +7.9 %, y hasta +18.8 % en el extremo de ventana
+  (δ = 22.7°, β = 10°). Lo encontró el auditor adversarial de EXT-7: la frase
+  «+9.7 % sobre Rankine» era cierta para el coeficiente y engañosa para la
+  fuerza horizontal (+1.7 %).
+- **Qué haría falta:** un campo de carga vertical del trasdós en
+  `EmpujesTrasdos` (con su brazo, porque también resiste el volteo) y el
+  ensamble de la normal en la base que lo sume antes de E1 y E3; entonces
+  `E_activo` pasa a ser la componente horizontal y el dorado del bloque C
+  gana `C_E_h_esperado` y `C_E_v_esperado`.
+- **Dónde vive:** `src/modelos.py::EmpujesTrasdos`

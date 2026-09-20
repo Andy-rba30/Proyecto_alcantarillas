@@ -1170,4 +1170,48 @@ DIS_MP_LRFD_EDICION = _d(
     estado=EstadoDiscrepancia.RESUELTA,
 )
 
+# ---------------------------------------------------------------------------
+# EXT-M-06 · El Ka estatico del cabezal: la v8 escribia Rankine, la fuente
+# primaria del marco escribe Coulomb
+# ---------------------------------------------------------------------------
+DIS_KA_COULOMB = _d(
+    id="DIS-HR-KA-COULOMB",
+    objeto="el coeficiente de empuje activo ESTATICO del trasdos del cabezal",
+    partes=(
+        Parte(quien="hoja_de_ruta",
+              que_dice=("su §9.2 escribia «Ka = tan²(45 − φ/2)» sin decir de "
+                        "donde salia, y el codigo la seguia: empuje estatico "
+                        "y sobrecarga con Rankine (`ka_rankine`) mientras el "
+                        "incremento sismico iba con Mononobe-Okabe, que es "
+                        "Coulomb con aceleracion. CORREGIDA EN EXT-0: la "
+                        "linea nombra el Ka de Coulomb del Manual y dice que "
+                        "con β = δ = 0 y trasdos vertical se reduce a la "
+                        "forma que escribia")),
+        Parte(quien="MP",
+              que_dice=("el coeficiente de empuje lateral activo «se puede "
+                        "tomar como» la expresion de Coulomb, ecs. "
+                        "2.4.4.1.5.3-1 y -2, con θ, δ y β; con angulos nulos "
+                        "coincide con tan²(45 − φ/2) (diferencia medida "
+                        "−5.6e-17)"),
+              cita_id="MP.2.4.4.1.5.3"),
+    ),
+    gana="MP",
+    por_que=("es la fuente primaria del marco elegido en §9.1 y la unica "
+             "formulacion homogenea con el incremento sismico: restar un "
+             "K_AE de Mononobe-Okabe (con i, β y δ) a un Ka de Rankine (que "
+             "ignora los tres) mezcla dos modelos sobre el mismo muro. La "
+             "hoja de ruta transcribia el caso particular sin nombrarlo"),
+    efecto_si_se_sigue_la_otra=("con i = β = δ = 0 ningun numero se mueve; "
+                                "en cuanto alguno deja de ser cero el "
+                                "coeficiente cambia (en el bloque C de CP-9, "
+                                "+9.7 % con i = 5°, β = 5° y δ = 17°; "
+                                "barriendo las cuatro ventanas declaradas, "
+                                "de −11.1 % a +44.4 %, y NO el «−6.25 % a "
+                                "+7.23 %» que la enmienda de EXT-0 escribio "
+                                "en la v8 y que EXT-7 corrigio), y quien lea "
+                                "la hoja sin leer el codigo dimensionara con "
+                                "el coeficiente equivocado"),
+    estado=EstadoDiscrepancia.RESUELTA,
+)
+
 DISCREPANCIAS: Dict[str, Discrepancia] = {d.id: d for d in _TODAS}

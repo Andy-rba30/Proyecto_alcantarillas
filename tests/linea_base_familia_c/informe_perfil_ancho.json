@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "247d2e7fc8b1cc6a6ccaaa3d8f3b3ab7ada62e1d",
+    "criterios_sha1": "b946ea4ae9a54a363fefc14aa75541a1c2b716d2",
     "puntos": 4,
     "dimensionados": 3,
     "cerrado": false
@@ -1515,6 +1515,7 @@
       "clases_producto_por_relleno",
       "cobertura_minima_cajon",
       "cortante_alto_muro_e060_art_11_10_10_2",
+      "cuantia_vertical_cortante_alto_e060_art_11_10_10_3",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "embocadura_cajon",
@@ -1534,6 +1535,7 @@
       "phi_relleno_trasdos",
       "predimensionamiento_cabezal",
       "punto_aplicacion_incremento_sismico",
+      "regimen_cortante_muro_e060_art_11_10_2",
       "remanso_derecho_via",
       "secciones_cajon_normalizadas"
     ],

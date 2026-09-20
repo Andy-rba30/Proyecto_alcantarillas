@@ -909,11 +909,22 @@ EG-2013 Sección 503 (Concreto Estructural), num. 503.01, pág. 905, describe el
 > coeficiente activo es el de Coulomb (verificado). Con ángulos nulos las dos
 > expresiones coinciden (diferencia medida −5.6e-17), de modo que **para un
 > cabezal con β = δ = 0 ningún número se mueve**; dentro de las ventanas
-> declaradas (i hasta 10°) la diferencia va de −6.25 % a +7.23 %, y con el
-> k_h = 0.5 de esta obra Mononobe-Okabe deja de tener solución antes de
-> i = 10° (con φ = 30°, ya desde i ≥ 5°), que es un límite que la sensibilidad
-> del criterio tiene que decir. Lo implementa EXT-7 (`k_a_coulomb` ya existe
-> en M9). Precedentes: `NOR-PUE-07`, `NOR-PUE-08`.
+> declaradas la diferencia del coeficiente va de **−11.1 %** (φ = 30°, i = β =
+> 0, δ = 22.7°) a **+44.4 %** (φ = 38°, i = β = 10°, δ = 0), y con el
+> k_h = 0.5 de esta obra Mononobe-Okabe deja de tener solución para
+> i ≥ φ − 26.6° (3.4° con φ = 30°, 8.4° con φ = 35°), que es un límite que la
+> sensibilidad del criterio dice. Lo implementó EXT-7 (`k_a_coulomb`, cita
+> `MP.2.4.4.1.5.3`, discrepancia `DIS-HR-KA-COULOMB`). Precedentes:
+> `NOR-PUE-07`, `NOR-PUE-08`.
+>
+> **Corregido (`EXT-M-06`, EXT-7).** La enmienda de EXT-0 escribía aquí «la
+> diferencia va de −6.25 % a +7.23 %» y «desde i ≥ 5° con φ = 30°»: los dos
+> números eran falsos. Medidos con `M9.k_a_coulomb` sobre las cuatro ventanas
+> de `criterios_adoptados.py` (φ 30–38, i 0–10, β 0–10, δ 0–22.7): el rango
+> es el de arriba, y el bloque C de CP-9 (dentro de las cuatro) da +9.67 %.
+> Además la resultante de Coulomb actúa a δ + β de la horizontal y el cálculo
+> la toma **entera como horizontal** (declarado en `M9.empujes_trasdos`;
+> descomposición diferida, `EXT-7-04`).
 
 #### Cadena sísmica — desagregada
 

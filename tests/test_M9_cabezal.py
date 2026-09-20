@@ -991,7 +991,12 @@ def test_los_dos_unicos_inf_deliberados_del_repositorio_siguen_ahi():
         assert v.cumple
 
 
-def test_el_agregado_devuelve_E1_a_E3_en_una_condicion(geometria):
+def test_el_agregado_devuelve_E1_a_E3_y_registra_E4_y_E5_pendientes(geometria):
+    """
+    Reescrito en EXT-7 (EXT-M-07): pineaba `estable` con tres items. Tres de
+    cinco NO es estable: lo que cumple es la estabilidad INTERNA, y las dos
+    filas globales quedan registradas como pendientes con su motivo.
+    """
     estabilidad = verificar_estabilidad(
         geometria=geometria, condicion=CondicionAnalisis.SISMICO,
         q_actuante=100.0, q_ultima=300.0,
@@ -999,7 +1004,9 @@ def test_el_agregado_devuelve_E1_a_E3_en_una_condicion(geometria):
         fuerza_resistente=80.0, fuerza_actuante=50.0)
 
     assert [v.codigo for v in estabilidad.verificaciones] == ["E1", "E2", "E3"]
-    assert estabilidad.estable
+    assert estabilidad.estabilidad_interna_cumple
+    assert not estabilidad.estable
+    assert estabilidad.pendientes == ("E4", "E5")
     assert estabilidad.condicion is CondicionAnalisis.SISMICO
 
 
@@ -1190,7 +1197,10 @@ def test_el_agregado_propaga_la_condicion_a_las_tres_filas(geometria):
     assert [v.valor_admisible for v in estatico.verificaciones] == [
         pytest.approx(3.00, abs=TOL), pytest.approx(1.50, abs=TOL),
         pytest.approx(1.50, abs=TOL)]
-    assert sismico.estable
+    # EXT-M-07: con E4 y E5 pendientes el sismico NO es `estable`; lo que
+    # cambia de condicion a condicion es la estabilidad INTERNA.
+    assert sismico.estabilidad_interna_cumple and not sismico.estable
+    assert not estatico.estabilidad_interna_cumple
     assert [v.codigo for v in estatico.verificaciones_incumplidas] == [
         "E1", "E2", "E3"]
 
@@ -1466,8 +1476,10 @@ def test_cuantias_minimas_de_referencia_art_14_3_1(direccion, minima):
 
 
 def test_verificar_cuantia_horizontal_y_vertical():
-    ok = verificar_cuantia(cuantia_provista=0.0025, direccion="horizontal")
-    no = verificar_cuantia(cuantia_provista=0.0010, direccion="vertical")
+    ok = verificar_cuantia(cuantia_provista=0.0025, direccion="horizontal",
+                           cortante_alto=False)
+    no = verificar_cuantia(cuantia_provista=0.0010, direccion="vertical",
+                           cortante_alto=False)
     assert ok.cumple and ok.codigo == "R1"
     assert not no.cumple and no.codigo == "R2"
     assert "14.3.1" in ok.numeral
@@ -1507,6 +1519,9 @@ def test_el_escalon_por_cortante_alto_detiene_el_calculo_y_no_se_rellena():
         cuantia_de_diseno(cuantia_calculada=0.0031, direccion="horizontal",
                           cortante_alto=True)
     assert ca.criterio(CRITERIO_CORTANTE_ALTO).valor is None
+    # Desde EXT-7 lo primero que se pregunta es el PLANO del cortante
+    # (11.10.2 / 11.10.1); la aceptacion completa esta en test_ext7_cabezal.
+    assert ca.criterio("regimen_cortante_muro_e060_art_11_10_2").valor is None
 
 
 def test_cortante_alto_no_tiene_valor_por_defecto():

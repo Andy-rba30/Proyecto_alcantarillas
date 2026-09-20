@@ -239,6 +239,12 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_FACTOR_MURO,
                                    NUMERAL_K_AE_AASHTO,
                                    NUMERAL_K_AE_MANUAL,
+                                   NUMERAL_KA_COULOMB,
+                                   KA_COULOMB_DECLARACION,
+                                   REGIMEN_CORTANTE_EN_EL_PLANO,
+                                   REGIMEN_CORTANTE_PERPENDICULAR,
+                                   REGIMENES_CORTANTE_MURO,
+                                   FS_CODIGO,
                                    NUMERAL_K_H0,
                                    NUMERAL_P_IR,
                                    NUMERAL_PRESION_CONTACTO,
@@ -310,7 +316,19 @@ NUMERAL_REGLA_RECUBRIMIENTO = "Sec. 0.2 (rige el recubrimiento mayor)"
 # valor con caso patron (EXT-7). Ver el criterio
 # 'cortante_alto_muro_e060_art_11_10_10_2'.
 NUMERAL_CORTANTE_ALTO = (NUMERAL_CORTANTE_MUROS_E060["cuantia_horizontal_min"]
-                         + " (cortante alto; valor pendiente de cablear)")
+                         + " (cortante alto en el plano; piso declarado en "
+                           "'cortante_alto_muro_e060_art_11_10_10_2')")
+# El piso VERTICAL bajo el mismo regimen (EXT-M-05 / R95-031) y las dos
+# lecturas del plano del cortante que deciden si el regimen rige.
+NUMERAL_CORTANTE_ALTO_VERTICAL = (
+    NUMERAL_CORTANTE_MUROS_E060["cuantia_vertical_min"]
+    + " (ec. 11-32, cortante alto en el plano; piso declarado en "
+      "'cuantia_vertical_cortante_alto_e060_art_11_10_10_3')")
+NUMERAL_CORTANTE_EN_EL_PLANO = NUMERAL_CORTANTE_MUROS_E060["en_el_plano"]
+NUMERAL_CORTANTE_PERPENDICULAR = (
+    NUMERAL_CORTANTE_MUROS_E060["perpendicular_al_plano"]
+    + " (cortante perpendicular al plano: diseño por 11.12, el regimen de "
+      "11.10.10 no rige)")
 
 CALCULADO = "Calculado"
 ETIQUETA_CALCULADO = "-"
@@ -372,6 +390,17 @@ NOMBRE_TABLA_4_4 = "Tabla 4.4"
 CATEGORIA_ACERO_SIN_RECUBRIR = "A"
 CRITERIO_FLEXION_CORTE = "procedimiento_flexion_corte_aashto_sec5"
 CRITERIO_CORTANTE_ALTO = "cortante_alto_muro_e060_art_11_10_10_2"
+CRITERIO_REGIMEN_CORTANTE = "regimen_cortante_muro_e060_art_11_10_2"
+CRITERIO_CUANTIA_VERTICAL_CORTANTE_ALTO = (
+    "cuantia_vertical_cortante_alto_e060_art_11_10_10_3")
+# LAS FILAS QUE LA TABLA DE SEC. 9.3 EXIGE, por su codigo y en su orden,
+# derivadas de `constantes_normativas.FS` y no escritas aqui (EXT-M-07).
+# `EstabilidadCabezal.estable` se mide contra esta tupla. E6 (la
+# excentricidad sismica, `verificar_excentricidad_sismica`) NO esta: no es
+# fila de esa tabla -- E.050 no la escribe; sale del Manual de Puentes -- y
+# quien la quiera exigir la pasa ampliando `exigidas` en
+# `verificar_estabilidad`. La decision esta en docs/decisiones_diferidas.md.
+EXIGIDAS_SEC_9_3 = tuple(FS_CODIGO[clave] for clave in FS)
 
 # Componentes de cada combinacion de Sec. 9.2, con la nomenclatura de cargas
 # de AASHTO LRFD. Son NOMBRES, no factores: los factores son [N] y estan en
@@ -863,12 +892,13 @@ def ka_rankine(*, phi_grados: float) -> float:
     literal. Es el caso de Rankine: muro vertical, relleno horizontal y
     friccion muro-suelo nula.
 
-    No sustituye al Ka de Coulomb que devuelve `k_a_coulomb`: cuando i, beta
-    o delta no son cero, el coeficiente estatico homogeneo con K_AE es el de
-    Coulomb, y restar dos coeficientes de formulaciones distintas para
-    obtener el incremento sismico no significa nada. Esta funcion existe
-    porque es la formula que la hoja de ruta cita y porque es el patron
-    contra el que se contrasta Mononobe-Okabe en su caso limite.
+    NO ES EL Ka DEL EMPUJE ESTATICO (EXT-M-06): desde EXT-7 `empujes_trasdos`
+    usa el de Coulomb del Manual de Puentes (`k_a_coulomb`), que es el de la
+    fuente primaria y el homogeneo con K_AE; con i = beta = delta = 0 los dos
+    coinciden exactamente, y en cuanto alguno deja de ser cero difieren.
+    Esta funcion se conserva como PATRON: es la forma reducida que la hoja de
+    ruta escribia en su Sec. 9.2 (enmendada en EXT-0, `DIS-HR-KA-COULOMB`) y
+    el caso limite contra el que se contrasta Mononobe-Okabe.
     """
     return math.tan(math.radians(45 - phi_grados / 2)) ** 2   # literal-ok: Ka = tan^2(45 - phi/2), Sec. 9.2
 
@@ -1473,16 +1503,55 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
     y son dos modelos distintos con dos resultados distintos. Escoger uno
     aqui y no decirlo seria decidir por el proyectista.
 
-    Que Ka usa el empuje estatico. El de Rankine, tan^2(45 - phi/2), porque
-    es el que Sec. 9.2 escribe de forma literal ("empuje de tierras: activo,
-    Ka = tan^2(45 - phi/2)"). El incremento sismico, en cambio, se calcula
-    homogeneo dentro de Mononobe-Okabe (K_AE - K_A de Coulomb), que es la
-    unica resta con sentido. Con i = beta = delta = 0 los dos coeficientes
-    estaticos coinciden exactamente y no hay nada que declarar; en cuanto
-    alguno de los tres angulos deje de ser cero, difieren, y la memoria tiene
-    que decir cual gobierna el empuje estatico. Ambos viajan en el resultado
-    (`K_A` de Rankine y `mononobe_okabe.K_A` de Coulomb) para que la
-    diferencia sea visible en vez de quedar escondida en una suma.
+    Que Ka usa el empuje estatico, y la sobrecarga: EL DE COULOMB del Manual
+    de Puentes, num. 2.4.4.1.5.3 (`k_a_coulomb`, la formulacion de
+    Mononobe-Okabe con k_h = k_v = 0), y no el de Rankine. Se declara aqui,
+    en el punto de uso, porque la hoja de ruta decia otra cosa (EXT-M-06):
+    su Sec. 9.2 escribia "Ka = tan^2(45 - phi/2)" sin decir de donde salia,
+    y hasta EXT-7 esta funcion la seguia -- empuje estatico y sobrecarga con
+    `ka_rankine` mientras el incremento sismico iba con Mononobe-Okabe, que
+    es Coulomb con aceleracion: dos familias de coeficiente sobre el mismo
+    muro, decision declarada en dos docstrings y autorizada por ninguna
+    fuente. La fuente primaria del marco elegido en Sec. 9.1 escribe Coulomb
+    (ecs. 2.4.4.1.5.3-1 y -2, pag. impresa 135; cita `MP.2.4.4.1.5.3`), y
+    con trasdos vertical, delta = 0 y relleno horizontal se reduce
+    EXACTAMENTE a la forma que la hoja escribia (diferencia medida
+    -5.6e-17). EXT-0 enmendo la v8; la discrepancia queda registrada y
+    resuelta como `DIS-HR-KA-COULOMB`, y la memoria la imprime por
+    `condicion_normativa_cabezal`.
+
+    Consecuencias que conviene leer antes de usarla: (1) los cuatro angulos
+    de Sec. 9.2 son entrada tambien en condicion ESTATICA -- antes solo phi
+    lo era -- y un vacio la detiene; (2) `K_A` y `mononobe_okabe.K_A` son
+    el MISMO numero, tambien con angulos no nulos, de modo que el incremento
+    K_AE - K_A resta dos coeficientes homogeneos; (3) con i = beta =
+    delta = 0 ningun numero se mueve respecto de Rankine, y `ka_rankine` se
+    conserva como patron del caso limite. Dentro de las ventanas declaradas
+    la diferencia no es un matiz: en el bloque C de CP-9 (i = 5, beta = 5,
+    delta = 17 grados) el COEFICIENTE de Coulomb da +9.7 % sobre Rankine, y
+    barriendo las cuatro ventanas enteras va de -11.1 % (phi = 30, i = beta
+    = 0, delta = 22.7) a +44.4 % (phi = 38, i = beta = 10, delta = 0).
+
+    LA RESULTANTE DE COULOMB ESTA INCLINADA, Y AQUI SE TOMA ENTERA COMO
+    HORIZONTAL (auditoria adversarial de EXT-7). P_A = gamma*H^2*K_A/2 es la
+    resultante sobre el trasdos, que actua a delta de la normal al paramento
+    (Figura 2.4.4.1.5.3-1 del Manual): delta + beta respecto de la
+    horizontal. Con Rankine (delta = beta = 0) era exactamente horizontal;
+    con Coulomb no, y `EmpujesTrasdos` la suma integra como carga EH
+    horizontal sin descomponerla en E_h = P_A*cos(delta + beta) y
+    E_v = P_A*sen(delta + beta). Lo mismo le pasa a la sobrecarga (mismo
+    Ka) y le pasaba ya al incremento sismico (P_AE tambien inclinado). En el
+    bloque C la sobreestimacion de la horizontal es +7.9 % (1/cos 22 - 1) y
+    llega a +18.8 % en el extremo de ventana (delta = 22.7, beta = 10); la
+    horizontal verdadera queda solo +1.7 % sobre Rankine. La direccion NO es
+    una: CONSERVADORA para E2 y E3 (mas fuerza horizontal y mas momento
+    volcante) y NO conservadora para E1 en la parte de la componente
+    vertical que deja de cargar sobre la base (mas normal, mas presion de
+    contacto). No se descompone en EXT-7 porque `EmpujesTrasdos` no tiene
+    modelo de cargas verticales del trasdos donde llevar E_v --- el vertical
+    que hoy existe es la subpresion ---; queda diferido con simbolo
+    (EXT-7-04 en docs/decisiones_diferidas.md) y declarado en la memoria por
+    `KA_COULOMB_DECLARACION`.
 
     Brazos. Los tres estaticos son geometria y no criterio: el empuje activo
     es triangular y su resultante cae en H/3, la sobrecarga es rectangular y
@@ -1529,9 +1598,15 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
     en condicion sismica) o el brazo del incremento.
     """
     gamma = peso_especifico_relleno()
-    K_A_rankine = ka_rankine(phi_grados=ca.valor(CRITERIO_PHI_RELLENO))
+    # Coulomb (MP 2.4.4.1.5.3), con los cuatro angulos declarados: es el
+    # mismo K_A que resta el incremento sismico. CriterioPendienteError en
+    # el primero de los cuatro que siga vacio, tambien en condicion estatica.
+    K_A = k_a_coulomb(phi_grados=ca.valor(CRITERIO_PHI_RELLENO),
+                      i_grados=ca.valor(CRITERIO_I_RELLENO),
+                      beta_grados=ca.valor(CRITERIO_BETA_MURO),
+                      delta_grados=ca.valor(CRITERIO_DELTA_MURO))
 
-    E_a = empuje_activo_estatico(gamma_relleno=gamma, k_a=K_A_rankine,
+    E_a = empuje_activo_estatico(gamma_relleno=gamma, k_a=K_A,
                                  H=altura_empuje)
     # AASHTO mide la altura de entrada de h_eq desde la superficie del relleno
     # hasta el FONDO DE LA ZAPATA, con un `shall`. `geometria.H` es la altura
@@ -1542,7 +1617,7 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
     # y no la altura equivalente, la orientacion ni la segunda fuente.
     h_eq = h_eq_sobrecarga_trasdos(altura_muro_total=altura_para_h_eq)
     E_s = empuje_sobrecarga_trasdos(
-        gamma_relleno=gamma, k_a=K_A_rankine, H=altura_empuje,
+        gamma_relleno=gamma, k_a=K_A, H=altura_empuje,
         altura_muro_total=altura_para_h_eq)
     h_agua = altura_agua_sobre_base(D_f=geometria.D_f,
                                     NF_profundidad_m=NF_profundidad_m)
@@ -1566,7 +1641,7 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
         E_sobrecarga=E_s, z_sobrecarga=altura_empuje / 2,
         E_hidrostatico=E_w, z_hidrostatico=h_agua / 3,   # literal-ok: centroide del triangulo
         U_subpresion=U,
-        K_A=K_A_rankine,
+        K_A=K_A,
         incremento_sismico=incremento,
         z_incremento=z_incremento,
         mononobe_okabe=mo,
@@ -1575,6 +1650,7 @@ def empujes_trasdos(*, geometria: GeometriaCabezal,
         orientacion_muro=ds.valor("orientacion_muro_respecto_al_trafico"),
         numeral_sobrecarga=(f"{NUMERAL_SOBRECARGA_TRASDOS} + "
                             f"{NUMERAL_SOBRECARGA_TRASDOS_AASHTO}"),
+        numeral_k_a=NUMERAL_KA_COULOMB,
     )
 
 
@@ -2355,18 +2431,30 @@ def verificar_estabilidad(*, geometria: GeometriaCabezal,
                           momento_volcante: float,
                           fuerza_resistente: float,
                           fuerza_actuante: float,
-                          incluir_globales: bool = False) -> EstabilidadCabezal:
+                          incluir_globales: bool = False,
+                          exigidas: Tuple[str, ...] = EXIGIDAS_SEC_9_3
+                          ) -> EstabilidadCabezal:
     """
     Las verificaciones de Sec. 9.3 para UNA condicion, a partir de las
     demandas ya calculadas por el llamador.
 
-    Devuelve E1, E2 y E3, que son las que se resuelven con las fuerzas y
-    momentos del cabezal. E4 y E5 solo se incluyen con
-    `incluir_globales=True`, y entonces la llamada se detiene con
-    `CriterioPendienteError` en 'metodo_estabilidad_global': se deja opcional
-    para que el expediente pueda cerrar la estabilidad interna del cabezal
-    mientras el analisis de taludes viaja por su cuenta en el EMS, sin que eso
-    haga desaparecer las dos filas de la tabla.
+    Resuelve E1, E2 y E3, que son las que salen de las fuerzas y momentos
+    del cabezal. E4 y E5 NO se omiten (EXT-M-07): quedan REGISTRADAS como
+    pendientes en el objeto, con el criterio que las bloquea
+    ('metodo_estabilidad_global') en `motivos_pendientes`, y por eso
+    `estable` es False aunque las tres resueltas cumplan -- lo que cumple es
+    `estabilidad_interna_cumple`. Con `incluir_globales=True` se intentan y
+    la llamada se detiene con `CriterioPendienteError` en ese criterio: se
+    deja opcional para que el expediente pueda cerrar la estabilidad interna
+    mientras el analisis de taludes viaja por su cuenta en el EMS, sin que
+    eso haga desaparecer las dos filas de la tabla ni las convierta en
+    cumplidas.
+
+    `exigidas` son las filas contra las que `estable` se mide: por defecto
+    las cinco de la tabla de FS (`EXIGIDAS_SEC_9_3`). E6 -- la excentricidad
+    sismica de `verificar_excentricidad_sismica` -- no es fila de esa tabla
+    y no entra por defecto; quien la exija la añade y queda como pendiente
+    hasta que la resuelva.
 
     El mismo cabezal se verifica dos veces, una por condicion: no es la misma
     verificacion con otro umbral, cambian tambien las fuerzas (aparece el
@@ -2386,9 +2474,19 @@ def verificar_estabilidad(*, geometria: GeometriaCabezal,
         verificaciones.append(verificar_estabilidad_global(condicion=condicion))
         verificaciones.append(verificar_talud(condicion=condicion))
 
+    # Las dos filas globales, cuando no se incluyen, quedan pendientes CON su
+    # motivo: la memoria imprime de que criterio dependen, no una fila vacia.
+    presentes = {v.codigo for v in verificaciones}
+    motivos = tuple((FS_CODIGO[clave], CRITERIO_ESTABILIDAD_GLOBAL)
+                    for clave in ("estabilidad_global", "talud")
+                    if FS_CODIGO[clave] in exigidas
+                    and FS_CODIGO[clave] not in presentes)
+
     return EstabilidadCabezal(condicion=condicion, geometria=geometria,
                               verificaciones=tuple(verificaciones),
-                              numeral=NUMERAL_9_3)
+                              exigidas=tuple(exigidas),
+                              numeral=NUMERAL_9_3,
+                              motivos_pendientes=motivos)
 
 
 # ===========================================================================
@@ -3014,10 +3112,14 @@ def cuantia_minima(*, direccion: str) -> float:
     diferencia importa el dia que el proyectista quiera ejercerla:
     `nota_excepcion_refuerzo_minimo` le dice que tiene que declarar para eso.
 
-    Escalon del Art. 11.10.10.2 (0.0025 bajo cortante alto): ver
-    `cuantia_de_diseno` y el criterio 'cortante_alto_muro_e060_art_11_10_10_2'.
-    Este modulo NO calcula cortante, y por eso el escalon queda declarado
-    como vacio y no resuelto en silencio.
+    Los pisos del regimen de cortante EN EL PLANO (11.10.10.2 horizontal,
+    ec. 11-32 del 11.10.10.3 vertical) y la pregunta previa del plano
+    (11.10.2 / 11.10.1): ver `cuantia_de_diseno` y los criterios
+    'regimen_cortante_muro_e060_art_11_10_2',
+    'cortante_alto_muro_e060_art_11_10_10_2' y
+    'cuantia_vertical_cortante_alto_e060_art_11_10_10_3'. Este modulo NO
+    calcula cortante, y por eso los tres quedan declarados como vacios y no
+    resueltos en silencio.
     """
     if direccion not in CUANTIA_MIN_MURO:
         raise DatoInvalidoError(
@@ -3051,25 +3153,95 @@ def nota_excepcion_refuerzo_minimo() -> str:
     )
 
 
-def verificar_cuantia(*, cuantia_provista: float, direccion: str) -> Verificacion:
+def _minimo_de_cuantia_aplicable(*, direccion: str,
+                                 cortante_alto: bool) -> Tuple[float, str,
+                                                              Optional[str],
+                                                              Optional[str]]:
+    """
+    El minimo que rige en una direccion, y de donde sale: (minimo, numeral,
+    clave del criterio [A] que lo DECIDIO o None si es [N] puro, regimen
+    declarado o None si la ficha no se abrio). Con cortante perpendicular el
+    numero es el del 14.3.1 y aun asi la clave es la del regimen: lo eligio
+    una declaracion, no la norma sola. Es el unico sitio donde se contesta la
+    pregunta, para que `verificar_cuantia` y `cuantia_de_diseno` no puedan
+    contestarla distinto (EXT-M-05).
+
+    Sin cortante alto: Art. 14.3.1, [N] puro. Con cortante alto, en este
+    orden y deteniendose en el primer vacio:
+
+      1. EN QUE PLANO actua el cortante ('regimen_cortante_muro_e060_art_
+         11_10_2'). E.060 11.10.2 restringe 11.10.3 a 11.10.10 al cortante
+         EN EL PLANO del muro; 11.10.1 manda el perpendicular a las losas de
+         11.12. Perpendicular: ni 11.10.10.2 ni .3 rigen, el minimo es el
+         del 14.3.1 y el numeral lo dice.
+      2. En el plano, el PISO de la direccion: horizontal, el 0.0025 del
+         11.10.10.2 ('cortante_alto_muro_e060_art_11_10_10_2'); vertical, la
+         ec. (11-32) del 11.10.10.3 ('cuantia_vertical_cortante_alto_e060_
+         art_11_10_10_3'), que este software NO evalua -- faltan hm, lm y la
+         rho_h requerida por 11.10.10.1 -- y por eso se declara.
+    """
+    minima = cuantia_minima(direccion=direccion)      # DatoInvalidoError si no es direccion
+    if not cortante_alto:
+        return minima, NUMERAL_CUANTIA_MIN, None, None
+
+    regimen = ca.valor(CRITERIO_REGIMEN_CORTANTE)     # CriterioPendienteError mientras falte
+    if regimen not in REGIMENES_CORTANTE_MURO:
+        # Segunda linea: la puerta (categoria) ya lo rechaza; aqui es un dato
+        # del expediente que no puede ser (SIS-E-05 / ficha EXT-5-02).
+        raise DatoInvalidoError(
+            campo=CRITERIO_REGIMEN_CORTANTE, valor=regimen,
+            motivo="las lecturas del plano del cortante son "
+                   + ", ".join(REGIMENES_CORTANTE_MURO))
+    if regimen == REGIMEN_CORTANTE_PERPENDICULAR:
+        # El numero es el del 14.3.1, pero QUIEN LO DECIDIO fue la
+        # declaracion [A] del regimen: se atribuye a ella, no a [N] puro
+        # (auditoria adversarial de EXT-7).
+        return (minima,
+                f"{NUMERAL_CUANTIA_MIN} / {NUMERAL_CORTANTE_PERPENDICULAR}",
+                CRITERIO_REGIMEN_CORTANTE, regimen)
+
+    if direccion == "horizontal":
+        clave, numeral = CRITERIO_CORTANTE_ALTO, NUMERAL_CORTANTE_ALTO
+    else:
+        clave, numeral = (CRITERIO_CUANTIA_VERTICAL_CORTANTE_ALTO,
+                          NUMERAL_CORTANTE_ALTO_VERTICAL)
+    # CriterioPendienteError mientras el piso siga sin declarar. No hay rama
+    # alternativa a proposito: sin el valor no se puede armar un muro en esta
+    # condicion, y caer al 14.3.1 seria elegir el minimo menor en silencio.
+    minima = float(ca.valor(clave))
+    return minima, f"{NUMERAL_CUANTIA_MIN} / {numeral}", clave, regimen
+
+
+def verificar_cuantia(*, cuantia_provista: float, direccion: str,
+                      cortante_alto: bool) -> Verificacion:
     """
     R1 (horizontal) / R2 (vertical): contraste de la cuantia PROVISTA en el
-    plano contra el minimo obligatorio de E.060 Art. 14.3.1.
+    plano contra el minimo que rige en esa direccion: el de E.060 Art. 14.3.1
+    o, con cortante alto EN EL PLANO del muro, el piso del regimen de
+    11.10.10 (11.10.10.2 horizontal, ec. 11-32 del 11.10.10.3 vertical).
+
+    `cortante_alto` NO tiene valor por defecto, por la misma razon que en
+    `cuantia_de_diseno`: la pregunta se contesta una sola vez por muro y no
+    la contesta esta funcion. Hasta EXT-7 este contraste ignoraba el
+    argumento y comparaba siempre contra el 14.3.1, de modo que un armado
+    vertical de 0.0020 «cumplia» bajo un regimen que le pide 0.0025.
 
     Es la comprobacion a posteriori, y no sustituye a `cuantia_de_diseno`:
     esta funcion detecta que un armado ya dibujado incumple el minimo, y
     aquella impide que el minimo se pierda al producir el armado. Las dos
     hacen falta -- la cuantia que llega aqui puede venir de un plano que
-    nadie paso por `cuantia_de_diseno`.
+    nadie paso por `cuantia_de_diseno` -- y por eso las dos leen el minimo
+    del mismo sitio, `_minimo_de_cuantia_aplicable`.
     """
-    minima = cuantia_minima(direccion=direccion)
+    minima, numeral, criterio, _regimen = _minimo_de_cuantia_aplicable(
+        direccion=direccion, cortante_alto=cortante_alto)
     codigo = "R1" if direccion == "horizontal" else "R2"
     return Verificacion(
         cumple=cuantia_provista >= minima - TOL_UMBRAL_NORMATIVO,
-        numeral=NUMERAL_CUANTIA_MIN,
+        numeral=numeral,
         valor_obtenido=cuantia_provista,
         valor_admisible=minima,
-        criterio_aplicado=None,          # [N] puro, Art. 14.3.1
+        criterio_aplicado=criterio,      # None: [N] puro, Art. 14.3.1
         codigo=codigo,
     )
 
@@ -3089,39 +3261,52 @@ def cuantia_de_diseno(*, cuantia_calculada: float, direccion: str,
     exigencia que solo se imprime no es una exigencia aplicada.
 
     `cortante_alto` NO tiene valor por defecto, y es deliberado. E.060 tiene
-    dos minimos horizontales -- 0.0020 (Art. 14.3.1) y el escalon del
-    Art. 11.10.10.2 bajo demanda de cortante alta -- y elegir el mas bajo
-    porque es el unico que la hoja de ruta transcribe seria quedarse con el
-    minimo menor por omision. Este modulo NO calcula cortante: el diseno por
-    flexion y corte esta bloqueado entero en
-    'procedimiento_flexion_corte_aashto_sec5' (AASHTO LRFD Sec. 5, Via 1 de
-    Sec. 0.2), asi que no hay Vu con que contestar la pregunta. Se traslada a
-    quien llama, que es quien tiene el diseno estructural delante:
+    dos regimenes de minimos -- el general del Art. 14.3.1 (0.0020 / 0.0015)
+    y el de cortante en el plano de 11.10.10 -- y elegir el mas bajo porque
+    es el unico que la hoja de ruta transcribia seria quedarse con el minimo
+    menor por omision. Este modulo NO calcula cortante: el diseno por flexion
+    y corte esta bloqueado entero en 'procedimiento_flexion_corte_aashto_sec5'
+    (AASHTO LRFD Sec. 5, Via 1 de Sec. 0.2), asi que no hay Vu con que
+    contestar la pregunta del 11.10.10.1. Se traslada a quien llama, que es
+    quien tiene el diseno estructural delante:
 
-        cortante_alto=False  el muro NO esta en la condicion del
-                             Art. 11.10.10.2, y quien lo afirma lo justifica
-                             en la memoria. Rige el 0.0020 / 0.0015.
-        cortante_alto=True   rige el escalon, cuyo valor esta declarado VACIO
-                             en 'cortante_alto_muro_e060_art_11_10_10_2':
-                             levanta `CriterioPendienteError` y detiene el
-                             calculo. Es el comportamiento correcto -- el
-                             numero no esta en la hoja de ruta y no se
-                             inventa aqui.
+        cortante_alto=False  el muro NO esta en la condicion de 11.10.10.1
+                             (Vu > phi*Vc), y quien lo afirma lo justifica
+                             en la memoria. Rige el 0.0020 / 0.0015 del
+                             Art. 14.3.1.
+        cortante_alto=True   se abre la cadena de abajo, que se DETIENE con
+                             `CriterioPendienteError` en el primer vacio.
 
-    `direccion` es 'horizontal' o 'vertical'. El escalon del Art. 11.10.10.2
-    es de la cuantia HORIZONTAL; en vertical, `cortante_alto=True` no cambia
-    el minimo del Art. 14.3.1, pero se sigue exigiendo el argumento para que
-    la pregunta se conteste una sola vez por muro y no por direccion.
+    LA CADENA CON CORTANTE ALTO, en el orden en que se pregunta (EXT-M-05,
+    R95-031; v8 §9.4 enmendada en EXT-0):
+
+      1. En que plano actua el cortante. E.060 11.10.2 aplica 11.10.3 a
+         11.10.10 a las fuerzas cortantes EN EL PLANO del muro, y 11.10.1
+         manda las PERPENDICULARES al plano a las disposiciones para losas
+         de 11.12 (pag. 103). Un cabezal en voladizo bajo empuje de tierras
+         trabaja perpendicular a su plano: si ese es el cortante, ni el
+         11.10.10.2 ni el 11.10.10.3 rigen y el minimo es el del 14.3.1 en
+         las DOS direcciones. Lo declara 'regimen_cortante_muro_e060_art_
+         11_10_2', vacio: ninguna de las dos respuestas se da por defecto.
+      2. En el plano, HORIZONTAL: el piso 0.0025 del 11.10.10.2, declarado
+         en 'cortante_alto_muro_e060_art_11_10_10_2' (vacio).
+      3. En el plano, VERTICAL: la ec. (11-32) del 11.10.10.3, rho_v =
+         0.0025 + 0.5*(2.5 - hm/lm)*(rho_h - 0.0025) >= 0.0025, que no
+         necesita superar la rho_h requerida por 11.10.10.1. Hasta EXT-7
+         esta rama devolvia el 0.0015 del 14.3.1 -- 1.67 veces menos acero
+         que el piso -- y este docstring afirmaba que el cortante alto no
+         cambiaba el minimo vertical, que es lo contrario de lo que la norma
+         dice (R95-031). La ecuacion NO se evalua aqui: faltan hm, lm (la
+         geometria del cabezal no lleva longitud) y la rho_h requerida (sale
+         de un Vu que no existe). Se declara evaluada fuera en
+         'cuantia_vertical_cortante_alto_e060_art_11_10_10_3', vacio.
+
+    `direccion` es 'horizontal' o 'vertical'. El resultado lleva el regimen
+    declarado y la clave del criterio que fijo el minimo, para que la
+    memoria diga en que plano actua el cortante y de donde salio el numero.
     """
-    minima = cuantia_minima(direccion=direccion)      # DatoInvalidoError si no es direccion
-    numeral = NUMERAL_CUANTIA_MIN
-
-    if cortante_alto and direccion == "horizontal":
-        # CriterioPendienteError mientras el escalon siga sin declarar. No hay
-        # rama alternativa a proposito: sin el valor del Art. 11.10.10.2 no se
-        # puede armar un muro en esta condicion.
-        minima = float(ca.valor(CRITERIO_CORTANTE_ALTO))
-        numeral = f"{NUMERAL_CUANTIA_MIN} / {NUMERAL_CORTANTE_ALTO}"
+    minima, numeral, criterio, regimen = _minimo_de_cuantia_aplicable(
+        direccion=direccion, cortante_alto=cortante_alto)
 
     if cuantia_calculada >= minima - TOL_UMBRAL_NORMATIVO:
         adoptada, gobierna = cuantia_calculada, "calculo"
@@ -3135,7 +3320,15 @@ def cuantia_de_diseno(*, cuantia_calculada: float, direccion: str,
         cuantia_adoptada=adoptada,
         gobierna=gobierna,
         numeral=numeral,
-        criterio_cortante_alto=CRITERIO_CORTANTE_ALTO,
+        # Solo la clave del piso que SE LEYO; vacia si el minimo es el del
+        # 14.3.1 (sin cortante alto, o con cortante perpendicular).
+        criterio_cortante_alto=(
+            criterio if criterio in (CRITERIO_CORTANTE_ALTO,
+                                     CRITERIO_CUANTIA_VERTICAL_CORTANTE_ALTO)
+            else ""),
+        regimen_cortante=regimen,
+        criterio_regimen_cortante=(CRITERIO_REGIMEN_CORTANTE
+                                   if cortante_alto else ""),
     )
 
 
@@ -3429,7 +3622,11 @@ FUNCIONES_SIN_CONSUMIDOR = {
         "porque su insumo es el diseno por flexion y corte, que se detiene en "
         "`diseno_flexion_corte` con NotImplementedError, y el espesor del "
         "elemento, que sale de 'predimensionamiento_cabezal'. La CLI registra "
-        "ese bloqueo en cada corrida (SIS-B-20)"),
+        "ese bloqueo en cada corrida (SIS-B-20). Desde EXT-7 las dos primeras "
+        "leen ademas, con cortante alto, el plano del cortante y el piso de "
+        "la direccion ('regimen_cortante_muro_e060_art_11_10_2', "
+        "'cuantia_vertical_cortante_alto_e060_art_11_10_10_3'): siguen sin "
+        "llamador, y por eso esos criterios no los invoca ninguna corrida"),
     "clase_exposicion_sulfatos / factor_recubrimiento_por_ac": (
         "No tienen llamador de PRODUCCION directo y no son deuda: las llama "
         "`requisitos_durabilidad_concreto` y "
@@ -3478,6 +3675,10 @@ def condicion_normativa_cabezal() -> Tuple[str, ...]:
         "(Sec. 9.1 y Tablero 2.3)",
         f"Empuje hidrostatico y subpresion: con NF a 1.4 m NO son opcionales "
         f"({NUMERAL_SUBPRESION})",
+        # El Ka estatico es el de Coulomb del Manual, no el tan^2 de la hoja
+        # de ruta: declarado en el punto de uso (`empujes_trasdos`) y aqui,
+        # para el revisor que lea la v8 antigua (EXT-M-06).
+        KA_COULOMB_DECLARACION,
         f"Zapata proxima al talud: doble verificacion, {NUMERAL_ZAPATA_TALUD_E050} "
         f"y {NUMERAL_ZAPATA_EN_TALUD}. El cabezal se apoya en el borde del "
         f"terraplen, no en terreno horizontal",

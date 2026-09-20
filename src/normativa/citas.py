@@ -68,6 +68,8 @@ FECHA_EXT3 = "2026-09-20"
 POR_EXT3 = "ext/EXT-3 · verificador-normativo"
 FECHA_EXT6 = "2026-09-20"
 POR_EXT6 = "ext/EXT-6 · verificador-normativo"
+FECHA_EXT7 = "2026-09-20"
+POR_EXT7 = "ext/EXT-7 · verificador-normativo"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
@@ -80,6 +82,7 @@ N1 = (FECHA_N1, POR_N1)
 EXT2 = (FECHA_EXT2, POR_EXT2)
 EXT3 = (FECHA_EXT3, POR_EXT3)
 EXT6 = (FECHA_EXT6, POR_EXT6)
+EXT7 = (FECHA_EXT7, POR_EXT7)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -5389,6 +5392,54 @@ MP_INTRODUCCION_LRFD_2014 = _cita(
           "---, de modo que la eleccion entre 9a y 10a es tecnica "
           "(DIS-MP-LRFD-EDICION dice por que la 9a es admisible; cual rige "
           "es de 'edicion_que_rige_el_expediente')."),
+)
+
+# ===========================================================================
+# EXT-7 (EXT-M-06) · El coeficiente activo del Manual de Puentes es COULOMB
+# ---------------------------------------------------------------------------
+# La v8 §9.2 escribia «Ka = tan²(45 − φ/2)» sin decir de donde salia, y el
+# codigo la seguia con Rankine en el empuje estatico mientras el incremento
+# sismico iba con Mononobe-Okabe (Coulomb con aceleracion). La fuente primaria
+# del marco elegido en §9.1 escribe Coulomb, con θ (cara posterior del muro
+# sobre la horizontal), δ y β (talud del relleno): con θ = 90°, δ = β = 0 se
+# reduce EXACTAMENTE a tan²(45 − φ/2). EXT-0 enmendo la hoja; esta es la cita
+# que sostiene la enmienda y el punto de uso (`M9.empujes_trasdos`).
+# Verificada sobre el texto extraido de la PDF 136 (pag. impresa 135): el
+# numeral, el titulo y la frase de apertura estan literales; las dos
+# ecuaciones se imprimen como formula y no se transcriben aqui. La palabra
+# «Coulomb» NO esta en el articulado: la escribe el pie de la Figura
+# 2.4.4.1.5.3-1 («Simbología para el empuje activo de Coulomb», PDF 137).
+# ===========================================================================
+
+MP_KA_COULOMB = _cita(
+    id="MP.2.4.4.1.5.3",
+    fuente_id="MP",
+    numeral="2.4.4.1.5.3",
+    titulo_numeral="Coeficiente de Empuje Lateral Activo, ka",
+    pagina_impresa="135",
+    pagina_pdf=136,
+    texto_literal=Verbatim(
+        texto="El coeficiente de empuje lateral activo se puede tomar como:",
+        pagina_pdf=136),
+    caracter=Caracter.PERMISO,
+    sesion=EXT7,
+    nota=("ES COULOMB (3.11.5.3 AASHTO): ka = sen²(θ + φ'f) / [r·sen²θ·"
+          "sen(θ − δ)], con r = [1 + √(sen(φ'f + δ)·sen(φ'f − β) / "
+          "(sen(θ − δ)·sen(θ + β)))]², ecs. 2.4.4.1.5.3-1 y -2 (PDF 136); "
+          "la simbologia (Figura 2.4.4.1.5.3-1, «empuje activo de Coulomb») "
+          "y la Tabla 2.4.4.1.5.3-1 de δ estan en la PDF 137 (pag. impresa "
+          "136). θ es el angulo de la cara posterior del muro con la "
+          "HORIZONTAL y β el del relleno con la horizontal: en la "
+          "formulacion de M9 (Mononobe-Okabe con k_h = k_v = 0) el trasdos "
+          "se mide desde la VERTICAL (β_M9 = 90° − θ) y el talud del relleno "
+          "es i (= β del Manual); la identidad entre las dos escrituras es "
+          "exacta y la recalcula el bloque __main__ de "
+          "tests/fixtures/casos_patron.py (CP-9, bloque C). Con θ = 90°, "
+          "δ = 0 y β = 0 se reduce a tan²(45 − φ/2), la forma que la v8 "
+          "§9.2 escribia (DIS-HR-KA-COULOMB, resuelta en EXT-0). El "
+          "«se puede tomar» es PERMISO: la fuente ofrece la expresion, no "
+          "la impone; el proyecto la adopta como coeficiente estatico por "
+          "homogeneidad con el sismico (EXT-M-06)."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
