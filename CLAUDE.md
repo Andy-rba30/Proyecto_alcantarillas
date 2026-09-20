@@ -429,7 +429,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2474**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2475**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -468,7 +468,39 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-6 (2026-09-20) sumó CINCUENTA tests**: los 35
+independientes. **EXT-7 (2026-09-20) sumó CINCUENTA Y OCHO tests**: los 50
+de `tests/test_ext7_cabezal.py` —la aceptación del cluster «cabezal» C07
+(EXT-M-05, EXT-M-06, EXT-M-07 y R95-031), escrita primero en rojo con un
+`xfail(strict=True)` de módulo —medidos 44 xfailed y 6 XPASS antes de tocar
+código: los cinco del caso límite de Rankine y la guardia de que nada se
+cablea a la CLI ya se cumplían— y liberada al corregir: la rama vertical con
+cortante alto que se detiene en el plano del cortante (11.10.2 / 11.10.1 →
+11.12) y en el piso de la ec. (11-32), `verificar_cuantia` con el mismo
+argumento, el docstring comprobado por AST, el Ka de Coulomb del Manual
+(`MP.2.4.4.1.5.3`, `DIS-HR-KA-COULOMB`) en el estático y la sobrecarga con
+el bloque C de CP-9 recomputado con la escritura del Manual, y
+`EstabilidadCabezal` con `exigidas`, `pendientes` y un `estable` estricto;
+más los tres ajustes que dejó el auditor adversarial (el [A] del régimen
+atribuido en la rama perpendicular, la resultante inclinada δ + β tomada
+entera como horizontal y declarada, y el rango «−6.25 % a +7.23 %» de la v8
+que era falso: medido −11.1 % a +44.4 %)—, los cuatro anclajes
+parametrizados de `test_decisiones_diferidas` para las fichas de la Parte
+XXIII (EXT-7-01..04), y los cuatro que crecen solos con los dos criterios
+nuevos (dos en `test_ext5_forma_gui`, dos en `test_criterios_adoptados`).
+Ningún archivo restó tests: los dos de `test_M9_cabezal` que pineaban
+`estable` con tres ítems se reescribieron y uno de `test_ext5_forma_gui`
+declara además el plano del cortante. La línea base de la Familia C se
+regeneró (cambian la declaración del Ka en la nota de la memoria, el
+recuento 71 → 73 criterios / 33 → 35 sin valor y la huella de criterios;
+ningún número de cálculo se mueve). Las cuatro configuraciones se MIDIERON
+sobre `origin/main` en `42a1cb1` (el commit `ext(EXT-7)`, fusionado por
+fast-forward), en serie y sin otra suite en marcha —una primera medición se
+descartó porque dos instancias del mismo script se solaparon y una
+desinstaló PyMuPDF a mitad de la otra—: las dos sin Tk sin `DISPLAY` y con
+un `xvfb-run` que falla, las dos sin PyMuPDF desinstalándolo y
+reinstalándolo. Los cuatro pares suben 58 exactos, porque ninguno de los 58
+depende de PyMuPDF ni de Tk: la cita nueva entra en los barridos de
+`test_normativa_pdf` sin sumar un test. **EXT-6 (2026-09-20) sumó CINCUENTA tests**: los 35
 de `tests/test_ext6_registro_normativo.py` —la aceptación del cluster
 «registro normativo» (EXT-N-01..04, PC-23, PC-26, PC-30, resto de
 EXT-G-03), escritos primero en rojo con `xfail(strict=True)` y liberados
@@ -658,7 +690,7 @@ llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
-2367; EXT-6: 2417; EXT-7: 2474. La
+2367; EXT-6: 2417; EXT-7: 2475. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -670,10 +702,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 2413 (medido en EXT-6) | 4 |
-| sí | no | 2405 (medido en EXT-6) | 12 |
-| no | sí | 2379 (medido en EXT-6) | 38 |
-| no | no | 2371 (medido en EXT-6) | 46 |
+| sí | sí | 2471 (medido en EXT-7) | 4 |
+| sí | no | 2463 (medido en EXT-7) | 12 |
+| no | sí | 2437 (medido en EXT-7) | 38 |
+| no | no | 2429 (medido en EXT-7) | 46 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
