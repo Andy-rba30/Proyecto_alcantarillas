@@ -323,6 +323,36 @@ los 4 tests de ventana corren)
   (`ca._registro`, `modelos._registro_normativo`, `constantes_normativas._reg`,
   `M11._reg_M11`): sin daño, sin singleton.
 
+### 1.4 Lo que un crítico de completitud añadió al cierre
+
+Cuatro comprobaciones que nadie había hecho y que **salen bien**: la línea base
+de 13 archivos es idéntica byte a byte con NumPy 2.3.5 / SciPy 1.17.0 (las
+versiones del auditor), así que sus reproducciones son comparables con la suite;
+las tres salidas de la CLI son deterministas entre procesos con `PYTHONHASHSEED`
+distinto; el HTML escapa el marcado de usuario en `id_punto` y `--proyecto` (236
+usos de `_esc`) y el JSON va con `allow_nan=False`; un CSV en latin1 o utf-16 sale
+como `UnicodeDecodeError` capturada por CLI y GUI.
+
+Cuatro huecos nuevos, menores, para el paso 1:
+
+- **PC-32 (media)** `M7.factor_esviaje` no tiene guardia de salida: con
+  `esviaje = 89.9°` (M0 admite `< 90`) la longitud del conducto de A-01 pasa de
+  18.6 a **10 313 m** sin excepción y la corrida sigue a M4 con esa fricción. Es el
+  patrón SIS-G-01 (`LimiteNumericoError` a la salida) sin aplicar.
+- **PC-33 (baja)** `cli._numero_externo` hace `float(bruto)` sin excluir `bool`:
+  `"luz_m": true` en `--datos-externos` entra como 1.0 m. NaN, Infinity y `'2,0'`
+  sí se rechazan.
+- **PC-34 (baja)** `--declarar ke_entrada=0,5` en la CLI declara la **tupla**
+  `(0, 5)` sin aviso, porque `ke_entrada` no tiene ventana; con `HW_D_max` la
+  guardia lo rechaza. Es PC-02 por la vía de la coma.
+- **PC-35 (baja)** `--plantilla` inexistente o sin marcadores termina con traceback
+  desnudo (`FileNotFoundError` / `ValueError`) y deja el JSON ya escrito: salida
+  parcial sin `ErrorProyecto`.
+
+Dimensiones que **nadie examinó** y quedan declaradas como tales: M8_estructural y
+M10_espaciamiento (19 y 9 tests); empaquetado y licencia (no hay `LICENSE`,
+`pyproject.toml` ni `logging`).
+
 ---
 
 ## 2. Evaluación del plan propuesto
