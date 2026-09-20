@@ -462,9 +462,11 @@ fusionado por fast-forward): las dos sin Tk con el `xvfb-run` que falla y
 sin `DISPLAY`, las dos sin PyMuPDF desinstalándolo y reinstalándolo; los
 cuatro pares coinciden con la derivación (ninguno de los treinta y tres
 depende de PyMuPDF, y sólo el de ventana real depende de Tk). El push se
-rechazó con 403 durante toda la sesión —la app de Claude sin acceso de
-escritura al repositorio, como en D9 y PD— y el commit de cierre lo dice
-con su SHA para que nadie lo lea como entregado hasta que entre.
+rechazó con 403 durante casi toda la sesión —la app de Claude sin acceso de
+escritura al repositorio, como en D9 y PD— y el commit de cierre `d7ffa7a`
+lo dejó dicho con su SHA; el acceso se restauró en la misma sesión, `main`
+entró por fast-forward y `origin/main` quedó en `d7ffa7a`, sobre el que se
+remidió «sí · sí»: 2156 passed, 4 skipped.
 **EXT-3 (2026-09-20) sumó TREINTA tests**: los veintiséis de
 `tests/test_ext3_regimen_barril.py` —la aceptación del cluster C06 (EXT-M-01,
 EXT-M-02, PC-04, PC-27 mitad compuerta, SIS-B-18 mitad JSON): los cuatro
