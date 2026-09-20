@@ -180,6 +180,57 @@ CP5_TRANSICION_HDS5 = {
             "ambas.",
 }
 
+# ---------------------------------------------------------------------------
+# CP-5T · El PUNTO MEDIO de la recta de transicion, Forma 1 (EXT-M-04, PC-19)
+# ---------------------------------------------------------------------------
+# CALCULADO A MANO desde las ecuaciones del num. A.2 de HDS-5 y de la Sec. 4.2
+# de la hoja de ruta (enmendada en EXT-0), NUNCA desde la salida del codigo.
+# Carta del concreto reforzado (Tabla A.1, Carta 1 escala 1, «Square edge
+# w/headwall», Forma 1): K = 0.0098, M = 2.0, c = 0.0398, Y = 0.67, Ks = -0.5.
+#
+# El extremo inferior de la recta es «la rama no sumergida en q* = 3.5», y la
+# rama no sumergida en q* = 3.5 es la del CAUDAL que corresponde a q* = 3.5:
+#
+#     A_llena = pi*0.90^2/4                        = 0.636172512 m2
+#     Q_lo    = 3.5 * A_llena * sqrt(0.90) / 1.811 = 1.166395268 m3/s
+#
+# y su H_c es el de ESE caudal, no el del caudal real del punto. Con
+# Q^2*T/(g*A^3) = 1 sobre la circular (el segundo Brent de M4) sale
+#
+#     theta_c = 4.012418 rad -> y_c = 0.639803 m, A_c = 0.483699 m2,
+#     V_c = Q_lo/A_c = 2.411405 m/s,  H_c = y_c + V_c^2/(2g) = 0.936177851 m
+#
+# Con S = 0.005 (la pendiente del caso patron CP-2):
+#
+#     lo = H_c/D + K*3.5^M + Ks*S = 1.040197612 + 0.12005 - 0.0025
+#        = 1.157747612            -> HW_lo = lo * D = 1.041972851 m
+#     hi = c*4.0^2 + Y + Ks*S     = 0.6368 + 0.67 - 0.0025
+#        = 1.3043                 -> HW_hi = hi * D = 1.17387 m
+#
+# En q* = 3.75, el punto medio de la ventana, la recta vale la MEDIA EXACTA de
+# los dos extremos: HW = (1.041972851 + 1.17387)/2 = 1.107921425 m.
+#
+# LO QUE EL CODIGO DABA HASTA EXT-2 (y lo que la auditoria externa midio):
+# 1.129037883 m, porque evaluaba el extremo inferior con el H_c del caudal REAL
+# (Q = 1.249709 m3/s, el de q* = 3.75), de modo que el extremo se movia con q*
+# y la «recta» era una curva. El error era conservador (+1.9 %) y solo de la
+# Forma 1: la ec. (A.2) no lleva H_c.
+CP5T_PUNTO_MEDIO_TRANSICION = {
+    "D": 0.90,
+    "S": 0.005,
+    "q_estrella": 3.75,                       # el punto medio de (3.5, 4.0)
+    "Q_lo_esperado": 1.166395268,             # 3.5*A_llena*sqrt(D)/Ku
+    "H_c_lo_esperado": 0.936177851,           # H_c(Q_lo), no H_c(Q real)
+    "HW_lo_esperado": 1.041972851,            # m, extremo inferior * D
+    "HW_hi_esperado": 1.17387,                # m, extremo superior * D
+    "HW_esperado": 1.107921425,               # m, media exacta de los extremos
+    "HW_con_extremo_movil": 1.129037883,      # m, lo que daba el codigo
+    "tolerancia": 1e-9,                       # los dorados llevan 9 decimales
+    "tolerancia_linealidad": 1e-12,           # segundas diferencias en la ventana
+    # La misma propiedad, en la ventana entera: paso de q* con que se barre.
+    "paso_q_estrella": 0.05,
+}
+
 # Caso adicional para las ramas puras, con el mismo D:
 CP5B_NO_SUMERGIDO = {"D": 0.90, "Q": 0.8998, "q_estrella_aprox": 2.70, "zona": "no_sumergido"}
 CP5C_SUMERGIDO = {"D": 0.90, "Q": 1.3997, "q_estrella_aprox": 4.20, "zona": "sumergido"}
@@ -742,6 +793,7 @@ TODOS_LOS_CASOS = {
     "CP3_VELOCIDAD_MINIMA": CP3_VELOCIDAD_MINIMA,
     "CP4_LAUSHEY": CP4_LAUSHEY,
     "CP5_TRANSICION_HDS5": CP5_TRANSICION_HDS5,
+    "CP5T_PUNTO_MEDIO_TRANSICION": CP5T_PUNTO_MEDIO_TRANSICION,
     "CP5B_NO_SUMERGIDO": CP5B_NO_SUMERGIDO,
     "CP5C_SUMERGIDO": CP5C_SUMERGIDO,
     "CP6_TIRANTE_CRITICO": CP6_TIRANTE_CRITICO,

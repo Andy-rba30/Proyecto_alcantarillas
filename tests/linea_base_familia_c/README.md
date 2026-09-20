@@ -100,6 +100,70 @@ dato de entrada. El detalle está en §16.1-bis, §1.1 y §16.11 de `docs/ruta_f
   punto de cajón— son idénticos byte a byte: ningún HW, tirante ni velocidad se mueve,
   que era la condición de la sesión.
 
+- **EXT-2** (`ext(EXT-2)`, 2026-09-20): cambian **diez archivos**, y por primera vez
+  desde C3 **se mueven números de cálculo**, todos declarados y todos esperados:
+  1. **`informe_perfil_ancho.json`, `memoria_perfil.html`, `memoria_expediente.html`,
+     `memoria_perfil_ancha.html` — A-01, la transición (`EXT-M-04`)**: el escalón
+     Ø 0.90 m de A-01 cae en la transición del control de entrada (q\* = 3.5018) y su
+     extremo inferior pasa a evaluarse con `H_c(Q_lo)`: `HW_entrada` **1.0423077 →
+     1.0420015 m (−0.306 mm)**, y con él la cota mínima de rasante por resguardo
+     (44.0923 → 44.0920 msnm), el V4 obtenido y el V4b. En las tres memorias el paso
+     F4.CONTROL de A-01 sustituye además `Q_lo`, `H_c_lo`, `HW_lo` y `HW_hi`; en la
+     estrecha y en la de expediente A-01 sigue sin dimensionar y el número se mueve en
+     su traza. A-02 y C-01 no se mueven en ningún archivo.
+  2. **Las tres memorias HTML** llevan además (a) el SHA-1 de `criterios_adoptados.py`
+     —cambió la justificación de `metodo_transicion_hds5`, que ahora dice con qué H_c
+     se evalúa el extremo— y (b) la ficha de ese criterio con la frase nueva.
+  3. **`memoria_punto_cajon.html` (`EXT-M-03`, ensanche N = 3)**: `punto_cajon.py`
+     declara `n_celdas_cajon = 3` y pasa por el reparto de M4. Cada barril recibe
+     Q/N = 2.000 m³/s: y_n 1.040 → 0.472 m, q\* 2.957 → 0.986 (sigue no sumergido,
+     Forma 2 pura), HW entrada 1.577 → 0.758 m, HW salida → 0.941 m, gobierna la
+     salida y `h_o` cae fuera de rango; la traza gana el paso **«Caudal que entra a
+     cada celda»** (F3.CELDAS, cita `HDS5_3ED.5.4.3#REPARTO`) y el `<pre>` imprime N y
+     Q_celda. Con N = 1 esta línea base era ciega al reparto: repartir o no repartir
+     daba el mismo número.
+  4. **`cli_perfil_ancho.txt`, `informe_perfil_ancho.json`, `resumen_perfil_ancho.csv`,
+     `memoria_perfil_ancha.html`, `informe_expediente.json`, `memoria_expediente.html`
+     — B-01, la fila con TW > D (`PC-18`)**: `entradas_ampliadas.json` declara
+     `TW_m = 1.00 m` para B-01 (D = 0.90 m), por encima del 0.30 global. Es la
+     **salida ahogada**: `h_o = TW`, `HW_salida` **0.356 → 0.818 m** (control de
+     salida), la cota mínima de 7.A pasa a gobernarla el resguardo (39.855 → 40.168
+     msnm, `resguardo_HW_subrasante` en vez de `cobertura_minima_aashto`), V4 obtenido
+     38.756 → 39.218, V4b 0.395 → 0.909. **Y V1 y V2 siguen [OK] sobre el tirante
+     normal y la velocidad uniforme** con el barril ahogado: es exactamente la
+     condición de `EXT-M-01` (régimen del barril), que EXT-3 corrige, y desde aquí la
+     línea base la tiene congelada y visible. TW = 1.00 m es un valor de sonda, como
+     el 0.30: no es una medición.
+  Los tres archivos restantes —`cli_perfil.txt`, `cli_rama_error.txt`,
+  `informe_rama_error.json`— son idénticos byte a byte: la corrida estrecha imprime
+  HW con dos decimales y −0.306 mm no los mueve, y la rama de error no llega a M4.
+
+  **Mutaciones que esta línea base ve desde EXT-2, medidas:**
+  - «pasar el Q total a M4» (`Q_celda = Q` en `M4.resolver_control`) → mueve
+    `memoria_punto_cajon.html` (y_n, HW, q\*, el paso del reparto). Antes no movía
+    nada: ninguna sección rectangular llegaba a `resolver_control` con N > 1.
+  - «extremo móvil» (`H_c_lo = critico.H_c`) → mueve los cuatro archivos de A-01.
+
+  **Mutaciones que esta línea base NO ve, y hay que saberlo:**
+  - **El techo `Q_lleno` de `tirante_normal` (`PC-06`)**: ningún punto del fixture cae en
+    la banda (Q_lleno, Q_manning(H)) del marco —C-01 se detiene antes, en
+    `embocadura_cajon`, y el punto de cajón corre con Q/N = 2.0 m³/s, lejos de 7.70—.
+    Quitar la guardia no mueve un byte. Lo cubren `test_ext2_multicelda_transicion`
+    y `test_seccion_rectangular`.
+  - **El reparto en el camino `normal=None` de `resolver_control`**: `punto_cajon.py`
+    inyecta el tirante normal (resuelto para Q/N con el mismo `caudal_por_celda`), de
+    modo que un reparto que sólo faltara en el camino sin tirante inyectado no se ve
+    aquí. Lo cubre `test_el_camino_sin_tirante_inyectado_tambien_reparte`.
+  - **Un marco de N celdas que pase por MD y la Fase 5**: C-01 sigue sin dimensionar
+    (cinco criterios del cajón sin declarar), y V6 rechaza N > 1. El multicelda de
+    punta a punta vive en el test de aceptación (`_disenar_marco_n3`, con verificador
+    inyectado), no en el corredor.
+  - **La rama V6 con N > 1** (sigue siendo `celdas == 1`; ficha EXT-2-01 de
+    `docs/decisiones_diferidas.md`).
+  - **`H_c_lo` bajo Forma 2**: el punto de cajón usa una carta de Forma 2 y no cae en
+    la transición; que `H_c_lo` sea `None` allí lo fija
+    `test_bajo_forma_2_no_hay_H_c_del_extremo_y_la_recta_no_se_mueve`.
+
 ## C3 ensanchó la ventana, y son diez archivos
 
 La ventana de C0 miraba **una** corrida: perfil, sin TW, tirando el JSON, sin CSV de

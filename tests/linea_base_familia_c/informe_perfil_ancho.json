@@ -225,9 +225,9 @@
         "V_sedimentacion_m_s": 2.4657739675712764,
         "y_normal_m": 0.6271229622477936,
         "y_critico_m": 0.6399701975127118,
-        "HW_entrada_m": 1.0423077331542925,
+        "HW_entrada_m": 1.0420015370127218,
         "HW_salida_m": 0.9929215494142943,
-        "HW_gobernante_m": 1.0423077331542925
+        "HW_gobernante_m": 1.0420015370127218
       },
       "proteccion_salida": {
         "numeral": "4.1.1.3.7 c)",
@@ -262,10 +262,10 @@
         "factible": true,
         "delta_rasante_cm": null,
         "tamizado": {
-          "cota_rasante_min_msnm": 44.0923077331543,
+          "cota_rasante_min_msnm": 44.09200153701273,
           "cota_rasante_actual_msnm": 44.2,
           "cota_por_recubrimiento_msnm": 43.55480000000001,
-          "cota_por_resguardo_msnm": 44.0923077331543,
+          "cota_por_resguardo_msnm": 44.09200153701273,
           "condicion_gobernante": "resguardo",
           "criterio_gobernante": "resguardo_HW_subrasante",
           "mensaje": "factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo)"
@@ -333,7 +333,7 @@
           "codigo": "V4",
           "numeral": "Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), num. 4.5.4 y 9.1(3) [hoja de ruta: Sec. 5.1]",
           "cumple": true,
-          "valor_obtenido": 43.1423077331543,
+          "valor_obtenido": 43.142001537012725,
           "valor_admisible": 43.25,
           "criterio_aplicado": "resguardo_HW_subrasante"
         },
@@ -342,7 +342,7 @@
           "codigo": "V4b",
           "numeral": "Fase 5, V4b -- adopcion del proyectista ('HW_D_max' [A]). NO es exigencia: el HDS-5, num. 2.2.5 d) 'Agency Constraints', pag. impresa 2.10, DESCRIBE la banda 1.0-1.5 que imponen las agencias viales de EE. UU., y el MTC no fija HW/D alguno",
           "cumple": true,
-          "valor_obtenido": 1.1581197035047694,
+          "valor_obtenido": 1.1577794855696908,
           "valor_admisible": 1.5,
           "criterio_aplicado": "HW_D_max"
         },
@@ -379,7 +379,7 @@
           "numeral": "Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1)",
           "cumple": true,
           "valor_obtenido": 44.2,
-          "valor_admisible": 44.0923077331543,
+          "valor_admisible": 44.09200153701273,
           "criterio_aplicado": "resguardo_HW_subrasante"
         },
         {
@@ -726,8 +726,8 @@
           "origen": "M7.longitud_conducto (Sec. 7.B)"
         },
         "TW_m": {
-          "valor": 0.3,
-          "origen": "datos externos (globales)"
+          "valor": 1.0,
+          "origen": "datos externos (punto B-01)"
         },
         "S_cauce": {
           "valor": 0.01,
@@ -764,8 +764,8 @@
         "y_normal_m": 0.14010552729048853,
         "y_critico_m": 0.17479402789992485,
         "HW_entrada_m": 0.2319944167649528,
-        "HW_salida_m": 0.3556088448759731,
-        "HW_gobernante_m": 0.3556088448759731
+        "HW_salida_m": 0.8182118309260107,
+        "HW_gobernante_m": 0.8182118309260107
       },
       "proteccion_salida": {
         "numeral": "4.1.1.3.7 c)",
@@ -800,13 +800,13 @@
         "factible": true,
         "delta_rasante_cm": null,
         "tamizado": {
-          "cota_rasante_min_msnm": 39.8548,
+          "cota_rasante_min_msnm": 40.168211830926005,
           "cota_rasante_actual_msnm": 40.6,
           "cota_por_recubrimiento_msnm": 39.8548,
-          "cota_por_resguardo_msnm": 39.70560884487597,
-          "condicion_gobernante": "recubrimiento",
-          "criterio_gobernante": "cobertura_minima_aashto",
-          "mensaje": "factible: la rasante 40.600 msnm alcanza la minima de 7.A (39.855 msnm, gobierna recubrimiento)"
+          "cota_por_resguardo_msnm": 40.168211830926005,
+          "condicion_gobernante": "resguardo",
+          "criterio_gobernante": "resguardo_HW_subrasante",
+          "mensaje": "factible: la rasante 40.600 msnm alcanza la minima de 7.A (40.168 msnm, gobierna resguardo)"
         }
       },
       "estructural": null,
@@ -871,7 +871,7 @@
           "codigo": "V4",
           "numeral": "Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), num. 4.5.4 y 9.1(3) [hoja de ruta: Sec. 5.1]",
           "cumple": true,
-          "valor_obtenido": 38.75560884487597,
+          "valor_obtenido": 39.21821183092601,
           "valor_admisible": 39.650000000000006,
           "criterio_aplicado": "resguardo_HW_subrasante"
         },
@@ -880,7 +880,7 @@
           "codigo": "V4b",
           "numeral": "Fase 5, V4b -- adopcion del proyectista ('HW_D_max' [A]). NO es exigencia: el HDS-5, num. 2.2.5 d) 'Agency Constraints', pag. impresa 2.10, DESCRIBE la banda 1.0-1.5 que imponen las agencias viales de EE. UU., y el MTC no fija HW/D alguno",
           "cumple": true,
-          "valor_obtenido": 0.39512093875108123,
+          "valor_obtenido": 0.9091242565844563,
           "valor_admisible": 1.5,
           "criterio_aplicado": "HW_D_max"
         },
@@ -917,8 +917,8 @@
           "numeral": "Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1)",
           "cumple": true,
           "valor_obtenido": 40.6,
-          "valor_admisible": 39.8548,
-          "criterio_aplicado": "cobertura_minima_aashto"
+          "valor_admisible": 40.168211830926005,
+          "criterio_aplicado": "resguardo_HW_subrasante"
         },
         {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",

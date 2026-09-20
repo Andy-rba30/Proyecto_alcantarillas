@@ -260,8 +260,8 @@
           "origen": "M7.longitud_conducto (Sec. 7.B)"
         },
         "TW_m": {
-          "valor": 0.3,
-          "origen": "datos externos (globales)"
+          "valor": 1.0,
+          "origen": "datos externos (punto B-01)"
         },
         "S_cauce": {
           "valor": 0.01,

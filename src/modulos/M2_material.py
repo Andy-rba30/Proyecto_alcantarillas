@@ -796,7 +796,8 @@ def numero_de_celdas(material: Material) -> int:
     seria falso y pasaria.
 
     VIVE EN M2 Y NO EN MD porque tiene DOS consumidores y los dos estan
-    debajo del orquestador: `MD._caudal_por_barril`, que reparte el caudal, y
+    debajo del orquestador: `M4.caudal_por_celda`, que reparte el caudal
+    (desde EXT-2; `MD._caudal_por_barril` es su alias), y
     `M5.v6_material_solido_arrastre`, que compara el numero contra la Sec.
     3.1. Ponerlo en MD obligaba a M5 a importar al modulo que lo orquesta.
     Leerlo dos veces con dos guardias distintas es como divergen los numeros.

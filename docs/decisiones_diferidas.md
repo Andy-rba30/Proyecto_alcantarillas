@@ -1449,3 +1449,56 @@ letra**, y por eso se escriben aquí y no sólo en el docstring.
   por separado; si algún día exige la columna, la rama de una sola celda
   numérica se vuelve redundante y se retira.
 - **Dónde vive:** `src/declaracion.py::_celda_escalar`
+
+---
+
+# Parte XVIII — Lo que EXT-2 dejó escrito al cerrar el cluster hidráulico A
+
+EXT-2 cerró EXT-M-03, EXT-M-04, PC-06 y PC-19 (el reparto Q/N dentro de M4, la
+recta de transición con `H_c(Q_lo)` y el techo `Q_lleno` del tirante normal).
+Dos cosas quedaron sin cambiar a propósito, y las dos se dejan aquí con su
+argumento para que nadie las lea como olvido.
+
+## EXT-2-01 · V6 sigue rechazando N > 1 aunque el multicelda ya se resuelve bien
+
+- **Qué se difirió:** cambiar `v6_material_solido_arrastre` (`cumple = celdas == 1`)
+  para que un marco de N > 1 celdas pueda **aceptarse**. El prompt de EXT-2 lo
+  ataba a que existiera un test multicelda de punta a punta y a que el cambio
+  fuera en el mismo commit que el contrato de `Q_celda_m3s`; el test existe
+  desde EXT-2 (`tests/test_ext2_multicelda_transicion.py::test_el_multicelda_se_dimensiona_con_Q_sobre_N_y_publica_los_dos_caudales`,
+  con verificador inyectado) y el contrato también, y aun así V6 no se toca.
+- **Por qué:** V6 no es una propiedad del programa sino una **lectura de la
+  fuente**: el num. 4.1.1.3.4 a) del Manual RECOMIENDA sección única sin
+  subdivisiones **ante capacidad de arrastre del curso** (`MC_HHD.4.1.1.3.4a#MULTIPLES`,
+  fundamento `F3.CELDAS`). Aceptar N > 1 exige saber si ESTE cauce arrastra
+  palizada, y ese dato —un [S] por punto, o al menos por corredor— no existe
+  en el CSV ni en `datos_sitio.py`. Sin él, la única V6 que no inventa nada es
+  la que hoy está: N > 1 no cumple, y quien declare multicelda lo ve como
+  incumplimiento con su criterio citado, no como un silencio. Cambiarla a
+  «cumple siempre» sería rellenar un vacío; cambiarla a «cumple si no hay
+  arrastre» exige el dato. El reparto Q/N (regla vinculante #3) queda
+  correcto y visible en la memoria con V6 tal cual: el defecto EXT-M-03 vivía
+  en la traza y en el motivo de rechazo, no en el veredicto.
+- **Qué haría falta:** una entrada [S] `arrastre_de_solidos` (o equivalente)
+  por punto, con su trazabilidad (observación de campo, registro de la Junta
+  de Usuarios), y una V6 que la lea: N > 1 cumple sólo sin arrastre
+  declarado. Con ese dato, `test_V6_sigue_rechazando_el_multicelda` se
+  reescribe en la misma sesión.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::v6_material_solido_arrastre`
+
+## EXT-2-02 · El JSON de la CLI no lleva `Q_celda_m3s` ni `numero_celdas` todavía
+
+- **Qué se difirió:** publicar los dos campos nuevos de `ResultadoHidraulico`
+  en `cli._diseno_json` (y por tanto en la GUI, que lee el mismo `Informe`).
+  Hoy viajan en la memoria HTML —el paso del reparto los imprime— y en el
+  objeto, pero el JSON sólo imprime `Q_m3s`, que sigue siendo el del punto.
+- **Por qué:** EXT-3 tiene asignada la mitad JSON de SIS-B-18 (`ahogado_por_TW`
+  y las banderas de h_o que tampoco llegan al JSON ni a la GUI), y meter aquí
+  dos claves nuevas al esquema sería tocar el mismo objeto en dos commits
+  consecutivos, que es lo que la regla «un cluster entero por commit» existe
+  para evitar. Ningún número publicado está mal: `Q_m3s` es el caudal del
+  punto, que es lo que su clave dice.
+- **Qué haría falta:** en EXT-3, sumar `Q_celda_m3s` y `numero_celdas` a
+  `_diseno_json` junto a las banderas de SIS-B-18, y regenerar la línea base
+  declarando que las tres corridas de la CLI ganan dos claves por punto.
+- **Dónde vive:** `src/modelos.py::ResultadoHidraulico`

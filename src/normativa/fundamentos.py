@@ -790,12 +790,21 @@ CELDAS = _fundamento(
         "que, y no al reves. Por eso el numero de celdas es un criterio "
         "declarado y no un supuesto del codigo."),
     verbo=Verbo.RECOMIENDA,
-    citas=("MC_HHD.4.1.1.3.4a#MULTIPLES",),  # recomendacion
+    # DOS CITAS DESDE EXT-2, y cada una sostiene una mitad distinta del
+    # paso: la del Manual sostiene la ADOPCION de N (recomendacion de seccion
+    # unica ante arrastre); la de HDS-5 num. 5.4.3 sostiene el REPARTO Q/N
+    # que M4 hace con ese N (regla vinculante #3), que hasta EXT-2 se
+    # afirmaba sin cita (EXT-M-03). El verbo lo sigue sosteniendo la primera.
+    citas=("MC_HHD.4.1.1.3.4a#MULTIPLES",   # recomendacion
+           "HDS5_3ED.5.4.3#REPARTO"),       # aproximacion: Q/N por barril
     que_pasa_si_no_se_hace=(
         "V6 sigue siendo trivialmente verdadera porque MD no sabe hacer "
         "multibarril -- que es una propiedad del PROGRAMA, no del diseno --, "
         "y el dia que sepa, la verificacion se vuelve falsa en silencio. Es "
-        "la trampa que la regla vinculante #10 anticipa."),
+        "la trampa que la regla vinculante #10 anticipa. Y si el reparto no "
+        "se imprime, la memoria adopta N y nunca dice con que caudal quedo "
+        "cada barril: Q = 9.0 impreso junto a un tirante que solo transporta "
+        "3.0 (EXT-M-03)."),
 )
 
 FORMA_HDS5 = _fundamento(

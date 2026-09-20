@@ -892,8 +892,20 @@ def _tabla_diseno(informe: Any) -> str:
         # Fase 7: la unica pendiente del entregable era la columna S_cauce del
         # bloque de datos de partida, que en esos puntos NO es la del diseño
         # (MAT-D9). Va aqui, al lado de Q, por la misma razon que Q.
+        # EL REPARTO ENTRE CELDAS SE DICE AQUI TAMBIEN (EXT-M-03): el y_n y las
+        # velocidades de esta fila son los de UNA celda, y sin N ni Q_celda la
+        # fila yuxtaponia el Q del punto con un tirante que solo transporta
+        # Q/N -- el mismo defecto que el paso de Manning tenia, mudado al
+        # resumen (lo señalo el auditor adversarial de EXT-2). Los dos campos
+        # llegan ya calculados por M4; aqui no se divide nada.
         _fila([_td("<b>Hidraulica</b>"),
-               _td(f"Q = {_num(hidraulica.Q)} m3/s &middot; S = "
+               _td(f"Q = {_num(hidraulica.Q)} m3/s"
+                   + (f" del punto, repartido entre N = "
+                      f"{hidraulica.numero_celdas} celdas: Q<sub>celda</sub> = "
+                      f"{_num(hidraulica.Q_celda_m3s)} m3/s, y los tirantes y "
+                      f"velocidades de esta fila son los de UNA celda"
+                      if hidraulica.numero_celdas != 1 else "")
+                   + f" &middot; S = "
                    f"{_num(hidraulica.S, FMT_4)} m/m (la del diseño: la del "
                    "cauce salvo que el punto declare la suya) &middot; "
                    f"y<sub>n</sub> = "

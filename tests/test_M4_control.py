@@ -307,15 +307,28 @@ def test_un_metodo_de_transicion_distinto_no_se_aplica_en_silencio(hds5):
 
 def test_la_interpolacion_reproduce_la_recta_entre_los_dos_extremos(hds5):
     """
-    Se interpola entre la forma no sumergida evaluada en q* = 3.5 y la
+    Se interpola entre la rama no sumergida evaluada en q* = 3.5 y la
     sumergida evaluada en q* = 4.0, no entre las dos evaluadas en el q* real.
+
+    REESCRITO EN EXT-2 (EXT-M-04, PC-19). Hasta entonces este test escribia
+    el extremo inferior con `critico.H_c` -- el H_c del caudal REAL del
+    punto -- y lo fijaba con rel=1e-12: un oraculo con la misma lectura que
+    el codigo, que defendia un extremo MOVIL y por tanto una curva bajo el
+    rotulo de «recta». La rama no sumergida «en q* = 3.5» es la del caudal
+    que corresponde a q* = 3.5, Q_lo = 3.5*A_llena*sqrt(D)/Ku, y su H_c es
+    el de ESE caudal (v8 §4.2, enmendada en EXT-0). Aqui el extremo se
+    escribe desde la fuente, con H_c(Q_lo), y se comprueba ademas que NO
+    coincide con el extremo movil: si alguien vuelve a el, este test cae.
     """
     c = CP5_TRANSICION_HDS5
     S = 0.005
-    critico = tirante_critico(Q=c["Q"], seccion=SeccionCircular(c["D"]))
-    resultado = control_entrada(Q=c["Q"], seccion=SeccionCircular(c["D"]), S=S, hds5=hds5, critico=critico)
+    sec = SeccionCircular(c["D"])
+    critico = tirante_critico(Q=c["Q"], seccion=sec)
+    resultado = control_entrada(Q=c["Q"], seccion=sec, S=S, hds5=hds5, critico=critico)
 
-    inferior = (critico.H_c / c["D"]
+    Q_lo = Q_LIM_NO_SUMERGIDO * area_llena(sec) * math.sqrt(c["D"]) / KU_SI
+    H_c_lo = tirante_critico(Q=Q_lo, seccion=sec).H_c
+    inferior = (H_c_lo / c["D"]
                 + hds5.K * Q_LIM_NO_SUMERGIDO ** hds5.M + hds5.Ks * S)
     superior = hds5.c * Q_LIM_SUMERGIDO ** 2 + hds5.Y + hds5.Ks * S
     peso = ((resultado.q_estrella - Q_LIM_NO_SUMERGIDO)
@@ -324,6 +337,14 @@ def test_la_interpolacion_reproduce_la_recta_entre_los_dos_extremos(hds5):
     assert resultado.HW_sobre_D == pytest.approx(
         inferior + peso * (superior - inferior), rel=1e-12)
     assert min(inferior, superior) <= resultado.HW_sobre_D <= max(inferior, superior)
+
+    # El extremo MOVIL -- con el H_c del caudal real -- ya no es el que se usa.
+    inferior_movil = (critico.H_c / c["D"]
+                      + hds5.K * Q_LIM_NO_SUMERGIDO ** hds5.M + hds5.Ks * S)
+    assert critico.H_c > H_c_lo                      # Q real > Q_lo en CP-5
+    assert resultado.HW_sobre_D != pytest.approx(
+        inferior_movil + peso * (superior - inferior_movil),
+        rel=CP5D_FORMA2["tolerancia_distincion"])
 
 
 def test_la_curva_empalma_continua_en_los_dos_limites(hds5):

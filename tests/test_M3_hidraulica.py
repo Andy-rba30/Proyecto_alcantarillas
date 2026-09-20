@@ -264,8 +264,11 @@ def test_parametros_invalidos_lanzan_dato_invalido(kwargs, campo, motivo):
 
 def test_el_None_de_tirante_normal_es_conservador_y_no_literal():
     """
-    MAT-O18. El docstring decia que None significa "no hay theta donde
-    Manning iguale Q". No es exacto: la curva Q(theta) de una seccion
+    MAT-O18. (Desde EXT-2, PC-06, el None en esa banda lo devuelve ANTES la
+    guardia `not Q < Q_lleno` de `tirante_normal`, comun a las dos formas; la
+    razon de Brent que sigue abajo es la que habia hasta entonces y sigue
+    siendo cierta para el bracket.) El docstring decia que None significa
+    "no hay theta donde Manning iguale Q". No es exacto: la curva Q(theta) de una seccion
     circular tiene un PICO cerca de y/D ~ 0.94 y despues BAJA hasta el caudal
     a seccion llena. En la banda (Q_lleno, Q_pico] SI existe theta -- dos, de
     hecho -- y la funcion devuelve None igual, porque Brent no encuentra

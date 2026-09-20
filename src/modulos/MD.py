@@ -102,10 +102,12 @@ defendible en la memoria.
 Ningun numero del bucle es un valor de proyecto escrito aqui: el 0.90 inicial,
 el paso de 0.15 y los topes por material entran por M2 desde el criterio
 'diametros_normalizados', y la progresion del MARCO desde
-'secciones_cajon_normalizadas'. Desde C5 MD si lee un criterio directamente y
-uno solo, 'n_celdas_cajon' (ver `_caudal_por_barril`): el reparto del caudal
-entre celdas es una decision del bucle, no del catalogo, y hasta entonces la
-frase «MD no lee `criterios_adoptados` en ninguna linea» era cierta.
+'secciones_cajon_normalizadas'. Desde C5 hasta EXT-2 MD leia un criterio
+directamente y uno solo, 'n_celdas_cajon', en `_caudal_por_barril`. Desde
+EXT-2 (EXT-M-03) el reparto Q/N vive en `M4.caudal_por_celda`, DENTRO de la
+pieza que consume el caudal, y MD lo pide por esa misma funcion para poder
+distinguir en el motivo el escalon que ni siquiera transporta Q/N. La frase
+«MD no lee `criterios_adoptados` en ninguna linea» vuelve a ser cierta.
 
 El mensaje de descarte
 ----------------------
@@ -159,10 +161,9 @@ from modelos import (CriterioPendienteError,
                      TipoMaterial,
                      Verificacion)
 from modulos.M2_material import (CRITERIO_SECCIONES_CAJON,
-                                 materiales_candidatos, numero_de_celdas,
-                                 siguiente_seccion)
+                                 materiales_candidatos, siguiente_seccion)
 from modulos.M3_hidraulica import resolver_manning
-from modulos.M4_control import resolver_control
+from modulos.M4_control import caudal_por_celda, resolver_control
 from tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_BUCLE = "Sec. 2 de la guia de sesiones (Fases 4 y 5)"
@@ -254,9 +255,12 @@ def _verificador_de_M5() -> Verificador:
 def _motivo_sin_flujo_libre(seccion: Seccion, Q: float, S: float,
                             material: Material) -> str:
     """
-    M3 devolvio None: no hay tirante normal en (0, 2*pi) para esa seccion.
-    No es un fallo -- es el resultado de diseño "esta seccion no alcanza"
-    (Sec. 4.1).
+    M3 devolvio None: no hay tirante normal en lamina libre para esa seccion
+    -- el caudal alcanza o supera el de seccion llena (PC-06), o Brent no
+    encuentra raiz --. No es un fallo -- es el resultado de diseño "esta
+    seccion no alcanza" (Sec. 4.1). `Q` es el de la celda: con N celdas es
+    Q/N, y desde EXT-2 la memoria lo dice en el paso del reparto. El texto
+    del motivo no cambia: es una cadena que la linea base compara.
     """
     return (f"{seccion.etiqueta()}: el conducto no transporta Q = {Q:.4f} m3/s en "
             f"flujo libre con S = {S:.5f} y n = {material.n_para_capacidad} "
@@ -394,8 +398,19 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     # coeficientes de HDS-5, el radio hidraulico y el control de entrada son
     # POR BARRIL (regla vinculante #3): con N celdas se dimensiona UNA con
     # Q/N. Para la circular N vale 1 -- el catalogo no ofrece multibarril -- y
-    # `_caudal_por_barril` lo devuelve tal cual, sin invocar ningun criterio y
+    # `caudal_por_celda` lo devuelve tal cual, sin invocar ningun criterio y
     # por lo tanto sin cambiar nada de lo que ya se imprimia.
+    #
+    # QUIEN REPARTE ES M4, NO ESTE BUCLE (EXT-M-03). Hasta EXT-2 el reparto
+    # vivia aqui, MD resolvia Manning con Q/N y despues le pasaba a
+    # `resolver_control` el Q TOTAL: las tres piezas de M4 corrian con 9.0
+    # sobre un tirante resuelto para 3.0 (+113.8 % de HW y cambio de control
+    # en el marco de tres celdas), y la memoria imprimia un Q que el tirante
+    # no transporta. Ahora M4 recibe el Q del punto y reparte por dentro;
+    # aqui se pide el MISMO reparto solo para resolver el tirante normal por
+    # adelantado y poder decir en el motivo que el escalon no transporta el
+    # caudal de la celda. `test_ext2_multicelda_transicion` espia las tres
+    # piezas: ninguna puede ver el Q total.
     Q_barril = _caudal_por_barril(Q, material)
     seccion = siguiente_seccion(material)    # primer escalon del catalogo
     ultimo_motivo = "el catalogo no ofrecio ninguna seccion"
@@ -432,6 +447,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
             else:
                 # No puede salir None: se le pasa el tirante normal ya
                 # resuelto, y ese es el unico caso en que M4 devuelve None.
+                # `Q` es el del PUNTO: M4 reparte por dentro con el mismo
+                # `caudal_por_celda`, y `normal` es el de Q/N (su contrato).
                 resultado = resolver_control(seccion=seccion, Q=Q, S=S,
                                              L=L, TW=TW,
                                              material=material, normal=normal)
@@ -526,22 +543,20 @@ def _caudal_por_barril(Q: float, material: Material) -> float:
     """
     El caudal que entra a UNA celda: Q/N (regla vinculante #3).
 
-    LA CIRCULAR NO INVOCA NINGUN CRITERIO, y es deliberado: su catalogo no
-    ofrece multibarril, N vale 1 por construccion del catalogo y no por una
-    decision del proyectista. Invocar 'n_celdas_cajon' aqui la registraria
-    como criterio USADO en toda corrida -- M11 imprime los usados -- y estaria
-    diciendo que el tubo eligio tener una celda, que es falso.
+    DESDE EXT-2 ES UN ALIAS DE `M4.caudal_por_celda` (EXT-M-03): el reparto
+    vive en la pieza que consume el caudal, y este bucle lo pide por la MISMA
+    funcion para que no haya dos repartos que puedan divergir. Se conserva
+    con su nombre porque la suite lo llama y porque nombra lo que MD hace
+    con el resultado: resolver el tirante normal del barril por adelantado.
 
-    EL MARCO SI LO INVOCA, y ahi esta lo que este criterio arregla: hasta hoy
-    V6 (material solido de arrastre) se cumplia trivialmente porque MD no
-    sabia hacer multibarril, que es una propiedad del PROGRAMA. Con el
-    criterio declarado, el numero de celdas es una DECISION escrita y V6 pasa
-    a depender de ella.
+    Lo que sigue valiendo, y esta escrito en M4: la circular no invoca ningun
+    criterio -- N vale 1 por construccion del catalogo --, y el marco lee
+    'n_celdas_cajon' por `M2.numero_de_celdas`, la misma lectura con la misma
+    guardia que V6. Con el criterio declarado, el numero de celdas es una
+    DECISION escrita y V6 depende de ella.
     """
-    if material.forma is not FormaSeccion.RECTANGULAR:
-        return Q
-    celdas = numero_de_celdas(material)
-    return Q / celdas
+    Q_celda, _ = caudal_por_celda(Q, material)
+    return Q_celda
 
 
 

@@ -265,11 +265,12 @@ def tirante_normal(seccion: Seccion, Q: float, S: float, n: float) -> Optional[G
     Resuelve el tirante normal de Manning (Sec. 4.1) para un D/Q/S/n dados,
     con Brent sobre theta en (0, 2*pi).
 
-    Devuelve None cuando la busqueda de Brent no encuentra raiz con el signo
-    esperado en los dos extremos del intervalo. No es un fallo del programa --
-    es el resultado de diseño "este material y este diametro no alcanzan" -- y
-    el orquestador de la Fase 4 lo lee como señal de pasar al siguiente
-    diametro de la progresion de M2.
+    Devuelve None cuando Q alcanza o supera el caudal a seccion llena, o
+    cuando la busqueda de Brent no encuentra raiz con el signo esperado en
+    los dos extremos del intervalo. No es un fallo del programa -- es el
+    resultado de diseño "este material y este diametro no alcanzan en lamina
+    libre" -- y el orquestador de la Fase 4 lo lee como señal de pasar al
+    siguiente escalon de la progresion de M2.
 
     EL CONTRATO, DICHO CON PRECISION (MAT-O18). El texto que ocupaba este
     lugar decia que None significa "no hay theta donde Manning iguale Q", y
@@ -295,8 +296,36 @@ def tirante_normal(seccion: Seccion, Q: float, S: float, n: float) -> Optional[G
     docstring afirme lo contrario de lo que el codigo hace: quien lea "no hay
     theta" concluira que el conducto no da, cuando lo que pasa es que da por
     encima del llenado admisible.
+
+    Y EL TECHO ES EL CAUDAL A SECCION LLENA, EN LAS DOS FORMAS (PC-06). En la
+    circular el bracket ya lo ponia solo: Q(theta_max) ES el caudal a seccion
+    llena, porque en theta = 2*pi el perimetro mojado es el perimetro entero.
+    En el marco NO: el bracket es (0, H) y en y = H el perimetro de lamina
+    libre es B + 2H, no 2B + 2H, de modo que Q_manning(H) SUPERA al caudal a
+    seccion llena -- para 2.00 x 1.50, n = 0.014 y S = 0.004: 9.64 frente a
+    7.70 m3/s -- y en la banda (7.70, 9.64) Brent encontraba una raiz y esta
+    funcion publicaba un «tirante normal» (y/H = 0.86 con Q = 8.0) por encima
+    del caudal que el conducto lleva a seccion llena. La solucion uniforme
+    con y < H existe en esa banda -- es el mismo fenomeno Q_pico > Q_lleno
+    que MAT-O18 documenta arriba para la circular --, de modo que lo que se
+    fija no es que el flujo «sea imposible» sino la CONVENCION que la
+    circular ya tenia por su bracket: la capacidad en lamina libre se acota
+    en Q_lleno, y por encima el escalon no alcanza. V1 rechazaba esos
+    tirantes de todos modos (y/H > 0.75), asi que ningun diseño aceptado se
+    mueve: se mueven el motivo y la traza, que publicaban un regimen que el
+    proyecto no admite. Por eso la guardia compara Q con
+    Q_lleno = (k_n/n) * A_llena * R_lleno^(2/3) * S^(1/2) ANTES del bracket,
+    con el radio hidraulico de la seccion llena que aporta la seccion; y lo
+    hace en las dos formas, porque en la circular no cambia nada (el techo
+    coincide con el que el bracket ya ponia, salvo el borde exacto) y una
+    guardia que bifurcara por forma seria la forma cableada en M3 que C1
+    retiro. Escrita en positivo y negada (MAT-D13): `not Q < Q_lleno`.
     """
     _validar_parametros(seccion, Q, S, n)
+    Q_lleno = (K_MANNING_SI / n) * seccion.area_llena \
+        * seccion.radio_hidraulico_lleno ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
+    if not Q < Q_lleno:
+        return None
     llenado_min, llenado_max = seccion.bracket_llenado()
 
     def f(llenado: float) -> float:

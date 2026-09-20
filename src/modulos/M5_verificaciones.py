@@ -1736,7 +1736,8 @@ def v6_material_solido_arrastre(*, material: Material) -> Verificacion:
     la comprueba.
 
     EL CONDUCTO CIRCULAR NO CONSULTA EL CRITERIO, y es la misma regla que
-    `MD._caudal_por_barril`: un tubo es una celda por construccion de su
+    `M4.caudal_por_celda` (desde EXT-2; antes `MD._caudal_por_barril`): un
+    tubo es una celda por construccion de su
     catalogo, y leer alli 'n_celdas_cajon' registraria como usado un criterio
     del marco en una corrida que no tiene ninguno.
     """

@@ -83,7 +83,8 @@ from modelos import (FormaSeccion, SeccionRectangular, TipoMaterial)  # noqa: E4
 from modulos.M2_material import catalogo                             # noqa: E402
 from modulos import M11_reporte as M11                               # noqa: E402
 from modulos.M3_hidraulica import resolver_manning                   # noqa: E402
-from modulos.M4_control import (control_entrada, control_salida,      # noqa: E402
+from modulos.M4_control import (caudal_por_celda,                     # noqa: E402
+                                control_entrada, control_salida,
                                 criterio_ke_de,
                                 resolver_control, tirante_critico)
 
@@ -109,10 +110,13 @@ FILA_N = "concreto_afinado"              # la unica subfila que no dice "tubo"
 KE_CAJON = "cajon_aletas_30_75_escuadra"
 
 # Elegido para que el punto caiga donde se quiere mirar, y se dice cual es cada
-# cosa: y/H = 0.694 (dentro del 0.75 de V1), regimen SUBCRITICO (y_n = 1.040 m
-# frente a y_c = 0.972 m) y q* = 2.957, o sea la rama NO SUMERGIDA -- la unica
-# en que la ec. (A.2) se aplica pura, sin interpolar con la (A.3) --. Es
-# justamente la rama en que cablear `forma = 1` cambia el numero.
+# cosa. Hasta EXT-2, con una celda: y/H = 0.694 (dentro del 0.75 de V1),
+# regimen SUBCRITICO (y_n = 1.040 m frente a y_c = 0.972 m) y q* = 2.957, o
+# sea la rama NO SUMERGIDA -- la unica en que la ec. (A.2) se aplica pura, sin
+# interpolar con la (A.3) --. Desde EXT-2, con TRES celdas, cada barril
+# recibe Q/N = 2.0 m3/s: sigue en la rama NO SUMERGIDA (q* = 0.986) y sigue
+# subcritico, que es lo que hace falta para que la mutacion «cablear
+# forma = 1» siga cambiando el numero.
 
 # LOS CUATRO VALORES DE LA CORRIDA DE PRUEBA. Se declaran aqui, juntos, para
 # que se lean de una vez y para que quede claro que son cuatro y no tres.
@@ -125,12 +129,14 @@ DECLARACIONES = {
     # CONTIENE la seccion de este fixture, para que el artefacto sea coherente
     # consigo mismo.
     "secciones_cajon_normalizadas": ((1.50, 1.20), (2.00, 1.50), (2.50, 2.00)),
-    # UNA CELDA. Este driver no pasa por MD y por lo tanto no ejercita el
-    # reparto Q/N -- con N = 1 daria el mismo numero de todos modos --, pero
-    # se declara igual: un marco con la embocadura y el n declarados y sin
-    # numero de celdas seria un expediente a medias, y lo que este artefacto
-    # publica es una traza de memoria completa.
-    "n_celdas_cajon": 1,
+    # TRES CELDAS DESDE EXT-2 (EXT-M-03, PC-18). Hasta entonces era 1, y con
+    # N = 1 la linea base era CIEGA al reparto Q/N: repartir o no repartir
+    # daba el mismo numero. Desde EXT-2 el reparto vive dentro de
+    # `M4.resolver_control` y este driver lo atraviesa, de modo que la
+    # mutacion «pasar el Q total a M4» mueve `memoria_punto_cajon.html`: el
+    # y_n, los dos HW, q* y el paso del reparto cambian. Sigue sin ser un
+    # diseño: es el valor que hace visible el defecto que EXT-2 cerro.
+    "n_celdas_cajon": 3,
     "ke_entrada_cajon": KE_CAJON,
 }
 
@@ -150,11 +156,17 @@ def main() -> None:
     marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,
                      forma=FormaSeccion.RECTANGULAR)
     seccion = SeccionRectangular(B, H)
-    normal = resolver_manning(seccion=seccion, Q=Q, S=S, material=marco)
+    # EL REPARTO ES EL DE M4, no uno propio: `caudal_por_celda` es la misma
+    # funcion con que `resolver_control` reparte por dentro, y el tirante
+    # normal que se le inyecta tiene que ser el de Q/N (su contrato). Un
+    # reparto escrito aqui a mano seria un segundo reparto que puede
+    # divergir del de produccion.
+    Q_celda, N = caudal_por_celda(Q, marco)
+    normal = resolver_manning(seccion=seccion, Q=Q_celda, S=S, material=marco)
     if normal is None:
         raise SystemExit(
             f"el fixture dejo de transportar su caudal: {seccion.etiqueta()} "
-            f"con Q = {Q} m3/s y S = {S} no tiene tirante normal")
+            f"con Q/N = {Q_celda} m3/s y S = {S} no tiene tirante normal")
     resultado = resolver_control(seccion=seccion, Q=Q, S=S, L=L, TW=TW,
                                  material=marco, normal=normal)
 
@@ -165,7 +177,11 @@ def main() -> None:
     print(f"seccion            {seccion.etiqueta()}")
     print(f"carta HDS-5        {CARTA}  (Equation Form {marco.hds5.forma})")
     print(f"fila Tabla N 09    {FILA_N}  n = {marco.n_min} .. {marco.n_max}")
-    print(f"Q                  {Q:.3f} m3/s")
+    print(f"Q                  {Q:.3f} m3/s  (del punto)")
+    print(f"N celdas           {N}")
+    print(f"Q_celda            {Q_celda:.3f} m3/s  (Q/N: el que resuelven M3 y M4)")
+    print(f"Q_celda (M4)       {resultado.Q_celda_m3s:.3f} m3/s  "
+          f"(ResultadoHidraulico.Q_celda_m3s, N = {resultado.numero_celdas})")
     print(f"S                  {S:.4f} m/m")
     print(f"L                  {L:.3f} m")
     print(f"TW                 {TW:.3f} m")
@@ -182,15 +198,15 @@ def main() -> None:
     # `ResultadoHidraulico` no lleva -- la via del critico, q*, el regimen,
     # h_o --. Son deterministas y no dependen de nada resuelto antes: no hay
     # dos resultados posibles que puedan divergir.
-    critico = tirante_critico(Q, seccion)
-    entrada = control_entrada(Q, seccion, S, marco.hds5, critico)
+    critico = tirante_critico(Q_celda, seccion)
+    entrada = control_entrada(Q_celda, seccion, S, marco.hds5, critico)
     # `criterio_ke` EXPLICITO, y hace falta: su valor por defecto es
     # `CRITERIO_KE`, el del TUBO, de modo que este artefacto -- que es el del
     # CAJON -- registraba como usado el criterio de la otra forma. No mueve
     # ningun numero impreso (de esta llamada solo se publica `h_o`), y por eso
     # justamente habria pasado inadvertido. Lo midio la auditoria adversarial
     # de C5.
-    salida = control_salida(Q, seccion, S, L, TW,
+    salida = control_salida(Q_celda, seccion, S, L, TW,
                             marco.n_para_capacidad, critico=critico,
                             criterio_ke=criterio_ke_de(marco))
     print(f"y_critico          {critico.y_c:.6f} m")

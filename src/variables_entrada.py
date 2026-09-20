@@ -971,7 +971,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "n_celdas_cajon": _Meta(
         unidad="celdas",
         nota="Entero >= 1. El caudal de diseño se reparte entre las celdas "
-             "-- `MD._caudal_por_barril` --, porque los coeficientes de HDS-5 "
+             "-- `M4.caudal_por_celda`, dentro de `resolver_control` desde EXT-2 --, "
+             "porque los coeficientes de HDS-5 "
              "y el radio hidraulico son POR BARRIL."),
     "ke_entrada_cajon": _Meta(
         unidad="-",

@@ -370,6 +370,7 @@ línea que se pueda romper.
 | `HDS5_3ED.3.3.3#HO_SUMERGIDA` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | exigencia | 2026-08-28 · texto |
 | `HDS5_3ED.5.3.3#ALINEADO` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
 | `HDS5_3ED.5.3.3#INDICADORES` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
+| `HDS5_3ED.5.4.3#REPARTO` | 5.4.3 | «Multiple Barrels» | pág. impresa **5.15** · PDF 151 | aproximacion | 2026-09-20 · texto |
 | `HDS5_3ED.A.2` | A.2, A.2.1 | «INLET CONTROL EQUATIONS» | pág. impresa **A.2** · PDF 191 | definicion | 2026-08-28 · texto |
 | `HDS5_3ED.A.2.1#KS` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.2** · PDF 191 | definicion | 2026-08-28 · texto |
 | `HDS5_3ED.A.2.1#QLIM` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.1** · PDF 190 | aproximacion | 2026-08-28 · texto |
@@ -391,6 +392,8 @@ línea que se pueda romper.
 > **`HDS5_3ED.5.3.3#ALINEADO`** — Es la contracara del indicador y la que explica por que la verificacion pasa en la inmensa mayoria de los puntos de este corredor: Sec. 7.B fija que la alcantarilla sigue la pendiente del cauce, de modo que S_conducto = S_cauce salvo que el punto declare `S_conducto` aparte. El «generally» es de la fuente y se conserva: no dice «nunca».
 
 > **`HDS5_3ED.5.3.3#INDICADORES`** — LOS DOS INDICADORES SON COMPARACIONES, NO UMBRALES. La fuente no escribe ninguna cifra: nombra dos desigualdades entre el conducto y el cauce natural. La primera -- S_conducto < S_cauce -- este software la puede evaluar con dos columnas que ya tiene. La segunda -- n_conducto > n_cauce -- necesita el n del CAUCE NATURAL, que no es columna de Sec. 1.2 y por eso queda declarada, no adivinada.
+
+> **`HDS5_3ED.5.4.3#REPARTO`** — Es el sosten de la regla vinculante #3 (Q/N por barril) que hasta EXT-2 no estaba en el registro. La fuente lo escribe como un SUPUESTO («is assumed») condicionado a barriles hidraulicamente identicos -- misma seccion, misma cota de fondo, misma embocadura --, que es exactamente lo que `SeccionRectangular` modela: UNA celda repetida N veces. Para barriles distintos o con cotas distintas la misma pagina remite a un procedimiento iterativo o a una curva de funcionamiento combinada (Section 3.5), que el proyecto NO implementa: el criterio 'n_celdas_cajon' declara N celdas iguales y nada mas.
 
 > **`HDS5_3ED.A.2`** — NOR-HDS-03, confirmado: `Ku` y `Ks` estan en la LISTA DE VARIABLES de las ecuaciones del num. A.2.1, pag. impresa A.2, y NO en la Tabla A.1. La Tabla A.1 tiene nueve columnas y de constantes de la ecuacion solo cuatro -- K, M, c e Y --: no hay columna K_u ni columna K_s.
 
@@ -1476,7 +1479,7 @@ recomienda.
 | `F10.CUNETA` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud maxima de recorrido de la cuneta, que fija el espaciamiento de las alcantarillas de alivio | **obliga** | `MC_HHD.4.1.2.1d` |
 | `F2.LUZ` | Fase 2 - Clasificacion y periodo de retorno | Denominacion de la obra por su luz: alcantarilla o puente | **define** | `MC_HHD.4.1.1.3.1`, `MC_HHD.4.1.1.5.1` |
 | `F2.TR` | Fase 2 - Clasificacion y periodo de retorno | Periodo de retorno del caudal de diseno, obtenido del riesgo admisible y la vida util de la Tabla N 02 | **recomienda** | `MC_HHD.3.6` |
-| `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES` |
+| `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES`, `HDS5_3ED.5.4.3#REPARTO` |
 | `F3.D_MIN` | Fase 3 - Tipo, material y durabilidad | Seccion minima circular de 0.90 m (36") | **obliga** | `MC_HHD.4.1.1.3.4a` |
 | `F3.MANTENIMIENTO` | Fase 3 - Tipo, material y durabilidad | Cota inferior de la progresion de secciones: dimension interior que permite mantener y limpiar el conducto | **obliga** | `MC_HHD.4.1.1.3.7d` |
 | `F3.SECCION_CANAL` | Fase 3 - Tipo, material y durabilidad | Adopcion de la seccion del cajon en un cruce de canal de riego, fuera del piso de 0.90 m | **obliga** | `MC_HHD.4.1.1.3.4a` |
@@ -1634,7 +1637,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 149.
+Citas sin firma de verificación: **5** de 150.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

@@ -62,6 +62,9 @@ POR_T2 = "trazabilidad/T2 · verificador-normativo"
 FECHA_N1 = "2026-09-14"
 POR_N1 = "normativa/N1 · verificador-normativo"
 
+FECHA_EXT2 = "2026-09-20"
+POR_EXT2 = "ext/EXT-2 · verificador-normativo"
+
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
 S20 = (FECHA_S20, POR_S20)
@@ -70,6 +73,7 @@ VC1 = (FECHA_VC1, POR_VC1)
 I1 = (FECHA_I1, POR_I1)
 T2 = (FECHA_T2, POR_T2)
 N1 = (FECHA_N1, POR_N1)
+EXT2 = (FECHA_EXT2, POR_EXT2)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -1885,6 +1889,44 @@ HDS5_3_1_3 = _cita(
           "patron que NOR-PUE-01: el numeral existe y su titulo no "
           "corresponde. La otra mitad de la cita vieja, «y Apendice A», SI "
           "era correcta: la misma regla esta en el num. A.2."),
+)
+
+# EL REPARTO ENTRE BARRILES, que la regla vinculante #3 de ruta_familia_c.md
+# §6 afirmaba sin cita (EXT-M-03): «Multicelda se resuelve por barril, no por
+# conjunto». El numeral que lo sostiene es el 5.4.3 «Multiple Barrels», cuyo
+# titulo esta en la pag. impresa 5.14 (PDF 150) y cuyo parrafo del reparto
+# esta en la 5.15 (PDF 151). Verificado en EXT-2 contra el PDF con PyMuPDF:
+# la oracion es una sola y termina en «among the barrels.» Lleva ademas la
+# condicion que la fuente pone -- «with identical hydraulic characteristics»
+# -- y por eso el `Verbatim` la incluye: sin ella el reparto igual seria
+# una afirmacion mas ancha que la de la fuente.
+HDS5_5_4_3_REPARTO = _cita(
+    id="HDS5_3ED.5.4.3#REPARTO",
+    fuente_id="HDS5_3ED",
+    numeral="5.4.3",
+    titulo_numeral="Multiple Barrels",
+    pagina_impresa="5.15",
+    pagina_pdf=151,
+    pagina_pdf_titulo=150,
+    texto_literal=Verbatim(
+        texto=("The nomographs provide the culvert discharge rate per barrel "
+               "for pipes or the flow per foot (meter) of span width for box "
+               "culverts.  For multiple barrels with identical hydraulic "
+               "characteristics, the total discharge is assumed to be "
+               "divided equally among the barrels."),
+        pagina_pdf=151),
+    caracter=Caracter.APROXIMACION,
+    sesion=EXT2,
+    nota=("Es el sosten de la regla vinculante #3 (Q/N por barril) que hasta "
+          "EXT-2 no estaba en el registro. La fuente lo escribe como un "
+          "SUPUESTO («is assumed») condicionado a barriles hidraulicamente "
+          "identicos -- misma seccion, misma cota de fondo, misma "
+          "embocadura --, que es exactamente lo que `SeccionRectangular` "
+          "modela: UNA celda repetida N veces. Para barriles distintos o con "
+          "cotas distintas la misma pagina remite a un procedimiento "
+          "iterativo o a una curva de funcionamiento combinada (Section "
+          "3.5), que el proyecto NO implementa: el criterio 'n_celdas_cajon' "
+          "declara N celdas iguales y nada mas."),
 )
 
 HDS5_3_3_3 = _cita(

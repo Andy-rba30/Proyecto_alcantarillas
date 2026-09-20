@@ -93,6 +93,19 @@ dentro de su rango; extrapolarlas al interior de la zona de transicion, que
 es justamente donde ninguna de las dos vale, seria usarlas fuera de su
 dominio. Asi la curva HWi/D(q*) queda continua en los dos extremos.
 
+    Y «EVALUADA EN q* = 3.5» ES EVALUADA PARA EL CAUDAL DE q* = 3.5 (EXT-M-04,
+    v8 §4.2 enmendada en EXT-0). La ec. (A.1) lleva H_c/D, y el H_c que
+    entra en el extremo inferior es el del caudal que corresponde a ese
+    q*, Q_lo = 3.5 * A_llena * sqrt(D) / Ku, no el del caudal real del
+    punto. Hasta EXT-2 se usaba el H_c del caudal real: el extremo
+    inferior se movia con q*, y lo que la memoria imprimia como «recta»
+    era una curva (incrementos de 20.8 a 5.6 mm por paso de q* en CP-5;
+    +1.9 % de HW, del lado conservador). Solo afecta a la Forma 1 -- la
+    (A.2) no lleva H_c -- y solo al interior de la ventana: en q* = 3.5 el
+    caudal real ES Q_lo y en q* = 4.0 el extremo superior no lleva H_c, de
+    modo que la continuidad en los bordes no cambia. El caso patron CP-5T
+    fija el punto medio, 1.107921425 m, calculado a mano.
+
     LA INTERPOLACION LINEAL NO ES EL METODO DEL HDS-5. Es una SIMPLIFICACION
     ADOPTADA, declarada como criterio [C] en 'metodo_transicion_hds5'. HDS-5
     no interpola: en la zona 3.5 < q* < 4.0 traza una curva TANGENTE a las
@@ -313,7 +326,8 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
                      LimiteNumericoError, Magnitud, Material, RegimenEntrada,
                      ResultadoHidraulico, TiranteCritico, TipoDeVeredicto,
-                     TiranteNormal, Umbral, Veredicto, paso)
+                     TiranteNormal, TransicionEntrada, Umbral, Veredicto, paso)
+from modulos.M2_material import CRITERIO_N_CELDAS_CAJON, numero_de_celdas
 from modulos.M3_hidraulica import geometria, resolver_manning
 from tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
 
@@ -788,7 +802,8 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
         q* >= 4.0   HWi/D = c*(q*)^2 + Y + Ks*S        (sumergido, ec. A.3;
                                                         comun a las dos formas)
         3.5 < q* < 4.0   interpolacion lineal entre el valor de la primera en
-                    q* = 3.5 y el de la segunda en q* = 4.0
+                    q* = 3.5 -- para el caudal Q_lo de ese q*, y bajo Forma 1
+                    con H_c(Q_lo) -- y el de la segunda en q* = 4.0
 
     La tercera rama NO reproduce el HDS-5: la curva tangente del HDS-5 se
     sustituye por una recta, y esa sustitucion es el criterio [C]
@@ -820,6 +835,7 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
     q_estrella = caudal_adimensional(Q, seccion)
     regimen = _regimen(q_estrella)
 
+    transicion = None
     if regimen is RegimenEntrada.NO_SUMERGIDO:
         HW_sobre_D = _hw_sobre_D_no_sumergido(q_estrella, critico.H_c, seccion, S, hds5)
     elif regimen is RegimenEntrada.SUMERGIDO:
@@ -842,12 +858,25 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
                        "validez. Reproducir la curva tangente del HDS-5 exige "
                        "programar otro procedimiento, no cambiar este valor",
             )
+        # EL EXTREMO INFERIOR ES EL DE Q_lo, EL CAUDAL DE q* = 3.5 (EXT-M-04),
+        # y bajo Forma 1 se evalua con el H_c de ESE caudal: es lo que hace
+        # que los dos extremos sean fijos para un D, una S y una carta, y
+        # que la recta sea una recta. Bajo Forma 2 la (A.2) no lleva H_c y
+        # no hay segundo critico que resolver.
+        Q_lo = Q_LIM_NO_SUMERGIDO * seccion.area_llena * math.sqrt(seccion.altura) / KU_SI
+        H_c_lo = (tirante_critico(Q_lo, seccion).H_c
+                  if hds5.forma == FORMA_1 else None)
         extremo_inferior = _hw_sobre_D_no_sumergido(
-            Q_LIM_NO_SUMERGIDO, critico.H_c, seccion, S, hds5)
+            Q_LIM_NO_SUMERGIDO, H_c_lo, seccion, S, hds5)
         extremo_superior = _hw_sobre_D_sumergido(Q_LIM_SUMERGIDO, S, hds5)
         peso = ((q_estrella - Q_LIM_NO_SUMERGIDO)
                 / (Q_LIM_SUMERGIDO - Q_LIM_NO_SUMERGIDO))
         HW_sobre_D = extremo_inferior + peso * (extremo_superior - extremo_inferior)
+        transicion = TransicionEntrada(
+            Q_lo=Q_lo, H_c_lo=H_c_lo,
+            HW_lo=extremo_inferior * seccion.altura,
+            HW_hi=extremo_superior * seccion.altura,
+            peso=peso)
 
     # Una sola vez, despues de las tres ramas, porque el rechazo es el mismo.
     #
@@ -868,6 +897,7 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
         regimen=regimen,
         critico=critico,
         constantes=hds5,
+        transicion=transicion,
     )
 
 
@@ -1185,8 +1215,61 @@ def hw_gobernante(entrada: ControlEntrada,
 # CONDICIONES DE USO que la propia fuente le pone (NOR-HDS-05).
 
 def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entrada,
-                       salida, control, gobierna_salida):
-    """La traza de M3 + M4 para una combinacion, en orden de calculo."""
+                       salida, control, gobierna_salida,
+                       Q_celda: Optional[float] = None, celdas: int = 1):
+    """
+    La traza de M3 + M4 para una combinacion, en orden de calculo.
+
+    `Q` es el caudal del PUNTO y `Q_celda` el que M3 y M4 resolvieron de
+    verdad (EXT-M-03); sin reparto valen lo mismo, y por eso `Q_celda` lleva
+    default: los tests que llaman a esta funcion con una sola celda no
+    tienen que saber que existe un reparto.
+    """
+    if Q_celda is None:
+        Q_celda = Q
+    # EL PASO DEL REPARTO, y va PRIMERO y solo en el marco: es lo primero que
+    # un revisor necesita para rehacer el tirante normal de la celda, y en la
+    # circular no hay reparto que contar -- un tubo es una celda por
+    # construccion del catalogo, sin criterio invocado, y un paso que dijera
+    # «Q/1» estaria imprimiendo una decision que nadie tomo --. Cuelga del
+    # MISMO fundamento que el paso «Numero de celdas» de M2 (F3.CELDAS): aquel
+    # adopta N, este dice con que caudal quedo cada barril. Hasta EXT-2 la
+    # memoria adoptaba N y nunca lo decia: imprimia Q = 9.0 junto a un y_n que
+    # solo transporta 3.0.
+    de_reparto = ()
+    if material.forma is FormaSeccion.RECTANGULAR:
+        de_reparto = (paso(
+            "F3.CELDAS",
+            codigo="3.3",
+            que="Caudal que entra a cada celda del marco",
+            formula="Q_celda = Q / N, con N celdas hidraulicamente iguales: los "
+                    "coeficientes de HDS-5, el radio hidraulico y los dos "
+                    "controles se resuelven POR BARRIL",
+            formula_cita_id="HDS5_3ED.5.4.3#REPARTO",
+            citas_textuales=("HDS5_3ED.5.4.3#REPARTO",),
+            sustitucion=(
+                Magnitud("Q", Q, "m3/s",
+                         "caudal de diseño del PUNTO: la columna Q_m3s del CSV "
+                         "en la Familia A, y el caudal declarado del drenaje "
+                         "longitudinal o del canal en las B y C",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("N", celdas, "celdas",
+                         f"adoptado en el criterio '{CRITERIO_N_CELDAS_CAJON}'; "
+                         "es el mismo numero que V6 verifica", cifras=None)),
+            resultado=Magnitud("Q_celda", Q_celda, "m3/s",
+                               "caudal de UNA celda: es el Q con que se "
+                               "resuelven los pasos 4.1 a 4.4 de abajo",
+                               cifras=CIFRAS_MAGNITUD),
+            veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                                explicacion="paso de calculo: no contrasta "
+                                            "contra ningun umbral"),
+            nota_del_proyecto=(
+                "La fuente lo escribe como un SUPUESTO condicionado a barriles "
+                "hidraulicamente identicos, que es lo que la seccion modela: "
+                "una celda repetida N veces. Barriles distintos o con cotas "
+                "distintas piden el procedimiento iterativo de HDS-5 Section "
+                "3.5, que este proyecto no implementa."),
+        ),)
     # EL PASO QUE DICE COMO SE CALCULAN A, P Y R, y va PRIMERO porque es el
     # que hace legible al siguiente: Manning define Q en funcion de A y de R,
     # y el num. 4.1.1.3.6 NO dice como se calcula ninguno de los dos. Ese
@@ -1267,7 +1350,14 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      "ingles, que NO se usa: todo el calculo opera en SI). El "
                      "Manual escribe la ec. (47) en forma SI, sin coeficiente",
                      cifras=CIFRAS_FACTOR),
-            Magnitud("Q", Q, "m3/s",
+            # EL Q CON QUE M3 RESOLVIO DE VERDAD (EXT-M-03): el de la celda.
+            # Sin reparto es el del punto, y la procedencia lo dice.
+            Magnitud("Q", Q_celda, "m3/s",
+                     (f"caudal de UNA celda, Q/N con N = {celdas} del paso "
+                      f"del reparto: es el que transporta el tirante de "
+                      f"abajo, no el caudal del punto ({Q:.{CIFRAS_MAGNITUD}f} "
+                      f"m3/s)")
+                     if celdas != 1 else
                      "caudal de diseño CON QUE CORRIO el punto: la columna "
                      "Q_m3s del CSV en la Familia A, y el caudal declarado "
                      "del drenaje longitudinal o del canal en las B y C",
@@ -1313,7 +1403,9 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
     # cerrada dejaria al revisor sin poder rehacerlo, que es exactamente el
     # defecto que C3 tuvo que corregir en el paso de la Forma 2.
     magnitudes_criticas = [
-        Magnitud("Q", Q, "m3/s", "el mismo caudal de diseño",
+        Magnitud("Q", Q_celda, "m3/s",
+                 "el mismo caudal del paso de Manning"
+                 + (": el de UNA celda" if celdas != 1 else ""),
                  cifras=CIFRAS_MAGNITUD),
         *seccion.magnitudes_de_forma()]
     if critico.cerrado:
@@ -1471,6 +1563,32 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                  + ("" if fila_altura == "D" else
                     " (la altura del marco; el diametro en la circular)"),
                  cifras=CIFRAS_FACTOR))
+    # LOS DOS EXTREMOS DE LA RECTA, solo cuando la rama es la de transicion
+    # (EXT-M-04): un HW «por la recta» sin los dos numeros entre los que se
+    # interpolo no se puede rehacer. El inferior se evalua para Q_lo, el
+    # caudal de q* = 3.5, y bajo Forma 1 con el H_c de ESE caudal.
+    if entrada.transicion is not None:
+        t = entrada.transicion
+        magnitudes.append(
+            Magnitud("Q_lo", t.Q_lo, "m3/s",
+                     f"caudal que corresponde a q* = {Q_LIM_NO_SUMERGIDO}: "
+                     f"{Q_LIM_NO_SUMERGIDO}*A_llena*D^0.5/Ku. El extremo "
+                     "inferior de la recta es la rama no sumergida para ESTE "
+                     "caudal, no para el del punto", cifras=CIFRAS_MAGNITUD))
+        if t.H_c_lo is not None:
+            magnitudes.append(
+                Magnitud("H_c_lo", t.H_c_lo, "m",
+                         "energia especifica critica de Q_lo, resuelta con el "
+                         "mismo solver del paso 4.2.1: es el H_c que entra en "
+                         "la ec. (A.1) del extremo inferior", cifras=CIFRAS_MAGNITUD))
+        magnitudes.append(
+            Magnitud("HW_lo", t.HW_lo, "m",
+                     f"extremo inferior: la rama no sumergida en q* = "
+                     f"{Q_LIM_NO_SUMERGIDO}, por D", cifras=CIFRAS_MAGNITUD))
+        magnitudes.append(
+            Magnitud("HW_hi", t.HW_hi, "m",
+                     f"extremo superior: la ec. (A.3) en q* = "
+                     f"{Q_LIM_SUMERGIDO}, por D", cifras=CIFRAS_MAGNITUD))
 
     de_entrada = paso(
         "F4.CONTROL",
@@ -1637,8 +1755,39 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
     # «Fases 3 y 4»; abrir uno nuevo en el reporte es de otra sesion. En la
     # circular la tupla viene VACIA y no se mueve nada: el tubo no elige en
     # Fase 3 -- su fila y su carta son lectura directa de una tabla --.
-    return material.pasos + (de_seccion, de_manning, de_critico, de_forma,
-                             de_entrada, de_salida, de_gobernante)
+    return material.pasos + de_reparto + (de_seccion, de_manning, de_critico,
+                                          de_forma, de_entrada, de_salida,
+                                          de_gobernante)
+
+
+def caudal_por_celda(Q: float, material: Material) -> Tuple[float, int]:
+    """
+    (Q/N, N): el caudal que entra a UNA celda y cuantas hay (regla vinculante
+    #3 de ruta_familia_c.md §6; HDS-5 num. 5.4.3, `HDS5_3ED.5.4.3#REPARTO`).
+
+    VIVE EN M4 DESDE EXT-2, y antes era `MD._caudal_por_barril` (EXT-M-03).
+    Con el reparto en el orquestador, M4 recibia el Q TOTAL y lo resolvia con
+    un tirante normal que MD habia resuelto para Q/N: cinco cifras a nueve
+    decimales, +113.8 % de HW y cambio de control en el marco de tres celdas.
+    Y el camino `normal=None` de `resolver_control` -- Manning resuelto aqui
+    -- ni siquiera repartia. Con el reparto DENTRO de la pieza que consume
+    el caudal, los dos caminos reparten igual y MD solo lo pide para poder
+    distinguir en el motivo el escalon que no transporta Q/N.
+
+    LA CIRCULAR NO INVOCA NINGUN CRITERIO, y es deliberado: su catalogo no
+    ofrece multibarril, N vale 1 por construccion del catalogo y no por una
+    decision del proyectista. Invocar 'n_celdas_cajon' aqui la registraria
+    como criterio USADO en toda corrida -- M11 imprime los usados -- y
+    estaria diciendo que el tubo eligio tener una celda, que es falso.
+
+    EL MARCO SI LO INVOCA, por `M2.numero_de_celdas`, que es la MISMA lectura
+    con la MISMA guardia que usa V6: dos lecturas con dos guardias es como
+    divergen los numeros.
+    """
+    if material.forma is not FormaSeccion.RECTANGULAR:
+        return Q, 1
+    celdas = numero_de_celdas(material)
+    return Q / celdas, celdas
 
 
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
@@ -1650,10 +1799,20 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
     junta el tirante normal de M3 (Sec. 4.1) con las tres piezas de M4
     (Sec. 4.2 y 4.3) en un `ResultadoHidraulico`.
 
-    Devuelve None si M3 no encuentra tirante normal para esa D y ese material
-    -- el conducto no transporta Q en flujo libre --, con la misma lectura que
-    en M3: no es un fallo, es "este material y este diametro no alcanzan" y el
-    orquestador de la Fase 4 pasa al siguiente diametro de M2.
+    `Q` ES EL CAUDAL DEL PUNTO, y lo que M3 y M4 resuelven es el de UNA
+    celda, `caudal_por_celda(Q, material)` (EXT-M-03): con N celdas iguales
+    cada barril recibe Q/N. El `ResultadoHidraulico` lleva los dos --`Q`
+    total y `Q_celda_m3s`-- y el `PasoDeMemoria` del reparto. Si el
+    orquestador inyecta `normal`, tiene que ser el tirante normal resuelto
+    para Q/N: es el contrato de MD, que lo resuelve con el mismo
+    `caudal_por_celda` para poder distinguir en el motivo el escalon que no
+    transporta el caudal de la celda.
+
+    Devuelve None si M3 no encuentra tirante normal para esa seccion y ese
+    material -- el conducto no transporta Q/N en lamina libre, o va a
+    presion --, con la misma lectura que en M3: no es un fallo, es "este
+    material y esta seccion no alcanzan" y el orquestador de la Fase 4 pasa
+    al siguiente escalon de M2.
 
     Reparto de rugosidades (regla de doble n, Sec. 4.1):
       - el tirante normal y la friccion del control de salida usan n_max
@@ -1668,15 +1827,17 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
     El tirante critico se resuelve UNA vez y se inyecta en las dos piezas que
     lo necesitan (Forma 1 del control de entrada y h_o del control de salida).
     """
+    Q_celda, celdas = caudal_por_celda(Q, material)
     if normal is None:
-        normal = resolver_manning(seccion=seccion, Q=Q, S=S,
+        normal = resolver_manning(seccion=seccion, Q=Q_celda, S=S,
                                   material=material)
     if normal is None:
         return None
 
-    critico = tirante_critico(Q, seccion)
-    entrada = control_entrada(Q=Q, seccion=seccion, S=S, hds5=material.hds5, critico=critico)
-    salida = control_salida(Q=Q, seccion=seccion, S=S, L=L, TW=TW,
+    critico = tirante_critico(Q_celda, seccion)
+    entrada = control_entrada(Q=Q_celda, seccion=seccion, S=S,
+                              hds5=material.hds5, critico=critico)
+    salida = control_salida(Q=Q_celda, seccion=seccion, S=S, L=L, TW=TW,
                             n=material.n_para_capacidad, critico=critico,
                             criterio_ke=criterio_ke_de(material))
     _, control = hw_gobernante(entrada, salida)
@@ -1709,8 +1870,10 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         # es el que el num. 3.3.3 acota, y viaja siempre --- no solo cuando
         # gobierna la salida ---: las banderas ya llevan esa condicion.
         HW_sobre_D_salida=salida.HW_sobre_D,
+        Q_celda_m3s=Q_celda,
+        numero_celdas=celdas,
         pasos=_pasos_hidraulicos(
             seccion=seccion, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
             critico=critico, entrada=entrada, salida=salida, control=control,
-            gobierna_salida=gobierna_salida),
+            gobierna_salida=gobierna_salida, Q_celda=Q_celda, celdas=celdas),
     )

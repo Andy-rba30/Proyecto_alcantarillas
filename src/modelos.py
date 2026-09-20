@@ -1792,6 +1792,32 @@ class TiranteCritico:
 
 
 @dataclass(frozen=True)
+class TransicionEntrada:
+    """
+    Los dos extremos de la recta de transicion del control de entrada
+    (3.5 < q* < 4.0), con el caudal y el H_c con que se evaluo el inferior.
+
+    EXISTE POR EXT-M-04. «La rama no sumergida en q* = 3.5» es la del CAUDAL
+    que corresponde a q* = 3.5 -- `Q_lo` = 3.5 * A_llena * sqrt(D) / Ku -- y,
+    bajo Forma 1, con el H_c de ESE caudal, `H_c_lo`. Hasta EXT-2 el extremo
+    se evaluaba con el H_c del caudal real, de modo que se movia con q* y lo
+    que la memoria imprimia como «recta» era una curva (v8 §4.2, enmendada
+    en EXT-0). Los cuatro numeros viajan para que el paso F4.CONTROL los
+    sustituya: un HW «por la recta» sin sus dos extremos no se puede rehacer.
+
+    `H_c_lo` es `None` bajo Forma 2: la ec. (A.2) no lleva H_c, y publicar
+    un H_c que no entra en el numero seria la clase de sustitucion falsa que
+    C3 tuvo que corregir en ese mismo paso.
+    """
+
+    Q_lo: float                   # m3/s - el caudal de q* = 3.5
+    H_c_lo: Optional[float]       # m    - H_c(Q_lo); None bajo Forma 2
+    HW_lo: float                  # m    - rama no sumergida en q* = 3.5, * D
+    HW_hi: float                  # m    - rama sumergida en q* = 4.0, * D
+    peso: float                   # adimensional - (q* - 3.5) / (4.0 - 3.5)
+
+
+@dataclass(frozen=True)
 class ControlEntrada:
     """
     Salida del control de entrada HDS-5 (Sec. 4.2). Ademas del HW lleva el
@@ -1829,6 +1855,10 @@ class ControlEntrada:
     regimen: RegimenEntrada
     critico: TiranteCritico
     constantes: ConstantesHDS5
+    # LOS DOS EXTREMOS DE LA RECTA, cuando la rama es la de transicion
+    # (EXT-M-04). `None` en las dos ramas puras: ahi no hay recta. Ver
+    # `TransicionEntrada`.
+    transicion: Optional["TransicionEntrada"] = None
     numeral: str = "HDS-5 Ap. A, Tabla A.1 (Sec. 4.2)"
 
 
@@ -2050,6 +2080,19 @@ class ResultadoHidraulico:
     llegan ya con esa condicion aplicada, de modo que True significa "este
     punto usa la aproximacion fuera del rango que su fuente declara" y no
     "podria pasarle a alguien". M11 lo imprime junto al HW del punto.
+
+    `Q_celda_m3s` y `numero_celdas` (EXT-M-03): `Q` SIGUE SIENDO EL CAUDAL
+    DEL PUNTO -- sus tres lectores (la memoria, el JSON de la CLI y la tabla
+    de resumen) lo imprimen como tal, y cambiarle el significado los habria
+    dejado imprimiendo un tercio del caudal como si fuera el del cruce --.
+    Lo que M4 RESUELVE es `Q_celda_m3s` = Q / `numero_celdas`, el caudal de
+    UN barril (regla vinculante #3 de ruta_familia_c.md §6; HDS-5 num.
+    5.4.3, cita `HDS5_3ED.5.4.3#REPARTO`). Los dos llevan default para que
+    los seis constructores de la suite y todo tubo circular -- una celda por
+    construccion del catalogo -- sigan armandose igual: `numero_celdas = 1`
+    y `Q_celda_m3s = Q`. Hasta EXT-2 el tipo no distinguia los dos caudales
+    y M4 recibia el total con un tirante normal resuelto para Q/N: la
+    memoria imprimia Q = 9.0 junto a un y_n que solo transporta 3.0.
     """
 
     y_normal: float                       # m  - con n_max (Sec. 4.1)
@@ -2082,6 +2125,15 @@ class ResultadoHidraulico:
     # critico, control de entrada, control de salida y adopcion del
     # gobernante. M11 los formatea; no los reconstruye.
     pasos: Tuple["PasoDeMemoria", ...] = ()
+    # EL CAUDAL CON QUE M3 Y M4 RESOLVIERON DE VERDAD, y cuantos barriles
+    # lo reciben (EXT-M-03). Ver el docstring. `None` en el constructor
+    # significa «no hay reparto»: se rellena con `Q` en `__post_init__`.
+    Q_celda_m3s: Optional[float] = None   # m3/s - Q / numero_celdas
+    numero_celdas: int = 1                # barriles hidraulicamente iguales
+
+    def __post_init__(self) -> None:
+        if self.Q_celda_m3s is None:
+            object.__setattr__(self, "Q_celda_m3s", self.Q)
 
     @property
     def HW(self) -> float:

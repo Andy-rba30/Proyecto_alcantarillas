@@ -166,7 +166,10 @@ def test_el_emisor_es_el_modulo_que_llama_a_paso_y_no_el_que_transporta(pasos):
     `PasoDeMemoria.fase` no podria.
     """
     emisores = ind.emisores_por_fundamento()
-    assert emisores["F3.CELDAS"] == ("M2_material",)
+    # DOS EMISORES DESDE EXT-2: M2 adopta N («Numero de celdas») y M4 emite
+    # el reparto Q/N con el mismo fundamento (EXT-M-03). Los dos llaman a
+    # `paso("F3.CELDAS", ...)` y el indice los distingue por AST.
+    assert emisores["F3.CELDAS"] == ("M2_material", "M4_control")
     assert emisores["F4.MANNING"] == ("M4_control",)
     assert emisores["F1.TW"] == ("M3_hidraulica",)
     assert emisores["F5.V1"] == ("M5_verificaciones",)
