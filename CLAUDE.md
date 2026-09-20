@@ -386,7 +386,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2097**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2127**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -419,7 +419,25 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-2 (2026-09-20) sumó DIECINUEVE tests**: los diecisiete de
+independientes. **EXT-3 (2026-09-20) sumó TREINTA tests**: los veintiséis de
+`tests/test_ext3_regimen_barril.py` —la aceptación del cluster C06 (EXT-M-01,
+EXT-M-02, PC-04, PC-27 mitad compuerta, SIS-B-18 mitad JSON): los cuatro
+casos del prompt escritos primero en rojo con `xfail(strict=True)` y
+liberados al corregir, los tipos nuevos (`RegimenBarril`,
+`MetodoNoEvaluableError`, `Bloqueo` en `modelos.py` con `TipoDeBloqueo`), el
+dorado CP-12 del régimen lleno, y los tres que dejó el auditor adversarial
+(la compuerta llamada en los dos alcances, que una mutación «siempre
+diferida» sobrevivía a 277 tests; la celda y/D del resumen siguiendo al
+régimen)—, el de B-01 «dimensionado con HW no evaluable/diferido» en
+`test_cierre_perfil`, y los tres anclajes parametrizados de
+`test_decisiones_diferidas` para las fichas de la Parte XIX (EXT-3-01,
+EXT-3-02, EXT-3-03). Las cuatro configuraciones se MIDIERON sobre
+`origin/main` en 43b2531 (el contenedor arrancó sin `python3-tk`, se
+instaló como manda el bloque de abajo, y las cuatro se midieron: las dos
+sin PyMuPDF desinstalándolo y reinstalándolo; las dos sin Tk con el
+`xvfb-run` que falla y sin `DISPLAY`). Las cinco citas nuevas entran en los
+barridos de `test_normativa_pdf` sin sumar un test, y por eso la columna
+«PyMuPDF = no» sigue saltando 33. **EXT-2 (2026-09-20) sumó DIECINUEVE tests**: los diecisiete de
 `tests/test_ext2_multicelda_transicion.py` —la aceptación del cluster
 hidráulico A del dictamen (EXT-M-03, EXT-M-04, PC-06, PC-19), catorce escritos
 primero en rojo con `xfail(strict=True)` y liberados al corregir, dos que
@@ -516,7 +534,7 @@ medirla; pre-N1 la encontró en 1881 y fusionó además la rama de S24, que
 llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
-EXT-0: 1986; EXT-1: 2078; EXT-2: 2097. La
+EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -528,10 +546,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 2093 (derivado en EXT-2: PD midió 1978) | 4 |
-| sí | no | 2089 | 8 |
-| no | sí | 2060 (derivado en EXT-2: PD midió 1945) | 37 |
-| no | no | 2056 (derivado en EXT-2: medido 2035 en EXT-1 antes de los dos tests del auditor) | 41 |
+| sí | sí | 2123 (medido en EXT-3) | 4 |
+| sí | no | 2119 (medido en EXT-3) | 8 |
+| no | sí | 2090 (medido en EXT-3) | 37 |
+| no | no | 2086 (medido en EXT-3) | 41 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
