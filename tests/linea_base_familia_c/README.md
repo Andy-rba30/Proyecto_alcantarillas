@@ -164,6 +164,64 @@ dato de entrada. El detalle está en §16.1-bis, §1.1 y §16.11 de `docs/ruta_f
     la transición; que `H_c_lo` sea `None` allí lo fija
     `test_bajo_forma_2_no_hay_H_c_del_extremo_y_la_recta_no_se_mueve`.
 
+- **EXT-3** (`ext(EXT-3)`, 2026-09-20): cambian **nueve archivos**, los nueve por el
+  régimen del barril, el dominio del método h_o y el bloque h_o del JSON (`EXT-M-01`,
+  `EXT-M-02`, `PC-04`, `SIS-B-18`, `EXT-2-02`). Idénticos byte a byte: `cli_expediente.txt`,
+  `cli_rama_error.txt`, `informe_rama_error.json` y `resumen_expediente.csv` (la rama de
+  error no llega a M4; la corrida de expediente sigue sin dimensionar ningún punto y su
+  volcado de texto no imprime la traza de escalones).
+  1. **`cli_perfil.txt`, `memoria_perfil.html` — la corrida ESTRECHA de C0, sin TW
+     declarado**: el TW sale por la vía 4 de Sec. 1.3 (receptor a sección llena) y para
+     **A-02 vale 1.196 m sobre D = 0.90 m**: el barril va **LLENO**, V1 (y/D = 1) y V2
+     (Q/A_llena) NO cumplen en Ø 0.90 y Ø 1.05, el primer D > TW (Ø 1.20) va
+     parcialmente lleno bajo control de salida —V1/V2 diferidas— y ahí el concreto
+     se cae por relleno negativo sobre la clave (`cota_subrasante`) y TMC/HDPE por el
+     espesor de pared sin declarar: **A-02 pasa de dimensionado (Ø 0.90, control de
+     salida) a «sin dimensionar» con `DisenoNoFactibleError`**. No es daño colateral:
+     hasta EXT-3 esa misma corrida imprimía «manda TW: la salida está ahogada» junto a
+     V1 [OK] con y/D = 0.373 sobre un barril que iba lleno (exactamente `EXT-M-01`), y el
+     TW de 1.196 m es el escenario acotado de la vía 4, no una medición. A-01 (TW < D,
+     control de salida) **sigue sin dimensionar, como antes** —`DisenoNoFactibleError`
+     por relleno negativo sobre la clave (`cota_subrasante`)—, y lo que gana son **dos
+     bloqueos diferidos** `MetodoNoEvaluableError` (V1 y V2) en su traza. Puntos
+     dimensionados 1 → 0 (el que cae es A-02); etapas bloqueadas 13 → 19; diferidas
+     9 → 14.
+  2. **`cli_perfil_ancho.txt`, `informe_perfil_ancho.json`, `resumen_perfil_ancho.csv`,
+     `memoria_perfil_ancha.html` — la corrida ANCHA, con TW declarado**: A-01 y A-02
+     (control de entrada, TW = 0.30) no mueven ningún número y ganan las dos líneas
+     nuevas del volcado («Regimen» y «h_o») y las **trece claves nuevas del JSON**
+     (`Q_celda_m3s`, `numero_celdas`, `regimen_barril`, `V_llena_m_s`, `V_salida_m_s`,
+     `V_salida_procedencia`, `y_salida_m`, `h_o_m`, `TW_m`, `ahogado_por_TW`,
+     `HW_sobre_D_salida`, `h_o_fuera_de_rango`, `h_o_requiere_cautela`). **B-01, la fila
+     con TW = 1.00 m > D = 0.90 m (`PC-18`)**, que EXT-2 dejó congelada con V1/V2 [OK]
+     sobre el barril ahogado: Ø 0.90 va LLENO y **V1 (y/D = 1.0) y V2 (Q/A_llena =
+     0.149 m/s) NO cumplen**; el punto cierra en **Ø 1.05** (TW < D, parcialmente lleno
+     bajo control de salida) con **V1 y V2 diferidas** por método no evaluable,
+     HW/D_salida = 0.778 (cautela, no fuera de rango), y la Fase 6 recibe la velocidad de
+     SALIDA de HDS-5 3.1.6 —Q entre el área al TW, **0.112 m/s** en vez de la uniforme
+     1.956— de modo que **d50 pasa de 0.126 a 0.0004 m** (el CSV lo imprime 0.000): con la
+     salida ahogada por el receptor el chorro no existe, que es lo que la fuente mide.
+     La clave del JSON de la Fase 6 pasa de `V_erosion_m_s` a `V_salida_m_s`.
+  3. **`informe_expediente.json`, `memoria_expediente.html` — la corrida de
+     EXPEDIENTE**: ningún punto dimensiona (igual que antes) pero A-01 (Ø 1.20) y A-02
+     (Ø 0.90) se detienen ahora en **V1 con `MetodoNoEvaluableError`** (control de
+     salida, barril parcialmente lleno) en vez de en el criterio pendiente de V5; los
+     escalones Ø 0.90 de B-01 con TW = 1.00 llevan `incumplidas: [V1, V2]`.
+  4. **Las cuatro memorias HTML** llevan además el SHA-1 de `criterios_adoptados.py` (no
+     cambió ningún valor: cambió el archivo) y el bloque de umbrales con la
+     `H_O_CONDICION_APLICACION` reescrita («no es un aviso: bloqueo método no
+     evaluable»). **`memoria_punto_cajon.html`** gana el paso **F4.REGIMEN** («Regimen del
+     barril y velocidad a la salida») en su traza; ningún número del cajón se mueve.
+
+  **Mutaciones que esta línea base ve desde EXT-3:** volver V2 a `V_sedimentacion` bajo
+  LLENO (B-01 vuelve a Ø 0.90 en la ancha; A-02 vuelve a dimensionar en la estrecha);
+  `regimen_del_barril` devolviendo siempre PARCIALMENTE_LLENO (mismo efecto); pasar
+  `V_erosion` a M6 (d50 de B-01 vuelve a 0.126). **Lo que NO ve:** el bloqueo «método no
+  evaluable» de la carga HW —ningún punto de las cuatro corridas queda bajo control de
+  salida con HW/D < 0.75 tras EXT-3 (B-01 sube a Ø 1.05 y pasa a 0.778)—; lo cubren
+  `tests/test_ext3_regimen_barril.py` y `tests/test_cierre_perfil.py` (B-01 del corredor
+  de perfil, HW/D = 0.395).
+
 ## C3 ensanchó la ventana, y son diez archivos
 
 La ventana de C0 miraba **una** corrida: perfil, sin TW, tirando el JSON, sin CSV de

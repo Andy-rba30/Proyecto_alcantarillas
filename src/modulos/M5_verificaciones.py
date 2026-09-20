@@ -221,7 +221,7 @@ auditoria adversarial de esa sesion.
 
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 import criterios_adoptados as ca
 from constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
@@ -229,11 +229,12 @@ from constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    UMBRALES_POR_CODIGO, V_MIN,
                                    Y_SOBRE_D_MAX, caracter_del_umbral)
 from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
-                     CIFRAS_PORCENTAJE, CotaDeEntrada,
+                     CIFRAS_PORCENTAJE, ControlGobernante, CotaDeEntrada,
                      DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
                      ErrorProyecto, Familia, FormaSeccion,
-                     Magnitud, Material,
-                     PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
+                     Magnitud, Material, MetodoNoEvaluableError,
+                     PuntoCritico, ReferenciaNormativa, RegimenBarril,
+                     ResultadoHidraulico,
                      Seccion,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
                      Verificacion, eleccion,
@@ -249,6 +250,43 @@ from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     filas_ev_de_la_tabla,
                                     peso_relleno_kn_m)
 from tolerancias import TOL_UMBRAL_NORMATIVO
+
+# LO QUE V1 Y V2 NO PUEDEN EVALUAR, dicho una vez (EXT-3; EXT-M-01, v8 §4.1).
+# Bajo control de SALIDA con el barril PARCIALMENTE LLENO el tirante y la
+# velocidad DENTRO del conducto no son los del flujo uniforme de M3 --el
+# control esta aguas abajo y la lamina sube desde max(y_c, TW) hacia la
+# entrada-- y no se conocen sin el perfil de la lamina de agua. Las dos
+# verificaciones lo dicen con `MetodoNoEvaluableError`, que la corrida
+# convierte en Bloqueo: diferible a nivel de perfil, no de expediente. No se
+# inventa un criterio de llenado para cerrarlas.
+PROCEDIMIENTO_PERFIL_LAMINA = (
+    "el perfil de la lamina de agua a lo largo del conducto (HDS-5 Section "
+    "3.5; el paquete de implementacion esta en el bloque que precede a "
+    "constantes_normativas.H_O_CONDICION_APLICACION), que este software no "
+    "calcula: es la sesion EXT-3b")
+MOTIVO_V1_V2_PENDIENTES = (
+    "bajo control de SALIDA con el barril PARCIALMENTE LLENO el tirante y la "
+    "velocidad dentro del conducto no son los del flujo uniforme de Manning "
+    "y no se conocen sin el perfil de la lamina; no se inventa un criterio "
+    "de llenado (v8 §4.1)")
+
+
+def _exigir_regimen_evaluable(codigo: str, resultado: ResultadoHidraulico,
+                              id_punto: Optional[str]) -> bool:
+    """
+    True si el barril va LLENO, False si va parcialmente lleno bajo control
+    de ENTRADA (regimen uniforme: los numeros de M3 valen), y
+    MetodoNoEvaluableError si va parcialmente lleno bajo control de SALIDA.
+    Es la UNICA bifurcacion por regimen de V1 y V2, y por eso esta escrita una
+    vez.
+    """
+    if resultado.regimen_barril is RegimenBarril.LLENO:
+        return True
+    if resultado.control_gobernante is ControlGobernante.SALIDA:
+        raise MetodoNoEvaluableError(
+            que=codigo, procedimiento=PROCEDIMIENTO_PERFIL_LAMINA,
+            motivo=MOTIVO_V1_V2_PENDIENTES, id_punto=id_punto)
+    return False
 
 # Los TRES numerales de las verificaciones hidraulicas se escriben largos, y
 # por el mismo motivo: son lo UNICO que la memoria imprime de cada
@@ -626,12 +664,45 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     fuerza normativa, sin nada en la fuente que lo justificara (MAT-O13,
     NOR-HID-10).
 
-    El tirante que se compara es `y_normal`, resuelto con n_max (rama de
-    capacidad): mas rugosidad da mas tirante para el mismo Q, o sea el extremo
-    conservador para una verificacion de borde libre.
+    EL TIRANTE QUE SE COMPARA ES EL DEL REGIMEN DEL BARRIL (EXT-3; EXT-M-01,
+    v8 §1.3 y §4.1 enmendadas en EXT-0), y solo en flujo uniforme es
+    `y_normal`:
+
+      * barril LLENO (TW >= D, `ResultadoHidraulico.regimen_barril`): el
+        tirante es D entero, y/D = 1 y NO CUMPLE. Aqui el veredicto no se
+        apoya en la recomendacion del 25 % sino en la exigencia del mismo
+        parrafo --«las alcantarillas no deben ser diseñadas para trabajar a
+        seccion llena» (pag. impresa 79, `MC_HHD.4.1.1.3.7b#LLENA`)--, que
+        viaja como cita textual del paso. Hasta EXT-3 esta funcion media el
+        tirante normal tambien ahi y daba [OK] con y/D = 0.135 sobre un
+        barril que la misma memoria decia ahogado.
+      * parcialmente lleno bajo control de ENTRADA: `y_normal`, resuelto con
+        n_max (rama de capacidad): mas rugosidad da mas tirante para el mismo
+        Q, o sea el extremo conservador para una verificacion de borde libre.
+      * parcialmente lleno bajo control de SALIDA: el tirante dentro del
+        conducto no se conoce sin el perfil de la lamina de agua, y esta
+        funcion lo dice con `MetodoNoEvaluableError` (ver
+        `_exigir_regimen_evaluable`). No inventa un criterio de llenado.
     """
     simbolo, nombre, procedencia = _magnitud_de_llenado(material)
-    y_sobre_D = resultado.y_normal / D
+    lleno = _exigir_regimen_evaluable("V1", resultado, punto.id)
+    if lleno:
+        y = D
+        procedencia_y = (
+            "tirante del REGIMEN del barril (M4, paso 4.3b): la seccion va "
+            "LLENA porque el TW alcanza la clave, y el tirante es la altura "
+            "interior entera. NO es el tirante normal de Manning, que aqui "
+            "no describe el flujo")
+        citas_de_regimen = ("MC_HHD.4.1.1.3.7b#LLENA",)
+    else:
+        y = resultado.y_normal
+        procedencia_y = (
+            "M3, tirante normal por Manning con la rama de n MAXIMO (mas "
+            "rugosidad da mas tirante para el mismo Q: el extremo conservador "
+            "para un borde libre); vale porque el barril va parcialmente "
+            "lleno bajo control de ENTRADA, en regimen uniforme (M4, paso 4.3b)")
+        citas_de_regimen = ()
+    y_sobre_D = y / D
     cumple = y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO
     umbral = _umbral_de(
         "V1", valor=Y_SOBRE_D_MAX, unidad="",
@@ -661,21 +732,23 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
                     f"{simbolo} es {nombre}, una de las tres magnitudes "
                     f"que el numeral enumera",
             formula_cita_id="MC_HHD.4.1.1.3.7b",
+            citas_textuales=citas_de_regimen,
             sustitucion=(
-                Magnitud("y_normal", resultado.y_normal, "m",
-                         "M3, tirante normal por Manning con la rama de n "
-                         "MAXIMO (mas rugosidad da mas tirante para el mismo "
-                         "Q: el extremo conservador para un borde libre)",
-                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("y_normal" if not lleno else "y", y, "m",
+                         procedencia_y, cifras=CIFRAS_MAGNITUD),
                 Magnitud(simbolo, D, "m", procedencia, cifras=CIFRAS_FACTOR)),
             resultado=Magnitud(f"y/{simbolo}", y_sobre_D, "",
-                               f"y_normal / {simbolo}, calculado en esta "
-                               f"verificacion", cifras=CIFRAS_MAGNITUD),
+                               f"{'y' if lleno else 'y_normal'} / {simbolo}, "
+                               f"calculado en esta verificacion",
+                               cifras=CIFRAS_MAGNITUD),
             umbral=umbral,
             veredicto=_veredicto(
                 cumple, Y_SOBRE_D_MAX - y_sobre_D, "",
                 "margen de borde libre por encima del 25 % exigido"
                 if cumple else
+                "el barril va LLENO (TW >= D): no hay borde libre, y la "
+                "fuente lo prohibe expresamente (pag. impresa 79)"
+                if lleno else
                 "el conducto trabaja con menos borde libre del recomendado"),
             nota_del_proyecto=f"{nota} {de_alcance}".strip(),
         ),
@@ -741,14 +814,53 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
     afectado; lo que estaba invertido era el conservadurismo. El fixture CP-3
     ya modelaba el umbral de V2 con n = 0.013 (n_max): el repositorio se
     contradecia a si mismo.
+
+    Y TODO LO ANTERIOR VALE PARA EL FLUJO UNIFORME (EXT-3; EXT-M-01, v8 §4.1
+    enmendada en EXT-0). La velocidad que se compara es la de la SECCION
+    EFECTIVA del regimen del barril:
+
+      * barril LLENO (TW >= D): `ResultadoHidraulico.V_llena_m_s` =
+        Q_celda / A_llena, que M4 calcula sin n --a seccion llena no hay
+        tirante que resolver, y por eso no hay dos ramas entre las que
+        elegir--. Es el caso (a) del dictamen: 0.05 m3/s en un tubo de 0.90 m
+        ahogado da 0.0786 m/s < 0.25, y esta funcion decia [OK] con los 0.974
+        m/s del flujo uniforme.
+      * parcialmente lleno bajo control de ENTRADA: `V_sedimentacion`, como
+        arriba.
+      * parcialmente lleno bajo control de SALIDA: `MetodoNoEvaluableError`
+        (ver `_exigir_regimen_evaluable`).
     """
-    cumple = resultado.V_sedimentacion >= V_MIN - TOL_UMBRAL_NORMATIVO
+    lleno = _exigir_regimen_evaluable("V2", resultado, None)
+    if lleno:
+        if resultado.V_llena_m_s is None:
+            raise ValueError(
+                "el ResultadoHidraulico dice regimen LLENO y no trae "
+                "V_llena_m_s: M4.resolver_control la llena siempre, asi que "
+                "esto es un fallo de programa, no del expediente")
+        V = resultado.V_llena_m_s
+        simbolo_V = "V_llena"
+        procedencia_V = (
+            "M4 (paso 4.3b): Q_celda / A_llena, la velocidad del regimen "
+            "LLENO porque el TW alcanza la clave del barril (HDS-5 3.1.6, "
+            "pag. impresa 3.18). No lleva n de Manning: a seccion llena no "
+            "hay tirante que resolver ni dos ramas entre las que elegir, y "
+            "la velocidad uniforme de M3 no describe este flujo")
+    else:
+        V = resultado.V_sedimentacion
+        simbolo_V = "V_sedimentacion"
+        procedencia_V = (
+            "M3, velocidad de la rama de n MAXIMO -- la estimacion BAJA de "
+            "velocidad, que es el extremo conservador contra un PISO. No es "
+            "la de V3, que verifica un techo y usa la rama opuesta (MAT-D1). "
+            "Vale porque el barril va parcialmente lleno bajo control de "
+            "ENTRADA, en regimen uniforme (M4, paso 4.3b)")
+    cumple = V >= V_MIN - TOL_UMBRAL_NORMATIVO
     umbral = _umbral_de("V2", valor=V_MIN, unidad="m/s",
                         descripcion="velocidad minima de autolimpieza")
     return Verificacion(
         cumple=cumple,
         numeral=NUMERAL_V2,
-        valor_obtenido=resultado.V_sedimentacion,
+        valor_obtenido=V,
         valor_admisible=V_MIN,
         criterio_aplicado=None,
         codigo="V2",
@@ -763,18 +875,14 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
             # sola, la segunda hace parecer opcional lo que el Manual manda.
             citas_textuales=("MC_HHD.4.1.1.3.6#VMIN_INICIO",),
             sustitucion=(
-                Magnitud("V_sedimentacion", resultado.V_sedimentacion, "m/s",
-                         "M3, velocidad de la rama de n MAXIMO -- la "
-                         "estimacion BAJA de velocidad, que es el extremo "
-                         "conservador contra un PISO. No es la de V3, que "
-                         "verifica un techo y usa la rama opuesta (MAT-D1)",
+                Magnitud(simbolo_V, V, "m/s", procedencia_V,
                          cifras=CIFRAS_MAGNITUD),),
-            resultado=Magnitud("V_sedimentacion", resultado.V_sedimentacion,
+            resultado=Magnitud(simbolo_V, V,
                                "m/s", "la misma velocidad, contrastada contra "
                                "el piso", cifras=CIFRAS_MAGNITUD),
             umbral=umbral,
             veredicto=_veredicto(
-                cumple, resultado.V_sedimentacion - V_MIN, "m/s",
+                cumple, V - V_MIN, "m/s",
                 "por encima del piso de autolimpieza" if cumple else
                 "por debajo del piso: el conducto puede sedimentar y perder "
                 "capacidad hidraulica"),
@@ -2144,7 +2252,12 @@ def verificar(*, punto: PuntoCritico, material: Material,
     Se detiene -- sin devolver nada -- en la primera de V3 (TMC/HDPE), V5,
     VC1, V7 o V8 que este pendiente: son excepciones, no verificaciones
     incumplidas, y el bucle de MD no debe tratarlas como un diametro rechazado
-    sino como lo que son, un calculo que no puede completarse todavia.
+    sino como lo que son, un calculo que no puede completarse todavia. Desde
+    EXT-3 tambien V1 y V2 se detienen asi, con `MetodoNoEvaluableError`,
+    cuando el barril va parcialmente lleno bajo control de SALIDA: el tirante
+    y la velocidad que comparan exigen el perfil de la lamina de agua. A
+    nivel de expediente eso bloquea el punto; a nivel de perfil
+    `cli._verificador_perfil` lo difiere y sigue.
 
     PERO LO QUE YA SE VERIFICO NO SE TIRA. Al detenerse, la excepcion se lleva
     en `verificaciones_completadas` las que si se evaluaron, con su veredicto y

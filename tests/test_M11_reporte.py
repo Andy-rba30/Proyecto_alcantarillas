@@ -25,7 +25,8 @@ import criterios_adoptados as ca
 import datos_sitio as ds
 from cli import (Bloqueo, DatoDeclarado, Informe, InformePunto,
                  cargar_datos_externos, correr)
-from modelos import FormaSeccion, PasoDiseno, SeccionCircular, Verificacion
+from modelos import (FormaSeccion, PasoDiseno, SeccionCircular, TipoDeBloqueo,
+                     Verificacion)
 from modulos import M11_reporte as M11
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -1004,7 +1005,8 @@ class TestEscapado:
 
     def test_un_bloqueo_con_html_se_escapa(self):
         punto = InformePunto(punto=_informe_de_ejemplo().puntos[0].punto)
-        punto.bloqueos = [Bloqueo(fase="<b>f</b>", etapa="e", tipo="t",
+        punto.bloqueos = [Bloqueo(fase="<b>f</b>", etapa="e",
+                                  tipo=TipoDeBloqueo.DIFERIDO_POR_ALCANCE,
                                   mensaje="<img src=x>")]
         html = M11._tabla_bloqueos(punto.bloqueos)
         assert "<img" not in html

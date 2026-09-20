@@ -270,6 +270,61 @@ class LimiteNumericoError(ErrorProyecto):
         super().__init__(texto)
 
 
+# El motivo con que la v8 §4.3 (enmendada en EXT-0) nombra el estado: es la
+# frase que la memoria, el JSON y la CLI imprimen junto al HW del punto, y por
+# eso es UNA constante y no una redaccion por sitio.
+MOTIVO_METODO_NO_EVALUABLE = "método no evaluable (HDS-5 3.24, Sección 3.5)"
+
+
+class MetodoNoEvaluableError(ErrorProyecto):
+    """
+    El dato esta y es valido, el criterio esta declarado, y lo que falta es
+    un PROCEDIMIENTO que este software no implementa: el metodo disponible no
+    esta definido para el punto, o no alcanza a producir la magnitud que la
+    verificacion compara. Sexta de la taxonomia (EXT-3; EXT-M-01, EXT-M-02,
+    PC-27).
+
+    Regla que la separa de sus hermanas, en el orden en que se pregunta:
+        DatoFaltanteError        el revisor tiene que ANADIR un dato.
+        DatoInvalidoError        tiene que CORREGIR un dato.
+        CriterioPendienteError   tiene que DECLARAR una eleccion.
+        LimiteNumericoError      la aritmetica no cabe en un double.
+        MetodoNoEvaluableError   no hay nada que anadir, corregir ni declarar:
+                                 hace falta OTRO METODO (hoy, el perfil de la
+                                 lamina de agua de HDS-5 Section 3.5), y hasta
+                                 que exista el punto no se puede cerrar.
+
+    Los dos casos vivos, ambos bajo CONTROL DE SALIDA con el barril
+    parcialmente lleno (v8 §4.1 y §4.3):
+      * `que="HW"`: HW/D < 0.75, donde la fuente dice que la aproximacion de
+        h_o «should not be used» (pag. impresa 3.24). No es un incumplimiento
+        --subir de diametro solo baja HW/D-- ni un aviso: el HW publicado no
+        es un resultado del metodo.
+      * `que="V1"` / `"V2"`: el tirante y la velocidad dentro del conducto no
+        se conocen sin el perfil de la lamina, y no se inventa un criterio de
+        llenado para cerrarlas.
+
+    Viaja por la via `Bloqueo` con `TipoDeBloqueo.METODO_NO_EVALUABLE`:
+    DIFERIBLE a nivel de perfil (el punto sale dimensionado con HW no
+    evaluable y el motivo impreso) y NO diferible a nivel de expediente,
+    donde el punto no cierra. Nunca se traduce a `Verificacion(cumple=False)`
+    ni a `DisenoNoFactibleError`: MD la acumula como a los criterios
+    pendientes y la relanza, en vez de descartar el material.
+    """
+
+    def __init__(self, que: str, procedimiento: str, motivo: str,
+                 id_punto: Optional[str] = None) -> None:
+        self.que = que
+        self.procedimiento = procedimiento
+        self.motivo = motivo
+        self.id_punto = id_punto
+        texto = f"{MOTIVO_METODO_NO_EVALUABLE}: {que}"
+        if id_punto:
+            texto += f" del punto {id_punto}"
+        texto += f" -- {motivo}. Hace falta: {procedimiento}"
+        super().__init__(texto)
+
+
 # ===========================================================================
 # Citas: la seccion interna y el numeral de la norma, separados
 # ===========================================================================
@@ -448,6 +503,48 @@ class ControlGobernante(str, Enum):
     """Cual de los dos controles fija la carga a la entrada."""
     ENTRADA = "entrada"   # Sec. 4.2, HDS-5
     SALIDA = "salida"     # Sec. 4.3, HW = H + ho - S*L
+
+
+class RegimenBarril(str, Enum):
+    """
+    Como fluye el barril, que es lo que decide con QUE tirante y QUE velocidad
+    se comparan V1 y V2 (v8 §1.3 y §4.1, enmendadas en EXT-0; EXT-M-01).
+
+    LLENO cuando la salida esta sumergida, TW >= D: el TW llena el barril
+    hasta la clave (HDS-5 3.1.6, pag. impresa 3.18: «Total barrel area is
+    used when the tailwater exceeds the top of the barrel»). La v8 escribe la
+    condicion como «TW >= D, o HW >= D con la salida sumergida»; la segunda
+    clausula esta CONTENIDA en la primera --con salida sumergida TW ya es
+    >= D--, y se dice aqui para que nadie la busque como un tercer caso.
+
+    DISCREPANCIA CON LA FUENTE PRIMARIA, DECLARADA EN EL PUNTO DE USO (EXT-3,
+    auditoria adversarial). La v8 §1.3 escribe que con TW >= D «el barril
+    fluye lleno», a secas. HDS-5 3.1.3 (pag. impresa 3.2, PDF 84,
+    `HDS5_3ED.3.1.3#SUMERGENCIA`) lo matiza para el CONTROL DE ENTRADA:
+    «submergence of the outlet end of the culvert does not assure outlet
+    control. In this case, the flow just downstream of the inlet is
+    supercritical and a hydraulic jump forms in the culvert barrel». O sea:
+    bajo control de entrada con TW >= D el barril NO va lleno en toda su
+    longitud --el tramo de aguas arriba es supercritico y el resalto lo llena
+    hacia la salida (Fig. 3.1C y 3.1D)--. Lo que SI va lleno es la salida y el
+    tramo aguas abajo del resalto, que es donde V1 no tiene borde libre y
+    donde la velocidad es Q/A_llena, la MENOR del barril: por eso LLENO se
+    conserva para V1 y V2 tambien bajo control de entrada (rechaza V1 y
+    compara V2 con la velocidad baja: conservador en los dos), y por eso la
+    velocidad de salida bajo control de entrada se toma del tirante normal
+    (mayor: conservador para d50). El defecto se reporta contra la v8, que
+    sigue diciendo «fluye lleno» sin el matiz mientras no se corrija; quien
+    la lea sin leer esto entendera flujo a presion en toda la longitud.
+
+    PARCIALMENTE_LLENO en otro caso. Y ahi el regimen NO dice cuanto llena:
+    bajo control de entrada el flujo es supercritico y se aproxima al tirante
+    normal (HDS-5 3.1.3 y 3.1.6), que es lo que M3 entrega; bajo control de
+    salida el tirante dentro del conducto exige el perfil de la lamina de
+    agua (HDS-5 3.1.4, tipos 6 y 7; Section 3.5), y V1/V2 quedan PENDIENTES
+    por `MetodoNoEvaluableError`. No se inventa un criterio de llenado.
+    """
+    LLENO = "lleno"
+    PARCIALMENTE_LLENO = "parcialmente lleno"
 
 
 class CondicionRasante(str, Enum):
@@ -1886,12 +1983,13 @@ class ControlSalida:
     de modo que hoy la rama llega a la memoria como texto y con su razon.
     Lo fija `tests/test_M4_control.py`.
 
-    AL JSON NO LLEGA, y la otra mitad de la ficha sigue viva. Tampoco llega
-    ninguna otra pieza del bloque h_o --- ni `h_o`, ni `TW`, ni los dos flags
-    de condicion de uso ---, de modo que la ausencia es del bloque entero y no
-    un olvido de este campo. Publicar la etiqueta de la rama sin los dos
-    numeros que la producen seria menos revisable que no publicarla: abrir el
-    JSON al bloque completo es una decision propia.
+    Y AL JSON LLEGA DESDE EXT-3, con el bloque h_o ENTERO y no solo la
+    etiqueta de la rama: `h_o`, `TW`, `ahogado_por_TW`, `HW_sobre_D` y los
+    dos flags viajan a `ResultadoHidraulico` y de ahi a `cli._diseno_json` y
+    a `cli.volcar` (SIS-B-18, mitad JSON). Hasta entonces no llegaba ninguna
+    pieza del bloque, y la decision de S19 era que publicar la etiqueta sin
+    los dos numeros que la producen seria menos revisable que no publicarla:
+    por eso se abrio al bloque completo y no a un campo.
 
     `h_o_fuera_de_rango` y `h_o_requiere_cautela` son las DOS condiciones de
     uso que HDS-5 pone a esa aproximacion y que el proyecto puede evaluar
@@ -2093,6 +2191,45 @@ class ResultadoHidraulico:
     y `Q_celda_m3s = Q`. Hasta EXT-2 el tipo no distinguia los dos caudales
     y M4 recibia el total con un tirante normal resuelto para Q/N: la
     memoria imprimia Q = 9.0 junto a un y_n que solo transporta 3.0.
+
+    EL REGIMEN DEL BARRIL, Y POR QUE ESTA AQUI (EXT-3; EXT-M-01, PC-04,
+    v8 §1.3 y §4.1 enmendadas en EXT-0). El parrafo de arriba sobre la doble
+    n sigue valiendo para el flujo UNIFORME, y el flujo uniforme no es el
+    unico regimen del barril: con TW >= D el barril fluye LLENO y el tirante
+    y la velocidad con que V1 y V2 se comparan son D y Q_celda/A_llena, no
+    los de Manning. Hasta EXT-3 la memoria imprimia «manda TW: la salida esta
+    ahogada» junto a V1 [OK] con y/D = 0.135, cuando a seccion llena el borde
+    libre no existe y la velocidad es 0.0786 m/s < 0.25.
+
+        `regimen_barril`   LLENO si TW >= D; PARCIALMENTE_LLENO en otro caso.
+        `V_llena_m_s`      Q_celda / A_llena: la velocidad del regimen LLENO.
+                           No lleva n --a seccion llena no hay tirante que
+                           resolver-- y por eso no rompe la regla de doble n:
+                           es la UNICA velocidad del barril en ese regimen,
+                           y V2 la compara tal cual.
+        `V_salida`         la velocidad a la SALIDA por HDS-5 3.1.6 (pag.
+                           impresa 3.18), como `Magnitud` con procedencia,
+                           que es la que recibe M6 (PC-04). Bajo control de
+                           SALIDA es Q_celda entre el area de la seccion al
+                           tirante min(D, max(TW, y_c)) --tirante critico,
+                           TW o seccion entera, segun el TW--: no depende de
+                           n. Bajo control de ENTRADA es la del tirante
+                           normal (pag. 3.24: «The velocity at normal depth
+                           is assumed to be the outlet velocity»), y de sus
+                           dos ramas la de n_min (`V_erosion`): el techo
+                           conservador para un d50 que crece con V^2. En
+                           pendiente suave con salida libre la de salida a
+                           y_c SUPERA a V_erosion (1.508 vs 1.184 m/s en el
+                           caso del dictamen): M6 recibia una piedra chica.
+        `y_salida_m`       el tirante con que se midio `V_salida`.
+        `h_o_m`, `TW_m`, `ahogado_por_TW`   el bloque h_o entero, que hasta
+                           EXT-3 no salia del `ControlSalida` (SIS-B-18): el
+                           JSON y `cli.volcar` lo imprimen junto a las dos
+                           banderas y a `HW_sobre_D_salida`.
+
+    Bajo control de SALIDA con el barril PARCIALMENTE LLENO no hay tirante ni
+    velocidad «del barril» que publicar: exigen el perfil de la lamina de
+    agua (HDS-5 Section 3.5), y V1/V2 lo dicen con `MetodoNoEvaluableError`.
     """
 
     y_normal: float                       # m  - con n_max (Sec. 4.1)
@@ -2130,6 +2267,17 @@ class ResultadoHidraulico:
     # significa «no hay reparto»: se rellena con `Q` en `__post_init__`.
     Q_celda_m3s: Optional[float] = None   # m3/s - Q / numero_celdas
     numero_celdas: int = 1                # barriles hidraulicamente iguales
+    # EL REGIMEN DEL BARRIL Y LO QUE DE EL DEPENDE (EXT-3; EXT-M-01, PC-04).
+    # Ver el docstring. Todos con default para que los constructores de la
+    # suite que no pasan por M4 sigan armandose; M4 los llena SIEMPRE, y
+    # `cli._fase_6` trata un `V_salida` vacio como fallo de programa.
+    regimen_barril: RegimenBarril = RegimenBarril.PARCIALMENTE_LLENO
+    V_llena_m_s: Optional[float] = None   # m/s - Q_celda / A_llena (regimen LLENO)
+    V_salida: Optional["Magnitud"] = None # m/s - HDS-5 3.1.6, con procedencia
+    y_salida_m: Optional[float] = None    # m  - tirante con que se midio V_salida
+    h_o_m: Optional[float] = None         # m  - max(TW, (y_c + D)/2), Sec. 4.3
+    TW_m: Optional[float] = None          # m  - tirante en el receptor
+    ahogado_por_TW: bool = False          # manda TW en h_o, no la geometria
 
     def __post_init__(self) -> None:
         if self.Q_celda_m3s is None:
@@ -2363,15 +2511,104 @@ class TipoDeVeredicto(str, Enum):
     exacta de la cita falsa que este proyecto viene retirando.
 
     DIFERIDO es distinto de NO_CUMPLE y de SIN_VEREDICTO: la verificacion
-    existe, tiene umbral y no se evaluo porque el alcance de la corrida la
-    dejo fuera (`--alcance perfil`). Imprimirla como "cumple" seria mentir y
-    como "no cumple" tambien.
+    existe, tiene umbral y no se evaluo. Dos razones, y el `Bloqueo` del
+    punto dice cual: porque el alcance de la corrida la dejo fuera
+    (`--alcance perfil`), o porque el METODO disponible no la puede evaluar
+    ahi (`MetodoNoEvaluableError`, EXT-3: el paso F4.HO bajo control de
+    salida con HW/D < 0.75). Imprimirla como "cumple" seria mentir y como
+    "no cumple" tambien: hasta EXT-3 el paso de h_o decia NO_CUMPLE mientras
+    el pipeline aceptaba el punto, que es la divergencia que SIS-A-07 prohibe.
     """
 
     CUMPLE = "cumple"
     NO_CUMPLE = "no cumple"
     DIFERIDO = "diferido"
     SIN_VEREDICTO = "sin veredicto"
+
+
+class TipoDeBloqueo(str, Enum):
+    """
+    Por que una etapa no se completo. Hasta EXT-3 `cli.Bloqueo.tipo` era un
+    `str` libre que valia `type(exc).__name__` o el literal "DiferidoPorAlcance"
+    escrito en tres sitios (PC-27). Los VALORES son esos mismos textos, a
+    proposito: la linea base, el JSON y los tests que comparan
+    `b.tipo == "CriterioPendienteError"` siguen leyendo lo mismo.
+
+    Cinco son excepciones del expediente (`de_excepcion` las traduce), el
+    sexto es una decision de la corrida y no una excepcion.
+    """
+    CRITERIO_PENDIENTE = "CriterioPendienteError"
+    DISENO_NO_FACTIBLE = "DisenoNoFactibleError"
+    DATO_FALTANTE = "DatoFaltanteError"
+    DATO_INVALIDO = "DatoInvalidoError"
+    LIMITE_NUMERICO = "LimiteNumericoError"
+    METODO_NO_EVALUABLE = "MetodoNoEvaluableError"
+    DIFERIDO_POR_ALCANCE = "DiferidoPorAlcance"
+
+    @classmethod
+    def de_excepcion(cls, exc: ErrorProyecto) -> "TipoDeBloqueo":
+        """El tipo de bloqueo que corresponde a una excepcion del expediente."""
+        for clase, tipo in _TIPO_DE_BLOQUEO_POR_CLASE:
+            if isinstance(exc, clase):
+                return tipo
+        raise TypeError(
+            f"{type(exc).__name__} no es una excepcion del expediente con "
+            f"tipo de bloqueo: la taxonomia de ErrorProyecto y "
+            f"TipoDeBloqueo tienen que crecer juntas")
+
+
+_TIPO_DE_BLOQUEO_POR_CLASE = (
+    (CriterioPendienteError, TipoDeBloqueo.CRITERIO_PENDIENTE),
+    (DisenoNoFactibleError, TipoDeBloqueo.DISENO_NO_FACTIBLE),
+    (DatoFaltanteError, TipoDeBloqueo.DATO_FALTANTE),
+    (DatoInvalidoError, TipoDeBloqueo.DATO_INVALIDO),
+    (LimiteNumericoError, TipoDeBloqueo.LIMITE_NUMERICO),
+    (MetodoNoEvaluableError, TipoDeBloqueo.METODO_NO_EVALUABLE),
+)
+
+
+@dataclass(frozen=True)
+class Bloqueo:
+    """
+    Una etapa que no se pudo completar, con la causa del expediente.
+
+    VIVE AQUI DESDE EXT-3, y antes en `cli.py` «a proposito» porque no fluia
+    entre modulos de calculo. Dejo de ser cierto cuando el estado
+    «pendiente / diferido / no evaluable» paso a ser un estado del DOMINIO y
+    no de la capa de reporte (PC-27): lo producen la Fase 5 y el bucle de MD
+    (`MetodoNoEvaluableError`), lo leen la CLI, la GUI y M11, y una misma
+    clase con `tipo` cerrado es lo que impide que cada capa escriba el suyo.
+    `InformePunto` e `Informe` siguen en `cli.py`: esos si son la forma del
+    reporte.
+
+    `criterio` esta relleno solo cuando la causa es un criterio pendiente: es
+    la clave que hay que declarar para desbloquear la etapa. `campo` cuando
+    falta o esta mal un dato. `delta_rasante_m` cuando el diseño no es
+    factible y 7.A pudo decir cuanto subir la rasante.
+    """
+
+    fase: str
+    etapa: str
+    tipo: TipoDeBloqueo
+    mensaje: str
+    criterio: Optional[str] = None
+    etiqueta: Optional[str] = None
+    concepto: Optional[str] = None
+    fuente: Optional[str] = None
+    campo: Optional[str] = None
+    delta_rasante_m: Optional[float] = None
+    # True cuando la etapa no se completo POR DECISION DE ALCANCE de la
+    # corrida (--alcance perfil), no por un defecto del expediente. Se imprime
+    # con su fundamento igual que cualquier bloqueo -- la memoria necesita esa
+    # constancia -- pero no cuenta para `Informe.cerrado`. Un
+    # METODO_NO_EVALUABLE lo lleva en True solo a nivel de perfil (v8 §4.3).
+    diferido_por_alcance: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.tipo, TipoDeBloqueo):
+            raise TypeError(
+                f"Bloqueo.tipo tiene que ser un TipoDeBloqueo, no "
+                f"{self.tipo!r}: el texto libre es lo que PC-27 retiro")
 
 
 @dataclass(frozen=True)
@@ -3821,10 +4058,31 @@ class ResultadoPunto:
         mismo numero que V1 verifica en `M5_verificaciones.v1_borde_libre` y
         el mismo que `Geometria.y_sobre_D` define para la seccion; escrito
         una vez, no puede divergir entre la memoria y la verificacion.
+
+        Y DESDE EXT-3 SIGUE EL REGIMEN DEL BARRIL, como V1: `y_normal /
+        altura` solo bajo control de entrada; 1 a barril lleno; None --celda
+        vacia declarada-- bajo control de salida con el barril parcialmente
+        lleno, donde V1 queda pendiente y publicar un y/D del flujo uniforme
+        seria la divergencia memoria/pipeline de SIS-A-07 en otra celda.
         """
         if self.resultado_hidraulico is None or self.seccion is None:
             return None
-        return self.resultado_hidraulico.y_normal / self.seccion.altura
+        h = self.resultado_hidraulico
+        altura = self.seccion.altura
+        # EL MISMO TIRANTE QUE V1 COMPARA (EXT-3, auditoria adversarial): el
+        # del REGIMEN del barril y no el normal a secas. A barril LLENO el
+        # tirante es la altura entera; bajo control de SALIDA con el barril
+        # parcialmente lleno no se conoce sin el perfil de la lamina y V1 queda
+        # pendiente, de modo que aqui sale None y la celda del cuadro resumen
+        # se imprime vacia declarada en vez de con un 0.13 plausible junto a
+        # una V1 diferida; solo bajo control de ENTRADA vale y_normal.
+        if h.regimen_barril is RegimenBarril.LLENO:
+            y = altura
+        elif h.control_gobernante is ControlGobernante.SALIDA:
+            return None
+        else:
+            y = h.y_normal
+        return y / altura
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:

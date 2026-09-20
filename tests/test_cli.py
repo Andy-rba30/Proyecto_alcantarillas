@@ -30,7 +30,7 @@ import criterios_adoptados as ca
 from tests.apoyo.criterios import sin_valor
 from modulos.M11_reporte import PlantillaHTML
 from modelos import (CriterioPendienteError,
-                     ControlGobernante, DatoInvalidoError,
+                     ControlGobernante, DatoInvalidoError, Magnitud,
                      ResultadoHidraulico, ResultadoPunto, SeccionCircular,
                      TipoMaterial, Verificacion)
 from modulos.M0_carga import cargar_puntos
@@ -318,13 +318,27 @@ def test_fase_9_corre_la_cadena_sismica_y_bloquea_la_geometria():
 # ---------------------------------------------------------------------------
 
 def test_los_criterios_bloqueantes_se_agrupan_con_sus_puntos():
+    """
+    LA LISTA DE PUNTOS CAMBIO EN EXT-3, y no porque V5 cambiara. Hasta EXT-3
+    los tres puntos circulares llegaban a V5 y se detenian en
+    'remanso_derecho_via'. Desde EXT-3, A-02 y B-01 --que en esta corrida
+    caen bajo control de SALIDA con el barril parcialmente lleno-- se
+    detienen ANTES, en V1, con `MetodoNoEvaluableError`: el tirante con que
+    V1 compara exige el perfil de la lamina de agua, y a nivel de expediente
+    eso bloquea. Solo A-01 (control de entrada, regimen uniforme) sigue
+    llegando al criterio de V5. El agrupamiento por criterio, que es lo que
+    este test fija, no cambia.
+    """
     informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
                        TW_m=0.0, longitud_m=12.0)
     bloqueantes = {c.clave: c for c in cli.criterios_bloqueantes(informe)}
     remanso = bloqueantes["remanso_derecho_via"]
-    assert set(remanso.puntos) == {"A-01", "A-02", "B-01"}
+    assert set(remanso.puntos) == {"A-01"}
     assert remanso.etiqueta == "A"
     assert remanso.concepto and remanso.fuente
+    for id_punto in ("A-02", "B-01"):
+        tipos = {b.tipo for b in _punto(informe, id_punto).bloqueos}
+        assert "MetodoNoEvaluableError" in tipos, id_punto
 
 
 def test_un_criterio_con_valor_no_aparece_como_bloqueante(monkeypatch):
@@ -365,7 +379,11 @@ def _resultado_hdpe(punto, S=None, **_):
         # `or` ni default: ese es justamente el defecto que MAT-D9 cierra.
         S=S,
         HW_entrada=0.50, HW_salida=0.40,
-        control_gobernante=ControlGobernante.ENTRADA)
+        control_gobernante=ControlGobernante.ENTRADA,
+        # La velocidad de salida que la Fase 6 consume desde EXT-3: bajo
+        # control de entrada es la del tirante normal, rama n_min.
+        V_salida=Magnitud("V_salida", 2.50, "m/s",
+                          "doble de prueba: tirante normal, rama n_min"))
     verificaciones = (
         Verificacion(cumple=True, numeral="4.1.1.3.7 b)", valor_obtenido=0.50,
                      valor_admisible=0.75, criterio_aplicado="Y_sobre_D_max",
@@ -643,6 +661,20 @@ def test_perfil_dimensiona_puntos_que_expediente_bloquea(monkeypatch):
     assert "V5" in v5.etapa
     v8 = next(b for b in diferidos if b.criterio == "TR_evento_extremo")
     assert "V8" in v8.etapa
+
+    # EXT-3: B-01 cae bajo control de SALIDA con HW/D < 0.75 y sale
+    # «dimensionado con HW no evaluable / diferido»: el bloqueo va con el
+    # motivo de la fuente y NO cuenta para el cierre; V1 y V2 quedan
+    # diferidas por regimen. A-01 (control de entrada) no lleva ninguno.
+    b01 = _punto(perfil, "B-01")
+    assert b01.dimensionado
+    no_evaluables = [b for b in b01.bloqueos
+                     if b.tipo == "MetodoNoEvaluableError"]
+    assert no_evaluables and all(b.diferido_por_alcance for b in no_evaluables)
+    assert any("carga HW" in b.etapa for b in no_evaluables)
+    assert all("método no evaluable (HDS-5 3.24, Sección 3.5)" in b.mensaje
+               for b in no_evaluables)
+    assert not [b for b in a01.bloqueos if b.tipo == "MetodoNoEvaluableError"]
 
 
 def test_perfil_intenta_v5_y_v8_pero_no_las_exige(monkeypatch):
@@ -1375,9 +1407,19 @@ def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
     html = destino.read_text(encoding="utf-8")
     assert "ALCANCE (Familia C" in html
     # Las dos cotas contra las que miden los dos umbrales, que es el argumento
-    # de por que la sustitucion NO es conservadora.
-    assert "la altura interior del propio barril" in html
+    # de por que la sustitucion NO es conservadora. LA MITAD DE V1 CAMBIO DE
+    # FORMA EN EXT-3: este marco cae bajo control de SALIDA con el barril
+    # parcialmente lleno, de modo que V1 ya no publica un numero --su tirante
+    # exige el perfil de la lamina de agua-- y queda DIFERIDA por metodo no
+    # evaluable. La advertencia de alcance viaja pegada al numero, y sin
+    # numero lo que tiene que verse es el bloqueo que explica por que no lo
+    # hay; la mitad de V4 sigue saliendo junto a su numero.
     assert "la subrasante de la VIA, con su resguardo por CBR" in html
+    assert "MetodoNoEvaluableError" in html
+    assert "verificacion V1 diferida al expediente" in html
+    assert "la altura interior del propio barril" not in html, (
+        "V1 volvio a publicar un numero bajo control de salida con barril "
+        "parcialmente lleno: o el regimen cambio o se invento un llenado")
     # Y sale por el canal de interpretacion, no pegada a una cita (NOR-HID-04).
     assert 'class="interpretacion"' in html
     # La otra mitad, y la que fija que el marco NO se calcula con la pared del

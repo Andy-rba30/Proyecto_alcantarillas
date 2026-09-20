@@ -153,6 +153,7 @@ from modelos import (CriterioPendienteError,
                      Familia,
                      FormaSeccion,
                      Material,
+                     MetodoNoEvaluableError,
                      PasoDiseno,
                      PuntoCritico,
                      ResultadoHidraulico,
@@ -615,6 +616,17 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     mixto y el caso en que un candidato posterior si cerro. Ver
     `_exigir_criterios_declarados`, que es donde esta el fundamento.
 
+    Y LO MISMO PARA «NO EVALUABLE» (EXT-3; EXT-M-02, PC-27). Si un candidato
+    se detuvo en `MetodoNoEvaluableError` --V1 o V2 bajo control de salida
+    con el barril parcialmente lleno-- el material NO se descarta ni el punto
+    sale «no factible»: no se evaluo, y «no se evaluo» no es «no cumple». Se
+    acumula como los criterios pendientes y se relanza el primero, tambien
+    cuando un candidato posterior si cerro (se estaria eligiendo ese material
+    por descarte de otro que nunca se llego a evaluar). Subir de diametro no
+    lo resuelve --el control de salida sigue gobernando-- y recorrer el
+    catalogo hasta `DisenoNoFactibleError` seria rechazar por una condicion
+    que ningun diametro puede cumplir.
+
     PENDIENTE DELIBERADO (fuera del alcance de la tarea que introdujo esto):
     cuando cada material se detiene en un criterio vacio DISTINTO, solo la
     primera clave viaja como excepcion, porque `CriterioPendienteError` lleva
@@ -638,6 +650,7 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     fallos: List[str] = []
     pendientes: List[CriterioPendienteError] = []
     faltantes: List[DatoFaltanteError] = []
+    no_evaluables: List[MetodoNoEvaluableError] = []
 
     for material in candidatos:
         try:
@@ -660,6 +673,13 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
             faltantes.append(exc)
             continue
+        except MetodoNoEvaluableError as exc:
+            # Tampoco es un descarte (EXT-3): el metodo disponible no alcanza
+            # a evaluar la verificacion en este material, y eso vale igual
+            # para los que siguen. Se acumula y decide la excepcion que sale.
+            fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
+            no_evaluables.append(exc)
+            continue
         except ErrorProyecto as exc:
             # Un material que revienta se descarta COMO MATERIAL y el bucle
             # sigue con el siguiente candidato. Antes la excepcion subia hasta
@@ -677,13 +697,15 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             # este material por descarte de otro que nunca se llego a evaluar,
             # y la memoria no podria defender la eleccion de Sec. 3.4.
             _exigir_criterios_declarados(pendientes)
+            _exigir_metodo_evaluable(no_evaluables)
             return resultado
 
         fallos.append(f"{material.nombre}: {motivo}")
 
     # Ningun candidato cerro. Antes de declarar el punto NO FACTIBLE hay que
-    # poder afirmar que todos se evaluaron de verdad: ver la funcion.
+    # poder afirmar que todos se evaluaron de verdad: ver las dos funciones.
     _exigir_criterios_declarados(pendientes)
+    _exigir_metodo_evaluable(no_evaluables)
 
     if faltantes and len(faltantes) == len(candidatos):
         # A TODOS les falto un dato (PC-28): degradarlo a DisenoNoFactibleError
@@ -697,6 +719,19 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
         motivo="ningun material candidato cumple la Fase 5. " + " | ".join(fallos),
         id_punto=punto.id,
     )
+
+
+def _exigir_metodo_evaluable(
+        no_evaluables: List[MetodoNoEvaluableError]) -> None:
+    """
+    Si algun candidato se detuvo porque el metodo no lo puede evaluar, sale
+    ESA excepcion y no DisenoNoFactibleError ni el resultado de otro material
+    (EXT-3). Va despues de `_exigir_criterios_declarados` a proposito: un
+    criterio vacio lo resuelve el proyectista declarando; un metodo que falta
+    lo resuelve otra sesion (EXT-3b), y el orden dice que hacer primero.
+    """
+    if no_evaluables:
+        raise no_evaluables[0]
 
 
 def _exigir_criterios_declarados(

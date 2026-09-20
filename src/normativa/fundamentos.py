@@ -237,7 +237,48 @@ HO = _fundamento(
     que_pasa_si_no_se_hace=(
         "Aplicar la aproximacion fuera de su rango sin decirlo: el HW de "
         "control de salida saldria de una formula que su propia fuente "
-        "desautoriza para ese caso, y nadie se enteraria (NOR-HDS-05)."),
+        "desautoriza para ese caso, y nadie se enteraria (NOR-HDS-05). Y "
+        "decirlo no basta: hasta EXT-3 el punto se aceptaba con el aviso "
+        "puesto y el paso imprimia NO_CUMPLE mientras el pipeline aceptaba. "
+        "Bajo HW/D < 0.75 el metodo NO esta definido para el punto, y eso "
+        "viaja como bloqueo «metodo no evaluable», diferible a nivel de "
+        "perfil y no de expediente (EXT-M-02)."),
+)
+
+REGIMEN = _fundamento(
+    id="F4.REGIMEN",
+    fase=F4,
+    que_paso=("Regimen del barril y velocidad a la salida, con el area que "
+              "HDS-5 3.1.6 asigna a cada caso"),
+    por_que=(
+        "El tirante y la velocidad con que se verifica el barril no son "
+        "siempre los del flujo uniforme de Manning: dependen de como fluye el "
+        "barril, y eso lo decide el tirante en el receptor y el control que "
+        "gobierna. Con el TW sobre la clave el barril va lleno y la unica "
+        "seccion es la entera; bajo control de entrada el flujo es "
+        "supercritico y se aproxima al tirante normal; bajo control de salida "
+        "con salida libre el agua pasa por el tirante critico a la salida. El "
+        "HDS-5 fija con que area se mide la velocidad a la salida en cada "
+        "caso --tirante critico, TW o seccion entera, segun el TW--, y esa "
+        "velocidad es la que dimensiona la proteccion de la Fase 6: en "
+        "pendiente suave con salida libre es MAYOR que la uniforme, y la "
+        "piedra que sale de la uniforme es chica. Y «lleno» con el TW sobre "
+        "la clave describe la salida y el tramo aguas abajo del resalto: bajo "
+        "control de entrada la sumergencia de la salida no asegura flujo "
+        "lleno en toda la longitud (HDS-5 3.1.3). Lo que el HDS-5 no da sin "
+        "un perfil de la lamina de agua es el tirante DENTRO del conducto "
+        "bajo control de salida con el barril parcialmente lleno, y ahi el "
+        "proyecto no inventa un criterio de llenado: lo declara pendiente."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.3.1.6#V_SALIDA", "HDS5_3ED.3.1.6#V_SALIDA_TW",
+           "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA", "HDS5_3ED.3.1.3#SUMERGENCIA"),
+    que_pasa_si_no_se_hace=(
+        "Lo que pasaba hasta EXT-3 (EXT-M-01, PC-04): con TW = 1.2 m sobre "
+        "un tubo de 0.90 m la memoria decia «manda TW: la salida esta "
+        "ahogada» y en la misma pagina V1 [OK] con y/D = 0.135 y V2 con la "
+        "velocidad uniforme, cuando a seccion llena no hay borde libre y la "
+        "velocidad es Q/A_llena = 0.0786 m/s < 0.25; y la Fase 6 recibia "
+        "1.184 m/s donde la velocidad de salida es 1.508."),
 )
 
 
@@ -263,13 +304,26 @@ V1 = _fundamento(
         "justamente la enumeracion de tres magnitudes la que hace que el "
         "numeral cubra al marco sin analogia ninguna. Con «altura» a secas "
         "un lector podia entender que la fuente habla de una sola forma y "
-        "que el cajon entra por extension; entra por el texto."),
+        "que el cajon entra por extension; entra por el texto. Y cuando el "
+        "barril va LLENO no hay 25 % que medir: el mismo parrafo lo prohibe "
+        "--«las alcantarillas no deben ser diseñadas para trabajar a seccion "
+        "llena»--, y ahi el veredicto se apoya en esa exigencia y no en la "
+        "recomendacion del umbral."),
     verbo=Verbo.RECOMIENDA,
-    citas=("MC_HHD.4.1.1.3.7b",),
+    # DOS CITAS DEL MISMO PARRAFO CON DOS FUERZAS (EXT-3): la del 25 % es
+    # RECOMENDACION y es la que el verbo sigue; la de «no deben ser diseñadas
+    # para trabajar a seccion llena» es EXIGENCIA y sostiene el «no cumple»
+    # de V1 cuando el barril fluye LLENO (TW >= D), donde no hay 25 % que
+    # medir. El verbo se queda en RECOMIENDA porque lo que este paso lleva de
+    # la fuente como UMBRAL sigue siendo el par recomendado; T11 aceptaria
+    # OBLIGA por la segunda cita y seria el agujero que `F5.V7` ya midio.
+    citas=("MC_HHD.4.1.1.3.7b", "MC_HHD.4.1.1.3.7b#LLENA"),
     que_pasa_si_no_se_hace=(
         "El diseno aceptaria conductos trabajando a seccion llena o casi "
         "llena, donde el modelo de Manning con que se dimensionaron ya no "
-        "describe el flujo."),
+        "describe el flujo. Y hasta EXT-3 los aceptaba: con el TW sobre la "
+        "clave V1 seguia midiendo el tirante normal de Manning y daba [OK] "
+        "con y/D = 0.135 sobre un barril que iba lleno (EXT-M-01)."),
 )
 
 # EL VERBO ES `RECOMIENDA` Y NO `OBLIGA`, Y ESO NO ES TIMIDEZ: es la unica
@@ -939,7 +993,8 @@ SECCION = _fundamento(
 #   2. «DOS pasos posteriores lo consumen» es cierto de ESTE pipeline y falso
 #      del HDS-5, que le da un tercer uso: el area de la seccion para la
 #      velocidad de salida bajo control de salida (num. 3.1.6, impresa 3.18 /
-#      PDF 100). Se acota el sujeto.
+#      PDF 100). Se acota el sujeto. (Desde EXT-3 ese tercer uso SI se
+#      implementa, en `M4.velocidad_de_salida`, y el texto lo dice.)
 #   3. «La Forma 1 arranca de H_c/D» sin condicionar se imprimia igual bajo
 #      Forma 2, donde la ec. (A.2) no usa H_c -- que es el defecto que C3
 #      corrigio en la nota del paso y que aqui volvia por el fundamento --.
@@ -958,9 +1013,10 @@ YC_RECT = _fundamento(
         "rama sumergida tampoco--, y el control de salida necesita la altura "
         "de la linea de energia a la salida, que el HDS-5 APROXIMA con "
         "ho = (dc + D)/2 y que el proyecto toma como el mayor entre esa y el "
-        "TW. Son dos en ESTE pipeline: el HDS-5 le da un tercer uso que aqui "
-        "no se implementa --el area de la velocidad de salida bajo control "
-        "de salida, num. 3.1.6--. En la seccion circular no hay solucion "
+        "TW. Y desde EXT-3 son TRES: el HDS-5 le da un tercer uso --el area "
+        "de la velocidad de salida bajo control de salida, num. 3.1.6-- que "
+        "el paso del regimen del barril si implementa, y que es la velocidad "
+        "que recibe la proteccion de la Fase 6. En la seccion circular no hay solucion "
         "cerrada y hace falta un segundo Brent; en la rectangular el ancho "
         "superficial es constante y la condicion de energia minima se "
         "despeja: y_c = (q^2/g)^(1/3) con q = Q/B. Que sea exacta no es un "

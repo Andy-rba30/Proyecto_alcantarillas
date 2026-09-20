@@ -62,7 +62,7 @@ Uso
     from modulos.M6_proteccion import laushey_d50, proteccion_salida
 
     d50 = laushey_d50(V=resultado.V_erosion)
-    proteccion = proteccion_salida(V=resultado.V_erosion)   # exige 'longitud_proteccion_salida'
+    proteccion = proteccion_salida(V=resultado.V_salida)    # `Magnitud` de M4 (HDS-5 3.1.6)
 
 QUE VELOCIDAD ENTRA (regla de doble n, Sec. 4.1)
 -------------------------------------------------
@@ -125,9 +125,20 @@ def laushey_d50(*, V: float) -> float:
 # Proteccion de salida completa: d50 + espesor + longitud + advertencia
 # ---------------------------------------------------------------------------
 
-def proteccion_salida(*, V: float) -> ProteccionSalida:
+def proteccion_salida(*, V: Magnitud) -> ProteccionSalida:
     """
     d50 de Laushey mas espesor y longitud, leidos de `criterios_adoptados.py`
+
+    `V` ES UNA `Magnitud` CON PROCEDENCIA, y no un float, desde EXT-3 (PC-04,
+    EXT-M-01): la velocidad que entra a Laushey es la de SALIDA por HDS-5
+    3.1.6, que M4 emite en `ResultadoHidraulico.V_salida` --bajo control de
+    salida, Q entre el area al tirante min(D, max(TW, y_c)); bajo control de
+    entrada, la del tirante normal con n_min--. Hasta EXT-3 esta funcion
+    recibia siempre `V_erosion` (flujo uniforme) y su paso de memoria decia
+    de donde salia con un texto fijo; en pendiente suave con salida libre la
+    velocidad de salida es MAYOR (1.508 vs 1.184 m/s en el caso del dictamen)
+    y la piedra salia chica. Ahora la procedencia la trae el numero, y esta
+    funcion la imprime sin reescribirla.
     (ambos [A] de nivel PERFIL, Sec. 6, y los dos DECLARADOS). El espesor es el
     multiplicador de 'espesor_proteccion_salida' (1.75, ventana 1.5-2.0)
     aplicado a d50; la longitud es 'longitud_proteccion_salida' (5.0 m, ventana
@@ -150,7 +161,12 @@ def proteccion_salida(*, V: float) -> ProteccionSalida:
     que dimensiona el apron por HEC-14 (ver la divergencia declarada en el
     docstring del modulo, MAT-X6).
     """
-    d50 = laushey_d50(V=V)
+    if not isinstance(V, Magnitud):
+        raise TypeError(
+            f"proteccion_salida espera la velocidad de salida como Magnitud "
+            f"con procedencia (ResultadoHidraulico.V_salida), no {V!r}: un "
+            "float suelto es una velocidad que la memoria no puede rastrear")
+    d50 = laushey_d50(V=V.valor)
     mult_espesor = ca.valor(CRITERIO_ESPESOR)
     espesor = mult_espesor * d50
     longitud = ca.valor(CRITERIO_LONGITUD)   # [A] declarado; `valor()` se detendria solo si se vaciara
@@ -172,11 +188,14 @@ def proteccion_salida(*, V: float) -> ProteccionSalida:
             # `paso()` lo impide. La via del campo `discrepancias` sigue
             # siendo la de las que hablan de un NUMERO y no de un texto.
             sustitucion=(
-                Magnitud("V", V, "m/s",
-                         "M3, velocidad de la rama de n MINIMO -- la "
-                         "estimacion ALTA --, que es el lado conservador para "
-                         "una proteccion contra socavacion: d50 crece con el "
-                         "CUADRADO de V", cifras=CIFRAS_MAGNITUD),
+                # LA PROCEDENCIA VIENE CON EL NUMERO (EXT-3): la escribe M4
+                # al elegir el area de HDS-5 3.1.6, y aqui se copia tal cual
+                # bajo el simbolo de la formula. Un texto fijo aqui volveria a
+                # afirmar de donde sale V sin poder desmentirse.
+                Magnitud("V", V.valor, "m/s",
+                         f"{V.procedencia}. Es la velocidad a la SALIDA, que "
+                         "es la que socava: d50 crece con el CUADRADO de V",
+                         cifras=CIFRAS_MAGNITUD),
                 # LA PROCEDENCIA DICE DE DONDE SALE EL NUMERO; la historia de
                 # POR QUE NO SALE DE DONDE LA HOJA DE RUTA DECIA vive en
                 # `DIS-HR-G-LAUSHEY` (resuelta en I2: la v8 corrigio la
@@ -214,7 +233,7 @@ def proteccion_salida(*, V: float) -> ProteccionSalida:
         d50=d50,
         espesor=espesor,
         longitud=longitud,
-        V=V,
+        V=V.valor,
         criterio_espesor=CRITERIO_ESPESOR,
         criterio_longitud=CRITERIO_LONGITUD,
         advertencias=ADVERTENCIAS_PROTECCION_SALIDA,

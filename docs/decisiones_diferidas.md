@@ -490,6 +490,12 @@ condición escrita.
   arriba decía «M5 no cambia»: `EXT-M-01` lo refuta (V1/V2 salen del régimen
   del barril bajo TW ahogante). Lo que queda: EXT-3 (bloqueo, régimen, velocidad
   de salida) y E-A (perfil por paso directo).
+- **Cerrado parcial en EXT-3 (2026-09-20):** bloqueo, régimen y velocidad de
+  salida hechos (`modelos.MetodoNoEvaluableError`, `cli._compuerta_metodo_h_o`,
+  `M5._exigir_regimen_evaluable`, `ResultadoHidraulico.V_salida`). Sigue
+  diferida SOLO la tercera condición y con ella el perfil por paso directo
+  (EXT-3b / E-A), con el paquete I1 intacto y dorados sólo de flujo uniforme
+  y balance de energía (conflicto #7).
 - **Dónde vive:** `src/constantes_normativas.py::H_O_CONDICION_APLICACION`
 
 ## NOR-PRO-04 · La norma a la que se difiere la verificación del TMC
@@ -1502,3 +1508,95 @@ argumento para que nadie las lea como olvido.
   `_diseno_json` junto a las banderas de SIS-B-18, y regenerar la línea base
   declarando que las tres corridas de la CLI ganan dos claves por punto.
 - **Dónde vive:** `src/modelos.py::ResultadoHidraulico`
+- **Cerrado en EXT-3 (2026-09-20):** `cli._diseno_json` publica `Q_celda_m3s`
+  y `numero_celdas` junto al bloque h_o entero y al régimen del barril (trece
+  claves nuevas por punto dimensionado); la línea base lo declara archivo por
+  archivo en el README de `tests/linea_base_familia_c/` (entrada EXT-3).
+
+# Parte XIX — Lo que EXT-3 dejó escrito al cerrar el régimen del barril y el dominio del método
+
+EXT-3 cerró EXT-M-01, EXT-M-02 y PC-04, la mitad compuerta de PC-27 y la mitad
+JSON de SIS-B-18 (régimen del barril, velocidad de salida de HDS-5 3.1.6, la
+sexta excepción `MetodoNoEvaluableError` y `Bloqueo` en `modelos.py` con
+`tipo` Enum). Tres cosas quedaron sin hacer a propósito, y una de ellas la v8
+decía que EXT-3 la haría: se dejan aquí con su argumento y su sesión.
+
+## EXT-3-01 · El 0.75 de V1 y el 0.25 m/s de V2 siguen rotulados [N] aunque la v8 ya dice que el umbral duro es [A]
+
+- **Qué se difirió:** reetiquetar `Y_SOBRE_D_MAX` y `V_MIN` —que
+  `constantes_normativas.py` lleva como [N]— a la forma que la v8 §4.1
+  enmendada en EXT-0 fija para V1 y V2: **[N] el deber de verificar** (el
+  Manual manda «verificar que la velocidad mínima… no produzca sedimentación»
+  y tomar en cuenta el borde libre) y **[A] el valor aplicado como umbral
+  duro**, porque las dos cifras llegan con «se recomienda» (págs. 77 y 79) y
+  aplicar una recomendación como rechazo es una adopción del proyectista, con
+  sensibilidad. La nota de §4.1 decía «lo cambia EXT-3».
+- **Por qué:** son 56 usos en 13 archivos, y el cambio no es un renombre:
+  exige dos criterios nuevos en `criterios_adoptados.py` con ventana,
+  `nivel` y `resolucion` (ambos de perfil), mueve la tabla de criterios que
+  `test_nivel_medido` contrasta contra las corridas, el bloque
+  `UMBRALES_DE_VERIFICACION` que M11 imprime siempre, los manifiestos y las
+  fichas de los dos criterios. EXT-3 ya era «la sesión más delicada de la
+  cadena» por el régimen del barril, y meter el reetiquetado en el mismo
+  commit habría mezclado dos clusters. La memoria SÍ imprime hoy el matiz
+  («recomienda, no prohíbe», NOR-HID-10 / NOR-MEM-01): lo que falta es la
+  etiqueta, no la honestidad del texto. La v8 §4.1 quedó corregida en EXT-3
+  para no prometer lo que el código no hizo.
+- **Qué haría falta:** una sesión propia (EXT-3c) que cree los dos criterios
+  [A] de perfil —o un solo criterio por verificación con el valor de la
+  fuente como default declarado—, mueva las lecturas de M5, deje las cifras
+  de la fuente donde están como constantes de tabla (el 25 % y el 0.25 m/s
+  SÍ los escribe el Manual: el patrón `F_PGA_TABLA` / `'F_pga'`) y regenere
+  los manifiestos.
+- **Dónde vive:** `src/constantes_normativas.py::Y_SOBRE_D_MAX`
+
+## EXT-3-02 · V1 y V2 se evalúan con el escenario de TW gobernante, no con los dos
+
+- **Qué se difirió:** la frase que la v8 §1.3 añadió en EXT-0 —«para V1/V2 el
+  escenario de TW mayor es el gobernante sólo si el barril llena en los dos;
+  si llena en uno solo, se evalúan los dos»— cuando el TW sale de la vía 4 de
+  Sec. 1.3 (dos escenarios acotados: salida libre y receptor a sección llena).
+  La corrida sigue resolviendo M4 y la Fase 5 UNA vez, con el TW gobernante
+  (el mayor), y por tanto con UN régimen del barril.
+- **Por qué:** bajo «cumplir en ambos» evaluar el segundo escenario no cambia
+  la aceptación. Si con el TW mayor el barril llena, V1 no cumple (y/D = 1) y
+  el escalón se rechaza igual; si con el TW mayor no llena, con el menor
+  tampoco, y de los dos el mayor es el que puede llevar el control de salida
+  a gobernar y dejar V1/V2 pendientes, que ya impide cerrar. Lo que se pierde
+  es sólo la impresión del segundo escenario en la memoria, y resolverlo
+  exige correr M4 dos veces por escalón y decidir cómo se publican dos trazas
+  hidráulicas del mismo punto, que es un cambio de forma de `ResultadoPunto`
+  y de M11 y no de EXT-3. **Con una salvedad que la auditoría de EXT-3
+  señaló y que no es de aceptación sino de la Fase 6:** la velocidad de
+  salida que recibe M6 es la del escenario de TW mayor, y con
+  y_c ≤ TW < D esa es la MENOR de las dos (Q/A(TW) < Q/A(y_c)): el d50 sale
+  del lado no conservador respecto del escenario de salida libre. Hoy ningún
+  punto dimensionado de la línea base cae ahí (los de vía 4 con TW ≥ D no
+  dimensionan), y es una razón más para evaluar los dos escenarios en EXT-3b.
+- **Qué haría falta:** un `ResultadoHidraulico` por escenario (o la pareja
+  dentro de `TWDeterminado`), la Fase 5 evaluada sobre los dos y la memoria
+  imprimiendo ambos regímenes; conviene hacerlo junto al perfil por paso
+  directo (EXT-3b), que es el que cambia la respuesta bajo control de salida.
+- **Dónde vive:** `src/modulos/M4_control.py::regimen_del_barril`
+
+## EXT-3-03 · El bloqueo «método no evaluable» no aparece en el tablero de criterios de la GUI
+
+- **Qué se difirió:** que `M11.criterios_bloqueantes` —el bloque «Criterios
+  pendientes que bloquearon una etapa» de la memoria y el tablero de seis
+  columnas de la pestaña 4 de la GUI— liste los `Bloqueo` de tipo
+  `METODO_NO_EVALUABLE`. Hoy los salta, porque llevan `criterio=None` y ese
+  agregador está construido por clave de criterio.
+- **Por qué:** es exactamente el hueco que PC-03 describe para el
+  `DisenoNoFactibleError` de MAT-D10, y PC-03 no está asignado a EXT-3 ni a
+  ninguna sesión de la cadena: cerrarlo aquí sería decidir la forma del
+  tablero para dos tipos de bloqueo a la vez sin su sesión. El bloqueo SÍ es
+  visible en todo lo demás que lee el `Informe`: `cli.volcar` (bloque
+  «Bloqueos» y bloque de alcance), `informe_json` (`bloqueos` del punto y
+  `alcance.diferidos`), la tabla «Etapas bloqueadas» y el bloque de alcance de
+  la memoria HTML, y el conteo de bloqueos de la pestaña de puntos de la GUI.
+  Lo que no ve el proyectista es una FILA en el tablero de criterios, que es
+  un tablero de criterios y no de bloqueos.
+- **Qué haría falta:** la sesión que recoja PC-03: un tablero de bloqueos sin
+  criterio (o una columna «qué hace falta» que admita «otro método» además de
+  «declarar»), con la GUI leyendo el mismo agregador que la memoria.
+- **Dónde vive:** `src/modulos/M11_reporte.py::criterios_bloqueantes`

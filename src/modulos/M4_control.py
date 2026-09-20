@@ -262,6 +262,38 @@ extender a toda la nota una imposibilidad que solo vale para una, y dejaba la
 memoria avisando de que "algun punto podria estar fuera de rango" sin decir
 cual lo esta.
 
+Y DESDE EXT-3 EL LIMITE DE 0.75 NO ES UN AVISO (EXT-M-02, v8 §4.3 enmendada en
+EXT-0). Cuando el control de salida gobierna y HW/D cae bajo 0.75 el metodo
+aproximado NO esta definido para ese punto: el HW que sale no es un resultado
+sino un numero fuera del dominio del metodo. Este modulo sigue sin lanzar --
+calcula, marca `h_o_fuera_de_rango` y juzga el paso F4.HO como DIFERIDO con
+el motivo «metodo no evaluable» -- y quien convierte la bandera en `Bloqueo`
+es la corrida (`cli.correr_punto`), leyendo el MISMO campo que el paso juzga:
+diferible a nivel de perfil, no a nivel de expediente. Nunca es un
+`Verificacion(cumple=False)`: subir de diametro solo baja HW/D (0.589 ->
+0.526 medido) y recorrer el catalogo hasta `DisenoNoFactibleError` seria
+rechazar por una condicion que ningun diametro puede cumplir.
+
+Regimen del barril y velocidad de salida (HDS-5 3.1.6; EXT-3)
+--------------------------------------------------------------
+`resolver_control()` emite ademas COMO fluye el barril y con que velocidad
+sale el agua, porque las dos cosas deciden verificaciones que hasta EXT-3 se
+hacian siempre con el flujo uniforme de M3 (EXT-M-01, PC-04):
+
+    LLENO               TW >= D: el TW llena el barril hasta la clave. V1 y V2
+                        se comparan con D y con Q_celda/A_llena.
+    PARCIALMENTE LLENO  en otro caso. Bajo control de ENTRADA el tirante es
+                        el normal (M3); bajo control de SALIDA no se conoce
+                        sin el perfil de la lamina y V1/V2 quedan pendientes.
+
+    V_salida            control de SALIDA: Q_celda / A(min(D, max(TW, y_c)))
+                        -- tirante critico, TW o seccion entera, segun el TW
+                        (pag. impresa 3.18) --, sin n.
+                        control de ENTRADA: la del tirante normal (pag. 3.24),
+                        rama n_min: techo conservador para el d50 de M6.
+
+Ver `regimen_del_barril`, `velocidad_de_salida` y el paso F4.REGIMEN.
+
 De donde salen V y R en esa ecuacion: la hoja de ruta escribe la formula pero
 no dice a que seccion pertenecen, y la eleccion mueve el resultado (R = D/4 =
 0.225 m a seccion llena frente a R = 0.2715 m con y/D = 0.75, en un tubo de
@@ -307,7 +339,7 @@ from __future__ import annotations
 
 import math
 import numbers
-from typing import Optional, Tuple
+from typing import NamedTuple, Optional, Tuple
 
 from scipy.optimize import brentq
 
@@ -324,7 +356,9 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      ConstantesHDS5,
                      ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
-                     LimiteNumericoError, Magnitud, Material, RegimenEntrada,
+                     LimiteNumericoError, Magnitud, Material,
+                     MOTIVO_METODO_NO_EVALUABLE, RegimenBarril,
+                     RegimenEntrada,
                      ResultadoHidraulico, TiranteCritico, TipoDeVeredicto,
                      TiranteNormal, TransicionEntrada, Umbral, Veredicto, paso)
 from modulos.M2_material import CRITERIO_N_CELDAS_CAJON, numero_de_celdas
@@ -1093,9 +1127,11 @@ def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
         )
 
     # Las dos condiciones de uso que HDS-5 pone a h_o y que SI se pueden
-    # evaluar (num. 3.3.3, pag. impresa 3.24; NOR-HDS-05). No lanzan: la
-    # fuente no prohibe calcular, dice que el numero no es de fiar. Ver
-    # `constantes_normativas.H_O_CONDICION_APLICACION`.
+    # evaluar (num. 3.3.3, pag. impresa 3.24; NOR-HDS-05). No lanzan AQUI: la
+    # pieza calcula y marca; la de 0.75 la convierte en `Bloqueo` «metodo no
+    # evaluable» la corrida, leyendo la bandera ya filtrada por control
+    # gobernante que `resolver_control` deja en `ResultadoHidraulico` (EXT-3).
+    # Ver `constantes_normativas.H_O_CONDICION_APLICACION`.
     HW_sobre_D = HW / seccion.altura
 
     return ControlSalida(
@@ -1201,6 +1237,139 @@ def hw_gobernante(entrada: ControlEntrada,
 
 
 # ---------------------------------------------------------------------------
+# Pieza 5 - Regimen del barril y velocidad de salida (HDS-5 3.1.6; EXT-3)
+# ---------------------------------------------------------------------------
+
+class _RegimenYSalida(NamedTuple):
+    """Lo que la pieza 5 entrega a `ResultadoHidraulico` y al paso F4.REGIMEN."""
+    regimen: RegimenBarril
+    V_llena: float          # m/s - Q_celda / A_llena
+    y_salida: float         # m   - tirante con que se midio V_salida
+    V_salida: Magnitud      # m/s - con su procedencia
+
+
+def regimen_del_barril(TW: float, seccion: Seccion) -> RegimenBarril:
+    """
+    LLENO si la salida esta sumergida, TW >= D; PARCIALMENTE_LLENO si no
+    (v8 §1.3 y §4.1, enmendadas en EXT-0; HDS-5 3.1.6, pag. impresa 3.18:
+    «Total barrel area is used when the tailwater exceeds the top of the
+    barrel»).
+
+    La v8 escribe «TW >= D, o HW >= D con la salida sumergida»: la segunda
+    clausula esta contenida en la primera (salida sumergida ES TW >= D), y por
+    eso aqui hay una condicion y no dos. Lo que NO hace esta funcion es decir
+    cuanto llena un barril con TW < D: eso exige el perfil de la lamina de agua
+    (HDS-5 3.1.4, tipos 6 y 7) y se declara pendiente, no se estima. Forma
+    MAT-D13: condicion en positivo y negada, con tolerancia nombrada.
+
+    NO MIRA EL CONTROL, Y ESO ES UNA DISCREPANCIA DECLARADA CON LA FUENTE
+    PRIMARIA (HDS-5 3.1.3, pag. impresa 3.2, `HDS5_3ED.3.1.3#SUMERGENCIA`):
+    bajo control de ENTRADA la sumergencia de la salida «does not assure
+    outlet control», el tramo de aguas arriba es supercritico y un resalto
+    llena el barril hacia la salida. LLENO aqui significa lo que V1 y V2
+    necesitan --la salida y el tramo aguas abajo del resalto van llenos, sin
+    borde libre y a la velocidad Q/A_llena, la menor del barril--, no «flujo a
+    presion en toda la longitud», que es lo que la v8 §1.3 dice a secas y por
+    lo que el defecto queda reportado contra ella (`modelos.RegimenBarril`).
+    """
+    if not TW < seccion.altura - TOL_UMBRAL_NORMATIVO:
+        return RegimenBarril.LLENO
+    return RegimenBarril.PARCIALMENTE_LLENO
+
+
+def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
+                        critico: TiranteCritico, normal: TiranteNormal,
+                        control: ControlGobernante) -> Tuple[Magnitud, float]:
+    """
+    (V_salida, y_salida) por HDS-5 3.1.6: la velocidad a la SALIDA del
+    conducto, que es la que dimensiona la proteccion de la Fase 6 (PC-04).
+
+    Control de SALIDA (pag. impresa 3.18): el area es la de la seccion al
+    tirante que fija el TW -- el critico si TW < y_c, el TW si y_c <= TW < D,
+    la seccion entera si TW >= D --, o sea min(D, max(TW, y_c)). No lleva n:
+    es Q entre un area, y por eso no entra en la regla de doble n.
+
+    Control de ENTRADA (pag. impresa 3.24, «The velocity at normal depth is
+    assumed to be the outlet velocity»): la del tirante normal. De sus dos
+    ramas se toma la de n MINIMO, `V_erosion`, la estimacion ALTA: d50 crece
+    con V^2 y el techo es el lado conservador de una proteccion. Es lo que M6
+    recibia siempre hasta EXT-3, tambien bajo control de salida, donde en
+    pendiente suave con salida libre la velocidad a y_c es MAYOR (1.508 vs
+    1.184 m/s en el caso del dictamen) y la piedra salia chica.
+    """
+    if control is ControlGobernante.ENTRADA:
+        salida_llena = ("" if TW < seccion.altura - TOL_UMBRAL_NORMATIVO else
+                        ". Con el TW sobre la clave la seccion de SALIDA va "
+                        "llena tras el resalto (HDS-5 3.1.3, Fig. 3.1C/D) y la "
+                        "velocidad real alli seria Q_celda/A_llena, menor: se "
+                        "conserva la del tirante normal como techo declarado, "
+                        "porque el 3.1.6 no da la regla para ese caso y d50 "
+                        "crece con V^2")
+        return Magnitud(
+            "V_salida", normal.V_erosion, "m/s",
+            "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de "
+            "ENTRADA la velocidad a la salida es la del tirante normal. De las "
+            "dos ramas de n (Sec. 4.1) se toma la de n MINIMO, V_erosion, la "
+            "estimacion ALTA: es el techo conservador para un d50 que crece "
+            "con el cuadrado de V" + salida_llena,
+            cifras=CIFRAS_MAGNITUD), normal.geometria.y
+    D = seccion.altura
+    y_salida = min(D, max(TW, critico.y_c))
+    # LAS TRES AREAS, Y DE DONDE SALE CADA UNA (regla vinculante #12 de
+    # ruta_familia_c.md §6): la seccion entera y la critica ya estan resueltas
+    # por la via canonica --`area_llena` y `critico.geometria.A`, que es la
+    # misma A con que M4 formo H_c-- y NO se recalculan desde el tirante. Solo
+    # el TW es un tirante SIN `Geometria` --es un dato del receptor, no la
+    # salida de un solver--, y ese es el unico caso en que se lee `area(TW)`
+    # por la via por tirante. Esta censado en
+    # `tests/test_seccion_rectangular.py::CENSO_VIA_POR_TIRANTE`.
+    if not y_salida < D - TOL_UMBRAL_NORMATIVO:
+        y_salida = D
+        A = seccion.area_llena
+        caso = ("el TW supera la clave del barril, de modo que el area es la "
+                "SECCION ENTERA (tercera vineta de la pag. 3.18): V = "
+                "Q_celda / A_llena")
+    elif TW > critico.y_c:
+        A = seccion.area(y_salida)
+        caso = ("el TW esta entre el tirante critico y la clave, de modo que "
+                "el tirante a la salida es el TW (segunda vineta de la pag. "
+                "3.18): V = Q_celda / A(TW)")
+    else:
+        A = critico.geometria.A
+        caso = ("el TW queda bajo el tirante critico, de modo que el agua pasa "
+                "por y_c a la salida (primera vineta de la pag. 3.18): V = "
+                "Q_celda / A(y_c), con el area critica que el paso 4.2 ya "
+                "resolvio")
+    if not A > 0:
+        # Forma MAT-D13: umbral en positivo y negado; el par culpable.
+        raise LimiteNumericoError(
+            "A_salida", valor=A,
+            motivo=f"el area de la seccion al tirante de salida "
+                   f"(y_salida = {y_salida!r} m, con TW = {TW!r} m y "
+                   f"y_c = {critico.y_c!r} m) no es positiva y la velocidad "
+                   "de salida de HDS-5 3.1.6 no se puede formar")
+    return Magnitud(
+        "V_salida", Q_celda / A, "m/s",
+        f"HDS-5 num. 3.1.6 (pag. impresa 3.18): bajo control de SALIDA el "
+        f"area de la velocidad de salida la fija el TW; aqui {caso}. No lleva "
+        f"n de Manning: es un caudal entre un area, y por eso no entra en la "
+        f"regla de doble n",
+        cifras=CIFRAS_MAGNITUD), y_salida
+
+
+def _regimen_y_salida(*, Q_celda: float, seccion: Seccion, TW: float,
+                      critico: TiranteCritico, normal: TiranteNormal,
+                      control: ControlGobernante) -> _RegimenYSalida:
+    """La pieza 5 entera, resuelta UNA vez: el resultado y el paso la comparten."""
+    V_salida, y_salida = velocidad_de_salida(
+        Q_celda=Q_celda, seccion=seccion, TW=TW, critico=critico,
+        normal=normal, control=control)
+    return _RegimenYSalida(regimen=regimen_del_barril(TW, seccion),
+                           V_llena=Q_celda / seccion.area_llena,
+                           y_salida=y_salida, V_salida=V_salida)
+
+
+# ---------------------------------------------------------------------------
 # La traza hidraulica de la memoria (§4.4)
 # ---------------------------------------------------------------------------
 # Los cuatro pasos que un revisor necesita leer de corrido para reconstruir el
@@ -1216,7 +1385,8 @@ def hw_gobernante(entrada: ControlEntrada,
 
 def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entrada,
                        salida, control, gobierna_salida,
-                       Q_celda: Optional[float] = None, celdas: int = 1):
+                       Q_celda: Optional[float] = None, celdas: int = 1,
+                       regimen: Optional[_RegimenYSalida] = None):
     """
     La traza de M3 + M4 para una combinacion, en orden de calculo.
 
@@ -1224,9 +1394,18 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
     verdad (EXT-M-03); sin reparto valen lo mismo, y por eso `Q_celda` lleva
     default: los tests que llaman a esta funcion con una sola celda no
     tienen que saber que existe un reparto.
+
+    `regimen` es la pieza 5 ya resuelta por `resolver_control` (EXT-3): el
+    paso F4.REGIMEN imprime EL MISMO objeto que viaja en el resultado, no una
+    segunda lectura. Si no llega --los tests de la traza suelta-- se resuelve
+    aqui con la misma funcion, que es la unica que existe.
     """
     if Q_celda is None:
         Q_celda = Q
+    if regimen is None:
+        regimen = _regimen_y_salida(Q_celda=Q_celda, seccion=seccion, TW=TW,
+                                    critico=critico, normal=normal,
+                                    control=control)
     # EL PASO DEL REPARTO, y va PRIMERO y solo en el marco: es lo primero que
     # un revisor necesita para rehacer el tirante normal de la celda, y en la
     # circular no hay reparto que contar -- un tubo es una celda por
@@ -1695,8 +1874,15 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                        "la mayor parte de su longitud-- no se puede evaluar "
                        "sin un perfil de la lamina de agua, que este script "
                        "no calcula: se declara."),
+        # DIFERIDO Y NO NO_CUMPLE bajo 0.75 (EXT-3, SIS-A-07): el pipeline no
+        # rechaza el punto por esto --subir D solo baja HW/D-- sino que lo
+        # bloquea como «metodo no evaluable»; un paso que dijera NO_CUMPLE
+        # sobre un punto que la corrida no rechaza es la divergencia entre
+        # memoria y pipeline que EXT-M-02 midio. El Bloqueo lo construye
+        # `cli.correr_punto` leyendo `ResultadoHidraulico.h_o_fuera_de_rango`,
+        # que es esta misma bandera filtrada por control gobernante.
         veredicto=Veredicto(
-            tipo=(TipoDeVeredicto.NO_CUMPLE
+            tipo=(TipoDeVeredicto.DIFERIDO
                   if (gobierna_salida and salida.h_o_fuera_de_rango)
                   else TipoDeVeredicto.CUMPLE if gobierna_salida
                   else TipoDeVeredicto.SIN_VEREDICTO),
@@ -1707,8 +1893,13 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                 "carga de este punto y las condiciones de h_o no aplican, "
                 "que es como la fuente las condiciona"
                 if not gobierna_salida else
-                "HW/D por debajo de 0.75: la aproximacion de h_o esta FUERA "
-                "del rango que su fuente declara"
+                f"{MOTIVO_METODO_NO_EVALUABLE}: HW/D por debajo de 0.75 bajo "
+                "control de salida, donde la fuente dice que la aproximacion "
+                "de h_o no debe usarse. El HW de arriba no es un resultado "
+                "del metodo sino un numero fuera de su dominio; la carga se "
+                "difiere al calculo de remanso (Section 3.5) y el punto viaja "
+                "con un bloqueo, diferible a nivel de perfil y no a nivel de "
+                "expediente (v8 §4.3)"
                 if salida.h_o_fuera_de_rango else
                 "HW/D por debajo de 1.2: la fuente pide cautela, el barril "
                 "puede fluir parcialmente lleno"
@@ -1720,6 +1911,74 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             "modo que un h_o sobreestimado puede hacer que el control de "
             "salida gobierne un punto donde no gobernaria. Deshacerla exige "
             "el procedimiento de barril parcialmente lleno del Cap. III."),
+    )
+
+    # EL PASO DEL REGIMEN (EXT-3), despues del control de salida porque
+    # necesita saber cual gobierna y antes de la adopcion porque V1, V2 y la
+    # Fase 6 leen de aqui. El `resultado` es EL MISMO objeto `Magnitud` que
+    # viaja en `ResultadoHidraulico.V_salida`: una lectura, no dos.
+    de_regimen = paso(
+        "F4.REGIMEN",
+        codigo="4.3b",
+        que="Regimen del barril y velocidad a la salida (HDS-5 3.1.6)",
+        formula="regimen = LLENO si TW >= D, PARCIALMENTE LLENO si no; "
+                "V_salida = Q_celda / A(y_salida), con y_salida = "
+                "min(D, max(TW, y_c)) bajo control de salida y y_salida = y_n "
+                "bajo control de entrada",
+        formula_cita_id="HDS5_3ED.3.1.6#V_SALIDA",
+        citas_textuales=("HDS5_3ED.3.1.6#V_SALIDA", "HDS5_3ED.3.1.6#V_SALIDA_TW",
+                         "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA",
+                         "HDS5_3ED.3.1.3#SUMERGENCIA"),
+        sustitucion=(
+            Magnitud("TW", TW, "m",
+                     "tirante en el receptor sobre el fondo de la SALIDA, el "
+                     "mismo del paso 4.3", cifras=CIFRAS_MAGNITUD),
+            Magnitud("D", seccion.altura, "m",
+                     f"altura interior del barril, la fila «{fila_altura}» "
+                     f"del paso 4.1", cifras=CIFRAS_FACTOR),
+            Magnitud("y_c", critico.y_c, "m", "tirante critico del paso 4.2",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("y_n", normal.geometria.y, "m",
+                     "tirante normal del paso 4.1, con n_max",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("Q_celda", Q_celda, "m3/s",
+                     "caudal de UNA celda, el mismo con que se resolvieron "
+                     "los pasos 4.1 a 4.3", cifras=CIFRAS_MAGNITUD),
+            Magnitud("regimen", regimen.regimen.value, "",
+                     "LLENO cuando TW >= D: la salida esta sumergida y la "
+                     "seccion de salida y el tramo aguas abajo van llenos, sin "
+                     "borde libre y a Q_celda/A_llena; bajo control de ENTRADA "
+                     "el tramo de aguas arriba sigue supercritico y un resalto "
+                     "lo llena hacia la salida (HDS-5 3.1.3, pag. 3.2), de modo "
+                     "que LLENO no significa presion en toda la longitud. "
+                     "PARCIALMENTE LLENO en otro caso, y con TW < D esta "
+                     "corrida NO estima cuanto llena: exige el perfil de la "
+                     "lamina de agua",
+                     cifras=None),
+            Magnitud("V_llena", regimen.V_llena, "m/s",
+                     "Q_celda / A_llena: la velocidad del regimen LLENO, sin n "
+                     "porque a seccion llena no hay tirante que resolver. Es la "
+                     "que V2 compara cuando el barril va lleno",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("y_salida", regimen.y_salida, "m",
+                     "tirante con que se mide la velocidad a la salida: "
+                     "min(D, max(TW, y_c)) bajo control de salida, y_n bajo "
+                     "control de entrada", cifras=CIFRAS_MAGNITUD),
+            Magnitud("control", control.value, "",
+                     "el control que gobierna, del paso 4.4", cifras=None)),
+        resultado=regimen.V_salida,
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="paso de calculo: no contrasta contra "
+                                        "ningun umbral. Lo que juzga V1 y V2 "
+                                        "esta en la Fase 5, y lo que recibe "
+                                        "la Fase 6 es V_salida"),
+        nota_del_proyecto=(
+            "Bajo control de SALIDA con el barril PARCIALMENTE LLENO el "
+            "tirante y la velocidad DENTRO del conducto no se conocen sin el "
+            "perfil de la lamina de agua (HDS-5 Section 3.5), y V1 y V2 "
+            "quedan pendientes por esa razon, no aprobadas con el tirante "
+            "normal. No se inventa un criterio de llenado. La velocidad A LA "
+            "SALIDA si se conoce, y es la de arriba."),
     )
 
     de_gobernante = paso(
@@ -1757,7 +2016,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
     # Fase 3 -- su fila y su carta son lectura directa de una tabla --.
     return material.pasos + de_reparto + (de_seccion, de_manning, de_critico,
                                           de_forma, de_entrada, de_salida,
-                                          de_gobernante)
+                                          de_regimen, de_gobernante)
 
 
 def caudal_por_celda(Q: float, material: Material) -> Tuple[float, int]:
@@ -1826,6 +2085,13 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
 
     El tirante critico se resuelve UNA vez y se inyecta en las dos piezas que
     lo necesitan (Forma 1 del control de entrada y h_o del control de salida).
+
+    Y DESDE EXT-3 EMITE LA PIEZA 5 (EXT-M-01, PC-04): el regimen del barril
+    (`regimen_del_barril`), la velocidad del regimen lleno y la velocidad a
+    la salida por HDS-5 3.1.6 (`velocidad_de_salida`), como `Magnitud` con
+    procedencia, mas el bloque h_o entero (h_o, TW, `ahogado_por_TW`) que
+    hasta entonces se quedaba en `ControlSalida` (SIS-B-18). `control_salida`
+    no cambia: la pieza 5 lee lo que aquella ya calculo.
     """
     Q_celda, celdas = caudal_por_celda(Q, material)
     if normal is None:
@@ -1847,6 +2113,9 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
     # depth ... is less than 1.2D"), y asi se propagan: si gobierna la entrada,
     # el HW de salida no es la carga del punto y no hay nada que advertir.
     gobierna_salida = control is ControlGobernante.SALIDA
+    regimen = _regimen_y_salida(Q_celda=Q_celda, seccion=seccion, TW=TW,
+                                critico=critico, normal=normal,
+                                control=control)
 
     return ResultadoHidraulico(
         y_normal=normal.geometria.y,
@@ -1872,8 +2141,18 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         HW_sobre_D_salida=salida.HW_sobre_D,
         Q_celda_m3s=Q_celda,
         numero_celdas=celdas,
+        # La pieza 5 y el bloque h_o (EXT-3). `V_salida` es el MISMO objeto
+        # que el paso F4.REGIMEN imprime como resultado.
+        regimen_barril=regimen.regimen,
+        V_llena_m_s=regimen.V_llena,
+        V_salida=regimen.V_salida,
+        y_salida_m=regimen.y_salida,
+        h_o_m=salida.h_o,
+        TW_m=salida.TW,
+        ahogado_por_TW=salida.ahogado_por_TW,
         pasos=_pasos_hidraulicos(
             seccion=seccion, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
             critico=critico, entrada=entrada, salida=salida, control=control,
-            gobierna_salida=gobierna_salida, Q_celda=Q_celda, celdas=celdas),
+            gobierna_salida=gobierna_salida, Q_celda=Q_celda, celdas=celdas,
+            regimen=regimen),
     )

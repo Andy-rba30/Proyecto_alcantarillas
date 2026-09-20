@@ -595,7 +595,7 @@ del parámetro propio.** La añadió C1 y la va a pisar C4.
 | Vía | Miembros | Estado |
 |---|---|---|
 | **Por parámetro propio — CANÓNICA** | `bracket_llenado()`, `geometria_en(llenado)`, `ancho_superficial_en_llenado(llenado)` | La que consumen M3 y M4. Es la que resuelve Brent |
-| **Por tirante — de lectura** | `area(y)`, `perimetro(y)`, `ancho_superficial(y)` | **DOS consumidores, los dos dentro de `SeccionRectangular.geometria_en`** *(medido en C4; hasta entonces eran cero)*. Es el vocabulario de la Sec. 4.1 |
+| **Por tirante — de lectura** | `area(y)`, `perimetro(y)`, `ancho_superficial(y)` | **TRES consumidores desde EXT-3: dos dentro de `SeccionRectangular.geometria_en`** *(medido en C4; hasta entonces eran cero)* **y uno en `M4.velocidad_de_salida`** *(EXT-3: el área al TW para la velocidad de salida de HDS-5 3.1.6, y el TW es un tirante sin `Geometria`; las áreas crítica y llena de esa misma función salen de la vía canónica)*. Es el vocabulario de la Sec. 4.1 |
 
 > **La celda decía «cero consumidores» y C4 le dio dos.** Los dos están en el único sitio
 > donde esta vía no puede equivocarse — `SeccionRectangular.geometria_en`, donde el

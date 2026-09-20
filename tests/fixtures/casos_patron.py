@@ -1466,3 +1466,36 @@ CP11_SERIES_NOMINALES = {
                                "sesion propia"),
     },
 }
+
+
+# ---------------------------------------------------------------------------
+# CP-12 · REGIMEN DEL BARRIL LLENO (EXT-3) -- el unico dorado cerrado del cluster
+# ---------------------------------------------------------------------------
+# CALCULADO A MANO, y es aritmetica de la fuente y no un dorado inventado: con
+# el TW por encima de la clave (TW >= D) el barril fluye lleno (v8 §1.3
+# enmendada en EXT-0; HDS-5 3.1.6, pag. impresa 3.18: «Total barrel area is
+# used when the tailwater exceeds the top of the barrel»), el tirante del
+# regimen es D entero -- y/D = 1, sin borde libre: MC-HHD pag. 79, «las
+# alcantarillas no deben ser diseñadas para trabajar a seccion llena» -- y la
+# velocidad es Q entre el area llena:
+#
+#     A_llena = pi * D^2 / 4 = pi * 0.81 / 4 = 0.6361725124 m2
+#     V_llena = Q / A_llena  = 0.05 / 0.6361725124 = 0.07859503363 m/s  < 0.25
+#
+# Es el caso (a) del dictamen del 2026-09-19 (EXT-M-01): hasta EXT-3 la memoria
+# imprimia «manda TW: la salida esta ahogada» y en la misma pagina V1 [OK] con
+# y/D = 0.135 y V2 evaluada con la velocidad uniforme de Manning (0.974 m/s).
+# El resto del caso (HW, control gobernante) NO lleva dorado: sale de Brent y
+# de las ecuaciones del HDS-5, y fabricarle una cifra seria el conflicto #7.
+CP12_REGIMEN_LLENO = {
+    "D": 0.90,
+    "Q": 0.05,
+    "S": 0.005,
+    "L": 20.0,
+    "TW": 1.2,                        # >= D: salida sumergida, barril lleno
+    "material": "concreto_reforzado",
+    "A_llena_esperada": 0.6361725124, # m2, pi*D^2/4
+    "V_llena_esperada": 0.07859503363, # m/s, Q/A_llena -- por debajo de V_MIN
+    "y_sobre_D_esperado": 1,          # el tirante del regimen es D entero
+    "tolerancia": 1e-9,               # los dorados llevan 9 decimales
+}

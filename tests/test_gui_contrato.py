@@ -1387,6 +1387,12 @@ def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
         "A|B": "Familia A: 2 puntos · Familia B: 1 punto en el CSV"}
     assert resumen["dimensionados"] == ["A-01", "A-02", "B-01"]
     assert resumen["diferidos"] > 0, "nada diferido: no es alcance de perfil"
+    # EXT-3: B-01 sigue dimensionado, pero «con HW no evaluable / diferido»
+    # --control de salida con HW/D = 0.395 < 0.75-- y con V1/V2 diferidas por
+    # regimen (barril parcialmente lleno bajo control de salida). Los dos de
+    # control de entrada no llevan ninguno de los dos.
+    assert resumen["hw_no_evaluable"] == ["B-01"]
+    assert resumen["v1_v2_diferidas"] == ["B-01"]
     # La plantilla la elige el ALCANCE de la corrida, que es SIS-A-17.
     assert resumen["plantilla"] == cli.NOMBRE_PLANTILLA_PERFIL
     # EL TABLERO, ANTES DE DECLARAR NADA: los dos que el alcance de perfil

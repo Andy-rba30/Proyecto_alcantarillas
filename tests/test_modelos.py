@@ -24,7 +24,7 @@ from modelos import (CasoDemandaSismica, CondicionAnalisis, ConstantesHDS5,
                      DatoFaltanteError, DatoInvalidoError,
                      DemandaSismicaCabezal, DisenoNoFactibleError,
                      EmpujesTrasdos, ErrorProyecto, Familia,
-                     LimiteNumericoError,
+                     LimiteNumericoError, MetodoNoEvaluableError,
                      FuerzaInerciaMuro, Geometria, Material, PasoDiseno,
                      SeccionCircular, SeccionRectangular,
                      PuntoCritico, ReferenciaNormativa, ResultadoHidraulico,
@@ -328,7 +328,7 @@ def test_un_rechazo_sin_motivo_es_incoherente():
 def test_toda_excepcion_del_negocio_desciende_de_error_proyecto():
     for excepcion in (CriterioPendienteError, DisenoNoFactibleError,
                       DatoFaltanteError, DatoInvalidoError,
-                      LimiteNumericoError):
+                      LimiteNumericoError, MetodoNoEvaluableError):
         assert issubclass(excepcion, ErrorProyecto)
 
 

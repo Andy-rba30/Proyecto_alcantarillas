@@ -230,6 +230,17 @@ RELACIONES: Dict[str, Tuple[Relacion, ...]] = {
         ("h_o~(y_c+D)/2", "v['h_o']", "v['(y_c + D)/2']"),
         ("HW/D=HW_salida/D", "v['HW/D']", "r / v['D']"),
     ),
+    # M4 --- regimen del barril y velocidad de salida (EXT-3, HDS-5 3.1.6):
+    # y_salida = min(D, max(TW, y_c)) es una longitud, y V_salida = Q/A con
+    # A ~ D^2. `regimen` y `control` son rotulos adimensionales y no entran.
+    "F4.REGIMEN@4.3b": (
+        ("y_salida~TW", "v['y_salida']", "v['TW']"),
+        ("y_salida~y_c", "v['y_salida']", "v['y_c']"),
+        ("y_salida~D", "v['y_salida']", "v['D']"),
+        ("V_llena~Q_celda/D^2", "v['V_llena']", "v['Q_celda'] / v['D'] ** 2"),
+        ("V_salida~V_llena", "r", "v['V_llena']"),
+        ("V_salida~Q_celda/D^2", "r", "v['Q_celda'] / v['D'] ** 2"),
+    ),
     # M4 --- HW = max(HW_entrada, HW_salida).
     "F4.CONTROL@4.4": (
         ("HW~HW_entrada", "r", "v['HW_entrada']"),

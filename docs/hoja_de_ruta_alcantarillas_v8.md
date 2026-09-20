@@ -244,8 +244,11 @@ cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion
 > **Corregido (`EXT-M-01`, `PC-04`, EXT-0).** «V4 y V4b, que son las únicas
 > verificaciones que dependen del TW» es **falso bajo TW ahogante**. Cuando el
 > TW alcanza la clave del conducto (TW ≥ D), o la carga a la entrada supera D
-> con la salida sumergida, el barril fluye **lleno**, y entonces el tirante y la
-> velocidad con que se comparan **V1 y V2** ya no son los del flujo uniforme de
+> con la salida sumergida, el barril fluye **lleno** —en la salida y en el tramo
+> aguas abajo del resalto cuando gobierna el control de entrada, HDS-5 3.1.3,
+> pág. 3.2; en toda la longitud sólo bajo control de salida, flujo tipo 4—, y
+> entonces el tirante y la velocidad con que se comparan **V1 y V2** ya no son
+> los del flujo uniforme de
 > Manning (§4.1): son los del **régimen del barril**, que depende del TW. El
 > Manual MTC lo dice de las dos: «las alcantarillas no deben ser diseñadas para
 > trabajar a sección llena» (num. 4.1.1.3.7 b), pág. impresa 79, PDF 82) y la
@@ -265,11 +268,35 @@ cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion
 > V1, V2 y la velocidad que entra a la Fase 6; (2) el «cumplir en ambos» del
 > paso 3 sigue valiendo tal cual para V4 y V4b, y para V1/V2 el escenario de TW
 > mayor es el gobernante sólo si el barril llena en los dos — si llena en uno
-> solo, se evalúan los dos. Lo implementa la sesión EXT-3 de
-> `docs/planes_mejora/07_CADENA_PROMPTS_EXT.md`; mientras no esté, **esta hoja
-> está corregida y el código no**, y quien diseñe con el código bajo TW
-> ahogante obtiene V1/V2 evaluadas sobre un régimen que no existe. Ver la nota
+> solo, se evalúan los dos. **Implementado en EXT-3 (2026-09-20)** salvo la
+> frase anterior: `M4.resolver_control` emite el régimen del barril
+> (`modelos.RegimenBarril`) y la velocidad de salida (`M4.velocidad_de_salida`),
+> V1/V2 se evalúan por régimen en `M5` y la Fase 6 recibe
+> `ResultadoHidraulico.V_salida`. **Lo que EXT-3 NO hizo, y queda declarado:**
+> la corrida sigue evaluando V1/V2 con el escenario de TW **gobernante** (el
+> mayor) y no los dos por separado. Bajo «cumplir en ambos» eso no cambia la
+> aceptación —si el mayor llena, V1 no cumple y el D se rechaza igual; si
+> ninguno llena, el mayor es el que puede caer bajo control de salida y dejar
+> V1/V2 pendientes, que ya impide cerrar—, pero sí deja sin imprimir el segundo
+> escenario. Ficha `EXT-3-02` en `docs/decisiones_diferidas.md`. Ver la nota
 > de §4.1 y las filas V1/V2 de la Fase 5.
+>
+> **Discrepancia con la fuente primaria, verificada (EXT-3, auditoría
+> adversarial).** «El barril fluye lleno» con TW ≥ D no vale a secas bajo
+> **control de entrada**: HDS-5 3.1.3, pág. impresa 3.2 (PDF 84), «In Figure
+> 3.1C, submergence of the outlet end of the culvert does not assure outlet
+> control. In this case, the flow just downstream of the inlet is supercritical
+> and a hydraulic jump forms in the culvert barrel» —y la Fig. 3.1D: la
+> sumergencia de los dos extremos «does not assure full flow»—. Lo que va lleno
+> es la salida y el tramo aguas abajo del resalto; el de aguas arriba sigue
+> supercrítico. El código (`modelos.RegimenBarril`, `M4.regimen_del_barril`)
+> conserva LLENO para V1 y V2 también bajo control de entrada porque es ese
+> tramo el que no tiene borde libre y el que fija la velocidad mínima
+> (Q/A_llena), y lo declara así en el punto de uso con la cita
+> `HDS5_3ED.3.1.3#SUMERGENCIA`; la velocidad de salida bajo control de entrada
+> sigue siendo la del tirante normal (mayor: conservadora para d50). La frase
+> de arriba («fluye lleno») lleva el matiz desde esta misma sesión; hasta EXT-3
+> se leía como flujo a presión en toda la longitud.
 
 ### 1.4 Densidad de investigación geotécnica
 
@@ -486,7 +513,15 @@ Resolver con **bisección o Brent sobre θ ∈ (0, 2π)**.
 > Precedentes: `NOR-HID-10` y `NOR-MEM-01` ya habían medido que las dos frases
 > son del mismo tipo y que el matiz «recomienda, no prohíbe» tenía que
 > imprimirse; aquí el matiz llega a la etiqueta. El código (`M5`) todavía lo
-> lleva como [N] en `constantes_normativas`: lo cambia EXT-3.
+> lleva como [N] en `constantes_normativas` (`Y_SOBRE_D_MAX`, `V_MIN`).
+> **EXT-3 (2026-09-20) NO lo cambió**, y esta frase decía que lo cambiaría:
+> el reetiquetado toca 56 usos en 13 archivos, la tabla de criterios, el
+> nivel medido y los manifiestos, y no cabía en la sesión que movía el
+> régimen. Queda para una sesión propia, **EXT-3c**, con ficha `EXT-3-01` en
+> `docs/decisiones_diferidas.md`. Mientras no exista, **esta hoja está
+> corregida en la etiqueta y el código no**: la memoria imprime el matiz
+> («recomienda») pero el valor sigue rotulado [N]. Lo que EXT-3 sí cambió del
+> régimen —el tirante y la velocidad que V1/V2 comparan— está en el código.
 
 #### 4.1.1 Por qué el n de HDPE es un rango y no 0.012 — **corrección**
 
@@ -626,11 +661,15 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 > remanso (Sección 3.5) que la propia fuente manda usar. En la banda
 > 0.75 ≤ HW/D < 1.2 el método sí se usa, con cautela, y el remanso es la
 > comprobación que la fuente pide «if a more accurate headwater is necessary»;
-> a nivel de expediente lo es. Lo implementa EXT-3; el perfil por paso directo,
-> que deshace la circularidad, es la sesión E-A. Mientras el código no cambie,
-> **esta hoja está corregida y el código no**: el punto B-01 del corredor de
-> referencia (control de salida, HW/D = 0.395) sale hoy como dimensionado sin
-> bloqueo.
+> a nivel de expediente lo es. **Implementado en EXT-3 (2026-09-20)**:
+> `modelos.MetodoNoEvaluableError` (sexta de la taxonomía) viaja como
+> `Bloqueo` con `TipoDeBloqueo.METODO_NO_EVALUABLE`; la compuerta es
+> `cli._compuerta_metodo_h_o`, que lee el MISMO campo que juzga el paso F4.HO
+> (`ResultadoHidraulico.h_o_fuera_de_rango`, ahora con veredicto DIFERIDO y
+> no NO_CUMPLE), diferible sólo a nivel de perfil. El punto B-01 del corredor
+> de referencia sale como dimensionado **con** el bloqueo diferido y el motivo
+> impreso junto al HW. El perfil por paso directo, que deshace la
+> circularidad, sigue siendo la sesión EXT-3b / E-A.
 
 > **Nota de unidades.** **19.63** es el valor SI. El **29** de la literatura FHWA es del sistema inglés. Usar 29 en métrico no falla ruidosamente: devuelve números plausibles y equivocados. **Test unitario obligatorio.**
 >

@@ -136,7 +136,8 @@ from modulos.M8_estructural import verificacion_diferida_estructural
 # Los rotulos de alcance viven en modelos.py, no en cli.py: M11 los necesita y
 # no puede importar la CLI --- es la CLI quien importa M11 ---. Ver la nota de
 # su declaracion.
-from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, TipoDeVeredicto)
+from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
+                     MOTIVO_METODO_NO_EVALUABLE, TipoDeVeredicto)
 
 _reg_M11 = _registro_M11.construir()
 
@@ -913,7 +914,7 @@ def _tabla_diseno(informe: Any) -> str:
                    f"{_num(hidraulica.y_critico)} m &middot; "
                    f"V<sub>erosion</sub> = "
                    f"{_num(hidraulica.V_erosion, FMT_2)} m/s (con n minimo, "
-                   f"contra los techos: V3 y d50) &middot; "
+                   f"contra el techo de V3) &middot; "
                    f"V<sub>sedimentacion</sub> = "
                    f"{_num(hidraulica.V_sedimentacion, FMT_2)} m/s (con n "
                    f"maximo, contra el piso de V2)")]),
@@ -933,15 +934,27 @@ def _tabla_diseno(informe: Any) -> str:
                   else H_O_HW_SOBRE_D_CAUTELA)
         veredicto = ("NO DEBE USARSE" if hidraulica.h_o_fuera_de_rango
                      else "PIDE CAUTELA")
+        # LO QUE HACE LA CORRIDA CON ELLO lo decide `cli.correr_punto`, no
+        # este formateador (EXT-3): bajo 0.75 el punto lleva el bloqueo
+        # «metodo no evaluable» -- en la tabla de etapas bloqueadas de esta
+        # misma memoria --, diferido solo a nivel de perfil. Aqui se dice, no
+        # se decide.
+        consecuencia = (
+            f" El punto lleva por eso el bloqueo <b>{_esc(MOTIVO_METODO_NO_EVALUABLE)}"
+            "</b>, que a nivel de perfil se difiere y a "
+            "nivel de expediente impide cerrar: ver la tabla de etapas "
+            "bloqueadas de este punto."
+            if hidraulica.h_o_fuera_de_rango else
+            " El HW de este punto esta calculado con ella igualmente, y por "
+            "eso se dice aqui.")
         filas.append(_fila([
             _td("<b>h<sub>o</sub> fuera de rango</b>"),
             _td(f"El control de SALIDA gobierna este punto y su "
                 f"HW/D = {_num(hidraulica.HW_sobre_D_salida, FMT_2)} "
                 f"queda por debajo de {_num(limite, FMT_2)}: para ese "
                 f"HW/D, {_esc(H_O_NUMERAL)} dice que la aproximacion "
-                f"h<sub>o</sub> = (d<sub>c</sub> + D)/2 <b>{veredicto}</b>. "
-                "El HW de este punto esta calculado con ella igualmente, y "
-                "por eso se dice aqui. Lo que lo resolveria es el "
+                f"h<sub>o</sub> = (d<sub>c</sub> + D)/2 <b>{veredicto}</b>."
+                f"{consecuencia} Lo que lo resolveria es el "
                 "procedimiento de barril parcialmente lleno del Cap. III "
                 "del HDS-5, que este script no implementa "
                 "(<code>geometria_control_salida</code>).")]))
@@ -1444,8 +1457,9 @@ def _bloques_fases_finales(informe: Any) -> str:
             f"espesor {_num(p.espesor)} m (criterio "
             f"<code>{_esc(p.criterio_espesor)}</code>), longitud "
             f"{_num(p.longitud)} m (criterio "
-            f"<code>{_esc(p.criterio_longitud)}</code>), con V = "
-            f"{_num(p.V, FMT_2)} m/s.</p>" + avisos)
+            f"<code>{_esc(p.criterio_longitud)}</code>), con la velocidad "
+            f"de SALIDA de HDS-5 3.1.6 V = {_num(p.V, FMT_2)} m/s (su "
+            f"procedencia, en el paso 6.1).</p>" + avisos)
 
     if informe.geometria is not None:
         g = informe.geometria
@@ -1525,7 +1539,7 @@ def _tabla_bloqueos(bloqueos: Sequence[Any]) -> str:
             detalle = f"campo <code>{_esc(b.campo)}</code>: {_esc(b.mensaje)}"
         partes.append(
             f'<div class="bloqueo"><p><b>{_esc(b.fase)}</b> &rarr; '
-            f"{_esc(b.etapa)} <i>({_esc(b.tipo)})</i><br>{detalle}</p></div>")
+            f"{_esc(b.etapa)} <i>({_esc(b.tipo.value)})</i><br>{detalle}</p></div>")
     return "".join(partes)
 
 

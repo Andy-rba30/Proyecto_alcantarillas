@@ -363,8 +363,12 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `HDS5_3ED.3.1.3#SUMERGENCIA` | 3.1.3 | «Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.3#TRANSICION` | 3.1.3 | «Inlet Control» | pág. impresa **3.4** · PDF 86 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.3.1.4#K` | 3.1.4, ec. (3.4b) | «Outlet Control» | pág. impresa **3.10** · PDF 92 | definicion | 2026-08-28 · texto |
+| `HDS5_3ED.3.1.6#V_SALIDA` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
+| `HDS5_3ED.3.1.6#V_SALIDA_TW` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
+| `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA` | 3.3.2 | «Inlet Control» | pág. impresa **3.24** · PDF 106 | aproximacion | 2026-09-20 · texto |
 | `HDS5_3ED.3.3.3#HO` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.3.3.3#HO_1_2D` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | exigencia | 2026-08-28 · texto |
 | `HDS5_3ED.3.3.3#HO_SUMERGIDA` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | exigencia | 2026-08-28 · texto |
@@ -379,9 +383,17 @@ línea que se pueda romper.
 | `HDS5_3ED.TA.1` | Table A.1 | «Constants for Inlet Control Equations for Charts in Appendix G.» | pág. impresa **A.8** · PDF 197 | definicion | 2026-08-28 · ambos |
 | `HDS5_3ED.TC.2` | Table C.2 | «Entrance Loss Coefficients.» | pág. impresa **C.6** · PDF 216 | definicion | 2026-08-28 · ambos |
 
+> **`HDS5_3ED.3.1.3#SUMERGENCIA`** — El parrafo sigue con la Fig. 3.1D: «submergence of both the inlet and the outlet ends of the culvert does not assure full flow». Sostiene que LLENO, en `modelos.RegimenBarril`, describe la salida y el tramo aguas abajo del resalto, no la longitud entera.
+
 > **`HDS5_3ED.3.1.3#TRANSICION`** — NOR-HDS-06, cerrado: ESTE es el numeral de la zona de transicion, no el «Cap. IV» que el criterio citaba. El Capitulo 4 de la 3a ed. se titula «CULVERT DESIGN FOR AQUATIC ORGANISM PASSAGE (AOP)» -- paso de fauna acuatica -- y tampoco se salva leyendolo como la edicion de 1985, cuyo Capitulo 4 es «Tapered Inlets». Es el mismo patron que NOR-PUE-01: el numeral existe y su titulo no corresponde. La otra mitad de la cita vieja, «y Apendice A», SI era correcta: la misma regla esta en el num. A.2.
 
 > **`HDS5_3ED.3.1.4#K`** — El 19.63 ESTA en la fuente, no es derivacion. El numeral abre en la pag. impresa 3.5 y la ecuacion esta en la 3.10.
+
+> **`HDS5_3ED.3.1.6#V_SALIDA`** — La oracion sigue con «(Figure 3.14).» y la lista de tres vinetas que reparte los casos por el TW: tirante critico si TW < y_c, TW si y_c < TW < D, seccion entera si TW > D. `M4.velocidad_de_salida` lo escribe como el area al tirante min(D, max(TW, y_c)).
+
+> **`HDS5_3ED.3.1.6#V_SALIDA_TW`** — Tercera vineta de la lista. Es la que sostiene el regimen LLENO de `modelos.RegimenBarril`: con TW sobre la clave la seccion efectiva es la entera, y V2 compara Q/A_llena.
+
+> **`HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`** — Es el ultimo parrafo del num. 3.3.2, en la misma pagina en que arranca el 3.3.3. El 3.1.6 dice lo mismo con mas matiz en la pag. 3.18 («the velocity calculated in this manner may be slightly higher than the actual velocity at the outlet»): por eso el caracter es APROXIMACION. De las dos ramas de n el proyecto toma la de n_min, el techo, para el d50 de la Fase 6.
 
 > **`HDS5_3ED.3.3.3#HO`** — Las TRES condiciones estan en esta pagina, y la primera tiene una SEGUNDA MITAD que el expediente no recogia: «It should not be used if the inlet is not submerged». Son dos condiciones, no una. Ademas la fuente no escribe la razon HW/D: escribe «the headwater depth (referenced to the inlet invert) is less than 1.2D», y la referencia al invert de entrada es parte de la definicion. Las tres son `should` / `can only`, no `shall`. C4: EL VERBATIM ESTABA TRUNCADO EN «flows full for», que es donde el PDF parte la linea, y la truncadura se llevaba «most of its length» -- o sea LA CONDICION MISMA --. Leido asi, el rotulo «texto literal» publicaba un requisito MAS LAXO que el de la fuente: «que el barril fluya lleno» en vez de «que fluya lleno en la mayor parte de su longitud». Es la elision sin marcar que CLAUDE.md persigue, y `test_normativa_pdf` no la veia porque verifica por subcadena y una truncadura siempre lo es. Verificado contra la PDF 106: la oracion termina en «most of its length.»
 
@@ -431,6 +443,7 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.3.6#VMIN_INICIO` | 4.1.1.3.6, párrafo posterior a la Tabla Nº 10 (primera mitad) | «Diseño hidráulico» | pág. impresa **76** · PDF 79 | exigencia | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.7a` | 4.1.1.3.7 a) | 4.1.1.3.7  Consideraciones para el diseño › «a)   Material sólido de arrastre» | pág. impresa **79** · PDF 82 | recomendacion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.7b` | 4.1.1.3.7 b) | 4.1.1.3.7  Consideraciones para el diseño › «b)  Borde libre» | pág. impresa **79** · PDF 82 | recomendacion | 2026-08-28 · texto |
+| `MC_HHD.4.1.1.3.7b#LLENA` | 4.1.1.3.7 b) | 4.1.1.3.7  Consideraciones para el diseño › «b)  Borde libre» | pág. impresa **79** · PDF 82 | exigencia | 2026-09-20 · texto |
 | `MC_HHD.4.1.1.3.7c` | 4.1.1.3.7 c), ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | aproximacion | 2026-08-28 · imagen renderizada |
 | `MC_HHD.4.1.1.3.7c#G` | 4.1.1.3.7 c), lista de variables de la ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.7d` | 4.1.1.3.7 d) | 4.1.1.3.7  Consideraciones para el diseño › «d)  Mantenimiento y limpieza» | pág. impresa **80** · PDF 83 | exigencia | 2026-09-07 · texto |
@@ -458,6 +471,8 @@ línea que se pueda romper.
 > **`MC_HHD.4.1.1.3.7a`** — Las CUATRO caracteristicas a las que «el párrafo anterior» remite estan en la pag. impresa 78 (PDF 81), no en la 79: la cita del repositorio decia solo «pag. 79» y con eso el condicionante quedaba fuera del rango citado. El rango correcto es 78-79. El valor 1.22 m NO esta en la fuente: el Manual escribe «Ф 48”» y la conversion (48 in = 1.2192 m) es del proyecto.
 
 > **`MC_HHD.4.1.1.3.7b`** — El 0.75 que el codigo usa es la DERIVACION aritmetica de este 25 % (1 - 0.25), no una cifra impresa; y la fuente no escribe «y/D» sino «la altura, diámetro o flecha de la estructura». La frase inmediatamente anterior SI es prohibitiva («las alcantarillas no deben ser diseñadas para trabajar a sección llena») pero prohibe la seccion llena, no fija el 25 %.
+
+> **`MC_HHD.4.1.1.3.7b#LLENA`** — Es la oracion inmediatamente ANTERIOR a la del 25 %, en el mismo parrafo. Prohibe la seccion llena y no fija cuanto borde libre hace falta: por eso sostiene el «no cumple» de V1 a barril LLENO (y/D = 1) y no el umbral 0.75, que sigue siendo la recomendacion endurecida por el proyecto.
 
 > **`MC_HHD.4.1.1.3.7c`** — La ec. (49) es d50 = V² / (3.1 g). La extraccion de texto la devuelve desordenada («) 1.3 ( 2 50 g V d =») por el orden de trazado, de modo que la lectura fiable es la de la pagina renderizada: el metodo de esta cita es IMAGEN y decirlo es parte de la verificacion.
 
@@ -1489,9 +1504,10 @@ recomienda.
 | `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D` |
 | `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning, resueltos con las DOS rugosidades del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
+| `F4.REGIMEN` | Fase 4 - Dimensionamiento hidraulico | Regimen del barril y velocidad a la salida, con el area que HDS-5 3.1.6 asigna a cada caso | **define** | `HDS5_3ED.3.1.6#V_SALIDA`, `HDS5_3ED.3.1.6#V_SALIDA_TW`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HDS5_3ED.3.1.3#SUMERGENCIA` |
 | `F4.SECCION` | Fase 4 - Dimensionamiento hidraulico | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | **define** | `MC_HHD.4.1.1.3.6` |
 | `F4.YC_RECT` | Fase 4 - Dimensionamiento hidraulico | Tirante critico de la seccion, y la energia critica H_c | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.A.2` |
-| `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y <= 0.75 de la altura, diametro o flecha de la estructura | **recomienda** | `MC_HHD.4.1.1.3.7b` |
+| `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y <= 0.75 de la altura, diametro o flecha de la estructura | **recomienda** | `MC_HHD.4.1.1.3.7b`, `MC_HHD.4.1.1.3.7b#LLENA` |
 | `F5.V2` | Fase 5 - Verificaciones | V2 - Velocidad minima de autolimpieza: V >= 0.25 m/s | **recomienda** | `MC_HHD.4.1.1.3.6#VMIN_INICIO`, `MC_HHD.4.1.1.3.6#VMIN` |
 | `F5.V2b` | Fase 5 - Verificaciones | V2b - Sedimentacion / colmatacion: el indicador de pendiente del HDS-5 mas el acceso de mantenimiento declarado | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO` |
 | `F5.V3` | Fase 5 - Verificaciones | V3 - Velocidad maxima admisible del revestimiento (Tabla N 10) | **obliga** | `MC_HHD.4.1.1.3.6#T10` |
@@ -1637,7 +1653,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 150.
+Citas sin firma de verificación: **5** de 155.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

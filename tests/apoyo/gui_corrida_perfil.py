@@ -143,6 +143,17 @@ def main(salida: Path) -> int:
             "dimensionados": sorted(p.punto.id for p in informe.puntos
                                     if p.dimensionado),
             "diferidos": len(informe.diferidos()),
+            # EXT-3: los puntos cuya carga HW quedo «metodo no evaluable»
+            # (control de salida con HW/D < 0.75) y los que difirieron V1/V2
+            # por regimen. Se leen del MISMO informe que la ventana pinta.
+            "hw_no_evaluable": sorted(
+                p.punto.id for p in informe.puntos
+                if any(b.tipo == "MetodoNoEvaluableError"
+                       and "carga HW" in b.etapa for b in p.bloqueos)),
+            "v1_v2_diferidas": sorted(
+                p.punto.id for p in informe.puntos
+                if any(b.tipo == "MetodoNoEvaluableError"
+                       and "verificacion V1" in b.etapa for b in p.bloqueos)),
             "plantilla": ventana._plantilla().name,
         }
 

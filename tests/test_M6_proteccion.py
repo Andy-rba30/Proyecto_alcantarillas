@@ -14,7 +14,7 @@ adoptados de espesor y longitud.
 
 import pytest
 
-from modelos import CriterioPendienteError, ProteccionSalida
+from modelos import CriterioPendienteError, Magnitud, ProteccionSalida
 from modulos.M6_proteccion import (ADVERTENCIA_FALTA_FILTRO,
                                    ADVERTENCIA_NO_ES_DISENO,
                                    CRITERIO_ESPESOR, CRITERIO_LONGITUD,
@@ -22,6 +22,12 @@ from modulos.M6_proteccion import (ADVERTENCIA_FALTA_FILTRO,
 from tests.fixtures.casos_patron import CP4_LAUSHEY
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from tests.apoyo.criterios import sin_valor
+
+
+def _V(valor: float) -> Magnitud:
+    """La velocidad como M4 la emite desde EXT-3: una Magnitud con procedencia."""
+    return Magnitud("V_salida", valor, "m/s",
+                    "prueba: velocidad de salida pasada explicita")
 
 
 @pytest.mark.parametrize("caso", CP4_LAUSHEY)
@@ -42,7 +48,7 @@ def test_proteccion_salida_se_detiene_en_longitud_pendiente():
     """
     with sin_valor(CRITERIO_LONGITUD):
         with pytest.raises(CriterioPendienteError) as exc:
-            proteccion_salida(V=2.0)
+            proteccion_salida(V=_V(2.0))
         assert exc.value.clave == CRITERIO_LONGITUD
 
 
@@ -59,7 +65,7 @@ def test_proteccion_salida_calcula_espesor_antes_de_detenerse(monkeypatch):
         original.__class__(**{**original.__dict__, "valor": 5.0}),
     )
 
-    resultado = proteccion_salida(V=2.0)
+    resultado = proteccion_salida(V=_V(2.0))
 
     assert isinstance(resultado, ProteccionSalida)
     assert resultado.d50 == pytest.approx(0.13167, abs=1e-4)

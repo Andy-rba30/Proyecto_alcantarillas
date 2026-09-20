@@ -72,6 +72,8 @@ con comentarios de linea. Queda escrita aqui para que no haya que deducirla.
 # Los nombres publicos de este archivo NO CAMBIAN. Un consumidor sigue
 # leyendo `MANNING`, `V_MAX` o `SOBRECARGA_TRASDOS_H_EQ` con la misma forma y
 # el mismo valor; lo unico que cambia es de donde salen.
+# El motivo del bloqueo «metodo no evaluable», escrito UNA vez (EXT-3).
+from modelos import MOTIVO_METODO_NO_EVALUABLE  # noqa: E402
 from typing import Tuple
 
 from normativa import registro as _registro_normativo
@@ -1016,6 +1018,13 @@ H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
 #      pag. 79) -- y M6 recibe la velocidad de salida: v8 §1.3, §4.1 y filas
 #      V1/V2 enmendadas en EXT-0, codigo en EXT-3. El paquete de arriba sigue
 #      valiendo para el PERFIL (E-A); lo que cambia es que M5 no espera a el.
+#      HECHO EN EXT-3 (2026-09-20): `M4.regimen_del_barril`,
+#      `M4.velocidad_de_salida` y el paso F4.REGIMEN; V1/V2 por regimen en M5
+#      (`_exigir_regimen_evaluable`); M6 recibe `ResultadoHidraulico.V_salida`;
+#      y bajo control de salida con HW/D < H_O_HW_SOBRE_D_MIN el punto viaja
+#      con el bloqueo «metodo no evaluable» (`modelos.MetodoNoEvaluableError`,
+#      compuerta en `cli._compuerta_metodo_h_o`). Lo que sigue pendiente es
+#      SOLO el perfil por paso directo (EXT-3b), con los puntos 1 a 5.
 #   5. LOS DORADOS NO SE FABRICAN: un caso patron de perfil necesita una
 #      corrida de referencia externa citable (HY-8 u otra), que es la misma
 #      regla del conflicto #7.
@@ -1026,9 +1035,16 @@ H_O_CONDICION_APLICACION = (
     "SE EVALUAN, punto por punto, los dos limites sobre HW/D: por debajo de "
     "1.2 la fuente pide cautela y por debajo de 0.75 dice que la aproximacion "
     "no debe usarse. Cuando el control de salida GOBIERNA un punto y su HW/D "
-    "cae bajo alguno de los dos, la memoria de ese punto lo dice con esas "
-    "palabras, junto al HW: un aviso general que no senala el punto afectado "
-    "no le sirve al revisor, que es lo que este bloque venia haciendo. "
+    "cae bajo 1.2, la memoria de ese punto lo dice con esas palabras, junto "
+    "al HW: un aviso general que no senala el punto afectado no le sirve al "
+    "revisor. Y cuando cae bajo 0.75 NO ES UN AVISO (EXT-3; EXT-M-02, v8 "
+    "§4.3): el metodo aproximado no esta definido para ese punto y el HW "
+    "publicado no es un resultado sino un numero fuera del dominio del "
+    "metodo. El punto viaja con el bloqueo «" + MOTIVO_METODO_NO_EVALUABLE
+    + "», diferible a nivel de perfil --sale dimensionado con HW no "
+    "evaluable y el motivo impreso-- y no diferible a nivel de expediente, "
+    "donde el punto no cierra hasta que exista el calculo de remanso. No es "
+    "un incumplimiento: subir de diametro solo baja HW/D. "
     "NO SE EVALUA la primera condicion -- que el barril fluya lleno en la "
     "mayor parte de su longitud --, y no por descuido: exige un perfil de la "
     "lamina de agua a lo largo del conducto, que este script no calcula. El "
@@ -1042,8 +1058,9 @@ H_O_CONDICION_APLICACION = (
     "HAY UNA CIRCULARIDAD QUE CONVIENE VER: el HW con que se evaluan los dos "
     "limites es el que produce la propia aproximacion, de modo que un h_o "
     "sobreestimado puede hacer que el control de salida gobierne un punto "
-    "donde no gobernaria. El aviso se emite igual; deshacer la circularidad "
-    "exige el procedimiento completo, no otra lectura de esta pagina.")
+    "donde no gobernaria. El bloqueo y el aviso se emiten igual; deshacer la "
+    "circularidad exige el procedimiento completo, no otra lectura de esta "
+    "pagina.")
 
 # ---------------------------------------------------------------------------
 # El CARACTER de cada umbral, y de cada CONDICION DE USO, que el proyecto aplica

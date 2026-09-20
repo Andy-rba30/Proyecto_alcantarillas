@@ -114,6 +114,21 @@ def _resultado(*, y_normal=0.60, y_critico=0.40, V=1.5, Q=1.0, S=0.006,
     )
 
 
+def _uniforme(normal) -> ResultadoHidraulico:
+    """
+    El `TiranteNormal` de M3 envuelto como lo que V2 recibe de verdad: un
+    `ResultadoHidraulico` en REGIMEN UNIFORME --barril parcialmente lleno bajo
+    control de ENTRADA--, que es el unico regimen en que V2 compara la rama
+    n_max de Manning (EXT-3). Hasta EXT-3 estos tests le pasaban a V2 el
+    `TiranteNormal` a secas, porque V2 solo leia `V_sedimentacion`; ahora
+    tambien lee el regimen y el control, y el doble tiene que decirlos.
+    """
+    return _resultado(y_normal=normal.geometria.y,
+                      V_erosion=normal.V_erosion,
+                      V_sedimentacion=normal.V_sedimentacion,
+                      control=ControlGobernante.ENTRADA)
+
+
 @pytest.fixture
 def concreto():
     return catalogo(TipoMaterial.CONCRETO_REFORZADO)
@@ -1646,7 +1661,7 @@ def test_v2_contra_el_caso_patron_CP3_por_la_cadena_de_produccion():
                                   material=material)
     assert resolucion is not None
 
-    v2 = v2_velocidad_minima(resultado=resolucion)
+    v2 = v2_velocidad_minima(resultado=_uniforme(resolucion))
     assert v2.codigo == "V2"
     assert v2.valor_admisible == pytest.approx(V_MIN, rel=REL_TRANSPORTE)
     assert v2.valor_obtenido == pytest.approx(c3["V_objetivo"], abs=c3["tolerancia_V"])
@@ -1695,14 +1710,14 @@ def test_la_salvedad_de_CP3_es_cierta_y_no_solo_una_advertencia_escrita():
     assert bajo.geometria.y_sobre_D < 0.056, (
         "el caudal elegido ya no cae bajo el tirante relativo de la salvedad: "
         "el test estaria comprobando otra cosa")
-    assert not v2_velocidad_minima(resultado=bajo).cumple, (
+    assert not v2_velocidad_minima(resultado=_uniforme(bajo)).cumple, (
         "la salvedad de CP-3 dice que con y/D < 0.056 V2 SI se viola a "
         "S = 0.001, y aqui no se viola: o la salvedad es falsa o M3 cambio")
 
     # Y por encima de ese tirante, la conclusion del fixture se sostiene.
     alto = resolver_manning(seccion=SeccionCircular(c3["D"]), Q=0.02, S=S, material=material)
     assert alto is not None and alto.geometria.y_sobre_D > 0.056
-    assert v2_velocidad_minima(resultado=alto).cumple
+    assert v2_velocidad_minima(resultado=_uniforme(alto)).cumple
 
 
 def test_v2_decide_con_la_rama_de_n_MAXIMO_y_no_con_la_de_erosion():

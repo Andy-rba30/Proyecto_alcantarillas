@@ -211,10 +211,15 @@ def test_la_ventana_cubre_los_ejes_que_dice_cubrir(recien_generada):
     assert lee("resumen_perfil_ancho.csv").strip(), "el CSV de resumen vino vacio"
 
     # (c) TRES de los cuatro puntos dimensionan en la corrida ancha; en la
-    # estrecha de C0 solo uno. Si alguien estrecha las entradas, esto cae.
+    # estrecha de C0 NINGUNO desde EXT-3 (era uno hasta EXT-2). Si alguien
+    # estrecha las entradas, esto cae. El que cayo en la estrecha es A-02: sin
+    # TW declarado, la via 4 de Sec. 1.3 le da TW = 1.196 m sobre D = 0.90 m,
+    # el barril va LLENO y V1/V2 dejan de aprobarse con el tirante normal
+    # (EXT-M-01); el README de la linea base lo declara. Con TW declarado
+    # (la ancha) los tres circulares siguen dimensionando.
     ancho = lee("cli_perfil_ancho.txt")
     assert ancho.count("Fase 4  sin dimensionar") == 1
-    assert lee("cli_perfil.txt").count("Fase 4  sin dimensionar") == 3
+    assert lee("cli_perfil.txt").count("Fase 4  sin dimensionar") == 4
 
     # (d) C-01, el punto de Familia C, llega a su bloqueo REAL. C5 lo CAMBIO,
     # y el cambio es su criterio de salida: hasta C4 el punto se detenia en

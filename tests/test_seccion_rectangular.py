@@ -870,6 +870,13 @@ VIA_POR_TIRANTE = {"area", "perimetro", "ancho_superficial"}
 CENSO_VIA_POR_TIRANTE = {
     ("src/modelos.py", "SeccionRectangular.geometria_en", "area"),
     ("src/modelos.py", "SeccionRectangular.geometria_en", "perimetro"),
+    # EXT-3: la velocidad de salida de HDS-5 3.1.6 bajo control de salida con
+    # y_c <= TW < D se mide con el area al TW, y el TW es un tirante SIN
+    # `Geometria` --dato del receptor, no salida de un solver--, que es
+    # exactamente el unico caso que la regla #12 admite. Las otras dos areas
+    # de esa funcion (critica y llena) salen de la via canonica y no estan
+    # aqui a proposito: `critico.geometria.A` y `seccion.area_llena`.
+    ("src/modulos/M4_control.py", "velocidad_de_salida", "area"),
 }
 
 

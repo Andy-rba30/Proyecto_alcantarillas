@@ -100,7 +100,7 @@
           "material": "TMC galvanizada",
           "seccion": "Ø 1.20 m",
           "aceptado": false,
-          "motivo": "Ø 1.20 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial",
+          "motivo": "Ø 1.20 m: el escalon no se pudo evaluar -- MetodoNoEvaluableError: método no evaluable (HDS-5 3.24, Sección 3.5): V1 del punto A-01 -- bajo control de SALIDA con el barril PARCIALMENTE LLENO el tirante y la velocidad dentro del conducto no son los del flujo uniforme de Manning y no se conocen sin el perfil de la lamina; no se inventa un criterio de llenado (v8 §4.1). Hace falta: el perfil de la lamina de agua a lo largo del conducto (HDS-5 Section 3.5; el paquete de implementacion esta en el bloque que precede a constantes_normativas.H_O_CONDICION_APLICACION), que este software no calcula: es la sesion EXT-3b",
           "incumplidas": []
         },
         {
@@ -199,7 +199,7 @@
           "material": "TMC galvanizada",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- MetodoNoEvaluableError: método no evaluable (HDS-5 3.24, Sección 3.5): V1 del punto A-02 -- bajo control de SALIDA con el barril PARCIALMENTE LLENO el tirante y la velocidad dentro del conducto no son los del flujo uniforme de Manning y no se conocen sin el perfil de la lamina; no se inventa un criterio de llenado (v8 §4.1). Hace falta: el perfil de la lamina de agua a lo largo del conducto (HDS-5 Section 3.5; el paquete de implementacion esta en el bloque que precede a constantes_normativas.H_O_CONDICION_APLICACION), que este software no calcula: es la sesion EXT-3b",
           "incumplidas": []
         },
         {
@@ -292,21 +292,30 @@
           "seccion": "Ø 0.90 m",
           "aceptado": false,
           "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial",
-          "incumplidas": []
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
         },
         {
           "material": "TMC galvanizada",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
           "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial",
-          "incumplidas": []
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
         },
         {
           "material": "HDPE",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
           "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - Manual de Diseño Geometrico DG-2018 + Ley 29338 (Fase 5, V5). Requiere perfil de remanso (paso a paso o HEC-RAS) y el ancho de derecho de via del expediente vial",
-          "incumplidas": []
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
         }
       ],
       "verificaciones": [

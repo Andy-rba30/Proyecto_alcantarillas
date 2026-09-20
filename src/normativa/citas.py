@@ -64,6 +64,8 @@ POR_N1 = "normativa/N1 · verificador-normativo"
 
 FECHA_EXT2 = "2026-09-20"
 POR_EXT2 = "ext/EXT-2 · verificador-normativo"
+FECHA_EXT3 = "2026-09-20"
+POR_EXT3 = "ext/EXT-3 · verificador-normativo"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
@@ -74,6 +76,7 @@ I1 = (FECHA_I1, POR_I1)
 T2 = (FECHA_T2, POR_T2)
 N1 = (FECHA_N1, POR_N1)
 EXT2 = (FECHA_EXT2, POR_EXT2)
+EXT3 = (FECHA_EXT3, POR_EXT3)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -440,6 +443,37 @@ MC_HHD_4_1_1_3_7b = _cita(
           "frase inmediatamente anterior SI es prohibitiva («las "
           "alcantarillas no deben ser diseñadas para trabajar a sección "
           "llena») pero prohibe la seccion llena, no fija el 25 %."),
+)
+
+# LA FRASE PROHIBITIVA DE ESE MISMO PARRAFO, como Cita y no como nota
+# (EXT-3; EXT-M-01). Hasta EXT-3 vivia solo dentro de la `nota` de arriba,
+# y por eso V1 no podia citarla: cuando el barril fluye lleno (TW >= D) el
+# «no cumple» de V1 no es la recomendacion del 25 % aplicada como umbral
+# duro --que es [A]-- sino esta exigencia, que es [N] de una pieza: la fuente
+# escribe «no deben», no «se recomienda». Son dos oraciones del mismo
+# apartado con dos fuerzas normativas, y la memoria tiene que poder decir
+# cual de las dos sostiene cada veredicto (NOR-HID-10, NOR-MEM-01).
+MC_HHD_4_1_1_3_7b_LLENA = _cita(
+    id="MC_HHD.4.1.1.3.7b#LLENA",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 b)",
+    titulo_numeral="b)  Borde libre",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="79",
+    pagina_pdf=82,
+    texto_literal=Verbatim(
+        texto=("las alcantarillas no deben ser diseñadas para trabajar a "
+               "sección llena, ya que esto incrementa su riesgo de "
+               "obstrucción, afectando su capacidad hidráulica."),
+        pagina_pdf=82),
+    caracter=Caracter.EXIGENCIA,
+    derivado_de="MC_HHD.4.1.1.3.7b",
+    sesion=EXT3,
+    nota=("Es la oracion inmediatamente ANTERIOR a la del 25 %, en el mismo "
+          "parrafo. Prohibe la seccion llena y no fija cuanto borde libre "
+          "hace falta: por eso sostiene el «no cumple» de V1 a barril LLENO "
+          "(y/D = 1) y no el umbral 0.75, que sigue siendo la recomendacion "
+          "endurecida por el proyecto."),
 )
 
 # ---------------------------------------------------------------------------
@@ -2011,6 +2045,111 @@ HDS5_3_3_3_HO_1_2D = _cita(
           "cuando el punto cae en la banda de cautela. Una elision no marcada "
           "dentro de algo rotulado «texto literal» es la misma clase de "
           "defecto que NOR-HID-06."),
+)
+
+# ---------------------------------------------------------------------------
+# 3.1.6 Outlet Velocity -- con QUE AREA se mide la velocidad a la salida
+# ---------------------------------------------------------------------------
+# Tres citas y no una, porque la pagina dice tres cosas con tres sujetos
+# (EXT-3; EXT-M-01, PC-04). El numeral abre en la pag. impresa 3.17 (PDF 99)
+# y la regla del area esta en la 3.18 (PDF 100); la de control de entrada
+# esta en la 3.24 (PDF 106), en el ultimo parrafo del num. 3.3.2 antes de que
+# empiece el 3.3.3, y por eso se cita alli y no en 3.1.6. Hasta EXT-3 el
+# proyecto sabia que el numeral existia --`fundamentos.F4.YC_RECT` decia que
+# HDS-5 le da a y_c «un tercer uso que aqui no se implementa»-- y M6 recibia
+# siempre la velocidad del flujo uniforme, tambien bajo control de salida,
+# donde en pendiente suave con salida libre la de salida a y_c es MAYOR
+# (1.508 vs 1.184 m/s en el caso del dictamen).
+HDS5_3_1_6_V_SALIDA = _cita(
+    id="HDS5_3ED.3.1.6#V_SALIDA",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.6",
+    titulo_numeral="Outlet Velocity",
+    pagina_impresa="3.18",
+    pagina_pdf=100,
+    pagina_pdf_titulo=99,
+    texto_literal=Verbatim(
+        texto=("In outlet control, the cross sectional area of the flow is "
+               "defined by the geometry of the outlet and either critical "
+               "depth, tailwater depth, or the height of the conduit"),
+        pagina_pdf=100),
+    caracter=Caracter.DEFINICION,
+    sesion=EXT3,
+    nota=("La oracion sigue con «(Figure 3.14).» y la lista de tres vinetas "
+          "que reparte los casos por el TW: tirante critico si TW < y_c, TW "
+          "si y_c < TW < D, seccion entera si TW > D. `M4.velocidad_de_salida` "
+          "lo escribe como el area al tirante min(D, max(TW, y_c))."),
+)
+
+HDS5_3_1_6_V_SALIDA_TW = _cita(
+    id="HDS5_3ED.3.1.6#V_SALIDA_TW",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.6",
+    titulo_numeral="Outlet Velocity",
+    pagina_impresa="3.18",
+    pagina_pdf=100,
+    pagina_pdf_titulo=99,
+    texto_literal=Verbatim(
+        texto=("Total barrel area is used when the tailwater exceeds the "
+               "top of the barrel"),
+        pagina_pdf=100),
+    caracter=Caracter.DEFINICION,
+    derivado_de="HDS5_3ED.3.1.6#V_SALIDA",
+    sesion=EXT3,
+    nota=("Tercera vineta de la lista. Es la que sostiene el regimen LLENO "
+          "de `modelos.RegimenBarril`: con TW sobre la clave la seccion "
+          "efectiva es la entera, y V2 compara Q/A_llena."),
+)
+
+# LA SUMERGENCIA DE LA SALIDA NO ASEGURA FLUJO LLENO BAJO CONTROL DE ENTRADA
+# (EXT-3, auditoria adversarial). Es la frase que matiza la regla «TW >= D =>
+# barril lleno» de la v8 §1.3 y que el proyecto declara como discrepancia en
+# `modelos.RegimenBarril` y `M4.regimen_del_barril`: con la salida sumergida y
+# el control en la entrada, el tramo de aguas arriba es supercritico y un
+# resalto llena el barril hacia la salida.
+HDS5_3_1_3_SUMERGENCIA = _cita(
+    id="HDS5_3ED.3.1.3#SUMERGENCIA",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.3",
+    titulo_numeral="Inlet Control",
+    pagina_impresa="3.2",
+    pagina_pdf=84,
+    texto_literal=Verbatim(
+        texto=("In Figure 3.1C, submergence of the outlet end of the culvert "
+               "does not assure outlet control.  In this case, the flow just "
+               "downstream of the inlet is supercritical and a hydraulic jump "
+               "forms in the culvert barrel."),
+        pagina_pdf=84),
+    caracter=Caracter.DEFINICION,
+    sesion=EXT3,
+    nota=("El parrafo sigue con la Fig. 3.1D: «submergence of both the inlet "
+          "and the outlet ends of the culvert does not assure full flow». "
+          "Sostiene que LLENO, en `modelos.RegimenBarril`, describe la salida "
+          "y el tramo aguas abajo del resalto, no la longitud entera."),
+)
+
+HDS5_3_3_2_V_SALIDA_ENTRADA = _cita(
+    id="HDS5_3ED.3.3.2#V_SALIDA_ENTRADA",
+    fuente_id="HDS5_3ED",
+    numeral="3.3.2",
+    titulo_numeral="Inlet Control",
+    pagina_impresa="3.24",
+    pagina_pdf=106,
+    pagina_pdf_titulo=104,
+    texto_literal=Verbatim(
+        texto=("If the controlling headwater is based on inlet control, "
+               "determine the normal depth and velocity in the culvert "
+               "barrel.  The velocity at normal depth is assumed to be the "
+               "outlet velocity."),
+        pagina_pdf=106),
+    caracter=Caracter.APROXIMACION,
+    sesion=EXT3,
+    nota=("Es el ultimo parrafo del num. 3.3.2, en la misma pagina en que "
+          "arranca el 3.3.3. El 3.1.6 dice lo mismo con mas matiz en la pag. "
+          "3.18 («the velocity calculated in this manner may be slightly "
+          "higher than the actual velocity at the outlet»): por eso el "
+          "caracter es APROXIMACION. De las dos ramas de n el proyecto toma "
+          "la de n_min, el techo, para el d50 de la Fase 6."),
 )
 
 # ---------------------------------------------------------------------------

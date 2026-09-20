@@ -297,6 +297,27 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   (`M9.verificar_volteo` y `M9.verificar_deslizamiento`, donde un FS infinito
   es la ausencia de la solicitación). Ninguna guardia de finitud puede
   atraparlos; por eso no hay barrido global y el censo está fijado en un test.
+- **MetodoNoEvaluableError: el dato está y es válido, el criterio está
+  declarado, y lo que falta es un PROCEDIMIENTO que el software no
+  implementa.** Sexta de la taxonomía, añadida en EXT-3 (EXT-M-01, EXT-M-02,
+  PC-27). La regla que la separa de las otras cinco, en el orden en que se
+  pregunta: si el revisor tiene que **añadir** es Faltante, si tiene que
+  **corregir** es Invalido, si tiene que **declarar** es CriterioPendiente, si
+  la aritmética no cabe es LimiteNumerico, y si no hay nada que añadir,
+  corregir ni declarar —hace falta OTRO MÉTODO— es MetodoNoEvaluable. Los dos
+  casos vivos están bajo control de salida con el barril parcialmente lleno:
+  la carga HW cuando HW/D < 0.75 («should not be used», HDS-5 pág. 3.24) y
+  V1/V2, cuyo tirante y velocidad exigen el perfil de la lámina de agua
+  (Section 3.5). **No es un incumplimiento** —subir de diámetro sólo baja
+  HW/D— ni un aviso: viaja por la vía `Bloqueo` con
+  `TipoDeBloqueo.METODO_NO_EVALUABLE`, **diferible a nivel de perfil y no de
+  expediente** (v8 §4.3), y `MD.disenar_punto` la acumula como a los criterios
+  pendientes en vez de descartar el material o degradarla a
+  `DisenoNoFactibleError`. Su `str()` empieza siempre por
+  `MOTIVO_METODO_NO_EVALUABLE`. Y desde EXT-3 `Bloqueo` vive en `modelos.py`
+  con `tipo: TipoDeBloqueo` (str Enum cuyos valores son los textos que la
+  línea base ya imprimía): la vía `cli._etapa` → `cli._bloqueo` descrita
+  arriba no cambia, `cli` lo reexporta.
 No usar Exception genérica en lógica de negocio. Un fallo de E/S (archivo
 inexistente) no es del expediente y sale como FileNotFoundError, fuera de
 ErrorProyecto.

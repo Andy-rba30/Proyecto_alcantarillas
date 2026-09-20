@@ -157,16 +157,19 @@ for _ruta in (RAIZ, SRC):
 
 import criterios_adoptados as ca                                    # noqa: E402
 import datos_sitio as ds                                            # noqa: E402
-from constantes_normativas import CUANTIA_MIN_MURO, RECUBRIMIENTO   # noqa: E402
+from constantes_normativas import (CUANTIA_MIN_MURO,                # noqa: E402
+                                   H_O_HW_SOBRE_D_MIN, RECUBRIMIENTO)
 from dominios import S_CAUCE_MAX                                    # noqa: E402
 from modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE       # noqa: E402
 from modelos import ALCANCE_PERFIL as _ALCANCE_PERFIL               # noqa: E402
-from modelos import (Clasificacion, CompatibilidadGeometrica,       # noqa: E402
+from modelos import (Bloqueo, Clasificacion,                        # noqa: E402
+                     CompatibilidadGeometrica,
                      CriterioPendienteError, DatoFaltanteError,
                      DatoInvalidoError, DisenoNoFactibleError,
-                     ErrorProyecto, Espaciamiento, Familia, PasoDiseno,
+                     ErrorProyecto, Espaciamiento, Familia,
+                     MetodoNoEvaluableError, PasoDiseno,
                      ProteccionSalida, PuntoCritico, ResultadoPunto,
-                     TWDeterminado, Verificacion)
+                     TipoDeBloqueo, TWDeterminado, Verificacion)
 from modulos.M0_carga import cargar_puntos                          # noqa: E402
 from modulos.M1_clasificacion import clasificar, exigir_alcance     # noqa: E402
 from modulos.M6_proteccion import proteccion_salida                 # noqa: E402
@@ -260,6 +263,19 @@ VERIFICACIONES_DIFERIDAS_POR_ALCANCE: Dict[str, Tuple[str, ...]] = {
     ALCANCE_EXPEDIENTE: (),
     ALCANCE_PERFIL: ("V5", "V8"),
 }
+
+# EN QUE ALCANCE UN «METODO NO EVALUABLE» SE DIFIERE (EXT-3; v8 §4.3
+# enmendada en EXT-0). No es una tercera tabla de verificaciones: V1 y V2 no
+# se difieren SIEMPRE --por eso no estan en la tupla de arriba, que el
+# anticipo de la pestana 1 lee como «lo que el alcance aparta»--, sino solo
+# cuando el barril va parcialmente lleno bajo control de salida, y la carga
+# HW solo cuando el control de salida gobierna con HW/D < 0.75. Lo que este
+# dato decide es que hace la corrida con ese `MetodoNoEvaluableError`: a nivel
+# de perfil lo registra como bloqueo diferido y el punto sigue dimensionandose
+# con HW no evaluable; a nivel de expediente es un bloqueo que impide cerrar,
+# hasta que exista el calculo de remanso (Section 3.5) que la fuente manda.
+# Lo consultan `_verificador_perfil` (V1/V2) y `_compuerta_metodo_h_o` (HW).
+ALCANCES_QUE_DIFIEREN_METODO_NO_EVALUABLE: Tuple[str, ...] = (ALCANCE_PERFIL,)
 
 
 def _difiere(alcance: str, modulo: str) -> bool:
@@ -411,6 +427,7 @@ SANGRIA_DETALLE = SANGRIA * 4   # literal-ok: nivel de sangria del volcado
 # La pendiente se imprime con mas decimales que el resto: S = 0.005 m/m con
 # los tres decimales por defecto se veria como 0.005 y con dos como 0.01.
 DECIMALES_PENDIENTE = 4         # literal-ok: decimales del volcado de S
+DECIMALES_FACTOR = 2            # decimales del volcado de un cociente HW/D
 MARCA_CUMPLE = "[OK]"
 MARCA_INCUMPLE = "[NO]"
 
@@ -697,35 +714,17 @@ def _exige_clave(clave: str, donde: str) -> None:
 # ===========================================================================
 # Estructuras del informe
 # ===========================================================================
-# No van en modelos.py a proposito: no fluyen entre modulos de calculo, son la
-# forma del reporte de esta capa. Lo que fluye entre modulos (ResultadoPunto,
-# Verificacion, CompatibilidadGeometrica...) se transporta tal cual, sin
-# copiarlo a dicts paralelos.
-
-@dataclass(frozen=True)
-class Bloqueo:
-    """
-    Una etapa que no se pudo completar, con la causa del expediente.
-
-    `criterio` esta relleno solo cuando la causa es un criterio pendiente: es
-    la clave que hay que declarar para desbloquear la etapa.
-    """
-
-    fase: str
-    etapa: str
-    tipo: str
-    mensaje: str
-    criterio: Optional[str] = None
-    etiqueta: Optional[str] = None
-    concepto: Optional[str] = None
-    fuente: Optional[str] = None
-    campo: Optional[str] = None
-    delta_rasante_m: Optional[float] = None
-    # True cuando la etapa no se completo POR DECISION DE ALCANCE de la
-    # corrida (--alcance perfil), no por un defecto del expediente. Se imprime
-    # con su fundamento igual que cualquier bloqueo -- la memoria necesita esa
-    # constancia -- pero no cuenta para `Informe.cerrado`.
-    diferido_por_alcance: bool = False
+# InformePunto, InformeCabezal e Informe no van en modelos.py a proposito: no
+# fluyen entre modulos de calculo, son la forma del reporte de esta capa. Lo
+# que fluye entre modulos (ResultadoPunto, Verificacion,
+# CompatibilidadGeometrica...) se transporta tal cual, sin copiarlo a dicts
+# paralelos.
+#
+# `Bloqueo` ESTABA AQUI Y YA NO (EXT-3, PC-27): su `tipo` pasa a ser el Enum
+# `modelos.TipoDeBloqueo` y la clase vive en `modelos.py`, porque el estado
+# «pendiente / diferido / no evaluable» dejo de ser de la capa de reporte -- lo
+# produce la Fase 5 (`MetodoNoEvaluableError`), lo leen la CLI, la GUI y M11
+# --. Se reexporta desde aqui para quien lo importaba como `cli.Bloqueo`.
 
 
 @dataclass
@@ -880,7 +879,7 @@ def _bloqueo(fase: str, etapa: str, exc: ErrorProyecto) -> Bloqueo:
         datos = {"campo": exc.campo}
     elif isinstance(exc, DisenoNoFactibleError):
         datos = {"delta_rasante_m": exc.delta_rasante_m}
-    return Bloqueo(fase=fase, etapa=etapa, tipo=type(exc).__name__,
+    return Bloqueo(fase=fase, etapa=etapa, tipo=TipoDeBloqueo.de_excepcion(exc),
                    mensaje=str(exc), **datos)
 
 
@@ -1072,10 +1071,38 @@ def _verificador_perfil(informe: InformePunto):
         # ellos. Es la trampa de NOR-MEM-01 otra vez: cierto sobre el codigo y
         # falso sobre el producto.
         filas: List[Verificacion] = []
+        # V1 Y V2 SIGUEN SIENDO OBLIGATORIAS, con una salvedad que no es de
+        # alcance sino de METODO (EXT-3, v8 §4.1): cuando el barril va
+        # parcialmente lleno bajo control de SALIDA, M5 no puede evaluarlas
+        # sin el perfil de la lamina de agua y lo dice con
+        # `MetodoNoEvaluableError`. A nivel de perfil ese fallo se registra
+        # como diferido --con la misma deduplicacion que V5 y V8-- y el
+        # punto sigue dimensionandose; a nivel de expediente sube y bloquea
+        # (`M5.verificar`). Cualquier OTRO ErrorProyecto de V1/V2 sube igual
+        # que antes: no es el metodo, es el expediente.
+        for codigo, pieza in (
+            ("V1", lambda: M5.v1_borde_libre(D=D, material=material,
+                                             punto=punto, resultado=resultado)),
+            ("V2", lambda: M5.v2_velocidad_minima(resultado=resultado)),
+        ):
+            try:
+                filas.append(pieza())
+            except MetodoNoEvaluableError as exc:
+                # Misma consulta que el hueco de V5 y que V8: este verificador
+                # solo corre a nivel de perfil, asi que la condicion es hoy
+                # siempre cierta, y esta escrita igual para que quitar el
+                # perfil de la tupla vuelva a subir el fallo como en el
+                # expediente, en vez de dejar el dato describiendo un
+                # diferimiento que el codigo ya no hace.
+                if ALCANCE_PERFIL in ALCANCES_QUE_DIFIEREN_METODO_NO_EVALUABLE:
+                    _diferir_verificacion(informe, codigo, exc, ya_registrados)
+                else:
+                    exc.verificaciones_completadas = tuple(filas)
+                    raise
+            except ErrorProyecto as exc:
+                exc.verificaciones_completadas = tuple(filas)
+                raise
         obligatorias_previas = (
-            lambda: M5.v1_borde_libre(D=D, material=material, punto=punto,
-                                      resultado=resultado),
-            lambda: M5.v2_velocidad_minima(resultado=resultado),
             # V2b entra como OBLIGATORIA, y no diferida: su indicador se
             # calcula con dos numeros que la corrida de perfil ya tiene (la
             # pendiente del diseño y la del cauce) y su criterio no depende
@@ -1225,23 +1252,39 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
     if informe.resultado is not None and not informe.resultado.aceptado:
         informe.bloqueos.append(Bloqueo(
             fase=FASE_DISENO, etapa="material y diametro (bucle de MD)",
-            tipo="DisenoNoFactibleError",
+            tipo=TipoDeBloqueo.DISENO_NO_FACTIBLE,
             mensaje=informe.resultado.motivo_rechazo or "sin motivo declarado"))
 
 
 def _fase_6(informe: InformePunto) -> None:
     """
-    Proteccion de salida por Laushey, con la V de la regla de doble n.
+    Proteccion de salida por Laushey, con la velocidad de SALIDA de HDS-5
+    3.1.6 que M4 emite (EXT-3; PC-04, EXT-M-01).
 
-    Entra `V_erosion` -- la rama de n minimo, la estimacion ALTA -- porque el
-    d50 crece con V^2 y la piedra mas grande es el lado conservador de una
-    proteccion contra socavacion. La otra rama, `V_sedimentacion`, es la del
-    piso de V2 y aqui daria una piedra mas chica que la necesaria.
+    Hasta EXT-3 entraba `V_erosion` -- la rama de n minimo del flujo uniforme,
+    la estimacion ALTA -- por ser el lado conservador de una proteccion cuyo
+    d50 crece con V^2. Y lo sigue siendo bajo control de ENTRADA, donde la
+    velocidad de salida es la del tirante normal; pero bajo control de SALIDA
+    la velocidad a la salida es Q entre el area al tirante min(D, max(TW,
+    y_c)), y en pendiente suave con salida libre es MAYOR que la uniforme
+    (1.508 vs 1.184 m/s en el caso del dictamen): la piedra salia chica. Quien
+    decide cual de las dos es M4, que tiene el control gobernante delante, y
+    la decision viaja en la procedencia de la `Magnitud`; esta fase la pasa
+    tal cual.
     """
     resultado = informe.resultado.resultado_hidraulico
+    if resultado.V_salida is None:
+        # Fallo de PROGRAMA, no del expediente: M4 llena V_salida siempre. Un
+        # ResultadoHidraulico sin ella no salio de `resolver_control`, y
+        # rellenarla aqui con V_erosion seria el default silencioso que este
+        # proyecto prohibe.
+        raise ValueError(
+            f"el resultado hidraulico de {informe.punto.id} no trae la "
+            "velocidad de salida (ResultadoHidraulico.V_salida): la Fase 6 "
+            "no elige una velocidad por su cuenta")
     informe.proteccion = _etapa(
         informe.bloqueos, FASE_PROTECCION, "d50, espesor y longitud",
-        lambda: proteccion_salida(V=resultado.V_erosion))
+        lambda: proteccion_salida(V=resultado.V_salida))
 
 
 def _fase_7(informe: InformePunto) -> None:
@@ -1334,7 +1377,7 @@ def _diferir_fase_8(informe: InformePunto) -> None:
     informe.bloqueos.append(Bloqueo(
         fase=FASE_ESTRUCTURAL,
         etapa=f"Fase 8 completa diferida al expediente (alcance {ALCANCE_PERFIL})",
-        tipo="DiferidoPorAlcance",
+        tipo=TipoDeBloqueo.DIFERIDO_POR_ALCANCE,
         mensaje=("clase o calibre por norma de producto (items 1-2) y cama "
                  "de apoyo (item 4) no se ejecutan en alcance de perfil: son "
                  "verificacion estructural del conducto, que la hoja de ruta "
@@ -1473,7 +1516,7 @@ def _declarar_alcance_familia_c(informe: InformePunto) -> None:
         fase="Fase 5 - Verificaciones",
         etapa="VC1 - alcance del requisito de la Sec. 2.3 (borde libre "
               "verificado; rasante hidraulica, no)",
-        tipo="DiferidoPorAlcance",
+        tipo=TipoDeBloqueo.DIFERIDO_POR_ALCANCE,
         mensaje=DECLARACION_ALCANCE_FAMILIA_C,
         diferido_por_alcance=True))
 
@@ -1567,6 +1610,56 @@ def _completar_s_cauce(informe: InformePunto,
     informe.punto_completado = replace(punto, S_cauce=declarado.valor)
 
 
+def _compuerta_metodo_h_o(informe: InformePunto, alcance: str) -> None:
+    """
+    La compuerta de EXT-M-02 (EXT-3; v8 §4.3 enmendada en EXT-0): si el punto
+    se dimensiono con el control de SALIDA gobernando y HW/D_salida < 0.75, el
+    metodo aproximado de h_o NO esta definido para ese punto --HDS-5 pag.
+    impresa 3.24, «should not be used»-- y el HW publicado no es un
+    resultado. Se registra como `Bloqueo` «metodo no evaluable»: diferido a
+    nivel de perfil (el punto sale dimensionado con HW no evaluable y el
+    motivo impreso junto al HW) y NO diferido a nivel de expediente, donde el
+    punto no cierra hasta que exista el calculo de remanso (Section 3.5).
+
+    LEE EL MISMO CAMPO QUE EL PASO F4.HO JUZGA (SIS-A-07):
+    `ResultadoHidraulico.h_o_fuera_de_rango`, ya filtrado por control
+    gobernante en M4. No recalcula nada. Y va DESPUES del bucle de MD a
+    proposito: no rechaza el diametro --subir D solo baja HW/D-- sino que
+    marca el punto, sea cual sea el D que la Fase 5 acepto.
+
+    A NIVEL DE EXPEDIENTE HOY NO SE ALCANZA, y conviene decirlo (auditoria
+    adversarial de EXT-3): bajo control de salida el barril va LLENO --V1 no
+    cumple-- o PARCIALMENTE LLENO --V1/V2 lanzan `MetodoNoEvaluableError` y
+    MD no dimensiona--, de modo que ningun punto llega dimensionado hasta
+    aqui con HW/D < 0.75 y el «no cierra» del expediente lo produce la Fase
+    5, no esta compuerta. La compuerta es la guardia para cuando el perfil
+    de la lamina (EXT-3b) evalue V1/V2 y este quede como unico bloqueo; su
+    rama de expediente la fija `test_ext3_regimen_barril` llamandola
+    directamente, para que una mutacion que la difiriera siempre no
+    sobreviva.
+    """
+    if not informe.dimensionado:
+        return
+    hidraulica = informe.resultado.resultado_hidraulico
+    if not hidraulica.h_o_fuera_de_rango:
+        return
+    exc = MetodoNoEvaluableError(
+        que="HW",
+        procedimiento=M5.PROCEDIMIENTO_PERFIL_LAMINA,
+        motivo=(f"el control de SALIDA gobierna y HW/D_salida = "
+                f"{_fmt(hidraulica.HW_sobre_D_salida)} queda por debajo de "
+                f"{_fmt(H_O_HW_SOBRE_D_MIN, DECIMALES_FACTOR)}, donde HDS-5 "
+                f"(pag. impresa 3.24) dice que la aproximacion "
+                f"h_o = max(TW, (y_c + D)/2) no debe usarse; el HW publicado "
+                f"no es un resultado del metodo. Subir de diametro solo baja "
+                f"HW/D, y por eso no es un incumplimiento"),
+        id_punto=informe.punto.id)
+    informe.bloqueos.append(replace(
+        _bloqueo(FASE_DISENO, "carga HW bajo control de salida (h_o, Sec. 4.3)",
+                 exc),
+        diferido_por_alcance=alcance in ALCANCES_QUE_DIFIEREN_METODO_NO_EVALUABLE))
+
+
 def correr_punto(punto: PuntoCritico, externos: DatosExternos,
                  alcance: str = ALCANCE_EXPEDIENTE) -> InformePunto:
     """
@@ -1576,7 +1669,10 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
 
     Con alcance de perfil, la Fase 5 difiere V5 y V8 (ver
     `_verificador_perfil`) y la Fase 8 no se ejecuta: queda como bloqueo
-    diferido con su fundamento (ver `_diferir_fase_8`).
+    diferido con su fundamento (ver `_diferir_fase_8`). Y en los dos alcances,
+    tras el bucle de MD, la compuerta de h_o (`_compuerta_metodo_h_o`, EXT-3):
+    un punto dimensionado bajo control de salida con HW/D < 0.75 lleva el
+    bloqueo «metodo no evaluable», diferido solo a nivel de perfil.
     """
     informe = InformePunto(punto=punto)
 
@@ -1587,6 +1683,7 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
 
     if _fase_2(informe, externos):
         _fase_diseno(informe, externos, alcance)
+        _compuerta_metodo_h_o(informe, alcance)
         if informe.dimensionado:
             _fase_6(informe)
             _fase_7(informe)
@@ -1655,7 +1752,7 @@ def _cabezal_diferido() -> InformeCabezal:
     informe.bloqueos.append(Bloqueo(
         fase=FASE_CABEZAL,
         etapa=f"Fase 9 completa diferida al expediente (alcance {ALCANCE_PERFIL})",
-        tipo="DiferidoPorAlcance",
+        tipo=TipoDeBloqueo.DIFERIDO_POR_ALCANCE,
         mensaje=("cadena sismica, Mononobe-Okabe, predimensionamiento, "
                  "recubrimientos y cuantias del cabezal no se ejecutan en "
                  "alcance de perfil: dependen de datos del expediente "
@@ -1745,7 +1842,8 @@ def _dato_json(dato: Optional[DatoDeclarado]) -> Optional[Dict[str, Any]]:
 
 
 def _bloqueo_json(bloqueo: Bloqueo) -> Dict[str, Any]:
-    return {"fase": bloqueo.fase, "etapa": bloqueo.etapa, "tipo": bloqueo.tipo,
+    return {"fase": bloqueo.fase, "etapa": bloqueo.etapa,
+            "tipo": bloqueo.tipo.value,
             "criterio": bloqueo.criterio, "etiqueta": bloqueo.etiqueta,
             "concepto": bloqueo.concepto, "fuente": bloqueo.fuente,
             "campo": bloqueo.campo,
@@ -1793,15 +1891,41 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "y_critico_m": _num(hidraulica.y_critico),
             "HW_entrada_m": _num(hidraulica.HW_entrada),
             "HW_salida_m": _num(hidraulica.HW_salida),
-            "HW_gobernante_m": _num(hidraulica.HW)}
+            "HW_gobernante_m": _num(hidraulica.HW),
+            # EL CAUDAL CON QUE M4 RESOLVIO DE VERDAD y cuantos barriles lo
+            # reciben (EXT-2-02): Q_m3s sigue siendo el del punto.
+            "Q_celda_m3s": _num(hidraulica.Q_celda_m3s),
+            "numero_celdas": hidraulica.numero_celdas,
+            # EL REGIMEN DEL BARRIL Y LA VELOCIDAD DE SALIDA (EXT-3; EXT-M-01,
+            # PC-04): lo que V1/V2 compararon y lo que recibio la Fase 6, con
+            # la procedencia que M4 escribio.
+            "regimen_barril": hidraulica.regimen_barril.value,
+            "V_llena_m_s": _num(hidraulica.V_llena_m_s),
+            "V_salida_m_s": (None if hidraulica.V_salida is None
+                             else _num(hidraulica.V_salida.valor)),
+            "V_salida_procedencia": (None if hidraulica.V_salida is None
+                                     else hidraulica.V_salida.procedencia),
+            "y_salida_m": _num(hidraulica.y_salida_m),
+            # EL BLOQUE h_o ENTERO (SIS-B-18, mitad JSON): los dos numeros que
+            # producen la rama, la rama, el cociente que las dos condiciones
+            # de uso acotan y las dos banderas, ya filtradas por control
+            # gobernante en M4. Hasta EXT-3 no llegaba ninguna pieza.
+            "h_o_m": _num(hidraulica.h_o_m),
+            "TW_m": _num(hidraulica.TW_m),
+            "ahogado_por_TW": hidraulica.ahogado_por_TW,
+            "HW_sobre_D_salida": _num(hidraulica.HW_sobre_D_salida),
+            "h_o_fuera_de_rango": hidraulica.h_o_fuera_de_rango,
+            "h_o_requiere_cautela": hidraulica.h_o_requiere_cautela}
 
 
 def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
-    # La clave dice de que rama es la velocidad, como en el bloque de
-    # hidraulica: el d50 de Laushey se calcula con `V_erosion` (n minimo, la
-    # estimacion alta). "V_m_s" a secas reproducia en este rincon del JSON la
-    # ambiguedad que MAT-D1 vino a quitar.
-    return {"numeral": p.numeral, "V_erosion_m_s": _num(p.V),
+    # La clave dice QUE velocidad es, como en el bloque de hidraulica: desde
+    # EXT-3 el d50 de Laushey se calcula con la velocidad de SALIDA de HDS-5
+    # 3.1.6 (`ResultadoHidraulico.V_salida`), que bajo control de entrada
+    # coincide con `V_erosion` y bajo control de salida no. La clave se
+    # llamaba "V_erosion_m_s" y habria seguido diciendo una rama que ya no es
+    # la que entra: es la ambiguedad que MAT-D1 vino a quitar, al reves.
+    return {"numeral": p.numeral, "V_salida_m_s": _num(p.V),
             "d50_m": _num(p.d50),
             "espesor_m": _num(p.espesor), "longitud_m": _num(p.longitud),
             "criterio_espesor": p.criterio_espesor,
@@ -2059,7 +2183,7 @@ def _lineas_bloqueos(bloqueos: Sequence[Bloqueo]) -> List[str]:
         return []
     out = [f"{SANGRIA}Bloqueos:"]
     for b in bloqueos:
-        out.append(f"{SANGRIA * 2}[{b.tipo}] {b.fase} -> {b.etapa}")
+        out.append(f"{SANGRIA * 2}[{b.tipo.value}] {b.fase} -> {b.etapa}")
         if b.criterio:
             out.append(f"{SANGRIA_DETALLE}falta declarar: {b.criterio} "
                        f"[{b.etiqueta}] - {b.concepto}")
@@ -2103,6 +2227,22 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         out.append(f"{SANGRIA}        Longitud : L = {_fmt(informe.longitud.valor)} m "
                    f"({informe.longitud.origen}) | TW = "
                    f"{_fmt(informe.tw.valor)} m ({informe.tw.origen})")
+        # EL REGIMEN Y EL BLOQUE h_o (EXT-3; SIS-B-18): lo que V1/V2
+        # compararon, lo que recibio la Fase 6 y las dos condiciones de uso
+        # de la aproximacion, dichas en el punto.
+        v_sal = ("sin emitir" if h.V_salida is None
+                 else f"{_fmt(h.V_salida.valor)} m/s")
+        out.append(f"{SANGRIA}        Regimen  : {h.regimen_barril.value} | "
+                   f"V_llena = {_fmt(h.V_llena_m_s)} m/s | "
+                   f"V_salida = {v_sal} (HDS-5 3.1.6, y_salida = "
+                   f"{_fmt(h.y_salida_m)} m)")
+        out.append(f"{SANGRIA}        h_o      : {_fmt(h.h_o_m)} m "
+                   f"({'manda TW: salida ahogada' if h.ahogado_por_TW else 'manda (y_c + D)/2'}; "
+                   f"TW = {_fmt(h.TW_m)} m) | HW/D_salida = "
+                   f"{_fmt(h.HW_sobre_D_salida)} | fuera de rango (< "
+                   f"{_fmt(H_O_HW_SOBRE_D_MIN, DECIMALES_FACTOR)}): "
+                   f"{'si' if h.h_o_fuera_de_rango else 'no'} | cautela: "
+                   f"{'si' if h.h_o_requiere_cautela else 'no'}")
     else:
         out.append(f"{SANGRIA}Fase 4  sin dimensionar")
 
