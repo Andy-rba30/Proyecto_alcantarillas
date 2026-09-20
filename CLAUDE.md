@@ -456,10 +456,15 @@ columna «Ventana Tk = no» salta ahora 9 y no 8) y los tres anclajes
 parametrizados de `test_decisiones_diferidas` para las fichas de la Parte XX
 (EXT-4-01, EXT-4-02, EXT-4-03). Ningún archivo restó tests: los nueve que
 vaciaban `_USADOS` a mano pasaron a las funciones públicas
-(`reiniciar_usos`) o al contexto del informe. Se midió «sí · sí» sobre el
-árbol de EXT-4 antes de fusionar (2156/4) y se remidió sobre `origin/main`;
-las otras tres se derivan sumando 33, porque ninguno de los treinta y tres
-depende de PyMuPDF, y el de ventana real es el único que depende de Tk.
+(`reiniciar_usos`) o al contexto del informe. Las cuatro configuraciones se
+MIDIERON sobre el árbol de `main` en `ec55253` (el commit `ext(EXT-4)`,
+fusionado por fast-forward): las dos sin Tk con el `xvfb-run` que falla y
+sin `DISPLAY`, las dos sin PyMuPDF desinstalándolo y reinstalándolo; los
+cuatro pares coinciden con la derivación (ninguno de los treinta y tres
+depende de PyMuPDF, y sólo el de ventana real depende de Tk). El push se
+rechazó con 403 durante toda la sesión —la app de Claude sin acceso de
+escritura al repositorio, como en D9 y PD— y el commit de cierre lo dice
+con su SHA para que nadie lo lea como entregado hasta que entre.
 **EXT-3 (2026-09-20) sumó TREINTA tests**: los veintiséis de
 `tests/test_ext3_regimen_barril.py` —la aceptación del cluster C06 (EXT-M-01,
 EXT-M-02, PC-04, PC-27 mitad compuerta, SIS-B-18 mitad JSON): los cuatro
@@ -588,9 +593,9 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
 | sí | sí | 2156 (medido en EXT-4) | 4 |
-| sí | no | 2151 (derivado en EXT-4: −5 de ventana) | 9 |
-| no | sí | 2123 (derivado en EXT-4: −33 de PDF) | 37 |
-| no | no | 2118 (derivado en EXT-4) | 42 |
+| sí | no | 2151 (medido en EXT-4) | 9 |
+| no | sí | 2123 (medido en EXT-4) | 37 |
+| no | no | 2118 (medido en EXT-4) | 42 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
