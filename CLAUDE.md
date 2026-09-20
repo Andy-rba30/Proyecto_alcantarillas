@@ -486,9 +486,13 @@ criterio nuevo y las cuatro fichas de la Parte XXII (`test_ext5_forma_gui`,
 `test_criterios_adoptados`, `test_decisiones_diferidas`). Las cuatro
 configuraciones se MIDIERON sobre el árbol de EXT-6 antes del commit (las
 dos sin Tk sin `DISPLAY` y con un `xvfb-run` que falla; las dos sin
-PyMuPDF desinstalándolo y reinstalándolo) y los cuatro pares suben
-exactamente 50: ninguno de los 50 depende de PyMuPDF (`sha1_de` es
-`hashlib`) ni de Tk. **EXT-5 (2026-09-20) sumó DOSCIENTOS SIETE tests**: los 204
+PyMuPDF desinstalándolo y reinstalándolo): los dos pares con PyMuPDF suben
+50 y los dos sin él suben 49 `passed` y 1 `skipped`, porque el T5 nuevo
+—el «5.00 m» de `DG2018.304.07.02#INCREMENTO` en
+`VALORES_QUE_LA_CITA_SOSTIENE`— abre el PDF y la columna «PyMuPDF = no»
+salta ahora 38 y no 37; ninguno de los 50 depende de Tk, y `sha1_de` es
+`hashlib`. `origin/main` quedó en `363091b` por fast-forward y «sí · sí» se
+remidió sobre un checkout limpio de ese commit: 2413 passed, 4 skipped. **EXT-5 (2026-09-20) sumó DOSCIENTOS SIETE tests**: los 204
 de `tests/test_ext5_forma_gui.py` —la aceptación del cluster GUI (EXT-G-01,
 PC-13, PC-14, la mitad de FORMA de EXT-V-02/05/06, la de pestaña 2 de
 EXT-V-04 y EXT-G-03): los cuatro casos del prompt escritos primero en rojo
@@ -668,8 +672,8 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 |---|---|---|---|
 | sí | sí | 2413 (medido en EXT-6) | 4 |
 | sí | no | 2405 (medido en EXT-6) | 12 |
-| no | sí | 2380 (medido en EXT-6) | 37 |
-| no | no | 2372 (medido en EXT-6) | 45 |
+| no | sí | 2379 (medido en EXT-6) | 38 |
+| no | no | 2371 (medido en EXT-6) | 46 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
