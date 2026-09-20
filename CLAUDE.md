@@ -429,7 +429,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2475**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2515**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -473,7 +473,39 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-7 (2026-09-20) sumó CINCUENTA Y OCHO tests**: los 50
+independientes. **EXT-8 (2026-09-20) sumó CUARENTA tests**: los 33 de
+`tests/test_ext8_rendimiento_gui.py` —la aceptación del cluster «rendimiento
+y GUI no bloqueante» (PC-10, PC-11, PC-12, PC-17), escrita primero en rojo
+con `xfail(strict=True)` de módulo —medidos 28 xfailed y 0 XPASS antes de
+tocar código, con `src/sesion.py` y `gui/exportacion_pdf.py` todavía
+inexistentes— y liberada al corregir: el presupuesto de `import cli` en
+subproceso con `-X importtime`, los tres perezosos comprobados en un
+proceso limpio, la sonda de weasyprint con sus dos diagnósticos, la sesión
+serializada de la CLI con procedencias, el progreso por stdout, el
+subproceso real (PDF, equivalencia del JSON, cancelación, fallo), el anexo
+con anclas y el cruce `href`↔`id`, el streaming, los techos de tamaño
+MEDIDOS (44.6 KB y 14.0 páginas por punto: el objetivo del dictamen no se
+alcanzó, ficha EXT-8-01) y la accesibilidad; los cinco últimos los dejó el
+auditor adversarial (la sesión del hijo desde la corrida y no desde los
+campos vivos, el hijo que no arranca, la bandera escrita que gana, el HTML
+no truncado y el enlace roto del anexo)—, el noveno test de ventana real
+en `test_gui_contrato` (`tests/apoyo/gui_ext8_real.py`) más el
+parametrizado que crece con `gui/exportacion_pdf.py` en `ARBOLES_DE_LA_GUI`,
+y los cinco anclajes de `test_decisiones_diferidas` para las fichas de la
+Parte XXIV (EXT-8-01..05). Ningún archivo restó tests: `test_seccion_
+rectangular` intercepta ahora `scipy.optimize.brentq` (de donde M4 lo toma
+en el punto de uso), los dos de `test_M11_reporte` sondean antes de parchear
+`WeasyHTML`, y `test_gui_contrato` lee la sesión de `_datos_de_sesion` y la
+versión de `src/sesion.py`. La línea base de la Familia C se regeneró
+(cambia el formato de la memoria: enlaces, anexo, el paso 2.1 una sola vez;
+ningún número de cálculo se mueve: JSON, CSV y volcados intactos). Las
+cuatro configuraciones se MIDIERON sobre `origin/main` en `8c1ac25` (el
+commit `ext(EXT-8)`, fusionado por fast-forward), en serie, sobre un
+checkout limpio: las dos sin Tk sin `DISPLAY` y con un `xvfb-run` que
+falla, las dos sin PyMuPDF desinstalándolo y reinstalándolo. De los 40,
+uno depende de PyMuPDF (`test_pc12_las_paginas_por_punto_caben_en_el_
+techo_medido`, marcado `pdf`) y uno de Tk (el de ventana real): la columna
+«PyMuPDF = no» salta ahora 39 y la «Ventana Tk = no» 13. **EXT-7 (2026-09-20) sumó CINCUENTA Y OCHO tests**: los 50
 de `tests/test_ext7_cabezal.py` —la aceptación del cluster «cabezal» C07
 (EXT-M-05, EXT-M-06, EXT-M-07 y R95-031), escrita primero en rojo con un
 `xfail(strict=True)` de módulo —medidos 44 xfailed y 6 XPASS antes de tocar
@@ -695,7 +727,7 @@ llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
-2367; EXT-6: 2417; EXT-7: 2475. La
+2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -707,10 +739,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 2471 (medido en EXT-7) | 4 |
-| sí | no | 2463 (medido en EXT-7) | 12 |
-| no | sí | 2437 (medido en EXT-7) | 38 |
-| no | no | 2429 (medido en EXT-7) | 46 |
+| sí | sí | 2511 (medido en EXT-8) | 4 |
+| sí | no | 2502 (medido en EXT-8) | 13 |
+| no | sí | 2476 (medido en EXT-8) | 39 |
+| no | no | 2467 (medido en EXT-8) | 48 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
