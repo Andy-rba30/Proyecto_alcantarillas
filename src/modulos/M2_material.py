@@ -211,6 +211,7 @@ Uso
 
 from __future__ import annotations
 
+import math
 import numbers
 from typing import Any, Optional, Tuple, Union
 
@@ -487,20 +488,11 @@ def espesor_pared(material: Material, D: float) -> float:
         # ese es el camino normal hoy. Si se declara, devuelve el espesor
         # adoptado: un escalar en metros, no una tabla por diametro -- un
         # marco vaciado in situ no tiene serie de producto que indexar.
-        t = ca.valor(CRITERIO_ESPESOR_PARED_CAJON)
-        if not isinstance(t, (int, float)) or isinstance(t, bool):
-            raise DatoInvalidoError(
-                campo=CRITERIO_ESPESOR_PARED_CAJON, valor=t,
-                motivo="el espesor de pared de un marco es UN escalar en "
-                       "metros, no una tabla por diametro: un marco vaciado "
-                       "in situ no tiene serie de producto que indexar")
-        if not t > 0:
-            raise DatoInvalidoError(
-                campo=CRITERIO_ESPESOR_PARED_CAJON, valor=t,
-                motivo="el espesor de pared tiene que ser positivo. La "
-                       "condicion se escribe negada (`not t > 0`) para que un "
-                       "NaN caiga del lado seguro, como en MAT-D13")
-        return float(t)
+        return _espesor_valido(
+            CRITERIO_ESPESOR_PARED_CAJON, ca.valor(CRITERIO_ESPESOR_PARED_CAJON),
+            que_es="el espesor de pared de un marco es UN escalar en metros, "
+                   "no una tabla por diametro: un marco vaciado in situ no "
+                   "tiene serie de producto que indexar")
     if material.espesor_pared is None:
         ca.valor(CRITERIO_ESPESOR_PARED)      # CriterioPendienteError si esta vacio
         raise DatoFaltanteError(
@@ -545,14 +537,49 @@ def espesor_pared(material: Material, D: float) -> float:
                 "y los dos quedan del lado inseguro si se estima por lo bajo"
             ),
         )
-    t = por_diametro[designado]
-    if not isinstance(t, numbers.Real):
+    return _espesor_valido(
+        CRITERIO_ESPESOR_PARED, por_diametro[designado],
+        que_es=f"el espesor declarado para '{material.tipo.value}' en el "
+               f"diametro {designado} mm es una celda de la columna 'Wall "
+               f"Thickness', en METROS")
+
+
+def _espesor_valido(campo: str, t: Any, *, que_es: str) -> float:
+    """
+    UN validador para las DOS ramas de `espesor_pared` (EXT-V-03).
+
+    Hasta EXT-1 cada rama tenia su propio `isinstance`, y divergian: la
+    rectangular exigia Real-no-bool y `t > 0`; la circular solo
+    `numbers.Real`. Medido por la auditoria externa sobre la rama circular:
+    `True` daba una pared de 1.0 m (D_ext 2.9 m, cota de clave 44.0), `0` se
+    devolvia como `int`, y -0.1 e inf entraban a la clave fisica (7.A) y al
+    volumen desplazado de V7. El predicado correcto ya existia
+    (`criterios_adoptados._es_real`); la duplicacion era la causa.
+
+    Forma MAT-D13: Real y no bool, finito, y la condicion de signo escrita EN
+    POSITIVO Y NEGADA (`not t > 0`), porque un NaN es falso frente a `<=`
+    igual que frente a `>`. Devuelve SIEMPRE `float(t)`: el espesor entra en
+    aritmetica con las cotas y un `int` disfrazado no es el mismo dato.
+    """
+    if not ca._es_real(t):
         raise DatoInvalidoError(
-            campo=CRITERIO_ESPESOR_PARED, valor=t,
-            motivo=f"el espesor declarado para '{material.tipo.value}' en el "
-                   f"diametro {designado} mm no es un numero. Los valores de "
-                   "la tabla son espesores en METROS")
-    return t
+            campo=campo, valor=t,
+            motivo=f"{que_es}. Lo declarado ({t!r}) no es un numero real -- "
+                   "un texto, un bool o una tabla no son un espesor")
+    if not math.isfinite(t):
+        raise DatoInvalidoError(
+            campo=campo, valor=t,
+            motivo=f"{que_es}. Lo declarado ({t!r}) no es finito: un espesor "
+                   "infinito o NaN no es una pared, y seguiria hasta la cota "
+                   "de clave y el volumen desplazado de V7")
+    if not t > 0:
+        raise DatoInvalidoError(
+            campo=campo, valor=t,
+            motivo=f"{que_es}. El espesor de pared tiene que ser positivo; "
+                   f"lo declarado es {t!r}. La condicion se escribe negada "
+                   "(`not t > 0`) para que un NaN caiga del lado seguro, "
+                   "como en MAT-D13")
+    return float(t)
 
 
 # `diametro_exterior(*, material, D) -> D + 2*t` VIVIA AQUI Y C8 LO RETIRA.
@@ -813,9 +840,82 @@ def progresion_de_cajon() -> tuple:
         pares = tuple((float(B), float(H)) for B, H in progresion)
     except (TypeError, ValueError):
         raise forma_mala from None
-    if not pares or any(B <= 0 or H <= 0 for B, H in pares):
+    if not pares or any(not (B > 0 and H > 0) for B, H in pares):
         raise forma_mala
+    _exigir_sin_repetidos(pares)
     return pares
+
+
+def _exigir_sin_repetidos(pares: tuple) -> None:
+    """
+    Ningun par (B, H) puede coincidir con uno anterior dentro de
+    TOL_UMBRAL_NORMATIVO (EXT-A-03).
+
+    Con un escalon repetido `_siguiente_seccion_cajon` encuentra SIEMPRE la
+    primera aparicion y devuelve el mismo siguiente, y el bucle de MD no
+    termina: la auditoria externa vio «cinco visitas» porque aborto; medido
+    sin abortar son 50 escalones en 0.00 s y ningun `ErrorProyecto`. Vale
+    para el duplicado ADYACENTE, para el NO adyacente (ciclo de longitud 2) y
+    para el CASI duplicado -- 5e-10 de diferencia --, porque la igualdad que
+    el bucle usa es la de `_misma_seccion`, con tolerancia, y no `==`.
+
+    Lo que NO se hace, y esta decidido: ni ordenar la serie (el orden lo
+    declara el proyectista, ver `_siguiente_seccion_cajon`) ni cambiar la API
+    por valor (tres tests la fijan). La guardia de PROGRESO de
+    `MD.disenar_material` es la otra mitad: esta rechaza la serie mal
+    declarada, aquella impide que cualquier regresion futura cuelgue la GUI.
+    """
+    for i, (B, H) in enumerate(pares):
+        for B_prev, H_prev in pares[:i]:
+            if (abs(B - B_prev) <= TOL_UMBRAL_NORMATIVO
+                    and abs(H - H_prev) <= TOL_UMBRAL_NORMATIVO):
+                raise DatoInvalidoError(
+                    CRITERIO_SECCIONES_CAJON, valor=pares,
+                    motivo=f"el par ({B}, {H}) en la posicion {i} REPITE un "
+                           f"escalon anterior de la serie (dentro de "
+                           f"TOL_UMBRAL_NORMATIVO = {TOL_UMBRAL_NORMATIVO}). "
+                           "Una progresion con un escalon repetido no avanza: "
+                           "el bucle de MD volveria siempre al mismo "
+                           "siguiente y no terminaria. Cada par (B, H) tiene "
+                           "que aparecer una sola vez",
+                )
+
+
+def _par_de_manning(clave: str, par: Any) -> Tuple[Optional[float],
+                                                  Optional[float]]:
+    """
+    El par (n_min, n_max) de un criterio de doble n, o (None, None) si el
+    criterio sigue sin valor (la excepcion documentada de 'n_manning_hdpe').
+
+    LA FORMA MALA ES DEL EXPEDIENTE, NO DEL PROGRAMA (PC-01). Hasta EXT-1 un
+    escalar declarado -- `--declarar n_manning_hdpe=0.012`, o `[0.012]` -- se
+    desempaquetaba aqui con `TypeError`/`ValueError`, y no reventaba solo en
+    el punto HDPE: tumbaba la corrida ENTERA de la CLI con traza, para todos
+    los puntos, porque `materiales_candidatos` construye el catalogo de los
+    tres materiales de una vez; la GUI lo mostraba como fallo de programa.
+    Se exige secuencia de DOS reales finitos, no bool, en orden. El orden
+    tambien lo exige `Material.__post_init__`, que es la red de abajo para
+    cualquier constructor que no pase por aqui.
+    """
+    if par is None:
+        return None, None
+    forma_mala = DatoInvalidoError(
+        clave, valor=par,
+        motivo="se espera el PAR (n_min, n_max) de la regla de doble n de la "
+               "Sec. 4.1 -- por ejemplo (0.010, 0.013) --: dos numeros reales "
+               "finitos, el minimo primero. Un escalar, una lista de otro "
+               "largo o un texto no son un par, y un par invertido mueve "
+               "todas las velocidades de M3->M5->M6 al lado no conservador",
+    )
+    if isinstance(par, (str, bytes)) or not isinstance(par, (tuple, list)):
+        raise forma_mala
+    if len(par) != 2 or not all(ca._es_real(x) and math.isfinite(x)
+                                for x in par):
+        raise forma_mala
+    n_min, n_max = par
+    if not n_min <= n_max:
+        raise forma_mala
+    return float(n_min), float(n_max)
 
 
 def catalogo(material: MaterialLike,
@@ -879,7 +979,8 @@ def catalogo(material: MaterialLike,
         hds5 = ConstantesHDS5.desde_dict(HDS5_INLET[_carta_de_cajon()])
         n_min, n_max = MANNING[_fila_manning_de_cajon()]
     elif tipo is TipoMaterial.HDPE:
-        n_min, n_max = _valor_si_declarado(CRITERIO_N_MANNING_HDPE)
+        n_min, n_max = _par_de_manning(CRITERIO_N_MANNING_HDPE,
+                                       _valor_si_declarado(CRITERIO_N_MANNING_HDPE))
         hds5 = ConstantesHDS5.desde_dict(ca.valor(CRITERIO_HDS5_HDPE))
     else:
         n_min, n_max = MANNING[_MANNING_CLAVE[tipo]]

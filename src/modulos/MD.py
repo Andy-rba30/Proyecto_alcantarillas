@@ -143,16 +143,27 @@ from typing import (Callable, List, Optional, Protocol, Sequence, Tuple,
                     Iterable)
 
 import criterios_adoptados as ca
-from modelos import (CriterioPendienteError, DatoInvalidoError,
+from modelos import (CriterioPendienteError,
+                     DatoFaltanteError,
+                     DatoInvalidoError,
                      DisenoNoFactibleError,
-                     ErrorProyecto, Familia, FormaSeccion, Material,
-                     PasoDiseno, PuntoCritico, ResultadoHidraulico,
-                     ResultadoPunto, Seccion, TipoMaterial, Verificacion)
+                     ErrorProyecto,
+                     Familia,
+                     FormaSeccion,
+                     Material,
+                     PasoDiseno,
+                     PuntoCritico,
+                     ResultadoHidraulico,
+                     ResultadoPunto,
+                     Seccion,
+                     TipoMaterial,
+                     Verificacion)
 from modulos.M2_material import (CRITERIO_SECCIONES_CAJON,
                                  materiales_candidatos, numero_de_celdas,
                                  siguiente_seccion)
 from modulos.M3_hidraulica import resolver_manning
 from modulos.M4_control import resolver_control
+from tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_BUCLE = "Sec. 2 de la guia de sesiones (Fases 4 y 5)"
 
@@ -388,8 +399,20 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     Q_barril = _caudal_por_barril(Q, material)
     seccion = siguiente_seccion(material)    # primer escalon del catalogo
     ultimo_motivo = "el catalogo no ofrecio ninguna seccion"
+    visitadas: List[Seccion] = []
 
     while seccion is not None:
+        # GUARDIA DE PROGRESO (EXT-A-03): un escalon ya visitado no se vuelve
+        # a probar, se detiene. Sin ella, una progresion que devolviera el
+        # mismo escalon -- por una serie de cajon con un par repetido, que
+        # `M2.progresion_de_cajon` ya rechaza, o por cualquier regresion
+        # futura del catalogo -- dejaba este bucle SIN TERMINO y colgaba la
+        # GUI sin `ErrorProyecto` (medido: 50 escalones en 0.00 s). Se
+        # compara con tolerancia, como `M2._misma_seccion`, y contra TODAS las
+        # visitadas y no solo la anterior: el ciclo de longitud 2 tambien es
+        # un bucle.
+        _exigir_progreso(material, seccion, visitadas)
+        visitadas.append(seccion)
         # Fuera del `try` a proposito: si la Fase 5 revienta, el escalon que
         # revento tiene que quedar en la traza CON la hidraulica que M3 y M4
         # si alcanzaron a resolver. Es lo unico que llega a la memoria cuando
@@ -464,6 +487,39 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
         seccion = siguiente_seccion(material, seccion)
 
     return None, _motivo_descarte(material, ultimo_motivo)
+
+
+def _mismo_escalon(a: Seccion, b: Seccion) -> bool:
+    """Dos secciones son el mismo escalon del catalogo, con tolerancia."""
+    if abs(a.altura - b.altura) > TOL_UMBRAL_NORMATIVO:
+        return False
+    ancho_a, ancho_b = getattr(a, "B", None), getattr(b, "B", None)
+    if ancho_a is None or ancho_b is None:
+        return ancho_a is ancho_b          # las dos circulares
+    return abs(ancho_a - ancho_b) <= TOL_UMBRAL_NORMATIVO
+
+
+def _exigir_progreso(material: Material, seccion: Seccion,
+                     visitadas: Sequence[Seccion]) -> None:
+    """
+    La progresion tiene que AVANZAR: la seccion nueva no puede ser una ya
+    visitada (EXT-A-03). Es `DatoInvalidoError` sobre el criterio del que
+    sale la progresion -- y por tanto `ErrorProyecto`, que `cli._etapa`
+    captura y la GUI muestra --, nunca un bucle.
+    """
+    if not any(_mismo_escalon(seccion, v) for v in visitadas):
+        return
+    clave = (CRITERIO_SECCIONES_CAJON
+             if material.forma is FormaSeccion.RECTANGULAR
+             else "diametros_normalizados")
+    raise DatoInvalidoError(
+        clave, valor=seccion.etiqueta(),
+        motivo=f"la progresion del catalogo de {material.nombre} no avanza: "
+               f"el escalon {seccion.etiqueta()} ya se habia probado "
+               f"({len(visitadas)} escalones recorridos). Un catalogo que "
+               "vuelve a un escalon anterior no termina nunca; se detiene "
+               "aqui en vez de colgar la corrida",
+    )
 
 
 def _caudal_por_barril(Q: float, material: Material) -> float:
@@ -566,6 +622,7 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
 
     fallos: List[str] = []
     pendientes: List[CriterioPendienteError] = []
+    faltantes: List[DatoFaltanteError] = []
 
     for material in candidatos:
         try:
@@ -578,6 +635,15 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             # decide que excepcion sale del punto (ver mas abajo).
             fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
             pendientes.append(exc)
+            continue
+        except DatoFaltanteError as exc:
+            # Tampoco es un descarte (PC-28): al material le FALTA un dato, y
+            # "falta un dato" no es "no cumple". Se acumula: si a TODOS los
+            # candidatos les falta uno, el punto no es «no factible», esta
+            # incompleto, y lo que sale es el primer DatoFaltanteError con su
+            # `campo`, que es la columna que el tablero tiene que mostrar.
+            fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
+            faltantes.append(exc)
             continue
         except ErrorProyecto as exc:
             # Un material que revienta se descarta COMO MATERIAL y el bucle
@@ -603,6 +669,14 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     # Ningun candidato cerro. Antes de declarar el punto NO FACTIBLE hay que
     # poder afirmar que todos se evaluaron de verdad: ver la funcion.
     _exigir_criterios_declarados(pendientes)
+
+    if faltantes and len(faltantes) == len(candidatos):
+        # A TODOS les falto un dato (PC-28): degradarlo a DisenoNoFactibleError
+        # con `campo=None` hacia que el tablero perdiera la columna que falta y
+        # que la GUI pintara «no factible» donde lo que hay es «incompleto».
+        # Se relanza el PRIMERO, con su campo; los demas quedan citados en la
+        # traza de `registrar` y en `fallos`.
+        raise faltantes[0]
 
     raise DisenoNoFactibleError(
         motivo="ningun material candidato cumple la Fase 5. " + " | ".join(fallos),

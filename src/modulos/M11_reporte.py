@@ -1831,7 +1831,21 @@ def _de_donde_salio(clave: str) -> str:
     if procedencia is None:
         return ""
     filas = []
-    if procedencia.filas:
+    if procedencia.filas and procedencia.difiere_de_la_celda():
+        # PROCEDENCIA VERAZ (EXT-V-02): el valor declarado NO es el de la
+        # celda, y la memoria no puede decir que «proviene» de ella. Se
+        # imprime la celda al lado, para que el revisor vea los dos numeros.
+        filas.append('<dt class="pendiente">Proviene de</dt>'
+                     '<dd class="pendiente">fila <code>'
+                     + "</code>, <code>".join(_esc(f) for f in procedencia.filas)
+                     + f"</code> de la tabla <code>{_esc(procedencia.tabla_id)}"
+                     f"</code> &mdash; {_esc(procedencia.titulo_de_la_tabla)}"
+                     f"<br><b>DIFIERE de la celda "
+                     f"({_esc(procedencia.valor_de_la_celda)})</b>: el valor "
+                     "de arriba NO es el que la tabla imprime en esa fila; "
+                     "es una adopcion del proyectista que la nota de la "
+                     "declaracion tiene que defender.</dd>")
+    elif procedencia.filas:
         filas.append("<dt>Proviene de</dt><dd>fila <code>"
                      + "</code>, <code>".join(_esc(f) for f in procedencia.filas)
                      + f"</code> de la tabla <code>{_esc(procedencia.tabla_id)}"

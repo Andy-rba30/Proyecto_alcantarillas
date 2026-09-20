@@ -61,3 +61,38 @@ TOL_THETA_BORDE = 1e-9
 # holgura real: 1e-9 sobre magnitudes de orden 1 es una millonesima de
 # milimetro. Se suma al lado admisible de la comparacion, nunca al obtenido.
 TOL_UMBRAL_NORMATIVO = 1e-9
+
+# ---------------------------------------------------------------------------
+# COS_ESVIAJE_MIN: donde 1/cos(esviaje) deja de estar determinado (PC-32)
+# ---------------------------------------------------------------------------
+# `M7.factor_esviaje` divide por cos(theta) y el dominio del esviaje es abierto
+# en 90 grados: M0 admite todo theta < 90, y a medida que theta se acerca a 90
+# el coseno se acerca a cero. La pregunta que este umbral contesta es
+# NUMERICA, no de proyecto: a partir de que coseno el FACTOR ya no esta
+# determinado al ultimo bit. El argumento de radians(theta) lleva un redondeo
+# absoluto del orden de (pi/2)*epsilon, cos tiene pendiente ~1 cerca de 90
+# grados, de modo que el error RELATIVO del factor es ~ (pi/2)*epsilon/cos.
+# Se exige que ese error quede por debajo de TOL_UMBRAL_NORMATIVO -- la misma
+# tolerancia con que el proyecto compara cualquier umbral --, y despejando:
+#
+#     cos(theta) > (pi/2) * epsilon / TOL_UMBRAL_NORMATIVO  ~= 3.5e-7
+#
+# o sea theta < 89.99998 grados. Dos precisiones que el auditor adversarial de
+# EXT-1 pidio dejar escritas: (a) TOL_UMBRAL_NORMATIVO se usa aqui como
+# tolerancia RELATIVA sobre el factor, no absoluta -- el factor es
+# adimensional y de orden 1 en el cruce normal, y lo que se acota es cuanto lo
+# mueve el ultimo bit del angulo --; (b) la derivacion usa epsilon donde el
+# redondeo real de radians(theta) es ulp(theta)*pi/180 ~ 2.5e-16 rad, de modo
+# que SOBREESTIMA el error ~1.6 veces y el umbral detiene un poco ANTES de lo
+# estrictamente necesario: medido a 1 ulp del angulo, el cambio relativo del
+# factor en el umbral es 6.4e-10. Es el lado conservador. Lo que NO es: una cota de cordura sobre el
+# esviaje. El esviaje de 89.9 grados -- factor 573, longitud de 10 313 m en
+# A-01 -- pasa este umbral, y pasa A PROPOSITO: cortarlo exigiria un valor
+# que ninguna norma de normas/ fija, y `factor_esviaje` (MAT-O18) deja
+# escrito que ese valor, si el proyecto lo quiere, es un criterio [A] con su
+# sensibilidad, no un literal escondido aqui. Es la frontera exacta entre una
+# tolerancia (esta) y un valor de proyecto (aquel).
+import math as _math      # noqa: E402  -- solo para derivar el umbral
+import sys as _sys        # noqa: E402
+
+COS_ESVIAJE_MIN = (_math.pi / 2) * _sys.float_info.epsilon / TOL_UMBRAL_NORMATIVO

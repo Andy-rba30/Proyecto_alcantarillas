@@ -853,6 +853,28 @@ class Material:
     # proyectista, y una memoria que no las desarrolle no las puede defender.
     pasos: Tuple["PasoDeMemoria", ...] = ()
 
+    def __post_init__(self) -> None:
+        # EL PAR ES UN PAR (PC-01): n_min <= n_max, o la regla de doble n se
+        # invierte entera y cada verificacion usa el n del lado equivocado
+        # sin que ninguna lo note. M2 lo exige al leer el criterio; esto es
+        # la red de abajo para cualquier constructor que no pase por M2.
+        # Escrito negado (`not n_min <= n_max`) para que un NaN no se cuele,
+        # como en MAT-D13. Es DatoInvalidoError y no ValueError: el par lo
+        # escribio el expediente (un criterio o una tabla), no el programa.
+        # El None es el de «Campos que el catalogo puede dejar en None» (M2):
+        # el criterio del HDPE vacio viaja como (None, None) y lo detiene el
+        # consumidor, no este constructor. Sin esta salvedad el None salia de
+        # aqui como TypeError (auditor adversarial de EXT-1).
+        if self.n_min is None or self.n_max is None:
+            return
+        if not self.n_min <= self.n_max:
+            raise DatoInvalidoError(
+                "n_manning", valor=(self.n_min, self.n_max),
+                motivo=f"el par de Manning de {self.nombre} esta invertido o "
+                       f"no es comparable: n_min = {self.n_min!r} tiene que "
+                       f"ser <= n_max = {self.n_max!r} (regla de doble n, "
+                       "Sec. 4.1: n_max para capacidad, n_min para velocidad)")
+
     @property
     def n_para_capacidad(self) -> float:
         """n maximo: conservador del lado de la inundacion (Sec. 4.1)."""

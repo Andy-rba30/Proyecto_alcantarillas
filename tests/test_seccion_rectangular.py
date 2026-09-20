@@ -823,14 +823,25 @@ def test_la_memoria_dice_cuando_el_critico_queda_topado():
 def test_la_guardia_de_finitud_esta_escrita_en_positivo_y_negada():
     """
     Plantilla de MAT-D13, y el caso que la separa de un `== math.inf`: un
-    caudal NaN. `_validar_positivo` lo deja pasar --`nan <= 0` es falso, que
-    es el mismo defecto que MAT-D13 fijo-- y llega hasta aqui, donde
-    `not y_c < math.inf` SI lo atrapa y lo devuelve como error del expediente.
+    caudal INFINITO. Pasa `_validar_positivo` -- `inf > 0` es verdadero y un
+    infinito no es un dato invalido por si solo: es la aritmetica que lo
+    combina la que no cabe -- y llega hasta aqui, donde `not y_c < math.inf`
+    SI lo atrapa y lo devuelve como error del expediente.
+
+    HASTA EXT-1 EL CASO ERA UN CAUDAL NaN, y el docstring decia que
+    `_validar_positivo` «lo deja pasar -- `nan <= 0` es falso, que es el
+    mismo defecto que MAT-D13 fijo --»: era un test escrito SOBRE un defecto
+    conocido (PC-05). EXT-1 puso `_validar_positivo` en la forma MAT-D13
+    (`not dato > 0`) y el NaN se detiene ahora en la puerta, como
+    `DatoInvalidoError('Q')`; lo que llega a esta guardia es el infinito.
     """
     m = SeccionRectangular(2.00, 1.50)
     with pytest.raises(LimiteNumericoError) as exc:
+        tirante_critico(float("inf"), m)
+    assert "Q = inf" in str(exc.value)
+    with pytest.raises(DatoInvalidoError) as exc:
         tirante_critico(float("nan"), m)
-    assert "no es un numero finito" in str(exc.value)
+    assert exc.value.campo == "Q"
 
 
 # ===========================================================================

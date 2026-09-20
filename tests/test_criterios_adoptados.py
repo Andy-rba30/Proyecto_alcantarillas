@@ -563,6 +563,34 @@ def test_la_declaracion_en_caliente_pasa_por_la_misma_guardia(_limpia_overrides)
     assert ca.valor_si_declarado("v_max_concreto_eleccion") == pytest.approx(4.0)
 
 
+def test_un_criterio_derivado_no_se_declara_por_ningun_camino(_limpia_overrides,
+                                                              tmp_path):
+    """
+    EXT-V-04: el MISMO RASERO alcanza tambien a lo que NO se elige. Un
+    criterio de resolucion `Derivada` lo calcula el programa desde otras
+    variables (la tabla de recubrimiento AASHTO sale del registro), y pisarlo
+    por la pestaña 2, por `--declarar` o por `declaracion.declarar_valor`
+    ponia en la memoria una tabla que la fuente no imprime (medido: el
+    recubrimiento de M9 baja de 40.64 a 25.4 mm con la tabla pisada a 1.0).
+    La emergente ya lo impedia; los tres caminos dinamicos entran por
+    `establecer_valor_dinamico` y la guardia va ahi. La escritura permanente
+    lo rechaza igual: el archivo no es donde se edita una tabla derivada.
+    """
+    derivadas = [c for c, v in CRITERIOS.items()
+                 if isinstance(v.resolucion, ca.Derivada)]
+    assert derivadas, "el test necesita al menos un criterio Derivada"
+    for clave in derivadas:
+        original = CRITERIOS[clave].valor
+        with pytest.raises(ValueError, match="se deriva de"):
+            ca.establecer_valor_dinamico(clave, original)
+        assert clave not in ca.valores_dinamicos()
+        copia = tmp_path / "criterios_copia.py"
+        copia.write_text(Path(ca.__file__).read_text(encoding="utf-8"),
+                         encoding="utf-8")
+        with pytest.raises(ValueError, match="se deriva de"):
+            ca.escribir_valor_en_archivo(clave, original, ruta=str(copia))
+
+
 def test_un_override_a_None_se_rechaza_y_cierra_el_default_silencioso(_limpia_overrides):
     """
     `valor()` consulta _OVERRIDES ANTES de mirar si el valor es None: un

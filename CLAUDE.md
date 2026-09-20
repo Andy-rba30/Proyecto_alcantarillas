@@ -365,7 +365,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **1986**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2078**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -398,7 +398,20 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-0 (2026-09-20) sumó CUATRO tests sin tocar un test**:
+independientes. **EXT-1 (2026-09-20) sumó NOVENTA Y DOS tests**: los 89 de
+`tests/test_ext1_entradas.py` —la aceptación del cluster «entradas» del
+dictamen, escrita primero en rojo con `xfail(strict=True)` y liberada al
+corregir, un bloque por ID (EXT-A-03, EXT-V-02..06, PC-01, PC-02, PC-05,
+PC-28, PC-32..35), más los dos de regresión que dejó el auditor adversarial
+(la clave de fila que no «difiere» de ninguna celda y el par de Manning sin
+declarar)—, el del «mismo rasero» para los criterios `Derivada` en
+`test_criterios_adoptados`, y los dos anclajes parametrizados de
+`test_decisiones_diferidas` para las fichas nuevas de la Parte XVII (PC-32 y
+EXT-V-02). Se midió «sí · no» sobre el árbol final (2070/8); «no · no» se
+midió antes de los dos tests del auditor (2035/41) y se deriva sumando 2,
+porque ninguno de los dos depende de PyMuPDF; las dos con Tk se derivan
+sumando 4, como en EXT-0: el contenedor no tenía `python3-tk`. **EXT-0 (2026-09-20)
+había sumado CUATRO tests sin tocar un test**:
 son los anclajes parametrizados de
 `test_decisiones_diferidas.py::test_el_simbolo_que_cada_ficha_ancla_sigue_existiendo`
 para las cuatro fichas nuevas de `docs/decisiones_diferidas.md` (SIS-B-22,
@@ -468,7 +481,7 @@ medirla; pre-N1 la encontró en 1881 y fusionó además la rama de S24, que
 llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
-EXT-0: 1986. La
+EXT-0: 1986; EXT-1: 2078. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -480,10 +493,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 1982 (derivado en EXT-0: PD midió 1978) | 4 |
-| sí | no | 1978 | 8 |
-| no | sí | 1949 (derivado en EXT-0: PD midió 1945) | 37 |
-| no | no | 1945 | 41 |
+| sí | sí | 2074 (derivado en EXT-1: PD midió 1978) | 4 |
+| sí | no | 2070 | 8 |
+| no | sí | 2041 (derivado en EXT-1: PD midió 1945) | 37 |
+| no | no | 2037 (derivado en EXT-1: medido 2035 antes de los dos tests del auditor) | 41 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

@@ -1129,22 +1129,36 @@ def test_g2_es_inclusiva_en_el_fondo_del_receptor_y_absorbe_el_ruido_de_float():
 def test_el_esviaje_casi_paralelo_pasa_M0_y_da_una_longitud_absurda():
     """
     MAT-O18, la parte que su ficha da por inalcanzable y NO lo es. M0 valida
-    `0 <= esviaje < 90`, de modo que 89.999999999 grados entra: el factor de
-    esviaje vale 5.7e10 y la longitud del conducto sale del orden de 1e11 m.
+    `0 <= esviaje < 90`, de modo que 89.9999 grados entra: el factor de
+    esviaje vale 5.7e5 y la longitud del conducto sale del orden de 1e6 m.
 
     No se acota, y el docstring de `factor_esviaje` dice por que: no hay
     esviaje maximo constructivo que citar -- ni Sec. 7.B ni EG-2013 lo fijan --
     y elegir uno seria inventar un valor normativo. Este test existe para que
     el numero este MEDIDO y a la vista, en vez de descrito como imposible.
+
+    LO QUE EXT-1 CAMBIO (PC-32), y lo que no: por debajo de
+    `tolerancias.COS_ESVIAJE_MIN` -- cos(theta) ~ 3.5e-7, theta > 89.99998
+    grados -- el factor deja de estar determinado en doble precision y sale
+    `LimiteNumericoError`, con el umbral NOMBRADO. Ese umbral es una
+    tolerancia numerica derivada de epsilon y de TOL_UMBRAL_NORMATIVO, no una
+    cota de proyecto: el caso que este test mide sigue pasando, y el
+    89.999999999 que medía antes (factor 5.7e10) es el que ahora se detiene.
     """
-    casi_paralelo = _punto(esviaje_grados=ESVIAJE_MAX - 1e-9)
+    casi_paralelo = _punto(esviaje_grados=ESVIAJE_MAX - 1e-4)
     factor = factor_esviaje(casi_paralelo)
 
-    assert factor > 1e9, (
+    assert factor > 1e5, (
         "el factor tiene que ser astronomico: si dejara de serlo, alguien "
         "puso una cota y hay que declararla como criterio")
     assert math.isfinite(factor), (
         "y aun asi finito: el dominio es abierto en 90, no cerrado")
+
+    # Mas cerca de 90 el limite es NUMERICO y lo dice con su nombre: no es la
+    # guarda de dominio (DatoInvalidoError) ni una cota de cordura.
+    with pytest.raises(LimiteNumericoError) as exc:
+        factor_esviaje(_punto(esviaje_grados=ESVIAJE_MAX - 1e-9))
+    assert "COS_ESVIAJE_MIN" in exc.value.motivo
 
     # El extremo cerrado si esta cubierto por la guarda.
     with pytest.raises(DatoInvalidoError):

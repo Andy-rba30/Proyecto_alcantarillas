@@ -69,7 +69,7 @@ from typing import Any, Optional, Tuple, Dict, List, Set
 
 from constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    H_O_CONDICION_TEXTO, H_O_NUMERAL,
-                                   MANNING)
+                                   KE_HDS5_C2, MANNING, V_MIN)
 from normativa import esquema as _esquema
 from normativa import registro as _registro_normativo
 from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
@@ -272,14 +272,29 @@ def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
     """
     Declara, solo para esta corrida, el valor de un criterio.
 
-    DE CUALQUIER CRITERIO, TAMBIEN DE UNO QUE YA TIENE VALOR EN EL ARCHIVO.
-    Esta funcion nunca lo impidio --- no hay ni hubo comprobacion de
-    `valor is None` aqui ---; quien lo impedia era la GUI, con un
-    `puede_declarar` en `_al_seleccionar_criterio`. Esa asimetria dejaba al
-    proyectista sin forma de TANTEAR: para probar un espesor distinto en seis
-    cruces habia que reescribir `criterios_adoptados.py`, o sea cambiar el
-    expediente para hacer un ensayo. Reescribirlo permanentemente si estaba
-    permitido, lo que dejaba la puerta ancha abierta y la estrecha cerrada.
+    DE CUALQUIER CRITERIO QUE SE ELIJA, TAMBIEN DE UNO QUE YA TIENE VALOR EN
+    EL ARCHIVO. Esta funcion nunca lo impidio --- no hay ni hubo comprobacion
+    de `valor is None` aqui ---; quien lo impedia era la GUI, con un
+    `puede_declarar` en `_al_seleccionar_criterio`.
+
+    Esa asimetria dejaba al proyectista sin forma de TANTEAR: para probar un
+    espesor distinto en seis cruces habia que reescribir
+    `criterios_adoptados.py`, o sea cambiar el expediente para hacer un
+    ensayo. Reescribirlo permanentemente si estaba permitido, lo que dejaba
+    la puerta ancha abierta y la estrecha cerrada.
+
+    LA UNICA EXCEPCION ES EL CRITERIO QUE NO SE ELIGE: el de resolucion
+    `Derivada` (EXT-V-04). Su valor lo calcula el programa desde otras
+    variables ya declaradas -- la tabla de recubrimiento AASHTO sale del
+    registro normativo, no de quien corre el calculo -- y pisarlo por esta
+    via ponia en la memoria una tabla que la fuente no imprime: medido en el
+    dictamen de la auditoria externa, con la tabla pisada a 1.0 el
+    recubrimiento de M9 baja de 40.64 a 25.4 mm. La ventana emergente ya lo
+    protegia (`contenido_de_campo` devuelve `editable=False`); la pestaña 2
+    de la GUI, `--declarar` y `declaracion.declarar_valor` entran por aqui,
+    de modo que la guardia va aqui y cubre a los tres. Se rechaza con
+    `ValueError`, como todo rechazo en la puerta de declaracion (SIS-E-05),
+    y el mensaje dice de que se deriva y que hay que editar en su lugar.
 
     Pisar un valor de archivo NO es lo mismo que rellenar un vacio, y el
     proyecto lo distingue en los tres sitios donde se ve: `criterios_pisados_en_caliente`
@@ -329,6 +344,15 @@ def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
             f"No se puede declarar '{clave}' con valor None: una declaracion "
             "en caliente aporta un valor, no lo retira. Para retirarla, usa "
             "`quitar_valor_dinamico`; el criterio vuelve a bloquear el calculo"
+        )
+    resolucion = CRITERIOS[clave].resolucion
+    if isinstance(resolucion, Derivada):
+        raise ValueError(
+            f"'{clave}' no se declara: se deriva de "
+            f"{', '.join(resolucion.de)}; edite sus entradas. Un criterio de "
+            "resolucion `Derivada` lo calcula el programa desde otras "
+            "variables ya declaradas, y pisarlo en caliente pondria en la "
+            f"memoria un valor que ninguna fuente sostiene ({resolucion.regla})"
         )
     _verificar_criterio(clave, replace(CRITERIOS[clave], valor=valor_nuevo))
     _OVERRIDES[clave] = valor_nuevo
@@ -494,6 +518,13 @@ def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
 
     if clave not in CRITERIOS:
         raise KeyError(f"'{clave}' no esta declarado en criterios_adoptados.py.")
+    if isinstance(CRITERIOS[clave].resolucion, Derivada):
+        # El mismo rasero que `establecer_valor_dinamico` (EXT-V-04): una
+        # tabla derivada del registro no se edita escribiendo un numero en
+        # su lugar, ni en caliente ni en el archivo.
+        raise ValueError(
+            f"'{clave}' no se escribe: se deriva de "
+            f"{', '.join(CRITERIOS[clave].resolucion.de)}; edite sus entradas")
 
     # La misma guardia que el archivo y que la declaracion en caliente, y
     # ANTES de tocar el disco: un valor que la guardia rechaza no llega a
@@ -771,6 +802,14 @@ def _tabla_recubrimiento_aashto_mm() -> Dict[str, Dict[str, float]]:
 
 
 _TABLA_RECUBRIMIENTO_AASHTO_MM = _tabla_recubrimiento_aashto_mm()
+
+
+# El recorrido de los coeficientes de la Tabla C.2 del HDS-5, DERIVADO de la
+# transcripcion del registro (`constantes_normativas.KE_HDS5_C2`) y no
+# escrito a mano: es la ventana de 'ke_entrada' (PC-02). Si la transcripcion
+# gana filas, la ventana las sigue.
+_VENTANA_KE_C2 = (min(f["ke"] for f in KE_HDS5_C2.values()),
+                  max(f["ke"] for f in KE_HDS5_C2.values()))
 
 
 CRITERIOS: Dict[str, Criterio] = {
@@ -2094,6 +2133,17 @@ CRITERIOS: Dict[str, Criterio] = {
         # Marcarlo como vacio verificado lo imprimiria en el bloque de
         # acotaciones de la memoria, que dice "el proyectista adopto esto
         # donde la norma no dice nada": seria falso.
+        #
+        # LA VENTANA (PC-02): el techo es el de la propia Tabla 8-4 -- por
+        # encima de 15 ft/s la fuente PROHIBE el termoplastico, de modo que
+        # el proyectista no puede adoptar mas --, y el piso es la velocidad
+        # minima [N] de la Sec. 5.2 (`V_MIN`, 0.25 m/s): un techo de
+        # velocidad por debajo del piso normativo no deja ninguna banda
+        # admisible y no es una adopcion defendible. Sin ventana el criterio
+        # aceptaba -1.0, 0.0 y 100.0 m/s por `--declarar`. El piso NO sale
+        # de la Tabla 8-4 (sus bandas inferiores no estan en normas/ y no se
+        # transcriben de memoria): sale de la norma peruana que ya rige V2.
+        sensibilidad=(V_MIN, 4.572),
         resolucion=Libre(
             que_lo_fija="el proyectista, adoptando el techo de la Tabla 8-4 "
                         "del WSDOT Hydraulics Manual, que es fuente tecnica "
@@ -2141,6 +2191,9 @@ CRITERIOS: Dict[str, Criterio] = {
         # Mismo motivo que en 'v_max_hdpe' para no llevar `vacio_verificado`:
         # cita cerrada sobre fuente tecnica (Sec. 10-bis del manifiesto), no
         # dossier de vacio agotado (SIS-D-12).
+        # La ventana, por lo mismo que en 'v_max_hdpe' (PC-02): techo de la
+        # Tabla 8-4 y piso en la velocidad minima normativa `V_MIN`.
+        sensibilidad=(V_MIN, 4.572),
         resolucion=Libre(
             que_lo_fija="el proyectista, adoptando el mismo techo que el "
                         "HDPE porque la fuente NO fija techo absoluto para "
@@ -2293,6 +2346,15 @@ CRITERIOS: Dict[str, Criterio] = {
         reemplazado_por="Fila de HDS-5 que corresponda si cambia el detalle de "
                         "embocadura del cabezal (Tablero 2.3). La Tabla C.2 "
                         "trae las demas configuraciones de borde",
+        # LA VENTANA ES LA DE LA TABLA DE LA QUE SALE (PC-02, EXT-V-02): el
+        # recorrido de los coeficientes que la Tabla C.2 imprime, 0.2 a 0.9,
+        # DERIVADO de la transcripcion (`KE_HDS5_C2`) y no copiado. Sin ella
+        # `--declarar ke_entrada=-0.5` pasaba la CLI entera, bajaba el HW de
+        # salida y podia cambiar el control gobernante, y `ke_entrada=0,5`
+        # declaraba la tupla (0, 5) por una coma. El consumidor
+        # (`M4.perdida_carga`) valida ademas el signo y el tipo, porque la
+        # ventana solo defiende lo que entra por la puerta de declaracion.
+        sensibilidad=_VENTANA_KE_C2,
         resolucion=DeTabla(
             tablas=("HDS5_3ED.TC2",),
             fila_id="concreto_headwall_square_edge",
@@ -2670,10 +2732,21 @@ CRITERIOS: Dict[str, Criterio] = {
         valor={"b_m": 2.0, "z_HV": 1.5, "S": 0.0008, "n": 0.030,
                "altura_total_m": 1.80},
         nivel=NIVEL_PERFIL,
-        # VENTANA POR CAMPO, escrita como la lista de rangos que el
-        # levantamiento tiene que confirmar. Simbolica y no numerica porque el
-        # valor es un dict de cinco campos y un solo par (min, max) no puede
-        # acotar cinco magnitudes distintas. El campo que mas mueve el
+        # VENTANA POR CAMPO, ESTRUCTURADA Y EVALUADA (EXT-V-05). Hasta EXT-1
+        # estaba escrita en prosa -- «n: 0.025 a 0.035 (canal en tierra con
+        # vegetacion estacional)» -- y por eso caia en la forma SIMBOLICA de
+        # `_verificar_sensibilidad`: se imprimia y no se evaluaba. La
+        # auditoria externa midio lo que eso dejaba pasar: `n='0.03'` llegaba
+        # a M3 como texto y salia TypeError, `n=True` valia 1, un tirante x5
+        # se aceptaba y una clave con errata se ignoraba. Un solo par
+        # (min, max) no puede acotar cinco magnitudes distintas, y la
+        # respuesta no es renunciar a la ventana sino darle la forma del
+        # valor: un par POR CAMPO, que `_verificar_dict` evalua clave a clave.
+        #
+        # LO QUE LA PROSA DECIA Y SIGUE VALIENDO, ahora fuera del dato: b_m y
+        # z_HV son los del dren colector de la red del Bajo Piura (talud de
+        # dren en suelo fino); S, la de una llanura de riego; n, el de un canal
+        # en tierra con vegetacion estacional. El campo que mas mueve el
         # resultado es `altura_total_m`, y solo en la via 4 (escenarios
         # acotados): es el que fija el TW del escenario "receptor a seccion
         # llena". En la via 3 lo que gobierna es la terna b/z/n/S a traves de
@@ -2681,12 +2754,11 @@ CRITERIOS: Dict[str, Criterio] = {
         # seccion con el caudal de A-01 (2.00 m3/s), pasar de n = 0.025 a
         # n = 0.030 sube el tirante normal de 0.8258 a 0.9082 m, un +10.0 %,
         # y esos 82 mm se trasladan al TW milimetro a milimetro.
-        sensibilidad=("b_m: 1.5 a 3.0 m (dren colector de la red del Bajo Piura)",
-                      "z_HV: 1.0 a 2.0 (talud de dren en suelo fino)",
-                      "S: 0.0005 a 0.0015 m/m (llanura de riego)",
-                      "n: 0.025 a 0.035 (canal en tierra con vegetacion "
-                      "estacional)",
-                      "altura_total_m: 1.2 a 2.5 m"),
+        sensibilidad={"b_m": (1.5, 3.0),             # m
+                      "z_HV": (1.0, 2.0),            # H:V
+                      "S": (0.0005, 0.0015),         # m/m
+                      "n": (0.025, 0.035),
+                      "altura_total_m": (1.2, 2.5)}, # m
         etiqueta="A",
         concepto="Seccion transversal del cuerpo receptor (dren o canal) en "
                  "el punto de descarga, con su pendiente y su n de Manning: "
@@ -2723,9 +2795,14 @@ CRITERIOS: Dict[str, Criterio] = {
                       "y un dato entregado no se recalcula -- "
                       "`M3.tw_seccion_1_3` la usa y ni siquiera invoca este "
                       "criterio. La sensibilidad declara, campo por campo, "
-                      "los rangos plausibles del dren colector de la red del "
-                      "Bajo Piura dentro de los que se movera el "
-                      "levantamiento",
+                      "los rangos plausibles dentro de los que se movera el "
+                      "levantamiento, y de donde sale cada banda: b_m 1.5 a "
+                      "3.0 m y z_HV 1.0 a 2.0 son los del dren colector de "
+                      "la red del Bajo Piura (talud de dren en suelo fino); "
+                      "S 0.0005 a 0.0015 m/m, la pendiente de una llanura de "
+                      "riego; n 0.025 a 0.035, el de un canal en tierra con "
+                      "vegetacion estacional; altura_total_m 1.2 a 2.5 m, la "
+                      "profundidad del dren a la corona del bordo",
         fuente="PENDIENTE - levantamiento de la seccion del dren o canal "
                "receptor en el punto de descarga (ANA / Junta de Usuarios "
                "del Bajo Piura). Sec. 1.3 de la hoja de ruta describe el "
@@ -6399,7 +6476,32 @@ def _rango_numerico(sensibilidad: Any) -> Optional[Tuple]:
 
 
 def _verificar_sensibilidad(clave: str, c: Criterio) -> None:
-    """Forma del rango, orden de sus extremos, y el valor dentro de el."""
+    """
+    Forma del rango, orden de sus extremos, y el valor dentro de el.
+
+    TRES FORMAS DE VENTANA, y la tercera llego en EXT-1 (EXT-V-05):
+
+      * un par numerico (min, max): se valida entero, y el valor -- escalar o
+        PAR -- tiene que caer dentro;
+      * una ventana SIMBOLICA (una cadena, una tupla con un extremo
+        simbolico): se declara, se imprime y no se evalua;
+      * un dict {campo: (min, max)} para los criterios cuyo valor es un dict
+        ('seccion_receptor' es el primero). Hasta EXT-1 su ventana estaba
+        escrita EN PROSA -- «n: 0.025 a 0.035» -- y por eso caia en la forma
+        simbolica: `n='0.03'` llegaba a M3 como texto y salia TypeError,
+        `n=True` valia 1, un tirante x5 pasaba y una clave desconocida se
+        ignoraba. La ventana por campo se evalua en `_verificar_dict`.
+
+    Y UN PAR ES UN PAR (PC-01): cuando el valor es una tupla o una lista bajo
+    un rango numerico, se exige que tenga DOS extremos y que esten en orden.
+    `n_manning_hdpe = (0.013, 0.010)` pasaba -- cada extremo cae en la
+    ventana -- y movia todas las velocidades de M3->M5->M6 al lado no
+    conservador: con Q = 1.167 m3/s y S = 0.020 el par nominal descarta el
+    HDPE por V3 y el invertido aprueba 0.90 m. El «no validamos el orden» de
+    `progresion_de_cajon` es un argumento de dos dimensiones que no se
+    traslada a un par escalar que la hoja de ruta (Sec. 4.1) presupone
+    ordenado: n_max para capacidad, n_min para velocidad.
+    """
     s = c.sensibilidad
     if s is None:
         return
@@ -6408,6 +6510,10 @@ def _verificar_sensibilidad(clave: str, c: Criterio) -> None:
             f"'{clave}' declara una sensibilidad vacia ({s!r}). O declara el "
             f"rango que se pudo elegir, o no declares el campo"
         )
+
+    if isinstance(s, dict):
+        _verificar_dict(clave, c)
+        return
 
     rango = _rango_numerico(s)
     if rango is None:
@@ -6431,7 +6537,15 @@ def _verificar_sensibilidad(clave: str, c: Criterio) -> None:
     # El valor puede ser un escalar o una tupla (la regla de doble n de
     # Sec. 4.1.1: `n_manning_hdpe` es un par, no un numero). En los dos casos
     # se exige que CADA numero caiga dentro del rango declarado.
-    candidatos = c.valor if isinstance(c.valor, (tuple, list)) else (c.valor,)
+    es_par = isinstance(c.valor, (tuple, list))
+    candidatos = tuple(c.valor) if es_par else (c.valor,)
+    if es_par and len(candidatos) != 2:
+        raise ValueError(
+            f"'{clave}' declara {c.valor!r}, de {len(candidatos)} elementos, "
+            f"bajo un rango de sensibilidad numerico {s!r}. Un valor en forma "
+            f"de secuencia es un PAR (minimo, maximo) -- la regla de doble n "
+            f"de la Sec. 4.1 -- y tiene exactamente dos extremos"
+        )
     for x in candidatos:
         if not _es_real(x):
             raise ValueError(
@@ -6445,6 +6559,75 @@ def _verificar_sensibilidad(clave: str, c: Criterio) -> None:
                 f"'{clave}' tiene el valor {c.valor!r} fuera del rango de "
                 f"sensibilidad que el mismo declara, {s!r} "
                 f"(el extremo infractor es {x!r}). {_SALIDA_RANGO}"
+            )
+    if es_par and not candidatos[0] <= candidatos[1]:
+        raise ValueError(
+            f"'{clave}' declara el par {c.valor!r} INVERTIDO: el primer "
+            f"extremo es el minimo y el segundo el maximo (regla de doble n, "
+            f"Sec. 4.1: n_max para capacidad, n_min para velocidad). Con el "
+            f"par al reves todas las velocidades salen del lado no "
+            f"conservador sin que ninguna verificacion lo note"
+        )
+
+
+def _verificar_dict(clave: str, c: Criterio) -> None:
+    """
+    La ventana ESTRUCTURADA {campo: (min, max)} de un criterio de valor dict
+    (EXT-V-05).
+
+    Se exige que la ventana misma este bien formada -- cada campo un par
+    numerico ordenado -- y, si hay valor, que el valor sea un dict con
+    EXACTAMENTE los campos de la ventana: una clave desconocida es una errata
+    que antes se ignoraba, y una clave que falta es un campo que M3 iba a
+    pedir con KeyError. Cada campo se contrasta con `_es_real` -- un texto o
+    un bool no son numeros -- y con su propio rango.
+    """
+    s = c.sensibilidad
+    for campo, rango in s.items():
+        par = _rango_numerico(rango)
+        if par is None or len(par) != 2:
+            raise ValueError(
+                f"'{clave}' declara para el campo {campo!r} la ventana "
+                f"{rango!r}, que no es un par numerico (minimo, maximo). Una "
+                f"sensibilidad estructurada lleva un par por campo"
+            )
+        if par[0] > par[1]:
+            raise ValueError(
+                f"'{clave}' tiene invertida la ventana del campo {campo!r} "
+                f"({rango!r}): el minimo es mayor que el maximo"
+            )
+    if c.valor is None:
+        return
+    if not isinstance(c.valor, dict):
+        raise ValueError(
+            f"'{clave}' declara una sensibilidad por campo ({sorted(s)}) y su "
+            f"valor es {c.valor!r}, que no es un dict con esos campos. "
+            f"{_SALIDA_RANGO}"
+        )
+    desconocidas = sorted(set(c.valor) - set(s))
+    faltantes = sorted(set(s) - set(c.valor))
+    if desconocidas or faltantes:
+        raise ValueError(
+            f"'{clave}' declara los campos {sorted(c.valor)} y su ventana "
+            f"conoce {sorted(s)}: desconocidos {desconocidas}, faltantes "
+            f"{faltantes}. Un campo que la ventana no conoce es una errata "
+            f"que antes se ignoraba en silencio; uno que falta es el que el "
+            f"consumidor iba a pedir y no iba a encontrar"
+        )
+    for campo, rango in s.items():
+        x = c.valor[campo]
+        minimo, maximo = rango
+        if not _es_real(x):
+            raise ValueError(
+                f"'{clave}' declara {campo!r} = {x!r}, que no es un numero, "
+                f"bajo la ventana numerica {rango!r}. Un texto o un bool no "
+                f"se defienden con un rango: {_SALIDA_RANGO}"
+            )
+        if not minimo <= x <= maximo:
+            raise ValueError(
+                f"'{clave}' declara {campo!r} = {x!r} fuera de la ventana "
+                f"que el mismo declara para ese campo, {rango!r}. "
+                f"{_SALIDA_RANGO}"
             )
 
 

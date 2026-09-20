@@ -293,6 +293,7 @@ Uso
 from __future__ import annotations
 
 import math
+import numbers
 from typing import Optional, Tuple
 
 from scipy.optimize import brentq
@@ -341,8 +342,44 @@ CRITERIO_TRANSICION = "metodo_transicion_hds5"
 # ---------------------------------------------------------------------------
 
 def _validar_positivo(nombre: str, dato: float, motivo: str) -> None:
-    if dato <= 0:
+    # Forma MAT-D13 (PC-05): la condicion se escribe EN POSITIVO Y NEGADA.
+    # `if dato <= 0` era permeable a NaN -- falso frente a `<=` igual que
+    # frente a `>` -- y un NaN por la API interna salia como ValueError de
+    # brentq, fuera de ErrorProyecto. Un `inf` pasa aqui a proposito: es
+    # positivo, y quien lo detiene es la guardia de finitud a la SALIDA.
+    if not dato > 0:
         raise DatoInvalidoError(nombre, valor=dato, motivo=motivo)
+
+
+def _validar_ke(ke: object, campo: str) -> float:
+    """
+    Un coeficiente de perdida de entrada: real, no bool, finito y `not ke >= 0`
+    (EXT-V-02, PC-02). La Tabla C.2 del HDS-5 recorre 0.2 a 0.9; el cero es
+    una embocadura sin perdida y se admite; un ke negativo RESTA carga --
+    `--declarar ke_entrada=-50` daba HW_salida = -7.668 m con el punto
+    dimensionado y cero incumplidas -- y no es un coeficiente. 'texto',
+    True y [1, 2] salian como TypeError, fuera de ErrorProyecto.
+    """
+    if not isinstance(ke, numbers.Real) or isinstance(ke, bool):
+        raise DatoInvalidoError(
+            campo, valor=ke,
+            motivo=f"el coeficiente de perdida de entrada ke tiene que ser un "
+                   f"numero real; lo declarado ({ke!r}) no lo es. La Tabla "
+                   "C.2 del HDS-5 lo tabula entre 0.2 y 0.9")
+    if not math.isfinite(ke):
+        raise DatoInvalidoError(
+            campo, valor=ke,
+            motivo="el coeficiente de perdida de entrada ke no es finito")
+    if not ke >= 0:
+        raise DatoInvalidoError(
+            campo, valor=ke,
+            motivo=f"el coeficiente de perdida de entrada ke no puede ser "
+                   f"negativo ({ke!r}): restaria carga en vez de perderla y "
+                   "bajaria el HW de salida. La Tabla C.2 del HDS-5 lo "
+                   "tabula entre 0.2 y 0.9; el cero es una embocadura sin "
+                   "perdida. La condicion se escribe negada (`not ke >= 0`) "
+                   "para que un NaN caiga del lado seguro (MAT-D13)")
+    return float(ke)
 
 
 def _validar_Q_D(Q: float, seccion: Seccion) -> None:
@@ -873,7 +910,10 @@ def ke_declarado(criterio_ke: str = CRITERIO_KE
     """
     valor = ca.valor(criterio_ke)
     if criterio_ke != CRITERIO_KE_CAJON:
-        return "", "", "", valor
+        # El NUMERO declarado se valida aqui, en el consumidor: la ventana del
+        # criterio defiende la puerta de declaracion y esta guardia defiende
+        # lo que llegue por cualquier otra via (EXT-V-02).
+        return "", "", "", _validar_ke(valor, criterio_ke)
     if not isinstance(valor, str) or valor not in KE_CAJON_C2:
         raise DatoInvalidoError(
             criterio_ke, valor=valor,
@@ -918,6 +958,7 @@ def perdida_carga(V: float, R: float, n: float, L: float,
         # los usa esta funcion -- son de la memoria, y los guarda
         # `control_salida` --, y un `[3]` suelto es un literal sin nombre.
         *_, ke = ke_declarado(criterio_ke)
+    ke = _validar_ke(ke, "ke")
 
     friccion = K_FRICCION_SI * n ** 2 * L / R ** (4 / 3)  # literal-ok: exponente 4/3 de Sec. 4.3
     return (1 + ke + friccion) * V ** 2 / (2 * G)
@@ -979,9 +1020,12 @@ def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
     _validar_Q_D(Q, seccion)
     _validar_positivo("S", S, "la pendiente del conducto debe ser positiva")
     _validar_positivo("L", L, "la longitud del conducto debe ser positiva")
-    if TW < 0:
+    # `not TW >= 0` y no `TW < 0` (PC-05, forma MAT-D13): un TW = NaN pasaba
+    # y HW salia NaN.
+    if not TW >= 0:
         raise DatoInvalidoError("TW", valor=TW,
-                                motivo="el tirante en el receptor no puede ser negativo")
+                                motivo="el tirante en el receptor no puede ser "
+                                       "negativo (TW = 0 es salida libre)")
 
     if critico is None:
         critico = tirante_critico(Q, seccion)
@@ -1001,6 +1045,22 @@ def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
     h_o = max(TW, h_o_geometrico)
     caida = S * L
     HW = H + h_o - caida
+    if not math.isfinite(HW):
+        # GUARDIA DE FINITUD A LA SALIDA (PC-05, patron SIS-G-01). Cada dato
+        # paso su validacion -- un L o un TW infinitos son positivos -- y es
+        # la aritmetica que los combina la que no cabe: H crece con L, h_o
+        # con TW, y la resta H + h_o - S*L puede dar inf o nan. El mensaje
+        # nombra el PAR, como MAT-D13: no hay umbral que reparta la culpa.
+        raise LimiteNumericoError(
+            "HW", valor=HW,
+            motivo=f"el control de salida (Sec. 4.3) no da una carga finita "
+                   f"con el par (L = {L!r} m, TW = {TW!r} m): H = {H!r}, "
+                   f"h_o = {h_o!r}, S*L = {caida!r}. Cada dato cumple su "
+                   "validacion por separado; lo que no cabe en un numero es "
+                   "la operacion que los combina. Sin esta guardia el HW "
+                   "seguiria hasta la memoria y el informe imprimiria un "
+                   "diagnostico entero sobre un numero que no lo es",
+        )
 
     # Las dos condiciones de uso que HDS-5 pone a h_o y que SI se pueden
     # evaluar (num. 3.3.3, pag. impresa 3.24; NOR-HDS-05). No lanzan: la

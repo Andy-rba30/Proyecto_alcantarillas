@@ -84,6 +84,21 @@ dato de entrada. El detalle está en §16.1-bis, §1.1 y §16.11 de `docs/ruta_f
   el contrato de memoria (§4.5) exige que nada de lo que se añade quede invisible en el
   reporte. El HW, los tirantes y las velocidades no se mueven: `git diff` sobre esta
   línea base da exactamente esas dos líneas.
+- **EXT-1** (`ext(EXT-1)`, 2026-09-20): cambian **tres archivos**
+  (`memoria_expediente.html`, `memoria_perfil.html`, `memoria_perfil_ancha.html`) y
+  **ninguna línea es un número de cálculo**: (1) el SHA-1 de `criterios_adoptados.py`,
+  porque ese archivo cambió; (2) la fila «Sensibilidad declarada» que aparece en tres
+  fichas de criterio que antes no la tenían —`ke_entrada` (0.2, 0.9: el recorrido de la
+  Tabla C.2 derivado de `KE_HDS5_C2`), `v_max_tmc` y `v_max_hdpe` (0.25, 4.572: el piso
+  [N] de V2 y el techo de la Tabla 8-4)—, efecto buscado de PC-02; (3) **sólo en
+  `memoria_perfil.html`**, la ficha de `seccion_receptor` (EXT-V-05): su sensibilidad
+  pasa de cinco frases en prosa a un dict `{campo: (min, max)}` que la guardia evalúa, y
+  su justificación recupera la procedencia de cada banda (dren colector del Bajo Piura,
+  llanura de riego, canal en tierra con vegetación estacional) que la prosa llevaba y el
+  dict solo no lleva —lo señaló el auditor adversarial: la memoria no puede perder de
+  dónde sale un rango—. Los 10 archivos restantes —JSON, CSV, volcados de la CLI y el
+  punto de cajón— son idénticos byte a byte: ningún HW, tirante ni velocidad se mueve,
+  que era la condición de la sesión.
 
 ## C3 ensanchó la ventana, y son diez archivos
 

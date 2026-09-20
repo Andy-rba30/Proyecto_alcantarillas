@@ -259,7 +259,7 @@ from modulos.M2_material import espesor_pared
 from modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
                                        cota_de_entrada,
                                        resguardo_por_cbr)
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from tolerancias import COS_ESVIAJE_MIN, TOL_UMBRAL_NORMATIVO
 
 NUMERAL_7A = "Sec. 7.A"
 NUMERAL_7B = "Sec. 7.B"
@@ -839,19 +839,31 @@ def factor_esviaje(punto: PuntoCritico) -> float:
 
     LA ASINTOTA NO ESTA ACOTADA, Y SE DECLARA (MAT-O18). El dominio es
     abierto en 90 grados, no cerrado, de modo que un esviaje que M0 acepta
-    puede estar arbitrariamente cerca del limite: con 89.999999999 grados el
-    factor vale 5.73e10 y `longitud_conducto` devuelve del orden de 1e11 m.
-    La ficha MAT-O18 lo clasifica como "no alcanzable desde el CSV validado",
-    y eso es INEXACTO: M0 valida `0 <= esviaje < 90` y ese valor pasa.
+    puede estar arbitrariamente cerca del limite: con 89.9999 grados el
+    factor vale 5.7e5 y `longitud_conducto` devuelve del orden de 1e6 m; con
+    89.9 grados, 573 y 10 313 m sobre A-01. La ficha MAT-O18 lo clasifica
+    como "no alcanzable desde el CSV validado", y eso es INEXACTO: M0 valida
+    `0 <= esviaje < 90` y esos valores pasan.
 
     No se pone cota de cordura porque no hay ninguna que citar: ni la Sec.
     7.B ni EG-2013 fijan un esviaje maximo constructivo, y elegir uno --
     45, 60 grados -- seria inventar un valor normativo, que es lo que
     CLAUDE.md prohibe expresamente. Lo que corresponde es que el numero se
-    VEA: una longitud de 1e11 m es absurda a simple vista en la memoria, y
+    VEA: una longitud de 1e6 m es absurda a simple vista en la memoria, y
     G2 la contrasta contra la cota del receptor. Si el proyecto quiere una
     cota, el camino es declararla como criterio [A] con su sensibilidad, no
     escribirla aqui.
+
+    LO QUE SI TIENE ES UNA GUARDIA DE SALIDA NUMERICA (PC-32, EXT-1), y
+    conviene no confundirla con la cota anterior: por debajo de
+    `tolerancias.COS_ESVIAJE_MIN` -- cos(theta) ~ 3.5e-7, o sea theta por
+    encima de 89.99998 grados -- el redondeo del angulo en doble precision
+    mueve el factor mas que TOL_UMBRAL_NORMATIVO en relativo, y el numero ya
+    no esta determinado por el dato. Ahi sale `LimiteNumericoError` con el
+    umbral nombrado (patron SIS-G-01). El umbral se DERIVA de epsilon y de la
+    tolerancia del proyecto, no se elige: es la frontera exacta entre una
+    tolerancia y un valor de proyecto. El 89.9 del dictamen (10 313 m) queda
+    del lado que pasa, a proposito, por el parrafo anterior.
     """
     if not (-ESVIAJE_MAX < punto.esviaje_grados < ESVIAJE_MAX):
         raise DatoInvalidoError(
@@ -860,7 +872,29 @@ def factor_esviaje(punto: PuntoCritico) -> float:
                    "grados, donde el conducto seria paralelo a la via y la "
                    "longitud de 7.B no estaria definida",
         )
-    return 1.0 / math.cos(math.radians(punto.esviaje_grados))
+    coseno = math.cos(math.radians(punto.esviaje_grados))
+    if not coseno > COS_ESVIAJE_MIN:
+        # GUARDIA DE SALIDA CON UMBRAL NOMBRADO (PC-32, patron SIS-G-01). El
+        # dato cumple su dominio -- M0 admite todo esviaje < 90 -- y es la
+        # aritmetica 1/cos la que deja de estar determinada: por debajo de
+        # `tolerancias.COS_ESVIAJE_MIN` el redondeo del angulo mueve el
+        # factor mas de TOL_UMBRAL_NORMATIVO en relativo. Es un limite
+        # NUMERICO y no una cota de cordura: 89.9 grados sigue pasando, y por
+        # que se explica en el docstring (MAT-O18) y en tolerancias.py.
+        raise LimiteNumericoError(
+            "esviaje_grados", valor=punto.esviaje_grados, id_punto=punto.id,
+            motivo=f"1/cos(esviaje) no esta determinado en doble precision: "
+                   f"cos({punto.esviaje_grados!r} grados) = {coseno!r} queda "
+                   f"por debajo de COS_ESVIAJE_MIN = {COS_ESVIAJE_MIN!r} "
+                   "(tolerancias.py), de modo que el ultimo bit del angulo "
+                   "mueve la longitud de 7.B mas que la tolerancia con que "
+                   "el proyecto compara umbrales. No es un esviaje fuera de "
+                   f"rango -- el dominio es abierto en {ESVIAJE_MAX} grados "
+                   "y ninguna norma de normas/ fija un maximo constructivo "
+                   "--, es un cruce cuya longitud no se puede calcular con "
+                   "este dato",
+        )
+    return 1.0 / coseno
 
 
 def _exigir_finito(campo: str, valor: float, punto: PuntoCritico) -> float:

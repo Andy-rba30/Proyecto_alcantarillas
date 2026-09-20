@@ -94,6 +94,8 @@ puentes» tambien se reescribio: con estas cuatro luces, todas menores que
 
 from __future__ import annotations
 
+import math
+import numbers
 from typing import Dict, List, Mapping, Optional, Tuple, Union
 
 from constantes_normativas import (LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE,
@@ -364,7 +366,10 @@ def _riesgo_del_propietario(cat: CategoriaTR, R: float, n: int):
     caudal de diseno, que es la direccion segura.
     """
     declarado = valor_si_declarado(CRITERIO_RIESGO_PROPIETARIO)
-    if not declarado or cat.value not in declarado:
+    if declarado is None:
+        return R, n, False
+    _exigir_forma_del_mapa(declarado)
+    if cat.value not in declarado:
         return R, n, False
 
     fila = declarado[cat.value]
@@ -389,6 +394,79 @@ def _riesgo_del_propietario(cat: CategoriaTR, R: float, n: int):
                    f"insegura, y no es lo que la nota concede",
         )
     return R_declarado, n_declarado, True
+
+
+_CAMPOS_DEL_PROPIETARIO = frozenset({"R", "n"})
+
+
+def _exigir_forma_del_mapa(declarado) -> None:
+    """
+    La FORMA de la declaracion del Propietario, validada entera antes de leer
+    una fila (EXT-V-06).
+
+    Hasta EXT-1 se leia con `fila.get("R", R)` sobre lo que llegara, y eso
+    tenia dos modos de fallo, uno ruidoso y otro mudo. El ruidoso: una lista
+    o un texto tumbaban la corrida con TypeError/KeyError, fuera de
+    `ErrorProyecto`. El MUDO, que es el grave: una fila con errata
+    ('quebrada_importantee') o un campo con errata ('r' por 'R') se IGNORABA
+    EN SILENCIO -- el `.get` devolvia el maximo de la tabla -- y la memoria
+    imprimia «DECLARADOS POR EL PROPIETARIO» sobre valores que el Propietario
+    no habia declarado. Un `bool` pasaba como numero. Se exige: mapa exterior
+    cuyas claves sean filas de `CategoriaTR`, cada fila un mapa con campos de
+    {R, n}, y cada campo un real finito que no sea bool. El motivo nombra la
+    RUTA del dato que falla, para que el revisor vaya derecho a la celda.
+    """
+    clave = CRITERIO_RIESGO_PROPIETARIO
+    if not isinstance(declarado, Mapping):
+        raise DatoInvalidoError(
+            clave, valor=declarado,
+            motivo="se declara como un mapa por fila de la Tabla N 02 -- "
+                   "{'quebrada_importante': {'R': 0.20, 'n': 25}} --, y lo "
+                   f"declarado ({type(declarado).__name__}) no es un mapa. "
+                   "Las claves de fila admitidas son: "
+                   + ", ".join(sorted(c.value for c in CategoriaTR)),
+        )
+    filas_validas = {c.value for c in CategoriaTR}
+    for fila_clave, fila in declarado.items():
+        ruta = f"{clave}[{fila_clave!r}]"
+        if fila_clave not in filas_validas:
+            raise DatoInvalidoError(
+                clave, valor=fila_clave,
+                motivo=f"{ruta}: {fila_clave!r} no es una fila de la Tabla "
+                       "N 02. Antes se ignoraba en silencio y la memoria "
+                       "decia «declarados por el Propietario» sobre los "
+                       "maximos de la tabla. Claves admitidas: "
+                       + ", ".join(sorted(filas_validas)),
+            )
+        if not isinstance(fila, Mapping):
+            raise DatoInvalidoError(
+                clave, valor=fila,
+                motivo=f"{ruta}: la fila tiene que ser un mapa con los "
+                       "campos 'R' (riesgo admisible, fraccion) y/o 'n' "
+                       f"(vida util, anios); lo declarado es "
+                       f"{type(fila).__name__}",
+            )
+        for campo, x in fila.items():
+            ruta_campo = f"{ruta}[{campo!r}]"
+            if campo not in _CAMPOS_DEL_PROPIETARIO:
+                raise DatoInvalidoError(
+                    clave, valor=campo,
+                    motivo=f"{ruta_campo}: el campo {campo!r} no existe; los "
+                           "campos son 'R' y 'n' (mayuscula y minuscula "
+                           "tal cual la Tabla N 02). Antes una errata aqui "
+                           "se ignoraba en silencio",
+                )
+            if not isinstance(x, numbers.Real) or isinstance(x, bool):
+                raise DatoInvalidoError(
+                    clave, valor=x,
+                    motivo=f"{ruta_campo}: {x!r} no es un numero real (un "
+                           "texto o un bool no lo son)",
+                )
+            if not math.isfinite(x):
+                raise DatoInvalidoError(
+                    clave, valor=x,
+                    motivo=f"{ruta_campo}: {x!r} no es finito",
+                )
 
 
 def _paso_tr(*, cat, R, n, exacto, del_propietario: bool):

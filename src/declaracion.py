@@ -69,6 +69,7 @@ import variables_entrada as _ve
 import ventana_normativa as _vn
 from modelos import DeCatalogo, DeTabla, EnRango, ModoDeResolucion, Poblacion
 from normativa import registro as _registro
+from tolerancias import TOL_UMBRAL_NORMATIVO
 from normativa.esquema import (BandaDeInterpolacion, ConjuntoDeMaximos,
                                IntervaloAdmisible, PisoUnico, TechoUnico)
 
@@ -122,6 +123,26 @@ class Procedencia:
     rotulo_del_rango: str = ""
     aviso: str = ""
     nota: str = ""
+    # LA CELDA DE LA QUE SE DICE QUE PROVIENE EL VALOR (EXT-V-02). Se guarda
+    # cuando la eleccion nombra una fila y una columna con celda escalar --
+    # o una fila con una sola celda numerica --, y es lo que permite que la
+    # memoria distinga «proviene de la fila» de «DIFIERE de la celda»: -50
+    # se declaraba con la procedencia de la fila 'Square-edge 0.5' de la
+    # Tabla C.2 y nada lo desmentia. None cuando la eleccion no tiene celda
+    # escalar que citar (F_pga declara filas, n_manning_hdpe un par).
+    valor_de_la_celda: Optional[float] = None
+
+    def difiere_de_la_celda(self) -> bool:
+        """
+        El valor declarado NO es el numero que la celda imprime. Solo puede
+        ser verdadero cuando hay celda citada, y `declarar_desde_tabla` la
+        cita unicamente para valores numericos: un criterio que declara la
+        CLAVE de la fila nunca «difiere».
+        """
+        return (self.valor_de_la_celda is not None
+                and not (_ca._es_real(self.valor)
+                         and abs(self.valor - self.valor_de_la_celda)
+                         <= TOL_UMBRAL_NORMATIVO))
 
     def como_texto(self) -> str:
         """
@@ -130,7 +151,12 @@ class Procedencia:
         separadores son del proyecto.
         """
         trozos = [f"declarado el {self.fecha}"]
-        if self.filas:
+        if self.filas and self.difiere_de_la_celda():
+            trozos.append(f"DIFIERE de la celda ({self.valor_de_la_celda}) de "
+                          f"la fila {', '.join(self.filas)} de la tabla "
+                          f"{self.tabla_id}: el valor declarado es "
+                          f"{self.valor!r} y NO proviene de ella")
+        elif self.filas:
             trozos.append(f"proviene de la fila {', '.join(self.filas)} de la "
                           f"tabla {self.tabla_id}")
         elif self.columnas:
@@ -492,6 +518,28 @@ def declarar_desde_tabla(clave: str, valor: Any, *,
     usada = _tabla_unica(clave, tabla_id)
     contenido = _vn.contenido_de_tabla(usada, clave)
     _exigir_elegibles(contenido, filas, columnas)
+    # LA CELDA SOLO SE CITA CUANDO LO DECLARADO ES UN NUMERO. Hay criterios
+    # que declaran la CLAVE DE LA FILA y no su coeficiente ('ke_entrada_cajon',
+    # 'embocadura_cajon': «lo que se declara es la CLAVE de la fila»), y para
+    # ellos el valor no es la celda ni pretende serlo: la procedencia dice
+    # «fila» y basta. Lo encontro el auditor adversarial de EXT-1: la primera
+    # version comparaba la clave con el 0.4 de la celda y rechazaba la
+    # declaracion legitima que hace la ventana de la GUI. Un texto declarado
+    # donde el criterio espera un numero lo rechaza la propia guardia del
+    # criterio (`_verificar_sensibilidad`), no esta.
+    celda = _celda_escalar(usada, filas, columnas) if _ca._es_real(valor) else None
+    if celda is not None and not nota.strip() and not (
+            abs(valor - celda) <= TOL_UMBRAL_NORMATIVO):
+        # PROCEDENCIA VERAZ (EXT-V-02): si el valor no es el de la celda que
+        # se nombra, o se dice por que (nota) o no se declara. Sin esto -50
+        # entraba con «proviene de la fila 'Square-edge 0.5'».
+        raise ValueError(
+            f"'{clave}': el valor declarado {valor!r} DIFIERE de la celda "
+            f"{celda!r} de la fila {', '.join(filas)} de {usada}, y no trae "
+            "`nota`. Un valor que no es el de la celda no PROVIENE de ella: "
+            "o se declara la celda, o se escribe en la nota por que se "
+            "adopta otro numero (la memoria lo imprimira como «DIFIERE de "
+            "la celda»)")
 
     _ca.establecer_valor_dinamico(clave, valor)
 
@@ -503,9 +551,41 @@ def declarar_desde_tabla(clave: str, valor: Any, *,
         tabla_id=usada, titulo_de_la_tabla=contenido.titulo_literal,
         filas=tuple(filas), columnas=tuple(columnas), filas_legibles=legibles,
         alternativas_descartadas=_alternativas(contenido, filas, columnas),
-        nota=nota or v.resolucion.que_elige)
+        nota=nota or v.resolucion.que_elige,
+        valor_de_la_celda=celda)
     _PROCEDENCIAS[clave] = procedencia
     return procedencia
+
+
+def _celda_escalar(tabla_id: str, filas: Sequence[str],
+                   columnas: Sequence[str]) -> Optional[float]:
+    """
+    El numero que la tabla imprime en la celda elegida, o None si la eleccion
+    no señala UNA celda escalar.
+
+    Hay celda cuando se nombra exactamente una fila y una columna, o una sola
+    fila que tiene UNA sola celda numerica (la Tabla C.2 tiene una columna de
+    coeficientes, y la ventana de la GUI deja elegir solo la fila). Con varias
+    filas, varias columnas, una celda no numerica (un rango, un texto) o una
+    fila con varias celdas numericas (los tres n de la Tabla N 09) no hay
+    celda que citar y se devuelve None: la procedencia dice «fila» y nada
+    mas, como hasta ahora.
+    """
+    if len(filas) != 1 or len(columnas) > 1:
+        return None
+    tabla = _registro.construir().tabla(tabla_id)
+    fila_id = filas[0]
+    fila = next((f for f in tabla.filas
+                 if f.id == fila_id or tabla.clave_corta(f) == fila_id), None)
+    if fila is None:
+        return None
+    if columnas:
+        celda = fila.valores.get(columnas[0])
+        return float(celda) if _ca._es_real(celda) else None
+    numericas = [x for x in fila.valores.values() if _ca._es_real(x)]
+    if len(numericas) != 1:
+        return None
+    return float(numericas[0])
 
 
 def declarar_en_rango(clave: str, valor: Any, *,

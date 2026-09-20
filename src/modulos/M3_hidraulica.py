@@ -174,12 +174,16 @@ def _validar_parametros(seccion: Seccion, Q: float, S: float, n: float) -> None:
     # juntos para siempre, que es el defecto que este repositorio persigue en
     # todas partes.
     seccion.exigir_dimensiones_positivas()
-    if Q <= 0:
+    # Forma MAT-D13 (PC-05): condicion EN POSITIVO Y NEGADA. `if Q <= 0` era
+    # permeable a NaN -- falso frente a `<=` igual que frente a `>` -- y el
+    # NaN seguia hasta brentq, que lo devolvia como ValueError: un fallo de
+    # programa donde hay un dato del expediente que no puede ser.
+    if not Q > 0:
         raise DatoInvalidoError("Q", valor=Q, motivo="el caudal debe ser positivo")
-    if S <= 0:
+    if not S > 0:
         raise DatoInvalidoError("S", valor=S, motivo="la pendiente debe ser positiva "
                                                        "para que Manning tenga solucion real")
-    if n <= 0:
+    if not n > 0:
         raise DatoInvalidoError("n", valor=n, motivo="el coeficiente de Manning debe ser positivo")
 
 

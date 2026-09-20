@@ -197,8 +197,9 @@ from modulos.M10_espaciamiento import espaciamiento_alivio          # noqa: E402
 from modulos.M11_reporte import (CriterioBloqueante,                # noqa: E402,F401
                                  DIR_PLANTILLAS, NOMBRE_PLANTILLA,
                                  NOMBRE_PLANTILLA_PERFIL,
-                                 criterios_bloqueantes,
-                                 exportar_csv, exportar_html, exportar_pdf)
+                                 cargar_plantilla, criterios_bloqueantes,
+                                 exportar_csv, exportar_html, exportar_pdf,
+                                 marcadores_de_la_memoria, memoria_html)
 from modulos import M5_verificaciones as M5                        # noqa: E402
 from modulos.MD import disenar_punto                                # noqa: E402
 
@@ -577,6 +578,15 @@ _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
 
 def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     """Un dato externo numerico tiene que ser finito y positivo, en SI."""
+    if isinstance(bruto, bool):
+        # `float(True)` es 1.0 y `"luz_m": true` entraba como 1.0 m (PC-33).
+        # Un booleano no es una longitud ni un caudal, y el JSON los
+        # distingue: quien escribio `true` no escribio un numero.
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo=f"es un booleano ({bruto!r}), no un numero (SI, metros o "
+                   f"m3/s); origen: {origen}",
+        )
     try:
         valor = float(bruto)
     except (TypeError, ValueError):
@@ -2426,9 +2436,26 @@ def declarar_criterios(declaraciones: Sequence[str]) -> List[str]:
                     "devolveria al calculo como infinito o NaN"
                 ) from None
             valor_nuevo = texto
+        if isinstance(valor_nuevo, tuple) and not _escrita_como_tupla(texto):
+            # `0,5` es una coma DECIMAL para quien la teclea y la tupla (0, 5)
+            # para `ast.literal_eval` (PC-34). Con 'HW_D_max' la ventana lo
+            # rechazaba; con un criterio sin ventana la tupla entraba en
+            # silencio. Una tupla se declara con sus parentesis: (0.010, 0.013).
+            raise ValueError(
+                f"--declarar {declaracion!r}: {texto!r} se leeria como la "
+                f"TUPLA {valor_nuevo!r}, no como un numero. Si es un decimal, "
+                "el separador es el punto (0.5); si de verdad es una tupla, "
+                "escribela con parentesis: (0.010, 0.013). La coma sin "
+                "parentesis no declara nada"
+            )
         ca.establecer_valor_dinamico(clave, valor_nuevo)
         aplicadas.append(clave)
     return aplicadas
+
+
+def _escrita_como_tupla(texto: str) -> bool:
+    """El texto lleva sus parentesis: una tupla escrita como tupla."""
+    return texto.startswith("(") and texto.endswith(")")
 
 
 def _parece_numero_no_finito(texto: str) -> bool:
@@ -2458,6 +2485,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
               f"{ca.valores_dinamicos()[clave]!r} "
               "(criterios_adoptados.py no se modifico)")
 
+    plantilla = plantilla_por_alcance(args.alcance, args.plantilla)
+    if args.html_salida is not None or args.pdf_salida is not None:
+        # LA PLANTILLA SE COMPRUEBA ANTES DE CORRER NADA (PC-35): una ruta
+        # inexistente o una hoja sin los marcadores del contrato terminaba
+        # con traceback desnudo (FileNotFoundError / ValueError) DESPUES de
+        # haber escrito el JSON: salida parcial sin ErrorProyecto. Ahora se
+        # rechaza aqui, sin JSON a medias, con el mismo codigo de salida
+        # que cualquier otra entrada que no se puede leer.
+        try:
+            _exigir_plantilla_valida(plantilla)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"No se puede usar la plantilla: {exc}", file=sys.stderr)
+            return 2
+
     banderas = {"luz_m": args.luz, "TW_m": args.TW,
                 "longitud_m": args.longitud,
                 "L_hidraulico_m": args.l_hidraulico,
@@ -2480,14 +2521,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     print(volcar(informe, con_criterios=args.criterios))
 
+    # LA MEMORIA SE ARMA ANTES DE ESCRIBIR EL JSON (PC-35): si la plantilla
+    # no imprime un bloque que esta corrida SI produjo (`ValueError` del
+    # contrato de marcadores, SIS-B-06), o si algun bloque de la memoria se
+    # detiene en un `ErrorProyecto`, se sale aqui sin dejar ninguna salida
+    # a medias. Lo que se escribe despues es lo que ya esta en memoria.
+    try:
+        if args.html_salida is not None or args.pdf_salida is not None:
+            memoria_html(informe, proyecto=args.proyecto,
+                         ruta_plantilla=plantilla)
+    except (FileNotFoundError, ValueError, ErrorProyecto) as exc:
+        print(f"No se pudo armar la memoria con la plantilla "
+              f"«{plantilla.name}»: {exc}", file=sys.stderr)
+        return 2
+
     destino = args.json_salida or args.csv.with_suffix(".informe.json")
     destino.write_text(
         json.dumps(informe_json(informe), ensure_ascii=False, indent=2,
                    allow_nan=False),
         encoding="utf-8")
     print(f"\nJSON del expediente: {destino}")
-
-    plantilla = plantilla_por_alcance(args.alcance, args.plantilla)
 
     if args.html_salida is not None:
         ruta = exportar_html(informe, args.html_salida,
@@ -2507,6 +2560,36 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"Cuadro resumen (CSV): {ruta}")
 
     return 0 if informe.cerrado else 1
+
+
+def _exigir_plantilla_valida(plantilla: Path) -> None:
+    """
+    La plantilla existe y pide SOLO marcadores del contrato de M11, y al
+    menos uno (PC-35).
+
+    `M11.cargar_plantilla` ya lanza FileNotFoundError si no existe; aqui se
+    añade la mitad que faltaba antes de correr: una hoja sin marcadores -- o
+    con uno que M11 no entrega -- no puede imprimir la memoria, y
+    `substitute` lo diria con KeyError/ValueError despues de escribir el
+    JSON. La otra direccion del contrato (un bloque que la corrida produce y
+    la hoja no imprime) solo se puede comprobar con la corrida hecha, y la
+    comprueba `memoria_html` antes de que `main` escriba nada.
+    """
+    hoja = cargar_plantilla(plantilla)
+    pedidos = {m.group("named") or m.group("braced")
+               for m in hoja.pattern.finditer(hoja.template)}
+    pedidos.discard(None)
+    if not pedidos:
+        raise ValueError(
+            f"la plantilla «{plantilla.name}» no tiene ningun marcador "
+            f"{hoja.delimiter}nombre: no puede imprimir la memoria. Los "
+            f"marcadores del contrato son {sorted(marcadores_de_la_memoria())}")
+    desconocidos = sorted(pedidos - set(marcadores_de_la_memoria()))
+    if desconocidos:
+        raise ValueError(
+            f"la plantilla «{plantilla.name}» pide marcadores que M11 no "
+            f"entrega: {desconocidos}. Los del contrato son "
+            f"{sorted(marcadores_de_la_memoria())}")
 
 
 if __name__ == "__main__":

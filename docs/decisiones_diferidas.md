@@ -777,6 +777,19 @@ M8 y de M11 que su propio alcance excluye.
   declara la tupla `(0, 5)` por una coma. La forma por número es lo que hace
   posible que la procedencia mienta; la forma por clave de fila —la que ya usa
   `ke_entrada_cajon`— no puede. Sesión: EXT-1 si cabe, si no EXT-6.
+- **EXT-1 (2026-09-20) cerró la mitad de VALIDACIÓN y difiere la MIGRACIÓN a
+  EXT-6.** Lo que ya no puede pasar: `ke_entrada` lleva la ventana de la Tabla
+  C.2 derivada de `KE_HDS5_C2` (0.2–0.9), `M4.perdida_carga` y `M4.ke_declarado`
+  rechazan con `DatoInvalidoError` todo ke que no sea un real finito con
+  `ke >= 0`, `declaracion.declarar_desde_tabla` guarda `valor_de_la_celda` y
+  exige nota si el valor declarado difiere de la celda, y la memoria imprime
+  «DIFIERE de la celda (0.5)» en vez de «proviene de esa fila». Lo que sigue
+  abierto es la FORMA: `ke_entrada` declara un número y `ke_entrada_cajon` una
+  clave de fila, y `M4.ke_declarado` conserva la rama que devuelve los tres
+  rótulos vacíos. No cupo en EXT-1 porque migrar la forma mueve la memoria del
+  corredor de referencia (la procedencia del ke de tubo pasaría a imprimir fila,
+  agrupación y bloque) y ese cambio de salida pertenece a la sesión que rehace
+  la forma de los criterios (EXT-6), no a la de guardias sin cambio de contrato.
 - **Dónde vive:** `src/constantes_normativas.py::KE_HDS5_C2`
 
 
@@ -1373,3 +1386,66 @@ ficha, arriba, para no duplicar el símbolo.
   derivándose de ahí y un test que compruebe que ninguna ficha lleva texto que no
   esté en su variable. Sesión EXT-5.
 - **Dónde vive:** `src/ayuda_entrada.py::FichaDeClaveExterna`
+
+
+---
+
+# Parte XVII — Lo que EXT-1 dejó escrito al cerrar las guardias locales
+
+Fuente: prompt EXT-1 de `docs/planes_mejora/07_CADENA_PROMPTS_EXT.md` y el
+paso 1 del dictamen. Los tests de aceptación están en
+`tests/test_ext1_entradas.py`, uno por ID. Las dos fichas de abajo son las dos
+decisiones que la sesión tomó **distintas de lo que el prompt pedía a la
+letra**, y por eso se escriben aquí y no sólo en el docstring.
+
+## PC-32 · El umbral de `factor_esviaje` es una tolerancia numérica, no una cota de esviaje
+
+- **Qué se difirió:** cortar el esviaje de **89.9 grados** (factor 573,
+  longitud de 10 313 m sobre A-01), que es el caso que el dictamen usa para
+  motivar PC-32. La guardia de salida **existe** desde EXT-1 y lanza
+  `LimiteNumericoError` con umbral nombrado, pero su umbral es
+  `tolerancias.COS_ESVIAJE_MIN` ≈ 3.5e-7 —cos(θ) por debajo del cual el
+  redondeo del ángulo en doble precisión mueve el factor más que
+  `TOL_UMBRAL_NORMATIVO` en relativo—, o sea θ > 89.99998°. El 89.9 pasa.
+- **Por qué:** porque cualquier umbral que atrape 89.9° es un **valor de
+  proyecto**, no una tolerancia: no hay norma en `normas/` que fije un esviaje
+  máximo constructivo (ni Sec. 7.B ni EG-2013), y el docstring de
+  `factor_esviaje` (MAT-O18) ya había decidido que si el proyecto quiere esa
+  cota, «el camino es declararla como criterio [A] con su sensibilidad, no
+  escribirla aquí». Escribirla en `tolerancias.py` con nombre de tolerancia
+  sería la misma cota disfrazada. Lo que sí es numérico —y se derivó, no se
+  eligió: `(π/2)·ε/TOL_UMBRAL_NORMATIVO`— es dónde 1/cos deja de estar
+  determinado por el dato, y eso es lo que la guardia mide. El caso del
+  dictamen sigue **visible**: la longitud absurda llega a la memoria y G2 la
+  contrasta contra la cota del receptor, como MAT-O18 escribió.
+- **Qué haría falta:** un criterio `[A]` de nivel perfil con el esviaje máximo
+  que el proyecto acepta construir, su ventana y su fuente técnica ([C] si
+  alguna guía lo fija), leído por `factor_esviaje` con `valor_si_declarado` para
+  no mover la línea base mientras nadie lo declare. Es una decisión del
+  proyectista, no de esta sesión.
+- **Dónde vive:** `src/tolerancias.py::COS_ESVIAJE_MIN`
+
+## EXT-V-02 · La celda que la procedencia cita se infiere cuando la fila tiene una sola
+
+- **Qué se difirió:** exigir que la GUI y `declarar_desde_tabla` nombren
+  siempre la **columna** además de la fila. El prompt pedía guardar
+  `valor_de_la_celda` «cuando se nombra una fila y una columna con celda
+  escalar»; la ventana de la Tabla C.2 deja elegir sólo la fila (la tabla tiene
+  una columna de coeficientes), de modo que con la letra del prompt la
+  procedencia veraz no se habría activado nunca en el flujo real.
+- **Por qué:** `declaracion._celda_escalar` resuelve la celda también cuando se
+  nombra una sola fila que tiene **una sola** celda numérica; con varias celdas
+  numéricas (los tres n de la Tabla N.º 09), varias filas o una celda no
+  escalar devuelve `None` y la procedencia dice «fila» como hasta ahora. No es
+  una inferencia sobre el dato —la celda es la que la tabla imprime— sino sobre
+  cuál celda se está citando, y sólo cuando no hay ambigüedad posible. **Y la
+  celda sólo se cita cuando lo declarado es un número**: los criterios que
+  declaran la CLAVE de la fila (`ke_entrada_cajon`, `embocadura_cajon`) no
+  «difieren» de ninguna celda. Lo encontró el auditor adversarial de EXT-1: la
+  primera versión comparaba la clave con el coeficiente y rechazaba la
+  declaración legítima que hace la ventana de la GUI; hay test de regresión en
+  `tests/test_ext1_entradas.py`.
+- **Qué haría falta:** nada mientras la ventana siga ofreciendo fila y columna
+  por separado; si algún día exige la columna, la rama de una sola celda
+  numérica se vuelve redundante y se retira.
+- **Dónde vive:** `src/declaracion.py::_celda_escalar`
