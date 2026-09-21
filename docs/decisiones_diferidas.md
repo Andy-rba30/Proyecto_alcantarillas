@@ -2137,35 +2137,22 @@ esperaría o porque dejan algo abierto.
 
 - **Qué se difirió:** retirar de `cli.py` el bloque `from src.servicio import
   (...)  # noqa: F401` que reexporta lo que `gui/app.py` lee como `cli.X` y
-  lo que la suite lee como `cli._x` (`_verificador_perfil`, `_etapa`,
-  `_numero_externo`, `_fase_*`, `_bloqueo`, `_dato_externo`,
-  `_compuerta_metodo_h_o`, `_DOMINIO_DE_CLAVE`, `CLAVES_EXTERNAS`,
-  `FAMILIAS_QUE_USAN`, `MODULOS_DIFERIDOS_POR_ALCANCE`,
-  `VERIFICACIONES_DIFERIDAS_POR_ALCANCE`, ...), y con él las lecturas
-  `cli.X` de la GUI y de los archivos de tests que las escriben.
+  lo que la suite lee de `cli` (por atributo y por `from cli import`), y
+  con él esas lecturas.
 - **Por qué:** E01 pedía mover la orquestación sin cambiar el contrato de
-  quien la consume, y el prompt de EXT-9 lo dice con esas palabras: las
-  reexportaciones «se retiran solo cuando los 11 archivos de tests migren».
-  Migrarlos en la misma sesión habría mezclado el movimiento con una
-  reescritura de la suite que no cambia lo que se prueba. Lo que SÍ se fija
-  ya es que la reexportación no es una copia: `test_e03_cli_reexporta_el_
-  mismo_objeto_que_el_servicio` deriva el censo del AST de `gui/app.py` y de
-  los tests y exige identidad (`cli.X is servicio.X`), y los tres
-  `monkeypatch` que parcheaban sobre `cli` una función que el servicio LLAMA
-  (`disenar_punto`, `cadena_sismica`, `seleccionar_clase_calibre`) migraron
-  a `servicio`, porque ahí se resuelve el nombre y sobre `cli` habrían
-  dejado de tener efecto.
-- **Qué haría falta:** cambiar `cli.X` por `servicio.X` en `gui/app.py` y en
-  los archivos de tests que lo escriben (`test_cli`, `test_ext1_entradas`,
-  `test_ext3_regimen_barril`, `test_ext4_contexto_corrida`,
-  `test_ext5_forma_gui`, `test_ext6_registro_normativo`,
-  `test_ext8_rendimiento_gui`, `test_familias_del_csv`, `test_gui_contrato`,
-  `test_memoria_sustentada`, `test_nivel_medido`, `test_traza_punto`,
-  `test_anticipo`, `test_ayuda_entrada`, `test_cierre_perfil`,
-  `test_canal_discrepancias`, `test_M11_reporte` y los apoyos de ventana
-  real), retirar el bloque y dejar que `test_e03_cli_reexporta_el_mismo_
-  objeto_que_el_servicio` quede vacío de contrato —su censo sale del código,
-  así que se apaga solo—.
+  quien la consume («se retiran solo cuando los archivos de tests migren»).
+  Lo que SÍ se fija ya es que la reexportación es el MISMO objeto, con el
+  censo derivado del AST de la GUI y de la suite por las dos vías
+  (`test_e03_cli_reexporta_el_mismo_objeto_que_el_servicio`); los tres
+  `monkeypatch` sobre lo que el servicio LLAMA migraron a `servicio`. El
+  auditor adversarial midió que sólo cinco privados se leen como código y
+  que seis (`_etapa`, `_fase_*`, `_dato_externo`, `_avisar_ids_desconocidos`)
+  se conservan porque el prompt los nombra; y que los lectores son 17
+  archivos por atributo más 6 por `from cli import`, no once. La lista y la
+  razón viven en el bloque de imports de `cli.py`.
+- **Qué haría falta:** cambiar `cli.X` y `from cli import` por `servicio` en
+  `gui/app.py` y en esos archivos, retirar el bloque y dejar que el censo del
+  test —que sale del código— se apague solo.
 - **Dónde vive:** `cli.py::main`
 
 ## EXT-9-02 · La CLI se queda en la raíz: no hay `python -m src.cli`
@@ -2188,6 +2175,11 @@ esperaría o porque dejan algo abierto.
   `python -m src.indice_formulas` —como script, `sys.path[0]` es `src/` y el
   paquete no se ve—, igual que `tests/linea_base_familia_c/punto_cajon.py`
   (`python -m tests.linea_base_familia_c.punto_cajon` en `regenerar.sh`).
+  Por la misma razón `python gui/app.py` dejó de funcionar —`sys.path[0]`
+  sería `gui/`— y la escritura vigente es la del README, `python -m gui.app`;
+  la forma vieja sobrevive en documentos históricos
+  (`docs/auditoria_y_ruta_despliegue_v9.md`, `prompt_PD_piloto_dimensional.md`
+  con `python3 src/indice_formulas.py`), que no se reescriben.
 - **Qué haría falta:** si algún día el adaptador entra al paquete, un
   `src/cli.py` con el `main` actual y un `cli.py` de raíz que sólo lo
   invoque, actualizando a la vez el comando del hijo del PDF, el README y

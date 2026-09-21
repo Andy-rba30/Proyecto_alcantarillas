@@ -423,36 +423,76 @@ def test_e02_equivalencia_por_las_dos_puertas(tmp_path):
     """
     Las MISMAS entradas por el servicio (`cargar_datos_externos` + `correr`)
     y por la CLI (`cli.main` con las banderas equivalentes) dan las mismas
-    entradas resueltas, el mismo informe y el mismo contexto: se compara el
-    JSON entero salvo la marca de tiempo. Los datos declarados viajan con
-    su origen, de modo que la comparacion cubre tambien de donde salio cada
-    uno.
+    entradas resueltas, el mismo informe y el mismo contexto, en DOS
+    corridas: la del JSON de datos externos a secas, y la del JSON mas dos
+    banderas de linea de comandos (`--luz`, `--longitud`, que pisan al
+    global del archivo) y un `--declarar` (que entra por
+    `establecer_valor_dinamico`, la misma via que el servicio recibe ya
+    aplicada). Se compara el JSON entero salvo la marca de tiempo --- que
+    lleva los datos declarados con su origen, los criterios usados con su
+    valor efectivo y si se declararon en caliente, y las dos huellas --- y,
+    del contexto del servicio, los usos y la huella del CSV contra lo que la
+    CLI escribio.
+
+    Lo que NO cubre, dicho para que no se lea de mas: la puerta `--sesion`
+    (`aplicar_sesion_serializada`, que es de la CLI y la fija
+    `test_ext8_rendimiento_gui` por el subproceso del PDF) y el libro de
+    procedencias, que el JSON no exporta.
     """
     import cli
+    from src import criterios_adoptados as ca
     from src import servicio
 
-    externos = servicio.cargar_datos_externos(
-        EXTERNOS_EJEMPLO, {"luz_m": None, "TW_m": None, "longitud_m": None,
-                           "L_hidraulico_m": None, "categoria_tr": None})
-    por_servicio = servicio.correr(CSV_EJEMPLO, externos,
-                                   alcance=servicio.ALCANCE_EXPEDIENTE)
-    contexto_servicio = por_servicio.contexto
+    sin_banderas = {"luz_m": None, "TW_m": None, "longitud_m": None,
+                    "L_hidraulico_m": None, "categoria_tr": None}
+    con_banderas = {**sin_banderas, "luz_m": 3.0, "longitud_m": 15.0}
+    declarada = ("longitud_proteccion_salida", 3.0)
+    corridas = (
+        ("sin banderas", sin_banderas, [], {}),
+        ("con banderas y --declarar", con_banderas,
+         ["--luz", "3.0", "--longitud", "15.0",
+          "--declarar", f"{declarada[0]}={declarada[1]}"],
+         dict([declarada])),
+    )
+    for rotulo, banderas, argv_extra, declaraciones in corridas:
+        for clave, valor in declaraciones.items():
+            ca.establecer_valor_dinamico(clave, valor)
+        try:
+            externos = servicio.cargar_datos_externos(EXTERNOS_EJEMPLO, banderas)
+            por_servicio = servicio.correr(CSV_EJEMPLO, externos,
+                                           alcance=servicio.ALCANCE_EXPEDIENTE)
+        finally:
+            for clave in declaraciones:
+                ca.quitar_valor_dinamico(clave)
+        contexto_servicio = por_servicio.contexto
 
-    destino = tmp_path / "por_cli.json"
-    codigo = cli.main([str(CSV_EJEMPLO), "--datos-externos", str(EXTERNOS_EJEMPLO),
-                       "--alcance", servicio.ALCANCE_EXPEDIENTE,
-                       "--json", str(destino)])
-    assert codigo in (0, 1), codigo
-    por_cli = json.loads(destino.read_text(encoding="utf-8"))
+        destino = tmp_path / f"por_cli_{len(argv_extra)}.json"
+        codigo = cli.main([str(CSV_EJEMPLO), "--datos-externos",
+                           str(EXTERNOS_EJEMPLO), "--alcance",
+                           servicio.ALCANCE_EXPEDIENTE, "--json", str(destino)]
+                          + argv_extra)
+        for clave in declaraciones:        # `--declarar` vale para esa corrida
+            ca.quitar_valor_dinamico(clave)
+        assert codigo in (0, 1), (rotulo, codigo)
+        por_cli = json.loads(destino.read_text(encoding="utf-8"))
 
-    assert _sin_marca_de_tiempo(cli.informe_json(por_servicio)) \
-        == _sin_marca_de_tiempo(por_cli)
-    # El contexto: lo que la corrida uso y con que valores. La CLI vuelve a
-    # correr, de modo que el registro de usos tiene que ser el mismo.
-    assert contexto_servicio is not None
-    assert [c["clave"] for c in por_cli["criterios"]["usados"]] \
-        == list(contexto_servicio.criterios_usados)
-    assert por_cli["expediente"]["csv_sha1"] == contexto_servicio.csv_sha1
+        assert _sin_marca_de_tiempo(cli.informe_json(por_servicio)) \
+            == _sin_marca_de_tiempo(por_cli), rotulo
+        # El contexto: lo que la corrida uso y con que valores. La CLI
+        # vuelve a correr, de modo que el registro de usos es el mismo.
+        assert contexto_servicio is not None, rotulo
+        assert [c["clave"] for c in por_cli["criterios"]["usados"]] \
+            == list(contexto_servicio.criterios_usados), rotulo
+        assert por_cli["expediente"]["csv_sha1"] == contexto_servicio.csv_sha1
+        if declaraciones:
+            # Las de conftest.py tambien estan; la declarada aqui, ademas.
+            assert por_cli["criterios"]["declarados_en_caliente"] \
+                == list(contexto_servicio.declarados_en_caliente), rotulo
+            assert declarada[0] in contexto_servicio.declarados_en_caliente
+            origenes = {p["datos_declarados"]["luz_m"]["origen"]
+                        for p in por_cli["puntos"]
+                        if p["datos_declarados"].get("luz_m")}
+            assert origenes == {"linea de comandos (--luz_m)"}, origenes
 
 
 # ===========================================================================
@@ -466,32 +506,43 @@ def _atributos_de_cli_en(ruta: Path) -> set:
             and isinstance(nodo.value, ast.Name) and nodo.value.id == "cli"}
 
 
-def _privados_de_cli_en_la_suite() -> set:
+def _nombres_importados_de_cli_en(ruta: Path) -> set:
+    """Los nombres que un archivo trae con `from cli import a, b`."""
+    return {alias.name for nodo in ast.walk(_arbol(ruta))
+            if isinstance(nodo, ast.ImportFrom) and nodo.module == "cli"
+            for alias in nodo.names}
+
+
+def _lo_que_la_suite_lee_de_cli() -> set:
     """
-    Los `cli._x` que la suite ESCRIBE COMO CODIGO, leidos del AST de cada
-    archivo de tests (una mencion en prosa, como las de este docstring, no
-    es un uso).
+    Todo lo que la suite ESCRIBE COMO CODIGO sobre `cli`, leido del AST de
+    cada archivo de tests: los atributos `cli.x` y los nombres de
+    `from cli import ...` (una mencion en prosa, como las de este
+    docstring, no es un uso). La segunda via la añadio el auditor
+    adversarial de EXT-9: seis archivos importan `correr`,
+    `cargar_datos_externos` o `InformePunto` con `from cli import`, y un
+    censo solo de atributos no los veia.
     """
-    privados = set()
+    nombres = set()
     for ruta in (RAIZ / "tests").rglob("*.py"):
         if "__pycache__" in ruta.parts:
             continue
-        privados |= {n for n in _atributos_de_cli_en(ruta) if n.startswith("_")}
-    return {p for p in privados if not p.startswith("__")}
+        nombres |= _atributos_de_cli_en(ruta) | _nombres_importados_de_cli_en(ruta)
+    return {n for n in nombres if not n.startswith("__")}
 
 
 def test_e03_cli_reexporta_el_mismo_objeto_que_el_servicio():
     """
-    Cada atributo que `gui/app.py` lee de `cli`, y cada privado que la
-    suite lee de `cli`, existe en `cli` y --- cuando el servicio lo define ---
-    ES el mismo objeto. Sin identidad, un `monkeypatch.setattr(servicio, ...)`
+    Cada atributo que `gui/app.py` lee de `cli`, y cada nombre que la suite
+    lee de `cli` (por atributo o por `from cli import`), existe en `cli` y
+    --- cuando el servicio lo define --- ES el mismo objeto. Sin identidad, un `monkeypatch.setattr(servicio, ...)`
     no alcanzaria a lo que la CLI corre, y al reves.
     """
     import cli
     from src import servicio
 
     de_la_gui = _atributos_de_cli_en(RAIZ / "gui" / "app.py")
-    de_la_suite = _privados_de_cli_en_la_suite()
+    de_la_suite = _lo_que_la_suite_lee_de_cli()
     assert de_la_gui and de_la_suite, "el censo salio vacio"
     en_servicio = _definidos_en(SRC / "servicio.py")
     for nombre in sorted(de_la_gui | de_la_suite):

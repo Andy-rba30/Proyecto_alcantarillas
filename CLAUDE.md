@@ -133,7 +133,9 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   cosas: identidad (ningún archivo de `src/` bajo dos claves de
   `sys.modules`, medido en subproceso), estilo único y cero `sys.path` (por
   AST), servicio sin adaptadores (por AST y en proceso limpio) y equivalencia
-  por las dos puertas (mismo JSON y mismo contexto).
+  por las dos puertas (mismo JSON, mismos usos y misma huella del CSV, con y
+  sin banderas y `--declarar`; la puerta `--sesion` la fija EXT-8 por el
+  subproceso del PDF).
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None
@@ -525,7 +527,16 @@ base de la Familia C se regeneró por UNA sola razón medida con `diff`: la
 huella `criterios_sha1`, porque `criterios_adoptados.py` cambió sus líneas
 de import; ningún número de cálculo ni ningún otro byte se movió. Ninguno de
 los diecisiete depende de PyMuPDF ni de Tk, de modo que los cuatro pares
-suben 17 exactos. **EXT-8 (2026-09-20) sumó CUARENTA tests**: los 33 de
+suben 17 exactos. Las cuatro configuraciones se MIDIERON sobre `origin/main`
+en `dda328e` (el commit `ext(EXT-9)`, fusionado por fast-forward), en serie,
+sobre un checkout limpio (`git worktree`) y sin otra suite en marcha: las
+dos sin Tk sin `DISPLAY` y con un `xvfb-run` que falla, las dos sin PyMuPDF
+desinstalándolo y reinstalándolo. El commit de cierre que sigue a `dda328e`
+lleva los ajustes del auditor adversarial (la guardia del anticipo en
+`test_gui_contrato`, que buscaba `cli.X` en el `unparse` y quedó verde
+sobre el docstring cuando `anticipo.py` pasó a leer `servicio.X`; el censo
+de `from cli import` y la segunda corrida con banderas y `--declarar` en
+`test_ext9`) sin sumar ni restar tests, y «sí · sí» se remidió sobre él. **EXT-8 (2026-09-20) sumó CUARENTA tests**: los 33 de
 `tests/test_ext8_rendimiento_gui.py` —la aceptación del cluster «rendimiento
 y GUI no bloqueante» (PC-10, PC-11, PC-12, PC-17), escrita primero en rojo
 con `xfail(strict=True)` de módulo —medidos 28 xfailed y 0 XPASS antes de
@@ -791,10 +802,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 2511 (medido en EXT-8) | 4 |
-| sí | no | 2502 (medido en EXT-8) | 13 |
-| no | sí | 2476 (medido en EXT-8) | 39 |
-| no | no | 2467 (medido en EXT-8) | 48 |
+| sí | sí | 2528 (medido en EXT-9) | 4 |
+| sí | no | 2519 (medido en EXT-9) | 13 |
+| no | sí | 2493 (medido en EXT-9) | 39 |
+| no | no | 2484 (medido en EXT-9) | 48 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

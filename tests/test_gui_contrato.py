@@ -2285,24 +2285,35 @@ def test_el_contenido_del_anticipo_se_deriva_de_los_simbolos_censados():
     La otra mitad del contrato, sobre `src/anticipo.py`: el bloque 1 es la
     interseccion de `criterios_del_alcance` con `criterios_sin_valor`, el 2
     contrasta contra `COLUMNAS` y `VACIOS_ADMITIDOS` leyendo SOLO la cabecera
-    (`leer_cabecera`), y el 3 lee los dos diccionarios de diferimiento de
-    `cli`. Ninguna de esas listas puede estar escrita a mano.
+    (`leer_cabecera`), y el 3 lee los dos diccionarios de diferimiento del
+    servicio de calculo (`servicio`, desde EXT-9; `cli` hasta entonces).
+    Ninguna de esas listas puede estar escrita a mano.
+
+    SE MIRAN NODOS `Attribute`, NO EL TEXTO DE `ast.unparse`: hasta EXT-9 el
+    test buscaba la cadena `cli.X` en el unparse, que incluye los
+    docstrings, y quedo VERDE SOBRE EL DOCSTRING cuando el modulo paso a
+    leer `servicio.X` (lo encontro el auditor adversarial de EXT-9: el
+    patron FACTOR_MURO_TABLA que CLAUDE.md nombra). Los literales de la
+    pareja diferida se buscan sobre las constantes del arbol, por lo mismo.
     """
     arbol = ast.parse((RAIZ / "src" / "anticipo.py").read_text(
         encoding="utf-8"), filename="anticipo.py")
-    fuente = ast.unparse(arbol)
+    leidos = {f"{n.value.id}.{n.attr}" for n in ast.walk(arbol)
+              if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)}
     for simbolo in ("ca.criterios_del_alcance", "ca.criterios_sin_valor",
                     "m0.COLUMNAS", "m0.VACIOS_ADMITIDOS", "m0.leer_cabecera",
-                    "cli.VERIFICACIONES_DIFERIDAS_POR_ALCANCE",
-                    "cli.MODULOS_DIFERIDOS_POR_ALCANCE"):
-        assert simbolo in fuente, (
+                    "servicio.VERIFICACIONES_DIFERIDAS_POR_ALCANCE",
+                    "servicio.MODULOS_DIFERIDOS_POR_ALCANCE"):
+        assert simbolo in leidos, (
             f"src/anticipo.py dejo de leer '{simbolo}': ese bloque paso a "
             "ser una lista propia, que es justo lo que G3 prohibe")
-    # Sin literales de la pareja diferida: la lista se LEE de cli.
-    for literal in ("'V5'", '"V5"', "'V8'", '"V8"'):
-        assert literal not in fuente, (
-            f"src/anticipo.py escribe {literal} a mano: el bloque 3 tiene "
-            "que leerse de cli, no transcribirse")
+    # Sin literales de la pareja diferida: la lista se LEE del servicio.
+    constantes = {n.value for n in ast.walk(arbol)
+                  if isinstance(n, ast.Constant) and isinstance(n.value, str)}
+    for literal in ("V5", "V8"):
+        assert literal not in constantes, (
+            f"src/anticipo.py escribe {literal!r} a mano: el bloque 3 tiene "
+            "que leerse del servicio, no transcribirse")
 
 
 def test_el_boton_de_ejecutar_no_depende_del_anticipo():

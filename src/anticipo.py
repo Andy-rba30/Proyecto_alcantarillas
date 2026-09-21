@@ -38,9 +38,10 @@ Todo sale de donde ya vive, que es la regla que S21/S22 dejaron asentada:
                                    y M0_carga.leer_cabecera --- SOLO cabecera y
                                    conteo de celdas vacias, sin ejecutar la
                                    carga completa ---
-    lo que el alcance difiere      cli.VERIFICACIONES_DIFERIDAS_POR_ALCANCE y
-                                   cli.MODULOS_DIFERIDOS_POR_ALCANCE, los dos
-                                   consultados por la propia corrida
+    lo que el alcance difiere      servicio.VERIFICACIONES_DIFERIDAS_POR_ALCANCE
+                                   y servicio.MODULOS_DIFERIDOS_POR_ALCANCE,
+                                   los dos consultados por la propia corrida
+                                   (en `cli` hasta EXT-9)
 
 Este modulo no hace aritmetica sobre magnitudes --- cuenta filas y celdas,
 que es lo unico que un contraste de cabecera necesita --- y no toma ninguna
@@ -236,7 +237,7 @@ def lineas_del_contraste(contraste: ContrasteDelCSV) -> Tuple[str, ...]:
 
 @dataclass(frozen=True)
 class DiferimientosDelAlcance:
-    """Lo que una corrida de ese alcance difiere, leido de cli."""
+    """Lo que una corrida de ese alcance difiere, leido del servicio."""
 
     alcance: str
     verificaciones: Tuple[str, ...]
