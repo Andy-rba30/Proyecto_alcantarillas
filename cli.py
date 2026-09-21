@@ -155,7 +155,7 @@ import math
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 # Los modulos del calculador se importan del paquete `src` (EXT-9, PC-08):
 # esta CLI vive en la raiz del repositorio y la raiz la pone el interprete
@@ -208,7 +208,8 @@ from src.modulos.M11_reporte import (CriterioBloqueante,  # noqa: F401
 # que lo hacian sobre `cli` migraron.
 from src.servicio import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, DECIMALES_FACTOR,
                           FASE_CABEZAL, DatoDeclarado, Informe, InformeCabezal,
-                          InformePunto, _fmt, cargar_datos_externos, correr)
+                          InformePunto, _fmt, advertencia_de_corredor_de,
+                          cargar_datos_externos, cargar_datos_sitio, correr)
 from src.servicio import (  # noqa: F401  (reexportaciones: contrato GUI/suite)
     CLAVES_EXTERNAS, DatosExternos, FAMILIAS_QUE_USAN, FASE_ESTRUCTURAL,
     MODULOS_DIFERIDOS_POR_ALCANCE, NOTA_ESTABILIDAD_CABEZAL,
@@ -553,6 +554,12 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
             # memoria: la del CSV es de los bytes que M0 leyo (PC-09).
             "csv_sha1": contexto.csv_sha1,
             "criterios_sha1": contexto.criterios_sha1,
+            # El corredor para el que se leyeron los [S] de esta corrida, y
+            # de que archivo salio (EXT-V-01). La advertencia de corredor NO
+            # va aqui: depende del nombre del proyecto, que es presentacion.
+            "corredor_del_proyecto": {
+                "valor": contexto.dato_efectivo("corredor_del_proyecto").valor,
+                "origen": contexto.dato_efectivo("corredor_del_proyecto").origen},
             "puntos": len(informe.puntos),
             "dimensionados": informe.dimensionados,
             "cerrado": informe.cerrado},
@@ -567,13 +574,21 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
         "puntos": [_punto_json(p) for p in informe.puntos],
         "cabezal": _cabezal_json(informe.cabezal),
         "datos_sitio": {
+            # Valor, trazabilidad, fecha y ORIGEN de la corrida (EXT-10),
+            # leidos de la foto: un [S] declarado por sesion viaja con el
+            # archivo del que salio, y el del repositorio con el suyo.
             "usados": [{"clave": k, "etiqueta": ds.dato(k).etiqueta,
-                        "valor": _num(ds.dato(k).valor),
+                        "valor": _num(contexto.dato_efectivo(k).valor),
                         "concepto": ds.dato(k).concepto,
-                        "trazabilidad": ds.dato(k).trazabilidad,
-                        "ambito": ds.dato(k).ambito}
+                        "trazabilidad": contexto.dato_efectivo(k).trazabilidad,
+                        "ambito": ds.dato(k).ambito,
+                        "origen": contexto.dato_efectivo(k).origen,
+                        "fecha": contexto.dato_efectivo(k).fecha,
+                        "declarado_en_caliente":
+                            contexto.dato_efectivo(k).declarado_en_caliente}
                        for k in contexto.datos_usados],
-            "sin_valor_declarados": ds.datos_sin_valor(),
+            "sin_valor_declarados": list(contexto.datos_sin_valor),
+            "declarados_en_caliente": list(contexto.datos_declarados_en_caliente),
             "trazabilidad_incompleta": ds.datos_con_verificacion_pendiente()},
         "criterios": {
             # Valor EFECTIVO y procedencia: el JSON es el otro reporte de la
@@ -901,7 +916,8 @@ def volcar(informe: Informe, con_criterios: bool = False) -> str:
         contexto = ContextoCorrida.de(informe)
         lineas.append("")
         lineas.append(ds.reporte_datos_sitio(solo_usados=True,
-                                             usados=contexto.datos_usados))
+                                             usados=contexto.datos_usados,
+                                             efectivos=contexto.datos_efectivos))
         lineas.append("")
         lineas.append(ca.reporte_criterios(solo_usados=True, contexto=contexto))
     return "\n".join(lineas)
@@ -964,6 +980,17 @@ class SesionSerializada:
     alcance: Optional[str]
     criterios: Optional[Dict[str, Any]]
     formato_version: int
+    # Formato 3 (EXT-10, E04): identidad, la ruta del sitio.json, los [S]
+    # declarados por sesion, las corridas embebidas y los avisos de la
+    # migracion explicita con que se leyo. `nombre` es el del archivo, que
+    # es el origen que la memoria imprime para un [S] repuesto de aqui.
+    id: str = ""
+    datos_sitio: Optional[Path] = None
+    sitio: Optional[Dict[str, Any]] = None
+    corridas: Tuple[Dict[str, Any], ...] = ()
+    csv_sha1: str = ""
+    avisos: Tuple[str, ...] = ()
+    nombre: str = ""
 
 
 def cargar_sesion_serializada(ruta: Path) -> SesionSerializada:
@@ -973,12 +1000,23 @@ def cargar_sesion_serializada(ruta: Path) -> SesionSerializada:
     `ValueError` con la lista de defectos; un archivo ilegible sale como lo
     que es (OSError, UnicodeDecodeError, JSONDecodeError), fuera de
     ErrorProyecto, igual que el CSV.
+
+    Desde EXT-10 la MIGRACION ES EXPLICITA: lo crudo se valida, se lleva al
+    formato actual con `sesion.migrar_a_actual` (v1 o v2 se completan y
+    dicen que se completaron; una version desconocida es `ValueError`), y
+    se vuelve a validar lo migrado. Los avisos viajan en `avisos`.
     """
     data = json.loads(Path(ruta).read_text(encoding="utf-8"))
     errores = _sesion.errores_de_sesion(data)
     if errores:
         raise ValueError(
             f"la sesion «{Path(ruta).name}» no se puede aplicar: "
+            + "; ".join(errores))
+    data, avisos = _sesion.migrar_a_actual(data)
+    errores = _sesion.errores_de_sesion(data)
+    if errores:
+        raise ValueError(
+            f"la sesion «{Path(ruta).name}» no se puede aplicar tras migrarla: "
             + "; ".join(errores))
     alcance = data.get("alcance") or None
     if alcance is not None and alcance not in (ALCANCE_PERFIL, ALCANCE_EXPEDIENTE):
@@ -993,7 +1031,14 @@ def cargar_sesion_serializada(ruta: Path) -> SesionSerializada:
         banderas=_sesion.banderas_de_externos(data.get("externos", {}) or {}),
         alcance=alcance,
         criterios=data.get("criterios"),
-        formato_version=int(data.get("formato_version", 1)))
+        formato_version=int(data.get("formato_version", 1)),
+        id=str(data.get("id", "") or ""),
+        datos_sitio=Path(data["datos_sitio"]) if data.get("datos_sitio") else None,
+        sitio=data.get("sitio"),
+        corridas=tuple(data.get("corridas") or ()),
+        csv_sha1=str(data.get("csv_sha1", "") or ""),
+        avisos=tuple(avisos),
+        nombre=Path(ruta).name)
 
 
 def aplicar_sesion_serializada(sesion: SesionSerializada):
@@ -1005,6 +1050,48 @@ def aplicar_sesion_serializada(sesion: SesionSerializada):
     para que `main` lo diga.
     """
     return _declaracion.restaurar_sesion(sesion.criterios or {}, sustituir=True)
+
+
+def aplicar_sitio_de_sesion(sesion: SesionSerializada):
+    """
+    Repone los datos de sitio [S] del bloque `sitio` de la sesion (EXT-10),
+    sustituyendo lo que otra obra hubiera declarado, con la sesion como
+    origen. Hermana de `aplicar_sesion_serializada`, y aparte de ella para
+    no cambiar su contrato. Devuelve el `ResultadoDeRestauracion`.
+    """
+    return _declaracion.restaurar_datos_de_sitio(
+        sesion.sitio or {"valores": {}}, sustituir=True,
+        origen=f"sesion {sesion.nombre}")
+
+
+def _comparar_con_la_corrida_embebida(informe: Informe,
+                                      sesion: SesionSerializada) -> Optional[str]:
+    """
+    Si la sesion trae embebida una corrida del MISMO CSV y alcance, dice si
+    esta corrida la REPRODUCE (salvo la marca de tiempo) o DIFIERE de ella.
+    Es lo que las corridas embebidas de E04 permiten afirmar; nunca detiene
+    nada, y mientras el hijo del PDF recalcule (ficha EXT-8-02) es la unica
+    equivalencia que se mide sobre la sesion misma.
+    """
+    contexto = ContextoCorrida.de(informe)
+    candidatas = [c for c in sesion.corridas
+                  if isinstance(c, dict) and c.get("csv_sha1") == contexto.csv_sha1
+                  and c.get("alcance") == informe.alcance
+                  and isinstance(c.get("informe_json"), dict)]
+    if not candidatas:
+        return None
+    guardada = candidatas[-1]
+    propia = json.loads(json.dumps(informe_json(informe), ensure_ascii=False,
+                                   allow_nan=False))
+    igual = (_sesion.sin_marca_de_tiempo(propia)
+             == _sesion.sin_marca_de_tiempo(guardada["informe_json"]))
+    cuando = guardada.get("generado_utc", "?")
+    if igual:
+        return (f"Esta corrida REPRODUCE la guardada en la sesion el {cuando} "
+                "(mismo JSON salvo la marca de tiempo)")
+    return (f"Esta corrida DIFIERE de la guardada en la sesion el {cuando}: "
+            "el expediente, los criterios o los datos de sitio cambiaron "
+            "desde entonces; revise antes de dar la memoria por vigente")
 
 
 def _bandera_explicita(argv: Optional[Sequence[str]], nombre: str) -> bool:
@@ -1025,7 +1112,10 @@ def _parser() -> argparse.ArgumentParser:
                     "CSV de puntos criticos de Sec. 1.2.",
         epilog="Los datos que no son columna de Sec. 1.2 (luz, TW, longitud, "
                "Q/S de Familias B y C, L_hidraulico) se declaran con las "
-               "banderas o con --datos-externos. No tienen valor por defecto.")
+               "banderas o con --datos-externos. No tienen valor por defecto. "
+               "Los datos de sitio [S] de OTRA obra (PGA, corredor...) se "
+               "declaran con --datos-sitio, con trazabilidad y fecha; sin "
+               "el gobiernan los de datos_sitio.py, la obra del repositorio.")
     p.add_argument("csv", type=Path, nargs="?", default=None,
                    help="ruta del CSV de puntos criticos (se puede omitir "
                         "con --sesion, que lo trae)")
@@ -1046,6 +1136,14 @@ def _parser() -> argparse.ArgumentParser:
                         "como <csv>.informe.json)")
     p.add_argument("--datos-externos", type=Path, dest="datos_externos",
                    help="JSON con los datos declarados, globales y por punto")
+    p.add_argument("--datos-sitio", type=Path, dest="datos_sitio",
+                   help="JSON con los datos de sitio [S] de la obra que se "
+                        "calcula (EXT-10): por clave, {valor, trazabilidad, "
+                        "fecha}. Se declaran SOLO para esta corrida por la "
+                        "misma guardia que datos_sitio.py, que no se toca; "
+                        "la memoria imprime de que archivo salio cada [S]. "
+                        "Una bandera escrita gana al bloque 'sitio' de "
+                        "--sesion")
     p.add_argument("--declarar", action="append", default=[],
                    metavar="CLAVE=VALOR", dest="declaraciones",
                    help="declara un criterio de criterios_adoptados.py SOLO "
@@ -1179,6 +1277,24 @@ def _parece_numero_no_finito(texto: str) -> bool:
         return False
 
 
+def _aplicar_datos_de_sitio(args, sesion: Optional[SesionSerializada]):
+    """
+    Que datos de sitio gobiernan esta corrida, en orden de precedencia:
+    `--datos-sitio` escrito > bloque `sitio` de la sesion > ruta `datos_sitio`
+    de la sesion > nada (gobierna `datos_sitio.py`). Devuelve el
+    `ResultadoDeRestauracion` de lo aplicado, o None si no se aplico nada.
+    """
+    if args.datos_sitio is not None:
+        return cargar_datos_sitio(args.datos_sitio)
+    if sesion is None:
+        return None
+    if sesion.sitio and sesion.sitio.get("valores"):
+        return aplicar_sitio_de_sesion(sesion)
+    if sesion.datos_sitio is not None:
+        return cargar_datos_sitio(sesion.datos_sitio)
+    return aplicar_sitio_de_sesion(sesion)
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -1197,6 +1313,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         except (ValueError, KeyError) as exc:
             print(f"No se pudo aplicar la sesion: {exc}", file=sys.stderr)
             return 2
+        for aviso in sesion.avisos:
+            print(f"Sesion migrada: {aviso}")
+        if sesion.id:
+            print(f"Sesion {sesion.id} ({sesion.nombre})")
         if restauracion.restaurados:
             print("Criterios restaurados de la sesion SOLO para esta corrida: "
                   + ", ".join(restauracion.restaurados)
@@ -1213,6 +1333,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.alcance = sesion.alcance
     if args.csv is None:
         parser.error("hace falta el CSV de puntos criticos, o una --sesion que lo traiga")
+
+    # LOS DATOS DE SITIO DE LA OBRA (EXT-10): la bandera escrita gana al
+    # bloque `sitio` de la sesion; sin bandera se aplica el bloque, y si la
+    # sesion no trae bloque pero si la ruta del sitio.json, se lee la ruta.
+    # Va ANTES de --declarar y de correr, y en su propio `try` con el mismo
+    # brazo que --declarar: es una declaracion, y su rechazo es ValueError.
+    try:
+        sitio = _aplicar_datos_de_sitio(args, sesion)
+    except (ValueError, KeyError) as exc:
+        print(f"No se pudo declarar el dato de sitio: {exc}", file=sys.stderr)
+        return 2
+    if sitio is not None and sitio.restaurados:
+        print("Datos de sitio [S] declarados SOLO para esta corrida desde "
+              f"{ds.origen_de(sitio.restaurados[0])}: "
+              + ", ".join(sitio.restaurados)
+              + " (datos_sitio.py no se modifico)")
+    if sitio is not None:
+        for clave, motivo in sitio.rechazados:
+            print(f"NO se restauro el dato de sitio {clave}: {motivo}",
+                  file=sys.stderr)
 
     try:
         declaradas = declarar_criterios(args.declaraciones)
@@ -1267,6 +1407,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     print(volcar(informe, con_criterios=args.criterios))
 
+    # La advertencia de corredor (EXT-V-01) y, si la sesion trae la corrida
+    # embebida, si esta la reproduce (E04). Ninguna detiene nada.
+    advertencia = advertencia_de_corredor_de(args.proyecto, ContextoCorrida.de(informe))
+    if advertencia:
+        print(f"\n{advertencia}")
+    if sesion is not None:
+        comparacion = _comparar_con_la_corrida_embebida(informe, sesion)
+        if comparacion:
+            print(f"\n{comparacion}")
+
     # LA MEMORIA SE ARMA ANTES DE ESCRIBIR EL JSON (PC-35): si la plantilla
     # no imprime un bloque que esta corrida SI produjo (`ValueError` del
     # contrato de marcadores, SIS-B-06), o si algun bloque de la memoria se
@@ -1282,10 +1432,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 2
 
     destino = args.json_salida or args.csv.with_suffix(".informe.json")
-    destino.write_text(
-        json.dumps(informe_json(informe), ensure_ascii=False, indent=2,
-                   allow_nan=False),
-        encoding="utf-8")
+    # Escritura atomica (E04): nunca un JSON a medias en disco.
+    _sesion.escribir_json_atomico(destino, informe_json(informe))
     print(f"\nJSON del expediente: {destino}")
 
     if args.html_salida is not None:

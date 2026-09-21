@@ -2430,3 +2430,67 @@ def test_ext8_la_ventana_real_exporta_sin_bloquear_y_responde_al_teclado(tmp_pat
     else:
         assert obs["html_navegador_existe"] is True
         assert "weasyprint" in obs["rotulo_estado_final"]
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_ext10_la_ventana_real_calcula_dos_obras_una_vacia_y_abre_B_tras_A(tmp_path):
+    """
+    EXT-10 sobre la ventana de verdad (EXT-V-01, E04): ver
+    `tests/apoyo/gui_ext10_real.py`. Lo que el AST no puede ver: el valor
+    real del campo «JSON de datos de sitio» tras cargar una sesion, el
+    archivo real que «Guardar sesion» escribe (formato 3 con id, sitio y
+    corridas embebidas), y que PGA gobierna de verdad la corrida de la
+    ventana con la obra A, con la obra vacia y con la obra B abierta tras A.
+    """
+    import json
+    import subprocess
+
+    from src import datos_sitio as ds
+    from tests.apoyo.aproximacion import REL_TRANSPORTE
+
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ext10_real",
+                       str(tmp_path)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=900)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    r = json.loads((tmp_path / "resumen_ext10.json").read_text(encoding="utf-8"))
+
+    # 1. La obra A gobierna con su PGA y la memoria sabe de que archivo salio.
+    assert r["pga_A"] == pytest.approx(0.40, rel=REL_TRANSPORTE)
+    assert r["origen_A"].endswith("sitio_A.json")
+    assert r["corredor_A"] == "Obra A, km 0-4"
+    assert all(r["exportadores_tras_A"].values())
+
+    # 2. La sesion guardada es formato 3 y lleva lo que E04 pide.
+    g = r["sesion_guardada"]
+    assert g["formato_version"] == 3 and g["id"] == r["id_inicial"]
+    assert g["datos_sitio"].endswith("sitio_A.json")
+    assert g["claves_sitio"] == ["PGA_roca_B", "corredor_del_proyecto"]
+    assert g["csv_sha1"] and g["corridas"] == 1 and g["corrida_tiene_informe"]
+    assert g["errores"] == []
+
+    # 3. La obra vacia: nada declarado, identidad nueva, el archivo gobierna.
+    n = r["tras_nuevo"]
+    assert n["campo_sitio"] == "" and n["proyecto"] == "" and n["csv"] == ""
+    assert n["informe_es_None"] and not any(n["exportadores"].values())
+    assert n["declarados"] == [] and n["id_cambio"] and n["corridas"] == 0
+    assert r["pga_vacia"] == pytest.approx(0.50, rel=REL_TRANSPORTE)
+    assert r["origen_vacia"] == ds.ORIGEN_ARCHIVO
+
+    # 4. Abrir B tras A: sustituye, y lo que gobierna es lo de B.
+    b = r["tras_cargar_B"]
+    assert b["campo_sitio"] == "" and b["id"] == b["id_esperado"]
+    assert b["declarados"] == ["PGA_roca_B", "corredor_del_proyecto"]
+    assert b["pga_efectivo"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
+    assert b["origen"].startswith("sesion ") and b["informe_es_None"]
+    assert r["pga_B"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
+    assert r["corredor_B"] == "Obra B, km 10-12"
+
+    # 5. Un sitio.json malo no corre, lo dice, y no toca lo que gobernaba.
+    m = r["tras_malo"]
+    assert m["informe_es_None"] and "PGA_rocaB" in m["error_visible"]
+    assert m["pga_efectivo"] == pytest.approx(0.30, rel=REL_TRANSPORTE)

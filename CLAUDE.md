@@ -51,6 +51,33 @@ varía punto a punto, es columna del CSV (NF_profundidad_m, cbr_subrasante). Un
 [S] pendiente de ensayo que además comparte tablero con los criterios puede
 quedar en criterios_adoptados.py con el campo `trazabilidad`.
 
+**Y desde EXT-10 hay una tercera casa, la de OTRA OBRA sobre el mismo
+despliegue: un [S] declarado por sesión.** Hasta EXT-10 el repositorio ERA
+un expediente: los [S] de corredor de La Unión están en datos_sitio.py y no es
+hardcoding sino diseño (EXT-V-01, decidido en EXT-0). Lo que faltaba era un
+requisito de producto —calcular un segundo corredor sin editar código—, y se
+resuelve así: un [S] declarado por sesión vive en el bloque `sitio` de la
+sesión JSON (`FORMATO_SESION = 3`, `src/sesion.py`) y entra al proceso por
+`--datos-sitio sitio.json` en la CLI —hermano de `--datos-externos`— o por el
+campo «JSON de datos de sitio» de la pestaña 1 de la GUI, SIEMPRE por
+`datos_sitio.establecer_dato_dinamico(clave, valor, trazabilidad, fecha)`, que
+construye el dato por `dataclasses.replace` y lo somete a la MISMA guardia que
+el archivo (`_verificar_dato`), exige trazabilidad no vacía y fecha, y rechaza
+un dato `Derivada` (`Z_E030` se deriva de la zona, no se declara). Cuatro
+cosas que la casa nueva NO cambia: (1) el programa nunca escribe
+datos_sitio.py —la sesión aporta el VALOR y su lectura; la ficha (concepto,
+procedimiento, fuente, ámbito) sigue en el archivo—; (2) los valores del
+archivo siguen siendo los de la obra del repositorio, y un proyecto nuevo se
+crea cargando una sesión vacía, no vaciando el archivo; (3) la memoria y el
+JSON imprimen DE QUÉ ARCHIVO salió cada [S] (datos_sitio.py o el sitio.json /
+la sesión), leído del `ContextoCorrida` de la corrida y no del estado vivo, y
+la memoria advierte cuando el nombre de `--proyecto` no coincide con el
+`corredor_del_proyecto` efectivo; (4) la ventana normativa sigue sin declarar
+[S] (regla R4: el camino es la sesión, no un campo de formulario). Y todo
+`DatoSitio` lleva `nivel`, como los criterios: medido por corridas, la de
+perfil no lee ningún [S] y la de expediente sólo `PGA_roca_B`
+(`tests/test_ext10_multiobra.py`).
+
 Tabla y elección se separan siempre: los valores de una tabla normativa son
 [N] y viven en constantes_normativas.py (F_PGA_TABLA,
 REDUCCION_KH_POR_DESPLAZAMIENTO); cuál fila aplica a esta obra es [A] y vive
@@ -82,6 +109,12 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   resultado del cálculo, no va ahí. datos_sitio.py está exento por la razón
   CONTRARIA: sus números sí son valores de proyecto, y de los más pesados —
   está aparte porque no son constantes universales, no porque no importen.
+  Desde EXT-10 un [S] de otra obra puede pisar el del archivo SOLO por
+  sesión (`establecer_dato_dinamico`, con trazabilidad y fecha, registrado
+  como «declarado (sesión)» en la memoria con el valor del archivo al lado):
+  datos_sitio.py sigue siendo el único archivo de [S] de corredor del
+  repositorio, y ningún módulo de cálculo lee un [S] por otra vía que
+  `datos_sitio.valor`.
   G_LAUSHEY = 9.8 SÍ vive en constantes_normativas.py, a pesar de ser
   numéricamente el mismo concepto físico: es el valor que la Sec. 4.1.1.3.7 c)
   de la hoja de ruta escribe explícitamente para su fórmula de d50, y separarlo

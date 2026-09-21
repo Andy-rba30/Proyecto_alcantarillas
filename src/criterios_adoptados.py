@@ -78,6 +78,9 @@ from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
                      CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
                      DeTabla, EnRango, Libre, ModoDeResolucion, Resolucion,
                      modo_de)
+from src.modelos import NIVEL_EXPEDIENTE as _NIVEL_EXPEDIENTE
+from src.modelos import NIVEL_PERFIL as _NIVEL_PERFIL
+from src.modelos import NIVELES as _NIVELES
 
 # Las CUATRO importaciones de constantes normativas que hace este archivo
 # entran por la misma razon, y ninguna transcribe nada: referencian lo que ya
@@ -113,9 +116,14 @@ from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
 # ENTREGA pertenece el criterio. Un estudio de PERFIL cierra con los primeros
 # declarados; los segundos son del expediente tecnico, y `--alcance perfil`
 # difiere sus etapas con su fundamento en el bloque de alcance.
-NIVEL_PERFIL = "perfil"
-NIVEL_EXPEDIENTE = "expediente"
-NIVELES = (NIVEL_PERFIL, NIVEL_EXPEDIENTE)
+#
+# Desde EXT-10 los tres nombres se DEFINEN en `modelos.py` --- los lleva
+# tambien `DatoSitio.nivel`, y `datos_sitio` no puede importar este modulo
+# --- y aqui se reexportan con los mismos nombres, que son los que leen la
+# GUI, `variables_entrada` y la suite (`ca.NIVEL_PERFIL`).
+NIVEL_PERFIL = _NIVEL_PERFIL
+NIVEL_EXPEDIENTE = _NIVEL_EXPEDIENTE
+NIVELES = _NIVELES
 
 # La etiqueta que exige ventana, y es UNA. CLAUDE.md lo escribe en la propia
 # definicion de la taxonomia: «[A] Sin norma ni fuente unica. Adopcion

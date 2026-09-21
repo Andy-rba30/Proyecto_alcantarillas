@@ -138,10 +138,14 @@ Los tres hechos que el expediente sí declara, cada uno con su cita y **sin tras
 
 **Regla arquitectónica:** todo parámetro que no sea una exigencia normativa verificada se declara **una sola vez**, en `criterios_adoptados.py`, y se propaga desde allí.
 
+> **Corregido (`EXT-V-01`, EXT-10).** La regla es de **un solo punto de definición**, no de un solo archivo, y la frase de arriba se quedó corta dos veces. Primero, desde S14 los datos de sitio **[S]** de corredor —el PGA del mapa, la zona sísmica, el corredor mismo— viven en `datos_sitio.py` y no en `criterios_adoptados.py`, porque no se eligen: se leen (taxonomía [S] de `CLAUDE.md`). Segundo, la auditoría externa del 2026-09-19 (V-01) leyó esos [S] como «hardcoding indebido», y no lo son: el repositorio **es** el expediente de una obra y un [S] con trazabilidad en un archivo versionado es más revisable que un campo de formulario. Lo que faltaba era un **requisito de producto**: que el mismo despliegue calcule **otra obra** sin editar código. Desde EXT-10 un [S] de otra obra se declara **por sesión** —bloque `sitio` de la sesión JSON, formato 3, o `--datos-sitio sitio.json`— con **trazabilidad y fecha obligatorias**, por la misma guardia que el archivo (`datos_sitio.establecer_dato_dinamico`); la sesión aporta el **valor y su lectura**, la ficha (concepto, procedimiento, fuente, ámbito) sigue definida **una sola vez** en `datos_sitio.py`, y la memoria imprime de qué archivo salió cada [S] y advierte si el nombre del proyecto no coincide con `corredor_del_proyecto`. Un proyecto nuevo se crea cargando una sesión vacía, nunca vaciando `datos_sitio.py`. El defecto era de esta hoja: describía dos contenedores donde el código tiene tres, y ninguno para la obra que no es la del repositorio.
+
 | Contenedor | Qué contiene |
 |---|---|
 | **Anexo B** | Solo constantes **[N]** con numeral verificado |
 | **`criterios_adoptados.py`** | Todo **[N→]**, **[C]** y **[A]**, con valor, etiqueta, justificación, fuente, ensayo que lo sustituye, rango de sensibilidad y verificación pendiente |
+| **`datos_sitio.py`** | Los **[S]** únicos para todo el corredor de la obra del repositorio, con procedimiento, fuente, trazabilidad, ámbito y nivel (EXT-10) |
+| **Sesión JSON, bloque `sitio`** (formato 3, EXT-10) | Los **[S]** de OTRA obra, declarados por sesión con valor, trazabilidad y fecha; la memoria los imprime como «declarado (sesión)» con el valor del archivo al lado |
 
 La inconsistencia Clase D/F que motivó la v5 no fue un error de cálculo: fue el mismo parámetro definido dos veces en dos lugares. Un único punto de definición hace esa contradicción estructuralmente imposible.
 

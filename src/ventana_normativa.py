@@ -1031,9 +1031,11 @@ def contenido_de_campo(clave: str) -> ContenidoDeCampo:
 #
 #   una COLUMNA DEL CSV es un dato por punto: su sitio es el CSV, y declararla
 #   aqui pondria el mismo numero en los 40 cruces;
-#   un DATO DE SITIO es un hecho determinado por un procedimiento, y
-#   `datos_sitio.py` NO TIENE API DE ESCRITURA a proposito -- el unico camino
-#   es construir el `DatoSitio`, con su trazabilidad, en el archivo.
+#   un DATO DE SITIO es un hecho determinado por un procedimiento, y no se
+#   elige en un formulario: el de la obra del repositorio se construye en
+#   `datos_sitio.py` con su trazabilidad, y el de OTRA obra entra por SESION
+#   (bloque `sitio` de la sesion formato 3 o `--datos-sitio sitio.json`, con
+#   trazabilidad y fecha; EXT-10, EXT-V-01), nunca por esta ventana.
 #
 # En los dos casos la ventana MUESTRA todo y no deja declarar, diciendo de
 # donde tiene que venir el valor. Es la misma regla R4 aplicada a la variable
@@ -1047,9 +1049,12 @@ _POR_QUE_NO_DECLARABLE: Dict[Poblacion, str] = {
         "mismo numero en todos los cruces",
     Poblacion.DATO_SITIO:
         "es un dato de sitio [S]: un hecho determinado por un procedimiento "
-        "sobre las coordenadas de esta obra. Se escribe en datos_sitio.py con "
-        "su procedimiento y su trazabilidad; el archivo no tiene API de "
-        "escritura y esta ventana no la inventa",
+        "sobre las coordenadas de esta obra. El de la obra del repositorio "
+        "esta escrito en datos_sitio.py con su procedimiento y su "
+        "trazabilidad; el de otra obra se declara por sesion (bloque 'sitio' "
+        "de la sesion, o --datos-sitio sitio.json / el campo «JSON de datos "
+        "de sitio» de la pestaña 1), con trazabilidad y fecha, y no desde "
+        "esta ventana",
     Poblacion.DATO_EXTERNO:
         "es un dato externo del expediente: entra por bandera o por el JSON "
         "de --datos-externos (pestaña 1), para toda la corrida o punto a "

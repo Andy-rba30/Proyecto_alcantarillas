@@ -1984,12 +1984,23 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
 # 3. Declaracion de criterios adoptados (entregable 2)
 # ===========================================================================
 
-def bloque_datos_sitio(contexto: Any, solo_usados: bool = True) -> str:
+def bloque_datos_sitio(contexto: Any, solo_usados: bool = True, *,
+                       proyecto: str = "") -> str:
     """
     Los datos de sitio [S] que el calculo invoco --- leidos del
     `ContextoCorrida` del informe, no del registro vivo (EXT-4) ---, cada uno
-    con el procedimiento que lo produjo y la trazabilidad que permite
-    repetirlo.
+    con el procedimiento que lo produjo, la trazabilidad que permite
+    repetirlo y, desde EXT-10, DE QUE ARCHIVO SALIO: `datos_sitio.py` (la
+    obra del repositorio) o el `sitio.json` / la sesion de otra obra. Un [S]
+    declarado por sesion que PISA un valor del archivo se imprime con lo que
+    el archivo dice al lado, como los criterios pisados en caliente: tantear
+    no es falsear, y la memoria tiene que dejar ver las dos cosas.
+
+    Abre con el corredor para el que se leyeron los datos de sitio de ESTA
+    corrida y, si el nombre del proyecto no coincide con el, con la
+    advertencia de corredor (EXT-V-01). El texto lo pone
+    `datos_sitio.advertencia_de_corredor`, una funcion pura sin estado;
+    aqui no se normaliza ni se compara nada, solo se formatea.
 
     Va delante de los criterios y no mezclado con ellos: un [S] no se defiende
     con un rango de sensibilidad -- no hay nada que elegir -- sino diciendo
@@ -1997,22 +2008,42 @@ def bloque_datos_sitio(contexto: Any, solo_usados: bool = True) -> str:
     eleccion de F_pga son la misma clase de afirmacion, y son lo contrario:
     uno es un hecho del sitio y el otro una decision del proyectista.
     """
+    corredor = contexto.dato_efectivo("corredor_del_proyecto")
+    partes: List[str] = [
+        '<p class="corredor">Corredor de los datos de sitio: '
+        f"<b>{_esc(str(corredor.valor))}</b> (origen: "
+        f"<code>{_esc(corredor.origen)}</code>)</p>"]
+    advertencia = ds.advertencia_de_corredor(proyecto, str(corredor.valor),
+                                             corredor.origen)
+    if advertencia:
+        partes.append(f'<div class="aviso"><p><b>{_esc(advertencia)}</b></p></div>')
+
     claves = sorted(contexto.datos_usados if solo_usados else ds.DATOS_SITIO)
     if not claves:
-        return ('<div class="aviso"><p>Esta corrida no invoco ningun dato de '
-                "sitio.</p></div>")
+        partes.append('<div class="aviso"><p>Esta corrida no invoco ningun dato '
+                      "de sitio.</p></div>")
+        return "".join(partes)
 
-    partes: List[str] = []
     for clave in claves:
         d = ds.dato(clave)
+        efectivo = contexto.dato_efectivo(clave)
         campos = [
             f"<dt>Concepto</dt><dd>{_esc(d.concepto)}</dd>",
-            f"<dt>Valor</dt><dd>{_valor_legible(d.valor)}</dd>",
+            f"<dt>Valor</dt><dd>{_valor_legible(efectivo.valor)}</dd>",
             f"<dt>Procedimiento</dt><dd>{_esc(d.procedimiento)}</dd>",
             f"<dt>Fuente</dt><dd>{_esc(d.fuente)}</dd>",
-            f"<dt>Trazabilidad</dt><dd>{_esc(d.trazabilidad)}</dd>",
+            f"<dt>Trazabilidad</dt><dd>{_esc(efectivo.trazabilidad)}</dd>",
             f"<dt>Ambito</dt><dd>{_esc(d.ambito)}</dd>",
+            f"<dt>Origen</dt><dd><code>{_esc(efectivo.origen)}</code></dd>",
         ]
+        if efectivo.declarado_en_caliente:
+            del_archivo = ("el archivo no lo tenia leido" if d.valor is None
+                           else f"el archivo dice {_valor_legible(d.valor)}")
+            campos.append(
+                '<dt class="pendiente">declarado (sesion)</dt>'
+                f'<dd class="pendiente">el {_esc(efectivo.fecha)}, desde '
+                f"<code>{_esc(efectivo.origen)}</code>; {del_archivo} "
+                f"(<code>{_esc(ds.ORIGEN_ARCHIVO)}</code>)</dd>")
         if d.reemplazado_por:
             campos.append("<dt>Lo sustituye</dt>"
                           f"<dd>{_esc(d.reemplazado_por)}</dd>")
@@ -3397,7 +3428,8 @@ def memoria_html_por_partes(
         "memorias_punto": "hay puntos" if n_puntos else "",
         "filas_resumen": "".join(fila_resumen(p, tipo_cabezal)
                                  for p in informe.puntos),
-        "bloque_datos_sitio": bloque_datos_sitio(contexto, solo_usados=True),
+        "bloque_datos_sitio": bloque_datos_sitio(contexto, solo_usados=True,
+                                                 proyecto=proyecto),
         "bloque_criterios": bloque_criterios(contexto, solo_usados=True),
         "bloque_pendientes": bloque_pendientes(tableros, bloqueantes, contexto,
                                               alcance=informe.alcance),

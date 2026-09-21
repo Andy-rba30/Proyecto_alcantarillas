@@ -199,7 +199,7 @@ ninguna es auditable.</p>
     <tr><th>Hoja de ruta (fuente normativa unica)</th>
         <td><b>v7</b> &mdash; <span class="mono">hoja_de_ruta_alcantarillas_v8.md</span></td></tr>
     <tr><th>SHA-1 de la hoja de ruta</th>
-        <td class="mono">2b2f96301044998dbd92bf2e1c3c6a709e7a2a7b</td></tr>
+        <td class="mono">0b9056cd2d0b2dbf8c6fc163e9f9fc89067c3bc2</td></tr>
     <tr><th>CSV de entrada</th>
         <td><span class="mono">tests/ejemplo_puntos.csv</span></td></tr>
     <tr><th>SHA-1 del CSV de entrada</th>
@@ -209,7 +209,7 @@ ninguna es auditable.</p>
     <tr><th>Fecha de criterios_adoptados.py</th>
         <td><FECHA></td></tr>
     <tr><th>SHA-1 de criterios_adoptados.py</th>
-        <td class="mono">71f9047c2c288608966f30404ff9232c7050e16f</td></tr>
+        <td class="mono">6d12e40aa526b5bdb47f9942783380d38977917e</td></tr>
     <tr><th>Fecha de generacion</th>
         <td><FECHA> &nbsp;(corrida UTC: <UTC>)</td></tr>
     <tr><th>Estado del expediente</th>
@@ -352,7 +352,7 @@ revisor <b>repetir la lectura</b> y llegar al mismo numero. Los que valen para
 todo el corredor salen de <code>datos_sitio.py</code>; los que varian punto a
 punto son columnas del CSV y viajan en la memoria de cada punto.</p>
 
-<div class="criterio"><p class="clave"><span class="etiqueta et-S">S</span> <code>PGA_roca_B</code></p><dl><dt>Concepto</dt><dd>Aceleracion pico del terreno en roca Clase B, Tr = 1000 anios, en g</dd><dt>Valor</dt><dd>0.5</dd><dt>Procedimiento</dt><dd>Lectura del mapa de isoaceleraciones espectrales sobre la ubicacion del proyecto. El mapa es normativo; el numero que se lee en el depende de la coordenada, y por eso el valor es [S] y no [N]: en otra provincia el MISMO mapa da otro numero</dd><dt>Fuente</dt><dd>Manual de Puentes MTC, Apendice A3, mapa &#x27;Isoaceleraciones Espectrales Suelo Tipo B, AASHTO 2014 (Roca). Periodo estructural 0.0 seg (PGA)&#x27; - descartados los mapas de Ss y S1</dd><dt>Trazabilidad</dt><dd>Lectura declarada para el distrito de La Union, Piura (Sec. 0.4 de la hoja de ruta, num. 83). LA COORDENADA EXACTA Y LA CURVA DE ISOACELERACION SOBRE LA QUE SE HIZO LA LECTURA NO ESTAN REGISTRADAS todavia: es el pendiente 1.4 del tablero de la hoja de ruta, abierto. Mientras siga abierto, la reproducibilidad de este dato llega hasta el nombre del distrito y no hasta el punto del mapa</dd><dt>Ambito</dt><dd>todo el corredor (terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150)</dd><dt class="pendiente">Verificar</dt><dd class="pendiente">Registrar en la memoria las coordenadas o la curva de isoaceleracion de la lectura (pendiente 1.4). Al registrarlas, comprobar sobre el mapa si la curva cambia dentro de los ~5 km del corredor: si cambiara, este dato deja de ser unico para el tramo y pasa a ser columna del CSV, como NF_profundidad_m</dd></dl></div><div class="aviso"><p><b>Advertencia.</b> Los datos de sitio <code>PGA_roca_B</code> tienen la trazabilidad incompleta: el valor esta leido, pero la memoria todavia no dice sobre que punto exacto se leyo y un revisor no puede reproducir la lectura.</p></div>
+<p class="corredor">Corredor de los datos de sitio: <b>terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150</b> (origen: <code>src/datos_sitio.py</code>)</p><div class="criterio"><p class="clave"><span class="etiqueta et-S">S</span> <code>PGA_roca_B</code></p><dl><dt>Concepto</dt><dd>Aceleracion pico del terreno en roca Clase B, Tr = 1000 anios, en g</dd><dt>Valor</dt><dd>0.5</dd><dt>Procedimiento</dt><dd>Lectura del mapa de isoaceleraciones espectrales sobre la ubicacion del proyecto. El mapa es normativo; el numero que se lee en el depende de la coordenada, y por eso el valor es [S] y no [N]: en otra provincia el MISMO mapa da otro numero</dd><dt>Fuente</dt><dd>Manual de Puentes MTC, Apendice A3, mapa &#x27;Isoaceleraciones Espectrales Suelo Tipo B, AASHTO 2014 (Roca). Periodo estructural 0.0 seg (PGA)&#x27; - descartados los mapas de Ss y S1</dd><dt>Trazabilidad</dt><dd>Lectura declarada para el distrito de La Union, Piura (Sec. 0.4 de la hoja de ruta, num. 83). LA COORDENADA EXACTA Y LA CURVA DE ISOACELERACION SOBRE LA QUE SE HIZO LA LECTURA NO ESTAN REGISTRADAS todavia: es el pendiente 1.4 del tablero de la hoja de ruta, abierto. Mientras siga abierto, la reproducibilidad de este dato llega hasta el nombre del distrito y no hasta el punto del mapa</dd><dt>Ambito</dt><dd>todo el corredor (terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150)</dd><dt>Origen</dt><dd><code>src/datos_sitio.py</code></dd><dt class="pendiente">Verificar</dt><dd class="pendiente">Registrar en la memoria las coordenadas o la curva de isoaceleracion de la lectura (pendiente 1.4). Al registrarlas, comprobar sobre el mapa si la curva cambia dentro de los ~5 km del corredor: si cambiara, este dato deja de ser unico para el tramo y pasa a ser columna del CSV, como NF_profundidad_m</dd></dl></div><div class="aviso"><p><b>Advertencia.</b> Los datos de sitio <code>PGA_roca_B</code> tienen la trazabilidad incompleta: el valor esta leido, pero la memoria todavia no dice sobre que punto exacto se leyo y un revisor no puede reproducir la lectura.</p></div>
 
 <h3>3.2 Criterios adoptados</h3>
 

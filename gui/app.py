@@ -436,6 +436,16 @@ class ExpedienteApp:
         self.proyecto_var = tk.StringVar()
         self.csv_var = tk.StringVar()
         self.datos_externos_var = tk.StringVar()
+        # El JSON de datos de sitio [S] de la obra (EXT-10, EXT-V-01): hermano
+        # del de datos externos. Vacio, gobiernan los de datos_sitio.py.
+        self.datos_sitio_var = tk.StringVar()
+        # LA IDENTIDAD DE LA SESION Y SUS CORRIDAS (E04): la sesion es el
+        # unico lugar del «proyecto actual». El id nace con la ventana (una
+        # sesion vacia) y se sustituye al cargar otra; cada corrida que
+        # termina se guarda con su `informe_json` embebido.
+        sesion_inicial = ses.sesion_vacia(APP_VERSION)
+        self.sesion_id = sesion_inicial["id"]
+        self.corridas = list(sesion_inicial["corridas"])
         self.externos_vars = {clave: tk.StringVar() for clave, *_r in CAMPOS_EXTERNOS}
         # El defecto es el MISMO que el de `cli.py` (`--alcance`, choices con
         # default `expediente`), y se lee de alli en vez de escribirse otra
@@ -554,6 +564,10 @@ class ExpedienteApp:
 
         barra = ttk.Frame(contenedor, padding=(0, 10, 0, 0))
         barra.pack(fill="x")
+        # «Nuevo proyecto» es como se crea OTRA obra sobre el mismo
+        # despliegue (EXT-10): se carga una sesion vacia, nunca se vacia
+        # datos_sitio.py ni criterios_adoptados.py.
+        ttk.Button(barra, text="Nuevo proyecto", command=self.nuevo_proyecto).pack(side="left", padx=4)
         ttk.Button(barra, text="Guardar sesion", command=self.guardar_sesion).pack(side="left", padx=4)
         ttk.Button(barra, text="Cargar sesion", command=self.cargar_sesion).pack(side="left", padx=4)
         ttk.Button(barra, text="Importar decisiones",
@@ -625,6 +639,25 @@ class ExpedienteApp:
         Tooltip(ent_ext, "JSON con secciones 'globales' y/o 'puntos', igual que\n"
                          "el '--datos-externos' de cli.py. Una bandera de abajo\n"
                          "pisa al valor global de este archivo.")
+
+        # LOS DATOS DE SITIO [S] DE OTRA OBRA (EXT-10, EXT-V-01): clon de la
+        # fila del JSON de datos externos. Vacio, gobiernan los del archivo
+        # datos_sitio.py --- la obra del repositorio --- y la memoria lo dice.
+        ttk.Label(f_proj, text="JSON de datos de sitio (opcional):").grid(
+            row=3, column=0, sticky="w", padx=5, pady=4)
+        ent_sitio = ttk.Entry(f_proj, textvariable=self.datos_sitio_var)
+        ent_sitio.grid(row=3, column=1, sticky="we", padx=5, pady=4)
+        f_sitio_botones = ttk.Frame(f_proj)
+        f_sitio_botones.grid(row=3, column=2, sticky="w", padx=5)
+        ttk.Button(f_sitio_botones, text="Examinar...",
+                   command=self._elegir_datos_sitio).pack(side="left")
+        Tooltip(ent_sitio, "JSON con los datos de sitio [S] de ESTA obra, por clave:\n"
+                           "{\"PGA_roca_B\": {\"valor\": 0.30, \"trazabilidad\": \"...\",\n"
+                           "\"fecha\": \"AAAA-MM-DD\"}, ...}, igual que el\n"
+                           "'--datos-sitio' de cli.py. Se declaran SOLO para la corrida,\n"
+                           "por la misma guardia que datos_sitio.py (que no se toca);\n"
+                           "la memoria imprime de que archivo salio cada [S]. Vacio,\n"
+                           "gobiernan los del archivo: la obra del repositorio.")
 
         ttk.Separator(p, orient="horizontal").pack(fill="x", pady=6)
 
@@ -1013,6 +1046,14 @@ class ExpedienteApp:
         )
         if ruta:
             self.datos_externos_var.set(ruta)
+
+    def _elegir_datos_sitio(self):
+        ruta = filedialog.askopenfilename(
+            title="Seleccionar JSON de datos de sitio [S] de la obra",
+            filetypes=[("Archivos JSON", "*.json"), ("Todos los archivos", "*.*")],
+        )
+        if ruta:
+            self.datos_sitio_var.set(ruta)
 
     # -------------------------- Pestana 2 -----------------------------
     def _construir_tab_criterios(self, p):
@@ -2192,13 +2233,27 @@ class ExpedienteApp:
         # que el subproceso del PDF recibe. Leerlas al exportar --- con el
         # radio o la luz cambiados despues de correr --- mandaria al hijo a
         # calcular otra obra (auditoria adversarial de EXT-8).
+        texto_sitio = self.datos_sitio_var.get().strip()
         self.entradas_de_la_corrida = {
             "csv": ruta_csv_texto,
             "datos_externos": texto_externos,
+            "datos_sitio": texto_sitio,
             "externos": {clave: var.get() for clave, var in self.externos_vars.items()},
             "alcance": self.alcance_var.get(),
         }
         self.root.update_idletasks()
+        # LOS DATOS DE SITIO DE LA OBRA (EXT-10), ANTES DE CORRER: si hay
+        # ruta, se declaran por sesion sustituyendo lo que otra obra hubiera
+        # declarado; sin ruta se conserva lo que la sesion abierta trajo. Su
+        # rechazo es el de una DECLARACION y se atrapa en su propio metodo
+        # (no aqui: `ejecutar_pipeline` no captura ValueError, SIS-E-01), con
+        # el mismo brazo que la CLI usa para `--datos-sitio`.
+        rechazo = self._declarar_datos_de_sitio(texto_sitio)
+        if rechazo is not None:
+            self._mostrar_error_entrada(rechazo)
+            self.btn_ejecutar.habilitar()
+            self.btn_ejecutar.config(text=TEXTO_BOTON_EJECUTAR)
+            return
         try:
             externos = cli.cargar_datos_externos(ruta_externos, self._leer_banderas())
             self.informe = cli.correr(ruta_csv, externos,
@@ -2233,6 +2288,10 @@ class ExpedienteApp:
             self.btn_ejecutar.habilitar()
             self.btn_ejecutar.config(text=TEXTO_BOTON_EJECUTAR)
 
+        # LA CORRIDA SE EMBEBE EN LA SESION (E04): con su `informe_json`,
+        # para que quien la abra despues pueda saber si la reproduce.
+        self.corridas.append(ses.corrida_para_sesion(
+            self.informe, cli.informe_json(self.informe)))
         self._llenar_tabla_puntos()
         self._llenar_resumen()
         # La pestana 2 se repinta porque acaba de aparecer el tercer filtro:
@@ -2254,6 +2313,23 @@ class ExpedienteApp:
                  f"{r.dimensionados}/{r.puntos} puntos dimensionados. "
                  f"Expediente {'cerrado' if r.cerrado else 'NO cerrado'}.")
         self.nb.select(self.tab_puntos)
+
+    def _declarar_datos_de_sitio(self, texto_sitio):
+        """
+        Declara por sesion los [S] del JSON de datos de sitio de la pestaña
+        1 (`cli.cargar_datos_sitio`, la misma puerta que `--datos-sitio`), y
+        devuelve el motivo del rechazo, o None. El brazo es el de una
+        declaracion --- `(ValueError, KeyError)`, el mismo que `cli.main`
+        usa para `--datos-sitio` y `--declarar` --- y vive aqui y no en
+        `ejecutar_pipeline`, que no captura ValueError (SIS-E-01).
+        """
+        if not texto_sitio:
+            return None
+        try:
+            cli.cargar_datos_sitio(Path(texto_sitio))
+        except (ValueError, KeyError) as exc:
+            return f"No se pudo declarar el dato de sitio:\n{exc}"
+        return None
 
     def _mostrar_error_entrada(self, mensaje):
         self.lbl_error_datos.config(text=mensaje)
@@ -2369,10 +2445,8 @@ class ExpedienteApp:
         if not ruta:
             return
         try:
-            Path(ruta).write_text(
-                json.dumps(cli.informe_json(self.informe), ensure_ascii=False,
-                           indent=2, allow_nan=False),
-                encoding="utf-8")
+            # Escritura atomica (E04): nunca un JSON a medias en disco.
+            ses.escribir_json_atomico(Path(ruta), cli.informe_json(self.informe))
             messagebox.showinfo("JSON exportado", f"Archivo: {ruta}")
         except (OSError, ErrorProyecto) as exc:
             messagebox.showerror("Error al exportar", f"{exc}")
@@ -2481,7 +2555,7 @@ class ExpedienteApp:
         sesion = expdf.sesion_de_la_corrida(
             self.informe, proyecto=self.proyecto_de_la_corrida,
             formato_version=FORMATO_SESION, app_version=APP_VERSION,
-            **self.entradas_de_la_corrida)
+            id_sesion=self.sesion_id, **self.entradas_de_la_corrida)
         proceso = expdf.ProcesoPdf(sesion=sesion, destino=ruta,
                                    plantilla=self._plantilla(),
                                    directorio_trabajo=trabajo)
@@ -2556,16 +2630,26 @@ class ExpedienteApp:
         SIS-A-18. `criterios` y `alcance` son lo que faltaba: sin ellos, una
         sesion guardada describia DONDE estaba el expediente y no QUE se
         habia decidido sobre el, que es la parte que cuesta rehacer.
+
+        FORMATO 3 (EXT-10, E04): `id`, `datos_sitio`, `sitio` (los [S]
+        declarados por sesion, con trazabilidad y fecha), `csv_sha1` de la
+        ultima corrida y `corridas` con su `informe_json` embebido. La
+        sesion es el unico lugar del «proyecto actual».
         """
         data = {
             "formato_version": FORMATO_SESION,
             "app_version": APP_VERSION,
+            "id": self.sesion_id,
             "proyecto": self.proyecto_var.get(),
             "csv": self.csv_var.get(),
             "datos_externos": self.datos_externos_var.get(),
+            "datos_sitio": self.datos_sitio_var.get(),
             "externos": {clave: var.get() for clave, var in self.externos_vars.items()},
             "alcance": self.alcance_var.get(),
             "criterios": dec.estado_de_sesion(),
+            "sitio": dec.estado_de_sitio_de_sesion(),
+            "csv_sha1": (self.corridas[-1]["csv_sha1"] if self.corridas else ""),
+            "corridas": list(self.corridas),
         }
         return data
 
@@ -2579,8 +2663,9 @@ class ExpedienteApp:
         if not ruta:
             return
         try:
-            with open(ruta, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            # Escritura temporal + `os.replace` (E04): una sesion nunca
+            # queda a medias en disco, y la anterior sigue si algo falla.
+            ses.escribir_json_atomico(Path(ruta), data)
             messagebox.showinfo("Exito", "Sesion guardada correctamente.")
         except OSError as exc:
             messagebox.showerror("Error al guardar", f"No se pudo escribir el archivo:\n{exc}")
@@ -2615,12 +2700,27 @@ class ExpedienteApp:
                 "El archivo es JSON valido pero no es una sesion que se "
                 "pueda aplicar; no se toco nada:\n- " + "\n- ".join(errores))
             return
-
-        version = data.get("formato_version", 1)
+        # LA MIGRACION ES EXPLICITA (EXT-10, E04): una sesion v1 o v2 se
+        # completa aqui, en una copia, y lo completado se dice al final. Una
+        # version que no se puede migrar se rechaza sin tocar nada.
+        try:
+            data, avisos_migracion = ses.migrar_a_actual(data)
+        except ValueError as exc:
+            messagebox.showerror("Error al cargar",
+                                 f"La sesion no se puede migrar; no se toco nada:\n{exc}")
+            return
+        errores = errores_de_sesion(data)
+        if errores:
+            messagebox.showerror(
+                "Error al cargar",
+                "La sesion no se puede aplicar tras migrarla; no se toco "
+                "nada:\n- " + "\n- ".join(errores))
+            return
 
         self.proyecto_var.set(data.get("proyecto", ""))
         self.csv_var.set(data.get("csv", ""))
         self.datos_externos_var.set(data.get("datos_externos", ""))
+        self.datos_sitio_var.set(data.get("datos_sitio", ""))
         # Los externos que la sesion NO trae se reponen a vacio: la ventana
         # queda como la sesion dice, no como la sesion anterior la dejo.
         externos = data.get("externos", {})
@@ -2634,19 +2734,82 @@ class ExpedienteApp:
             alcance = cli.ALCANCE_EXPEDIENTE
         self.alcance_var.set(alcance)
 
-        aviso = self._restaurar_criterios(data.get("criterios"), sustituir=True)
+        aviso = self._aplicar_bloques_de_sesion(data, origen=f"sesion {Path(ruta).name}")
 
         self.lbl_error_datos.config(text="")
         self._llenar_tabla_criterios()
         self.nb.select(self.tab_datos)
-        if version < FORMATO_SESION:
-            aviso = (f"La sesion se guardo con el formato v{version} y se "
-                     f"leyo como v{FORMATO_SESION}. Las sesiones v1 no "
-                     "guardaban ni el alcance de la corrida ni los criterios "
-                     "declarados: revise las dos cosas antes de ejecutar. "
-                     + aviso)
+        if avisos_migracion:
+            aviso = ("La sesion se migro al formato v"
+                     f"{FORMATO_SESION}: " + "; ".join(avisos_migracion)
+                     + ". Revise antes de ejecutar. " + aviso)
         if aviso:
             messagebox.showinfo("Sesion cargada", aviso)
+
+    def nuevo_proyecto(self):
+        """
+        «Nuevo proyecto»: OTRA obra sobre el mismo despliegue (EXT-10,
+        EXT-V-01). Se carga una sesion vacia --- identidad nueva, campos
+        vacios, sin criterios ni datos de sitio declarados --- y se sustituye
+        todo lo declarado, por el mismo camino que «Cargar sesion». Nunca se
+        vacia datos_sitio.py ni criterios_adoptados.py: mientras la obra
+        nueva no declare sus [S], gobiernan los del archivo y la memoria lo
+        dice en «Origen» y en la advertencia de corredor.
+        """
+        if not messagebox.askyesno(
+                "Nuevo proyecto",
+                "Se abre un proyecto nuevo: se retiran los criterios y los "
+                "datos de sitio declarados para esta sesion y se vacian los "
+                "campos. Los archivos del repositorio no se tocan. ¿Continuar?"):
+            return
+        data = ses.sesion_vacia(APP_VERSION)
+        self.proyecto_var.set(data["proyecto"])
+        self.csv_var.set(data["csv"])
+        self.datos_externos_var.set(data["datos_externos"])
+        self.datos_sitio_var.set(data["datos_sitio"])
+        for var in self.externos_vars.values():
+            var.set("")
+        self.alcance_var.set(data["alcance"])
+        aviso = self._aplicar_bloques_de_sesion(data, origen="proyecto nuevo")
+        self.lbl_error_datos.config(text="")
+        self._llenar_tabla_criterios()
+        self.nb.select(self.tab_datos)
+        messagebox.showinfo("Nuevo proyecto",
+                            f"Proyecto nuevo (sesion {self.sesion_id}). "
+                            + (aviso or "No habia nada declarado que retirar."))
+
+    def _aplicar_bloques_de_sesion(self, data, *, origen):
+        """
+        La mitad de «abrir una sesion» que SUSTITUYE estado: la identidad,
+        las corridas embebidas, los criterios declarados
+        (`_restaurar_criterios(sustituir=True)`) y los datos de sitio [S]
+        declarados por sesion (`declaracion.restaurar_datos_de_sitio`, la
+        misma guardia que `datos_sitio.py`). La comparten «Cargar sesion» y
+        «Nuevo proyecto» para que abrir la obra B tras la A y abrir una obra
+        vacia sean el mismo camino. Devuelve el aviso para el dialogo.
+        """
+        self.sesion_id = data.get("id") or ses.sesion_vacia(APP_VERSION)["id"]
+        self.corridas = list(data.get("corridas") or [])
+        aviso = self._restaurar_criterios(data.get("criterios"), sustituir=True)
+        try:
+            resultado = dec.restaurar_datos_de_sitio(
+                data.get("sitio") or {"valores": {}}, sustituir=True, origen=origen)
+        except (ValueError, KeyError) as exc:
+            return f"{aviso} No se pudieron restaurar los datos de sitio: {exc}".strip()
+        partes = [aviso] if aviso else []
+        if resultado.restaurados:
+            partes.append(
+                "Datos de sitio [S] declarados SOLO para esta sesion: "
+                f"{', '.join(resultado.restaurados)}. datos_sitio.py no se modifico.")
+        if resultado.retirados:
+            partes.append(
+                "Se RETIRARON los datos de sitio de la sesion anterior que "
+                f"esta no trae: {', '.join(resultado.retirados)}.")
+        if resultado.hubo_rechazos:
+            detalle = "; ".join(f"{clave}: {motivo}"
+                                for clave, motivo in resultado.rechazados)
+            partes.append(f"NO se restauraron los datos de sitio: {detalle}")
+        return " ".join(partes)
 
     def importar_decisiones(self):
         """

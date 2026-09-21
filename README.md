@@ -41,6 +41,33 @@ por encima de 40 puntos la ventana ofrece la vía del navegador (HTML + Ctrl+P).
 dos banderas nuevas valen también a mano: `--sesion` repone una sesión guardada y
 `--progreso` imprime el avance.
 
+## Otra obra sobre el mismo despliegue: `--datos-sitio` y la sesión (formato 3)
+
+Los datos de sitio **[S]** del corredor de la obra del repositorio (el PGA del
+mapa, el corredor mismo) viven en `src/datos_sitio.py` con su trazabilidad, y
+**no se editan** para calcular otra obra (EXT-10, EXT-V-01). Otra obra declara
+los suyos **por sesión**, con trazabilidad y fecha, y por la misma guardia que
+el archivo:
+
+```
+python cli.py <csv> --alcance expediente --datos-sitio sitio.json --proyecto "Obra B"
+```
+
+```json
+{"PGA_roca_B": {"valor": 0.30, "trazabilidad": "lectura del mapa A3 sobre ...", "fecha": "2026-09-21"},
+ "corredor_del_proyecto": {"valor": "Obra B, km 10-12", "trazabilidad": "...", "fecha": "2026-09-21"}}
+```
+
+En la ventana es el campo «JSON de datos de sitio» de la pestaña 1, y el botón
+«Nuevo proyecto» abre una obra vacía (una sesión nueva, nunca un archivo
+vaciado). La sesión guardada es desde EXT-10 el **formato 3**: `id`, la ruta del
+`sitio.json`, el bloque `sitio` con los [S] declarados, `csv_sha1` y las
+corridas con su `informe_json` embebido; una sesión v1 o v2 se migra al abrirla
+y la ventana o la CLI dicen qué completaron. La memoria y el JSON imprimen **de
+qué archivo salió cada [S]** («Origen») y advierten si el nombre del proyecto
+no coincide con el corredor de los datos de sitio; con `--sesion`, la CLI dice
+además si su corrida **reproduce** la guardada en la sesión o **difiere**.
+
 ## Exportar a PDF: WeasyPrint necesita librerías nativas
 
 **En Linux y macOS normalmente no hay nada que hacer.** En **Windows sí**, y

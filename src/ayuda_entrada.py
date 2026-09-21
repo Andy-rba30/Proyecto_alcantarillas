@@ -416,7 +416,9 @@ _EXPLICACIONES_DE_ETIQUETAS: Dict[str, Tuple[str, str, str]] = {
           "Un hecho de ESTE lugar, leido con un procedimiento real (mapa, "
           "ensayo, medicion). Cambia al mover la obra de sitio, no al cambiar "
           "de proyectista; se defiende con la trazabilidad de la lectura, no "
-          "con un rango.",
+          "con un rango. El de la obra del repositorio esta en datos_sitio.py; "
+          "el de otra obra se declara por sesion (JSON de datos de sitio, con "
+          "trazabilidad y fecha), sin editar el archivo.",
           "datos_sitio.py"),
     "C": ("Vacio cubierto con fuente tecnica",
           "La norma peruana calla y el valor sale de una fuente tecnica "

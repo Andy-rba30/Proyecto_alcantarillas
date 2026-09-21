@@ -256,7 +256,8 @@ def test_el_reporte_advierte_de_la_trazabilidad_incompleta():
 def _dato_valido(**campos):
     base = dict(valor=1.0, concepto="c", procedimiento="p", fuente="f",
                 trazabilidad="t",
-                resolucion=ds.DeEnsayo(ensayo="e", trazabilidad_exigida="te"))
+                resolucion=ds.DeEnsayo(ensayo="e", trazabilidad_exigida="te"),
+                nivel=ds.NIVEL_EXPEDIENTE)
     base.update(campos)
     return DatoSitio(**base)
 
@@ -313,7 +314,7 @@ def test_el_barrido_al_importar_da_el_mensaje_con_la_clave(monkeypatch):
                      ("fuente", "f"), ("trazabilidad", ""),
                      ("ambito", ds.AMBITO_CORREDOR), ("etiqueta", "S"),
                      ("reemplazado_por", None), ("verificacion_pendiente", None),
-                     ("resolucion", None)):
+                     ("resolucion", None), ("nivel", ds.NIVEL_EXPEDIENTE)):
         object.__setattr__(malo, campo, v)
     monkeypatch.setitem(DATOS_SITIO, "dato_de_prueba", malo)
     with pytest.raises(ValueError, match="dato_de_prueba"):

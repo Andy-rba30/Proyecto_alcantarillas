@@ -936,7 +936,11 @@ class TestCriteriosBloqueantes:
         bloqueantes = M11.criterios_bloqueantes(informe)
         assert bloqueantes, "la corrida de ejemplo bloquea por criterio"
         for c in bloqueantes:
-            assert c.clave in ca.CRITERIOS
+            # Un bloqueante puede ser un CRITERIO o un DATO DE SITIO [S]
+            # pendiente (SIS-A-05; `ca.declaracion_de` resuelve los dos).
+            # Este test suponia que solo criterios, y desde EXT-10 un [S]
+            # que otra obra deja sin leer bloquea por la misma via.
+            assert c.clave in ca.CRITERIOS or c.clave in ds.DATOS_SITIO
             assert c.etiqueta and c.concepto and c.fuente
             assert c.etapas
 

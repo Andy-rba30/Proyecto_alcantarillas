@@ -543,6 +543,10 @@ LECTURAS_ESTATICAS = {
     "ca.criterios_sin_consumidor", "ca.parametros_sensibilizables",
     "ds.DATOS_SITIO", "ds.dato", "ds.datos_sin_valor",
     "ds.datos_con_verificacion_pendiente",
+    # EXT-10: el texto de la advertencia de corredor es una funcion PURA de
+    # sus argumentos (M11 le pasa el corredor y el origen de la foto); y el
+    # rotulo del archivo del repositorio es una constante.
+    "ds.advertencia_de_corredor", "ds.ORIGEN_ARCHIVO",
 }
 
 

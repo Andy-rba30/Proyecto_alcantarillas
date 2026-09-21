@@ -247,10 +247,13 @@ _declarar_criterios_de_prueba()
 # estos dict/set y sustituirlos dejaria a `valor()` escribiendo en otro.
 @pytest.fixture(autouse=True)
 def _estado_de_proceso_aislado():
-    """Foto de los cuatro registros antes de cada test, y reposicion despues."""
+    """Foto de los cinco registros antes de cada test, y reposicion despues."""
     overrides = dict(_ca._OVERRIDES)
     usados = set(_ca._USADOS)
     usados_sitio = set(_ds._USADOS)
+    # Los [S] declarados por sesion (EXT-10): el quinto registro, con la
+    # misma foto y la misma reposicion que los criterios en caliente.
+    overrides_sitio = dict(_ds._OVERRIDES)
     procedencias = dict(_dec._PROCEDENCIAS)
     _declarar_criterios_de_prueba()
     yield
@@ -260,5 +263,7 @@ def _estado_de_proceso_aislado():
     _ca._USADOS.update(usados)
     _ds._USADOS.clear()
     _ds._USADOS.update(usados_sitio)
+    _ds._OVERRIDES.clear()
+    _ds._OVERRIDES.update(overrides_sitio)
     _dec._PROCEDENCIAS.clear()
     _dec._PROCEDENCIAS.update(procedencias)

@@ -81,7 +81,7 @@ from src.dominios import S_CAUCE_MAX
 from src.modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE
 from src.modelos import ALCANCE_PERFIL as _ALCANCE_PERFIL
 from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
-                         ContextoCorrida, CriterioPendienteError,
+                         ContextoCorrida, CriterioPendienteError, DatoEfectivoDeSitio,
                          DatoFaltanteError, DatoInvalidoError,
                          DisenoNoFactibleError, ErrorProyecto, Espaciamiento,
                          Familia, MetodoNoEvaluableError, PasoDiseno,
@@ -631,6 +631,75 @@ def _exige_clave(clave: str, donde: str) -> None:
             motivo=f"clave no reconocida en {donde}. Las admitidas son: "
                    + ", ".join(CLAVES_EXTERNAS),
         )
+
+
+# ===========================================================================
+# Datos de sitio de OTRA obra (EXT-10, EXT-V-01): --datos-sitio sitio.json
+# ===========================================================================
+
+def cargar_datos_sitio(ruta: Path, *, origen: Optional[str] = None):
+    """
+    Lee el JSON de datos de sitio de la obra que se va a calcular y los
+    declara POR SESION, sustituyendo lo que otra obra hubiera declarado
+    (`declaracion.restaurar_datos_de_sitio(sustituir=True)`). Hermano de
+    `cargar_datos_externos`, y con la forma de la sesion escrita una vez:
+
+        {
+          "PGA_roca_B": {"valor": 0.30, "trazabilidad": "...", "fecha": "2026-09-21"},
+          "corredor_del_proyecto": {"valor": "...", "trazabilidad": "...", "fecha": "..."}
+        }
+
+    Se admite tambien la envoltura `{"valores": {...}}`, que es el bloque
+    `sitio` de la sesion: un solo parseo para las dos formas.
+
+    UN DEFECTO RECHAZA EL ARCHIVO ENTERO, con `ValueError` y no con
+    `DatoInvalidoError`: lo que se rechaza no es un dato del expediente sino
+    una DECLARACION que alguien escribio, y el rechazo en la puerta de
+    declaracion es `ValueError` (contrato SIS-E-05, el mismo de `--declarar`).
+    La clave desconocida tambien sale como `ValueError` --- un [S] no se
+    inventa por sesion: su ficha vive en `datos_sitio.py` --- para que las
+    dos puertas atrapen UNA excepcion. Y NADA SE TOCA si algo se rechaza: la
+    restauracion corre primero EN SECO, y solo con la cuenta limpia se vacia
+    lo de la obra anterior y se vuelca lo nuevo. Una obra con la mitad de
+    sus [S] seria la obra equivocada con mas silencio, y una obra que pierde
+    los suyos porque el archivo de la siguiente venia mal, tambien.
+    """
+    ruta = Path(ruta)
+    crudo = json.loads(ruta.read_text(encoding="utf-8-sig"))
+    if not isinstance(crudo, dict):
+        raise ValueError(
+            f"'{ruta.name}' tiene que ser un objeto JSON con un dato de sitio "
+            f"por clave, y trae {type(crudo).__name__}")
+    valores = crudo.get("valores", crudo) if set(crudo) == {"valores"} else crudo
+    if not isinstance(valores, dict):
+        raise ValueError(
+            f"'{ruta.name}': 'valores' tiene que ser un objeto con claves y "
+            f"trae {type(valores).__name__}")
+    for clave, entrada in valores.items():
+        if not isinstance(entrada, dict):
+            raise ValueError(
+                f"'{ruta.name}': '{clave}' tiene que ser un objeto con valor, "
+                f"trazabilidad y fecha, y trae {type(entrada).__name__}")
+    origen_ = origen if origen is not None else str(ruta)
+    en_seco = _declaracion.restaurar_datos_de_sitio(
+        {"valores": valores}, sustituir=True, origen=origen_, en_seco=True)
+    if en_seco.hubo_rechazos:
+        detalle = "; ".join(f"{clave}: {motivo}" for clave, motivo in en_seco.rechazados)
+        raise ValueError(
+            f"'{ruta.name}' no se puede aplicar entero, y no se aplica a "
+            f"medias: {detalle}")
+    return _declaracion.restaurar_datos_de_sitio(
+        {"valores": valores}, sustituir=True, origen=origen_)
+
+
+def advertencia_de_corredor_de(proyecto: str, contexto: ContextoCorrida) -> Optional[str]:
+    """
+    La advertencia de corredor de UNA corrida: el corredor efectivo y su
+    origen se leen de la foto, y el texto lo pone `datos_sitio`. La CLI lo
+    imprime en consola y M11 en la memoria; ninguno la calcula por su cuenta.
+    """
+    corredor = contexto.dato_efectivo("corredor_del_proyecto")
+    return ds.advertencia_de_corredor(proyecto, str(corredor.valor), corredor.origen)
 
 
 # ===========================================================================
@@ -1808,7 +1877,21 @@ def capturar_contexto(*, csv_sha1: str) -> ContextoCorrida:
         criterios_con_verificacion_pendiente=tuple(
             ca.criterios_con_verificacion_pendiente()),
         csv_sha1=csv_sha1,
-        criterios_sha1=sha1_archivo(ARCHIVO_CRITERIOS))
+        criterios_sha1=sha1_archivo(ARCHIVO_CRITERIOS),
+        # Los datos de sitio con que gobierno la corrida y de que archivo
+        # salio cada uno (EXT-10): valor copiado en profundidad, como los
+        # criterios; el resto de la ficha es lectura estatica de `ds.dato`.
+        datos_efectivos={
+            clave: DatoEfectivoDeSitio(
+                valor=copy.deepcopy(ds.dato_efectivo(clave).valor),
+                trazabilidad=ds.dato_efectivo(clave).trazabilidad,
+                fecha=ds.fecha_de(clave),
+                origen=ds.origen_de(clave),
+                declarado_en_caliente=clave in ds.datos_dinamicos())
+            for clave in sorted(ds.DATOS_SITIO)},
+        datos_declarados_en_caliente=tuple(ds.datos_declarados_en_caliente()),
+        datos_pisados_en_caliente=tuple(ds.datos_pisados_en_caliente()),
+        datos_sin_valor=tuple(ds.datos_sin_valor()))
 
 
 def _avisar_ids_desconocidos(informe: Informe, externos: DatosExternos) -> None:

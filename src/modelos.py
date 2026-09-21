@@ -2511,6 +2511,22 @@ CIFRAS_PORCENTAJE = 1
 ALCANCE_PERFIL = "perfil"
 ALCANCE_EXPEDIENTE = "expediente"
 
+# LOS DOS NIVELES DE ENTREGA. No son etiquetas de la taxonomia de CLAUDE.md
+# (esas son [N], [N->], [S], [C], [A]) ni fases del calculo: dicen a que
+# ENTREGA pertenece un criterio o un dato de sitio. Un estudio de PERFIL
+# cierra con los primeros declarados; los segundos son del expediente
+# tecnico, y `--alcance perfil` difiere sus etapas con su fundamento.
+#
+# VIVEN AQUI DESDE EXT-10, y no en `criterios_adoptados.py` donde nacieron
+# (S20), porque desde EXT-10 los lleva tambien `DatoSitio.nivel`:
+# `criterios_adoptados` importa `datos_sitio` y `datos_sitio` no puede
+# importar `criterios_adoptados`, de modo que el unico hogar comun es este.
+# `criterios_adoptados` los reexporta con los mismos nombres (`ca.NIVEL_PERFIL`),
+# que es como los leen la GUI, `variables_entrada` y la suite.
+NIVEL_PERFIL = "perfil"
+NIVEL_EXPEDIENTE = "expediente"
+NIVELES = (NIVEL_PERFIL, NIVEL_EXPEDIENTE)
+
 
 class TipoDeVeredicto(str, Enum):
     """
@@ -2621,6 +2637,29 @@ class Bloqueo:
 
 
 @dataclass(frozen=True)
+class DatoEfectivoDeSitio:
+    """
+    Lo que un dato de sitio [S] APORTO a una corrida, y de donde (EXT-10).
+
+    Es la mitad de ESTADO de un `DatoSitio`, y solo esa: el valor con que
+    gobierno, la trazabilidad de ESA lectura, la fecha en que se declaro y
+    el archivo del que salio (`datos_sitio.py`, o el `sitio.json` / la sesion
+    de otra obra). La otra mitad --- concepto, procedimiento, fuente, ambito
+    --- es del ARCHIVO y la capa de reporte la sigue leyendo de `ds.dato`,
+    que es una lectura estatica. No es un segundo `DatoSitio`: es lo que
+    `ContextoCorrida.valores_efectivos` es para los criterios, con los tres
+    campos que un [S] lleva ademas del valor porque se defiende con
+    trazabilidad y no con rango.
+    """
+
+    valor: Any
+    trazabilidad: str
+    fecha: str
+    origen: str
+    declarado_en_caliente: bool
+
+
+@dataclass(frozen=True)
 class ContextoCorrida:
     """
     LA FOTO DEL ESTADO CON QUE CORRIO EL EXPEDIENTE, tomada por `servicio.correr`
@@ -2654,6 +2693,9 @@ class ContextoCorrida:
       y no al exportar.
     - `csv_sha1`: de los MISMOS BYTES que M0 leyo, no del archivo en disco.
     - `criterios_sha1`: la huella del archivo de criterios al correr.
+    - `datos_efectivos`, `datos_declarados_en_caliente`,
+      `datos_pisados_en_caliente`, `datos_sin_valor` (EXT-10): los datos de
+      sitio con que gobierno la corrida y de que archivo salio cada uno.
 
     Que NO lleva: nada que sea del ARCHIVO y no del estado --- concepto,
     fuente, justificacion, etiqueta, sensibilidad ---, que la capa de reporte
@@ -2678,26 +2720,49 @@ class ContextoCorrida:
     criterios_con_verificacion_pendiente: Tuple[str, ...]
     csv_sha1: str
     criterios_sha1: str
+    # LOS DATOS DE SITIO EFECTIVOS (EXT-10, EXT-V-01). Hasta EXT-10 la foto
+    # solo llevaba `datos_usados`, porque un [S] no tenia mas estado que el
+    # uso: su valor era el del archivo. Desde que un [S] de OTRA OBRA puede
+    # entrar por sesion (`datos_sitio.establecer_dato_dinamico`), el valor,
+    # la trazabilidad, la fecha y el ORIGEN con que gobierno cada dato son
+    # estado de la corrida, y viajan aqui con la misma regla que los
+    # criterios: se fotografian al salir y ningun exportador los lee del
+    # registro vivo. `datos_sin_valor` tambien es foto: una sesion puede
+    # rellenar un [S] vacio del archivo, y la lista cambia con el estado.
+    datos_efectivos: Mapping[str, "DatoEfectivoDeSitio"]
+    datos_declarados_en_caliente: Tuple[str, ...]
+    datos_pisados_en_caliente: Tuple[str, ...]
+    datos_sin_valor: Tuple[str, ...]
 
     def __post_init__(self) -> None:
         # `frozen` solo impide REASIGNAR los campos; un dict dentro seguia
         # siendo mutable y `informe.contexto.valores_efectivos[k] = x` movia
         # el JSON y el HTML de una corrida ya pasada sin excepcion (auditoria
-        # adversarial de EXT-4). Los dos mapas quedan de solo lectura y las
+        # adversarial de EXT-4). Los mapas quedan de solo lectura y las
         # secuencias, tuplas: la foto no se puede retocar, ni a proposito.
-        for campo in ("valores_efectivos", "procedencias"):
+        for campo in ("valores_efectivos", "procedencias", "datos_efectivos"):
             valor = getattr(self, campo)
             if not isinstance(valor, MappingProxyType):
                 object.__setattr__(self, campo, MappingProxyType(dict(valor)))
         for campo in ("criterios_usados", "datos_usados",
                       "declarados_en_caliente", "pisados_en_caliente",
                       "criterios_sin_valor", "criterios_opcionales_sin_declarar",
-                      "criterios_con_verificacion_pendiente"):
+                      "criterios_con_verificacion_pendiente",
+                      "datos_declarados_en_caliente", "datos_pisados_en_caliente",
+                      "datos_sin_valor"):
             object.__setattr__(self, campo, tuple(getattr(self, campo)))
 
     def declarado_en_caliente(self, clave: str) -> bool:
         """True si el valor que GOBERNO esa corrida entro en caliente."""
         return clave in self.declarados_en_caliente
+
+    def dato_efectivo(self, clave: str) -> "DatoEfectivoDeSitio":
+        """El dato de sitio TAL COMO GOBERNO esa corrida, con su origen."""
+        return self.datos_efectivos[clave]
+
+    def dato_declarado_en_caliente(self, clave: str) -> bool:
+        """True si el [S] que goberno esa corrida entro por sesion."""
+        return clave in self.datos_declarados_en_caliente
 
     def valor_efectivo(self, clave: str) -> Any:
         """El valor con que gobierno el criterio en esa corrida."""

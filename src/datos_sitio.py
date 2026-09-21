@@ -79,10 +79,13 @@ se ha leido tampoco se sustituye por un default.
 
 import math
 import numbers
-from dataclasses import dataclass
+import re
+import unicodedata
+from dataclasses import dataclass, replace
 from typing import Any, Dict, Iterable, List, Optional, Set
 
-from src.modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
+from src.modelos import (NIVEL_EXPEDIENTE, NIVEL_PERFIL, NIVELES,
+                     CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
                      Libre, ModoDeResolucion, Resolucion, modo_de)
 
 
@@ -132,6 +135,17 @@ class DatoSitio:
     reemplazado_por: Optional[str] = None      # ensayo/dato que lo sustituye
     verificacion_pendiente: Optional[str] = None   # lo que falta confirmar
     resolucion: Optional[Resolucion] = None    # COMO se resuelve (Sec. 4.3)
+    nivel: str = ""                            # perfil | expediente (EXT-10)
+
+    # `nivel` dice a que ENTREGA pertenece el dato, con los mismos dos
+    # valores que `Criterio.nivel` (S20/S21) y por la misma razon: un [S]
+    # sin valor que no dice si frena el perfil o lo difiere el alcance no se
+    # puede planificar. Es obligatorio para los nueve --- lo exige la guardia,
+    # no el constructor, para no romper el orden posicional --- y se rellena
+    # MIDIENDO: `tests/test_ext10_multiobra.py` corre el pipeline a los dos
+    # alcances y lo contrasta en las dos direcciones. Lo que ninguna corrida
+    # invoca lleva el nivel como argumento junto al campo, censado en ese
+    # test para que el grupo no crezca en silencio.
 
     # `resolucion` dice COMO SE LLEGA al valor, y para un dato de sitio la
     # respuesta casi siempre es la misma -- se determino con un procedimiento
@@ -288,6 +302,17 @@ def _verificar_dato(d: "DatoSitio") -> None:
         raise ValueError(
             f"'{nombre}' se resuelve `derivada` y no dice de que se deriva"
         )
+    # AL FINAL, y no es orden casual: las comprobaciones de arriba son las
+    # que el archivo hacia cumplir desde SIS-D-09, y sus mensajes son los que
+    # la suite espera primero. El nivel llego en EXT-10 y se comprueba
+    # despues de que el dato sea un dato.
+    if d.nivel not in NIVELES:
+        raise ValueError(
+            f"'{nombre}' declara nivel={d.nivel!r}, que no es ninguno de "
+            f"{NIVELES}. Todo dato de sitio dice a que entrega pertenece: sin "
+            "eso no se sabe si un [S] sin leer frena el nivel de perfil o si "
+            f"`--alcance {NIVEL_PERFIL}` difiere su etapa al expediente"
+        )
 
 
 _USADOS: Set[str] = set()
@@ -327,6 +352,10 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                                "~5 km del corredor: si cambiara, este dato "
                                "deja de ser unico para el tramo y pasa a ser "
                                "columna del CSV, como NF_profundidad_m",
+        # nivel: MEDIDO en tests/test_ext10_multiobra.py: lo invoca la corrida de
+        #        expediente (M9, Fase 9) y no la de perfil, que difiere la Fase 9
+        #        entera
+        nivel=NIVEL_EXPEDIENTE,
         resolucion=DeEnsayo(
             ensayo="lectura del mapa de isoaceleraciones espectrales del "
                    "Apendice A3 del Manual de Puentes sobre la ubicacion del "
@@ -388,6 +417,10 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                                "vigente para el distrito antes de citar este "
                                "valor en la memoria. No gobierna ningun "
                                "calculo (Sec. 0.4), por lo que no bloquea",
+        # nivel: ARGUMENTO, no medida: ningun modulo lo consume (solo referencia,
+        #        Sec. 0.4). Es del marco sismico del cabezal, que es de expediente;
+        #        censado en DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
+        nivel=NIVEL_EXPEDIENTE,
         resolucion=DeEnsayo(
             ensayo="consulta del Anexo II de E.030 -- zonificacion sismica "
                    "por distritos -- sobre el distrito del proyecto",
@@ -457,6 +490,10 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
                                "contrasto contra la norma vigente. No "
                                "gobierna ningun calculo (Sec. 0.4), por lo "
                                "que no bloquea",
+        # nivel: ARGUMENTO, no medida: ningun modulo lo consume (solo referencia,
+        #        Sec. 0.4); mismo marco que la zona. Censado en
+        #        DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
+        nivel=NIVEL_EXPEDIENTE,
         resolucion=Derivada(
             de=("ZONA_SISMICA_LA_UNION",),
             regla="entrada en la Tabla N 1 de factores de zona del Art. 11.1 "
@@ -488,6 +525,13 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         reemplazado_por="Progresiva inicial y final del tramo, del expediente "
                         "vial, cuando el proyecto declare su cabecera de "
                         "obra en vez de una longitud aproximada",
+        # nivel: ARGUMENTO, no medida: no gobierna ningun calculo --- ningun
+        #        modulo lo invoca por `valor()`; lo lee la memoria (M11) del
+        #        contexto para imprimirlo como ambito de los demas [S] y en
+        #        la advertencia de corredor, a CUALQUIER nivel --- y es lo
+        #        primero que una obra nueva declara. Censado en
+        #        DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
+        nivel=NIVEL_PERFIL,
         resolucion=DeEnsayo(
             ensayo="definicion del tramo en la Fase 0-bis de la hoja de ruta "
                    "(num. 150): el terraplen sobre el que se distribuyen los "
@@ -556,6 +600,10 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             "Declarar la orientacion sobre el plano de planta del expediente. "
             "Mientras siga en None, `M9.h_eq_sobrecarga_trasdos` se detiene y "
             "el empuje de sobrecarga viva del cabezal no se calcula"),
+        # nivel: consumidor M9 (Fase 9), diferido a perfil; no medible por corrida
+        #        mientras siga sin valor: la cadena de M9 se detiene antes en otros
+        #        pendientes
+        nivel=NIVEL_EXPEDIENTE,
         resolucion=DeEnsayo(
             ensayo="lectura del plano de planta: angulo entre el eje del "
                    "conducto y el eje de la via",
@@ -595,6 +643,9 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             "Solo hace falta si la orientacion resulta 'paralelo_al_trafico'. "
             "Con 'perpendicular_al_trafico' la Tabla 3.11.6.4-1 no tiene "
             "columna de distancia y este dato no se invoca"),
+        # nivel: consumidor M9 (Fase 9), diferido a perfil; solo se invoca con
+        #        orientacion 'paralelo_al_trafico', que sigue sin declarar
+        nivel=NIVEL_EXPEDIENTE,
         resolucion=DeEnsayo(
             ensayo="medicion sobre la seccion transversal del expediente "
                    "vial, del paramento interior del cabezal al borde de la "
@@ -640,6 +691,11 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             "Declararlo al cerrar la clase de via. El Cuadro tabula 2, 3 y 4 "
             "carriles por sentido y NO dice que hacer con 5 o mas: esa es una "
             "laguna de la fuente, declarada en el registro"),
+        # nivel: ARGUMENTO, no medida: ningun modulo lo consume; lo cierra el
+        #        programa de calicatas del Cuadro 4.1 del Manual de Suelos, que el
+        #        num. 4.2 fija a nivel de perfil. Censado en
+        #        DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
+        nivel=NIVEL_PERFIL,
         resolucion=DeEnsayo(
             ensayo="lectura del diseño geometrico de la via (seccion "
                    "transversal tipo)",
@@ -687,6 +743,10 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             "4.1 bloquean y el piso de 0.90 m se aplica como adopcion "
             "conservadora declarada (ver la justificacion de "
             "COND-DMIN-ALTO-VOLUMEN)"),
+        # nivel: ARGUMENTO, no medida: ningun modulo lo consume; misma tabla de
+        #        calicatas de perfil que carriles_por_sentido, y el piso de seccion
+        #        del num. 4.1.1.3.4 a). Censado en DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
+        nivel=NIVEL_PERFIL,
         resolucion=DeEnsayo(
             ensayo="lectura de la clase de via del estudio de demanda (IMDA) "
                    "contra la clasificacion del DG-2018",
@@ -723,6 +783,10 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
             "Cerrar el inventario de gabinete y declarar si/no con el "
             "listado de lo consultado y, si existe, que estudio se usa como "
             "informacion secundaria"),
+        # nivel: ARGUMENTO, no medida: ningun modulo lo consume; el num. 4.2 del
+        #        Manual de Suelos lo pide para el espaciamiento de calicatas a nivel
+        #        de perfil. Censado en DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
+        nivel=NIVEL_PERFIL,
         resolucion=DeEnsayo(
             ensayo="inventario de gabinete de estudios geotecnicos previos "
                    "del tramo",
@@ -738,16 +802,202 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
 # API
 # ---------------------------------------------------------------------------
 
+# EL ARCHIVO DEL QUE SALE UN [S] QUE NADIE DECLARO POR SESION. Es el origen
+# que la memoria imprime junto a cada dato del repositorio; cualquier otro
+# origen es la ruta del `sitio.json` o el nombre de la sesion que lo trajo.
+ORIGEN_ARCHIVO = "src/datos_sitio.py"
+
+
+@dataclass(frozen=True)
+class DatoDeclaradoDeSitio:
+    """
+    Un [S] declarado POR SESION, tal como gobierna esta corrida (EXT-10).
+
+    `dato` es el `DatoSitio` del archivo con el valor y la trazabilidad de
+    ESTA obra puestos por `dataclasses.replace` --- o sea, ya sometido a
+    `_verificar_dato` por `__post_init__` ---; `fecha` es cuando se hizo la
+    lectura o la declaracion, y `origen` de que archivo salio (la ruta del
+    `sitio.json`, o «sesion <nombre>»). No es un segundo `DatoSitio` ni un
+    objeto `Proyecto`: es la mitad de estado que un [S] no tenia hasta que el
+    mismo despliegue tuvo que calcular otra obra (EXT-V-01).
+    """
+    dato: DatoSitio
+    fecha: str
+    origen: str
+
+
+# LAS DECLARACIONES POR SESION, en memoria de proceso, con el mismo nombre y
+# la misma regla que `criterios_adoptados._OVERRIDES`: se pierden al cerrar,
+# nunca se confunden con el archivo, y `valor()` las consulta ANTES de mirar
+# el archivo. Hasta EXT-10 este modulo no tenia API de escritura A PROPOSITO
+# --- el unico camino era construir el `DatoSitio` en el archivo --- porque
+# el repositorio era el expediente de UNA obra. La casa nueva (CLAUDE.md,
+# taxonomia [S]; v8 §0.7) no cambia eso para la obra del repositorio: cambia
+# que OTRA obra pueda traer sus [S] sin editar codigo, y por una sola puerta.
+_OVERRIDES: Dict[str, DatoDeclaradoDeSitio] = {}
+
+
+def verificar_declaracion_de_sitio(clave: str, valor: Any,
+                                   trazabilidad: str) -> DatoSitio:
+    """
+    La guardia de `establecer_dato_dinamico`, EN SECO: comprueba y devuelve
+    el `DatoSitio` que gobernaria, sin escribir nada. Hermana de
+    `criterios_adoptados.verificar_declaracion`, y por la misma razon: abrir
+    una sesion tiene que validar TODO el candidato antes de vaciar lo
+    declarado (EXT-A-02), y un solo camino de comprobacion no puede divergir
+    de si mismo.
+
+    Rechaza con `KeyError` la clave que el archivo no declara --- un [S] se
+    declara por sesion, no se INVENTA por sesion: la ficha (concepto,
+    procedimiento, fuente, ambito) sigue viviendo aqui --- y con `ValueError`
+    (contrato SIS-E-05, rechazo en la puerta de declaracion) el valor `None`
+    (declarar aporta un valor, no lo retira), la trazabilidad vacia (un [S]
+    se defiende diciendo donde se leyo; sin eso no hay lectura que repetir)
+    y el dato de resolucion `Derivada` (`Z_E030` lo deriva el programa de la
+    zona sismica: pisarlo pondria en la memoria un factor que la tabla no da,
+    el mismo argumento que EXT-V-04 para los criterios). Todo lo demas ---
+    finitud, campos, modo --- lo comprueba `_verificar_dato` al construir el
+    candidato por `dataclasses.replace`, que es la MISMA guardia del archivo.
+    """
+    del_archivo = dato(clave)
+    if valor is None:
+        raise ValueError(
+            f"No se puede declarar '{clave}' con valor None: una declaracion "
+            "por sesion aporta un valor, no lo retira. Para retirarla, usa "
+            "`quitar_dato_dinamico`; el dato vuelve a lo que dice el archivo"
+        )
+    if not str(trazabilidad or "").strip():
+        raise ValueError(
+            f"'{clave}' se declara sin trazabilidad. Un dato de sitio de OTRA "
+            "obra se defiende igual que el del archivo: diciendo sobre que "
+            "coordenada, mapa, ensayo o lamina se hizo la lectura, para que "
+            "un revisor la repita. Sin trazabilidad no hay lectura, hay un "
+            "numero"
+        )
+    if isinstance(del_archivo.resolucion, Derivada):
+        raise ValueError(
+            f"'{clave}' no se declara: se deriva de "
+            f"{', '.join(del_archivo.resolucion.de)}; declare sus entradas. "
+            "Un dato de resolucion `derivada` lo calcula el programa desde "
+            "otro dato ya determinado, y pisarlo por sesion pondria en la "
+            f"memoria un valor que ninguna tabla sostiene "
+            f"({del_archivo.resolucion.regla})"
+        )
+    # `replace` construye un DatoSitio nuevo y `__post_init__` corre
+    # `_verificar_dato`: finitud, campos obligatorios, modo y nivel, con los
+    # mismos mensajes que al importar el archivo.
+    return replace(del_archivo, valor=valor, trazabilidad=str(trazabilidad).strip())
+
+
+def establecer_dato_dinamico(clave: str, valor: Any, trazabilidad: str,
+                             fecha: str, *, origen: str) -> None:
+    """
+    Declara, SOLO para este proceso, el valor de un dato de sitio de otra
+    obra: la unica puerta por la que un [S] entra sin editar `datos_sitio.py`
+    (EXT-10, EXT-V-01). Por ella pasan `--datos-sitio sitio.json`, el bloque
+    `sitio` de la sesion (`declaracion.restaurar_datos_de_sitio`) y el campo
+    de la pestaña 1 de la GUI; ninguno escribe en `_OVERRIDES` por su cuenta.
+
+    `fecha` es obligatoria y es de la LECTURA o de la declaracion, no de la
+    corrida: la memoria la imprime junto al valor para que «PGA = 0.30 g»
+    lleve dicho cuando y sobre que se leyo. `origen` es el archivo del que
+    salio la declaracion, y es lo que la memoria imprime como «Origen» para
+    que un [S] de sesion no se lea nunca como uno del repositorio.
+
+    No registra uso: declarar no es usar, igual que en los criterios. El uso
+    lo registra `valor()` cuando un modulo de calculo invoca el dato, y por
+    eso el registro de EXT-4 sigue diciendo solo lo que la corrida invoco.
+    """
+    candidato = verificar_declaracion_de_sitio(clave, valor, trazabilidad)
+    if not str(fecha or "").strip():
+        raise ValueError(
+            f"'{clave}' se declara sin fecha. La fecha de la lectura es parte "
+            "de la trazabilidad de un [S] declarado por sesion: sin ella la "
+            "memoria no puede decir cuando se leyo el mapa o se hizo el ensayo"
+        )
+    _OVERRIDES[clave] = DatoDeclaradoDeSitio(dato=candidato,
+                                             fecha=str(fecha).strip(),
+                                             origen=str(origen))
+
+
+def quitar_dato_dinamico(clave: str) -> None:
+    """Retira la declaracion por sesion de un dato (vuelve a lo del archivo)."""
+    _OVERRIDES.pop(clave, None)
+
+
+def limpiar_datos_dinamicos() -> None:
+    """
+    Retira todas las declaraciones por sesion. Lo llama
+    `declaracion.restaurar_datos_de_sitio(sustituir=True)` al abrir una
+    sesion --- abrir la obra B no hereda los [S] de la obra A --- y la fixture
+    autouse de `conftest.py`, que fotografia y repone el estado de cada test.
+    """
+    _OVERRIDES.clear()
+
+
+def datos_dinamicos() -> Dict[str, DatoDeclaradoDeSitio]:
+    """Las declaraciones por sesion vivas, por clave, sin registrar uso."""
+    return dict(_OVERRIDES)
+
+
+def datos_declarados_en_caliente() -> List[str]:
+    """Claves con valor declarado por sesion, en orden alfabetico."""
+    return sorted(_OVERRIDES)
+
+
+def datos_pisados_en_caliente() -> List[str]:
+    """
+    Los declarados por sesion que PISAN un valor del archivo, no un vacio.
+    Hermano de `criterios_adoptados.criterios_pisados_en_caliente`, y por la
+    misma razon: rellenar un vacio deja el expediente donde estaba, pisar
+    sustituye una lectura ya transcrita que sigue en el archivo diciendo
+    otra cosa, y la memoria tiene que imprimir las dos.
+    """
+    return sorted(c for c in _OVERRIDES if DATOS_SITIO[c].valor is not None)
+
+
+def dato_efectivo(clave: str) -> DatoSitio:
+    """
+    El dato TAL COMO GOBIERNA el calculo: el declarado por sesion si lo hay,
+    el del archivo si no. No registra uso. `dato()` sigue devolviendo lo que
+    dice el ARCHIVO, para quien necesite contrastarlo con la declaracion.
+    """
+    if clave in _OVERRIDES:
+        return _OVERRIDES[clave].dato
+    return dato(clave)
+
+
+def origen_de(clave: str) -> str:
+    """De que archivo sale el valor que gobierna: el del repositorio, o el
+    de la sesion / el `sitio.json` que lo declaro."""
+    dato(clave)
+    if clave in _OVERRIDES:
+        return _OVERRIDES[clave].origen
+    return ORIGEN_ARCHIVO
+
+
+def fecha_de(clave: str) -> str:
+    """La fecha de la declaracion por sesion, o vacia si gobierna el archivo."""
+    dato(clave)
+    if clave in _OVERRIDES:
+        return _OVERRIDES[clave].fecha
+    return ""
+
+
 def valor(clave: str) -> Any:
     """
     Devuelve el dato de sitio y registra la invocacion.
 
-    Un dato sin leer todavia (valor None) lanza `CriterioPendienteError`: la
-    misma regla que en `criterios_adoptados.valor`, porque el error que se
-    evita es el mismo -- rellenar en silencio lo que nadie ha determinado.
+    Consulta primero lo declarado por sesion (EXT-10) y despues el archivo,
+    en el mismo orden que `criterios_adoptados.valor`. Un dato sin leer
+    todavia (valor None) lanza `CriterioPendienteError`: la misma regla que
+    en los criterios, porque el error que se evita es el mismo -- rellenar
+    en silencio lo que nadie ha determinado.
     """
     dato_ = dato(clave)
     _USADOS.add(clave)
+    if clave in _OVERRIDES:
+        return _OVERRIDES[clave].dato.valor
     if dato_.valor is None:
         raise CriterioPendienteError(
             clave, concepto=dato_.concepto,
@@ -786,8 +1036,13 @@ def reiniciar_usos() -> None:
 
 
 def datos_sin_valor() -> List[str]:
-    """Los datos declarados pero todavia sin leer. Detienen el calculo."""
-    return sorted(k for k, d in DATOS_SITIO.items() if d.valor is None)
+    """
+    Los datos declarados pero todavia sin leer. Detienen el calculo. Mira el
+    valor EFECTIVO (EXT-10): un [S] vacio del archivo que la sesion de otra
+    obra rellena deja de bloquear en esa corrida, y `ContextoCorrida` lo
+    fotografia al salir para que el JSON no lo lea del estado vivo.
+    """
+    return sorted(k for k in DATOS_SITIO if dato_efectivo(k).valor is None)
 
 
 def datos_con_verificacion_pendiente() -> List[str]:
@@ -796,7 +1051,8 @@ def datos_con_verificacion_pendiente() -> List[str]:
 
 
 def reporte_datos_sitio(solo_usados: bool = True, *,
-                        usados: Optional[Iterable[str]] = None) -> str:
+                        usados: Optional[Iterable[str]] = None,
+                        efectivos: Optional[Any] = None) -> str:
     """
     Bloque de declaracion de datos de sitio para el reporte final, hermano de
     `criterios_adoptados.reporte_criterios`.
@@ -805,6 +1061,10 @@ def reporte_datos_sitio(solo_usados: bool = True, *,
     memoria declara lo que sostiene sus numeros, no el catalogo completo.
     `usados` es la foto de una corrida (`ContextoCorrida.datos_usados`) y
     sustituye al registro vivo: es lo que `cli.volcar` pasa desde EXT-4.
+    `efectivos` es la otra mitad de la foto (`ContextoCorrida.datos_efectivos`,
+    EXT-10): el valor, la trazabilidad, la fecha y el ORIGEN con que gobierno
+    cada dato; sin ella se imprime lo que dice el archivo, que es lo que
+    gobierna cuando nadie declaro nada por sesion.
     """
     if usados is None:
         usados = _USADOS
@@ -818,12 +1078,20 @@ def reporte_datos_sitio(solo_usados: bool = True, *,
 
     for k in claves:
         d = DATOS_SITIO[k]
-        out.append(f"[{d.etiqueta}] {k} = {d.valor!r}")
+        foto = efectivos[k] if efectivos is not None else None
+        valor_ = foto.valor if foto is not None else d.valor
+        trazabilidad = foto.trazabilidad if foto is not None else d.trazabilidad
+        origen = foto.origen if foto is not None else ORIGEN_ARCHIVO
+        out.append(f"[{d.etiqueta}] {k} = {valor_!r}")
         out.append(f"     Concepto      : {d.concepto}")
         out.append(f"     Procedimiento : {d.procedimiento}")
         out.append(f"     Fuente        : {d.fuente}")
-        out.append(f"     Trazabilidad  : {d.trazabilidad}")
+        out.append(f"     Trazabilidad  : {trazabilidad}")
         out.append(f"     Ambito        : {d.ambito}")
+        out.append(f"     Origen        : {origen}")
+        if foto is not None and foto.declarado_en_caliente:
+            out.append(f"     Declarado (sesion) el {foto.fecha}; el archivo "
+                       f"dice {d.valor!r}")
         if d.reemplazado_por:
             out.append(f"     Se sustituye por: {d.reemplazado_por}")
         if d.verificacion_pendiente:
@@ -849,6 +1117,53 @@ def reporte_datos_sitio(solo_usados: bool = True, *,
         out.append("-" * 78)
 
     return "\n".join(out)
+
+
+# ---------------------------------------------------------------------------
+# La advertencia de corredor (EXT-10)
+# ---------------------------------------------------------------------------
+
+_ESPACIOS = re.compile(r"\s+")
+
+
+def _normalizado(texto: str) -> str:
+    """Sin tildes, en minusculas y con los espacios colapsados: lo minimo
+    para comparar dos rotulos escritos por dos personas."""
+    sin_tildes = "".join(c for c in unicodedata.normalize("NFKD", str(texto))
+                         if not unicodedata.combining(c))
+    return _ESPACIOS.sub(" ", sin_tildes.casefold()).strip()
+
+
+def advertencia_de_corredor(proyecto: str, corredor: str,
+                            origen: str) -> Optional[str]:
+    """
+    El texto de la advertencia cuando el nombre del proyecto no coincide con
+    el corredor para el que se leyeron los datos de sitio, o `None`.
+
+    Es una funcion PURA de texto, sin estado: la llaman la CLI (consola) y
+    M11 (memoria) con el corredor EFECTIVO de la corrida y su origen, ambos
+    leidos del `ContextoCorrida`; M11 no normaliza ni compara nada por su
+    cuenta (regla «la memoria la emite el calculo; M11 la formatea»).
+
+    La comparacion es TEXTUAL y deliberadamente laxa: no advierte si el
+    proyecto no tiene nombre, ni si uno de los dos rotulos contiene al otro
+    una vez normalizados (sin tildes, sin mayusculas, sin dobles espacios).
+    No bloquea nada y no va al JSON: es el aviso que el paso 10 del dictamen
+    pide para el caso que EXT-V-01 describe --- correr la obra B con el
+    nombre de B y los [S] que siguen siendo los de A ---, y su unico
+    proposito es que ese caso no pase en silencio.
+    """
+    if not str(proyecto or "").strip():
+        return None
+    a, b = _normalizado(proyecto), _normalizado(corredor)
+    if a and b and (a in b or b in a):
+        return None
+    return (f"Advertencia de corredor: el proyecto se llama «{proyecto}» y los "
+            f"datos de sitio de esta corrida se leyeron para el corredor "
+            f"«{corredor}» (origen: {origen}). Si es otra obra, declare sus "
+            "datos de sitio [S] con --datos-sitio sitio.json (CLI) o en el "
+            "campo «JSON de datos de sitio» de la pestaña 1 (GUI), con su "
+            "trazabilidad y su fecha; datos_sitio.py no se edita")
 
 
 def _coherencia_de_datos_sitio() -> None:

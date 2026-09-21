@@ -1386,7 +1386,17 @@ ficha, arriba, para no duplicar el símbolo.
   único lugar del «proyecto actual», y la advertencia cuando `--proyecto` no
   coincide con `corredor_del_proyecto`. Sesión EXT-10, sólo después de EXT-4 y
   EXT-9.
-- **Dónde vive:** `src/datos_sitio.py::corredor_del_proyecto`
+- **CERRADA en EXT-10 (2026-09-21).** Enmienda constitucional primero
+  (CLAUDE.md, taxonomía [S]; v8 §0.7) y mecanismo después: `DatoSitio.nivel`
+  medido en las dos direcciones (`tests/test_ext10_multiobra.py`),
+  `datos_sitio.establecer_dato_dinamico` (replace + `_verificar_dato`,
+  trazabilidad y fecha obligatorias, `Derivada` rechazada), `--datos-sitio`
+  (`servicio.cargar_datos_sitio`, rechazo entero y en seco), sesión formato
+  3 (`src/sesion.py`) como único lugar del «proyecto actual»,
+  `ContextoCorrida.datos_efectivos` con origen, y la memoria con «Origen» y
+  la advertencia de corredor. Los valores de La Unión siguen en los
+  archivos; un proyecto nuevo es `sesion_vacia()`. Parte XXVI.
+- **Dónde vive:** `src/datos_sitio.py::establecer_dato_dinamico`
 
 ## EXT-G-03 · Las seis fichas de ayuda de claves externas: se llenan, pero sólo por derivación
 
@@ -1663,7 +1673,15 @@ quedaron sin hacer a propósito, con su argumento y su sesión.
   migración, corridas embebidas (cada una con su `contexto`), escritura
   atómica; y decidir si «Importar decisiones» —que hoy suma sin vaciar y sin
   preguntar— pide confirmación clave a clave cuando pisa.
-- **Dónde vive:** `gui/app.py::errores_de_sesion`
+- **CERRADA en EXT-10 (2026-09-21), salvo la pregunta de «Importar
+  decisiones», que queda como ficha EXT-10-02.** `FORMATO_SESION = 3`,
+  `sesion.migrar_a_actual` (explícita, por escalones, `ValueError` para lo
+  que no se puede migrar), `id`, `csv_sha1`, `corridas` con `informe_json`
+  (`sesion.corrida_para_sesion`; la CLI dice si su corrida REPRODUCE o
+  DIFIERE de la embebida), y `sesion.escribir_json_atomico` (temporal +
+  `os.replace`) en las cuatro escrituras. `ResultadoDeRestauracion` no
+  cambió de contrato: `restaurar_datos_de_sitio` lo reutiliza.
+- **Dónde vive:** `src/sesion.py::migrar_a_actual`
 
 ## EXT-4-02 · El contexto vive en registros de módulo, no en `contextvars`: la GUI sigue corriendo en su hilo
 
@@ -2072,6 +2090,10 @@ esperaría o porque dejan algo abierto.
   (`gui.exportacion_pdf.sin_marca_de_tiempo`).
 - **Qué haría falta:** un formato de sesión con la corrida embebida
   (`informe_json` por corrida, `FORMATO_SESION = 3`): es EXT-10 / E04.
+- **Cerrada EN PARTE en EXT-10 (2026-09-21).** La sesión embebe la corrida
+  y la CLI compara la suya con la embebida (`cli._comparar_con_la_corrida_
+  embebida`); el hijo del PDF SIGUE RECALCULANDO, porque `Informe` sigue
+  sin forma de ida y vuelta. Lo que queda es la ficha EXT-10-04.
 - **Dónde vive:** `gui/exportacion_pdf.py::ProcesoPdf`
 
 ## EXT-8-03 · Las claves enteras de un criterio declarado no sobreviven al JSON de la sesión
@@ -2206,3 +2228,120 @@ esperaría o porque dejan algo abierto.
   citas, criterios, memoria o pasos regenera los cuatro documentos con su
   sello, como manda el ritual de cierre.
 - **Dónde vive:** `src/indice_formulas.py::corrida_de_referencia`
+
+
+---
+
+# Parte XXVI — Lo que EXT-10 dejó escrito al hacer del despliegue una herramienta multi-obra
+
+EXT-10 cerró EXT-V-01 y la fase E04 del plan de evolución: la enmienda
+constitucional primero (CLAUDE.md, v8 §0.7) y después el mecanismo —
+`DatoSitio.nivel`, `datos_sitio.establecer_dato_dinamico`, `--datos-sitio`,
+la sesión formato 3 como único lugar del «proyecto actual», el origen de
+cada [S] en la memoria y la advertencia de corredor—. Seis cosas quedaron
+decididas DISTINTAS de la lectura más directa del prompt, o sin hacer a
+propósito, y cada una lleva su argumento y su símbolo.
+
+## EXT-10-01 · La ventana normativa sigue sin declarar datos de sitio
+
+- **Qué se difirió:** que la pestaña 2 / la ventana emergente declaren un
+  [S] como declaran un criterio.
+- **Por qué:** la regla R4 («cuando una fila depende de un dato que el
+  proyecto no tiene, la ventana pide o bloquea; nunca elige») vale para la
+  variable entera: un [S] no se elige en un formulario, se LEE con un
+  procedimiento y se defiende con la trazabilidad de esa lectura. La casa
+  nueva de EXT-10 es la sesión —un archivo con valor, trazabilidad y fecha
+  por clave, revisable y versionable—, y por eso el campo de la pestaña 1 y
+  `--datos-sitio` son la puerta, no un cuadro de texto por dato. El texto de
+  `_POR_QUE_NO_DECLARABLE[DATO_SITIO]` dice ahora dónde sí se declara.
+- **Qué haría falta:** decidir si un editor por dato en la GUI (valor +
+  trazabilidad + fecha, sobre `verificar_declaracion_de_sitio`) es un
+  requisito de producto; es la misma pregunta que E10 para los criterios.
+- **Dónde vive:** `src/ventana_normativa.py::_POBLACION_DECLARABLE`
+
+## EXT-10-02 · «Importar decisiones» importa criterios y no datos de sitio
+
+- **Qué se difirió:** que «Importar decisiones» (sustituir=False) sume
+  también el bloque `sitio` de otra sesión, y la confirmación clave a clave
+  cuando pisa (pregunta abierta desde EXT-4-01).
+- **Por qué:** importar decisiones de otra sesión tiene sentido para lo que
+  se ELIGE —un criterio elegido en la obra A puede valer en la B—; un [S] es
+  un hecho de UN sitio y sumar los de otra obra es exactamente el error que
+  la etiqueta existe para impedir. Abrir sustituye, importar suma sólo
+  criterios, y `_aplicar_bloques_de_sesion` es la única función que toca los
+  [S] de la sesión. La confirmación clave a clave sigue sin decidirse: no
+  cabe en un cluster de estado de datos de sitio.
+- **Qué haría falta:** un caso de uso real en que dos obras compartan un
+  [S] (no se conoce ninguno), y para la confirmación, la sesión E10 de
+  editores tipados.
+- **Dónde vive:** `gui/app.py::importar_decisiones`
+
+## EXT-10-03 · La advertencia de corredor es textual, no bloquea y no va al JSON
+
+- **Qué se difirió:** una comparación «fuerte» entre el proyecto y el
+  corredor (por identificador, por progresivas) y un bloqueo cuando no
+  coinciden; y meter la advertencia en `informe_json`.
+- **Por qué:** los dos rótulos los escriben personas —`--proyecto` es un
+  nombre de portada y `corredor_del_proyecto` un texto de expediente— y no
+  hay ningún dato que los relacione más que el texto. La comparación es por
+  contención normalizada (sin tildes, sin mayúsculas, espacios colapsados),
+  pura y sin estado (`datos_sitio.advertencia_de_corredor`), y sólo AVISA:
+  el caso que persigue —correr la obra B con los [S] de A— no es un
+  incumplimiento normativo sino un descuido que tiene que verse. No va al
+  JSON porque `Informe` no lleva `proyecto` (es presentación) y el JSON de
+  dos corridas iguales no puede depender del nombre de portada. Y el [S]
+  `corredor_del_proyecto` de La Unión NO se reescribió para que «coincida»
+  con «Via de evitamiento - La Union»: sería cambiar un dato de sitio para
+  callar un aviso.
+- **Qué haría falta:** una cabecera de obra con progresivas en el CSV o en
+  el sitio.json (lo que `reemplazado_por` de `corredor_del_proyecto` ya
+  pide) y entonces una comparación por dato y no por texto.
+- **Dónde vive:** `src/datos_sitio.py::advertencia_de_corredor`
+
+## EXT-10-04 · La sesión embebe la corrida; el hijo del PDF sigue recalculando
+
+- **Qué se difirió:** que el subproceso del PDF (EXT-8) lea el `informe_json`
+  embebido en la sesión y sólo formatee, en vez de repetir el cálculo.
+- **Por qué:** `informe_json` es un volcado de salida, no un formato de
+  carga: `Informe` no tiene ida y vuelta y M11 formatea objetos, no dicts.
+  Lo que E04 sí da es la equivalencia MEDIDA sobre la sesión: la CLI, al
+  abrir una sesión con corrida embebida del mismo CSV y alcance, dice si su
+  corrida la REPRODUCE (mismo JSON salvo la marca de tiempo) o DIFIERE, y
+  eso es lo que un revisor necesita para saber si la memoria sigue vigente.
+- **Qué haría falta:** un cargador de `Informe` desde su JSON, con los
+  `PasoDeMemoria` incluidos; es la sesión E14 (comparador) la que lo
+  necesitará primero.
+- **Dónde vive:** `cli.py::_comparar_con_la_corrida_embebida`
+
+## EXT-10-05 · El nivel de seis datos de sitio es un argumento, no una medida
+
+- **Qué se difirió:** medir por corridas el `nivel` de `ZONA_SISMICA_LA_UNION`,
+  `Z_E030`, `corredor_del_proyecto`, `carriles_por_sentido`, `clase_de_via` y
+  `existe_informacion_secundaria_tramo`.
+- **Por qué:** ningún módulo de cálculo los invoca por `valor()` (la zona y
+  el Z son sólo referencia, Sec. 0.4; el corredor lo imprime M11 desde el
+  contexto; los tres de calicatas los pide el Manual de Suelos y ningún
+  módulo los consume todavía), de modo que ninguna corrida puede medirlos.
+  Se clasifican por argumento, escrito junto al campo, y están censados en
+  `DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA` para que el grupo no crezca en
+  silencio, con la misma técnica que `test_nivel_medido`. Los otros tres se
+  midieron: `PGA_roca_B` lo invoca sólo la corrida de expediente, y los dos
+  de M9 se detienen antes en otros pendientes.
+- **Qué haría falta:** un consumidor real de los tres de calicatas (el
+  programa de exploración del expediente), que los haría medibles.
+- **Dónde vive:** `tests/test_ext10_multiobra.py::DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA`
+
+## EXT-10-06 · El `id` de una sesión migrada sólo es estable desde que se guarda
+
+- **Qué se difirió:** una identidad de sesión derivada del contenido (una
+  huella) en vez de un `uuid4` asignado al migrar.
+- **Por qué:** una sesión v1 o v2 no tiene identidad, y una huella del
+  contenido cambiaría con cada campo editado, que es lo contrario de una
+  identidad. `migrar_a_actual` asigna un `uuid4` nuevo a cada apertura de
+  una sesión sin `id` y LO DICE en el aviso («solo sera estable cuando la
+  guarde»); la ventana lo conserva en `sesion_id` y «Guardar sesion» lo
+  escribe, y desde entonces abrir y guardar conservan el mismo. Los
+  archivos de `tests/apoyo/` que escriben `FORMATO_SESION` sin `id` entran
+  por la misma regla.
+- **Qué haría falta:** nada para cerrarla; es el comportamiento elegido.
+- **Dónde vive:** `src/sesion.py::_migrar_v2_a_v3`

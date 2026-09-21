@@ -28,13 +28,22 @@ aqui: la hace `criterios_adoptados.escribir_valor_en_archivo`, que la GUI
 llama detras de una confirmacion propia. Declarar para la corrida y fijar el
 expediente son dos decisiones distintas y este modulo solo hace la primera.
 
-Que NO se declara desde aqui
-----------------------------
+Que NO se declara desde la ventana
+----------------------------------
 Solo los CRITERIOS. Una columna del CSV es un dato por punto y su sitio es el
-CSV; un dato de sitio es un hecho determinado por un procedimiento y
-`datos_sitio.py` no tiene API de escritura a proposito. En los dos casos la
-ventana muestra todo y no deja declarar, diciendo de donde tiene que venir el
-valor: es la regla R4 aplicada a la variable entera en vez de a una fila.
+CSV; un dato de sitio es un hecho determinado por un procedimiento y no se
+elige en un formulario. En los dos casos la ventana muestra todo y no deja
+declarar, diciendo de donde tiene que venir el valor: es la regla R4 aplicada
+a la variable entera en vez de a una fila.
+
+Desde EXT-10 (EXT-V-01) un [S] de OTRA OBRA si entra al proceso, pero por
+SESION y no por la ventana: el bloque `sitio` de la sesion JSON (formato 3)
+o `--datos-sitio sitio.json`, con valor, trazabilidad y fecha, por la unica
+puerta `datos_sitio.establecer_dato_dinamico`. Este modulo pone la mitad que
+le toca --- `restaurar_datos_de_sitio` y `estado_de_sitio_de_sesion`, gemelas
+de `restaurar_sesion` y `estado_de_sesion` --- porque es quien ya sabe abrir
+una sesion en seco, vaciar y volcar sin dejar nada a medias (EXT-A-02).
+`datos_sitio.py`, el archivo, sigue sin escribirse nunca desde el programa.
 
 R4, en el camino de declaracion
 -------------------------------
@@ -66,6 +75,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from src import criterios_adoptados as _ca
+from src import datos_sitio as _ds
 from src import variables_entrada as _ve
 from src import ventana_normativa as _vn
 from src.modelos import DeCatalogo, DeTabla, EnRango, ModoDeResolucion, Poblacion
@@ -396,6 +406,96 @@ def _exigir_declarable(clave: str) -> None:
         raise ValueError(
             f"'{clave}' no se declara desde la ventana: "
             f"{_vn._POR_QUE_NO_DECLARABLE[v.poblacion]}")
+
+
+# ===========================================================================
+# Los datos de sitio de la sesion (EXT-10, EXT-V-01)
+# ===========================================================================
+
+def estado_de_sitio_de_sesion() -> Dict[str, Any]:
+    """
+    Los [S] declarados por sesion, listos para `json.dump`: el bloque `sitio`
+    de la sesion formato 3. Gemela de `estado_de_sesion`. Cada entrada lleva
+    el valor, la trazabilidad de ESA lectura y su fecha, que es exactamente
+    lo que `datos_sitio.establecer_dato_dinamico` exige para reponerla.
+    """
+    return {"valores": {
+        clave: {"valor": declarado.dato.valor,
+                "trazabilidad": declarado.dato.trazabilidad,
+                "fecha": declarado.fecha}
+        for clave, declarado in _ds.datos_dinamicos().items()}}
+
+
+def restaurar_datos_de_sitio(bloque: Any, *, sustituir: bool = True,
+                             origen: str,
+                             en_seco: bool = False) -> ResultadoDeRestauracion:
+    """
+    Repone los datos de sitio [S] que una sesion (o un `sitio.json`) trae,
+    por el MISMO camino que la GUI y la CLI: `establecer_dato_dinamico`, con
+    su guardia. Gemela de `restaurar_sesion`, con las mismas tres fases y por
+    las mismas razones (EXT-A-02): (1) EN SECO, cada entrada pasa por
+    `verificar_declaracion_de_sitio` y la fecha se exige, de modo que lo
+    aceptado y lo rechazado se conocen antes de tocar nada; (2) si
+    `sustituir`, se vacia TODO lo declarado por sesion y `retirados` dice
+    que se fue --- abrir la obra B no hereda ni el valor ni la fecha de la
+    obra A ---; (3) se vuelca solo lo aceptado, con `origen` como archivo
+    de procedencia de cada dato.
+
+    `bloque` es `{"valores": {clave: {valor, trazabilidad, fecha}}}`. Lo que
+    la guardia rechaza sale en `rechazados` con su motivo; un bloque que no
+    tiene esa forma es `ValueError` antes de vaciar nada. Con `en_seco=True`
+    se hace SOLO la fase (1) y se devuelve la cuenta sin tocar el estado:
+    es lo que `servicio.cargar_datos_sitio` usa para rechazar un archivo
+    entero sin retirar lo que otra obra tenia declarado.
+    """
+    if not isinstance(bloque, dict):
+        raise ValueError(
+            "el bloque de datos de sitio de la sesion no es un objeto con "
+            f"claves: trae {type(bloque).__name__}")
+    valores = bloque.get("valores", {})
+    if not isinstance(valores, dict):
+        raise ValueError(
+            "el bloque 'valores' de los datos de sitio no es un objeto con "
+            f"claves: trae {type(valores).__name__}")
+
+    aceptados: List[Tuple[str, Any, str, str]] = []
+    rechazados: List[Tuple[str, str]] = []
+    for clave, entrada in valores.items():
+        if not isinstance(entrada, dict):
+            rechazados.append((clave, "cada dato de sitio es un objeto con "
+                                      "valor, trazabilidad y fecha, y este "
+                                      f"trae {type(entrada).__name__}"))
+            continue
+        trazabilidad = entrada.get("trazabilidad", "")
+        fecha = str(entrada.get("fecha", "") or "").strip()
+        try:
+            _ds.verificar_declaracion_de_sitio(clave, entrada.get("valor"),
+                                               trazabilidad)
+        except (ValueError, KeyError) as exc:
+            rechazados.append((clave, str(exc)))
+            continue
+        if not fecha:
+            rechazados.append((clave, "se declara sin fecha: la fecha de la "
+                                      "lectura es parte de la trazabilidad "
+                                      "de un [S] declarado por sesion"))
+            continue
+        aceptados.append((clave, entrada.get("valor"), str(trazabilidad), fecha))
+
+    if en_seco:
+        return ResultadoDeRestauracion(tuple(clave for clave, *_r in aceptados),
+                                       tuple(rechazados), ())
+
+    retirados: Tuple[str, ...] = ()
+    if sustituir:
+        previas = set(_ds.datos_dinamicos())
+        _ds.limpiar_datos_dinamicos()
+        retirados = tuple(sorted(previas - {clave for clave, *_r in aceptados}))
+
+    for clave, valor, trazabilidad, fecha in aceptados:
+        _ds.establecer_dato_dinamico(clave, valor, trazabilidad, fecha,
+                                     origen=origen)
+    return ResultadoDeRestauracion(tuple(clave for clave, *_r in aceptados),
+                                   tuple(rechazados), retirados)
 
 
 def _tabla_unica(clave: str, tabla_id: Optional[str]) -> str:

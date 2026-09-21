@@ -3,7 +3,11 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "71f9047c2c288608966f30404ff9232c7050e16f",
+    "criterios_sha1": "6d12e40aa526b5bdb47f9942783380d38977917e",
+    "corredor_del_proyecto": {
+      "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
+      "origen": "src/datos_sitio.py"
+    },
     "puntos": 4,
     "dimensionados": 0,
     "cerrado": false
@@ -475,6 +479,7 @@
       "existe_informacion_secundaria_tramo",
       "orientacion_muro_respecto_al_trafico"
     ],
+    "declarados_en_caliente": [],
     "trazabilidad_incompleta": [
       "PGA_roca_B",
       "ZONA_SISMICA_LA_UNION",

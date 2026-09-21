@@ -55,6 +55,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from src import sesion as _sesion
+
 # LOS LIMITES MEDIDOS, escritos donde el usuario los lee (la ayuda del
 # boton). Son medidas del dictamen (PC-11), no valores de proyecto: no
 # gobiernan ningun calculo. Por encima de `UMBRAL_PUNTOS_PDF` la ventana
@@ -100,7 +102,8 @@ def comando_exportar_pdf(*, interprete: str, cli: Path, sesion: Path,
 def sesion_de_la_corrida(informe: Any, *, proyecto: str, csv: str,
                          datos_externos: str, externos: Dict[str, str],
                          alcance: str, formato_version: int,
-                         app_version: str) -> Dict[str, Any]:
+                         app_version: str, datos_sitio: str = "",
+                         id_sesion: str = "") -> Dict[str, Any]:
     """
     La sesion que describe LA CORRIDA que produjo `informe`, no los campos
     vivos de la ventana.
@@ -120,33 +123,35 @@ def sesion_de_la_corrida(informe: Any, *, proyecto: str, csv: str,
     valores = {clave: contexto.valores_efectivos[clave] for clave in claves}
     procedencias = {clave: asdict(p) for clave, p in contexto.procedencias.items()
                     if clave in valores}
+    # Los [S] declarados por sesion CON QUE CORRIO (EXT-10), de la foto y no
+    # del registro vivo, con su trazabilidad y su fecha: el hijo los repone
+    # por `declaracion.restaurar_datos_de_sitio`, la misma guardia.
+    sitio = {clave: {"valor": contexto.dato_efectivo(clave).valor,
+                     "trazabilidad": contexto.dato_efectivo(clave).trazabilidad,
+                     "fecha": contexto.dato_efectivo(clave).fecha}
+             for clave in contexto.datos_declarados_en_caliente}
     return {
         "formato_version": formato_version,
         "app_version": app_version,
+        "id": id_sesion,
         "proyecto": proyecto,
         "csv": csv,
         "datos_externos": datos_externos,
+        "datos_sitio": datos_sitio,
         "externos": dict(externos),
         "alcance": alcance,
         "criterios": {"valores": valores, "procedencias": procedencias},
+        "sitio": {"valores": sitio},
+        "csv_sha1": contexto.csv_sha1,
+        # El hijo recalcula (ficha EXT-8-02): no necesita las corridas.
+        "corridas": [],
     }
 
 
-def sin_marca_de_tiempo(informe_json: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    El JSON de un informe sin su marca de tiempo, para comparar dos corridas
-    de la MISMA obra hechas en momentos distintos. La marca de tiempo esta
-    en `expediente.generado_utc` (y en `generado`, si el volcado la lleva
-    arriba): es el unico campo volatil del informe, y la linea base de la
-    Familia C lo normaliza con el mismo criterio.
-    """
-    copia = dict(informe_json)
-    copia.pop("generado", None)
-    if isinstance(copia.get("expediente"), dict):
-        expediente = dict(copia["expediente"])
-        expediente.pop("generado_utc", None)
-        copia["expediente"] = expediente
-    return copia
+# `sin_marca_de_tiempo` vive en `src/sesion.py` desde EXT-10 (la CLI la usa
+# para comparar su corrida con la embebida en la sesion) y se reexporta aqui
+# con el mismo nombre, que es como la leen la ventana y la suite.
+sin_marca_de_tiempo = _sesion.sin_marca_de_tiempo
 
 
 class ProcesoPdf:
@@ -186,8 +191,8 @@ class ProcesoPdf:
         """Escribe la sesion de trabajo y lanza el hijo. No espera."""
         from cli import PREFIJO_PROGRESO  # noqa: F401  (el contrato existe)
         self.directorio_trabajo.mkdir(parents=True, exist_ok=True)
-        self.ruta_sesion.write_text(json.dumps(self.sesion, ensure_ascii=False, indent=2),
-                                    encoding="utf-8")
+        # Escritura atomica (E04): el hijo nunca lee una sesion a medias.
+        _sesion.escribir_json_atomico(self.ruta_sesion, self.sesion)
         self.comando = comando_exportar_pdf(
             interprete=self.interprete, cli=self.raiz / "cli.py",
             sesion=self.ruta_sesion, destino=self.destino,
