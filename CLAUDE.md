@@ -592,7 +592,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4021**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4034**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -642,7 +642,32 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **PF-2 (2026-09-21) sumó QUINCE tests**, y ninguno depende de
+independientes. **PF-3 (2026-09-21) sumó TRECE tests**, y ninguno depende de
+PyMuPDF ni de Tk: los 12 de `tests/test_pf3_barrido.py` —la aceptación del
+barrido de sensibilidad: los siete del prompt escritos primero en rojo con
+`xfail(strict=True)` por test (medidos 7 xfailed y 0 XPASS antes de tocar
+código) y liberados al corregir (tres corridas sobre el mismo árbol con
+`criterios_sha1` y `csv_sha1` idénticos, cada una con SU valor declarado y
+su procedencia; la tabla leída del volcado y la primera corrida IGUAL a sí
+misma; el valor fuera de la ventana que no corre nada, medido con
+`servicio.correr` interceptado; el criterio de tabla que exige fila o nota
+por la misma puerta; el estado del proceso repuesto con la MISMA
+procedencia; la guardia por AST; y la CLI con dos barridos, el JSON y la
+memoria que no se escribe), más los cinco que dejó el auditor adversarial
+en la parte 2 (la comparación con la PRIMERA corrida y el «no comparable»
+cuando A-01 pasa de control de entrada a salida en ke = 0.9; `_filas_de`
+sobre una comparación sintética; el punto que deja de dimensionar y dice
+V3; la base aplicada en la puerta como en la pestaña 2; y la CLI que
+cierra la puerta de todos los barridos antes de correr, avisa de las
+banderas que no aplica y nombra la clave inexistente y el valor vacío)— y
+el anclaje de la ficha PF-3-01 en `test_decisiones_diferidas`. Ningún
+archivo restó tests ni se reescribió. La línea base no se movió: el
+comparador cambió tres literales por constantes con el mismo texto. Las
+cuatro configuraciones: «sí · sí» MEDIDA sobre un checkout limpio
+(`git worktree`) de `d4a4488` (el segundo commit `ext(PF-3)`, con los
+ajustes del auditor), sin otra suite en marcha: 4031 passed, 3 skipped,
+collected 4034; las otras tres se derivan sumando 13 a las de PF-2, porque
+ninguno de los 13 depende de PyMuPDF ni de Tk. **PF-2 (2026-09-21) sumó QUINCE tests**, y ninguno depende de
 PyMuPDF ni de Tk: los 14 de `tests/test_pf2_prevuelo.py` —la aceptación
 del cuarto bloque del anticipo, escrita primero en rojo con
 `xfail(strict=True)` por test (medidos 10 xfailed y 0 XPASS antes de tocar
@@ -1164,7 +1189,8 @@ propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
-EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021. La
+EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
+PF-3: 4034. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1176,10 +1202,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4018 (medido en PF-2) | 3 |
-| sí | no | 4007 (derivado: 3992 de PF-1 + 15) | 14 |
-| no | sí | 3983 (derivado: 3968 de PF-1 + 15) | 38 |
-| no | no | 3972 (derivado: 3957 de PF-1 + 15) | 49 |
+| sí | sí | 4031 (medido en PF-3) | 3 |
+| sí | no | 4020 (derivado: 4007 de PF-2 + 13) | 14 |
+| no | sí | 3996 (derivado: 3983 de PF-2 + 13) | 38 |
+| no | no | 3985 (derivado: 3972 de PF-2 + 13) | 49 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
