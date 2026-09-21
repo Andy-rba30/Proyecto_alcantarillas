@@ -617,7 +617,12 @@ cálculo se movió (README de la línea base). El auditor adversarial dejó
 además la enmienda de la v8 con su declaración en el punto de uso, la
 `justificacion` que promete sólo lo que el código hace, la monotonía
 acotada a la Forma 1 y el piso viajando en `ResultadoHidraulico` y en el
-JSON por punto.
+JSON por punto. Las cuatro configuraciones: «sí · sí» MEDIDA sobre un
+checkout limpio (`git worktree`) de `3d478d3` (el tercer commit
+`ext(PF-1)`, tras el auditor y las dos guardias de la suite), sin otra
+suite en marcha: 4003 passed, 3 skipped, collected 4006; las otras tres se
+derivan sumando 112 a las del cierre de E-B, porque ninguno de los 112
+depende de PyMuPDF ni de Tk.
 **El cierre de E-B (2026-09-21, tras la revisión) sumó UN
 test**, sin dependencia de PyMuPDF ni de Tk: el de
 `tests/test_eb_editores_comparador.py` que cierra el hueco del texto que
@@ -1084,7 +1089,7 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | PENDIENTE_SI_SI (medido en PF-1) | 3 |
+| sí | sí | 4003 (medido en PF-1) | 3 |
 | sí | no | 3992 (derivado: 3880 del cierre de E-B + 112) | 14 |
 | no | sí | 3968 (derivado: 3856 del cierre de E-B + 112) | 38 |
 | no | no | 3957 (derivado: 3845 del cierre de E-B + 112) | 49 |
