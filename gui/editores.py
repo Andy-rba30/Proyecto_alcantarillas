@@ -134,10 +134,13 @@ class EditorTipado:
                       justify="left", style="Ayuda.TLabel").pack(anchor="w", pady=(4, 0))
         f_nota = ttk.Frame(p)
         f_nota.pack(fill="x", pady=(4, 0))
-        exige = e.exige_fila
-        ttk.Label(f_nota, text=("Nota (procedencia; obligatoria si el valor no "
-                                "proviene de una fila):" if exige
-                                else "Nota (procedencia, opcional):")).pack(side="left")
+        if e.exige_nota:
+            rotulo = "Nota = TRAZABILIDAD del ensayo (obligatoria):"
+        elif e.exige_fila:
+            rotulo = "Nota (procedencia; obligatoria si el valor no proviene de una fila):"
+        else:
+            rotulo = "Nota (procedencia, opcional):"
+        ttk.Label(f_nota, text=rotulo).pack(side="left")
         ent = ttk.Entry(f_nota, textvariable=self.nota_var, width=60)
         ent.pack(side="left", fill="x", expand=True, padx=(6, 0))
         Tooltip(ent, "Viaja con la procedencia y la memoria la imprime. En un\n"
@@ -471,6 +474,15 @@ class EditorDict(EditorTipado):
     def _mostrar(self, color, mensaje):
         self.lbl_mensaje.config(text=mensaje, foreground=color or COLOR_OK)
 
+    def _al_fila_elegida(self, opcion):
+        # La fila FIJA sus campos homonimos (K, M, c, Y de la Tabla A.1); los
+        # demas se quedan como estan y `declarar` exige la nota si ninguno
+        # coincide (auditoria adversarial de E-B, R5).
+        if isinstance(opcion.valor_propuesto, dict):
+            for campo, celda in opcion.valor_propuesto.items():
+                if campo in self.vars:
+                    self.vars[campo].set(_texto_de(celda))
+
     def piezas(self):
         return {c.nombre: self._pieza(c, self.vars[c.nombre].get())
                 for c in self.esquema.campos}
@@ -491,8 +503,11 @@ class EditorSerieDeClaves(EditorTipado):
         for o in self.esquema.opciones_de_tabla:
             var = tk.BooleanVar(value=False)
             self.vars[o.fila] = var
-            chk = ttk.Checkbutton(f, text=rotulo_de_opcion(o), variable=var,
-                                  state="normal" if o.elegible else "disabled")
+            # Todas se pueden marcar y desmarcar: la fila NO elegible la
+            # rechaza R4 al declarar (por `declarar_desde_tabla`), con su
+            # motivo, y una casilla apagada dejaba sin poder DESMARCAR la
+            # que el archivo trae (auditoria adversarial de E-B, A2).
+            chk = ttk.Checkbutton(f, text=rotulo_de_opcion(o), variable=var)
             chk.pack(anchor="w")
             self._trazar(var)
 

@@ -31,16 +31,28 @@ Las tres reglas del prompt, y donde vive cada una
 2. **Una adopcion distinta EXIGE procedencia.** `declarar` enruta por el
    modo de resolucion a la puerta que corresponde de `declaracion.py`: con
    fila, `declarar_desde_tabla` (que rechaza sin `nota` un numero que
-   DIFIERE de la celda, EXT-V-02); sin fila, en un criterio que se lee de una
-   tabla, hace falta la nota, o no entra. Teclear la CLAVE de una fila es
-   elegir esa fila (`fila_implicita`), que es el camino del raton de EXT-5;
-   un numero que coincide con VARIAS celdas no nombra ninguna --- adivinar
-   la fila seria inventar la procedencia.
+   DIFIERE de la celda, EXT-V-02; para un dict, la comprobacion es campo a
+   campo contra las columnas homonimas de la fila); sin fila, en un criterio
+   que se lee de una tabla, hace falta la nota, o no entra. Teclear la CLAVE
+   de una fila es elegir esa fila (`fila_implicita`), que es el camino del
+   raton de EXT-5, y vale para TODA fila, elegible o no: la que no lo es la
+   rechaza R4 en `declaracion`, igual que desde la ventana emergente. Un
+   NUMERO nunca nombra una fila --- ni cuando coincide con una sola celda:
+   la auditoria adversarial de E-B midio que 0.9 atribuia `ke_entrada` a
+   «Corrugated metal, projecting», que nadie eligio; adivinar la fila es
+   inventar la procedencia ---. Y un dato `de_ensayo` exige la nota, que es
+   su trazabilidad: sin ella la procedencia nombraria un ensayo que nadie
+   hizo (Conflicto #8, `clase_sitio`).
 3. **Aplicar es ATOMICO.** El valor se arma ENTERO (`armar_valor`), pasa la
    MISMA guardia que el archivo en seco (`verificar`, que es
    `ca.verificar_declaracion`) y entra por una sola llamada a `declaracion`,
    que a su vez verifica antes de escribir y registra la procedencia solo
    despues. Si un campo falla, no entra nada: ni el valor ni la procedencia.
+   Y `descomponer_valor` FALLA ante piezas que no encajan --- un triple en
+   una serie de pares, una clave que el dict no declara --- en vez de
+   filtrarlas: la primera version las descartaba, el editor se pintaba con
+   el resto y «Aplicar» declaraba un valor recortado con confirmacion verde
+   (auditoria adversarial de E-B).
 
 Lo que NO inventa: un dict cuyos campos no se pueden derivar de la ficha
 --- un dict de dicts como `cobertura_minima_aashto`, o uno vacio sin
@@ -126,6 +138,7 @@ class EsquemaDeEditor:
     tabla_id: str = ""
     opciones_de_tabla: Tuple[OpcionDeTabla, ...] = ()
     exige_fila: bool = False
+    exige_nota: bool = False        # de_ensayo: la nota es la trazabilidad
     dominio: str = ""
     valor_actual: Any = None
 
@@ -195,11 +208,21 @@ def _celdas_usadas(contenido: _vn.ContenidoDeTabla, fila: _vn.FilaMostrada) -> L
     return salida
 
 
+def _campos_homonimos(tabla: Any, fila_id: str,
+                      campos: Tuple[CampoDelEditor, ...]) -> Optional[Dict[str, Any]]:
+    """{campo: celda} para los campos del dict que son columna de la fila; None si ninguno."""
+    valores = tabla.fila(fila_id).valores
+    homonimos = {c.nombre: valores[c.nombre] for c in campos if c.nombre in valores}
+    return homonimos or None
+
+
 def _opciones_de_tabla(clave: str, r: DeTabla, tipo_de_editor: str,
-                       formas: Tuple[str, ...]) -> Tuple[str, Tuple[OpcionDeTabla, ...]]:
+                       formas: Tuple[str, ...],
+                       campos: Tuple[CampoDelEditor, ...]) -> Tuple[str, Tuple[OpcionDeTabla, ...]]:
     contenido = _vn.contenido_de_tabla(r.tablas[0], clave)
     numerico = tipo_de_editor in (ESCALAR, PAR) and not (
         {TIPO_TEXTO, TIPO_CATEGORIA} & set(formas))
+    tabla = _registro.construir().tabla(contenido.tabla_id)
     opciones = []
     for f in contenido.filas:
         if numerico:
@@ -210,7 +233,17 @@ def _opciones_de_tabla(clave: str, r: DeTabla, tipo_de_editor: str,
                 propuesto = (float(celdas[0]), float(celdas[1]))
             else:
                 propuesto = None
-        elif tipo_de_editor in (DICT, LITERAL):
+        elif tipo_de_editor == DICT:
+            # Los campos HOMONIMOS de las columnas de la fila (K, M, c, Y de
+            # la Tabla A.1 para `hds5_embocadura_hdpe`); None si no hay
+            # ninguno: elegir la fila no fija entonces ningun campo, y
+            # `declarar` exige la nota (auditoria adversarial de E-B, R5).
+            propuesto = _campos_homonimos(tabla, f.id, campos)
+        elif tipo_de_editor == LITERAL or TIPO_CATEGORIA in formas:
+            # Una CATEGORIA elige dentro de su conjunto cerrado; la clave de
+            # la fila no es uno de esos textos y la guardia la rechazaria
+            # (medido: las catorce filas de `condicion_pavimento`). Las filas
+            # se ofrecen como contexto y no proponen valor.
             propuesto = None
         else:
             propuesto = f.clave_corta
@@ -298,7 +331,7 @@ def esquema_de(clave: str) -> EsquemaDeEditor:
 
     tabla_id, opciones = "", ()
     if isinstance(r, DeTabla):
-        tabla_id, opciones = _opciones_de_tabla(clave, r, tipo_de_editor, formas)
+        tabla_id, opciones = _opciones_de_tabla(clave, r, tipo_de_editor, formas, campos)
 
     editable = not isinstance(r, Derivada)
     motivo = ("" if editable else
@@ -309,6 +342,7 @@ def esquema_de(clave: str) -> EsquemaDeEditor:
         tabla_id=tabla_id, opciones_de_tabla=opciones,
         exige_fila=(isinstance(r, DeTabla) and tipo_de_editor in (ESCALAR, PAR)
                     and TIPO_CATEGORIA not in formas),
+        exige_nota=isinstance(r, DeEnsayo),
         dominio=_dominio_de(r), valor_actual=_ca.criterio_efectivo(clave).valor)
 
 
@@ -383,22 +417,45 @@ def armar_valor(esquema: EsquemaDeEditor, piezas: Any) -> Any:
 
 
 def descomponer_valor(esquema: EsquemaDeEditor, valor: Any) -> Any:
-    """Las piezas de un valor entero, para pintarlas. `None` da piezas vacias."""
+    """
+    Las piezas de un valor entero, para pintarlas. `None` da piezas vacias.
+    Un valor que NO cabe en los campos --- un triple en una serie de pares,
+    una clave que el dict no declara, un par de tres --- es `ValueError`,
+    nunca un recorte: lo que el editor pinta tiene que ser lo que el literal
+    dice, o la pestaña declara un valor que el proyectista no ve.
+    """
     tipo = esquema.tipo_de_editor
     if tipo in (ESCALAR, LITERAL):
         return {CAMPO_UNICO: valor}
-    if tipo == PAR:
-        par = tuple(valor) if isinstance(valor, (tuple, list)) and len(valor) == 2 else (None, None)
-        return dict(zip(CAMPOS_DEL_PAR, par))
-    if tipo == SERIE_DE_PARES:
-        if not isinstance(valor, (tuple, list)):
+    if valor is None:
+        if tipo == PAR:
+            return dict(zip(CAMPOS_DEL_PAR, (None, None)))
+        if tipo == SERIE_DE_PARES:
             return []
-        return [tuple(p) for p in valor if isinstance(p, (tuple, list)) and len(p) == 2]
+        if tipo == DICT:
+            return {c.nombre: None for c in esquema.campos}
+        if tipo == SERIE_DE_CLAVES:
+            return {CAMPO_CLAVES: []}
+    if tipo == PAR:
+        if not isinstance(valor, (tuple, list)) or len(valor) != 2:
+            raise ValueError(f"'{esquema.clave}': {valor!r} no es un par (minimo, maximo)")
+        return dict(zip(CAMPOS_DEL_PAR, tuple(valor)))
+    if tipo == SERIE_DE_PARES:
+        if not isinstance(valor, (tuple, list)) or not all(
+                isinstance(p, (tuple, list)) and len(p) == 2 for p in valor):
+            raise ValueError(f"'{esquema.clave}': {valor!r} no es una serie de pares")
+        return [tuple(p) for p in valor]
     if tipo == DICT:
-        origen = valor if isinstance(valor, dict) else {}
-        return {c.nombre: origen.get(c.nombre) for c in esquema.campos}
+        if not isinstance(valor, dict):
+            raise ValueError(f"'{esquema.clave}': {valor!r} no es un dict")
+        sobran = sorted(set(valor) - {c.nombre for c in esquema.campos})
+        if sobran:
+            raise ValueError(f"'{esquema.clave}': los campos {sobran} no estan en el editor")
+        return {c.nombre: valor.get(c.nombre) for c in esquema.campos}
     if tipo == SERIE_DE_CLAVES:
-        return {CAMPO_CLAVES: list(valor) if isinstance(valor, (tuple, list)) else []}
+        if not isinstance(valor, (tuple, list)) or not all(isinstance(k, str) for k in valor):
+            raise ValueError(f"'{esquema.clave}': {valor!r} no es una serie de claves")
+        return {CAMPO_CLAVES: list(valor)}
     raise ValueError(f"editor {tipo!r} sin regla de descomposicion")
 
 
@@ -423,30 +480,52 @@ def veredicto_al_escribir(clave: str, valor: Any) -> ResultadoValidacion:
 
 def fila_implicita(esquema: EsquemaDeEditor, valor: Any) -> Optional[str]:
     """
-    La fila que un valor tecleado NOMBRA sin haberla elegido: la clave de una
-    fila (o su id) cuando el valor es un texto; la unica fila elegible cuya
-    celda propuesta es ese numero (o ese par) cuando es numerico. Con varias
-    candidatas, ninguna: adivinar seria inventar la procedencia.
+    La fila que un TEXTO tecleado NOMBRA sin haberla elegido: la clave de una
+    fila, o su id, sea elegible o no --- la que no lo es la rechaza R4 al
+    declararla, igual que desde la ventana emergente ---. Un numero no
+    nombra ninguna fila, ni cuando coincide con una sola celda: adivinarla
+    es inventar la procedencia (auditoria adversarial de E-B).
     """
-    if not esquema.opciones_de_tabla:
+    if not esquema.opciones_de_tabla or not isinstance(valor, str):
         return None
-    elegibles = [o for o in esquema.opciones_de_tabla if o.elegible]
-    if isinstance(valor, str):
-        for o in elegibles:
-            if valor in (o.fila, f"{esquema.tabla_id}#{o.fila}"):
-                return o.fila
-        return None
-    candidatas = []
-    for o in elegibles:
+    for o in esquema.opciones_de_tabla:
+        if valor in (o.fila, f"{esquema.tabla_id}#{o.fila}"):
+            return o.fila
+    return None
+
+
+def filas_con_esa_celda(esquema: EsquemaDeEditor, valor: Any) -> Tuple[OpcionDeTabla, ...]:
+    """Las filas cuya celda propuesta es ese numero (o ese par): para DECIRLO, no para elegir."""
+    salida = []
+    for o in esquema.opciones_de_tabla:
         p = o.valor_propuesto
         if _es_real(valor) and _es_real(p) and abs(float(valor) - float(p)) <= TOL_UMBRAL_NORMATIVO:
-            candidatas.append(o.fila)
+            salida.append(o)
         elif (isinstance(valor, (tuple, list)) and isinstance(p, tuple)
               and len(valor) == len(p) and all(_es_real(x) for x in valor)
               and all(abs(float(x) - float(y)) <= TOL_UMBRAL_NORMATIVO
                       for x, y in zip(valor, p))):
-            candidatas.append(o.fila)
-    return candidatas[0] if len(candidatas) == 1 else None
+            salida.append(o)
+    return tuple(salida)
+
+
+def _mismo_valor(a: Any, b: Any) -> bool:
+    if _es_real(a) and _es_real(b):
+        return abs(float(a) - float(b)) <= TOL_UMBRAL_NORMATIVO
+    return a == b
+
+
+def _campos_que_difieren_de_la_fila(esquema: EsquemaDeEditor, fila: str,
+                                    valor: Dict[str, Any]) -> Optional[List[str]]:
+    """
+    Los campos del dict que la fila fija (columnas homonimas) y cuyo valor
+    declarado es OTRO. None si la fila no fija ningun campo.
+    """
+    opcion = next((o for o in esquema.opciones_de_tabla if o.fila == fila), None)
+    if opcion is None or not isinstance(opcion.valor_propuesto, dict):
+        return None
+    return [campo for campo, celda in opcion.valor_propuesto.items()
+            if not _mismo_valor(valor.get(campo), celda)]
 
 
 def declarar(clave: str, valor: Any, *, fila: str = "", nota: str = "") -> _dec.Procedencia:
@@ -459,17 +538,57 @@ def declarar(clave: str, valor: Any, *, fila: str = "", nota: str = "") -> _dec.
     verificar(clave, valor)
     esquema = esquema_de(clave)
     r = _ca.criterio(clave).resolucion
+    nota = (nota or "").strip()
+    if isinstance(r, DeEnsayo) and not nota:
+        raise ValueError(
+            f"'{clave}' es un dato de ensayo ({r.ensayo}): la nota es su "
+            f"TRAZABILIDAD y no es opcional ({r.trazabilidad_exigida}). Sin ella "
+            "la procedencia nombraria un ensayo que nadie hizo")
     if isinstance(r, DeTabla):
         fila = (fila or "").strip() or (fila_implicita(esquema, valor) or "")
+        if esquema.tipo_de_editor == SERIE_DE_CLAVES and isinstance(valor, (tuple, list)):
+            # Las claves SON las filas: R4 y las alternativas descartadas
+            # las aplica `declaracion`, como desde la ventana emergente.
+            return _dec.declarar_desde_tabla(clave, valor, tabla_id=esquema.tabla_id,
+                                             filas=tuple(valor), nota=nota)
         if fila:
+            if isinstance(valor, dict):
+                difieren = _campos_que_difieren_de_la_fila(esquema, fila, valor)
+                if difieren is None and not nota:
+                    raise ValueError(
+                        f"'{clave}': la fila «{fila}» de {esquema.tabla_id} no fija "
+                        "ningun campo de este dict, de modo que elegirla no dice de "
+                        "donde salen sus valores: escriba en la nota que se toma de "
+                        "ella y por que")
+                if difieren and not nota:
+                    raise ValueError(
+                        f"'{clave}': los campos {difieren} DIFIEREN de las celdas de la "
+                        f"fila «{fila}» de {esquema.tabla_id}, y no traen nota. Un dict "
+                        "que no es el de la fila no PROVIENE de ella: o se toman sus "
+                        "celdas, o se escribe por que se adoptan otros numeros")
+            elif isinstance(valor, (tuple, list)):
+                opcion = next((o for o in esquema.opciones_de_tabla if o.fila == fila), None)
+                if opcion is not None and isinstance(opcion.valor_propuesto, tuple) \
+                        and not nota and not all(
+                            _mismo_valor(x, y) for x, y in zip(valor, opcion.valor_propuesto)):
+                    raise ValueError(
+                        f"'{clave}': el par {valor!r} DIFIERE del par "
+                        f"{opcion.valor_propuesto!r} de la fila «{fila}» de "
+                        f"{esquema.tabla_id}, y no trae nota")
             return _dec.declarar_desde_tabla(clave, valor, tabla_id=esquema.tabla_id,
                                              filas=(fila,), nota=nota)
-        if esquema.exige_fila and not nota.strip():
+        if esquema.exige_fila and not nota:
+            coinciden = filas_con_esa_celda(esquema, valor)
+            pista = ""
+            if coinciden:
+                pista = (" Coincide con la celda de " + ", ".join(
+                    f"«{o.fila}»" + ("" if o.elegible else f" (NO elegible: {o.motivo})")
+                    for o in coinciden) + ", pero un numero no nombra una fila: elijala.")
             raise ValueError(
                 f"'{clave}' se lee de la tabla {esquema.tabla_id} y el valor {valor!r} "
-                "no proviene de ninguna de sus filas: una adopcion distinta exige "
+                "no nombra ninguna de sus filas: una adopcion distinta exige "
                 "procedencia. Elija la fila en el editor, o escriba en la nota por "
-                "que se adopta otro numero (la memoria lo imprimira como adoptado)")
+                f"que se adopta otro numero (la memoria lo imprimira como adoptado).{pista}")
         return _dec.declarar_valor(clave, valor, nota=nota)
     if isinstance(r, EnRango):
         return _dec.declarar_en_rango(clave, valor, nota=nota)

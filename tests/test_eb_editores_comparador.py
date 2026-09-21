@@ -161,7 +161,11 @@ def test_e10_un_texto_de_tabla_propone_la_clave_de_la_fila():
     assert not e.exige_fila
     assert e.campos[0].tipo == ed.TIPO_CATEGORIA
     assert set(e.campos[0].opciones) == set(ca.criterio(CATEGORIA).sensibilidad)
-    assert all(isinstance(o.valor_propuesto, str) for o in e.opciones_de_tabla)
+    # Y las filas NO proponen su clave: no es uno de los tres textos y la
+    # guardia la rechazaria (R8 de la auditoria adversarial: las catorce
+    # filas de la Tabla 12.6.6.3-1 dejaban al editor en un callejon).
+    assert e.opciones_de_tabla
+    assert all(o.valor_propuesto is None for o in e.opciones_de_tabla)
 
 
 def test_e10_el_par_ordenado_tiene_minimo_y_maximo_con_la_ventana():
@@ -339,16 +343,15 @@ def test_e10_la_clave_de_una_fila_tecleada_es_esa_fila(_limpio):
     assert ed.fila_implicita(e, "cajon_concreto_aletas_30_75") == "cajon_concreto_aletas_30_75"
     p = ed.declarar("embocadura_cajon", "cajon_concreto_aletas_30_75")
     assert p.modo == "de_tabla" and p.filas == ("cajon_concreto_aletas_30_75",)
-    # Un numero que coincide con VARIAS celdas (0.5 esta en cuatro filas de
-    # la Tabla C.2) NO nombra ninguna: adivinar la fila seria inventar la
-    # procedencia. Uno que coincide con UNA sola, si.
+    # Un NUMERO no nombra ninguna fila, ni cuando coincide con una sola
+    # celda: la auditoria adversarial midio que 0.9 atribuia ke_entrada a
+    # «Corrugated metal, projecting» sin que nadie la eligiera (R3).
+    # Adivinar la fila es inventar la procedencia; el rechazo lo DICE.
     assert ed.fila_implicita(ed.esquema_de(KE), KE_CELDA) is None
-    unicas = {}
-    for o in ed.esquema_de(KE).opciones_de_tabla:
-        if o.elegible:
-            unicas.setdefault(o.valor_propuesto, []).append(o.fila)
-    celda, filas = next((c, f) for c, f in unicas.items() if len(f) == 1)
-    assert ed.fila_implicita(ed.esquema_de(KE), celda) == filas[0]
+    assert ed.fila_implicita(ed.esquema_de(KE), 0.9) is None
+    with pytest.raises(ValueError, match="cm_projecting"):
+        ed.declarar(KE, 0.9)
+    assert not ca.declarado_en_caliente(KE)
 
 
 def test_e10_en_rango_declara_por_su_puerta(_limpio):
@@ -363,6 +366,112 @@ def test_e10_un_derivado_no_se_declara_por_el_editor(_limpio):
     ed = _mod("src.editores")
     with pytest.raises(ValueError, match="deriva"):
         ed.declarar(DERIVADA, {"a": 1})
+
+
+# Lo que dejo la auditoria adversarial de E-B (R1, R4, R5, A1, A2)
+
+def test_e10_descomponer_falla_ante_piezas_que_no_encajan_en_vez_de_recortar():
+    """
+    R1: `[[1.2, 0.9], [1.5, 1.2, 3]]` se descomponia en `[[1.2, 0.9]]`, el
+    editor se pintaba con eso y «Aplicar» declaraba el recorte en verde.
+    """
+    ed = _mod("src.editores")
+    with pytest.raises(ValueError, match="serie de pares"):
+        ed.descomponer_valor(ed.esquema_de(SERIE), [[1.2, 0.9], [1.5, 1.2, 3]])
+    with pytest.raises(ValueError, match="extra"):
+        ed.descomponer_valor(ed.esquema_de(RECEPTOR), {"b_m": 2.0, "extra": 9})
+    with pytest.raises(ValueError, match="par"):
+        ed.descomponer_valor(ed.esquema_de(PAR), (0.01, 0.012, 0.013))
+    with pytest.raises(ValueError, match="claves"):
+        ed.descomponer_valor(ed.esquema_de(CLAVES_DE_FILA), ("C", 4))
+
+
+def test_e10_la_pestana_2_no_declara_desde_un_editor_que_no_refleja_el_literal():
+    """R1, la mitad de la GUI: el editor deja de ser la fuente si el literal no cupo."""
+    arbol = _arbol(RAIZ / "gui" / "app.py")
+    fuente = ast.unparse(arbol)
+    assert "_editor_refleja_literal" in fuente
+    valor = next(n for n in ast.walk(arbol) if isinstance(n, ast.FunctionDef)
+                 and n.name == "_valor_a_declarar")
+    assert "_editor_refleja_literal" in ast.unparse(valor)
+    literal = next(n for n in ast.walk(arbol) if isinstance(n, ast.FunctionDef)
+                   and n.name == "_literal_cambio")
+    assert any(isinstance(n, ast.ExceptHandler) for n in ast.walk(literal))
+
+
+def test_e10_el_literal_de_un_texto_no_lleva_comillas():
+    """R2: `repr` ponia comillas y «Aplicar» declaraba la clave entre comillas."""
+    doble_tkinter.instalar()
+    app = doble_tkinter.gui_app()
+    assert app.ExpedienteApp._literal_de("interpolacion_lineal_entre_extremos") \
+        == "interpolacion_lineal_entre_extremos"
+    assert app.ExpedienteApp._literal_de([[1.2, 0.9]]) == "[[1.2, 0.9]]"
+    assert app.ExpedienteApp._literal_de(None) == ""
+    from gui.componentes import interpretar_texto_declarado
+    for valor in ("flexible", 0.2, 1, (0.01, 0.013), {"b_m": 2.0}):
+        assert interpretar_texto_declarado(app.ExpedienteApp._literal_de(valor)) == valor
+
+
+def test_e10_una_fila_no_elegible_tecleada_la_rechaza_R4_tambien_con_nota(_limpio):
+    """
+    R4: la clave de una fila que NO es elegible entraba tecleada con nota,
+    por `declarar_valor`; la ventana emergente la rechazaba con R4. Una
+    puerta, una respuesta.
+    """
+    ed = _mod("src.editores")
+    e = ed.esquema_de("ke_entrada_cajon")
+    fila = next(o.fila for o in e.opciones_de_tabla if not o.elegible)
+    assert ed.fila_implicita(e, fila) == fila
+    with pytest.raises(ValueError, match="R4"):
+        ed.declarar("ke_entrada_cajon", fila, nota="adopto la fila del cajon")
+    assert not ca.declarado_en_caliente("ke_entrada_cajon")
+
+
+def test_e10_un_dict_de_tabla_toma_de_la_fila_sus_campos_homonimos_o_exige_nota(_limpio):
+    """
+    R5: elegir una fila para `hds5_embocadura_hdpe` no proponia nada y la
+    procedencia nombraba una fila cuyas celdas no eran el valor declarado.
+    """
+    ed = _mod("src.editores")
+    e = ed.esquema_de("hds5_embocadura_hdpe")
+    opcion = next(o for o in e.opciones_de_tabla if o.fila == "circular_cmp_headwall")
+    assert set(opcion.valor_propuesto) == {"K", "M", "c", "Y"}
+    valor = dict(ca.criterio("hds5_embocadura_hdpe").valor)      # el del archivo
+    with pytest.raises(ValueError, match="DIFIEREN"):
+        ed.declarar("hds5_embocadura_hdpe", valor, fila="circular_cmp_headwall")
+    assert not ca.declarado_en_caliente("hds5_embocadura_hdpe")
+    valor.update(opcion.valor_propuesto)
+    p = ed.declarar("hds5_embocadura_hdpe", valor, fila="circular_cmp_headwall")
+    assert p.filas == ("circular_cmp_headwall",)
+    # Una fila que no fija ningun campo del dict no dice de donde sale: nota.
+    e2 = ed.esquema_de("riesgo_admisible_propietario")
+    assert all(o.valor_propuesto is None for o in e2.opciones_de_tabla)
+    with pytest.raises(ValueError, match="no fija"):
+        ed.declarar("riesgo_admisible_propietario", {"R": 0.3, "n": 25}, fila="puentes")
+
+
+def test_e10_un_dato_de_ensayo_exige_su_trazabilidad_en_la_nota(_limpio):
+    """A1: sin nota la procedencia nombraba un ensayo que nadie hizo (Conflicto #8)."""
+    ed = _mod("src.editores")
+    assert ed.esquema_de("clase_sitio").exige_nota
+    with pytest.raises(ValueError, match="TRAZABILIDAD"):
+        ed.declarar("clase_sitio", "D")
+    assert not ca.declarado_en_caliente("clase_sitio")
+    p = ed.declarar("clase_sitio", "D", nota="Vs30 = 250 m/s, EMS-2026-03, calicata C-2")
+    assert "Vs30" in p.nota
+
+
+def test_e10_la_serie_de_claves_declara_desde_la_tabla_con_sus_filas(_limpio):
+    """A2: F_pga entraba por `declarar_valor` sin filas ni R4."""
+    ed = _mod("src.editores")
+    e = ed.esquema_de(CLAVES_DE_FILA)
+    elegibles = [o.fila for o in e.opciones_de_tabla if o.elegible]
+    p = ed.declarar(CLAVES_DE_FILA, tuple(elegibles[:2]))
+    assert p.modo == "de_tabla" and p.filas == tuple(elegibles[:2])
+    no_elegibles = [o.fila for o in e.opciones_de_tabla if not o.elegible]
+    if no_elegibles:
+        with pytest.raises(ValueError, match="R4"):
+            ed.declarar(CLAVES_DE_FILA, (elegibles[0], no_elegibles[0]))
 
 
 # ===========================================================================
@@ -556,6 +665,55 @@ def test_e14_los_criterios_y_los_datos_de_sitio_usados_se_comparan_por_clave():
     r = comp.comparar(a, b)
     assert any(d.donde == "criterios" and d.campo.startswith(usado["clave"])
                for d in r.diferencias)
+
+
+def test_e14_no_hay_falsos_iguales_en_bloqueos_iteraciones_ni_listas_de_estado():
+    """
+    R6 de la auditoria adversarial: `delta_rasante_m` y `mensaje` de un
+    bloqueo, un bloqueo repetido, el contenido de una iteracion, el numeral
+    de una verificacion y las listas de estado quedaban fuera.
+    """
+    comp = _mod("src.comparador")
+    a = _json("informe_rama_error.json")
+
+    def _mutado(f):
+        b = json.loads(json.dumps(a))
+        f(b)
+        return comp.comparar(a, b)
+
+    punto = next(p for p in a["puntos"] if p["bloqueos"])
+    i = a["puntos"].index(punto)
+    assert not _mutado(lambda b: b["puntos"][i]["bloqueos"][0].update(mensaje="otro")).iguales
+    assert not _mutado(lambda b: b["puntos"][i]["bloqueos"].append(
+        dict(b["puntos"][i]["bloqueos"][0]))).iguales
+    if punto["bloqueos"][0].get("delta_rasante_m") is not None:
+        assert not _mutado(lambda b: b["puntos"][i]["bloqueos"][0].update(
+            delta_rasante_m=b["puntos"][i]["bloqueos"][0]["delta_rasante_m"] + 0.75)).iguales
+    con_iteraciones = next(p for p in a["puntos"] if p["iteraciones"])
+    j = a["puntos"].index(con_iteraciones)
+    campo = next(k for k, v in con_iteraciones["iteraciones"][0].items() if isinstance(v, str))
+    assert not _mutado(lambda b: b["puntos"][j]["iteraciones"][0].update({campo: "otro"})).iguales
+    con_verif = next(p for p in a["puntos"] if p["verificaciones"])
+    k = a["puntos"].index(con_verif)
+    assert not _mutado(lambda b: b["puntos"][k]["verificaciones"][0].update(numeral="9.9")).iguales
+    assert not _mutado(lambda b: b["criterios"]["sin_consumidor"].append("x")).iguales
+    assert not _mutado(lambda b: b["criterios"]["verificacion_pendiente"].append("x")).iguales
+    assert not _mutado(lambda b: b["datos_sitio"]["sin_valor_declarados"].append("x")).iguales
+
+
+def test_e14_un_nan_o_un_infinito_nunca_es_el_mismo_numero_que_otro():
+    """R7: la forma negada dejaba caer NaN e inf del lado de «igual»."""
+    comp = _mod("src.comparador")
+    nan, inf = float("nan"), float("inf")
+    assert not comp.mismo_numero(nan, nan)
+    assert not comp.mismo_numero(nan, 1.0)
+    assert not comp.mismo_numero(inf, -inf)
+    assert not comp.mismo_numero(inf, 1e308)
+    assert comp.mismo_numero(inf, inf) and comp.mismo_numero(-inf, -inf)
+    a = _json("informe_perfil_ancho.json")
+    b = json.loads(json.dumps(a))
+    b["puntos"][0]["diseno"]["HW_gobernante_m"] = nan
+    assert not comp.comparar(a, b).iguales
 
 
 def test_e14_el_comparador_nunca_recalcula():

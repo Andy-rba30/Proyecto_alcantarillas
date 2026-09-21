@@ -2694,7 +2694,7 @@ símbolo.
   los deriva solo; no hay nada que cambiar en `gui/editores.py`.
 - **Dónde vive:** `src/editores.py::_campos_del_dict`
 
-## EB-02 · Una categoría no exige fila, y un número que coincide con varias celdas no nombra ninguna
+## EB-02 · Una categoría no exige fila, y un número nunca nombra una fila
 
 - **Qué se difirió:** exigir la fila de la tabla a TODO criterio `de_tabla`
   al declararlo desde la pestaña 2, y resolver por el número tecleado la
@@ -2703,12 +2703,20 @@ símbolo.
   cerrado que la ficha deriva de la tabla (`sensibilidad`): las filas de
   `condicion_pavimento` son materiales de conducto y sus claves no son los
   tres textos que el criterio admite, de modo que exigir fila la habría
-  vuelto indeclarable. Y en la Tabla C.2 el 0.5 está en cinco filas
-  elegibles: nombrar una por el número sería inventar la procedencia
-  (EXT-V-02 al revés). Teclear la CLAVE de una fila sí la nombra —es el
-  camino del ratón de EXT-5, que sigue valiendo—; un número que coincide
-  con UNA sola celda también; con varias, hace falta elegirla o escribir la
-  nota.
+  vuelto indeclarable, y por eso sus filas se ofrecen como contexto y no
+  proponen valor (la primera versión proponía la clave de la fila y la
+  guardia la rechazaba en las catorce: R8 de la auditoría adversarial). Y
+  un número no nombra ninguna fila, ni cuando coincide con una sola celda:
+  la primera versión infería la única coincidencia y la auditoría midió que
+  0.9 atribuía `ke_entrada` a «Corrugated metal, projecting» sin que nadie
+  la eligiera (R3); adivinar la fila es inventar la procedencia (EXT-V-02
+  al revés). El rechazo DICE con qué filas coincide el número, para que se
+  elija. Teclear la CLAVE de una fila sí la nombra —es el camino del ratón
+  de EXT-5, que sigue valiendo—, y vale para toda fila, elegible o no: la
+  que no lo es la rechaza R4 en `declaracion`, como desde la ventana
+  emergente (R4 de la auditoría: con nota entraba por `declarar_valor`).
+  Un dato `de_ensayo` exige la nota, que es su trazabilidad (A1, Conflicto
+  #8).
 - **Qué haría falta:** nada para el producto; una tabla con una fila por
   categoría permitiría emparejar `categoria` con fila, y entonces
   `exige_fila` podría incluirla.
@@ -2766,7 +2774,11 @@ símbolo.
   objeto desde EXT-10 —las corridas embebidas en la sesión, con su
   `informe_json`— y la CLI ya dice si una corrida reproduce la guardada; la
   pieza que faltaba para leerlo es el comparador de E14, y una vista de
-  lista de corridas no añade ningún objeto nuevo.
+  lista de corridas no añade ningún objeto nuevo. Consecuencia que conviene
+  saber: una `--plantilla` propia sin `%%indice` cae en la guardia de
+  contenido (SIS-B-06), porque el índice nunca está vacío; es el mismo
+  precedente que el anexo de EXT-8, y la plantilla se corrige añadiendo el
+  marcador.
 - **Qué haría falta:** una pestaña o un volcado que liste las corridas de la
   sesión y compare dos cualesquiera por el comparador; es presentación
   sobre objetos que ya existen.

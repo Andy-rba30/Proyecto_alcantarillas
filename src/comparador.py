@@ -54,6 +54,7 @@ Codigo de salida 0 si son iguales, 1 si hay diferencias o no comparables,
 from __future__ import annotations
 
 import json
+import math
 import numbers
 import sys
 from dataclasses import dataclass
@@ -148,9 +149,14 @@ def mismo_numero(a: float, b: float) -> bool:
     """
     Dos reales son el mismo numero si su diferencia no pasa del mayor de los
     dos umbrales nombrados: el absoluto para magnitudes pequenas, el relativo
-    para las grandes. Forma MAT-D13: en positivo y negada, para que un NaN
-    salga como distinto.
+    para las grandes. Un NaN no es el mismo numero que nada --- ni que otro
+    NaN ---, y dos infinitos lo son solo con el mismo signo: `json.loads`
+    acepta `NaN` e `Infinity`, y sin esta rama la forma negada de la
+    tolerancia los dejaba caer del lado de «igual» (auditoria adversarial de
+    E-B); con un infinito el umbral relativo se volvia infinito.
     """
+    if not (math.isfinite(a) and math.isfinite(b)):
+        return (math.isinf(a) and math.isinf(b) and (a > 0) == (b > 0))
     return not (abs(a - b) > max(TOL_COMPARADOR_ABS,
                                  TOL_COMPARADOR_REL * max(abs(a), abs(b))))
 
@@ -232,7 +238,13 @@ def _comparar_punto(id_punto: str, pa: Dict[str, Any], pb: Dict[str, Any],
         else:
             _comparar_valor(id_punto, "diseno", da, db, diferencias)
 
-    # Verificaciones por (fase, codigo); bloqueos por (etapa, tipo, criterio).
+    # Verificaciones por (fase, codigo), con TODOS sus campos; bloqueos por
+    # (etapa, tipo, criterio, diferido), con todos sus campos y contando
+    # repetidos (un set escondia dos bloqueos iguales frente a uno, y el
+    # `delta_rasante_m` y el `mensaje` de un DisenoNoFactibleError, que son
+    # lo que CLAUDE.md exige que lleve: auditoria adversarial de E-B);
+    # iteraciones enteras, en su orden, que es el de la progresion del
+    # catalogo.
     va = {(v.get("fase"), v.get("codigo")): v for v in pa.get("verificaciones") or []}
     vb = {(v.get("fase"), v.get("codigo")): v for v in pb.get("verificaciones") or []}
     for k in sorted(set(va) | set(vb), key=str):
@@ -241,24 +253,29 @@ def _comparar_punto(id_punto: str, pa: Dict[str, Any], pb: Dict[str, Any],
             diferencias.append(Diferencia(id_punto, rotulo, "evaluada" if k in va else "<ausente>",
                                           "evaluada" if k in vb else "<ausente>"))
             continue
-        for campo in ("cumple", "valor_obtenido", "valor_admisible", "criterio_aplicado"):
-            _comparar_valor(id_punto, f"{rotulo}.{campo}", va[k].get(campo),
-                            vb[k].get(campo), diferencias)
-    ba = {(x.get("etapa"), x.get("tipo"), x.get("criterio"), x.get("diferido_por_alcance"))
-          for x in pa.get("bloqueos") or []}
-    bb = {(x.get("etapa"), x.get("tipo"), x.get("criterio"), x.get("diferido_por_alcance"))
-          for x in pb.get("bloqueos") or []}
-    for etapa, tipo, criterio, diferido in sorted(ba ^ bb, key=str):
+        _comparar_valor(id_punto, rotulo, va[k], vb[k], diferencias)
+    ba: Dict[Tuple[Any, ...], List[Any]] = {}
+    for x in pa.get("bloqueos") or []:
+        ba.setdefault(_clave_de_bloqueo(x), []).append(x)
+    bb: Dict[Tuple[Any, ...], List[Any]] = {}
+    for x in pb.get("bloqueos") or []:
+        bb.setdefault(_clave_de_bloqueo(x), []).append(x)
+    for k in sorted(set(ba) | set(bb), key=str):
+        etapa, tipo, criterio, diferido = k
         que = f"bloqueo {tipo} en «{etapa}»" + (f" por {criterio}" if criterio else "") \
               + (" (diferido por alcance)" if diferido else "")
-        en_a = (etapa, tipo, criterio, diferido) in ba
-        diferencias.append(Diferencia(id_punto, que, "presente" if en_a else "<ausente>",
-                                      "<ausente>" if en_a else "presente"))
+        if k not in ba or k not in bb:
+            diferencias.append(Diferencia(id_punto, que, "presente" if k in ba else "<ausente>",
+                                          "presente" if k in bb else "<ausente>"))
+            continue
+        _comparar_valor(id_punto, que, ba[k], bb[k], diferencias)
 
-    ia = [(p.get("D_m"), p.get("material")) for p in pa.get("iteraciones") or []]
-    ib = [(p.get("D_m"), p.get("material")) for p in pb.get("iteraciones") or []]
-    if len(ia) != len(ib):
-        diferencias.append(Diferencia(id_punto, "iteraciones[len]", len(ia), len(ib)))
+    _comparar_valor(id_punto, "iteraciones", pa.get("iteraciones"), pb.get("iteraciones"),
+                    diferencias)
+
+
+def _clave_de_bloqueo(x: Dict[str, Any]) -> Tuple[Any, ...]:
+    return (x.get("etapa"), x.get("tipo"), x.get("criterio"), x.get("diferido_por_alcance"))
 
 
 # ===========================================================================
@@ -303,16 +320,31 @@ def comparar(a: Dict[str, Any], b: Dict[str, Any]) -> ComparacionDeInformes:
 
     _comparar_valor(CABEZAL, "cabezal", a.get(CABEZAL), b.get(CABEZAL), diferencias)
 
+    # Los DOS bloques de estado enteros: las listas de claves ordenadas y los
+    # usados/bloqueantes por clave. Ningun subbloque se deja fuera: el
+    # primer comparador ignoraba `verificacion_pendiente`, `sin_consumidor`
+    # y las tres listas de los datos de sitio (auditoria adversarial de E-B).
     ca_, cb_ = a.get(CRITERIOS) or {}, b.get(CRITERIOS) or {}
     _comparar_por_clave(CRITERIOS, ca_.get("usados"), cb_.get("usados"), "clave", diferencias)
-    for campo in ("sin_valor_declarados", "declarados_en_caliente"):
-        _comparar_valor(CRITERIOS, campo, sorted(ca_.get(campo) or []),
-                        sorted(cb_.get(campo) or []), diferencias)
+    for campo in ("sin_valor_declarados", "declarados_en_caliente",
+                  "verificacion_pendiente", "sin_consumidor"):
+        _comparar_valor(CRITERIOS, campo, sorted(ca_.get(campo) or [], key=str),
+                        sorted(cb_.get(campo) or [], key=str), diferencias)
     _comparar_por_clave(CRITERIOS + ".bloquearon", ca_.get("bloquearon"),
                         cb_.get("bloquearon"), "clave", diferencias)
+    for k in sorted(set(ca_) | set(cb_)):
+        if k not in ("usados", "sin_valor_declarados", "declarados_en_caliente",
+                     "verificacion_pendiente", "sin_consumidor", "bloquearon"):
+            _comparar_valor(CRITERIOS, k, ca_.get(k), cb_.get(k), diferencias)
 
     sa, sb = a.get(DATOS_SITIO) or {}, b.get(DATOS_SITIO) or {}
     _comparar_por_clave(DATOS_SITIO, sa.get("usados"), sb.get("usados"), "clave", diferencias)
+    for k in sorted(set(sa) | set(sb)):
+        if k != "usados":
+            _comparar_valor(DATOS_SITIO, k, sorted(sa.get(k) or [], key=str)
+                            if isinstance(sa.get(k), list) else sa.get(k),
+                            sorted(sb.get(k) or [], key=str)
+                            if isinstance(sb.get(k), list) else sb.get(k), diferencias)
 
     return ComparacionDeInformes(
         puntos_comunes=comunes, solo_en_a=solo_a, solo_en_b=solo_b,
@@ -341,8 +373,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         print(f"No se pudo comparar: {exc}", file=sys.stderr)
         return 2
-    for linea in resultado.lineas():
-        print(linea)
+    try:
+        for linea in resultado.lineas():
+            print(linea)
+        sys.stdout.flush()
+    except BrokenPipeError:
+        # `| head` cerro la tuberia: el veredicto ya esta en el codigo de salida.
+        pass
     return 0 if resultado.iguales else 1
 
 

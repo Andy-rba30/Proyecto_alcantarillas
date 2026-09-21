@@ -1325,6 +1325,7 @@ class ExpedienteApp:
         self.f_editor.grid(row=2, column=0, columnspan=2, sticky="we", pady=(0, 6))
         self.editor = None
         self._sincronizando_editor = False
+        self._editor_refleja_literal = True
         try:
             self.color_neutro_editor = ttk.Style().lookup("TFrame", "background") \
                 or "SystemButtonFace"
@@ -1732,7 +1733,7 @@ class ExpedienteApp:
         self._montar_editor(clave, valor_actual)
         self._sincronizando_editor = True
         try:
-            self.valor_declarado_var.set("" if valor_actual is None else repr(valor_actual))
+            self.valor_declarado_var.set(self._literal_de(valor_actual))
         finally:
             self._sincronizando_editor = False
 
@@ -1840,6 +1841,18 @@ class ExpedienteApp:
     # ------------------------------------------------------------------
     # El editor tipado y su sincronizacion con el literal (E-B, E10)
     # ------------------------------------------------------------------
+    @staticmethod
+    def _literal_de(valor):
+        """
+        El texto del literal para un valor: el texto MISMO si es un texto
+        (el parser no quita comillas: `repr` de una cadena las ponia y
+        «Aplicar» declaraba la clave entre comillas, auditoria adversarial de
+        E-B), `repr` para todo lo demas, que el parser lee entero.
+        """
+        if valor is None:
+            return ""
+        return valor if isinstance(valor, str) else repr(valor)
+
     def _montar_editor(self, clave, valor_actual):
         """
         El editor de la forma de `clave`, montado bajo el literal y pintado
@@ -1855,6 +1868,7 @@ class ExpedienteApp:
             al_cambiar=self._editor_cambio)
         self.editor.marco.pack(fill="x")
         self.editor.poner_valor(valor_actual)
+        self._editor_refleja_literal = True
 
     def _editor_cambio(self):
         """Un campo del editor cambio: el literal se reescribe con el valor entero."""
@@ -1866,21 +1880,33 @@ class ExpedienteApp:
             return          # un campo a medias: el literal conserva lo anterior
         self._sincronizando_editor = True
         try:
-            self.valor_declarado_var.set(repr(valor))
+            self.valor_declarado_var.set(self._literal_de(valor))
+            self._editor_refleja_literal = True
         finally:
             self._sincronizando_editor = False
 
     def _literal_cambio(self, *_args):
-        """El literal cambio (tecleado a mano): el editor se repinta con el."""
+        """
+        El literal cambio (tecleado a mano): el editor se repinta con el. Si
+        el literal NO cabe en los campos --- un triple en una serie de
+        pares, una clave que el dict no declara --- el editor se queda como
+        estaba y DEJA DE SER LA FUENTE (`_editor_refleja_literal`): la
+        primera version lo repintaba recortado y «Aplicar» declaraba el
+        recorte con confirmacion verde (auditoria adversarial de E-B).
+        """
         if self.editor is None or self._sincronizando_editor:
             return
         try:
             valor = self._interpretar_valor_declarado(self.valor_declarado_var.get())
         except ValueError:
-            return          # un literal a medias todavia no es un valor
+            self._editor_refleja_literal = False    # a medias: no representa el literal
+            return
         self._sincronizando_editor = True
         try:
             self.editor.poner_valor(valor)
+            self._editor_refleja_literal = True
+        except ValueError:
+            self._editor_refleja_literal = False
         finally:
             self._sincronizando_editor = False
 
@@ -1898,7 +1924,8 @@ class ExpedienteApp:
         """
         editor = self.editor
         if (editor is not None and editor.esquema.clave == clave
-                and editor.esquema.tipo_de_editor != sed.LITERAL):
+                and editor.esquema.tipo_de_editor != sed.LITERAL
+                and self._editor_refleja_literal):
             return editor.valor()
         return self._interpretar_valor_declarado(self.valor_declarado_var.get())
 

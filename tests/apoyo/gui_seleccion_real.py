@@ -88,6 +88,11 @@ def main(destino: Path) -> int:
 
         # 2. Declarar por el camino de la pestana, y que la confirmacion quede.
         ventana.valor_declarado_var.set("1.5")
+        # La primera pendiente en orden alfabetico es un dato DE ENSAYO
+        # (`Mw_licuefaccion`): desde E-B la nota es su trazabilidad y no es
+        # opcional, y el editor montado por la seleccion real la lleva.
+        if ventana.editor is not None and ventana.editor.esquema.exige_nota:
+            ventana.editor.nota_var.set("trazabilidad de prueba del apoyo de la suite")
         ventana._aplicar_valor_corrida()
         raiz.update()
         obs["confirmacion_tras_declarar"] = ventana.lbl_estado_criterio.cget("text")

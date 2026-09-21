@@ -473,10 +473,13 @@ ErrorProyecto.
   «Valor nuevo» (dos vistas, un valor) y «Aplicar» declara en UNA llamada por
   `src.editores.declarar`, que enruta a la puerta de `declaracion.py` del
   modo del criterio y registra la procedencia: elegir una fila obtiene el
-  valor de la tabla; teclear la clave de una fila la nombra; un número que
+  valor de la tabla; teclear la clave de una fila la nombra (y R4 rechaza
+  la que no es elegible); un número nunca nombra una fila; un número que
   DIFIERE de la celda, o que no proviene de ninguna fila en un criterio de
-  tabla, exige nota o no entra; una categoría elige dentro de su conjunto
-  cerrado sin fila. La pestaña 2 ya no llama a `establecer_valor_dinamico`
+  tabla, exige nota o no entra; un dict de tabla toma de la fila sus campos
+  homónimos o exige nota; una categoría elige dentro de su conjunto cerrado
+  sin fila; un dato de ensayo exige la nota, que es su trazabilidad. La
+  pestaña 2 ya no llama a `establecer_valor_dinamico`
   ni olvida procedencias (fichas EB-01, EB-02). La ventana emergente
   conserva su campo único (EB-06). El comparador de dos `informe_json`
   (`src/comparador.py`, E14) vive en la pestaña 4 y en `cli.py --comparar`,
