@@ -2489,6 +2489,9 @@ def test_ext10_la_ventana_real_calcula_dos_obras_una_vacia_y_abre_B_tras_A(tmp_p
     assert b["origen"].startswith("sesion ") and b["informe_es_None"]
     assert r["pga_B"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
     assert r["corredor_B"] == "Obra B, km 10-12"
+    # El campo gana al bloque, y borrarlo devuelve el bloque de la sesion.
+    assert r["pga_con_A_en_el_campo"] == pytest.approx(0.40, rel=REL_TRANSPORTE)
+    assert r["pga_con_campo_vacio"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
 
     # 5. Un sitio.json malo no corre, lo dice, y no toca lo que gobernaba.
     m = r["tras_malo"]

@@ -262,12 +262,56 @@ def test_b_un_dato_declarado_gobierna_y_registra_su_uso():
     ("PGA_roca_B", float("inf"), TRAZ_B, FECHA, ValueError, "infinito"),
     ("Z_E030", 0.35, TRAZ_B, FECHA, ValueError, "ZONA_SISMICA_LA_UNION"),
     ("dato_que_no_existe", 1.0, TRAZ_B, FECHA, KeyError, "datos_sitio.py"),
+    # La FORMA y el signo (auditoria adversarial de EXT-10): lo que un
+    # sitio.json escrito a mano trae con facilidad y que M9 reventaria.
+    ("PGA_roca_B", "0.30", TRAZ_B, FECHA, ValueError, "numero real"),
+    ("PGA_roca_B", True, TRAZ_B, FECHA, ValueError, "numero real"),
+    ("PGA_roca_B", [0.3], TRAZ_B, FECHA, ValueError, "numero real"),
+    ("PGA_roca_B", -0.3, TRAZ_B, FECHA, ValueError, "positivo"),
+    ("PGA_roca_B", 0.0, TRAZ_B, FECHA, ValueError, "positivo"),
+    ("orientacion_muro_respecto_al_trafico", "diagonal", TRAZ_B, FECHA, ValueError,
+     "perpendicular_al_trafico"),
+    ("orientacion_muro_respecto_al_trafico", 7, TRAZ_B, FECHA, ValueError,
+     "perpendicular_al_trafico"),
+    ("carriles_por_sentido", "dos", TRAZ_B, FECHA, ValueError, "entero"),
+    ("carriles_por_sentido", 2.5, TRAZ_B, FECHA, ValueError, "entero"),
+    ("carriles_por_sentido", 0, TRAZ_B, FECHA, ValueError, "positivo"),
+    ("distancia_borde_calzada_al_trasdos_m", -1.0, TRAZ_B, FECHA, ValueError, "negativo"),
+    ("corredor_del_proyecto", "   ", TRAZ_B, FECHA, ValueError, "texto no vacio"),
+    ("existe_informacion_secundaria_tramo", "quizas", TRAZ_B, FECHA, ValueError, "'si', 'no'"),
 ])
 def test_b_la_puerta_rechaza_lo_que_el_archivo_rechazaria(clave, valor, trazabilidad,
                                                           fecha, excepcion, texto):
     with pytest.raises(excepcion, match=texto):
         ds.establecer_dato_dinamico(clave, valor, trazabilidad, fecha, origen="prueba")
     assert ds.datos_dinamicos() == {}, "un rechazo no deja nada escrito"
+
+
+def test_b_toda_ficha_declara_forma_y_las_formas_son_las_de_los_criterios():
+    """Una sola escritura: las cadenas de forma de los [S] son las de `ca`."""
+    assert set(ds.FORMAS_DE_SITIO) <= set(ca.FORMAS)
+    for clave, dato in ds.DATOS_SITIO.items():
+        assert dato.forma in ds.FORMAS_DE_SITIO, clave
+        if dato.forma == ds.FORMA_CATEGORIA:
+            assert dato.opciones, clave
+    assert ds.dato("orientacion_muro_respecto_al_trafico").opciones == (
+        "perpendicular_al_trafico", "paralelo_al_trafico")
+    with pytest.raises(ValueError, match="forma"):
+        replace(ds.dato("PGA_roca_B"), forma="lista")
+    with pytest.raises(ValueError, match="opciones"):
+        replace(ds.dato("PGA_roca_B"), forma=ds.FORMA_CATEGORIA)
+
+
+def test_b_un_dato_bien_formado_de_cada_forma_entra():
+    ds.establecer_dato_dinamico("PGA_roca_B", 1, TRAZ_B, FECHA, origen="p")  # int vale
+    ds.establecer_dato_dinamico("carriles_por_sentido", 3, "plano", FECHA, origen="p")
+    ds.establecer_dato_dinamico("orientacion_muro_respecto_al_trafico",
+                                "paralelo_al_trafico", "plano de planta", FECHA, origen="p")
+    ds.establecer_dato_dinamico("existe_informacion_secundaria_tramo", ds.NO,
+                                "inventario de gabinete", FECHA, origen="p")
+    ds.establecer_dato_dinamico("distancia_borde_calzada_al_trasdos_m", 0.0,
+                                "seccion tipo", FECHA, origen="p")
+    assert len(ds.datos_dinamicos()) == 5
 
 
 def test_b_quitar_y_limpiar_devuelven_el_archivo():
@@ -337,6 +381,7 @@ def test_c_la_memoria_imprime_el_origen_y_el_corredor_de_cada_obra(tmp_path):
     assert "Obra B, km 10-12" in memoria
     assert "declarado (sesi" in memoria          # rotulo del [S] pisado
     assert "0.50" in memoria or "0.5" in memoria  # lo que el archivo dice, al lado
+    # La obra B declaro sus [S] por sesion: no hay nada que advertir.
     assert "Advertencia de corredor" not in memoria
 
 
@@ -457,6 +502,19 @@ def test_e_abrir_B_tras_A_sustituye_y_no_hereda():
     # El corredor volvio al archivo: B no lo trae, y el de A no se hereda.
     assert ds.origen_de("corredor_del_proyecto") == ds.ORIGEN_ARCHIVO
     assert ds.valor("corredor_del_proyecto") == ds.CORREDOR_DEL_PROYECTO
+
+
+def test_e_el_origen_de_cada_dato_sobrevive_a_la_sesion():
+    ds.establecer_dato_dinamico("PGA_roca_B", 0.30, TRAZ_B, FECHA, origen="/obra/sitio_B.json")
+    bloque = json.loads(json.dumps(dec.estado_de_sitio_de_sesion()))
+    assert bloque["valores"]["PGA_roca_B"]["origen"] == "/obra/sitio_B.json"
+    ds.limpiar_datos_dinamicos()
+    dec.restaurar_datos_de_sitio(bloque, sustituir=True, origen="sesion x.json")
+    assert ds.origen_de("PGA_roca_B") == "/obra/sitio_B.json"
+    # Sin origen en la entrada, el del bloque.
+    del bloque["valores"]["PGA_roca_B"]["origen"]
+    dec.restaurar_datos_de_sitio(bloque, sustituir=True, origen="sesion x.json")
+    assert ds.origen_de("PGA_roca_B") == "sesion x.json"
 
 
 def test_e_un_candidato_rechazado_no_deja_la_sesion_a_medias():
@@ -597,10 +655,12 @@ def test_f_la_sesion_de_la_gui_lleva_id_huella_sitio_y_corridas(tmp_path):
     assert ses.errores_de_sesion(json.loads(json.dumps(sesion))) == []
     assert sesion["id"] == "abc"
     assert sesion["csv_sha1"] == informe.contexto.csv_sha1
-    assert sesion["datos_sitio"] == "sitio_B.json"
+    # La ruta no viaja al hijo (releeria un archivo que pudo cambiar); el
+    # bloque lleva el origen real de cada dato.
+    assert sesion["datos_sitio"] == ""
     pga = sesion["sitio"]["valores"]["PGA_roca_B"]
     assert pga["valor"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
-    assert (pga["trazabilidad"], pga["fecha"]) == (TRAZ_B, FECHA)
+    assert (pga["trazabilidad"], pga["fecha"], pga["origen"]) == (TRAZ_B, FECHA, "sitio_B.json")
     assert sesion["corridas"] == []
     # La ventana arma el MISMO conjunto de claves (leido de su AST).
     arbol = ast.parse(GUI.read_text(encoding="utf-8-sig"))
@@ -636,6 +696,15 @@ def test_f_la_cli_repone_el_sitio_de_la_sesion_y_la_bandera_escrita_gana(tmp_pat
     datos = json.loads(salida.read_text(encoding="utf-8"))
     assert datos["cabezal"]["cadena_sismica"]["PGA"] == pytest.approx(0.20, rel=REL_TRANSPORTE)
     assert _usado(datos, "PGA_roca_B")["origen"].endswith("sitio_C.json")
+    # Y la RUTA de la sesion gana al bloque, como en la ventana, y se dice:
+    # una sesion guardada con el campo lleno trae las dos cosas.
+    sesion["datos_sitio"] = str(sitio_c)
+    ruta_sesion = _escribir(tmp_path, "sesion_ruta_y_bloque.json", sesion)
+    hecho = _cli("--sesion", str(ruta_sesion), "--json", str(salida))
+    assert hecho.returncode in (0, 1), hecho.stderr
+    datos = json.loads(salida.read_text(encoding="utf-8"))
+    assert datos["cabezal"]["cadena_sismica"]["PGA"] == pytest.approx(0.20, rel=REL_TRANSPORTE)
+    assert "gobierna la ruta" in hecho.stdout and "el bloque se ignora" in hecho.stdout
 
 
 def test_f_la_cli_compara_su_corrida_con_la_embebida_en_la_sesion(tmp_path):
@@ -687,6 +756,8 @@ def test_f_el_hijo_del_pdf_reproduce_la_corrida_con_el_sitio_de_la_sesion(tmp_pa
                    "criterios": dec.estado_de_sesion(),
                    "sitio": {"valores": _sitio(0.30, "Obra B", TRAZ_B)}})
     dec.restaurar_datos_de_sitio(sesion["sitio"], sustituir=True, origen="sesion")
+    # El bloque que la ventana escribe lleva el origen real de cada dato.
+    sesion["sitio"] = dec.estado_de_sitio_de_sesion()
     propio = cli.informe_json(cli.correr(csv, _externos_expediente()))
     ds.limpiar_datos_dinamicos()
     proceso = expdf.ProcesoPdf(sesion=sesion, destino=tmp_path / "m.pdf",
@@ -698,11 +769,9 @@ def test_f_el_hijo_del_pdf_reproduce_la_corrida_con_el_sitio_de_la_sesion(tmp_pa
     ajeno = json.loads(proceso.ruta_json.read_text(encoding="utf-8"))
     propio_json = json.loads(json.dumps(propio, ensure_ascii=False, allow_nan=False))
     assert ajeno["cabezal"]["cadena_sismica"]["PGA"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
-    # El origen es lo unico que difiere: el hijo lo lee de SU sesion.
-    for volcado in (propio_json, ajeno):
-        for usado in volcado["datos_sitio"]["usados"]:
-            usado["origen"] = "<origen>"
-        volcado["expediente"]["corredor_del_proyecto"]["origen"] = "<origen>"
+    # El hijo imprime el ORIGEN REAL de cada [S], no su sesion temporal de
+    # trabajo: el mismo JSON, entero, incluidas las rutas.
+    assert _usado(ajeno, "PGA_roca_B")["origen"] == "sesion"
     assert expdf.sin_marca_de_tiempo(propio_json) == expdf.sin_marca_de_tiempo(ajeno)
 
 
@@ -710,22 +779,24 @@ def test_f_el_hijo_del_pdf_reproduce_la_corrida_con_el_sitio_de_la_sesion(tmp_pa
 # (g) La advertencia de corredor
 # ===========================================================================
 
-@pytest.mark.parametrize("proyecto,corredor", [
-    ("", "terraplen de ~5 km"),
-    ("Obra B", "Obra B, km 10-12"),
-    ("Vía de evitamiento - tramo 2", "VIA DE EVITAMIENTO"),
-    ("  obra   b ", "corredor de la OBRA B"),
-])
-def test_g_no_advierte_sin_proyecto_ni_cuando_uno_contiene_al_otro(proyecto, corredor):
-    assert ds.advertencia_de_corredor(proyecto, corredor, "archivo") is None
-
-
-def test_g_advierte_cuando_no_coinciden_y_dice_de_donde_salio_el_corredor():
-    texto = ds.advertencia_de_corredor("Via de evitamiento", "terraplen de ~5 km", "sitio.json")
-    assert texto and "Via de evitamiento" in texto and "terraplen de ~5 km" in texto
-    assert "sitio.json" in texto and "--datos-sitio" in texto
-    assert texto == ds.advertencia_de_corredor("Via de evitamiento", "terraplen de ~5 km",
-                                               "sitio.json")
+def test_g_la_advertencia_es_por_origen_y_no_por_texto():
+    """
+    Auditoria adversarial de EXT-10: comparar dos rotulos escritos por
+    personas fallaba en las dos direcciones. La regla es por ORIGEN: si el
+    corredor gobierna desde datos_sitio.py, se avisa (con o sin nombre de
+    proyecto); si otra obra lo declaro por sesion, no hay nada que advertir.
+    """
+    texto = ds.advertencia_de_corredor("Via de evitamiento", ds.CORREDOR_DEL_PROYECTO,
+                                       ds.ORIGEN_ARCHIVO)
+    assert texto and "Via de evitamiento" in texto and ds.CORREDOR_DEL_PROYECTO in texto
+    assert ds.ORIGEN_ARCHIVO in texto and "--datos-sitio" in texto
+    sin_nombre = ds.advertencia_de_corredor("", ds.CORREDOR_DEL_PROYECTO, ds.ORIGEN_ARCHIVO)
+    assert sin_nombre and "no tiene nombre" in sin_nombre
+    for proyecto in ("", "A", "Obra B", "Obra B, km 10-12"):
+        assert ds.advertencia_de_corredor(proyecto, "Obra B, km 10-12", "sitio_B.json") is None
+    # Pura: la misma salida con las mismas entradas.
+    assert texto == ds.advertencia_de_corredor("Via de evitamiento", ds.CORREDOR_DEL_PROYECTO,
+                                               ds.ORIGEN_ARCHIVO)
 
 
 def test_g_la_advertencia_llega_a_la_consola_y_a_la_memoria_pero_no_al_json(tmp_path):
@@ -736,7 +807,13 @@ def test_g_la_advertencia_llega_a_la_consola_y_a_la_memoria_pero_no_al_json(tmp_
     memoria = html.read_text(encoding="utf-8")
     assert "Advertencia de corredor" in memoria
     assert "advertencia" not in json.dumps(datos).lower()
+    # Sin nombre de proyecto tambien avisa: los [S] siguen siendo los del
+    # repositorio. Con los [S] declarados por sesion, no.
     hecho, _ = _cli_expediente(tmp_path, "y")
+    assert "Advertencia de corredor" in hecho.stdout and "no tiene nombre" in hecho.stdout
+    sitio_b = _escribir(tmp_path, "sitio_B.json", _sitio(0.30, "Obra B", TRAZ_B))
+    hecho, _ = _cli_expediente(tmp_path, "z", "--datos-sitio", str(sitio_b),
+                               "--proyecto", "cualquier nombre")
     assert "Advertencia de corredor" not in hecho.stdout
 
 
@@ -744,9 +821,9 @@ def test_g_M11_formatea_la_advertencia_y_no_la_calcula():
     fuente = M11_ARCHIVO.read_text(encoding="utf-8-sig")
     arbol = ast.parse(fuente)
     nombres = {ast.unparse(n.func) for n in ast.walk(arbol) if isinstance(n, ast.Call)}
-    assert not any(n.endswith(".casefold") or n.endswith(".lower") and "corredor" in n
-                   for n in nombres)
+    assert not any(n.endswith(".casefold") for n in nombres)
     assert "unicodedata" not in fuente
+    assert "ORIGEN_ARCHIVO ==" not in fuente and "== ds.ORIGEN_ARCHIVO" not in fuente
     assert "ds.advertencia_de_corredor" in nombres
 
 
@@ -790,6 +867,15 @@ def test_h_el_json_lee_los_sin_valor_de_la_foto_y_no_del_estado_vivo():
     ds.limpiar_datos_dinamicos()
     assert "carriles_por_sentido" not in cli.informe_json(informe)["datos_sitio"][
         "sin_valor_declarados"], "la foto no cambia con el estado vivo"
+
+
+def test_h_el_volcado_lee_los_sin_leer_de_la_foto():
+    ds.establecer_dato_dinamico("carriles_por_sentido", 2, "plano", FECHA, origen="s")
+    informe = cli.correr(CSV_EJEMPLO, _externos_expediente())
+    antes = cli.volcar(informe, con_criterios=True)
+    assert "- carriles_por_sentido" not in antes
+    ds.limpiar_datos_dinamicos()
+    assert cli.volcar(informe, con_criterios=True) == antes
 
 
 def test_h_criterios_bloqueantes_resuelve_tambien_un_dato_de_sitio_pendiente(monkeypatch):

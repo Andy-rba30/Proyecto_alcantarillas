@@ -201,6 +201,8 @@ Expediente cerrado      : no
 
 El expediente NO cierra. Mientras un criterio siga sin valor, la etapa que lo invoca se detiene: no se sustituye por un defecto (Sec. 0.7).
 
+Advertencia de corredor: el proyecto no tiene nombre y los [S] de esta corrida gobiernan desde src/datos_sitio.py, que es la obra del repositorio (corredor «terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150»). Si esta memoria es de otra obra, declare sus [S] con --datos-sitio sitio.json (CLI) o en el campo de sitio de la pestaña 1 (GUI), con su trazabilidad y su fecha; datos_sitio.py no se edita
+
 JSON del expediente: <SALIDA>/informe_exp.json
 Memoria de calculo (HTML): <SALIDA>/memoria_exp.html
 Plantilla usada          : memoria_alcantarillas.html

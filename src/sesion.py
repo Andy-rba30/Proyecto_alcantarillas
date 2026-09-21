@@ -157,6 +157,10 @@ def errores_de_sesion(data: Any) -> List[str]:
                 if faltan:
                     errores.append(f"'sitio.valores.{clave}' no trae "
                                    f"{', '.join(faltan)}")
+                if "origen" in entrada and not isinstance(entrada["origen"], str):
+                    errores.append(f"'sitio.valores.{clave}.origen' tiene que "
+                                   f"ser str y trae "
+                                   f"{type(entrada['origen']).__name__}")
     corridas = data.get("corridas")
     if isinstance(corridas, list):
         for indice, corrida in enumerate(corridas):
@@ -301,6 +305,26 @@ def corrida_para_sesion(informe: Any, informe_json: Dict[str, Any]) -> Dict[str,
         "criterios_sha1": contexto.criterios_sha1,
         "informe_json": informe_json,
     }
+
+
+def sin_origen_de_los_datos_de_sitio(informe_json: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    El JSON de un informe sin las RUTAS de origen de sus datos de sitio,
+    para comparar dos corridas de la misma obra hechas en dos maquinas o
+    con la sesion renombrada: el origen es una ruta absoluta o el nombre de
+    un archivo de sesion, y no dice nada del calculo. La CLI compara asi su
+    corrida con la embebida en la sesion (auditoria adversarial de EXT-10).
+    """
+    copia = json.loads(json.dumps(informe_json))
+    sitio = copia.get("datos_sitio")
+    if isinstance(sitio, dict):
+        for usado in sitio.get("usados", []) or []:
+            if isinstance(usado, dict):
+                usado.pop("origen", None)
+    expediente = copia.get("expediente")
+    if isinstance(expediente, dict) and isinstance(expediente.get("corredor_del_proyecto"), dict):
+        expediente["corredor_del_proyecto"].pop("origen", None)
+    return copia
 
 
 def sin_marca_de_tiempo(informe_json: Dict[str, Any]) -> Dict[str, Any]:

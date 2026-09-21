@@ -79,11 +79,10 @@ se ha leido tampoco se sustituye por un default.
 
 import math
 import numbers
-import re
-import unicodedata
 from dataclasses import dataclass, replace
 from typing import Any, Dict, Iterable, List, Optional, Set
 
+from src.constantes_normativas import ORIENTACIONES_TABULADAS
 from src.modelos import (NIVEL_EXPEDIENTE, NIVEL_PERFIL, NIVELES,
                      CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
                      Libre, ModoDeResolucion, Resolucion, modo_de)
@@ -113,6 +112,26 @@ CORREDOR_DEL_PROYECTO = ("terraplen de ~5 km de la Fase 0-bis de la hoja de "
 # mudarse al CSV.
 AMBITO_CORREDOR = f"todo el corredor ({CORREDOR_DEL_PROYECTO})"
 
+# LA FORMA DEL VALOR DE UN DATO DE SITIO (EXT-10, auditoria adversarial).
+# `_verificar_dato` era «la misma guardia que el archivo» y por eso no
+# bastaba: el archivo es codigo revisado y un `sitio.json` es entrada de
+# usuario, y sin forma la puerta aceptaba `"0.30"` (cadena), `True`, `-0.3` o
+# `[0.3]` para el PGA, y la corrida moria despues en M9 con un `TypeError`
+# fuera de `ErrorProyecto` --- la leccion de EXT-5 (PC-13, PC-14) repetida
+# para los [S] ---. Cuatro formas bastan para un hecho de sitio; las cadenas
+# son las MISMAS que `criterios_adoptados.FORMA_*` a proposito (un test lo
+# fija), y este archivo no importa aquel porque el orden de dependencia va al
+# reves.
+FORMA_INT = "int"              # entero de Python; `bool` queda fuera
+FORMA_FLOAT = "float"          # real (un `int` vale); `bool` queda fuera
+FORMA_STR = "str"              # texto no vacio
+FORMA_CATEGORIA = "categoria"  # texto de un conjunto cerrado: `opciones`
+FORMAS_DE_SITIO = (FORMA_INT, FORMA_FLOAT, FORMA_STR, FORMA_CATEGORIA)
+
+# Las dos respuestas de un hecho de gabinete que se responde con si o no.
+SI = "si"
+NO = "no"
+
 
 @dataclass(frozen=True)
 class DatoSitio:
@@ -136,6 +155,17 @@ class DatoSitio:
     verificacion_pendiente: Optional[str] = None   # lo que falta confirmar
     resolucion: Optional[Resolucion] = None    # COMO se resuelve (Sec. 4.3)
     nivel: str = ""                            # perfil | expediente (EXT-10)
+    forma: str = ""                            # FORMAS_DE_SITIO (EXT-10)
+    opciones: tuple = ()                       # el conjunto cerrado de una categoria
+    positivo: bool = False                     # la magnitud tiene que ser > 0
+    no_negativo: bool = False                  # la magnitud tiene que ser >= 0
+
+    # `forma`, `opciones`, `positivo` y `no_negativo` son la ESTRUCTURA y el
+    # signo del valor, no su dominio de proyecto: que un PGA sea un real
+    # positivo, que un numero de carriles sea un entero positivo y que una
+    # distancia no sea negativa son hechos de la magnitud, sin numero que
+    # elegir, y por eso no piden ni constante normativa ni criterio. Lo que
+    # SI seria un valor de proyecto --- un techo para el PGA --- no esta.
 
     # `nivel` dice a que ENTREGA pertenece el dato, con los mismos dos
     # valores que `Criterio.nivel` (S20/S21) y por la misma razon: un [S]
@@ -313,6 +343,59 @@ def _verificar_dato(d: "DatoSitio") -> None:
             "eso no se sabe si un [S] sin leer frena el nivel de perfil o si "
             f"`--alcance {NIVEL_PERFIL}` difiere su etapa al expediente"
         )
+    _verificar_forma(nombre, d)
+
+
+def _verificar_forma(nombre: str, d: "DatoSitio") -> None:
+    """
+    La forma y el signo del valor (EXT-10): la parte de la guardia que hace
+    que un `sitio.json` mal escrito se rechace en la puerta con `ValueError`
+    (SIS-E-05) y no en M9 con un `TypeError` que tumba la corrida.
+    """
+    if d.forma not in FORMAS_DE_SITIO:
+        raise ValueError(
+            f"'{nombre}' declara forma={d.forma!r}, que no es ninguna de "
+            f"{FORMAS_DE_SITIO}. Todo dato de sitio dice que ESTRUCTURA tiene "
+            "su valor: es lo que la puerta exige antes de que el consumidor "
+            "lo reviente"
+        )
+    if d.forma == FORMA_CATEGORIA and not d.opciones:
+        raise ValueError(
+            f"'{nombre}' es una categoria y no declara `opciones`: el "
+            "conjunto cerrado es parte de la ficha"
+        )
+    if d.forma != FORMA_CATEGORIA and d.opciones:
+        raise ValueError(
+            f"'{nombre}' declara opciones={d.opciones!r} con forma "
+            f"{d.forma!r}: las opciones son de una categoria"
+        )
+    v = d.valor
+    if v is None:
+        return
+    es_bool = isinstance(v, bool)
+    if d.forma == FORMA_INT and (es_bool or not isinstance(v, int)):
+        raise ValueError(
+            f"'{nombre}' tiene que ser un entero y trae {v!r} "
+            f"({type(v).__name__})")
+    if d.forma == FORMA_FLOAT and (es_bool or not isinstance(v, numbers.Real)):
+        raise ValueError(
+            f"'{nombre}' tiene que ser un numero real y trae {v!r} "
+            f"({type(v).__name__}); una cadena como '0.30' no es un numero")
+    if d.forma == FORMA_STR and (not isinstance(v, str) or not v.strip()):
+        raise ValueError(
+            f"'{nombre}' tiene que ser un texto no vacio y trae {v!r}")
+    if d.forma == FORMA_CATEGORIA and v not in d.opciones:
+        raise ValueError(
+            f"'{nombre}' tiene que ser una de {d.opciones} y trae {v!r}")
+    # Signo, en positivo y negado (forma MAT-D13): un NaN ya no llega aqui,
+    # pero la escritura es la misma que en el resto del proyecto.
+    if d.positivo and not v > 0:
+        raise ValueError(
+            f"'{nombre}' tiene que ser estrictamente positivo y trae {v!r}: "
+            "una lectura de esta magnitud no puede ser cero ni negativa")
+    if d.no_negativo and not v >= 0:
+        raise ValueError(
+            f"'{nombre}' no puede ser negativo y trae {v!r}")
 
 
 _USADOS: Set[str] = set()
@@ -356,6 +439,8 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         #        expediente (M9, Fase 9) y no la de perfil, que difiere la Fase 9
         #        entera
         nivel=NIVEL_EXPEDIENTE,
+        forma=FORMA_FLOAT,
+        positivo=True,
         resolucion=DeEnsayo(
             ensayo="lectura del mapa de isoaceleraciones espectrales del "
                    "Apendice A3 del Manual de Puentes sobre la ubicacion del "
@@ -421,6 +506,8 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         #        Sec. 0.4). Es del marco sismico del cabezal, que es de expediente;
         #        censado en DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
         nivel=NIVEL_EXPEDIENTE,
+        forma=FORMA_INT,
+        positivo=True,
         resolucion=DeEnsayo(
             ensayo="consulta del Anexo II de E.030 -- zonificacion sismica "
                    "por distritos -- sobre el distrito del proyecto",
@@ -494,6 +581,8 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         #        Sec. 0.4); mismo marco que la zona. Censado en
         #        DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
         nivel=NIVEL_EXPEDIENTE,
+        forma=FORMA_FLOAT,
+        positivo=True,
         resolucion=Derivada(
             de=("ZONA_SISMICA_LA_UNION",),
             regla="entrada en la Tabla N 1 de factores de zona del Art. 11.1 "
@@ -532,6 +621,7 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         #        primero que una obra nueva declara. Censado en
         #        DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
         nivel=NIVEL_PERFIL,
+        forma=FORMA_STR,
         resolucion=DeEnsayo(
             ensayo="definicion del tramo en la Fase 0-bis de la hoja de ruta "
                    "(num. 150): el terraplen sobre el que se distribuyen los "
@@ -604,6 +694,8 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         #        mientras siga sin valor: la cadena de M9 se detiene antes en otros
         #        pendientes
         nivel=NIVEL_EXPEDIENTE,
+        forma=FORMA_CATEGORIA,
+        opciones=ORIENTACIONES_TABULADAS,
         resolucion=DeEnsayo(
             ensayo="lectura del plano de planta: angulo entre el eje del "
                    "conducto y el eje de la via",
@@ -646,6 +738,8 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         # nivel: consumidor M9 (Fase 9), diferido a perfil; solo se invoca con
         #        orientacion 'paralelo_al_trafico', que sigue sin declarar
         nivel=NIVEL_EXPEDIENTE,
+        forma=FORMA_FLOAT,
+        no_negativo=True,
         resolucion=DeEnsayo(
             ensayo="medicion sobre la seccion transversal del expediente "
                    "vial, del paramento interior del cabezal al borde de la "
@@ -696,6 +790,8 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         #        num. 4.2 fija a nivel de perfil. Censado en
         #        DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
         nivel=NIVEL_PERFIL,
+        forma=FORMA_INT,
+        positivo=True,
         resolucion=DeEnsayo(
             ensayo="lectura del diseño geometrico de la via (seccion "
                    "transversal tipo)",
@@ -747,6 +843,7 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         #        calicatas de perfil que carriles_por_sentido, y el piso de seccion
         #        del num. 4.1.1.3.4 a). Censado en DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
         nivel=NIVEL_PERFIL,
+        forma=FORMA_STR,
         resolucion=DeEnsayo(
             ensayo="lectura de la clase de via del estudio de demanda (IMDA) "
                    "contra la clasificacion del DG-2018",
@@ -787,6 +884,8 @@ DATOS_SITIO: Dict[str, DatoSitio] = {
         #        Manual de Suelos lo pide para el espaciamiento de calicatas a nivel
         #        de perfil. Censado en DATOS_SIN_CONSUMIDOR_Y_SIN_MEDIDA
         nivel=NIVEL_PERFIL,
+        forma=FORMA_CATEGORIA,
+        opciones=(SI, NO),
         resolucion=DeEnsayo(
             ensayo="inventario de gabinete de estudios geotecnicos previos "
                    "del tramo",
@@ -1052,7 +1151,8 @@ def datos_con_verificacion_pendiente() -> List[str]:
 
 def reporte_datos_sitio(solo_usados: bool = True, *,
                         usados: Optional[Iterable[str]] = None,
-                        efectivos: Optional[Any] = None) -> str:
+                        efectivos: Optional[Any] = None,
+                        sin_valor: Optional[Iterable[str]] = None) -> str:
     """
     Bloque de declaracion de datos de sitio para el reporte final, hermano de
     `criterios_adoptados.reporte_criterios`.
@@ -1107,7 +1207,11 @@ def reporte_datos_sitio(solo_usados: bool = True, *,
             out.append(f"  - {k}")
         out.append("-" * 78)
 
-    sin_leer = datos_sin_valor()
+    # La seccion «SIN LEER» tambien es foto desde EXT-10: una sesion puede
+    # rellenar un vacio del archivo, y el volcado de una corrida no puede
+    # cambiar con lo que se declare despues (regla EXT-4; auditoria
+    # adversarial de EXT-10). Sin foto se lee el estado vivo, como antes.
+    sin_leer = sorted(sin_valor) if sin_valor is not None else datos_sin_valor()
     if sin_leer:
         out.append("")
         out.append("-" * 78)
@@ -1123,47 +1227,41 @@ def reporte_datos_sitio(solo_usados: bool = True, *,
 # La advertencia de corredor (EXT-10)
 # ---------------------------------------------------------------------------
 
-_ESPACIOS = re.compile(r"\s+")
-
-
-def _normalizado(texto: str) -> str:
-    """Sin tildes, en minusculas y con los espacios colapsados: lo minimo
-    para comparar dos rotulos escritos por dos personas."""
-    sin_tildes = "".join(c for c in unicodedata.normalize("NFKD", str(texto))
-                         if not unicodedata.combining(c))
-    return _ESPACIOS.sub(" ", sin_tildes.casefold()).strip()
-
-
 def advertencia_de_corredor(proyecto: str, corredor: str,
                             origen: str) -> Optional[str]:
     """
-    El texto de la advertencia cuando el nombre del proyecto no coincide con
-    el corredor para el que se leyeron los datos de sitio, o `None`.
+    El aviso de que los datos de sitio de esta corrida son los de la obra
+    del REPOSITORIO, o `None` si otra obra los declaro por sesion.
 
     Es una funcion PURA de texto, sin estado: la llaman la CLI (consola) y
     M11 (memoria) con el corredor EFECTIVO de la corrida y su origen, ambos
-    leidos del `ContextoCorrida`; M11 no normaliza ni compara nada por su
-    cuenta (regla «la memoria la emite el calculo; M11 la formatea»).
+    leidos del `ContextoCorrida`; M11 no compara nada por su cuenta.
 
-    La comparacion es TEXTUAL y deliberadamente laxa: no advierte si el
-    proyecto no tiene nombre, ni si uno de los dos rotulos contiene al otro
-    una vez normalizados (sin tildes, sin mayusculas, sin dobles espacios).
-    No bloquea nada y no va al JSON: es el aviso que el paso 10 del dictamen
-    pide para el caso que EXT-V-01 describe --- correr la obra B con el
-    nombre de B y los [S] que siguen siendo los de A ---, y su unico
-    proposito es que ese caso no pase en silencio.
+    LA REGLA ES POR ORIGEN Y NO POR TEXTO, y eso lo decidio la auditoria
+    adversarial de EXT-10. La primera version comparaba el nombre del
+    proyecto con el corredor por contencion normalizada, y fallaba en las
+    dos direcciones: el corredor del archivo es una descripcion («terraplen
+    de ~5 km de la Fase 0-bis…») que ningun nombre de obra contiene, de
+    modo que la propia obra del repositorio recibia el aviso siempre; y un
+    proyecto con nombre corto («A», «km») o sin nombre no lo recibia nunca.
+    Dos rotulos escritos por personas no se pueden comparar con provecho.
+    Lo que SI se sabe con certeza es de donde salio el corredor: si gobierna
+    desde `datos_sitio.py`, los [S] son los de la obra del repositorio, y
+    el aviso lo dice --- con el nombre del proyecto si lo hay --- para que
+    correr la obra B con los datos de A no pase en silencio (EXT-V-01). Si
+    otra obra los declaro por sesion, con trazabilidad y fecha, la sesion
+    ES el proyecto y no hay nada que advertir. No bloquea y no va al JSON.
     """
-    if not str(proyecto or "").strip():
+    if origen != ORIGEN_ARCHIVO:
         return None
-    a, b = _normalizado(proyecto), _normalizado(corredor)
-    if a and b and (a in b or b in a):
-        return None
-    return (f"Advertencia de corredor: el proyecto se llama «{proyecto}» y los "
-            f"datos de sitio de esta corrida se leyeron para el corredor "
-            f"«{corredor}» (origen: {origen}). Si es otra obra, declare sus "
-            "datos de sitio [S] con --datos-sitio sitio.json (CLI) o en el "
-            "campo «JSON de datos de sitio» de la pestaña 1 (GUI), con su "
-            "trazabilidad y su fecha; datos_sitio.py no se edita")
+    nombre = (f"el proyecto se llama «{proyecto}» y" if str(proyecto or "").strip()
+              else "el proyecto no tiene nombre y")
+    return (f"Advertencia de corredor: {nombre} los [S] de esta corrida "
+            f"gobiernan desde {ORIGEN_ARCHIVO}, que es la obra del repositorio "
+            f"(corredor «{corredor}»). Si esta memoria es de otra obra, declare "
+            "sus [S] con --datos-sitio sitio.json (CLI) o en el campo de sitio "
+            "de la pestaña 1 (GUI), con su trazabilidad y su fecha; "
+            "datos_sitio.py no se edita")
 
 
 def _coherencia_de_datos_sitio() -> None:

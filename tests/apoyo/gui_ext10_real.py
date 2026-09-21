@@ -172,6 +172,17 @@ def main(salida: Path) -> int:
         resumen["pga_B"] = volcado["cabezal"]["cadena_sismica"]["PGA"]
         resumen["corredor_B"] = volcado["expediente"]["corredor_del_proyecto"]["valor"]
 
+        # 4b. Borrar el campo retira lo que la ruta trajo: gobierna el bloque
+        # de la sesion abierta (B), no el ultimo archivo leido.
+        ventana.datos_sitio_var.set(str(sitio_a))
+        informe = _correr(ventana, raiz)
+        resumen["pga_con_A_en_el_campo"] = cli.informe_json(informe)["cabezal"][
+            "cadena_sismica"]["PGA"]
+        ventana.datos_sitio_var.set("")
+        informe = _correr(ventana, raiz)
+        resumen["pga_con_campo_vacio"] = cli.informe_json(informe)["cabezal"][
+            "cadena_sismica"]["PGA"]
+
         # 5. Un sitio.json malo se rechaza sin correr.
         malo = salida / "sitio_malo.json"
         malo.write_text(json.dumps({"PGA_rocaB": {"valor": 0.2, "trazabilidad": "t",

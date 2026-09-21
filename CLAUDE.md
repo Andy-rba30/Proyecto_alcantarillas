@@ -60,9 +60,12 @@ resuelve así: un [S] declarado por sesión vive en el bloque `sitio` de la
 sesión JSON (`FORMATO_SESION = 3`, `src/sesion.py`) y entra al proceso por
 `--datos-sitio sitio.json` en la CLI —hermano de `--datos-externos`— o por el
 campo «JSON de datos de sitio» de la pestaña 1 de la GUI, SIEMPRE por
-`datos_sitio.establecer_dato_dinamico(clave, valor, trazabilidad, fecha)`, que
-construye el dato por `dataclasses.replace` y lo somete a la MISMA guardia que
-el archivo (`_verificar_dato`), exige trazabilidad no vacía y fecha, y rechaza
+`datos_sitio.establecer_dato_dinamico(clave, valor, trazabilidad, fecha,
+origen=…)`, que construye el dato por `dataclasses.replace` y lo somete a la
+MISMA guardia que el archivo (`_verificar_dato`, que desde EXT-10 exige
+también la FORMA y el signo: `DatoSitio.forma`, `opciones`, `positivo`,
+`no_negativo`, porque un sitio.json es entrada de usuario y `"0.30"` o `True`
+llegaban a M9), exige trazabilidad no vacía y fecha, y rechaza
 un dato `Derivada` (`Z_E030` se deriva de la zona, no se declara). Cuatro
 cosas que la casa nueva NO cambia: (1) el programa nunca escribe
 datos_sitio.py —la sesión aporta el VALOR y su lectura; la ficha (concepto,
@@ -71,8 +74,10 @@ archivo siguen siendo los de la obra del repositorio, y un proyecto nuevo se
 crea cargando una sesión vacía, no vaciando el archivo; (3) la memoria y el
 JSON imprimen DE QUÉ ARCHIVO salió cada [S] (datos_sitio.py o el sitio.json /
 la sesión), leído del `ContextoCorrida` de la corrida y no del estado vivo, y
-la memoria advierte cuando el nombre de `--proyecto` no coincide con el
-`corredor_del_proyecto` efectivo; (4) la ventana normativa sigue sin declarar
+la memoria advierte cuando el `corredor_del_proyecto` efectivo gobierna
+desde datos_sitio.py —los [S] son los de la obra del repositorio, con o sin
+nombre de `--proyecto`; comparar dos rótulos por texto se probó y se refutó,
+ficha EXT-10-03—; (4) la ventana normativa sigue sin declarar
 [S] (regla R4: el camino es la sesión, no un campo de formulario). Y todo
 `DatoSitio` lleva `nivel`, como los criterios: medido por corridas, la de
 perfil no lee ningún [S] y la de expediente sólo `PGA_roca_B`

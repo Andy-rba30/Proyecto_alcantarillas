@@ -409,10 +409,18 @@ def test_los_cuatro_angulos_de_sec_9_2_estan_declarados_vacios(clave):
 # criterios de tanteo de la cadena sismica.
 
 def _declarar_dato_de_sitio(monkeypatch, clave, valor):
-    original = ds.dato(clave)
-    monkeypatch.setitem(
-        ds.DATOS_SITIO, clave,
-        replace(original, valor=valor))
+    """
+    Pone el valor SIN pasar por la guardia del archivo: desde EXT-10
+    `_verificar_dato` rechaza en la puerta una orientacion fuera de las dos
+    tabuladas o una distancia negativa (forma y signo), y lo que estos tests
+    ejercitan es la SEGUNDA linea, la guardia del consumidor en M9. Se copia
+    el dato y se le escribe el valor por `object.__setattr__`, que es lo que
+    `test_datos_sitio.test_el_barrido_al_importar…` ya hace para el mismo fin.
+    """
+    import copy
+    forzado = copy.copy(ds.dato(clave))
+    object.__setattr__(forzado, "valor", valor)
+    monkeypatch.setitem(ds.DATOS_SITIO, clave, forzado)
 
 
 def _declarar_orientacion(monkeypatch, orientacion):

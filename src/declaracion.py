@@ -422,7 +422,11 @@ def estado_de_sitio_de_sesion() -> Dict[str, Any]:
     return {"valores": {
         clave: {"valor": declarado.dato.valor,
                 "trazabilidad": declarado.dato.trazabilidad,
-                "fecha": declarado.fecha}
+                "fecha": declarado.fecha,
+                # El archivo REAL del que salio (auditoria adversarial de
+                # EXT-10): sin el, el hijo del PDF imprimia como origen su
+                # sesion temporal de trabajo.
+                "origen": declarado.origen}
         for clave, declarado in _ds.datos_dinamicos().items()}}
 
 
@@ -441,7 +445,9 @@ def restaurar_datos_de_sitio(bloque: Any, *, sustituir: bool = True,
     obra A ---; (3) se vuelca solo lo aceptado, con `origen` como archivo
     de procedencia de cada dato.
 
-    `bloque` es `{"valores": {clave: {valor, trazabilidad, fecha}}}`. Lo que
+    `bloque` es `{"valores": {clave: {valor, trazabilidad, fecha[, origen]}}}`:
+    si una entrada trae su `origen` (el archivo real del que salio), se
+    conserva; si no, el `origen` del bloque entero es el que se escribe. Lo que
     la guardia rechaza sale en `rechazados` con su motivo; un bloque que no
     tiene esa forma es `ValueError` antes de vaciar nada. Con `en_seco=True`
     se hace SOLO la fase (1) y se devuelve la cuenta sin tocar el estado:
@@ -479,7 +485,8 @@ def restaurar_datos_de_sitio(bloque: Any, *, sustituir: bool = True,
                                       "lectura es parte de la trazabilidad "
                                       "de un [S] declarado por sesion"))
             continue
-        aceptados.append((clave, entrada.get("valor"), str(trazabilidad), fecha))
+        aceptados.append((clave, entrada.get("valor"), str(trazabilidad), fecha,
+                          str(entrada.get("origen") or "").strip() or origen))
 
     if en_seco:
         return ResultadoDeRestauracion(tuple(clave for clave, *_r in aceptados),
@@ -491,9 +498,9 @@ def restaurar_datos_de_sitio(bloque: Any, *, sustituir: bool = True,
         _ds.limpiar_datos_dinamicos()
         retirados = tuple(sorted(previas - {clave for clave, *_r in aceptados}))
 
-    for clave, valor, trazabilidad, fecha in aceptados:
+    for clave, valor, trazabilidad, fecha, origen_entrada in aceptados:
         _ds.establecer_dato_dinamico(clave, valor, trazabilidad, fecha,
-                                     origen=origen)
+                                     origen=origen_entrada)
     return ResultadoDeRestauracion(tuple(clave for clave, *_r in aceptados),
                                    tuple(rechazados), retirados)
 

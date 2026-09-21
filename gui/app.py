@@ -446,6 +446,10 @@ class ExpedienteApp:
         sesion_inicial = ses.sesion_vacia(APP_VERSION)
         self.sesion_id = sesion_inicial["id"]
         self.corridas = list(sesion_inicial["corridas"])
+        # El bloque `sitio` de la sesion abierta: es lo que gobierna cuando
+        # el campo «JSON de datos de sitio» esta vacio (auditoria adversarial
+        # de EXT-10: borrar el campo tiene que retirar lo que la ruta trajo).
+        self.sitio_de_la_sesion = dict(sesion_inicial["sitio"])
         self.externos_vars = {clave: tk.StringVar() for clave, *_r in CAMPOS_EXTERNOS}
         # El defecto es el MISMO que el de `cli.py` (`--alcance`, choices con
         # default `expediente`), y se lee de alli en vez de escribirse otra
@@ -2316,17 +2320,21 @@ class ExpedienteApp:
 
     def _declarar_datos_de_sitio(self, texto_sitio):
         """
-        Declara por sesion los [S] del JSON de datos de sitio de la pestaña
-        1 (`cli.cargar_datos_sitio`, la misma puerta que `--datos-sitio`), y
-        devuelve el motivo del rechazo, o None. El brazo es el de una
-        declaracion --- `(ValueError, KeyError)`, el mismo que `cli.main`
-        usa para `--datos-sitio` y `--declarar` --- y vive aqui y no en
-        `ejecutar_pipeline`, que no captura ValueError (SIS-E-01).
+        Que datos de sitio gobiernan la corrida, con LA MISMA regla que la
+        CLI: el campo de la pestaña 1 (la ruta) gana al bloque `sitio` de la
+        sesion abierta, y con el campo vacio gobierna ese bloque --- que es
+        vacio en un proyecto nuevo, y entonces gobierna `datos_sitio.py` ---.
+        Borrar el campo retira, por tanto, lo que la ruta trajo. Devuelve el
+        motivo del rechazo, o None. El brazo es el de una declaracion
+        (`(ValueError, KeyError)`, el mismo que `cli.main`) y vive aqui y no
+        en `ejecutar_pipeline`, que no captura ValueError (SIS-E-01).
         """
-        if not texto_sitio:
-            return None
         try:
-            cli.cargar_datos_sitio(Path(texto_sitio))
+            if texto_sitio:
+                cli.cargar_datos_sitio(Path(texto_sitio))
+            else:
+                dec.restaurar_datos_de_sitio(self.sitio_de_la_sesion, sustituir=True,
+                                             origen="sesion abierta")
         except (ValueError, KeyError) as exc:
             return f"No se pudo declarar el dato de sitio:\n{exc}"
         return None
@@ -2790,10 +2798,11 @@ class ExpedienteApp:
         """
         self.sesion_id = data.get("id") or ses.sesion_vacia(APP_VERSION)["id"]
         self.corridas = list(data.get("corridas") or [])
+        self.sitio_de_la_sesion = dict(data.get("sitio") or {"valores": {}})
         aviso = self._restaurar_criterios(data.get("criterios"), sustituir=True)
         try:
             resultado = dec.restaurar_datos_de_sitio(
-                data.get("sitio") or {"valores": {}}, sustituir=True, origen=origen)
+                self.sitio_de_la_sesion, sustituir=True, origen=origen)
         except (ValueError, KeyError) as exc:
             return f"{aviso} No se pudieron restaurar los datos de sitio: {exc}".strip()
         partes = [aviso] if aviso else []

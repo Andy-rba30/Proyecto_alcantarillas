@@ -2276,23 +2276,26 @@ propósito, y cada una lleva su argumento y su símbolo.
   editores tipados.
 - **Dónde vive:** `gui/app.py::importar_decisiones`
 
-## EXT-10-03 · La advertencia de corredor es textual, no bloquea y no va al JSON
+## EXT-10-03 · La advertencia de corredor es por origen, no por texto; no bloquea y no va al JSON
 
-- **Qué se difirió:** una comparación «fuerte» entre el proyecto y el
-  corredor (por identificador, por progresivas) y un bloqueo cuando no
-  coinciden; y meter la advertencia en `informe_json`.
-- **Por qué:** los dos rótulos los escriben personas —`--proyecto` es un
-  nombre de portada y `corredor_del_proyecto` un texto de expediente— y no
-  hay ningún dato que los relacione más que el texto. La comparación es por
-  contención normalizada (sin tildes, sin mayúsculas, espacios colapsados),
-  pura y sin estado (`datos_sitio.advertencia_de_corredor`), y sólo AVISA:
-  el caso que persigue —correr la obra B con los [S] de A— no es un
-  incumplimiento normativo sino un descuido que tiene que verse. No va al
-  JSON porque `Informe` no lleva `proyecto` (es presentación) y el JSON de
-  dos corridas iguales no puede depender del nombre de portada. Y el [S]
-  `corredor_del_proyecto` de La Unión NO se reescribió para que «coincida»
-  con «Via de evitamiento - La Union»: sería cambiar un dato de sitio para
-  callar un aviso.
+- **Qué se difirió:** comparar el nombre de `--proyecto` con
+  `corredor_del_proyecto` («advierte si no coinciden», letra del prompt),
+  un bloqueo cuando no coinciden, y meter la advertencia en `informe_json`.
+- **Por qué:** la primera versión comparaba los dos textos por contención
+  normalizada y el auditor adversarial la refutó en las dos direcciones: el
+  corredor del archivo es una descripción («terraplen de ~5 km de la Fase
+  0-bis…») que ningún nombre de obra contiene, así que la propia obra del
+  repositorio recibía el aviso siempre; y un proyecto de nombre corto («A»,
+  «km») o sin nombre no lo recibía nunca. Dos rótulos escritos por personas
+  no se pueden comparar con provecho. Lo que sí se sabe con certeza es el
+  ORIGEN del corredor efectivo: si gobierna desde `datos_sitio.py`, los [S]
+  son los de la obra del repositorio y el aviso lo dice, con o sin nombre
+  de proyecto; si otra obra los declaró por sesión, la sesión es el
+  proyecto y no hay nada que advertir. Sigue siendo puro, sólo avisa, y no
+  va al JSON porque `Informe` no lleva `proyecto`. El [S]
+  `corredor_del_proyecto` de La Unión no se reescribió para callar el
+  aviso, y por eso la memoria de la obra del repositorio lo lleva: es
+  cierto que sus [S] gobiernan desde el archivo.
 - **Qué haría falta:** una cabecera de obra con progresivas en el CSV o en
   el sitio.json (lo que `reemplazado_por` de `corredor_del_proyecto` ya
   pide) y entonces una comparación por dato y no por texto.

@@ -128,7 +128,8 @@ def sesion_de_la_corrida(informe: Any, *, proyecto: str, csv: str,
     # por `declaracion.restaurar_datos_de_sitio`, la misma guardia.
     sitio = {clave: {"valor": contexto.dato_efectivo(clave).valor,
                      "trazabilidad": contexto.dato_efectivo(clave).trazabilidad,
-                     "fecha": contexto.dato_efectivo(clave).fecha}
+                     "fecha": contexto.dato_efectivo(clave).fecha,
+                     "origen": contexto.dato_efectivo(clave).origen}
              for clave in contexto.datos_declarados_en_caliente}
     return {
         "formato_version": formato_version,
@@ -137,7 +138,11 @@ def sesion_de_la_corrida(informe: Any, *, proyecto: str, csv: str,
         "proyecto": proyecto,
         "csv": csv,
         "datos_externos": datos_externos,
-        "datos_sitio": datos_sitio,
+        # La RUTA del sitio.json no viaja al hijo: si la sesion trae ruta y
+        # bloque, la ruta gana (misma regla en las dos puertas) y el hijo
+        # releeria un archivo que pudo cambiar tras la corrida (PC-15). El
+        # bloque lleva el origen real de cada dato, que es lo que imprime.
+        "datos_sitio": "",
         "externos": dict(externos),
         "alcance": alcance,
         "criterios": {"valores": valores, "procedencias": procedencias},

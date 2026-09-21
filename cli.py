@@ -917,7 +917,8 @@ def volcar(informe: Informe, con_criterios: bool = False) -> str:
         lineas.append("")
         lineas.append(ds.reporte_datos_sitio(solo_usados=True,
                                              usados=contexto.datos_usados,
-                                             efectivos=contexto.datos_efectivos))
+                                             efectivos=contexto.datos_efectivos,
+                                             sin_valor=contexto.datos_sin_valor))
         lineas.append("")
         lineas.append(ca.reporte_criterios(solo_usados=True, contexto=contexto))
     return "\n".join(lineas)
@@ -1083,12 +1084,17 @@ def _comparar_con_la_corrida_embebida(informe: Informe,
     guardada = candidatas[-1]
     propia = json.loads(json.dumps(informe_json(informe), ensure_ascii=False,
                                    allow_nan=False))
-    igual = (_sesion.sin_marca_de_tiempo(propia)
-             == _sesion.sin_marca_de_tiempo(guardada["informe_json"]))
+    # Sin la marca de tiempo y sin las RUTAS de origen de los [S]: una ruta
+    # absoluta o el nombre del archivo de sesion no dicen nada del calculo,
+    # y con ellas dos maquinas dirian DIFIERE sobre la misma obra.
+    igual = (_sesion.sin_origen_de_los_datos_de_sitio(_sesion.sin_marca_de_tiempo(propia))
+             == _sesion.sin_origen_de_los_datos_de_sitio(
+                 _sesion.sin_marca_de_tiempo(guardada["informe_json"])))
     cuando = guardada.get("generado_utc", "?")
     if igual:
         return (f"Esta corrida REPRODUCE la guardada en la sesion el {cuando} "
-                "(mismo JSON salvo la marca de tiempo)")
+                "(mismo JSON salvo la marca de tiempo y las rutas de origen "
+                "de los datos de sitio)")
     return (f"Esta corrida DIFIERE de la guardada en la sesion el {cuando}: "
             "el expediente, los criterios o los datos de sitio cambiaron "
             "desde entonces; revise antes de dar la memoria por vigente")
@@ -1280,19 +1286,27 @@ def _parece_numero_no_finito(texto: str) -> bool:
 def _aplicar_datos_de_sitio(args, sesion: Optional[SesionSerializada]):
     """
     Que datos de sitio gobiernan esta corrida, en orden de precedencia:
-    `--datos-sitio` escrito > bloque `sitio` de la sesion > ruta `datos_sitio`
-    de la sesion > nada (gobierna `datos_sitio.py`). Devuelve el
-    `ResultadoDeRestauracion` de lo aplicado, o None si no se aplico nada.
+    `--datos-sitio` escrito > ruta `datos_sitio` de la sesion > bloque
+    `sitio` de la sesion > nada (gobierna `datos_sitio.py`). Es LA MISMA
+    regla que la ventana aplica al ejecutar (el campo de la pestaña 1 gana
+    al bloque de la sesion abierta): la auditoria adversarial de EXT-10
+    midio que con la regla anterior (bloque > ruta) las dos puertas
+    calculaban obras distintas sobre la misma sesion si el sitio.json
+    cambiaba tras guardar. Cuando la ruta gana y la sesion traia ademas un
+    bloque, `main` lo dice. Devuelve `(resultado, aviso)`.
     """
     if args.datos_sitio is not None:
-        return cargar_datos_sitio(args.datos_sitio)
+        return cargar_datos_sitio(args.datos_sitio), None
     if sesion is None:
-        return None
-    if sesion.sitio and sesion.sitio.get("valores"):
-        return aplicar_sitio_de_sesion(sesion)
+        return None, None
     if sesion.datos_sitio is not None:
-        return cargar_datos_sitio(sesion.datos_sitio)
-    return aplicar_sitio_de_sesion(sesion)
+        aviso = None
+        if sesion.sitio and sesion.sitio.get("valores"):
+            aviso = (f"La sesion trae la ruta {sesion.datos_sitio} y ademas un "
+                     "bloque 'sitio': gobierna la ruta (se relee el archivo), "
+                     "como en la ventana; el bloque se ignora")
+        return cargar_datos_sitio(sesion.datos_sitio), aviso
+    return aplicar_sitio_de_sesion(sesion), None
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -1340,10 +1354,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # Va ANTES de --declarar y de correr, y en su propio `try` con el mismo
     # brazo que --declarar: es una declaracion, y su rechazo es ValueError.
     try:
-        sitio = _aplicar_datos_de_sitio(args, sesion)
+        sitio, aviso_sitio = _aplicar_datos_de_sitio(args, sesion)
     except (ValueError, KeyError) as exc:
         print(f"No se pudo declarar el dato de sitio: {exc}", file=sys.stderr)
         return 2
+    if aviso_sitio:
+        print(aviso_sitio)
     if sitio is not None and sitio.restaurados:
         print("Datos de sitio [S] declarados SOLO para esta corrida desde "
               f"{ds.origen_de(sitio.restaurados[0])}: "
