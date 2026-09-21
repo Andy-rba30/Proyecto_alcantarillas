@@ -331,6 +331,23 @@ class CampoValidable:
         self.marco.configure(
             background=COLOR_ERROR if hay_error else self.color_neutro)
 
+    def desconectar(self):
+        """
+        Suelta la traza de la variable ANTES de destruir el widget (E-B).
+
+        Los editores tipados de la pestaña 2 se montan y desmontan al
+        cambiar de criterio, y una traza viva sobre una variable cuyo marco
+        ya no existe revienta con `TclError` a la siguiente escritura --- que
+        Tk entrega a `report_callback_exception`, o sea a un cuadro modal ---.
+        Quien destruye un campo lo desconecta primero.
+        """
+        if self._traza is not None:
+            try:
+                self.variable.trace_remove("write", self._traza)
+            except tk.TclError:
+                pass
+            self._traza = None
+
 
 class BotonAccion:
     """

@@ -55,6 +55,7 @@ from pathlib import Path
 from typing import Any, Tuple
 
 from src import criterios_adoptados as ca
+from src import responsable as _responsable
 from src import servicio
 from src.modelos import Familia, VacioAdmitido
 # Por el modulo y no por el valor, por la razon escrita en `ayuda_entrada.py`:
@@ -82,10 +83,18 @@ SIN_CSV = ("Sin CSV legible todavía: el contraste de columnas se hace al "
 
 @dataclass(frozen=True)
 class CriterioVacio:
-    """Una fila del bloque 1: clave y concepto, para pintar y navegar."""
+    """
+    Una fila del bloque 1: clave y concepto, para pintar y navegar, y desde
+    E-B (E13 reducido) QUIEN lo fija y CON QUE evidencia, derivados de la
+    ficha por `src/responsable.py`: la misma pareja que `M11.CriterioBloqueante`
+    lleva despues de correr. Con defecto vacio para que el tipo siga siendo
+    construible por su par (clave, concepto).
+    """
 
     clave: str
     concepto: str
+    responsable: str = ""
+    evidencia: str = ""
 
 
 def criterios_vacios_alcanzables(alcance: str) -> Tuple[CriterioVacio, ...]:
@@ -106,9 +115,16 @@ def criterios_vacios_alcanzables(alcance: str) -> Tuple[CriterioVacio, ...]:
     de correr.
     """
     alcanzables = set(ca.criterios_del_alcance(alcance))
-    return tuple(
-        CriterioVacio(clave=clave, concepto=ca.criterio(clave).concepto)
-        for clave in ca.criterios_sin_valor() if clave in alcanzables)
+    salida = []
+    for clave in ca.criterios_sin_valor():
+        if clave not in alcanzables:
+            continue
+        criterio = ca.criterio(clave)
+        quien = _responsable.responsabilidad_de(criterio)
+        salida.append(CriterioVacio(clave=clave, concepto=criterio.concepto,
+                                    responsable=quien.responsable,
+                                    evidencia=quien.evidencia))
+    return tuple(salida)
 
 
 # ===========================================================================

@@ -1487,7 +1487,9 @@
           "A-02",
           "B-01"
         ],
-        "diferido": true
+        "diferido": true,
+        "responsable": "el proyectista: V8 de la hoja de ruta pide la verificacion y no fija ni el TR ni el umbral de 'la via no colapsa aunque desborde'",
+        "evidencia": "TR del evento extremo (p.ej. el de la serie FEN de la Fase 1-bis) y definicion tecnica de colapso de la via, ambos declarados en la memoria"
       },
       {
         "clave": "embocadura_cajon",
@@ -1504,7 +1506,9 @@
         "puntos": [
           "C-01"
         ],
-        "diferido": false
+        "diferido": false,
+        "responsable": "el proyectista, eligiendo sobre HDS5_3ED.TA1, HDS5_3ED.TC2: la carta y escala de la Tabla A.1 de la que salen K, M, c, Y y la forma de ecuacion; y, emparejada con ella, la fila de la Tabla C.2 de la que sale ke",
+        "evidencia": "El detalle de embocadura del cabezal que fije el expediente (Sec. 9.1), del que salen la carta y la fila de ke a la vez"
       },
       {
         "clave": "remanso_derecho_via",
@@ -1523,7 +1527,9 @@
           "A-02",
           "B-01"
         ],
-        "diferido": true
+        "diferido": true,
+        "responsable": "ensayo o medicion: perfil de remanso aguas arriba (paso a paso o HEC-RAS) y ancho de derecho de via del expediente",
+        "evidencia": "Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto"
       }
     ]
   }

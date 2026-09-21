@@ -216,6 +216,30 @@ def test_la_corrida_es_determinista(recien_generada, tmp_path):
         "hay un campo volatil que la normalizacion de `regenerar.sh` no cubre")
 
 
+def test_el_comparador_dice_iguales_sobre_la_linea_base_recien_generada(recien_generada):
+    """
+    El primer consumidor del comparador (E-B, E14) es esta linea base: los
+    volcados comprometidos y los recien generados son LA MISMA corrida, y
+    `comparador.comparar` tiene que decirlo por identidad de punto con sus
+    tolerancias --- que es la afirmacion que el diff de bytes de arriba hace
+    sin nombrar ningun campo. Si los bytes coinciden y el comparador dice
+    DIFIEREN, el roto es el comparador; si los bytes difieren y el
+    comparador dice IGUALES, la diferencia es de formato y no de calculo, y
+    ese es exactamente el diagnostico que el mensaje del primer test pide
+    hacer a mano.
+    """
+    import json
+
+    from src import comparador
+
+    for nombre in sorted(n for n in _generados_comprometidos() if n.endswith(".json")):
+        comprometido = json.loads((DIR / nombre).read_text(encoding="utf-8"))
+        generado = json.loads((recien_generada / nombre).read_text(encoding="utf-8"))
+        resultado = comparador.comparar(comprometido, generado)
+        assert resultado.iguales, (nombre, resultado.lineas())
+        assert resultado.puntos_comunes == tuple(p["id"] for p in comprometido["puntos"])
+
+
 def test_la_ventana_cubre_los_ejes_que_dice_cubrir(recien_generada):
     """
     LA VENTANA MIDE LO QUE DICE MEDIR, y no de palabra. Cada assert de aqui

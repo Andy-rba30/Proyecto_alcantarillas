@@ -167,6 +167,9 @@
     color: #7b7b7b; font-size: .85rem;
   }
 
+  .indice ol { padding-left: 1.4em; }
+  .indice li { margin: 2px 0; }
+  .indice a { text-decoration: none; }
   @media print {
     body { padding: 0; max-width: none; }
     h2 { page-break-after: avoid; }
@@ -174,6 +177,7 @@
     table, .criterio, .nota, .aviso, .bloqueo { page-break-inside: avoid; }
     .paso { page-break-inside: avoid; }
     .punto { page-break-inside: avoid; }
+    .indice { page-break-after: always; }
     .salto { page-break-before: always; }
   }
 </style>
@@ -183,6 +187,9 @@
 <h1>Memoria de calculo &mdash; Alcantarillas y cabezales</h1>
 <p class="subtitulo">%%proyecto</p>
 <p class="lead">%%subtitulo</p>
+
+<!-- El indice se DERIVA de los h2 de esta misma hoja y de los puntos del informe (sesion E-B). -->
+%%indice
 
 <!-- ==================================================================== -->
 <h2 id="trazabilidad">0. Encabezado de trazabilidad</h2>

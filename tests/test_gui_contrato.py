@@ -83,6 +83,9 @@ ARBOL_COMPONENTES = ast.parse(COMPONENTES.read_text(encoding="utf-8-sig"),
 EXPORTACION_PDF = RAIZ / "gui" / "exportacion_pdf.py"
 ARBOL_EXPORTACION = ast.parse(EXPORTACION_PDF.read_text(encoding="utf-8-sig"),
                               filename="exportacion_pdf.py")
+EDITORES = RAIZ / "gui" / "editores.py"
+ARBOL_EDITORES = ast.parse(EDITORES.read_text(encoding="utf-8-sig"),
+                           filename="editores.py")
 
 ARBOLES_DE_LA_GUI = {
     "gui/app.py": ARBOL_GUI,
@@ -90,6 +93,8 @@ ARBOLES_DE_LA_GUI = {
     "gui/componentes.py": ARBOL_COMPONENTES,
     # EXT-8: el subproceso del PDF, sin Tk pero capa de presentacion.
     "gui/exportacion_pdf.py": ARBOL_EXPORTACION,
+    # E-B (E10): los editores tipados de la pestaña 2.
+    "gui/editores.py": ARBOL_EDITORES,
 }
 
 
@@ -1139,8 +1144,11 @@ def test_la_ventana_principal_no_afirma_reutilizar_el_campo_validable():
     """
     SIS-A-12. El encabezado decia reutilizar «MarcoScroll, Tooltip y campo
     validable» de legacy/Tc.py, y de los tres este archivo usa dos: el campo
-    validable vive en `gui/componentes.CampoValidable` y lo cablea la ventana
-    emergente. Quedaba ademas `color_borde_ok`, el color neutro que aquel
+    validable vive en `gui/componentes.CampoValidable` y lo cablean la ventana
+    emergente y, desde E-B, los editores tipados de `gui/editores.py` (E10),
+    que la pestaña 2 monta por forma. `gui/app.py` sigue sin importarlo:
+    lo que importa es el modulo de editores, y el encabezado dice las dos
+    cosas. Quedaba ademas `color_borde_ok`, el color neutro que aquel
     componente pintaba, calculado y sin lector.
     """
     doc = ast.get_docstring(ARBOL_GUI) or ""
@@ -1148,14 +1156,21 @@ def test_la_ventana_principal_no_afirma_reutilizar_el_campo_validable():
                   if isinstance(nodo, ast.ImportFrom)
                   and (nodo.module or "").endswith("componentes")
                   for alias in nodo.names}
+    de_gui = {alias.name for nodo in ast.walk(ARBOL_GUI)
+              if isinstance(nodo, ast.ImportFrom) and nodo.module == "gui"
+              for alias in nodo.names}
 
     assert "CampoValidable" not in importados, (
         "si gui/app.py pasa a usar CampoValidable, actualiza su encabezado: "
         "este test existe para que las dos cosas no se separen otra vez")
+    assert "editores" in de_gui, (
+        "la pestaña 2 monta los editores tipados de gui/editores.py (E-B)")
     assert "campo validable" in doc.lower(), (
         "el encabezado tiene que seguir diciendo DONDE esta el campo validable")
     assert "gui/componentes.CampoValidable" in doc, (
         "el encabezado nombra el componente por su sitio, no de memoria")
+    assert "gui/editores.py" in doc, (
+        "el encabezado dice que los editores tipados son el segundo consumidor")
 
     asignados = {d.attr for nodo in ast.walk(ARBOL_GUI)
                  if isinstance(nodo, ast.Assign)

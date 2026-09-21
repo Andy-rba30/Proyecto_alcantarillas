@@ -256,9 +256,13 @@ CONSTRUCTORES_DE_TRANSCRIPCION = {
 # Lo que la ventana AFIRMA sobre una norma no vive en ninguno de los dos: sale
 # de `src/normativa/` via `src/ventana_normativa.py`, de modo que ni un
 # numeral ni un valor de tabla pueden esconderse en su geometria de widget.
+# `gui/editores.py` entra en E-B (E10) por lo mismo: pinta los editores
+# tipados de la pestaña 2 y no calcula nada; su contenido lo deriva
+# `src/editores.py`, que SI esta bajo el barrido estrecho de `src/`.
 CAPA_DE_PRESENTACION = ("cli.py", "gui/app.py", "gui/ayuda_entrada.py",
-                        "gui/componentes.py", "gui/exportacion_pdf.py",
-                        "gui/ventana_normativa.py", "verificar_sesion.py")
+                        "gui/componentes.py", "gui/editores.py",
+                        "gui/exportacion_pdf.py", "gui/ventana_normativa.py",
+                        "verificar_sesion.py")
 
 # `conftest.py` queda fuera Y SE DECLARA POR QUE, que es la mitad que faltaba
 # en los hallazgos de esta familia. Sus numeros -- los espesores de pared de
@@ -865,7 +869,11 @@ CENSO_DE_MARCAS = {
     # 41 -> 43 en EXT-8: la cadencia del sondeo del subproceso del PDF
     # (`CADENCIA_SONDEO_PDF_MS`, ms) y el ancho de ajuste del rotulo visible
     # del motivo de los exportadores. Ninguna es magnitud del expediente.
-    "gui/app.py": 43,
+    # 43 -> 45 en E-B: los anchos de las dos columnas nuevas de la pestaña 4
+    # (responsable, evidencia). Geometria de presentacion; el tamano de la
+    # ventana de comparacion es una cadena de Tk («900x500») y no un literal
+    # numerico, y por eso no lleva marca.
+    "gui/app.py": 45,
     # La ayuda de entrada de S22, mas la pestana de conceptos de G5. Ninguno
     # es una magnitud del expediente: la mascara del bit de Control de Tk
     # (0x4), los dos altos en lineas de las dos cajas copiables --- la cabecera

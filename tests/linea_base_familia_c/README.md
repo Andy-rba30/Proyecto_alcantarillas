@@ -377,3 +377,25 @@ diff se lee entero así:
   control de salida es el del remanso, porque su aproximación queda bajo 0.75·H; la
   aproximación misma (1.045982117 m, el dorado de EXT-2) sigue impresa en el paso 4.3 y
   viaja en `perfil_HW_aproximado_m`.
+
+## Lo que movió E-B (2026-09-21), y por qué no es una regresión
+
+E-B no tocó ningún módulo de cálculo: trajo los editores tipados de la pestaña 2, el
+comparador de dos `informe_json`, la pareja responsable/evidencia y el índice de la
+memoria. Se regeneró por dos cambios de FORMATO, medidos con `diff`:
+
+- **`informe_perfil_ancho.json` e `informe_expediente.json`**: cada fila de
+  `criterios.bloquearon` lleva dos claves nuevas, `responsable` y `evidencia`,
+  derivadas de la ficha por `src/responsable.py` (E13 reducido). Ningún otro byte del
+  JSON se movió; `informe_rama_error.json` no cambia porque esa corrida no tiene
+  bloqueantes por criterio.
+- **Las tres memorias de la CLI** (`memoria_perfil.html`, `memoria_perfil_ancha.html`,
+  `memoria_expediente.html`): el marcador `%%indice` (el `<nav class="indice">` con una
+  entrada por `<h2 id>` de la plantilla y una por punto), las tres reglas de estilo del
+  índice y el `id="punto-<id>"` de cada bloque de punto. `memoria_punto_cajon.html` no
+  cambia: el driver imprime pasos por `M11.bloque_pasos`, no la plantilla entera.
+- Los cuatro `cli_*.txt`, los dos `resumen_*.csv` y `informe_rama_error.json`: idénticos.
+
+El comparador de E14 es desde esta sesión el segundo consumidor de esta línea base:
+`tests/test_linea_base.py` compara los dos JSON comprometidos con los recién generados
+por `comparador.comparar` además de byte a byte, y tiene que decir IGUALES.

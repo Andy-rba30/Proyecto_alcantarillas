@@ -1151,7 +1151,9 @@
           "recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4)"
         ],
         "puntos": [],
-        "diferido": false
+        "diferido": false,
+        "responsable": "el proyectista, eligiendo sobre AASHTO_LRFD_9.T5.10.1-1: la COLUMNA de categoria de material de refuerzo: A (acero sin recubrir), B (epoxico o galvanizado) o C (AASHTO M 334M)",
+        "evidencia": "Especificacion del acero de refuerzo del expediente (norma de producto del acero que se compra), o la decision expresa del proyectista de proteger o no el refuerzo en ambiente salino"
       },
       {
         "clave": "embocadura_cajon",
@@ -1168,7 +1170,9 @@
         "puntos": [
           "C-01"
         ],
-        "diferido": false
+        "diferido": false,
+        "responsable": "el proyectista, eligiendo sobre HDS5_3ED.TA1, HDS5_3ED.TC2: la carta y escala de la Tabla A.1 de la que salen K, M, c, Y y la forma de ecuacion; y, emparejada con ella, la fila de la Tabla C.2 de la que sale ke",
+        "evidencia": "El detalle de embocadura del cabezal que fije el expediente (Sec. 9.1), del que salen la carta y la fila de ke a la vez"
       },
       {
         "clave": "exposicion_quimica_ems",
@@ -1183,7 +1187,9 @@
           "aviso de ambiente corrosivo (9.4)"
         ],
         "puntos": [],
-        "diferido": false
+        "diferido": false,
+        "responsable": "ensayo o medicion: analisis quimico del EMS: sulfato soluble en suelo y en agua freatica, y cloruros",
+        "evidencia": "El analisis quimico del EMS. Mientras no exista, ningun recubrimiento de 9.4 se puede calcular"
       },
       {
         "clave": "phi_relleno_trasdos",
@@ -1198,7 +1204,9 @@
           "K_AE de Mononobe-Okabe (9.2)"
         ],
         "puntos": [],
-        "diferido": false
+        "diferido": false,
+        "responsable": "el proyectista, con el ensayo del material de cantera del trasdos o un valor de practica corriente declarado con su fuente",
+        "evidencia": "Ensayo de corte directo sobre el material de cantera"
       },
       {
         "clave": "predimensionamiento_cabezal",
@@ -1213,7 +1221,9 @@
           "predimensionamiento del cabezal (9.3, E1-E5)"
         ],
         "puntos": [],
-        "diferido": false
+        "diferido": false,
+        "responsable": "el proyectista, o el plano tipo de cabezal del expediente vial",
+        "evidencia": "Plano de encofrado del cabezal, acotado"
       },
       {
         "clave": "remanso_derecho_via",
@@ -1232,7 +1242,9 @@
           "A-02",
           "B-01"
         ],
-        "diferido": false
+        "diferido": false,
+        "responsable": "ensayo o medicion: perfil de remanso aguas arriba (paso a paso o HEC-RAS) y ancho de derecho de via del expediente",
+        "evidencia": "Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto"
       }
     ]
   }

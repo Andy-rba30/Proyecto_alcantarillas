@@ -9,14 +9,25 @@ Tooltip, los dos por `gui/componentes.py`.
 Que NO reutiliza este archivo, dicho porque el encabezado lo afirmaba (SIS-A-12)
 ---------------------------------------------------------------------------
 El **campo validable** de `legacy/Tc.py` (`_campo_validable` + `_marcar`)
-existe en el proyecto, pero no aqui: vive en `gui/componentes.CampoValidable`
-y lo usa la ventana emergente, `gui/ventana_normativa.py`, que es donde la
-Sec. 4.3 pide validar AL ESCRIBIR. Esta ventana valida al pulsar EJECUTAR y
-sus campos son `ttk.Entry` desnudos. De aquel componente quedaba ademas un
-resto muerto --- `self.color_borde_ok`, el color de fondo neutro que
-`_campo_validable` pintaba ---: se calculaba en `_crear_interfaz` y no lo
-leia nadie. Retirado; el color neutro que el componente necesita se lo pide
-hoy `CampoValidable` a su llamador.
+existe en el proyecto, pero no lo importa este archivo: vive en
+`gui/componentes.CampoValidable` y lo usan la ventana emergente,
+`gui/ventana_normativa.py`, que es donde la Sec. 4.3 pide validar AL
+ESCRIBIR, y desde E-B los EDITORES TIPADOS de la pestaña 2,
+`gui/editores.py` (E10): un editor por forma de `Criterio.forma` ---
+escalar, par, serie de pares, dict con campos, serie de claves --- cuyos
+campos son `CampoValidable` y cuyo contenido (que campos, con que ventana,
+que filas de la tabla y que celda propone cada una) lo deriva
+`src/editores.py` de la ficha. Los editores NO abren un segundo camino de
+declaracion: COMPONEN el campo literal «Valor nuevo», que sigue siendo la
+unica fuente del valor, y «Aplicar» lo arma entero y lo declara en UNA
+llamada por `src.editores.declarar` --- que enruta a `declaracion.py` y
+registra la procedencia: la fila elegida, o la nota que una adopcion
+distinta exige ---, o no declara nada. Los campos de la pestaña 1 siguen
+siendo `ttk.Entry` desnudos que se validan al pulsar EJECUTAR. De aquel
+componente quedaba ademas un resto muerto --- `self.color_borde_ok`, el
+color de fondo neutro que `_campo_validable` pintaba ---: se calculaba en
+`_crear_interfaz` y no lo leia nadie. Retirado; el color neutro que el
+componente necesita se lo pide hoy `CampoValidable` a su llamador.
 
 No reimplementa el pipeline: llama a las mismas funciones que usa `cli.py`
 (`cargar_datos_externos`, `correr`, `informe_json`, `exportar_html`,
@@ -45,8 +56,11 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
                             seleccionar una fila, el detalle de verificaciones
                             y bloqueos de ese punto.
     4. Resumen             Estado del expediente, criterios pendientes que
-                            bloquearon una etapa, lo diferido por alcance, y
-                            exportacion (JSON/HTML/PDF/CSV).
+                            bloquearon una etapa --- con QUIEN los resuelve y
+                            con que EVIDENCIA, derivados de la ficha (E-B,
+                            E13 reducido) ---, lo diferido por alcance,
+                            exportacion (JSON/HTML/PDF/CSV) y la comparacion
+                            de la corrida con otro `informe_json` (E14).
 
 El alcance de la corrida (SIS-A-17)
 -----------------------------------
@@ -236,7 +250,9 @@ import json
 from src import anticipo as antc
 import cli
 from src import criterios_adoptados as ca
+from src import comparador as compa
 from src import declaracion as dec
+from src import editores as sed
 from src import variables_entrada as ve
 from src.modelos import Derivada, ErrorProyecto, Familia
 # Solo para PREGUNTARLE si weasyprint cargo (`_ayuda_del_pdf`). No se le pide
@@ -257,6 +273,7 @@ from src import traza_punto as tp
 # AttributeError al pulsar, no al arrancar. Lo encontro `pyflakes`.
 from src import sesion as ses
 from gui import ayuda_entrada as ayuda_ent  # noqa: E402
+from gui import editores as ged  # noqa: E402
 from gui import exportacion_pdf as expdf  # noqa: E402
 from gui import ventana_normativa as ventana_norma  # noqa: E402
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR,  # noqa: E402
@@ -499,7 +516,8 @@ class ExpedienteApp:
     # El informe vigente y su invalidacion (EXT-4, PC-15)
     # ------------------------------------------------------------------
     def _apagar_exportadores(self, motivo):
-        for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv):
+        for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv,
+                    self.btn_comparar):
             btn.deshabilitar(motivo)
 
     def _invalidar_informe(self, motivo):
@@ -769,13 +787,20 @@ class ExpedienteApp:
         f_arbol_ant = ttk.Frame(f_ant)
         f_arbol_ant.pack(fill="x", pady=(2, 6))
         f_arbol_ant.columnconfigure(0, weight=1)
+        # Con RESPONSABLE y EVIDENCIA (E-B, E13 reducido), derivados por
+        # `src/responsable.py` y traidos en `CriterioVacio`; el panel sigue
+        # siendo informativo (00_LEEME_DICTAMEN §3).
         self.tree_anticipo = ttk.Treeview(
-            f_arbol_ant, columns=("clave", "concepto"), show="headings",
-            height=6)
+            f_arbol_ant, columns=("clave", "concepto", "responsable", "evidencia"),
+            show="headings", height=6)
         self.tree_anticipo.heading("clave", text="Criterio pendiente")
         self.tree_anticipo.heading("concepto", text="Concepto")
-        self.tree_anticipo.column("clave", width=280, anchor="w")
-        self.tree_anticipo.column("concepto", width=560, anchor="w")
+        self.tree_anticipo.heading("responsable", text="Responsable (quien lo fija)")
+        self.tree_anticipo.heading("evidencia", text="Evidencia (que lo sostiene)")
+        self.tree_anticipo.column("clave", width=220, anchor="w")
+        self.tree_anticipo.column("concepto", width=320, anchor="w")
+        self.tree_anticipo.column("responsable", width=220, anchor="w")
+        self.tree_anticipo.column("evidencia", width=220, anchor="w")
         self.tree_anticipo.grid(row=0, column=0, sticky="ew")
         scroll_ant = ttk.Scrollbar(f_arbol_ant, orient="vertical",
                                    command=self.tree_anticipo.yview)
@@ -967,7 +992,9 @@ class ExpedienteApp:
         for criterio in vacios:
             self.tree_anticipo.insert("", "end", iid=criterio.clave,
                                       values=(criterio.clave,
-                                              criterio.concepto))
+                                              criterio.concepto,
+                                              criterio.responsable,
+                                              criterio.evidencia))
         self.lbl_anticipo_criterios.config(
             text=(f"Criterios vacíos que el alcance «{alcance}» puede "
                   f"invocar: {len(vacios)}"),
@@ -1287,7 +1314,23 @@ class ExpedienteApp:
                 "Entero ('1'), numero con punto o coma decimal ('0,20'),\n"
                 "lista de pares ('[[1.20, 0.90], [1.50, 1.20]]') o texto,\n"
                 "segun la FORMA que declara el criterio. Lo que no tenga esa\n"
-                "forma se rechaza aqui, no en el calculo.")
+                "forma se rechaza aqui, no en el calculo. El editor de abajo\n"
+                "COMPONE este mismo campo: las dos vistas son el mismo valor.")
+
+        # EL EDITOR TIPADO DEL CRITERIO SELECCIONADO (E-B, E10). Se monta por
+        # forma al seleccionar (`_montar_editor`) y compone el literal de
+        # arriba; el literal, a su vez, lo repinta. Una sola fuente del
+        # valor, dos vistas, y un solo boton que declara.
+        self.f_editor = ttk.Frame(f_declarar)
+        self.f_editor.grid(row=2, column=0, columnspan=2, sticky="we", pady=(0, 6))
+        self.editor = None
+        self._sincronizando_editor = False
+        try:
+            self.color_neutro_editor = ttk.Style().lookup("TFrame", "background") \
+                or "SystemButtonFace"
+        except tk.TclError:
+            self.color_neutro_editor = "SystemButtonFace"
+        self.valor_declarado_var.trace_add("write", self._literal_cambio)
 
         # DOS FILAS DE BOTONES, y la segunda no es estetica: las cuatro en
         # una sola sumaban mas ancho que la ventana en su tamano por defecto
@@ -1297,13 +1340,16 @@ class ExpedienteApp:
         # sola, separada por una linea: la accion que no se deshace no
         # comparte fila con las que si.
         f_botones = ttk.Frame(f_declarar)
-        f_botones.grid(row=2, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        f_botones.grid(row=3, column=0, columnspan=2, sticky="w", pady=(4, 0))
 
         self.btn_aplicar_corrida = BotonAccion(
             f_botones, "Aplicar solo a esta corrida", fondo="#2e86c1", command=self._aplicar_valor_corrida,
             motivo=MOTIVO_SIN_CRITERIO,
             ayuda="El valor se usa en la proxima ejecucion del calculo, pero\n"
-                  "criterios_adoptados.py NO se modifica.")
+                  "criterios_adoptados.py NO se modifica. Entra ENTERO y en una\n"
+                  "sola llamada por declaracion.py, con su procedencia: la fila\n"
+                  "elegida en el editor, o la nota que una adopcion distinta\n"
+                  "exige. Si un campo falla, no entra nada.")
         self.btn_aplicar_corrida.pack(side="left", padx=(0, 8), ipadx=6, ipady=3)
 
         self.btn_quitar_declarado = BotonAccion(
@@ -1328,10 +1374,10 @@ class ExpedienteApp:
         self.btn_ventana_norma.pack(side="left", padx=8, ipadx=6, ipady=3)
 
         ttk.Separator(f_declarar, orient="horizontal").grid(
-            row=3, column=0, columnspan=2, sticky="ew", pady=8)
+            row=4, column=0, columnspan=2, sticky="ew", pady=8)
 
         f_permanente = ttk.Frame(f_declarar)
-        f_permanente.grid(row=4, column=0, columnspan=2, sticky="w")
+        f_permanente.grid(row=5, column=0, columnspan=2, sticky="w")
 
         self.btn_guardar_archivo = BotonAccion(
             f_permanente, "Guardar en archivo fuente (permanente)",
@@ -1680,7 +1726,15 @@ class ExpedienteApp:
         self.txt_detalle_criterio.configure(state="disabled")
 
         valor_actual = ca.criterio_efectivo(clave).valor
-        self.valor_declarado_var.set("" if valor_actual is None else str(valor_actual))
+        # El editor primero y el literal despues, bajo la misma guardia de
+        # sincronizacion: `set` dispara `_literal_cambio`, que repintaria el
+        # editor recien montado con lo que acaba de pintar.
+        self._montar_editor(clave, valor_actual)
+        self._sincronizando_editor = True
+        try:
+            self.valor_declarado_var.set("" if valor_actual is None else repr(valor_actual))
+        finally:
+            self._sincronizando_editor = False
 
         en_caliente = ca.declarado_en_caliente(clave)
         # DECLARAR EN CALIENTE YA NO DEPENDE DE QUE EL CRITERIO ESTE VACIO.
@@ -1783,28 +1837,109 @@ class ExpedienteApp:
         """
         return interpretar_texto_declarado(texto)
 
+    # ------------------------------------------------------------------
+    # El editor tipado y su sincronizacion con el literal (E-B, E10)
+    # ------------------------------------------------------------------
+    def _montar_editor(self, clave, valor_actual):
+        """
+        El editor de la forma de `clave`, montado bajo el literal y pintado
+        con el valor efectivo. Un `Derivada` no tiene editor: no se elige.
+        """
+        if self.editor is not None:
+            self.editor.desmontar()
+            self.editor = None
+        if isinstance(ca.criterio(clave).resolucion, Derivada):
+            return
+        self.editor = ged.construir_editor(
+            self.f_editor, clave, color_neutro=self.color_neutro_editor,
+            al_cambiar=self._editor_cambio)
+        self.editor.marco.pack(fill="x")
+        self.editor.poner_valor(valor_actual)
+
+    def _editor_cambio(self):
+        """Un campo del editor cambio: el literal se reescribe con el valor entero."""
+        if self.editor is None or self._sincronizando_editor:
+            return
+        try:
+            valor = self.editor.valor()
+        except ValueError:
+            return          # un campo a medias: el literal conserva lo anterior
+        self._sincronizando_editor = True
+        try:
+            self.valor_declarado_var.set(repr(valor))
+        finally:
+            self._sincronizando_editor = False
+
+    def _literal_cambio(self, *_args):
+        """El literal cambio (tecleado a mano): el editor se repinta con el."""
+        if self.editor is None or self._sincronizando_editor:
+            return
+        try:
+            valor = self._interpretar_valor_declarado(self.valor_declarado_var.get())
+        except ValueError:
+            return          # un literal a medias todavia no es un valor
+        self._sincronizando_editor = True
+        try:
+            self.editor.poner_valor(valor)
+        finally:
+            self._sincronizando_editor = False
+
+    def _valor_a_declarar(self, clave):
+        """
+        El valor que «Aplicar» y «Guardar» declaran: el que COMPONEN los
+        campos del editor montado para esta clave, o el literal cuando el
+        editor es el literal (o no hay editor de esta clave).
+
+        No se lee el literal a ciegas: un campo del editor que no arma
+        --- `n` = 0.05 fuera de su ventana, pintado en rojo --- deja el
+        literal en el valor ANTERIOR, y declarar ese literal seria declarar
+        un numero que el proyectista no esta viendo (medido en la ventana
+        real de E-B). Con el editor como fuente, el rechazo nombra el campo.
+        """
+        editor = self.editor
+        if (editor is not None and editor.esquema.clave == clave
+                and editor.esquema.tipo_de_editor != sed.LITERAL):
+            return editor.valor()
+        return self._interpretar_valor_declarado(self.valor_declarado_var.get())
+
+    def _fila_y_nota_del_editor(self, clave):
+        """
+        La fila elegida y la nota del editor, SOLO si el editor es de esta
+        clave: un llamador que fija `_clave_criterio_seleccionado` sin pasar
+        por la seleccion (los apoyos de la suite) no hereda la fila de otro.
+        """
+        if self.editor is None or self.editor.esquema.clave != clave:
+            return "", ""
+        return self.editor.fila(), self.editor.nota()
+
     def _aplicar_valor_corrida(self):
         clave = self._clave_criterio_seleccionado
         if not clave:
             return
-        # `establecer_valor_dinamico` entra en el try: desde que somete la
-        # declaracion a la guardia de criterios_adoptados, rechaza un valor
-        # fuera del rango de sensibilidad con ValueError. Fuera del try, ese
-        # rechazo salia como traceback de Tk en vez de como mensaje leible.
+        # TODO ENTRA EN EL TRY Y EN UNA SOLA LLAMADA (E-B, E10): el literal
+        # se interpreta, se arma entero y `src.editores.declarar` lo somete
+        # a la guardia en seco y lo enruta a la puerta de `declaracion.py`
+        # que corresponde al modo del criterio --- desde la tabla con la
+        # fila elegida (o la que la clave tecleada nombra), en rango, o
+        # libre ---, que registra la PROCEDENCIA. Un rechazo --- forma,
+        # ventana, un numero que DIFIERE de la celda sin nota, una adopcion
+        # sin fila ni nota en un criterio de tabla --- sale como ValueError
+        # y aqui se pinta; nada queda declarado a medias. Hasta E-B este
+        # camino llamaba a `establecer_valor_dinamico` y OLVIDABA la
+        # procedencia: un valor tecleado aqui no tenia origen que la memoria
+        # pudiera imprimir.
         try:
-            valor_nuevo = self._interpretar_valor_declarado(self.valor_declarado_var.get())
-            ca.establecer_valor_dinamico(clave, valor_nuevo)
+            valor_nuevo = self._valor_a_declarar(clave)
+            fila, nota = self._fila_y_nota_del_editor(clave)
+            procedencia = sed.declarar(clave, valor_nuevo, fila=fila, nota=nota)
         except (ValueError, KeyError) as exc:
             self.lbl_estado_criterio.config(text=f"Error: {exc}", foreground=COLOR_ERROR)
             return
-        # Un valor tecleado aqui no tiene procedencia: si la clave la tenia
-        # de la ventana normativa, esa procedencia hablaria ahora de otro
-        # numero (EXT-A-02 por otra puerta, auditoria adversarial de EXT-4).
-        dec.olvidar_procedencia(clave)
         # El informe de la ultima corrida ya no describe este estado (PC-15).
         self._invalidar_informe(MOTIVO_INFORME_DESACTUALIZADO)
         self.lbl_estado_criterio.config(
-            text=f"'{clave}' declarado a {valor_nuevo!r} SOLO para la proxima corrida. "
+            text=f"'{clave}' declarado a {valor_nuevo!r} SOLO para la proxima corrida, "
+                 f"con procedencia registrada ({procedencia.como_texto()}). "
                  "criterios_adoptados.py no se modifico.",
             foreground=COLOR_AVISO)
         # Sin `selection_set` detras: lo hace `_llenar_tabla_criterios`, que es
@@ -1845,7 +1980,7 @@ class ExpedienteApp:
         if not clave:
             return
         try:
-            valor_nuevo = self._interpretar_valor_declarado(self.valor_declarado_var.get())
+            valor_nuevo = self._valor_a_declarar(clave)
         except ValueError as exc:
             self.lbl_estado_criterio.config(text=f"Error: {exc}", foreground=COLOR_ERROR)
             return
@@ -2079,7 +2214,11 @@ class ExpedienteApp:
 
         f_crit = ttk.Frame(p)
         f_crit.pack(fill="both", expand=False, pady=4)
-        cols = ("clave", "etiqueta", "concepto", "fuente", "fases", "puntos")
+        # RESPONSABLE Y EVIDENCIA (E-B, E13 reducido): QUIEN aporta el valor
+        # y CON QUE se sostiene, derivados de la ficha por `src/responsable.py`
+        # y traidos en `CriterioBloqueante`. La pestaña pinta; no escribe.
+        cols = ("clave", "etiqueta", "concepto", "fuente", "fases", "puntos",
+                "responsable", "evidencia")
         self.tree_criterios = ttk.Treeview(f_crit, columns=cols, show="headings", height=8)
         encabezados = [
             ("clave", "Clave", 130, "w"),  # literal-ok: ancho de columna, px
@@ -2088,6 +2227,8 @@ class ExpedienteApp:
             ("fuente", "Fuente que lo resolveria", 220, "w"),  # literal-ok: ancho de columna, px
             ("fases", "Fases", 140, "w"),  # literal-ok: ancho de columna, px
             ("puntos", "Puntos", 140, "w"),  # literal-ok: ancho de columna, px
+            ("responsable", "Responsable (quien lo fija)", 220, "w"),  # literal-ok: ancho de columna, px
+            ("evidencia", "Evidencia (que lo sostiene)", 220, "w"),  # literal-ok: ancho de columna, px
         ]
         for col, txt, ancho, anchor in encabezados:
             self.tree_criterios.heading(col, text=txt)
@@ -2130,6 +2271,20 @@ class ExpedienteApp:
             ayuda="El cuadro resumen (entregable 3 de M11), una fila\n"
                   "por punto, en una hoja de calculo.")
         self.btn_csv.pack(side="left", padx=8, ipadx=8, ipady=4)
+
+        # COMPARAR CON OTRO VOLCADO (E-B, E14): el `informe_json` de ESTA
+        # corrida --- el mismo que se embebe en la sesion, fotografiado al
+        # correr --- contra un JSON del disco, por `src/comparador.py`. Nunca
+        # recalcula: compara dos volcados.
+        self.btn_comparar = BotonAccion(
+            f_exp, "Comparar con otro JSON...", fondo="#5d6d7e",
+            command=self.comparar_informe, motivo=MOTIVO_SIN_CORRIDA,
+            ayuda="Compara el volcado de esta corrida con otro informe_json\n"
+                  "(otra version del CSV, de los criterios o del codigo), por\n"
+                  "identidad de punto y con tolerancias nombradas. Dice que\n"
+                  "campo difiere en que punto, y que no se puede comparar y\n"
+                  "por que (metodos distintos). No corre nada.")
+        self.btn_comparar.pack(side="left", padx=8, ipadx=8, ipady=4)
 
         # EL MOTIVO DEL BLOQUEO, A LA VISTA (EXT-8, PC-17). Los cuatro
         # exportadores comparten motivo --- se apagan y encienden juntos ---,
@@ -2294,8 +2449,11 @@ class ExpedienteApp:
 
         # LA CORRIDA SE EMBEBE EN LA SESION (E04): con su `informe_json`,
         # para que quien la abra despues pueda saber si la reproduce.
+        # El volcado se fotografia AQUI y el comparador de la pestaña 4 lo
+        # lee de aqui (E14): compara la corrida hecha, no una nueva.
+        self.volcado_de_la_corrida = cli.informe_json(self.informe)
         self.corridas.append(ses.corrida_para_sesion(
-            self.informe, cli.informe_json(self.informe)))
+            self.informe, self.volcado_de_la_corrida))
         self._llenar_tabla_puntos()
         self._llenar_resumen()
         # La pestana 2 se repinta porque acaba de aparecer el tercer filtro:
@@ -2304,7 +2462,8 @@ class ExpedienteApp:
         # el filtro exacto este disponible en el momento en que se vuelve
         # exacto.
         self._llenar_tabla_criterios()
-        for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv):
+        for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv,
+                    self.btn_comparar):
             btn.habilitar()
         # La via del PDF se relee AQUI y no solo al construir la ventana: es
         # barato y evita que la ayuda hable de una maquina distinta de la que
@@ -2423,7 +2582,8 @@ class ExpedienteApp:
             fases = ", ".join(c.fases) + (
                 " (diferido por alcance)" if c.diferido else "")
             self.tree_criterios.insert("", "end", values=(
-                c.clave, c.etiqueta, c.concepto, c.fuente, fases, puntos))
+                c.clave, c.etiqueta, c.concepto, c.fuente, fases, puntos,
+                c.responsable, c.evidencia))
 
     # ------------------------------------------------------------------
     # Exportacion
@@ -2606,6 +2766,47 @@ class ExpedienteApp:
         if self.proceso_pdf is not None:
             self.proceso_pdf.cancelar()
             self.lbl_estado_pdf.config(text="Cancelando la exportacion del PDF...")
+
+    def comparar_informe(self, ruta=None):
+        """
+        La corrida vigente contra otro `informe_json` del disco (E-B, E14).
+
+        Compara el VOLCADO fotografiado al correr (`volcado_de_la_corrida`)
+        con el archivo elegido, por `src.comparador.comparar`: nunca corre
+        el pipeline ni vuelve a armar el informe con el estado vivo. Devuelve
+        el resultado (para los apoyos de la suite) y lo muestra en una
+        ventana de texto; `None` si no hubo comparacion.
+        """
+        if self.informe is None:
+            return None
+        if ruta is None:
+            ruta = filedialog.askopenfilename(
+                title="Elegir el informe_json con el que comparar",
+                filetypes=[("Archivo JSON", "*.json"), ("Todos los archivos", "*.*")])
+        if not ruta:
+            return None
+        try:
+            otro = compa.cargar(Path(ruta))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+            messagebox.showerror("No se pudo leer el JSON", f"{exc}")
+            return None
+        resultado = compa.comparar(self.volcado_de_la_corrida, otro)
+        self._mostrar_comparacion(resultado, ruta)
+        return resultado
+
+    def _mostrar_comparacion(self, resultado, ruta):
+        ventana = tk.Toplevel(self.root)
+        ventana.title("Comparacion de dos informe_json")
+        ventana.geometry("900x500")
+        ventana.transient(self.root)
+        ventana.bind("<Escape>", lambda _evt: ventana.destroy())
+        ttk.Label(ventana, text=f"Esta corrida (A) frente a {ruta} (B)",
+                  style="Header.TLabel", wraplength=860, justify="left").pack(
+                      anchor="w", padx=10, pady=(10, 4))
+        texto = tk.Text(ventana, wrap="word", font=("Consolas", 9))
+        texto.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        texto.insert("1.0", "\n".join(resultado.lineas()))
+        texto.configure(state="disabled")
 
     def exportar_csv(self):
         if self.informe is None:

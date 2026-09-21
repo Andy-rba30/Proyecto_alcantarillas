@@ -125,3 +125,27 @@ PASOS_PERFIL_LAMINA = 2000
 # (una potencia 4/3 y dos cuadrados: unas decenas de ulp), y no un umbral de
 # proyecto.
 TOL_ASINTOTA_PERFIL = 1e-12
+
+# ---------------------------------------------------------------------------
+# El comparador de dos `informe_json` (E-B, E14): cuando dos numeros de dos
+# volcados son "el mismo numero"
+# ---------------------------------------------------------------------------
+# `src/comparador.py` empareja dos volcados por identidad de punto y compara
+# campo a campo. Dos corridas del mismo arbol sobre el mismo CSV producen los
+# MISMOS bytes (la linea base de la Familia C lo demuestra byte a byte), de
+# modo que la unica diferencia numerica legitima entre dos volcados iguales
+# es el ruido de la aritmetica en punto flotante --- la asociacion de una
+# suma, el orden de un producto --- y estas dos tolerancias lo absorben: un
+# umbral absoluto para las magnitudes pequenas (un tirante de 0.30 m, una
+# pendiente de 0.0008) y uno relativo para las grandes (una cota de 3800 m).
+# Son del mismo orden que `TOL_UMBRAL_NORMATIVO`, y por la misma razon: un
+# nanometro no es una diferencia de diseno. Una diferencia REAL de calculo
+# --- 0.3 mm de HW por una constante cambiada (EXT-2 midio -0.306 mm) --- esta
+# seis ordenes de magnitud por encima y se reporta.
+#
+# NO son valores de proyecto: cambiarlas no mueve ningun numero de ninguna
+# memoria; solo cuantas cifras tienen que coincidir para que el comparador
+# calle. Y no son un criterio: no hay nada que declarar en la memoria sobre
+# ellas.
+TOL_COMPARADOR_ABS = 1e-9
+TOL_COMPARADOR_REL = 1e-9

@@ -2663,3 +2663,128 @@ cada una lleva su argumento y su símbolo.
   19.63), lo que movería el término de fricción de H en un 0.05 % y con él la
   línea base; hasta entonces las dos asíntotas conviven, dichas.
 - **Dónde vive:** `src/modulos/M4_control.py::_llenado_donde_Sf_iguala_S`
+
+# Parte XXIX — Lo que E-B dejó escrito al construir los editores tipados, el comparador y el índice
+
+E-B ejecutó las cuatro piezas del último prompt de la cadena (E10, E14, E13
+reducido, E21 acotado) sobre lo que EXT-4, EXT-5 y EXT-10 ya habían dejado:
+la forma de cada criterio, el contexto de corrida y la sesión con corridas
+embebidas. Seis cosas quedaron decididas DISTINTAS de la lectura más directa
+del prompt, o sin hacer a propósito, y cada una lleva su argumento y su
+símbolo.
+
+## EB-01 · El literal sigue existiendo: el editor lo compone y es la fuente al aplicar; un dict que la ficha no descompone no recibe campos inventados
+
+- **Qué se difirió:** sustituir el campo literal «Valor nuevo» de la pestaña 2
+  por los editores tipados, y dar campos a TODOS los `dict_con_campos`.
+- **Por qué:** el literal es el único camino de declaración desde EXT-5 y
+  los cuatro apoyos de ventana real de la suite declaran por él; los
+  editores lo COMPONEN (dos vistas, un valor) en vez de abrir un segundo
+  camino con su propia guardia. Al aplicar, la fuente es el editor cuando
+  tiene campos y el literal cuando no (`_valor_a_declarar`): medido en la
+  ventana real, un campo que no arma (n = 0.05 fuera de su ventana) dejaba
+  el literal en el valor ANTERIOR y «Aplicar» declaraba un número que el
+  proyectista no veía. Y un dict cuyos campos no salen de la ficha —un dict
+  de dicts como `cobertura_minima_aashto`, o uno vacío sin ventana ni
+  campos obligatorios como `N_cq_N_gammaq_meyerhof`— cae al editor LITERAL:
+  darle campos sería escribir en el editor lo que la ficha no declara,
+  que es el error que el proyecto persigue en todas partes.
+- **Qué haría falta:** que las fichas de esos dicts declaren sus campos
+  (`campos_obligatorios`, o una ventana por campo) y entonces el editor
+  los deriva solo; no hay nada que cambiar en `gui/editores.py`.
+- **Dónde vive:** `src/editores.py::_campos_del_dict`
+
+## EB-02 · Una categoría no exige fila, y un número que coincide con varias celdas no nombra ninguna
+
+- **Qué se difirió:** exigir la fila de la tabla a TODO criterio `de_tabla`
+  al declararlo desde la pestaña 2, y resolver por el número tecleado la
+  fila de la que «proviene».
+- **Por qué:** en una `categoria` la selección normativa ES el conjunto
+  cerrado que la ficha deriva de la tabla (`sensibilidad`): las filas de
+  `condicion_pavimento` son materiales de conducto y sus claves no son los
+  tres textos que el criterio admite, de modo que exigir fila la habría
+  vuelto indeclarable. Y en la Tabla C.2 el 0.5 está en cinco filas
+  elegibles: nombrar una por el número sería inventar la procedencia
+  (EXT-V-02 al revés). Teclear la CLAVE de una fila sí la nombra —es el
+  camino del ratón de EXT-5, que sigue valiendo—; un número que coincide
+  con UNA sola celda también; con varias, hace falta elegirla o escribir la
+  nota.
+- **Qué haría falta:** nada para el producto; una tabla con una fila por
+  categoría permitiría emparejar `categoria` con fila, y entonces
+  `exige_fila` podría incluirla.
+- **Dónde vive:** `src/editores.py::fila_implicita`
+
+## EB-03 · El comparador compara volcados, no informes; «método» son tres campos
+
+- **Qué se difirió:** un cargador de `Informe` desde su JSON (la ficha
+  EXT-10-04 lo pedía «para el comparador») y una definición más ancha de
+  «método distinto».
+- **Por qué:** el comparador trabaja sobre dos `dict` y no necesita
+  reconstruir objetos: comparar volcados es lo que la línea base hace byte
+  a byte y lo que la CLI hacía con `==` sobre la corrida embebida; ahora hay
+  UNA definición de «la misma corrida» y las dos la llaman. Cargar un
+  `Informe` desde JSON seguiría siendo un segundo motor sin tests, y
+  EXT-10-04 queda como estaba. «Método distinto» son el control gobernante,
+  el régimen del barril y el tipo de perfil de la lámina: los tres deciden
+  de qué fórmula salió cada número del diseño; el material o la sección no
+  son método sino RESULTADO, y su cambio se reporta como diferencia.
+- **Qué haría falta:** un consumidor que necesite el objeto —el hijo del
+  PDF leyendo la corrida embebida— y entonces el cargador, con los
+  `PasoDeMemoria` incluidos.
+- **Dónde vive:** `src/comparador.py::CAMPOS_DE_METODO`
+
+## EB-04 · Responsable y evidencia son una derivación de la ficha, no una matriz; van al JSON y no a la memoria
+
+- **Qué se difirió:** la «matriz requisito-aplicabilidad-responsable-
+  evidencia» del plan original, y una columna de responsable en la memoria
+  HTML.
+- **Por qué:** el dictamen la descartó por no tener forma en el esquema del
+  registro; lo que E13 reducido pide cabe en dos lecturas de objetos que ya
+  existen —`resolucion` dice quién fija el valor y `reemplazado_por` (o la
+  trazabilidad exigida por el ensayo, o la fuente de un vacío) qué lo
+  sostiene— y por eso vive en un módulo sin estado que leen el anticipo y
+  M11. Van al JSON `criterios.bloquearon` porque es el otro reporte de la
+  corrida y dejarlo sin la columna que la pestaña 4 muestra repetiría
+  SIS-A-13; no van a la memoria porque el bloque de pendientes ya imprime
+  «Qué lo resuelve» desde `reemplazado_por` y una segunda columna diría lo
+  mismo con otras palabras.
+- **Qué haría falta:** un caso en que responsable y evidencia no se lean de
+  la ficha (una asignación de obra, un plazo), que sería un campo nuevo de
+  `Criterio` y una decisión de producto.
+- **Dónde vive:** `src/responsable.py::evidencia_de`
+
+## EB-05 · El índice se deriva de la plantilla y de los puntos; el «histórico» no ganó una vista
+
+- **Qué se difirió:** un índice escrito en la plantilla, un índice de pasos
+  dentro de cada punto, y una vista del histórico de corridas (el «e
+  histórico» del título del prompt).
+- **Por qué:** el índice sale de los `<h2 id>` del texto que se va a
+  imprimir y de los `InformePunto`, de modo que no puede divergir de las
+  secciones ni de los puntos («nada que no exista como objeto»); un índice
+  de pasos por punto duplicaría los `<h5>` que el anexo ya enlaza (EXT-8) y
+  engordaría la memoria que EXT-8 adelgazó. El histórico ya existe como
+  objeto desde EXT-10 —las corridas embebidas en la sesión, con su
+  `informe_json`— y la CLI ya dice si una corrida reproduce la guardada; la
+  pieza que faltaba para leerlo es el comparador de E14, y una vista de
+  lista de corridas no añade ningún objeto nuevo.
+- **Qué haría falta:** una pestaña o un volcado que liste las corridas de la
+  sesión y compare dos cualesquiera por el comparador; es presentación
+  sobre objetos que ya existen.
+- **Dónde vive:** `src/modulos/M11_reporte.py::indice_de_la_memoria`
+
+## EB-06 · La ventana emergente conserva su campo único; las dos ventanas no se unifican
+
+- **Qué se difirió:** montar los editores tipados también en la ventana
+  normativa emergente (`gui/ventana_normativa.py`), que declara con UN
+  `CampoValidable` y el mismo parser.
+- **Por qué:** la emergente existe para LEER la norma —la tabla completa con
+  sus notas, el rango con su semántica— y su campo declara lo que esa
+  lectura decide; los editores tipados existen para COMPONER un valor
+  estructurado, que es la pregunta de la pestaña 2. Las dos comparten el
+  parser (EXT-5) y la puerta de declaración, que es lo que impide que
+  diverjan; duplicar los editores en la emergente habría sido un segundo
+  sitio donde mantener la misma composición.
+- **Qué haría falta:** decidir si la emergente absorbe la pestaña 2 (una
+  sola ventana de declaración), que es una decisión de producto y no de
+  este cluster.
+- **Dónde vive:** `gui/ventana_normativa.py::_pie`

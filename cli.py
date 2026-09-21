@@ -166,6 +166,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from src import criterios_adoptados as ca
 from src import datos_sitio as ds
 from src import declaracion as _declaracion
+from src import comparador as _comparador
 from src import sesion as _sesion
 from src.constantes_normativas import H_O_HW_SOBRE_D_MIN
 from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
@@ -661,7 +662,12 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
                             # True cuando TODO lo que este criterio detuvo
                             # estaba diferido por alcance (EXT-G-02): no
                             # bloquea el cierre de esta corrida.
-                            "diferido": c.diferido}
+                            "diferido": c.diferido,
+                            # QUIEN lo fija y CON QUE evidencia (E-B, E13
+                            # reducido), derivados de la ficha: las mismas
+                            # dos columnas que la pestaña 4 y el anticipo.
+                            "responsable": c.responsable,
+                            "evidencia": c.evidencia}
                            for c in bloqueantes]},
     }
 
@@ -1144,12 +1150,13 @@ def _comparar_con_la_corrida_embebida(informe: Informe,
     guardada = candidatas[-1]
     propia = json.loads(json.dumps(informe_json(informe), ensure_ascii=False,
                                    allow_nan=False))
-    # Sin la marca de tiempo y sin las RUTAS de origen de los [S]: una ruta
-    # absoluta o el nombre del archivo de sesion no dicen nada del calculo,
-    # y con ellas dos maquinas dirian DIFIERE sobre la misma obra.
-    igual = (_sesion.sin_origen_de_los_datos_de_sitio(_sesion.sin_marca_de_tiempo(propia))
-             == _sesion.sin_origen_de_los_datos_de_sitio(
-                 _sesion.sin_marca_de_tiempo(guardada["informe_json"])))
+    # LA MISMA COMPARACION QUE `--comparar` (E-B, E14): `comparador.comparar`
+    # normaliza --- sin la marca de tiempo y sin las RUTAS de origen de los
+    # [S], que no dicen nada del calculo y con las que dos maquinas dirian
+    # DIFIERE sobre la misma obra --- y compara por identidad de punto con
+    # las tolerancias nombradas. Hasta E-B esto comparaba dos dicts con `==`
+    # por su cuenta: dos definiciones de «la misma corrida».
+    igual = _comparador.comparar(propia, guardada["informe_json"]).iguales
     cuando = guardada.get("generado_utc", "?")
     if igual:
         return (f"Esta corrida REPRODUCE la guardada en la sesion el {cuando} "
@@ -1185,6 +1192,11 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("csv", type=Path, nargs="?", default=None,
                    help="ruta del CSV de puntos criticos (se puede omitir "
                         "con --sesion, que lo trae)")
+    p.add_argument("--comparar", nargs=2, type=Path, metavar=("A.json", "B.json"),
+                   dest="comparar",
+                   help="compara dos volcados informe_json por identidad de punto "
+                        "(src/comparador.py) y termina: 0 iguales, 1 difieren, 2 "
+                        "no se pudo leer. No corre el pipeline")
     p.add_argument("--sesion", type=Path, dest="sesion",
                    help="sesion guardada por la ventana (JSON): repone el "
                         "proyecto, el CSV, los datos externos, el alcance y "
@@ -1372,6 +1384,11 @@ def _aplicar_datos_de_sitio(args, sesion: Optional[SesionSerializada]):
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
+
+    # COMPARAR DOS VOLCADOS Y SALIR (E-B, E14): ningun otro argumento se
+    # lee y el pipeline no corre. El comparador no importa el motor.
+    if args.comparar is not None:
+        return _comparador.main([str(r) for r in args.comparar])
 
     # LA SESION SERIALIZADA VA PRIMERO (EXT-8, PC-11): repone los criterios
     # con su procedencia y rellena lo que la linea de comandos no trajo. Una

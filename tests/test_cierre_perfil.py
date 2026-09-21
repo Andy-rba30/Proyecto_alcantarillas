@@ -185,7 +185,9 @@ def test_lo_diferido_esta_listado_con_fundamento_en_el_bloque_de_alcance(
     assert any("Fase 8" in e for e in etapas)
     assert any("Fase 9" in e for e in etapas)
 
-    bloque = memoria.split("4. Alcance y diferimientos")[1].split("<h2")[0]
+    # Desde el ancla de la seccion y no desde su titulo: el indice (E-B)
+    # repite el titulo antes, como texto de un enlace.
+    bloque = memoria.split('<h2 id="alcance"')[1].split("<h2")[0]
     for _id_punto, b in diferidos:
         assert b.etapa in bloque or b.mensaje[:60] in bloque, b.etapa
     # Y el fundamento, no solo el rotulo: la fuente que cerraria el criterio.
@@ -360,7 +362,9 @@ def test_los_numeros_del_caso_a_mano_estan_en_la_memoria(memoria):
     IMPRESOS, no solo calculados: es la diferencia entre "el codigo lo hace
     bien" y "la memoria lo dice", que es la trampa de NOR-MEM-01.
     """
-    a01 = memoria.split("A-01 &nbsp;")[1].split("A-02 &nbsp;")[0]
+    # Desde el ancla del punto y no desde su rotulo: el indice (E-B) lo
+    # repite antes, como texto de un enlace.
+    a01 = memoria.split('id="punto-A-01"')[1].split('id="punto-A-02"')[0]
     for numero in ("18.635",     # L de 7.B
                    "0.220",      # TW de Sec. 1.3
                    "0.627",      # y_n

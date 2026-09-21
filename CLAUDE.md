@@ -462,6 +462,30 @@ ErrorProyecto.
   como columna del CSV— pero se lee como ANTECEDENTE, no como plantilla viva.
   Su estatus completo está en su propio encabezado y en
   `docs/decisiones_diferidas.md`.
+- **Desde E-B la pestaña 2 declara por editores TIPADOS, y el literal sigue
+  siendo la fuente.** `gui/editores.py` monta un editor por
+  `Criterio.forma` (escalar, par, serie de pares, dict con campos, serie de
+  claves; LITERAL para lo que la ficha no descompone, sin inventar campos),
+  cada campo es un `CampoValidable` que valida al escribir con
+  `src.editores.validar_campo`, y el contenido —campos, ventanas, filas de la
+  tabla y la celda que cada fila propone— lo deriva `src/editores.py` de la
+  ficha y del registro, sin Tk. Los editores COMPONEN el campo literal
+  «Valor nuevo» (dos vistas, un valor) y «Aplicar» declara en UNA llamada por
+  `src.editores.declarar`, que enruta a la puerta de `declaracion.py` del
+  modo del criterio y registra la procedencia: elegir una fila obtiene el
+  valor de la tabla; teclear la clave de una fila la nombra; un número que
+  DIFIERE de la celda, o que no proviene de ninguna fila en un criterio de
+  tabla, exige nota o no entra; una categoría elige dentro de su conjunto
+  cerrado sin fila. La pestaña 2 ya no llama a `establecer_valor_dinamico`
+  ni olvida procedencias (fichas EB-01, EB-02). La ventana emergente
+  conserva su campo único (EB-06). El comparador de dos `informe_json`
+  (`src/comparador.py`, E14) vive en la pestaña 4 y en `cli.py --comparar`,
+  nunca recalcula y es la MISMA comparación que la CLI hace con la corrida
+  embebida en la sesión; responsable y evidencia de un pendiente
+  (`src/responsable.py`, E13 reducido) se derivan de `resolucion` y
+  `reemplazado_por` y se pintan en la pestaña 4, en el anticipo y en el JSON;
+  la memoria lleva índice derivado de los `<h2 id>` de la plantilla y de los
+  puntos (`M11.indice_de_la_memoria`, E21 acotado).
 
 ## Tests
 - pytest en tests/. Mínimo un test por módulo.

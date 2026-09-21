@@ -123,6 +123,7 @@ from typing import (Any, Callable, Dict, Iterator, List, Optional, Sequence,
 
 from src import criterios_adoptados as ca
 from src import datos_sitio as ds
+from src import responsable as _responsable
 # Los umbrales normativos con su CARACTER (recomendacion / exigencia) se leen
 # de su transcripcion, no se reescriben aqui: la memoria y el codigo tienen
 # que citar el mismo objeto o divergen, que es literalmente NOR-MEM-01.
@@ -355,8 +356,13 @@ MARCADORES: Tuple[str, ...] = (
     # EXT-8 (PC-12): el anexo unico de fundamentos, citas y umbrales al que
     # cada paso enlaza en vez de transcribirlos. Ver `anexo_referencias`.
     "anexo_referencias",
+    # E-B (E21 acotado): el indice del documento, derivado de los `<h2 id>`
+    # de la propia plantilla y de los puntos del informe. Ver
+    # `indice_de_la_memoria`.
+    "indice",
 )
 MARCADOR_ANEXO = "anexo_referencias"
+MARCADOR_INDICE = "indice"
 
 # Las etapas del progreso que `memoria_html_por_partes` y `exportar_pdf`
 # comunican por `progreso(etapa, hecho, total)` (EXT-8, PC-11). La CLI las
@@ -798,6 +804,12 @@ class CriterioBloqueante:
     # iguales, de modo que «bloqueo esta corrida» era falso de la mitad de
     # las filas de una corrida de perfil.
     diferido: bool = False
+    # QUIEN lo fija y CON QUE evidencia (E-B, E13 reducido), derivados de la
+    # ficha por `src/responsable.py`: `resolucion` y `reemplazado_por`. La
+    # pestaña 4, el JSON y el anticipo (antes de correr) leen la misma
+    # derivacion.
+    responsable: str = ""
+    evidencia: str = ""
 
 
 def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
@@ -824,6 +836,7 @@ def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
         # Ver `ca.declaracion_de`: un [S] de corredor pendiente levanta la
         # misma CriterioPendienteError y no esta en CRITERIOS (SIS-A-05).
         declarado = ca.declaracion_de(clave)
+        quien = _responsable.responsabilidad_de(declarado)
         salida.append(CriterioBloqueante(
             clave=clave, etiqueta=declarado.etiqueta,
             concepto=declarado.concepto, fuente=declarado.fuente,
@@ -831,7 +844,8 @@ def criterios_bloqueantes(informe: Any) -> Tuple[CriterioBloqueante, ...]:
             fases=tuple(acumulado[clave]["fases"]),
             etapas=tuple(acumulado[clave]["etapas"]),
             puntos=tuple(acumulado[clave]["puntos"]),
-            diferido=clave not in reales))
+            diferido=clave not in reales,
+            responsable=quien.responsable, evidencia=quien.evidencia))
     return tuple(salida)
 
 
@@ -1306,6 +1320,49 @@ def ancla_de_discrepancia(discrepancia_id: str) -> str:
 
 def ancla_de_criterio(clave: str) -> str:
     return "criterio-" + _slug(clave)
+
+
+def ancla_de_punto(id_punto: str) -> str:
+    """El `id` del bloque de un punto critico, al que el indice enlaza (E-B)."""
+    return "punto-" + _slug(id_punto)
+
+
+_RE_H2_DE_LA_PLANTILLA = re.compile(r'<h2\s+id="([^"]+)"[^>]*>(.*?)</h2>', re.S)
+_RE_ETIQUETA_HTML = re.compile(r"<[^>]+>")
+
+
+def indice_de_la_memoria(texto_plantilla: str, informe: Any) -> str:
+    """
+    El indice del documento (E-B, E21 acotado): una entrada por `<h2 id>` de
+    la PROPIA plantilla, en su orden, y bajo la seccion de los puntos una
+    entrada por punto del informe con su estado. Nada que no exista como
+    objeto: los titulos y las anclas se leen del texto de la plantilla que
+    se va a imprimir --- de modo que el indice no puede divergir de las
+    secciones ---, y los puntos, del `Informe`. `memoria_html_por_partes` lo
+    calcula sobre `plantilla.template` antes del primer trozo.
+    """
+    entradas = []
+    for ancla, titulo in _RE_H2_DE_LA_PLANTILLA.findall(texto_plantilla):
+        rotulo = " ".join(_RE_ETIQUETA_HTML.sub("", titulo).split())
+        entradas.append(f'<li>{_enlace(ancla, rotulo, "indice-seccion")}')
+        if ancla == "memorias" and informe.puntos:
+            puntos = []
+            for p in informe.puntos:
+                punto = p.punto
+                estado = ("dimensionado" if p.dimensionado else "sin dimensionar")
+                n_bloqueos = len(p.bloqueos_reales())
+                detalle = (f"{_esc(punto.id)} &nbsp;|&nbsp; progresiva "
+                           f"{_esc(punto.progresiva_display)} &nbsp;|&nbsp; Familia "
+                           f"{_esc(punto.familia.value)} &nbsp;|&nbsp; {estado}")
+                if n_bloqueos:
+                    plural = "" if n_bloqueos == 1 else "s"
+                    detalle += f" &nbsp;|&nbsp; {n_bloqueos} etapa{plural} bloqueada{plural}"
+                puntos.append(
+                    f"<li>{_enlace(ancla_de_punto(punto.id), detalle, 'indice-punto')}</li>")
+            entradas.append("<ol>" + "".join(puntos) + "</ol>")
+        entradas.append("</li>")
+    return ('<nav class="indice"><h2 id="indice">Indice</h2><ol>'
+            + "".join(entradas) + "</ol></nav>")
 
 
 def ancla_de_umbral(umbral: Any) -> str:
@@ -1933,7 +1990,7 @@ def memoria_de_punto(informe: Any) -> str:
     estado = ("dimensionado" if informe.dimensionado
               else "sin dimensionar")
     partes = [
-        f'<div class="{clase}">',
+        f'<div class="{clase}" id="{ancla_de_punto(punto.id)}">',
         f"<h3>{_esc(punto.id)} &nbsp;|&nbsp; progresiva "
         f"{_esc(punto.progresiva_display)} &nbsp;|&nbsp; Familia "
         f"{_esc(punto.familia.value)} &nbsp;|&nbsp; {estado}</h3>",
@@ -3476,6 +3533,9 @@ def memoria_html_por_partes(
                   "incumplidas; el detalle esta en los bloques 1 y 4")
 
     n_puntos = len(informe.puntos)
+    # La plantilla se carga ANTES de los valores: el indice se deriva de su
+    # texto (E-B, E21), y la guardia de contenido de abajo la necesita igual.
+    plantilla = cargar_plantilla(ruta_plantilla)
 
     def _memorias_punto() -> Iterator[str]:
         for i, p in enumerate(informe.puntos, start=1):
@@ -3516,6 +3576,7 @@ def memoria_html_por_partes(
         "bloque_homonimias": bloque_homonimias(),
         "bloque_discrepancias": bloque_discrepancias(informe),
         MARCADOR_ANEXO: anexo_referencias(informe),
+        MARCADOR_INDICE: indice_de_la_memoria(plantilla.template, informe),
     }
     if progreso is not None:
         progreso(ETAPA_BLOQUES, 1, 1)
@@ -3526,7 +3587,6 @@ def memoria_html_por_partes(
             "`MARCADORES` y el diccionario de `memoria_html` tienen que decir "
             "lo mismo, porque el test de la plantilla se apoya en esa lista."
         )
-    plantilla = cargar_plantilla(ruta_plantilla)
     _exigir_que_la_plantilla_no_pierda_contenido(plantilla, valores,
                                                  ruta_plantilla)
     texto = plantilla.template

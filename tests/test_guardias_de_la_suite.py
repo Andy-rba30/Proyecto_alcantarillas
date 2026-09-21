@@ -1187,7 +1187,6 @@ PUBLICAS_SIN_REFERENCIA_EN_TESTS = {
     "M11_reporte.traza_hidraulica": "la llama `pasos_impresos` (M11); se ejercita con cada memoria",
     "M11_reporte.verificaciones_publicadas": "la llama `desarrollo_de_verificaciones` (M11); se ejercita con cada memoria",
     "M11_reporte.ancla_de_discrepancia": "la llama `bloque_discrepancias` (M11, anexo EXT-8); se ejercita con cada memoria",
-    "M11_reporte.ancla_de_criterio": "la llama `bloque_criterios` (M11, anexo EXT-8); se ejercita con cada memoria",
     "M11_reporte.ancla_de_umbral": "la llama `anexo_referencias` (M11, anexo EXT-8); se ejercita con cada memoria",
     "M11_reporte.bloque_paso": "la llama `bloque_pasos` (M11); se ejercita con cada memoria",
     "M11_reporte.bloque_umbrales": "la llama `memoria_html_por_partes` (M11); se ejercita con cada memoria",
