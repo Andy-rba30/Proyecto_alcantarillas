@@ -588,7 +588,10 @@ test**, sin dependencia de PyMuPDF ni de Tk: el de
 `tests/test_eb_editores_comparador.py` que cierra el hueco del texto que
 nombra otra fila (escrito en rojo con `xfail(strict=True)`, medido 1
 xfailed y 0 XPASS, y comprobado rojo otra vez sin la guardia antes de
-liberarlo). Con él el archivo tiene 63. **E-B (2026-09-21) sumó SESENTA Y
+liberarlo). Con él el archivo tiene 63. Se midió «sí · sí» sobre un
+checkout limpio de `fbc57e6` (3891/3, collected 3894) y las otras tres
+se derivan sumando 1, como en EXT-1 y EXT-2, porque el test no depende
+de PyMuPDF ni de Tk. **E-B (2026-09-21) sumó SESENTA Y
 NUEVE tests netos**, y ninguno depende de PyMuPDF; uno depende de Tk: los
 62 de `tests/test_eb_editores_comparador.py` —la aceptación de E10, E14,
 E13 reducido y E21 acotado: 53 en la parte 1 (51 funciones más un
@@ -1046,10 +1049,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 3890 (medido en E-B) | 3 |
-| sí | no | 3879 (medido en E-B) | 14 |
-| no | sí | 3855 (medido en E-B) | 38 |
-| no | no | 3844 (medido en E-B) | 49 |
+| sí | sí | 3891 (medido en el cierre de E-B) | 3 |
+| sí | no | 3880 (derivado: 3879 de E-B + 1) | 14 |
+| no | sí | 3856 (derivado: 3855 de E-B + 1) | 38 |
+| no | no | 3845 (derivado: 3844 de E-B + 1) | 49 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
