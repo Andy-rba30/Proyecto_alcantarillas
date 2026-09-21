@@ -13,8 +13,9 @@ Dos cosas que estas pruebas fijan a proposito:
    resultado que el producto NUNCA puede producir (PC-20) --. Desde EXT-11
    `informe_dimensionado` ES una corrida del producto, sin parche: la de
    PERFIL con las entradas de la linea base de la Familia C, que dimensiona
-   A-01, A-02 y B-01 en CONCRETO con las Fases 6 y 7 reales, V5 y V8
-   diferidas con su fundamento y el contexto de corrida completo. La Fase 8,
+   A-01 y A-02 en CONCRETO con las Fases 6 y 7 reales, V5 y V8
+   diferidas con su fundamento y el contexto de corrida completo (hasta E-A
+   dimensionaba tambien B-01: ver `PUNTOS_QUE_DIMENSIONAN_EN_PERFIL`). La Fase 8,
    que el perfil difiere por diseño, se prueba llamandola EXPLICITAMENTE
    sobre una copia del punto real (`test_la_fase_8_corre_sobre_el_concreto_
    real...`): una corrida de expediente con esos resultados inyectados
@@ -48,6 +49,7 @@ from src.modulos.M2_material import catalogo
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from src.dominios import S_CAUCE_MAX
 from src.modulos import M11_reporte as M11
+from src.modulos import M5_verificaciones as M5
 
 CSV = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
 
@@ -329,26 +331,26 @@ def test_fase_9_corre_la_cadena_sismica_y_bloquea_la_geometria():
 
 def test_los_criterios_bloqueantes_se_agrupan_con_sus_puntos():
     """
-    LA LISTA DE PUNTOS CAMBIO EN EXT-3, y no porque V5 cambiara. Hasta EXT-3
-    los tres puntos circulares llegaban a V5 y se detenian en
-    'remanso_derecho_via'. Desde EXT-3, A-02 y B-01 --que en esta corrida
-    caen bajo control de SALIDA con el barril parcialmente lleno-- se
-    detienen ANTES, en V1, con `MetodoNoEvaluableError`: el tirante con que
-    V1 compara exige el perfil de la lamina de agua, y a nivel de expediente
-    eso bloquea. Solo A-01 (control de entrada, regimen uniforme) sigue
-    llegando al criterio de V5. El agrupamiento por criterio, que es lo que
-    este test fija, no cambia.
+    LA LISTA DE PUNTOS CAMBIO EN EXT-3 Y VOLVIO EN E-A, y no porque V5
+    cambiara. Hasta EXT-3 los tres puntos circulares llegaban a V5 y se
+    detenian en 'remanso_derecho_via'. En EXT-3, A-02 y B-01 --que en esta
+    corrida caen bajo control de SALIDA con el barril parcialmente lleno--
+    se detenian ANTES, en V1, con `MetodoNoEvaluableError`: el tirante con
+    que V1 compara exigia el perfil de la lamina de agua. Desde E-A el perfil
+    existe, V1 y V2 se evaluan sobre el, y los tres vuelven a llegar al
+    criterio de V5. El agrupamiento por criterio, que es lo que este test
+    fija, no cambia.
     """
     informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
                        TW_m=0.0, longitud_m=12.0)
     bloqueantes = {c.clave: c for c in cli.criterios_bloqueantes(informe)}
     remanso = bloqueantes["remanso_derecho_via"]
-    assert set(remanso.puntos) == {"A-01"}
+    assert set(remanso.puntos) == {"A-01", "A-02", "B-01"}
     assert remanso.etiqueta == "A"
     assert remanso.concepto and remanso.fuente
-    for id_punto in ("A-02", "B-01"):
+    for id_punto in ("A-01", "A-02", "B-01"):
         tipos = {b.tipo for b in _punto(informe, id_punto).bloqueos}
-        assert "MetodoNoEvaluableError" in tipos, id_punto
+        assert "MetodoNoEvaluableError" not in tipos, id_punto
 
 
 def test_un_criterio_con_valor_no_aparece_como_bloqueante(monkeypatch):
@@ -377,7 +379,16 @@ def test_el_expediente_no_cierra_mientras_haya_bloqueos():
 ENTRADAS_LINEA_BASE = (Path(__file__).resolve().parent / "linea_base_familia_c"
                        / "entradas_ampliadas.json")
 LUZ_LINEA_BASE_M = 2.75
-PUNTOS_QUE_DIMENSIONAN_EN_PERFIL = {"A-01", "A-02", "B-01"}
+# B-01 SALIO DE ESTE CONJUNTO EN E-A, y es un resultado y no una perdida: su
+# TW ampliado de 1.00 m (fixture) ahoga un barril de 0.90 m --a D = 0.90 va
+# LLENO y V1 no cumple-- y en todo D mayor la curva S1 arranca en el TW y
+# llega a la entrada con y_max = TW y V_min = Q/A(TW) entre 0.06 y 0.11 m/s,
+# por debajo del piso de 0.25 m/s de V2: con esa descarga el barril
+# sedimenta en cualquier diametro, y el punto termina en
+# DisenoNoFactibleError (`test_b01_ahogado_no_cierra_por_V2_en_ningun_D`).
+# Hasta E-A el perfil no existia, V1/V2 quedaban DIFERIDAS y B-01 salia
+# «dimensionado» a D = 1.05 m con un bloqueo «metodo no evaluable».
+PUNTOS_QUE_DIMENSIONAN_EN_PERFIL = {"A-01", "A-02"}
 
 
 def _externos_linea_base():
@@ -389,8 +400,9 @@ def _externos_linea_base():
 def informe_dimensionado():
     """
     La corrida REAL de perfil (PC-20): A-01 y A-02 en concreto reforzado
-    D = 0.90 m y B-01 en D = 1.05 m, dimensionados por el bucle de MD con la
-    Fase 5 de perfil (V5 y V8 diferidas al expediente con fundamento). Es la
+    D = 0.90 m, dimensionados por el bucle de MD con la Fase 5 de perfil (V5
+    y V8 diferidas al expediente con fundamento); B-01 no cierra desde E-A
+    (ver `PUNTOS_QUE_DIMENSIONAN_EN_PERFIL`). Es la
     salida del producto tal cual, con su `contexto` de corrida: no hay
     parche, doble ni resultado inyectado. De modulo porque es cara y los
     tests solo la leen; el que necesita cambiarla la copia.
@@ -488,9 +500,38 @@ def test_reporta_material_diametro_y_control_gobernante(informe_dimensionado):
                                                         rel=REL_TRANSPORTE)
     assert (a01.resultado.resultado_hidraulico.control_gobernante
             is ControlGobernante.ENTRADA)
-    # Los tres puntos circulares del CSV dimensionan, y en concreto.
+    # Los puntos circulares que dimensionan lo hacen en concreto.
     for id_punto in PUNTOS_QUE_DIMENSIONAN_EN_PERFIL:
         assert _punto(informe_dimensionado, id_punto).dimensionado
+
+
+def test_b01_ahogado_no_cierra_por_V2_en_ningun_D(informe_dimensionado):
+    """
+    E-A: B-01 con el TW ampliado de 1.00 m no se dimensiona, y el motivo es
+    MEDIDO y no un metodo que falta. A D = 0.90 el barril va LLENO y V1 no
+    cumple; en todo D mayor la S1 arranca en el TW, llega a la entrada y
+    deja V_min = Q/A(TW) < 0.25 m/s: V2 no cumple en ningun escalon. El
+    bucle termina en DisenoNoFactibleError, nunca en «metodo no evaluable».
+    """
+    from src.modelos import RegimenBarril, TipoDePerfil
+    b01 = _punto(informe_dimensionado, "B-01")
+    assert not b01.dimensionado
+    tipos = {b.tipo for b in b01.bloqueos}
+    assert "DisenoNoFactibleError" in tipos and "MetodoNoEvaluableError" not in tipos
+    parciales = [p for p in b01.traza
+                 if p.resultado_hidraulico is not None
+                 and p.resultado_hidraulico.regimen_barril
+                 is RegimenBarril.PARCIALMENTE_LLENO]
+    assert parciales
+    for p in parciales:
+        perfil = p.resultado_hidraulico.perfil
+        # S1 en el concreto (pendiente pronunciada) y M1 en el TMC, cuyo n
+        # mayor sube y_n por encima de y_c: las dos bajan desde el TW.
+        assert perfil.tipo in (TipoDePerfil.S1, TipoDePerfil.M1)
+        assert perfil.alcanza_entrada
+        assert perfil.y_max_m == pytest.approx(1.0, rel=REL_TRANSPORTE)
+        assert perfil.V_min_m_s < M5.V_MIN
+    assert any("V2" in (p.motivo or "") for p in parciales)
 
 
 def test_toda_verificacion_reportada_lleva_numeral(informe_dimensionado):
@@ -742,19 +783,15 @@ def test_perfil_dimensiona_puntos_que_expediente_bloquea(monkeypatch):
     v8 = next(b for b in diferidos if b.criterio == "TR_evento_extremo")
     assert "V8" in v8.etapa
 
-    # EXT-3: B-01 cae bajo control de SALIDA con HW/D < 0.75 y sale
-    # «dimensionado con HW no evaluable / diferido»: el bloqueo va con el
-    # motivo de la fuente y NO cuenta para el cierre; V1 y V2 quedan
-    # diferidas por regimen. A-01 (control de entrada) no lleva ninguno.
+    # EXT-3: B-01 caia bajo control de SALIDA con HW/D < 0.75 y salia
+    # «dimensionado con HW no evaluable / diferido». E-A: el perfil de la
+    # lamina decide la carga y V1/V2 se evaluan sobre el; ningun punto lleva
+    # ya el bloqueo «metodo no evaluable», y B-01 sigue dimensionado.
     b01 = _punto(perfil, "B-01")
     assert b01.dimensionado
-    no_evaluables = [b for b in b01.bloqueos
-                     if b.tipo == "MetodoNoEvaluableError"]
-    assert no_evaluables and all(b.diferido_por_alcance for b in no_evaluables)
-    assert any("carga HW" in b.etapa for b in no_evaluables)
-    assert all("método no evaluable (HDS-5 3.24, Sección 3.5)" in b.mensaje
-               for b in no_evaluables)
-    assert not [b for b in a01.bloqueos if b.tipo == "MetodoNoEvaluableError"]
+    assert b01.resultado.resultado_hidraulico.perfil is not None
+    for p in (a01, b01):
+        assert not [b for b in p.bloqueos if b.tipo == "MetodoNoEvaluableError"]
 
 
 def test_perfil_intenta_v5_y_v8_pero_no_las_exige(monkeypatch):
@@ -1496,18 +1533,16 @@ def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
     assert "ALCANCE (Familia C" in html
     # Las dos cotas contra las que miden los dos umbrales, que es el argumento
     # de por que la sustitucion NO es conservadora. LA MITAD DE V1 CAMBIO DE
-    # FORMA EN EXT-3: este marco cae bajo control de SALIDA con el barril
-    # parcialmente lleno, de modo que V1 ya no publica un numero --su tirante
-    # exige el perfil de la lamina de agua-- y queda DIFERIDA por metodo no
-    # evaluable. La advertencia de alcance viaja pegada al numero, y sin
-    # numero lo que tiene que verse es el bloqueo que explica por que no lo
-    # hay; la mitad de V4 sigue saliendo junto a su numero.
+    # FORMA EN EXT-3 Y VOLVIO EN E-A: este marco cae bajo control de SALIDA
+    # con el barril parcialmente lleno; en EXT-3 V1 no publicaba numero --su
+    # tirante exigia el perfil de la lamina-- y quedaba DIFERIDA; desde E-A
+    # el perfil existe y V1 publica su tirante maximo con la advertencia de
+    # alcance pegada al numero, como V4.
     assert "la subrasante de la VIA, con su resguardo por CBR" in html
-    assert "MetodoNoEvaluableError" in html
-    assert "verificacion V1 diferida al expediente" in html
-    assert "la altura interior del propio barril" not in html, (
-        "V1 volvio a publicar un numero bajo control de salida con barril "
-        "parcialmente lleno: o el regimen cambio o se invento un llenado")
+    assert "MetodoNoEvaluableError" not in html
+    assert "la altura interior del propio barril" in html, (
+        "V1 dejo de publicar un numero bajo control de salida con barril "
+        "parcialmente lleno: el perfil de la lamina no llego a V1")
     # Y sale por el canal de interpretacion, no pegada a una cita (NOR-HID-04).
     assert 'class="interpretacion"' in html
     # La otra mitad, y la que fija que el marco NO se calcula con la pared del

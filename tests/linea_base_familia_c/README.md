@@ -344,3 +344,36 @@ ni elección de material, ni iteración de catálogo.
 - **La memoria generada no lleva la advertencia de fixture.** Quien abra
   `memoria_perfil_ancha.html` suelto ve una memoria completa con TW = 0.300 m y nada que
   diga que es una sonda; la advertencia vive en este README y en el script.
+
+## Lo que movió E-A (2026-09-21), y por qué no es una regresión
+
+E-A trajo el **perfil de la lámina de agua por paso directo** (`M4.perfil_lamina`,
+pasos 4.3c y 4.3d) y cerró NOR-HDS-05. Diez de los 13 archivos se regeneraron, y el
+diff se lee entero así:
+
+- **Ningún número de cálculo se movió en los puntos que siguen dimensionando.** A-01 y
+  A-02 (ancha) son barriles supercríticos con TW < y_c: la S1 desde y_c tiene longitud
+  cero, el remanso no alcanza la entrada y la entrada gobernaba y sigue gobernando.
+  Cambia lo que se IMPRIME: la línea `Perfil` de `cli_perfil_ancho.txt`, las diez claves
+  `perfil_*` del bloque `diseno` del JSON y los dos pasos nuevos en las memorias.
+- **B-01 (ancha) deja de dimensionarse**, y es un resultado, no una pérdida: su TW de
+  1.00 m (fixture) ahoga un barril de 0.90 m —a D = 0.90 va LLENO y V1 no cumple— y en
+  todo D mayor la S1 arranca en el TW, llega a la entrada y deja `V_min = Q/A(TW)` entre
+  0.06 y 0.11 m/s < 0.25: V2 no cumple en ningún escalón y el punto termina en
+  `DisenoNoFactibleError` (motivo V2 en la traza). Hasta E-A salía «dimensionado» a
+  1.05 m con V1/V2 DIFERIDAS por «método no evaluable», que era lo que EXT-3 declaró
+  provisional. `resumen_perfil_ancho.csv` lo refleja (fila B-01 vacía) y el resumen pasa
+  de 3 a 2 dimensionados.
+- **Desaparecen todos los bloqueos `MetodoNoEvaluableError`** (V1, V2 y «carga HW») de
+  las cuatro corridas de la CLI: en la estrecha los tres circulares llegan otra vez a V5
+  y se detienen ahí (los `motivo` de la traza en `informe_expediente.json` pasan de
+  «método no evaluable» a `CriterioPendienteError('remanso_derecho_via')`); «Diferidas
+  por alcance» baja de 14 a 8 (estrecha) y de 13 a 10 (ancha).
+- `criterios_sha1` cambia porque `criterios_adoptados.py` reescribió los textos de
+  `geometria_control_salida` (la premisa ahora se mide); `hoja_ruta_sha1` por la
+  enmienda de la v8 §4.1/§4.3.
+- **Ningún número de calculo se movió en `memoria_punto_cajon.html`**: el marco gana los
+  dos pasos del perfil (M2 desde y_c que llega a la entrada) y el HW efectivo del
+  control de salida es el del remanso, porque su aproximación queda bajo 0.75·H; la
+  aproximación misma (1.045982117 m, el dorado de EXT-2) sigue impresa en el paso 4.3 y
+  viaja en `perfil_HW_aproximado_m`.

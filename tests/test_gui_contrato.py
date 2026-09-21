@@ -1419,16 +1419,19 @@ def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
         "A|B": "Familia A: 2 puntos · Familia B: 1 punto en el CSV"}
     assert resumen["dimensionados"] == ["A-01", "A-02", "B-01"]
     assert resumen["diferidos"] > 0, "nada diferido: no es alcance de perfil"
-    # EXT-3: B-01 sigue dimensionado, pero «con HW no evaluable / diferido»
-    # --control de salida con HW/D = 0.395 < 0.75-- y con V1/V2 diferidas por
-    # regimen (barril parcialmente lleno bajo control de salida). Los dos de
-    # control de entrada no llevan ninguno de los dos.
-    assert resumen["hw_no_evaluable"] == ["B-01"]
+    # E-A: B-01 sigue dimensionado y ya SIN «HW no evaluable». En esta corrida
+    # (TW = 0) es un barril supercritico que la aproximacion clasificaba bajo
+    # control de salida con HW/D = 0.395 < 0.75; con el perfil de la lamina el
+    # remanso desde y_c no remonta nada, gobierna la entrada y V1/V2 se
+    # evaluan. Lo que la ventana pinta es lo que el producto produce: ningun
+    # «metodo no evaluable» en ningun punto.
+    assert resumen["hw_no_evaluable"] == []
     # EXT-5 (PC-13): C-01 entra aqui. Con '1' leido como 1.0 el marco no
     # pasaba de M2 y C-01 nunca llegaba a V1/V2; con el entero que la ventana
-    # entrega ahora, llega y las difiere como B-01. Sigue sin dimensionar por
-    # su bloqueo REAL (`S_cauce`), que afirma `tests/test_ext5_forma_gui.py`.
-    assert resumen["v1_v2_diferidas"] == ["B-01", "C-01"]
+    # entrega ahora, llega. Desde E-A ni C-01 ni B-01 difieren V1/V2: se
+    # evaluan sobre el perfil. C-01 sigue sin dimensionar por su bloqueo REAL
+    # (`S_cauce`), que afirma `tests/test_ext5_forma_gui.py`.
+    assert resumen["v1_v2_diferidas"] == []
     assert resumen["cajon_declarado"]["n_celdas_cajon"] == "1"
     # La plantilla la elige el ALCANCE de la corrida, que es SIS-A-17.
     assert resumen["plantilla"] == cli.NOMBRE_PLANTILLA_PERFIL

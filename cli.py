@@ -170,8 +170,8 @@ from src import sesion as _sesion
 from src.constantes_normativas import H_O_HW_SOBRE_D_MIN
 from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ContextoCorrida, ErrorProyecto, Espaciamiento,
-                         PasoDiseno, ProteccionSalida, ResultadoPunto,
-                         Verificacion)
+                         PasoDiseno, PerfilLamina, ProteccionSalida,
+                         ResultadoPunto, Verificacion)
 from src.modulos import M2_material as M2
 from src.modulos import M5_verificaciones as M5
 from src.modulos.M8_estructural import verificacion_diferida_estructural
@@ -305,11 +305,21 @@ CLAVES_DISENO_JSON = (
     "regimen_barril", "V_llena_m_s", "V_salida_m_s", "V_salida_procedencia",
     "y_salida_m", "h_o_m", "TW_m", "ahogado_por_TW", "HW_sobre_D_salida",
     "h_o_fuera_de_rango", "h_o_requiere_cautela",
+    # EL PERFIL DE LA LAMINA (E-A): las dos salidas --la fraccion de longitud
+    # a seccion llena y el HW por remanso-- con el rotulo del perfil, si
+    # alcanza la entrada, si sustituye a la aproximacion, y el tirante
+    # maximo y la velocidad minima que V1 y V2 compararon.
+    "perfil_tipo", "perfil_alcanza_entrada", "perfil_HW_remanso_m",
+    "perfil_HW_aproximado_m", "perfil_sustituye_aproximacion",
+    "perfil_y_entrada_m", "perfil_y_max_m", "perfil_V_min_m_s",
+    "perfil_fraccion_llena", "perfil_longitud_llena_m",
+    "perfil_y_asintota_m", "perfil_comprobacion_manda",
 )
 
 
 def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
     material, hidraulica = resultado.material, resultado.resultado_hidraulico
+    perfil = hidraulica.perfil
     return {"material": material.nombre, "tipo": material.tipo.value,
             "norma_producto": material.norma_producto,
             "alcance_norma_producto": M2.alcance_norma_producto_de(
@@ -360,7 +370,39 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "ahogado_por_TW": hidraulica.ahogado_por_TW,
             "HW_sobre_D_salida": _num(hidraulica.HW_sobre_D_salida),
             "h_o_fuera_de_rango": hidraulica.h_o_fuera_de_rango,
-            "h_o_requiere_cautela": hidraulica.h_o_requiere_cautela}
+            "h_o_requiere_cautela": hidraulica.h_o_requiere_cautela,
+            # EL PERFIL DE LA LAMINA (E-A): las dos salidas del paso 4.3c/4.3d
+            # y lo que V1/V2 compararon. Las claves van LITERALES aqui, y no
+            # por desempaquetado, porque el test de EXT-6 lee el contrato del
+            # AST de este dict. `None` en cada una si el resultado no trae
+            # perfil, que M4 no produce (`_campo_del_perfil`).
+            "perfil_tipo": _campo_del_perfil(perfil, lambda p: p.tipo.value),
+            "perfil_alcanza_entrada": _campo_del_perfil(
+                perfil, lambda p: p.alcanza_entrada),
+            "perfil_HW_remanso_m": _campo_del_perfil(
+                perfil, lambda p: _num(p.HW_remanso_m)),
+            "perfil_HW_aproximado_m": _campo_del_perfil(
+                perfil, lambda p: _num(p.HW_aproximado_m)),
+            "perfil_sustituye_aproximacion": _campo_del_perfil(
+                perfil, lambda p: p.sustituye_aproximacion),
+            "perfil_y_entrada_m": _campo_del_perfil(
+                perfil, lambda p: _num(p.y_entrada_m)),
+            "perfil_y_max_m": _campo_del_perfil(perfil, lambda p: _num(p.y_max_m)),
+            "perfil_V_min_m_s": _campo_del_perfil(
+                perfil, lambda p: _num(p.V_min_m_s)),
+            "perfil_fraccion_llena": _campo_del_perfil(
+                perfil, lambda p: _num(p.fraccion_llena)),
+            "perfil_longitud_llena_m": _campo_del_perfil(
+                perfil, lambda p: _num(p.longitud_llena_m)),
+            "perfil_y_asintota_m": _campo_del_perfil(
+                perfil, lambda p: _num(p.y_asintota_m)),
+            "perfil_comprobacion_manda": _campo_del_perfil(
+                perfil, lambda p: p.comprobacion_manda)}
+
+
+def _campo_del_perfil(perfil: Optional[PerfilLamina], lector) -> Any:
+    """Un campo del perfil para el JSON, o None si el resultado no lo trae."""
+    return None if perfil is None else lector(perfil)
 
 
 def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
@@ -712,13 +754,31 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"V_llena = {_fmt(h.V_llena_m_s)} m/s | "
                    f"V_salida = {v_sal} (HDS-5 3.1.6, y_salida = "
                    f"{_fmt(h.y_salida_m)} m)")
+        # HW/D_salida es el de la APROXIMACION del paso 4.3 (el cociente que
+        # las dos condiciones juzgan); que se use o no lo dice la linea del
+        # perfil (E-A). `usa fuera de rango` es la bandera de la compuerta.
         out.append(f"{SANGRIA}        h_o      : {_fmt(h.h_o_m)} m "
                    f"({'manda TW: salida ahogada' if h.ahogado_por_TW else 'manda (y_c + D)/2'}; "
-                   f"TW = {_fmt(h.TW_m)} m) | HW/D_salida = "
-                   f"{_fmt(h.HW_sobre_D_salida)} | fuera de rango (< "
-                   f"{_fmt(H_O_HW_SOBRE_D_MIN, DECIMALES_FACTOR)}): "
+                   f"TW = {_fmt(h.TW_m)} m) | HW_aprox/D = "
+                   f"{_fmt(h.HW_sobre_D_salida)} | usa la aproximacion fuera de "
+                   f"rango (< {_fmt(H_O_HW_SOBRE_D_MIN, DECIMALES_FACTOR)}): "
                    f"{'si' if h.h_o_fuera_de_rango else 'no'} | cautela: "
                    f"{'si' if h.h_o_requiere_cautela else 'no'}")
+        # EL PERFIL DE LA LAMINA (E-A): las dos salidas del paso 4.3c/4.3d.
+        if h.perfil is not None:
+            pf = h.perfil
+            remanso = ("no alcanza la entrada" if not pf.alcanza_entrada
+                       else f"{_fmt(pf.HW_remanso_m)} m")
+            papel = ("sustituye a la aproximacion (HW_aprox/D < 0.75)"
+                     if pf.sustituye_aproximacion
+                     else "manda: la comprobacion pide mas carga que la aproximacion"
+                     if pf.comprobacion_manda
+                     else "comprueba la aproximacion, que sigue siendo la carga")
+            out.append(f"{SANGRIA}        Perfil   : {pf.tipo.value} | lleno en "
+                       f"{_fmt(pf.longitud_llena_m)} m de {_fmt(informe.longitud.valor)} m "
+                       f"(fraccion {_fmt(pf.fraccion_llena)}) | HW por remanso = "
+                       f"{remanso} ({papel}) | y_max = {_fmt(pf.y_max_m)} m, "
+                       f"V_min = {_fmt(pf.V_min_m_s)} m/s")
     else:
         out.append(f"{SANGRIA}Fase 4  sin dimensionar")
 

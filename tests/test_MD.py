@@ -35,9 +35,10 @@ from pathlib import Path
 import pytest
 
 from src.constantes_normativas import Y_SOBRE_D_MAX
-from src.modelos import (CriterioPendienteError, DatoFaltanteError,
-                     DatoInvalidoError, DisenoNoFactibleError, ErrorProyecto,
-                     Familia, PuntoCritico, TipoMaterial, Verificacion)
+from src.modelos import (ControlGobernante, CriterioPendienteError,
+                     DatoFaltanteError, DatoInvalidoError,
+                     DisenoNoFactibleError, ErrorProyecto, Familia,
+                     PuntoCritico, TipoDePerfil, TipoMaterial, Verificacion)
 from src.modulos.M0_carga import cargar_puntos
 from src.modulos.M2_material import catalogo
 from src.modulos.MD import (FUNCION_VERIFICACIONES, MENSAJE_DIAMETRO_SUPERADO,
@@ -50,6 +51,7 @@ from tests.apoyo.aproximacion import REL_TRANSPORTE
 # Contexto geometrico del punto. Son datos de la Fase 7 (L) y del Tablero 3.1
 # (TW): MD los exige como argumentos y no los deriva.
 L_CONDUCTO = 24.0     # m
+REL_M2_CERCA_DE_ASINTOTA = 5e-3  # una M2 de 24 m se queda a <0.5 % de y_n
 TW_LIBRE = 0.0        # m, salida libre
 
 
@@ -213,7 +215,16 @@ def test_la_hidraulica_del_resultado_es_la_del_par_aceptado():
     hidraulica = resultado.resultado_hidraulico
 
     assert hidraulica.Q == pytest.approx(punto.Q_m3s)
-    assert resultado.y_sobre_D == pytest.approx(Y_SOBRE_D_MAX, rel=1e-3)
+    # Con TW = 0 el punto gobierna por SALIDA con el barril parcialmente lleno
+    # y, desde E-A, y/D es el tirante MAXIMO del perfil de la lamina (M2 desde
+    # y_c hacia su asintota), no el del flujo uniforme: a 24 m la M2 queda un
+    # 0.2 % por debajo de y_n, y esa diferencia es medida, no ruido.
+    assert hidraulica.control_gobernante is ControlGobernante.SALIDA
+    assert hidraulica.perfil.tipo is TipoDePerfil.M2
+    assert resultado.y_sobre_D == pytest.approx(
+        hidraulica.perfil.y_max_m / resultado.seccion.altura, rel=REL_TRANSPORTE)
+    assert resultado.y_sobre_D <= Y_SOBRE_D_MAX
+    assert resultado.y_sobre_D == pytest.approx(Y_SOBRE_D_MAX, rel=REL_M2_CERCA_DE_ASINTOTA)
     # Regla de doble n (Sec. 4.1): la velocidad de erosion sale de n_min, no
     # de Q/A -- esa ultima es justamente `V_sedimentacion`, la del piso de V2.
     assert hidraulica.V_erosion > hidraulica.Q / (hidraulica.y_normal

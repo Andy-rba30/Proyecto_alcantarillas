@@ -93,9 +93,16 @@ CORRIDAS_IMPORTTIME = 3
 # repetido --- la repeticion medida cayo del 44 % al 7 % de los bytes ---.
 # El techo se fija con holgura sobre la MEDIDA, no sobre el objetivo, para
 # que un cambio de formato que suba el coste se vea aqui y no en el
-# siguiente PDF de 200 puntos.
-KB_POR_PUNTO_MAX = 50.0
-PAGINAS_POR_PUNTO_MAX = 16
+# siguiente PDF de 200 puntos. E-A (2026-09-21) LO SUBIO Y SE VIO AQUI, que
+# es para lo que estaba: los dos pasos del perfil de la lamina (4.3c y
+# 4.3d), uno y otro por cada escalon de la traza, llevan la medida de 44.6 a
+# 51.4 KB por punto (misma corrida, mismo metodo). Es contenido del punto
+# --la sustitucion del perfil con sus procedencias--, no repeticion, y el
+# techo se vuelve a fijar con holgura sobre la medida nueva.
+KB_POR_PUNTO_MAX = 60.0
+# Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
+# del perfil por escalon. El techo se fija con la misma holgura que el de KB.
+PAGINAS_POR_PUNTO_MAX = 19
 
 
 def _arbol(ruta: Path) -> ast.Module:

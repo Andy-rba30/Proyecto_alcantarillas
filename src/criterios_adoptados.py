@@ -2535,8 +2535,13 @@ CRITERIOS: Dict[str, Criterio] = {
                "seccion llena. Sec. 4.3 de la hoja de ruta cita la ecuacion sin "
                "definir la seccion",
         reemplazado_por="Procedimiento de barril parcialmente lleno de HDS-5 "
-                        "(longitud de la seccion llena, Cap. III) si el "
-                        "expediente lo exige",
+                        "(Cap. III), que desde E-A el proyecto SI calcula "
+                        "(`M4.perfil_lamina`, paso 4.3c/4.3d): mide la "
+                        "longitud a seccion llena y da la carga por remanso "
+                        "bajo HW/D < 0.75. Lo que este criterio sigue "
+                        "decidiendo es de que seccion salen V y R del termino "
+                        "de friccion de H; una seccion de referencia distinta "
+                        "exigiria ademas cambiar ese termino, no el perfil",
         verificacion_pendiente=(
             "Con TW bajo y pendiente pronunciada el barril puede no llegar a "
             "llenarse y el control de salida no gobierna igualmente; "
@@ -2547,19 +2552,62 @@ CRITERIOS: Dict[str, Criterio] = {
             "termino de la misma ecuacion, y el proyecto la aplicaba sin "
             "recogerla (NOR-HDS-05). " + H_O_NUMERAL + " la escribe asi: "
             + "; ".join(f"<<{cita}>>" for cita in H_O_CONDICION_TEXTO)
-            + ". La premisa entra dos veces por dos puertas -- este criterio "
-            "la ADOPTA y h_o la SUPONE -- y no se comprueba por ninguna: que "
-            "el barril fluya lleno en la mayor parte de su longitud exige un "
-            "perfil de la lamina de agua a lo largo del conducto, que este "
-            "script no calcula. Mientras siga asi, el HW de control de salida "
-            "de un punto cuyo barril no llene esta calculado fuera del rango "
-            "que la propia fuente declara. Lo que la cerraria es el "
-            "procedimiento de barril parcialmente lleno del Cap. III, que es "
-            "lo que ya dice `reemplazado_por`"),
+            + ". La premisa entraba dos veces por dos puertas -- este criterio "
+            "la ADOPTA y h_o la SUPONE -- y hasta E-A no se comprobaba por "
+            "ninguna. Desde E-A (2026-09-21) SE COMPRUEBA: el perfil de la "
+            "lamina de agua por paso directo (`M4.perfil_lamina`) mide la "
+            "longitud a seccion llena en cada punto y el paso 4.3c juzga con "
+            "ella la primera condicion (lleno en mas de la mitad de la "
+            "longitud, el criterio 'fraccion_llena_mayor_parte' [A]); bajo HW/D < 0.75 la "
+            "aproximacion se sustituye por el remanso (paso 4.3d). Lo que "
+            "queda declarado, y no verificado, es lo PROPIO de este criterio: "
+            "que el termino de friccion de H se forme con V y R de la seccion "
+            "llena aunque el perfil mida que el barril no llena. La pag. 3.12 "
+            "del HDS-5 lo avala hasta HW = 0.75D («adequate results»), y por "
+            "debajo el remanso ya no usa H"),
         resolucion=Libre(
             que_lo_fija="el proyectista: Sec. 4.3 escribe la ecuacion y no "
                         "dice a que seccion pertenecen V y R",
             dominio="declaracion entre seccion llena y tirante normal",
+        ),
+    ),
+
+    "fraccion_llena_mayor_parte": Criterio(
+        valor=0.5,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Fraccion de la longitud del barril a seccion llena por "
+                 "encima de la cual se lee que fluye lleno «for most of its "
+                 "length» (primera condicion de uso de h_o, HDS-5 pag. 3.24)",
+        justificacion="Desde E-A el perfil de la lamina (M4, paso 4.3c) MIDE "
+                      "la longitud a seccion llena, y juzgar la primera "
+                      "condicion de uso de h_o exige decir cuanto es «la mayor "
+                      "parte». La fuente escribe la palabra y no el numero: "
+                      "«most» es la mayoria --mas de la mitad-- y esa es la "
+                      "lectura adoptada, declarada en el registro con lo que "
+                      "juega en contra (citas.INTERPRETACION_MAYOR_PARTE). Es "
+                      "[A] y no [N] porque la palabra admite lecturas mas "
+                      "exigentes («casi toda»), y una lectura con alternativas "
+                      "es una eleccion con ventana. Sensibilidad: de 0.5 (la "
+                      "mitad) a 0.9 («casi toda»); solo mueve el ROTULO del "
+                      "veredicto del paso 4.3c, nunca una magnitud: la "
+                      "consecuencia de fallar la condicion la fija la pag. "
+                      "3.12 (la aproximacion vale hasta HW/D = 0.75, y bajo "
+                      "0.75 el remanso), no esta fraccion. Se compara en "
+                      "estricto: la fraccion llena tiene que SUPERAR el valor",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, num. 3.3.3, pag. impresa "
+               "3.24 (cita HDS5_3ED.3.3.3#HO): «can only be used if the "
+               "barrel flows full for most of its length». La pag. impresa "
+               "3.12 relaja la condicion («works best when the barrel flows "
+               "full over at least part of its length»; «adequate results "
+               "... down to a headwater of 0.75D»)",
+        sensibilidad=(0.5, 0.9),
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente escribe «most» y no un "
+                        "numero, y la pag. 3.12 de la misma fuente relaja la "
+                        "condicion a «at least part»",
+            dominio="fraccion en (0, 1]",
         ),
     ),
 

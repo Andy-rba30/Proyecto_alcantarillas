@@ -234,19 +234,29 @@ HO = _fundamento(
         "declarada como tal por la fuente, no una definicion: la fuente le "
         "pone condicion de uso --solo si el barril fluye lleno en la mayor "
         "parte de su longitud, y no si la entrada no esta sumergida-- y el "
-        "proyecto la evalua punto por punto en vez de suponerla cumplida."),
+        "proyecto la evalua punto por punto en vez de suponerla cumplida: "
+        "los dos limites sobre HW/D en este paso, y la longitud a seccion "
+        "llena en el paso del perfil (4.3c), que desde E-A la mide. Donde la "
+        "propia fuente dice que la aproximacion no debe usarse (HW/D < 0.75) "
+        "el HW del punto es el del remanso y no el de este paso."),
     verbo=Verbo.DEFINE,
     citas=("HDS5_3ED.3.3.3#HO", "HDS5_3ED.3.3.3#HO_SUMERGIDA",
-           "HDS5_3ED.3.3.3#HO_1_2D"),
+           "HDS5_3ED.3.3.3#HO_1_2D", "HDS5_3ED.3.1.4#0_75D"),
     que_pasa_si_no_se_hace=(
         "Aplicar la aproximacion fuera de su rango sin decirlo: el HW de "
         "control de salida saldria de una formula que su propia fuente "
         "desautoriza para ese caso, y nadie se enteraria (NOR-HDS-05). Y "
         "decirlo no basta: hasta EXT-3 el punto se aceptaba con el aviso "
         "puesto y el paso imprimia NO_CUMPLE mientras el pipeline aceptaba. "
-        "Bajo HW/D < 0.75 el metodo NO esta definido para el punto, y eso "
-        "viaja como bloqueo «metodo no evaluable», diferible a nivel de "
-        "perfil y no de expediente (EXT-M-02)."),
+        "Bajo HW/D < 0.75 el metodo NO esta definido para el punto: hasta "
+        "E-A eso viajaba como bloqueo «metodo no evaluable», diferible a "
+        "nivel de perfil y no de expediente (EXT-M-02); desde E-A la carga "
+        "de ese punto es la del REMANSO (paso 4.3c, HDS-5 pag. 3.12: «For "
+        "lower headwaters, backwater calculations are required») y la "
+        "aproximacion se imprime como lo que es, un numero fuera de su "
+        "dominio. Y la primera condicion --que el barril fluya lleno en la "
+        "mayor parte de su longitud-- ya no se declara: se MIDE en el "
+        "mismo paso."),
 )
 
 REGIMEN = _fundamento(
@@ -272,7 +282,10 @@ REGIMEN = _fundamento(
         "lleno en toda la longitud (HDS-5 3.1.3). Lo que el HDS-5 no da sin "
         "un perfil de la lamina de agua es el tirante DENTRO del conducto "
         "bajo control de salida con el barril parcialmente lleno, y ahi el "
-        "proyecto no inventa un criterio de llenado: lo declara pendiente."),
+        "proyecto no inventa un criterio de llenado: hasta E-A lo declaraba "
+        "pendiente, y desde E-A lo resuelve el perfil por paso directo del "
+        "paso 4.3c, del que V1 y V2 toman el tirante maximo y la velocidad "
+        "minima del barril."),
     verbo=Verbo.DEFINE,
     citas=("HDS5_3ED.3.1.6#V_SALIDA", "HDS5_3ED.3.1.6#V_SALIDA_TW",
            "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA", "HDS5_3ED.3.1.3#SUMERGENCIA"),
@@ -283,6 +296,47 @@ REGIMEN = _fundamento(
         "velocidad uniforme, cuando a seccion llena no hay borde libre y la "
         "velocidad es Q/A_llena = 0.0786 m/s < 0.25; y la Fase 6 recibia "
         "1.184 m/s donde la velocidad de salida es 1.508."),
+)
+
+
+PERFIL = _fundamento(
+    id="F4.PERFIL",
+    fase=F4,
+    que_paso=("Perfil de la lamina de agua por paso directo desde la salida "
+              "hacia la entrada: longitud a seccion llena y carga a la "
+              "entrada por remanso (HDS-5 pag. 3.12 y Section 3.5)"),
+    por_que=(
+        "Bajo control de salida con el barril parcialmente lleno la lamina "
+        "de agua dentro del conducto no es la del flujo uniforme: la fija el "
+        "extremo aguas abajo --el tirante critico en la salida o el del "
+        "receptor, el mayor-- y desde alli remonta hacia la entrada. El "
+        "HDS-5 lo escribe como el calculo de remanso que la aproximacion "
+        "h_o = (d_c + D)/2 existe para evitar, y lo manda de vuelta en dos "
+        "sitios: cuando la carga cae bajo 0.75D el remanso «is required», y "
+        "por encima «should be used to check» la aproximacion. Con el perfil "
+        "se saben tres cosas que sin el se declaraban: cuanto del barril va "
+        "a seccion llena --la primera condicion de uso de h_o, que hasta E-A "
+        "no se podia medir--, el tirante maximo y la velocidad minima del "
+        "barril --lo que V1 y V2 comparan--, y la carga a la entrada donde "
+        "la aproximacion no vale. Y una cuarta que deshace una circularidad: "
+        "si la lamina que sube desde la salida corta el tirante critico antes "
+        "de llegar a la entrada, el control de salida no impone carga alguna "
+        "--el barril es supercritico y gobierna la entrada--, cosa que la "
+        "aproximacion, que solo compara dos numeros, no puede ver."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.3.1.4#REMANSO", "HDS5_3ED.3.1.4#EMPALME",
+           "HDS5_3ED.3.1.4#HW_REMANSO", "HDS5_3ED.3.1.4#0_75D",
+           "HDS5_3ED.3.5#PERFIL", "HDS5_3ED.3.5.1#S1",
+           "HDS5_3ED.3.5.1#TIPO7", "HDS5_3ED.3.3.3#HO"),
+    que_pasa_si_no_se_hace=(
+        "Lo que pasaba hasta E-A: V1 y V2 quedaban PENDIENTES por «metodo no "
+        "evaluable» bajo control de salida parcialmente lleno, la carga con "
+        "HW/D < 0.75 viajaba con el mismo bloqueo, y la primera condicion de "
+        "h_o se transcribia sin medirse. Y el caso (b) del dictamen "
+        "(Q = 0.3, S = 0.005, TW = 0) se publicaba bajo control de SALIDA "
+        "con HW/D = 0.589 siendo un barril supercritico (y_n = 0.2965 < "
+        "y_c = 0.3157): la aproximacion decidia el control con un h_o que la "
+        "fuente le prohibe usar ahi."),
 )
 
 

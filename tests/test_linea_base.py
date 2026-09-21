@@ -233,15 +233,18 @@ def test_la_ventana_cubre_los_ejes_que_dice_cubrir(recien_generada):
     assert '"generado_utc"' in lee("informe_perfil_ancho.json")
     assert lee("resumen_perfil_ancho.csv").strip(), "el CSV de resumen vino vacio"
 
-    # (c) TRES de los cuatro puntos dimensionan en la corrida ancha; en la
-    # estrecha de C0 NINGUNO desde EXT-3 (era uno hasta EXT-2). Si alguien
-    # estrecha las entradas, esto cae. El que cayo en la estrecha es A-02: sin
-    # TW declarado, la via 4 de Sec. 1.3 le da TW = 1.196 m sobre D = 0.90 m,
-    # el barril va LLENO y V1/V2 dejan de aprobarse con el tirante normal
-    # (EXT-M-01); el README de la linea base lo declara. Con TW declarado
-    # (la ancha) los tres circulares siguen dimensionando.
+    # (c) DOS de los cuatro puntos dimensionan en la corrida ancha (tres hasta
+    # E-A); en la estrecha de C0 NINGUNO desde EXT-3 (era uno hasta EXT-2). Si
+    # alguien estrecha las entradas, esto cae. El que cayo en la estrecha es
+    # A-02: sin TW declarado, la via 4 de Sec. 1.3 le da TW = 1.196 m sobre
+    # D = 0.90 m, el barril va LLENO y V1/V2 dejan de aprobarse con el tirante
+    # normal (EXT-M-01); el README de la linea base lo declara. El que cayo en
+    # la ancha en E-A es B-01: su TW ampliado de 1.00 m ahoga el barril, la S1
+    # arranca en el TW y deja V_min = Q/A(TW) < 0.25 m/s en todo D, de modo
+    # que V2 no cumple en ningun escalon y el punto sale «no factible» con su
+    # motivo, donde hasta E-A salia dimensionado con V1/V2 diferidas.
     ancho = lee("cli_perfil_ancho.txt")
-    assert ancho.count("Fase 4  sin dimensionar") == 1
+    assert ancho.count("Fase 4  sin dimensionar") == 2
     assert lee("cli_perfil.txt").count("Fase 4  sin dimensionar") == 4
 
     # (d) C-01, el punto de Familia C, llega a su bloqueo REAL. C5 lo CAMBIO,

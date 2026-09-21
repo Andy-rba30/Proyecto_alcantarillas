@@ -191,7 +191,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -279,7 +279,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -314,7 +314,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -501,7 +501,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **3779**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **3824**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -551,7 +551,55 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-11 (2026-09-21) sumó MIL CIENTO SESENTA Y DOS tests**,
+independientes. **E-A (2026-09-21) sumó CUARENTA Y CINCO tests**, y
+ninguno depende de PyMuPDF ni de Tk: los 36 de
+`tests/test_ea_perfil_lamina.py` —la aceptación de NOR-HDS-05 entera, el
+perfil de la lámina de agua por paso directo (HDS-5 pág. 3.12 / PDF 94
+con la Ec. 3.7; umbrales de la pág. 3.24; Section 3.5.1): los 26 primeros
+escritos en rojo con `xfail(strict=True)` de módulo —medidos 26 xfailed y
+0 XPASS antes de tocar código— y liberados al corregir (los tipos
+`PerfilLamina`/`TipoDePerfil`, los DOS dorados de LÍMITE que el conflicto
+#7 admite sin corrida externa —flujo lleno de punta a punta, que reproduce
+la fórmula cerrada de `control_salida` a 1e-9, y flujo uniforme en su
+propia asíntota—, el balance de energía por estación y la monotonía de
+M1/M2/S1, la convergencia N frente a 2N, la fracción analítica de longitud
+llena, el caso (b) del dictamen que pasa a ENTRADA porque la S1 no alcanza
+la entrada, el caso (c) con HW por remanso, V1/V2 sobre el perfil, la
+corrida sin bloqueos «no evaluables», la regla vinculante #12 por AST y
+las siete citas verificadas); los diez restantes los dejaron el auditor
+adversarial (la asíntota y_n' de la Ec. 3.7 frente al y_n de Manning, la
+banda 0.75–1.2 donde manda la comprobación si pide más carga, el TW a
+1e-9 de la clave, el punto fijo sobre la asíntota) y el arnés de mutación
+(`V_entrada_m_s` del retorno UNIFORME, los escalones mínimos)—, el de
+`test_cli` (B-01 ahogado no cierra por V2 en ningún D), los siete
+anclajes parametrizados de `test_decisiones_diferidas` para las fichas de
+la Parte XXVIII (EA-01..07) y el que crece solo en `test_ext5_forma_gui`
+con el criterio nuevo `fraccion_llena_mayor_parte` (73 → 74 criterios).
+Ningún archivo restó tests: el bloque (b) de `test_ext3_regimen_barril`
+se reescribió a la verdad nueva con el mismo número, `test_cierre_perfil`
+(B-01 con V1/V2 evaluadas), `test_dimensional_piloto` (F4.PERFIL@4.3c/4.3d;
+`K_FRICCION_SI` ya la nombra el paso 4.3c), `test_ext2` (HW multicelda
+contra `perfil.HW_aproximado_m`), `test_ext11_mutacion` (censo remedido:
+62 supervivientes con razón, 20 nuevos del perfil, un hueco real cerrado),
+`test_ext8` (techos remedidos: 51.4 KB y 16.0 páginas por punto),
+`test_sin_literales` (ocho marcas en M4) y `test_MD` (el y/D del punto
+CP-2 con TW = 0 es el máximo del perfil M2, 0.7484, y no el uniforme) se
+reescribieron sin sumar ni restar. La línea base de la Familia C se
+regeneró y lo que se mueve está declarado en su README y en el commit:
+B-01 (TW = 1.00 m) YA NO SE DIMENSIONA —la S1 desde el TW deja V_min =
+Q/A(TW) entre 0.06 y 0.11 m/s < 0.25 en todo D: `DisenoNoFactibleError`
+con motivo V2 donde antes salía 1.05 m con V1/V2 diferidas—; A-01 y A-02
+no cambian de diámetro; el bloqueo «método no evaluable» desaparece de la
+corrida; entran las doce claves `perfil_*` del JSON y los pasos 4.3c/4.3d;
+cambian `criterios_sha1` y `hoja_ruta_sha1`. La mutación se remidió con el
+arnés sobre las once funciones tocadas (242 mutantes: 212 muertos en la
+primera vuelta, 87.6 %, 5 más en la segunda, 25 vivos, uno cerrado con
+una aserción y 24 censados, ficha EA-06). Las cuatro configuraciones se
+MIDIERON sobre `origin/main` en `SHA_EXT` (el commit `ext(E-A)`, fusionado
+por fast-forward), en serie, sobre un checkout limpio (`git worktree`) y
+sin otra suite en marcha: las dos sin Tk sin `DISPLAY` y con un `xvfb-run`
+que falla, las dos sin PyMuPDF desinstalándolo y reinstalándolo;
+`collected = 3824` en las cuatro. **EXT-11 (2026-09-21) sumó MIL CIENTO SESENTA Y DOS tests**,
 y ninguno depende de PyMuPDF ni de Tk: los 981 de
 `tests/test_ext11_propiedades.py` —las siete propiedades del motor por
 mallas (Q = V_sedimentación·A en circular y rectangular; Q_total = N·Q_celda
@@ -906,7 +954,7 @@ propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
-EXT-11: 3779. La
+EXT-11: 3779; E-A: 3824. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES

@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "6d12e40aa526b5bdb47f9942783380d38977917e",
+    "criterios_sha1": "d1dae91152635637f0e63523f6a81ba45b1bd8f8",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -106,7 +106,7 @@
           "material": "TMC galvanizada",
           "seccion": "Ø 1.20 m",
           "aceptado": false,
-          "motivo": "Ø 1.20 m: el escalon no se pudo evaluar -- MetodoNoEvaluableError: método no evaluable (HDS-5 3.24, Sección 3.5): V1 del punto A-01 -- bajo control de SALIDA con el barril PARCIALMENTE LLENO el tirante y la velocidad dentro del conducto no son los del flujo uniforme de Manning y no se conocen sin el perfil de la lamina; no se inventa un criterio de llenado (v8 §4.1). Hace falta: el perfil de la lamina de agua a lo largo del conducto (HDS-5 Section 3.5; el paquete de implementacion esta en el bloque que precede a constantes_normativas.H_O_CONDICION_APLICACION), que este software no calcula: es la sesion EXT-3b",
+          "motivo": "Ø 1.20 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
           "incumplidas": []
         },
         {
@@ -205,7 +205,7 @@
           "material": "TMC galvanizada",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- MetodoNoEvaluableError: método no evaluable (HDS-5 3.24, Sección 3.5): V1 del punto A-02 -- bajo control de SALIDA con el barril PARCIALMENTE LLENO el tirante y la velocidad dentro del conducto no son los del flujo uniforme de Manning y no se conocen sin el perfil de la lamina; no se inventa un criterio de llenado (v8 §4.1). Hace falta: el perfil de la lamina de agua a lo largo del conducto (HDS-5 Section 3.5; el paquete de implementacion esta en el bloque que precede a constantes_normativas.H_O_CONDICION_APLICACION), que este software no calcula: es la sesion EXT-3b",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
           "incumplidas": []
         },
         {
@@ -815,6 +815,13 @@
         "valor": "sin_reduccion",
         "declarado_en_caliente": false,
         "concepto": "Si se aplica al cabezal la reduccion de k_h0 que el numeral autoriza para muros con desplazamiento lateral admitido"
+      },
+      {
+        "clave": "fraccion_llena_mayor_parte",
+        "etiqueta": "A",
+        "valor": 0.5,
+        "declarado_en_caliente": false,
+        "concepto": "Fraccion de la longitud del barril a seccion llena por encima de la cual se lee que fluye lleno «for most of its length» (primera condicion de uso de h_o, HDS-5 pag. 3.24)"
       },
       {
         "clave": "geometria_control_salida",

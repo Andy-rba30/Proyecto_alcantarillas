@@ -16,7 +16,19 @@ trabajadores; `python3 -m tests.apoyo.mutacion --segunda-vuelta`):
   score 0.8365. SEGUNDA VUELTA (linea base, cierre de perfil, CLI) sobre los
   111 vivos: 65 mueren, 46 sobreviven a todo; tres mas murieron con la
   segunda tanda de «Lo que la MUTACION enseño» (remedidos funcion por
-  funcion con el arnes): 43 censados abajo.
+  funcion con el arnes): 43 censados abajo (42 desde E-A, que retiro la
+  entrada de `_exigir_regimen_evaluable` al desaparecer la funcion).
+  E-A (2026-09-21) REMIDIO con `--funcion` las once funciones del perfil
+  de la lamina (M4: perfil_lamina, _pendiente_friccion,
+  _pendiente_friccion_llena, _llenado_de_tirante,
+  _llenado_donde_Sf_iguala_S, _energia_especifica, hw_gobernante,
+  resolver_control; M5: _regimen_de_v1_v2, v1_borde_libre,
+  v2_velocidad_minima), con `tests/test_ea_perfil_lamina.py` sumado a
+  los OBJETIVOS: 242 mutantes, 212 muertos en la primera vuelta (score
+  0.876), 5 mas en la segunda, 25 vivos; uno era un hueco real
+  (`V_entrada_m_s` del retorno UNIFORME) y se cerro con una asercion en
+  el dorado de flujo uniforme; los otros 24 son los cuatro ya censados
+  (hw_gobernante x2, V1, V2) y 20 nuevos: 62 censados en total.
   SIN `tests/test_ext11_propiedades.py` (los otros nueve objetivos, misma
   corrida): 504/679, score 0.7423. Sesenta y cuatro mutantes mueren SOLO por
   las propiedades y sus tandas: el receptor trapecial de la Sec. 1.3 (31:
@@ -103,7 +115,7 @@ SUPERVIVIENTES_CON_RAZON = {
         "borde: HW/D exactamente igual a 0.75 (o a 1.2, la cautela) de HDS-5 pag. 3.24; la lectura (0.75 usable) no se fija por test porque construir HW/D = 0.75 exacto exige invertir el control de salida, y el caso es de medida nula",
     "src/modulos/M4_control.py::control_salida::comparacion::HW_sobre_D < H_O_HW_SOBRE_D_CAUTELA -> HW_sobre_D <= H_O_HW_SOBRE_D_CAUTELA":
         "borde: HW/D exactamente igual a 0.75 (o a 1.2, la cautela) de HDS-5 pag. 3.24; la lectura (0.75 usable) no se fija por test porque construir HW/D = 0.75 exacto exige invertir el control de salida, y el caso es de medida nula",
-    "src/modulos/M4_control.py::hw_gobernante::comparacion::salida.HW > entrada.HW + TOL_UMBRAL_NORMATIVO -> salida.HW >= entrada.HW + TOL_UMBRAL_NORMATIVO":
+    "src/modulos/M4_control.py::hw_gobernante::comparacion::HW_salida > entrada.HW + TOL_UMBRAL_NORMATIVO -> HW_salida >= entrada.HW + TOL_UMBRAL_NORMATIVO":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
     "src/modulos/M4_control.py::hw_gobernante::aritmetico::entrada.HW + TOL_UMBRAL_NORMATIVO -> entrada.HW - TOL_UMBRAL_NORMATIVO":
         "banda: solo se distingue con un valor a menos de 2·TOL_UMBRAL_NORMATIVO (1e-9) del umbral; la banda existe para que la igualdad en punto flotante cuente como cumplimiento",
@@ -121,8 +133,57 @@ SUPERVIVIENTES_CON_RAZON = {
         "banda: solo se distingue con un valor a menos de 2·TOL_UMBRAL_NORMATIVO (1e-9) del umbral; la banda existe para que la igualdad en punto flotante cuente como cumplimiento",
     "src/modulos/M4_control.py::_pasos_hidraulicos::constante::1 -> 2":
         "equivalente: el valor por defecto `celdas=1` nunca se usa, `resolver_control` pasa siempre `celdas` explicito",
-    "src/modulos/M5_verificaciones.py::_exigir_regimen_evaluable::retorno_none::return False -> return None":
-        "equivalente: `return None` es tan falso como `return False` para el unico lector (`if _exigir_regimen_evaluable(...)`)",
+    # E-A retiro la entrada `_exigir_regimen_evaluable::retorno_none` (return
+    # False -> return None): la funcion paso a `_regimen_de_v1_v2`, que
+    # devuelve uno de tres rotulos y no un booleano, y ese mutante ya no se
+    # genera. Los mutantes nuevos del perfil se remidieron con el arnes al
+    # cierre de E-A (ver la ficha EA-06 en docs/decisiones_diferidas.md).
+    # --- E-A: el perfil de la lamina (M4.perfil_lamina y sus auxiliares),
+    # medido el 2026-09-21 con `--funcion` sobre las once funciones tocadas:
+    # 242 mutantes, 212 muertos en la primera vuelta (87.6 %), 5 mas en la
+    # segunda, 25 vivos; el unico hueco real (V_entrada_m_s del retorno
+    # UNIFORME) se cerro con una asercion y quedan los 24 de abajo, mas los
+    # cuatro que ya estaban censados (hw_gobernante x2, V1, V2). ------------
+    "src/modulos/M4_control.py::_llenado_donde_Sf_iguala_S::comparacion::f_a * f_b < 0 -> f_a * f_b <= 0":
+        "borde: solo se distingue si la raiz de Sf = S cae EXACTAMENTE en un extremo del corchete (f = 0 en punto flotante), de medida nula; entonces Brent devuelve ese extremo y el perfil es el mismo",
+    "src/modulos/M4_control.py::_llenado_donde_Sf_iguala_S::aritmetico::f_a * f_b -> f_a / f_b":
+        "equivalente: el signo del cociente es el del producto salvo con f_b = 0, que es el borde de arriba",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::HW_aproximado / D < H_O_HW_SOBRE_D_MIN -> HW_aproximado / D <= H_O_HW_SOBRE_D_MIN":
+        "borde: HW/D exactamente 0.75 (HDS-5 pag. 3.24), de medida nula; el mismo borde que `control_salida` lleva censado",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::HW_aproximado / D < H_O_HW_SOBRE_D_CAUTELA -> HW_aproximado / D <= H_O_HW_SOBRE_D_CAUTELA":
+        "borde: HW/D exactamente 1.2 (HDS-5 pag. 3.24), de medida nula; el mismo borde que `control_salida` lleva censado",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::TW < D - TOL_UMBRAL_NORMATIVO -> TW <= D - TOL_UMBRAL_NORMATIVO":
+        "borde: un TW a exactamente D - 1e-9 (el borde de la banda que `regimen_del_barril` comparte), de medida nula",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::TW > D -> TW >= D":
+        "equivalente: con TW == D las dos ramas dan h_salida = D",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::pendiente_linea < 0 -> pendiente_linea <= 0":
+        "borde: Sf_llena exactamente igual a S (linea llena horizontal), de medida nula; el original la declara llena hasta la entrada y el mutante dividiria por cero en x_corte",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::x_corte < L -> x_corte <= L":
+        "borde: la linea llena corta la clave EXACTAMENTE en la entrada (x_corte == L), de medida nula: llena hasta la entrada y lamina libre de longitud cero publican los mismos numeros",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::TW > y_c -> TW >= y_c":
+        "equivalente: con TW == y_c el llenado del TW por Brent es el llenado de y_c (a TOL_BRENT), y la frontera max(y_c, TW) es la misma",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::f_salida < 0 -> f_salida <= 0":
+        "borde: Sf exactamente igual a S en la frontera (f_salida == 0.0 en punto flotante), de medida nula; la rama M1/S1 encontraria la raiz en la propia frontera y el retorno UNIFORME a TOL es el mismo",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::f_salida > 0 -> f_salida >= 0":
+        "borde: el mismo f_salida == 0.0 exacto de arriba, que solo llega a esta rama tras fallar `< 0`",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::g0.y > y_c + TOL_UMBRAL_NORMATIVO -> g0.y >= y_c + TOL_UMBRAL_NORMATIVO":
+        "borde: una frontera a exactamente y_c + 1e-9 m, de medida nula (S1 de longitud cero frente a una S1 de un escalon de 1e-9 m)",
+    "src/modulos/M4_control.py::perfil_lamina::aritmetico::y_c + TOL_UMBRAL_NORMATIVO -> y_c - TOL_UMBRAL_NORMATIVO":
+        "banda: solo se distingue con una frontera a menos de 2·TOL_UMBRAL_NORMATIVO (1e-9 m) de y_c; la banda existe para que y_c calculado por Brent cuente como y_c",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::abs(g0.y - y_asintota) <= TOL_UMBRAL_NORMATIVO -> abs(g0.y - y_asintota) < TOL_UMBRAL_NORMATIVO":
+        "borde: una frontera a exactamente 1e-9 m de la asintota, de medida nula",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::abs(denominador) > TOL_ASINTOTA_PERFIL * S -> abs(denominador) >= TOL_ASINTOTA_PERFIL * S":
+        "borde: |S - Sf_medio| exactamente igual a 1e-12·S, de medida nula",
+    "src/modulos/M4_control.py::perfil_lamina::aritmetico::TOL_ASINTOTA_PERFIL * S -> TOL_ASINTOTA_PERFIL / S":
+        "banda: el freno de la escalera pasa de 1e-12·S a 1e-12/S (1e-15 frente a 1e-9 con S = 0.001) y ninguna estacion de la suite cae entre los dos: acercarse tanto a la asintota exige del orden de 1e9 escalones; fijarlo pediria un caso al pelo sobre la tolerancia numerica, que no mueve ninguna magnitud",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::dx >= 0 -> dx > 0":
+        "borde: dx exactamente 0.0 (dos escalones consecutivos con la misma energia especifica), de medida nula; el mutante lo trataria como avance negativo",
+    "src/modulos/M4_control.py::perfil_lamina::comparacion::x + dx < L -> x + dx <= L":
+        "borde: un escalon que termina EXACTAMENTE en la entrada (x + dx == L), de medida nula: el cruce por Brent devuelve el mismo llenado que el escalon",
+    "src/modulos/M4_control.py::perfil_lamina::aritmetico::longitud_llena / L -> longitud_llena * L #3":
+        "equivalente: en el retorno UNIFORME a TOL `longitud_llena` es 0 (la rama sumergida deja la frontera en la clave, y una asintota a menos de 1e-9 m de la clave es el borde), y 0/L = 0·L",
+    "src/modulos/M4_control.py::perfil_lamina::aritmetico::longitud_llena / L -> longitud_llena * L #5":
+        "equivalente: la S1 de longitud cero exige g0.y <= y_c + TOL, y tras un tramo lleno g0.y es D > y_c: solo se llega sin tramo lleno, con `longitud_llena` = 0, y 0/L = 0·L",
     "src/modulos/M5_verificaciones.py::v1_borde_libre::comparacion::y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO -> y_sobre_D < Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
     "src/modulos/M5_verificaciones.py::v2_velocidad_minima::comparacion::V >= V_MIN - TOL_UMBRAL_NORMATIVO -> V > V_MIN - TOL_UMBRAL_NORMATIVO":

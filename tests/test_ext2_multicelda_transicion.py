@@ -67,7 +67,13 @@ Q_CELDA = 3.0          # m3/s, Q/N con N = 3
 S_MARCO = 0.004        # m/m
 L_MARCO = 24.0         # m
 TW_LIBRE = 0.0         # m
-HW_SALIDA_MULTICELDA = 1.045982117    # m, el numero del dictamen (M-03)
+HW_SALIDA_MULTICELDA = 1.045982117    # m, el numero del dictamen (M-03): la
+                                      # APROXIMACION de la Sec. 4.3 con Q/N.
+                                      # Desde E-A `HW_salida` es el efectivo
+                                      # (el remanso bajo HW/D < 0.75, que es
+                                      # el caso de este marco) y la
+                                      # aproximacion viaja en
+                                      # `perfil.HW_aproximado_m`.
 TOL_DORADO = 1e-9                     # los dorados llevan 9 decimales
 # El Q_lleno del dictamen esta escrito con dos decimales (7.70 m3/s): la
 # tolerancia es la del redondeo con que se cita, no una precision de calculo.
@@ -125,7 +131,12 @@ def test_el_multicelda_se_dimensiona_con_Q_sobre_N_y_publica_los_dos_caudales():
     """
     r = _disenar_marco_n3().resultado_hidraulico
     assert r.control_gobernante is ControlGobernante.SALIDA
-    assert r.HW_salida == pytest.approx(HW_SALIDA_MULTICELDA, abs=TOL_DORADO)
+    assert r.perfil.HW_aproximado_m == pytest.approx(HW_SALIDA_MULTICELDA,
+                                                     abs=TOL_DORADO)
+    # E-A: la aproximacion queda bajo 0.75·H y el HW efectivo es el del
+    # remanso, que llega a la entrada por una M2 desde y_c.
+    assert r.perfil.sustituye_aproximacion and r.perfil.alcanza_entrada
+    assert r.HW_salida == pytest.approx(r.perfil.HW_remanso_m, rel=REL_TRANSPORTE)
     assert r.Q == pytest.approx(Q_TOTAL, rel=REL_TRANSPORTE)
     assert r.Q_celda_m3s == pytest.approx(Q_CELDA, rel=REL_TRANSPORTE)
     assert r.numero_celdas == 3
@@ -169,7 +180,8 @@ def test_el_camino_sin_tirante_inyectado_tambien_reparte():
                              Q=Q_TOTAL, S=S_MARCO, L=L_MARCO, TW=TW_LIBRE,
                              material=_marco(), normal=None)
     assert r is not None
-    assert r.HW_salida == pytest.approx(HW_SALIDA_MULTICELDA, abs=TOL_DORADO)
+    assert r.perfil.HW_aproximado_m == pytest.approx(HW_SALIDA_MULTICELDA,
+                                                     abs=TOL_DORADO)
     assert r.Q_celda_m3s == pytest.approx(Q_CELDA, rel=REL_TRANSPORTE)
 
 

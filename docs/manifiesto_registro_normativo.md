@@ -421,13 +421,20 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `HDS5_3ED.3.1.3#SUMERGENCIA` | 3.1.3 | «Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.3#TRANSICION` | 3.1.3 | «Inlet Control» | pág. impresa **3.4** · PDF 86 | aproximacion | 2026-08-28 · texto |
+| `HDS5_3ED.3.1.4#0_75D` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | exigencia | 2026-09-21 · texto |
+| `HDS5_3ED.3.1.4#EMPALME` | 3.1.4, ec. (3.7) | «Outlet Control» | pág. impresa **3.12** · PDF 94 | definicion | 2026-09-21 · texto |
+| `HDS5_3ED.3.1.4#HW_REMANSO` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.1.4#K` | 3.1.4, ec. (3.4b) | «Outlet Control» | pág. impresa **3.10** · PDF 92 | definicion | 2026-08-28 · texto |
+| `HDS5_3ED.3.1.4#REMANSO` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.1.6#V_SALIDA` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.6#V_SALIDA_TW` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA` | 3.3.2 | «Inlet Control» | pág. impresa **3.24** · PDF 106 | aproximacion | 2026-09-20 · texto |
 | `HDS5_3ED.3.3.3#HO` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.3.3.3#HO_1_2D` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | exigencia | 2026-08-28 · texto |
 | `HDS5_3ED.3.3.3#HO_SUMERGIDA` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | exigencia | 2026-08-28 · texto |
+| `HDS5_3ED.3.5#PERFIL` | 3.5 | «CULVERT DESIGN USING SOFTWARE (WATER SURFACE PROFILES)» | pág. impresa **3.36** · PDF 118 | definicion | 2026-09-21 · texto |
+| `HDS5_3ED.3.5.1#S1` | 3.5.1 | «USGS Flow Types and Water Surface Profiles» | pág. impresa **3.37** · PDF 119 | definicion | 2026-09-21 · texto |
+| `HDS5_3ED.3.5.1#TIPO7` | 3.5.1 | «USGS Flow Types and Water Surface Profiles» | pág. impresa **3.38** · PDF 120 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.5.3.3#ALINEADO` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
 | `HDS5_3ED.5.3.3#INDICADORES` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
 | `HDS5_3ED.5.4.3#REPARTO` | 5.4.3 | «Multiple Barrels» | pág. impresa **5.15** · PDF 151 | aproximacion | 2026-09-20 · texto |
@@ -443,7 +450,15 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.3.1.3#TRANSICION`** — NOR-HDS-06, cerrado: ESTE es el numeral de la zona de transicion, no el «Cap. IV» que el criterio citaba. El Capitulo 4 de la 3a ed. se titula «CULVERT DESIGN FOR AQUATIC ORGANISM PASSAGE (AOP)» -- paso de fauna acuatica -- y tampoco se salva leyendolo como la edicion de 1985, cuyo Capitulo 4 es «Tapered Inlets». Es el mismo patron que NOR-PUE-01: el numeral existe y su titulo no corresponde. La otra mitad de la cita vieja, «y Apendice A», SI era correcta: la misma regla esta en el num. A.2.
 
+> **`HDS5_3ED.3.1.4#0_75D`** — Las dos frases anteriores de la misma pagina dicen cuando el metodo aproximado «works best» (barril lleno al menos en parte) y que «becomes increasingly inaccurate as the headwater falls further below the top of the barrel». Esta es la que CUANTIFICA: hasta 0.75D los resultados son adecuados aun con el barril parcialmente lleno en toda su longitud, y por debajo el remanso es obligatorio («are required»). Es lo que sostiene que bajo HW/D < 0.75 `ResultadoHidraulico.HW_salida` sea el HW del remanso y no el de la aproximacion, y que por encima la aproximacion siga gobernando con el remanso impreso como comprobacion (v8 §4.3). Conviene leerla junto a la pag. 3.24: alli la vineta dice «can only be used if the barrel flows full for most of its length», una condicion MAS estricta que esta; el proyecto mide aquella (paso 4.3c) y aplica esta, y lo declara como discrepancia interna de la fuente en `constantes_normativas.H_O_CONDICION_APLICACION`.
+
+> **`HDS5_3ED.3.1.4#EMPALME`** — La Ec. 3.7 sigue a esta frase: Sf = Hf/L = Ku·n²·V²/(R^1.33·2g), con Ku = 29 (19.63 en SI, la misma `K_FRICCION_SI` de la Sec. 4.3). El proyecto la escribe con R^(4/3), como `perdida_carga`, y la usa en los dos sentidos: la linea llena que arranca en un TW sobre la clave y BAJA de ella aguas arriba cuando Sf < S (el caso del corredor de referencia, B-01 ampliada), y la que arranca donde la M2 corta la clave (Fig. 3.7B).
+
+> **`HDS5_3ED.3.1.4#HW_REMANSO`** — Es la forma del HW por remanso: HW = y_entrada + (1 + ke)·V_entrada²/2g, con las velocidades de aproximacion y de salida nulas (num. 3.3.3, «assumed to be zero for the manual method»). Con la linea llena de punta a punta reproduce exactamente HW = H + h_o - S·L de `control_salida` con h_o = TW.
+
 > **`HDS5_3ED.3.1.4#K`** — El 19.63 ESTA en la fuente, no es derivacion. El numeral abre en la pag. impresa 3.5 y la ecuacion esta en la 3.10.
+
+> **`HDS5_3ED.3.1.4#REMANSO`** — Es el procedimiento en prosa (pieza 1 del paquete I1): la frontera aguas abajo max(y_c, TW) y la marcha hacia la entrada. La frase anterior dice para que casos: «Backwater calculations may be required for the partly full flow conditions shown in Figures 3.7A and C».
 
 > **`HDS5_3ED.3.1.6#V_SALIDA`** — La oracion sigue con «(Figure 3.14).» y la lista de tres vinetas que reparte los casos por el TW: tirante critico si TW < y_c, TW si y_c < TW < D, seccion entera si TW > D. `M4.velocidad_de_salida` lo escribe como el area al tirante min(D, max(TW, y_c)).
 
@@ -456,6 +471,12 @@ línea que se pueda romper.
 > **`HDS5_3ED.3.3.3#HO_1_2D`** — De aqui salen los DOS limites que `M4` evalua punto por punto: 1.2D (cautela) y 0.75D (no usar). La transcripcion anterior del expediente se saltaba, sin marcarlo, la oracion sobre las backwater calculations -- que es justamente la que dice QUE HACER cuando el punto cae en la banda de cautela. Una elision no marcada dentro de algo rotulado «texto literal» es la misma clase de defecto que NOR-HID-06.
 
 > **`HDS5_3ED.3.3.3#HO_SUMERGIDA`** — Segunda mitad de la vineta de h_o, y es una condicion DISTINTA de la primera: aquella acota por llenado del barril, esta por sumergencia de la entrada. El expediente las leia como una sola.
+
+> **`HDS5_3ED.3.5#PERFIL`** — La frase esta en el parrafo introductorio de la Seccion 3.5 que abre la pag. 3.36, justo ANTES del encabezado 3.5.1 (el encabezado 3.5 esta en la pag. 3.34, PDF 116), y es la que nombra las TRES salidas del perfil que E-A implementa: el tirante (V1), la velocidad (V2) y la longitud de barril lleno (la primera condicion de h_o). El parrafo sigue: «The profile is determined by first establishing if the culvert slope is supercritical (inlet control) or subcritical (outlet control). Next, the tailwater is used to establish which profile to assume and at what depth to start the profile».
+
+> **`HDS5_3ED.3.5.1#S1`** — Parrafo «USGS Flow Type 1 (Inlet Control)». Es lo que sostiene `PerfilLamina.alcanza_entrada`: en pendiente pronunciada la S1 que arranca en el TW (o en y_c, con longitud cero) solo gobierna el HW si llega a la cara de entrada; si corta y_c antes, el control es de entrada y aguas arriba del resalto el flujo es supercritico. La fuente sigue con la localizacion del resalto por la profundidad secuente (JFt, JFf) y, en HY-8 7.3, por momentum: el proyecto NO situa el resalto --le basta saber que la S1 no llega-- y lo deja escrito en decisiones_diferidas.md.
+
+> **`HDS5_3ED.3.5.1#TIPO7`** — Parrafo «USGS Flow Type 7 (Outlet Control)»; el de los tipos 4 y 6, en la misma pagina, dice lo mismo para el barril lleno «for most of its length» (FFt/FFc) y que con «tailwater … higher than the culvert crown at the exit … the barrel flows full (FFf)». Es la fuente de que la fraccion llena sea un RESULTADO del perfil y no una lectura, y de los rotulos M1/M2 de `modelos.TipoDePerfil`.
 
 > **`HDS5_3ED.5.3.3#ALINEADO`** — Es la contracara del indicador y la que explica por que la verificacion pasa en la inmensa mayoria de los puntos de este corredor: Sec. 7.B fija que la alcantarilla sigue la pendiente del cauce, de modo que S_conducto = S_cauce salvo que el punto declare `S_conducto` aparte. El «generally» es de la fuente y se conserva: no dice «nunca».
 
@@ -1593,9 +1614,10 @@ recomienda.
 | `F3.TIPO_MARCO` | Fase 3 - Tipo, material y durabilidad | Tipo de estructura del cruce: alcantarilla tipo marco de concreto de seccion rectangular | **recomienda** | `MC_HHD.4.1.1.3.4a#TIPOS`, `MC_HHD.4.1.1.3.4a#NIVELES`, `MC_HHD.4.1.1.3.4a#MARCO`, `MC_HHD.LAMINA_03` |
 | `F4.CONTROL` | Fase 4 - Dimensionamiento hidraulico | Carga a la entrada HW por los dos controles del HDS-5, entrada y salida, y adopcion del mayor | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.3.1.4#K` |
 | `F4.FORMA_HDS5` | Fase 4 - Dimensionamiento hidraulico | Forma de la ecuacion de control de entrada del HDS-5 que aplica a esta seccion, y por que | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.TA.1`, `HDS5_3ED.A.3#FORMAS` |
-| `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D` |
+| `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D`, `HDS5_3ED.3.1.4#0_75D` |
 | `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning: UNA geometria (el tirante, con n_max) y DOS velocidades, una por cada extremo del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
+| `F4.PERFIL` | Fase 4 - Dimensionamiento hidraulico | Perfil de la lamina de agua por paso directo desde la salida hacia la entrada: longitud a seccion llena y carga a la entrada por remanso (HDS-5 pag. 3.12 y Section 3.5) | **define** | `HDS5_3ED.3.1.4#REMANSO`, `HDS5_3ED.3.1.4#EMPALME`, `HDS5_3ED.3.1.4#HW_REMANSO`, `HDS5_3ED.3.1.4#0_75D`, `HDS5_3ED.3.5#PERFIL`, `HDS5_3ED.3.5.1#S1`, `HDS5_3ED.3.5.1#TIPO7`, `HDS5_3ED.3.3.3#HO` |
 | `F4.REGIMEN` | Fase 4 - Dimensionamiento hidraulico | Regimen del barril y velocidad a la salida, con el area que HDS-5 3.1.6 asigna a cada caso | **define** | `HDS5_3ED.3.1.6#V_SALIDA`, `HDS5_3ED.3.1.6#V_SALIDA_TW`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HDS5_3ED.3.1.3#SUMERGENCIA` |
 | `F4.SECCION` | Fase 4 - Dimensionamiento hidraulico | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | **define** | `MC_HHD.4.1.1.3.6` |
 | `F4.YC_RECT` | Fase 4 - Dimensionamiento hidraulico | Tirante critico de la seccion, y la energia critica H_c | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.A.2` |
@@ -1753,7 +1775,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 173.
+Citas sin firma de verificación: **5** de 180.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

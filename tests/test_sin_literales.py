@@ -941,7 +941,11 @@ CENSO_DE_MARCAS = {
     # siguen aqui, pero ya no escriben la formula: la piden a la seccion.
     # Los tres que quedan son los exponentes de A^3/T (dos) y el 4/3 de la
     # friccion de Sec. 4.3.
-    "src/modulos/M4_control.py": 3,
+    # 3 -> 8 en E-A: el 4/3 de la Ec. 3.7 en las dos pendientes de friccion
+    # del perfil (`_pendiente_friccion`, `_pendiente_friccion_llena`; dos
+    # literales por linea, el 4 y el 3) y el 100 que lleva la fraccion llena
+    # a porcentaje en el TEXTO del paso 4.3c.
+    "src/modulos/M4_control.py": 8,
     # 1 -> 0 en C7, y por eso desaparece del censo: el `pi/4` de la
     # subpresion se fue a `SeccionCircular.area_exterior`. M8 dejo de
     # saber que forma tiene el conducto, que es justo lo que se buscaba.

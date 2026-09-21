@@ -363,13 +363,15 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
                      LimiteNumericoError, Magnitud, Material,
-                     MOTIVO_METODO_NO_EVALUABLE, RegimenBarril,
+                     MOTIVO_METODO_NO_EVALUABLE, PerfilLamina, RegimenBarril,
                      RegimenEntrada,
-                     ResultadoHidraulico, TiranteCritico, TipoDeVeredicto,
+                     ResultadoHidraulico, TiranteCritico, TipoDePerfil,
+                     TipoDeVeredicto,
                      TiranteNormal, TransicionEntrada, Umbral, Veredicto, paso)
 from src.modulos.M2_material import CRITERIO_N_CELDAS_CAJON, numero_de_celdas
 from src.modulos.M3_hidraulica import geometria, resolver_manning
-from src.tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
+from src.tolerancias import (PASOS_PERFIL_LAMINA, TOL_ASINTOTA_PERFIL,
+                             TOL_BRENT, TOL_UMBRAL_NORMATIVO)
 
 NUMERAL_CRITICO = "4.2.1"
 NUMERAL_ENTRADA = "4.2"
@@ -385,6 +387,7 @@ CRITERIO_KE = "ke_entrada"
 CRITERIO_KE_CAJON = "ke_entrada_cajon"
 CRITERIO_GEOMETRIA_SALIDA = "geometria_control_salida"
 CRITERIO_TRANSICION = "metodo_transicion_hds5"
+CRITERIO_FRACCION_LLENA = "fraccion_llena_mayor_parte"   # E-A, paso 4.3c
 
 # EL BRACKET DE THETA SE FUE A `SeccionCircular.bracket_llenado()` en C1,
 # igual que en M3: es la seccion la que sabe sobre que parametro se la
@@ -1220,8 +1223,9 @@ def criterio_ke_de(material: Material) -> str:
             else CRITERIO_KE)
 
 
-def hw_gobernante(entrada: ControlEntrada,
-                  salida: ControlSalida) -> Tuple[float, ControlGobernante]:
+def hw_gobernante(entrada: ControlEntrada, salida: ControlSalida,
+                  perfil: Optional[PerfilLamina] = None
+                  ) -> Tuple[float, ControlGobernante]:
     """
     HW de diseno y control que lo produce (Sec. 4.2 y 4.3): el MAYOR de los
     dos. Cada control es una restriccion independiente sobre la misma
@@ -1237,9 +1241,24 @@ def hw_gobernante(entrada: ControlEntrada,
     TOL_UMBRAL_NORMATIVO. No es una decision de calculo -- el HW es el mismo
     numero por ambos caminos, hasta la millonesima de milimetro -- sino la
     etiqueta con la que se reporta ese numero.
+
+    CON `perfil` (E-A) EL HW DE SALIDA QUE COMPITE ES EL EFECTIVO
+    (`PerfilLamina.HW_efectivo_m`): la aproximacion de la Sec. 4.3 mientras
+    HW_aprox/D >= 0.75 --la pag. 3.12 del HDS-5 la avala hasta ahi-- y el
+    remanso por debajo, donde la fuente dice que la aproximacion «should not
+    be used» y que «backwater calculations are required». Y cuando bajo 0.75
+    el remanso NO alcanza la entrada --la S1 corta y_c antes, o tiene
+    longitud cero en un barril supercritico con TW <= y_c-- el control de
+    salida no impone carga alguna y gobierna la ENTRADA (Section 3.5.1: la S1
+    se usa «if the S1 curve extends to the face of the culvert»). Es lo que
+    deshace la circularidad de la aproximacion: hasta E-A el caso (b) del
+    dictamen se clasificaba como control de salida con un h_o que la fuente
+    prohibe usar ahi. Sin `perfil` --la pieza aislada y los tests de antes
+    de E-A-- compara la aproximacion, como siempre.
     """
-    if salida.HW > entrada.HW + TOL_UMBRAL_NORMATIVO:
-        return salida.HW, ControlGobernante.SALIDA
+    HW_salida = salida.HW if perfil is None else perfil.HW_efectivo_m
+    if HW_salida is not None and HW_salida > entrada.HW + TOL_UMBRAL_NORMATIVO:
+        return HW_salida, ControlGobernante.SALIDA
     return entrada.HW, ControlGobernante.ENTRADA
 
 
@@ -1377,6 +1396,379 @@ def _regimen_y_salida(*, Q_celda: float, seccion: Seccion, TW: float,
 
 
 # ---------------------------------------------------------------------------
+# Pieza 6 - El perfil de la lamina de agua por paso directo (E-A; NOR-HDS-05)
+# ---------------------------------------------------------------------------
+# El procedimiento de barril parcialmente lleno del Cap. III del HDS-5, tal
+# como la pag. impresa 3.12 (PDF 94) lo escribe y la Section 3.5.1 (PDF
+# 118-120) lo reparte por tipos: el calculo de remanso arranca en la lamina
+# de la salida --«critical depth at the culvert outlet or … the tailwater
+# depth, whichever is higher»-- y avanza hacia la entrada; donde la lamina
+# esta sobre la clave rige «a straight, full flow hydraulic grade line» con la
+# pendiente de friccion de la Ec. 3.7; y en la entrada «the inlet losses and
+# the velocity head are added to the elevation of the hydraulic grade line»
+# para formar el HW. El paquete de implementacion (piezas 1 a 5) esta en el
+# bloque que precede a `constantes_normativas.H_O_CONDICION_APLICACION`.
+#
+# SE INTEGRA SOBRE EL PARAMETRO PROPIO DE LA SECCION, no sobre el tirante
+# (regla vinculante #12 de ruta_familia_c.md §6). La escalera recorre
+# `llenado` --theta en la circular, el tirante en el marco-- y cada escalon
+# pide su `Geometria` entera a `geometria_en`: A, P, R e y mutuamente
+# consistentes, sin pasar por `theta_desde_tirante`, que en la circular esta
+# mal condicionada en los extremos. El unico tirante que llega SIN
+# `Geometria` es el TW, y su llenado se resuelve con Brent sobre
+# `bracket_llenado()`, por la misma via canonica; ninguna de las tres
+# funciones de esta pieza llama a `area(y)`, `perimetro(y)` ni
+# `ancho_superficial(y)`, y `tests/test_ea_perfil_lamina.py` lo fija por AST
+# junto al censo de `test_seccion_rectangular`.
+#
+# EL PASO DIRECTO, en una linea: entre dos escalones consecutivos de la
+# escalera, con E = y + V²/2g y Sf la Ec. 3.7 en cada uno,
+#
+#     dx = (E_aguas_abajo - E_aguas_arriba) / (S - Sf_medio),   Sf_medio = (Sf_0 + Sf_1)/2
+#
+# con x medido desde la salida hacia aguas arriba. La direccion de la
+# escalera la fija la clasificacion del perfil (HDS-5 3.5.1): en pendiente
+# suave la lamina tiende a y_n --M1 bajando desde un TW > y_n, M2 subiendo
+# desde max(y_c, TW) < y_n-- y la asintota se excluye; en pendiente
+# pronunciada (y_n <= y_c) la lamina baja hacia y_c (S1) y, si lo alcanza
+# antes de la entrada, el remanso NO llega y el control es de entrada. El
+# cruce con x = L se resuelve DENTRO del escalon con Brent, para que el paso
+# de la escalera no imponga su resolucion al tirante de la entrada.
+#
+# LO QUE NO HACE, dicho para que no se lea de mas: no situa el resalto
+# hidraulico (HY-8 7.3 lo hace por momentum; aqui basta saber que la S1 no
+# llega a la cara de entrada), no calcula perfiles S2 desde la entrada (bajo
+# control de entrada el tramo supercritico se aproxima por el uniforme, como
+# desde EXT-3) y no fabrica dorados: sus dos casos patron son limites de la
+# propia formula (conflicto #7).
+
+def _fmt_m(valor: Optional[float]) -> str:
+    """Un numero del perfil en el texto de una procedencia, a las cifras de la memoria."""
+    if valor is None:
+        return "--"
+    return f"{valor:.{CIFRAS_MAGNITUD}f}"
+
+
+def _pendiente_friccion(g: Geometria, Q: float, n: float) -> float:
+    """
+    Sf de la Ec. 3.7 (HDS-5 pag. impresa 3.12): Sf = Ku·n²·V²/(R^(4/3)·2g),
+    con Ku = `K_FRICCION_SI` = 19.63 y V = Q/A sobre la `Geometria` del
+    escalon. Es el MISMO termino de friccion de `perdida_carga` (Sec. 4.3),
+    escrito por unidad de longitud: asi el tramo lleno del perfil reproduce
+    la formula cerrada del control de salida exactamente, y la fuente
+    imprime R^1.33 donde la Sec. 4.3 y este modulo escriben R^(4/3).
+    """
+    V = Q / g.A
+    return K_FRICCION_SI * n ** 2 * V ** 2 / (g.R ** (4 / 3) * 2 * G)  # literal-ok: exponente 4/3 de la Ec. 3.7 / Sec. 4.3
+
+
+def _pendiente_friccion_llena(seccion: Seccion, Q: float, n: float) -> float:
+    """
+    La Ec. 3.7 a SECCION LLENA, con `area_llena` y `radio_hidraulico_lleno`:
+    en el marco el R lleno lleva la losa superior en el perimetro
+    (2B + 2H) y NO es el de `geometria_en(H)`, que es de lamina libre
+    (B + 2H). Es la misma pareja con que `control_salida` forma H.
+    """
+    V = Q / seccion.area_llena
+    return K_FRICCION_SI * n ** 2 * V ** 2 / (seccion.radio_hidraulico_lleno ** (4 / 3) * 2 * G)  # literal-ok: exponente 4/3 de la Ec. 3.7 / Sec. 4.3
+
+
+def _energia_especifica(g: Geometria, Q: float) -> float:
+    """E = y + V²/2g sobre la `Geometria` del escalon."""
+    V = Q / g.A
+    return g.y + V ** 2 / (2 * G)
+
+
+def _llenado_de_tirante(seccion: Seccion, y: float) -> float:
+    """
+    El parametro propio de la seccion cuyo tirante es `y`, resuelto con
+    Brent sobre `bracket_llenado()` y `geometria_en` (la via CANONICA de la
+    regla #12), y no con la inversa cerrada de la forma. Lo necesita el TW,
+    que es el unico tirante que entra al perfil sin `Geometria`: es un dato
+    del receptor, no la salida de un solver. Quien llama garantiza
+    y_c <= y < D, de modo que la raiz existe y esta lejos de los dos bordes.
+    """
+    llenado_min, llenado_max = seccion.bracket_llenado()
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
+    return brentq(lambda llenado: seccion.geometria_en(llenado).y - y,
+                  llenado_min, llenado_max, xtol=TOL_BRENT)
+
+
+def _llenado_donde_Sf_iguala_S(seccion: Seccion, Q: float, n: float, S: float,
+                               llenado_a: float, llenado_b: float) -> Optional[float]:
+    """
+    El parametro propio en que la Ec. 3.7 da Sf = S dentro de [a, b] --la
+    ASINTOTA del perfil con su propia ley de friccion--, o `None` si Sf - S
+    no cambia de signo en el intervalo. Brent sobre `geometria_en` (via
+    canonica). NO es el tirante normal de M3, y la diferencia esta medida
+    (auditoria adversarial de E-A): Manning en M3 lleva `K_MANNING_SI` = 1 y
+    la Ec. 3.7 lleva `K_FRICCION_SI`/(2g) = 19.63/19.62 = 1.00051, de modo que
+    en y_n de Manning la pendiente de friccion del perfil vale 1.00051·S y la
+    lamina que el paso directo integra tiende a un y_n' 0.05 % mas alto
+    (0.07 mm en D = 0.90 con Q = 0.3 y S = 0.001). Clasificar el perfil
+    contra y_n en vez de contra y_n' dejaba una banda de TW entre los dos en
+    la que la escalera iba contra su propio perfil y lanzaba
+    `LimiteNumericoError`; por eso la asintota se busca con la MISMA ley que
+    integra, y y_n se imprime al lado, con su diferencia declarada.
+    """
+    def f(llenado: float) -> float:
+        return _pendiente_friccion(seccion.geometria_en(llenado), Q, n) - S
+
+    f_a, f_b = f(llenado_a), f(llenado_b)
+    if not f_a * f_b < 0:
+        return None
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
+    return brentq(f, llenado_a, llenado_b, xtol=TOL_BRENT)
+
+
+def perfil_lamina(*, Q_celda: float, seccion: Seccion, S: float, L: float,
+                  TW: float, n: float, ke: float, critico: TiranteCritico,
+                  HW_aproximado: float,
+                  rungs: int = PASOS_PERFIL_LAMINA) -> PerfilLamina:
+    """
+    El perfil de la lamina de agua desde la salida hacia la entrada, por paso
+    directo (HDS-5 3.a ed., pag. impresa 3.12 / PDF 94; Section 3.5.1, PDF
+    118-120; E-A). Ver el bloque de arriba para el metodo y sus limites.
+
+    `n` es n_max --la regla de doble n manda el n mayor para una carga, y
+    ademas da mas tirante y menos velocidad, el lado conservador de V1 y de
+    V2-- y `ke` es el coeficiente con que `control_salida` formo H, para que
+    el tramo lleno reproduzca HW = H + h_o - S·L exactamente. `HW_aproximado`
+    es el HW de `control_salida`: decide `sustituye_aproximacion` (HW_aprox/D
+    < 0.75, pag. 3.24 y 3.12) y `cautela_aproximacion` (< 1.2), y viaja en
+    el resultado para que la memoria imprima los dos numeros juntos.
+
+    LA CLASIFICACION NO LEE EL TIRANTE NORMAL DE M3: lee el SIGNO de
+    Sf - S en la frontera de salida, con la misma Ec. 3.7 que integra
+    (`_llenado_donde_Sf_iguala_S`). Con Sf(y_salida) < S la lamina baja
+    aguas arriba hacia la raiz de Sf = S: si esa raiz esta por encima de y_c
+    es una M1 (asintota, excluida); si no la hay por encima de y_c, es una
+    S1 que termina en y_c (pendiente pronunciada). Con Sf(y_salida) > S la
+    lamina sube hacia la raiz por encima (M2, asintota) o, si no la hay bajo
+    la clave --Q por encima del caudal a seccion llena--, hasta la clave, y
+    desde alli sigue la linea de energia llena (Fig. 3.7B). Asi el perfil no
+    necesita `normal` y vale igual cuando M3 no tiene solucion.
+
+    Devuelve un `PerfilLamina`; nunca `None`. Cuando el remanso no alcanza
+    la entrada lo dice `alcanza_entrada=False` con `x_fin_remanso_m`.
+    """
+    _validar_Q_D(Q_celda, seccion)
+    _validar_positivo("S", S, "la pendiente del conducto debe ser positiva")
+    _validar_positivo("L", L, "la longitud del conducto debe ser positiva")
+    _validar_positivo("n", n, "el coeficiente de Manning debe ser positivo")
+    if not TW >= 0:
+        raise DatoInvalidoError("TW", valor=TW,
+                                motivo="el tirante en el receptor no puede ser "
+                                       "negativo (TW = 0 es salida libre)")
+    if not rungs >= 2:
+        raise ValueError(f"perfil_lamina: la escalera necesita al menos dos "
+                         f"escalones, no {rungs!r}")
+
+    D = seccion.altura
+    llenado_min, llenado_max = seccion.bracket_llenado()
+    llenado_c = critico.geometria.llenado
+    V_llena = Q_celda / seccion.area_llena
+    Sf_llena = _pendiente_friccion_llena(seccion, Q_celda, n)
+    y_c = critico.y_c
+    sustituye = HW_aproximado / D < H_O_HW_SOBRE_D_MIN
+    cautela = HW_aproximado / D < H_O_HW_SOBRE_D_CAUTELA
+    y_salida = min(D, max(y_c, TW))
+
+    def _hw(y_entrada: float, V_entrada: float) -> float:
+        # HDS-5 pag. 3.12: las perdidas de entrada y la carga de velocidad se
+        # suman a la linea de energia en la entrada.
+        return y_entrada + (1 + ke) * V_entrada ** 2 / (2 * G)
+
+    def _resultado(**kw) -> PerfilLamina:
+        return PerfilLamina(y_salida_m=y_salida, n=n, ke=ke,
+                            HW_aproximado_m=HW_aproximado,
+                            sustituye_aproximacion=sustituye,
+                            cautela_aproximacion=cautela, rungs=rungs, **kw)
+
+    def _lleno_hasta_la_entrada(h_entrada: float, longitud_llena: float,
+                                estaciones: Tuple[Tuple[float, float], ...],
+                                y_max: float, V_min: float) -> PerfilLamina:
+        if not math.isfinite(h_entrada):
+            raise LimiteNumericoError(
+                "h_entrada", valor=h_entrada,
+                motivo=f"la linea de energia llena no da una carga finita en "
+                       f"la entrada con el par (L = {L!r} m, TW = {TW!r} m): "
+                       f"Sf_llena = {Sf_llena!r}, S = {S!r}")
+        return _resultado(
+            tipo=TipoDePerfil.LLENA, alcanza_entrada=True, x_fin_remanso_m=None,
+            y_entrada_m=h_entrada, V_entrada_m_s=V_llena,
+            HW_remanso_m=_hw(h_entrada, V_llena), y_asintota_m=None,
+            longitud_llena_m=longitud_llena, fraccion_llena=longitud_llena / L,
+            y_max_m=max(y_max, D), V_min_m_s=min(V_min, V_llena),
+            estaciones=estaciones)
+
+    # --- 1. Donde arranca la lamina libre --------------------------------
+    x = 0.0
+    longitud_llena = 0.0
+    y_max = y_salida
+    V_min = math.inf
+    if not TW < D - TOL_UMBRAL_NORMATIVO:
+        # Salida sumergida (el mismo umbral que `regimen_del_barril`): la
+        # linea de energia llena arranca en el TW, sobre el fondo de la
+        # salida, y cambia aguas arriba a razon de (Sf_llena - S). Un TW a
+        # menos de TOL de la clave se toma como la clave: la banda de la
+        # tolerancia no puede producir un tramo lleno negativo (auditoria
+        # adversarial de E-A).
+        h_salida = TW if TW > D else D
+        pendiente_linea = Sf_llena - S
+        if not pendiente_linea < 0:
+            # La linea no baja de la clave: llena hasta la entrada.
+            return _lleno_hasta_la_entrada(h_salida + pendiente_linea * L, L, (),
+                                           D, V_llena)
+        x_corte = (h_salida - D) / (S - Sf_llena)
+        if not x_corte < L:
+            return _lleno_hasta_la_entrada(h_salida + pendiente_linea * L, L, (),
+                                           D, V_llena)
+        longitud_llena = x_corte
+        x = x_corte
+        llenado_actual = llenado_max
+        y_max = D
+        V_min = V_llena
+    elif TW > y_c:
+        llenado_actual = _llenado_de_tirante(seccion, TW)
+    else:
+        llenado_actual = llenado_c
+
+    g0 = seccion.geometria_en(llenado_actual)
+    estaciones = [(x, g0.y)]
+    y_max = max(y_max, g0.y)
+    V_min = min(V_min, Q_celda / g0.A)
+
+    # --- 2. Clasificacion por el signo de Sf - S en la frontera ------------
+    f_salida = _pendiente_friccion(g0, Q_celda, n) - S
+    y_asintota: Optional[float] = None
+    if f_salida < 0:
+        # La lamina BAJA aguas arriba, hacia la raiz de Sf = S si esta por
+        # encima de y_c (M1) o hasta y_c si no (S1, pendiente pronunciada).
+        raiz = _llenado_donde_Sf_iguala_S(seccion, Q_celda, n, S, llenado_c,
+                                          llenado_actual)
+        if raiz is None:
+            if not g0.y > y_c + TOL_UMBRAL_NORMATIVO:
+                # S1 de longitud cero: la frontera YA esta en y_c y el remanso
+                # no remonta nada. Aguas arriba el flujo es supercritico
+                # (control de entrada), aproximado por el uniforme como en
+                # EXT-3; ese tramo no cambia y_max ni V_min, porque en
+                # pendiente pronunciada y_n < y_c <= y_salida.
+                return _resultado(
+                    tipo=TipoDePerfil.S1, alcanza_entrada=False,
+                    x_fin_remanso_m=x, y_entrada_m=None, V_entrada_m_s=None,
+                    HW_remanso_m=None, y_asintota_m=None,
+                    longitud_llena_m=longitud_llena,
+                    fraccion_llena=longitud_llena / L, y_max_m=y_max,
+                    V_min_m_s=V_min, estaciones=tuple(estaciones))
+            objetivo, terminal, tipo = llenado_c, "critico", TipoDePerfil.S1
+        else:
+            objetivo, terminal, tipo = raiz, "", TipoDePerfil.M1
+            y_asintota = seccion.geometria_en(raiz).y
+    elif f_salida > 0:
+        # La lamina SUBE aguas arriba: hacia la raiz de Sf = S bajo la clave
+        # (M2) o, si no la hay, hasta la clave y desde alli llena (Fig. 3.7B).
+        raiz = _llenado_donde_Sf_iguala_S(seccion, Q_celda, n, S, llenado_actual,
+                                          llenado_max)
+        if raiz is None:
+            objetivo, terminal, tipo = llenado_max, "clave", TipoDePerfil.M2
+        else:
+            objetivo, terminal, tipo = raiz, "", TipoDePerfil.M2
+            y_asintota = seccion.geometria_en(raiz).y
+    else:
+        objetivo, terminal, tipo = llenado_actual, "", TipoDePerfil.UNIFORME
+        y_asintota = g0.y
+    if y_asintota is not None and abs(g0.y - y_asintota) <= TOL_UMBRAL_NORMATIVO:
+        # UNIFORME a la tolerancia del proyecto: nada mueve la lamina.
+        return _resultado(
+            tipo=TipoDePerfil.UNIFORME, alcanza_entrada=True, x_fin_remanso_m=None,
+            y_entrada_m=g0.y, V_entrada_m_s=Q_celda / g0.A,
+            HW_remanso_m=_hw(g0.y, Q_celda / g0.A), y_asintota_m=y_asintota,
+            longitud_llena_m=longitud_llena, fraccion_llena=longitud_llena / L,
+            y_max_m=y_max, V_min_m_s=V_min,
+            estaciones=tuple(estaciones) + ((L, g0.y),))
+
+    # --- 3. La escalera, escalon a escalon, aguas arriba ------------------
+    E0, Sf0 = _energia_especifica(g0, Q_celda), _pendiente_friccion(g0, Q_celda, n)
+    llenado_previo = llenado_actual
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
+    y_entrada: Optional[float] = None
+    for k in range(1, rungs + 1):
+        if not terminal and k == rungs:
+            break                       # la asintota se excluye
+        llenado_k = llenado_actual + (objetivo - llenado_actual) * k / rungs
+        g1 = seccion.geometria_en(llenado_k)
+        E1 = _energia_especifica(g1, Q_celda)
+        Sf1 = _pendiente_friccion(g1, Q_celda, n)
+        denominador = S - (Sf0 + Sf1) / 2
+        if not abs(denominador) > TOL_ASINTOTA_PERFIL * S:
+            break                       # asintota alcanzada: plano desde aqui
+        dx = (E0 - E1) / denominador
+        if not dx >= 0:
+            # Forma MAT-D13: umbral en positivo y negado; el par culpable. Un
+            # dx negativo es una escalera que va contra su propio perfil, y
+            # con la clasificacion de arriba --el signo de Sf - S con la
+            # MISMA ley que integra-- no ocurre; si ocurre, la aritmetica no
+            # cierra y no se publica un perfil sobre ella.
+            raise LimiteNumericoError(
+                "dx", valor=dx,
+                motivo=f"el paso directo devolvio un avance negativo entre "
+                       f"y = {g0.y!r} m y y = {g1.y!r} m (E_0 = {E0!r}, "
+                       f"E_1 = {E1!r}, S - Sf_medio = {denominador!r}): la "
+                       "escalera va contra el perfil que clasifico")
+        if not x + dx < L:
+            # Cruce con la entrada DENTRO del escalon: el llenado exacto.
+            def resto(llenado: float) -> float:
+                g = seccion.geometria_en(llenado)
+                return ((E0 - _energia_especifica(g, Q_celda))
+                        / (S - (Sf0 + _pendiente_friccion(g, Q_celda, n)) / 2)
+                        - (L - x))
+            a, b = sorted((llenado_previo, llenado_k))
+            llenado_L = brentq(resto, a, b, xtol=TOL_BRENT)
+            gL = seccion.geometria_en(llenado_L)
+            estaciones.append((L, gL.y))
+            y_max = max(y_max, gL.y)
+            V_min = min(V_min, Q_celda / gL.A)
+            y_entrada = gL.y
+            V_entrada = Q_celda / gL.A
+            break
+        x += dx
+        estaciones.append((x, g1.y))
+        y_max = max(y_max, g1.y)
+        V_min = min(V_min, Q_celda / g1.A)
+        E0, Sf0, g0, llenado_previo = E1, Sf1, g1, llenado_k
+
+    # --- 4. Como termino ----------------------------------------------------
+    if y_entrada is None:
+        if terminal == "critico":
+            # La S1 corto y_c en x < L: el remanso no alcanza la entrada. El
+            # tramo supercritico aguas arriba (y <= y_c < y_salida) no cambia
+            # y_max ni V_min: los dos estan en la salida.
+            return _resultado(
+                tipo=tipo, alcanza_entrada=False, x_fin_remanso_m=x,
+                y_entrada_m=None, V_entrada_m_s=None, HW_remanso_m=None,
+                y_asintota_m=None, longitud_llena_m=longitud_llena,
+                fraccion_llena=longitud_llena / L, y_max_m=y_max,
+                V_min_m_s=V_min, estaciones=tuple(estaciones))
+        if terminal == "clave":
+            # La M2 corto la clave en x < L: linea llena hasta la entrada.
+            return _lleno_hasta_la_entrada(
+                D + (Sf_llena - S) * (L - x), longitud_llena + (L - x),
+                tuple(estaciones), y_max, V_min)
+        # Asintota alcanzada (o escalera agotada junto a ella): la lamina
+        # esta en y_asintota a todos los efectos y sigue plana hasta L.
+        y_entrada = g0.y
+        V_entrada = Q_celda / g0.A
+        estaciones.append((L, y_entrada))
+    return _resultado(
+        tipo=tipo, alcanza_entrada=True, x_fin_remanso_m=None,
+        y_entrada_m=y_entrada, V_entrada_m_s=V_entrada,
+        HW_remanso_m=_hw(y_entrada, V_entrada), y_asintota_m=y_asintota,
+        longitud_llena_m=longitud_llena, fraccion_llena=longitud_llena / L,
+        y_max_m=y_max, V_min_m_s=V_min, estaciones=tuple(estaciones))
+
+
+# ---------------------------------------------------------------------------
 # La traza hidraulica de la memoria (§4.4)
 # ---------------------------------------------------------------------------
 # Los cuatro pasos que un revisor necesita leer de corrido para reconstruir el
@@ -1393,7 +1785,8 @@ def _regimen_y_salida(*, Q_celda: float, seccion: Seccion, TW: float,
 def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entrada,
                        salida, control, gobierna_salida,
                        Q_celda: Optional[float] = None, celdas: int = 1,
-                       regimen: Optional[_RegimenYSalida] = None):
+                       regimen: Optional[_RegimenYSalida] = None,
+                       perfil: Optional[PerfilLamina] = None):
     """
     La traza de M3 + M4 para una combinacion, en orden de calculo.
 
@@ -1405,7 +1798,8 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
     `regimen` es la pieza 5 ya resuelta por `resolver_control` (EXT-3): el
     paso F4.REGIMEN imprime EL MISMO objeto que viaja en el resultado, no una
     segunda lectura. Si no llega --los tests de la traza suelta-- se resuelve
-    aqui con la misma funcion, que es la unica que existe.
+    aqui con la misma funcion, que es la unica que existe. `perfil` (E-A) es
+    la pieza 6, con el mismo contrato.
     """
     if Q_celda is None:
         Q_celda = Q
@@ -1413,6 +1807,12 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         regimen = _regimen_y_salida(Q_celda=Q_celda, seccion=seccion, TW=TW,
                                     critico=critico, normal=normal,
                                     control=control)
+    if perfil is None:
+        perfil = perfil_lamina(Q_celda=Q_celda, seccion=seccion, S=S, L=L, TW=TW,
+                               n=material.n_para_capacidad, ke=salida.ke,
+                               critico=critico, HW_aproximado=salida.HW)
+    HW_salida_efectivo = (perfil.HW_efectivo_m if perfil.HW_efectivo_m is not None
+                          else salida.HW)
     # EL PASO DEL REPARTO, y va PRIMERO y solo en el marco: es lo primero que
     # un revisor necesita para rehacer el tirante normal de la celda, y en la
     # circular no hay reparto que contar -- un tubo es una celda por
@@ -1877,47 +2277,56 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             aplicacion="h_o se calcula SIEMPRE; los dos limites se evaluan "
                        "punto por punto y solo cuentan si el control de "
                        "SALIDA gobierna, que es como la fuente los escribe. "
-                       "La tercera condicion --que el barril fluya lleno en "
-                       "la mayor parte de su longitud-- no se puede evaluar "
-                       "sin un perfil de la lamina de agua, que este script "
-                       "no calcula: se declara."),
-        # DIFERIDO Y NO NO_CUMPLE bajo 0.75 (EXT-3, SIS-A-07): el pipeline no
-        # rechaza el punto por esto --subir D solo baja HW/D-- sino que lo
-        # bloquea como «metodo no evaluable»; un paso que dijera NO_CUMPLE
-        # sobre un punto que la corrida no rechaza es la divergencia entre
-        # memoria y pipeline que EXT-M-02 midio. El Bloqueo lo construye
-        # `servicio.correr_punto` leyendo `ResultadoHidraulico.h_o_fuera_de_rango`,
-        # que es esta misma bandera filtrada por control gobernante.
+                       "Bajo 0.75 la aproximacion NO se usa: el HW del punto "
+                       "es el del remanso del paso 4.3d (pag. 3.12: «backwater "
+                       "calculations are required»). La tercera condicion "
+                       "--que el barril fluya lleno en la mayor parte de su "
+                       "longitud-- se MIDE en el paso 4.3c con el perfil de "
+                       "la lamina."),
+        # NO_CUMPLE Y NO DIFERIDO bajo 0.75 desde E-A, y memoria y pipeline
+        # dicen lo mismo (SIS-A-07): la condicion de uso de la aproximacion
+        # NO se cumple y, en consecuencia, la aproximacion NO se usa --el HW
+        # del punto es el del remanso (4.3d) o, si el remanso no alcanza la
+        # entrada, gobierna la entrada--. Hasta E-A no habia remanso y el
+        # paso decia DIFERIDO con el bloqueo «metodo no evaluable». La
+        # bandera `ResultadoHidraulico.h_o_fuera_de_rango` que la compuerta
+        # de `servicio` lee queda en False con perfil.
         veredicto=Veredicto(
-            tipo=(TipoDeVeredicto.DIFERIDO
+            tipo=(TipoDeVeredicto.NO_CUMPLE
                   if (gobierna_salida and salida.h_o_fuera_de_rango)
                   else TipoDeVeredicto.CUMPLE if gobierna_salida
                   else TipoDeVeredicto.SIN_VEREDICTO),
             margen=salida.HW_sobre_D - H_O_HW_SOBRE_D_MIN,
             unidad="",
             explicacion=(
-                "gobierna el control de ENTRADA: el HW de salida no es la "
-                "carga de este punto y las condiciones de h_o no aplican, "
-                "que es como la fuente las condiciona"
+                ("gobierna el control de ENTRADA: el HW de salida no es la "
+                 "carga de este punto y las condiciones de h_o no aplican, "
+                 "que es como la fuente las condiciona"
+                 + (". Y gobierna porque el remanso del paso 4.3d no alcanza "
+                    "la entrada: la aproximacion de arriba esta ademas fuera "
+                    "de su rango (HW/D < 0.75) y no compite"
+                    if perfil.sustituye_aproximacion else ""))
                 if not gobierna_salida else
-                f"{MOTIVO_METODO_NO_EVALUABLE}: HW/D por debajo de 0.75 bajo "
-                "control de salida, donde la fuente dice que la aproximacion "
-                "de h_o no debe usarse. El HW de arriba no es un resultado "
-                "del metodo sino un numero fuera de su dominio; la carga se "
-                "difiere al calculo de remanso (Section 3.5) y el punto viaja "
-                "con un bloqueo, diferible a nivel de perfil y no a nivel de "
-                "expediente (v8 §4.3)"
+                "HW/D por debajo de 0.75 bajo control de salida, donde la "
+                "fuente dice que la aproximacion de h_o no debe usarse: el "
+                "HW de arriba NO es la carga del punto sino un numero fuera "
+                "del dominio del metodo, y la carga es la del REMANSO del "
+                "paso 4.3d (pag. 3.12: «For lower headwaters, backwater "
+                "calculations are required»)"
                 if salida.h_o_fuera_de_rango else
                 "HW/D por debajo de 1.2: la fuente pide cautela, el barril "
-                "puede fluir parcialmente lleno"
+                "puede fluir parcialmente lleno; el remanso del paso 4.3d es "
+                "la comprobacion que la fuente pide"
                 if salida.h_o_requiere_cautela else
                 "HW/D dentro del rango de validez que la fuente declara")),
         nota_del_proyecto=(
-            "HAY UNA CIRCULARIDAD QUE CONVIENE VER: el HW con que se evaluan "
-            "los dos limites es el que produce la propia aproximacion, de "
-            "modo que un h_o sobreestimado puede hacer que el control de "
-            "salida gobierne un punto donde no gobernaria. Deshacerla exige "
-            "el procedimiento de barril parcialmente lleno del Cap. III."),
+            "HABIA UNA CIRCULARIDAD, y el paso 4.3c/4.3d la deshace: el HW "
+            "con que se evaluan los dos limites es el que produce la propia "
+            "aproximacion, de modo que un h_o sobreestimado puede hacer que "
+            "el control de salida gobierne un punto donde no gobernaria. "
+            "Desde E-A, bajo 0.75 el remanso decide: si no alcanza la "
+            "entrada, el control de salida no impone carga y gobierna la "
+            "entrada."),
     )
 
     # EL PASO DEL REGIMEN (EXT-3), despues del control de salida porque
@@ -1981,26 +2390,288 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                                         "la Fase 6 es V_salida"),
         nota_del_proyecto=(
             "Bajo control de SALIDA con el barril PARCIALMENTE LLENO el "
-            "tirante y la velocidad DENTRO del conducto no se conocen sin el "
-            "perfil de la lamina de agua (HDS-5 Section 3.5), y V1 y V2 "
-            "quedan pendientes por esa razon, no aprobadas con el tirante "
-            "normal. No se inventa un criterio de llenado. La velocidad A LA "
-            "SALIDA si se conoce, y es la de arriba."),
+            "tirante y la velocidad DENTRO del conducto no son los del flujo "
+            "uniforme: salen del perfil de la lamina de agua del paso 4.3c "
+            "(HDS-5 Section 3.5), y V1 y V2 comparan su tirante maximo y su "
+            "velocidad minima. No se inventa un criterio de llenado. La "
+            "velocidad A LA SALIDA es la de arriba."),
+    )
+
+    # LOS DOS PASOS DEL PERFIL (E-A, pieza 6): 4.3c mide la longitud a
+    # seccion llena --y con ella juzga la primera condicion de uso de h_o,
+    # que hasta E-A solo se declaraba-- y 4.3d da la carga a la entrada por
+    # remanso, que bajo 0.75D sustituye a la aproximacion del paso 4.3 y por
+    # encima la comprueba. Van despues del regimen y antes de la adopcion,
+    # porque la adopcion lee el HW efectivo que 4.3d decide.
+    citas_perfil = ("HDS5_3ED.3.1.4#REMANSO", "HDS5_3ED.3.1.4#EMPALME",
+                    "HDS5_3ED.3.1.4#HW_REMANSO", "HDS5_3ED.3.1.4#0_75D",
+                    "HDS5_3ED.3.5#PERFIL", "HDS5_3ED.3.5.1#S1",
+                    "HDS5_3ED.3.5.1#TIPO7")
+    usa_aproximacion = gobierna_salida and not perfil.sustituye_aproximacion
+    mayor_parte = ca.valor(CRITERIO_FRACCION_LLENA)
+    llena_la_mayor_parte = perfil.fraccion_llena > mayor_parte
+    porcentaje_lleno = f"{perfil.fraccion_llena * 100:.{CIFRAS_FACTOR}f} %"  # literal-ok: 100 convierte la fraccion a porcentaje de presentacion
+    de_lo_lleno = (
+        f"el barril va a seccion llena en {_fmt_m(perfil.longitud_llena_m)} m "
+        f"de {_fmt_m(L)} m ({porcentaje_lleno} de su longitud)")
+    sustitucion_perfil = (
+        Magnitud("y_salida", perfil.y_salida_m, "m",
+                 "frontera aguas abajo del remanso: el mayor de y_c y TW, "
+                 "acotado a D (pag. 3.12, «critical depth at the culvert "
+                 "outlet or … the tailwater depth, whichever is higher»)",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("y_n", normal.geometria.y, "m",
+                 "tirante normal del paso 4.1, con n_max (Manning con "
+                 "K_MANNING_SI = 1)", cifras=CIFRAS_MAGNITUD),
+        (Magnitud("y_n'", perfil.y_asintota_m, "m",
+                  "la asintota del perfil: el tirante en que la Ec. 3.7 da "
+                  "Sf = S con el mismo n. Queda un 0.05 % por encima de y_n "
+                  "porque K_FRICCION_SI/(2g) = 19.63/19.62, y el perfil se "
+                  "clasifica e integra contra el (M1 baja hacia el, M2 sube "
+                  "hacia el)", cifras=CIFRAS_FINA)
+         if perfil.y_asintota_m is not None else
+         Magnitud("y_n'", "sin asintota bajo la clave", "",
+                  "la Ec. 3.7 no da Sf = S entre la frontera y la clave: la "
+                  "lamina termina en y_c (S1), en la clave (M2 que se "
+                  "empalma con la linea llena) o va llena", cifras=None)),
+        Magnitud("y_c", critico.y_c, "m",
+                 "tirante critico del paso 4.2: el limite de la curva S1 y "
+                 "la frontera con salida libre", cifras=CIFRAS_MAGNITUD),
+        Magnitud("D", seccion.altura, "m",
+                 f"altura interior del barril, la fila «{fila_altura}» del "
+                 f"paso 4.1: la clave donde la lamina libre se empalma con "
+                 f"la linea de energia llena", cifras=CIFRAS_FACTOR),
+        Magnitud("n", perfil.n, "",
+                 "n MAXIMO de la Tabla N 09 (paso 4.1), el mismo de la "
+                 "friccion del paso 4.3: mas rugosidad da mas remanso, mas "
+                 "tirante y menos velocidad, el lado conservador de la "
+                 "carga, de V1 y de V2", cifras=CIFRAS_FINA),
+        Magnitud("S", S, "m/m", "pendiente del conducto, la del paso 4.1",
+                 cifras=CIFRAS_FINA),
+        Magnitud("L", L, "m", "longitud del conducto, la del paso 4.3",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("ke", perfil.ke, "",
+                 "el mismo coeficiente de perdida de entrada del paso 4.3",
+                 cifras=CIFRAS_FACTOR),
+        Magnitud("HW_aprox", perfil.HW_aproximado_m, "m",
+                 "la carga del paso 4.3, por la aproximacion h_o = max(TW, "
+                 "(y_c + D)/2)", cifras=CIFRAS_MAGNITUD),
+        Magnitud("HW_aprox/D", salida.HW_sobre_D, "",
+                 "el cociente que decide si la aproximacion se usa: por "
+                 "debajo de 0.75 la sustituye el remanso",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("perfil", perfil.tipo.value, "",
+                 "rotulo del perfil resuelto (HDS-5 Section 3.5.1): M1 baja "
+                 "hacia y_n desde un TW alto, M2 sube hacia y_n, S1 baja "
+                 "hacia y_c en pendiente pronunciada, uniforme si la "
+                 "frontera es y_n, llena si la linea de energia llena "
+                 "alcanza la entrada", cifras=None),
+        Magnitud("escalones", perfil.rungs, "",
+                 "escalones de la escalera del paso directo sobre el "
+                 "parametro propio de la seccion (precision numerica, "
+                 "tolerancias.PASOS_PERFIL_LAMINA)", cifras=None),
+    )
+    de_perfil = paso(
+        "F4.PERFIL",
+        codigo="4.3c",
+        que="Perfil de la lamina de agua por paso directo: longitud a "
+            "seccion llena, y la primera condicion de uso de h_o, MEDIDA",
+        formula="desde y_salida = min(D, max(y_c, TW)) hacia la entrada, "
+                "escalon a escalon: dx = (E_abajo - E_arriba) / (S - Sf_medio), "
+                "con E = y + V^2/(2g) y Sf = Ku*n^2*V^2/(R^(4/3)*2g), Ec. 3.7; "
+                "donde la lamina esta sobre la clave rige la linea de energia "
+                "llena con Sf_llena. L_llena = longitud sobre la clave; "
+                "fraccion_llena = L_llena / L",
+        formula_cita_id="HDS5_3ED.3.1.4#REMANSO",
+        citas_textuales=citas_perfil + ("HDS5_3ED.3.3.3#HO",),
+        sustitucion=sustitucion_perfil,
+        resultado=Magnitud("fraccion_llena", perfil.fraccion_llena, "",
+                           f"longitud a seccion llena entre la longitud del "
+                           f"conducto: {de_lo_lleno}. Es la primera de las "
+                           "tres salidas del perfil que HDS-5 3.5.1 nombra "
+                           "(«length of barrel flowing full»)",
+                           cifras=CIFRAS_MAGNITUD),
+        umbral=Umbral(
+            descripcion="fraccion de la longitud a seccion llena por encima "
+                        "de la cual el barril fluye lleno «for most of its "
+                        "length» (lectura del proyecto: mas de la mitad, "
+                        "citas.INTERPRETACION_MAYOR_PARTE; el numero es el "
+                        f"criterio '{CRITERIO_FRACCION_LLENA}' [A])",
+            valor=mayor_parte, unidad="",
+            cita_id="HDS5_3ED.3.3.3#HO",
+            criterio_aplicado=CRITERIO_FRACCION_LLENA,
+            caracter="APROXIMACION con condicion de uso expresa («can only "
+                     "be used if…»); la misma fuente la relaja en la pag. "
+                     "3.12 hasta HW = 0.75D aun con el barril parcialmente "
+                     "lleno en toda su longitud",
+            aplicacion="Se MIDE siempre. Juzga solo cuando la aproximacion "
+                       "del paso 4.3 es la carga del punto (control de "
+                       "salida con HW/D >= 0.75); si no se cumple, el HW "
+                       "sigue siendo el de la aproximacion --la pag. 3.12 la "
+                       "avala hasta 0.75D-- y el remanso del paso 4.3d se "
+                       "imprime como la comprobacion que la pag. 3.24 pide. "
+                       "No rechaza el punto: es la condicion ideal de un "
+                       "metodo, no una exigencia sobre el diseño (v8 §4.3)."),
+        veredicto=Veredicto(
+            tipo=(TipoDeVeredicto.SIN_VEREDICTO if not usa_aproximacion
+                  else TipoDeVeredicto.CUMPLE if llena_la_mayor_parte
+                  else TipoDeVeredicto.NO_CUMPLE),
+            margen=perfil.fraccion_llena - mayor_parte,
+            unidad="",
+            explicacion=(
+                (f"medido: {de_lo_lleno}. "
+                 + ("gobierna el control de ENTRADA y las condiciones de uso "
+                    "de h_o no aplican"
+                    if not gobierna_salida else
+                    "la aproximacion del paso 4.3 no se usa --HW/D < 0.75-- "
+                    "y su condicion de uso no aplica: la carga del punto es "
+                    "la del remanso del paso 4.3d"))
+                if not usa_aproximacion else
+                f"{de_lo_lleno}: la aproximacion h_o = (d_c + D)/2 se usa "
+                "dentro de su primera condicion (barril lleno en la mayor "
+                "parte de su longitud)"
+                if llena_la_mayor_parte else
+                f"{de_lo_lleno}: la aproximacion h_o = (d_c + D)/2 se usa "
+                "FUERA de su primera condicion (pag. 3.24). El HW del punto "
+                "sigue siendo el suyo porque la pag. 3.12 de la misma fuente "
+                "da «adequate results» hasta HW = 0.75D aun con el barril "
+                "parcialmente lleno en toda su longitud, y el remanso del "
+                "paso 4.3d es la comprobacion que la fuente pide. No es un "
+                "incumplimiento del diseño: es la condicion ideal de un "
+                "metodo cuya validez la propia fuente extiende (v8 §4.3)")),
+        nota_del_proyecto=(
+            "Es el procedimiento de barril parcialmente lleno del Cap. III "
+            "que hasta E-A este software no calculaba. LA ECUACION DEL PASO "
+            "--dx = (E_abajo - E_arriba)/(S - Sf_medio)-- NO la escribe el "
+            "HDS-5: es el balance de energia entre dos secciones del flujo "
+            "gradualmente variado, que la fuente delega en el software de la "
+            "Section 3.5; lo que la fuente escribe es de donde arranca el "
+            "remanso, hacia donde avanza, la Ec. 3.7 y el empalme. Se integra "
+            "sobre el parametro propio de la seccion (regla vinculante #12 de "
+            "la Familia C) y no situa el resalto hidraulico: le basta saber si "
+            "la curva S1 alcanza la cara de entrada (HDS-5 3.5.1)."),
+    )
+    if perfil.alcanza_entrada:
+        resultado_remanso = Magnitud(
+            "HW_remanso", perfil.HW_remanso_m, "m",
+            f"y_entrada + (1 + ke)*V_entrada^2/(2g), con y_entrada = "
+            f"{_fmt_m(perfil.y_entrada_m)} m y V_entrada = "
+            f"{_fmt_m(perfil.V_entrada_m_s)} m/s del perfil"
+            + (" (carga de presion: la linea de energia llena alcanza la "
+               "entrada)" if perfil.tipo is TipoDePerfil.LLENA else ""),
+            cifras=CIFRAS_MAGNITUD)
+        explicacion_remanso = (
+            "es la carga del punto bajo control de SALIDA: sustituye a la "
+            "aproximacion del paso 4.3, fuera de su rango (HW/D < 0.75)"
+            if gobierna_salida and perfil.sustituye_aproximacion else
+            "es la carga del punto bajo control de SALIDA: la comprobacion "
+            "que la pag. 3.24 pide en la banda de cautela da MAS carga que la "
+            "aproximacion del paso 4.3, y del lado de la inundacion manda la "
+            "mayor (v8 §4.3, nota de E-A)"
+            if gobierna_salida and perfil.comprobacion_manda else
+            "comprobacion del paso 4.3, que sigue siendo la carga del punto: "
+            "la aproximacion esta dentro del rango que la pag. 3.12 avala y "
+            "pide igual o mas carga que el remanso"
+            if gobierna_salida else
+            "no es la carga del punto: gobierna el control de ENTRADA"
+            if not perfil.sustituye_aproximacion else
+            "no es la carga del punto: gobierna el control de ENTRADA, cuyo "
+            "HW supera al del remanso")
+    else:
+        resultado_remanso = Magnitud(
+            "HW_remanso", "no alcanza la entrada", "",
+            f"la curva S1 corta el tirante critico a x = "
+            f"{_fmt_m(perfil.x_fin_remanso_m)} m de la salida, antes de la "
+            f"entrada (L = {_fmt_m(L)} m): aguas arriba el flujo es "
+            "supercritico y lo controla la entrada (HDS-5 3.5.1: la S1 se "
+            "usa «if the S1 curve extends to the face of the culvert»)",
+            cifras=None)
+        explicacion_remanso = (
+            "el control de salida no impone carga alguna en la entrada: "
+            "gobierna el control de ENTRADA"
+            + (". La aproximacion del paso 4.3 --que lo clasificaba como "
+               "control de salida-- esta fuera de su rango y no compite: es "
+               "la circularidad deshecha"
+               if perfil.sustituye_aproximacion else
+               ". La aproximacion del paso 4.3 sigue siendo la carga de "
+               "control de salida que compite, dentro del rango que la pag. "
+               "3.12 avala"))
+    de_remanso = paso(
+        "F4.PERFIL",
+        codigo="4.3d",
+        que="Carga a la entrada por remanso, HW_remanso, y el tirante maximo "
+            "y la velocidad minima del barril que V1 y V2 comparan",
+        formula="HW_remanso = y_entrada + (1 + ke)*V_entrada^2/(2g), con "
+                "y_entrada el tirante (o la carga de presion) del perfil en "
+                "x = L; y_max = tirante maximo del perfil; V_min = Q_celda / "
+                "A(y_max)",
+        formula_cita_id="HDS5_3ED.3.1.4#HW_REMANSO",
+        citas_textuales=citas_perfil,
+        sustitucion=(
+            (Magnitud("y_entrada", perfil.y_entrada_m, "m",
+                      "tirante (o carga de presion) del perfil en la entrada "
+                      "(x = L)", cifras=CIFRAS_MAGNITUD)
+             if perfil.alcanza_entrada else
+             Magnitud("y_entrada", "no alcanza la entrada", "",
+                      "el remanso termina antes de la entrada (ver el "
+                      "resultado)", cifras=None)),
+            Magnitud("ke", perfil.ke, "",
+                     "el mismo coeficiente de perdida de entrada del paso 4.3",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("Q_celda", Q_celda, "m3/s",
+                     "caudal de UNA celda, el mismo de los pasos 4.1 a 4.3",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("y_max", perfil.y_max_m, "m",
+                     "tirante MAXIMO del perfil a lo largo del barril (D si "
+                     "hay tramo lleno; incluye el tirante normal del tramo "
+                     "supercritico aguas arriba de un resalto): el que V1 "
+                     "compara bajo control de salida", cifras=CIFRAS_MAGNITUD),
+            Magnitud("V_min", perfil.V_min_m_s, "m/s",
+                     "Q_celda / A(y_max), la velocidad MINIMA del barril: la "
+                     "que V2 compara bajo control de salida",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("alcanza_entrada", "si" if perfil.alcanza_entrada else "no",
+                     "", "si el remanso llega a la cara de entrada (HDS-5 "
+                     "3.5.1)", cifras=None)),
+        resultado=resultado_remanso,
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion=explicacion_remanso),
+        nota_del_proyecto=(
+            "Las velocidades de aproximacion y de salida se toman nulas, como "
+            "en el metodo manual (num. 3.3.3). Con la linea de energia llena "
+            "de punta a punta este numero es exactamente el HW = H + h_o - "
+            "S*L del paso 4.3 con h_o = TW."),
     )
 
     de_gobernante = paso(
         "F4.CONTROL",
         codigo="4.4",
         que="Cual de los dos controles gobierna",
-        formula="HW = max(HW_entrada, HW_salida)",
+        formula="HW = max(HW_entrada, HW_salida), con HW_salida el del remanso "
+                "(4.3d) si HW_aprox/D < 0.75, el mayor de aproximacion y remanso "
+                "si 0.75 <= HW_aprox/D < 1.2, y el de la aproximacion (4.3) si "
+                "no; sin remanso que alcance la entrada bajo 0.75, gobierna la "
+                "entrada",
         formula_cita_id="HDS5_3ED.A.2",
+        citas_textuales=("HDS5_3ED.3.1.4#0_75D",),
         sustitucion=(
             Magnitud("HW_entrada", entrada.HW, "m", "pieza 4.2",
                      cifras=CIFRAS_MAGNITUD),
-            Magnitud("HW_salida", salida.HW, "m", "pieza 4.3",
+            Magnitud("HW_salida", HW_salida_efectivo, "m",
+                     "pieza 4.3d, el remanso: sustituye a la aproximacion, "
+                     "fuera de su rango"
+                     if perfil.sustituye_aproximacion and perfil.alcanza_entrada
+                     else "pieza 4.3, la aproximacion, fuera de su rango y sin "
+                     "remanso que alcance la entrada: NO compite (4.3d)"
+                     if perfil.sustituye_aproximacion
+                     else "pieza 4.3d, el remanso: en la banda de cautela la "
+                     "comprobacion pide mas carga que la aproximacion y manda"
+                     if perfil.comprobacion_manda
+                     else "pieza 4.3, la aproximacion, dentro del rango que la "
+                     "pag. 3.12 avala; el remanso de 4.3d la comprueba",
                      cifras=CIFRAS_MAGNITUD)),
         resultado=Magnitud(
-            "HW", salida.HW if gobierna_salida else entrada.HW, "m",
+            "HW", HW_salida_efectivo if gobierna_salida else entrada.HW, "m",
             f"carga de diseño del punto; gobierna el control de "
             f"{control.value}", cifras=CIFRAS_MAGNITUD),
         veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
@@ -2023,7 +2694,8 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
     # Fase 3 -- su fila y su carta son lectura directa de una tabla --.
     return material.pasos + de_reparto + (de_seccion, de_manning, de_critico,
                                           de_forma, de_entrada, de_salida,
-                                          de_regimen, de_gobernante)
+                                          de_regimen, de_perfil, de_remanso,
+                                          de_gobernante)
 
 
 def caudal_por_celda(Q: float, material: Material) -> Tuple[float, int]:
@@ -2113,7 +2785,13 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
     salida = control_salida(Q=Q_celda, seccion=seccion, S=S, L=L, TW=TW,
                             n=material.n_para_capacidad, critico=critico,
                             criterio_ke=criterio_ke_de(material))
-    _, control = hw_gobernante(entrada, salida)
+    # LA PIEZA 6 (E-A): el perfil de la lamina, con el mismo n_max y el mismo
+    # ke con que `control_salida` formo H. Decide, con `hw_gobernante`, cual
+    # es el HW efectivo del control de salida y si ese control impone carga.
+    perfil = perfil_lamina(Q_celda=Q_celda, seccion=seccion, S=S, L=L, TW=TW,
+                           n=material.n_para_capacidad, ke=salida.ke,
+                           critico=critico, HW_aproximado=salida.HW)
+    _, control = hw_gobernante(entrada, salida, perfil)
 
     # HDS-5 escribe las dos condiciones de uso de h_o condicionadas a que el
     # control de salida GOBIERNE ("If outlet control governs and the headwater
@@ -2123,6 +2801,14 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
     regimen = _regimen_y_salida(Q_celda=Q_celda, seccion=seccion, TW=TW,
                                 critico=critico, normal=normal,
                                 control=control)
+    # EL HW DE SALIDA QUE SE PUBLICA es el efectivo (remanso bajo 0.75D,
+    # aproximacion en el resto). Cuando el remanso no alcanza la entrada el
+    # control de salida no impone carga y gobierna la entrada: se publica la
+    # aproximacion, rotulada en el perfil como lo que es (fuera de rango y
+    # sin remanso que la sustituya), para que el tipo siga llevando un
+    # numero y la memoria pueda imprimir los dos.
+    HW_salida_efectivo = (perfil.HW_efectivo_m if perfil.HW_efectivo_m is not None
+                          else salida.HW)
 
     return ResultadoHidraulico(
         y_normal=normal.geometria.y,
@@ -2137,14 +2823,24 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         # (MAT-D9).
         S=S,
         HW_entrada=entrada.HW,
-        HW_salida=salida.HW,
+        HW_salida=HW_salida_efectivo,
         control_gobernante=control,
-        h_o_fuera_de_rango=gobierna_salida and salida.h_o_fuera_de_rango,
+        # «Este punto USA la aproximacion fuera de rango»: con perfil no
+        # puede pasar --donde esta fuera de rango, no se usa-- y la bandera
+        # queda en False. La compuerta de `servicio` la sigue leyendo para
+        # el resultado sin perfil que M4 no produce (E-A).
+        h_o_fuera_de_rango=(gobierna_salida and salida.h_o_fuera_de_rango
+                            and not perfil.sustituye_aproximacion),
         h_o_requiere_cautela=gobierna_salida and salida.h_o_requiere_cautela,
         # El HW/D que esas dos banderas acotan, para que la memoria lo
         # imprima sin volver a dividir (C8, punto 2). Es el de SALIDA porque
         # es el que el num. 3.3.3 acota, y viaja siempre --- no solo cuando
-        # gobierna la salida ---: las banderas ya llevan esa condicion.
+        # gobierna la salida ---: las banderas ya llevan esa condicion. Y
+        # SIGUE SIENDO EL DE LA APROXIMACION desde E-A (auditoria
+        # adversarial): es el cociente que las dos banderas y la sustitucion
+        # juzgan, y cambiarle la definicion bajo el mismo nombre era mezclar
+        # el numero que se juzga con el que se publica. El HW efectivo viaja
+        # en `HW_salida` y el remanso en `perfil`.
         HW_sobre_D_salida=salida.HW_sobre_D,
         Q_celda_m3s=Q_celda,
         numero_celdas=celdas,
@@ -2157,9 +2853,10 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         h_o_m=salida.h_o,
         TW_m=salida.TW,
         ahogado_por_TW=salida.ahogado_por_TW,
+        perfil=perfil,
         pasos=_pasos_hidraulicos(
             seccion=seccion, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
             critico=critico, entrada=entrada, salida=salida, control=control,
             gobierna_salida=gobierna_salida, Q_celda=Q_celda, celdas=celdas,
-            regimen=regimen),
+            regimen=regimen, perfil=perfil),
     )

@@ -106,33 +106,27 @@ def _punto(informe, id_punto):
 # 1 - La corrida llega a la Fase 5, que es lo que R48-041 no pudo medir
 # ===========================================================================
 
-def test_b01_queda_dimensionado_con_hw_no_evaluable_y_diferido(informe_perfil):
+def test_b01_queda_dimensionado_con_V1_V2_del_perfil_y_sin_bloqueo_no_evaluable(
+        informe_perfil):
     """
-    EXT-3 (EXT-M-02, v8 §4.3): B-01 cae bajo control de SALIDA con
-    HW/D = 0.395 < 0.75, donde la aproximacion de h_o «should not be used».
-    A nivel de perfil el punto SIGUE dimensionado --subir D solo baja HW/D--
-    y lleva el bloqueo «metodo no evaluable» DIFERIDO, con su motivo; y V1 y
-    V2, que bajo ese regimen no se conocen sin el perfil de la lamina, quedan
-    diferidas por la misma via en vez de aprobadas con el tirante normal.
-    A-01 y A-02, bajo control de entrada, no llevan ninguno de los tres.
+    EXT-3 fijaba aqui que B-01 --control de SALIDA con HW/D = 0.395 < 0.75--
+    salia dimensionado CON el bloqueo «metodo no evaluable» diferido y con
+    V1 y V2 diferidas. E-A (2026-09-21) trae el perfil de la lamina: la
+    aproximacion fuera de rango ya no se usa --el remanso decide-- y V1 y V2
+    se evaluan con el tirante maximo y la velocidad minima del perfil. Ningun
+    punto lleva ya el bloqueo, y B-01 sigue dimensionado.
     """
-    from src.modelos import MOTIVO_METODO_NO_EVALUABLE, TipoDeBloqueo
+    from src.modelos import TipoDeBloqueo
     b01 = _punto(informe_perfil, "B-01")
     assert b01.dimensionado
     h = b01.resultado.resultado_hidraulico
-    assert h.h_o_fuera_de_rango and h.HW_sobre_D_salida < 0.75
-    no_evaluables = [b for b in b01.bloqueos
-                     if b.tipo is TipoDeBloqueo.METODO_NO_EVALUABLE]
-    assert no_evaluables and all(b.diferido_por_alcance for b in no_evaluables)
-    etapas = [b.etapa for b in no_evaluables]
-    assert any("carga HW" in e for e in etapas)
-    assert any("V1" in e for e in etapas) and any("V2" in e for e in etapas)
-    assert all(MOTIVO_METODO_NO_EVALUABLE in b.mensaje for b in no_evaluables)
-    codigos = {c for c, _v in b01.verificaciones()}
-    assert "V1" not in codigos and "V2" not in codigos
-    for id_punto in ("A-01", "A-02"):
+    assert h.perfil is not None
+    assert not h.h_o_fuera_de_rango
+    for id_punto in ("A-01", "A-02", "B-01"):
         assert not [b for b in _punto(informe_perfil, id_punto).bloqueos
                     if b.tipo is TipoDeBloqueo.METODO_NO_EVALUABLE], id_punto
+    codigos = {v.codigo for _fase, v in b01.verificaciones()}
+    assert {"V1", "V2"} <= codigos
 
 
 def test_la_corrida_de_perfil_pasa_de_la_fase_2_y_dimensiona(informe_perfil):

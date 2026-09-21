@@ -479,24 +479,21 @@ condición escrita.
   comentario que precede a `H_O_CONDICION_APLICACION`, que es donde se va a
   pisar. La implementación es sesión propia con plan mode: toca
   `M4.control_salida`, que es motor validado.
-- **Reabierta en EXT-0 (2026-09-20), con argumento nuevo.** El «Cerrado» de
-  arriba descansaba en que HW/D < 0.75 bajo control de salida era un **aviso**
-  («el aviso se emite igual», v8 §4.3). `EXT-M-02` midió que el aviso convive
-  con un punto **aceptado** (`h_o_fuera_de_rango=True` sin lector fuera de
-  M11) mientras el `PasoDeMemoria` del mismo punto imprime NO_CUMPLE: memoria
-  y pipeline en desacuerdo (`SIS-A-07`). La v8 §4.3 decide ahora que es un
-  **«método no evaluable»** por la vía `Bloqueo` —diferible en perfil, no en
-  expediente—, nunca `cumple=False` (subir D sólo baja HW/D). Y el paquete de
-  arriba decía «M5 no cambia»: `EXT-M-01` lo refuta (V1/V2 salen del régimen
-  del barril bajo TW ahogante). Lo que queda: EXT-3 (bloqueo, régimen, velocidad
-  de salida) y E-A (perfil por paso directo).
-- **Cerrado parcial en EXT-3 (2026-09-20):** bloqueo, régimen y velocidad de
-  salida hechos (`modelos.MetodoNoEvaluableError`, `cli._compuerta_metodo_h_o`,
-  `M5._exigir_regimen_evaluable`, `ResultadoHidraulico.V_salida`). Sigue
-  diferida SOLO la tercera condición y con ella el perfil por paso directo
-  (EXT-3b / E-A), con el paquete I1 intacto y dorados sólo de flujo uniforme
-  y balance de energía (conflicto #7).
-- **Dónde vive:** `src/constantes_normativas.py::H_O_CONDICION_APLICACION`
+- **Reabierta en EXT-0 (2026-09-20)** con argumento nuevo (`EXT-M-02`: el
+  aviso convivía con un punto aceptado mientras el paso imprimía NO_CUMPLE,
+  SIS-A-07; `EXT-M-01`: «M5 no cambia» era falso). La v8 §4.3 decidió
+  «método no evaluable» por vía `Bloqueo`, diferible en perfil y no en
+  expediente. **Cerrado parcial en EXT-3:** bloqueo, régimen y velocidad de
+  salida (`modelos.MetodoNoEvaluableError`, `servicio._compuerta_metodo_h_o`,
+  `ResultadoHidraulico.V_salida`); quedaba sólo el perfil (EXT-3b / E-A).
+- **CERRADA en E-A (2026-09-21):** el perfil por paso directo existe
+  (`M4.perfil_lamina`, `modelos.PerfilLamina`, pasos 4.3c/4.3d; siete citas
+  nuevas de las págs. 3.12 y 3.36–3.38). Las tres condiciones se evalúan: la
+  primera se mide (fracción llena contra `'fraccion_llena_mayor_parte'` [A]),
+  bajo HW/D < 0.75 el HW es el del remanso o gobierna la entrada, y V1/V2
+  salen del perfil. Lo que sigue sin hacer a propósito: Parte XXVIII (EA-01
+  a EA-07).
+- **Dónde vive:** `src/modulos/M4_control.py::perfil_lamina`
 
 ## NOR-PRO-04 · La norma a la que se difiere la verificación del TMC
 
@@ -2496,3 +2493,173 @@ hacer a propósito, y cada una lleva su argumento y su símbolo.
   que hoy es de medida nula; para el de `M5.verificar`, cerrar V5 en el
   expediente.
 - **Dónde vive:** `tests/test_ext11_mutacion.py::SUPERVIVIENTES_CON_RAZON`
+
+# Parte XXVIII — Lo que E-A dejó escrito al calcular el perfil de la lámina
+
+E-A cerró NOR-HDS-05 entera: el perfil de la lámina de agua por paso directo
+(HDS-5 pág. 3.12 y Sección 3.5), con sus dos salidas —la fracción de longitud
+a sección llena, que vuelve medida la primera condición de h_o, y el HW por
+remanso bajo HW/D < 0.75, que deshace la circularidad de la aproximación— y
+con V1/V2 evaluadas sobre él. Siete cosas quedaron decididas DISTINTAS de la
+lectura más directa de la fuente o del prompt, o sin hacer a propósito, y
+cada una lleva su argumento y su símbolo.
+
+## EA-01 · Los dorados del perfil son límites de la propia fórmula, no una corrida HY-8
+
+- **Qué se difirió:** un caso patrón de perfil con números externos
+  (HY-8 u otra corrida citable) en `tests/fixtures/casos_patron.py`.
+- **Por qué:** el conflicto #7 de la matriz de auditorías prohíbe fabricar
+  dorados, y el paquete I1 lo dijo para el perfil: «un caso patrón de perfil
+  necesita una corrida de referencia externa citable». No la hay. Lo que sí
+  se puede fijar sin inventar son los LÍMITES de la propia fórmula —con la
+  línea de energía llena de punta a punta el perfil reproduce
+  HW = H + h_o − S·L de `control_salida` (identidad algebraica); con TW = y_n
+  el perfil es plano y HW = y_n + (1 + ke)·V_n²/2g— y el BALANCE DE ENERGÍA
+  estación a estación, que es la ecuación que el método resuelve. Los números
+  del prototipo (0.489, 0.391, 1.130, 0.5518, 0.501) se contrastan a la cifra
+  impresa, como los del dictamen en EXT-3: lectura, no dorado.
+- **Qué haría falta:** una corrida HY-8 (o equivalente) aportada por el dueño
+  del expediente sobre uno de los casos del dictamen, con su archivo de
+  entrada; con ella el caso entra en `casos_patron.py` con su cita.
+- **Dónde vive:** `tests/test_ea_perfil_lamina.py::REL_DORADO_LIMITE`
+
+## EA-02 · El resalto no se sitúa por momentum: la S1 que no llega a la entrada se lee como control de entrada
+
+- **Qué se difirió:** situar el resalto hidráulico dentro del barril (HY-8
+  7.3 lo hace por momentum, Sección 3.5.1) y computar la S2 desde la
+  entrada aguas arriba de él.
+- **Por qué:** para el HW basta lo que la Sección 3.5.1 escribe del tipo 1:
+  la S1 se usa «if the S1 curve extends to the face of the culvert»; si
+  corta el tirante crítico antes, el control es de entrada y el HW es el de
+  la pieza 4.2, exista o no un resalto aguas abajo. Dónde queda el resalto
+  cambia el tirante y la velocidad del tramo intermedio, y ahí el proyecto
+  aproxima el tramo supercrítico por el uniforme —la misma decisión de EXT-3
+  para el control de entrada— y toma como tirante máximo el mayor entre la S1
+  medida y y_n (`PerfilLamina.y_max_m`), que es conservador para V1 y para
+  V2. Situar el resalto exigiría la ecuación de cantidad de movimiento en la
+  sección circular, que ninguna de las dos fuentes transcribe.
+- **Qué haría falta:** transcribir la condición de profundidades secuentes
+  para la sección circular y el marco (Chow o HY-8) con su cita, y una
+  corrida de referencia que la valide.
+- **Dónde vive:** `src/modulos/M4_control.py::perfil_lamina`
+
+## EA-03 · En la banda 0.75 ≤ HW/D < 1.2 la aproximación es el método y la comprobación manda sólo si pide más carga; el paso 4.3c puede decir NO CUMPLE sin rechazar el punto
+
+- **Qué se difirió:** sustituir la aproximación por el remanso siempre que
+  exista el perfil (la lectura de HY-8, Sección 3.5), o siempre que el barril
+  no vaya lleno en la mayor parte de su longitud.
+- **Por qué:** la v8 §4.3 (EXT-0) decidió que en la banda 0.75–1.2 «el método
+  sí se usa, con cautela, y el remanso es la comprobación que la fuente
+  pide», y el prompt de E-A pide el remanso «bajo HW/D < 0.75». La fuente
+  sostiene esa lectura (pág. 3.12: «adequate results … down to a headwater of
+  0.75D»). Lo que la auditoría adversarial de E-A midió es que una
+  comprobación sin consecuencia no comprueba nada: en 165 de 228
+  combinaciones de la banda el remanso pedía MÁS carga que la aproximación
+  (hasta +34 mm, +5 %), y publicar la menor teniendo la mayor no es
+  conservador. Por eso en la banda manda el mayor de los dos
+  (`PerfilLamina.comprobacion_manda`) y por encima de 1.2 la aproximación, con
+  el remanso impreso. La viñeta de la pág. 3.24 («can only be used if the
+  barrel flows full for most of its length») es más estricta que su propia
+  prosa y el proyecto la MIDE en vez de aplicarla: cuando la aproximación se
+  usa y el barril no va lleno en la mayor parte, el paso 4.3c imprime NO
+  CUMPLE sobre esa condición, con la cita de la 3.12 que ampara el HW. No es
+  la divergencia de SIS-A-07 (`TipoDeVeredicto` lo dice): lo que no se cumple
+  es la condición ideal de un método cuya validez la propia fuente extiende,
+  y `verificaciones_incumplidas` lee las `Verificacion`, no los pasos. V3
+  tampoco cambia: sigue comparando `V_erosion` del uniforme (EXT-3).
+- **Qué haría falta:** que la v8 §4.3 decida que el remanso gobierna siempre
+  que exista; con ella `HW_efectivo_m` devuelve siempre el remanso y el paso
+  4.3 se vuelve informativo.
+- **Dónde vive:** `src/modelos.py::PerfilLamina`
+
+## EA-04 · La compuerta de h_o queda como guardia sin alcance en producción
+
+- **Qué se difirió:** retirar `servicio._compuerta_metodo_h_o`, los dos casos
+  de `MetodoNoEvaluableError` bajo control de salida y el texto
+  `M5.PROCEDIMIENTO_PERFIL_LAMINA`.
+- **Por qué:** con el perfil que M4 emite siempre, la aproximación fuera de
+  rango no se usa y `ResultadoHidraulico.h_o_fuera_de_rango` no puede ser
+  True; V1/V2 tampoco llegan al `MetodoNoEvaluableError`. Pero el tipo sigue
+  admitiendo un resultado SIN perfil —los constructores de la suite que no
+  pasan por M4—, y ahí la guardia es la respuesta honesta: no se inventa un
+  llenado. Retirarla convertiría ese estado en un `AttributeError` fuera de
+  `ErrorProyecto`. Los dos tests que la llaman directamente
+  (`test_ext3_regimen_barril`, `test_ea_perfil_lamina`) fijan que dispara sin
+  perfil y calla con él.
+- **Qué haría falta:** que `ResultadoHidraulico.perfil` deje de admitir
+  `None` —lo que exige reescribir los constructores de la suite— y entonces
+  la compuerta y los dos casos se retiran juntos.
+- **Dónde vive:** `src/servicio.py::_compuerta_metodo_h_o`
+
+## EA-05 · «Most of its length» es un [A] con ventana, y su lectura vive en el registro
+
+- **Qué se difirió:** un número [N] para «most of its length», o la
+  cuantificación por la fuente.
+- **Por qué:** «most» es una palabra de la fuente, no un número. La primera
+  redacción de E-A lo escribió como 1/2 en `constantes_normativas.py` («el
+  significado de la palabra»), y la auditoría adversarial lo refutó con la
+  propia `Interpretacion` registrada: admite «casi toda», o sea que hay
+  alternativas, y una lectura con alternativas es una elección con ventana,
+  [A] por la taxonomía de CLAUDE.md. Es `'fraccion_llena_mayor_parte'`
+  (0.5, sensibilidad 0.5–0.9, nivel perfil, forma float) y la lectura
+  sigue en `citas.INTERPRETACION_MAYOR_PARTE`, con lo que juega en contra.
+  Sólo mueve el rótulo del veredicto del paso 4.3c: la consecuencia de fallar
+  la condición la fija la pág. 3.12 (EA-03).
+- **Qué haría falta:** que la fuente cuantifique «most»; entonces el número
+  pasa a [N] y la `Interpretacion` se retira.
+- **Dónde vive:** `src/criterios_adoptados.py::fraccion_llena_mayor_parte`
+
+## EA-06 · Veinticuatro mutantes del perfil sobreviven a toda la suite, y cada uno tiene su razón escrita
+
+- **Qué se difirió:** matar los 24 mutantes de `M4.perfil_lamina` y sus
+  auxiliares que sobreviven a los once archivos objetivo del arnés
+  (`tests/test_ea_perfil_lamina.py` sumado a los diez de EXT-11) y a la
+  segunda vuelta (línea base, cierre de perfil, CLI), medidos el 2026-09-21
+  con `--funcion` sobre las once funciones tocadas por E-A: 242 mutantes,
+  212 muertos en la primera vuelta (87.6 %), 5 más en la segunda, 25 vivos.
+  Uno era un hueco real —`V_entrada_m_s` del retorno UNIFORME, que ningún
+  test leía (Q/A → Q·A sobrevivía)— y se cerró con una aserción en el dorado
+  de flujo uniforme; una primera medición, antes de la auditoría adversarial,
+  había dejado 37 vivos y motivó cinco tests más y la retirada de dos
+  términos muertos (`max(y_max, y_n)`, `min(V_min, Q/A_n)`).
+- **Por qué:** ninguno de los 24 es un hueco, y la clase de cada uno está en
+  `SUPERVIVIENTES_CON_RAZON`: 4 ya estaban censados desde EXT-11
+  (`hw_gobernante` ×2, V1, V2: banda); de los 20 nuevos, 13 son de borde
+  (una igualdad exacta en punto flotante: la raíz de Sf = S en un extremo del
+  corchete, Sf exactamente S en la frontera o en la línea llena, HW/D
+  exactamente 0.75 o 1.2, el corte de la clave o un escalón que termina
+  exactamente en la entrada, dx exactamente cero, una frontera a
+  exactamente 1e-9 m de y_c, de la clave o de la asíntota), 5 son
+  equivalentes (el signo del cociente frente al del producto; TW == D;
+  TW == y_c; `longitud_llena` = 0 en los dos retornos donde el mutante lo
+  multiplica) y 2 son de banda (la frontera a menos de 2·TOL de y_c, y el
+  freno de la escalera en 1e-12·S frente a 1e-12/S, entre los que ninguna
+  estación cae porque acercarse tanto a la asíntota exige del orden de 1e9
+  escalones). Los de borde y banda son los de siempre: fijarlos pediría
+  casos al pelo sobre tolerancias numéricas que no mueven ninguna magnitud.
+- **Qué haría falta:** casos construidos exactamente sobre cada borde
+  (un TW igual a y_c a la ulp, un Sf_llena igual a S), que fijarían lecturas
+  de medida nula; nada para los equivalentes.
+- **Dónde vive:** `tests/test_ext11_mutacion.py::SUPERVIVIENTES_CON_RAZON`
+
+## EA-07 · La asíntota del perfil no es el tirante normal de M3, y la diferencia queda impresa
+
+- **Qué se difirió:** unificar la ley de fricción del perfil (Ec. 3.7 con
+  `K_FRICCION_SI` = 19.63) con la de Manning en M3 (`K_MANNING_SI` = 1), o
+  clasificar el perfil contra `y_normal`.
+- **Por qué:** la auditoría adversarial de E-A midió que 19.63/(2·9.81) =
+  1.00051, de modo que en el y_n de Manning la pendiente de fricción del
+  perfil vale 1.00051·S y la lámina tiende a un y_n' un 0.05 % más alto
+  (0.07 mm en D = 0.90, Q = 0.3, S = 0.001). Clasificar contra y_n dejaba una
+  banda de TW entre y_n y y_n' en la que la escalera iba contra su propio
+  perfil y lanzaba `LimiteNumericoError`. La corrección es clasificar e
+  integrar contra la raíz de Sf = S con la MISMA ley
+  (`M4._llenado_donde_Sf_iguala_S`), publicar y_n' junto a y_n en el paso
+  4.3c y no tocar la ley: 19.63 es el número que la fuente escribe para la
+  fricción del control de salida (v8 §4.3, conflicto #6) y M3 sigue siendo
+  Manning con k = 1 como manda la Sec. 4.1; el 0.05 % es el mismo que separa
+  19.63 de 2g y está declarado desde PD.
+- **Qué haría falta:** que la v8 decida una sola g para la fricción (2g o
+  19.63), lo que movería el término de fricción de H en un 0.05 % y con él la
+  línea base; hasta entonces las dos asíntotas conviven, dichas.
+- **Dónde vive:** `src/modulos/M4_control.py::_llenado_donde_Sf_iguala_S`

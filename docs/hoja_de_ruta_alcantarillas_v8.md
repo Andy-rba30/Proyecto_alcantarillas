@@ -499,9 +499,17 @@ Resolver con **bisección o Brent sobre θ ∈ (0, 2π)**.
 > barril, no del uniforme**; Manning sigue siendo la herramienta del régimen
 > parcialmente lleno y del control de entrada. Bajo control de salida con el
 > barril parcialmente lleno, el tirante y la velocidad dentro del conducto no
-> se conocen sin el perfil de la lámina de agua (§4.3): ahí V1 y V2 quedan
+> se conocen sin el perfil de la lámina de agua (§4.3): ahí V1 y V2 quedaban
 > **pendientes**, no aprobadas con el tirante normal, y no se inventa un
-> criterio de llenado para cerrarlas.
+> criterio de llenado para cerrarlas. **Corregido en E-A (2026-09-21):** el
+> perfil existe (`M4.perfil_lamina`, paso 4.3c/4.3d de la memoria) y V1 y V2
+> se evalúan sobre él: V1 con el **tirante máximo** del barril (`y_max`, D si
+> hay tramo lleno) y V2 con la **velocidad mínima**, Q/A(y_max), las dos con
+> n_max —más tirante y menos velocidad, el lado conservador de las dos—. La
+> consecuencia medida en el corredor de referencia: B-01 con el TW ampliado
+> de 1.00 m **no cierra en ningún diámetro** —la curva S1 arranca en el TW y
+> deja V_min entre 0.06 y 0.11 m/s < 0.25— y termina en «no factible» con el
+> motivo de V2, donde antes salía «dimensionado» con V1/V2 diferidas.
 >
 > Y las dos verificaciones no son [N] de una pieza. **El deber de verificar es
 > [N]**: el Manual manda «verificar que la velocidad mínima del flujo dentro
@@ -675,6 +683,61 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 > impreso junto al HW. El perfil por paso directo, que deshace la
 > circularidad, sigue siendo la sesión EXT-3b / E-A.
 
+> **Hecho en E-A (2026-09-21; cierra `NOR-HDS-05` entera).** El perfil de la
+> lámina de agua se calcula por **paso directo** desde la salida hacia la
+> entrada (`M4.perfil_lamina`, pasos 4.3c y 4.3d de la memoria), tal como la
+> pág. impresa 3.12 del HDS-5 (PDF 94) lo escribe: la frontera aguas abajo es
+> «critical depth at the culvert outlet or … the tailwater depth, whichever
+> is higher», acotada a D; donde la lámina está sobre la clave rige «a
+> straight, full flow hydraulic grade line» con la pendiente de fricción de
+> la **Ec. 3.7** (S_f = K_u·n²·V²/(R^{4/3}·2g), el mismo término de fricción
+> de H); y en la entrada «the inlet losses and the velocity head are added
+> to the elevation of the hydraulic grade line» (HW = y_entrada +
+> (1 + k_e)·V²/2g). Se integra sobre el parámetro propio de la sección
+> (regla vinculante #12 de la Familia C) y los perfiles se rotulan como en la
+> Sección 3.5.1 (M1, M2, S1, uniforme, llena). **De las tres condiciones de
+> uso de h_o se evalúan las tres**: los dos límites sobre HW/D en el paso 4.3
+> y la primera —«flows full for most of its length»— **medida** en el 4.3c
+> como fracción de longitud a sección llena, leyendo «most» como más de la
+> mitad (`'fraccion_llena_mayor_parte'` [A], 0.5 con sensibilidad 0.5–0.9;
+> la lectura, con lo que juega en contra, en `citas.INTERPRETACION_MAYOR_PARTE`).
+> **Bajo HW/D < 0.75 la aproximación no se usa**: el HW del punto es el del
+> remanso (pág. 3.12: «For lower headwaters, backwater calculations are
+> required»), y si el remanso **no alcanza la entrada** —la S1 corta el
+> tirante crítico antes, o tiene longitud cero en un barril supercrítico con
+> TW ≤ y_c— el control de salida no impone carga y **gobierna la entrada**:
+> es la circularidad deshecha (el caso (b) del dictamen, Q = 0.3, S = 0.005,
+> TW = 0, es un barril supercrítico —y_n = 0.2965 < y_c = 0.3157— que la
+> aproximación clasificaba como control de salida con HW/D = 0.589). El
+> bloqueo «método no evaluable» deja de producirse y queda como guardia de un
+> resultado sin perfil. En la banda 0.75 ≤ HW/D < 1.2 la aproximación sigue
+> siendo el método y el remanso es la comprobación que la fuente pide
+> («should be used to check the result»): **si la comprobación pide más
+> carga, manda ella** (`PerfilLamina.comprobacion_manda`; medido en E-A, en
+> 165 de 228 combinaciones de la banda el remanso supera a la aproximación,
+> hasta +5 %), porque del lado de la inundación no se publica la carga menor
+> teniendo la mayor. Por encima de 1.2 la aproximación, con el remanso
+> impreso. Y la asíntota de la lámina es la de su propia ley de fricción
+> —la Ec. 3.7 con 19.63, un 0.05 % por encima del y_n de Manning con k = 1—,
+> impresa como y_n' junto a y_n en el paso 4.3c (ficha EA-07).
+>
+> **Discrepancia dentro de la fuente, declarada.** La viñeta de la pág. 3.24
+> dice que la aproximación «can only be used if the barrel flows full for
+> most of its length»; la prosa de la pág. 3.12 dice que da «adequate
+> results» hasta HW = 0.75D aun con el barril «partly full over its entire
+> length». Esta hoja aplica la regla **cuantificada** de la 3.12 y **mide** la
+> de la 3.24: cuando la aproximación se usa (HW/D ≥ 0.75) y el barril no va
+> lleno en la mayor parte, el paso 4.3c lo dice con **NO CUMPLE sobre esa
+> condición**, con la cita de la 3.12 que ampara el HW y el remanso al lado;
+> el punto **no se rechaza** por ello, porque lo que no se cumple es la
+> condición ideal de un método cuya validez la propia fuente extiende, no una
+> exigencia sobre el diseño. Los dorados del perfil son límites de la propia
+> fórmula —flujo lleno de punta a punta y flujo uniforme— y el balance de
+> energía estación a estación; ninguna corrida HY-8 se fabrica (conflicto
+> #7). Lo que el perfil **no** hace queda en `docs/decisiones_diferidas.md`
+> (Parte XXVIII): no sitúa el resalto por momentum, no calcula S2 desde la
+> entrada y no cambia V3.
+
 > **Nota de unidades.** **19.63** es el valor SI. El **29** de la literatura FHWA es del sistema inglés. Usar 29 en métrico no falla ruidosamente: devuelve números plausibles y equivocados. **Test unitario obligatorio.**
 >
 > **Corregido desde 19.62** (conflicto #6 del plan de correcciones; `MAT-D12`, `MAT-X5`, `MAT-O12`, `NOR-COH-01`, `SIS-A-20`). Esta hoja escribía 19.62 en sus **cuatro** menciones y el código sostenía 19.63 desde antes, declarando la discrepancia. Gana la fuente primaria, verificada contra el PDF: **HDS-5 3.ª ed. (2012), num. 3.1.4, ec. (3.4b), pág. impresa 3.10** — «KU = 29 in English Units (19.63 in SI)» —, repetido en la ec. (DG 3.1), pág. DG3.3. **Ojo con la otra copia de `normas/`:** `fhwa_culvert_hydraulics_hds5si.pdf` es la edición de **1985** y, pese al «si» del nombre, imprime sus ecs. (4b) y (5) con **29** y rótulos duales «ft (m)»; leerla literal «en SI» reproduce el error que esta nota advierte: **×1.477 sobre el término de fricción (+47.7 %)**, que en CP-8 sube H de 0.4977 a 0.5455 m (+9.6 %).
@@ -697,8 +760,8 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 
 | # | Verificación | Criterio | Ancla |
 |---|---|---|---|
-| **V1** | Borde libre | Mínimo **25 % de altura, diámetro o flecha** → **y/D ≤ 0.75**, evaluado sobre el **tirante del régimen del barril**: a sección llena **no cumple**; bajo control de salida con barril parcialmente lleno queda **pendiente** hasta el perfil de lámina (§4.1, §4.3) | **[N] el deber de verificar**, 4.1.1.3.7 b), pág. impresa 79 · **[A] el 0.75 como umbral duro** («Se recomienda…»). *Corregido desde* «[N] 4.1.1.3.7 b), pág. 79» (`EXT-M-01`, `PC-24`, EXT-0; ver la nota de §4.1) |
-| **V2** | Velocidad mínima | **V ≥ 0.25 m/s**, con la **velocidad del régimen del barril**: a sección llena Q/A_llena; bajo control de entrada, la del tirante normal (n_max); bajo control de salida con barril parcialmente lleno, **pendiente** hasta el perfil de lámina | **[N] el deber de verificar**, 4.1.1.3.6, págs. impresas **76-77** · **[A] el 0.25 m/s como umbral duro** («recomendándose…»). *Corregido desde* «[N] 4.1.1.3.6, pág. 75» (`EXT-M-01`, `PC-24`, `NOR-HID-09`, EXT-0): la cifra está en la 77 y el párrafo arranca en la 76; la 75 es la Tabla Nº 09 |
+| **V1** | Borde libre | Mínimo **25 % de altura, diámetro o flecha** → **y/D ≤ 0.75**, evaluado sobre el **tirante del régimen del barril**: a sección llena **no cumple**; bajo control de salida con barril parcialmente lleno, sobre el **tirante máximo del perfil de lámina** (E-A; §4.1, §4.3) | **[N] el deber de verificar**, 4.1.1.3.7 b), pág. impresa 79 · **[A] el 0.75 como umbral duro** («Se recomienda…»). *Corregido desde* «[N] 4.1.1.3.7 b), pág. 79» (`EXT-M-01`, `PC-24`, EXT-0; ver la nota de §4.1) |
+| **V2** | Velocidad mínima | **V ≥ 0.25 m/s**, con la **velocidad del régimen del barril**: a sección llena Q/A_llena; bajo control de entrada, la del tirante normal (n_max); bajo control de salida con barril parcialmente lleno, la **velocidad mínima del perfil de lámina**, Q/A(y_max) (E-A) | **[N] el deber de verificar**, 4.1.1.3.6, págs. impresas **76-77** · **[A] el 0.25 m/s como umbral duro** («recomendándose…»). *Corregido desde* «[N] 4.1.1.3.6, pág. 75» (`EXT-M-01`, `PC-24`, `NOR-HID-09`, EXT-0): la cifra está en la 77 y el párrafo arranca en la 76; la 75 es la Tabla Nº 09 |
 | **V2b** | Sedimentación / colmatación | **S_conducto ≥ S_cauce** (indicador del HDS-5, num. 5.3.3) + **acceso de mantenimiento en planos** | **[C]** + [A] — *corregido desde* «Material sólido de arrastre + acceso de mantenimiento en planos», que era `[N] + [A]`; ver la nota de abajo (`SIS-A-13`, `MAT-O15`) |
 | **V3** | Velocidad máxima | **Solo techo admisible.** Concreto **V ≤ 6.0 m/s**; ladrillo con concreto **V ≤ 3.5**; mampostería de piedra **V ≤ 2.0**. El par de la Tabla Nº 10 es un rango de valores MÁXIMOS según calidad del revestimiento, **no** un piso y un techo: el extremo inferior es el máximo admisible del acabado más pobre, y V3 no lo exige como mínimo. El piso universal de autolimpieza es **V2** (0.25 m/s). **TMC y HDPE: PPI/FHWA, valor por extraer** | [N] Tabla Nº 10, num. 4.1.1.3.6, pág. 76 / [C] |
 | **V4** | Carga a la entrada HW | **cota de entrada + HW ≤ cota de subrasante − resguardo(CBR)** — *corregido desde* «HW ≤ cota de subrasante − resguardo(CBR)», que comparaba una **carga** con una **cota** (`MAT-O5`); ver la nota de datum en 5.1 | **[N→]** ver 5.1 |

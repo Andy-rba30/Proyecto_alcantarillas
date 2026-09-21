@@ -1242,20 +1242,25 @@ CASOS_R4: Tuple[CasoR4, ...] = (
                           "texto literal de la condicion, y el enunciado "
                           "completo de las tres vive en "
                           "`constantes_normativas.H_O_CONDICION_TEXTO`. "
-                          "NINGUNA VENTANA LA MUESTRA, y no por descuido: h_o "
-                          "no es una variable de entrada -- no se elige, la "
-                          "calcula M4 punto por punto --, de modo que no hay "
-                          "variable cuya ventana abrir. La condicion tampoco "
-                          "esta declarada como `CondicionAplicacion`",
+                          "Desde E-A las tres se EVALUAN punto por punto en "
+                          "la memoria: los dos limites sobre HW/D en el paso "
+                          "4.3 y la longitud a seccion llena --medida por el "
+                          "perfil de la lamina, `M4.perfil_lamina`-- en el "
+                          "paso 4.3c. NINGUNA VENTANA LA MUESTRA, y no por "
+                          "descuido: h_o no es una variable de entrada -- no "
+                          "se elige, la calcula M4 punto por punto --, de "
+                          "modo que no hay variable cuya ventana abrir. La "
+                          "condicion tampoco esta declarada como "
+                          "`CondicionAplicacion`",
            que_lo_traeria_a_la_ventana="declarar las tres condiciones del "
                           "num. 3.3.3 como `CondicionAplicacion` de la cita "
-                          "HDS5_3ED.3.3.3#HO (dos `PorExpresion` sobre HW/D y "
-                          "una `NoEvaluable` para el barril lleno, que exige "
-                          "el procedimiento de barril parcialmente lleno del "
-                          "Cap. III del HDS-5) y hacer que la memoria "
-                          "sustentada de S18 las imprima con el paso que las "
-                          "usa. Es trabajo del cluster C06, que sigue en "
-                          "'Cerrado parcial'"),
+                          "HDS5_3ED.3.3.3#HO (tres `PorExpresion`: dos sobre "
+                          "HW/D y una sobre la fraccion de longitud a seccion "
+                          "llena que el perfil de E-A ya mide) y hacer que la "
+                          "ventana las resuelva sobre el resultado de un "
+                          "punto, no sobre una variable de entrada. NOR-HDS-05 "
+                          "esta cerrada (E-A); lo que falta es solo la "
+                          "ventana, y es trabajo de la ventana normativa"),
     CasoR4(hallazgo="NOR-AAS-06",
            de_que_depende="refuerzo transversal minimo del Art. 5.7.2.5",
            condicion_id="",

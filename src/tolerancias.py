@@ -96,3 +96,32 @@ import math as _math      # noqa: E402  -- solo para derivar el umbral
 import sys as _sys        # noqa: E402
 
 COS_ESVIAJE_MIN = (_math.pi / 2) * _sys.float_info.epsilon / TOL_UMBRAL_NORMATIVO
+
+# ---------------------------------------------------------------------------
+# El paso directo del perfil de la lamina de agua (E-A, HDS-5 pag. 3.12 y
+# Section 3.5): dos parametros NUMERICOS, ninguno de proyecto
+# ---------------------------------------------------------------------------
+# `M4.perfil_lamina` integra la ecuacion del flujo gradualmente variado por
+# paso directo: recorre el PARAMETRO PROPIO de la seccion (theta en la
+# circular, el tirante en el marco) en una escalera uniforme entre la
+# frontera de la salida y el objetivo del perfil (y_n, y_c o la clave), y en
+# cada escalon resuelve dx = (E_abajo - E_arriba)/(S - Sf_medio). Cuantos
+# escalones tiene la escalera es precision numerica: medido sobre los casos
+# del dictamen (D = 0.90, L = 20), 500, 2000 y 8000 escalones mueven el HW
+# del remanso menos de 1e-8 m; cambiarlo no mueve ninguna magnitud fisica,
+# solo el ruido de la discretizacion, y por eso vive aqui y no en un archivo
+# de valores. El cruce con x = L se resuelve dentro del escalon con Brent
+# (`TOL_BRENT`), no por interpolacion lineal, para que la escalera no
+# imponga su paso al tirante de la entrada.
+PASOS_PERFIL_LAMINA = 2000
+
+# Donde la escalera se detiene porque llego a la ASINTOTA: en un perfil M1 o
+# M2 la lamina tiende a y_n sin alcanzarlo, y ahi S - Sf tiende a cero por
+# los dos lados. Cuando |S - Sf_medio| queda por debajo de esta fraccion de
+# S, el cociente dx = dE/(S - Sf) ya no esta determinado en double --se
+# dividen dos residuos de redondeo-- y el perfil se toma como plano desde ese
+# escalon: la lamina esta, a todos los efectos, en y_n. Es una tolerancia
+# RELATIVA sobre la pendiente, del orden del ruido de la aritmetica de Sf
+# (una potencia 4/3 y dos cuadrados: unas decenas de ulp), y no un umbral de
+# proyecto.
+TOL_ASINTOTA_PERFIL = 1e-12

@@ -975,6 +975,10 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "F_pga": _Meta(unidad="-"),
     "F_pga_lectura_columna_extrema": _Meta(unidad="-"),
     "HW_D_max": _Meta(unidad="-"),
+    # E-A: la lectura de «most of its length» con que el paso 4.3c juzga la
+    # primera condicion de uso de h_o sobre la fraccion llena que el perfil
+    # de la lamina mide. La consume M4 (`CRITERIO_FRACCION_LLENA`).
+    "fraccion_llena_mayor_parte": _Meta(unidad="-"),
     "Mw_licuefaccion": _Meta(
         unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
     "N_cq_N_gammaq_meyerhof": _Meta(unidad="-"),

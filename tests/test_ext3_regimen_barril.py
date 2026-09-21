@@ -28,6 +28,19 @@ Los numeros de contraste (0.0786, 0.589, 1.508, 1.184) son los del dictamen y
 de la v8 §1.3; el dorado CERRADO es el del regimen lleno (CP-12: Q/A_llena es
 aritmetica de la fuente), y para (c) no hay dorado a proposito: y_c sale de
 Brent (conflicto #7 de la matriz de auditorias).
+
+LO QUE E-A (2026-09-21) CAMBIO DE ESTE ARCHIVO, y por que no es una
+regresion. El bloque (b) fijaba un estado que EXT-3 declaro provisional
+--«hasta el perfil de la lamina»--: bajo control de salida con HW/D < 0.75
+el punto viajaba con el bloqueo «metodo no evaluable» y V1/V2 quedaban
+pendientes. Desde E-A el perfil existe (`M4.perfil_lamina`,
+`ResultadoHidraulico.perfil`): el caso (b) es un barril SUPERCRITICO (y_n =
+0.2965 < y_c = 0.3157) cuyo remanso no alcanza la entrada, gobierna la
+ENTRADA y V1/V2 se evaluan; el bloqueo queda como guardia de un resultado
+SIN perfil, que aqui se construye a mano con `replace(r, perfil=None)`. Los
+tests del bloque (b) se reescribieron a esa verdad; los del regimen LLENO
+(a) y los de la velocidad de salida (c) no cambian. La aceptacion de E-A
+esta en `tests/test_ea_perfil_lamina.py`.
 """
 
 import json
@@ -230,53 +243,79 @@ def test_a_el_punto_no_sale_dimensionado_sin_bloqueo(tmp_path):
     assert veredictos["V1"] is False and veredictos["V2"] is False
 
 
-def test_a_en_perfil_solo_dimensiona_por_encima_del_TW_y_con_V1_V2_diferidas(
+def test_a_en_perfil_ningun_diametro_cumple_V2_y_el_punto_no_se_dimensiona(
         tmp_path):
     """
     A nivel de perfil ningun D <= TW cierra (van llenos: V1 y V2 no cumplen),
-    y el primer D > TW va parcialmente lleno bajo control de salida: V1 y V2
-    quedan DIFERIDAS por metodo no evaluable, no aprobadas con el tirante
-    normal. El punto sale dimensionado CON esos bloqueos, nunca limpio.
+    y en los D > TW el barril va parcialmente lleno bajo control de salida.
+    Hasta E-A ahi V1 y V2 quedaban DIFERIDAS por metodo no evaluable y el
+    punto salia «dimensionado». Desde E-A el perfil de la lamina las evalua,
+    y dice lo que la fisica dice: con 1.2 m de agua en el receptor y 0.05
+    m3/s el barril es un remanso --la S1 arranca en el TW y la velocidad
+    minima Q/A(TW) queda muy por debajo de 0.25 m/s en TODO diametro--, de
+    modo que V2 no cumple en ningun escalon y el punto NO se dimensiona.
+    Nunca «metodo no evaluable»: es un incumplimiento medido, no un metodo
+    que falta.
     """
     informe = _correr(tmp_path, Q=0.05, S=0.005, TW=1.2,
                       alcance=cli.ALCANCE_PERFIL)
     b01 = _b01(informe)
-    assert b01.dimensionado
-    assert b01.resultado.seccion.altura > 1.2
+    assert not b01.dimensionado
+    assert not _no_evaluables(b01)
     llenos = [p for p in b01.traza
               if p.resultado_hidraulico is not None
               and p.resultado_hidraulico.regimen_barril is modelos.RegimenBarril.LLENO]
     assert llenos and all(not p.aceptado for p in llenos)
-    diferidos = [b for b in _no_evaluables(b01) if b.diferido_por_alcance]
-    etapas = " ".join(b.etapa for b in diferidos)
-    assert "V1" in etapas and "V2" in etapas
-    assert not [b for b in b01.bloqueos if b.tipo == "DisenoNoFactibleError"]
+    parciales = [p for p in b01.traza
+                 if p.resultado_hidraulico is not None
+                 and p.resultado_hidraulico.regimen_barril
+                 is modelos.RegimenBarril.PARCIALMENTE_LLENO]
+    assert parciales
+    for p in parciales:
+        perfil = p.resultado_hidraulico.perfil
+        # S1 en el concreto (pendiente pronunciada) y M1 en el TMC, cuyo n
+        # mayor sube y_n por encima de y_c: las dos bajan desde el TW.
+        assert perfil.tipo in (modelos.TipoDePerfil.S1, modelos.TipoDePerfil.M1)
+        assert perfil.y_max_m == pytest.approx(1.2, rel=REL_TRANSPORTE)
+        assert perfil.V_min_m_s < M5.V_MIN
+        assert not p.aceptado
+    assert any("V2" in (p.motivo or "") for p in parciales)
 
 
 # ===========================================================================
-# (b) HW/D = 0.589 bajo control de salida: metodo no evaluable
+# (b) HW/D = 0.589 bajo control de salida: desde E-A, el perfil decide
 # ===========================================================================
 
-def test_b_la_fuente_reproduce_el_caso_del_dictamen_tal_como_esta_hoy():
+def test_b_la_aproximacion_sigue_diciendo_lo_que_decia_y_el_perfil_la_corrige():
+    """
+    La APROXIMACION del paso 4.3 no cambia: HW_aprox/D = 0.589 < 0.75, fuera
+    de su rango. Lo que cambia es que ya no decide: el remanso desde y_c en
+    un barril supercritico no remonta nada y gobierna la ENTRADA.
+    """
     r = _resuelto(Q=0.3, S=0.005, TW=0.0)
-    assert r.control_gobernante is ControlGobernante.SALIDA
-    assert r.HW_sobre_D_salida == pytest.approx(0.589, rel=REL_DICTAMEN)
-    assert r.h_o_fuera_de_rango is True
+    assert r.perfil.HW_aproximado_m / D_CASO == pytest.approx(0.589, rel=REL_DICTAMEN)
+    assert r.perfil.sustituye_aproximacion
+    assert not r.perfil.alcanza_entrada
+    assert r.control_gobernante is ControlGobernante.ENTRADA
+    assert r.h_o_fuera_de_rango is False
 
 
-def test_b_el_paso_de_h_o_dice_DIFERIDO_y_no_NO_CUMPLE():
-    """SIS-A-07: memoria y pipeline dicen lo mismo. El paso F4.HO no juzga
-    «no cumple» un punto que el pipeline no rechaza: dice que el metodo no es
-    evaluable ahi, con el motivo de la fuente."""
+def test_b_el_paso_de_h_o_ya_no_dice_DIFERIDO():
+    """SIS-A-07: memoria y pipeline dicen lo mismo. El paso F4.HO no difiere
+    nada: gobierna la entrada y lo dice, con la razon del perfil."""
     r = _resuelto(Q=0.3, S=0.005, TW=0.0)
     ho = next(p for p in r.pasos if p.fundamento_id == "F4.HO")
-    assert ho.veredicto.tipo is TipoDeVeredicto.DIFERIDO
-    assert modelos.MOTIVO_METODO_NO_EVALUABLE in ho.veredicto.explicacion
+    assert ho.veredicto.tipo is TipoDeVeredicto.SIN_VEREDICTO
+    assert modelos.MOTIVO_METODO_NO_EVALUABLE not in ho.veredicto.explicacion
+    assert "remanso" in ho.veredicto.explicacion
     assert r.regimen_barril is modelos.RegimenBarril.PARCIALMENTE_LLENO
 
 
-def test_b_V1_y_V2_quedan_pendientes_bajo_control_de_salida_parcial():
-    r = _resuelto(Q=0.3, S=0.005, TW=0.0)
+def test_b_sin_perfil_V1_y_V2_siguen_diciendo_metodo_no_evaluable():
+    """El fallback de EXT-3, sobre un resultado que NO trae perfil."""
+    from dataclasses import replace
+    r = replace(_resuelto(Q=0.3, S=0.001, TW=0.0), perfil=None)
+    assert r.control_gobernante is ControlGobernante.SALIDA
     with pytest.raises(modelos.MetodoNoEvaluableError) as e1:
         M5.v1_borde_libre(D=D_CASO, material=_concreto(), punto=_punto_md(),
                           resultado=r)
@@ -285,46 +324,33 @@ def test_b_V1_y_V2_quedan_pendientes_bajo_control_de_salida_parcial():
     assert e1.value.que == "V1" and e2.value.que == "V2"
 
 
-def test_b_MD_nunca_degrada_a_diseno_no_factible():
-    """Subir de diametro solo baja HW/D (0.589 -> 0.526 medido en el
-    dictamen): recorrer el catalogo hasta DisenoNoFactibleError seria
-    rechazar por una condicion que ningun D puede cumplir."""
+def test_b_MD_ya_no_relanza_metodo_no_evaluable():
+    """
+    Con el perfil, MD ni relanza «metodo no evaluable» ni recorre el
+    catalogo hasta DisenoNoFactibleError. A nivel de expediente el bucle
+    llega hasta V5 y se detiene en su criterio vacio, como antes de EXT-3:
+    `CriterioPendienteError('remanso_derecho_via')`.
+    """
     punto = _punto_md(id="B-01", Q_m3s=0.3, S_cauce=0.005)
     with declarados(CRITERIOS_CORRIDA):
         with pytest.raises(ErrorProyecto) as exc:
             MD.disenar_punto(punto, L=L_CASO, TW=0.0)
-    assert isinstance(exc.value, modelos.MetodoNoEvaluableError)
-    assert not isinstance(exc.value, DisenoNoFactibleError)
+    assert isinstance(exc.value, modelos.CriterioPendienteError)
+    assert exc.value.clave == "remanso_derecho_via"
+    assert not isinstance(exc.value, (modelos.MetodoNoEvaluableError,
+                                      DisenoNoFactibleError))
 
 
-def test_b_en_expediente_el_punto_no_cierra_como_si(tmp_path):
-    informe = _correr(tmp_path, Q=0.3, S=0.005, TW=0.0,
-                      alcance=cli.ALCANCE_EXPEDIENTE)
+@pytest.mark.parametrize("alcance", [cli.ALCANCE_EXPEDIENTE, cli.ALCANCE_PERFIL])
+def test_b_la_corrida_no_lleva_bloqueo_no_evaluable(tmp_path, alcance):
+    informe = _correr(tmp_path, Q=0.3, S=0.005, TW=0.0, alcance=alcance)
     b01 = _b01(informe)
-    assert not informe.cerrado
-    assert _no_evaluables(b01)
-    assert not any(b.diferido_por_alcance for b in _no_evaluables(b01))
+    assert not _no_evaluables(b01)
     assert not [b for b in b01.bloqueos if b.tipo == "DisenoNoFactibleError"]
-    for _codigo, v in b01.verificaciones():
-        assert v.cumple, "nunca Verificacion(cumple=False) por el dominio de h_o"
-
-
-def test_b_en_perfil_queda_dimensionado_con_HW_no_evaluable_diferido(tmp_path):
-    informe = _correr(tmp_path, Q=0.3, S=0.005, TW=0.0,
-                      alcance=cli.ALCANCE_PERFIL)
-    b01 = _b01(informe)
-    assert b01.dimensionado
-    diferidos = [b for b in _no_evaluables(b01) if b.diferido_por_alcance]
-    assert diferidos, [b.tipo for b in b01.bloqueos]
-    assert any(modelos.MOTIVO_METODO_NO_EVALUABLE in b.mensaje
-               for b in diferidos)
-    # Ninguno de ellos cuenta para el cierre de perfil...
-    assert all(b.diferido_por_alcance for b in _no_evaluables(b01))
-    # ...y V1 y V2 estan entre los diferidos, no entre las filas de la tabla.
-    codigos = {c for c, _v in b01.verificaciones()}
-    assert "V1" not in codigos and "V2" not in codigos
-    etapas = " ".join(b.etapa for b in diferidos)
-    assert "V1" in etapas and "V2" in etapas
+    if alcance == cli.ALCANCE_PERFIL:
+        assert b01.dimensionado
+        codigos = {v.codigo for _fase, v in b01.verificaciones()}
+        assert {"V1", "V2"} <= codigos
 
 
 # ===========================================================================
@@ -396,17 +422,25 @@ def test_d_el_bloque_h_o_llega_al_json(tmp_path):
     diseno = cli.informe_json(informe)["puntos"][0]["diseno"]
     for clave in CLAVES_H_O + CLAVES_REGIMEN:
         assert clave in diseno, clave
-    assert diseno["h_o_fuera_de_rango"] is True
+    # E-A: la aproximacion fuera de rango no se USA (el perfil decide), asi
+    # que la bandera es False y el HW/D publicado es el efectivo.
+    assert diseno["h_o_fuera_de_rango"] is False
     assert diseno["ahogado_por_TW"] is False
-    assert diseno["HW_sobre_D_salida"] == pytest.approx(0.589, rel=REL_DICTAMEN)
+    assert diseno["perfil_HW_aproximado_m"] / D_CASO == pytest.approx(
+        0.589, rel=REL_DICTAMEN)
+    assert diseno["perfil_sustituye_aproximacion"] is True
     assert diseno["regimen_barril"] == "parcialmente lleno"
     assert diseno["numero_celdas"] == 1
     json.dumps(cli.informe_json(informe))      # serializable entero
 
 
 def test_d_el_bloque_h_o_llega_a_volcar(tmp_path):
-    informe = _correr(tmp_path, Q=0.05, S=0.005, TW=1.2,
+    # E-A: el caso ahogado (TW = 1.2) ya no se dimensiona --V2 no cumple en
+    # ningun D--, y `volcar` solo imprime el bloque de la Fase 4 de un punto
+    # dimensionado. Se mide sobre un TW que ahoga h_o sin ahogar el barril.
+    informe = _correr(tmp_path, Q=0.3, S=0.001, TW=0.7,
                       alcance=cli.ALCANCE_PERFIL)
+    assert _b01(informe).dimensionado
     texto = cli.volcar(informe)
     assert "h_o" in texto and "HW/D" in texto
     assert "manda TW" in texto or "ahogad" in texto
@@ -416,10 +450,10 @@ def test_d_el_bloque_h_o_llega_a_volcar(tmp_path):
 # ===========================================================================
 # La compuerta, llamada directamente: los dos alcances (auditoria de EXT-3)
 # ===========================================================================
-# A nivel de expediente ningun punto llega hoy dimensionado con HW/D < 0.75
-# (V1/V2 bloquean antes), asi que la rama «no diferible» de la compuerta no se
-# ejerce por el pipeline. Se fija aqui llamandola sobre un punto dimensionado
-# a mano: una mutacion que la difiriera siempre pasaba 277 tests.
+# Con el perfil de E-A ningun resultado de M4 llega con `h_o_fuera_de_rango`
+# en True, asi que la compuerta no se alcanza por el pipeline. Se fija aqui
+# sobre un resultado SIN perfil armado a mano: una mutacion que la difiriera
+# siempre pasaba 277 tests en EXT-3, y sigue sin pasar este.
 
 def _informe_dimensionado_con(resultado_hidraulico):
     from src.modelos import ResultadoPunto
@@ -432,8 +466,16 @@ def _informe_dimensionado_con(resultado_hidraulico):
     return informe
 
 
+def _sin_perfil_y_fuera_de_rango(r):
+    from dataclasses import replace
+    assert r.perfil.sustituye_aproximacion
+    return replace(r, perfil=None, h_o_fuera_de_rango=True,
+                   HW_salida=r.perfil.HW_aproximado_m,
+                   HW_sobre_D_salida=r.perfil.HW_aproximado_m / D_CASO)
+
+
 def test_la_compuerta_no_difiere_en_expediente_y_si_en_perfil():
-    r = _resuelto(Q=0.3, S=0.005, TW=0.0)          # HW/D = 0.589, fuera de rango
+    r = _sin_perfil_y_fuera_de_rango(_resuelto(Q=0.3, S=0.001, TW=0.0))
     assert r.h_o_fuera_de_rango
     exp = _informe_dimensionado_con(r)
     cli._compuerta_metodo_h_o(exp, cli.ALCANCE_EXPEDIENTE)
@@ -468,10 +510,19 @@ def test_y_sobre_D_del_punto_sigue_al_regimen_del_barril():
                               resultado_hidraulico=r, verificaciones=())
     lleno = punto_con(_resuelto(Q=0.05, S=0.005, TW=1.2))
     assert lleno.y_sobre_D == pytest.approx(1, rel=REL_TRANSPORTE)
-    salida_parcial = punto_con(_resuelto(Q=0.3, S=0.005, TW=0.0))
-    assert salida_parcial.y_sobre_D is None, (
-        "bajo control de salida parcialmente lleno V1 queda pendiente: "
-        "publicar y_normal/D en el resumen es la divergencia de SIS-A-07")
+    salida_parcial = punto_con(_resuelto(Q=0.3, S=0.001, TW=0.0))
+    assert salida_parcial.resultado_hidraulico.control_gobernante \
+        is ControlGobernante.SALIDA
+    assert salida_parcial.y_sobre_D == pytest.approx(
+        salida_parcial.resultado_hidraulico.perfil.y_max_m / D_CASO,
+        rel=REL_TRANSPORTE), (
+        "bajo control de salida parcialmente lleno V1 compara el tirante "
+        "maximo del perfil (E-A): el resumen publica ese mismo y/D")
+    from dataclasses import replace
+    sin_perfil = punto_con(replace(salida_parcial.resultado_hidraulico, perfil=None))
+    assert sin_perfil.y_sobre_D is None, (
+        "sin perfil V1 queda pendiente: publicar y_normal/D en el resumen "
+        "es la divergencia de SIS-A-07")
     entrada = punto_con(_resuelto(Q=1.167, S=0.006, TW=0.22))
     assert entrada.y_sobre_D == pytest.approx(
         entrada.resultado_hidraulico.y_normal / D_CASO, rel=REL_TRANSPORTE)

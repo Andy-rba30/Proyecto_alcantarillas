@@ -95,6 +95,7 @@ OBJETIVOS = (
     "tests/test_ext1_entradas.py",      # el bloque de TW de la Sec. 1.3 (M3)
     "tests/test_ext2_multicelda_transicion.py",
     "tests/test_ext3_regimen_barril.py",
+    "tests/test_ea_perfil_lamina.py",   # E-A: el perfil de la lamina (M4/M5)
 )
 SEGUNDA_VUELTA = (
     "tests/test_linea_base.py",

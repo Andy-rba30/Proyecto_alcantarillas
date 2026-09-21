@@ -1672,16 +1672,17 @@ def _compuerta_metodo_h_o(informe: InformePunto, alcance: str) -> None:
     proposito: no rechaza el diametro --subir D solo baja HW/D-- sino que
     marca el punto, sea cual sea el D que la Fase 5 acepto.
 
-    A NIVEL DE EXPEDIENTE HOY NO SE ALCANZA, y conviene decirlo (auditoria
-    adversarial de EXT-3): bajo control de salida el barril va LLENO --V1 no
-    cumple-- o PARCIALMENTE LLENO --V1/V2 lanzan `MetodoNoEvaluableError` y
-    MD no dimensiona--, de modo que ningun punto llega dimensionado hasta
-    aqui con HW/D < 0.75 y el «no cierra» del expediente lo produce la Fase
-    5, no esta compuerta. La compuerta es la guardia para cuando el perfil
-    de la lamina (EXT-3b) evalue V1/V2 y este quede como unico bloqueo; su
-    rama de expediente la fija `test_ext3_regimen_barril` llamandola
-    directamente, para que una mutacion que la difiriera siempre no
-    sobreviva.
+    DESDE E-A NO SE ALCANZA EN PRODUCCION, y conviene decirlo: M4 llena
+    siempre `ResultadoHidraulico.perfil`, y con perfil la aproximacion fuera
+    de rango NO se usa --el HW del punto es el del remanso (paso 4.3d) o
+    gobierna la entrada--, de modo que la bandera `h_o_fuera_de_rango` queda
+    en False y el bloqueo «metodo no evaluable» ya no se produce. La
+    compuerta se conserva como GUARDIA del resultado sin perfil, que solo un
+    `ResultadoHidraulico` armado a mano puede traer: su rama de expediente y
+    su silencio con perfil los fijan `test_ext3_regimen_barril` y
+    `test_ea_perfil_lamina` llamandola directamente, para que una mutacion
+    que la difiriera siempre no sobreviva. (Hasta E-A tampoco se alcanzaba
+    a nivel de expediente, por otra razon: V1/V2 lanzaban antes.)
     """
     if not informe.dimensionado:
         return
@@ -1716,8 +1717,9 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     `_verificador_perfil`) y la Fase 8 no se ejecuta: queda como bloqueo
     diferido con su fundamento (ver `_diferir_fase_8`). Y en los dos alcances,
     tras el bucle de MD, la compuerta de h_o (`_compuerta_metodo_h_o`, EXT-3):
-    un punto dimensionado bajo control de salida con HW/D < 0.75 lleva el
-    bloqueo «metodo no evaluable», diferido solo a nivel de perfil.
+    un punto dimensionado bajo control de salida con HW/D < 0.75 y SIN perfil
+    de la lamina lleva el bloqueo «metodo no evaluable», diferido solo a
+    nivel de perfil; con el perfil que M4 emite desde E-A, no se alcanza.
     """
     informe = InformePunto(punto=punto)
 

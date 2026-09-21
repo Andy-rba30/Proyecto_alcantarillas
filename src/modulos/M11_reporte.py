@@ -150,7 +150,8 @@ from src.modulos.M8_estructural import verificacion_diferida_estructural
 # no puede importar la CLI --- es la CLI quien importa M11 ---. Ver la nota de
 # su declaracion.
 from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, ContextoCorrida,
-                     MOTIVO_METODO_NO_EVALUABLE, TipoDeVeredicto)
+                     ControlGobernante, MOTIVO_METODO_NO_EVALUABLE,
+                     TipoDeVeredicto)
 
 _reg_M11 = _registro_M11.construir()
 
@@ -1035,36 +1036,111 @@ def _tabla_diseno(informe: Any) -> str:
     # solo como advertencia general del bloque 0-ter (NOR-HDS-05): un aviso
     # que no señala el punto afectado deja al revisor sin saber cual de ellos
     # esta calculado fuera del rango de su fuente, que es el "nadie se entera"
-    # que el hallazgo denuncia.
-    if hidraulica.h_o_requiere_cautela:
-        limite = (H_O_HW_SOBRE_D_MIN if hidraulica.h_o_fuera_de_rango
+    # que el hallazgo denuncia. Desde E-A la fila lee ademas el perfil de la
+    # lamina: bajo 0.75 la aproximacion NO se usa y el HW es el del remanso;
+    # la primera condicion --barril lleno en la mayor parte-- viene MEDIDA.
+    # Aqui se dice, no se decide ni se calcula: todo sale del `PerfilLamina`.
+    perfil = hidraulica.perfil
+    if hidraulica.h_o_requiere_cautela or hidraulica.h_o_fuera_de_rango:
+        # `HW_sobre_D_salida` es el de la APROXIMACION (paso 4.3), que es el
+        # cociente que las dos condiciones juzgan. Lo que el punto hace con
+        # ella lo dice el perfil (E-A): bajo 0.75 no se usa y el HW es el
+        # del remanso; en la banda de cautela manda el mayor de los dos.
+        sustituida = perfil is not None and perfil.sustituye_aproximacion
+        limite = (H_O_HW_SOBRE_D_MIN if sustituida or hidraulica.h_o_fuera_de_rango
                   else H_O_HW_SOBRE_D_CAUTELA)
-        veredicto = ("NO DEBE USARSE" if hidraulica.h_o_fuera_de_rango
+        veredicto = ("NO DEBE USARSE" if sustituida or hidraulica.h_o_fuera_de_rango
                      else "PIDE CAUTELA")
-        # LO QUE HACE LA CORRIDA CON ELLO lo decide `servicio.correr_punto`, no
-        # este formateador (EXT-3): bajo 0.75 el punto lleva el bloqueo
-        # «metodo no evaluable» -- en la tabla de etapas bloqueadas de esta
-        # misma memoria --, diferido solo a nivel de perfil. Aqui se dice, no
-        # se decide.
-        consecuencia = (
-            f" El punto lleva por eso el bloqueo <b>{_esc(MOTIVO_METODO_NO_EVALUABLE)}"
-            "</b>, que a nivel de perfil se difiere y a "
-            "nivel de expediente impide cerrar: ver la tabla de etapas "
-            "bloqueadas de este punto."
-            if hidraulica.h_o_fuera_de_rango else
-            " El HW de este punto esta calculado con ella igualmente, y por "
-            "eso se dice aqui.")
+        # LO QUE HACE LA CORRIDA CON ELLO lo decide `servicio.correr_punto` o
+        # `M4.resolver_control`, no este formateador: aqui se dice, no se
+        # decide. Sin perfil, bajo 0.75 el punto lleva el bloqueo «metodo no
+        # evaluable» (EXT-3); con perfil (E-A) la bandera no puede estar en
+        # True y el HW del punto es el del remanso.
+        if hidraulica.h_o_fuera_de_rango:
+            consecuencia = (
+                f" El punto lleva por eso el bloqueo <b>{_esc(MOTIVO_METODO_NO_EVALUABLE)}"
+                "</b>, que a nivel de perfil se difiere y a "
+                "nivel de expediente impide cerrar: ver la tabla de etapas "
+                "bloqueadas de este punto.")
+        elif sustituida and perfil.alcanza_entrada:
+            consecuencia = (
+                " La aproximaci&oacute;n <b>no se usa</b>: el HW de este punto "
+                f"es el del remanso del paso 4.3d, {_num(perfil.HW_remanso_m)} m "
+                "(HDS-5 p&aacute;g. 3.12: «backwater calculations are required»).")
+        elif sustituida:
+            consecuencia = (
+                " La aproximaci&oacute;n <b>no se usa</b> y el remanso del paso "
+                "4.3d no alcanza la entrada: el control de salida no impone "
+                "carga y gobierna la entrada.")
+        elif perfil is not None and perfil.comprobacion_manda:
+            consecuencia = (
+                " La comprobaci&oacute;n por remanso del paso 4.3d pide "
+                f"<b>m&aacute;s carga</b> ({_num(perfil.HW_remanso_m)} m) que la "
+                f"aproximaci&oacute;n ({_num(perfil.HW_aproximado_m)} m), y del "
+                "lado de la inundaci&oacute;n manda la mayor: el HW del punto es "
+                "el del remanso.")
+        elif perfil is not None:
+            consecuencia = (
+                " El HW de este punto es el de la aproximaci&oacute;n, y la "
+                "comprobaci&oacute;n por remanso del paso 4.3d "
+                + ("no alcanza la entrada." if not perfil.alcanza_entrada else
+                   f"({_num(perfil.HW_remanso_m)} m) no pide m&aacute;s carga."))
+        else:
+            consecuencia = (
+                " El HW de este punto esta calculado con ella igualmente, y por "
+                "eso se dice aqui.")
         filas.append(_fila([
             _td("<b>h<sub>o</sub> fuera de rango</b>"),
-            _td(f"El control de SALIDA gobierna este punto y su "
-                f"HW/D = {_num(hidraulica.HW_sobre_D_salida, FMT_2)} "
-                f"queda por debajo de {_num(limite, FMT_2)}: para ese "
-                f"HW/D, {_esc(H_O_NUMERAL)} dice que la aproximacion "
-                f"h<sub>o</sub> = (d<sub>c</sub> + D)/2 <b>{veredicto}</b>."
-                f"{consecuencia} Lo que lo resolveria es el "
-                "procedimiento de barril parcialmente lleno del Cap. III "
-                "del HDS-5, que este script no implementa "
-                "(<code>geometria_control_salida</code>).")]))
+            _td(f"El control de SALIDA gobierna este punto y la "
+                f"aproximaci&oacute;n del paso 4.3 da HW/D = "
+                f"{_num(hidraulica.HW_sobre_D_salida, FMT_2)}, por debajo de "
+                f"{_num(limite, FMT_2)}: para ese HW/D, {_esc(H_O_NUMERAL)} dice "
+                f"que la aproximacion h<sub>o</sub> = (d<sub>c</sub> + D)/2 "
+                f"<b>{veredicto}</b>.{consecuencia}")]))
+    if perfil is not None:
+        gobierna_salida = (hidraulica.control_gobernante
+                           is ControlGobernante.SALIDA)
+        if not perfil.alcanza_entrada:
+            remanso = (f"el remanso <b>no alcanza la entrada</b>: la curva S1 "
+                       f"corta el tirante critico a "
+                       f"{_num(perfil.x_fin_remanso_m, FMT_2)} m de la salida "
+                       f"y aguas arriba el flujo es supercritico, controlado "
+                       f"por la entrada")
+        else:
+            remanso = (f"HW por remanso = {_num(perfil.HW_remanso_m)} m "
+                       f"(y<sub>entrada</sub> = {_num(perfil.y_entrada_m)} m)")
+        if perfil.sustituye_aproximacion and gobierna_salida:
+            papel = (" &mdash; <b>sustituye</b> a la aproximacion "
+                     f"(HW<sub>aprox</sub> = {_num(perfil.HW_aproximado_m)} m, "
+                     f"HW<sub>aprox</sub>/D &lt; {_num(H_O_HW_SOBRE_D_MIN, FMT_2)}: "
+                     f"{_esc(H_O_NUMERAL)} dice que no debe usarse y la pag. "
+                     "3.12 manda el remanso)")
+        elif perfil.sustituye_aproximacion:
+            papel = (" &mdash; la aproximacion "
+                     f"(HW<sub>aprox</sub> = {_num(perfil.HW_aproximado_m)} m) "
+                     "esta fuera de su rango y no compite: gobierna la entrada")
+        elif gobierna_salida and perfil.comprobacion_manda:
+            papel = (" &mdash; <b>manda</b>: en la banda de cautela la "
+                     "comprobacion pide mas carga que la aproximacion "
+                     f"(HW<sub>aprox</sub> = {_num(perfil.HW_aproximado_m)} m)")
+        elif gobierna_salida:
+            papel = (" &mdash; comprobacion de la aproximacion del paso 4.3, "
+                     "que sigue siendo la carga del punto")
+        else:
+            papel = " &mdash; gobierna la entrada"
+        filas.append(_fila([
+            _td("<b>Perfil de la l&aacute;mina</b> (paso 4.3c/4.3d)"),
+            _td(f"Perfil <b>{_esc(perfil.tipo.value)}</b> por paso directo "
+                f"desde la salida (HDS-5 p&aacute;g. 3.12, Secci&oacute;n 3.5). "
+                f"El barril fluye a secci&oacute;n llena en "
+                f"{_num(perfil.longitud_llena_m, FMT_2)} m "
+                f"(fracci&oacute;n {_num(perfil.fraccion_llena, FMT_2)} de su "
+                f"longitud): la primera condici&oacute;n de uso de h<sub>o</sub> "
+                f"&mdash;lleno en la mayor parte&mdash; est&aacute; "
+                f"<b>medida</b>, no declarada. {remanso}{papel}. "
+                f"y<sub>max</sub> = {_num(perfil.y_max_m)} m y "
+                f"V<sub>min</sub> = {_num(perfil.V_min_m_s, FMT_2)} m/s son lo "
+                "que V1 y V2 comparan bajo control de salida.")]))
     return "<h4>Fases 3-5 &mdash; Combinacion adoptada</h4>" \
            '<table class="compacta">' + "".join(filas) + "</table>"
 

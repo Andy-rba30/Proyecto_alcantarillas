@@ -736,7 +736,11 @@ def _exigir_metodo_evaluable(
     ESA excepcion y no DisenoNoFactibleError ni el resultado de otro material
     (EXT-3). Va despues de `_exigir_criterios_declarados` a proposito: un
     criterio vacio lo resuelve el proyectista declarando; un metodo que falta
-    lo resuelve otra sesion (EXT-3b), y el orden dice que hacer primero.
+    lo resuelve otra sesion, y el orden dice que hacer primero. Desde E-A el
+    metodo que faltaba --el perfil de la lamina de agua-- existe y M4 lo
+    emite siempre, de modo que en produccion no llega ninguna
+    `MetodoNoEvaluableError` hasta aqui; la guardia se conserva para el
+    resultado sin perfil.
     """
     if no_evaluables:
         raise no_evaluables[0]

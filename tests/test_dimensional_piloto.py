@@ -237,18 +237,40 @@ RELACIONES: Dict[str, Tuple[Relacion, ...]] = {
         ("V_salida~V_llena", "r", "v['V_llena']"),
         ("V_salida~Q_celda/D^2", "r", "v['Q_celda'] / v['D'] ** 2"),
     ),
+    # M4 --- el perfil de la lamina (E-A): 4.3c mide la fraccion de longitud
+    # a seccion llena (adimensional) y trae el HW/D de la aproximacion que
+    # decide si se sustituye; 4.3d da la carga por remanso y el par (y_max,
+    # V_min) que V1 y V2 comparan, con V_min = Q_celda/A(y_max) y A ~ y^2.
+    # El resultado de 4.3d es un tirante [m] cuando el remanso alcanza la
+    # entrada y un rotulo sin unidad cuando no, de modo que la relacion
+    # sobre `r` no se declara: la unidad del resultado la fija el paso.
+    "F4.PERFIL@4.3c": (
+        ("fraccion adimensional", "r", "ADIM"),
+        ("HW_aprox/D", "v['HW_aprox/D']", "v['HW_aprox'] / v['D']"),
+        ("y_salida~y_c", "v['y_salida']", "v['y_c']"),
+        ("y_salida~D", "v['y_salida']", "v['D']"),
+        ("y_n~D", "v['y_n']", "v['D']"),
+        ("L~D", "v['L']", "v['D']"),
+    ),
+    "F4.PERFIL@4.3d": (
+        ("V_min=Q_celda/A(y_max)", "v['V_min']", "v['Q_celda'] / v['y_max'] ** 2"),
+    ),
     # M4 --- HW = max(HW_entrada, HW_salida).
     "F4.CONTROL@4.4": (
         ("HW~HW_entrada", "r", "v['HW_entrada']"),
         ("HW~HW_salida", "r", "v['HW_salida']"),
     ),
-    # M5 --- y/D <= 0.75.
+    # M5 --- y/D <= 0.75. EL TIRANTE CAMBIA DE SIMBOLO CON EL REGIMEN (EXT-3,
+    # E-A): `y_normal` bajo control de entrada, `y` a barril lleno, `y_max`
+    # bajo control de salida con el perfil; la relacion nombra la PRIMERA
+    # magnitud de la sustitucion (`_1`), que es el tirante en las tres ramas.
     "F5.V1@V1": (
-        ("y/D", "r", "v['y_normal'] / v['D']"),
+        ("y/D", "r", "v['_1'] / v['D']"),
     ),
-    # M5 --- V >= 0.25 m/s.
+    # M5 --- V >= 0.25 m/s: `V_sedimentacion`, `V_llena` o `V_min`, la
+    # primera magnitud en las tres ramas.
     "F5.V2@V2": (
-        ("V", "r", "v['V_sedimentacion']"),
+        ("V", "r", "v['_1']"),
     ),
     # M5 --- S_conducto >= S_cauce, resultado la diferencia.
     "F5.V2b@V2b": (
@@ -368,16 +390,18 @@ CONSTANTES_SI: Dict[str, ConstanteSI] = {
         imperial_en_comentario=r"Exacto:\s*2\*32\.2/1\.486\^2 = ([0-9.]+)",
         huella_en_los_pasos=r"K_FRICCION_SI|K_friccion|19\.63",
         cierra_desde_el_comentario=True,
-        la_nombra_algun_paso=False,
+        la_nombra_algun_paso=True,
         nota="K = 2g/phi^2 lleva m^(1/3) si n es adimensional. Desde el "
              "exacto 2·32.2/1.486^2 = 29.164 la conversion da 19.627, que "
              "es el 19.63 transcrito; desde el «29» impreso "
              "--29.164 redondeado-- da 19.51, un 0.6 % por debajo, y el "
              "comentario dice desde PD cual de las dos derivaciones es la que "
-             "cierra. Sigue sin nombrarla ningun paso de la corrida: el paso "
-             "4.3 recibe H como numero con la procedencia «perdida de carga en "
-             "el barril», y transcribir la formula de H es un paso nuevo que "
-             "PD no abrio (ficha I4-01)."),
+             "cierra. Hasta E-A no la nombraba ningun paso de la corrida: el "
+             "paso 4.3 recibe H como numero con la procedencia «perdida de "
+             "carga en el barril», y transcribir la formula de H es un paso "
+             "nuevo que PD no abrio (ficha I4-01). Desde E-A la nombra el paso "
+             "4.3c (F4.PERFIL): la Ec. 3.7 del paso directo lleva "
+             "K_FRICCION_SI en su formula y en su sustitucion."),
 }
 
 
@@ -428,7 +452,12 @@ def _clave(paso) -> str:
 
 
 def _variables(paso) -> Dict[str, Dim]:
-    return {m.simbolo: _dim(m.unidad) for m in paso.sustitucion}
+    v = {m.simbolo: _dim(m.unidad) for m in paso.sustitucion}
+    # `_1`: la PRIMERA magnitud de la sustitucion, para los pasos cuyo
+    # simbolo cambia con el regimen (V1 y V2; ver `RELACIONES`).
+    if paso.sustitucion:
+        v["_1"] = _dim(paso.sustitucion[0].unidad)
+    return v
 
 
 def _texto_del_paso(paso) -> str:
@@ -725,8 +754,9 @@ def test_si_algun_paso_de_la_corrida_nombra_la_constante_SI(nombre,
     Una constante que ningun paso imprime no se puede verificar «en la
     sustitucion» de nada: KU_SI aparece en la procedencia de q*, y
     K_MANNING_SI, desde PD, como k_n en la sustitucion del paso 4.1;
-    K_FRICCION_SI no aparece en ninguna, porque el paso 4.3 recibe H ya
-    calculado. El censo lo dice y este test lo mide.
+    K_FRICCION_SI no aparecia en ninguna hasta E-A, porque el paso 4.3
+    recibe H ya calculado, y desde E-A la trae el paso 4.3c (la Ec. 3.7 del
+    paso directo). El censo lo dice y este test lo mide.
     """
     c = CONSTANTES_SI[nombre]
     nombrada = any(re.search(c.huella_en_los_pasos, _texto_del_paso(p))

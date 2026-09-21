@@ -968,6 +968,14 @@ H_O_HW_SOBRE_D_MIN = 0.75           # HW/D por debajo del cual la aproximacion
 H_O_HW_SOBRE_D_CAUTELA = 1.2        # HW/D por debajo del cual la fuente pide
                                     # cautela: el barril puede fluir
                                     # parcialmente lleno (mismo numeral)
+# LA PRIMERA CONDICION, MEDIDA (E-A): «can only be used if the barrel flows
+# full for MOST of its length». Desde E-A el perfil de la lamina
+# (`M4.perfil_lamina`, paso 4.3c) mide la longitud a seccion llena, y cuanto
+# es «la mayor parte» NO vive aqui: es una lectura del proyectista con
+# alternativas admitidas («casi toda»), o sea un [A] con su ventana,
+# `criterios_adoptados 'fraccion_llena_mayor_parte'` (0.5, sensibilidad
+# 0.5-0.9), declarada ademas como `Interpretacion` de la cita
+# HDS5_3ED.3.3.3#HO. Aqui solo viven los dos numeros que la fuente escribe.
 # La forma con el MAXIMO -- que es la que implementa `M4.control_salida` -- la
 # 3a ed. no la numera: la escribe en prosa ("the greater of tailwater or
 # (dc + D)/2", misma pag. 3.24; "or (dc + D)/2 if larger", num. 3.4.5, pag.
@@ -1028,42 +1036,80 @@ H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
 #      con el bloqueo «metodo no evaluable» (`modelos.MetodoNoEvaluableError`,
 #      compuerta en `servicio._compuerta_metodo_h_o`). Lo que sigue pendiente es
 #      SOLO el perfil por paso directo (EXT-3b), con los puntos 1 a 5.
+#      HECHO EN E-A (2026-09-21): `M4.perfil_lamina` integra por paso directo
+#      sobre el PARAMETRO PROPIO de la seccion (regla vinculante #12: la via
+#      por tirante no gana consumidores; el llenado del TW se resuelve con
+#      Brent sobre `bracket_llenado()`), desde max(y_c, TW) acotado a D hacia
+#      la entrada, con la Ec. 3.7 como pendiente de friccion y el empalme con
+#      la linea de energia llena en los dos sentidos (un TW sobre la clave que
+#      baja de ella aguas arriba; una M2 que la corta). Sale un
+#      `modelos.PerfilLamina` en `ResultadoHidraulico.perfil`, con las dos
+#      salidas: (a) la fraccion de longitud a seccion llena, juzgada en el
+#      paso F4.PERFIL (4.3c) contra 'fraccion_llena_mayor_parte' [A], y (b) el
+#      HW por remanso, que bajo HW/D < 0.75 SUSTITUYE a la aproximacion en
+#      `ResultadoHidraulico.HW_salida` y, si el remanso no alcanza la entrada
+#      (S1 que corta y_c, incluida la de longitud cero de un barril
+#      supercritico con TW <= y_c), devuelve el control a la ENTRADA: es la
+#      circularidad deshecha. V1 y V2 comparan `perfil.y_max_m` y
+#      `perfil.V_min_m_s`, y el bloqueo «metodo no evaluable» queda como el
+#      fallback de un resultado sin perfil, que M4 no produce.
 #   5. LOS DORADOS NO SE FABRICAN: un caso patron de perfil necesita una
 #      corrida de referencia externa citable (HY-8 u otra), que es la misma
-#      regla del conflicto #7.
+#      regla del conflicto #7. E-A lo respeta: sus dos dorados son LIMITES de
+#      la propia formula --flujo lleno de punta a punta (el perfil reproduce
+#      HW = H + h_o - S*L) y flujo uniforme (TW = y_n)-- y el balance de
+#      energia estacion a estacion; ningun numero de perfil se fija como
+#      dorado (`tests/test_ea_perfil_lamina.py`).
 # Lo que el proyecto hace con la condicion, y que NO puede hacer:
 H_O_CONDICION_APLICACION = (
     "h_o se calcula SIEMPRE, y de las tres condiciones que la fuente le pone "
-    "el proyecto EVALUA dos y declara la tercera. "
+    "el proyecto EVALUA LAS TRES desde E-A (2026-09-21); hasta entonces "
+    "evaluaba dos y declaraba la tercera. "
     "SE EVALUAN, punto por punto, los dos limites sobre HW/D: por debajo de "
     "1.2 la fuente pide cautela y por debajo de 0.75 dice que la aproximacion "
     "no debe usarse. Cuando el control de salida GOBIERNA un punto y su HW/D "
     "cae bajo 1.2, la memoria de ese punto lo dice con esas palabras, junto "
-    "al HW: un aviso general que no senala el punto afectado no le sirve al "
-    "revisor. Y cuando cae bajo 0.75 NO ES UN AVISO (EXT-3; EXT-M-02, v8 "
-    "§4.3): el metodo aproximado no esta definido para ese punto y el HW "
-    "publicado no es un resultado sino un numero fuera del dominio del "
-    "metodo. El punto viaja con el bloqueo «" + MOTIVO_METODO_NO_EVALUABLE
-    + "», diferible a nivel de perfil --sale dimensionado con HW no "
-    "evaluable y el motivo impreso-- y no diferible a nivel de expediente, "
-    "donde el punto no cierra hasta que exista el calculo de remanso. No es "
+    "al HW, y el remanso del paso 4.3d es la comprobacion que la fuente pide "
+    "(«backwater calculations (Section 3.5) should be used to check the "
+    "result from the approximate method»): si la comprobacion pide MAS carga, "
+    "manda ella --medido en E-A, en 165 de 228 combinaciones de la banda el "
+    "remanso supera a la aproximacion, hasta +5 %--; un aviso general que no "
+    "senala el punto afectado no le sirve al revisor. Y cuando cae bajo 0.75 "
+    "la aproximacion NO SE USA (E-A; EXT-M-02, v8 §4.3): el metodo aproximado "
+    "no esta definido para ese punto y el HW del punto es el del REMANSO "
+    "(pag. impresa 3.12: «For lower headwaters, backwater calculations are "
+    "required»), calculado por paso directo desde la salida hacia la entrada. "
+    "Si ese remanso no alcanza la entrada --la lamina que sube desde la "
+    "salida corta el tirante critico antes de llegar, que es lo que pasa en "
+    "un barril supercritico con TW <= y_c--, el control de salida no impone "
+    "carga alguna y gobierna la ENTRADA: es la circularidad de la "
+    "aproximacion, deshecha. Hasta E-A ese punto viajaba con el bloqueo «"
+    + MOTIVO_METODO_NO_EVALUABLE
+    + "», diferible a nivel de perfil y no de expediente; el bloqueo queda "
+    "como guardia de un resultado sin perfil, que M4 ya no produce. No es "
     "un incumplimiento: subir de diametro solo baja HW/D. "
-    "NO SE EVALUA la primera condicion -- que el barril fluya lleno en la "
-    "mayor parte de su longitud --, y no por descuido: exige un perfil de la "
-    "lamina de agua a lo largo del conducto, que este script no calcula. El "
-    "criterio adoptado 'geometria_control_salida' = 'seccion_llena' "
-    "PRESUPONE ademas lo mismo que ahi habria que verificar, de modo que esa "
-    "premisa entra dos veces por dos puertas y no se comprueba por ninguna. "
-    "No se sustituye por otra formula ni se inventa un criterio de llenado: "
-    "se declara, y quien revise el expediente decide si el punto necesita el "
-    "procedimiento de barril parcialmente lleno del Cap. III, que es la "
-    "alternativa que el propio criterio ya cita. "
-    "HAY UNA CIRCULARIDAD QUE CONVIENE VER: el HW con que se evaluan los dos "
-    "limites es el que produce la propia aproximacion, de modo que un h_o "
-    "sobreestimado puede hacer que el control de salida gobierne un punto "
-    "donde no gobernaria. El bloqueo y el aviso se emiten igual; deshacer la "
-    "circularidad exige el procedimiento completo, no otra lectura de esta "
-    "pagina.")
+    "SE MIDE la primera condicion --que el barril fluya lleno en la mayor "
+    "parte de su longitud--, que hasta E-A no se podia evaluar: exige un "
+    "perfil de la lamina de agua a lo largo del conducto, y el paso 4.3c lo "
+    "calcula y publica la longitud a seccion llena. «La mayor parte» se lee "
+    "como MAS DE LA MITAD ('fraccion_llena_mayor_parte' [A], lectura declarada "
+    "en el registro con su ventana). El criterio adoptado 'geometria_control_salida' = "
+    "'seccion_llena' sigue decidiendo de que seccion salen V y R de la "
+    "formula de H, y la premisa que compartia con h_o --que el barril vaya "
+    "lleno-- ya no entra por dos puertas sin comprobarse: se comprueba en el "
+    "paso 4.3c. "
+    "DISCREPANCIA DENTRO DE LA FUENTE, declarada aqui porque es donde se "
+    "aplica: la vineta de la pag. 3.24 dice que la aproximacion «can only be "
+    "used if the barrel flows full for most of its length», y la prosa de la "
+    "pag. 3.12 dice que da «adequate results» hasta HW = 0.75D aun con el "
+    "barril «partly full over its entire length». El proyecto aplica la "
+    "regla CUANTIFICADA de la 3.12 --la aproximacion gobierna mientras HW/D "
+    ">= 0.75-- y MIDE la de la 3.24: cuando el barril no va lleno en la mayor "
+    "parte y la aproximacion se usa, el paso 4.3c lo dice con NO CUMPLE sobre "
+    "esa condicion, con la cita de la 3.12 que ampara el HW y el remanso al "
+    "lado; el punto no se rechaza por ello, porque lo que no se cumple es la "
+    "condicion ideal de un metodo cuya validez la propia fuente extiende, no "
+    "una exigencia sobre el diseño. Es la decision de la v8 §4.3.")
 
 # ---------------------------------------------------------------------------
 # El CARACTER de cada umbral, y de cada CONDICION DE USO, que el proyecto aplica

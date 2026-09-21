@@ -548,6 +548,43 @@ class RegimenBarril(str, Enum):
     PARCIALMENTE_LLENO = "parcialmente lleno"
 
 
+class TipoDePerfil(str, Enum):
+    """
+    Que perfil de lamina de agua resolvio el paso directo desde la salida
+    hacia la entrada (E-A; HDS-5 3.a ed. Section 3.5.1, pag. impresa 3.36-3.38,
+    PDF 118-120, y la prosa de la pag. 3.12, PDF 94). Los rotulos son los de
+    la fuente y los de HY-8:
+
+        M1        pendiente suave, TW > y_n: la lamina BAJA hacia y_n aguas
+                  arriba (tipo 3, «an M1 curve is computed starting at the
+                  tailwater depth at the outlet»).
+        M2        pendiente suave, max(y_c, TW) < y_n: la lamina SUBE hacia
+                  y_n aguas arriba (tipo 2, «an M2 curve is computed starting
+                  at critical depth at the outlet»; tipo 7 «to determine the
+                  length of culvert that will flow full»).
+        S1        pendiente pronunciada (y_n <= y_c) con la frontera por
+                  encima de y_c: la lamina baja hacia y_c y, si lo alcanza
+                  antes de la entrada, el remanso NO llega a la entrada y el
+                  control es de ENTRADA (tipo 1/5: «an S1 curve is computed
+                  and used if the S1 curve extends to the face of the
+                  culvert»). Incluye la S1 de longitud CERO: TW <= y_c en un
+                  barril supercritico, que es el caso (b) del dictamen.
+        UNIFORME  la frontera coincide con y_n: nada mueve la lamina.
+        LLENA     la linea de energia llena (Ec. 3.7) arranca en la salida
+                  y alcanza la entrada sin bajar de la clave: el barril va a
+                  presion en toda su longitud.
+
+    Con un tramo lleno que arranca en la salida y termina antes de la
+    entrada, el tipo es el de la LAMINA LIBRE que sigue aguas arriba (M1 o
+    S1), y `PerfilLamina.longitud_llena_m` dice cuanto midio el tramo lleno.
+    """
+    M1 = "M1"
+    M2 = "M2"
+    S1 = "S1"
+    UNIFORME = "uniforme"
+    LLENA = "llena"
+
+
 class CondicionRasante(str, Enum):
     """
     Cual de las dos condiciones de Sec. 7.A fija la cota de rasante minima:
@@ -2052,6 +2089,158 @@ class ControlSalida:
     numeral: str = "Sec. 4.3"
 
 
+@dataclass(frozen=True)
+class PerfilLamina:
+    """
+    El perfil de la lamina de agua a lo largo del barril, resuelto por PASO
+    DIRECTO desde la salida hacia la entrada (E-A; NOR-HDS-05 cerrada). Es
+    el procedimiento de barril parcialmente lleno del Cap. III del HDS-5,
+    tal como la pag. impresa 3.12 (PDF 94) lo escribe: el calculo «begin[s]
+    at the water surface at the downstream end of the culvert and proceed[s]
+    upstream to the entrance», la frontera aguas abajo es «critical depth at
+    the culvert outlet or … the tailwater depth, whichever is higher», y
+    donde la lamina toca la clave se empalma «a straight, full flow hydraulic
+    grade line» con la pendiente de friccion de la Ec. 3.7. Lo resuelve
+    `M4.perfil_lamina`; este tipo es lo que sale.
+
+    ES UN TIPO PROPIO Y NO DIEZ CAMPOS SUELTOS EN `ResultadoHidraulico`, a
+    proposito (prompt de E-A: «no ampliar ResultadoHidraulico a ciegas»):
+    `ResultadoHidraulico.perfil` es UN campo, y quien necesite el perfil lo
+    lee entero, con su tipo y su procedencia.
+
+    Lo que entrega, y a quien:
+
+        `fraccion_llena`, `longitud_llena_m`
+            la PRIMERA SALIDA util: cuanto del barril va a seccion llena, que
+            vuelve MEDIDA la primera condicion de uso de h_o («can only be
+            used if the barrel flows full for most of its length», pag. 3.24)
+            que hasta E-A solo se declaraba. La juzga el paso F4.PERFIL.
+        `HW_remanso_m`, `y_entrada_m`, `V_entrada_m_s`
+            la SEGUNDA: la carga a la entrada por remanso, HW = y_entrada +
+            (1 + ke)·V_entrada²/2g (pag. 3.12: «The inlet losses and the
+            velocity head are added to the elevation of the hydraulic grade
+            line at the inlet»). `None` cuando el remanso NO alcanza la
+            entrada (`alcanza_entrada=False`): la S1 corto y_c en
+            `x_fin_remanso_m` < L, o tuvo longitud cero, y el control es de
+            entrada (Section 3.5.1: la S1 se usa «if the S1 curve extends to
+            the face of the culvert»). El proyecto NO situa el resalto por
+            momentum (HY-8 v7.3): esa lectura basta para el HW y queda
+            escrita en `docs/decisiones_diferidas.md`.
+        `sustituye_aproximacion`
+            True cuando HW_aproximado/D < 0.75, donde la fuente dice que la
+            aproximacion h_o = max(TW, (y_c + D)/2) «should not be used» y
+            que «backwater calculations are required» (pags. 3.24 y 3.12):
+            ahi `ResultadoHidraulico.HW_salida` es `HW_remanso_m` y no
+            `HW_aproximado_m`. Por encima de 0.75 la aproximacion sigue
+            siendo el metodo --la pag. 3.12 la avala («adequate results are
+            obtained down to a headwater of 0.75D»)-- y el remanso es la
+            comprobacion que la pag. 3.24 pide («should be used to check the
+            result from the approximate method»): en la banda de cautela
+            (`cautela_aproximacion`, HW_aprox/D < 1.2) la comprobacion MANDA
+            cuando pide mas carga (`comprobacion_manda`), y por encima de
+            1.2 se imprime. Es la decision de la v8 §4.3 (EXT-0, nota de
+            E-A), no una eleccion de esta pieza.
+        `y_asintota_m`
+            el tirante hacia el que tiende la lamina con la ley de friccion
+            del perfil (la Ec. 3.7, donde Sf = S): un 0.05 % por encima del
+            y_n de Manning de M3, porque K_FRICCION_SI/(2g) = 19.63/19.62.
+            None cuando el perfil no tiene asintota bajo la clave (S1,
+            crown, llena).
+        `y_max_m`, `V_min_m_s`
+            el tirante MAXIMO en lamina libre a lo largo del barril (D si hay
+            tramo lleno) y la velocidad MINIMA, Q/A(y_max): lo que V1 y V2
+            comparan bajo control de SALIDA con el barril parcialmente lleno,
+            que hasta E-A quedaba pendiente por `MetodoNoEvaluableError`. Con
+            n_max, como el resto del control de salida: mas tirante y menos
+            velocidad, el lado conservador de las dos. Cuando la S1 no
+            alcanza la entrada, el tramo supercritico aguas arriba del
+            resalto se aproxima por el uniforme, como bajo control de entrada
+            (EXT-3), y no mueve ninguno de los dos: en pendiente pronunciada
+            y_n < y_c <= y_salida, de modo que el maximo esta en la salida.
+        `estaciones`
+            (x desde la salida, y) de cada rung de lamina libre que el paso
+            directo resolvio, en orden aguas arriba. Sirven para rehacer el
+            balance de energia estacion a estacion --E_arriba + S·Δx =
+            E_abajo + Sf_medio·Δx-- que es la ecuacion del metodo; no van al
+            JSON.
+
+    `n` y `ke` son los que entraron: n_max (la regla de doble n manda el n
+    mayor para una carga) y el ke con que `control_salida` formo H, para que
+    el tramo lleno reproduzca la formula cerrada de la Sec. 4.3 exactamente.
+    `rungs` es el numero de escalones de la escalera en el parametro propio
+    de la seccion (`tolerancias.PASOS_PERFIL_LAMINA`): precision numerica,
+    no un valor de proyecto.
+    """
+
+    tipo: TipoDePerfil
+    y_salida_m: float                 # m  - frontera aguas abajo max(y_c, TW), acotada a D
+    alcanza_entrada: bool             # False: la S1 corto y_c antes de la entrada
+    x_fin_remanso_m: Optional[float]  # m  - donde termino el remanso si no alcanza
+    y_entrada_m: Optional[float]      # m  - tirante (o carga de presion) en la entrada
+    V_entrada_m_s: Optional[float]    # m/s
+    HW_remanso_m: Optional[float]     # m  - y_entrada + (1 + ke) V^2/2g
+    y_asintota_m: Optional[float]     # m  - donde la Ec. 3.7 da Sf = S (y_n'); None sin asintota
+    longitud_llena_m: float           # m  - tramo a seccion llena
+    fraccion_llena: float             # longitud_llena_m / L
+    y_max_m: float                    # m  - tirante maximo (V1)
+    V_min_m_s: float                  # m/s - velocidad minima, Q/A(y_max) (V2)
+    n: float                          # n_max con que se resolvio
+    ke: float                         # el ke de H
+    HW_aproximado_m: float            # m  - el HW de la aproximacion (ControlSalida.HW)
+    sustituye_aproximacion: bool      # HW_aproximado/D < 0.75: la aproximacion NO se usa
+    cautela_aproximacion: bool        # HW_aproximado/D < 1.2: la banda de cautela
+    rungs: int                        # escalones de la escalera
+    estaciones: Tuple[Tuple[float, float], ...] = ()
+
+    def __post_init__(self) -> None:
+        # Guardias de coherencia interna, forma MAT-D13: en positivo y negadas.
+        if not 0 <= self.fraccion_llena <= 1:
+            raise ValueError(
+                f"PerfilLamina: la fraccion llena ({self.fraccion_llena!r}) no "
+                "esta en [0, 1]")
+        if self.alcanza_entrada and self.HW_remanso_m is None:
+            raise ValueError(
+                "PerfilLamina: el remanso alcanza la entrada y no trae HW")
+        if not self.alcanza_entrada and self.HW_remanso_m is not None:
+            raise ValueError(
+                "PerfilLamina: el remanso no alcanza la entrada y trae HW")
+        if self.sustituye_aproximacion and not self.cautela_aproximacion:
+            raise ValueError(
+                "PerfilLamina: bajo 0.75 la aproximacion esta tambien bajo 1.2")
+
+    @property
+    def comprobacion_manda(self) -> bool:
+        """
+        True cuando, en la banda de cautela (0.75 <= HW_aprox/D < 1.2), el
+        remanso alcanza la entrada y pide MAS carga que la aproximacion. La
+        pag. 3.24 manda usar el remanso «to check the result from the
+        approximate method», y una comprobacion que da mas carga no se puede
+        descartar del lado de la inundacion: medido en E-A (auditoria
+        adversarial), en 165 de 228 combinaciones de la banda el remanso
+        superaba a la aproximacion, hasta +34 mm (+5 %). Por eso en la banda
+        el HW efectivo es el MAYOR de los dos (v8 §4.3, nota de E-A).
+        """
+        return (self.cautela_aproximacion and not self.sustituye_aproximacion
+                and self.HW_remanso_m is not None
+                and self.HW_remanso_m > self.HW_aproximado_m)
+
+    @property
+    def HW_efectivo_m(self) -> Optional[float]:
+        """
+        La carga de control de SALIDA que el punto usa: el remanso donde
+        sustituye a la aproximacion (HW_aprox/D < 0.75), el mayor de los dos
+        en la banda de cautela (`comprobacion_manda`), la aproximacion en el
+        resto; `None` si la aproximacion no se usa y el remanso no alcanza la
+        entrada --el control de salida no impone carga alguna y gobierna la
+        entrada--.
+        """
+        if self.sustituye_aproximacion:
+            return self.HW_remanso_m
+        if self.comprobacion_manda:
+            return self.HW_remanso_m
+        return self.HW_aproximado_m
+
+
 # ===========================================================================
 # Sec. 1.3 - TW: se calcula, no se mide
 # ===========================================================================
@@ -2236,9 +2425,25 @@ class ResultadoHidraulico:
                            JSON y `cli.volcar` lo imprimen junto a las dos
                            banderas y a `HW_sobre_D_salida`.
 
-    Bajo control de SALIDA con el barril PARCIALMENTE LLENO no hay tirante ni
-    velocidad «del barril» que publicar: exigen el perfil de la lamina de
-    agua (HDS-5 Section 3.5), y V1/V2 lo dicen con `MetodoNoEvaluableError`.
+    Bajo control de SALIDA con el barril PARCIALMENTE LLENO el tirante y la
+    velocidad «del barril» salen DESDE E-A del perfil de la lamina de agua
+    (HDS-5 Section 3.5; `perfil`, un `PerfilLamina`): V1 compara
+    `perfil.y_max_m` y V2 `perfil.V_min_m_s`. Hasta E-A no existia y V1/V2 lo
+    decian con `MetodoNoEvaluableError`; hoy esa excepcion queda como el
+    fallback de un resultado armado SIN perfil (`perfil is None`), que M4 no
+    produce nunca.
+
+    `perfil` (E-A) es UN campo y no diez, a proposito: el perfil se lee
+    entero, con su tipo, su procedencia y sus dos salidas (la fraccion de
+    longitud a seccion llena y el HW por remanso). Con el, `HW_salida` es el
+    HW EFECTIVO del control de salida --el remanso donde sustituye a la
+    aproximacion (HW_aprox/D < 0.75, pag. 3.24 y 3.12 del HDS-5) y la
+    aproximacion en el resto-- y `HW_sobre_D_salida` es ese mismo efectivo
+    entre D; `h_o_fuera_de_rango` significa lo que su docstring dice --«este
+    punto USA la aproximacion fuera del rango que su fuente declara»-- y con
+    perfil no puede ser True: donde la aproximacion esta fuera de rango, no
+    se usa. Solo un resultado sin perfil puede llevarla en True, y es lo que
+    la compuerta `servicio._compuerta_metodo_h_o` sigue guardando.
     """
 
     y_normal: float                       # m  - con n_max (Sec. 4.1)
@@ -2287,6 +2492,10 @@ class ResultadoHidraulico:
     h_o_m: Optional[float] = None         # m  - max(TW, (y_c + D)/2), Sec. 4.3
     TW_m: Optional[float] = None          # m  - tirante en el receptor
     ahogado_por_TW: bool = False          # manda TW en h_o, no la geometria
+    # EL PERFIL DE LA LAMINA (E-A): un solo campo, ver el docstring. M4 lo
+    # llena SIEMPRE; `None` solo en los constructores de la suite que no
+    # pasan por M4, y ahi V1/V2 vuelven al fallback de EXT-3.
+    perfil: Optional["PerfilLamina"] = None
 
     def __post_init__(self) -> None:
         if self.Q_celda_m3s is None:
@@ -2540,9 +2749,21 @@ class TipoDeVeredicto(str, Enum):
     punto dice cual: porque el alcance de la corrida la dejo fuera
     (`--alcance perfil`), o porque el METODO disponible no la puede evaluar
     ahi (`MetodoNoEvaluableError`, EXT-3: el paso F4.HO bajo control de
-    salida con HW/D < 0.75). Imprimirla como "cumple" seria mentir y como
-    "no cumple" tambien: hasta EXT-3 el paso de h_o decia NO_CUMPLE mientras
-    el pipeline aceptaba el punto, que es la divergencia que SIS-A-07 prohibe.
+    salida con HW/D < 0.75, hasta E-A). Imprimirla como "cumple" seria mentir
+    y como "no cumple" tambien: hasta EXT-3 el paso de h_o decia NO_CUMPLE
+    mientras el pipeline aceptaba el punto CON ESE HW, que es la divergencia
+    que SIS-A-07 prohibe.
+
+    NO_CUMPLE SOBRE UNA CONDICION DE USO DE UN METODO (E-A) no es esa
+    divergencia, y conviene decirlo porque se parece: los pasos F4.HO (bajo
+    HW/D < 0.75) y F4.PERFIL 4.3c (barril que no va lleno en la mayor parte)
+    juzgan la condicion que la fuente pone a la APROXIMACION de h_o, no al
+    diseño. Cuando dicen NO_CUMPLE, el paso dice ademas que hace el pipeline
+    con ello --usa el remanso, o conserva la aproximacion porque la pag. 3.12
+    la avala hasta 0.75D--, y el punto no se rechaza porque ninguna exigencia
+    sobre el diseño se incumple: `ResultadoPunto.verificaciones_incumplidas`
+    lee las `Verificacion`, no los pasos. Memoria y pipeline dicen lo mismo:
+    «esta condicion del metodo no se cumple, y por eso el HW es este».
     """
 
     CUMPLE = "cumple"
@@ -4337,26 +4558,29 @@ class ResultadoPunto:
         una vez, no puede divergir entre la memoria y la verificacion.
 
         Y DESDE EXT-3 SIGUE EL REGIMEN DEL BARRIL, como V1: `y_normal /
-        altura` solo bajo control de entrada; 1 a barril lleno; None --celda
-        vacia declarada-- bajo control de salida con el barril parcialmente
-        lleno, donde V1 queda pendiente y publicar un y/D del flujo uniforme
-        seria la divergencia memoria/pipeline de SIS-A-07 en otra celda.
+        altura` solo bajo control de entrada; 1 a barril lleno; y bajo
+        control de salida con el barril parcialmente lleno, DESDE E-A, el
+        tirante maximo del perfil de la lamina (`perfil.y_max_m`), que es el
+        que V1 compara. Hasta E-A salia None --celda vacia declarada-- porque
+        V1 quedaba pendiente y publicar un y/D del flujo uniforme seria la
+        divergencia memoria/pipeline de SIS-A-07 en otra celda; None sigue
+        siendo la respuesta si el resultado no trae perfil.
         """
         if self.resultado_hidraulico is None or self.seccion is None:
             return None
         h = self.resultado_hidraulico
         altura = self.seccion.altura
-        # EL MISMO TIRANTE QUE V1 COMPARA (EXT-3, auditoria adversarial): el
-        # del REGIMEN del barril y no el normal a secas. A barril LLENO el
+        # EL MISMO TIRANTE QUE V1 COMPARA (EXT-3, auditoria adversarial; E-A):
+        # el del REGIMEN del barril y no el normal a secas. A barril LLENO el
         # tirante es la altura entera; bajo control de SALIDA con el barril
-        # parcialmente lleno no se conoce sin el perfil de la lamina y V1 queda
-        # pendiente, de modo que aqui sale None y la celda del cuadro resumen
-        # se imprime vacia declarada en vez de con un 0.13 plausible junto a
-        # una V1 diferida; solo bajo control de ENTRADA vale y_normal.
+        # parcialmente lleno es el maximo del perfil de la lamina; solo bajo
+        # control de ENTRADA vale y_normal.
         if h.regimen_barril is RegimenBarril.LLENO:
             y = altura
         elif h.control_gobernante is ControlGobernante.SALIDA:
-            return None
+            if h.perfil is None:
+                return None
+            y = h.perfil.y_max_m
         else:
             y = h.y_normal
         return y / altura
