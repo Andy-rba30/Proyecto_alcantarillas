@@ -2492,6 +2492,10 @@ class ResultadoHidraulico:
     HW_entrada: float                     # m  - control de entrada (Sec. 4.2)
     HW_salida: float                      # m  - control de salida (Sec. 4.3)
     control_gobernante: ControlGobernante
+    # PF-1 (PC-03): el piso que `control_entrada` adopto en lugar de la
+    # ecuacion, o None. Viaja aqui para que el JSON por punto y el comparador
+    # lo vean; la memoria lo imprime desde el paso F4.CONTROL.
+    piso_hw_entrada: Optional["PisoDeCargaEntrada"] = None
     # Las dos condiciones de uso de h_o que el proyecto evalua, ya filtradas
     # por si el control de salida gobierna (NOR-HDS-05). Ver `ControlSalida`.
     h_o_fuera_de_rango: bool = False

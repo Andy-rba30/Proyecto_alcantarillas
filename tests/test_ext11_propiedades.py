@@ -716,7 +716,10 @@ def test_el_resguardo_por_cbr_lee_la_tabla_con_el_borde_superior_abierto():
 # toda la malla, sin acercarse al ruido del borde.
 FRACCIONES_DE_S_LIMITE = (0.1, 0.5, 0.9)
 D_MALLA_SIGNO = (0.90, 1.20, 1.50, 2.00, 2.40)
-Q_MALLA_SIGNO = (0.05, 0.10, 0.30, 1.0)
+# Los dos ultimos caudales llevan el D = 0.90 a la transicion y a la rama
+# sumergida (q* = 6.0 y 10.5): la propiedad se mide en las TRES ramas
+# (auditor adversarial de PF-1, punto 5), no solo en la no sumergida.
+Q_MALLA_SIGNO = (0.05, 0.10, 0.30, 1.0, 2.0, 3.5)
 
 
 @pytest.mark.parametrize("Q", Q_MALLA_SIGNO)

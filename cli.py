@@ -315,6 +315,12 @@ CLAVES_DISENO_JSON = (
     "perfil_y_entrada_m", "perfil_y_max_m", "perfil_V_min_m_s",
     "perfil_fraccion_llena", "perfil_longitud_llena_m",
     "perfil_y_asintota_m", "perfil_comprobacion_manda",
+    # EL PISO DE LA CARGA A LA ENTRADA (PF-1, PC-03): que opcion del criterio
+    # `hw_entrada_fuera_de_rango` se adopto (None cuando la ecuacion entrego
+    # carga por si sola, que es todo el corredor), el HW/D que la ecuacion
+    # devolvio y el S* de la carta. Sin esto el JSON decia HW_entrada_m = H_c
+    # como si fuera la ecuacion y el comparador no distinguia los dos casos.
+    "hw_entrada_piso", "hw_entrada_HW_sobre_D_formula", "hw_entrada_S_limite_m_m",
 )
 
 
@@ -343,6 +349,15 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             # distintos, y una sola clave obligaba a adivinar cual (MAT-D1).
             "V_erosion_m_s": _num(hidraulica.V_erosion),
             "V_sedimentacion_m_s": _num(hidraulica.V_sedimentacion),
+            "hw_entrada_piso": (None if hidraulica.piso_hw_entrada is None
+                                else hidraulica.piso_hw_entrada.adoptado),
+            "hw_entrada_HW_sobre_D_formula": (
+                None if hidraulica.piso_hw_entrada is None
+                else _num(hidraulica.piso_hw_entrada.HW_sobre_D_formula)),
+            "hw_entrada_S_limite_m_m": (
+                None if hidraulica.piso_hw_entrada is None
+                or hidraulica.piso_hw_entrada.S_limite is None
+                else _num(hidraulica.piso_hw_entrada.S_limite)),
             "y_normal_m": _num(hidraulica.y_normal),
             "y_critico_m": _num(hidraulica.y_critico),
             "HW_entrada_m": _num(hidraulica.HW_entrada),

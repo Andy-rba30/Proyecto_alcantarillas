@@ -2815,35 +2815,22 @@ símbolo.
 ## PF-1-01 · La carga a la entrada fuera de rango es un vacío declarable, no un método no evaluable ni un descarte definitivo
 
 - **Qué se difirió:** tratar el HWi/D ≤ 0 de MAT-D10 como
-  `MetodoNoEvaluableError` (la clase de EXT-3 para V1/V2 bajo control de
-  salida parcialmente lleno), y también la otra mitad que el prompt PF-1
-  pedía: probar «el siguiente diámetro» antes de descartar el material.
-- **Por qué:** la taxonomía de CLAUDE.md se pregunta en orden, y este caso
-  se detiene en la tercera pregunta. No falta dato (no es Faltante); una
-  pendiente de 0.40 m/m medida en campo no se corrige (no es Invalido); y lo
-  que el revisor tiene que hacer es DECLARAR: la carga mínima con que la
-  entrada pasa Q es la energía específica crítica H_c, que el paso 4.2.1 ya
-  resolvió, de modo que adoptarla es una elección del proyectista sobre un
-  número que existe, no un procedimiento nuevo. Un método no evaluable es el
-  que ninguna declaración resuelve —V1/V2 necesitaban el perfil de la lámina,
-  que es un cálculo—; éste se resuelve declarando, y la regla constitucional
-  para un vacío de la hoja de ruta es exactamente la entrada con
-  `valor=None`, [A] y la excepción que detiene: `hw_entrada_fuera_de_rango`,
-  de perfil, con dos opciones cerradas (`energia_critica`, `descartar`) y el
-  salto en S* dicho en su ficha. Lo que PC-03 midió y esta ficha cierra es
-  que el descarte era DEFINITIVO y MUDO —`Bloqueo.criterio = None`, invisible
-  en `M11.criterios_bloqueantes` y en la pestaña 4—; con el criterio, el
-  bloqueo viaja con clave, etapa, punto y el par (Q, S) con su S*. Y el
-  «siguiente diámetro» del prompt estaba al revés: HWi/D DECRECE con D
-  (bajan H_c/D y q* a la vez con Ks·S fijo), de modo que si la carta se cae
-  en el D mínimo ninguno mayor la levanta; S*(D) no crece con D y
-  `tests/test_pf1_hw_fuera_de_rango.py` lo fija junto a P9 de
-  `test_ext11_propiedades`. Descartar el material entero bajo «descartar»
-  es correcto; la refutación del dictamen (S* y la monotonía escritas; el
-  corredor nunca lo alcanza) sigue siendo cierta y por eso el corredor no
-  invoca el criterio y la línea base sólo se mueve en el recuento.
+  `MetodoNoEvaluableError`, y la otra mitad que el prompt PF-1 pedía:
+  probar «el siguiente diámetro» antes de descartar el material.
+- **Por qué:** la taxonomía se pregunta en orden y este caso se detiene en
+  «declarar»: H_c, que el paso 4.2.1 ya resolvió, es un piso que el
+  proyectista puede adoptar cuando la ecuación no entrega carga; un método
+  no evaluable es el que ninguna declaración resuelve (V1/V2 exigían un
+  cálculo). PC-03 medía un descarte definitivo y mudo; con el criterio [A]
+  de perfil `hw_entrada_fuera_de_rango` el bloqueo viaja con clave, punto y
+  el par (Q, S) con su S*. El piso acota el signo y no impone H_c como
+  mínimo (la carga salta en S*: la ficha lo dice). El «siguiente diámetro»
+  estaba al revés: S*(D) no crece con D bajo Forma 1, la de las tres cartas
+  circulares; bajo Forma 2 no es general y con S ≤ `S_CAUCE_MAX` sólo la
+  Forma 1 no sumergida puede dispararse. La v8 §4.2 describía el rechazo
+  anterior y se enmendó con nota «Corregido». El argumento entero, con los
+  números medidos, está en el docstring del símbolo.
 - **Qué haría falta:** un procedimiento de control de entrada válido para
-  pendientes de ese orden en una fuente de `normas/` (curvas de HDS-5 para
-  pendientes fuertes, o ensayo), que convertiría el [A] en [C] o lo
-  retiraría.
+  pendientes de ese orden en una fuente de `normas/`, que convertiría el
+  [A] en [C] o lo retiraría.
 - **Dónde vive:** `src/modulos/M4_control.py::_resolver_hw_fuera_de_rango`

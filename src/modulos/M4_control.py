@@ -135,8 +135,8 @@ exacto es
 y por encima de esa pendiente la recta BAJA al subir q*: con D = 0.90 m y
 S = 0.30, un q* de 3.50 da HW = 1.0585 m y uno de 4.00 da 1.0300 m -- 28.6 mm
 MENOS de carga con 14 % MAS de caudal, y del lado no conservador --. No lo
-atrapa nadie: `_exigir_hw_no_negativo` solo mira el signo, y aqui el numero es
-positivo.
+atrapa nadie: `_resolver_hw_fuera_de_rango` solo mira el signo, y aqui el numero
+es positivo.
 
 Lo encontro la auditoria de C3 y queda DECLARADO, no corregido: corregirlo
 seria sustituir el metodo de transicion adoptado, que es el criterio [C]
@@ -810,10 +810,18 @@ def pendiente_limite_de_signo(Q: float, seccion: Seccion, hds5: ConstantesHDS5,
     se devuelve `inf` porque el censo de los dos `inf` deliberados del
     repositorio no admite un tercero.
 
-    S* NO CRECE CON D: bajan H_c/D y q* a la vez con Ks*S fijo, de modo que
-    si la carta se cae en el diametro minimo del catalogo ninguno mayor la
-    levanta. Es lo que hace correcto descartar el material entero bajo
-    «descartar» (`tests/test_pf1_hw_fuera_de_rango.py` lo fija).
+    S* NO CRECE CON D BAJO FORMA 1: bajan H_c/D y q* a la vez con Ks*S fijo,
+    de modo que si la carta se cae en el diametro minimo del catalogo ninguno
+    mayor la levanta, y por eso descartar el material entero bajo «descartar»
+    es correcto para las tres cartas circulares del catalogo, que son Forma 1
+    (`tests/test_pf1_hw_fuera_de_rango.py` y P9 lo fijan). BAJO FORMA 2 NO
+    ES UNA PROPIEDAD GENERAL, y lo midio el auditor adversarial de PF-1: al
+    crecer D el q* baja y la rama pasa a la no sumergida de la (A.2), que no
+    lleva Ks*S, de modo que S* pasa a None --- la carta deja de poder caerse
+    ---. Lo que acota el alcance de todo esto es el dominio del dato: con
+    S <= `dominios.S_CAUCE_MAX` (1.0) solo la Forma 1 no sumergida puede
+    dispararse, porque en la rama sumergida y en la transicion S* vale al
+    menos (c*4^2 + Y)/|Ks| ~ 2.6 para toda carta transcrita.
     """
     _validar_Q_D(Q, seccion)
     if critico is None:
@@ -913,6 +921,21 @@ def _resolver_hw_fuera_de_rango(HW_sobre_D: float, m: float, *, Q: float,
     `M11.criterios_bloqueantes` lo saltaba ---. La clase elegida y por que no
     es `MetodoNoEvaluableError` estan en la ficha PF-1-01.
 
+    LA HOJA DE RUTA DECIA OTRA COSA Y SE ENMENDO EN PF-1: la nota de MAT-D10
+    de la v8 §4.2 escribia «`M4.control_entrada()` rechaza ese resultado con
+    `DisenoNoFactibleError`. Es un rechazo, no un piso», que era la conducta
+    hasta PF-1; la enmienda (nota «Corregido (PF-1, PC-03)» en esa seccion)
+    describe la de ahora. No es una discrepancia normativa --- HDS-5 no dice
+    nada del caso --- sino la descripcion del software en la hoja, y por
+    eso se enmienda la hoja y no se abre una `DIS-*`.
+
+    EL PISO ACOTA EL SIGNO, NO IMPONE H_c COMO MINIMO: por debajo de S* la
+    ecuacion puede devolver una carga positiva menor que H_c (con D = 0.90 y
+    Q = 0.05: HW = 0.035 m a S = 0.30 frente a H_c = 0.169 m) y se acepta tal
+    cual, como antes de PF-1; el criterio solo gobierna el caso en que la
+    ecuacion no entrega carga. Por eso la carga NO es continua en S*, y la
+    ficha del criterio lo dice en su `justificacion`.
+
     Tres salidas, las tres con el par (Q, S) culpable y el S* de la carta:
       * sin declarar        -> CriterioPendienteError sobre
                                `hw_entrada_fuera_de_rango` (Bloqueo con criterio,
@@ -931,7 +954,8 @@ def _resolver_hw_fuera_de_rango(HW_sobre_D: float, m: float, *, Q: float,
     if HW_sobre_D > 0:
         return HW_sobre_D, None
     S_limite = S - HW_sobre_D / m if m < 0 else None
-    caso = (f"D={seccion.altura} m, Q={Q} m3/s, S={S} m/m, q*={q_estrella:.5f}: "
+    caso = (f"D={seccion.altura} m (altura del barril), Q={Q} m3/s (por "
+            f"barril), S={S} m/m, q*={q_estrella:.5f}: "
             f"la correccion por pendiente Ks*S (Ks={hds5.Ks}) devuelve "
             f"HWi/D={HW_sobre_D:.5f}, una carga a la entrada nula o negativa; "
             f"la ecuacion deja de entregar carga desde S*="
@@ -2948,6 +2972,10 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         # (MAT-D9).
         S=S,
         HW_entrada=entrada.HW,
+        # El piso adoptado por `hw_entrada_fuera_de_rango`, si lo hubo (PF-1):
+        # el JSON y el comparador tienen que poder distinguir un punto cuyo
+        # HW_entrada es H_c por adopcion de uno en que lo dio la ecuacion.
+        piso_hw_entrada=entrada.piso,
         HW_salida=HW_salida_efectivo,
         control_gobernante=control,
         # «Este punto USA la aproximacion fuera de rango»: con perfil no

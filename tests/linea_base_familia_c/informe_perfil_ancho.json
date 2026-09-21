@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "47ad1a1bbd2d868f70853e078682dd7def7f90d2",
+    "criterios_sha1": "d827f4d653b8fc3be3578f0d00dbfed72c093c5d",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -216,6 +216,9 @@
         "S_m_m": 0.006,
         "V_erosion_m_s": 3.205506157842659,
         "V_sedimentacion_m_s": 2.4657739675712764,
+        "hw_entrada_piso": null,
+        "hw_entrada_HW_sobre_D_formula": null,
+        "hw_entrada_S_limite_m_m": null,
         "y_normal_m": 0.6271229622477936,
         "y_critico_m": 0.6399701975127118,
         "HW_entrada_m": 1.0420015370127218,
@@ -513,6 +516,9 @@
         "S_m_m": 0.008,
         "V_erosion_m_s": 2.882885082216342,
         "V_sedimentacion_m_s": 2.2176039093971864,
+        "hw_entrada_piso": null,
+        "hw_entrada_HW_sobre_D_formula": null,
+        "hw_entrada_S_limite_m_m": null,
         "y_normal_m": 0.3358338199114026,
         "y_critico_m": 0.4031436347123781,
         "HW_entrada_m": 0.5720081284009831,

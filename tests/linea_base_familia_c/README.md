@@ -410,3 +410,10 @@ los tres JSON, la lista de criterios sin valor que los JSON y las memorias
 imprimen (entra la clave nueva) y el recuento «74 criterios declarados, 35
 todavía sin valor» → «75 / 36» en las tres memorias. Es el mismo movimiento de
 FORMATO que EXT-7 declaró al abrir los dos criterios del cabezal.
+
+La parte 2 de PF-1 (los ajustes del auditor adversarial) la movió otra vez y
+sólo en formato: `hoja_ruta_sha1` (la nota «Corregido (PF-1)» de la v8 §4.2),
+`criterios_sha1` (la `justificacion` del criterio nuevo) y tres claves nuevas
+en el bloque `diseno` del JSON —`hw_entrada_piso`,
+`hw_entrada_HW_sobre_D_formula`, `hw_entrada_S_limite_m_m`—, las tres en
+`null` porque ningún punto del corredor adopta el piso.
