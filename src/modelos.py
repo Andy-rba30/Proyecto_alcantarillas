@@ -5036,7 +5036,10 @@ class FilaDelBarrido:
     ultimas columnas se leen de la comparacion con la corrida del primer
     valor: los codigos de las verificaciones cuyo veredicto `cumple` cambio,
     y si el punto se pudo comparar (`motivo` dice por que no). Cuando el
-    punto no dimensiono, material, seccion, carga y control van en None.
+    punto no dimensiono, material, seccion, carga y control van en None y
+    `incumplidas_en_la_progresion` dice que verificaciones incumplio a lo
+    largo de su progresion (leido de `iteraciones[].incumplidas`); cuando
+    dimensiono va vacia.
     """
     valor: Any
     id_punto: str
@@ -5048,6 +5051,7 @@ class FilaDelBarrido:
     verificaciones_que_cambian: Tuple[str, ...]
     comparable: bool
     motivo: str = ""
+    incumplidas_en_la_progresion: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

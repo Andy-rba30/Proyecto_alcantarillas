@@ -1259,8 +1259,10 @@ def _parser() -> argparse.ArgumentParser:
                         "escribe la tabla; repetible, UNA clave a la vez (nunca "
                         "el producto cartesiano). Cada valor pasa la misma "
                         "puerta que una declaracion: fuera de la ventana de "
-                        "sensibilidad no corre nada. Con --barrido no se arma "
-                        "memoria y --json recibe el barrido, no el expediente")
+                        "sensibilidad no corre nada. La coma SEPARA valores "
+                        "(3,5 son dos valores; un par se escribe con parentesis). "
+                        "Con --barrido no se arma memoria y --json recibe el "
+                        "barrido, no el expediente")
     p.add_argument("--barrido-nota", default="", dest="barrido_nota",
                    metavar="TEXTO",
                    help="nota de procedencia de los valores barridos (la que "
@@ -1271,7 +1273,8 @@ def _parser() -> argparse.ArgumentParser:
                    metavar="FILA",
                    help="fila de la tabla de la que provienen los valores "
                         "barridos, cuando la hay; vale para todos los "
-                        "--barrido de la invocacion")
+                        "--barrido de la invocacion, de modo que dos claves de "
+                        "tablas distintas con fila se barren en dos invocaciones")
     p.add_argument("--luz", type=float, help="luz del cruce, m (Sec. 2.1)")
     p.add_argument("--tw", type=float, dest="TW",
                    help="tirante en el receptor sobre el fondo de la salida, m")
@@ -1461,9 +1464,22 @@ def valores_del_barrido(barrido: str) -> Tuple[str, Tuple[Any, ...]]:
     try:
         valores = ast.literal_eval(f"({texto},)")
     except (ValueError, SyntaxError):
-        valores = tuple(_literal_declarado(trozo.strip(), f"--barrido {barrido!r}")
-                        for trozo in texto.split(","))
+        trozos = [trozo.strip() for trozo in texto.split(",")]
+        if any(not trozo for trozo in trozos):
+            raise ValueError(
+                f"--barrido {barrido!r} trae un valor vacio (dos comas seguidas, "
+                "o una coma al final): cada coma separa un valor") from None
+        valores = tuple(_literal_declarado(trozo, f"--barrido {barrido!r}")
+                        for trozo in trozos)
     return clave, tuple(valores)
+
+
+# Las banderas que un barrido no aplica: el barrido no es un expediente y no
+# arma memoria ni cuadro (PF-3). Se AVISA, porque callarlas era escribir
+# nada con codigo 0 (auditor adversarial de PF-3).
+_BANDERAS_QUE_EL_BARRIDO_NO_APLICA = (("html_salida", "--html"), ("pdf_salida", "--pdf"),
+                                      ("csv_resumen_salida", "--csv-resumen"),
+                                      ("criterios", "--criterios"), ("progreso", "--progreso"))
 
 
 def _barrer_desde_cli(args, externos: DatosExternos) -> int:
@@ -1477,16 +1493,34 @@ def _barrer_desde_cli(args, externos: DatosExternos) -> int:
     que un valor fuera de la ventana no deja ninguna corrida hecha.
     """
     from src import barrido as _barrido
-    volcados = []
-    for texto in args.barridos:
-        try:
+    ignoradas = [bandera for campo, bandera in _BANDERAS_QUE_EL_BARRIDO_NO_APLICA
+                 if getattr(args, campo)]
+    if ignoradas:
+        print("Con --barrido no se escribe memoria ni cuadro: se ignoran "
+              + ", ".join(ignoradas), file=sys.stderr)
+    # LA PUERTA DE TODOS LOS BARRIDOS ANTES DE LA PRIMERA CORRIDA: con dos
+    # --barrido, el segundo que no pasara la puerta se descubria despues de
+    # correr el primero entero (auditor adversarial de PF-3).
+    barridos = []
+    try:
+        for texto in args.barridos:
             clave, valores = valores_del_barrido(texto)
+            _barrido.verificar_valores(clave, valores, fila=args.barrido_fila,
+                                       nota=args.barrido_nota)
+            barridos.append((texto, clave, valores))
+    except KeyError as exc:
+        print(f"No se pudo barrer: la clave {exc} no existe en criterios_adoptados.py",
+              file=sys.stderr)
+        return 2
+    except ValueError as exc:
+        print(f"No se pudo barrer: {exc}", file=sys.stderr)
+        return 2
+    volcados = []
+    for texto, clave, valores in barridos:
+        try:
             resultado = _barrido.barrer(
                 args.csv, externos, args.alcance, clave, valores,
                 fila=args.barrido_fila, nota=args.barrido_nota, volcar=informe_json)
-        except (ValueError, KeyError) as exc:
-            print(f"No se pudo barrer: {exc}", file=sys.stderr)
-            return 2
         except ErrorProyecto as exc:
             print(f"El barrido de {texto!r} se detuvo en el expediente: {exc}",
                   file=sys.stderr)
@@ -1578,6 +1612,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.alcance = sesion.alcance
     if args.csv is None:
         parser.error("hace falta el CSV de puntos criticos, o una --sesion que lo traiga")
+    if args.prevuelo and args.barridos:
+        parser.error("--prevuelo y --barrido no se combinan: el pre-vuelo no corre "
+                     "y el barrido corre una vez por valor")
 
     # LOS DATOS DE SITIO DE LA OBRA (EXT-10): la bandera escrita gana al
     # bloque `sitio` de la sesion; sin bandera se aplica el bloque, y si la

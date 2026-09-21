@@ -56,11 +56,42 @@ from src import editores as _sed
 from src import servicio
 from src.modelos import CorridaDelBarrido, FilaDelBarrido, ResultadoDeBarrido
 
-# El prefijo con que el comparador rotula la diferencia de una verificacion
-# (`comparador._comparar_punto`): «verificacion V2.cumple». Se lee de ahi;
-# aqui solo se reconoce.
-_ROTULO_VERIFICACION = "verificacion "
+# El campo del volcado de una verificacion que lleva el veredicto (`cumple`,
+# `cli._verificacion_json`), como sufijo del rotulo del comparador:
+# «verificacion V2.cumple».
 _CAMPO_VEREDICTO = ".cumple"
+
+
+def verificar_valores(clave: str, valores: Sequence[Any], *, fila: str = "",
+                      nota: str = "",
+                      declaraciones_base: Optional[Mapping[str, Any]] = None) -> None:
+    """
+    LA PUERTA, PARA TODOS LOS VALORES, SIN CORRER NADA: cada valor se
+    declara de verdad por la puerta de la pestana 2 (`editores.declarar`),
+    sobre el estado de entrada mas `declaraciones_base` --- la elegibilidad
+    de una fila (R4) depende de otros criterios, y una base que solo se
+    verificara sin aplicarse rechazaba lo que la pestana 2 acepta (auditor
+    adversarial de PF-3) ---, y se deshace. `ValueError` si algun valor no
+    pasa; `KeyError` si la clave no existe. Al salir el estado es el de
+    entrada. `barrer` la llama antes de su primera corrida; la CLI la llama
+    para TODOS sus barridos antes de correr el primero.
+    """
+    valores = tuple(valores)
+    if not valores:
+        raise ValueError(f"el barrido de '{clave}' no trae ningun valor")
+    _ca.criterio(clave)  # KeyError si la clave no existe, antes de nada
+    base = dict(declaraciones_base or {})
+    entrada = _dec.estado_de_sesion()
+    try:
+        for k, v in base.items():
+            _ca.verificar_declaracion(k, v)
+        for valor in valores:
+            _dec.restaurar_sesion(entrada, sustituir=True)
+            for k, v in base.items():
+                _ca.establecer_valor_dinamico(k, v)
+            _sed.declarar(clave, valor, fila=fila, nota=nota)
+    finally:
+        _dec.restaurar_sesion(entrada, sustituir=True)
 
 
 def barrer(ruta_csv: Path, externos: Any, alcance: str, clave: str,
@@ -88,22 +119,12 @@ def barrer(ruta_csv: Path, externos: Any, alcance: str, clave: str,
     estado del proceso ya repuesto.
     """
     valores = tuple(valores)
-    if not valores:
-        raise ValueError(f"el barrido de '{clave}' no trae ningun valor")
-    _ca.criterio(clave)  # KeyError si la clave no existe, antes de nada
     base = dict(declaraciones_base or {})
+    # 1. LA PUERTA, PARA TODOS LOS VALORES, ANTES DE LA PRIMERA CORRIDA: lo
+    # que rechaza sale de aqui sin haber corrido nada.
+    verificar_valores(clave, valores, fila=fila, nota=nota, declaraciones_base=base)
     entrada = _dec.estado_de_sesion()
     try:
-        # 1. LA PUERTA, PARA TODOS LOS VALORES, ANTES DE LA PRIMERA CORRIDA:
-        # cada valor se declara de verdad por la puerta de la pestana 2 y
-        # se deshace; lo que la puerta rechaza sale de aqui sin haber
-        # corrido nada.
-        for k, v in base.items():
-            _ca.verificar_declaracion(k, v)
-        for valor in valores:
-            _dec.restaurar_sesion(entrada, sustituir=True)
-            _sed.declarar(clave, valor, fila=fila, nota=nota)
-
         # 2. UNA CORRIDA POR VALOR, cada una desde el estado de entrada.
         corridas: List[Tuple[Any, str, Dict[str, Any]]] = []
         for valor in valores:
@@ -131,27 +152,57 @@ def barrer(ruta_csv: Path, externos: Any, alcance: str, clave: str,
                               filas=tuple(filas))
 
 
+def _verificacion_que_cambia(d: _comparador.Diferencia) -> Optional[str]:
+    """
+    El codigo de la verificacion si esta diferencia es un cambio de
+    VEREDICTO: `cumple` distinto, o la verificacion evaluada en una corrida
+    y ausente en la otra --- que es como sale cuando el punto deja de
+    dimensionar y sus once verificaciones desaparecen del volcado (auditor
+    adversarial de PF-3) ---. None si es otra cosa (un valor obtenido, un
+    umbral).
+    """
+    rotulo = _comparador.ROTULO_VERIFICACION
+    if not d.campo.startswith(rotulo):
+        return None
+    if d.campo.endswith(_CAMPO_VEREDICTO):
+        return d.campo[len(rotulo):-len(_CAMPO_VEREDICTO)]
+    if {d.a, d.b} == {_comparador.VALOR_EVALUADA, _comparador.VALOR_AUSENTE}:
+        return d.campo[len(rotulo):]
+    return None
+
+
 def _filas_de(valor: Any, volcado: Dict[str, Any],
               comparacion: _comparador.ComparacionDeInformes) -> List[FilaDelBarrido]:
-    """La tabla de una corrida: una fila por punto, leida del volcado y de la comparacion."""
+    """
+    La tabla de una corrida: una fila por punto, leida del volcado y de la
+    comparacion. Un punto que NO dimensiono dice ademas que verificaciones
+    incumplio a lo largo de su progresion (`iteraciones[].incumplidas`, la
+    union), porque «no dimensionado» sin el por que es lo que la tesis no
+    puede leer: el comparador solo dice que el diseño esta en A y no en B.
+    """
     salida = []
     for punto in volcado.get("puntos") or []:
         id_punto = str(punto.get("id"))
         diseno = punto.get("diseno") or {}
+        dimensionado = bool(punto.get("dimensionado"))
         motivos = tuple(n.por_que for n in comparacion.no_comparables if n.donde == id_punto)
         cambian = tuple(sorted({
-            d.campo[len(_ROTULO_VERIFICACION):-len(_CAMPO_VEREDICTO)]
-            for d in comparacion.diferencias
-            if d.donde == id_punto and d.campo.startswith(_ROTULO_VERIFICACION)
-            and d.campo.endswith(_CAMPO_VEREDICTO)}))
+            codigo for codigo in (_verificacion_que_cambia(d)
+                                  for d in comparacion.diferencias if d.donde == id_punto)
+            if codigo}))
+        incumplidas: Tuple[str, ...] = ()
+        if not dimensionado:
+            incumplidas = tuple(sorted({
+                str(c) for paso in (punto.get("iteraciones") or [])
+                for c in (paso.get("incumplidas") or [])}))
         salida.append(FilaDelBarrido(
-            valor=valor, id_punto=id_punto,
-            dimensionado=bool(punto.get("dimensionado")),
+            valor=valor, id_punto=id_punto, dimensionado=dimensionado,
             material=diseno.get("material"), seccion=diseno.get("seccion"),
             HW_gobernante_m=diseno.get("HW_gobernante_m"),
             control_gobernante=diseno.get("control_gobernante"),
             verificaciones_que_cambian=cambian,
-            comparable=not motivos, motivo="; ".join(motivos)))
+            comparable=not motivos, motivo="; ".join(motivos),
+            incumplidas_en_la_progresion=incumplidas))
     return salida
 
 
@@ -177,7 +228,8 @@ def volcado_del_barrido(resultado: ResultadoDeBarrido) -> Dict[str, Any]:
 
 
 ENCABEZADO_DE_LA_TABLA = ("valor", "punto", "material", "seccion", "HW (m)",
-                          "control", "verificaciones que cambian", "comparable")
+                          "control", "verificaciones que cambian",
+                          "incumplidas si no dimensiona", "comparable")
 
 
 def lineas_de_la_tabla(resultado: ResultadoDeBarrido) -> Tuple[str, ...]:
@@ -194,6 +246,7 @@ def lineas_de_la_tabla(resultado: ResultadoDeBarrido) -> Tuple[str, ...]:
             f.seccion or "—", "—" if f.HW_gobernante_m is None else repr(f.HW_gobernante_m),
             f.control_gobernante or "—",
             ", ".join(f.verificaciones_que_cambian) or "ninguna",
+            ", ".join(f.incumplidas_en_la_progresion) or "—",
             "si" if f.comparable else f"NO: {f.motivo}"))
     anchos = [max(len(fila[i]) for fila in celdas) for i in range(len(ENCABEZADO_DE_LA_TABLA))]
     salida = [f"Barrido de '{resultado.clave}' sobre {len(resultado.corridas)} valor(es): "

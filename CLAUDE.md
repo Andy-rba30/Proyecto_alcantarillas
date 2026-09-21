@@ -535,13 +535,24 @@ ErrorProyecto.
   de E-B (`comparador.comparar`), «no comparable» incluido cuando cambia
   el método, y `src/barrido.py` no importa `src.modulos` ni `cli` (por
   AST): el volcador entra como argumento (`volcar=cli.informe_json`). La
+  puerta es una función aparte, `barrido.verificar_valores`, que aplica
+  también `declaraciones_base` —la elegibilidad de una fila (R4) depende
+  de otros criterios— y que la CLI llama para TODOS sus barridos antes de
+  correr el primero; un punto que deja de dimensionar dice qué
+  verificaciones incumplió en su progresión
+  (`FilaDelBarrido.incumplidas_en_la_progresion`, leído de
+  `iteraciones[].incumplidas`), y una verificación que desaparece del
+  volcado cuenta como cambio de veredicto (auditor adversarial de PF-3,
+  que midió además cuatro mutantes vivos sobre las tres columnas de la
+  tabla, hoy muertos). La
   CLI lo expone con `--barrido CLAVE=v1,v2,v3` (repetible, UNA clave a la
   vez, nunca el producto cartesiano; `--barrido-nota` y `--barrido-fila`
-  valen para todos los de la invocación), imprime la tabla y escribe
-  `{"barridos": [...]}` en `--json` o en `<csv>.barrido.json`; NO arma
-  memoria, porque el barrido es un anexo de la tesis y no parte del
-  expediente. El botón «Barrido…» de la pestaña 2 se difirió con símbolo
-  (ficha PF-3-01).
+  valen para todos los de la invocación; la coma SEPARA valores, de modo
+  que PC-34 no aplica y `3,5` son dos), imprime la tabla, avisa de las
+  banderas que no aplica y escribe `{"barridos": [...]}` en `--json` o en
+  `<csv>.barrido.json`; NO arma memoria, porque el barrido es un anexo
+  de la tesis y no parte del expediente. El botón «Barrido…» de la
+  pestaña 2 se difirió con símbolo (ficha PF-3-01).
 
 ## Tests
 - pytest en tests/. Mínimo un test por módulo.

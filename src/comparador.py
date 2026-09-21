@@ -80,6 +80,14 @@ DATOS_SITIO = "datos_sitio"
 
 ROTULO_IGUALES = "IGUALES"
 ROTULO_DIFIEREN = "DIFIEREN"
+# Como se rotula la diferencia de una verificacion de un punto («verificacion
+# V3», y debajo «.cumple», «.valor_obtenido»...). Es una constante y no un
+# literal en `_comparar_punto` porque `barrido._filas_de` la LEE para
+# reconocer sus filas: una segunda transcripcion divergiria sin aviso
+# (auditor adversarial de PF-3).
+ROTULO_VERIFICACION = "verificacion "
+VALOR_EVALUADA = "evaluada"
+VALOR_AUSENTE = "<ausente>"
 
 
 @dataclass(frozen=True)
@@ -248,10 +256,11 @@ def _comparar_punto(id_punto: str, pa: Dict[str, Any], pb: Dict[str, Any],
     va = {(v.get("fase"), v.get("codigo")): v for v in pa.get("verificaciones") or []}
     vb = {(v.get("fase"), v.get("codigo")): v for v in pb.get("verificaciones") or []}
     for k in sorted(set(va) | set(vb), key=str):
-        rotulo = f"verificacion {k[1] or k[0]}"
+        rotulo = f"{ROTULO_VERIFICACION}{k[1] or k[0]}"
         if k not in va or k not in vb:
-            diferencias.append(Diferencia(id_punto, rotulo, "evaluada" if k in va else "<ausente>",
-                                          "evaluada" if k in vb else "<ausente>"))
+            diferencias.append(Diferencia(id_punto, rotulo,
+                                          VALOR_EVALUADA if k in va else VALOR_AUSENTE,
+                                          VALOR_EVALUADA if k in vb else VALOR_AUSENTE))
             continue
         _comparar_valor(id_punto, rotulo, va[k], vb[k], diferencias)
     ba: Dict[Tuple[Any, ...], List[Any]] = {}

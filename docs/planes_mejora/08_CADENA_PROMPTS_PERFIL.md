@@ -76,7 +76,12 @@ Ejecuta únicamente PF-3 de docs/planes_mejora/08_CADENA_PROMPTS_PERFIL.md y apl
 > `restaurar_sesion(sustituir=True)`, que repone también la procedencia de lo
 > que el proceso tenía al entrar; y el botón «Barrido…» de la pestaña 2 se
 > difirió con símbolo (ficha PF-3-01). `barrer` recibe el volcador
-> (`volcar=cli.informe_json`) porque `src/` no importa `cli` (EXT-9).
+> (`volcar=cli.informe_json`) porque `src/` no importa `cli` (EXT-9). El
+> auditor adversarial dejó la parte 2: la puerta como función aparte
+> (`verificar_valores`, con la base aplicada y llamada por la CLI para todos
+> los barridos antes de correr), las verificaciones incumplidas del punto que
+> no dimensiona, la verificación que desaparece como cambio de veredicto, el
+> rótulo del comparador como constante, y los avisos de la CLI.
 
 ## PF-4 · V2b: umbral duro o indicador con aviso, declarado y no cableado
 

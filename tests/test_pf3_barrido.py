@@ -211,3 +211,135 @@ def test_pf3_la_cli_barre_y_escribe_el_json_sin_memoria(tmp_path):
          "--barrido-nota", NOTA],
         capture_output=True, text=True, cwd=RAIZ)
     assert hecho.returncode == 2 and "sensibilidad" in hecho.stderr
+
+
+# ===========================================================================
+# 4 - Lo que dejo el auditor adversarial (parte 2)
+# ===========================================================================
+# Cuatro mutantes obvios sobrevivian a los siete de arriba: comparar cada
+# corrida con la ANTERIOR en vez de con la primera, `comparable=True`
+# siempre, `verificaciones_que_cambian=()` siempre, y leer las diferencias de
+# todos los puntos en cada fila. Las tres columnas que definen la tabla no
+# tenian test. Y un punto que dejaba de dimensionar decia «no dimensionado»
+# sin la verificacion que lo tumbo.
+
+VALORES_CON_CAMBIO_DE_CONTROL = (0.2, 0.5, 0.9)   # A-01 pasa de entrada a salida en 0.9
+
+
+def test_pf3_la_comparacion_es_con_la_primera_y_el_cambio_de_metodo_no_es_comparable(tmp_path, _limpio):
+    from src import comparador
+    r = _barrer(_csv_a01(tmp_path), valores=VALORES_CON_CAMBIO_DE_CONTROL)
+    primera, media, ultima = r.corridas
+    assert primera.comparable and media.comparable
+    # La ultima cambia de metodo: control gobernante distinto, «no comparable».
+    assert not ultima.comparable
+    fila_ultima = next(f for f in r.filas if f.valor == ultima.valor)
+    fila_primera = next(f for f in r.filas if f.valor == primera.valor)
+    assert fila_primera.control_gobernante != fila_ultima.control_gobernante
+    assert not fila_ultima.comparable and comparador.CAMPOS_DE_METODO[0] in fila_ultima.motivo
+    assert fila_ultima.HW_gobernante_m > fila_primera.HW_gobernante_m * (1 + REL_TRANSPORTE)
+    # Y la comparacion de CADA corrida es con la del primer valor, no con la
+    # anterior: la linea del criterio dice A = <primer valor>.
+    for c in (media, ultima):
+        linea = next(l for l in c.comparacion_con_la_primera if f"{CLAVE}.valor" in l)
+        assert f"A = {primera.valor!r}" in linea and f"B = {c.valor!r}" in linea
+
+
+def test_pf3_las_filas_leen_solo_las_diferencias_de_su_punto_y_solo_los_veredictos():
+    from src import barrido, comparador
+    volcado = {"puntos": [
+        {"id": "P1", "dimensionado": True,
+         "diseno": {"material": "m", "seccion": "s", "HW_gobernante_m": 1.0,
+                    "control_gobernante": "entrada"}},
+        {"id": "P2", "dimensionado": False, "diseno": None,
+         "iteraciones": [{"incumplidas": ["V3"]}, {"incumplidas": ["V3", "V2b"]}]}]}
+    R = comparador.ROTULO_VERIFICACION
+    comparacion = comparador.ComparacionDeInformes(
+        puntos_comunes=("P1", "P2"), solo_en_a=(), solo_en_b=(),
+        diferencias=(
+            comparador.Diferencia("P1", f"{R}V3.cumple", True, False),        # cambia
+            comparador.Diferencia("P1", f"{R}V1.valor_obtenido", 1.0, 2.0),   # no es veredicto
+            comparador.Diferencia("P1", f"{R}V4", comparador.VALOR_EVALUADA,
+                                  comparador.VALOR_AUSENTE),                  # desaparece: cambia
+            comparador.Diferencia("P1", "diseno.HW_salida_m", 1.0, 1.1),      # no es verificacion
+            comparador.Diferencia("P2", f"{R}V2.cumple", True, False)),       # de OTRO punto
+        no_comparables=(comparador.NoComparable("P2", "sin diseño en B"),))
+    filas = {f.id_punto: f for f in barrido._filas_de(0.5, volcado, comparacion)}
+    assert filas["P1"].verificaciones_que_cambian == ("V3", "V4")
+    assert filas["P1"].comparable and filas["P1"].motivo == ""
+    assert filas["P1"].incumplidas_en_la_progresion == ()
+    assert filas["P2"].verificaciones_que_cambian == ("V2",)
+    assert not filas["P2"].comparable and filas["P2"].motivo == "sin diseño en B"
+    assert filas["P2"].incumplidas_en_la_progresion == ("V2b", "V3")
+    assert filas["P2"].material is None and filas["P2"].HW_gobernante_m is None
+
+
+def test_pf3_el_punto_que_deja_de_dimensionar_dice_que_verificacion_lo_tumbo(tmp_path, _limpio):
+    from src import barrido
+    # v_max_concreto_eleccion en su ventana (3.0, 6.0): con 3.0 m/s el
+    # concreto incumple V3 en toda la progresion. Con el limite del concreto
+    # solo, A-01 sigue dimensionando en TMC (medido: Ø 1.20 m); para que el
+    # punto NO dimensione, las otras dos familias llevan su limite al piso de
+    # su ventana por `declaraciones_base`, que acompaña a las dos corridas.
+    ventana = ca.criterio("v_max_concreto_eleccion").sensibilidad
+    base = {k: ca.criterio(k).sensibilidad[0] for k in ("v_max_tmc", "v_max_hdpe")}
+    r = barrido.barrer(_csv_a01(tmp_path), _externos(), cli.ALCANCE_PERFIL,
+                       "v_max_concreto_eleccion", (ventana[1], ventana[0]),
+                       nota=NOTA, declaraciones_base=base, volcar=cli.informe_json)
+    alta, baja = (next(f for f in r.filas if f.valor == v) for v in (ventana[1], ventana[0]))
+    assert alta.dimensionado and alta.incumplidas_en_la_progresion == ()
+    assert alta.material and "oncreto" in alta.material
+    for c in r.corridas:
+        declarados = c.informe_json["criterios"]["declarados_en_caliente"]
+        assert set(base) <= set(declarados)
+    assert not baja.dimensionado and not baja.comparable
+    # La union de la progresion entera, las tres familias: V3 en todas, y lo
+    # que otra familia incumplio ademas (medido: V7 en el HDPE) se lee igual.
+    assert "V3" in baja.incumplidas_en_la_progresion
+    assert "V3" in baja.verificaciones_que_cambian
+    assert not r.corridas[1].comparable
+    lineas = barrido.lineas_de_la_tabla(r)
+    assert any("no dimensionado" in l and "V3" in l for l in lineas)
+
+
+def test_pf3_la_puerta_aplica_las_declaraciones_base_como_la_pestana_2(_limpio):
+    from src import barrido
+    fila = "cajon_aletas_30_75_escuadra"          # elegible solo con embocadura_cajon
+    celda = next(o.valor_propuesto for o in sed.esquema_de(CLAVE).opciones_de_tabla
+                 if o.fila == fila)
+    antes = dec.estado_de_sesion()
+    with pytest.raises(ValueError, match="R4"):
+        barrido.verificar_valores(CLAVE, (celda,), fila=fila)
+    base = {"embocadura_cajon": ca.criterio("embocadura_cajon").sensibilidad[0]}
+    barrido.verificar_valores(CLAVE, (celda,), fila=fila, declaraciones_base=base)
+    # La puerta no deja nada: ni la base ni el valor.
+    assert dec.estado_de_sesion() == antes
+    assert not ca.declarado_en_caliente("embocadura_cajon") and dec.procedencia_de(CLAVE) is None
+
+
+def test_pf3_la_cli_cierra_la_puerta_de_todos_los_barridos_antes_de_correr_y_avisa(tmp_path):
+    ruta = _csv_a01(tmp_path)
+    salida = tmp_path / "barrido.json"
+    base = [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--alcance", "perfil",
+            "--luz", str(LUZ), "--tw", str(TW), "--barrido-nota", NOTA]
+    # El segundo barrido no pasa la puerta: el primero NO corre y no hay JSON.
+    hecho = subprocess.run(base + ["--barrido", f"{CLAVE}=0.3,0.5",
+                                   "--barrido", f"{CLAVE}=0.3,{FUERA}", "--json", str(salida)],
+                           capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 2 and "sensibilidad" in hecho.stderr
+    assert "Barrido de" not in hecho.stdout and not salida.exists()
+    # Las banderas que el barrido no aplica se dicen, y el pre-vuelo no se combina.
+    hecho = subprocess.run(base + ["--barrido", f"{CLAVE}=0.3", "--html", str(tmp_path / "n.html"),
+                                   "--csv-resumen", str(tmp_path / "n.csv"), "--json", str(salida)],
+                           capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 0, hecho.stderr
+    assert "--html" in hecho.stderr and "--csv-resumen" in hecho.stderr
+    assert not (tmp_path / "n.html").exists() and not (tmp_path / "n.csv").exists()
+    hecho = subprocess.run(base + ["--barrido", f"{CLAVE}=0.3", "--prevuelo"],
+                           capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 2 and "--prevuelo" in hecho.stderr
+    # Una clave inexistente y un valor vacio por errata se dicen con esas palabras.
+    hecho = subprocess.run(base + ["--barrido", "no_existe=1"], capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 2 and "no existe" in hecho.stderr
+    hecho = subprocess.run(base + ["--barrido", f"{CLAVE}=0.3,,0.5"], capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 2 and "vacio" in hecho.stderr
