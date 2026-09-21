@@ -203,3 +203,13 @@ NOR-PRO-04), la discrepancia de gamma EV que se queda abierta por diseño, y
 el gabinete (las tres lecturas de T1; las Tablas 1 a 5 de M 170M, que son
 transcripción por imagen y podrían ser una N3; el original en inglés de
 M 294).
+
+## Añadido tras E-B: la cadena PF (perfil en las tres familias)
+
+Con la cadena EXT y E-A/E-B en `origin/main`, la revisión de cierre de E-B
+midió que la app dimensiona a perfil las tres familias del §2.3 y dejó seis
+sesiones para lo que esa corrida puso a la vista. Sus prompts viven en
+`08_CADENA_PROMPTS_PERFIL.md` (PF-1 a PF-6): PC-03, pre-vuelo de datos por
+familia, barrido de sensibilidad con el comparador, V2b declarable, guía de
+corrida de perfil ejecutada por la suite, y tres cabos (R48-007, la fila que
+el editor no suelta, lo que el comparador calla).
