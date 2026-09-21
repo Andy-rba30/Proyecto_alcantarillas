@@ -64,6 +64,15 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "pdf: abre un PDF de normas/; exige PyMuPDF (requirements-dev.txt)")
+    # `lento`: un test que por si solo pesa mas de diez segundos porque lanza
+    # un subproceso pesado (weasyprint, un PDF). NO se salta: se marca para
+    # que una corrida de trabajo pueda dejarlo fuera (`-m "not lento"`) y
+    # para que el reparto del tiempo de la suite se lea del codigo (PC-22:
+    # cuatro tests sumaban 27 de 80 s). El conteo de la suite no cambia.
+    config.addinivalue_line(
+        "markers",
+        "lento: mas de diez segundos por un subproceso pesado; "
+        "excluible con -m \"not lento\", nunca saltado por defecto")
 
 from src import criterios_adoptados as _ca
 from src import datos_sitio as _ds

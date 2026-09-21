@@ -180,7 +180,30 @@ def test_la_corrida_es_determinista(recien_generada, tmp_path):
     sellos de reloj y el mtime de criterios_adoptados.py, que cambia POR CLON
     y no por corrida --, y `regenerar.sh` los normaliza. Esto comprueba que
     la normalizacion sigue cubriendolos.
+
+    UNA SOLA CORRIDA EN VERDE (PC-22). Hasta EXT-11 este test lanzaba una
+    SEGUNDA corrida del script (6 s medidos en 5196dd2) para compararla con
+    la de la fixture. La segunda corrida ya existe: son los archivos
+    COMPROMETIDOS, generados por el mismo arbol en otro clon y otra hora
+    --- una prueba de determinismo mas fuerte que dos corridas seguidas en
+    la misma maquina, porque atraviesa justo el campo que cambia por clon.
+    Si la corrida de la fixture coincide con lo comprometido, el
+    determinismo queda demostrado sin correr nada mas. Solo cuando NO
+    coincide se lanza la segunda corrida, para separar los dos diagnosticos
+    que la discrepancia mezcla: un campo volatil sin normalizar (dos
+    corridas seguidas tambien difieren) o un cambio del codigo (dos corridas
+    seguidas coinciden y es el test de arriba el que tiene que fallar).
     """
+    distintos_de_lo_comprometido = [
+        nombre for nombre in sorted(_generados_comprometidos())
+        if (DIR / nombre).read_bytes() != (recien_generada / nombre).read_bytes()]
+    if not distintos_de_lo_comprometido:
+        # En verde este test AFIRMA lo mismo que el de arriba y con otro
+        # sentido: la corrida de hoy reproduce byte a byte una corrida
+        # anterior del mismo arbol. Queda dicho que es la misma comparacion
+        # (auditoria de EXT-11); lo que añade es el camino rojo de abajo.
+        assert not distintos_de_lo_comprometido
+        return
     segunda = tmp_path / "segunda"
     r = subprocess.run([SH, str(SCRIPT), str(segunda)], cwd=RAIZ,
                        capture_output=True, text=True)

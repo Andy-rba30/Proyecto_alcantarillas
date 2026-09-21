@@ -501,12 +501,18 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2617**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **3779**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
-regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
+regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
+(la primera viñeta de abajo explica la que desapareció):
 
-- `tests/test_MD.py` — el `skipped` **permanente** por condición imposible:
-  su `skipif` guarda que `M5_verificaciones` no exista, y ya no puede darse.
+- `tests/test_MD.py` YA NO SALTA. Hasta EXT-11 tenía el `skipped`
+  **permanente** por condición imposible —un `skipif` que guardaba que
+  `M5_verificaciones` no existiera, y ya no podía darse—, que era un test que
+  nunca corría (PC-22). EXT-11 lo sustituyó por la simulación de la ausencia
+  REAL: un subproceso sobre una copia del árbol sin el archivo de M5, donde
+  `import_module` falla de verdad. Por eso la columna «sí · sí» pasa de 4 a
+  3 saltos.
 - `tests/test_gui_contrato.py` y `tests/test_ext5_forma_gui.py` — los tests
   de **ventana real**, que hoy son **nueve** en siete corridas (S20 abrió el
   primero, la corrida de perfil; S22 el de la ayuda de entrada; G1 el de la
@@ -545,7 +551,39 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-10 (2026-09-21) sumó OCHENTA Y CINCO tests**: los 78
+independientes. **EXT-11 (2026-09-21) sumó MIL CIENTO SESENTA Y DOS tests**,
+y ninguno depende de PyMuPDF ni de Tk: los 981 de
+`tests/test_ext11_propiedades.py` —las siete propiedades del motor por
+mallas (Q = V_sedimentación·A en circular y rectangular; Q_total = N·Q_celda
+a través de MD→M4; V_erosion ≥ V_sedimentación; continuidad y linealidad de
+la transición en las dos formas; monotonía de HW(Q) bajo Forma 1;
+tirante_normal = None para Q ≥ Q_lleno; HW(N=3) ≠ HW(N=1) y HW(N, N·Q) =
+HW(1, Q)) más las dos tandas de «lo que la mutación enseñó» (V3 juzga la
+rama alta y su paso lo publica; los umbrales de M5 son inclusivos; las
+guardias del receptor trapecial, el par de Manning, el ke, la progresión
+que se repite, la cota del TW, el motivo de descarte del marco)—, los 119
+de `tests/test_ext11_cruce_temarios.py` (PC-29: 71 ítems ALTA/CRÍTICA de
+los temarios cruzados con la hoja `Hallazgos`, leída con
+`tests/apoyo/tracker.py` sin openpyxl), los 9 de
+`tests/test_ext11_mutacion.py` (el arnés `tests/apoyo/mutacion.py`
+probándose a sí mismo y el censo de 43 supervivientes con razón), los 47
+netos de `test_guardias_de_la_suite` (la guardia PC-21
+`afirmaciones_textuales_sobre_codigo` con taint, sus 16 autopruebas y el
+censo `TEXTUAL_CON_RAZON`; el censo `PUBLICAS_SIN_REFERENCIA_EN_TESTS` de 29
+públicas por tokens NAME con su llamador comprobado por AST, parametrizado),
+los 5 anclajes de `test_decisiones_diferidas` para las fichas de la Parte
+XXVII (EXT-11-01..05) y el test nuevo de test_cli (la Fase 8 llamada sobre
+el concreto real de perfil). Ningún archivo restó tests: el skip permanente
+de `test_MD` pasó a ser un test que corre (la ausencia real de M5 en
+subproceso), y por eso «sí · sí» salta 3 y no 4; test_anticipo,
+test_gui_contrato, test_ext8, test_ext10, test_ayuda_entrada, test_M5,
+test_dimensional_piloto se reescribieron al AST sin sumar ni restar. La
+mutación medida con el arnés (679 mutantes sobre M3–M5/MD, `_par_de_manning`
+y las tres propiedades del par de n): 568 muertos en la primera vuelta
+(83.6 %) contra diez archivos objetivo, 65 de los 111 restantes en la
+segunda (línea base, cierre de perfil, CLI), 46 vivos, 43 tras la segunda
+tanda; sin `hypothesis` ni `mutmut` (consulta sin respuesta, ficha
+EXT-11-01). **EXT-10 (2026-09-21) sumó OCHENTA Y CINCO tests**: los 78
 de `tests/test_ext10_multiobra.py` —la aceptación de EXT-V-01 y de la fase
 E04: 63 escritos primero en rojo con `xfail(strict=True)` por test —medidos
 63 xfailed y 0 XPASS antes de tocar código; dos guardias no lo llevaron
@@ -860,7 +898,8 @@ llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
-2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617. La
+2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
+EXT-11: 3779. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES

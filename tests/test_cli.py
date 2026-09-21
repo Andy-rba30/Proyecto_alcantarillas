@@ -6,12 +6,21 @@ que registre cada bloqueo con su causa y que no rellene ningun vacio.
 
 Dos cosas que estas pruebas fijan a proposito:
 
-1. Con los criterios como estan hoy, NINGUN punto se dimensiona: V5 y V8 de la
-   Fase 5 son vacios declarados y la Fase 5 no puede completarse. El informe de
-   un punto dimensionado se prueba sustituyendo `MD.disenar_punto` -- lo que se
-   verifica ahi es la capa de reporte (material, D, control gobernante,
-   verificaciones con numeral), no el bucle de MD, que tiene sus propias
-   pruebas en tests/test_MD.py.
+1. A NIVEL DE EXPEDIENTE ningun punto se dimensiona: V5 y V8 de la Fase 5
+   son vacios declarados y el bucle de MD se detiene en ellos. Hasta EXT-11
+   el informe de un punto dimensionado se probaba sustituyendo
+   `MD.disenar_punto` por un STUB de HDPE con numeros inventados -- un
+   resultado que el producto NUNCA puede producir (PC-20) --. Desde EXT-11
+   `informe_dimensionado` ES una corrida del producto, sin parche: la de
+   PERFIL con las entradas de la linea base de la Familia C, que dimensiona
+   A-01, A-02 y B-01 en CONCRETO con las Fases 6 y 7 reales, V5 y V8
+   diferidas con su fundamento y el contexto de corrida completo. La Fase 8,
+   que el perfil difiere por diseño, se prueba llamandola EXPLICITAMENTE
+   sobre una copia del punto real (`test_la_fase_8_corre_sobre_el_concreto_
+   real...`): una corrida de expediente con esos resultados inyectados
+   parecia mas «real» y no lo era --- perdia los usos de criterios de la
+   Fase 4 y presentaba tres puntos dimensionados con la Fase 5 incompleta
+   en silencio (auditoria de EXT-11; ficha EXT-11-04).
 
 2. Un criterio se declara con `monkeypatch.setitem` sobre `ca.CRITERIOS`, el
    mismo patron de tests/test_M5_verificaciones.py: la prueba no toca el
@@ -31,8 +40,8 @@ from src import servicio
 from tests.apoyo.criterios import sin_valor
 from src.modulos.M11_reporte import PlantillaHTML
 from src.modelos import (CriterioPendienteError,
-                     ControlGobernante, DatoInvalidoError, Magnitud,
-                     ResultadoHidraulico, ResultadoPunto, SeccionCircular,
+                     ControlGobernante, DatoInvalidoError,
+                     ResultadoHidraulico, ResultadoPunto,
                      TipoMaterial, Verificacion)
 from src.modulos.M0_carga import cargar_puntos
 from src.modulos.M2_material import catalogo
@@ -361,52 +370,78 @@ def test_el_expediente_no_cierra_mientras_haya_bloqueos():
 # Reporte de un punto dimensionado
 # ---------------------------------------------------------------------------
 
-def _resultado_hdpe(punto, S=None, **_):
+# LAS ENTRADAS DE LA LINEA BASE DE LA FAMILIA C (`entradas_ampliadas.json` +
+# luz 2.75 m): la misma corrida que `tests/linea_base_familia_c/regenerar.sh`
+# congela, para que lo que aqui se afirma del punto dimensionado sea lo que
+# el producto imprime en la linea base y no otro caso.
+ENTRADAS_LINEA_BASE = (Path(__file__).resolve().parent / "linea_base_familia_c"
+                       / "entradas_ampliadas.json")
+LUZ_LINEA_BASE_M = 2.75
+PUNTOS_QUE_DIMENSIONAN_EN_PERFIL = {"A-01", "A-02", "B-01"}
+
+
+def _externos_linea_base():
+    return cli.cargar_datos_externos(ENTRADAS_LINEA_BASE,
+                                     {"luz_m": LUZ_LINEA_BASE_M})
+
+
+@pytest.fixture(scope="module")
+def informe_dimensionado():
     """
-    Un `ResultadoPunto` aceptado, con material y hidraulica coherentes, para
-    probar la capa de reporte. HDPE por costumbre de este archivo, no por
-    necesidad: desde C01 los tres materiales corren el tamizado de 7.A con la
-    misma tabla (AASHTO LRFD 12.6.6.3) y ninguno depende ya de un criterio de
-    recubrimiento propio.
+    La corrida REAL de perfil (PC-20): A-01 y A-02 en concreto reforzado
+    D = 0.90 m y B-01 en D = 1.05 m, dimensionados por el bucle de MD con la
+    Fase 5 de perfil (V5 y V8 diferidas al expediente con fundamento). Es la
+    salida del producto tal cual, con su `contexto` de corrida: no hay
+    parche, doble ni resultado inyectado. De modulo porque es cara y los
+    tests solo la leen; el que necesita cambiarla la copia.
     """
-    material = catalogo(TipoMaterial.HDPE)
-    S = punto.exigir("S_cauce") if S is None else S
-    hidraulica = ResultadoHidraulico(
-        y_normal=0.30, y_critico=0.25,
-        V_erosion=2.50, V_sedimentacion=1.92, Q=punto.Q_m3s or 1.0,
-        # La S del diseño, resuelta como la resuelve `MD.disenar_punto`: la
-        # que declare el llamador y, si no hay, `punto.exigir("S_cauce")`,
-        # que lanza DatoFaltanteError cuando la columna viene vacia. Sin
-        # `or` ni default: ese es justamente el defecto que MAT-D9 cierra.
-        S=S,
-        HW_entrada=0.50, HW_salida=0.40,
-        control_gobernante=ControlGobernante.ENTRADA,
-        # La velocidad de salida que la Fase 6 consume desde EXT-3: bajo
-        # control de entrada es la del tirante normal, rama n_min.
-        V_salida=Magnitud("V_salida", 2.50, "m/s",
-                          "doble de prueba: tirante normal, rama n_min"))
-    verificaciones = (
-        Verificacion(cumple=True, numeral="4.1.1.3.7 b)", valor_obtenido=0.50,
-                     valor_admisible=0.75, criterio_aplicado="Y_sobre_D_max",
-                     codigo="V1"),
-        Verificacion(cumple=True, numeral="4.1.1.3.7 a)", valor_obtenido=2.50,
-                     valor_admisible=0.60, criterio_aplicado=None, codigo="V2"),
-    )
-    return ResultadoPunto(punto=punto, aceptado=True, material=material,
-                          seccion=SeccionCircular(D=0.60),
-                          resultado_hidraulico=hidraulica,
-                          verificaciones=verificaciones)
+    informe = cli.correr(CSV, _externos_linea_base(), alcance=cli.ALCANCE_PERFIL)
+    dimensionados = {p.punto.id for p in informe.puntos if p.dimensionado}
+    assert dimensionados == PUNTOS_QUE_DIMENSIONAN_EN_PERFIL, sorted(dimensionados)
+    assert all(p.resultado.material.tipo is TipoMaterial.CONCRETO_REFORZADO
+               for p in informe.puntos if p.dimensionado)
+    return informe
+
+
+def _copia_ligera(informe):
+    """
+    Copia del informe con sus `InformePunto` copiados uno a uno (listas de
+    bloqueos incluidas), para que un test pueda alterar un punto sin tocar
+    la fixture de modulo. No es `deepcopy`: `ReferenciaNormativa` (un `str`
+    con `__new__` propio) no lo admite, y no hace falta copiar los
+    resultados congelados.
+    """
+    import copy
+    nuevo = copy.copy(informe)
+    nuevo.puntos = [_copia_ligera_del_punto(p) for p in informe.puntos]
+    return nuevo
+
+
+def _copia_ligera_del_punto(informe_punto):
+    import copy
+    nuevo = copy.copy(informe_punto)
+    nuevo.bloqueos = list(informe_punto.bloqueos)
+    nuevo.traza = list(informe_punto.traza)
+    return nuevo
 
 
 @pytest.fixture
-def informe_dimensionado(monkeypatch):
-    """A-01 dimensionado, con la Fase 6 desbloqueada y la 8 aun sin tabla."""
-    _declarar(monkeypatch, longitud_proteccion_salida=3.0)
-    # Se patchea donde el nombre se RESUELVE: el servicio (EXT-9).
-    monkeypatch.setattr(servicio, "disenar_punto",
-                        lambda punto, **kwargs: _resultado_hdpe(punto, **kwargs))
-    return _informe(luz_m=2.0, categoria_tr="quebrada_menor", TW_m=0.0,
-                    longitud_m=12.0)
+def informe_con_criterio_desconocido(informe_dimensionado):
+    """
+    El informe real con UNA verificacion añadida a A-01 cuyo
+    `criterio_aplicado` no es clave de CRITERIOS. Es el unico doble que queda
+    en este archivo, y es de la capa de REPORTE: prueba que el volcado tolera
+    un nombre desconocido, no que el producto lo produzca.
+    """
+    import dataclasses
+    informe = _copia_ligera(informe_dimensionado)   # la fixture de modulo no se toca
+    a01 = _punto(informe, "A-01")
+    extra = Verificacion(cumple=True, numeral="4.1.1.3.7 b)", valor_obtenido=0.50,
+                         valor_admisible=0.75, criterio_aplicado="Y_sobre_D_max",
+                         codigo="V1")
+    a01.resultado = dataclasses.replace(
+        a01.resultado, verificaciones=a01.resultado.verificaciones + (extra,))
+    return informe
 
 
 def test_el_cuadro_resumen_csv_lleva_el_contenido_del_punto_dimensionado(
@@ -427,8 +462,10 @@ def test_el_cuadro_resumen_csv_lleva_el_contenido_del_punto_dimensionado(
 
     a01 = por_id["A-01"]
     assert a01["familia"] == "A"
-    assert a01["material"], "el material del punto dimensionado quedo vacio"
-    assert a01["seccion"] == "Ø 0.60 m"
+    assert a01["material"] == "Concreto reforzado", (
+        "el material del punto dimensionado tiene que ser el que el "
+        "producto eligio, no un doble")
+    assert a01["seccion"] == "Ø 0.90 m"
     assert a01["control_gobernante"] == "entrada"
     assert a01["V_erosion_ms"] and a01["V_sedimentacion_ms"]
     assert a01["V_erosion_ms"] != a01["V_sedimentacion_ms"], (
@@ -446,11 +483,14 @@ def test_el_cuadro_resumen_csv_lleva_el_contenido_del_punto_dimensionado(
 def test_reporta_material_diametro_y_control_gobernante(informe_dimensionado):
     a01 = _punto(informe_dimensionado, "A-01")
     assert a01.dimensionado
-    assert a01.resultado.material.tipo is TipoMaterial.HDPE
-    assert a01.resultado.seccion.altura == pytest.approx(0.60,
+    assert a01.resultado.material.tipo is TipoMaterial.CONCRETO_REFORZADO
+    assert a01.resultado.seccion.altura == pytest.approx(0.90,
                                                         rel=REL_TRANSPORTE)
     assert (a01.resultado.resultado_hidraulico.control_gobernante
             is ControlGobernante.ENTRADA)
+    # Los tres puntos circulares del CSV dimensionan, y en concreto.
+    for id_punto in PUNTOS_QUE_DIMENSIONAN_EN_PERFIL:
+        assert _punto(informe_dimensionado, id_punto).dimensionado
 
 
 def test_toda_verificacion_reportada_lleva_numeral(informe_dimensionado):
@@ -461,12 +501,47 @@ def test_toda_verificacion_reportada_lleva_numeral(informe_dimensionado):
     assert {"V1", "V2", "G1", "G2"} <= codigos
 
 
-def test_las_fases_6_7_y_8_corren_sobre_el_punto_dimensionado(informe_dimensionado):
+def test_las_fases_6_y_7_corren_sobre_el_punto_dimensionado(informe_dimensionado):
+    """
+    PC-20: las Fases 6 y 7 sobre un concreto que el producto dimensiono. La
+    longitud ya no es un dato declarado (12.0 m) sino la que 7.B calcula
+    para cada punto desde la plataforma y los taludes. La Fase 8 queda
+    diferida en perfil, por diseño, y se prueba aparte.
+    """
+    for id_punto in PUNTOS_QUE_DIMENSIONAN_EN_PERFIL:
+        p = _punto(informe_dimensionado, id_punto)
+        assert p.proteccion.d50 > 0, id_punto
+        assert p.proteccion.advertencias, "Sec. 6 exige el aviso de filtro"
+        assert p.geometria is not None and p.geometria.longitud > 0, id_punto
+        assert "M7.longitud_conducto" in p.longitud.origen, id_punto
+        assert p.cama_apoyo is None, "en perfil la Fase 8 se difiere"
+        assert any(b.diferido_por_alcance and b.fase == cli.FASE_ESTRUCTURAL
+                   for b in p.bloqueos), id_punto
+    # V5 y V8 no desaparecen: quedan diferidas con su fundamento.
     a01 = _punto(informe_dimensionado, "A-01")
-    assert a01.proteccion.d50 > 0
-    assert a01.proteccion.advertencias, "Sec. 6 exige el aviso de filtro"
-    assert a01.geometria.longitud == pytest.approx(12.0, rel=REL_TRANSPORTE)
-    assert a01.cama_apoyo is not None
+    assert {b.criterio for b in a01.bloqueos if b.criterio} >= {
+        "remanso_derecho_via", "TR_evento_extremo"}
+    # Y los criterios que gobernaron los numeros estan en el contexto.
+    assert {"HW_D_max", "ke_entrada", "diametros_normalizados"} <= set(
+        informe_dimensionado.contexto.criterios_usados)
+
+
+def test_la_fase_8_corre_sobre_el_concreto_real_que_el_producto_dimensiono(
+        informe_dimensionado):
+    """
+    PC-20, la Fase 8: el expediente no puede dimensionar (V5/V8 vacias) y
+    el perfil la difiere, de modo que la unica forma de ejercitarla sobre un
+    resultado del producto es LLAMARLA sobre una copia del punto real. Llega
+    a la cama de apoyo del concreto y se detiene en la clase de producto,
+    que es lo que `test_la_clase_de_producto_sigue_bloqueada` fija.
+    """
+    for id_punto in PUNTOS_QUE_DIMENSIONAN_EN_PERFIL:
+        p = _copia_ligera_del_punto(_punto(informe_dimensionado, id_punto))
+        servicio._fase_8(p)
+        assert p.cama_apoyo is not None, id_punto
+        assert "clases_producto_por_relleno" in _claves_bloqueantes(p), id_punto
+    # La fixture de modulo no se toco.
+    assert _punto(informe_dimensionado, "A-01").cama_apoyo is None
 
 
 def test_la_fase_7_usa_la_misma_longitud_que_la_fase_4(informe_dimensionado):
@@ -475,8 +550,9 @@ def test_la_fase_7_usa_la_misma_longitud_que_la_fase_4(informe_dimensionado):
 
 
 def test_la_clase_de_producto_sigue_bloqueada(informe_dimensionado):
-    claves = _claves_bloqueantes(_punto(informe_dimensionado, "A-01"))
-    assert "clases_producto_por_relleno" in claves
+    a01 = _copia_ligera_del_punto(_punto(informe_dimensionado, "A-01"))
+    servicio._fase_8(a01)
+    assert "clases_producto_por_relleno" in _claves_bloqueantes(a01)
 
 
 # ---------------------------------------------------------------------------
@@ -502,20 +578,22 @@ def test_el_json_es_serializable_y_lleva_las_tres_listas_de_criterios(
     assert all("declarado_en_caliente" in c for c in datos["criterios"]["usados"])
     a01 = next(p for p in datos["puntos"] if p["id"] == "A-01")
     assert a01["diseno"]["control_gobernante"] == "entrada"
-    assert a01["diseno"]["seccion"] == "Ø 0.60 m"
+    assert a01["diseno"]["seccion"] == "Ø 0.90 m"
+    assert a01["diseno"]["material"] == "Concreto reforzado"
     assert all(v["numeral"] for v in a01["verificaciones"])
 
 
 def test_el_volcado_no_revienta_con_un_criterio_aplicado_desconocido(
-        informe_dimensionado):
+        informe_con_criterio_desconocido):
     """
-    `_resultado_hdpe` aplica el umbral "Y_sobre_D_max", que NO es clave de
-    CRITERIOS. El acceso directo `ca.criterio(...)` lanzaba KeyError y se caia
+    Una verificacion con el umbral "Y_sobre_D_max", que NO es clave de
+    CRITERIOS (la añade `informe_con_criterio_desconocido` al resultado real
+    de A-01). El acceso directo `ca.criterio(...)` lanzaba KeyError y se caia
     el volcado entero del expediente por un desajuste de nombre en la capa de
     reporte. La consulta tolerante imprime la clave tal cual, sin etiqueta.
     """
     assert "Y_sobre_D_max" not in ca.CRITERIOS
-    texto = cli.volcar(informe_dimensionado)
+    texto = cli.volcar(informe_con_criterio_desconocido)
     assert "umbral del criterio 'Y_sobre_D_max'" in texto
     # Sin etiqueta inventada: la linea termina en la clave, no en "[algo]".
     linea = next(l for l in texto.splitlines() if "Y_sobre_D_max" in l)
@@ -979,11 +1057,17 @@ def test_bandera_plantilla_fuerza_la_plantilla_de_la_memoria(tmp_path, capsys):
     assert destino.is_file()
 
 
+@pytest.mark.lento
 def test_bandera_pdf_escribe_o_deja_el_html_con_su_mensaje(tmp_path, capsys):
     """
     --pdf tiene dos finales declarados: con weasyprint escribe el PDF; sin el,
     deja el HTML y lo dice. El test acepta los dos y comprueba que el mensaje
     corresponde al que ocurrio, que es lo que la bandera promete.
+
+    Marcado `lento` (PC-22): con weasyprint instalado es el test mas caro de
+    la suite (12.8 s medidos en 5196dd2 y en EXT-11), porque renderiza el
+    PDF entero de los cuatro puntos. No se salta: se puede dejar fuera de
+    una corrida de trabajo con `-m "not lento"`.
     """
     destino = tmp_path / "memoria.pdf"
     cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json"),

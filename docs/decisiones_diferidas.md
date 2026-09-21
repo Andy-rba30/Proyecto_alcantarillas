@@ -2348,3 +2348,151 @@ propósito, y cada una lleva su argumento y su símbolo.
   por la misma regla.
 - **Qué haría falta:** nada para cerrarla; es el comportamiento elegido.
 - **Dónde vive:** `src/sesion.py::_migrar_v2_a_v3`
+
+# Parte XXVII — Lo que EXT-11 dejó escrito al medir la suite con propiedades y mutación
+
+EXT-11 cerró PC-18 (residuo), PC-20, PC-21, PC-22 y PC-29: siete propiedades
+del motor hidráulico por mallas, un arnés de mutación propio medido sobre
+M3–M5/MD y el par (n_min, n_max), y la higiene de suite que el dictamen
+enumeró (dos tests textuales al AST con su guardia, la corrida real en
+concreto de test_cli, la ausencia real de M5, la marca `lento`, el censo de
+públicas sin referencia y el cruce de los temarios como test). Cinco cosas
+quedaron decididas DISTINTAS de la lectura más directa del prompt, o sin
+hacer a propósito, y cada una lleva su argumento y su símbolo.
+
+## EXT-11-01 · Sin `hypothesis` ni `mutmut`: mallas y un arnés propio, hasta que se apruebe la dependencia
+
+- **Qué se difirió:** sumar `hypothesis` y `mutmut` a `requirements-dev.txt`
+  como dependencias de TEST, con la misma justificación que PyMuPDF.
+- **Por qué:** el prompt de EXT-11 manda CONSULTAR antes (regla de
+  dependencias de CLAUDE.md) y da el camino por defecto si no se aprueban:
+  `pytest.parametrize` sobre mallas. La consulta no obtuvo respuesta en la
+  sesión, y sin respuesta la regla es que no se suma nada. Las siete
+  propiedades se escribieron sobre mallas deterministas (10 secciones × 3
+  materiales o el marco × 4 pendientes × 6 fracciones de Q_lleno; 58 pasos
+  de q\* para la monotonía), y la mutación se midió con
+  `tests/apoyo/mutacion.py`, un arnés por AST de un archivo que genera los
+  ocho operadores —seis sintácticos y dos del dominio, el par de n y las dos
+  velocidades— y corre los tests objetivo en subproceso. Lo que se pierde
+  frente a `hypothesis` es la búsqueda aleatoria de contraejemplos y el
+  encogimiento; frente a `mutmut`, la caché incremental y el catálogo
+  completo de operadores. Lo que se gana es que la malla se lee entera y
+  que la mutación corre en minutos sin dependencia nueva.
+- **Qué haría falta:** la aprobación de las dos dependencias. Con ella, las
+  mallas se conservan (son la documentación de cada propiedad) y se añade
+  por encima una estrategia de `hypothesis` por propiedad; el arnés propio
+  se retira si `mutmut` reproduce su censo de supervivientes.
+- **Dónde vive:** `tests/apoyo/mutacion.py::MODULOS_DE_EXT11`
+
+## EXT-11-03 · El cruce de los temarios lleva un censo manual porque el auditor y el informe numeran distinto
+
+- **Qué se difirió:** un cruce puramente automático entre
+  `temario_refutar_*.json` y la hoja `Hallazgos`, sin lista mantenida a mano.
+- **Por qué:** los ítems de los temarios remiten a la numeración ORIGINAL
+  del auditor (`H-13`, `E-06`, `G-06`, `H-MC-19`) y las filas del tracker a
+  la del informe consolidado (`NOR-E060-03`, `NOR-HID-05`), y ningún
+  documento del repositorio enlaza las dos: `auditoria_normativa.md` §13
+  lista los ítems por `R95-nnn`/`hallazgo_id` sin decir a qué ficha NOR
+  corresponden. EXT-0 cruzó los 71 ítems ALTA/CRÍTICA a mano y dejó huella
+  sólo de los 7 con fila propia y de los 8 grupos PARCIAL anotados en
+  «Vínculos cruzados»; los 45 restantes están cubiertos por una fila NOR y
+  nadie lo había escrito. `CUBIERTOS_POR_FILA_NOR` es ese resto, ítem por
+  ítem con la fila que lo cubre, y el test lo exige en las dos
+  direcciones: un ítem sin fila, sin mención y sin censo falla, y una
+  entrada del censo que el tracker ya absorbió también. Los otros 26 se
+  cubren solos por (a) y (b).
+- **Qué haría falta:** una columna «ID auditor» en las filas NOR del
+  tracker (o en las fichas de §11 del informe) que enlace `H-nn` ↔ `NOR-*`;
+  con ella el censo se deriva y desaparece.
+- **Dónde vive:** `tests/test_ext11_cruce_temarios.py::CUBIERTOS_POR_FILA_NOR`
+
+## EXT-11-04 · La Fase 8 se prueba llamándola sobre el resultado real de perfil, porque el expediente no dimensiona
+
+- **Qué se difirió:** una corrida de EXPEDIENTE que dimensione un punto
+  sin ayuda, para que las Fases 6, 7 y 8 se prueben de punta a punta por la
+  puerta del expediente.
+- **Por qué:** a nivel de expediente V5 y V8 son obligatorias y están
+  vacías (`remanso_derecho_via`, `TR_evento_extremo`), y con ellas
+  declaradas piden datos que ninguna puerta aporta todavía
+  (`ancho_derecho_via_m`, `Q_evento_extremo_m3s`): el bucle de MD se
+  detiene ANTES de dimensionar, por diseño. La corrida de perfil sí
+  dimensiona A-01, A-02 y B-01 en concreto reforzado con las Fases 6 y 7
+  reales, V5 y V8 diferidas con fundamento y el contexto completo, y ESA
+  corrida es `informe_dimensionado`: salida del producto sin parche. La
+  Fase 8, diferida en perfil también por diseño, se ejercita llamando
+  `servicio._fase_8` sobre una copia del punto real, y llega a la cama de
+  apoyo del concreto y al bloqueo de la clase de producto. Se descartó la
+  alternativa que la sesión escribió primero —una corrida de expediente con
+  `disenar_punto` devolviendo el resultado de perfil— porque el auditor
+  adversarial midió que no era «el producto»: perdía los usos de criterios
+  de la Fase 4 (`correr` reinicia el registro al entrar) y mostraba tres
+  puntos dimensionados a nivel de expediente con V5 y V8 ni verificadas,
+  ni bloqueadas, ni diferidas. El stub de HDPE D = 0.60 m que el producto
+  no podía producir (PC-20) se retiró; queda un solo doble, de la capa de
+  reporte (`informe_con_criterio_desconocido`), sobre una copia.
+- **Qué haría falta:** cerrar V5 y V8 en el expediente (los datos de
+  remanso y del evento extremo por una puerta real); entonces la Fase 8 se
+  prueba por la corrida de expediente y la llamada explícita sobra.
+- **Dónde vive:** `tests/test_cli.py::informe_dimensionado`
+
+## EXT-11-05 · El determinismo de la línea base se demuestra con los archivos comprometidos, no con una segunda corrida
+
+- **Qué se difirió:** la segunda corrida de `regenerar.sh` que
+  `test_la_corrida_es_determinista` lanzaba siempre (6 s medidos en
+  5196dd2) para comparar dos corridas del mismo árbol.
+- **Por qué:** los archivos comprometidos SON una corrida anterior del
+  mismo árbol, hecha en otro clon y a otra hora, que es exactamente el eje
+  por el que el mtime de `criterios_adoptados.py` variaba (C0). Si la
+  corrida de la fixture coincide con ellos byte a byte, el determinismo
+  queda demostrado con una prueba más fuerte que dos corridas seguidas en
+  la misma máquina, y sin correr nada más. La segunda corrida se conserva
+  para el caso rojo, donde separa los dos diagnósticos que la discrepancia
+  mezcla: un campo volátil sin normalizar (dos corridas seguidas también
+  difieren) o un cambio del código (dos corridas seguidas coinciden y es el
+  test de la línea base el que tiene que fallar). Es la mitad «compartir la
+  corrida entre sus dos tests» de PC-22; la fixture de módulo ya la
+  compartía entre los otros tres desde antes del dictamen. Queda dicho lo
+  que el auditor adversarial señaló: en verde, este test afirma la MISMA
+  comparación que el de la línea base, con otro sentido; lo que añade es el
+  diagnóstico del caso rojo, y en el clon que regeneró la línea base el
+  eje del mtime no lo ejercita ninguna de las dos pruebas.
+- **Qué haría falta:** nada para cerrarla; es el comportamiento elegido.
+- **Dónde vive:** `tests/test_linea_base.py::test_la_corrida_es_determinista`
+
+## EXT-11-02 · Cuarenta y tres mutantes sobreviven a toda la suite, y cada uno tiene su razón escrita
+
+- **Qué se difirió:** matar los 43 mutantes de M3–M5/MD que sobreviven a
+  los diez archivos objetivo del arnés y a la segunda vuelta (línea base,
+  cierre de perfil y CLI), medidos el 2026-09-21 sobre el árbol de EXT-11:
+  568 de 679 muertos en la primera vuelta (83.6 %), 65 de los 111
+  supervivientes muertos en la segunda, 46 vivos; tres más murieron con la
+  segunda tanda de tests que la propia lista motivó (el motivo de descarte
+  del marco, la identidad de anchos en `_mismo_escalon`, la procedencia del
+  ke) y quedan 43.
+- **Por qué:** ninguno de los 43 es un hueco real, y la clase de cada uno
+  está escrita en `SUPERVIVIENTES_CON_RAZON`: 34 son equivalentes (una
+  `<=` frente a `<` cuando la banda `TOL_UMBRAL_NORMATIVO` ya cubre la
+  igualdad exacta, de medida nula; las guardias del corchete de
+  `tirante_normal`, inalcanzables tras la de `Q_lleno`; un `return None`
+  donde sólo se lee la falsedad; un argumento por defecto que nadie usa; el
+  `cota_agua` sin efecto de la vía de escenarios; el techo de la tabla del
+  CBR, que el orden descendente de la tabla vuelve redundante); 6 son de
+  banda (el signo de la tolerancia en V4, V4b, VC1, V7, `hw_gobernante` y
+  la altura del barril, donde fijar el umbral exacto exige cotas o pesos al
+  pelo); 2 son de borde
+  (HW/D exactamente 0.75 y 1.2 de HDS-5 pág. 3.24, de medida nula) y 1
+  está fuera del alcance de la suite (`M5.verificar` entera, porque V5
+  vacía detiene el expediente antes de su último `return`; ficha
+  EXT-11-04). Los huecos reales que la mutación encontró —V3 juzgando la
+  rama baja, los umbrales inclusivos, las guardias del receptor, el par de
+  Manning, el ke, la progresión que se repite, la cota del TW— se cerraron
+  con tests y se remidieron con el arnés función por función; ninguno se
+  censó. La lista se ancla por (módulo, función, operador, fragmento,
+  ordinal) y `test_cada_superviviente_del_censo_sigue_siendo_un_mutante_
+  del_codigo` la contrasta con lo que el arnés genera hoy.
+- **Qué haría falta:** para los de banda y borde, casos construidos al pelo
+  (invertir el control de salida para HW/D = 0.75 exacto, cotas que dejen
+  V4 a menos de 1e-9 del admisible), que fijarían una lectura de la fuente
+  que hoy es de medida nula; para el de `M5.verificar`, cerrar V5 en el
+  expediente.
+- **Dónde vive:** `tests/test_ext11_mutacion.py::SUPERVIVIENTES_CON_RAZON`

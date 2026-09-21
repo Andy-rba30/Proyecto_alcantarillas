@@ -398,10 +398,16 @@ def _comentario_de(nombre: str) -> str:
 
 
 def _nombres_SI_declarados() -> set:
-    fuente = (SRC / "constantes_normativas.py").read_text(encoding="utf-8")
+    import ast
+    arbol = ast.parse((SRC / "constantes_normativas.py").read_text(encoding="utf-8"))
     # Solo las asignaciones NUMERICAS: `NUMERAL_KU_SI` es el texto de una
-    # cita y lleva el sufijo por arrastre del nombre de la constante.
-    return set(re.findall(r"^([A-Z0-9_]+_SI)\s*=\s*[0-9]", fuente, flags=re.M))
+    # cita y lleva el sufijo por arrastre del nombre de la constante. Por
+    # AST (PC-21): un comentario `# X_SI = 1` no es una declaracion.
+    return {t.id for n in arbol.body if isinstance(n, ast.Assign)
+            for t in n.targets if isinstance(t, ast.Name) and t.id.endswith("_SI")
+            and isinstance(n.value, ast.Constant)
+            and isinstance(n.value.value, (int, float))
+            and not isinstance(n.value.value, bool)}
 
 
 # ===========================================================================

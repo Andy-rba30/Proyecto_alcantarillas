@@ -21,7 +21,9 @@ produce y que el boton de EJECUTAR no depende de nada de esto) vive en
 `tests/test_gui_contrato.py`, no aqui.
 """
 
+import ast
 import inspect
+import textwrap
 from dataclasses import replace
 from pathlib import Path
 
@@ -260,8 +262,15 @@ def test_la_pareja_V5_V8_no_es_una_tabla_paralela():
     diferimiento que la corrida ya no hace (la defensa es la misma que la de
     `MODULOS_DIFERIDOS_POR_ALCANCE`, escrita alli).
     """
-    fuente = inspect.getsource(cli._verificador_perfil)
-    assert fuente.count("VERIFICACIONES_DIFERIDAS_POR_ALCANCE") >= 2, (
+    # POR AST Y NO POR TEXTO (PC-21). `getsource(...).count(...)` contaba
+    # tambien las menciones en comentarios --- y la funcion tiene dos
+    # comentarios que nombran el dato ---, de modo que el mutante que borra
+    # una CONSULTA real seguia verde. Se cuentan los nodos `Name` del cuerpo,
+    # que son las lecturas que el interprete ejecuta.
+    arbol = ast.parse(textwrap.dedent(inspect.getsource(cli._verificador_perfil)))
+    consultas = [n for n in ast.walk(arbol) if isinstance(n, ast.Name)
+                 and n.id == "VERIFICACIONES_DIFERIDAS_POR_ALCANCE"]
+    assert len(consultas) >= 2, (
         "_verificador_perfil dejo de consultar el dato en sus dos puntos "
         "de diferimiento")
     assert set(cli.VERIFICACIONES_DIFERIDAS_POR_ALCANCE) == set(

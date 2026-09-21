@@ -441,11 +441,13 @@ def test_la_version_del_formato_de_sesion_subio():
     # y la GUI la reexporta con el mismo nombre.
     import re
     from src import sesion
-    texto = (RAIZ / "src" / "sesion.py").read_text(encoding="utf-8-sig")
-    version = re.search(r"^FORMATO_SESION = (\d+)", texto, re.MULTILINE)
-    assert version is not None
-    assert int(version.group(1)) >= 2
-    assert sesion.FORMATO_SESION == int(version.group(1))
+    arbol_sesion = ast.parse((RAIZ / "src" / "sesion.py").read_text(encoding="utf-8-sig"))
+    declaradas = [n.value.value for n in arbol_sesion.body if isinstance(n, ast.Assign)
+                  and any(getattr(t, "id", "") == "FORMATO_SESION" for t in n.targets)
+                  and isinstance(n.value, ast.Constant)]
+    assert declaradas, "src/sesion.py dejo de declarar FORMATO_SESION como constante"
+    assert declaradas[0] == sesion.FORMATO_SESION
+    assert sesion.FORMATO_SESION >= 2
 
 
 # ---------------------------------------------------------------------------
@@ -604,8 +606,19 @@ def test_el_campo_validable_valida_al_escribir_y_no_al_calcular():
     revisaria al pulsar el boton, que es el patron de `legacy/Tc.py` y
     justamente lo que el plan pide cambiar.
     """
-    fuente = COMPONENTES.read_text(encoding="utf-8-sig")
-    assert "trace_add" in fuente
+    # POR AST Y NO POR TEXTO (PC-21): `"trace_add" in read_text()` se ponia
+    # verde sobre el comentario del encabezado de `gui/componentes.py`, que
+    # nombra el `trace_add` para explicarlo. Lo que se afirma es que
+    # `CampoValidable` LO LLAMA.
+    campo = next(n for n in ast.walk(ARBOL_COMPONENTES)
+                 if isinstance(n, ast.ClassDef) and n.name == "CampoValidable")
+    llamadas = [n for n in ast.walk(campo) if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "trace_add"]
+    assert llamadas, "CampoValidable ya no engancha un trace_add a su variable"
+    assert any(isinstance(a, ast.Constant) and a.value == "write"
+               for c in llamadas for a in c.args), (
+        "el trace_add tiene que escuchar la ESCRITURA, que es validar al escribir")
 
 
 # ---------------------------------------------------------------------------

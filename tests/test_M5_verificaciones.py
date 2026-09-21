@@ -1461,8 +1461,12 @@ def test_las_once_filas_de_la_fase_5_tienen_su_funcion():
     # una --, no con el primer resultado de un glob.
     hoja = M11.ruta_hoja_de_ruta()
     filas = re.findall(r"^\| \*\*(V\d+b?)\*\*", hoja.read_text(encoding="utf-8"), re.M)
+    import ast
     modulo = (raiz / "src" / "modulos" / "M5_verificaciones.py").read_text(encoding="utf-8")
-    funciones = re.findall(r"^def (v\d+b?_\w+)", modulo, re.M)
+    # Por AST y no por regex sobre el texto (PC-21): un `def` en un
+    # comentario o en un docstring contaria igual.
+    funciones = [n.name for n in ast.parse(modulo).body
+                 if isinstance(n, ast.FunctionDef) and re.match(r"v\d+b?_", n.name)]
     assert len(filas) == 11, f"la tabla de Fase 5 ya no tiene once filas: {filas}"
     assert len(funciones) == 11, f"M5 ya no tiene once verificaciones: {funciones}"
     assert len(textos) == len(filas) - len(funciones)

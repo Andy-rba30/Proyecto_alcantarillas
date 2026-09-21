@@ -11,6 +11,7 @@ detectado los hallazgos de las tres auditorias.
 """
 
 import ast
+import re
 import io
 import tokenize
 from pathlib import Path
@@ -798,3 +799,508 @@ def test_cada_exencion_de_caso_patron_dice_que_haria_falta():
         assert ("falta" in razon or "no le corresponde" in razon
                 or "NO es deuda" in razon), (
             f"{modulo}: la razon no dice que haria falta para retirarla")
+
+
+# ---------------------------------------------------------------------------
+# PC-21 - lo que se afirma de un CODIGO se afirma sobre su AST, no sobre su
+# texto: `getsource(...).count(...)` y `"x" in ruta_py.read_text()` cuentan
+# los comentarios, y el mutante que borra el uso real sigue verde
+# ---------------------------------------------------------------------------
+#
+# El precedente es S16, que paso al AST el `"FACTOR_MURO_TABLA = {" in fuente`
+# que estaba verde sobre el comentario que explicaba la retirada del simbolo
+# (CLAUDE.md). El dictamen midio que el patron volvio dos veces
+# (`test_anticipo`, `test_gui_contrato`), y EXT-11 las paso al AST y dejo
+# esta guardia para que no vuelva una tercera.
+#
+# QUE SE DETECTA. Dentro de cada funcion de la suite, un texto que sale de
+# `inspect.getsource(...)` o de `<ruta>.read_text(...)` donde `<ruta>` nombra
+# un archivo `.py` (directamente, o por una constante de modulo que lo
+# nombra), y que se usa como contenedor de un `in` / `not in` o como receptor
+# de `.count(` SIN haber pasado por `ast.parse(...)` en la misma funcion. Un
+# `read_text()` de un `.md`, de un `.html` o de un `.json` no es codigo y no
+# entra: lo que se persigue es la afirmacion textual sobre CODIGO.
+#
+# QUE NO SE PROHIBE, Y POR QUE HAY UN CENSO. Hay afirmaciones que son
+# textuales A PROPOSITO y que el AST no puede hacer: (a) la AUSENCIA de una
+# frase en todo el archivo, comentarios incluidos, que es mas fuerte por
+# texto; (b) la presencia de un COMENTARIO, que por definicion no esta en el
+# arbol; (c) un ancla de texto con la que el test REESCRIBE una copia del
+# archivo; (d) un rotulo de la GUI, que es una cadena y se afirma como
+# cadena; (e) que un archivo de la suite NOMBRE a otro en una tupla de datos;
+# (f) el objeto medido es el TEXTO que un escritor del proyecto produjo
+# (`escribir_valor_en_archivo`): se afirma la forma escrita, no un uso.
+# Cada una vive en `TEXTUAL_CON_RAZON` con su razon, y el censo se comprueba
+# en las dos direcciones: un sitio nuevo sin censar falla, y una entrada
+# cuyo sitio ya no existe tambien, para que el censo no se vuelva una lista
+# de excepciones muertas.
+
+_LECTORES_DE_CODIGO = ("getsource", "read_text", "read_bytes")
+_BUSCADORES_DE_TEXTO = ("count", "find", "rfind", "index", "rindex",
+                        "startswith", "endswith")
+_FUNCIONES_DE_RE = ("search", "match", "fullmatch", "findall", "finditer")
+_MARCAS_DE_PYTHON = (".py",)
+_EL_PROPIO_ARCHIVO = ("Path(__file__)", "Path(__file__).resolve()", "__file__")
+
+
+def _nombre_de_llamada_simple(nodo: ast.Call) -> str:
+    f = nodo.func
+    if isinstance(f, ast.Attribute):
+        return f.attr
+    if isinstance(f, ast.Name):
+        return f.id
+    return ""
+
+
+def _nombres_asignados(objetivo) -> list:
+    if isinstance(objetivo, ast.Name):
+        return [objetivo.id]
+    if isinstance(objetivo, (ast.Tuple, ast.List)):
+        return [n for e in objetivo.elts for n in _nombres_asignados(e)]
+    return []
+
+
+def _resolutor_de_rutas_python(arbol_modulo: ast.Module, fn=None):
+    """
+    Devuelve `es_py(expr)`: si la expresion nombra un archivo `.py`, sea en
+    su texto o a traves de una constante --- de modulo o LOCAL de la funcion
+    --- (hasta tres saltos). Las locales entraron con la auditoria de EXT-11:
+    `ruta = RAIZ / "gui" / "app.py"; ruta.read_text()` evadia al detector.
+    """
+    tabla = {}
+    cuerpos = [arbol_modulo.body] + ([ast.walk(fn)] if fn is not None else [])
+    for cuerpo in cuerpos:
+        for n in cuerpo:
+            if isinstance(n, ast.Assign):
+                for nombre in _nombres_asignados(n.targets[0]) if len(n.targets) == 1 else []:
+                    tabla[nombre] = ast.unparse(n.value)
+            elif isinstance(n, ast.AnnAssign) and n.value is not None:
+                for nombre in _nombres_asignados(n.target):
+                    tabla[nombre] = ast.unparse(n.value)
+
+    def es_py(expr, profundidad=0) -> bool:
+        s = ast.unparse(expr) if isinstance(expr, ast.AST) else expr
+        if any(marca in s for marca in _MARCAS_DE_PYTHON) or s in _EL_PROPIO_ARCHIVO:
+            return True
+        if profundidad > 2:
+            return False
+        return any(re.search(r"\b" + re.escape(nombre) + r"\b", s)
+                   and es_py(valor, profundidad + 1)
+                   for nombre, valor in tabla.items())
+    return es_py
+
+
+def afirmaciones_textuales_sobre_codigo(codigo: str, nombre: str = "<memoria>"):
+    """
+    [(linea, funcion, forma, lector)] de cada afirmacion TEXTUAL sobre el
+    texto de un codigo Python: `in` / `not in`, `.count(` / `.find(` /
+    `.index(` / `.startswith(`, o `re.search(...)` y hermanas, sobre un texto
+    que salio de `inspect.getsource(...)`, de `<ruta .py>.read_text()` /
+    `.read_bytes()` o de `open(<ruta .py>).read()`.
+
+    EL TEXTO SE SIGUE COMO UNA MANCHA (taint): todo nombre asignado desde
+    una expresion que contiene el texto --- `fuente.lower()`,
+    `fuente.splitlines()`, `a, b = fuente.split(...)`, la variable de una
+    comprension sobre el texto --- queda marcado, y una afirmacion sobre
+    cualquiera de ellos cuenta. Un `ast.parse(fuente)` NO desmarca `fuente`:
+    parsear y despues preguntar por el texto es la evasion mas facil, y la
+    primera version de este detector la aceptaba (auditoria de EXT-11).
+    """
+    arbol = ast.parse(codigo, filename=nombre)
+    hallazgos = []
+    for fn in ast.walk(arbol):
+        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        es_py = _resolutor_de_rutas_python(arbol, fn)
+        manchados: dict = {}      # nombre -> lector del que viene el texto
+        # Alias del lector (`leer = inspect.getsource`), de modulo o locales.
+        alias = set()
+        for n in list(arbol.body) + list(ast.walk(fn)):
+            if isinstance(n, ast.Assign) and ast.unparse(n.value).split(".")[-1] == "getsource":
+                alias.update(x for o in n.targets for x in _nombres_asignados(o))
+
+        def _lector_directo(nodo):
+            """El lector si la expresion ES una lectura de codigo Python."""
+            if not isinstance(nodo, ast.Call):
+                return None
+            lector = _nombre_de_llamada_simple(nodo)
+            if lector == "getsource" or (isinstance(nodo.func, ast.Name)
+                                         and nodo.func.id in alias):
+                return "getsource"
+            if lector in ("read_text", "read_bytes") \
+                    and isinstance(nodo.func, ast.Attribute) \
+                    and es_py(nodo.func.value):
+                return lector
+            if lector == "read" and isinstance(nodo.func, ast.Attribute) \
+                    and isinstance(nodo.func.value, ast.Call) \
+                    and _nombre_de_llamada_simple(nodo.func.value) == "open" \
+                    and nodo.func.value.args and es_py(nodo.func.value.args[0]):
+                return "open"
+            return None
+
+        def _sin_arboles(expr):
+            """
+            Los nodos de la expresion SIN descender en `ast.parse(...)`: lo
+            que sale de un parse es un arbol, no texto, y no arrastra la
+            mancha (la variable parseada, en cambio, la conserva).
+            """
+            pendientes = [expr]
+            while pendientes:
+                n = pendientes.pop()
+                if isinstance(n, ast.Call) and _nombre_de_llamada_simple(n) == "parse":
+                    continue
+                yield n
+                pendientes.extend(ast.iter_child_nodes(n))
+
+        def _lector_de(expr):
+            """El lector si la expresion contiene texto de codigo, o None."""
+            for n in _sin_arboles(expr):
+                directo = _lector_directo(n)
+                if directo:
+                    return directo
+                if isinstance(n, ast.Name) and n.id in manchados:
+                    return manchados[n.id]
+            return None
+
+        # Propagacion de la mancha hasta el punto fijo.
+        cambio = True
+        while cambio:
+            cambio = False
+            for n in ast.walk(fn):
+                objetivos, valor = [], None
+                if isinstance(n, ast.Assign):
+                    objetivos = [x for o in n.targets for x in _nombres_asignados(o)]
+                    valor = n.value
+                elif isinstance(n, ast.AnnAssign) and n.value is not None:
+                    objetivos, valor = _nombres_asignados(n.target), n.value
+                elif isinstance(n, ast.NamedExpr):
+                    objetivos, valor = _nombres_asignados(n.target), n.value
+                elif isinstance(n, ast.comprehension):
+                    objetivos, valor = _nombres_asignados(n.target), n.iter
+                elif isinstance(n, ast.For):
+                    objetivos, valor = _nombres_asignados(n.target), n.iter
+                if valor is None:
+                    continue
+                lector = _lector_de(valor)
+                if lector:
+                    for nombre_obj in objetivos:
+                        if nombre_obj not in manchados:
+                            manchados[nombre_obj] = lector
+                            cambio = True
+
+        for n in ast.walk(fn):
+            if isinstance(n, ast.Compare):
+                for op, contenedor in zip(n.ops, n.comparators):
+                    lector = _lector_de(contenedor)
+                    if isinstance(op, (ast.In, ast.NotIn)) and lector:
+                        hallazgos.append((n.lineno, fn.name, "in", lector))
+            if isinstance(n, ast.Call):
+                llamado = _nombre_de_llamada_simple(n)
+                if llamado in _BUSCADORES_DE_TEXTO and isinstance(n.func, ast.Attribute):
+                    lector = _lector_de(n.func.value)
+                    if lector:
+                        hallazgos.append((n.lineno, fn.name, llamado, lector))
+                if llamado in _FUNCIONES_DE_RE and isinstance(n.func, ast.Attribute) \
+                        and ast.unparse(n.func.value) == "re":
+                    lector = next((_lector_de(a) for a in n.args if _lector_de(a)), None)
+                    if lector:
+                        hallazgos.append((n.lineno, fn.name, "re." + llamado, lector))
+    return sorted(set(hallazgos))
+
+
+# El censo: (archivo, funcion) -> razon por la que la afirmacion es textual a
+# proposito. Las letras remiten a las cinco razones admitidas de arriba.
+TEXTUAL_CON_RAZON = {
+    ("test_ayuda_entrada.py", "test_un_estado_nuevo_exige_su_parrafo_y_con_el_aparece_solo"):
+        "(c) las dos anclas son el texto con el que el test REESCRIBE una "
+        "copia de gui/app.py con un estado mas; el texto es la herramienta",
+    ("test_ext10_multiobra.py", "test_h_la_gui_carga_declara_y_guarda_por_las_puertas_nuevas"):
+        "(d) «Nuevo proyecto» es el rotulo del boton: una cadena afirmada "
+        "como cadena; la variable de Tk del mismo test va por AST",
+    ("test_criterios_adoptados.py", "test_la_escritura_permanente_reescribe_el_valor_en_el_archivo"):
+        "(f) afirma el TEXTO que `escribir_valor_en_archivo` escribio en la "
+        "copia: la forma escrita del bloque es lo que se mide",
+    ("test_criterios_adoptados.py", "test_la_escritura_permanente_si_alcanza_a_un_valor_escalar"):
+        "(f) afirma el TEXTO que `escribir_valor_en_archivo` escribio en la "
+        "copia, tras comprobar por ast.parse que sigue siendo Python",
+    ("test_dimensional_piloto.py", "_comentario_de"):
+        "(b) recoge el COMENTARIO que sigue a una constante, que por "
+        "definicion no esta en el AST; es lo que el chequeo dimensional lee",
+    ("test_estilo_criterios.py", "_siglas_derivadas"):
+        "(b) busca la explicacion de cada sigla en TODO el texto, "
+        "comentarios y docstrings incluidos: es donde las siglas se explican",
+    ("test_ext5_forma_gui.py", "test_la_gui_de_ayuda_ya_no_anuncia_claves_sin_ficha"):
+        "(a) afirma la AUSENCIA de dos frases en todo gui/ayuda_entrada.py, "
+        "comentarios incluidos",
+    ("test_ext7_cabezal.py", "test_M05_el_docstring_ya_no_afirma_lo_contrario_de_la_norma"):
+        "(a) afirma la AUSENCIA de la frase falsa de R95-031 en todo "
+        "M9_cabezal.py, docstring y comentarios incluidos",
+    ("test_ext8_rendimiento_gui.py", "test_pc11_la_gui_exporta_el_pdf_sin_bloquear_el_hilo_de_tk"):
+        "(a) afirma la AUSENCIA de `threading`, `.wait(` y `.communicate(` "
+        "en gui/app.py; las presencias del mismo test van por AST",
+    ("test_ext8_rendimiento_gui.py", "test_ext8_el_modulo_de_exportacion_esta_vigilado"):
+        "(e) afirma que test_sin_literales NOMBRA al modulo nuevo en su tupla "
+        "de rutas; el nombre es un dato, no un uso (test_gui_contrato se "
+        "consulta por su dato ARBOLES_DE_LA_GUI)",
+    ("test_guardias_de_la_suite.py", "test_el_cupo_esta_escrito_con_su_razon_y_no_es_una_meta"):
+        "(b) afirma la presencia de un COMENTARIO --- la razon del cupo ---, "
+        "que por definicion no esta en el AST",
+}
+
+
+def _censo_textual():
+    hallados = {}
+    for ruta in ARCHIVOS_DE_PRUEBA:
+        for linea, funcion, forma, lector in afirmaciones_textuales_sobre_codigo(
+                ruta.read_text(encoding="utf-8"), ruta.name):
+            hallados.setdefault((ruta.name, funcion), []).append(
+                f"{ruta.name}:{linea} {forma} sobre {lector}()")
+    return hallados
+
+
+def test_ninguna_afirmacion_sobre_codigo_es_textual_sin_censar():
+    hallados = _censo_textual()
+    sin_censar = {sitio: usos for sitio, usos in hallados.items()
+                  if sitio not in TEXTUAL_CON_RAZON}
+    assert not sin_censar, (
+        "afirmaciones textuales sobre CODIGO (`in read_text()` de un .py o "
+        "`getsource(...).count(`) sin pasar por ast.parse. O se pasan al AST "
+        "(precedente S16, PC-21) o entran en TEXTUAL_CON_RAZON con una de "
+        "las cinco razones admitidas:\n  "
+        + "\n  ".join(f"{a}::{f}: {', '.join(u)}"
+                      for (a, f), u in sorted(sin_censar.items())))
+
+
+def test_el_censo_textual_no_conserva_sitios_que_ya_no_existen():
+    hallados = _censo_textual()
+    muertos = sorted(set(TEXTUAL_CON_RAZON) - set(hallados))
+    assert not muertos, (
+        f"entradas de TEXTUAL_CON_RAZON cuyo sitio ya no afirma nada por "
+        f"texto: {muertos}. Retiralas: un censo con muertos deja de vigilar.")
+    for razon in TEXTUAL_CON_RAZON.values():
+        assert razon[:3] in ("(a)", "(b)", "(c)", "(d)", "(e)", "(f)"), razon
+
+
+# --- el detector probandose a si mismo -------------------------------------
+
+def test_el_detector_textual_ve_getsource_count():
+    codigo = ("import inspect\n"
+              "def test_x():\n"
+              "    fuente = inspect.getsource(f)\n"
+              "    assert fuente.count('X') >= 2\n")
+    assert [(4, "test_x", "count", "getsource")] == \
+        afirmaciones_textuales_sobre_codigo(codigo)
+
+
+def test_el_detector_textual_ve_in_sobre_read_text_de_un_py():
+    codigo = ("from pathlib import Path\n"
+              "RAIZ = Path('.')\n"
+              "GUI = RAIZ / 'gui' / 'app.py'\n"
+              "def test_x():\n"
+              "    fuente = GUI.read_text()\n"
+              "    assert 'trace_add' in fuente\n"
+              "def test_y():\n"
+              "    assert 'z' not in (RAIZ / 'src' / 'm.py').read_text()\n")
+    assert [(6, "test_x", "in", "read_text"), (8, "test_y", "in", "read_text")] == \
+        afirmaciones_textuales_sobre_codigo(codigo)
+
+
+def test_el_detector_textual_no_molesta_a_lo_que_no_es_codigo():
+    codigo = ("from pathlib import Path\n"
+              "DOC = Path('docs') / 'x.md'\n"
+              "def test_x():\n"
+              "    assert 'frase' in DOC.read_text()\n"
+              "    html = (Path('a') / 'memoria.html').read_text()\n"
+              "    assert 'marca' in html and html.count('x') == 1\n")
+    assert afirmaciones_textuales_sobre_codigo(codigo) == []
+
+
+def test_un_ast_parse_decorativo_no_exime_a_la_afirmacion_textual():
+    codigo = ("import ast, inspect\n"
+              "def test_x():\n"
+              "    fuente = inspect.getsource(f)\n"
+              "    arbol = ast.parse(fuente)\n"
+              "    assert 'X' in fuente\n")
+    assert [(5, "test_x", "in", "getsource")] == \
+        afirmaciones_textuales_sobre_codigo(codigo)
+
+
+@pytest.mark.parametrize("cuerpo,esperado", [
+    # ruta LOCAL, no una constante de modulo
+    ("    ruta = RAIZ / 'gui' / 'app.py'\n    fuente = ruta.read_text()\n"
+     "    assert 'x' in fuente\n", "in"),
+    # variable intermedia derivada del texto
+    ("    fuente = GUI.read_text()\n    texto = fuente.lower()\n"
+     "    assert 'x' in texto\n", "in"),
+    # .find / .index / .startswith
+    ("    fuente = GUI.read_text()\n    assert fuente.find('x') >= 0\n", "find"),
+    ("    fuente = GUI.read_text()\n    assert fuente.index('x')\n", "index"),
+    # re.search sobre el texto
+    ("    fuente = GUI.read_text()\n    assert re.search('x', fuente)\n", "re.search"),
+    # alias del lector
+    ("    leer = inspect.getsource\n    fuente = leer(f)\n"
+     "    assert 'x' in fuente\n", "in"),
+    # comprension sobre las lineas del texto
+    ("    fuente = GUI.read_text()\n"
+     "    assert any('x' in l for l in fuente.splitlines())\n", "in"),
+    # read_bytes y open().read()
+    ("    assert b'x' in GUI.read_bytes()\n", "in"),
+    ("    assert 'x' in open(RAIZ / 'a.py').read()\n", "in"),
+    # asignacion por tupla y anotada
+    ("    a, b = GUI.read_text().split('#', 1)\n    assert 'x' in b\n", "in"),
+    ("    fuente: str = GUI.read_text()\n    assert 'x' in fuente\n", "in"),
+])
+def test_el_detector_textual_ve_las_evasiones_que_el_auditor_probo(cuerpo, esperado):
+    codigo = ("import re, inspect\nfrom pathlib import Path\n"
+              "RAIZ = Path('.')\nGUI = RAIZ / 'gui' / 'app.py'\n"
+              "def test_x():\n" + cuerpo)
+    formas = [forma for _, _, forma, _ in afirmaciones_textuales_sobre_codigo(codigo)]
+    assert esperado in formas, formas
+
+
+# ---------------------------------------------------------------------------
+# PC-22 - las funciones PUBLICAS de src/modulos que ningun test nombra, en un
+# censo fijado con la razon de cada una
+# ---------------------------------------------------------------------------
+#
+# El dictamen conto 16 sobre 5196dd2; hoy son 23, y el numero nunca se habia
+# fijado, de modo que podia crecer en silencio. Que un test no NOMBRE una
+# funcion no significa que no la ejercite: casi todas tienen consumidor de
+# produccion y se prueban a traves de el (la memoria HTML, el servicio, la
+# CLI). El censo dice cual es ese consumidor, medido por AST sobre `src/`,
+# `gui/` y `cli.py`, y se comprueba en las dos direcciones: una funcion
+# publica nueva sin test y sin censo falla, y una entrada del censo que un
+# test ya nombra tambien, para que el censo se achique cuando la suite crece.
+# La unica sin consumidor de produccion (el peso del suelo sobre el talon) ya
+# estaba censada con su razon en `M9_cabezal.FUNCIONES_SIN_CONSUMIDOR`.
+
+MODULOS_DE_CALCULO = sorted((RAIZ / "src" / "modulos").glob("*.py"))
+
+PUBLICAS_SIN_REFERENCIA_EN_TESTS = {
+    "M0_carga.leer_bytes": "la llama `correr` (servicio); la ejercita toda corrida de la CLI",
+    "M0_carga.cargar_puntos_de_bytes": "la llama `correr` (servicio); la ejercita toda corrida de la CLI",
+    "M11_reporte.sha1_de_bytes": "la llama `correr` (servicio, csv_sha1); la ejercita test_ext4",
+    "M11_reporte.version_criterios": "la llama `trazabilidad` (M11); se ejercita con cada memoria",
+    "M11_reporte.fecha_archivo": "la llama `trazabilidad` (M11); se ejercita con cada memoria",
+    "M11_reporte.traza_clasificacion": "la llama `pasos_impresos` (M11) y `traza_del_punto`; se ejercita con cada memoria",
+    "M11_reporte.traza_tw": "la llama `pasos_impresos` (M11); se ejercita con cada memoria",
+    "M11_reporte.traza_hidraulica": "la llama `pasos_impresos` (M11); se ejercita con cada memoria",
+    "M11_reporte.verificaciones_publicadas": "la llama `desarrollo_de_verificaciones` (M11); se ejercita con cada memoria",
+    "M11_reporte.ancla_de_discrepancia": "la llama `bloque_discrepancias` (M11, anexo EXT-8); se ejercita con cada memoria",
+    "M11_reporte.ancla_de_criterio": "la llama `bloque_criterios` (M11, anexo EXT-8); se ejercita con cada memoria",
+    "M11_reporte.ancla_de_umbral": "la llama `anexo_referencias` (M11, anexo EXT-8); se ejercita con cada memoria",
+    "M11_reporte.bloque_paso": "la llama `bloque_pasos` (M11); se ejercita con cada memoria",
+    "M11_reporte.bloque_umbrales": "la llama `memoria_html_por_partes` (M11); se ejercita con cada memoria",
+    "M11_reporte.bloque_homonimias": "la llama `memoria_html_por_partes` (M11); se ejercita con cada memoria",
+    "M11_reporte.bloque_alcance": "la llama `memoria_html_por_partes` (M11); se ejercita con cada memoria",
+    "M2_material.alcance_norma_producto_de": "la llama `_diseno_json` (cli); la ejercita test_cli por el JSON",
+    "M3_hidraulica.area_trapecial": "la llama `caudal_manning_trapecial` (Sec. 1.3); la ejercita test_ext1 por el TW",
+    "M3_hidraulica.perimetro_trapecial": "la llama `caudal_manning_trapecial` (Sec. 1.3); la ejercita test_ext1 por el TW",
+    "M4_control.regimen_del_barril": "la llama `_regimen_y_salida` (EXT-3); la ejercita test_ext3 por resolver_control",
+    "M4_control.velocidad_de_salida": "la llama `_regimen_y_salida` (EXT-3); la ejercita test_ext3 por resolver_control",
+    "M5_verificaciones.pieza_del_hueco_de_V5": "la llama `_verificador_perfil` (servicio) y `verificar` (M5); la ejercita test_cierre_perfil",
+    "M8_estructural.filas_ev_de_la_tabla": "la llama `v7_flotacion` (M5); la ejercita test_M5 por V7",
+    "M9_cabezal.peso_suelo_sobre_talon": "SIN consumidor de produccion; censada con su razon en M9_cabezal.FUNCIONES_SIN_CONSUMIDOR",
+    "M9_cabezal.gamma_eq": "SIN consumidor de produccion; censada con su razon en M9_cabezal.FUNCIONES_SIN_CONSUMIDOR",
+    "M9_cabezal.factor_recubrimiento_por_ac": "la llama `_recubrimiento_aashto_detallado` (C07); la ejercita test_M9_cabezal por el recubrimiento",
+    "M9_cabezal.nota_excepcion_refuerzo_minimo": "la llama `correr_cabezal` (servicio); la ejercita test_cli por el cabezal",
+    "M9_cabezal.requiere_refuerzo_dos_capas": "la llama `nota_temperatura_dos_caras` (M9); la ejercita test_ext7",
+    "M9_cabezal.funciones_sin_consumidor": "la llama `condicion_normativa_cabezal` (M9); la ejercita test_cli por el volcado del cabezal",
+}
+
+
+def _nombres_de_la_suite() -> set:
+    """
+    Los tokens NAME de toda la suite --- ni cadenas ni comentarios ni
+    docstrings --- MENOS el propio censo de arriba. La primera version
+    buscaba el nombre por regex sobre el texto crudo y se ponia verde sobre
+    un comentario que lo mencionara, que es exactamente el patron PC-21 que
+    este mismo archivo persigue (auditoria de EXT-11): medido, siete
+    publicas pasaban por «referenciadas» gracias a un comentario, un
+    docstring o una cadena.
+    """
+    nombres = set()
+    for ruta in ARCHIVOS_DE_PRUEBA:
+        texto = ruta.read_text(encoding="utf-8")
+        if ruta == Path(__file__).resolve():
+            lineas = texto.split("\n")
+            arbol = ast.parse(texto, filename=ruta.name)
+            for nodo in arbol.body:
+                if isinstance(nodo, ast.Assign) and any(
+                        getattr(objetivo, "id", "") == "PUBLICAS_SIN_REFERENCIA_EN_TESTS"
+                        for objetivo in nodo.targets):
+                    for i in range(nodo.lineno - 1, nodo.end_lineno):
+                        lineas[i] = ""
+            texto = "\n".join(lineas)
+        for token in tokenize.generate_tokens(io.StringIO(texto).readline):
+            if token.type == tokenize.NAME:
+                nombres.add(token.string)
+    return nombres
+
+
+def _publicas_sin_referencia_en_tests() -> set:
+    nombres = _nombres_de_la_suite()
+    sin_referencia = set()
+    for ruta in MODULOS_DE_CALCULO:
+        arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
+        for nodo in arbol.body:
+            if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)) \
+                    and not nodo.name.startswith("_") \
+                    and nodo.name not in nombres:
+                sin_referencia.add(f"{ruta.stem}.{nodo.name}")
+    return sin_referencia
+
+
+def test_las_publicas_sin_referencia_en_tests_son_las_del_censo():
+    medidas = _publicas_sin_referencia_en_tests()
+    nuevas = sorted(medidas - set(PUBLICAS_SIN_REFERENCIA_EN_TESTS))
+    assert not nuevas, (
+        "funciones publicas de src/modulos que ningun test nombra y que no "
+        f"estan en PUBLICAS_SIN_REFERENCIA_EN_TESTS: {nuevas}. O se les escribe "
+        "test, o entran en el censo con su consumidor de produccion.")
+    cubiertas = sorted(set(PUBLICAS_SIN_REFERENCIA_EN_TESTS) - medidas)
+    assert not cubiertas, (
+        f"entradas del censo que un test ya nombra: {cubiertas}. Retiralas: "
+        "el censo tiene que achicarse cuando la suite crece.")
+
+
+def _funciones_de_produccion_que_llaman_a(nombre: str) -> set:
+    """Nombres de las funciones de src/, gui/ y cli.py que contienen una llamada a `nombre`."""
+    llamadoras = set()
+    for ruta in list((RAIZ / "src").rglob("*.py")) + list((RAIZ / "gui").glob("*.py")) \
+            + [RAIZ / "cli.py"]:
+        arbol = ast.parse(ruta.read_text(encoding="utf-8"), filename=ruta.name)
+        for fn in ast.walk(arbol):
+            if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)) or fn.name == nombre:
+                continue
+            for nodo in ast.walk(fn):
+                if isinstance(nodo, ast.Call):
+                    f = nodo.func
+                    llamado = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
+                    if llamado == nombre:
+                        llamadoras.add(fn.name)
+    return llamadoras
+
+
+@pytest.mark.parametrize("calificado", sorted(PUBLICAS_SIN_REFERENCIA_EN_TESTS))
+def test_cada_publica_del_censo_tiene_el_consumidor_que_dice(calificado):
+    """
+    La razon del censo se COMPRUEBA con nombre y apellido: «la llama `X`»
+    exige que la funcion X de produccion contenga la llamada (la primera
+    version solo pedia «algun llamador», y cinco razones nombraban a otro:
+    auditoria de EXT-11); «SIN consumidor» exige que M9 la tenga en su censo.
+    """
+    modulo, nombre = calificado.split(".")
+    razon = PUBLICAS_SIN_REFERENCIA_EN_TESTS[calificado]
+    llamadoras = _funciones_de_produccion_que_llaman_a(nombre)
+    if razon.startswith("SIN consumidor"):
+        from src.modulos import M9_cabezal
+        assert not llamadoras, f"{calificado}: la llama {sorted(llamadoras)}"
+        assert nombre in M9_cabezal.FUNCIONES_SIN_CONSUMIDOR
+        return
+    nombrados = re.findall(r"`([A-Za-z_][A-Za-z0-9_]*)`", razon)
+    assert nombrados, f"{calificado}: la razon no nombra al llamador entre acentos graves"
+    for llamadora in nombrados:
+        assert llamadora in llamadoras, (
+            f"{calificado}: la razon dice que la llama `{llamadora}` y no la "
+            f"llama; la llaman {sorted(llamadoras)}")

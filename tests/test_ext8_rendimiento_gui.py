@@ -644,8 +644,10 @@ def test_pc11_la_gui_exporta_el_pdf_sin_bloquear_el_hilo_de_tk():
         assert prohibido not in fuente
     lanzar = ast.unparse(_funcion(arbol, "_lanzar_pdf"))
     assert "MOTIVO_EXPORTANDO_PDF" in lanzar and "deshabilitar" in lanzar
-    assert "btn_cancelar_pdf" in fuente
-    assert "lbl_estado_pdf" in fuente
+    # Por AST y no por texto (PC-21): los dos widgets son ATRIBUTOS que la
+    # ventana asigna, no menciones.
+    atributos = {n.attr for n in ast.walk(arbol) if isinstance(n, ast.Attribute)}
+    assert {"btn_cancelar_pdf", "lbl_estado_pdf"} <= atributos
     # El contrato viejo sigue: la via del navegador con su plantilla.
     llamadas = _llamadas_a(exportar, "cli.exportar_pdf") + \
         _llamadas_a(_funcion(arbol, "_exportar_pdf_por_navegador"), "cli.exportar_pdf")
@@ -904,8 +906,8 @@ def test_pc17_el_boton_apagado_tiene_un_rotulo_visible_ademas_del_tooltip():
     assert _funcion(boton, "con_rotulo"), "BotonAccion no ofrece un rotulo visible"
     pintar = ast.unparse(_funcion(boton, "_pintar"))
     assert "rotulo" in pintar, "el rotulo no se repinta con el estado"
-    gui = GUI.read_text(encoding="utf-8-sig")
-    assert ".con_rotulo(" in gui, "la ventana principal no usa el rotulo"
+    assert _llamadas_a(_arbol(GUI), "con_rotulo"), (
+        "la ventana principal no usa el rotulo")
 
 
 def _bind_de(nodo, evento: str):
@@ -938,5 +940,7 @@ def test_ext8_el_modulo_de_exportacion_esta_vigilado():
     assert EXPORTACION.is_file()
     literales = (RAIZ / "tests" / "test_sin_literales.py").read_text(encoding="utf-8")
     assert "gui/exportacion_pdf.py" in literales
-    contrato = (RAIZ / "tests" / "test_gui_contrato.py").read_text(encoding="utf-8")
-    assert "exportacion_pdf" in contrato
+    # Por el DATO que test_gui_contrato publica, no por su texto (PC-21): un
+    # comentario que nombrara el modulo pondria verde la version textual.
+    from tests.test_gui_contrato import ARBOLES_DE_LA_GUI
+    assert "gui/exportacion_pdf.py" in ARBOLES_DE_LA_GUI

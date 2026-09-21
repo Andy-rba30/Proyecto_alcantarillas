@@ -822,8 +822,17 @@ def test_g_M11_formatea_la_advertencia_y_no_la_calcula():
     arbol = ast.parse(fuente)
     nombres = {ast.unparse(n.func) for n in ast.walk(arbol) if isinstance(n, ast.Call)}
     assert not any(n.endswith(".casefold") for n in nombres)
-    assert "unicodedata" not in fuente
-    assert "ORIGEN_ARCHIVO ==" not in fuente and "== ds.ORIGEN_ARCHIVO" not in fuente
+    # Por AST (PC-21): ni un import de unicodedata ni una comparacion de
+    # igualdad contra ORIGEN_ARCHIVO --- la advertencia es por ORIGEN, y el
+    # origen lo decide datos_sitio, no un `==` de M11.
+    importados = {a.name for n in ast.walk(arbol) if isinstance(n, ast.Import)
+                  for a in n.names} | {n.module for n in ast.walk(arbol)
+                                       if isinstance(n, ast.ImportFrom)}
+    assert "unicodedata" not in importados
+    for n in ast.walk(arbol):
+        if isinstance(n, ast.Compare) and any(isinstance(op, (ast.Eq, ast.NotEq))
+                                              for op in n.ops):
+            assert "ORIGEN_ARCHIVO" not in ast.unparse(n), ast.unparse(n)
     assert "ds.advertencia_de_corredor" in nombres
 
 
@@ -908,8 +917,12 @@ def test_h_la_gui_carga_declara_y_guarda_por_las_puertas_nuevas():
     assert any(n.endswith("_aplicar_bloques_de_sesion") for n, _ in nuevo)
     bloques = _llamadas(_funcion(arbol, "_aplicar_bloques_de_sesion"))
     assert any(n.endswith("restaurar_datos_de_sitio") for n, _ in bloques)
+    # El rotulo del boton es una cadena y se afirma como cadena; la variable
+    # de Tk es un ATRIBUTO que la ventana asigna y se afirma por AST (PC-21).
     fuente = GUI.read_text(encoding="utf-8-sig")
-    assert "Nuevo proyecto" in fuente and "datos_sitio_var" in fuente
+    assert "Nuevo proyecto" in fuente
+    assert "datos_sitio_var" in {n.attr for n in ast.walk(arbol)
+                                 if isinstance(n, ast.Attribute)}
 
 
 def test_h_la_cli_reexporta_el_cargador_del_servicio():

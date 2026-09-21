@@ -334,15 +334,28 @@ def test_la_ventana_no_escribe_ninguna_columna_por_su_cuenta():
     `gui/ayuda_entrada.py` PINTA. Si nombrara una columna del CSV a mano, esa
     seria la version que envejece --- y ademas la que el proyectista lee.
     """
-    fuente = (RAIZ / "gui" / "ayuda_entrada.py").read_text(encoding="utf-8")
-    cuerpo = "\n".join(
-        linea for linea in fuente.splitlines()
-        if not linea.lstrip().startswith("#"))
+    import ast
+    arbol = ast.parse((RAIZ / "gui" / "ayuda_entrada.py").read_text(encoding="utf-8"))
+    # Las CADENAS del arbol, sin docstrings (PC-21): hasta EXT-11 se filtraban
+    # los comentarios a mano y se buscaba `"columna"` en el texto restante, y
+    # un docstring que nombrara la columna contaba como escritura.
+    cadenas = set()
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, (ast.FunctionDef, ast.ClassDef, ast.Module)):
+            cuerpo = nodo.body
+            if cuerpo and isinstance(cuerpo[0], ast.Expr) \
+                    and isinstance(cuerpo[0].value, ast.Constant) \
+                    and isinstance(cuerpo[0].value.value, str):
+                cuerpo = cuerpo[1:]
+            for hijo in cuerpo:
+                for n in ast.walk(hijo):
+                    if isinstance(n, ast.Constant) and isinstance(n.value, str):
+                        cadenas.add(n.value)
     # Las dos que el docstring cita como ejemplo del cruce entre las dos
-    # pestanas quedan fuera del cuerpo por el filtro de comentarios; lo que se
-    # persigue son las OTRAS diecisiete escritas en un widget.
+    # pestanas quedan fuera; lo que se persigue son las OTRAS diecisiete
+    # escritas en un widget.
     escritas = [c for c in m0.COLUMNAS
-                if c not in ("Q_m3s", "S_cauce") and f'"{c}"' in cuerpo]
+                if c not in ("Q_m3s", "S_cauce") and c in cadenas]
     assert not escritas, (
         "la ventana escribe columnas a mano: " + ", ".join(escritas))
 

@@ -28,7 +28,6 @@ parametro `verificar` justamente para eso. Los verificadores de prueba son
 deliberadamente triviales (V1 sola, o un si/no constante).
 """
 
-import importlib.util
 import sys
 import types
 from pathlib import Path
@@ -369,15 +368,61 @@ def test_sin_caudal_o_sin_pendiente_es_dato_faltante(campo):
     assert excinfo.value.campo == campo
 
 
-@pytest.mark.skipif(importlib.util.find_spec(MODULO_VERIFICACIONES) is not None,
-                    reason="M5 ya existe: el verificador por defecto lo importa")
-def test_sin_M5_la_ausencia_sale_como_ImportError_y_no_como_ErrorProyecto():
+# LA AUSENCIA REAL DE M5, SIMULADA DE VERDAD (PC-22). Hasta EXT-11 este caso
+# era un test con `skipif(find_spec(M5) is not None)`: un test que NUNCA
+# puede correr, porque M5 existe desde C09 y no va a dejar de existir. Un
+# skip permanente no vigila nada y ademas cuenta como `skipped` en cada
+# corrida (CLAUDE.md lo tenia censado como «el skipped permanente por
+# condicion imposible»). Aqui se sustituye por lo que el skip decia probar:
+# un ARBOL SIN el archivo `src/modulos/M5_verificaciones.py`, en un proceso
+# aparte, donde `import_module` falla de verdad --- no un `None` en
+# `sys.modules` (eso lo prueba el test de la via de escape, mas abajo) ni un
+# doble sin `verificar` ---. Se copian `src/` y `tests/` a un directorio
+# temporal, se borra M5 y se llama a `disenar_punto` sin verificador.
+GUION_SIN_M5 = """
+import sys
+from tests.test_MD import _punto, L_CONDUCTO, TW_LIBRE
+from src.modelos import ErrorProyecto
+from src.modulos.MD import MODULO_VERIFICACIONES, disenar_punto
+assert MODULO_VERIFICACIONES not in sys.modules
+try:
+    disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE)
+except ImportError as exc:
+    assert not isinstance(exc, ErrorProyecto), type(exc)
+    assert MODULO_VERIFICACIONES in str(exc), str(exc)
+    assert "no esta en el proyecto" in str(exc), str(exc)
+    print("IMPORTERROR_ESPERADO")
+else:
+    print("SIN_ERROR")
+"""
+
+
+def test_sin_M5_la_ausencia_sale_como_ImportError_y_no_como_ErrorProyecto(tmp_path):
     """
     Falta un modulo del script, no un dato del expediente: la GUI no debe
-    mostrarlo como "no factible" ni como "falta declarar".
+    mostrarlo como "no factible" ni como "falta declarar". Se mide sobre un
+    arbol en el que el archivo de M5 NO EXISTE.
     """
-    with pytest.raises(ImportError, match="M5_verificaciones"):
-        disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE)
+    import shutil
+    import subprocess
+
+    raiz = Path(__file__).resolve().parents[1]
+    arbol = tmp_path / "sin_m5"
+    # `docs/` entra porque `criterios_adoptados` verifica al importarse que
+    # el manifiesto de citas existe (`_verificar_ancla_de_vacio`).
+    for carpeta in ("src", "tests", "docs"):
+        shutil.copytree(raiz / carpeta, arbol / carpeta,
+                        ignore=shutil.ignore_patterns("__pycache__",
+                                                      "linea_base_familia_c",
+                                                      "*.xlsx", "*.pdf"))
+    ausente = arbol / Path(*MODULO_VERIFICACIONES.split(".")).with_suffix(".py")
+    assert ausente.is_file(), ausente
+    ausente.unlink()
+
+    r = subprocess.run([sys.executable, "-c", GUION_SIN_M5], cwd=arbol,
+                       capture_output=True, text=True, timeout=120)
+    assert r.returncode == 0, r.stderr
+    assert "IMPORTERROR_ESPERADO" in r.stdout, r.stdout
 
 
 # ===========================================================================
@@ -596,17 +641,19 @@ def test_lote_con_todos_fallidos_devuelve_todos_como_no_aceptados():
 #
 # `_verificador_de_M5` tiene DOS salidas de fallo y su docstring las nombra
 # las dos ("un M5 ausente O SIN ESA FUNCION"). La primera la cubre el test de
-# mas arriba, que hoy queda SALTADO porque M5 ya existe -- el skip es
-# deliberado y su motivo esta escrito en el `reason`; la segunda no la cubria
-# nadie, y es la que se puede ejercitar sin borrar el modulo.
+# mas arriba, en un subproceso sobre un arbol sin M5 (hasta EXT-11 era un
+# skip permanente); la segunda no la cubria nadie, y es la que se puede
+# ejercitar sin borrar el modulo.
 #
 # Las dos se alcanzan aqui inyectando en `sys.modules` lo que `import_module`
 # encontraria en cada caso. No se toca produccion ni se borra nada del
 # arbol: `monkeypatch.setitem` repone `sys.modules` al terminar el test.
 #
-# El skip de arriba NO se retira: prueba la ausencia REAL del modulo -- que
-# es lo que veria un repositorio sin la Fase 5 -- y eso no lo demuestra
-# ninguna inyeccion. Este bloque cubre las lineas; aquel declara el caso.
+# El test de arriba prueba la ausencia REAL del modulo -- que es lo que
+# veria un repositorio sin la Fase 5 -- en un arbol sin el archivo, y eso
+# no lo demuestra ninguna inyeccion. Este bloque cubre las lineas en
+# proceso; aquel mide el caso de verdad (hasta EXT-11 era un skip que nunca
+# podia correr, PC-22).
 
 
 def test_un_M5_sin_la_funcion_verificar_sale_como_ImportError(monkeypatch):
