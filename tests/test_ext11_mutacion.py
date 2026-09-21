@@ -107,7 +107,7 @@ SUPERVIVIENTES_CON_RAZON = {
         "equivalente: `f(y_hi) > 1` en vez de `> 0` solo duplica el corchete una vez mas antes de Brent; la raiz es la misma",
     "src/modulos/M3_hidraulica.py::tw_seccion_1_3::aritmetico::cota_fondo_salida + gobernante -> cota_fondo_salida - gobernante #2":
         "equivalente: es el `cota_agua` que la via de escenarios pasa a `_paso_tw`, y ese argumento no llega a ningun campo del paso por esa via (la cota que si se publica, `cota_TW_msnm`, la fija test_la_cota_de_agua_del_TW...)",
-    "src/modulos/M4_control.py::_exigir_hw_no_negativo::comparacion::HW_sobre_D > 0 -> HW_sobre_D >= 0":
+    "src/modulos/M4_control.py::_resolver_hw_fuera_de_rango::comparacion::HW_sobre_D > 0 -> HW_sobre_D >= 0":
         "equivalente: HW/D exactamente 0.0 (una lamina en el fondo) es de medida nula; el mutante solo cambia si un caudal produce ese cero exacto",
     "src/modulos/M4_control.py::control_salida::comparacion::TW > h_o_geometrico -> TW >= h_o_geometrico":
         "equivalente: con TW == h_o_geometrico las dos ramas devuelven el mismo h_o; el mutante solo cambia el rotulo `ahogado_por_TW` en la igualdad exacta",

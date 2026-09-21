@@ -399,3 +399,14 @@ memoria. Se regeneró por dos cambios de FORMATO, medidos con `diff`:
 El comparador de E14 es desde esta sesión el segundo consumidor de esta línea base:
 `tests/test_linea_base.py` compara los dos JSON comprometidos con los recién generados
 por `comparador.comparar` además de byte a byte, y tiene que decir IGUALES.
+
+## Regenerada en PF-1 (2026-09-21): el recuento de criterios, nada más
+
+PF-1 abrió el criterio [A] de perfil `hw_entrada_fuera_de_rango` (PC-03) y el
+corredor del repositorio no lo invoca —su S* ronda 0.38 m/m y las pendientes
+del corredor son 0.006–0.008—, de modo que **ningún número de cálculo se
+movió**. Lo que cambia, medido con `git diff`: la huella `criterios_sha1` de
+los tres JSON, la lista de criterios sin valor que los JSON y las memorias
+imprimen (entra la clave nueva) y el recuento «74 criterios declarados, 35
+todavía sin valor» → «75 / 36» en las tres memorias. Es el mismo movimiento de
+FORMATO que EXT-7 declaró al abrir los dos criterios del cabezal.

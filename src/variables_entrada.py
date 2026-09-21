@@ -1135,6 +1135,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "longitud_proteccion_salida": _Meta(unidad="m"),
     "metodo_estabilidad_global": _Meta(unidad="-"),
     "metodo_transicion_hds5": _Meta(unidad="-"),
+    # PF-1 (PC-03): categoria (energia_critica | descartar), la consume M4.
+    "hw_entrada_fuera_de_rango": _Meta(unidad="-"),
     "n_manning_hdpe": _Meta(unidad="-"),
     "origen_cota_fondo_entrada": _Meta(unidad="-"),
     "pendiente_relleno_trasdos_i": _Meta(unidad="grados"),

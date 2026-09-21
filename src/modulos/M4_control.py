@@ -157,15 +157,20 @@ D = 0.90 m, Q = 0.05 m3/s y la carta de concreto vale S > 0.3770624, y hasta
 esta correccion el diseño se ACEPTABA entero con HW = -0.010 m, o sea con V4
 y el tamizado de 7.A evaluados 0.18 m del lado no conservador.
 
-`control_entrada()` ya no devuelve ese numero: cuando HWi/D sale <= 0 lanza
-`DisenoNoFactibleError` con el motivo entero. Es un rechazo, no un piso, y la
-diferencia importa. Un piso exige decidir QUE carga se adopta en su lugar --
-la lectura fisica seria HW ~ H_c, la energia especifica critica --, y ese
-valor no lo fija ni la hoja de ruta ni el HDS-5: adoptarlo aqui seria rellenar
-un vacio en silencio, que es el peor defecto de este proyecto. Rechazar no
-adopta nada. Lo que el rechazo afirma es solo lo que se puede sostener: que
-con esos datos la formulacion del HDS-5 quedo fuera de rango y su resultado
-no es publicable.
+`control_entrada()` ya no devuelve ese numero. Hasta PF-1, cuando HWi/D salia
+<= 0 lanzaba `DisenoNoFactibleError` con el motivo entero: un rechazo, no un
+piso, porque un piso exige decidir QUE carga se adopta en su lugar -- la
+lectura fisica seria HW ~ H_c, la energia especifica critica -- y ese valor no
+lo fija ni la hoja de ruta ni el HDS-5, de modo que adoptarlo EN EL CODIGO
+seria rellenar un vacio en silencio. Ese argumento sigue en pie y por eso el
+codigo sigue sin adoptar nada por su cuenta. Lo que PC-03 midio es que el
+rechazo era DEFINITIVO y MUDO, y que la constitucion tiene una regla para
+este vacio que no es descartar: desde PF-1 el caso lo resuelve el criterio
+[A] de perfil `hw_entrada_fuera_de_rango` (`_resolver_hw_fuera_de_rango`):
+sin declarar, `CriterioPendienteError` con el par (Q, S) y S*, visible en la
+pestaña 4; «energia_critica», HW = H_c con el `PisoDeCargaEntrada` que la
+memoria imprime; «descartar», la conducta anterior. S* lo publica
+`pendiente_limite_de_signo`.
 
 CUANTO DE MAT-D10 CIERRA ESTE RECHAZO, dicho con numeros porque callarlo lo
 haria parecer mas de lo que es. Cierra el SIGNO y poco mas. Justo por debajo
@@ -357,7 +362,8 @@ from src.constantes_normativas import (FORMA_1, FORMA_2, K_MANNING_SI,
                                    KE_HDS5_C2, KU_SI,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
-from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+from src.modelos import (CriterioPendienteError, PisoDeCargaEntrada,
+                         CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      FormaSeccion, Geometria, Seccion,
                      ConstantesHDS5,
                      ControlEntrada, ControlGobernante,
@@ -387,6 +393,12 @@ CRITERIO_KE = "ke_entrada"
 CRITERIO_KE_CAJON = "ke_entrada_cajon"
 CRITERIO_GEOMETRIA_SALIDA = "geometria_control_salida"
 CRITERIO_TRANSICION = "metodo_transicion_hds5"
+# EL VACIO DE PC-03 (PF-1): que se adopta cuando la correccion por pendiente
+# deja la carga a la entrada en cero o bajo cero. Ver
+# `_resolver_hw_fuera_de_rango` y `pendiente_limite_de_signo`.
+CRITERIO_HW_FUERA_DE_RANGO = "hw_entrada_fuera_de_rango"
+PISO_ENERGIA_CRITICA = "energia_critica"
+PISO_DESCARTAR = "descartar"
 CRITERIO_FRACCION_LLENA = "fraccion_llena_mayor_parte"   # E-A, paso 4.3c
 
 # EL BRACKET DE THETA SE FUE A `SeccionCircular.bracket_llenado()` en C1,
@@ -781,56 +793,175 @@ def _regimen(q_estrella: float) -> RegimenEntrada:
     return RegimenEntrada.TRANSICION
 
 
-def _exigir_hw_no_negativo(HW_sobre_D: float, S: float, seccion: Seccion,
-                           q_estrella: float, hds5: ConstantesHDS5) -> None:
+def pendiente_limite_de_signo(Q: float, seccion: Seccion, hds5: ConstantesHDS5,
+                              critico: Optional[TiranteCritico] = None
+                              ) -> Optional[float]:
     """
-    Rechaza el HWi/D que la correccion por pendiente K_s*S deja bajo cero
-    (MAT-D10). Sec. 4.2 no acota ese termino y la recta no tiene tope: con
-    K_s = -0.5, una pendiente grande y un caudal chico devuelven una carga
-    NEGATIVA a la entrada, que es una lamina de agua por debajo del fondo del
-    conducto -- no un HW pequeño: un HW imposible.
+    S*: la pendiente a partir de la cual la ecuacion de control de entrada
+    deja de entregar carga para este Q y esta seccion (MAT-D10, PC-03).
 
-    No sustituye el valor por ningun piso. Que carga corresponde cuando la
-    formulacion sale de rango no lo fija la hoja de ruta ni el HDS-5, y
-    adoptar uno aqui -- H_c, cero, el que fuera -- seria rellenar un vacio en
-    silencio.
+    HWi/D es lineal en S en cada rama --- pendiente Ks en la (A.1) y la
+    (A.3), 0 en la (A.2), y peso*Ks en la recta de transicion bajo Forma 2
+    ---, de modo que S* = X/(-m), con X el HWi/D sin el termino de pendiente
+    y m la pendiente de la rama. Para la Forma 1 no sumergida es el
+    S* = 2*(H_c/D + K*(q*)^M) que el docstring del modulo escribe con
+    Ks = -0.5. Devuelve None cuando la rama no decrece con S (Forma 2 no
+    sumergida, o una carta con Ks >= 0): ahi no hay limite que citar, y no
+    se devuelve `inf` porque el censo de los dos `inf` deliberados del
+    repositorio no admite un tercero.
 
-    POR QUE `DisenoNoFactibleError` Y NO `DatoInvalidoError`, que fue la
-    primera eleccion y era la equivocada. `DatoInvalidoError` es "el dato esta
-    pero no puede ser": tipo equivocado, fuera del rango de `dominios.py`, o
-    en contradiccion con otro dato de su fila. Una S de 0.40 m/m no es ninguna
-    de las tres -- es del tipo correcto, cae dentro de `S_CAUCE_MAX` = 1.0 y no
-    contradice a nadie --, y el discriminante de CLAUDE.md ("si el revisor
-    tiene que CORREGIR algo es Invalido") no se cumple: una pendiente medida
-    en campo no se corrige. Lo que no puede sostenerse no es el dato, es la
-    combinacion: con ese Q, ese D y esa S, el metodo adoptado no entrega un
-    numero publicable. Eso es una no factibilidad, y su motivo lo dice.
+    S* NO CRECE CON D: bajan H_c/D y q* a la vez con Ks*S fijo, de modo que
+    si la carta se cae en el diametro minimo del catalogo ninguno mayor la
+    levanta. Es lo que hace correcto descartar el material entero bajo
+    «descartar» (`tests/test_pf1_hw_fuera_de_rango.py` lo fija).
+    """
+    _validar_Q_D(Q, seccion)
+    if critico is None:
+        critico = tirante_critico(Q, seccion)
+    q_estrella = caudal_adimensional(Q, seccion)
+    sin_pendiente, _, _, m = _hw_sobre_D_y_pendiente(
+        q_estrella, critico, seccion, S=0, hds5=hds5)
+    if not m < 0:
+        return None
+    return sin_pendiente / (-m)
 
-    El mensaje tampoco puede mandar al revisor a "revisar la pendiente de esta
-    fila": es lo que se le dice cuando la celda esta cargada en porcentaje
-    (ver `dominios.S_CAUCE_MAX`), y aqui lo iria a buscar y no lo encontraria.
 
-    `MD.disenar_material` lo trata como descarte del material con su causa
-    citada entera, y descartar el material -- no solo el diametro -- es lo
-    correcto: HWi/D decrece con D (bajan H_c/D y q* a la vez), de modo que si
-    la carta se cae en un diametro, ninguno mayor la levanta.
+def _hw_sobre_D_y_pendiente(q_estrella: float, critico: TiranteCritico,
+                            seccion: Seccion, S: float, hds5: ConstantesHDS5
+                            ) -> Tuple[float, RegimenEntrada,
+                                       Optional[TransicionEntrada], float]:
+    """
+    (HWi/D, rama, recta de transicion o None, dHWi/D / dS) para un q* y una
+    S. Es el cuerpo de las tres ramas de `control_entrada`, separado para que
+    `pendiente_limite_de_signo` evalue las MISMAS ecuaciones --- con S = 0,
+    que aqui se admite porque la positividad de S la exige `control_entrada`
+    y no las ecuaciones ---. La cuarta salida es la pendiente de la rama en
+    S, que es lo unico que S* necesita ademas del numero.
+    """
+    regimen = _regimen(q_estrella)
+    transicion = None
+    if regimen is RegimenEntrada.NO_SUMERGIDO:
+        HW_sobre_D = _hw_sobre_D_no_sumergido(q_estrella, critico.H_c, seccion, S, hds5)
+        m = hds5.Ks if hds5.forma == FORMA_1 else 0
+    elif regimen is RegimenEntrada.SUMERGIDO:
+        HW_sobre_D = _hw_sobre_D_sumergido(q_estrella, S, hds5)
+        m = hds5.Ks
+    else:
+        # Interpolacion lineal entre los EXTREMOS del rango de validez de cada
+        # forma, no entre las dos formas evaluadas en el q* real: dentro de la
+        # transicion ninguna de las dos ecuaciones vale, y extrapolarlas seria
+        # usarlas fuera de su dominio de ajuste. Asi la curva empalma continua
+        # en q* = 3.5 y en q* = 4.0.
+        #
+        # El criterio se invoca AQUI y no al entrar en la funcion: asi M11
+        # declara la simplificacion solo si algun punto cae de verdad en la
+        # transicion, y no en las corridas donde todos los q* quedan fuera.
+        metodo = ca.valor(CRITERIO_TRANSICION)
+        if metodo != "interpolacion_lineal_entre_extremos":
+            raise DatoInvalidoError(
+                CRITERIO_TRANSICION, valor=metodo,
+                motivo="M4 solo implementa la recta entre los extremos de "
+                       "validez. Reproducir la curva tangente del HDS-5 exige "
+                       "programar otro procedimiento, no cambiar este valor",
+            )
+        # EL EXTREMO INFERIOR ES EL DE Q_lo, EL CAUDAL DE q* = 3.5 (EXT-M-04),
+        # y bajo Forma 1 se evalua con el H_c de ESE caudal: es lo que hace
+        # que los dos extremos sean fijos para un D, una S y una carta, y
+        # que la recta sea una recta. Bajo Forma 2 la (A.2) no lleva H_c y
+        # no hay segundo critico que resolver.
+        Q_lo = Q_LIM_NO_SUMERGIDO * seccion.area_llena * math.sqrt(seccion.altura) / KU_SI
+        H_c_lo = (tirante_critico(Q_lo, seccion).H_c
+                  if hds5.forma == FORMA_1 else None)
+        extremo_inferior = _hw_sobre_D_no_sumergido(
+            Q_LIM_NO_SUMERGIDO, H_c_lo, seccion, S, hds5)
+        extremo_superior = _hw_sobre_D_sumergido(Q_LIM_SUMERGIDO, S, hds5)
+        peso = ((q_estrella - Q_LIM_NO_SUMERGIDO)
+                / (Q_LIM_SUMERGIDO - Q_LIM_NO_SUMERGIDO))
+        HW_sobre_D = extremo_inferior + peso * (extremo_superior - extremo_inferior)
+        transicion = TransicionEntrada(
+            Q_lo=Q_lo, H_c_lo=H_c_lo,
+            HW_lo=extremo_inferior * seccion.altura,
+            HW_hi=extremo_superior * seccion.altura,
+            peso=peso)
+        # Bajo Forma 1 los dos extremos llevan Ks*S y la recta hereda la
+        # pendiente entera; bajo Forma 2 solo el superior, y la hereda por
+        # su peso.
+        m = hds5.Ks if hds5.forma == FORMA_1 else peso * hds5.Ks
+    return HW_sobre_D, regimen, transicion, m
+
+
+def _resolver_hw_fuera_de_rango(HW_sobre_D: float, m: float, *, Q: float,
+                                S: float, seccion: Seccion, q_estrella: float,
+                                hds5: ConstantesHDS5, critico: TiranteCritico
+                                ) -> Tuple[float, Optional[PisoDeCargaEntrada]]:
+    """
+    Resuelve el HWi/D que la correccion por pendiente Ks*S deja en cero o
+    bajo cero (MAT-D10): una lamina de agua por debajo del fondo del
+    conducto, que no existe. Sec. 4.2 no acota ese termino, la recta no
+    tiene tope, y ni la hoja de ruta ni el HDS-5 dicen que hacer ahi.
+
+    HASTA PF-1 ESTO ERA `_exigir_hw_no_negativo` Y LANZABA
+    `DisenoNoFactibleError`, con un argumento que sigue siendo cierto en su
+    mitad: el dato no esta mal (una pendiente medida en campo no se
+    «corrige»: no es DatoInvalidoError) y adoptar un piso EN EL CODIGO seria
+    rellenar un vacio en silencio. Lo que el argumento no decia es que la
+    constitucion tiene una regla para ese vacio, y no es descartar: es la
+    entrada con valor=None, etiqueta [A] y la excepcion que detiene el
+    calculo hasta que el proyectista declare. PC-03 lo midio por el otro
+    lado: el descarte era DEFINITIVO --- un cruce trivialmente factible salia
+    como no factible --- y MUDO --- el Bloqueo viajaba con `criterio=None` y
+    `M11.criterios_bloqueantes` lo saltaba ---. La clase elegida y por que no
+    es `MetodoNoEvaluableError` estan en la ficha PF-1-01.
+
+    Tres salidas, las tres con el par (Q, S) culpable y el S* de la carta:
+      * sin declarar        -> CriterioPendienteError sobre
+                               `hw_entrada_fuera_de_rango` (Bloqueo con criterio,
+                               visible en la pestaña 4);
+      * «energia_critica»   -> HW = H_c, la energia especifica critica del paso
+                               4.2.1, y el `PisoDeCargaEntrada` que la memoria
+                               imprime con el HWi/D que la ecuacion devolvio;
+      * «descartar»         -> DisenoNoFactibleError, la conducta anterior, y
+                               `MD.disenar_material` descarta el material entero
+                               --- con razon: HWi/D decrece con D, ver
+                               `pendiente_limite_de_signo` ---.
+
+    La comparacion se escribe en positivo y negada (forma MAT-D13): un NaN
+    tampoco pasa.
     """
     if HW_sobre_D > 0:
-        return
-    raise DisenoNoFactibleError(
-        motivo=f"control de entrada ({NUMERAL_ENTRADA}): con "
-               f"D={seccion.altura} m, "
-               f"S={S} m/m y q*={q_estrella:.5f}, la correccion por pendiente "
-               f"Ks*S (Ks={hds5.Ks}) devuelve HWi/D={HW_sobre_D:.5f} -- una "
-               f"carga a la entrada nula o negativa, que es fisicamente "
-               f"imposible. El HDS-5 formula esa correccion para pendientes "
-               f"de alcantarilla corrientes y aqui quedo extrapolada fuera de "
-               f"rango. No se adopta ningun piso en su lugar (ni la hoja de "
-               f"ruta ni el HDS-5 lo fijan), de modo que esta combinacion no "
-               f"produce un HW publicable y se descarta. Lo que la resolveria "
-               f"es un procedimiento valido para pendientes de ese orden, no "
-               f"otro diametro: HWi/D decrece al crecer D",
-    )
+        return HW_sobre_D, None
+    S_limite = S - HW_sobre_D / m if m < 0 else None
+    caso = (f"D={seccion.altura} m, Q={Q} m3/s, S={S} m/m, q*={q_estrella:.5f}: "
+            f"la correccion por pendiente Ks*S (Ks={hds5.Ks}) devuelve "
+            f"HWi/D={HW_sobre_D:.5f}, una carga a la entrada nula o negativa; "
+            f"la ecuacion deja de entregar carga desde S*="
+            + (f"{S_limite:.5f} m/m" if S_limite is not None else "(sin limite)"))
+    try:
+        adoptado = ca.valor(CRITERIO_HW_FUERA_DE_RANGO)
+    except CriterioPendienteError as exc:
+        raise CriterioPendienteError(
+            exc.clave, concepto=exc.concepto,
+            fuente=f"{exc.fuente}. Caso: {caso}") from None
+    if adoptado == PISO_ENERGIA_CRITICA:
+        return critico.H_c / seccion.altura, PisoDeCargaEntrada(
+            criterio=CRITERIO_HW_FUERA_DE_RANGO, adoptado=adoptado,
+            HW_sobre_D_formula=HW_sobre_D, S_limite=S_limite)
+    if adoptado == PISO_DESCARTAR:
+        raise DisenoNoFactibleError(
+            motivo=f"control de entrada ({NUMERAL_ENTRADA}): {caso}. El HDS-5 "
+                   f"formula esa correccion para pendientes de alcantarilla "
+                   f"corrientes y aqui quedo extrapolada fuera de rango; "
+                   f"'{CRITERIO_HW_FUERA_DE_RANGO}' esta declarado "
+                   f"«{PISO_DESCARTAR}», de modo que no se adopta ningun piso "
+                   f"y esta combinacion se descarta. Lo que la resolveria es "
+                   f"un procedimiento valido para pendientes de ese orden, no "
+                   f"otro diametro: HWi/D decrece al crecer D",
+        )
+    # Segunda linea (EXT-5): la puerta ya rechaza lo que no es del conjunto
+    # cerrado, y esto defiende lo que llegue por otra via.
+    raise DatoInvalidoError(
+        CRITERIO_HW_FUERA_DE_RANGO, valor=adoptado,
+        motivo=f"solo admite «{PISO_ENERGIA_CRITICA}» o «{PISO_DESCARTAR}»")
 
 
 def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
@@ -877,62 +1008,17 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
         critico = tirante_critico(Q, seccion)
 
     q_estrella = caudal_adimensional(Q, seccion)
-    regimen = _regimen(q_estrella)
+    HW_sobre_D, regimen, transicion, m = _hw_sobre_D_y_pendiente(
+        q_estrella, critico, seccion, S, hds5)
 
-    transicion = None
-    if regimen is RegimenEntrada.NO_SUMERGIDO:
-        HW_sobre_D = _hw_sobre_D_no_sumergido(q_estrella, critico.H_c, seccion, S, hds5)
-    elif regimen is RegimenEntrada.SUMERGIDO:
-        HW_sobre_D = _hw_sobre_D_sumergido(q_estrella, S, hds5)
-    else:
-        # Interpolacion lineal entre los EXTREMOS del rango de validez de cada
-        # forma, no entre las dos formas evaluadas en el q* real: dentro de la
-        # transicion ninguna de las dos ecuaciones vale, y extrapolarlas seria
-        # usarlas fuera de su dominio de ajuste. Asi la curva empalma continua
-        # en q* = 3.5 y en q* = 4.0.
-        #
-        # El criterio se invoca AQUI y no al entrar en la funcion: asi M11
-        # declara la simplificacion solo si algun punto cae de verdad en la
-        # transicion, y no en las corridas donde todos los q* quedan fuera.
-        metodo = ca.valor(CRITERIO_TRANSICION)
-        if metodo != "interpolacion_lineal_entre_extremos":
-            raise DatoInvalidoError(
-                CRITERIO_TRANSICION, valor=metodo,
-                motivo="M4 solo implementa la recta entre los extremos de "
-                       "validez. Reproducir la curva tangente del HDS-5 exige "
-                       "programar otro procedimiento, no cambiar este valor",
-            )
-        # EL EXTREMO INFERIOR ES EL DE Q_lo, EL CAUDAL DE q* = 3.5 (EXT-M-04),
-        # y bajo Forma 1 se evalua con el H_c de ESE caudal: es lo que hace
-        # que los dos extremos sean fijos para un D, una S y una carta, y
-        # que la recta sea una recta. Bajo Forma 2 la (A.2) no lleva H_c y
-        # no hay segundo critico que resolver.
-        Q_lo = Q_LIM_NO_SUMERGIDO * seccion.area_llena * math.sqrt(seccion.altura) / KU_SI
-        H_c_lo = (tirante_critico(Q_lo, seccion).H_c
-                  if hds5.forma == FORMA_1 else None)
-        extremo_inferior = _hw_sobre_D_no_sumergido(
-            Q_LIM_NO_SUMERGIDO, H_c_lo, seccion, S, hds5)
-        extremo_superior = _hw_sobre_D_sumergido(Q_LIM_SUMERGIDO, S, hds5)
-        peso = ((q_estrella - Q_LIM_NO_SUMERGIDO)
-                / (Q_LIM_SUMERGIDO - Q_LIM_NO_SUMERGIDO))
-        HW_sobre_D = extremo_inferior + peso * (extremo_superior - extremo_inferior)
-        transicion = TransicionEntrada(
-            Q_lo=Q_lo, H_c_lo=H_c_lo,
-            HW_lo=extremo_inferior * seccion.altura,
-            HW_hi=extremo_superior * seccion.altura,
-            peso=peso)
-
-    # Una sola vez, despues de las tres ramas, porque el rechazo es el mismo.
-    #
-    # ESTE COMENTARIO DECIA «el termino Ks*S entra en las tres -- tambien en
-    # la transicion, por sus dos extremos --», y desde C3 es falso por partida
-    # doble: con Forma 2, Ks*S entra en DOS de las tres ramas, y en la
-    # transicion por UN solo extremo, el sumergido. Bajo Forma 2 no sumergida
-    # la guardia no puede dispararse -- K*(q*)^M > 0 siempre para q* > 0 --,
-    # de modo que sigue sin haber rama que se le escape; lo que cambia es de
-    # donde puede venir el numero negativo cuando lo hay.
-    # Ver `_exigir_hw_no_negativo` y el docstring del modulo.
-    _exigir_hw_no_negativo(HW_sobre_D, S, seccion, q_estrella, hds5)
+    # Una sola vez, despues de las tres ramas, porque la resolucion es la
+    # misma. Bajo Forma 2 no sumergida no puede dispararse -- K*(q*)^M > 0
+    # siempre para q* > 0 --; en las demas ramas el termino Ks*S entra, y de
+    # ahi puede venir el numero negativo. Ver `_resolver_hw_fuera_de_rango`
+    # y el docstring del modulo.
+    HW_sobre_D, piso = _resolver_hw_fuera_de_rango(
+        HW_sobre_D, m, Q=Q, S=S, seccion=seccion, q_estrella=q_estrella,
+        hds5=hds5, critico=critico)
 
     return ControlEntrada(
         HW=HW_sobre_D * seccion.altura,
@@ -942,6 +1028,7 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
         critico=critico,
         constantes=hds5,
         transicion=transicion,
+        piso=piso,
     )
 
 
@@ -2176,6 +2263,41 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      f"extremo superior: la ec. (A.3) en q* = "
                      f"{Q_LIM_SUMERGIDO}, por D", cifras=CIFRAS_MAGNITUD))
 
+    # EL PISO ADOPTADO (PF-1, PC-03), solo cuando la ecuacion devolvio una
+    # carga nula o negativa y el criterio `hw_entrada_fuera_de_rango` esta
+    # declarado «energia_critica»: la memoria imprime lo que la ecuacion dio,
+    # el S* de la carta y lo que se adopto en su lugar. Sin piso, nada de
+    # esto aparece, que es el caso de todo el corredor del repositorio.
+    piso = entrada.piso
+    if piso is not None:
+        magnitudes.append(
+            Magnitud("HW/D_formula", piso.HW_sobre_D_formula, "",
+                     "lo que la ecuacion de control de entrada devolvio con "
+                     "la correccion por pendiente Ks*S: nulo o negativo, una "
+                     "lamina bajo el fondo del conducto (MAT-D10)",
+                     cifras=CIFRAS_MAGNITUD))
+        if piso.S_limite is not None:
+            magnitudes.append(
+                Magnitud("S*", piso.S_limite, "m/m",
+                         "pendiente desde la que la ecuacion deja de entregar "
+                         "carga para este Q y este D: S* = X/(-Ks), con X el "
+                         "HWi/D sin el termino de pendiente "
+                         "(`pendiente_limite_de_signo`)", cifras=CIFRAS_MAGNITUD))
+        magnitudes.append(
+            Magnitud("H_c", entrada.critico.H_c, "m",
+                     "energia especifica critica del paso 4.2.1, adoptada como "
+                     f"piso de la carga por el criterio [A] '{piso.criterio}' "
+                     f"= «{piso.adoptado}»", cifras=CIFRAS_MAGNITUD))
+    nota_del_piso = ("" if piso is None else
+                     f" LA CARGA IMPRESA ES UN PISO ADOPTADO, no la ecuacion: "
+                     f"para este Q y este D la correccion por pendiente Ks*S "
+                     f"dejo HW/D en {piso.HW_sobre_D_formula:.5f}, y el "
+                     f"criterio [A] '{piso.criterio}' esta declarado "
+                     f"«{piso.adoptado}», de modo que HW_entrada = H_c. Es una "
+                     f"adopcion del proyectista sobre un vacio de HDS-5 (PC-03, "
+                     f"PF-1): ni la hoja de ruta ni la fuente fijan que carga "
+                     f"corresponde fuera del rango de la correccion.")
+
     de_entrada = paso(
         "F4.CONTROL",
         codigo="4.2",
@@ -2188,7 +2310,9 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         sustitucion=tuple(magnitudes),
         resultado=Magnitud("HW_entrada", entrada.HW, "m",
                            f"carga sobre el fondo de la entrada, regimen "
-                           f"«{entrada.regimen.value}»",
+                           f"«{entrada.regimen.value}»"
+                           + ("" if piso is None else
+                              f"; PISO adoptado por '{piso.criterio}'"),
                            cifras=CIFRAS_MAGNITUD),
         veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
                             explicacion="paso de calculo"),
@@ -2200,7 +2324,8 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                "contiene." if ks_participa else
                "Esta carta es de Forma 2 y la rama aplicada es la NO "
                "sumergida: el numero de arriba no lleva Ks*S, y por eso Ks "
-               "no aparece en la sustitucion.")),
+               "no aparece en la sustitucion.")
+            + nota_del_piso),
     )
 
     de_salida = paso(

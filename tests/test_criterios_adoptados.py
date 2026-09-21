@@ -171,8 +171,10 @@ def test_todo_criterio_de_perfil_sin_valor_tiene_ficha_declarable():
     claves = ca.criterios_de_perfil_sin_valor()
     assert sorted(claves) == [
         "TW_receptor", "cobertura_minima_cajon", "embocadura_cajon",
-        "espesor_pared_cajon", "homogeneidad_serie_fen", "ke_entrada_cajon",
-        "n_celdas_cajon", "n_manning_cajon", "secciones_cajon_normalizadas"]
+        "espesor_pared_cajon", "homogeneidad_serie_fen",
+        "hw_entrada_fuera_de_rango",     # PF-1 (PC-03): el piso de la carga a la entrada
+        "ke_entrada_cajon", "n_celdas_cajon", "n_manning_cajon",
+        "secciones_cajon_normalizadas"]
     for clave in claves:
         c = CRITERIOS[clave]
         for campo in ("concepto", "justificacion", "fuente"):

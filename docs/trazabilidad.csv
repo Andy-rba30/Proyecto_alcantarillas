@@ -1,4 +1,4 @@
-# Sello · fecha: 2026-09-21 · commit: fbc57e6 · alcance: registro completo, una fila por Cita: 180 citas de 16 fuentes · suite: 3891 passed, 3 skipped (PyMuPDF sí · ventana Tk sí)
+# Sello · fecha: 2026-09-21 · commit: 863aac8+cambios-sin-commit · alcance: registro completo, una fila por Cita: 180 citas de 16 fuentes · suite: 3969 passed, 3 skipped (PyMuPDF sí · ventana Tk sí)
 cita_id,fuente_id,norma,edicion,numeral,titulo_numeral,pagina_impresa,pagina_pdf,caracter,metodo_verificacion,fecha_verificacion,tiene_interpretacion,discrepancias_que_la_tocan,consumidores_declarados
 AASHTO_LRFD_9.10.5.4.2,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",10.5.4.2,Liquefaction Design Requirements,10-34,1323,exigencia,texto,2026-08-29,no,DIS-HR-VIA-DE-LA-LICUEFACCION [resuelta],
 AASHTO_LRFD_9.10.5.4.2#ESPECTRO,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020","10.5.4.2, configuracion licuada",Liquefaction Design Requirements,10-34,1323,recomendacion,texto,2026-08-29,no,DIS-HR-VIA-DE-LA-LICUEFACCION [resuelta],

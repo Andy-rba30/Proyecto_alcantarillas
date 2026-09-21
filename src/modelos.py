@@ -2002,7 +2002,41 @@ class ControlEntrada:
     # (EXT-M-04). `None` en las dos ramas puras: ahi no hay recta. Ver
     # `TransicionEntrada`.
     transicion: Optional["TransicionEntrada"] = None
+    # EL PISO ADOPTADO cuando la correccion por pendiente dejo la ecuacion
+    # fuera de rango (PF-1, PC-03). `None` siempre que la ecuacion entrego
+    # carga por si sola, que es todo el corredor del repositorio. Ver
+    # `PisoDeCargaEntrada`.
+    piso: Optional["PisoDeCargaEntrada"] = None
     numeral: str = "HDS-5 Ap. A, Tabla A.1 (Sec. 4.2)"
+
+
+@dataclass(frozen=True)
+class PisoDeCargaEntrada:
+    """
+    Lo que M4 adopto en lugar del HWi/D que la ecuacion de control de
+    entrada devolvio en cero o bajo cero (MAT-D10 / PC-03, cerrado en PF-1).
+
+    La correccion por pendiente Ks*S de las ecs. (A.1) y (A.3) es una recta
+    sin tope: con Ks = -0.5, un caudal chico y una pendiente grande la carga
+    sale NEGATIVA, que es una lamina bajo el fondo del conducto. Hasta PF-1
+    eso era un `DisenoNoFactibleError` definitivo y mudo --- el `Bloqueo`
+    viajaba sin `criterio` y la pestaña 4 no lo mostraba ---. Desde PF-1 es
+    un vacio DECLARABLE de perfil: el criterio [A] `hw_entrada_fuera_de_rango`
+    decide si se adopta la energia especifica critica H_c como piso
+    («energia_critica») o si el caso se descarta («descartar»); sin
+    declarar, `CriterioPendienteError` con el par (Q, S) culpable y S*.
+
+    `HW_sobre_D_formula` es lo que la ecuacion devolvio (<= 0), conservado
+    para que la memoria lo imprima al lado del piso; `S_limite` es la
+    pendiente S* a partir de la cual la ecuacion deja de entregar carga
+    para ese Q y ese D (None si la rama no depende de S), y es lo que le
+    dice al revisor cuanta pendiente sobra.
+    """
+
+    criterio: str
+    adoptado: str
+    HW_sobre_D_formula: float
+    S_limite: Optional[float]
 
 
 @dataclass(frozen=True)

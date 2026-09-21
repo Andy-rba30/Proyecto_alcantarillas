@@ -2140,6 +2140,81 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    "hw_entrada_fuera_de_rango": Criterio(
+        # EL VACIO QUE PC-03 PIDIO Y PF-1 ABRIO. La correccion por pendiente
+        # Ks*S de las ecs. (A.1) y (A.3) de HDS-5 es una recta sin tope: con
+        # Ks = -0.5, un caudal chico y una pendiente grande la carga a la
+        # entrada sale en cero o bajo cero (MAT-D10). HDS-5 no dice que hacer
+        # ahi y la hoja de ruta tampoco. Hasta PF-1 `M4.control_entrada`
+        # lanzaba DisenoNoFactibleError y el material se descartaba entero,
+        # con razon --- HWi/D DECRECE con D, y si la carta se cae en el D
+        # minimo ninguno mayor la levanta --- pero MUDO: el Bloqueo viajaba
+        # sin criterio y la pestaña 4 no lo mostraba. La regla de CLAUDE.md
+        # para un vacio es esta entrada: valor=None, [A], y detener el
+        # calculo con excepcion; la decision de clase (CriterioPendienteError
+        # y no MetodoNoEvaluableError) esta en la ficha PF-1-01 de
+        # docs/decisiones_diferidas.md.
+        valor=None,                 # VACIO: solo bloquea si algun punto cae fuera de rango
+        nivel=NIVEL_PERFIL,         # lo consume M4 (Fase 4), que corre a perfil;
+                                    # el corredor del repositorio nunca lo invoca
+                                    # (S_cauce 0.006-0.008 frente a S* ~ 0.38)
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO, que es la ventana entera. «energia_critica»:
+        # se adopta HW = H_c, la energia especifica critica que el paso 4.2.1
+        # ya resolvio --- la carga minima con que la entrada pasa Q en
+        # regimen critico ---, y se declara que la correccion por pendiente
+        # quedo saturada; la memoria imprime al lado el HWi/D que la ecuacion
+        # devolvio y el S* de la carta. Es una adopcion con un salto: justo
+        # por debajo de S* la ecuacion entrega una carga diminuta y positiva
+        # (con S = 0.37706 y D = 0.90, HW = +1e-6 m) y justo por encima el
+        # piso vale H_c; el salto es de la ecuacion extrapolada, no del
+        # piso, y queda dicho aqui porque quien declare esta opcion tiene
+        # que saber que la carga NO es continua en S*. «descartar»: la
+        # conducta de antes de PF-1, DisenoNoFactibleError con el par (Q, S)
+        # y S* en el motivo, y el material entero descartado.
+        sensibilidad=("energia_critica", "descartar"),
+        concepto="Que se adopta cuando la ecuacion de control de entrada de "
+                 "HDS-5 devuelve una carga nula o negativa por la correccion "
+                 "por pendiente Ks*S (caudal chico con pendiente grande)",
+        justificacion="La ec. (A.1) HWi/D = H_c/D + K*(q*)^M + Ks*S y la (A.3) "
+                      "HWi/D = c*(q*)^2 + Y + Ks*S llevan la correccion por "
+                      "pendiente como recta sin tope, con Ks = -0.5 en las "
+                      "embocaduras sin inglete. Para S > S* = -(H_c/D + "
+                      "K*(q*)^M)/Ks (Forma 1 no sumergida) la carga sale bajo "
+                      "cero: una lamina por debajo del fondo, que no existe. "
+                      "HDS-5 formula la correccion para pendientes corrientes "
+                      "de alcantarilla y no dice que hacer fuera de ese rango; "
+                      "la hoja de ruta (Sec. 4.2) tampoco. Adoptar un piso en "
+                      "el codigo seria rellenar el vacio en silencio; "
+                      "descartar sin decirlo era un no factible definitivo "
+                      "por una condicion que el proyectista podia resolver "
+                      "declarando. Con D = 0.90 m (el minimo del catalogo) S* "
+                      "vale 0.377 para Q = 0.05 m3/s y 0.54 para 0.10: en el "
+                      "corredor del repositorio (S_cauce 0.006-0.008) no se "
+                      "alcanza; en una via con alivios pequenos en tramos "
+                      "empinados si",
+        fuente="PENDIENTE - HDS-5 3a ed. (FHWA-HIF-12-026), num. A.2 'INLET "
+               "CONTROL EQUATIONS', pag. impresa A.1-A.2 (PDF 190-191): las "
+               "ecs. (A.1) y (A.3) con su termino Ks*S, sin acotar su rango "
+               "de pendiente. Requiere decision del proyectista sobre el "
+               "piso; ninguna fuente de normas/ lo fija",
+        reemplazado_por="Un procedimiento de control de entrada valido para "
+                        "pendientes de ese orden (curvas de HDS-5 para "
+                        "pendientes fuertes, o ensayo), que ninguna fuente de "
+                        "normas/ trae hoy",
+        verificacion_pendiente="Declarar en la memoria que puntos del corredor "
+                               "caen con S > S*(Q, D): si ninguno lo hace, "
+                               "este criterio no toca ningun resultado y no "
+                               "se invoca",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, cuando un punto cae fuera del rango "
+                        "de la correccion por pendiente: H_c como piso "
+                        "declarado, o el descarte",
+            dominio="declaracion del tratamiento del caso fuera de rango",
+        ),
+    ),
+
     "n_manning_hdpe": Criterio(
         # El valor NO se escribe: se LEE de la tabla normativa de la que sale
         # por analogia. Escrito a mano era el mismo par (0.010, 0.013) copiado

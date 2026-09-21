@@ -191,7 +191,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -279,7 +279,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -314,7 +314,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -533,7 +533,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **3894**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **3972**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -583,7 +583,30 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **El cierre de E-B (2026-09-21, tras la revisión) sumó UN
+independientes. **PF-1 (2026-09-21) sumó SETENTA Y OCHO tests**, y ninguno
+depende de PyMuPDF ni de Tk: los 11 de
+`tests/test_pf1_hw_fuera_de_rango.py` —la aceptación de PC-03, escrita
+primero en rojo con `xfail(strict=True)` por test (medidos 17 xfailed con
+parametrizados y 0 XPASS antes de tocar código) y liberada al corregir: la
+carta fuera de rango es un vacío declarable (`CriterioPendienteError` sobre
+`hw_entrada_fuera_de_rango`) con el par (Q, S) y S* en el mensaje; el
+límite de signo analítico que `M4.pendiente_limite_de_signo` publica;
+«energia_critica» adopta H_c y lo publica en `ControlEntrada.piso`;
+«descartar» es la conducta anterior; la ficha es de perfil, categórica y
+con ventana; el bloqueo viaja con criterio y la pestaña 4 y el JSON lo
+pintan; declarado en caliente el punto dimensiona y la memoria lo
+declara; y S* no crece con D—, los 64 de la propiedad P9 en
+`tests/test_ext11_propiedades.py` (bajo S* la carta entrega carga sobre la
+malla Q × D × fracción; S* no crece con D), el anclaje de la ficha PF-1-01
+en `test_decisiones_diferidas` y los dos que crecen solos con el criterio
+nuevo (`test_ext5_forma_gui`, `test_criterios_adoptados`). Ningún archivo
+restó tests: el parametrizado de MAT-D10 de `test_M4_control` mide ahora
+los dos caminos (sin declarar y «descartar») y `test_cierre_perfil` cuenta
+DIEZ vacíos de perfil, tres no invocados por el corredor. La línea base de
+la Familia C se regeneró por FORMATO, medido con `diff`: `criterios_sha1`,
+la clave nueva en la lista de criterios sin valor y el recuento «74 / 35»
+→ «75 / 36»; ningún número de cálculo se movió (README de la línea base).
+**El cierre de E-B (2026-09-21, tras la revisión) sumó UN
 test**, sin dependencia de PyMuPDF ni de Tk: el de
 `tests/test_eb_editores_comparador.py` que cierra el hueco del texto que
 nombra otra fila (escrito en rojo con `xfail(strict=True)`, medido 1
@@ -1037,7 +1060,7 @@ propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
-EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894. La
+EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 3972. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1049,10 +1072,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 3891 (medido en el cierre de E-B) | 3 |
-| sí | no | 3880 (derivado: 3879 de E-B + 1) | 14 |
-| no | sí | 3856 (derivado: 3855 de E-B + 1) | 38 |
-| no | no | 3845 (derivado: 3844 de E-B + 1) | 49 |
+| sí | sí | PENDIENTE_SI_SI (medido en PF-1) | 3 |
+| sí | no | 3958 (derivado: 3880 del cierre de E-B + 78) | 14 |
+| no | sí | 3934 (derivado: 3856 del cierre de E-B + 78) | 38 |
+| no | no | 3923 (derivado: 3845 del cierre de E-B + 78) | 49 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

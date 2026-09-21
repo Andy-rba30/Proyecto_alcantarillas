@@ -303,7 +303,7 @@ CP5D_FORMA2 = {
 }
 
 # LA TRANSICION BAJO FORMA 2 PUEDE DECRECER CON EL CAUDAL, y hay que fijarlo
-# porque no lo atrapa ninguna guardia: `_exigir_hw_no_negativo` solo mira el
+# porque no lo atrapa ninguna guardia: `_resolver_hw_fuera_de_rango` solo mira el
 # signo y aqui el numero es positivo. Lo encontro la auditoria de C3.
 #
 # Con Forma 1 los DOS extremos de la recta llevan Ks*S y el termino se cancela

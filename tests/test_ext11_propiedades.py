@@ -698,3 +698,45 @@ def test_el_resguardo_por_cbr_lee_la_tabla_con_el_borde_superior_abierto():
         assert siguiente < resguardo
         assert resguardo_por_cbr(cbr_max - 2 * TOL_UMBRAL_NORMATIVO) == pytest.approx(
             resguardo, rel=REL_TRANSPORTE)
+
+
+# ===========================================================================
+# PF-1 (PC-03) - P9: el limite de signo de la correccion por pendiente
+# ===========================================================================
+#
+# Para todo (Q, D) de la malla y toda S por debajo de S*(Q, D), la ecuacion
+# de control de entrada entrega HWi/D > 0; y S* no crece con D, que es lo
+# que hace correcto descartar el material ENTERO bajo «descartar» (si la
+# carta se cae en el D minimo, ninguno mayor la levanta). Se escribio en rojo
+# junto a `tests/test_pf1_hw_fuera_de_rango.py` porque `pendiente_limite_de_
+# signo` no existia; a diferencia de P1-P8 no defiende un invariante que el
+# motor ya cumplia sino uno que PF-1 abrio.
+
+# Fracciones de S* a las que se evalua la carga: por debajo del limite en
+# toda la malla, sin acercarse al ruido del borde.
+FRACCIONES_DE_S_LIMITE = (0.1, 0.5, 0.9)
+D_MALLA_SIGNO = (0.90, 1.20, 1.50, 2.00, 2.40)
+Q_MALLA_SIGNO = (0.05, 0.10, 0.30, 1.0)
+
+
+@pytest.mark.parametrize("Q", Q_MALLA_SIGNO)
+@pytest.mark.parametrize("D", D_MALLA_SIGNO)
+@pytest.mark.parametrize("fraccion", FRACCIONES_DE_S_LIMITE)
+def test_P9_bajo_el_limite_de_signo_la_carta_entrega_carga(Q, D, fraccion):
+    from src.modulos.M4_control import pendiente_limite_de_signo
+    hds5 = catalogo(TipoMaterial.CONCRETO_REFORZADO).hds5
+    seccion = SeccionCircular(D)
+    limite = pendiente_limite_de_signo(Q=Q, seccion=seccion, hds5=hds5)
+    assert limite is not None and limite > 0
+    entrada = control_entrada(Q=Q, seccion=seccion, S=fraccion * limite, hds5=hds5)
+    assert entrada.HW_sobre_D > 0 and entrada.piso is None
+
+
+@pytest.mark.parametrize("Q", Q_MALLA_SIGNO)
+def test_P9_el_limite_de_signo_no_crece_con_D(Q):
+    from src.modulos.M4_control import pendiente_limite_de_signo
+    hds5 = catalogo(TipoMaterial.CONCRETO_REFORZADO).hds5
+    limites = [pendiente_limite_de_signo(Q=Q, seccion=SeccionCircular(D), hds5=hds5)
+               for D in D_MALLA_SIGNO]
+    for menor, mayor in zip(limites, limites[1:]):
+        assert mayor <= menor * (1 + REL_TRANSPORTE)

@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "d1dae91152635637f0e63523f6a81ba45b1bd8f8",
+    "criterios_sha1": "47ad1a1bbd2d868f70853e078682dd7def7f90d2",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -1087,6 +1087,7 @@
       "h_eq_bajo_altura_tabulada",
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
+      "hw_entrada_fuera_de_rango",
       "inclinacion_muro_beta",
       "ke_entrada_cajon",
       "metodo_estabilidad_global",

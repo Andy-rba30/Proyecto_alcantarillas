@@ -437,13 +437,23 @@ def test_todo_criterio_que_la_corrida_de_perfil_invoca_esta_clasificado(
                 "de perfil lo invoca sin que su etapa quede diferida")
 
 
-# LOS VACIOS DE PERFIL SON NUEVE Y NO DOS: cinco los abrio C5 y dos C7. Se
+# LOS VACIOS DE PERFIL SON DIEZ Y NO DOS: cinco los abrio C5, dos C7 y uno PF-1. Se
 # separan en dos grupos porque no son la misma clase de hueco:
 #
-#   NO INVOCADOS -- los dos de S20. Existen y esta corrida no llega a ellos.
+#   NO INVOCADOS -- los dos de S20 y el de PF-1. Existen y esta corrida no
+#                   llega a ellos.
 #   INVOCADOS    -- los cinco del cajon. La corrida SI llega a ellos, y por eso
 #                   detienen el punto de Familia C. Ese es su trabajo.
-VACIOS_DE_PERFIL_NO_INVOCADOS = ["TW_receptor", "homogeneidad_serie_fen"]
+VACIOS_DE_PERFIL_NO_INVOCADOS = [
+    "TW_receptor", "homogeneidad_serie_fen",
+    # PF-1 (PC-03): que se adopta cuando la correccion por pendiente deja la
+    # carga a la entrada bajo cero. Lo consume M4, que SI corre a perfil,
+    # pero el corredor del repositorio (S_cauce 0.006-0.008) queda muy por
+    # debajo del S* de cualquier punto (~0.38 con D = 0.90) y la corrida no
+    # llega a el; `tests/test_pf1_hw_fuera_de_rango.py` lo invoca con el caso
+    # de la ficha.
+    "hw_entrada_fuera_de_rango",
+]
 VACIOS_DE_PERFIL_DEL_CAJON = [
     "secciones_cajon_normalizadas",   # la progresion B*H
     "n_manning_cajon",                # la fila de la Tabla N 09
@@ -473,10 +483,10 @@ VACIOS_DE_PERFIL_DEL_CAJON = [
 
 def test_los_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
     """
-    Son NUEVE, y ninguno es una omision: los nueve declaran por que no se
+    Son DIEZ, y ninguno es una omision: los diez declaran por que no se
     pudieron cerrar.
 
-    LOS DOS DE S20, que esta corrida no invoca:
+    LOS TRES QUE ESTA CORRIDA NO INVOCA (dos de S20 y uno de PF-1):
 
     'TW_receptor'          Sec. 1.3 lo dejo como ULTIMA puerta. Con el
                            expediente aportando el caudal del receptor, la

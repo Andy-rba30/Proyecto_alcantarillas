@@ -28,7 +28,8 @@ from src.constantes_fisicas import G
 from src.constantes_normativas import (KU_SI, K_FRICCION_SI,
                                    Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO)
 from src.dominios import S_CAUCE_MAX
-from src.modelos import (ConstantesHDS5, ControlGobernante, DatoInvalidoError,
+from src.modelos import (ConstantesHDS5, ControlGobernante, CriterioPendienteError,
+                         DatoInvalidoError,
                      DisenoNoFactibleError, RegimenEntrada, ResultadoHidraulico,
                      TiranteCritico)
 from src.modulos.M2_material import catalogo
@@ -706,13 +707,20 @@ def test_las_tres_piezas_son_tipos_de_modelos(hds5):
 # justamente lo que ningun test fijaba:
 #
 #   tirante_critico          DatoInvalidoError sobre 'Q'      -- el dato
-#   _exigir_hw_no_negativo   DisenoNoFactibleError            -- la combinacion
+#   _resolver_hw_fuera_de_rango  CriterioPendienteError       -- la combinacion,
+#                                                              que desde PF-1 se
+#                                                              DECLARA (PC-03)
 #   _geometria_de_referencia DatoInvalidoError sobre el criterio
 #
-# Que la segunda sea DisenoNoFactibleError y no DatoInvalidoError esta
-# razonado en el docstring de `_exigir_hw_no_negativo` (MAT-D10): con esa Q,
-# esa D y esa S ningun dato esta mal -- lo que no se sostiene es la
-# combinacion --, y una pendiente medida en campo no se "corrige".
+# Que la segunda NO sea DatoInvalidoError esta razonado en el docstring de
+# `_resolver_hw_fuera_de_rango` (MAT-D10): con esa Q, esa D y esa S ningun
+# dato esta mal -- lo que no se sostiene es la combinacion --, y una
+# pendiente medida en campo no se "corrige". Hasta PF-1 era
+# DisenoNoFactibleError, un descarte definitivo y mudo; desde PF-1 (PC-03)
+# es el vacio declarable `hw_entrada_fuera_de_rango`: sin declarar,
+# CriterioPendienteError; declarado «descartar», la conducta anterior. Los
+# dos caminos se miden abajo y la aceptacion entera esta en
+# tests/test_pf1_hw_fuera_de_rango.py.
 
 
 def test_un_caudal_que_no_deja_residuo_critico_se_detiene_en_Q():
@@ -773,8 +781,18 @@ def test_la_correccion_por_pendiente_no_puede_dejar_la_carga_bajo_cero(
     S = 0.40                      # m/m
     assert 0 < S < S_CAUCE_MAX, "el caso dejo de ser una pendiente posible"
 
-    with pytest.raises(DisenoNoFactibleError) as exc:
+    # Sin declarar: el vacio detiene el calculo (PF-1, PC-03).
+    with pytest.raises(CriterioPendienteError) as pendiente:
         control_entrada(Q=Q, seccion=SeccionCircular(D), S=S, hds5=hds5)
+    assert pendiente.value.clave == "hw_entrada_fuera_de_rango"
+
+    # Declarado «descartar»: la conducta anterior, con su motivo entero.
+    ca.establecer_valor_dinamico("hw_entrada_fuera_de_rango", "descartar")
+    try:
+        with pytest.raises(DisenoNoFactibleError) as exc:
+            control_entrada(Q=Q, seccion=SeccionCircular(D), S=S, hds5=hds5)
+    finally:
+        ca.quitar_valor_dinamico("hw_entrada_fuera_de_rango")
 
     motivo = str(exc.value)
     assert NUMERAL_ENTRADA in motivo
@@ -1255,7 +1273,7 @@ def test_bajo_forma_2_la_nota_del_critico_no_dice_que_entra_en_el_control_de_ent
 def test_bajo_forma_2_la_transicion_puede_decrecer_con_el_caudal():
     """
     LA PROPIEDAD QUE LA AUDITORIA DE C3 DESTAPO, y que ninguna guardia atrapa:
-    `_exigir_hw_no_negativo` solo mira el signo, y aqui el numero es positivo.
+    `_resolver_hw_fuera_de_rango` solo mira el signo, y aqui el numero es positivo.
 
     Con Forma 1 los dos extremos de la recta llevan Ks*S y el termino se
     cancela en la diferencia. Con Forma 2 el extremo inferior lo pierde, y por

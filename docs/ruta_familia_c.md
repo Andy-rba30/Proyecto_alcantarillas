@@ -179,7 +179,7 @@ concentra ahí, no está repartida.
 |---|---|---|
 | `M4_control.caudal_adimensional(Q, D)` | — | |
 | `M4_control._hw_sobre_D_no_sumergido(q*, H_c, D, S, hds5)` | — | **SÍ** |
-| `M4_control._exigir_hw_no_negativo(HW/D, S, D, q*, hds5)` | — | |
+| `M4_control._resolver_hw_fuera_de_rango(HW/D, m, Q, S, D, q*, hds5, critico)` (hasta PF-1, `_exigir_hw_no_negativo`) | — | |
 | `M4_control.control_entrada(Q, D, S, hds5, critico)` | — | **SÍ** |
 | `M4_control.control_salida(Q, D, S, L, TW, n, ke, critico)` | — | |
 | `M4_control._pasos_hidraulicos(...)` | **`F4.MANNING`, `F4.CONTROL`, `F4.HO`** | |
