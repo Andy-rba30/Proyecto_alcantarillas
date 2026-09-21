@@ -555,7 +555,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4017**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4021**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -605,8 +605,8 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **PF-2 (2026-09-21) sumó ONCE tests**, y ninguno depende de
-PyMuPDF ni de Tk: los 10 de `tests/test_pf2_prevuelo.py` —la aceptación
+independientes. **PF-2 (2026-09-21) sumó QUINCE tests**, y ninguno depende de
+PyMuPDF ni de Tk: los 14 de `tests/test_pf2_prevuelo.py` —la aceptación
 del cuarto bloque del anticipo, escrita primero en rojo con
 `xfail(strict=True)` por test (medidos 10 xfailed y 0 XPASS antes de tocar
 código) y liberada al corregir: la luz en los cuatro puntos y lo de cada
@@ -617,11 +617,23 @@ que espera a un tablero no se confunde con lo que detiene; el TW sin vía
 cae en el criterio con el mismo predicado del resolvedor; la UNIÓN contra
 tres corridas reales con lo de más censado y medido; la guardia por AST de
 que ni el bloque ni `cli._prevuelo` corren el pipeline; la CLI que sale con
-1 y con 0; y las líneas del bloque— y el anclaje de la ficha PF-2-01 en
-`test_decisiones_diferidas`. Ningún archivo restó tests: `test_gui_contrato`
-fija las dos llamadas nuevas del panel y `test_sin_literales` censa las
-cinco marcas de columna de la tabla nueva de `gui/app.py` (45 → 50). La
-línea base no se movió. **PF-1 (2026-09-21) sumó CIENTO DOCE tests**, y ninguno
+1 y con 0; y las líneas del bloque; más los cuatro que dejó el auditor
+adversarial en la parte 2: la celda obligatoria vacía que el JSON no
+sustituye, la celda no numérica y la familia ilegible como faltas de
+carga, la partición exacta de las claves externas sin columna, y la CLI
+que sale con 1 cuando la cabecera detiene la carga— y el anclaje de la
+ficha PF-2-01 en `test_decisiones_diferidas`. Ningún archivo restó tests:
+`test_gui_contrato` fija las dos llamadas nuevas del panel,
+`test_sin_literales` censa las cinco marcas de columna de la tabla nueva
+de `gui/app.py` (45 → 50) y `test_ext9` retira ahora la marca de tiempo
+REAL del JSON (`expediente.generado_utc`; retiraba una clave inexistente y
+sólo pasaba con las dos corridas en el mismo segundo, que el aislamiento
+de PF-2 destapó). La línea base no se movió. Las cuatro configuraciones:
+«sí · sí» MEDIDA sobre un checkout limpio (`git worktree`) de `654ca60` (el
+segundo commit `ext(PF-2)`, con los ajustes del auditor), sin otra suite en
+marcha: 4018 passed, 3 skipped, collected 4021; las otras tres se derivan
+sumando 15 a las de PF-1, porque ninguno de los 15 depende de PyMuPDF ni
+de Tk. **PF-1 (2026-09-21) sumó CIENTO DOCE tests**, y ninguno
 depende de PyMuPDF ni de Tk: los 13 de
 `tests/test_pf1_hw_fuera_de_rango.py` —la aceptación de PC-03, escrita
 primero en rojo con `xfail(strict=True)` por test (medidos 17 xfailed y 0
@@ -1115,7 +1127,7 @@ propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
-EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4017. La
+EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1127,10 +1139,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | PENDIENTE_SI_SI (medido en PF-2) | 3 |
-| sí | no | 4003 (derivado: 3992 de PF-1 + 11) | 14 |
-| no | sí | 3979 (derivado: 3968 de PF-1 + 11) | 38 |
-| no | no | 3968 (derivado: 3957 de PF-1 + 11) | 49 |
+| sí | sí | 4018 (medido en PF-2) | 3 |
+| sí | no | 4007 (derivado: 3992 de PF-1 + 15) | 14 |
+| no | sí | 3983 (derivado: 3968 de PF-1 + 15) | 38 |
+| no | no | 3972 (derivado: 3957 de PF-1 + 15) | 49 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
