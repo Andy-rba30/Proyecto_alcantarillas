@@ -516,6 +516,32 @@ ErrorProyecto.
   es una falta) y la ventana lo pinta en una tabla más del mismo panel,
   refrescada también al cambiar el JSON y las banderas; `gui/app.py` sólo
   pinta.
+- **Desde PF-3 un [A] se puede BARRER sobre su ventana, y el barrido no
+  recalcula ni deja rastro.** `src/barrido.py::barrer(csv, externos,
+  alcance, clave, valores, fila=, nota=, declaraciones_base=, volcar=)`
+  corre `servicio.correr` una vez por valor y devuelve un
+  `ResultadoDeBarrido` de `modelos.py` con los volcados enteros dentro y
+  una tabla por (valor, punto) leída del volcado. Tres reglas, fijadas en
+  `tests/test_pf3_barrido.py`: (1) cada valor entra por LA MISMA puerta
+  que la pestaña 2 (`editores.declarar`: forma, ventana, fila o nota para
+  un criterio de tabla, trazabilidad de un dato de ensayo) y entra ANTES
+  de la primera corrida, de modo que un valor fuera de la ventana no corre
+  nada —un barrido fuera de la ventana no es sensibilidad, es otra
+  adopción—; (2) cada corrida parte del estado de entrada y al salir,
+  también con excepción, el proceso queda como estaba (fotografía de
+  `declaracion.estado_de_sesion` y `restaurar_sesion(sustituir=True)`, la
+  vía de «Cargar sesión», que repone también la procedencia); (3) la
+  comparación de cada corrida con la del primer valor es la del comparador
+  de E-B (`comparador.comparar`), «no comparable» incluido cuando cambia
+  el método, y `src/barrido.py` no importa `src.modulos` ni `cli` (por
+  AST): el volcador entra como argumento (`volcar=cli.informe_json`). La
+  CLI lo expone con `--barrido CLAVE=v1,v2,v3` (repetible, UNA clave a la
+  vez, nunca el producto cartesiano; `--barrido-nota` y `--barrido-fila`
+  valen para todos los de la invocación), imprime la tabla y escribe
+  `{"barridos": [...]}` en `--json` o en `<csv>.barrido.json`; NO arma
+  memoria, porque el barrido es un anexo de la tesis y no parte del
+  expediente. El botón «Barrido…» de la pestaña 2 se difirió con símbolo
+  (ficha PF-3-01).
 
 ## Tests
 - pytest en tests/. Mínimo un test por módulo.

@@ -2873,3 +2873,36 @@ símbolo.
   un punto sin detenerse en la primera —es otra semántica de `_etapa`— y
   entonces el pre-vuelo sería una medida y no una estimación.
 - **Dónde vive:** `src/anticipo.py::datos_faltantes_por_punto`
+
+# Parte XXXII — Lo que PF-3 dejó escrito al abrir el barrido de sensibilidad
+
+## PF-3-01 · El barrido vive en la CLI y en el servicio; el botón «Barrido…» de la pestaña 2 no entró
+
+- **Qué se difirió:** el botón «Barrido…» de la pestaña 2 sobre el criterio
+  seleccionado, que pediría los valores por el parser único
+  (`interpretar_texto_declarado`) y pintaría la tabla en un Toplevel. El
+  prompt lo declaraba opcional «si no cabe en la sesión», y no cupo: la
+  sesión cerró el módulo, los tipos, la CLI y la aceptación.
+- **Por qué:** lo que una ventana pintaría ya existe como DATO y como texto
+  en `src/barrido.py` (`ResultadoDeBarrido`, `lineas_de_la_tabla`,
+  `volcado_del_barrido`), de modo que el botón sería sólo un Toplevel que
+  llama a `barrer` con el criterio seleccionado y pinta las líneas; ninguna
+  regla del barrido —la puerta antes de la primera corrida, el estado
+  repuesto al salir, la comparación por el comparador— vive en la GUI ni
+  podría vivir ahí. Dos cosas que un botón tendría que resolver y la CLI
+  no: que el barrido corre el pipeline tantas veces como valores, y la
+  pestaña 3 exporta desde `Informe.contexto` de la ÚLTIMA corrida (EXT-4),
+  así que el botón tendría que correr en el subproceso de EXT-8 o dejar
+  claro que no toca el informe de la ventana; y que `barrer` repone el
+  estado de entrada por `restaurar_sesion(sustituir=True)`, que vacía y
+  vuelve a volcar las declaraciones, con lo que la pestaña 2 tendría que
+  refrescarse al volver. El prompt pedía aislar cada corrida con
+  `declaracion.limpiar()` y `ca.quitar_valor_dinamico`; se hizo con la
+  fotografía de `estado_de_sesion` y `restaurar_sesion`, que es la vía que
+  «Cargar sesión» ya usa y repone también la procedencia (medido:
+  `estado_de_sesion()` igual al de entrada, con la nota original).
+- **Qué haría falta:** el Toplevel que lea `esquema_de(clave)` para pedir
+  los valores con el editor tipado de E-B, corra `barrer` fuera del hilo
+  de Tk (o en el subproceso de EXT-8) sin tocar el informe de la pestaña 3,
+  y refresque la pestaña 2 al terminar; con su test de ventana real.
+- **Dónde vive:** `src/barrido.py::barrer`

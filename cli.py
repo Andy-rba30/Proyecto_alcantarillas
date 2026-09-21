@@ -1251,6 +1251,27 @@ def _parser() -> argparse.ArgumentParser:
                         "para esta corrida (repetible). Es la misma via que "
                         "la GUI: el archivo no se toca y la memoria imprime "
                         "el valor marcado como declarado para la corrida")
+    p.add_argument("--barrido", action="append", default=[],
+                   metavar="CLAVE=v1,v2,v3", dest="barridos",
+                   help="barrido de sensibilidad (PF-3): corre el pipeline una "
+                        "vez por valor con el criterio declarado a ese valor, "
+                        "compara cada corrida con la del primer valor y "
+                        "escribe la tabla; repetible, UNA clave a la vez (nunca "
+                        "el producto cartesiano). Cada valor pasa la misma "
+                        "puerta que una declaracion: fuera de la ventana de "
+                        "sensibilidad no corre nada. Con --barrido no se arma "
+                        "memoria y --json recibe el barrido, no el expediente")
+    p.add_argument("--barrido-nota", default="", dest="barrido_nota",
+                   metavar="TEXTO",
+                   help="nota de procedencia de los valores barridos (la que "
+                        "un criterio de tabla exige cuando el valor no "
+                        "proviene de una fila); vale para todos los --barrido "
+                        "de la invocacion")
+    p.add_argument("--barrido-fila", default="", dest="barrido_fila",
+                   metavar="FILA",
+                   help="fila de la tabla de la que provienen los valores "
+                        "barridos, cuando la hay; vale para todos los "
+                        "--barrido de la invocacion")
     p.add_argument("--luz", type=float, help="luz del cruce, m (Sec. 2.1)")
     p.add_argument("--tw", type=float, dest="TW",
                    help="tirante en el receptor sobre el fondo de la salida, m")
@@ -1404,6 +1425,81 @@ def _aplicar_datos_de_sitio(args, sesion: Optional[SesionSerializada]):
     return aplicar_sitio_de_sesion(sesion), None
 
 
+def _literal_declarado(texto: str, bandera: str) -> Any:
+    """
+    Un valor tecleado en la linea de comandos, con la lectura de `--declarar`:
+    `ast.literal_eval`, texto para lo que no es literal (un criterio
+    categorico), y el rechazo de 'nan'/'inf' disfrazados de texto.
+    """
+    try:
+        return ast.literal_eval(texto)
+    except (ValueError, SyntaxError):
+        if _parece_numero_no_finito(texto):
+            raise ValueError(
+                f"{bandera}: {texto!r} no es un numero declarable: no es un "
+                "literal de Python, entraria como TEXTO y el primer consumidor "
+                "que haga float() lo devolveria al calculo como infinito o NaN"
+            ) from None
+        return texto
+
+
+def valores_del_barrido(barrido: str) -> Tuple[str, Tuple[Any, ...]]:
+    """
+    `CLAVE=v1,v2,v3` de `--barrido` como (clave, valores). Los valores se
+    leen JUNTOS como una tupla de literales de Python, de modo que un par
+    se escribe con sus parentesis --- `(0.010, 0.013),(0.012, 0.015)` --- y
+    la coma sin parentesis separa valores (no es decimal: PC-34). Lo que no
+    es un literal se lee como texto, valor a valor, con el mismo respaldo
+    que `--declarar`.
+    """
+    clave, sep, texto = barrido.partition("=")
+    clave, texto = clave.strip(), texto.strip()
+    if not sep or not clave:
+        raise ValueError(f"--barrido {barrido!r} no tiene la forma CLAVE=v1,v2,v3")
+    if not texto:
+        raise ValueError(f"--barrido {barrido!r} no trae ningun valor")
+    try:
+        valores = ast.literal_eval(f"({texto},)")
+    except (ValueError, SyntaxError):
+        valores = tuple(_literal_declarado(trozo.strip(), f"--barrido {barrido!r}")
+                        for trozo in texto.split(","))
+    return clave, tuple(valores)
+
+
+def _barrer_desde_cli(args, externos: DatosExternos) -> int:
+    """
+    Los barridos de `--barrido`, uno tras otro y cada uno sobre el mismo
+    estado de entrada (lo que `--sesion`, `--datos-sitio` y `--declarar`
+    dejaron declarado). Imprime la tabla de cada uno y escribe UN JSON con
+    todos (`{"barridos": [...]}`) en `--json` o junto al CSV. Devuelve 0, o
+    2 si algun valor no pasa la puerta o una corrida se detiene en un error
+    del expediente: la puerta se cierra ANTES de la primera corrida, de modo
+    que un valor fuera de la ventana no deja ninguna corrida hecha.
+    """
+    from src import barrido as _barrido
+    volcados = []
+    for texto in args.barridos:
+        try:
+            clave, valores = valores_del_barrido(texto)
+            resultado = _barrido.barrer(
+                args.csv, externos, args.alcance, clave, valores,
+                fila=args.barrido_fila, nota=args.barrido_nota, volcar=informe_json)
+        except (ValueError, KeyError) as exc:
+            print(f"No se pudo barrer: {exc}", file=sys.stderr)
+            return 2
+        except ErrorProyecto as exc:
+            print(f"El barrido de {texto!r} se detuvo en el expediente: {exc}",
+                  file=sys.stderr)
+            return 2
+        print("\n".join(_barrido.lineas_de_la_tabla(resultado)))
+        print()
+        volcados.append(_barrido.volcado_del_barrido(resultado))
+    destino = args.json_salida or args.csv.with_suffix(".barrido.json")
+    _sesion.escribir_json_atomico(destino, {"barridos": volcados})
+    print(f"JSON del barrido: {destino}")
+    return 0
+
+
 def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str) -> int:
     """
     Imprime los cuatro bloques del anticipo de la pestaña 1 y devuelve 0 si
@@ -1546,6 +1642,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             # EL PRE-VUELO Y SALIR (PF-2): nada de lo de abajo corre. Los
             # cuatro bloques los produce `src/anticipo.py`; aqui se imprimen.
             return _prevuelo(args.csv, externos, args.alcance)
+        if args.barridos:
+            # EL BARRIDO Y SALIR (PF-3): el expediente no se corre ni se
+            # exporta; el barrido es un anexo de la tesis, no una memoria.
+            return _barrer_desde_cli(args, externos)
         informe = correr(args.csv, externos, alcance=args.alcance)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         # UnicodeDecodeError es subclase de ValueError y no entra sola: un CSV

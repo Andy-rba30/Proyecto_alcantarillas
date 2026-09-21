@@ -5002,3 +5002,63 @@ class CabeceraCSV:
     columnas: Tuple[str, ...]
     vacias_por_columna: Dict[str, int]
     filas: int
+
+
+# ===========================================================================
+# El barrido de sensibilidad de un criterio (PF-3)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class CorridaDelBarrido:
+    """
+    Una corrida del barrido: el valor que el criterio tomo en ella, la
+    procedencia con que se declaro (el texto del libro de `declaracion`),
+    el volcado ENTERO de `cli.informe_json` y lo que el comparador de E-B
+    dijo al contrastarla con la corrida del primer valor (`lineas()`, la
+    primera empieza por IGUALES o DIFIEREN). `comparable` es False cuando
+    el comparador encontro algun «no comparable»: metodo distinto en algun
+    punto, alcance distinto, o un punto con diseño en una corrida y sin el
+    en la otra. La produce `barrido.barrer`; ningun modulo de calculo la
+    lee.
+    """
+    valor: Any
+    procedencia: str
+    informe_json: Dict[str, Any]
+    comparacion_con_la_primera: Tuple[str, ...]
+    comparable: bool
+
+
+@dataclass(frozen=True)
+class FilaDelBarrido:
+    """
+    Una fila de la tabla del barrido: un punto en una corrida. Todo lo que
+    lleva se LEE del volcado de esa corrida (`puntos[].diseno`), y las dos
+    ultimas columnas se leen de la comparacion con la corrida del primer
+    valor: los codigos de las verificaciones cuyo veredicto `cumple` cambio,
+    y si el punto se pudo comparar (`motivo` dice por que no). Cuando el
+    punto no dimensiono, material, seccion, carga y control van en None.
+    """
+    valor: Any
+    id_punto: str
+    dimensionado: bool
+    material: Optional[str]
+    seccion: Optional[str]
+    HW_gobernante_m: Optional[float]
+    control_gobernante: Optional[str]
+    verificaciones_que_cambian: Tuple[str, ...]
+    comparable: bool
+    motivo: str = ""
+
+
+@dataclass(frozen=True)
+class ResultadoDeBarrido:
+    """
+    El barrido entero de UNA clave sobre una lista de valores de su
+    ventana (PF-3): las corridas en el orden de los valores y la tabla por
+    punto, una fila por (valor, punto). Los volcados enteros viajan dentro
+    de cada corrida para que quien lea el barrido pueda comparar cualquier
+    par con el comparador sin volver a correr nada.
+    """
+    clave: str
+    corridas: Tuple[CorridaDelBarrido, ...]
+    filas: Tuple[FilaDelBarrido, ...]
