@@ -133,6 +133,17 @@ Ejecuta únicamente PF-5 de docs/planes_mejora/08_CADENA_PROMPTS_PERFIL.md y apl
 
 ## PF-6 · Cabos: R48-007, la fila que el editor no suelta, lo que el comparador calla
 
+> **Ejecutado (PF-6, 2026-09-21).** (a) El verificador normativo confirmó
+> las dos citas y encontró la que decide: en las 281 páginas del Manual de
+> Suelos no hay techo alguno del CBR; la cita fuerte de la base granular es
+> el Cuadro Nº 10.2 («Mínimo 100%», pág. impresa 108), y el Cuadro 12.13 de
+> la pág. 129 no es «tabla de base granular» sino la de coeficientes
+> estructurales. `dominios.py` deja de topar: `CBR_MAX_FISICO` se retira y
+> queda `CBR_MIN_FISICO` (ficha PF-6-01). (b) La suelta vale sólo para las
+> filas que ponen su CLAVE; en una fila de CELDA otro número sigue siendo
+> «DIFIERE» con nota (PF-6-02). (c) `CAMPOS_OMITIDOS` alimenta también el
+> mensaje «REPRODUCE» de la CLI, que era una segunda transcripción (PF-6-03).
+
 ```text
 Ejecuta únicamente PF-6 de docs/planes_mejora/08_CADENA_PROMPTS_PERFIL.md y aplica las reglas comunes de 07_CADENA_PROMPTS_EXT.md. Sin plan mode. Tres cabos medidos, en un solo commit porque los tres son guardias pequeñas y ninguno mueve un número de cálculo. (a) R48-007, abierto: `dominios.CBR_MAX_FISICO = 100.0` es un techo que `M0_carga` aplica con DatoInvalidoError, y el Manual de Suelos tiene la categoría S5 abierta por arriba (cuadro de categorías de subrasante, pág. impresa 37) y base granular con CBR 100 % (pág. 129). ANTES de tocar dominios.py verifica las dos páginas contra el PDF con el verificador-normativo y cita numeral, página y texto literal; si la fuente sostiene que un CBR > 100 % es legítimo, dominios.py deja de topar en 100 (recuerda que dominios.py acota lo que un dato PUEDE SER, y que un techo que la fuente no fija es un valor de proyecto inventado); si no lo sostiene, di por qué y deja la fila como está. Cierra o argumenta R48-007 en el tracker con el SHA. (b) `gui/editores.py::EditorEscalar._al_fila_elegida` prellena la clave y deja el campo editable; si el proyectista reescribe el texto, `_fila_y_nota_del_editor` sigue devolviendo la fila vieja y la puerta (`declaracion.declarar_desde_tabla`, cierre de E-B parte 3) rechaza con «NOMBRA la fila…». Haz que el editor suelte la fila cuando el texto deja de ser la clave de la fila elegida, sin declarar nada por su cuenta (guardia por AST de EB-01 intacta); mídelo en `tests/apoyo/gui_eb_real.py` con el gesto real. (c) `src/comparador.py`: `lineas()` dice «salvo la marca de tiempo y las rutas de origen» y calla que ignora `expediente.csv`; `alcance.diferidos` se compara sólo por longitud (`diferidos[len]`); `True` y `1` salen IGUALES porque `_es_numero` excluye bool y `True == 1`. Compara `diferidos` por contenido, distingue bool de número, y que `lineas()` nombre exactamente lo que el comparador omite, leído de una tupla `CAMPOS_OMITIDOS` que el test contrasta contra el código. Tests primero en rojo con xfail(strict=True) para los tres. Ritual de cierre. Devuelve qué IDs cerraste (entero / en parte / no). Detente ahí.
 ```

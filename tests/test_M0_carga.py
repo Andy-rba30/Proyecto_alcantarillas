@@ -342,7 +342,6 @@ def test_un_valor_no_numerico_falla_nombrando_su_columna(tmp_path):
 @pytest.mark.parametrize("columna, valor", [
     ("cbr_subrasante", "0"),        # una proporcion nula no es un suelo
     ("cbr_subrasante", "-3"),
-    ("cbr_subrasante", "250"),      # fuera de la escala del CBR
     ("Q_m3s", "0"),
     ("Q_m3s", "-1.2"),
     ("area_ha", "-850"),

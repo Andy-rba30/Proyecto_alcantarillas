@@ -638,7 +638,7 @@ _COLUMNAS: Dict[str, _Columna] = {
                                  "MIDE en cada cruce: por eso es columna y no "
                                  "dato de corredor",
         ),
-        dominio="CBR_MAX_FISICO",
+        dominio="CBR_MIN_FISICO",
         criterio_destino="resguardo_HW_subrasante",
     ),
 

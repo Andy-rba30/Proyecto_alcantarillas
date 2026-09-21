@@ -182,7 +182,7 @@ class DatoInvalidoError(ErrorProyecto):
     rango fisico posible, o contradice a otro dato de la misma fila (Sec. 1.5).
 
     Es hermano de DatoFaltanteError y no el mismo: "falta la columna" y "la
-    columna trae un CBR de 250 %" son dos problemas distintos del expediente y
+    columna trae un CBR negativo" son dos problemas distintos del expediente y
     se corrigen de forma distinta. Ambos descienden de ErrorProyecto, de modo
     que la GUI puede atrapar los dos con un solo except.
     """

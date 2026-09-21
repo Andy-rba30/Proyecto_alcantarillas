@@ -277,6 +277,9 @@ class EditorEscalar(EditorTipado):
         e = self.esquema
         campo = e.campos[0]
         self.var_valor = tk.StringVar()
+        # La fila cuya CLAVE lleva el texto ahora mismo (PF-6 b), o None.
+        self._fila_que_el_texto_lleva = None
+        self.var_valor.trace_add("write", self._soltar_fila_si_el_texto_cambia)
         self._desplegable_de_filas(p, self._al_fila_elegida)
         f = ttk.Frame(p)
         f.pack(fill="x")
@@ -304,8 +307,41 @@ class EditorEscalar(EditorTipado):
         self.lbl_mensaje.config(text=mensaje, foreground=color or COLOR_OK)
 
     def _al_fila_elegida(self, opcion):
+        self._fila_que_el_texto_lleva = None
         if opcion.valor_propuesto is not None:
             self.var_valor.set(_texto_de(opcion.valor_propuesto))
+        # Solo cuando la fila pone su CLAVE (no una celda) el texto la
+        # nombra, y solo entonces reescribirlo la suelta: con una celda
+        # (0.5 de la Tabla C.2) otro numero es «DIFIERE de la celda» y la
+        # fila tiene que seguir para que la puerta pueda decirlo.
+        if isinstance(opcion.valor_propuesto, str) and opcion.valor_propuesto == opcion.fila:
+            self._fila_que_el_texto_lleva = opcion
+
+    def _soltar_fila_si_el_texto_cambia(self, *_args):
+        """
+        Suelta la fila elegida cuando el texto deja de ser su clave (PF-6 b).
+
+        Hasta PF-6 elegir la fila A y reescribir el texto con la clave de B
+        dejaba `fila()` en A, y la puerta (`declaracion.declarar_desde_tabla`)
+        rechazaba con «el texto NOMBRA la fila B y la procedencia cita la
+        fila A». Aqui no se declara nada (guardia por AST de EB-01): solo se
+        deja de citar una fila que el texto ya no nombra, y la pestaña 2
+        declara la que el texto nombre por `src.editores.fila_implicita`.
+        """
+        opcion = self._fila_que_el_texto_lleva
+        if opcion is None or self._sincronizando:
+            return
+        if self.var_valor.get().strip() == opcion.fila:
+            return
+        self._fila_que_el_texto_lleva = None
+        self.fila_var.set("")
+        if getattr(self, "rotulo_fila_var", None) is not None:
+            self.rotulo_fila_var.set("")
+        if getattr(self, "lbl_fila", None) is not None:
+            self.lbl_fila.config(
+                text=f"Fila soltada: el texto ya no es la clave de «{opcion.fila}». "
+                     "Se declara lo que el texto nombre (o elija otra fila).",
+                foreground=COLOR_AVISO)
 
     def piezas(self):
         return {sed.CAMPO_UNICO: self._pieza(self.esquema.campos[0], self.var_valor.get())}

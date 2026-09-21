@@ -1196,8 +1196,7 @@ def _comparar_con_la_corrida_embebida(informe: Informe,
     cuando = guardada.get("generado_utc", "?")
     if igual:
         return (f"Esta corrida REPRODUCE la guardada en la sesion el {cuando} "
-                "(mismo JSON salvo la marca de tiempo y las rutas de origen "
-                "de los datos de sitio)")
+                f"(mismo JSON; {_comparador.descripcion_de_lo_omitido()})")
     return (f"Esta corrida DIFIERE de la guardada en la sesion el {cuando}: "
             "el expediente, los criterios o los datos de sitio cambiaron "
             "desde entonces; revise antes de dar la memoria por vigente")

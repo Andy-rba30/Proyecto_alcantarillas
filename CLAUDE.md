@@ -379,7 +379,7 @@ distinga un problema del expediente de un fallo del programa con un solo except.
 - DatoInvalidoError: el dato **está** pero no puede ser: no es del tipo
   esperado, cae fuera del rango físico de dominios.py, o contradice a otro
   dato de su misma fila (§1.5). Hermana de DatoFaltanteError y no la misma:
-  "falta la columna cbr_subrasante" y "el CBR dice 250 %" son dos problemas
+  "falta la columna cbr_subrasante" y "el CBR dice −3 %" son dos problemas
   distintos del expediente y se corrigen de forma distinta. La regla para
   elegir: si el revisor tiene que **añadir** algo es Faltante, si tiene que
   **corregir** algo es Invalido.
@@ -592,7 +592,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4098**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4115**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -642,7 +642,31 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **PF-5 (2026-09-21) sumó TREINTA Y CUATRO tests**, y ninguno
+independientes. **PF-6 (2026-09-21) sumó DIECISIETE tests netos** (18
+nuevos y un caso parametrizado retirado), y uno depende de Tk: los 15 de `tests/test_pf6_cabos.py` —los tres cabos, escritos primero
+en rojo con `xfail(strict=True)` por test (medidos 12 xfailed y 0 XPASS antes
+de tocar código) y liberados al corregir: (a) R48-007, el techo
+`CBR_MAX_FISICO = 100.0` retirado contra la fuente primaria (verificador
+normativo sobre el Manual de Suelos: S5 «CBR ≥ 30%» abierta, Cuadro 4.11
+pág. 37; «Mínimo 100%» de la base granular, Cuadro Nº 10.2 pág. 108; «Base
+Granular CBR 100%», Cuadro 12.13 pág. 129; y ningún techo en 281 páginas) y
+sustituido por `CBR_MIN_FISICO`, con un CBR de 250 % que se carga y el piso
+que sigue; (b) el editor escalar que suelta la fila cuando el texto deja de
+ser su clave, medido en la ventana de verdad (`tests/apoyo/gui_eb_real.py`,
+bloque 3b: el único de los 15 que depende de Tk); (c) `CAMPOS_OMITIDOS`
+contrastado ruta a ruta contra el comportamiento del comparador, los
+diferidos por contenido y un bool que nunca es igual a un número— y los tres
+anclajes de `test_decisiones_diferidas` para las fichas de la Parte XXXV
+(PF-6-01..03). Ningún archivo restó tests: `test_M0_carga` retira el caso
+«250» de su parametrizado (ya no es inválido), `test_M5_verificaciones`
+barre desde el piso y por encima de la tabla en vez de hasta el techo, y
+`test_sin_literales` baja el censo de marcas de `dominios.py` de 5 a 4 (el
+`0.0` del piso es literal exento). Cierra R48-007 entero. La línea base no
+se movió: ningún número de cálculo cambia. Las cuatro configuraciones:
+«sí · sí» MEDIDA sobre el árbol de PF-6 con `python3-tk` para `python3.12`
+y PyMuPDF: 4112 passed, 3 skipped, collected 4115; las otras tres se
+derivan de las de PF-5 sumando 17 `passed` con Tk, y 16 `passed` y 1
+`skipped` sin Tk. **PF-5 (2026-09-21) sumó TREINTA Y CUATRO tests**, y ninguno
 depende de PyMuPDF ni de Tk: los 32 de `tests/test_guia_perfil.py`, la
 guardia de `docs/guia_perfil.md` —la guía de corrida de perfil para un
 tesista, que NO se escribe a mano dos veces—: los ocho bloques de comandos
@@ -1260,7 +1284,7 @@ post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
 EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
-PF-3: 4034; PF-4: 4064; PF-5: 4098. La
+PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1272,10 +1296,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4095 (medido en PF-5) | 3 |
-| sí | no | 4084 (derivado: 4050 de PF-4 + 34) | 14 |
-| no | sí | 4060 (derivado: 4026 de PF-4 + 34) | 38 |
-| no | no | 4049 (derivado: 4015 de PF-4 + 34) | 49 |
+| sí | sí | 4112 (medido en PF-6) | 3 |
+| sí | no | 4100 (derivado: 4084 de PF-5 + 16) | 15 |
+| no | sí | 4077 (derivado: 4060 de PF-5 + 17) | 38 |
+| no | no | 4065 (derivado: 4049 de PF-5 + 16) | 50 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

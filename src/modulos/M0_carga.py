@@ -50,7 +50,7 @@ from dataclasses import fields
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from src.dominios import (CBR_MAX_FISICO, ESVIAJE_MAX, METROS_POR_KM, S_CAUCE_MAX)
+from src.dominios import (CBR_MIN_FISICO, ESVIAJE_MAX, METROS_POR_KM, S_CAUCE_MAX)
 from src.modelos import (CabeceraCSV, DatoFaltanteError, DatoInvalidoError,
                      Familia, PuntoCritico, VacioAdmitido)
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
@@ -247,7 +247,7 @@ def _no_marca_pendiente() -> Set[str]:
 _SOBRANTES = "__sobrantes__"       # restkey de csv.DictReader
 
 
-# Los limites de dominio del dato de entrada (CBR_MAX_FISICO, ESVIAJE_MAX,
+# Los limites de dominio del dato de entrada (CBR_MIN_FISICO, ESVIAJE_MAX,
 # S_CAUCE_MAX, METROS_POR_KM) viven en dominios.py con su justificacion. M0 los
 # usa, no los declara.
 
@@ -591,13 +591,13 @@ def _valida_rangos(v: Dict[str, Optional[float]], id_punto: str) -> None:
                id_punto, "el caudal de diseno del receptor es positivo")
 
     # El CBR de la subrasante define el resguardo de V4 (Sec. 5.1). Su rango
-    # fisico es el de una proporcion contra la piedra patron; que sea alto o
-    # bajo no lo decide M0, lo decide la tabla de 5.1.
+    # fisico es el de una proporcion positiva; que sea alto o bajo no lo
+    # decide M0, lo decide la tabla de 5.1.
     cbr = v["cbr_subrasante"]
-    _exige(cbr > 0, "cbr_subrasante", cbr, id_punto, "el CBR es positivo")
-    _exige(cbr <= CBR_MAX_FISICO, "cbr_subrasante", cbr, id_punto,
-           f"un CBR de subrasante por encima de {CBR_MAX_FISICO} % no es un "
-           "suelo: revisa si el valor esta en otra escala")
+    # Solo el piso: el CBR no tiene techo que la fuente fije (PF-6, R48-007;
+    # la verificacion esta junto a `dominios.CBR_MIN_FISICO`).
+    _exige(cbr > CBR_MIN_FISICO, "cbr_subrasante", cbr, id_punto,
+           "el CBR es una proporcion positiva")
 
     _exige(0 <= v["esviaje_grados"] < ESVIAJE_MAX, "esviaje_grados",
            v["esviaje_grados"], id_punto,

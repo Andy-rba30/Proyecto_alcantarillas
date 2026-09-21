@@ -315,7 +315,7 @@ def test_el_dominio_fisico_se_rotula_como_no_normativo():
     assert campo.dominio_fisico is not None
     assert campo.dominio_fisico.clase == "dominio_fisico"
     assert "NO es" in campo.dominio_fisico.rotulo
-    assert "CBR_MAX_FISICO" in campo.dominio_fisico.frase
+    assert "CBR_MIN_FISICO" in campo.dominio_fisico.frase
 
 
 def test_el_rango_normativo_dice_que_pasa_al_salirse():

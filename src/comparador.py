@@ -21,7 +21,9 @@ Lo que es, y lo que no
 * La NORMALIZACION es la misma que la CLI aplica a la corrida embebida en
   la sesion (EXT-10) y que `regenerar.sh` aplica a la linea base: fuera la
   marca de tiempo y fuera las RUTAS de origen de los datos de sitio, porque
-  ninguna de las dos dice nada del calculo. `sesion.sin_marca_de_tiempo` y
+  ninguna de las dos dice nada del calculo; y `comparar` tampoco mira la
+  ruta del CSV (`expediente.csv`: compara su huella `csv_sha1`). Todo lo
+  que se omite esta en `CAMPOS_OMITIDOS`, y `lineas()` lo dice de ahi. `sesion.sin_marca_de_tiempo` y
   `sesion.sin_origen_de_los_datos_de_sitio` son las dos funciones, y por eso
   `cli._comparar_con_la_corrida_embebida` llama a `comparar` en vez de
   comparar dos dicts con `==`: UNA definicion de «la misma corrida».
@@ -78,6 +80,23 @@ CABEZAL = "cabezal"
 CRITERIOS = "criterios"
 DATOS_SITIO = "datos_sitio"
 
+# LO QUE EL COMPARADOR OMITE, dicho UNA vez (PF-6 c). `lineas()` lo lee de
+# aqui y `tests/test_pf6_cabos.py` lo contrasta contra el comportamiento:
+# cada ruta de esta tupla se puede mutar sin romper la igualdad, y ninguna
+# otra hoja de `expediente` puede. Hasta PF-6 `lineas()` decia «salvo la
+# marca de tiempo y las rutas de origen» y callaba `expediente.csv`, la
+# ruta del CSV, que `comparar` nunca miro (compara `csv_sha1`, que es lo
+# que dice algo del calculo). Las dos primeras son la marca de tiempo
+# (`sesion.sin_marca_de_tiempo`), las dos ultimas las rutas de origen de
+# los [S] (`sesion.sin_origen_de_los_datos_de_sitio`).
+CAMPOS_OMITIDOS: Tuple[str, ...] = (
+    "generado",
+    "expediente.generado_utc",
+    "expediente.csv",
+    "expediente.corredor_del_proyecto.origen",
+    "datos_sitio.usados[].origen",
+)
+
 ROTULO_IGUALES = "IGUALES"
 ROTULO_DIFIEREN = "DIFIEREN"
 # Como se rotula la diferencia de una verificacion de un punto («verificacion
@@ -128,8 +147,7 @@ class ComparacionDeInformes:
         """El informe en texto, elegido aqui para que la CLI y la GUI impriman lo mismo."""
         if self.iguales:
             return ((f"{ROTULO_IGUALES}: los dos volcados describen la misma corrida "
-                     f"({len(self.puntos_comunes)} puntos, salvo la marca de tiempo y "
-                     "las rutas de origen de los datos de sitio)."),)
+                     f"({len(self.puntos_comunes)} puntos; {descripcion_de_lo_omitido()})."),)
         salida: List[str] = [
             f"{ROTULO_DIFIEREN}: {len(self.diferencias)} diferencia(s), "
             f"{len(self.no_comparables)} no comparable(s), "
@@ -148,6 +166,11 @@ class ComparacionDeInformes:
 # ===========================================================================
 # Comparacion generica de valores
 # ===========================================================================
+
+def descripcion_de_lo_omitido() -> str:
+    """La frase con que la CLI y la GUI dicen que NO compara, leida de `CAMPOS_OMITIDOS`."""
+    return "no se comparan " + ", ".join(CAMPOS_OMITIDOS)
+
 
 def _es_numero(x: Any) -> bool:
     return isinstance(x, numbers.Real) and not isinstance(x, bool)
@@ -191,8 +214,10 @@ def _comparar_valor(donde: str, campo: str, a: Any, b: Any,
         for i, (x, y) in enumerate(zip(a, b)):
             _comparar_valor(donde, f"{campo}[{i}]", x, y, diferencias)
         return
-    # Hojas no numericas (texto, bool, None) y tipos distintos: exactas.
-    if a != b:
+    # Hojas no numericas (texto, bool, None) y tipos distintos: exactas. Un
+    # bool y un numero NUNCA son iguales aunque `True == 1` en Python (PF-6 c):
+    # `cerrado: true` frente a `cerrado: 1` es un volcado de otra forma.
+    if isinstance(a, bool) != isinstance(b, bool) or a != b:
         diferencias.append(Diferencia(donde, campo, a, b))
 
 
@@ -317,8 +342,12 @@ def comparar(a: Dict[str, Any], b: Dict[str, Any]) -> ComparacionDeInformes:
                         f"{ab.get('nivel')!r}): una corrida difiere etapas que la otra "
                         "ejecuta; los puntos se comparan igual, el cierre no"))
     else:
-        _comparar_valor(ALCANCE, "diferidos[len]", len(aa.get("diferidos") or []),
-                        len(ab.get("diferidos") or []), diferencias)
+        # Por CONTENIDO y en su orden (el de los puntos), no solo por longitud
+        # (PF-6 c): dos corridas que difieren la misma cantidad de etapas por
+        # criterios distintos no son la misma corrida. `_comparar_valor` sigue
+        # nombrando `diferidos[len]` cuando cambia la cantidad.
+        _comparar_valor(ALCANCE, "diferidos", aa.get("diferidos") or [],
+                        ab.get("diferidos") or [], diferencias)
 
     pa, pb = _por_clave(a.get(PUNTOS), "id"), _por_clave(b.get(PUNTOS), "id")
     comunes = tuple(p["id"] for p in (a.get(PUNTOS) or []) if p.get("id") in pb)

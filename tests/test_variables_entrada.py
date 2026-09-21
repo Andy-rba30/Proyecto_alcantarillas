@@ -476,7 +476,7 @@ def test_el_reporte_marca_el_dominio_fisico_como_no_normativo():
     llenada; fuera del rango normativo se incumple la norma.
     """
     texto = ve.reporte_variables(Poblacion.COLUMNA_CSV)
-    assert "dominios.CBR_MAX_FISICO" in texto
+    assert "dominios.CBR_MIN_FISICO" in texto
     assert "no es normativo" in texto
 
 

@@ -3031,3 +3031,73 @@ símbolo.
   escrita como test contra el símbolo que la sostiene, como
   `test_decisiones_diferidas` ancla cada ficha por símbolo y no por texto.
 - **Dónde vive:** `tests/apoyo/guia_perfil.py::ventana_de`
+
+# Parte XXXV — Lo que PF-6 dejó escrito al cerrar tres cabos
+
+## PF-6-01 · El CBR no tiene techo que la fuente fije: `CBR_MAX_FISICO` se retira y queda sólo el piso
+
+- **Cerrado (PF-6):** R48-007. `dominios.CBR_MAX_FISICO = 100.0` topaba el
+  CBR de subrasante y M0 lo aplicaba con `DatoInvalidoError`, con el
+  comentario «por encima de 100 el dato está en otra escala o mal
+  transcrito». Verificado contra el PDF del Manual de Suelos, Geología,
+  Geotecnia y Pavimentos (MTC): el Cuadro 4.11 «Categorías de Sub rasante»
+  (pág. impresa 37 / PDF 38) deja S5 abierta («CBR ≥ 30%»); el Cuadro Nº
+  10.2 «Valor Relativo de Soporte, CBR en Base Granular» (pág. impresa 108 /
+  PDF 109) exige «Mínimo 100%» a la base de carreteras de primera clase o
+  tráfico > 10 × 10⁶ EE; el Cuadro 12.13 (pág. impresa 129 / PDF 130)
+  tabula «Base Granular CBR 100%»; y en las 281 páginas no hay techo del CBR
+  ni la expresión «piedra patrón». Un techo que la fuente no fija es un
+  valor de proyecto inventado, y `dominios.py` sólo acota lo que un dato
+  PUEDE SER. Queda `CBR_MIN_FISICO = 0.0` (exclusivo), que es lo único que
+  la escala fija, y la ayuda lo rotula como piso.
+- **Abierto:** la ficha del tracker llamaba «tabla de base granular» al
+  Cuadro 12.13, que es la tabla de coeficientes estructurales a_i; la cita
+  fuerte es el Cuadro Nº 10.2, y así se dejó escrito junto al símbolo. Y la
+  fuente no afirma que un CBR > 100 % sea legítimo con esas palabras: lo que
+  sostiene sin interpretar es que no fija techo. Que la tabla de resguardo
+  de Sec. 5.1 tenga su fila más alta ilimitada (`test_M5_verificaciones`) es
+  lo que hace que un CBR alto no deje a V4 sin fila.
+- **Qué haría falta:** nada para el techo. Si alguna vez una norma peruana
+  fijara una escala cerrada del CBR, volvería como [N] con numeral, no a
+  `dominios.py`.
+- **Dónde vive:** `src/dominios.py::CBR_MIN_FISICO`
+
+## PF-6-02 · El editor escalar suelta la fila cuando el texto deja de ser su clave, y sólo entonces
+
+- **Cerrado (PF-6):** `EditorEscalar` prellenaba la clave de la fila
+  elegida y dejaba el campo editable; reescribirlo con la clave de otra
+  fila dejaba `fila()` en la vieja y la puerta rechazaba con «NOMBRA la
+  fila…». Ahora una traza sobre el texto suelta la fila cuando el texto
+  deja de ser su clave, sin declarar nada (la guardia por AST de EB-01 sigue
+  verde), y la pestaña 2 declara la fila que el texto nombra por
+  `src.editores.fila_implicita`. Medido en la ventana de verdad
+  (`tests/apoyo/gui_eb_real.py`, bloque 3b).
+- **Abierto:** la suelta vale SÓLO para las filas que ponen su CLAVE
+  (`embocadura_cajon`, `ke_entrada_cajon`, `n_manning_cajon`). En una fila
+  que pone una CELDA (`ke_entrada`, 0.5 de la Tabla C.2) teclear otro
+  número NO suelta la fila, a propósito: ese caso es «DIFIERE de la celda»
+  y exige nota, y la puerta sólo puede decirlo si la fila sigue citada
+  (bloque 3 del mismo script). Son dos gestos distintos con dos
+  significados distintos, y unificarlos perdería uno.
+- **Qué haría falta:** nada; queda dicho para que nadie «complete» la
+  suelta a las filas de celda.
+- **Dónde vive:** `gui/editores.py::_soltar_fila_si_el_texto_cambia`
+
+## PF-6-03 · Lo que el comparador omite se dice desde `CAMPOS_OMITIDOS`, y lo que la prosa del registro decía antes no se reescribe
+
+- **Cerrado (PF-6):** `lineas()` decía «salvo la marca de tiempo y las rutas
+  de origen» y callaba `expediente.csv`, que `comparar` nunca miró (mira
+  `csv_sha1`); `alcance.diferidos` se comparaba sólo por longitud; `True` y
+  `1` salían iguales. Hoy `CAMPOS_OMITIDOS` nombra las cinco rutas, `lineas()`
+  y el mensaje «REPRODUCE» de la CLI (`cli._comparar_con_la_corrida_embebida`)
+  las leen de `descripcion_de_lo_omitido()`, los diferidos se comparan por
+  contenido y en su orden, y un bool nunca es igual a un número.
+  `tests/test_pf6_cabos.py` contrasta la tupla contra el comportamiento:
+  cada ruta se muta sin romper la igualdad y cada otra hoja de `expediente`
+  la rompe.
+- **Abierto:** la frase vieja sigue citada en fichas anteriores de este
+  registro y en docstrings de tests que describen lo que se midió entonces
+  (`test_ext8`, `test_ext9`): son historia, no una segunda transcripción
+  viva, y no se reescriben.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/comparador.py::CAMPOS_OMITIDOS`

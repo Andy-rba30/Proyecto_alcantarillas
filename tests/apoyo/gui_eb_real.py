@@ -49,6 +49,11 @@ SERIE = "secciones_cajon_normalizadas"
 RECEPTOR = "seccion_receptor"
 KE = "ke_entrada"
 KE_FILA = "concreto_headwall_square_edge"
+# PF-6 (b): un criterio cuyas filas ponen su CLAVE (no una celda): elegir una
+# y reescribir el texto con la clave de otra tiene que SOLTAR la elegida.
+EMBOCADURA = "embocadura_cajon"
+EMBOCADURA_FILA_A = "cajon_concreto_aletas_30_75"
+EMBOCADURA_FILA_B = "cajon_concreto_aleta_45_d043"
 
 PARES_TECLEADOS = (("1,20", "0.90"), ("1.50", "1,20"), ("2.00", "1.50"))
 
@@ -160,6 +165,30 @@ def main(salida: Path) -> int:
             "estado_con_nota": ventana.lbl_estado_criterio.cget("text"),
             "difiere_con_nota": bool(p and p.difiere_de_la_celda()),
             "declarado": ca.valor(KE) if ca.declarado_en_caliente(KE) else None,
+        }
+
+        # 3b. Una fila de CLAVE (PF-6 b): elegir la fila A pone su clave;
+        #     reescribir el texto con la clave de la fila B suelta la elegida,
+        #     y «Aplicar» declara la que el texto nombra, sin el rechazo
+        #     «NOMBRA la fila…» de la puerta.
+        editor = _seleccionar(ventana, raiz, EMBOCADURA)
+        editor.elegir_fila(EMBOCADURA_FILA_A)
+        raiz.update()
+        fila_tras_elegir = editor.fila()
+        texto_tras_elegir = editor.var_valor.get()
+        editor.var_valor.set(EMBOCADURA_FILA_B)
+        raiz.update()
+        fila_tras_reescribir = editor.fila()
+        ventana._aplicar_valor_corrida()
+        raiz.update()
+        p = dec.procedencia_de(EMBOCADURA)
+        resumen["embocadura"] = {
+            "fila_tras_elegir": fila_tras_elegir,
+            "texto_tras_elegir": texto_tras_elegir,
+            "fila_tras_reescribir": fila_tras_reescribir,
+            "estado": ventana.lbl_estado_criterio.cget("text"),
+            "procedencia_filas": list(p.filas) if p else None,
+            "declarado": ca.valor(EMBOCADURA) if ca.declarado_en_caliente(EMBOCADURA) else None,
         }
 
         # 4. Correr, y las dos columnas nuevas.

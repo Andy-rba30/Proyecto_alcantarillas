@@ -37,7 +37,7 @@ import pytest
 from src import criterios_adoptados as ca
 from src.constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
-from src.dominios import CBR_MAX_FISICO
+from src.dominios import CBR_MIN_FISICO
 from src.modelos import (ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
                      Familia, FormaSeccion, PuntoCritico, ResultadoHidraulico,
@@ -1608,14 +1608,15 @@ def test_la_tabla_de_resguardo_no_deja_ningun_CBR_sin_fila():
         assert cbr_min == techo_siguiente, (
             f"hueco o solape en la tabla: {cbr_min} frente a {techo_siguiente}")
 
-    # La consecuencia observable, barrida sobre el dominio fisico del dato
-    # (dominios.CBR_MAX_FISICO, que es lo que M0 admite) y mas alla de sus dos
-    # extremos: toda entrada devuelve resguardo, ninguna llega al `raise`.
+    # La consecuencia observable, barrida desde el piso del dominio fisico del
+    # dato (dominios.CBR_MIN_FISICO, que es lo que M0 admite; techo no hay
+    # desde PF-6, R48-007) y mas alla de los dos extremos de la tabla: toda
+    # entrada devuelve resguardo, ninguna llega al `raise`.
     bordes = [b for fila in filas for b in fila[:2] if b is not None]
     muestras = sorted(set(
         bordes
         + [b - 0.1 for b in bordes] + [b + 0.1 for b in bordes]
-        + [0.1, CBR_MAX_FISICO, CBR_MAX_FISICO * 10]))
+        + [CBR_MIN_FISICO + 0.1, max(bordes) * 10, max(bordes) * 100]))
     for cbr in muestras:
         assert resguardo_por_cbr(cbr) > 0, f"CBR = {cbr} se quedo sin fila"
 

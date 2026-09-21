@@ -914,7 +914,7 @@ def test_un_caudal_enorme_no_revienta_con_overflow_crudo():
 def test_los_dos_extremos_son_errores_de_proyecto_no_crashes():
     """
     Lo que la clase nueva compra: la GUI atrapa los dos con el mismo `except
-    ErrorProyecto` con que atrapa un CBR de 250 %. Antes uno era
+    ErrorProyecto` con que atrapa un CBR negativo. Antes uno era
     ZeroDivisionError y el otro OverflowError, y ninguno de los dos lo era.
     """
     material = catalogo(TipoMaterial.CONCRETO_REFORZADO)

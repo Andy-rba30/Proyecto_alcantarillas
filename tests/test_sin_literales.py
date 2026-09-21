@@ -901,7 +901,11 @@ CENSO_DE_MARCAS = {
     # mientras el calculo trabaja en metros. Misma naturaleza que
     # `METROS_POR_KM` y `CENTIMETROS_POR_METRO`, que ya estaban: es la
     # definicion de la unidad, no un valor de proyecto.
-    "src/dominios.py": 5,
+    # 5 -> 4 en PF-6 (R48-007): `CBR_MAX_FISICO = 100.0` se retiro contra la
+    # fuente primaria y quedo `CBR_MIN_FISICO = 0.0`, cuyo literal es exento
+    # (cero) y cuya marca por tanto no exime nada: se conserva como
+    # justificacion escrita, igual que las demas del archivo, pero no cuenta.
+    "src/dominios.py": 4,
     # UNA sola: `CIFRAS_MAGNITUD = 3`, los decimales con que la traza de la
     # memoria imprime una magnitud (§4.4). Es de la misma naturaleza que los
     # `FMT_*` de M11 --- cuantos decimales se escriben, no cuanto vale nada ---
@@ -1296,7 +1300,7 @@ def test_los_limites_de_dominio_salieron_de_M0():
     declarados_en_dominios = estructura.nombres_asignados(dominios)
     declarados_en_m0 = estructura.nombres_asignados(m0)
     usados_en_m0 = estructura.nombres_usados(m0)
-    for nombre in ("CBR_MAX_FISICO", "ESVIAJE_MAX", "S_CAUCE_MAX", "METROS_POR_KM"):
+    for nombre in ("CBR_MIN_FISICO", "ESVIAJE_MAX", "S_CAUCE_MAX", "METROS_POR_KM"):
         assert nombre in declarados_en_dominios, (
             f"'{nombre}' no se declara en dominios.py")
         assert nombre not in declarados_en_m0, (
