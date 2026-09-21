@@ -501,7 +501,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2532**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2617**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -545,7 +545,37 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-9 (2026-09-21) sumó DIECISIETE tests**: los 14 de
+independientes. **EXT-10 (2026-09-21) sumó OCHENTA Y CINCO tests**: los 78
+de `tests/test_ext10_multiobra.py` —la aceptación de EXT-V-01 y de la fase
+E04: 63 escritos primero en rojo con `xfail(strict=True)` por test —medidos
+63 xfailed y 0 XPASS antes de tocar código; dos guardias no lo llevaron
+porque valen antes y después, y se midió con un XPASS— y liberados al
+corregir; los quince restantes los dejó el auditor adversarial (la forma y
+el signo de un [S] declarado por sesión: `"0.30"`, `True`, `-0.3`, `[0.3]`,
+una orientación fuera de las dos tabuladas, `"dos"` carriles; el origen por
+entrada; el volcado que lee «SIN LEER» de la foto; la advertencia por
+origen; la precedencia ruta/bloque)—, el DÉCIMO test de ventana real de
+`test_gui_contrato` (`tests/apoyo/gui_ext10_real.py`: dos obras por el campo
+de la pestaña 1, «Guardar sesion» en formato 3, «Nuevo proyecto», abrir B
+tras A, borrar el campo, y un sitio.json malo que no corre) y los seis
+anclajes parametrizados de `test_decisiones_diferidas` para las fichas de
+la Parte XXVI (EXT-10-01..06). Ningún archivo restó tests: `test_M11_reporte`
+admite un [S] entre los bloqueantes, `test_datos_sitio` enumera los campos
+nuevos, `test_M9_cabezal` fuerza el valor por `object.__setattr__` para
+seguir probando la guardia del consumidor, `test_ext4` lista dos lecturas
+estáticas más y `test_sin_literales` censa la marca de `FORMATO_SESION`.
+La línea base de la Familia C se regeneró por cambios de FORMATO medidos
+con `diff`: `hoja_ruta_sha1` (la v8 enmendada), `criterios_sha1` (los
+imports de `NIVEL_*`), el bloque `corredor_del_proyecto` y los campos
+`origen`/`fecha`/`declarado_en_caliente` del JSON, la línea «Corredor» y la
+fila «Origen» del HTML, y la advertencia de corredor de la obra del
+repositorio en las memorias y los volcados; ningún número de cálculo se
+movió. Las cuatro configuraciones se MIDIERON sobre `eb926e6` (el segundo
+commit `ext(EXT-10)`, con los ajustes del auditor), en serie, sobre un
+checkout limpio (`git worktree`) y sin otra suite en marcha: las dos sin
+Tk sin `DISPLAY` y con un `xvfb-run` que falla, las dos sin PyMuPDF
+desinstalándolo y reinstalándolo. De los 85, ninguno depende de PyMuPDF y
+sólo el de ventana real depende de Tk. **EXT-9 (2026-09-21) sumó DIECISIETE tests**: los 14 de
 `tests/test_ext9_paquete_servicio.py` —la aceptación de PC-08 y de las fases
 E01, E02, E03, E03a, E03b y E03c del plan de evolución: diez escritos primero
 en rojo con `xfail(strict=True)` —medidos 4 passed, 10 xfailed y 0 XPASS
@@ -828,7 +858,7 @@ llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
-2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532. La
+2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
