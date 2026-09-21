@@ -172,7 +172,7 @@ from src.constantes_normativas import H_O_HW_SOBRE_D_MIN
 from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ContextoCorrida, ErrorProyecto, Espaciamiento,
                          PasoDiseno, PerfilLamina, ProteccionSalida,
-                         ResultadoPunto, Verificacion)
+                         ResultadoPunto, TipoDeVeredicto, Verificacion)
 from src.modulos import M2_material as M2
 from src.modulos import M5_verificaciones as M5
 from src.modulos.M8_estructural import verificacion_diferida_estructural
@@ -231,6 +231,10 @@ SANGRIA_DETALLE = SANGRIA * 4   # literal-ok: nivel de sangria del volcado
 DECIMALES_PENDIENTE = 4         # literal-ok: decimales del volcado de S
 MARCA_CUMPLE = "[OK]"
 MARCA_INCUMPLE = "[NO]"
+# El indicador disparado bajo `regimen_v2b` = indicador_con_aviso (PF-4): la
+# verificacion no detiene el punto (`cumple` True) y no es un [OK]; la marca
+# se lee del veredicto del paso, como hace M11.
+MARCA_INDICADOR = "[AVISO]"
 
 # ===========================================================================
 # Volcado a JSON
@@ -246,9 +250,22 @@ def _num(valor: Any) -> Any:
     return valor
 
 
+def _veredicto_de(v: Verificacion) -> Optional[str]:
+    """El tipo de veredicto del paso de la verificacion, o None sin paso."""
+    if v.paso is None or v.paso.veredicto is None:
+        return None
+    return v.paso.veredicto.tipo.value
+
+
 def _verificacion_json(fase: str, v: Verificacion) -> Dict[str, Any]:
+    # `veredicto` entra en PF-4: `cumple` dice si el punto se detiene y el
+    # veredicto dice que juzgo la memoria. Bajo `regimen_v2b` =
+    # indicador_con_aviso las dos cosas difieren a proposito (cumple=True,
+    # veredicto «indicador»), y un JSON con solo `cumple` lo perderia --
+    # el «fuera de dominio» que solo existia en el HTML es PC-27.
     return {"fase": fase, "codigo": v.codigo, "numeral": v.numeral,
-            "cumple": v.cumple, "valor_obtenido": _num(v.valor_obtenido),
+            "cumple": v.cumple, "veredicto": _veredicto_de(v),
+            "valor_obtenido": _num(v.valor_obtenido),
             "valor_admisible": _num(v.valor_admisible),
             "criterio_aplicado": v.criterio_aplicado}
 
@@ -702,7 +719,10 @@ def _lineas_verificaciones(informe: InformePunto) -> List[str]:
         return []
     out = [f"{SANGRIA}Verificaciones:"]
     for fase, v in filas:
-        marca = MARCA_CUMPLE if v.cumple else MARCA_INCUMPLE
+        if _veredicto_de(v) == TipoDeVeredicto.INDICADOR.value:
+            marca = MARCA_INDICADOR
+        else:
+            marca = MARCA_CUMPLE if v.cumple else MARCA_INCUMPLE
         codigo = v.codigo or fase.split(" - ")[0]
         out.append(f"{SANGRIA * 2}{marca} {codigo:<4} {v.numeral:<28} "
                    f"obtenido {_fmt(v.valor_obtenido)} | admisible "

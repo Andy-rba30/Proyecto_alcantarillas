@@ -840,6 +840,31 @@ La norma no protege del riesgo real, que es la **colmatación** en una llanura d
 > umbral duro por decisión propia, igual que hace con las recomendaciones de V1
 > y de V2, y lo declara en el bloque de umbrales de la memoria.
 >
+> *Corregido (`PF-4`, 2026-09-21): la fila de la tabla ya decía «indicador» donde
+> la fuente dice «indicator» y no hay nada que corregir en ella; lo que estaba
+> mal era el párrafo anterior, que describía la «decisión propia» como si
+> estuviera declarada y no lo estaba: vivía cableada en `M5.v2b_sedimentacion`
+> como «umbral duro, por decisión conservadora del proyecto», sin ficha, sin
+> ventana ni procedencia, que es lo que la constitución prohíbe a un [A]. Y su
+> consecuencia se midió en la corrida de perfil de la revisión de E-B: con la
+> pendiente de sonda de C-01 (0.004 frente a 0.006 del cauce) el umbral duro
+> descartó los tres marcos de la progresión, cumpliendo todo lo demás, cuando
+> en un cruce de canal la pendiente del conducto la fija el canal. Verificado
+> contra el PDF (pág. impresa 5.11 = PDF 147): el 5.3.3 nombra DOS «key
+> indicators of potential problems at culvert sites», no escribe cifra alguna y
+> no contiene «shall» ni «should» (`caracter` DEFINICION de
+> `HDS5_3ED.5.3.3#INDICADORES`). Desde PF-4 el régimen es el criterio [A] de
+> perfil `regimen_v2b`, con dos opciones cerradas: `umbral_duro` (la conducta
+> de S20, valor del archivo: el indicador disparado deja `cumple = False` y la
+> sección se descarta) e `indicador_con_aviso` (V2b se evalúa igual, la memoria
+> imprime el texto literal de la fuente con el veredicto INDICADOR —un valor
+> nuevo de `TipoDeVeredicto`, no una cuarta capa del estado de verificación,
+> PC-27— y el diámetro no se descarta). El paso F5.V2b imprime siempre la
+> elección con su fundamento (`F5.V2b.REGIMEN`, verbo DEFINE, el único que el
+> carácter de la cita sostiene). Ningún número de la línea base se movió. El
+> segundo indicador —el n de Manning del cauce natural— sigue pendiente bajo
+> los dos regímenes, como dice el párrafo de arriba.*
+>
 > **La mitad [A] dejó de ser un párrafo.** El acceso de mantenimiento entra por
 > el criterio `acceso_mantenimiento_v2b`, que **detiene** la corrida mientras
 > siga vacío. Antes era una constancia que la memoria imprimía y que nadie

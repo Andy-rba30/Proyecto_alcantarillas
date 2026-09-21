@@ -89,6 +89,28 @@ Ejecuta únicamente PF-3 de docs/planes_mejora/08_CADENA_PROMPTS_PERFIL.md y apl
 Ejecuta únicamente PF-4 de docs/planes_mejora/08_CADENA_PROMPTS_PERFIL.md y aplica las reglas comunes de 07_CADENA_PROMPTS_EXT.md. Sesión con plan mode. Usa el verificador-normativo antes de tocar nada: HDS-5 3.ª ed., num. 5.3.3 «Sedimentation», pág. impresa 5.11 —la cita ya está en el registro; lee su `texto_literal` y su `caracter`—. La fuente nombra DOS «key indicators of potential problems» (pendiente del barril menor que la del cauce; rugosidad mayor que la del cauce) y no fija umbral. `M5_verificaciones.v2b_sedimentacion` (V2b, implementada en S20) convierte el primero en umbral duro «por decisión conservadora del proyecto», y en la corrida de perfil de la revisión de E-B eso descartó los siete marcos de la serie de C-01 con el dato de sonda (0.004 frente a 0.006) — en un cruce de canal real la pendiente del conducto suele venir fijada por el canal. Esa «decisión conservadora» es un [A] que vive cableado y sin ficha, que es lo que la constitución prohíbe. Crea en criterios_adoptados.py el criterio `regimen_v2b` con forma `categoria`, dos opciones cerradas en `sensibilidad` («umbral_duro»: la conducta actual, V2b incumplida detiene el punto; «indicador_con_aviso»: V2b se evalúa igual, se imprime en la memoria con el texto literal de la fuente y el veredicto INDICADOR, y NO descarta el diámetro), nivel PERFIL, etiqueta [A] con `Fundamento` cuyo verbo esté sostenido por el `caracter` de la cita (NOR-MEM-01: no escribas «la norma exige» sobre «key indicators»), y VALOR «umbral_duro» —no vacío: dejarlo vacío detendría los cuatro puntos de toda corrida de perfil, y esta sesión no cambia ningún número de la línea base—. La segunda mitad del indicador (n de Manning del cauce natural) sigue pendiente como hoy; no la inventes. El veredicto INDICADOR tiene que ser un `TipoDeVeredicto` que ya exista o uno nuevo argumentado en modelos.py (revisa PC-27, «Cerrado parcial», antes: el estado de verificación ya tiene tres capas y no puede ganar una cuarta sin cerrar aquélla); `Verificacion.cumple` sigue siendo bool y la memoria lo pinta como aviso, no como incumplimiento ni como diferido. Tests primero en rojo con xfail(strict=True): con el valor del archivo la línea base de la Familia C no cambia un byte (diff vacío); declarando «indicador_con_aviso» por `--declarar`, C-01 con `S_conducto = 0.004` dimensiona y su memoria imprime el texto literal de 5.3.3 desde `Registro.textos_literales()` y el veredicto de aviso; la guardia de forma rechaza «aviso» y «1»; el criterio aparece en la pestaña 2 con editor de categoría; y `tests/test_cierre_perfil.py` sigue midiendo que el criterio es de perfil porque la corrida lo invoca. Reporta contra la v8 (fila V2b de la tabla de Fase 5) si su redacción dice «umbral» donde la fuente dice «indicator», con la cita. No cierra IDs del tracker; enlaza PC-27 si lo tocas. Ritual de cierre. Detente ahí.
 ```
 
+> **Ejecutado (PF-4, 2026-09-21).** Entró el criterio [A] de perfil
+> `regimen_v2b` (categoría, valor de archivo `umbral_duro`, ventana
+> `umbral_duro` / `indicador_con_aviso`), el veredicto
+> `TipoDeVeredicto.INDICADOR` —un valor de la capa del veredicto, no una
+> cuarta capa: PC-27 sigue «Cerrado parcial», ficha PF-4-01— y el fundamento
+> `F5.V2b.REGIMEN` (verbo DEFINE, el único que el `caracter` DEFINICION de
+> la cita sostiene; verificado contra el PDF: dos «key indicators», sin
+> cifra, sin «shall»/«should» en la 5.11). `M5.v2b_sedimentacion` conserva
+> la comparación byte a byte (el censo de mutación la nombra), lee el
+> régimen y bajo aviso devuelve `cumple=True` con veredicto INDICADOR; el
+> paso imprime siempre la elección del régimen. M11 y la CLI lo pintan como
+> aviso (`[AVISO]`, clase `indicador`) y el JSON lleva la clave nueva
+> `veredicto` en cada verificación. Un desvío del texto del prompt,
+> declarado: «la línea base no cambia un byte» es inalcanzable por diseño
+> del repositorio (`criterios_sha1`, `hoja_ruta_sha1` y la lista de usados
+> cambian con cualquier criterio nuevo), de modo que lo que se fijó y se
+> midió con el comparador de E-B es que **ningún número se movió**; el
+> diff está censado en el README de la línea base. La fila V2b de la v8 ya
+> decía «indicador» y no se corrige; se enmienda la nota de §5.2 que
+> describía la «decisión propia» como declarada sin estarlo. El segundo
+> indicador (n del cauce) sigue pendiente bajo los dos regímenes.
+
 ## PF-5 · Guía de corrida de perfil que la suite ejecuta
 
 ```text

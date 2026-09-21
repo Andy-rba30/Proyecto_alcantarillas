@@ -2906,3 +2906,66 @@ símbolo.
   de Tk (o en el subproceso de EXT-8) sin tocar el informe de la pestaña 3,
   y refresque la pestaña 2 al terminar; con su test de ventana real.
 - **Dónde vive:** `src/barrido.py::barrer`
+
+# Parte XXXIII — Lo que PF-4 dejó escrito al declarar el régimen de V2b
+
+## PF-4-01 · INDICADOR es un valor de `TipoDeVeredicto` y no una cuarta capa del estado de verificación; el segundo indicador del 5.3.3 sigue sin evaluarse
+
+- **Qué se difirió:** dos cosas, y ninguna es la corrección de PF-4. (1) La
+  unificación de las tres capas del estado de verificación que PC-27 dejó
+  «Cerrado parcial» —`Verificacion.cumple: bool`, `TipoDeVeredicto` adosado
+  al `PasoDeMemoria` y `Bloqueo`—: PF-4 la toca sin cerrarla. Añade el quinto
+  valor `INDICADOR` a la capa del veredicto y deja `cumple` como el bool que
+  lee la compuerta de MD (`all(v.cumple ...)`), de modo que bajo `regimen_v2b`
+  = `indicador_con_aviso` una misma `Verificacion` dice `cumple=True` al
+  pipeline y `INDICADOR` a la memoria, a propósito y con el JSON llevando las
+  dos cosas (`cumple` y la clave nueva `veredicto` de `_verificacion_json`).
+  (2) El segundo indicador del num. 5.3.3 —«roughness greater than the
+  channel»—, que exige el n de Manning del cauce natural: no es columna de la
+  Sec. 1.2, la hoja de ruta no lo fija y ninguno de los dos regímenes lo
+  evalúa; `regimen_v2b.verificacion_pendiente` lo dice con esas palabras.
+- **Por qué:** para (1), porque el prompt de PF-4 lo prohíbe con razón: «el
+  estado de verificación ya tiene tres capas y no puede ganar una cuarta sin
+  cerrar aquélla». Un valor nuevo de la capa existente no es una capa: no
+  añade un objeto que los lectores tengan que consultar además de `cumple`,
+  y lo que dice —«se evaluó, el indicador se disparó, y el proyecto decidió
+  por un [A] declarado no detener el punto»— no lo podía decir ninguno de
+  los cuatro valores anteriores sin mentir (CUMPLE), sin divergir del
+  pipeline (NO_CUMPLE, SIS-A-07), sin fingir que no se evaluó (DIFERIDO) o
+  que no se juzgó (SIN_VEREDICTO). `Veredicto.cumple` sigue devolviendo
+  False para INDICADOR y no tiene consumidor de producción (medido por grep
+  en PF-4). Para (2), porque la regla de la constitución para un vacío es no
+  inventarlo: el dato que cerraría la fila entera es un [S] por punto que
+  hoy nadie levanta.
+- **Qué haría falta:** para (1), la sesión que PC-27 sigue esperando: un
+  solo estado de verificación del que `cumple`, el veredicto del paso y el
+  `Bloqueo` sean vistas y no fuentes, con «no aplica» como valor, y
+  `EstabilidadCabezal` sin su tupla vacía. Para (2), una columna
+  `n_manning_cauce` de la Sec. 1.2 (o un [S] por punto) con su
+  trazabilidad, y la segunda comparación en `M5.v2b_sedimentacion` bajo el
+  mismo `regimen_v2b`.
+- **Dónde vive:** `src/modelos.py::TipoDeVeredicto`
+
+## PF-4-02 · El barrido leía el veredicto sólo de `cumple`, y desde PF-4 son dos campos
+
+- **Cerrado (PF-4):** `src/barrido.py` decidía si una verificación «cambia de
+  veredicto» mirando un solo sufijo del rótulo del comparador,
+  `_CAMPO_VEREDICTO = ".cumple"`. Con el veredicto INDICADOR eso deja de
+  bastar: bajo `regimen_v2b` = `indicador_con_aviso` una verificación pasa de
+  CUMPLE a INDICADOR con `cumple` en True las dos veces, y la tabla del
+  barrido habría dicho «sin cambios de veredicto» sobre una corrida en la que
+  el indicador se disparó. Son dos campos desde PF-4
+  (`_CAMPOS_DE_VEREDICTO`), y el conjunto de códigos deduplica, de modo que
+  una verificación que mueve los dos sigue contando una vez.
+- **Abierto:** nada de este hueco. Queda dicho porque es la clase de defecto
+  que un campo nuevo del volcado produce en silencio: todo lector que
+  clasifique diferencias del comparador POR NOMBRE DE CAMPO hay que revisarlo
+  cuando `cli._verificacion_json` gana una clave. Los otros lectores se
+  midieron en PF-4 y ninguno lo hace: `comparador` compara el dict entero,
+  `MD` y `servicio.InformePunto.incumplidas` leen el objeto y no el volcado,
+  y la interfaz cuenta por `incumplidas()`.
+- **Qué haría falta:** nada; está cerrado. Para no repetirlo, el sitio donde
+  se decide qué campos del volcado son «el veredicto» es esa tupla, y es la
+  que hay que ampliar si aparece un tercero.
+- **Dónde vive:** `src/barrido.py::_CAMPOS_DE_VEREDICTO`
+

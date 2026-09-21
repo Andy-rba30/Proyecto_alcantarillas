@@ -2802,12 +2802,37 @@ class TipoDeVeredicto(str, Enum):
     sobre el diseño se incumple: `ResultadoPunto.verificaciones_incumplidas`
     lee las `Verificacion`, no los pasos. Memoria y pipeline dicen lo mismo:
     «esta condicion del metodo no se cumple, y por eso el HW es este».
+
+    INDICADOR (PF-4) ES EL QUINTO, Y ES UN VALOR DE ESTA CAPA, NO UNA CAPA
+    NUEVA. PC-27 («Cerrado parcial») deja escrito que el estado de
+    verificacion ya vive en tres capas que no se reducen entre si --
+    `Verificacion.cumple: bool`, este enum adosado al `PasoDeMemoria`, y
+    `Bloqueo` -- y que formalizar sin decidir cual gobierna produce una
+    cuarta. PF-4 no la produce: `cumple` sigue siendo el bool que lee la
+    compuerta de MD (`all(v.cumple ...)`) y `Bloqueo` no se toca. Lo que hace
+    falta es que ESTA capa pueda decir una cosa que ninguno de los cuatro
+    valores anteriores decia sin mentir: «la comparacion se evaluo, el
+    indicador que la fuente nombra SE DISPARO, y el proyecto decidio --por un
+    criterio [A] declarado, `regimen_v2b` = indicador_con_aviso-- no detener
+    el punto por ello». CUMPLE mentiria (el indicador se disparo); NO_CUMPLE
+    haria divergir la memoria del pipeline, que acepta el punto (SIS-A-07,
+    el mismo defecto que EXT-3 corrigio en F4.HO); DIFERIDO es «no se
+    evaluo» y aqui se evaluo; SIN_VEREDICTO es «no juzga» y aqui se juzgo
+    contra un umbral. Por eso INDICADOR exige umbral igual que CUMPLE y
+    NO_CUMPLE (`PasoDeMemoria.__post_init__`), y M11 lo pinta como AVISO --
+    ni incumple ni diferido--. `Veredicto.cumple` sigue diciendo solo
+    CUMPLE: un indicador disparado no «cumple», aunque el punto no se
+    detenga; esa propiedad no tiene consumidor de produccion (medido por
+    grep en PF-4) y se deja como esta. La fuente que lo sostiene es la que
+    lo nombra asi: HDS-5 3.a ed. num. 5.3.3, «are key indicators of
+    potential problems», `caracter` DEFINICION, sin umbral ni «shall».
     """
 
     CUMPLE = "cumple"
     NO_CUMPLE = "no cumple"
     DIFERIDO = "diferido"
     SIN_VEREDICTO = "sin veredicto"
+    INDICADOR = "indicador"
 
 
 class TipoDeBloqueo(str, Enum):
@@ -3261,9 +3286,13 @@ class PasoDeMemoria:
                 "la §4.4 y no admite excepcion: el fundamento se declara en "
                 "`normativa/fundamentos.py` y se trae con `modelos.paso()`, "
                 "nunca se escribe suelto en el modulo de calculo")
+        # INDICADOR entra en la lista desde PF-4: decir que un indicador se
+        # disparo sin decir contra que es tan indefendible como un «cumple»
+        # sin umbral.
         if self.veredicto is not None and self.umbral is None and \
                 self.veredicto.tipo in (TipoDeVeredicto.CUMPLE,
-                                        TipoDeVeredicto.NO_CUMPLE):
+                                        TipoDeVeredicto.NO_CUMPLE,
+                                        TipoDeVeredicto.INDICADOR):
             raise ValueError(
                 f"PasoDeMemoria «{self.que}»: veredicto "
                 f"«{self.veredicto.tipo.value}» sin umbral. Decir que algo "

@@ -264,6 +264,12 @@ FMT_4 = "{:.4f}"
 VACIO = "&ndash;"
 MARCA_CUMPLE = "cumple"
 MARCA_INCUMPLE = "NO cumple"
+# El AVISO de PF-4: un indicador que se disparo bajo `regimen_v2b` =
+# indicador_con_aviso. Ni incumple (el punto no se detiene) ni diferido (se
+# evaluo): tiene su marca y su clase, y la tabla de verificaciones lo lee del
+# `paso.veredicto` de la propia `Verificacion`, no de `cumple`.
+MARCA_INDICADOR = "INDICADOR (aviso)"
+CLASE_INDICADOR = "indicador"
 
 # Orden de lectura de las etiquetas, de mas normativo a mas adoptado. Reproduce
 # el de `criterios_adoptados.reporte_criterios`.
@@ -440,6 +446,20 @@ def _marca(cumple: bool) -> str:
     clase = "cumple" if cumple else "incumple"
     texto = MARCA_CUMPLE if cumple else MARCA_INCUMPLE
     return f'<span class="{clase}">{texto}</span>'
+
+
+def _es_indicador(v: Any) -> bool:
+    """True si la verificacion lleva veredicto INDICADOR en su paso (PF-4)."""
+    paso = getattr(v, "paso", None)
+    veredicto = getattr(paso, "veredicto", None)
+    return veredicto is not None and \
+        veredicto.tipo is TipoDeVeredicto.INDICADOR
+
+
+def _marca_de_verificacion(v: Any) -> str:
+    if _es_indicador(v):
+        return f'<span class="{CLASE_INDICADOR}">{MARCA_INDICADOR}</span>'
+    return _marca(v.cumple)
 
 
 def _orden_etiqueta(etiqueta: str) -> int:
@@ -1556,6 +1576,8 @@ def _veredicto_del_paso(paso: Any) -> str:
         marca = f'<span class="{MARCA_CUMPLE}">cumple</span>'
     elif v.tipo is TipoDeVeredicto.NO_CUMPLE:
         marca = f'<span class="incumple">NO cumple</span>'
+    elif v.tipo is TipoDeVeredicto.INDICADOR:
+        marca = f'<span class="{CLASE_INDICADOR}">{MARCA_INDICADOR}</span>'
     else:
         marca = f"<b>{_esc(v.tipo.value)}</b>"
     margen = ""
@@ -1760,11 +1782,14 @@ def _tabla_verificaciones(informe: Any) -> str:
         else:
             umbral = f"{_etiqueta_html('N')} constante normativa"
         codigo = v.codigo or fase.split(" - ")[0]
-        clase = "" if v.cumple else "fila-incumple"
+        if _es_indicador(v):
+            clase = "fila-indicador"
+        else:
+            clase = "" if v.cumple else "fila-incumple"
         filas.append(_fila([_td(_esc(codigo)), _td(_esc(v.numeral)),
                             _td(_num(v.valor_obtenido), "num"),
                             _td(_num(v.valor_admisible), "num"),
-                            _td(umbral), _td(_marca(v.cumple))], clase))
+                            _td(umbral), _td(_marca_de_verificacion(v))], clase))
     # La tabla de Fase 5 de la hoja de ruta trae ONCE filas y este software
     # evalua las once desde S20. Se dice aqui, pegado a la tabla de
     # verificaciones, y no en una nota lejana: es donde el revisor cuenta.

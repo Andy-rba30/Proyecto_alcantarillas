@@ -3304,7 +3304,9 @@ CRITERIOS: Dict[str, Criterio] = {
     # V2b, la mitad [A] de la fila: el acceso de mantenimiento. La mitad
     # evaluable de V2b -- el indicador de pendiente del HDS-5 num. 5.3.3 -- la
     # calcula `M5.v2b_sedimentacion` y NO pasa por aqui: es una comparacion
-    # entre dos numeros de la fuente y del CSV, no una adopcion.
+    # entre dos numeros de la fuente y del CSV, no una adopcion. Lo que SI
+    # pasa por aqui desde PF-4 es el REGIMEN con que se aplica esa
+    # comparacion (`regimen_v2b`, la entrada siguiente).
     "acceso_mantenimiento_v2b": Criterio(
         # LA OPCION QUE RESUELVE EL PROBLEMA, no la que sale gratis. Las
         # tres de la ventana son declaraciones legitimas y solo una prevé la
@@ -3371,6 +3373,91 @@ CRITERIOS: Dict[str, Criterio] = {
                         "limpieza de una alcantarilla",
             dominio="declaracion del dispositivo de acceso; el conjunto "
                     "cerrado de valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    # V2b, el REGIMEN con que se aplica la mitad evaluable (PF-4). Hasta PF-4
+    # `M5.v2b_sedimentacion` aplicaba el indicador de pendiente como umbral
+    # duro «por decision conservadora del proyecto»: un [A] cableado y sin
+    # ficha, que es lo que la constitucion prohibe. Aqui vive la eleccion; la
+    # COMPARACION (S_conducto >= S_cauce) sigue en M5 y no pasa por aqui.
+    "regimen_v2b": Criterio(
+        # NO VACIO, y es deliberado: dejarlo vacio detendria los cuatro
+        # puntos de toda corrida de perfil, y PF-4 no mueve ningun numero de
+        # la linea base. `umbral_duro` es la conducta que el proyecto tenia
+        # desde S20, ahora dicha con ficha. Quien quiera la otra la declara.
+        valor="umbral_duro",
+        nivel=NIVEL_PERFIL,         # lo consume V2b, que la corrida de perfil
+                                    # invoca como obligatoria (servicio y M5)
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO, que es la ventana entera. «umbral_duro»: el
+        # indicador disparado -- S_conducto < S_cauce -- deja la Verificacion
+        # con cumple=False, MD descarta la seccion y prueba la siguiente, y
+        # si ninguna cumple el punto no dimensiona. «indicador_con_aviso»: V2b
+        # se evalua IGUAL (mismos numeros, mismo margen), la Verificacion sale
+        # con cumple=True, el paso lleva veredicto INDICADOR (TipoDeVeredicto,
+        # modelos.py) que la memoria pinta como AVISO con el texto literal de
+        # la fuente, y el diametro NO se descarta. El segundo indicador del
+        # numeral no entra en ninguna de las dos: ver `verificacion_pendiente`.
+        sensibilidad=("umbral_duro", "indicador_con_aviso"),
+        concepto="Con que regimen se aplica el indicador de sedimentacion del "
+                 "HDS-5 num. 5.3.3 (pendiente del conducto frente a la del "
+                 "cauce natural) en la fila V2b: como umbral duro que detiene "
+                 "el punto, o como indicador que se imprime con aviso y no "
+                 "descarta el diametro",
+        justificacion="Decide que hace el pipeline cuando el indicador de "
+                      "pendiente de V2b se dispara. La fuente (HDS-5 3.a ed., "
+                      "num. 5.3.3, pag. impresa 5.11, cita "
+                      "HDS5_3ED.5.3.3#INDICADORES) DEFINE dos indicadores de "
+                      "posibles problemas de sedimentacion -- la pendiente "
+                      "del barril menor que la del cauce y la rugosidad "
+                      "mayor que la del cauce -- y no fija umbral, cifra ni "
+                      "consecuencia: en toda la pagina no hay una exigencia "
+                      "ni una recomendacion sobre que hacer con ellos. "
+                      "Convertir un indicador en condicion de aceptacion es "
+                      "por tanto una eleccion del proyectista, y una "
+                      "eleccion se declara con ficha, ventana y procedencia "
+                      "en vez de vivir cableada en la verificacion. Las dos "
+                      "opciones son defendibles y no valen lo mismo en toda "
+                      "obra. «umbral_duro», el valor del archivo, es la "
+                      "lectura mas conservadora del indicador y la que "
+                      "obliga a reconsiderar la rasante en una entrada "
+                      "deprimida, que es justo el caso que el HDS-5 describe "
+                      "como «built with an upstream depression». "
+                      "«indicador_con_aviso» existe porque en un cruce de "
+                      "canal (Familia C) la pendiente del conducto suele "
+                      "venir fijada por el canal y no por el proyectista: "
+                      "con el umbral duro, una pendiente de conducto menor "
+                      "que la del cauce (0.004 frente a 0.006 en el punto "
+                      "C-01 del corredor) descarta la progresion entera de "
+                      "marcos aunque cumplan todo lo demas, y la unica salida "
+                      "es editar el dato. Bajo aviso el indicador se evalua "
+                      "igual, se imprime con el texto literal de la fuente y "
+                      "el veredicto INDICADOR, y queda como constancia de "
+                      "mantenimiento junto al acceso de limpieza declarado "
+                      "en 'acceso_mantenimiento_v2b'. Ninguna de las dos "
+                      "opciones mueve un numero de calculo: solo cambia si "
+                      "el punto se detiene",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 5.3.3 'Sedimentation', "
+               "pag. impresa 5.11 (PDF 147): cita HDS5_3ED.5.3.3#INDICADORES "
+               "(caracter DEFINICION) y su contracara HDS5_3ED.5.3.3#ALINEADO. "
+               "La fuente define el indicador; el regimen con que se aplica "
+               "no sale de ella ni de la hoja de ruta: es adopcion del "
+               "proyectista (Fundamento F5.V2b.REGIMEN, verbo DEFINE)",
+        verificacion_pendiente="El SEGUNDO indicador del num. 5.3.3 -- "
+                               "'roughness greater than the channel' -- "
+                               "sigue sin evaluarse bajo los dos regimenes: "
+                               "exige el n de Manning del CAUCE NATURAL, que "
+                               "no es columna de Sec. 1.2 ni la fija la hoja "
+                               "de ruta, y PF-4 no lo inventa. Este criterio "
+                               "gobierna solo lo que se hace con el primero",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente define un indicador y no "
+                        "prescribe que hacer cuando se dispara; ninguna "
+                        "norma de normas/ ni la hoja de ruta lo fija",
+            dominio="declaracion del regimen; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
         ),
     ),
 

@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "84a56fb883dfc3c4a3270f898626f65a51dda969",
+    "criterios_sha1": "425c6a95c9badfb847c8831550fcb38e394743d4",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -123,6 +123,7 @@
           "codigo": null,
           "numeral": "4.1.1.3.1 / 4.1.1.5.1",
           "cumple": true,
+          "veredicto": "cumple",
           "valor_obtenido": 2.75,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
@@ -222,6 +223,7 @@
           "codigo": null,
           "numeral": "4.1.1.3.1 / 4.1.1.5.1",
           "cumple": true,
+          "veredicto": "cumple",
           "valor_obtenido": 2.75,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
@@ -321,6 +323,7 @@
           "codigo": null,
           "numeral": "4.1.1.3.1 / 4.1.1.5.1",
           "cumple": true,
+          "veredicto": "cumple",
           "valor_obtenido": 2.75,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
@@ -411,6 +414,7 @@
           "codigo": null,
           "numeral": "4.1.1.3.1 / 4.1.1.5.1",
           "cumple": true,
+          "veredicto": "cumple",
           "valor_obtenido": 2.75,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
@@ -669,6 +673,7 @@
       "metodo_transicion_hds5",
       "n_manning_hdpe",
       "origen_cota_fondo_entrada",
+      "regimen_v2b",
       "resguardo_HW_subrasante",
       "seccion_receptor",
       "talud_terraplen",

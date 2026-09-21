@@ -56,10 +56,17 @@ from src import editores as _sed
 from src import servicio
 from src.modelos import CorridaDelBarrido, FilaDelBarrido, ResultadoDeBarrido
 
-# El campo del volcado de una verificacion que lleva el veredicto (`cumple`,
-# `cli._verificacion_json`), como sufijo del rotulo del comparador:
-# «verificacion V2.cumple».
-_CAMPO_VEREDICTO = ".cumple"
+# Los campos del volcado de una verificacion que llevan el veredicto
+# (`cli._verificacion_json`), como sufijo del rotulo del comparador:
+# «verificacion V2.cumple». Son DOS desde PF-4 y no uno: `cumple` dice si el
+# punto se detiene y `veredicto` que juzgo la memoria, y bajo `regimen_v2b` =
+# indicador_con_aviso pueden moverse por separado --- el indicador que se
+# dispara pasa de CUMPLE a INDICADOR con `cumple` en True las dos veces ---.
+# Mirando solo `cumple`, la tabla del barrido diria «sin cambios de
+# veredicto» sobre una corrida en la que el indicador se disparo. El
+# conjunto de codigos deduplica, de modo que una verificacion que mueve los
+# dos campos sigue contando una vez.
+_CAMPOS_DE_VEREDICTO = (".cumple", ".veredicto")
 
 
 def verificar_valores(clave: str, valores: Sequence[Any], *, fila: str = "",
@@ -155,17 +162,18 @@ def barrer(ruta_csv: Path, externos: Any, alcance: str, clave: str,
 def _verificacion_que_cambia(d: _comparador.Diferencia) -> Optional[str]:
     """
     El codigo de la verificacion si esta diferencia es un cambio de
-    VEREDICTO: `cumple` distinto, o la verificacion evaluada en una corrida
-    y ausente en la otra --- que es como sale cuando el punto deja de
-    dimensionar y sus once verificaciones desaparecen del volcado (auditor
-    adversarial de PF-3) ---. None si es otra cosa (un valor obtenido, un
-    umbral).
+    VEREDICTO: `cumple` o `veredicto` distinto, o la verificacion evaluada
+    en una corrida y ausente en la otra --- que es como sale cuando el punto
+    deja de dimensionar y sus once verificaciones desaparecen del volcado
+    (auditor adversarial de PF-3) ---. None si es otra cosa (un valor
+    obtenido, un umbral).
     """
     rotulo = _comparador.ROTULO_VERIFICACION
     if not d.campo.startswith(rotulo):
         return None
-    if d.campo.endswith(_CAMPO_VEREDICTO):
-        return d.campo[len(rotulo):-len(_CAMPO_VEREDICTO)]
+    for campo in _CAMPOS_DE_VEREDICTO:
+        if d.campo.endswith(campo):
+            return d.campo[len(rotulo):-len(campo)]
     if {d.a, d.b} == {_comparador.VALOR_EVALUADA, _comparador.VALOR_AUSENTE}:
         return d.campo[len(rotulo):]
     return None

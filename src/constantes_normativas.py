@@ -1217,14 +1217,19 @@ UMBRALES_DE_VERIFICACION = (
      "citas": ("HDS5_3ED.5.3.3#INDICADORES", "HDS5_3ED.5.3.3#ALINEADO"),
      "literales_de_tabla": (),
      "matiz": "La fuente escribe «are key indicators of potential problems», "
-              "no un umbral: es un INDICADOR y no una prohibicion. El "
-              "proyecto lo endurece, igual que endurece las recomendaciones "
-              "de V1 y de V2.",
+              "no un umbral: es un INDICADOR y no una prohibicion. Como se "
+              "aplica lo declara el criterio 'regimen_v2b' [A] (PF-4), que "
+              "en el archivo lo endurece, igual que el proyecto endurece "
+              "las recomendaciones de V1 y de V2.",
      "aplicacion": "De los DOS indicadores que el numeral nombra se evalua "
                    "UNO -- pendiente del barril frente a la del cauce --, "
                    "porque el otro exige el n de Manning del CAUCE NATURAL, "
-                   "que no es columna de Sec. 1.2. Se aplica como umbral "
-                   "DURO sobre el indicador evaluable. La otra mitad de la "
+                   "que no es columna de Sec. 1.2. Con que regimen se aplica "
+                   "el indicador evaluable lo fija el criterio 'regimen_v2b' "
+                   "[A]: como umbral DURO que detiene el punto (valor del "
+                   "archivo), o como indicador con aviso, que se evalua "
+                   "igual, se imprime con veredicto INDICADOR y no descarta "
+                   "el diametro. La otra mitad de la "
                    "fila V2b de la hoja de ruta -- el acceso de "
                    "mantenimiento, contenido de planos -- no es un numero: "
                    "entra por el criterio 'acceso_mantenimiento_v2b', que se "

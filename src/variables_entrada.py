@@ -991,7 +991,16 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "el indicador de sedimentacion del HDS-5 num. 5.3.3 -- no "
              "necesita declaracion: se calcula comparando la pendiente del "
              "diseño con la del cauce, y las dos son datos que la corrida ya "
-             "tiene."),
+             "tiene. Lo que si se declara desde PF-4 es con que REGIMEN se "
+             "aplica esa comparacion: 'regimen_v2b'."),
+    "regimen_v2b": _Meta(
+        unidad="-",
+        nota="Como se aplica el indicador de pendiente de V2b (PF-4): como "
+             "umbral duro que detiene el punto, o como indicador con aviso "
+             "que se evalua igual, se imprime con veredicto INDICADOR y no "
+             "descarta el diametro. Lo consume V2b, que la corrida de perfil "
+             "invoca como obligatoria; el valor del archivo es el umbral "
+             "duro, la conducta de S20."),
     "borde_libre_canal_m": _Meta(
         unidad="m",
         fase_declarada="Fase 5 - Verificaciones (VC1, cruce de canal)",

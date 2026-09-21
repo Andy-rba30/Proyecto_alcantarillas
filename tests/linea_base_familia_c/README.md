@@ -417,3 +417,41 @@ sólo en formato: `hoja_ruta_sha1` (la nota «Corregido (PF-1)» de la v8 §4.2)
 en el bloque `diseno` del JSON —`hw_entrada_piso`,
 `hw_entrada_HW_sobre_D_formula`, `hw_entrada_S_limite_m_m`—, las tres en
 `null` porque ningún punto del corredor adopta el piso.
+
+## Regenerada en PF-4 (2026-09-21): formato alrededor de V2b, ningún número
+
+PF-4 sacó a `criterios_adoptados.py` el régimen con que V2b aplica el indicador
+de HDS-5 §5.3.3 (`regimen_v2b`, valor de archivo `umbral_duro`: la conducta
+de S20), de modo que **ningún número de cálculo se movió**: los dos puntos que
+llegan a V2b (A-01 y A-02) tienen `S_conducto = S_cauce` y C-01 se detiene
+antes, en los siete del cajón. Se midió con el comparador de E-B
+(`src.comparador.comparar`) sobre los tres JSON de `a96bbec` frente a los
+regenerados, y cada diferencia es de una de estas clases:
+
+- `criterios_sha1` (el criterio nuevo), en los tres JSON; la huella de la
+  hoja de ruta cambia también, por la nota «Corregido (PF-4)» de la v8 §5.2,
+  pero sólo aparece en las tres memorias: el JSON no la lleva;
+- la clave nueva `veredicto` de cada verificación (`cli._verificacion_json`:
+  `cumple` dice si el punto se detiene y `veredicto` qué juzgó la memoria;
+  bajo `indicador_con_aviso` difieren a propósito), 26 en el JSON ancho y 4
+  en los otros dos;
+- el texto de `NUMERAL_V2B` en las dos filas V2b (ya no dice «por decisión
+  conservadora del proyecto» sino que nombra el criterio), también en
+  `cli_perfil_ancho.txt`;
+- `regimen_v2b` entre los criterios usados y en la lista
+  `verificacion_pendiente` (21 → 22), en el JSON ancho y el de expediente;
+- en las tres memorias: el CSS `.indicador` / `tr.fila-indicador`, el
+  recuento «75 criterios declarados» → «76», la huella, el bloque de umbrales
+  (la «aplicación» de V2b nombra el criterio), la elección del régimen en el
+  paso F5.V2b de A-01 y A-02, la ficha de `regimen_v2b` en el bloque de
+  criterios y el fundamento `F5.V2b.REGIMEN` en el anexo.
+
+Lo que la ventana NO ve, y queda dicho: el régimen `indicador_con_aviso`,
+que ningún punto de la línea base declara. Lo mide
+`tests/test_pf4_regimen_v2b.py` con C-01 y la pendiente de sonda (0.004
+frente a 0.006) por la CLI real, en las dos direcciones: bajo el valor del
+archivo los tres marcos se descartan por V2b; bajo aviso C-01 dimensiona con
+el marco 1.20 × 0.90 m, V2b sale `cumple=True` con veredicto `indicador`, y
+la memoria imprime el literal del 5.3.3 desde el registro con la marca de
+aviso.
+

@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "84a56fb883dfc3c4a3270f898626f65a51dda969",
+    "criterios_sha1": "425c6a95c9badfb847c8831550fcb38e394743d4",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -123,6 +123,7 @@
           "codigo": null,
           "numeral": "4.1.1.3.1 / 4.1.1.5.1",
           "cumple": true,
+          "veredicto": "cumple",
           "valor_obtenido": 2.75,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
@@ -222,6 +223,7 @@
           "codigo": null,
           "numeral": "4.1.1.3.1 / 4.1.1.5.1",
           "cumple": true,
+          "veredicto": "cumple",
           "valor_obtenido": 2.75,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
@@ -330,6 +332,7 @@
           "codigo": null,
           "numeral": "4.1.1.3.1 / 4.1.1.5.1",
           "cumple": true,
+          "veredicto": "cumple",
           "valor_obtenido": 2.75,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
@@ -426,6 +429,7 @@
           "codigo": null,
           "numeral": "4.1.1.3.1 / 4.1.1.5.1",
           "cumple": true,
+          "veredicto": "cumple",
           "valor_obtenido": 2.75,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
@@ -897,6 +901,13 @@
         "concepto": "Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata, ancho del TALON e inclinacion beta del trasdos), en m"
       },
       {
+        "clave": "regimen_v2b",
+        "etiqueta": "A",
+        "valor": "umbral_duro",
+        "declarado_en_caliente": false,
+        "concepto": "Con que regimen se aplica el indicador de sedimentacion del HDS-5 num. 5.3.3 (pendiente del conducto frente a la del cauce natural) en la fila V2b: como umbral duro que detiene el punto, o como indicador que se imprime con aviso y no descarta el diametro"
+      },
+      {
         "clave": "remanso_derecho_via",
         "etiqueta": "A",
         "valor": null,
@@ -1120,6 +1131,7 @@
       "metodo_transicion_hds5",
       "n_manning_hdpe",
       "origen_cota_fondo_entrada",
+      "regimen_v2b",
       "resguardo_HW_subrasante",
       "seccion_receptor",
       "talud_terraplen",

@@ -481,6 +481,47 @@ V2B = _fundamento(
         "omitirla sin que el expediente se enterara."),
 )
 
+# EL REGIMEN DE V2B ES UNA ELECCION, Y LO QUE LA SOSTIENE ES QUE LA FUENTE
+# DEFINE Y NO EXIGE (PF-4). El verbo es DEFINE porque el `caracter` de las
+# dos citas es DEFINICION -- la 5.11 escribe «are key indicators of potential
+# problems», sin cifra y sin «shall»/«should» (verificado contra el PDF en
+# PF-4) -- y `VERBO_COMPATIBLE_CON` no admite otro. Escribir «la norma exige
+# S_conducto >= S_cauce» encima de ese parrafo seria NOR-MEM-01. Lo consume la
+# `EleccionDeProyecto` del criterio `regimen_v2b` dentro del paso F5.V2b, que
+# sigue fundado en `V2B`: este fundamento explica por que hay algo que
+# ELEGIR, no por que existe la verificacion.
+V2B_REGIMEN = _fundamento(
+    id="F5.V2b.REGIMEN",
+    fase=F5,
+    que_paso=("V2b - El regimen con que se aplica el indicador de pendiente: "
+              "umbral duro o indicador con aviso (`regimen_v2b`)"),
+    por_que=(
+        "El HDS-5 DEFINE dos indicadores de posibles problemas de "
+        "sedimentacion -- pendiente del barril menor que la del cauce, y "
+        "rugosidad mayor que la del cauce -- y no fija umbral ni prescribe "
+        "que hacer cuando uno se dispara: son sintomas que la fuente pide "
+        "reconocer, no una condicion de aceptacion del diseno. Que hace el "
+        "proyecto con un indicador disparado es por tanto una ELECCION del "
+        "proyectista, y una eleccion se declara con ficha, ventana y "
+        "procedencia (`regimen_v2b`, [A]) en vez de vivir cableada como "
+        "«decision conservadora» dentro de la verificacion. Las dos opciones "
+        "son defendibles y no valen lo mismo en toda obra: en una entrada "
+        "deprimida para ganar recubrimiento el umbral duro obliga a "
+        "reconsiderar la rasante; en un cruce de canal la pendiente del "
+        "conducto la fija el canal, y el aviso deja constancia del "
+        "indicador y del acceso de limpieza sin descartar un marco que "
+        "cumple todo lo demas."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.5.3.3#INDICADORES", "HDS5_3ED.5.3.3#ALINEADO"),
+    que_pasa_si_no_se_hace=(
+        "Lo que paso entre S20 y PF-4: el indicador se aplicaba como umbral "
+        "duro sin que ningun criterio lo dijera, y en la corrida de perfil "
+        "de la revision de E-B eso descarto los siete marcos de la "
+        "progresion de C-01 con la pendiente de sonda (0.004 frente a "
+        "0.006), sin que el proyectista tuviera donde declarar otra cosa "
+        "ni la memoria dijera que habia una eleccion."),
+)
+
 V3 = _fundamento(
     id="F5.V3",
     fase=F5,

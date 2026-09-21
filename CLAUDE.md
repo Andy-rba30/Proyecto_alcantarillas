@@ -592,7 +592,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4034**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4064**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -642,6 +642,43 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
+independientes. **PF-4 (2026-09-21) sumó TREINTA tests**, y ninguno depende
+de PyMuPDF ni de Tk: los 27 de `tests/test_pf4_regimen_v2b.py` —la
+aceptación de PF-4: el régimen con que V2b aplica el indicador de HDS-5
+§5.3.3 deja de estar cableado como «decisión conservadora del proyecto» y
+pasa al criterio [A] de perfil `regimen_v2b` (categoría, valor de archivo
+`umbral_duro`, ventana `umbral_duro` / `indicador_con_aviso`); 19 escritos
+primero en rojo con `xfail(strict=True)` por test (medidos 19 xfailed, 0
+XPASS, 2 passed y un teardown que fallaba en el árbol viejo por no existir
+la clave) y liberados al corregir: la ficha, la guardia de forma sobre seis
+valores malos y los dos buenos, `TipoDeVeredicto.INDICADOR` y su exigencia
+de umbral, M11 pintándolo como aviso, V2b bajo los dos regímenes con la
+elección y su fundamento en el paso, el consumidor que rechaza un régimen
+que burla la puerta, la línea base sin mover un número medida con el
+comparador de E-B, C-01 por la CLI real en las dos direcciones, y el editor
+de categoría de la pestaña 2; más los que dejó la auditoría adversarial que
+la sesión ejecutó al caerse el subagente (el literal buscado DENTRO del
+bloque de C-01 y la clase de la fila, porque el literal ya se imprimía en
+A-01 y A-02 y un `in html` a secas pasaba vacuo; y el barrido de PF-3, que
+leía el veredicto sólo de `.cumple` y se habría callado un CUMPLE →
+INDICADOR)—, los dos anclajes de `test_decisiones_diferidas` para las fichas
+de la Parte XXXIII (PF-4-01, PF-4-02) y el que crece solo en
+`test_ext5_forma_gui` con el criterio nuevo (75 → 76 criterios). Ningún
+archivo restó tests. Cinco mutantes medidos y los cinco muertos: `cumple or
+aviso` → `cumple`, INDICADOR → CUMPLE, `not cumple` → `cumple`, el paso sin
+la elección del régimen, y el `nivel` del criterio a expediente. La línea
+base de la Familia C se regeneró por FORMATO, clasificado diferencia a
+diferencia con el propio comparador contra `a96bbec`: la huella
+`criterios_sha1`, la clave nueva `veredicto` de cada verificación (26 en el
+JSON ancho, 4 en los otros dos), el texto de `NUMERAL_V2B`, el criterio
+nuevo entre los usados, `verificacion_pendiente` 21 → 22, y en las memorias
+el CSS del aviso, la huella de la hoja de ruta y el recuento «75 / 36» →
+«76 / 36»; ningún número de cálculo se movió y el CSV resumen, los tres
+`cli_*.txt` salvo el numeral y la memoria del cajón quedaron intactos. Las
+cuatro configuraciones: «sí · sí» MEDIDA sobre un checkout limpio
+(`git worktree`) del commit `ext(PF-4)`, sin otra suite en marcha: 4061 passed,
+3 skipped, collected 4064; las otras tres se derivan sumando 30 a
+las de PF-3, porque ninguno de los 30 depende de PyMuPDF ni de Tk.
 independientes. **PF-3 (2026-09-21) sumó TRECE tests**, y ninguno depende de
 PyMuPDF ni de Tk: los 12 de `tests/test_pf3_barrido.py` —la aceptación del
 barrido de sensibilidad: los siete del prompt escritos primero en rojo con
@@ -1190,7 +1227,7 @@ post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
 EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
-PF-3: 4034. La
+PF-3: 4034; PF-4: 4064. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1202,10 +1239,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4031 (medido en PF-3) | 3 |
-| sí | no | 4020 (derivado: 4007 de PF-2 + 13) | 14 |
-| no | sí | 3996 (derivado: 3983 de PF-2 + 13) | 38 |
-| no | no | 3985 (derivado: 3972 de PF-2 + 13) | 49 |
+| sí | sí | 4061 (medido en PF-4) | 3 |
+| sí | no | 4050 (derivado: 4020 de PF-3 + 30) | 14 |
+| no | sí | 4026 (derivado: 3996 de PF-3 + 30) | 38 |
+| no | no | 4015 (derivado: 3985 de PF-3 + 30) | 49 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
