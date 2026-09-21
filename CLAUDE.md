@@ -528,7 +528,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **3824**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **3893**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -578,7 +578,43 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **E-A (2026-09-21) sumó CUARENTA Y CINCO tests**, y
+independientes. **E-B (2026-09-21) sumó SESENTA Y NUEVE tests netos**, y
+ninguno depende de PyMuPDF; uno depende de Tk: los 62 de
+`tests/test_eb_editores_comparador.py` —la aceptación de E10, E14, E13
+reducido y E21 acotado, escrita primero en rojo con `xfail(strict=True)`
+por test (medidos 52 xfailed, 1 passed y 0 XPASS antes de tocar código;
+49 XPASS al escribirlo, y liberados), más los ocho que dejó el auditor
+adversarial (el `descomponer_valor` que recortaba un triple y declaraba el
+recorte en verde; el `repr` que ponía comillas a un texto; la fila que un
+número «adivinaba»; la fila no elegible que entraba con nota por otra
+puerta; el dict de tabla que nombraba una fila cuyas celdas no eran el
+valor; el comparador con falsos IGUALES en bloqueos, iteraciones y listas
+de estado; el NaN que caía del lado de «igual»; la categoría de tabla que
+proponía una clave que la guardia rechazaba) y el UNDÉCIMO test de ventana
+real (`tests/apoyo/gui_eb_real.py`: la serie de pares par a par, el dict
+con un campo fuera de ventana que no declara nada, la fila de la Tabla C.2
+que pone 0.5 y el 0.55 que exige nota, las dos columnas nuevas y la
+comparación de la corrida con su propio volcado)—, el de `test_linea_base`
+con el comparador como segundo consumidor de la línea base, los seis
+anclajes de `test_decisiones_diferidas` para las fichas de la Parte XXIX
+(EB-01..06) y el parametrizado de `test_gui_contrato` que crece con
+`gui/editores.py` en `ARBOLES_DE_LA_GUI`; menos UNO: el censo
+`PUBLICAS_SIN_REFERENCIA_EN_TESTS` retira `M11_reporte.ancla_de_criterio`,
+que la suite ya nombra. Ningún archivo restó tests: `test_cierre_perfil`
+corta la memoria por el ancla y no por el título (el índice lo repite como
+enlace), `test_ext4` conoce el quinto botón de la pestaña 4,
+`test_sin_literales` censa `gui/editores.py` y las dos marcas de columna de
+`gui/app.py` (43 → 45). La línea base de la Familia C se regeneró por
+FORMATO, medido con `diff`: las claves `responsable` y `evidencia` en
+`criterios.bloquearon` de los dos JSON con bloqueantes, y el índice, sus
+tres reglas de estilo y el `id` de cada bloque de punto en las tres
+memorias de la CLI; ningún número de cálculo se movió (README de la línea
+base). Las cuatro configuraciones se MIDIERON sobre `origin/main` en
+`5a35ed3` (el segundo commit `ext(E-B)`, con las correcciones del auditor,
+fusionado por fast-forward), en serie, sobre un checkout limpio
+(`git worktree`) y sin otra suite en marcha: las dos sin Tk sin `DISPLAY` y
+con un `xvfb-run` que falla, las dos sin PyMuPDF desinstalándolo y
+reinstalándolo; `collected = 3893` en las cuatro. **E-A (2026-09-21) sumó CUARENTA Y CINCO tests**, y
 ninguno depende de PyMuPDF ni de Tk: los 36 de
 `tests/test_ea_perfil_lamina.py` —la aceptación de NOR-HDS-05 entera, el
 perfil de la lámina de agua por paso directo (HDS-5 pág. 3.12 / PDF 94
@@ -981,7 +1017,7 @@ propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
-EXT-11: 3779; E-A: 3824. La
+EXT-11: 3779; E-A: 3824; E-B: 3893. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -993,10 +1029,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 3821 (medido en E-A) | 3 |
-| sí | no | 3811 (medido en E-A) | 13 |
-| no | sí | 3786 (medido en E-A) | 38 |
-| no | no | 3776 (medido en E-A) | 48 |
+| sí | sí | 3890 (medido en E-B) | 3 |
+| sí | no | 3879 (medido en E-B) | 14 |
+| no | sí | 3855 (medido en E-B) | 38 |
+| no | no | 3844 (medido en E-B) | 49 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
