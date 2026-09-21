@@ -1420,7 +1420,8 @@ def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str) -> int:
     if not vacios:
         print("  ninguno")
     print("\n== Columnas del CSV ==")
-    for linea in _antc.lineas_del_contraste(_antc.contraste_de_cabecera(ruta_csv)):
+    contraste = _antc.contraste_de_cabecera(ruta_csv)
+    for linea in _antc.lineas_del_contraste(contraste):
         print(f"  {linea}")
     print("\n== Lo que este alcance difiere ==")
     for linea in _antc.lineas_de_diferimientos(_antc.diferimientos_del_alcance(alcance)):
@@ -1429,7 +1430,13 @@ def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str) -> int:
     estimado = _antc.datos_faltantes_por_punto(ruta_csv, externos, alcance)
     for linea in _antc.lineas_del_prevuelo(estimado):
         print(f"  {linea}")
-    return 1 if any(e.detiene for e in estimado) else 0
+    # EL CODIGO DE SALIDA LEE LOS DOS BLOQUES QUE DETIENEN (auditor
+    # adversarial de PF-2): una cabecera incompleta o una columna que no
+    # admite vacio detienen la carga igual que una falta por punto, y salir
+    # con 0 mientras la misma pantalla lo imprime seria contradecirse.
+    detiene_la_carga = bool(contraste.faltan) or any(
+        not c.admite_vacio for c in contraste.con_vacios)
+    return 1 if detiene_la_carga or any(e.detiene for e in estimado) else 0
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

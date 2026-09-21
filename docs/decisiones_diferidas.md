@@ -2848,18 +2848,27 @@ símbolo.
   se detiene en la primera falta de cada punto, de modo que las siguientes
   no llegan a producirse; el pre-vuelo existe justamente para decirlas todas
   de una vez, y por eso estima de más en la dirección medida (sin luz, C-01
-  no pasa de la Fase 2; con luz y TW, M1 se detiene en `Q_m3s`; con el JSON
-  ampliado, MD se detiene en los criterios del cajón antes de que VC1 exija
-  la coronación). La dirección que importa la fija la unión de
+  no pasa de la Fase 2; con luz y TW, el bucle de MD se detiene en `Q_m3s`;
+  con el JSON ampliado, MD se detiene en los criterios del cajón antes de
+  que VC1 exija la coronación). La dirección que importa la fija la unión de
   `tests/test_pf2_prevuelo.py`: ningún `DatoFaltanteError` real sobre una
-  columna o una clave externa escapa a la estimación, y lo de más queda
-  censado con su razón. Y qué familia exige `cota_coronacion_canal` (VC1,
-  sólo C) o `area_ha` (M1, sólo A y B) no se lee del AST —el consumidor es
-  el mismo módulo en las tres familias y la compuerta vive en la lógica de
-  `_verificador_perfil`—: se declara en `servicio.FAMILIAS_QUE_EXIGEN_COLUMNA`,
-  al lado de `FAMILIAS_QUE_USAN`, que nació igual y se corrigió por medida.
-  El TW no se declara: `servicio.tw_sin_via_de_sec_1_3` es el predicado que
-  `_resolver_tw` y el pre-vuelo comparten.
+  columna o una clave externa escapa a la estimación —ni los que M0 lanza
+  al cargar, que no son bloqueos: el auditor adversarial midió que una celda
+  obligatoria vacía «cubierta» por el JSON salía como resuelta cuando M0 la
+  rechaza antes de leer el JSON, y desde la parte 2 la carga se comprueba
+  PRIMERO—, y lo de más queda censado con su razón. Qué familia exige
+  `cota_coronacion_canal` (VC1, sólo C) o `area_ha` (`M1._categoria_por_area`,
+  sólo A) no se lee del AST —el consumidor es el mismo módulo en las tres
+  familias y la compuerta vive en la lógica de `_verificador_perfil` y de
+  `periodo_retorno_de`—: se declara en `servicio.FAMILIAS_QUE_EXIGEN_COLUMNA`,
+  al lado de `FAMILIAS_QUE_USAN`, que nació igual y se corrigió por medida;
+  y las claves externas con vía alterna en el código (`longitud_m`,
+  `categoria_tr`, `S_conducto`) se declaran en
+  `servicio.EXTERNOS_CON_VIA_ALTERNA` con un test que exige la partición
+  exacta. El TW no se declara: `servicio.tw_sin_via_de_sec_1_3` es el
+  predicado que `_resolver_tw` y el pre-vuelo comparten (registra el uso de
+  `seccion_receptor` fuera de una corrida; inocuo, porque `servicio.correr`
+  vacía los usos al entrar).
 - **Qué haría falta:** una corrida «en seco» que registre TODAS las faltas de
   un punto sin detenerse en la primera —es otra semántica de `_etapa`— y
   entonces el pre-vuelo sería una medida y no una estimación.

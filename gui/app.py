@@ -507,6 +507,12 @@ class ExpedienteApp:
         # cuando cambian las familias del expediente (el anticipo tambien:
         # `_releer_familias` termina repintandolo).
         self.csv_var.trace_add("write", lambda *_a: self._releer_familias())
+        # El bloque 4 del anticipo (PF-2) depende ademas del JSON de datos
+        # externos y de las banderas de esta pestaña: sin estas trazas se
+        # quedaba viejo hasta tocar el CSV o el alcance (auditor de PF-2).
+        self.datos_externos_var.trace_add("write", lambda *_a: self._pintar_anticipo())
+        for _var in self.externos_vars.values():
+            _var.trace_add("write", lambda *_a: self._pintar_anticipo())
 
     def _excepcion_en_callback(self, tipo, valor, tb):
         traceback.print_exception(tipo, valor, tb)

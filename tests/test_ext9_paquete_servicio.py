@@ -414,8 +414,16 @@ def test_e02_importar_y_ejecutar_el_servicio_no_inicia_cli_ni_gui():
 
 
 def _sin_marca_de_tiempo(informe_json: dict) -> dict:
+    """
+    El volcado sin su marca de tiempo, que vive en `expediente.generado_utc`
+    (segundos): este ayudante retiraba una clave `generado` de primer nivel
+    que el JSON no tiene, y el test solo pasaba cuando las dos corridas caian
+    en el MISMO segundo --- verde en la suite con las caches calientes, rojo
+    al correrlo solo ---. Lo midio PF-2 al aislar el test.
+    """
     copia = json.loads(json.dumps(informe_json))
     copia.pop("generado", None)
+    copia.get("expediente", {}).pop("generado_utc", None)
     return copia
 
 

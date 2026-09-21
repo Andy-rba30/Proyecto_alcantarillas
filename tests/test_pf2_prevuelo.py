@@ -38,12 +38,11 @@ import pytest
 import cli
 from src import anticipo as antc
 from src import servicio
-from src.modelos import Familia, TipoDeBloqueo
+from src.modelos import DatoFaltanteError, DatoInvalidoError, Familia, TipoDeBloqueo
 
 RAIZ = Path(__file__).resolve().parents[1]
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
 AMPLIADAS = RAIZ / "tests" / "linea_base_familia_c" / "entradas_ampliadas.json"
-ROJO = pytest.mark.xfail(strict=True, reason="PF-2 todavia no ejecutado")
 
 LUZ_DEL_CASO = 2.75          # m: la de la linea base, separa alcantarilla de puente
 TW_DEL_CASO = 0.30           # m: el TW global de entradas_ampliadas.json
@@ -147,8 +146,16 @@ def test_pf2_el_tw_sin_ninguna_via_cae_en_el_criterio_y_el_prevuelo_lo_dice(monk
 # 2 - La union: nada real escapa a la estimacion, y lo de mas queda censado
 # ===========================================================================
 
-def _faltas_reales(externos):
-    informe = cli.correr(CSV_EJEMPLO, externos, alcance=cli.ALCANCE_PERFIL)
+def _faltas_reales(externos, ruta=CSV_EJEMPLO):
+    """
+    Las faltas de la corrida real: las que M0 lanza al CARGAR (revientan
+    `correr`, no son bloqueos; el auditor de PF-2 midio que la union era
+    ciega a ellas) y las que las etapas registran como Bloqueo.
+    """
+    try:
+        informe = cli.correr(ruta, externos, alcance=cli.ALCANCE_PERFIL)
+    except DatoFaltanteError as exc:
+        return {exc.id_punto: {exc.campo}}
     reales = {}
     for punto in informe.puntos:
         for b in punto.bloqueos:
@@ -161,13 +168,14 @@ def _faltas_reales(externos):
 # Lo que el pre-vuelo estima de MAS respecto de cada corrida real, MEDIDO y
 # con la razon: la corrida se detiene en la primera falta de cada punto
 # (`servicio._etapa` registra UN bloqueo por etapa) y las siguientes no
-# llegan a producirse. Sin luz, C-01 no pasa de la Fase 2; con luz y TW, M1
-# se detiene en Q_m3s antes de que MD pida S_cauce y VC1 la coronacion; con
-# el JSON ampliado, MD se detiene en los criterios del cajon (bloque 1)
-# antes de que VC1 llegue a exigir cota_coronacion_canal --- que es la capa
-# que la revision de E-B midio al declarar los siete ---. Es la clase de
-# falso positivo que una estimacion honesta declara, no esconde: cada
-# entrada de mas es una falta REAL que la corrida sentiria despues.
+# llegan a producirse. Sin luz, C-01 no pasa de la Fase 2; con luz y TW, el
+# bucle de MD se detiene en Q_m3s (la etapa «material y diametro») antes de
+# pedir S_cauce y de que VC1 exija la coronacion; con el JSON ampliado, MD
+# se detiene en los criterios del cajon (bloque 1) antes de que VC1 llegue
+# a exigir cota_coronacion_canal --- que es la capa que la revision de E-B
+# midio al declarar los siete ---. Es la clase de falso positivo que una
+# estimacion honesta declara, no esconde: cada entrada de mas es una falta
+# REAL que la corrida sentiria despues.
 SOBRA_SIN_LUZ = {"C-01": {"Q_m3s", "S_cauce", "cota_coronacion_canal"}}
 SOBRA_CON_LUZ = {"C-01": {"S_cauce", "cota_coronacion_canal"}}
 SOBRA_CON_TODO = {"C-01": {"cota_coronacion_canal"}}
@@ -192,6 +200,87 @@ def test_pf2_todo_dato_faltante_real_estaba_en_el_prevuelo(externos, sobra):
 # ===========================================================================
 # 3 - Guardias: no corre el pipeline, y la CLI lo expone
 # ===========================================================================
+
+def _csv_con(tmp_path, nombre, id_base="A-02", **celdas):
+    filas = list(csv.DictReader(CSV_EJEMPLO.open(encoding="utf-8")))
+    fila = dict(next(f for f in filas if f["id"] == id_base))
+    fila.update(celdas)
+    ruta = tmp_path / nombre
+    with ruta.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(fila))
+        w.writeheader()
+        w.writerow(fila)
+    return ruta
+
+
+def test_pf2_una_celda_obligatoria_vacia_detiene_la_carga_aunque_el_json_la_traiga(tmp_path):
+    """
+    La refutacion central del auditor de PF-2: A-02 con Q_m3s vacia y
+    Q_m3s en el JSON salia «0 que detienen» y la corrida real reventaba en
+    M0 con DatoFaltanteError. La carga va PRIMERO: en una familia que no
+    admite la celda vacia, el JSON no llega a actuar.
+    """
+    ruta = _csv_con(tmp_path, "a02_sin_q.csv", Q_m3s="")
+    json_q = tmp_path / "q.json"
+    json_q.write_text('{"puntos": {"A-02": {"Q_m3s": 0.48}}}', encoding="utf-8")
+    externos = _externos(json_q, luz_m=LUZ_DEL_CASO, TW_m=TW_DEL_CASO)
+    detiene, _ = _por_punto(antc.datos_faltantes_por_punto(ruta, externos, cli.ALCANCE_PERFIL))
+    assert "Q_m3s" in detiene["A-02"] and "M0" in detiene["A-02"]["Q_m3s"].etapa
+    assert "JSON" in detiene["A-02"]["Q_m3s"].de_donde
+    reales = _faltas_reales(externos, ruta)
+    assert reales == {"A-02": {"Q_m3s"}}
+    assert reales["A-02"] <= set(detiene["A-02"])
+
+
+def test_pf2_una_celda_no_numerica_y_una_familia_ilegible_detienen_la_carga(tmp_path):
+    """M0 las rechaza como DatoInvalidoError; el pre-vuelo lo dice antes."""
+    # El conjunto que M0 convierte a numero es dato publico (PF-2): es lo que
+    # el pre-vuelo consulta, y cota_TW esta en el.
+    assert "cota_TW" in antc.m0.columnas_numericas()
+    assert "sucs_fundacion" not in antc.m0.columnas_numericas()
+    ruta = _csv_con(tmp_path, "a02_tw_abc.csv", cota_TW="abc")
+    externos = _externos(luz_m=LUZ_DEL_CASO)
+    detiene, _ = _por_punto(antc.datos_faltantes_por_punto(ruta, externos, cli.ALCANCE_PERFIL))
+    assert "cota_TW" in detiene["A-02"] and "no es un numero" in detiene["A-02"]["cota_TW"].de_donde
+    with pytest.raises(DatoInvalidoError):
+        cli.correr(ruta, externos, alcance=cli.ALCANCE_PERFIL)
+    ruta = _csv_con(tmp_path, "x.csv", familia="X")
+    estimado = antc.datos_faltantes_por_punto(ruta, externos, cli.ALCANCE_PERFIL)
+    assert [e.dato for e in estimado] == ["familia"] and estimado[0].detiene
+    with pytest.raises(DatoInvalidoError):
+        cli.correr(ruta, externos, alcance=cli.ALCANCE_PERFIL)
+
+
+def test_pf2_toda_clave_externa_sin_columna_tiene_regla_o_via_alterna_declarada():
+    """
+    La particion es exacta: lo que no es columna tiene regla explicita en el
+    pre-vuelo (luz_m, TW_m, L_hidraulico_m) o via alterna declarada en
+    `servicio.EXTERNOS_CON_VIA_ALTERNA`. Una clave nueva sin ninguna de las
+    dos rompe este test en vez de caerse del bucle en silencio.
+    """
+    sin_columna = {c for c in servicio.CLAVES_EXTERNAS if c not in antc.m0.COLUMNAS}
+    con_regla = {"luz_m", "TW_m", "L_hidraulico_m"}
+    assert sin_columna == con_regla | set(servicio.EXTERNOS_CON_VIA_ALTERNA)
+    assert not con_regla & set(servicio.EXTERNOS_CON_VIA_ALTERNA)
+    assert all(c not in antc.m0.COLUMNAS for c in servicio.EXTERNOS_CON_VIA_ALTERNA)
+
+
+def test_pf2_la_cli_sale_con_1_si_la_cabecera_detiene_la_carga(tmp_path):
+    """El codigo de salida lee tambien el bloque 2 (auditor de PF-2)."""
+    filas = list(csv.DictReader(CSV_EJEMPLO.open(encoding="utf-8")))
+    fila = dict(next(f for f in filas if f["id"] == "A-02"))
+    fila.pop("cbr_subrasante")
+    ruta = tmp_path / "sin_col.csv"
+    with ruta.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(fila))
+        w.writeheader()
+        w.writerow(fila)
+    hecho = subprocess.run(
+        [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--prevuelo",
+         "--luz", str(LUZ_DEL_CASO), "--tw", str(TW_DEL_CASO)],
+        capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 1 and "cbr_subrasante" in hecho.stdout
+
 
 def _llamadas(fn):
     arbol = ast.parse(inspect.getsource(fn))

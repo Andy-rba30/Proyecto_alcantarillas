@@ -273,12 +273,23 @@ DETALLE_FALTA_L_HIDRAULICO = ("Sec. 10 describe el procedimiento de la cuneta "
                               "hidraulica se declara, no se deduce")
 FAMILIAS_QUE_EXIGEN_COLUMNA: Dict[str, Tuple[Familia, ...]] = {
     "cota_coronacion_canal": (Familia.C,),
-    # `area_ha` la lee M1 para el TR (Sec. 2.2), que la Familia C no tiene:
-    # M0 solo la admite vacia en C, y ahi vacia no detiene nada (medido: C-01
-    # dimensiona sin ella). En A y B es obligatoria y el gate no se consulta.
-    "area_ha": (Familia.A, Familia.B),
+    # `area_ha` la lee UNICAMENTE `M1._categoria_por_area`, alcanzable solo en
+    # la Familia A sin `categoria_tr` declarada (Sec. 2.2): la B tiene la fila
+    # fija de Sec. 2.3 y la C no tiene TR (lo midio el auditor adversarial de
+    # PF-2 sobre `periodo_retorno_de`). M0 solo la admite vacia en C, y ahi
+    # vacia no detiene nada; en A y B es obligatoria y el gate no se consulta.
+    "area_ha": (Familia.A,),
 }
 COLUMNAS_DEL_TW: Tuple[str, ...] = ("cota_TW", "Q_receptor_m3s")
+# Las claves externas que NO son columna y que el codigo resuelve por otra
+# via cuando faltan --- y por eso el pre-vuelo no las lista como faltas ---:
+# `longitud_m` la calcula 7.B (`_resolver_longitud`), `categoria_tr` cae en
+# el criterio de la Tabla N 02 o en la fila fija de Sec. 2.3 (M1), y
+# `S_conducto` cae en `S_cauce` (`disenar_punto`, `_resolver_tw`). Lo que
+# queda de `CLAVES_EXTERNAS` sin columna --- luz_m, TW_m, L_hidraulico_m ---
+# tiene su regla explicita en el pre-vuelo, y el test de PF-2 fija que la
+# particion sea exacta: una clave nueva sin regla ni via alterna no pasa.
+EXTERNOS_CON_VIA_ALTERNA: Tuple[str, ...] = ("longitud_m", "categoria_tr", "S_conducto")
 
 
 def tw_sin_via_de_sec_1_3(tw_declarado: Optional[float], cota_TW: Optional[float],

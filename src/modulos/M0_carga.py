@@ -214,6 +214,16 @@ VACIOS_ADMITIDOS: Tuple[VacioAdmitido, ...] = (
 )
 
 
+def columnas_numericas() -> Tuple[str, ...]:
+    """
+    Las columnas que `_punto_desde_fila` convierte a numero (`_a_float`): una
+    celda no vacia que no sea un numero es DatoInvalidoError en la carga. La
+    lee el pre-vuelo (PF-2) para decirlo antes de correr, y por eso es dato
+    publico y no una copia.
+    """
+    return _NUMERICAS
+
+
 def columnas_que_admiten_vacio(familia: Optional[Familia] = None) -> Set[str]:
     """
     Las columnas cuya celda puede ir vacia para esa familia.

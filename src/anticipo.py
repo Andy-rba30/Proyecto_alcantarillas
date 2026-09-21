@@ -341,6 +341,7 @@ def lineas_de_diferimientos(diferido: DiferimientosDelAlcance) -> Tuple[str, ...
 
 DETIENE = "detiene"
 ESPERA = "espera"
+ETAPA_CARGA = "carga del CSV (M0, Sec. 1.2)"
 COLUMNA = "columna del CSV"
 EXTERNO = "dato externo"
 # Los modulos del censo que LEEN la columna sin consumirla en un calculo: la
@@ -435,17 +436,40 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                 detiene=detiene))
 
         # --- columnas presentes en la cabecera con la celda vacia ---------
+        if familia is None and fila.get("familia", "") != "":
+            # M0 rechaza la fila entera (`_familia`, DatoInvalidoError): se
+            # dice aqui y NO se le atribuyen las faltas de las tres familias.
+            anadir("familia", COLUMNA,
+                   f"{_ve.variable('familia').concepto}. El valor "
+                   f"{fila['familia']!r} no es A, B ni C", ETAPA_CARGA, True)
+            continue
         for columna in m0.COLUMNAS:
-            if columna not in fila or fila[columna]:
-                continue
+            if columna not in fila:
+                continue                      # cabecera incompleta: bloque 2
             concepto = _ve.variable(columna).concepto
+            if fila[columna]:
+                # Una celda que M0 va a convertir a numero y no lo es: la
+                # carga se detiene ahi (DatoInvalidoError), con o sin JSON.
+                if columna in m0.columnas_numericas() and _numero_o_none(fila[columna]) is None:
+                    anadir(columna, COLUMNA,
+                           f"{concepto}. La celda {fila[columna]!r} no es un numero",
+                           ETAPA_CARGA, True)
+                continue
+            if columna not in admiten:
+                # LA CARGA VA PRIMERO (auditor adversarial de PF-2): en una
+                # familia que no admite la celda vacia, M0 la rechaza antes
+                # de que el JSON o una bandera lleguen a actuar.
+                de_donde = concepto
+                if columna in servicio.CLAVES_EXTERNAS and externos.dato(id_punto, columna) is not None:
+                    de_donde += (". El JSON o la bandera la traen, pero M0 no "
+                                 "admite la celda vacia en esta familia y la "
+                                 "carga se detiene antes de leerlos")
+                anadir(columna, COLUMNA, de_donde, ETAPA_CARGA, True)
+                continue
             if columna in servicio.CLAVES_EXTERNAS and externos.dato(id_punto, columna) is not None:
                 continue                      # la trae el JSON o una bandera
             if columna in servicio.COLUMNAS_DEL_TW:
                 continue                      # es una via del TW: ver abajo
-            if columna not in admiten:
-                anadir(columna, COLUMNA, concepto, "carga del CSV (M0, Sec. 1.2)", True)
-                continue
             grupos = _grupos_que_admiten(columna, familia)
             if not any(g.marca_pendiente for g in grupos):
                 continue                      # regla declarada: no espera a nadie
@@ -487,10 +511,20 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                            "el TW cae en la ultima puerta de Sec. 1.3, el "
                            "criterio 'TW_receptor' (bloque 1)",
                            "tirante en el receptor (TW, Sec. 1.3)", False)
-            # longitud_m, categoria_tr y S_conducto tienen via alterna en el
-            # codigo (7.B, la fila fija o el criterio de la Tabla N 02, y
-            # S_cauce): no son faltas. S_conducto se nombra en la entrada de
-            # S_cauce cuando las dos faltan.
+            elif clave in servicio.EXTERNOS_CON_VIA_ALTERNA:
+                # 7.B, la fila fija o el criterio de la Tabla N 02, y S_cauce:
+                # no son faltas. S_conducto se nombra en la entrada de S_cauce
+                # cuando las dos faltan.
+                continue
+            else:
+                # Una clave nueva sin regla aqui ni via alterna declarada: se
+                # DICE, con la particion que el test de PF-2 fija, en vez de
+                # caerse del bucle en silencio.
+                anadir(clave, EXTERNO,
+                       f"{concepto}. Clave de CLAVES_EXTERNAS sin regla de "
+                       "pre-vuelo ni via alterna declarada (EXTERNOS_CON_VIA_"
+                       "ALTERNA): el pre-vuelo no sabe si detiene",
+                       "sin regla de pre-vuelo", False)
     return tuple(salida)
 
 

@@ -508,9 +508,14 @@ ErrorProyecto.
   la corrida se detiene en la primera falta de cada punto y el pre-vuelo
   las dice todas; la unión de `tests/test_pf2_prevuelo.py` fija que
   ninguna falta real escapa y censa lo de más con su razón (ficha PF-2-01).
-  La CLI lo expone con `--prevuelo` (imprime los cuatro bloques y termina
-  sin correr: 0 si nada detiene, 1 si algo lo hace) y la ventana lo pinta
-  en una tabla más del mismo panel; `gui/app.py` sólo pinta.
+  La carga se comprueba PRIMERO: una celda que M0 no admite vacía en esa
+  familia, una celda no numérica o una familia ilegible detienen la carga
+  aunque el JSON «cubra» el dato (auditor adversarial de PF-2). La CLI lo
+  expone con `--prevuelo` (imprime los cuatro bloques y termina sin correr:
+  0 si nada detiene la carga ni una etapa, 1 si algo lo hace; «espera» no
+  es una falta) y la ventana lo pinta en una tabla más del mismo panel,
+  refrescada también al cambiar el JSON y las banderas; `gui/app.py` sólo
+  pinta.
 
 ## Tests
 - pytest en tests/. Mínimo un test por módulo.
