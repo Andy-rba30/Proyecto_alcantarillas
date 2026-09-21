@@ -575,7 +575,9 @@ commit `ext(EXT-10)`, con los ajustes del auditor), en serie, sobre un
 checkout limpio (`git worktree`) y sin otra suite en marcha: las dos sin
 Tk sin `DISPLAY` y con un `xvfb-run` que falla, las dos sin PyMuPDF
 desinstalándolo y reinstalándolo. De los 85, ninguno depende de PyMuPDF y
-sólo el de ventana real depende de Tk. **EXT-9 (2026-09-21) sumó DIECISIETE tests**: los 14 de
+sólo el de ventana real depende de Tk: la columna «Ventana Tk = no» salta
+ahora 14 y no 13, y la «PyMuPDF = no» sigue saltando 35 más que la de al
+lado. **EXT-9 (2026-09-21) sumó DIECISIETE tests**: los 14 de
 `tests/test_ext9_paquete_servicio.py` —la aceptación de PC-08 y de las fases
 E01, E02, E03, E03a, E03b y E03c del plan de evolución: diez escritos primero
 en rojo con `xfail(strict=True)` —medidos 4 passed, 10 xfailed y 0 XPASS
@@ -870,10 +872,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 2528 (medido en EXT-9) | 4 |
-| sí | no | 2519 (medido en EXT-9) | 13 |
-| no | sí | 2493 (medido en EXT-9) | 39 |
-| no | no | 2484 (medido en EXT-9) | 48 |
+| sí | sí | 2613 (medido en EXT-10) | 4 |
+| sí | no | 2603 (medido en EXT-10) | 14 |
+| no | sí | 2578 (medido en EXT-10) | 39 |
+| no | no | 2568 (medido en EXT-10) | 49 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
