@@ -873,7 +873,7 @@ CENSO_DE_MARCAS = {
     # (responsable, evidencia). Geometria de presentacion; el tamano de la
     # ventana de comparacion es una cadena de Tk («900x500») y no un literal
     # numerico, y por eso no lleva marca.
-    "gui/app.py": 45,
+    "gui/app.py": 50,
     # La ayuda de entrada de S22, mas la pestana de conceptos de G5. Ninguno
     # es una magnitud del expediente: la mascara del bit de Control de Tk
     # (0x4), los dos altos en lineas de las dos cajas copiables --- la cabecera

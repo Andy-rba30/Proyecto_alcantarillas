@@ -494,6 +494,23 @@ ErrorProyecto.
   `reemplazado_por` y se pintan en la pestaña 4, en el anticipo y en el JSON;
   la memoria lleva índice derivado de los `<h2 id>` de la plantilla y de los
   puntos (`M11.indice_de_la_memoria`, E21 acotado).
+- **Desde PF-2 el anticipo de la pestaña 1 tiene un cuarto bloque, los
+  datos que faltan punto a punto**, y sigue siendo una ESTIMACIÓN que no
+  gobierna ningún botón. `anticipo.datos_faltantes_por_punto(csv, externos,
+  alcance)` lo deriva de lo que la corrida consulta —los vacíos admitidos
+  de M0, los consumidores del censo menos los módulos que el alcance
+  difiere, `servicio.CLAVES_EXTERNAS` con `familias_que_usan`, la columna
+  que exige una sola familia (`servicio.FAMILIAS_QUE_EXIGEN_COLUMNA`) y el
+  predicado del TW que `_resolver_tw` comparte (`tw_sin_via_de_sec_1_3`)—
+  y dice de cada falta si DETIENE una etapa o ESPERA a un tablero, con la
+  misma etapa y el mismo detalle que el `Bloqueo` llevará
+  (`ETAPA_FALTA_*`, `DETALLE_FALTA_*`). Estima de MÁS a propósito, porque
+  la corrida se detiene en la primera falta de cada punto y el pre-vuelo
+  las dice todas; la unión de `tests/test_pf2_prevuelo.py` fija que
+  ninguna falta real escapa y censa lo de más con su razón (ficha PF-2-01).
+  La CLI lo expone con `--prevuelo` (imprime los cuatro bloques y termina
+  sin correr: 0 si nada detiene, 1 si algo lo hace) y la ventana lo pinta
+  en una tabla más del mismo panel; `gui/app.py` sólo pinta.
 
 ## Tests
 - pytest en tests/. Mínimo un test por módulo.
@@ -533,7 +550,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4006**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4017**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -583,7 +600,23 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **PF-1 (2026-09-21) sumó CIENTO DOCE tests**, y ninguno
+independientes. **PF-2 (2026-09-21) sumó ONCE tests**, y ninguno depende de
+PyMuPDF ni de Tk: los 10 de `tests/test_pf2_prevuelo.py` —la aceptación
+del cuarto bloque del anticipo, escrita primero en rojo con
+`xfail(strict=True)` por test (medidos 10 xfailed y 0 XPASS antes de tocar
+código) y liberada al corregir: la luz en los cuatro puntos y lo de cada
+familia (la coronación sólo en C-01, la longitud hidráulica sólo en B-01,
+el caudal y la pendiente del canal en C-01 con S_conducto nombrado en la
+misma entrada); con el JSON ampliado y la luz sólo queda la coronación; lo
+que espera a un tablero no se confunde con lo que detiene; el TW sin vía
+cae en el criterio con el mismo predicado del resolvedor; la UNIÓN contra
+tres corridas reales con lo de más censado y medido; la guardia por AST de
+que ni el bloque ni `cli._prevuelo` corren el pipeline; la CLI que sale con
+1 y con 0; y las líneas del bloque— y el anclaje de la ficha PF-2-01 en
+`test_decisiones_diferidas`. Ningún archivo restó tests: `test_gui_contrato`
+fija las dos llamadas nuevas del panel y `test_sin_literales` censa las
+cinco marcas de columna de la tabla nueva de `gui/app.py` (45 → 50). La
+línea base no se movió. **PF-1 (2026-09-21) sumó CIENTO DOCE tests**, y ninguno
 depende de PyMuPDF ni de Tk: los 13 de
 `tests/test_pf1_hw_fuera_de_rango.py` —la aceptación de PC-03, escrita
 primero en rojo con `xfail(strict=True)` por test (medidos 17 xfailed y 0
@@ -1077,7 +1110,7 @@ propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
-EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006. La
+EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4017. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1089,10 +1122,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4003 (medido en PF-1) | 3 |
-| sí | no | 3992 (derivado: 3880 del cierre de E-B + 112) | 14 |
-| no | sí | 3968 (derivado: 3856 del cierre de E-B + 112) | 38 |
-| no | no | 3957 (derivado: 3845 del cierre de E-B + 112) | 49 |
+| sí | sí | PENDIENTE_SI_SI (medido en PF-2) | 3 |
+| sí | no | 4003 (derivado: 3992 de PF-1 + 11) | 14 |
+| no | sí | 3979 (derivado: 3968 de PF-1 + 11) | 38 |
+| no | no | 3968 (derivado: 3957 de PF-1 + 11) | 49 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

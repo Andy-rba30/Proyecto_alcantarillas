@@ -2834,3 +2834,33 @@ símbolo.
   pendientes de ese orden en una fuente de `normas/`, que convertiría el
   [A] en [C] o lo retiraría.
 - **Dónde vive:** `src/modulos/M4_control.py::_resolver_hw_fuera_de_rango`
+
+---
+
+# Parte XXXI — Lo que PF-2 dejó escrito al abrir el pre-vuelo de datos por punto
+
+## PF-2-01 · El pre-vuelo estima de más a propósito, y lo que exige una sola familia es un dato declarado del servicio, no una deducción
+
+- **Qué se difirió:** que el cuarto bloque del anticipo reproduzca EXACTAMENTE
+  lo que la corrida registra (ni una falta de más), y que la familia que
+  exige una columna admitida vacía se derive del código en vez de declararse.
+- **Por qué:** la corrida registra UN bloqueo por etapa (`servicio._etapa`) y
+  se detiene en la primera falta de cada punto, de modo que las siguientes
+  no llegan a producirse; el pre-vuelo existe justamente para decirlas todas
+  de una vez, y por eso estima de más en la dirección medida (sin luz, C-01
+  no pasa de la Fase 2; con luz y TW, M1 se detiene en `Q_m3s`; con el JSON
+  ampliado, MD se detiene en los criterios del cajón antes de que VC1 exija
+  la coronación). La dirección que importa la fija la unión de
+  `tests/test_pf2_prevuelo.py`: ningún `DatoFaltanteError` real sobre una
+  columna o una clave externa escapa a la estimación, y lo de más queda
+  censado con su razón. Y qué familia exige `cota_coronacion_canal` (VC1,
+  sólo C) o `area_ha` (M1, sólo A y B) no se lee del AST —el consumidor es
+  el mismo módulo en las tres familias y la compuerta vive en la lógica de
+  `_verificador_perfil`—: se declara en `servicio.FAMILIAS_QUE_EXIGEN_COLUMNA`,
+  al lado de `FAMILIAS_QUE_USAN`, que nació igual y se corrigió por medida.
+  El TW no se declara: `servicio.tw_sin_via_de_sec_1_3` es el predicado que
+  `_resolver_tw` y el pre-vuelo comparten.
+- **Qué haría falta:** una corrida «en seco» que registre TODAS las faltas de
+  un punto sin detenerse en la primera —es otra semántica de `_etapa`— y
+  entonces el pre-vuelo sería una medida y no una estimación.
+- **Dónde vive:** `src/anticipo.py::datos_faltantes_por_punto`

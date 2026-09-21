@@ -2294,7 +2294,10 @@ def test_los_tres_bloques_del_anticipo_los_produce_src_y_la_gui_pinta():
                    "antc.contraste_de_cabecera",
                    "antc.lineas_del_contraste",
                    "antc.diferimientos_del_alcance",
-                   "antc.lineas_de_diferimientos"):
+                   "antc.lineas_de_diferimientos",
+                   # PF-2: el cuarto bloque, los datos que faltan por punto.
+                   "antc.datos_faltantes_por_punto",
+                   "antc.lineas_del_prevuelo"):
         assert nombre in llamadas, (
             f"la GUI dejo de pedir '{nombre}': o lo calcula ella, o dejo de "
             "mostrar ese bloque")

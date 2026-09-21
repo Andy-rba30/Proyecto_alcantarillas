@@ -828,6 +828,37 @@ class ExpedienteApp:
                                                wraplength=900, justify="left")
         self.lbl_anticipo_diferido.pack(anchor="w")
 
+        # --- Bloque 4 (PF-2): los datos que faltan, punto a punto ----------
+        # Lo produce `antc.datos_faltantes_por_punto` con el CSV, el JSON de
+        # datos externos y las banderas de esta pestaña; aqui solo se pinta.
+        # Como los otros tres, es una estimacion y no toca el boton.
+        ttk.Label(f_ant, text="Datos que faltan, punto a punto (pre-vuelo)",
+                  style="Header.TLabel").pack(anchor="w", pady=(6, 0))
+        self.lbl_anticipo_prevuelo = ttk.Label(f_ant, text="", style="Ayuda.TLabel",
+                                               wraplength=900, justify="left")
+        self.lbl_anticipo_prevuelo.pack(anchor="w")
+        f_pre = ttk.Frame(f_ant)
+        f_pre.pack(fill="x", pady=(2, 6))
+        f_pre.columnconfigure(0, weight=1)
+        self.tree_prevuelo = ttk.Treeview(
+            f_pre, columns=("punto", "dato", "estado", "etapa", "de_donde"),
+            show="headings", height=5)
+        self.tree_prevuelo.heading("punto", text="Punto")
+        self.tree_prevuelo.heading("dato", text="Dato")
+        self.tree_prevuelo.heading("estado", text="Estado")
+        self.tree_prevuelo.heading("etapa", text="Etapa que lo siente")
+        self.tree_prevuelo.heading("de_donde", text="De donde tendria que venir")
+        self.tree_prevuelo.column("punto", width=90, anchor="w")     # literal-ok: ancho de columna en px
+        self.tree_prevuelo.column("dato", width=170, anchor="w")     # literal-ok: ancho de columna en px
+        self.tree_prevuelo.column("estado", width=80, anchor="w")    # literal-ok: ancho de columna en px
+        self.tree_prevuelo.column("etapa", width=230, anchor="w")    # literal-ok: ancho de columna en px
+        self.tree_prevuelo.column("de_donde", width=420, anchor="w") # literal-ok: ancho de columna en px
+        self.tree_prevuelo.grid(row=0, column=0, sticky="ew")
+        scroll_pre = ttk.Scrollbar(f_pre, orient="vertical",
+                                   command=self.tree_prevuelo.yview)
+        self.tree_prevuelo.configure(yscroll=scroll_pre.set)
+        scroll_pre.grid(row=0, column=1, sticky="ns")
+
         self._pintar_anticipo()
 
         self.lbl_error_datos = ttk.Label(p, text="", style="Error.TLabel", wraplength=820, justify="left")
@@ -1020,6 +1051,37 @@ class ExpedienteApp:
         self.lbl_anticipo_diferido.config(
             text="\n".join(antc.lineas_de_diferimientos(diferido)),
             foreground=COLOR_AVISO if diferido.difiere_algo else "#666666")
+
+        # Bloque 4 (PF-2). Los datos externos se arman por la MISMA puerta
+        # que la corrida (`cli.cargar_datos_externos` con el JSON de la
+        # pestaña y sus banderas); un JSON ilegible o una bandera mal tecleada
+        # no rompen el anticipo: se dice y se sigue.
+        if not hasattr(self, "tree_prevuelo"):
+            return
+        for item in self.tree_prevuelo.get_children():
+            self.tree_prevuelo.delete(item)
+        if contraste is None:
+            self.lbl_anticipo_prevuelo.config(text=antc.SIN_CSV, foreground="#666666")
+            return
+        ruta_externos = self.datos_externos_var.get().strip() or None
+        try:
+            externos = cli.cargar_datos_externos(
+                Path(ruta_externos) if ruta_externos else None, self._leer_banderas())
+            estimado = antc.datos_faltantes_por_punto(Path(ruta), externos, alcance)
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            self.lbl_anticipo_prevuelo.config(
+                text=f"El pre-vuelo no pudo armar los datos externos: {exc}",
+                foreground=COLOR_AVISO)
+            return
+        lineas = antc.lineas_del_prevuelo(estimado)
+        detiene = any(e.detiene for e in estimado)
+        self.lbl_anticipo_prevuelo.config(
+            text=lineas[0], foreground=COLOR_AVISO if detiene else "#666666")
+        for e in estimado:
+            familia = "" if e.familia is None else f" ({e.familia.value})"
+            self.tree_prevuelo.insert("", "end", values=(
+                f"{e.id_punto}{familia}", e.dato,
+                "DETIENE" if e.detiene else "espera", e.etapa, e.de_donde))
 
     def _ir_al_criterio_del_anticipo(self, _evt=None):
         """

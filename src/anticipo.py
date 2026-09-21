@@ -52,11 +52,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Tuple
+import csv
+from typing import Any, Dict, List, Optional, Tuple
 
 from src import criterios_adoptados as ca
 from src import responsable as _responsable
 from src import servicio
+from src import variables_entrada as _ve
 from src.modelos import Familia, VacioAdmitido
 # Por el modulo y no por el valor, por la razon escrita en `ayuda_entrada.py`:
 # un `from ... import COLUMNAS` copia la tupla y la deja leyendo una foto.
@@ -298,4 +300,212 @@ def lineas_de_diferimientos(diferido: DiferimientosDelAlcance) -> Tuple[str, ...
         lineas.append(
             "Módulos de cálculo que esta corrida no ejecuta: "
             + ", ".join(diferido.modulos) + ".")
+    return tuple(lineas)
+
+
+# ===========================================================================
+# Bloque 4 - los datos que faltan, punto a punto, sin ejecutar el pipeline (PF-2)
+# ===========================================================================
+#
+# LA EVIDENCIA QUE LO ABRIO: la corrida de perfil de la revision de E-B
+# necesito CUATRO corridas para dimensionar el punto de Familia C, porque cada
+# bloqueo aparecio despues del anterior --- `luz_m`, los siete criterios del
+# cajon, `cota_coronacion_canal`, `S_conducto` ---: `servicio._etapa` registra
+# UN bloqueo por etapa y el revisor ve el siguiente solo al corregir el
+# primero. Este bloque lee de una vez lo que la corrida iria diciendo capa a
+# capa, y lo lee de donde la corrida lo decide:
+#
+#   columnas obligatorias vacias     m0.columnas_que_admiten_vacio(familia),
+#                                    que es lo que `_punto_desde_fila` consulta
+#   columnas admitidas vacias        m0.VACIOS_ADMITIDOS (quien las debe y si
+#                                    esperan a alguien) y el censo de
+#                                    consumidores de `variables_entrada`, menos
+#                                    los modulos que el alcance difiere
+#                                    (servicio.MODULOS_DIFERIDOS_POR_ALCANCE)
+#   la columna que exige UNA familia servicio.FAMILIAS_QUE_EXIGEN_COLUMNA
+#   claves externas                  servicio.CLAVES_EXTERNAS,
+#                                    servicio.familias_que_usan, y los textos
+#                                    con que `_fase_2` y `_fase_10` registran la
+#                                    falta (ETAPA_FALTA_*, DETALLE_FALTA_*)
+#   el TW sin ninguna via            servicio.tw_sin_via_de_sec_1_3, el MISMO
+#                                    predicado que `_resolver_tw`
+#
+# SIGUE SIENDO UNA ESTIMACION, por dos razones medidas y no supuestas
+# (tests/test_pf2_prevuelo.py, la union contra la corrida real): estima de MAS
+# cuando la corrida se detiene en una falta anterior del mismo punto y no llega
+# a producir las siguientes, y no ve lo que solo se sabe corriendo (un
+# criterio dict al que le falta una entrada, una cota que M7 exige tras
+# tender el conducto). Lo que garantiza el test es la direccion que importa:
+# ningun DatoFaltanteError real sobre una columna o una clave externa escapa a
+# lo que aqui se estimo para ese punto.
+
+DETIENE = "detiene"
+ESPERA = "espera"
+COLUMNA = "columna del CSV"
+EXTERNO = "dato externo"
+# Los modulos del censo que LEEN la columna sin consumirla en un calculo: la
+# carga y el reporte. Que una columna admitida vacia solo los tenga a ellos
+# como consumidores es lo que la vuelve «espera» y no «detiene».
+_LECTORES_SIN_CALCULO = ("M0_carga", "M11_reporte")
+
+
+@dataclass(frozen=True)
+class DatoFaltanteEstimado:
+    """
+    Una falta estimada para UN punto: que dato, de que poblacion, de donde
+    tendria que venir, en que etapa se sentiria, y si DETIENE esa etapa o
+    solo ESPERA a un tablero (M0 la admite vacia y ningun modulo de calculo
+    de este alcance la consume).
+    """
+
+    id_punto: str
+    familia: Optional[Familia]
+    dato: str
+    poblacion: str
+    de_donde: str
+    etapa: str
+    detiene: bool
+
+
+def _filas_crudas(ruta: Any) -> List[Dict[str, str]]:
+    """
+    Las filas del CSV tal como estan, SIN validar: la misma lectura de
+    solo-contenido que `M0_carga.leer_cabecera`, fila a fila. Una fila sin
+    ningun contenido no cuenta; una celda que no alcanza a traer, vacia.
+    """
+    with Path(ruta).open(encoding="utf-8-sig", newline="") as archivo:
+        lector = csv.DictReader(archivo, restval="")
+        return [{(k or "").strip(): (v or "").strip() for k, v in fila.items() if k}
+                for fila in lector
+                if any((v or "").strip() for v in fila.values())]
+
+
+def _familia_de(fila: Dict[str, str]) -> Optional[Familia]:
+    try:
+        return Familia(fila.get("familia", ""))
+    except ValueError:
+        return None
+
+
+def _grupos_que_admiten(columna: str, familia: Optional[Familia]) -> Tuple[VacioAdmitido, ...]:
+    return tuple(v for v in m0.VACIOS_ADMITIDOS
+                 if columna in v.columnas and v.alcanza_a(familia))
+
+
+def _consumidores_de_calculo(clave: str, alcance: str) -> Tuple[str, ...]:
+    diferidos = set(servicio.MODULOS_DIFERIDOS_POR_ALCANCE.get(alcance, ()))
+    return tuple(m for m in _ve.variable(clave).consumido_por
+                 if m not in _LECTORES_SIN_CALCULO and m not in diferidos)
+
+
+def _aplica(clave: str, familia: Optional[Familia]) -> bool:
+    return familia is None or familia in servicio.familias_que_usan(clave)
+
+
+def _numero_o_none(celda: str) -> Optional[float]:
+    try:
+        return float(celda) if celda else None
+    except ValueError:
+        return None
+
+
+def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
+                              alcance: str) -> Tuple[DatoFaltanteEstimado, ...]:
+    """
+    El bloque 4: lo que le falta a cada fila del CSV para que la corrida de
+    ese alcance no se detenga por un dato, sin ejecutar el pipeline.
+
+    `externos` es el `DatosExternos` que la corrida recibiria (el JSON de
+    `--datos-externos` mas las banderas): una clave declarada ahi, global o
+    por punto, cuenta como presente. Lee el CSV con `_filas_crudas`, que no
+    valida ni lanza por el contenido, y los fallos de E/S salen como tales.
+    """
+    salida: List[DatoFaltanteEstimado] = []
+    externas_no_columna = tuple(c for c in servicio.CLAVES_EXTERNAS
+                                if c not in m0.COLUMNAS)
+    for fila in _filas_crudas(ruta_csv):
+        id_punto = fila.get("id", "") or "(fila sin id)"
+        familia = _familia_de(fila)
+        admiten = m0.columnas_que_admiten_vacio(familia)
+
+        def anadir(dato, poblacion, de_donde, etapa, detiene):
+            salida.append(DatoFaltanteEstimado(
+                id_punto=id_punto, familia=familia, dato=dato,
+                poblacion=poblacion, de_donde=de_donde, etapa=etapa,
+                detiene=detiene))
+
+        # --- columnas presentes en la cabecera con la celda vacia ---------
+        for columna in m0.COLUMNAS:
+            if columna not in fila or fila[columna]:
+                continue
+            concepto = _ve.variable(columna).concepto
+            if columna in servicio.CLAVES_EXTERNAS and externos.dato(id_punto, columna) is not None:
+                continue                      # la trae el JSON o una bandera
+            if columna in servicio.COLUMNAS_DEL_TW:
+                continue                      # es una via del TW: ver abajo
+            if columna not in admiten:
+                anadir(columna, COLUMNA, concepto, "carga del CSV (M0, Sec. 1.2)", True)
+                continue
+            grupos = _grupos_que_admiten(columna, familia)
+            if not any(g.marca_pendiente for g in grupos):
+                continue                      # regla declarada: no espera a nadie
+            quien = "; ".join(g.quien_lo_debe for g in grupos)
+            de_donde = f"{concepto}. Lo debe: {quien}"
+            if columna == "S_cauce" and externos.dato(id_punto, "S_conducto") is None:
+                de_donde += (". La via alterna del conducto (S_conducto, por "
+                             "--datos-externos) tampoco esta declarada")
+            exigida_por = servicio.FAMILIAS_QUE_EXIGEN_COLUMNA.get(columna)
+            consumidores = _consumidores_de_calculo(columna, alcance)
+            if exigida_por is not None:
+                detiene = familia is None or familia in exigida_por
+            else:
+                detiene = bool(consumidores)
+            etapa = (("la exige " + ", ".join(consumidores)) if detiene
+                     else "ningun modulo de calculo de este alcance la consume")
+            anadir(columna, COLUMNA, de_donde, etapa, detiene)
+
+        # --- claves externas que no son columna -------------------------
+        for clave in externas_no_columna:
+            if not _aplica(clave, familia) or externos.dato(id_punto, clave) is not None:
+                continue
+            concepto = _ve.variable(clave).concepto
+            if clave == "luz_m":
+                anadir(clave, EXTERNO, f"{concepto}. {servicio.DETALLE_FALTA_LUZ}",
+                       servicio.ETAPA_FALTA_LUZ, True)
+            elif clave == "L_hidraulico_m":
+                anadir(clave, EXTERNO,
+                       f"{concepto}. {servicio.DETALLE_FALTA_L_HIDRAULICO}",
+                       servicio.ETAPA_FALTA_L_HIDRAULICO, True)
+            elif clave == "TW_m":
+                sin_via = servicio.tw_sin_via_de_sec_1_3(
+                    None, _numero_o_none(fila.get("cota_TW", "")),
+                    _numero_o_none(fila.get("Q_receptor_m3s", "")))
+                if sin_via:
+                    anadir(clave, EXTERNO,
+                           f"{concepto}. Sin TW declarado, sin cota_TW y sin "
+                           "Q_receptor_m3s (o sin 'seccion_receptor' declarado), "
+                           "el TW cae en la ultima puerta de Sec. 1.3, el "
+                           "criterio 'TW_receptor' (bloque 1)",
+                           "tirante en el receptor (TW, Sec. 1.3)", False)
+            # longitud_m, categoria_tr y S_conducto tienen via alterna en el
+            # codigo (7.B, la fila fija o el criterio de la Tabla N 02, y
+            # S_cauce): no son faltas. S_conducto se nombra en la entrada de
+            # S_cauce cuando las dos faltan.
+    return tuple(salida)
+
+
+def lineas_del_prevuelo(estimado: Tuple[DatoFaltanteEstimado, ...]) -> Tuple[str, ...]:
+    """Las lineas del bloque 4, una por falta, con el recuento delante."""
+    detienen = [e for e in estimado if e.detiene]
+    esperan = [e for e in estimado if not e.detiene]
+    if not estimado:
+        return ("Nada falta por punto: ninguna columna obligatoria vacía, ninguna "
+                "clave externa sin declarar y ningún vacío que espere a un tablero.",)
+    lineas = [f"Datos que faltan: {len(detienen)} que detienen una etapa y "
+              f"{len(esperan)} que esperan a un tablero (estimación por punto)."]
+    for e in detienen + esperan:
+        familia = "" if e.familia is None else f" (Familia {e.familia.value})"
+        estado = "DETIENE" if e.detiene else "espera"
+        lineas.append(f"{e.id_punto}{familia} · {e.dato} · {estado} · {e.etapa} "
+                      f"· {e.poblacion}: {e.de_donde}")
     return tuple(lineas)

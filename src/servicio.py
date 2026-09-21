@@ -246,6 +246,55 @@ FAMILIAS_QUE_USAN: Dict[str, Tuple[Familia, ...]] = {
 }
 
 
+# LO QUE EL PRE-VUELO DE DATOS LEE DE AQUI (PF-2), declarado UNA vez y en el
+# sitio donde se aplica, para que `anticipo.datos_faltantes_por_punto` no lo
+# escriba a mano:
+#
+#   * los textos con que `_fase_2` y `_fase_10` registran la falta de `luz_m`
+#     y de `L_hidraulico_m` (etapa y detalle), que el pre-vuelo imprime tal
+#     cual porque son los mismos que el Bloqueo llevara;
+#   * las columnas admitidas vacias por M0 que una verificacion exige SOLO en
+#     una familia: `cota_coronacion_canal` la exige VC1 (Familia C, Sec. 2.3)
+#     y en las otras dos la celda vacia no detiene nada. Es un dato del
+#     programa como FAMILIAS_QUE_USAN, y como aquel se contrasta por medida
+#     (tests/test_pf2_prevuelo.py, la union contra la corrida real);
+#   * las dos columnas que son VIAS del TW de Sec. 1.3 (`_resolver_tw`):
+#     vacias no detienen nada por si solas, porque el TW tiene otras vias y
+#     una ultima puerta (`TW_receptor`); `tw_sin_via_de_sec_1_3` es el
+#     predicado que el resolvedor y el pre-vuelo comparten.
+ETAPA_FALTA_LUZ = "umbral de luz (Sec. 2.1)"
+DETALLE_FALTA_LUZ = ("no es columna de Sec. 1.2: declararla con --luz o en "
+                     "--datos-externos. Sin ella no se puede separar "
+                     "alcantarilla de puente y el punto no se dimensiona")
+ETAPA_FALTA_L_HIDRAULICO = "espaciamiento maximo entre alivios"
+DETALLE_FALTA_L_HIDRAULICO = ("Sec. 10 describe el procedimiento de la cuneta "
+                              "pero no fija su seccion, su n de Manning ni la "
+                              "formula de intensidad: la longitud por capacidad "
+                              "hidraulica se declara, no se deduce")
+FAMILIAS_QUE_EXIGEN_COLUMNA: Dict[str, Tuple[Familia, ...]] = {
+    "cota_coronacion_canal": (Familia.C,),
+    # `area_ha` la lee M1 para el TR (Sec. 2.2), que la Familia C no tiene:
+    # M0 solo la admite vacia en C, y ahi vacia no detiene nada (medido: C-01
+    # dimensiona sin ella). En A y B es obligatoria y el gate no se consulta.
+    "area_ha": (Familia.A, Familia.B),
+}
+COLUMNAS_DEL_TW: Tuple[str, ...] = ("cota_TW", "Q_receptor_m3s")
+
+
+def tw_sin_via_de_sec_1_3(tw_declarado: Optional[float], cota_TW: Optional[float],
+                          Q_receptor: Optional[float]) -> bool:
+    """
+    True cuando ninguna de las vias de Sec. 1.3 es recorrible con lo que hay
+    --- ni TW declarado, ni `cota_TW`, ni Manning en el receptor (que exige
+    `Q_receptor_m3s` y el criterio `seccion_receptor` declarado) --- y el TW
+    cae en la ultima puerta, el criterio 'TW_receptor'. Lo lee `_resolver_tw`
+    para decidir si consulta ese criterio, y el pre-vuelo (PF-2) para decir
+    que el punto caera ahi sin correr nada.
+    """
+    return (tw_declarado is None and cota_TW is None and Q_receptor is None
+            and ca.valor_si_declarado(CRITERIO_SECCION_RECEPTOR) is None)
+
+
 def familias_que_usan(clave: str) -> Tuple[Familia, ...]:
     """
     Las familias para las que declarar ese dato cambia algo. Sin fila
@@ -1007,9 +1056,8 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
 
     def resolver():
         declarado_a_mano = (declarado.valor if declarado is not None else None)
-        if declarado_a_mano is None and punto.cota_TW is None \
-                and punto.Q_receptor_m3s is None \
-                and ca.valor_si_declarado(CRITERIO_SECCION_RECEPTOR) is None:
+        if tw_sin_via_de_sec_1_3(declarado_a_mano, punto.cota_TW,
+                                 punto.Q_receptor_m3s):
             # Ninguna de las cuatro vias de Sec. 1.3 es recorrible: se cae al
             # criterio, que es la ultima puerta y la que detiene con su ficha
             # entera. Se consulta con `valor`, no con `valor_si_declarado`,
@@ -1241,11 +1289,8 @@ def _fase_2(informe: InformePunto, externos: DatosExternos) -> bool:
     informe.categoria_tr = externos.dato(punto.id, "categoria_tr")
     luz = None if informe.luz is None else informe.luz.valor
     if luz is None:
-        _falta_dato(informe.bloqueos, FASE_CLASIFICACION,
-                    "umbral de luz (Sec. 2.1)", "luz_m",
-                    "no es columna de Sec. 1.2: declararla con --luz o en "
-                    "--datos-externos. Sin ella no se puede separar "
-                    "alcantarilla de puente y el punto no se dimensiona")
+        _falta_dato(informe.bloqueos, FASE_CLASIFICACION, ETAPA_FALTA_LUZ,
+                    "luz_m", DETALLE_FALTA_LUZ)
         return False
 
     categoria = externos.valor(punto.id, "categoria_tr")
@@ -1393,12 +1438,8 @@ def _fase_10(informe: InformePunto, externos: DatosExternos) -> None:
         return
     L_hidraulico = externos.valor(informe.punto.id, "L_hidraulico_m")
     if L_hidraulico is None:
-        _falta_dato(informe.bloqueos, FASE_ALIVIO,
-                    "espaciamiento maximo entre alivios", "L_hidraulico_m",
-                    "Sec. 10 describe el procedimiento de la cuneta pero no "
-                    "fija su seccion, su n de Manning ni la formula de "
-                    "intensidad: la longitud por capacidad hidraulica se "
-                    "declara, no se deduce")
+        _falta_dato(informe.bloqueos, FASE_ALIVIO, ETAPA_FALTA_L_HIDRAULICO,
+                    "L_hidraulico_m", DETALLE_FALTA_L_HIDRAULICO)
         return
     informe.espaciamiento = _etapa(
         informe.bloqueos, FASE_ALIVIO, "min(L_normativo, L_hidraulico)",

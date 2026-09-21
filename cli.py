@@ -1213,6 +1213,13 @@ def _parser() -> argparse.ArgumentParser:
                    help="compara dos volcados informe_json por identidad de punto "
                         "(src/comparador.py) y termina: 0 iguales, 1 difieren, 2 "
                         "no se pudo leer. No corre el pipeline")
+    p.add_argument("--prevuelo", action="store_true", dest="prevuelo",
+                   help="imprime el anticipo entero (criterios vacios que el "
+                        "alcance puede invocar, contraste del CSV, lo que el "
+                        "alcance difiere y los datos que faltan punto a punto) "
+                        "y termina SIN correr el pipeline: 0 si nada detiene "
+                        "una etapa, 1 si algo lo hace (PF-2). Es una "
+                        "estimacion: la lista definitiva la da la corrida")
     p.add_argument("--sesion", type=Path, dest="sesion",
                    help="sesion guardada por la ventana (JSON): repone el "
                         "proyecto, el CSV, los datos externos, el alcance y "
@@ -1397,6 +1404,34 @@ def _aplicar_datos_de_sitio(args, sesion: Optional[SesionSerializada]):
     return aplicar_sitio_de_sesion(sesion), None
 
 
+def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str) -> int:
+    """
+    Imprime los cuatro bloques del anticipo de la pestaña 1 y devuelve 0 si
+    ninguna falta estimada detiene una etapa, 1 si alguna lo hace. No corre
+    el pipeline ni carga los puntos: es la MISMA estimacion que la ventana
+    pinta antes de ejecutar, y la lista definitiva la da la corrida.
+    """
+    from src import anticipo as _antc
+    print(_antc.AVISO_DEL_ANTICIPO)
+    print("\n== Criterios vacios que el alcance puede invocar ==")
+    vacios = _antc.criterios_vacios_alcanzables(alcance)
+    for c in vacios:
+        print(f"  {c.clave}: {c.concepto} [{c.responsable}]")
+    if not vacios:
+        print("  ninguno")
+    print("\n== Columnas del CSV ==")
+    for linea in _antc.lineas_del_contraste(_antc.contraste_de_cabecera(ruta_csv)):
+        print(f"  {linea}")
+    print("\n== Lo que este alcance difiere ==")
+    for linea in _antc.lineas_de_diferimientos(_antc.diferimientos_del_alcance(alcance)):
+        print(f"  {linea}")
+    print("\n== Datos que faltan, punto a punto ==")
+    estimado = _antc.datos_faltantes_por_punto(ruta_csv, externos, alcance)
+    for linea in _antc.lineas_del_prevuelo(estimado):
+        print(f"  {linea}")
+    return 1 if any(e.detiene for e in estimado) else 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -1500,6 +1535,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     progreso = _informar_progreso if args.progreso else None
     try:
         externos = cargar_datos_externos(args.datos_externos, banderas)
+        if args.prevuelo:
+            # EL PRE-VUELO Y SALIR (PF-2): nada de lo de abajo corre. Los
+            # cuatro bloques los produce `src/anticipo.py`; aqui se imprimen.
+            return _prevuelo(args.csv, externos, args.alcance)
         informe = correr(args.csv, externos, alcance=args.alcance)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         # UnicodeDecodeError es subclase de ValueError y no entra sola: un CSV
