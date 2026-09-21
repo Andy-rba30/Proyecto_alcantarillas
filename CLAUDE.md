@@ -583,7 +583,14 @@ y las tres propiedades del par de n): 568 muertos en la primera vuelta
 (83.6 %) contra diez archivos objetivo, 65 de los 111 restantes en la
 segunda (línea base, cierre de perfil, CLI), 46 vivos, 43 tras la segunda
 tanda; sin `hypothesis` ni `mutmut` (consulta sin respuesta, ficha
-EXT-11-01). **EXT-10 (2026-09-21) sumó OCHENTA Y CINCO tests**: los 78
+EXT-11-01). Las cuatro configuraciones se MIDIERON sobre `origin/main` en
+`e734c23` (el commit `ext(EXT-11)`, fusionado por fast-forward), en serie,
+sobre un checkout limpio (`git worktree`) y sin otra suite en marcha: las
+dos sin Tk sin `DISPLAY` y con un `xvfb-run` que falla, las dos sin PyMuPDF
+desinstalándolo y reinstalándolo; `collected = 3779` en las cuatro, y los
+cuatro pares suben 1163 `passed` y bajan 1 `skipped` respecto de EXT-10,
+porque ninguno de los 1162 depende de PyMuPDF ni de Tk y el salto
+permanente de `test_MD` desapareció. **EXT-10 (2026-09-21) sumó OCHENTA Y CINCO tests**: los 78
 de `tests/test_ext10_multiobra.py` —la aceptación de EXT-V-01 y de la fase
 E04: 63 escritos primero en rojo con `xfail(strict=True)` por test —medidos
 63 xfailed y 0 XPASS antes de tocar código; dos guardias no lo llevaron
@@ -911,10 +918,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 2613 (medido en EXT-10) | 4 |
-| sí | no | 2603 (medido en EXT-10) | 14 |
-| no | sí | 2578 (medido en EXT-10) | 39 |
-| no | no | 2568 (medido en EXT-10) | 49 |
+| sí | sí | 3776 (medido en EXT-11) | 3 |
+| sí | no | 3766 (medido en EXT-11) | 13 |
+| no | sí | 3741 (medido en EXT-11) | 38 |
+| no | no | 3731 (medido en EXT-11) | 48 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
