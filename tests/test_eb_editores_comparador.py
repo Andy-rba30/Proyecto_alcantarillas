@@ -75,6 +75,7 @@ KE_CELDA = 0.5
 PAR = "n_manning_hdpe"                      # par_ordenado de_tabla
 CATEGORIA = "condicion_pavimento"           # categoria de_tabla
 CLAVES_DE_FILA = "F_pga"                    # serie_de_claves de_tabla
+KE_CAJON = "ke_entrada_cajon"               # str de_tabla: declara la CLAVE de una fila
 DERIVADA = "tabla_recubrimiento_aashto_mm"  # Derivada: no editable
 RANGO = "v_max_concreto_eleccion"           # en_rango
 ANIDADO = "cobertura_minima_aashto"         # dict con dicts dentro: literal
@@ -348,6 +349,52 @@ def test_e10_la_clave_de_una_fila_tecleada_es_esa_fila(_limpio):
     # «Corrugated metal, projecting» sin que nadie la eligiera (R3).
     # Adivinar la fila es inventar la procedencia; el rechazo lo DICE.
     assert ed.fila_implicita(ed.esquema_de(KE), KE_CELDA) is None
+
+
+def test_e10_un_texto_que_nombra_otra_fila_no_entra_con_la_fila_elegida(_limpio):
+    """
+    El hueco que la revision de E-B midio despues del cierre: en un criterio
+    de tabla cuyo valor es la CLAVE DE UNA FILA ('ke_entrada_cajon'), el
+    texto «cajon_aletas_paralelas_escuadra» (ke = 0.7) entraba con
+    `fila="cajon_aletas_30_75_escuadra"` (ke = 0.4) y la memoria imprimia
+    «proviene de la fila cajon_aletas_30_75_escuadra». La parte 2 cerro el
+    DIFIERE para numeros, pares y dicts y no para el texto, porque
+    `declarar_desde_tabla` solo compara la celda cuando el valor es real.
+
+    La regla: un texto que NOMBRA una fila de la tabla es esa fila, y no
+    puede entrar citando otra --- ni con nota, porque la nota explica una
+    adopcion distinta de la celda y aqui no hay adopcion: hay dos filas que
+    se contradicen. Vale en la PUERTA (`declaracion.declarar_desde_tabla`),
+    de modo que cubre la pestana 2 (`src.editores.declarar`) y la ventana
+    emergente, que llama a la puerta directamente.
+    """
+    ed = _mod("src.editores")
+    # Las filas de cajon de la Tabla C.2 solo son elegibles (R4) con la
+    # embocadura del marco declarada; sin ella el rechazo seria el de R4 y
+    # no el que este test mide.
+    ed.declarar("embocadura_cajon", "cajon_concreto_aletas_30_75")
+    elegida, tecleada = "cajon_aletas_30_75_escuadra", "cajon_aletas_paralelas_escuadra"
+    with pytest.raises(ValueError, match="nombra"):
+        ed.declarar(KE_CAJON, tecleada, fila=elegida)
+    assert not ca.declarado_en_caliente(KE_CAJON)
+    assert dec.procedencia_de(KE_CAJON) is None
+    with pytest.raises(ValueError, match="nombra"):
+        ed.declarar(KE_CAJON, tecleada, fila=elegida, nota="la quiero asi")
+    assert not ca.declarado_en_caliente(KE_CAJON)
+    # La misma guardia en la puerta, que es por donde entra la ventana
+    # emergente (`gui/ventana_normativa.py::_declarar_segun_cara`).
+    with pytest.raises(ValueError, match="nombra"):
+        dec.declarar_desde_tabla(KE_CAJON, tecleada, filas=(elegida,))
+    assert not ca.declarado_en_caliente(KE_CAJON)
+    # El id largo de la fila la nombra igual que su clave corta.
+    with pytest.raises(ValueError, match="nombra"):
+        dec.declarar_desde_tabla(KE_CAJON, "HDS5_3ED.TC2#" + tecleada, filas=(elegida,))
+    # Y el texto que SI es la fila elegida entra, por las dos puertas.
+    p = ed.declarar(KE_CAJON, tecleada, fila=tecleada)
+    assert p.filas == (tecleada,) and ca.valor(KE_CAJON) == tecleada
+    dec.olvidar(KE_CAJON); ca.quitar_valor_dinamico(KE_CAJON)
+    p = dec.declarar_desde_tabla(KE_CAJON, tecleada, filas=("HDS5_3ED.TC2#" + tecleada,))
+    assert ca.valor(KE_CAJON) == tecleada
     assert ed.fila_implicita(ed.esquema_de(KE), 0.9) is None
     with pytest.raises(ValueError, match="cm_projecting"):
         ed.declarar(KE, 0.9)

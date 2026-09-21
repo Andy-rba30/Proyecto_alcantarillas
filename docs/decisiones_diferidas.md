@@ -2716,7 +2716,14 @@ símbolo.
   que no lo es la rechaza R4 en `declaracion`, como desde la ventana
   emergente (R4 de la auditoría: con nota entraba por `declarar_valor`).
   Un dato `de_ensayo` exige la nota, que es su trazabilidad (A1, Conflicto
-  #8).
+  #8). Y un texto que nombra una fila DISTINTA de la elegida no entra, con
+  o sin nota: la revisión posterior al cierre midió que
+  «cajon_aletas_paralelas_escuadra» (ke = 0.7) entraba con la fila
+  «cajon_aletas_30_75_escuadra» (ke = 0.4) y la memoria citaba la segunda;
+  la parte 2 había cerrado el DIFIERE para números, pares y dicts y no para
+  el texto. La guardia vive en la puerta
+  (`declaracion.declarar_desde_tabla`) y por eso cubre también la ventana
+  emergente.
 - **Qué haría falta:** nada para el producto; una tabla con una fila por
   categoría permitiría emparejar `categoria` con fila, y entonces
   `exige_fila` podría incluirla.

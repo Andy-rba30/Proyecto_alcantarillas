@@ -665,6 +665,24 @@ def declarar_desde_tabla(clave: str, valor: Any, *,
     # declaracion legitima que hace la ventana de la GUI. Un texto declarado
     # donde el criterio espera un numero lo rechaza la propia guardia del
     # criterio (`_verificar_sensibilidad`), no esta.
+    # Y CUANDO LO DECLARADO ES UN TEXTO QUE NOMBRA UNA FILA, ESA ES LA FILA.
+    # La revision de E-B lo midio despues del cierre: la parte 2 cerro el
+    # DIFIERE para numeros, pares y dicts, y un TEXTO seguia entrando con
+    # cualquier fila --- «cajon_aletas_paralelas_escuadra» (ke = 0.7) con
+    # `filas=("cajon_aletas_30_75_escuadra",)` (ke = 0.4), y la memoria
+    # imprimia «proviene de la fila cajon_aletas_30_75_escuadra». Aqui no hay
+    # adopcion que una nota pueda explicar: hay dos filas que se contradicen,
+    # y por eso se rechaza con o sin nota. Un texto que no nombra NINGUNA fila
+    # sigue siendo asunto del consumidor (`M4._rotulos_ke` lo rechaza como
+    # `DatoInvalidoError` contra el bloque de cajon), como hasta ahora.
+    nombrada = _fila_que_nombra(usada, valor) if isinstance(valor, str) else None
+    if nombrada is not None and filas and not all(
+            _misma_fila(usada, f, nombrada) for f in filas):
+        raise ValueError(
+            f"'{clave}': el texto {valor!r} NOMBRA la fila «{nombrada}» de "
+            f"{usada}, y la procedencia cita la fila {', '.join(filas)}. Una "
+            "fila no proviene de otra: elija la fila que el texto nombra, o "
+            "escriba la clave de la fila elegida")
     celda = _celda_escalar(usada, filas, columnas) if _ca._es_real(valor) else None
     if celda is not None and not nota.strip() and not (
             abs(valor - celda) <= TOL_UMBRAL_NORMATIVO):
@@ -693,6 +711,24 @@ def declarar_desde_tabla(clave: str, valor: Any, *,
         valor_de_la_celda=celda)
     _PROCEDENCIAS[clave] = procedencia
     return procedencia
+
+
+def _fila_que_nombra(tabla_id: str, texto: str) -> Optional[str]:
+    """
+    La clave corta de la fila de `tabla_id` que `texto` nombra --- por su id
+    largo o por su clave corta ---, o None si no nombra ninguna.
+    """
+    tabla = _registro.construir().tabla(tabla_id)
+    for f in tabla.filas:
+        if texto == f.id or texto == tabla.clave_corta(f):
+            return tabla.clave_corta(f)
+    return None
+
+
+def _misma_fila(tabla_id: str, a: str, b: str) -> bool:
+    """`a` y `b` nombran la misma fila de `tabla_id`, por id largo o clave corta."""
+    fa, fb = _fila_que_nombra(tabla_id, a), _fila_que_nombra(tabla_id, b)
+    return fa is not None and fa == fb
 
 
 def _celda_escalar(tabla_id: str, filas: Sequence[str],

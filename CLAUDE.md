@@ -474,7 +474,12 @@ ErrorProyecto.
   `src.editores.declarar`, que enruta a la puerta de `declaracion.py` del
   modo del criterio y registra la procedencia: elegir una fila obtiene el
   valor de la tabla; teclear la clave de una fila la nombra (y R4 rechaza
-  la que no es elegible); un número nunca nombra una fila; un número que
+  la que no es elegible); un texto que nombra una fila DISTINTA de la
+  elegida no entra, con o sin nota, y lo rechaza la puerta
+  (`declaracion.declarar_desde_tabla`), de modo que vale también para la
+  ventana emergente —la revisión de E-B lo midió después del cierre:
+  «cajon_aletas_paralelas_escuadra» entraba «proveniente de la fila
+  cajon_aletas_30_75_escuadra»—; un número nunca nombra una fila; un número que
   DIFIERE de la celda, o que no proviene de ninguna fila en un criterio de
   tabla, exige nota o no entra; un dict de tabla toma de la fila sus campos
   homónimos o exige nota; una categoría elige dentro de su conjunto cerrado
@@ -528,7 +533,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **3893**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **3894**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -578,19 +583,31 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **E-B (2026-09-21) sumó SESENTA Y NUEVE tests netos**, y
-ninguno depende de PyMuPDF; uno depende de Tk: los 62 de
-`tests/test_eb_editores_comparador.py` —la aceptación de E10, E14, E13
-reducido y E21 acotado, escrita primero en rojo con `xfail(strict=True)`
-por test (medidos 52 xfailed, 1 passed y 0 XPASS antes de tocar código;
-49 XPASS al escribirlo, y liberados), más los ocho que dejó el auditor
-adversarial (el `descomponer_valor` que recortaba un triple y declaraba el
-recorte en verde; el `repr` que ponía comillas a un texto; la fila que un
-número «adivinaba»; la fila no elegible que entraba con nota por otra
-puerta; el dict de tabla que nombraba una fila cuyas celdas no eran el
-valor; el comparador con falsos IGUALES en bloqueos, iteraciones y listas
-de estado; el NaN que caía del lado de «igual»; la categoría de tabla que
-proponía una clave que la guardia rechazaba) y el UNDÉCIMO test de ventana
+independientes. **El cierre de E-B (2026-09-21, tras la revisión) sumó UN
+test**, sin dependencia de PyMuPDF ni de Tk: el de
+`tests/test_eb_editores_comparador.py` que cierra el hueco del texto que
+nombra otra fila (escrito en rojo con `xfail(strict=True)`, medido 1
+xfailed y 0 XPASS, y comprobado rojo otra vez sin la guardia antes de
+liberarlo). Con él el archivo tiene 63. **E-B (2026-09-21) sumó SESENTA Y
+NUEVE tests netos**, y ninguno depende de PyMuPDF; uno depende de Tk: los
+62 de `tests/test_eb_editores_comparador.py` —la aceptación de E10, E14,
+E13 reducido y E21 acotado: 53 en la parte 1 (51 funciones más un
+parametrizado de tres casos), escrita primero en rojo con
+`xfail(strict=True)` por test (medidos 52 xfailed, 1 passed y 0 XPASS
+antes de tocar código; 49 XPASS al escribirlo, y liberados), más los
+NUEVE que dejó el auditor adversarial en la parte 2 —y no ocho, que es lo
+que decía el mensaje de `5a35ed3` («61 (+8)») y lo que sumaba el desglose
+anterior de este párrafo: se contaron por nombre de función en el diff—
+(el `descomponer_valor` que recortaba un triple y declaraba el recorte en
+verde; el `repr` que ponía comillas a un texto; la pestaña 2 que no
+declara desde un editor que no refleja el literal; la fila no elegible
+que entraba con nota por otra puerta; la serie de claves que declara desde
+la tabla; el dato de ensayo que exige su trazabilidad; el dict de tabla
+que nombraba una fila cuyas celdas no eran el valor; el comparador con
+falsos IGUALES en bloqueos, iteraciones y listas de estado; el NaN y el
+infinito que caían del lado de «igual». La fila que un número «adivinaba»
+y la categoría de tabla que proponía una clave que la guardia rechazaba
+fueron REESCRITURAS de tests existentes, no altas) y el UNDÉCIMO test de ventana
 real (`tests/apoyo/gui_eb_real.py`: la serie de pares par a par, el dict
 con un campo fuera de ventana que no declara nada, la fila de la Tabla C.2
 que pone 0.5 y el 0.55 que exige nota, las dos columnas nuevas y la
@@ -1017,7 +1034,7 @@ propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
-EXT-11: 3779; E-A: 3824; E-B: 3893. La
+EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
