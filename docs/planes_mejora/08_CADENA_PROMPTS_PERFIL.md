@@ -113,6 +113,20 @@ Ejecuta únicamente PF-4 de docs/planes_mejora/08_CADENA_PROMPTS_PERFIL.md y apl
 
 ## PF-5 · Guía de corrida de perfil que la suite ejecuta
 
+> **Corregido al ejecutarlo (PF-5, 2026-09-21).** Cuatro lecturas del prompt
+> no describían el árbol y la guía dice lo que el programa hace (ficha
+> PF-5-01): los [A] de perfil sin valor son DIEZ desde PF-1
+> (`hw_entrada_fuera_de_rango`), no nueve; «Expediente cerrado: no» es lo
+> que se ve mientras una etapa bloquea, y la corrida completa a perfil dice
+> `si` (`Informe.cerrado` mide contra el alcance declarado; las trece
+> diferidas no cuentan); sobre `tests/ejemplo_puntos.csv` tal cual la
+> Familia C no dimensiona nunca porque la coronación del canal va vacía a
+> propósito, y la guía trabaja sobre una copia con esa sola celda rellenada,
+> que el test construye desde el CSV del repositorio; y la sesión la escribe
+> la ventana, no la CLI, de modo que la guía muestra una sesión mínima que el
+> test valida y corre con `--sesion`. El texto del prompt se conserva tal
+> como se ejecutó.
+
 ```text
 Ejecuta únicamente PF-5 de docs/planes_mejora/08_CADENA_PROMPTS_PERFIL.md y aplica las reglas comunes de 07_CADENA_PROMPTS_EXT.md. Sin plan mode. El README describe requisitos, exportación y multi-obra; no dice cómo se lleva un CSV de una vía nueva hasta un perfil con las tres familias dimensionadas. Escribe docs/guia_perfil.md para un tesista que no ha leído el código, con esta secuencia y NADA que no exista como objeto: (1) qué columnas del CSV exige cada familia, derivado de `M0_carga.COLUMNAS` y `VACIOS_ADMITIDOS` (si PF-2 ya entró, el texto remite al `--prevuelo`); (2) el JSON de `--datos-externos` con las seis claves de `servicio.CLAVES_EXTERNAS`, globales y por punto, y cuál gana; (3) el `sitio.json` de `--datos-sitio` para una obra que no es La Unión, con trazabilidad y fecha, y la advertencia de corredor que sale si no se declara; (4) los nueve [A] de perfil sin valor (`ca.criterios_de_perfil_sin_valor()`), con la FORMA de cada uno (`Criterio.forma`), su ventana y un ejemplo de `--declarar` sintácticamente válido por forma —serie de pares, texto de fila, entero, real—, sin recomendar ningún valor: la guía dice cómo se declara, no qué; (5) la lectura del RESUMEN: qué significa «Puntos dimensionados», «Etapas bloqueadas», «Diferidas por alcance» y por qué «Expediente cerrado: no» es lo esperado a perfil; (6) las salidas: JSON, HTML, PDF, CSV resumen, sesión, y `--comparar`/`--barrido` si PF-3 ya entró. La guía NO se escribe a mano dos veces: cada bloque de comandos de la guía lo ejecuta `tests/test_guia_perfil.py` en subproceso sobre `tests/ejemplo_puntos.csv`, un fixture JSON y un sitio.json de prueba, y afirma el número de puntos dimensionados que la guía promete (los cuatro, con los siete del cajón declarados y `S_conducto ≥ S_cauce`); las listas de columnas, claves y criterios de la guía se comparan contra los símbolos de los que salen (test de sincronía, como los cuatro generados), de modo que si un criterio cambia de forma el test lo dice. Enlaza la guía desde README.md en una línea. No cierra IDs. Ritual de cierre. Detente ahí.
 ```

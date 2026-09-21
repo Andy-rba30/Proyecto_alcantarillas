@@ -2969,3 +2969,65 @@ símbolo.
   que hay que ampliar si aparece un tercero.
 - **Dónde vive:** `src/barrido.py::_CAMPOS_DE_VEREDICTO`
 
+# Parte XXXIV — Lo que PF-5 dejó escrito al abrir la guía de corrida de perfil
+
+## PF-5-01 · La guía dice lo que el programa hace, no lo que el prompt suponía: diez [A] de perfil sin valor, un `si` a perfil, una celda del CSV y una sesión escrita a mano
+
+- **Qué se difirió:** cuatro lecturas del prompt de PF-5 que el árbol ya no
+  sostenía, resueltas del lado del programa. (1) «Los nueve [A] de perfil sin
+  valor» son DIEZ desde PF-1 (`hw_entrada_fuera_de_rango`): la guía lista lo
+  que `ca.criterios_de_perfil_sin_valor()` devuelve y el test compara contra
+  la función, no contra un número. (2) «Expediente cerrado: no» no es lo
+  esperado cuando nada bloquea al alcance declarado: `Informe.cerrado` mide
+  contra el alcance, y la corrida completa (cuatro puntos, cero bloqueadas,
+  trece diferidas) imprime `si` y sale con 0. La guía muestra el `no` de la
+  corrida con el cajón sin declarar y el `si` de la completa, y dice que un
+  `si` a perfil no es un expediente completo. (3) Sobre `tests/ejemplo_puntos.csv`
+  tal cual la Familia C no dimensiona nunca: la coronación del canal de C-01
+  va vacía a propósito (`M0_carga.VACIOS_ADMITIDOS`) y VC1 detiene el punto.
+  La guía trabaja sobre una COPIA con esa sola celda rellenada, y el test la
+  construye desde el CSV del repositorio y exige que la fila de la guía
+  difiera del ejemplo exactamente ahí. (4) La sesión la escribe la ventana y
+  la CLI no tiene bandera para escribirla: la guía muestra una sesión mínima
+  con las claves de `sesion.sesion_vacia`, el test la valida con
+  `sesion.errores_de_sesion`, la corre con `--sesion` y exige que sus siete
+  criterios sean los del comando `--declarar` de la guía.
+- **Por qué:** la regla de PF-5 es «NADA que no exista como objeto», y las
+  cuatro lecturas describían objetos que no existen así. Lo que la guía
+  promete lo mide `tests/test_guia_perfil.py` corriendo sus bloques en
+  subproceso y comparando las líneas del RESUMEN impresas en la guía con la
+  salida real: si el programa cambia, la guía se pone en rojo antes que en
+  falso.
+- **Qué haría falta:** para (1) y (2), nada. Para (3), rellenar la celda en
+  el CSV del repositorio movería la línea base y los tests de PF-2 que miden
+  el vacío. Para (4), una bandera de la CLI que escriba la sesión de una
+  corrida (`sesion.corrida_para_sesion` ya produce el bloque `corridas`),
+  que no está pedida.
+- **Dónde vive:** `tests/test_guia_perfil.py::ORDEN_EN_LA_GUIA`
+
+## PF-5-02 · Lo que el test de la guía comprueba y lo que deja a la prosa
+
+- **Qué se difirió:** la guardia sobre la PROSA de la guía. El test mide
+  las siete tablas generadas texto a texto contra `tests/apoyo/guia_perfil.py`
+  (derivadas de `M0_carga.COLUMNAS` y `VACIOS_ADMITIDOS`,
+  `servicio.CLAVES_EXTERNAS` con la bandera leída del parser real,
+  `datos_sitio.DATOS_SITIO`, `ca.criterios_de_perfil_sin_valor()` con
+  `Criterio.forma`, `M11.COLUMNAS_RESUMEN_CSV`, `sesion.sesion_vacia`); los
+  ocho bloques de comandos ejecutados en orden con sus archivos, su código
+  de salida y las líneas del RESUMEN; los diez ejemplos de `--declarar` por
+  la puerta real; y el enlace del README. Las frases sueltas —qué significa
+  cada cifra del RESUMEN, la precedencia por punto > bandera > global, qué
+  resuelve «por otra vía» cada clave— se escribieron leyendo
+  `Informe.cerrado`, `DatosExternos.dato` y `EXTERNOS_CON_VIA_ALTERNA`, y
+  ninguna guardia las relee. La columna «Ventana» se deriva con tres ramas
+  (`categoria` → opciones de `sensibilidad`; `DeTabla` → tablas; `Libre` →
+  `dominio`): un criterio con otra resolución, o una `Libre` sin `dominio`,
+  hace que el generador lance `ValueError` hasta que la ficha diga su ventana.
+- **Por qué:** la prosa que explica un objeto no se deriva de él sin un
+  segundo motor de texto, y una guía redactada para pasar un test deja de
+  redactarse para el tesista. Lo que sí se deriva —listas, formas, ventanas,
+  cifras impresas— es lo que envejece en silencio, y eso se deriva.
+- **Qué haría falta:** una afirmación por frase que alguien quiera vigilar,
+  escrita como test contra el símbolo que la sostiene, como
+  `test_decisiones_diferidas` ancla cada ficha por símbolo y no por texto.
+- **Dónde vive:** `tests/apoyo/guia_perfil.py::ventana_de`

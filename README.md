@@ -28,6 +28,9 @@ python cli.py <csv de puntos> --alcance perfil|expediente [--html salida.html] [
 python -m gui.app          # la ventana
 ```
 
+De un CSV nuevo a las tres familias dimensionadas a nivel de perfil, paso a
+paso y con comandos que la suite ejecuta: `docs/guia_perfil.md`.
+
 ## Exportar a PDF desde la ventana: en un proceso aparte
 
 Desde EXT-8 el botón «Exportar memoria (PDF)» no escribe el PDF en el hilo de la

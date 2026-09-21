@@ -592,7 +592,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4064**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4098**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -642,7 +642,40 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **PF-4 (2026-09-21) sumó TREINTA tests**, y ninguno depende
+independientes. **PF-5 (2026-09-21) sumó TREINTA Y CUATRO tests**, y ninguno
+depende de PyMuPDF ni de Tk: los 32 de `tests/test_guia_perfil.py`, la
+guardia de `docs/guia_perfil.md` —la guía de corrida de perfil para un
+tesista, que NO se escribe a mano dos veces—: los ocho bloques de comandos
+de la guía se ejecutan en subproceso, en el orden en que la guía los
+presenta, con los archivos que la guía muestra (las cercas `archivo=` se
+escriben tal cual y el CSV de trabajo se deriva de `tests/ejemplo_puntos.csv`
+rellenando la sola celda que la guía dice), y se afirma lo que la guía
+promete: el código de salida de cada comando, las líneas del RESUMEN que la
+guía imprime contra la salida real, los cuatro puntos dimensionados con los
+siete del cajón declarados y `S_conducto ≥ S_cauce`, la advertencia de
+corredor sin `--datos-sitio` y su ausencia con él, la sesión mínima válida
+que `--sesion` reproduce, `--comparar` y `--barrido`; las siete tablas
+generadas se comparan texto a texto con `tests/apoyo/guia_perfil.py`, que
+las deriva de sus símbolos (`M0_carga.COLUMNAS`, `VACIOS_ADMITIDOS`,
+`servicio.CLAVES_EXTERNAS` con la bandera leída del parser real,
+`datos_sitio.DATOS_SITIO`, `ca.criterios_de_perfil_sin_valor()` con
+`Criterio.forma` y su ventana, `M11.COLUMNAS_RESUMEN_CSV`,
+`sesion.sesion_vacia`) y se regeneran con `python -m tests.apoyo.guia_perfil`;
+los diez ejemplos de `--declarar` (uno por criterio de perfil sin valor, en su
+orden, con todas las formas) pasan la puerta real, y el README enlaza la
+guía. El único `lento` es el del PDF por la sesión, que acepta los dos
+finales declarados de `--pdf`. Los otros dos son los anclajes parametrizados
+de `test_decisiones_diferidas` para las dos fichas de la Parte XXXIV
+(PF-5-01, PF-5-02). No cierra IDs; las dos fichas registran lo que el prompt suponía y el árbol no
+sostiene: DIEZ [A] de perfil sin valor desde PF-1 y no nueve, el `si` de
+«Expediente cerrado» a perfil cuando nada bloquea al alcance declarado, la
+copia del CSV con la coronación de C-01, y la sesión que la CLI no escribe.
+La línea base no se movió: PF-5 no toca `src/`. Las cuatro configuraciones:
+«sí · sí» MEDIDA sobre el árbol de PF-5 con `python3-tk` instalado para
+`python3.12` (el intérprete de la suite es 3.11 sin tkinter; la sonda lo
+encuentra sola) y PyMuPDF presente: 4095 passed, 3 skipped, collected 4098;
+las otras tres se derivan sumando 34 a las de PF-4, porque ninguno de los
+34 depende de PyMuPDF ni de Tk. **PF-4 (2026-09-21) sumó TREINTA tests**, y ninguno depende
 de PyMuPDF ni de Tk: los 27 de `tests/test_pf4_regimen_v2b.py` —la
 aceptación de PF-4: el régimen con que V2b aplica el indicador de HDS-5
 §5.3.3 deja de estar cableado como «decisión conservadora del proyecto» y
@@ -1227,7 +1260,7 @@ post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
 EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
-PF-3: 4034; PF-4: 4064. La
+PF-3: 4034; PF-4: 4064; PF-5: 4098. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1239,10 +1272,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4061 (medido en PF-4) | 3 |
-| sí | no | 4050 (derivado: 4020 de PF-3 + 30) | 14 |
-| no | sí | 4026 (derivado: 3996 de PF-3 + 30) | 38 |
-| no | no | 4015 (derivado: 3985 de PF-3 + 30) | 49 |
+| sí | sí | 4095 (medido en PF-5) | 3 |
+| sí | no | 4084 (derivado: 4050 de PF-4 + 34) | 14 |
+| no | sí | 4060 (derivado: 4026 de PF-4 + 34) | 38 |
+| no | no | 4049 (derivado: 4015 de PF-4 + 34) | 49 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
