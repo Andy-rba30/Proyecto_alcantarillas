@@ -349,15 +349,6 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             # distintos, y una sola clave obligaba a adivinar cual (MAT-D1).
             "V_erosion_m_s": _num(hidraulica.V_erosion),
             "V_sedimentacion_m_s": _num(hidraulica.V_sedimentacion),
-            "hw_entrada_piso": (None if hidraulica.piso_hw_entrada is None
-                                else hidraulica.piso_hw_entrada.adoptado),
-            "hw_entrada_HW_sobre_D_formula": (
-                None if hidraulica.piso_hw_entrada is None
-                else _num(hidraulica.piso_hw_entrada.HW_sobre_D_formula)),
-            "hw_entrada_S_limite_m_m": (
-                None if hidraulica.piso_hw_entrada is None
-                or hidraulica.piso_hw_entrada.S_limite is None
-                else _num(hidraulica.piso_hw_entrada.S_limite)),
             "y_normal_m": _num(hidraulica.y_normal),
             "y_critico_m": _num(hidraulica.y_critico),
             "HW_entrada_m": _num(hidraulica.HW_entrada),
@@ -413,7 +404,17 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "perfil_y_asintota_m": _campo_del_perfil(
                 perfil, lambda p: _num(p.y_asintota_m)),
             "perfil_comprobacion_manda": _campo_del_perfil(
-                perfil, lambda p: p.comprobacion_manda)}
+                perfil, lambda p: p.comprobacion_manda),
+            "hw_entrada_piso": (None if hidraulica.piso_hw_entrada is None
+                                else hidraulica.piso_hw_entrada.adoptado),
+            "hw_entrada_HW_sobre_D_formula": (
+                None if hidraulica.piso_hw_entrada is None
+                else _num(hidraulica.piso_hw_entrada.HW_sobre_D_formula)),
+            "hw_entrada_S_limite_m_m": (
+                None if hidraulica.piso_hw_entrada is None
+                or hidraulica.piso_hw_entrada.S_limite is None
+                else _num(hidraulica.piso_hw_entrada.S_limite)),
+}
 
 
 def _campo_del_perfil(perfil: Optional[PerfilLamina], lector) -> Any:
